@@ -479,19 +479,18 @@ static bool process_event(SDL_Event *event)
 
         if(stuffed_key)
         {
-          if(status->keymap[stuffed_key] == 0)
-            key_press(status, stuffed_key, stuffed_key);
+          joystick_key_press(status, stuffed_key, stuffed_key);
 
           if(last_axis == (digital_value ^ 1))
           {
-            key_release(status,
+            joystick_key_release(status,
              input.joystick_axis_map[which][axis][last_axis]);
           }
         }
       }
       else if(last_axis != -1)
       {
-        key_release(status,
+        joystick_key_release(status,
           input.joystick_axis_map[which][axis][last_axis]);
       }
 
@@ -505,8 +504,8 @@ static bool process_event(SDL_Event *event)
       int button = event->jbutton.button;
       enum keycode stuffed_key = input.joystick_button_map[which][button];
 
-      if(stuffed_key && (status->keymap[stuffed_key] == 0))
-        key_press(status, stuffed_key, stuffed_key);
+      if(stuffed_key)
+        joystick_key_press(status, stuffed_key, stuffed_key);
 
       break;
     }
@@ -518,7 +517,7 @@ static bool process_event(SDL_Event *event)
       enum keycode stuffed_key = input.joystick_button_map[which][button];
 
       if(stuffed_key)
-        key_release(status, stuffed_key);
+        joystick_key_release(status, stuffed_key);
 
       break;
     }
@@ -534,34 +533,34 @@ static bool process_event(SDL_Event *event)
       
       //if(dir & SDL_HAT_CENTERED)
       {
-        key_release(status, key_up);
-        key_release(status, key_down);
-        key_release(status, key_left);
-        key_release(status, key_right);
+        joystick_key_release(status, key_up);
+        joystick_key_release(status, key_down);
+        joystick_key_release(status, key_left);
+        joystick_key_release(status, key_right);
       }
     
       if(dir & SDL_HAT_UP)
       {
-        if (key_up && (status->keymap[key_up] == 0))
-          key_press(status, key_up, key_up);
+        if (key_up)
+          joystick_key_press(status, key_up, key_up);
       }
       
       if(dir & SDL_HAT_DOWN)
       {
-        if (key_down && (status->keymap[key_down] == 0))
-          key_press(status, key_down, key_down);
+        if (key_down)
+          joystick_key_press(status, key_down, key_down);
       }
       
       if(dir & SDL_HAT_LEFT)
       {
-        if (key_left && (status->keymap[key_left] == 0))
-          key_press(status, key_left, key_left);
+        if (key_left)
+          joystick_key_press(status, key_left, key_left);
       }
       
       if(dir & SDL_HAT_RIGHT)
       {
-        if (key_right && (status->keymap[key_right] == 0))
-          key_press(status, key_right, key_right);
+        if (key_right)
+          joystick_key_press(status, key_right, key_right);
       }
       
       break;

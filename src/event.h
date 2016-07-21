@@ -38,6 +38,8 @@ __M_BEGIN_DECLS
 #define MOUSE_BUTTON_WHEELUP    4
 #define MOUSE_BUTTON_WHEELDOWN  5
 
+#define STATUS_NUM_KEYCODES     512
+
 struct buffered_status
 {
   enum keycode key_pressed;
@@ -136,6 +138,11 @@ void map_joystick_hat(int joystick, enum keycode up_key, enum keycode down_key,
  enum keycode left_key, enum keycode right_key);
 void set_unfocus_pause(bool value);
 void set_num_buffered_events(Uint8 value);
+
+void joystick_key_press(struct buffered_status *status,
+ enum keycode key, Uint16 unicode_key);
+void joystick_key_release(struct buffered_status *status,
+ enum keycode key);
 
 void real_warp_mouse(Uint32 x, Uint32 y);
 

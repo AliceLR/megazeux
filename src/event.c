@@ -314,11 +314,15 @@ static enum keycode convert_xt_internal(Uint32 key, enum keycode *second)
 
 static bool update_autorepeat(void)
 {
+  // The repeat key may not be a "valid" keycode due to the unbounded nature
+  // of joypad support.  All invalid keys use the last position because that's
+  // better than crashing.
+  enum keycode status_key = CLAMP(status->key_repeat, 0, STATUS_NUM_KEYCODES -1);
   struct buffered_status *status = store_status();
   bool rval = false;
 
   // Repeat code
-  Uint8 last_key_state = status->keymap[status->key_repeat];
+  Uint8 last_key_state = status->keymap[status_key];
   Uint8 last_mouse_state = status->mouse_repeat_state;
 
   if(last_key_state)
@@ -331,7 +335,7 @@ static bool update_autorepeat(void)
       if(ms_difference > KEY_REPEAT_START)
       {
         status->keypress_time = new_time;
-        status->keymap[status->key_repeat] = 2;
+        status->keymap[status_key] = 2;
         status->key = status->key_repeat;
         status->unicode = status->unicode_repeat;
         rval = true;
@@ -782,6 +786,41 @@ void key_release(struct buffered_status *status, enum keycode key)
   status->key_repeat = IKEY_UNKNOWN;
   status->unicode_repeat = 0;
   status->key_release = key;
+}
+
+/* Additional checks for joystick button presses, especially for
+*  arbitrary out-of-bounds keycodes.
+*/
+void joystick_key_press(struct buffered_status *status,
+ enum keycode key, Uint16 unicode_key)
+{
+  enum keycode status_key = CLAMP(key, 0, STATUS_NUM_KEYCODES - 1);
+
+  if(status_key && (status->keymap[status_key] == 0))
+  {
+    status->keymap[status_key] = 1;
+    status->key_pressed = key;
+    status->key = key;
+    status->unicode = unicode_key;
+    status->key_repeat = key;
+    status->unicode_repeat = unicode_key;
+    status->keypress_time = get_ticks();
+    status->key_release = IKEY_UNKNOWN;
+  }
+}
+
+void joystick_key_release(struct buffered_status *status,
+  enum keycode key)
+{
+  enum keycode status_key = CLAMP(key, 0, STATUS_NUM_KEYCODES - 1);
+
+  if(status_key)
+  {
+    status->keymap[status_key] = 0;
+    status->key_repeat = IKEY_UNKNOWN;
+    status->unicode_repeat = 0;
+    status->key_release = key;
+  }
 }
 
 void wait_for_key_release(Uint32 index)

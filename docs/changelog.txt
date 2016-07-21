@@ -86,6 +86,8 @@ BUGFIXES
 + Fixed crash bug when attempting to use file counters with
   paths equal to or longer than 512 chars in length. MegaZeux
   will now ignore such paths.
++ Fixed bug where MZX would crash with out-of-bounds joystick
+  key mappings.
 
 DEVELOPERS
 
