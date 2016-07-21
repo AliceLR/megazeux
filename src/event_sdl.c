@@ -542,26 +542,26 @@ static bool process_event(SDL_Event *event)
     
       if(dir & SDL_HAT_UP)
       {
-        key_press(status, key_up, key_up);
-      //  key_release(status, key_down);
+        if (key_up && (status->keymap[key_up] == 0))
+          key_press(status, key_up, key_up);
       }
       
       if(dir & SDL_HAT_DOWN)
       {
-        key_press(status, key_down, key_down);
-        //key_release(status, key_up);
+        if (key_down && (status->keymap[key_down] == 0))
+          key_press(status, key_down, key_down);
       }
       
       if(dir & SDL_HAT_LEFT)
       {
-        key_press(status, key_left, key_left);
-        //key_release(status, key_right);
+        if (key_left && (status->keymap[key_left] == 0))
+          key_press(status, key_left, key_left);
       }
       
       if(dir & SDL_HAT_RIGHT)
       {
-        key_press(status, key_right, key_right);
-        //key_release(status, key_left);
+        if (key_right && (status->keymap[key_right] == 0))
+          key_press(status, key_right, key_right);
       }
       
       break;
