@@ -317,8 +317,8 @@ static bool update_autorepeat(void)
   // The repeat key may not be a "valid" keycode due to the unbounded nature
   // of joypad support.  All invalid keys use the last position because that's
   // better than crashing.
-  enum keycode status_key = CLAMP(status->key_repeat, 0, STATUS_NUM_KEYCODES -1);
   struct buffered_status *status = store_status();
+  enum keycode status_key = CLAMP(status->key_repeat, 0, STATUS_NUM_KEYCODES -1);
   bool rval = false;
 
   // Repeat code
