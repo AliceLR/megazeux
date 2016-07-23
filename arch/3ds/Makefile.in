@@ -1,0 +1,60 @@
+#
+# Nintendo 3DS Makefile
+#
+
+include $(DEVKITARM)/3ds_rules
+
+.PHONY: package
+
+ifeq ($(strip $(DEVKITPRO)),)
+$(error "DEVKITPRO must be set in your environment.")
+endif
+
+ifeq ($(strip $(DEVKITARM)),)
+$(error "DEVKITARM must be set in your environment.")
+endif
+
+CC      := arm-none-eabi-gcc
+CXX     := arm-none-eabi-g++
+AR      := arm-none-eabi-ar
+OBJCOPY := arm-none-eabi-objcopy
+
+APP_TITLE = MegaZeux
+APP_DESCRIPTION = \"Game creation system\"
+APP_AUTHOR = \"MegaZeux Developers\"
+APP_ICON = arch/3ds/icon.png
+
+#
+# 3DS target rules
+#
+STRIP  = /bin/true
+
+#
+# Override library paths.
+#
+
+EXTRA_INCLUDES = -isystem $(CTRULIB)/include -isystem $(DEVKITPRO)/portlibs/armv6k/include
+EXTRA_LIBS = -L$(CTRULIB)/lib -L$(DEVKITPRO)/portlibs/armv6k/lib -L$(DEVKITARM)/arm-none-eabi/lib/armv6k/fpu -lsf2d -lctru -lpng16 -lz
+
+MACHDEP = -march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft
+
+ARCH_CFLAGS   += ${EXTRA_INCLUDES} ${MACHDEP} -DARM11 -D__3DS__ -Iarch/3ds
+ARCH_CXXFLAGS += ${ARCH_CFLAGS}
+ARCH_LDFLAGS  += ${EXTRA_LIBS} ${MACHDEP} -specs=3dsx.specs
+
+#
+# Vile hack, remove me ASAP
+#
+arch/3ds/%.o: arch/3ds/%.c
+	$(if ${V},,@echo "  CC      " $<)
+	${CC} -MD ${core_cflags} ${core_flags} -Wno-unused-macros -c $< -o $@
+
+package: mzx mzxrun.smdh
+	3dsxtool ${mzxrun} ${mzxrun}.3dsx --smdh=${mzxrun}.smdh	
+
+build := build/${SUBPLATFORM}/3ds/megazeux
+build: package ${build}
+	${CP} arch/3ds/pad.config ${build}
+	${CP} ${mzxrun}.3dsx ${build}/../
+
+include arch/zip.inc

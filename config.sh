@@ -25,6 +25,7 @@ usage() {
 	echo "  psp            Experimental PSP port"
 	echo "  gp2x           Experimental GP2X port"
 	echo "  nds            Experimental NDS port"
+	echo "  3ds            Experimental 3DS port"
 	echo "  wii            Experimental Wii port"
 	echo "  amiga          Experimental AmigaOS 4 port"
 	echo "  android        Experimental Android port"
@@ -421,6 +422,12 @@ elif [ "$PLATFORM" = "nds" ]; then
 	BINDIR=$SHAREDIR
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
+elif [ "$PLATFORM" = "3ds" ]; then
+	SHAREDIR=/3ds/megazeux
+	GAMESDIR=$SHAREDIR
+	BINDIR=$SHAREDIR
+	echo "#define CONFFILE \"$SHAREDIR/config.txt\"" >> src/config.h
+	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 elif [ "$PLATFORM" = "wii" ]; then
 	SHAREDIR=/apps/megazeux
 	GAMESDIR=$SHAREDIR
@@ -466,6 +473,11 @@ fi
 
 if [ "$PLATFORM" = "wii" ]; then
 	echo "Disabling SDL (Wii)."
+	SDL="false"
+fi
+
+if [ "$PLATFORM" = "3ds" ]; then
+	echo "Disabling SDL (3DS)."
 	SDL="false"
 fi
 
@@ -540,6 +552,23 @@ if [ "$PLATFORM" = "nds" ]; then
 fi
 
 #
+# If the 3DS arch is enabled, some code has to be compile time
+# enabled too.
+#
+if [ "$PLATFORM" = "3ds" ]; then
+	echo "Enabling 3DS-specific hacks."
+	echo "#define CONFIG_3DS" >> src/config.h
+	echo "BUILD_3DS=1" >> platform.inc
+
+	echo "Force-disabling software renderer on 3DS."
+	echo "Building custom 3DS renderer."
+	SOFTWARE="false"
+
+	echo "Disabling utils on 3DS (silly)."
+	UTILS="false"
+fi
+
+#
 # If the PSP arch is enabled, some code has to be compile time
 # enabled too.
 #
@@ -572,9 +601,10 @@ if [ "$PLATFORM" = "gp2x" ]; then
 fi
 
 #
-# Force-disable OpenGL and overlay renderers on PSP, GP2X and NDS
+# Force-disable OpenGL and overlay renderers on PSP, GP2X, 3DS, NDS and Wii
 #
 if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" \
+  -o "$PLATFORM" = "3ds" \
   -o "$PLATFORM" = "nds" -o "$PLATFORM" = "wii" ]; then
   	echo "Force-disabling OpenGL and overlay renderers."
 	GL="false"
@@ -627,6 +657,7 @@ fi
 # Force disable modular DSOs.
 #
 if [ "$PLATFORM" = "gp2x" -o "$PLATFORM" = "nds" \
+  -o "$PLATFORM" = "3ds" \
   -o "$PLATFORM" = "psp"  -o "$PLATFORM" = "wii" ]; then
 	echo "Force-disabling modular build (nonsensical or unsupported)."
 	MODULAR="false"
@@ -636,6 +667,7 @@ fi
 # Force disable networking.
 #
 if [ "$EDITOR" = "false" -o "$PLATFORM" = "unix" -o "$PLATFORM" = "psp" \
+  -o "$PLATFORM" = "3ds" \
   -o "$PLATFORM" = "nds" -o "$PLATFORM" = "wii" ]; then
 	echo "Force-disabling networking (nonsensical or unsupported)."
 	NETWORK="false"

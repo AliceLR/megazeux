@@ -43,10 +43,10 @@ typedef int32_t Sint32;
 typedef uint64_t Uint64;
 typedef int64_t Sint64;
 
-#if defined(CONFIG_WII) || defined(CONFIG_NDS)
+#if defined(CONFIG_WII) || defined(CONFIG_NDS) || defined(CONFIG_3DS)
 int real_main(int argc, char *argv[]);
 #define main real_main
-#endif // CONFIG_WII || CONFIG_NDS
+#endif // CONFIG_WII || CONFIG_NDS || CONFIG_3DS
 
 #endif // CONFIG_SDL
 
@@ -61,6 +61,8 @@ int real_main(int argc, char *argv[]);
 #include "mutex_sdl.h"
 #elif defined(CONFIG_WII)
 #include "../arch/wii/mutex.h"
+#elif defined(CONFIG_3DS)
+#include "../arch/3ds/mutex.h"
 #else
 #error Provide a valid mutex implementation for this platform!
 #endif
