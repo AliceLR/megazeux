@@ -24,13 +24,13 @@
 #undef main
 
 #include "../../src/util.h"
-#ifdef CONFIG_AUDIO
-#include "audio.h"
-#endif
+#include "../../src/event.h"
+#include "../../src/graphics.h"
 
-#include <3ds.h>
 #include <unistd.h>
 #include <stdio.h>
+
+#include <3ds.h>
 
 void delay(Uint32 ms)
 {
@@ -47,18 +47,13 @@ Uint32 get_ticks(void)
 
 bool platform_init(void)
 {
-  hidInit();
-
-  sf2d_init();
+  gfxInitDefault();
   consoleInit(GFX_BOTTOM, NULL);
-  sf2d_swapbuffers();
-  sf2d_set_3D(0);
   return true;
 }
 
 void platform_quit(void)
 {
-  hidExit();
 }
 
 void initialize_joysticks(void)
@@ -75,6 +70,10 @@ void real_warp_mouse(Uint32 x, Uint32 y)
 int main(int argc, char *argv[])
 {
   static char *_argv[] = {"/"};
+  int retval;
   chdir("/");
-  return real_main(1, _argv);
+
+  APT_SetAppCpuTimeLimit(80);
+  retval = real_main(1, _argv);
+  return retval;
 }

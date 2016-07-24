@@ -25,7 +25,7 @@
 
 extern struct input_status input;
 
-bool update_hid();
+bool update_hid(void);
 
 bool __update_event_status(void)
 {
@@ -76,7 +76,7 @@ static void do_joybutton_event(struct buffered_status *status, bool down,
   do_key_event(status, down, stuffed_key);
 }
 
-bool check_key(struct buffered_status *status,
+static inline bool check_key(struct buffered_status *status,
   Uint32 down, Uint32 up, Uint32 key, enum keycode code)
 {
   if(down & key)
@@ -93,7 +93,7 @@ bool check_key(struct buffered_status *status,
     return false;
 }
 
-bool check_joy(struct buffered_status *status,
+static inline bool check_joy(struct buffered_status *status,
   Uint32 down, Uint32 up, Uint32 key, Uint32 code)
 {
   if(down & key)
@@ -110,7 +110,7 @@ bool check_joy(struct buffered_status *status,
     return false;
 }
 
-bool update_hid()
+bool update_hid(void)
 {
   struct buffered_status *status = store_status();
   Uint32 down, up;

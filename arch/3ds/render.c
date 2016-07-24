@@ -25,12 +25,19 @@
 #include "util.h"
 
 #include <3ds.h>
-#include <sf2d.h>
+#include <citro3d.h>
+
+#include "shader_shbin.h"
 
 struct ctr_render_data
 {
-  sf2d_texture *texture;
   Uint32* buffer;
+  DVLB_s* dvlb;
+  shaderProgram_s shader;
+  int projection_loc;
+  C3D_Mtx projection;
+  C3D_Tex texture;
+  C3D_RenderTarget* target;
 };
 
 static bool ctr_init_video(struct graphics_data *graphics,
@@ -40,15 +47,38 @@ static bool ctr_init_video(struct graphics_data *graphics,
 
   memset(&render_data, 0, sizeof(struct ctr_render_data));
   graphics->render_data = &render_data;
+  render_data.buffer = linearAlloc(1024 * 512 * 4);
 
-  render_data.texture = sf2d_create_texture(1024, 512, TEXFMT_RGBA8, SF2D_PLACE_RAM);
-  render_data.buffer = linearAlloc((render_data.texture->pow2_w * render_data.texture->pow2_h) * 4);
+  C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
+  gfxSet3D(false);
 
-  render_data.texture->params =
-		GPU_TEXTURE_MAG_FILTER(GPU_LINEAR)
-		| GPU_TEXTURE_MIN_FILTER(GPU_LINEAR)
-		| GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_BORDER)
-		| GPU_TEXTURE_WRAP_T(GPU_CLAMP_TO_BORDER);
+  render_data.target = C3D_RenderTargetCreate(240, 400, GPU_RB_RGBA8, GPU_RB_DEPTH24_STENCIL8);
+  C3D_RenderTargetSetClear(render_data.target, C3D_CLEAR_ALL, 0x00FF00FF, 0);
+  C3D_RenderTargetSetOutput(render_data.target, GFX_TOP, GFX_LEFT,
+	GX_TRANSFER_FLIP_VERT(0) | GX_TRANSFER_OUT_TILED(0) | GX_TRANSFER_RAW_COPY(0) |
+	GX_TRANSFER_IN_FORMAT(GX_TRANSFER_FMT_RGBA8) | GX_TRANSFER_OUT_FORMAT(GX_TRANSFER_FMT_RGB8)
+	| GX_TRANSFER_SCALING(GX_TRANSFER_SCALE_NO));
+
+  render_data.dvlb = DVLB_ParseFile((u32 *)shader_shbin, shader_shbin_size);
+  shaderProgramInit(&render_data.shader);
+  shaderProgramSetVsh(&render_data.shader, &render_data.dvlb->DVLE[0]);
+  C3D_BindProgram(&render_data.shader);
+  render_data.projection_loc = shaderInstanceGetUniformLocation(render_data.shader.vertexShader, "projection");
+
+  C3D_AttrInfo* attrInfo = C3D_GetAttrInfo();
+  AttrInfo_Init(attrInfo);
+  AttrInfo_AddLoader(attrInfo, 0, GPU_FLOAT, 3); // v0 = position
+  AttrInfo_AddLoader(attrInfo, 1, GPU_FLOAT, 2); // v1 = texcoord
+
+  Mtx_OrthoTilt(&render_data.projection, 0.0, 400.0, 0.0, 240.0, 0.0, 1.0);
+
+  C3D_TexInit(&render_data.texture, 1024, 512, GPU_RGBA8);
+  C3D_TexSetFilter(&render_data.texture, GPU_LINEAR, GPU_LINEAR);
+
+  C3D_TexEnv* env = C3D_GetTexEnv(0);
+  C3D_TexEnvSrc(env, C3D_Both, GPU_TEXTURE0, 0, 0);
+  C3D_TexEnvOp(env, C3D_Both, 0, 0, 0);
+  C3D_TexEnvFunc(env, C3D_Both, GPU_REPLACE);
 
   graphics->allow_resize = 0;
   graphics->bits_per_pixel = 32;
@@ -130,23 +160,62 @@ static void ctr_render_mouse(struct graphics_data *graphics,
   render_mouse(pixels, pitch, bpp, x, y, mask, amask, w, h);
 }
 
-extern void sf2d_texture_tile32_hardware(sf2d_texture *texture, const void *data, int w, int h);
-
 static void ctr_sync_screen(struct graphics_data *graphics)
 {
   struct ctr_render_data *render_data = graphics->render_data;
-  float xs, ys;
+  float xp, yp;
+  float umin, vmin;
+  float umax, vmax;
+  float slider = osGet3DSliderState() * 1.15f;
 
-  sf2d_start_frame(GFX_TOP, GFX_LEFT);
-  render_data->texture->tiled = 0;
-  sf2d_texture_tile32_hardware(render_data->texture, render_data->buffer, render_data->texture->pow2_w, render_data->texture->pow2_h);
+  if(slider < 0.0f)
+    slider = 0.0f;
+  if(slider > 1.0f)
+    slider = 1.0f;
 
-  xs = 400.0 / 640.0;
-  ys = 220.0 / 350.0;
-  sf2d_draw_texture_scale(render_data->texture, 0, 10, xs, ys);
-  sf2d_end_frame();
+  GSPGPU_FlushDataCache(render_data->buffer, 1024 * 512 * 4);
+  GX_DisplayTransfer((u32 *) render_data->buffer, GX_BUFFER_DIM(1024, 512),
+	(u32 *) render_data->texture.data, GX_BUFFER_DIM(1024, 512),
+	GX_TRANSFER_FLIP_VERT(1) | GX_TRANSFER_OUT_TILED(1) | GX_TRANSFER_RAW_COPY(0) |
+	GX_TRANSFER_IN_FORMAT(GX_TRANSFER_FMT_RGBA8) | GX_TRANSFER_OUT_FORMAT(GX_TRANSFER_FMT_RGBA8)
+	| GX_TRANSFER_SCALING(GX_TRANSFER_SCALE_NO));
 
-  sf2d_swapbuffers();
+  C3D_TexBind(0, &render_data->texture);
+
+  C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
+  C3D_FrameDrawOn(render_data->target);
+
+  C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, render_data->projection_loc, &render_data->projection);
+
+  xp = (slider * 120.0);
+  yp = (slider * 65.0);
+
+  umin = xp / 1024.0f;
+  vmin = yp / 1024.0f;
+  umax = (640.0f - xp) / 1024.0f;
+  vmax = (350.0f - yp) / 512.0f;
+
+  gspWaitForPPF();
+  GSPGPU_InvalidateDataCache(render_data->texture.data, render_data->texture.size);
+
+  C3D_ImmDrawBegin(GPU_TRIANGLE_STRIP);
+	  C3D_ImmSendAttrib(0.0f, 0.0f, 0.5f, 0.0f);
+	  C3D_ImmSendAttrib(umin, vmax, 0.0f, 0.0f);
+
+	  C3D_ImmSendAttrib(400.0f, 0.0f, 0.5f, 0.0f);
+	  C3D_ImmSendAttrib(umax, vmax, 0.0f, 0.0f);
+
+	  C3D_ImmSendAttrib(400.0f, 240.0f, 0.5f, 0.0f);
+	  C3D_ImmSendAttrib(umax, vmin, 0.0f, 0.0f);
+
+	  C3D_ImmSendAttrib(0.0f, 240.0f, 0.5f, 0.0f);
+	  C3D_ImmSendAttrib(umin, vmin, 0.0f, 0.0f);
+
+	  C3D_ImmSendAttrib(0.0f, 0.0f, 0.5f, 0.0f);
+	  C3D_ImmSendAttrib(umin, vmax, 0.0f, 0.0f);
+  C3D_ImmDrawEnd();
+
+  C3D_FrameEnd(0);
 }
 
 void render_ctr_register(struct renderer *renderer)
