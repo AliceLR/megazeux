@@ -105,7 +105,7 @@ endif
 endif
 
 ifeq (${BUILD_3DS},1)
-core_cobjs += arch/3ds/shader.shbin.o
+core_cobjs += arch/3ds/shader.shbin.o arch/3ds/shader_accel.shbin.o
 core_cobjs += arch/3ds/platform.o arch/3ds/render.o
 core_cobjs += arch/3ds/event.o arch/3ds/audio.o
 endif
