@@ -48,7 +48,6 @@ Uint32 get_ticks(void)
 bool platform_init(void)
 {
   gfxInitDefault();
-  consoleInit(GFX_BOTTOM, NULL);
   return true;
 }
 

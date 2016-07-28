@@ -24,6 +24,7 @@
 #include <3ds.h>
 
 extern struct input_status input;
+bool touch_held;
 
 bool update_hid(void);
 
@@ -110,6 +111,33 @@ static inline bool check_joy(struct buffered_status *status,
     return false;
 }
 
+bool ctr_update_touch(struct buffered_status *status)
+{
+  touchPosition touch;
+  int mx, my;
+
+  hidTouchRead(&touch);
+  mx = touch.px * 2;
+  my = touch.py * 2 - 32;
+  if(my < 0) my = 0;
+  if(my > 350) my = 350;
+
+  if(mx != status->real_mouse_x || my != status->real_mouse_y)
+  {
+    status->real_mouse_x = mx;
+    status->real_mouse_y = my;
+    status->mouse_x = mx / 8;
+    status->mouse_y = my / 14;
+    status->mouse_moved = true;
+
+    focus_pixel(mx, my);
+
+    return true;
+  }
+  else
+    return false;
+}
+
 bool update_hid(void)
 {
   struct buffered_status *status = store_status();
@@ -131,6 +159,34 @@ bool update_hid(void)
   retval |= check_joy(status, down, up, KEY_L, 4);
   retval |= check_joy(status, down, up, KEY_SELECT, 6);
   retval |= check_joy(status, down, up, KEY_START, 7);
+  retval |= check_joy(status, down, up, KEY_ZL, 8);
+  retval |= check_joy(status, down, up, KEY_ZR, 9);
+
+  if(down & KEY_TOUCH)
+  {
+    status->mouse_button = MOUSE_BUTTON_LEFT;
+    status->mouse_repeat = MOUSE_BUTTON_LEFT;
+    status->mouse_button_state |= MOUSE_BUTTON(MOUSE_BUTTON_LEFT);
+    status->mouse_repeat_state = 1;
+    status->mouse_drag_state = -1;
+    status->mouse_time = get_ticks();
+    touch_held = true;
+    retval = true;
+  }
+  else if(up & KEY_TOUCH)
+  {
+    status->mouse_button_state &= ~MOUSE_BUTTON(MOUSE_BUTTON_LEFT);
+    status->mouse_repeat = 0;
+    status->mouse_repeat_state = 0;
+    status->mouse_drag_state = -0;
+    touch_held = false;
+    retval = true;
+  }
+
+  if(touch_held)
+  {
+    retval |= ctr_update_touch(status);
+  }
 
   return retval;
 }
