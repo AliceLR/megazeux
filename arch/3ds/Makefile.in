@@ -59,11 +59,20 @@ arch/3ds/%.shbin.o : arch/3ds/%.v.pica
 	echo "extern const u32" `(echo $(CURBIN) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`_size";" >> `(echo $(CURLOC) | tr . _)`.h
 
 package: mzx mzxrun.smdh
-	3dsxtool ${mzxrun} ${mzxrun}.3dsx --smdh=${mzxrun}.smdh	
+	3dsxtool ${mzxrun} ${mzxrun}.3dsx --smdh=${mzxrun}.smdh	--romfs=arch/3ds/romfs
+	bannertool makebanner -i arch/3ds/banner/megazeux-banner.png \
+		-a arch/3ds/banner/silence.wav -o megazeux-cia.bnr
+	bannertool makesmdh -s "MegaZeux" -l "MegaZeux game player" -p "MegaZeux developers" \
+		-i arch/3ds/banner/megazeux-icon.png -o megazeux-cia.smdh -r regionfree
+	makerom -f cia -elf ${mzxrun} -icon megazeux-cia.smdh -banner megazeux-cia.bnr \
+		-desc app:4 -v -o ${mzxrun}.cia -target t -exefslogo -rsf arch/3ds/banner/megazeux.rsf
+
 
 build := build/${SUBPLATFORM}/3ds/megazeux
 build: package ${build}
 	${CP} arch/3ds/pad.config ${build}
 	${CP} ${mzxrun}.3dsx ${build}/../
+	${CP} ${mzxrun}.cia ${build}/../../
+	${RM} ${build}/${mzxrun} ${build}/${mzxrun}.debug
 
 include arch/zip.inc

@@ -8,12 +8,9 @@
 .alias intc0 v1
 .alias inclr v2
 
-.constf const(0.0, 0.0, 0.5, 0.0)
 .constf SCALES(0.03125, 0.0546875,0.00392156862745098, 1.0)
 .constf RGBS(0.00392156862745098, 0.00392156862745098, 0.00392156862745098, 0.00392156862745098)
 .constf POSSCALE(8.0, 14.0, 1.0, 1.0)
-.alias ZEROS const.yyyy
-.alias  ONES SCALES.wwww
 
 .proc main
 	mov r1, POSSCALE

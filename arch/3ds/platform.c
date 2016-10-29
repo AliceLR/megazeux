@@ -31,6 +31,7 @@
 #include <stdio.h>
 
 #include <3ds.h>
+#include <citro3d.h>
 
 void delay(Uint32 ms)
 {
@@ -47,12 +48,22 @@ Uint32 get_ticks(void)
 
 bool platform_init(void)
 {
+  romfsInit();
+  osSetSpeedupEnable(1);
+  APT_SetAppCpuTimeLimit(80);
+
   gfxInitDefault();
+  gfxSet3D(false);
+  C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
   return true;
 }
 
 void platform_quit(void)
 {
+  C3D_Fini();
+  gfxExit();
+
+  romfsExit();
 }
 
 void initialize_joysticks(void)
@@ -72,7 +83,6 @@ int main(int argc, char *argv[])
   int retval;
   chdir("/");
 
-  APT_SetAppCpuTimeLimit(80);
   retval = real_main(1, _argv);
   return retval;
 }

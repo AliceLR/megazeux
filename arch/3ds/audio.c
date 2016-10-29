@@ -27,24 +27,21 @@
 
 #ifdef CONFIG_AUDIO
 
-static void* audio_buffer;
-static ndspWaveBuf ndsp_buffer;
+static u8* audio_buffer;
+static ndspWaveBuf ndsp_buffer[2];
 static int buffer_size;
 static Uint32 last_pos = 0;
+static bool soundFillBlock = false;
 
 void ndsp_callback(void* dud)
 {
-  Uint32 pos = ndspChnGetSamplePos(0);
-  u8* data = (u8*) dud;
-  if(pos >= audio.buffer_samples && last_pos < audio.buffer_samples)
-  {
-    audio_callback(&data[0], buffer_size);
+  if (ndsp_buffer[soundFillBlock].status == NDSP_WBUF_DONE) {
+    audio_callback(ndsp_buffer[soundFillBlock].data_pcm16, buffer_size);
+
+    DSP_FlushDataCache(ndsp_buffer[soundFillBlock].data_pcm8, audio.buffer_samples * 4);
+    ndspChnWaveBufAdd(0, &ndsp_buffer[soundFillBlock]);
+    soundFillBlock = !soundFillBlock;
   }
-  else if(pos < audio.buffer_samples && last_pos >= audio.buffer_samples)
-  {
-    audio_callback(&data[buffer_size], buffer_size);
-  }
-  last_pos = pos;
 }
 
 void init_audio_platform(struct config_info *conf)
@@ -72,21 +69,25 @@ void init_audio_platform(struct config_info *conf)
 
   memset(&ndsp_buffer, 0, sizeof(ndspWaveBuf));
   ndspChnReset(0);
-  ndspChnSetInterp(0, NDSP_INTERP_POLYPHASE);
+  ndspChnSetInterp(0, NDSP_INTERP_LINEAR);
   ndspChnSetRate(0, audio.output_frequency);
   ndspChnSetFormat(0, NDSP_CHANNELS(2) | NDSP_ENCODING(NDSP_ENCODING_PCM16));
   ndspChnSetMix(0, mix);
 
-  ndsp_buffer.data_vaddr = audio_buffer;
-  ndsp_buffer.nsamples = audio.buffer_samples * 2;
-  ndsp_buffer.looping = true;
-  ndsp_buffer.status = NDSP_WBUF_FREE;
-  ndspChnWaveBufAdd(0, &ndsp_buffer);
+  ndsp_buffer[0].data_vaddr = &audio_buffer[0];
+  ndsp_buffer[0].nsamples = audio.buffer_samples;
+  ndsp_buffer[1].data_vaddr = &audio_buffer[buffer_size];
+  ndsp_buffer[1].nsamples = audio.buffer_samples;
+
+  ndspChnWaveBufAdd(0, &ndsp_buffer[0]);
+  ndspChnWaveBufAdd(0, &ndsp_buffer[1]);
 }
 
 void quit_audio_platform(void)
 {
   // stub
+  linearFree(audio_buffer);
+  ndspExit();
 }
 
 #endif // CONFIG_AUDIO
