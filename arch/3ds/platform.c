@@ -84,5 +84,5 @@ int main(int argc, char *argv[])
   chdir("/");
 
   retval = real_main(1, _argv);
-  return retval;
+  return 0;
 }

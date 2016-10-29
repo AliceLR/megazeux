@@ -128,7 +128,7 @@ void ctr_keyboard_init(struct ctr_render_data *render_data)
 
 void ctr_keyboard_draw(struct ctr_render_data *render_data)
 {
-  void* ptr1 = ctr_draw_2d_texture(render_data, keyboard_tex, 0, 0, 320, 240, 0, 0, 320, 240, 4.0f);
+  ctr_draw_2d_texture(render_data, keyboard_tex, 0, 0, 320, 240, 0, 0, 320, 240, 4.0f);
 
   if (current_key_down != IKEY_UNKNOWN)
   {
@@ -137,13 +137,11 @@ void ctr_keyboard_draw(struct ctr_render_data *render_data)
       touch_area_t* area = &touch_areas[i];
       if (current_key_down == area->keycode)
       {
-        linearFree(ctr_draw_2d_texture(render_data, keyboard_tex, 320 + area->x, area->y, area->w, area->h,
-          area->x, area->y, area->w, area->h, 4.0f));
+        ctr_draw_2d_texture(render_data, keyboard_tex, 320 + area->x, 240 - area->y - area->h, area->w, area->h,
+          area->x, area->y, area->w, area->h, 3.0f);
       }
     }
   }
-
-  linearFree(ptr1);
 }
 
 bool ctr_keyboard_update(struct buffered_status *status)

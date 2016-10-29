@@ -156,7 +156,7 @@ static inline bool ctr_update_touch(struct buffered_status *status, touchPositio
   else
   {
     mx = touch->px * 2;
-    my = touch->py * 2 - 65;
+    my = touch->py * 2 - 64;
     if(mx < 0) mx = 0;
     if(mx >= 640) mx = 639;
     if(my < 0) my = 0;

@@ -20,9 +20,9 @@ struct ctr_render_data
   struct v_char *map;
   struct ctr_shader_data shader, shader_accel;
   C3D_Mtx projection;
-  C3D_Tex texture, chartex;
+  C3D_Tex chartex;
+  C3D_RenderBuf playfield, target_top, target_bottom;
   u8 chartex_dirty, cursor_on, mouse_on;
-  C3D_RenderTarget *target, *target_bottom;
   u32 focus_x, focus_y;
 };
 
@@ -48,12 +48,18 @@ struct vertex
   vector_2f texcoord;
 };
 
+struct linear_ptr_list_entry
+{
+  void* ptr;
+  struct linear_ptr_list_entry* next;
+};
+
 C3D_Tex* ctr_load_png(const char *name);
 
 void ctr_init_shader(struct ctr_shader_data *shader, const void* data, int size);
 void ctr_bind_shader(struct ctr_shader_data *shader);
 
-void* ctr_draw_2d_texture(struct ctr_render_data *render_data, const C3D_Tex* texture,
+void ctr_draw_2d_texture(struct ctr_render_data *render_data, C3D_Tex* texture,
   int tx, int ty, int tw, int th,
   float x, float y, float w, float h, float z);
 
