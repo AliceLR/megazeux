@@ -11,8 +11,12 @@ typedef struct
   u8 flags;
 } touch_area_t;
 
+// from platform.c
+bool ctr_is_2d(void);
+
 void ctr_keyboard_init(struct ctr_render_data *render_data);
 void ctr_keyboard_draw(struct ctr_render_data *render_data);
 bool ctr_keyboard_update(struct buffered_status *status);
+bool ctr_keyboard_force_zoom_out(void);
 
 #endif /* __3DS_KEYBOARD_H__ */

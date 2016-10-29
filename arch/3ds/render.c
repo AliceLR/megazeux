@@ -279,38 +279,28 @@ static short *ctr_char_bitmask_to_texture(signed char *c, short *p)
   // This tests the 7th bit, if 0, result is 0.
   // If 1, result is 255 (because of sign extended bit shift!).
   // Note the use of char constants to force 8bit calculation.
-  *(p++) = (*c << 24 >> 31) * 0x101;
-  *(p++) = (*c << 25 >> 31) * 0x101;
-  *(p++) = (*c << 26 >> 31) * 0x101;
-  *(p++) = (*c << 27 >> 31) * 0x101;
-  *(p++) = (*c << 28 >> 31) * 0x101;
-  *(p++) = (*c << 29 >> 31) * 0x101;
-  *(p++) = (*c << 30 >> 31) * 0x101;
-  *(p++) = (*c << 31 >> 31) * 0x101;
+  *(p++) = (*c << 24 >> 31);
+  *(p++) = (*c << 25 >> 31);
+  *(p++) = (*c << 26 >> 31);
+  *(p++) = (*c << 27 >> 31);
+  *(p++) = (*c << 28 >> 31);
+  *(p++) = (*c << 29 >> 31);
+  *(p++) = (*c << 30 >> 31);
+  *(p++) = (*c << 31 >> 31);
   return p;
 }
 
-static short *ctr_char_bitmask_to_texture_smzx_1(signed char *c, short *p)
+static short *ctr_char_bitmask_to_texture_smzx_1(signed char *c, short *p_)
 {
-  static const u8 alphas[] = {0, 10, 5, 15};
-  u16 col;
+  static const u32 alphas[] = {0x00000000, 0x000A000A, 0x00050005, 0x000F000F};
+  u32 *p = (u32*) p_;
 
-  col = alphas[((*c & 0xC0) >> 6)] | 0xFFF0;
-  *(p++) = col;
-  *(p++) = col;
+  *(p++) = alphas[((*c & 0xC0) >> 6)] | 0xFFF0FFF0;
+  *(p++) = alphas[((*c & 0x30) >> 4)] | 0xFFF0FFF0;
+  *(p++) = alphas[((*c & 0x0C) >> 2)] | 0xFFF0FFF0;
+  *(p++) = alphas[(*c & 0x03)] | 0xFFF0FFF0;
 
-  col = alphas[((*c & 0x30) >> 4)] | 0xFFF0;
-  *(p++) = col;
-  *(p++) = col;
-
-  col = alphas[((*c & 0x0C) >> 2)] | 0xFFF0;
-  *(p++) = col;
-  *(p++) = col;
-
-  col = alphas[(*c & 0x03)] | 0xFFF0;
-  *(p++) = col;
-  *(p++) = col;
-  return p;
+  return (short*) p;
 }
 
 static inline void ctr_do_remap_charsets(struct graphics_data *graphics)
@@ -443,7 +433,7 @@ static void ctr_render_graph(struct graphics_data *graphics)
       }
   }
   else
-    render_graph32s(render_data->buffer, 124 * 4, graphics, set_colors32[mode]);
+    render_graph32s(render_data->buffer, 1024 * 4, graphics, set_colors32[mode]);
 }
 
 static void ctr_render_cursor(struct graphics_data *graphics,
@@ -503,12 +493,17 @@ static inline void ctr_draw_playfield(struct ctr_render_data *render_data, bool 
   ctr_set_2d_projection_screen(render_data, top_screen);
   if(top_screen)
   {
-    slider = (osGet3DSliderState() * 1.3f) - 0.15f;
-
-    if(slider < 0.0f)
-      slider = 0.0f;
-    if(slider > 1.0f)
+    if(ctr_keyboard_force_zoom_out())
+    {
       slider = 1.0f;
+    }
+    else
+    {
+      slider = (osGet3DSliderState() * 1.3f) - 0.15f;
+
+      if(slider < 0.0f) slider = 0.0f;
+      if(slider > 1.0f) slider = 1.0f;
+    }
 
     width = 400 + (240 * slider);
     height = 240 + (144 * slider);

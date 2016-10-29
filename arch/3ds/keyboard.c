@@ -33,6 +33,7 @@
 
 static C3D_Tex* keyboard_tex;
 static enum keycode current_key_down = IKEY_UNKNOWN;
+static bool force_zoom_out = false;
 
 static touch_area_t touch_areas[] = {
   { 2, 118, 22, 16, IKEY_ESCAPE, 0 },
@@ -121,6 +122,11 @@ static inline bool ctr_key_touched(touchPosition* pos, touch_area_t* area)
     && pos->py < (area->y + area->h);
 }
 
+bool ctr_keyboard_force_zoom_out(void)
+{
+  return force_zoom_out;
+}
+
 void ctr_keyboard_init(struct ctr_render_data *render_data)
 {
   keyboard_tex = ctr_load_png("romfs:/kbd_display.png");
@@ -129,6 +135,11 @@ void ctr_keyboard_init(struct ctr_render_data *render_data)
 void ctr_keyboard_draw(struct ctr_render_data *render_data)
 {
   ctr_draw_2d_texture(render_data, keyboard_tex, 0, 0, 320, 240, 0, 0, 320, 240, 4.0f);
+
+  if (ctr_is_2d())
+  {
+    ctr_draw_2d_texture(render_data, keyboard_tex, force_zoom_out ? 16 : 0, 240, 16, 16, 302, 2, 16, 16, 3.0f);    
+  }
 
   if (current_key_down != IKEY_UNKNOWN)
   {
@@ -159,6 +170,11 @@ bool ctr_keyboard_update(struct buffered_status *status)
 
   if(down & KEY_TOUCH)
   {
+    if (ctr_is_2d() && pos.px >= 302 && pos.py >= 2 && pos.px < 318 && pos.py < 18)
+    {
+      force_zoom_out = !force_zoom_out;
+    }
+
     for(int i = 0; i < touch_areas_len; i++)
     {
       touch_area_t* area = &touch_areas[i];

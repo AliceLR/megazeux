@@ -33,12 +33,21 @@
 #include <3ds.h>
 #include <citro3d.h>
 
+#include "keyboard.h"
+
+static u8 isNot2DS;
+
 void delay(Uint32 ms)
 {
   if(ms > 0)
   {
     svcSleepThread(1e6 * ms);
   }
+}
+
+bool ctr_is_2d(void)
+{
+  return isNot2DS == 0;
 }
 
 Uint32 get_ticks(void)
@@ -48,6 +57,7 @@ Uint32 get_ticks(void)
 
 bool platform_init(void)
 {
+  cfguInit();
   romfsInit();
   osSetSpeedupEnable(1);
   APT_SetAppCpuTimeLimit(80);
@@ -55,6 +65,8 @@ bool platform_init(void)
   gfxInitDefault();
   gfxSet3D(false);
   C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
+
+  CFGU_GetModelNintendo2DS(&isNot2DS);
   return true;
 }
 
@@ -64,6 +76,7 @@ void platform_quit(void)
   gfxExit();
 
   romfsExit();
+  cfguExit();
 }
 
 void initialize_joysticks(void)
