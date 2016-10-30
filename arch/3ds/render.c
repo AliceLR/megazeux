@@ -70,9 +70,9 @@ static void* tex_alloc_png_surface(png_uint_32 w, png_uint_32 h,
 static inline void ctr_set_2d_projection(struct ctr_render_data *render_data, int width, int height, bool tilt)
 {
   if (tilt)
-    Mtx_OrthoTilt(&render_data->projection, 0, width, height, 0, -1.0, 5.0, true);
+    Mtx_OrthoTilt(&render_data->projection, 0, width, height, 0, -1.0, 6.0, true);
   else
-    Mtx_Ortho(&render_data->projection, 0, width, 0, height, -1.0, 5.0, true);
+    Mtx_Ortho(&render_data->projection, 0, width, 0, height, -1.0, 6.0, true);
   C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, render_data->shader.proj_loc, &render_data->projection);
   C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, render_data->shader_accel.proj_loc, &render_data->projection);
 }
@@ -180,11 +180,9 @@ static bool ctr_init_video(struct graphics_data *graphics,
   memset(&render_data, 0, sizeof(struct ctr_render_data));
   graphics->render_data = &render_data;
   render_data.buffer = linearAlloc(1024 * 512 * 4);
-  render_data.chartex_buffer = linearAlloc(256 * 256 * 2);
-  memset(render_data.chartex_buffer, 0xFFFFFFFF, 256 * 256 * 2);
 
-  render_data.map = linearAlloc(((80 * 25 * 2) + 2) * 4 * sizeof(struct v_char));
-  for (int i = 0; i < 80 * 50 + 2; i++)
+  render_data.map = linearAlloc(MAP_QUADS * 4 * sizeof(struct v_char));
+  for (int i = 0; i < MAP_QUADS; i++)
   {
     render_data.map[i * 4 + 0].x = (i % 80);
     render_data.map[i * 4 + 0].y = ((i / 80) % 25);
@@ -203,9 +201,10 @@ static bool ctr_init_video(struct graphics_data *graphics,
     render_data.map[i * 4 + 3].u = 1;
     render_data.map[i * 4 + 3].v = 17;
   }
-  for (int i = 0; i < (80 * 50 + 2) * 4; i++)
+
+  for (int i = 0; i < MAP_QUADS * 4; i++)
   {
-    render_data.map[i].z = (i < 80 * 100) ? 3 : ((i < 80 * 200) ? 2 : 1);
+    render_data.map[i].z = 5 - (i / (80 * 25 * 4));
   }
 
   C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
@@ -227,8 +226,14 @@ static bool ctr_init_video(struct graphics_data *graphics,
   C3D_RenderBufInit(&render_data.playfield, 1024, 512, GPU_RGBA8, 0);
   C3D_TexSetFilter(&render_data.playfield.colorBuf, GPU_LINEAR, GPU_LINEAR);
 
-  C3D_TexInitVRAM(&render_data.chartex, 256, 256, GPU_RGBA4);
-  C3D_TexSetFilter(&render_data.chartex, GPU_LINEAR, GPU_LINEAR);
+  for (int i = 0; i < 3; i++)
+  {
+    render_data.charset[i].buffer = linearAlloc(256 * 256 * 2);
+    memset(render_data.charset[i].buffer, 0xFF, 256 * 256 * 2);
+
+    C3D_TexInitVRAM(&render_data.charset[i].texture, 256, 256, GPU_RGBA4);
+    C3D_TexSetFilter(&render_data.charset[i].texture, GPU_NEAREST, GPU_NEAREST);
+  }
 
   texEnv = C3D_GetTexEnv(0);
   C3D_TexEnvSrc(texEnv, C3D_Both, GPU_TEXTURE0, 0, 0);
@@ -303,6 +308,26 @@ static short *ctr_char_bitmask_to_texture_smzx_1(signed char *c, short *p_)
   return (short*) p;
 }
 
+static inline void ctr_char_bitmask_to_textures_smzx_23(struct ctr_render_data *render_data,
+  signed char *charset, u8 c, u8 b)
+{
+  int p, i;
+  u8 ch, t;
+
+  ch = charset[c * 14 + b];
+  p = ((c & 0x1F) * 8) + ((c & 0xE0) * 112) + (b * 256);
+
+  for (i = 0; i < 4; i++)
+  {
+    t = (ch >> (6 - i*2)) & 3;
+
+    *((u32*) (&render_data->charset[0].buffer[p])) = (t == 1) ? 0xFFFFFFFF : 0;
+    *((u32*) (&render_data->charset[1].buffer[p])) = (t == 2) ? 0xFFFFFFFF : 0;
+    *((u32*) (&render_data->charset[2].buffer[p])) = (t == 3) ? 0xFFFFFFFF : 0;
+    p += 2;
+  }
+}
+
 static inline void ctr_do_remap_charsets(struct graphics_data *graphics)
 {
   struct ctr_render_data *render_data;
@@ -312,10 +337,16 @@ static inline void ctr_do_remap_charsets(struct graphics_data *graphics)
 
   render_data = graphics->render_data;
   c = (signed char *)graphics->charset;
-  p = (short *)render_data->chartex_buffer;
+  p = (short *)render_data->charset[0].buffer;
 
   switch(graphics->screen_mode)
   {
+    case 2:
+    case 3:
+      for(i = 0; i < 256; i++)
+        for(j = 0; j < 14; j++)
+          ctr_char_bitmask_to_textures_smzx_23(render_data, c, i, j);
+      break;
     case 1:
       for(i = 0; i < 16; i++, c += -14 + 32 * 14)
         for(j = 0; j < 14; j++, c += -32 * 14 + 1)
@@ -330,7 +361,7 @@ static inline void ctr_do_remap_charsets(struct graphics_data *graphics)
       break;
   }
 
-  render_data->chartex_dirty = 1;
+  render_data->charset_dirty = 1;
 }
 
 static inline void ctr_do_remap_char(struct graphics_data *graphics,
@@ -343,13 +374,18 @@ static inline void ctr_do_remap_char(struct graphics_data *graphics,
 
   render_data = graphics->render_data;
   c = (signed char *)graphics->charset;
-  p = (short *)render_data->chartex_buffer;
+  p = (short *)render_data->charset[0].buffer;
 
   p += ((chr & 0x1F) * 8) + ((chr & 0xE0) * 112);
   c += chr * 14;
 
   switch(graphics->screen_mode)
   {
+    case 2:
+    case 3:
+      for(i = 0; i < 14; i++)
+        ctr_char_bitmask_to_textures_smzx_23(render_data, (signed char *)graphics->charset, chr, i);
+      break;
     case 1:
       for(i = 0; i < 14; i++, c++, p += 256)
         ctr_char_bitmask_to_texture_smzx_1(c, p);
@@ -360,7 +396,7 @@ static inline void ctr_do_remap_char(struct graphics_data *graphics,
       break;
   }
 
-  render_data->chartex_dirty = 1;
+  render_data->charset_dirty = 1;
 }
 
 static void ctr_do_remap_charbyte(struct graphics_data *graphics,
@@ -372,13 +408,17 @@ static void ctr_do_remap_charbyte(struct graphics_data *graphics,
 
   render_data = graphics->render_data;
   c = (signed char *)graphics->charset;
-  p = (short *)render_data->chartex_buffer;
+  p = (short *)render_data->charset[0].buffer;
 
   p += ((chr & 0x1F) * 8) + ((chr & 0xE0) * 112) + (byte << 8);
   c += chr * 14;
 
   switch(graphics->screen_mode)
   {
+    case 2:
+    case 3:
+      ctr_char_bitmask_to_textures_smzx_23(render_data, (signed char *)graphics->charset, chr, byte);
+      break;
     case 1:
       ctr_char_bitmask_to_texture_smzx_1(c, p);
       break;
@@ -387,7 +427,33 @@ static void ctr_do_remap_charbyte(struct graphics_data *graphics,
       break;
   }
 
-  render_data->chartex_dirty = 1;
+  render_data->charset_dirty = 1;
+}
+
+static inline int getSmzxColor23(struct graphics_data *graphics, struct char_element *src, int i)
+{
+  if(graphics->screen_mode == 3)
+  {
+    if (i == 1) i = 2;
+    else if (i == 2) i = 1;
+    
+    return graphics->flat_intensity_palette[(((src->bg_color << 4) | src->fg_color) + i) & 255];
+  }
+  else
+  {
+    switch(i)
+    {
+      case 0:
+      default:
+        return graphics->flat_intensity_palette[src->bg_color * 0x11];
+      case 2:
+        return graphics->flat_intensity_palette[(src->fg_color << 4) | src->bg_color];
+      case 1:
+        return graphics->flat_intensity_palette[(src->bg_color << 4) | src->fg_color];
+      case 3:
+        return graphics->flat_intensity_palette[src->fg_color * 0x11];
+    }
+  }
 }
 
 static void ctr_render_graph(struct graphics_data *graphics)
@@ -395,7 +461,7 @@ static void ctr_render_graph(struct graphics_data *graphics)
   struct ctr_render_data *render_data;
   struct char_element *src;
   Uint32 mode;
-  int i, j, k, l, col, col2;
+  int i, j, k, l, m, n, col, col2, col3, col4;
   u8 u, v;
 
   render_data = graphics->render_data;
@@ -433,7 +499,65 @@ static void ctr_render_graph(struct graphics_data *graphics)
       }
   }
   else
-    render_graph32s(render_data->buffer, 1024 * 4, graphics, set_colors32[mode]);
+  {
+    k = 0;
+    l = 80 * 25 * 4;
+    m = 80 * 25 * 8;
+    n = 80 * 25 * 12;
+    src = &graphics->text_video[80 * 24];
+    for (j = 0; j < 25; j++, src -= 160)
+      for (i = 0; i < 80; i++, src++)
+      {
+        u = src->char_value & 31;
+        v = src->char_value >> 5;
+        col = getSmzxColor23(graphics, src, 0);
+        col2 = getSmzxColor23(graphics, src, 1);
+        col3 = getSmzxColor23(graphics, src, 2);
+        col4 = getSmzxColor23(graphics, src, 3);
+        render_data->map[k++].col = col;
+        render_data->map[k++].col = col;
+        render_data->map[k++].col = col;
+        render_data->map[k++].col = col;
+        render_data->map[l].u = u;
+        render_data->map[l].v = v+1;
+        render_data->map[l++].col = col2;
+        render_data->map[l].u = u+1;
+        render_data->map[l].v = v+1;
+        render_data->map[l++].col = col2;
+        render_data->map[l].u = u;
+        render_data->map[l].v = v;
+        render_data->map[l++].col = col2;
+        render_data->map[l].u = u+1;
+        render_data->map[l].v = v;
+        render_data->map[l++].col = col2;
+
+        render_data->map[m].u = u;
+        render_data->map[m].v = v+1;
+        render_data->map[m++].col = col3;
+        render_data->map[m].u = u+1;
+        render_data->map[m].v = v+1;
+        render_data->map[m++].col = col3;
+        render_data->map[m].u = u;
+        render_data->map[m].v = v;
+        render_data->map[m++].col = col3;
+        render_data->map[m].u = u+1;
+        render_data->map[m].v = v;
+        render_data->map[m++].col = col3;
+
+        render_data->map[n].u = u;
+        render_data->map[n].v = v+1;
+        render_data->map[n++].col = col4;
+        render_data->map[n].u = u+1;
+        render_data->map[n].v = v+1;
+        render_data->map[n++].col = col4;
+        render_data->map[n].u = u;
+        render_data->map[n].v = v;
+        render_data->map[n++].col = col4;
+        render_data->map[n].u = u+1;
+        render_data->map[n].v = v;
+        render_data->map[n++].col = col4;
+      }
+  }
 }
 
 static void ctr_render_cursor(struct graphics_data *graphics,
@@ -441,7 +565,7 @@ static void ctr_render_cursor(struct graphics_data *graphics,
 {
   struct ctr_render_data *render_data = graphics->render_data;
   Uint32 flatcolor = graphics->flat_intensity_palette[color];
-  int ind = 80 * 25 * 8;
+  int ind = MAP_CHAR_SIZE;
   float y1 = 25 - (y + ((lines + offset) / 14.0f));
   float y2 = 25 - (y + (offset / 14.0f));
 
@@ -465,7 +589,7 @@ static void ctr_render_mouse(struct graphics_data *graphics,
 {
   struct ctr_render_data *render_data = graphics->render_data;
   Uint32 col = 0xFFFFFF00;
-  int offset = 80 * 25 * 8 + 4;
+  int offset = MAP_CHAR_SIZE + 4;
   float y1 = 25 - ((y + h) / 14.0f);
   float y2 = 25 - (y / 14.0f);
 
@@ -541,49 +665,54 @@ static void ctr_render_playfield(struct graphics_data *graphics, struct ctr_rend
   ctr_set_2d_projection(render_data, 1024, 512, false);
   ctr_bind_shader(&render_data->shader_accel);
 
-  if(graphics->screen_mode < 2)
+  if(render_data->charset_dirty)
   {
-    if(render_data->chartex_dirty)
+    for (int i = 0; i < ((graphics->screen_mode < 2) ? 1 : 3); i++)
     {
-      GSPGPU_FlushDataCache(render_data->chartex_buffer, 256 * 256 * 2);
-      C3D_SafeDisplayTransfer((u32 *) render_data->chartex_buffer, GX_BUFFER_DIM(256, 256),
-        (u32 *) render_data->chartex.data, GX_BUFFER_DIM(256, 256),
+      GSPGPU_FlushDataCache(render_data->charset[i].buffer, 256 * 256 * 2);
+      C3D_SafeDisplayTransfer((u32 *) render_data->charset[i].buffer, GX_BUFFER_DIM(256, 256),
+        (u32 *) render_data->charset[i].texture.data, GX_BUFFER_DIM(256, 256),
         GX_TRANSFER_FLIP_VERT(1) | GX_TRANSFER_OUT_TILED(1) | GX_TRANSFER_RAW_COPY(0) |
         GX_TRANSFER_IN_FORMAT(GPU_RGBA4) | GX_TRANSFER_OUT_FORMAT(GPU_RGBA4)
         | GX_TRANSFER_SCALING(GX_TRANSFER_SCALE_NO));
       gspWaitForPPF();
-      GSPGPU_FlushDataCache(render_data->chartex.data, 256 * 256 * 2);
-
-      render_data->chartex_dirty = false;
+      GSPGPU_FlushDataCache(render_data->charset[i].texture.data, 256 * 256 * 2);
     }
 
-    bufInfo = C3D_GetBufInfo();
-    BufInfo_Init(bufInfo);
-    BufInfo_Add(bufInfo, render_data->map, sizeof(struct v_char), 3, 0x210);
+    render_data->charset_dirty = false;
+    render_data->last_smzx_mode = graphics->screen_mode;
+  }
 
-    C3D_TexBind(0, &render_data->chartex);
+  bufInfo = C3D_GetBufInfo();
+  BufInfo_Init(bufInfo);
+  BufInfo_Add(bufInfo, render_data->map, sizeof(struct v_char), 3, 0x210);
+
+  if(graphics->screen_mode < 2)
+  {
+    C3D_TexBind(0, &render_data->charset[0].texture);
     C3D_DrawArrays(GPU_TRIANGLE_STRIP, 0, 80 * 25 * 8);
   }
   else
   {
-    GSPGPU_FlushDataCache(render_data->buffer, 1024 * 512 * 4);
-    C3D_SafeDisplayTransfer((u32 *) render_data->buffer, GX_BUFFER_DIM(1024, 512),
-      (u32 *) render_data->playfield.colorBuf.data, GX_BUFFER_DIM(1024, 512),
-      GX_TRANSFER_FLIP_VERT(0) | GX_TRANSFER_OUT_TILED(1) | GX_TRANSFER_RAW_COPY(0) |
-      GX_TRANSFER_IN_FORMAT(GX_TRANSFER_FMT_RGBA8) | GX_TRANSFER_OUT_FORMAT(GX_TRANSFER_FMT_RGBA8)
-      | GX_TRANSFER_SCALING(GX_TRANSFER_SCALE_NO));
-    gspWaitForPPF();
+    C3D_TexBind(0, &render_data->charset[0].texture);
+    C3D_DrawArrays(GPU_TRIANGLE_STRIP, 0, 80 * 25 * 8);
+
+    C3D_TexBind(0, &render_data->charset[1].texture);
+    C3D_DrawArrays(GPU_TRIANGLE_STRIP, 80 * 25 * 8, 80 * 25 * 4);
+
+    C3D_TexBind(0, &render_data->charset[2].texture);
+    C3D_DrawArrays(GPU_TRIANGLE_STRIP, 80 * 25 * 12, 80 * 25 * 4);
   }
 
   if (render_data->cursor_on)
   {
-    C3D_DrawArrays(GPU_TRIANGLE_STRIP, 80 * 25 * 8, 4);
+    C3D_DrawArrays(GPU_TRIANGLE_STRIP, MAP_CHAR_SIZE, 4);
   }
 
   if (render_data->mouse_on)
   {
     C3D_AlphaBlend(GPU_BLEND_SUBTRACT, GPU_BLEND_ADD, GPU_SRC_COLOR, GPU_DST_COLOR, GPU_SRC_ALPHA, GPU_DST_ALPHA);
-    C3D_DrawArrays(GPU_TRIANGLE_STRIP, 80 * 25 * 8 + 4, 4);
+    C3D_DrawArrays(GPU_TRIANGLE_STRIP, MAP_CHAR_SIZE + 4, 4);
     C3D_AlphaBlend(GPU_BLEND_ADD, GPU_BLEND_ADD, GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA, GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA);
   }
 }

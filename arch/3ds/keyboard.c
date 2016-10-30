@@ -31,8 +31,14 @@
 #include "keyboard.h"
 #include "render.h"
 
+#define MAX_KEYS_DOWN 8
+
 static C3D_Tex* keyboard_tex;
-static enum keycode current_key_down = IKEY_UNKNOWN;
+static enum keycode keys_down[] = {
+  IKEY_UNKNOWN, IKEY_UNKNOWN, IKEY_UNKNOWN, IKEY_UNKNOWN,
+  IKEY_UNKNOWN, IKEY_UNKNOWN, IKEY_UNKNOWN, IKEY_UNKNOWN
+};
+static u8 keys_down_count = 0;
 static bool force_zoom_out = false;
 
 static touch_area_t touch_areas[] = {
@@ -115,6 +121,11 @@ static touch_area_t touch_areas[] = {
 };
 #define touch_areas_len (sizeof(touch_areas) / sizeof(touch_area_t))
 
+static inline bool ctr_is_modifier(enum keycode keycode)
+{
+  return keycode >= IKEY_RSHIFT && keycode <= IKEY_RSUPER;
+}
+
 static inline bool ctr_key_touched(touchPosition* pos, touch_area_t* area)
 {
   return pos->px >= area->x && pos->py >= area->y
@@ -141,15 +152,19 @@ void ctr_keyboard_draw(struct ctr_render_data *render_data)
     ctr_draw_2d_texture(render_data, keyboard_tex, force_zoom_out ? 16 : 0, 240, 16, 16, 302, 2, 16, 16, 3.0f);    
   }
 
-  if (current_key_down != IKEY_UNKNOWN)
+  if (keys_down_count > 0)
   {
     for(int i = 0; i < touch_areas_len; i++)
     {
       touch_area_t* area = &touch_areas[i];
-      if (current_key_down == area->keycode)
+      for(int j = 0; j < keys_down_count; j++)
       {
-        ctr_draw_2d_texture(render_data, keyboard_tex, 320 + area->x, 240 - area->y - area->h, area->w, area->h,
-          area->x, area->y, area->w, area->h, 3.0f);
+        if (keys_down[j] == area->keycode)
+        {
+          ctr_draw_2d_texture(render_data, keyboard_tex, 320 + area->x, 240 - area->y - area->h, area->w, area->h,
+            area->x, area->y, area->w, area->h, 3.0f);
+          break;
+        }
       }
     }
   }
@@ -181,17 +196,20 @@ bool ctr_keyboard_update(struct buffered_status *status)
       if(ctr_key_touched(&pos, area))
       {
         do_key_event(status, (down & KEY_TOUCH), area->keycode);
-        current_key_down = area->keycode;
+        keys_down[keys_down_count++] = area->keycode;
         retval = true;
         break;
       }
     }
   }
 
-  if(up & KEY_TOUCH && current_key_down != IKEY_UNKNOWN)
+  if(up & KEY_TOUCH && keys_down_count > 0 && !ctr_is_modifier(keys_down[keys_down_count - 1]))
   {
-    do_key_event(status, false, current_key_down);
-    current_key_down = IKEY_UNKNOWN;
+    for (; keys_down_count > 0; keys_down_count--)
+    {
+      do_key_event(status, false, keys_down[keys_down_count - 1]);
+      keys_down[keys_down_count - 1] = IKEY_UNKNOWN;
+    }
     retval = true;
   }
 
