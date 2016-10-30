@@ -309,13 +309,13 @@ static short *ctr_char_bitmask_to_texture_smzx_1(signed char *c, short *p_)
 }
 
 static inline void ctr_char_bitmask_to_textures_smzx_23(struct ctr_render_data *render_data,
-  signed char *charset, u8 c, u8 b)
+  signed char *charset, u16 c, u8 b)
 {
   int p, i;
   u8 ch, t;
 
   ch = charset[c * 14 + b];
-  p = ((c & 0x1F) * 8) + ((c & 0xE0) * 112) + (b * 256);
+  p = ((c & 0x1F) * 8) + ((c & 0x1E0) * 112) + (b * 256);
 
   for (i = 0; i < 4; i++)
   {
@@ -343,7 +343,7 @@ static inline void ctr_do_remap_charsets(struct graphics_data *graphics)
   {
     case 2:
     case 3:
-      for(i = 0; i < 256; i++)
+      for(i = 0; i < 512; i++)
         for(j = 0; j < 14; j++)
           ctr_char_bitmask_to_textures_smzx_23(render_data, c, i, j);
       break;
@@ -376,7 +376,7 @@ static inline void ctr_do_remap_char(struct graphics_data *graphics,
   c = (signed char *)graphics->charset;
   p = (short *)render_data->charset[0].buffer;
 
-  p += ((chr & 0x1F) * 8) + ((chr & 0xE0) * 112);
+  p += ((chr & 0x1F) * 8) + ((chr & 0x1E0) * 112);
   c += chr * 14;
 
   switch(graphics->screen_mode)
@@ -410,7 +410,7 @@ static void ctr_do_remap_charbyte(struct graphics_data *graphics,
   c = (signed char *)graphics->charset;
   p = (short *)render_data->charset[0].buffer;
 
-  p += ((chr & 0x1F) * 8) + ((chr & 0xE0) * 112) + (byte << 8);
+  p += ((chr & 0x1F) * 8) + ((chr & 0x1E0) * 112) + (byte << 8);
   c += chr * 14;
 
   switch(graphics->screen_mode)
@@ -434,9 +434,6 @@ static inline int getSmzxColor23(struct graphics_data *graphics, struct char_ele
 {
   if(graphics->screen_mode == 3)
   {
-    if (i == 1) i = 2;
-    else if (i == 2) i = 1;
-    
     return graphics->flat_intensity_palette[(((src->bg_color << 4) | src->fg_color) + i) & 255];
   }
   else
@@ -446,9 +443,9 @@ static inline int getSmzxColor23(struct graphics_data *graphics, struct char_ele
       case 0:
       default:
         return graphics->flat_intensity_palette[src->bg_color * 0x11];
-      case 2:
-        return graphics->flat_intensity_palette[(src->fg_color << 4) | src->bg_color];
       case 1:
+        return graphics->flat_intensity_palette[(src->fg_color << 4) | src->bg_color];
+      case 2:
         return graphics->flat_intensity_palette[(src->bg_color << 4) | src->fg_color];
       case 3:
         return graphics->flat_intensity_palette[src->fg_color * 0x11];
@@ -511,8 +508,8 @@ static void ctr_render_graph(struct graphics_data *graphics)
         u = src->char_value & 31;
         v = src->char_value >> 5;
         col = getSmzxColor23(graphics, src, 0);
-        col2 = getSmzxColor23(graphics, src, 1);
-        col3 = getSmzxColor23(graphics, src, 2);
+        col2 = getSmzxColor23(graphics, src, 2);
+        col3 = getSmzxColor23(graphics, src, 1);
         col4 = getSmzxColor23(graphics, src, 3);
         render_data->map[k++].col = col;
         render_data->map[k++].col = col;
@@ -664,6 +661,17 @@ static void ctr_render_playfield(struct graphics_data *graphics, struct ctr_rend
   C3D_RenderBufBind(&render_data->playfield);
   ctr_set_2d_projection(render_data, 1024, 512, false);
   ctr_bind_shader(&render_data->shader_accel);
+
+  if(render_data->last_smzx_mode != graphics->screen_mode)
+  {
+    // SMZX mode changed, re-draw textures (unless mode change is 2<->3,
+    // those use the same texture format)
+    if(!((render_data->last_smzx_mode == 3 && graphics->screen_mode == 2)
+      || (render_data->last_smzx_mode == 2 && graphics->screen_mode == 3)))
+    {
+      ctr_do_remap_charsets(graphics);
+    }
+  }
 
   if(render_data->charset_dirty)
   {

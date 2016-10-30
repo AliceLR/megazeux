@@ -27,7 +27,7 @@ struct ctr_render_data
   u32 *buffer;
   struct ctr_charset_data charset[3];
   bool charset_dirty;
-  int last_smzx_mode;
+  unsigned int last_smzx_mode;
   struct v_char *map;
   struct ctr_shader_data shader, shader_accel;
   C3D_Mtx projection;
