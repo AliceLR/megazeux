@@ -30,10 +30,9 @@
 static u8* audio_buffer;
 static ndspWaveBuf ndsp_buffer[2];
 static int buffer_size;
-static Uint32 last_pos = 0;
 static bool soundFillBlock = false;
 
-void ndsp_callback(void* dud)
+static void ndsp_callback(void* dud)
 {
   if (ndsp_buffer[soundFillBlock].status == NDSP_WBUF_DONE) {
     audio_callback(ndsp_buffer[soundFillBlock].data_pcm16, buffer_size);

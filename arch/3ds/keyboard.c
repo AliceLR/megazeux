@@ -145,6 +145,8 @@ void ctr_keyboard_init(struct ctr_render_data *render_data)
 
 void ctr_keyboard_draw(struct ctr_render_data *render_data)
 {
+  Uint32 i, j;
+
   ctr_draw_2d_texture(render_data, keyboard_tex, 0, 0, 320, 240, 0, 0, 320, 240, 4.0f);
 
   if (ctr_is_2d())
@@ -154,10 +156,10 @@ void ctr_keyboard_draw(struct ctr_render_data *render_data)
 
   if (keys_down_count > 0)
   {
-    for(int i = 0; i < touch_areas_len; i++)
+    for(i = 0; i < touch_areas_len; i++)
     {
       touch_area_t* area = &touch_areas[i];
-      for(int j = 0; j < keys_down_count; j++)
+      for(j = 0; j < keys_down_count; j++)
       {
         if (keys_down[j] == area->keycode)
         {
@@ -173,7 +175,7 @@ void ctr_keyboard_draw(struct ctr_render_data *render_data)
 bool ctr_keyboard_update(struct buffered_status *status)
 {
   touchPosition pos;
-  Uint32 down, up;
+  Uint32 down, up, i;
   bool retval = false;
 
   if(get_bottom_screen_mode() != BOTTOM_SCREEN_MODE_KEYBOARD)
@@ -190,7 +192,7 @@ bool ctr_keyboard_update(struct buffered_status *status)
       force_zoom_out = !force_zoom_out;
     }
 
-    for(int i = 0; i < touch_areas_len; i++)
+    for(i = 0; i < touch_areas_len; i++)
     {
       touch_area_t* area = &touch_areas[i];
       if(ctr_key_touched(&pos, area))

@@ -163,7 +163,7 @@ static inline bool ctr_update_touch(struct buffered_status *status, touchPositio
     if(my >= 350) my = 349;
   }
 
-  if(mx != status->real_mouse_x || my != status->real_mouse_y)
+  if((Uint32) mx != status->real_mouse_x || (Uint32) my != status->real_mouse_y)
   {
     status->real_mouse_x = mx;
     status->real_mouse_y = my;
@@ -199,7 +199,7 @@ static inline bool ctr_update_cstick(struct buffered_status *status)
     if(nmy < 0) nmy = 0;
     if(nmy >= 350) nmy = 349;
 
-    if(nmx != status->real_mouse_x || nmy != status->real_mouse_y)
+    if((Uint32) nmx != status->real_mouse_x || (Uint32) nmy != status->real_mouse_y)
     {
       status->real_mouse_x = nmx;
       status->real_mouse_y = nmy;
