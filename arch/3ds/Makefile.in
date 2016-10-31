@@ -22,7 +22,7 @@ OBJCOPY := arm-none-eabi-objcopy
 APP_TITLE = MegaZeux
 APP_DESCRIPTION = \"Game creation system\"
 APP_AUTHOR = \"MegaZeux Developers\"
-APP_ICON = arch/3ds/icon.png
+APP_ICON = arch/3ds/banner/megazeux-icon.png
 
 #
 # 3DS target rules
