@@ -2550,7 +2550,8 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
        ((file_name[0] != '.') || (file_name[1] == '.')))
       {
         if(S_ISDIR(file_info.st_mode))
-        {          // Exclude .. from base dir in subdirsonly mode
+        {
+          // Exclude .. from base dir in subdirsonly mode
           if(dirs_okay &&
            !(dirs_okay == 2 && !strcmp(file_name, "..") &&
              !strcmp(current_dir_name, base_dir_name) ))
