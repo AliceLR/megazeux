@@ -3870,7 +3870,7 @@ easily circumvented by using constant expressions. Constant
 expressions also allow larger hexadecimal numbers and octal
 numbers; please view the expressions section for more detail.
 
->#EXPRESS.HLP:1st:Expressions
+>#EXPRESS.HLP:exp:Expressions
 
 :col:~E[color]
 
@@ -8279,7 +8279,7 @@ quotes; such will cause MegaZeux to misinterpret your
 expression in different ways, depending on which you used.
 Therefore, using expressions for nesting is another benefit.
 
-Example: We set "r" to 1, "in" to 8 and ""out18" to 11. We want
+Example: We set "r" to 1, "in" to 8 and "out18" to 11. We want
 to output the value of "out18".
 "(&out&&r&in&&)" would output (0r&in&).
 "('out'r''in'')" would output ('out'r''in'')
@@ -8292,23 +8292,24 @@ In expressions, the following operators may be used:
 
 Binary operators (value-argument-value):
 
- +  Addition
- -  Subtraction
- *  Multiplication
- /  Division
- %  Modulo
- ^  Exponent (A^B is A to the Bth order/power)
- >> Bitshift Right (logical, not arithmetic)
- << Bitshift Left (logical, not arithmetic)
- >  Greater Than
- <  Less Than
- >= Greater Than or Equal To
- <= Less Than or Equal To
- =  Equal To
- != Not Equal To
- a  Bitwise AND (not logical AND)
- o  Bitwise OR (not logical OR)
- x  Bitwise XOR (not logical XOR)
+ +   Addition
+ -   Subtraction
+ *   Multiplication
+ /   Division
+ %   Modulo
+ ^   Exponent (A^B is A to the Bth order/power)
+ >>  Bitshift Right (logical, not arithmetic)
+ <<  Bitshift Left (logical, not arithmetic)
+ >>> Signed Shift Right (arithmetic)
+ >   Greater Than
+ <   Less Than
+ >=  Greater Than or Equal To
+ <=  Less Than or Equal To
+ =   Equal To
+ !=  Not Equal To
+ a   Bitwise AND (not logical AND)
+ o   Bitwise OR (not logical OR)
+ x   Bitwise XOR (not logical XOR)
 
 ~E+ Addition~F: Outputs the sum of the two given values. (3+2)
 would return 5.
@@ -12814,3 +12815,4 @@ $~9New in Versions Through 1.03
 >#OLDESVER.HLP:100:New in versions 2.01 to 2.60
 >#NEWIN200.HLP:1st:New in version 2.00
 >#MAIN.HLP:072:Table of Contents
+@
