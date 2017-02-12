@@ -228,11 +228,11 @@ SET EDGE COLOR [color]                                  |     NO      |
 SET MAXHEALTH #                                         |     NO      |
 SET MESG COLUMN #                                       |     NO      |
 SFX #                                                   |     NO      |
-SHOOT [dir]                                             |     NO      |
-SHOOTMISSILE [dir]                                      |     NO      |
-SHOOTSEEKER [dir]                                       |     NO      |
+SHOOT [dir]                                             |     NO(10)  |
+SHOOTMISSILE [dir]                                      |     NO(10)  |
+SHOOTSEEKER [dir]                                       |     NO(10)  |
 SLOWTIME #                                              |     NO      |
-SPITFIRE [dir]                                          |     NO      |
+SPITFIRE [dir]                                          |     NO(10)  |
 STATUS COUNTER # "counter"                              |     NO      |
 SWAP WORLD "file"                                       |     NO      |
 SWITCH [dir] [dir]                                      |     NO      |
@@ -267,3 +267,4 @@ ZAP "label" #                                           |     NO      |
 (7) = A special case exists where it currently executes a cycle end going through a transporter.
 (8) = A special case exists for the SAVE_GAME and SAVE_WORLD "special" counters which do end the cycle if used.
 (9) = Does not end a cycle if any or all of the affected objects do not move.
+(10) = Ends a cycle in MZX v2.83 and worlds made in MZX v2.83
