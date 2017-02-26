@@ -66,7 +66,8 @@ void init_audio_platform(struct config_info *conf)
   memset(audio_buffer, 0, buffer_size * 2);
   ndspSetCallback(ndsp_callback, audio_buffer);
 
-  memset(&ndsp_buffer, 0, sizeof(ndspWaveBuf));
+  memset(&ndsp_buffer[0], 0, sizeof(ndspWaveBuf));
+  memset(&ndsp_buffer[1], 0, sizeof(ndspWaveBuf));
   ndspChnReset(0);
   ndspChnSetInterp(0, NDSP_INTERP_LINEAR);
   ndspChnSetRate(0, audio.output_frequency);
