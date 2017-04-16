@@ -310,13 +310,13 @@ static short *ctr_char_bitmask_to_texture(signed char *c, short *p)
 
 static short *ctr_char_bitmask_to_texture_smzx_1(signed char *c, short *p_)
 {
-  static const u32 alphas[] = {0x00000000, 0x000A000A, 0x00050005, 0x000F000F};
+  static const u32 alphas[] = {0xFFF0FFF0, 0xFFFAFFFA, 0xFFF5FFF5, 0xFFFFFFFF};
   u32 *p = (u32*) p_;
 
-  *(p++) = alphas[((*c & 0xC0) >> 6)] | 0xFFF0FFF0;
-  *(p++) = alphas[((*c & 0x30) >> 4)] | 0xFFF0FFF0;
-  *(p++) = alphas[((*c & 0x0C) >> 2)] | 0xFFF0FFF0;
-  *(p++) = alphas[(*c & 0x03)] | 0xFFF0FFF0;
+  *(p++) = alphas[((*c & 0xC0) >> 6)];
+  *(p++) = alphas[((*c & 0x30) >> 4)];
+  *(p++) = alphas[((*c & 0x0C) >> 2)];
+  *(p++) = alphas[(*c & 0x03)];
 
   return (short*) p;
 }
