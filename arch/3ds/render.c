@@ -34,17 +34,6 @@
 
 // #define RDR_DEBUG
 
-static struct linear_ptr_list_entry* linear_ptr_list = NULL;
-
-static void free_linear_ptrs(void)
-{
-  while (linear_ptr_list != NULL)
-  {
-    linearFree(linear_ptr_list->ptr);
-    linear_ptr_list = linear_ptr_list->next;
-  }
-}
-
 // texture PNG dimensions must be powers of two
 static bool tex_w_h_constraint(png_uint_32 w, png_uint_32 h)
 {
@@ -102,7 +91,6 @@ C3D_Tex* ctr_load_png(const char* name)
       dataBuf[i] = __builtin_bswap32(data[i]);
 
     GSPGPU_InvalidateDataCache(dataBuf, output->size);
-
     C3D_SafeDisplayTransfer(dataBuf, GX_BUFFER_DIM(output->width, output->height),
       data, GX_BUFFER_DIM(output->width, output->height),
       GX_TRANSFER_FLIP_VERT(0) | GX_TRANSFER_OUT_TILED(1) | GX_TRANSFER_RAW_COPY(0) |
@@ -122,16 +110,30 @@ void ctr_bind_shader(struct ctr_shader_data *shader)
   C3D_SetAttrInfo(&shader->attr);
 }
 
+static int vertex_heap_pos = 0, vertex_heap_len = 0;
+static struct vertex* vertex_heap;
+
 void ctr_draw_2d_texture(struct ctr_render_data *render_data, C3D_Tex* texture,
   int tx, int ty, int tw, int th,
   float x, float y, float w, float h, float z)
 {
   struct vertex* vertices;
-  struct linear_ptr_list_entry* entry;
   float umin, umax, vmin, vmax;
   C3D_BufInfo* bufInfo;
 
-  vertices = linearAlloc(sizeof(struct vertex) * 4);
+  if (vertex_heap_len == 0)
+  {
+    vertex_heap_len = 256;
+    vertex_heap = linearAlloc(sizeof(struct vertex) * vertex_heap_len);
+  }
+  else if (vertex_heap_pos + 4 > vertex_heap_len)
+  {
+    vertex_heap_len *= 2;
+    vertex_heap = linearRealloc(vertex_heap, sizeof(struct vertex) * vertex_heap_len);
+  }
+
+  vertices = &vertex_heap[vertex_heap_pos];
+  vertex_heap_pos += 4;
 
   ctr_bind_shader(&render_data->shader);
 
@@ -156,11 +158,6 @@ void ctr_draw_2d_texture(struct ctr_render_data *render_data, C3D_Tex* texture,
 
   C3D_TexBind(0, texture);
   C3D_DrawArrays(GPU_TRIANGLE_STRIP, 0, 4);
-
-  entry = malloc(sizeof(struct linear_ptr_list_entry));
-  entry->ptr = vertices;
-  entry->next = linear_ptr_list;
-  linear_ptr_list = entry;
 }
 
 void ctr_init_shader(struct ctr_shader_data *shader, const void* data, int size)
@@ -190,19 +187,19 @@ static bool ctr_init_video(struct graphics_data *graphics,
   for (int i = 0; i < MAP_QUADS; i++)
   {
     render_data.map[i * 4 + 0].x = (i % 80);
-    render_data.map[i * 4 + 0].y = ((i / 80) % 25);
+    render_data.map[i * 4 + 0].y = 24 - ((i / 80) % 25);
     render_data.map[i * 4 + 0].u = 0;
     render_data.map[i * 4 + 0].v = 16;
     render_data.map[i * 4 + 1].x = (i % 80) + 1;
-    render_data.map[i * 4 + 1].y = ((i / 80) % 25);
+    render_data.map[i * 4 + 1].y = 24 - ((i / 80) % 25);
     render_data.map[i * 4 + 1].u = 1;
     render_data.map[i * 4 + 1].v = 16;
     render_data.map[i * 4 + 2].x = (i % 80);
-    render_data.map[i * 4 + 2].y = ((i / 80) % 25) + 1;
+    render_data.map[i * 4 + 2].y = 24 - ((i / 80) % 25) + 1;
     render_data.map[i * 4 + 2].u = 0;
     render_data.map[i * 4 + 2].v = 17;
     render_data.map[i * 4 + 3].x = (i % 80) + 1;
-    render_data.map[i * 4 + 3].y = ((i / 80) % 25) + 1;
+    render_data.map[i * 4 + 3].y = 24 - ((i / 80) % 25) + 1;
     render_data.map[i * 4 + 3].u = 1;
     render_data.map[i * 4 + 3].v = 17;
   }
@@ -216,7 +213,7 @@ static bool ctr_init_video(struct graphics_data *graphics,
   gfxSet3D(false);
 
   render_data.bg_buf = linearAlloc(128 * 32 * 4);
-  C3D_TexInitVRAM(&render_data.bg_tex, 128, 32, GPU_RGB8);
+  C3D_TexInit(&render_data.bg_tex, 128, 32, GPU_RGB8);
   render_data.playfield = C3D_RenderTargetCreate(1024, 512, GPU_RB_RGBA8, GPU_RB_DEPTH16);
   render_data.target_top = C3D_RenderTargetCreate(240, 400, GPU_RB_RGBA8, GPU_RB_DEPTH16);
   render_data.target_bottom = C3D_RenderTargetCreate(240, 320, GPU_RB_RGBA8, GPU_RB_DEPTH16);
@@ -247,7 +244,7 @@ static bool ctr_init_video(struct graphics_data *graphics,
     render_data.charset[i].buffer = linearAlloc(256 * 256 * 2);
     memset(render_data.charset[i].buffer, 0xFF, 256 * 256 * 2);
 
-    C3D_TexInitVRAM(&render_data.charset[i].texture, 256, 256, GPU_RGBA4);
+    C3D_TexInit(&render_data.charset[i].texture, 256, 256, GPU_RGBA4);
     C3D_TexSetFilter(&render_data.charset[i].texture, GPU_NEAREST, GPU_NEAREST);
   }
 
@@ -471,7 +468,6 @@ static inline int getSmzxColor23(struct graphics_data *graphics, struct char_ele
 
 static void ctr_render_graph(struct graphics_data *graphics)
 {
-  unsigned long tmp;  
   struct ctr_render_data *render_data;
   struct char_element *src;
   Uint32 mode;
@@ -486,8 +482,8 @@ static void ctr_render_graph(struct graphics_data *graphics)
   {
     k = 0;
     l = 0;
-    src = &graphics->text_video[80 * 24];
-    for (j = 0; j < 25; j++, src -= 160)
+    src = graphics->text_video;
+    for (j = 0; j < 25; j++)
     {
       for (i = 0; i < 80; i++, src++)
       {
@@ -518,8 +514,8 @@ static void ctr_render_graph(struct graphics_data *graphics)
     l = 0;
     m = 80 * 25 * 4;
     n = 80 * 25 * 8;
-    src = &graphics->text_video[80 * 24];
-    for (j = 0; j < 25; j++, src -= 160)
+    src = graphics->text_video;
+    for (j = 0; j < 25; j++)
     {
       for (i = 0; i < 80; i++, src++)
       {
@@ -573,10 +569,11 @@ static void ctr_render_graph(struct graphics_data *graphics)
     }
   }
 
-  GSPGPU_InvalidateDataCache(render_data->bg_buf, 128 * 25);
+  GSPGPU_InvalidateDataCache(render_data->map, MAP_QUADS * 4 * sizeof(struct v_char));
+  GSPGPU_InvalidateDataCache(render_data->bg_buf, 128 * 25 * 4);
   C3D_SafeDisplayTransfer((u32 *) render_data->bg_buf, GX_BUFFER_DIM(128, 32),
     (u32 *) render_data->bg_tex.data, GX_BUFFER_DIM(128, 32),
-    GX_TRANSFER_FLIP_VERT(0) | GX_TRANSFER_OUT_TILED(1) | GX_TRANSFER_RAW_COPY(0) |
+    GX_TRANSFER_FLIP_VERT(1) | GX_TRANSFER_OUT_TILED(1) | GX_TRANSFER_RAW_COPY(0) |
     GX_TRANSFER_IN_FORMAT(GPU_RGBA8) | GX_TRANSFER_OUT_FORMAT(GPU_RGB8)
     | GX_TRANSFER_SCALING(GX_TRANSFER_SCALE_NO));
 }
@@ -710,8 +707,8 @@ static void ctr_render_playfield(struct graphics_data *graphics, struct ctr_rend
     render_data->last_smzx_mode = graphics->screen_mode;
   }
 
-  C3D_CullFace(GPU_CULL_NONE);
-  ctr_draw_2d_texture(render_data, &render_data->bg_tex, 0, 32 - 25, 80, 25, 0, 0, 640, 350, 4.0f);
+  C3D_CullFace(GPU_CULL_FRONT_CCW);
+  ctr_draw_2d_texture(render_data, &render_data->bg_tex, 0, 0, 80, 25, 0, 0, 640, 350, 5.0f);
   C3D_CullFace(GPU_CULL_BACK_CCW);
 
   bufInfo = C3D_GetBufInfo();
@@ -757,7 +754,7 @@ static void ctr_sync_screen(struct graphics_data *graphics)
   if (!C3D_FrameBegin(0)) {
     return;
   }
-  free_linear_ptrs();
+  vertex_heap_pos = 0;
 
   C3D_FrameDrawOn(render_data->playfield);
   ctr_render_playfield(graphics, render_data);
