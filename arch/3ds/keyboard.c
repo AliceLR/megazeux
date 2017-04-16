@@ -33,7 +33,7 @@
 
 #define MAX_KEYS_DOWN 8
 
-static C3D_Tex* keyboard_tex;
+C3D_Tex* keyboard_tex;
 static enum keycode keys_down[] = {
   IKEY_UNKNOWN, IKEY_UNKNOWN, IKEY_UNKNOWN, IKEY_UNKNOWN,
   IKEY_UNKNOWN, IKEY_UNKNOWN, IKEY_UNKNOWN, IKEY_UNKNOWN

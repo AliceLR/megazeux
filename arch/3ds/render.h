@@ -26,8 +26,8 @@
 #include <3ds.h>
 #include <citro3d.h>
 
-#define MAP_QUADS ((80 * 25 * 4) + 2)
-#define MAP_CHAR_SIZE ((MAP_QUADS - 2) * 4)
+#define MAP_QUADS ((80 * 25 * 3) + 2)
+#define MAP_CHAR_SIZE ((MAP_QUADS - 2) * 3)
 
 struct ctr_shader_data
 {
@@ -52,7 +52,9 @@ struct ctr_render_data
   struct v_char *map;
   struct ctr_shader_data shader, shader_accel;
   C3D_Mtx projection;
-  C3D_RenderBuf playfield, target_top, target_bottom;
+  u32 *bg_buf;
+  C3D_Tex bg_tex;
+  C3D_RenderTarget *playfield, *target_top, *target_bottom;
   u8 cursor_on, mouse_on;
   u32 focus_x, focus_y;
 };
