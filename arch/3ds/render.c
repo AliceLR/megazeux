@@ -204,7 +204,7 @@ static bool ctr_init_video(struct graphics_data *graphics,
     render_data.map[i * 4 + 3].v = 17;
   }
 
-  for (int i = 0; i < MAP_QUADS * 3; i++)
+  for (int i = 0; i < MAP_QUADS * 4; i++)
   {
     render_data.map[i].z = 4 - (i / (80 * 25 * 4));
   }
@@ -576,6 +576,7 @@ static void ctr_render_graph(struct graphics_data *graphics)
     GX_TRANSFER_FLIP_VERT(1) | GX_TRANSFER_OUT_TILED(1) | GX_TRANSFER_RAW_COPY(0) |
     GX_TRANSFER_IN_FORMAT(GPU_RGBA8) | GX_TRANSFER_OUT_FORMAT(GPU_RGB8)
     | GX_TRANSFER_SCALING(GX_TRANSFER_SCALE_NO));
+  gspWaitForPPF();
 }
 
 static void ctr_render_cursor(struct graphics_data *graphics,
@@ -701,6 +702,7 @@ static void ctr_render_playfield(struct graphics_data *graphics, struct ctr_rend
         GX_TRANSFER_FLIP_VERT(1) | GX_TRANSFER_OUT_TILED(1) | GX_TRANSFER_RAW_COPY(0) |
         GX_TRANSFER_IN_FORMAT(GPU_RGBA4) | GX_TRANSFER_OUT_FORMAT(GPU_RGBA4)
         | GX_TRANSFER_SCALING(GX_TRANSFER_SCALE_NO));
+      gspWaitForPPF();
     }
 
     render_data->charset_dirty = false;

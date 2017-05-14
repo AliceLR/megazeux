@@ -27,7 +27,7 @@
 #include <citro3d.h>
 
 #define MAP_QUADS ((80 * 25 * 3) + 2)
-#define MAP_CHAR_SIZE ((MAP_QUADS - 2) * 3)
+#define MAP_CHAR_SIZE ((MAP_QUADS - 2) * 4)
 
 struct ctr_shader_data
 {
