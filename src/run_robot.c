@@ -4915,8 +4915,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
               int d_flag = flags[d_id];
 
               if((d_id == ROBOT_PUSHABLE) || (d_id == PLAYER) ||
-               ((push_dir < 2) && (d_flag & A_PUSHNS)) ||
-               ((push_dir >= 2) && (d_flag & A_PUSHEW)))
+               ((int_dir < 2) && (d_flag & A_PUSHNS)) ||
+               ((int_dir >= 2) && (d_flag & A_PUSHEW)))
               {
                 push(mzx_world, x, y, int_dir, 0);
                 update_blocked = 1;

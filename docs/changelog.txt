@@ -88,6 +88,8 @@ BUGFIXES
   will now ignore such paths.
 + Fixed bug where MZX would crash with out-of-bounds joystick
   key mappings.
++ Fixed a bug where robots could not push the SliderNS type to
+  the south.
 
 DEVELOPERS
 
