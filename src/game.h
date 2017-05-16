@@ -45,7 +45,6 @@ int take_key(struct world *mzx_world, int color);
 int give_key(struct world *mzx_world, int color);
 
 extern bool pal_update;
-extern bool editing;
 
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC void play_game(struct world *mzx_world);
