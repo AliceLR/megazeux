@@ -58,7 +58,7 @@
 #define WORLD_VERSION_PREV_HI ((WORLD_VERSION_PREV >> 8) & 0xff)
 #define WORLD_VERSION_PREV_LO (WORLD_VERSION_PREV & 0xff)
 
-#if WORLD_VERSION == 0x0254
+#if WORLD_VERSION == 0x0255
 
 /* Suppress a couple of annoying warnings
 #define WORLD_GLOBAL_OFFSET_OFFSET 4230
@@ -107,19 +107,19 @@ static void fputud(unsigned int src, FILE *fp)
 }
 */
 
-static enum status convert_284_to_283_board(FILE *fp, int *delta)
+static enum status convert_285_to_284_board(FILE *fp, int *delta)
 {
   //well, that was easy!!
   return SUCCESS;
 }
 
-static enum status convert_284_to_283(FILE *fp)
+static enum status convert_285_to_284(FILE *fp)
 {
   //no changes in format
   return SUCCESS;
 }
 
-#endif // WORLD_VERSION == 0x0254
+#endif // WORLD_VERSION == 0x0255
 
 int main(int argc, char *argv[])
 {
@@ -240,14 +240,14 @@ int main(int argc, char *argv[])
   if(byte == EOF)
     goto err_write;
 
-#if WORLD_VERSION == 0x0254
+#if WORLD_VERSION == 0x0255
   {
     enum status ret;
 
     if(world)
-      ret = convert_284_to_283(fp);
+      ret = convert_285_to_284(fp);
     else
-      ret = convert_284_to_283_board(fp, NULL);
+      ret = convert_285_to_284_board(fp, NULL);
 
     switch(ret)
     {
