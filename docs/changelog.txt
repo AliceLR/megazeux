@@ -90,6 +90,8 @@ BUGFIXES
   key mappings.
 + Fixed a bug where robots could not push the SliderNS type to
   the south.
++ Fixed a bug where a robot using #return or #top multiple times
+  within a single command could cause a crash.
 
 DEVELOPERS
 

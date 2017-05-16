@@ -1520,12 +1520,9 @@ static int send_robot_direct(struct robot *cur_robot, const char *mesg,
         set_robot_position(cur_robot, return_pos);
       }
       else
-
-      if(send_self)
       {
-        // Contextually invalid return; skip the command
-        cur_robot->cur_prog_line +=
-         1 + robot_program[cur_robot->cur_prog_line] + 1;
+        // Contextually invalid return; treat like an invalid label
+        return 2;
       }
     }
     else
@@ -1539,12 +1536,9 @@ static int send_robot_direct(struct robot *cur_robot, const char *mesg,
         cur_robot->stack_pointer = 0;
       }
       else
-
-      if(send_self)
       {
-        // Contextually invalid top; skip the command
-        cur_robot->cur_prog_line +=
-         1 + robot_program[cur_robot->cur_prog_line] + 1;
+        // Contextually invalid top; treat like an invalid label
+        return 2;
       }
     }
     else
