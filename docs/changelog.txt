@@ -92,6 +92,9 @@ BUGFIXES
   the south.
 + Fixed a bug where a robot using #return or #top multiple times
   within a single command could cause a crash.
++ Fixed a port regression where IF ANY would continue to iterate
+  over the board after finding a match, potentially triggering
+  multiple subroutines, #return, or #top labels.
 
 DEVELOPERS
 
