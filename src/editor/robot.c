@@ -52,6 +52,9 @@ void create_blank_robot_direct(struct robot *cur_robot, int x, int y)
   cur_robot->bullet_type = 1;
   cur_robot->used = 1;
   cur_robot->cur_prog_line = 1;
+
+  cur_robot->commands_total = 0;
+  cur_robot->commands_cycle = 0;
 }
 
 void create_blank_scroll_direct(struct scroll *cur_scroll)

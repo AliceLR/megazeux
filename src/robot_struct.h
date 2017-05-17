@@ -107,6 +107,11 @@ struct robot
 
   // Local counters - store in save file
   int local[32];
+
+#ifdef CONFIG_EDITOR
+  int commands_total;
+  int commands_cycle;
+#endif
 };
 
 __M_END_DECLS

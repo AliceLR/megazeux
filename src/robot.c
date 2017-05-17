@@ -233,6 +233,10 @@ void create_blank_robot(struct robot *r, int savegame)
   r->stack_pointer = 0;
   r->stack = NULL;
 
+#ifdef CONFIG_EDITOR
+  r->commands_total = 0;
+  r->commands_cycle = 0;
+#endif
 }
 
 struct robot *load_robot_allocate(FILE *fp, int savegame, int file_version,
@@ -278,6 +282,11 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
     val_error(WORLD_ROBOT_MISSING, robot_location);
     goto err_out;
   }
+
+#ifdef CONFIG_EDITOR
+  cur_robot->commands_total = 0;
+  cur_robot->commands_cycle = 0;
+#endif
 
   fread(cur_robot->robot_name, 15, 1, fp);
   cur_robot->robot_char = fgetc(fp);

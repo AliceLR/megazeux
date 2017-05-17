@@ -1200,8 +1200,12 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
     // Reset x/y
     cur_robot->xpos = x;
     cur_robot->ypos = y;
-    // Update cycle count
 
+#ifdef CONFIG_EDITOR
+    cur_robot->commands_cycle = 0;
+#endif
+
+    // Update cycle count
     cur_robot->cycle_count++;
     if(cur_robot->cycle_count < cur_robot->robot_cycle)
     {
@@ -1295,12 +1299,17 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
     // Get command number
     cmd = cmd_ptr[0];
 
+#ifdef CONFIG_EDITOR
+    (cur_robot->commands_total)++;
+    (cur_robot->commands_cycle)++;
+
     if(debug_robot && mzx_world->editing)
     {
       // Returns 1 if the user chose to stop the program.
       if(debug_robot(mzx_world, cur_robot, id))
         cmd = ROBOTIC_CMD_END;
     }
+#endif
 
     // Act according to command
     switch(cmd)

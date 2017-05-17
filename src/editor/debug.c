@@ -218,9 +218,11 @@ const char *board_var_list[11] = {
   "timereset",
 };
 // Locals are added onto the end later.
-int num_robot_vars = 11;
-const char *robot_var_list[11] = {
+int num_robot_vars = 13;
+const char *robot_var_list[13] = {
   "robot_name*",
+  "commands_total",
+  "commands_cycle*",
   "bullettype",
   "lava_walk",
   "loopcount",
@@ -329,6 +331,16 @@ static void read_var(struct world *mzx_world, char *var_buffer)
       int_value = strlen(char_value);
     }
     else
+    if(!strcmp(real_var, "commands_total"))
+    {
+      int_value = mzx_world->current_board->robot_list[index]->commands_total;
+    }
+    else
+    if(!strcmp(real_var, "commands_cycle"))
+    {
+      int_value = mzx_world->current_board->robot_list[index]->commands_cycle;
+    }
+    else
     if(!strncmp(real_var, "spr", 3))
     {
       char *sub_var;
@@ -415,7 +427,19 @@ static void write_var(struct world *mzx_world, char *var_buffer, int int_val, ch
     int index = var[-1];
 
     if(var[strlen(var) - 1] != '*')
-      set_counter(mzx_world, var, int_val, index);
+    {
+      // Special case: not an actual counter, but needs to be writable
+      if(!strcmp(var, "commands_total"))
+      {
+        mzx_world->current_board->robot_list[index]->commands_total = int_val;
+      }
+
+      // Everything else
+      else
+      {
+        set_counter(mzx_world, var, int_val, index);
+      }
+    }
   }
 
   // Now update var_buffer to reflect the new value.
