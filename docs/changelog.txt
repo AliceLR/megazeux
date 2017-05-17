@@ -8,6 +8,9 @@ FEATURES
 
 + Added a built-in robot debugger. See the Debug Mode section of
   the help file for details.
++ Added commands_cycle and commands_total variables to the Robot
+  section of the counter debugger. See the Debug Mode section of
+  the help file for details.
 + Kinds specified as 255 on the char ID table are now treated as
   custom* kinds when placed and selected in the editor. If you
   switched a kind to char ID 255 in a game that already had that
