@@ -106,7 +106,8 @@
 #define WORLD_BLOCK_2_SIZE 72
 #endif
 
-int suppress_errors = -1;
+static int suppress_errors[NUM_VAL_ERRORS];
+static int count_errors[NUM_VAL_ERRORS];
 
 
 
@@ -121,8 +122,12 @@ void val_error_str(enum val_error error_id, int value, char *string)
   char error_mesg[80];
   int hi = (value & 0xFF00) >> 8, lo = (value & 0xFF);
   int opts = ERROR_OPT_OK;
-  int severity = 1;
   int code = 0;
+
+  (count_errors[error_id])++;
+
+  if(suppress_errors[error_id])
+    return;
 
   switch (error_id)
   {
@@ -174,13 +179,13 @@ void val_error_str(enum val_error error_id, int value, char *string)
     }
     case WORLD_PASSWORD_PROTECTED:
     {
-      sprintf(error_mesg, "This world may be password protected.");
+      sprintf(error_mesg, "This world may be password protected");
       code = 0x0D02;
       break;
     }
     case WORLD_LOCKED:
     {
-      sprintf(error_mesg, "Cannot load password protected world.");
+      sprintf(error_mesg, "Cannot load password protected world");
       code = 0x0D02;
       break;
     }
@@ -227,23 +232,40 @@ void val_error_str(enum val_error error_id, int value, char *string)
       code = 0x0D03;
       break;
     }
+    case MZM_DOES_NOT_EXIST:
+    {
+      snprintf(error_mesg, 80,
+       "MZM '%s' doesn't exist!", string);
+      code = 0x0D01;
+      break;
+    }
     case MZM_FILE_INVALID:
     {
-      sprintf(error_mesg, "File is not an MZM or is corrupt");
+      snprintf(error_mesg, 80,
+       "File '%s' is not an MZM or is corrupt", string);
       code = 0x6660;
       break;
     }
     case MZM_FILE_FROM_SAVEGAME:
     {
-      sprintf(error_mesg, "Runtime robots incompatible with editor -- robots will be dummied out");
+      snprintf(error_mesg, 80,
+       "MZM '%s' contains runtime robots; dummying out", string);
       code = 0x6661;
       break;
     }
     case MZM_FILE_VERSION_TOO_RECENT:
     {
       snprintf(error_mesg, 80,
-       "MZM file of a more recent version (%d.%d) -- robots will be dummied out", hi, lo);
+       "MZM '%s' from newer version (%d.%d); dummying out robots",
+       string, hi, lo);
       code = 0x6661;
+      break;
+    }
+    case MZM_ROBOT_CORRUPT:
+    {
+      snprintf(error_mesg, 80,
+       "MZM '%s' contains missing or corrupt robots", string);
+      code = 0x6662;
       break;
     }
     case LOAD_BC_CORRUPT:
@@ -257,8 +279,7 @@ void val_error_str(enum val_error error_id, int value, char *string)
     }
   }
 
-  if(severity > suppress_errors)
-    error(error_mesg, 1, opts, code);
+  error(error_mesg, 1, opts, code);
 }
 
 FILE * val_fopen(const char *filename)
@@ -279,9 +300,23 @@ FILE * val_fopen(const char *filename)
   return f;
 }
 
-void set_validation_suppression(int level)
+int get_error_count(enum val_error error_id)
 {
-  suppress_errors = level;
+  return count_errors[error_id];
+}
+
+void set_validation_suppression(enum val_error error_id, int value)
+{
+  suppress_errors[error_id] = value;
+}
+
+static void clear_validation_suppression(void)
+{
+  for (int i = 0; i < NUM_VAL_ERRORS; i++)
+  {
+    suppress_errors[i] = 0;
+    count_errors[i] = 0;
+  }
 }
 
 
@@ -539,6 +574,9 @@ enum val_result validate_world_file(const char *filename,
     *end_of_global_offset = ftell(f);
 
   //todo: maybe have a complete fail when N number of pointers fail?
+
+  // Success: reset suppression for board/runtime checks
+  clear_validation_suppression();
 
   goto err_close;
 

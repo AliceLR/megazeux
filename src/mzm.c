@@ -236,7 +236,8 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
 
   if(!(input_file = fopen_unsafe(name, "rb")))
   {
-    val_error(FILE_DOES_NOT_EXIST, 0);
+    val_error_str(MZM_DOES_NOT_EXIST, 0, name);
+    set_validation_suppression(MZM_DOES_NOT_EXIST, 1);
     goto err_out;
   }
 
@@ -322,13 +323,14 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
     // If the mzm version is newer than the MZX version, show a message and continue.
     if(mzm_world_version > WORLD_VERSION)
     {
-      val_error(MZM_FILE_VERSION_TOO_RECENT, mzm_world_version);
+      val_error_str(MZM_FILE_VERSION_TOO_RECENT, mzm_world_version, name);
+      set_validation_suppression(MZM_FILE_VERSION_TOO_RECENT, 1);
     }
 
     // If the MZM is a save MZM but we're not loading at runtime, show a message and continue.
     if(savegame_mode > savegame)
     {
-      val_error(MZM_FILE_FROM_SAVEGAME, 0);
+      val_error_str(MZM_FILE_FROM_SAVEGAME, 0, name);
     }
 
     switch(mode)
@@ -470,12 +472,15 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
               // dynamically created MZMs in the editor is still useful, we'll just
               // dummy out the robots.
 
+              // We don't want to see these in any case.
+              set_validation_suppression(WORLD_ROBOT_MISSING, 1);
+              set_validation_suppression(BOARD_ROBOT_CORRUPT, 1);
+
               if((savegame_mode > savegame) ||
                (WORLD_VERSION < mzm_world_version))
               {
                 fseek(input_file, robots_location, SEEK_SET);
 
-                set_validation_suppression(1);
                 for(i = 0; i < num_robots; i++)
                 {
                   current_x = robot_x_locations[i];
@@ -487,7 +492,7 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
 
                   // If this is from a futer version and the format changed, we'll
                   // just end up with an 'R' char, but we don't plan on changing
-                  // the robot format until the EBML overhaul (which will use
+                  // the robot format until the zip overhaul (which will use
                   // different code).
                   if(current_x != -1)
                   {
@@ -500,22 +505,16 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
                     clear_robot(cur_robot);
                   }
                 }
-                set_validation_suppression(-1);
               }
               else
               {
+                int missing_count = get_error_count(WORLD_ROBOT_MISSING);
+                int corrupt_count = get_error_count(BOARD_ROBOT_CORRUPT);
+
                 fseek(input_file, robots_location, SEEK_SET);
 
                 for(i = 0; i < num_robots; i++)
                 {
-                  int check_val = fgetw(input_file);
-                  fseek(input_file, -2, SEEK_CUR);
-                  if(check_val < 0)
-                  {
-                    val_error(WORLD_ROBOT_MISSING, ftell(input_file));
-                    set_validation_suppression(1);
-                  }
-
                   cur_robot = load_robot_allocate(input_file, savegame_mode,
                    mzm_world_version, mzx_world->version);
                   current_x = robot_x_locations[i];
@@ -562,6 +561,14 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
                   {
                     clear_robot(cur_robot);
                   }
+                }
+
+                // If any of these errors were encountered, report once
+                if((missing_count - get_error_count(WORLD_ROBOT_MISSING)) |
+                  (corrupt_count - get_error_count(BOARD_ROBOT_CORRUPT)))
+                {
+                  val_error_str(MZM_ROBOT_CORRUPT, 0, name);
+                  set_validation_suppression(MZM_ROBOT_CORRUPT, 1);
                 }
               }
             }
@@ -718,14 +725,17 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
     fclose(input_file);
   }
 
-  set_validation_suppression(-1);
+  // Clear none of the validation error suppressions:
+  // 1) in combination with poor practice, they could lock MZX,
+  // 2) they'll get reset after reloading the world.
   return 0;
 
 err_invalid:
-  val_error(MZM_FILE_INVALID, 0);
+  val_error_str(MZM_FILE_INVALID, 0, name);
+  set_validation_suppression(MZM_FILE_INVALID, 1);
+
   fclose(input_file);
 err_out:
-  set_validation_suppression(-1);
   return -1;
 }
 

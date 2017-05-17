@@ -433,6 +433,7 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
    ccalloc(num_robots, sizeof(struct robot *));
 
   // Any null objects being placed will later be optimized out
+  set_validation_suppression(WORLD_ROBOT_MISSING, 0);
 
   if(num_robots)
   {
@@ -445,7 +446,7 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
       {
         // Send off the error and then tell validation to shut up for now
         val_error(WORLD_ROBOT_MISSING, ftell(fp));
-        set_validation_suppression(1);
+        set_validation_suppression(WORLD_ROBOT_MISSING, 1);
         truncated = 1;
       }
 
@@ -465,7 +466,7 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
     }
   }
 
-  set_validation_suppression(-1);
+  set_validation_suppression(WORLD_ROBOT_MISSING, 0);
 
   if(num_robots_active > 0)
   {

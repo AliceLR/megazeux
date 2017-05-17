@@ -42,36 +42,41 @@ enum val_result
   VAL_NEED_UNLOCK // Unlock world file.
 };
 
+#define NUM_VAL_ERRORS 23
+
 enum val_error
 {
-  FILE_DOES_NOT_EXIST,
-  SAVE_FILE_INVALID,
-  SAVE_VERSION_OLD,
-  SAVE_VERSION_TOO_RECENT,
-  WORLD_FILE_INVALID,
-  WORLD_FILE_VERSION_OLD,
-  WORLD_FILE_VERSION_TOO_RECENT,
-  WORLD_PASSWORD_PROTECTED,
-  WORLD_LOCKED,
-  WORLD_BOARD_MISSING,
-  WORLD_BOARD_CORRUPT,
-  WORLD_BOARD_TRUNCATED_SAFE,
-  WORLD_ROBOT_MISSING,
-  BOARD_FILE_INVALID,
-  BOARD_ROBOT_CORRUPT,
-  BOARD_SCROLL_CORRUPT,
-  BOARD_SENSOR_CORRUPT,
-  MZM_FILE_INVALID,
-  MZM_FILE_FROM_SAVEGAME,
-  MZM_FILE_VERSION_TOO_RECENT,
-  LOAD_BC_CORRUPT
+  FILE_DOES_NOT_EXIST             = 0,
+  SAVE_FILE_INVALID               = 1,
+  SAVE_VERSION_OLD                = 2,
+  SAVE_VERSION_TOO_RECENT         = 3,
+  WORLD_FILE_INVALID              = 4,
+  WORLD_FILE_VERSION_OLD          = 5,
+  WORLD_FILE_VERSION_TOO_RECENT   = 6,
+  WORLD_PASSWORD_PROTECTED        = 7,
+  WORLD_LOCKED                    = 8,
+  WORLD_BOARD_MISSING             = 9,
+  WORLD_BOARD_CORRUPT             = 10,
+  WORLD_BOARD_TRUNCATED_SAFE      = 11,
+  WORLD_ROBOT_MISSING             = 12,
+  BOARD_FILE_INVALID              = 13,
+  BOARD_ROBOT_CORRUPT             = 14,
+  BOARD_SCROLL_CORRUPT            = 15,
+  BOARD_SENSOR_CORRUPT            = 16,
+  MZM_DOES_NOT_EXIST              = 17,
+  MZM_FILE_INVALID                = 18,
+  MZM_FILE_FROM_SAVEGAME          = 19,
+  MZM_FILE_VERSION_TOO_RECENT     = 20,
+  MZM_ROBOT_CORRUPT               = 21,
+  LOAD_BC_CORRUPT                 = 22,
 };
 
 CORE_LIBSPEC void val_error(enum val_error error_id, int value);
 CORE_LIBSPEC void val_error_str(enum val_error error_id, int value, char *string);
 CORE_LIBSPEC FILE * val_fopen(const char *filename);
 
-void set_validation_suppression(int level);
+int get_error_count(enum val_error error_id);
+void set_validation_suppression(enum val_error error_id, int value);
 
 CORE_LIBSPEC enum val_result validate_world_file(const char *filename, int savegame,
  int *end_of_global_offset, int decrypt_attempted);
