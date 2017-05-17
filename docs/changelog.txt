@@ -98,6 +98,9 @@ BUGFIXES
 + Fixed a port regression where IF ANY would continue to iterate
   over the board after finding a match, potentially triggering
   multiple subroutines, #return, or #top labels.
++ Fixed a bug where MZM error messages could repeat indefinitely
+  and lock up MZX.
+  
 
 DEVELOPERS
 
