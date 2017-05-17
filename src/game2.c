@@ -2177,7 +2177,7 @@ int push(struct world *mzx_world, int x, int y, int dir, int checking)
         }
 
         // No previous ID yet?
-        if(p_id == 0xFF)
+        if(p_id == NO_ID)
         {
           // Remove what was there
           id_remove_top(mzx_world, dx, dy);
@@ -2190,19 +2190,20 @@ int push(struct world *mzx_world, int x, int y, int dir, int checking)
           level_param[d_offset] = p_param;
           level_color[d_offset] = p_color;
 
-          // How about a pushable robot?
-          if(d_id == ROBOT_PUSHABLE)
-          {
-            // Send the default label for pushing
-            send_robot_def(mzx_world, d_param, LABEL_PUSHED);
-          }
-
+          // FIXME: this is bugged, see issue 632
           // Was a player/sensor sandwich pushed?
           if((p_id == PLAYER) && (p_under_id == SENSOR))
           {
             push_player_sensor(mzx_world, p_offset, d_offset,
              sensor_param, sensor_color);
           }
+        }
+
+        // How about a pushable robot?
+        if(d_id == ROBOT_PUSHABLE)
+        {
+          // Send the default label for pushing
+          send_robot_def(mzx_world, d_param, LABEL_PUSHED);
         }
 
         // Load current into previous

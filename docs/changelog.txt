@@ -100,7 +100,9 @@ BUGFIXES
   multiple subroutines, #return, or #top labels.
 + Fixed a bug where MZM error messages could repeat indefinitely
   and lock up MZX.
-  
++ Fixed a bug where the (#)PUSHED label would not be sent to the
+  first object in a row of pushed objects if that object was a
+  robot.
 
 DEVELOPERS
 
