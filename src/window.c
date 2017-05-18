@@ -653,6 +653,7 @@ static int change_current_element(struct world *mzx_world, struct dialog *di,
 int run_dialog(struct world *mzx_world, struct dialog *di)
 {
   int mouse_press;
+  int mouse_drag_state;
   int x = di->x;
   int y = di->y;
   int title_x_offset = x + (di->width / 2) - ((int)strlen(di->title) / 2);
@@ -714,8 +715,9 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
     }
 
     mouse_press = get_mouse_press_ext();
+    mouse_drag_state = get_mouse_drag();
 
-    if(get_mouse_drag() &&
+    if(mouse_drag_state &&
      (mouse_press <= MOUSE_BUTTON_RIGHT) &&
      (current_element->drag_function))
     {
@@ -732,7 +734,8 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
     }
     else
 
-    if((mouse_press && (mouse_press <= MOUSE_BUTTON_RIGHT))
+    if((mouse_press && (mouse_press <= MOUSE_BUTTON_RIGHT)
+     && !mouse_drag_state)
      || (new_key == -1))
     {
       do
@@ -753,8 +756,6 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
           current_element = di->elements[element_under];
           highlight_element(mzx_world, di, element_under);
 
-          wait_for_mouse_release(mouse_press);
-
           new_key = current_element->click_function(mzx_world, di,
            current_element, mouse_press,
            mouse_x - di->x - current_element->x,
@@ -773,8 +774,6 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
 
           if(current_element->click_function)
           {
-            wait_for_mouse_release(mouse_press);
-
             new_key = current_element->click_function(mzx_world, di,
              current_element, mouse_press,
              mouse_x - di->x - current_element->x,
@@ -874,7 +873,6 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
           break;
 
         // Restore screen, set current, and return -1
-        wait_for_key_release(IKEY_ESCAPE);
         pop_context();
         return -1;
       }
@@ -1219,10 +1217,13 @@ static int key_button(struct world *mzx_world, struct dialog *di,
     case IKEY_SPACE:
     case IKEY_RETURN:
     {
+      //Only work on press.  Ignore autorepeat.
+      if (get_key_status(keycode_internal, key) != 1)
+        break;
+
       // Flag that the dialog is done processing
       di->done = 1;
       di->return_value = src->return_value;
-      wait_for_key_release(key);
       break;
     }
 

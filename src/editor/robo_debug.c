@@ -273,6 +273,10 @@ void free_breakpoints(void)
 static int debug_robot_idle_function(struct world *mzx_world,
  struct dialog *di, int key)
 {
+  // Do nothing if the key is being held.
+  if(get_key_status(keycode_internal, key) != 1)
+    return 0;
+
   switch(key)
   {
     case IKEY_c:
@@ -322,10 +326,7 @@ static int debug_robot_idle_function(struct world *mzx_world,
   }
 
   if(di->done)
-  {
-    wait_for_key_release(key);
     return 0;
-  }
 
   return key;
 }

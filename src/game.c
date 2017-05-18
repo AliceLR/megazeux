@@ -1865,6 +1865,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
   // We have the world loaded, on the proper scene.
   // We are faded out. Commence playing!
   int key = -1;
+  int key_status = 0;
   char keylbl[5] = "KEY?";
   struct board *src_board;
   int fadein = 1;
@@ -1891,6 +1892,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
     // Keycheck
 
     key = get_key(keycode_internal);
+    key_status = get_key_status(keycode_internal, key);
 
     if(key)
     {
@@ -2207,9 +2209,13 @@ __editor_maybe_static void play_game(struct world *mzx_world)
            get_counter(mzx_world, "ENTER_MENU", 0);
           send_robot_all_def(mzx_world, "KeyEnter");
 
+          // Ignore if this isn't a fresh press
+          if(key_status != 1)
+            break;
+
           if(mzx_world->version < 0x0209 || enter_menu_status)
           {
-            int key;
+            int key, status;
             save_screen();
 
             draw_window_box(8, 4, 35, 18, 25, 16, 24, 1, 1);
@@ -2229,10 +2235,13 @@ __editor_maybe_static void play_game(struct world *mzx_world)
             {
               update_event_status_delay();
               update_screen();
-              key = get_key(keycode_internal);
-            } while(key != IKEY_RETURN && key != IKEY_ESCAPE);
 
-            wait_for_key_release(key);
+              key = get_key(keycode_internal);
+              status = get_key_status(keycode_internal, key);
+
+            } while(
+             (key != IKEY_RETURN && key != IKEY_ESCAPE) || (status != 1)
+            );
 
             restore_screen();
 
@@ -2246,7 +2255,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
           // Quit
           m_show();
 
-          if(confirm(mzx_world, "Quit playing- Are you sure?"))
+          if(key_status!=1 || confirm(mzx_world, "Quit playing- Are you sure?"))
             key = 0;
 
           update_event_status();
@@ -2265,6 +2274,7 @@ void title_screen(struct world *mzx_world)
 {
   int fadein = 1;
   int key = 0;
+  int key_status = 0;
   int fade;
   struct stat file_info;
   struct board *src_board;
@@ -2333,6 +2343,7 @@ void title_screen(struct world *mzx_world)
 
     // Keycheck
     key = get_key(keycode_internal);
+    key_status = get_key_status(keycode_internal, key);
 
     if(key)
     {
@@ -2685,7 +2696,11 @@ void title_screen(struct world *mzx_world)
 
         case IKEY_RETURN: // Enter
         {
-          int key;
+          int key, status;
+
+          // Ignore if this isn't a fresh press
+          if(key_status != 1)
+            break;
 
           save_screen();
           draw_window_box(28, 4, 51, 16, 25, 16, 24, 1, 1);
@@ -2707,7 +2722,8 @@ void title_screen(struct world *mzx_world)
             update_event_status_delay();
             update_screen();
             key = get_key(keycode_internal);
-          } while(key != IKEY_RETURN && key != IKEY_ESCAPE);
+            status = get_key_status(keycode_internal, key);
+          } while((key != IKEY_RETURN && key != IKEY_ESCAPE) || status!=1);
 
           restore_screen();
           update_screen();
@@ -2720,7 +2736,7 @@ void title_screen(struct world *mzx_world)
           // Quit
           m_show();
 
-          if(confirm(mzx_world, "Exit MegaZeux - Are you sure?"))
+          if(key_status!=1 || confirm(mzx_world, "Exit MegaZeux - Are you sure?"))
             key = 0;
 
           update_screen();

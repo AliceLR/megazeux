@@ -129,6 +129,7 @@ struct buffered_status *store_status(void);
 CORE_LIBSPEC bool update_event_status(void);
 CORE_LIBSPEC Uint32 update_event_status_delay(void);
 CORE_LIBSPEC Uint32 get_key(enum keycode_type type);
+CORE_LIBSPEC Uint32 get_key_status(enum keycode_type type, Uint32 index);
 CORE_LIBSPEC void get_mouse_position(int *x, int *y);
 CORE_LIBSPEC void get_real_mouse_position(int *x, int *y);
 CORE_LIBSPEC Uint32 get_mouse_press(void);
@@ -143,8 +144,6 @@ CORE_LIBSPEC void initialize_joysticks(void);
 CORE_LIBSPEC void key_press(struct buffered_status *status, enum keycode key,
  Uint16 unicode_key);
 CORE_LIBSPEC void key_release(struct buffered_status *status, enum keycode key);
-CORE_LIBSPEC void wait_for_key_release(Uint32 index);
-CORE_LIBSPEC void wait_for_mouse_release(Uint32 mouse_button);
 
 // Implemented by "drivers" (SDL, Wii, and NDS currently)
 void __wait_event(void);
@@ -153,7 +152,6 @@ bool __update_event_status(void);
 void wait_event(void);
 Uint32 get_last_key(enum keycode_type type);
 void force_last_key(enum keycode_type type, int val);
-Uint32 get_key_status(enum keycode_type type, Uint32 index);
 void warp_mouse_x(Uint32 x);
 void warp_mouse_y(Uint32 y);
 void warp_real_mouse_x(Uint32 x);
