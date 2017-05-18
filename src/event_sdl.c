@@ -303,10 +303,21 @@ static bool process_event(SDL_Event *event)
       fake_event.button.x = 0;
       fake_event.button.y = 0;
 
-      if(event->wheel.y < 0)
-        fake_event.button.button = MOUSE_BUTTON_WHEELDOWN;
+      if(abs(event->wheel.x) > abs(event->wheel.y))
+      {
+        if(event->wheel.x < 0)
+          fake_event.button.button = MOUSE_BUTTON_WHEELLEFT;
+        else
+          fake_event.button.button = MOUSE_BUTTON_WHEELRIGHT;
+      }
+
       else
-        fake_event.button.button = MOUSE_BUTTON_WHEELUP;
+      {
+        if(event->wheel.y < 0)
+          fake_event.button.button = MOUSE_BUTTON_WHEELDOWN;
+        else
+          fake_event.button.button = MOUSE_BUTTON_WHEELUP;
+      }
 
       SDL_PushEvent(&fake_event);
 

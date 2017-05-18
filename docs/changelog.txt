@@ -23,6 +23,8 @@ FEATURES
 + Seeking in the String section of the counter debugger will now
   ignore the $ prefix.
 + Tentative joypad POV hat support added: joyNhat = U, D, L, R
++ The BUTTONS counter has been extended to support the mouse
+  wheel and X1/X2 buttons.
 
 BUGFIXES
 

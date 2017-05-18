@@ -1858,18 +1858,49 @@ static void vlayer_width_write(struct world *mzx_world,
 static int buttons_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  int buttons_formatted, raw_status = get_mouse_status();
+  int buttons_formatted = 0;
 
-  // Initially just grab the left button status
-  buttons_formatted = raw_status & MOUSE_BUTTON(MOUSE_BUTTON_LEFT);
+  // This is sufficient for the buttons.
+  int raw_status = get_mouse_status();
 
-  /* For legacy reasons, MegaZeux wants the second bit to be RIGHT, and
-   * the third bit to be MIDDLE, but SDL has these swapped around.
+  // Wheel presses are immediately released. We need this too.
+  int raw_status_ext = get_mouse_press_ext();
+
+  /* Since button values are inconsistent even for the same SDL
+   * version across platforms, and we also want right to be the
+   * second bit and middle the third, we'll map every button.
    */
-  if (raw_status & MOUSE_BUTTON(MOUSE_BUTTON_MIDDLE))
-    buttons_formatted |= MOUSE_BUTTON(MOUSE_BUTTON_RIGHT);
+
+  if (raw_status & MOUSE_BUTTON(MOUSE_BUTTON_LEFT))
+    buttons_formatted |= MOUSE_BUTTON(1);
+
   if (raw_status & MOUSE_BUTTON(MOUSE_BUTTON_RIGHT))
-    buttons_formatted |= MOUSE_BUTTON(MOUSE_BUTTON_MIDDLE);
+    buttons_formatted |= MOUSE_BUTTON(2);
+
+  if (raw_status & MOUSE_BUTTON(MOUSE_BUTTON_MIDDLE))
+    buttons_formatted |= MOUSE_BUTTON(3);
+
+  // For 2.85+, also map the wheel and side buttons
+  if( mzx_world->version >= 0x0255 )
+  {
+    if (raw_status_ext == MOUSE_BUTTON_WHEELUP)
+      buttons_formatted |= MOUSE_BUTTON(4);
+
+    if (raw_status_ext == MOUSE_BUTTON_WHEELDOWN)
+      buttons_formatted |= MOUSE_BUTTON(5);
+
+    if (raw_status_ext == MOUSE_BUTTON_WHEELLEFT)
+      buttons_formatted |= MOUSE_BUTTON(6);
+
+    if (raw_status_ext == MOUSE_BUTTON_WHEELRIGHT)
+      buttons_formatted |= MOUSE_BUTTON(7);
+
+    if (raw_status & MOUSE_BUTTON(MOUSE_BUTTON_X1))
+      buttons_formatted |= MOUSE_BUTTON(8);
+
+    if (raw_status & MOUSE_BUTTON(MOUSE_BUTTON_X2))
+      buttons_formatted |= MOUSE_BUTTON(9);
+  }
 
   return buttons_formatted;
 }
