@@ -94,6 +94,7 @@ struct buffered_status
   bool caps_status;
   bool numlock_status;
   bool mouse_moved;
+  bool exit;
   Sint8 axis[16][16];
   Uint8 keymap[512];
 };
@@ -144,6 +145,8 @@ CORE_LIBSPEC void initialize_joysticks(void);
 CORE_LIBSPEC void key_press(struct buffered_status *status, enum keycode key,
  Uint16 unicode_key);
 CORE_LIBSPEC void key_release(struct buffered_status *status, enum keycode key);
+CORE_LIBSPEC bool get_exit_status(void);
+CORE_LIBSPEC bool set_exit_status(bool value);
 
 // Implemented by "drivers" (SDL, Wii, and NDS currently)
 void __wait_event(void);

@@ -22,6 +22,7 @@
 #include <string.h>
 
 #include "../helpsys.h"
+#include "../event.h"
 #include "../intake.h"
 #include "../graphics.h"
 #include "../window.h"
@@ -1298,7 +1299,8 @@ void global_robot(struct world *mzx_world)
   m_show();
 
   if(intake(mzx_world, cur_robot->robot_name,
-   14, 34, 13, 15, 1, 0, NULL, 0, NULL) != IKEY_ESCAPE)
+   14, 34, 13, 15, 1, 0, NULL, 0, NULL) != IKEY_ESCAPE
+   && !get_exit_status())
   {
     restore_screen();
     set_context(87);

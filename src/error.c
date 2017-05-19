@@ -123,6 +123,10 @@ int error(const char *string, unsigned int type, unsigned int options,
     wait_event();
     t1 = get_key(keycode_internal);
 
+    //Exit event--mimic Escape
+    if(get_exit_status())
+      t1 = IKEY_ESCAPE;
+
     //Process
     switch(t1)
     {

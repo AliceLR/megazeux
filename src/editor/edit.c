@@ -1080,6 +1080,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
   struct sensor copy_sensor;
 
   int i;
+  int exit;
   int fade;
   int cursor_board_x = 0, cursor_board_y = 0;
   int cursor_x = 0, cursor_y = 0;
@@ -1339,6 +1340,8 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
     update_event_status_delay();
     key = get_key(keycode_internal);
+
+    exit = get_exit_status();
 
     if(get_mouse_press())
     {
@@ -3370,11 +3373,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         }
         else
 
-        if(modified &&
-         confirm(mzx_world, "Exit: World has not been saved, are you sure?"))
-        {
-          key = 0;
-        }
+        exit = 1;
         break;
       }
 
@@ -3401,6 +3400,9 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
             update_event_status_delay();
             v_key = get_key(keycode_internal);
+
+            if(get_exit_status())
+              v_key = IKEY_ESCAPE;
 
             switch(v_key)
             {
@@ -3952,7 +3954,18 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         modified = 1;
       }
     }
-  } while(key != IKEY_ESCAPE);
+
+    // Exit event and Escape
+    if(exit)
+    {
+      if(modified &&
+       confirm(mzx_world, "Exit: World has not been saved, are you sure?"))
+      {
+        exit = 0;
+      }
+    }
+
+  } while(!exit);
 
   update_event_status();
 

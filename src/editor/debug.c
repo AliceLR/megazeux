@@ -1396,7 +1396,7 @@ static void input_counter_value(struct world *mzx_world, char *var_buffer)
   write_string(name, 6, 12, DI_DEBUG_LABEL, 0);
 
   if(intake(mzx_world, new_value, 68, 6, 13, 15, 1, 0,
-   NULL, 0, NULL) != IKEY_ESCAPE)
+   NULL, 0, NULL) != IKEY_ESCAPE && !get_exit_status())
   {
     if(var[0] == '$')
     {

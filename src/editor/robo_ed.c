@@ -3212,6 +3212,7 @@ static void paste_buffer(struct robot_state *rstate)
 
 void robot_editor(struct world *mzx_world, struct robot *cur_robot)
 {
+  int exit;
   int key;
   int i;
   int mouse_press;
@@ -3595,6 +3596,8 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
 
     rstate.active_macro = NULL;
     rstate.macro_recurse_level = 0;
+
+    exit = get_exit_status();
 
     switch(key)
     {
@@ -3987,25 +3990,7 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
 
       case IKEY_ESCAPE:
       {
-        update_current_line(&rstate);
-
-#ifdef CONFIG_DEBYTECODE
-        if(rstate.confirm_changes)
-        {
-          char confirm_prompt[80] = "Program modified. Save changes?";
-          int confirm_changes_res = ask_yes_no(mzx_world, confirm_prompt);
-
-          if(confirm_changes_res < 0)
-            key = 0;
-
-          if(!confirm_changes_res)
-            cur_robot->program_source = package_program(rstate.base->next,
-             NULL, &(cur_robot->program_source_length), cur_robot->program_source);
-
-        }
-#endif
-        if(validate_lines(&rstate, 0))
-          key = 0;
+        exit = 1;
         break;
       }
 
@@ -4257,7 +4242,7 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
           write_string("Configure macro:", 17, 12, DI_DEBUG_LABEL, 0);
 
           if(intake(mzx_world, macro_line, 29, 34, 12, 15, 1, 0, NULL,
-           0, NULL) != IKEY_ESCAPE)
+           0, NULL) != IKEY_ESCAPE && !get_exit_status())
           {
             struct ext_macro *macro_src;
             int next;
@@ -4276,7 +4261,31 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
         break;
       }
     }
-  } while(key != IKEY_ESCAPE);
+
+    if(exit)
+    {
+      update_current_line(&rstate);
+
+#ifdef CONFIG_DEBYTECODE
+      if(rstate.confirm_changes)
+      {
+        char confirm_prompt[80] = "Program modified. Save changes?";
+        int confirm_changes_res = ask_yes_no(mzx_world, confirm_prompt);
+
+        if(confirm_changes_res < 0)
+          exit = 0;
+
+        if(!confirm_changes_res)
+          cur_robot->program_source = package_program(rstate.base->next,
+           NULL, &(cur_robot->program_source_length), cur_robot->program_source);
+
+      }
+#endif
+      if(validate_lines(&rstate, 0))
+        exit = 0;
+    }
+
+  } while(!exit);
 
 #ifndef CONFIG_DEBYTECODE
   // Package time

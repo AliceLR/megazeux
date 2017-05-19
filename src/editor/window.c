@@ -66,6 +66,7 @@ static const char fg_per_bk[16] =
 int list_menu(const char *const *choices, int choice_size, const char *title,
  int current, int num_choices, int xpos, int ypos)
 {
+  int exit;
   char key_buffer[64];
   int mouse_press;
   int key_position = 0;
@@ -149,6 +150,8 @@ int list_menu(const char *const *choices, int choice_size, const char *title,
     // Act upon it
     key = get_key(keycode_internal);
 
+    exit = get_exit_status();
+
     mouse_press = get_mouse_press_ext();
 
     if(mouse_press && (mouse_press <= MOUSE_BUTTON_RIGHT))
@@ -215,12 +218,8 @@ int list_menu(const char *const *choices, int choice_size, const char *title,
     {
       case IKEY_ESCAPE:
       {
-        // ESC
-        restore_screen();
-        if(current == 0)
-          return -32767;
-        else
-          return -current;
+          exit = 1;
+          break;
       }
 
       case IKEY_BACKSPACE:
@@ -339,6 +338,17 @@ int list_menu(const char *const *choices, int choice_size, const char *title,
         break;
       }
     }
+
+    // Exit event or Escape
+    if(exit)
+    {
+      restore_screen();
+      if(current == 0)
+        return -32767;
+      else
+        return -current;
+    }
+
   } while(1);
 }
 
@@ -481,6 +491,10 @@ int color_selection(int current, int allow_wild)
 
     update_event_status_delay();
     key = get_key(keycode_internal);
+
+    // Exit event -- mimic Escape
+    if(get_exit_status())
+      key = IKEY_ESCAPE;
 
     if(get_mouse_press())
     {
@@ -1003,7 +1017,7 @@ int add_board(struct world *mzx_world, int current)
   write_string("Name for new board:", 18, 13, 78, 0);
   temp_board_str[0] = 0;
   if(intake(mzx_world, temp_board_str, BOARD_NAME_SIZE - 1,
-   38, 13, 15, 1, 0, NULL, 0, NULL) == IKEY_ESCAPE)
+   38, 13, 15, 1, 0, NULL, 0, NULL) == IKEY_ESCAPE || get_exit_status())
   {
     restore_screen();
     return -1;

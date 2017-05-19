@@ -410,6 +410,7 @@ bool update_event_status(void)
   status->unicode = 0;
   status->mouse_moved = 0;
   status->mouse_button = 0;
+  status->exit = 0;
 
   rval  = __update_event_status();
   rval |= update_autorepeat();
@@ -425,6 +426,7 @@ void wait_event(void)
   status->unicode = 0;
   status->mouse_moved = 0;
   status->mouse_button = 0;
+  status->exit = 0;
 
   __wait_event();
   update_autorepeat();
@@ -821,4 +823,18 @@ void joystick_key_release(struct buffered_status *status,
     status->unicode_repeat = 0;
     status->key_release = key;
   }
+}
+
+bool get_exit_status(void)
+{
+  const struct buffered_status *status = load_status();
+  return status->exit;
+}
+
+bool set_exit_status(bool value)
+{
+  struct buffered_status *status = store_status();
+  bool exit = status->exit;
+  status->exit = value;
+  return exit;
 }

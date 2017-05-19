@@ -261,6 +261,7 @@ int draw_window_box_ext(int x1, int y1, int x2, int y2, int color,
 __editor_maybe_static int char_selection_ext(int current, int allow_multichar,
  int *width_ptr, int *height_ptr)
 {
+  int exit;
   int width = 1;
   int height = 1;
   int x, y;
@@ -402,6 +403,8 @@ __editor_maybe_static int char_selection_ext(int current, int allow_multichar,
     update_event_status_delay();
     key = get_key(keycode_internal);
 
+    exit = get_exit_status();
+
     if(get_mouse_press())
     {
       int mouse_x, mouse_y;
@@ -427,14 +430,8 @@ __editor_maybe_static int char_selection_ext(int current, int allow_multichar,
     {
       case IKEY_ESCAPE:
       {
-        // ESC
-        pop_context();
-        restore_screen();
-
-        if(current == 0)
-          return -256;
-        else
-          return -current;
+        exit = 1;
+        break;
       }
 
       case IKEY_SPACE:
@@ -517,6 +514,19 @@ __editor_maybe_static int char_selection_ext(int current, int allow_multichar,
         break;
       }
     }
+
+    // ESC or exit event
+    if(exit)
+    {
+      pop_context();
+      restore_screen();
+
+      if(current == 0)
+        return -256;
+      else
+        return -current;
+    }
+
   } while(1);
 }
 
@@ -652,6 +662,7 @@ static int change_current_element(struct world *mzx_world, struct dialog *di,
 
 int run_dialog(struct world *mzx_world, struct dialog *di)
 {
+  int exit;
   int mouse_press;
   int mouse_drag_state;
   int x = di->x;
@@ -713,6 +724,8 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
       if(new_key > 0)
         current_key = new_key;
     }
+
+    exit = get_exit_status();
 
     mouse_press = get_mouse_press_ext();
     mouse_drag_state = get_mouse_drag();
@@ -784,6 +797,9 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
           }
         }
       } while(new_key == -1);
+
+      if(get_exit_status())
+        exit = 1;
     }
     else
 
@@ -869,12 +885,12 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
       case IKEY_ESCAPE: // ESC
       {
         //Only work on press.  Ignore autorepeat.
-        if (get_key_status(keycode_internal, IKEY_ESCAPE) != 1)
-          break;
+        if (get_key_status(keycode_internal, IKEY_ESCAPE) == 1)
+          exit = 1;
 
-        // Restore screen, set current, and return -1
-        pop_context();
-        return -1;
+        //if (new_key == current_key)
+        //  exit = 1;
+        break;
       }
 
 #ifdef CONFIG_HELPSYS
@@ -890,6 +906,15 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
         break;
       }
     }
+
+    // ESC or exit event
+    if(exit)
+    {
+      // Restore screen, set current, and return -1
+      pop_context();
+      return -1;
+    }
+
   } while(di->done != 1);
 
   pop_context();

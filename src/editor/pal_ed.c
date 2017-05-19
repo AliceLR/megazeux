@@ -119,6 +119,10 @@ void palette_editor(struct world *mzx_world)
     write_string("\x20\x20", (current_color * 2) + 19, 9, 143, 0);
     // Process
 
+    // Exit event -- mimic Escape
+    if(get_exit_status())
+      key = IKEY_ESCAPE;
+
     if(get_mouse_press())
     {
       int mouse_x, mouse_y;

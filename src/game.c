@@ -1864,6 +1864,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
 {
   // We have the world loaded, on the proper scene.
   // We are faded out. Commence playing!
+  int exit;
   int key = -1;
   int key_status = 0;
   char keylbl[5] = "KEY?";
@@ -1893,6 +1894,8 @@ __editor_maybe_static void play_game(struct world *mzx_world)
 
     key = get_key(keycode_internal);
     key_status = get_key_status(keycode_internal, key);
+
+    exit = get_exit_status();
 
     if(key)
     {
@@ -2239,6 +2242,9 @@ __editor_maybe_static void play_game(struct world *mzx_world)
               key = get_key(keycode_internal);
               status = get_key_status(keycode_internal, key);
 
+              if(get_exit_status())
+                break;
+
             } while(
              (key != IKEY_RETURN && key != IKEY_ESCAPE) || (status != 1)
             );
@@ -2252,18 +2258,25 @@ __editor_maybe_static void play_game(struct world *mzx_world)
 
         case IKEY_ESCAPE:
         {
-          // Quit
-          m_show();
+          if(key_status == 1)
+            exit = 1;
 
-          if(key_status!=1 || confirm(mzx_world, "Quit playing- Are you sure?"))
-            key = 0;
-
-          update_event_status();
           break;
         }
       }
     }
-  } while(key != IKEY_ESCAPE);
+
+    // Quit
+    if(exit)
+    {
+      m_show();
+
+      exit = !confirm(mzx_world, "Quit playing- Are you sure?");
+
+      update_event_status();
+    }
+
+  } while(!exit);
 
   pop_context();
   vquick_fadeout();
@@ -2272,6 +2285,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
 
 void title_screen(struct world *mzx_world)
 {
+  int exit;
   int fadein = 1;
   int key = 0;
   int key_status = 0;
@@ -2344,6 +2358,8 @@ void title_screen(struct world *mzx_world)
     // Keycheck
     key = get_key(keycode_internal);
     key_status = get_key_status(keycode_internal, key);
+
+    exit = get_exit_status();
 
     if(key)
     {
@@ -2723,6 +2739,10 @@ void title_screen(struct world *mzx_world)
             update_screen();
             key = get_key(keycode_internal);
             status = get_key_status(keycode_internal, key);
+
+            if(get_exit_status())
+              break;
+
           } while((key != IKEY_RETURN && key != IKEY_ESCAPE) || status!=1);
 
           restore_screen();
@@ -2733,20 +2753,26 @@ void title_screen(struct world *mzx_world)
 
         case IKEY_ESCAPE:
         {
-          // Quit
-          m_show();
-
-          if(key_status!=1 || confirm(mzx_world, "Exit MegaZeux - Are you sure?"))
-            key = 0;
-
-          update_screen();
-          update_event_status();
+          if(key_status==1)
+            exit = 1;
           break;
         }
       }
       draw_intro_mesg(mzx_world);
     }
-  } while(key != IKEY_ESCAPE);
+
+    // Quit
+    if(exit)
+    {
+      m_show();
+
+      exit = !confirm(mzx_world, "Exit MegaZeux - Are you sure?");
+
+      update_screen();
+      update_event_status();
+    }
+
+  } while(!exit);
 
   vquick_fadeout();
   clear_sfx_queue();

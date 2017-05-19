@@ -142,7 +142,8 @@ static bool check_create_basedir(const char *file)
 static void check_cancel_update(void)
 {
   update_event_status();
-  if(get_key(keycode_internal) == IKEY_ESCAPE)
+  if(get_key(keycode_internal) == IKEY_ESCAPE
+   || get_exit_status())
     cancel_update = true;
 }
 

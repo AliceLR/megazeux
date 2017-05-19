@@ -2467,6 +2467,10 @@ void robot_box_display(struct world *mzx_world, char *program,
     update_event_status_delay();
     key = get_key(keycode_internal);
 
+    // Exit event--mimic Escape
+    if(get_exit_status())
+      key = IKEY_ESCAPE;
+
     mouse_press = get_mouse_press_ext();
 
     if(mouse_press && (mouse_press <= MOUSE_BUTTON_RIGHT))

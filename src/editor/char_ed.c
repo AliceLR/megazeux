@@ -893,6 +893,10 @@ int char_editor(struct world *mzx_world)
 
     key = get_key(keycode_internal);
 
+    // Exit event -- mimic Escape
+    if(get_exit_status())
+      key = IKEY_ESCAPE;
+
     draw_new = 0;
 
     if(get_shift_status(keycode_internal) || (block_mode == 2))

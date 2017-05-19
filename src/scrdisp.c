@@ -183,6 +183,10 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
       key = get_key(keycode_internal);
     }
 
+    // Exit event -- mimic Escape
+    if(get_exit_status())
+      key = IKEY_ESCAPE;
+
     old_pos = pos;
 
     if(get_mouse_press() || (key == -1))
@@ -597,6 +601,11 @@ void help_display(struct world *mzx_world, char *help, int offs, char *file,
     }
 
     key = get_key(keycode_internal);
+
+    // Exit event -- mimic Escape
+    if(get_exit_status())
+      key = IKEY_ESCAPE;
+
     old_pos = pos;
     switch(key)
     {

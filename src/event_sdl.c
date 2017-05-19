@@ -177,10 +177,8 @@ static bool process_event(SDL_Event *event)
   {
     case SDL_QUIT:
     {
-      // Stuff an escape
-      status->key = IKEY_ESCAPE;
-      status->keymap[IKEY_ESCAPE] = 1;
-      status->keypress_time = get_ticks();
+      // Set the exit status
+      status->exit = 1;
       break;
     }
 

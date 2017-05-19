@@ -1072,7 +1072,7 @@ int edit_robot(struct world *mzx_world, struct robot *cur_robot)
   m_show();
 
   if(intake(mzx_world, cur_robot->robot_name, 14, 34, 13,
-   15, 1, 0, NULL, 0, NULL) != IKEY_ESCAPE)
+   15, 1, 0, NULL, 0, NULL) != IKEY_ESCAPE && !get_exit_status())
   {
     restore_screen();
     save_screen();

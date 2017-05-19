@@ -205,11 +205,18 @@ int intake(struct world *mzx_world, char *string, int max_len,
       place = 0;
 
       cur_char = get_key(keycode_unicode);
+
+      // Exit event mimics escape, so exit_type > 0 only.
+      if(get_exit_status() && exit_type > 0)
+      {
+        key = 0;
+        done = 1;
+      }
     }
 
     mouse_press = get_mouse_press_ext();
 
-    if(get_mouse_press_ext())
+    if(mouse_press)
     {
       int mouse_x, mouse_y;
       get_mouse_position(&mouse_x, &mouse_y);
