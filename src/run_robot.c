@@ -5726,20 +5726,28 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
     next_cmd_prefix:
     // Next line
-    cur_robot->pos_within_line = 0;
     first_cmd = 0;
 
     if(!cur_robot->cur_prog_line)
+    {
+      cur_robot->pos_within_line = 0;
       break;
+    }
 
+    // If we're returning from a subroutine, we don't want to set the
+    // pos_within_line. Other sends will set it to zero anyway.
     if(!gotoed)
+    {
       cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
+      cur_robot->pos_within_line = 0;
+    }
 
     if(!program[cur_robot->cur_prog_line])
     {
       //End of program
       end_prog:
       cur_robot->cur_prog_line = 0;
+      cur_robot->pos_within_line = 0;
       break;
     }
 

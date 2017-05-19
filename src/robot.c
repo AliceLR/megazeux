@@ -517,7 +517,8 @@ err_out:
   create_blank_robot(cur_robot, savegame);
 }
 
-static void robot_stack_push(struct robot *cur_robot, int value)
+static void robot_stack_push(struct robot *cur_robot, int position,
+ int position_in_line)
 {
   int stack_pointer = cur_robot->stack_pointer;
   int stack_size = cur_robot->stack_size;
@@ -527,7 +528,7 @@ static void robot_stack_push(struct robot *cur_robot, int value)
   {
     // Initialize or double the stack. Don't let it get too large though!
     if(stack_size == 0)
-      stack_size = 1;
+      stack_size = 2;
     else
       stack_size *= 2;
 
@@ -539,22 +540,28 @@ static void robot_stack_push(struct robot *cur_robot, int value)
     cur_robot->stack_size = stack_size;
   }
 
-  stack[stack_pointer] = value;
-  cur_robot->stack_pointer = stack_pointer + 1;
+  stack[stack_pointer++] = position;
+  stack[stack_pointer++] = position_in_line;
+  cur_robot->stack_pointer = stack_pointer;
 }
 
-static int robot_stack_pop(struct robot *cur_robot)
+static int robot_stack_pop(struct robot *cur_robot, int *position_in_line)
 {
   int stack_pointer = cur_robot->stack_pointer;
+  int *stack = cur_robot->stack;
 
   if(stack_pointer)
   {
     stack_pointer--;
+    *position_in_line = stack[stack_pointer];
+
+    stack_pointer--;
     cur_robot->stack_pointer = stack_pointer;
-    return cur_robot->stack[stack_pointer];
+    return stack[stack_pointer];
   }
   else
   {
+    *position_in_line = 0;
     return -1;
   }
 }
@@ -1481,10 +1488,11 @@ static void send_sensors(struct world *mzx_world, char *name, const char *mesg)
   }
 }
 
-static void set_robot_position(struct robot *cur_robot, int position)
+static void set_robot_position(struct robot *cur_robot, int position,
+ int position_in_line)
 {
   cur_robot->cur_prog_line = position;
-  cur_robot->pos_within_line = 0;
+  cur_robot->pos_within_line = position_in_line;
   cur_robot->cycle_count = cur_robot->robot_cycle - 1;
 
   // Popping a subroutine's retval from the stack may legitimately
@@ -1525,8 +1533,9 @@ static int send_robot_direct(struct robot *cur_robot, const char *mesg,
     {
       if(cur_robot->stack_pointer)
       {
-        int return_pos = robot_stack_pop(cur_robot);
-        set_robot_position(cur_robot, return_pos);
+        int return_pos_in_line;
+        int return_pos = robot_stack_pop(cur_robot, &return_pos_in_line);
+        set_robot_position(cur_robot, return_pos, return_pos_in_line);
       }
       else
       {
@@ -1541,7 +1550,9 @@ static int send_robot_direct(struct robot *cur_robot, const char *mesg,
     {
       if(cur_robot->stack_pointer)
       {
-        set_robot_position(cur_robot, cur_robot->stack[0]);
+        set_robot_position(cur_robot, cur_robot->stack[0],
+         cur_robot->stack[1]);
+
         cur_robot->stack_pointer = 0;
       }
       else
@@ -1559,11 +1570,16 @@ static int send_robot_direct(struct robot *cur_robot, const char *mesg,
         // Push the current address onto the stack
         // If a maximum overflow happened, this simply won't work.
         int robot_position = cur_robot->cur_prog_line;
+        int return_position_in_line = 0;
         int return_position;
 
         if(robot_position)
         {
           return_position = robot_position;
+
+          // 2.85+: we want the pos_within_line too.
+          if(cur_robot->world_version >= 0x0255)
+            return_position_in_line = cur_robot->pos_within_line;
 
           if(send_self)
             return_position += robot_program[robot_position] + 2;
@@ -1573,9 +1589,11 @@ static int send_robot_direct(struct robot *cur_robot, const char *mesg,
           return_position = 0;
         }
 
-        robot_stack_push(cur_robot, return_position);
+        robot_stack_push(cur_robot, return_position,
+         return_position_in_line);
+
         // Do the jump
-        set_robot_position(cur_robot, new_position);
+        set_robot_position(cur_robot, new_position, 0);
         return 0;
       }
 
@@ -1588,7 +1606,7 @@ static int send_robot_direct(struct robot *cur_robot, const char *mesg,
 
     if(new_position != -1)
     {
-      set_robot_position(cur_robot, new_position);
+      set_robot_position(cur_robot, new_position, 0);
       return 0;
     }
 

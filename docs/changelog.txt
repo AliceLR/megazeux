@@ -106,6 +106,10 @@ BUGFIXES
   first object in a row of pushed objects if that object was a
   robot.
 + Fixed support for PPC Linux builds. (Insidious)
++ Fixed a bug where a robot sent a subroutine would restart the
+  command it was executing upon #return if the command was a
+  multi-cycle command. This fix applies to worlds saved in 2.85
+  and later only.
 
 DEVELOPERS
 

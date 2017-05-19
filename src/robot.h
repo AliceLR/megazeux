@@ -32,7 +32,7 @@ __M_BEGIN_DECLS
 // The value is a bit arbitrary, but it's mainly there to prevent MZX from
 // crashing when under infinite recursion.
 
-#define ROBOT_START_STACK 4
+#define ROBOT_START_STACK 8
 #define ROBOT_MAX_STACK   65536
 
 #define LABEL_TOUCH 0
