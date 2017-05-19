@@ -319,9 +319,13 @@ elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 	elif [ "`echo $MACH | sed 's,^arm.*,arm,'`" = "arm" ]; then
 		ARCHNAME=arm
 		LIBDIR=lib
+	elif [ "$MACH" == "ppc" ]; then
+		ARCHNAME=ppc
+		LIBDIR=lib
 	else
-		echo "Add a friendly MACH to config.sh."
-		exit 1
+		ARCHNAME=$MACH
+		LIBDIR=lib # The default for most systems
+		echo "WARNING: Compiling on an unsupported architecture. Add a friendly MACH to config.sh."
 	fi
 
 	echo "#define PLATFORM \"$UNIX-$ARCHNAME\"" > src/config.h

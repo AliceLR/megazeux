@@ -105,6 +105,7 @@ BUGFIXES
 + Fixed a bug where the (#)PUSHED label would not be sent to the
   first object in a row of pushed objects if that object was a
   robot.
++ Fixed support for PPC Linux builds. (Insidious)
 
 DEVELOPERS
 
