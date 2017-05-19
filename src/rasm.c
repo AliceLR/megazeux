@@ -5404,7 +5404,7 @@ static char *legacy_disassemble_arg(enum arg_type arg_type, char *src,
   return src;
 }
 
-static int legacy_disassemble_command(char *command_base, char *output_base,
+__editor_maybe_static int legacy_disassemble_command(char *command_base, char *output_base,
  int *line_length, int bytecode_length, bool print_ignores, int base)
 {
   int command_length = *command_base;

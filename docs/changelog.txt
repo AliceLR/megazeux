@@ -26,6 +26,11 @@ FEATURES
 + The BUTTONS counter has been extended to support the mouse
   wheel and X1/X2 buttons.
 
++ Debytecode: the LOAD_SOURCE_FILE special counter can now be
+  used to load and compile a robot program from source code.
++ Debytecode: the robot editor's import robot menu now supports
+  loading legacy source code.
+
 BUGFIXES
 
 + Fixed crash bug when using ALT+Z (Clear Board).

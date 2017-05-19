@@ -265,6 +265,9 @@ CORE_LIBSPEC char *assemble_program(char *src, int *size);
 
 #ifdef CONFIG_EDITOR
 
+CORE_LIBSPEC int legacy_disassemble_command(char *command_base, char *output_base,
+ int *line_length, int bytecode_length, bool print_ignores, int base);
+
 CORE_LIBSPEC struct token *parse_command(char *src, char **_next,
  int *num_parse_tokens);
 CORE_LIBSPEC void print_color(int color, char *color_buffer);

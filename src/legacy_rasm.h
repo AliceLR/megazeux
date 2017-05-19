@@ -65,7 +65,7 @@ int validate_legacy_bytecode(char *bc, int program_length);
 
 #ifdef CONFIG_DEBYTECODE
 
-int legacy_assemble_line(char *cpos, char *output_buffer, char *error_buffer,
+CORE_LIBSPEC int legacy_assemble_line(char *cpos, char *output_buffer, char *error_buffer,
  char *param_listing, int *arg_count_ext);
 
 #else // !CONFIG_DEBYTECODE

@@ -1601,7 +1601,19 @@ static int load_bc_read(struct world *mzx_world,
   return -1;
 }
 
-#ifndef CONFIG_DEBYTECODE
+#ifdef CONFIG_DEBYTECODE
+
+static int load_source_file_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  mzx_world->special_counter_return = FOPEN_LOAD_SOURCE_FILE;
+  if(name[16])
+    return strtol(name + 16, NULL, 10);
+
+  return -1;
+}
+
+#else // !CONFIG_DEBYTECODE
 
 static int save_robot_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
@@ -2513,6 +2525,9 @@ static const struct function_counter builtin_counters[] =
   { "load_bc?", 0x0249, load_bc_read, NULL },                        // 2.70
   { "load_game", 0x0244, load_game_read, NULL },                     // 2.68
   { "load_robot?", 0x0249, load_robot_read, NULL },                  // 2.70
+#ifdef CONFIG_DEBYTECODE
+  { "load_source_file?", 0x025A, load_source_file_read, NULL },      // Debytecode
+#endif
   { "local?", 0x0208, local_read, local_write },                     // 2.51s1
   { "loopcount", 0, loopcount_read, loopcount_write },               // <=2.51
   { "max!,!", 0x0254, maxval_read, NULL },                           // 2.84
@@ -2839,9 +2854,10 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
 #ifdef CONFIG_DEBYTECODE
 
-    // TODO: Implement new one: right now load_robot loads legacy bots.
     case FOPEN_LOAD_ROBOT:
     {
+      // Load legacy source code.
+
       if(value >= 0)
         cur_robot = get_robot_by_id(mzx_world, value);
 
@@ -2940,6 +2956,60 @@ int set_counter_special(struct world *mzx_world, char *char_value,
         }
 
         fclose(bc_file);
+      }
+      break;
+    }
+
+
+    case FOPEN_LOAD_SOURCE_FILE:
+    {
+      // Load source code.
+
+      FILE *src_file = fsafeopen(char_value, "rt");
+
+      if(src_file)
+      {
+        if(value >= 0)
+          cur_robot = get_robot_by_id(mzx_world, value);
+
+        if(cur_robot)
+        {
+          char *new_source;
+          int new_length;
+
+          new_length = ftell_and_rewind(src_file);
+
+          new_source = cmalloc(new_length+1);
+          fread(new_source, new_length, 1, src_file);
+          new_source[new_length] = 0;
+
+          if(new_source)
+          {
+            if(cur_robot->program_source)
+              free(cur_robot->program_source);
+
+            cur_robot->program_source = new_source;
+            cur_robot->program_source_length = new_length;
+
+            // TODO: Move this outside of here.
+            if(cur_robot->program_bytecode)
+            {
+              free(cur_robot->program_bytecode);
+              cur_robot->program_bytecode = NULL;
+              cur_robot->stack_pointer = 0;
+              cur_robot->cur_prog_line = 1;
+            }
+
+            prepare_robot_bytecode(cur_robot);
+
+            // Restart this robot if either it was just a LOAD_ROBOT
+            // OR LOAD_ROBOTn was used where n is &robot_id&.
+            if(value == -1 || value == id)
+              return 1;
+          }
+        }
+
+        fclose(src_file);
       }
       break;
     }

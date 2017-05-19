@@ -1809,10 +1809,23 @@ static void import_block(struct world *mzx_world, struct robot_state *rstate)
   ssize_t ext_pos;
 
   txt_ext[1] = ".BC";
-#endif
 
   if(choose_file(mzx_world, txt_ext, import_name, "Import Robot", 1))
     return;
+
+#else // CONFIG_DEBYTECODE
+  const char *label[] = { "Legacy source code" };
+  int is_legacy = 0;
+
+  struct element *elements[] = {
+    construct_check_box(21, 20, label, 1, strlen(label[0]), &is_legacy)
+  };
+
+  if(file_manager(mzx_world, txt_ext, NULL, import_name, "Import Robot", 1,
+   0, elements, 1, 2))
+    return;
+
+#endif
 
   import_file = fopen_unsafe(import_name, "rb");
 
@@ -1863,8 +1876,37 @@ static void import_block(struct world *mzx_world, struct robot_state *rstate)
        free(buffer);
     }
   }
+
+#else //CONFIG_DEBYTECODE
+  if(is_legacy)
+  {
+    char command_buffer[512];
+    char bytecode_buffer[256];
+    char errors[256];
+
+    int disasm_length;
+
+    rstate->command_buffer = command_buffer;
+
+    while(fsafegets(line_buffer, 256, import_file) != NULL)
+    {
+      legacy_assemble_line(line_buffer, bytecode_buffer, errors,
+       NULL, NULL);
+
+      legacy_disassemble_command(bytecode_buffer, command_buffer,
+       &disasm_length, 256,
+       mzx_world->conf.disassemble_extras,
+       mzx_world->conf.disassemble_base
+      );
+
+      command_buffer[disasm_length] = 0;
+
+      add_line(rstate,-1);
+    }
+  }
+
+#endif //CONFIG_DEBYTECODE
   else
-#endif
   {
     // fsafegets ensures that no line terminators are present
     while(fsafegets(line_buffer, 255, import_file) != NULL)
