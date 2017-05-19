@@ -2612,10 +2612,6 @@ static const struct function_counter builtin_counters[] =
   { "uch!,!", 0x0254, uch_read, NULL },                              // 2.84
   { "uco!,!", 0x0254, uco_read, NULL },                              // 2.84
   { "uid!,!", 0x0254, uid_read, uid_write },                         // 2.84
-//  { "under_char", 0x0254, under_char_read, NULL },                   // 2.84
-//  { "under_color", 0x0254, under_color_read, NULL },                 // 2.84
-//  { "under_id", 0x0254, under_id_read, under_id_write },             // 2.84
-//  { "under_param", 0x0254, under_param_read, under_param_write },    // 2.84
   { "upr!,!", 0x0254, upr_read, upr_write },                         // 2.84
   { "vch!,!", 0x0248, vch_read, vch_write },                         // 2.69c
   { "vco!,!", 0x0248, vco_read, vco_write },                         // 2.69c
