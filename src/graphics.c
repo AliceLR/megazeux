@@ -202,6 +202,18 @@ void ec_mem_save_set(Uint8 *chars)
   memcpy(chars, graphics.charset, CHAR_SIZE * CHARSET_SIZE);
 }
 
+void ec_mem_load_set_var(char *chars, size_t len, Uint8 pos)
+{
+  Uint32 offset = pos * CHAR_SIZE;
+  Uint32 size = MIN(len, CHAR_SIZE * CHARSET_SIZE - offset);
+
+  memcpy(graphics.charset + offset, chars, size);
+
+  // some renderers may want to map charsets to textures
+  if(graphics.renderer.remap_charsets)
+    graphics.renderer.remap_charsets(&graphics);
+}
+
 __editor_maybe_static void ec_load_mzx(void)
 {
   ec_mem_load_set(graphics.default_charset);
@@ -455,6 +467,32 @@ void load_palette(const char *fname)
   }
 
   fclose(pal_file);
+}
+
+void load_palette_mem(char *pal, size_t len)
+{
+  int size, r, g, b, i, j;
+
+  switch(graphics.screen_mode)
+  {
+    // Regular text mode
+    case 0:
+      size = MIN(len, 16*3);
+      break;
+
+    // SMZX
+    default:
+      size = MIN(len, 256*3);
+      break;
+  }
+
+  for(i = 0, j = 0; j < size; i++)
+  {
+    r = pal[j++];
+    g = pal[j++];
+    b = pal[j++];
+    set_rgb(i, r, g, b);
+  }
 }
 
 void smzx_palette_loaded(int val)

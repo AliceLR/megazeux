@@ -25,6 +25,10 @@ FEATURES
 + Tentative joypad POV hat support added: joyNhat = U, D, L, R
 + The BUTTONS counter has been extended to support the mouse
   wheel and X1/X2 buttons.
++ Strings can now be used in the LOAD PALETTE "file" command in
+  place of a file name, i.e. LOAD PALETTE "$string+10".
++ Strings can now be used in the LOAD CHAR SET "file" command in
+  place of a file name, i.e. LOAD CHAR SET "@240$chars".
 
 + Debytecode: the LOAD_SOURCE_FILE special counter can now be
   used to load and compile a robot program from source code.

@@ -167,10 +167,12 @@ CORE_LIBSPEC void ec_change_char(Uint8 chr, char *matrix);
 CORE_LIBSPEC Sint32 ec_load_set_var(char *name, Uint8 pos);
 CORE_LIBSPEC void ec_mem_load_set(Uint8 *chars);
 CORE_LIBSPEC void ec_mem_save_set(Uint8 *chars);
+CORE_LIBSPEC void ec_mem_load_set_var(char *chars, size_t len, Uint8 pos);
 
 CORE_LIBSPEC void update_palette(void);
 CORE_LIBSPEC void set_gui_palette(void);
 CORE_LIBSPEC void load_palette(const char *fname);
+CORE_LIBSPEC void load_palette_mem(char *pal, size_t len);
 CORE_LIBSPEC void smzx_palette_loaded(int val);
 CORE_LIBSPEC void set_screen_mode(Uint32 mode);
 CORE_LIBSPEC Uint32 get_screen_mode(void);

@@ -5157,6 +5157,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
       {
         char charset_name[ROBOT_MAX_TR];
         char *translated_name = cmalloc(MAX_PATH);
+        char *src_name;
+        int pos;
 
         tr_msg(mzx_world, cmd_ptr + 2, id, charset_name);
 
@@ -5164,35 +5166,41 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         if(charset_name[0] == '+')
         {
           char tempc = charset_name[3];
-          char *next;
-          int pos;
 
           charset_name[3] = 0;
-          pos = (int)strtol(charset_name + 1, &next, 16);
+          pos = (int)strtol(charset_name + 1, &src_name, 16);
           charset_name[3] = tempc;
-
-          if(!fsafetranslate(next, translated_name))
-            ec_load_set_var(translated_name, pos);
         }
         else
 
         if(charset_name[0] == '@')
         {
           char tempc = charset_name[4];
-          char *next;
-          int pos;
 
           charset_name[4] = 0;
-          pos = (int)strtol(charset_name + 1, &next, 10);
+          pos = (int)strtol(charset_name + 1, &src_name, 10);
           charset_name[4] = tempc;
-
-          if(!fsafetranslate(next, translated_name))
-            ec_load_set_var(translated_name, pos);
         }
         else
         {
-          if(!fsafetranslate(charset_name, translated_name))
-            ec_load_set(translated_name);
+          src_name = charset_name;
+          pos = 0;
+        }
+
+        // Load from string (2.85+)
+        if(mzx_world->version >= 0x0255 && is_string(src_name))
+        {
+          struct string src;
+
+          if(get_string(mzx_world, src_name, &src, id))
+            ec_mem_load_set_var(src.value, src.length, pos);
+        }
+        else
+
+        // Load from file
+        if(!fsafetranslate(src_name, translated_name))
+        {
+          ec_load_set_var(translated_name, pos);
         }
 
         free(translated_name);
@@ -5261,8 +5269,21 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
         tr_msg(mzx_world, cmd_ptr + 2, id, name_buffer);
 
+        // Load palette from string (2.85+)
+        if(mzx_world->version >= 0x0255 && is_string(name_buffer))
+        {
+          struct string src;
+
+          if(get_string(mzx_world, name_buffer, &src, id))
+            load_palette_mem(src.value, src.length);
+        }
+        else
+
+        // Load palette from file
         if(!fsafetranslate(name_buffer, translated_name))
+        {
           load_palette(translated_name);
+        }
 
         free(translated_name);
         pal_update = true;
