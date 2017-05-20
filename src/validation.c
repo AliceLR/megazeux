@@ -277,6 +277,14 @@ void val_error_str(enum val_error error_id, int value, char *string)
       code = 0xD0D0;
       break;
     }
+#ifdef CONFIG_DEBYTECODE
+    case DBC_SAVE_ROBOT_UNSUPPORTED:
+    {
+      sprintf(error_mesg, "SAVE_ROBOT and SAVE_BC are no longer supported by MegaZeux.");
+      code = 0x0fac;
+      break;
+    }
+#endif
   }
 
   error(error_mesg, 1, opts, code);

@@ -41,6 +41,7 @@
 #include "robot.h"
 #include "sprite.h"
 #include "world.h"
+#include "validation.h"
 #include "util.h"
 
 #ifdef CONFIG_UTHASH
@@ -1613,7 +1614,7 @@ static int load_source_file_read(struct world *mzx_world,
   return -1;
 }
 
-#else // !CONFIG_DEBYTECODE
+#endif // CONFIG_DEBYTECODE
 
 static int save_robot_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
@@ -1634,8 +1635,6 @@ static int save_bc_read(struct world *mzx_world,
 
   return -1;
 }
-
-#endif // CONFIG_DEBYTECODE
 
 static int fread_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
@@ -2559,13 +2558,9 @@ static const struct function_counter builtin_counters[] =
   { "rid*", 0x0246, rid_read, NULL },                                // 2.69b
   { "robot_id", 0x0209, robot_id_read, NULL },                       // 2.60
   { "robot_id_*", 0x0241, robot_id_n_read, NULL },                   // 2.65
-#ifndef CONFIG_DEBYTECODE
   { "save_bc?", 0x0249, save_bc_read, NULL },                        // 2.70
-#endif
   { "save_game", 0x0244, save_game_read, NULL },                     // 2.68
-#ifndef CONFIG_DEBYTECODE
   { "save_robot?", 0x0249, save_robot_read, NULL },                  // 2.70
-#endif
   { "save_world", 0x0248, save_world_read, NULL },                   // 2.69c
   { "scrolledx", 0x0208, scrolledx_read, NULL },                     // 2.51s1
   { "scrolledy", 0x0208, scrolledy_read, NULL },                     // 2.51s1
@@ -3010,16 +3005,27 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       break;
     }
 
-    // TODO: show some kind of error - we can't support this. That's
-    // because there probably won't be source code present to save.
-    // If any games use it then they just can't be supported. There just
-    // isn't an easy fix for this.
-    /* case FOPEN_SAVE_ROBOT: */
+    /* We can't support this. That's because there probably won't be
+     * source code present to save. If any games use it then they just
+     * can't be supported. There just isn't an easy fix for this.
+     */
+    case FOPEN_SAVE_ROBOT:
+    {
+      val_error(DBC_SAVE_ROBOT_UNSUPPORTED, 0);
+      set_validation_suppression(DBC_SAVE_ROBOT_UNSUPPORTED, 1);
+      break;
+    }
 
-    // TODO: This can't really exist anymore... do something here to send
-    // out an error. In practice I doubt any games use it, but they can't
-    // be supported - there's no really easy fix for this.
-    /* case FOPEN_SAVE_BC: */
+    /* This can't really exist anymore... In practice I doubt any games
+     * use it, but they can't  be supported - there's no really easy fix
+     * for this.
+     */
+    case FOPEN_SAVE_BC:
+    {
+      val_error(DBC_SAVE_ROBOT_UNSUPPORTED, 0);
+      set_validation_suppression(DBC_SAVE_ROBOT_UNSUPPORTED, 1);
+      break;
+    }
 
 #else // !CONFIG_DEBYTECODE
 

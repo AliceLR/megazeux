@@ -118,10 +118,9 @@ enum special_counter_return
   FOPEN_LOAD_BC,
 #ifdef CONFIG_DEBYTECODE
   FOPEN_LOAD_SOURCE_FILE,
-#else
+#endif
   FOPEN_SAVE_ROBOT,
   FOPEN_SAVE_BC
-#endif
 };
 
 __M_END_DECLS

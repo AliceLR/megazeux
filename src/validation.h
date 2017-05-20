@@ -42,7 +42,7 @@ enum val_result
   VAL_NEED_UNLOCK // Unlock world file.
 };
 
-#define NUM_VAL_ERRORS 23
+#define NUM_VAL_ERRORS 24
 
 enum val_error
 {
@@ -69,6 +69,9 @@ enum val_error
   MZM_FILE_VERSION_TOO_RECENT     = 20,
   MZM_ROBOT_CORRUPT               = 21,
   LOAD_BC_CORRUPT                 = 22,
+#ifdef CONFIG_DEBYTECODE
+  DBC_SAVE_ROBOT_UNSUPPORTED
+#endif
 };
 
 CORE_LIBSPEC void val_error(enum val_error error_id, int value);
