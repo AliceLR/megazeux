@@ -74,6 +74,8 @@ char *assemble_file(char *name, int *size);
 void disassemble_file(char *name, char *program, int program_length,
  int allow_ignores, int base);
 
+char *assemble_file_mem(char *src, int len, int *size);
+
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC int legacy_assemble_line(char *cpos, char *output_buffer,
  char *error_buffer, char *param_listing, int *arg_count_ext);

@@ -5639,4 +5639,69 @@ char *legacy_convert_file(char *file_name, int *_disasm_length,
   return NULL;
 }
 
+char *legacy_convert_file_mem(char *src, int len, int *_disasm_length,
+ bool print_ignores, int base)
+{
+  if(len)
+  {
+    char *input_start = src;
+    char *input_end = src + len;
+
+    int disasm_length = 0;
+    int disasm_offset = 0;
+    int disasm_length_allocated = 256;
+    char *program_disasm = malloc(disasm_length_allocated);
+
+    char source_buffer[256];
+    char command_buffer[512];
+    char bytecode_buffer[256];
+    char errors[256];
+
+    int disasm_line_length;
+
+    // Copying to a buffer isn't the quickest solution, but trying to
+    // handle it differently turns into spaghetti.
+    while(memsafegets(source_buffer, 255, &input_start, input_end))
+    {
+      // Assemble line
+      legacy_assemble_line(source_buffer, bytecode_buffer, errors,
+       NULL, NULL);
+
+      // Disassemble command into command_buffer.
+      legacy_disassemble_command(bytecode_buffer, command_buffer,
+       &disasm_line_length, 256, print_ignores, base);
+      command_buffer[disasm_line_length] = 0;
+
+      // Increment the total size (plus size for new line)
+      disasm_length += disasm_line_length + 1;
+
+      // Reallocate buffer if necessary.
+      while(disasm_length > disasm_length_allocated)
+      {
+        disasm_length_allocated *= 2;
+        program_disasm =  realloc(program_disasm, disasm_length_allocated);
+      }
+
+      // Copy new line into buffer.
+      memcpy(program_disasm + disasm_offset, command_buffer,
+       disasm_line_length);
+
+      // Write newline char.
+      disasm_offset += disasm_line_length;
+      program_disasm[disasm_offset] = '\n';
+      disasm_offset++;
+    }
+
+    // Null terminate and return total size.
+    disasm_length++;
+    program_disasm = realloc(program_disasm, disasm_length);
+    program_disasm[disasm_offset] = 0;
+    *_disasm_length = disasm_length;
+
+    return program_disasm;
+  }
+
+  return NULL;
+}
+
 #endif /* CONFIG_DEBYTECODE */

@@ -132,6 +132,8 @@ CORE_LIBSPEC void boyer_moore_index(void *B, size_t b_len,
 CORE_LIBSPEC void *boyer_moore_search(void *A, size_t a_len, void *B, size_t b_len,
  int *index, bool ignore_case);
 
+CORE_LIBSPEC int memsafegets(char *dest, int size, char **src, char *end);
+
 #if defined(__WIN32__) && defined(__STRICT_ANSI__)
 CORE_LIBSPEC int strcasecmp(const char *s1, const char *s2);
 CORE_LIBSPEC int strncasecmp(const char *s1, const char *s2, size_t n);

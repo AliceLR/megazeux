@@ -2056,6 +2056,57 @@ exit_out:
   return buffer;
 }
 
+char *assemble_file_mem(char *src, int len, int *size)
+{
+  char line_buffer[256];
+  char bytecode_buffer[256];
+  char error_buffer[256];
+  int line_bytecode_length;
+  int allocated_size = 1024;
+  char *buffer;
+
+  char *input_pos = src;
+  char *input_end = src + len;
+
+  int output_position = 1;
+  int current_size = 1;
+
+  buffer = cmalloc(1024);
+  buffer[0] = 0xFF;
+
+  // It's wasteful to copy each line, but the alternative is worse...
+  while(memsafegets(line_buffer, 255, &input_pos, input_end))
+  {
+    line_bytecode_length =
+     legacy_assemble_line(line_buffer, bytecode_buffer, error_buffer, NULL, NULL);
+
+    if((line_bytecode_length != -1) &&
+     ((current_size + line_bytecode_length) < MAX_OBJ_SIZE))
+    {
+      if((current_size + line_bytecode_length) > allocated_size)
+      {
+        allocated_size *= 2;
+        buffer = crealloc(buffer, allocated_size);
+      }
+      memcpy(buffer + output_position, bytecode_buffer, line_bytecode_length);
+      output_position += line_bytecode_length;
+      current_size += line_bytecode_length;
+    }
+    else
+    {
+      free(buffer);
+      return NULL;
+    }
+  }
+
+  // trim the buffer to match the output size
+  buffer = crealloc(buffer, current_size + 1);
+  buffer[current_size] = 0;
+  *size = current_size + 1;
+
+  return buffer;
+}
+
 __editor_maybe_static void print_color(int color, char *color_buffer)
 {
   if(color & 0x100)

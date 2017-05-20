@@ -36,7 +36,7 @@ CORE_LIBSPEC void set_counter(struct world *mzx_world, const char *name,
  int value, int id);
 CORE_LIBSPEC int get_string(struct world *mzx_world, const char *name,
  struct string *dest, int id);
-CORE_LIBSPEC void set_string(struct world *mzx_world, const char *name,
+CORE_LIBSPEC int set_string(struct world *mzx_world, const char *name,
  struct string *src, int id);
 CORE_LIBSPEC void counter_fsg(void);
 

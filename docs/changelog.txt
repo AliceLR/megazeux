@@ -29,9 +29,12 @@ FEATURES
   place of a file name, i.e. LOAD PALETTE "$string+10".
 + Strings can now be used in the LOAD CHAR SET "file" command in
   place of a file name, i.e. LOAD CHAR SET "@240$chars".
++ Strings can now be used for the special counter LOAD_ROBOT in
+  place of a file name, i.e. set "$str" "LOAD_ROBOT".
 
 + Debytecode: the LOAD_SOURCE_FILE special counter can now be
   used to load and compile a robot program from source code.
+  This can be used with either a file or a string as input.
 + Debytecode: the robot editor's import robot menu now supports
   loading legacy source code.
 

@@ -1573,7 +1573,14 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             dest.length = strlen(src_buffer);
           }
 
-          set_string(mzx_world, dest_buffer, &dest, id);
+          gotoed = set_string(mzx_world, dest_buffer, &dest, id);
+
+          // Loading source/robots from strings might have changed these
+          if(gotoed)
+          {
+            program = cur_robot->program_bytecode;
+            cmd_ptr = program + cur_robot->cur_prog_line;
+          }
         }
         else
         {

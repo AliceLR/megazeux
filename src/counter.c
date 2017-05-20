@@ -3643,7 +3643,7 @@ static int load_string_board_direct(struct world *mzx_world,
   }
 }
 
-void set_string(struct world *mzx_world, const char *name, struct string *src,
+int set_string(struct world *mzx_world, const char *name, struct string *src,
  int id)
 {
   bool offset_specified = false, size_specified = false;
@@ -3723,7 +3723,7 @@ void set_string(struct world *mzx_world, const char *name, struct string *src,
           {
             if(offset == 0 && !offset_specified)
               dest->length = read_pos;
-            return;
+            return 0;
           }
 
           dest_value[read_pos + offset] = current_char;
@@ -3860,11 +3860,165 @@ void set_string(struct world *mzx_world, const char *name, struct string *src,
     }
   }
   else
+
+  // Load source code from a string
+
+#ifdef CONFIG_DEBYTECODE
+  if(special_name_partial("load_robot") && mzx_world->version >= 0x0255)
+  {
+    // Load legacy source code (2.85+)
+
+    struct robot *cur_robot;
+    int load_id = id;
+
+    // If there's a number at the end, we're loading to another robot.
+    if(src_length > 10)
+      load_id = strtol(src_value + 10, NULL, 10);
+
+    cur_robot = get_robot_by_id(mzx_world, load_id);
+
+    if(cur_robot)
+    {
+      int new_length = 0;
+      char *new_source = legacy_convert_file_mem(dest->value,
+       dest->length,
+       &new_length,
+       mzx_world->conf.disassemble_extras,
+       mzx_world->conf.disassemble_base);
+
+      if(new_source)
+      {
+        if(cur_robot->program_source)
+          free(cur_robot->program_source);
+
+        cur_robot->program_source = new_source;
+        cur_robot->program_source_length = new_length;
+
+        // TODO: Move this outside of here.
+        if(cur_robot->program_bytecode)
+        {
+          free(cur_robot->program_bytecode);
+          cur_robot->program_bytecode = NULL;
+          cur_robot->stack_pointer = 0;
+          cur_robot->cur_prog_line = 1;
+        }
+
+        prepare_robot_bytecode(cur_robot);
+
+        // Restart this robot if either it was just a LOAD_ROBOT
+        // OR LOAD_ROBOTn was used where n is &robot_id&.
+        if(load_id == id)
+          return 1;
+      }
+    }
+  }
+  else
+
+  if(special_name_partial("load_source_file") && mzx_world->version >= 0x025A)
+  {
+    // Source code (DBC+)
+
+    struct robot *cur_robot;
+    int load_id = id;
+
+    // If there's a number at the end, we're loading to another robot.
+    if(src_length > 16)
+      load_id = strtol(src_value + 16, NULL, 10);
+
+    cur_robot = get_robot_by_id(mzx_world, load_id);
+
+    if(cur_robot)
+    {
+      int new_length = dest->length;
+      char *new_source;
+
+      if(new_length)
+      {
+        if(cur_robot->program_source)
+          free(cur_robot->program_source);
+
+        // We have to duplicate the source for prepare_robot_bytecode.
+        // Even if we're just going to throw it away afterward.
+        new_source = cmalloc(new_length + 1);
+        memcpy(new_source, dest->value, new_length);
+        new_source[new_length] = 0;
+
+        cur_robot->program_source = new_source;
+        cur_robot->program_source_length = new_length;
+
+        // TODO: Move this outside of here.
+        if(cur_robot->program_bytecode)
+        {
+          free(cur_robot->program_bytecode);
+          cur_robot->program_bytecode = NULL;
+          cur_robot->stack_pointer = 0;
+          cur_robot->cur_prog_line = 1;
+        }
+
+        prepare_robot_bytecode(cur_robot);
+
+        // Restart this robot if either it was just a LOAD_ROBOT
+        // OR LOAD_ROBOTn was used where n is &robot_id&.
+        if(load_id == id)
+          return 1;
+      }
+    }
+  }
+
+#else //!CONFIG_DEBYTECODE
+  if(special_name_partial("load_robot") && mzx_world->version >= 0x0255)
+  {
+    // Load robot from string (2.85+)
+
+    char *new_program;
+    int new_size;
+
+    new_program = assemble_file_mem(dest->value, dest->length, &new_size);
+
+    if(new_program)
+    {
+      struct robot *cur_robot;
+      int load_id = id;
+
+      // If there's a number at the end, we're loading to another robot.
+      if(src_length > 10)
+        load_id = strtol(src_value + 10, NULL, 10);
+
+      cur_robot = get_robot_by_id(mzx_world, load_id);
+
+      if(cur_robot)
+      {
+        reallocate_robot(cur_robot, new_size);
+        clear_label_cache(cur_robot->label_list, cur_robot->num_labels);
+
+        memcpy(cur_robot->program_bytecode, new_program, new_size);
+        cur_robot->stack_pointer = 0;
+        cur_robot->cur_prog_line = 1;
+        cur_robot->label_list =
+         cache_robot_labels(cur_robot, &cur_robot->num_labels);
+
+        // Restart this robot if either it was just a LOAD_ROBOT
+        // OR LOAD_ROBOTn was used where n is &robot_id&.
+        if(load_id == id)
+        {
+          free(new_program);
+          return 1;
+        }
+      }
+
+      free(new_program);
+    }
+  }
+#endif
+
+  else
   {
     // Just a normal string here.
     force_string_move(mzx_world, name, next, &dest, src_length,
      offset, offset_specified, &size, size_specified, src_value);
   }
+
+  return 0;
 }
 
 int get_counter(struct world *mzx_world, const char *name, int id)
