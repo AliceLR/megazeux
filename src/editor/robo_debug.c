@@ -349,11 +349,15 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id)
   cmd_ptr = program + cur_robot->cur_prog_line;
 
 #ifdef CONFIG_DEBYTECODE
-  {
-    confirm(mzx_world, "Robotic debugger not yet supported by debytecode");
-    robo_debugger_enabled = 0;
-    return 0;
-  }
+  // FIXME: these two lines stop compiler warnings
+  if(line_size){}
+  if(cmd_ptr){}
+
+  // FIXME: implement
+  confirm(mzx_world, "Robotic debugger not yet supported by debytecode");
+  robo_debugger_enabled = 0;
+  return 0;
+
 #else //!CONFIG_DEBYTECODE
   {
     char *c;
