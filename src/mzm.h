@@ -28,8 +28,12 @@ __M_BEGIN_DECLS
 
 CORE_LIBSPEC void save_mzm(struct world *mzx_world, char *name,
  int start_x, int start_y, int width, int height, int mode, int savegame);
+CORE_LIBSPEC void save_mzm_string(struct world *mzx_world, const char *name,
+ int start_x, int start_y, int width, int height, int mode, int savegame, int id);
 CORE_LIBSPEC int load_mzm(struct world *mzx_world, char *name,
  int start_x, int start_y, int mode, int savegame);
+CORE_LIBSPEC int load_mzm_memory(struct world *mzx_world, char *name, int start_x,
+ int start_y, int mode, int savegame, const void *buffer, size_t length);
 
 __M_END_DECLS
 

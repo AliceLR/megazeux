@@ -4027,6 +4027,19 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
   return 0;
 }
 
+// Creates a new string if it doesn't already exist; otherwise, resizes
+// the string to the provided length
+struct string *new_string(struct world *mzx_world, const char *name,
+ size_t length, int id)
+{
+  struct string *str;
+  int next = 0;
+
+  str = find_string(mzx_world, name, &next);
+  force_string_length(mzx_world, name, next, &str, &length);
+  return str;
+}
+
 int get_counter(struct world *mzx_world, const char *name, int id)
 {
   const struct function_counter *fdest;

@@ -910,13 +910,16 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
       if(dest_param && !src_type)
         src_type = 3;
 
-      err = fsafetranslate(name_buffer, translated_name);
-      if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
-      {
-        save_mzm(mzx_world, translated_name, src_x, src_y,
-         width, height, src_type, 1);
+      if(mzx_world->version >= 0x0255 && is_string(name_buffer)) {
+        save_mzm_string(mzx_world, name_buffer, src_x, src_y, width, height, src_type, 1, id);
+      } else {
+        err = fsafetranslate(name_buffer, translated_name);
+        if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
+        {
+          save_mzm(mzx_world, translated_name, src_x, src_y,
+          width, height, src_type, 1);
+        }
       }
-
       free(translated_name);
       return;
     }
@@ -3084,14 +3087,22 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
           tr_msg(mzx_world, cmd_ptr + 3, id, mzm_name_buffer);
 
-          if(!fsafetranslate(mzm_name_buffer, translated_name))
+          if(mzx_world->version >= 0x0255 && is_string(mzm_name_buffer))
           {
-            load_mzm(mzx_world, translated_name, put_x, put_y,
-             put_param, 1);
+            struct string src;
+            
+            if(get_string(mzx_world, mzm_name_buffer, &src, id))
+              load_mzm_memory(mzx_world, mzm_name_buffer, put_x, put_y, put_param, 1, src.value, src.length);
           }
-
+          else
+            {
+            if(!fsafetranslate(mzm_name_buffer, translated_name))
+            {
+              load_mzm(mzx_world, translated_name, put_x, put_y,
+              put_param, 1);
+            }
+          }
           free(translated_name);
-
           if(id)
           {
             int offset = x + (y * board_width);

@@ -131,6 +131,14 @@ CORE_LIBSPEC void add_ext(char *src, const char *ext);
 bool reload_savegame(struct world *mzx_world, const char *file, int *faded);
 bool reload_swap(struct world *mzx_world, const char *file, int *faded);
 
+// Code to load/save multi-byte ints to/from little endian memory
+int mem_getc(const unsigned char **ptr);
+int mem_getd(const unsigned char **ptr);
+int mem_getw(const unsigned char **ptr);
+void mem_putc(int src, unsigned char **ptr);
+void mem_putd(int src, unsigned char **ptr);
+void mem_putw(int src, unsigned char **ptr);
+
 // Code to load multi-byte ints from little endian file
 
 int fgetw(FILE *fp);

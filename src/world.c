@@ -87,6 +87,49 @@ static inline void meter_initial_draw(int curr, int target,
 
 // Get 2 bytes
 
+int mem_getc(const unsigned char **ptr)
+{
+  int val = (*ptr)[0];
+  *ptr += 1;
+  return val;
+}
+
+int mem_getw(const unsigned char **ptr)
+{
+  int val = (*ptr)[0] | ((*ptr)[1] << 8);
+  *ptr += 2;
+  return val;
+}
+
+int mem_getd(const unsigned char **ptr)
+{
+  int val = (*ptr)[0] | ((*ptr)[1] << 8) | ((*ptr)[2] << 16) | ((int)((*ptr)[3]) << 24);
+  *ptr += 4;
+  return val;
+}
+
+void mem_putc(int src, unsigned char **ptr)
+{
+  (*ptr)[0] = src;
+  *ptr += 1;
+}
+
+void mem_putw(int src, unsigned char **ptr)
+{
+  (*ptr)[0] = src & 0xFF;
+  (*ptr)[1] = (src >> 8) & 0xFF;
+  *ptr += 2;
+}
+
+void mem_putd(int src, unsigned char **ptr)
+{
+  (*ptr)[0] = src & 0xFF;
+  (*ptr)[1] = (src >> 8) & 0xFF;
+  (*ptr)[2] = (src >> 16) & 0xFF;
+  (*ptr)[3] = (src >> 24) & 0xFF;
+  *ptr += 4;
+}
+
 int fgetw(FILE *fp)
 {
   int a = fgetc(fp), b = fgetc(fp);

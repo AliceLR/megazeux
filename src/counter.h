@@ -38,7 +38,11 @@ CORE_LIBSPEC int get_string(struct world *mzx_world, const char *name,
  struct string *dest, int id);
 CORE_LIBSPEC int set_string(struct world *mzx_world, const char *name,
  struct string *src, int id);
+CORE_LIBSPEC void set_string_raw(struct world *mzx_world, const void *buffer,
+ size_t len, struct string *src, int id);
 CORE_LIBSPEC void counter_fsg(void);
+CORE_LIBSPEC struct string *new_string(struct world *mzx_world, const char *name,
+ size_t length, int id);
 
 void initialize_gateway_functions(struct world *mzx_world);
 void inc_counter(struct world *mzx_world, const char *name, int value, int id);

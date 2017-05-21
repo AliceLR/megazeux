@@ -115,9 +115,16 @@ CORE_LIBSPEC void replace_player(struct world *mzx_world);
 void create_blank_robot(struct robot *cur_robot, int savegame);
 struct robot *load_robot_allocate(FILE *fp, int savegame, int file_version,
  int world_version);
+size_t load_robot_calculate_size(const void *buffer, int savegame, int version);
 void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version);
+void load_robot_from_memory(struct robot *cur_robot, const void *buffer,
+ int savegame, int version, int robot_location);
 struct scroll *load_scroll_allocate(FILE *fp);
 struct sensor *load_sensor_allocate(FILE *fp);
+size_t calculate_partial_robot_size(int savegame, int version);
+size_t save_robot_calculate_size(struct robot *cur_robot, int savegame, int version);
+void save_robot_to_memory(struct robot *cur_robot, void *buffer, int savegame,
+ int version);
 void save_robot(struct robot *cur_robot, FILE *fp, int savegame, int version);
 void save_scroll(struct scroll *cur_scroll, FILE *fp, int savegame);
 void save_sensor(struct sensor *cur_sensor, FILE *fp, int savegame);
