@@ -1,4 +1,4 @@
-/* MegaZeux0
+/* MegaZeux
  *
  * Copyright (C) 2017 Alice Rowan <petrifiedrowan@gmail.com>
  *
@@ -277,6 +277,8 @@ static const char *zip_error_string(enum zip_error code)
       return "File uses unsupported compression method; use DEFLATE or no compression";
     case ZIP_UNSUPPORTED_ZIP64:
       return "File contains unsupported ZIP64 data";
+    case ZIP_MISSING_LOCAL_HEADER:
+      return "Could not find the local file header";
     case ZIP_HEADER_MISMATCH:
       return "Local header does not match central directory header";
     case ZIP_CRC32_MISMATCH:
@@ -458,13 +460,11 @@ static int zip_read_file_header(struct zip_archive *zp,
     // I don't really like this solution, but...
     // Memfiles: make sure there's enough space
     if(zp->hasspace && !zp->hasspace(30-i, fp))
-      return ZIP_ALLOC_MORE_SPACE;
+      return ZIP_MISSING_LOCAL_HEADER;
 
     n = getc(fp);
     if(n < 0)
-      return ZIP_READ_ERROR;
-
-    //debug("Current position: %d, n=%x, i=%d\n", zp->tell(fp), n, i);
+      return ZIP_MISSING_LOCAL_HEADER;
 
     // Match the signature
     if(n == magic[i])
@@ -521,7 +521,6 @@ static int zip_read_file_header(struct zip_archive *zp,
   else
   if(method != ZIP_M_NO_COMPRESSION && method != ZIP_M_DEFLATE)
   {
-    warn("Unsupported compression method %d.\n", method);
     return ZIP_UNSUPPORTED_COMPRESSION;
   }
   fh->method = method;
@@ -848,7 +847,6 @@ int zip_read_file(struct zip_archive *zp, char *name, int name_buffer_size,
 
   else
   {
-    warn("Unsupported compression method.\n");
     result = ZIP_UNSUPPORTED_COMPRESSION;
     goto err_out;
   }
@@ -1169,8 +1167,6 @@ int zip_read_directory(struct zip_archive *zp)
       goto err_out;
     }
 
-    //debug("Current position: %d, n=%x, i=%d\n", zp->tell(fp), n, i);
-  
     if(n == eocd_sig[i])
     {
       i++;
