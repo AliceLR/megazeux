@@ -227,7 +227,7 @@ endif
 
 endif
 
-core_cflags += ${ZLIB_CFLAGS} ${core_cflags}
+core_cflags := ${ZLIB_CFLAGS} ${core_cflags}
 core_ldflags := ${ZLIB_LDFLAGS} ${core_ldflags} 
 
 ifeq (${BUILD_NETWORK},1)
