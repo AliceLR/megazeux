@@ -19,9 +19,9 @@
 DWORD CSoundFile::GetLength(BOOL bAdjust, BOOL bTotal)
 //----------------------------------------------------
 {
-	UINT dwElapsedTime=0, nRow=0, nCurrentPattern=0, nNextPattern=0, nPattern=Order[0];
+	UINT dwElapsedTime=0, nRow=0, nCurrentPattern=0, nNextPattern=0, nPattern=0;
 	UINT nMusicSpeed=m_nDefaultSpeed, nMusicTempo=m_nDefaultTempo, nNextRow=0;
-	UINT nMaxRow = 0, nMaxPattern = 0;
+	UINT nMaxRow = 0, nMaxPattern = 0, nNextStartRow = 0;
 	LONG nGlbVol = m_nDefaultGlobalVolume, nOldGlbVolSlide = 0;
 	BYTE samples[MAX_CHANNELS];
 	BYTE instr[MAX_CHANNELS];
@@ -38,19 +38,17 @@ DWORD CSoundFile::GetLength(BOOL bAdjust, BOOL bTotal)
 	memset(oldparam, 0, sizeof(oldparam));
 	memset(chnvols, 64, sizeof(chnvols));
 	memset(samples, 0, sizeof(samples));
-	for (UINT icv=0; icv<m_nChannels; icv++) chnvols[icv] = ChnSettings[icv].nVolume;
+	for (UINT icv=0; icv<m_nChannels; icv++)
+		chnvols[icv] = ChnSettings[icv].nVolume;
 	nMaxRow = m_nNextRow;
 	nMaxPattern = m_nNextPattern;
-	nCurrentPattern = nNextPattern = 0;
-	nPattern = Order[0];
-	nRow = nNextRow = 0;
 	for (;;)
 	{
 		UINT nSpeedCount = 0;
 		nRow = nNextRow;
 		nCurrentPattern = nNextPattern;
 		// Check if pattern is valid
-		nPattern = Order[nCurrentPattern];
+		nPattern = (nCurrentPattern < MAX_ORDERS) ? Order[nCurrentPattern] : 0xFF;
 		while (nPattern >= MAX_PATTERNS)
 		{
 			// End of song ?
@@ -65,7 +63,8 @@ DWORD CSoundFile::GetLength(BOOL bAdjust, BOOL bTotal)
 			nNextPattern = nCurrentPattern;
 		}
 		// Weird stuff?
-		if ((nPattern >= MAX_PATTERNS) || (!Patterns[nPattern])) break;
+		if ((nPattern >= MAX_PATTERNS) || (!Patterns[nPattern]) ||
+			PatternSize[nPattern] == 0) break;
 		// Should never happen
 		if (nRow >= PatternSize[nPattern]) nRow = 0;
 		// Update next position
@@ -73,7 +72,8 @@ DWORD CSoundFile::GetLength(BOOL bAdjust, BOOL bTotal)
 		if (nNextRow >= PatternSize[nPattern])
 		{
 			nNextPattern = nCurrentPattern + 1;
-			nNextRow = 0;
+			nNextRow = nNextStartRow;
+			nNextStartRow = 0;
 		}
 		if (!nRow)
 		{
@@ -108,6 +108,7 @@ DWORD CSoundFile::GetLength(BOOL bAdjust, BOOL bTotal)
 				if (param <= nCurrentPattern) goto EndMod;
 				nNextPattern = param;
 				nNextRow = 0;
+				nNextStartRow = 0;
 				if (bAdjust)
 				{
 					pChn->nPatternLoopCount = 0;
@@ -118,6 +119,7 @@ DWORD CSoundFile::GetLength(BOOL bAdjust, BOOL bTotal)
 			case CMD_PATTERNBREAK:
 				nNextRow = param;
 				nNextPattern = nCurrentPattern + 1;
+				nNextStartRow = 0;
 				if (bAdjust)
 				{
 					pChn->nPatternLoopCount = 0;
@@ -159,7 +161,10 @@ DWORD CSoundFile::GetLength(BOOL bAdjust, BOOL bTotal)
 				if ((param & 0xF0) == 0x60)
 				{
 					if (param & 0x0F) dwElapsedTime += (dwElapsedTime - patloop[nChn]) * (param & 0x0F);
-					else patloop[nChn] = dwElapsedTime;
+					else {
+						patloop[nChn] = dwElapsedTime;
+						if (m_nType & MOD_TYPE_XM) nNextStartRow = nRow;
+					}
 				}
 				break;
 			}
@@ -1171,11 +1176,13 @@ BOOL CSoundFile::ProcessEffects()
 		// Position Jump
 		case CMD_POSITIONJUMP:
 			nPosJump = param;
+			m_nNextStartRow = 0;
 			break;
 
 		// Pattern Break
 		case CMD_PATTERNBREAK:
 			nBreakRow = param;
+			m_nNextStartRow = 0;
 			break;
 
 		// Midi Controller
@@ -2129,6 +2136,7 @@ int CSoundFile::PatternLoop(MODCHANNEL *pChn, UINT param)
 	} else
 	{
 		pChn->nPatternLoop = m_nRow;
+		if (m_nType & MOD_TYPE_XM) m_nNextStartRow = m_nRow;
 	}
 	return -1;
 }
@@ -2300,8 +2308,12 @@ UINT CSoundFile::GetPeriodFromNote(UINT note, int nFineTune, UINT nC4Speed) cons
 			return (FreqS3MTable[note % 12] << 5) >> (note / 12);
 		} else
 		{
+			int divider;
 			if (!nC4Speed) nC4Speed = 8363;
-			return _muldiv(8363, (FreqS3MTable[note % 12] << 5), nC4Speed << (note / 12));
+			// if C4Speed is large, then up shifting may produce a zero divider
+			divider = nC4Speed << (note / 12);
+			if (!divider) divider = 1e6;
+			return _muldiv(8363, (FreqS3MTable[note % 12] << 5), divider);
 		}
 	} else
 	if (m_nType & (MOD_TYPE_XM|MOD_TYPE_MT2))
@@ -2375,5 +2387,3 @@ UINT CSoundFile::GetFreqFromPeriod(UINT period, UINT nC4Speed, int nPeriodFrac) 
 		}
 	}
 }
-
-

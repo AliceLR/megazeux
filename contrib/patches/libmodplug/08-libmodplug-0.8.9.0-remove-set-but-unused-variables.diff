@@ -1,7 +1,7 @@
-diff --git a/contrib/libmodplug/src/fastmix.cpp b/contrib/libmodplug/src/fastmix.cpp
+diff --git a/src/fastmix.cpp b/src/fastmix.cpp
 index eacaecc..86fdcd6 100644
---- a/contrib/libmodplug/src/fastmix.cpp
-+++ b/contrib/libmodplug/src/fastmix.cpp
+--- a/src/fastmix.cpp
++++ b/src/fastmix.cpp
 @@ -1485,13 +1485,12 @@ UINT CSoundFile::CreateStereoMix(int count)
  	{
  		const LPMIXINTERFACE *pMixFuncTable;
@@ -17,10 +17,10 @@ index eacaecc..86fdcd6 100644
  		pOfsR = &gnDryROfsVol;
  		pOfsL = &gnDryLOfsVol;
  		nFlags = 0;
-diff --git a/contrib/libmodplug/src/load_669.cpp b/contrib/libmodplug/src/load_669.cpp
+diff --git a/src/load_669.cpp b/src/load_669.cpp
 index f3aa0ee..4087fa2 100644
---- a/contrib/libmodplug/src/load_669.cpp
-+++ b/contrib/libmodplug/src/load_669.cpp
+--- a/src/load_669.cpp
++++ b/src/load_669.cpp
 @@ -48,14 +48,12 @@ DWORD lengthArrayToDWORD(const BYTE length[4]) {
  BOOL CSoundFile::Read669(const BYTE *lpStream, DWORD dwMemLength)
  //---------------------------------------------------------------
@@ -36,10 +36,10 @@ index f3aa0ee..4087fa2 100644
  	if ((!pfh->samples) || (pfh->samples > 64) || (pfh->restartpos >= 128)
  	 || (!pfh->patterns) || (pfh->patterns > 128)) return FALSE;
  	DWORD dontfuckwithme = 0x1F1 + pfh->samples * sizeof(SAMPLE669) + pfh->patterns * 0x600;
-diff --git a/contrib/libmodplug/src/load_it.cpp b/contrib/libmodplug/src/load_it.cpp
+diff --git a/src/load_it.cpp b/src/load_it.cpp
 index 10b17af..bc57fb3 100644
---- a/contrib/libmodplug/src/load_it.cpp
-+++ b/contrib/libmodplug/src/load_it.cpp
+--- a/src/load_it.cpp
++++ b/src/load_it.cpp
 @@ -166,7 +166,7 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
  	DWORD inspos[MAX_INSTRUMENTS];
  	DWORD smppos[MAX_SAMPLES];
@@ -89,10 +89,10 @@ index 10b17af..bc57fb3 100644
  			pSrc += 2;
  			bLeft = 17;
  			wTemp = wTemp2 = 0;
-diff --git a/contrib/libmodplug/src/load_okt.cpp b/contrib/libmodplug/src/load_okt.cpp
+diff --git a/src/load_okt.cpp b/src/load_okt.cpp
 index 7968f0b..50b905f 100644
---- a/contrib/libmodplug/src/load_okt.cpp
-+++ b/contrib/libmodplug/src/load_okt.cpp
+--- a/src/load_okt.cpp
++++ b/src/load_okt.cpp
 @@ -43,7 +43,7 @@ BOOL CSoundFile::ReadOKT(const BYTE *lpStream, DWORD dwMemLength)
  {
  	const OKTFILEHEADER *pfh = (OKTFILEHEADER *)lpStream;

@@ -374,7 +374,8 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 	if (m_nInstruments >= MAX_INSTRUMENTS) m_nInstruments = MAX_INSTRUMENTS-1;
 	for (UINT nins=0; nins<m_nInstruments; nins++)
 	{
-		if ((inspos[nins] > 0) && (inspos[nins] < dwMemLength - sizeof(ITOLDINSTRUMENT)))
+		if ((inspos[nins] > 0) && dwMemLength > sizeof(ITOLDINSTRUMENT) &&
+			(inspos[nins] < dwMemLength - sizeof(ITOLDINSTRUMENT)))
 		{
 			INSTRUMENTHEADER *penv = new INSTRUMENTHEADER;
 			if (!penv) continue;
@@ -1072,7 +1073,7 @@ BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 		if (psmp->uFlags & CHN_PINGPONGSUSTAIN) itss.flags |= 0x80;
 		itss.C5Speed = psmp->nC4Speed;
 		if (!itss.C5Speed) // if no C5Speed assume it is XM Sample
-		{ 
+		{
 			UINT period;
 
 			/**
@@ -1080,7 +1081,7 @@ BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 			 * RealNote = Note + RelativeTone
 			 */
 			period = GetPeriodFromNote(61+psmp->RelativeTone, psmp->nFineTune, 0);
-						
+
 			if (period)
 				itss.C5Speed = GetFreqFromPeriod(period, 0, 0);
 			/**
@@ -1148,7 +1149,7 @@ BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 	}
 	// Updating offsets
 	fseek(f, dwHdrPos, SEEK_SET);
-	
+
 	/* <Toad> Now we can byteswap them ;-) */
 	UINT WW;
 	UINT WX;
@@ -1166,7 +1167,7 @@ BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 	WX <<= 2;
 	for (WW=0; WW < (WX>>2); WW++)
 	       patpos[WW] = bswapLE32(patpos[WW]);
-	
+
 	if (header.insnum) fwrite(inspos, 4, header.insnum, f);
 	if (header.smpnum) fwrite(smppos, 4, header.smpnum, f);
 	if (header.patnum) fwrite(patpos, 4, header.patnum, f);
@@ -1187,6 +1188,10 @@ static DWORD ITReadBits(DWORD &bitbuf, UINT &bitnum, LPBYTE &ibuf, CHAR n)
 {
 	DWORD retval = 0;
 	UINT i = n;
+
+	// explicit if read 0 bits, then return 0
+	if (i == 0)
+		return(0);
 
 	if (n > 0)
 	{
@@ -1510,4 +1515,3 @@ UINT CSoundFile::LoadMixPlugins(const void *pData, UINT nLen)
 	}
 	return nPos;
 }
-

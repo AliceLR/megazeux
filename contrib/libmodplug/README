@@ -1,11 +1,22 @@
-Modplug Plugin for XMMS v2.0 / libmodplug v0.8.5
- Based on the ModPlug sound engine by Olivier Lapicque <olivierl@jps.net>
- XMMS plugin by Kenton Varda <temporal@gauge3d.org>
- Maintainer is now Konstanty Bialkowski <konstanty@ieee.org>
+libmodplug - the library which was part of the Modplug-xmms project
+Web page: http://modplug-xmms.sf.net/
 
+ Based on the ModPlug sound engine by Olivier Lapicque <olivierl@jps.net>
+ XMMS plugin by Kenton Varda <temporal@gauge3d.org> (~2002)
+ Maintainer is now Konstanty Bialkowski <konstanty@ieee.org> (~2006)
+
+On Wed 14 Aug 2013 the repository was forked / cloned to GitHub.
+The current release is libmodplug v0.8.9.0.
+
+History
+-------
 Olivier Lapicque, author of Modplug, which is arguably the best quality
 MOD-playing software available, has placed his sound rendering code in the
 public domain.  This library and plugin is based on that code.
+
+This code was originally part of modplug-xmms, and was split into a library - libmodplug
+and the modplug-xmms code. Also since then an example rendering project called modplugplay and
+modplug123 were introduced. They are still available on the sourceforge website.
 
 For more information on libmodplug, the library for decoding mod-like music
 formats, see libmodplug/README.
@@ -31,7 +42,7 @@ Contents
   it to work on PPC and other big-endian systems.
 
 * Under linux there is also modplugplay contributed, which allows command
- line playing of mod files under Linux.
+ line playing of mod files under Linux. (Available at http://modplug-xmms.sf.net/)
 
 -----------
 2. Features
@@ -40,7 +51,7 @@ Contents
     MOD, S3M, XM, IT, 669, AMF (both of them), AMS, DBM, DMF, DSM, FAR,
     MDL, MED, MTM, OKT, PTM, STM, ULT, UMX, MT2, PSM
 - Plays zip, rar, gzip, and bzip2 compressed mods.  The following
-    extensions are recognized:
+    extensions are recognized: (Only in modplug-xmms)
     zip:  MDZ,  S3Z,  XMZ,  ITZ
     rar:  MDR,  S3R,  XMR,  ITR
     gzip: MDGZ, S3GZ, XMGZ, ITGZ
@@ -52,7 +63,7 @@ Contents
     compressed mods.  For example, if you zipped a UMX mod and gave it the
     extension MDZ, it would work fine.
 - plays timidity's GUS patch files (*.pat):
-   a multi sample pat file with n samples can be played with a Frere Jacques 
+   a multi sample pat file with n samples can be played with a Frere Jacques
    canon with n voices.
 - plays all types of MIDI files (*.mid):
    uses the timidity .pat files for samples (when available)
@@ -74,7 +85,7 @@ Contents
        default: "/usr/local/share/timidity".
 
       MMABC_NO_RANDOM_PICK when not set and the abc file contains multiple songs
-       (X:n) the first song to be played will be picked at random another click 
+       (X:n) the first song to be played will be picked at random another click
        on the play button advances to the next
        song in the file (or the first when the last song has been
        played), when set it can be 0 (zero) or not numeric
@@ -83,7 +94,7 @@ Contents
        let it play the n-th song in the file and advancing to the next
        song when the play button is clicked.
 
-      MMABC_DUMPTRACKS when set it gives diagnostic information on stdout, 
+      MMABC_DUMPTRACKS when set it gives diagnostic information on stdout,
        values can be:
 
         all - every event is printed
@@ -92,7 +103,7 @@ Contents
            immediately succeeding the control events.
 - Slightly better sound quality than Mikmod.  Vastly superior quality
    over Winamp.
-- All XMMS calls are supported exept for the band gains on the
+- All XMMS calls are supported except for the band gains on the
    equalizer.  The preamp is supported, but MOD music is not anywhere
    near as cheap to equalize as MP3.  Thus, equalization does is not
    supported in this version.  However, a variable bass boost option
@@ -151,25 +162,6 @@ Looping: Some mods have loops built-in.  Normally, these loops are
 ------------------
 
 Problem:
- None of the config options seem to have any affect on the sound quality.
-
-Possible cause:
- You did not disable MikMod, so mods are being played by it rather than
- by ModPlug.
-
-Solution:
- Disable MikMod in the XMMS input plugins configuration dialog.
-
-Alternative cause:
- You are not playing a mod-like file.  ModPlug only plays mod-like file
- formats, and has no affect on mp3's or other non-mod formats.  (Note:
- Yes, I have actually had people e-mail me with this problem.)
-
-Solution:
- Download some mods.  You can start at <http://www.traxinspace.org>.
-
-
-Problem:
  Some of my files load up, but show garbled info in the playlist and/or
  don't play correctly.
 
@@ -219,7 +211,7 @@ Solution:
  If it sounds wrong there, then send the mod and a bug report to
  Olivier Lapicque <olivierl@jps.net>.  If the mod plays correctly in
  Windows, however, then the bug is my fault.  In that case, e-mail
- me (Konstanty) <konstanty@ieee.org>. (previously Kenton Varda at 
+ me (Konstanty) <konstanty@ieee.org>. (previously Kenton Varda at
  <temporal@gauge3d.org>).
 
 
@@ -230,4 +222,3 @@ Problem:
 Solution:
  E-mail me (Konstanty) at <konstanty@ieee.org>.  I would be
  happy to hear any suggestions or problems you have.
-

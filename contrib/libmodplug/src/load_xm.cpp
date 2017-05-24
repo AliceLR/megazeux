@@ -89,15 +89,17 @@ BOOL CSoundFile::ReadXM(const BYTE *lpStream, DWORD dwMemLength)
 
 	m_nChannels = 0;
 	if ((!lpStream) || (dwMemLength < 0x200)) return FALSE;
-	if (strnicmp((LPCSTR)lpStream, "Extended Module", 15)) return FALSE;
+	if (strncmp((LPCSTR)lpStream, "Extended Module:", 16)) return FALSE;
 
 	memcpy(m_szNames[0], lpStream+17, 20);
 	xmhead = *(tagXMFILEHEADER *)(lpStream+60);
 	dwHdrSize = bswapLE32(xmhead.size);
 	norders = bswapLE16(xmhead.norder);
-	if ((!norders) || (norders > MAX_ORDERS)) return FALSE;
 	restartpos = bswapLE16(xmhead.restartpos);
 	channels = bswapLE16(xmhead.channels);
+
+	if ((!dwHdrSize) || dwHdrSize > dwMemLength - 60) return FALSE;
+	if ((!norders) || (norders > MAX_ORDERS)) return FALSE;
 	if ((!channels) || (channels > 64)) return FALSE;
 	m_nType = MOD_TYPE_XM;
 	m_nMinPeriod = 27;
@@ -164,6 +166,7 @@ BOOL CSoundFile::ReadXM(const BYTE *lpStream, DWORD dwMemLength)
 			dwMemPos++;
 			dwSize = bswapLE32(*((DWORD *)(lpStream+dwMemPos)));
 		}
+		if (dwMemPos + 9 > dwMemLength) return TRUE;		
 		rows = bswapLE16(*((WORD *)(lpStream+dwMemPos+5)));
 		if ((!rows) || (rows > 256)) rows = 64;
 		packsize = bswapLE16(*((WORD *)(lpStream+dwMemPos+7)));
