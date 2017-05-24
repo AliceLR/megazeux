@@ -43,12 +43,19 @@ static Uint32 omp_mix_data(struct audio_stream *a_src, Sint32 *buffer,
   struct openmpt_stream *omp_stream = (struct openmpt_stream *)a_src;
   Uint32 read_wanted = omp_stream->s.allocated_data_length - omp_stream->s.stream_offset;
   Uint8 *read_buffer = (Uint8 *)omp_stream->s.output_data + omp_stream->s.stream_offset;
+  Uint32 r_val = 0;
 
   read_len = openmpt_module_read_interleaved_stereo(omp_stream->module_data,
 omp_stream->s.frequency, read_wanted/4, read_buffer) * 4;
   sampled_mix_data((struct sampled_stream *)omp_stream, buffer, len);
 
-  return 0;
+  if(read_len < read_wanted && !a_src->repeat)
+  {
+    memset(read_buffer + read_len, 0, read_wanted - read_len);
+    r_val = 1;
+  }
+
+  return r_val;
 }
 
 static void omp_set_volume(struct audio_stream *a_src, Uint32 volume)
