@@ -22,6 +22,7 @@
 
 #include <zlib.h>
 
+#include "platform.h"
 #include "world.h"
 #include "world_struct.h"
 #include "util.h"
@@ -308,7 +309,7 @@ static enum zip_error zip_read_file_header(struct zip_archive *zp,
   void *fp = zp->fp;
 
   int (*seek)(void *, int, int) = zp->seek;
-  int (*getc)(void *) = zp->getc;
+  int (*getb)(void *) = zp->getc;
   int (*getw)(void *) = zp->getw;
   int (*getd)(void *) = zp->getd;
   int (*read)(void *, size_t, size_t, void *) = zp->read;
@@ -326,7 +327,7 @@ static enum zip_error zip_read_file_header(struct zip_archive *zp,
     if(zp->hasspace && !zp->hasspace(30-i, fp))
       return ZIP_MISSING_LOCAL_HEADER;
 
-    n = getc(fp);
+    n = getb(fp);
     if(n < 0)
       return ZIP_MISSING_LOCAL_HEADER;
 
@@ -646,13 +647,13 @@ int zgetw(struct zip_archive *zp, enum zip_error *err)
 
   if(zp->streaming_file)
   {
-    int (*getc)(void *) = zp->getc;
+    int (*getb)(void *) = zp->getc;
     void *fp = zp->fp;
     int v1;
     int v2;
 
-    v1 = _zget_stream(getc(fp), zp);
-    v2 = _zget_stream(getc(fp), zp);
+    v1 = _zget_stream(getb(fp), zp);
+    v2 = _zget_stream(getb(fp), zp);
     if(v1 < 0 || v2 < 0)
     {
       *err = ZIP_EOF;
@@ -672,17 +673,17 @@ int zgetd(struct zip_archive *zp, enum zip_error *err)
 
   if(zp->streaming_file)
   {
-    int (*getc)(void *) = zp->getc;
+    int (*getb)(void *) = zp->getc;
     void *fp = zp->fp;
     int v1;
     int v2;
     int v3;
     int v4;
 
-    v1 = _zget_stream(getc(fp), zp);
-    v2 = _zget_stream(getc(fp), zp);
-    v3 = _zget_stream(getc(fp), zp);
-    v4 = _zget_stream(getc(fp), zp);
+    v1 = _zget_stream(getb(fp), zp);
+    v2 = _zget_stream(getb(fp), zp);
+    v3 = _zget_stream(getb(fp), zp);
+    v4 = _zget_stream(getb(fp), zp);
 
     if(v1 < 0 || v2 < 0 || v3 < 0 || v4 < 0)
     {
@@ -954,7 +955,7 @@ enum zip_error zip_read_close_stream(struct zip_archive *zp)
   Uint32 stream_left;
   char v;
 
-  int (*getc)(void *);
+  int (*getb)(void *);
   void *fp;
 
   enum zip_error result;
@@ -963,7 +964,7 @@ enum zip_error zip_read_close_stream(struct zip_archive *zp)
   if(result)
     goto err_out;
 
-  getc = zp->getc;
+  getb = zp->getc;
   fp = zp->fp;
 
   expected_crc32 = zp->streaming_file->crc32;
@@ -973,7 +974,7 @@ enum zip_error zip_read_close_stream(struct zip_archive *zp)
   stream_left = zp->stream_left;
   while(stream_left)
   {
-    v = getc(fp);
+    v = getb(fp);
     stream_crc32 = zip_crc32(stream_crc32, &v, 1);
     stream_left--;
   }
@@ -1478,7 +1479,7 @@ enum zip_error zip_read_directory(struct zip_archive *zp)
   void *fp;
 
   int (*seek)(void *, int, int);
-  int (*getc)(void *);
+  int (*getb)(void *);
   int (*getw)(void *);
   int (*getd)(void *);
 
@@ -1508,7 +1509,7 @@ enum zip_error zip_read_directory(struct zip_archive *zp)
 
   fp = zp->fp;
   seek = zp->seek;
-  getc = zp->getc;
+  getb = zp->getc;
   getw = zp->getw;
   getd = zp->getd;
 
@@ -1526,7 +1527,7 @@ enum zip_error zip_read_directory(struct zip_archive *zp)
   i = 0;
   while(1)
   {
-    n = getc(fp);
+    n = getb(fp);
     if(n < 0)
     {
       result = ZIP_NO_EOCD;

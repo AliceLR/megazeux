@@ -20,6 +20,7 @@
 #ifndef __ZIP_H
 #define __ZIP_H
 
+#include "platform.h"
 #include "world_struct.h"
 
 #define ZIP_M_NO_COMPRESSION 0
