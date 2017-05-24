@@ -1,9 +1,9 @@
 BasicInfo:
   Title                   : "MegaZeux"
   CompanyCode             : "00"
-  ProductCode             : "CTR-P-MZXD"
+  ProductCode             : "HB-MZX"
   ContentType             : Application
-  Logo                    : Nintendo # Nintendo / Licensed / Distributed / iQue / iQueForSystem
+  Logo                    : Homebrew # Nintendo / Licensed / Distributed / iQue / iQueForSystem
 
 RomFs:
   RootPath                : arch/3ds/romfs
@@ -25,7 +25,7 @@ Option:
   EnableCompress          : true # Compresses exefs code
   
 AccessControlInfo:
-  #UseExtSaveData : true
+  UseExtSaveData : false
   #ExtSaveDataId: 0xff3ff
   #UseExtendedSaveDataAccessControl: true
   #AccessibleSaveDataIds: [0x101, 0x202, 0x303, 0x404, 0x505, 0x606]
@@ -49,7 +49,7 @@ AccessControlInfo:
   Priority                      : 16
    
   MaxCpu                        : 0x9E # Default
-  DisableDebug                  : false
+  DisableDebug                  : true
   EnableForceDebug              : false
   CanWriteSharedPage            : false
   CanUsePrivilegedPriority      : false
@@ -66,7 +66,7 @@ AccessControlInfo:
   MemoryType                    : Application
   HandleTableSize: 512
   
-  SystemModeExt                 : Legacy # Legacy(Default)/124MB/178MB  Legacy:Use Old3DS SystemMode
+  SystemModeExt                 : 124MB # Legacy(Default)/124MB/178MB  Legacy:Use Old3DS SystemMode
   CpuSpeed                      : 804MHz # 268MHz(Default)/804MHz
   EnableL2Cache                 : true # false(default)/true
   CanAccessCore2                : true 
