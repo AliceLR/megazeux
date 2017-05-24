@@ -38,6 +38,15 @@ __M_BEGIN_DECLS
 #define MOUSE_BUTTON_MIDDLE     2
 #define MOUSE_BUTTON_RIGHT      3
 
+// SDL 1.2 and non-SDL default.
+// Note: SDL 1.2 has no wheel left/right support.
+#define MOUSE_BUTTON_WHEELUP    4
+#define MOUSE_BUTTON_WHEELDOWN  5
+#define MOUSE_BUTTON_X1         6
+#define MOUSE_BUTTON_X2         7
+#define MOUSE_BUTTON_WHEELLEFT  8
+#define MOUSE_BUTTON_WHEELRIGHT 9
+
 // Extended buttons.
 // SDL 1.2 and SDL 2 both carry through X11 values.
 #ifdef CONFIG_X11
@@ -49,28 +58,20 @@ __M_BEGIN_DECLS
 #define MOUSE_BUTTON_X1         8
 #define MOUSE_BUTTON_X2         9
 
-// SDL 2 maps X1 and X2, but has a separate wheel event that we map.
-#elif defined(CONFIG_SDL) && SDL_VERSION_ATLEAST(2,0,0)
+#elif defined(CONFIG_SDL)
 
+// SDL 2 maps X1 and X2, but has a separate wheel event that we map.
+#if SDL_VERSION_ATLEAST(2,0,0)
 #define MOUSE_BUTTON_X1         4
 #define MOUSE_BUTTON_X2         5
 #define MOUSE_BUTTON_WHEELUP    6
 #define MOUSE_BUTTON_WHEELDOWN  7
 #define MOUSE_BUTTON_WHEELLEFT  8
 #define MOUSE_BUTTON_WHEELRIGHT 9
-
-// SDL 1.2 and non-SDL default.
-// Note: SDL 1.2 has no wheel left/right support.
-#else
-
-#define MOUSE_BUTTON_WHEELUP    4
-#define MOUSE_BUTTON_WHEELDOWN  5
-#define MOUSE_BUTTON_X1         6
-#define MOUSE_BUTTON_X2         7
-#define MOUSE_BUTTON_WHEELLEFT  8
-#define MOUSE_BUTTON_WHEELRIGHT 9
+#endif //SDL_VERSION_ATLEAST(2,0,0)
 
 #endif //extended buttons
+
 
 struct buffered_status
 {
