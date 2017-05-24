@@ -124,7 +124,7 @@ bool platform_init(void)
   }
 
   // If the "extra RAM" is missing, warn the user
-  if(!REG_DSIMODE)
+  if(!isDSiMode())
     if(nds_ram_init(DETECT_RAM))
       nds_ext_lock();
 

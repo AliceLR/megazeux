@@ -618,6 +618,27 @@ static void nds_remap_char(struct graphics_data *graphics, Uint16 chr)
   }
 }
 
+static void nds_remap_charbyte(struct graphics_data *graphics, Uint16 chr, Uint8 byte)
+{
+  if(chr < 256)
+  {
+    /* Each character is 64 bytes.  Advance the vram pointer. */
+    u16* vram = (u16*)BG_TILE_RAM_SUB(1) + 32*chr + 2*byte;
+    u8* charset = graphics->charset + 14*chr + byte;
+    u16 line = *charset;
+
+    /* Plot 8 pixels, 4 pixels at a time. */
+    *(vram++) = ((line >> 7) & 1)       |
+                ((line >> 6) & 1) <<  4 |
+                ((line >> 5) & 1) <<  8 |
+                ((line >> 4) & 1) << 12;
+    *(vram++) = ((line >> 3) & 1)       |
+                ((line >> 2) & 1) <<  4 |
+                ((line >> 1) & 1) <<  8 |
+                ((line     ) & 1) << 12;
+  }
+}
+
 static void nds_remap_charsets(struct graphics_data *graphics)
 {
   int i;
@@ -698,6 +719,7 @@ void render_nds_register(struct renderer *renderer)
   renderer->resize_screen = nds_resize_screen;
   renderer->remap_charsets = nds_remap_charsets;
   renderer->remap_char = nds_remap_char;
+  renderer->remap_charbyte = nds_remap_charbyte;
   renderer->get_screen_coords = get_screen_coords_centered;
   renderer->set_screen_coords = set_screen_coords_centered;
   renderer->render_graph = nds_render_graph;

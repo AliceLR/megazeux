@@ -2,7 +2,7 @@
 # Nintendo DS Makefile
 #
 
-.PHONY: arm7bin arm9bin package clean
+.PHONY: package clean
 
 ifeq ($(strip $(DEVKITPRO)),)
 $(error "DEVKITPRO must be set in your environment.")
@@ -49,18 +49,13 @@ arch/nds/%.o: arch/nds/%.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${core_cflags} ${core_flags} -Wno-unused-macros -c $< -o $@
 
-arm9bin: mzx
-	${OBJCOPY} -O binary ${mzxrun} ${mzxrun}.arm9
-
-arm7bin:
+package: mzx
 	${MAKE} -C arch/nds TARGET=${mzxrun}
-
-package: arm7bin arm9bin
-	ndstool -c ${mzxrun}.nds -7 arch/nds/${mzxrun}.arm7 -9 ${mzxrun}.arm9 -b arch/nds/icon.bmp "MegaZeux ${VERSION}"
+	ndstool -c ${mzxrun}.nds -7 arch/nds/${mzxrun}.arm7.elf -9 ${mzxrun} -b arch/nds/icon.bmp "MegaZeux ${VERSION}"
 
 clean:
 	@${MAKE} -C arch/nds TARGET=${mzxrun} clean
-	@rm -f ${mzxrun}.nds arch/nds/${mzxrun}.arm7 ${mzxrun}.arm9 arch/nds/*.{d,o}
+	@rm -f ${mzxrun}.nds arch/nds/*.{d,o}
 
 #
 # We're only interested in our packaged binary; remove the ELF intermediaries
