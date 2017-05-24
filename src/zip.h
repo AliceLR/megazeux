@@ -103,21 +103,21 @@ struct zip_archive
 
   int (*hasspace)(size_t, void *);
 
-  int (*getc)(void *);
-  int (*getw)(void *);
-  int (*getd)(void *);
-  int (*putc)(int, void *);
-  void (*putw)(int, void *);
-  void (*putd)(int, void *);
+  int (*vgetc)(void *);
+  int (*vgetw)(void *);
+  int (*vgetd)(void *);
+  int (*vputc)(int, void *);
+  void (*vputw)(int, void *);
+  void (*vputd)(int, void *);
 
-  int (*read)(void *, size_t, size_t, void *);
-  int (*write)(void *, size_t, size_t, void *);
+  int (*vread)(void *, size_t, size_t, void *);
+  int (*vwrite)(void *, size_t, size_t, void *);
 
-  int (*seek)(void *, int, int);
-  int (*tell)(void *);
-  int (*error)(void *);
+  int (*vseek)(void *, int, int);
+  int (*vtell)(void *);
+  int (*verror)(void *);
 
-  int (*close)(void *);
+  int (*vclose)(void *);
 };
 
 
