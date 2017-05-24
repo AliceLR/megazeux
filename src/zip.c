@@ -35,8 +35,10 @@
 
 #define ZIP_S_READ_RAW 0
 #define ZIP_S_READ_FILES 1
-#define ZIP_S_WRITE_RAW 2
-#define ZIP_S_WRITE_FILES 3
+#define ZIP_S_READ_STREAM 2
+#define ZIP_S_WRITE_RAW 3
+#define ZIP_S_WRITE_FILES 4
+#define ZIP_S_WRITE_STREAM 5
 
 
 /* This zip reader/writer is designed:
@@ -53,158 +55,6 @@
  * While not copied from or even based on ajs's zipio, I took a few
  * pointers from it.
  */
-
-struct memfile
-{
-  char *start;
-  char *current;
-  char *end;
-};
-
-static struct memfile *mfopen(char *src, int len)
-{
-  struct memfile *mf = cmalloc(sizeof(struct memfile));
-
-  mf->start = src;
-  mf->current = src;
-  mf->end = src + len;
-
-  return mf;
-}
-
-static int mfclose(struct memfile *mf)
-{
-  if(mf)
-  {
-    free(mf);
-    return 0;
-  }
-  return -1;
-}
-
-static int mfhasspace(size_t len, struct memfile *mf)
-{
-  return (len + mf->current) <= mf->end;
-}
-
-static int mfgetc(struct memfile *mf)
-{
-  int v;
-  v =  mf->current[0];
-  mf->current += 1;
-  return v;
-}
-
-static int mfgetw(struct memfile *mf)
-{
-  int v;
-  v =  mf->current[0];
-  v |= mf->current[1] << 8;
-  mf->current += 2;
-  return v;
-}
-
-static int mfgetd(struct memfile *mf)
-{
-  int v;
-  v =  mf->current[0];
-  v |= mf->current[1] << 8;
-  v |= mf->current[2] << 16;
-  v |= mf->current[3] << 24;
-  mf->current += 4;
-  return v;
-}
-
-static int mfputc(int ch, struct memfile *mf)
-{
-  mf->current[0] = ch & 0xFF;
-  mf->current += 1;
-  return ch & 0xFF;
-}
-
-static void mfputw(int ch, struct memfile *mf)
-{
-  mf->current[0] = ch & 0xFF;
-  mf->current[1] = (ch >> 8) & 0xFF;
-  mf->current += 2;
-}
-
-static void mfputd(int ch, struct memfile *mf)
-{
-  mf->current[0] = ch & 0xFF;
-  mf->current[1] = (ch >> 8) & 0xFF;
-  mf->current[2] = (ch >> 16) & 0xFF;
-  mf->current[3] = (ch >> 24) & 0xFF;
-  mf->current += 4;
-}
-
-static int mfread(char *dest, size_t len, size_t count, struct memfile *mf)
-{
-  unsigned int i;
-  for(i = 0; i < count; i++)
-  {
-    if(mf->current + len >= mf->end)
-      break;
-
-    memcpy(dest, mf->current, len);
-    mf->current += len;
-    dest += len;
-  }
-
-  return i;
-}
-
-static int mfwrite(char *src, size_t len, size_t count, struct memfile *mf)
-{
-  unsigned int i;
-  for(i = 0; i < count; i++)
-  {
-    if(mf->current + len >= mf->end)
-      break;
-
-    memcpy(mf->current, src, len);
-    mf->current += len;
-    src += len;
-  }
-
-  return i;
-}
-
-static int mfseek(struct memfile *mf, int offs, int code)
-{
-  char *ptr;
-  switch(code)
-  {
-    case SEEK_SET:
-      ptr = mf->start + offs;
-      break;
-
-    case SEEK_CUR:
-      ptr = mf->current + offs;
-      break;
-
-    case SEEK_END:
-      ptr = mf->end + offs;
-      break;
-
-    default:
-      ptr = NULL;
-      break;
-  }
-
-  if(ptr && ptr >= mf->start && ptr <= mf->end)
-  {
-    mf->current = ptr;
-    return 0;
-  }
-
-  return -1;
-}
-
-static int mftell(struct memfile *mf)
-{
-  return mf->current - mf->start;
-}
 
 
 static int zip_get_dos_date_time(void)
@@ -233,10 +83,12 @@ static const char *zip_error_string(enum zip_error code)
   {
     case ZIP_SUCCESS:
       return "No error";
-    case ZIP_NULL:
-      return "Function received null archive pointer";
     case ZIP_EOF:
       return "Reached end of file";
+    case ZIP_NULL:
+      return "Function received null archive pointer";
+    case ZIP_NULL_BUF:
+      return "Function received null buffer pointer";
     case ZIP_SEEK_ERROR:
       return "Could not seek to requested position";
     case ZIP_READ_ERROR:
@@ -246,7 +98,9 @@ static const char *zip_error_string(enum zip_error code)
     case ZIP_OPEN_ERROR:
       return "Could not open archive";
     case ZIP_ALLOC_MORE_SPACE:
-      return "Unexpectedly reached the end of the input memory block";
+      return "Input memory block is not large enough to complete the operation";
+    case ZIP_INVALID_WHILE_CLOSING:
+      return "Invalid operation; archive is currently being closed";
     case ZIP_INVALID_READ_IN_WRITE_MODE:
       return "Archive is in write mode and can not be read from";
     case ZIP_INVALID_WRITE_IN_READ_MODE:
@@ -255,10 +109,18 @@ static const char *zip_error_string(enum zip_error code)
       return "Archive is in file mode and can not be directly read from";
     case ZIP_INVALID_RAW_WRITE_IN_FILE_MODE:
       return "Archive is in file mode and can not be directly written to";
-    case ZIP_INVALID_FILE_READ_IN_RAW_MODE:
-      return "Archive is in raw mode; use zip_read_directory before writing files";
     case ZIP_INVALID_DIRECTORY_READ_IN_FILE_MODE:
       return "Directory has already been read";
+    case ZIP_INVALID_FILE_READ_IN_RAW_MODE:
+      return "Archive is in raw mode; use zip_read_directory before writing files";
+    case ZIP_INVALID_FILE_READ_IN_STREAM_MODE:
+      return "Archive is in stream mode; close the stream before reading new files";
+    case ZIP_INVALID_FILE_WRITE_IN_STREAM_MODE:
+      return "Archive is in stream mode; close the stream before writing new files";
+    case ZIP_INVALID_STREAM_READ:
+      return "Archive is not in stream mode; can't read from or close stream";
+    case ZIP_INVALID_STREAM_WRITE:
+      return "Archive is not in stream mode; can't write to or close stream";
     case ZIP_INVALID_EXPAND:
       return "Expand can be used on zip archives in memory only";
     case ZIP_NO_EOCD:
@@ -269,16 +131,18 @@ static const char *zip_error_string(enum zip_error code)
       return "Central directory has fewer records than expected";
     case ZIP_UNSUPPORTED_MULTIPLE_DISKS:
       return "Multiple disks archives are unsupported";
-    case ZIP_UNSUPPORTED_DATA_DESCRIPTOR:
-      return "Data descriptors are unsupported";
     case ZIP_UNSUPPORTED_FLAGS:
       return "File uses unsupported flags; use 0";
     case ZIP_UNSUPPORTED_COMPRESSION:
       return "File uses unsupported compression method; use DEFLATE or no compression";
     case ZIP_UNSUPPORTED_ZIP64:
       return "File contains unsupported ZIP64 data";
+    case ZIP_UNSUPPORTED_DEFLATE_STREAM:
+      return "Streaming DEFLATE currently only supports using the full file length";
     case ZIP_MISSING_LOCAL_HEADER:
       return "Could not find the local file header";
+    case ZIP_MISSING_DATA_DESCRIPTOR:
+      return "Could not find the data descriptor";
     case ZIP_HEADER_MISMATCH:
       return "Local header does not match central directory header";
     case ZIP_CRC32_MISMATCH:
@@ -434,7 +298,7 @@ static char file_sig_central[] =
   0x02
 };
 
-static int zip_read_file_header(struct zip_archive *zp,
+static enum zip_error zip_read_file_header(struct zip_archive *zp,
  struct zip_file_header *fh, int is_central)
 {
   int n, m, k, i;
@@ -502,8 +366,7 @@ static int zip_read_file_header(struct zip_archive *zp,
   else
   if(flags & ZIP_F_DATA_DESCRIPTOR)
   {
-    warn("Zips using data descriptors currently unsupported.\n");
-    return ZIP_UNSUPPORTED_DATA_DESCRIPTOR;
+    // Supported flag - don't error out
   }
   else
   if(flags != 0)
@@ -511,6 +374,7 @@ static int zip_read_file_header(struct zip_archive *zp,
     warn("Zip using unsupported options (%d) -- use 0.\n", flags);
     return ZIP_UNSUPPORTED_FLAGS;
   }
+  fh->flags = flags;
 
   // compression method
   method = getw(fp);
@@ -530,18 +394,29 @@ static int zip_read_file_header(struct zip_archive *zp,
   if(seek(fp, 4, SEEK_CUR))
     return ZIP_SEEK_ERROR;
 
-  // crc32
-  fh->crc32 = getd(fp);
+  if(flags & ZIP_F_DATA_DESCRIPTOR)
+  {
+    // crc32
+    // compressed size
+    // uncompressed size
+    seek(fp, 12, SEEK_CUR);
+  }
 
-  // compressed size
-  fh->compressed_size = getd(fp);
-  if(fh->compressed_size == 0xFFFFFFFF)
-    return ZIP_UNSUPPORTED_ZIP64;
+  else
+  {
+    // crc32
+    fh->crc32 = getd(fp);
 
-  // uncompressed size
-  fh->uncompressed_size = getd(fp);
-  if(fh->uncompressed_size == 0xFFFFFFFF)
-    return ZIP_UNSUPPORTED_ZIP64;
+    // compressed size
+    fh->compressed_size = getd(fp);
+    if(fh->compressed_size == 0xFFFFFFFF)
+      return ZIP_UNSUPPORTED_ZIP64;
+
+    // uncompressed size
+    fh->uncompressed_size = getd(fp);
+    if(fh->uncompressed_size == 0xFFFFFFFF)
+      return ZIP_UNSUPPORTED_ZIP64;
+  }
 
   // file name length
   n = getw(fp);
@@ -586,10 +461,40 @@ static int zip_read_file_header(struct zip_archive *zp,
   }
 
   // We should be at the start of the data or next record now.
+  // We might need to look at the data descriptor, though.
+  if(flags & ZIP_F_DATA_DESCRIPTOR)
+  {
+    Uint32 expected_c_size = fh->compressed_size;
+
+    // Find the data descriptor
+    if(seek(fp, expected_c_size, SEEK_CUR))
+      return ZIP_MISSING_DATA_DESCRIPTOR;
+
+    // crc32
+    fh->crc32 = getd(fp);
+
+    // compressed size
+    fh->compressed_size = getd(fp);
+    if(fh->compressed_size == 0xFFFFFFFF)
+      return ZIP_UNSUPPORTED_ZIP64;
+
+    // uncompressed size
+    fh->uncompressed_size = getd(fp);
+    if(fh->uncompressed_size == 0xFFFFFFFF)
+      return ZIP_UNSUPPORTED_ZIP64;
+
+    if(zp->error && zp->error(fp))
+      return ZIP_READ_ERROR;
+
+    // Go back to the start of the file.
+    seek(fp, -expected_c_size-12, SEEK_CUR);
+  }
+
   return ZIP_SUCCESS;
 }
 
-static int zip_write_file_header(struct zip_archive *zp,
+
+static enum zip_error zip_write_file_header(struct zip_archive *zp,
  struct zip_file_header *fh, int is_central)
 {
   int i;
@@ -621,14 +526,14 @@ static int zip_write_file_header(struct zip_archive *zp,
     putw(ZIP_VERSION_MINIMUM, fp);
 
   // General purpose bit flag
-  putw(0, fp);
+  putw(fh->flags, fp);
 
   // Compression method
   putw(fh->method, fp);
 
   // File last modification time
   // File last modification date
-  putd(zp->dos_date_time, fp);
+  putd(zip_get_dos_date_time(), fp);
 
   // CRC-32
   putd(fh->crc32, fp);
@@ -679,90 +584,291 @@ static int zip_write_file_header(struct zip_archive *zp,
 }
 
 
-/* Read a block of data from a zip archive. Only works before
- * zip_read_directory() is called.
+/* Basic checks to make sure the read functions can actually be used. */
+
+#define zip_read_raw_mode_check(zp)                                     \
+( !(zp)                           ? ZIP_NULL :                          \
+  (zp)->closing                   ? ZIP_INVALID_WHILE_CLOSING :         \
+  (zp)->mode == ZIP_S_READ_STREAM ? ZIP_SUCCESS :                       \
+  (zp)->mode == ZIP_S_READ_RAW    ? ZIP_SUCCESS :                       \
+  (zp)->mode == ZIP_S_READ_FILES  ? ZIP_INVALID_RAW_READ_IN_FILE_MODE : \
+  ZIP_INVALID_READ_IN_WRITE_MODE)
+
+#define zip_read_file_mode_check(zp)                                    \
+( !(zp)                           ? ZIP_NULL :                          \
+  (zp)->closing                   ? ZIP_INVALID_WHILE_CLOSING :         \
+  (zp)->mode == ZIP_S_READ_FILES  ? ZIP_SUCCESS :                       \
+  (zp)->mode == ZIP_S_READ_STREAM ? ZIP_INVALID_FILE_READ_IN_STREAM_MODE : \
+  (zp)->mode == ZIP_S_READ_RAW    ? ZIP_INVALID_FILE_READ_IN_RAW_MODE : \
+  ZIP_INVALID_READ_IN_WRITE_MODE)
+
+#define zip_read_stream_mode_check(zp)                                  \
+( !(zp)                           ? ZIP_NULL :                          \
+  (zp)->closing                   ? ZIP_INVALID_WHILE_CLOSING :         \
+  (zp)->mode == ZIP_S_READ_STREAM ? ZIP_SUCCESS :                       \
+  (zp)->mode == ZIP_S_READ_RAW    ? ZIP_INVALID_STREAM_READ :           \
+  (zp)->mode == ZIP_S_READ_FILES  ? ZIP_INVALID_STREAM_READ :           \
+  ZIP_INVALID_READ_IN_WRITE_MODE)
+
+
+/* Read data from a zip archive. Only works before zip_read_directory()
+ * is called or while streaming a file.
  */
 
-int zip_read(struct zip_archive *zp, char *dest, int *destLen)
+static int _zget_stream(char v, struct zip_archive *zp)
 {
-  int bufferLen = *destLen;
-  int result;
+  if(!zp->stream_left)
+    return -1;
+  zp->stream_crc32 = zip_crc32(zp->stream_crc32, &v, 1);
+  zp->stream_left -= 1;
+  return v;
+}
 
-  if(!zp)
+int zgetc(struct zip_archive *zp, enum zip_error *err)
+{
+  char v;
+
+  if((*err = zip_read_raw_mode_check(zp)))
+    return -1;
+
+  v = zp->getc(zp->fp);
+
+  if(zp->streaming_file)
+    return _zget_stream(v, zp);
+
+  return v;
+}
+
+int zgetw(struct zip_archive *zp, enum zip_error *err)
+{
+  if((*err = zip_read_raw_mode_check(zp)))
+    return -1;
+
+  if(zp->streaming_file)
   {
-    result = ZIP_NULL;
+    int (*getc)(void *) = zp->getc;
+    void *fp = zp->fp;
+    int v1;
+    int v2;
+
+    v1 = _zget_stream(getc(fp), zp);
+    v2 = _zget_stream(getc(fp), zp);
+    if(v1 < 0 || v2 < 0)
+    {
+      *err = ZIP_EOF;
+      return -1;
+    }
+
+    return (v2 << 8) + v1;
+  }
+
+  return zp->getw(zp->fp);
+}
+
+int zgetd(struct zip_archive *zp, enum zip_error *err)
+{
+  if((*err = zip_read_raw_mode_check(zp)))
+    return -1;
+
+  if(zp->streaming_file)
+  {
+    int (*getc)(void *) = zp->getc;
+    void *fp = zp->fp;
+    int v1;
+    int v2;
+    int v3;
+    int v4;
+
+    v1 = _zget_stream(getc(fp), zp);
+    v2 = _zget_stream(getc(fp), zp);
+    v3 = _zget_stream(getc(fp), zp);
+    v4 = _zget_stream(getc(fp), zp);
+
+    if(v1 < 0 || v2 < 0 || v3 < 0 || v4 < 0)
+    {
+      *err = ZIP_EOF;
+      return -1;
+    }
+    return (v4 << 24) + (v3 << 16) + (v2 << 8) + v1;
+  }
+
+  return zp->getd(zp->fp);
+}
+
+enum zip_error zread(char *destBuf, size_t readLen, struct zip_archive *zp)
+{
+  struct zip_file_header *fh;
+  char *src;
+  void *fp;
+
+  Uint32 u_size;
+  Uint32 c_size;
+  Uint32 consumed;
+  Uint16 method = ZIP_M_NO_COMPRESSION;
+
+  enum zip_error result;
+
+  result = zip_read_raw_mode_check(zp);
+  if(result)
+    goto err_out;
+
+  if(!destBuf)
+  {
+    result = ZIP_NULL_BUF;
     goto err_out;
   }
 
-  if(zp->mode != ZIP_S_READ_RAW)
+  fp = zp->fp;
+  fh = zp->streaming_file;
+
+  if(fh)
   {
-    if(zp->mode == ZIP_S_READ_FILES)
+    c_size = fh->compressed_size;
+    u_size = fh->uncompressed_size;
+    method = fh->method;
+  }
+
+  // No compression
+  if(method == ZIP_M_NO_COMPRESSION)
+  {
+    if(fh)
     {
-      result = ZIP_INVALID_RAW_READ_IN_FILE_MODE;
+      // Can't read past the length of the file
+      readLen = MIN(readLen, zp->stream_left);
+    }
+
+    // Can't read past the end of the archive
+    readLen = MIN(readLen, (zp->end_in_file - zp->tell(fp)));
+    consumed = readLen;
+
+    if(readLen <= 0)
+    {
+      result = ZIP_EOF;
       goto err_out;
     }
-    result = ZIP_INVALID_READ_IN_WRITE_MODE;
+
+    if(!zp->read(destBuf, readLen, 1, fp))
+    {
+      result = ZIP_READ_ERROR;
+      goto err_out;
+    }
+  }
+  else
+
+  // DEFLATE compression
+  if(method == ZIP_M_DEFLATE)
+  {
+    if(!fh || readLen != u_size)
+    {
+      result = ZIP_UNSUPPORTED_DEFLATE_STREAM;
+      goto err_out;
+    }
+
+    src = cmalloc(c_size);
+
+    if(!zp->read(src, c_size, 1, fp))
+    {
+      result = ZIP_READ_ERROR;
+      goto err_free_src;
+    }
+
+    consumed = c_size;
+    result = zip_uncompress(destBuf, &u_size, src, &consumed);
+
+    if(result != Z_STREAM_END || readLen != u_size || consumed != c_size)
+    {
+      warn("Uncompress result %d. Expected %u, got %u (consumed %u)\n",
+       result, readLen, u_size, consumed);
+      result = ZIP_INFLATE_FAILED;
+      goto err_free_src;
+    }
+    free(src);
   }
 
-  *destLen *= zp->read(dest, bufferLen, 1, zp->fp);
-
-  if(!*destLen)
+  // This shouldn't have made it this far...
+  else
   {
-    result = ZIP_READ_ERROR;
+    result = ZIP_UNSUPPORTED_COMPRESSION;
     goto err_out;
+  }
+
+  // Update the crc32 and streamed amount
+  if(fh)
+  {
+    zp->stream_crc32 = zip_crc32(zp->stream_crc32, destBuf, readLen);
+    zp->stream_left -= consumed;
   }
 
   return ZIP_SUCCESS;
 
-err_out:
-  zip_error("zip_read", result);
+err_free_src:
+  free(src);
 
-  dest[0] = 0;
-  *destLen = 0;
+err_out:
+  if(result != ZIP_EOF)
+    zip_error("zread", result);
+
   return result;
 }
 
 
-/* Read a file from the a zip archive. Only works after zip_read_directory()
- * is called. On return, **dest will point to a newly allocated block of data
- * and *destLen will contain the length of this block.
+/* Get the filename of the next file in the archive. Only works after
+ * zip_read_directory() is called.
  */
 
-int zip_read_file(struct zip_archive *zp, char *name, int name_buffer_size,
- char **dest, int *destLen)
+enum zip_error zip_next_file_name(struct zip_archive *zp, char *name,
+ int name_buffer_size)
+{
+  struct zip_file_header *fh;
+  enum zip_error result;
+
+  result = zip_read_file_mode_check(zp);
+  if(result)
+    goto err_out;
+
+  if(zp->pos >= zp->num_files)
+  {
+    result = ZIP_EOF;
+    goto err_out;
+  }
+
+  fh = zp->files[zp->pos];
+
+  name_buffer_size = MIN(name_buffer_size, fh->file_name_length);
+  memcpy(name, fh->file_name, name_buffer_size);
+  name[name_buffer_size] = 0;
+
+  return ZIP_SUCCESS;
+
+err_out:
+  zip_error("zip_next_file_name", result);
+  return result;
+}
+
+
+/* Open a stream to read the next file from a zip archive. Only works after
+ * zip_read_directory() is called. On return, destLen will be the uncompressed
+ * size of the file.
+ */
+
+enum zip_error zip_read_open_file_stream(struct zip_archive *zp,
+ size_t *destLen)
 {
   struct zip_file_header *central_fh;
   struct zip_file_header local_fh;
   void *fp;
 
   Uint32 f_crc32;
-  Uint32 u_crc32;
   Uint32 c_size;
   Uint32 u_size;
-  char *src;
-
   Uint16 method;
+
   Uint32 read_pos;
+  enum zip_error result;
 
-  int result;
-
-  if(!zp)
-  {
-    result = ZIP_NULL;
+  result = zip_read_file_mode_check(zp);
+  if(result)
     goto err_out;
-  }
-
-  // This only works in file reading mode
-  if(zp->mode != ZIP_S_READ_FILES)
-  {
-    if(zp->mode == ZIP_S_READ_RAW)
-    {
-      result = ZIP_INVALID_FILE_READ_IN_RAW_MODE;
-      goto err_out;
-    }
-    result = ZIP_INVALID_READ_IN_WRITE_MODE;
-    goto err_out;
-  }
 
   if(zp->pos >= zp->num_files)
   {
@@ -771,12 +877,26 @@ int zip_read_file(struct zip_archive *zp, char *name, int name_buffer_size,
   }
 
   central_fh = zp->files[zp->pos];
-  zp->pos++;
 
   f_crc32 = central_fh->crc32;
   c_size = central_fh->compressed_size;
   u_size = central_fh->uncompressed_size;
   method = central_fh->method;
+
+  // Check for unsupported methods
+  if(method == ZIP_M_NO_COMPRESSION)
+  {
+    debug("File: %s type: no compression\n", central_fh->file_name);
+  }
+  else if (method == ZIP_M_DEFLATE)
+  {
+    debug("File: %s type: DEFLATE\n", central_fh->file_name);
+  }
+  else
+  {
+    result = ZIP_UNSUPPORTED_COMPRESSION;
+    goto err_out;
+  }
 
   // Seek to the start of the record
   fp = zp->fp;
@@ -790,7 +910,10 @@ int zip_read_file(struct zip_archive *zp, char *name, int name_buffer_size,
     }
   }
 
-  // Read the local header
+  // Read the local header -- but first, give it the expected
+  // compressed size just in the case there's a data descriptor.
+
+  local_fh.compressed_size = c_size;
   result = zip_read_file_header(zp, &local_fh, 0);
   if(result)
     goto err_out;
@@ -804,71 +927,120 @@ int zip_read_file(struct zip_archive *zp, char *name, int name_buffer_size,
     goto err_out;
   }
 
-  // No compression
-  if(method == ZIP_M_NO_COMPRESSION)
-  {
-    debug("File: %s type: no compression\n", central_fh->file_name);
-    *dest = cmalloc(u_size);
-    if(zp->read(*dest, u_size, 1, fp))
-    {
-      result = ZIP_READ_ERROR;
-      goto err_free_dest;
-    }
-  }
-  else
-
-  // DEFLATE compression
-  if(method == ZIP_M_DEFLATE)
-  {
-    Uint32 old_size = u_size;
-
-    debug("File: %s type: DEFLATE\n", central_fh->file_name);
-
-    *dest = cmalloc(u_size);
-    src = cmalloc(c_size);
-
-    if(!zp->read(src, c_size, 1, fp))
-    {
-      result = ZIP_READ_ERROR;
-      goto err_free_src;
-    }
-
-    result = zip_uncompress(*dest, &u_size, src, &c_size);
-
-    if(result != Z_STREAM_END || old_size != u_size)
-    {
-      warn("Uncompress result %d. Expected %u, got %u (consumed %u)\n",
-       result, old_size, u_size, c_size);
-      result = ZIP_INFLATE_FAILED;
-      goto err_free_src;
-    }
-    free(src);
-  }
-
-  else
-  {
-    result = ZIP_UNSUPPORTED_COMPRESSION;
-    goto err_out;
-  }
+  // Everything looks good. Set up stream mode.
+  zp->mode = ZIP_S_READ_STREAM;
+  zp->streaming_file = central_fh;
+  zp->stream_left = c_size;
+  zp->stream_crc32 = 0;
 
   *destLen = u_size;
 
-  u_crc32 = crc32(0, (Bytef *) *dest, u_size);
-  if(f_crc32 != u_crc32)
+  return ZIP_SUCCESS;
+
+err_out:
+  zip_error("zip_read_open_file_stream", result);
+  *destLen = 0;
+  return result;
+}
+
+
+/* Close the reading stream.
+ */
+
+enum zip_error zip_read_close_stream(struct zip_archive *zp)
+{
+  Uint32 expected_crc32;
+  Uint32 stream_crc32;
+  Uint32 stream_left;
+  char v;
+
+  int (*getc)(void *);
+  void *fp;
+
+  enum zip_error result;
+
+  result = zip_read_stream_mode_check(zp);
+  if(result)
+    goto err_out;
+
+  getc = zp->getc;
+  fp = zp->fp;
+
+  expected_crc32 = zp->streaming_file->crc32;
+  stream_crc32 = zp->stream_crc32;
+
+  // If the stream was incomplete, finish the crc32
+  stream_left = zp->stream_left;
+  while(stream_left)
   {
-    warn("crc check failed: expected %x, got %x\n", f_crc32, u_crc32);
-    result = ZIP_CRC32_MISMATCH;
-    goto err_free_dest;
+    v = getc(fp);
+    stream_crc32 = zip_crc32(stream_crc32, &v, 1);
+    stream_left--;
   }
 
-  name_buffer_size = MIN(name_buffer_size, central_fh->file_name_length);
-  memcpy(name, central_fh->file_name, name_buffer_size);
-  name[name_buffer_size] = 0;
+  // Increment the position and clear the streaming vars
+  zp->mode = ZIP_S_READ_FILES;
+  zp->streaming_file = NULL;
+  zp->stream_left = 0;
+  zp->stream_crc32 = 0;
+  zp->pos++;
+
+  // Check the CRC-32 of the stream
+  if(expected_crc32 != stream_crc32)
+  {
+    warn("crc check: expected %x, got %x\n", expected_crc32, stream_crc32);
+    result = ZIP_CRC32_MISMATCH;
+    goto err_out;
+  }
 
   return ZIP_SUCCESS;
 
-err_free_src:
-  free(src);
+err_out:
+  zip_error("zip_read_close_stream", result);
+  return result;
+}
+
+
+/* Read a file from the a zip archive. Only works after zip_read_directory()
+ * is called. On return, **dest will point to a newly allocated block of data
+ * and *destLen will contain the length of this block.
+ */
+
+enum zip_error zip_read_file(struct zip_archive *zp, char *name,
+ int name_buffer_size, char **dest, size_t *destLen)
+{
+  Uint32 u_size;
+  enum zip_error result;
+
+  // No need to check mode; the functions used here will
+
+  // Optional; this may have already been checked.
+  if(name)
+  {
+    result = zip_next_file_name(zp, name, name_buffer_size);
+    if(result)
+      goto err_out;
+  }
+
+  result = zip_read_open_file_stream(zp, &u_size);
+  if(result)
+    goto err_out;
+
+  *dest = cmalloc(u_size);
+  *destLen = u_size;
+
+  result = zread(*dest, *destLen, zp);
+  if(result && result != ZIP_EOF)
+    goto err_close;
+
+  result = zip_read_close_stream(zp);
+  if(result)
+    goto err_free_dest;
+
+  return ZIP_SUCCESS;
+
+err_close:
+  zip_read_close_stream(zp);
 
 err_free_dest:
   free(*dest);
@@ -883,117 +1055,164 @@ err_out:
 }
 
 
-/* Write a block of data to a zip archive. Only works before zip_write_file()
- * is called.
+/* Basic checks to make sure the write functions can be used. */
+
+#define zip_write_raw_mode_check(zp)                                      \
+( !(zp)                            ? ZIP_NULL :                           \
+  (zp)->closing                    ? ZIP_INVALID_WHILE_CLOSING :          \
+  (zp)->mode == ZIP_S_WRITE_STREAM ? ZIP_SUCCESS :                        \
+  (zp)->mode == ZIP_S_WRITE_RAW    ? ZIP_SUCCESS :                        \
+  (zp)->mode == ZIP_S_WRITE_FILES  ? ZIP_INVALID_RAW_WRITE_IN_FILE_MODE : \
+  ZIP_INVALID_WRITE_IN_READ_MODE)
+
+#define zip_write_file_mode_check(zp)                                     \
+( !(zp)                            ? ZIP_NULL :                           \
+  (zp)->closing                    ? ZIP_INVALID_WHILE_CLOSING :          \
+  (zp)->mode == ZIP_S_WRITE_FILES  ? ZIP_SUCCESS :                        \
+  (zp)->mode == ZIP_S_WRITE_RAW    ? ZIP_SUCCESS :                        \
+  (zp)->mode == ZIP_S_WRITE_STREAM ? ZIP_INVALID_FILE_WRITE_IN_STREAM_MODE : \
+  ZIP_INVALID_WRITE_IN_READ_MODE)
+
+#define zip_write_stream_mode_check(zp)                                   \
+( !(zp)                            ? ZIP_NULL :                           \
+  (zp)->closing                    ? ZIP_INVALID_WHILE_CLOSING :          \
+  (zp)->mode == ZIP_S_WRITE_STREAM ? ZIP_SUCCESS :                        \
+  (zp)->mode == ZIP_S_WRITE_FILES  ? ZIP_INVALID_STREAM_WRITE :           \
+  (zp)->mode == ZIP_S_WRITE_RAW    ? ZIP_INVALID_STREAM_WRITE :           \
+  ZIP_INVALID_WRITE_IN_READ_MODE)
+
+
+/* Write data to a zip archive. Only works in raw and stream modes.
  */
 
-int zip_write(struct zip_archive *zp, char *src, int srcLen)
+enum zip_error zputc(int value, struct zip_archive *zp)
 {
-  int bufferLen = srcLen;
-  int result;
+  enum zip_error result;
+  char v;
 
-  if(!zp)
+  if((result = zip_write_raw_mode_check(zp)))
+    return result;
+
+  zp->putc(value, zp->fp);
+
+  if(zp->streaming_file)
   {
-    result = ZIP_NULL;
-    goto err_out;
-  }
-
-  if(zp->mode != ZIP_S_WRITE_RAW)
-  {
-    if(zp->mode == ZIP_S_WRITE_FILES)
-    {
-      result = ZIP_INVALID_RAW_WRITE_IN_FILE_MODE;
-      goto err_out;
-    }
-    result = ZIP_INVALID_WRITE_IN_READ_MODE;
-    goto err_out;
-  }
-
-  result = zp->write(src, bufferLen, 1, zp->fp);
-
-  if(!result)
-  {
-    result = ZIP_WRITE_ERROR;
-    goto err_out;
+    zp->stream_crc32 = zip_crc32(zp->stream_crc32, &v, 1);
+    zp->stream_left += 1;
   }
 
   return ZIP_SUCCESS;
-
-err_out:
-  zip_error("zip_write", result);
-  return result;
 }
 
+enum zip_error zputw(int value, struct zip_archive *zp)
+{
+  enum zip_error result;
 
-/* Write a file to a zip archive. The first time this is used, the archive will
- * change to file writing mode, after which zip_write() will fail.
- * Valid methods: ZIP_M_NO_COMPRESSION, ZIP_M_DEFLATE
- */
+  if((result = zip_write_raw_mode_check(zp)))
+    return result;
 
-int zip_write_file(struct zip_archive *zp, char *name, char *src, int srcLen,
- int method)
+  zp->putw(value, zp->fp);
+
+  if(zp->streaming_file)
+  {
+    char v[2];
+    v[0] = value & 0xFF;
+    v[1] = (value>>8) & 0xFF;
+    zp->stream_crc32 = zip_crc32(zp->stream_crc32, (char *)&v, 2);
+    zp->stream_left += 2;
+  }
+
+  return ZIP_SUCCESS;
+}
+
+enum zip_error zputd(int value, struct zip_archive *zp)
+{
+  enum zip_error result;
+
+  if((result = zip_write_raw_mode_check(zp)))
+    return result;
+
+  zp->putd(value, zp->fp);
+
+  if(zp->streaming_file)
+  {
+    char v[4];
+    v[0] = value & 0xFF;
+    v[1] = (value>>8) & 0xFF;
+    v[2] = (value>>16) & 0xFF;
+    v[3] = (value>>24) & 0xFF;
+    zp->stream_crc32 = zip_crc32(zp->stream_crc32, (char *)&v, 4);
+    zp->stream_left += 4;
+  }
+
+  return ZIP_SUCCESS;
+}
+
+enum zip_error zwrite(char *src, size_t srcLen, struct zip_archive *zp)
 {
   struct zip_file_header *fh;
-  char *file_name;
-  int expected_size;
-  char *dest;
+  char *buffer;
+  size_t writeLen;
+  Uint16 method = ZIP_M_NO_COMPRESSION;
 
   void *fp;
 
-  Uint32 u_size = srcLen;
-  Uint32 c_size;
+  enum zip_error result;
 
-  int result;
-
-  if(!zp)
-  {
-    result = ZIP_NULL;
+  result = zip_write_raw_mode_check(zp);
+  if(result)
     goto err_out;
-  }
 
-  // This only works in write mode
-  if(zp->mode != ZIP_S_WRITE_FILES)
-  {
-    // If we're in raw mode, switch to file mode.
-    if(zp->mode == ZIP_S_WRITE_RAW)
-    {
-      zp->mode = ZIP_S_WRITE_FILES;
-    }
-    else
-    {
-      result = ZIP_INVALID_READ_IN_WRITE_MODE;
-      goto err_out;
-    }
-  }
-
-  fh = cmalloc(sizeof(struct zip_file_header));
-  file_name = cmalloc(strlen(name) + 1);
   fp = zp->fp;
 
-  // Set up the header
-  fh->method = method;
-  fh->crc32 = zip_crc32(0, src, u_size);
-  fh->offset = zp->tell(fp);
-  fh->file_name_length = strlen(name);
-  fh->file_name = file_name;
-  strcpy(file_name, name);
-
-  expected_size = 30 + fh->file_name_length;
+  fh = zp->streaming_file;
+  if(fh)
+  {
+    method = fh->method;
+  }
 
   // No compression
   if(method == ZIP_M_NO_COMPRESSION)
   {
-    debug("File: %s type: no compression\n", name);
-
-    fh->compressed_size = u_size;
-    fh->uncompressed_size = u_size;
+    writeLen = srcLen;
 
     // Test if we have the space to write
     if(zp->hasspace)
     {
-      expected_size += u_size;
+      if(!zp->hasspace(srcLen, fp))
+      {
+        result = ZIP_ALLOC_MORE_SPACE;
+        goto err_out;
+      }
+    }
 
-      if(!zp->hasspace(expected_size, fp))
+    if(!zp->write(src, srcLen, 1, fp))
+    {
+      result = ZIP_WRITE_ERROR;
+      goto err_out;
+    }
+  }
+  else
+
+  // DEFLATE
+  // This might cause issues if the entire file isn't written in one go. Not sure.
+  if(method == ZIP_M_DEFLATE)
+  {
+    size_t consumed = srcLen;
+
+    result = zip_compress(&buffer, &writeLen, src, &consumed);
+    if(result != Z_STREAM_END)
+    {
+      warn("Compress result %d. Source length %u, used %u (output %u)\n",
+       result, srcLen, consumed, writeLen);
+      result = ZIP_DEFLATE_FAILED;
+      goto err_free;
+    }
+
+    // Test if we have the space to write
+    if(zp->hasspace)
+    {
+      if(!zp->hasspace(writeLen, fp))
       {
         result = ZIP_ALLOC_MORE_SPACE;
         goto err_free;
@@ -1001,65 +1220,172 @@ int zip_write_file(struct zip_archive *zp, char *name, char *src, int srcLen,
     }
 
     // Write
-    result = zip_write_file_header(zp, fh, 0);
-    if(result)
-      goto err_free;
-
-    if(!zp->write(src, u_size, 1, fp))
+    if(!zp->write(buffer, writeLen, 1, fp))
     {
       result = ZIP_WRITE_ERROR;
       goto err_free;
     }
-  }
-  else
 
-  // DEFLATE
-  if(method == ZIP_M_DEFLATE)
-  {
-    debug("File: %s type: DEFLATE\n", name);
-
-    result = zip_compress(&dest, &c_size, src, (Uint32 *)&srcLen);
-    if(result != Z_STREAM_END)
-    {
-      warn("Uncompress result %d. Expected %u, used %u (wrote %u)\n",
-       result, u_size, srcLen, c_size);
-      result = ZIP_DEFLATE_FAILED;
-      goto err_free_dest;
-    }
-
-    fh->compressed_size = c_size;
-    fh->uncompressed_size = u_size;
-
-    // Test if we have the space to write
-    if(zp->hasspace)
-    {
-      expected_size += c_size;
-
-      if(!zp->hasspace(expected_size, fp))
-      {
-        result = ZIP_ALLOC_MORE_SPACE;
-        goto err_free_dest;
-      }
-    }
-
-    // Write
-    result = zip_write_file_header(zp, fh, 0);
-    if(result)
-      goto err_free_dest;
-
-    if(!zp->write(dest, c_size, 1, fp))
-    {
-      result = ZIP_WRITE_ERROR;
-      goto err_free_dest;
-    }
-
-    free(dest);
+    free(buffer);
   }
 
   else
   {
     result = ZIP_UNSUPPORTED_COMPRESSION;
     goto err_free;
+  }
+
+  if(fh)
+  {
+    // Update the stream
+    fh->uncompressed_size += srcLen;
+    zp->stream_crc32 = zip_crc32(zp->stream_crc32, src, srcLen);
+    zp->stream_left += writeLen;
+  }
+
+  return ZIP_SUCCESS;
+
+err_free:
+  free(buffer);
+
+err_out:
+  zip_error("zwrite", result);
+  return result;
+}
+
+
+/* Open a file writing stream. This works in raw writing mode; when the file
+ * write is done, the archive will be in file writing mode.
+ */
+
+enum zip_error zip_write_open_file_stream(struct zip_archive *zp, char *name, int method)
+{
+  struct zip_file_header *fh;
+  char *file_name;
+
+  void *fp;
+
+  enum zip_error result;
+
+  result = zip_write_file_mode_check(zp);
+  if(result)
+    goto err_out;
+
+  fp = zp->fp;
+
+  // memfiles: make sure there's enough space for the header
+  if(zp->hasspace && !zp->hasspace(strlen(name) + 30, fp))
+  {
+    result = ZIP_ALLOC_MORE_SPACE;
+    goto err_out;
+  }
+
+  // Check to make sure we're using a valid method
+  // No compression
+  if(method == ZIP_M_NO_COMPRESSION)
+  {
+    debug("File: %s type: no compression\n", name);
+  }
+
+  else
+  // DEFLATE
+  if(method == ZIP_M_DEFLATE)
+  {
+    debug("File: %s type: DEFLATE\n", name);
+  }
+
+  else
+  {
+    result = ZIP_UNSUPPORTED_COMPRESSION;
+    goto err_out;
+  }
+
+  fh = cmalloc(sizeof(struct zip_file_header));
+  file_name = cmalloc(strlen(name) + 1);
+
+  fp = zp->fp;
+
+  // Set up the header
+  fh->flags = 0;
+  fh->method = method;
+  fh->crc32 = 0;
+  fh->compressed_size = 0;
+  fh->uncompressed_size = 0;
+  fh->offset = zp->tell(fp);
+  fh->file_name_length = strlen(name);
+  fh->file_name = file_name;
+  strcpy(file_name, name);
+
+  // Write the header
+  result = zip_write_file_header(zp, fh, 0);
+  if(result)
+    goto err_free;
+
+  // Set up the stream
+  zp->mode = ZIP_S_WRITE_STREAM;
+  zp->streaming_file = fh;
+  zp->stream_left = 0;
+  zp->stream_crc32 = 0;
+
+  return ZIP_SUCCESS;
+
+err_free:
+  free(fh);
+  free(file_name);
+  zp->streaming_file = NULL;
+
+err_out:
+  zip_error("zip_write_open_file_stream", result);
+  return result;
+}
+
+
+/* Close a file writing stream. */
+
+enum zip_error zip_write_close_stream(struct zip_archive *zp)
+{
+  struct zip_file_header *fh;
+
+  void *fp;
+  void (*putd)(int, void *);
+  int (*seek)(void *, int, int);
+  int seek_value;
+
+  enum zip_error result;
+
+  result = zip_write_stream_mode_check(zp);
+  if(result)
+    goto err_out;
+
+  // Add missing fields to the header.
+  fh = zp->streaming_file;
+  fh->crc32 = zp->stream_crc32;
+  fh->compressed_size = zp->stream_left;
+
+  // Go back and write sizes and CRC32
+  // Could use a data descriptor instead...
+
+  fp = zp->fp;
+  putd = zp->putd;
+  seek = zp->seek;
+
+  // Compressed data + file name + extra field length + file name length
+  seek_value = fh->compressed_size + fh->file_name_length + 2 + 2;
+
+  if(seek(fp, -12-seek_value, SEEK_CUR))
+  {
+    result = ZIP_SEEK_ERROR;
+    goto err_out;
+  }
+
+  putd(fh->crc32, fp);
+  putd(fh->compressed_size, fp);
+  putd(fh->uncompressed_size, fp);
+
+  if(seek(fp, seek_value, SEEK_CUR))
+  {
+    result = ZIP_SEEK_ERROR;
+    goto err_out;
   }
 
   // Put the file header into the zip archive
@@ -1074,14 +1400,48 @@ int zip_write_file(struct zip_archive *zp, char *name, char *src, int srcLen,
   zp->num_files++;
   zp->pos++;
 
+  // Clean up the stream
+  zp->mode = ZIP_S_WRITE_FILES;
+  zp->streaming_file = NULL;
+  zp->stream_left = 0;
+  zp->stream_crc32 = 0;
+
   return ZIP_SUCCESS;
 
-err_free_dest:
-  free(dest);
+err_out:
+  zip_error("zip_write_close_stream", result);
+  return result;
+}
 
-err_free:
-  free(file_name);
-  free(fh);
+
+/* Write a file to a zip archive. The first time this is used, the archive will
+ * change to file writing mode, after which zip_write() will fail.
+ * Valid methods: ZIP_M_NO_COMPRESSION, ZIP_M_DEFLATE
+ */
+
+enum zip_error zip_write_file(struct zip_archive *zp, char *name, char *src,
+ size_t srcLen, int method)
+{
+  enum zip_error result;
+
+  // No need to check mode; the functions used here will
+
+  result = zip_write_open_file_stream(zp, name, method);
+  if(result)
+    goto err_out;
+
+  result = zwrite(src, srcLen, zp);
+  if(result && result != ZIP_EOF)
+    goto err_close;
+
+  result = zip_write_close_stream(zp);
+  if(result)
+    goto err_out;
+
+  return ZIP_SUCCESS;
+
+err_close:
+  zip_write_close_stream(zp);
 
 err_out:
   zip_error("zip_write_file", result);
@@ -1089,6 +1449,11 @@ err_out:
 }
 
 
+/* Reads the central directory of a zip archive. This places the archive into
+ * file read mode; read files using zip_read_file(). If this fails, the input
+ * is probably not actually a zip archive, or uses features we don't support.
+ */
+ 
 static char eocd_sig[] = {
   0x50,
   0x4b,
@@ -1105,12 +1470,7 @@ static int _zip_header_cmp(const void *a, const void *b)
   );
 }
 
-/* Reads the central directory of a zip archive. This places the archive into
- * file read mode; read files using zip_read_file(). If this fails, the input
- * is probably not actually a zip archive, or uses features we don't support.
- */
-
-int zip_read_directory(struct zip_archive *zp)
+enum zip_error zip_read_directory(struct zip_archive *zp)
 {
   int n, i, j;
   int result;
@@ -1125,6 +1485,12 @@ int zip_read_directory(struct zip_archive *zp)
   if(!zp)
   {
     result = ZIP_NULL;
+    goto err_out;
+  }
+
+  if(zp->closing)
+  {
+    result = ZIP_INVALID_WHILE_CLOSING;
     goto err_out;
   }
 
@@ -1292,7 +1658,9 @@ err_out:
 }
 
 
-static int zip_write_eocd_record(struct zip_archive *zp)
+/* Writes the EOCD during the archive close. */
+
+static enum zip_error zip_write_eocd_record(struct zip_archive *zp)
 {
   int i;
 
@@ -1351,7 +1719,7 @@ static int zip_write_eocd_record(struct zip_archive *zp)
  * reallocate using zip_expand and call zip_close again.
  */
 
-int zip_close(struct zip_archive *zp, int *final_length)
+enum zip_error zip_close(struct zip_archive *zp, size_t *final_length)
 {
   int result = ZIP_SUCCESS;
   int mode;
@@ -1370,6 +1738,13 @@ int zip_close(struct zip_archive *zp, int *final_length)
   fp = zp->fp;
   tell = zp->tell;
 
+  // Before initiating the close, make sure there wasn't an open write stream!
+  if(zp->streaming_file && mode == ZIP_S_WRITE_STREAM)
+  {
+    warn("zip_close called while writing file stream!\n");
+    zip_write_close_stream(zp);
+  }
+
   if(!zp->closing)
   {
     debug("Finalizing and closing zip file.\n");
@@ -1384,7 +1759,7 @@ int zip_close(struct zip_archive *zp, int *final_length)
   {
     int expected_size = 22 + 46*zp->num_files + zp->running_file_name_length;
 
-    // Calcualte projected file size in case more space is needed
+    // Calculate projected file size in case more space is needed
     if(final_length)
       *final_length = zp->offset_central_directory + expected_size;
 
@@ -1436,7 +1811,7 @@ int zip_close(struct zip_archive *zp, int *final_length)
   else
   {
     if(final_length)
-      *final_length = zp->end;
+      *final_length = zp->end_in_file;
   }
 
   zp->close(zp->fp);
@@ -1451,6 +1826,8 @@ int zip_close(struct zip_archive *zp, int *final_length)
 }
 
 
+/* Perform additional setup for write mode. */
+
 static void zip_init_for_write(struct zip_archive *zp, int num_files)
 {
   struct zip_file_header **f;
@@ -1460,31 +1837,40 @@ static void zip_init_for_write(struct zip_archive *zp, int num_files)
   zp->files_alloc = num_files;
   zp->files = f;
 
-  zp->dos_date_time = zip_get_dos_date_time();
   zp->running_file_name_length = 0;
 
   zp->mode = ZIP_S_WRITE_RAW;
 }
 
 
+/* Set up a new zip archive struct. */
+
 static struct zip_archive *zip_new_archive(void)
 {
   struct zip_archive *zp = cmalloc(sizeof(struct zip_archive));
 
+  zp->start_in_file = 0;
   zp->files_alloc = 0;
   zp->closing = 0;
-  zp->start = 0;
   zp->pos = 0;
 
   zp->num_files = 0;
   zp->size_central_directory = 0;
   zp->offset_central_directory = 0;
 
+  zp->streaming_file = NULL;
+  zp->stream_left = 0;
+  zp->stream_crc32 = 0;
+
   zp->mode = ZIP_S_READ_RAW;
 
   return zp;
 }
 
+
+/* Configure the zip archive for file reading. TODO: abstract the file
+ * functions further so the struct isn't as large?
+ */
 
 static struct zip_archive *zip_get_archive_file(FILE *fp)
 {
@@ -1519,7 +1905,7 @@ struct zip_archive *zip_open_file_read(char *file_name)
   if(fp)
   {
     struct zip_archive *zp = zip_get_archive_file(fp);
-    zp->end = ftell_and_rewind(fp);
+    zp->end_in_file = ftell_and_rewind(fp);
 
     debug("Opened file '%s' for reading.\n", file_name);
     return zp;
@@ -1554,6 +1940,11 @@ struct zip_archive *zip_open_file_write(char *file_name)
 }
 
 
+
+/* Configure the zip archive for memory reading. TODO: abstract the file
+ * functions further so the struct isn't as large?
+ */
+
 static struct zip_archive *zip_get_archive_mem(struct memfile *mf)
 {
   struct zip_archive *zp = zip_new_archive();
@@ -1580,7 +1971,7 @@ static struct zip_archive *zip_get_archive_mem(struct memfile *mf)
  * is called. Afterward, the archive will be in file read mode.
  */
 
-struct zip_archive *zip_open_mem_read(char *src, int len)
+struct zip_archive *zip_open_mem_read(char *src, size_t len)
 {
   struct zip_archive *zp;
   struct memfile *mf;
@@ -1590,7 +1981,7 @@ struct zip_archive *zip_open_mem_read(char *src, int len)
     mf = mfopen(src, len);
     zp = zip_get_archive_mem(mf);
 
-    zp->end = len;
+    zp->end_in_file = len;
     
     debug("Opened memfile '%p', length %d for reading.\n", src, len);
     return zp;
@@ -1606,7 +1997,7 @@ struct zip_archive *zip_open_mem_read(char *src, int len)
  * is called. Afterward, the archive will be in file write mode.
  */
 
-struct zip_archive *zip_open_mem_write(char *src, int len)
+struct zip_archive *zip_open_mem_write(char *src, size_t len)
 {
   struct zip_archive *zp;
   struct memfile *mf;
@@ -1631,7 +2022,7 @@ struct zip_archive *zip_open_mem_write(char *src, int len)
  * write function fails with ZIP_ALLOC_MORE_SPACE.
  */
 
-int zip_expand(struct zip_archive *zp, char **src, size_t new_size)
+enum zip_error zip_expand(struct zip_archive *zp, char **src, size_t new_size)
 {
   struct memfile *mf;
   size_t current_offset;
@@ -1684,13 +2075,15 @@ void zip_test(struct world *mzx_world)
   char *zip_file;
   char *data;
   char *off;
-  int zip_len = 0;
-  int len = 32;
-  int result = 0;
+  size_t zip_len = 0;
+  size_t len = 32;
+  
+  enum zip_error result = 0;
 
   // Read an arbitrary zip from file
   zp = zip_open_file_read((char *)"_mzmstrings.zip");
-  if(!zip_read(zp, name, &len) && len)
+
+  if(zread(name, len, zp) == ZIP_SUCCESS)
   {
     name[31] = 0;
     debug("Some raw data: %s\n", name);
@@ -1716,23 +2109,21 @@ void zip_test(struct world *mzx_world)
   printf("\n");
 
   // Write a zip to memory
-  zip_len = zip_bound_total_header_usage(1, 14);
-  zip_len += zip_bound_data_usage(name, strlen(name) + 1);
+  sprintf(name, "Some data.txt");
+  len = strlen(name);
+
+  zip_len = zip_bound_total_header_usage(1, len);
+  zip_len += len;
+  //zip_len += zip_bound_data_usage(name, strlen(name) + 1);
   zip_file = cmalloc(zip_len);
 
   zp = zip_open_mem_write(zip_file, zip_len);
   
-  debug("(note: writing raw data to throw off the calculated bound)\n");
-  sprintf(name, "Some data.txt");
-  len = strlen(name) + 1;
-  zip_write(zp, name, len);
+  //debug("(note: writing raw data to throw off the calculated bound)\n");
+  //zip_write(zp, name, len);
 
-  len = strlen(name) + 1;
-  result = zip_write_file(zp, name, name, len, ZIP_M_DEFLATE);
-  if(result)
-  {
-    debug("Error code: %d\n", result);
-  }
+  zip_write_file(zp, name, name, len, ZIP_M_NO_COMPRESSION);
+
   result = zip_close(zp, &zip_len);
   if(result == ZIP_ALLOC_MORE_SPACE)
   {
@@ -1751,12 +2142,30 @@ void zip_test(struct world *mzx_world)
   fclose(fp);
 
   // Read a zip from memory
+  data = NULL;
   zp = zip_open_mem_read(zip_file, zip_len);
   if(!zip_read_directory(zp))
   {
-    result = zip_read_file(zp, name, 31, &data, &len);
-    if(result)
-      debug("Error code: %d\n", result);
+    zip_next_file_name(zp, name, 31);
+
+    result = zip_read_open_file_stream(zp, &len);
+    if(!result)
+    {
+      char *pos;
+
+      data = cmalloc(len);
+      pos = data;
+
+      while(zread(pos, 1, zp) == ZIP_SUCCESS)
+        pos++;
+
+      result = zip_read_close_stream(zp);
+      if(result == ZIP_SUCCESS)
+      {
+        *pos = 0;
+        debug("Read file '%s' from stream: %s\n", name, data);
+      }
+    }
   }
   zip_close(zp, NULL);
   printf("\n");
@@ -1765,11 +2174,7 @@ void zip_test(struct world *mzx_world)
 
   // Write a zip to file
   zp = zip_open_file_write((char *)"output.zip");
-  result = zip_write_file(zp, name, data, len, ZIP_M_DEFLATE);
-  if(result)
-  {
-    debug("Error code: %d\n", result);
-  }
+  zip_write_file(zp, name, data, len, ZIP_M_DEFLATE);
   zip_close(zp, NULL);
   printf("\n");
 

@@ -603,6 +603,159 @@ int memsafegets(char *dest, int size, char **src, char *end)
 }
 
 
+struct memfile *mfopen(char *src, size_t len)
+{
+  struct memfile *mf = cmalloc(sizeof(struct memfile));
+
+  mf->start = src;
+  mf->current = src;
+  mf->end = src + len;
+
+  return mf;
+}
+
+void mfopen_static(char *src, size_t len, struct memfile *mf)
+{
+  mf->start = src;
+  mf->current = src;
+  mf->end = src + len;
+}
+
+int mfclose(struct memfile *mf)
+{
+  if(mf)
+  {
+    free(mf);
+    return 0;
+  }
+  return -1;
+}
+
+int mfhasspace(size_t len, struct memfile *mf)
+{
+  return (len + mf->current) <= mf->end;
+}
+
+int mfgetc(struct memfile *mf)
+{
+  int v;
+  v =  mf->current[0];
+  mf->current += 1;
+  return v;
+}
+
+int mfgetw(struct memfile *mf)
+{
+  int v;
+  v =  mf->current[0];
+  v |= mf->current[1] << 8;
+  mf->current += 2;
+  return v;
+}
+
+int mfgetd(struct memfile *mf)
+{
+  int v;
+  v =  mf->current[0];
+  v |= mf->current[1] << 8;
+  v |= mf->current[2] << 16;
+  v |= mf->current[3] << 24;
+  mf->current += 4;
+  return v;
+}
+
+int mfputc(int ch, struct memfile *mf)
+{
+  mf->current[0] = ch & 0xFF;
+  mf->current += 1;
+  return ch & 0xFF;
+}
+
+void mfputw(int ch, struct memfile *mf)
+{
+  mf->current[0] = ch & 0xFF;
+  mf->current[1] = (ch >> 8) & 0xFF;
+  mf->current += 2;
+}
+
+void mfputd(int ch, struct memfile *mf)
+{
+  mf->current[0] = ch & 0xFF;
+  mf->current[1] = (ch >> 8) & 0xFF;
+  mf->current[2] = (ch >> 16) & 0xFF;
+  mf->current[3] = (ch >> 24) & 0xFF;
+  mf->current += 4;
+}
+
+int mfread(char *dest, size_t len, size_t count, struct memfile *mf)
+{
+  unsigned int i;
+  for(i = 0; i < count; i++)
+  {
+    if(mf->current + len >= mf->end)
+      break;
+
+    memcpy(dest, mf->current, len);
+    mf->current += len;
+    dest += len;
+  }
+
+  return i;
+}
+
+int mfwrite(char *src, size_t len, size_t count, struct memfile *mf)
+{
+  unsigned int i;
+  for(i = 0; i < count; i++)
+  {
+    if(mf->current + len >= mf->end)
+      break;
+
+    memcpy(mf->current, src, len);
+    mf->current += len;
+    src += len;
+  }
+
+  return i;
+}
+
+int mfseek(struct memfile *mf, int offs, int code)
+{
+  char *ptr;
+  switch(code)
+  {
+    case SEEK_SET:
+      ptr = mf->start + offs;
+      break;
+
+    case SEEK_CUR:
+      ptr = mf->current + offs;
+      break;
+
+    case SEEK_END:
+      ptr = mf->end + offs;
+      break;
+
+    default:
+      ptr = NULL;
+      break;
+  }
+
+  if(ptr && ptr >= mf->start && ptr <= mf->end)
+  {
+    mf->current = ptr;
+    return 0;
+  }
+
+  return -1;
+}
+
+int mftell(struct memfile *mf)
+{
+  return mf->current - mf->start;
+}
+
+
 #if defined(__WIN32__) && defined(__STRICT_ANSI__)
 
 /* On WIN32 with C99 defining __STRICT_ANSI__ these POSIX.1-2001 functions

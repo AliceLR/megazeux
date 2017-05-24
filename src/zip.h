@@ -29,29 +29,36 @@
 
 enum zip_error {
   ZIP_SUCCESS = 0,
-  ZIP_NULL,
   ZIP_EOF,
+  ZIP_NULL,
+  ZIP_NULL_BUF,
   ZIP_SEEK_ERROR,
   ZIP_READ_ERROR,
   ZIP_WRITE_ERROR,
   ZIP_OPEN_ERROR,
   ZIP_ALLOC_MORE_SPACE,
+  ZIP_INVALID_WHILE_CLOSING,
   ZIP_INVALID_READ_IN_WRITE_MODE,
   ZIP_INVALID_WRITE_IN_READ_MODE,
   ZIP_INVALID_RAW_READ_IN_FILE_MODE,
   ZIP_INVALID_RAW_WRITE_IN_FILE_MODE,
-  ZIP_INVALID_FILE_READ_IN_RAW_MODE,
   ZIP_INVALID_DIRECTORY_READ_IN_FILE_MODE,
+  ZIP_INVALID_FILE_READ_IN_RAW_MODE,
+  ZIP_INVALID_FILE_READ_IN_STREAM_MODE,
+  ZIP_INVALID_FILE_WRITE_IN_STREAM_MODE,
+  ZIP_INVALID_STREAM_READ,
+  ZIP_INVALID_STREAM_WRITE,
   ZIP_INVALID_EXPAND,
   ZIP_NO_EOCD,
   ZIP_NO_CENTRAL_DIRECTORY,
   ZIP_INCOMPLETE_CENTRAL_DIRECTORY,
   ZIP_UNSUPPORTED_MULTIPLE_DISKS,
-  ZIP_UNSUPPORTED_DATA_DESCRIPTOR,
   ZIP_UNSUPPORTED_FLAGS,
   ZIP_UNSUPPORTED_COMPRESSION,
   ZIP_UNSUPPORTED_ZIP64,
+  ZIP_UNSUPPORTED_DEFLATE_STREAM,
   ZIP_MISSING_LOCAL_HEADER,
+  ZIP_MISSING_DATA_DESCRIPTOR,
   ZIP_HEADER_MISMATCH,
   ZIP_CRC32_MISMATCH,
   ZIP_INFLATE_FAILED,
@@ -60,6 +67,7 @@ enum zip_error {
 
 struct zip_file_header
 {
+  Uint16 flags;
   Uint16 method;
   Uint32 crc32;
   Uint32 compressed_size;
@@ -71,23 +79,24 @@ struct zip_file_header
 
 struct zip_archive
 {
-  Uint16 pos;
   Uint8 mode;
   Uint8 closing;
 
-  Uint32 start;
-  Uint32 end;
-
-  Uint16 files_alloc;
-
+  Uint16 pos;
   Uint16 num_files;
+  Uint16 files_alloc;
   Uint32 size_central_directory;
   Uint32 offset_central_directory;
-  Uint32 dos_date_time;
 
   Uint32 running_file_name_length;
 
   struct zip_file_header **files;
+  struct zip_file_header *streaming_file;
+  Uint32 stream_left;
+  Uint32 stream_crc32;
+
+  Uint32 start_in_file;
+  Uint32 end_in_file;
 
   void *fp;
 
@@ -114,23 +123,41 @@ struct zip_archive
 int zip_bound_data_usage(char *src, int srcLen);
 int zip_bound_total_header_usage(int num_files, int max_name_size);
 
-int zip_read(struct zip_archive *zp, char *dest, int *destLen);
-int zip_read_file(struct zip_archive *zp, char *name, int name_buffer_size,
- char **dest, int *destLen);
+int zgetc(struct zip_archive *zp, enum zip_error *err);
+int zgetw(struct zip_archive *zp, enum zip_error *err);
+int zgetd(struct zip_archive *zp, enum zip_error *err);
+enum zip_error zread(char *destBuf, size_t readLen, struct zip_archive *zp);
 
-int zip_write(struct zip_archive *zp, char *src, int srcLen);
-int zip_write_file(struct zip_archive *zp, char *name, char *src, int srcLen,
+enum zip_error zip_next_file_name(struct zip_archive *zp, char *name,
+ int name_buffer_size);
+enum zip_error zip_read_open_file_stream(struct zip_archive *zp,
+ size_t *destLen);
+enum zip_error zip_read_close_stream(struct zip_archive *zp);
+
+enum zip_error zip_read_file(struct zip_archive *zp, char *name,
+ int name_buffer_size, char **dest, size_t *destLen);
+
+enum zip_error zputc(int value, struct zip_archive *zp);
+enum zip_error zputw(int value, struct zip_archive *zp);
+enum zip_error zputd(int value, struct zip_archive *zp);
+enum zip_error zwrite(char *src, size_t srcLen, struct zip_archive *zp);
+
+enum zip_error zip_write_open_file_stream(struct zip_archive *zp, char *name,
  int method);
+enum zip_error zip_write_close_stream(struct zip_archive *zp);
 
-int zip_read_directory(struct zip_archive *zp);
-int zip_close(struct zip_archive *zp, int *final_length);
+enum zip_error zip_write_file(struct zip_archive *zp, char *name, char *src,
+ size_t srcLen, int method);
+
+enum zip_error zip_read_directory(struct zip_archive *zp);
+enum zip_error zip_close(struct zip_archive *zp, size_t *final_length);
 
 struct zip_archive *zip_open_file_read(char *file_name);
 struct zip_archive *zip_open_file_write(char *file_name);
-struct zip_archive *zip_open_mem_read(char *src, int len);
-struct zip_archive *zip_open_mem_write(char *src, int len);
+struct zip_archive *zip_open_mem_read(char *src, size_t len);
+struct zip_archive *zip_open_mem_write(char *src, size_t len);
 
-int zip_expand(struct zip_archive *zp, char **src, size_t new_size);
+enum zip_error zip_expand(struct zip_archive *zp, char **src, size_t new_size);
 
 // FIXME REMOVE
 #define TEST

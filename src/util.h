@@ -134,6 +134,28 @@ CORE_LIBSPEC void *boyer_moore_search(void *A, size_t a_len, void *B, size_t b_l
 
 CORE_LIBSPEC int memsafegets(char *dest, int size, char **src, char *end);
 
+struct memfile
+{
+  char *start;
+  char *current;
+  char *end;
+};
+
+struct memfile *mfopen(char *src, size_t len);
+void mfopen_static(char *src, size_t len, struct memfile *mf);
+int mfclose(struct memfile *mf);
+int mfhasspace(size_t len, struct memfile *mf);
+int mfgetc(struct memfile *mf);
+int mfgetw(struct memfile *mf);
+int mfgetd(struct memfile *mf);
+int mfputc(int ch, struct memfile *mf);
+void mfputw(int ch, struct memfile *mf);
+void mfputd(int ch, struct memfile *mf);
+int mfread(char *dest, size_t len, size_t count, struct memfile *mf);
+int mfwrite(char *src, size_t len, size_t count, struct memfile *mf);
+int mfseek(struct memfile *mf, int offs, int code);
+int mftell(struct memfile *mf);
+
 #if defined(__WIN32__) && defined(__STRICT_ANSI__)
 CORE_LIBSPEC int strcasecmp(const char *s1, const char *s2);
 CORE_LIBSPEC int strncasecmp(const char *s1, const char *s2, size_t n);
