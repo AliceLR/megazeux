@@ -696,7 +696,7 @@ int zgetd(struct zip_archive *zp, enum zip_error *err)
   return zp->vgetd(zp->fp);
 }
 
-enum zip_error zread(char *destBuf, size_t readLen, struct zip_archive *zp)
+enum zip_error zread(char *destBuf, Uint32 readLen, struct zip_archive *zp)
 {
   struct zip_file_header *fh;
   char *src;
@@ -851,7 +851,7 @@ err_out:
  */
 
 enum zip_error zip_read_open_file_stream(struct zip_archive *zp,
- size_t *destLen)
+ Uint32 *destLen)
 {
   struct zip_file_header *central_fh;
   struct zip_file_header local_fh;
@@ -1006,7 +1006,7 @@ err_out:
  */
 
 enum zip_error zip_read_file(struct zip_archive *zp, char *name,
- int name_buffer_size, char **dest, size_t *destLen)
+ int name_buffer_size, char **dest, Uint32 *destLen)
 {
   Uint32 u_size;
   enum zip_error result;
@@ -1147,11 +1147,11 @@ enum zip_error zputd(int value, struct zip_archive *zp)
   return ZIP_SUCCESS;
 }
 
-enum zip_error zwrite(char *src, size_t srcLen, struct zip_archive *zp)
+enum zip_error zwrite(char *src, Uint32 srcLen, struct zip_archive *zp)
 {
   struct zip_file_header *fh;
   char *buffer;
-  size_t writeLen;
+  Uint32 writeLen;
   Uint16 method = ZIP_M_NO_COMPRESSION;
 
   void *fp;
@@ -1197,7 +1197,7 @@ enum zip_error zwrite(char *src, size_t srcLen, struct zip_archive *zp)
   // This might cause issues if the entire file isn't written in one go. Not sure.
   if(method == ZIP_M_DEFLATE)
   {
-    size_t consumed = srcLen;
+    Uint32 consumed = srcLen;
 
     result = zip_compress(&buffer, &writeLen, src, &consumed);
     if(result != Z_STREAM_END)
@@ -1417,7 +1417,7 @@ err_out:
  */
 
 enum zip_error zip_write_file(struct zip_archive *zp, char *name, char *src,
- size_t srcLen, int method)
+ Uint32 srcLen, int method)
 {
   enum zip_error result;
 
@@ -1716,7 +1716,7 @@ static enum zip_error zip_write_eocd_record(struct zip_archive *zp)
  * reallocate using zip_expand and call zip_close again.
  */
 
-enum zip_error zip_close(struct zip_archive *zp, size_t *final_length)
+enum zip_error zip_close(struct zip_archive *zp, Uint32 *final_length)
 {
   int result = ZIP_SUCCESS;
   int mode;
@@ -1904,11 +1904,9 @@ struct zip_archive *zip_open_file_read(char *file_name)
     struct zip_archive *zp = zip_get_archive_file(fp);
     zp->end_in_file = ftell_and_rewind(fp);
 
-    debug("Opened file '%s' for reading.\n", file_name);
     return zp;
   }
 
-  warn("Failed to open file '%s'.\n", file_name);
   return NULL;
 }
 
@@ -1928,11 +1926,9 @@ struct zip_archive *zip_open_file_write(char *file_name)
 
     zip_init_for_write(zp, ZIP_DEFAULT_NUM_FILES);
 
-    debug("Opened file '%s' for writing.\n", file_name);
     return zp;
   }
 
-  warn("Failed to open file '%s'.\n", file_name);
   return NULL;
 }
 
@@ -1968,7 +1964,7 @@ static struct zip_archive *zip_get_archive_mem(struct memfile *mf)
  * is called. Afterward, the archive will be in file read mode.
  */
 
-struct zip_archive *zip_open_mem_read(char *src, size_t len)
+struct zip_archive *zip_open_mem_read(char *src, Uint32 len)
 {
   struct zip_archive *zp;
   struct memfile *mf;
@@ -1979,12 +1975,10 @@ struct zip_archive *zip_open_mem_read(char *src, size_t len)
     zp = zip_get_archive_mem(mf);
 
     zp->end_in_file = len;
-    
-    debug("Opened memfile '%p', length %d for reading.\n", src, len);
+
     return zp;
   }
 
-  warn("Failed to open memfile '%p'.\n", src);
   return NULL;
 }
 
@@ -1994,7 +1988,7 @@ struct zip_archive *zip_open_mem_read(char *src, size_t len)
  * is called. Afterward, the archive will be in file write mode.
  */
 
-struct zip_archive *zip_open_mem_write(char *src, size_t len)
+struct zip_archive *zip_open_mem_write(char *src, Uint32 len)
 {
   struct zip_archive *zp;
   struct memfile *mf;
@@ -2006,11 +2000,9 @@ struct zip_archive *zip_open_mem_write(char *src, size_t len)
 
     zip_init_for_write(zp, ZIP_DEFAULT_NUM_FILES);
 
-    debug("Opened memfile '%p', length %d for writing.\n", src, len);
     return zp;
   }
 
-  warn("Failed to open memfile '%p'.\n", src);
   return NULL;
 }
 
@@ -2019,10 +2011,10 @@ struct zip_archive *zip_open_mem_write(char *src, size_t len)
  * write function fails with ZIP_ALLOC_MORE_SPACE.
  */
 
-enum zip_error zip_expand(struct zip_archive *zp, char **src, size_t new_size)
+enum zip_error zip_expand(struct zip_archive *zp, char **src, Uint32 new_size)
 {
   struct memfile *mf;
-  size_t current_offset;
+  Uint32 current_offset;
   char *start;
 
   int result;
@@ -2042,7 +2034,7 @@ enum zip_error zip_expand(struct zip_archive *zp, char **src, size_t new_size)
   mf = zp->fp;
   start = mf->start;
 
-  if((size_t)(mf->end - start) < new_size)
+  if((Uint32)(mf->end - start) < new_size)
   {
     current_offset = mf->current - start;
 
@@ -2072,8 +2064,8 @@ void zip_test(struct world *mzx_world)
   char *zip_file;
   char *data;
   char *off;
-  size_t zip_len = 0;
-  size_t len = 32;
+  Uint32 zip_len = 0;
+  Uint32 len = 32;
   
   enum zip_error result = 0;
 
@@ -2124,7 +2116,7 @@ void zip_test(struct world *mzx_world)
   result = zip_close(zp, &zip_len);
   if(result == ZIP_ALLOC_MORE_SPACE)
   {
-    debug("Attempting to expand to %d bytes\n", zip_len);
+    debug("Attempting to expand to %d bytes\n", (int)zip_len);
     zip_expand(zp, &zip_file, zip_len);
     result = zip_close(zp, &zip_len);
     if(result)

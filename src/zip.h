@@ -127,38 +127,38 @@ int zip_bound_total_header_usage(int num_files, int max_name_size);
 int zgetc(struct zip_archive *zp, enum zip_error *err);
 int zgetw(struct zip_archive *zp, enum zip_error *err);
 int zgetd(struct zip_archive *zp, enum zip_error *err);
-enum zip_error zread(char *destBuf, size_t readLen, struct zip_archive *zp);
+enum zip_error zread(char *destBuf, Uint32 readLen, struct zip_archive *zp);
 
 enum zip_error zip_next_file_name(struct zip_archive *zp, char *name,
  int name_buffer_size);
 enum zip_error zip_read_open_file_stream(struct zip_archive *zp,
- size_t *destLen);
+ Uint32 *destLen);
 enum zip_error zip_read_close_stream(struct zip_archive *zp);
 
 enum zip_error zip_read_file(struct zip_archive *zp, char *name,
- int name_buffer_size, char **dest, size_t *destLen);
+ int name_buffer_size, char **dest, Uint32 *destLen);
 
 enum zip_error zputc(int value, struct zip_archive *zp);
 enum zip_error zputw(int value, struct zip_archive *zp);
 enum zip_error zputd(int value, struct zip_archive *zp);
-enum zip_error zwrite(char *src, size_t srcLen, struct zip_archive *zp);
+enum zip_error zwrite(char *src, Uint32 srcLen, struct zip_archive *zp);
 
 enum zip_error zip_write_open_file_stream(struct zip_archive *zp, char *name,
  int method);
 enum zip_error zip_write_close_stream(struct zip_archive *zp);
 
 enum zip_error zip_write_file(struct zip_archive *zp, char *name, char *src,
- size_t srcLen, int method);
+ Uint32 srcLen, int method);
 
 enum zip_error zip_read_directory(struct zip_archive *zp);
-enum zip_error zip_close(struct zip_archive *zp, size_t *final_length);
+enum zip_error zip_close(struct zip_archive *zp, Uint32 *final_length);
 
 struct zip_archive *zip_open_file_read(char *file_name);
 struct zip_archive *zip_open_file_write(char *file_name);
-struct zip_archive *zip_open_mem_read(char *src, size_t len);
-struct zip_archive *zip_open_mem_write(char *src, size_t len);
+struct zip_archive *zip_open_mem_read(char *src, Uint32 len);
+struct zip_archive *zip_open_mem_write(char *src, Uint32 len);
 
-enum zip_error zip_expand(struct zip_archive *zp, char **src, size_t new_size);
+enum zip_error zip_expand(struct zip_archive *zp, char **src, Uint32 new_size);
 
 // FIXME REMOVE
 #define TEST
