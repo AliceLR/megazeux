@@ -19,6 +19,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "mzm.h"
 #include "data.h"
@@ -58,18 +59,25 @@ static void save_mzm_common(struct world *mzx_world, int start_x, int start_y, i
     if (mode == 0) {
       // Allocate memory for robots
       {
-        struct robot **robot_list = mzx_world->current_board->robot_list;
-        int num_robots_allocated = mzx_world->current_board->num_robots_allocated;
+        struct board *src_board = mzx_world->current_board;
+        struct robot **robot_list = src_board->robot_list_name_sorted;
+        int num_robots_active = src_board->num_robots_active;
+        int rid;
+        int offset;
         size_t robot_size;
-        for (int i = 1; i <= num_robots_allocated; i++) {
+
+        for (int i = 0; i < num_robots_active; i++) {
           struct robot *cur_robot = robot_list[i];
           if (cur_robot)
           {
             if (cur_robot->xpos >= start_x && cur_robot->ypos >= start_y &&
                 cur_robot->xpos < start_x + width && cur_robot->ypos < start_y + height)
             {
+              offset = cur_robot->xpos + (cur_robot->ypos * src_board->board_width);
+              assert(is_robot((enum thing)src_board->level_id[offset]));
+              rid = src_board->level_param[offset];
               robot_size = save_robot_calculate_size(cur_robot, savegame, WORLD_VERSION);
-              robot_sizes[i] = (int)robot_size;
+              robot_sizes[rid] = (int)robot_size;
               mzm_size += robot_size;
             }
           }
@@ -630,7 +638,7 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer, int file
                 cur_robot->world_version = mzx_world->version;
                 load_robot_from_memory(cur_robot, bufferPtr, savegame_mode,
                   mzm_world_version, bufferPtr - (const unsigned char *)buffer);
-                bufferPtr += load_robot_calculate_size(bufferPtr, savegame, mzx_world->version);
+                bufferPtr += robot_calculated_size;
                 current_x = robot_x_locations[i];
                 current_y = robot_y_locations[i];
                 cur_robot->xpos = current_x;

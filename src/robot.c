@@ -533,6 +533,12 @@ size_t load_robot_calculate_size(const void *buffer, int savegame, int version)
   bufferPtr = (unsigned char *)buffer + 0;
   program_length = mem_getd(&bufferPtr);
 
+  // Prior to DBC / VERSION_PROGRAM_SOURCE the last two bytes are junk
+  #ifdef CONFIG_DEBYTECODE
+  if(version < VERSION_PROGRAM_SOURCE)
+  #endif
+    program_length &= 0xFFFF;
+  
   // Next, if this is a savegame robot, read the stack size
   if (savegame) {
     bufferPtr = (unsigned char *)buffer + 41;
