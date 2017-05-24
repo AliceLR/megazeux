@@ -175,8 +175,15 @@ LINK_CC := ${CXX}
 endif
 
 ifeq (${BUILD_MIKMOD},1)
+core_flags += ${MIKMOD_CFLAGS}
 core_ldflags := ${MIKMOD_LDFLAGS} ${core_ldflags}
 core_cobjs += ${core_obj}/audio_mikmod.o
+endif
+
+ifeq (${BUILD_OPENMPT},1)
+core_flags += ${OPENMPT_CFLAGS}
+core_ldflags := ${OPENMPT_LDFLAGS} ${core_ldflags}
+core_cobjs += ${core_obj}/audio_openmpt.o
 endif
 
 ifeq (${LIBPNG},1)

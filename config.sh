@@ -50,6 +50,7 @@ usage() {
 	echo "  --enable-gp2x         Enables half-res software renderer."
 	echo "  --disable-modplug     Disable ModPlug music engine."
 	echo "  --enable-mikmod       Enables MikMod music engine."
+	echo "  --enable-openmpt      Enables OpenMPT music engine."
 	echo "  --disable-libpng      Disable PNG screendump support."
 	echo "  --disable-audio       Disable all audio (sound + music)."
 	echo "  --enable-tremor       Switches out libvorbis for libtremor."
@@ -100,6 +101,7 @@ OVERLAY="true"
 GP2X="false"
 MODPLUG="true"
 MIKMOD="false"
+OPENMPT="false"
 LIBPNG="true"
 AUDIO="true"
 TREMOR="false"
@@ -207,6 +209,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--disable-mikmod" ] && MIKMOD="false"
 	[ "$1" = "--enable-mikmod" ]  && MIKMOD="true"
+
+	[ "$1" = "--disable-openmpt" ] && OPENMPT="false"
+	[ "$1" = "--enable-openmpt" ]  && OPENMPT="true"
 
 	[ "$1" = "--disable-libpng" ] && LIBPNG="false"
 	[ "$1" = "--enable-libpng" ]  && LIBPNG="true"
@@ -588,11 +593,12 @@ if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" \
 fi
 
 #
-# Force-disable modplug/mikmod if audio is disabled
+# Force-disable modplug/mikmod/openmpt if audio is disabled
 #
 if [ "$AUDIO" = "false" ]; then
 	MODPLUG="false"
 	MIKMOD="false"
+	OPENMPT="false"
 fi
 
 #
@@ -837,7 +843,11 @@ fi
 #
 # GP2X needs Mikmod, other platforms can pick
 #
-if [ "$MODPLUG" = "true" ]; then
+if [ "$OPENMPT" = "true" ]; then
+	echo "Selected OpenMPT music engine."
+	echo "#define CONFIG_OPENMPT" >> src/config.h
+	echo "BUILD_OPENMPT=1" >> platform.inc
+elif [ "$MODPLUG" = "true" ]; then
 	echo "Selected Modplug music engine."
 	echo "#define CONFIG_MODPLUG" >> src/config.h
 	echo "BUILD_MODPLUG=1" >> platform.inc

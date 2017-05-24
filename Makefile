@@ -57,6 +57,9 @@ endif
 MIKMOD_CFLAGS  ?= -I${PREFIX}/include
 MIKMOD_LDFLAGS ?= -L${PREFIX}/lib -lmikmod
 
+OPENMPT_CFLAGS  ?= -I${PREFIX}/include
+OPENMPT_LDFLAGS ?= -L${PREFIX}/lib -lopenmpt
+
 ZLIB_CFLAGS  ?= -I${PREFIX}/include \
                 -D_FILE_OFFSET_BITS=32 -U_LARGEFILE64_SOURCE
 ZLIB_LDFLAGS ?= -L${PREFIX}/lib -lz
