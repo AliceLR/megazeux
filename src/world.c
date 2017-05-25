@@ -1616,6 +1616,7 @@ __editor_maybe_static void default_global_data(struct world *mzx_world)
   set_counter(mzx_world, "AMMO", 0, 0);
   set_counter(mzx_world, "COINS", 0, 0);
   set_counter(mzx_world, "ENTER_MENU", 1, 0);
+  set_counter(mzx_world, "ESCAPE_MENU", 1, 0);
   set_counter(mzx_world, "F2_MENU", 1, 0);
   set_counter(mzx_world, "GEMS", 0, 0);
   set_counter(mzx_world, "HEALTH", mzx_world->starting_health, 0);
