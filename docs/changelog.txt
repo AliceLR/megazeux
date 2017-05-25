@@ -33,6 +33,11 @@ FEATURES
   place of a file name, i.e. set "$str" "LOAD_ROBOT".
 + Strings can now be used for saving and loading MZMs in place
   of a file name, i.e. put "@$str" image_file... (Lancer-X)
++ Added ESCAPE_MENU counter. When set to anything except 0, this
+  counter will prevent pressing escape from opening the exit
+  gameplay menu. This will not affect any other escape menus in
+  MZX, and the exit gameplay menu can still be opened by other
+  means, such as ALT+F4, CTRL+C, the window close button, etc.
 
 + Debytecode: the LOAD_SOURCE_FILE special counter can now be
   used to load and compile a robot program from source code.
