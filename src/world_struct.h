@@ -37,6 +37,10 @@ __M_BEGIN_DECLS
 #include "sfx.h"
 #include "util.h"
 
+#define CHANGE_STATE_SWAP_WORLD 1
+#define CHANGE_STATE_LOAD_GAME_ROBOTIC 2
+#define CHANGE_STATE_EXIT_GAME_ROBOTIC 3
+
 struct world
 {
   // 0 if a world has been loaded, 1 if it hasn't
@@ -178,8 +182,8 @@ struct world
   // counters. It should normally be set to FOPEN_NONE.
   enum special_counter_return special_counter_return;
 
-  // Indicates if a robot swapped the world
-  int swapped;
+  // Indicates a robotic world swap, savegame load, or game exit
+  int change_game_state;
 
   // Current speed of MZX world
   int mzx_speed;

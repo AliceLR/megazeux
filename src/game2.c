@@ -248,11 +248,10 @@ void update_board(struct world *mzx_world)
         {
           run_robot(mzx_world, current_param, x, y);
 
-          if(mzx_world->swapped)
-          {
-            // Swapped world; get out of here
+          // On a game state change, we need to return to the main game loop.
+          if(mzx_world->change_game_state)
             return;
-          }
+
           break;
         }
 
@@ -1807,14 +1806,13 @@ void update_board(struct world *mzx_world)
       if(is_robot(current_id))
       {
         current_param = level_param[level_offset];
+
         // May change the source board (with swap world or load game)
         run_robot(mzx_world, -current_param, x, y);
 
-        if(mzx_world->swapped)
-        {
-          // Swapped world; get out of here
+        // On a game state change, we need to return to the main game loop.
+        if(mzx_world->change_game_state)
           return;
-        }
       }
       level_offset--;
     }

@@ -1596,8 +1596,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           {
             gotoed = set_counter_special(mzx_world, dest_buffer, value, id);
 
-            // We loaded a new game successfully; get out of here
-            if(mzx_world->swapped)
+            // On a game state change, we need to return to the main game loop.
+            if(mzx_world->change_game_state)
               return;
 
             // Some specials might have changed these
@@ -5383,7 +5383,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         if(redo_load == 1)
           break;
 
-        mzx_world->swapped = 1;
+        // Exit to the main loop and let it know we're swapping worlds.
+        mzx_world->change_game_state = CHANGE_STATE_SWAP_WORLD;
         free(translated_name);
         return;
       }

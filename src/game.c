@@ -1263,7 +1263,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
     if(reload) reload--;
   }
 
-  mzx_world->swapped = 0;
+  mzx_world->change_game_state = 0;
 
   if((src_board->robot_list[0] != NULL) &&
    (src_board->robot_list[0])->used)
@@ -1607,22 +1607,36 @@ static int update(struct world *mzx_world, int game, int *fadein)
     *fadein = 0;
   }
 
-  if(mzx_world->swapped)
+  switch(mzx_world->change_game_state)
   {
-    src_board = mzx_world->current_board;
-    load_board_module(src_board);
-    strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
+    case CHANGE_STATE_SWAP_WORLD:
+    case CHANGE_STATE_LOAD_GAME_ROBOTIC:
+    {
+      // Load the new board's mod
+      src_board = mzx_world->current_board;
+      load_board_module(src_board);
+      strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
 
-    // send both JUSTLOADED and JUSTENTERED respectively; the
-    // JUSTENTERED label will take priority if a robot defines it.
-    // This differs from pressing P on the title screen, where the
-    // order of precedence is swapped.
-    // If swapped==2, we came here from LOAD_GAME; don't JUSTENTERED
-    send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
-    if(mzx_world->swapped != 2)
-      send_robot_def(mzx_world, 0, LABEL_JUSTENTERED);
+      // send both JUSTLOADED and JUSTENTERED respectively; the
+      // JUSTENTERED label will take priority if a robot defines it.
+      // This differs from pressing P on the title screen, where the
+      // order of precedence is swapped.
+      send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
 
-    return 1;
+      // Only do this for swap world.
+      if(mzx_world->change_game_state == CHANGE_STATE_SWAP_WORLD)
+        send_robot_def(mzx_world, 0, LABEL_JUSTENTERED);
+
+      return 1;
+    }
+
+    case CHANGE_STATE_EXIT_GAME_ROBOTIC:
+      // Exit game--skip input processing. The game state will be
+      // exit the next cycle.
+      return 1;
+
+    default:
+      break;
   }
 
   if(mzx_world->target_where != TARGET_NONE)
@@ -1883,6 +1897,10 @@ __editor_maybe_static void play_game(struct world *mzx_world)
 
   do
   {
+    // Exit game state change
+    if(mzx_world->change_game_state == CHANGE_STATE_EXIT_GAME_ROBOTIC)
+      break;
+
     focus_on_player(mzx_world);
 
     // Update

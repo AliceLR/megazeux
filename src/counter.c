@@ -1561,6 +1561,16 @@ static int smzx_palette_read(struct world *mzx_world,
   return 0;
 }
 
+static void exit_game_write(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int value, int id)
+{
+  if(value)
+  {
+    // Signal the main loop that the game state should change.
+    mzx_world->change_game_state = CHANGE_STATE_EXIT_GAME_ROBOTIC;
+  }
+}
+
 static int load_game_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
@@ -2498,6 +2508,7 @@ static const struct function_counter builtin_counters[] =
   { "date_month", 0x0209, date_month_read, NULL },                   // 2.60
   { "date_year", 0x0209, date_year_read, NULL },                     // 2.60
   { "divider", 0x0244, divider_read, divider_write },                // 2.68
+  { "exit_game", 0x0255, NULL, exit_game_write },                    // 2.85
   { "fread", 0x0209, fread_read, NULL },                             // 2.60
   { "fread_counter", 0x0241, fread_counter_read, NULL },             // 2.65
   { "fread_delimiter", 0x0254, NULL, fread_delim_write },            // 2.84
@@ -2834,8 +2845,9 @@ int set_counter_special(struct world *mzx_world, char *char_value,
             insta_fadeout();
           else
             insta_fadein();
-          // Let game.c handle the rest for now
-          mzx_world->swapped = 2;
+
+          // Let the main loop know we're loading a save from Robotic
+          mzx_world->change_game_state = CHANGE_STATE_LOAD_GAME_ROBOTIC;
         }
       }
 
