@@ -6,8 +6,8 @@
 */
 
 #include <math.h> //for GCCFIX
-#include <libmodplug/stdafx.h>
-#include <libmodplug/sndfile.h>
+#include "libmodplug/stdafx.h"
+#include "libmodplug/sndfile.h"
 
 #define MMCMP_SUPPORT
 
@@ -105,6 +105,7 @@ BOOL CSoundFile::Create(LPCBYTE lpStream, DWORD dwMemLength)
 	m_nFrameDelay = 0;
 	m_nNextRow = 0;
 	m_nRow = 0;
+	m_nNextStartRow = 0;
 	m_nPattern = 0;
 	m_nCurrentPattern = 0;
 	m_nNextPattern = 0;
@@ -230,7 +231,7 @@ BOOL CSoundFile::Create(LPCBYTE lpStream, DWORD dwMemLength)
 		if (pins->nGlobalVol > 64) pins->nGlobalVol = 64;
 	}
 	// Check invalid instruments
-	while ((m_nInstruments > 0) && (!Headers[m_nInstruments])) 
+	while ((m_nInstruments > 0) && (!Headers[m_nInstruments]))
 		m_nInstruments--;
 	// Set default values
 	if (m_nSongPreAmp < 0x20) m_nSongPreAmp = 0x20;
@@ -246,6 +247,7 @@ BOOL CSoundFile::Create(LPCBYTE lpStream, DWORD dwMemLength)
 	m_nTickCount = m_nMusicSpeed;
 	m_nNextRow = 0;
 	m_nRow = 0;
+	m_nNextStartRow = 0;
 	if ((m_nRestartPos >= MAX_ORDERS) || (Order[m_nRestartPos] >= MAX_PATTERNS)) m_nRestartPos = 0;
 	// Load plugins
 	if (gpMixPluginCreateProc)
@@ -680,6 +682,7 @@ void CSoundFile::SetCurrentPos(UINT nPos)
 	}
 	m_nNextPattern = nPattern;
 	m_nNextRow = nRow;
+	m_nNextStartRow = 0;
 	m_nTickCount = m_nMusicSpeed;
 	m_nBufferCount = 0;
 	m_nPatternDelay = 0;
@@ -708,7 +711,7 @@ void CSoundFile::SetCurrentOrder(UINT nPos)
 	} else
 	{
 		m_nNextPattern = nPos;
-		m_nRow = m_nNextRow = 0;
+		m_nRow = m_nNextRow = m_nNextStartRow = 0;
 		m_nPattern = 0;
 		m_nTickCount = m_nMusicSpeed;
 		m_nBufferCount = 0;
@@ -772,11 +775,11 @@ UINT CSoundFile::GetSaveFormats() const
 {
 	UINT n = 0;
 	if ((!m_nSamples) || (!m_nChannels) || (m_nType == MOD_TYPE_NONE)) return 0;
-	switch(m_nType)
-	{
-	case MOD_TYPE_MOD:	n = MOD_TYPE_MOD;
-	case MOD_TYPE_S3M:	n = MOD_TYPE_S3M;
-	}
+	if (m_nType & MOD_TYPE_MOD)
+		n |= MOD_TYPE_MOD;
+	if (m_nType & MOD_TYPE_S3M)
+		n |= MOD_TYPE_S3M;
+	// Can always save to XM & IT
 	n |= MOD_TYPE_XM | MOD_TYPE_IT;
 	if (!m_nInstruments)
 	{
@@ -791,7 +794,8 @@ UINT CSoundFile::GetSampleName(UINT nSample,LPSTR s) const
 //--------------------------------------------------------
 {
         char sztmp[40] = "";      // changed from CHAR
-	memcpy(sztmp, m_szNames[nSample],32);
+	if (nSample < MAX_SAMPLES)
+		memcpy(sztmp, m_szNames[nSample], 32);
 	sztmp[31] = 0;
 	if (s) strcpy(s, sztmp);
 	return strlen(sztmp);
@@ -1096,11 +1100,12 @@ UINT CSoundFile::WriteSample(FILE *f, MODINSTRUMENT *pins, UINT nFlags, UINT nMa
 UINT CSoundFile::ReadSample(MODINSTRUMENT *pIns, UINT nFlags, LPCSTR lpMemFile, DWORD dwMemLength)
 //------------------------------------------------------------------------------
 {
-	UINT len = 0, mem = pIns->nLength+6;
+	UINT len = 0, mem;
 
 	// Disable >2Gb samples,(preventing buffer overflow in AllocateSample)
 	if ((!pIns) || ((int)pIns->nLength < 4) || (!lpMemFile)) return 0;
 	if (pIns->nLength > MAX_SAMPLE_LENGTH) pIns->nLength = MAX_SAMPLE_LENGTH;
+	mem = pIns->nLength+6;
 	pIns->uFlags &= ~(CHN_16BIT|CHN_STEREO);
 	if (nFlags & RSF_16BIT)
 	{
@@ -1150,7 +1155,7 @@ UINT CSoundFile::ReadSample(MODINSTRUMENT *pIns, UINT nFlags, LPCSTR lpMemFile, 
 	case RS_ADPCM4:
 		{
 			len = (pIns->nLength + 1) / 2;
-			if (len > dwMemLength - 16) break;
+			if (len > dwMemLength - 16 || dwMemLength < 16) break;
 			memcpy(CompressionTable, lpMemFile, 16);
 			lpMemFile += 16;
 			signed char *pSample = pIns->pSample;
@@ -1403,8 +1408,9 @@ UINT CSoundFile::ReadSample(MODINSTRUMENT *pIns, UINT nFlags, LPCSTR lpMemFile, 
 			DWORD bitbuf = bswapLE32(*((DWORD *)ibuf));
 			UINT bitnum = 32;
 			BYTE dlt = 0, lowbyte = 0;
+			LPBYTE ibufend = (LPBYTE)lpMemFile + dwMemLength - 1;
 			ibuf += 4;
-			for (UINT j=0; j<pIns->nLength; j++)
+			for (UINT j=0; j<pIns->nLength && ibuf < ibufend; j++)
 			{
 				BYTE hibyte;
 				BYTE sign;
@@ -1416,8 +1422,10 @@ UINT CSoundFile::ReadSample(MODINSTRUMENT *pIns, UINT nFlags, LPCSTR lpMemFile, 
 				} else
 				{
 					hibyte = 8;
-					while (!MDLReadBits(bitbuf, bitnum, ibuf, 1)) hibyte += 0x10;
-					hibyte += MDLReadBits(bitbuf, bitnum, ibuf, 4);
+					while (ibuf < ibufend && !MDLReadBits(bitbuf, bitnum, ibuf, 1))
+						hibyte += 0x10;
+					if (ibuf < ibufend)
+						hibyte += MDLReadBits(bitbuf, bitnum, ibuf, 4);
 				}
 				if (sign) hibyte = ~hibyte;
 				dlt += hibyte;
@@ -1765,8 +1773,11 @@ void CSoundFile::CheckCPUUsage(UINT nCPU)
 BOOL CSoundFile::SetPatternName(UINT nPat, LPCSTR lpszName)
 //---------------------------------------------------------
 {
-        char szName[MAX_PATTERNNAME] = "";   // changed from CHAR
+        char szName[MAX_PATTERNNAME] = "";
+	// check input arguments
 	if (nPat >= MAX_PATTERNS) return FALSE;
+	if (lpszName == NULL) return(FALSE);
+
 	if (lpszName) lstrcpyn(szName, lpszName, MAX_PATTERNNAME);
 	szName[MAX_PATTERNNAME-1] = 0;
 	if (!m_lpszPatternNames) m_nPatternNames = 0;
@@ -1774,7 +1785,7 @@ BOOL CSoundFile::SetPatternName(UINT nPat, LPCSTR lpszName)
 	{
 		if (!lpszName[0]) return TRUE;
 		UINT len = (nPat+1)*MAX_PATTERNNAME;
-		char *p = new char[len];   // changed from CHAR
+		char *p = new char[len];
 		if (!p) return FALSE;
 		memset(p, 0, len);
 		if (m_lpszPatternNames)
@@ -1900,4 +1911,3 @@ BOOL CSoundFile::DestroySample(UINT nSample)
 }
 
 #endif // MODPLUG_FASTSOUNDLIB
-

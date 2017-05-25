@@ -4,8 +4,8 @@
  * Authors: Olivier Lapicque <olivierl@jps.net>
 */
 
-#include <libmodplug/stdafx.h>
-#include <libmodplug/sndfile.h>
+#include "libmodplug/stdafx.h"
+#include "libmodplug/sndfile.h"
 #include "tables.h"
 
 #ifdef MODPLUG_TRACKER
@@ -414,14 +414,16 @@ BOOL CSoundFile::ProcessRow()
 			m_nNextPattern = m_nCurrentPattern;
 		}
 		// Weird stuff?
-		if ((m_nPattern >= MAX_PATTERNS) || (!Patterns[m_nPattern])) return FALSE;
+		if ((m_nPattern >= MAX_PATTERNS) || (!Patterns[m_nPattern]) ||
+			PatternSize[m_nPattern] == 0) return FALSE;
 		// Should never happen
 		if (m_nRow >= PatternSize[m_nPattern]) m_nRow = 0;
 		m_nNextRow = m_nRow + 1;
 		if (m_nNextRow >= PatternSize[m_nPattern])
 		{
 			if (!(m_dwSongFlags & SONG_PATTERNLOOP)) m_nNextPattern = m_nCurrentPattern + 1;
-			m_nNextRow = 0;
+			m_nNextRow = m_nNextStartRow;
+			m_nNextStartRow = 0;
 		}
 		// Reset channel values
 		MODCHANNEL *pChn = Chn;
@@ -1235,5 +1237,3 @@ BOOL CSoundFile::ReadNote()
 	}
 	return TRUE;
 }
-
-
