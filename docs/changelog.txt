@@ -129,6 +129,8 @@ BUGFIXES
   command it was executing upon #return if the command was a
   multi-cycle command. This fix applies to worlds saved in 2.85
   and later only.
++ Fixed a bug where ALT+F4 would cause menus to open instead of/
+  in addition to triggering an exit event.
 
 DEVELOPERS
 

@@ -3639,7 +3639,10 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
     rstate.active_macro = NULL;
     rstate.macro_recurse_level = 0;
 
+    // Exit event - ignore other input
     exit = get_exit_status();
+    if(exit)
+      key = 0;
 
     switch(key)
     {

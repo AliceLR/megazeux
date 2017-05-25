@@ -1902,7 +1902,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
 
     exit = get_exit_status();
 
-    if(key)
+    if(key && !exit)
     {
       int key_char = get_key(keycode_internal);
 
@@ -2373,7 +2373,7 @@ void title_screen(struct world *mzx_world)
 
     exit = get_exit_status();
 
-    if(key)
+    if(key && !exit)
     {
       int reload_curr_world_in_editor = 1;
       switch(key)

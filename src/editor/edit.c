@@ -1341,7 +1341,10 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
     update_event_status_delay();
     key = get_key(keycode_internal);
 
+    // Exit event - ignore other input
     exit = get_exit_status();
+    if(exit)
+      key = 0;
 
     if(get_mouse_press())
     {
