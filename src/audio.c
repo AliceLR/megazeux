@@ -49,7 +49,7 @@
 #include <vorbis/vorbisfile.h>
 #endif
 
-#if defined(CONFIG_MODPLUG) && defined(CONFIG_MIKMOD)
+#if defined(CONFIG_MODPLUG) + defined(CONFIG_MIKMOD) + defined(CONFIG_XMP) > 1
 #error Can only have one module system enabled concurrently!
 #endif
 
@@ -60,6 +60,10 @@
 
 #ifdef CONFIG_MIKMOD
 #include "audio_mikmod.h"
+#endif
+
+#ifdef CONFIG_XMP
+#include "audio_xmp.h"
 #endif
 
 #define FP_SHIFT      13
@@ -1523,6 +1527,10 @@ static struct audio_stream *construct_stream_audio_file(char *filename,
   a_return = construct_mikmod_stream(filename, frequency, volume, repeat);
 #endif
 
+#ifdef CONFIG_XMP
+  a_return = construct_xmp_stream(filename, frequency, volume, repeat);
+#endif
+
   return a_return;
 }
 
@@ -1601,6 +1609,10 @@ void init_audio(struct config_info *conf)
 
 #ifdef CONFIG_MIKMOD
   init_mikmod(conf);
+#endif
+
+#ifdef CONFIG_XMP
+  init_xmp(conf);
 #endif
 
   set_music_volume(conf->music_volume);

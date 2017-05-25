@@ -167,7 +167,7 @@ int check_ext_for_gdm_and_convert(const char *filename, char *new_file);
 
 /*** these should only be exported for audio plugins */
 
-#if defined(CONFIG_MODPLUG) || defined(CONFIG_MIKMOD)
+#if defined(CONFIG_MODPLUG) || defined(CONFIG_MIKMOD) || defined(CONFIG_XMP)
 
 void sampled_set_buffer(struct sampled_stream *s_src);
 void sampled_mix_data(struct sampled_stream *s_src, Sint32 *dest_buffer,
@@ -188,7 +188,7 @@ void construct_audio_stream(struct audio_stream *a_src,
  void (* destruct)(struct audio_stream *a_src),
  Uint32 volume, Uint32 repeat);
 
-#endif // CONFIG_MODPLUG || CONFIG_MIKMOD
+#endif // CONFIG_MODPLUG || CONFIG_MIKMOD || CONFIG_XMP
 
 /*** end audio plugins exports */
 
