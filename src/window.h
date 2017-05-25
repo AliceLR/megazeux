@@ -33,7 +33,7 @@ CORE_LIBSPEC void set_context(int c);
 CORE_LIBSPEC void pop_context(void);
 
 // For name seeking in list_menu
-#define TIME_SUSPEND 300
+#define TIME_SUSPEND 500
 
 // All screen-affecting code preserves the mouse cursor
 CORE_LIBSPEC int save_screen(void);
