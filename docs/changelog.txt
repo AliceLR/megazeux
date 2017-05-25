@@ -38,7 +38,7 @@ FEATURES
   This will not affect any other escape menus in MZX, and the
   exit gameplay menu can still be opened by other means, such as
   ALT+F4, CTRL+C, the window close button, etc.
-+ Added EXIT_MENU function counter. When set to anything but 0,
++ Added EXIT_GAME function counter. When set to anything but 0,
   this will cause MegaZeux to exit to the title screen. This has
   no effect on the title screen.
 
