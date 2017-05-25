@@ -1,0 +1,280 @@
+diff -Nrup _src/fastmix.cpp src/fastmix.cpp
+--- _src/fastmix.cpp	2017-05-24 19:12:03.728797917 +0200
++++ src/fastmix.cpp	2017-05-24 19:19:45.040811114 +0200
+@@ -568,7 +568,7 @@ CzWINDOWEDFIR sfir;
+ typedef VOID (MPPASMCALL * LPMIXINTERFACE)(MODCHANNEL *, int *, int *);
+ 
+ #define BEGIN_MIX_INTERFACE(func)\
+-	VOID MPPASMCALL func(MODCHANNEL *pChannel, int *pbuffer, int *pbufmax)\
++	static VOID MPPASMCALL func(MODCHANNEL *pChannel, int *pbuffer, int *pbufmax)\
+ 	{\
+ 		LONG nPos;
+ 
+@@ -659,8 +659,8 @@ typedef VOID (MPPASMCALL * LPMIXINTERFAC
+ /////////////////////////////////////////////////////
+ //
+ 
+-void MPPASMCALL X86_InitMixBuffer(int *pBuffer, UINT nSamples);
+-void MPPASMCALL X86_EndChannelOfs(MODCHANNEL *pChannel, int *pBuffer, UINT nSamples);
++static void MPPASMCALL X86_InitMixBuffer(int *pBuffer, UINT nSamples);
++static void MPPASMCALL X86_EndChannelOfs(MODCHANNEL *pChannel, int *pBuffer, UINT nSamples);
+ void MPPASMCALL X86_StereoFill(int *pBuffer, UINT nSamples, LPLONG lpROfs, LPLONG lpLOfs);
+ void X86_StereoMixToFloat(const int *, float *, float *, UINT nCount);
+ void X86_FloatToStereoMix(const float *pIn1, const float *pIn2, int *pOut, UINT nCount);
+@@ -794,6 +794,8 @@ BEGIN_MIX_INTERFACE(FastMono16BitLinearM
+ 	SNDMIX_STOREFASTMONOVOL
+ END_MIX_INTERFACE()
+ 
++#ifdef MODPLUG_DEADCODE
++
+ BEGIN_MIX_INTERFACE(FastMono8BitSplineMix)
+ 	SNDMIX_BEGINSAMPLELOOP8
+ 	SNDMIX_GETMONOVOL8SPLINE
+@@ -818,6 +820,7 @@ BEGIN_MIX_INTERFACE(FastMono16BitFirFilt
+ 	SNDMIX_STOREFASTMONOVOL
+ END_MIX_INTERFACE()
+ 
++#endif // MODPLUG_DEADCODE
+ 
+ // Fast Ramps
+ BEGIN_FASTRAMPMIX_INTERFACE(FastMono8BitRampMix)
+@@ -844,6 +847,8 @@ BEGIN_FASTRAMPMIX_INTERFACE(FastMono16Bi
+ 	SNDMIX_RAMPFASTMONOVOL
+ END_FASTRAMPMIX_INTERFACE()
+ 
++#ifdef MODPLUG_DEADCODE
++
+ BEGIN_FASTRAMPMIX_INTERFACE(FastMono8BitSplineRampMix)
+ 	SNDMIX_BEGINSAMPLELOOP8
+ 	SNDMIX_GETMONOVOL8SPLINE
+@@ -868,6 +873,7 @@ BEGIN_FASTRAMPMIX_INTERFACE(FastMono16Bi
+ 	SNDMIX_RAMPFASTMONOVOL
+ END_FASTRAMPMIX_INTERFACE()
+ 
++#endif // MODPLUG_DEADCODE
+ 
+ //////////////////////////////////////////////////////
+ // Stereo samples
+@@ -1986,7 +1992,7 @@ DWORD MPPASMCALL X86_Convert32To32(LPVOI
+ 
+ 
+ #ifdef MSC_VER
+-void MPPASMCALL X86_InitMixBuffer(int *pBuffer, UINT nSamples)
++static void MPPASMCALL X86_InitMixBuffer(int *pBuffer, UINT nSamples)
+ //------------------------------------------------------------
+ {
+ 	_asm {
+@@ -2020,7 +2026,7 @@ done:;
+ #else
+ //---GCCFIX: Asm replaced with C function
+ // Will fill in later.
+-void MPPASMCALL X86_InitMixBuffer(int *pBuffer, UINT nSamples)
++static void MPPASMCALL X86_InitMixBuffer(int *pBuffer, UINT nSamples)
+ {
+ 	memset(pBuffer, 0, nSamples * sizeof(int));
+ }
+@@ -2208,7 +2214,7 @@ void MPPASMCALL X86_StereoFill(int *pBuf
+ #endif
+ 
+ #ifdef MSC_VER
+-void MPPASMCALL X86_EndChannelOfs(MODCHANNEL *pChannel, int *pBuffer, UINT nSamples)
++static void MPPASMCALL X86_EndChannelOfs(MODCHANNEL *pChannel, int *pBuffer, UINT nSamples)
+ //------------------------------------------------------------------------------
+ {
+ 	_asm {
+@@ -2251,7 +2257,7 @@ brkloop:
+ #else
+ //---GCCFIX: Asm replaced with C function
+ // Will fill in later.
+-void MPPASMCALL X86_EndChannelOfs(MODCHANNEL *pChannel, int *pBuffer, UINT nSamples)
++static void MPPASMCALL X86_EndChannelOfs(MODCHANNEL *pChannel, int *pBuffer, UINT nSamples)
+ {
+ 	int rofs = pChannel->nROfs;
+ 	int lofs = pChannel->nLOfs;
+diff -Nrup _src/libmodplug/it_defs.h src/libmodplug/it_defs.h
+--- _src/libmodplug/it_defs.h	2017-05-24 19:12:03.713797917 +0200
++++ src/libmodplug/it_defs.h	2017-05-24 19:14:01.554801288 +0200
+@@ -128,7 +128,4 @@ typedef struct ITSAMPLESTRUCT
+ 
+ #pragma pack()
+ 
+-extern BYTE autovibit2xm[8];
+-extern BYTE autovibxm2it[8];
+-
+ #endif
+diff -Nrup _src/libmodplug/stdafx.h src/libmodplug/stdafx.h
+--- _src/libmodplug/stdafx.h	2017-05-24 19:12:03.713797917 +0200
++++ src/libmodplug/stdafx.h	2017-05-24 19:14:23.382801912 +0200
+@@ -88,7 +88,7 @@ typedef const char* LPCSTR;
+ typedef void* PVOID;
+ typedef void VOID;
+ 
+-inline LONG MulDiv (long a, long b, long c)
++static inline LONG MulDiv (long a, long b, long c)
+ {
+ /*if (!c) return 0;*/
+   return ((uint64_t) a * (uint64_t) b ) / c;
+@@ -104,7 +104,7 @@ inline LONG MulDiv (long a, long b, long
+ 
+ #define  GHND   0
+ #define GlobalFreePtr(p) free((void *)(p))
+-inline int8_t * GlobalAllocPtr(unsigned int, size_t size)
++static inline int8_t * GlobalAllocPtr(unsigned int, size_t size)
+ {
+   int8_t * p = (int8_t *) malloc(size);
+ 
+@@ -112,7 +112,7 @@ inline int8_t * GlobalAllocPtr(unsigned
+   return p;
+ }
+ 
+-inline void ProcessPlugins(int n) {}
++static inline void ProcessPlugins(int n) {}
+ 
+ #ifndef FALSE
+ #define FALSE	false
+diff -Nrup _src/load_amf.cpp src/load_amf.cpp
+--- _src/load_amf.cpp	2017-05-24 19:12:03.726797917 +0200
++++ src/load_amf.cpp	2017-05-24 19:14:35.629802263 +0200
+@@ -52,7 +52,7 @@ typedef struct _AMFSAMPLE
+ extern void Log(LPCSTR, ...);
+ #endif
+ 
+-VOID AMF_Unpack(MODCOMMAND *pPat, const BYTE *pTrack, UINT nRows, UINT nChannels)
++static VOID AMF_Unpack(MODCOMMAND *pPat, const BYTE *pTrack, UINT nRows, UINT nChannels)
+ //-------------------------------------------------------------------------------
+ {
+ 	UINT lastinstr = 0;
+diff -Nrup _src/load_it.cpp src/load_it.cpp
+--- _src/load_it.cpp	2017-05-24 19:12:03.728797917 +0200
++++ src/load_it.cpp	2017-05-24 19:15:10.155803250 +0200
+@@ -15,11 +15,13 @@
+ #pragma warning(disable:4244)
+ #endif
+ 
+-BYTE autovibit2xm[8] =
++static BYTE autovibit2xm[8] =
+ { 0, 3, 1, 4, 2, 0, 0, 0 };
+ 
+-BYTE autovibxm2it[8] =
++#ifndef MODPLUG_NO_FILESAVE
++static BYTE autovibxm2it[8] =
+ { 0, 2, 4, 1, 3, 0, 0, 0 };
++#endif
+ 
+ //////////////////////////////////////////////////////////
+ // Impulse Tracker IT file support
+@@ -1181,7 +1183,7 @@ BOOL CSoundFile::SaveIT(LPCSTR lpszFileN
+ //////////////////////////////////////////////////////////////////////////////
+ // IT 2.14 compression
+ 
+-DWORD ITReadBits(DWORD &bitbuf, UINT &bitnum, LPBYTE &ibuf, CHAR n)
++static DWORD ITReadBits(DWORD &bitbuf, UINT &bitnum, LPBYTE &ibuf, CHAR n)
+ //-----------------------------------------------------------------
+ {
+ 	DWORD retval = 0;
+diff -Nrup _src/load_mod.cpp src/load_mod.cpp
+--- _src/load_mod.cpp	2017-05-24 19:12:03.725797917 +0200
++++ src/load_mod.cpp	2017-05-24 19:20:23.181812205 +0200
+@@ -39,7 +39,8 @@ void CSoundFile::ConvertModCommand(MODCO
+ 	case 0x0D:	command = CMD_PATTERNBREAK; param = ((param >> 4) * 10) + (param & 0x0F); break;
+ 	case 0x0E:	command = CMD_MODCMDEX; break;
+ 	case 0x0F:	command = (param <= (UINT)((m_nType & (MOD_TYPE_XM|MOD_TYPE_MT2)) ? 0x1F : 0x20)) ? CMD_SPEED : CMD_TEMPO;
+-				if ((param == 0xFF) && (m_nSamples == 15)) command = 0; break;
++				if ((param == 0xFF) && (m_nSamples == 15)) command = 0;
++				break;
+ 	// Extension for XM extended effects
+ 	case 'G' - 55:	command = CMD_GLOBALVOLUME; break;
+ 	case 'H' - 55:	command = CMD_GLOBALVOLSLIDE; if (param & 0xF0) param &= 0xF0; break;
+@@ -184,7 +185,7 @@ static BOOL IsValidName(LPCSTR s, int le
+ 	return TRUE;
+ }
+ 
+-BOOL IsMagic(LPCSTR s1, LPCSTR s2)
++static BOOL IsMagic(LPCSTR s1, LPCSTR s2)
+ {
+ 	return ((*(DWORD *)s1) == (*(DWORD *)s2)) ? TRUE : FALSE;
+ }
+diff -Nrup _src/mmcmp.cpp src/mmcmp.cpp
+--- _src/mmcmp.cpp	2017-05-24 19:12:03.727797917 +0200
++++ src/mmcmp.cpp	2017-05-24 19:15:42.755804183 +0200
+@@ -8,7 +8,7 @@
+ #include "stdafx.h"
+ #include "sndfile.h"
+ 
+-BOOL PP20_Unpack(LPCBYTE *ppMemFile, LPDWORD pdwMemLength);
++static BOOL PP20_Unpack(LPCBYTE *ppMemFile, LPDWORD pdwMemLength);
+ 
+ #pragma pack(1)
+ typedef struct MMCMPFILEHEADER
+@@ -482,7 +482,7 @@ static VOID PP20_DoUnpack(const BYTE *pS
+ }
+ 
+ 
+-BOOL PP20_Unpack(LPCBYTE *ppMemFile, LPDWORD pdwMemLength)
++static BOOL PP20_Unpack(LPCBYTE *ppMemFile, LPDWORD pdwMemLength)
+ {
+ 	DWORD dwMemLength = *pdwMemLength;
+ 	LPCBYTE lpMemFile = *ppMemFile;
+diff -Nrup _src/modplug.cpp src/modplug.cpp
+--- _src/modplug.cpp	2017-05-24 19:12:03.717797917 +0200
++++ src/modplug.cpp	2017-05-24 19:16:23.480805348 +0200
+@@ -15,7 +15,7 @@ struct _ModPlugFile
+ 
+ namespace ModPlug
+ {
+-	ModPlug_Settings gSettings =
++	static ModPlug_Settings gSettings =
+ 	{
+ 		MODPLUG_ENABLE_OVERSAMPLING | MODPLUG_ENABLE_NOISE_REDUCTION,
+ 
+@@ -35,9 +35,9 @@ namespace ModPlug
+ 		0
+ 	};
+ 
+-	int gSampleSize;
++	static int gSampleSize;
+ 
+-	void UpdateSettings(bool updateBasicConfig)
++	static void UpdateSettings(bool updateBasicConfig)
+ 	{
+ 		if(gSettings.mFlags & MODPLUG_ENABLE_REVERB)
+ 		{
+@@ -108,6 +108,8 @@ int ModPlug_Read(ModPlugFile* file, void
+ 	return file->mSoundFile.Read(buffer, size) * ModPlug::gSampleSize;
+ }
+ 
++#ifdef MODPLUG_DEADCODE
++
+ const char* ModPlug_GetName(ModPlugFile* file)
+ {
+ 	return file->mSoundFile.GetTitle();
+@@ -118,6 +120,8 @@ int ModPlug_GetLength(ModPlugFile* file)
+ 	return file->mSoundFile.GetSongTime() * 1000;
+ }
+ 
++#endif // MODPLUG_DEADCODE
++
+ void ModPlug_InitMixerCallback(ModPlugFile* file,ModPlugMixerProc proc)
+ {
+ 	file->mSoundFile.gpSndMixHook = (LPSNDMIXHOOKPROC)proc ;
+diff -Nrup _src/modplug.h src/modplug.h
+--- _src/modplug.h	2017-05-24 19:12:03.715797917 +0200
++++ src/modplug.h	2017-05-24 19:17:20.606806982 +0200
+@@ -51,6 +51,8 @@ MODPLUG_EXPORT void ModPlug_Unload(ModPl
+  * of the mod has been reached, zero is returned. */
+ MODPLUG_EXPORT int  ModPlug_Read(ModPlugFile* file, void* buffer, int size);
+ 
++#ifdef MODPLUG_DEADCODE
++
+ /* Get the name of the mod.  The returned buffer is stored within the ModPlugFile
+  * structure and will remain valid until you unload the file. */
+ MODPLUG_EXPORT const char* ModPlug_GetName(ModPlugFile* file);
+@@ -67,6 +69,8 @@ MODPLUG_EXPORT int ModPlug_GetLength(Mod
+  * ModPlug_GetLength() does not report the full length. */
+ MODPLUG_EXPORT void ModPlug_Seek(ModPlugFile* file, int millisecond);
+ 
++#endif // MODPLUG_DEADCODE
++
+ enum _ModPlug_Flags
+ {
+ 	MODPLUG_ENABLE_OVERSAMPLING     = 1 << 0,  /* Enable oversampling (*highly* recommended) */

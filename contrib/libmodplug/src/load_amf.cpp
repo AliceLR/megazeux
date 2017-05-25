@@ -148,6 +148,7 @@ static VOID AMF_Unpack(MODCOMMAND *pPat, const BYTE *pTrack, UINT nRows, UINT nC
 			case 0x17:	param = (param+64)&0x7F;
 						if (m->command) { if (!m->volcmd) { m->volcmd = VOLCMD_PANNING;  m->vol = param/2; } command = 0; }
 						else { command = CMD_PANNING8; }
+				break;
 			// Unknown effects
 			default:	command = param = 0;
 			}
@@ -168,7 +169,7 @@ BOOL CSoundFile::ReadAMF(LPCBYTE lpStream, const DWORD dwMemLength)
 {
 	const AMFFILEHEADER *pfh = (AMFFILEHEADER *)lpStream;
 	DWORD dwMemPos;
-	
+
 	if ((!lpStream) || (dwMemLength < 2048)) return FALSE;
 	if ((!strncmp((LPCTSTR)lpStream, "ASYLUM Music Format V1.0", 25)) && (dwMemLength > 4096))
 	{
@@ -266,7 +267,7 @@ BOOL CSoundFile::ReadAMF(LPCBYTE lpStream, const DWORD dwMemLength)
 	if ((pfh->szAMF[0] != 'A') || (pfh->szAMF[1] != 'M') || (pfh->szAMF[2] != 'F')
 	 || (pfh->version < 10) || (pfh->version > 14) || (!bswapLE16(pfh->numtracks))
 	 || (!pfh->numorders) || (pfh->numorders > MAX_PATTERNS)
-	 || (!pfh->numsamples) || (pfh->numsamples > MAX_SAMPLES)
+	 || (!pfh->numsamples) || (pfh->numsamples >= MAX_SAMPLES)
 	 || (pfh->numchannels < 4) || (pfh->numchannels > 32))
 		return FALSE;
 	memcpy(m_szNames[0], pfh->title, 32);
@@ -355,7 +356,7 @@ BOOL CSoundFile::ReadAMF(LPCBYTE lpStream, const DWORD dwMemLength)
 		if ((psh->type) && (bswapLE32(psh->offset) < dwMemLength-1))
 		{
 			sampleseekpos[iIns] = bswapLE32(psh->offset);
-			if (bswapLE32(psh->offset) > maxsampleseekpos) 
+			if (bswapLE32(psh->offset) > maxsampleseekpos)
 				maxsampleseekpos = bswapLE32(psh->offset);
 			if ((pins->nLoopEnd > pins->nLoopStart + 2)
 			 && (pins->nLoopEnd <= pins->nLength)) pins->uFlags |= CHN_LOOP;
@@ -365,13 +366,16 @@ BOOL CSoundFile::ReadAMF(LPCBYTE lpStream, const DWORD dwMemLength)
 	USHORT *pTrackMap = (USHORT *)(lpStream+dwMemPos);
 	UINT realtrackcnt = 0;
 	dwMemPos += pfh->numtracks * sizeof(USHORT);
+	if (dwMemPos >= dwMemLength)
+		return TRUE;
+
 	for (UINT iTrkMap=0; iTrkMap<pfh->numtracks; iTrkMap++)
 	{
 		if (realtrackcnt < pTrackMap[iTrkMap]) realtrackcnt = pTrackMap[iTrkMap];
 	}
 	// Store tracks positions
 	BYTE **pTrackData = new BYTE *[realtrackcnt];
-	memset(pTrackData, 0, sizeof(pTrackData));
+	memset(pTrackData, 0, sizeof(BYTE *) * realtrackcnt);
 	for (UINT iTrack=0; iTrack<realtrackcnt; iTrack++) if (dwMemPos <= dwMemLength - 3)
 	{
 		UINT nTrkSize = bswapLE16(*(USHORT *)(lpStream+dwMemPos));
@@ -419,4 +423,3 @@ BOOL CSoundFile::ReadAMF(LPCBYTE lpStream, const DWORD dwMemLength)
 	}
 	return TRUE;
 }
-
