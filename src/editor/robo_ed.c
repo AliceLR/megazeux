@@ -3801,6 +3801,10 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
       {
         int thing_index, end_x, start_x = rstate.current_x;
 
+        // ALT+F4 - do nothing.
+        if(get_alt_status(keycode_internal))
+          break;
+
         if(!rstate.command_buffer[start_x])
           start_x--;
 

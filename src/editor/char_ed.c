@@ -1618,6 +1618,10 @@ int char_editor(struct world *mzx_world)
         int char_offset = current_char;
         int skip = 32 - highlight_width;
 
+        // ALT+F4 - do nothing.
+        if(get_alt_status(keycode_internal))
+          break;
+
         for(i = 0; i < highlight_height; i++,
          char_offset += skip)
         {

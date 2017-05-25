@@ -1980,6 +1980,10 @@ __editor_maybe_static void play_game(struct world *mzx_world)
 
         case IKEY_F4:
         {
+          // ALT+F4 - do nothing.
+          if(get_alt_status(keycode_internal))
+            break;
+
           if(mzx_world->version < 0x0252 ||
            get_counter(mzx_world, "LOAD_MENU", 0))
           {
@@ -2421,6 +2425,13 @@ void title_screen(struct world *mzx_world)
         }
 
         case IKEY_F4:
+        {
+          // ALT+F4 - do nothing.
+          if(get_alt_status(keycode_internal))
+            break;
+
+          // Continue to IKEY_r
+        }
         case IKEY_r:
         {
           char save_file_name[MAX_PATH] = { 0 };

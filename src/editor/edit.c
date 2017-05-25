@@ -1840,6 +1840,10 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
       // Item
       case IKEY_F4:
       {
+        // ALT+F4 - do nothing.
+        if(get_alt_status(keycode_internal))
+          break;
+
         if(!overlay_edit)
         {
           if(get_shift_status(keycode_internal))
