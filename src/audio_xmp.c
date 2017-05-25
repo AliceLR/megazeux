@@ -31,7 +31,7 @@ struct xmp_stream
 {
   struct sampled_stream s;
   xmp_context ctx;
-  Uint32 row_tbl[XMP_MAX_MOD_LENGTH];
+  int row_tbl[XMP_MAX_MOD_LENGTH];
   Uint32 effective_frequency, repeat;
 };
 
