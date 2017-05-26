@@ -145,6 +145,29 @@ struct audio_stream *construct_xmp_stream(char *filename, Uint32 frequency,
   if(ctx)
   {
     xmp_set_player(ctx, XMP_PLAYER_DEFPAN, 50);
+
+    switch(xmp_resample_mode)
+    {
+      case 0:
+      {
+        xmp_set_player(ctx, XMP_PLAYER_INTERP, XMP_INTERP_NEAREST);
+        break;
+      }
+
+      case 1:
+      {
+        xmp_set_player(ctx, XMP_PLAYER_INTERP, XMP_INTERP_LINEAR);
+        break;
+      }
+
+      case 2:
+      case 3:
+      {
+        xmp_set_player(ctx, XMP_PLAYER_INTERP, XMP_INTERP_SPLINE);
+        break;
+      }
+    }
+
     if(xmp_load_module(ctx, filename) == 0)
     {
       struct xmp_stream *xmp_stream = cmalloc(sizeof(struct xmp_stream));
