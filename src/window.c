@@ -1609,7 +1609,6 @@ static int click_button(struct world *mzx_world, struct dialog *di,
 {
   if(!new_active)
   {
-    di->done = 1;
     return IKEY_RETURN;
   }
 
