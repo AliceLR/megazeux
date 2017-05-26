@@ -63,8 +63,8 @@ BUGFIXES
   section to be placed into the '#' list.
 + Dialog window labels can not be put into focus by clicking
   them with the mouse anymore.
-+ Dialog windows now wait for a key/mouse release before closing
-  or selecting buttons.
++ Dialog windows closed by pressing escape will now close only
+  on a new press instead of whenever the key is held.
 + Load (F4)/quickload (F10) on invalid save files in-game leaves
   the current game running instead of exiting to the titlescreen
   or editor.

@@ -1242,9 +1242,11 @@ static int key_button(struct world *mzx_world, struct dialog *di,
     case IKEY_SPACE:
     case IKEY_RETURN:
     {
-      //Only work on press.  Ignore autorepeat.
-      if (get_key_status(keycode_internal, key) != 1)
-        break;
+      // 0=not pressed (i.e. this is a fake press from clicking)
+      // 1=pressed
+      // 2=repeat. We want to ignore that.
+      if (get_key_status(keycode_internal, key) > 1)
+        return 0;
 
       // Flag that the dialog is done processing
       di->done = 1;
