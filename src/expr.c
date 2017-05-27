@@ -85,12 +85,6 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
 {
   char number_buffer[16];
 
-  //char *buffer = cmalloc(EXPR_BUFFER_SIZE);
-  //struct expr_stack *stack = cmalloc(EXPR_STACK_SIZE*sizeof(struct expr_stack));
-  //struct expr_stack *cur_stack;
-  //int stack_alloc = EXPR_STACK_SIZE;
-  //char *buf_alloc = buffer + EXPR_BUFFER_SIZE;
-
   // Position in stack
   int pos = 0;
   char current_char;
@@ -176,6 +170,7 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
           {
             // Invalid operand
             warn("Invalid operand.\n");
+            *error = 1;
             goto err_out;
           }
         }
@@ -193,11 +188,13 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
         current_char = *expression;
         expression++;
 
-        // FIXME
-        if(buf_pos == buf_alloc)
+        if(buf_pos >= buf_alloc)
         {
+          // Truncate the counter name and continue.
           warn("Hit end of expression buffer while parsing operand.\n");
-          goto err_out;
+          buf_pos = buf_alloc - 1;
+          *buf_pos = '\0';
+          break;
         }
 
         if(current_char == '\'')
@@ -243,6 +240,7 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
         {
           // Invalid -- truncated operand
           warn("Encountered null while parsing operand.\n");
+          *error = 2;
           goto err_out;
         }
         else
@@ -270,16 +268,10 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
       //if(pos >= EXPR_STACK_SIZE)
       {
         warn("Hit top of expression stack.\n");
+        *error = 3;
         goto err_out;
       }
 
-      /*
-      cur_stack = &(stack[pos]);
-      cur_stack->buf_start = buf_start;
-      cur_stack->operator = operator;
-      cur_stack->operand = operand_a;
-      cur_stack->state = state & ~EXPR_STATE_PUSH &
-       ~EXPR_STATE_PUSH_INTERPOLATION;*/
       stack[pos].buf_start = buf_start;
       stack[pos].operator = operator;
       stack[pos].operand = operand_a;
@@ -369,11 +361,11 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
       // Overwrite the unary operators' null terminator
       buf_pos--;
 
-      // FIXME
       if(len > (buf_alloc - buf_pos))
       {
+        // Truncate the interpolated value and continue
         warn("Hit end of expression buffer while interpolating.\n");
-        goto err_out;
+        len = buf_alloc - buf_pos;
       }
 
       memcpy(buf_pos, src, len);
@@ -382,12 +374,6 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
       pos--;
       if(pos >= 0)
       {
-        /*
-        cur_stack = &(stack[pos]);
-        buf_start = cur_stack->buf_start;
-        operator = cur_stack->operator;
-        operand_a = cur_stack->operand;
-        state = cur_stack->state;*/
         buf_start = stack[pos].buf_start;
         operator = stack[pos].operator;
         operand_a = stack[pos].operand;
@@ -396,6 +382,7 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
       else
       {
         warn("Hit bottom of expression stack unexpectedly while interpolating.\n");
+        *error = 4;
         goto err_out;
       }
 
@@ -588,12 +575,7 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
         {
           int value = operand_a;
           int len;
-          /*
-          cur_stack = &(stack[pos]);
-          buf_start = cur_stack->buf_start;
-          operator = cur_stack->operator;
-          operand_a = cur_stack->operand;
-          state = cur_stack->state;*/
+
           buf_start = stack[pos].buf_start;
           operator = stack[pos].operator;
           operand_a = stack[pos].operand;
@@ -607,12 +589,14 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
 
             sprintf(number_buffer, "%d", value);
             len = strlen(number_buffer);
-            // FIXME
+
             if(len+1 > (buf_alloc - buf_pos))
             {
+              // Truncate the interpolated value and continue.
               warn("Hit end of buffer at closing parenthesis.\n");
-              goto err_out;
+              len = buf_alloc - buf_pos - 1;
             }
+
             strcpy(buf_pos, number_buffer);
             buf_pos += len;
           }
@@ -758,6 +742,7 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
       default:
         // Invalid operator
         warn("Invalid operator or unclosed expression.\n");
+        *error = 2;
         goto err_out;
     }
   }
@@ -767,9 +752,8 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
   return operand_a;
 
 err_out:
-  // FIXME
   if(!*error)
-    *error = 1;
+    *error = -1;
 
   // DEBUG: remove
   {
@@ -792,9 +776,6 @@ err_out:
     debug("line number: %d\n", line_num);
     debug("expression: %s\n", *_expression);
   }
-
-  //free(buffer);
-  //free(stack);
 
   *_expression = expression;
   return 0;
