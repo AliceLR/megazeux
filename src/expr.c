@@ -1,6 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2002 Gilead Kutnick <exophase@adelphia.net>
+ * Copyright (C) 2017 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -28,9 +29,6 @@
 #include "robot.h"
 #include "rasm.h"
 
-// Only pass these evaluators valid expressions. The compiler should take care
-// of that part, so don't call it outside of evaluating robot code.
-
 enum op
 {
   OP_ADDITION,
@@ -52,6 +50,771 @@ enum op
   OP_LESS_THAN_OR_EQUAL,
   OP_NOT_EQUAL
 };
+
+#ifndef CONFIG_DEBYTECODE
+
+/* This new expression parser for legacy Robotic is faster than the older
+ * parser. It's not suited to the more complex debytecode (mainly thanks to
+ * interpolation), so I've left the old parser intact below for debytecode.
+ */
+
+#define EXPR_BUFFER_SIZE 512
+#define EXPR_STACK_SIZE 32
+
+#define EXPR_STATE_START_OPERAND 1
+#define EXPR_STATE_PARSE_OPERAND 2
+#define EXPR_STATE_AMP 4
+#define EXPR_STATE_PUSH 8
+#define EXPR_STATE_PUSH_INTERPOLATION 16
+#define EXPR_STATE_INTERPOLATING 32
+
+struct expr_stack {
+  int buf_start;
+  int operand;
+  char operator;
+  char state;
+};
+
+char buffer[EXPR_BUFFER_SIZE];
+struct expr_stack stack[EXPR_STACK_SIZE];
+int stack_alloc = EXPR_STACK_SIZE;
+char *buf_alloc = buffer + EXPR_BUFFER_SIZE;
+
+int parse_expression(struct world *mzx_world, char **_expression, int *error,
+ int id)
+{
+  char number_buffer[16];
+
+  //char *buffer = cmalloc(EXPR_BUFFER_SIZE);
+  //struct expr_stack *stack = cmalloc(EXPR_STACK_SIZE*sizeof(struct expr_stack));
+  //struct expr_stack *cur_stack;
+  //int stack_alloc = EXPR_STACK_SIZE;
+  //char *buf_alloc = buffer + EXPR_BUFFER_SIZE;
+
+  // Position in stack
+  int pos = 0;
+  char current_char;
+
+  // Current positions in the buffer and in the original expression
+  char *buf_pos = buffer;
+  char *expression = *_expression;
+
+  // For the current level of expression:
+  // Offset in the buffer where operand B's name starts
+  int buf_start = 0;
+
+  // Operator ID, values for operands
+  enum op operator = OP_ADDITION;
+  int operand_a = 0;
+  int operand_b = 0;
+
+  // Parsing state
+  char state = 0;
+
+  *error = 0;
+
+  // Note: initial open paren already skipped.
+  do
+  {
+    // Get next operand -- we need to skip spaces first
+    while(isspace(*expression))
+      expression++;
+
+
+    // Figure out what our operand actually is.
+    // Also handle the prefixed unary operators.
+
+    if(!(state & EXPR_STATE_START_OPERAND))
+    {
+      current_char = *expression;
+      expression++;
+
+      switch(current_char)
+      {
+        // One's compliment
+        case '~':
+        case '!':
+          // Put it on the name buffer and handle it once we have a value.
+          *buf_pos = '~';
+          buf_pos++;
+          continue;
+
+        // Unary negation
+        case '-':
+          // Put it on the name buffer and handle it once we have a value.
+          *buf_pos = '-';
+          buf_pos++;
+          continue;
+
+        // Nested expression
+        case '(':
+          state |= EXPR_STATE_PUSH;
+          break;
+
+        // Counter
+        case '\'':
+          state |= EXPR_STATE_PARSE_OPERAND;
+          break;
+
+        // Also a counter
+        case '&':
+          state |= EXPR_STATE_PARSE_OPERAND | EXPR_STATE_AMP;
+          break;
+
+        // Otherwise, it must be an integer, or just something invalid.
+        default:
+        {
+          if((current_char >= '0') && (current_char <= '9'))
+          {
+            // Integer
+            char *end_p;
+            operand_b = (int)strtol(expression - 1, &end_p, 0);
+            expression = end_p;
+            break;
+          }
+          else
+          {
+            // Invalid operand
+            warn("Invalid operand.\n");
+            goto err_out;
+          }
+        }
+      }
+      state |= EXPR_STATE_START_OPERAND;
+      buf_start = buf_pos - buffer;
+    }
+
+
+    // Parse a named operand.
+    if(state & EXPR_STATE_PARSE_OPERAND)
+    {
+      do
+      {
+        current_char = *expression;
+        expression++;
+
+        // FIXME
+        if(buf_pos == buf_alloc)
+        {
+          warn("Hit end of expression buffer while parsing operand.\n");
+          goto err_out;
+        }
+
+        if(current_char == '\'')
+        {
+          if(state & EXPR_STATE_INTERPOLATING)
+          {
+            // Unexpected end of interpolation!
+            // Back up expression so it finds ' the next level down.
+            expression--;
+          }
+          *buf_pos = '\0';
+          break;
+        }
+        else
+
+        if(current_char == '&')
+        {
+          if(state & EXPR_STATE_AMP)
+          {
+            // Already reading a &counter&? This is the end
+            *buf_pos = '\0';
+          }
+          else
+
+          if(*expression == '&')
+          {
+            // Two &&s in a counter name -> one & char
+            expression++;
+            *buf_pos = '&';
+            buf_pos++;
+          }
+
+          else
+          {
+            // Interpolation
+            state |= EXPR_STATE_PUSH_INTERPOLATION;
+          }
+          break;
+        }
+        else
+
+        if(current_char == '\0')
+        {
+          // Invalid -- truncated operand
+          warn("Encountered null while parsing operand.\n");
+          goto err_out;
+        }
+        else
+
+        if(current_char == '(')
+        {
+          state |= EXPR_STATE_PUSH;
+          break;
+        }
+
+        else
+        {
+          *buf_pos = current_char;
+          buf_pos++;
+        }
+      }
+      while(1);
+    }
+
+
+    // Push state onto stack for expressions and interpolation
+    if(state & (EXPR_STATE_PUSH|EXPR_STATE_PUSH_INTERPOLATION))
+    {
+      if(pos >= stack_alloc)
+      //if(pos >= EXPR_STACK_SIZE)
+      {
+        warn("Hit top of expression stack.\n");
+        goto err_out;
+      }
+
+      /*
+      cur_stack = &(stack[pos]);
+      cur_stack->buf_start = buf_start;
+      cur_stack->operator = operator;
+      cur_stack->operand = operand_a;
+      cur_stack->state = state & ~EXPR_STATE_PUSH &
+       ~EXPR_STATE_PUSH_INTERPOLATION;*/
+      stack[pos].buf_start = buf_start;
+      stack[pos].operator = operator;
+      stack[pos].operand = operand_a;
+      stack[pos].state = state & ~EXPR_STATE_PUSH &
+       ~EXPR_STATE_PUSH_INTERPOLATION;
+      pos++;
+
+      // Push a null to help unary operator processing
+      *buf_pos = '\0';
+      buf_pos++;
+
+      // Set up for interpolating a counter/string
+      if(state & EXPR_STATE_PUSH_INTERPOLATION)
+      {
+        state = EXPR_STATE_START_OPERAND | EXPR_STATE_PARSE_OPERAND
+         | EXPR_STATE_AMP | EXPR_STATE_INTERPOLATING;
+      }
+
+      else
+      {
+        state = 0;
+      }
+
+      buf_start = buf_pos - buffer;
+      operand_a = 0;
+      operator = OP_ADDITION;
+      continue;
+    }
+
+
+    // Interpolate a counter or string
+    if(state & EXPR_STATE_INTERPOLATING)
+    {
+      int len;
+      char *src;
+      buf_pos = buffer + buf_start;
+
+      // Input
+      if(!strcasecmp(buf_pos, "INPUT"))
+      {
+        src = mzx_world->current_board->input_string;
+        len = strlen(src);
+      }
+      else
+
+      // Counter or string
+      if(is_string(buf_pos))
+      {
+        // Write the value of the counter name
+        struct string str_src;
+
+        get_string(mzx_world, buf_pos, &str_src, 0);
+
+        src = str_src.value;
+        len = str_src.length;
+      }
+      else
+
+      // #(counter) is a hex representation.
+      if(*buf_pos == '+')
+      {
+        sprintf(number_buffer, "%x",
+         get_counter(mzx_world, buf_pos + 1, id));
+
+        src = number_buffer;
+        len = strlen(number_buffer);
+      }
+      else
+
+      if(*buf_pos == '#')
+      {
+        sprintf(number_buffer, "%02x",
+         get_counter(mzx_world, buf_pos + 1, id));
+
+        src = number_buffer;
+        len = 2;
+      }
+      else
+      {
+        sprintf(number_buffer, "%d",
+         get_counter(mzx_world, buf_pos, id));
+
+        src = number_buffer;
+        len = strlen(number_buffer);
+      }
+
+      // Overwrite the unary operators' null terminator
+      buf_pos--;
+
+      // FIXME
+      if(len > (buf_alloc - buf_pos))
+      {
+        warn("Hit end of expression buffer while interpolating.\n");
+        goto err_out;
+      }
+
+      memcpy(buf_pos, src, len);
+      buf_pos += len;
+
+      pos--;
+      if(pos >= 0)
+      {
+        /*
+        cur_stack = &(stack[pos]);
+        buf_start = cur_stack->buf_start;
+        operator = cur_stack->operator;
+        operand_a = cur_stack->operand;
+        state = cur_stack->state;*/
+        buf_start = stack[pos].buf_start;
+        operator = stack[pos].operator;
+        operand_a = stack[pos].operand;
+        state = stack[pos].state;
+      }
+      else
+      {
+        warn("Hit bottom of expression stack unexpectedly while interpolating.\n");
+        goto err_out;
+      }
+
+      continue;
+    }
+
+
+    // Translate operand B
+    buf_pos = buffer + buf_start;
+    if(state & EXPR_STATE_PARSE_OPERAND)
+    {
+      //debug("Counter: %s\n", buf_pos);
+      operand_b = get_counter(mzx_world, buf_pos, id);
+    }
+
+    // Clear state for next operand
+    state = 0;
+
+
+    // Apply unary operators
+    while((--buf_pos) >= buffer)
+    {
+      switch(*buf_pos)
+      {
+        case '~':
+          operand_b = ~operand_b;
+          continue;
+
+        case '-':
+          operand_b = -operand_b;
+          continue;
+      }
+      break;
+    }
+
+    // Shift the buffer pos in front of the unary null, or to the beginning
+    buf_pos++;
+
+
+    // Perform operation
+    switch(operator)
+    {
+      case OP_ADDITION:
+        operand_a += operand_b;
+        break;
+
+      case OP_SUBTRACTION:
+        operand_a -= operand_b;
+        break;
+
+      case OP_MULTIPLICATION:
+        operand_a *= operand_b;
+        break;
+
+      case OP_DIVISION:
+      {
+        if(operand_b == 0)
+          operand_a = 0;
+
+        else
+          operand_a /= operand_b;
+
+        break;
+      }
+
+      case OP_MODULUS:
+      {
+        int val;
+
+        if(operand_b == 0)
+        {
+          operand_a = 0;
+          break;
+        }
+
+        val = operand_a % operand_b;
+
+        // Converted C99 regulated truncated modulus to
+        // the more useful (for us) floored modulus
+        // Source:
+        // Division and Modulus for Computer Scientists
+        // DAAN LEIJEN
+        // University of Utrecht
+
+        if((val < 0) ^ (operand_b < 0))
+          val += operand_b;
+
+        operand_a = val;
+        break;
+      }
+
+      case OP_EXPONENTIATION:
+      {
+        int i;
+        int val = 1;
+
+        // a==0 -> result = 0
+        if(operand_a == 0)
+          break;
+
+        // a==1 -> result = 1
+        if(operand_a == 1)
+          break;
+
+        // a==-1 -> result = 1 if b is even, -1 if b is odd
+        if(operand_a == -1)
+          operand_b &= 1;
+
+        // no floating point support :(
+        if(operand_b < 0)
+        {
+          operand_a = 0;
+          break;
+        }
+
+        for(i = 0; i < operand_b; i++)
+          val *= operand_a;
+
+        operand_a = val;
+        break;
+      }
+
+      case OP_AND:
+        operand_a &= operand_b;
+        break;
+
+      case OP_OR:
+        operand_a |= operand_b;
+        break;
+
+      case OP_XOR:
+        operand_a ^= operand_b;
+        break;
+
+      case OP_BITSHIFT_LEFT:
+        operand_a <<= operand_b;
+        break;
+
+      case OP_BITSHIFT_RIGHT:
+        operand_a = ((unsigned int)(operand_a) >> operand_b);
+        break;
+
+      case OP_ARITHMETIC_BITSHIFT_RIGHT:
+        operand_a = ((signed int)(operand_a) >> operand_b);
+        break;
+
+      case OP_EQUAL:
+        operand_a = (operand_a == operand_b);
+        break;
+
+      case OP_LESS_THAN:
+        operand_a = (operand_a < operand_b);
+        break;
+
+      case OP_LESS_THAN_OR_EQUAL:
+        operand_a = (operand_a <= operand_b);
+        break;
+
+      case OP_GREATER_THAN:
+        operand_a = (operand_a > operand_b);
+        break;
+
+      case OP_GREATER_THAN_OR_EQUAL:
+        operand_a = (operand_a >= operand_b);
+        break;
+
+      case OP_NOT_EQUAL:
+        operand_a = (operand_a != operand_b);
+        break;
+
+      default:
+        break;
+    }
+
+
+    // Get next operator -- we need to skip any spaces first
+    while(isspace(*expression))
+      expression++;
+
+    current_char = *expression;
+    expression++;
+
+    switch(current_char)
+    {
+      // End of expression
+      case ')':
+      {
+        pos--;
+        if(pos >= 0)
+        {
+          int value = operand_a;
+          int len;
+          /*
+          cur_stack = &(stack[pos]);
+          buf_start = cur_stack->buf_start;
+          operator = cur_stack->operator;
+          operand_a = cur_stack->operand;
+          state = cur_stack->state;*/
+          buf_start = stack[pos].buf_start;
+          operator = stack[pos].operator;
+          operand_a = stack[pos].operand;
+          state = stack[pos].state;
+
+          // If we're in the middle of an operand, print to the buffer
+          if(state & EXPR_STATE_PARSE_OPERAND)
+          {
+            // Overwrite the unary operators' null terminator
+            buf_pos--;
+
+            sprintf(number_buffer, "%d", value);
+            len = strlen(number_buffer);
+            // FIXME
+            if(len+1 > (buf_alloc - buf_pos))
+            {
+              warn("Hit end of buffer at closing parenthesis.\n");
+              goto err_out;
+            }
+            strcpy(buf_pos, number_buffer);
+            buf_pos += len;
+          }
+
+          // Otherwise, this is the new operand
+          else
+          {
+            operand_b = value;
+          }
+        }
+        continue;
+      }
+
+      // Addition operator
+      case '+':
+      {
+        operator = OP_ADDITION;
+        break;
+      }
+
+      // Subtraction operator
+      case '-':
+      {
+        operator = OP_SUBTRACTION;
+        break;
+      }
+
+      // Multiplication operator
+      case '*':
+      {
+        operator = OP_MULTIPLICATION;
+        break;
+      }
+
+      // Division operator
+      case '/':
+      {
+        operator = OP_DIVISION;
+        break;
+      }
+
+      // Modulus operator
+      case '%':
+      {
+        operator = OP_MODULUS;
+        break;
+      }
+
+      // Exponent operator
+      case '^':
+      {
+        operator = OP_EXPONENTIATION;
+        break;
+      }
+
+      // Bitwise AND operator
+      case 'a':
+      {
+        operator = OP_AND;
+        break;
+      }
+
+      // Bitwise OR operator
+      case 'o':
+      {
+        operator = OP_OR;
+        break;
+      }
+
+      // Bitwise XOR operator
+      case 'x':
+      {
+        operator = OP_XOR;
+        break;
+      }
+
+      // Less than/bitshift left
+      case '<':
+      {
+        if(*expression == '<')
+        {
+          expression++;
+          operator = OP_BITSHIFT_LEFT;
+          break;
+        }
+        if(*expression == '=')
+        {
+          expression++;
+          operator = OP_LESS_THAN_OR_EQUAL;
+          break;
+        }
+        operator = OP_LESS_THAN;
+        break;
+      }
+
+      // Greater than/bitshift right
+      case '>':
+      {
+        if(*expression == '>')
+        {
+          expression++;
+          if(*expression == '>')
+          {
+            expression++;
+            operator = OP_ARITHMETIC_BITSHIFT_RIGHT;
+            break;
+          }
+          operator = OP_BITSHIFT_RIGHT;
+          break;
+        }
+        if(*expression == '=')
+        {
+          expression++;
+          operator = OP_GREATER_THAN_OR_EQUAL;
+          break;
+        }
+        operator = OP_GREATER_THAN;
+        break;
+      }
+
+      // Equality
+      case '=':
+      {
+        operator = OP_EQUAL;
+        break;
+      }
+
+      // Inequality
+      case '!':
+      {
+        if(*expression == '=')
+        {
+          expression++;
+          operator = OP_NOT_EQUAL;
+          break;
+        }
+        // Invalid operator
+        goto err_out;
+      }
+
+      // Null terminator or unrecognized symbol
+      case '\0':
+      default:
+        // Invalid operator
+        warn("Invalid operator or unclosed expression.\n");
+        goto err_out;
+    }
+  }
+  while(pos >= 0);
+
+  *_expression = expression;
+  return operand_a;
+
+err_out:
+  // FIXME
+  if(!*error)
+    *error = 1;
+
+  // DEBUG: remove
+  {
+    struct robot *cur_robot = mzx_world->current_board->robot_list[id];
+    char *program = cur_robot->program_bytecode;
+    char* cmd_ptr = program + cur_robot->cur_prog_line;
+    char *c;
+    int line_num;
+
+    // figure out our line number
+    line_num = 1;
+    c = program + 1;
+    while(c < cmd_ptr)
+    {
+      c += *c + 2;
+      line_num++;
+    }
+
+    debug("robot id: %d\n", id);
+    debug("line number: %d\n", line_num);
+    debug("expression: %s\n", *_expression);
+  }
+
+  //free(buffer);
+  //free(stack);
+
+  *_expression = expression;
+  return 0;
+}
+
+
+#else /* CONFIG_DEBYTECODE */
+
+
+/* This is the old expression parser in its full glory.
+ *
+ * This parser is slower than the new one, but generally easier to understand.
+ * Rather than adapt the new parser to the more complex debytecode--so it could
+ * be rewritten for compiled expressions later anyway--I'm just leaving the old
+ * one intact for now.
+ */
+
+
+// Only pass these evaluators valid expressions. The compiler should take care
+// of that part, so don't call it outside of evaluating robot code.
 
 static int last_val;
 
@@ -698,3 +1461,5 @@ int parse_string_expression(struct world *mzx_world, char **_expression,
 }
 
 #endif // CONFIG_DEBYTECODE
+
+#endif // outer CONFIG_DEBYTECODE
