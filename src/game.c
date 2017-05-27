@@ -1631,8 +1631,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
     }
 
     case CHANGE_STATE_EXIT_GAME_ROBOTIC:
-      // Exit game--skip input processing. The game state will be
-      // exit the next cycle.
+      // Exit game--skip input processing. The game state will exit.
       return 1;
 
     default:
@@ -1897,15 +1896,15 @@ __editor_maybe_static void play_game(struct world *mzx_world)
 
   do
   {
-    // Exit game state change
-    if(mzx_world->change_game_state == CHANGE_STATE_EXIT_GAME_ROBOTIC)
-      break;
-
     focus_on_player(mzx_world);
 
     // Update
     if(update(mzx_world, 1, &fadein))
     {
+      // Exit game state change
+      if(mzx_world->change_game_state == CHANGE_STATE_EXIT_GAME_ROBOTIC)
+        break;
+
       update_event_status();
       continue;
     }
