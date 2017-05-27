@@ -2823,9 +2823,11 @@ static char *get_expr_binary_operator_token(char *src, int *_is_operator)
 
       if(src[1] == '>')
       {
-        src++;
-        if(src[1] == '>')
+        if(src[2] == '>')
+        {
           src++;
+        }
+        src++;
       }
       break;
 
@@ -4732,8 +4734,6 @@ static char *legacy_disassemble_print_binary_operator(char *src,
     case '-':
     case '/':
     case '%':
-    case '&':
-    case '|':
     case '~':
     case '*':
     case '=':
@@ -4770,6 +4770,13 @@ static char *legacy_disassemble_print_binary_operator(char *src,
       {
         *output = operator_char;
         output++;
+        if(src[2] == operator_char)
+        {
+          *output = operator_char;
+          output++;
+          src++;
+          string_length--;
+        }
         src++;
         string_length--;
       }
