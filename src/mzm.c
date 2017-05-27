@@ -562,7 +562,7 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer, int file
             int robot_partial_size;
             int current_position;
 
-            robot_partial_size = calculate_partial_robot_size(savegame_mode, mzx_world->version);
+            robot_partial_size = calculate_partial_robot_size(savegame_mode, mzm_world_version);
 
             // If we're loading a "runtime MZM" then it means that we're loading
             // bytecode. And to do this we must both be in-game and must be
@@ -599,7 +599,7 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer, int file
 
                   if (current_position + robot_partial_size > file_length)
                     goto err_invalid;
-                  robot_calculated_size = load_robot_calculate_size(bufferPtr, savegame_mode, mzx_world->version);
+                  robot_calculated_size = load_robot_calculate_size(bufferPtr, savegame_mode, mzm_world_version);
                   if (current_position + robot_calculated_size > file_length)
                     goto err_invalid;
 
@@ -630,7 +630,7 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer, int file
 
                 if (current_position + robot_partial_size > file_length)
                   goto err_invalid;
-                robot_calculated_size = load_robot_calculate_size(bufferPtr, savegame_mode, mzx_world->version);
+                robot_calculated_size = load_robot_calculate_size(bufferPtr, savegame_mode, mzm_world_version);
                 if (current_position + robot_calculated_size > file_length)
                   goto err_invalid;
 
