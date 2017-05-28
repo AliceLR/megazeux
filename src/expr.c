@@ -85,10 +85,10 @@ struct expr_stack {
   char state;
 };
 
-char buffer[EXPR_BUFFER_SIZE];
-struct expr_stack stack[EXPR_STACK_SIZE];
-int stack_alloc = EXPR_STACK_SIZE;
-char *buf_alloc = buffer + EXPR_BUFFER_SIZE;
+static char buffer[EXPR_BUFFER_SIZE];
+static struct expr_stack stack[EXPR_STACK_SIZE];
+static int stack_alloc = EXPR_STACK_SIZE;
+static char *buf_alloc = buffer + EXPR_BUFFER_SIZE;
 
 int parse_expression(struct world *mzx_world, char **_expression, int *error,
  int id)
