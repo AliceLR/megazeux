@@ -41,6 +41,11 @@ FEATURES
 + Added EXIT_GAME function counter. When set to anything but 0,
   this will cause MegaZeux to exit to the title screen. This has
   no effect on the title screen.
++ Added the ternary operator (?:) to expressions. If the value
+  to the left of ? is not equal to zero, the expression between
+  the ? and the : will be evaluated. If the value to the left of
+  ? is equal to zero, the expression to the right of : will be
+  evaluated.
 
 + Debytecode: the LOAD_SOURCE_FILE special counter can now be
   used to load and compile a robot program from source code.

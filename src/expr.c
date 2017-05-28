@@ -48,7 +48,8 @@ enum op
   OP_GREATER_THAN,
   OP_GREATER_THAN_OR_EQUAL,
   OP_LESS_THAN_OR_EQUAL,
-  OP_NOT_EQUAL
+  OP_NOT_EQUAL,
+  OP_TERNARY
 };
 
 #ifndef CONFIG_DEBYTECODE
@@ -56,6 +57,14 @@ enum op
 /* This new expression parser for legacy Robotic is faster than the older
  * parser. It's not suited to the more complex debytecode (mainly thanks to
  * interpolation), so I've left the old parser intact below for debytecode.
+ *
+ * Error codes:
+ * -1 - unknown
+ * 0  - success
+ * 1  - invalid operand
+ * 2  - invalid operator
+ * 3  - stack overflow
+ * 4  - stack underflow
  */
 
 #define EXPR_BUFFER_SIZE 512
@@ -67,6 +76,7 @@ enum op
 #define EXPR_STATE_PUSH 8
 #define EXPR_STATE_PUSH_INTERPOLATION 16
 #define EXPR_STATE_INTERPOLATING 32
+#define EXPR_STATE_TERNARY_MIDDLE 64
 
 struct expr_stack {
   int buf_start;
@@ -240,7 +250,7 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
         {
           // Invalid -- truncated operand
           warn("Encountered null while parsing operand.\n");
-          *error = 2;
+          *error = 1;
           goto err_out;
         }
         else
@@ -398,8 +408,8 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
       operand_b = get_counter(mzx_world, buf_pos, id);
     }
 
-    // Clear state for next operand
-    state = 0;
+    // Clear states for next operand
+    state &= EXPR_STATE_TERNARY_MIDDLE;
 
 
     // Apply unary operators
@@ -559,6 +569,7 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
 
 
     // Get next operator -- we need to skip any spaces first
+    // Prefix operators are handled during the operand search, not here.
     while(isspace(*expression))
       expression++;
 
@@ -567,9 +578,130 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
 
     switch(current_char)
     {
+      // Ternary operator left (2.85+)
+      case '?':
+      {
+        if(mzx_world->version < 0x0255)
+          goto err_out;
+
+        // True
+        if(operand_a)
+        {
+          state = EXPR_STATE_TERNARY_MIDDLE;
+        }
+
+        // False - seek next ':'
+        else
+        {
+          int paren_level = 0;
+          int ternary_level = 0;
+          while(1)
+          {
+            current_char = *expression;
+            expression++;
+
+            if(current_char == '\0')
+            {
+              *error = 2;
+              goto err_out;
+            }
+            else
+
+            if(current_char == '(')
+            {
+              paren_level++;
+            }
+            else
+
+            if(current_char == ')')
+            {
+              if(paren_level <= 0)
+              {
+                *error = 2;
+                goto err_out;
+              }
+              paren_level--;
+            }
+            else
+
+            if(current_char == '?')
+            {
+              if(paren_level == 0)
+                ternary_level++;
+            }
+            else
+
+            if(current_char == ':')
+            {
+              if(ternary_level <= 0)
+                break;
+
+              ternary_level--;
+            }
+          }
+          state = 0;
+        }
+        operator = OP_ADDITION;
+        operand_a = 0;
+        break;
+      }
+
+      // Ternary operator right
+      case ':':
+      {
+        int paren_level = 0;
+
+        if(mzx_world->version < 0x0255)
+          goto err_out;
+
+        if(!(state & EXPR_STATE_TERNARY_MIDDLE))
+        {
+          *error = 2;
+          goto err_out;
+        }
+
+        state = 0;
+
+        // Seek next ')'
+        while(1)
+        {
+          current_char = *expression;
+          expression++;
+
+          if(current_char == '\0')
+          {
+            *error = 2;
+            goto err_out;
+          }
+          else
+
+          if(current_char == '(')
+          {
+            paren_level++;
+          }
+          else
+
+          if(current_char == ')')
+          {
+            if(paren_level <= 0)
+              break;
+
+            paren_level--;
+          }
+        }
+        // Proceed into the ')' handler:
+      }
+
       // End of expression
       case ')':
       {
+        // Invalid end of expression where : should exist
+        if(state & EXPR_STATE_TERNARY_MIDDLE)
+        {
+          *error = 2;
+          goto err_out;
+        }
+
         pos--;
         if(pos >= 0)
         {
@@ -807,7 +939,7 @@ static char *expr_skip_whitespace(char *expression)
 }
 
 static int parse_argument(struct world *mzx_world, char **_argument,
- int *type, int id)
+ int *type, int operand_a, int id)
 {
   char *argument = *_argument;
   int first_char = *argument;
@@ -830,7 +962,7 @@ static int parse_argument(struct world *mzx_world, char **_argument,
       argument++;
       if(!isspace((int)*argument))
       {
-        int t2, val = parse_argument(mzx_world, &argument, &t2, id);
+        int t2, val = parse_argument(mzx_world, &argument, &t2, 0, id);
 #ifndef CONFIG_DEBYTECODE
         if((t2 != 0) && (t2 != 2))
         {
@@ -999,7 +1131,7 @@ static int parse_argument(struct world *mzx_world, char **_argument,
       int t2, val;
 
       argument++;
-      val = parse_argument(mzx_world, &argument, &t2, id);
+      val = parse_argument(mzx_world, &argument, &t2, 0, id);
 
 #ifndef CONFIG_DEBYTECODE
       if((t2 != 0) && (t2 != 2))
@@ -1051,6 +1183,131 @@ static int parse_argument(struct world *mzx_world, char **_argument,
       *type = 0;
       *_argument = argument;
       return val;
+    }
+
+    // Ternary operator left (2.85+)
+    case '?':
+    {
+      if(mzx_world->version < 0x0255)
+      {
+        *type = -1;
+        *_argument = argument;
+        return -1;
+      }
+
+      // True - nothing to be done here
+      // False - seek next ':'
+      if(!operand_a)
+      {
+        int paren_level = 0;
+        int ternary_level = 0;
+        while(1)
+        {
+          argument++;
+          first_char = *argument;
+
+#ifndef CONFIG_DEBYTECODE
+          // It's hard to ensure these are actually valid for this parser in
+          // regular MZX (and we don't, since regular MZX uses a different
+          // parser now). But debytecode is validated ahead of time!
+          if(first_char == '\0')
+          {
+            *type = -1;
+            *_argument = argument;
+            return -1;
+          }
+          else
+#endif // !CONFIG_DEBYTECODE
+
+          if(first_char == '(')
+          {
+            paren_level++;
+          }
+          else
+
+          if(first_char == ')')
+          {
+            if(paren_level <= 0)
+            {
+              *type = -1;
+              *_argument = argument;
+              return -1;
+            }
+            paren_level--;
+          }
+          else
+
+          if(first_char == '?')
+          {
+            if(paren_level == 0)
+              ternary_level++;
+          }
+          else
+
+          if(first_char == ':')
+          {
+            if(ternary_level <= 0)
+              break;
+
+            ternary_level--;
+          }
+        }
+      }
+
+      *type = 1;
+      *_argument = argument + 1;
+      return OP_TERNARY;
+    }
+
+    // Ternary operator right
+    case ':':
+    {
+      // We're only here because we finished execution of the inner argument.
+      int paren_level = 0;
+
+      if(mzx_world->version < 0x0255)
+      {
+        *type = -1;
+        *_argument = argument;
+        return -1;
+      }
+
+      // Seek next ')'
+      while(1)
+      {
+        argument++;
+        first_char = *argument;
+
+#ifndef CONFIG_DEBYTECODE
+        if(first_char == '\0')
+        {
+            *type = -1;
+            *_argument = argument;
+            return -1;
+        }
+        else
+#endif // !CONFIG_DEBYTECODE
+
+        if(first_char == '(')
+        {
+          paren_level++;
+        }
+        else
+
+        if(first_char == ')')
+        {
+          if(paren_level <= 0)
+            break;
+
+          paren_level--;
+        }
+      }
+
+      // This performs an addition (in this case, of zero) without requiring
+      // us to seek a new operand. The parser will then find the ')' and exit.
+      *type = 2;
+      *_argument = argument;
+      return 0;
     }
 
 #ifdef CONFIG_DEBYTECODE
@@ -1282,6 +1539,9 @@ static int evaluate_operation(int operand_a, enum op c_operator, int operand_b)
     case OP_NOT_EQUAL:
       return operand_a != operand_b;
 
+    case OP_TERNARY:
+      return operand_b;
+
     default:
       return operand_a;
   }
@@ -1300,7 +1560,7 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
 
   // Skip initial whitespace..
   expression = expr_skip_whitespace(expression);
-  value = parse_argument(mzx_world, &expression, &current_arg, id);
+  value = parse_argument(mzx_world, &expression, &current_arg, 0, id);
 
 #ifndef CONFIG_DEBYTECODE
   if((current_arg != 0) && (current_arg != 2))
@@ -1322,7 +1582,7 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
       break;
     }
 
-    c_operator = parse_argument(mzx_world, &expression, &current_arg, id);
+    c_operator = parse_argument(mzx_world, &expression, &current_arg, value, id);
     // Next arg must be an operator, unless it's a negative number,
     // in which case it's considered + num
     if(current_arg == 2)
@@ -1341,7 +1601,7 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
 #endif
 
       expression = expr_skip_whitespace(expression);
-      operand_val = parse_argument(mzx_world, &expression, &current_arg, id);
+      operand_val = parse_argument(mzx_world, &expression, &current_arg, value, id);
 
 #ifndef CONFIG_DEBYTECODE
       // And now it must be an integer.

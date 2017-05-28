@@ -2607,7 +2607,7 @@ static const struct special_word *find_special_word(const char *name,
 
 static inline bool is_identifier_char(char c)
 {
-  return isalnum((int)c) || (c == '$') || (c == '_') || (c == '?') ||
+  return isalnum((int)c) || (c == '$') || (c == '_') ||
                             (c == '#') || (c == '.');
 }
 
@@ -2809,6 +2809,16 @@ static char *get_expr_binary_operator_token(char *src, int *_is_operator)
     case '=':
       break;
 
+    // Ternary operator special case - this needs to be counted
+    case '?':
+      is_operator = 2;
+      break;
+
+    // Ternary operator special case - this needs to be counted
+    case ':':
+      is_operator = 3;
+      break;
+
     case '*':
       if(src[1] == '*')
         src++;
@@ -2922,7 +2932,9 @@ static char *get_expr_value_token(char *src)
 static char *get_expression(char *src)
 {
   char *next, *next_next;
+  int ternary_level = 0;
   int is_operator;
+
   // Skip initial whitespace.
   src = skip_whitespace(src);
 
@@ -2947,6 +2959,10 @@ static char *get_expression(char *src)
     if(!is_operator)
       return src;
 
+    ternary_level += (is_operator == 2) - (is_operator == 3);
+    if(ternary_level < 0)
+      return src;
+
     next = skip_whitespace(next);
     // Now get a value token.
     next_next = get_expr_value_token(next);
@@ -2955,6 +2971,9 @@ static char *get_expression(char *src)
 
     next = next_next;
   }
+
+  if(ternary_level > 0)
+    return src;
 
   return next;
 }
@@ -4737,6 +4756,8 @@ static char *legacy_disassemble_print_binary_operator(char *src,
     case '~':
     case '*':
     case '=':
+    case '?':
+    case ':':
       *output = operator_char;
       output++;
       break;
