@@ -2682,6 +2682,36 @@ static char *find_comment(char *src)
   return src;
 }
 
+static bool is_color(char *value)
+{
+  if((value[0] == 'c') && (value[1] != 0) &&
+   ((isxdigit((int)value[1]) || (value[1] == '?')) &&
+   (isxdigit((int)value[2]) || (value[2] == '?')) &&
+   (isspace(value[3]) || (value[3] == '\0'))))
+  {
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
+
+static bool is_param(char *value)
+{
+  if((value[0] == 'p') && (value[1] != 0) &&
+   ((isxdigit((int)value[1]) && isxdigit((int)value[2])) ||
+   ((value[1] == '?') && (value[2] == '?'))) &&
+   (isspace(value[3]) || (value[3] == '\0')))
+  {
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
+
 static int get_param(char *cmd_line)
 {
   if((cmd_line[1] == '?') && (cmd_line[2] == '?'))
@@ -3195,7 +3225,6 @@ static char *get_token(char *src, struct token *token)
         token->arg_value.equality_type = LESS_THAN;
       }
 
-      next++;
       break;
 
     // Match >, >=, or ><
@@ -3219,7 +3248,6 @@ static char *get_token(char *src, struct token *token)
         token->arg_value.equality_type = GREATER_THAN;
       }
 
-      next++;
       break;
 
     // Match =, ==, =<, or =>
@@ -3247,7 +3275,6 @@ static char *get_token(char *src, struct token *token)
         next++;
       }
 
-      next++;
       break;
 
     // Match ! or !=
@@ -3257,7 +3284,7 @@ static char *get_token(char *src, struct token *token)
       if(src[1] == '=')
       {
         token->arg_value.equality_type = NOT_EQUAL;
-        next += 2;
+        next += 1;
       }
       break;
 
@@ -3270,16 +3297,38 @@ static char *get_token(char *src, struct token *token)
       break;
 
     default:
-      // It's just a string - could be an ignore word or otherwise a basic
-      // identifier.
-      next = find_non_identifier_char(src);
-      token_type = TOKEN_TYPE_BASIC_IDENTIFIER;
+      if(is_color(src))
+      {
+        // Color
+        next = src + 3;
+        token_type = TOKEN_TYPE_COLOR;
+      }
+      else
+
+      if(is_param(src))
+      {
+        // Param
+        next = src + 3;
+        token_type = TOKEN_TYPE_PARAM;
+      }
+
+      else
+      {
+        // It's just a string - could be an ignore word or otherwise a basic
+        // identifier.
+        next = find_non_identifier_char(src);
+        token_type = TOKEN_TYPE_BASIC_IDENTIFIER;
+      }
 
       // Until we decide we care about what special word this is then this
       // stays NULL.
       token->value_is_cached = false;
       break;
   }
+
+  // The next character must be the terminator or a space.
+  if(!isspace(*next) && *next != '\0')
+    token_type = TOKEN_TYPE_INVALID;
 
   token->length = next - src;
   token->value = src;
@@ -3499,34 +3548,6 @@ static const struct command_set *find_command_set(const char *name,
   }
 
   return NULL;
-}
-
-static bool is_color(char *value)
-{
-  if((value[0] == 'c') && (value[1] != 0) &&
-   ((isxdigit((int)value[1]) || (value[1] == '?')) &&
-   (isxdigit((int)value[2]) || (value[2] == '?'))))
-  {
-    return true;
-  }
-  else
-  {
-    return false;
-  }
-}
-
-static bool is_param(char *value)
-{
-  if((value[0] == 'p') && (value[1] != 0) &&
-   ((isxdigit((int)value[1]) && isxdigit((int)value[2])) ||
-   ((value[1] == '?') && (value[2] == '?'))))
-  {
-    return true;
-  }
-  else
-  {
-    return false;
-  }
 }
 
 // This structure acts as a cache so we don't have to keep grabbing the same
@@ -3843,16 +3864,14 @@ static int match_command(const struct mzx_command *command,
     }
 
     if((arg_type & ARG_TYPE_COLOR) &&
-     (token_type == TOKEN_TYPE_BASIC_IDENTIFIER) &&
-     (is_color(current_token->value)))
+     (token_type == TOKEN_TYPE_COLOR))
     {
       *match_type = ARG_TYPE_INDEXED_COLOR;
       continue;
     }
 
     if((arg_type & ARG_TYPE_PARAM) &&
-     (token_type == TOKEN_TYPE_BASIC_IDENTIFIER) &&
-     (is_param(current_token->value)))
+     (token_type == TOKEN_TYPE_PARAM))
     {
       *match_type = ARG_TYPE_INDEXED_PARAM;
       continue;
