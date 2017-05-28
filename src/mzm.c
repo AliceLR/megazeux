@@ -76,7 +76,8 @@ static void save_mzm_common(struct world *mzx_world, int start_x, int start_y, i
               offset = cur_robot->xpos + (cur_robot->ypos * src_board->board_width);
               assert(is_robot((enum thing)src_board->level_id[offset]));
               rid = src_board->level_param[offset];
-              robot_size = save_robot_calculate_size(cur_robot, savegame, WORLD_VERSION);
+              robot_size = save_robot_calculate_size(mzx_world, cur_robot,
+               savegame, WORLD_VERSION);
               robot_sizes[rid] = (int)robot_size;
               mzm_size += robot_size;
             }
@@ -606,8 +607,8 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer, int file
                   cur_robot = cmalloc(sizeof(struct robot));
 
                   cur_robot->world_version = mzx_world->version;
-                  load_robot_from_memory(cur_robot, bufferPtr, savegame_mode,
-                   mzm_world_version, (int)current_position);
+                  load_robot_from_memory(mzx_world, cur_robot, bufferPtr,
+                   savegame_mode, mzm_world_version, (int)current_position);
                   bufferPtr += robot_calculated_size;
                   offset = current_x + (current_y * board_width);
                   level_id[offset] = CUSTOM_BLOCK;
@@ -636,7 +637,7 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer, int file
 
                 cur_robot = cmalloc(sizeof(struct robot));
                 cur_robot->world_version = mzx_world->version;
-                load_robot_from_memory(cur_robot, bufferPtr, savegame_mode,
+                load_robot_from_memory(mzx_world, cur_robot, bufferPtr, savegame_mode,
                   mzm_world_version, bufferPtr - (const unsigned char *)buffer);
                 bufferPtr += robot_calculated_size;
                 current_x = robot_x_locations[i];
@@ -647,7 +648,7 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer, int file
 #ifdef CONFIG_DEBYTECODE
                 // If we're loading source code at runtime, we need to compile it
                 if(savegame_mode < savegame)
-                  prepare_robot_bytecode(cur_robot);
+                  prepare_robot_bytecode(mzx_world, cur_robot);
 #endif
 
                 if(current_x != -1)

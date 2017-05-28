@@ -51,8 +51,9 @@
 #define parsedir(a, b, c, d) \
  parsedir(mzx_world, a, b, c, d, _bl[0], _bl[1], _bl[2], _bl[3])
 
-__editor_maybe_static
+#ifdef CONFIG_EDITOR
 int (*debug_robot)(struct world *mzx_world, struct robot *cur_robot, int id);
+#endif
 
 static const char *const item_to_counter[9] =
 {
@@ -507,7 +508,7 @@ static void copy_xy_to_xy(struct world *mzx_world, int src_x, int src_y,
     if(is_robot(src_id))
     {
       struct robot *src_robot = src_board->robot_list[src_param];
-      src_param = duplicate_robot(src_board, src_robot,
+      src_param = duplicate_robot(mzx_world, src_board, src_robot,
        dest_x, dest_y);
     }
     else
@@ -536,7 +537,8 @@ static void copy_xy_to_xy(struct world *mzx_world, int src_x, int src_y,
   }
 }
 
-__editor_maybe_static void copy_board_to_board_buffer(struct board *src_board,
+__editor_maybe_static void copy_board_to_board_buffer(struct world *mzx_world,
+ struct board *src_board,
  int x, int y, int width, int height, char *dest_id, char *dest_param,
  char *dest_color, char *dest_under_id, char *dest_under_param,
  char *dest_under_color, struct board *dest_board)
@@ -565,7 +567,7 @@ __editor_maybe_static void copy_board_to_board_buffer(struct board *src_board,
       if(is_robot(src_id))
       {
         struct robot *src_robot = src_board->robot_list[src_param];
-        src_param = duplicate_robot(dest_board, src_robot,
+        src_param = duplicate_robot(mzx_world, dest_board, src_robot,
          0, 0);
       }
       else
@@ -966,7 +968,7 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
       char *under_param_buffer = cmalloc(width * height);
       char *under_color_buffer = cmalloc(width * height);
 
-      copy_board_to_board_buffer(src_board, src_x, src_y, width,
+      copy_board_to_board_buffer(mzx_world, src_board, src_x, src_y, width,
        height, id_buffer, param_buffer, color_buffer,
        under_id_buffer, under_param_buffer, under_color_buffer,
        src_board);
@@ -1219,7 +1221,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
     cur_robot->cycle_count = 0;
 
 #ifdef CONFIG_DEBYTECODE
-    prepare_robot_bytecode(cur_robot);
+    prepare_robot_bytecode(mzx_world, cur_robot);
 #endif
 
     // Does program exist?
@@ -1602,7 +1604,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
             // Some specials might have changed these
 #ifdef CONFIG_DEBYTECODE
-            prepare_robot_bytecode(cur_robot);
+            prepare_robot_bytecode(mzx_world, cur_robot);
 #endif
             program = cur_robot->program_bytecode;
             cmd_ptr = program + cur_robot->cur_prog_line;
@@ -3184,7 +3186,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         if(!strcasecmp(mzx_world->global_robot.robot_name,
          robot_name_buffer))
         {
-          replace_robot(src_board, &mzx_world->global_robot, id);
+          replace_robot(mzx_world, src_board, &mzx_world->global_robot, id);
         }
         else
         {
@@ -3196,7 +3198,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
             if(found_robot != cur_robot)
             {
-              replace_robot(src_board, found_robot, id);
+              replace_robot(mzx_world, src_board, found_robot, id);
             }
           }
         }
@@ -3219,7 +3221,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         if(is_robot(d_id))
         {
           int idx = level_param[offset];
-          replace_robot(src_board, src_board->robot_list[idx], id);
+          replace_robot(mzx_world, src_board, src_board->robot_list[idx], id);
         }
 
         cur_robot = src_board->robot_list[id];
@@ -3246,7 +3248,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             if(is_robot(d_id))
             {
               int idx = level_param[offset];
-              replace_robot(src_board, src_board->robot_list[idx], id);
+              replace_robot(mzx_world, src_board, src_board->robot_list[idx],
+               id);
             }
           }
         }
@@ -3276,7 +3279,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
             if(!move_dir(src_board, &duplicate_x, &duplicate_y, duplicate_dir))
             {
-              dest_id = duplicate_robot(src_board, cur_robot,
+              dest_id = duplicate_robot(mzx_world, src_board, cur_robot,
                duplicate_x, duplicate_y);
 
               if(dest_id != -1)
@@ -3313,7 +3316,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             duplicate_id = ROBOT;
           }
 
-          dest_id = duplicate_robot(src_board, cur_robot,
+          dest_id = duplicate_robot(mzx_world, src_board, cur_robot,
            duplicate_x, duplicate_y);
 
           if(dest_id != -1)
@@ -4673,7 +4676,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
         offset = duplicate_x + (duplicate_y * board_width);
         dest_id =
-         duplicate_robot(src_board, cur_robot, duplicate_x, duplicate_y);
+         duplicate_robot(mzx_world, src_board, cur_robot,
+          duplicate_x, duplicate_y);
 
         if(dest_id != -1)
         {
@@ -4721,7 +4725,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
         offset = duplicate_x + (duplicate_y * board_width);
         dest_id =
-         duplicate_robot(src_board, cur_robot, duplicate_x, duplicate_y);
+         duplicate_robot(mzx_world, src_board, cur_robot,
+          duplicate_x, duplicate_y);
 
         if(dest_id != -1)
         {

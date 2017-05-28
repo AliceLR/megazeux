@@ -65,7 +65,7 @@ CORE_LIBSPEC void add_robot_name_entry(struct board *src_board,
  struct robot *cur_robot, char *name);
 CORE_LIBSPEC int find_free_robot(struct board *src_board);
 
-void prepare_robot_bytecode(struct robot *cur_robot);
+void prepare_robot_bytecode(struct world *mzx_world, struct robot *cur_robot);
 
 #else /* !CONFIG_DEBYTECODE */
 
@@ -81,8 +81,8 @@ void add_robot_name_entry(struct board *src_board, struct robot *cur_robot,
 int find_free_robot(struct board *src_board);
 
 #ifdef CONFIG_EDITOR
-CORE_LIBSPEC void duplicate_robot_direct(struct robot *cur_robot,
- struct robot *copy_robot, int x, int y);
+CORE_LIBSPEC void duplicate_robot_direct(struct world *mzx_world,
+ struct robot *cur_robot, struct robot *copy_robot, int x, int y);
 #endif
 
 #endif /* !CONFIG_DEBYTECODE */
@@ -91,10 +91,10 @@ CORE_LIBSPEC void clear_robot_contents(struct robot *cur_robot);
 CORE_LIBSPEC void clear_robot_id(struct board *src_board, int id);
 CORE_LIBSPEC void clear_scroll_id(struct board *src_board, int id);
 CORE_LIBSPEC void clear_sensor_id(struct board *src_board, int id);
-CORE_LIBSPEC void replace_robot(struct board *src_board,
- struct robot *src_robot, int dest_id);
-CORE_LIBSPEC int duplicate_robot(struct board *src_board,
- struct robot *cur_robot, int x, int y);
+CORE_LIBSPEC void replace_robot(struct world *mzx_world,
+ struct board *src_board, struct robot *src_robot, int dest_id);
+CORE_LIBSPEC int duplicate_robot(struct world *mzx_world,
+ struct board *src_board, struct robot *cur_robot, int x, int y);
 CORE_LIBSPEC int duplicate_scroll(struct board *src_board,
  struct scroll *cur_scroll);
 CORE_LIBSPEC int duplicate_sensor(struct board *src_board,
@@ -112,20 +112,24 @@ CORE_LIBSPEC int place_player_xy(struct world *mzx_world, int x, int y);
 CORE_LIBSPEC void setup_overlay(struct board *src_board, int mode);
 CORE_LIBSPEC void replace_player(struct world *mzx_world);
 
-void create_blank_robot(struct robot *cur_robot, int savegame);
-struct robot *load_robot_allocate(FILE *fp, int savegame, int file_version,
- int world_version);
+void create_blank_robot(struct world *mzx_world, struct robot *cur_robot,
+ int savegame);
+struct robot *load_robot_allocate(struct world *mzx_world, FILE *fp,
+ int savegame, int file_version);
 size_t load_robot_calculate_size(const void *buffer, int savegame, int version);
-void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version);
-void load_robot_from_memory(struct robot *cur_robot, const void *buffer,
- int savegame, int version, int robot_location);
+void load_robot(struct world *mzx_world, struct robot *cur_robot, FILE *fp,
+ int savegame, int version);
+void load_robot_from_memory(struct world *mzx_world, struct robot *cur_robot,
+ const void *buffer, int savegame, int version, int robot_location);
 struct scroll *load_scroll_allocate(FILE *fp);
 struct sensor *load_sensor_allocate(FILE *fp);
 size_t calculate_partial_robot_size(int savegame, int version);
-size_t save_robot_calculate_size(struct robot *cur_robot, int savegame, int version);
+size_t save_robot_calculate_size(struct world *mzx_world,
+ struct robot *cur_robot, int savegame, int version);
 void save_robot_to_memory(struct robot *cur_robot, void *buffer, int savegame,
  int version);
-void save_robot(struct robot *cur_robot, FILE *fp, int savegame, int version);
+void save_robot(struct world *mzx_world, struct robot *cur_robot, FILE *fp,
+ int savegame, int version);
 void save_scroll(struct scroll *cur_scroll, FILE *fp, int savegame);
 void save_sensor(struct sensor *cur_sensor, FILE *fp, int savegame);
 void clear_robot(struct robot *cur_robot);
@@ -194,9 +198,9 @@ CORE_LIBSPEC void copy_layer_to_board(struct board *src_board, int x, int y,
 CORE_LIBSPEC void copy_layer_to_buffer(int x,  int y, int width, int height,
  char *src_char, char *src_color, char *dest_char,
  char *dest_color, int layer_width);
-CORE_LIBSPEC void copy_board_to_board_buffer(struct board *src_board,
- int x, int y, int width, int height, char *dest_id, char *dest_param,
- char *dest_color, char *dest_under_id, char *dest_under_param,
+CORE_LIBSPEC void copy_board_to_board_buffer(struct world *mzx_world,
+ struct board *src_board, int x, int y, int width, int height, char *dest_id,
+ char *dest_param, char *dest_color, char *dest_under_id, char *dest_under_param,
  char *dest_under_color, struct board *dest_board);
 CORE_LIBSPEC void copy_board_buffer_to_board(struct board *src_board,
  int x, int y, int width, int height, char *src_id, char *src_param,

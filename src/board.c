@@ -154,8 +154,8 @@ static void create_blank_board(struct board *cur_board)
   cur_board->sensor_list = ccalloc(1, sizeof(struct sensor *));
 }
 
-__editor_maybe_static int load_board_direct(struct board *cur_board,
- FILE *fp, int data_size, int savegame, int version)
+__editor_maybe_static int load_board_direct(struct world *mzx_world,
+ struct board *cur_board, FILE *fp, int data_size, int savegame, int version)
 {
   int num_robots, num_scrolls, num_sensors, num_robots_active;
   int overlay_mode, size, board_width, board_height, i;
@@ -450,7 +450,8 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
         truncated = 1;
       }
 
-      cur_robot = load_robot_allocate(fp, savegame, version, cur_board->world_version);
+      cur_robot = load_robot_allocate(mzx_world, fp, savegame, version);
+
       if(cur_robot->used)
       {
         cur_board->robot_list[i] = cur_robot;
@@ -650,8 +651,8 @@ err_invalid:
   return VAL_INVALID;
 }
 
-struct board *load_board_allocate(FILE *fp, int savegame,
- int file_version, int world_version)
+struct board *load_board_allocate(struct world *mzx_world, FILE *fp,
+ int savegame, int file_version)
 {
   struct board *cur_board = cmalloc(sizeof(struct board));
   int board_size, board_location, last_location;
@@ -675,8 +676,9 @@ struct board *load_board_allocate(FILE *fp, int savegame,
     goto err_out;
   }
 
-  cur_board->world_version = world_version;
-  result = load_board_direct(cur_board, fp, board_size, savegame, file_version);
+  cur_board->world_version = mzx_world->version;
+  result = load_board_direct(mzx_world, cur_board, fp, board_size, savegame,
+   file_version);
 
   if(result != VAL_SUCCESS)
     create_blank_board(cur_board);
@@ -720,7 +722,8 @@ static void save_RLE2_plane(char *plane, FILE *fp, int size)
   }
 }
 
-int save_board(struct board *cur_board, FILE *fp, int savegame, int version)
+int save_board(struct world *mzx_world, struct board *cur_board, FILE *fp,
+ int savegame, int version)
 {
   int num_robots, num_scrolls, num_sensors;
   int start_location = ftell(fp);
@@ -849,7 +852,7 @@ int save_board(struct board *cur_board, FILE *fp, int savegame, int version)
     for(i = 1; i <= num_robots; i++)
     {
       cur_robot = cur_board->robot_list[i];
-      save_robot(cur_robot, fp, savegame, version);
+      save_robot(mzx_world, cur_robot, fp, savegame, version);
     }
   }
 

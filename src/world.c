@@ -771,7 +771,7 @@ int save_world(struct world *mzx_world, const char *file, int savegame)
     // First save the offset of where the board will be placed
     board_begin_position = ftell(fp);
     // Now save the board and get the size
-    board_size = save_board(cur_board, fp, savegame, WORLD_VERSION);
+    board_size = save_board(mzx_world, cur_board, fp, savegame, WORLD_VERSION);
     // board_end_position, unused
     ftell(fp);
     // Record size/offset information.
@@ -783,7 +783,7 @@ int save_world(struct world *mzx_world, const char *file, int savegame)
 
   // Save for global robot position
   gl_rob_position = ftell(fp);
-  save_robot(&mzx_world->global_robot, fp, savegame, WORLD_VERSION);
+  save_robot(mzx_world, &mzx_world->global_robot, fp, savegame, WORLD_VERSION);
 
   meter_update_screen(&meter_curr, meter_target);
 
@@ -1534,14 +1534,15 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
   for(i = 0; i < num_boards; i++)
   {
     mzx_world->board_list[i] =
-     load_board_allocate(fp, savegame, version, mzx_world->version);
+     load_board_allocate(mzx_world, fp, savegame, version);
     store_board_to_extram(mzx_world->board_list[i]);
     meter_update_screen(&meter_curr, meter_target);
   }
 
   // Read global robot
   fseek(fp, gl_rob, SEEK_SET); //don't worry if this fails
-  load_robot(&mzx_world->global_robot, fp, savegame, version);
+  load_robot(mzx_world, &mzx_world->global_robot, fp, savegame,
+   mzx_world->version);
 
   // Go back to where the names are
   fseek(fp, last_pos, SEEK_SET);

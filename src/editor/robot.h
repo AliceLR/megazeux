@@ -40,31 +40,31 @@ void replace_sensor(struct board *src_board, struct sensor *src_sensor,
 
 #ifdef CONFIG_DEBYTECODE
 
-void duplicate_robot_direct_source(struct robot *cur_robot,
- struct robot *copy_robot, int x, int y);
-int duplicate_robot_source(struct board *src_board, struct robot *cur_robot,
- int x, int y);
-void replace_robot_source(struct board *src_board, struct robot *src_robot,
- int dest_id);
+void duplicate_robot_direct_source(struct world *mzx_world,
+ struct robot *cur_robot, struct robot *copy_robot, int x, int y);
+int duplicate_robot_source(struct world *mzx_world,
+ struct board *src_board, struct robot *cur_robot, int x, int y);
+void replace_robot_source(struct world *mzx_world,
+ struct board *src_board, struct robot *src_robot, int dest_id);
 
 #else // !CONFIG_DEBYTECODE
 
-static inline void duplicate_robot_direct_source(struct robot *cur_robot,
- struct robot *copy_robot, int x, int y)
+static inline void duplicate_robot_direct_source(struct world *mzx_world,
+ struct robot *cur_robot, struct robot *copy_robot, int x, int y)
 {
-  duplicate_robot_direct(cur_robot, copy_robot, x, y);
+  duplicate_robot_direct(mzx_world, cur_robot, copy_robot, x, y);
 }
 
-static inline int duplicate_robot_source(struct board *src_board,
- struct robot *cur_robot, int x, int y)
+static inline int duplicate_robot_source(struct world *mzx_world,
+ struct board *src_board, struct robot *cur_robot, int x, int y)
 {
-  return duplicate_robot(src_board, cur_robot, x, y);
+  return duplicate_robot(mzx_world, src_board, cur_robot, x, y);
 }
 
-static inline void replace_robot_source(struct board *src_board,
- struct robot *src_robot, int dest_id)
+static inline void replace_robot_source(struct world *mzx_world,
+ struct board *src_board, struct robot *src_robot, int dest_id)
 {
-  replace_robot(src_board, src_robot, dest_id);
+  replace_robot(mzx_world, src_board, src_robot, dest_id);
 }
 
 #endif // !CONFIG_DEBYTECODE

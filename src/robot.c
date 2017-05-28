@@ -177,7 +177,7 @@ int get_robot_id(struct board *src_board, const char *name)
   return -1;
 }
 
-void create_blank_robot(struct robot *r, int savegame)
+void create_blank_robot(struct world *mzx_world, struct robot *r, int savegame)
 {
   int i;
 
@@ -194,7 +194,7 @@ void create_blank_robot(struct robot *r, int savegame)
     strcpy(r->program_source, "\x0A"); // Linebreak then term
 
     // Compile our blank program please, snicker
-    prepare_robot_bytecode(r);
+    prepare_robot_bytecode(mzx_world, r);
   }
 #else /* !CONFIG_DEBYTECODE */
   {
@@ -239,19 +239,20 @@ void create_blank_robot(struct robot *r, int savegame)
 #endif
 }
 
-struct robot *load_robot_allocate(FILE *fp, int savegame, int file_version,
- int world_version)
+struct robot *load_robot_allocate(struct world *mzx_world, FILE *fp,
+ int savegame, int file_version)
 {
   struct robot *cur_robot = cmalloc(sizeof(struct robot));
 
-  cur_robot->world_version = world_version;
-  load_robot(cur_robot, fp, savegame, file_version);
+  cur_robot->world_version = mzx_world->version;
+  load_robot(mzx_world, cur_robot, fp, savegame, file_version);
   return cur_robot;
 }
 
 // Most of this stuff does not have to be loaded unless savegame
 // is set.
-void load_robot_from_memory(struct robot *cur_robot, const void *buffer, int savegame, int version, int robot_location)
+void load_robot_from_memory(struct world *mzx_world, struct robot *cur_robot,
+ const void *buffer, int savegame, int version, int robot_location)
 {
   int program_length, validated_length;
   int i;
@@ -364,7 +365,7 @@ void load_robot_from_memory(struct robot *cur_robot, const void *buffer, int sav
        &(cur_robot->program_source_length), true, 10);
 
       free(program_legacy_bytecode);
-      prepare_robot_bytecode(cur_robot);
+      prepare_robot_bytecode(mzx_world, cur_robot);
 
       // And if you thought that lancer-x was a bad person for relying
       // on in-game saved MZMs then you should also know that these
@@ -499,7 +500,7 @@ err_invalid:
   // that were allocated, they'll be cleared later.
   val_error(BOARD_ROBOT_CORRUPT, robot_location);
 err_out:
-  create_blank_robot(cur_robot, savegame);
+  create_blank_robot(mzx_world, cur_robot, savegame);
 }
 
 size_t calculate_partial_robot_size(int savegame, int version)
@@ -557,7 +558,8 @@ size_t load_robot_calculate_size(const void *buffer, int savegame, int version)
   return robot_size;
 }
 
-void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
+void load_robot(struct world *mzx_world, struct robot *cur_robot, FILE *fp,
+ int savegame, int version)
 {
   int robot_location = ftell(fp);
   size_t partial_size = calculate_partial_robot_size(savegame, version);
@@ -573,7 +575,8 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
   if (total_read != full_size) {
     val_error(BOARD_ROBOT_CORRUPT, robot_location);
   } else {
-    load_robot_from_memory(cur_robot, buffer, savegame, version, robot_location);
+    load_robot_from_memory(mzx_world, cur_robot, buffer, savegame, version,
+     robot_location);
   }
   free(buffer);
 }
@@ -694,7 +697,8 @@ struct sensor *load_sensor_allocate(FILE *fp)
   return cur_sensor;
 }
 
-size_t save_robot_calculate_size(struct robot *cur_robot, int savegame, int version)
+size_t save_robot_calculate_size(struct world *mzx_world,
+ struct robot *cur_robot, int savegame, int version)
 {
   // This both prepares a robot for saving (in the case of a savegame robot in debytecode mzx)
   // and calculates the amount of space it will require. As a result, it is mandatory to
@@ -705,7 +709,7 @@ size_t save_robot_calculate_size(struct robot *cur_robot, int savegame, int vers
 #ifdef CONFIG_DEBYTECODE
   if(savegame)
   {
-    prepare_robot_bytecode(cur_robot);
+    prepare_robot_bytecode(mzx_world, cur_robot);
     program_length = cur_robot->program_bytecode_length;
   }
   else
@@ -847,9 +851,11 @@ void save_robot_to_memory(struct robot *cur_robot, void *buffer, int savegame, i
   //bufferPtr += program_length;  // Uncomment if adding more
 }
 
-void save_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
+void save_robot(struct world *mzx_world, struct robot *cur_robot, FILE *fp,
+ int savegame, int version)
 {
-  size_t robot_size = save_robot_calculate_size(cur_robot, savegame, version);
+  size_t robot_size = save_robot_calculate_size(mzx_world, cur_robot, savegame,
+   version);
   void *buffer = cmalloc(robot_size);
   save_robot_to_memory(cur_robot, buffer, savegame, version);
   if (buffer) {
@@ -1620,14 +1626,14 @@ static void set_robot_position(struct robot *cur_robot, int position,
     cur_robot->status = 2;
 }
 
-static int send_robot_direct(struct robot *cur_robot, const char *mesg,
- int ignore_lock, int send_self)
+static int send_robot_direct(struct world *mzx_world, struct robot *cur_robot,
+ const char *mesg, int ignore_lock, int send_self)
 {
   char *robot_program;
   int new_position;
 
 #ifdef CONFIG_DEBYTECODE
-  prepare_robot_bytecode(cur_robot);
+  prepare_robot_bytecode(mzx_world, cur_robot);
 #endif
   robot_program = cur_robot->program_bytecode;
 
@@ -1744,7 +1750,7 @@ void send_robot(struct world *mzx_world, char *name, const char *mesg,
     if(!strcasecmp(name, mzx_world->global_robot.robot_name) &&
      mzx_world->global_robot.used)
     {
-      send_robot_direct(&mzx_world->global_robot, mesg,
+      send_robot_direct(mzx_world, &mzx_world->global_robot, mesg,
        ignore_lock, 0);
     }
 
@@ -1752,7 +1758,7 @@ void send_robot(struct world *mzx_world, char *name, const char *mesg,
     {
       while(first <= last)
       {
-        send_robot_direct(src_board->robot_list_name_sorted[first],
+        send_robot_direct(mzx_world, src_board->robot_list_name_sorted[first],
          mesg, ignore_lock, 0);
         first++;
       }
@@ -1766,13 +1772,13 @@ int send_robot_id(struct world *mzx_world, int id, const char *mesg,
  int ignore_lock)
 {
   struct robot *cur_robot = mzx_world->current_board->robot_list[id];
-  return send_robot_direct(cur_robot, mesg, ignore_lock, 0);
+  return send_robot_direct(mzx_world, cur_robot, mesg, ignore_lock, 0);
 }
 
 int send_robot_self(struct world *mzx_world, struct robot *src_robot,
  const char *mesg, int ignore_lock)
 {
-  return send_robot_direct(src_robot, mesg, ignore_lock, 1);
+  return send_robot_direct(mzx_world, src_robot, mesg, ignore_lock, 1);
 }
 
 void send_robot_all(struct world *mzx_world, const char *mesg)
@@ -1782,12 +1788,13 @@ void send_robot_all(struct world *mzx_world, const char *mesg)
 
   if(mzx_world->global_robot.used)
   {
-    send_robot_direct(&mzx_world->global_robot, mesg, 0, 0);
+    send_robot_direct(mzx_world, &mzx_world->global_robot, mesg, 0, 0);
   }
 
   for(i = 0; i < src_board->num_robots_active; i++)
   {
-    send_robot_direct(src_board->robot_list_name_sorted[i], mesg, 0, 0);
+    send_robot_direct(mzx_world, src_board->robot_list_name_sorted[i],
+     mesg, 0, 0);
   }
 }
 
@@ -3181,7 +3188,7 @@ static
 #else
 __editor_maybe_static
 #endif
-void duplicate_robot_direct(struct robot *cur_robot,
+void duplicate_robot_direct(struct world *mzx_world, struct robot *cur_robot,
  struct robot *copy_robot, int x, int y)
 {
   char *dest_program_location, *src_program_location;
@@ -3190,7 +3197,7 @@ void duplicate_robot_direct(struct robot *cur_robot,
   ptrdiff_t program_offset;
 
 #ifdef CONFIG_DEBYTECODE
-  prepare_robot_bytecode(cur_robot);
+  prepare_robot_bytecode(mzx_world, cur_robot);
 #endif
   program_length = cur_robot->program_bytecode_length;
   num_labels = cur_robot->num_labels;
@@ -3226,11 +3233,23 @@ void duplicate_robot_direct(struct robot *cur_robot,
   }
 
 #ifdef CONFIG_DEBYTECODE
-  // FIXME: Short-term fix to repair copy block operations that contain robots
-  //        in debytecode; freeing program_source everywhere causes the editor
-  //        to corrupt robot code on the next edit (Bug ID 316)
-  //        [ Similar change, same bug ID, made in prepare_robot_bytecode ]
-  //copy_robot->program_source = NULL;
+  // If we're in the editor, we want to give the new robot a brand new duplicate
+  // of our source code.
+#ifdef CONFIG_EDITOR
+  if(mzx_world->editing)
+  {
+    copy_robot->program_source = cmalloc(cur_robot->program_source_length);
+    memcpy(copy_robot->program_source, cur_robot->program_source,
+     cur_robot->program_source_length);
+    copy_robot->program_source_length = cur_robot->program_source_length;
+  }
+  // Otherwise we want to at least know it doesn't exist
+  else
+#endif
+  {
+    copy_robot->program_source = NULL;
+    copy_robot->program_source_length = 0;
+  }
 #endif
 
   // Give the robot an empty stack.
@@ -3250,14 +3269,15 @@ void duplicate_robot_direct(struct robot *cur_robot,
 // Finds a robot ID then duplicates a robot there. Must not be called
 // in the editor (use duplicate_robot_source instead).
 
-int duplicate_robot(struct board *src_board, struct robot *cur_robot,
+int duplicate_robot(struct world *mzx_world,
+ struct board *src_board, struct robot *cur_robot,
  int x, int y)
 {
   int dest_id = find_free_robot(src_board);
   if(dest_id != -1)
   {
     struct robot *copy_robot = cmalloc(sizeof(struct robot));
-    duplicate_robot_direct(cur_robot, copy_robot, x, y);
+    duplicate_robot_direct(mzx_world, cur_robot, copy_robot, x, y);
     add_robot_name_entry(src_board, copy_robot, copy_robot->robot_name);
     src_board->robot_list[dest_id] = copy_robot;
   }
@@ -3269,8 +3289,8 @@ int duplicate_robot(struct board *src_board, struct robot *cur_robot,
 // so that it can modify the ID table. The dest position is assumed
 // to already contain something, and is thus cleared first.
 // Will not allow replacing the global robot.
-void replace_robot(struct board *src_board, struct robot *src_robot,
- int dest_id)
+void replace_robot(struct world *mzx_world, struct board *src_board,
+ struct robot *src_robot, int dest_id)
 {
   char old_name[64];
   int x = (src_board->robot_list[dest_id])->xpos;
@@ -3280,7 +3300,7 @@ void replace_robot(struct board *src_board, struct robot *src_robot,
   strcpy(old_name, cur_robot->robot_name);
 
   clear_robot_contents(cur_robot);
-  duplicate_robot_direct(src_robot, cur_robot, x, y);
+  duplicate_robot_direct(mzx_world, src_robot, cur_robot, x, y);
   strcpy(cur_robot->robot_name, old_name);
 
   if(dest_id)
@@ -3506,7 +3526,7 @@ void optimize_null_objects(struct board *src_board)
 
 #ifdef CONFIG_DEBYTECODE
 
-void prepare_robot_bytecode(struct robot *cur_robot)
+void prepare_robot_bytecode(struct world *mzx_world, struct robot *cur_robot)
 {
   if(cur_robot->program_bytecode == NULL)
   {
@@ -3520,14 +3540,15 @@ void prepare_robot_bytecode(struct robot *cur_robot)
     cur_robot->label_list =
      cache_robot_labels(cur_robot, &cur_robot->num_labels);
 
-    // FIXME: Short-term fix to repair copy block operations that contain
-    //        robots in debytecode; freeing program_source everywhere causes
-    //        the editor to corrupt robot code on the next edit (Bug ID 316)
-    //        [ Similar change, same bug ID, duplicate_robot_direct ]
-    // Can free source code now.
-    //free(cur_robot->program_source);
-    //cur_robot->program_source = NULL;
-    //cur_robot->program_source_length = 0;
+#ifdef CONFIG_EDITOR
+    // Can free source code if we're not in the editor.
+    if(!mzx_world->editing)
+#endif
+    {
+      free(cur_robot->program_source);
+      cur_robot->program_source = NULL;
+      cur_robot->program_source_length = 0;
+    }
   }
 }
 

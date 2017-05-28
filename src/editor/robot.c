@@ -106,8 +106,8 @@ void replace_sensor(struct board *src_board, struct sensor *src_sensor,
 // worry about program or labels, but it needs the runtime stuff,
 // for now (this should change later)
 
-void duplicate_robot_direct_source(struct robot *cur_robot,
- struct robot *copy_robot, int x, int y)
+void duplicate_robot_direct_source(struct world *mzx_world,
+ struct robot *cur_robot, struct robot *copy_robot, int x, int y)
 {
   int program_source_length = cur_robot->program_source_length;
 
@@ -132,8 +132,8 @@ void duplicate_robot_direct_source(struct robot *cur_robot,
   copy_robot->status = 0;
 }
 
-void replace_robot_source(struct board *src_board, struct robot *src_robot,
- int dest_id)
+void replace_robot_source(struct world *mzx_world, struct board *src_board,
+ struct robot *src_robot, int dest_id)
 {
   char old_name[64];
   int x = (src_board->robot_list[dest_id])->xpos;
@@ -143,21 +143,21 @@ void replace_robot_source(struct board *src_board, struct robot *src_robot,
   strcpy(old_name, cur_robot->robot_name);
 
   clear_robot_contents(cur_robot);
-  duplicate_robot_direct_source(src_robot, cur_robot, x, y);
+  duplicate_robot_direct_source(mzx_world, src_robot, cur_robot, x, y);
   strcpy(cur_robot->robot_name, old_name);
 
   if(dest_id)
     change_robot_name(src_board, cur_robot, src_robot->robot_name);
 }
 
-int duplicate_robot_source(struct board *src_board, struct robot *cur_robot,
- int x, int y)
+int duplicate_robot_source(struct world *mzx_world, struct board *src_board,
+ struct robot *cur_robot, int x, int y)
 {
   int dest_id = find_free_robot(src_board);
   if(dest_id != -1)
   {
     struct robot *copy_robot = cmalloc(sizeof(struct robot));
-    duplicate_robot_direct_source(cur_robot, copy_robot, x, y);
+    duplicate_robot_direct_source(mzx_world, cur_robot, copy_robot, x, y);
     add_robot_name_entry(src_board, copy_robot, copy_robot->robot_name);
     src_board->robot_list[dest_id] = copy_robot;
   }

@@ -571,13 +571,13 @@ int place_current_at_xy(struct world *mzx_world, enum thing id, int color,
         if(is_robot(old_id))
         {
           int old_param = src_board->level_param[offset];
-          replace_robot_source(src_board, copy_robot, old_param);
+          replace_robot_source(mzx_world, src_board, copy_robot, old_param);
           src_board->level_color[offset] = color;
           src_board->level_id[offset] = id;
           return old_param;
         }
 
-        param = duplicate_robot_source(src_board, copy_robot, x, y);
+        param = duplicate_robot_source(mzx_world, src_board, copy_robot, x, y);
         if(param != -1)
         {
           (src_board->robot_list[param])->xpos = x;
@@ -675,7 +675,7 @@ static void grab_at_xy(struct world *mzx_world, enum thing *new_id,
     if(is_robot(grab_id))
     {
       struct robot *src_robot = src_board->robot_list[grab_param];
-      duplicate_robot_direct_source(src_robot, copy_robot, 0, 0);
+      duplicate_robot_direct_source(mzx_world, src_robot, copy_robot, 0, 0);
     }
     else
 
@@ -1207,6 +1207,8 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
     edit_screen_height = EDIT_SCREEN_EXTENDED;
   else
     edit_screen_height = EDIT_SCREEN_NORMAL;
+
+  mzx_world->editing = true;
 
   do
   {
@@ -2472,7 +2474,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                 if(!new_file(mzx_world, mzb_ext, ".mzb", export_name,
                  "Export board file", 1))
                 {
-                  save_board_file(src_board, export_name);
+                  save_board_file(mzx_world, src_board, export_name);
                 }
                 break;
               }
@@ -3149,7 +3151,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                 char *under_id_buffer = cmalloc(block_size);
                 char *under_param_buffer = cmalloc(block_size);
                 char *under_color_buffer = cmalloc(block_size);
-                copy_board_to_board_buffer(block_board, start_x, start_y,
+                copy_board_to_board_buffer(mzx_world, block_board, start_x, start_y,
                  block_width, block_height, id_buffer, param_buffer,
                  color_buffer, under_id_buffer, under_param_buffer,
                  under_color_buffer, src_board);
@@ -3186,7 +3188,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                 char *under_id_buffer = cmalloc(block_size);
                 char *under_param_buffer = cmalloc(block_size);
                 char *under_color_buffer = cmalloc(block_size);
-                copy_board_to_board_buffer(block_board, start_x, start_y,
+                copy_board_to_board_buffer(mzx_world, block_board, start_x, start_y,
                  block_width, block_height, id_buffer, param_buffer,
                  color_buffer, under_id_buffer, under_param_buffer,
                  under_color_buffer, src_board);
@@ -3481,12 +3483,9 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
             load_board_module(src_board);
 
-            mzx_world->editing = true;
             pause_robot_debugger();
 
             play_game(mzx_world);
-
-            mzx_world->editing = false;
 
             chdir(return_dir);
 
@@ -3976,6 +3975,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
   update_event_status();
 
+  mzx_world->editing = false;
   debug_mode = false;
 
   clear_world(mzx_world);

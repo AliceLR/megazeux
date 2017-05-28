@@ -48,7 +48,8 @@ static int board_magic(const char magic_string[4])
   return 0;
 }
 
-static struct board *load_board_allocate_direct(FILE *fp, int version)
+static struct board *load_board_allocate_direct(struct world *mzx_world,
+ FILE *fp, int version)
 {
   struct board *cur_board = cmalloc(sizeof(struct board));
   int board_start, board_end;
@@ -59,7 +60,8 @@ static struct board *load_board_allocate_direct(FILE *fp, int version)
   fseek(fp, board_start, SEEK_SET);
 
   cur_board->world_version = version;
-  load_board_direct(cur_board, fp, (board_end - board_start), 0, version);
+  load_board_direct(mzx_world, cur_board, fp, (board_end - board_start), 0,
+   version);
   fread(cur_board->board_name, 25, 1, fp);
   return cur_board;
 }
@@ -77,7 +79,7 @@ void replace_current_board(struct world *mzx_world, char *name)
   if(version > 0 && version <= WORLD_VERSION)
   {
     clear_board(src_board);
-    src_board = load_board_allocate_direct(input_mzb, version);
+    src_board = load_board_allocate_direct(mzx_world, input_mzb, version);
     optimize_null_objects(src_board);
 
     set_update_done_current(mzx_world);
@@ -189,7 +191,8 @@ struct board *create_blank_board(struct editor_config_info *conf)
   return cur_board;
 }
 
-void save_board_file(struct board *cur_board, char *name)
+void save_board_file(struct world *mzx_world, struct board *cur_board,
+ char *name)
 {
   FILE *board_file = fopen_unsafe(name, "wb");
 
@@ -202,7 +205,7 @@ void save_board_file(struct board *cur_board, char *name)
     fputc(WORLD_VERSION & 0xff, board_file);
 
     optimize_null_objects(cur_board);
-    save_board(cur_board, board_file, 0, WORLD_VERSION);
+    save_board(mzx_world, cur_board, board_file, 0, WORLD_VERSION);
     // Write name
     fwrite(cur_board->board_name, 25, 1, board_file);
     fclose(board_file);

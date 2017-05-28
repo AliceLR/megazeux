@@ -2889,7 +2889,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
             cur_robot->cur_prog_line = 1;
           }
 
-          prepare_robot_bytecode(cur_robot);
+          prepare_robot_bytecode(mzx_world, cur_robot);
 
           // Restart this robot if either it was just a LOAD_ROBOT
           // OR LOAD_ROBOTn was used where n is &robot_id&.
@@ -2947,7 +2947,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
           cur_robot->cur_prog_line = 1;
           cur_robot->stack_pointer = 0;
-          prepare_robot_bytecode(cur_robot);
+          prepare_robot_bytecode(mzx_world, cur_robot);
 
           // Restart this robot if either it was just a LOAD_BC
           // OR LOAD_BCn was used where n is &robot_id&.
@@ -3003,7 +3003,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
               cur_robot->cur_prog_line = 1;
             }
 
-            prepare_robot_bytecode(cur_robot);
+            prepare_robot_bytecode(mzx_world, cur_robot);
 
             // Restart this robot if either it was just a LOAD_ROBOT
             // OR LOAD_ROBOTn was used where n is &robot_id&.
@@ -3921,7 +3921,7 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
           cur_robot->cur_prog_line = 1;
         }
 
-        prepare_robot_bytecode(cur_robot);
+        prepare_robot_bytecode(mzx_world, cur_robot);
 
         // Restart this robot if either it was just a LOAD_ROBOT
         // OR LOAD_ROBOTn was used where n is &robot_id&.
@@ -3973,7 +3973,7 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
           cur_robot->cur_prog_line = 1;
         }
 
-        prepare_robot_bytecode(cur_robot);
+        prepare_robot_bytecode(mzx_world, cur_robot);
 
         // Restart this robot if either it was just a LOAD_ROBOT
         // OR LOAD_ROBOTn was used where n is &robot_id&.
