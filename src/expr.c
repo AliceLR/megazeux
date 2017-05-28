@@ -404,7 +404,6 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
     buf_pos = buffer + buf_start;
     if(state & EXPR_STATE_PARSE_OPERAND)
     {
-      //debug("Counter: %s\n", buf_pos);
       operand_b = get_counter(mzx_world, buf_pos, id);
     }
 
@@ -886,28 +885,6 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
 err_out:
   if(!*error)
     *error = -1;
-
-  // DEBUG: remove
-  {
-    struct robot *cur_robot = mzx_world->current_board->robot_list[id];
-    char *program = cur_robot->program_bytecode;
-    char* cmd_ptr = program + cur_robot->cur_prog_line;
-    char *c;
-    int line_num;
-
-    // figure out our line number
-    line_num = 1;
-    c = program + 1;
-    while(c < cmd_ptr)
-    {
-      c += *c + 2;
-      line_num++;
-    }
-
-    debug("robot id: %d\n", id);
-    debug("line number: %d\n", line_num);
-    debug("expression: %s\n", *_expression);
-  }
 
   *_expression = expression;
   return 0;
