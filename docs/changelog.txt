@@ -143,6 +143,8 @@ BUGFIXES
   slashes in their names would fail to be recognized as the same
   mod.
 
++ Debytecode: SAVE_WORLD is no longer supported.
+
 DEVELOPERS
 
 + Fixed linking bug when attempting to make a modular build of

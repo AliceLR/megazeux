@@ -2812,6 +2812,21 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       break;
     }
 
+#ifdef CONFIG_DEBYTECODE
+
+    /* We can't support this. That's because there probably won't be
+     * source code present to save. If any games use it then they just
+     * can't be supported. There just isn't an easy fix for this.
+     */
+    case FOPEN_SAVE_WORLD:
+    {
+      val_error(DBC_SAVE_ROBOT_UNSUPPORTED, 0);
+      set_validation_suppression(DBC_SAVE_ROBOT_UNSUPPORTED, 1);
+      break;
+    }
+
+#else // !CONFIG_DEBYTECODE
+
     case FOPEN_SAVE_WORLD:
     {
       char *translated_path = cmalloc(MAX_PATH);
@@ -2831,6 +2846,8 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       free(translated_path);
       break;
     }
+
+#endif // !CONFIG_DEBYTECODE
 
     case FOPEN_LOAD_GAME:
     {
