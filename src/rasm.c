@@ -2697,11 +2697,41 @@ static bool is_color(char *value)
   }
 }
 
+static bool is_basic_color(char *value)
+{
+  if((value[0] == 'c') && (value[1] != 0) &&
+   isxdigit((int)value[1]) &&
+   isxdigit((int)value[2]) &&
+   (isspace(value[3]) || (value[3] == '\0')))
+  {
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
+
 static bool is_param(char *value)
 {
   if((value[0] == 'p') && (value[1] != 0) &&
    ((isxdigit((int)value[1]) && isxdigit((int)value[2])) ||
    ((value[1] == '?') && (value[2] == '?'))) &&
+   (isspace(value[3]) || (value[3] == '\0')))
+  {
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
+
+static bool is_basic_param(char *value)
+{
+  if((value[0] == 'p') && (value[1] != 0) &&
+   isxdigit((int)value[1]) &&
+   isxdigit((int)value[2]) &&
    (isspace(value[3]) || (value[3] == '\0')))
   {
     return true;
@@ -3301,7 +3331,12 @@ static char *get_token(char *src, struct token *token)
       {
         // Color
         next = src + 3;
-        token_type = TOKEN_TYPE_COLOR;
+        // We need two different types, since basic colors can also be
+        // identifiers. Wildcard colors can't, since they have ?s.
+        if(is_basic_color(src))
+          token_type = TOKEN_TYPE_BASIC_COLOR;
+        else
+          token_type = TOKEN_TYPE_WILDCARD_COLOR;
       }
       else
 
@@ -3309,7 +3344,12 @@ static char *get_token(char *src, struct token *token)
       {
         // Param
         next = src + 3;
-        token_type = TOKEN_TYPE_PARAM;
+        // We need two different types, since basic params can also be
+        // identifiers. Wildcard params can't, since they have ?s.
+        if(is_basic_param(src))
+          token_type = TOKEN_TYPE_BASIC_PARAM;
+        else
+          token_type = TOKEN_TYPE_WILDCARD_PARAM;
       }
 
       else
@@ -3864,14 +3904,16 @@ static int match_command(const struct mzx_command *command,
     }
 
     if((arg_type & ARG_TYPE_COLOR) &&
-     (token_type == TOKEN_TYPE_COLOR))
+     ((token_type == TOKEN_TYPE_BASIC_COLOR) ||
+     (token_type == TOKEN_TYPE_WILDCARD_COLOR)))
     {
       *match_type = ARG_TYPE_INDEXED_COLOR;
       continue;
     }
 
     if((arg_type & ARG_TYPE_PARAM) &&
-     (token_type == TOKEN_TYPE_PARAM))
+     ((token_type == TOKEN_TYPE_BASIC_PARAM) ||
+     (token_type == TOKEN_TYPE_WILDCARD_PARAM)))
     {
       *match_type = ARG_TYPE_INDEXED_PARAM;
       continue;
@@ -3950,7 +3992,9 @@ static int match_command(const struct mzx_command *command,
      ARG_TYPE_ROBOT_NAME)) &&
      ((token_type == TOKEN_TYPE_NAME) ||
      (token_type == TOKEN_TYPE_BASIC_IDENTIFIER) ||
-     (token_type == TOKEN_TYPE_EXPRESSION)))
+     (token_type == TOKEN_TYPE_EXPRESSION) ||
+     (token_type == TOKEN_TYPE_BASIC_COLOR) ||
+     (token_type == TOKEN_TYPE_BASIC_PARAM)))
     {
       // A name match is a weak match, so take away from the strength by
       // decrementing it.
