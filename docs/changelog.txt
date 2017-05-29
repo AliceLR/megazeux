@@ -139,6 +139,9 @@ BUGFIXES
   and later only.
 + Fixed a bug where ALT+F4 would cause menus to open instead of/
   in addition to triggering an exit event.
++ Fixed a bug where subdirectory mods with different types of
+  slashes in their names would fail to be recognized as the same
+  mod.
 
 DEVELOPERS
 
