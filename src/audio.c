@@ -1637,13 +1637,6 @@ __editor_maybe_static int load_module(char *filename, bool safely,
     return 1;
   }
 
-  // Should never happen, but let's find out
-  if(!strcmp(filename, "*"))
-  {
-    warn("Passed '*' as a file to load! Report this!\n");
-    return 0;
-  }
-
   if(safely)
   {
     if(fsafetranslate(filename, translated_filename) != FSAFE_SUCCESS)
@@ -1666,11 +1659,6 @@ __editor_maybe_static int load_module(char *filename, bool safely,
 
   UNLOCK();
   return 1;
-}
-
-int load_board_module(struct board *src_board)
-{
-  return load_module(src_board->mod_playing, true, src_board->volume);
 }
 
 void end_module(void)

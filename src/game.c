@@ -256,6 +256,99 @@ void set_caption(struct world *mzx_world, struct board *board,
   free(buffer);
 }
 
+static int load_board_module_change_test(struct world *mzx_world, char *filename)
+{
+  // Determine if a board module should stay the same on a board transition.
+  // Unlike magic_load_mod, does not actually change the playing mod, and will
+  // fail if the names are exactly the same.
+
+  char translated_name[MAX_PATH];
+  int mod_star = 0;
+  int n_result;
+
+  size_t mod_name_size;
+
+  // Temporarily remove *
+  mod_name_size = strlen(filename);
+  if(mod_name_size && filename[mod_name_size - 1] == '*')
+  {
+    filename[mod_name_size - 1] = 0;
+    mod_star = 1;
+  }
+
+  // Get the translated name (the one we want to compare against now)
+  n_result = fsafetranslate(filename, translated_name);
+
+  // Add * back
+  if(mod_star)
+    filename[mod_name_size - 1] = '*';
+
+  // Fail if the new name doesn't pass safety checks
+  if(n_result != FSAFE_SUCCESS)
+    return 0;
+
+  // Fail if the new name is star
+  if(!strcmp(filename, "*"))
+    return 0;
+
+  // Fail if the filenames are the same
+  if(!strcasecmp(translated_name, mzx_world->real_mod_playing))
+    return 0;
+
+  return 1;
+}
+
+__editor_maybe_static
+void load_board_module(struct world *mzx_world, struct board *src_board)
+{
+  // Load the given board's module and update the real_mod_playing field.
+
+  char translated_name[MAX_PATH];
+  char *filename = src_board->mod_playing;
+  size_t mod_name_size = strlen(filename);
+  int mod_star = 0;
+  int n_result;
+  int result;
+
+  // Do nothing.
+  if(!strcmp(filename, "*"))
+    return;
+
+  // Temporarily get rid of the star.
+  // This is purely for the title screen and editor.
+  // Gameplay will resolve these to * via magic_load_mod.
+  if(mod_name_size && filename[mod_name_size - 1] == '*')
+  {
+    filename[mod_name_size - 1] = 0;
+    mod_star = 1;
+  }
+
+  // Get the translated name (the one we want to compare against later)
+  n_result = fsafetranslate(filename, translated_name);
+
+  // Add * back
+  if(mod_star)
+    filename[mod_name_size - 1] = '*';
+
+  // If it failed to translate, stop
+  if(n_result != FSAFE_SUCCESS)
+    return;
+
+  // The safety check has already been done as a mandatory part of updating
+  // real_mod_playing. So don't bother doing it again (false).
+  result = load_module(src_board->mod_playing, false, src_board->volume);
+
+  // If the mod actually changed, update real mod playing.
+  if(result)
+    strcpy(mzx_world->real_mod_playing, translated_name);
+
+  // Readd the star.
+  if(mod_star)
+  {
+    filename[mod_name_size - 1] = '*';
+  }
+}
+
 static void load_world_file(struct world *mzx_world, char *name)
 {
   struct board *src_board;
@@ -279,8 +372,7 @@ static void load_world_file(struct world *mzx_world, char *name)
     send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
 
     src_board = mzx_world->current_board;
-    load_board_module(src_board);
-    strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
+    load_board_module(mzx_world, src_board);
     set_counter(mzx_world, "TIME", src_board->time_limit, 0);
     set_intro_mesg_timer(MESG_TIMEOUT);
   }
@@ -288,7 +380,7 @@ static void load_world_file(struct world *mzx_world, char *name)
   {
     // Restart the music if we still have a world in memory.
     if(mzx_world->current_board)
-      load_board_module(mzx_world->current_board);
+      load_board_module(mzx_world, mzx_world->current_board);
   }
 }
 
@@ -589,8 +681,7 @@ static void game_settings(struct world *mzx_world)
     if(!get_music_on_state() && (mzx_world->active))
     {
       // Turn on music.
-      strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
-      load_board_module(src_board);
+      load_board_module(mzx_world, src_board);
     }
 
     set_music_on(music);
@@ -1276,8 +1367,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
 
   if(update_music)
   {
-    load_board_module(src_board);
-    strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
+    load_board_module(mzx_world, src_board);
   }
   update_music = 0;
 
@@ -1614,8 +1704,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
     {
       // Load the new board's mod
       src_board = mzx_world->current_board;
-      load_board_module(src_board);
-      strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
+      load_board_module(mzx_world, src_board);
 
       // send both JUSTLOADED and JUSTENTERED respectively; the
       // JUSTENTERED label will take priority if a robot defines it.
@@ -1673,8 +1762,9 @@ static int update(struct world *mzx_world, int game, int *fadein)
 
     src_board = mzx_world->current_board;
 
-    if(strcasecmp(mzx_world->real_mod_playing, src_board->mod_playing) &&
-     strcmp(src_board->mod_playing, "*"))
+    // Determine if the board module should be reloaded on transition to
+    // another board
+    if(load_board_module_change_test(mzx_world, src_board->mod_playing))
     {
       update_music = 1;
     }
@@ -2019,9 +2109,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
               // Reset this
               src_board = mzx_world->current_board;
               // Swap in starting board
-              load_board_module(src_board);
-              strcpy(mzx_world->real_mod_playing,
-               src_board->mod_playing);
+              load_board_module(mzx_world, src_board);
 
               find_player(mzx_world);
 
@@ -2204,9 +2292,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
               find_player(mzx_world);
 
               // Swap in starting board
-              load_board_module(src_board);
-              strcpy(mzx_world->real_mod_playing,
-               src_board->mod_playing);
+              load_board_module(mzx_world, src_board);
 
               send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
               fadein ^= 1;
@@ -2472,8 +2558,7 @@ void title_screen(struct world *mzx_world)
             {
               src_board = mzx_world->current_board;
               // Swap in starting board
-              load_board_module(src_board);
-              strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
+              load_board_module(mzx_world, src_board);
               set_intro_mesg_timer(0);
 
               // Copy filename
@@ -2509,9 +2594,7 @@ void title_screen(struct world *mzx_world)
                 if(reload_world(mzx_world, curr_file, &fade))
                 {
                   src_board = mzx_world->current_board;
-                  load_board_module(src_board);
-                  strcpy(mzx_world->real_mod_playing,
-                   src_board->mod_playing);
+                  load_board_module(mzx_world, src_board);
                   set_counter(mzx_world, "TIME",
                    src_board->time_limit, 0);
                 }
@@ -2536,7 +2619,7 @@ void title_screen(struct world *mzx_world)
         {
           if(mzx_world->active)
           {
-            char old_mod_playing[128];
+            char old_mod_playing[MAX_PATH];
             strcpy(old_mod_playing, mzx_world->real_mod_playing);
 
             // Play
@@ -2580,13 +2663,11 @@ void title_screen(struct world *mzx_world)
               send_robot_def(mzx_world, 0, LABEL_JUSTENTERED);
               send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
 
-              if(strcmp(src_board->mod_playing, "*") &&
-               strcasecmp(src_board->mod_playing, old_mod_playing))
-              {
-                load_board_module(src_board);
-              }
+              // Load the mod, but with special handling of *
+              strcpy(mzx_world->real_mod_playing, old_mod_playing);
+              if(load_board_module_change_test(mzx_world, src_board->mod_playing))
+                load_board_module(mzx_world, src_board);
 
-              strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
               set_intro_mesg_timer(0);
 
               set_counter(mzx_world, "TIME", src_board->time_limit, 0);
@@ -2610,9 +2691,7 @@ void title_screen(struct world *mzx_world)
               if(reload_world(mzx_world, curr_file, &fade))
               {
                 src_board = mzx_world->current_board;
-                load_board_module(src_board);
-                strcpy(mzx_world->real_mod_playing,
-                 src_board->mod_playing);
+                load_board_module(mzx_world, src_board);
                 set_counter(mzx_world, "TIME", src_board->time_limit, 0);
               }
               // Whoops, something happened! Make a blank world instead
@@ -2701,8 +2780,7 @@ void title_screen(struct world *mzx_world)
           {
             src_board = mzx_world->current_board;
             // Swap in starting board
-            load_board_module(src_board);
-            strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
+            load_board_module(mzx_world, src_board);
             set_intro_mesg_timer(0);
 
             fadein ^= 1;
@@ -2735,9 +2813,7 @@ void title_screen(struct world *mzx_world)
               if(reload_world(mzx_world, curr_file, &fade))
               {
                 src_board = mzx_world->current_board;
-                load_board_module(src_board);
-                strcpy(mzx_world->real_mod_playing,
-                 src_board->mod_playing);
+                load_board_module(mzx_world, src_board);
                 set_counter(mzx_world, "TIME",
                  src_board->time_limit, 0);
               }

@@ -84,31 +84,53 @@ __editor_maybe_static const int def_params[128] =
 static void magic_load_mod(struct world *mzx_world, char *filename)
 {
   struct board *src_board = mzx_world->current_board;
-  size_t mod_name_size = strlen(filename);
-  int change_real_mod = 0;
+  char translated_name[MAX_PATH];
+  int mod_star = 0;
+  int n_result;
 
-  if((mod_name_size > 1) && (filename[mod_name_size - 1] == '*'))
+  size_t mod_name_size;
+
+  // Temporarily remove *
+  mod_name_size = strlen(filename);
+  if(mod_name_size && filename[mod_name_size - 1] == '*')
   {
     filename[mod_name_size - 1] = 0;
+    mod_star = 1;
+  }
 
-    if(strcasecmp(src_board->mod_playing, filename))
+  // Get the translated name (the one we want to compare against now)
+  n_result = fsafetranslate(filename, translated_name);
+
+  // Add * back
+  if(mod_star)
+    filename[mod_name_size - 1] = '*';
+
+  if(n_result == FSAFE_SUCCESS)
+  {
+    // filename*
+    if(mod_star)
     {
-      strcpy(src_board->mod_playing, filename);
-      change_real_mod = load_board_module(src_board);
+      // Different names? Play the mod
+      if(strcasecmp(translated_name, mzx_world->real_mod_playing))
+      {
+        // This will update real_mod_playing
+        strcpy(src_board->mod_playing, translated_name);
+        load_board_module(mzx_world, src_board);
+      }
+
+      strcpy(src_board->mod_playing, "*");
     }
 
-    strcpy(src_board->mod_playing, "*");
-  }
-  else
-  {
-    strcpy(src_board->mod_playing, filename);
+    // filename or *
+    else
+    {
+      strcpy(src_board->mod_playing, translated_name);
 
-    if(filename[0] != '*')
-      change_real_mod = load_board_module(src_board);
+      // This will update real_mod_playing
+      if(filename[0] != '*')
+        load_board_module(mzx_world, src_board);
+    }
   }
-
-  if(change_real_mod && filename[0] != '*')
-    strcpy(mzx_world->real_mod_playing, filename);
 }
 
 static void save_player_position(struct world *mzx_world, int pos)

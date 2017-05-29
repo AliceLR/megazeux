@@ -51,7 +51,9 @@ CORE_LIBSPEC void play_game(struct world *mzx_world);
 CORE_LIBSPEC void draw_viewport(struct world *src_board);
 CORE_LIBSPEC void set_caption(struct world *mzx_world, struct board *board,
  struct robot *robot, int editor);
-
+CORE_LIBSPEC void load_board_module(struct world *mzx_world,
+ struct board *src_board);
+ 
 CORE_LIBSPEC extern bool debug_mode;
 CORE_LIBSPEC extern const char *const world_ext[2];
 CORE_LIBSPEC extern void (*edit_world)(struct world *mzx_world,

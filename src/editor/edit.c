@@ -215,15 +215,9 @@ static void fix_board(struct world *mzx_world, int new_board)
 static void fix_mod(struct world *mzx_world, struct board *src_board,
  int *listening_flag)
 {
-  // We don't want * in the real_mod_playing
-  if(strcmp(src_board->mod_playing, "*"))
-  {
-    // Passing a ref in case we want to properly end it here at some point
-    if(!(*listening_flag))
-      load_board_module(src_board);
-
-    strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
-  }
+  // Passing a ref in case we want to properly end it here at some point
+  if(!(*listening_flag))
+    load_board_module(mzx_world, src_board);
 }
 
 #define NUM_MENUS 6
@@ -2248,6 +2242,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                    &board_height, &level_id, &level_param, &level_color,
                    &overlay, &overlay_color);
 
+                  // fixme load_mod_check
                   if(strcmp(src_board->mod_playing, "*") &&
                    strcasecmp(src_board->mod_playing,
                    mzx_world->real_mod_playing))
@@ -3480,8 +3475,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             mzx_world->player_restart_x = mzx_world->player_x;
             mzx_world->player_restart_y = mzx_world->player_y;
 
-            strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
-            load_board_module(src_board);
+            load_board_module(mzx_world, src_board);
 
             pause_robot_debugger();
 
