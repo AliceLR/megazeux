@@ -3815,6 +3815,7 @@ static int match_command(const struct mzx_command *command,
   int arg_position = 0;
   int parameters = command->parameters;
   int strength = 0;
+  int match_next_arg = 0;
 
   // Step through each parameter in the command - it requires 0 to N
   // tokens (possibly depending on what tokens we have). If we need more
@@ -3827,10 +3828,15 @@ static int match_command(const struct mzx_command *command,
     arg_type = command->param_types[arg_position];
     arg_position++;
 
-    // All args will take at least one token. It's just that if it's optional
-    // it'll toss it back.
+    // All args will take at least one token. If a token wants to try to match
+    // the next argument in the list, don't get a new token.
 
-    get_token_skip_comments(goto no_match);
+    if(!match_next_arg)
+    {
+      // Alters current_token, token_type, and sometimes match_type
+      get_token_skip_comments(goto no_match);
+    }
+    match_next_arg = 0;
 
     if(arg_type & ARG_TYPE_IGNORE)
     {
@@ -3846,9 +3852,9 @@ static int match_command(const struct mzx_command *command,
         continue;
       }
 
-      // Otherwise, fall through and let it match something else.
-      arg_type = command->param_types[arg_position];
-      arg_position++;
+      // Try to match the next argument in the list.
+      match_next_arg = 1;
+      continue;
     }
 
     if(arg_type & ARG_TYPE_FRAGMENT)
