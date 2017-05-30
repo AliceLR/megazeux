@@ -65,8 +65,9 @@ static void save_mzm_common(struct world *mzx_world, int start_x, int start_y, i
         int rid;
         int offset;
         size_t robot_size;
+        int i;
 
-        for (int i = 0; i < num_robots_active; i++) {
+        for (i = 0; i < num_robots_active; i++) {
           struct robot *cur_robot = robot_list[i];
           if (cur_robot)
           {

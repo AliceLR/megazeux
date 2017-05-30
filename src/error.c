@@ -404,6 +404,7 @@ void set_error_suppression(enum error_code id, int value)
 
 void reset_error_suppression(void)
 {
-  for (int i = 0; i < NUM_ERROR_CODES; i++)
+  int i;
+  for (i = 0; i < NUM_ERROR_CODES; i++)
     suppress_errors[i] = 0;
 }
