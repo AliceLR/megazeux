@@ -23,9 +23,9 @@
 
 #include "mzm.h"
 #include "data.h"
+#include "error.h"
 #include "idput.h"
 #include "world.h"
-#include "validation.h"
 
 // This is assumed to not go over the edges.
 
@@ -417,14 +417,14 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer, int file
   // If the mzm version is newer than the MZX version, show a message and continue.
   if(mzm_world_version > WORLD_VERSION)
   {
-    val_error_str(MZM_FILE_VERSION_TOO_RECENT, mzm_world_version, name);
-    set_validation_suppression(MZM_FILE_VERSION_TOO_RECENT, 1);
+    error_message(E_MZM_FILE_VERSION_TOO_RECENT, mzm_world_version, name);
+    set_error_suppression(E_MZM_FILE_VERSION_TOO_RECENT, 1);
   }
 
   // If the MZM is a save MZM but we're not loading at runtime, show a message and continue.
   if(savegame_mode > savegame)
   {
-    val_error_str(MZM_FILE_FROM_SAVEGAME, 0, name);
+    error_message(E_MZM_FILE_FROM_SAVEGAME, 0, name);
   }
 
   switch(mode)
@@ -572,8 +572,8 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer, int file
             // dummy out the robots.
 
             // We don't want to see these in any case.
-            set_validation_suppression(WORLD_ROBOT_MISSING, 1);
-            set_validation_suppression(BOARD_ROBOT_CORRUPT, 1);
+            set_error_suppression(E_WORLD_ROBOT_MISSING, 1);
+            set_error_suppression(E_BOARD_ROBOT_CORRUPT, 1);
 
             if((savegame_mode > savegame) ||
               (WORLD_VERSION < mzm_world_version))
@@ -619,8 +619,8 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer, int file
             }
             else
             {
-              int missing_count = get_error_count(WORLD_ROBOT_MISSING);
-              int corrupt_count = get_error_count(BOARD_ROBOT_CORRUPT);
+              // Reset the error count.
+              get_and_reset_error_count();
 
               bufferPtr = buffer;
               bufferPtr += robots_location;
@@ -686,12 +686,11 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer, int file
                 }
               }
 
-              // If any of these errors were encountered, report once
-              if((missing_count - get_error_count(WORLD_ROBOT_MISSING)) |
-                (corrupt_count - get_error_count(BOARD_ROBOT_CORRUPT)))
+              // If any of errors were encountered, report once
+              if(get_and_reset_error_count())
               {
-                val_error_str(MZM_ROBOT_CORRUPT, 0, name);
-                set_validation_suppression(MZM_ROBOT_CORRUPT, 1);
+                error_message(E_MZM_ROBOT_CORRUPT, 0, name);
+                set_error_suppression(E_MZM_ROBOT_CORRUPT, 1);
               }
             }
           }
@@ -852,8 +851,8 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer, int file
   return 0;
 
 err_invalid:
-  val_error_str(MZM_FILE_INVALID, 0, name);
-  set_validation_suppression(MZM_FILE_INVALID, 1);
+  error_message(E_MZM_FILE_INVALID, 0, name);
+  set_error_suppression(E_MZM_FILE_INVALID, 1);
   return -1;
 }
 
@@ -878,8 +877,8 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
     free(buffer);
     return success;
   } else {
-    val_error_str(MZM_DOES_NOT_EXIST, 0, name);
-    set_validation_suppression(MZM_DOES_NOT_EXIST, 1);
+    error_message(E_MZM_DOES_NOT_EXIST, 0, name);
+    set_error_suppression(E_MZM_DOES_NOT_EXIST, 1);
     return -1;
   }
 }

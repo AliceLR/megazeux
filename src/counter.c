@@ -41,7 +41,7 @@
 #include "robot.h"
 #include "sprite.h"
 #include "world.h"
-#include "validation.h"
+#include "error.h"
 #include "util.h"
 
 #ifdef CONFIG_UTHASH
@@ -2820,8 +2820,8 @@ int set_counter_special(struct world *mzx_world, char *char_value,
      */
     case FOPEN_SAVE_WORLD:
     {
-      val_error(DBC_SAVE_ROBOT_UNSUPPORTED, 0);
-      set_validation_suppression(DBC_SAVE_ROBOT_UNSUPPORTED, 1);
+      error_message(E_DBC_SAVE_ROBOT_UNSUPPORTED, 0, NULL);
+      set_error_suppression(E_DBC_SAVE_ROBOT_UNSUPPORTED, 1);
       break;
     }
 
@@ -2943,7 +2943,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
           if(validate_legacy_bytecode(program_legacy_bytecode, program_bytecode_length) <= 0)
           {
-            val_error_str(LOAD_BC_CORRUPT, 0, char_value);
+            error_message(E_LOAD_BC_CORRUPT, 0, char_value);
             free(program_legacy_bytecode);
             break;
           }
@@ -3040,8 +3040,8 @@ int set_counter_special(struct world *mzx_world, char *char_value,
      */
     case FOPEN_SAVE_ROBOT:
     {
-      val_error(DBC_SAVE_ROBOT_UNSUPPORTED, 0);
-      set_validation_suppression(DBC_SAVE_ROBOT_UNSUPPORTED, 1);
+      error_message(E_DBC_SAVE_ROBOT_UNSUPPORTED, 0, NULL);
+      set_error_suppression(E_DBC_SAVE_ROBOT_UNSUPPORTED, 1);
       break;
     }
 
@@ -3051,8 +3051,8 @@ int set_counter_special(struct world *mzx_world, char *char_value,
      */
     case FOPEN_SAVE_BC:
     {
-      val_error(DBC_SAVE_ROBOT_UNSUPPORTED, 0);
-      set_validation_suppression(DBC_SAVE_ROBOT_UNSUPPORTED, 1);
+      error_message(E_DBC_SAVE_ROBOT_UNSUPPORTED, 0);
+      set_error_suppression(E_DBC_SAVE_ROBOT_UNSUPPORTED, 1);
       break;
     }
 
@@ -3112,7 +3112,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
           if(validate_legacy_bytecode(program_bytecode, new_size) <= 0)
           {
-            val_error_str(LOAD_BC_CORRUPT, 0, char_value);
+            error_message(E_LOAD_BC_CORRUPT, 0, char_value);
             free(program_bytecode);
             break;
           }

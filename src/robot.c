@@ -27,6 +27,7 @@
 #include "const.h"
 #include "game.h"
 #include "game2.h"
+#include "error.h"
 #include "idarray.h"
 #include "graphics.h"
 #include "event.h"
@@ -39,7 +40,6 @@
 #include "util.h"
 #include "rasm.h"
 #include "legacy_rasm.h"
-#include "validation.h"
 
 static int cmp_labels(const void *dest, const void *src)
 {
@@ -279,7 +279,7 @@ void load_robot_from_memory(struct world *mzx_world, struct robot *cur_robot,
 
   if(program_length == EOF)
   {
-    val_error(WORLD_ROBOT_MISSING, robot_location);
+    error_message(E_WORLD_ROBOT_MISSING, robot_location, NULL);
     goto err_out;
   }
 
@@ -498,7 +498,7 @@ void load_robot_from_memory(struct world *mzx_world, struct robot *cur_robot,
 err_invalid:
   // Don't worry about the unused source and bytecode
   // that were allocated, they'll be cleared later.
-  val_error(BOARD_ROBOT_CORRUPT, robot_location);
+  error_message(E_BOARD_ROBOT_CORRUPT, robot_location, NULL);
 err_out:
   create_blank_robot(mzx_world, cur_robot, savegame);
 }
@@ -573,7 +573,7 @@ void load_robot(struct world *mzx_world, struct robot *cur_robot, FILE *fp,
   buffer = crealloc(buffer, full_size);
   total_read += fread((unsigned char *)buffer + partial_size, full_size - partial_size, 1, fp) * (full_size - partial_size);
   if (total_read != full_size) {
-    val_error(BOARD_ROBOT_CORRUPT, robot_location);
+    error_message(E_BOARD_ROBOT_CORRUPT, robot_location, NULL);
   } else {
     load_robot_from_memory(mzx_world, cur_robot, buffer, savegame, version,
      robot_location);

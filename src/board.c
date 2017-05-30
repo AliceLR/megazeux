@@ -206,7 +206,7 @@ __editor_maybe_static int load_board_direct(struct world *mzx_world,
   // board_mode, unused
   if(fgetc(fp) == EOF)
   {
-    val_error(WORLD_BOARD_MISSING, board_location);
+    error_message(E_WORLD_BOARD_MISSING, board_location, NULL);
     return VAL_MISSING;
   }
 
@@ -433,7 +433,7 @@ __editor_maybe_static int load_board_direct(struct world *mzx_world,
    ccalloc(num_robots, sizeof(struct robot *));
 
   // Any null objects being placed will later be optimized out
-  set_validation_suppression(WORLD_ROBOT_MISSING, 0);
+  set_error_suppression(E_WORLD_ROBOT_MISSING, 0);
 
   if(num_robots)
   {
@@ -445,8 +445,8 @@ __editor_maybe_static int load_board_direct(struct world *mzx_world,
       if(length_check < 0)
       {
         // Send off the error and then tell validation to shut up for now
-        val_error(WORLD_ROBOT_MISSING, ftell(fp));
-        set_validation_suppression(WORLD_ROBOT_MISSING, 1);
+        error_message(E_WORLD_ROBOT_MISSING, ftell(fp), NULL);
+        set_error_suppression(E_WORLD_ROBOT_MISSING, 1);
         truncated = 1;
       }
 
@@ -467,7 +467,7 @@ __editor_maybe_static int load_board_direct(struct world *mzx_world,
     }
   }
 
-  set_validation_suppression(WORLD_ROBOT_MISSING, 0);
+  set_error_suppression(E_WORLD_ROBOT_MISSING, 0);
 
   if(num_robots_active > 0)
   {
@@ -604,30 +604,36 @@ board_scan:
     }
     if(robot_count > cur_board->num_robots)
     {
-      snprintf(err_mesg, 80, "Board @ %Xh: found %i robots; expected %i",
-       board_location, robot_count, cur_board->num_robots);
-      error(err_mesg, 1, 8, 0);
+      snprintf(err_mesg, 80, "found %i robots; expected %i",
+       robot_count, cur_board->num_robots);
+
+      error_message(E_BOARD_SUMMARY, board_location, err_mesg);
     }
     if(scroll_count > cur_board->num_scrolls)
     {
-      snprintf(err_mesg, 80, "Board @ %Xh: found %i scrolls/signs; expected %i",
-       board_location, scroll_count, cur_board->num_scrolls);
-      error(err_mesg, 1, 8, 0);
+      snprintf(err_mesg, 80, "found %i scrolls/signs; expected %i",
+       scroll_count, cur_board->num_scrolls);
+
+      error_message(E_BOARD_SUMMARY, board_location, err_mesg);
     }
     // This won't be reached but I'll leave it anyway.
     if(sensor_count > cur_board->num_sensors)
     {
-      snprintf(err_mesg, 80, "Board @ %Xh: found %i sensors; expected %i",
-       board_location, sensor_count, cur_board->num_sensors);
-      error(err_mesg, 1, 8, 0);
+      snprintf(err_mesg, 80, "found %i sensors; expected %i",
+       sensor_count, cur_board->num_sensors);
+
+      error_message(E_BOARD_SUMMARY, board_location, err_mesg);
     }
     if(err_mesg[0])
-      error("Any extra robots/scrolls/signs were replaced", 1, 8, 0);
+    {
+      error_message(E_BOARD_SUMMARY, board_location,
+       "Any extra robots/scrolls/signs were replaced");
+    }
 
   }
 
   if(truncated == 1)
-    val_error(WORLD_BOARD_TRUNCATED_SAFE, board_location);
+    error_message(E_WORLD_BOARD_TRUNCATED_SAFE, board_location, NULL);
 
   return VAL_SUCCESS;
 
@@ -647,7 +653,7 @@ err_freeoverlay:
   }
 
 err_invalid:
-  val_error(WORLD_BOARD_CORRUPT, board_location);
+  error_message(E_WORLD_BOARD_CORRUPT, board_location, NULL);
   return VAL_INVALID;
 }
 
@@ -672,7 +678,7 @@ struct board *load_board_allocate(struct world *mzx_world, FILE *fp,
 
   if(fseek(fp, board_location, SEEK_SET))
   {
-    val_error(WORLD_BOARD_MISSING, board_location);
+    error_message(E_WORLD_BOARD_MISSING, board_location, NULL);
     goto err_out;
   }
 

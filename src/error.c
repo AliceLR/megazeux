@@ -1,6 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
+ * Copyright (C) 2017 Alice Rowan (petrifiedrowan@gmail.com)
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -39,10 +40,11 @@ static const char *const error_type_names[] =
 };
 
 
-// Call for an error OR a warning. Type=0 for a warning, 1 for a recoverable
-// error, 2 for a fatal error. Options are (bits set in options and returned
-// as action) FAIL=1, RETRY=2, EXIT TO DOS=4, OK=8 (OK is for usually only
-// for warnings) Type = 3 for a critical error
+//Call for an error OR a warning. Type=0 for a warning, 1 for a recoverable
+//error, 2 for a fatal error. Options are (bits set in options and returned
+//as action) FAIL=1, RETRY=2, EXIT TO DOS=4, OK=8, HELP=16 (OK is for usually
+//only for warnings) Code is a specialized error code for debugging purposes.
+//Type of 3 for a critical error.
 
 int error(const char *string, unsigned int type, unsigned int options,
  unsigned int code)
@@ -185,4 +187,223 @@ int error(const char *string, unsigned int type, unsigned int options,
   }
 
   return ret;
+}
+
+
+static char suppress_errors[NUM_ERROR_CODES];
+static int error_count = 0;
+
+// Wrapper for error().
+int error_message(enum error_code id, int parameter, const char *string)
+{
+  char error_mesg[80];
+  int hi = (parameter & 0xFF00) >> 8;
+  int lo = (parameter & 0xFF);
+  int opts = ERROR_OPT_OK;
+  int severity = 1; // ERROR
+  int code = id;
+
+  error_count++;
+
+  switch (id)
+  {
+    case E_FILE_DOES_NOT_EXIST:
+      sprintf(error_mesg, "File doesn't exist");
+      break;
+
+    case E_SAVE_FILE_INVALID:
+      sprintf(error_mesg, "File is not a valid .SAV file or is corrupt");
+      code = 0x2101;
+      break;
+
+    case E_SAVE_VERSION_OLD:
+      sprintf(error_mesg,
+       ".SAV files from older versions of MZX (%d.%d) are not supported", hi, lo);
+      code = 0x2101;
+      break;
+
+    case E_SAVE_VERSION_TOO_RECENT:
+      sprintf(error_mesg,
+       ".SAV files from newer versions of MZX (%d.%d) are not supported", hi, lo);
+      code = 0x2101;
+      break;
+
+    case E_WORLD_FILE_INVALID:
+      sprintf(error_mesg, "File is not a valid world file or is corrupt");
+      code = 0x0D02;
+      break;
+
+    case E_WORLD_FILE_VERSION_OLD:
+      sprintf(error_mesg,
+       "World is from old version (%d.%d); use converter", hi, lo);
+      code = 0x0D02;
+      break;
+
+    case E_WORLD_FILE_VERSION_TOO_RECENT:
+      sprintf(error_mesg,
+       "World is from a more recent version (%d.%d)", hi, lo);
+      code = 0x0D02;
+      break;
+
+    case E_WORLD_PASSWORD_PROTECTED:
+      sprintf(error_mesg, "This world may be password protected");
+      code = 0x0D02;
+      break;
+
+    case E_WORLD_DECRYPT_WRITE_PROTECTED:
+      sprintf(error_mesg, "Cannot decrypt write-protected world; check permissions");
+      code = 0x0DD5;
+      break;
+
+    case E_WORLD_LOCKED:
+      sprintf(error_mesg, "Cannot load password protected world");
+      code = 0x0D02;
+      break;
+
+    case E_WORLD_IO_POST_VALIDATION:
+      sprintf(error_mesg, "Post validation IO error occurred");
+      code = 0x0D01;
+      break;
+
+    case E_WORLD_IO_SAVING:
+      sprintf(error_mesg, "Error saving world; file may be write protected");
+      code = 0x0D01;
+      break;
+
+    case E_WORLD_BOARD_MISSING:
+      sprintf(error_mesg,
+       "Board @ %Xh could not be found", parameter);
+      code = 0x0D03;
+      break;
+
+    case E_WORLD_BOARD_CORRUPT:
+      sprintf(error_mesg,
+       "Board @ %Xh is irrecoverably truncated or corrupt", parameter);
+      code = 0x0D03;
+      break;
+
+    case E_WORLD_BOARD_TRUNCATED_SAFE:
+      sprintf(error_mesg,
+       "Board @ %Xh is truncated, but could be partially recovered", parameter);
+      code = 0x0D03;
+      break;
+
+    case E_WORLD_ROBOT_MISSING:
+      sprintf(error_mesg, "Robot @ %Xh could not be found", parameter);
+      code = 0x0D03;
+      break;
+
+    case E_BOARD_FILE_INVALID:
+      sprintf(error_mesg, "File is not a board file or is corrupt");
+      code = 0x4040;
+      break;
+
+    case E_BOARD_ROBOT_CORRUPT:
+      sprintf(error_mesg, "Robot @ %Xh is truncated or corrupt", parameter);
+      code = 0x0D03;
+      break;
+
+    case E_BOARD_SCROLL_CORRUPT:
+      sprintf(error_mesg, "Scroll @ %Xh is truncated or corrupt", parameter);
+      code = 0x0D03;
+      break;
+
+    case E_BOARD_SENSOR_CORRUPT:
+      sprintf(error_mesg, "Sensor @ %Xh is truncated or corrupt", parameter);
+      code = 0x0D03;
+      break;
+
+    case E_BOARD_SUMMARY:
+      sprintf(error_mesg, "Board @ %Xh summary", parameter);
+      code = 0x4041;
+      break;
+
+    case E_MZM_DOES_NOT_EXIST:
+      sprintf(error_mesg, "MZM doesn't exist");
+      code = 0x0D01;
+      break;
+
+    case E_MZM_FILE_INVALID:
+      sprintf(error_mesg, "File is not an MZM or is corrupt");
+      code = 0x6660;
+      break;
+
+    case E_MZM_FILE_FROM_SAVEGAME:
+      sprintf(error_mesg, "MZM contains runtime robots; dummying out");
+      code = 0x6661;
+      break;
+
+    case E_MZM_FILE_VERSION_TOO_RECENT:
+      sprintf(error_mesg,
+       "MZM from newer version (%d.%d); dummying out robots", hi, lo);
+      code = 0x6661;
+      break;
+
+    case E_MZM_ROBOT_CORRUPT:
+      sprintf(error_mesg, "MZM contains missing or corrupt robots");
+      code = 0x6662;
+      break;
+
+    case E_LOAD_BC_CORRUPT:
+      sprintf(error_mesg, "Bytecode file failed validation check");
+      code = 0xD0D0;
+      break;
+
+#ifdef CONFIG_DEBYTECODE
+    case E_DBC_WORLD_OVERWRITE_OLD:
+      sprintf(error_mesg,
+       "Save would overwrite older version (%d.%d); aborted", hi, lo);
+      code = 0x0fac;
+      break;
+
+    case E_DBC_SAVE_ROBOT_UNSUPPORTED:
+      sprintf(error_mesg,
+       "SAVE_WORLD, SAVE_ROBOT and SAVE_BC are no longer supported");
+      code = 0x0fac;
+      break;
+#endif
+
+    case E_DEFAULT:
+    default:
+      snprintf(error_mesg, 79, "%s", string);
+      string = NULL;
+      break;
+  }
+
+  // This needs to happen after the switch, unfortunately, since we need to
+  // check the options. Suppress errors that allow OK only.
+  if(suppress_errors[id] && (opts == ERROR_OPT_OK))
+    return ERROR_OPT_OK;
+
+  if(string)
+  {
+    int offset = strlen(error_mesg);
+    int left = 79 - offset;
+    if(left > 0)
+    {
+      snprintf(error_mesg + offset, left, ": %s", string);
+    }
+  }
+
+  return error(error_mesg, severity, opts, code);
+}
+
+
+
+int get_and_reset_error_count(void)
+{
+  int count = error_count;
+  error_count = 0;
+  return count;
+}
+
+void set_error_suppression(enum error_code id, int value)
+{
+  suppress_errors[id] = value;
+}
+
+void reset_error_suppression(void)
+{
+  for (int i = 0; i < NUM_ERROR_CODES; i++)
+    suppress_errors[i] = 0;
 }

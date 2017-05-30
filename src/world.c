@@ -48,8 +48,8 @@
 #include "game.h"
 #include "audio.h"
 #include "extmem.h"
-#include "util.h"
 #include "validation.h"
+#include "util.h"
 
 static const char magic_code[16] =
  "\xE6\x52\xEB\xF2\x6D\x4D\x4A\xB7\x87\xB2\x92\x88\xDE\x91\x24";
@@ -259,7 +259,7 @@ static void decrypt(const char *file_name)
   dest = fopen_unsafe(file_name, "wb");
   if(!dest)
   {
-    error("Cannot decrypt write-protected world.", 1, 8, 0x0DD5);
+    error_message(E_WORLD_DECRYPT_WRITE_PROTECTED, 0, NULL);
     return;
   }
   pro_method = *src_ptr;
@@ -432,10 +432,12 @@ int save_world(struct world *mzx_world, const char *file, int savegame)
         char tmp[3];
         if(fread(tmp, 1, 3, fp) == 3)
         {
-          // If it's not a 2.90 world, abort the save
-          if(world_magic(tmp) < 0x025A)
+          int old_version = world_magic(tmp);
+
+          // If it's non-debytecode, abort
+          if(old_version < VERSION_PROGRAM_SOURCE)
           {
-            error("Save would overwrite older world. Aborted.", 0, 1, 1337);
+            error_message(E_DBC_WORLD_OVERWRITE_OLD, old_version, file);
             goto exit_close;
           }
         }
@@ -448,7 +450,7 @@ int save_world(struct world *mzx_world, const char *file, int savegame)
   fp = fopen_unsafe(file, "wb");
   if(!fp)
   {
-    error("Error saving world", 1, 8, 0x0D01);
+    error_message(E_WORLD_IO_SAVING, 0, file);
     return -1;
   }
 
@@ -1052,21 +1054,24 @@ __editor_maybe_static FILE *try_load_world(const char *file,
   char magic[5];
   int v;
 
-  enum val_result status = validate_world_file(file, savegame, NULL, 0);
+  enum val_result status = validate_legacy_world_file(file, savegame, NULL, 0);
 
   if(VAL_NEED_UNLOCK == status)
   {
     decrypt(file);
-    status = validate_world_file(file, savegame, NULL, 1);
+    status = validate_legacy_world_file(file, savegame, NULL, 1);
   }
   if(VAL_SUCCESS != status)
     goto err_out;
+
+  // Success: reset suppression for the world
+  reset_error_suppression();
 
   // Validation succeeded so this should be a breeze.
   fp = fopen_unsafe(file, "rb");
   if(!fp)
   {
-    error("Post validation IO error occurred", 1, 8, 0x0D01);
+    error_message(E_WORLD_IO_POST_VALIDATION, 0, NULL);
     goto err_out;
   }
 

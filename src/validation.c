@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2012 Alice Lauren Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2012 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -33,7 +33,6 @@
 #include "window.h"
 #include "const.h"
 #include "util.h"
-#include "legacy_rasm.h"
 
 /****************************
  * LEGACY WORLD FORMAT INFO *
@@ -106,190 +105,6 @@
 #define WORLD_BLOCK_2_SIZE 72
 #endif
 
-static int suppress_errors[NUM_VAL_ERRORS];
-static int count_errors[NUM_VAL_ERRORS];
-
-
-
-/* error messages */
-void val_error(enum val_error error_id, int value)
-{
-  val_error_str(error_id, value, NULL);
-}
-
-void val_error_str(enum val_error error_id, int value, char *string)
-{
-  char error_mesg[80];
-  int hi = (value & 0xFF00) >> 8, lo = (value & 0xFF);
-  int opts = ERROR_OPT_OK;
-  int code = 0;
-
-  (count_errors[error_id])++;
-
-  if(suppress_errors[error_id])
-    return;
-
-  switch (error_id)
-  {
-    case FILE_DOES_NOT_EXIST:
-    {
-      sprintf(error_mesg, "File doesn't exist!");
-      code = 0x0D01;
-      break;
-    }
-    case SAVE_FILE_INVALID:
-    {
-      sprintf(error_mesg, "File is not a valid .SAV file or is corrupt");
-      code = 0x2101;
-      break;
-    }
-    case SAVE_VERSION_OLD:
-    {
-      snprintf(error_mesg, 80,
-       ".SAV files from older versions of MZX (%d.%d) are not supported", hi, lo);
-      code = 0x2101;
-      break;
-    }
-    case SAVE_VERSION_TOO_RECENT:
-    {
-      snprintf(error_mesg, 80,
-       ".SAV files from newer versions of MZX (%d.%d) are not supported", hi, lo);
-      code = 0x2101;
-      break;
-    }
-    case WORLD_FILE_INVALID:
-    {
-      sprintf(error_mesg, "File is not a valid world file or is corrupt");
-      code = 0x0D02;
-      break;
-    }
-    case WORLD_FILE_VERSION_OLD:
-    {
-      snprintf(error_mesg, 80,
-       "World is from old version (%d.%d); use converter", hi, lo);
-      code = 0x0D02;
-      break;
-    }
-    case WORLD_FILE_VERSION_TOO_RECENT:
-    {
-      snprintf(error_mesg, 80,
-       "World is from a more recent version (%d.%d)", hi, lo);
-      code = 0x0D02;
-      break;
-    }
-    case WORLD_PASSWORD_PROTECTED:
-    {
-      sprintf(error_mesg, "This world may be password protected");
-      code = 0x0D02;
-      break;
-    }
-    case WORLD_LOCKED:
-    {
-      sprintf(error_mesg, "Cannot load password protected world");
-      code = 0x0D02;
-      break;
-    }
-    case WORLD_BOARD_MISSING:
-    {
-      snprintf(error_mesg, 80,
-       "Board @ %Xh could not be found", value);
-      code = 0x0D03;
-      break;
-    }
-    case WORLD_BOARD_CORRUPT:
-    {
-      snprintf(error_mesg, 80,
-       "Board @ %Xh is irrecoverably truncated or corrupt", value);
-      code = 0x0D03;
-      break;
-    }
-    case WORLD_BOARD_TRUNCATED_SAFE:
-    {
-      snprintf(error_mesg, 80,
-       "Board @ %Xh is truncated, but could be partially recovered", value);
-      code = 0x0D03;
-      break;
-    }
-    case WORLD_ROBOT_MISSING:
-    {
-      snprintf(error_mesg, 80,
-       "Robot @ %Xh could not be found", value);
-      code = 0x0D03;
-      break;
-    }
-    case BOARD_FILE_INVALID:
-    {
-      sprintf(error_mesg, "File is not a board file or is corrupt");
-      code = 0x4040;
-      break;
-    }
-    case BOARD_ROBOT_CORRUPT:
-    case BOARD_SCROLL_CORRUPT:
-    case BOARD_SENSOR_CORRUPT:
-    {
-      snprintf(error_mesg, 80,
-       "Robot @ %Xh is truncated or corrupt", value);
-      code = 0x0D03;
-      break;
-    }
-    case MZM_DOES_NOT_EXIST:
-    {
-      snprintf(error_mesg, 80,
-       "MZM '%s' doesn't exist!", string);
-      code = 0x0D01;
-      break;
-    }
-    case MZM_FILE_INVALID:
-    {
-      snprintf(error_mesg, 80,
-       "File '%s' is not an MZM or is corrupt", string);
-      code = 0x6660;
-      break;
-    }
-    case MZM_FILE_FROM_SAVEGAME:
-    {
-      snprintf(error_mesg, 80,
-       "MZM '%s' contains runtime robots; dummying out", string);
-      code = 0x6661;
-      break;
-    }
-    case MZM_FILE_VERSION_TOO_RECENT:
-    {
-      snprintf(error_mesg, 80,
-       "MZM '%s' from newer version (%d.%d); dummying out robots",
-       string, hi, lo);
-      code = 0x6661;
-      break;
-    }
-    case MZM_ROBOT_CORRUPT:
-    {
-      snprintf(error_mesg, 80,
-       "MZM '%s' contains missing or corrupt robots", string);
-      code = 0x6662;
-      break;
-    }
-    case LOAD_BC_CORRUPT:
-    {
-      snprintf(error_mesg, 80,
-       "Bytecode file '%s' failed validation check", string);
-      // This can easily result in hard-to-escape loops
-      opts |= ERROR_OPT_EXIT;
-      code = 0xD0D0;
-      break;
-    }
-#ifdef CONFIG_DEBYTECODE
-    case DBC_SAVE_ROBOT_UNSUPPORTED:
-    {
-      sprintf(error_mesg, "SAVE_WORLD, SAVE_ROBOT and SAVE_BC are no longer supported.");
-      code = 0x0fac;
-      break;
-    }
-#endif
-  }
-
-  error(error_mesg, 1, opts, code);
-}
-
 FILE * val_fopen(const char *filename)
 {
   struct stat stat_result;
@@ -308,24 +123,6 @@ FILE * val_fopen(const char *filename)
   return f;
 }
 
-int get_error_count(enum val_error error_id)
-{
-  return count_errors[error_id];
-}
-
-void set_validation_suppression(enum val_error error_id, int value)
-{
-  suppress_errors[error_id] = value;
-}
-
-static void clear_validation_suppression(void)
-{
-  for (int i = 0; i < NUM_VAL_ERRORS; i++)
-  {
-    suppress_errors[i] = 0;
-    count_errors[i] = 0;
-  }
-}
 
 
 /* This is a lot like try_load_world but much more thorough, and doesn't
@@ -333,7 +130,7 @@ static void clear_validation_suppression(void)
  * any data is ever loaded, so that Megazeux can cleanly abort if there
  * is an issue.
  */
-enum val_result validate_world_file(const char *filename,
+enum val_result validate_legacy_world_file(const char *filename,
  int savegame, int *end_of_global_offset, int decrypt_attempted)
 {
   enum val_result result = VAL_SUCCESS;
@@ -347,7 +144,7 @@ enum val_result validate_world_file(const char *filename,
   /* TEST 1:  Make sure it's a readable file */
   if(!(f = val_fopen(filename)))
   {
-    val_error(FILE_DOES_NOT_EXIST, 0);
+    error_message(E_FILE_DOES_NOT_EXIST, 0, filename);
     result = VAL_MISSING;
     goto err_out;
   }
@@ -366,13 +163,13 @@ enum val_result validate_world_file(const char *filename,
 
     else if (v > WORLD_VERSION)
     {
-      val_error(SAVE_VERSION_TOO_RECENT, v);
+      error_message(E_SAVE_VERSION_TOO_RECENT, v, NULL);
       result = VAL_VERSION;
       goto err_close;
     }
     else if (v < WORLD_VERSION)
     {
-      val_error(SAVE_VERSION_OLD, v);
+      error_message(E_SAVE_VERSION_OLD, v, NULL);
       result = VAL_VERSION;
       goto err_close;
     }
@@ -490,7 +287,7 @@ enum val_result validate_world_file(const char *filename,
       if(decrypt_attempted) // In the unlikely event that this will happen again
         goto err_invalid;
 
-      val_error(WORLD_PASSWORD_PROTECTED, 0);
+      error_message(E_WORLD_PASSWORD_PROTECTED, 0, filename);
 
       if(!confirm(NULL, "Would you like to decrypt it?"))
       {
@@ -499,7 +296,7 @@ enum val_result validate_world_file(const char *filename,
       }
       else
       {
-        val_error(WORLD_LOCKED, 0);
+        error_message(E_WORLD_LOCKED, 0, filename);
         result = VAL_ABORTED;
         goto err_close;
       }
@@ -514,13 +311,13 @@ enum val_result validate_world_file(const char *filename,
 
     else if (v < 0x0205)
     {
-      val_error(WORLD_FILE_VERSION_OLD, v);
+      error_message(E_WORLD_FILE_VERSION_OLD, v, NULL);
       result = VAL_VERSION;
       goto err_close;
     }
     else if (v > WORLD_VERSION)
     {
-      val_error(WORLD_FILE_VERSION_TOO_RECENT, v);
+      error_message(E_WORLD_FILE_VERSION_TOO_RECENT, v, NULL);
       result = VAL_VERSION;
       goto err_close;
     }
@@ -583,114 +380,16 @@ enum val_result validate_world_file(const char *filename,
 
   //todo: maybe have a complete fail when N number of pointers fail?
 
-  // Success: reset suppression for board/runtime checks
-  clear_validation_suppression();
-
   goto err_close;
 
 err_invalid:
   result = VAL_INVALID;
   if(savegame)
-    val_error(SAVE_FILE_INVALID, 0);
+    error_message(E_SAVE_FILE_INVALID, 0, filename);
   else
-    val_error(WORLD_FILE_INVALID, 0);
+    error_message(E_WORLD_FILE_INVALID, 0, filename);
 err_close:
   fclose(f);
 err_out:
   return result;
 }
-
-
-// This is part of robot validation, don't give any messages.
-/*enum val_result validate_legacy_bytecode(char *bc, int program_length)
-{
-  int i = 1;
-  int cur_command_start, cur_command_length, cur_param_length;
-
-  if(!bc)
-    goto err_invalid;
-
-  // First -- fix the odd robots that appear in old MZX games,
-  // such as Catacombs of Zeux.
-  if((program_length == 2) || (bc[0] != 0xFF))
-  {
-    bc[0] = 0xFF;
-    bc[1] = 0x0;
-  }
-
-  if(bc[0] != 0xFF)
-    goto err_invalid;
-
-  // One iteration should be a single command.
-  while(1)
-  {
-    cur_command_length = bc[i];
-    i++;
-    if(cur_command_length == 0)
-      break;
-
-    cur_command_start = i;
-
-    if((i + cur_command_length) > program_length)
-      goto err_invalid;
-
-    if(bc[i + cur_command_length] != cur_command_length)
-      goto err_invalid;
-
-    i++;
-
-    while(i < cur_command_start + cur_command_length)
-    {
-      cur_param_length = bc[i];
-      if(cur_param_length == 0)
-        cur_param_length = 2;
-
-      i += cur_param_length + 1;
-    }
-    i++;
-
-    if(i != cur_command_start + cur_command_length + 1)
-      goto err_invalid;
-
-    if(i > program_length)
-      goto err_invalid;
-  }
-
-  if(i < program_length)
-  {
-    debug("Robot checked for %i but program length is %i; extra wiped\n",
-     program_length, i);
-    memset(bc + i, '\0', program_length-i);
-  }
-
-  if(i > program_length)
-    goto err_invalid;
-
-  return VAL_SUCCESS;
-
-err_invalid:
-  {
-    int n;
-    char hex_seg[4];
-    char *err_mesg = cmalloc(sizeof(char) * ((cur_command_length + 2) * 3 + 2));
-    err_mesg[0] = 0;
-
-    for(n = cur_command_start - 1;
-     n < (cur_command_start + cur_command_length + 1) &&
-     n < program_length;
-     n++)
-    {
-      snprintf(hex_seg, 4, "%X ", bc[n]);
-      strcat(err_mesg, hex_seg);
-    }
-
-    debug("Prog len: %i    i: %i   bc[0]: %i   bc[1]: %i\n",
-     program_length, i, bc[0], bc[1]);
-
-    debug("Bytecode: %s\n\n", err_mesg);
-
-    free(err_mesg);
-  }
-
-  return VAL_INVALID;
-}*/

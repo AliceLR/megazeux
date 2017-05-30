@@ -20,6 +20,10 @@
 #ifndef __ZIP_H
 #define __ZIP_H
 
+#include "compat.h"
+
+__M_BEGIN_DECLS
+
 #include "platform.h"
 #include "world_struct.h"
 
@@ -165,5 +169,7 @@ enum zip_error zip_expand(struct zip_archive *zp, char **src, Uint32 new_size);
 #ifdef TEST
 void zip_test(struct world *mzx_world);
 #endif //TEST
+
+__M_END_DECLS
 
 #endif //__ZIP_H

@@ -32,14 +32,52 @@
 
 __M_BEGIN_DECLS
 
-//Call for an error OR a warning. Type=0 for a warning, 1 for a recoverable
-//error, 2 for a fatal error. Options are (bits set in options and returned
-//as action) FAIL=1, RETRY=2, EXIT TO DOS=4, OK=8, HELP=16 (OK is for usually
-//only for warnings) Code is a specialized error code for debugging purposes.
-//Type of 3 for a critical error.
+enum error_code
+{
+  E_DEFAULT,
+  E_FILE_DOES_NOT_EXIST,
+  E_SAVE_FILE_INVALID,
+  E_SAVE_VERSION_OLD,
+  E_SAVE_VERSION_TOO_RECENT,
+  E_WORLD_FILE_INVALID,
+  E_WORLD_FILE_VERSION_OLD,
+  E_WORLD_FILE_VERSION_TOO_RECENT,
+  E_WORLD_PASSWORD_PROTECTED,
+  E_WORLD_DECRYPT_WRITE_PROTECTED,
+  E_WORLD_LOCKED,
+  E_WORLD_IO_POST_VALIDATION,
+  E_WORLD_IO_SAVING,
+  E_WORLD_BOARD_MISSING,
+  E_WORLD_BOARD_CORRUPT,
+  E_WORLD_BOARD_TRUNCATED_SAFE,
+  E_WORLD_ROBOT_MISSING,
+  E_BOARD_FILE_INVALID,
+  E_BOARD_ROBOT_CORRUPT,
+  E_BOARD_SCROLL_CORRUPT,
+  E_BOARD_SENSOR_CORRUPT,
+  E_BOARD_SUMMARY,
+  E_MZM_DOES_NOT_EXIST,
+  E_MZM_FILE_INVALID,
+  E_MZM_FILE_FROM_SAVEGAME,
+  E_MZM_FILE_VERSION_TOO_RECENT,
+  E_MZM_ROBOT_CORRUPT,
+  E_LOAD_BC_CORRUPT,
+#ifdef CONFIG_DEBYTECODE
+  E_DBC_WORLD_OVERWRITE_OLD,
+  E_DBC_SAVE_ROBOT_UNSUPPORTED,
+#endif
+  NUM_ERROR_CODES
+};
 
 CORE_LIBSPEC int error(const char *string, unsigned int type,
  unsigned int options, unsigned int code);
+
+CORE_LIBSPEC int error_message(enum error_code id, int parameter,
+ const char *string);
+
+int get_and_reset_error_count(void);
+void set_error_suppression(enum error_code id, int value);
+void reset_error_suppression(void);
 
 __M_END_DECLS
 
