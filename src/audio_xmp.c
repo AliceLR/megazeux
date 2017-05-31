@@ -25,6 +25,11 @@
 #include "const.h"
 #include "util.h"
 
+// Necessary for libxmp
+#ifdef __WIN32__
+#define BUILDING_STATIC
+#endif
+
 #include <xmp.h>
 
 struct xmp_stream
@@ -74,12 +79,23 @@ static void audio_xmp_set_repeat(struct audio_stream *a_src, Uint32 repeat)
 
 static void audio_xmp_set_position(struct audio_stream *a_src, Uint32 position)
 {
-  xmp_set_position(((struct xmp_stream *)a_src)->ctx, position);
+  struct xmp_frame_info info;
+  int i;
+  xmp_get_frame_info(((struct xmp_stream *)a_src)->ctx, &info);
+  // FIXME: xmp does not have a way to set the position accurately. Here, we try to
+  // narrow it down to the nearest order.
+  for (i = 1; i < XMP_MAX_MOD_LENGTH; i++)
+    if ((Uint32) ((struct xmp_stream *)a_src)->row_tbl[i] > position)
+    {
+      xmp_set_position(((struct xmp_stream *)a_src)->ctx, i - 1);
+      return;
+    }
+  xmp_set_position(((struct xmp_stream *)a_src)->ctx, 0);
 }
 
 static void audio_xmp_set_order(struct audio_stream *a_src, Uint32 order)
 {
-  audio_xmp_set_position(a_src, ((struct xmp_stream *)a_src)->row_tbl[order % XMP_MAX_MOD_LENGTH]);
+  xmp_set_position(((struct xmp_stream *)a_src)->ctx, order);
 }
 
 static void audio_xmp_set_frequency(struct sampled_stream *s_src, Uint32 frequency)
@@ -104,19 +120,15 @@ static void audio_xmp_set_frequency(struct sampled_stream *s_src, Uint32 frequen
 static Uint32 audio_xmp_get_order(struct audio_stream *a_src)
 {
   struct xmp_frame_info info;
-  int i;
   xmp_get_frame_info(((struct xmp_stream *)a_src)->ctx, &info);
-  for (i = 1; i < XMP_MAX_MOD_LENGTH; i++)
-    if (((struct xmp_stream *)a_src)->row_tbl[i] > info.pos)
-      return i - 1;
-  return XMP_MAX_MOD_LENGTH;
+  return info.pos;
 }
 
 static Uint32 audio_xmp_get_position(struct audio_stream *a_src)
 {
   struct xmp_frame_info info;
   xmp_get_frame_info(((struct xmp_stream *)a_src)->ctx, &info);
-  return info.pos;
+  return ((struct xmp_stream *)a_src)->row_tbl[info.pos] + info.row;
 }
 
 static Uint32 audio_xmp_get_frequency(struct sampled_stream *s_src)
