@@ -28,6 +28,7 @@
 
 #include "const.h"
 #include "counter.h"
+#include "counter_struct.h"
 #include "error.h"
 #include "extmem.h"
 #include "fsafeopen.h"
@@ -48,6 +49,68 @@ static inline void meter_restore_screen(void) {}
 static inline void meter_initial_draw(int curr, int target, const char *title) {}
 
 #endif //!CONFIG_LOADSAVE_METER
+
+
+static char name_buffer[ROBOT_MAX_TR];
+
+static inline struct counter *legacy_load_counter(struct world *mzx_world, FILE *fp)
+{
+  int value = fgetd(fp);
+  int name_length = fgetd(fp);
+
+  fread(name_buffer, name_length, 1, fp);
+
+  // Stupid legacy hacks
+  if(!strncasecmp(name_buffer, "mzx_speed", name_length))
+  {
+    mzx_world->mzx_speed = value;
+    return NULL;
+  }
+
+  if(!strncasecmp(name_buffer, "_____lock_speed", name_length))
+  {
+    mzx_world->lock_speed = value;
+    return NULL;
+  }
+
+  return load_new_counter(name_buffer, name_length, value);
+}
+
+static inline struct string *legacy_load_string(FILE *fp)
+{
+  int name_length = fgetd(fp);
+  int str_length = fgetd(fp);
+
+  struct string *src_string;
+
+  fread(name_buffer, name_length, 1, fp);
+
+  src_string = load_new_string(name_buffer, name_length, str_length);
+
+  fread(src_string->value, str_length, 1, fp);
+
+  return src_string;
+}
+
+static inline void legacy_save_counter(FILE *fp, struct counter *src_counter)
+{
+  size_t name_length = strlen(src_counter->name);
+
+  fputd(src_counter->value, fp);
+  fputd((int)name_length, fp);
+  fwrite(src_counter->name, name_length, 1, fp);
+}
+
+static inline void legacy_save_string(FILE *fp, struct string *src_string)
+{
+  size_t name_length = strlen(src_string->name);
+  size_t str_length = src_string->length;
+
+  fputd((int)name_length, fp);
+  fputd((int)str_length, fp);
+  fwrite(src_string->name, name_length, 1, fp);
+  fwrite(src_string->value, str_length, 1, fp);
+}
 
 
 int legacy_save_world(struct world *mzx_world, const char *file, int savegame)
@@ -205,18 +268,19 @@ int legacy_save_world(struct world *mzx_world, const char *file, int savegame)
     fputd(mzx_world->num_counters + 2, fp);
     for(i = 0; i < mzx_world->num_counters; i++)
     {
-      save_counter(fp, mzx_world->counter_list[i]);
+      legacy_save_counter(fp, mzx_world->counter_list[i]);
     }
 
     mzx_speed = malloc(sizeof(struct counter) + sizeof("mzx_speed") - 1);
     mzx_speed->value = mzx_world->mzx_speed;
     strcpy(mzx_speed->name, "mzx_speed");
-    save_counter(fp, mzx_speed);
+    legacy_save_counter(fp, mzx_speed);
     free(mzx_speed);
+
     lock_speed = malloc(sizeof(struct counter) + sizeof("_____lock_speed") - 1);
     lock_speed->value = mzx_world->lock_speed;
     strcpy(lock_speed->name, "_____lock_speed");
-    save_counter(fp, lock_speed);
+    legacy_save_counter(fp, lock_speed);
     free(lock_speed);
 
     // Write strings
@@ -224,7 +288,7 @@ int legacy_save_world(struct world *mzx_world, const char *file, int savegame)
 
     for(i = 0; i < mzx_world->num_strings; i++)
     {
-      save_string(fp, mzx_world->string_list[i]);
+      legacy_save_string(fp, mzx_world->string_list[i]);
     }
 
     // Sprite data
@@ -1063,7 +1127,7 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
 
     for(i = 0, j = 0; i < num_counters; i++)
     {
-      struct counter *counter = load_counter(mzx_world, fp);
+      struct counter *counter = legacy_load_counter(mzx_world, fp);
 
       /* We loaded a special counter, this doesn't need to be
        * loaded into the regular list.
@@ -1089,7 +1153,7 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
 
     for(i = 0; i < num_strings; i++)
     {
-      mzx_world->string_list[i] = load_string(fp);
+      mzx_world->string_list[i] = legacy_load_string(fp);
       mzx_world->string_list[i]->list_ind = i;
     }
 

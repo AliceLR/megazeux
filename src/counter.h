@@ -63,10 +63,10 @@ int set_counter_special(struct world *mzx_world, char *char_value,
  int value, int id);
 bool is_string(char *buffer);
 
-struct counter *load_counter(struct world *mzx_world, FILE *fp);
-struct string *load_string(FILE *fp);
-void save_counter(FILE *fp, struct counter *src_counter);
-void save_string(FILE *fp, struct string *src_string);
+struct counter *load_new_counter(const char *name, int name_length, int value);
+struct string *load_new_string(const char *name, int name_length,
+ int str_length);
+
 void free_counter_list(struct counter **counter_list, int num_counters);
 void free_string_list(struct string **string_list, int num_strings);
 

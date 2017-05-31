@@ -4530,28 +4530,13 @@ void counter_fsg(void)
   }
 }
 
-struct counter *load_counter(struct world *mzx_world, FILE *fp)
+// Create a new counter from loading a save file
+struct counter *load_new_counter(const char *name, int name_length, int value)
 {
-  int value = fgetd(fp);
-  int name_length = fgetd(fp);
-
   struct counter *src_counter =
    cmalloc(sizeof(struct counter) + name_length);
-  fread(src_counter->name, name_length, 1, fp);
 
-  // Let's not have too many of these things, hopefully
-  if(!strncasecmp(src_counter->name, "mzx_speed", name_length))
-  {
-    mzx_world->mzx_speed = value;
-    free(src_counter);
-    return NULL;
-  }
-  if(!strncasecmp(src_counter->name, "_____lock_speed", name_length))
-  {
-    mzx_world->lock_speed = value;
-    free(src_counter);
-    return NULL;
-  }
+  memcpy(src_counter->name, name, name_length);
 
   src_counter->name[name_length] = 0;
   src_counter->value = value;
@@ -4566,19 +4551,17 @@ struct counter *load_counter(struct world *mzx_world, FILE *fp)
   return src_counter;
 }
 
-struct string *load_string(FILE *fp)
+// Create a new string from loading a save file
+struct string *load_new_string(const char *name, int name_length,
+ int str_length)
 {
-  int name_length = fgetd(fp);
-  int str_length = fgetd(fp);
-
   struct string *src_string =
    cmalloc(sizeof(struct string) + name_length + str_length);
 
-  fread(src_string->name, name_length, 1, fp);
+  memcpy(src_string->name, name, name_length);
 
   src_string->value = src_string->name + name_length + 1;
 
-  fread(src_string->value, str_length, 1, fp);
   src_string->name[name_length] = 0;
 
   src_string->length = str_length;
@@ -4589,26 +4572,6 @@ struct string *load_string(FILE *fp)
 #endif
 
   return src_string;
-}
-
-void save_counter(FILE *fp, struct counter *src_counter)
-{
-  size_t name_length = strlen(src_counter->name);
-
-  fputd(src_counter->value, fp);
-  fputd((int)name_length, fp);
-  fwrite(src_counter->name, name_length, 1, fp);
-}
-
-void save_string(FILE *fp, struct string *src_string)
-{
-  size_t name_length = strlen(src_string->name);
-  size_t str_length = src_string->length;
-
-  fputd((int)name_length, fp);
-  fputd((int)str_length, fp);
-  fwrite(src_string->name, name_length, 1, fp);
-  fwrite(src_string->value, str_length, 1, fp);
 }
 
 void free_counter_list(struct counter **counter_list, int num_counters)

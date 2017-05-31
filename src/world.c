@@ -149,6 +149,8 @@ int save_magic(const char magic_string[5])
   }
 }
 
+// NEW SPRITE VARS:  spr#_unbound (is in the flags already), spr#_tcol (int, spr->transparent_color)
+
 int save_world(struct world *mzx_world, const char *file, int savegame)
 {
 #ifdef CONFIG_DEBYTECODE
