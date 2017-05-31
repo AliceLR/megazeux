@@ -22,13 +22,14 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 
 #include "legacy_world.h"
+#include "legacy_board.h"
 
 #include "const.h"
 #include "counter.h"
-#include "counter_struct.h"
 #include "error.h"
 #include "extmem.h"
 #include "fsafeopen.h"
@@ -38,7 +39,6 @@
 #include "sprite.h"
 #include "window.h"
 #include "world.h"
-#include "world_struct.h"
 #include "util.h"
 
 
@@ -115,6 +115,8 @@ static inline void legacy_save_string(FILE *fp, struct string *src_string)
 
 int legacy_save_world(struct world *mzx_world, const char *file, int savegame)
 {
+  int file_version = WORLD_LEGACY_FORMAT_VERSION;
+
   int i, num_boards;
   int gl_rob_position, gl_rob_save_position;
   int board_offsets_position, board_begin_position;
@@ -140,8 +142,8 @@ int legacy_save_world(struct world *mzx_world, const char *file, int savegame)
   {
     // Write this MZX's version string
     fputs("MZS", fp);
-    fputc((WORLD_LEGACY_FORMAT_VERSION >> 8) & 0xff, fp);
-    fputc(WORLD_LEGACY_FORMAT_VERSION & 0xff, fp);
+    fputc((file_version >> 8) & 0xff, fp);
+    fputc(file_version & 0xff, fp);
 
     // Write the version of the loaded world for this SAV
     fputw(mzx_world->version, fp);
@@ -157,8 +159,8 @@ int legacy_save_world(struct world *mzx_world, const char *file, int savegame)
 
     // Write this MZX's version string
     fputc('M', fp);
-    fputc((WORLD_LEGACY_FORMAT_VERSION >> 8) & 0xff, fp);
-    fputc(WORLD_LEGACY_FORMAT_VERSION & 0xff, fp);
+    fputc((file_version >> 8) & 0xff, fp);
+    fputc(file_version & 0xff, fp);
   }
 
   // Save charset
@@ -454,7 +456,8 @@ int legacy_save_world(struct world *mzx_world, const char *file, int savegame)
     // First save the offset of where the board will be placed
     board_begin_position = ftell(fp);
     // Now save the board and get the size
-    board_size = save_board(mzx_world, cur_board, fp, savegame, WORLD_VERSION);
+    board_size = legacy_save_board(mzx_world, cur_board, fp, savegame,
+     file_version);
     // board_end_position, unused
     ftell(fp);
     // Record size/offset information.
@@ -466,7 +469,7 @@ int legacy_save_world(struct world *mzx_world, const char *file, int savegame)
 
   // Save for global robot position
   gl_rob_position = ftell(fp);
-  save_robot(mzx_world, &mzx_world->global_robot, fp, savegame, WORLD_VERSION);
+  save_robot(mzx_world, &mzx_world->global_robot, fp, savegame, file_version);
 
   meter_update_screen(&meter_curr, meter_target);
 
@@ -989,7 +992,7 @@ err_out:
 
 
 void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
- bool savegame, int version, char *name, int *faded)
+ bool savegame, int file_version, char *name, int *faded)
 {
   int i;
   int num_boards;
@@ -1010,7 +1013,7 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
   {
     fseek(fp, 29, SEEK_SET);
     strcpy(mzx_world->name, name);
-    mzx_world->version = version;
+    mzx_world->version = file_version;
     mzx_world->current_board_id = 0;
   }
 
@@ -1361,7 +1364,7 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
   for(i = 0; i < num_boards; i++)
   {
     mzx_world->board_list[i] =
-     load_board_allocate(mzx_world, fp, savegame, version);
+     legacy_load_board_allocate(mzx_world, fp, savegame, file_version);
     store_board_to_extram(mzx_world->board_list[i]);
     meter_update_screen(&meter_curr, meter_target);
   }
@@ -1369,7 +1372,7 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
   // Read global robot
   fseek(fp, gl_rob, SEEK_SET); //don't worry if this fails
   load_robot(mzx_world, &mzx_world->global_robot, fp, savegame,
-   mzx_world->version);
+   file_version);
 
   // Go back to where the names are
   fseek(fp, last_pos, SEEK_SET);
