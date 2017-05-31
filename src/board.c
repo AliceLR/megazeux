@@ -27,7 +27,6 @@
 #include "extmem.h"
 #include "error.h"
 #include "util.h"
-#include "validation.h"
 
 /* 13 (not NULL terminated in format) */
 #define LEGACY_MOD_FILENAME_MAX 13

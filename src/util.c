@@ -235,6 +235,46 @@ char *mzx_res_get_by_id(enum resource_id id)
   return mzx_res[id].path;
 }
 
+// Get 2 bytes, little endian
+
+int fgetw(FILE *fp)
+{
+  int a = fgetc(fp), b = fgetc(fp);
+  if((a == EOF) || (b == EOF))
+    return EOF;
+
+  return (b << 8) | a;
+}
+
+// Get 4 bytes, little endian
+
+int fgetd(FILE *fp)
+{
+  int a = fgetc(fp), b = fgetc(fp), c = fgetc(fp), d = fgetc(fp);
+  if((a == EOF) || (b == EOF) || (c == EOF) || (d == EOF))
+    return EOF;
+
+  return (d << 24) | (c << 16) | (b << 8) | a;
+}
+
+// Put 2 bytes, little endian
+
+void fputw(int src, FILE *fp)
+{
+  fputc(src & 0xFF, fp);
+  fputc(src >> 8, fp);
+}
+
+// Put 4 bytes, little endian
+
+void fputd(int src, FILE *fp)
+{
+  fputc(src & 0xFF, fp);
+  fputc((src >> 8) & 0xFF, fp);
+  fputc((src >> 16) & 0xFF, fp);
+  fputc((src >> 24) & 0xFF, fp);
+}
+
 // Determine file size of an open FILE and rewind it
 
 long ftell_and_rewind(FILE *f)
@@ -263,6 +303,18 @@ unsigned int Random(unsigned long long range)
 
   value = (seed & 0xFFFFFFFF) * range / 0xFFFFFFFF;
   return (unsigned int)value;
+}
+
+// FIXME: This function should probably die. It's unsafe.
+void add_ext(char *src, const char *ext)
+{
+  size_t len = strlen(src);
+
+  if((len < 4) || ((src[len - 4] != '.') && (src[len - 3] != '.')
+   && (src[len - 2] != '.')))
+  {
+    strncat(src, ext, 4);
+  }
 }
 
 __utils_maybe_static ssize_t __get_path(const char *file_name, char *dest,
@@ -553,6 +605,50 @@ void *boyer_moore_search(void *A, size_t a_len, void *B, size_t b_len,
     }
   }
   return NULL;
+}
+
+
+int mem_getc(const unsigned char **ptr)
+{
+  int val = (*ptr)[0];
+  *ptr += 1;
+  return val;
+}
+
+int mem_getw(const unsigned char **ptr)
+{
+  int val = (*ptr)[0] | ((*ptr)[1] << 8);
+  *ptr += 2;
+  return val;
+}
+
+int mem_getd(const unsigned char **ptr)
+{
+  int val = (*ptr)[0] | ((*ptr)[1] << 8) | ((*ptr)[2] << 16) | ((int)((*ptr)[3]) << 24);
+  *ptr += 4;
+  return val;
+}
+
+void mem_putc(int src, unsigned char **ptr)
+{
+  (*ptr)[0] = src;
+  *ptr += 1;
+}
+
+void mem_putw(int src, unsigned char **ptr)
+{
+  (*ptr)[0] = src & 0xFF;
+  (*ptr)[1] = (src >> 8) & 0xFF;
+  *ptr += 2;
+}
+
+void mem_putd(int src, unsigned char **ptr)
+{
+  (*ptr)[0] = src & 0xFF;
+  (*ptr)[1] = (src >> 8) & 0xFF;
+  (*ptr)[2] = (src >> 16) & 0xFF;
+  (*ptr)[3] = (src >> 24) & 0xFF;
+  *ptr += 4;
 }
 
 

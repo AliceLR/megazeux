@@ -114,7 +114,16 @@ __M_BEGIN_DECLS
 #undef  WORLD_VERSION_PREV
 #endif
 
-// These three are needed by validation.c until I figure out a better way
+enum val_result
+{
+  VAL_SUCCESS,
+  VAL_VERSION,    // Version issue
+  VAL_INVALID,    // Failed validation
+  VAL_TRUNCATED,  // Passed validation until it hit EOF
+  VAL_MISSING,    // file or ptr location in file does not exist
+  VAL_ABORTED,    // Load aborted by user
+};
+
 CORE_LIBSPEC int world_magic(const char magic_string[3]);
 CORE_LIBSPEC int save_magic(const char magic_string[5]);
 
@@ -126,32 +135,21 @@ CORE_LIBSPEC void clear_world(struct world *mzx_world);
 CORE_LIBSPEC void clear_global_data(struct world *mzx_world);
 CORE_LIBSPEC void default_scroll_values(struct world *mzx_world);
 
-CORE_LIBSPEC void add_ext(char *src, const char *ext);
-
 bool reload_savegame(struct world *mzx_world, const char *file, int *faded);
 bool reload_swap(struct world *mzx_world, const char *file, int *faded);
 
-// Code to load/save multi-byte ints to/from little endian memory
-int mem_getc(const unsigned char **ptr);
-int mem_getd(const unsigned char **ptr);
-int mem_getw(const unsigned char **ptr);
-void mem_putc(int src, unsigned char **ptr);
-void mem_putd(int src, unsigned char **ptr);
-void mem_putw(int src, unsigned char **ptr);
-
-// Code to load multi-byte ints from little endian file
-
-int fgetw(FILE *fp);
-int fgetd(FILE *fp);
-void fputw(int src, FILE *fp);
-void fputd(int src, FILE *fp);
+#ifdef CONFIG_LOADSAVE_METER
+void meter_update_screen(int *curr, int target) {}
+void meter_restore_screen(void) {}
+void meter_initial_draw(int curr, int target, const char *title) {}
+#endif
 
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC FILE *try_load_world(const char *file, bool savegame,
  int *version, char *name);
 CORE_LIBSPEC void default_global_data(struct world *mzx_world);
-CORE_LIBSPEC void set_update_done(struct world *mzx_world);
 
+CORE_LIBSPEC void set_update_done(struct world *mzx_world);
 CORE_LIBSPEC void refactor_board_list(struct world *mzx_world,
  struct board **new_board_list, int new_list_size,
  int *board_id_translation_list);

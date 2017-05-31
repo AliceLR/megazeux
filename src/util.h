@@ -83,9 +83,16 @@ CORE_LIBSPEC int mzx_res_init(const char *argv0, bool editor);
 CORE_LIBSPEC void mzx_res_free(void);
 CORE_LIBSPEC char *mzx_res_get_by_id(enum resource_id id);
 
+// Code to load multi-byte ints from little endian file
+int fgetw(FILE *fp);
+int fgetd(FILE *fp);
+void fputw(int src, FILE *fp);
+void fputd(int src, FILE *fp);
+
 CORE_LIBSPEC long ftell_and_rewind(FILE *f);
 unsigned int Random(unsigned long long range);
 
+CORE_LIBSPEC void add_ext(char *src, const char *ext);
 CORE_LIBSPEC ssize_t get_path(const char *file_name, char *dest, unsigned int buf_len);
 #ifdef CONFIG_UTILS
 ssize_t __get_path(const char *file_name, char *dest, unsigned int buf_len);
@@ -132,6 +139,14 @@ CORE_LIBSPEC void boyer_moore_index(void *B, size_t b_len,
 CORE_LIBSPEC void *boyer_moore_search(void *A, size_t a_len, void *B, size_t b_len,
  int *index, bool ignore_case);
 
+// Code to load/save multi-byte ints to/from little endian memory
+int mem_getc(const unsigned char **ptr);
+int mem_getd(const unsigned char **ptr);
+int mem_getw(const unsigned char **ptr);
+void mem_putc(int src, unsigned char **ptr);
+void mem_putd(int src, unsigned char **ptr);
+void mem_putw(int src, unsigned char **ptr);
+ 
 CORE_LIBSPEC int memsafegets(char *dest, int size, char **src, char *end);
 
 struct memfile
