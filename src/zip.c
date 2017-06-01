@@ -41,6 +41,8 @@
 #define ZIP_S_WRITE_FILES 4
 #define ZIP_S_WRITE_STREAM 5
 
+#define ZIP_MZX_PROP_MAGIC  0x785A  // "Zx"
+#define ZIP_MZX_PROP_SIZE   8       // [prop x4][board x2][robot x2]
 
 /* This zip reader/writer is designed:
  *
@@ -52,6 +54,8 @@
  *
  * 2) With the ability to use memory blocks instead of files. This is
  * mainly for MZMs, which need to be writable both to file and to strings.
+ *
+ * 3) With the ability to store extra data in the zip related to the MZX world.
  *
  * While not copied from or even based on ajs's zipio, I took a few
  * pointers from it.
@@ -141,7 +145,7 @@ static const char *zip_error_string(enum zip_error code)
     case ZIP_UNSUPPORTED_DEFLATE_STREAM:
       return "Streaming DEFLATE currently only supports using the full file length";
     case ZIP_MISSING_LOCAL_HEADER:
-      return "Could not find the local file header";
+      return "Could not find file header";
     case ZIP_MISSING_DATA_DESCRIPTOR:
       return "Could not find the data descriptor";
     case ZIP_HEADER_MISMATCH:
@@ -159,6 +163,7 @@ static const char *zip_error_string(enum zip_error code)
 static void zip_error(const char *func, enum zip_error code)
 {
   printf("ERROR: in %s: %s\n", func, zip_error_string(code));
+  fflush(stdout);
 }
 
 
@@ -277,9 +282,10 @@ int zip_bound_total_header_usage(int num_files, int max_name_size)
   //               = 5 for MZM data
 
   return num_files *
-   (30 + max_name_size +  // Local header
-    46 + max_name_size) + // Central directory header
-   22;                    // EOCD record
+   // base + file name     extra field header + data
+   (30 + max_name_size +   4 + ZIP_MZX_PROP_SIZE +    // Local
+    46 + max_name_size +   4 + ZIP_MZX_PROP_SIZE) +   // Central directory
+    22;                                               // EOCD record
 }
 
 
@@ -395,29 +401,18 @@ static enum zip_error zip_read_file_header(struct zip_archive *zp,
   if(vseek(fp, 4, SEEK_CUR))
     return ZIP_SEEK_ERROR;
 
-  if(flags & ZIP_F_DATA_DESCRIPTOR)
-  {
-    // crc32
-    // compressed size
-    // uncompressed size
-    vseek(fp, 12, SEEK_CUR);
-  }
+  // crc32
+  fh->crc32 = vgetd(fp);
 
-  else
-  {
-    // crc32
-    fh->crc32 = vgetd(fp);
+  // compressed size
+  fh->compressed_size = vgetd(fp);
+  if(fh->compressed_size == 0xFFFFFFFF)
+    return ZIP_UNSUPPORTED_ZIP64;
 
-    // compressed size
-    fh->compressed_size = vgetd(fp);
-    if(fh->compressed_size == 0xFFFFFFFF)
-      return ZIP_UNSUPPORTED_ZIP64;
-
-    // uncompressed size
-    fh->uncompressed_size = vgetd(fp);
-    if(fh->uncompressed_size == 0xFFFFFFFF)
-      return ZIP_UNSUPPORTED_ZIP64;
-  }
+  // uncompressed size
+  fh->uncompressed_size = vgetd(fp);
+  if(fh->uncompressed_size == 0xFFFFFFFF)
+    return ZIP_UNSUPPORTED_ZIP64;
 
   // file name length
   n = vgetw(fp);
@@ -447,8 +442,48 @@ static enum zip_error zip_read_file_header(struct zip_archive *zp,
     fh->file_name[n] = 0;
 
     // Extra field (m)
+    if(m)
+    {
+      int left = m;
+      int len;
+      int id;
+
+      fh->mzx_prop_id = 0;
+      fh->mzx_board_id = 0;
+      fh->mzx_robot_id = 0;
+
+      while(left>0)
+      {
+        if(left < 4)
+          break;
+
+        id = vgetw(fp);
+        len = vgetw(fp);
+        left -= 4;
+
+        if(len > left)
+          break;
+
+        if(id == ZIP_MZX_PROP_MAGIC)
+        {
+          fh->mzx_prop_id = vgetd(fp);
+          fh->mzx_board_id = vgetw(fp);
+          fh->mzx_robot_id = vgetw(fp);
+          left -= ZIP_MZX_PROP_SIZE;
+          break;
+        }
+
+        // else skip and continue
+        vseek(fp, len, SEEK_CUR);
+        left -= len;
+      }
+
+      // Correct our position to the start of the comment
+      vseek(fp, left, SEEK_CUR);
+    }
+
     // File comment (k)
-    if(vseek(fp, m+k, SEEK_CUR))
+    if(vseek(fp, k, SEEK_CUR))
       return ZIP_SEEK_ERROR;
   }
 
@@ -459,36 +494,36 @@ static enum zip_error zip_read_file_header(struct zip_archive *zp,
     // Extra field (m)
     if(vseek(fp, n+m, SEEK_CUR))
       return ZIP_SEEK_ERROR;
-  }
 
-  // We should be at the start of the data or next record now.
-  // We might need to look at the data descriptor, though.
-  if(flags & ZIP_F_DATA_DESCRIPTOR)
-  {
-    Uint32 expected_c_size = fh->compressed_size;
+    // We should be at the start of the data now.
+    // We might need to look at the data descriptor, though.
+    if(flags & ZIP_F_DATA_DESCRIPTOR)
+    {
+      Uint32 expected_c_size = fh->compressed_size;
 
-    // Find the data descriptor
-    if(vseek(fp, expected_c_size, SEEK_CUR))
-      return ZIP_MISSING_DATA_DESCRIPTOR;
+      // Find the data descriptor
+      if(vseek(fp, expected_c_size, SEEK_CUR))
+        return ZIP_MISSING_DATA_DESCRIPTOR;
 
-    // crc32
-    fh->crc32 = vgetd(fp);
+      // crc32
+      fh->crc32 = vgetd(fp);
 
-    // compressed size
-    fh->compressed_size = vgetd(fp);
-    if(fh->compressed_size == 0xFFFFFFFF)
-      return ZIP_UNSUPPORTED_ZIP64;
+      // compressed size
+      fh->compressed_size = vgetd(fp);
+      if(fh->compressed_size == 0xFFFFFFFF)
+        return ZIP_UNSUPPORTED_ZIP64;
 
-    // uncompressed size
-    fh->uncompressed_size = vgetd(fp);
-    if(fh->uncompressed_size == 0xFFFFFFFF)
-      return ZIP_UNSUPPORTED_ZIP64;
+      // uncompressed size
+      fh->uncompressed_size = vgetd(fp);
+      if(fh->uncompressed_size == 0xFFFFFFFF)
+        return ZIP_UNSUPPORTED_ZIP64;
 
-    if(zp->verror && zp->verror(fp))
-      return ZIP_READ_ERROR;
+      if(zp->verror && zp->verror(fp))
+        return ZIP_READ_ERROR;
 
-    // Go back to the start of the file.
-    vseek(fp, -expected_c_size-12, SEEK_CUR);
+      // Go back to the start of the file.
+      vseek(fp, -expected_c_size-12, SEEK_CUR);
+    }
   }
 
   return ZIP_SUCCESS;
@@ -548,8 +583,8 @@ static enum zip_error zip_write_file_header(struct zip_archive *zp,
   // File name length
   vputw(fh->file_name_length, fp);
 
-  // File comment length
-  vputw(0, fp);
+  // Extra field length
+  vputw(4 + ZIP_MZX_PROP_SIZE, fp);
 
   // (central directory only fields)
   if(is_central)
@@ -574,7 +609,13 @@ static enum zip_error zip_write_file_header(struct zip_archive *zp,
   if(!vwrite(fh->file_name, fh->file_name_length, 1, fp))
     return ZIP_WRITE_ERROR;
 
-  // Extra field (is zero bytes)
+  // Extra field
+  vputw(ZIP_MZX_PROP_MAGIC, fp);
+  vputw(ZIP_MZX_PROP_SIZE, fp);
+  vputd(fh->mzx_prop_id, fp);
+  vputw(fh->mzx_board_id, fp);
+  vputw(fh->mzx_robot_id, fp);
+
   // File commend (is zero bytes)
 
   // Check for errors.
@@ -811,12 +852,12 @@ err_out:
 }
 
 
-/* Get the filename of the next file in the archive. Only works after
+/* Get the MZX properties of the next file in the archive. Only works after
  * zip_read_directory() is called.
  */
 
-enum zip_error zip_next_file_name(struct zip_archive *zp, char *name,
- int name_buffer_size)
+enum zip_error zip_get_next_prop(struct zip_archive *zp,
+ unsigned int *prop_id, char *board_id, char *robot_id)
 {
   struct zip_file_header *fh;
   enum zip_error result;
@@ -833,14 +874,16 @@ enum zip_error zip_next_file_name(struct zip_archive *zp, char *name,
 
   fh = zp->files[zp->pos];
 
-  name_buffer_size = MIN(name_buffer_size, fh->file_name_length);
-  memcpy(name, fh->file_name, name_buffer_size);
-  name[name_buffer_size] = 0;
+  *prop_id = fh->mzx_prop_id;
+  *board_id = fh->mzx_board_id;
+  *robot_id = fh->mzx_robot_id;
 
   return ZIP_SUCCESS;
 
 err_out:
-  zip_error("zip_next_file_name", result);
+  if(result != ZIP_EOF)
+    zip_error("zip_get_next_mzx_prop", result);
+
   return result;
 }
 
@@ -851,7 +894,7 @@ err_out:
  */
 
 enum zip_error zip_read_open_file_stream(struct zip_archive *zp,
- Uint32 *destLen)
+ char *name, int name_buffer_size, Uint32 *destLen)
 {
   struct zip_file_header *central_fh;
   struct zip_file_header local_fh;
@@ -876,6 +919,14 @@ enum zip_error zip_read_open_file_stream(struct zip_archive *zp,
   }
 
   central_fh = zp->files[zp->pos];
+
+  // Copy the file name, if requested
+  if(name && name_buffer_size)
+  {
+    name_buffer_size = MIN(name_buffer_size, central_fh->file_name_length);
+    memcpy(name, central_fh->file_name, name_buffer_size);
+    name[name_buffer_size] = 0;
+  }
 
   f_crc32 = central_fh->crc32;
   c_size = central_fh->compressed_size;
@@ -1013,15 +1064,7 @@ enum zip_error zip_read_file(struct zip_archive *zp, char *name,
 
   // No need to check mode; the functions used here will
 
-  // Optional; this may have already been checked.
-  if(name)
-  {
-    result = zip_next_file_name(zp, name, name_buffer_size);
-    if(result)
-      goto err_out;
-  }
-
-  result = zip_read_open_file_stream(zp, &u_size);
+  result = zip_read_open_file_stream(zp, name, name_buffer_size, &u_size);
   if(result)
     goto err_out;
 
@@ -1255,7 +1298,9 @@ err_out:
  * write is done, the archive will be in file writing mode.
  */
 
-enum zip_error zip_write_open_file_stream(struct zip_archive *zp, char *name, int method)
+enum zip_error zip_write_open_file_stream(struct zip_archive *zp,
+ const char *name, int method, Uint32 prop_id, char board_id,
+ char robot_id)
 {
   struct zip_file_header *fh;
   char *file_name;
@@ -1271,7 +1316,7 @@ enum zip_error zip_write_open_file_stream(struct zip_archive *zp, char *name, in
   fp = zp->fp;
 
   // memfiles: make sure there's enough space for the header
-  if(zp->hasspace && !zp->hasspace(strlen(name) + 30, fp))
+  if(zp->hasspace && !zp->hasspace(strlen(name) + 30 + 4 + ZIP_MZX_PROP_SIZE, fp))
   {
     result = ZIP_ALLOC_MORE_SPACE;
     goto err_out;
@@ -1303,6 +1348,10 @@ enum zip_error zip_write_open_file_stream(struct zip_archive *zp, char *name, in
   fp = zp->fp;
 
   // Set up the header
+  fh->mzx_prop_id = prop_id;
+  fh->mzx_board_id = board_id;
+  fh->mzx_robot_id = robot_id;
+
   fh->flags = 0;
   fh->method = method;
   fh->crc32 = 0;
@@ -1366,8 +1415,10 @@ enum zip_error zip_write_close_stream(struct zip_archive *zp)
   vputd = zp->vputd;
   vseek = zp->vseek;
 
-  // Compressed data + file name + extra field length + file name length
-  seek_value = fh->compressed_size + fh->file_name_length + 2 + 2;
+  // Compressed data + file name
+  seek_value = fh->compressed_size + fh->file_name_length
+  // + extra field + extra field length + file name length
+   + (4 + ZIP_MZX_PROP_SIZE) + 2 + 2;
 
   if(vseek(fp, -12-seek_value, SEEK_CUR))
   {
@@ -1416,14 +1467,17 @@ err_out:
  * Valid methods: ZIP_M_NO_COMPRESSION, ZIP_M_DEFLATE
  */
 
-enum zip_error zip_write_file(struct zip_archive *zp, char *name, char *src,
- Uint32 srcLen, int method)
+enum zip_error zip_write_file(struct zip_archive *zp, const char *name,
+ char *src, Uint32 srcLen, int method, Uint32 prop_id, char board_id,
+ char robot_id)
 {
   enum zip_error result;
 
   // No need to check mode; the functions used here will
 
-  result = zip_write_open_file_stream(zp, name, method);
+  result = zip_write_open_file_stream(zp, name, method, prop_id, board_id,
+   robot_id);
+
   if(result)
     goto err_out;
 
@@ -1461,15 +1515,30 @@ static char eocd_sig[] = {
 
 static int _zip_header_cmp(const void *a, const void *b)
 {
+  struct zip_file_header *A = *(struct zip_file_header **)a;
+  struct zip_file_header *B = *(struct zip_file_header **)b;
+  int ab = A->mzx_board_id;
+  int bb = B->mzx_board_id;
+  int ar = A->mzx_robot_id;
+  int br = B->mzx_robot_id;
+
+  return  (ab!=bb) ? (bb-ab) :
+          (ar!=br) ? (br-ar) : B->mzx_prop_id - A->mzx_prop_id;
+}
+
+/*
+static int _zip_header_cmp(const void *a, const void *b)
+{
   return strcmp(
    (*(struct zip_file_header **)a)->file_name,
    (*(struct zip_file_header **)b)->file_name
   );
 }
+*/
 
 enum zip_error zip_read_directory(struct zip_archive *zp)
 {
-  int n, i, j;
+  int n, i;
   int result;
 
   void *fp;
@@ -1604,12 +1673,13 @@ enum zip_error zip_read_directory(struct zip_archive *zp)
   // Load central directory records
   if(n)
   {
-    struct zip_file_header **f = cmalloc(sizeof(struct zip_file_header) * n);
+    struct zip_file_header **f = cmalloc(sizeof(struct zip_file_header *) * n);
     zp->files = f;
 
+    memset(f, 0, sizeof(struct zip_file_header *)*n);
+
     // Go to the start of the central directory.
-    j = zp->vtell(fp);
-    if(vseek(fp, zp->offset_central_directory - j, SEEK_CUR))
+    if(vseek(fp, zp->offset_central_directory, SEEK_SET))
     {
       result = ZIP_SEEK_ERROR;
       goto err_out;
@@ -1637,7 +1707,7 @@ enum zip_error zip_read_directory(struct zip_archive *zp)
       goto err_out;
     }
 
-    // We want a sorted directory.
+    // We want a directory sorted by board and property criteria
     qsort(zp->files, n, sizeof(struct zip_file_header *),
      _zip_header_cmp);
   }
@@ -1754,7 +1824,8 @@ enum zip_error zip_close(struct zip_archive *zp, Uint32 *final_length)
 
   if(mode == ZIP_S_WRITE_FILES)
   {
-    int expected_size = 22 + 46*zp->num_files + zp->running_file_name_length;
+    int expected_size = 22 + (ZIP_MZX_PROP_SIZE+4+46)*zp->num_files
+     + zp->running_file_name_length;
 
     // Calculate projected file size in case more space is needed
     if(final_length)
@@ -1777,21 +1848,24 @@ enum zip_error zip_close(struct zip_archive *zp, Uint32 *final_length)
   {
     struct zip_file_header *fh = zp->files[i];
 
-    // Write the central directory
-    if(mode == ZIP_S_WRITE_FILES)
+    if(fh)
     {
-      result = zip_write_file_header(zp, fh, 1);
-      if(result)
+      // Write the central directory
+      if(mode == ZIP_S_WRITE_FILES)
       {
-        // Not much that can be done at this point.
-        mode = 0;
+        result = zip_write_file_header(zp, fh, 1);
+        if(result)
+        {
+          // Not much that can be done at this point.
+          mode = 0;
+        }
       }
+
+      if(fh->file_name)
+        free(fh->file_name);
+
+      free(fh);
     }
-
-    if(fh->file_name)
-      free(fh->file_name);
-
-    free(fh);
   }
 
   // Write the end of central directory record
@@ -1895,10 +1969,8 @@ static struct zip_archive *zip_get_archive_file(FILE *fp)
  * is called. Afterward, the archive will be in file read mode.
  */
 
-struct zip_archive *zip_open_file_read(char *file_name)
+struct zip_archive *zip_open_fp_read(FILE *fp)
 {
-  FILE *fp = fopen_unsafe(file_name, "rb");
-
   if(fp)
   {
     struct zip_archive *zp = zip_get_archive_file(fp);
@@ -1910,16 +1982,21 @@ struct zip_archive *zip_open_file_read(char *file_name)
   return NULL;
 }
 
+struct zip_archive *zip_open_file_read(const char *file_name)
+{
+  FILE *fp = fopen_unsafe(file_name, "rb");
+
+  return zip_open_fp_read(fp);
+}
+
 
 /* Open a zip archive located in a file for writing. The archive will be in
  * raw write mode, for use with zip_write(), until zip_write_file() is called.
  * Afterward, the archive will be in file write mode.
  */
 
-struct zip_archive *zip_open_file_write(char *file_name)
+struct zip_archive *zip_open_fp_write(FILE *fp)
 {
-  FILE *fp = fopen_unsafe(file_name, "wb");
-
   if(fp)
   {
     struct zip_archive *zp = zip_get_archive_file(fp);
@@ -1930,6 +2007,13 @@ struct zip_archive *zip_open_file_write(char *file_name)
   }
 
   return NULL;
+}
+
+struct zip_archive *zip_open_file_write(const char *file_name)
+{
+  FILE *fp = fopen_unsafe(file_name, "wb");
+
+  return zip_open_fp_write(fp);
 }
 
 
@@ -2070,19 +2154,20 @@ void zip_test(struct world *mzx_world)
   enum zip_error result = 0;
 
   // Read an arbitrary zip from file
-  zp = zip_open_file_read((char *)"_mzmstrings.zip");
+  zp = zip_open_file_read("_mzmstrings.zip");
 
   if(zread(name, len, zp) == ZIP_SUCCESS)
   {
     name[31] = 0;
     debug("Some raw data: %s\n", name);
   }
-  if(!zip_read_directory(zp))
+  result = zip_read_directory(zp);
+  if(result == ZIP_SUCCESS)
   {
     while(1)
     {
       result = zip_read_file(zp, name, 31, &data, &len);
-      if(result)
+      if(result != ZIP_SUCCESS)
       {
         if(result == ZIP_EOF)
           debug("No more files.\n");
@@ -2111,7 +2196,7 @@ void zip_test(struct world *mzx_world)
   //debug("(note: writing raw data to throw off the calculated bound)\n");
   //zip_write(zp, name, len);
 
-  zip_write_file(zp, name, name, len, ZIP_M_NO_COMPRESSION);
+  zip_write_file(zp, name, name, len, ZIP_M_NO_COMPRESSION, 0, 0, 0);
 
   result = zip_close(zp, &zip_len);
   if(result == ZIP_ALLOC_MORE_SPACE)
@@ -2135,9 +2220,7 @@ void zip_test(struct world *mzx_world)
   zp = zip_open_mem_read(zip_file, zip_len);
   if(!zip_read_directory(zp))
   {
-    zip_next_file_name(zp, name, 31);
-
-    result = zip_read_open_file_stream(zp, &len);
+    result = zip_read_open_file_stream(zp, name, 31, &len);
     if(!result)
     {
       char *pos;
@@ -2163,7 +2246,7 @@ void zip_test(struct world *mzx_world)
 
   // Write a zip to file
   zp = zip_open_file_write((char *)"output.zip");
-  zip_write_file(zp, name, data, len, ZIP_M_DEFLATE);
+  zip_write_file(zp, name, data, len, ZIP_M_DEFLATE, 0, 0, 0);
   zip_close(zp, NULL);
   printf("\n");
 

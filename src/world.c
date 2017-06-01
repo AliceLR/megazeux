@@ -149,6 +149,18 @@ int save_magic(const char magic_string[5])
   }
 }
 
+
+enum world_prop
+{
+  WPROP_EOF                       = 0x0000,
+  WPROP_WORLD_NAME                = 0x0001,
+  WPROP_WORLD_VERSION             = 0x0002,
+
+  WPROP_SAVE_VERSION              = 0x0010,
+  WPROP_STARTING_BOARD            = 0x0011,
+  WPROP_
+};
+
 // NEW SPRITE VARS:  spr#_unbound (is in the flags already), spr#_tcol (int, spr->transparent_color)
 
 int save_world(struct world *mzx_world, const char *file, int savegame)

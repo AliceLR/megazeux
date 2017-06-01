@@ -72,6 +72,9 @@ enum zip_error {
 
 struct zip_file_header
 {
+  Uint32 mzx_prop_id;
+  Uint8 mzx_board_id;
+  Uint8 mzx_robot_id;
   Uint16 flags;
   Uint16 method;
   Uint32 crc32;
@@ -133,10 +136,12 @@ int zgetw(struct zip_archive *zp, enum zip_error *err);
 int zgetd(struct zip_archive *zp, enum zip_error *err);
 enum zip_error zread(char *destBuf, Uint32 readLen, struct zip_archive *zp);
 
-enum zip_error zip_next_file_name(struct zip_archive *zp, char *name,
- int name_buffer_size);
+enum zip_error zip_get_next_prop(struct zip_archive *zp,
+ Uint32 *prop_id, char *board_id, char *robot_id);
+
 enum zip_error zip_read_open_file_stream(struct zip_archive *zp,
- Uint32 *destLen);
+ char *name, int name_buffer_size, Uint32 *destLen);
+
 enum zip_error zip_read_close_stream(struct zip_archive *zp);
 
 enum zip_error zip_read_file(struct zip_archive *zp, char *name,
@@ -147,18 +152,23 @@ enum zip_error zputw(int value, struct zip_archive *zp);
 enum zip_error zputd(int value, struct zip_archive *zp);
 enum zip_error zwrite(char *src, Uint32 srcLen, struct zip_archive *zp);
 
-enum zip_error zip_write_open_file_stream(struct zip_archive *zp, char *name,
- int method);
+enum zip_error zip_write_open_file_stream(struct zip_archive *zp,
+ const char *name, int method, Uint32 prop_id, char board_id,
+ char robot_id);
+
 enum zip_error zip_write_close_stream(struct zip_archive *zp);
 
-enum zip_error zip_write_file(struct zip_archive *zp, char *name, char *src,
- Uint32 srcLen, int method);
+enum zip_error zip_write_file(struct zip_archive *zp, const char *name,
+ char *src, Uint32 srcLen, int method, Uint32 prop_id, char board_id,
+ char robot_id);
 
 enum zip_error zip_read_directory(struct zip_archive *zp);
 enum zip_error zip_close(struct zip_archive *zp, Uint32 *final_length);
 
-struct zip_archive *zip_open_file_read(char *file_name);
-struct zip_archive *zip_open_file_write(char *file_name);
+struct zip_archive *zip_open_fp_read(FILE *fp);
+struct zip_archive *zip_open_fp_write(FILE *fp);
+struct zip_archive *zip_open_file_read(const char *file_name);
+struct zip_archive *zip_open_file_write(const char *file_name);
 struct zip_archive *zip_open_mem_read(char *src, Uint32 len);
 struct zip_archive *zip_open_mem_write(char *src, Uint32 len);
 
