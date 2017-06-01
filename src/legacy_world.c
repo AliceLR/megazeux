@@ -341,19 +341,7 @@ int legacy_save_world(struct world *mzx_world, const char *file, int savegame)
       if(len)
         fwrite(mzx_world->input_file_name, len, 1, fp);
     }
-
-    if(!mzx_world->input_is_dir && mzx_world->input_file)
-    {
-      fputd(ftell(mzx_world->input_file), fp);
-    }
-    else if(mzx_world->input_is_dir)
-    {
-      fputd(dir_tell(&mzx_world->input_directory), fp);
-    }
-    else
-    {
-      fputd(0, fp);
-    }
+    fputd(mzx_world->temp_input_pos, fp);
 
     // Write output file name and if open, position
     {
@@ -362,15 +350,7 @@ int legacy_save_world(struct world *mzx_world, const char *file, int savegame)
       if(len)
         fwrite(mzx_world->output_file_name, len, 1, fp);
     }
-
-    if(mzx_world->output_file)
-    {
-      fputd(ftell(mzx_world->output_file), fp);
-    }
-    else
-    {
-      fputd(0, fp);
-    }
+    fputd(mzx_world->temp_output_pos, fp);
 
     fputw(get_screen_mode(), fp);
 
@@ -1145,9 +1125,6 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
       j++;
     }
 
-    // Setup gateway functions
-    initialize_gateway_functions(mzx_world);
-
     // Read strings
     num_strings = fgetd(fp);
     mzx_world->num_strings = num_strings;
@@ -1214,6 +1191,7 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
     mzx_world->bi_shoot_status = fgetc(fp);
     mzx_world->bi_mesg_status = fgetc(fp);
 
+    // Load input file name, open later
     {
       size_t len = fgetw(fp);
       if(len >= MAX_PATH)
@@ -1222,42 +1200,9 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
       fread(mzx_world->input_file_name, len, 1, fp);
       mzx_world->input_file_name[len] = 0;
     }
+    mzx_world->temp_input_pos = fgetd(fp);
 
-    if(mzx_world->input_file_name[0])
-    {
-      char *translated_path = cmalloc(MAX_PATH);
-      int err;
-
-      mzx_world->input_is_dir = false;
-
-      err = fsafetranslate(mzx_world->input_file_name, translated_path);
-      if(err == -FSAFE_MATCHED_DIRECTORY)
-      {
-        if(dir_open(&mzx_world->input_directory, translated_path))
-        {
-          dir_seek(&mzx_world->input_directory, fgetd(fp));
-          mzx_world->input_is_dir = true;
-        }
-        else
-          fseek(fp, 4, SEEK_CUR);
-      }
-      else if(err == -FSAFE_SUCCESS)
-      {
-        mzx_world->input_file = fopen_unsafe(translated_path, "rb");
-        if(mzx_world->input_file)
-          fseek(mzx_world->input_file, fgetd(fp), SEEK_SET);
-        else
-          fseek(fp, 4, SEEK_CUR);
-      }
-
-      free(translated_path);
-    }
-    else
-    {
-      fseek(fp, 4, SEEK_CUR);
-    }
-
-    // Load ouput file name, open
+    // Load output file name, open later
     {
       size_t len = fgetw(fp);
       if(len >= MAX_PATH)
@@ -1266,25 +1211,7 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
       fread(mzx_world->output_file_name, len, 1, fp);
       mzx_world->output_file_name[len] = 0;
     }
-
-    if(mzx_world->output_file_name[0])
-    {
-      mzx_world->output_file =
-       fsafeopen(mzx_world->output_file_name, "ab");
-
-      if(mzx_world->output_file)
-      {
-        fseek(mzx_world->output_file, fgetd(fp), SEEK_SET);
-      }
-      else
-      {
-        fseek(fp, 4, SEEK_CUR);
-      }
-    }
-    else
-    {
-      fseek(fp, 4, SEEK_CUR);
-    }
+    mzx_world->temp_output_pos = fgetd(fp);
 
     screen_mode = fgetw(fp);
 

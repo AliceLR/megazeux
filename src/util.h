@@ -151,8 +151,8 @@ CORE_LIBSPEC int memsafegets(char *dest, int size, char **src, char *end);
 
 struct memfile
 {
-  char *start;
   char *current;
+  char *start;
   char *end;
 };
 

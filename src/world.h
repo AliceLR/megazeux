@@ -34,6 +34,7 @@ __M_BEGIN_DECLS
 #include "counter.h"
 #include "sprite.h"
 #include "sfx.h"
+#include "util.h"
 #include "configure.h"
 
 /* When making new versions, change the number below, and
@@ -116,7 +117,7 @@ __M_BEGIN_DECLS
 
 enum file_prop
 {
-  FPROP_IGNORE                = 0x0000,
+  FPROP_NONE                  = 0x0000,
   FPROP_WORLD_INFO            = 0x0010, // properties file
   FPROP_WORLD_CHARS           = 0x0020, // data, 3584
   FPROP_WORLD_PAL             = 0x0030, // data, 768
@@ -129,6 +130,7 @@ enum file_prop
   FPROP_WORLD_GLOBAL_ROBOT    = 0x0090, // properties file
   FPROP_WORLD_COUNTERS        = 0x00A0, // special format, use stream
   FPROP_WORLD_STRINGS         = 0x00B0, // special format, use stream
+  FPROP_WORLD_BOARD_NAMES     = 0x00C0, // properties file
 
   FPROP_BOARD_INFO            = 0x0100, // properties file (board_id)
   FPROP_BOARD_BID             = 0x0200, // data
@@ -170,10 +172,13 @@ CORE_LIBSPEC void default_scroll_values(struct world *mzx_world);
 bool reload_savegame(struct world *mzx_world, const char *file, int *faded);
 bool reload_swap(struct world *mzx_world, const char *file, int *faded);
 
+int next_prop(struct memfile *prop, int *identifier, int *length,
+ struct memfile *mf);
+
 #ifdef CONFIG_LOADSAVE_METER
-void meter_update_screen(int *curr, int target) {}
-void meter_restore_screen(void) {}
-void meter_initial_draw(int curr, int target, const char *title) {}
+void meter_update_screen(int *curr, int target);
+void meter_restore_screen(void);
+void meter_initial_draw(int curr, int target, const char *title);
 #endif
 
 #ifdef CONFIG_EDITOR

@@ -1523,7 +1523,7 @@ static int _zip_header_cmp(const void *a, const void *b)
   int br = B->mzx_robot_id;
 
   return  (ab!=bb) ? (bb-ab) :
-          (ar!=br) ? (br-ar) : B->mzx_prop_id - A->mzx_prop_id;
+          (ar!=br) ? (br-ar) : (int)B->mzx_prop_id - (int)A->mzx_prop_id;
 }
 
 /*

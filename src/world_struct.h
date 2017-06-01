@@ -122,6 +122,8 @@ struct world
   FILE *input_file;
   bool input_is_dir;
   struct mzx_dir input_directory;
+  int temp_input_pos;
+  int temp_output_pos;
   int commands;
   int vlayer_size;
   int vlayer_width;

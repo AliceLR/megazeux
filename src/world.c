@@ -84,6 +84,197 @@ inline void meter_initial_draw(int curr, int target, const char *title) {}
 #endif //CONFIG_LOADSAVE_METER
 
 
+#define PROP_HEADER_SIZE 4
+
+// IF YOU ADD ANYTHING, MAKE SURE THIS GETS UPDATED!
+#define COUNT_WORLD_PROPS ( 2 +   4 + 16)
+#define BOUND_WORLD_PROPS (27 + 455 + 24)
+
+#define COUNT_SAVE_PROPS  ( 2 +   4 +   24)
+#define BOUND_SAVE_PROPS  ( 3 +   9 + 1631)
+
+enum world_prop
+{
+  WPROP_EOF                       = 0x0000,
+
+  // Header redundant properties      2 (4)     27  (30)
+  WPROP_WORLD_NAME                = 0x0001, //  25
+  WPROP_WORLD_VERSION             = 0x0002, //   2
+  WPROP_SAVE_VERSION              = 0x0003, //       (2)
+  WPROP_SAVE_START_BOARD          = 0x0004, //       (1)
+
+  // ID Chars                            4     455
+  WPROP_ID_CHARS                  = 0x0010, // 323
+  WPROP_ID_MISSILE_COLOR          = 0x0011, //   1
+  WPROP_ID_BULLET_COLOR           = 0x0012, //   3
+  WPROP_ID_DMG                    = 0x0013, // 128
+
+  // Status counters  1  COUNTER_NAME_SIZE * NUM_STATUS_COUNTERS
+  WPROP_STATUS_COUNTERS           = 0x0020,
+
+  // Global properties                  16      24
+  WPROP_EDGE_COLOR                = 0x0030, //   1
+  WPROP_FIRST_BOARD               = 0x0031, //   1
+  WPROP_ENDGAME_BOARD             = 0x0032, //   1
+  WPROP_DEATH_BOARD               = 0x0033, //   1
+  WPROP_ENDGAME_X                 = 0x0034, //   2
+  WPROP_ENDGAME_Y                 = 0x0035, //   2
+  WPROP_GAME_OVER_SFX             = 0x0036, //   1
+  WPROP_DEATH_X                   = 0x0037, //   2
+  WPROP_DEATH_Y                   = 0x0038, //   2
+  WPROP_STARTING_LIVES            = 0x0039, //   2
+  WPROP_LIVES_LIMIT               = 0x003A, //   2
+  WPROP_STARTING_HEALTH           = 0x003B, //   2
+  WPROP_HEALTH_LIMIT              = 0x003C, //   2
+  WPROP_ENEMY_HURT_ENEMY          = 0x003D, //   1
+  WPROP_CLEAR_ON_EXIT             = 0x003E, //   1
+  WPROP_ONLY_FROM_SWAP            = 0x003F, //   1
+
+  // Temporarily save-only               4       9
+  WPROP_SMZX_MODE                 = 0x4000, //   1
+  WPROP_VLAYER_WIDTH              = 0x4001, //   2
+  WPROP_VLAYER_HEIGHT             = 0x4002, //   2
+  WPROP_VLAYER_SIZE               = 0x4003, //   4
+
+  // Save properties                    24    1631 + NUM_KEYS
+  WPROP_REAL_MOD_PLAYING          = 0x8000, // 512
+  WPROP_MZX_SPEED                 = 0x8010, //   1
+  WPROP_LOCK_SPEED                = 0x8011, //   1
+  WPROP_COMMANDOS                 = 0x8012, //   4
+  WPROP_SAVED_POSITIONS           = 0x8020, //  40 (2+2+1)*8
+  WPROP_PLAYER_RESTART_X          = 0x8021, //   2
+  WPROP_PLAYER_RESTARY_Y          = 0x8022, //   2
+  WPROP_SAVED_PL_COLOR            = 0x8030, //   1
+  WPROP_UNDER_PLAYER              = 0x8031, //   3 (1+1+1)
+  WPROP_KEYS                      = 0x8040, // NUM_KEYS
+  WPROP_DURATIONS                 = 0x8050, //   5 (1+1+1+1+1)
+  WPROP_SCROLL_COLS               = 0x8060, //   5 (1+1+1+1+1)
+  WPROP_MESG_EDGES                = 0x8070, //   1
+  WPROP_MULTIPLIER                = 0x8080, //   4
+  WPROP_DIVIDER                   = 0x8081, //   4
+  WPROP_C_DIVISIONS               = 0x8082, //   4
+  WPROP_INPUT_FILE_NAME           = 0x8090, // 512
+  WPROP_INPUT_POS                 = 0x8094, //   4
+  WPROP_FREAD_DELIMITER           = 0x8095, //   4
+  WPROP_OUTPUT_FILE_NAME          = 0x8098, // 512
+  WPROP_OUTPUT_POS                = 0x809C, //   4
+  WPROP_FWRITE_DELIMITER          = 0x809D, //   4
+  WPROP_BI_SHOOT_STATUS           = 0x80A0, //   1
+  WPROP_BI_MESG_STATUS            = 0x80A1, //   1
+};
+
+static inline int world_prop_file_size(void)
+{
+  return (BOUND_WORLD_PROPS + PROP_HEADER_SIZE * COUNT_WORLD_PROPS) + 2;
+}
+
+static inline int save_prop_extra_file_size(void)
+{
+  return (BOUND_SAVE_PROPS + PROP_HEADER_SIZE * COUNT_SAVE_PROPS) + 2;
+}
+
+
+#define COUNT_SPRITE_PROPS 13
+#define BOUND_SPRITE_PROPS 20
+
+enum sprite_prop
+{
+  SPROP_EOF               = 0x00,
+  SPROP_X                 = 0x10, // 2
+  SPROP_Y                 = 0x11, // 2
+  SPROP_REF_X             = 0x20, // 2
+  SPROP_REF_Y             = 0x21, // 2
+  SPROP_COLOR             = 0x30, // 1
+  SPROP_FLAGS             = 0x40, // 1
+  SPROP_WIDTH             = 0x50, // 1
+  SPROP_HEIGHT            = 0x51, // 1
+  SPROP_COL_X             = 0x60, // 1
+  SPROP_COL_Y             = 0x61, // 1
+  SPROP_COL_WIDTH         = 0x70, // 1
+  SPROP_COL_HEIGHT        = 0x71, // 1
+  SPROP_TRANSPARENT_COLOR = 0x80, // 4
+};
+
+static inline int sprite_prop_file_size(void)
+{
+  return
+   (BOUND_SPRITE_PROPS + PROP_HEADER_SIZE * COUNT_SPRITE_PROPS)
+   * MAX_SPRITES + 2;
+}
+
+
+// This function is used to save properties files in world loading.
+// There are no safety checks here. USE THE BOUNDING FUNCTIONS WHEN ALLOCATING.
+static inline void save_prop_eof(struct memfile *mf)
+{
+  mfputw(0, mf);
+}
+
+static inline void save_prop_c(int ident, int value, struct memfile *mf)
+{
+  mfputw(ident, mf);
+  mfputw(1, mf);
+  mfputc(value, mf);
+}
+
+static inline void save_prop_w(int ident, int value, struct memfile *mf)
+{
+  mfputw(ident, mf);
+  mfputw(2, mf);
+  mfputw(value, mf);
+}
+
+static inline void save_prop_d(int ident, int value, struct memfile *mf)
+{
+  mfputw(ident, mf);
+  mfputw(4, mf);
+  mfputd(value, mf);
+}
+
+static inline void save_prop_m(int ident, void *src, size_t len, size_t count,
+ struct memfile *mf)
+{
+  mfputw(ident, mf);
+  mfputw(len * count, mf);
+  mfwrite(src, len, count, mf);
+}
+
+// This function is used to read properties files in world loading.
+int next_prop(struct memfile *prop, int *ident, int *length,
+ struct memfile *mf)
+{
+  char *end = mf->end;
+  char *cur;
+  int len;
+  int id;
+
+  if((end - mf->current)<PROP_HEADER_SIZE)
+  {
+    *ident = 0;
+    return 0;
+  }
+
+  id = mfgetw(mf);
+  len = mfgetw(mf);
+  cur = mf->current;
+
+  if((end - cur)<len)
+  {
+    *ident = 0;
+    return 0;
+  }
+
+  *ident = id;
+  *length = len;
+  prop->current = cur;
+  prop->start = cur;
+  prop->end = cur + len;
+
+  mf->current += len;
+  return 1;
+}
+
+
 int world_magic(const char magic_string[3])
 {
   if(magic_string[0] == 'M')
@@ -149,20 +340,6 @@ int save_magic(const char magic_string[5])
   }
 }
 
-
-enum world_prop
-{
-  WPROP_EOF                       = 0x0000,
-  WPROP_WORLD_NAME                = 0x0001,
-  WPROP_WORLD_VERSION             = 0x0002,
-
-  WPROP_SAVE_VERSION              = 0x0010,
-  WPROP_STARTING_BOARD            = 0x0011,
-  WPROP_
-};
-
-// NEW SPRITE VARS:  spr#_unbound (is in the flags already), spr#_tcol (int, spr->transparent_color)
-
 int save_world(struct world *mzx_world, const char *file, int savegame)
 {
 #ifdef CONFIG_DEBYTECODE
@@ -193,6 +370,30 @@ int save_world(struct world *mzx_world, const char *file, int savegame)
     }
   }
 #endif
+
+  // Prepare input pos
+  if(!mzx_world->input_is_dir && mzx_world->input_file)
+  {
+    mzx_world->temp_input_pos = ftell(mzx_world->input_file);
+  }
+  else if(mzx_world->input_is_dir)
+  {
+    mzx_world->temp_input_pos = dir_tell(&mzx_world->input_directory);
+  }
+  else
+  {
+    mzx_world->temp_input_pos = 0;
+  }
+
+  // Prepare output pos
+  if(mzx_world->output_file)
+  {
+    mzx_world->temp_output_pos = ftell(mzx_world->output_file);
+  }
+  else
+  {
+    mzx_world->temp_output_pos = 0;
+  }
 
   // FIXME save_world_zip
   return legacy_save_world(mzx_world, file, savegame);
@@ -459,6 +660,9 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
   // Update the palette  
   update_palette();
 
+  // Setup gateway functions
+  initialize_gateway_functions(mzx_world);
+
 #ifdef CONFIG_DEBYTECODE
   // Convert SFX strings if needed
   if(version < VERSION_PROGRAM_SOURCE)
@@ -470,6 +674,43 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
       convert_sfx_strs(sfx_offset);
   }
 #endif
+
+  // Open input file
+  if(mzx_world->input_file_name[0])
+  {
+    char translated_path[MAX_PATH];
+    int err;
+
+    mzx_world->input_is_dir = false;
+
+    err = fsafetranslate(mzx_world->input_file_name, translated_path);
+    if(err == -FSAFE_MATCHED_DIRECTORY)
+    {
+      if(dir_open(&mzx_world->input_directory, translated_path))
+      {
+        dir_seek(&mzx_world->input_directory, mzx_world->temp_input_pos);
+        mzx_world->input_is_dir = true;
+      }
+    }
+    else if(err == -FSAFE_SUCCESS)
+    {
+      mzx_world->input_file = fopen_unsafe(translated_path, "rb");
+      if(mzx_world->input_file)
+        fseek(mzx_world->input_file, mzx_world->temp_input_pos, SEEK_SET);
+    }
+  }
+
+  // Open output file
+  if(mzx_world->output_file_name[0])
+  {
+    mzx_world->output_file =
+     fsafeopen(mzx_world->output_file_name, "ab");
+
+    if(mzx_world->output_file)
+    {
+      fseek(mzx_world->output_file, mzx_world->temp_output_pos, SEEK_SET);
+    }
+  }
 
   // This pointer is now invalid. Clear it before we try to
   // send it back to extra RAM.
