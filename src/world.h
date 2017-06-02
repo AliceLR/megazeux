@@ -118,35 +118,37 @@ __M_BEGIN_DECLS
 enum file_prop
 {
   FPROP_NONE                  = 0x0000,
-  FPROP_WORLD_INFO            = 0x0010, // properties file
-  FPROP_WORLD_CHARS           = 0x0020, // data, 3584
-  FPROP_WORLD_PAL             = 0x0030, // data, 768
-  FPROP_WORLD_PAL_INTENSITY   = 0x0035, // data, 256
-  FPROP_WORLD_PAL_INDEX       = 0x003A, // data, 1024
-  FPROP_WORLD_SFX             = 0x0040, // plaintext
-  FPROP_WORLD_SPRITES         = 0x0050, // properties file
+  FPROP_WORLD_INFO            = 0x0001, // properties file
+  FPROP_WORLD_PATH            = 0x0002, // plaintext
+  FPROP_WORLD_GLOBAL_ROBOT    = 0x0004, // properties file
+  FPROP_WORLD_STAT_COUNTERS   = 0x0005, // plaintext, NUM_STATUS_COUNTERS * COUNTER_NAME_SIZE
+  FPROP_WORLD_SFX             = 0x0006, // plaintext, NUM_SFX * 69
+  FPROP_WORLD_BOARD_NAMES     = 0x0007, // plaintext, mzx_world->num_boards * BOARD_NAME_SIZE
+  FPROP_WORLD_CHARS           = 0x000A, // data, 3584
+  FPROP_WORLD_PAL             = 0x000C, // data, SMZX_PAL_SIZE * 3
+  FPROP_WORLD_PAL_INDEX       = 0x000D, // data, 1024
+  FPROP_WORLD_PAL_INTENSITY   = 0x000E, // data, SMZX_PAL_SIZE * 1
+
   FPROP_WORLD_VCO             = 0x0080, // data
   FPROP_WORLD_VCH             = 0x0081, // data
-  FPROP_WORLD_GLOBAL_ROBOT    = 0x0090, // properties file
-  FPROP_WORLD_COUNTERS        = 0x00A0, // special format, use stream
-  FPROP_WORLD_STRINGS         = 0x00B0, // special format, use stream
-  FPROP_WORLD_BOARD_NAMES     = 0x00C0, // properties file
+  FPROP_WORLD_SPRITES         = 0x0084, // properties file
+  FPROP_WORLD_COUNTERS        = 0x0085, // counter format, use stream
+  FPROP_WORLD_STRINGS         = 0x0086, // string format, use stream
 
   FPROP_BOARD_INFO            = 0x0100, // properties file (board_id)
-  FPROP_BOARD_BID             = 0x0200, // data
-  FPROP_BOARD_BCO             = 0x0210, // data
-  FPROP_BOARD_BCH             = 0x0220, // data
-  FPROP_BOARD_UID             = 0x0300, // data
-  FPROP_BOARD_UCO             = 0x0310, // data
-  FPROP_BOARD_UCH             = 0x0320, // data
-  FPROP_BOARD_OCO             = 0x0400, // data
-  FPROP_BOARD_OCH             = 0x0410, // data
+  FPROP_BOARD_BID             = 0x0101, // data
+  FPROP_BOARD_BCO             = 0x0102, // data
+  FPROP_BOARD_BCH             = 0x0103, // data
+  FPROP_BOARD_UID             = 0x0104, // data
+  FPROP_BOARD_UCO             = 0x0105, // data
+  FPROP_BOARD_UCH             = 0x0106, // data
+  FPROP_BOARD_OCO             = 0x0107, // data
+  FPROP_BOARD_OCH             = 0x0108, // data
 
   FPROP_ROBOT_INFO            = 0x1000, // properties file (board_id + robot_id)
   FPROP_SCROLL                = 0x2000, // properties file (board_id + robot_id)
   FPROP_SENSOR_INFO           = 0x3000  // properties file (board_id + robot_id)
 };
-
 
 enum val_result
 {
@@ -171,6 +173,9 @@ CORE_LIBSPEC void default_scroll_values(struct world *mzx_world);
 
 bool reload_savegame(struct world *mzx_world, const char *file, int *faded);
 bool reload_swap(struct world *mzx_world, const char *file, int *faded);
+
+void save_counters_file(struct world *mzx_world, const char *file);
+int load_counters_file(struct world *mzx_world, const char *file);
 
 int next_prop(struct memfile *prop, int *identifier, int *length,
  struct memfile *mf);

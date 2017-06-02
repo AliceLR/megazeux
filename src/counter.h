@@ -41,6 +41,8 @@ CORE_LIBSPEC int set_string(struct world *mzx_world, const char *name,
 CORE_LIBSPEC void set_string_raw(struct world *mzx_world, const void *buffer,
  size_t len, struct string *src, int id);
 CORE_LIBSPEC void counter_fsg(void);
+CORE_LIBSPEC void new_counter(struct world *mzx_world, const char *name,
+ int value, int id);
 CORE_LIBSPEC struct string *new_string(struct world *mzx_world, const char *name,
  size_t length, int id);
 
@@ -66,6 +68,11 @@ bool is_string(char *buffer);
 struct counter *load_new_counter(const char *name, int name_length, int value);
 struct string *load_new_string(const char *name, int name_length,
  int str_length);
+
+void load_set_counter(struct world *mzx_world, const char *name,
+ int name_length, int value);
+struct string *load_set_string(struct world *mzx_world, const char *name,
+ int name_length, int str_length);
 
 void free_counter_list(struct counter **counter_list, int num_counters);
 void free_string_list(struct string **string_list, int num_strings);

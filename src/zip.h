@@ -27,7 +27,7 @@ __M_BEGIN_DECLS
 #include "platform.h"
 #include "world_struct.h"
 
-#define ZIP_M_NO_COMPRESSION 0
+#define ZIP_M_NONE 0
 #define ZIP_M_DEFLATE 8
 
 #define ZIP_F_DATA_DESCRIPTOR 1<<3
@@ -106,6 +106,13 @@ struct zip_archive
   Uint32 start_in_file;
   Uint32 end_in_file;
 
+  enum zip_error read_raw_error;
+  enum zip_error read_file_error;
+  enum zip_error read_stream_error;
+  enum zip_error write_raw_error;
+  enum zip_error write_file_error;
+  enum zip_error write_stream_error;
+
   void *fp;
 
   int (*hasspace)(size_t, void *);
@@ -118,7 +125,7 @@ struct zip_archive
   void (*vputd)(int, void *);
 
   int (*vread)(void *, size_t, size_t, void *);
-  int (*vwrite)(void *, size_t, size_t, void *);
+  int (*vwrite)(const void *, size_t, size_t, void *);
 
   int (*vseek)(void *, int, int);
   int (*vtell)(void *);
@@ -144,13 +151,14 @@ enum zip_error zip_read_open_file_stream(struct zip_archive *zp,
 
 enum zip_error zip_read_close_stream(struct zip_archive *zp);
 
+enum zip_error zip_skip_file(struct zip_archive *zp);
 enum zip_error zip_read_file(struct zip_archive *zp, char *name,
  int name_buffer_size, char **dest, Uint32 *destLen);
 
 enum zip_error zputc(int value, struct zip_archive *zp);
 enum zip_error zputw(int value, struct zip_archive *zp);
 enum zip_error zputd(int value, struct zip_archive *zp);
-enum zip_error zwrite(char *src, Uint32 srcLen, struct zip_archive *zp);
+enum zip_error zwrite(const char *src, Uint32 srcLen, struct zip_archive *zp);
 
 enum zip_error zip_write_open_file_stream(struct zip_archive *zp,
  const char *name, int method, Uint32 prop_id, char board_id,

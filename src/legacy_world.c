@@ -115,7 +115,7 @@ static inline void legacy_save_string(FILE *fp, struct string *src_string)
 
 int legacy_save_world(struct world *mzx_world, const char *file, int savegame)
 {
-  int file_version = WORLD_LEGACY_FORMAT_VERSION;
+  int file_version = WORLD_VERSION;// WORLD_LEGACY_FORMAT_VERSION; FIXME
 
   int i, num_boards;
   int gl_rob_position, gl_rob_save_position;
@@ -273,12 +273,14 @@ int legacy_save_world(struct world *mzx_world, const char *file, int savegame)
       legacy_save_counter(fp, mzx_world->counter_list[i]);
     }
 
+    // Stupid hack
     mzx_speed = malloc(sizeof(struct counter) + sizeof("mzx_speed") - 1);
     mzx_speed->value = mzx_world->mzx_speed;
     strcpy(mzx_speed->name, "mzx_speed");
     legacy_save_counter(fp, mzx_speed);
     free(mzx_speed);
 
+    // another stupid hack
     lock_speed = malloc(sizeof(struct counter) + sizeof("_____lock_speed") - 1);
     lock_speed->value = mzx_world->lock_speed;
     strcpy(lock_speed->name, "_____lock_speed");

@@ -46,6 +46,10 @@ FEATURES
   the ? and the : will be evaluated. If the value to the left of
   ? is equal to zero, the expression to the right of : will be
   evaluated.
++ Added SAVE_COUNTERS and LOAD_COUNTERS special counters. These
+  will save and load files containing every counter and string
+  from the world they're used in, respectively. These files are
+  not version checked, and may be used like save files.
 
 + Debytecode: the LOAD_SOURCE_FILE special counter can now be
   used to load and compile a robot program from source code.

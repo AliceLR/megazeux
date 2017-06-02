@@ -1592,6 +1592,20 @@ static int save_world_read(struct world *mzx_world,
   return 0;
 }
 
+static int load_counters_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  mzx_world->special_counter_return = FOPEN_LOAD_COUNTERS;
+  return 0;
+}
+
+static int save_counters_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  mzx_world->special_counter_return = FOPEN_SAVE_COUNTERS;
+  return 0;
+}
+
 static int load_robot_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
@@ -2533,6 +2547,7 @@ static const struct function_counter builtin_counters[] =
   { "key_release", 0x0245, key_release_read, NULL },                 // 2.69
   { "lava_walk", 0x0209, lava_walk_read, lava_walk_write },          // 2.60
   { "load_bc?", 0x0249, load_bc_read, NULL },                        // 2.70
+  { "load_counters", 0x0255, load_counters_read, NULL },             // 2.85
   { "load_game", 0x0244, load_game_read, NULL },                     // 2.68
   { "load_robot?", 0x0249, load_robot_read, NULL },                  // 2.70
 #ifdef CONFIG_DEBYTECODE
@@ -2570,6 +2585,7 @@ static const struct function_counter builtin_counters[] =
   { "robot_id", 0x0209, robot_id_read, NULL },                       // 2.60
   { "robot_id_*", 0x0241, robot_id_n_read, NULL },                   // 2.65
   { "save_bc?", 0x0249, save_bc_read, NULL },                        // 2.70
+  { "save_counters", 0x0255, save_counters_read, NULL},              // 2.85
   { "save_game", 0x0244, save_game_read, NULL },                     // 2.68
   { "save_robot?", 0x0249, save_robot_read, NULL },                  // 2.70
   { "save_world", 0x0248, save_world_read, NULL },                   // 2.69c
@@ -2787,6 +2803,32 @@ int set_counter_special(struct world *mzx_world, char *char_value,
         load_palette(translated_path);
         pal_update = true;
       }
+
+      free(translated_path);
+      break;
+    }
+
+    case FOPEN_SAVE_COUNTERS:
+    {
+      char *translated_path = cmalloc(MAX_PATH);
+      int err;
+
+      err = fsafetranslate(char_value, translated_path);
+      if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
+        save_counters_file(mzx_world, translated_path);
+
+      free(translated_path);
+      break;
+    }
+
+    case FOPEN_LOAD_COUNTERS:
+    {
+      char *translated_path = cmalloc(MAX_PATH);
+      int err;
+
+      err = fsafetranslate(char_value, translated_path);
+      if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
+        load_counters_file(mzx_world, translated_path);
 
       free(translated_path);
       break;
@@ -4056,6 +4098,32 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
   return 0;
 }
 
+// Creates a new counter if it doesn't already exist; otherwise, sets the
+// old counter's value. Basically, set_string without the function check.
+void new_counter(struct world *mzx_world, const char *name, int value, int id)
+{
+  struct counter *cdest;
+  int next;
+
+  cdest = find_counter(mzx_world, name, &next);
+
+  if(cdest)
+  {
+    // See if there's a gateway
+    if(cdest->gateway_write)
+    {
+      value = cdest->gateway_write(mzx_world, cdest, name, value, id);
+    }
+
+    cdest->value = value;
+  }
+
+  else
+  {
+    add_counter(mzx_world, name, value, next);
+  }
+}
+
 // Creates a new string if it doesn't already exist; otherwise, resizes
 // the string to the provided length
 struct string *new_string(struct world *mzx_world, const char *name,
@@ -4530,7 +4598,7 @@ void counter_fsg(void)
   }
 }
 
-// Create a new counter from loading a save file
+// Create a new counter from loading a save file. This skips find_counter.
 struct counter *load_new_counter(const char *name, int name_length, int value)
 {
   struct counter *src_counter =
@@ -4551,7 +4619,7 @@ struct counter *load_new_counter(const char *name, int name_length, int value)
   return src_counter;
 }
 
-// Create a new string from loading a save file
+// Create a new string from loading a save file. This skips find_string.
 struct string *load_new_string(const char *name, int name_length,
  int str_length)
 {
