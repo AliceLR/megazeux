@@ -34,12 +34,14 @@ struct sprite
   int ref_y;
   char color;
   char flags;
-  char width;
-  char height;
-  signed char col_x;
-  signed char col_y;
-  char col_width;
-  char col_height;
+  unsigned int width;
+  unsigned int height;
+  signed int col_x;
+  signed int col_y;
+  unsigned int col_width;
+  unsigned int col_height;
+  int transparent_color;
+  int offset;
 };
 
 struct collision_list

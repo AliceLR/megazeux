@@ -196,6 +196,28 @@ static void soft_sync_screen(struct graphics_data *graphics)
 #endif
 }
 
+
+static void soft_render_layer(struct graphics_data *graphics,
+ struct video_layer *layer)
+{
+  struct sdl_render_data *render_data = graphics->render_data;
+  SDL_Surface *screen = soft_get_screen_surface(render_data);
+
+  Uint32 *pixels = (Uint32 *)screen->pixels;
+  Uint32 pitch = screen->pitch;
+  Uint32 bpp = screen->format->BitsPerPixel;
+
+  pixels += pitch * ((screen->h - 350) / 8);
+  pixels += (screen->w - 640) * bpp / 64;
+
+  SDL_LockSurface(screen);
+  if(bpp == 32)
+  {
+    render_layer_32bit(pixels, pitch, graphics, layer); 
+  }
+  SDL_UnlockSurface(screen);
+}
+
 void render_soft_register(struct renderer *renderer)
 {
   memset(renderer, 0, sizeof(struct renderer));
@@ -207,6 +229,7 @@ void render_soft_register(struct renderer *renderer)
   renderer->get_screen_coords = get_screen_coords_centered;
   renderer->set_screen_coords = set_screen_coords_centered;
   renderer->render_graph = soft_render_graph;
+  renderer->render_layer = soft_render_layer;
   renderer->render_cursor = soft_render_cursor;
   renderer->render_mouse = soft_render_mouse;
   renderer->sync_screen = soft_sync_screen;

@@ -42,6 +42,8 @@ struct rgb_color
   Uint8 unused;
 };
 
+#define INVISIBLE_CHAR 65535
+
 struct char_element
 {
   Uint16 char_value;
@@ -58,12 +60,27 @@ struct char_element
 #define CHAR_SIZE 14
 #define CHARSET_SIZE 256
 #define NUM_CHARSETS 16
+#define PROTECTED_CHARSET_POSITION ((NUM_CHARSETS - 1) * CHARSET_SIZE)
+#define FULL_CHARSET_SIZE (CHARSET_SIZE * NUM_CHARSETS)
 
 #define PAL_SIZE 16
 #define NUM_PALS 2
 #define SMZX_PAL_SIZE 256
+#define PROTECTED_PAL_SIZE 16
+#define FULL_PAL_SIZE (SMZX_PAL_SIZE + PROTECTED_PAL_SIZE)
+
+#define TEXTVIDEO_LAYERS 512
+
+#define BOARD_LAYER 0
+#define OVERLAY_LAYER 1
+#define UI_LAYER 2
+
+#define LAYER_DRAWORDER_BOARD 0
+#define LAYER_DRAWORDER_OVERLAY 1000
+#define LAYER_DRAWORDER_UI 2000
 
 struct graphics_data;
+struct video_layer;
 
 struct renderer
 {
@@ -81,12 +98,22 @@ struct renderer
                              int *, int *, int *, int *);
   void (*set_screen_coords)(struct graphics_data *, int, int, int *, int *);
   void (*render_graph)     (struct graphics_data *);
+  void (*render_layer)     (struct graphics_data *, struct video_layer *);
   void (*render_cursor)    (struct graphics_data *, Uint32, Uint32, Uint8,
                              Uint8, Uint8);
   void (*render_mouse)     (struct graphics_data *, Uint32, Uint32, Uint8,
                              Uint8);
   void (*sync_screen)      (struct graphics_data *);
   void (*focus_pixel)      (struct graphics_data *, Uint32, Uint32);
+};
+
+struct video_layer {
+  Uint32 w, h, mode;
+  int x, y;
+  struct char_element *data;
+  int draw_order;
+  int transparent_col;
+  int offset;
 };
 
 struct graphics_data
@@ -96,12 +123,20 @@ struct graphics_data
   struct char_element text_video[SCREEN_W * SCREEN_H];
   Uint8 charset[CHAR_SIZE * CHARSET_SIZE * NUM_CHARSETS];
   struct rgb_color palette[SMZX_PAL_SIZE];
+  struct rgb_color protected_palette[PAL_SIZE];
   struct rgb_color intensity_palette[SMZX_PAL_SIZE];
   struct rgb_color backup_palette[SMZX_PAL_SIZE];
   struct rgb_color editor_backup_palette[SMZX_PAL_SIZE];
+  char smzx_indices[SMZX_PAL_SIZE * 4];
   Uint32 current_intensity[SMZX_PAL_SIZE];
   Uint32 saved_intensity[SMZX_PAL_SIZE];
   Uint32 backup_intensity[SMZX_PAL_SIZE];
+  
+  Uint32 layer_count;
+  struct video_layer video_layers[TEXTVIDEO_LAYERS];
+  Uint32 current_layer;
+  struct char_element *current_video;
+  struct video_layer *sorted_video_layers[TEXTVIDEO_LAYERS];
 
   enum cursor_mode_types cursor_mode;
   Uint32 fade_status;
@@ -126,7 +161,8 @@ struct graphics_data
 
   Uint8 default_charset[CHAR_SIZE * CHARSET_SIZE];
 
-  Uint32 flat_intensity_palette[SMZX_PAL_SIZE];
+  Uint32 flat_intensity_palette[FULL_PAL_SIZE];
+  Uint32 protected_pal_position;
   struct renderer renderer;
   void *render_data;
 };
@@ -148,6 +184,8 @@ CORE_LIBSPEC void draw_char_ext(Uint8 chr, Uint8 color, Uint32 x,
  Uint32 y, Uint32 offset, Uint32 c_offset);
 CORE_LIBSPEC void draw_char_linear_ext(Uint8 color, Uint8 chr,
  Uint32 offset, Uint32 offset_b, Uint32 c_offset);
+CORE_LIBSPEC void draw_char_to_layer(Uint8 color, Uint8 chr,
+ Uint32 x, Uint32 y, Uint32 offset_b, Uint32 c_offset);
 CORE_LIBSPEC void write_string_mask(const char *str, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed);
 
@@ -158,16 +196,22 @@ CORE_LIBSPEC void cursor_off(void);
 CORE_LIBSPEC void move_cursor(Uint32 x, Uint32 y);
 
 CORE_LIBSPEC bool init_video(struct config_info *conf, const char *caption);
+CORE_LIBSPEC void destruct_layers(void);
+CORE_LIBSPEC Uint32 create_layer(int x, int y, Uint32 w, Uint32 h,
+ int draw_order, int t_col, int offset);
+CORE_LIBSPEC void move_layer(Uint32 layer, int x, int y);
+CORE_LIBSPEC void select_layer(Uint32 layer);
+CORE_LIBSPEC void blank_layers(void);
 CORE_LIBSPEC bool has_video_initialized(void);
 CORE_LIBSPEC void update_screen(void);
 CORE_LIBSPEC void set_window_caption(const char *caption);
 
-CORE_LIBSPEC void ec_read_char(Uint8 chr, char *matrix);
-CORE_LIBSPEC void ec_change_char(Uint8 chr, char *matrix);
-CORE_LIBSPEC Sint32 ec_load_set_var(char *name, Uint8 pos);
+CORE_LIBSPEC void ec_read_char(Uint16 chr, char *matrix);
+CORE_LIBSPEC void ec_change_char(Uint16 chr, char *matrix);
+CORE_LIBSPEC Sint32 ec_load_set_var(char *name, Uint16 pos);
 CORE_LIBSPEC void ec_mem_load_set(Uint8 *chars);
 CORE_LIBSPEC void ec_mem_save_set(Uint8 *chars);
-CORE_LIBSPEC void ec_mem_load_set_var(char *chars, size_t len, Uint8 pos);
+CORE_LIBSPEC void ec_mem_load_set_var(char *chars, size_t len, Uint16 pos);
 
 CORE_LIBSPEC void update_palette(void);
 CORE_LIBSPEC void set_gui_palette(void);
@@ -178,6 +222,8 @@ CORE_LIBSPEC void set_screen_mode(Uint32 mode);
 CORE_LIBSPEC Uint32 get_screen_mode(void);
 CORE_LIBSPEC void set_palette_intensity(Uint32 percent);
 CORE_LIBSPEC void set_rgb(Uint32 color, Uint32 r, Uint32 g, Uint32 b);
+CORE_LIBSPEC Uint32 get_smzx_index(Uint32 col, Uint32 offset);
+CORE_LIBSPEC void set_smzx_index(Uint32 col, Uint32 offset, Uint32 value);
 CORE_LIBSPEC void set_red_component(Uint32 color, Uint32 r);
 CORE_LIBSPEC void set_green_component(Uint32 color, Uint32 g);
 CORE_LIBSPEC void set_blue_component(Uint32 color, Uint32 b);
@@ -216,11 +262,11 @@ void cursor_underline(void);
 bool set_video_mode(void);
 void toggle_fullscreen(void);
 void resize_screen(Uint32 w, Uint32 h);
-void set_screen(struct char_element *src);
-void get_screen(struct char_element *dest);
+void set_screen(struct char_element *src, Uint32 layer);
+void get_screen(struct char_element *dest, Uint32 layer);
 
-void ec_change_byte(Uint8 chr, Uint8 byte, Uint8 new_value);
-Uint8 ec_read_byte(Uint8 chr, Uint8 byte);
+void ec_change_byte(Uint16 chr, Uint8 byte, Uint8 new_value);
+Uint8 ec_read_byte(Uint16 chr, Uint8 byte);
 Sint32 ec_load_set(char *name);
 
 void set_color_intensity(Uint32 color, Uint32 percent);
@@ -230,6 +276,7 @@ void dialog_fadein(void);
 void dialog_fadeout(void);
 void vquick_fadein(void);
 void dump_screen(void);
+void dump_char(Uint16 char_idx, Uint8 color, int mode, Uint8 *buffer);
 
 void get_screen_coords(int screen_x, int screen_y, int *x, int *y,
  int *min_x, int *min_y, int *max_x, int *max_y);
