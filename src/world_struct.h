@@ -140,7 +140,7 @@ struct world
   struct robot global_robot;
 
   int custom_sfx_on;
-  char custom_sfx[NUM_SFX * 69];
+  char custom_sfx[NUM_SFX * SFX_SIZE];
 
   // Not part of world/save files, but runtime globals
   int player_x;

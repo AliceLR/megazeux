@@ -166,7 +166,7 @@ static void zip_error(const char *func, enum zip_error code)
 {
   char buffer[80];
   snprintf(buffer, 80, "%s: %s", func, zip_error_string(code));
-  error_message(E_DEFAULT, 0, buffer);
+  error_message(E_ZIP, 0, buffer);
 }
 
 
@@ -778,7 +778,7 @@ int zgetd(struct zip_archive *zp, enum zip_error *err)
   return zp->vgetd(zp->fp);
 }
 
-enum zip_error zread(char *destBuf, Uint32 readLen, struct zip_archive *zp)
+enum zip_error zread(void *destBuf, Uint32 readLen, struct zip_archive *zp)
 {
   struct zip_file_header *fh;
   char *src;
@@ -879,7 +879,7 @@ err_out:
  */
 
 enum zip_error zip_get_next_prop(struct zip_archive *zp,
- unsigned int *prop_id, char *board_id, char *robot_id)
+ Uint32 *prop_id, char *board_id, char *robot_id)
 {
   struct zip_file_header *fh;
   enum zip_error result;
@@ -908,6 +908,35 @@ enum zip_error zip_get_next_prop(struct zip_archive *zp,
 
 err_out:
   zip_error("zip_get_next_mzx_prop", result);
+  return result;
+}
+
+
+/* Get the uncompressed length of the next file in the archive. Only works after
+ * zip_read_directory() is called.
+ */
+
+enum zip_error zip_get_next_uncompressed_size(struct zip_archive *zp,
+ Uint32 *u_size)
+{
+  enum zip_error result;
+
+  result = zp->read_file_error;
+  if(result)
+    goto err_out;
+
+  if(zp->pos >= zp->num_files)
+  {
+    return ZIP_EOF;
+  }
+
+  if(u_size)
+    *u_size = zp->files[zp->pos]->uncompressed_size;
+
+  return ZIP_SUCCESS;
+
+err_out:
+  zip_error("zip_get_next_u_size", result);
   return result;
 }
 
@@ -1031,9 +1060,10 @@ enum zip_error zip_read_close_stream(struct zip_archive *zp)
   Uint32 expected_crc32;
   Uint32 stream_crc32;
   Uint32 stream_left;
-  char v;
+  char buffer[128];
+  int size;
 
-  int (*vgetc)(void *);
+  int (*vread)(void *, size_t, size_t, void *);
   void *fp;
 
   enum zip_error result;
@@ -1042,7 +1072,7 @@ enum zip_error zip_read_close_stream(struct zip_archive *zp)
   if(result)
     goto err_out;
 
-  vgetc = zp->vgetc;
+  vread = zp->vread;
   fp = zp->fp;
 
   expected_crc32 = zp->streaming_file->crc32;
@@ -1052,9 +1082,10 @@ enum zip_error zip_read_close_stream(struct zip_archive *zp)
   stream_left = zp->stream_left;
   while(stream_left)
   {
-    v = vgetc(fp);
-    stream_crc32 = zip_crc32(stream_crc32, &v, 1);
-    stream_left--;
+    size = MIN(128, stream_left);
+    vread(buffer, size, 1, fp);
+    stream_crc32 = zip_crc32(stream_crc32, buffer, size);
+    stream_left -= size;
   }
 
   // Increment the position and clear the streaming vars
@@ -1110,54 +1141,53 @@ err_out:
 
 
 /* Read a file from the a zip archive. Only works after zip_read_directory()
- * is called. On return, **dest will point to a newly allocated block of data
- * and *destLen will contain the length of this block.
+ * is called. If provided, readLen will return the actual number of bytes read.
  */
 
 enum zip_error zip_read_file(struct zip_archive *zp, char *name,
- int name_buffer_size, char **dest, Uint32 *destLen)
+ int nameLen, void *destBuf, Uint32 destLen, Uint32 *readLen)
 {
   Uint32 u_size;
   enum zip_error result;
 
   // No need to check mode; the functions used here will
 
-  // We can't accept NULL pointers here, though
-  if(!dest || !destLen)
+  // We can't accept a NULL pointer here, though
+  if(!destBuf)
   {
     result = ZIP_NULL_BUF;
     goto err_out;
   }
 
-  result = zip_read_open_file_stream(zp, name, name_buffer_size, &u_size);
+  result = zip_read_open_file_stream(zp, name, nameLen, &u_size);
   if(result)
     goto err_out;
 
-  *dest = cmalloc(u_size);
-  *destLen = u_size;
+  u_size = MIN(destLen, u_size);
 
-  result = zread(*dest, *destLen, zp);
+  result = zread(destBuf, u_size, zp);
   if(result && result != ZIP_EOF)
     goto err_close;
 
   result = zip_read_close_stream(zp);
   if(result)
-    goto err_free_dest;
+    goto err_out;
+
+  if(readLen)
+    *readLen = u_size;
 
   return ZIP_SUCCESS;
 
 err_close:
   zip_read_close_stream(zp);
 
-err_free_dest:
-  free(*dest);
-
 err_out:
   if(result != ZIP_EOF)
     zip_error("zip_read_file", result);
 
-  *dest = NULL;
-  *destLen = 0;
+  if(readLen)
+    *readLen = 0;
+
   return result;
 }
 
@@ -1236,7 +1266,7 @@ enum zip_error zputd(int value, struct zip_archive *zp)
   return ZIP_SUCCESS;
 }
 
-enum zip_error zwrite(const char *src, Uint32 srcLen, struct zip_archive *zp)
+enum zip_error zwrite(const void *src, Uint32 srcLen, struct zip_archive *zp)
 {
   struct zip_file_header *fh;
   char *buffer;
@@ -1518,7 +1548,7 @@ err_out:
  */
 
 enum zip_error zip_write_file(struct zip_archive *zp, const char *name,
- char *src, Uint32 srcLen, int method, Uint32 prop_id, char board_id,
+ const void *src, Uint32 srcLen, int method, Uint32 prop_id, char board_id,
  char robot_id)
 {
   enum zip_error result;
@@ -2232,13 +2262,17 @@ void zip_test(struct world *mzx_world)
   {
     while(1)
     {
-      result = zip_read_file(zp, name, 31, &data, &len);
+      result = zip_get_next_uncompressed_size(zp, &len);
       if(result != ZIP_SUCCESS)
       {
         if(result == ZIP_EOF)
           debug("No more files.\n");
         break;
       }
+
+      data = cmalloc(len);
+      result = zip_read_file(zp, name, 31, data, len, NULL);
+
       off = data;
       if(memsafegets(name, 31, &off, data+len))
         debug("Preview: %s\n", name);

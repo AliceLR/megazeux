@@ -141,10 +141,13 @@ int zip_bound_total_header_usage(int num_files, int max_name_size);
 int zgetc(struct zip_archive *zp, enum zip_error *err);
 int zgetw(struct zip_archive *zp, enum zip_error *err);
 int zgetd(struct zip_archive *zp, enum zip_error *err);
-enum zip_error zread(char *destBuf, Uint32 readLen, struct zip_archive *zp);
+enum zip_error zread(void *destBuf, Uint32 readLen, struct zip_archive *zp);
 
 enum zip_error zip_get_next_prop(struct zip_archive *zp,
  Uint32 *prop_id, char *board_id, char *robot_id);
+
+enum zip_error zip_get_next_uncompressed_size(struct zip_archive *zp,
+ Uint32 *u_size);
 
 enum zip_error zip_read_open_file_stream(struct zip_archive *zp,
  char *name, int name_buffer_size, Uint32 *destLen);
@@ -153,12 +156,12 @@ enum zip_error zip_read_close_stream(struct zip_archive *zp);
 
 enum zip_error zip_skip_file(struct zip_archive *zp);
 enum zip_error zip_read_file(struct zip_archive *zp, char *name,
- int name_buffer_size, char **dest, Uint32 *destLen);
+ int nameLen, void *destBuf, Uint32 destLen, Uint32 *readLen);
 
 enum zip_error zputc(int value, struct zip_archive *zp);
 enum zip_error zputw(int value, struct zip_archive *zp);
 enum zip_error zputd(int value, struct zip_archive *zp);
-enum zip_error zwrite(const char *src, Uint32 srcLen, struct zip_archive *zp);
+enum zip_error zwrite(const void *src, Uint32 srcLen, struct zip_archive *zp);
 
 enum zip_error zip_write_open_file_stream(struct zip_archive *zp,
  const char *name, int method, Uint32 prop_id, char board_id,
@@ -167,7 +170,7 @@ enum zip_error zip_write_open_file_stream(struct zip_archive *zp,
 enum zip_error zip_write_close_stream(struct zip_archive *zp);
 
 enum zip_error zip_write_file(struct zip_archive *zp, const char *name,
- char *src, Uint32 srcLen, int method, Uint32 prop_id, char board_id,
+ const void *src, Uint32 srcLen, int method, Uint32 prop_id, char board_id,
  char robot_id);
 
 enum zip_error zip_read_directory(struct zip_archive *zp);

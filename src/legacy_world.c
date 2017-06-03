@@ -36,6 +36,7 @@
 #include "game.h"
 #include "graphics.h"
 #include "idput.h"
+#include "sfx.h"
 #include "sprite.h"
 #include "window.h"
 #include "world.h"
@@ -393,7 +394,7 @@ int legacy_save_world(struct world *mzx_world, const char *file, int savegame)
     fputc(0, fp);
     length_slot_pos = ftell(fp);
     fputw(0, fp);
-    for(i = 0; i < NUM_SFX; i++, offset += 69)
+    for(i = 0; i < NUM_SFX; i++, offset += LEGACY_SFX_SIZE)
     {
       sfx_len = strlen(mzx_world->custom_sfx + offset);
       fputc((int)sfx_len, fp);
@@ -1266,7 +1267,7 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
     fseek(fp, 2, SEEK_CUR);     // Skip word size
 
     //Read sfx
-    for(i = 0; i < NUM_SFX; i++, sfx_offset += 69)
+    for(i = 0; i < NUM_SFX; i++, sfx_offset += LEGACY_SFX_SIZE)
     {
       sfx_size = fgetc(fp);
       fread(sfx_offset, sfx_size, 1, fp);

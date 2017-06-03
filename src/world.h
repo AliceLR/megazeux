@@ -122,8 +122,7 @@ enum file_prop
   FPROP_WORLD_PATH            = 0x0002, // plaintext
   FPROP_WORLD_GLOBAL_ROBOT    = 0x0004, // properties file
   FPROP_WORLD_STAT_COUNTERS   = 0x0005, // plaintext, NUM_STATUS_COUNTERS * COUNTER_NAME_SIZE
-  FPROP_WORLD_SFX             = 0x0006, // plaintext, NUM_SFX * 69
-  FPROP_WORLD_BOARD_NAMES     = 0x0007, // plaintext, mzx_world->num_boards * BOARD_NAME_SIZE
+  FPROP_WORLD_SFX             = 0x0006, // data, NUM_SFX * SFX_SIZE
   FPROP_WORLD_CHARS           = 0x000A, // data, 3584
   FPROP_WORLD_PAL             = 0x000C, // data, SMZX_PAL_SIZE * 3
   FPROP_WORLD_PAL_INDEX       = 0x000D, // data, 1024

@@ -363,6 +363,7 @@ int error_message(enum error_code id, int parameter, const char *string)
       break;
 #endif
 
+    case E_ZIP:
     case E_DEFAULT:
     default:
       snprintf(error_mesg, 79, "%s", string);

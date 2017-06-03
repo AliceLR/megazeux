@@ -158,7 +158,7 @@ void sfx_edit(struct world *mzx_world)
     if((!old_sfx_mode) && (mzx_world->custom_sfx_on))
     {
       char *offset = mzx_world->custom_sfx;
-      for(i = 0; i < NUM_SFX; i++, offset += 69)
+      for(i = 0; i < NUM_SFX; i++, offset += SFX_SIZE)
       {
         strcpy(offset, sfx_strs[i]);
       }
@@ -180,7 +180,7 @@ void sfx_edit(struct world *mzx_world)
         {
           b_elements[i] = construct_input_box(1, i + 2,
            sfx_names[(page * 17) + i], 68, 224,
-           mzx_world->custom_sfx + ((i + (page * 17)) * 69));
+           mzx_world->custom_sfx + ((i + (page * 17)) * SFX_SIZE));
         }
 
         b_elements[i] = construct_label(23, 20,

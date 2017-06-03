@@ -30,6 +30,9 @@
 #include <unistd.h>
 #endif
 
+#include "legacy_world.h"
+#include "zip.h"
+
 #include "configure.h"
 #include "helpsys.h"
 #include "sfx.h"
@@ -49,8 +52,6 @@
 #include "game.h"
 #include "audio.h"
 #include "extmem.h"
-#include "legacy_world.h"
-#include "zip.h"
 #include "util.h"
 
 
@@ -202,7 +203,7 @@ static inline int sprite_prop_file_size(void)
 }
 
 
-// This function is used to save properties files in world loading.
+// This function is used to save properties files in world saving.
 // There are no safety checks here. USE THE BOUNDING FUNCTIONS WHEN ALLOCATING.
 static inline void save_prop_eof(struct memfile *mf)
 {
@@ -273,139 +274,318 @@ int next_prop(struct memfile *prop, int *ident, int *length,
   return 1;
 }
 
-static inline void save_world_info(struct world *mzx_world,
+static inline int save_world_info(struct world *mzx_world,
  struct zip_archive *zp, int savegame, const char *name, enum file_prop file_id)
 {
+  // FIXME
+  return 0;
 }
 
 static inline int load_world_info(struct world *mzx_world,
  struct zip_archive *zp, int savegame)
 {
+  // FIXME
   return 0;
 }
 
-static inline void save_world_global_robot(struct world *mzx_world,
+static inline int save_world_global_robot(struct world *mzx_world,
  struct zip_archive *zp, const char *name, enum file_prop file_id)
 {
+  // FIXME
+  return 0;
 }
 
-static inline void load_world_global_robot(struct world *mzx_world,
+static inline int load_world_global_robot(struct world *mzx_world,
  struct zip_archive *zp)
 {
+  // FIXME
+  return 0;
 }
 
-static inline void save_world_stat_counters(struct world *mzx_world,
+// Status counters
+static inline int save_world_stat_counters(struct world *mzx_world,
  struct zip_archive *zp, const char *name, enum file_prop file_id)
 {
+  char buffer[COUNTER_NAME_SIZE * NUM_STATUS_COUNTERS];
+  char *pos = buffer;
+  int i;
+
+  for(i = 0; i < NUM_STATUS_COUNTERS; i++)
+  {
+    memcpy(pos, mzx_world->status_counters_shown[i], COUNTER_NAME_SIZE);
+    pos += COUNTER_NAME_SIZE;
+  }
+
+  return zip_write_file(zp, name,
+   buffer, COUNTER_NAME_SIZE * NUM_STATUS_COUNTERS,
+   ZIP_M_NONE, file_id, 0, 0);
 }
 
-static inline void load_world_stat_counters(struct world *mzx_world,
+static inline int load_world_stat_counters(struct world *mzx_world,
  struct zip_archive *zp)
 {
+  char buffer[COUNTER_NAME_SIZE * NUM_STATUS_COUNTERS];
+  char *pos = buffer;
+  int i;
+  int result;
+
+  result = zip_read_file(zp, NULL, 0, buffer,
+   COUNTER_NAME_SIZE * NUM_STATUS_COUNTERS, NULL);
+
+  if(result == ZIP_SUCCESS)
+  {
+    for(i = 0; i < NUM_STATUS_COUNTERS; i++)
+    {
+      memcpy(mzx_world->status_counters_shown[i], pos, COUNTER_NAME_SIZE);
+      pos += COUNTER_NAME_SIZE;
+    }
+  }
+
+  return result;
 }
 
-static inline void save_world_sfx(struct world *mzx_world,
+// SFX
+static inline int save_world_sfx(struct world *mzx_world,
  struct zip_archive *zp, const char *name, enum file_prop file_id)
 {
+  // Only save if custom SFX are enabled
+  if(mzx_world->custom_sfx_on)
+  {
+    return zip_write_file(zp, name, mzx_world->custom_sfx, NUM_SFX * SFX_SIZE,
+     ZIP_M_NONE, file_id, 0, 0);
+  }
+
+  return ZIP_SUCCESS;
 }
 
-static inline void load_world_sfx(struct world *mzx_world,
+static inline int load_world_sfx(struct world *mzx_world,
  struct zip_archive *zp)
 {
+  // No custom SFX loaded yet
+  if(!mzx_world->custom_sfx_on)
+  {
+    return zip_read_file(zp, NULL, 0,
+     mzx_world->custom_sfx, NUM_SFX * SFX_SIZE, NULL);
+  }
+
+  // Already loaded custom SFX; skip
+  else
+  {
+    return zip_skip_file(zp);
+  }
 }
 
-static inline void save_world_board_names(struct world *mzx_world,
+// Charset
+static inline int save_world_chars(struct world *mzx_world,
  struct zip_archive *zp, const char *name, enum file_prop file_id)
 {
+  unsigned char buffer[CHAR_SIZE * CHARSET_SIZE];
+
+  ec_mem_save_set(buffer);
+
+  return zip_write_file(zp, name, buffer, CHAR_SIZE * CHARSET_SIZE,
+   ZIP_M_NONE, file_id, 0, 0);
 }
 
-static inline void load_world_board_names(struct world *mzx_world,
+static inline int load_world_chars(struct world *mzx_world,
  struct zip_archive *zp)
 {
+  unsigned char buffer[CHAR_SIZE * CHARSET_SIZE];
+  int result;
+
+  result = zip_read_file(zp, NULL, 0, buffer, CHAR_SIZE * CHARSET_SIZE, NULL);
+
+  if(result == ZIP_SUCCESS)
+  {
+    ec_mem_load_set(buffer);
+  }
+
+  return result;
 }
 
-static inline void save_world_chars(struct world *mzx_world,
+// Palette
+static inline int save_world_pal(struct world *mzx_world,
  struct zip_archive *zp, const char *name, enum file_prop file_id)
 {
+  unsigned char buffer[SMZX_PAL_SIZE * 3];
+  unsigned char *cur = buffer;
+  int i;
+
+  for(i = 0; i < SMZX_PAL_SIZE; i++)
+  {
+    get_rgb(i, cur, cur+1, cur+2);
+    cur += 3;
+  }
+
+  return zip_write_file(zp, name, buffer, SMZX_PAL_SIZE * 3,
+   ZIP_M_NONE, file_id, 0, 0);
 }
 
-static inline void load_world_chars(struct world *mzx_world,
+static inline int load_world_pal(struct world *mzx_world,
  struct zip_archive *zp)
 {
+  unsigned char buffer[SMZX_PAL_SIZE * 3];
+  unsigned char *cur;
+  unsigned int size;
+  unsigned int i;
+  int result;
+
+  result = zip_read_file(zp, NULL, 0, buffer, SMZX_PAL_SIZE*3, &size);
+  if(result == ZIP_SUCCESS)
+  {
+    cur = buffer;
+    size /= 3;
+
+    for(i = 0; i < size; i++)
+    {
+      set_rgb(i, cur[0], cur[1], cur[2]);
+      cur += 3;
+    }
+  }
+
+  return result;
 }
 
-static inline void save_world_pal(struct world *mzx_world,
+// Palette index
+static inline int save_world_pal_index(struct world *mzx_world,
  struct zip_archive *zp, const char *name, enum file_prop file_id)
 {
+  // FIXME
+  return 0;
 }
 
-static inline void load_world_pal(struct world *mzx_world,
+static inline int load_world_pal_index(struct world *mzx_world,
  struct zip_archive *zp)
 {
+  // FIXME
+  return 0;
 }
 
-static inline void save_world_pal_index(struct world *mzx_world,
+// Palette intensities
+static inline int save_world_pal_inten(struct world *mzx_world,
  struct zip_archive *zp, const char *name, enum file_prop file_id)
 {
+  char buffer[SMZX_PAL_SIZE];
+  char *cur = buffer;
+  int i;
+
+  for(i = 0; i < SMZX_PAL_SIZE; i++, cur++)
+    *cur = get_color_intensity(i);
+
+  return zip_write_file(zp, name, buffer, SMZX_PAL_SIZE,
+   ZIP_M_NONE, file_id, 0, 0);
 }
 
-static inline void load_world_pal_index(struct world *mzx_world,
+static inline int load_world_pal_inten(struct world *mzx_world,
  struct zip_archive *zp)
 {
+  char buffer[SMZX_PAL_SIZE];
+  char *cur;
+  unsigned int size;
+  unsigned int i;
+  int result;
+
+  result = zip_read_file(zp, NULL, 0, buffer, SMZX_PAL_SIZE, &size);
+  if(result == ZIP_SUCCESS)
+  {
+    cur = buffer;
+
+    for(i = 0; i < size; i++, cur++)
+      set_color_intensity(i, *cur);
+  }
+
+  return result;
 }
 
-static inline void save_world_pal_inten(struct world *mzx_world,
+// Vlayer colors
+static inline int save_world_vco(struct world *mzx_world,
  struct zip_archive *zp, const char *name, enum file_prop file_id)
 {
+  return zip_write_file(zp, name,
+   mzx_world->vlayer_colors, mzx_world->vlayer_size,
+   ZIP_M_NONE, file_id, 0, 0);
 }
 
-static inline void load_world_pal_inten(struct world *mzx_world,
+static inline int load_world_vco(struct world *mzx_world,
  struct zip_archive *zp)
 {
+  int vlayer_size = mzx_world->vlayer_size;
+
+  if(!mzx_world->vlayer_size)
+  {
+    mzx_world->vlayer_width = 1;
+    mzx_world->vlayer_height = 1;
+    mzx_world->vlayer_size = 1;
+  }
+
+  if(!mzx_world->vlayer_colors)
+  {
+    mzx_world->vlayer_chars = cmalloc(vlayer_size);
+    mzx_world->vlayer_colors = cmalloc(vlayer_size);
+  }
+
+  return zip_read_file(zp, NULL, 0,
+   mzx_world->vlayer_colors, vlayer_size, NULL);
 }
 
-static inline void save_world_vco(struct world *mzx_world,
+// Vlayer chars
+static inline int save_world_vch(struct world *mzx_world,
  struct zip_archive *zp, const char *name, enum file_prop file_id)
 {
+  return zip_write_file(zp, name,
+   mzx_world->vlayer_chars, mzx_world->vlayer_size,
+   ZIP_M_NONE, file_id, 0, 0);
 }
 
-static inline void load_world_vco(struct world *mzx_world,
+static inline int load_world_vch(struct world *mzx_world,
  struct zip_archive *zp)
 {
+  int vlayer_size = mzx_world->vlayer_size;
+
+  if(!mzx_world->vlayer_size)
+  {
+    mzx_world->vlayer_width = 1;
+    mzx_world->vlayer_height = 1;
+    mzx_world->vlayer_size = 1;
+  }
+
+  if(!mzx_world->vlayer_chars)
+  {
+    mzx_world->vlayer_chars = cmalloc(vlayer_size);
+    mzx_world->vlayer_colors = cmalloc(vlayer_size);
+  }
+
+  return zip_read_file(zp, NULL, 0,
+   mzx_world->vlayer_chars, vlayer_size, NULL);
 }
 
-static inline void save_world_vch(struct world *mzx_world,
+// Sprites
+static inline int save_world_sprites(struct world *mzx_world,
  struct zip_archive *zp, const char *name, enum file_prop file_id)
 {
+  // FIXME
+  return 0;
 }
 
-static inline void load_world_vch(struct world *mzx_world,
+static inline int load_world_sprites(struct world *mzx_world,
  struct zip_archive *zp)
 {
+  // FIXME
+  return 0;
 }
 
-static inline void save_world_sprites(struct world *mzx_world,
- struct zip_archive *zp, const char *name, enum file_prop file_id)
-{
-}
-
-static inline void load_world_sprites(struct world *mzx_world,
- struct zip_archive *zp)
-{
-}
-
-static inline void save_world_counters(struct world *mzx_world,
+// Counters
+static inline int save_world_counters(struct world *mzx_world,
  struct zip_archive *zp, const char *name, enum file_prop file_id)
 {
   struct counter *src_counter;
   size_t name_length;
+  int result;
   int i;
 
-  enum zip_error result;
-
-  if(ZIP_SUCCESS !=
-   zip_write_open_file_stream(zp, name, ZIP_M_NONE, file_id, 0, 0))
-    return;
+  result = zip_write_open_file_stream(zp, name, ZIP_M_NONE, file_id, 0, 0);
+  if(result != ZIP_SUCCESS)
+    return result;
 
   zputd(mzx_world->num_counters, zp);
 
@@ -416,15 +596,13 @@ static inline void save_world_counters(struct world *mzx_world,
 
     zputd(src_counter->value, zp);
     zputd(name_length, zp);
-    result = zwrite(src_counter->name, name_length, zp);
-    if(result != ZIP_SUCCESS)
-      break;
+    zwrite(src_counter->name, name_length, zp);
   }
 
-  zip_write_close_stream(zp);
+  return zip_write_close_stream(zp);
 }
 
-static inline void load_world_counters(struct world *mzx_world,
+static inline int load_world_counters(struct world *mzx_world,
  struct zip_archive *zp)
 {
   char name_buffer[ROBOT_MAX_TR];
@@ -437,9 +615,9 @@ static inline void load_world_counters(struct world *mzx_world,
 
   enum zip_error result;
 
-  if(ZIP_SUCCESS !=
-   zip_read_open_file_stream(zp, NULL, 0, NULL))
-    return;
+  result = zip_read_open_file_stream(zp, NULL, 0, NULL);
+  if(result != ZIP_SUCCESS)
+    return result;
 
   num_counters = zgetd(zp, &result);
   num_prev_allocated = mzx_world->num_counters_allocated;
@@ -484,22 +662,22 @@ static inline void load_world_counters(struct world *mzx_world,
   if(!num_prev_allocated)
     mzx_world->num_counters = i;
 
-  zip_read_close_stream(zp);
+  return zip_read_close_stream(zp);
 }
 
-static inline void save_world_strings(struct world *mzx_world,
+// Strings
+static inline int save_world_strings(struct world *mzx_world,
  struct zip_archive *zp, const char *name, enum file_prop file_id)
 {
   struct string *src_string;
   size_t name_length;
   size_t str_length;
+  int result;
   int i;
 
-  enum zip_error result;
-
-  if(ZIP_SUCCESS !=
-   zip_write_open_file_stream(zp, name, ZIP_M_NONE, file_id, 0, 0))
-    return;
+  result = zip_write_open_file_stream(zp, name, ZIP_M_NONE, file_id, 0, 0);
+  if(result != ZIP_SUCCESS)
+    return result;
 
   zputd(mzx_world->num_strings, zp);
 
@@ -512,15 +690,13 @@ static inline void save_world_strings(struct world *mzx_world,
     zputd(name_length, zp);
     zputd(str_length, zp);
     zwrite(src_string->name, name_length, zp);
-    result = zwrite(src_string->value, str_length, zp);
-    if(result != ZIP_SUCCESS)
-      break;
+    zwrite(src_string->value, str_length, zp);
   }
 
-  zip_write_close_stream(zp);
+  return zip_write_close_stream(zp);
 }
 
-static inline void load_world_strings(struct world *mzx_world,
+static inline int load_world_strings(struct world *mzx_world,
  struct zip_archive *zp)
 {
   struct string *src_string;
@@ -534,9 +710,9 @@ static inline void load_world_strings(struct world *mzx_world,
 
   enum zip_error result;
 
-  if(ZIP_SUCCESS !=
-   zip_read_open_file_stream(zp, NULL, 0, NULL))
-    return;
+  result = zip_read_open_file_stream(zp, NULL, 0, NULL);
+  if(result != ZIP_SUCCESS)
+    return result;
 
   num_strings = zgetd(zp, &result);
   num_prev_allocated = mzx_world->num_counters_allocated;
@@ -584,7 +760,7 @@ static inline void load_world_strings(struct world *mzx_world,
   if(!num_prev_allocated)
     mzx_world->num_strings = i;
 
-  zip_read_close_stream(zp);
+  return zip_read_close_stream(zp);
 }
 
 
@@ -631,7 +807,6 @@ static void save_world_zip(struct world *mzx_world, const char *file,
   save_world_global_robot(mzx_world, zp,  "gr",     FPROP_WORLD_GLOBAL_ROBOT);
   save_world_stat_counters(mzx_world, zp, "status", FPROP_WORLD_STAT_COUNTERS);
   save_world_sfx(mzx_world, zp,           "sfx",    FPROP_WORLD_SFX);
-  save_world_board_names(mzx_world, zp,   "boards", FPROP_WORLD_BOARD_NAMES);
   save_world_chars(mzx_world, zp,         "chars",  FPROP_WORLD_CHARS);
   save_world_pal(mzx_world, zp,           "pal",    FPROP_WORLD_PAL);
 
@@ -1104,6 +1279,9 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
     set_config_from_file(&(mzx_world->conf), config_file_name);
   }
 
+  // Some initial setting(s)
+  mzx_world->custom_sfx_on = 0;
+
   // FIXME load_world_zip
   legacy_load_world(mzx_world, fp, file, savegame, version, name, faded);
 
@@ -1120,7 +1298,7 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
     char *sfx_offset = mzx_world->custom_sfx;
     int i;
 
-    for(i = 0; i < NUM_SFX; i++, sfx_offset += 69)
+    for(i = 0; i < NUM_SFX; i++, sfx_offset += SFX_SIZE)
       convert_sfx_strs(sfx_offset);
   }
 #endif
@@ -1613,7 +1791,7 @@ void clear_global_data(struct world *mzx_world)
   mzx_world->output_file_name[0] = 0;
   mzx_world->input_file_name[0] = 0;
 
-  memset(mzx_world->custom_sfx, 0, NUM_SFX * 69);
+  memset(mzx_world->custom_sfx, 0, NUM_SFX * SFX_SIZE);
 
   mzx_world->bomb_type = 1;
   mzx_world->dead = 0;

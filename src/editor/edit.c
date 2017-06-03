@@ -2323,7 +2323,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                   FILE *sfx_file;
 
                   sfx_file = fopen_unsafe(import_name, "rb");
-                  fread(mzx_world->custom_sfx, 69, 50, sfx_file);
+                  fread(mzx_world->custom_sfx, SFX_SIZE, NUM_SFX, sfx_file);
                   mzx_world->custom_sfx_on = 1;
                   fclose(sfx_file);
                   modified = 1;
@@ -2523,9 +2523,9 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                   if(sfx_file)
                   {
                     if(mzx_world->custom_sfx_on)
-                      fwrite(mzx_world->custom_sfx, 69, 50, sfx_file);
+                      fwrite(mzx_world->custom_sfx, SFX_SIZE, NUM_SFX, sfx_file);
                     else
-                      fwrite(sfx_strs, 69, 50, sfx_file);
+                      fwrite(sfx_strs, SFX_SIZE, NUM_SFX, sfx_file);
 
                     fclose(sfx_file);
                   }
