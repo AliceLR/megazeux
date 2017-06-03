@@ -89,7 +89,7 @@ int get_context(void)
 // Big fat hack. This will be initialized to a bunch of 0's, or NULLs.
 // Use this to replace the null strings before they get dereferenced.
 
-static struct char_element screen_storage[NUM_SAVSCR][80 * 25];
+static struct char_element screen_storage[NUM_SAVSCR][80 * 25 * 2];
 
 // Current space for save_screen and restore_screen
 static int cur_screen = 0;
@@ -111,7 +111,7 @@ int save_screen(void)
     error("Windowing code bug", 2, 4, 0x1F01);
   }
 
-  get_screen(screen_storage[cur_screen]);
+  get_screen(screen_storage[cur_screen], UI_LAYER);
   cur_screen++;
   return 0;
 }
@@ -124,7 +124,7 @@ int restore_screen(void)
   if(cur_screen == 0)
     error("Windowing code bug", 2, 4, 0x1F02);
   cur_screen--;
-  set_screen(screen_storage[cur_screen]);
+  set_screen(screen_storage[cur_screen], UI_LAYER);
   return 0;
 }
 

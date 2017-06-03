@@ -257,6 +257,42 @@ static void set_colors32_smzx3 (struct graphics_data *graphics,
   char_colors[3] = graphics->flat_intensity_palette[(base + 3) & 0xFF];
 }
 
+static void set_indices_mzx(struct graphics_data *graphics,
+ int *indices, Uint8 bg, Uint8 fg)
+{
+  indices[0] = bg;
+  indices[1] = fg;
+}
+static void set_indices_smzx(struct graphics_data *graphics,
+ int *indices, Uint8 bg, Uint8 fg)
+{
+  indices[0] = bg;
+  indices[1] = -2;
+  indices[2] = -2;
+  indices[3] = fg;
+}
+static void set_indices_smzx2(struct graphics_data *graphics,
+ int *indices, Uint8 bg, Uint8 fg)
+{
+  bg &= 0x0F;
+  fg &= 0x0F;
+  indices[0] = (bg << 4) | bg;
+  indices[1] = (bg << 4) | fg;
+  indices[2] = (fg << 4) | bg;
+  indices[3] = (fg << 4) | fg;
+}
+static void set_indices_smzx3(struct graphics_data *graphics,
+ int *indices, Uint8 bg, Uint8 fg)
+{
+  Uint8 base;
+
+  base = (bg << 4) | (fg & 0x0F);
+  indices[0] = base;
+  indices[1] = (base + 2) & 0xFF;
+  indices[2] = (base + 1) & 0xFF;
+  indices[3] = (base + 3) & 0xFF;
+}
+
 void (*const set_colors8[4])
  (struct graphics_data *, Uint32 *, Uint8, Uint8) =
 {
@@ -282,6 +318,15 @@ void (*const set_colors32[4])
   set_colors32_smzx,
   set_colors32_smzx,
   set_colors32_smzx3
+};
+
+void (*const set_indices[4])
+ (struct graphics_data *, int *, Uint8, Uint8) =
+{
+  set_indices_mzx,
+  set_indices_smzx,
+  set_indices_smzx2,
+  set_indices_smzx3
 };
 
 #ifdef CONFIG_RENDER_YUV
@@ -522,6 +567,100 @@ void render_graph32s(Uint32 *pixels, Uint32 pitch,
       dest = ldest + 8;
     }
     dest = ldest2 + row_advance;
+  }
+}
+
+// VERY BAD RENDERER. REPLACE THIS ASAP.
+void render_layer_32bit(Uint32 *pixels, Uint32 pitch, struct graphics_data *graphics, struct video_layer *layer)
+{
+  Uint32 mode = layer->mode;
+
+  Uint32 ch_x, ch_y;
+  Uint16 c;
+
+  struct char_element *src = layer->data;
+  int row, col;
+  int tcol = layer->transparent_col;
+
+  Uint8 *char_ptr;
+  Uint8 current_char_byte;
+
+  Uint32 *drawPtr;
+  Uint32 pix;
+  //Uint32 advance = (pitch / 4) - 8;
+
+  int x, y, i;
+
+  Uint32 char_colors[4];
+  int char_idx[4];
+
+  Uint32 protected_pal_position = graphics->protected_pal_position;
+
+  for (ch_y = 0; ch_y < layer->h; ch_y++) {
+    for (ch_x = 0; ch_x < layer->w; ch_x++) {
+      c = src->char_value;
+      if (c != INVISIBLE_CHAR) {
+        // Char values of 256+, prior to offsetting, are from the protected set
+        if (c > 0xFF) {
+          c = (c & 0xFF) + PROTECTED_CHARSET_POSITION;
+        } else {
+          c += layer->offset;
+          c %= PROTECTED_CHARSET_POSITION;
+        }
+
+        /*
+        layer_set_colors(graphics, char_colors, src->bg_color, src->fg_color);
+        set_indices[mode](graphics, char_idx, src->bg_color, src->fg_color);
+        */
+        if (mode) {
+          for (i = 0; i < 4; i++) {
+            char_idx[i] = graphics->smzx_indices[((src->bg_color & 0xF) << 4 | (src->fg_color & 0xF)) * 4 + i];
+            char_colors[i] = graphics->flat_intensity_palette[char_idx[i]];
+          }
+        } else {
+          if (src->bg_color >= 16) char_idx[0] = (src->bg_color - 16) % 16 + protected_pal_position;
+          else char_idx[0] = src->bg_color;
+          if (src->fg_color >= 16) char_idx[1] = (src->fg_color - 16) % 16 + protected_pal_position;
+          else char_idx[1] = src->fg_color;
+          for (i = 0; i < 2; i++) {
+            char_colors[i] = graphics->flat_intensity_palette[char_idx[i]];
+          }
+        }
+        char_ptr = graphics->charset + (c * CHAR_H);
+        for (row = 0; row < CHAR_H; row++) {
+          current_char_byte = *char_ptr;
+          if (mode == 0) {
+            for (col = 0; col < CHAR_W; col++) {
+              y = layer->y + ch_y * 14 + row;
+              x = layer->x + ch_x * 8 + col;
+              if (x >= 0 && y >= 0 && x < SCREEN_W * CHAR_W && y < SCREEN_H * CHAR_H) {
+                drawPtr = pixels + (pitch / 4) * y + x;
+                pix = char_colors[(current_char_byte & (0x80 >> col)) << col >> 7];
+                if (char_idx[(current_char_byte & (0x80 >> col)) << col >> 7] != tcol)
+                  *drawPtr = pix;
+              }
+            }
+          } else {
+            for (col = 0; col < CHAR_W; col+=2) {
+              y = layer->y + ch_y * 14 + row;
+              x = layer->x + ch_x * 8 + col;
+              if (x >= 0 && y >= 0 && x < SCREEN_W * CHAR_W && y < SCREEN_H * CHAR_H) {
+                drawPtr = pixels + (pitch / 4) * y + x;
+                pix = char_colors[(current_char_byte & (0xC0 >> col)) << col >> 6];
+                if (char_idx[(current_char_byte & (0xC0 >> col)) << col >> 6] != tcol)
+                {
+                  *drawPtr = pix;
+                  if (x < SCREEN_W * CHAR_W - 1)
+                    *(++drawPtr) = pix;
+                }
+              }
+            }
+          }
+          char_ptr++;
+        }
+      }
+      src++;
+    }
   }
 }
 

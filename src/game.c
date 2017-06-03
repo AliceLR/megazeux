@@ -1536,8 +1536,11 @@ static int update(struct world *mzx_world, int game, int *fadein)
   if(mzx_world->target_where != TARGET_TELEPORT)
   {
     int top_x, top_y;
-
+    
+    blank_layers();
+    
     // Draw border
+    select_layer(UI_LAYER);
     draw_viewport(mzx_world);
 
     // Draw screen
@@ -1563,6 +1566,8 @@ static int update(struct world *mzx_world, int game, int *fadein)
       int player_x = mzx_world->player_x;
       int player_y = mzx_world->player_y;
 
+      select_layer(BOARD_LAYER);
+
       for(i = viewport_y; i < viewport_y + viewport_height; i++)
       {
         fill_line(viewport_width, viewport_x, i, 176, 8);
@@ -1580,10 +1585,12 @@ static int update(struct world *mzx_world, int game, int *fadein)
     {
       draw_game_window(src_board, top_x, top_y);
     }
+    select_layer(OVERLAY_LAYER);
 
     // Add sprites
     draw_sprites(mzx_world);
-
+    
+    select_layer(UI_LAYER);
     // Add time limit
     time_remaining = get_counter(mzx_world, "TIME", 0);
     if(time_remaining)

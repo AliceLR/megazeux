@@ -2237,7 +2237,11 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         {
           int ret = 0;
 
-          prefix_mid_xy(mzx_world, &check_x, &check_y, x, y);
+          if (check_param < MAX_SPRITES &&
+           mzx_world->sprite_list[check_param]->flags & SPRITE_UNBOUND)
+            prefix_mid_xy_unbound(mzx_world, &check_x, &check_y, x, y);
+          else
+            prefix_mid_xy(mzx_world, &check_x, &check_y, x, y);
 
           /* 256 == p?? */
           if(check_param == 256)
@@ -2297,8 +2301,10 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             check_x += check_sprite->x;
             check_y += check_sprite->y;
           }
-
-          prefix_mid_xy(mzx_world, &check_x, &check_y, x, y);
+          if (check_sprite->flags & SPRITE_UNBOUND)
+            prefix_mid_xy_unbound(mzx_world, &check_x, &check_y, x, y);
+          else
+            prefix_mid_xy(mzx_world, &check_x, &check_y, x, y);
           offset = check_x + (check_y * board_width);
 
           ret = sprite_colliding_xy(mzx_world, check_sprite,
@@ -3154,10 +3160,13 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           if(put_param == 256)
             put_param = mzx_world->sprite_num;
 
-          prefix_mid_xy(mzx_world, &put_x, &put_y, x, y);
-
           if((unsigned int)put_param < 256)
           {
+            if (mzx_world->sprite_list[put_param]->flags & SPRITE_UNBOUND)
+              prefix_mid_xy_unbound(mzx_world, &put_x, &put_y, x, y);
+            else
+              prefix_mid_xy(mzx_world, &put_x, &put_y, x, y);
+
             plot_sprite(mzx_world, mzx_world->sprite_list[put_param],
              put_color, put_x, put_y);
           }
