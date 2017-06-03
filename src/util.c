@@ -783,33 +783,35 @@ void mfputd(int ch, struct memfile *mf)
   mf->current += 4;
 }
 
-int mfread(char *dest, size_t len, size_t count, struct memfile *mf)
+int mfread(void *dest, size_t len, size_t count, struct memfile *mf)
 {
   unsigned int i;
+  char *pos = dest;
   for(i = 0; i < count; i++)
   {
     if(mf->current + len >= mf->end)
       break;
 
-    memcpy(dest, mf->current, len);
+    memcpy(pos, mf->current, len);
     mf->current += len;
-    dest += len;
+    pos += len;
   }
 
   return i;
 }
 
-int mfwrite(char *src, size_t len, size_t count, struct memfile *mf)
+int mfwrite(const void *src, size_t len, size_t count, struct memfile *mf)
 {
   unsigned int i;
+  char *pos = (char *)src;
   for(i = 0; i < count; i++)
   {
     if(mf->current + len >= mf->end)
       break;
 
-    memcpy(mf->current, src, len);
+    memcpy(mf->current, pos, len);
     mf->current += len;
-    src += len;
+    pos += len;
   }
 
   return i;

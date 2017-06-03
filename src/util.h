@@ -166,8 +166,8 @@ int mfgetd(struct memfile *mf);
 int mfputc(int ch, struct memfile *mf);
 void mfputw(int ch, struct memfile *mf);
 void mfputd(int ch, struct memfile *mf);
-int mfread(char *dest, size_t len, size_t count, struct memfile *mf);
-int mfwrite(char *src, size_t len, size_t count, struct memfile *mf);
+int mfread(void *dest, size_t len, size_t count, struct memfile *mf);
+int mfwrite(const void *src, size_t len, size_t count, struct memfile *mf);
 int mfseek(struct memfile *mf, int offs, int code);
 int mftell(struct memfile *mf);
 

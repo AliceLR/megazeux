@@ -89,21 +89,32 @@ inline void meter_initial_draw(int curr, int target, const char *title) {}
 #define PROP_HEADER_SIZE 4
 
 // IF YOU ADD ANYTHING, MAKE SURE THIS GETS UPDATED!
-#define COUNT_WORLD_PROPS ( 2 +   5 + 16)
-#define BOUND_WORLD_PROPS (27 + 455 + 24)
+#define COUNT_WORLD_PROPS ( 2 +   4 + 16)
+#define BOUND_WORLD_PROPS (29 + 455 + 24)
 
-#define COUNT_SAVE_PROPS  ( 2 +   4 +   24)
-#define BOUND_SAVE_PROPS  ( 3 +   9 + 1632 + NUM_KEYS)
+#define COUNT_SAVE_PROPS  ( 2 +   4 +   33)
+#define BOUND_SAVE_PROPS  ( 1 +   9 + 1632 + NUM_KEYS)
+
+// 600
+#define WORLD_PROP_SIZE \
+ (BOUND_WORLD_PROPS + PROP_HEADER_SIZE * COUNT_WORLD_PROPS + 2)
+
+// 1783
+#define SAVE_PROP_SIZE \
+ (BOUND_SAVE_PROPS + PROP_HEADER_SIZE * COUNT_SAVE_PROPS)
+
+// 2383
+#define WORLD_PROP_TOTAL_SIZE (WORLD_PROP_SIZE + SAVE_PROP_SIZE)
 
 enum world_prop
 {
-  WPROP_EOF                       = 0x0000, // Size bound (save)
+  WPROP_EOF                       = 0x0000, // Size
 
-  // Header redundant properties      2 (4)     27  (30)
+  // Header redundant properties      2 (4)     29 (1)
   WPROP_WORLD_NAME                = 0x0001, //  25
   WPROP_WORLD_VERSION             = 0x0002, //   2
-  WPROP_SAVE_VERSION              = 0x0003, //       (2)
-  WPROP_SAVE_START_BOARD          = 0x0004, //       (1)
+  WPROP_FILE_VERSION              = 0x0003, //   2
+  WPROP_SAVE_START_BOARD          = 0x0004, //  (1)
 
   // ID Chars                            4     455
   WPROP_ID_CHARS                  = 0x0010, // 323
@@ -130,77 +141,84 @@ enum world_prop
   WPROP_ONLY_FROM_SWAP            = 0x002F, //   1
 
   // Temporarily save-only               4       9
-  WPROP_SMZX_MODE                 = 0x0030, //   1
-  WPROP_VLAYER_WIDTH              = 0x0031, //   2
-  WPROP_VLAYER_HEIGHT             = 0x0032, //   2
-  WPROP_VLAYER_SIZE               = 0x0033, //   4
+  WPROP_SMZX_MODE                 = 0x8030, //   1
+  WPROP_VLAYER_WIDTH              = 0x8031, //   2
+  WPROP_VLAYER_HEIGHT             = 0x8032, //   2
+  WPROP_VLAYER_SIZE               = 0x8033, //   4
 
   // Save properties                    24    1632 + NUM_KEYS
-  WPROP_REAL_MOD_PLAYING          = 0x0040, // 512
-  WPROP_MZX_SPEED                 = 0x0041, //   1
-  WPROP_LOCK_SPEED                = 0x0042, //   1
-  WPROP_COMMANDOS                 = 0x0043, //   4
-  WPROP_SAVED_POSITIONS           = 0x0048, //  40 (2+2+1)*8
-  WPROP_PLAYER_RESTART_X          = 0x0049, //   2
-  WPROP_PLAYER_RESTARY_Y          = 0x004A, //   2
-  WPROP_SAVED_PL_COLOR            = 0x004B, //   1
-  WPROP_UNDER_PLAYER              = 0x004C, //   3 (1+1+1)
-  WPROP_KEYS                      = 0x004D, // NUM_KEYS
-  WPROP_DURATIONS                 = 0x0050, //   5 (1+1+1+1+1)
-  WPROP_SCROLL_COLS               = 0x0051, //   5 (1+1+1+1+1)
-  WPROP_MESG_EDGES                = 0x0052, //   1
-  WPROP_BI_SHOOT_STATUS           = 0x0053, //   1
-  WPROP_BI_MESG_STATUS            = 0x0054, //   1
-  WPROP_FADED                     = 0x0055, //   1
-  WPROP_INPUT_FILE_NAME           = 0x0060, // 512
-  WPROP_INPUT_POS                 = 0x0064, //   4
-  WPROP_FREAD_DELIMITER           = 0x0065, //   4
-  WPROP_OUTPUT_FILE_NAME          = 0x0068, // 512
-  WPROP_OUTPUT_POS                = 0x006C, //   4
-  WPROP_FWRITE_DELIMITER          = 0x006D, //   4
-  WPROP_MULTIPLIER                = 0x0070, //   4
-  WPROP_DIVIDER                   = 0x0071, //   4
-  WPROP_C_DIVISIONS               = 0x0072, //   4
+  WPROP_REAL_MOD_PLAYING          = 0x8040, // 512
+  WPROP_MZX_SPEED                 = 0x8041, //   1
+  WPROP_LOCK_SPEED                = 0x8042, //   1
+  WPROP_COMMANDOS                 = 0x8043, //   4
+  WPROP_SAVED_POSITIONS           = 0x8048, //  40 (2+2+1)*8
+  WPROP_UNDER_PLAYER              = 0x8049, //   3 (1+1+1)
+  WPROP_PLAYER_RESTART_X          = 0x804A, //   2
+  WPROP_PLAYER_RESTART_Y          = 0x804B, //   2
+  WPROP_SAVED_PL_COLOR            = 0x804C, //   1
+  WPROP_KEYS                      = 0x804D, // NUM_KEYS
+  WPROP_BLIND_DUR                 = 0x8050, //   1
+  WPROP_FIREWALKER_DUR            = 0x8051, //   1
+  WPROP_FREEZE_TIME_DUR           = 0x8052, //   1
+  WPROP_SLOW_TIME_DUR             = 0x8053, //   1
+  WPROP_WIND_DUR                  = 0x8054, //   1
+  WPROP_SCROLL_BASE_COLOR         = 0x8058, //   1
+  WPROP_SCROLL_CORNER_COLOR       = 0x8059, //   1
+  WPROP_SCROLL_POINTER_COLOR      = 0x805A, //   1
+  WPROP_SCROLL_TITLE_COLOR        = 0x805B, //   1
+  WPROP_SCROLL_ARROW_COLOR        = 0x805C, //   1
+  WPROP_MESG_EDGES                = 0x8060, //   1
+  WPROP_BI_SHOOT_STATUS           = 0x8061, //   1
+  WPROP_BI_MESG_STATUS            = 0x8062, //   1
+  WPROP_FADED                     = 0x8063, //   1
+  WPROP_INPUT_FILE_NAME           = 0x8070, // 512
+  WPROP_INPUT_POS                 = 0x8074, //   4
+  WPROP_FREAD_DELIMITER           = 0x8075, //   4
+  WPROP_OUTPUT_FILE_NAME          = 0x8078, // 512
+  WPROP_OUTPUT_POS                = 0x807C, //   4
+  WPROP_FWRITE_DELIMITER          = 0x807D, //   4
+  WPROP_MULTIPLIER                = 0x8080, //   4
+  WPROP_DIVIDER                   = 0x8081, //   4
+  WPROP_C_DIVISIONS               = 0x8082, //   4
 };
 
-static inline int world_prop_file_size(void)
-{
-  return (BOUND_WORLD_PROPS + PROP_HEADER_SIZE * COUNT_WORLD_PROPS) + 2;
-}
 
-static inline int save_prop_extra_file_size(void)
-{
-  return (BOUND_SAVE_PROPS + PROP_HEADER_SIZE * COUNT_SAVE_PROPS) + 2;
-}
+#define COUNT_SPRITE_PROPS 15
+#define BOUND_SPRITE_PROPS 60
+#define COUNT_SPRITE_ONCE_PROPS 3
+#define BOUND_SPRITE_ONCE_PROPS 12
 
-
-#define COUNT_SPRITE_PROPS 13
-#define BOUND_SPRITE_PROPS 20
+// 30746
+#define SPRITE_PROPS_SIZE \
+ ((BOUND_SPRITE_PROPS + PROP_HEADER_SIZE * COUNT_SPRITE_PROPS) * MAX_SPRITES + \
+ (BOUND_SPRITE_ONCE_PROPS + PROP_HEADER_SIZE * COUNT_SPRITE_ONCE_PROPS) + 2)
 
 enum sprite_prop
 {
   SPROP_EOF               = 0x00,
-  SPROP_X                 = 0x01, // 2
-  SPROP_Y                 = 0x02, // 2
-  SPROP_REF_X             = 0x03, // 2
-  SPROP_REF_Y             = 0x04, // 2
-  SPROP_COLOR             = 0x05, // 1
-  SPROP_FLAGS             = 0x06, // 1
-  SPROP_WIDTH             = 0x07, // 1
-  SPROP_HEIGHT            = 0x08, // 1
-  SPROP_COL_X             = 0x09, // 1
-  SPROP_COL_Y             = 0x0A, // 1
-  SPROP_COL_WIDTH         = 0x0B, // 1
-  SPROP_COL_HEIGHT        = 0x0C, // 1
-  SPROP_TRANSPARENT_COLOR = 0x0D, // 4
-};
 
-static inline int sprite_prop_file_size(void)
-{
-  return
-   (BOUND_SPRITE_PROPS + PROP_HEADER_SIZE * COUNT_SPRITE_PROPS)
-   * MAX_SPRITES + 2;
-}
+  // For each sprite
+  SPROP_SET_ID            = 0x01, // 4, used to select a sprite #
+  SPROP_X                 = 0x02, // 2 (actually saving everything as 4)
+  SPROP_Y                 = 0x03, // 2
+  SPROP_REF_X             = 0x04, // 2
+  SPROP_REF_Y             = 0x05, // 2
+  SPROP_COLOR             = 0x06, // 1
+  SPROP_FLAGS             = 0x07, // 1
+  SPROP_WIDTH             = 0x08, // 1
+  SPROP_HEIGHT            = 0x09, // 1
+  SPROP_COL_X             = 0x0A, // 1
+  SPROP_COL_Y             = 0x0B, // 1
+  SPROP_COL_WIDTH         = 0x0C, // 1
+  SPROP_COL_HEIGHT        = 0x0D, // 1
+  SPROP_TRANSPARENT_COLOR = 0x0E, // 4
+  SPROP_CHARSET_OFFSET    = 0x0F, // 4
+
+  // Only once
+  SPROP_ACTIVE_SPRITES    = 0x8000, // 1
+  SPROP_SPRITE_Y_ORDER    = 0x8001, // 1
+  SPROP_COLLISION_COUNT   = 0x8002, // 2
+};
 
 
 // This function is used to save properties files in world saving.
@@ -231,12 +249,30 @@ static inline void save_prop_d(int ident, int value, struct memfile *mf)
   mfputd(value, mf);
 }
 
-static inline void save_prop_m(int ident, void *src, size_t len, size_t count,
+static inline void save_prop_s(int ident, void *src, size_t len, size_t count,
  struct memfile *mf)
 {
   mfputw(ident, mf);
   mfputw(len * count, mf);
   mfwrite(src, len, count, mf);
+}
+
+static inline int load_prop_int(int length, struct memfile *prop)
+{
+  switch(length)
+  {
+    case 1:
+      return mfgetc(prop);
+
+    case 2:
+      return mfgetw(prop);
+
+    case 4:
+      return mfgetd(prop);
+
+    default:
+      return 0;
+  }
 }
 
 // This function is used to read properties files in world loading.
@@ -246,25 +282,21 @@ int next_prop(struct memfile *prop, int *ident, int *length,
   char *end = mf->end;
   char *cur;
   int len;
-  int id;
 
   if((end - mf->current)<PROP_HEADER_SIZE)
   {
-    *ident = 0;
     return 0;
   }
 
-  id = mfgetw(mf);
+  *ident = mfgetw(mf);
   len = mfgetw(mf);
   cur = mf->current;
 
   if((end - cur)<len)
   {
-    *ident = 0;
     return 0;
   }
 
-  *ident = id;
   *length = len;
   prop->current = cur;
   prop->start = cur;
@@ -274,20 +306,504 @@ int next_prop(struct memfile *prop, int *ident, int *length,
   return 1;
 }
 
+
+// World info
 static inline int save_world_info(struct world *mzx_world,
- struct zip_archive *zp, int savegame, const char *name, enum file_prop file_id)
+ struct zip_archive *zp, int savegame, int file_version,
+ const char *name, enum file_prop file_id)
 {
-  // FIXME
-  return 0;
+  char buffer[WORLD_PROP_TOTAL_SIZE];
+  char prop_buffer[40];
+  struct memfile _mf;
+  struct memfile _prop;
+  struct memfile *mf = &_mf;
+  struct memfile *prop = &_prop;
+  int size;
+  int i;
+
+  mfopen_static(buffer, WORLD_PROP_TOTAL_SIZE, mf);
+  mfopen_static(prop_buffer, 40, prop);
+
+  // Header redundant properties
+  save_prop_s(WPROP_WORLD_NAME, mzx_world->name, BOARD_NAME_SIZE, 1, mf);
+  save_prop_w(WPROP_FILE_VERSION, file_version, mf);
+
+  if(savegame)
+  {
+    save_prop_w(WPROP_WORLD_VERSION, mzx_world->version, mf);
+    save_prop_c(WPROP_SAVE_START_BOARD, mzx_world->current_board_id, mf);
+  }
+  else
+  {
+    save_prop_w(WPROP_WORLD_VERSION, file_version, mf);
+  }
+
+  // ID Chars
+  save_prop_s(WPROP_ID_CHARS,           id_chars, 323, 1, mf);
+  save_prop_c(WPROP_ID_MISSILE_COLOR,   missile_color, mf);
+  save_prop_s(WPROP_ID_BULLET_COLOR,    bullet_color, 3, 1, mf);
+  save_prop_s(WPROP_ID_DMG,             id_dmg, 128, 1, mf);
+
+  // Global properties
+  save_prop_c(WPROP_EDGE_COLOR,         mzx_world->edge_color, mf);
+  save_prop_c(WPROP_FIRST_BOARD,        mzx_world->first_board, mf);
+  save_prop_c(WPROP_ENDGAME_BOARD,      mzx_world->endgame_board, mf);
+  save_prop_c(WPROP_DEATH_BOARD,        mzx_world->death_board, mf);
+  save_prop_w(WPROP_ENDGAME_X,          mzx_world->endgame_x, mf);
+  save_prop_w(WPROP_ENDGAME_Y,          mzx_world->endgame_y, mf);
+  save_prop_c(WPROP_GAME_OVER_SFX,      mzx_world->game_over_sfx, mf);
+  save_prop_w(WPROP_DEATH_X,            mzx_world->death_x, mf);
+  save_prop_w(WPROP_DEATH_Y,            mzx_world->death_y, mf);
+  save_prop_w(WPROP_STARTING_LIVES,     mzx_world->starting_lives, mf);
+  save_prop_w(WPROP_LIVES_LIMIT,        mzx_world->lives_limit, mf);
+  save_prop_w(WPROP_STARTING_HEALTH,    mzx_world->starting_health, mf);
+  save_prop_w(WPROP_HEALTH_LIMIT,       mzx_world->health_limit, mf);
+  save_prop_c(WPROP_ENEMY_HURT_ENEMY,   mzx_world->enemy_hurt_enemy, mf);
+  save_prop_c(WPROP_CLEAR_ON_EXIT,      mzx_world->clear_on_exit, mf);
+  save_prop_c(WPROP_ONLY_FROM_SWAP,     mzx_world->only_from_swap, mf);
+
+  if(savegame)
+  {
+    // Temporarily save-only
+    save_prop_c(WPROP_SMZX_MODE,        get_screen_mode(), mf);
+    save_prop_w(WPROP_VLAYER_WIDTH,     mzx_world->vlayer_width, mf);
+    save_prop_w(WPROP_VLAYER_HEIGHT,    mzx_world->vlayer_height, mf);
+    save_prop_d(WPROP_VLAYER_SIZE,      mzx_world->vlayer_size, mf);
+
+    // Save properties
+    size = strlen(mzx_world->real_mod_playing) + 1;
+    save_prop_s(WPROP_REAL_MOD_PLAYING, mzx_world->real_mod_playing, size, 1, mf);
+
+    save_prop_c(WPROP_MZX_SPEED,        mzx_world->mzx_speed, mf);
+    save_prop_c(WPROP_LOCK_SPEED,       mzx_world->lock_speed, mf);
+    save_prop_d(WPROP_COMMANDOS,        mzx_world->commands, mf);
+
+    mfseek(prop, 0, SEEK_SET);
+    for(i = 0; i < 8; i++)
+    {
+      mfputw(mzx_world->pl_saved_x[i], prop);
+      mfputw(mzx_world->pl_saved_y[i], prop);
+      mfputc(mzx_world->pl_saved_board[i], prop);
+    }
+    save_prop_s(WPROP_SAVED_POSITIONS,  prop_buffer, 40, 1, mf);
+
+    prop_buffer[0] = mzx_world->under_player_id;
+    prop_buffer[1] = mzx_world->under_player_color;
+    prop_buffer[2] = mzx_world->under_player_param;
+    save_prop_s(WPROP_UNDER_PLAYER,     prop_buffer, 3, 1, mf);
+
+    save_prop_w(WPROP_PLAYER_RESTART_X, mzx_world->player_restart_x, mf);
+    save_prop_w(WPROP_PLAYER_RESTART_Y, mzx_world->player_restart_y, mf);
+    save_prop_c(WPROP_SAVED_PL_COLOR,   mzx_world->saved_pl_color, mf);
+    save_prop_s(WPROP_KEYS,             mzx_world->keys, NUM_KEYS, 1, mf);
+    save_prop_c(WPROP_BLIND_DUR,        mzx_world->blind_dur, mf);
+    save_prop_c(WPROP_FIREWALKER_DUR,   mzx_world->firewalker_dur, mf);
+    save_prop_c(WPROP_FREEZE_TIME_DUR,  mzx_world->freeze_time_dur, mf);
+    save_prop_c(WPROP_SLOW_TIME_DUR,    mzx_world->slow_time_dur, mf);
+    save_prop_c(WPROP_WIND_DUR,         mzx_world->wind_dur, mf);
+    save_prop_c(WPROP_SCROLL_BASE_COLOR,    mzx_world->scroll_base_color, mf);
+    save_prop_c(WPROP_SCROLL_CORNER_COLOR,  mzx_world->scroll_corner_color, mf);
+    save_prop_c(WPROP_SCROLL_POINTER_COLOR, mzx_world->scroll_pointer_color, mf);
+    save_prop_c(WPROP_SCROLL_TITLE_COLOR,   mzx_world->scroll_title_color, mf);
+    save_prop_c(WPROP_SCROLL_ARROW_COLOR,   mzx_world->scroll_arrow_color, mf);
+    save_prop_c(WPROP_MESG_EDGES,       mzx_world->mesg_edges, mf);
+    save_prop_c(WPROP_BI_SHOOT_STATUS,  mzx_world->bi_shoot_status, mf);
+    save_prop_c(WPROP_BI_MESG_STATUS,   mzx_world->bi_mesg_status, mf);
+    save_prop_c(WPROP_FADED,            get_fade_status(), mf);
+
+    size = strlen(mzx_world->input_file_name) + 1;
+    save_prop_s(WPROP_INPUT_FILE_NAME,  mzx_world->input_file_name, size, 1, mf);
+    save_prop_d(WPROP_INPUT_POS,        mzx_world->temp_input_pos, mf);
+    save_prop_d(WPROP_FREAD_DELIMITER,  mzx_world->fread_delimiter, mf);
+
+    size = strlen(mzx_world->output_file_name) + 1;
+    save_prop_s(WPROP_OUTPUT_FILE_NAME, mzx_world->output_file_name, size, 1, mf);
+    save_prop_d(WPROP_OUTPUT_POS,       mzx_world->temp_output_pos, mf);
+    save_prop_d(WPROP_FWRITE_DELIMITER, mzx_world->fwrite_delimiter, mf);
+    save_prop_d(WPROP_MULTIPLIER,       mzx_world->multiplier, mf);
+    save_prop_d(WPROP_DIVIDER,          mzx_world->divider, mf);
+    save_prop_d(WPROP_C_DIVISIONS,      mzx_world->c_divisions, mf);
+  }
+
+  save_prop_eof(mf);
+
+  size = mftell(mf);
+
+  return zip_write_file(zp, name, buffer, size, ZIP_M_NONE, file_id, 0, 0);
+}
+
+#define check(id) {        \
+  if(last_ident < id) {    \
+    missing_ident = id;    \
+    goto err;              \
+  }                        \
 }
 
 static inline int load_world_info(struct world *mzx_world,
- struct zip_archive *zp, int savegame)
+ struct zip_archive *zp, int savegame, int file_version)
 {
-  // FIXME
-  return 0;
+  char buffer[WORLD_PROP_TOTAL_SIZE];
+  struct memfile _mf;
+  struct memfile _prop;
+  struct memfile *mf = &_mf;
+  struct memfile *prop = &_prop;
+  unsigned int actual_size;
+  int last_ident;
+  int missing_ident;
+  int ident;
+  int size;
+
+  int read_file_version = 0;
+
+  int result;
+
+  result = zip_read_file(zp, NULL, 0,
+   buffer, WORLD_PROP_TOTAL_SIZE, &actual_size);
+
+  if(result != ZIP_SUCCESS)
+    return result;
+
+  mfopen_static(buffer, actual_size, mf);
+
+  while(next_prop(prop, &ident, &size, mf))
+  {
+    switch(ident)
+    {
+      // Header redundant properties
+      case WPROP_WORLD_NAME:
+        mfread(mzx_world->name, size, 1, prop);
+        break;
+
+      case WPROP_WORLD_VERSION:
+        mzx_world->version = load_prop_int(size, prop);
+        break;
+
+      case WPROP_FILE_VERSION:
+        read_file_version = load_prop_int(size, prop);
+        break;
+
+      case WPROP_SAVE_START_BOARD:
+        mzx_world->current_board_id = load_prop_int(size, prop);
+        break;
+
+      // ID Chars
+      case WPROP_ID_CHARS:
+        mfread(id_chars, 323, 1, prop);
+        break;
+
+      case WPROP_ID_MISSILE_COLOR:
+        check(WPROP_ID_CHARS);
+        missile_color = load_prop_int(size, prop);
+        break;
+
+      case WPROP_ID_BULLET_COLOR:
+        check(WPROP_ID_MISSILE_COLOR);
+        mfread(bullet_color, 3, 1, prop);
+        break;
+        
+      case WPROP_ID_DMG:
+        check(WPROP_ID_BULLET_COLOR);
+        mfread(id_dmg, 128, 1, prop);
+        break;
+
+      // Global properties
+      case WPROP_EDGE_COLOR:
+        check(WPROP_ID_DMG);
+        // FIXME
+        break;
+
+      case WPROP_FIRST_BOARD:
+        check(WPROP_EDGE_COLOR);
+        // FIXME
+        break;
+
+      case WPROP_ENDGAME_BOARD:
+        check(WPROP_FIRST_BOARD);
+        // FIXME
+        break;
+
+      case WPROP_DEATH_BOARD:
+        check(WPROP_ENDGAME_BOARD);
+        // FIXME
+        break;
+
+      case WPROP_ENDGAME_X:
+        check(WPROP_DEATH_BOARD);
+        // FIXME
+        break;
+
+      case WPROP_ENDGAME_Y:
+        check(WPROP_ENDGAME_X);
+        // FIXME
+        break;
+
+      case WPROP_GAME_OVER_SFX:
+        check(WPROP_ENDGAME_Y);
+        // FIXME
+        break;
+
+      case WPROP_DEATH_X:
+        check(WPROP_GAME_OVER_SFX);
+        // FIXME
+        break;
+
+      case WPROP_DEATH_Y:
+        check(WPROP_DEATH_X);
+        // FIXME
+        break;
+
+      case WPROP_STARTING_LIVES:
+        check(WPROP_DEATH_Y);
+        // FIXME
+        break;
+
+      case WPROP_LIVES_LIMIT:
+        check(WPROP_STARTING_LIVES);
+        // FIXME
+        break;
+
+      case WPROP_STARTING_HEALTH:
+        check(WPROP_LIVES_LIMIT);
+        // FIXME
+        break;
+
+      case WPROP_HEALTH_LIMIT:
+        check(WPROP_STARTING_HEALTH);
+        // FIXME
+        break;
+
+      case WPROP_ENEMY_HURT_ENEMY:
+        check(WPROP_HEALTH_LIMIT);
+        // FIXME
+        break;
+
+      case WPROP_CLEAR_ON_EXIT:
+        check(WPROP_ENEMY_HURT_ENEMY);
+        // FIXME
+        break;
+
+      case WPROP_ONLY_FROM_SWAP:
+        check(WPROP_CLEAR_ON_EXIT);
+        // FIXME
+        break;
+
+
+      // Temporarily save-only
+      case WPROP_SMZX_MODE:
+        check(WPROP_ONLY_FROM_SWAP);
+        // FIXME
+        break;
+
+      case WPROP_VLAYER_WIDTH:
+        check(WPROP_SMZX_MODE);
+        // FIXME
+        break;
+
+      case WPROP_VLAYER_HEIGHT:
+        check(WPROP_VLAYER_WIDTH);
+        // FIXME
+        break;
+
+      case WPROP_VLAYER_SIZE:
+        check(WPROP_VLAYER_HEIGHT);
+        // FIXME
+        break;
+
+
+      // Save properties
+      case WPROP_REAL_MOD_PLAYING:
+        check(WPROP_VLAYER_SIZE);
+        // FIXME
+        break;
+
+      case WPROP_MZX_SPEED:
+        check(WPROP_REAL_MOD_PLAYING);
+        // FIXME
+        break;
+
+      case WPROP_LOCK_SPEED:
+        check(WPROP_MZX_SPEED);
+        // FIXME
+        break;
+
+      case WPROP_COMMANDOS:
+        check(WPROP_LOCK_SPEED);
+        // FIXME
+        break;
+
+      case WPROP_SAVED_POSITIONS:
+        check(WPROP_COMMANDOS);
+        // FIXME
+        break;
+
+      case WPROP_UNDER_PLAYER:
+        check(WPROP_SAVED_POSITIONS);
+        // FIXME
+        break;
+
+      case WPROP_PLAYER_RESTART_X:
+        check(WPROP_UNDER_PLAYER);
+        // FIXME
+        break;
+
+      case WPROP_PLAYER_RESTART_Y:
+        check(WPROP_PLAYER_RESTART_X);
+        // FIXME
+        break;
+
+      case WPROP_SAVED_PL_COLOR:
+        check(WPROP_PLAYER_RESTART_Y);
+        // FIXME
+        break;
+
+      case WPROP_KEYS:
+        check(WPROP_SAVED_PL_COLOR);
+        // FIXME
+        break;
+
+      case WPROP_BLIND_DUR:
+        check(WPROP_KEYS);
+        // FIXME
+        break;
+
+      case WPROP_FIREWALKER_DUR:
+        check(WPROP_BLIND_DUR);
+        // FIXME
+        break;
+
+      case WPROP_FREEZE_TIME_DUR:
+        check(WPROP_FIREWALKER_DUR);
+        // FIXME
+        break;
+
+      case WPROP_SLOW_TIME_DUR:
+        check(WPROP_FREEZE_TIME_DUR);
+        // FIXME
+        break;
+
+      case WPROP_WIND_DUR:
+        check(WPROP_SLOW_TIME_DUR);
+        // FIXME
+        break;
+
+      case WPROP_SCROLL_BASE_COLOR:
+        check(WPROP_WIND_DUR);
+        // FIXME
+        break;
+
+      case WPROP_SCROLL_CORNER_COLOR:
+        check(WPROP_SCROLL_BASE_COLOR);
+        // FIXME
+        break;
+
+      case WPROP_SCROLL_POINTER_COLOR:
+        check(WPROP_SCROLL_CORNER_COLOR);
+        // FIXME
+        break;
+
+      case WPROP_SCROLL_TITLE_COLOR:
+        check(WPROP_SCROLL_POINTER_COLOR);
+        // FIXME
+        break;
+
+      case WPROP_SCROLL_ARROW_COLOR:
+        check(WPROP_SCROLL_TITLE_COLOR);
+        // FIXME
+        break;
+
+      case WPROP_MESG_EDGES:
+        check(WPROP_SCROLL_ARROW_COLOR);
+        // FIXME
+        break;
+
+      case WPROP_BI_SHOOT_STATUS:
+        check(WPROP_MESG_EDGES);
+        // FIXME
+        break;
+
+      case WPROP_BI_MESG_STATUS:
+        check(WPROP_BI_SHOOT_STATUS);
+        // FIXME
+        break;
+
+      case WPROP_FADED:
+        check(WPROP_BI_MESG_STATUS);
+        // FIXME
+        break;
+
+      case WPROP_INPUT_FILE_NAME:
+        check(WPROP_FADED);
+        // FIXME
+        break;
+
+      case WPROP_INPUT_POS:
+        check(WPROP_INPUT_FILE_NAME);
+        // FIXME
+        break;
+
+      case WPROP_FREAD_DELIMITER:
+        check(WPROP_INPUT_POS);
+        // FIXME
+        break;
+
+      case WPROP_OUTPUT_FILE_NAME:
+        check(WPROP_FREAD_DELIMITER);
+        // FIXME
+        break;
+
+      case WPROP_OUTPUT_POS:
+        check(WPROP_OUTPUT_FILE_NAME);
+        // FIXME
+        break;
+
+      case WPROP_FWRITE_DELIMITER:
+        check(WPROP_OUTPUT_POS);
+        // FIXME
+        break;
+
+      case WPROP_MULTIPLIER:
+        check(WPROP_FWRITE_DELIMITER);
+        // FIXME
+        break;
+
+      case WPROP_DIVIDER:
+        check(WPROP_MULTIPLIER);
+        // FIXME
+        break;
+
+      case WPROP_C_DIVISIONS:
+        check(WPROP_DIVIDER);
+        // FIXME
+        break;
+
+      default:
+        break;
+    }
+    last_ident = ident;
+  }
+
+  if(file_version != read_file_version)
+  {} // FIXME
+
+  return result;
+
+err:
+  fprintf(stderr, "load_world_info: found %d, expected %d (last: %d)",
+   ident, missing_ident, last_ident);
+  return -1;
 }
 
+/* Properties of the six commandos:
+ *
+ * Braizen: Fire
+ * Gigan: Power/Strength
+ * Proxis: Ice
+ * Dantyr: Explosive
+ * Photon: Lazer Based
+ * Rodstar: Solar
+ */
+
+// Global robot
 static inline int save_world_global_robot(struct world *mzx_world,
  struct zip_archive *zp, const char *name, enum file_prop file_id)
 {
@@ -301,6 +817,7 @@ static inline int load_world_global_robot(struct world *mzx_world,
   // FIXME
   return 0;
 }
+
 
 // Status counters
 static inline int save_world_stat_counters(struct world *mzx_world,
@@ -344,6 +861,7 @@ static inline int load_world_stat_counters(struct world *mzx_world,
   return result;
 }
 
+
 // SFX
 static inline int save_world_sfx(struct world *mzx_world,
  struct zip_archive *zp, const char *name, enum file_prop file_id)
@@ -375,6 +893,7 @@ static inline int load_world_sfx(struct world *mzx_world,
   }
 }
 
+
 // Charset
 static inline int save_world_chars(struct world *mzx_world,
  struct zip_archive *zp, const char *name, enum file_prop file_id)
@@ -402,6 +921,7 @@ static inline int load_world_chars(struct world *mzx_world,
 
   return result;
 }
+
 
 // Palette
 static inline int save_world_pal(struct world *mzx_world,
@@ -446,6 +966,7 @@ static inline int load_world_pal(struct world *mzx_world,
   return result;
 }
 
+
 // Palette index
 static inline int save_world_pal_index(struct world *mzx_world,
  struct zip_archive *zp, const char *name, enum file_prop file_id)
@@ -460,6 +981,7 @@ static inline int load_world_pal_index(struct world *mzx_world,
   // FIXME
   return 0;
 }
+
 
 // Palette intensities
 static inline int save_world_pal_inten(struct world *mzx_world,
@@ -496,6 +1018,7 @@ static inline int load_world_pal_inten(struct world *mzx_world,
 
   return result;
 }
+
 
 // Vlayer colors
 static inline int save_world_vco(struct world *mzx_world,
@@ -559,20 +1082,158 @@ static inline int load_world_vch(struct world *mzx_world,
    mzx_world->vlayer_chars, vlayer_size, NULL);
 }
 
+
 // Sprites
 static inline int save_world_sprites(struct world *mzx_world,
  struct zip_archive *zp, const char *name, enum file_prop file_id)
 {
-  // FIXME
-  return 0;
+  char buffer[SPRITE_PROPS_SIZE];
+  struct sprite *spr;
+  struct memfile mf;
+  int i;
+
+  mfopen_static(buffer, SPRITE_PROPS_SIZE, &mf);
+
+  // For each
+  for(i = 0; i < MAX_SPRITES; i++)
+  {
+    spr = mzx_world->sprite_list[i];
+
+    save_prop_c(SPROP_SET_ID,             i, &mf);
+    save_prop_d(SPROP_X,                  spr->x, &mf);
+    save_prop_d(SPROP_Y,                  spr->y, &mf);
+    save_prop_d(SPROP_REF_X,              spr->ref_x, &mf);
+    save_prop_d(SPROP_REF_Y,              spr->ref_y, &mf);
+    save_prop_d(SPROP_COLOR,              spr->color, &mf);
+    save_prop_d(SPROP_FLAGS,              spr->flags, &mf);
+    save_prop_d(SPROP_WIDTH,              spr->width, &mf);
+    save_prop_d(SPROP_HEIGHT,             spr->height, &mf);
+    save_prop_d(SPROP_COL_X,              spr->col_x, &mf);
+    save_prop_d(SPROP_COL_Y,              spr->col_y, &mf);
+    save_prop_d(SPROP_COL_WIDTH,          spr->col_width, &mf);
+    save_prop_d(SPROP_COL_HEIGHT,         spr->col_height, &mf);
+    //save_prop_d(SPROP_TRANSPARENT_COLOR,  spr->transparent_color, &mf);
+    //save_prop_d(SPROP_CHARSET_OFFSET,     spr->offset, &mf);
+    //FIXME
+    save_prop_d(SPROP_TRANSPARENT_COLOR, 0, &mf);
+    save_prop_d(SPROP_CHARSET_OFFSET, 0, &mf);
+  }
+
+  // Only once
+  save_prop_d(SPROP_ACTIVE_SPRITES,       mzx_world->active_sprites, &mf);
+  save_prop_d(SPROP_SPRITE_Y_ORDER,       mzx_world->sprite_y_order, &mf);
+  save_prop_d(SPROP_COLLISION_COUNT,      mzx_world->collision_count, &mf);
+
+  save_prop_eof(&mf);
+
+  return zip_write_file(zp, name, buffer, SPRITE_PROPS_SIZE,
+   ZIP_M_NONE, file_id, 0, 0);
 }
 
 static inline int load_world_sprites(struct world *mzx_world,
  struct zip_archive *zp)
 {
-  // FIXME
-  return 0;
+  char buffer[SPRITE_PROPS_SIZE];
+  unsigned int actual_size;
+
+  struct sprite *spr = NULL;
+  struct memfile mf;
+  struct memfile prop;
+  int ident;
+  int length;
+  int value;
+
+  int result;
+
+  result = zip_read_file(zp, NULL, 0, buffer, SPRITE_PROPS_SIZE, &actual_size);
+  if(result != ZIP_SUCCESS)
+    return result;
+
+  mfopen_static(buffer, actual_size, &mf);
+
+  while(next_prop(&prop, &ident, &length, &mf))
+  {
+    // Only numeric values here.
+    value = load_prop_int(length, &prop);
+
+    switch(ident)
+    {
+      case SPROP_EOF:
+        return result;
+
+      case SPROP_SET_ID:
+        if(value >= 0 && value < MAX_SPRITES)
+          spr = mzx_world->sprite_list[value];
+        else
+          spr = NULL;
+        break;
+
+      case SPROP_X:
+        if(spr) spr->x = value;
+        break;
+
+      case SPROP_Y:
+        if(spr) spr->y = value;
+        break;
+
+      case SPROP_REF_X:
+        if(spr) spr->ref_x = value;
+        break;
+
+      case SPROP_REF_Y:
+        if(spr) spr->ref_y = value;
+        break;
+
+      case SPROP_COLOR:
+        if(spr) spr->color = value;
+        break;
+
+      case SPROP_FLAGS:
+        if(spr) spr->flags = value;
+        break;
+
+      case SPROP_WIDTH:
+        if(spr) spr->width = (unsigned int)value;
+        break;
+
+      case SPROP_HEIGHT:
+        if(spr) spr->height = (unsigned int)value;
+        break;
+
+      case SPROP_COL_X:
+        if(spr) spr->col_x = value;
+        break;
+
+      case SPROP_COL_Y:
+        if(spr) spr->col_y = value;
+        break;
+
+      case SPROP_COL_WIDTH:
+        if(spr) spr->col_width = (unsigned int)value;
+        break;
+
+      case SPROP_COL_HEIGHT:
+        if(spr) spr->col_height = (unsigned int)value;
+        break;
+
+      case SPROP_TRANSPARENT_COLOR:
+        // FIXME
+        //if(spr) spr->transparent_color = value;
+        break;
+
+      case SPROP_CHARSET_OFFSET:
+        // FIXME
+        //if(spr) spr->offset = value;
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  return result;
 }
+
 
 // Counters
 static inline int save_world_counters(struct world *mzx_world,
@@ -664,6 +1325,7 @@ static inline int load_world_counters(struct world *mzx_world,
 
   return zip_read_close_stream(zp);
 }
+
 
 // Strings
 static inline int save_world_strings(struct world *mzx_world,
@@ -764,13 +1426,13 @@ static inline int load_world_strings(struct world *mzx_world,
 }
 
 
-static void save_world_zip(struct world *mzx_world, const char *file,
+static int save_world_zip(struct world *mzx_world, const char *file,
  int savegame, int file_version)
 {
   struct zip_archive *zp = zip_open_file_write(file);
 
   if(!zp)
-    return;
+    return -1;
 
   // Header
   if(!savegame)
@@ -802,7 +1464,8 @@ static void save_world_zip(struct world *mzx_world, const char *file,
     zputc(mzx_world->current_board_id, zp);
   }
 
-  save_world_info(mzx_world, zp, savegame, "_info", FPROP_WORLD_INFO);
+  save_world_info(mzx_world, zp, savegame, file_version,
+   "_info", FPROP_WORLD_INFO);
 
   save_world_global_robot(mzx_world, zp,  "gr",     FPROP_WORLD_GLOBAL_ROBOT);
   save_world_stat_counters(mzx_world, zp, "status", FPROP_WORLD_STAT_COUNTERS);
@@ -812,6 +1475,7 @@ static void save_world_zip(struct world *mzx_world, const char *file,
 
   if(savegame)
   {
+    // FIXME extended charset -- 1 through (NUM_CHARSETS-1)
     save_world_pal_index(mzx_world, zp,   "palidx", FPROP_WORLD_PAL_INDEX);
     save_world_pal_inten(mzx_world, zp,   "palint", FPROP_WORLD_PAL_INTENSITY);
     save_world_vco(mzx_world, zp,         "vco",    FPROP_WORLD_VCO);
@@ -824,6 +1488,7 @@ static void save_world_zip(struct world *mzx_world, const char *file,
   // FIXME boards
 
   zip_close(zp, NULL);
+  return 0;
 }
 
 
@@ -966,6 +1631,7 @@ int save_magic(const char magic_string[5])
 }
 
 int save_world(struct world *mzx_world, const char *file, int savegame)
+// FIXME: file_version
 {
 #ifdef CONFIG_DEBYTECODE
   FILE *fp;
@@ -1020,7 +1686,12 @@ int save_world(struct world *mzx_world, const char *file, int savegame)
     mzx_world->temp_output_pos = 0;
   }
 
-  // FIXME save_world_zip
+  // FIXME proper support
+  if(savegame)
+  {
+    return save_world_zip(mzx_world, file, savegame, WORLD_VERSION);
+  }
+
   return legacy_save_world(mzx_world, file, savegame);
 }
 
@@ -1251,7 +1922,7 @@ static void convert_sfx_strs(char *sfx_buf)
 
 
 static void load_world(struct world *mzx_world, FILE *fp, const char *file,
- bool savegame, int version, char *name, int *faded)
+ bool savegame, int file_version, char *name, int *faded)
 {
   size_t file_name_len = strlen(file) - 4;
   char config_file_name[MAX_PATH];
@@ -1260,7 +1931,7 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
   struct stat file_info;
 
   get_path(file, file_path, MAX_PATH);
-
+  
   // chdir to game directory
   if(file_path[0])
   {
@@ -1283,7 +1954,7 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
   mzx_world->custom_sfx_on = 0;
 
   // FIXME load_world_zip
-  legacy_load_world(mzx_world, fp, file, savegame, version, name, faded);
+  legacy_load_world(mzx_world, fp, file, savegame, file_version, name, faded);
 
   // Update the palette  
   update_palette();
@@ -1293,7 +1964,7 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
 
 #ifdef CONFIG_DEBYTECODE
   // Convert SFX strings if needed
-  if(version < VERSION_PROGRAM_SOURCE)
+  if(file_version < VERSION_PROGRAM_SOURCE)
   {
     char *sfx_offset = mzx_world->custom_sfx;
     int i;
