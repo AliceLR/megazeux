@@ -3051,7 +3051,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
      */
     case FOPEN_SAVE_BC:
     {
-      error_message(E_DBC_SAVE_ROBOT_UNSUPPORTED, 0);
+      error_message(E_DBC_SAVE_ROBOT_UNSUPPORTED, 0, NULL);
       set_error_suppression(E_DBC_SAVE_ROBOT_UNSUPPORTED, 1);
       break;
     }
