@@ -1624,7 +1624,7 @@ void quit_audio(void)
 /* If the mod was successfully changed, return 1.  This value is used
 *  to determine whether to change real_mod_playing.
 */
-__editor_maybe_static int load_module(char *filename, bool safely,
+int load_module(char *filename, bool safely,
  int volume)
 {
   char translated_filename[MAX_PATH];
