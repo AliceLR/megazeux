@@ -36,6 +36,7 @@ __M_BEGIN_DECLS
 #include "sfx.h"
 #include "util.h"
 #include "configure.h"
+#include "zip.h"
 
 /* When making new versions, change the number below, and
  * change the number in the version strings to follow. From now on,
@@ -119,10 +120,8 @@ enum file_prop
 {
   FPROP_NONE                  = 0x0000,
   FPROP_WORLD_INFO            = 0x0001, // properties file
-  FPROP_WORLD_PATH            = 0x0002, // plaintext
   FPROP_WORLD_GLOBAL_ROBOT    = 0x0004, // properties file
-  FPROP_WORLD_STAT_COUNTERS   = 0x0005, // plaintext, NUM_STATUS_COUNTERS * COUNTER_NAME_SIZE
-  FPROP_WORLD_SFX             = 0x0006, // data, NUM_SFX * SFX_SIZE
+  FPROP_WORLD_SFX             = 0x0008, // data, NUM_SFX * SFX_SIZE
   FPROP_WORLD_CHARS           = 0x000A, // data, 3584
   FPROP_WORLD_PAL             = 0x000C, // data, SMZX_PAL_SIZE * 3
   FPROP_WORLD_PAL_INDEX       = 0x000D, // data, 1024
@@ -186,8 +185,10 @@ void meter_initial_draw(int curr, int target, const char *title);
 #endif
 
 #ifdef CONFIG_EDITOR
-CORE_LIBSPEC FILE *try_load_world(const char *file, bool savegame,
- int *version, char *name);
+CORE_LIBSPEC void try_load_world(struct world *mzx_world,
+ struct zip_archive **zp, FILE **fp, const char *file, bool savegame,
+ int *file_version, char *name);
+
 CORE_LIBSPEC void default_global_data(struct world *mzx_world);
 
 CORE_LIBSPEC void set_update_done(struct world *mzx_world);

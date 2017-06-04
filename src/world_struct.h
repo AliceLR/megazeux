@@ -202,6 +202,10 @@ struct world
   bool editing;
 #endif
 
+  // World validation: we don't want to alloc this file twice.
+  char *raw_world_info;
+  int raw_world_info_size;
+
   // Keep this open, just once
   FILE *help_file;
 

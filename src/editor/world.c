@@ -21,11 +21,13 @@
 
 #include "world.h"
 
+#include "../const.h"
 #include "../error.h"
 #include "../graphics.h"
 #include "../window.h"
 #include "../world.h"
 #include "../idput.h"
+#include "../zip.h"
 
 #include "board.h"
 #include "robot.h"
@@ -145,6 +147,7 @@ static const unsigned char def_id_chars[455] =
 
 bool append_world(struct world *mzx_world, const char *file)
 {
+  char ignore[BOARD_NAME_SIZE];
   int i, i2;
   int num_boards, old_num_boards = mzx_world->num_boards;
   int last_pos;
@@ -154,9 +157,16 @@ bool append_world(struct world *mzx_world, const char *file)
   int board_width, board_height;
   char *level_id, *level_param;
   int input_version;
+
+  struct zip_archive *zp;
   FILE *fp;
 
-  fp = try_load_world(file, false, &input_version, NULL);
+  try_load_world(mzx_world, &zp, &fp, file, false, &input_version, ignore);
+
+  // FIXME zip support
+  if(zp)
+    zip_close(zp, NULL);
+
   if(!fp)
     return false;
 

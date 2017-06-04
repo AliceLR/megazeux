@@ -705,20 +705,26 @@ static void decrypt(const char *file_name)
  */
 
 enum val_result validate_legacy_world_file(const char *file,
- int savegame, int *end_of_global_offset, int decrypt_attempted)
+ int savegame, int decrypt_attempted)
 {
   enum val_result result = VAL_SUCCESS;
 
+  struct stat stat_result;
+  int stat_op_result;
   FILE *f;
   char magic[15];
   int num_boards;
   int board_name_offset;
   int v, i;
 
-  /* TEST 1: we already know it's a valid file if we're here at all. */
-  f = fopen_unsafe(file, "rb");
-  if(!f)
+  /* TEST 1: make sure it's even a file */
+  stat_op_result = stat(file, &stat_result);
+
+  if(stat_op_result ||
+   !S_ISREG(stat_result.st_mode) ||
+   !(f = fopen_unsafe(file, "rb")))
   {
+    error_message(E_FILE_DOES_NOT_EXIST, 0, file);
     result = VAL_MISSING;
     goto err_out;
   }
@@ -735,7 +741,7 @@ enum val_result validate_legacy_world_file(const char *file,
     if(!v)
       goto err_invalid;
 
-    else if (v > WORLD_VERSION)
+    else if (v > WORLD_LEGACY_FORMAT_VERSION)
     {
       error_message(E_SAVE_VERSION_TOO_RECENT, v, NULL);
       result = VAL_VERSION;
@@ -869,8 +875,7 @@ enum val_result validate_legacy_world_file(const char *file,
         decrypt(file);
   
         // Call this function again, but with decrypt_attempted = 1
-        return validate_legacy_world_file(file, savegame,
-         end_of_global_offset, 1);
+        return validate_legacy_world_file(file, savegame, 1);
       }
 
       else
@@ -894,7 +899,7 @@ enum val_result validate_legacy_world_file(const char *file,
       result = VAL_VERSION;
       goto err_close;
     }
-    else if (v > WORLD_VERSION)
+    else if (v > WORLD_LEGACY_FORMAT_VERSION)
     {
       error_message(E_WORLD_FILE_VERSION_TOO_RECENT, v, NULL);
       result = VAL_VERSION;
@@ -949,13 +954,6 @@ enum val_result validate_legacy_world_file(const char *file,
    fseek(f, num_boards * 8, SEEK_CUR) ||
    ((ftell(f) - board_name_offset) != num_boards * (BOARD_NAME_SIZE + 8)))
     goto err_invalid;
-
-  /* If any of the pointers are less than this pos we probably
-   * aren't dealing with a valid world, but it's not our job
-   * to figure that out right now, so we'll pass it back.
-   */
-  if(end_of_global_offset)
-    *end_of_global_offset = ftell(f);
 
   //todo: maybe have a complete fail when N number of pointers fail?
 
@@ -1139,18 +1137,6 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
       mzx_world->string_list[i] = legacy_load_string(fp);
       mzx_world->string_list[i]->list_ind = i;
     }
-
-    // Allocate space for sprites and clist
-    mzx_world->num_sprites = MAX_SPRITES;
-    mzx_world->sprite_list = ccalloc(MAX_SPRITES, sizeof(struct sprite *));
-
-    for(i = 0; i < MAX_SPRITES; i++)
-    {
-      mzx_world->sprite_list[i] = ccalloc(1, sizeof(struct sprite));
-    }
-
-    mzx_world->collision_list = ccalloc(MAX_SPRITES, sizeof(int));
-    mzx_world->sprite_num = 0;
 
     // Sprite data
     for(i = 0; i < MAX_SPRITES; i++)

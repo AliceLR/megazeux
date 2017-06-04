@@ -17,6 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdint.h>
 #include <stdio.h>
 #include <time.h>
 
@@ -25,7 +26,6 @@
 #include "zip.h"
 
 #include "error.h"
-#include "platform.h"
 #include "world.h"
 #include "world_struct.h"
 #include "util.h"
@@ -69,8 +69,8 @@ static int zip_get_dos_date_time(void)
   time_t current_time = time(NULL);
   struct tm *tm = localtime(&current_time);
 
-  Uint16 time;
-  Uint16 date;
+  uint16_t time;
+  uint16_t date;
 
   time =  (tm->tm_hour << 11);
   time |= (tm->tm_min << 5);
@@ -170,13 +170,13 @@ static void zip_error(const char *func, enum zip_error code)
 }
 
 
-static inline Uint32 zip_crc32(Uint32 crc, const char *src, Uint32 srcLen)
+static inline uint32_t zip_crc32(uint32_t crc, const char *src, uint32_t srcLen)
 {
   return crc32(crc, (Bytef *) src, (uLong) srcLen);
 }
 
-static int zip_uncompress(char *dest, Uint32 *destLen, const char *src,
- Uint32 *srcLen)
+static int zip_uncompress(char *dest, uint32_t *destLen, const char *src,
+ uint32_t *srcLen)
 {
   z_stream stream;
   int err;
@@ -210,8 +210,8 @@ static int zip_uncompress(char *dest, Uint32 *destLen, const char *src,
   return err;
 }
 
-static int zip_compress(char **dest, Uint32 *destLen, const char *src,
- Uint32 *srcLen)
+static int zip_compress(char **dest, uint32_t *destLen, const char *src,
+ uint32_t *srcLen)
 {
   z_stream stream;
   int _destLen;
@@ -571,7 +571,7 @@ static enum zip_error zip_read_file_header(struct zip_archive *zp,
     // We might need to look at the data descriptor, though.
     if(flags & ZIP_F_DATA_DESCRIPTOR)
     {
-      Uint32 expected_c_size = fh->compressed_size;
+      uint32_t expected_c_size = fh->compressed_size;
 
       // Find the data descriptor
       if(vseek(fp, expected_c_size, SEEK_CUR))
@@ -778,12 +778,12 @@ int zgetd(struct zip_archive *zp, enum zip_error *err)
   return zp->vgetd(zp->fp);
 }
 
-enum zip_error zread(void *destBuf, Uint32 readLen, struct zip_archive *zp)
+enum zip_error zread(void *destBuf, uint32_t readLen, struct zip_archive *zp)
 {
   struct zip_file_header *fh;
   char *src;
 
-  Uint32 consumed;
+  uint32_t consumed;
 
   enum zip_error result;
 
@@ -819,8 +819,8 @@ enum zip_error zread(void *destBuf, Uint32 readLen, struct zip_archive *zp)
   // DEFLATE compression
   if(fh->method == ZIP_M_DEFLATE)
   {
-    Uint32 u_size = fh ? fh->uncompressed_size : 0;
-    Uint32 c_size = fh ? fh->compressed_size : 0;
+    uint32_t u_size = fh ? fh->uncompressed_size : 0;
+    uint32_t c_size = fh ? fh->compressed_size : 0;
 
     if(!fh || readLen != u_size)
     {
@@ -879,7 +879,7 @@ err_out:
  */
 
 enum zip_error zip_get_next_prop(struct zip_archive *zp,
- Uint32 *prop_id, char *board_id, char *robot_id)
+ uint32_t *prop_id, char *board_id, char *robot_id)
 {
   struct zip_file_header *fh;
   enum zip_error result;
@@ -917,7 +917,7 @@ err_out:
  */
 
 enum zip_error zip_get_next_uncompressed_size(struct zip_archive *zp,
- Uint32 *u_size)
+ uint32_t *u_size)
 {
   enum zip_error result;
 
@@ -947,18 +947,18 @@ err_out:
  */
 
 enum zip_error zip_read_open_file_stream(struct zip_archive *zp,
- char *name, int name_buffer_size, Uint32 *destLen)
+ char *name, int name_buffer_size, uint32_t *destLen)
 {
   struct zip_file_header *central_fh;
   struct zip_file_header local_fh;
   void *fp;
 
-  Uint32 f_crc32;
-  Uint32 c_size;
-  Uint32 u_size;
-  Uint16 method;
+  uint32_t f_crc32;
+  uint32_t c_size;
+  uint32_t u_size;
+  uint16_t method;
 
-  Uint32 read_pos;
+  uint32_t read_pos;
   enum zip_error result;
 
   result = (zp ? zp->read_file_error : ZIP_NULL);
@@ -1057,9 +1057,9 @@ err_out:
 
 enum zip_error zip_read_close_stream(struct zip_archive *zp)
 {
-  Uint32 expected_crc32;
-  Uint32 stream_crc32;
-  Uint32 stream_left;
+  uint32_t expected_crc32;
+  uint32_t stream_crc32;
+  uint32_t stream_left;
   char buffer[128];
   int size;
 
@@ -1113,6 +1113,31 @@ err_out:
 }
 
 
+/* Rewind to the start of the zip archive. */
+
+enum zip_error zip_rewind(struct zip_archive *zp)
+{
+  enum zip_error result;
+
+  result = zp->read_file_error;
+  if(result)
+    goto err_out;
+
+  if(zp->num_files == 0)
+  {
+    return ZIP_EOF;
+  }
+
+  zp->pos = 0;
+
+  return ZIP_SUCCESS;
+
+err_out:
+  zip_error("zip_rewind", result);
+  return result;
+}
+
+
 /* Skip the current file in the zip archive. Only works after
  * zip_read_directory() is called.
  */
@@ -1135,7 +1160,7 @@ enum zip_error zip_skip_file(struct zip_archive *zp)
   return ZIP_SUCCESS;
 
 err_out:
-  zip_error("zip_skip", result);
+  zip_error("zip_skip_file", result);
   return result;
 }
 
@@ -1145,9 +1170,9 @@ err_out:
  */
 
 enum zip_error zip_read_file(struct zip_archive *zp, char *name,
- int nameLen, void *destBuf, Uint32 destLen, Uint32 *readLen)
+ int nameLen, void *destBuf, uint32_t destLen, uint32_t *readLen)
 {
-  Uint32 u_size;
+  uint32_t u_size;
   enum zip_error result;
 
   // No need to check mode; the functions used here will
@@ -1266,12 +1291,12 @@ enum zip_error zputd(int value, struct zip_archive *zp)
   return ZIP_SUCCESS;
 }
 
-enum zip_error zwrite(const void *src, Uint32 srcLen, struct zip_archive *zp)
+enum zip_error zwrite(const void *src, uint32_t srcLen, struct zip_archive *zp)
 {
   struct zip_file_header *fh;
   char *buffer;
-  Uint32 writeLen;
-  Uint16 method = ZIP_M_NONE;
+  uint32_t writeLen;
+  uint16_t method = ZIP_M_NONE;
 
   void *fp;
 
@@ -1318,7 +1343,7 @@ enum zip_error zwrite(const void *src, Uint32 srcLen, struct zip_archive *zp)
   // This might cause issues if the entire file isn't written in one go. Not sure.
   if(method == ZIP_M_DEFLATE)
   {
-    Uint32 consumed = srcLen;
+    uint32_t consumed = srcLen;
 
     result = zip_compress(&buffer, &writeLen, src, &consumed);
     if(result != Z_STREAM_END)
@@ -1377,7 +1402,7 @@ err_out:
  */
 
 enum zip_error zip_write_open_file_stream(struct zip_archive *zp,
- const char *name, int method, Uint32 prop_id, char board_id,
+ const char *name, int method, uint32_t prop_id, char board_id,
  char robot_id)
 {
   struct zip_file_header *fh;
@@ -1548,7 +1573,7 @@ err_out:
  */
 
 enum zip_error zip_write_file(struct zip_archive *zp, const char *name,
- const void *src, Uint32 srcLen, int method, Uint32 prop_id, char board_id,
+ const void *src, uint32_t srcLen, int method, uint32_t prop_id, char board_id,
  char robot_id)
 {
   enum zip_error result;
@@ -1618,7 +1643,7 @@ static int _zip_header_cmp(const void *a, const void *b)
 
 enum zip_error zip_read_directory(struct zip_archive *zp)
 {
-  int n, i;
+  int n, i, j;
   int result;
 
   void *fp;
@@ -1670,14 +1695,11 @@ enum zip_error zip_read_directory(struct zip_archive *zp)
 
   // Find the end of central directory signature.
   i = 0;
-  while(1)
+  j = -22;
+  do
   {
     n = vgetc(fp);
-    if(n < 0)
-    {
-      result = ZIP_NO_EOCD;
-      goto err_out;
-    }
+    j++;
 
     if(n == eocd_sig[i])
     {
@@ -1689,6 +1711,9 @@ enum zip_error zip_read_directory(struct zip_archive *zp)
 
     else
     {
+      if(n < 0)
+        break;
+
       /* Backtrack (simplified Boyer-Moore)
        * any matched -> jump back 1 minus # matched minus signature length
        * n = 'K' -> jump back -1-1
@@ -1702,14 +1727,23 @@ enum zip_error zip_read_directory(struct zip_archive *zp)
           n==5   ?   -1-2 :
           n==6   ?   -1-3 : -1-4;
 
+      j += i;
       if(vseek(fp, i, SEEK_CUR))
       {
-        result = ZIP_NO_EOCD;
-        goto err_out;
+        i = 0;
+        break;
       }
 
       i = 0;
     }
+  }
+  // Max length of signature + comment.
+  while(j >= -65557);
+
+  if(i < 4)
+  {
+    result = ZIP_NO_EOCD;
+    goto err_out;
   }
 
   // Number of this disk
@@ -1753,10 +1787,8 @@ enum zip_error zip_read_directory(struct zip_archive *zp)
   // Load central directory records
   if(n)
   {
-    struct zip_file_header **f = cmalloc(sizeof(struct zip_file_header *) * n);
+    struct zip_file_header **f = ccalloc(n, sizeof(struct zip_file_header *));
     zp->files = f;
-
-    memset(f, 0, sizeof(struct zip_file_header *)*n);
 
     // Go to the start of the central directory.
     if(vseek(fp, zp->offset_central_directory, SEEK_SET))
@@ -1867,7 +1899,7 @@ static enum zip_error zip_write_eocd_record(struct zip_archive *zp)
  * reallocate using zip_expand and call zip_close again.
  */
 
-enum zip_error zip_close(struct zip_archive *zp, Uint32 *final_length)
+enum zip_error zip_close(struct zip_archive *zp, uint32_t *final_length)
 {
   int result = ZIP_SUCCESS;
   int mode;
@@ -2140,7 +2172,7 @@ static struct zip_archive *zip_get_archive_mem(struct memfile *mf)
  * is called. Afterward, the archive will be in file read mode.
  */
 
-struct zip_archive *zip_open_mem_read(char *src, Uint32 len)
+struct zip_archive *zip_open_mem_read(char *src, uint32_t len)
 {
   struct zip_archive *zp;
   struct memfile *mf;
@@ -2166,7 +2198,7 @@ struct zip_archive *zip_open_mem_read(char *src, Uint32 len)
  * is called. Afterward, the archive will be in file write mode.
  */
 
-struct zip_archive *zip_open_mem_write(char *src, Uint32 len)
+struct zip_archive *zip_open_mem_write(char *src, uint32_t len)
 {
   struct zip_archive *zp;
   struct memfile *mf;
@@ -2191,10 +2223,10 @@ struct zip_archive *zip_open_mem_write(char *src, Uint32 len)
  * write function fails with ZIP_ALLOC_MORE_SPACE.
  */
 
-enum zip_error zip_expand(struct zip_archive *zp, char **src, Uint32 new_size)
+enum zip_error zip_expand(struct zip_archive *zp, char **src, uint32_t new_size)
 {
   struct memfile *mf;
-  Uint32 current_offset;
+  uint32_t current_offset;
   char *start;
 
   int result;
@@ -2214,7 +2246,7 @@ enum zip_error zip_expand(struct zip_archive *zp, char **src, Uint32 new_size)
   mf = zp->fp;
   start = mf->start;
 
-  if((Uint32)(mf->end - start) < new_size)
+  if((uint32_t)(mf->end - start) < new_size)
   {
     current_offset = mf->current - start;
 
@@ -2244,8 +2276,8 @@ void zip_test(struct world *mzx_world)
   char *zip_file;
   char *data;
   char *off;
-  Uint32 zip_len = 0;
-  Uint32 len = 32;
+  uint32_t zip_len = 0;
+  uint32_t len = 32;
   
   enum zip_error result = 0;
 

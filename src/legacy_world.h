@@ -104,7 +104,7 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
  bool savegame, int file_version, char *name, int *faded);
 
 enum val_result validate_legacy_world_file(const char *file, int savegame,
- int *end_of_global_offset, int decrypt_attempted);
+ int decrypt_attempted);
 
 __M_END_DECLS
 

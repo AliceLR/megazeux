@@ -24,7 +24,8 @@
 
 __M_BEGIN_DECLS
 
-#include "platform.h"
+#include <stdint.h>
+
 #include "world_struct.h"
 
 #define ZIP_M_NONE 0
@@ -72,39 +73,39 @@ enum zip_error {
 
 struct zip_file_header
 {
-  Uint32 mzx_prop_id;
-  Uint8 mzx_board_id;
-  Uint8 mzx_robot_id;
-  Uint16 flags;
-  Uint16 method;
-  Uint32 crc32;
-  Uint32 compressed_size;
-  Uint32 uncompressed_size;
-  Uint16 file_name_length;
-  Uint32 offset;
+  uint32_t mzx_prop_id;
+  uint8_t mzx_board_id;
+  uint8_t mzx_robot_id;
+  uint16_t flags;
+  uint16_t method;
+  uint32_t crc32;
+  uint32_t compressed_size;
+  uint32_t uncompressed_size;
+  uint16_t file_name_length;
+  uint32_t offset;
   char *file_name;
 };
 
 struct zip_archive
 {
-  Uint8 mode;
-  Uint8 closing;
+  uint8_t mode;
+  uint8_t closing;
 
-  Uint16 pos;
-  Uint16 num_files;
-  Uint16 files_alloc;
-  Uint32 size_central_directory;
-  Uint32 offset_central_directory;
+  uint16_t pos;
+  uint16_t num_files;
+  uint16_t files_alloc;
+  uint32_t size_central_directory;
+  uint32_t offset_central_directory;
 
-  Uint32 running_file_name_length;
+  uint32_t running_file_name_length;
 
   struct zip_file_header **files;
   struct zip_file_header *streaming_file;
-  Uint32 stream_left;
-  Uint32 stream_crc32;
+  uint32_t stream_left;
+  uint32_t stream_crc32;
 
-  Uint32 start_in_file;
-  Uint32 end_in_file;
+  uint32_t start_in_file;
+  uint32_t end_in_file;
 
   enum zip_error read_raw_error;
   enum zip_error read_file_error;
@@ -141,49 +142,51 @@ int zip_bound_total_header_usage(int num_files, int max_name_size);
 int zgetc(struct zip_archive *zp, enum zip_error *err);
 int zgetw(struct zip_archive *zp, enum zip_error *err);
 int zgetd(struct zip_archive *zp, enum zip_error *err);
-enum zip_error zread(void *destBuf, Uint32 readLen, struct zip_archive *zp);
+enum zip_error zread(void *destBuf, uint32_t readLen, struct zip_archive *zp);
 
 enum zip_error zip_get_next_prop(struct zip_archive *zp,
- Uint32 *prop_id, char *board_id, char *robot_id);
+ uint32_t *prop_id, char *board_id, char *robot_id);
 
 enum zip_error zip_get_next_uncompressed_size(struct zip_archive *zp,
- Uint32 *u_size);
+ uint32_t *u_size);
 
 enum zip_error zip_read_open_file_stream(struct zip_archive *zp,
- char *name, int name_buffer_size, Uint32 *destLen);
+ char *name, int name_buffer_size, uint32_t *destLen);
 
 enum zip_error zip_read_close_stream(struct zip_archive *zp);
 
+enum zip_error zip_rewind(struct zip_archive *zp);
 enum zip_error zip_skip_file(struct zip_archive *zp);
 enum zip_error zip_read_file(struct zip_archive *zp, char *name,
- int nameLen, void *destBuf, Uint32 destLen, Uint32 *readLen);
+ int nameLen, void *destBuf, uint32_t destLen, uint32_t *readLen);
 
 enum zip_error zputc(int value, struct zip_archive *zp);
 enum zip_error zputw(int value, struct zip_archive *zp);
 enum zip_error zputd(int value, struct zip_archive *zp);
-enum zip_error zwrite(const void *src, Uint32 srcLen, struct zip_archive *zp);
+enum zip_error zwrite(const void *src, uint32_t srcLen, struct zip_archive *zp);
 
 enum zip_error zip_write_open_file_stream(struct zip_archive *zp,
- const char *name, int method, Uint32 prop_id, char board_id,
+ const char *name, int method, uint32_t prop_id, char board_id,
  char robot_id);
 
 enum zip_error zip_write_close_stream(struct zip_archive *zp);
 
 enum zip_error zip_write_file(struct zip_archive *zp, const char *name,
- const void *src, Uint32 srcLen, int method, Uint32 prop_id, char board_id,
+ const void *src, uint32_t srcLen, int method, uint32_t prop_id, char board_id,
  char robot_id);
 
 enum zip_error zip_read_directory(struct zip_archive *zp);
-enum zip_error zip_close(struct zip_archive *zp, Uint32 *final_length);
+CORE_LIBSPEC enum zip_error zip_close(struct zip_archive *zp,
+ uint32_t *final_length);
 
 struct zip_archive *zip_open_fp_read(FILE *fp);
 struct zip_archive *zip_open_fp_write(FILE *fp);
 struct zip_archive *zip_open_file_read(const char *file_name);
 struct zip_archive *zip_open_file_write(const char *file_name);
-struct zip_archive *zip_open_mem_read(char *src, Uint32 len);
-struct zip_archive *zip_open_mem_write(char *src, Uint32 len);
+struct zip_archive *zip_open_mem_read(char *src, uint32_t len);
+struct zip_archive *zip_open_mem_write(char *src, uint32_t len);
 
-enum zip_error zip_expand(struct zip_archive *zp, char **src, Uint32 new_size);
+enum zip_error zip_expand(struct zip_archive *zp, char **src, uint32_t new_size);
 
 // FIXME REMOVE
 #define TEST
