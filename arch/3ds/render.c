@@ -423,7 +423,7 @@ static void ctr_do_remap_charbyte(struct graphics_data *graphics,
   c = (signed char *)graphics->charset;
   p = (short *)render_data->charset[0].buffer;
 
-  p += ((chr & 0x1F) * 8) + ((chr & 0x1E0) * 112) + (byte << 8);
+  p += ((chr & 0x1F) * 8) + ((chr & 0x1E0) * 112);
   c += chr * 14;
 
   switch(graphics->screen_mode)
@@ -433,9 +433,11 @@ static void ctr_do_remap_charbyte(struct graphics_data *graphics,
       ctr_char_bitmask_to_textures_smzx_23(render_data, (signed char *)graphics->charset, chr, byte);
       break;
     case 1:
+      c += byte; p += byte << 8;
       ctr_char_bitmask_to_texture_smzx_1(c, p);
       break;
     default:
+      c += byte; p += byte << 8;
       ctr_char_bitmask_to_texture(c, p);
       break;
   }
