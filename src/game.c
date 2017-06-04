@@ -268,6 +268,10 @@ static int load_board_module_change_test(struct world *mzx_world, char *filename
 
   size_t mod_name_size;
 
+  // Special case: mod "" ends the module.
+  if(!filename[0])
+    return 1;
+
   // Temporarily remove *
   mod_name_size = strlen(filename);
   if(mod_name_size && filename[mod_name_size - 1] == '*')
@@ -309,6 +313,14 @@ void load_board_module(struct world *mzx_world, struct board *src_board)
   int mod_star = 0;
   int n_result;
   int result;
+
+  // Special case: mod "" ends the module.
+  if(!filename[0])
+  {
+    mzx_world->real_mod_playing[0] = 0;
+    end_module();
+    return;
+  }
 
   // Do nothing.
   if(!strcmp(filename, "*"))

@@ -90,6 +90,14 @@ static void magic_load_mod(struct world *mzx_world, char *filename)
 
   size_t mod_name_size;
 
+  // Special case: mod "" ends the module.
+  if(!filename[0])
+  {
+    mzx_world->real_mod_playing[0] = 0;
+    end_module();
+    return;
+  }
+
   // Temporarily remove *
   mod_name_size = strlen(filename);
   if(mod_name_size && filename[mod_name_size - 1] == '*')
