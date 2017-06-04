@@ -302,7 +302,6 @@ static int load_board_module_change_test(struct world *mzx_world, char *filename
   return 1;
 }
 
-__editor_maybe_static
 void load_board_module(struct world *mzx_world, struct board *src_board)
 {
   // Load the given board's module and update the real_mod_playing field.
