@@ -2331,10 +2331,11 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
 
 
 static struct zip_archive *try_load_zip_world(struct world *mzx_world,
- const char *file, bool savegame, int *file_version, char *name)
+ const char *file, bool savegame, int *file_version, int *protected, char *name)
 {
   struct zip_archive *zp = zip_open_file_read(file);
   char magic[5];
+  int pr = 0;
   int v;
 
   int result;
@@ -2353,8 +2354,7 @@ static struct zip_archive *try_load_zip_world(struct world *mzx_world,
     enum zip_error ignore;
 
     zread(name, BOARD_NAME_SIZE, zp);
-    // Skip the protection byte
-    zgetc(zp, &ignore);
+    pr = zgetc(zp, &ignore);
     zread(magic, 3, zp);
 
     v = world_magic(magic);
@@ -2369,6 +2369,9 @@ static struct zip_archive *try_load_zip_world(struct world *mzx_world,
    *
    * So we can just fail safely and let the legacy loader pick it up.
    */
+
+  if(pr)
+    goto err_protected;
 
   if(v > 0 && v <= WORLD_LEGACY_FORMAT_VERSION)
     goto err_close;
@@ -2436,6 +2439,8 @@ err_close:
     }
   }
 
+err_protected:
+  *protected = pr;
   zip_close(zp, NULL);
   return NULL;
 }
@@ -2485,12 +2490,13 @@ void try_load_world(struct world *mzx_world, struct zip_archive **zp,
   // Regular worlds use a zip_archive. Legacy worlds use a FILE.
   struct zip_archive *_zp = NULL;
   FILE *_fp = NULL;
+  int protected = 0;
   int v = 0;
 
-  _zp = try_load_zip_world(mzx_world, file, savegame, &v, name);
+  _zp = try_load_zip_world(mzx_world, file, savegame, &v, &protected, name);
 
   if(!_zp)
-    if(v > 0x0205 && v <= WORLD_LEGACY_FORMAT_VERSION)
+    if(protected || (v > 0x0205 && v <= WORLD_LEGACY_FORMAT_VERSION))
       _fp = try_load_legacy_world(file, savegame, &v, name);
 
   *zp = _zp;
