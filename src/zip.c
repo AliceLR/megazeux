@@ -1977,8 +1977,7 @@ enum zip_error zip_close(struct zip_archive *zp, uint32_t *final_length)
         }
       }
 
-      if(fh->file_name)
-        free(fh->file_name);
+      free(fh->file_name);
 
       free(fh);
     }
@@ -2003,8 +2002,7 @@ enum zip_error zip_close(struct zip_archive *zp, uint32_t *final_length)
 
   zp->vclose(zp->fp);
 
-  if(zp->files)
-    free(zp->files);
+  free(zp->files);
 
   free(zp);
 
@@ -2264,124 +2262,3 @@ err_out:
   zip_error("zip_expand", result);
   return result;
 }
-
-
-// FIXME REMOVE
-#ifdef TEST
-void zip_test(struct world *mzx_world)
-{
-  FILE *fp;
-  struct zip_archive *zp;
-  char name[32];
-  char *zip_file;
-  char *data;
-  char *off;
-  uint32_t zip_len = 0;
-  uint32_t len = 32;
-  
-  enum zip_error result = 0;
-
-  // Read an arbitrary zip from file
-  zp = zip_open_file_read("_mzmstrings.zip");
-
-  if(zread(name, len, zp) == ZIP_SUCCESS)
-  {
-    name[31] = 0;
-    debug("Some raw data: %s\n", name);
-  }
-  result = zip_read_directory(zp);
-  if(result == ZIP_SUCCESS)
-  {
-    while(1)
-    {
-      result = zip_get_next_uncompressed_size(zp, &len);
-      if(result != ZIP_SUCCESS)
-      {
-        if(result == ZIP_EOF)
-          debug("No more files.\n");
-        break;
-      }
-
-      data = cmalloc(len);
-      result = zip_read_file(zp, name, 31, data, len, NULL);
-
-      off = data;
-      if(memsafegets(name, 31, &off, data+len))
-        debug("Preview: %s\n", name);
-      free(data);
-    }
-  }
-  zip_close(zp, NULL);
-  printf("\n");
-
-  // Write a zip to memory
-  sprintf(name, "Some data.txt");
-  len = strlen(name);
-
-  zip_len = zip_bound_total_header_usage(1, len);
-  zip_len += len;
-  //zip_len += zip_bound_data_usage(name, strlen(name) + 1);
-  zip_file = cmalloc(zip_len);
-
-  zp = zip_open_mem_write(zip_file, zip_len);
-  
-  //debug("(note: writing raw data to throw off the calculated bound)\n");
-  //zip_write(zp, name, len);
-
-  zip_write_file(zp, name, name, len, ZIP_M_NONE, 0, 0, 0);
-
-  result = zip_close(zp, &zip_len);
-  if(result == ZIP_ALLOC_MORE_SPACE)
-  {
-    debug("Attempting to expand to %d bytes\n", (int)zip_len);
-    zip_expand(zp, &zip_file, zip_len);
-    result = zip_close(zp, &zip_len);
-    if(result)
-      debug("Close failed.\n");
-    else
-      debug("Successfully closed file.\n");
-  }
-  printf("\n");
-
-  fp = fopen_unsafe("memtest1", "wb");
-  fwrite(zip_file, zip_len, 1, fp);
-  fclose(fp);
-
-  // Read a zip from memory
-  data = NULL;
-  zp = zip_open_mem_read(zip_file, zip_len);
-  if(!zip_read_directory(zp))
-  {
-    result = zip_read_open_file_stream(zp, name, 31, &len);
-    if(!result)
-    {
-      char *pos;
-
-      data = cmalloc(len);
-      pos = data;
-
-      while(zread(pos, 1, zp) == ZIP_SUCCESS)
-        pos++;
-
-      result = zip_read_close_stream(zp);
-      if(result == ZIP_SUCCESS)
-      {
-        *pos = 0;
-        debug("Read file '%s' from stream: %s\n", name, data);
-      }
-    }
-  }
-  zip_close(zp, NULL);
-  printf("\n");
-
-  free(zip_file);
-
-  // Write a zip to file
-  zp = zip_open_file_write((char *)"output.zip");
-  zip_write_file(zp, name, data, len, ZIP_M_DEFLATE, 0, 0, 0);
-  zip_close(zp, NULL);
-  printf("\n");
-
-  free(data);
-}
-#endif //TEST

@@ -188,12 +188,6 @@ struct zip_archive *zip_open_mem_write(char *src, uint32_t len);
 
 enum zip_error zip_expand(struct zip_archive *zp, char **src, uint32_t new_size);
 
-// FIXME REMOVE
-#define TEST
-#ifdef TEST
-void zip_test(struct world *mzx_world);
-#endif //TEST
-
 __M_END_DECLS
 
 #endif //__ZIP_H
