@@ -979,6 +979,7 @@ static inline int save_world_chars(struct world *mzx_world,
 {
   unsigned char buffer[CHAR_SIZE * CHARSET_SIZE];
 
+  // FIXME save multiple charsets
   ec_mem_save_set(buffer);
 
   return zip_write_file(zp, name, buffer, CHAR_SIZE * CHARSET_SIZE,
@@ -991,6 +992,7 @@ static inline int load_world_chars(struct world *mzx_world,
   unsigned char buffer[CHAR_SIZE * CHARSET_SIZE];
   int result;
 
+  // FIXME load multiple charsets
   result = zip_read_file(zp, NULL, 0, buffer, CHAR_SIZE * CHARSET_SIZE, NULL);
 
   if(result == ZIP_SUCCESS)
@@ -2522,6 +2524,10 @@ static void default_sprite_data(struct world *mzx_world)
 __editor_maybe_static void default_global_data(struct world *mzx_world)
 {
   int i;
+
+  // This might be a new world, so make sure we have sprites.
+  if(!mzx_world->sprite_list)
+    default_sprite_data(mzx_world);
 
   // Set some default counter values
   // The others have to be here so their gateway functions will stick
