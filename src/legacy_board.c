@@ -581,6 +581,7 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
         // Send off the error and then tell validation to shut up for now
         error_message(E_WORLD_ROBOT_MISSING, ftell(fp), NULL);
         set_error_suppression(E_WORLD_ROBOT_MISSING, 1);
+        set_error_suppression(E_BOARD_ROBOT_CORRUPT, 1);
         truncated = 1;
       }
 
@@ -602,6 +603,7 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   }
 
   set_error_suppression(E_WORLD_ROBOT_MISSING, 0);
+  set_error_suppression(E_BOARD_ROBOT_CORRUPT, 0);
 
   if(num_robots_active > 0)
   {
