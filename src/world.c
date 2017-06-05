@@ -2496,7 +2496,7 @@ void try_load_world(struct world *mzx_world, struct zip_archive **zp,
   _zp = try_load_zip_world(mzx_world, file, savegame, &v, &protected, name);
 
   if(!_zp)
-    if(protected || (v > 0x0205 && v <= WORLD_LEGACY_FORMAT_VERSION))
+    if(protected || (v >= 0x0205 && v <= WORLD_LEGACY_FORMAT_VERSION))
       _fp = try_load_legacy_world(file, savegame, &v, name);
 
   *zp = _zp;
