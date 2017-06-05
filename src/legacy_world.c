@@ -452,7 +452,7 @@ int legacy_save_world(struct world *mzx_world, const char *file, int savegame)
 
   // Save for global robot position
   gl_rob_position = ftell(fp);
-  save_robot(mzx_world, &mzx_world->global_robot, fp, savegame, file_version);
+  legacy_save_robot(mzx_world, &mzx_world->global_robot, fp, savegame, file_version);
 
   meter_update_screen(&meter_curr, meter_target);
 
@@ -1287,7 +1287,7 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
 
   // Read global robot
   fseek(fp, gl_rob, SEEK_SET); //don't worry if this fails
-  load_robot(mzx_world, &mzx_world->global_robot, fp, savegame,
+  legacy_load_robot(mzx_world, &mzx_world->global_robot, fp, savegame,
    file_version);
 
   // Go back to where the names are

@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include "legacy_board.h"
+#include "legacy_robot.h"
 
 #include "board.h"
 #include "const.h"
@@ -250,7 +251,7 @@ int legacy_save_board(struct world *mzx_world, struct board *cur_board,
     for(i = 1; i <= num_robots; i++)
     {
       cur_robot = cur_board->robot_list[i];
-      save_robot(mzx_world, cur_robot, fp, savegame, file_version);
+      legacy_save_robot(mzx_world, cur_robot, fp, savegame, file_version);
     }
   }
 
@@ -265,7 +266,7 @@ int legacy_save_board(struct world *mzx_world, struct board *cur_board,
     for(i = 1; i <= num_scrolls; i++)
     {
       cur_scroll = cur_board->scroll_list[i];
-      save_scroll(cur_scroll, fp, savegame);
+      legacy_save_scroll(cur_scroll, fp, savegame);
     }
   }
 
@@ -280,7 +281,7 @@ int legacy_save_board(struct world *mzx_world, struct board *cur_board,
     for(i = 1; i <= num_sensors; i++)
     {
       cur_sensor = cur_board->sensor_list[i];
-      save_sensor(cur_sensor, fp, savegame);
+      legacy_save_sensor(cur_sensor, fp, savegame);
     }
   }
 
@@ -585,7 +586,8 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
         truncated = 1;
       }
 
-      cur_robot = load_robot_allocate(mzx_world, fp, savegame, file_version);
+      cur_robot = legacy_load_robot_allocate(mzx_world, fp, savegame,
+       file_version);
 
       if(cur_robot->used)
       {
@@ -644,7 +646,7 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   {
     for(i = 1; i <= num_scrolls; i++)
     {
-      cur_scroll = load_scroll_allocate(fp);
+      cur_scroll = legacy_load_scroll_allocate(fp);
       if(cur_scroll->used)
         cur_board->scroll_list[i] = cur_scroll;
       else
@@ -674,7 +676,7 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   {
     for(i = 1; i <= num_sensors; i++)
     {
-      cur_sensor = load_sensor_allocate(fp);
+      cur_sensor = legacy_load_sensor_allocate(fp);
       if(cur_sensor->used)
         cur_board->sensor_list[i] = cur_sensor;
       else

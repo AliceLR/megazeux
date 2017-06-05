@@ -57,7 +57,7 @@ __M_BEGIN_DECLS
 #define VERSION_PROGRAM_SOURCE   0x025A
 
 // And the last one where bytecode was used.
-#define VERSION_PROGRAM_BYTECODE 0x0253
+#define VERSION_PROGRAM_BYTECODE 0x0255
 
 CORE_LIBSPEC void change_robot_name(struct board *src_board,
  struct robot *cur_robot, char *new_name);
@@ -70,8 +70,7 @@ void prepare_robot_bytecode(struct world *mzx_world, struct robot *cur_robot);
 #else /* !CONFIG_DEBYTECODE */
 
 CORE_LIBSPEC void reallocate_robot(struct robot *robot, int size);
-CORE_LIBSPEC struct label **cache_robot_labels(struct robot *robot,
- int *num_labels);
+
 
 void clear_label_cache(struct label **label_list, int num_labels);
 void change_robot_name(struct board *src_board, struct robot *cur_robot,
@@ -86,6 +85,9 @@ CORE_LIBSPEC void duplicate_robot_direct(struct world *mzx_world,
 #endif
 
 #endif /* !CONFIG_DEBYTECODE */
+
+CORE_LIBSPEC struct label **cache_robot_labels(struct robot *robot,
+ int *num_labels);
 
 CORE_LIBSPEC void clear_robot_contents(struct robot *cur_robot);
 CORE_LIBSPEC void clear_robot_id(struct board *src_board, int id);
@@ -112,8 +114,7 @@ CORE_LIBSPEC int place_player_xy(struct world *mzx_world, int x, int y);
 CORE_LIBSPEC void setup_overlay(struct board *src_board, int mode);
 CORE_LIBSPEC void replace_player(struct world *mzx_world);
 
-void create_blank_robot(struct world *mzx_world, struct robot *cur_robot,
- int savegame);
+/* FIXME
 struct robot *load_robot_allocate(struct world *mzx_world, FILE *fp,
  int savegame, int file_version);
 size_t load_robot_calculate_size(const void *buffer, int savegame, int version);
@@ -132,6 +133,11 @@ void save_robot(struct world *mzx_world, struct robot *cur_robot, FILE *fp,
  int savegame, int version);
 void save_scroll(struct scroll *cur_scroll, FILE *fp, int savegame);
 void save_sensor(struct sensor *cur_sensor, FILE *fp, int savegame);
+*/
+
+void create_blank_robot(struct world *mzx_world, struct robot *cur_robot,
+ int savegame);
+
 void clear_robot(struct robot *cur_robot);
 void clear_scroll(struct scroll *cur_scroll);
 void clear_sensor(struct sensor *cur_sensor);

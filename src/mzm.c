@@ -26,6 +26,8 @@
 #include "error.h"
 #include "idput.h"
 #include "world.h"
+#include "legacy_robot.h"
+#include "robot.h"
 
 // This is assumed to not go over the edges.
 
@@ -77,7 +79,7 @@ static void save_mzm_common(struct world *mzx_world, int start_x, int start_y, i
               offset = cur_robot->xpos + (cur_robot->ypos * src_board->board_width);
               assert(is_robot((enum thing)src_board->level_id[offset]));
               rid = src_board->level_param[offset];
-              robot_size = save_robot_calculate_size(mzx_world, cur_robot,
+              robot_size = legacy_save_robot_calculate_size(mzx_world, cur_robot,
                savegame, WORLD_VERSION);
               robot_sizes[rid] = (int)robot_size;
               mzm_size += robot_size;
@@ -194,7 +196,7 @@ static void save_mzm_common(struct world *mzx_world, int start_x, int start_y, i
           for(i = 0; i < num_robots; i++)
           {
             // Save each robot
-            save_robot_to_memory(robot_list[robot_numbers[i]], bufferPtr, savegame, WORLD_VERSION);
+            legacy_save_robot_to_memory(robot_list[robot_numbers[i]], bufferPtr, savegame, WORLD_VERSION);
             bufferPtr += robot_sizes[robot_numbers[i]];
           }
         }
@@ -564,7 +566,7 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer, int file
             int robot_partial_size;
             int current_position;
 
-            robot_partial_size = calculate_partial_robot_size(savegame_mode, mzm_world_version);
+            robot_partial_size = legacy_calculate_partial_robot_size(savegame_mode, mzm_world_version);
 
             // If we're loading a "runtime MZM" then it means that we're loading
             // bytecode. And to do this we must both be in-game and must be
@@ -601,14 +603,14 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer, int file
 
                   if (current_position + robot_partial_size > file_length)
                     goto err_invalid;
-                  robot_calculated_size = load_robot_calculate_size(bufferPtr, savegame_mode, mzm_world_version);
+                  robot_calculated_size = legacy_load_robot_calculate_size(bufferPtr, savegame_mode, mzm_world_version);
                   if (current_position + robot_calculated_size > file_length)
                     goto err_invalid;
 
                   cur_robot = cmalloc(sizeof(struct robot));
 
                   cur_robot->world_version = mzx_world->version;
-                  load_robot_from_memory(mzx_world, cur_robot, bufferPtr,
+                  legacy_load_robot_from_memory(mzx_world, cur_robot, bufferPtr,
                    savegame_mode, mzm_world_version, (int)current_position);
                   bufferPtr += robot_calculated_size;
                   offset = current_x + (current_y * board_width);
@@ -632,13 +634,13 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer, int file
 
                 if (current_position + robot_partial_size > file_length)
                   goto err_invalid;
-                robot_calculated_size = load_robot_calculate_size(bufferPtr, savegame_mode, mzm_world_version);
+                robot_calculated_size = legacy_load_robot_calculate_size(bufferPtr, savegame_mode, mzm_world_version);
                 if (current_position + robot_calculated_size > file_length)
                   goto err_invalid;
 
                 cur_robot = cmalloc(sizeof(struct robot));
                 cur_robot->world_version = mzx_world->version;
-                load_robot_from_memory(mzx_world, cur_robot, bufferPtr, savegame_mode,
+                legacy_load_robot_from_memory(mzx_world, cur_robot, bufferPtr, savegame_mode,
                   mzm_world_version, bufferPtr - (const unsigned char *)buffer);
                 bufferPtr += robot_calculated_size;
                 current_x = robot_x_locations[i];
