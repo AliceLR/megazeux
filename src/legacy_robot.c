@@ -127,12 +127,16 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
     for(i = 0; i < 32; i++)
       cur_robot->local[i] = mem_getd(&bufferPtr);
 
-    stack_size = mem_getd(&bufferPtr);
-    cur_robot->stack_pointer = mem_getd(&bufferPtr);
+    // Double so we can fit pos_within_line values in.
+    stack_size = mem_getd(&bufferPtr) * 2;
+    cur_robot->stack_pointer = mem_getd(&bufferPtr) * 2;
 
     cur_robot->stack = ccalloc(stack_size, sizeof(int));
-    for(i = 0; i < stack_size; i++)
+    for(i = 0; i < stack_size; i += 2)
+    {
       cur_robot->stack[i] = mem_getd(&bufferPtr);
+      cur_robot->stack[i+1] = 0;
+    }
 
     cur_robot->stack_size = stack_size;
 
@@ -483,7 +487,7 @@ size_t legacy_save_robot_calculate_size(struct world *mzx_world,
     robot_size += 4 * 32; // 32 local counters
     robot_size += 4; // stack size
     robot_size += 4; // stack pointer
-    robot_size += 4 * cur_robot->stack_size; // stack
+    robot_size += 4 * cur_robot->stack_size / 2; // stack
   }
   robot_size += program_length;
   return robot_size;
@@ -582,12 +586,15 @@ void legacy_save_robot_to_memory(struct robot *cur_robot, void *buffer, int save
     }
 
     // Put the stack size
-    mem_putd(stack_size, &bufferPtr);
-    // Put the stack pointer
-    mem_putd(cur_robot->stack_pointer, &bufferPtr);
-    // Put the stack
+    // Divide by two; we don't want to save pos_within_line values.
+    mem_putd(stack_size/2, &bufferPtr);
 
-    for(i = 0; i < stack_size; i++)
+    // Put the stack pointer
+    mem_putd(cur_robot->stack_pointer/2, &bufferPtr);
+
+    // Put the stack
+    // Only put even indices; odd indices are pos_within_line values.
+    for(i = 0; i < stack_size; i += 2)
     {
       mem_putd(cur_robot->stack[i], &bufferPtr);
     }
