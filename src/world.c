@@ -30,6 +30,8 @@
 #include <unistd.h>
 #endif
 
+#include "world.h"
+#include "world_prop.h"
 #include "legacy_world.h"
 #include "zip.h"
 
@@ -43,7 +45,6 @@
 #include "counter.h"
 #include "graphics.h"
 #include "event.h"
-#include "world.h"
 #include "data.h"
 #include "idput.h"
 #include "fsafeopen.h"
@@ -83,8 +84,6 @@ inline void meter_initial_draw(int curr, int target, const char *title) {}
 
 #endif //CONFIG_LOADSAVE_METER
 
-
-#define PROP_HEADER_SIZE 4
 
 // IF YOU ADD ANYTHING, MAKE SURE THIS GETS UPDATED!
 #define COUNT_WORLD_PROPS ( 4 +   4 + 16 + 1)
@@ -222,92 +221,6 @@ enum sprite_prop
   SPROP_SPRITE_Y_ORDER    = 0x8001, // 1
   SPROP_COLLISION_COUNT   = 0x8002, // 2
 };
-
-
-// This function is used to save properties files in world saving.
-// There are no safety checks here. USE THE BOUNDING FUNCTIONS WHEN ALLOCATING.
-static inline void save_prop_eof(struct memfile *mf)
-{
-  mfputw(0, mf);
-}
-
-static inline void save_prop_c(int ident, int value, struct memfile *mf)
-{
-  mfputw(ident, mf);
-  mfputw(1, mf);
-  mfputc(value, mf);
-}
-
-static inline void save_prop_w(int ident, int value, struct memfile *mf)
-{
-  mfputw(ident, mf);
-  mfputw(2, mf);
-  mfputw(value, mf);
-}
-
-static inline void save_prop_d(int ident, int value, struct memfile *mf)
-{
-  mfputw(ident, mf);
-  mfputw(4, mf);
-  mfputd(value, mf);
-}
-
-static inline void save_prop_s(int ident, void *src, size_t len, size_t count,
- struct memfile *mf)
-{
-  mfputw(ident, mf);
-  mfputw(len * count, mf);
-  mfwrite(src, len, count, mf);
-}
-
-static inline int load_prop_int(int length, struct memfile *prop)
-{
-  switch(length)
-  {
-    case 1:
-      return mfgetc(prop);
-
-    case 2:
-      return mfgetw(prop);
-
-    case 4:
-      return mfgetd(prop);
-
-    default:
-      return 0;
-  }
-}
-
-// This function is used to read properties files in world loading.
-int next_prop(struct memfile *prop, int *ident, int *length,
- struct memfile *mf)
-{
-  char *end = mf->end;
-  char *cur;
-  int len;
-
-  if((end - mf->current)<PROP_HEADER_SIZE)
-  {
-    return 0;
-  }
-
-  *ident = mfgetw(mf);
-  len = mfgetw(mf);
-  cur = mf->current;
-
-  if((end - cur)<len)
-  {
-    return 0;
-  }
-
-  *length = len;
-  prop->current = cur;
-  prop->start = cur;
-  prop->end = cur + len;
-
-  mf->current += len;
-  return 1;
-}
 
 
 // World info
@@ -459,8 +372,6 @@ static inline int save_world_info(struct world *mzx_world,
   }                                                                           \
   last_ident = ident;                                                         \
 }
-
-// TODO: a way to do this less wastefully/disgustingly?
 
 static inline enum val_result validate_world_info(struct world *mzx_world,
  struct zip_archive *zp, int savegame, int *file_version)
@@ -927,16 +838,19 @@ static inline void load_world_info(struct world *mzx_world,
 
 // Global robot
 static inline int save_world_global_robot(struct world *mzx_world,
- struct zip_archive *zp, const char *name, enum file_prop file_id)
+ struct zip_archive *zp, int savegame, int file_version, const char *name,
+ enum file_prop file_id)
 {
-  // FIXME
+  save_robot(&mzx_world->global_robot, zp, savegame, file_version,
+   name, file_id, 0, 0);
+
   return 0;
 }
 
 static inline int load_world_global_robot(struct world *mzx_world,
- struct zip_archive *zp)
+ struct zip_archive *zp, int savegame, int file_version)
 {
-  // FIXME
+  load_robot(mzx_world, &mzx_world->global_robot, zp, savegame, file_version);
   return 0;
 }
 
@@ -1600,7 +1514,9 @@ static int save_world_zip(struct world *mzx_world, const char *file,
   save_world_info(mzx_world, zp, savegame, file_version,
    "world", FPROP_WORLD_INFO);
 
-  save_world_global_robot(mzx_world, zp,  "gr",     FPROP_WORLD_GLOBAL_ROBOT);
+  save_world_global_robot(mzx_world, zp, savegame, file_version,
+   "gr", FPROP_WORLD_GLOBAL_ROBOT);
+
   save_world_sfx(mzx_world, zp,           "sfx",    FPROP_WORLD_SFX);
   save_world_chars(mzx_world, zp,         "chars",  FPROP_WORLD_CHARS);
   save_world_pal(mzx_world, zp,           "pal",    FPROP_WORLD_PAL);
@@ -1759,7 +1675,7 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
       }
 
       case FPROP_WORLD_GLOBAL_ROBOT:
-        load_world_global_robot(mzx_world, zp);
+        load_world_global_robot(mzx_world, zp, savegame, file_version);
         loaded_global_robot = 1;
         break;
 
@@ -1820,9 +1736,9 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
       case FPROP_BOARD_UCH:
       case FPROP_BOARD_OCO:
       case FPROP_BOARD_OCH:
-      case FPROP_ROBOT_INFO:
+      case FPROP_ROBOT:
       case FPROP_SCROLL:
-      case FPROP_SENSOR_INFO:
+      case FPROP_SENSOR:
         // FIXME
         //meter_update_screen(&meter_curr, meter_target);
         break;

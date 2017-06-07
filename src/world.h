@@ -143,9 +143,9 @@ enum file_prop
   FPROP_BOARD_OCO             = 0x0107, // data
   FPROP_BOARD_OCH             = 0x0108, // data
 
-  FPROP_ROBOT_INFO            = 0x1000, // properties file (board_id + robot_id)
+  FPROP_ROBOT                 = 0x1000, // properties file (board_id + robot_id)
   FPROP_SCROLL                = 0x2000, // properties file (board_id + robot_id)
-  FPROP_SENSOR_INFO           = 0x3000  // properties file (board_id + robot_id)
+  FPROP_SENSOR                = 0x3000  // properties file (board_id + robot_id)
 };
 
 enum val_result
@@ -174,9 +174,6 @@ bool reload_swap(struct world *mzx_world, const char *file, int *faded);
 
 void save_counters_file(struct world *mzx_world, const char *file);
 int load_counters_file(struct world *mzx_world, const char *file);
-
-int next_prop(struct memfile *prop, int *identifier, int *length,
- struct memfile *mf);
 
 #ifdef CONFIG_LOADSAVE_METER
 void meter_update_screen(int *curr, int target);

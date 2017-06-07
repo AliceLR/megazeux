@@ -40,6 +40,439 @@
 #include "util.h"
 #include "rasm.h"
 #include "legacy_rasm.h"
+#include "world_prop.h"
+#include "zip.h"
+
+
+#define COUNT_ROBOT_PROPS (15 + 2)
+#define BOUND_ROBOT_PROPS (37 + 4)
+
+#define ROBOT_PROPS_SIZE \
+ (PROP_HEADER_SIZE * COUNT_ROBOT_PROPS + BOUND_ROBOT_PROPS)
+
+#define COUNT_ROBOT_SAVE_PROPS (5)
+#define BOUND_ROBOT_SAVE_PROPS (12+4*32)
+
+#define ROBOT_SAVE_PROPS_SIZE \
+ (PROP_HEADER_SIZE * COUNT_ROBOT_SAVE_PROPS + BOUND_ROBOT_SAVE_PROPS)
+
+enum robot_prop {
+  RPROP_EOF               = 0x0000,
+//RPROP_PROGRAM           = 0x0001, // 4
+  RPROP_ROBOT_NAME        = 0x0002, // 15
+  RPROP_ROBOT_CHAR        = 0x0003, // 1
+  RPROP_CUR_PROG_LINE     = 0x0004, // 4
+  RPROP_POS_WITHIN_LINE   = 0x0005, // 4
+  RPROP_ROBOT_CYCLE       = 0x0006, // 1
+  RPROP_CYCLE_COUNT       = 0x0007, // 1
+  RPROP_BULLET_TYPE       = 0x0008, // 1
+  RPROP_IS_LOCKED         = 0x0009, // 1
+  RPROP_CAN_LAVAWALK      = 0x000A, // 1
+  RPROP_WALK_DIR          = 0x000B, // 1
+  RPROP_LAST_TOUCH_DIR    = 0x000C, // 1
+  RPROP_LAST_SHOT_DIR     = 0x000D, // 1
+  RPROP_XPOS              = 0x000E, // 2
+  RPROP_YPOS              = 0x000F, // 2
+  RPROP_STATUS            = 0x0010, // 1
+
+  RPROP_LOOP_COUNT        = 0x0100, // 4
+  RPROP_LOCALS            = 0x0101, // 4*32
+  RPROP_STACK_SIZE        = 0x0110, // 4
+  RPROP_STACK_POINTER     = 0x0111, // 4
+  RPROP_STACK             = 0x0112, // variable
+
+  RPROP_BYTECODE_LENGTH   = 0x8000, // 4
+  RPROP_PROGRAM_BYTECODE  = 0x8001, // variable
+  RPROP_SOURCE_LENGTH     = 0x8002, // 4
+  RPROP_PROGRAM_SOURCE    = 0x8003, // variable
+};
+
+#define SCROLL_PROPS_SIZE (PROP_HEADER_SIZE * 2 + 2)
+enum scroll_prop {
+  SCRPROP_EOF             = 0x00,
+  SCRPROP_NUM_LINES       = 0x01, // 2
+  SCRPROP_MESG            = 0x02, // variable
+};
+
+#define SENSOR_PROPS_SIZE (PROP_HEADER_SIZE * 3 + 31)
+enum sensor_prop {
+  SENPROP_EOF             = 0x00,
+  SENPROP_SENSOR_NAME     = 0x01, // 15
+  SENPROP_SENSOR_CHAR     = 0x02, //  1
+  SENPROP_ROBOT_TO_MESG   = 0x03, // 15
+};
+
+
+void load_robot(struct world *mzx_world, struct robot *cur_robot,
+ struct zip_archive *zp, int savegame, int file_version)
+{
+  // FIXME
+  zip_skip_file(zp);
+}
+
+struct robot *load_robot_allocate(struct world *mzx_world,
+ struct zip_archive *zp, int savegame, int file_version)
+{
+  return NULL;
+}
+
+struct scroll *load_scroll_allocate(struct zip_archive *zp)
+{
+  struct scroll *cur_scroll = ccalloc(1, sizeof(struct scroll));
+
+  unsigned int actual_size;
+  void *buffer;
+  struct memfile mf;
+  struct memfile prop;
+  int ident;
+  int size;
+
+  zip_get_next_uncompressed_size(zp, &actual_size);
+  buffer = cmalloc(actual_size);
+
+  // We aren't saving or loading null scrolls.
+  cur_scroll->used = 1;
+
+  zip_read_file(zp, NULL, 0, buffer, actual_size, &actual_size);
+
+  mfopen_static(buffer, actual_size, &mf);
+
+  while(next_prop(&prop, &ident, &size, &mf))
+  {
+    switch(ident)
+    {
+      case SCRPROP_EOF:
+        mfseek(&mf, 0, SEEK_END);
+        break;
+
+      case SCRPROP_NUM_LINES:
+        cur_scroll->num_lines = load_prop_int(size, &prop);
+        break;
+
+      case SCRPROP_MESG:
+        cur_scroll->mesg_size = size;
+        cur_scroll->mesg = cmalloc(size);
+        mfread(cur_scroll->mesg, size, 1, &prop);
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  if(!cur_scroll->num_lines || !cur_scroll->mesg_size)
+  {
+    // We have an incomplete sensor, so slip in an empty scroll.
+    cur_scroll->num_lines = 1;
+    cur_scroll->mesg_size = 3;
+
+    free(cur_scroll->mesg);
+    cur_scroll->mesg = cmalloc(3);
+    strcpy(cur_scroll->mesg, "\x01\x0A");
+  }
+
+  free(buffer);
+  return cur_scroll;
+}
+
+struct sensor *load_sensor_allocate(struct zip_archive *zp)
+{
+  struct sensor *cur_sensor = ccalloc(1, sizeof(struct sensor));
+
+  unsigned int actual_size;
+  void *buffer;
+  struct memfile mf;
+  struct memfile prop;
+  int ident;
+  int size;
+
+  zip_get_next_uncompressed_size(zp, &actual_size);
+  buffer = cmalloc(actual_size);
+
+  // We aren't saving or loading null sensors.
+  cur_sensor->used = 1;
+
+  zip_read_file(zp, NULL, 0, buffer, actual_size, &actual_size);
+
+  mfopen_static(buffer, actual_size, &mf);
+
+  while(next_prop(&prop, &ident, &size, &mf))
+  {
+    switch(ident)
+    {
+      case SENPROP_EOF:
+        mfseek(&mf, 0, SEEK_END);
+        break;
+
+      case SENPROP_SENSOR_NAME:
+        size = MIN(size, 15);
+        mfread(cur_sensor->sensor_name, size, 1, &prop);
+        break;
+
+      case SENPROP_SENSOR_CHAR:
+        cur_sensor->sensor_char = load_prop_int(size, &prop);
+        break;
+
+      case SENPROP_ROBOT_TO_MESG:
+        size = MIN(size, 15);
+        mfread(cur_sensor->robot_to_mesg, size, 1, &prop);
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  // Zeros work fine as filler for incomplete sensors here
+
+  free(buffer);
+  return cur_sensor;
+}
+
+size_t save_robot_calculate_size(struct robot *cur_robot, int savegame,
+ int file_version)
+{
+  int size = ROBOT_PROPS_SIZE;
+
+  size += savegame ? ROBOT_SAVE_PROPS_SIZE : 0;
+
+#ifdef CONFIG_DEBYTECODE
+  if(!savegame)
+  {
+    size += cur_robot->program_source_length;
+  }
+  else
+#endif
+  {
+    size += cur_robot->program_bytecode_length;
+  }
+
+  return size;
+}
+
+void save_robot(struct robot *cur_robot, struct zip_archive *zp, int savegame,
+ int file_version, const char *name, int file_id, int board_id, int id)
+{
+  //char filename[10];
+  void *buffer;
+  struct memfile mf;
+  struct memfile prop;
+  size_t actual_size;
+
+  if(cur_robot->used)
+  {
+    actual_size = save_robot_calculate_size(cur_robot, savegame, file_version);
+
+    buffer = cmalloc(actual_size);
+
+    mfopen_static(buffer, actual_size, &mf);
+
+    save_prop_s(RPROP_ROBOT_NAME, cur_robot->robot_name, 15, 1, &mf);
+    save_prop_c(RPROP_ROBOT_CHAR, cur_robot->robot_char, &mf);
+
+    if(savegame)
+    {
+      int stack_size = cur_robot->stack_size;
+      int i;
+
+      save_prop_d(RPROP_CUR_PROG_LINE, cur_robot->cur_prog_line, &mf);
+      save_prop_d(RPROP_POS_WITHIN_LINE, cur_robot->pos_within_line, &mf);
+      save_prop_c(RPROP_ROBOT_CYCLE, cur_robot->robot_cycle, &mf);
+      save_prop_c(RPROP_CYCLE_COUNT, cur_robot->cycle_count, &mf);
+      save_prop_c(RPROP_BULLET_TYPE, cur_robot->bullet_type, &mf);
+      save_prop_c(RPROP_IS_LOCKED, cur_robot->is_locked, &mf);
+      save_prop_c(RPROP_CAN_LAVAWALK, cur_robot->can_lavawalk, &mf);
+      save_prop_c(RPROP_WALK_DIR, cur_robot->walk_dir, &mf);
+      save_prop_c(RPROP_LAST_TOUCH_DIR, cur_robot->last_touch_dir, &mf);
+      save_prop_c(RPROP_LAST_SHOT_DIR, cur_robot->last_shot_dir, &mf);
+      save_prop_w(RPROP_XPOS, cur_robot->xpos, &mf);
+      save_prop_w(RPROP_YPOS, cur_robot->ypos, &mf);
+      save_prop_c(RPROP_STATUS, cur_robot->status, &mf);
+
+      save_prop_d(RPROP_LOOP_COUNT, cur_robot->loop_count, &mf);
+      save_prop_v(RPROP_LOCALS, 4*32, &prop, &mf);
+
+      for(i = 0; i < 32; i++)
+        mfputd(cur_robot->local[i], &prop);
+
+      save_prop_d(RPROP_STACK_SIZE, stack_size, &mf);
+      save_prop_d(RPROP_STACK_POINTER, cur_robot->stack_pointer, &mf);
+      save_prop_v(RPROP_STACK, stack_size * 4, &prop, &mf);
+
+      for(i = 0; i < stack_size; i++)
+        mfputd(cur_robot->stack[i], &prop);
+    }
+
+    else
+    {
+      save_prop_d(RPROP_CUR_PROG_LINE, 1, &mf);
+      save_prop_d(RPROP_POS_WITHIN_LINE, 0, &mf);
+      save_prop_c(RPROP_ROBOT_CYCLE, 0, &mf);
+      save_prop_c(RPROP_CYCLE_COUNT, 0, &mf);
+      save_prop_c(RPROP_BULLET_TYPE, 1, &mf);
+      save_prop_c(RPROP_IS_LOCKED, 0, &mf);
+      save_prop_c(RPROP_CAN_LAVAWALK, 0, &mf);
+      save_prop_c(RPROP_WALK_DIR, 0, &mf);
+      save_prop_c(RPROP_LAST_TOUCH_DIR, 0, &mf);
+      save_prop_c(RPROP_LAST_SHOT_DIR, 0, &mf);
+      save_prop_w(RPROP_XPOS, cur_robot->xpos, &mf);
+      save_prop_w(RPROP_YPOS, cur_robot->ypos, &mf);
+      save_prop_c(RPROP_STATUS, 0, &mf);
+    }
+
+#ifdef CONFIG_DEBYTECODE
+    if(!savegame)
+    {
+      int src_len = cur_robot->program_source_length;
+
+      save_prop_d(RPROP_SOURCE_LENGTH, src_len, &mf);
+      save_prop_v(RPROP_PROGRAM_SOURCE, src_len, &prop, &mf);
+
+      mfwrite(cur_robot->program_source, src_len, 1, &prop);
+    }
+    else
+#endif
+    {
+      int bc_len = cur_robot->program_bytecode_length;
+
+      save_prop_d(RPROP_BYTECODE_LENGTH, bc_len, &mf);
+      save_prop_v(RPROP_PROGRAM_BYTECODE, bc_len, &prop, &mf);
+
+      mfwrite(cur_robot->program_bytecode, bc_len, 1, &prop);
+    }
+
+    /*
+    if(id > 0)
+      sprintf(filename, "b%Xr%X", (unsigned char)board_id, (unsigned char)id);
+
+    else
+      sprintf(filename, "gr");
+    */
+
+    zip_write_file(zp, name, buffer, actual_size,
+     ZIP_M_NONE, file_id, board_id, id);
+
+    free(buffer);
+  }
+}
+
+void save_scroll(struct scroll *cur_scroll, struct zip_archive *zp,
+ const char *name, int file_id, int board_id, int id)
+{
+  //char filename[10];
+  void *buffer;
+  struct memfile mf;
+  size_t scroll_size;
+  size_t actual_size;
+
+  if(cur_scroll->used)
+  {
+    scroll_size = cur_scroll->mesg_size;
+    actual_size = scroll_size + SCROLL_PROPS_SIZE;
+
+    buffer = cmalloc(actual_size);
+
+    mfopen_static(buffer, actual_size, &mf);
+
+    save_prop_w(SCRPROP_NUM_LINES, cur_scroll->num_lines, &mf);
+    save_prop_s(SCRPROP_MESG, cur_scroll->mesg, scroll_size, 1, &mf);
+
+    //sprintf(filename, "b%Xsc%X", (unsigned char)board_id, (unsigned char)id);
+
+    zip_write_file(zp, name, buffer, actual_size,
+     ZIP_M_NONE, file_id, board_id, id);
+
+    free(buffer);
+  }
+}
+
+void save_sensor(struct sensor *cur_sensor, struct zip_archive *zp,
+ const char *name, int file_id, int board_id, int id)
+{
+  //char filename[10];
+  char buffer[SENSOR_PROPS_SIZE];
+  struct memfile mf;
+
+  if(cur_sensor->used)
+  {
+    mfopen_static(buffer, SENSOR_PROPS_SIZE, &mf);
+
+    save_prop_s(SENPROP_SENSOR_NAME, cur_sensor->sensor_name, 15, 1, &mf);
+    save_prop_c(SENPROP_SENSOR_CHAR, cur_sensor->sensor_char, &mf);
+    save_prop_s(SENPROP_ROBOT_TO_MESG, cur_sensor->robot_to_mesg, 15, 1, &mf);
+
+    //sprintf(filename, "b%Xse%X", (unsigned char)board_id, (unsigned char)id);
+
+    zip_write_file(zp, name, buffer, SENSOR_PROPS_SIZE,
+     ZIP_M_NONE, file_id, board_id, id);
+  }
+}
+
+
+void create_blank_robot(struct world *mzx_world, struct robot *r, int savegame)
+{
+  int i;
+
+  free(r->program_bytecode);
+
+  r->program_bytecode = NULL;
+  r->program_bytecode_length = 0;
+
+#ifdef CONFIG_DEBYTECODE
+  {
+    if(r->program_source)
+      free(r->program_source);
+
+    r->program_source_length = 2;
+    r->program_source = cmalloc(2);
+    strcpy(r->program_source, "\x0A"); // Linebreak then term
+
+    prepare_robot_bytecode(mzx_world, r);
+  }
+#else /* !CONFIG_DEBYTECODE */
+  {
+    r->program_bytecode_length = 2;
+    r->program_bytecode = cmalloc(2);
+    strcpy(r->program_bytecode, "\xFF"); // Blank program, -1 then 0
+  }
+#endif
+
+  strcpy(r->robot_name, "<<empty>>");
+  r->robot_char = 'R';
+  r->cur_prog_line = 1;
+  r->pos_within_line = 0;
+  r->robot_cycle = 1;
+  r->cycle_count = 0;
+  r->bullet_type = 0;
+  r->is_locked = 1;
+  r->can_lavawalk = 1;
+  r->walk_dir = IDLE;
+  r->last_touch_dir = IDLE;
+  r->last_shot_dir = IDLE;
+  r->xpos = -1;
+  r->ypos = -1;
+  r->status = 0;
+  r->used = 1;
+  r->loop_count = 0;
+  for(i = 0; i<32; i++)
+    r->local[i] = 0;
+
+  free(r->label_list);
+
+  r->num_labels = 0;
+  r->label_list = NULL;
+
+  free(r->stack);
+
+  r->stack_size = 0;
+  r->stack_pointer = 0;
+  r->stack = NULL;
+
+#ifdef CONFIG_EDITOR
+  r->commands_total = 0;
+  r->commands_cycle = 0;
+#endif
+}
 
 static int cmp_labels(const void *dest, const void *src)
 {
@@ -139,107 +572,6 @@ struct label **cache_robot_labels(struct robot *robot, int *num_labels)
 
   *num_labels = labels_found;
   return label_list;
-}
-
-int get_robot_id(struct board *src_board, const char *name)
-{
-  int first, last;
-
-  if(find_robot(src_board, name, &first, &last))
-  {
-    struct robot *cur_robot = src_board->robot_list_name_sorted[first];
-    // This is a cheap trick for now since robots don't have
-    // a back-reference for ID's
-    int offset = cur_robot->xpos +
-     (cur_robot->ypos * src_board->board_width);
-    enum thing d_id = (enum thing)src_board->level_id[offset];
-
-    if(is_robot(d_id))
-    {
-      return src_board->level_param[offset];
-    }
-    else
-    {
-      int i;
-      for(i = 1; i <= src_board->num_robots; i++)
-      {
-        if(!src_board->robot_list[i])
-          continue;
-        if(!strcasecmp(name, (src_board->robot_list[i])->robot_name))
-          return i;
-      }
-    }
-  }
-
-  return -1;
-}
-
-void create_blank_robot(struct world *mzx_world, struct robot *r, int savegame)
-{
-  int i;
-
-  if(r->program_bytecode)
-    free(r->program_bytecode);
-
-  r->program_bytecode = NULL;
-  r->program_bytecode_length = 0;
-
-#ifdef CONFIG_DEBYTECODE
-  {
-    if(r->program_source)
-      free(r->program_source);
-
-    r->program_source_length = 2;
-    r->program_source = cmalloc(2);
-    strcpy(r->program_source, "\x0A"); // Linebreak then term
-
-    prepare_robot_bytecode(mzx_world, r);
-  }
-#else /* !CONFIG_DEBYTECODE */
-  {
-    r->program_bytecode_length = 2;
-    r->program_bytecode = cmalloc(2);
-    strcpy(r->program_bytecode, "\xFF"); // Blank program, -1 then 0
-  }
-#endif
-
-  strcpy(r->robot_name, "<<empty>>");
-  r->robot_char = 'R';
-  r->cur_prog_line = 1;
-  r->pos_within_line = 0;
-  r->robot_cycle = 1;
-  r->cycle_count = 0;
-  r->bullet_type = 0;
-  r->is_locked = 1;
-  r->can_lavawalk = 1;
-  r->walk_dir = IDLE;
-  r->last_touch_dir = IDLE;
-  r->last_shot_dir = IDLE;
-  r->xpos = -1;
-  r->ypos = -1;
-  r->status = 0;
-  r->used = 1;
-  r->loop_count = 0;
-  for(i = 0; i<32; i++)
-    r->local[i] = 0;
-
-  if(r->label_list)
-    free(r->label_list);
-
-  r->num_labels = 0;
-  r->label_list = NULL;
-
-  if(r->stack)
-    free(r->stack);
-
-  r->stack_size = 0;
-  r->stack_pointer = 0;
-  r->stack = NULL;
-
-#ifdef CONFIG_EDITOR
-  r->commands_total = 0;
-  r->commands_cycle = 0;
-#endif
 }
 
 #ifdef CONFIG_DEBYTECODE
@@ -377,6 +709,39 @@ void reallocate_scroll(struct scroll *scroll, size_t size)
 {
   scroll->mesg = crealloc(scroll->mesg, size);
   scroll->mesg_size = size;
+}
+
+int get_robot_id(struct board *src_board, const char *name)
+{
+  int first, last;
+
+  if(find_robot(src_board, name, &first, &last))
+  {
+    struct robot *cur_robot = src_board->robot_list_name_sorted[first];
+    // This is a cheap trick for now since robots don't have
+    // a back-reference for ID's
+    int offset = cur_robot->xpos +
+     (cur_robot->ypos * src_board->board_width);
+    enum thing d_id = (enum thing)src_board->level_id[offset];
+
+    if(is_robot(d_id))
+    {
+      return src_board->level_param[offset];
+    }
+    else
+    {
+      int i;
+      for(i = 1; i <= src_board->num_robots; i++)
+      {
+        if(!src_board->robot_list[i])
+          continue;
+        if(!strcasecmp(name, (src_board->robot_list[i])->robot_name))
+          return i;
+      }
+    }
+  }
+
+  return -1;
 }
 
 static struct label *find_label(struct robot *cur_robot, const char *name)

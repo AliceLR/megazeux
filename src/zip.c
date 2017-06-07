@@ -1294,7 +1294,7 @@ enum zip_error zputd(int value, struct zip_archive *zp)
 enum zip_error zwrite(const void *src, uint32_t srcLen, struct zip_archive *zp)
 {
   struct zip_file_header *fh;
-  char *buffer;
+  char *buffer = NULL;
   uint32_t writeLen;
   uint16_t method = ZIP_M_NONE;
 

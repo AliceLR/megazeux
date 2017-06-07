@@ -27,6 +27,7 @@
 
 #include "legacy_world.h"
 #include "legacy_board.h"
+#include "legacy_robot.h"
 
 #include "const.h"
 #include "counter.h"
