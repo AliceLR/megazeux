@@ -145,7 +145,7 @@ int zgetd(struct zip_archive *zp, enum zip_error *err);
 enum zip_error zread(void *destBuf, uint32_t readLen, struct zip_archive *zp);
 
 enum zip_error zip_get_next_prop(struct zip_archive *zp,
- uint32_t *prop_id, char *board_id, char *robot_id);
+ unsigned int *prop_id, unsigned int *board_id, unsigned int *robot_id);
 
 enum zip_error zip_get_next_uncompressed_size(struct zip_archive *zp,
  uint32_t *u_size);

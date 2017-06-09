@@ -789,7 +789,7 @@ int mfread(void *dest, size_t len, size_t count, struct memfile *mf)
   char *pos = dest;
   for(i = 0; i < count; i++)
   {
-    if(mf->current + len >= mf->end)
+    if(mf->current + len > mf->end)
       break;
 
     memcpy(pos, mf->current, len);
@@ -806,7 +806,7 @@ int mfwrite(const void *src, size_t len, size_t count, struct memfile *mf)
   char *pos = (char *)src;
   for(i = 0; i < count; i++)
   {
-    if(mf->current + len >= mf->end)
+    if(mf->current + len > mf->end)
       break;
 
     memcpy(mf->current, pos, len);

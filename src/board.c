@@ -30,6 +30,10 @@
 #include "util.h"
 
 
+//sprintf(filename, "b%Xr%X", (unsigned char)board_id, (unsigned char)id);
+//sprintf(filename, "b%Xsc%X", (unsigned char)board_id, (unsigned char)id);
+//sprintf(filename, "b%Xse%X", (unsigned char)board_id, (unsigned char)id);
+
 __editor_maybe_static
 int load_board_direct(struct world *mzx_world, struct board *cur_board,
  FILE *fp, int data_size, int savegame, int file_version)

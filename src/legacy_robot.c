@@ -27,6 +27,7 @@
 #include "const.h"
 #include "error.h"
 #include "legacy_rasm.h"
+#include "rasm.h"
 #include "robot.h"
 #include "world_struct.h"
 #include "util.h"
@@ -46,8 +47,6 @@ struct robot *legacy_load_robot_allocate(struct world *mzx_world, FILE *fp,
   cur_robot->program_source = NULL;
 #endif
 
-  cur_robot->world_version = mzx_world->version;
-
   legacy_load_robot(mzx_world, cur_robot, fp, savegame, file_version);
   return cur_robot;
 }
@@ -62,6 +61,8 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
   int i;
 
   const unsigned char *bufferPtr = buffer;
+
+  cur_robot->world_version = mzx_world->version;
 
   cur_robot->stack = NULL;
   cur_robot->label_list = NULL;
@@ -155,7 +156,10 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
       validated_length = validate_legacy_bytecode(program_legacy_bytecode, program_length);
 
       if(validated_length <= 0)
+      {
+        free(program_legacy_bytecode);
         goto err_invalid;
+      }
 
       else if(validated_length < program_length)
       {
@@ -229,7 +233,10 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
         validated_length = validate_legacy_bytecode(program_legacy_bytecode, program_length);
 
         if(validated_length <= 0)
+        {
+          free(program_legacy_bytecode);
           goto err_invalid;
+        }
 
         else if(validated_length < program_length)
         {
@@ -304,7 +311,9 @@ err_invalid:
   // that were allocated, they'll be cleared later.
   error_message(E_BOARD_ROBOT_CORRUPT, robot_location, NULL);
 
-  create_blank_robot(mzx_world, cur_robot, savegame);
+  clear_robot_contents(cur_robot);
+  create_blank_robot(cur_robot);
+  strcpy(cur_robot->robot_name, "<<error>>");
 }
 
 size_t legacy_calculate_partial_robot_size(int savegame, int version)
@@ -380,7 +389,8 @@ void legacy_load_robot(struct world *mzx_world, struct robot *cur_robot,
 
   if (total_read != full_size) {
     error_message(E_BOARD_ROBOT_CORRUPT, robot_location, NULL);
-    create_blank_robot(mzx_world, cur_robot, savegame);
+    create_blank_robot(cur_robot);
+    strcpy(cur_robot->robot_name, "<<error>>");
     fseek(fp, 0, SEEK_END);
   } else {
     legacy_load_robot_from_memory(mzx_world, cur_robot, buffer, savegame,

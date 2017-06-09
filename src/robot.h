@@ -135,8 +135,7 @@ void save_scroll(struct scroll *cur_scroll, struct zip_archive *zp,
 void save_sensor(struct sensor *cur_sensor, struct zip_archive *zp,
  const char *name, int file_id, int board_id, int id);
 
-void create_blank_robot(struct world *mzx_world, struct robot *cur_robot,
- int savegame);
+void create_blank_robot(struct robot *cur_robot);
 
 void clear_robot(struct robot *cur_robot);
 void clear_scroll(struct scroll *cur_scroll);

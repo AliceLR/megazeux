@@ -30,7 +30,7 @@ __M_BEGIN_DECLS
 // Static functions for world/board/robot IO. Include in those C files only.
 
 
-#define PROP_HEADER_SIZE 4
+#define PROP_HEADER_SIZE 6
 
 // This function is used to save properties files in world saving.
 // There are no safety checks here. USE THE BOUNDING FUNCTIONS WHEN ALLOCATING.
@@ -42,21 +42,21 @@ static inline void save_prop_eof(struct memfile *mf)
 static inline void save_prop_c(int ident, int value, struct memfile *mf)
 {
   mfputw(ident, mf);
-  mfputw(1, mf);
+  mfputd(1, mf);
   mfputc(value, mf);
 }
 
 static inline void save_prop_w(int ident, int value, struct memfile *mf)
 {
   mfputw(ident, mf);
-  mfputw(2, mf);
+  mfputd(2, mf);
   mfputw(value, mf);
 }
 
 static inline void save_prop_d(int ident, int value, struct memfile *mf)
 {
   mfputw(ident, mf);
-  mfputw(4, mf);
+  mfputd(4, mf);
   mfputd(value, mf);
 }
 
@@ -64,7 +64,7 @@ static inline void save_prop_s(int ident, const void *src, size_t len,
  size_t count, struct memfile *mf)
 {
   mfputw(ident, mf);
-  mfputw(len * count, mf);
+  mfputd(len * count, mf);
   mfwrite(src, len, count, mf);
 }
 
@@ -72,7 +72,7 @@ static inline void save_prop_v(int ident, size_t len, struct memfile *prop,
  struct memfile *mf)
 {
   mfputw(ident, mf);
-  mfputw(len, mf);
+  mfputd(len, mf);
   mfopen_static(mf->current, len, prop);
   mf->current += len;
 }
@@ -109,7 +109,7 @@ static int next_prop(struct memfile *prop, int *ident, int *length,
   }
 
   *ident = mfgetw(mf);
-  len = mfgetw(mf);
+  len = mfgetd(mf);
   cur = mf->current;
 
   if((end - cur)<len)
