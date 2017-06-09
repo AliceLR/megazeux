@@ -641,7 +641,7 @@ static void glsl_render_graph(struct graphics_data *graphics)
 {
   struct glsl_render_data *render_data = graphics->render_data;
   struct char_element *src = graphics->text_video;
-  Uint32 *colorptr, *dest, i;
+  Uint32 *colorptr, *dest, i, j;
   int width, height;
 
   static const float tex_coord_array_single[2 * 4] = {
@@ -711,7 +711,7 @@ static void glsl_render_graph(struct graphics_data *graphics)
   colorptr = graphics->flat_intensity_palette;
   dest = render_data->background_texture;
 
-  for(i = 0; i < FULL_PAL_SIZE; i++, dest++, colorptr++)
+  for(i = 0; i < graphics->protected_pal_position + 16; i++, dest++, colorptr++)
     *dest = *colorptr;
 
   glsl.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 896, FULL_PAL_SIZE, 1, GL_RGBA,
@@ -719,8 +719,9 @@ static void glsl_render_graph(struct graphics_data *graphics)
   gl_check_error();
 
   dest = render_data->background_texture;
-  for(i = 0; i < SMZX_PAL_SIZE * 4; i++, dest++)
-    *dest = graphics->smzx_indices[i];
+  for (i = 0; i < 4; i++)
+    for(j = 0; j < SMZX_PAL_SIZE; j++, dest++)
+      *dest = graphics->smzx_indices[j * 4 + i];
 
   glsl.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 897, SMZX_PAL_SIZE, 4, GL_RGBA,
    GL_UNSIGNED_BYTE, render_data->background_texture);
