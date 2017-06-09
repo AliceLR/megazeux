@@ -123,6 +123,21 @@ static void soft_render_graph(struct graphics_data *graphics)
       render_graph32(pixels, pitch, graphics, set_colors32[mode]);
     else
       render_graph32s(pixels, pitch, graphics, set_colors32[mode]);
+    
+    /* This just adds a 3x3 red box to the top left of the screen
+       It's useful for debugging because it indicates when the 
+       fallback renderer is used
+
+    *(pixels + 0) = 0xFFFF0000;
+    *(pixels + 1) = 0xFFFF0000;
+    *(pixels + 2) = 0xFFFF0000;
+    *(pixels + (pitch/4)) = 0xFFFF0000;
+    *(pixels + (pitch/4) + 1) = 0xFFFF0000;
+    *(pixels + (pitch/4) + 2) = 0xFFFF0000;
+    *(pixels + (pitch/2)) = 0xFFFF0000;
+    *(pixels + (pitch/2) + 1) = 0xFFFF0000;
+    *(pixels + (pitch/2) + 2) = 0xFFFF0000;
+    */
   }
   SDL_UnlockSurface(screen);
 }
