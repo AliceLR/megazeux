@@ -101,7 +101,6 @@ static void soft_update_colors(struct graphics_data *graphics,
 
 static void soft_render_graph(struct graphics_data *graphics)
 {
-  fflush(stderr);
   struct sdl_render_data *render_data = graphics->render_data;
   SDL_Surface *screen = soft_get_screen_surface(render_data);
 
@@ -128,7 +127,7 @@ static void soft_render_graph(struct graphics_data *graphics)
     /* This just adds a 3x3 red box to the top left of the screen
        It's useful for debugging because it indicates when the 
        fallback renderer is used
-       
+
     *(pixels + 0) = 0xFFFF0000;
     *(pixels + 1) = 0xFFFF0000;
     *(pixels + 2) = 0xFFFF0000;
