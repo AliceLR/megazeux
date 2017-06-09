@@ -22,6 +22,7 @@
 #include "graphics.h"
 #include "render.h"
 #include "render_sdl.h"
+#include "render_layer.h"
 #include "renderers.h"
 #include "util.h"
 
@@ -82,6 +83,7 @@ static void soft_update_colors(struct graphics_data *graphics,
   }
   else
   {
+    if (count > 256) count = 256;
     for(i = 0; i < count; i++)
     {
       sdlpal[i].r = palette[i].r;
@@ -211,10 +213,7 @@ static void soft_render_layer(struct graphics_data *graphics,
   pixels += (screen->w - 640) * bpp / 64;
 
   SDL_LockSurface(screen);
-  if(bpp == 32)
-  {
-    render_layer_32bit(pixels, pitch, graphics, layer); 
-  }
+  render_layer(pixels, bpp, pitch, graphics, layer); 
   SDL_UnlockSurface(screen);
 }
 

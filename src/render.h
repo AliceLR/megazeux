@@ -51,8 +51,6 @@ void render_graph32(Uint32 *pixels, Uint32 pitch,
 void render_graph32s(Uint32 *pixels, Uint32 pitch,
  struct graphics_data *graphics,
  void (*set_colors)(struct graphics_data *, Uint32 *, Uint8, Uint8));
-void render_layer_32bit(Uint32 *pixels, Uint32 pitch,
- struct graphics_data *graphics, struct video_layer *layer);
 
 void render_cursor(Uint32 *pixels, Uint32 pitch, Uint8 bpp, Uint32 x, Uint32 y,
  Uint32 color, Uint8 lines, Uint8 offset);

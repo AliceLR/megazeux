@@ -90,6 +90,14 @@ static void magic_load_mod(struct world *mzx_world, char *filename)
 
   size_t mod_name_size;
 
+  // Special case: mod "" ends the module.
+  if(!filename[0])
+  {
+    mzx_world->real_mod_playing[0] = 0;
+    end_module();
+    return;
+  }
+
   // Temporarily remove *
   mod_name_size = strlen(filename);
   if(mod_name_size && filename[mod_name_size - 1] == '*')
@@ -4051,8 +4059,10 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           char_buffer[i] = parse_param(mzx_world, next_param, id);
           next_param = next_param_pos(next_param);
         }
-
-        ec_change_char(char_num, char_buffer);
+        // Prior to 2.85 char params are clipped
+        if (mzx_world->version < 0x0255) char_num &= 0xFF;
+        if (char_num <= 0xFF || layer_renderer_check(true))
+          ec_change_char(char_num, char_buffer);
         break;
       }
 
@@ -5006,6 +5016,9 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           char char_buffer[14];
           int i;
 
+          // Prior to 2.85 char params are clipped
+          if (mzx_world->version < 0x0255) char_num &= 0xFF;
+
           ec_read_char(char_num, char_buffer);
 
           switch(scroll_dir)
@@ -5085,6 +5098,9 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
         if(is_cardinal_dir(flip_dir))
         {
+          // Prior to 2.85 char params are clipped
+          if (mzx_world->version < 0x0255) char_num &= 0xFF;
+          
           ec_read_char(char_num, char_buffer);
 
           switch(flip_dir)
@@ -5133,6 +5149,14 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         char char_buffer[14];
         char *p2 = next_param_pos(cmd_ptr + 1);
         int dest_char = parse_param(mzx_world, p2, id);
+
+        // Prior to 2.85 char params are clipped
+        if (mzx_world->version < 0x0255)
+        {
+          src_char &= 0xFF;
+          dest_char &= 0xFF;
+        }
+        
         ec_read_char(src_char, char_buffer);
         ec_change_char(dest_char, char_buffer);
         break;
@@ -5247,14 +5271,14 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           struct string src;
 
           if(get_string(mzx_world, src_name, &src, id))
-            ec_mem_load_set_var(src.value, src.length, pos);
+            ec_mem_load_set_var(src.value, src.length, pos, mzx_world->version);
         }
         else
 
         // Load from file
         if(!fsafetranslate(src_name, translated_name))
         {
-          ec_load_set_var(translated_name, pos);
+          ec_load_set_var(translated_name, pos, mzx_world->version);
         }
 
         free(translated_name);

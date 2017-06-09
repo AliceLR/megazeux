@@ -348,6 +348,11 @@ int error_message(enum error_code id, int parameter, const char *string)
       sprintf(error_mesg, "Bytecode file failed validation check");
       code = 0xD0D0;
       break;
+    
+    case E_NO_LAYER_RENDERER:
+      sprintf(error_mesg, "Current renderer lacks advanced graphical features; features disabled");
+      code = 0x2563;
+      break;
 
 #ifdef CONFIG_DEBYTECODE
     case E_DBC_WORLD_OVERWRITE_OLD:

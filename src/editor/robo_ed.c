@@ -2902,7 +2902,7 @@ static void display_robot_line(struct robot_state *rstate,
         else
         {
           arg_length = strcspn(line_pos, " ") + 1;
-          chars_offset = 256;
+          chars_offset = PRO_CH;
         }
 
         if((current_arg == S_COLOR) && (color_codes[current_arg + 1] == 255))

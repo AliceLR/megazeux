@@ -877,15 +877,18 @@ static void spr_offset_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
-  (mzx_world->sprite_list[spr_num])->offset = value;
+  if (layer_renderer_check(true))
+    (mzx_world->sprite_list[spr_num])->offset = value;
 }
 
 static void spr_unbound_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
-  (mzx_world->sprite_list[spr_num])->flags &= ~SPRITE_UNBOUND;
-  (mzx_world->sprite_list[spr_num])->flags |= value ? SPRITE_UNBOUND : 0;
+  if (layer_renderer_check(true)) {
+    (mzx_world->sprite_list[spr_num])->flags &= ~SPRITE_UNBOUND;
+    (mzx_world->sprite_list[spr_num])->flags |= value ? SPRITE_UNBOUND : 0;
+  }
 }
 
 static void spr_height_write(struct world *mzx_world,
@@ -1488,14 +1491,25 @@ static void upr_write(struct world *mzx_world,
 static int char_byte_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  return ec_read_byte(get_counter(mzx_world, "CHAR", id),
+  Uint16 char_num = get_counter(mzx_world, "CHAR", id);
+
+  // Prior to 2.85 char params are clipped
+  if (mzx_world->version < 0x0255) char_num &= 0xFF;
+  
+  return ec_read_byte(char_num,
    get_counter(mzx_world, "BYTE", id));
 }
 
 static void char_byte_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
-  ec_change_byte(get_counter(mzx_world, "CHAR", id),
+  Uint16 char_num = get_counter(mzx_world, "CHAR", id);
+
+  // Prior to 2.85 char params are clipped
+  if (mzx_world->version < 0x0255) char_num &= 0xFF;
+  if (char_num > 0xFF && !layer_renderer_check(true)) return;
+
+  ec_change_byte(char_num,
    get_counter(mzx_world, "BYTE", id), value);
 }
 
@@ -3138,7 +3152,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
      */
     case FOPEN_SAVE_BC:
     {
-      error_message(E_DBC_SAVE_ROBOT_UNSUPPORTED, 0);
+      error_message(E_DBC_SAVE_ROBOT_UNSUPPORTED, 0, NULL);
       set_error_suppression(E_DBC_SAVE_ROBOT_UNSUPPORTED, 1);
       break;
     }

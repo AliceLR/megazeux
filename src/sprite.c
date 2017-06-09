@@ -43,12 +43,13 @@ static int compare_spr(const void *dest, const void *src)
    (src_y + spr_src->col_y));
 }
 
-static inline int is_blank(char c)
+static inline int is_blank(Uint16 c)
 {
   int cp[4];
   int blank = 0;
 
   cp[3] = 0;
+
   ec_read_char(c, (char *)cp);
 
   blank |= cp[0];
@@ -96,7 +97,8 @@ void draw_sprites(struct world *mzx_world)
   struct sprite **sprite_list = mzx_world->sprite_list;
   struct sprite *draw_order[MAX_SPRITES];
   struct sprite *cur_sprite;
-  char ch, color;
+  Uint16 ch;
+  char color;
   int viewport_x = src_board->viewport_x;
   int viewport_y = src_board->viewport_y;
   int viewport_width = src_board->viewport_width;
@@ -110,6 +112,7 @@ void draw_sprites(struct world *mzx_world)
   int draw_layer_order;
   bool unbound;
   int transparent_color;
+  int ub_offx, ub_offy;
 
   calculate_xytop(mzx_world, &screen_x, &screen_y);
   // see if y sort should be done
@@ -240,15 +243,48 @@ void draw_sprites(struct world *mzx_world)
       if((ref_y + draw_height) > bheight)
         draw_height = bheight - ref_y;
       
+      if (draw_width <= 0 || draw_height <= 0)
+        continue;
+      ub_offx = 0;
+      ub_offy = 0;
       if (unbound)
       {
+        // Are portions of this sprite entirely outside the viewport?
+        // If so, clip them off
+        start_x = cur_sprite->x + viewport_x * CHAR_W;
+        start_y = cur_sprite->y + viewport_y * CHAR_H;
+        if (!(cur_sprite->flags & SPRITE_STATIC)) {
+          start_x -= screen_x * CHAR_W;
+          start_y -= screen_y * CHAR_H;
+        }
+
+        if (start_x < -CHAR_W + 1) {
+          ub_offx += start_x / -CHAR_W;
+          draw_width -= start_x / -CHAR_W;
+          start_x += (start_x / -CHAR_W) * CHAR_W;
+        }
+        if (start_y < -CHAR_H + 1) {
+          ub_offy += start_y / -CHAR_H;
+          draw_height -= start_y / -CHAR_H;
+          start_y += (start_y / -CHAR_H) * CHAR_H;
+        }
+        if (start_x + draw_width * CHAR_W >= (viewport_width + 1) * CHAR_W) {
+          draw_width += (((viewport_width + 1) * CHAR_W) - (start_x + draw_width * CHAR_W)) / CHAR_W;
+        }
+        if (start_y + draw_height * CHAR_H >= (viewport_height + 1) * CHAR_H) {
+          draw_height += (((viewport_height + 1) * CHAR_H) - (start_y + draw_height * CHAR_H)) / CHAR_H;
+        }
+
+        // If there is nothing left of the sprite, don't draw it
+        if (draw_width < 1 || draw_height < 1) continue;
+
         // Zero out start_x and start_y for now
         // We will then modify their values directly
         start_x = 0;
         start_y = 0;
       }
 
-      i4 = ((ref_y + offset_y) * bwidth) + ref_x + offset_x;
+      i4 = ((ref_y + offset_y + ub_offy) * bwidth) + ref_x + offset_x + ub_offx;
       i5 = (start_y * 80) + start_x;
 
       if(overlay_mode == 2)
@@ -302,7 +338,7 @@ void draw_sprites(struct world *mzx_world)
           {
             if (unbound || ch != 32)
             {
-              if(!(cur_sprite->flags & SPRITE_CHAR_CHECK2) || !is_blank(ch))
+              if(!(cur_sprite->flags & SPRITE_CHAR_CHECK2) || !is_blank((ch + cur_sprite->offset) % PROTECTED_CHARSET_POSITION))
               {
                 if (!unbound)
                   draw_char_linear_ext(color, ch, i5, 0, 0);
@@ -323,8 +359,8 @@ void draw_sprites(struct world *mzx_world)
       if (unbound)
       {
         // Fix the x and y positions of this sprite
-        start_x = cur_sprite->x + viewport_x * CHAR_W;
-        start_y = cur_sprite->y + viewport_y * CHAR_H;
+        start_x = cur_sprite->x + viewport_x * CHAR_W + ub_offx * CHAR_W;
+        start_y = cur_sprite->y + viewport_y * CHAR_H + ub_offy * CHAR_H;
         if (!(cur_sprite->flags & SPRITE_STATIC)) {
           start_x -= screen_x * CHAR_W;
           start_y -= screen_y * CHAR_H;
@@ -819,6 +855,7 @@ static inline bool collision_char(const struct sprite *spr, char flags, int x, i
   int ch;
   get_sprite_tile(spr, x, y, mzx_world, &ch, NULL);
   if (ch == -1) return false;
+  ch = (ch + spr->offset) % PROTECTED_CHARSET_POSITION;
   if ((flags & SPRITE_CHAR_CHECK) && ch != 32) return true;
   if ((flags & SPRITE_CHAR_CHECK2) && !is_blank(ch)) return true;
   return false;
@@ -893,7 +930,7 @@ static inline void mask_alloc_chr(const struct sprite *spr, struct mask m, int c
     get_sprite_tile(spr, x + spr->ref_x, y + spr->ref_y, mzx_world, &chr, &col);
     memset(output, 0, CHAR_SIZE);
     if (chr != -1) {
-      dump_char(chr, col, -1, bitmap_buffer);
+      dump_char((chr + spr->offset) % PROTECTED_CHARSET_POSITION, col, -1, bitmap_buffer);
       for (py = 0; py < CHAR_H; py++) {
         for (px = 0; px < CHAR_W; px++) {
           if (bitmap_buffer[py * CHAR_W + px] != tcol) {

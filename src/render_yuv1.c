@@ -19,6 +19,7 @@
 
 #include "graphics.h"
 #include "render.h"
+#include "render_layer.h"
 #include "render_sdl.h"
 #include "render_yuv.h"
 #include "renderers.h"
@@ -45,6 +46,21 @@ static void yuv1_render_graph(struct graphics_data *graphics)
     render_graph32(pixels, pitch, graphics, set_colors32[mode]);
   else
     render_graph32s(pixels, pitch, graphics, set_colors32[mode]);
+
+  yuv_unlock_overlay(render_data);
+}
+
+static void yuv1_render_layer(struct graphics_data *graphics, struct video_layer *layer)
+{
+  struct yuv_render_data *render_data = graphics->render_data;
+  Uint32 *pixels;
+  int pitch;
+
+  yuv_lock_overlay(render_data);
+
+  pixels = yuv_get_pixels_pitch(render_data, &pitch);
+
+  render_layer(pixels, 32, pitch, graphics, layer);
 
   yuv_unlock_overlay(render_data);
 }
@@ -92,6 +108,7 @@ void render_yuv1_register(struct renderer *renderer)
   renderer->get_screen_coords = get_screen_coords_scaled;
   renderer->set_screen_coords = set_screen_coords_scaled;
   renderer->render_graph = yuv1_render_graph;
+  renderer->render_layer = yuv1_render_layer;
   renderer->render_cursor = yuv1_render_cursor;
   renderer->render_mouse = yuv1_render_mouse;
   renderer->sync_screen = yuv_sync_screen;
