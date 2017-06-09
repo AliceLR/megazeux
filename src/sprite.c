@@ -312,7 +312,8 @@ void draw_sprites(struct world *mzx_world)
         transparent_color = -1;
       
       layer = create_layer(start_x * CHAR_W, start_y * CHAR_H, draw_width,
-       draw_height, draw_layer_order, transparent_color, cur_sprite->offset);
+       draw_height, draw_layer_order, transparent_color, cur_sprite->offset,
+       unbound);
       select_layer(layer);
       for(i2 = 0; i2 < draw_height; i2++)
       {
@@ -895,6 +896,12 @@ static inline struct mask allocate_mask(const struct sprite *spr)
   m.data = cmalloc(spr->width * spr->height * CHAR_SIZE);
   return m;
 }
+
+static inline struct mask null_mask(void)
+{
+  struct mask m = {rectangle(0, 0, 0, 0), NULL, NULL};
+  return m;
+}
 static inline void destroy_mask(struct mask m)
 {
   free(m.mapping);
@@ -923,7 +930,8 @@ static inline void mask_alloc_chr(const struct sprite *spr, struct mask m, int c
   int px, py;
   int tcol = spr->transparent_color;
   Uint8 bitmap_buffer[CHAR_W * CHAR_H];
-  Uint8 *output = &m.data[ch * CHAR_SIZE];
+  Uint8 *output;
+  output = &m.data[ch * CHAR_SIZE];;
 
   if (!m.mapping[ch]) {
     m.mapping[ch] = 1;
@@ -1026,10 +1034,12 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *spr,
   int cx, cy;
   bool sprite_collided;
   char target_flags;
-  struct mask spr_mask, target_mask;
+  struct mask spr_mask = null_mask(), target_mask = null_mask();
   bool spr_mask_allocated = false, target_mask_allocated;
 
-  //if (mzx_world->version < 0x0255) return sprite_colliding_xy_old(mzx_world, spr, x, y);
+  if (0) // Enable this once we're done testing
+    if (mzx_world->version < 0x0255)
+      return sprite_colliding_xy_old(mzx_world, spr, x, y);
 
   collision_sprite.x = x;
   collision_sprite.y = y;
