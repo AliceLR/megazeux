@@ -1054,7 +1054,7 @@ static void draw_menu_minimal(int overlay_edit, int draw_mode,
   int i;
 
   for(i = 0; i < 80; i++)
-    draw_char_ext(' ', EC_MAIN_BOX, i, EDIT_SCREEN_EXTENDED, 256, 16);
+    draw_char_ext(' ', EC_MAIN_BOX, i, EDIT_SCREEN_EXTENDED, PRO_CH, 16);
 
   write_string("Alt+H: Toggle Help", 3, EDIT_SCREEN_EXTENDED, EC_OPTION, 1);
 
@@ -2278,7 +2278,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                  "Choose character set to import", 1, 0,
                  elements, 1, 2))
                 {
-                  ec_load_set_var(import_name, char_offset);
+                  ec_load_set_var(import_name, char_offset, 0);
                 }
                 modified = 1;
                 break;

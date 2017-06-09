@@ -61,6 +61,7 @@ struct char_element
 #define CHARSET_SIZE 256
 #define NUM_CHARSETS 16
 #define PROTECTED_CHARSET_POSITION ((NUM_CHARSETS - 1) * CHARSET_SIZE)
+#define PRO_CH  PROTECTED_CHARSET_POSITION
 #define FULL_CHARSET_SIZE (CHARSET_SIZE * NUM_CHARSETS)
 
 #define PAL_SIZE 16
@@ -97,6 +98,7 @@ struct renderer
   void (*get_screen_coords)(struct graphics_data *, int, int, int *, int *,
                              int *, int *, int *, int *);
   void (*set_screen_coords)(struct graphics_data *, int, int, int *, int *);
+  void (*switch_shader)    (struct graphics_data *, const char *v, const char *f);
   void (*render_graph)     (struct graphics_data *);
   void (*render_layer)     (struct graphics_data *, struct video_layer *);
   void (*render_cursor)    (struct graphics_data *, Uint32, Uint32, Uint8,
@@ -177,6 +179,7 @@ CORE_LIBSPEC void color_line(Uint32 length, Uint32 x, Uint32 y, Uint8 color);
 CORE_LIBSPEC void fill_line(Uint32 length, Uint32 x, Uint32 y, Uint8 chr,
  Uint8 color);
 CORE_LIBSPEC void draw_char(Uint8 chr, Uint8 color, Uint32 x, Uint32 y);
+CORE_LIBSPEC void erase_char(Uint32 x, Uint32 y);
 
 CORE_LIBSPEC void write_string_ext(const char *string, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed, Uint32 offset, Uint32 c_offset);
@@ -208,10 +211,10 @@ CORE_LIBSPEC void set_window_caption(const char *caption);
 
 CORE_LIBSPEC void ec_read_char(Uint16 chr, char *matrix);
 CORE_LIBSPEC void ec_change_char(Uint16 chr, char *matrix);
-CORE_LIBSPEC Sint32 ec_load_set_var(char *name, Uint16 pos);
+CORE_LIBSPEC Sint32 ec_load_set_var(char *name, Uint16 pos, int version);
 CORE_LIBSPEC void ec_mem_load_set(Uint8 *chars);
 CORE_LIBSPEC void ec_mem_save_set(Uint8 *chars);
-CORE_LIBSPEC void ec_mem_load_set_var(char *chars, size_t len, Uint16 pos);
+CORE_LIBSPEC void ec_mem_load_set_var(char *chars, size_t len, Uint16 pos, int v);
 
 CORE_LIBSPEC void update_palette(void);
 CORE_LIBSPEC void set_gui_palette(void);
@@ -281,6 +284,9 @@ void dump_char(Uint16 char_idx, Uint8 color, int mode, Uint8 *buffer);
 void get_screen_coords(int screen_x, int screen_y, int *x, int *y,
  int *min_x, int *min_y, int *max_x, int *max_y);
 void set_screen_coords(int x, int y, int *screen_x, int *screen_y);
+
+CORE_LIBSPEC void switch_shader(const char *v, const char *f);
+CORE_LIBSPEC bool layer_renderer_check(bool show_error);
 
 /* Renderers might have the facility to center a screen on a given
  * region of the window. Currently only the NDS renderer implements

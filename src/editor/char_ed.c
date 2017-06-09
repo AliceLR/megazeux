@@ -766,6 +766,11 @@ int char_editor(struct world *mzx_world)
          info_x, info_y + pad_height + 1, 143, 1
       );
 
+      erase_char(info_x + 16, info_y + pad_height + 13);
+      erase_char(info_x + 17, info_y + pad_height + 13);
+      erase_char(info_x + 18, info_y + pad_height + 13);
+      erase_char(info_x + 19, info_y + pad_height + 13);
+      select_layer(OVERLAY_LAYER);
       if(current_pixel)
       {
         write_string("\xDB\xDB\xDB\xDB", info_x + 16,
@@ -776,6 +781,7 @@ int char_editor(struct world *mzx_world)
         write_string("\xFA\xFA\xFA\xFA", info_x + 16,
          info_y + pad_height + 13, 0x87, 1);
       }
+      select_layer(UI_LAYER);
     }
     else
     {
@@ -798,7 +804,17 @@ int char_editor(struct world *mzx_world)
          info_x, info_y + pad_height + 1, 143, 1
       );
     }
+    {
+      int x, y;
+      for (y = chars_y; y < chars_y + chars_height; y++) {
+        for (x = chars_x; x < chars_x + chars_width; x++) {
+          erase_char(x, y);
+        }
+      }
+    }
 
+
+    select_layer(OVERLAY_LAYER);
     // Update char
     if(block_mode)
     {
@@ -828,7 +844,7 @@ int char_editor(struct world *mzx_world)
          current_width, current_height, x, y, 1, 1);
       }
     }
-
+    select_layer(UI_LAYER);
     switch(draw)
     {
       case 0:
@@ -849,6 +865,7 @@ int char_editor(struct world *mzx_world)
 
     // Current character
     write_number(current_char, 143, info_x + 20, info_y, 3, 0, 10);
+    
 
     for(i = 0, offset = 0; i < highlight_height; i++)
     {
@@ -862,6 +879,9 @@ int char_editor(struct world *mzx_world)
     {
       for(i2 = 0; i2 < current_width; i2++, offset++)
       {
+        select_layer(UI_LAYER);
+        erase_char(i2 + info_x, info_y + i + 1);
+        select_layer(OVERLAY_LAYER);
         draw_char_ext(mini_buffer[offset], 143,
          i2 + info_x, info_y + i + 1, 0, 16);
       }
@@ -875,18 +895,28 @@ int char_editor(struct world *mzx_world)
         if((i2 >= 0) && (i2 < highlight_width) &&
          (i < highlight_height))
         {
+          select_layer(UI_LAYER);
+          erase_char(i2 + info_x + current_width + 11,
+           info_y + i + 1);
+          select_layer(OVERLAY_LAYER);
           draw_char_ext(current_char + i2 + (i * 32),
            143, i2 + info_x + current_width + 11,
            info_y + i + 1, 0, 16);
         }
         else
         {
+          select_layer(UI_LAYER);
+          erase_char(i2 + info_x + current_width + 11,
+           info_y + i + 1);
+          select_layer(OVERLAY_LAYER);
           draw_char_ext(current_char + i2 + (i * 32),
            128, i2 + info_x + current_width + 11,
            info_y + i + 1, 0, 16);
         }
       }
     }
+
+    select_layer(UI_LAYER);
 
     update_screen();
     update_event_status_delay();
@@ -1770,7 +1800,7 @@ int char_editor(struct world *mzx_world)
 
               add_ext(import_name, ".chr");
               char_size =
-               ec_load_set_var(import_name, char_offset);
+               ec_load_set_var(import_name, char_offset, 0);
 
               if(char_size != -1)
                 char_offset += char_size;

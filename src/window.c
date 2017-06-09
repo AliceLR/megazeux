@@ -141,7 +141,7 @@ int draw_window_box(int x1, int y1, int x2, int y2, int color,
  int dark_color, int corner_color, int shadow, int fill_center)
 {
   return draw_window_box_ext(x1, y1, x2, y2, color, dark_color,
-   corner_color, shadow, fill_center, 256, 16);
+   corner_color, shadow, fill_center, PRO_CH, 16);
 }
 
 int draw_window_box_ext(int x1, int y1, int x2, int y2, int color,
@@ -961,9 +961,9 @@ static void draw_label(struct world *mzx_world, struct dialog *di,
   int y = di->y + e->y;
 
   if(src->respect_colors)
-    color_string_ext(src->text, x, y, DI_TEXT, 256, 16, true);
+    color_string_ext(src->text, x, y, DI_TEXT, PRO_CH, 16, true);
   else
-    write_string_ext(src->text, x, y, DI_TEXT, true, 256, 16);
+    write_string_ext(src->text, x, y, DI_TEXT, true, PRO_CH, 16);
 }
 
 static void draw_input_box(struct world *mzx_world, struct dialog *di,
