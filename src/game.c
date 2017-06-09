@@ -137,7 +137,11 @@ static const char cw_offs[8] = { 10, 2, 6, 4, 5, 1, 9, 8 };
 static const char ccw_offs[8] = { 10, 8, 9, 1, 5, 4, 6, 2 };
 
 // Whether to update a palette from robot activity
-bool pal_update; 
+bool pal_update;
+
+#ifdef CONFIG_FPS
+double average_fps;
+#endif /* CONFIG_FPS */
 
 __editor_maybe_static const char *const world_ext[] = { ".MZX", NULL };
 
@@ -248,6 +252,14 @@ void set_caption(struct world *mzx_world, struct board *board,
     snprintf(buffer, MAX_CAPTION_SIZE, "%s %s", caption, "(editor)");
     strcpy(caption, buffer);
   }
+
+  #ifdef CONFIG_FPS
+  if(mzx_world && !editor && !robot && !board)
+  {
+    snprintf(buffer, MAX_CAPTION_SIZE, "%s %s FPS: %f", caption, CAPTION_SPACER, average_fps);
+    strcpy(caption, buffer);
+  }
+  #endif /* CONFIG_FPS */
 
   set_window_caption(caption);
 
@@ -1129,6 +1141,66 @@ static int update(struct world *mzx_world, int game, int *fadein)
   char *level_under_color = src_board->level_under_color;
   char *level_under_param = src_board->level_under_param;
   int total_ticks;
+  #ifdef CONFIG_FPS
+  #define FPS_HISTORY_SIZE 5
+  #define FPS_INTERVAL 1000
+  static int fps_previous_ticks = -1;
+  static int frames_counted;
+  static int fps_history[FPS_HISTORY_SIZE];
+
+  {
+    int i;
+    int min_fps, max_fps, total_fps;
+    int fps_history_count;
+    int ticks_delta = start_ticks - fps_previous_ticks;
+
+    if (fps_previous_ticks == -1) {
+      fps_previous_ticks = start_ticks;
+      frames_counted = 0;
+      for (i = 0; i < FPS_HISTORY_SIZE; i++)
+        fps_history[i] = -1;
+    } else {
+      if (ticks_delta >= FPS_INTERVAL) {
+        for (i = FPS_HISTORY_SIZE - 1; i >= 1; i--)
+        {
+          fps_history[i] = fps_history[i - 1];
+        }
+        fps_history[0] = frames_counted;
+        min_fps = fps_history[0];
+        max_fps = fps_history[0];
+        total_fps = 0;
+        fps_history_count = 0;
+        for (i = 0; i < FPS_HISTORY_SIZE; i++)
+        {
+          if (fps_history[i] > -1)
+          {
+            if (fps_history[i] > max_fps)
+              max_fps = fps_history[i];
+            if (fps_history[i] < min_fps)
+              min_fps = fps_history[i];
+            total_fps += fps_history[i];
+            fps_history_count++;
+          }
+        }
+
+         // Subtract off highest and lowest scores (outliers)
+        total_fps -= max_fps;
+        total_fps -= min_fps;
+        if (fps_history_count > 2)
+        {
+          average_fps = 1.0 * total_fps / (fps_history_count - 2) * (1000.0 / FPS_INTERVAL);
+          set_caption(mzx_world, NULL, NULL, 0);
+        }
+        fps_previous_ticks += FPS_INTERVAL;
+
+        frames_counted = 0;
+      } else {
+        frames_counted++;
+      }
+    }
+  }
+
+  #endif /* CONFIG_FPS */
 
   pal_update = false;
 

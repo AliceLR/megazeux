@@ -35,8 +35,10 @@
 #include "configure.h"
 #include "event.h"
 #include "render.h"
+#include "render_layer.h"
 #include "renderers.h"
 #include "platform.h"
+#include "error.h"
 
 #ifdef CONFIG_PNG
 #include "pngops.h"
@@ -170,17 +172,22 @@ __editor_maybe_static void ec_load_set_secondary(const char *name,
     graphics.renderer.remap_charsets(&graphics);
 }
 
-Sint32 ec_load_set_var(char *name, Uint16 pos)
+Sint32 ec_load_set_var(char *name, Uint16 pos, int version)
 {
   Uint32 size = CHARSET_SIZE;
   FILE *fp = fopen_unsafe(name, "rb");
+  Uint32 maxChars = PROTECTED_CHARSET_POSITION;
+  if (version < 0x0255) maxChars = 256; // Prior to 2.85
 
   if(!fp)
     return -1;
   
   size = ftell_and_rewind(fp) / CHAR_SIZE;
-  if(size + pos > PROTECTED_CHARSET_POSITION)
-    size = PROTECTED_CHARSET_POSITION - pos;
+  if (size + pos >= 256 && maxChars > 256 && !layer_renderer_check(true))
+    maxChars = 256;
+  
+  if(size + pos > maxChars)
+    size = maxChars - pos;
 
   fread(graphics.charset + (pos * CHAR_SIZE), CHAR_SIZE, size, fp);
   fclose(fp);
@@ -206,10 +213,16 @@ void ec_mem_save_set(Uint8 *chars)
   memcpy(chars, graphics.charset, CHAR_SIZE * CHARSET_SIZE);
 }
 
-void ec_mem_load_set_var(char *chars, size_t len, Uint16 pos)
+void ec_mem_load_set_var(char *chars, size_t len, Uint16 pos, int version)
 {
   Uint32 offset = pos * CHAR_SIZE;
-  Uint32 size = MIN(len, CHAR_SIZE * PROTECTED_CHARSET_POSITION - offset);
+  Uint32 size;
+  Uint32 maxChars = PROTECTED_CHARSET_POSITION;
+  if (version < 0x0255) maxChars = 256; // Prior to 2.85
+  if (len + offset >= 256 * CHAR_SIZE && !layer_renderer_check(true))
+    maxChars = 256;
+
+  size = MIN(len, CHAR_SIZE * maxChars - offset);
 
   memcpy(graphics.charset + offset, chars, size);
 
@@ -220,7 +233,13 @@ void ec_mem_load_set_var(char *chars, size_t len, Uint16 pos)
 
 __editor_maybe_static void ec_load_mzx(void)
 {
+  if (layer_renderer_check(false))
+  {
+    // Wipe the unprotected parts of the charset
+    memset(graphics.charset, 0, PROTECTED_CHARSET_POSITION * CHAR_SIZE);
+  }
   ec_mem_load_set(graphics.default_charset);
+
 }
 
 static void update_colors(struct rgb_color *palette, Uint32 count)
@@ -265,10 +284,17 @@ static Uint32 make_palette(struct rgb_color *palette)
      sizeof(struct rgb_color) * PAL_SIZE);
     paletteSize = PAL_SIZE;
   }
-  memcpy(palette + paletteSize, default_pal, sizeof(struct rgb_color) * PROTECTED_PAL_SIZE);
+  memcpy(palette + paletteSize, default_pal,
+   sizeof(struct rgb_color) * PROTECTED_PAL_SIZE);
   graphics.protected_pal_position = paletteSize;
 
   paletteSize += PROTECTED_PAL_SIZE;
+  if (paletteSize > 256 && !layer_renderer_check(false))
+  {
+    // Renderers without layer support often have poor upport for large palettes,
+    // so to be safe we restrict the palette size
+    paletteSize = 256;
+  }
   return paletteSize;
 }
 
@@ -431,6 +457,9 @@ Uint32 get_smzx_index(Uint32 col, Uint32 offset)
 }
 void set_smzx_index(Uint32 col, Uint32 offset, Uint32 value)
 {
+  // Setting the SMZX index is only supported for mode 3
+  if (graphics.screen_mode != 3) return;
+
   offset = offset % 4;
   if (offset == 1) offset = 2;
   else if (offset == 2) offset = 1;
@@ -615,7 +644,6 @@ void set_screen_mode(Uint32 mode)
       load_palette(mzx_res_get_by_id(SMZX_PAL));
       graphics.default_smzx_loaded = 1;
     }
-    update_palette();
   }
   else
 
@@ -626,7 +654,6 @@ void set_screen_mode(Uint32 mode)
     graphics.screen_mode = mode;
 
     set_gui_palette();
-    update_palette();
   }
   else
   {
@@ -659,10 +686,7 @@ void set_screen_mode(Uint32 mode)
     }
   }
 
-  if(mode == 1)
-  {
-    update_palette();
-  }
+  update_palette();
 }
 
 Uint32 get_screen_mode(void)
@@ -1024,7 +1048,8 @@ static void set_window_icon(void)
 #endif // CONFIG_SDL && CONFIG_ICON
 }
 
-static void new_empty_layer(struct video_layer *layer, int x, int y, Uint32 w, Uint32 h, int draw_order)
+static void new_empty_layer(struct video_layer *layer, int x, int y, Uint32 w,
+ Uint32 h, int draw_order)
 {
   layer->data = cmalloc(sizeof(struct char_element) * w * h);
   layer->w = w;
@@ -1037,15 +1062,16 @@ static void new_empty_layer(struct video_layer *layer, int x, int y, Uint32 w, U
   layer->offset = 0;
 }
 
-Uint32 create_layer(int x, int y, Uint32 w, Uint32 h, int draw_order, int t_col, int offset)
+Uint32 create_layer(int x, int y, Uint32 w, Uint32 h, int draw_order, int t_col,
+ int offset)
 {
   Uint32 layer_idx = graphics.layer_count;
   struct video_layer *layer = &graphics.video_layers[layer_idx];
-  graphics.layer_count++;
   new_empty_layer(layer, x, y, w, h, draw_order);
   memset(layer->data, 0xFF, sizeof(struct char_element) * w * h);
   layer->transparent_col = t_col;
   layer->offset = offset;
+  graphics.layer_count++;
   return layer_idx;
 }
 
@@ -1170,6 +1196,16 @@ bool init_video(struct config_info *conf, const char *caption)
    graphics.default_charset);
   ec_load_set_secondary(mzx_res_get_by_id(MZX_EDIT_CHR),
    graphics.charset + (PROTECTED_CHARSET_POSITION * CHAR_SIZE));
+  if (!layer_renderer_check(false))
+  {
+    // As the renderer doesn't support advanced features, it
+    // may also not support the number of charsets we want
+    // Copy the protected charset to the end of the normal charset
+    // position
+    memcpy(graphics.charset + (CHARSET_SIZE * CHAR_SIZE),
+      graphics.charset + (PROTECTED_CHARSET_POSITION * CHAR_SIZE),
+      CHARSET_SIZE * CHAR_SIZE);
+  }
 
   ec_load_mzx();
   init_palette();
@@ -1496,7 +1532,7 @@ void write_string_mask(const char *str, Uint32 x, Uint32 y,
       default:
       {
         if((cur_char >= 32) && (cur_char <= 127))
-          dest->char_value = cur_char + 256;
+          dest->char_value = cur_char + PRO_CH;
         else
           dest->char_value = cur_char;
 
@@ -1582,7 +1618,7 @@ void write_line_mask(const char *str, Uint32 x, Uint32 y,
       default:
       {
         if((cur_char >= 32) && (cur_char <= 127))
-          dest->char_value = cur_char + 256;
+          dest->char_value = cur_char + PRO_CH;
         else
           dest->char_value = cur_char;
 
@@ -1696,7 +1732,7 @@ void draw_char_to_layer(Uint8 color, Uint8 chr,
  Uint32 x, Uint32 y, Uint32 offset_b, Uint32 c_offset)
 {
   int w = graphics.video_layers[graphics.current_layer].w;
-  struct char_element *dest = graphics.current_video + offset_adjust((y * w) + x);
+  struct char_element *dest = graphics.current_video + (y * w) + x;
   dest->char_value = chr + offset_b;
   dest->bg_color = (color >> 4) + c_offset;
   dest->fg_color = (color & 0x0F) + c_offset;
@@ -1704,28 +1740,33 @@ void draw_char_to_layer(Uint8 color, Uint8 chr,
 
 void color_string(const char *string, Uint32 x, Uint32 y, Uint8 color)
 {
-  color_string_ext(string, x, y, color, 256, 16, false);
+  color_string_ext(string, x, y, color, PRO_CH, 16, false);
 }
 
 void write_string(const char *string, Uint32 x, Uint32 y, Uint8 color,
  Uint32 tab_allowed)
 {
-  write_string_ext(string, x, y, color, tab_allowed, 256, 16);
+  write_string_ext(string, x, y, color, tab_allowed, PRO_CH, 16);
 }
 
 void color_line(Uint32 length, Uint32 x, Uint32 y, Uint8 color)
 {
-  color_line_ext(length, x, y, color, 256, 16);
+  color_line_ext(length, x, y, color, PRO_CH, 16);
 }
 
 void fill_line(Uint32 length, Uint32 x, Uint32 y, Uint8 chr,
  Uint8 color)
 {
-  fill_line_ext(length, x, y, chr, color, 256, 16);
+  fill_line_ext(length, x, y, chr, color, PRO_CH, 16);
 }
 void draw_char(Uint8 chr, Uint8 color, Uint32 x, Uint32 y)
 {
-  draw_char_ext(chr, color, x, y, 256, 16);
+  draw_char_ext(chr, color, x, y, PRO_CH, 16);
+}
+void erase_char(Uint32 x, Uint32 y)
+{
+  struct char_element *dest = graphics.current_video + offset_adjust((y * SCREEN_W) + x);
+  dest->char_value = INVISIBLE_CHAR;
 }
 
 Uint8 get_color_linear(Uint32 offset)
@@ -1828,11 +1869,13 @@ void m_show(void)
  * Copyright (C) 2006 Angelo "Encelo" Theodorou
  * Copyright (C) 2007 Alistair John Strachan <alistair@devzero.co.uk>
  */
+/*
 static void dump_screen_real(Uint8 *pix, struct rgb_color *pal, int count,
  const char *name)
 {
   png_write_screen(pix, pal, count, name);
 }
+*/
 
 static void dump_screen_real_32bpp(Uint32 *pix, const char *name)
 {
@@ -1843,6 +1886,7 @@ static void dump_screen_real_32bpp(Uint32 *pix, const char *name)
 
 #define DUMP_FMT_EXT "bmp"
 
+/*
 static void dump_screen_real(Uint8 *pix, struct rgb_color *pal, int count,
  const char *name)
 {
@@ -1889,7 +1933,7 @@ static void dump_screen_real(Uint8 *pix, struct rgb_color *pal, int count,
 
   fclose(file);
 }
-
+*/
 static void dump_screen_real_32bpp(Uint32 *pix, const char *name)
 {
   FILE *file;
@@ -1946,7 +1990,9 @@ static void dump_screen_real_32bpp(Uint32 *pix, const char *name)
 
 void dump_screen(void)
 {
-  //struct rgb_color palette[SMZX_PAL_SIZE];
+  struct rgb_color palette[FULL_PAL_SIZE];
+  Uint32 backup_palette[FULL_PAL_SIZE];
+  int palette_size;
   char name[MAX_NAME_SIZE];
   struct stat file_info;
   Uint32 *ss;
@@ -1964,10 +2010,14 @@ void dump_screen(void)
   ss = cmalloc(sizeof(Uint32) * 640 * 350);
   if(ss)
   {
-    /*
-    render_graph8(ss, 640 * sizeof(Uint8), &graphics, set_colors8[graphics.screen_mode]);
-    dump_screen_real(ss, palette, make_palette(palette), name);
-    */
+    // Unfortunately, render_layer wants flat_intensity_palette set, so we need to back
+    // this up, fill it, render the layer to memory, then copy the old palette back.
+    memcpy(backup_palette, graphics.flat_intensity_palette, sizeof(Uint32) * FULL_PAL_SIZE);
+    palette_size = make_palette(palette);
+    for (i = 0; i < palette_size; i++)
+    {
+      graphics.flat_intensity_palette[i] = (palette[i].r << 16) | (palette[i].g << 8) | (palette[i].b << 0);
+    }
     
     for (layer = 0; layer < graphics.layer_count; layer++)
     {
@@ -1976,8 +2026,10 @@ void dump_screen(void)
     qsort(graphics.sorted_video_layers, graphics.layer_count, sizeof(struct video_layer *), compare_layers);
     for (layer = 0; layer < graphics.layer_count; layer++)
     {
-      render_layer_32bit(ss, 640 * sizeof(Uint32), &graphics, graphics.sorted_video_layers[layer]);
+      render_layer(ss, 32, 640 * sizeof(Uint32), &graphics, graphics.sorted_video_layers[layer]);
     }
+
+    memcpy(graphics.flat_intensity_palette, backup_palette, sizeof(Uint32) * FULL_PAL_SIZE);
     
     //dump_screen_real(ss, palette, make_palette(palette), name);
     dump_screen_real_32bpp(ss, name);
@@ -2049,4 +2101,23 @@ void focus_pixel(int x, int y)
 {
   if(graphics.renderer.focus_pixel)
     graphics.renderer.focus_pixel(&graphics, x, y);
+}
+
+void switch_shader(const char *vert_path, const char *frag_path)
+{
+  if (graphics.renderer.switch_shader)
+    graphics.renderer.switch_shader(&graphics, vert_path, frag_path);
+}
+
+bool layer_renderer_check(bool show_error)
+{
+  if (!graphics.renderer.render_layer)
+  {
+    if (show_error) {
+      error_message(E_NO_LAYER_RENDERER, 0, NULL);
+      set_error_suppression(E_NO_LAYER_RENDERER, 1);
+    }
+    return false;
+  }
+  return true;
 }
