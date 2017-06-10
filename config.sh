@@ -22,7 +22,7 @@ usage() {
 	echo "  unix           Unix-like / Linux / Solaris / BSD / Embedded"
 	echo "  unix-devel     As above, but for running from current dir"
 	echo "  darwin         Macintosh OS X (not Classic)"
-	echo "  psp            Experimental PSP port"
+	echo "  psp            Expegzrimental PSP port"
 	echo "  gp2x           Experimental GP2X port"
 	echo "  nds            Experimental NDS port"
 	echo "  wii            Experimental Wii port"
@@ -407,8 +407,9 @@ echo "#define CONFDIR \"$SYSCONFDIR/\"" >> src/config.h
 # FIXME: SHAREDIR should be hardcoded in fewer cases
 #
 if [ "$PLATFORM" = "unix" ]; then
-	echo "#define CONFFILE \"megazeux-config\""    >> src/config.h
-	echo "#define SHAREDIR \"$SHAREDIR/megazeux/\"" >> src/config.h
+	echo "#define CONFFILE \"megazeux-config\""        >> src/config.h
+	echo "#define SHAREDIR \"$SHAREDIR/megazeux/\""    >> src/config.h
+	echo "#define USERCONFFILE \"~/.megazeux-config\"" >> src/config.h
 elif [ "$PLATFORM" = "nds" ]; then
 	SHAREDIR=/games/megazeux
 	GAMESDIR=$SHAREDIR
@@ -425,8 +426,9 @@ elif [ "$PLATFORM" = "darwin" ]; then
 	SHAREDIR=../Resources
 	GAMESDIR=$SHAREDIR
 	BINDIR=$SHAREDIR
-	echo "#define CONFFILE \"config.txt\"" >> src/config.h
-	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
+	echo "#define CONFFILE \"config.txt\""             >> src/config.h
+	echo "#define SHAREDIR \"$SHAREDIR\""              >> src/config.h
+	echo "#define USERCONFFILE \"~/.megazeux-config\"" >> src/config.h
 elif [ "$PLATFORM" = "android" ]; then
 	SHAREDIR=/data/megazeux
 	GAMESDIR=/data/megazeux
