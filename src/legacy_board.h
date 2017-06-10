@@ -29,13 +29,13 @@ __M_BEGIN_DECLS
 #include "board_struct.h"
 #include "world_struct.h"
 
-int legacy_save_board(struct world *mzx_world, struct board *cur_board,
- FILE *fp, int savegame, int version);
+CORE_LIBSPEC int legacy_save_board(struct world *mzx_world,
+ struct board *cur_board, FILE *fp, int savegame, int version);
 
-int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
- FILE *fp, int data_size, int savegame, int version);
+CORE_LIBSPEC int legacy_load_board_direct(struct world *mzx_world,
+ struct board *cur_board, FILE *fp, int data_size, int savegame, int version);
 
-struct board *legacy_load_board_allocate(struct world *mzx_world,
+CORE_LIBSPEC struct board *legacy_load_board_allocate(struct world *mzx_world,
  FILE *fp, int savegame, int file_version);
 
 __M_END_DECLS

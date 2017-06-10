@@ -127,8 +127,9 @@ struct sensor *load_sensor_allocate(struct zip_archive *zp);
 size_t save_robot_calculate_size(struct robot *cur_robot, int savegame,
  int file_version);
 
-void save_robot(struct robot *cur_robot, struct zip_archive *zp, int savegame,
- int file_version, const char *name, int file_id, int board_id, int id);
+void save_robot(struct world *mzx_world, struct robot *cur_robot,
+ struct zip_archive *zp, int savegame, int file_version,
+ const char *name, int file_id, int board_id, int id);
 
 void save_scroll(struct scroll *cur_scroll, struct zip_archive *zp,
  const char *name, int file_id, int board_id, int id);

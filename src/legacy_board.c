@@ -28,7 +28,6 @@
 #include "board.h"
 #include "const.h"
 #include "error.h"
-#include "extmem.h"
 #include "world.h"
 #include "util.h"
 
@@ -691,18 +690,21 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
 board_scan:
   // Now do a board scan to make sure there aren't more than the data told us.
   {
+    char *level_id = cur_board->level_id;
+    char *level_under_id = cur_board->level_under_id;
+
     int robot_count = 0, scroll_count = 0, sensor_count = 0;
     char err_mesg[80] = { 0 };
+    char id;
 
     for(i = 0; i < (board_width * board_height); i++)
     {
-      if(cur_board->level_id[i] > 127)
-        cur_board->level_id[i] = CUSTOM_BLOCK;
+      id = level_id[i];
 
-      if(cur_board->level_under_id[i] > 127)
-        cur_board->level_under_id[i] = CUSTOM_FLOOR;
+      if(level_under_id[i] > 127)
+        level_under_id[i] = CUSTOM_FLOOR;
 
-      switch(cur_board->level_id[i])
+      switch(id)
       {
         case ROBOT:
         case ROBOT_PUSHABLE:
@@ -726,6 +728,7 @@ board_scan:
             cur_board->level_param[i] = 'S';
             cur_board->level_color[i] = 0xCF;
           }
+          break;
         }
         case SENSOR:
         {
@@ -737,6 +740,13 @@ board_scan:
             cur_board->level_param[i] = 'S';
             cur_board->level_color[i] = 0xDF;
           }
+          break;
+        }
+        default:
+        {
+          if(id > 127)
+            level_id[i] = CUSTOM_BLOCK;
+          break;
         }
       }
     }

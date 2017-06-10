@@ -27,14 +27,13 @@ __M_BEGIN_DECLS
 #include "const.h"
 #include "board_struct.h"
 #include "world_struct.h"
-
-#define MAX_BOARDS 250
+#include "zip.h"
 
 CORE_LIBSPEC int save_board(struct world *mzx_world, struct board *cur_board,
- FILE *fp, int savegame, int version);
+ struct zip_archive *zp, int savegame, int file_version, int board_id);
 
 CORE_LIBSPEC struct board *load_board_allocate(struct world *mzx_world,
- FILE *fp, int savegame, int file_version);
+ struct zip_archive *zp, int savegame, int file_version, unsigned int board_id);
 
 CORE_LIBSPEC void clear_board(struct board *cur_board);
 
@@ -44,7 +43,8 @@ int find_board(struct world *mzx_world, char *name);
 
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC int load_board_direct(struct world *mzx_world,
- struct board *cur_board, FILE *fp, int data_size, int savegame, int version);
+ struct board *cur_board,  struct zip_archive *zp, int savegame,
+ int file_version, unsigned int board_id);
 #endif // CONFIG_EDITOR
 
 __M_END_DECLS

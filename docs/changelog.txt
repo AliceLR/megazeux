@@ -50,6 +50,7 @@ FEATURES
   will save and load files containing every counter and string
   from the world they're used in, respectively. These files are
   not version checked, and may be used like save files.
++ Robots now keep their robot IDs after reloading saves.
 
 + Debytecode: the LOAD_SOURCE_FILE special counter can now be
   used to load and compile a robot program from source code.
@@ -146,6 +147,7 @@ BUGFIXES
 + Fixed a bug where subdirectory mods with different types of
   slashes in their names would fail to be recognized as the same
   mod.
++ Fixed a bug where SMZX palette intensities were not saved.
 
 + Debytecode: SAVE_WORLD is no longer supported.
 

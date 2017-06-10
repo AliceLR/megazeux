@@ -21,6 +21,7 @@
 
 #include "../board.h"
 #include "../extmem.h"
+#include "../legacy_board.h"
 #include "../world.h"
 
 #include "world.h"
@@ -59,8 +60,9 @@ static struct board *load_board_allocate_direct(struct world *mzx_world,
   board_end = ftell(fp);
   fseek(fp, board_start, SEEK_SET);
 
+  // FIXME zip support
   cur_board->world_version = version;
-  load_board_direct(mzx_world, cur_board, fp, (board_end - board_start), 0,
+  legacy_load_board_direct(mzx_world, cur_board, fp, (board_end - board_start), 0,
    version);
   fread(cur_board->board_name, 25, 1, fp);
   return cur_board;
@@ -204,8 +206,9 @@ void save_board_file(struct world *mzx_world, struct board *cur_board,
     fputc((WORLD_VERSION >> 8) & 0xff, board_file);
     fputc(WORLD_VERSION & 0xff, board_file);
 
+    // FIXME ZIP support
     optimize_null_objects(cur_board);
-    save_board(mzx_world, cur_board, board_file, 0, WORLD_VERSION);
+    legacy_save_board(mzx_world, cur_board, board_file, 0, WORLD_VERSION);
     // Write name
     fwrite(cur_board->board_name, 25, 1, board_file);
     fclose(board_file);

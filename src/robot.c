@@ -48,7 +48,7 @@
 #define BOUND_ROBOT_PROPS (20 + 0) // +prog
 
 #define ROBOT_PROPS_SIZE \
- (PROP_HEADER_SIZE * COUNT_ROBOT_PROPS + BOUND_ROBOT_PROPS)
+ (PROP_HEADER_SIZE * COUNT_ROBOT_PROPS + BOUND_ROBOT_PROPS + 2)
 
 #define COUNT_ROBOT_SAVE_PROPS (11 + 3 +    1)
 #define BOUND_ROBOT_SAVE_PROPS (17 + 8 + 4*32) // +stack
@@ -217,10 +217,18 @@ void load_robot(struct world *mzx_world, struct robot *cur_robot,
 
       // Legacy world, now save
       case RPROP_CUR_PROG_LINE:
+#ifdef CONFIG_DEBYTECODE
+        // Legacy bytecode and DBC bytecode don't necessarily correspond.
+        if(file_version < VERSION_PROGRAM_SOURCE) break;
+#endif
         cur_robot->cur_prog_line = load_prop_int(size, &prop);
         break;
 
       case RPROP_POS_WITHIN_LINE:
+#ifdef CONFIG_DEBYTECODE
+        // Legacy bytecode and DBC bytecode don't necessarily correspond.
+        if(file_version < VERSION_PROGRAM_SOURCE) break;
+#endif
         cur_robot->pos_within_line = load_prop_int(size, &prop);
         break;
 
@@ -353,8 +361,12 @@ void load_robot(struct world *mzx_world, struct robot *cur_robot,
           {
             prepare_robot_bytecode(mzx_world, cur_robot);
 
+            // These won't necessary correspond to anything meaningful now.
+            // Reset them to the start of the robot.
             if(cur_robot->cur_prog_line)
               cur_robot->cur_prog_line = 1;
+
+            cur_robot->pos_within_line = 0;
           }
         }
         else
@@ -369,6 +381,13 @@ void load_robot(struct world *mzx_world, struct robot *cur_robot,
 
           cur_robot->program_source = NULL;
           cur_robot->program_source_length = 0;
+        }
+
+        if(cur_robot->program_bytecode)
+        {
+          // Create the label cache for this robot
+          cur_robot->label_list =
+           cache_robot_labels(cur_robot, &cur_robot->num_labels);
         }
 
         break;
@@ -430,6 +449,7 @@ err_invalid:
   clear_robot_contents(cur_robot);
   create_blank_robot(cur_robot);
   strcpy(cur_robot->robot_name, "<<error>>");
+  cur_robot->cur_prog_line = 0;
 
   free(buffer);
 }
@@ -488,7 +508,7 @@ struct scroll *load_scroll_allocate(struct zip_archive *zp)
     }
   }
 
-  if(!cur_scroll->num_lines || !cur_scroll->mesg_size)
+  if(!cur_scroll->mesg_size)
   {
     // We have an incomplete sensor, so slip in an empty scroll.
     cur_scroll->num_lines = 1;
@@ -562,7 +582,11 @@ size_t save_robot_calculate_size(struct robot *cur_robot, int savegame,
 {
   int size = ROBOT_PROPS_SIZE;
 
-  size += savegame ? ROBOT_SAVE_PROPS_SIZE : 0;
+  if(savegame)
+  {
+    size += ROBOT_SAVE_PROPS_SIZE;
+    size += 4 * cur_robot->stack_size;
+  }
 
 #ifdef CONFIG_DEBYTECODE
   if(!savegame)
@@ -578,8 +602,9 @@ size_t save_robot_calculate_size(struct robot *cur_robot, int savegame,
   return size;
 }
 
-void save_robot(struct robot *cur_robot, struct zip_archive *zp, int savegame,
- int file_version, const char *name, int file_id, int board_id, int id)
+void save_robot(struct world *mzx_world, struct robot *cur_robot,
+ struct zip_archive *zp, int savegame, int file_version,
+ const char *name, int file_id, int board_id, int id)
 {
   void *buffer;
   struct memfile mf;
@@ -588,6 +613,12 @@ void save_robot(struct robot *cur_robot, struct zip_archive *zp, int savegame,
 
   if(cur_robot->used)
   {
+#ifdef CONFIG_DEBYTECODE
+    // This needs to be done before we can even calculate the size.
+    if(savegame)
+      prepare_robot_bytecode(mzx_world, cur_robot);
+#endif
+
     actual_size = save_robot_calculate_size(cur_robot, savegame, file_version);
 
     buffer = cmalloc(actual_size);
@@ -647,6 +678,8 @@ void save_robot(struct robot *cur_robot, struct zip_archive *zp, int savegame,
       for(i = 0; i < stack_size; i++)
         mfputd(cur_robot->stack[i], &prop);
     }
+
+    save_prop_eof(&mf);
 
     zip_write_file(zp, name, buffer, actual_size,
      ZIP_M_NONE, file_id, board_id, id);

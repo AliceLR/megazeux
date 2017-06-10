@@ -46,6 +46,8 @@ static const char *const error_type_names[] =
 //only for warnings) Code is a specialized error code for debugging purposes.
 //Type of 3 for a critical error.
 
+// SUPPRESS=32 should only be used in conjunction with error_message().
+
 int error(const char *string, unsigned int type, unsigned int options,
  unsigned int code)
 {
@@ -104,6 +106,11 @@ int error(const char *string, unsigned int type, unsigned int options,
     write_string(", O for OK", t1, 13, 78, 0);
     t1 += 10;
   }
+  if(options & ERROR_OPT_SUPPRESS)
+  {
+    write_string(", S for Suppress", t1, 13, 78, 0);
+    t1 += 16;
+  }
 
   draw_char('.', 78, t1, 13);
   draw_char(':', 78, 9, 13);
@@ -152,6 +159,10 @@ int error(const char *string, unsigned int type, unsigned int options,
         if(!(options & ERROR_OPT_OK)) break;
         ret = ERROR_OPT_OK;
         break;
+      case IKEY_s:
+        if(!(options & ERROR_OPT_SUPPRESS)) break;
+        ret = ERROR_OPT_SUPPRESS;
+        break;
       case IKEY_h:
         if(!(options & ERROR_OPT_HELP)) break;
         // Call help
@@ -199,9 +210,10 @@ int error_message(enum error_code id, int parameter, const char *string)
   char error_mesg[80];
   int hi = (parameter & 0xFF00) >> 8;
   int lo = (parameter & 0xFF);
-  int opts = ERROR_OPT_OK;
+  int opts = ERROR_OPT_OK | ERROR_OPT_SUPPRESS;
   int severity = 1; // ERROR
   int code = id;
+  int result;
 
   error_count++;
 
@@ -349,6 +361,40 @@ int error_message(enum error_code id, int parameter, const char *string)
       code = 0xD0D0;
       break;
 
+    case E_ZIP_BOARD_CORRUPT:
+      sprintf(error_mesg, "Board # %d is corrupt", lo);
+      break;
+
+    case E_ZIP_BOARD_MISSING_DATA:
+      sprintf(error_mesg, "Board # %d is missing data:", lo);
+      break;
+
+    case E_ZIP_ROBOT_CORRUPT:
+      sprintf(error_mesg, "Robot # %d on board # %d is corrupt", lo, hi);
+      break;
+
+    case E_ZIP_SCROLL_CORRUPT:
+      sprintf(error_mesg, "Scroll # %d on board # %d is corrupt", lo, hi);
+      break;
+
+    case E_ZIP_SENSOR_CORRUPT:
+      sprintf(error_mesg, "Sensor # %d on board # %d is corrupt", lo, hi);
+      break;
+
+    case E_ZIP_ROBOT_MISSING_FROM_BOARD:
+      sprintf(error_mesg, "Robot # %d does not exist on board # %d", lo, hi);
+      break;
+
+    case E_ZIP_ROBOT_MISSING_FROM_DATA:
+      sprintf(error_mesg,
+       "Robot # %d exists on board # %d, but was not found", lo, hi);
+      break;
+
+    case E_ZIP_ROBOT_DUPLICATED:
+      sprintf(error_mesg,
+       "Robot # %d contains duplicates on board # %d", lo, hi);
+      break;
+
 #ifdef CONFIG_DEBYTECODE
     case E_DBC_WORLD_OVERWRITE_OLD:
       sprintf(error_mesg,
@@ -373,7 +419,7 @@ int error_message(enum error_code id, int parameter, const char *string)
 
   // This needs to happen after the switch, unfortunately, since we need to
   // check the options. Suppress errors that allow OK only.
-  if(suppress_errors[id] && (opts == ERROR_OPT_OK))
+  if(suppress_errors[id] && (opts & ERROR_OPT_OK))
     return ERROR_OPT_OK;
 
   if(string)
@@ -386,7 +432,15 @@ int error_message(enum error_code id, int parameter, const char *string)
     }
   }
 
-  return error(error_mesg, severity, opts, code);
+  result = error(error_mesg, severity, opts, code);
+
+  if(result == ERROR_OPT_SUPPRESS)
+  {
+    suppress_errors[id] = 1;
+    return ERROR_OPT_OK;
+  }
+
+  return result;
 }
 
 

@@ -86,9 +86,6 @@ void free_string_list(struct string **string_list, int num_strings);
 // Strings cannot be longer than 4M (orig 1M)
 #define MAX_STRING_LEN (1 << 22)
 
-// Maximum space board can consume
-#define MAX_BOARD_SIZE 16 * 1024 * 1024
-
 __M_END_DECLS
 
 #endif // __COUNTER_H

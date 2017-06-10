@@ -135,13 +135,13 @@ enum file_prop
 
   FPROP_BOARD_INFO            = 0x0100, // properties file (board_id)
   FPROP_BOARD_BID             = 0x0101, // data
-  FPROP_BOARD_BCO             = 0x0102, // data
-  FPROP_BOARD_BCH             = 0x0103, // data
+  FPROP_BOARD_BPR             = 0x0102, // data
+  FPROP_BOARD_BCO             = 0x0103, // data
   FPROP_BOARD_UID             = 0x0104, // data
-  FPROP_BOARD_UCO             = 0x0105, // data
-  FPROP_BOARD_UCH             = 0x0106, // data
-  FPROP_BOARD_OCO             = 0x0107, // data
-  FPROP_BOARD_OCH             = 0x0108, // data
+  FPROP_BOARD_UPR             = 0x0105, // data
+  FPROP_BOARD_UCO             = 0x0106, // data
+  FPROP_BOARD_OCH             = 0x0107, // data
+  FPROP_BOARD_OCO             = 0x0108, // data
 
   FPROP_ROBOT                 = 0x1000, // properties file (board_id + robot_id)
   FPROP_SCROLL                = 0x2000, // properties file (board_id + robot_id)

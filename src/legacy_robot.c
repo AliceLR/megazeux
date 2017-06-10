@@ -314,6 +314,7 @@ err_invalid:
   clear_robot_contents(cur_robot);
   create_blank_robot(cur_robot);
   strcpy(cur_robot->robot_name, "<<error>>");
+  cur_robot->cur_prog_line = 0;
 }
 
 size_t legacy_calculate_partial_robot_size(int savegame, int version)
