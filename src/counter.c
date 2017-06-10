@@ -654,6 +654,23 @@ static void smzx_b_write(struct world *mzx_world,
   pal_update = true;
 }
 
+static int smzx_idx_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  int col = 0, offset = 0;
+  get_counter_params(name + 8, &col, &offset);
+  return get_smzx_index(col, offset);
+}
+
+static void smzx_idx_write(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int value, int id)
+{
+  int col = 0, offset = 0;
+  get_counter_params(name + 8, &col, &offset);
+  set_smzx_index(col, offset, value);
+  pal_update = true;
+}
+
 static int spr_clist_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
@@ -685,6 +702,27 @@ static int spr_cy_read(struct world *mzx_world,
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   return (mzx_world->sprite_list[spr_num])->col_y;
+}
+
+static int spr_tcol_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
+  return (mzx_world->sprite_list[spr_num])->transparent_color;
+}
+
+static int spr_offset_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
+  return (mzx_world->sprite_list[spr_num])->offset;
+}
+
+static int spr_unbound_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
+  return (mzx_world->sprite_list[spr_num])->flags & SPRITE_UNBOUND ? 1 : 0;
 }
 
 static int spr_width_read(struct world *mzx_world,
@@ -763,25 +801,40 @@ static void spr_ccheck_write(struct world *mzx_world,
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   struct sprite *cur_sprite = mzx_world->sprite_list[spr_num];
 
-  value %= 3;
-  switch(value)
-  {
-    case 0:
+  if (mzx_world->version < 0x025A)
+  {  // Old (somewhat dodgy) behaviour tied to <2.90
+    value %= 3;
+    switch(value)
     {
-      cur_sprite->flags &= ~(SPRITE_CHAR_CHECK | SPRITE_CHAR_CHECK2);
-      break;
-    }
+      case 0:
+      {
+        cur_sprite->flags &= ~(SPRITE_CHAR_CHECK | SPRITE_CHAR_CHECK2);
+        break;
+      }
 
-    case 1:
-    {
-      cur_sprite->flags |= SPRITE_CHAR_CHECK;
-      break;
-    }
+      case 1:
+      {
+        cur_sprite->flags |= SPRITE_CHAR_CHECK;
+        break;
+      }
 
-    case 2:
+      case 2:
+      {
+        cur_sprite->flags |= SPRITE_CHAR_CHECK2;
+        break;
+      }
+    }
+  }
+  else
+  { // 2.90 makes use of both flags to allow 3 different ccheck modes
+    value %= 4;
+    cur_sprite->flags &= ~(SPRITE_CHAR_CHECK | SPRITE_CHAR_CHECK2);
+    switch(value)
     {
-      cur_sprite->flags |= SPRITE_CHAR_CHECK2;
-      break;
+      case 0: break;
+      case 1: cur_sprite->flags |= SPRITE_CHAR_CHECK; break;
+      case 2: cur_sprite->flags |= SPRITE_CHAR_CHECK2; break;
+      case 3: cur_sprite->flags |= SPRITE_CHAR_CHECK | SPRITE_CHAR_CHECK2; break;
     }
   }
 }
@@ -799,6 +852,8 @@ static void spr_cx_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
+  if (mzx_world->version < 0x025A) // Before 2.90 these fields were ints.
+    value = (signed char) value;
   (mzx_world->sprite_list[spr_num])->col_x = value;
 }
 
@@ -806,7 +861,34 @@ static void spr_cy_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
+  if (mzx_world->version < 0x025A) // Before 2.90 these fields were ints.
+    value = (signed char) value;
   (mzx_world->sprite_list[spr_num])->col_y = value;
+}
+
+static void spr_tcol_write(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int value, int id)
+{
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
+  (mzx_world->sprite_list[spr_num])->transparent_color = value;
+}
+
+static void spr_offset_write(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int value, int id)
+{
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
+  if (layer_renderer_check(true))
+    (mzx_world->sprite_list[spr_num])->offset = value;
+}
+
+static void spr_unbound_write(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int value, int id)
+{
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
+  if (layer_renderer_check(true)) {
+    (mzx_world->sprite_list[spr_num])->flags &= ~SPRITE_UNBOUND;
+    (mzx_world->sprite_list[spr_num])->flags |= value ? SPRITE_UNBOUND : 0;
+  }
 }
 
 static void spr_height_write(struct world *mzx_world,
@@ -910,6 +992,8 @@ static void spr_cwidth_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
+  if (mzx_world->version < 0x025A) // Before 2.90 these fields were ints.
+    value = (char) value;
   (mzx_world->sprite_list[spr_num])->col_width = value;
 }
 
@@ -917,6 +1001,8 @@ static void spr_cheight_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
+  if (mzx_world->version < 0x025A) // Before 2.90 these fields were ints.
+    value = (char) value;
   (mzx_world->sprite_list[spr_num])->col_height = value;
 }
 
@@ -1405,14 +1491,25 @@ static void upr_write(struct world *mzx_world,
 static int char_byte_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  return ec_read_byte(get_counter(mzx_world, "CHAR", id),
+  Uint16 char_num = get_counter(mzx_world, "CHAR", id);
+
+  // Prior to 2.90 char params are clipped
+  if (mzx_world->version < 0x025A) char_num &= 0xFF;
+  
+  return ec_read_byte(char_num,
    get_counter(mzx_world, "BYTE", id));
 }
 
 static void char_byte_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
-  ec_change_byte(get_counter(mzx_world, "CHAR", id),
+  Uint16 char_num = get_counter(mzx_world, "CHAR", id);
+
+  // Prior to 2.90 char params are clipped
+  if (mzx_world->version < 0x025A) char_num &= 0xFF;
+  if (char_num > 0xFF && !layer_renderer_check(true)) return;
+
+  ec_change_byte(char_num,
    get_counter(mzx_world, "BYTE", id), value);
 }
 
@@ -1568,6 +1665,17 @@ static void exit_game_write(struct world *mzx_world,
   {
     // Signal the main loop that the game state should change.
     mzx_world->change_game_state = CHANGE_STATE_EXIT_GAME_ROBOTIC;
+  }
+}
+
+static void play_game_write(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int value, int id)
+{
+  struct config_info *conf = &mzx_world->conf;
+  if(value && conf->standalone_mode)
+  {
+    // Signal the main loop that the game state should change.
+    mzx_world->change_game_state = CHANGE_STATE_PLAY_GAME_ROBOTIC;
   }
 }
 
@@ -1915,8 +2023,8 @@ static int buttons_read(struct world *mzx_world,
   if (raw_status & MOUSE_BUTTON(MOUSE_BUTTON_MIDDLE))
     buttons_formatted |= MOUSE_BUTTON(3);
 
-  // For 2.85+, also map the wheel and side buttons
-  if( mzx_world->version >= 0x0255 )
+  // For 2.90+, also map the wheel and side buttons
+  if( mzx_world->version >= 0x025A )
   {
     if (raw_status_ext == MOUSE_BUTTON_WHEELUP)
       buttons_formatted |= MOUSE_BUTTON(4);
@@ -2522,7 +2630,7 @@ static const struct function_counter builtin_counters[] =
   { "date_month", 0x0209, date_month_read, NULL },                   // 2.60
   { "date_year", 0x0209, date_year_read, NULL },                     // 2.60
   { "divider", 0x0244, divider_read, divider_write },                // 2.68
-  { "exit_game", 0x0255, NULL, exit_game_write },                    // 2.85
+  { "exit_game", 0x025A, NULL, exit_game_write },                    // 2.90
   { "fread", 0x0209, fread_read, NULL },                             // 2.60
   { "fread_counter", 0x0241, fread_counter_read, NULL },             // 2.65
   { "fread_delimiter", 0x0254, NULL, fread_delim_write },            // 2.84
@@ -2547,11 +2655,11 @@ static const struct function_counter builtin_counters[] =
   { "key_release", 0x0245, key_release_read, NULL },                 // 2.69
   { "lava_walk", 0x0209, lava_walk_read, lava_walk_write },          // 2.60
   { "load_bc?", 0x0249, load_bc_read, NULL },                        // 2.70
-  { "load_counters", 0x0255, load_counters_read, NULL },             // 2.85
+  { "load_counters", 0x025A, load_counters_read, NULL },             // 2.90
   { "load_game", 0x0244, load_game_read, NULL },                     // 2.68
   { "load_robot?", 0x0249, load_robot_read, NULL },                  // 2.70
 #ifdef CONFIG_DEBYTECODE
-  { "load_source_file?", 0x025A, load_source_file_read, NULL },      // Debytecode
+  { "load_source_file?", 0x0300, load_source_file_read, NULL },      // Debytecode
 #endif
   { "local?", 0x0208, local_read, local_write },                     // 2.51s1
   { "loopcount", 0, loopcount_read, loopcount_write },               // <=2.51
@@ -2579,13 +2687,14 @@ static const struct function_counter builtin_counters[] =
   { "playerlastdir", 0, playerlastdir_read, playerlastdir_write },   // <=2.51
   { "playerx", 0x0208, playerx_read, NULL },                         // 2.51s1
   { "playery", 0x0208, playery_read, NULL },                         // 2.51s1
+  { "play_game", 0x025A, NULL, play_game_write },                    // 2.90
   { "r!.*", 0x0241, r_read, r_write },                               // 2.65
   { "red_value", 0x0209, red_value_read, red_value_write },          // 2.60
   { "rid*", 0x0246, rid_read, NULL },                                // 2.69b
   { "robot_id", 0x0209, robot_id_read, NULL },                       // 2.60
   { "robot_id_*", 0x0241, robot_id_n_read, NULL },                   // 2.65
   { "save_bc?", 0x0249, save_bc_read, NULL },                        // 2.70
-  { "save_counters", 0x0255, save_counters_read, NULL},              // 2.85
+  { "save_counters", 0x025A, save_counters_read, NULL},              // 2.90
   { "save_game", 0x0244, save_game_read, NULL },                     // 2.68
   { "save_robot?", 0x0249, save_robot_read, NULL },                  // 2.70
   { "save_world", 0x0248, save_world_read, NULL },                   // 2.69c
@@ -2594,6 +2703,7 @@ static const struct function_counter builtin_counters[] =
   { "sin!", 0x0244, sin_read, NULL },                                // 2.68
   { "smzx_b!", 0x0245, smzx_b_read, smzx_b_write },                  // 2.69
   { "smzx_g!", 0x0245, smzx_g_read, smzx_g_write },                  // 2.69
+  { "smzx_idx!,!", 0x025A, smzx_idx_read, smzx_idx_write },          // 2.90
   { "smzx_mode", 0x0245, smzx_mode_read, smzx_mode_write },          // 2.69
   { "smzx_palette", 0x0245, smzx_palette_read, NULL },               // 2.69
   { "smzx_r!", 0x0245, smzx_r_read, smzx_r_write },                  // 2.69
@@ -2606,6 +2716,7 @@ static const struct function_counter builtin_counters[] =
   { "spr!_cy", 0x0241, spr_cy_read, spr_cy_write },                  // 2.65
   { "spr!_height", 0x0241, spr_height_read, spr_height_write },      // 2.65
   { "spr!_off", 0x0241, NULL, spr_off_write },                       // 2.65
+  { "spr!_offset", 0x025A, spr_offset_read, spr_offset_write },      // 2.90
   { "spr!_overlaid", 0x0241, NULL, spr_overlaid_write },             // 2.65
   { "spr!_overlay", 0x0248, NULL, spr_overlaid_write },              // 2.69c
   { "spr!_refx", 0x0241, spr_refx_read, spr_refx_write },            // 2.65
@@ -2613,6 +2724,8 @@ static const struct function_counter builtin_counters[] =
   { "spr!_setview", 0x0241, NULL, spr_setview_write },               // 2.65
   { "spr!_static", 0x0241, NULL, spr_static_write },                 // 2.65
   { "spr!_swap", 0x0241, NULL, spr_swap_write },                     // 2.65
+  { "spr!_tcol", 0x025A, spr_tcol_read, spr_tcol_write },            // 2.90
+  { "spr!_unbound", 0x025A, spr_unbound_read, spr_unbound_write },   // 2.90
   { "spr!_vlayer", 0x0248, NULL, spr_vlayer_write },                 // 2.69c
   { "spr!_width", 0x0241, spr_width_read, spr_width_write },         // 2.65
   { "spr!_x", 0x0241, spr_x_read, spr_x_write },                     // 2.65
@@ -3941,9 +4054,9 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
   // Load source code from a string
 
 #ifdef CONFIG_DEBYTECODE
-  if(special_name_partial("load_robot") && mzx_world->version >= 0x0255)
+  if(special_name_partial("load_robot") && mzx_world->version >= 0x025A)
   {
-    // Load legacy source code (2.85+)
+    // Load legacy source code (2.90+)
 
     struct robot *cur_robot;
     int load_id = id;
@@ -3991,7 +4104,8 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
   }
   else
 
-  if(special_name_partial("load_source_file") && mzx_world->version >= 0x025A)
+  if(special_name_partial("load_source_file") &&
+   mzx_world->version >= VERSION_PROGRAM_SOURCE)
   {
     // Source code (DBC+)
 
@@ -4043,9 +4157,9 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
   }
 
 #else //!CONFIG_DEBYTECODE
-  if(special_name_partial("load_robot") && mzx_world->version >= 0x0255)
+  if(special_name_partial("load_robot") && mzx_world->version >= 0x025A)
   {
-    // Load robot from string (2.85+)
+    // Load robot from string (2.90+)
 
     char *new_program;
     int new_size;

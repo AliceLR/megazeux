@@ -24,6 +24,7 @@
 
 #include "platform.h"
 #include "render.h"
+#include "render_layer.h"
 #include "renderers.h"
 #include "util.h"
 
@@ -175,9 +176,11 @@ static bool gl1_set_video_mode(struct graphics_data *graphics,
   struct gl1_render_data *render_data = graphics->render_data;
 
   gl_set_attributes(graphics);
-
+  
   if(!gl_set_video_mode(graphics, width, height, depth, fullscreen, resize))
     return false;
+  
+  gl_set_attributes(graphics);
 
   if(!gl_load_syms(gl1_syms_map))
     return false;
@@ -274,6 +277,13 @@ static void gl1_render_graph(struct graphics_data *graphics)
   }
 }
 
+static void gl1_render_layer(struct graphics_data *graphics, struct video_layer *layer)
+{
+  struct gl1_render_data *render_data = graphics->render_data;
+
+  render_layer(render_data->pixels, 32, render_data->w * 4, graphics, layer);
+}
+
 static void gl1_render_cursor(struct graphics_data *graphics,
  Uint32 x, Uint32 y, Uint8 color, Uint8 lines, Uint8 offset)
 {
@@ -337,6 +347,7 @@ void render_gl1_register(struct renderer *renderer)
   renderer->get_screen_coords = get_screen_coords_scaled;
   renderer->set_screen_coords = set_screen_coords_scaled;
   renderer->render_graph = gl1_render_graph;
+  renderer->render_layer = gl1_render_layer;
   renderer->render_cursor = gl1_render_cursor;
   renderer->render_mouse = gl1_render_mouse;
   renderer->sync_screen = gl1_sync_screen;

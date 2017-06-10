@@ -55,10 +55,10 @@ __M_BEGIN_DECLS
 
 // This is the version where programs became source code instead of
 // bytecode.
-#define VERSION_PROGRAM_SOURCE   0x025A
+#define VERSION_PROGRAM_SOURCE   0x0300
 
 // And the last one where bytecode was used.
-#define VERSION_PROGRAM_BYTECODE 0x0255
+#define VERSION_PROGRAM_BYTECODE 0x025A
 
 CORE_LIBSPEC void change_robot_name(struct board *src_board,
  struct robot *cur_robot, char *new_name);
@@ -155,6 +155,7 @@ int send_robot_self(struct world *mzx_world, struct robot *src_robot,
 int move_dir(struct board *src_board, int *x, int *y, enum dir dir);
 void prefix_first_last_xy(struct world *mzx_world, int *fx, int *fy,
  int *lx, int *ly, int robotx, int roboty);
+void prefix_mid_xy_unbound(struct world *mzx_world, int *mx, int *my, int x, int y);
 void prefix_mid_xy(struct world *mzx_world, int *mx, int *my, int x, int y);
 void prefix_last_xy_var(struct world *mzx_world, int *lx, int *ly,
  int robotx, int roboty, int width, int height);

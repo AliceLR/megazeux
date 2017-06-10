@@ -1728,8 +1728,8 @@ static int send_robot_direct(struct world *mzx_world, struct robot *cur_robot,
         {
           return_position = robot_position;
 
-          // 2.85+: we want the pos_within_line too.
-          if(cur_robot->world_version >= 0x0255)
+          // 2.90+: we want the pos_within_line too.
+          if(cur_robot->world_version >= 0x025A)
             return_position_in_line = cur_robot->pos_within_line;
 
           if(send_self)
@@ -2105,13 +2105,9 @@ void prefix_mid_xy_var(struct world *mzx_world, int *mx, int *my,
   *my = tmy;
 }
 
-// Just does the middle prefixes, since those are all that's usually
-// needed...
-void prefix_mid_xy(struct world *mzx_world, int *mx, int *my, int x, int y)
+// Unbounded version.
+void prefix_mid_xy_unbound(struct world *mzx_world, int *mx, int *my, int x, int y)
 {
-  struct board *src_board = mzx_world->current_board;
-  int board_width = src_board->board_width;
-  int board_height = src_board->board_height;
   int tmx = *mx;
   int tmy = *my;
 
@@ -2140,17 +2136,27 @@ void prefix_mid_xy(struct world *mzx_world, int *mx, int *my, int x, int y)
     }
   }
 
-  if(tmx < 0)
-    tmx = 0;
-  if(tmy < 0)
-    tmy = 0;
-  if(tmx >= board_width)
-    tmx = board_width - 1;
-  if(tmy >= board_height)
-    tmy = board_height - 1;
-
   *mx = tmx;
   *my = tmy;
+}
+
+// Just does the middle prefixes, since those are all that's usually
+// needed...
+void prefix_mid_xy(struct world *mzx_world, int *mx, int *my, int x, int y)
+{
+  struct board *src_board = mzx_world->current_board;
+  int board_width = src_board->board_width;
+  int board_height = src_board->board_height;
+  prefix_mid_xy_unbound(mzx_world, mx, my, x, y);
+
+  if(*mx < 0)
+    *mx = 0;
+  if(*my < 0)
+    *my = 0;
+  if(*mx >= board_width)
+    *mx = board_width - 1;
+  if(*my >= board_height)
+    *my = board_height - 1;
 }
 
 // Move an x/y pair in a given direction. Returns non-0 if edge reached.

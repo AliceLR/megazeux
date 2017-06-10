@@ -35,8 +35,10 @@
 #include "configure.h"
 #include "event.h"
 #include "render.h"
+#include "render_layer.h"
 #include "renderers.h"
 #include "platform.h"
+#include "error.h"
 
 #ifdef CONFIG_PNG
 #include "pngops.h"
@@ -106,29 +108,33 @@ static const struct rgb_color default_pal[16] =
   { 255, 255, 255, 0 }
 };
 
-void ec_change_byte(Uint8 chr, Uint8 byte, Uint8 new_value)
+void ec_change_byte(Uint16 chr, Uint8 byte, Uint8 new_value)
 {
+  chr = chr % PROTECTED_CHARSET_POSITION;
   graphics.charset[(chr * CHAR_SIZE) + byte] = new_value;
 
   if(graphics.renderer.remap_charbyte)
     graphics.renderer.remap_charbyte(&graphics, chr, byte);
 }
 
-void ec_change_char(Uint8 chr, char *matrix)
+void ec_change_char(Uint16 chr, char *matrix)
 {
+  chr = chr % PROTECTED_CHARSET_POSITION;
   memcpy(graphics.charset + (chr * CHAR_SIZE), matrix, CHAR_SIZE);
 
   if(graphics.renderer.remap_char)
     graphics.renderer.remap_char(&graphics, chr);
 }
 
-Uint8 ec_read_byte(Uint8 chr, Uint8 byte)
+Uint8 ec_read_byte(Uint16 chr, Uint8 byte)
 {
+  chr = chr % PROTECTED_CHARSET_POSITION;
   return graphics.charset[(chr * CHAR_SIZE) + byte];
 }
 
-void ec_read_char(Uint8 chr, char *matrix)
+void ec_read_char(Uint16 chr, char *matrix)
 {
+  chr = chr % PROTECTED_CHARSET_POSITION;
   memcpy(matrix, graphics.charset + (chr * CHAR_SIZE), CHAR_SIZE);
 }
 
@@ -166,17 +172,22 @@ __editor_maybe_static void ec_load_set_secondary(const char *name,
     graphics.renderer.remap_charsets(&graphics);
 }
 
-Sint32 ec_load_set_var(char *name, Uint8 pos)
+Sint32 ec_load_set_var(char *name, Uint16 pos, int version)
 {
   Uint32 size = CHARSET_SIZE;
   FILE *fp = fopen_unsafe(name, "rb");
+  Uint32 maxChars = PROTECTED_CHARSET_POSITION;
+  if (version < 0x025A) maxChars = 256; // Prior to 2.90
 
   if(!fp)
     return -1;
-
+  
   size = ftell_and_rewind(fp) / CHAR_SIZE;
-  if(size + pos > CHARSET_SIZE)
-    size = CHARSET_SIZE - pos;
+  if (size + pos >= 256 && maxChars > 256 && !layer_renderer_check(true))
+    maxChars = 256;
+  
+  if(size + pos > maxChars)
+    size = maxChars - pos;
 
   fread(graphics.charset + (pos * CHAR_SIZE), CHAR_SIZE, size, fp);
   fclose(fp);
@@ -202,10 +213,16 @@ void ec_mem_save_set(Uint8 *chars)
   memcpy(chars, graphics.charset, CHAR_SIZE * CHARSET_SIZE);
 }
 
-void ec_mem_load_set_var(char *chars, size_t len, Uint8 pos)
+void ec_mem_load_set_var(char *chars, size_t len, Uint16 pos, int version)
 {
   Uint32 offset = pos * CHAR_SIZE;
-  Uint32 size = MIN(len, CHAR_SIZE * CHARSET_SIZE - offset);
+  Uint32 size;
+  Uint32 maxChars = PROTECTED_CHARSET_POSITION;
+  if (version < 0x025A) maxChars = 256; // Prior to 2.90
+  if (len + offset >= 256 * CHAR_SIZE && !layer_renderer_check(true))
+    maxChars = 256;
+
+  size = MIN(len, CHAR_SIZE * maxChars - offset);
 
   memcpy(graphics.charset + offset, chars, size);
 
@@ -216,7 +233,13 @@ void ec_mem_load_set_var(char *chars, size_t len, Uint8 pos)
 
 __editor_maybe_static void ec_load_mzx(void)
 {
+  if (layer_renderer_check(false))
+  {
+    // Wipe the unprotected parts of the charset
+    memset(graphics.charset, 0, PROTECTED_CHARSET_POSITION * CHAR_SIZE);
+  }
   ec_mem_load_set(graphics.default_charset);
+
 }
 
 static void update_colors(struct rgb_color *palette, Uint32 count)
@@ -227,6 +250,7 @@ static void update_colors(struct rgb_color *palette, Uint32 count)
 static Uint32 make_palette(struct rgb_color *palette)
 {
   Uint32 i;
+  Uint32 paletteSize;
 
   // Is SMZX mode set?
   if(graphics.screen_mode)
@@ -252,24 +276,39 @@ static Uint32 make_palette(struct rgb_color *palette)
       memcpy(palette, graphics.intensity_palette,
        sizeof(struct rgb_color) * SMZX_PAL_SIZE);
     }
-    return SMZX_PAL_SIZE;
+    paletteSize = SMZX_PAL_SIZE;
   }
   else
   {
     memcpy(palette, graphics.intensity_palette,
-     sizeof(struct rgb_color) * PAL_SIZE * NUM_PALS);
-    return PAL_SIZE * NUM_PALS;
+     sizeof(struct rgb_color) * PAL_SIZE);
+    paletteSize = PAL_SIZE;
   }
+  memcpy(palette + paletteSize, default_pal,
+   sizeof(struct rgb_color) * PROTECTED_PAL_SIZE);
+  graphics.protected_pal_position = paletteSize;
+
+  paletteSize += PROTECTED_PAL_SIZE;
+  if (paletteSize > 256 && !layer_renderer_check(false))
+  {
+    // Renderers without layer support often have poor upport for large palettes,
+    // so to be safe we restrict the palette size
+    paletteSize = 256;
+  }
+  return paletteSize;
 }
+
 
 void update_palette(void)
 {
-  struct rgb_color new_palette[SMZX_PAL_SIZE];
+  struct rgb_color new_palette[FULL_PAL_SIZE];
   update_colors(new_palette, make_palette(new_palette));
 }
 
 void set_gui_palette(void)
 {
+  /* TODO: Just get rid of this method and every call to it
+
   int i;
 
   memcpy(graphics.palette + PAL_SIZE, default_pal,
@@ -279,6 +318,7 @@ void set_gui_palette(void)
 
   for(i = 16; i < PAL_SIZE * NUM_PALS; i++)
     graphics.current_intensity[i] = 100;
+  */
 }
 
 static void init_palette(void)
@@ -407,6 +447,26 @@ void set_blue_component(Uint32 color, Uint32 b)
   graphics.intensity_palette[color].b = b;
 }
 
+Uint32 get_smzx_index(Uint32 col, Uint32 offset)
+{
+  offset = offset % 4;
+  if (offset == 1) offset = 2;
+  else if (offset == 2) offset = 1;
+
+  return graphics.smzx_indices[(col % SMZX_PAL_SIZE) * 4 + offset];
+}
+void set_smzx_index(Uint32 col, Uint32 offset, Uint32 value)
+{
+  // Setting the SMZX index is only supported for mode 3
+  if (graphics.screen_mode != 3) return;
+
+  offset = offset % 4;
+  if (offset == 1) offset = 2;
+  else if (offset == 2) offset = 1;
+
+  graphics.smzx_indices[(col % SMZX_PAL_SIZE) * 4 + offset] = value % SMZX_PAL_SIZE;
+}
+
 Uint32 get_color_intensity(Uint32 color)
 {
   return graphics.current_intensity[color];
@@ -486,7 +546,7 @@ void load_palette_mem(char *pal, size_t len)
       break;
   }
 
-  for(i = 0, j = 0; j < size; i++)
+  for(i = 0, j = 0; j+2 < size; i++)
   {
     r = pal[j++];
     g = pal[j++];
@@ -562,6 +622,9 @@ void dialog_fadeout(void)
 
 void set_screen_mode(Uint32 mode)
 {
+  int i;
+  char *pal_idx;
+  char bg, fg;
   mode %= 4;
 
   if((mode >= 2) && (graphics.screen_mode < 2))
@@ -570,8 +633,6 @@ void set_screen_mode(Uint32 mode)
     graphics.screen_mode = mode;
     if(!graphics.default_smzx_loaded)
     {
-      int i;
-
       if(graphics.fade_status)
       {
         for(i = 0; i < SMZX_PAL_SIZE; i++)
@@ -583,7 +644,6 @@ void set_screen_mode(Uint32 mode)
       load_palette(mzx_res_get_by_id(SMZX_PAL));
       graphics.default_smzx_loaded = 1;
     }
-    update_palette();
   }
   else
 
@@ -594,17 +654,39 @@ void set_screen_mode(Uint32 mode)
     graphics.screen_mode = mode;
 
     set_gui_palette();
-    update_palette();
   }
   else
   {
     graphics.screen_mode = mode;
   }
 
-  if(mode == 1)
+  pal_idx = graphics.smzx_indices;
+  if (mode == 1 || mode == 2)
   {
-    update_palette();
+    for (i = 0; i < 256; i++)
+    {
+      bg = (i & 0xF0) >> 4;
+      fg = i & 0x0F;
+      pal_idx[0] = (bg << 4) | bg;
+      pal_idx[1] = (bg << 4) | fg;
+      pal_idx[2] = (fg << 4) | bg;
+      pal_idx[3] = (fg << 4) | fg;
+      pal_idx += 4;
+    }
   }
+  else
+  if (mode == 3)
+  {
+    for (i = 0; i < 256; i++) {
+      pal_idx[0] = (i + 0) & 0xFF;
+      pal_idx[1] = (i + 2) & 0xFF;
+      pal_idx[2] = (i + 1) & 0xFF;
+      pal_idx[3] = (i + 3) & 0xFF;
+      pal_idx += 4;
+    }
+  }
+
+  update_palette();
 }
 
 Uint32 get_screen_mode(void)
@@ -612,9 +694,16 @@ Uint32 get_screen_mode(void)
   return graphics.screen_mode;
 }
 
+static int compare_layers(const void *a, const void *b)
+{
+   return ( (*(struct video_layer * const *)a)->draw_order -
+    (*(struct video_layer * const *)b)->draw_order);
+}
+
 void update_screen(void)
 {
   Uint32 ticks = get_ticks();
+  Uint32 layer;
 
   if((ticks - graphics.cursor_timestamp) > CURSOR_BLINK_RATE)
   {
@@ -622,7 +711,20 @@ void update_screen(void)
     graphics.cursor_timestamp = ticks;
   }
 
-  graphics.renderer.render_graph(&graphics);
+  if (graphics.requires_extended && graphics.renderer.render_layer) {
+    for (layer = 0; layer < graphics.layer_count; layer++)
+    {
+      graphics.sorted_video_layers[layer] = &graphics.video_layers[layer];
+    }
+    qsort(graphics.sorted_video_layers, graphics.layer_count, sizeof(struct video_layer *), compare_layers);
+    for (layer = 0; layer < graphics.layer_count; layer++)
+    {
+      graphics.renderer.render_layer(&graphics, graphics.sorted_video_layers[layer]);
+    }
+  } else {
+    // Fallback if the layer renderer is unavailable or unnecessary
+    graphics.renderer.render_graph(&graphics);
+  }
   if(graphics.cursor_flipflop &&
    (graphics.cursor_mode != cursor_mode_invisible))
   {
@@ -946,6 +1048,118 @@ static void set_window_icon(void)
 #endif // CONFIG_SDL && CONFIG_ICON
 }
 
+static void new_empty_layer(struct video_layer *layer, int x, int y, Uint32 w,
+ Uint32 h, int draw_order)
+{
+  layer->data = cmalloc(sizeof(struct char_element) * w * h);
+  layer->w = w;
+  layer->h = h;
+  layer->x = x;
+  layer->y = y;
+  layer->mode = graphics.screen_mode;
+  layer->draw_order = draw_order;
+  layer->transparent_col = -1;
+  layer->offset = 0;
+}
+
+Uint32 create_layer(int x, int y, Uint32 w, Uint32 h, int draw_order, int t_col,
+ int offset, bool unbound)
+{
+  Uint32 layer_idx = graphics.layer_count;
+  struct video_layer *layer = &graphics.video_layers[layer_idx];
+  new_empty_layer(layer, x, y, w, h, draw_order);
+  memset(layer->data, 0xFF, sizeof(struct char_element) * w * h);
+  layer->transparent_col = t_col;
+  layer->offset = offset;
+  graphics.layer_count++;
+  if (!graphics.requires_extended && unbound)
+    graphics.requires_extended = true;
+  return layer_idx;
+}
+
+void move_layer(Uint32 layer, int x, int y)
+{
+  graphics.video_layers[layer].x = x;
+  graphics.video_layers[layer].y = y;
+  if (!graphics.requires_extended &&
+   (x % CHAR_W != 0 || y % CHAR_H != 0))
+    graphics.requires_extended = true;
+}
+
+static void init_layers(void)
+{
+  new_empty_layer
+(&graphics.video_layers[BOARD_LAYER], 0, 0, SCREEN_W, SCREEN_H, LAYER_DRAWORDER_BOARD);
+  new_empty_layer
+(&graphics.video_layers[OVERLAY_LAYER], 0, 0, SCREEN_W, SCREEN_H, LAYER_DRAWORDER_OVERLAY);
+  new_empty_layer
+(&graphics.video_layers[UI_LAYER], 0, 0, SCREEN_W, SCREEN_H, LAYER_DRAWORDER_UI);
+
+  select_layer(UI_LAYER);
+
+  graphics.layer_count = 3;
+}
+
+void select_layer(Uint32 layer)
+{
+  graphics.current_layer = layer;
+  graphics.current_video = graphics.video_layers[layer].data;
+}
+
+static int offset_adjust(int offset)
+{
+  // Transform the given offset from screen space to layer space
+  struct video_layer *layer;
+  int x, y;
+  layer = &graphics.video_layers[graphics.current_layer];
+  x = (offset % SCREEN_W) - (layer->x / CHAR_W);
+  y = (offset / SCREEN_W) - (layer->y / CHAR_H);
+  return y * layer->w + x;
+}
+
+void blank_layers(void)
+{
+  // This clears the first 3 layers and deletes all other layers
+
+  Uint32 i;
+
+  memset(graphics.video_layers[BOARD_LAYER].data, 0x00,
+   sizeof(struct char_element) * SCREEN_W * SCREEN_H);
+  memset(graphics.video_layers[OVERLAY_LAYER].data, 0xFF,
+   sizeof(struct char_element) * SCREEN_W * SCREEN_H);
+  memset(graphics.video_layers[UI_LAYER].data, 0xFF,
+   sizeof(struct char_element) * SCREEN_W * SCREEN_H);
+  graphics.video_layers[BOARD_LAYER].mode = graphics.screen_mode;
+  graphics.video_layers[OVERLAY_LAYER].mode = graphics.screen_mode;
+  graphics.video_layers[UI_LAYER].mode = 0;
+  for (i = 3; i < graphics.layer_count; i++)
+  {
+    if (graphics.video_layers[i].data)
+      free(graphics.video_layers[i].data);
+  }
+  graphics.layer_count = 3;
+  graphics.requires_extended = false;
+}
+
+static void dirty_ui(void)
+{
+  if (graphics.requires_extended) return;
+  if (graphics.current_layer != UI_LAYER) return;
+  if (graphics.screen_mode == 0) return;
+  graphics.requires_extended = true;
+}
+
+void destruct_layers(void)
+{
+  Uint32 i;
+  for (i = 0; i < graphics.layer_count; i++)
+  {
+    if (graphics.video_layers[i].data)
+      free(graphics.video_layers[i].data);
+  }
+  graphics.layer_count = 0;
+}
+
 bool init_video(struct config_info *conf, const char *caption)
 {
   graphics.screen_mode = 0;
@@ -958,6 +1172,8 @@ bool init_video(struct config_info *conf, const char *caption)
   graphics.cursor_timestamp = get_ticks();
   graphics.cursor_flipflop = 1;
   graphics.system_mouse = conf->system_mouse;
+
+  init_layers();
 
   if(!set_graphics_output(conf))
     return false;
@@ -993,7 +1209,17 @@ bool init_video(struct config_info *conf, const char *caption)
   ec_load_set_secondary(mzx_res_get_by_id(MZX_DEFAULT_CHR),
    graphics.default_charset);
   ec_load_set_secondary(mzx_res_get_by_id(MZX_EDIT_CHR),
-   graphics.charset + (CHARSET_SIZE * CHAR_SIZE));
+   graphics.charset + (PROTECTED_CHARSET_POSITION * CHAR_SIZE));
+  if (!layer_renderer_check(false))
+  {
+    // As the renderer doesn't support advanced features, it
+    // may also not support the number of charsets we want
+    // Copy the protected charset to the end of the normal charset
+    // position
+    memcpy(graphics.charset + (CHARSET_SIZE * CHAR_SIZE),
+      graphics.charset + (PROTECTED_CHARSET_POSITION * CHAR_SIZE),
+      CHARSET_SIZE * CHAR_SIZE);
+  }
 
   ec_load_mzx();
   init_palette();
@@ -1113,7 +1339,8 @@ void resize_screen(Uint32 w, Uint32 h)
 void color_string_ext_special(const char *str, Uint32 x, Uint32 y,
  Uint8 *color, Uint32 offset, Uint32 c_offset, bool respect_newline)
 {
-  struct char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
+  struct char_element *dest = graphics.current_video + offset_adjust((y * SCREEN_W) + x);
+  struct char_element *dest_copy = graphics.text_video + (y * SCREEN_W) + x;
   const char *src = str;
   Uint8 cur_char = *src;
   Uint8 next;
@@ -1122,6 +1349,8 @@ void color_string_ext_special(const char *str, Uint32 x, Uint32 y,
 
   char next_str[2];
   next_str[1] = 0;
+
+  if (c_offset) dirty_ui();
 
   while(cur_char)
   {
@@ -1150,6 +1379,7 @@ void color_string_ext_special(const char *str, Uint32 x, Uint32 y,
             dest->char_value = '@' + offset;
             dest->bg_color = bg_color;
             dest->fg_color = fg_color;
+            *(dest_copy++) = *dest;
             dest++;
           }
           else
@@ -1182,6 +1412,7 @@ void color_string_ext_special(const char *str, Uint32 x, Uint32 y,
             dest->char_value = '~' + offset;
             dest->bg_color = bg_color;
             dest->fg_color = fg_color;
+            *(dest_copy++) = *dest;
             dest++;
           }
           else
@@ -1198,7 +1429,8 @@ void color_string_ext_special(const char *str, Uint32 x, Uint32 y,
         if(respect_newline)
         {
           y++;
-          dest = graphics.text_video + (y * SCREEN_W) + x;
+          dest = graphics.current_video + offset_adjust((y * SCREEN_W) + x);
+          dest_copy = graphics.text_video + (y * SCREEN_W) + x;
           break;
         }
         // Fall thru
@@ -1208,10 +1440,11 @@ void color_string_ext_special(const char *str, Uint32 x, Uint32 y,
         dest->char_value = cur_char + offset;
         dest->bg_color = bg_color;
         dest->fg_color = fg_color;
+        *(dest_copy++) = *dest;
         dest++;
       }
     }
-    if(dest >= graphics.text_video + (SCREEN_W * SCREEN_H))
+    if(dest >= graphics.current_video + offset_adjust(SCREEN_W * SCREEN_H))
       break;
 
     str++;
@@ -1236,11 +1469,14 @@ void write_string_ext(const char *str, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed, Uint32 offset,
  Uint32 c_offset)
 {
-  struct char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
+  struct char_element *dest = graphics.current_video + offset_adjust((y * SCREEN_W) + x);
+  struct char_element *dest_copy = graphics.text_video + (y * SCREEN_W) + x;
   const char *src = str;
   Uint8 cur_char = *src;
   Uint8 bg_color = (color >> 4) + c_offset;
   Uint8 fg_color = (color & 0x0F) + c_offset;
+
+  if (c_offset) dirty_ui();
 
   while(cur_char && (cur_char != 0))
   {
@@ -1250,7 +1486,8 @@ void write_string_ext(const char *str, Uint32 x, Uint32 y,
       case '\n':
       {
         y++;
-        dest = graphics.text_video + (y * SCREEN_W) + x;
+        dest = graphics.current_video + offset_adjust((y * SCREEN_W) + x);
+        dest_copy = graphics.text_video + (y * SCREEN_W) + x;
         break;
       }
       case '\t':
@@ -1258,6 +1495,7 @@ void write_string_ext(const char *str, Uint32 x, Uint32 y,
         if(tab_allowed)
         {
           dest += 5;
+          dest_copy += 5;
           break;
         }
       }
@@ -1266,10 +1504,11 @@ void write_string_ext(const char *str, Uint32 x, Uint32 y,
         dest->char_value = cur_char + offset;
         dest->bg_color = bg_color;
         dest->fg_color = fg_color;
+        *(dest_copy++) = *dest;
         dest++;
       }
     }
-    if(dest >= graphics.text_video + (SCREEN_W * SCREEN_H))
+    if(dest >= graphics.current_video + offset_adjust(SCREEN_W * SCREEN_H))
       break;
 
     str++;
@@ -1280,11 +1519,14 @@ void write_string_ext(const char *str, Uint32 x, Uint32 y,
 void write_string_mask(const char *str, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed)
 {
-  struct char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
+  struct char_element *dest = graphics.current_video + offset_adjust((y * SCREEN_W) + x);
+  struct char_element *dest_copy = graphics.text_video + (y * SCREEN_W) + x;
   const char *src = str;
   Uint8 cur_char = *src;
   Uint8 bg_color = (color >> 4) + 16;
   Uint8 fg_color = (color & 0x0F) + 16;
+
+  dirty_ui();
 
   while(cur_char && (cur_char != 0))
   {
@@ -1294,7 +1536,8 @@ void write_string_mask(const char *str, Uint32 x, Uint32 y,
       case '\n':
       {
         y++;
-        dest = graphics.text_video + (y * SCREEN_W) + x;
+        dest = graphics.current_video + offset_adjust((y * SCREEN_W) + x);
+        dest_copy = graphics.text_video + (y * SCREEN_W) + x;
         break;
       }
       case '\t':
@@ -1302,22 +1545,24 @@ void write_string_mask(const char *str, Uint32 x, Uint32 y,
         if(tab_allowed)
         {
           dest += 5;
+          dest_copy += 5;
           break;
         }
       }
       default:
       {
         if((cur_char >= 32) && (cur_char <= 127))
-          dest->char_value = cur_char + 256;
+          dest->char_value = cur_char + PRO_CH;
         else
           dest->char_value = cur_char;
 
         dest->bg_color = bg_color;
         dest->fg_color = fg_color;
+        *(dest_copy++) = *dest;
         dest++;
       }
     }
-    if(dest >= graphics.text_video + (SCREEN_W * SCREEN_H))
+    if(dest >= graphics.current_video + offset_adjust(SCREEN_W * SCREEN_H))
       break;
 
     str++;
@@ -1331,11 +1576,14 @@ void write_line_ext(const char *str, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed, Uint32 offset,
  Uint32 c_offset)
 {
-  struct char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
+  struct char_element *dest = graphics.current_video + offset_adjust((y * SCREEN_W) + x);
+  struct char_element *dest_copy = graphics.text_video + (y * SCREEN_W) + x;
   const char *src = str;
   Uint8 cur_char = *src;
   Uint8 bg_color = (color >> 4) + c_offset;
   Uint8 fg_color = (color & 0x0F) + c_offset;
+
+  if (c_offset) dirty_ui();
 
   while(cur_char && (cur_char != '\n'))
   {
@@ -1347,6 +1595,7 @@ void write_line_ext(const char *str, Uint32 x, Uint32 y,
         if(tab_allowed)
         {
           dest += 10;
+          dest_copy += 10;
           break;
         }
       }
@@ -1355,6 +1604,7 @@ void write_line_ext(const char *str, Uint32 x, Uint32 y,
         dest->char_value = cur_char + offset;
         dest->bg_color = bg_color;
         dest->fg_color = fg_color;
+        *(dest_copy++) = *dest;
         dest++;
       }
     }
@@ -1366,11 +1616,14 @@ void write_line_ext(const char *str, Uint32 x, Uint32 y,
 void write_line_mask(const char *str, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed)
 {
-  struct char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
+  struct char_element *dest = graphics.current_video + offset_adjust((y * SCREEN_W) + x);
+  struct char_element *dest_copy = graphics.text_video + (y * SCREEN_W) + x;
   const char *src = str;
   Uint8 cur_char = *src;
   Uint8 bg_color = (color >> 4) + 16;
   Uint8 fg_color = (color & 0x0F) + 16;
+
+  dirty_ui();
 
   while(cur_char && (cur_char != '\n'))
   {
@@ -1382,18 +1635,20 @@ void write_line_mask(const char *str, Uint32 x, Uint32 y,
         if(tab_allowed)
         {
           dest += 10;
+          dest_copy += 10;
           break;
         }
       }
       default:
       {
         if((cur_char >= 32) && (cur_char <= 127))
-          dest->char_value = cur_char + 256;
+          dest->char_value = cur_char + PRO_CH;
         else
           dest->char_value = cur_char;
 
         dest->bg_color = bg_color;
         dest->fg_color = fg_color;
+        *(dest_copy++) = *dest;
         dest++;
       }
     }
@@ -1439,15 +1694,20 @@ void write_number(int number, char color, int x, int y,
 static void color_line_ext(Uint32 length, Uint32 x, Uint32 y,
  Uint8 color, Uint32 offset, Uint32 c_offset)
 {
-  struct char_element *dest = graphics.text_video + (y * 80) + x;
+  struct char_element *dest = graphics.current_video + offset_adjust((y * SCREEN_W) + x);
+  struct char_element *dest_copy = graphics.text_video + (y * SCREEN_W) + x;
   Uint8 bg_color = (color >> 4) + c_offset;
   Uint8 fg_color = (color & 0x0F) + c_offset;
   Uint32 i;
 
+  if (c_offset) dirty_ui();
+
   for(i = 0; i < length; i++)
   {
+    dest->char_value = dest_copy->char_value;
     dest->bg_color = bg_color;
     dest->fg_color = fg_color;
+    *(dest_copy++) = *dest;
     dest++;
   }
 }
@@ -1455,16 +1715,20 @@ static void color_line_ext(Uint32 length, Uint32 x, Uint32 y,
 void fill_line_ext(Uint32 length, Uint32 x, Uint32 y,
  Uint8 chr, Uint8 color, Uint32 offset, Uint32 c_offset)
 {
-  struct char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
+  struct char_element *dest = graphics.current_video + offset_adjust((y * SCREEN_W) + x);
+  struct char_element *dest_copy = graphics.text_video + (y * SCREEN_W) + x;
   Uint8 bg_color = (color >> 4) + c_offset;
   Uint8 fg_color = (color & 0x0F) + c_offset;
   Uint32 i;
+
+  if (c_offset) dirty_ui();
 
   for(i = 0; i < length; i++)
   {
     dest->char_value = chr + offset;
     dest->bg_color = bg_color;
     dest->fg_color = fg_color;
+    *(dest_copy++) = *dest;
     dest++;
   }
 }
@@ -1472,16 +1736,35 @@ void fill_line_ext(Uint32 length, Uint32 x, Uint32 y,
 void draw_char_ext(Uint8 chr, Uint8 color, Uint32 x,
  Uint32 y, Uint32 offset, Uint32 c_offset)
 {
-  struct char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
+  struct char_element *dest = graphics.current_video + offset_adjust((y * SCREEN_W) + x);
+  struct char_element *dest_copy = graphics.text_video + (y * SCREEN_W) + x;
   dest->char_value = chr + offset;
   dest->bg_color = (color >> 4) + c_offset;
   dest->fg_color = (color & 0x0F) + c_offset;
+  *(dest_copy++) = *dest;
+
+  if (c_offset) dirty_ui();
 }
 
 void draw_char_linear_ext(Uint8 color, Uint8 chr,
  Uint32 offset, Uint32 offset_b, Uint32 c_offset)
 {
-  struct char_element *dest = graphics.text_video + offset;
+  Uint32 adj_offset = offset_adjust(offset);
+  struct char_element *dest = graphics.current_video + adj_offset;
+  struct char_element *dest_copy = graphics.text_video + offset;
+  dest->char_value = chr + offset_b;
+  dest->bg_color = (color >> 4) + c_offset;
+  dest->fg_color = (color & 0x0F) + c_offset;
+  *(dest_copy++) = *dest;
+
+  if (c_offset) dirty_ui();
+}
+
+void draw_char_to_layer(Uint8 color, Uint8 chr,
+ Uint32 x, Uint32 y, Uint32 offset_b, Uint32 c_offset)
+{
+  int w = graphics.video_layers[graphics.current_layer].w;
+  struct char_element *dest = graphics.current_video + (y * w) + x;
   dest->char_value = chr + offset_b;
   dest->bg_color = (color >> 4) + c_offset;
   dest->fg_color = (color & 0x0F) + c_offset;
@@ -1489,28 +1772,33 @@ void draw_char_linear_ext(Uint8 color, Uint8 chr,
 
 void color_string(const char *string, Uint32 x, Uint32 y, Uint8 color)
 {
-  color_string_ext(string, x, y, color, 256, 16, false);
+  color_string_ext(string, x, y, color, PRO_CH, 16, false);
 }
 
 void write_string(const char *string, Uint32 x, Uint32 y, Uint8 color,
  Uint32 tab_allowed)
 {
-  write_string_ext(string, x, y, color, tab_allowed, 256, 16);
+  write_string_ext(string, x, y, color, tab_allowed, PRO_CH, 16);
 }
 
 void color_line(Uint32 length, Uint32 x, Uint32 y, Uint8 color)
 {
-  color_line_ext(length, x, y, color, 256, 16);
+  color_line_ext(length, x, y, color, PRO_CH, 16);
 }
 
 void fill_line(Uint32 length, Uint32 x, Uint32 y, Uint8 chr,
  Uint8 color)
 {
-  fill_line_ext(length, x, y, chr, color, 256, 16);
+  fill_line_ext(length, x, y, chr, color, PRO_CH, 16);
 }
 void draw_char(Uint8 chr, Uint8 color, Uint32 x, Uint32 y)
 {
-  draw_char_ext(chr, color, x, y, 256, 16);
+  draw_char_ext(chr, color, x, y, PRO_CH, 16);
+}
+void erase_char(Uint32 x, Uint32 y)
+{
+  struct char_element *dest = graphics.current_video + offset_adjust((y * SCREEN_W) + x);
+  dest->char_value = INVISIBLE_CHAR;
 }
 
 Uint8 get_color_linear(Uint32 offset)
@@ -1524,27 +1812,34 @@ void clear_screen(Uint8 chr, Uint8 color)
   Uint32 i;
   Uint8 fg_color = color & 0x0F;
   Uint8 bg_color = color >> 4;
-  struct char_element *dest = graphics.text_video;
+  struct char_element *dest = graphics.current_video;
+  struct char_element *dest_copy = graphics.text_video;
 
   for(i = 0; i < (SCREEN_W * SCREEN_H); i++)
   {
     dest->char_value = chr;
     dest->fg_color = fg_color;
     dest->bg_color = bg_color;
+    *(dest_copy++) = *dest;
     dest++;
   }
+
   update_screen();
 }
 
-void set_screen(struct char_element *src)
+void set_screen(struct char_element *src, Uint32 layer)
 {
-  memcpy(graphics.text_video, src,
+  memcpy(graphics.video_layers[layer].data, src,
+   SCREEN_W * SCREEN_H * sizeof(struct char_element));
+  memcpy(graphics.text_video, src + SCREEN_W * SCREEN_H * sizeof(struct char_element),
    SCREEN_W * SCREEN_H * sizeof(struct char_element));
 }
 
-void get_screen(struct char_element *dest)
+void get_screen(struct char_element *dest, Uint32 layer)
 {
-  memcpy(dest, graphics.text_video,
+  memcpy(dest, graphics.video_layers[layer].data,
+   SCREEN_W * SCREEN_H * sizeof(struct char_element));
+  memcpy(dest + SCREEN_W * SCREEN_H * sizeof(struct char_element), graphics.text_video,
    SCREEN_W * SCREEN_H * sizeof(struct char_element));
 }
 
@@ -1607,16 +1902,24 @@ void m_show(void)
  * Copyright (C) 2006 Angelo "Encelo" Theodorou
  * Copyright (C) 2007 Alistair John Strachan <alistair@devzero.co.uk>
  */
+/*
 static void dump_screen_real(Uint8 *pix, struct rgb_color *pal, int count,
  const char *name)
 {
   png_write_screen(pix, pal, count, name);
+}
+*/
+
+static void dump_screen_real_32bpp(Uint32 *pix, const char *name)
+{
+  png_write_screen_32bpp(pix, name);
 }
 
 #else
 
 #define DUMP_FMT_EXT "bmp"
 
+/*
 static void dump_screen_real(Uint8 *pix, struct rgb_color *pal, int count,
  const char *name)
 {
@@ -1663,6 +1966,56 @@ static void dump_screen_real(Uint8 *pix, struct rgb_color *pal, int count,
 
   fclose(file);
 }
+*/
+static void dump_screen_real_32bpp(Uint32 *pix, const char *name)
+{
+  FILE *file;
+  int i, x;
+  Uint8 rowbuffer[SCREEN_W * CHAR_W * 3]; // 24bpp
+  Uint8 *rowbuffer_ptr;
+  Uint32 *pix_ptr;
+
+  file = fopen_unsafe(name, "wb");
+  if(!file)
+    return;
+
+  // BMP header
+  fputw(0x4D42, file); // BM
+  fputd(14 + 40 + SCREEN_W * CHAR_W * SCREEN_H * CHAR_H * 3, file); // BMP + DIB + image
+  fputd(0, file); // Reserved
+  fputd(14, file); // DIB header offset
+
+  // DIB header
+  fputd(40, file); // DIB header size (Windows 3/BITMAPINFOHEADER)
+  fputd(SCREEN_W * CHAR_W, file); // Width in pixels
+  fputd(SCREEN_H * CHAR_H, file); // Height in pixels
+  fputw(1, file); // Number of color planes
+  fputw(24, file); // Bits per pixel
+  fputd(0, file); // Compression method (none)
+  fputd(SCREEN_W * CHAR_W * SCREEN_H * CHAR_H * 3, file); // Image data size
+  fputd(3780, file); // Horizontal dots per meter
+  fputd(3780, file); // Vertical dots per meter
+  fputd(0, file); // Number of colors in palette
+  fputd(0, file); // Number of important colors
+
+  // Image data
+  for(i = SCREEN_H * CHAR_H - 1; i >= 0; i--)
+  {
+    pix_ptr = pix + i * SCREEN_W * CHAR_W;
+    rowbuffer_ptr = rowbuffer;
+    for (x = 0; x < SCREEN_W * CHAR_W; x++) {
+      rowbuffer_ptr[0] = (*pix_ptr & 0x000000FF) >> 0;
+      rowbuffer_ptr[1] = (*pix_ptr & 0x0000FF00) >> 8;
+      rowbuffer_ptr[2] = (*pix_ptr & 0x00FF0000) >> 16;
+      rowbuffer_ptr += 3;
+      pix_ptr++;
+    }
+    fwrite(rowbuffer, SCREEN_W * CHAR_W * 3, 1, file);
+    //fwrite(pix + i * 640, sizeof(Uint8), 640, file);
+  }
+
+  fclose(file);
+}
 
 #endif // CONFIG_PNG
 
@@ -1670,11 +2023,14 @@ static void dump_screen_real(Uint8 *pix, struct rgb_color *pal, int count,
 
 void dump_screen(void)
 {
-  struct rgb_color palette[SMZX_PAL_SIZE];
+  struct rgb_color palette[FULL_PAL_SIZE];
+  Uint32 backup_palette[FULL_PAL_SIZE];
+  int palette_size;
   char name[MAX_NAME_SIZE];
   struct stat file_info;
-  Uint8 *ss;
+  Uint32 *ss;
   int i;
+  Uint32 layer;
 
   for(i = 0; i < 99999; i++)
   {
@@ -1684,12 +2040,66 @@ void dump_screen(void)
       break;
   }
 
-  ss = cmalloc(sizeof(Uint8) * 640 * 350);
+  ss = cmalloc(sizeof(Uint32) * 640 * 350);
   if(ss)
   {
-    render_graph8(ss, 640, &graphics, set_colors8[graphics.screen_mode]);
-    dump_screen_real(ss, palette, make_palette(palette), name);
+    // Unfortunately, render_layer wants flat_intensity_palette set, so we need to back
+    // this up, fill it, render the layer to memory, then copy the old palette back.
+    memcpy(backup_palette, graphics.flat_intensity_palette, sizeof(Uint32) * FULL_PAL_SIZE);
+    palette_size = make_palette(palette);
+    for (i = 0; i < palette_size; i++)
+    {
+      graphics.flat_intensity_palette[i] = (palette[i].r << 16) | (palette[i].g << 8) | (palette[i].b << 0);
+    }
+    
+    for (layer = 0; layer < graphics.layer_count; layer++)
+    {
+      graphics.sorted_video_layers[layer] = &graphics.video_layers[layer];
+    }
+    qsort(graphics.sorted_video_layers, graphics.layer_count, sizeof(struct video_layer *), compare_layers);
+    for (layer = 0; layer < graphics.layer_count; layer++)
+    {
+      render_layer(ss, 32, 640 * sizeof(Uint32), &graphics, graphics.sorted_video_layers[layer]);
+    }
+
+    memcpy(graphics.flat_intensity_palette, backup_palette, sizeof(Uint32) * FULL_PAL_SIZE);
+    
+    //dump_screen_real(ss, palette, make_palette(palette), name);
+    dump_screen_real_32bpp(ss, name);
     free(ss);
+  }
+}
+
+void dump_char(Uint16 char_idx, Uint8 color, int mode, Uint8 *buffer)
+{
+  // Dumps the specified char into the provided buffer. Expects CHAR_W * CHAR_H bytes
+  int x, y;
+  Uint8 cols[4];
+  if (mode == -1) mode = graphics.screen_mode;
+  char_idx = char_idx % PROTECTED_CHARSET_POSITION;
+  color = color % SMZX_PAL_SIZE;
+  
+  if (mode == 0) {
+    cols[0] = (color & 0xF0) >> 4;
+    cols[1] = color & 0x0F;
+    for (y = 0; y < CHAR_H; y++) {
+      char row = graphics.charset[char_idx * CHAR_SIZE + y];
+      for (x = 0; x < CHAR_W; x++) {
+        buffer[y * CHAR_W + x] = cols[(row >> (7-x)) & 0x01];
+      }
+    }
+  } else {
+    cols[0] = graphics.smzx_indices[color * 4 + 0];
+    cols[1] = graphics.smzx_indices[color * 4 + 1];
+    cols[2] = graphics.smzx_indices[color * 4 + 2];
+    cols[3] = graphics.smzx_indices[color * 4 + 3];
+    for (y = 0; y < CHAR_H; y++) {
+      char row = graphics.charset[char_idx * CHAR_SIZE + y];
+      for (x = 0; x < CHAR_W; x += 2) {
+        buffer[y * CHAR_W + x] = cols[(row >> (7-x)) & 0x03];
+        buffer[y * CHAR_W + x + 1] = cols[(row >> (7-x)) & 0x03];
+      }
+    }
   }
 }
 
@@ -1724,4 +2134,23 @@ void focus_pixel(int x, int y)
 {
   if(graphics.renderer.focus_pixel)
     graphics.renderer.focus_pixel(&graphics, x, y);
+}
+
+void switch_shader(const char *vert_path, const char *frag_path)
+{
+  if (graphics.renderer.switch_shader)
+    graphics.renderer.switch_shader(&graphics, vert_path, frag_path);
+}
+
+bool layer_renderer_check(bool show_error)
+{
+  if (!graphics.renderer.render_layer)
+  {
+    if (show_error) {
+      error_message(E_NO_LAYER_RENDERER, 0, NULL);
+      set_error_suppression(E_NO_LAYER_RENDERER, 1);
+    }
+    return false;
+  }
+  return true;
 }

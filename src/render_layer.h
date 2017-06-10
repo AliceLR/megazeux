@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2002 Gilead Kutnick <exophase@adelphia.net>
+ * Copyright (C) 2017 Dr Lancer-X <drlancer@megazeux.org>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,39 +17,22 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __SPRITE_STRUCT_H
-#define __SPRITE_STRUCT_H
+#ifndef __RENDER_LAYER_H
+#define __RENDER_LAYER_H
 
 #include "compat.h"
 
 __M_BEGIN_DECLS
 
-#define MAX_SPRITES         256
+#include "graphics.h"
 
-struct sprite
-{
-  int x;
-  int y;
-  int ref_x;
-  int ref_y;
-  char color;
-  char flags;
-  unsigned int width;
-  unsigned int height;
-  signed int col_x;
-  signed int col_y;
-  unsigned int col_width;
-  unsigned int col_height;
-  int transparent_color;
-  int offset;
-};
+void render_layer(void *pixels, int force_bpp, Uint32 pitch, struct graphics_data
+ *graphics, struct video_layer *layer);
 
-struct collision_list
-{
-  int num;
-  int collisions[MAX_SPRITES];
-};
+void render_layer_32bpp(void *pixels, Uint32 pitch, struct graphics_data *graphics, struct video_layer *layer);
+void render_layer_16bpp(void *pixels, Uint32 pitch, struct graphics_data *graphics, struct video_layer *layer);
+void render_layer_8bpp(void *pixels, Uint32 pitch, struct graphics_data *graphics, struct video_layer *layer);
 
 __M_END_DECLS
 
-#endif // __SPRITE_STRUCT_H
+#endif // __RENDER_LAYER_H

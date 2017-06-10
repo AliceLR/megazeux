@@ -81,7 +81,7 @@ void palette_editor(struct world *mzx_world)
       color = ((i & 30) * 8);
       if(i < 20)
         color += 15;
-      draw_char_ext(chr, color, i + 19, i2 + 5, 256, 0);
+      draw_char_ext(chr, color, i + 19, i2 + 5, PRO_CH, 0);
     }
   }
 

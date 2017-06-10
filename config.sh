@@ -50,6 +50,7 @@ usage() {
 	echo "  --enable-gp2x         Enables half-res software renderer."
 	echo "  --disable-modplug     Disable ModPlug music engine."
 	echo "  --enable-mikmod       Enables MikMod music engine."
+	echo "  --enable-xmp          Enables XMP music engine."
 	echo "  --disable-libpng      Disable PNG screendump support."
 	echo "  --disable-audio       Disable all audio (sound + music)."
 	echo "  --enable-tremor       Switches out libvorbis for libtremor."
@@ -65,6 +66,7 @@ usage() {
 	echo "  --disable-uthash      Disables hash counter/string lookups."
 	echo "  --enable-debytecode   Enable experimental 'debytecode' transform."
 	echo "  --enable-libsdl2      Enable experimental SDL 2.0 support."
+	echo "  --enable-fps          Enable frames-per-second counter."
 	echo
 	echo "e.g.: ./config.sh --platform unix --prefix /usr"
 	echo "                  --sysconfdir /etc --disable-x11"
@@ -100,6 +102,7 @@ OVERLAY="true"
 GP2X="false"
 MODPLUG="true"
 MIKMOD="false"
+XMP="false"
 LIBPNG="true"
 AUDIO="true"
 TREMOR="false"
@@ -116,6 +119,7 @@ CHECK_ALLOC="true"
 UTHASH="true"
 DEBYTECODE="false"
 LIBSDL2="false"
+FPSCOUNTER="false"
 
 #
 # User may override above settings
@@ -208,6 +212,9 @@ while [ "$1" != "" ]; do
 	[ "$1" = "--disable-mikmod" ] && MIKMOD="false"
 	[ "$1" = "--enable-mikmod" ]  && MIKMOD="true"
 
+	[ "$1" = "--disable-xmp" ] && XMP="false"
+	[ "$1" = "--enable-xmp" ]  && XMP="true"
+
 	[ "$1" = "--disable-libpng" ] && LIBPNG="false"
 	[ "$1" = "--enable-libpng" ]  && LIBPNG="true"
 
@@ -255,6 +262,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--enable-libsdl2" ]  && LIBSDL2="true"
 	[ "$1" = "--disable-libsdl2" ] && LIBSDL2="false"
+
+	[ "$1" = "--enable-fps" ]  && FPSCOUNTER="true"
+	[ "$1" = "--disable-fps" ] && FPSCOUNTER="false"
 
 	if [ "$1" = "--help" ]; then
 		usage
@@ -593,6 +603,7 @@ fi
 if [ "$AUDIO" = "false" ]; then
 	MODPLUG="false"
 	MIKMOD="false"
+	XMP="false"
 fi
 
 #
@@ -841,6 +852,10 @@ if [ "$MODPLUG" = "true" ]; then
 	echo "Selected Modplug music engine."
 	echo "#define CONFIG_MODPLUG" >> src/config.h
 	echo "BUILD_MODPLUG=1" >> platform.inc
+elif [ "$XMP" = "true" ]; then
+	echo "Selected XMP music engine."
+	echo "#define CONFIG_XMP" >> src/config.h
+	echo "BUILD_XMP=1" >> platform.inc
 elif [ "$MIKMOD" = "true" ]; then
 	echo "Selected Mikmod music engine."
 	echo "#define CONFIG_MIKMOD" >> src/config.h
@@ -1001,6 +1016,16 @@ if [ "$LIBSDL2" = "true" ]; then
 	echo "BUILD_LIBSDL2=1" >> platform.inc
 else
 	echo "Experimental SDL 2.0 support disabled."
+fi
+
+#
+# Frames-per-second counter
+#
+if [ "$FPSCOUNTER" = "true" ]; then
+	echo "fps counter enabled."
+	echo "#define CONFIG_FPS" >> src/config.h
+else
+	echo "fps counter disabled."
 fi
 
 echo

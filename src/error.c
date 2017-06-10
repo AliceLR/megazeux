@@ -360,6 +360,11 @@ int error_message(enum error_code id, int parameter, const char *string)
       sprintf(error_mesg, "Bytecode file failed validation check");
       code = 0xD0D0;
       break;
+    
+    case E_NO_LAYER_RENDERER:
+      sprintf(error_mesg, "Current renderer lacks advanced graphical features; features disabled");
+      code = 0x2563;
+      break;
 
     case E_ZIP_BOARD_CORRUPT:
       sprintf(error_mesg, "Board # %d is corrupt", lo);

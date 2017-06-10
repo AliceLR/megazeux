@@ -65,9 +65,10 @@ core_cobjs := \
   ${core_obj}/idput.o ${core_obj}/intake.o ${core_obj}/legacy_rasm.o \
   ${core_obj}/legacy_board.o ${core_obj}/legacy_robot.o              \
   ${core_obj}/legacy_world.o ${core_obj}/mzm.o ${core_obj}/render.o  \
-  ${core_obj}/robot.o ${core_obj}/run_robot.o ${core_obj}/scrdisp.o  \
-  ${core_obj}/sfx.o ${core_obj}/sprite.o ${core_obj}/util.o          \
-  ${core_obj}/window.o ${core_obj}/world.o ${core_obj}/zip.o
+  ${core_obj}/render_layer.o ${core_obj}/robot.o                     \
+  ${core_obj}/run_robot.o ${core_obj}/scrdisp.o ${core_obj}/sfx.o    \
+  ${core_obj}/sprite.o ${core_obj}/util.o ${core_obj}/window.o       \
+  ${core_obj}/world.o ${core_obj}/zip.o
 
 #
 # Lists mandatory C++ language sources (mangled to object names) required
@@ -178,6 +179,12 @@ endif
 ifeq (${BUILD_MIKMOD},1)
 core_ldflags := ${MIKMOD_LDFLAGS} ${core_ldflags}
 core_cobjs += ${core_obj}/audio_mikmod.o
+endif
+
+ifeq (${BUILD_XMP},1)
+core_cflags += ${XMP_CFLAGS}
+core_ldflags := ${XMP_LDFLAGS} ${core_ldflags}
+core_cobjs += ${core_obj}/audio_xmp.o
 endif
 
 ifeq (${LIBPNG},1)

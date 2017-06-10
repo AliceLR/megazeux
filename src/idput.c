@@ -475,7 +475,7 @@ void id_put(struct board *src_board, unsigned char x_pos, unsigned char y_pos,
     {
       overlay_offset = array_offset;
     }
-
+    select_layer(OVERLAY_LAYER);
     c = src_board->overlay[overlay_offset];
     color = src_board->overlay_color[overlay_offset];
     if(overlay_mode & 64)
@@ -488,6 +488,7 @@ void id_put(struct board *src_board, unsigned char x_pos, unsigned char y_pos,
     {
       if(c == 32)
       {
+        select_layer(BOARD_LAYER);
         c = get_id_char(src_board, array_offset);
         color = get_id_color(src_board, array_offset);
       }
@@ -495,6 +496,7 @@ void id_put(struct board *src_board, unsigned char x_pos, unsigned char y_pos,
       {
         if(!(color & 0xF0) && !(overlay_mode & 64))
         {
+          select_layer(BOARD_LAYER);
           c = get_id_char(src_board, array_offset);
           color = (color & 0x0F) |
            (get_id_color(src_board, array_offset) & 0xF0);
@@ -505,6 +507,7 @@ void id_put(struct board *src_board, unsigned char x_pos, unsigned char y_pos,
     {
       if(c == 32)
       {
+        select_layer(BOARD_LAYER);
         c = get_id_char(src_board, array_offset);
         color = get_id_color(src_board, array_offset);
       }
@@ -520,6 +523,7 @@ void id_put(struct board *src_board, unsigned char x_pos, unsigned char y_pos,
   }
   else
   {
+    select_layer(BOARD_LAYER);
     c = get_id_char(src_board, array_offset);
     color = get_id_color(src_board, array_offset);
   }

@@ -40,6 +40,7 @@ __M_BEGIN_DECLS
 #define CHANGE_STATE_SWAP_WORLD 1
 #define CHANGE_STATE_LOAD_GAME_ROBOTIC 2
 #define CHANGE_STATE_EXIT_GAME_ROBOTIC 3
+#define CHANGE_STATE_PLAY_GAME_ROBOTIC 4
 
 struct world
 {
@@ -212,6 +213,8 @@ struct world
   // An array for game2.cpp
   char *update_done;
   int update_done_size;
+  // Are we exiting all the way out of MZX?
+  bool full_exit;
 };
 
 __M_END_DECLS

@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2002 Gilead Kutnick <exophase@adelphia.net>
+ * Copyright (C) 2007 Alistair John Strachan <alistair@devzero.co.uk>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,39 +17,19 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __SPRITE_STRUCT_H
-#define __SPRITE_STRUCT_H
+/* Declarations */
+
+#ifndef __AUDIO_XMP_H
+#define __AUDIO_XMP_H
 
 #include "compat.h"
 
 __M_BEGIN_DECLS
 
-#define MAX_SPRITES         256
-
-struct sprite
-{
-  int x;
-  int y;
-  int ref_x;
-  int ref_y;
-  char color;
-  char flags;
-  unsigned int width;
-  unsigned int height;
-  signed int col_x;
-  signed int col_y;
-  unsigned int col_width;
-  unsigned int col_height;
-  int transparent_color;
-  int offset;
-};
-
-struct collision_list
-{
-  int num;
-  int collisions[MAX_SPRITES];
-};
+struct audio_stream *construct_xmp_stream(char *filename, Uint32 frequency,
+ Uint32 volume, Uint32 repeat);
+void init_xmp(struct config_info *conf);
 
 __M_END_DECLS
 
-#endif // __SPRITE_STRUCT_H
+#endif  // __AUDIO_XMP_H

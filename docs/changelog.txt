@@ -51,6 +51,11 @@ FEATURES
   from the world they're used in, respectively. These files are
   not version checked, and may be used like save files.
 + Robots now keep their robot IDs after reloading saves.
++ Added standalone mode. The config parameters standalone_mode
+  and no_titlescreen can now be used (from MZXRun only) to
+  create standalone versions of MZX with the ability to fully
+  customise the player's experience. See config.txt for details.
+  (Lancer-X)
 
 + Debytecode: the LOAD_SOURCE_FILE special counter can now be
   used to load and compile a robot program from source code.
@@ -140,7 +145,7 @@ BUGFIXES
 + Fixed support for PPC Linux builds. (Insidious)
 + Fixed a bug where a robot sent a subroutine would restart the
   command it was executing upon #return if the command was a
-  multi-cycle command. This fix applies to worlds saved in 2.85
+  multi-cycle command. This fix applies to worlds saved in 2.90
   and later only.
 + Fixed a bug where ALT+F4 would cause menus to open instead of/
   in addition to triggering an exit event.
@@ -164,6 +169,7 @@ DEVELOPERS
   older PNG file). This will make future updates much easier.
 + Updated NDS, Wii and PSP ports to latest devkitpro toolchains.
 + Updated libmodplug to version 0.8.9.0. (asiekierka)
++ Added experimental libxmp support. (asiekierka)
 
 
 December 24, 2012 - MZX 2.84c

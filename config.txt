@@ -234,6 +234,29 @@
 
 # startup_editor = 1
 
+# Enable standalone mode. This is a game mode meant to be used
+# for packaged standalone MegaZeux games. In standalone mode:
+# - ENTER_MENU, ESCAPE_MENU, HELP_MENU, F2_MENU and LOAD_MENU
+#   can be used on the title screen to disable these menus.
+# - HELP_MENU prevents the help menu from being opened even
+#   when other builtin dialogs are open
+# - EXIT_GAME can be used on the title screen to exit MegaZeux
+# - The default title screen message does not appear
+# - PLAY_GAME can be set to 1 to start a game 
+# - Using ALT-F4, closing the window or using other OS-specific
+#   ways of closing an application will exit MZX entirely,
+#   without asking for confirmation first
+# Standalone mode can only be used from MZXRun.
+
+# standalone_mode = 1
+
+# Enable no titlescreen mode. This mode only works if standalone
+# mode is enabled and causes the following:
+# - The title screen is skipped and the game begins on the first
+#   board.
+# - Exiting to the title screen exits MegaZeux
+
+# no_titlescreen = 1
 
 ### Board editor options ###
 
