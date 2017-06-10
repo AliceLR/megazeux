@@ -8,6 +8,8 @@ FEATURES
 
 + Added a built-in robot debugger. See the Debug Mode section of
   the help file for details.
++ The counter debugger now remembers its previous position after
+  being reopened.
 + Added commands_cycle and commands_total variables to the Robot
   section of the counter debugger. See the Debug Mode section of
   the help file for details.
