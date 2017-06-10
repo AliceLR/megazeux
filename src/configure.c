@@ -443,6 +443,18 @@ static void config_startup_editor(struct config_info *conf, char *name,
   conf->startup_editor = strtoul(value, NULL, 10);
 }
 
+static void config_standalone_mode(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  conf->standalone_mode = strtoul(value, NULL, 10);
+}
+
+static void config_no_titlescreen(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  conf->no_titlescreen = strtoul(value, NULL, 10);
+}
+
 static void config_set_video_ratio(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
@@ -490,6 +502,7 @@ static const struct config_entry config_options[] =
 #ifdef CONFIG_NETWORK
   { "network_enabled", config_set_network_enabled },
 #endif
+  { "no_titlescreen", config_no_titlescreen },
   { "num_buffered_events", config_set_num_buffered_events },
   { "pause_on_unfocus", pause_on_unfocus },
   { "pc_speaker_on", config_set_pc_speaker },
@@ -501,6 +514,7 @@ static const struct config_entry config_options[] =
   { "socks_host", config_set_socks_host },
   { "socks_port", config_set_socks_port },
 #endif
+  { "standalone_mode", config_standalone_mode },
   { "startup_editor", config_startup_editor },
   { "startup_file", config_startup_file },
   { "startup_path", config_startup_path },
@@ -576,6 +590,8 @@ static const struct config_info default_options =
   1,                            // disassemble_extras
   10,                           // disassemble_base
   0,                            // startup_editor
+  0,                            // standalone_mode
+  0,                            // no_titlescreen
 
   1,                            // mask_midchars
   false,                        // system_mouse
