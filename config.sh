@@ -22,7 +22,7 @@ usage() {
 	echo "  unix           Unix-like / Linux / Solaris / BSD / Embedded"
 	echo "  unix-devel     As above, but for running from current dir"
 	echo "  darwin         Macintosh OS X (not Classic)"
-	echo "  psp            Expegzrimental PSP port"
+	echo "  psp            Experimental PSP port"
 	echo "  gp2x           Experimental GP2X port"
 	echo "  nds            Experimental NDS port"
 	echo "  wii            Experimental Wii port"
