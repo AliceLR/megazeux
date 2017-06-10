@@ -167,7 +167,6 @@ void render_layer(void *pixels, int force_bpp, Uint32 pitch, struct graphics_dat
   // Currently not sure how big endian will work, so for now force alignment to bpp
   align = force_bpp;
   #endif
-  trans = 1;
 
   if (0)
     reference_renderer(pixels, pitch, graphics, layer);
