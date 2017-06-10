@@ -46,6 +46,37 @@ FEATURES
   the ? and the : will be evaluated. If the value to the left of
   ? is equal to zero, the expression to the right of : will be
   evaluated.
++ Added unbound sprites. Sprites can be unbound from the grid by
+  setting spr#_unbound to 1. Their coordinates will now refer to
+  the sprite's location in pixels, not tiles. spr#_width,
+  height, refx and refy still refer to chars; however, spr#_x,
+  y, cx, cy, cwidth and cheight are all in pixels. Unbound
+  sprites do not work with all renderers; currently, out of the
+  renderers available on the PC platforms, the overlay2 renderer
+  lacks this functionality. (Lancer-X)
++ Unbound sprites do not let char 32 or blank characters (when
+  in SMZX mode 2) through like regular sprites do. Instead, set
+  spr#_tcol to a color that will be transparent when the unbound
+  sprite is drawn. (Lancer-X)
++ Unbound sprites can make use of additional hidden charsets.
+  There are an additional 14 charsets beyond the default that
+  can be modified through using load char set or char edit.
+  (e.g. load char set "@256charset.chr")
+  A sprite can be set to refer to these later chars with the
+  spr#_offset counter. The offset value is then added to each
+  char in the sprite. You can use this to refer to higher char
+  sets.
+  (e.g. set "spr0_offset" 256)
+  Offset values can also be set to locations within a char set.
+  (Lancer-X)
++ The colors used by tiles of a given color # in SMZX modes 2
+  and 3 can now be rebound using the "smzx_idx#,#" counters.
+  (e.g. set "smzx_idx7,0" 32)
+  Now if you put down a c07 tile, all 00 pixels will refer to
+  color 32 (as opposed to color 0 in SMZX mode 2 or color 7 in
+  SMZX mode 1). These values are reset whenever the SMZX mode is
+  changed. Once again, this is only available to renderers that
+  support unbound sprites. (Lancer-X)
 
 + Debytecode: the LOAD_SOURCE_FILE special counter can now be
   used to load and compile a robot program from source code.
@@ -142,8 +173,14 @@ BUGFIXES
 + Fixed a bug where subdirectory mods with different types of
   slashes in their names would fail to be recognized as the same
   mod.
++ The UI now uses the regular MZX mode and the protected palette
+  when playing SMZX games. This is only available to renderers
+  that support unbound sprites. (Lancer-X)
++ Changing from SMZX mode 1 to 0 correctly restores the palette.
+  (Lancer-X)
 
 + Debytecode: SAVE_WORLD is no longer supported.
+
 
 DEVELOPERS
 
@@ -158,7 +195,19 @@ DEVELOPERS
   older PNG file). This will make future updates much easier.
 + Updated NDS, Wii and PSP ports to latest devkitpro toolchains.
 + Updated libmodplug to version 0.8.9.0. (asiekierka)
-
++ New rendering architecture that mostly sits alongside the old
+  rendering architecture. There is a new function implemented by
+  supporting renderers: render_layer(). This provides a layer
+  in a similar form to the text_video array in graphics and
+  expects that to be drawn on the screen. This is called once
+  for each layer that is drawn- this means the board, overlay,
+  UI and sprites. Each layer can have a different SMZX mode,
+  although at the moment this is only used to allow the UI to
+  remain in regular MZX mode while the game or editor is in SMZX
+  mode. The render_layer() function is only called if it is
+  implemented by the renderer and if there is something on the
+  screen that can only be drawn by the renderer (e.g. unbound
+  sprites, or UI elements in an SMZX game) (Lancer-X)
 
 December 24, 2012 - MZX 2.84c
 
