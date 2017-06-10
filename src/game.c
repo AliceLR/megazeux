@@ -2982,7 +2982,7 @@ void title_screen(struct world *mzx_world)
           
           // Escape menu only works on the title screen if the
           // standalone_mode config option is set
-          if(mzx_world->version < 0x025A || escape_menu_status
+          if(mzx_world->version < 0x025A || escape_menu_status ||
            !conf->standalone_mode)
           {
             if(key_status == 1)
