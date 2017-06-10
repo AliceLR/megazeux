@@ -1571,6 +1571,17 @@ static void exit_game_write(struct world *mzx_world,
   }
 }
 
+static void play_game_write(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int value, int id)
+{
+  struct config_info *conf = &mzx_world->conf;
+  if(value && conf->standalone_mode)
+  {
+    // Signal the main loop that the game state should change.
+    mzx_world->change_game_state = CHANGE_STATE_PLAY_GAME_ROBOTIC;
+  }
+}
+
 static int load_game_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
@@ -2564,6 +2575,7 @@ static const struct function_counter builtin_counters[] =
   { "playerlastdir", 0, playerlastdir_read, playerlastdir_write },   // <=2.51
   { "playerx", 0x0208, playerx_read, NULL },                         // 2.51s1
   { "playery", 0x0208, playery_read, NULL },                         // 2.51s1
+  { "play_game", 0x025A, NULL, play_game_write },                    // 2.90
   { "r!.*", 0x0241, r_read, r_write },                               // 2.65
   { "red_value", 0x0209, red_value_read, red_value_write },          // 2.60
   { "rid*", 0x0246, rid_read, NULL },                                // 2.69b
