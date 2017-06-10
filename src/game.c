@@ -154,8 +154,11 @@ static void draw_intro_mesg(struct world *mzx_world)
 {
   static const char mesg1[] = "F1: Help   ";
   static const char mesg2[] = "Enter: Menu   Ctrl-Alt-Enter: Fullscreen";
+  struct config_info *conf = &mzx_world->conf;
 
   if(intro_mesg_timer == 0)
+    return;
+  if (conf->standalone_mode)
     return;
 
   if(mzx_world->help_file)
@@ -1734,6 +1737,10 @@ static int update(struct world *mzx_world, int game, int *fadein)
       // Exit game--skip input processing. The game state will exit.
       return 1;
 
+    case CHANGE_STATE_PLAY_GAME_ROBOTIC:
+      // we need to continue input processing
+      return 0;
+
     default:
       break;
   }
@@ -1984,11 +1991,13 @@ __editor_maybe_static void play_game(struct world *mzx_world)
   // We have the world loaded, on the proper scene.
   // We are faded out. Commence playing!
   int exit;
+  int confirm_exit = 0;
   int key = -1;
   int key_status = 0;
   char keylbl[5] = "KEY?";
   struct board *src_board;
   int fadein = 1;
+  struct config_info *conf = &mzx_world->conf;
 
   // Main game loop
   // Mouse remains hidden unless menu/etc. is invoked
@@ -2387,7 +2396,10 @@ __editor_maybe_static void play_game(struct world *mzx_world)
 
           if(mzx_world->version < 0x0255 || escape_menu_status)
             if(key_status == 1)
+            {
+              confirm_exit = 1;
               exit = 1;
+            }
 
           break;
         }
@@ -2397,15 +2409,26 @@ __editor_maybe_static void play_game(struct world *mzx_world)
     // Quit
     if(exit)
     {
-      m_show();
+      // Special behaviour in standalone- only escape exits
+      // ask for confirmation
+      if (conf->no_titlescreen ||
+       (conf->standalone_mode && !confirm_exit))
+      {
+        mzx_world->full_exit = true;
+      }
+      
+      if (confirm_exit || !conf->standalone_mode)
+      {
+        confirm_exit = 0;
+        m_show();
 
-      exit = !confirm(mzx_world, "Quit playing- Are you sure?");
+        exit = !confirm(mzx_world, "Quit playing- Are you sure?");
 
-      update_event_status();
+        update_event_status();
+      }
     }
 
   } while(!exit);
-
   pop_context();
   vquick_fadeout();
   clear_sfx_queue();
@@ -2414,6 +2437,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
 void title_screen(struct world *mzx_world)
 {
   int exit;
+  int confirm_exit = 0;
   int fadein = 1;
   int key = 0;
   int key_status = 0;
@@ -2421,6 +2445,7 @@ void title_screen(struct world *mzx_world)
   struct stat file_info;
   struct board *src_board;
   char *current_dir;
+  struct config_info *conf = &mzx_world->conf;
 
   debug_mode = false;
 
@@ -2435,8 +2460,18 @@ void title_screen(struct world *mzx_world)
   set_config_from_file(&(mzx_world->conf), "title.cnf");
   chdir(current_dir);
 
+  // First, disable standalone mode if this is a build of MZX
+  // with the editor enabled
+  if (edit_world)
+  {
+    conf->standalone_mode = 0;
+  }
+
   if(edit_world && mzx_world->conf.startup_editor)
   {
+    // Disable standalone mode
+    conf->standalone_mode = 0;
+
     set_intro_mesg_timer(0);
     edit_world(mzx_world, 0);
   }
@@ -2445,8 +2480,17 @@ void title_screen(struct world *mzx_world)
     if(!stat(curr_file, &file_info))
       load_world_file(mzx_world, curr_file);
     else
+    {
+      // Disable standalone mode
+      conf->standalone_mode = 0;
+
       load_world_selection(mzx_world);
+    }
   }
+
+  // if standalone mode is disabled, also disable no_titlescreen
+  if (!conf->standalone_mode)
+    conf->no_titlescreen = 0;
 
   src_board = mzx_world->current_board;
   draw_intro_mesg(mzx_world);
@@ -2455,39 +2499,60 @@ void title_screen(struct world *mzx_world)
 
   do
   {
-    // Focus on center
-    if(fadein)
-    {
-      int x, y;
-      set_screen_coords(640/2, 350/2, &x, &y);
-      focus_pixel(x, y);
-    }
-
-    // Update
-    if(mzx_world->active)
-    {
-      if(update(mzx_world, 0, &fadein))
+    if (!conf->no_titlescreen) {
+      // Focus on center
+      if(fadein)
       {
-        update_event_status();
-        continue;
+        int x, y;
+        set_screen_coords(640/2, 350/2, &x, &y);
+        focus_pixel(x, y);
+      }
+
+      // Update
+      if(mzx_world->active)
+      {
+        if(update(mzx_world, 0, &fadein))
+        {
+          update_event_status();
+          continue;
+        }
+      }
+      else
+      {
+        // Give some delay time if nothing's loaded
+        update_event_status_delay();
+        update_screen();
+      }
+
+      src_board = mzx_world->current_board;
+
+      update_event_status();
+
+      // Keycheck
+      key = get_key(keycode_internal);
+      key_status = get_key_status(keycode_internal, key);
+
+      exit = get_exit_status();
+      if (conf->standalone_mode)
+      {
+        switch (mzx_world->change_game_state)
+        {
+          case CHANGE_STATE_EXIT_GAME_ROBOTIC:
+            exit = 1;
+            break;
+          case CHANGE_STATE_PLAY_GAME_ROBOTIC:
+            key = IKEY_p;
+            break;
+          default:
+            break;
+        }
       }
     }
     else
     {
-      // Give some delay time if nothing's loaded
-      update_event_status_delay();
-      update_screen();
+      // No titlescreen mode, so jump straight to the game
+      key = IKEY_p;
     }
-
-    src_board = mzx_world->current_board;
-
-    update_event_status();
-
-    // Keycheck
-    key = get_key(keycode_internal);
-    key_status = get_key_status(keycode_internal, key);
-
-    exit = get_exit_status();
 
     if(key && !exit)
     {
@@ -2506,6 +2571,10 @@ void title_screen(struct world *mzx_world)
         case IKEY_F1:
         case IKEY_h:
         {
+          int help_menu_status =
+           get_counter(mzx_world, "HELP_MENU", 0);
+          if(conf->standalone_mode || !help_menu_status)
+            break;
           m_show();
           help_system(mzx_world);
           update_screen();
@@ -2515,6 +2584,10 @@ void title_screen(struct world *mzx_world)
         case IKEY_F2:
         case IKEY_s:
         {
+          int f2_menu_status =
+           get_counter(mzx_world, "F2_MENU", 0);
+          if(conf->standalone_mode || !f2_menu_status)
+            break;
           // Settings
           m_show();
 
@@ -2528,6 +2601,7 @@ void title_screen(struct world *mzx_world)
         case IKEY_F3:
         case IKEY_l:
         {
+          if (conf->standalone_mode) break;
           load_world_selection(mzx_world);
           fadein = 1;
           src_board = mzx_world->current_board;
@@ -2547,6 +2621,10 @@ void title_screen(struct world *mzx_world)
         case IKEY_r:
         {
           char save_file_name[MAX_PATH] = { 0 };
+          int load_menu_status =
+           get_counter(mzx_world, "LOAD_MENU", 0);
+          if(conf->standalone_mode && !load_menu_status)
+            break;
 
           // Restore
           m_show();
@@ -2590,7 +2668,7 @@ void title_screen(struct world *mzx_world)
 
               update_event_status();
               play_game(mzx_world);
-
+              if (mzx_world->full_exit) break;
               // Done playing- load world again
               // Already faded out from play_game()
               end_module();
@@ -2690,6 +2768,7 @@ void title_screen(struct world *mzx_world)
               vquick_fadeout();
 
               play_game(mzx_world);
+              if (mzx_world->full_exit) break;
               // Done playing- load world again
               // Already faded out from play_game()
               end_module();
@@ -2769,6 +2848,11 @@ void title_screen(struct world *mzx_world)
         // Quickload
         case IKEY_F10:
         {
+          int load_menu_status =
+           get_counter(mzx_world, "LOAD_MENU", 0);
+          if(conf->standalone_mode && !load_menu_status)
+            break;
+          
           // Restore
           m_show();
 
@@ -2809,7 +2893,7 @@ void title_screen(struct world *mzx_world)
             vquick_fadeout();
 
             play_game(mzx_world);
-
+            if (mzx_world->full_exit) break;
             // Done playing- load world again
             // Already faded out from play_game()
             end_module();
@@ -2846,9 +2930,13 @@ void title_screen(struct world *mzx_world)
         case IKEY_RETURN: // Enter
         {
           int key, status;
+          int enter_menu_status =
+           get_counter(mzx_world, "ENTER_MENU", 0);
 
           // Ignore if this isn't a fresh press
           if(key_status != 1)
+            break;
+          if (conf->standalone_mode && !enter_menu_status)
             break;
 
           save_screen();
@@ -2886,8 +2974,19 @@ void title_screen(struct world *mzx_world)
 
         case IKEY_ESCAPE:
         {
-          if(key_status==1)
-            exit = 1;
+          // ESCAPE_MENU (2.85+)
+          int escape_menu_status =
+           get_counter(mzx_world, "ESCAPE_MENU", 0);
+          
+          // Escape menu only works on the title screen if the
+          // standalone_mode config option is set
+          if(!conf->standalone_mode || escape_menu_status)
+            if(key_status == 1)
+            {
+              confirm_exit = 1;
+              exit = 1;
+            }
+
           break;
         }
       }
@@ -2897,13 +2996,21 @@ void title_screen(struct world *mzx_world)
     // Quit
     if(exit)
     {
-      m_show();
+      // Special behaviour in standalone- only escape exits
+      // ask for confirmation
+      if (confirm_exit || !conf->standalone_mode)
+      {
+        confirm_exit = 0;
+        m_show();
 
-      exit = !confirm(mzx_world, "Exit MegaZeux - Are you sure?");
+        exit = !confirm(mzx_world, "Exit MegaZeux - Are you sure?");
 
-      update_screen();
-      update_event_status();
+        update_screen();
+        update_event_status();
+      }
     }
+
+    if (mzx_world->full_exit) break;
 
   } while(!exit);
 
