@@ -942,7 +942,7 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
       if(dest_param && !src_type)
         src_type = 3;
 
-      if(mzx_world->version >= 0x0255 && is_string(name_buffer)) {
+      if(mzx_world->version >= 0x025A && is_string(name_buffer)) {
         save_mzm_string(mzx_world, name_buffer, src_x, src_y, width, height, src_type, 1, id);
       } else {
         err = fsafetranslate(name_buffer, translated_name);
@@ -3119,7 +3119,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
           tr_msg(mzx_world, cmd_ptr + 3, id, mzm_name_buffer);
 
-          if(mzx_world->version >= 0x0255 && is_string(mzm_name_buffer))
+          if(mzx_world->version >= 0x025A && is_string(mzm_name_buffer))
           {
             struct string src;
             
@@ -5240,8 +5240,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           pos = 0;
         }
 
-        // Load from string (2.85+)
-        if(mzx_world->version >= 0x0255 && is_string(src_name))
+        // Load from string (2.90+)
+        if(mzx_world->version >= 0x025A && is_string(src_name))
         {
           struct string src;
 
@@ -5322,8 +5322,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
         tr_msg(mzx_world, cmd_ptr + 2, id, name_buffer);
 
-        // Load palette from string (2.85+)
-        if(mzx_world->version >= 0x0255 && is_string(name_buffer))
+        // Load palette from string (2.90+)
+        if(mzx_world->version >= 0x025A && is_string(name_buffer))
         {
           struct string src;
 

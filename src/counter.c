@@ -1901,8 +1901,8 @@ static int buttons_read(struct world *mzx_world,
   if (raw_status & MOUSE_BUTTON(MOUSE_BUTTON_MIDDLE))
     buttons_formatted |= MOUSE_BUTTON(3);
 
-  // For 2.85+, also map the wheel and side buttons
-  if( mzx_world->version >= 0x0255 )
+  // For 2.90+, also map the wheel and side buttons
+  if( mzx_world->version >= 0x025A )
   {
     if (raw_status_ext == MOUSE_BUTTON_WHEELUP)
       buttons_formatted |= MOUSE_BUTTON(4);
@@ -2508,7 +2508,7 @@ static const struct function_counter builtin_counters[] =
   { "date_month", 0x0209, date_month_read, NULL },                   // 2.60
   { "date_year", 0x0209, date_year_read, NULL },                     // 2.60
   { "divider", 0x0244, divider_read, divider_write },                // 2.68
-  { "exit_game", 0x0255, NULL, exit_game_write },                    // 2.85
+  { "exit_game", 0x025A, NULL, exit_game_write },                    // 2.90
   { "fread", 0x0209, fread_read, NULL },                             // 2.60
   { "fread_counter", 0x0241, fread_counter_read, NULL },             // 2.65
   { "fread_delimiter", 0x0254, NULL, fread_delim_write },            // 2.84
@@ -3899,9 +3899,9 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
   // Load source code from a string
 
 #ifdef CONFIG_DEBYTECODE
-  if(special_name_partial("load_robot") && mzx_world->version >= 0x0255)
+  if(special_name_partial("load_robot") && mzx_world->version >= 0x025A)
   {
-    // Load legacy source code (2.85+)
+    // Load legacy source code (2.90+)
 
     struct robot *cur_robot;
     int load_id = id;
@@ -4002,9 +4002,9 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
   }
 
 #else //!CONFIG_DEBYTECODE
-  if(special_name_partial("load_robot") && mzx_world->version >= 0x0255)
+  if(special_name_partial("load_robot") && mzx_world->version >= 0x025A)
   {
-    // Load robot from string (2.85+)
+    // Load robot from string (2.90+)
 
     char *new_program;
     int new_size;

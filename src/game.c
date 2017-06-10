@@ -2381,11 +2381,11 @@ __editor_maybe_static void play_game(struct world *mzx_world)
 
         case IKEY_ESCAPE:
         {
-          // ESCAPE_MENU (2.85+)
+          // ESCAPE_MENU (2.90+)
           int escape_menu_status =
            get_counter(mzx_world, "ESCAPE_MENU", 0);
 
-          if(mzx_world->version < 0x0255 || escape_menu_status)
+          if(mzx_world->version < 0x025A || escape_menu_status)
             if(key_status == 1)
               exit = 1;
 
