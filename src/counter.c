@@ -2536,7 +2536,7 @@ static const struct function_counter builtin_counters[] =
   { "load_game", 0x0244, load_game_read, NULL },                     // 2.68
   { "load_robot?", 0x0249, load_robot_read, NULL },                  // 2.70
 #ifdef CONFIG_DEBYTECODE
-  { "load_source_file?", 0x025A, load_source_file_read, NULL },      // Debytecode
+  { "load_source_file?", 0x0300, load_source_file_read, NULL },      // Debytecode
 #endif
   { "local?", 0x0208, local_read, local_write },                     // 2.51s1
   { "loopcount", 0, loopcount_read, loopcount_write },               // <=2.51
@@ -3949,7 +3949,8 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
   }
   else
 
-  if(special_name_partial("load_source_file") && mzx_world->version >= 0x025A)
+  if(special_name_partial("load_source_file") &&
+   mzx_world->version >= VERSION_PROGRAM_SOURCE)
   {
     // Source code (DBC+)
 

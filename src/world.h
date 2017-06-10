@@ -98,7 +98,7 @@ __M_BEGIN_DECLS
  * such as altering semantics or actually changing the binary format, this
  * value MUST be bumped.
  */
-#define WORLD_VERSION      0x0255
+#define WORLD_VERSION      0x025A
 
 /* See the downver.c tool for more information. Please, if you bump the
  * WORLD_VERSION, always make sure this is updated with its previous
@@ -110,7 +110,7 @@ __M_BEGIN_DECLS
 // FIXME: hack
 #ifdef CONFIG_DEBYTECODE
 #undef  WORLD_VERSION
-#define WORLD_VERSION      0x025A
+#define WORLD_VERSION      0x0300
 #undef  WORLD_VERSION_PREV
 #endif
 

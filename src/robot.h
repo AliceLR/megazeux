@@ -54,10 +54,10 @@ __M_BEGIN_DECLS
 
 // This is the version where programs became source code instead of
 // bytecode.
-#define VERSION_PROGRAM_SOURCE   0x025A
+#define VERSION_PROGRAM_SOURCE   0x0300
 
 // And the last one where bytecode was used.
-#define VERSION_PROGRAM_BYTECODE 0x0253
+#define VERSION_PROGRAM_BYTECODE 0x025A
 
 CORE_LIBSPEC void change_robot_name(struct board *src_board,
  struct robot *cur_robot, char *new_name);
