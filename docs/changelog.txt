@@ -55,6 +55,8 @@ FEATURES
   (Lancer-X)
 + The minimal help bar now displays robot memory and the current
   board mod when contextually appropriate.
++ The minimal help options for the board and robot editors are
+  now enabled by default.
 
 + Debytecode: the LOAD_SOURCE_FILE special counter can now be
   used to load and compile a robot program from source code.

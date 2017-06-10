@@ -532,7 +532,7 @@ static const struct editor_config_info default_editor_options =
 {
   // Board editor options
   0,                            // editor_space_toggles
-  0,                            // board_editor_hide_help
+  1,                            // board_editor_hide_help
   1,                            // editor_tab_focuses_view
 
   // Defaults for new boards
@@ -568,7 +568,7 @@ static const struct editor_config_info default_editor_options =
   { 11, 10, 10, 14, 255, 3, 11, 2, 14, 0, 15, 11, 7, 15, 1, 2, 3 },
   1,                            // color_coding_on
   1,                            // default_invalid_status
-  0,                            // robot_editor_hide_help
+  1,                            // robot_editor_hide_help
 
   // Backup options
   3,                            // backup_count
