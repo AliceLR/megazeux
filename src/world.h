@@ -63,7 +63,7 @@ __M_BEGIN_DECLS
  *  M\x02\x52 - MZX 2.82
  *  M\x02\x53 - MZX 2.83
  *  M\x02\x54 - MZX 2.84
- *  M\x02\x55 - MZX 2.85
+ *  M\x02\x5A - MZX 2.90
  *
  * Save files:
  *
@@ -82,7 +82,8 @@ __M_BEGIN_DECLS
  *  MZS\x02\x51 - MZX 2.81
  *  MZS\x02\x52 - MZX 2.82
  *  MZS\x02\x53 - MZX 2.83
- *  MZS\x02\x55 - MZX 2.85
+ *  MZS\x02\x54 - MZX 2.84
+ *  MZS\x02\x5A - MZX 2.90
  *
  * Board files follow a similar pattern to world files. Versions prior to
  * 2.51S1 are "MB2". For versions greater than 2.51S1, they match the
@@ -98,7 +99,7 @@ __M_BEGIN_DECLS
  * such as altering semantics or actually changing the binary format, this
  * value MUST be bumped.
  */
-#define WORLD_VERSION      0x0255
+#define WORLD_VERSION      0x025A
 
 /* See the downver.c tool for more information. Please, if you bump the
  * WORLD_VERSION, always make sure this is updated with its previous
@@ -110,7 +111,7 @@ __M_BEGIN_DECLS
 // FIXME: hack
 #ifdef CONFIG_DEBYTECODE
 #undef  WORLD_VERSION
-#define WORLD_VERSION      0x025A
+#define WORLD_VERSION      0x0300
 #undef  WORLD_VERSION_PREV
 #endif
 

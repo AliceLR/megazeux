@@ -576,10 +576,10 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
 
     switch(current_char)
     {
-      // Ternary operator left (2.85+)
+      // Ternary operator left (2.90+)
       case '?':
       {
-        if(mzx_world->version < 0x0255)
+        if(mzx_world->version < 0x025A)
           goto err_out;
 
         // True
@@ -649,7 +649,7 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
       {
         int paren_level = 0;
 
-        if(mzx_world->version < 0x0255)
+        if(mzx_world->version < 0x025A)
           goto err_out;
 
         if(!(state & EXPR_STATE_TERNARY_MIDDLE))
@@ -1160,10 +1160,10 @@ static int parse_argument(struct world *mzx_world, char **_argument,
       return val;
     }
 
-    // Ternary operator left (2.85+)
+    // Ternary operator left (2.90+)
     case '?':
     {
-      if(mzx_world->version < 0x0255)
+      if(mzx_world->version < 0x025A)
       {
         *type = -1;
         *_argument = argument;
@@ -1240,7 +1240,7 @@ static int parse_argument(struct world *mzx_world, char **_argument,
       // We're only here because we finished execution of the inner argument.
       int paren_level = 0;
 
-      if(mzx_world->version < 0x0255)
+      if(mzx_world->version < 0x025A)
       {
         *type = -1;
         *_argument = argument;

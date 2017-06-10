@@ -942,7 +942,7 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
       if(dest_param && !src_type)
         src_type = 3;
 
-      if(mzx_world->version >= 0x0255 && is_string(name_buffer)) {
+      if(mzx_world->version >= 0x025A && is_string(name_buffer)) {
         save_mzm_string(mzx_world, name_buffer, src_x, src_y, width, height, src_type, 1, id);
       } else {
         err = fsafetranslate(name_buffer, translated_name);
@@ -3125,7 +3125,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
           tr_msg(mzx_world, cmd_ptr + 3, id, mzm_name_buffer);
 
-          if(mzx_world->version >= 0x0255 && is_string(mzm_name_buffer))
+          if(mzx_world->version >= 0x025A && is_string(mzm_name_buffer))
           {
             struct string src;
             
@@ -4059,8 +4059,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           char_buffer[i] = parse_param(mzx_world, next_param, id);
           next_param = next_param_pos(next_param);
         }
-        // Prior to 2.85 char params are clipped
-        if (mzx_world->version < 0x0255) char_num &= 0xFF;
+        // Prior to 2.90 char params are clipped
+        if (mzx_world->version < 0x025A) char_num &= 0xFF;
         if (char_num <= 0xFF || layer_renderer_check(true))
           ec_change_char(char_num, char_buffer);
         break;
@@ -5016,8 +5016,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           char char_buffer[14];
           int i;
 
-          // Prior to 2.85 char params are clipped
-          if (mzx_world->version < 0x0255) char_num &= 0xFF;
+          // Prior to 2.90 char params are clipped
+          if (mzx_world->version < 0x025A) char_num &= 0xFF;
 
           ec_read_char(char_num, char_buffer);
 
@@ -5098,8 +5098,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
         if(is_cardinal_dir(flip_dir))
         {
-          // Prior to 2.85 char params are clipped
-          if (mzx_world->version < 0x0255) char_num &= 0xFF;
+          // Prior to 2.90 char params are clipped
+          if (mzx_world->version < 0x025A) char_num &= 0xFF;
           
           ec_read_char(char_num, char_buffer);
 
@@ -5150,8 +5150,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         char *p2 = next_param_pos(cmd_ptr + 1);
         int dest_char = parse_param(mzx_world, p2, id);
 
-        // Prior to 2.85 char params are clipped
-        if (mzx_world->version < 0x0255)
+        // Prior to 2.90 char params are clipped
+        if (mzx_world->version < 0x025A)
         {
           src_char &= 0xFF;
           dest_char &= 0xFF;
@@ -5265,8 +5265,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           pos = 0;
         }
 
-        // Load from string (2.85+)
-        if(mzx_world->version >= 0x0255 && is_string(src_name))
+        // Load from string (2.90+)
+        if(mzx_world->version >= 0x025A && is_string(src_name))
         {
           struct string src;
 
@@ -5347,8 +5347,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
         tr_msg(mzx_world, cmd_ptr + 2, id, name_buffer);
 
-        // Load palette from string (2.85+)
-        if(mzx_world->version >= 0x0255 && is_string(name_buffer))
+        // Load palette from string (2.90+)
+        if(mzx_world->version >= 0x025A && is_string(name_buffer))
         {
           struct string src;
 

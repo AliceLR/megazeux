@@ -1037,9 +1037,8 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *spr,
   struct mask spr_mask = null_mask(), target_mask = null_mask();
   bool spr_mask_allocated = false, target_mask_allocated;
 
-  if (0) // Enable this once we're done testing
-    if (mzx_world->version < 0x0255)
-      return sprite_colliding_xy_old(mzx_world, spr, x, y);
+  if (mzx_world->version < 0x025A)
+    return sprite_colliding_xy_old(mzx_world, spr, x, y);
 
   collision_sprite.x = x;
   collision_sprite.y = y;

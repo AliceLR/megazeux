@@ -181,19 +181,21 @@ void create_blank_robot(struct world *mzx_world, struct robot *r, int savegame)
 {
   int i;
 
-  free(r->program_bytecode);
+  if(r->program_bytecode)
+    free(r->program_bytecode);
+
   r->program_bytecode = NULL;
   r->program_bytecode_length = 0;
 
 #ifdef CONFIG_DEBYTECODE
   {
-    free(r->program_source);
+    if(r->program_source)
+      free(r->program_source);
 
     r->program_source_length = 2;
     r->program_source = cmalloc(2);
     strcpy(r->program_source, "\x0A"); // Linebreak then term
 
-    // Compile our blank program please, snicker
     prepare_robot_bytecode(mzx_world, r);
   }
 #else /* !CONFIG_DEBYTECODE */
@@ -224,11 +226,15 @@ void create_blank_robot(struct world *mzx_world, struct robot *r, int savegame)
   for(i = 0; i<32; i++)
     r->local[i] = 0;
 
-  free(r->label_list);
+  if(r->label_list)
+    free(r->label_list);
+
   r->num_labels = 0;
   r->label_list = NULL;
 
-  free(r->stack);
+  if(r->stack)
+    free(r->stack);
+
   r->stack_size = 0;
   r->stack_pointer = 0;
   r->stack = NULL;
@@ -243,6 +249,15 @@ struct robot *load_robot_allocate(struct world *mzx_world, FILE *fp,
  int savegame, int file_version)
 {
   struct robot *cur_robot = cmalloc(sizeof(struct robot));
+
+  cur_robot->stack = NULL;
+  cur_robot->label_list = NULL;
+  cur_robot->program_bytecode = NULL;
+  cur_robot->num_labels = 0;
+
+#ifdef CONFIG_DEBYTECODE
+  cur_robot->program_source = NULL;
+#endif
 
   cur_robot->world_version = mzx_world->version;
   load_robot(mzx_world, cur_robot, fp, savegame, file_version);
@@ -574,6 +589,8 @@ void load_robot(struct world *mzx_world, struct robot *cur_robot, FILE *fp,
   total_read += fread((unsigned char *)buffer + partial_size, full_size - partial_size, 1, fp) * (full_size - partial_size);
   if (total_read != full_size) {
     error_message(E_BOARD_ROBOT_CORRUPT, robot_location, NULL);
+    create_blank_robot(mzx_world, cur_robot, savegame);
+    fseek(fp, 0, SEEK_END);
   } else {
     load_robot_from_memory(mzx_world, cur_robot, buffer, savegame, version,
      robot_location);

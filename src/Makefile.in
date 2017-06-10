@@ -180,6 +180,12 @@ core_ldflags := ${MIKMOD_LDFLAGS} ${core_ldflags}
 core_cobjs += ${core_obj}/audio_mikmod.o
 endif
 
+ifeq (${BUILD_XMP},1)
+core_cflags += ${XMP_CFLAGS}
+core_ldflags := ${XMP_LDFLAGS} ${core_ldflags}
+core_cobjs += ${core_obj}/audio_xmp.o
+endif
+
 ifeq (${LIBPNG},1)
 core_flags += ${LIBPNG_CFLAGS} -DNEED_PNG_WRITE_SCREEN
 core_ldflags := ${LIBPNG_LDFLAGS} ${core_ldflags}

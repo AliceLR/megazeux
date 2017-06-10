@@ -77,6 +77,11 @@ FEATURES
   SMZX mode 1). These values are reset whenever the SMZX mode is
   changed. Once again, this is only available to renderers that
   support unbound sprites. (Lancer-X)
++ Added standalone mode. The config parameters standalone_mode
+  and no_titlescreen can now be used (from MZXRun only) to
+  create standalone versions of MZX with the ability to fully
+  customise the player's experience. See config.txt for details.
+  (Lancer-X)
 
 + Debytecode: the LOAD_SOURCE_FILE special counter can now be
   used to load and compile a robot program from source code.
@@ -166,7 +171,7 @@ BUGFIXES
 + Fixed support for PPC Linux builds. (Insidious)
 + Fixed a bug where a robot sent a subroutine would restart the
   command it was executing upon #return if the command was a
-  multi-cycle command. This fix applies to worlds saved in 2.85
+  multi-cycle command. This fix applies to worlds saved in 2.90
   and later only.
 + Fixed a bug where ALT+F4 would cause menus to open instead of/
   in addition to triggering an exit event.
@@ -208,6 +213,8 @@ DEVELOPERS
   implemented by the renderer and if there is something on the
   screen that can only be drawn by the renderer (e.g. unbound
   sprites, or UI elements in an SMZX game) (Lancer-X)
++ Added experimental libxmp support. (asiekierka)
+
 
 December 24, 2012 - MZX 2.84c
 

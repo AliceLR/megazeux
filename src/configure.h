@@ -68,6 +68,8 @@ struct config_info
   int disassemble_extras;
   int disassemble_base;
   int startup_editor;
+  int standalone_mode;
+  int no_titlescreen;
 
   // Misc options
   int mask_midchars;

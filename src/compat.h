@@ -79,11 +79,11 @@ typedef enum
 #endif
 
 #ifdef CONFIG_AUDIO
-#if defined(CONFIG_MODPLUG) || defined(CONFIG_MIKMOD)
+#if defined(CONFIG_MODPLUG) || defined(CONFIG_MIKMOD) || defined(CONFIG_XMP)
 #define __audio_c_maybe_static
-#else // !CONFIG_MODPLUG && !CONFIG_MIKMOD
+#else // !CONFIG_MODPLUG && !CONFIG_MIKMOD && !CONFIG_XMP
 #define __audio_c_maybe_static static
-#endif // CONFIG_MODPLUG || CONFIG_MIKMOD
+#endif // CONFIG_MODPLUG || CONFIG_MIKMOD || CONFIG_XMP
 #else // !CONFIG_AUDIO
 #define __audio_c_maybe_static static
 #endif // CONFIG_AUDIO
