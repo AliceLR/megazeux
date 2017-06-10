@@ -122,9 +122,9 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
   dialog_fadein();
 
   if(editing)
-    scroll_edging_ext(mzx_world, type, 256, 16);
+    scroll_edging_ext(mzx_world, type, PRO_CH, 16);
   else
-    scroll_edging_ext(mzx_world, type, 0, 16);
+    scroll_edging_ext(mzx_world, type, 0, 0);
 
   // Loop
   where = scroll->mesg;
@@ -562,7 +562,7 @@ void help_display(struct world *mzx_world, char *help, int offs, char *file,
 
   dialog_fadein();
 
-  scroll_edging_ext(mzx_world, 3, 256, 16);
+  scroll_edging_ext(mzx_world, 3, PRO_CH, 16);
 
   // Loop
   file[0] = label[0] = 0;

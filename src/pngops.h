@@ -37,6 +37,7 @@ __M_BEGIN_DECLS
 
 int png_write_screen(Uint8 *pixels, struct rgb_color *pal, int count,
  const char *name);
+int png_write_screen_32bpp(Uint32 *pixels, const char *name);
 
 #endif // NEED_PNG_WRITE_SCREEN
 

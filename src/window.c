@@ -89,7 +89,7 @@ int get_context(void)
 // Big fat hack. This will be initialized to a bunch of 0's, or NULLs.
 // Use this to replace the null strings before they get dereferenced.
 
-static struct char_element screen_storage[NUM_SAVSCR][80 * 25];
+static struct char_element screen_storage[NUM_SAVSCR][80 * 25 * 2];
 
 // Current space for save_screen and restore_screen
 static int cur_screen = 0;
@@ -111,7 +111,7 @@ int save_screen(void)
     error("Windowing code bug", 2, 4, 0x1F01);
   }
 
-  get_screen(screen_storage[cur_screen]);
+  get_screen(screen_storage[cur_screen], UI_LAYER);
   cur_screen++;
   return 0;
 }
@@ -124,7 +124,7 @@ int restore_screen(void)
   if(cur_screen == 0)
     error("Windowing code bug", 2, 4, 0x1F02);
   cur_screen--;
-  set_screen(screen_storage[cur_screen]);
+  set_screen(screen_storage[cur_screen], UI_LAYER);
   return 0;
 }
 
@@ -141,7 +141,7 @@ int draw_window_box(int x1, int y1, int x2, int y2, int color,
  int dark_color, int corner_color, int shadow, int fill_center)
 {
   return draw_window_box_ext(x1, y1, x2, y2, color, dark_color,
-   corner_color, shadow, fill_center, 256, 16);
+   corner_color, shadow, fill_center, PRO_CH, 16);
 }
 
 int draw_window_box_ext(int x1, int y1, int x2, int y2, int color,
@@ -961,9 +961,9 @@ static void draw_label(struct world *mzx_world, struct dialog *di,
   int y = di->y + e->y;
 
   if(src->respect_colors)
-    color_string_ext(src->text, x, y, DI_TEXT, 256, 16, true);
+    color_string_ext(src->text, x, y, DI_TEXT, PRO_CH, 16, true);
   else
-    write_string_ext(src->text, x, y, DI_TEXT, true, 256, 16);
+    write_string_ext(src->text, x, y, DI_TEXT, true, PRO_CH, 16);
 }
 
 static void draw_input_box(struct world *mzx_world, struct dialog *di,

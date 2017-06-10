@@ -32,6 +32,8 @@ extern void (*const set_colors16[4])(struct graphics_data *graphics,
  Uint32 *char_colors, Uint8 bg, Uint8 fg);
 extern void (*const set_colors32[4])(struct graphics_data *graphics,
  Uint32 *char_colors, Uint8 bg, Uint8 fg);
+extern void (*const set_indices[4])(struct graphics_data *graphics,
+ int *indices, Uint8 bg, Uint8 fg);
 #ifdef CONFIG_RENDER_YUV
 extern void (*const yuv2_set_colors[4])(struct graphics_data *graphics,
  Uint32 *char_colors, Uint8 bg, Uint8 fg);

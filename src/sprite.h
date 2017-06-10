@@ -50,6 +50,7 @@ enum
   SPRITE_STATIC       = (1 << 4),
   SPRITE_CHAR_CHECK2  = (1 << 5),
   SPRITE_VLAYER       = (1 << 6),
+  SPRITE_UNBOUND      = (1 << 7)
 };
 
 void plot_sprite(struct world *mzx_world, struct sprite *cur_sprite, int color,

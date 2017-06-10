@@ -777,6 +777,8 @@ static void draw_edit_window(struct board *src_board, int array_x, int array_y,
   int board_width = src_board->board_width;
   int board_height = src_board->board_height;
 
+  blank_layers();
+
   if(board_width < viewport_width)
     viewport_width = board_width;
   if(board_height < viewport_height)
@@ -789,6 +791,7 @@ static void draw_edit_window(struct board *src_board, int array_x, int array_y,
       id_put(src_board, x, y, a_x, a_y, a_x, a_y);
     }
   }
+  select_layer(UI_LAYER);
 }
 
 static void flash_thing(struct world *mzx_world, int start, int end,
@@ -1051,7 +1054,7 @@ static void draw_menu_minimal(int overlay_edit, int draw_mode,
   int i;
 
   for(i = 0; i < 80; i++)
-    draw_char_ext(' ', EC_MAIN_BOX, i, EDIT_SCREEN_EXTENDED, 256, 16);
+    draw_char_ext(' ', EC_MAIN_BOX, i, EDIT_SCREEN_EXTENDED, PRO_CH, 16);
 
   write_string("Alt+H: Toggle Help", 3, EDIT_SCREEN_EXTENDED, EC_OPTION, 1);
 
@@ -2275,7 +2278,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                  "Choose character set to import", 1, 0,
                  elements, 1, 2))
                 {
-                  ec_load_set_var(import_name, char_offset);
+                  ec_load_set_var(import_name, char_offset, 0);
                 }
                 modified = 1;
                 break;

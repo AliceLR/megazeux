@@ -437,24 +437,24 @@ int color_selection(int current, int allow_wild)
         if(x == 16)
         {
           if(y == 16)
-            draw_char_ext(color_sel_wild, 135, 31, 20, 256, 0);
+            draw_char_ext(color_sel_wild, 135, 31, 20, PRO_CH, 0);
           else
             draw_char_ext(color_sel_wild, fg_per_bk[y] + y * 16,
-             31, y + 4, 256, 0);
+             31, y + 4, PRO_CH, 0);
         }
         else
 
         if(y == 16)
         {
           if(x == 0)
-            draw_char_ext(color_sel_wild, 128, 15, 20, 256, 0);
+            draw_char_ext(color_sel_wild, 128, 15, 20, PRO_CH, 0);
           else
-            draw_char_ext(color_sel_wild, x, x + 15, 20, 256, 0);
+            draw_char_ext(color_sel_wild, x, x + 15, 20, PRO_CH, 0);
         }
         else
         {
           draw_char_ext(color_sel_char, x + (y * 16), x + 15,
-           y + 4, 256, 0);
+           y + 4, PRO_CH, 0);
         }
       }
     }
@@ -629,13 +629,13 @@ void draw_color_box(int color, int q_bit, int x, int y, int x_limit)
         color = 8;
 
       if(x < x_limit)
-        draw_char_ext(color_wild, color, x, y, 256, 0);
+        draw_char_ext(color_wild, color, x, y, PRO_CH, 0);
 
       if(x + 1 < x_limit)
-        draw_char_ext(color_dot, color, x + 1, y, 256, 0);
+        draw_char_ext(color_dot, color, x + 1, y, PRO_CH, 0);
 
       if(x + 2 < x_limit)
-        draw_char_ext(color_wild, color, x + 2, y, 256, 0);
+        draw_char_ext(color_wild, color, x + 2, y, PRO_CH, 0);
     }
     else
 
@@ -647,13 +647,13 @@ void draw_color_box(int color, int q_bit, int x, int y, int x_limit)
       color = (color << 4) + fg_per_bk[color];
 
       if(x < x_limit)
-        draw_char_ext(color_wild, color, x, y, 256, 0);
+        draw_char_ext(color_wild, color, x, y, PRO_CH, 0);
 
       if(x + 1 < x_limit)
-        draw_char_ext(color_wild, color, x + 1, y, 256, 0);
+        draw_char_ext(color_wild, color, x + 1, y, PRO_CH, 0);
 
       if(x + 2 < x_limit)
-        draw_char_ext(color_wild, color, x + 2, y, 256, 0);
+        draw_char_ext(color_wild, color, x + 2, y, PRO_CH, 0);
     }
     else
     {
@@ -671,13 +671,13 @@ void draw_color_box(int color, int q_bit, int x, int y, int x_limit)
   else
   {
     if(x < x_limit)
-      draw_char_ext(color_blank, color, x, y, 256, 0);
+      draw_char_ext(color_blank, color, x, y, PRO_CH, 0);
 
     if(x + 1 < x_limit)
-      draw_char_ext(color_dot, color, x + 1, y, 256, 0);
+      draw_char_ext(color_dot, color, x + 1, y, PRO_CH, 0);
 
     if(x + 2 < x_limit)
-      draw_char_ext(color_blank, color, x + 2, y, 256, 0);
+      draw_char_ext(color_blank, color, x + 2, y, PRO_CH, 0);
   }
 }
 
