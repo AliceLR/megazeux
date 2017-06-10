@@ -22,6 +22,7 @@
 #include "graphics.h"
 #include "render.h"
 #include "render_sdl.h"
+#include "render_layer.h"
 #include "renderers.h"
 #include "util.h"
 
@@ -82,6 +83,7 @@ static void soft_update_colors(struct graphics_data *graphics,
   }
   else
   {
+    if (count > 256) count = 256;
     for(i = 0; i < count; i++)
     {
       sdlpal[i].r = palette[i].r;
@@ -121,6 +123,21 @@ static void soft_render_graph(struct graphics_data *graphics)
       render_graph32(pixels, pitch, graphics, set_colors32[mode]);
     else
       render_graph32s(pixels, pitch, graphics, set_colors32[mode]);
+    
+    /* This just adds a 3x3 red box to the top left of the screen
+       It's useful for debugging because it indicates when the 
+       fallback renderer is used
+
+    *(pixels + 0) = 0xFFFF0000;
+    *(pixels + 1) = 0xFFFF0000;
+    *(pixels + 2) = 0xFFFF0000;
+    *(pixels + (pitch/4)) = 0xFFFF0000;
+    *(pixels + (pitch/4) + 1) = 0xFFFF0000;
+    *(pixels + (pitch/4) + 2) = 0xFFFF0000;
+    *(pixels + (pitch/2)) = 0xFFFF0000;
+    *(pixels + (pitch/2) + 1) = 0xFFFF0000;
+    *(pixels + (pitch/2) + 2) = 0xFFFF0000;
+    */
   }
   SDL_UnlockSurface(screen);
 }
@@ -196,6 +213,25 @@ static void soft_sync_screen(struct graphics_data *graphics)
 #endif
 }
 
+
+static void soft_render_layer(struct graphics_data *graphics,
+ struct video_layer *layer)
+{
+  struct sdl_render_data *render_data = graphics->render_data;
+  SDL_Surface *screen = soft_get_screen_surface(render_data);
+
+  Uint32 *pixels = (Uint32 *)screen->pixels;
+  Uint32 pitch = screen->pitch;
+  Uint32 bpp = screen->format->BitsPerPixel;
+
+  pixels += pitch * ((screen->h - 350) / 8);
+  pixels += (screen->w - 640) * bpp / 64;
+
+  SDL_LockSurface(screen);
+  render_layer(pixels, bpp, pitch, graphics, layer); 
+  SDL_UnlockSurface(screen);
+}
+
 void render_soft_register(struct renderer *renderer)
 {
   memset(renderer, 0, sizeof(struct renderer));
@@ -207,6 +243,7 @@ void render_soft_register(struct renderer *renderer)
   renderer->get_screen_coords = get_screen_coords_centered;
   renderer->set_screen_coords = set_screen_coords_centered;
   renderer->render_graph = soft_render_graph;
+  renderer->render_layer = soft_render_layer;
   renderer->render_cursor = soft_render_cursor;
   renderer->render_mouse = soft_render_mouse;
   renderer->sync_screen = soft_sync_screen;

@@ -71,7 +71,7 @@ endif
 
 PTHREAD_LDFLAGS ?= -lpthread
 
-OPTIMIZE_CFLAGS ?= -O2
+OPTIMIZE_CFLAGS ?= -O3
 
 ifeq (${DEBUG},1)
 #

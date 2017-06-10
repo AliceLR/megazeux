@@ -179,7 +179,6 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
           else
           {
             // Invalid operand
-            warn("Invalid operand.\n");
             *error = 1;
             goto err_out;
           }
@@ -872,7 +871,6 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
       case '\0':
       default:
         // Invalid operator
-        warn("Invalid operator or unclosed expression.\n");
         *error = 2;
         goto err_out;
     }

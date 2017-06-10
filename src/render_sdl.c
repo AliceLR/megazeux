@@ -310,6 +310,8 @@ bool gl_check_video_mode(struct graphics_data *graphics, int width, int height,
 
 void gl_set_attributes(struct graphics_data *graphics)
 {
+  // Note that this function is called twice- both before and after
+  // gl_set_video_mode
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
   if(graphics->gl_vsync == 0)

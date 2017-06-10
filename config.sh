@@ -66,6 +66,7 @@ usage() {
 	echo "  --disable-uthash      Disables hash counter/string lookups."
 	echo "  --enable-debytecode   Enable experimental 'debytecode' transform."
 	echo "  --enable-libsdl2      Enable experimental SDL 2.0 support."
+	echo "  --enable-fps          Enable frames-per-second counter."
 	echo
 	echo "e.g.: ./config.sh --platform unix --prefix /usr"
 	echo "                  --sysconfdir /etc --disable-x11"
@@ -118,6 +119,7 @@ CHECK_ALLOC="true"
 UTHASH="true"
 DEBYTECODE="false"
 LIBSDL2="false"
+FPSCOUNTER="false"
 
 #
 # User may override above settings
@@ -260,6 +262,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--enable-libsdl2" ]  && LIBSDL2="true"
 	[ "$1" = "--disable-libsdl2" ] && LIBSDL2="false"
+
+	[ "$1" = "--enable-fps" ]  && FPSCOUNTER="true"
+	[ "$1" = "--disable-fps" ] && FPSCOUNTER="false"
 
 	if [ "$1" = "--help" ]; then
 		usage
@@ -1011,6 +1016,16 @@ if [ "$LIBSDL2" = "true" ]; then
 	echo "BUILD_LIBSDL2=1" >> platform.inc
 else
 	echo "Experimental SDL 2.0 support disabled."
+fi
+
+#
+# Frames-per-second counter
+#
+if [ "$FPSCOUNTER" = "true" ]; then
+	echo "fps counter enabled."
+	echo "#define CONFIG_FPS" >> src/config.h
+else
+	echo "fps counter disabled."
 fi
 
 echo

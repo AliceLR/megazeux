@@ -167,6 +167,8 @@ __libspec int main(int argc, char *argv[])
 
   vquick_fadeout();
 
+  destruct_layers();
+
   if(mzx_world.active)
   {
     clear_world(&mzx_world);

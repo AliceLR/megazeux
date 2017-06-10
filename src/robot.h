@@ -149,6 +149,7 @@ int send_robot_self(struct world *mzx_world, struct robot *src_robot,
 int move_dir(struct board *src_board, int *x, int *y, enum dir dir);
 void prefix_first_last_xy(struct world *mzx_world, int *fx, int *fy,
  int *lx, int *ly, int robotx, int roboty);
+void prefix_mid_xy_unbound(struct world *mzx_world, int *mx, int *my, int x, int y);
 void prefix_mid_xy(struct world *mzx_world, int *mx, int *my, int x, int y);
 void prefix_last_xy_var(struct world *mzx_world, int *lx, int *ly,
  int robotx, int roboty, int width, int height);
