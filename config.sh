@@ -50,6 +50,7 @@ usage() {
 	echo "  --enable-gp2x         Enables half-res software renderer."
 	echo "  --disable-modplug     Disable ModPlug music engine."
 	echo "  --enable-mikmod       Enables MikMod music engine."
+	echo "  --enable-xmp          Enables XMP music engine."
 	echo "  --disable-libpng      Disable PNG screendump support."
 	echo "  --disable-audio       Disable all audio (sound + music)."
 	echo "  --enable-tremor       Switches out libvorbis for libtremor."
@@ -100,6 +101,7 @@ OVERLAY="true"
 GP2X="false"
 MODPLUG="true"
 MIKMOD="false"
+XMP="false"
 LIBPNG="true"
 AUDIO="true"
 TREMOR="false"
@@ -207,6 +209,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--disable-mikmod" ] && MIKMOD="false"
 	[ "$1" = "--enable-mikmod" ]  && MIKMOD="true"
+
+	[ "$1" = "--disable-xmp" ] && XMP="false"
+	[ "$1" = "--enable-xmp" ]  && XMP="true"
 
 	[ "$1" = "--disable-libpng" ] && LIBPNG="false"
 	[ "$1" = "--enable-libpng" ]  && LIBPNG="true"
@@ -593,6 +598,7 @@ fi
 if [ "$AUDIO" = "false" ]; then
 	MODPLUG="false"
 	MIKMOD="false"
+	XMP="false"
 fi
 
 #
@@ -841,6 +847,10 @@ if [ "$MODPLUG" = "true" ]; then
 	echo "Selected Modplug music engine."
 	echo "#define CONFIG_MODPLUG" >> src/config.h
 	echo "BUILD_MODPLUG=1" >> platform.inc
+elif [ "$XMP" = "true" ]; then
+	echo "Selected XMP music engine."
+	echo "#define CONFIG_XMP" >> src/config.h
+	echo "BUILD_XMP=1" >> platform.inc
 elif [ "$MIKMOD" = "true" ]; then
 	echo "Selected Mikmod music engine."
 	echo "#define CONFIG_MIKMOD" >> src/config.h
