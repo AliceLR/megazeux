@@ -230,8 +230,10 @@ void mzx_res_free(void)
       free(mzx_res[i].path);
 }
 
+#ifdef USERCONFFILE
 #define COPY_BUFFER_SIZE  4096
 static unsigned char copy_buffer[COPY_BUFFER_SIZE];
+#endif
 
 char *mzx_res_get_by_id(enum resource_id id)
 {
