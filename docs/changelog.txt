@@ -57,6 +57,11 @@ FEATURES
   board mod when contextually appropriate.
 + The minimal help options for the board and robot editors are
   now enabled by default.
++ Shaders can now be changed from the F2 menu when using the
+  GLSL renderer. The user can select a fragment shader from the
+  assets/shaders/extra/ directory. If a matching vertex shader
+  exists, it will be loaded alongside the fragment shader.
+  Otherwise, MZX will fall back to the default vertex shader.
 
 + Debytecode: the LOAD_SOURCE_FILE special counter can now be
   used to load and compile a robot program from source code.

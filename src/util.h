@@ -83,6 +83,10 @@ CORE_LIBSPEC int mzx_res_init(const char *argv0, bool editor);
 CORE_LIBSPEC void mzx_res_free(void);
 CORE_LIBSPEC char *mzx_res_get_by_id(enum resource_id id);
 
+#ifdef CONFIG_RENDER_GL_PROGRAM
+void mzx_res_get_extra_shader_dir(char *dest);
+#endif
+
 CORE_LIBSPEC long ftell_and_rewind(FILE *f);
 unsigned int Random(unsigned long long range);
 

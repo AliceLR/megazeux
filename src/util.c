@@ -235,6 +235,32 @@ char *mzx_res_get_by_id(enum resource_id id)
   return mzx_res[id].path;
 }
 
+#ifdef CONFIG_RENDER_GL_PROGRAM
+void mzx_res_get_extra_shader_dir(char *dest)
+{
+  char *path = cmalloc(MAX_PATH);
+  char *name = cmalloc(MAX_PATH);
+
+  // A file we know will always exist in the shaders folder.
+  char *res_path = mzx_res[SHADERS_SCALER_VERT].path;
+
+  split_path_filename(res_path, path, MAX_PATH, name, MAX_PATH);
+
+  if(!change_dir_name(path, "extra"))
+  {
+    strcpy(dest, path);
+  }
+
+  else
+  {
+    dest[0] = 0;
+  }
+
+  free(path);
+  free(name);
+}
+#endif
+
 // Determine file size of an open FILE and rewind it
 
 long ftell_and_rewind(FILE *f)
@@ -351,20 +377,33 @@ int create_path_if_not_exists(const char *filename)
   return 0;
 }
 
-static void clean_path_slashes(const char *source, char *dest, int buf_size)
+static int isslash(char n)
 {
-  unsigned int i;
-  int p;
+  return n=='\\' || n=='/';
+}
 
-  for(i = 0, p = 0;
-   (i < strlen(source)) && (source[i] != 0) && (p < buf_size-1);
-   i++, p++)
+static void clean_path_slashes(const char *src, char *dest, size_t buf_size)
+{
+  unsigned int i = 0;
+  unsigned int p = 0;
+  size_t src_len = strlen(src);
+
+  while((i < src_len) && (p < buf_size-1))
   {
-    dest[p] = source[i];
-    while((dest[p] == DIR_SEPARATOR_CHAR) &&
-     (source[i + 1] == DIR_SEPARATOR_CHAR) &&
-     (source[i + 1] != 0))
+    if(isslash(src[i]))
+    {
+      while(isslash(src[i]))
+        i++;
+
+      dest[p] = DIR_SEPARATOR_CHAR;
+      p++;
+    }
+    else
+    {
+      dest[p] = src[i];
       i++;
+      p++;
+    }
   }
   dest[p] = '\0';
 

@@ -1631,7 +1631,7 @@ static int click_number_box(struct world *mzx_world, struct dialog *di,
     (src->upper_limit < 10) && (!src->mult_five))
   {
     // Select number IF on the number line itself
-    mouse_x -= (int)strlen(src->question);
+    mouse_x += 7;
     if((mouse_x < src->upper_limit) && (mouse_x >= 0))
       *(src->result) = mouse_x + 1;
   }
@@ -1644,6 +1644,39 @@ static int click_number_box(struct world *mzx_world, struct dialog *di,
   else
 
   if((mouse_x >= 3) && (mouse_y <= 5))
+  {
+    return IKEY_DOWN;
+  }
+
+  return 0;
+}
+
+static int drag_number_box(struct world *mzx_world, struct dialog *di,
+ struct element *e, int mouse_button, int mouse_x, int mouse_y)
+{
+  struct number_box *src = (struct number_box *)e;
+  int mouse_press = get_mouse_press();
+
+  mouse_x -= (int)strlen(src->question) + 7;
+
+  if((src->lower_limit == 1) &&
+    (src->upper_limit < 10) && (!src->mult_five))
+  {
+    // Select number IF on the number line itself
+    mouse_x += 7;
+    if((mouse_x < src->upper_limit) && (mouse_x >= 0))
+      *(src->result) = mouse_x + 1;
+  }
+  else
+
+  // get_mouse_press() has repeating, which we want here.
+  if((mouse_x >= 0) && (mouse_x <= 2) && mouse_press)
+  {
+    return IKEY_UP;
+  }
+  else
+
+  if((mouse_x >= 3) && (mouse_y <= 5) && mouse_press)
   {
     return IKEY_DOWN;
   }
@@ -1891,7 +1924,7 @@ struct element *construct_number_box(int x, int y,
     width += 13;
 
   construct_element(&(src->e), x, y, width, 1,
-   draw_number_box, key_number_box, click_number_box, NULL, NULL);
+   draw_number_box, key_number_box, click_number_box, drag_number_box, NULL);
 
   return (struct element *)src;
 }
@@ -2255,7 +2288,8 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
   char *current_dir_name;
   char current_dir_short[56];
   size_t current_dir_length;
-  char *previous_dir_name;
+  char *return_dir_name;
+  char *base_dir_name;
   int total_filenames_allocated;
   int total_dirnames_allocated;
   char **file_list;
@@ -2277,26 +2311,37 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
   int drive_letter_bitmap;
 #endif
 
+  // Buffers for the return file's path and name.
   char ret_path[MAX_PATH];
   char ret_file[MAX_PATH];
 
   // These are stack heavy so put them on the heap
   // This function is not performance sensitive anyway.
   file_name = cmalloc(PATH_BUF_LEN);
+
+  // The current directory the file manager is in.
   current_dir_name = cmalloc(MAX_PATH);
-  previous_dir_name = cmalloc(MAX_PATH);
+
+  // Where the file manager is allowed to search.
+  base_dir_name = cmalloc(MAX_PATH);
+
+  // Where the file manager needs to return on exit.
+  return_dir_name = cmalloc(MAX_PATH);
 
   if(allow_new)
     last_element = FILESEL_FILENAME;
 
-  getcwd(previous_dir_name, MAX_PATH);
+  getcwd(return_dir_name, MAX_PATH);
+  strcpy(current_dir_name, return_dir_name);
 
-  strcpy(current_dir_name, previous_dir_name);
-
-  // If ret is in a different dir, make that the current dir
+  // Split the input path (it may be a directory)
   split_path_filename(ret, ret_path, MAX_PATH, ret_file, MAX_PATH);
+
+  // We may be searching in a base directory that isn't the cwd.
   if(ret_path[0])
     change_dir_name(current_dir_name, ret_path);
+
+  strcpy(base_dir_name, current_dir_name);
 
   while(return_value == 1)
   {
@@ -2332,7 +2377,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
           // Exclude .. from base dir in subdirsonly mode
           if(dirs_okay &&
            !(dirs_okay == 2 && !strcmp(file_name, "..") &&
-             !strcmp(current_dir_name, previous_dir_name) ))
+             !strcmp(current_dir_name, base_dir_name) ))
           {
             dir_list[num_dirs] = cmalloc(file_name_length + 1);
             strncpy(dir_list[num_dirs], file_name, file_name_length);
@@ -2345,12 +2390,10 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
           // Must match one of the wildcards, also ignore the .
           if(file_name_length >= 4)
           {
-            if(file_name[file_name_length - 4] == '.')
-              ext_pos = (ssize_t)file_name_length - 4;
-            else if(file_name[file_name_length - 3] == '.')
-              ext_pos = (ssize_t)file_name_length - 3;
-            else
-              ext_pos = 0;
+            // Find the extension.
+            for(ext_pos = file_name_length - 1; ext_pos >= 0; ext_pos--)
+              if(file_name[ext_pos] == '.')
+                break;
 
             for(i = 0; wildcards[i] != NULL; i++)
             {
@@ -2416,7 +2459,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
     dir_close(&current_dir);
 skip_dir:
 
-    chdir(previous_dir_name);
+    chdir(return_dir_name);
 
     qsort(file_list, num_files, sizeof(char *), sort_function);
     qsort(dir_list, num_dirs, sizeof(char *), sort_function);
@@ -2777,20 +2820,24 @@ skip_dir:
     // No unallowed paths kthx
     if(dirs_okay != 1)
     {
-      // If the base path isn't part of the return path, or if there's an
-      // unallowed subdirectory.
-      if(strncmp(previous_dir_name, current_dir_name, strlen(previous_dir_name)) ||
-         (!dirs_okay &&
-          strstr(current_dir_name + strlen(previous_dir_name), DIR_SEPARATOR)))
+      // If the base path isn't part of the return path
+      if(strncmp(base_dir_name, current_dir_name, strlen(base_dir_name)) ||
+       strstr(current_dir_name, "..") ||
+
+      // or if there's an unallowed subdirectory
+       (!dirs_okay &&
+        strstr(current_dir_name + strlen(base_dir_name), DIR_SEPARATOR)))
       {
         debug("some1 dropped da ball!!!!!!11\n");
-        strcpy(current_dir_name, previous_dir_name);
+        strcpy(current_dir_name, base_dir_name);
         return_value = 1;
         ret[0] = 0;
       }
       else
+
+      if(!strcmp(base_dir_name, return_dir_name))
       {
-        strcpy(ret_file, ret + strlen(previous_dir_name) + 1);
+        strcpy(ret_file, ret + strlen(base_dir_name) + 1);
         strcpy(ret, ret_file);
       }
     }
@@ -2827,7 +2874,8 @@ skip_dir:
     ret[0] = 0;
   }
 
-  free(previous_dir_name);
+  free(base_dir_name);
+  free(return_dir_name);
   free(current_dir_name);
   free(file_name);
 
