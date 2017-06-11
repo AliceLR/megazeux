@@ -66,6 +66,12 @@
 #define EDIT_SCREEN_EXTENDED 24
 #define EDIT_SCREEN_NORMAL   19
 
+#define DRAW_MEMORY_TIMER_MAX 120
+#define DRAW_MOD_TIMER_MAX    300
+
+static int draw_memory_timer = 0;
+static int draw_mod_timer = 0;
+
 void free_editor_config(struct world *mzx_world)
 {
   int i;
@@ -137,6 +143,9 @@ static bool editor_reload_world(struct world *mzx_world, const char *file,
 
   if(world_loaded && stat(config_file_name, &file_info) >= 0)
     set_editor_config_from_file(conf, config_file_name);
+
+  draw_memory_timer = DRAW_MEMORY_TIMER_MAX / 2;
+  draw_mod_timer = DRAW_MOD_TIMER_MAX;
 
   return world_loaded;
 }
@@ -217,7 +226,17 @@ static void fix_mod(struct world *mzx_world, struct board *src_board,
 {
   // Passing a ref in case we want to properly end it here at some point
   if(!(*listening_flag))
-    load_board_module(mzx_world, src_board);
+  {
+    if(!strcmp(src_board->mod_playing, "*"))
+    {
+      end_module();
+    }
+
+    else
+    {
+      load_board_module(mzx_world, src_board);
+    }
+  }
 }
 
 #define NUM_MENUS 6
@@ -525,6 +544,7 @@ static int change_param(struct world *mzx_world, enum thing id, int param,
 
   if(is_robot(id))
   {
+    draw_memory_timer = DRAW_MEMORY_TIMER_MAX;
     return edit_robot(mzx_world, copy_robot);
   }
   else
@@ -1056,7 +1076,52 @@ static void draw_menu_minimal(int overlay_edit, int draw_mode,
   for(i = 0; i < 80; i++)
     draw_char_ext(' ', EC_MAIN_BOX, i, EDIT_SCREEN_EXTENDED, PRO_CH, 16);
 
-  write_string("Alt+H: Toggle Help", 3, EDIT_SCREEN_EXTENDED, EC_OPTION, 1);
+  // Display robot memory where the Alt+H message would usually go.
+  if(draw_memory_timer > 0)
+  {
+    int robot_mem = 0;
+
+    for(i = 0; i < src_board->num_robots_active; i++)
+    {
+      robot_mem +=
+#ifdef CONFIG_DEBYTECODE
+       (src_board->robot_list_name_sorted[i])->program_source_length;
+#else
+       (src_board->robot_list_name_sorted[i])->program_bytecode_length;
+#endif
+    }
+
+    robot_mem = (robot_mem + 512) / 1024;
+
+    write_string("Robot mem:       kb", 2, EDIT_SCREEN_EXTENDED, EC_MODE_STR, 1);
+    write_number(robot_mem, 31, 2+11, EDIT_SCREEN_EXTENDED, 6, 0, 10);
+  }
+  else
+
+  // Display the board mod where the Alt+H message would usually go.
+  if(draw_mod_timer > 0)
+  {
+    char *mod_name = src_board->mod_playing;
+    int len = strlen(mod_name);
+    int off = 0;
+    char temp;
+
+    write_string("Mod:               ", 2, EDIT_SCREEN_EXTENDED, EC_MODE_STR, 1);
+
+    if(len > 14)
+      off = MIN((DRAW_MOD_TIMER_MAX - draw_mod_timer)/10, len-14);
+
+    temp = mod_name[off+14];
+    mod_name[off+14] = 0;
+    write_string(mod_name+off, 2+5, EDIT_SCREEN_EXTENDED, 31, 1);
+    mod_name[off+14] = temp;
+  }
+
+  // Display the Alt+H message.
+  else
+  {
+    write_string("Alt+H : Toggle Help", 2, EDIT_SCREEN_EXTENDED, EC_OPTION, 1);
+  }
 
   write_string("X/Y:      /     ", 3+21, EDIT_SCREEN_EXTENDED,
    EC_MODE_STR, 1);
@@ -1268,6 +1333,8 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
     if(edit_screen_height == EDIT_SCREEN_NORMAL)
     {
+      draw_memory_timer = 0;
+      draw_mod_timer = 0;
       draw_menu_normal(overlay_edit, draw_mode, current_menu, current_color,
        current_id, copy_sensor.sensor_char, copy_robot.robot_char,
        level_id, level_param, current_param, src_board);
@@ -1278,6 +1345,12 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
        copy_sensor.sensor_char, copy_robot.robot_char, level_id, level_param,
        current_param, src_board, cursor_board_x, cursor_board_y);
     }
+
+    if(draw_memory_timer > 0)
+      draw_memory_timer--;
+
+    if(draw_mod_timer > 0)
+      draw_mod_timer--;
 
     // Highlight block for draw mode 3
     if(draw_mode == 3)
@@ -2568,6 +2641,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                 strcpy(src_board->mod_playing, new_mod);
                 strcpy(mzx_world->real_mod_playing, new_mod);
                 fix_mod(mzx_world, src_board, &listening_flag);
+                draw_mod_timer = DRAW_MOD_TIMER_MAX;
               }
             }
             else
@@ -2575,6 +2649,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
               src_board->mod_playing[0] = 0;
               mzx_world->real_mod_playing[0] = 0;
               fix_mod(mzx_world, src_board, &listening_flag);
+              draw_mod_timer = DRAW_MOD_TIMER_MAX;
             }
             modified = 1;
           }
@@ -3749,6 +3824,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           src_board->mod_playing[0] = '*';
           src_board->mod_playing[1] = 0;
           fix_mod(mzx_world, src_board, &listening_flag);
+          draw_mod_timer = DRAW_MOD_TIMER_MAX;
 
           modified = 1;
         }
@@ -3780,6 +3856,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
               if(is_robot(d_id))
               {
+                draw_memory_timer = DRAW_MEMORY_TIMER_MAX;
                 edit_robot(mzx_world, src_board->robot_list[d_param]);
                 modified = 1;
               }
@@ -3920,6 +3997,9 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
        edit_screen_height);
 
       new_board = -1;
+
+      draw_memory_timer = DRAW_MEMORY_TIMER_MAX / 2;
+      draw_mod_timer = DRAW_MOD_TIMER_MAX;
 
       modified = 1;
     }

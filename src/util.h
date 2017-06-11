@@ -83,6 +83,10 @@ CORE_LIBSPEC int mzx_res_init(const char *argv0, bool editor);
 CORE_LIBSPEC void mzx_res_free(void);
 CORE_LIBSPEC char *mzx_res_get_by_id(enum resource_id id);
 
+#ifdef CONFIG_RENDER_GL_PROGRAM
+void mzx_res_get_extra_shader_dir(char *dest);
+#endif
+
 // Code to load multi-byte ints from little endian file
 int fgetw(FILE *fp);
 int fgetd(FILE *fp);

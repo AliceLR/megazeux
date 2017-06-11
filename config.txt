@@ -1,5 +1,5 @@
 # Configuration file for MegaZeux
-# Jan 11th, 2013
+# Jun 10th, 2017
 
 # Comments begin with #. Whitespace is ignored. Empty lines are
 # ignored as well.
@@ -284,8 +284,8 @@
 
 # editor_enter_splits = 1
 
-# Set to 1 if you want the board editor to not show the hotkey
-# help by default.
+# Set to 0 if you want the board editor to show the hotkey help
+# by default.
 
 # board_editor_hide_help = 1
 
@@ -416,10 +416,10 @@
 
 # robot_editor_default_palette = 0
 
-# Set to 1 if you want the robot editor to not show the hotkey
-# help and horizontal border by default.
+# Set to 0 if you want the robot editor to show the hotkey help
+# and horizontal border by default.
 
-# robot_editor_hide_help = 0
+# robot_editor_hide_help = 1
 
 
 # Backup options

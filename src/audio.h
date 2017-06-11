@@ -122,11 +122,11 @@ CORE_LIBSPEC void quit_audio(void);
 CORE_LIBSPEC int load_module(char *filename, bool safely, int volume);
 CORE_LIBSPEC void end_module(void);
 CORE_LIBSPEC void play_sample(int freq, char *filename, bool safely);
+CORE_LIBSPEC void volume_module(int vol);
 
 void end_sample(void);
 void jump_module(int order);
 int get_order(void);
-void volume_module(int vol);
 void module_exit(void);
 void module_init(void);
 void spot_sample(int freq, int sample);

@@ -1,13 +1,30 @@
-/*
+/* MegaZeux
+ *
+ * Copyright (C) 2017 Dr Lancer-X <drlancer@megazeux.org>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
 
-RENDERER_BPP            8, 16, 32
-RENDERER_TRPARENCY   0, 1
-RENDERER_ALIGN          8, 16, 32, 64
-RENDERER_SMZX           0, 1, 2, 3
-RENDERER_CLIP           0, 1
-RENDERER_PPAL           16, 256
+// This file recursively includes itself to apply a sort of pseudo-templating
+// in order to generate many versions of the render_func_... function. The
+// right function to call is selected through a dispatch mechanism, also
+// generated through recursive inclusion.
 
-*/
+// Errors and warnings in this file are duplicated hundreds of times over, so
+// when working on this function it can be good to redirect make's stderr
+// stream to a file.
 
 #ifndef RENDERER_BPP
 
@@ -314,18 +331,6 @@ static inline void RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, RENDERER_ALIG
   int pixel_x, pixel_y;
   #endif
 
-  //fprintf(stderr, "Rendering screen with %s\n", STR(RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, RENDERER_ALIGN, RENDERER_SMZX, RENDERER_CLIP, RENDERER_PPAL)));
-  /*
-  char tbuf[256];
-  size_t layerSize = layer->w * layer->h;
-  sprintf(tbuf, "%s %d", STR(RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, RENDERER_ALIGN, RENDERER_SMZX, RENDERER_CLIP, RENDERER_PPAL)), PPW);
-  if (layerSize < strlen(tbuf)) tbuf[layerSize] = '\0';
-  for (i = 0; tbuf[i] != 0; i++) {
-    layer->data[i].char_value = tbuf[i];
-    layer->data[i].fg_color = 15;
-    layer->data[i].bg_color = 0;
-  }
-  */
   // Position the output ptr at the location of the first char
   outPtr = (ALIGNTYPE *)pixels;
   outPtr += layer->y * (int)align_pitch;
