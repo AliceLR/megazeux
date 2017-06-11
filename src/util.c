@@ -230,8 +230,51 @@ void mzx_res_free(void)
       free(mzx_res[i].path);
 }
 
+#define COPY_BUFFER_SIZE  4096
+static unsigned char copy_buffer[COPY_BUFFER_SIZE];
+
 char *mzx_res_get_by_id(enum resource_id id)
 {
+  #ifdef USERCONFFILE
+  if (id == CONFIG_TXT)
+  {
+    // Special handling for CONFIG_TXT to allow for user
+    // configuration files
+
+    // Check if the file can be opened for reading
+    FILE *fp = fopen_unsafe(USERCONFFILE, "rb");
+    
+    if (fp)
+    {
+      fclose(fp);
+      return (char *)USERCONFFILE;
+    }
+    // Otherwise, try to open the file for writing
+    fp = fopen_unsafe(USERCONFFILE, "wb");
+    if (fp)
+    {
+      FILE *original = fopen_unsafe(mzx_res[id].path, "rb");
+      if (original)
+      {
+        size_t bytes_read;
+        for (;;)
+        {
+          bytes_read = fread(copy_buffer, 1, COPY_BUFFER_SIZE, original);
+          if (bytes_read)
+            fwrite(copy_buffer, 1, bytes_read, fp);
+          else
+            break;
+        }
+        fclose(fp);
+        fclose(original);
+        return (char *)USERCONFFILE;
+      }
+      fclose(fp);
+    }
+
+    // If that's no good, just read the normal config file
+  }
+  #endif /* USERCONFFILE */
   return mzx_res[id].path;
 }
 

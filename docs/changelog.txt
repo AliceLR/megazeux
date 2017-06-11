@@ -53,6 +53,10 @@ FEATURES
   create standalone versions of MZX with the ability to fully
   customise the player's experience. See config.txt for details.
   (Lancer-X)
++ On Linux and Mac OS X the configuration file will be copied
+  into the user's home directory and given the name
+  .megazeux-config if it is not already present. This config
+  file will then be used instead of the global one. (Lancer-X)
 
 + Debytecode: the LOAD_SOURCE_FILE special counter can now be
   used to load and compile a robot program from source code.
