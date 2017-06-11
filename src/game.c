@@ -2724,7 +2724,7 @@ void title_screen(struct world *mzx_world)
         {
           int help_menu_status =
            get_counter(mzx_world, "HELP_MENU", 0);
-          if(conf->standalone_mode || !help_menu_status)
+          if(conf->standalone_mode && !help_menu_status)
             break;
           m_show();
           help_system(mzx_world);
@@ -2737,7 +2737,7 @@ void title_screen(struct world *mzx_world)
         {
           int f2_menu_status =
            get_counter(mzx_world, "F2_MENU", 0);
-          if(conf->standalone_mode || !f2_menu_status)
+          if(conf->standalone_mode && !f2_menu_status)
             break;
           // Settings
           m_show();
