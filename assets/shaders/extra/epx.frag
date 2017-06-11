@@ -1,4 +1,4 @@
-#version 130
+#version 110
 // vim:syntax=c:sts=3:sw=3:et:
 
 // EPX scaler by GreaseMonkey
@@ -11,7 +11,7 @@ void main( void )
 {
    vec2 tcstepx = vec2(1.0/XS, 0.0);
    vec2 tcstepy = vec2(0.0, 1.0/YS);
-   vec2 tcbase = (trunc(vTexcoord*vec2(XS, YS)) + vec2(0.5, 0.5))/vec2(XS, YS);
+   vec2 tcbase = (floor(vTexcoord*vec2(XS, YS)) + vec2(0.5, 0.5))/vec2(XS, YS);
    vec4 c0 = texture2D(baseMap, tcbase);
    vec4 c1 = texture2D(baseMap, tcbase-tcstepy);
    vec4 c2 = texture2D(baseMap, tcbase-tcstepx);
