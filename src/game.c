@@ -341,8 +341,6 @@ void load_board_module(struct world *mzx_world, struct board *src_board)
     return;
 
   // Temporarily get rid of the star.
-  // This is purely for the title screen and editor.
-  // Gameplay will resolve these to * via magic_load_mod.
   if(mod_name_size && filename[mod_name_size - 1] == '*')
   {
     filename[mod_name_size - 1] = 0;
@@ -360,9 +358,8 @@ void load_board_module(struct world *mzx_world, struct board *src_board)
   if(n_result != FSAFE_SUCCESS)
     return;
 
-  // The safety check has already been done as a mandatory part of updating
-  // real_mod_playing. So don't bother doing it again (false).
-  result = load_module(src_board->mod_playing, false, src_board->volume);
+  // The safety check has already been done. So don't do it again (false).
+  result = load_module(translated_name, false, src_board->volume);
 
   // If the mod actually changed, update real mod playing.
   if(result)
@@ -373,6 +370,14 @@ void load_board_module(struct world *mzx_world, struct board *src_board)
   {
     filename[mod_name_size - 1] = '*';
   }
+}
+
+static void load_savegame_module(struct world *mzx_world)
+{
+  struct board *cur_board = mzx_world->current_board;
+
+  // For savegames, we need to load real_mod_playing instead of the board mod.
+  load_module(mzx_world->real_mod_playing, true, cur_board->volume);
 }
 
 static void load_world_file(struct world *mzx_world, char *name)
@@ -1854,7 +1859,6 @@ static int update(struct world *mzx_world, int game, int *fadein)
   switch(mzx_world->change_game_state)
   {
     case CHANGE_STATE_SWAP_WORLD:
-    case CHANGE_STATE_LOAD_GAME_ROBOTIC:
     {
       // Load the new board's mod
       src_board = mzx_world->current_board;
@@ -1865,10 +1869,17 @@ static int update(struct world *mzx_world, int game, int *fadein)
       // This differs from pressing P on the title screen, where the
       // order of precedence is swapped.
       send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
+      send_robot_def(mzx_world, 0, LABEL_JUSTENTERED);
 
-      // Only do this for swap world.
-      if(mzx_world->change_game_state == CHANGE_STATE_SWAP_WORLD)
-        send_robot_def(mzx_world, 0, LABEL_JUSTENTERED);
+      return 1;
+    }
+
+    case CHANGE_STATE_LOAD_GAME_ROBOTIC:
+    {
+      load_savegame_module(mzx_world);
+
+      // Only send JUSTLOADED for savegames.
+      send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
 
       return 1;
     }
@@ -2268,8 +2279,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
 
               // Reset this
               src_board = mzx_world->current_board;
-              // Swap in starting board
-              load_board_module(mzx_world, src_board);
+              load_savegame_module(mzx_world);
 
               find_player(mzx_world);
 
@@ -2451,8 +2461,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
 
               find_player(mzx_world);
 
-              // Swap in starting board
-              load_board_module(mzx_world, src_board);
+              load_savegame_module(mzx_world);
 
               send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
               fadein ^= 1;
@@ -2788,8 +2797,7 @@ void title_screen(struct world *mzx_world)
             if(reload_savegame(mzx_world, save_file_name, &fadein))
             {
               src_board = mzx_world->current_board;
-              // Swap in starting board
-              load_board_module(mzx_world, src_board);
+              load_savegame_module(mzx_world);
               set_intro_mesg_timer(0);
 
               // Copy filename
@@ -3016,8 +3024,7 @@ void title_screen(struct world *mzx_world)
           else
           {
             src_board = mzx_world->current_board;
-            // Swap in starting board
-            load_board_module(mzx_world, src_board);
+            load_savegame_module(mzx_world);
             set_intro_mesg_timer(0);
 
             fadein ^= 1;
