@@ -182,6 +182,7 @@ struct list_box
   int return_value;
   const char **choices;
   int *result;
+  int *result_offset;
   int scroll_offset;
   char key_buffer[64];
   int key_position;
@@ -285,7 +286,8 @@ CORE_LIBSPEC void construct_element(struct element *e, int x, int y,
   struct element *e));
 CORE_LIBSPEC struct element *construct_list_box(int x, int y,
  const char **choices, int num_choices, int num_choices_visible,
- int choice_length, int return_value, int *result, bool respect_color_codes);
+ int choice_length, int return_value, int *result, int *result_offset,
+ bool respect_color_codes);
 CORE_LIBSPEC void construct_dialog_ext(struct dialog *src, const char *title,
  int x, int y, int width, int height, struct element **elements,
  int num_elements, int sfx_test_for_input, int pad_space, int start_element,

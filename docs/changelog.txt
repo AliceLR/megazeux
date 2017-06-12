@@ -200,6 +200,8 @@ BUGFIXES
   that support unbound sprites. (Lancer-X)
 + Changing from SMZX mode 1 to 0 correctly restores the palette.
   (Lancer-X)
++ Fixed a bug where the tree list in the counter debugger would
+  rapidly scroll through elements when clicked.
 
 + Debytecode: SAVE_WORLD is no longer supported.
 

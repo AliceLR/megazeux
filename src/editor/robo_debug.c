@@ -145,7 +145,7 @@ void __edit_breakpoints(struct world *mzx_world)
     }
 
     elements[0] = construct_list_box(2, 2, (const char **)list, num_break_points,
-     19, 76, 0, &selected, false);
+     19, 76, 0, &selected, NULL, false);
     elements[1] = construct_button(4, 22, "Add", 1);
     elements[2] = construct_button(11, 22, "Edit", 2);
     elements[3] = construct_button(19, 22, "Delete", 3);
