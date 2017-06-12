@@ -401,6 +401,18 @@ static bool update_autorepeat(void)
   return rval;
 }
 
+// event_sdl.c needs this in SDL 1.2 for catching autorepeat non-events while
+// performing wait_event with a timeout.
+
+#if defined(CONFIG_SDL)
+#if !SDL_VERSION_ATLEAST(2,0,0)
+bool update_autorepeat_sdl(void)
+{
+  return update_autorepeat();
+}
+#endif /*SDL_VERSION_ATLEAST*/
+#endif /*CONFIG_SDL*/
+
 bool update_event_status(void)
 {
   struct buffered_status *status = store_status();

@@ -182,6 +182,12 @@ void joystick_key_release(struct buffered_status *status,
 
 void real_warp_mouse(Uint32 x, Uint32 y);
 
+#if defined(CONFIG_SDL)
+#if !SDL_VERSION_ATLEAST(2,0,0)
+bool update_autorepeat_sdl(void);
+#endif
+#endif
+
 __M_END_DECLS
 
 #endif // __EVENT_H

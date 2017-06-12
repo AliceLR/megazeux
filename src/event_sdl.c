@@ -590,6 +590,35 @@ bool __update_event_status(void)
   return rval;
 }
 
+#if !SDL_VERSION_ATLEAST(2,0,0)
+static int SDL_WaitEventTimeout(SDL_Event *event, int timeout)
+{
+  // SDL 1.2 doesn't have SDL_WaitEventTimeout. The suggested alternative
+  // is to use timers, but this was simpler and most things won't use this
+  // SDL version anyway.
+
+  int i = timeout;
+  int anyEvent = 0;
+
+  while(timeout>0 && !anyEvent)
+  {
+    i--;
+    delay(1);
+    anyEvent = SDL_PollEvent(event);
+
+    // If an autorepeat triggers, it needs to be processed.
+    if(update_autorepeat_sdl())
+      break;
+
+    // "Fix" awful intake cursor blinking
+    if(!(i&7))
+      update_screen();
+  }
+
+  return anyEvent;
+}
+#endif
+
 void __wait_event(int timeout)
 {
   SDL_Event event;
