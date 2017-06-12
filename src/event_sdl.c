@@ -354,12 +354,9 @@ static bool process_event(SDL_Event *event)
       // Because of the way the SDL 1.2 assumption is embedded deeply in
       // the MZX event queue processor, emulate the 1.2 behaviour by waiting
       // for a TEXTINPUT event after a KEYDOWN.
-      if(SDL_WaitEventTimeout(event, 1))
-      {
-        if(event->type == SDL_TEXTINPUT)
-          unicode = event->text.text[0] | event->text.text[1] << 8;
-        else
-          SDL_PushEvent(event);
+      SDL_PumpEvents();
+      if (SDL_PeepEvents(event, 1, SDL_GETEVENT, SDL_TEXTINPUT, SDL_TEXTINPUT)) {
+        unicode = event->text.text[0] | event->text.text[1] << 8;
       }
 #else
       unicode = event->key.keysym.unicode;
@@ -593,19 +590,23 @@ bool __update_event_status(void)
   return rval;
 }
 
-void __wait_event(void)
+void __wait_event(int timeout)
 {
   SDL_Event event;
+  int anyEvent;
 
   // FIXME: WaitEvent with MSVC hangs the render cycle, so this is, hopefully,
   //        a short-term fix.
   #ifdef MSVC_H
-    SDL_PollEvent(&event);
+    anyEvent = SDL_PollEvent(&event);
   #else
-    SDL_WaitEvent(&event);
+    if (!timeout) {
+      anyEvent = SDL_WaitEvent(&event);
+    } else {
+      anyEvent = SDL_WaitEventTimeout(&event, timeout);
+    }
   #endif
-
-  process_event(&event);
+  if (anyEvent) process_event(&event);
 }
 
 void real_warp_mouse(Uint32 x, Uint32 y)

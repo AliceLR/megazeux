@@ -79,7 +79,7 @@ void real_warp_mouse(Uint32 x, Uint32 y)
   // stub
 }
 
-void __wait_event(void)
+void __wait_event(int timeout)
 {
   // stub
 }

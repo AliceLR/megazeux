@@ -162,6 +162,8 @@ BUGFIXES
 + Fixed a bug where subdirectory mods with different types of
   slashes in their names would fail to be recognized as the same
   mod.
++ Fixed a bug where keystrokes were getting lost during event
+  processing. (Lancer-X)
 
 + Debytecode: SAVE_WORLD is no longer supported.
 
