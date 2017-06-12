@@ -94,6 +94,9 @@ static inline struct string *legacy_load_string(FILE *fp)
   return src_string;
 }
 
+
+#ifdef CONFIG_EDITOR
+
 static inline void legacy_save_counter(FILE *fp, struct counter *src_counter)
 {
   size_t name_length = strlen(src_counter->name);
@@ -117,7 +120,7 @@ static inline void legacy_save_string(FILE *fp, struct string *src_string)
 
 int legacy_save_world(struct world *mzx_world, const char *file, int savegame)
 {
-  int file_version = WORLD_VERSION;// WORLD_LEGACY_FORMAT_VERSION; FIXME
+  int file_version = WORLD_LEGACY_FORMAT_VERSION;
 
   int i, num_boards;
   int gl_rob_position, gl_rob_save_position;
@@ -475,6 +478,8 @@ int legacy_save_world(struct world *mzx_world, const char *file, int savegame)
   fclose(fp);
   return 0;
 }
+
+#endif /* CONFIG_EDITOR */
 
 
 static const char magic_code[16] =

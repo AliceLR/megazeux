@@ -2961,7 +2961,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
       err = fsafetranslate(char_value, translated_path);
       if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
-        save_world(mzx_world, translated_path, 1);
+        save_world(mzx_world, translated_path, 1, WORLD_VERSION);
 
       free(translated_path);
       break;
@@ -2996,7 +2996,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
       err = fsafetranslate(char_value, translated_path);
       if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
-        save_world(mzx_world, translated_path, 0);
+        save_world(mzx_world, translated_path, 0, WORLD_VERSION);
 
       free(translated_path);
       break;

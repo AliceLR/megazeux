@@ -160,18 +160,21 @@ int export_type(struct world *mzx_world)
   struct dialog di;
   const char *radio_strings[] =
   {
-    "Board file (MZB)", "Character set (CHR)",
-    "Palette (PAL)", "Sound effects (SFX)"
+    "Board file (MZB)",
+    "Character set (CHR)",
+    "Palette (PAL)",
+    "Sound effects (SFX)",
+    "Downver. world (MZX)",
   };
 
   set_context(77);
 
   elements[0] = construct_radio_button(2, 3, radio_strings,
-   4, 19, &export_choice);
-  elements[1] = construct_button(5, 8, "OK", 0);
-  elements[2] = construct_button(15, 8, "Cancel", -1);
+   5, 19, &export_choice);
+  elements[1] = construct_button(5, 9, "OK", 0);
+  elements[2] = construct_button(15, 9, "Cancel", -1);
 
-  construct_dialog(&di, "Export as:", 26, 5, 28, 11,
+  construct_dialog(&di, "Export as:", 26, 5, 28, 12,
    elements, 3, 0);
 
   dialog_result = run_dialog(mzx_world, &di);
@@ -192,9 +195,12 @@ int import_type(struct world *mzx_world)
   struct dialog di;
   const char *radio_strings[] =
   {
-    "Board file (MZB)", "Character set (CHR)",
-    "World file (MZX)", "Palette (PAL)",
-    "Sound effects (SFX)", "MZM (choose pos.)"
+    "Board file (MZB)",
+    "Character set (CHR)",
+    "World file (MZX)",
+    "Palette (PAL)",
+    "Sound effects (SFX)",
+    "MZM (choose pos.)"
   };
 
   set_context(77);

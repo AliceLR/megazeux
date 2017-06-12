@@ -1865,11 +1865,20 @@ int save_magic(const char magic_string[5])
   }
 }
 
-int save_world(struct world *mzx_world, const char *file, int savegame)
-// FIXME: world_version
+int save_world(struct world *mzx_world, const char *file, int savegame,
+ int world_version)
 {
 #ifdef CONFIG_DEBYTECODE
   FILE *fp;
+
+  // TODO we'll cross this bridge when we need to. That shouldn't be
+  // until debytecode gets an actual release, though.
+
+  if(world_version == WORLD_VERSION_PREV)
+  {
+    error("Downver. not currently supported by debytecode.", 1, 8, 0);
+    return -1;
+  }
 
   if(!savegame)
   {
@@ -1886,7 +1895,7 @@ int save_world(struct world *mzx_world, const char *file, int savegame)
           // If it's non-debytecode, abort
           if(old_version < VERSION_PROGRAM_SOURCE)
           {
-            error_message(E_DBC_WORLD_OVERWRITE_OLD, old_version, file);
+            error_message(E_DBC_WORLD_OVERWRITE_OLD, old_version, NULL);
             fclose(fp);
             return -1;
           }
@@ -1895,7 +1904,7 @@ int save_world(struct world *mzx_world, const char *file, int savegame)
       fclose(fp);
     }
   }
-#endif
+#endif /* CONFIG_DEBYTECODE */
 
   // Prepare input pos
   if(!mzx_world->input_is_dir && mzx_world->input_file)
@@ -1921,15 +1930,27 @@ int save_world(struct world *mzx_world, const char *file, int savegame)
     mzx_world->temp_output_pos = 0;
   }
 
-  //if (world_version > WORLD_LEGACY_FORMAT_VERSION)
+#ifdef CONFIG_EDITOR
+  if(world_version == WORLD_VERSION_PREV)
+  {
+    return legacy_save_world(mzx_world, file, savegame);
+  }
+  else
+#endif
+
+  if(world_version == WORLD_VERSION)
   {
     return save_world_zip(mzx_world, file, savegame, WORLD_VERSION);
   }
 
-  //else
-  //{
-  //  return legacy_save_world(mzx_world, file, savegame);
-  //}
+  else
+  {
+    fprintf(stderr,
+     "ERROR: Attempted to save incompatible world version %d.%d! Aborting!\n",
+     (world_version >> 8) & 0xFF, world_version & 0xFF);
+
+    return -1;
+  }
 }
 
 __editor_maybe_static

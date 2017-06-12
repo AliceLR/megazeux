@@ -49,6 +49,7 @@ static int cmp_robots(const void *dest, const void *src)
 }
 
 
+#ifdef CONFIG_EDITOR
 static void save_RLE2_plane(char *plane, FILE *fp, int size)
 {
   int i, runsize;
@@ -79,6 +80,8 @@ static void save_RLE2_plane(char *plane, FILE *fp, int size)
     }
   }
 }
+#endif /* CONFIG_EDITOR */
+
 
 static int load_RLE2_plane(char *plane, FILE *fp, int size)
 {
@@ -120,6 +123,7 @@ static int load_RLE2_plane(char *plane, FILE *fp, int size)
 }
 
 
+#ifdef CONFIG_EDITOR
 int legacy_save_board(struct world *mzx_world, struct board *cur_board,
  FILE *fp, int savegame, int file_version)
 {
@@ -286,6 +290,7 @@ int legacy_save_board(struct world *mzx_world, struct board *cur_board,
 
   return (ftell(fp) - start_location);
 }
+#endif /* CONFIG_EDITOR */
 
 
 int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,

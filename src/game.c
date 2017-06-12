@@ -2231,7 +2231,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
               {
                 strcpy(curr_sav, save_game);
                 // Save entire game
-                save_world(mzx_world, curr_sav, 1);
+                save_world(mzx_world, curr_sav, 1, WORLD_VERSION);
               }
 
               update_event_status();
@@ -2420,7 +2420,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
              SENSOR)))
             {
               // Save entire game
-              save_world(mzx_world, curr_sav, 1);
+              save_world(mzx_world, curr_sav, 1, WORLD_VERSION);
             }
           }
           break;

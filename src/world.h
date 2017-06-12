@@ -103,9 +103,13 @@ __M_BEGIN_DECLS
  */
 #define WORLD_VERSION      0x025A
 
-/* See the downver.c tool for more information. Please, if you bump the
- * WORLD_VERSION, always make sure this is updated with its previous
- * value. Therefore, users can always downgrade their work to an
+/* The world version that worlds will be saved as when Export Downver. World
+ * is used from the editor. This function was previously fulfilled by downver,
+ * but the increase in complexity of the world file made maintaining downver
+ * infeasible.
+ *
+ * If you increase WORLD_VERSION, always make sure this is updated with its
+ * previous value. Therefore, users can always downgrade their work to an
  * older version (if it at all makes sense to do so).
  */
 #define WORLD_VERSION_PREV 0x0254
@@ -115,6 +119,7 @@ __M_BEGIN_DECLS
 #undef  WORLD_VERSION
 #define WORLD_VERSION      0x0300
 #undef  WORLD_VERSION_PREV
+#define WORLD_VERSION_PREV 0x025A
 #endif
 
 enum file_prop
@@ -163,7 +168,7 @@ CORE_LIBSPEC int world_magic(const char magic_string[3]);
 CORE_LIBSPEC int save_magic(const char magic_string[5]);
 
 CORE_LIBSPEC int save_world(struct world *mzx_world, const char *file,
- int savegame);
+ int savegame, int world_version);
 CORE_LIBSPEC bool reload_world(struct world *mzx_world, const char *file,
  int *faded);
 CORE_LIBSPEC void clear_world(struct world *mzx_world);

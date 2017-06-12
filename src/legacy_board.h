@@ -29,8 +29,10 @@ __M_BEGIN_DECLS
 #include "board_struct.h"
 #include "world_struct.h"
 
+#ifdef CONFIG_EDITOR
 CORE_LIBSPEC int legacy_save_board(struct world *mzx_world,
  struct board *cur_board, FILE *fp, int savegame, int version);
+#endif
 
 CORE_LIBSPEC int legacy_load_board_direct(struct world *mzx_world,
  struct board *cur_board, FILE *fp, int data_size, int savegame, int version);
