@@ -199,7 +199,7 @@ BUGFIXES
   when playing SMZX games. This is only available to renderers
   that support unbound sprites. (Lancer-X)
 + Changing from SMZX mode 1 to 0 correctly restores the palette.
-(Lancer-X)
+  (Lancer-X)
 
 + Debytecode: SAVE_WORLD is no longer supported.
 
