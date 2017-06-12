@@ -27,7 +27,7 @@ __M_BEGIN_DECLS
 #include "platform.h"
 #include "keysym.h"
 
-#define UPDATE_DELAY 30
+#define UPDATE_DELAY 16
 
 #define KEY_REPEAT_STACK_SIZE 32
 
