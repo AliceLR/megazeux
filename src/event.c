@@ -471,6 +471,7 @@ void update_event_status_intake(void)
     last_update_time = get_ticks();
 
   delay_ticks = UPDATE_DELAY - (get_ticks() - last_update_time);
+  if (delay_ticks < 1) delay_ticks = 1;
 
   last_update_time = get_ticks();
 
