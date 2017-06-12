@@ -590,19 +590,23 @@ bool __update_event_status(void)
   return rval;
 }
 
-void __wait_event(void)
+void __wait_event(int timeout)
 {
   SDL_Event event;
+  int anyEvent;
 
   // FIXME: WaitEvent with MSVC hangs the render cycle, so this is, hopefully,
   //        a short-term fix.
   #ifdef MSVC_H
-    SDL_PollEvent(&event);
+    anyEvent = SDL_PollEvent(&event);
   #else
-    SDL_WaitEvent(&event);
+    if (!timeout) {
+      anyEvent = SDL_WaitEvent(&event);
+    } else {
+      anyEvent = SDL_WaitEventTimeout(&event, timeout);
+    }
   #endif
-
-  process_event(&event);
+  if (anyEvent) process_event(&event);
 }
 
 void real_warp_mouse(Uint32 x, Uint32 y)

@@ -200,7 +200,7 @@ int intake(struct world *mzx_world, char *string, int max_len,
     else
     {
       update_screen();
-      update_event_status_delay();
+      update_event_status_intake();
       key = get_key(keycode_internal);
       place = 0;
 

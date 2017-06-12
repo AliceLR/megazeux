@@ -1068,12 +1068,14 @@ bool __update_event_status(void)
   return rval;
 }
 
-void __wait_event(void)
+void __wait_event(int timeout)
 {
   mqmsg_t ev;
 
   if(!eq_inited)
     return;
+
+  if (timeout) delay(timeout);
 
   if(MQ_Receive(eq, &ev, MQ_MSG_BLOCK))
   {

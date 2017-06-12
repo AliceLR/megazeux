@@ -122,7 +122,7 @@ int error(const char *string, unsigned int type, unsigned int options,
   // Get key
   do
   {
-    wait_event();
+    wait_event(0);
     t1 = get_key(keycode_internal);
 
     //Exit event--mimic Escape
