@@ -1179,8 +1179,9 @@ bool init_video(struct config_info *conf, const char *caption)
   if(!set_graphics_output(conf))
     return false;
 
-  // These values (the defaults, actually) are special and tell MZX to
-  // use 640x480 because hahahahahahahahahahahahahahahahaha
+  // By default, use a resolution of 640x480 if nothing else was
+  // provided. We should communicate with the renderer to get
+  // the desktop resolution.
   if(conf->resolution_width == -1 && conf->resolution_height == -1)
   {
     graphics.resolution_width = 640;
