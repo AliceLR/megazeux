@@ -1098,7 +1098,7 @@ static void init_layers(void)
 
   select_layer(UI_LAYER);
 
-  graphics.layer_count = 3;
+  blank_layers();
 }
 
 void select_layer(Uint32 layer)
@@ -1179,8 +1179,9 @@ bool init_video(struct config_info *conf, const char *caption)
   if(!set_graphics_output(conf))
     return false;
 
-  // These values (the defaults, actually) are special and tell MZX to try
-  // to use the current desktop resolution as the fullscreen resolution
+  // By default, use a resolution of 640x480 if nothing else was
+  // provided. We should communicate with the renderer to get
+  // the desktop resolution.
   if(conf->resolution_width == -1 && conf->resolution_height == -1)
   {
     graphics.resolution_width = 640;
