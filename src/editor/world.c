@@ -360,14 +360,12 @@ bool append_world(struct world *mzx_world, const char *file)
   if(zp)
   {
     ret = append_world_zip(mzx_world, zp, file_version);
-    zip_close(zp, NULL);
   }
   else
 
   if(fp)
   {
     ret = append_world_legacy(mzx_world, fp, file_version);
-    fclose(fp);
   }
 
   // Remove any null boards
