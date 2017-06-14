@@ -1746,12 +1746,17 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
 
       // Defer to the board loader.
       case FPROP_BOARD_INFO:
-        mzx_world->board_list[board_id] =
-         load_board_allocate(mzx_world, zp, savegame, file_version, board_id);
+      {
+        if((int)board_id < mzx_world->num_boards)
+        {
+          mzx_world->board_list[board_id] =
+           load_board_allocate(mzx_world, zp, savegame, file_version, board_id);
 
-        store_board_to_extram(mzx_world->board_list[board_id]);
-        meter_update_screen(&meter_curr, meter_target);
+          store_board_to_extram(mzx_world->board_list[board_id]);
+          meter_update_screen(&meter_curr, meter_target);
+        }
         break;
+      }
 
       case FPROP_BOARD_BID:
       case FPROP_BOARD_BPR:
@@ -2702,6 +2707,7 @@ void clear_world(struct world *mzx_world)
     clear_board(board_list[i]);
   }
   free(board_list);
+  mzx_world->current_board_id = 0;
   mzx_world->current_board = NULL;
   mzx_world->board_list = NULL;
 

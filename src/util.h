@@ -160,20 +160,20 @@ struct memfile
   char *end;
 };
 
-struct memfile *mfopen(const void *src, size_t len);
-void mfopen_static(const void *src, size_t len, struct memfile *mf);
-int mfclose(struct memfile *mf);
-int mfhasspace(size_t len, struct memfile *mf);
-int mfgetc(struct memfile *mf);
-int mfgetw(struct memfile *mf);
-int mfgetd(struct memfile *mf);
-int mfputc(int ch, struct memfile *mf);
-void mfputw(int ch, struct memfile *mf);
-void mfputd(int ch, struct memfile *mf);
-int mfread(void *dest, size_t len, size_t count, struct memfile *mf);
-int mfwrite(const void *src, size_t len, size_t count, struct memfile *mf);
-int mfseek(struct memfile *mf, int offs, int code);
-int mftell(struct memfile *mf);
+CORE_LIBSPEC struct memfile *mfopen(const void *src, size_t len);
+CORE_LIBSPEC void mfopen_static(const void *src, size_t len, struct memfile *mf);
+CORE_LIBSPEC int mfclose(struct memfile *mf);
+CORE_LIBSPEC int mfhasspace(size_t len, struct memfile *mf);
+CORE_LIBSPEC int mfgetc(struct memfile *mf);
+CORE_LIBSPEC int mfgetw(struct memfile *mf);
+CORE_LIBSPEC int mfgetd(struct memfile *mf);
+CORE_LIBSPEC int mfputc(int ch, struct memfile *mf);
+CORE_LIBSPEC void mfputw(int ch, struct memfile *mf);
+CORE_LIBSPEC void mfputd(int ch, struct memfile *mf);
+CORE_LIBSPEC int mfread(void *dest, size_t len, size_t count, struct memfile *mf);
+CORE_LIBSPEC int mfwrite(const void *src, size_t len, size_t count, struct memfile *mf);
+CORE_LIBSPEC int mfseek(struct memfile *mf, int offs, int code);
+CORE_LIBSPEC int mftell(struct memfile *mf);
 
 #if defined(__WIN32__) && defined(__STRICT_ANSI__)
 CORE_LIBSPEC int strcasecmp(const char *s1, const char *s2);

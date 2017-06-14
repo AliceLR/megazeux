@@ -3,6 +3,7 @@
  * Copyright (C) 1996 Greg Janson
  * Copyright (C) 1999 Charles Goetzman
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
+ * Copyright (C) 2017 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -28,7 +29,10 @@
 #include "../world.h"
 #include "../legacy_board.h"
 #include "../idput.h"
+#include "../util.h"
 #include "../zip.h"
+
+#include "../world_prop.h"
 
 #include "board.h"
 #include "robot.h"
@@ -146,30 +150,44 @@ static const unsigned char def_id_chars[455] =
   0, 0, 0, 0, 0, 0  /* 122-127 */
 };
 
-bool append_world(struct world *mzx_world, const char *file)
+
+static void append_world_refactor_board(struct board *cur_board,
+ int old_num_boards)
 {
-  char ignore[BOARD_NAME_SIZE];
-  int i, i2;
-  int num_boards, old_num_boards = mzx_world->num_boards;
-  int last_pos;
+  int board_width = cur_board->board_width;
+  int board_height = cur_board->board_height;
+  char *level_id = cur_board->level_id;
+  char *level_param = cur_board->level_param;
   int offset;
   int d_flag;
+  int i;
+
+  // Offset all entrances and exits
+  for(offset = 0; offset < board_width * board_height; offset++)
+  {
+    d_flag = flags[(int)level_id[offset]];
+
+    if((d_flag & A_ENTRANCE) && (level_param[offset] != NO_BOARD))
+    {
+      level_param[offset] += old_num_boards;
+    }
+  }
+
+  for(i = 0; i < 4; i++)
+  {
+    if(cur_board->board_dir[i] != NO_BOARD)
+      cur_board->board_dir[i] += old_num_boards;
+  }
+}
+
+
+static bool append_world_legacy(struct world *mzx_world, FILE *fp,
+ int file_version)
+{
+  int i;
+  int num_boards, old_num_boards = mzx_world->num_boards;
+  int last_pos;
   struct board *cur_board;
-  int board_width, board_height;
-  char *level_id, *level_param;
-  int input_version;
-
-  struct zip_archive *zp;
-  FILE *fp;
-
-  try_load_world(mzx_world, &zp, &fp, file, false, &input_version, ignore);
-
-  // FIXME zip support
-  if(zp)
-    zip_close(zp, NULL);
-
-  if(!fp)
-    return false;
 
   fseek(fp, 4234, SEEK_SET);
 
@@ -208,8 +226,7 @@ bool append_world(struct world *mzx_world, const char *file)
   for(i = old_num_boards; i < old_num_boards + num_boards; i++)
   {
     mzx_world->board_list[i] =
-     legacy_load_board_allocate(mzx_world, fp, 0, input_version);
-    cur_board = mzx_world->board_list[i];
+     legacy_load_board_allocate(mzx_world, fp, 0, file_version);
   }
 
   // Go back to where the names are
@@ -229,36 +246,136 @@ bool append_world(struct world *mzx_world, const char *file)
       // Also optimize out null objects
       optimize_null_objects(cur_board);
 
-      board_width = cur_board->board_width;
-      board_height = cur_board->board_height;
-      level_id = cur_board->level_id;
-      level_param = cur_board->level_param;
+      // Fix exits
+      append_world_refactor_board(cur_board, old_num_boards);
+    }
+  }
 
-      // ALSO offset all entrances and exits
-      for(offset = 0; offset < board_width * board_height; offset++)
+  fclose(fp);
+  return true;
+}
+
+
+#define WPROP_NUM_BOARDS 0x0008
+
+static int append_world_zip_get_num_boards(const void *buffer, int buf_size)
+{
+  struct memfile mf;
+  struct memfile prop;
+  int ident;
+  int size;
+
+  mfopen_static(buffer, buf_size, &mf);
+
+  while(next_prop(&prop, &ident, &size, &mf))
+    if(ident == WPROP_NUM_BOARDS)
+      return load_prop_int(size, &prop);
+
+  return 0;
+}
+
+
+static bool append_world_zip(struct world *mzx_world, struct zip_archive *zp,
+ int file_version)
+{
+  struct board *cur_board;
+
+  unsigned int file_id;
+  unsigned int board_id;
+
+  int old_num_boards = mzx_world->num_boards;
+  int num_boards;
+  int result;
+  int i;
+
+  // Since we went through try_load_world, the world info has been loaded
+  // and is valid. This is all we need it for, so throw it away afterward.
+  num_boards = append_world_zip_get_num_boards(
+   mzx_world->raw_world_info, mzx_world->raw_world_info_size);
+
+  free(mzx_world->raw_world_info);
+  mzx_world->raw_world_info = NULL;
+  mzx_world->raw_world_info_size = 0;
+
+  if(num_boards + old_num_boards >= MAX_BOARDS)
+    num_boards = MAX_BOARDS - old_num_boards;
+
+  mzx_world->num_boards += num_boards;
+  mzx_world->num_boards_allocated += num_boards;
+  mzx_world->board_list =
+   crealloc(mzx_world->board_list,
+   sizeof(struct board *) * (old_num_boards + num_boards));
+
+  for(i = old_num_boards; i < old_num_boards + num_boards; i++)
+  {
+    while(1)
+    {
+      result = zip_get_next_prop(zp, &file_id, &board_id, NULL);
+
+      if(result != ZIP_SUCCESS)
       {
-        d_flag = flags[(int)level_id[offset]];
+        mzx_world->board_list[i] = NULL;
+        break;
+      }
+      else
 
-        if((d_flag & A_ENTRANCE) && (level_param[offset] != NO_BOARD))
-        {
-          level_param[offset] += old_num_boards;
-        }
+      if(file_id != FPROP_BOARD_INFO)
+      {
+        zip_skip_file(zp);
+        continue;
       }
 
-      for(i2 = 0; i2 < 4; i2++)
+      else
       {
-        if(cur_board->board_dir[i2] != NO_BOARD)
-          cur_board->board_dir[i2] += old_num_boards;
+        cur_board = load_board_allocate(mzx_world, zp, 0,
+         file_version, board_id);
+
+        mzx_world->board_list[i] = cur_board;
+
+        if(cur_board)
+          append_world_refactor_board(cur_board, old_num_boards);
+
+        break;
       }
     }
+  }
+
+  zip_close(zp, NULL);
+  return true;
+}
+
+
+bool append_world(struct world *mzx_world, const char *file)
+{
+  char ignore[BOARD_NAME_SIZE];
+  int file_version;
+
+  bool ret = false;
+
+  struct zip_archive *zp;
+  FILE *fp;
+
+  try_load_world(mzx_world, &zp, &fp, file, false, &file_version, ignore);
+
+  if(zp)
+  {
+    ret = append_world_zip(mzx_world, zp, file_version);
+    zip_close(zp, NULL);
+  }
+  else
+
+  if(fp)
+  {
+    ret = append_world_legacy(mzx_world, fp, file_version);
+    fclose(fp);
   }
 
   // Remove any null boards
   optimize_null_boards(mzx_world);
 
-  fclose(fp);
-  return true;
+  return ret;
 }
+
 
 // Create a new, blank, world, suitable for editing.
 void create_blank_world(struct world *mzx_world)

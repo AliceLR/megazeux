@@ -459,7 +459,7 @@ int get_and_reset_error_count(void)
 
 void set_error_suppression(enum error_code id, int value)
 {
-  suppress_errors[id] = value;
+  suppress_errors[id] = (char)value;
 }
 
 void reset_error_suppression(void)

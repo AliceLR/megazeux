@@ -24,8 +24,8 @@
 
 __M_BEGIN_DECLS
 
-#include <util.h>
 
+#include "util.h"
 
 // Static functions for world/board/robot IO. Include in those C files only.
 

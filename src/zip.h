@@ -26,7 +26,7 @@ __M_BEGIN_DECLS
 
 #include <stdint.h>
 
-#include "world_struct.h"
+#include "util.h"
 
 #define ZIP_M_NONE 0
 #define ZIP_M_DEFLATE 8
@@ -151,6 +151,7 @@ enum zip_error zread(void *destBuf, uint32_t readLen, struct zip_archive *zp);
 enum zip_error zip_get_next_name(struct zip_archive *zp,
  char *name, int name_buffer_size);
 
+CORE_LIBSPEC
 enum zip_error zip_get_next_prop(struct zip_archive *zp,
  unsigned int *prop_id, unsigned int *board_id, unsigned int *robot_id);
 
@@ -168,7 +169,10 @@ enum zip_error zip_read_open_mem_stream(struct zip_archive *zp,
 enum zip_error zip_read_close_mem_stream(struct zip_archive *zp);
 
 enum zip_error zip_rewind(struct zip_archive *zp);
+
+CORE_LIBSPEC
 enum zip_error zip_skip_file(struct zip_archive *zp);
+
 enum zip_error zip_read_file(struct zip_archive *zp,
  void *destBuf, uint32_t destLen, uint32_t *readLen);
 

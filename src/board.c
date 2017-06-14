@@ -381,7 +381,7 @@ static int load_board_info(struct board *cur_board, struct zip_archive *zp,
   unsigned int actual_size;
   struct memfile mf;
   struct memfile prop;
-  int last_ident;
+  int last_ident = -1;
   int ident;
   int size;
   int v;
@@ -431,21 +431,21 @@ static int load_board_info(struct board *cur_board, struct zip_archive *zp,
 
       case BPROP_NUM_ROBOTS:
         err_if_missing(BPROP_OVERLAY_MODE);
-        v = load_prop_int(size, &prop);
+        v = load_prop_int(size, &prop) & 0xFF;
         cur_board->num_robots = v;
         cur_board->num_robots_allocated = v;
         break;
 
       case BPROP_NUM_SCROLLS:
         err_if_missing(BPROP_NUM_ROBOTS);
-        v = load_prop_int(size, &prop);
+        v = load_prop_int(size, &prop) & 0xFF;
         cur_board->num_scrolls = v;
         cur_board->num_scrolls_allocated = v;
         break;
 
       case BPROP_NUM_SENSORS:
         err_if_missing(BPROP_NUM_SCROLLS);
-        v = load_prop_int(size, &prop);
+        v = load_prop_int(size, &prop) & 0xFF;
         cur_board->num_sensors = v;
         cur_board->num_sensors_allocated = v;
         break;
@@ -691,14 +691,15 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
 
   unsigned int i;
 
-  int has_bid;
-  int has_bpr;
-  int has_bco;
-  int has_uid;
-  int has_upr;
-  int has_uco;
-  int has_och;
-  int has_oco;
+  int has_base = 0;
+  int has_bid = 0;
+  int has_bpr = 0;
+  int has_bco = 0;
+  int has_uid = 0;
+  int has_upr = 0;
+  int has_uco = 0;
+  int has_och = 0;
+  int has_oco = 0;
 
   cur_board->world_version = mzx_world->version;
   default_board(cur_board);
@@ -716,6 +717,7 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
         if(load_board_info(cur_board, zp, savegame, file_version))
           goto err_invalid;
 
+        has_base = 1;
         board_size = cur_board->board_width * cur_board->board_height;
 
         cur_board->level_id = ccalloc(1, board_size);
@@ -754,6 +756,9 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
 
       case FPROP_BOARD_BID:
       {
+        if(!has_base)
+          goto err_invalid;
+
         has_bid = 1;
         zip_read_file(zp, cur_board->level_id, board_size, NULL);
         break;
@@ -761,6 +766,9 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
 
       case FPROP_BOARD_BPR:
       {
+        if(!has_base)
+          goto err_invalid;
+
         has_bpr = 1;
         zip_read_file(zp, cur_board->level_param, board_size, NULL);
         break;
@@ -768,6 +776,9 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
 
       case FPROP_BOARD_BCO:
       {
+        if(!has_base)
+          goto err_invalid;
+
         has_bco = 1;
         zip_read_file(zp, cur_board->level_color, board_size, NULL);
         break;
@@ -775,14 +786,19 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
 
       case FPROP_BOARD_UID:
       {
+        if(!has_base)
+          goto err_invalid;
+
         has_uid = 1;
         zip_read_file(zp, cur_board->level_under_id, board_size, NULL);
-
         break;
       }
 
       case FPROP_BOARD_UPR:
       {
+        if(!has_base)
+          goto err_invalid;
+
         has_upr = 1;
         zip_read_file(zp, cur_board->level_under_param, board_size, NULL);
         break;
@@ -790,6 +806,9 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
 
       case FPROP_BOARD_UCO:
       {
+        if(!has_base)
+          goto err_invalid;
+
         has_uco = 1;
         zip_read_file(zp, cur_board->level_under_color, board_size, NULL);
         break;
@@ -797,6 +816,9 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
 
       case FPROP_BOARD_OCH:
       {
+        if(!has_base)
+          goto err_invalid;
+
         if(cur_board->overlay_mode)
         {
           has_och = 1;
@@ -812,6 +834,9 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
 
       case FPROP_BOARD_OCO:
       {
+        if(!has_base)
+          goto err_invalid;
+
         if(cur_board->overlay_mode)
         {
           has_oco = 1;
@@ -827,6 +852,9 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
 
       case FPROP_ROBOT:
       {
+        if(!has_base)
+          goto err_invalid;
+
         if(robot_id_read <= num_robots && !robot_list[robot_id_read])
         {
           struct robot *cur_robot;
@@ -847,6 +875,9 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
 
       case FPROP_SCROLL:
       {
+        if(!has_base)
+          goto err_invalid;
+
         if(robot_id_read <= num_scrolls && !scroll_list[robot_id_read])
         {
           scroll_list[robot_id_read] = load_scroll_allocate(zp);
@@ -860,6 +891,9 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
 
       case FPROP_SENSOR:
       {
+        if(!has_base)
+          goto err_invalid;
+
         if(robot_id_read <= num_sensors && !sensor_list[robot_id_read])
         {
           sensor_list[robot_id_read] = load_sensor_allocate(zp);
@@ -875,6 +909,9 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
         break;
     }
   }
+
+  if(!has_base)
+    goto err_invalid;
 
   if(!has_bid)
     error_message(E_ZIP_BOARD_MISSING_DATA, (int)board_id, "bid");
