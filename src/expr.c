@@ -120,9 +120,7 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
   // Note: initial open paren already skipped.
   do
   {
-    // Get next operand -- we need to skip spaces first
-    while(isspace(*expression))
-      expression++;
+    // Get next operand
 
 
     // Figure out what our operand actually is.
@@ -130,6 +128,10 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
 
     if(!(state & EXPR_STATE_START_OPERAND))
     {
+      // We need to skip spaces, first
+      while(isspace(*expression))
+        expression++;
+
       current_char = *expression;
       expression++;
 
