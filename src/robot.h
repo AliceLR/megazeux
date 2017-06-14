@@ -124,8 +124,8 @@ struct robot *load_robot_allocate(struct world *mzx_world,
 struct scroll *load_scroll_allocate(struct zip_archive *zp);
 struct sensor *load_sensor_allocate(struct zip_archive *zp);
 
-size_t save_robot_calculate_size(struct robot *cur_robot, int savegame,
- int file_version);
+size_t save_robot_calculate_size(struct world *mzx_world,
+ struct robot *cur_robot, int savegame, int file_version);
 
 void save_robot(struct world *mzx_world, struct robot *cur_robot,
  struct zip_archive *zp, int savegame, int file_version,

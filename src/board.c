@@ -390,7 +390,7 @@ static int load_board_info(struct board *cur_board, struct zip_archive *zp,
 
   buffer = cmalloc(actual_size);
 
-  zip_read_file(zp, NULL, 0, buffer, actual_size, &actual_size);
+  zip_read_file(zp, buffer, actual_size, &actual_size);
 
   mfopen_static(buffer, actual_size, &mf);
 
@@ -755,32 +755,28 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
       case FPROP_BOARD_BID:
       {
         has_bid = 1;
-        zip_read_file(zp, NULL, 0, cur_board->level_id,
-         board_size, NULL);
+        zip_read_file(zp, cur_board->level_id, board_size, NULL);
         break;
       }
 
       case FPROP_BOARD_BPR:
       {
         has_bpr = 1;
-        zip_read_file(zp, NULL, 0, cur_board->level_param,
-         board_size, NULL);
+        zip_read_file(zp, cur_board->level_param, board_size, NULL);
         break;
       }
 
       case FPROP_BOARD_BCO:
       {
         has_bco = 1;
-        zip_read_file(zp, NULL, 0, cur_board->level_color,
-         board_size, NULL);
+        zip_read_file(zp, cur_board->level_color, board_size, NULL);
         break;
       }
 
       case FPROP_BOARD_UID:
       {
         has_uid = 1;
-        zip_read_file(zp, NULL, 0, cur_board->level_under_id,
-         board_size, NULL);
+        zip_read_file(zp, cur_board->level_under_id, board_size, NULL);
 
         break;
       }
@@ -788,16 +784,14 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
       case FPROP_BOARD_UPR:
       {
         has_upr = 1;
-        zip_read_file(zp, NULL, 0, cur_board->level_under_param,
-         board_size, NULL);
+        zip_read_file(zp, cur_board->level_under_param, board_size, NULL);
         break;
       }
 
       case FPROP_BOARD_UCO:
       {
         has_uco = 1;
-        zip_read_file(zp, NULL, 0, cur_board->level_under_color,
-         board_size, NULL);
+        zip_read_file(zp, cur_board->level_under_color, board_size, NULL);
         break;
       }
 
@@ -806,8 +800,7 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
         if(cur_board->overlay_mode)
         {
           has_och = 1;
-          zip_read_file(zp, NULL, 0, cur_board->overlay,
-           board_size, NULL);
+          zip_read_file(zp, cur_board->overlay, board_size, NULL);
         }
         else
         {
@@ -822,8 +815,7 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
         if(cur_board->overlay_mode)
         {
           has_oco = 1;
-          zip_read_file(zp, NULL, 0, cur_board->overlay_color,
-           board_size, NULL);
+          zip_read_file(zp, cur_board->overlay_color, board_size, NULL);
         }
         else
         {

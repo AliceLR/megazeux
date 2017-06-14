@@ -2,6 +2,7 @@
  *
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  * Copyright (C) 2017 Dr Lancer-X <drlancer@megazeux.org>
+ * Copyright (C) 2017 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -27,8 +28,17 @@
 #include "error.h"
 #include "idput.h"
 #include "world.h"
-#include "legacy_robot.h"
 #include "robot.h"
+#include "legacy_world.h"
+#include "legacy_robot.h"
+#include "zip.h"
+
+
+/* The MZM format hasn't changed a whole lot with zips; only the robots
+ * section is really different. This is because MZMs are in general meant to
+ * be a raw data format, and furthermore accessing the raw data might be useful.
+ */
+
 
 // This is assumed to not go over the edges.
 
@@ -38,9 +48,9 @@ static void save_mzm_common(struct world *mzx_world, int start_x, int start_y, i
     int storage_mode = 0;
     void *buffer;
     unsigned char *bufferPtr;
-    int robot_sizes[256];
 
     size_t mzm_size;
+    int num_robots_alloc = 0;
 
     if(mode)
       storage_mode = 1;
@@ -65,9 +75,7 @@ static void save_mzm_common(struct world *mzx_world, int start_x, int start_y, i
         struct board *src_board = mzx_world->current_board;
         struct robot **robot_list = src_board->robot_list_name_sorted;
         int num_robots_active = src_board->num_robots_active;
-        int rid;
         int offset;
-        size_t robot_size;
         int i;
 
         for (i = 0; i < num_robots_active; i++) {
@@ -79,16 +87,19 @@ static void save_mzm_common(struct world *mzx_world, int start_x, int start_y, i
             {
               offset = cur_robot->xpos + (cur_robot->ypos * src_board->board_width);
               assert(is_robot((enum thing)src_board->level_id[offset]));
-              rid = src_board->level_param[offset];
-              robot_size = legacy_save_robot_calculate_size(mzx_world, cur_robot,
+              mzm_size += save_robot_calculate_size(mzx_world, cur_robot,
                savegame, WORLD_VERSION);
-              robot_sizes[rid] = (int)robot_size;
-              mzm_size += robot_size;
+              num_robots_alloc++;
             }
           }
         }
       }
     }
+
+    // Now, we need to add the total overhead of the zip file.
+    // File names are all "r##", so the max name length is 3.
+    mzm_size += zip_bound_total_header_usage(num_robots_alloc, 3);
+
     buffer = alloc(mzm_size, storage);
     bufferPtr = buffer;
     memcpy(bufferPtr, "MZM3", 4);
@@ -110,6 +121,8 @@ static void save_mzm_common(struct world *mzx_world, int start_x, int start_y, i
       // Board, raw
       case 0:
       {
+        struct zip_archive *zp;
+
         struct board *src_board = mzx_world->current_board;
         int board_width = src_board->board_width;
         char *level_id = src_board->level_id;
@@ -173,15 +186,23 @@ static void save_mzm_common(struct world *mzx_world, int start_x, int start_y, i
           offset += line_skip;
         }
 
+        // Get the zip redy 2 go
+        zp = zip_open_mem_write(buffer, mzm_size);
+        robot_table_position = bufferPtr - (unsigned char *)buffer;
+
+        // Get the zip in position. Won't alter the bufferPtr
+        zseek(zp, robot_table_position, SEEK_SET);
+
         // Go back to header to put robot table information
         if(num_robots)
         {
           struct robot **robot_list = src_board->robot_list;
+          char name[4];
 
-          robot_table_position = bufferPtr - (unsigned char *)buffer;
           bufferPtr = buffer;
           bufferPtr += 8;
           // Where the robots will be stored
+          // (not actually necessary anymore)
           mem_putd(robot_table_position, &bufferPtr);
           // Number of robots
           mem_putc(num_robots, &bufferPtr);
@@ -190,17 +211,18 @@ static void save_mzm_common(struct world *mzx_world, int start_x, int start_y, i
           // Savegame mode for robots
           mem_putc(savegame, &bufferPtr);
 
-          // Back to robot table position
-          bufferPtr = buffer;
-          bufferPtr += robot_table_position;
-
+          // Write robots into the zip
           for(i = 0; i < num_robots; i++)
           {
+            sprintf(name, "r%2.2X", i);
+
             // Save each robot
-            legacy_save_robot_to_memory(robot_list[robot_numbers[i]], bufferPtr, savegame, WORLD_VERSION);
-            bufferPtr += robot_sizes[robot_numbers[i]];
+            save_robot(mzx_world, robot_list[robot_numbers[i]], zp,
+             savegame, WORLD_VERSION, name, FPROP_ROBOT, 0, i);
           }
         }
+
+        zip_close(zp, NULL);
 
         break;
       }
@@ -422,7 +444,6 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer, int file
   if(mzm_world_version > WORLD_VERSION)
   {
     error_message(E_MZM_FILE_VERSION_TOO_RECENT, mzm_world_version, name);
-    set_error_suppression(E_MZM_FILE_VERSION_TOO_RECENT, 1);
   }
 
   // If the MZM is a save MZM but we're not loading at runtime, show a message and continue.
@@ -559,6 +580,11 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer, int file
 
           if(num_robots)
           {
+            struct zip_archive *zp;
+            unsigned int file_id;
+            unsigned int robot_id;
+            int result;
+
             struct robot *cur_robot;
             int current_x, current_y;
             int offset;
@@ -566,8 +592,34 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer, int file
             int robot_calculated_size;
             int robot_partial_size;
             int current_position;
+            int dummy;
 
-            robot_partial_size = legacy_calculate_partial_robot_size(savegame_mode, mzm_world_version);
+            // We suppress the errors that will generally occur here and barely
+            // error check the zip functions. Why? This needs to run all the way
+            // through, regardless of whether it finds errors. Otherwise, we'll
+            // get invalid robots with ID=0 littered around the board.
+
+            set_error_suppression(E_WORLD_ROBOT_MISSING, 1);
+            set_error_suppression(E_BOARD_ROBOT_CORRUPT, 1);
+
+            // Reset the error count.
+            get_and_reset_error_count();
+
+            if(mzm_world_version <= WORLD_LEGACY_FORMAT_VERSION)
+            {
+              robot_partial_size =
+               legacy_calculate_partial_robot_size(savegame_mode,
+               mzm_world_version);
+
+              bufferPtr = buffer;
+              bufferPtr += robots_location;
+            }
+
+            else
+            {
+              zp = zip_open_mem_read(buffer, file_length);
+              zip_read_directory(zp);
+            }
 
             // If we're loading a "runtime MZM" then it means that we're loading
             // bytecode. And to do this we must both be in-game and must be
@@ -575,77 +627,115 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer, int file
             // dynamically created MZMs in the editor is still useful, we'll just
             // dummy out the robots.
 
-            // We don't want to see these in any case.
-            set_error_suppression(E_WORLD_ROBOT_MISSING, 1);
-            set_error_suppression(E_BOARD_ROBOT_CORRUPT, 1);
-
             if((savegame_mode > savegame) ||
               (WORLD_VERSION < mzm_world_version))
             {
-              bufferPtr = buffer;
-              bufferPtr += robots_location;
+              dummy = 1;
+            }
 
-              for(i = 0; i < num_robots; i++)
+            for(i = 0; i < num_robots; i++)
+            {
+              cur_robot = cmalloc(sizeof(struct robot));
+
+              current_x = robot_x_locations[i];
+              current_y = robot_y_locations[i];
+
+              // TODO: Skipped legacy robots aren't checked for, so the loaded
+              // chars for dummy robots on clipped MZMs might be off. This
+              // shouldn't matter too often though.
+
+              if(mzm_world_version <= WORLD_LEGACY_FORMAT_VERSION)
               {
-                current_x = robot_x_locations[i];
-                current_y = robot_y_locations[i];
+                create_blank_robot(cur_robot);
 
+                current_position = bufferPtr - (const unsigned char *)buffer;
+
+                // If we fail, we have to continue, or robots won't be dummied
+                // correctly. In this case, seek to the end.
+
+                if(current_position + robot_partial_size <= file_length)
+                {
+                  robot_calculated_size =
+                   legacy_load_robot_calculate_size(bufferPtr, savegame_mode,
+                   mzm_world_version);
+
+                  if(current_position + robot_calculated_size <= file_length)
+                  {
+                    legacy_load_robot_from_memory(mzx_world, cur_robot, bufferPtr,
+                     savegame_mode, mzm_world_version, (int)current_position);
+                  }
+                  else
+                  {
+                    bufferPtr = (const unsigned char*)buffer + file_length;
+                    dummy = 1;
+                  }
+                }
+                else
+                {
+                  bufferPtr = (const unsigned char*)buffer + file_length;
+                  dummy = 1;
+                }
+
+                bufferPtr += robot_calculated_size;
+              }
+
+              // Search the zip until a robot is found.
+              else do
+              {
+                result = zip_get_next_prop(zp, &file_id, NULL, &robot_id);
+
+                if(result != ZIP_SUCCESS)
+                {
+                  // We have to continue, or we'll get screwed up robots.
+                  create_blank_robot(cur_robot);
+                  dummy = 1;
+                  break;
+                }
+                else
+
+                if(file_id != FPROP_ROBOT || (int)robot_id < i)
+                {
+                  // Not a robot or is a skipped robot
+                  zip_skip_file(zp);
+                }
+                else
+
+                if((int)robot_id > i)
+                {
+                  // There's a robot missing.
+                  create_blank_robot(cur_robot);
+                  break;
+                }
+
+                else
+                {
+                  load_robot(mzx_world, cur_robot, zp, savegame_mode,
+                   mzm_world_version);
+                  break;
+                }
+              }
+              while(1);
+
+              if(dummy)
+              {
                 // Unfortunately, getting the actual character for the robot is
                 // kind of a lot of work right now. We have to load it then
                 // throw it away.
 
                 // If this is from a futer version and the format changed, we'll
-                // just end up with an 'R' char, but we don't plan on changing
-                // the robot format until the zip overhaul (which will use
-                // different code).
+                // just end up with an 'R' char, but this shouldn't happen again
                 if(current_x != -1)
                 {
-                  current_position = bufferPtr - (const unsigned char *)buffer;
-
-                  if (current_position + robot_partial_size > file_length)
-                    goto err_invalid;
-                  robot_calculated_size = legacy_load_robot_calculate_size(bufferPtr, savegame_mode, mzm_world_version);
-                  if (current_position + robot_calculated_size > file_length)
-                    goto err_invalid;
-
-                  cur_robot = cmalloc(sizeof(struct robot));
-
-                  cur_robot->world_version = mzx_world->version;
-                  legacy_load_robot_from_memory(mzx_world, cur_robot, bufferPtr,
-                   savegame_mode, mzm_world_version, (int)current_position);
-                  bufferPtr += robot_calculated_size;
                   offset = current_x + (current_y * board_width);
                   level_id[offset] = CUSTOM_BLOCK;
                   level_param[offset] = cur_robot->robot_char;
-                  clear_robot(cur_robot);
                 }
+                clear_robot(cur_robot);
               }
-            }
-            else
-            {
-              // Reset the error count.
-              get_and_reset_error_count();
 
-              bufferPtr = buffer;
-              bufferPtr += robots_location;
-
-              for(i = 0; i < num_robots; i++)
+              else
               {
-                current_position = bufferPtr - (const unsigned char *)buffer;
-
-                if (current_position + robot_partial_size > file_length)
-                  goto err_invalid;
-                robot_calculated_size = legacy_load_robot_calculate_size(bufferPtr, savegame_mode, mzm_world_version);
-                if (current_position + robot_calculated_size > file_length)
-                  goto err_invalid;
-
-                cur_robot = cmalloc(sizeof(struct robot));
                 cur_robot->world_version = mzx_world->version;
-                legacy_load_robot_from_memory(mzx_world, cur_robot, bufferPtr, savegame_mode,
-                  mzm_world_version, bufferPtr - (const unsigned char *)buffer);
-                bufferPtr += robot_calculated_size;
-                current_x = robot_x_locations[i];
-                current_y = robot_y_locations[i];
                 cur_robot->xpos = current_x;
                 cur_robot->ypos = current_y;
 
@@ -689,14 +779,16 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer, int file
                   clear_robot(cur_robot);
                 }
               }
-
-              // If any of errors were encountered, report once
-              if(get_and_reset_error_count())
-              {
-                error_message(E_MZM_ROBOT_CORRUPT, 0, name);
-                set_error_suppression(E_MZM_ROBOT_CORRUPT, 1);
-              }
             }
+
+            if(mzm_world_version > WORLD_LEGACY_FORMAT_VERSION)
+            {
+              zip_close(zp, NULL);
+            }
+
+            // If any errors were encountered, report
+            if(get_and_reset_error_count())
+              goto err_robots;
           }
           break;
         }
@@ -854,9 +946,13 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer, int file
   // 2) they'll get reset after reloading the world.
   return 0;
 
+err_robots:
+  // The main file loaded fine, but there was a problem handling robots
+  error_message(E_MZM_ROBOT_CORRUPT, 0, name);
+  return 0;
+
 err_invalid:
   error_message(E_MZM_FILE_INVALID, 0, name);
-  set_error_suppression(E_MZM_FILE_INVALID, 1);
   return -1;
 }
 
@@ -882,7 +978,6 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
     return success;
   } else {
     error_message(E_MZM_DOES_NOT_EXIST, 0, name);
-    set_error_suppression(E_MZM_DOES_NOT_EXIST, 1);
     return -1;
   }
 }

@@ -352,7 +352,7 @@ int error_message(enum error_code id, int parameter, const char *string)
       break;
 
     case E_MZM_ROBOT_CORRUPT:
-      sprintf(error_mesg, "MZM contains missing or corrupt robots");
+      sprintf(error_mesg, "MZM is missing robots or contains corrupt robots");
       code = 0x6662;
       break;
 

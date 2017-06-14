@@ -389,7 +389,7 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
 
   buffer = cmalloc(actual_size);
 
-  zip_read_file(zp, NULL, 0, buffer, actual_size, NULL);
+  zip_read_file(zp, buffer, actual_size, NULL);
 
   mfopen_static(buffer, actual_size, &mf);
 
@@ -501,7 +501,7 @@ static inline void load_world_info(struct world *mzx_world,
 
     buffer = cmalloc(actual_size);
 
-    zip_read_file(zp, NULL, 0, buffer, actual_size, NULL);
+    zip_read_file(zp, buffer, actual_size, NULL);
   }
 
   else
@@ -873,8 +873,7 @@ static inline int load_world_sfx(struct world *mzx_world,
   if(!mzx_world->custom_sfx_on)
   {
     mzx_world->custom_sfx_on = 1;
-    return zip_read_file(zp, NULL, 0,
-     mzx_world->custom_sfx, NUM_SFX * SFX_SIZE, NULL);
+    return zip_read_file(zp, mzx_world->custom_sfx, NUM_SFX * SFX_SIZE, NULL);
   }
 
   // Already loaded custom SFX; skip
@@ -905,7 +904,7 @@ static inline int load_world_chars(struct world *mzx_world,
   int result;
 
   // FIXME load multiple charsets
-  result = zip_read_file(zp, NULL, 0, buffer, CHAR_SIZE * CHARSET_SIZE, NULL);
+  result = zip_read_file(zp, buffer, CHAR_SIZE * CHARSET_SIZE, NULL);
 
   if(result == ZIP_SUCCESS)
   {
@@ -943,7 +942,7 @@ static inline int load_world_pal(struct world *mzx_world,
   unsigned int i;
   int result;
 
-  result = zip_read_file(zp, NULL, 0, buffer, SMZX_PAL_SIZE*3, &size);
+  result = zip_read_file(zp, buffer, SMZX_PAL_SIZE*3, &size);
   if(result == ZIP_SUCCESS)
   {
     cur = buffer;
@@ -1000,7 +999,7 @@ static inline int load_world_pal_inten(struct world *mzx_world,
   unsigned int i;
   int result;
 
-  result = zip_read_file(zp, NULL, 0, buffer, SMZX_PAL_SIZE, &size);
+  result = zip_read_file(zp, buffer, SMZX_PAL_SIZE, &size);
   if(result == ZIP_SUCCESS)
   {
     cur = buffer;
@@ -1027,8 +1026,7 @@ static inline int load_world_vco(struct world *mzx_world,
 {
   int vlayer_size = mzx_world->vlayer_size;
 
-  return zip_read_file(zp, NULL, 0,
-   mzx_world->vlayer_colors, vlayer_size, NULL);
+  return zip_read_file(zp, mzx_world->vlayer_colors, vlayer_size, NULL);
 }
 
 // Vlayer chars
@@ -1045,8 +1043,7 @@ static inline int load_world_vch(struct world *mzx_world,
 {
   int vlayer_size = mzx_world->vlayer_size;
 
-  return zip_read_file(zp, NULL, 0,
-   mzx_world->vlayer_chars, vlayer_size, NULL);
+  return zip_read_file(zp, mzx_world->vlayer_chars, vlayer_size, NULL);
 }
 
 
@@ -1122,7 +1119,7 @@ static inline int load_world_sprites(struct world *mzx_world,
 
   buffer = cmalloc(actual_size);
 
-  result = zip_read_file(zp, NULL, 0, buffer, actual_size, NULL);
+  result = zip_read_file(zp, buffer, actual_size, NULL);
   if(result != ZIP_SUCCESS)
     goto err_free;
 
@@ -1255,7 +1252,7 @@ static inline int load_world_counters(struct world *mzx_world,
 
   enum zip_error result;
 
-  result = zip_read_open_file_stream(zp, NULL, 0, NULL);
+  result = zip_read_open_file_stream(zp, NULL);
   if(result != ZIP_SUCCESS)
     return result;
 
@@ -1351,7 +1348,7 @@ static inline int load_world_strings(struct world *mzx_world,
 
   enum zip_error result;
 
-  result = zip_read_open_file_stream(zp, NULL, 0, NULL);
+  result = zip_read_open_file_stream(zp, NULL);
   if(result != ZIP_SUCCESS)
     return result;
 

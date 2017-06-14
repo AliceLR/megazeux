@@ -160,8 +160,8 @@ struct memfile
   char *end;
 };
 
-struct memfile *mfopen(char *src, size_t len);
-void mfopen_static(char *src, size_t len, struct memfile *mf);
+struct memfile *mfopen(const void *src, size_t len);
+void mfopen_static(const void *src, size_t len, struct memfile *mf);
 int mfclose(struct memfile *mf);
 int mfhasspace(size_t len, struct memfile *mf);
 int mfgetc(struct memfile *mf);

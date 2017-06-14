@@ -783,22 +783,22 @@ int memsafegets(char *dest, int size, char **src, char *end)
 }
 
 
-struct memfile *mfopen(char *src, size_t len)
+struct memfile *mfopen(const void *src, size_t len)
 {
   struct memfile *mf = cmalloc(sizeof(struct memfile));
 
-  mf->start = src;
-  mf->current = src;
-  mf->end = src + len;
+  mf->start = (char *)src;
+  mf->current = (char *)src;
+  mf->end = (char *)src + len;
 
   return mf;
 }
 
-void mfopen_static(char *src, size_t len, struct memfile *mf)
+void mfopen_static(const void *src, size_t len, struct memfile *mf)
 {
-  mf->start = src;
-  mf->current = src;
-  mf->end = src + len;
+  mf->start = (char *)src;
+  mf->current = (char *)src;
+  mf->end = (char *)src + len;
 }
 
 int mfclose(struct memfile *mf)
