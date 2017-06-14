@@ -26,8 +26,6 @@
 #include "zip.h"
 
 #include "error.h"
-#include "world.h"
-#include "world_struct.h"
 #include "util.h"
 
 
