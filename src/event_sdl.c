@@ -354,12 +354,9 @@ static bool process_event(SDL_Event *event)
       // Because of the way the SDL 1.2 assumption is embedded deeply in
       // the MZX event queue processor, emulate the 1.2 behaviour by waiting
       // for a TEXTINPUT event after a KEYDOWN.
-      if(SDL_WaitEventTimeout(event, 1))
-      {
-        if(event->type == SDL_TEXTINPUT)
-          unicode = event->text.text[0] | event->text.text[1] << 8;
-        else
-          SDL_PushEvent(event);
+      SDL_PumpEvents();
+      if (SDL_PeepEvents(event, 1, SDL_GETEVENT, SDL_TEXTINPUT, SDL_TEXTINPUT)) {
+        unicode = event->text.text[0] | event->text.text[1] << 8;
       }
 #else
       unicode = event->key.keysym.unicode;
@@ -593,19 +590,52 @@ bool __update_event_status(void)
   return rval;
 }
 
-void __wait_event(void)
+#if !SDL_VERSION_ATLEAST(2,0,0)
+static int SDL_WaitEventTimeout(SDL_Event *event, int timeout)
+{
+  // SDL 1.2 doesn't have SDL_WaitEventTimeout. The suggested alternative
+  // is to use timers, but this was simpler and most things won't use this
+  // SDL version anyway.
+
+  int i = timeout;
+  int anyEvent = 0;
+
+  while(timeout>0 && !anyEvent)
+  {
+    i--;
+    delay(1);
+    anyEvent = SDL_PollEvent(event);
+
+    // If an autorepeat triggers, it needs to be processed.
+    if(update_autorepeat_sdl())
+      break;
+
+    // "Fix" awful intake cursor blinking
+    if(!(i&7))
+      update_screen();
+  }
+
+  return anyEvent;
+}
+#endif
+
+void __wait_event(int timeout)
 {
   SDL_Event event;
+  int anyEvent;
 
   // FIXME: WaitEvent with MSVC hangs the render cycle, so this is, hopefully,
   //        a short-term fix.
   #ifdef MSVC_H
-    SDL_PollEvent(&event);
+    anyEvent = SDL_PollEvent(&event);
   #else
-    SDL_WaitEvent(&event);
+    if (!timeout) {
+      anyEvent = SDL_WaitEvent(&event);
+    } else {
+      anyEvent = SDL_WaitEventTimeout(&event, timeout);
+    }
   #endif
-
-  process_event(&event);
+  if (anyEvent) process_event(&event);
 }
 
 void real_warp_mouse(Uint32 x, Uint32 y)

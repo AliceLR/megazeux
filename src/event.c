@@ -401,6 +401,18 @@ static bool update_autorepeat(void)
   return rval;
 }
 
+// event_sdl.c needs this in SDL 1.2 for catching autorepeat non-events while
+// performing wait_event with a timeout.
+
+#if defined(CONFIG_SDL)
+#if !SDL_VERSION_ATLEAST(2,0,0)
+bool update_autorepeat_sdl(void)
+{
+  return update_autorepeat();
+}
+#endif /*SDL_VERSION_ATLEAST*/
+#endif /*CONFIG_SDL*/
+
 bool update_event_status(void)
 {
   struct buffered_status *status = store_status();
@@ -430,7 +442,7 @@ bool update_event_status(void)
   return rval;
 }
 
-void wait_event(void)
+void wait_event(int timeout)
 {
   struct buffered_status *status = store_status();
 
@@ -440,7 +452,7 @@ void wait_event(void)
   status->mouse_button = 0;
   status->exit = 0;
 
-  __wait_event();
+  __wait_event(timeout);
   update_autorepeat();
 }
 
@@ -461,6 +473,21 @@ Uint32 update_event_status_delay(void)
 
   delay(delay_ticks);
   return rval;
+}
+
+void update_event_status_intake(void)
+{
+  int delay_ticks;
+
+  if(!last_update_time)
+    last_update_time = get_ticks();
+
+  delay_ticks = UPDATE_DELAY - (get_ticks() - last_update_time);
+  if (delay_ticks < 1) delay_ticks = 1;
+
+  last_update_time = get_ticks();
+
+  wait_event(delay_ticks);
 }
 
 static enum keycode emit_keysym_wrt_numlock(enum keycode key)

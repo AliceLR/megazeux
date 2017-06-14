@@ -1573,6 +1573,9 @@ static int key_list_box(struct world *mzx_world, struct dialog *di,
 
   *(src->result) = current_choice;
 
+  if(src->result_offset)
+    *(src->result_offset) = src->scroll_offset;
+
   return 0;
 }
 
@@ -1748,6 +1751,9 @@ static int click_list_box(struct world *mzx_world, struct dialog *di,
       }
     }
   }
+
+  if(src->result_offset)
+    *(src->result_offset) = scroll_offset;
 
   return 0;
 }
@@ -1931,9 +1937,10 @@ struct element *construct_number_box(int x, int y,
 
 __editor_maybe_static struct element *construct_list_box(int x, int y,
  const char **choices, int num_choices, int num_choices_visible,
- int choice_length, int return_value, int *result, bool respect_color_codes)
+ int choice_length, int return_value, int *result, int *result_offset,
+ bool respect_color_codes)
 {
-  int scroll_offset = *result - (num_choices_visible / 2);
+  int scroll_offset;
 
   struct list_box *src = cmalloc(sizeof(struct list_box));
   src->choices = choices;
@@ -1941,11 +1948,18 @@ __editor_maybe_static struct element *construct_list_box(int x, int y,
   src->num_choices_visible = num_choices_visible;
   src->choice_length = choice_length;
   src->result = result;
+  src->result_offset = result_offset;
   src->return_value = return_value;
   src->key_position = 0;
   src->last_keypress_time = 0;
   src->clicked_scrollbar = 0;
   src->respect_color_codes = respect_color_codes;
+
+  if(result_offset)
+    scroll_offset = *result_offset;
+
+  else
+    scroll_offset = *result - (num_choices_visible / 2);
 
   if(scroll_offset < 0)
     scroll_offset = 0;
@@ -2538,10 +2552,10 @@ skip_dir:
 
     elements[FILESEL_FILE_LIST] =
      construct_list_box(2, 2, (const char **)file_list, num_files,
-     list_length, 55, 1, &chosen_file, true);
+     list_length, 55, 1, &chosen_file, NULL, true);
     elements[FILESEL_DIR_LIST] =
      construct_list_box(59, 2, (const char **)dir_list, num_dirs,
-     list_length, 15, 2, &chosen_dir, true);
+     list_length, 15, 2, &chosen_dir, NULL, true);
     elements[FILESEL_FILENAME] =
      construct_input_box(2, list_length + 3, "", 55,
      0, ret);

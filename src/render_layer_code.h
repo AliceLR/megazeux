@@ -530,7 +530,7 @@ static inline void RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, RENDERER_ALIG
                   #endif /* RENDERER_CLIP */
                   {
                   #if RENDERER_TR
-                  if (tcol == (int)pcol)
+                  if (tcol == char_idx[pcol])
                     pix = drawPtr[write_pos];
                   #endif /* RENDERER_TR */
                   drawPtr[write_pos] = pix;
@@ -538,7 +538,7 @@ static inline void RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, RENDERER_ALIG
                   
                   write_pos++;
                   #if RENDERER_TR
-                  if (tcol == (int)pcol)
+                  if (tcol == char_idx[pcol])
                     pix = drawPtr[write_pos];
                   #endif /* RENDERER_TR */
 

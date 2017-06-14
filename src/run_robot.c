@@ -129,16 +129,18 @@ static void magic_load_mod(struct world *mzx_world, char *filename)
       strcpy(src_board->mod_playing, "*");
     }
 
-    // filename or *
+    // filename
     else
     {
-      strcpy(src_board->mod_playing, translated_name);
-
       // This will update real_mod_playing
-      if(filename[0] != '*')
-        load_board_module(mzx_world, src_board);
+      strcpy(src_board->mod_playing, translated_name);
+      load_board_module(mzx_world, src_board);
     }
   }
+
+  // *
+  if (filename[0] == '*')
+    strcpy(src_board->mod_playing, "*");
 }
 
 static void save_player_position(struct world *mzx_world, int pos)

@@ -1721,7 +1721,9 @@ void __debug_counters(struct world *mzx_world)
   char **var_list = NULL, **tree_list = NULL;
 
   int window_focus = 0;
-  int node_selected = 0, var_selected = 0;
+  int var_selected = 0;
+  int node_selected = 0;
+  int node_scroll_offset = 0;
   int dialog_result;
   struct element *elements[8];
   struct dialog di;
@@ -1752,7 +1754,7 @@ void __debug_counters(struct world *mzx_world)
     {
       focus = previous_node;
       strncpy(search_text, previous_var, VAR_SEARCH_MAX);
-      search_flags = VAR_SEARCH_NAMES | VAR_SEARCH_LOCAL;
+      search_flags = VAR_SEARCH_NAMES | VAR_SEARCH_LOCAL | VAR_SEARCH_WRAP;
 
       reopened = 1;
     }
@@ -1769,10 +1771,10 @@ void __debug_counters(struct world *mzx_world)
     {
       elements[0] = construct_list_box(
        VAR_LIST_X, VAR_LIST_Y, (const char **)var_list, num_vars,
-       VAR_LIST_HEIGHT, VAR_LIST_WIDTH, 0, &var_selected, false);
+       VAR_LIST_HEIGHT, VAR_LIST_WIDTH, 0, &var_selected, NULL, false);
       elements[1] = construct_list_box(
        TREE_LIST_X, TREE_LIST_Y, (const char **)tree_list, tree_size,
-       TREE_LIST_HEIGHT, TREE_LIST_WIDTH, 1, &node_selected, false);
+       TREE_LIST_HEIGHT, TREE_LIST_WIDTH, 1, &node_selected, &node_scroll_offset, false);
       elements[2] = construct_button(BUTTONS_X + 0, BUTTONS_Y + 0, "Search", 2);
       elements[3] = construct_button(BUTTONS_X +11, BUTTONS_Y + 0, "New", 3);
       elements[4] = construct_button(BUTTONS_X + 0, BUTTONS_Y + 2, "Toggle Empties", 4);
@@ -1920,6 +1922,7 @@ void __debug_counters(struct world *mzx_world)
               if(!strcmp(tree_list[i] + TREE_LIST_WIDTH, search_node->name))
               {
                 node_selected = i;
+                node_scroll_offset = node_selected - (TREE_LIST_HEIGHT/2);
                 break;
               }
             }
@@ -1975,6 +1978,7 @@ void __debug_counters(struct world *mzx_world)
             if(!strcmp(tree_list[i] + TREE_LIST_WIDTH, focus->name))
             {
               node_selected = i;
+              node_scroll_offset = node_selected - (TREE_LIST_HEIGHT/2);
               break;
             }
           }
