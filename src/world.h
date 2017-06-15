@@ -114,6 +114,9 @@ __M_BEGIN_DECLS
  */
 #define WORLD_VERSION_PREV 0x0254
 
+// This is the last version of MegaZeux to use the legacy world format.
+#define WORLD_LEGACY_FORMAT_VERSION 0x0254
+
 // FIXME: hack
 #ifdef CONFIG_DEBYTECODE
 #undef  WORLD_VERSION

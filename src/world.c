@@ -1932,7 +1932,7 @@ void assign_fprops(struct zip_archive *zp, int board_file)
 
 
 static enum val_result validate_world_zip(struct world *mzx_world,
- struct zip_archive *zp, int savegame, int *file_version, int retry)
+ struct zip_archive *zp, int savegame, int *file_version, int is_retry)
 {
   unsigned int file_id;
   int result;
@@ -2027,7 +2027,7 @@ err_out:
     mzx_world->raw_world_info_size = 0;
   }
 
-  if(!retry)
+  if(!is_retry)
   {
     // This is a fallback for idiots who extracted and rearchived their world.
     // Try to fix its properties and try again.

@@ -23,11 +23,14 @@
 #include "../extmem.h"
 #include "../legacy_board.h"
 #include "../world.h"
+#include "../util.h"
+#include "../zip.h"
 
 #include "world.h"
 #include "configure.h"
 
 #include <string.h>
+
 
 static int board_magic(const char magic_string[4])
 {
@@ -49,7 +52,26 @@ static int board_magic(const char magic_string[4])
   return 0;
 }
 
-static struct board *load_board_allocate_direct(struct world *mzx_world,
+void save_board_file(struct world *mzx_world, struct board *cur_board,
+ char *name)
+{
+  struct zip_archive *zp = zip_open_file_write(name);
+
+  if(zp)
+  {
+    zputc(0xFF, zp);
+
+    zputc('M', zp);
+    zputc((WORLD_VERSION >> 8) & 0xFF, zp);
+    zputc(WORLD_VERSION & 0xFF, zp);
+
+    save_board(mzx_world, cur_board, zp, 0, WORLD_VERSION, 0);
+
+    zip_close(zp, NULL);
+  }
+}
+
+static struct board *legacy_load_board_allocate_direct(struct world *mzx_world,
  FILE *fp, int version)
 {
   struct board *cur_board = cmalloc(sizeof(struct board));
@@ -68,32 +90,103 @@ static struct board *load_board_allocate_direct(struct world *mzx_world,
   return cur_board;
 }
 
-void replace_current_board(struct world *mzx_world, char *name)
+static int find_first_board(struct zip_archive *zp, int is_retry)
 {
-  int version, current_board_id = mzx_world->current_board_id;
-  struct board *src_board = mzx_world->current_board;
-  FILE *input_mzb = fopen_unsafe(name, "rb");
-  char version_string[4];
+  unsigned int file_id;
+  unsigned int board_id;
 
-  fread(version_string, 4, 1, input_mzb);
-  version = board_magic(version_string);
+  // Make sure we're at the start.
+  zip_rewind(zp);
 
-  if(version > 0 && version <= WORLD_VERSION)
+  while(ZIP_SUCCESS == zip_get_next_prop(zp, &file_id, &board_id, NULL))
   {
-    clear_board(src_board);
-    src_board = load_board_allocate_direct(mzx_world, input_mzb, version);
-    optimize_null_objects(src_board);
+    if(file_id == FPROP_BOARD_INFO)
+      return (int)board_id;
 
-    set_update_done_current(mzx_world);
-
-    if(src_board->robot_list)
-      src_board->robot_list[0] = &mzx_world->global_robot;
-
-    set_current_board(mzx_world, src_board);
-    mzx_world->board_list[current_board_id] = src_board;
+    zip_skip_file(zp);
   }
 
-  fclose(input_mzb);
+  if(!is_retry)
+  {
+    // This is a fallback for idiots who extracted and rearchived their world.
+    // Try to fix its properties and try again.
+    assign_fprops(zp, 1);
+    return find_first_board(zp, 1);
+  }
+
+  return -1;
+}
+
+void replace_current_board(struct world *mzx_world, char *name)
+{
+  int current_board_id = mzx_world->current_board_id;
+  struct board *src_board = mzx_world->current_board;
+
+  FILE *fp = fopen_unsafe(name, "rb");
+  struct zip_archive *zp;
+
+  char version_string[4];
+  int file_version;
+  int success = 0;
+
+  if(fp)
+  {
+    fread(version_string, 4, 1, fp);
+    file_version = board_magic(version_string);
+
+    if(file_version > 0 && file_version <= WORLD_LEGACY_FORMAT_VERSION)
+    {
+      // Legacy board.
+      clear_board(src_board);
+
+      src_board =
+       legacy_load_board_allocate_direct(mzx_world, fp, file_version);
+
+      success = 1;
+      fclose(fp);
+    }
+
+    else
+    {
+      int board_id;
+
+      // Regular board or maybe not a board at all.
+      zp = zip_open_fp_read(fp);
+
+      // Make sure it's an actual zip.
+      if(ZIP_SUCCESS == zip_read_directory(zp))
+      {
+        // Make sure the zip contains a board.
+        board_id = find_first_board(zp, 0);
+
+        if(board_id >= 0)
+        {
+          clear_board(src_board);
+
+          src_board =
+           load_board_allocate(mzx_world, zp, 0, file_version, board_id);
+
+          success = 1;
+        }
+      }
+
+      zip_close(zp, NULL);
+    }
+
+    if(success)
+    {
+      // Set up the newly allocated board.
+      optimize_null_objects(src_board);
+
+      if(src_board->robot_list)
+        src_board->robot_list[0] = &mzx_world->global_robot;
+
+      set_update_done_current(mzx_world);
+
+      set_current_board(mzx_world, src_board);
+      mzx_world->board_list[current_board_id] = src_board;
+    }
+  }
 }
 
 struct board *create_blank_board(struct editor_config_info *conf)
@@ -191,28 +284,6 @@ struct board *create_blank_board(struct editor_config_info *conf)
   cur_board->level_id[0] = 127;
 
   return cur_board;
-}
-
-void save_board_file(struct world *mzx_world, struct board *cur_board,
- char *name)
-{
-  FILE *board_file = fopen_unsafe(name, "wb");
-
-  if(board_file)
-  {
-    fputc(0xff, board_file);
-
-    fputc('M', board_file);
-    fputc((WORLD_VERSION >> 8) & 0xff, board_file);
-    fputc(WORLD_VERSION & 0xff, board_file);
-
-    // FIXME ZIP support
-    optimize_null_objects(cur_board);
-    legacy_save_board(mzx_world, cur_board, board_file, 0, WORLD_VERSION);
-    // Write name
-    fwrite(cur_board->board_name, 25, 1, board_file);
-    fclose(board_file);
-  }
 }
 
 void change_board_size(struct board *src_board, int new_width, int new_height)

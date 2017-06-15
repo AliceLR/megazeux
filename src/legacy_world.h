@@ -31,9 +31,6 @@ __M_BEGIN_DECLS
 #include "world_struct.h"
 
 
-// This is the last version of MegaZeux to use the legacy world format.
-#define WORLD_LEGACY_FORMAT_VERSION 0x0254
-
 /****************************
  * LEGACY WORLD FORMAT INFO *
  ****************************/

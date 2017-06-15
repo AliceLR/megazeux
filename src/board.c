@@ -33,8 +33,8 @@
 #include "zip.h"
 
 
-#define COUNT_BOARD_PROPS (              1 + 6 +        1 + 22)
-#define BOUND_BOARD_PROPS (BOARD_NAME_SIZE + 6 + MAX_PATH + 22)
+#define COUNT_BOARD_PROPS (              1 +  7 +        1 + 22)
+#define BOUND_BOARD_PROPS (BOARD_NAME_SIZE + 10 + MAX_PATH + 22)
 #define BOARD_PROPS_SIZE \
  (COUNT_BOARD_PROPS * PROP_HEADER_SIZE + BOUND_BOARD_PROPS + 2)
 
@@ -46,7 +46,7 @@
 enum board_prop {
   BPROP_EOF                   = 0x0000,
 
-  // Essential                       7     6 + BOARD_NAME_SIZE
+  // Essential                       8     10 + BOARD_NAME_SIZE
   BPROP_BOARD_NAME            = 0x0001, // BOARD_NAME_SIZE
   BPROP_BOARD_WIDTH           = 0x0002, // 2
   BPROP_BOARD_HEIGHT          = 0x0003, // 2
@@ -54,6 +54,7 @@ enum board_prop {
   BPROP_NUM_ROBOTS            = 0x0005, // 1
   BPROP_NUM_SCROLLS           = 0x0006, // 1
   BPROP_NUM_SENSORS           = 0x0007, // 1
+  BPROP_FILE_VERSION          = 0x0008, // 2
 
   // Non-essential                  22     22 + MAX_PATH
   BPROP_MOD_PLAYING           = 0x0010, // MAX_PATH
@@ -125,6 +126,7 @@ static void save_board_info(struct board *cur_board, struct zip_archive *zp,
   save_prop_c(BPROP_NUM_ROBOTS, cur_board->num_robots, &mf);
   save_prop_c(BPROP_NUM_SCROLLS, cur_board->num_scrolls, &mf);
   save_prop_c(BPROP_NUM_SENSORS, cur_board->num_sensors, &mf);
+  save_prop_w(BPROP_FILE_VERSION, file_version, &mf);
 
   length = strlen(cur_board->mod_playing);
   save_prop_s(BPROP_MOD_PLAYING, cur_board->mod_playing, length, 1, &mf);
@@ -375,7 +377,7 @@ void dummy_board(struct board *cur_board)
 #define err_if_missing(expected) if(last_ident < expected) { goto err_free; }
 
 static int load_board_info(struct board *cur_board, struct zip_archive *zp,
- int savegame, int file_version)
+ int savegame, int *file_version)
 {
   char *buffer;
   unsigned int actual_size;
@@ -448,6 +450,11 @@ static int load_board_info(struct board *cur_board, struct zip_archive *zp,
         v = load_prop_int(size, &prop) & 0xFF;
         cur_board->num_sensors = v;
         cur_board->num_sensors_allocated = v;
+        break;
+
+      case BPROP_FILE_VERSION:
+        err_if_missing(BPROP_NUM_SENSORS);
+        *file_version = load_prop_int(size, &prop);
         break;
 
 
@@ -642,7 +649,8 @@ static int load_board_info(struct board *cur_board, struct zip_archive *zp,
     last_ident = ident;
   }
 
-  err_if_missing(BPROP_NUM_SENSORS);
+  // FIXME
+  err_if_missing(BPROP_FILE_VERSION);
 
   size = cur_board->board_width * cur_board->board_height;
 
@@ -714,7 +722,7 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
     {
       case FPROP_BOARD_INFO:
       {
-        if(load_board_info(cur_board, zp, savegame, file_version))
+        if(load_board_info(cur_board, zp, savegame, &file_version))
           goto err_invalid;
 
         has_base = 1;
