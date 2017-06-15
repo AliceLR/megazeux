@@ -772,19 +772,15 @@ static bool __recv(struct host *h, void *buffer, unsigned int len)
 
     // normally it won't all get through at once
     count = platform_recv(h->fd, &buf[pos], len - pos, 0);
-    if(count < 0)
+    if(count < 0 && host_last_error_fatal())
     {
-      // non-blocking socket, so can fail and still be ok
-      if(!host_last_error_fatal())
-      {
-        // Added a delay; should hopefully avoid 100% cpu
-        // failing over and over again
-        delay(10);
-        count = 0;
-        continue;
-      }
-
       return false;
+    } else if (count <= 0) {
+      // non-blocking socket, so can fail and still be ok
+      // Add a short delay to prevent excessive CPU use
+      delay(10);
+      count = 0;
+      continue;
     }
 
     if(h->cancel_cb && h->cancel_cb())
