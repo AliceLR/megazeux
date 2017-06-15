@@ -2962,7 +2962,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           {
             // Block
             shoot(mzx_world, x, y, dir_to_int(direction),
-             cur_robot->bullet_type);
+             CLAMP(cur_robot->bullet_type, 0, 2));
 
             if(_bl[dir_to_int(direction)])
               _bl[dir_to_int(direction)] = 3;
