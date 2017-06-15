@@ -175,6 +175,8 @@ CORE_LIBSPEC void clear_world(struct world *mzx_world);
 CORE_LIBSPEC void clear_global_data(struct world *mzx_world);
 CORE_LIBSPEC void default_scroll_values(struct world *mzx_world);
 
+CORE_LIBSPEC void assign_fprops(struct zip_archive *zp, int board_file);
+
 bool reload_savegame(struct world *mzx_world, const char *file, int *faded);
 bool reload_swap(struct world *mzx_world, const char *file, int *faded);
 

@@ -444,17 +444,19 @@ void load_robot(struct world *mzx_world, struct robot *cur_robot,
   unsigned int actual_size;
   struct memfile mf;
 
+  unsigned int method;
   unsigned int board_id;
   unsigned int id;
 
   zip_get_next_prop(zp, NULL, &board_id, &id);
+  zip_get_next_method(zp, &method);
 
   // We aren't saving or loading null robots.
   cur_robot->world_version = mzx_world->version;
   cur_robot->used = 1;
 
-  // If this is a memory zip, we can just read the memory directly.
-  if(zp->is_memory)
+  // If this is an uncompressed memory zip, we can read the memory directly.
+  if(zp->is_memory && method == ZIP_M_NONE)
   {
     zip_read_open_mem_stream(zp, &mf);
   }
@@ -473,7 +475,7 @@ void load_robot(struct world *mzx_world, struct robot *cur_robot,
     error_message(E_BOARD_ROBOT_CORRUPT, (board_id << 8)|id, NULL);
   }
 
-  if(zp->is_memory)
+  if(zp->is_memory && method == ZIP_M_NONE)
   {
     zip_read_close_mem_stream(zp);
   }

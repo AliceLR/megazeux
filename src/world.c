@@ -224,6 +224,72 @@ enum sprite_prop
 };
 
 
+int world_magic(const char magic_string[3])
+{
+  if(magic_string[0] == 'M')
+  {
+    if(magic_string[1] == 'Z')
+    {
+      switch(magic_string[2])
+      {
+        case 'X':
+          return 0x0100;
+        case '2':
+          return 0x0205;
+        case 'A':
+          return 0x0208;
+      }
+    }
+    else
+    {
+      // I hope to God that MZX doesn't last beyond 9.x
+      if((magic_string[1] > 1) && (magic_string[1] < 10))
+        return ((int)magic_string[1] << 8) + (int)magic_string[2];
+    }
+  }
+
+  return 0;
+}
+
+int save_magic(const char magic_string[5])
+{
+  if((magic_string[0] == 'M') && (magic_string[1] == 'Z'))
+  {
+    switch(magic_string[2])
+    {
+      case 'S':
+        if((magic_string[3] == 'V') && (magic_string[4] == '2'))
+        {
+          return 0x0205;
+        }
+        else if((magic_string[3] >= 2) && (magic_string[3] <= 10))
+        {
+          return((int)magic_string[3] << 8 ) + magic_string[4];
+        }
+        else
+        {
+          return 0;
+        }
+      case 'X':
+        if((magic_string[3] == 'S') && (magic_string[4] == 'A'))
+        {
+          return 0x0208;
+        }
+        else
+        {
+          return 0;
+        }
+      default:
+        return 0;
+    }
+  }
+  else
+  {
+    return 0;
+  }
+}
+
+
 // World info
 static inline int save_world_info(struct world *mzx_world,
  struct zip_archive *zp, int savegame, int file_version,
@@ -1280,6 +1346,9 @@ static inline int save_world_counters(struct world *mzx_world,
 static inline int load_world_counters(struct world *mzx_world,
  struct zip_archive *zp)
 {
+  char *buffer;
+  struct memfile mf;
+
   char name_buffer[ROBOT_MAX_TR];
   size_t name_length;
   int value;
@@ -1289,12 +1358,31 @@ static inline int load_world_counters(struct world *mzx_world,
   int i;
 
   enum zip_error result;
+  unsigned int method;
 
-  result = zip_read_open_file_stream(zp, NULL);
+  result = zip_get_next_method(zp, &method);
   if(result != ZIP_SUCCESS)
     return result;
 
-  num_counters = zgetd(zp, &result);
+  // If this is an uncompressed memory zip, we can read the memory directly.
+  if(zp->is_memory && method == ZIP_M_NONE)
+  {
+    zip_read_open_mem_stream(zp, &mf);
+  }
+
+  else
+  {
+    unsigned int actual_size;
+
+    zip_get_next_uncompressed_size(zp, &actual_size);
+    buffer = cmalloc(actual_size);
+    zip_read_file(zp, buffer, actual_size, &actual_size);
+
+    mfopen_static(buffer, actual_size, &mf);
+  }
+
+  num_counters = mfgetd(&mf);
+
   num_prev_allocated = mzx_world->num_counters_allocated;
 
   // If there aren't already any counters, allocate manually.
@@ -1307,13 +1395,13 @@ static inline int load_world_counters(struct world *mzx_world,
 
   for(i = 0; i < num_counters; i++)
   {
-    value = zgetd(zp, &result);
-    name_length = zgetd(zp, &result);
+    value = mfgetd(&mf);
+    name_length = mfgetd(&mf);
 
     if(name_length >= ROBOT_MAX_TR)
       break;
 
-    if(ZIP_SUCCESS != zread(name_buffer, name_length, zp))
+    if(!mfread(name_buffer, name_length, 1, &mf))
       break;
 
     // If there were already counters, use new_counter to set or add them
@@ -1337,7 +1425,17 @@ static inline int load_world_counters(struct world *mzx_world,
   if(!num_prev_allocated)
     mzx_world->num_counters = i;
 
-  return zip_read_close_stream(zp);
+  if(zp->is_memory && method == ZIP_M_NONE)
+  {
+    zip_read_close_mem_stream(zp);
+  }
+
+  else
+  {
+    free(buffer);
+  }
+
+  return ZIP_SUCCESS;
 }
 
 
@@ -1372,6 +1470,100 @@ static inline int save_world_strings(struct world *mzx_world,
   return zip_write_close_stream(zp);
 }
 
+static inline int load_world_strings_mem(struct world *mzx_world,
+ struct zip_archive *zp, int method)
+{
+  // In unusual cases (DEFLATEd strings, loading from memory), use this
+  // implementation.
+  char *buffer;
+  struct memfile mf;
+
+  struct string *src_string;
+  char name_buffer[ROBOT_MAX_TR];
+  size_t name_length;
+  size_t str_length;
+
+  int num_prev_allocated;
+  int num_strings;
+  int i;
+
+  // If this is an uncompressed memory zip, we can read the memory directly.
+  if(zp->is_memory && method == ZIP_M_NONE)
+  {
+    zip_read_open_mem_stream(zp, &mf);
+  }
+
+  else
+  {
+    unsigned int actual_size;
+
+    zip_get_next_uncompressed_size(zp, &actual_size);
+    buffer = cmalloc(actual_size);
+    zip_read_file(zp, buffer, actual_size, &actual_size);
+
+    mfopen_static(buffer, actual_size, &mf);
+  }
+
+  num_strings = mfgetd(&mf);
+
+  num_prev_allocated = mzx_world->num_strings_allocated;
+
+  // If there aren't already any strings, allocate manually.
+  if(!num_prev_allocated)
+  {
+    mzx_world->num_strings = num_strings;
+    mzx_world->num_strings_allocated = num_strings;
+    mzx_world->string_list = ccalloc(num_strings, sizeof(struct string *));
+  }
+
+  for(i = 0; i < num_strings; i++)
+  {
+    name_length = mfgetd(&mf);
+    str_length = mfgetd(&mf);
+
+    if(name_length >= ROBOT_MAX_TR || str_length > MAX_STRING_LEN)
+      break;
+
+    if(!mfread(name_buffer, name_length, 1, &mf))
+      break;
+
+    // If there were already string, use new_string to set or add them
+    // into the existing strings as-needed.
+    if(num_prev_allocated)
+    {
+      name_buffer[name_length] = 0;
+      src_string = new_string(mzx_world, name_buffer, str_length, -1);
+    }
+
+    // Otherwise, put them in the list manually.
+    else
+    {
+      src_string = load_new_string(name_buffer, name_length, str_length);
+      mzx_world->string_list[i] = src_string;
+    }
+
+    mfread(src_string->value, str_length, 1, &mf);
+    src_string->length = str_length;
+  }
+
+  // If there weren't any previously allocated, the number successfully read is
+  // the new number of strings.
+  if(!num_prev_allocated)
+    mzx_world->num_strings = i;
+
+  if(zp->is_memory && method == ZIP_M_NONE)
+  {
+    zip_read_close_mem_stream(zp);
+  }
+
+  else
+  {
+    free(buffer);
+  }
+
+  return ZIP_SUCCESS;
+}
+
 static inline int load_world_strings(struct world *mzx_world,
  struct zip_archive *zp)
 {
@@ -1385,13 +1577,20 @@ static inline int load_world_strings(struct world *mzx_world,
   int i;
 
   enum zip_error result;
+  unsigned int method;
 
-  result = zip_read_open_file_stream(zp, NULL);
+  result = zip_get_next_method(zp, &method);
   if(result != ZIP_SUCCESS)
     return result;
 
+  if(zp->is_memory || method == ZIP_M_DEFLATE)
+    return load_world_strings_mem(mzx_world, zp, method);
+
+  // Stream the strings out of the file.
+  zip_read_open_file_stream(zp, NULL);
+
   num_strings = zgetd(zp, &result);
-  num_prev_allocated = mzx_world->num_counters_allocated;
+  num_prev_allocated = mzx_world->num_strings_allocated;
 
   // If there aren't already any strings, allocate manually.
   if(!num_prev_allocated)
@@ -1507,94 +1706,233 @@ err:
 }
 
 
-static int save_world_zip(struct world *mzx_world, const char *file,
- int savegame, int file_version)
+#define match_name(str) ((sizeof(str)-1 == len) && !strcmp(str, next))
+
+static inline void parse_board_file_name(char *next, unsigned int *_file_id,
+ unsigned int *_board_id, unsigned int *_robot_id)
 {
-  struct zip_archive *zp = zip_open_file_write(file);
-  struct board *cur_board;
-  int i;
+  unsigned int file_id;
+  unsigned int board_id;
+  unsigned int robot_id;
+  int len = strlen(next);
+  char temp;
 
-  int meter_target = 2 + mzx_world->num_boards;
-  int meter_curr = 0;
-
-  if(!zp)
-    return -1;
-
-  meter_initial_draw(meter_curr, meter_target, "Saving...");
-
-  // Header
-  if(!savegame)
+  if(len > 3)
   {
-    // World name
-    zwrite(mzx_world->name, BOARD_NAME_SIZE, zp);
-
-    // Protection method -- always zero
-    zputc(0, zp);
-
-    // Version string
-    zputc('M', zp);
-    zputc((file_version >> 8) & 0xFF, zp);
-    zputc(file_version & 0xFF, zp);
+    temp = next[3];
+    next[3] = 0;
   }
+
+  board_id = strtoul(next+1, &next, 16);
+  next[0] = temp;
+
+  if(next[0])
+  {
+    if(next[0] == 'r')
+    {
+      robot_id = strtoul(next+1, &next, 16);
+      if(robot_id != 0)
+      {
+        file_id = FPROP_ROBOT;
+      }
+    }
+    else
+
+    if(next[0] == 's')
+    {
+      if(next[1] == 'c')
+      {
+        robot_id = strtoul(next+2, &next, 16);
+        if(robot_id != 0)
+        {
+          file_id = FPROP_SCROLL;
+        }
+      }
+      else
+
+      if(next[1] == 'e')
+      {
+        robot_id = strtoul(next+1, &next, 16);
+        if(robot_id != 0)
+        {
+          file_id = FPROP_SENSOR;
+        }
+      }
+    }
+
+    len = strlen(next);
+
+    if(match_name("bid"))
+    {
+      file_id = FPROP_BOARD_BID;
+    }
+    else
+
+    if(match_name("bpr"))
+    {
+      file_id = FPROP_BOARD_BPR;
+    }
+    else
+
+    if(match_name("bco"))
+    {
+      file_id = FPROP_BOARD_BCO;
+    }
+    else
+
+    if(match_name("uid"))
+    {
+      file_id = FPROP_BOARD_UID;
+    }
+    else
+
+    if(match_name("upr"))
+    {
+      file_id = FPROP_BOARD_UPR;
+    }
+    else
+
+    if(match_name("uco"))
+    {
+      file_id = FPROP_BOARD_UCO;
+    }
+    else
+
+    if(match_name("och"))
+    {
+      file_id = FPROP_BOARD_OCH;
+    }
+    else
+
+    if(match_name("oco"))
+    {
+      file_id = FPROP_BOARD_OCO;
+    }
+  }
+
   else
   {
-    // Version string
-    zwrite("MZS", 3, zp);
-    zputc((file_version >> 8) & 0xFF, zp);
-    zputc(file_version & 0xFF, zp);
-
-    // MZX world version
-    zputw(mzx_world->version, zp);
-
-    // Current board ID
-    zputc(mzx_world->current_board_id, zp);
+    file_id = FPROP_BOARD_INFO;
   }
 
-  save_world_info(mzx_world, zp, savegame, file_version,
-   "world", FPROP_WORLD_INFO);
+  *_file_id = file_id;
+  *_board_id = board_id;
+  *_robot_id = robot_id;
+}
 
-  save_world_global_robot(mzx_world, zp, savegame, file_version,
-   "gr", FPROP_WORLD_GLOBAL_ROBOT);
+void assign_fprops(struct zip_archive *zp, int board_file)
+{
+  // Assign property IDs if they don't already exist
+  unsigned int file_id;
+  unsigned int board_id;
+  unsigned int robot_id;
+  char name[32];
+  char *next;
+  int len;
 
-  save_world_sfx(mzx_world, zp,           "sfx",    FPROP_WORLD_SFX);
-  save_world_chars(mzx_world, zp, savegame, "chars",  FPROP_WORLD_CHARS);
-  save_world_pal(mzx_world, zp,           "pal",    FPROP_WORLD_PAL);
-
-  if(savegame)
+  zip_rewind(zp);
+  while(ZIP_SUCCESS == zip_get_next_name(zp, name, 31))
   {
-    // FIXME extended charset -- 1 through (NUM_CHARSETS-1)
-    save_world_pal_index(mzx_world, zp,   "palidx", FPROP_WORLD_PAL_INDEX);
-    save_world_pal_inten(mzx_world, zp,   "palint", FPROP_WORLD_PAL_INTENSITY);
-    save_world_vco(mzx_world, zp,         "vco",    FPROP_WORLD_VCO);
-    save_world_vch(mzx_world, zp,         "vch",    FPROP_WORLD_VCH);
-    save_world_sprites(mzx_world, zp,     "spr",    FPROP_WORLD_SPRITES);
-    save_world_counters(mzx_world, zp,    "counter",FPROP_WORLD_COUNTERS);
-    save_world_strings(mzx_world, zp,     "string", FPROP_WORLD_STRINGS);
+    next = name;
+    len = strlen(next);
+    file_id = 0;
+    board_id = 0;
+    robot_id = 0;
+
+    if(next[0] == 'b')
+    {
+      parse_board_file_name(next, &file_id, &board_id, &robot_id);
+    }
+    else
+
+    if(!board_file)
+    {
+      if(match_name("world"))
+      {
+        file_id = FPROP_WORLD_INFO;
+      }
+      else
+
+      if(match_name("gr"))
+      {
+        file_id = FPROP_WORLD_GLOBAL_ROBOT;
+      }
+      else
+
+      if(match_name("sfx"))
+      {
+        file_id = FPROP_WORLD_SFX;
+      }
+      else
+
+      if(match_name("chars"))
+      {
+        file_id = FPROP_WORLD_CHARS;
+      }
+      else
+
+      if(match_name("pal"))
+      {
+        file_id = FPROP_WORLD_PAL;
+      }
+      else
+
+      if(match_name("palidx"))
+      {
+        file_id = FPROP_WORLD_PAL_INDEX;
+      }
+      else
+
+      if(match_name("palint"))
+      {
+        file_id = FPROP_WORLD_PAL_INTENSITY;
+      }
+      else
+
+      if(match_name("vco"))
+      {
+        file_id = FPROP_WORLD_VCO;
+      }
+      else
+
+      if(match_name("vch"))
+      {
+        file_id = FPROP_WORLD_VCH;
+      }
+      else
+
+      if(match_name("spr"))
+      {
+        file_id = FPROP_WORLD_SPRITES;
+      }
+      else
+
+      if(match_name("counter"))
+      {
+        file_id = FPROP_WORLD_COUNTERS;
+      }
+      else
+
+      if(match_name("string"))
+      {
+        file_id = FPROP_WORLD_STRINGS;
+      }
+    }
+
+    // Set the property
+    zip_set_next_prop(zp, file_id, board_id, robot_id);
+
+    // Don't actually want to do anything with the file.
+    zip_skip_file(zp);
   }
 
-  meter_update_screen(&meter_curr, meter_target);
-
-  for(i = 0; i < mzx_world->num_boards; i++)
-  {
-    cur_board = mzx_world->board_list[i];
-
-    if(cur_board)
-      save_board(mzx_world, cur_board, zp, savegame, file_version, i);
-
-    meter_update_screen(&meter_curr, meter_target);
-  }
-
-  meter_update_screen(&meter_curr, meter_target);
-
-  meter_restore_screen();
-
-  zip_close(zp, NULL);
-  return 0;
+  // Resort the archive
+  zip_sort_by_prop(zp);
 }
 
 
 static enum val_result validate_world_zip(struct world *mzx_world,
- struct zip_archive *zp, int savegame, int *file_version)
+ struct zip_archive *zp, int savegame, int *file_version, int retry)
 {
   unsigned int file_id;
   int result;
@@ -1607,7 +1945,9 @@ static enum val_result validate_world_zip(struct world *mzx_world,
 
   int has_gr = 0;
 
-  // The directory has already been read by this point, and we're at the start.
+  // The directory has already been read by this point.
+  // Make sure we're at the start.
+  zip_rewind(zp);
 
   // Step through the directory and make sure the mandatory files exist.
   while(ZIP_SUCCESS == zip_get_next_prop(zp, &file_id, NULL, NULL))
@@ -1686,8 +2026,101 @@ err_out:
     mzx_world->raw_world_info = NULL;
     mzx_world->raw_world_info_size = 0;
   }
-  // FIXME offer to attempt to assign IDs by name
+
+  if(!retry)
+  {
+    // This is a fallback for idiots who extracted and rearchived their world.
+    // Try to fix its properties and try again.
+    assign_fprops(zp, 0);
+    return validate_world_zip(mzx_world, zp, savegame, file_version, 1);
+  }
+
   return VAL_MISSING;
+}
+
+
+static int save_world_zip(struct world *mzx_world, const char *file,
+ int savegame, int file_version)
+{
+  struct zip_archive *zp = zip_open_file_write(file);
+  struct board *cur_board;
+  int i;
+
+  int meter_target = 2 + mzx_world->num_boards;
+  int meter_curr = 0;
+
+  if(!zp)
+    return -1;
+
+  meter_initial_draw(meter_curr, meter_target, "Saving...");
+
+  // Header
+  if(!savegame)
+  {
+    // World name
+    zwrite(mzx_world->name, BOARD_NAME_SIZE, zp);
+
+    // Protection method -- always zero
+    zputc(0, zp);
+
+    // Version string
+    zputc('M', zp);
+    zputc((file_version >> 8) & 0xFF, zp);
+    zputc(file_version & 0xFF, zp);
+  }
+  else
+  {
+    // Version string
+    zwrite("MZS", 3, zp);
+    zputc((file_version >> 8) & 0xFF, zp);
+    zputc(file_version & 0xFF, zp);
+
+    // MZX world version
+    zputw(mzx_world->version, zp);
+
+    // Current board ID
+    zputc(mzx_world->current_board_id, zp);
+  }
+
+  save_world_info(mzx_world, zp, savegame, file_version,
+   "world", FPROP_WORLD_INFO);
+
+  save_world_global_robot(mzx_world, zp, savegame, file_version,
+   "gr", FPROP_WORLD_GLOBAL_ROBOT);
+
+  save_world_sfx(mzx_world, zp,           "sfx",    FPROP_WORLD_SFX);
+  save_world_chars(mzx_world, zp, savegame, "chars",  FPROP_WORLD_CHARS);
+  save_world_pal(mzx_world, zp,           "pal",    FPROP_WORLD_PAL);
+
+  if(savegame)
+  {
+    save_world_pal_index(mzx_world, zp,   "palidx", FPROP_WORLD_PAL_INDEX);
+    save_world_pal_inten(mzx_world, zp,   "palint", FPROP_WORLD_PAL_INTENSITY);
+    save_world_vco(mzx_world, zp,         "vco",    FPROP_WORLD_VCO);
+    save_world_vch(mzx_world, zp,         "vch",    FPROP_WORLD_VCH);
+    save_world_sprites(mzx_world, zp,     "spr",    FPROP_WORLD_SPRITES);
+    save_world_counters(mzx_world, zp,    "counter",FPROP_WORLD_COUNTERS);
+    save_world_strings(mzx_world, zp,     "string", FPROP_WORLD_STRINGS);
+  }
+
+  meter_update_screen(&meter_curr, meter_target);
+
+  for(i = 0; i < mzx_world->num_boards; i++)
+  {
+    cur_board = mzx_world->board_list[i];
+
+    if(cur_board)
+      save_board(mzx_world, cur_board, zp, savegame, file_version, i);
+
+    meter_update_screen(&meter_curr, meter_target);
+  }
+
+  meter_update_screen(&meter_curr, meter_target);
+
+  meter_restore_screen();
+
+  zip_close(zp, NULL);
+  return 0;
 }
 
 
@@ -1839,71 +2272,6 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
   return 0;
 }
 
-
-int world_magic(const char magic_string[3])
-{
-  if(magic_string[0] == 'M')
-  {
-    if(magic_string[1] == 'Z')
-    {
-      switch(magic_string[2])
-      {
-        case 'X':
-          return 0x0100;
-        case '2':
-          return 0x0205;
-        case 'A':
-          return 0x0208;
-      }
-    }
-    else
-    {
-      // I hope to God that MZX doesn't last beyond 9.x
-      if((magic_string[1] > 1) && (magic_string[1] < 10))
-        return ((int)magic_string[1] << 8) + (int)magic_string[2];
-    }
-  }
-
-  return 0;
-}
-
-int save_magic(const char magic_string[5])
-{
-  if((magic_string[0] == 'M') && (magic_string[1] == 'Z'))
-  {
-    switch(magic_string[2])
-    {
-      case 'S':
-        if((magic_string[3] == 'V') && (magic_string[4] == '2'))
-        {
-          return 0x0205;
-        }
-        else if((magic_string[3] >= 2) && (magic_string[3] <= 10))
-        {
-          return((int)magic_string[3] << 8 ) + magic_string[4];
-        }
-        else
-        {
-          return 0;
-        }
-      case 'X':
-        if((magic_string[3] == 'S') && (magic_string[4] == 'A'))
-        {
-          return 0x0208;
-        }
-        else
-        {
-          return 0;
-        }
-      default:
-        return 0;
-    }
-  }
-  else
-  {
-    return 0;
-  }
-}
 
 int save_world(struct world *mzx_world, const char *file, int savegame,
  int world_version)
@@ -2389,7 +2757,7 @@ static struct zip_archive *try_load_zip_world(struct world *mzx_world,
   if(result != ZIP_SUCCESS)
     goto err_close;
 
-  result = validate_world_zip(mzx_world, zp, savegame, file_version);
+  result = validate_world_zip(mzx_world, zp, savegame, file_version, 0);
 
   if(result != VAL_SUCCESS)
     goto err_close;

@@ -964,7 +964,34 @@ enum zip_error zip_get_next_prop(struct zip_archive *zp,
 
 err_out:
   if(result != ZIP_EOF)
-    zip_error("zip_get_next_mzx_prop", result);
+    zip_error("zip_get_next_prop", result);
+  return result;
+}
+
+enum zip_error zip_set_next_prop(struct zip_archive *zp,
+ unsigned int prop_id, unsigned int board_id, unsigned int robot_id)
+{
+  struct zip_file_header *fh;
+  enum zip_error result;
+
+  result = zp->read_file_error;
+  if(result)
+    goto err_out;
+
+  if(zp->pos >= zp->num_files)
+    return ZIP_EOF;
+
+  fh = zp->files[zp->pos];
+
+  fh->mzx_prop_id = prop_id;
+  fh->mzx_board_id = board_id;
+  fh->mzx_robot_id = robot_id;
+
+  return ZIP_SUCCESS;
+
+err_out:
+  if(result != ZIP_EOF)
+    zip_error("zip_set_next_prop", result);
   return result;
 }
 
@@ -995,6 +1022,35 @@ enum zip_error zip_get_next_uncompressed_size(struct zip_archive *zp,
 err_out:
   if(result != ZIP_EOF)
     zip_error("zip_get_next_u_size", result);
+  return result;
+}
+
+
+/* Get the compression method of the next file in the archive. Only works after
+ * zip_read_directory() is called.
+ */
+
+enum zip_error zip_get_next_method(struct zip_archive *zp, unsigned int *method)
+{
+  enum zip_error result;
+
+  result = zp->read_file_error;
+  if(result)
+    goto err_out;
+
+  if(zp->pos >= zp->num_files)
+  {
+    return ZIP_EOF;
+  }
+
+  if(method)
+    *method = zp->files[zp->pos]->method;
+
+  return ZIP_SUCCESS;
+
+err_out:
+  if(result != ZIP_EOF)
+    zip_error("zip_get_next_method", result);
   return result;
 }
 
@@ -2017,6 +2073,19 @@ static int _zip_header_cmp(const void *a, const void *b)
           (ap!=bp) ? (ap-bp) : (int)A->mzx_robot_id - (int)B->mzx_robot_id;
 }
 
+enum zip_error zip_sort_by_prop(struct zip_archive *zp)
+{
+  if(!zp || zp->read_file_error)
+    return ZIP_READ_ERROR;
+
+  if(zp->num_files)
+    qsort(zp->files, zp->num_files, sizeof(struct zip_file_header *),
+     _zip_header_cmp);
+
+  zp->pos = 0;
+  return ZIP_SUCCESS;
+}
+
 /*
 static int _zip_header_cmp(const void *a, const void *b)
 {
@@ -2204,18 +2273,20 @@ enum zip_error zip_read_directory(struct zip_archive *zp)
       result = ZIP_INCOMPLETE_CENTRAL_DIRECTORY;
       goto err_out;
     }
-
-    // We want a directory sorted by board and property criteria
-    qsort(zp->files, n, sizeof(struct zip_file_header *),
-     _zip_header_cmp);
   }
 
   // We're in file read mode now.
   zp->mode = ZIP_S_READ_FILES;
+  precalculate_read_errors(zp);
+
+  if(n)
+  {
+    // We want a directory sorted by board and property criteria
+    zip_sort_by_prop(zp);
+  }
 
   // At this point, we're probably at the EOCD. Reading files will seek
   // to the start of their respective entries, so just leave it alone.
-  precalculate_read_errors(zp);
   return ZIP_SUCCESS;
 
 err_out:
