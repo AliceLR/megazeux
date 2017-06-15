@@ -79,9 +79,9 @@ void meter_initial_draw(int curr, int target, const char *title)
 
 #else //!CONFIG_LOADSAVE_METER
 
-inline void meter_update_screen(int *curr, int target) {}
-inline void meter_restore_screen(void) {}
-inline void meter_initial_draw(int curr, int target, const char *title) {}
+static inline void meter_update_screen(int *curr, int target) {}
+static inline void meter_restore_screen(void) {}
+static inline void meter_initial_draw(int curr, int target, const char *title) {}
 
 #endif //CONFIG_LOADSAVE_METER
 
