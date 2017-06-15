@@ -207,6 +207,8 @@ BUGFIXES
   out. (Lancer-X)
 + Fixed various bugs related to the pushing of sensors.
   (Lancer-X)
++ Made KEY a board counter <=2.70. Also added masking <=2.62 to
+  make Oath Demo work again. (Lancer-X)
 
 + Debytecode: SAVE_WORLD is no longer supported.
 
