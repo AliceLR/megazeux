@@ -65,7 +65,7 @@ usage() {
 	echo "  --disable-check-alloc Disables memory allocator error handling."
 	echo "  --disable-uthash      Disables hash counter/string lookups."
 	echo "  --enable-debytecode   Enable experimental 'debytecode' transform."
-	echo "  --enable-libsdl2      Enable experimental SDL 2.0 support."
+	echo "  --disable-libsdl2     Disable SDL 2.0 support (falls back on 1.2)."
 	echo "  --enable-fps          Enable frames-per-second counter."
 	echo
 	echo "e.g.: ./config.sh --platform unix --prefix /usr"
@@ -118,7 +118,7 @@ EGL="false"
 CHECK_ALLOC="true"
 UTHASH="true"
 DEBYTECODE="false"
-LIBSDL2="false"
+LIBSDL2="true"
 FPSCOUNTER="false"
 
 #
@@ -1011,13 +1011,13 @@ else
 fi
 
 #
-# Experimental SDL 2.0 support, if enabled
+# SDL 2.0 support, if enabled
 #
 if [ "$LIBSDL2" = "true" ]; then
-	echo "Experimental SDL 2.0 support enabled."
+	echo "SDL 2.0 support enabled."
 	echo "BUILD_LIBSDL2=1" >> platform.inc
 else
-	echo "Experimental SDL 2.0 support disabled."
+	echo "SDL 2.0 support disabled."
 fi
 
 #
