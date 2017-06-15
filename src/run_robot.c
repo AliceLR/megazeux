@@ -220,8 +220,12 @@ int place_at_xy(struct world *mzx_world, enum thing id, int color, int param,
 
   if(new_id == SENSOR)
   {
-    int new_param = src_board->level_param[offset];
-    clear_sensor_id(src_board, new_param);
+    // Okay to put player on sensor; it won't destroy the sensor
+    if (id != PLAYER)
+    {
+      int new_param = src_board->level_param[offset];
+      clear_sensor_id(src_board, new_param);
+    }
   }
   else
 
@@ -4995,7 +4999,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
               if((d_id == ROBOT_PUSHABLE) || (d_id == PLAYER) ||
                ((int_dir < 2) && (d_flag & A_PUSHNS)) ||
-               ((int_dir >= 2) && (d_flag & A_PUSHEW)))
+               ((int_dir >= 2) && (d_flag & A_PUSHEW)) ||
+               (d_id == SENSOR))
               {
                 push(mzx_world, x, y, int_dir, 0);
                 update_blocked = 1;
