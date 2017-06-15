@@ -777,6 +777,9 @@ static bool __recv(struct host *h, void *buffer, unsigned int len)
       // non-blocking socket, so can fail and still be ok
       if(!host_last_error_fatal())
       {
+        // Added a delay; should hopefully avoid 100% cpu
+        // failing over and over again
+        delay(10);
         count = 0;
         continue;
       }
