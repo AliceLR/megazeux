@@ -202,6 +202,11 @@ BUGFIXES
   (Lancer-X)
 + Fixed a bug where the tree list in the counter debugger would
   rapidly scroll through elements when clicked.
++ Fixed a bug where the updater, on failing to receive data from
+  the server, would consume large amounts of CPU before timing
+  out. (Lancer-X)
++ Fixed various bugs related to the pushing of sensors.
+  (Lancer-X)
 
 + Debytecode: SAVE_WORLD is no longer supported.
 
