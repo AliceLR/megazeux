@@ -886,31 +886,56 @@ static inline int load_world_sfx(struct world *mzx_world,
 
 // Charset
 static inline int save_world_chars(struct world *mzx_world,
- struct zip_archive *zp, const char *name, enum file_prop file_id)
+ struct zip_archive *zp, int savegame, const char *name, enum file_prop file_id)
 {
-  unsigned char buffer[CHAR_SIZE * CHARSET_SIZE];
+  unsigned char *buffer;
+  size_t size;
+  int result;
 
-  // FIXME save multiple charsets
-  ec_mem_save_set(buffer);
+  // Save every charset
+  if(savegame)
+    size = PROTECTED_CHARSET_POSITION;
 
-  return zip_write_file(zp, name, buffer, CHAR_SIZE * CHARSET_SIZE,
-   ZIP_M_NONE, file_id, 0, 0);
+  // Only save the first charset
+  else
+    size = CHARSET_SIZE;
+
+  buffer = cmalloc(size * CHAR_SIZE);
+  ec_mem_save_set_var(buffer, size, 0);
+
+  result = zip_write_file(zp, name, buffer, size * CHAR_SIZE,
+   ZIP_M_DEFLATE, file_id, 0, 0);
+
+  free(buffer);
+  return result;
 }
 
 static inline int load_world_chars(struct world *mzx_world,
- struct zip_archive *zp)
+ struct zip_archive *zp, int savegame)
 {
-  unsigned char buffer[CHAR_SIZE * CHARSET_SIZE];
+  char *buffer;
+  unsigned int actual_size;
+  size_t size;
   int result;
 
-  // FIXME load multiple charsets
-  result = zip_read_file(zp, buffer, CHAR_SIZE * CHARSET_SIZE, NULL);
+  // Load every charset
+  if(savegame)
+    size = PROTECTED_CHARSET_POSITION;
+
+  // Load only the first charset
+  else
+    size = CHARSET_SIZE;
+
+  buffer = cmalloc(size * CHAR_SIZE);
+
+  result = zip_read_file(zp, buffer, size * CHAR_SIZE, &actual_size);
 
   if(result == ZIP_SUCCESS)
   {
-    ec_mem_load_set(buffer);
+    ec_mem_load_set_var(buffer, size, 0, WORLD_VERSION);
   }
 
+  free(buffer);
   return result;
 }
 
@@ -963,15 +988,33 @@ static inline int load_world_pal(struct world *mzx_world,
 static inline int save_world_pal_index(struct world *mzx_world,
  struct zip_archive *zp, const char *name, enum file_prop file_id)
 {
-  // FIXME
-  return 0;
+  char *buffer = cmalloc(SMZX_PAL_SIZE * 4);
+  int result;
+
+  save_indices(buffer);
+
+  result = zip_write_file(zp, name, buffer, SMZX_PAL_SIZE * 4,
+   ZIP_M_NONE, file_id, 0, 0);
+
+  free(buffer);
+  return result;
 }
 
 static inline int load_world_pal_index(struct world *mzx_world,
  struct zip_archive *zp)
 {
-  // FIXME
-  return 0;
+  char *buffer = cmalloc(SMZX_PAL_SIZE * 4);
+  int result;
+
+  result = zip_read_file(zp, buffer, SMZX_PAL_SIZE * 4, NULL);
+
+  if(result == ZIP_SUCCESS)
+  {
+    load_indices(buffer);
+  }
+
+  free(buffer);
+  return result;
 }
 
 
@@ -1077,11 +1120,8 @@ static inline int save_world_sprites(struct world *mzx_world,
     save_prop_d(SPROP_COL_Y,              spr->col_y, &mf);
     save_prop_d(SPROP_COL_WIDTH,          spr->col_width, &mf);
     save_prop_d(SPROP_COL_HEIGHT,         spr->col_height, &mf);
-    //save_prop_d(SPROP_TRANSPARENT_COLOR,  spr->transparent_color, &mf);
-    //save_prop_d(SPROP_CHARSET_OFFSET,     spr->offset, &mf);
-    //FIXME
-    save_prop_d(SPROP_TRANSPARENT_COLOR, 0, &mf);
-    save_prop_d(SPROP_CHARSET_OFFSET, 0, &mf);
+    save_prop_d(SPROP_TRANSPARENT_COLOR,  spr->transparent_color, &mf);
+    save_prop_d(SPROP_CHARSET_OFFSET,     spr->offset, &mf);
   }
 
   // Only once
@@ -1191,13 +1231,11 @@ static inline int load_world_sprites(struct world *mzx_world,
         break;
 
       case SPROP_TRANSPARENT_COLOR:
-        // FIXME
-        //if(spr) spr->transparent_color = value;
+        if(spr) spr->transparent_color = value;
         break;
 
       case SPROP_CHARSET_OFFSET:
-        // FIXME
-        //if(spr) spr->offset = value;
+        if(spr) spr->offset = value;
         break;
 
       default:
@@ -1519,7 +1557,7 @@ static int save_world_zip(struct world *mzx_world, const char *file,
    "gr", FPROP_WORLD_GLOBAL_ROBOT);
 
   save_world_sfx(mzx_world, zp,           "sfx",    FPROP_WORLD_SFX);
-  save_world_chars(mzx_world, zp,         "chars",  FPROP_WORLD_CHARS);
+  save_world_chars(mzx_world, zp, savegame, "chars",  FPROP_WORLD_CHARS);
   save_world_pal(mzx_world, zp,           "pal",    FPROP_WORLD_PAL);
 
   if(savegame)
@@ -1702,7 +1740,7 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
         break;
 
       case FPROP_WORLD_CHARS:
-        load_world_chars(mzx_world, zp);
+        load_world_chars(mzx_world, zp, savegame);
         break;
 
       case FPROP_WORLD_PAL:
