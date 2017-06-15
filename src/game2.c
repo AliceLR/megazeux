@@ -2024,6 +2024,12 @@ static void push_player_sensor(struct world *mzx_world, int p_offset,
   char *level_under_color = src_board->level_under_color;
   char *level_under_param = src_board->level_under_param;
 
+  // Move the bottom layer under the sensor to the top,
+  // eliminating the sensor
+  src_board->level_id[p_offset] = level_under_id[p_offset];
+  src_board->level_color[p_offset] = level_under_color[p_offset];
+  src_board->level_param[p_offset] = level_under_param[p_offset];
+
   // Restore the previous under with this stuff
   level_under_id[p_offset] = mzx_world->under_player_id;
   level_under_color[p_offset] = mzx_world->under_player_color;
@@ -2145,7 +2151,9 @@ int push(struct world *mzx_world, int x, int y, int dir, int checking)
 
       // Can the destination be moved under and thus pushed onto?
       // A sensor will also work if the player is what's being pushed onto it.
-      if((d_flag & A_UNDER) || ((p_id == PLAYER) && (d_id == SENSOR)))
+      // (but only if what's under the player isn't another sensor)
+      if((d_flag & A_UNDER) ||
+       ((p_id == PLAYER) && (d_id == SENSOR) && (p_under_id != SENSOR)))
       {
         // Place the previous thing here
         id_place(mzx_world, dx, dy, p_id, p_color, p_param);
