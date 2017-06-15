@@ -2024,11 +2024,26 @@ static void push_player_sensor(struct world *mzx_world, int p_offset,
   char *level_under_color = src_board->level_under_color;
   char *level_under_param = src_board->level_under_param;
 
+  // Record the old sensor's details
+  color = src_board->level_color[p_offset];
+  param = src_board->level_param[p_offset];
+
   // Move the bottom layer under the sensor to the top,
   // eliminating the sensor
   src_board->level_id[p_offset] = level_under_id[p_offset];
   src_board->level_color[p_offset] = level_under_color[p_offset];
   src_board->level_param[p_offset] = level_under_param[p_offset];
+
+  // Do we now have a sensor? If so, swap it with our current sensor
+  if (src_board->level_id[p_offset] == SENSOR)
+  {
+    char tmp_color = src_board->level_color[p_offset];
+    char tmp_param = src_board->level_param[p_offset];
+    src_board->level_color[p_offset] = color;
+    src_board->level_param[p_offset] = param;
+    color = tmp_color;
+    param = tmp_param;
+  }
 
   // Restore the previous under with this stuff
   level_under_id[p_offset] = mzx_world->under_player_id;
@@ -2062,7 +2077,7 @@ int push(struct world *mzx_world, int x, int y, int dir, int checking)
   int dx = x, dy = y, d_offset, d_flag;
   enum thing d_id = NO_ID;
   char d_param, d_color;
-  enum thing d_under_id;
+  enum thing d_under_id = NO_ID;
   enum thing p_id = NO_ID;
   char p_param = 0xFF, p_color = 0xFF;
   enum thing p_under_id = NO_ID;
@@ -2079,11 +2094,13 @@ int push(struct world *mzx_world, int x, int y, int dir, int checking)
   {
     // Previous ID
     p_id = d_id;
+    p_under_id = d_under_id;
     // Get the next in the dir, out of bounds returns 1
     if(arraydir2(src_board, dx, dy, &dx, &dy, dir))
       return 1;
     d_offset = xy2array2(src_board, dx, dy);
     d_id = (enum thing)level_id[d_offset];
+    d_under_id = (enum thing)level_under_id[d_offset];
     d_flag = flags[(int)d_id];
 
     // If a push can be made here, the destination has been found
@@ -2107,7 +2124,7 @@ int push(struct world *mzx_world, int x, int y, int dir, int checking)
         if(!(d_flag & A_SPEC_PUSH))
           return 1;
         // Player can be pushed onto sensor, otherwise it's pushable
-        if((d_id == SENSOR) && (p_id == PLAYER))
+        if((d_id == SENSOR) && (p_id == PLAYER) && (p_under_id != SENSOR))
           break;
         else
 
