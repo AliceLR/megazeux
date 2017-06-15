@@ -208,6 +208,8 @@ BUGFIXES
   (Lancer-X)
 + Fixed a bug where the tree list in the counter debugger would
   rapidly scroll through elements when clicked.
++ Fixed a bug where MZX would crash in some cases when testing
+  after adding/importing new boards into a world.
 
 + Debytecode: SAVE_WORLD is no longer supported.
 

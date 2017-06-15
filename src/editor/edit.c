@@ -3558,6 +3558,8 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             save_editor_palette();
             vquick_fadeout();
             cursor_off();
+
+            set_update_done(mzx_world);
             src_board = mzx_world->board_list[current_board_id];
             fix_board(mzx_world, current_board_id);
             set_counter(mzx_world, "TIME", src_board->time_limit, 0);

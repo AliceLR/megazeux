@@ -368,6 +368,9 @@ bool append_world(struct world *mzx_world, const char *file)
     ret = append_world_legacy(mzx_world, fp, file_version);
   }
 
+  // Make sure update_done is adequately sized
+  set_update_done(mzx_world);
+
   // Remove any null boards
   optimize_null_boards(mzx_world);
 
