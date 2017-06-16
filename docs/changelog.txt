@@ -106,6 +106,18 @@ FEATURES
   Before, they would lose their world version after testing.
 + Added world version display to the debug window.
 + Added GOOP_WALK counter for robots.
++ Added "Reset board on entry" parameter for boards. When set,
+  the board will reset to its original state when the board is
+  entered during gameplay. This setting can be saved as a board
+  default.
++ Added "Load charset on entry" parameter for boards. When set,
+  MegaZeux will load the selected charset file when the board
+  is entered during gameplay. This setting can be saved as a
+  board default.
++ Added "Load palette on entry" parameter for boards. When set,
+  MegaZeux will load the selected palette file when the board
+  is entered during gameplay. This setting can be saved as a
+  board default.
 
 + Debytecode: the LOAD_SOURCE_FILE special counter can now be
   used to load and compile a robot program from source code.

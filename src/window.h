@@ -199,6 +199,17 @@ struct board_list
   int *result;
 };
 
+struct file_selector
+{
+  struct element e;
+  const char *title;
+  const char *file_manager_title;
+  const char *const *file_manager_exts;
+  const char *none_mesg;
+  int allow_unset;
+  char *result;
+};
+
 CORE_LIBSPEC void construct_dialog(struct dialog *src, const char *title,
  int x, int y, int width, int height, struct element **elements,
  int num_elements, int start_element);
@@ -212,6 +223,10 @@ CORE_LIBSPEC struct element *construct_button(int x, int y, const char *label,
 CORE_LIBSPEC struct element *construct_number_box(int x, int y,
  const char *question, int lower_limit, int upper_limit,
  int mult_five, int *result);
+CORE_LIBSPEC struct element *construct_file_selector(int x, int y,
+ const char *title, const char *file_manager_title,
+ const char *const *file_manager_exts, const char *none_mesg, int show_width,
+ int allow_unset, char *result);
 
 CORE_LIBSPEC int choose_file_ch(struct world *mzx_world,
  const char *const *wildcards, char *ret, const char *title, int dirs_okay);

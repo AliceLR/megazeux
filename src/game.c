@@ -1895,6 +1895,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
   {
     int saved_player_last_dir = src_board->player_last_dir;
     int target_board = mzx_world->target_board;
+    int load_assets = 0;
 
     // Aha.. TELEPORT or ENTRANCE.
     // Destroy message, bullets, spitfire?
@@ -1920,8 +1921,8 @@ static int update(struct world *mzx_world, int game, int *fadein)
 
     if(mzx_world->current_board_id != target_board)
     {
-       mzx_world->current_board_id = target_board;
-       set_current_board_ext(mzx_world, mzx_world->board_list[target_board]);
+      change_board(mzx_world, target_board);
+      load_assets = 1;
     }
 
     src_board = mzx_world->current_board;
@@ -2106,6 +2107,12 @@ static int update(struct world *mzx_world, int game, int *fadein)
       if(!get_fade_status())
         *fadein = 1;
       vquick_fadeout();
+    }
+
+    // Load current board's charset and palette, if necessary
+    if(load_assets)
+    {
+      change_board_load_assets(mzx_world);
     }
 
     mzx_world->target_where = TARGET_NONE;
@@ -2897,9 +2904,7 @@ void title_screen(struct world *mzx_world)
             {
               if(mzx_world->current_board_id != mzx_world->first_board)
               {
-                mzx_world->current_board_id = mzx_world->first_board;
-                set_current_board_ext(mzx_world,
-                 mzx_world->board_list[mzx_world->current_board_id]);
+                change_board(mzx_world, mzx_world->first_board);
               }
 
               src_board = mzx_world->current_board;
@@ -2923,6 +2928,9 @@ void title_screen(struct world *mzx_world)
               mzx_world->player_restart_x = mzx_world->player_x;
               mzx_world->player_restart_y = mzx_world->player_y;
               vquick_fadeout();
+
+              // Load board palette and charset
+              change_board_load_assets(mzx_world);
 
               play_game(mzx_world);
               if (mzx_world->full_exit) break;

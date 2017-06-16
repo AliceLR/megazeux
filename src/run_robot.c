@@ -3720,12 +3720,12 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
       case ROBOTIC_CMD_TELEPORT: // teleport
       {
+        struct board *cur_board = mzx_world->current_board;
         char board_dest_buffer[ROBOT_MAX_TR];
         char *p2 = next_param_pos(cmd_ptr + 1);
         int teleport_x = parse_param(mzx_world, p2, id);
         char *p3 = next_param_pos(p2);
         int teleport_y = parse_param(mzx_world, p3, id);
-        int current_board_id = mzx_world->current_board_id;
         int board_id;
 
         tr_msg(mzx_world, cmd_ptr + 2, id, board_dest_buffer);
@@ -3737,8 +3737,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           prefix_mid_xy(mzx_world, &teleport_x, &teleport_y, x, y);
 
           // And switch back
-          set_current_board_ext(mzx_world,
-           mzx_world->board_list[current_board_id]);
+          set_current_board_ext(mzx_world, cur_board);
           mzx_world->target_board = board_id;
           mzx_world->target_x = teleport_x;
           mzx_world->target_y = teleport_y;

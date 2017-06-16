@@ -3564,8 +3564,12 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             cursor_off();
 
             set_update_done(mzx_world);
-            src_board = mzx_world->board_list[current_board_id];
-            fix_board(mzx_world, current_board_id);
+
+            // Changes to the board, duplicates if reset on entry
+            change_board(mzx_world, current_board_id);
+            change_board_load_assets(mzx_world);
+            src_board = mzx_world->current_board;
+
             set_counter(mzx_world, "TIME", src_board->time_limit, 0);
             send_robot_def(mzx_world, 0, LABEL_JUSTENTERED);
             send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);

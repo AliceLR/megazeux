@@ -37,6 +37,9 @@ CORE_LIBSPEC struct board *load_board_allocate(struct world *mzx_world,
 
 CORE_LIBSPEC void clear_board(struct board *cur_board);
 
+struct board *duplicate_board(struct world *mzx_world,
+ struct board *src_board);
+
 void dummy_board(struct board *cur_board);
 
 int find_board(struct world *mzx_world, char *name);

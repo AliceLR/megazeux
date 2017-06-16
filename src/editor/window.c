@@ -944,6 +944,13 @@ static int click_color_box(struct world *mzx_world, struct dialog *di,
   return IKEY_RETURN;
 }
 
+static int click_board_list(struct world *mzx_world, struct dialog *di,
+ struct element *e, int mouse_button, int mouse_x, int mouse_y,
+ int new_active)
+{
+  return IKEY_RETURN;
+}
+
 struct element *construct_check_box(int x, int y, const char **choices,
  int num_choices, int max_length, int *results)
 {
@@ -984,13 +991,6 @@ struct element *construct_color_box(int x, int y,
    NULL, NULL);
 
   return (struct element *)src;
-}
-
-static int click_board_list(struct world *mzx_world, struct dialog *di,
- struct element *e, int mouse_button, int mouse_x, int mouse_y,
- int new_active)
-{
-  return IKEY_RETURN;
 }
 
 struct element *construct_board_list(int x, int y,

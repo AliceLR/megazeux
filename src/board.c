@@ -33,13 +33,13 @@
 #include "zip.h"
 
 
-#define COUNT_BOARD_PROPS (              1 +  7 +        1 + 22)
-#define BOUND_BOARD_PROPS (BOARD_NAME_SIZE + 10 + MAX_PATH + 22)
+#define COUNT_BOARD_PROPS (              1 +  7 +          3 + 25)
+#define BOUND_BOARD_PROPS (BOARD_NAME_SIZE + 10 + 3*MAX_PATH + 25)
 #define BOARD_PROPS_SIZE \
  (COUNT_BOARD_PROPS * PROP_HEADER_SIZE + BOUND_BOARD_PROPS + 2)
 
-#define COUNT_BOARD_SAVE_PROPS (             2 + 20)
-#define BOUND_BOARD_SAVE_PROPS (2*ROBOT_MAX_TR + 28)
+#define COUNT_BOARD_SAVE_PROPS (             2 + 15)
+#define BOUND_BOARD_SAVE_PROPS (2*ROBOT_MAX_TR + 25)
 #define BOARD_SAVE_PROPS_SIZE \
  (COUNT_BOARD_SAVE_PROPS * PROP_HEADER_SIZE + BOUND_BOARD_SAVE_PROPS)
 
@@ -56,7 +56,7 @@ enum board_prop {
   BPROP_NUM_SENSORS           = 0x0007, // 1
   BPROP_FILE_VERSION          = 0x0008, // 2
 
-  // Non-essential                  22     22 + MAX_PATH
+  // Non-essential                  25     25 + 3 MAX_PATH
   BPROP_MOD_PLAYING           = 0x0010, // MAX_PATH
   BPROP_VIEWPORT_X            = 0x0011, // 1
   BPROP_VIEWPORT_Y            = 0x0012, // 1
@@ -82,8 +82,11 @@ enum board_prop {
   BPROP_PLAYER_NS_LOCKED      = 0x0026, // 1
   BPROP_PLAYER_EW_LOCKED      = 0x0027, // 1
   BPROP_PLAYER_ATTACK_LOCKED  = 0x0028, // 1
+  BPROP_RESET_ON_ENTRY        = 0x0029, // 1
+  BPROP_CHARSET_PATH          = 0x002A, // MAX_PATH
+  BPROP_PALETTE_PATH          = 0x002B, // MAX_PATH
 
-  // Save                           20     28 + 2 ROBOT_MAX_TR
+  // Save                           17     25 + 2 ROBOT_MAX_TR
   BPROP_SCROLL_X              = 0x0100, // 2
   BPROP_SCROLL_Y              = 0x0101, // 2
   BPROP_LOCKED_X              = 0x0102, // 2
@@ -154,6 +157,13 @@ static void save_board_info(struct board *cur_board, struct zip_archive *zp,
   save_prop_c(BPROP_PLAYER_NS_LOCKED, cur_board->player_ns_locked, &mf);
   save_prop_c(BPROP_PLAYER_EW_LOCKED, cur_board->player_ew_locked, &mf);
   save_prop_c(BPROP_PLAYER_ATTACK_LOCKED, cur_board->player_attack_locked, &mf);
+  save_prop_c(BPROP_RESET_ON_ENTRY, cur_board->reset_on_entry, &mf);
+
+  length = strlen(cur_board->charset_path);
+  save_prop_s(BPROP_CHARSET_PATH, cur_board->charset_path, length, 1 , &mf);
+
+  length = strlen(cur_board->palette_path);
+  save_prop_s(BPROP_PALETTE_PATH, cur_board->palette_path, length, 1, &mf);
 
   if(savegame)
   {
@@ -315,7 +325,10 @@ static void default_board(struct board *cur_board)
   cur_board->board_dir[2] = 0;
   cur_board->board_dir[3] = 0;
   cur_board->restart_if_zapped = 0;
+  cur_board->reset_on_entry = 0;
   cur_board->time_limit = 0;
+  cur_board->charset_path[0] = 0;
+  cur_board->palette_path[0] = 0;
 
   cur_board->scroll_x = 0;
   cur_board->scroll_y = 0;
@@ -569,6 +582,21 @@ static int load_board_info(struct board *cur_board, struct zip_archive *zp,
         cur_board->player_attack_locked = load_prop_int(size, &prop);
         break;
 
+      case BPROP_RESET_ON_ENTRY:
+        cur_board->reset_on_entry = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_CHARSET_PATH:
+        size = MIN(size, MAX_PATH - 1);
+        mfread(cur_board->charset_path, size, 1, &prop);
+        cur_board->charset_path[size] = 0;
+        break;
+
+      case BPROP_PALETTE_PATH:
+        size = MIN(size, MAX_PATH - 1);
+        mfread(cur_board->palette_path, size, 1, &prop);
+        cur_board->palette_path[size] = 0;
+        break;
 
 
       // Savegame only
@@ -1135,6 +1163,132 @@ struct board *load_board_allocate(struct world *mzx_world,
   load_board_direct(mzx_world, cur_board, zp, savegame, file_version, board_id);
 
   return cur_board;
+}
+
+struct board *duplicate_board(struct world *mzx_world,
+ struct board *src_board)
+{
+  // Create a deep copy of a board into a new board
+  struct board *dest_board;
+  struct robot **dest_robot_list;
+  struct robot **dest_robot_name_list;
+  struct scroll **dest_scroll_list;
+  struct sensor **dest_sensor_list;
+
+  struct robot *src_robot;
+  struct robot *dest_robot;
+  struct scroll *src_scroll;
+  struct scroll *dest_scroll;
+  struct sensor *src_sensor;
+  struct sensor *dest_sensor;
+
+  int size = src_board->board_width * src_board->board_height;
+  int num_robots_active = 0;
+  int i;
+
+  dest_board = cmalloc(sizeof(struct board));
+  memcpy(dest_board, src_board, sizeof(struct board));
+
+  // Level data
+  dest_board->level_id = cmalloc(size);
+  dest_board->level_param = cmalloc(size);
+  dest_board->level_color = cmalloc(size);
+  dest_board->level_under_id = cmalloc(size);
+  dest_board->level_under_param = cmalloc(size);
+  dest_board->level_under_color = cmalloc(size);
+
+  memcpy(dest_board->level_id, src_board->level_id, size);
+  memcpy(dest_board->level_param, src_board->level_param, size);
+  memcpy(dest_board->level_color, src_board->level_color, size);
+  memcpy(dest_board->level_under_id, src_board->level_under_id, size);
+  memcpy(dest_board->level_under_param, src_board->level_under_param, size);
+  memcpy(dest_board->level_under_color, src_board->level_under_color, size);
+
+  if(src_board->overlay_mode)
+  {
+    dest_board->overlay = cmalloc(size);
+    dest_board->overlay_color = cmalloc(size);
+
+    memcpy(dest_board->overlay, src_board->overlay, size);
+    memcpy(dest_board->overlay_color, src_board->overlay_color, size);
+  }
+
+  // Robots
+  dest_robot_list =
+   ccalloc(src_board->num_robots + 1, sizeof(struct robot *));
+
+  dest_robot_name_list =
+   ccalloc(src_board->num_robots, sizeof(struct robot *));
+
+  dest_board->robot_list = dest_robot_list;
+  dest_board->robot_list_name_sorted = dest_robot_name_list;
+
+  for(i = 1; i <= src_board->num_robots; i++)
+  {
+    src_robot = src_board->robot_list[i];
+
+    if(src_robot)
+    {
+      dest_robot = cmalloc(sizeof(struct robot));
+
+      duplicate_robot_direct(mzx_world, src_robot, dest_robot,
+       src_robot->xpos, src_robot->ypos);
+
+      dest_robot_list[i] = dest_robot;
+      dest_robot_name_list[num_robots_active] = dest_robot;
+      num_robots_active++;
+    }
+  }
+
+  // Sort the new list.
+  qsort(dest_robot_name_list, num_robots_active,
+   sizeof(struct robot *), cmp_robots);
+
+  // Should be the same, but just in case:
+  dest_board->num_robots_active = num_robots_active;
+
+  // Global robot
+  dest_board->robot_list[0] = src_board->robot_list[0];
+
+  // Scrolls
+  dest_scroll_list =
+   ccalloc(src_board->num_scrolls + 1, sizeof(struct scroll *));
+
+  dest_board->scroll_list = dest_scroll_list;
+
+  for(i = 1; i <= src_board->num_scrolls; i++)
+  {
+    src_scroll = src_board->scroll_list[i];
+
+    if(src_scroll)
+    {
+      dest_scroll = cmalloc(sizeof(struct scroll));
+      dest_scroll_list[i] = dest_scroll;
+
+      duplicate_scroll_direct(src_scroll, dest_scroll);
+    }
+  }
+
+  // Sensors
+  dest_sensor_list =
+   ccalloc(src_board->num_sensors + 1, sizeof(struct sensor *));
+
+  dest_board->sensor_list = dest_sensor_list;
+
+  for(i = 1; i <= src_board->num_sensors; i++)
+  {
+    src_sensor = src_board->sensor_list[i];
+
+    if(src_sensor)
+    {
+      dest_sensor = cmalloc(sizeof(struct sensor));
+      dest_sensor_list[i] = dest_sensor;
+
+      duplicate_sensor_direct(src_sensor, dest_sensor);
+    }
+  }
+
+  return dest_board;
 }
 
 void clear_board(struct board *cur_board)

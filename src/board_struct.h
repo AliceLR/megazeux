@@ -64,6 +64,7 @@ struct board
   int fire_burns;
   int board_dir[4];
   int restart_if_zapped;
+  int reset_on_entry;
   int time_limit;
   int last_key;
   int num_input;
@@ -85,6 +86,8 @@ struct board
   int volume;
   int volume_inc;
   int volume_target;
+  char charset_path[MAX_PATH];
+  char palette_path[MAX_PATH];
 
   int num_robots;
   int num_robots_active;

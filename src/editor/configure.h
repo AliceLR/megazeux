@@ -60,6 +60,7 @@ struct editor_config_info
   int forest_to_floor;
   int collect_bombs;
   int restart_if_hurt;
+  int reset_on_entry;
   int player_locked_ns;
   int player_locked_ew;
   int player_locked_att;
@@ -67,6 +68,8 @@ struct editor_config_info
   int explosions_leave;
   int saving_enabled;
   int overlay_enabled;
+  char charset_path[MAX_PATH];
+  char palette_path[MAX_PATH];
 
   // Char editor options
   int undo_history_size;

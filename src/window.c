@@ -1079,6 +1079,38 @@ static void draw_number_box(struct world *mzx_world, struct dialog *di,
   }
 }
 
+#define list_button " \x1F "
+
+static void draw_file_selector(struct world *mzx_world, struct dialog *di,
+ struct element *e, int color, int active)
+{
+  struct file_selector *src = (struct file_selector *)e;
+  int x = di->x + e->x;
+  int y = di->y + e->y;
+  int width = e->width;
+  char *path = src->result;
+  int len = strlen(path);
+
+  write_string(src->title, x, y, color, 0);
+  fill_line(width, x, y + 1, 32, DI_LIST);
+
+  if(path[0])
+  {
+    if(len > width-5)
+    {
+      path = path + len - (width-5);
+    }
+    write_string(path, x + 1, y + 1, DI_LIST, 0);
+  }
+  else
+  {
+    write_string(src->none_mesg, x + 1, y + 1, DI_LIST, 0);
+  }
+
+  // Draw button
+  write_string(list_button, x + width - 3, y + 1, DI_ARROWBUTTON, 0);
+}
+
 #define MAX_NAME_BUFFER 512
 
 static void draw_list_box(struct world *mzx_world, struct dialog *di,
@@ -1404,6 +1436,44 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
   return 0;
 }
 
+static int key_file_selector(struct world *mzx_world, struct dialog *di,
+ struct element *e, int key)
+{
+  struct file_selector *src = (struct file_selector *)e;
+
+  switch(key)
+  {
+    case IKEY_SPACE:
+    case IKEY_RETURN:
+    {
+      char new_path[MAX_PATH] = { 0 };
+
+      if(!choose_file_ch(mzx_world, src->file_manager_exts, new_path,
+       src->file_manager_title, 2))
+      {
+        strcpy(src->result, new_path);
+      }
+
+      break;
+    }
+
+    case IKEY_DELETE:
+    case IKEY_BACKSPACE:
+    {
+      if(src->allow_unset)
+        src->result[0] = 0;
+      break;
+    }
+
+    default:
+    {
+      return key;
+    }
+  }
+
+  return 0;
+}
+
 static int key_list_box(struct world *mzx_world, struct dialog *di,
  struct element *e, int key)
 {
@@ -1687,6 +1757,13 @@ static int drag_number_box(struct world *mzx_world, struct dialog *di,
   return 0;
 }
 
+static int click_file_selector(struct world *mzx_world, struct dialog *di,
+ struct element *e, int mouse_button, int mouse_x, int mouse_y,
+ int new_active)
+{
+  return IKEY_RETURN;
+}
+
 static int click_list_box(struct world *mzx_world, struct dialog *di,
  struct element *e, int mouse_button, int mouse_x, int mouse_y,
  int new_active)
@@ -1931,6 +2008,27 @@ struct element *construct_number_box(int x, int y,
 
   construct_element(&(src->e), x, y, width, 1,
    draw_number_box, key_number_box, click_number_box, drag_number_box, NULL);
+
+  return (struct element *)src;
+}
+
+struct element *construct_file_selector(int x, int y,
+ const char *title, const char *file_manager_title,
+ const char *const *file_manager_exts, const char *none_mesg, int show_width,
+ int allow_unset, char *result)
+{
+  struct file_selector *src = cmalloc(sizeof(struct file_selector));
+
+  src->title = title;
+  src->file_manager_title = file_manager_title;
+  src->file_manager_exts = file_manager_exts;
+  src->none_mesg = none_mesg;
+  src->allow_unset = allow_unset;
+  src->result = result;
+
+  construct_element(&(src->e), x, y, show_width + 3,
+   2, draw_file_selector, key_file_selector, click_file_selector,
+   NULL, NULL);
 
   return (struct element *)src;
 }

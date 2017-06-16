@@ -137,6 +137,7 @@ struct world
   struct board **board_list;
   struct board *current_board;
   int current_board_id;
+  int temporary_board;
 
   struct robot global_robot;
 

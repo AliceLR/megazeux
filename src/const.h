@@ -71,6 +71,7 @@ enum
 #define NO_BOARD              255
 #define NO_ENDGAME_BOARD      255
 #define NO_DEATH_BOARD        255
+#define TEMPORARY_BOARD       255
 #define DEATH_SAME_POS        254
 
 #define NO_KEY                127

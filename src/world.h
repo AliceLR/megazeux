@@ -182,6 +182,9 @@ CORE_LIBSPEC void default_scroll_values(struct world *mzx_world);
 
 CORE_LIBSPEC void assign_fprops(struct zip_archive *zp, int board_file);
 
+CORE_LIBSPEC void change_board(struct world *mzx_world, int board_id);
+CORE_LIBSPEC void change_board_load_assets(struct world *mzx_world);
+
 bool reload_savegame(struct world *mzx_world, const char *file, int *faded);
 bool reload_swap(struct world *mzx_world, const char *file, int *faded);
 

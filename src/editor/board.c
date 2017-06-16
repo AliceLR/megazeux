@@ -234,6 +234,7 @@ struct board *create_blank_board(struct editor_config_info *conf)
     cur_board->board_dir[i] = NO_BOARD;
   }
 
+  cur_board->reset_on_entry =    conf->reset_on_entry;
   cur_board->restart_if_zapped = conf->restart_if_hurt;
   cur_board->time_limit =        conf->time_limit;
   cur_board->last_key = '?';
@@ -256,6 +257,9 @@ struct board *create_blank_board(struct editor_config_info *conf)
   cur_board->volume = 255;
   cur_board->volume_inc = 0;
   cur_board->volume_target = 255;
+
+  strcpy(cur_board->charset_path, conf->charset_path);
+  strcpy(cur_board->palette_path, conf->palette_path);
 
   cur_board->num_robots = 0;
   cur_board->num_robots_active = 0;

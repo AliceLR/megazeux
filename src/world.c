@@ -91,8 +91,8 @@ static inline void meter_initial_draw(int curr, int target, const char *title) {
 #define BOUND_WORLD_PROPS (BOARD_NAME_SIZE + 5 + 455 + 24 + \
  (NUM_STATUS_COUNTERS * COUNTER_NAME_SIZE))
 
-#define COUNT_SAVE_PROPS  ( 1 +   4 + 29 +          3 +        1)
-#define BOUND_SAVE_PROPS  ( 1 +   9 + 96 + 3*MAX_PATH + NUM_KEYS)
+#define COUNT_SAVE_PROPS  ( 2 +   4 + 29 +          3 +        1)
+#define BOUND_SAVE_PROPS  ( 2 +   9 + 96 + 3*MAX_PATH + NUM_KEYS)
 
 // 600
 #define WORLD_PROP_SIZE \
@@ -109,11 +109,12 @@ enum world_prop
 {
   WPROP_EOF                       = 0x0000, // Size
 
-  // Header redundant properties      4 (5)     5 + BOARD_NAME_SIZE (+1)
+  // Header redundant properties      4 (6)     5 + BOARD_NAME_SIZE (+2)
   WPROP_WORLD_NAME                = 0x0001, //  BOARD_NAME_SIZE
   WPROP_WORLD_VERSION             = 0x0002, //   2
   WPROP_FILE_VERSION              = 0x0003, //   2
   WPROP_SAVE_START_BOARD          = 0x0004, //  (1)
+  WPROP_SAVE_TEMPORARY_BOARD      = 0x0005, //  (1)
   WPROP_NUM_BOARDS                = 0x0008, //   1
 
   // ID Chars                            4     455
@@ -401,6 +402,7 @@ static inline int save_world_info(struct world *mzx_world,
   {
     save_prop_w(WPROP_WORLD_VERSION, mzx_world->version, mf);
     save_prop_c(WPROP_SAVE_START_BOARD, mzx_world->current_board_id, mf);
+    save_prop_c(WPROP_SAVE_TEMPORARY_BOARD, mzx_world->temporary_board, mf);
   }
   else
   {
@@ -693,6 +695,11 @@ static inline void load_world_info(struct world *mzx_world,
       case WPROP_SAVE_START_BOARD:
         if(savegame)
         mzx_world->current_board_id = load_prop_int(size, prop);
+        break;
+
+      case WPROP_SAVE_TEMPORARY_BOARD:
+        if(savegame)
+        mzx_world->temporary_board = load_prop_int(size, prop);
         break;
 
       case WPROP_NUM_BOARDS:
@@ -1068,24 +1075,24 @@ static inline int load_world_chars(struct world *mzx_world,
 {
   char *buffer;
   unsigned int actual_size;
-  size_t size;
   int result;
+
+  zip_get_next_uncompressed_size(zp, &actual_size);
+
+  buffer = cmalloc(actual_size);
+  result = zip_read_file(zp, buffer, actual_size, &actual_size);
 
   // Load every charset
   if(savegame)
-    size = PROTECTED_CHARSET_POSITION;
+    actual_size = PROTECTED_CHARSET_POSITION * CHAR_SIZE;
 
   // Load only the first charset
   else
-    size = CHARSET_SIZE;
-
-  buffer = cmalloc(size * CHAR_SIZE);
-
-  result = zip_read_file(zp, buffer, size * CHAR_SIZE, &actual_size);
+    actual_size = CHARSET_SIZE * CHAR_SIZE;
 
   if(result == ZIP_SUCCESS)
   {
-    ec_mem_load_set_var(buffer, size, 0, WORLD_VERSION);
+    ec_mem_load_set_var(buffer, actual_size, 0, WORLD_VERSION);
   }
 
   free(buffer);
@@ -2135,8 +2142,8 @@ static int save_world_zip(struct world *mzx_world, const char *file,
   struct board *cur_board;
   int i;
 
-  int meter_target = 2 + mzx_world->num_boards;
   int meter_curr = 0;
+  int meter_target = 2 + mzx_world->num_boards + mzx_world->temporary_board;
 
   if(!zp)
     return -1;
@@ -2204,6 +2211,14 @@ static int save_world_zip(struct world *mzx_world, const char *file,
     meter_update_screen(&meter_curr, meter_target);
   }
 
+  if(mzx_world->temporary_board)
+  {
+    save_board(mzx_world, mzx_world->current_board, zp, savegame,
+     file_version, TEMPORARY_BOARD);
+
+    meter_update_screen(&meter_curr, meter_target);
+  }
+
   meter_update_screen(&meter_curr, meter_target);
 
   meter_restore_screen();
@@ -2247,7 +2262,7 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
         mzx_world->board_list =
          ccalloc(mzx_world->num_boards, sizeof(struct board *));
 
-        meter_target += mzx_world->num_boards;
+        meter_target += mzx_world->num_boards + mzx_world->temporary_board;
         meter_update_screen(&meter_curr, meter_target);
         break;
       }
@@ -2313,6 +2328,17 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
            load_board_allocate(mzx_world, zp, savegame, file_version, board_id);
 
           store_board_to_extram(mzx_world->board_list[board_id]);
+          meter_update_screen(&meter_curr, meter_target);
+        }
+        else
+
+        // Load the temporary board
+        if(mzx_world->temporary_board &&
+         board_id == TEMPORARY_BOARD)
+        {
+          mzx_world->current_board =
+           load_board_allocate(mzx_world, zp, savegame, file_version, board_id);
+
           meter_update_screen(&meter_curr, meter_target);
         }
         break;
@@ -2566,7 +2592,9 @@ void refactor_board_list(struct world *mzx_world,
     d_param = mzx_world->current_board_id;
     d_param = board_id_translation_list[d_param];
     mzx_world->current_board_id = d_param;
-    mzx_world->current_board = board_list[d_param];
+
+    if(!mzx_world->temporary_board)
+      mzx_world->current_board = board_list[d_param];
   }
 
   d_param = mzx_world->first_board;
@@ -2779,9 +2807,12 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
 
   // This pointer is now invalid. Clear it before we try to
   // send it back to extra RAM.
-  mzx_world->current_board = NULL;
-  set_current_board_ext(mzx_world,
-   mzx_world->board_list[mzx_world->current_board_id]);
+  if(!mzx_world->temporary_board)
+  {
+    mzx_world->current_board = NULL;
+    set_current_board_ext(mzx_world,
+     mzx_world->board_list[mzx_world->current_board_id]);
+  }
 
   mzx_world->active = 1;
 
@@ -2970,6 +3001,55 @@ void try_load_world(struct world *mzx_world, struct zip_archive **zp,
   *file_version = v;
 }
 
+
+void change_board(struct world *mzx_world, int board_id)
+{
+  // Set the current board during gameplay.
+  struct board *cur_board = mzx_world->current_board;
+
+  // Is this board temporary? Clear it
+  if(mzx_world->temporary_board)
+  {
+    assert(cur_board != NULL);
+    assert(cur_board->reset_on_entry != 0);
+
+    clear_board(cur_board);
+    mzx_world->current_board = NULL;
+    mzx_world->temporary_board = 0;
+  }
+
+  mzx_world->current_board_id = board_id;
+  set_current_board_ext(mzx_world, mzx_world->board_list[board_id]);
+
+  cur_board = mzx_world->current_board;
+
+  // Does this board need a duplicate? (2.90+)
+  if(mzx_world->version >= 0x025A && cur_board->reset_on_entry)
+  {
+    struct board *dup_board = duplicate_board(mzx_world, cur_board);
+    store_board_to_extram(cur_board);
+
+    mzx_world->current_board = dup_board;
+    mzx_world->temporary_board = 1;
+  }
+}
+
+void change_board_load_assets(struct world *mzx_world)
+{
+  // The sequel to change_board; use after the vquick_fadeout.
+  struct board *cur_board = mzx_world->current_board;
+  char translated_name[MAX_PATH];
+
+  // Does this board need a char set loaded? (2.90+)
+  if(mzx_world->version >= 0x025A && cur_board->charset_path[0])
+    if(fsafetranslate(cur_board->charset_path, translated_name) == FSAFE_SUCCESS)
+      ec_load_set(translated_name);
+
+  // Does this board need a palette loaded? (2.90+)
+  if(mzx_world->version >= 0x025A && cur_board->palette_path[0])
+    if(fsafetranslate(cur_board->palette_path, translated_name) == FSAFE_SUCCESS)
+      load_palette(translated_name);
+}
 
 // This needs to happen before a world is loaded if clear_global_data was used.
 
@@ -3176,9 +3256,9 @@ bool reload_swap(struct world *mzx_world, const char *file, int *faded)
 
   load_world(mzx_world, zp, fp, file, false, version, name, faded);
 
-  mzx_world->current_board_id = mzx_world->first_board;
-  set_current_board_ext(mzx_world,
-   mzx_world->board_list[mzx_world->current_board_id]);
+  // Change to the first board of the new world.
+  change_board(mzx_world, mzx_world->first_board);
+  change_board_load_assets(mzx_world);
 
   // Give curr_file a full path
   getcwd(full_path, MAX_PATH);
@@ -3207,6 +3287,14 @@ void clear_world(struct world *mzx_world)
     clear_board(board_list[i]);
   }
   free(board_list);
+
+  // Make sure we nuke the duplicate too, if it exists.
+  if(mzx_world->temporary_board)
+  {
+    clear_board(mzx_world->current_board);
+  }
+
+  mzx_world->temporary_board = 0;
   mzx_world->current_board_id = 0;
   mzx_world->current_board = NULL;
   mzx_world->board_list = NULL;

@@ -375,6 +375,12 @@ static void config_board_restart(struct editor_config_info *conf,
   conf->restart_if_hurt = CLAMP(strtol(value, NULL, 10), 0, 1);
 }
 
+static void config_board_reset_on_entry(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
+{
+  conf->reset_on_entry = CLAMP(strtol(value, NULL, 10), 0, 1);
+}
+
 static void config_board_locked_ns(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
@@ -397,6 +403,22 @@ static void config_board_time_limit(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
   conf->time_limit = CLAMP(strtol(value, NULL, 10), 0, 32767);
+}
+
+static void config_board_charset(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
+{
+  int size = MIN(strlen(value), MAX_PATH - 1);
+  memcpy(conf->charset_path, value, size);
+  conf->charset_path[size] = 0;
+}
+
+static void config_board_palette(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
+{
+  int size = MIN(strlen(value), MAX_PATH - 1);
+  strncpy(conf->palette_path, value, size);
+  conf->palette_path[size] = 0;
 }
 
 static void config_board_explosions(struct editor_config_info *conf,
@@ -456,6 +478,7 @@ static const struct editor_config_entry editor_config_options[] =
   { "backup_name", backup_name },
   { "board_default_can_bomb", config_board_can_bomb },
   { "board_default_can_shoot", config_board_can_shoot },
+  { "board_default_charset_path", config_board_charset },
   { "board_default_collect_bombs", config_board_collect_bombs },
   { "board_default_explosions_leave", config_board_explosions },
   { "board_default_fire_burns_brown", config_board_fire_brown },
@@ -466,9 +489,11 @@ static const struct editor_config_entry editor_config_options[] =
   { "board_default_forest_to_floor", config_board_forest },
   { "board_default_height", config_board_height },
   { "board_default_overlay", config_board_overlay },
+  { "board_default_palette_path", config_board_palette },
   { "board_default_player_locked_att", config_board_locked_att },
   { "board_default_player_locked_ew", config_board_locked_ew },
   { "board_default_player_locked_ns", config_board_locked_ns },
+  { "board_default_reset_on_entry", config_board_reset_on_entry },
   { "board_default_restart_if_hurt", config_board_restart },
   { "board_default_saving", config_board_saving },
   { "board_default_time_limit", config_board_time_limit },
@@ -533,7 +558,7 @@ static const struct editor_config_info default_editor_options =
   // Board editor options
   0,                            // editor_space_toggles
   1,                            // board_editor_hide_help
-  1,                            // editor_tab_focuses_view
+  0,                            // editor_tab_focuses_view
 
   // Defaults for new boards
   0,                            // viewport_x
@@ -552,6 +577,7 @@ static const struct editor_config_info default_editor_options =
   0,                            // forest_to_floor
   0,                            // collect_bombs
   0,                            // restart_if_hurt
+  0,                            // reset_on_entry
   0,                            // player_locked_ns
   0,                            // player_locked_ew
   0,                            // player_locked_att
@@ -559,6 +585,8 @@ static const struct editor_config_info default_editor_options =
   1,                            // explosions_leave (default = ash)
   0,                            // saving_enabled (default = enabled)
   1,                            // overlay_enabled (default = enabled)
+  "",                           // charset_path
+  "",                           // palette_path
 
   // Char editor options
   10,                           // Undo history size
@@ -738,6 +766,8 @@ void save_local_editor_config(struct editor_config_info *conf,
   fwrite(buf, 1, strlen(buf), fp);
   sprintf(buf, "board_default_restart_if_hurt = %i\n", conf->restart_if_hurt);
   fwrite(buf, 1, strlen(buf), fp);
+  sprintf(buf, "board_default_reset_on_entry = %i\n", conf->reset_on_entry);
+  fwrite(buf, 1, strlen(buf), fp);
   sprintf(buf, "board_default_player_locked_ns = %i\n", conf->player_locked_ns);
   fwrite(buf, 1, strlen(buf), fp);
   sprintf(buf, "board_default_player_locked_ew = %i\n", conf->player_locked_ew);
@@ -745,6 +775,10 @@ void save_local_editor_config(struct editor_config_info *conf,
   sprintf(buf, "board_default_player_locked_att = %i\n", conf->player_locked_att);
   fwrite(buf, 1, strlen(buf), fp);
   sprintf(buf, "board_default_time_limit = %i\n", conf->time_limit);
+  fwrite(buf, 1, strlen(buf), fp);
+  sprintf(buf, "board_default_charset_path = %s\n", conf->charset_path);
+  fwrite(buf, 1, strlen(buf), fp);
+  sprintf(buf, "board_default_palette_path = %s\n", conf->palette_path);
   fwrite(buf, 1, strlen(buf), fp);
 
   switch(conf->explosions_leave)
