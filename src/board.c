@@ -22,83 +22,279 @@
 #include <string.h>
 
 #include "board.h"
-#include "world.h"
+
 #include "const.h"
-#include "extmem.h"
 #include "error.h"
+#include "legacy_board.h"
+#include "robot.h"
+#include "world.h"
+#include "world_prop.h"
 #include "util.h"
-#include "validation.h"
+#include "zip.h"
 
-/* 13 (not NULL terminated in format) */
-#define LEGACY_MOD_FILENAME_MAX 13
 
-/* 80 (w/o saved NULL terminator) */
-#define LEGACY_BOTTOM_MESG_MAX  80
+#define COUNT_BOARD_PROPS (              1 +  7 +        1 + 22)
+#define BOUND_BOARD_PROPS (BOARD_NAME_SIZE + 10 + MAX_PATH + 22)
+#define BOARD_PROPS_SIZE \
+ (COUNT_BOARD_PROPS * PROP_HEADER_SIZE + BOUND_BOARD_PROPS + 2)
 
-/* 80 (w/o saved NULL terminator) */
-#define LEGACY_INPUT_STRING_MAX 80
+#define COUNT_BOARD_SAVE_PROPS (             2 + 20)
+#define BOUND_BOARD_SAVE_PROPS (2*ROBOT_MAX_TR + 28)
+#define BOARD_SAVE_PROPS_SIZE \
+ (COUNT_BOARD_SAVE_PROPS * PROP_HEADER_SIZE + BOUND_BOARD_SAVE_PROPS)
 
-static int cmp_robots(const void *dest, const void *src)
+enum board_prop {
+  BPROP_EOF                   = 0x0000,
+
+  // Essential                       8     10 + BOARD_NAME_SIZE
+  BPROP_BOARD_NAME            = 0x0001, // BOARD_NAME_SIZE
+  BPROP_BOARD_WIDTH           = 0x0002, // 2
+  BPROP_BOARD_HEIGHT          = 0x0003, // 2
+  BPROP_OVERLAY_MODE          = 0x0004, // 1
+  BPROP_NUM_ROBOTS            = 0x0005, // 1
+  BPROP_NUM_SCROLLS           = 0x0006, // 1
+  BPROP_NUM_SENSORS           = 0x0007, // 1
+  BPROP_FILE_VERSION          = 0x0008, // 2
+
+  // Non-essential                  22     22 + MAX_PATH
+  BPROP_MOD_PLAYING           = 0x0010, // MAX_PATH
+  BPROP_VIEWPORT_X            = 0x0011, // 1
+  BPROP_VIEWPORT_Y            = 0x0012, // 1
+  BPROP_VIEWPORT_WIDTH        = 0x0013, // 1
+  BPROP_VIEWPORT_HEIGHT       = 0x0014, // 1
+  BPROP_CAN_SHOOT             = 0x0015, // 1
+  BPROP_CAN_BOMB              = 0x0016, // 1
+  BPROP_FIRE_BURN_BROWN       = 0x0017, // 1
+  BPROP_FIRE_BURN_SPACE       = 0x0018, // 1
+  BPROP_FIRE_BURN_FAKES       = 0x0019, // 1
+  BPROP_FIRE_BURN_TREES       = 0x001A, // 1
+  BPROP_EXPLOSIONS_LEAVE      = 0x001B, // 1
+  BPROP_SAVE_MODE             = 0x001C, // 1
+  BPROP_FOREST_BECOMES        = 0x001D, // 1
+  BPROP_COLLECT_BOMBS         = 0x001E, // 1
+  BPROP_FIRE_BURNS            = 0x001F, // 1
+  BPROP_BOARD_N               = 0x0020, // 1
+  BPROP_BOARD_S               = 0x0021, // 1
+  BPROP_BOARD_E               = 0x0022, // 1
+  BPROP_BOARD_W               = 0x0023, // 1
+  BPROP_RESTART_IF_ZAPPED     = 0x0024, // 1
+  BPROP_TIME_LIMIT            = 0x0025, // 2
+
+  // Save                           20     28 + 2 ROBOT_MAX_TR
+  BPROP_SCROLL_X              = 0x0100, // 2
+  BPROP_SCROLL_Y              = 0x0101, // 2
+  BPROP_LOCKED_X              = 0x0102, // 2
+  BPROP_LOCKED_Y              = 0x0103, // 2
+  BPROP_PLAYER_LAST_DIR       = 0x0104, // 1
+  BPROP_PLAYER_NS_LOCKED      = 0x0105, // 1
+  BPROP_PLAYER_EW_LOCKED      = 0x0106, // 1
+  BPROP_PLAYER_ATTACK_LOCKED  = 0x0107, // 1
+  BPROP_LAZWALL_START         = 0x010A, // 1
+  BPROP_LAST_KEY              = 0x010B, // 1
+  BPROP_NUM_INPUT             = 0x010C, // 4
+  BPROP_INPUT_SIZE            = 0x010D, // 4 (IS SEPARATE FROM INPUT_STRING)
+  BPROP_INPUT_STRING          = 0x010E, // ROBOT_MAX_TR
+  BRPOP_BOTTOM_MESG           = 0x0110, // ROBOT_MAX_TR
+  BPROP_BOTTOM_MESG_TIMER     = 0x0111, // 1
+  BPROP_BOTTOM_MESG_ROW       = 0x0112, // 1
+  BPROP_BOTTOM_MESG_COL       = 0x0113, // 1
+  BPROP_VOLUME                = 0x0114, // 1
+  BPROP_VOLUME_INC            = 0x0115, // 1
+  BPROP_VOLUME_TARGET         = 0x0116, // 1
+};
+
+static void save_board_info(struct board *cur_board, struct zip_archive *zp,
+ int savegame, int file_version, const char *name, int file_id, int board_id)
 {
-  struct robot *rsrc = *((struct robot **)src);
-  struct robot *rdest = *((struct robot **)dest);
-  return strcasecmp(rdest->robot_name, rsrc->robot_name);
+  char *buffer;
+  struct memfile mf;
+
+  unsigned int size = BOARD_PROPS_SIZE;
+  int length;
+
+  if(savegame)
+    size += BOARD_SAVE_PROPS_SIZE;
+
+  buffer = cmalloc(size);
+
+  mfopen_static(buffer, size, &mf);
+
+  save_prop_s(BPROP_BOARD_NAME, cur_board->board_name, BOARD_NAME_SIZE, 1, &mf);
+  save_prop_w(BPROP_BOARD_WIDTH, cur_board->board_width, &mf);
+  save_prop_w(BPROP_BOARD_HEIGHT, cur_board->board_height, &mf);
+  save_prop_c(BPROP_OVERLAY_MODE, cur_board->overlay_mode, &mf);
+  save_prop_c(BPROP_NUM_ROBOTS, cur_board->num_robots, &mf);
+  save_prop_c(BPROP_NUM_SCROLLS, cur_board->num_scrolls, &mf);
+  save_prop_c(BPROP_NUM_SENSORS, cur_board->num_sensors, &mf);
+  save_prop_w(BPROP_FILE_VERSION, file_version, &mf);
+
+  length = strlen(cur_board->mod_playing);
+  save_prop_s(BPROP_MOD_PLAYING, cur_board->mod_playing, length, 1, &mf);
+  save_prop_c(BPROP_VIEWPORT_X, cur_board->viewport_x, &mf);
+  save_prop_c(BPROP_VIEWPORT_Y, cur_board->viewport_y, &mf);
+  save_prop_c(BPROP_VIEWPORT_WIDTH, cur_board->viewport_width, &mf);
+  save_prop_c(BPROP_VIEWPORT_HEIGHT, cur_board->viewport_height, &mf);
+  save_prop_c(BPROP_CAN_SHOOT, cur_board->can_shoot, &mf);
+  save_prop_c(BPROP_CAN_BOMB, cur_board->can_bomb, &mf);
+  save_prop_c(BPROP_FIRE_BURN_BROWN, cur_board->fire_burn_brown, &mf);
+  save_prop_c(BPROP_FIRE_BURN_SPACE, cur_board->fire_burn_space, &mf);
+  save_prop_c(BPROP_FIRE_BURN_FAKES, cur_board->fire_burn_fakes, &mf);
+  save_prop_c(BPROP_FIRE_BURN_TREES, cur_board->fire_burn_trees, &mf);
+  save_prop_c(BPROP_EXPLOSIONS_LEAVE, cur_board->explosions_leave, &mf);
+  save_prop_c(BPROP_SAVE_MODE, cur_board->save_mode, &mf);
+  save_prop_c(BPROP_FOREST_BECOMES, cur_board->forest_becomes, &mf);
+  save_prop_c(BPROP_COLLECT_BOMBS, cur_board->collect_bombs, &mf);
+  save_prop_c(BPROP_FIRE_BURNS, cur_board->fire_burns, &mf);
+  save_prop_c(BPROP_BOARD_N, cur_board->board_dir[0], &mf);
+  save_prop_c(BPROP_BOARD_S, cur_board->board_dir[1], &mf);
+  save_prop_c(BPROP_BOARD_E, cur_board->board_dir[2], &mf);
+  save_prop_c(BPROP_BOARD_W, cur_board->board_dir[3], &mf);
+  save_prop_c(BPROP_RESTART_IF_ZAPPED, cur_board->restart_if_zapped, &mf);
+  save_prop_c(BPROP_TIME_LIMIT, cur_board->time_limit, &mf);
+
+  if(savegame)
+  {
+    save_prop_w(BPROP_SCROLL_X, cur_board->scroll_x, &mf);
+    save_prop_w(BPROP_SCROLL_Y, cur_board->scroll_y, &mf);
+    save_prop_w(BPROP_LOCKED_X, cur_board->locked_x, &mf);
+    save_prop_w(BPROP_LOCKED_Y, cur_board->locked_y, &mf);
+    save_prop_c(BPROP_PLAYER_LAST_DIR, cur_board->player_last_dir, &mf);
+    save_prop_c(BPROP_PLAYER_NS_LOCKED, cur_board->player_ns_locked, &mf);
+    save_prop_c(BPROP_PLAYER_EW_LOCKED, cur_board->player_ew_locked, &mf);
+    save_prop_c(BPROP_PLAYER_ATTACK_LOCKED, cur_board->player_attack_locked, &mf);
+    save_prop_c(BPROP_LAZWALL_START, cur_board->lazwall_start, &mf);
+    save_prop_c(BPROP_LAST_KEY, cur_board->last_key, &mf);
+    save_prop_d(BPROP_NUM_INPUT, cur_board->num_input, &mf);
+    save_prop_d(BPROP_INPUT_SIZE, cur_board->input_size, &mf);
+
+    length = strlen(cur_board->input_string);
+    save_prop_s(BPROP_INPUT_STRING, cur_board->input_string, length, 1, &mf);
+
+    length = strlen(cur_board->bottom_mesg);
+    save_prop_s(BRPOP_BOTTOM_MESG, cur_board->bottom_mesg, length, 1, &mf);
+    save_prop_c(BPROP_BOTTOM_MESG_TIMER, cur_board->b_mesg_timer, &mf);
+    save_prop_c(BPROP_BOTTOM_MESG_ROW, cur_board->b_mesg_row, &mf);
+    save_prop_c(BPROP_BOTTOM_MESG_COL, cur_board->b_mesg_col, &mf);
+    save_prop_c(BPROP_VOLUME, cur_board->volume, &mf);
+    save_prop_c(BPROP_VOLUME_INC, cur_board->volume_inc, &mf);
+    save_prop_c(BPROP_VOLUME_TARGET, cur_board->volume_target, &mf);
+  }
+
+  save_prop_eof(&mf);
+
+  size = mftell(&mf);
+
+  zip_write_file(zp, name, buffer, size, ZIP_M_NONE, file_id, board_id, 0);
+
+  free(buffer);
 }
 
-static int load_RLE2_plane(char *plane, FILE *fp, int size)
+int save_board(struct world *mzx_world, struct board *cur_board,
+ struct zip_archive *zp, int savegame, int file_version, int board_id)
 {
-  int i, runsize;
-  int current_char;
+  int board_size = cur_board->board_width * cur_board->board_height;
+  char name[10];
+  int count;
+  int i;
 
-  if(size < 0)
-    return -3;
+  sprintf(name, "b%2.2X", (unsigned char)board_id);
 
-  for(i = 0; i < size; i++)
+  save_board_info(cur_board, zp, savegame, file_version,
+   name, FPROP_BOARD_INFO, board_id);
+
+  sprintf(name+3, "bid");
+  zip_write_file(zp, name, cur_board->level_id,
+   board_size, ZIP_M_DEFLATE, FPROP_BOARD_BID, board_id, 0);
+
+  sprintf(name+3, "bpr");
+  zip_write_file(zp, name, cur_board->level_param,
+   board_size, ZIP_M_DEFLATE, FPROP_BOARD_BPR, board_id, 0);
+
+  sprintf(name+3, "bco");
+  zip_write_file(zp, name, cur_board->level_color,
+   board_size, ZIP_M_DEFLATE, FPROP_BOARD_BCO, board_id, 0);
+
+  sprintf(name+3, "uid");
+  zip_write_file(zp, name, cur_board->level_under_id,
+   board_size, ZIP_M_DEFLATE, FPROP_BOARD_UID, board_id, 0);
+
+  sprintf(name+3, "upr");
+  zip_write_file(zp, name, cur_board->level_under_param,
+   board_size, ZIP_M_DEFLATE, FPROP_BOARD_UPR, board_id, 0);
+
+  sprintf(name+3, "uco");
+  zip_write_file(zp, name, cur_board->level_under_color,
+   board_size, ZIP_M_DEFLATE, FPROP_BOARD_UCO, board_id, 0);
+
+  if(cur_board->overlay_mode)
   {
-    current_char = fgetc(fp);
-    if(current_char == EOF)
-    {
-      return -1;
-    }
-    else if(!(current_char & 0x80))
-    {
-      // Regular character
-      plane[i] = current_char;
-    }
-    else
-    {
-      // A run
-      runsize = current_char & 0x7F;
-      if((i + runsize) > size)
-        return -2;
+    sprintf(name+3, "och");
+    zip_write_file(zp, name, cur_board->overlay,
+     board_size, ZIP_M_DEFLATE, FPROP_BOARD_OCH, board_id, 0);
 
-      current_char = fgetc(fp);
-      if(current_char == EOF)
-        return -1;
+    sprintf(name+3, "oco");
+    zip_write_file(zp, name, cur_board->overlay_color,
+     board_size, ZIP_M_DEFLATE, FPROP_BOARD_OCO, board_id, 0);
+  }
 
-      memset(plane + i, current_char, runsize);
-      i += (runsize - 1);
+  name[3] = 'r';
+  count = cur_board->num_robots;
+  if(count)
+  {
+    struct robot *cur_robot;
+
+    for(i = 1; i <= count; i++)
+    {
+      cur_robot = cur_board->robot_list[i];
+      if(cur_robot)
+      {
+        sprintf(name+4, "%2.2X", i);
+        save_robot(mzx_world, cur_robot, zp, savegame, file_version,
+         name, FPROP_ROBOT, board_id, i);
+      }
+    }
+  }
+
+  sprintf(name+3, "sc");
+  count = cur_board->num_scrolls;
+  if(count)
+  {
+    struct scroll *cur_scroll;
+
+    for(i = 1; i <= count; i++)
+    {
+      cur_scroll = cur_board->scroll_list[i];
+      if(cur_scroll)
+      {
+        sprintf(name+5, "%2.2X", i);
+        save_scroll(cur_scroll, zp, name, FPROP_SCROLL, board_id, i);
+      }
+    }
+  }
+
+  sprintf(name+3, "se");
+  count = cur_board->num_sensors;
+  if(count)
+  {
+    struct sensor *cur_sensor;
+
+    for(i = 1; i <= count; i++)
+    {
+      cur_sensor = cur_board->sensor_list[i];
+      if(cur_sensor)
+      {
+        sprintf(name+5, "%2.2X", i);
+        save_sensor(cur_sensor, zp, name, FPROP_SENSOR, board_id, i);
+      }
     }
   }
 
   return 0;
 }
 
-static void create_blank_board(struct board *cur_board)
+static void default_board(struct board *cur_board)
 {
-  int size = 2000;
-  cur_board->overlay_mode = 0;
-  cur_board->board_width = 80;
-  cur_board->board_height = 25;
-
-  cur_board->level_id = ccalloc(1, size);
-  cur_board->level_color = ccalloc(1, size);
-  cur_board->level_param = ccalloc(1, size);
-  cur_board->level_under_id = ccalloc(1, size);
-  cur_board->level_under_color = ccalloc(1, size);
-  cur_board->level_under_param = ccalloc(1, size);
-
-  strcpy(cur_board->mod_playing, "");
+  cur_board->mod_playing[0] = 0;
   cur_board->viewport_x = 0;
   cur_board->viewport_y = 0;
   cur_board->viewport_width = 80;
@@ -120,26 +316,50 @@ static void create_blank_board(struct board *cur_board)
   cur_board->board_dir[3] = 0;
   cur_board->restart_if_zapped = 0;
   cur_board->time_limit = 0;
-  cur_board->last_key = 0;
-  cur_board->num_input = 0;
-  cur_board->input_size = 0;
-  strcpy(cur_board->input_string, "");
-  cur_board->player_last_dir = 0;
-  strcpy(cur_board->bottom_mesg, "");
-  cur_board->b_mesg_timer = 0;
-  cur_board->lazwall_start = 0;
-  cur_board->b_mesg_row = 24;
-  cur_board->b_mesg_col = -1;
+
   cur_board->scroll_x = 0;
   cur_board->scroll_y = 0;
-  cur_board->locked_x = 0;
-  cur_board->locked_y = 0;
+  cur_board->locked_x = -1;
+  cur_board->locked_y = -1;
+
+  cur_board->player_last_dir = 0x10;
   cur_board->player_ns_locked = 0;
   cur_board->player_ew_locked = 0;
   cur_board->player_attack_locked = 0;
-  cur_board->volume = 0;
+
+  cur_board->volume = 255;
   cur_board->volume_inc = 0;
-  cur_board->volume_target = 0;
+  cur_board->volume_target = 255;
+
+  cur_board->lazwall_start = 7;
+  cur_board->last_key = '?';
+  cur_board->num_input = 0;
+  cur_board->input_size = 0;
+  cur_board->input_string[0] = 0;
+  cur_board->bottom_mesg[0] = 0;
+  cur_board->b_mesg_timer = 0;
+  cur_board->b_mesg_row = 24;
+  cur_board->b_mesg_col = -1;
+}
+
+void dummy_board(struct board *cur_board)
+{
+  // Allocate placeholder data for broken boards so they will run
+  int size = 2000;
+  cur_board->overlay_mode = 0;
+  cur_board->board_width = 80;
+  cur_board->board_height = 25;
+
+  default_board(cur_board);
+
+  cur_board->level_id = ccalloc(1, size);
+  cur_board->level_color = ccalloc(1, size);
+  cur_board->level_param = ccalloc(1, size);
+  cur_board->level_under_id = ccalloc(1, size);
+  cur_board->level_under_color = ccalloc(1, size);
+  cur_board->level_under_param = ccalloc(1, size);
+
+  cur_board->level_id[0] = 127;
 
   cur_board->num_robots = 0;
   cur_board->num_robots_active = 0;
@@ -154,745 +374,766 @@ static void create_blank_board(struct board *cur_board)
   cur_board->sensor_list = ccalloc(1, sizeof(struct sensor *));
 }
 
-__editor_maybe_static int load_board_direct(struct world *mzx_world,
- struct board *cur_board, FILE *fp, int data_size, int savegame, int version)
+#define err_if_missing(expected) if(last_ident < expected) { goto err_free; }
+
+static int load_board_info(struct board *cur_board, struct zip_archive *zp,
+ int savegame, int *file_version)
 {
-  int num_robots, num_scrolls, num_sensors, num_robots_active;
-  int overlay_mode, size, board_width, board_height, i;
-  int viewport_x, viewport_y, viewport_width, viewport_height;
-  int truncated = 0;
+  char *buffer;
+  unsigned int actual_size;
+  struct memfile mf;
+  struct memfile prop;
+  int last_ident = -1;
+  int ident;
+  int size;
+  int v;
 
-  struct robot *cur_robot;
-  struct scroll *cur_scroll;
-  struct sensor *cur_sensor;
+  zip_get_next_uncompressed_size(zp, &actual_size);
 
-  char *test_buffer;
+  buffer = cmalloc(actual_size);
 
-  int board_location = ftell(fp);
+  zip_read_file(zp, buffer, actual_size, &actual_size);
 
-  cur_board->num_robots = 0;
-  cur_board->num_robots_allocated = 0;
-  cur_board->num_robots_active = 0;
-  cur_board->num_scrolls = 0;
-  cur_board->num_scrolls_allocated = 0;
-  cur_board->num_sensors = 0;
-  cur_board->num_sensors_allocated = 0;
-  cur_board->robot_list = NULL;
-  cur_board->robot_list_name_sorted = NULL;
-  cur_board->sensor_list = NULL;
-  cur_board->scroll_list = NULL;
+  mfopen_static(buffer, actual_size, &mf);
 
-  // Initialize some fields that may no longer be loaded
-  // from the board file itself..
-
-  cur_board->last_key = '?';
-  cur_board->num_input = 0;
-  cur_board->input_size = 0;
-  cur_board->input_string[0] = 0;
-  cur_board->player_last_dir = 0x10;
-  cur_board->bottom_mesg[0] = 0;
-  cur_board->b_mesg_timer = 0;
-  cur_board->lazwall_start = 7;
-  cur_board->b_mesg_row = 24;
-  cur_board->b_mesg_col = -1;
-  cur_board->scroll_x = 0;
-  cur_board->scroll_y = 0;
-  cur_board->locked_x = -1;
-  cur_board->locked_y = -1;
-  cur_board->volume = 255;
-  cur_board->volume_inc = 0;
-  cur_board->volume_target = 255;
-
-  // board_mode, unused
-  if(fgetc(fp) == EOF)
+  while(next_prop(&prop, &ident, &size, &mf))
   {
-    error_message(E_WORLD_BOARD_MISSING, board_location, NULL);
-    return VAL_MISSING;
+    switch(ident)
+    {
+      case BPROP_EOF:
+        mfseek(&mf, 0, SEEK_END);
+        break;
+
+      // Essential
+      case BPROP_BOARD_NAME:
+        size = MIN(size, BOARD_NAME_SIZE);
+        mfread(cur_board->board_name, size, 1, &prop);
+        cur_board->board_name[BOARD_NAME_SIZE - 1] = 0;
+        break;
+
+      case BPROP_BOARD_WIDTH:
+        err_if_missing(BPROP_BOARD_NAME);
+        cur_board->board_width = load_prop_int(size, &prop);
+        if(cur_board->board_width < 1)
+          goto err_free;
+        break;
+
+      case BPROP_BOARD_HEIGHT:
+        err_if_missing(BPROP_BOARD_WIDTH);
+        cur_board->board_height = load_prop_int(size, &prop);
+        if(cur_board->board_height < 1)
+          goto err_free;
+        break;
+
+      case BPROP_OVERLAY_MODE:
+        err_if_missing(BPROP_BOARD_HEIGHT);
+        v = load_prop_int(size, &prop);
+        cur_board->overlay_mode = CLAMP(v, 0, 3);
+        break;
+
+      case BPROP_NUM_ROBOTS:
+        err_if_missing(BPROP_OVERLAY_MODE);
+        v = load_prop_int(size, &prop) & 0xFF;
+        cur_board->num_robots = v;
+        cur_board->num_robots_allocated = v;
+        break;
+
+      case BPROP_NUM_SCROLLS:
+        err_if_missing(BPROP_NUM_ROBOTS);
+        v = load_prop_int(size, &prop) & 0xFF;
+        cur_board->num_scrolls = v;
+        cur_board->num_scrolls_allocated = v;
+        break;
+
+      case BPROP_NUM_SENSORS:
+        err_if_missing(BPROP_NUM_SCROLLS);
+        v = load_prop_int(size, &prop) & 0xFF;
+        cur_board->num_sensors = v;
+        cur_board->num_sensors_allocated = v;
+        break;
+
+      case BPROP_FILE_VERSION:
+        err_if_missing(BPROP_NUM_SENSORS);
+        *file_version = load_prop_int(size, &prop);
+        break;
+
+
+      // Non-essential
+      case BPROP_MOD_PLAYING:
+        size = MIN(size, MAX_PATH-1);
+        mfread(cur_board->mod_playing, size, 1, &prop);
+        cur_board->mod_playing[size] = 0;
+        break;
+
+      case BPROP_VIEWPORT_X:
+        v = load_prop_int(size, &prop);
+        cur_board->viewport_x = CLAMP(v, 0, 79);
+        break;
+
+      case BPROP_VIEWPORT_Y:
+        v = load_prop_int(size, &prop);
+        cur_board->viewport_y = CLAMP(v, 0, 24);
+        break;
+
+      case BPROP_VIEWPORT_WIDTH:
+        v = load_prop_int(size, &prop);
+        v = CLAMP(v, 1, 80 - cur_board->viewport_x);
+        v = CLAMP(v, 1, cur_board->board_width);
+        cur_board->viewport_width = v;
+        break;
+
+      case BPROP_VIEWPORT_HEIGHT:
+        v = load_prop_int(size, &prop);
+        v = CLAMP(v, 1, 25 - cur_board->viewport_y);
+        v = CLAMP(v, 1, cur_board->board_height);
+        cur_board->viewport_height = v;
+        break;
+
+      case BPROP_CAN_SHOOT:
+        cur_board->can_shoot = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_CAN_BOMB:
+        cur_board->can_bomb = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_FIRE_BURN_BROWN:
+        cur_board->fire_burn_brown = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_FIRE_BURN_SPACE:
+        cur_board->fire_burn_space = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_FIRE_BURN_FAKES:
+        cur_board->fire_burn_fakes = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_FIRE_BURN_TREES:
+        cur_board->fire_burn_trees = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_EXPLOSIONS_LEAVE:
+        cur_board->explosions_leave = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_SAVE_MODE:
+        cur_board->save_mode = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_FOREST_BECOMES:
+        cur_board->forest_becomes = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_COLLECT_BOMBS:
+        cur_board->collect_bombs = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_FIRE_BURNS:
+        cur_board->fire_burns = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_BOARD_N:
+        cur_board->board_dir[0] = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_BOARD_S:
+        cur_board->board_dir[1] = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_BOARD_E:
+        cur_board->board_dir[2] = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_BOARD_W:
+        cur_board->board_dir[3] = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_RESTART_IF_ZAPPED:
+        cur_board->restart_if_zapped = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_TIME_LIMIT:
+        cur_board->time_limit = load_prop_int(size, &prop);
+        break;
+
+
+      // Savegame only
+      case BPROP_SCROLL_X:
+        cur_board->scroll_x = (signed short) load_prop_int(size, &prop);
+        break;
+
+      case BPROP_SCROLL_Y:
+        cur_board->scroll_y = (signed short) load_prop_int(size, &prop);
+        break;
+
+      case BPROP_LOCKED_X:
+        cur_board->locked_x = (signed short) load_prop_int(size, &prop);
+        break;
+
+      case BPROP_LOCKED_Y:
+        cur_board->locked_y = (signed short) load_prop_int(size, &prop);
+        break;
+
+      case BPROP_PLAYER_LAST_DIR:
+        cur_board->player_last_dir = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_PLAYER_NS_LOCKED:
+        cur_board->player_ns_locked = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_PLAYER_EW_LOCKED:
+        cur_board->player_ew_locked = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_PLAYER_ATTACK_LOCKED:
+        cur_board->player_attack_locked = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_LAZWALL_START:
+        cur_board->lazwall_start = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_LAST_KEY:
+        cur_board->last_key = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_NUM_INPUT:
+        cur_board->num_input = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_INPUT_SIZE:
+        cur_board->input_size = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_INPUT_STRING:
+        size = MIN(size, ROBOT_MAX_TR-1);
+        mfread(cur_board->input_string, size, 1, &prop);
+        cur_board->input_string[size] = 0;
+        break;
+
+      case BRPOP_BOTTOM_MESG:
+        size = MIN(size, ROBOT_MAX_TR-1);
+        mfread(cur_board->bottom_mesg, size, 1, &prop);
+        cur_board->bottom_mesg[size] = 0;
+        break;
+
+      case BPROP_BOTTOM_MESG_TIMER:
+        cur_board->b_mesg_timer = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_BOTTOM_MESG_ROW:
+        cur_board->b_mesg_row = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_BOTTOM_MESG_COL:
+        cur_board->b_mesg_col = (signed char) load_prop_int(size, &prop);
+        break;
+
+      case BPROP_VOLUME:
+        cur_board->volume = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_VOLUME_INC:
+        cur_board->volume_inc = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_VOLUME_TARGET:
+        cur_board->volume_target = load_prop_int(size, &prop);
+        break;
+
+      default:
+        break;
+    }
+    last_ident = ident;
   }
 
-  overlay_mode = fgetc(fp);
+  err_if_missing(BPROP_FILE_VERSION);
 
-  if(!overlay_mode)
+  size = cur_board->board_width * cur_board->board_height;
+
+  if(size <= 0 || size > MAX_BOARD_SIZE)
+    goto err_free;
+
+  free(buffer);
+  return 0;
+
+err_free:
+  free(buffer);
+  return 1;
+}
+
+
+static int cmp_robots(const void *dest, const void *src)
+{
+  struct robot *rsrc = *((struct robot **)src);
+  struct robot *rdest = *((struct robot **)dest);
+  return strcasecmp(rdest->robot_name, rsrc->robot_name);
+}
+
+__editor_maybe_static
+int load_board_direct(struct world *mzx_world, struct board *cur_board,
+ struct zip_archive *zp, int savegame, int file_version, unsigned int board_id)
+{
+  unsigned int file_id;
+  unsigned int board_id_read;
+  unsigned int robot_id_read;
+
+  size_t board_size = 0;
+
+  struct robot **robot_list;
+  struct robot **robot_list_name_sorted;
+  struct scroll **scroll_list;
+  struct sensor **sensor_list;
+
+  char found_robots[256] = {0};
+  char found_scrolls[256] = {0};
+  char found_sensors[256] = {0};
+
+  unsigned int num_robots;
+  unsigned int num_scrolls;
+  unsigned int num_sensors;
+  unsigned int num_robots_active = 0;
+
+  unsigned int i;
+
+  int has_base = 0;
+  int has_bid = 0;
+  int has_bpr = 0;
+  int has_bco = 0;
+  int has_uid = 0;
+  int has_upr = 0;
+  int has_uco = 0;
+  int has_och = 0;
+  int has_oco = 0;
+
+  cur_board->world_version = mzx_world->version;
+  default_board(cur_board);
+
+  while(ZIP_SUCCESS ==
+   zip_get_next_prop(zp, &file_id, &board_id_read, &robot_id_read))
   {
-    int overlay_width;
-    int overlay_height;
+    if(board_id_read != board_id)
+      break;
 
-    overlay_mode = fgetc(fp);
-    overlay_width = fgetw(fp);
-    overlay_height = fgetw(fp);
+    switch(file_id)
+    {
+      case FPROP_BOARD_INFO:
+      {
+        if(load_board_info(cur_board, zp, savegame, &file_version))
+          goto err_invalid;
 
-    size = overlay_width * overlay_height;
+        has_base = 1;
+        board_size = cur_board->board_width * cur_board->board_height;
 
-    if((size < 1) || (size > MAX_BOARD_SIZE))
-      goto err_invalid;
+        cur_board->level_id = ccalloc(1, board_size);
+        cur_board->level_param = ccalloc(1, board_size);
+        cur_board->level_color = ccalloc(1, board_size);
+        cur_board->level_under_id = ccalloc(1, board_size);
+        cur_board->level_under_param = ccalloc(1, board_size);
+        cur_board->level_under_color = ccalloc(1, board_size);
 
-    cur_board->overlay = cmalloc(size);
-    cur_board->overlay_color = cmalloc(size);
+        if(cur_board->overlay_mode)
+        {
+          cur_board->overlay = ccalloc(1, board_size);
+          cur_board->overlay_color = ccalloc(1, board_size);
+        }
 
-    if(load_RLE2_plane(cur_board->overlay, fp, size))
-      goto err_freeoverlay;
+        num_robots = cur_board->num_robots;
+        num_scrolls = cur_board->num_scrolls;
+        num_sensors = cur_board->num_sensors;
 
-    test_buffer = cmalloc(1024);
-    free(test_buffer);
+        robot_list = ccalloc(num_robots + 1, sizeof(struct robot *));
 
-    // Skip sizes
-    if(fseek(fp, 4, SEEK_CUR) ||
-     load_RLE2_plane(cur_board->overlay_color, fp, size))
-      goto err_freeoverlay;
+        robot_list_name_sorted =
+         ccalloc(num_robots, sizeof(struct robot *));
 
-    test_buffer = cmalloc(1024);
-    free(test_buffer);
+        scroll_list = ccalloc(num_scrolls + 1, sizeof(struct scroll *));
+
+        sensor_list = ccalloc(num_sensors + 1, sizeof(struct sensor *));
+
+        cur_board->robot_list = robot_list;
+        cur_board->robot_list_name_sorted = robot_list_name_sorted;
+        cur_board->scroll_list = scroll_list;
+        cur_board->sensor_list = sensor_list;
+
+        break;
+      }
+
+      case FPROP_BOARD_BID:
+      {
+        if(!has_base)
+          goto err_invalid;
+
+        has_bid = 1;
+        zip_read_file(zp, cur_board->level_id, board_size, NULL);
+        break;
+      }
+
+      case FPROP_BOARD_BPR:
+      {
+        if(!has_base)
+          goto err_invalid;
+
+        has_bpr = 1;
+        zip_read_file(zp, cur_board->level_param, board_size, NULL);
+        break;
+      }
+
+      case FPROP_BOARD_BCO:
+      {
+        if(!has_base)
+          goto err_invalid;
+
+        has_bco = 1;
+        zip_read_file(zp, cur_board->level_color, board_size, NULL);
+        break;
+      }
+
+      case FPROP_BOARD_UID:
+      {
+        if(!has_base)
+          goto err_invalid;
+
+        has_uid = 1;
+        zip_read_file(zp, cur_board->level_under_id, board_size, NULL);
+        break;
+      }
+
+      case FPROP_BOARD_UPR:
+      {
+        if(!has_base)
+          goto err_invalid;
+
+        has_upr = 1;
+        zip_read_file(zp, cur_board->level_under_param, board_size, NULL);
+        break;
+      }
+
+      case FPROP_BOARD_UCO:
+      {
+        if(!has_base)
+          goto err_invalid;
+
+        has_uco = 1;
+        zip_read_file(zp, cur_board->level_under_color, board_size, NULL);
+        break;
+      }
+
+      case FPROP_BOARD_OCH:
+      {
+        if(!has_base)
+          goto err_invalid;
+
+        if(cur_board->overlay_mode)
+        {
+          has_och = 1;
+          zip_read_file(zp, cur_board->overlay, board_size, NULL);
+        }
+        else
+        {
+          zip_skip_file(zp);
+        }
+
+        break;
+      }
+
+      case FPROP_BOARD_OCO:
+      {
+        if(!has_base)
+          goto err_invalid;
+
+        if(cur_board->overlay_mode)
+        {
+          has_oco = 1;
+          zip_read_file(zp, cur_board->overlay_color, board_size, NULL);
+        }
+        else
+        {
+          zip_skip_file(zp);
+        }
+
+        break;
+      }
+
+      case FPROP_ROBOT:
+      {
+        if(!has_base)
+          goto err_invalid;
+
+        if(robot_id_read <= num_robots && !robot_list[robot_id_read])
+        {
+          struct robot *cur_robot;
+
+          cur_robot = load_robot_allocate(mzx_world, zp, savegame, file_version);
+
+          robot_list[robot_id_read] = cur_robot;
+          robot_list_name_sorted[num_robots_active] = cur_robot;
+
+          num_robots_active++;
+        }
+        else
+        {
+          zip_skip_file(zp);
+        }
+        break;
+      }
+
+      case FPROP_SCROLL:
+      {
+        if(!has_base)
+          goto err_invalid;
+
+        if(robot_id_read <= num_scrolls && !scroll_list[robot_id_read])
+        {
+          scroll_list[robot_id_read] = load_scroll_allocate(zp);
+        }
+        else
+        {
+          zip_skip_file(zp);
+        }
+        break;
+      }
+
+      case FPROP_SENSOR:
+      {
+        if(!has_base)
+          goto err_invalid;
+
+        if(robot_id_read <= num_sensors && !sensor_list[robot_id_read])
+        {
+          sensor_list[robot_id_read] = load_sensor_allocate(zp);
+        }
+        else
+        {
+          zip_skip_file(zp);
+        }
+        break;
+      }
+
+      default:
+        break;
+    }
   }
-  else
-  {
-    overlay_mode = 0;
-    // Undo that last get
-    fseek(fp, -1, SEEK_CUR);
-  }
 
-  cur_board->overlay_mode = overlay_mode;
-
-  board_width = fgetw(fp);
-  board_height = fgetw(fp);
-  cur_board->board_width = board_width;
-  cur_board->board_height = board_height;
-
-  size = board_width * board_height;
-
-  if((size < 1) || (size > MAX_BOARD_SIZE))
-    goto err_freeoverlay;
-
-  cur_board->level_id = cmalloc(size);
-  cur_board->level_color = cmalloc(size);
-  cur_board->level_param = cmalloc(size);
-  cur_board->level_under_id = cmalloc(size);
-  cur_board->level_under_color = cmalloc(size);
-  cur_board->level_under_param = cmalloc(size);
-
-  if(load_RLE2_plane(cur_board->level_id, fp, size))
-    goto err_freeboard;
-
-  if(fseek(fp, 4, SEEK_CUR) ||
-   load_RLE2_plane(cur_board->level_color, fp, size))
-    goto err_freeboard;
-
-  if(fseek(fp, 4, SEEK_CUR) ||
-   load_RLE2_plane(cur_board->level_param, fp, size))
-    goto err_freeboard;
-
-  if(fseek(fp, 4, SEEK_CUR) ||
-   load_RLE2_plane(cur_board->level_under_id, fp, size))
-    goto err_freeboard;
-
-  if(fseek(fp, 4, SEEK_CUR) ||
-   load_RLE2_plane(cur_board->level_under_color, fp, size))
-    goto err_freeboard;
-
-  if(fseek(fp, 4, SEEK_CUR) ||
-   load_RLE2_plane(cur_board->level_under_param, fp, size))
-    goto err_freeboard;
-
-  // Load board parameters
-
-  if(version < 0x0253)
-  {
-    fread(cur_board->mod_playing, LEGACY_MOD_FILENAME_MAX, 1, fp);
-    cur_board->mod_playing[LEGACY_MOD_FILENAME_MAX] = 0;
-  }
-  else
-  {
-    size_t len = fgetw(fp);
-    if(len >= MAX_PATH)
-      len = MAX_PATH - 1;
-
-    fread(cur_board->mod_playing, len, 1, fp);
-    cur_board->mod_playing[len] = 0;
-  }
-
-  viewport_x = fgetc(fp);
-  viewport_y = fgetc(fp);
-  viewport_width = fgetc(fp);
-  viewport_height = fgetc(fp);
-
-  if(
-   (viewport_x < 0) || (viewport_x > 79) ||
-   (viewport_y < 0) || (viewport_y > 24) ||
-   (viewport_width < 1) || (viewport_width > 80) ||
-   (viewport_height < 1) || (viewport_height > 25))
+  if(!has_base)
     goto err_invalid;
 
-  cur_board->viewport_x = viewport_x;
-  cur_board->viewport_y = viewport_y;
-  cur_board->viewport_width = viewport_width;
-  cur_board->viewport_height = viewport_height;
-  cur_board->can_shoot = fgetc(fp);
-  cur_board->can_bomb = fgetc(fp);
-  cur_board->fire_burn_brown = fgetc(fp);
-  cur_board->fire_burn_space = fgetc(fp);
-  cur_board->fire_burn_fakes = fgetc(fp);
-  cur_board->fire_burn_trees = fgetc(fp);
-  cur_board->explosions_leave = fgetc(fp);
-  cur_board->save_mode = fgetc(fp);
-  cur_board->forest_becomes = fgetc(fp);
-  cur_board->collect_bombs = fgetc(fp);
-  cur_board->fire_burns = fgetc(fp);
+  if(!has_bid)
+    error_message(E_ZIP_BOARD_MISSING_DATA, (int)board_id, "bid");
 
-  for(i = 0; i < 4; i++)
-  {
-    cur_board->board_dir[i] = fgetc(fp);
-  }
+  if(!has_bpr)
+    error_message(E_ZIP_BOARD_MISSING_DATA, (int)board_id, "bpr");
 
-  cur_board->restart_if_zapped = fgetc(fp);
-  cur_board->time_limit = fgetw(fp);
+  if(!has_bco)
+    error_message(E_ZIP_BOARD_MISSING_DATA, (int)board_id, "bco");
 
-  if(version < 0x0253)
-  {
-    cur_board->last_key = fgetc(fp);
-    cur_board->num_input = fgetw(fp);
-    cur_board->input_size = fgetc(fp);
+  if(!has_uid)
+    error_message(E_ZIP_BOARD_MISSING_DATA, (int)board_id, "uid");
 
-    fread(cur_board->input_string, LEGACY_INPUT_STRING_MAX + 1, 1, fp);
-    cur_board->input_string[LEGACY_INPUT_STRING_MAX] = 0;
+  if(!has_upr)
+    error_message(E_ZIP_BOARD_MISSING_DATA, (int)board_id, "upr");
 
-    cur_board->player_last_dir = fgetc(fp);
+  if(!has_uco)
+    error_message(E_ZIP_BOARD_MISSING_DATA, (int)board_id, "uco");
 
-    fread(cur_board->bottom_mesg, LEGACY_BOTTOM_MESG_MAX + 1, 1, fp);
-    cur_board->bottom_mesg[LEGACY_BOTTOM_MESG_MAX] = 0;
+  if(!has_och && cur_board->overlay_mode)
+    error_message(E_ZIP_BOARD_MISSING_DATA, (int)board_id, "och");
 
-    cur_board->b_mesg_timer = fgetc(fp);
-    cur_board->lazwall_start = fgetc(fp);
-    cur_board->b_mesg_row = fgetc(fp);
-    cur_board->b_mesg_col = (signed char)fgetc(fp);
-    cur_board->scroll_x = (signed short)fgetw(fp);
-    cur_board->scroll_y = (signed short)fgetw(fp);
-    cur_board->locked_x = (signed short)fgetw(fp);
-    cur_board->locked_y = (signed short)fgetw(fp);
-  }
-  else if(savegame)
-  {
-    size_t len;
+  if(!has_oco && cur_board->overlay_mode)
+    error_message(E_ZIP_BOARD_MISSING_DATA, (int)board_id, "oco");
 
-    cur_board->last_key = fgetc(fp);
-    cur_board->num_input = fgetw(fp);
-    cur_board->input_size = fgetw(fp);
-
-    len = fgetw(fp);
-    if(len >= ROBOT_MAX_TR)
-      len = ROBOT_MAX_TR - 1;
-
-    fread(cur_board->input_string, len, 1, fp);
-    cur_board->input_string[len] = 0;
-
-    cur_board->player_last_dir = fgetc(fp);
-
-    len = fgetw(fp);
-    if(len >= ROBOT_MAX_TR)
-      len = ROBOT_MAX_TR - 1;
-
-    fread(cur_board->bottom_mesg, len, 1, fp);
-    cur_board->bottom_mesg[len] = 0;
-
-    cur_board->b_mesg_timer = fgetc(fp);
-    cur_board->lazwall_start = fgetc(fp);
-    cur_board->b_mesg_row = fgetc(fp);
-    cur_board->b_mesg_col = (signed char)fgetc(fp);
-    cur_board->scroll_x = (signed short)fgetw(fp);
-    cur_board->scroll_y = (signed short)fgetw(fp);
-    cur_board->locked_x = (signed short)fgetw(fp);
-    cur_board->locked_y = (signed short)fgetw(fp);
-  }
-
-  cur_board->player_ns_locked = fgetc(fp);
-  cur_board->player_ew_locked = fgetc(fp);
-  cur_board->player_attack_locked = fgetc(fp);
-
-  if(version < 0x0253 || savegame)
-  {
-    cur_board->volume = fgetc(fp);
-    cur_board->volume_inc = fgetc(fp);
-    cur_board->volume_target = fgetc(fp);
-  }
-
-
-  /***************/
-  /* Load robots */
-  /***************/
-  num_robots = fgetc(fp);
-  num_robots_active = 0;
-
-  if(num_robots == EOF)
-    truncated = 1;
-
-  // EOF/crazy value check
-  if((num_robots < 0) || (num_robots > 255) || (num_robots > size))
-    goto board_scan;
-
-  cur_board->robot_list = ccalloc(num_robots + 1, sizeof(struct robot *));
-  // Also allocate for name sorted list
-  cur_board->robot_list_name_sorted =
-   ccalloc(num_robots, sizeof(struct robot *));
-
-  // Any null objects being placed will later be optimized out
-  set_error_suppression(E_WORLD_ROBOT_MISSING, 0);
-
-  if(num_robots)
-  {
-    for(i = 1; i <= num_robots; i++)
-    {
-      // Make sure there's robots to load here
-      int length_check = fgetw(fp);
-      fseek(fp, -2, SEEK_CUR);
-      if(length_check < 0)
-      {
-        // Send off the error and then tell validation to shut up for now
-        error_message(E_WORLD_ROBOT_MISSING, ftell(fp), NULL);
-        set_error_suppression(E_WORLD_ROBOT_MISSING, 1);
-        truncated = 1;
-      }
-
-      cur_robot = load_robot_allocate(mzx_world, fp, savegame, version);
-
-      if(cur_robot->used)
-      {
-        cur_board->robot_list[i] = cur_robot;
-        cur_board->robot_list_name_sorted[num_robots_active] = cur_robot;
-        num_robots_active++;
-      }
-      else
-      {
-        // We don't need no null robot
-        clear_robot(cur_robot);
-        cur_board->robot_list[i] = NULL;
-      }
-    }
-  }
-
-  set_error_suppression(E_WORLD_ROBOT_MISSING, 0);
-
+  /* Sort the name sorted list.
+   * Do not shorten it; the name sorted list is expected to be num_robots in
+   * length at all times, though it's not obvious from the way the legacy loader
+   * works. After loading, the legacy loader will perform optimize_null_objects,
+   * which removes the unused robots. However, this loader does not, to preserve
+   * robot IDs when loading saves. Just leave nulls in the spaces at the end.
+   */
   if(num_robots_active > 0)
   {
-    if(num_robots_active != num_robots)
-    {
-      cur_board->robot_list_name_sorted =
-       crealloc(cur_board->robot_list_name_sorted,
-       sizeof(struct robot *) * num_robots_active);
-    }
-    qsort(cur_board->robot_list_name_sorted, num_robots_active,
+    qsort(robot_list_name_sorted, num_robots_active,
      sizeof(struct robot *), cmp_robots);
   }
-  else
-  {
-    free(cur_board->robot_list_name_sorted);
-    cur_board->robot_list_name_sorted = NULL;
-  }
 
-  cur_board->num_robots = num_robots;
-  cur_board->num_robots_allocated = num_robots;
   cur_board->num_robots_active = num_robots_active;
 
+  // Insert the global robot.
+  robot_list[0] = &(mzx_world->global_robot);
 
-  /****************/
-  /* Load scrolls */
-  /****************/
-  num_scrolls = fgetc(fp);
-
-  if(num_scrolls == EOF)
-    truncated = 1;
-
-  if((num_scrolls < 0) || (num_scrolls > 255) || (num_robots + num_scrolls > size))
-    goto board_scan;
-
-  cur_board->scroll_list = ccalloc(num_scrolls + 1, sizeof(struct scroll *));
-
-  if(num_scrolls)
+  // Validate the data on the board.
+  if(has_bid)
   {
-    for(i = 1; i <= num_scrolls; i++)
+    char *level_id = cur_board->level_id;
+    char *level_param = cur_board->level_param;
+    char *level_color = cur_board->level_color;
+    char *level_under_id = cur_board->level_under_id;
+    unsigned char id;
+    unsigned char pr;
+    int err;
+
+    // These IDs aren't allowed.
+    found_robots[0] = 1;
+    found_scrolls[0] = 1;
+    found_sensors[0] = 1;
+
+    for(i = 0; i < board_size; i++)
     {
-      cur_scroll = load_scroll_allocate(fp);
-      if(cur_scroll->used)
-        cur_board->scroll_list[i] = cur_scroll;
-      else
-        clear_scroll(cur_scroll);
-    }
-  }
+      id = level_id[i];
 
-  cur_board->num_scrolls = num_scrolls;
-  cur_board->num_scrolls_allocated = num_scrolls;
-
-
-  /****************/
-  /* Load sensors */
-  /****************/
-  num_sensors = fgetc(fp);
-
-  if(num_sensors == EOF)
-    truncated = 1;
-
-  if((num_sensors < 0) || (num_sensors > 255) ||
-   (num_scrolls + num_sensors + num_robots > size))
-    goto board_scan;
-
-  cur_board->sensor_list = ccalloc(num_sensors + 1, sizeof(struct sensor *));
-
-  if(num_sensors)
-  {
-    for(i = 1; i <= num_sensors; i++)
-    {
-      cur_sensor = load_sensor_allocate(fp);
-      if(cur_sensor->used)
-        cur_board->sensor_list[i] = cur_sensor;
-      else
-        clear_sensor(cur_sensor);
-    }
-  }
-
-  cur_board->num_sensors = num_sensors;
-  cur_board->num_sensors_allocated = num_sensors;
-
-
-board_scan:
-  // Now do a board scan to make sure there aren't more than the data told us.
-  {
-    int robot_count = 0, scroll_count = 0, sensor_count = 0;
-    char err_mesg[80] = { 0 };
-
-    for(i = 0; i < (board_width * board_height); i++)
-    {
-      if(cur_board->level_id[i] > 127)
-        cur_board->level_id[i] = CUSTOM_BLOCK;
-
-      if(cur_board->level_under_id[i] > 127)
-        cur_board->level_under_id[i] = CUSTOM_FLOOR;
-
-      switch(cur_board->level_id[i])
+      switch(id)
       {
         case ROBOT:
         case ROBOT_PUSHABLE:
         {
-          robot_count++;
-          if(robot_count > cur_board->num_robots)
+          pr = level_param[i];
+
+          if(!found_robots[pr] && pr<=num_robots && robot_list[pr])
           {
-            cur_board->level_id[i] = CUSTOM_BLOCK;
-            cur_board->level_param[i] = 'R';
-            cur_board->level_color[i] = 0xCF;
+            found_robots[pr] = 1;
           }
+          else
+          {
+            err = (board_id << 8)|pr;
+
+            if(found_robots[pr])
+              error_message(E_ZIP_ROBOT_DUPLICATED, err, NULL);
+            else
+              error_message(E_ZIP_ROBOT_MISSING_FROM_DATA, err, NULL);
+
+            level_id[i] = CUSTOM_BLOCK;
+            level_param[i] = 'R';
+            level_color[i] = 0xCF;
+          }
+
           break;
         }
+
         case SIGN:
         case SCROLL:
         {
-          scroll_count++;
-          if(scroll_count > cur_board->num_scrolls)
+          pr = level_param[i];
+
+          if(!found_scrolls[pr] && pr<=num_scrolls && scroll_list[pr])
           {
-            cur_board->level_id[i] = CUSTOM_BLOCK;
-            cur_board->level_param[i] = 'S';
-            cur_board->level_color[i] = 0xCF;
+            found_scrolls[pr] = 1;
           }
+          else
+          {
+            // Silently fix.
+            level_id[i] = CUSTOM_BLOCK;
+            level_param[i] = 'S';
+            level_color[i] = 0xCF;
+          }
+          break;
         }
+
         case SENSOR:
         {
-          // Wait, I forgot.  Nobody cares about sensors.
-          //sensor_count++;
-          if(sensor_count > cur_board->num_sensors)
+          pr = level_param[i];
+
+          if(!found_sensors[pr] && pr<=num_sensors && sensor_list[pr])
           {
-            cur_board->level_id[i] = CUSTOM_FLOOR;
+            found_sensors[pr] = 1;
+          }
+          else
+          {
+            // Silently fix.
+            level_id[i] = CUSTOM_FLOOR;
+            level_param[i] = 'S';
+            level_color[i] = 0xDF;
+          }
+        }
+
+        default:
+        {
+          // If for any reason extkinds find their way into a 2.90+ file...
+          if(id > 127)
+            level_id[i] = CUSTOM_BLOCK;
+          break;
+        }
+      }
+
+      id = level_under_id[i];
+
+      switch(id)
+      {
+        case SENSOR:
+        {
+          pr = cur_board->level_under_param[i];
+
+          if(!found_sensors[pr] && pr<=num_sensors && sensor_list[pr])
+          {
+            found_sensors[pr] = 1;
+          }
+          else
+          {
+            // Silently fix.
+            level_under_id[i] = CUSTOM_FLOOR;
             cur_board->level_param[i] = 'S';
             cur_board->level_color[i] = 0xDF;
           }
+          break;
+        }
+
+        default:
+        {
+          if(level_under_id[i] > 127)
+            level_under_id[i] = CUSTOM_FLOOR;
+          break;
         }
       }
     }
-    if(robot_count > cur_board->num_robots)
-    {
-      snprintf(err_mesg, 80, "found %i robots; expected %i",
-       robot_count, cur_board->num_robots);
-
-      error_message(E_BOARD_SUMMARY, board_location, err_mesg);
-    }
-    if(scroll_count > cur_board->num_scrolls)
-    {
-      snprintf(err_mesg, 80, "found %i scrolls/signs; expected %i",
-       scroll_count, cur_board->num_scrolls);
-
-      error_message(E_BOARD_SUMMARY, board_location, err_mesg);
-    }
-    // This won't be reached but I'll leave it anyway.
-    if(sensor_count > cur_board->num_sensors)
-    {
-      snprintf(err_mesg, 80, "found %i sensors; expected %i",
-       sensor_count, cur_board->num_sensors);
-
-      error_message(E_BOARD_SUMMARY, board_location, err_mesg);
-    }
-    if(err_mesg[0])
-    {
-      error_message(E_BOARD_SUMMARY, board_location,
-       "Any extra robots/scrolls/signs were replaced");
-    }
-
   }
 
-  if(truncated == 1)
-    error_message(E_WORLD_BOARD_TRUNCATED_SAFE, board_location, NULL);
+  // Now, make sure everything loaded was found on the board.
+  for(i = 1; i <= num_robots; i++)
+  {
+    if(robot_list[i] && !found_robots[i])
+    {
+      // Deleting these is a pain. Just leave them.
+      error_message(E_ZIP_ROBOT_MISSING_FROM_BOARD, (board_id << 8)|i, NULL);
+    }
+  }
+
+  for(i = 1; i <= num_scrolls; i++)
+  {
+    if(scroll_list[i] && !found_scrolls[i])
+    {
+      // Silently fix.
+      clear_scroll(scroll_list[i]);
+      scroll_list[i] = NULL;
+    }
+  }
+
+  for(i = 1; i <= num_sensors; i++)
+  {
+    if(sensor_list[i] && !found_sensors[i])
+    {
+      // Silently fix.
+      clear_sensor(sensor_list[i]);
+      sensor_list[i] = NULL;
+    }
+  }
 
   return VAL_SUCCESS;
 
-err_freeboard:
-  free(cur_board->level_id);
-  free(cur_board->level_color);
-  free(cur_board->level_param);
-  free(cur_board->level_under_id);
-  free(cur_board->level_under_color);
-  free(cur_board->level_under_param);
-
-err_freeoverlay:
-  if(overlay_mode)
-  {
-    free(cur_board->overlay);
-    free(cur_board->overlay_color);
-  }
-
 err_invalid:
-  error_message(E_WORLD_BOARD_CORRUPT, board_location, NULL);
+  error_message(E_ZIP_BOARD_CORRUPT, (int)board_id, NULL);
+  dummy_board(cur_board);
+
   return VAL_INVALID;
 }
 
-struct board *load_board_allocate(struct world *mzx_world, FILE *fp,
- int savegame, int file_version)
+struct board *load_board_allocate(struct world *mzx_world,
+ struct zip_archive *zp, int savegame, int file_version, unsigned int board_id)
 {
   struct board *cur_board = cmalloc(sizeof(struct board));
-  int board_size, board_location, last_location;
-  enum val_result result;
 
-  board_size = fgetd(fp);
+  load_board_direct(mzx_world, cur_board, zp, savegame, file_version, board_id);
 
-  // Skip deleted boards
-  if(!board_size)
-  {
-    fseek(fp, 4, SEEK_CUR);
-    goto err_out;
-  }
-
-  board_location = fgetd(fp);
-  last_location = ftell(fp);
-
-  if(fseek(fp, board_location, SEEK_SET))
-  {
-    error_message(E_WORLD_BOARD_MISSING, board_location, NULL);
-    goto err_out;
-  }
-
-  cur_board->world_version = mzx_world->version;
-  result = load_board_direct(mzx_world, cur_board, fp, board_size, savegame,
-   file_version);
-
-  if(result != VAL_SUCCESS)
-    create_blank_board(cur_board);
-
-  fseek(fp, last_location, SEEK_SET);
   return cur_board;
-
-err_out:
-  free(cur_board);
-  return NULL;
-}
-
-static void save_RLE2_plane(char *plane, FILE *fp, int size)
-{
-  int i, runsize;
-  char current_char;
-
-  for(i = 0; i < size; i++)
-  {
-    current_char = plane[i];
-    runsize = 1;
-
-    while((i < (size - 1)) && (plane[i + 1] == current_char) &&
-     (runsize < 127))
-    {
-      i++;
-      runsize++;
-    }
-
-    // Put the runsize if necessary
-    if((runsize > 1) || current_char & 0x80)
-    {
-      fputc(runsize | 0x80, fp);
-      // Put the run character
-      fputc(current_char, fp);
-    }
-    else
-    {
-      fputc(current_char, fp);
-    }
-  }
-}
-
-int save_board(struct world *mzx_world, struct board *cur_board, FILE *fp,
- int savegame, int version)
-{
-  int num_robots, num_scrolls, num_sensors;
-  int start_location = ftell(fp);
-  int board_width = cur_board->board_width;
-  int board_height = cur_board->board_height;
-  int board_size = board_width * board_height;
-  int i;
-
-  // Board mode is now ignored, put 0
-  fputc(0, fp);
-  // Put overlay mode
-
-  if(cur_board->overlay_mode)
-  {
-    fputc(0, fp);
-    fputc(cur_board->overlay_mode, fp);
-    fputw(cur_board->board_width, fp);
-    fputw(cur_board->board_height, fp);
-    save_RLE2_plane(cur_board->overlay, fp, board_size);
-    fputw(cur_board->board_width, fp);
-    fputw(cur_board->board_height, fp);
-    save_RLE2_plane(cur_board->overlay_color, fp, board_size);
-  }
-
-  fputw(board_width, fp);
-  fputw(board_height, fp);
-  save_RLE2_plane(cur_board->level_id, fp, board_size);
-  fputw(board_width, fp);
-  fputw(board_height, fp);
-  save_RLE2_plane(cur_board->level_color, fp, board_size);
-  fputw(board_width, fp);
-  fputw(board_height, fp);
-  save_RLE2_plane(cur_board->level_param, fp, board_size);
-  fputw(board_width, fp);
-  fputw(board_height, fp);
-  save_RLE2_plane(cur_board->level_under_id, fp, board_size);
-  fputw(board_width, fp);
-  fputw(board_height, fp);
-  save_RLE2_plane(cur_board->level_under_color, fp, board_size);
-  fputw(board_width, fp);
-  fputw(board_height, fp);
-  save_RLE2_plane(cur_board->level_under_param, fp, board_size);
-
-  // Save board parameters
-
-  {
-    size_t len = strlen(cur_board->mod_playing);
-    fputw((int)len, fp);
-    if(len)
-      fwrite(cur_board->mod_playing, len, 1, fp);
-  }
-
-  fputc(cur_board->viewport_x, fp);
-  fputc(cur_board->viewport_y, fp);
-  fputc(cur_board->viewport_width, fp);
-  fputc(cur_board->viewport_height, fp);
-  fputc(cur_board->can_shoot, fp);
-  fputc(cur_board->can_bomb, fp);
-  fputc(cur_board->fire_burn_brown, fp);
-  fputc(cur_board->fire_burn_space, fp);
-  fputc(cur_board->fire_burn_fakes, fp);
-  fputc(cur_board->fire_burn_trees, fp);
-  fputc(cur_board->explosions_leave, fp);
-  fputc(cur_board->save_mode, fp);
-  fputc(cur_board->forest_becomes, fp);
-  fputc(cur_board->collect_bombs, fp);
-  fputc(cur_board->fire_burns, fp);
-
-  for(i = 0; i < 4; i++)
-  {
-    fputc(cur_board->board_dir[i], fp);
-  }
-
-  fputc(cur_board->restart_if_zapped, fp);
-  fputw(cur_board->time_limit, fp);
-
-  if(savegame)
-  {
-    size_t len;
-
-    fputc(cur_board->last_key, fp);
-    fputw(cur_board->num_input, fp);
-    fputw((int)cur_board->input_size, fp);
-
-    len = strlen(cur_board->input_string);
-    fputw((int)len, fp);
-    if(len)
-      fwrite(cur_board->input_string, len, 1, fp);
-
-    fputc(cur_board->player_last_dir, fp);
-
-    len = strlen(cur_board->bottom_mesg);
-    fputw((int)len, fp);
-    if(len)
-      fwrite(cur_board->bottom_mesg, len, 1, fp);
-
-    fputc(cur_board->b_mesg_timer, fp);
-    fputc(cur_board->lazwall_start, fp);
-    fputc(cur_board->b_mesg_row, fp);
-    fputc(cur_board->b_mesg_col, fp);
-    fputw(cur_board->scroll_x, fp);
-    fputw(cur_board->scroll_y, fp);
-    fputw(cur_board->locked_x, fp);
-    fputw(cur_board->locked_y, fp);
-  }
-
-  fputc(cur_board->player_ns_locked, fp);
-  fputc(cur_board->player_ew_locked, fp);
-  fputc(cur_board->player_attack_locked, fp);
-
-  if(savegame)
-  {
-    fputc(cur_board->volume, fp);
-    fputc(cur_board->volume_inc, fp);
-    fputc(cur_board->volume_target, fp);
-  }
-
-  // Save robots
-  num_robots = cur_board->num_robots;
-  fputc(num_robots, fp);
-
-  if(num_robots)
-  {
-    struct robot *cur_robot;
-
-    for(i = 1; i <= num_robots; i++)
-    {
-      cur_robot = cur_board->robot_list[i];
-      save_robot(mzx_world, cur_robot, fp, savegame, version);
-    }
-  }
-
-  // Save scrolls
-  num_scrolls = cur_board->num_scrolls;
-  putc(num_scrolls, fp);
-
-  if(num_scrolls)
-  {
-    struct scroll *cur_scroll;
-
-    for(i = 1; i <= num_scrolls; i++)
-    {
-      cur_scroll = cur_board->scroll_list[i];
-      save_scroll(cur_scroll, fp, savegame);
-    }
-  }
-
-  // Save sensors
-  num_sensors = cur_board->num_sensors;
-  fputc(num_sensors, fp);
-
-  if(num_sensors)
-  {
-    struct sensor *cur_sensor;
-
-    for(i = 1; i <= num_sensors; i++)
-    {
-      cur_sensor = cur_board->sensor_list[i];
-      save_sensor(cur_sensor, fp, savegame);
-    }
-  }
-
-  return (ftell(fp) - start_location);
 }
 
 void clear_board(struct board *cur_board)

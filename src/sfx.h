@@ -26,8 +26,10 @@
 
 __M_BEGIN_DECLS
 
-// Number of unique sound effects
+// Number of unique sound effects and length of sound effects
 #define NUM_SFX         50
+#define SFX_SIZE        69
+#define LEGACY_SFX_SIZE 69
 
 #include "world_struct.h"
 
@@ -35,7 +37,7 @@ __M_BEGIN_DECLS
 #define NOISEMAX        4096
 
 #ifdef CONFIG_EDITOR
-CORE_LIBSPEC extern char sfx_strs[NUM_SFX][69];
+CORE_LIBSPEC extern char sfx_strs[NUM_SFX][SFX_SIZE];
 #endif // CONFIG_EDITOR
 
 extern int topindex, backindex;

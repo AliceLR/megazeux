@@ -32,7 +32,7 @@ int backindex = 0; // Marks bottom of queue
 
 #if defined(CONFIG_AUDIO) || defined(CONFIG_EDITOR)
 
-__editor_maybe_static char sfx_strs[NUM_SFX][69] =
+__editor_maybe_static char sfx_strs[NUM_SFX][SFX_SIZE] =
 {
   "5c-gec-gec", // Gem
   "5c-gec-gec", // Magic Gem
@@ -150,7 +150,7 @@ void play_sfx(struct world *mzx_world, int sfxn)
   {
     if(mzx_world->custom_sfx_on)
     {
-      play_str(mzx_world->custom_sfx + (sfxn * 69), 1);
+      play_str(mzx_world->custom_sfx + (sfxn * SFX_SIZE), 1);
     }
     else
     {

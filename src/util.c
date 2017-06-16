@@ -230,8 +230,10 @@ void mzx_res_free(void)
       free(mzx_res[i].path);
 }
 
+#ifdef USERCONFFILE
 #define COPY_BUFFER_SIZE  4096
 static unsigned char copy_buffer[COPY_BUFFER_SIZE];
+#endif
 
 char *mzx_res_get_by_id(enum resource_id id)
 {
@@ -304,6 +306,46 @@ void mzx_res_get_extra_shader_dir(char *dest)
 }
 #endif
 
+// Get 2 bytes, little endian
+
+int fgetw(FILE *fp)
+{
+  int a = fgetc(fp), b = fgetc(fp);
+  if((a == EOF) || (b == EOF))
+    return EOF;
+
+  return (b << 8) | a;
+}
+
+// Get 4 bytes, little endian
+
+int fgetd(FILE *fp)
+{
+  int a = fgetc(fp), b = fgetc(fp), c = fgetc(fp), d = fgetc(fp);
+  if((a == EOF) || (b == EOF) || (c == EOF) || (d == EOF))
+    return EOF;
+
+  return (d << 24) | (c << 16) | (b << 8) | a;
+}
+
+// Put 2 bytes, little endian
+
+void fputw(int src, FILE *fp)
+{
+  fputc(src & 0xFF, fp);
+  fputc(src >> 8, fp);
+}
+
+// Put 4 bytes, little endian
+
+void fputd(int src, FILE *fp)
+{
+  fputc(src & 0xFF, fp);
+  fputc((src >> 8) & 0xFF, fp);
+  fputc((src >> 16) & 0xFF, fp);
+  fputc((src >> 24) & 0xFF, fp);
+}
+
 // Determine file size of an open FILE and rewind it
 
 long ftell_and_rewind(FILE *f)
@@ -332,6 +374,18 @@ unsigned int Random(unsigned long long range)
 
   value = (seed & 0xFFFFFFFF) * range / 0xFFFFFFFF;
   return (unsigned int)value;
+}
+
+// FIXME: This function should probably die. It's unsafe.
+void add_ext(char *src, const char *ext)
+{
+  size_t len = strlen(src);
+
+  if((len < 4) || ((src[len - 4] != '.') && (src[len - 3] != '.')
+   && (src[len - 2] != '.')))
+  {
+    strncat(src, ext, 4);
+  }
 }
 
 __utils_maybe_static ssize_t __get_path(const char *file_name, char *dest,
@@ -638,6 +692,50 @@ void *boyer_moore_search(void *A, size_t a_len, void *B, size_t b_len,
 }
 
 
+int mem_getc(const unsigned char **ptr)
+{
+  int val = (*ptr)[0];
+  *ptr += 1;
+  return val;
+}
+
+int mem_getw(const unsigned char **ptr)
+{
+  int val = (*ptr)[0] | ((*ptr)[1] << 8);
+  *ptr += 2;
+  return val;
+}
+
+int mem_getd(const unsigned char **ptr)
+{
+  int val = (*ptr)[0] | ((*ptr)[1] << 8) | ((*ptr)[2] << 16) | ((int)((*ptr)[3]) << 24);
+  *ptr += 4;
+  return val;
+}
+
+void mem_putc(int src, unsigned char **ptr)
+{
+  (*ptr)[0] = src;
+  *ptr += 1;
+}
+
+void mem_putw(int src, unsigned char **ptr)
+{
+  (*ptr)[0] = src & 0xFF;
+  (*ptr)[1] = (src >> 8) & 0xFF;
+  *ptr += 2;
+}
+
+void mem_putd(int src, unsigned char **ptr)
+{
+  (*ptr)[0] = src & 0xFF;
+  (*ptr)[1] = (src >> 8) & 0xFF;
+  (*ptr)[2] = (src >> 16) & 0xFF;
+  (*ptr)[3] = (src >> 24) & 0xFF;
+  *ptr += 4;
+}
+
+
 // like fsafegets, except from memory.
 int memsafegets(char *dest, int size, char **src, char *end)
 {
@@ -685,22 +783,22 @@ int memsafegets(char *dest, int size, char **src, char *end)
 }
 
 
-struct memfile *mfopen(char *src, size_t len)
+struct memfile *mfopen(const void *src, size_t len)
 {
   struct memfile *mf = cmalloc(sizeof(struct memfile));
 
-  mf->start = src;
-  mf->current = src;
-  mf->end = src + len;
+  mf->start = (char *)src;
+  mf->current = (char *)src;
+  mf->end = (char *)src + len;
 
   return mf;
 }
 
-void mfopen_static(char *src, size_t len, struct memfile *mf)
+void mfopen_static(const void *src, size_t len, struct memfile *mf)
 {
-  mf->start = src;
-  mf->current = src;
-  mf->end = src + len;
+  mf->start = (char *)src;
+  mf->current = (char *)src;
+  mf->end = (char *)src + len;
 }
 
 int mfclose(struct memfile *mf)
@@ -769,33 +867,35 @@ void mfputd(int ch, struct memfile *mf)
   mf->current += 4;
 }
 
-int mfread(char *dest, size_t len, size_t count, struct memfile *mf)
+int mfread(void *dest, size_t len, size_t count, struct memfile *mf)
 {
   unsigned int i;
+  char *pos = dest;
   for(i = 0; i < count; i++)
   {
-    if(mf->current + len >= mf->end)
+    if(mf->current + len > mf->end)
       break;
 
-    memcpy(dest, mf->current, len);
+    memcpy(pos, mf->current, len);
     mf->current += len;
-    dest += len;
+    pos += len;
   }
 
   return i;
 }
 
-int mfwrite(char *src, size_t len, size_t count, struct memfile *mf)
+int mfwrite(const void *src, size_t len, size_t count, struct memfile *mf)
 {
   unsigned int i;
+  char *pos = (char *)src;
   for(i = 0; i < count; i++)
   {
-    if(mf->current + len >= mf->end)
+    if(mf->current + len > mf->end)
       break;
 
-    memcpy(mf->current, src, len);
+    memcpy(mf->current, pos, len);
     mf->current += len;
-    src += len;
+    pos += len;
   }
 
   return i;

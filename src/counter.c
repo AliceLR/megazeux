@@ -1700,6 +1700,20 @@ static int save_world_read(struct world *mzx_world,
   return 0;
 }
 
+static int load_counters_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  mzx_world->special_counter_return = FOPEN_LOAD_COUNTERS;
+  return 0;
+}
+
+static int save_counters_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  mzx_world->special_counter_return = FOPEN_SAVE_COUNTERS;
+  return 0;
+}
+
 static int load_robot_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
@@ -2641,6 +2655,7 @@ static const struct function_counter builtin_counters[] =
   { "key_release", 0x0245, key_release_read, NULL },                 // 2.69
   { "lava_walk", 0x0209, lava_walk_read, lava_walk_write },          // 2.60
   { "load_bc?", 0x0249, load_bc_read, NULL },                        // 2.70
+  { "load_counters", 0x025A, load_counters_read, NULL },             // 2.90
   { "load_game", 0x0244, load_game_read, NULL },                     // 2.68
   { "load_robot?", 0x0249, load_robot_read, NULL },                  // 2.70
 #ifdef CONFIG_DEBYTECODE
@@ -2679,6 +2694,7 @@ static const struct function_counter builtin_counters[] =
   { "robot_id", 0x0209, robot_id_read, NULL },                       // 2.60
   { "robot_id_*", 0x0241, robot_id_n_read, NULL },                   // 2.65
   { "save_bc?", 0x0249, save_bc_read, NULL },                        // 2.70
+  { "save_counters", 0x025A, save_counters_read, NULL},              // 2.90
   { "save_game", 0x0244, save_game_read, NULL },                     // 2.68
   { "save_robot?", 0x0249, save_robot_read, NULL },                  // 2.70
   { "save_world", 0x0248, save_world_read, NULL },                   // 2.69c
@@ -2905,6 +2921,32 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       break;
     }
 
+    case FOPEN_SAVE_COUNTERS:
+    {
+      char *translated_path = cmalloc(MAX_PATH);
+      int err;
+
+      err = fsafetranslate(char_value, translated_path);
+      if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
+        save_counters_file(mzx_world, translated_path);
+
+      free(translated_path);
+      break;
+    }
+
+    case FOPEN_LOAD_COUNTERS:
+    {
+      char *translated_path = cmalloc(MAX_PATH);
+      int err;
+
+      err = fsafetranslate(char_value, translated_path);
+      if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
+        load_counters_file(mzx_world, translated_path);
+
+      free(translated_path);
+      break;
+    }
+
     case FOPEN_SAVE_GAME:
     {
       char *translated_path;
@@ -2921,9 +2963,9 @@ int set_counter_special(struct world *mzx_world, char *char_value,
           cur_robot->program_bytecode[cur_robot->cur_prog_line] + 2;
         }
 
-        err = fsafetranslate(char_value, translated_path);
-        if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
-          save_world(mzx_world, translated_path, 1);
+      err = fsafetranslate(char_value, translated_path);
+      if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
+        save_world(mzx_world, translated_path, 1, WORLD_VERSION);
 
         free(translated_path);
       }
@@ -2972,7 +3014,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
         err = fsafetranslate(char_value, translated_path);
         if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
-          save_world(mzx_world, translated_path, 0);
+          save_world(mzx_world, translated_path, 0, WORLD_VERSION);
 
         free(translated_path);
       }
@@ -4198,6 +4240,32 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
   return 0;
 }
 
+// Creates a new counter if it doesn't already exist; otherwise, sets the
+// old counter's value. Basically, set_string without the function check.
+void new_counter(struct world *mzx_world, const char *name, int value, int id)
+{
+  struct counter *cdest;
+  int next;
+
+  cdest = find_counter(mzx_world, name, &next);
+
+  if(cdest)
+  {
+    // See if there's a gateway
+    if(cdest->gateway_write)
+    {
+      value = cdest->gateway_write(mzx_world, cdest, name, value, id);
+    }
+
+    cdest->value = value;
+  }
+
+  else
+  {
+    add_counter(mzx_world, name, value, next);
+  }
+}
+
 // Creates a new string if it doesn't already exist; otherwise, resizes
 // the string to the provided length
 struct string *new_string(struct world *mzx_world, const char *name,
@@ -4672,28 +4740,13 @@ void counter_fsg(void)
   }
 }
 
-struct counter *load_counter(struct world *mzx_world, FILE *fp)
+// Create a new counter from loading a save file. This skips find_counter.
+struct counter *load_new_counter(const char *name, int name_length, int value)
 {
-  int value = fgetd(fp);
-  int name_length = fgetd(fp);
-
   struct counter *src_counter =
    cmalloc(sizeof(struct counter) + name_length);
-  fread(src_counter->name, name_length, 1, fp);
 
-  // Let's not have too many of these things, hopefully
-  if(!strncasecmp(src_counter->name, "mzx_speed", name_length))
-  {
-    mzx_world->mzx_speed = value;
-    free(src_counter);
-    return NULL;
-  }
-  if(!strncasecmp(src_counter->name, "_____lock_speed", name_length))
-  {
-    mzx_world->lock_speed = value;
-    free(src_counter);
-    return NULL;
-  }
+  memcpy(src_counter->name, name, name_length);
 
   src_counter->name[name_length] = 0;
   src_counter->value = value;
@@ -4708,19 +4761,17 @@ struct counter *load_counter(struct world *mzx_world, FILE *fp)
   return src_counter;
 }
 
-struct string *load_string(FILE *fp)
+// Create a new string from loading a save file. This skips find_string.
+struct string *load_new_string(const char *name, int name_length,
+ int str_length)
 {
-  int name_length = fgetd(fp);
-  int str_length = fgetd(fp);
-
   struct string *src_string =
    cmalloc(sizeof(struct string) + name_length + str_length);
 
-  fread(src_string->name, name_length, 1, fp);
+  memcpy(src_string->name, name, name_length);
 
   src_string->value = src_string->name + name_length + 1;
 
-  fread(src_string->value, str_length, 1, fp);
   src_string->name[name_length] = 0;
 
   src_string->length = str_length;
@@ -4731,26 +4782,6 @@ struct string *load_string(FILE *fp)
 #endif
 
   return src_string;
-}
-
-void save_counter(FILE *fp, struct counter *src_counter)
-{
-  size_t name_length = strlen(src_counter->name);
-
-  fputd(src_counter->value, fp);
-  fputd((int)name_length, fp);
-  fwrite(src_counter->name, name_length, 1, fp);
-}
-
-void save_string(FILE *fp, struct string *src_string)
-{
-  size_t name_length = strlen(src_string->name);
-  size_t str_length = src_string->length;
-
-  fputd((int)name_length, fp);
-  fputd((int)str_length, fp);
-  fwrite(src_string->name, name_length, 1, fp);
-  fwrite(src_string->value, str_length, 1, fp);
 }
 
 void free_counter_list(struct counter **counter_list, int num_counters)
