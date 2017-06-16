@@ -2196,6 +2196,19 @@ __editor_maybe_static void play_game(struct world *mzx_world)
       {
         keylbl[3] = key_char;
         send_robot_all_def(mzx_world, keylbl);
+        debug("This world's version is %x\n", mzx_world->version);
+        // In MZX versions <=2.70 key was a board counter
+        if (mzx_world->version <= 0x0249)
+        {
+          char keych = toupper(key_char);
+          // <2.60 it only supported 1-9 and A-Z
+          if (mzx_world->version >= 0x0232 ||
+           (keych >= 'A' && keych <= 'Z') |
+           (keych >= '1' && keych <= '9'))
+          {
+            src_board->last_key = keych;
+          }
+        }
       }
 
       switch(key)

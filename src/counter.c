@@ -1065,12 +1065,22 @@ static void input_write(struct world *mzx_world,
 static int key_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
+  // In versions <=2.70 key was a board counter
+  if (mzx_world->version <= 0x0249)
+  {
+    return mzx_world->current_board->last_key;
+  }
   return toupper(get_last_key(keycode_internal));
 }
 
 static void key_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
+  // In versions <=2.70 key was a board counter
+  if (mzx_world->version <= 0x0249)
+  {
+    mzx_world->current_board->last_key = CLAMP(value, 0, 255);
+  }
   force_last_key(keycode_internal, toupper(value));
 }
 
