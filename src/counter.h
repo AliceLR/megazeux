@@ -41,6 +41,8 @@ CORE_LIBSPEC int set_string(struct world *mzx_world, const char *name,
 CORE_LIBSPEC void set_string_raw(struct world *mzx_world, const void *buffer,
  size_t len, struct string *src, int id);
 CORE_LIBSPEC void counter_fsg(void);
+CORE_LIBSPEC void new_counter(struct world *mzx_world, const char *name,
+ int value, int id);
 CORE_LIBSPEC struct string *new_string(struct world *mzx_world, const char *name,
  size_t length, int id);
 
@@ -63,10 +65,15 @@ int set_counter_special(struct world *mzx_world, char *char_value,
  int value, int id);
 bool is_string(char *buffer);
 
-struct counter *load_counter(struct world *mzx_world, FILE *fp);
-struct string *load_string(FILE *fp);
-void save_counter(FILE *fp, struct counter *src_counter);
-void save_string(FILE *fp, struct string *src_string);
+struct counter *load_new_counter(const char *name, int name_length, int value);
+struct string *load_new_string(const char *name, int name_length,
+ int str_length);
+
+void load_set_counter(struct world *mzx_world, const char *name,
+ int name_length, int value);
+struct string *load_set_string(struct world *mzx_world, const char *name,
+ int name_length, int str_length);
+
 void free_counter_list(struct counter **counter_list, int num_counters);
 void free_string_list(struct string **string_list, int num_strings);
 
@@ -78,9 +85,6 @@ void free_string_list(struct string **string_list, int num_strings);
 
 // Strings cannot be longer than 4M (orig 1M)
 #define MAX_STRING_LEN (1 << 22)
-
-// Maximum space board can consume
-#define MAX_BOARD_SIZE 16 * 1024 * 1024
 
 __M_END_DECLS
 

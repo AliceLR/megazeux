@@ -34,7 +34,9 @@ __M_BEGIN_DECLS
 #include "counter.h"
 #include "sprite.h"
 #include "sfx.h"
+#include "util.h"
 #include "configure.h"
+#include "zip.h"
 
 /* When making new versions, change the number below, and
  * change the number in the version strings to follow. From now on,
@@ -101,58 +103,103 @@ __M_BEGIN_DECLS
  */
 #define WORLD_VERSION      0x025A
 
-/* See the downver.c tool for more information. Please, if you bump the
- * WORLD_VERSION, always make sure this is updated with its previous
- * value. Therefore, users can always downgrade their work to an
+/* The world version that worlds will be saved as when Export Downver. World
+ * is used from the editor. This function was previously fulfilled by downver,
+ * but the increase in complexity of the world file made maintaining downver
+ * infeasible.
+ *
+ * If you increase WORLD_VERSION, always make sure this is updated with its
+ * previous value. Therefore, users can always downgrade their work to an
  * older version (if it at all makes sense to do so).
  */
 #define WORLD_VERSION_PREV 0x0254
+
+// This is the last version of MegaZeux to use the legacy world format.
+#define WORLD_LEGACY_FORMAT_VERSION 0x0254
 
 // FIXME: hack
 #ifdef CONFIG_DEBYTECODE
 #undef  WORLD_VERSION
 #define WORLD_VERSION      0x0300
 #undef  WORLD_VERSION_PREV
+#define WORLD_VERSION_PREV 0x025A
 #endif
 
-// These three are needed by validation.c until I figure out a better way
+enum file_prop
+{
+  FPROP_NONE                  = 0x0000,
+  FPROP_WORLD_INFO            = 0x0001, // properties file
+  FPROP_WORLD_GLOBAL_ROBOT    = 0x0004, // properties file
+  FPROP_WORLD_SFX             = 0x0008, // data, NUM_SFX * SFX_SIZE
+  FPROP_WORLD_CHARS           = 0x000A, // data, 3584
+  FPROP_WORLD_PAL             = 0x000C, // data, SMZX_PAL_SIZE * 3
+  FPROP_WORLD_PAL_INDEX       = 0x000D, // data, 1024
+  FPROP_WORLD_PAL_INTENSITY   = 0x000E, // data, SMZX_PAL_SIZE * 1
+
+  FPROP_WORLD_VCO             = 0x0080, // data
+  FPROP_WORLD_VCH             = 0x0081, // data
+  FPROP_WORLD_SPRITES         = 0x0084, // properties file
+  FPROP_WORLD_COUNTERS        = 0x0085, // counter format, use stream
+  FPROP_WORLD_STRINGS         = 0x0086, // string format, use stream
+
+  FPROP_BOARD_INFO            = 0x0100, // properties file (board_id)
+  FPROP_BOARD_BID             = 0x0101, // data
+  FPROP_BOARD_BPR             = 0x0102, // data
+  FPROP_BOARD_BCO             = 0x0103, // data
+  FPROP_BOARD_UID             = 0x0104, // data
+  FPROP_BOARD_UPR             = 0x0105, // data
+  FPROP_BOARD_UCO             = 0x0106, // data
+  FPROP_BOARD_OCH             = 0x0107, // data
+  FPROP_BOARD_OCO             = 0x0108, // data
+
+  FPROP_ROBOT                 = 0x1000, // properties file (board_id + robot_id)
+  FPROP_SCROLL                = 0x2000, // properties file (board_id + robot_id)
+  FPROP_SENSOR                = 0x3000  // properties file (board_id + robot_id)
+};
+
+enum val_result
+{
+  VAL_SUCCESS,
+  VAL_VERSION,    // Version issue
+  VAL_INVALID,    // Failed validation
+  VAL_TRUNCATED,  // Passed validation until it hit EOF
+  VAL_MISSING,    // file or ptr location in file does not exist
+  VAL_ABORTED,    // Load aborted by user
+};
+
 CORE_LIBSPEC int world_magic(const char magic_string[3]);
 CORE_LIBSPEC int save_magic(const char magic_string[5]);
 
 CORE_LIBSPEC int save_world(struct world *mzx_world, const char *file,
- int savegame);
+ int savegame, int world_version);
 CORE_LIBSPEC bool reload_world(struct world *mzx_world, const char *file,
  int *faded);
 CORE_LIBSPEC void clear_world(struct world *mzx_world);
 CORE_LIBSPEC void clear_global_data(struct world *mzx_world);
 CORE_LIBSPEC void default_scroll_values(struct world *mzx_world);
 
-CORE_LIBSPEC void add_ext(char *src, const char *ext);
+CORE_LIBSPEC void assign_fprops(struct zip_archive *zp, int board_file);
 
 bool reload_savegame(struct world *mzx_world, const char *file, int *faded);
 bool reload_swap(struct world *mzx_world, const char *file, int *faded);
 
-// Code to load/save multi-byte ints to/from little endian memory
-int mem_getc(const unsigned char **ptr);
-int mem_getd(const unsigned char **ptr);
-int mem_getw(const unsigned char **ptr);
-void mem_putc(int src, unsigned char **ptr);
-void mem_putd(int src, unsigned char **ptr);
-void mem_putw(int src, unsigned char **ptr);
+void save_counters_file(struct world *mzx_world, const char *file);
+int load_counters_file(struct world *mzx_world, const char *file);
 
-// Code to load multi-byte ints from little endian file
-
-int fgetw(FILE *fp);
-int fgetd(FILE *fp);
-void fputw(int src, FILE *fp);
-void fputd(int src, FILE *fp);
+#ifdef CONFIG_LOADSAVE_METER
+void meter_update_screen(int *curr, int target);
+void meter_restore_screen(void);
+void meter_initial_draw(int curr, int target, const char *title);
+#endif
 
 #ifdef CONFIG_EDITOR
-CORE_LIBSPEC FILE *try_load_world(const char *file, bool savegame,
- int *version, char *name);
-CORE_LIBSPEC void default_global_data(struct world *mzx_world);
-CORE_LIBSPEC void set_update_done(struct world *mzx_world);
+CORE_LIBSPEC void try_load_world(struct world *mzx_world,
+ struct zip_archive **zp, FILE **fp, const char *file, bool savegame,
+ int *file_version, char *name);
 
+CORE_LIBSPEC void default_global_data(struct world *mzx_world);
+
+CORE_LIBSPEC void set_update_done(struct world *mzx_world);
 CORE_LIBSPEC void refactor_board_list(struct world *mzx_world,
  struct board **new_board_list, int new_list_size,
  int *board_id_translation_list);

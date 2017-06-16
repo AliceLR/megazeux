@@ -216,6 +216,7 @@ CORE_LIBSPEC Sint32 ec_load_set_var(char *name, Uint16 pos, int version);
 CORE_LIBSPEC void ec_mem_load_set(Uint8 *chars);
 CORE_LIBSPEC void ec_mem_save_set(Uint8 *chars);
 CORE_LIBSPEC void ec_mem_load_set_var(char *chars, size_t len, Uint16 pos, int v);
+CORE_LIBSPEC void ec_mem_save_set_var(Uint8 *chars, size_t len, Uint16 pos);
 
 CORE_LIBSPEC void update_palette(void);
 CORE_LIBSPEC void set_gui_palette(void);
@@ -276,6 +277,8 @@ Sint32 ec_load_set(char *name);
 void set_color_intensity(Uint32 color, Uint32 percent);
 Uint32 get_color_intensity(Uint32 color);
 Uint32 get_fade_status(void);
+void save_indices(void *buffer);
+void load_indices(void *buffer);
 void dialog_fadein(void);
 void dialog_fadeout(void);
 void vquick_fadein(void);

@@ -123,6 +123,8 @@ struct world
   FILE *input_file;
   bool input_is_dir;
   struct mzx_dir input_directory;
+  int temp_input_pos;
+  int temp_output_pos;
   int commands;
   int vlayer_size;
   int vlayer_width;
@@ -139,7 +141,7 @@ struct world
   struct robot global_robot;
 
   int custom_sfx_on;
-  char custom_sfx[NUM_SFX * 69];
+  char custom_sfx[NUM_SFX * SFX_SIZE];
 
   // Not part of world/save files, but runtime globals
   int player_x;
@@ -200,6 +202,10 @@ struct world
   struct editor_config_info editor_conf_backup;
   bool editing;
 #endif
+
+  // World validation: we don't want to alloc this file twice.
+  char *raw_world_info;
+  int raw_world_info_size;
 
   // Keep this open, just once
   FILE *help_file;

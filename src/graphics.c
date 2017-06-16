@@ -232,6 +232,14 @@ void ec_mem_load_set_var(char *chars, size_t len, Uint16 pos, int version)
     graphics.renderer.remap_charsets(&graphics);
 }
 
+void ec_mem_save_set_var(Uint8 *chars, size_t len, Uint16 pos)
+{
+  Uint32 offset = pos * CHAR_SIZE;
+  Uint32 size = MIN(PROTECTED_CHARSET_POSITION - pos, (int)len) * CHAR_SIZE;
+
+  memcpy(chars, graphics.charset + offset, size);
+}
+
 __editor_maybe_static void ec_load_mzx(void)
 {
   if (layer_renderer_check(false))
@@ -554,6 +562,16 @@ void load_palette_mem(char *pal, size_t len)
     b = pal[j++];
     set_rgb(i, r, g, b);
   }
+}
+
+void save_indices(void *buffer)
+{
+  memcpy(buffer, graphics.smzx_indices, SMZX_PAL_SIZE * 4);
+}
+
+void load_indices(void *buffer)
+{
+  memcpy(graphics.smzx_indices, buffer, SMZX_PAL_SIZE * 4);
 }
 
 void smzx_palette_loaded(int val)

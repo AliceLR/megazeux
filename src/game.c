@@ -54,11 +54,6 @@
 #include "extmem.h"
 #include "util.h"
 
-// DEBUG: ZIP TESTING CODE! FIXME REMOVE!
-// ALSO REMOVE THE IKEY_z HOOK IN title_screen()
-#include "zip.h"
-// DEBUG: ZIP TESTING CODE! FIXME REMOVE!
-
 #define MESG_TIMEOUT 160
 
 // Number of cycles to make player idle before repeating a
@@ -2247,7 +2242,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
               {
                 strcpy(curr_sav, save_game);
                 // Save entire game
-                save_world(mzx_world, curr_sav, 1);
+                save_world(mzx_world, curr_sav, 1, WORLD_VERSION);
               }
 
               update_event_status();
@@ -2435,7 +2430,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
              SENSOR)))
             {
               // Save entire game
-              save_world(mzx_world, curr_sav, 1);
+              save_world(mzx_world, curr_sav, 1, WORLD_VERSION);
             }
           }
           break;
@@ -2710,14 +2705,6 @@ void title_screen(struct world *mzx_world)
       int reload_curr_world_in_editor = 1;
       switch(key)
       {
-        // DEBUG: ZIP TESTING CODE! FIXME REMOVE!
-        case IKEY_z:
-        {
-          zip_test(mzx_world);
-          break;
-        }
-        // DEBUG: ZIP TESTING CODE! FIXME REMOVE!
-
 #ifdef CONFIG_HELPSYS
         case IKEY_F1:
         case IKEY_h:

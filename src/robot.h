@@ -27,6 +27,7 @@ __M_BEGIN_DECLS
 #include "robot_struct.h"
 #include "board_struct.h"
 #include "world_struct.h"
+#include "zip.h"
 
 // Let's not let a robot's stack get larger than 64k right now.
 // The value is a bit arbitrary, but it's mainly there to prevent MZX from
@@ -70,8 +71,7 @@ void prepare_robot_bytecode(struct world *mzx_world, struct robot *cur_robot);
 #else /* !CONFIG_DEBYTECODE */
 
 CORE_LIBSPEC void reallocate_robot(struct robot *robot, int size);
-CORE_LIBSPEC struct label **cache_robot_labels(struct robot *robot,
- int *num_labels);
+
 
 void clear_label_cache(struct label **label_list, int num_labels);
 void change_robot_name(struct board *src_board, struct robot *cur_robot,
@@ -86,6 +86,9 @@ CORE_LIBSPEC void duplicate_robot_direct(struct world *mzx_world,
 #endif
 
 #endif /* !CONFIG_DEBYTECODE */
+
+CORE_LIBSPEC struct label **cache_robot_labels(struct robot *robot,
+ int *num_labels);
 
 CORE_LIBSPEC void clear_robot_contents(struct robot *cur_robot);
 CORE_LIBSPEC void clear_robot_id(struct board *src_board, int id);
@@ -112,26 +115,29 @@ CORE_LIBSPEC int place_player_xy(struct world *mzx_world, int x, int y);
 CORE_LIBSPEC void setup_overlay(struct board *src_board, int mode);
 CORE_LIBSPEC void replace_player(struct world *mzx_world);
 
-void create_blank_robot(struct world *mzx_world, struct robot *cur_robot,
- int savegame);
-struct robot *load_robot_allocate(struct world *mzx_world, FILE *fp,
- int savegame, int file_version);
-size_t load_robot_calculate_size(const void *buffer, int savegame, int version);
-void load_robot(struct world *mzx_world, struct robot *cur_robot, FILE *fp,
- int savegame, int version);
-void load_robot_from_memory(struct world *mzx_world, struct robot *cur_robot,
- const void *buffer, int savegame, int version, int robot_location);
-struct scroll *load_scroll_allocate(FILE *fp);
-struct sensor *load_sensor_allocate(FILE *fp);
-size_t calculate_partial_robot_size(int savegame, int version);
+void load_robot(struct world *mzx_world, struct robot *cur_robot,
+ struct zip_archive *zp, int savegame, int file_version);
+
+struct robot *load_robot_allocate(struct world *mzx_world,
+ struct zip_archive *zp, int savegame, int file_version);
+
+struct scroll *load_scroll_allocate(struct zip_archive *zp);
+struct sensor *load_sensor_allocate(struct zip_archive *zp);
+
 size_t save_robot_calculate_size(struct world *mzx_world,
- struct robot *cur_robot, int savegame, int version);
-void save_robot_to_memory(struct robot *cur_robot, void *buffer, int savegame,
- int version);
-void save_robot(struct world *mzx_world, struct robot *cur_robot, FILE *fp,
- int savegame, int version);
-void save_scroll(struct scroll *cur_scroll, FILE *fp, int savegame);
-void save_sensor(struct sensor *cur_sensor, FILE *fp, int savegame);
+ struct robot *cur_robot, int savegame, int file_version);
+
+void save_robot(struct world *mzx_world, struct robot *cur_robot,
+ struct zip_archive *zp, int savegame, int file_version,
+ const char *name, int file_id, int board_id, int id);
+
+void save_scroll(struct scroll *cur_scroll, struct zip_archive *zp,
+ const char *name, int file_id, int board_id, int id);
+void save_sensor(struct sensor *cur_sensor, struct zip_archive *zp,
+ const char *name, int file_id, int board_id, int id);
+
+void create_blank_robot(struct robot *cur_robot);
+
 void clear_robot(struct robot *cur_robot);
 void clear_scroll(struct scroll *cur_scroll);
 void clear_sensor(struct sensor *cur_sensor);

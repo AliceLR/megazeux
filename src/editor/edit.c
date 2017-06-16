@@ -1285,7 +1285,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
       create_path_if_not_exists(backup_name);
 
-      save_world(mzx_world, backup_name_formatted, 0);
+      save_world(mzx_world, backup_name_formatted, 0, WORLD_VERSION);
       backup_num = (backup_num + 1) % backup_count;
       backup_timestamp = get_ticks();
     }
@@ -2110,7 +2110,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
               // Save entire game
               strcpy(current_world, world_name);
               strcpy(curr_file, current_world);
-              save_world(mzx_world, current_world, 0);
+              save_world(mzx_world, current_world, 0, WORLD_VERSION);
 
               get_path(world_name, new_path, MAX_PATH);
               if(new_path[0])
@@ -2399,7 +2399,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                   FILE *sfx_file;
 
                   sfx_file = fopen_unsafe(import_name, "rb");
-                  fread(mzx_world->custom_sfx, 69, 50, sfx_file);
+                  fread(mzx_world->custom_sfx, SFX_SIZE, NUM_SFX, sfx_file);
                   mzx_world->custom_sfx_on = 1;
                   fclose(sfx_file);
                   modified = 1;
@@ -2599,14 +2599,29 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                   if(sfx_file)
                   {
                     if(mzx_world->custom_sfx_on)
-                      fwrite(mzx_world->custom_sfx, 69, 50, sfx_file);
+                      fwrite(mzx_world->custom_sfx, SFX_SIZE, NUM_SFX, sfx_file);
                     else
-                      fwrite(sfx_strs, 69, 50, sfx_file);
+                      fwrite(sfx_strs, SFX_SIZE, NUM_SFX, sfx_file);
 
                     fclose(sfx_file);
                   }
                 }
                 break;
+              }
+
+              case 4:
+              {
+                // Downver. world
+                char title[80];
+
+                sprintf(title, "Export world to previous version (%d.%d)",
+                 (WORLD_VERSION_PREV >> 8) & 0xFF, WORLD_VERSION_PREV & 0xFF);
+
+                if(!new_file(mzx_world, world_ext, ".mzx", export_name,
+                 title, 1))
+                {
+                  save_world(mzx_world, export_name, 0, WORLD_VERSION_PREV);
+                }
               }
             }
           }
@@ -3535,7 +3550,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           int fade;
           int current_board_id = mzx_world->current_board_id;
 
-          if(!save_world(mzx_world, "__test.mzx", 0))
+          if(!save_world(mzx_world, "__test.mzx", 0, WORLD_VERSION))
           {
             char *return_dir = cmalloc(MAX_PATH);
             getcwd(return_dir, MAX_PATH);
@@ -3543,6 +3558,8 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             save_editor_palette();
             vquick_fadeout();
             cursor_off();
+
+            set_update_done(mzx_world);
             src_board = mzx_world->board_list[current_board_id];
             fix_board(mzx_world, current_board_id);
             set_counter(mzx_world, "TIME", src_board->time_limit, 0);

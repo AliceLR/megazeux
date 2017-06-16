@@ -5174,9 +5174,9 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         int fx_num = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
 
-        if(strlen(p2 + 1) > 68)
-          p2[69] = 0;
-        strcpy(mzx_world->custom_sfx + (fx_num * 69), p2 + 1);
+        if(strlen(p2 + 1) >= SFX_SIZE)
+          p2[SFX_SIZE] = 0;
+        strcpy(mzx_world->custom_sfx + (fx_num * SFX_SIZE), p2 + 1);
         break;
       }
 
