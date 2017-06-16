@@ -1653,10 +1653,13 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             if(mzx_world->special_counter_return == FOPEN_SAVE_GAME ||
              (mzx_world->special_counter_return == FOPEN_SAVE_WORLD))
             {
-              if(!program[cur_robot->cur_prog_line])
-                cur_robot->cur_prog_line = 0;
+              if (mzx_world->version < 0x025A)
+              { // Prior to 2.90
+                if(!program[cur_robot->cur_prog_line])
+                  cur_robot->cur_prog_line = 0;
 
-              goto breaker;
+                goto breaker;
+              }
             }
           }
           else

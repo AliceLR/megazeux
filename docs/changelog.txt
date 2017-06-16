@@ -215,6 +215,8 @@ BUGFIXES
   (Lancer-X)
 + Fixed a bug where MZX would crash in some cases when testing
   after adding/importing new boards into a world.
++ SAVE_GAME and SAVE_WORLD now happen at the end of a cycle, not
+  immediately. (Lancer-X)
 
 + Debytecode: SAVE_WORLD is no longer supported.
 
