@@ -2907,21 +2907,35 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
     case FOPEN_SAVE_GAME:
     {
-      char *translated_path = cmalloc(MAX_PATH);
+      char *translated_path;
       int err;
 
-      if(cur_robot)
+      if (mzx_world->version < 0x025A)
       {
-        // Advance the program so that loading a SAV doesn't re-run this line
-        cur_robot->cur_prog_line +=
-         cur_robot->program_bytecode[cur_robot->cur_prog_line] + 2;
+        // Prior to 2.90, save_game took place immediately
+        translated_path = cmalloc(MAX_PATH);
+        if(cur_robot)
+        {
+          // Advance the program so that loading a SAV doesn't re-run this line
+          cur_robot->cur_prog_line +=
+          cur_robot->program_bytecode[cur_robot->cur_prog_line] + 2;
+        }
+
+        err = fsafetranslate(char_value, translated_path);
+        if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
+          save_world(mzx_world, translated_path, 1);
+
+        free(translated_path);
       }
-
-      err = fsafetranslate(char_value, translated_path);
-      if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
-        save_world(mzx_world, translated_path, 1);
-
-      free(translated_path);
+      else
+      {
+        // From 2.90 onward, save_game takes place at the end
+        // of the cycle
+        mzx_world->robotic_save_type = SAVE_NONE;
+        err = fsafetranslate(char_value, mzx_world->robotic_save_path);
+        if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
+          mzx_world->robotic_save_type = SAVE_GAME;
+      }
       break;
     }
 
@@ -2942,21 +2956,35 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
     case FOPEN_SAVE_WORLD:
     {
-      char *translated_path = cmalloc(MAX_PATH);
+      char *translated_path;
       int err;
-
-      if(cur_robot)
+      if (mzx_world->version < 0x025A)
       {
-        // Advance the program so that loading a SAV doesn't re-run this line
-        cur_robot->cur_prog_line +=
-         cur_robot->program_bytecode[cur_robot->cur_prog_line] + 2;
+        // Prior to 2.90, save_world took place immediately
+        translated_path = cmalloc(MAX_PATH);
+
+        if(cur_robot)
+        {
+          // Advance the program so that loading a SAV doesn't re-run this line
+          cur_robot->cur_prog_line +=
+          cur_robot->program_bytecode[cur_robot->cur_prog_line] + 2;
+        }
+
+        err = fsafetranslate(char_value, translated_path);
+        if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
+          save_world(mzx_world, translated_path, 0);
+
+        free(translated_path);
       }
-
-      err = fsafetranslate(char_value, translated_path);
-      if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
-        save_world(mzx_world, translated_path, 0);
-
-      free(translated_path);
+      else
+      {
+        // From 2.90 onward, save_world takes place at the end
+        // of the cycle
+        mzx_world->robotic_save_type = SAVE_NONE;
+        err = fsafetranslate(char_value, mzx_world->robotic_save_path);
+        if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
+          mzx_world->robotic_save_type = SAVE_WORLD;
+      }
       break;
     }
 

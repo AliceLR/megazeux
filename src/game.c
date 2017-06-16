@@ -2173,6 +2173,22 @@ __editor_maybe_static void play_game(struct world *mzx_world)
 
     src_board = mzx_world->current_board;
 
+    // Has the game/world been saved from robotic?
+    if (mzx_world->robotic_save_type != SAVE_NONE)
+    {
+      if (mzx_world->robotic_save_type == SAVE_GAME)
+      {
+        // SAVE_GAME
+        save_world(mzx_world, mzx_world->robotic_save_path, 1);
+      }
+      else
+      {
+        // SAVE_WORLD
+        save_world(mzx_world, mzx_world->robotic_save_path, 0);
+      }
+      mzx_world->robotic_save_type = SAVE_NONE;
+    }
+
     // Keycheck
 
     key = get_key(keycode_internal);
