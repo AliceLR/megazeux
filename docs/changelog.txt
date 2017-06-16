@@ -102,6 +102,9 @@ FEATURES
   SMZX mode 1). These values are reset whenever the SMZX mode is
   changed. Once again, this is only available to renderers that
   support unbound sprites. (Lancer-X)
++ Edited worlds now retain their world version until resaved.
+  Before, they would lose their world version after testing.
++ Added world version display to the debug window.
 
 + Debytecode: the LOAD_SOURCE_FILE special counter can now be
   used to load and compile a robot program from source code.
