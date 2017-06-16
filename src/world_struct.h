@@ -185,8 +185,8 @@ struct world
   // counters. It should normally be set to FOPEN_NONE.
   enum special_counter_return special_counter_return;
 
-  // These are used to handle SAVE_GAME/SAVE_WORLD.
-  enum { SAVE_NONE, SAVE_GAME, SAVE_WORLD} robotic_save_type;
+  // These are used to handle SAVE_GAME
+  enum { SAVE_NONE, SAVE_GAME } robotic_save_type;
   char robotic_save_path[MAX_PATH];
 
   // Indicates a robotic world swap, savegame load, or game exit

@@ -409,7 +409,7 @@ int error_message(enum error_code id, int parameter, const char *string)
 
     case E_DBC_SAVE_ROBOT_UNSUPPORTED:
       sprintf(error_mesg,
-       "SAVE_WORLD, SAVE_ROBOT and SAVE_BC are no longer supported");
+       "SAVE_ROBOT and SAVE_BC are no longer supported");
       code = 0x0fac;
       break;
 #endif
