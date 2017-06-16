@@ -215,6 +215,9 @@ BUGFIXES
   (Lancer-X)
 + Fixed a bug where MZX would crash in some cases when testing
   after adding/importing new boards into a world.
++ Made KEY a board counter <=2.70. Also added masking <=2.62 to
+  make Oath Demo work again. (Lancer-X)
++ Bullet types shot by robots clamped to 0-2. (Lancer-X)
 
 + Debytecode: SAVE_WORLD is no longer supported.
 
@@ -245,6 +248,8 @@ DEVELOPERS
   implemented by the renderer and if there is something on the
   screen that can only be drawn by the renderer (e.g. unbound
   sprites, or UI elements in an SMZX game) (Lancer-X)
++ LibSDL2 support is now the default. It can still be disabled
+  by passing --disable-libsdl2 to config.sh. (Lancer-X)
 
 
 December 24, 2012 - MZX 2.84c
