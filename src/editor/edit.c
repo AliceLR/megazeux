@@ -2112,6 +2112,9 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
               strcpy(curr_file, current_world);
               save_world(mzx_world, current_world, 0, WORLD_VERSION);
 
+              // It's now officially WORLD_VERSION
+              mzx_world->version = WORLD_VERSION;
+
               get_path(world_name, new_path, MAX_PATH);
               if(new_path[0])
                 chdir(new_path);
@@ -3552,6 +3555,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
           if(!save_world(mzx_world, "__test.mzx", 0, WORLD_VERSION))
           {
+            int world_version = mzx_world->version;
             char *return_dir = cmalloc(MAX_PATH);
             getcwd(return_dir, MAX_PATH);
 
@@ -3590,6 +3594,12 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
               fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
                cursor_x, cursor_y, board_width, board_height, edit_screen_height);
               modified = 0;
+            }
+
+            else
+            {
+              // Set it back to the original version.
+              mzx_world->version = world_version;
             }
 
             load_editor_palette();

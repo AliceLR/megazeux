@@ -29,6 +29,7 @@
 #include "window.h"
 #include "graphics.h"
 #include "event.h"
+#include "world.h"
 
 // Error type names by type code:
 static const char *const error_type_names[] =
@@ -208,6 +209,7 @@ static int error_count = 0;
 int error_message(enum error_code id, int parameter, const char *string)
 {
   char error_mesg[80];
+  char version_string[16];
   int hi = (parameter & 0xFF00) >> 8;
   int lo = (parameter & 0xFF);
   int opts = ERROR_OPT_OK | ERROR_OPT_SUPPRESS;
@@ -215,6 +217,7 @@ int error_message(enum error_code id, int parameter, const char *string)
   int code = id;
   int result;
 
+  get_version_string(version_string, parameter);
   error_count++;
 
   switch (id)
@@ -230,13 +233,15 @@ int error_message(enum error_code id, int parameter, const char *string)
 
     case E_SAVE_VERSION_OLD:
       sprintf(error_mesg,
-       ".SAV files from older versions of MZX (%d.%d) are not supported", hi, lo);
+       ".SAV files from older versions of MZX (%s) are not supported",
+       version_string);
       code = 0x2101;
       break;
 
     case E_SAVE_VERSION_TOO_RECENT:
       sprintf(error_mesg,
-       ".SAV files from newer versions of MZX (%d.%d) are not supported", hi, lo);
+       ".SAV files from newer versions of MZX (%s) are not supported",
+       version_string);
       code = 0x2101;
       break;
 
@@ -247,13 +252,15 @@ int error_message(enum error_code id, int parameter, const char *string)
 
     case E_WORLD_FILE_VERSION_OLD:
       sprintf(error_mesg,
-       "World is from old version (%d.%d); use converter", hi, lo);
+       "World is from old version (%s); use converter",
+       version_string);
       code = 0x0D02;
       break;
 
     case E_WORLD_FILE_VERSION_TOO_RECENT:
       sprintf(error_mesg,
-       "World is from a more recent version (%d.%d)", hi, lo);
+       "World is from a more recent version (%s)",
+       version_string);
       code = 0x0D02;
       break;
 
@@ -347,7 +354,8 @@ int error_message(enum error_code id, int parameter, const char *string)
 
     case E_MZM_FILE_VERSION_TOO_RECENT:
       sprintf(error_mesg,
-       "MZM from newer version (%d.%d); dummying out robots", hi, lo);
+       "MZM from newer version (%s); dummying out robots",
+       version_string);
       code = 0x6661;
       break;
 
@@ -403,7 +411,8 @@ int error_message(enum error_code id, int parameter, const char *string)
 #ifdef CONFIG_DEBYTECODE
     case E_DBC_WORLD_OVERWRITE_OLD:
       sprintf(error_mesg,
-       "Save would overwrite older version (%d.%d); aborted", hi, lo);
+       "Save would overwrite older version (%s); aborted",
+       version_string);
       code = 0x0fac;
       break;
 

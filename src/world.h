@@ -52,6 +52,7 @@ __M_BEGIN_DECLS
  *  MZ2 - Ver 2.x MegaZeux             (mzx_world->version == 0x0205)
  *  MZA - Ver 2.51S1 Megazeux          (mzx_world->version == 0x0208)
  *  M\x02\x09 - 2.5.1spider2+
+ *  M\x02\x11 - Used for decrypted worlds.
  *  M\x02\x32 - MZX 2.62
  *  M\x02\x3E - MZX 2.62b
  *  M\x02\x41 - MZX 2.65
@@ -169,6 +170,7 @@ enum val_result
 
 CORE_LIBSPEC int world_magic(const char magic_string[3]);
 CORE_LIBSPEC int save_magic(const char magic_string[5]);
+CORE_LIBSPEC int get_version_string(char buffer[16], int world_version);
 
 CORE_LIBSPEC int save_world(struct world *mzx_world, const char *file,
  int savegame, int world_version);

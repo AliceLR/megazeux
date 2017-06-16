@@ -289,6 +289,92 @@ int save_magic(const char magic_string[5])
   }
 }
 
+int get_version_string(char buffer[16], int world_version)
+{
+  switch(world_version)
+  {
+    // 1.xx
+    case 0x0100:
+      sprintf(buffer, "1.xx");
+      break;
+
+    // <=2.51
+    case 0x0205:
+      sprintf(buffer, "2.xx/2.51");
+      break;
+
+    // 2.51s1
+    case 0x0208:
+      sprintf(buffer, "2.51s1");
+      break;
+
+    // 2.51s2 / 2.60 / 2.61
+    case 0x0209:
+      sprintf(buffer, "2.51s2/2.61");
+      break;
+
+    // Decrypted worlds
+    case 0x0211:
+      sprintf(buffer, "<decrypted>");
+      break;
+
+    // 2.62
+    case 0x0232:
+      sprintf(buffer, "2.62");
+      break;
+
+    // 2.62b
+    case 0x023E:
+      sprintf(buffer, "2.62b");
+      break;
+
+    // 2.65
+    case 0x0241:
+      sprintf(buffer, "2.65");
+      break;
+
+    // 2.68
+    case 0x0244:
+      sprintf(buffer, "2.68");
+      break;
+
+    case 0x0245:
+      sprintf(buffer, "2.69");
+      break;
+
+    case 0x0246:
+      sprintf(buffer, "2.69b");
+      break;
+
+    case 0x0248:
+      sprintf(buffer, "2.69c");
+      break;
+
+    case 0x0249:
+      sprintf(buffer, "2.70");
+      break;
+
+    default:
+    {
+      if(world_version < 0x0250)
+      {
+        sprintf(buffer, "<unknown %4.4Xh>", world_version);
+      }
+
+      else
+      {
+        buffer[11] = 0;
+        snprintf(buffer, 11, "%d.%2.2d",
+         (world_version >> 8) & 0xFF, world_version & 0xFF);
+      }
+
+      break;
+    }
+  }
+
+  return strlen(buffer);
+}
+
 
 // World info
 static inline int save_world_info(struct world *mzx_world,
@@ -605,6 +691,7 @@ static inline void load_world_info(struct world *mzx_world,
       }
 
       case WPROP_SAVE_START_BOARD:
+        if(savegame)
         mzx_world->current_board_id = load_prop_int(size, prop);
         break;
 
@@ -1666,7 +1753,7 @@ int load_counters_file(struct world *mzx_world, const char *file)
 
   if(!zp)
   {
-    error_message(E_FILE_DOES_NOT_EXIST, 0, file);
+    error_message(E_FILE_DOES_NOT_EXIST, 0, NULL);
     return 0;
   }
 
@@ -1702,7 +1789,7 @@ int load_counters_file(struct world *mzx_world, const char *file)
   return 0;
 
 err:
-  error_message(E_SAVE_FILE_INVALID, 0, file);
+  error_message(E_SAVE_FILE_INVALID, 0, NULL);
   zip_close(zp, NULL);
   return -1;
 }
@@ -2344,6 +2431,11 @@ int save_world(struct world *mzx_world, const char *file, int savegame,
   if(world_version == WORLD_VERSION_PREV)
   {
     return legacy_save_world(mzx_world, file, savegame);
+    // TODO: The version that's actually getting passed into these save
+    // functions is the file version; to save a compatibility world, both
+    // the file version and the mzx world version need to be WORLD_VERSION_PREV.
+    // So get mzx_world->version, temporarily store it, save with it equal to
+    // WORLD_VERSION_PREV, and reset it.
   }
   else
 #endif
@@ -2776,19 +2868,19 @@ err_close:
   {
     if(v > WORLD_VERSION)
     {
-      error_message(E_SAVE_VERSION_TOO_RECENT, v, file);
+      error_message(E_SAVE_VERSION_TOO_RECENT, v, NULL);
     }
     else
 
     if(v > 0 && v < WORLD_LEGACY_FORMAT_VERSION)
     {
-      error_message(E_SAVE_VERSION_OLD, v, file);
+      error_message(E_SAVE_VERSION_OLD, v, NULL);
     }
     else
 
     if(v != WORLD_LEGACY_FORMAT_VERSION)
     {
-      error_message(E_SAVE_FILE_INVALID, 0, file);
+      error_message(E_SAVE_FILE_INVALID, 0, NULL);
     }
   }
 
@@ -2796,20 +2888,20 @@ err_close:
   {
     if (v > WORLD_VERSION)
     {
-      error_message(E_WORLD_FILE_VERSION_TOO_RECENT, v, file);
+      error_message(E_WORLD_FILE_VERSION_TOO_RECENT, v, NULL);
     }
     else
 
     if(v > 0 && v < 0x0205)
     {
-      error_message(E_WORLD_FILE_VERSION_OLD, v, file);
+      error_message(E_WORLD_FILE_VERSION_OLD, v, NULL);
     }
 
     else
 
     if(v == 0 || v > WORLD_LEGACY_FORMAT_VERSION)
     {
-      error_message(E_WORLD_FILE_INVALID, 0, file);
+      error_message(E_WORLD_FILE_INVALID, 0, NULL);
     }
   }
 

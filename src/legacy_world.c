@@ -137,7 +137,7 @@ int legacy_save_world(struct world *mzx_world, const char *file, int savegame)
   fp = fopen_unsafe(file, "wb");
   if(!fp)
   {
-    error_message(E_WORLD_IO_SAVING, 0, file);
+    error_message(E_WORLD_IO_SAVING, 0, NULL);
     return -1;
   }
 
@@ -730,7 +730,7 @@ enum val_result validate_legacy_world_file(const char *file,
    !S_ISREG(stat_result.st_mode) ||
    !(f = fopen_unsafe(file, "rb")))
   {
-    error_message(E_FILE_DOES_NOT_EXIST, 0, file);
+    error_message(E_FILE_DOES_NOT_EXIST, 0, NULL);
     result = VAL_MISSING;
     goto err_out;
   }
@@ -873,7 +873,7 @@ enum val_result validate_legacy_world_file(const char *file,
       if(decrypt_attempted) // In the unlikely event that this will happen again
         goto err_invalid;
 
-      error_message(E_WORLD_PASSWORD_PROTECTED, 0, file);
+      error_message(E_WORLD_PASSWORD_PROTECTED, 0, NULL);
 
       if(!confirm(NULL, "Would you like to decrypt it?"))
       {
@@ -886,7 +886,7 @@ enum val_result validate_legacy_world_file(const char *file,
 
       else
       {
-        error_message(E_WORLD_LOCKED, 0, file);
+        error_message(E_WORLD_LOCKED, 0, NULL);
         result = VAL_ABORTED;
         goto err_close;
       }
@@ -968,9 +968,9 @@ enum val_result validate_legacy_world_file(const char *file,
 err_invalid:
   result = VAL_INVALID;
   if(savegame)
-    error_message(E_SAVE_FILE_INVALID, 0, file);
+    error_message(E_SAVE_FILE_INVALID, 0, NULL);
   else
-    error_message(E_WORLD_FILE_INVALID, 0, file);
+    error_message(E_WORLD_FILE_INVALID, 0, NULL);
 err_close:
   fclose(f);
 err_out:

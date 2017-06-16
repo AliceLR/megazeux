@@ -2106,8 +2106,10 @@ void __debug_counters(struct world *mzx_world)
 void __draw_debug_box(struct world *mzx_world, int x, int y, int d_x, int d_y)
 {
   struct board *src_board = mzx_world->current_board;
-  int i;
+  char version_string[16];
+  int version_string_len;
   int robot_mem = 0;
+  int i;
 
   draw_window_box(x, y, x + 19, y + 5, DI_DEBUG_BOX, DI_DEBUG_BOX_DARK,
    DI_DEBUG_BOX_CORNER, 0, 1);
@@ -2119,6 +2121,9 @@ void __draw_debug_box(struct world *mzx_world, int x, int y, int d_x, int d_y)
     "Robot mem:      kb\n",
     x + 1, y + 1, DI_DEBUG_LABEL, 0
   );
+
+  version_string_len = get_version_string(version_string, mzx_world->version);
+  write_string(version_string, x + 19 - version_string_len, y, DI_DEBUG_BOX, 0);
 
   write_number(d_x, DI_DEBUG_NUMBER, x + 8, y + 1, 5, 0, 10);
   write_number(d_y, DI_DEBUG_NUMBER, x + 14, y + 1, 5, 0, 10);
