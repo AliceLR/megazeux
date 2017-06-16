@@ -3193,6 +3193,8 @@ void clear_global_data(struct world *mzx_world)
   mzx_world->output_file_name[0] = 0;
   mzx_world->input_file_name[0] = 0;
 
+  mzx_world->robotic_save_type = SAVE_NONE;
+
   memset(mzx_world->custom_sfx, 0, NUM_SFX * SFX_SIZE);
 
   mzx_world->bomb_type = 1;
