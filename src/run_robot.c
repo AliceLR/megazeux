@@ -1645,18 +1645,19 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             program = cur_robot->program_bytecode;
             cmd_ptr = program + cur_robot->cur_prog_line;
 
-            // FIXME: For the moment, end the cycle if we save the game
-            //        or the world. The save_world() function is trying to
-            //        "optimize" a live board, which breaks commands like
-            //        DIE which expect robot IDs to be in sequence (the ID is
-            //        cached for the whole cycle).
-            if(mzx_world->special_counter_return == FOPEN_SAVE_GAME ||
-             (mzx_world->special_counter_return == FOPEN_SAVE_WORLD))
+            // Prior to 2.90, SAVE_GAME works immediately and requires the
+            // robot's cycle to be ended for it to safely work. After 2.90
+            // SAVE_GAME takes place at the end of the cycle, so this is
+            // no longer necessary.
+            if(mzx_world->special_counter_return == FOPEN_SAVE_GAME)
             {
-              if(!program[cur_robot->cur_prog_line])
-                cur_robot->cur_prog_line = 0;
+              if (mzx_world->version < 0x025A)
+              { // Prior to 2.90
+                if(!program[cur_robot->cur_prog_line])
+                  cur_robot->cur_prog_line = 0;
 
-              goto breaker;
+                goto breaker;
+              }
             }
           }
           else

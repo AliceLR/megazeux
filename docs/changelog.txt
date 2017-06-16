@@ -218,8 +218,10 @@ BUGFIXES
 + Made KEY a board counter <=2.70. Also added masking <=2.62 to
   make Oath Demo work again. (Lancer-X)
 + Bullet types shot by robots clamped to 0-2. (Lancer-X)
++ SAVE_GAME and SAVE_WORLD now happen at the end of a cycle, not
+  immediately. (Lancer-X)
++ SAVE_WORLD no longer exists. (Lancer-X)
 
-+ Debytecode: SAVE_WORLD is no longer supported.
 
 DEVELOPERS
 

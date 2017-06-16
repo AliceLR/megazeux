@@ -1703,13 +1703,6 @@ static int save_game_read(struct world *mzx_world,
   return 0;
 }
 
-static int save_world_read(struct world *mzx_world,
- const struct function_counter *counter, const char *name, int id)
-{
-  mzx_world->special_counter_return = FOPEN_SAVE_WORLD;
-  return 0;
-}
-
 static int load_counters_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
@@ -2707,7 +2700,6 @@ static const struct function_counter builtin_counters[] =
   { "save_counters", 0x025A, save_counters_read, NULL},              // 2.90
   { "save_game", 0x0244, save_game_read, NULL },                     // 2.68
   { "save_robot?", 0x0249, save_robot_read, NULL },                  // 2.70
-  { "save_world", 0x0248, save_world_read, NULL },                   // 2.69c
   { "scrolledx", 0x0208, scrolledx_read, NULL },                     // 2.51s1
   { "scrolledy", 0x0208, scrolledy_read, NULL },                     // 2.51s1
   { "sin!", 0x0244, sin_read, NULL },                                // 2.68
@@ -2959,60 +2951,37 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
     case FOPEN_SAVE_GAME:
     {
-      char *translated_path = cmalloc(MAX_PATH);
+      char *translated_path;
       int err;
 
-      if(cur_robot)
+      if (mzx_world->version < 0x025A)
       {
-        // Advance the program so that loading a SAV doesn't re-run this line
-        cur_robot->cur_prog_line +=
-         cur_robot->program_bytecode[cur_robot->cur_prog_line] + 2;
+        // Prior to 2.90, save_game took place immediately
+        translated_path = cmalloc(MAX_PATH);
+        if(cur_robot)
+        {
+          // Advance the program so that loading a SAV doesn't re-run this line
+          cur_robot->cur_prog_line +=
+          cur_robot->program_bytecode[cur_robot->cur_prog_line] + 2;
+        }
+
+        err = fsafetranslate(char_value, translated_path);
+        if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
+          save_world(mzx_world, translated_path, 1, WORLD_VERSION);
+
+        free(translated_path);
       }
-
-      err = fsafetranslate(char_value, translated_path);
-      if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
-        save_world(mzx_world, translated_path, 1, WORLD_VERSION);
-
-      free(translated_path);
-      break;
-    }
-
-#ifdef CONFIG_DEBYTECODE
-
-    /* We can't support this. That's because there probably won't be
-     * source code present to save. If any games use it then they just
-     * can't be supported. There just isn't an easy fix for this.
-     */
-    case FOPEN_SAVE_WORLD:
-    {
-      error_message(E_DBC_SAVE_ROBOT_UNSUPPORTED, 0, NULL);
-      set_error_suppression(E_DBC_SAVE_ROBOT_UNSUPPORTED, 1);
-      break;
-    }
-
-#else // !CONFIG_DEBYTECODE
-
-    case FOPEN_SAVE_WORLD:
-    {
-      char *translated_path = cmalloc(MAX_PATH);
-      int err;
-
-      if(cur_robot)
+      else
       {
-        // Advance the program so that loading a SAV doesn't re-run this line
-        cur_robot->cur_prog_line +=
-         cur_robot->program_bytecode[cur_robot->cur_prog_line] + 2;
+        // From 2.90 onward, save_game takes place at the end
+        // of the cycle
+        mzx_world->robotic_save_type = SAVE_NONE;
+        err = fsafetranslate(char_value, mzx_world->robotic_save_path);
+        if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
+          mzx_world->robotic_save_type = SAVE_GAME;
       }
-
-      err = fsafetranslate(char_value, translated_path);
-      if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
-        save_world(mzx_world, translated_path, 0, WORLD_VERSION);
-
-      free(translated_path);
       break;
     }
-
-#endif // !CONFIG_DEBYTECODE
 
     case FOPEN_LOAD_GAME:
     {
