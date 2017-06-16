@@ -1540,6 +1540,7 @@ static inline int load_world_strings_mem(struct world *mzx_world,
     {
       src_string = load_new_string(name_buffer, name_length, str_length);
       mzx_world->string_list[i] = src_string;
+      mzx_world->string_list[i]->list_ind = i;
     }
 
     mfread(src_string->value, str_length, 1, &mf);
@@ -1624,6 +1625,7 @@ static inline int load_world_strings(struct world *mzx_world,
     {
       src_string = load_new_string(name_buffer, name_length, str_length);
       mzx_world->string_list[i] = src_string;
+      mzx_world->string_list[i]->list_ind = i;
     }
 
     zread(src_string->value, str_length, zp);

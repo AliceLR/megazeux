@@ -2196,7 +2196,6 @@ __editor_maybe_static void play_game(struct world *mzx_world)
       {
         keylbl[3] = key_char;
         send_robot_all_def(mzx_world, keylbl);
-        debug("This world's version is %x\n", mzx_world->version);
         // In MZX versions <=2.70 key was a board counter
         if (mzx_world->version <= 0x0249)
         {
