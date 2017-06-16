@@ -76,6 +76,7 @@ struct robot
   char bullet_type;
   char is_locked;
   char can_lavawalk;              // Can always travel on fire
+  char can_goopwalk;
   enum dir walk_dir;
   enum dir last_touch_dir;
   enum dir last_shot_dir;

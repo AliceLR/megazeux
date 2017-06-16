@@ -88,6 +88,9 @@ enum robot_prop {
   RPROP_LOCALS            = 0x010C, // 4*32
   RPROP_STACK_POINTER     = 0x0110, // 4
   RPROP_STACK             = 0x0111, // variable
+
+  // New
+  RPROP_CAN_GOOPWALK      = 0x0120, // 1
 };
 
 #define SCROLL_PROPS_SIZE (PROP_HEADER_SIZE * 2 + 2)
@@ -135,6 +138,7 @@ void create_blank_robot(struct robot *cur_robot)
   cur_robot->bullet_type = 1;
   cur_robot->is_locked = 0;
   cur_robot->can_lavawalk = 0;
+  cur_robot->can_goopwalk = 0;
   cur_robot->walk_dir = 0;
   cur_robot->last_touch_dir = 0;
   cur_robot->last_shot_dir = 0;
@@ -269,6 +273,11 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
         cur_robot->stack = cmalloc(size * sizeof(int));
         for(i = 0; i < size; i++)
           cur_robot->stack[i] = mfgetd(&prop);
+        break;
+
+      // New
+      case RPROP_CAN_GOOPWALK:
+        cur_robot->can_goopwalk = load_prop_int(size, &prop);
         break;
 
       // Slated for separation
@@ -699,6 +708,8 @@ static void save_robot_to_memory(struct robot *cur_robot,
 
     for(i = 0; i < stack_size; i++)
       mfputd(cur_robot->stack[i], &prop);
+
+    save_prop_c(RPROP_CAN_GOOPWALK, cur_robot->can_goopwalk, mf);
   }
 
   save_prop_eof(mf);

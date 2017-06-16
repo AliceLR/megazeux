@@ -1884,6 +1884,18 @@ static void lava_walk_write(struct world *mzx_world,
   (mzx_world->current_board->robot_list[id])->can_lavawalk = value;
 }
 
+static int goop_walk_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  return (mzx_world->current_board->robot_list[id])->can_goopwalk;
+}
+
+static void goop_walk_write(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int value, int id)
+{
+  (mzx_world->current_board->robot_list[id])->can_goopwalk = value;
+}
+
 static int robot_id_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
@@ -2646,6 +2658,7 @@ static const struct function_counter builtin_counters[] =
   { "fwrite_modify", 0x0248, fwrite_modify_read, NULL },             // 2.69c
   { "fwrite_open", 0x0209, fwrite_open_read, NULL },                 // 2.60
   { "fwrite_pos", 0x0209, fwrite_pos_read, fwrite_pos_write },       // 2.60
+  { "goop_walk", 0x025A, goop_walk_read, goop_walk_write },          // 2.90
   { "green_value", 0x0209, green_value_read, green_value_write },    // 2.60
   { "horizpld", 0, horizpld_read, NULL },                            // <=2.51
   { "input", 0, input_read, input_write },                           // <=2.51

@@ -1270,8 +1270,9 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
     if(id && is_cardinal_dir(walk_dir))
     {
       enum move_status status = move(mzx_world, x, y, dir_to_int(walk_dir),
-       CAN_PUSH | CAN_TRANSPORT | CAN_FIREWALK |
-       CAN_WATERWALK | (CAN_LAVAWALK * cur_robot->can_lavawalk));
+       CAN_PUSH | CAN_TRANSPORT | CAN_FIREWALK | CAN_WATERWALK |
+       CAN_LAVAWALK * cur_robot->can_lavawalk |
+       CAN_GOOPWALK * cur_robot->can_goopwalk);
 
       if(status == HIT_EDGE)
       {
@@ -1423,8 +1424,9 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
               enum move_status status;
 
               status = move(mzx_world, x, y, dir_to_int(direction),
-               CAN_PUSH | CAN_TRANSPORT | CAN_FIREWALK |
-               CAN_WATERWALK | CAN_LAVAWALK * cur_robot->can_lavawalk);
+               CAN_PUSH | CAN_TRANSPORT | CAN_FIREWALK | CAN_WATERWALK |
+               CAN_LAVAWALK * cur_robot->can_lavawalk |
+               CAN_GOOPWALK * cur_robot->can_goopwalk);
 
               if(status == NO_HIT)
               {
@@ -1452,7 +1454,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
             status = move(mzx_world, x, y, dir_to_int(direction),
              CAN_PUSH | CAN_TRANSPORT | CAN_FIREWALK | CAN_WATERWALK |
-             CAN_LAVAWALK * cur_robot->can_lavawalk);
+             CAN_LAVAWALK * cur_robot->can_lavawalk |
+             CAN_GOOPWALK * cur_robot->can_goopwalk);
 
             if(status)
             {
@@ -3621,7 +3624,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           {
             if((move(mzx_world, x, y, dir_to_int(direction),
              CAN_PUSH | CAN_TRANSPORT | CAN_FIREWALK | CAN_WATERWALK |
-             CAN_LAVAWALK * cur_robot->can_lavawalk)) &&
+             CAN_LAVAWALK * cur_robot->can_lavawalk |
+             CAN_GOOPWALK * cur_robot->can_goopwalk)) &&
              (cmd == 232))
             {
               cur_robot->pos_within_line--; // persistent...
