@@ -649,7 +649,6 @@ static int load_board_info(struct board *cur_board, struct zip_archive *zp,
     last_ident = ident;
   }
 
-  // FIXME
   err_if_missing(BPROP_FILE_VERSION);
 
   size = cur_board->board_width * cur_board->board_height;
