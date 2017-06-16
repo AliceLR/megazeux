@@ -79,6 +79,9 @@ enum board_prop {
   BPROP_BOARD_W               = 0x0023, // 1
   BPROP_RESTART_IF_ZAPPED     = 0x0024, // 1
   BPROP_TIME_LIMIT            = 0x0025, // 2
+  BPROP_PLAYER_NS_LOCKED      = 0x0026, // 1
+  BPROP_PLAYER_EW_LOCKED      = 0x0027, // 1
+  BPROP_PLAYER_ATTACK_LOCKED  = 0x0028, // 1
 
   // Save                           20     28 + 2 ROBOT_MAX_TR
   BPROP_SCROLL_X              = 0x0100, // 2
@@ -86,9 +89,6 @@ enum board_prop {
   BPROP_LOCKED_X              = 0x0102, // 2
   BPROP_LOCKED_Y              = 0x0103, // 2
   BPROP_PLAYER_LAST_DIR       = 0x0104, // 1
-  BPROP_PLAYER_NS_LOCKED      = 0x0105, // 1
-  BPROP_PLAYER_EW_LOCKED      = 0x0106, // 1
-  BPROP_PLAYER_ATTACK_LOCKED  = 0x0107, // 1
   BPROP_LAZWALL_START         = 0x010A, // 1
   BPROP_LAST_KEY              = 0x010B, // 1
   BPROP_NUM_INPUT             = 0x010C, // 4
@@ -151,6 +151,9 @@ static void save_board_info(struct board *cur_board, struct zip_archive *zp,
   save_prop_c(BPROP_BOARD_W, cur_board->board_dir[3], &mf);
   save_prop_c(BPROP_RESTART_IF_ZAPPED, cur_board->restart_if_zapped, &mf);
   save_prop_c(BPROP_TIME_LIMIT, cur_board->time_limit, &mf);
+  save_prop_c(BPROP_PLAYER_NS_LOCKED, cur_board->player_ns_locked, &mf);
+  save_prop_c(BPROP_PLAYER_EW_LOCKED, cur_board->player_ew_locked, &mf);
+  save_prop_c(BPROP_PLAYER_ATTACK_LOCKED, cur_board->player_attack_locked, &mf);
 
   if(savegame)
   {
@@ -159,9 +162,6 @@ static void save_board_info(struct board *cur_board, struct zip_archive *zp,
     save_prop_w(BPROP_LOCKED_X, cur_board->locked_x, &mf);
     save_prop_w(BPROP_LOCKED_Y, cur_board->locked_y, &mf);
     save_prop_c(BPROP_PLAYER_LAST_DIR, cur_board->player_last_dir, &mf);
-    save_prop_c(BPROP_PLAYER_NS_LOCKED, cur_board->player_ns_locked, &mf);
-    save_prop_c(BPROP_PLAYER_EW_LOCKED, cur_board->player_ew_locked, &mf);
-    save_prop_c(BPROP_PLAYER_ATTACK_LOCKED, cur_board->player_attack_locked, &mf);
     save_prop_c(BPROP_LAZWALL_START, cur_board->lazwall_start, &mf);
     save_prop_c(BPROP_LAST_KEY, cur_board->last_key, &mf);
     save_prop_d(BPROP_NUM_INPUT, cur_board->num_input, &mf);
@@ -557,6 +557,19 @@ static int load_board_info(struct board *cur_board, struct zip_archive *zp,
         cur_board->time_limit = load_prop_int(size, &prop);
         break;
 
+      case BPROP_PLAYER_NS_LOCKED:
+        cur_board->player_ns_locked = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_PLAYER_EW_LOCKED:
+        cur_board->player_ew_locked = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_PLAYER_ATTACK_LOCKED:
+        cur_board->player_attack_locked = load_prop_int(size, &prop);
+        break;
+
+
 
       // Savegame only
       case BPROP_SCROLL_X:
@@ -577,18 +590,6 @@ static int load_board_info(struct board *cur_board, struct zip_archive *zp,
 
       case BPROP_PLAYER_LAST_DIR:
         cur_board->player_last_dir = load_prop_int(size, &prop);
-        break;
-
-      case BPROP_PLAYER_NS_LOCKED:
-        cur_board->player_ns_locked = load_prop_int(size, &prop);
-        break;
-
-      case BPROP_PLAYER_EW_LOCKED:
-        cur_board->player_ew_locked = load_prop_int(size, &prop);
-        break;
-
-      case BPROP_PLAYER_ATTACK_LOCKED:
-        cur_board->player_attack_locked = load_prop_int(size, &prop);
         break;
 
       case BPROP_LAZWALL_START:
