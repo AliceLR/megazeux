@@ -1447,11 +1447,14 @@ static int key_file_selector(struct world *mzx_world, struct dialog *di,
     case IKEY_RETURN:
     {
       char new_path[MAX_PATH] = { 0 };
+      strcpy(new_path, src->base_path);
 
       if(!choose_file_ch(mzx_world, src->file_manager_exts, new_path,
        src->file_manager_title, 2))
       {
         strcpy(src->result, new_path);
+        di->done = 1;
+        di->return_value = src->return_value;
       }
 
       break;
@@ -2014,16 +2017,19 @@ struct element *construct_number_box(int x, int y,
 
 struct element *construct_file_selector(int x, int y,
  const char *title, const char *file_manager_title,
- const char *const *file_manager_exts, const char *none_mesg, int show_width,
- int allow_unset, char *result)
+ const char *const *file_manager_exts, const char *none_mesg,
+ int show_width, int allow_unset, const char *base_path, char *result,
+ int return_value)
 {
   struct file_selector *src = cmalloc(sizeof(struct file_selector));
 
   src->title = title;
   src->file_manager_title = file_manager_title;
   src->file_manager_exts = file_manager_exts;
+  src->base_path = base_path;
   src->none_mesg = none_mesg;
   src->allow_unset = allow_unset;
+  src->return_value = return_value;
   src->result = result;
 
   construct_element(&(src->e), x, y, show_width + 3,

@@ -797,6 +797,8 @@ void board_info(struct world *mzx_world)
   char charset_string[MAX_PATH];
   char palette_string[MAX_PATH];
 
+  int pos = 3;
+
   set_context(85);
 
   strcpy(title_string, src_board->board_name);
@@ -826,15 +828,18 @@ void board_info(struct world *mzx_world)
      0, 32767, 0, &time_limit);
 
     elements[9] = construct_file_selector(3, 18, "Load charset on entry-",
-     "Select a character set...", charset_exts, "(none)", 23, 1, charset_string);
+     "Select a character set...", charset_exts, "(none)", 23, 1, "",
+     charset_string, 2);
 
     elements[10] = construct_file_selector(31, 18, "Load palette on entry-",
-     "Select a palette...", palette_exts, "(none)", 23, 1, palette_string);
+     "Select a palette...", palette_exts, "(none)", 23, 1, "",
+     palette_string, 2);
 
     construct_dialog(&di, "Board Settings", 10, 0, 60, 24,
-     elements, 11, 3);
+     elements, 11, pos);
 
     dialog_result = run_dialog(mzx_world, &di);
+    pos = di.current_element;
     destruct_dialog(&di);
 
     // Save defaults
@@ -862,6 +867,8 @@ void board_info(struct world *mzx_world)
       strcpy(conf->charset_path, charset_string);
       strcpy(conf->palette_path, palette_string);
       save_local_editor_config(conf, curr_file);
+      // Setting focus back to the board name shows the user feedback.
+      pos = 3;
     }
   } while(dialog_result > 0);
 

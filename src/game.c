@@ -621,6 +621,8 @@ static void set_3_mesg(struct world *mzx_world, const char *str1, int num,
 #ifdef CONFIG_RENDER_GL_PROGRAM
 // Note- we search for .frags, then load the matching .vert too if present.
 static const char *shader_exts[] = { ".frag", NULL };
+static char shader_path[MAX_PATH];
+static char shader_name[MAX_PATH];
 #endif
 
 static void game_settings(struct world *mzx_world)
@@ -631,11 +633,13 @@ static void game_settings(struct world *mzx_world)
   struct dialog di;
   int dialog_result;
   int speed_option = 0;
+  int shader_option = 0;
   int num_elements = 8;
   int start_option = 0;
 
-  int ok_x = 7;
-  int cancel_x = 16;
+  int ok_pos;
+  int cancel_pos;
+  int speed_pos;
 
   const char *radio_strings_1[2] =
   {
@@ -647,53 +651,23 @@ static void game_settings(struct world *mzx_world)
   };
   struct element *elements[10];
 
-  // Speed needs to be after Shaders, but Shaders needs this for positioning
-  if(!mzx_world->lock_speed)
-  {
-    speed_option = 2;
-  }
+  set_context(92);
 
 #ifdef CONFIG_RENDER_GL_PROGRAM
   if(!strcmp(mzx_world->conf.video_output, "glsl"))
   {
-    elements[num_elements] = construct_button(19, 13 + speed_option,
-     "Shader", 2);
+    shader_option = 3;
     num_elements++;
-
-    ok_x = 3;
-    cancel_x = 9;
   }
 #endif
 
   if(!mzx_world->lock_speed)
   {
+    speed_option = 2;
     start_option = num_elements;
-    elements[num_elements] = construct_number_box(5, 2, "Speed- ", 1, 16,
-     0, &mzx_speed);
-
     num_elements++;
   }
 
-  elements[0] = construct_radio_button(4, 2 + speed_option,
-   radio_strings_1, 2, 19, &music);
-  elements[1] = construct_radio_button(4, 5 + speed_option,
-   radio_strings_2, 2, 18, &sfx);
-  elements[2] = construct_label(3, 8 + speed_option,
-   "Audio volumes-");
-  elements[3] = construct_number_box(3, 9 + speed_option,
-   "Overall volume- ", 1, 8, 0, &music_volume);
-  elements[4] = construct_number_box(3, 10 + speed_option,
-   "SoundFX volume- ", 1, 8, 0, &sound_volume);
-  elements[5] = construct_number_box(3, 11 + speed_option,
-   "PC Speaker SFX- ", 1, 8, 0, &sfx_volume);
-  elements[6] = construct_button(ok_x, 13 + speed_option, "OK", 0);
-  elements[7] = construct_button(cancel_x, 13 + speed_option,
-   "Cancel", 1);
-
-  construct_dialog(&di, "Game Settings", 25, 4 - (speed_option / 2),
-   30, 16 + speed_option, elements, num_elements, start_option);
-
-  set_context(92);
   mzx_speed = mzx_world->mzx_speed;
   music = get_music_on_state() ^ 1;
   sfx = get_sfx_on_state() ^ 1;
@@ -701,64 +675,109 @@ static void game_settings(struct world *mzx_world)
   sound_volume = get_sound_volume();
   sfx_volume = get_sfx_volume();
 
-  dialog_result = run_dialog(mzx_world, &di);
-  destruct_dialog(&di);
-  pop_context();
-
-  if(!dialog_result)
+  do
   {
-    set_sfx_volume(sfx_volume);
-
-    if(music_volume != get_music_volume())
-    {
-      set_music_volume(music_volume);
-
-      if(mzx_world->active)
-        volume_module(src_board->volume);
-    }
-
-    if(sound_volume != get_sound_volume())
-      set_sound_volume(sound_volume);
-
-    sfx ^= 1;
-    music ^= 1;
-
-    set_sfx_on(sfx);
-
-    if(!music)
-    {
-      // Turn off music.
-      if(get_music_on_state() && (mzx_world->active))
-        end_module();
-    }
-    else
-
-    if(!get_music_on_state() && (mzx_world->active))
-    {
-      // Turn on music.
-      load_board_module(mzx_world, src_board);
-    }
-
-    set_music_on(music);
-    mzx_world->mzx_speed = mzx_speed;
-  }
+    ok_pos = 6;
+    cancel_pos = 7;
+    speed_pos = 8;
 
 #ifdef CONFIG_RENDER_GL_PROGRAM
-  else
-
-  // Shader selection
-  if(dialog_result == 2)
-  {
-    char frag[MAX_PATH];
-    char vert[MAX_PATH];
-    struct stat path_info;
-
-    mzx_res_get_extra_shader_dir(frag);
-
-    if(frag[0])
+    if(!strcmp(mzx_world->conf.video_output, "glsl"))
     {
-      if(!choose_file_ch(mzx_world, shader_exts, frag,
-       "Choose a scaling shader...", 0))
+      mzx_res_get_extra_shader_dir(shader_path);
+
+      elements[6] = construct_file_selector(3, 13 + speed_option,
+       "Scaling shader-", "Choose a scaling shader...", shader_exts,
+       "<default: nearest>", 21, 0, shader_path, shader_name, 2);
+
+      ok_pos++;
+      cancel_pos++;
+      speed_pos++;
+    }
+#endif
+
+    if(!mzx_world->lock_speed)
+    {
+      elements[speed_pos] = construct_number_box(5, 2, "Speed- ", 1, 16,
+       0, &mzx_speed);
+    }
+
+    elements[0] = construct_radio_button(4, 2 + speed_option,
+     radio_strings_1, 2, 19, &music);
+    elements[1] = construct_radio_button(4, 5 + speed_option,
+     radio_strings_2, 2, 18, &sfx);
+    elements[2] = construct_label(3, 8 + speed_option,
+     "Audio volumes-");
+    elements[3] = construct_number_box(3, 9 + speed_option,
+     "Overall volume- ", 1, 8, 0, &music_volume);
+    elements[4] = construct_number_box(3, 10 + speed_option,
+     "SoundFX volume- ", 1, 8, 0, &sound_volume);
+    elements[5] = construct_number_box(3, 11 + speed_option,
+     "PC Speaker SFX- ", 1, 8, 0, &sfx_volume);
+
+    elements[ok_pos] = construct_button(6, 13 + speed_option + shader_option,
+     "OK", 0);
+
+    elements[cancel_pos] = construct_button(15, 13 + speed_option + shader_option,
+     "Cancel", 1);
+
+    construct_dialog(&di, "Game Settings", 25, 4 - ((speed_option+shader_option) / 2),
+     30, 16 + speed_option + shader_option, elements, num_elements, start_option);
+
+    dialog_result = run_dialog(mzx_world, &di);
+    start_option = di.current_element;
+    destruct_dialog(&di);
+
+    if(!dialog_result)
+    {
+      set_sfx_volume(sfx_volume);
+
+      if(music_volume != get_music_volume())
+      {
+        set_music_volume(music_volume);
+
+        if(mzx_world->active)
+          volume_module(src_board->volume);
+      }
+
+      if(sound_volume != get_sound_volume())
+        set_sound_volume(sound_volume);
+
+      sfx ^= 1;
+      music ^= 1;
+
+      set_sfx_on(sfx);
+
+      if(!music)
+      {
+        // Turn off music.
+        if(get_music_on_state() && (mzx_world->active))
+          end_module();
+      }
+      else
+
+      if(!get_music_on_state() && (mzx_world->active))
+      {
+        // Turn on music.
+        load_board_module(mzx_world, src_board);
+      }
+
+      set_music_on(music);
+      mzx_world->mzx_speed = mzx_speed;
+    }
+
+#ifdef CONFIG_RENDER_GL_PROGRAM
+    else
+
+    // Shader selection
+    if(dialog_result == 2)
+    {
+      // Reuse the path for the vertex shader.
+      char *vert = shader_path;
+      char *frag = shader_name;
+      struct stat path_info;
+
+      if(frag[0])
       {
         strcpy(vert, frag);
         strcpy(vert + strlen(vert) - 4, "vert");
@@ -772,8 +791,11 @@ static void game_settings(struct world *mzx_world)
         switch_shader(vert, frag);
       }
     }
-  }
 #endif
+  }
+  while(dialog_result > 1);
+
+  pop_context();
 }
 
 static void place_player(struct world *mzx_world, int x, int y, int dir)
