@@ -753,7 +753,11 @@ enum val_result validate_legacy_world_file(const char *file,
       result = VAL_VERSION;
       goto err_close;
     }
-    else if (v < WORLD_LEGACY_FORMAT_VERSION)
+
+    // This disables 2.84 save loading.
+    // If we ever want this to return, revert this check.
+    else if (v < WORLD_VERSION)
+    //else if (v < WORLD_LEGACY_FORMAT_VERSION)
     {
       error_message(E_SAVE_VERSION_OLD, v, NULL);
       result = VAL_VERSION;
