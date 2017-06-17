@@ -94,8 +94,8 @@ FEATURES
   (e.g. set "spr0_offset" 256)
   Offset values can also be set to locations within a char set.
   (Lancer-X)
-+ The colors used by tiles of a given color # in SMZX modes 2
-  and 3 can now be rebound using the "smzx_idx#,#" counters.
++ The colors used by tiles of a given color # in SMZX mode 3
+  can now be rebound using the "smzx_idx#,#" counters.
   (e.g. set "smzx_idx7,0" 32)
   Now if you put down a c07 tile, all 00 pixels will refer to
   color 32 (as opposed to color 0 in SMZX mode 2 or color 7 in
@@ -239,7 +239,6 @@ BUGFIXES
 + SAVE_GAME and SAVE_WORLD now happen at the end of a cycle, not
   immediately. (Lancer-X)
 + SAVE_WORLD no longer exists. (Lancer-X)
-
 
 DEVELOPERS
 
