@@ -239,6 +239,10 @@ BUGFIXES
 + SAVE_GAME and SAVE_WORLD now happen at the end of a cycle, not
   immediately. (Lancer-X)
 + SAVE_WORLD no longer exists. (Lancer-X)
++ Labels at the end of a program no longer get randomly sorted
+  first and stop the actual first instance of that label being
+  called. This fixes a bug in the Dark Corner 'Zane' demo.
+  (Lancer-X)
 
 DEVELOPERS
 
