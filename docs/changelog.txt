@@ -118,6 +118,8 @@ FEATURES
   MegaZeux will load the selected palette file when the board
   is entered during gameplay. This setting can be saved as a
   board default.
++ Maximum robot size has been increased from 64kb to 2mb.
+  (Lancer-X)
 
 + Debytecode: the LOAD_SOURCE_FILE special counter can now be
   used to load and compile a robot program from source code.

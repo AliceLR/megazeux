@@ -26,7 +26,7 @@ __M_BEGIN_DECLS
 
 #include <stdio.h>
 
-#define MAX_OBJ_SIZE       65536
+#define MAX_OBJ_SIZE       2097152
 
 #define S_IMM_U16          0
 #define S_IMM_S16          0
