@@ -180,8 +180,8 @@ int intake(struct world *mzx_world, char *string, int max_len,
     }
     else
     {
-      write_number(currx + 1, 79, 32, 0, 3, 0, 10);
-      write_number(curr_len + 1, 79, 36, 0, 3, 0, 10);
+      write_number(currx + 1, 79, 28, 0, 3, 0, 10);
+      write_number(curr_len + 1, 79, 32, 0, 3, 0, 10);
     }
 
     // Get key

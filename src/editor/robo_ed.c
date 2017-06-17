@@ -122,7 +122,7 @@ static const char top_highlight_color = combine_colors(14, 4);
 static const char current_line_color = combine_colors(11, 8);
 static const char mark_color = combine_colors(0, 7);
 
-static const int max_size = 65535;
+static const int max_size = 2097152;
 
 static int case_option = 0;
 
@@ -3287,7 +3287,7 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
   rstate.current_line = 0;
   rstate.current_rline = &base;
   rstate.total_lines = 0;
-  rstate.max_size = 65535;
+  rstate.max_size = max_size;
   rstate.include_ignores = mzx_world->conf.disassemble_extras;
   rstate.disassemble_base = mzx_world->conf.disassemble_base;
   rstate.ccodes = mzx_world->editor_conf.color_codes;
@@ -3428,7 +3428,7 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
     rstate.scr_line_end = 20;
   }
 
-  sprintf(max_size_buffer, "%05d", rstate.max_size);
+  sprintf(max_size_buffer, "%07d", rstate.max_size);
   strcpy(rstate.command_buffer, rstate.current_rline->line_text);
 
   do
@@ -3476,14 +3476,14 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
     snprintf(str_buffer, 32, "%05d", rstate.total_lines);
     str_buffer[31] = 0;
     write_string(str_buffer, 14, 0, top_text_color, 0);
-    write_string("Character:", 21, 0, top_highlight_color, 0);
-    write_string("/", 35, 0, top_highlight_color, 0);
-    write_string("Size:", 41, 0, top_highlight_color, 0);
-    snprintf(str_buffer, 32, "%05d", rstate.size);
+    write_string("Char.:", 21, 0, top_highlight_color, 0);
+    write_string("/", 31, 0, top_highlight_color, 0);
+    write_string("Size:", 37, 0, top_highlight_color, 0);
+    snprintf(str_buffer, 32, "%07d", rstate.size);
     str_buffer[31] = 0;
-    write_string(str_buffer, 47, 0, top_text_color, 0);
-    write_string("/", 52, 0, top_highlight_color, 0);
-    write_string(max_size_buffer, 53, 0, top_text_color, 0);
+    write_string(str_buffer, 43, 0, top_text_color, 0);
+    write_string("/", 50, 0, top_highlight_color, 0);
+    write_string(max_size_buffer, 51, 0, top_text_color, 0);
     write_string("X:", 60, 0, top_highlight_color, 0);
     snprintf(str_buffer, 32, "%05d", cur_robot->xpos);
     str_buffer[31] = 0;
