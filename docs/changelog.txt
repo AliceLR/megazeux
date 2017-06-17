@@ -253,6 +253,7 @@ DEVELOPERS
 + Updated NDS, Wii and PSP ports to latest devkitpro toolchains.
 + Updated libmodplug to version 0.8.9.0. (asiekierka)
 + Added experimental libxmp support. (asiekierka)
++ Added experimental libopenmpt support. (asiekierka)
 + New rendering architecture that mostly sits alongside the old
   rendering architecture. There is a new function implemented by
   supporting renderers: render_layer(). This provides a layer
