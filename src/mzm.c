@@ -592,7 +592,7 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer, int file
             int robot_calculated_size;
             int robot_partial_size;
             int current_position;
-            int dummy;
+            int dummy = 0;
 
             // We suppress the errors that will generally occur here and barely
             // error check the zip functions. Why? This needs to run all the way
