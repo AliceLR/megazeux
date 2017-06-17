@@ -290,6 +290,7 @@ static const char *const overlay_menu_lines[4] =
   "Character"
 };
 
+/* FIXME future feature.
 static const char *const vlayer_menu_lines[4] =
 {
   " VLAYER EDITING- (Alt+V to end)",
@@ -297,6 +298,7 @@ static const char *const vlayer_menu_lines[4] =
   " C:Color  Alt+\x12\x1d:Move 10   Alt+B:Block  Tab:Draw  Alt+P:Size  F2:Text",
   "Character"
 };
+*/
 
 static const char tmenu_num_choices[8] = { 17, 14, 18, 8, 6, 11, 12, 10 };
 

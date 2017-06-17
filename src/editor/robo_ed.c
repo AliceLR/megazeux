@@ -109,17 +109,14 @@ static const char bottom_line_connect = 193;
 static const char vertical_line = 179;
 static const char horizontal_line = 196;
 static const char top_char = 219;
-static const char bottom_char = 219;
 static const char bg_char = 32;
 static const char bg_color = 8;
 static const char bg_color_solid = combine_colors(0, 8);
 static const char top_color = 4;
-static const char bottom_color = 1;
 static const char line_color = combine_colors(15, 8);
 static const char top_text_color = combine_colors(15, 4);
 static const char bottom_text_color = combine_colors(15, 1);
 static const char top_highlight_color = combine_colors(14, 4);
-static const char current_line_color = combine_colors(11, 8);
 static const char mark_color = combine_colors(0, 7);
 
 static const int max_size = 2097152;
