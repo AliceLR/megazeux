@@ -825,6 +825,8 @@ static int cmp_labels(const void *dest, const void *src)
   {
     if(ldest->position == 0)
       return 1;
+    if(lsrc->position == 0)
+      return -1;
 
     return ldest->position - lsrc->position;
   }
