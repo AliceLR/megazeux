@@ -60,6 +60,9 @@ MIKMOD_LDFLAGS ?= -L${PREFIX}/lib -lmikmod
 XMP_CFLAGS  ?= -I${PREFIX}/include
 XMP_LDFLAGS ?= -L${PREFIX}/lib -lxmp
 
+OPENMPT_CFLAGS  ?= -I${PREFIX}/include
+OPENMPT_LDFLAGS ?= -L${PREFIX}/lib -lopenmpt
+
 ZLIB_CFLAGS  ?= -I${PREFIX}/include \
                 -D_FILE_OFFSET_BITS=32 -U_LARGEFILE64_SOURCE
 ZLIB_LDFLAGS ?= -L${PREFIX}/lib -lz

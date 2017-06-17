@@ -79,11 +79,12 @@ typedef enum
 #endif
 
 #ifdef CONFIG_AUDIO
-#if defined(CONFIG_MODPLUG) || defined(CONFIG_MIKMOD) || defined(CONFIG_XMP)
+// One of the mod playback engines is enabled.
+#if defined(CONFIG_AUDIO_MOD_SYSTEM)
 #define __audio_c_maybe_static
-#else // !CONFIG_MODPLUG && !CONFIG_MIKMOD && !CONFIG_XMP
+#else // !CONFIG_AUDIO_MOD_SYSTEM
 #define __audio_c_maybe_static static
-#endif // CONFIG_MODPLUG || CONFIG_MIKMOD || CONFIG_XMP
+#endif // CONFIG_AUDIO_MOD_SYSTEM
 #else // !CONFIG_AUDIO
 #define __audio_c_maybe_static static
 #endif // CONFIG_AUDIO
