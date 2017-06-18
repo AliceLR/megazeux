@@ -2708,6 +2708,10 @@ void title_screen(struct world *mzx_world)
       {
         if(update(mzx_world, 0, &fadein))
         {
+          if (conf->standalone_mode &&
+           mzx_world->change_game_state ==
+           CHANGE_STATE_EXIT_GAME_ROBOTIC)
+            break;
           update_event_status();
           continue;
         }
@@ -2732,9 +2736,6 @@ void title_screen(struct world *mzx_world)
       {
         switch (mzx_world->change_game_state)
         {
-          case CHANGE_STATE_EXIT_GAME_ROBOTIC:
-            exit = 1;
-            break;
           case CHANGE_STATE_PLAY_GAME_ROBOTIC:
             key = IKEY_p;
             break;
