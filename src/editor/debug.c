@@ -2028,7 +2028,7 @@ void __debug_counters(struct world *mzx_world)
         export_name[0] = 0;
 
         if(!new_file(mzx_world, txt_ext, ".txt", export_name,
-         "Export counters/strings", 1))
+         "Export counters/strings text file...", 1))
         {
           FILE *fp;
 
@@ -2040,8 +2040,6 @@ void __debug_counters(struct world *mzx_world)
              mzx_world->counter_list[i]->name,
              mzx_world->counter_list[i]->value);
           }
-
-          fprintf(fp, "set \"mzx_speed\" to %d\n", mzx_world->mzx_speed);
 
           for(i = 0; i < mzx_world->num_strings; i++)
           {
