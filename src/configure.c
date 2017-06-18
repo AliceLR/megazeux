@@ -84,7 +84,7 @@
 #endif
 
 #ifndef UPDATE_HOST_COUNT
-#define UPDATE_HOST_COUNT 2
+#define UPDATE_HOST_COUNT 3
 #endif
 
 #ifndef UPDATE_HOSTS
