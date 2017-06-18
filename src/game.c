@@ -2255,6 +2255,8 @@ __editor_maybe_static void play_game(struct world *mzx_world)
           {
             m_show();
             help_system(mzx_world);
+
+            update_event_status();
           }
           break;
         }
@@ -2526,13 +2528,21 @@ __editor_maybe_static void play_game(struct world *mzx_world)
           if(get_alt_status(keycode_internal))
           {
             if(edit_breakpoints && editing)
+            {
               edit_breakpoints(mzx_world);
+
+              update_event_status();
+            }
           }
           // Debug counter editor
           else
           {
             if(debug_counters && editing)
+            {
               debug_counters(mzx_world);
+
+              update_event_status();
+            }
           }
           break;
         }
