@@ -2188,7 +2188,13 @@ __editor_maybe_static void play_game(struct world *mzx_world)
     {
       // Exit game state change
       if(mzx_world->change_game_state == CHANGE_STATE_EXIT_GAME_ROBOTIC)
+      {
+        if (conf->no_titlescreen)
+        {
+          mzx_world->full_exit = true;
+        }
         break;
+      }
 
       update_event_status();
       continue;
@@ -3202,7 +3208,7 @@ void title_screen(struct world *mzx_world)
 
     if (mzx_world->full_exit) break;
 
-  } while(!exit);
+  } while(!exit && !mzx_world->full_exit);
 
   vquick_fadeout();
   clear_sfx_queue();
