@@ -88,7 +88,11 @@
 #endif
 
 #ifndef UPDATE_HOSTS
-#define UPDATE_HOSTS { "updates.digitalmzx.net", "updates.mzx.devzero.co.uk" }
+#define UPDATE_HOSTS {     \
+ "updates.digitalmzx.net", \
+ "updates.megazeux.org",   \
+ "updates.megazeux.net",   \
+}
 #endif
 #endif /* CONFIG_UPDATER */
 

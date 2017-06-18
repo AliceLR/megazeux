@@ -1,8 +1,41 @@
 GIT
 
-+ FIXME: Updater needs help file section and context
-+ FIXME: Robot debugger needs to be linked to context
-+ FIXME: Counter debugger needs to be linked to context
+FEATURES
+
+BUGFIXES
+
+DEVELOPERS
+
+
+June 18, 2017 - MZX 2.90
+
+Hey, it's been a while! Didn't mean to keep everyone waiting.
+To make up for it as much as possible, we've prepared an extra
+special release of MegaZeux here for you. Yeah, you!
+
+I don't even know where to start with this release, as there's
+simply a lot to talk about. MZX's world formats and rendering
+architecture have gone through major overhauls, and a multitude
+of bugs have been fixed (60+). Particularly the MZX UI graphical
+glitch that occurred when an SMZX mode was enabled.
+
+Some notable new features are unbound sprites (MZX's new native
+pixel precision support), loading character sets/palettes/source
+code/MZMs from strings, saving MZMs to strings, a new Robotic
+debugger, the SAVE_COUNTERS and LOAD_COUNTERS function counters,
+options to help create standalone game releases, the ability to
+assign character sets/palettes to a board to load on entry, and
+resetting boards on entry. The size limit of Robotic bytecode
+has been increased to 2MB.
+
+Other important mentions: MegaZeux has been updated to use
+SDL 2.0 and libmodplug 0.8.9.0. The SAVE_WORLD function counter
+has been permanently removed. The downver utility has been
+temporarily discontinued, as adapting it to this release would
+have been a considerable amount of work. Instead, there is a new
+option in the Export menu in the editor to export a 2.84 world.
+
+Enjoy, and try not to get overwhelmed by all of the new stuff!
 
 FEATURES
 

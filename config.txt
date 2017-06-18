@@ -1,5 +1,5 @@
 # Configuration file for MegaZeux
-# Jun 10th, 2017
+# Jun 18th, 2017
 
 # Comments begin with #. Whitespace is ignored. Empty lines are
 # ignored as well.
@@ -52,7 +52,9 @@
 #
 # Uncomment either of the lines below (but not both) if you want to try it.
 # The "overlay2" mode is cheaper, but will be less accurate due to the use
-# of chroma subsampling instead of a full YUV encode.
+# of chroma subsampling instead of a full YUV encode. Furthermore, the
+# "overlay2" mode does not support newer graphical features such as unbound
+# sprites. The use of it is not recommended.
 
 # video_output = overlay1
 # video_output = overlay2
@@ -74,8 +76,9 @@
 # MegaZeux also provides a scaler for programmable hardware. If you have
 # OpenGL 2.0 or OpenGL ES 2.0 capable hardware, you should use this renderer.
 # Written by Logicow, it uses shaders to do the tiling and scaling. There
-# are four shader programs that can be customized. This renderer is called
-# "glsl". It is the highest quality and best performing renderer.
+# are several shader programs that can be selected at runtime using the F2
+# menu. This renderer is called "glsl". It is the highest quality and best
+# performing renderer.
 #
 # Uncomment ONE of the lines below:
 
@@ -272,10 +275,10 @@
 # editor_space_toggles = 1
 
 # Whether or not the editor should center the viewport on the
-# cursor in tab draw mode. Enabled by default, uncomment the
-# following line to disable.
+# cursor in tab draw mode. Disabled by default; uncomment the
+# following line to enable.
 
-# editor_tab_focuses_view = 0
+# editor_tab_focuses_view = 1
 
 # If this is set to 1 (the default), enter can be used to split
 # a line in the robot editor. However, the classic behaviour is
@@ -322,6 +325,7 @@
 # board_default_forest_to_floor = 0
 # board_default_collect_bombs = 0
 # board_default_restart_if_hurt = 0
+# board_default_reset_on_entry = 0
 # board_default_player_locked_ns = 0
 # board_default_player_locked_ew = 0
 # board_default_player_locked_att = 0
@@ -329,6 +333,8 @@
 # board_default_explosions_leave = ash
 # board_default_saving = enabled
 # board_default_overlay = enabled
+# board_default_charset_path = 
+# board_default_palette_path = 
 
 
 ### Robot editor options ###
@@ -462,8 +468,8 @@
 # to experiment to find which joystick is which number, if you have
 # multiple ones, otherwise just use 1. Up to 16 joysticks are
 # recognized.
-# You can currently map two things, axes and buttons.
-# Axes/buttons are mapped to keys given by number. You can find out
+# You can currently map three things, axes, buttons, and POV hats.
+# Axes/buttons/hats are mapped to keys given by number. You can find out
 # a key's number by printing key_pressed in a loop (NOT key_code).
 # Axis mapping looks as follows:
 
@@ -481,6 +487,14 @@
 # Where X is the number of the joystick, Y is the number of the button
 # (you may have to experiment to find out which button is which number),
 # and A is the key whose press is emulated when this button is pressed.
+
+# Hat mapping looks as follos:
+
+# joyXhat = U, D, L, R
+
+# Where X is the number of the joystick, U is the key for the up direction,
+# D is the key for the down direction, L is the key for the left direction,
+# and R is the key for the right direction.
 
 
 # Misc Options
@@ -527,10 +541,11 @@
 # URL and should not contain protocol specifiers such as http://
 
 # By default, MZX will attempt to connect to updates.digitalmzx.net,
-# followed by updates.mzx.devzero.co.uk.
+# followed by updates.megazeux.org and updates.megazeux.net.
 
 # update_host = updates.digitalmzx.net
-# update_host = updates.mzx.devzero.co.uk
+# update_host = updates.megazeux.org
+# update_host = updates.megazeux.net
 
 # The update "branch" is consulted each time the updater runs. Typically,
 # there are only two branches, "Stable" and "Unstable". Please note, this
