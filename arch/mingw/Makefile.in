@@ -64,7 +64,11 @@ clean:
 # Windows builds must copy $SDL_DLL and create a directx.bat
 #
 build: ${build}
+ifdef CUSTOM_SDL_DLL_DIR
+	${CP} ${CUSTOM_SDL_DLL_DIR}/${SDL_DLL} ${build}
+else
 	${CP} ${SDL_PREFIX}/bin/${SDL_DLL} ${build}
+endif
 	${PEFIX} ${build}/${SDL_DLL}
 	${CP} arch/mingw/directx.bat ${build}
 ifeq (${BUILD_UTILS},1)
