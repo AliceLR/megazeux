@@ -127,6 +127,9 @@ FEATURES
   (e.g. set "spr0_offset" 256)
   Offset values can also be set to locations within a char set.
   (Lancer-X)
++ To allow you to access the extended charsets, the @ option to
+  load char set now takes up to 4 digits, rather than merely 3.
+  The + option still only allows 2 hex digits. (Lancer-X)
 + The colors used by tiles of a given color # in SMZX mode 3
   can now be rebound using the "smzx_idx#,#" counters.
   (e.g. set "smzx_idx7,0" 32)

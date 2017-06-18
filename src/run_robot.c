@@ -5264,11 +5264,18 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
         if(charset_name[0] == '@')
         {
-          char tempc = charset_name[4];
-
-          charset_name[4] = 0;
+          char tempc;
+          int maxlen;
+          // The offset string length was increased in 2.90 to
+          // allow for accessing extended char sets.
+          if (mzx_world->version < 0x025A)
+            maxlen = 3;
+          else
+            maxlen = 4;
+          tempc = charset_name[maxlen+1];
+          charset_name[maxlen+1] = 0;
           pos = (int)strtol(charset_name + 1, &src_name, 10);
-          charset_name[4] = tempc;
+          charset_name[maxlen+1] = tempc;
         }
         else
         {

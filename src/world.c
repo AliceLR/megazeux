@@ -1081,18 +1081,16 @@ static inline int load_world_chars(struct world *mzx_world,
 
   buffer = cmalloc(actual_size);
   result = zip_read_file(zp, buffer, actual_size, &actual_size);
-
-  // Load every charset
-  if(savegame)
-    actual_size = PROTECTED_CHARSET_POSITION * CHAR_SIZE;
-
-  // Load only the first charset
-  else
-    actual_size = CHARSET_SIZE * CHAR_SIZE;
-
   if(result == ZIP_SUCCESS)
   {
-    ec_mem_load_set_var(buffer, actual_size, 0, WORLD_VERSION);
+    // Load every charset
+    if(savegame)
+      ec_mem_load_set_var(buffer, PROTECTED_CHARSET_POSITION * CHAR_SIZE,
+       0, WORLD_VERSION);
+
+    // Load only the first charset
+    else
+      ec_mem_load_set((Uint8 *)buffer);
   }
 
   free(buffer);
