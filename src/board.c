@@ -1121,8 +1121,9 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
   {
     if(robot_list[i] && !found_robots[i])
     {
-      // Deleting these is a pain. Just leave them.
+      // Deleting these is a pain. Mark them to be cleaned on save.
       error_message(E_ZIP_ROBOT_MISSING_FROM_BOARD, (board_id << 8)|i, NULL);
+      robot_list[i]->used = 0;
     }
   }
 

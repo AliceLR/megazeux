@@ -699,15 +699,21 @@ board_scan:
   // Now do a board scan to make sure there aren't more than the data told us.
   {
     char *level_id = cur_board->level_id;
+    char *level_param = cur_board->level_param;
     char *level_under_id = cur_board->level_under_id;
+    struct robot **robot_list = cur_board->robot_list;
 
     int robot_count = 0, scroll_count = 0, sensor_count = 0;
     char err_mesg[80] = { 0 };
-    char id;
+    unsigned char id;
+    unsigned char pr;
+
+    char found_robots[256] = {0};
 
     for(i = 0; i < (board_width * board_height); i++)
     {
       id = level_id[i];
+      pr = level_param[i];
 
       if(level_under_id[i] > 127)
         level_under_id[i] = CUSTOM_FLOOR;
@@ -718,7 +724,12 @@ board_scan:
         case ROBOT_PUSHABLE:
         {
           robot_count++;
-          if(robot_count > cur_board->num_robots)
+          if(!found_robots[pr] && pr <= num_robots && robot_list[pr])
+          {
+            found_robots[pr] = 1;
+          }
+
+          else
           {
             cur_board->level_id[i] = CUSTOM_BLOCK;
             cur_board->level_param[i] = 'R';
@@ -758,6 +769,26 @@ board_scan:
         }
       }
     }
+
+    // Perform a robot scan to make sure every robot is actually on the board.
+    // Some old worlds (e.g. Catacombs of Zeux, Demon Earth) contain useless
+    // robots that aren't. Silently mark the missing ones to not be saved.
+    for(i = 1; i <= robot_count; i++)
+    {
+      cur_robot = robot_list[i];
+
+      if(cur_robot && cur_robot->used)
+      {
+        if(!found_robots[i])
+        {
+          debug("Robot # %d was loaded but is missing on board @ %d; marked unused\n",
+           i, board_location);
+
+          cur_robot->used = 0;
+        }
+      }
+    }
+
     if(robot_count > cur_board->num_robots)
     {
       snprintf(err_mesg, 80, "found %i robots; expected %i",
