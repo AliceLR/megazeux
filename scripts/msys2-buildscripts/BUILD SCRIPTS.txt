@@ -1,0 +1,16 @@
+These scripts are intended for building and uploading releases
+of MegaZeux. Copy everything in this directory to the root
+directory of a brand new msys2 installation (highly recommended)
+
+Edit 1_PrepareReleaseEnvironment.bat to put in the URL for the
+Git repository containing MZX.
+Edit 2_CreateReleases.bat to change anything necessary (usually
+just the name and branch of the current stable version of MZX)
+Edit 3_UploadReleases.bat to uncomment one of the lines, based
+on whether you prefer PHP or scp/ssh uploads and whatever your
+server is configured for. You may also need to modify
+mingw-uploadrelease-ssh.sh if your don't want to upload to the
+directory you land at when SSHing to your server.
+
+Then run 1_PrepareReleaseEnvironment.bat, followed by
+2_CreateReleases.bat, followed by 3_UploadReleases.bat.
