@@ -142,13 +142,21 @@ void ec_read_char(Uint16 chr, char *matrix)
 Sint32 ec_load_set(char *name)
 {
   FILE *fp = fopen_unsafe(name, "rb");
+  size_t chars_read;
 
   if(fp == NULL)
    return -1;
 
-  fread(graphics.charset, CHAR_SIZE, CHARSET_SIZE, fp);
+  chars_read = fread(graphics.charset, CHAR_SIZE,
+   PROTECTED_CHARSET_POSITION, fp);
 
   fclose(fp);
+  // Clear any extended chars that weren't read
+  if (layer_renderer_check(false))
+  {
+    memset(&graphics.charset[CHAR_SIZE * chars_read], 0,
+     CHAR_SIZE * (PROTECTED_CHARSET_POSITION - chars_read));
+  }
 
   // some renderers may want to map charsets to textures
   if(graphics.renderer.remap_charsets)
@@ -203,6 +211,12 @@ Sint32 ec_load_set_var(char *name, Uint16 pos, int version)
 void ec_mem_load_set(Uint8 *chars)
 {
   memcpy(graphics.charset, chars, CHAR_SIZE * CHARSET_SIZE);
+  // Clear extended charsets
+  if (layer_renderer_check(false))
+  {
+    memset(&graphics.charset[CHAR_SIZE * CHARSET_SIZE], 0,
+     CHAR_SIZE * (PROTECTED_CHARSET_POSITION - CHARSET_SIZE));
+  }
 
   // some renderers may want to map charsets to textures
   if(graphics.renderer.remap_charsets)
@@ -242,13 +256,7 @@ void ec_mem_save_set_var(Uint8 *chars, size_t len, Uint16 pos)
 
 __editor_maybe_static void ec_load_mzx(void)
 {
-  if (layer_renderer_check(false))
-  {
-    // Wipe the unprotected parts of the charset
-    memset(graphics.charset, 0, PROTECTED_CHARSET_POSITION * CHAR_SIZE);
-  }
   ec_mem_load_set(graphics.default_charset);
-
 }
 
 static void update_colors(struct rgb_color *palette, Uint32 count)
