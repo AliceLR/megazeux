@@ -3303,11 +3303,6 @@ static int find_free_sensor(struct board *src_board)
 // source code. It's only for runtime (use duplicate_robot_direct_source
 // there instead)
 
-#ifdef CONFIG_DEBYTECODE
-static
-#else
-__editor_maybe_static
-#endif
 void duplicate_robot_direct(struct world *mzx_world, struct robot *cur_robot,
  struct robot *copy_robot, int x, int y)
 {
@@ -3428,7 +3423,7 @@ void replace_robot(struct world *mzx_world, struct board *src_board,
 }
 
 // Like duplicate_robot_direct, but for scrolls.
-__editor_maybe_static void duplicate_scroll_direct(struct scroll *cur_scroll,
+void duplicate_scroll_direct(struct scroll *cur_scroll,
  struct scroll *copy_scroll)
 {
   size_t mesg_size = cur_scroll->mesg_size;
@@ -3441,7 +3436,7 @@ __editor_maybe_static void duplicate_scroll_direct(struct scroll *cur_scroll,
 }
 
 // Like duplicate_robot_direct, but for sensors.
-__editor_maybe_static void duplicate_sensor_direct(struct sensor *cur_sensor,
+void duplicate_sensor_direct(struct sensor *cur_sensor,
  struct sensor *copy_sensor)
 {
   // Copy all the contents

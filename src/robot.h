@@ -80,11 +80,6 @@ void add_robot_name_entry(struct board *src_board, struct robot *cur_robot,
  char *name);
 int find_free_robot(struct board *src_board);
 
-#ifdef CONFIG_EDITOR
-CORE_LIBSPEC void duplicate_robot_direct(struct world *mzx_world,
- struct robot *cur_robot, struct robot *copy_robot, int x, int y);
-#endif
-
 #endif /* !CONFIG_DEBYTECODE */
 
 CORE_LIBSPEC struct label **cache_robot_labels(struct robot *robot,
@@ -190,12 +185,14 @@ static inline char *tr_msg(struct world *mzx_world, char *mesg, int id,
 
 void run_robot(struct world *mzx_world, int id, int x, int y);
 
-#ifdef CONFIG_EDITOR
+CORE_LIBSPEC void duplicate_robot_direct(struct world *mzx_world,
+ struct robot *cur_robot, struct robot *copy_robot, int x, int y);
 CORE_LIBSPEC void duplicate_scroll_direct(struct scroll *cur_scroll,
  struct scroll *copy_scroll);
 CORE_LIBSPEC void duplicate_sensor_direct(struct sensor *cur_sensor,
  struct sensor *copy_sensor);
 
+#ifdef CONFIG_EDITOR
 CORE_LIBSPEC void copy_buffer_to_layer(int x, int y, int width, int height,
  char *src_char, char *src_color, char *dest_char,
  char *dest_color, int layer_width);
