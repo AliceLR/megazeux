@@ -170,14 +170,6 @@ static inline void RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, X, X, X, X)
 #include "render_layer_code.h"
 #undef RENDERER_SMZX
 
-#define RENDERER_SMZX  2
-#include "render_layer_code.h"
-#undef RENDERER_SMZX
-
-#define RENDERER_SMZX  3
-#include "render_layer_code.h"
-#undef RENDERER_SMZX
-
 static inline void RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, RENDERER_ALIGN, X, X, X)
  (void *pixels, Uint32 pitch, struct graphics_data *graphics, struct video_layer *layer,
  int ppal, int clip, int smzx)
@@ -188,15 +180,9 @@ static inline void RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, RENDERER_ALIG
        (pixels, pitch, graphics, layer, ppal, clip);
       break;
     case 1:
-      RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, RENDERER_ALIGN, 1, X, X)
-       (pixels, pitch, graphics, layer, ppal, clip);
-      break;
     case 2:
-      RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, RENDERER_ALIGN, 2, X, X)
-       (pixels, pitch, graphics, layer, ppal, clip);
-      break;
     case 3:
-      RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, RENDERER_ALIGN, 3, X, X)
+      RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, RENDERER_ALIGN, 1, X, X)
        (pixels, pitch, graphics, layer, ppal, clip);
       break;
     default:
