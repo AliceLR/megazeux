@@ -290,6 +290,7 @@ BUGFIXES
   (Lancer-X)
 + Copy and copy block in pre-port MZX games now preserves the
   state of any robots copied. (Lancer-X)
++ MegaZeux can now be exited during an infinite loop. (Lancer-X)
 
 DEVELOPERS
 

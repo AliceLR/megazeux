@@ -1902,6 +1902,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
     }
 
     case CHANGE_STATE_EXIT_GAME_ROBOTIC:
+    case CHANGE_STATE_REQUEST_EXIT:
       // Exit game--skip input processing. The game state will exit.
       return 1;
 
@@ -2187,7 +2188,8 @@ __editor_maybe_static void play_game(struct world *mzx_world)
     if(update(mzx_world, 1, &fadein))
     {
       // Exit game state change
-      if(mzx_world->change_game_state == CHANGE_STATE_EXIT_GAME_ROBOTIC)
+      if(mzx_world->change_game_state == CHANGE_STATE_EXIT_GAME_ROBOTIC ||
+       mzx_world->change_game_state == CHANGE_STATE_REQUEST_EXIT)
       {
         if (conf->no_titlescreen)
         {
@@ -2727,6 +2729,9 @@ void title_screen(struct world *mzx_world)
           if (conf->standalone_mode &&
            mzx_world->change_game_state ==
            CHANGE_STATE_EXIT_GAME_ROBOTIC)
+            break;
+          if (mzx_world->change_game_state ==
+           CHANGE_STATE_REQUEST_EXIT)
             break;
           update_event_status();
           continue;

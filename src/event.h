@@ -150,10 +150,16 @@ CORE_LIBSPEC void key_press(struct buffered_status *status, enum keycode key,
 CORE_LIBSPEC void key_release(struct buffered_status *status, enum keycode key);
 CORE_LIBSPEC bool get_exit_status(void);
 CORE_LIBSPEC bool set_exit_status(bool value);
+CORE_LIBSPEC bool peek_exit_input(void);
 
 // Implemented by "drivers" (SDL, Wii, and NDS currently)
 void __wait_event(int timeout);
 bool __update_event_status(void);
+
+// This one is SDL-only
+#ifdef CONFIG_SDL
+bool __peek_exit_input(void);
+#endif
 
 void wait_event(int timeout);
 Uint32 get_last_key(enum keycode_type type);

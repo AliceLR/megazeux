@@ -5876,6 +5876,30 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
     }
     find_player(mzx_world);
 
+    if ((lines_run + 1) % 1000000 == 0) {
+      if (peek_exit_input()) {
+        bool exit = false;
+        update_event_status();
+        if (get_exit_status()) {
+          exit = true;
+        } else {
+          if (get_key_status(keycode_internal, IKEY_ESCAPE)) {
+            exit = true;
+          }
+        }
+        if (exit) {
+          m_show();
+          if (!confirm(mzx_world,
+           "MegaZeux appears to have frozen. Do you want to exit?"))
+          {
+            mzx_world->change_game_state =
+             CHANGE_STATE_REQUEST_EXIT;
+            break;
+          }
+        }
+      }
+    }
+
   } while(((++lines_run) < mzx_world->commands) && (!done));
 
   breaker:

@@ -590,6 +590,34 @@ bool __update_event_status(void)
   return rval;
 }
 
+// This returns whether the input buffer _may_ contain a request to quit.
+// Proper polling should be performed if the answer is yes.
+bool __peek_exit_input(void)
+{
+  #if SDL_VERSION_ATLEAST(2,0,0)
+  SDL_Event events[256];
+  int num_events, i;
+  SDL_PumpEvents();
+  num_events = SDL_PeepEvents(events, 256, SDL_PEEKEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT);
+  for (i = 0; i < num_events; i++) {
+    if (events[i].type == SDL_QUIT) return true;
+    if (events[i].type == SDL_KEYDOWN) {
+      SDL_KeyboardEvent *ev = &events[i];
+      if (ev->keysym.sym == SDLK_ESCAPE) return true;
+      if (ev->keysym.sym == SDLK_c && ev->keysym.mod & KMOD_CTRL) return true;
+      if (ev->keysym.sym == SDLK_F4 && ev->keysym.mod & KMOD_ALT) return true;
+    }
+  }
+
+  #else /* !SDL_VERSION_ATLEAST(2,0,0) */
+
+  // FIXME: SDL supports SDL_PeepEvents but the implementation is
+  // different
+  return false;
+
+  #endif /* SDL_VERSION_ATLEAST(2,0,0) */
+}
+
 #if !SDL_VERSION_ATLEAST(2,0,0)
 static int SDL_WaitEventTimeout(SDL_Event *event, int timeout)
 {

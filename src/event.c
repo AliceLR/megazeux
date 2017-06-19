@@ -442,6 +442,15 @@ bool update_event_status(void)
   return rval;
 }
 
+bool peek_exit_input(void)
+{
+  #ifdef CONFIG_SDL
+  return __peek_exit_input();
+  #else /* !CONFIG_SDL */
+  return false;
+  #endif /* CONFIG_SDL */
+}
+
 void wait_event(int timeout)
 {
   struct buffered_status *status = store_status();
