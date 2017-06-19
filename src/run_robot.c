@@ -545,7 +545,7 @@ static void copy_xy_to_xy(struct world *mzx_world, int src_x, int src_y,
     {
       struct robot *src_robot = src_board->robot_list[src_param];
       src_param = duplicate_robot(mzx_world, src_board, src_robot,
-       dest_x, dest_y);
+       dest_x, dest_y, 1);
     }
     else
 
@@ -604,7 +604,7 @@ __editor_maybe_static void copy_board_to_board_buffer(struct world *mzx_world,
       {
         struct robot *src_robot = src_board->robot_list[src_param];
         src_param = duplicate_robot(mzx_world, dest_board, src_robot,
-         0, 0);
+         0, 0, 1);
       }
       else
 
@@ -3329,7 +3329,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             if(!move_dir(src_board, &duplicate_x, &duplicate_y, duplicate_dir))
             {
               dest_id = duplicate_robot(mzx_world, src_board, cur_robot,
-               duplicate_x, duplicate_y);
+               duplicate_x, duplicate_y, 0);
 
               if(dest_id != -1)
                 place_at_xy(mzx_world, duplicate_id, duplicate_color,
@@ -3366,7 +3366,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           }
 
           dest_id = duplicate_robot(mzx_world, src_board, cur_robot,
-           duplicate_x, duplicate_y);
+           duplicate_x, duplicate_y, 0);
 
           if(dest_id != -1)
           {
@@ -4728,7 +4728,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         offset = duplicate_x + (duplicate_y * board_width);
         dest_id =
          duplicate_robot(mzx_world, src_board, cur_robot,
-          duplicate_x, duplicate_y);
+          duplicate_x, duplicate_y, 0);
 
         if(dest_id != -1)
         {
@@ -4777,7 +4777,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         offset = duplicate_x + (duplicate_y * board_width);
         dest_id =
          duplicate_robot(mzx_world, src_board, cur_robot,
-          duplicate_x, duplicate_y);
+          duplicate_x, duplicate_y, 0);
 
         if(dest_id != -1)
         {

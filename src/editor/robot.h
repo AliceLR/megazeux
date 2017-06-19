@@ -52,13 +52,13 @@ void replace_robot_source(struct world *mzx_world,
 static inline void duplicate_robot_direct_source(struct world *mzx_world,
  struct robot *cur_robot, struct robot *copy_robot, int x, int y)
 {
-  duplicate_robot_direct(mzx_world, cur_robot, copy_robot, x, y);
+  duplicate_robot_direct(mzx_world, cur_robot, copy_robot, x, y, 0);
 }
 
 static inline int duplicate_robot_source(struct world *mzx_world,
  struct board *src_board, struct robot *cur_robot, int x, int y)
 {
-  return duplicate_robot(mzx_world, src_board, cur_robot, x, y);
+  return duplicate_robot(mzx_world, src_board, cur_robot, x, y, 0);
 }
 
 static inline void replace_robot_source(struct world *mzx_world,
