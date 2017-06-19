@@ -1284,7 +1284,7 @@ int char_editor(struct world *mzx_world)
       case IKEY_RETURN:
       {
         int new_char =
-         char_selection_ext(current_char, 1, &highlight_width,
+         char_selection_ext(current_char, 1, 1, &highlight_width,
          &highlight_height);
         int highlight_size = highlight_width * highlight_height;
         int search_order[16];

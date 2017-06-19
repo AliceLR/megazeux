@@ -46,11 +46,15 @@ FEATURES
 + Added commands_cycle and commands_total variables to the Robot
   section of the counter debugger. See the Debug Mode section of
   the help file for details.
-+ Kinds specified as 255 on the char ID table are now treated as
-  custom* kinds when placed and selected in the editor. If you
-  switched a kind to char ID 255 in a game that already had that
-  kind, the parameters will not be changed (and the kinds will
-  still be char 0 if they were already placed in the world).
++ Certain types specified as 255 on the char ID table are now
+  treated as Custom* types when placed and selected in the
+  editor. If you switched a type to char ID 255 in a game that
+  already had that type, the parameters will not be changed
+  (and the types will still be char 0 if they were already
+  placed in the world). When making a type a Custom* type from
+  the global chars dialog, it will appear visually different in
+  the list and in the character selection window, and also ask
+  for confirmation.
 + The enter menu can be closed with escape now.
 + In the editor, the Backspace key now removes the top layer
   and brings the under layer to the top, as a compliment to Del.

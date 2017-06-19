@@ -38,6 +38,7 @@
 #define color_blank ' '
 #define color_wild '\x3F'
 #define color_dot '\xFE'
+#define char_custom '\x3F'
 
 //Foreground colors that look nice for each background color
 static const char fg_per_bk[16] =
@@ -711,15 +712,28 @@ static void draw_char_box(struct world *mzx_world, struct dialog *di,
  struct element *e, int color, int active)
 {
   struct char_box *src = (struct char_box *)e;
+  unsigned char result = *(src->result);
   int x = di->x + e->x;
   int y = di->y + e->y;
   int question_len = (int)strlen(src->question) + di->pad_space;
 
   write_string(src->question, x, y, color, 0);
-  draw_char_ext(*(src->result), DI_CHAR,
-   x + question_len + 1, y, 0, 16);
-  draw_char(' ', DI_CHAR, x + question_len, y);
-  draw_char(' ', DI_CHAR, x + question_len + 2, y);
+
+  // Special case: display for char ID value 255 custom behavior
+  if((result == 255) && !(src->allow_char_255))
+  {
+    draw_char(char_custom, 0x05, x + question_len + 0, y);
+    draw_char(char_custom, 0x0D, x + question_len + 1, y);
+    draw_char(char_custom, 0x05, x + question_len + 2, y);
+  }
+
+  else
+  {
+    draw_char_ext(*(src->result), DI_CHAR,
+     x + question_len + 1, y, 0, 16);
+    draw_char(' ', DI_CHAR, x + question_len, y);
+    draw_char(' ', DI_CHAR, x + question_len + 2, y);
+  }
 }
 
 static void draw_color_box_element(struct world *mzx_world, struct dialog *di,
@@ -834,10 +848,10 @@ static int key_char_box(struct world *mzx_world, struct dialog *di,
     case IKEY_RETURN:
     {
       int current_char =
-       char_selection(*(src->result));
+       char_selection_ext(*(src->result), src->allow_char_255, 0, NULL, NULL);
 
       if((current_char == 255) && !(src->allow_char_255) &&
-       confirm(mzx_world, "CHAR IDs <128 set to 255 use their param as their char."))
+       confirm(mzx_world, "Use param for the char of this type (like CustomBlock)?"))
         current_char = -1; //don't change the char if the user cancels.
 
       if(current_char >= 0)

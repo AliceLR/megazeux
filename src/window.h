@@ -311,8 +311,8 @@ CORE_LIBSPEC void construct_dialog_ext(struct dialog *src, const char *title,
  int num_elements, int sfx_test_for_input, int pad_space, int start_element,
  int (* idle_function)(struct world *mzx_world, struct dialog *di, int key));
 
-CORE_LIBSPEC int char_selection_ext(int current, int allow_multichar,
- int *width_ptr, int *height_ptr);
+CORE_LIBSPEC int char_selection_ext(int current, int allow_char_255,
+ int allow_multichar, int *width_ptr, int *height_ptr);
 CORE_LIBSPEC struct element *construct_input_box(int x, int y,
  const char *question, int max_length, int input_flags, char *result);
 CORE_LIBSPEC int file_manager(struct world *mzx_world,

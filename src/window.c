@@ -258,8 +258,12 @@ int draw_window_box_ext(int x1, int y1, int x2, int y2, int color,
 // Mouse support- Click on a character to select it. If it is the current
 // character, it exits.
 
-__editor_maybe_static int char_selection_ext(int current, int allow_multichar,
- int *width_ptr, int *height_ptr)
+// allow_char_255 -- if this is set to zero, char 255 will have a special
+// display corresponding to Custom* type behavior. This is meant for the char
+// ID editor only.
+
+__editor_maybe_static int char_selection_ext(int current, int allow_char_255,
+ int allow_multichar, int *width_ptr, int *height_ptr)
 {
   int exit;
   int width = 1;
@@ -388,6 +392,13 @@ __editor_maybe_static int char_selection_ext(int current, int allow_multichar,
         }
       }
     }
+
+    // Special display for allow_char_255 == 0
+    if(!allow_char_255)
+    {
+      draw_char('?', 0x05 + (current == 255) * 0x08, 31+23, 7+7);
+    }
+
     // Draw arrows
     draw_window_box(22, 6, 55, 15, DI_DARK, DI_MAIN, DI_CORNER, 0, 0);
     draw_char(char_sel_arrows_0, DI_TEXT, x, 15);
@@ -532,7 +543,7 @@ __editor_maybe_static int char_selection_ext(int current, int allow_multichar,
 
 int char_selection(int current)
 {
-  return char_selection_ext(current, 0, NULL, NULL);
+  return char_selection_ext(current, 1, 0, NULL, NULL);
 }
 
 __editor_maybe_static void construct_element(struct element *e, int x, int y,
