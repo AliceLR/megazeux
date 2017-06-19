@@ -112,6 +112,7 @@ struct robot
 #ifdef CONFIG_EDITOR
   int commands_total;
   int commands_cycle;
+  int commands_caught;
 #endif
 };
 

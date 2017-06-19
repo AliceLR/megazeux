@@ -91,8 +91,8 @@ static inline void meter_initial_draw(int curr, int target, const char *title) {
 #define BOUND_WORLD_PROPS (BOARD_NAME_SIZE + 5 + 455 + 24 + \
  (NUM_STATUS_COUNTERS * COUNTER_NAME_SIZE))
 
-#define COUNT_SAVE_PROPS  ( 2 +   4 + 29 +          3 +        1)
-#define BOUND_SAVE_PROPS  ( 2 +   9 + 96 + 3*MAX_PATH + NUM_KEYS)
+#define COUNT_SAVE_PROPS  ( 2 +   4 +  30 +          3 +        1)
+#define BOUND_SAVE_PROPS  ( 2 +   9 + 100 + 3*MAX_PATH + NUM_KEYS)
 
 // 600
 #define WORLD_PROP_SIZE \
@@ -150,11 +150,12 @@ enum world_prop
   WPROP_VLAYER_HEIGHT             = 0x8032, //   2
   WPROP_VLAYER_SIZE               = 0x8033, //   4
 
-  // Save properties                  29+4     96 + 3 MAX_PATH + NUM_KEYS
+  // Save properties                  30+4    100 + 3 MAX_PATH + NUM_KEYS
   WPROP_REAL_MOD_PLAYING          = 0x8040, // MAX_PATH
   WPROP_MZX_SPEED                 = 0x8041, //   1
   WPROP_LOCK_SPEED                = 0x8042, //   1
   WPROP_COMMANDS                  = 0x8043, //   4
+  WPROP_COMMANDS_STOP             = 0x8044, //   4
   WPROP_SAVED_POSITIONS           = 0x8048, //  40 (2+2+1)*8
   WPROP_UNDER_PLAYER              = 0x8049, //   3 (1+1+1)
   WPROP_PLAYER_RESTART_X          = 0x804A, //   2
@@ -459,6 +460,7 @@ static inline int save_world_info(struct world *mzx_world,
     save_prop_c(WPROP_MZX_SPEED,        mzx_world->mzx_speed, mf);
     save_prop_c(WPROP_LOCK_SPEED,       mzx_world->lock_speed, mf);
     save_prop_d(WPROP_COMMANDS,         mzx_world->commands, mf);
+    save_prop_d(WPROP_COMMANDS_STOP,    mzx_world->commands_stop, mf);
     save_prop_v(WPROP_SAVED_POSITIONS,  40, prop, mf);
 
     for(i = 0; i < 8; i++)
@@ -591,6 +593,7 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
   check(WPROP_MZX_SPEED);
   check(WPROP_LOCK_SPEED);
   check(WPROP_COMMANDS);
+  check(WPROP_COMMANDS_STOP);
   check(WPROP_SAVED_POSITIONS);
   check(WPROP_UNDER_PLAYER);
   check(WPROP_PLAYER_RESTART_X);
@@ -849,6 +852,10 @@ static inline void load_world_info(struct world *mzx_world,
 
       case WPROP_COMMANDS:
         mzx_world->commands = load_prop_int(size, prop);
+        break;
+
+      case WPROP_COMMANDS_STOP:
+        mzx_world->commands_stop = load_prop_int(size, prop);
         break;
 
       case WPROP_SAVED_POSITIONS:
@@ -3147,6 +3154,7 @@ __editor_maybe_static void default_global_data(struct world *mzx_world)
   mzx_world->under_player_param = 0;
 
   mzx_world->commands = 40;
+  mzx_world->commands_stop = 2000000;
 
   default_scroll_values(mzx_world);
 

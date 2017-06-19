@@ -126,6 +126,7 @@ struct world
   int temp_input_pos;
   int temp_output_pos;
   int commands;
+  int commands_stop;
   int vlayer_size;
   int vlayer_width;
   int vlayer_height;

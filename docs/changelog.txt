@@ -41,6 +41,11 @@ FEATURES
 
 + Added a built-in robot debugger. See the Debug Mode section of
   the help file for details.
++ Added the COMMANDS_STOP special counter to MegaZeux. When a
+  robot executes a number of commands exceeding this value while
+  testing, the robot debugger will be enabled automatically and
+  will open. During regular gameplay, it will be ignored. The
+  default value of COMMANDS_STOP is 2000000.
 + The counter debugger now remembers its previous position after
   being reopened.
 + Added commands_cycle and commands_total variables to the Robot

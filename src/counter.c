@@ -1633,6 +1633,18 @@ static void commands_write(struct world *mzx_world,
   mzx_world->commands = value;
 }
 
+static int commands_stop_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  return mzx_world->commands_stop;
+}
+
+static void commands_stop_write(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int value, int id)
+{
+  mzx_world->commands_stop = value;
+}
+
 static int fread_open_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
@@ -2639,6 +2651,7 @@ static const struct function_counter builtin_counters[] =
   { "buttons", 0x0208, buttons_read, NULL },                         // 2.51s1
   { "char_byte", 0x0209, char_byte_read, char_byte_write },          // 2.60
   { "commands", 0x0209, commands_read, commands_write },             // 2.60
+  { "commands_stop", 0x025A, commands_stop_read, commands_stop_write },// 2.90
   { "cos!", 0x0244, cos_read, NULL },                                // 2.68
   { "c_divisions", 0x0244, c_divisions_read, c_divisions_write },    // 2.68
   { "date_day", 0x0209, date_day_read, NULL },                       // 2.60

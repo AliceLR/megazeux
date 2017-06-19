@@ -1244,6 +1244,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
 #ifdef CONFIG_EDITOR
     cur_robot->commands_cycle = 0;
+    cur_robot->commands_caught = 0;
 #endif
 
     // Update cycle count

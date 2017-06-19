@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2012 Alice Lauren Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2017 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -331,6 +331,21 @@ static int debug_robot_idle_function(struct world *mzx_world,
   return key;
 }
 
+enum actions {
+  ACTION_STEPPED,
+  ACTION_MATCHED,
+  ACTION_CAUGHT,
+  ACTION_CAUGHT_AUTO,
+};
+
+// Don't exceed 8 chars.
+static const char *action_strings[] = {
+  "next:",
+  "matched",
+  "caught",
+  "enabled;",
+};
+
 // FIXME: make it NOT come here every command while editing, maybe. Just a thought
 // If the return value != 0, the robot ignores the current command and ends
 int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id)
@@ -338,9 +353,28 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id)
   int i;
   bool done = false;
   bool stop_robot = false;
+  int action = ACTION_STEPPED;
 
   char *program;
   char *cmd_ptr;
+
+#ifndef CONFIG_DEBYTECODE
+  if(cur_robot->commands_cycle - cur_robot->commands_caught >= mzx_world->commands_stop)
+  {
+    if(!robo_debugger_enabled)
+    {
+      action = ACTION_CAUGHT_AUTO;
+    }
+
+    else
+    {
+      action = ACTION_CAUGHT;
+    }
+
+    robo_debugger_enabled = 1;
+    step = 1;
+  }
+#endif
 
   if(!robo_debugger_enabled)
     return 0;
@@ -380,6 +414,7 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id)
           continue;
 
         match = true;
+        action = ACTION_MATCHED;
         break;
       }
 
@@ -398,8 +433,11 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id)
   }
 #endif
 
+  cur_robot->commands_caught = cur_robot->commands_cycle;
+
   // Open debug dialog
-  do {
+  do
+  {
     int button_line;
     int num_lines = 0;
     struct element *elements[10];
@@ -412,7 +450,8 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id)
     char label[4][77] = { { 0 } };
     char *line_pos = line_buffer;
 
-    snprintf(info, 76, "Robot Debugger - matched `%s` (%i@%i,%i) at line %i:",
+    snprintf(info, 76, "Robot Debugger - %s `%s` (%i@%i,%i) at line %i:",
+     action_strings[action],
      cur_robot->robot_name, id, cur_robot->xpos, cur_robot->ypos, line_num);
     info[76] = 0;
     for(i = 0; i < 4; i++)
@@ -431,6 +470,7 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id)
       // FIXME: hack
       ((struct label_element *)(elements[9 - i]))->respect_colors = false;
     }
+    num_lines = MAX(num_lines, 1);
 
     button_line = num_lines + 2;
     if(position)
