@@ -5889,8 +5889,10 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         }
         if (exit) {
           m_show();
-          if (!confirm(mzx_world,
-           "MegaZeux appears to have frozen. Do you want to exit?"))
+          exit = !confirm(mzx_world,
+           "MegaZeux appears to have frozen. Do you want to exit?");
+          update_screen();
+          if (exit)
           {
             mzx_world->change_game_state =
              CHANGE_STATE_REQUEST_EXIT;
