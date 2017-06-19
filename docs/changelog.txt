@@ -290,6 +290,8 @@ BUGFIXES
   (Lancer-X)
 + Copy and copy block in pre-port MZX games now preserves the
   state of any robots copied. (Lancer-X)
++ Copying and pasting robot code with LF line endings on Windows
+  now works. (Lancer-X)
 
 DEVELOPERS
 
