@@ -389,7 +389,7 @@ static void read_var(struct world *mzx_world, char *var_buffer)
     }
     else
 
-    if(match_var("commands_cycle"))
+    if(match_var("commands_cycle*"))
     {
       int_value = cur_board->robot_list[index]->commands_cycle;
     }
