@@ -1233,7 +1233,7 @@ struct board *duplicate_board(struct world *mzx_world,
       dest_robot = cmalloc(sizeof(struct robot));
 
       duplicate_robot_direct(mzx_world, src_robot, dest_robot,
-       src_robot->xpos, src_robot->ypos);
+       src_robot->xpos, src_robot->ypos, 0);
 
       dest_robot_list[i] = dest_robot;
       dest_robot_name_list[num_robots_active] = dest_robot;

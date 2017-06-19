@@ -92,7 +92,8 @@ CORE_LIBSPEC void clear_sensor_id(struct board *src_board, int id);
 CORE_LIBSPEC void replace_robot(struct world *mzx_world,
  struct board *src_board, struct robot *src_robot, int dest_id);
 CORE_LIBSPEC int duplicate_robot(struct world *mzx_world,
- struct board *src_board, struct robot *cur_robot, int x, int y);
+ struct board *src_board, struct robot *cur_robot, int x, int y,
+ int preserve_state);
 CORE_LIBSPEC int duplicate_scroll(struct board *src_board,
  struct scroll *cur_scroll);
 CORE_LIBSPEC int duplicate_sensor(struct board *src_board,
@@ -186,7 +187,8 @@ static inline char *tr_msg(struct world *mzx_world, char *mesg, int id,
 void run_robot(struct world *mzx_world, int id, int x, int y);
 
 CORE_LIBSPEC void duplicate_robot_direct(struct world *mzx_world,
- struct robot *cur_robot, struct robot *copy_robot, int x, int y);
+ struct robot *cur_robot, struct robot *copy_robot, int x, int y,
+ int preserve_state);
 CORE_LIBSPEC void duplicate_scroll_direct(struct scroll *cur_scroll,
  struct scroll *copy_scroll);
 CORE_LIBSPEC void duplicate_sensor_direct(struct sensor *cur_sensor,

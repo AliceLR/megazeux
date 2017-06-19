@@ -3304,7 +3304,7 @@ static int find_free_sensor(struct board *src_board)
 // there instead)
 
 void duplicate_robot_direct(struct world *mzx_world, struct robot *cur_robot,
- struct robot *copy_robot, int x, int y)
+ struct robot *copy_robot, int x, int y, int preserve_state)
 {
   char *dest_program_location, *src_program_location;
   struct label *src_label, *dest_label;
@@ -3367,18 +3367,26 @@ void duplicate_robot_direct(struct world *mzx_world, struct robot *cur_robot,
   }
 #endif
 
-  // Give the robot an empty stack.
-  copy_robot->stack = NULL;
-  copy_robot->stack_size = 0;
-  copy_robot->stack_pointer = 0;
+  if (preserve_state && mzx_world->version < 0x0250) {
+    // Prior to 2.80, copy and copy block preserved the current robot state
+    // Therefore leave all robot vars alone and copy the stack over
+    size_t stack_capacity = copy_robot->stack_size * sizeof(int);
+    copy_robot->stack = cmalloc(stack_capacity);
+    memcpy(copy_robot->stack, cur_robot->stack, stack_capacity);
+  } else {
+    // Give the robot an empty stack.
+    copy_robot->stack = NULL;
+    copy_robot->stack_size = 0;
+    copy_robot->stack_pointer = 0;
+
+    if(cur_robot->cur_prog_line)
+      copy_robot->cur_prog_line = 1;
+
+    copy_robot->pos_within_line = 0;
+    copy_robot->status = 0;
+  }
   copy_robot->xpos = x;
   copy_robot->ypos = y;
-
-  if(cur_robot->cur_prog_line)
-    copy_robot->cur_prog_line = 1;
-
-  copy_robot->pos_within_line = 0;
-  copy_robot->status = 0;
 }
 
 // Finds a robot ID then duplicates a robot there. Must not be called
@@ -3386,13 +3394,14 @@ void duplicate_robot_direct(struct world *mzx_world, struct robot *cur_robot,
 
 int duplicate_robot(struct world *mzx_world,
  struct board *src_board, struct robot *cur_robot,
- int x, int y)
+ int x, int y, int preserve_state)
 {
   int dest_id = find_free_robot(src_board);
   if(dest_id != -1)
   {
     struct robot *copy_robot = cmalloc(sizeof(struct robot));
-    duplicate_robot_direct(mzx_world, cur_robot, copy_robot, x, y);
+    duplicate_robot_direct(mzx_world, cur_robot, copy_robot, x, y,
+      preserve_state);
     add_robot_name_entry(src_board, copy_robot, copy_robot->robot_name);
     src_board->robot_list[dest_id] = copy_robot;
   }
@@ -3415,7 +3424,7 @@ void replace_robot(struct world *mzx_world, struct board *src_board,
   strcpy(old_name, cur_robot->robot_name);
 
   clear_robot_contents(cur_robot);
-  duplicate_robot_direct(mzx_world, src_robot, cur_robot, x, y);
+  duplicate_robot_direct(mzx_world, src_robot, cur_robot, x, y, 0);
   strcpy(cur_robot->robot_name, old_name);
 
   if(dest_id)

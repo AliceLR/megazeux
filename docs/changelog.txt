@@ -279,6 +279,8 @@ BUGFIXES
   first and stop the actual first instance of that label being
   called. This fixes a bug in the Dark Corner 'Zane' demo.
   (Lancer-X)
++ Copy and copy block in pre-port MZX games now preserves the
+  state of any robots copied. (Lancer-X)
 
 DEVELOPERS
 
