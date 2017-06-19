@@ -184,6 +184,7 @@ const char *world_var_list[] = {
   "red_value",
   "c_divisions",
   "commands",
+  "commands_stop",
   "divider",
   "fread_delimiter", //no read
   "fwrite_delimiter", //no read
