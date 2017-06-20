@@ -79,6 +79,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 void Usage()
 {
   fprintf(stderr, "ccv " VERSION " - char conversion tool for megazeux\n");
+  fprintf(stderr, "by Dr Lancer-X <drlancer@megazeux.org>\n");
   fprintf(stderr, "Usage: ccv [options] input_file [...]\n");
   fprintf(stderr, "Type \"ccv -help\" for extended options information\n");
 }
