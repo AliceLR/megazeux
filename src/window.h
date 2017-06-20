@@ -29,6 +29,8 @@ __M_BEGIN_DECLS
 
 #include "world_struct.h"
 
+#include "context_enum.h"
+
 CORE_LIBSPEC void set_context(int c);
 CORE_LIBSPEC void pop_context(void);
 

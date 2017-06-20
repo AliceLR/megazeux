@@ -651,7 +651,7 @@ static void game_settings(struct world *mzx_world)
   };
   struct element *elements[10];
 
-  set_context(92);
+  set_context(CTX_F2_MENU);
 
 #ifdef CONFIG_RENDER_GL_PROGRAM
   if(!strcmp(mzx_world->conf.video_output, "glsl"))
@@ -2177,7 +2177,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
   // Main game loop
   // Mouse remains hidden unless menu/etc. is invoked
 
-  set_context(91);
+  set_context(CTX_PLAY_GAME);
 
   do
   {

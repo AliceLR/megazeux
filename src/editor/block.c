@@ -65,7 +65,7 @@ int block_cmd(struct world *mzx_world)
     "Save as MZM"
   };
 
-  set_context(73);
+  set_context(CTX_BLOCK_CMD);
   elements[0] = construct_radio_button(2, 2, radio_button_strings,
    9, 21, &block_operation);
   elements[1] = construct_button(5, 12, "OK", 0);
@@ -98,7 +98,7 @@ int rtoo_obj_type(struct world *mzx_world)
     "Text"
   };
 
-  set_context(74);
+  set_context(CTX_BLOCK_TYPE);
   elements[0] = construct_radio_button(6, 4, radio_button_strings,
    3, 12, &object_type);
   elements[1] = construct_button(5, 11, "OK", 0);
@@ -132,7 +132,7 @@ int choose_char_set(struct world *mzx_world)
     "Blank set"
   };
 
-  set_context(75);
+  set_context(CTX_CHOOSE_CHARSET);
   elements[0] = construct_radio_button(4, 4, radio_button_strings,
    4, 16, &charset_type);
   elements[1] = construct_button(5, 11, "OK", 0);
@@ -167,7 +167,7 @@ int export_type(struct world *mzx_world)
     "Downver. world (MZX)",
   };
 
-  set_context(77);
+  set_context(CTX_IMPORTEXPORT_TYPE);
 
   elements[0] = construct_radio_button(2, 3, radio_strings,
    5, 19, &export_choice);
@@ -203,7 +203,7 @@ int import_type(struct world *mzx_world)
     "MZM (choose pos.)"
   };
 
-  set_context(77);
+  set_context(CTX_IMPORTEXPORT_TYPE);
 
   elements[0] = construct_radio_button(2, 3, radio_strings,
    6, 19, &import_choice);

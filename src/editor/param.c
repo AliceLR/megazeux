@@ -1025,7 +1025,7 @@ int edit_sensor(struct world *mzx_world, struct sensor *cur_sensor)
   struct element *elements[5];
   int dialog_result;
 
-  set_context(94);
+  set_context(CTX_SENSOR_EDITOR);
   strcpy(sensor_name, cur_sensor->sensor_name);
   strcpy(sensor_robot, cur_sensor->robot_to_mesg);
 
@@ -1089,18 +1089,17 @@ int edit_robot(struct world *mzx_world, struct robot *cur_robot)
     {
       cur_robot->robot_char = new_char;
       // Now edit the program.
-      set_context(87);
+      set_context(CTX_ROBO_ED);
       robot_editor(mzx_world, cur_robot);
+      pop_context();
     }
   }
   else
   {
-    pop_context();
     restore_screen();
     return -1;
   }
 
-  pop_context();
   restore_screen();
   return 0;
 }
