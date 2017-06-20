@@ -32,6 +32,9 @@ png2smzx_objs := ${utils_obj}/png2smzx.o ${utils_obj}/smzxconv.o
 png2smzx_objs += ${core_obj}/util.o ${core_obj}/pngops.o
 png2smzx_ldflags := ${LIBPNG_LDFLAGS}
 
+ccv := ${utils_src}/ccv${BINEXT}
+ccv_objs := ${utils_obj}/ccv.o
+
 ${utils_obj}/%.o: ${utils_src}/%.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${CFLAGS} ${utils_cflags} -I${core_src} \
@@ -62,9 +65,14 @@ ${png2smzx}: ${png2smzx_objs}
 	${CC} ${png2smzx_objs} -o ${png2smzx} \
 	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${png2smzx_ldflags}
 
+${ccv}: ${ccv_objs}
+	$(if ${V},,@echo "  LINK    " ${ccv})
+	${CC} ${ccv_objs} -o ${ccv} \
+	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS}
+
 utils: $(filter-out $(wildcard ${utils_obj}), ${utils_obj})
 
-utils: ${checkres} ${hlp2txt} ${txt2hlp}
+utils: ${checkres} ${hlp2txt} ${txt2hlp} ${ccv}
 
 ifeq (${LIBPNG},1)
 utils: ${png2smzx}
