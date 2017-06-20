@@ -394,6 +394,8 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
   bool try_next_host = true;
   bool ret = false;
 
+  set_context(CTX_UPDATER);
+
   if(conf->update_host_count < 1)
   {
     error("No updater hosts defined! Aborting.", 1, 8, 0);
@@ -771,6 +773,8 @@ err_free_url_base:
     free(url_base);
 err_host_destroy:
     host_destroy(h);
+
+    pop_context();
   } //end host for loop
 
 err_chdir:

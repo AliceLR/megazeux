@@ -539,7 +539,7 @@ void status_counter_info(struct world *mzx_world)
   int i;
 
   set_confirm_buttons(elements);
-  set_context(82);
+  set_context(CTX_STATUS_COUNTERS);
 
   elements[2] = construct_input_box(12, 5,
    status_counters_strings[0], COUNTER_NAME_SIZE - 1, 0,
@@ -572,7 +572,7 @@ void board_exits(struct world *mzx_world)
   memcpy(exits, src_board->board_dir, sizeof(int) * 4);
 
   set_confirm_buttons(elements);
-  set_context(83);
+  set_context(CTX_BOARD_EXITS);
 
   elements[2] = construct_board_list(12, 4, "Board to north:",
    1, exits + 0);
@@ -613,7 +613,7 @@ void size_pos(struct world *mzx_world)
     src_board->board_width, src_board->board_height
   };
 
-  set_context(84);
+  set_context(CTX_BOARD_SIZES);
 
   do
   {
@@ -799,7 +799,7 @@ void board_info(struct world *mzx_world)
 
   int pos = 3;
 
-  set_context(85);
+  set_context(CTX_BOARD_INFO);
 
   strcpy(title_string, src_board->board_name);
   strcpy(charset_string, src_board->charset_path);
@@ -916,7 +916,7 @@ static void global_chars(struct world *mzx_world)
   int results[24];
   struct element *elements[27];
   struct dialog di;
-  set_context(89);
+  set_context(CTX_CHANGE_CHAR_IDS);
 
   do
   {
@@ -1078,7 +1078,7 @@ static void global_dmg(struct world *mzx_world)
   int results[22];
   int i;
 
-  set_context(90);
+  set_context(CTX_CHANGE_DAMAGE);
   set_confirm_buttons(elements);
 
   for(i = 0; i < 11; i++)
@@ -1186,17 +1186,18 @@ void global_info(struct world *mzx_world)
      a_elements, 15, 2);
 
     redo = 0;
-    set_context(86);
+    set_context(CTX_GLOBAL_SETTINGS);
 
     dialog_result = run_dialog(mzx_world, &a_di);
     destruct_dialog(&a_di);
+    pop_context();
 
     switch(dialog_result)
     {
       case 2:
       {
         // Returns 1 for previous
-        set_context(88);
+        set_context(CTX_GLOBAL_SETTINGS_2);
 
         if(death_board == DEATH_SAME_POS)
         {
@@ -1325,8 +1326,6 @@ void global_info(struct world *mzx_world)
       }
     }
   } while(redo);
-
-  pop_context();
 }
 
 void global_robot(struct world *mzx_world)
@@ -1345,7 +1344,7 @@ void global_robot(struct world *mzx_world)
    && !get_exit_status())
   {
     restore_screen();
-    set_context(87);
+    set_context(CTX_ROBO_ED);
     robot_editor(mzx_world, cur_robot);
     pop_context();
   }

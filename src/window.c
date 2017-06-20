@@ -53,6 +53,8 @@
 #include <sys/iosupport.h>
 #endif
 
+#include "context_enum.h"
+
 // This context stuff was originally in helpsys, but it's actually
 // more of a property of the windowing system.
 
@@ -60,7 +62,7 @@ static int contexts[128];
 static int curr_context;
 
 // 72 = "No" context link
-__editor_maybe_static int context = 72;
+__editor_maybe_static int context = CTX_MAIN;
 
 void set_context(int c)
 {
@@ -286,8 +288,8 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
   // Save screen
   save_screen();
 
-  if(context == 72)
-    set_context(98);
+  if(context == CTX_MAIN)
+    set_context(CTX_DIALOG_BOX);
   else
     set_context(context);
 
@@ -687,8 +689,8 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
   int i;
   struct config_info *conf = &mzx_world->conf;
 
-  if(context == 72)
-    set_context(98);
+  if(context == CTX_MAIN)
+    set_context(CTX_DIALOG_BOX);
   else
     set_context(context);
 
@@ -908,7 +910,7 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
 #ifdef CONFIG_HELPSYS
       case IKEY_F1: // F1
       {
-        if (conf->standalone_mode &&
+        if (!conf->standalone_mode ||
          get_counter(mzx_world, "HELP_MENU", 0))
         {
           help_system(mzx_world);

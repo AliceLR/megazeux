@@ -378,8 +378,8 @@ int color_selection(int current, int allow_wild)
   // Save screen
   save_screen();
 
-  if(context == 72)
-    set_context(98);
+  if(context == CTX_MAIN)
+    set_context(CTX_DIALOG_BOX);
   else
     set_context(context);
 

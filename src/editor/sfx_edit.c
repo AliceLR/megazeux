@@ -136,7 +136,7 @@ void sfx_edit(struct world *mzx_world)
 
   struct element *b_elements[21];
 
-  set_context(97);
+  set_context(CTX_SFX_EDITOR);
 
   construct_dialog(&a_di, "Choose SFX mode", 26, 7, 28, 8,
    a_elements, 3, 0);

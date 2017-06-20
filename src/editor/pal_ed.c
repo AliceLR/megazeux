@@ -63,7 +63,7 @@ void palette_editor(struct world *mzx_world)
   unsigned char current_r, current_g, current_b;
 
   cursor_off();
-  set_context(93);
+  set_context(CTX_PALETTE_EDITOR);
   save_screen();
 
   // Draw window

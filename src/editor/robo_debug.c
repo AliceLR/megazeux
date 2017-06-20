@@ -129,6 +129,8 @@ void __edit_breakpoints(struct world *mzx_world)
    "Disable Robot Debugger",
   };
 
+  set_context(CTX_BREAKPOINT_EDITOR);
+
   m_show();
 
   do {
@@ -235,6 +237,7 @@ void __edit_breakpoints(struct world *mzx_world)
   } while (result > -1);
 
   m_hide();
+  pop_context();
 }
 
 // Turn off the debugger without clearing the breakpoints
@@ -487,11 +490,13 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id)
      80, num_lines + 4, elements, ARRAY_SIZE(elements), 0, 0, selected,
      debug_robot_idle_function);
 
+    set_context(CTX_ROBOT_DEBUG);
     m_show();
     dialog_result = run_dialog(mzx_world, &di);
     m_hide();
 
     destruct_dialog(&di);
+    pop_context();
 
     if(dialog_result != -2)
       selected = dialog_result + 1;

@@ -1739,6 +1739,8 @@ void __debug_counters(struct world *mzx_world)
 
   int reopened = 0;
 
+  set_context(CTX_COUNTER_DEBUG);
+
   m_show();
 
   // also known as crash_stack
@@ -2079,6 +2081,8 @@ void __debug_counters(struct world *mzx_world)
   } while(dialog_result != -1);
 
   m_hide();
+
+  pop_context();
 
   // Copy the last selected var to the previous field.
   if(var_selected < num_vars)

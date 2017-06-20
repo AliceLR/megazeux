@@ -669,7 +669,7 @@ int char_editor(struct world *mzx_world)
     update_palette();
   }
 
-  set_context(79);
+  set_context(CTX_CHAR_EDIT);
 
   m_show();
   // Get char
