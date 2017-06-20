@@ -288,13 +288,13 @@ static int debug_robot_idle_function(struct world *mzx_world,
       di->done = 1;
       break;
     }
-    case IKEY_n:
+    case IKEY_s:
     {
       di->return_value = 0;
       di->done = 1;
       break;
     }
-    case IKEY_s:
+    case IKEY_h:
     {
       if(get_alt_status(keycode_internal))
         di->return_value = 2;
@@ -487,9 +487,9 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
       dialog_y = 25 - (num_lines + 4);
 
     elements[0]  = construct_button( 3, button_line, "Continue", -1);
-    elements[1]  = construct_button(15, button_line, "Next", 0);
-    elements[2]  = construct_button(23, button_line, "Stop", 1);
-    elements[3]  = construct_button(31, button_line, "Stop all", 2);
+    elements[1]  = construct_button(15, button_line, "Step", 0);
+    elements[2]  = construct_button(23, button_line, "Halt", 1);
+    elements[3]  = construct_button(31, button_line, "Halt all", 2);
     elements[4]  = construct_button(52, button_line, "Counters", 3);
     elements[5]  = construct_button(64, button_line, "Breakpoints", 4);
 
