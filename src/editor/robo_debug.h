@@ -23,7 +23,7 @@ __M_BEGIN_DECLS
 
 EDITOR_LIBSPEC void __edit_breakpoints(struct world *mzx_world);
 EDITOR_LIBSPEC int __debug_robot(struct world *mzx_world,
- struct robot *cur_robot, int id);
+ struct robot *cur_robot, int id, int lines_run);
 
 EDITOR_LIBSPEC void free_breakpoints(void);
 EDITOR_LIBSPEC void pause_robot_debugger(void);

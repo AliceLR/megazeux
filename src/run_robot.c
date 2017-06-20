@@ -52,7 +52,8 @@
  parsedir(mzx_world, a, b, c, d, _bl[0], _bl[1], _bl[2], _bl[3])
 
 #ifdef CONFIG_EDITOR
-int (*debug_robot)(struct world *mzx_world, struct robot *cur_robot, int id);
+int (*debug_robot)(struct world *mzx_world, struct robot *cur_robot, int id,
+ int lines_run);
 #endif
 
 static const char *const item_to_counter[9] =
@@ -1343,13 +1344,10 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
     cmd = cmd_ptr[0];
 
 #ifdef CONFIG_EDITOR
-    (cur_robot->commands_total)++;
-    (cur_robot->commands_cycle)++;
-
     if(debug_robot && mzx_world->editing)
     {
       // Returns 1 if the user chose to stop the program.
-      if(debug_robot(mzx_world, cur_robot, id))
+      if(debug_robot(mzx_world, cur_robot, id, lines_run))
         cmd = ROBOTIC_CMD_END;
     }
 #endif
@@ -5905,6 +5903,9 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
   } while(((++lines_run) < mzx_world->commands) && (!done));
 
   breaker:
+
+  cur_robot->commands_total += lines_run;
+  cur_robot->commands_cycle = lines_run;
 
   cur_robot->cycle_count = 0; // In case a label changed it
   // Reset x/y (from movements)

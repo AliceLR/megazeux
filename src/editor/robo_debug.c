@@ -351,7 +351,8 @@ static const char *action_strings[] = {
 
 // FIXME: make it NOT come here every command while editing, maybe. Just a thought
 // If the return value != 0, the robot ignores the current command and ends
-int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id)
+int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
+ int lines_run)
 {
   int i;
   bool done = false;
@@ -362,7 +363,8 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id)
   char *cmd_ptr;
 
 #ifndef CONFIG_DEBYTECODE
-  if(cur_robot->commands_cycle - cur_robot->commands_caught >= mzx_world->commands_stop)
+  // FIXME this should exist for debytecode as well
+  if(lines_run - cur_robot->commands_caught >= mzx_world->commands_stop)
   {
     if(!robo_debugger_enabled)
     {
@@ -436,7 +438,12 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id)
   }
 #endif
 
-  cur_robot->commands_caught = cur_robot->commands_cycle;
+  // Keep running track of the last position we were caught at.
+  cur_robot->commands_caught = lines_run;
+
+  // Update these temporarily for the counter debugger.
+  cur_robot->commands_total += lines_run;
+  cur_robot->commands_cycle = lines_run;
 
   // Open debug dialog
   do
@@ -562,6 +569,10 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id)
       }
     }
   } while(!done);
+
+  // These aren't final yet, so change them back.
+  cur_robot->commands_total -= lines_run;
+  cur_robot->commands_cycle = 0;
 
   update_event_status();
 
