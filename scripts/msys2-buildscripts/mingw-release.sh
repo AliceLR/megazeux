@@ -16,14 +16,16 @@ MSYSTEM=MSYS
 cd /mzx-build-workingdir
 mkdir -p uploads
 mkdir -p zips
-pushd releases
-rm -f updates-uncompressed.txt
+rm -rf releases-update
+cp -r releases releases-update
+pushd releases-update
 for T in $types
 do
   pushd $T
   for A in $archs
   do
     pushd $A
+    rm -f /mzx-build-workingdir/zips/$T-$A.zip
     zip -r /mzx-build-workingdir/zips/$T-$A.zip *
     /mzx-build-scripts/builddir-to-updatedir.sh
     popd
