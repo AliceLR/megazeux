@@ -293,6 +293,9 @@ BUGFIXES
 + Copying and pasting robot code with LF line endings on Windows
   now works. (Lancer-X)
 + MegaZeux can now be exited during an infinite loop. (Lancer-X)
++ Fixed a bug where SAVE_GAME on the first cycle of a board
+  would cause the game to be faded out on load. This still
+  affects legacy worlds. (Lancer-X)
 
 DEVELOPERS
 
