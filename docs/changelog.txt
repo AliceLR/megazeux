@@ -292,6 +292,7 @@ BUGFIXES
   state of any robots copied. (Lancer-X)
 + Copying and pasting robot code with LF line endings on Windows
   now works. (Lancer-X)
++ MegaZeux can now be exited during an infinite loop. (Lancer-X)
 
 DEVELOPERS
 
