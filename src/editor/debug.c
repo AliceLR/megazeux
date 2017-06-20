@@ -228,6 +228,7 @@ const char *robot_var_list[] = {
   "commands_cycle*", //no read
   "bullettype",
   "lava_walk",
+  "goop_walk",
   "lockself", //no read or write
   "loopcount",
   "thisx*",
