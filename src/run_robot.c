@@ -5887,8 +5887,10 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         }
         if (exit) {
           m_show();
+          dialog_fadein();
           exit = !confirm(mzx_world,
            "MegaZeux appears to have frozen. Do you want to exit?");
+          dialog_fadeout();
           update_screen();
           if (exit)
           {

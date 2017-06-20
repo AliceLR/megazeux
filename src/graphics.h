@@ -239,6 +239,8 @@ CORE_LIBSPEC Uint32 get_blue_component(Uint32 color);
 CORE_LIBSPEC void vquick_fadeout(void);
 CORE_LIBSPEC void insta_fadein(void);
 CORE_LIBSPEC void insta_fadeout(void);
+CORE_LIBSPEC void dialog_fadein(void);
+CORE_LIBSPEC void dialog_fadeout(void);
 CORE_LIBSPEC void default_palette(void);
 
 CORE_LIBSPEC void m_hide(void);
@@ -279,8 +281,6 @@ Uint32 get_color_intensity(Uint32 color);
 Uint32 get_fade_status(void);
 void save_indices(void *buffer);
 void load_indices(void *buffer);
-void dialog_fadein(void);
-void dialog_fadeout(void);
 void vquick_fadein(void);
 void dump_screen(void);
 void dump_char(Uint16 char_idx, Uint8 color, int mode, Uint8 *buffer);

@@ -445,6 +445,8 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
   cur_robot->commands_total += lines_run;
   cur_robot->commands_cycle = lines_run;
 
+  dialog_fadein();
+
   // Open debug dialog
   do
   {
@@ -569,6 +571,8 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
       }
     }
   } while(!done);
+
+  dialog_fadeout();
 
   // These aren't final yet, so change them back.
   cur_robot->commands_total -= lines_run;
