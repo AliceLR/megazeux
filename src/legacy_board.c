@@ -773,7 +773,7 @@ board_scan:
     // Perform a robot scan to make sure every robot is actually on the board.
     // Some old worlds (e.g. Catacombs of Zeux, Demon Earth) contain useless
     // robots that aren't. Silently mark the missing ones to not be saved.
-    for(i = 1; i <= robot_count; i++)
+    for(i = 1; i <= num_robots; i++)
     {
       cur_robot = robot_list[i];
 
