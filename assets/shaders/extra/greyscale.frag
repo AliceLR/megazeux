@@ -14,7 +14,13 @@ varying vec2 vTexcoord;
 void main( void )
 {
   const vec4 weight = vec4(0.30, 0.59, 0.11, 0);
-  vec4 color = texture2D( baseMap, vec2(floor(vTexcoord.x*XS)/XS+AX, floor(vTexcoord.y*YS)/YS+AY) );
+
+  vec2 tcbase = (floor(vTexcoord*vec2(XS, YS) + 0.5) + 0.5)/vec2(XS, YS);
+  vec2 tcdiff = vTexcoord-tcbase;
+  vec2 sdiff = sign(tcdiff);
+  vec2 adiff = pow(abs(tcdiff)*vec2(XS, YS), vec2(2.0));
+  vec4 color = texture2D(baseMap, tcbase + sdiff*adiff/vec2(XS, YS));
+
   float lum = dot( color, weight );
 
   gl_FragColor = vec4(lum, lum, lum, 1.0);

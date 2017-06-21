@@ -28,7 +28,7 @@ float CalcScanLineWeight(float dist)
 
 void main()
 {
-    vec2 textureSize = (XS,YS);
+    vec2 textureSize = vec2(XS,YS);
 
     vec2 texcoordInPixels = vTexcoord * textureSize;
     vec2 tempCoord = floor(texcoordInPixels) + 0.5;
