@@ -8,7 +8,7 @@ uniform sampler2D baseMap;
 
 varying vec2 vTexcoord;
 
-#define MASK_BRIGHTNESS 1.4
+#define MASK_BRIGHTNESS 0.70
 #define SCANLINE_WEIGHT 6.0
 #define SCANLINE_GAP_BRIGHTNESS 0.12
 #define BLOOM_FACTOR 1.5
@@ -68,5 +68,5 @@ void main()
 		else
 			mask.z = 1.0;
 #endif
-    gl_FragColor = vec4(color * mask, 1.0);
+    gl_FragColor = vec4(color * mask, 1.0) * 1.75;
 }
