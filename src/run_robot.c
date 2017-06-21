@@ -5874,7 +5874,9 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
     }
     find_player(mzx_world);
 
-    if ((lines_run + 1) % 1000000 == 0) {
+    // Some commands can decrement lines_run, putting it at -1 here,
+    // so add 2 to lines_run for the check.
+    if ((lines_run + 2) % 1000000 == 0) {
       if (peek_exit_input()) {
         bool exit = false;
         update_event_status();
