@@ -287,6 +287,7 @@ ifeq (${BUILD_UTILS},1)
 	${CP} ${checkres} ${build}/utils
 	${CP} ${hlp2txt} ${txt2hlp} ${build}/utils
 	${CP} ${png2smzx} ${build}/utils
+	${CP} ${ccv} ${build}/utils
 	@if test -f ${checkres}.debug; then \
 		cp ${checkres}.debug ${build}/utils; \
 		cp ${hlp2txt}.debug  ${txt2hlp}.debug ${build}/utils; \
