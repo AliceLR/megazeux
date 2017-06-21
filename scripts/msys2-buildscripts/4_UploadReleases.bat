@@ -2,3 +2,5 @@
 
 :: usr\bin\bash -l /mingw-uploadrelease-curl.sh "http://Put the URL of your upload PHP script here/.php"
 :: usr\bin\bash -l /mingw-uploadrelease-ssh.sh "username@example.com"
+
+pause
