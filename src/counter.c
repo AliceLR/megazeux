@@ -852,7 +852,7 @@ static void spr_cx_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
-  if (mzx_world->version < 0x025A) // Before 2.90 these fields were ints.
+  if (mzx_world->version < 0x025A) // Before 2.90 these fields were chars.
     value = (signed char) value;
   (mzx_world->sprite_list[spr_num])->col_x = value;
 }
@@ -861,7 +861,7 @@ static void spr_cy_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
-  if (mzx_world->version < 0x025A) // Before 2.90 these fields were ints.
+  if (mzx_world->version < 0x025A) // Before 2.90 these fields were chars.
     value = (signed char) value;
   (mzx_world->sprite_list[spr_num])->col_y = value;
 }
@@ -895,6 +895,8 @@ static void spr_height_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
+  if (mzx_world->version < 0x025A) // Before 2.90 these fields were chars.
+    value = (char) value;
   (mzx_world->sprite_list[spr_num])->height = value;
 }
 
@@ -902,6 +904,8 @@ static void spr_width_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
+  if (mzx_world->version < 0x025A) // Before 2.90 these fields were chars.
+    value = (char) value;
   (mzx_world->sprite_list[spr_num])->width = value;
 }
 
@@ -992,7 +996,7 @@ static void spr_cwidth_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
-  if (mzx_world->version < 0x025A) // Before 2.90 these fields were ints.
+  if (mzx_world->version < 0x025A) // Before 2.90 these fields were chars.
     value = (char) value;
   (mzx_world->sprite_list[spr_num])->col_width = value;
 }
@@ -1001,7 +1005,7 @@ static void spr_cheight_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
-  if (mzx_world->version < 0x025A) // Before 2.90 these fields were ints.
+  if (mzx_world->version < 0x025A) // Before 2.90 these fields were chars.
     value = (char) value;
   (mzx_world->sprite_list[spr_num])->col_height = value;
 }
