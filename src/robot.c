@@ -159,6 +159,21 @@ void create_blank_robot(struct robot *cur_robot)
 #endif
 }
 
+void create_blank_robot_program(struct robot *cur_robot)
+{
+  // Add a blank robot program to a robot.
+
+#ifdef CONFIG_DEBYTECODE
+  cur_robot->program_source_length = 2;
+  cur_robot->program_source = cmalloc(2);
+  strcpy(cur_robot->program_source, "\n");
+#else
+  cur_robot->program_bytecode_length = 2;
+  cur_robot->program_bytecode = cmalloc(2);
+  strcpy(cur_robot->program_bytecode, "\xFF");
+#endif
+}
+
 
 #define err_if_skipped(idn) if(last_ident < idn) { goto err_invalid; }
 
@@ -440,6 +455,7 @@ err_invalid:
   // Nuke the robot
   clear_robot_contents(cur_robot);
   create_blank_robot(cur_robot);
+  create_blank_robot_program(cur_robot);
   strcpy(cur_robot->robot_name, "<<error>>");
   cur_robot->cur_prog_line = 0;
 

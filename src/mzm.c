@@ -686,6 +686,7 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer, int file
                 {
                   // We have to continue, or we'll get screwed up robots.
                   create_blank_robot(cur_robot);
+                  create_blank_robot_program(cur_robot);
                   dummy = 1;
                   break;
                 }
@@ -702,6 +703,7 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer, int file
                 {
                   // There's a robot missing.
                   create_blank_robot(cur_robot);
+                  create_blank_robot_program(cur_robot);
                   break;
                 }
 

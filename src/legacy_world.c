@@ -1300,6 +1300,9 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
   legacy_load_robot(mzx_world, &mzx_world->global_robot, fp, savegame,
    file_version);
 
+  // Some old worlds have the global_robot marked unused. Always mark it used.
+  mzx_world->global_robot.used = 1;
+
   // Go back to where the names are
   fseek(fp, last_pos, SEEK_SET);
   for(i = 0; i < num_boards; i++)

@@ -313,6 +313,7 @@ err_invalid:
 
   clear_robot_contents(cur_robot);
   create_blank_robot(cur_robot);
+  create_blank_robot_program(cur_robot);
   strcpy(cur_robot->robot_name, "<<error>>");
   cur_robot->cur_prog_line = 0;
 }
@@ -391,6 +392,7 @@ void legacy_load_robot(struct world *mzx_world, struct robot *cur_robot,
   if (total_read != full_size) {
     error_message(E_BOARD_ROBOT_CORRUPT, robot_location, NULL);
     create_blank_robot(cur_robot);
+    create_blank_robot_program(cur_robot);
     strcpy(cur_robot->robot_name, "<<error>>");
     fseek(fp, 0, SEEK_END);
   } else {

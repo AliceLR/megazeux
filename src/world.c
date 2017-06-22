@@ -36,6 +36,7 @@
 #include "zip.h"
 
 #include "board.h"
+#include "robot.h"
 #include "configure.h"
 #include "sfx.h"
 #include "error.h"
@@ -2044,8 +2045,6 @@ static enum val_result validate_world_zip(struct world *mzx_world,
   int has_counter = 0;
   int has_string = 0;
 
-  int has_gr = 0;
-
   // The directory has already been read by this point.
   // Make sure we're at the start.
   zip_rewind(zp);
@@ -2088,9 +2087,6 @@ static enum val_result validate_world_zip(struct world *mzx_world,
 
       // Mandatory, but we can recover from not having them.
       case FPROP_WORLD_GLOBAL_ROBOT:
-        has_gr = 1;
-        break;
-
       case FPROP_WORLD_PAL_INDEX:
       case FPROP_WORLD_PAL_INTENSITY:
       case FPROP_WORLD_VCO:
@@ -2114,9 +2110,6 @@ static enum val_result validate_world_zip(struct world *mzx_world,
 
   if(savegame && !(has_counter && has_string))
     goto err_out;
-
-  if(!has_gr)
-    error_message(E_WORLD_ROBOT_MISSING, 0, "gr");
 
   return VAL_SUCCESS;
 
@@ -2368,7 +2361,12 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
 
   // Check for missing global robot
   if(!loaded_global_robot)
-    error_message(E_WORLD_ROBOT_MISSING, 0, NULL);
+  {
+    error_message(E_ZIP_ROBOT_MISSING_FROM_DATA, 0, "gr");
+
+    create_blank_robot(&mzx_world->global_robot);
+    create_blank_robot_program(&mzx_world->global_robot);
+  }
 
   // Check for no title screen; make a dummy board if it's missing.
   if(!mzx_world->board_list[0])
