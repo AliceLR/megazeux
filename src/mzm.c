@@ -69,28 +69,25 @@ static void save_mzm_common(struct world *mzx_world, int start_x, int start_y, i
       mzm_size += width * height * 2;
     }
 
-    if (mode == 0) {
+    if (mode == 0)
+    {
       // Allocate memory for robots
-      {
-        struct board *src_board = mzx_world->current_board;
-        struct robot **robot_list = src_board->robot_list_name_sorted;
-        int num_robots_active = src_board->num_robots_active;
-        int offset;
-        int i;
+      struct board *src_board = mzx_world->current_board;
+      struct robot **robot_list = src_board->robot_list_name_sorted;
+      int num_robots_active = src_board->num_robots_active;
+      int i;
 
-        for (i = 0; i < num_robots_active; i++) {
-          struct robot *cur_robot = robot_list[i];
-          if (cur_robot)
+      for (i = 0; i < num_robots_active; i++)
+      {
+        struct robot *cur_robot = robot_list[i];
+        if (cur_robot)
+        {
+          if (cur_robot->xpos >= start_x && cur_robot->ypos >= start_y &&
+              cur_robot->xpos < start_x + width && cur_robot->ypos < start_y + height)
           {
-            if (cur_robot->xpos >= start_x && cur_robot->ypos >= start_y &&
-                cur_robot->xpos < start_x + width && cur_robot->ypos < start_y + height)
-            {
-              offset = cur_robot->xpos + (cur_robot->ypos * src_board->board_width);
-              assert(is_robot((enum thing)src_board->level_id[offset]));
-              mzm_size += save_robot_calculate_size(mzx_world, cur_robot,
-               savegame, WORLD_VERSION);
-              num_robots_alloc++;
-            }
+            mzm_size += save_robot_calculate_size(mzx_world, cur_robot,
+             savegame, WORLD_VERSION);
+            num_robots_alloc++;
           }
         }
       }
@@ -589,8 +586,8 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer, int file
             int current_x, current_y;
             int offset;
             int new_param;
-            int robot_calculated_size;
-            int robot_partial_size;
+            int robot_calculated_size = 0;
+            int robot_partial_size = 0;
             int current_position;
             int dummy = 0;
 
@@ -613,6 +610,7 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer, int file
 
               bufferPtr = buffer;
               bufferPtr += robots_location;
+              zp = NULL;
             }
 
             else

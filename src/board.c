@@ -711,18 +711,18 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
 
   size_t board_size = 0;
 
-  struct robot **robot_list;
-  struct robot **robot_list_name_sorted;
-  struct scroll **scroll_list;
-  struct sensor **sensor_list;
+  struct robot **robot_list = NULL;
+  struct robot **robot_list_name_sorted = NULL;
+  struct scroll **scroll_list = NULL;
+  struct sensor **sensor_list = NULL;
 
   char found_robots[256] = {0};
   char found_scrolls[256] = {0};
   char found_sensors[256] = {0};
 
-  unsigned int num_robots;
-  unsigned int num_scrolls;
-  unsigned int num_sensors;
+  unsigned int num_robots = 0;
+  unsigned int num_scrolls = 0;
+  unsigned int num_sensors = 0;
   unsigned int num_robots_active = 0;
 
   unsigned int i;

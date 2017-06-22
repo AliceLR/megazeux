@@ -2,6 +2,7 @@
  *
  * Copyright (C) 1996 Greg Janson
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
+ * Copyright (C) 2017 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -449,7 +450,7 @@ err_invalid:
 void load_robot(struct world *mzx_world, struct robot *cur_robot,
  struct zip_archive *zp, int savegame, int file_version)
 {
-  char *buffer;
+  char *buffer = NULL;
   unsigned int actual_size;
   struct memfile mf;
 
@@ -719,9 +720,9 @@ void save_robot(struct world *mzx_world, struct robot *cur_robot,
  struct zip_archive *zp, int savegame, int file_version,
  const char *name, int file_id, int board_id, int id)
 {
-  void *buffer;
   struct memfile mf;
-  size_t actual_size;
+  void *buffer = NULL;
+  size_t actual_size = 0;
 
   if(cur_robot->used)
   {

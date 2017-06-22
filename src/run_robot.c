@@ -4900,7 +4900,11 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         char *p4 = next_param_pos(p3);
         char *p5 = next_param_pos(p4);
         char *p6 = next_param_pos(p5);
-        int src_x, src_y, dest_x, dest_y;
+        // These will always be set, but the compiler doesn't think so.
+        int src_x = 0;
+        int src_y = 0;
+        int dest_x = 0;
+        int dest_y = 0;
         int width = parse_param(mzx_world, p3, id);
         int height = parse_param(mzx_world, p4, id);
 

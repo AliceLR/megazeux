@@ -1445,8 +1445,8 @@ static inline int save_world_counters(struct world *mzx_world,
 static inline int load_world_counters(struct world *mzx_world,
  struct zip_archive *zp)
 {
-  char *buffer;
   struct memfile mf;
+  char *buffer = NULL;
 
   char name_buffer[ROBOT_MAX_TR];
   size_t name_length;
@@ -1574,8 +1574,8 @@ static inline int load_world_strings_mem(struct world *mzx_world,
 {
   // In unusual cases (DEFLATEd strings, loading from memory), use this
   // implementation.
-  char *buffer;
   struct memfile mf;
+  char *buffer = NULL;
 
   struct string *src_string;
   char name_buffer[ROBOT_MAX_TR];
@@ -1812,11 +1812,11 @@ err:
 static inline void parse_board_file_name(char *next, unsigned int *_file_id,
  unsigned int *_board_id, unsigned int *_robot_id)
 {
-  unsigned int file_id;
-  unsigned int board_id;
-  unsigned int robot_id;
+  unsigned int file_id = 0;
+  unsigned int board_id = 0;
+  unsigned int robot_id = 0;
   int len = strlen(next);
-  char temp;
+  char temp = 0;
 
   if(len > 3)
   {
