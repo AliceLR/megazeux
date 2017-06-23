@@ -41,11 +41,8 @@ struct robot *legacy_load_robot_allocate(struct world *mzx_world, FILE *fp,
   cur_robot->stack = NULL;
   cur_robot->label_list = NULL;
   cur_robot->program_bytecode = NULL;
-  cur_robot->num_labels = 0;
-
-#ifdef CONFIG_DEBYTECODE
   cur_robot->program_source = NULL;
-#endif
+  cur_robot->num_labels = 0;
 
   legacy_load_robot(mzx_world, cur_robot, fp, savegame, file_version);
   return cur_robot;
@@ -67,11 +64,10 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
   cur_robot->stack = NULL;
   cur_robot->label_list = NULL;
   cur_robot->program_bytecode = NULL;
+  cur_robot->program_source = NULL;
   cur_robot->num_labels = 0;
 
 #ifdef CONFIG_DEBYTECODE
-  cur_robot->program_source = NULL;
-
   if(version >= VERSION_PROGRAM_SOURCE)
   {
     program_length = mem_getd(&bufferPtr);
@@ -84,8 +80,11 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
   }
 
 #ifdef CONFIG_EDITOR
+  cur_robot->command_map = NULL;
+  cur_robot->command_map_length = 0;
   cur_robot->commands_total = 0;
   cur_robot->commands_cycle = 0;
+  cur_robot->commands_caught = 0;
 #endif
 
   memcpy(cur_robot->robot_name, bufferPtr, 15);

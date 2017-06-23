@@ -57,6 +57,12 @@
 #define ROBOT_SAVE_PROPS_SIZE \
  (PROP_HEADER_SIZE * COUNT_ROBOT_SAVE_PROPS + BOUND_ROBOT_SAVE_PROPS)
 
+#define COUNT_ROBOT_DBC_EDIT_PROPS (2)
+#define BOUND_ROBOT_DBC_EDIT_PROPS (0) // +prog +map
+
+#define ROBOT_DBC_EDIT_PROPS_SIZE \
+ (PROP_HEADER_SIZE * COUNT_ROBOT_DBC_EDIT_PROPS + BOUND_ROBOT_DBC_EDIT_PROPS)
+
 enum robot_prop {
   RPROP_EOF               = 0x0000,
   RPROP_ROBOT_NAME        = 0x0001, // 15
@@ -67,6 +73,7 @@ enum robot_prop {
 
   // Slated for separation
 #ifdef CONFIG_DEBYTECODE
+  RPROP_PROGRAM_MAP       = 0x00FD, // variable
   RPROP_PROGRAM_SOURCE    = 0x00FE, // variable
 #endif
   RPROP_PROGRAM_BYTECODE  = 0x00FF, // variable
@@ -127,10 +134,8 @@ void create_blank_robot(struct robot *cur_robot)
 
   cur_robot->program_bytecode_length = 0;
   cur_robot->program_bytecode = NULL;
-#ifdef CONFIG_DEBYTECODE
   cur_robot->program_source_length = 0;
   cur_robot->program_source = NULL;
-#endif
 
   cur_robot->cur_prog_line = 1;
   cur_robot->pos_within_line = 0;
@@ -154,6 +159,9 @@ void create_blank_robot(struct robot *cur_robot)
     cur_robot->local[i] = 0;
 
 #ifdef CONFIG_EDITOR
+  cur_robot->command_map = NULL;
+  cur_robot->command_map_length = 0;
+
   cur_robot->commands_total = 0;
   cur_robot->commands_cycle = 0;
 #endif
@@ -299,6 +307,29 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
       // Slated for separation
 #ifdef CONFIG_DEBYTECODE
 
+      case RPROP_PROGRAM_MAP:
+      {
+        err_if_skipped(RPROP_YPOS);
+
+        if(cur_robot->command_map)
+          break;
+
+        if(savegame && mzx_world->editing)
+        {
+          cur_robot->command_map = cmalloc(size);
+          cur_robot->command_map_length = size / sizeof(struct command_mapping);
+
+          for(i = 0; i < cur_robot->command_map_length; i++)
+          {
+            cur_robot->command_map[i].real_line = mfgetd(&prop);
+            cur_robot->command_map[i].bc_pos = mfgetd(&prop);
+            cur_robot->command_map[i].src_pos = mfgetd(&prop);
+          }
+        }
+
+        break;
+      }
+
       case RPROP_PROGRAM_SOURCE:
       {
         err_if_skipped(RPROP_YPOS);
@@ -306,7 +337,7 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
         if(cur_robot->program_source)
           break;
 
-        if(!savegame)
+        if(!savegame || mzx_world->editing)
         {
           // This program is source, just load it straight
           cur_robot->program_source = cmalloc(size + 1);
@@ -315,10 +346,6 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
           mfread(cur_robot->program_source, size, 1, &prop);
 
           cur_robot->program_source[size] = 0;
-
-          // This will become non-null when the robot's executed.
-          cur_robot->program_bytecode = NULL;
-          cur_robot->program_bytecode_length = 0;
         }
 
         break;
@@ -334,23 +361,13 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
         // Load legacy bytecode, and compile it, if necessary.
         if(file_version < VERSION_PROGRAM_SOURCE)
         {
-          char *program_legacy_bytecode = prop.start;//cmalloc(size);
+          char *program_legacy_bytecode = prop.start;
           int v_size;
-
-          //mfread(program_legacy_bytecode, size, 1, &prop);
 
           v_size = validate_legacy_bytecode(program_legacy_bytecode, size);
 
           if(v_size < 0)
-          {
-            //free(program_legacy_bytecode);
             goto err_invalid;
-          }
-
-          /*else if(v_size < size)
-          {
-            program_legacy_bytecode = crealloc(program_legacy_bytecode, v_size);
-          }*/
 
           cur_robot->program_bytecode = NULL;
           cur_robot->program_bytecode_length = 0;
@@ -358,8 +375,6 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
           cur_robot->program_source =
            legacy_disassemble_program(program_legacy_bytecode, v_size,
             &(cur_robot->program_source_length), true, 10);
-
-          //free(program_legacy_bytecode);
 
           // Compile the bytecode if this is a savegame
           if(savegame)
@@ -376,16 +391,13 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
         }
         else
 
-        // Only load bytecode if this is a savegame
+        // Load bytecode if this is a savegame
         if(savegame)
         {
           // FIXME needs validation
           cur_robot->program_bytecode = cmalloc(size);
           cur_robot->program_bytecode_length = size;
           mfread(cur_robot->program_bytecode, size, 1, &prop);
-
-          cur_robot->program_source = NULL;
-          cur_robot->program_source_length = 0;
         }
 
         if(cur_robot->program_bytecode)
@@ -657,6 +669,16 @@ size_t save_robot_calculate_size(struct world *mzx_world,
     // Make sure this has been done already.
     prepare_robot_bytecode(mzx_world, cur_robot);
     size += cur_robot->program_bytecode_length;
+
+    if(mzx_world->editing)
+    {
+      // When editing, save these too.
+      size += ROBOT_DBC_EDIT_PROPS_SIZE;
+
+      size += cur_robot->program_source_length;
+      size += cur_robot->command_map_length *
+       sizeof(struct command_mapping);
+    }
   }
 
 #else // !CONFIG_DEBYTECODE
@@ -679,7 +701,23 @@ static void save_robot_to_memory(struct robot *cur_robot,
   save_prop_w(RPROP_YPOS, cur_robot->ypos, mf);
 
 #ifdef CONFIG_DEBYTECODE
-  if(!savegame)
+  if(cur_robot->command_map)
+  {
+    int map_len = cur_robot->command_map_length *
+     sizeof(struct command_mapping);
+    int i;
+
+    save_prop_v(RPROP_PROGRAM_MAP, map_len, &prop, mf);
+
+    for(i = 0; i < cur_robot->command_map_length; i++)
+    {
+      mfputd(cur_robot->command_map[i].real_line, &prop);
+      mfputd(cur_robot->command_map[i].bc_pos, &prop);
+      mfputd(cur_robot->command_map[i].src_pos, &prop);
+    }
+  }
+
+  if(cur_robot->program_source)
   {
     int src_len = cur_robot->program_source_length;
 
@@ -687,8 +725,9 @@ static void save_robot_to_memory(struct robot *cur_robot,
 
     mfwrite(cur_robot->program_source, src_len, 1, &prop);
   }
-  else
 #endif
+
+  if(cur_robot->program_bytecode)
   {
     int bc_len = cur_robot->program_bytecode_length;
 
@@ -960,7 +999,15 @@ void clear_robot_contents(struct robot *cur_robot)
     cur_robot->stack = NULL;
   }
 
-#ifdef CONFIG_DEBYTECODE
+#ifdef CONFIG_EDITOR
+  if(cur_robot->command_map)
+  {
+    free(cur_robot->command_map);
+    cur_robot->command_map = NULL;
+    cur_robot->command_map_length = 0;
+  }
+#endif
+
   // If it was created by the game or loaded via a save file
   // then it won't have source code.
   if(cur_robot->program_source)
@@ -969,7 +1016,6 @@ void clear_robot_contents(struct robot *cur_robot)
     cur_robot->program_source = NULL;
     cur_robot->program_source_length = 0;
   }
-#endif
 
   // It could be in the editor, or possibly it was never executed.
   if(cur_robot->program_bytecode)
@@ -3671,25 +3717,33 @@ void prepare_robot_bytecode(struct world *mzx_world, struct robot *cur_robot)
 {
   if(cur_robot->program_bytecode == NULL)
   {
-    cur_robot->program_bytecode =
-     assemble_program(cur_robot->program_source,
-     &(cur_robot->program_bytecode_length));
+#ifdef CONFIG_EDITOR
+    if(mzx_world->editing)
+    {
+      // Assemble and map the program. Do not free the source.
+      assemble_program(cur_robot->program_source,
+       &cur_robot->program_bytecode, &cur_robot->program_bytecode_length,
+       &cur_robot->command_map, &cur_robot->command_map_length);
+    }
+    else
+#endif
+    {
+      // Assemble, but do not map the program.
+      assemble_program(cur_robot->program_source,
+       &cur_robot->program_bytecode, &cur_robot->program_bytecode_length,
+       NULL, NULL);
+
+      // Can free source code if we're not in the editor.
+      free(cur_robot->program_source);
+      cur_robot->program_source = NULL;
+      cur_robot->program_source_length = 0;
+    }
 
     // This was moved here from load robot - only build up the labels once the
     // robot's actually used. But eventually this should be combined with
     // assemble_program.
     cur_robot->label_list =
      cache_robot_labels(cur_robot, &cur_robot->num_labels);
-
-#ifdef CONFIG_EDITOR
-    // Can free source code if we're not in the editor.
-    if(!mzx_world->editing)
-#endif
-    {
-      free(cur_robot->program_source);
-      cur_robot->program_source = NULL;
-      cur_robot->program_source_length = 0;
-    }
   }
 }
 

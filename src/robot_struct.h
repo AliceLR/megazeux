@@ -25,6 +25,7 @@
 __M_BEGIN_DECLS
 
 #include "data.h"
+#include "legacy_rasm.h"
 
 struct label
 {
@@ -60,10 +61,8 @@ struct sensor
 struct robot
 {
   int world_version;
-#ifdef CONFIG_DEBYTECODE
   int program_source_length;
   char *program_source;
-#endif
   int program_bytecode_length;
   char *program_bytecode;         // Pointer to robot's program
   char robot_name[15];
@@ -110,6 +109,11 @@ struct robot
   int local[32];
 
 #ifdef CONFIG_EDITOR
+  // A mapping of bytecode lines to source lines.
+  struct command_mapping *command_map;
+  int command_map_length;
+
+  // Total commands run; commands run in cycle; commands seen by debugger
   int commands_total;
   int commands_cycle;
   int commands_caught;

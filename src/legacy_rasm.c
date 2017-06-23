@@ -2586,8 +2586,113 @@ void disassemble_file(char *name, char *program, int program_length,
   fclose(output_file);
 }
 
-#endif // CONFIG_DEBYTECODE
+#ifdef CONFIG_EDITOR
+static inline int get_program_line_count(char *program, int program_length)
+{
+  char *end = program + program_length;
+  int line_num = 0;
 
+  // Skip 0xFF
+  program++;
+
+  while(program < end)
+  {
+    program += *program + 2;
+    line_num++;
+  }
+
+  return line_num;
+}
+
+void disassemble_and_map_program(char *program, int program_length,
+ char **_source, int *_source_length, struct command_mapping **_command_map,
+ int *_command_map_length)
+{
+  // Take a program and turn in into source code plus a mapping from the
+  // bytecode to sourcecode. Required for the robot debugger.
+
+  char line_buffer[256] = { 0 };
+  int line_size = 0;
+
+  // Better to overshoot than undershoot here.
+  int source_length = program_length * 2;
+  char *source = cmalloc(source_length);
+  int offset = 0;
+
+  struct command_mapping *cmd_map;
+  int cmd_map_length;
+  int i;
+
+  char *start = program;
+  char *next = program + 1;
+
+  int ret;
+
+  cmd_map_length = get_program_line_count(program, program_length) + 1;
+  cmd_map = cmalloc(cmd_map_length * sizeof(struct command_mapping));
+
+  cmd_map[0].real_line = 0;
+  cmd_map[0].bc_pos = 0;
+  cmd_map[0].src_pos = 0;
+
+  for(i = 1; i < cmd_map_length; i++)
+  {
+    line_size = 0;
+
+    cmd_map[i].real_line = i;
+    cmd_map[i].bc_pos = next - start;
+    cmd_map[i].src_pos = offset;
+
+    ret = disassemble_line(next, &next,
+     line_buffer,
+     NULL,        // Error buffer
+     &line_size,
+     1,           // Print ignored words
+     NULL,        // Arg types
+     NULL,        // Arg count
+     10           // Numeric base
+    );
+
+    // +2 for line break and potentially the terminator
+    while(source_length - offset < line_size + 2)
+    {
+      source_length *= 2;
+      source = crealloc(source, source_length);
+    }
+
+    if(ret)
+    {
+      memcpy(source + offset, line_buffer, line_size);
+      offset += line_size;
+
+      source[offset] = '\n';
+      offset++;
+    }
+  }
+
+  source[offset] = '\0';
+
+  // FIXME debug remove
+  for(i = 0; i < cmd_map_length; i++)
+  {
+    debug("Line: %d  BC: %d  SRC: %d\n", i, cmd_map[i].bc_pos, cmd_map[i].src_pos);
+  }
+  debug("Source:\n\n%s\n\n", source);
+  // FIXME debug remove
+
+  // Shrink program alloc
+  source_length = offset;
+  source = crealloc(source, source_length + 1);
+
+  *_source = source;
+  *_source_length = source_length;
+
+  *_command_map = cmd_map;
+  *_command_map_length = cmd_map_length;
+}
+#endif // CONFIG_EDITOR
+
+#endif // !CONFIG_DEBYTECODE
 
 
 int validate_legacy_bytecode(char *bc, int program_length)

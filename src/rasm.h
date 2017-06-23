@@ -267,7 +267,10 @@ char *legacy_convert_file_mem(char *src, int len, int *_disasm_length,
  bool print_ignores, int base);
 
 char *find_non_identifier_char(char *str);
-CORE_LIBSPEC char *assemble_program(char *src, int *size);
+
+CORE_LIBSPEC void assemble_program(char *program_source, char **_bytecode,
+ int *_bytecode_length, struct command_mapping **_command_map,
+ int *_command_map_length);
 
 #ifdef CONFIG_EDITOR
 
