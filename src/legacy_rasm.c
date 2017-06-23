@@ -2672,14 +2672,6 @@ void disassemble_and_map_program(char *program, int program_length,
 
   source[offset] = '\0';
 
-  // FIXME debug remove
-  for(i = 0; i < cmd_map_length; i++)
-  {
-    debug("Line: %d  BC: %d  SRC: %d\n", i, cmd_map[i].bc_pos, cmd_map[i].src_pos);
-  }
-  debug("Source:\n\n%s\n\n", source);
-  // FIXME debug remove
-
   // Shrink program alloc
   source_length = offset;
   source = crealloc(source, source_length + 1);
