@@ -177,7 +177,7 @@ static void unescape_string(char *buf, int *len)
  ***********************/
 
 // We'll read off of these when we construct the tree
-const char *world_var_list[] = {
+static const char *world_var_list[] = {
   "bimesg", //no read
   "blue_value",
   "green_value",
@@ -201,7 +201,7 @@ const char *world_var_list[] = {
   "vlayer_height*",
 };
 
-const char *board_var_list[] = {
+static const char *board_var_list[] = {
   "board_name*",
   "board_mod*", //no read
   "board_w*",
@@ -222,7 +222,7 @@ const char *board_var_list[] = {
 };
 
 // Locals are added onto the end later.
-const char *robot_var_list[] = {
+static const char *robot_var_list[] = {
   "robot_name*",
   "commands_total", //no read or write
   "commands_cycle*", //no read
@@ -242,7 +242,7 @@ const char *robot_var_list[] = {
 
 // Sprite parent has yorder, collisions, and clist#
 // The following will all be added to the end of 'sprN_'
-const char *sprite_var_list[] = {
+static const char *sprite_var_list[] = {
   "x",
   "y",
   "refx",
@@ -263,10 +263,26 @@ const char *sprite_var_list[] = {
   "vlayer", // no read
 };
 
-int num_world_vars = ARRAY_SIZE(world_var_list);
-int num_board_vars = ARRAY_SIZE(board_var_list);
-int num_robot_vars = ARRAY_SIZE(robot_var_list);
-int num_sprite_vars = ARRAY_SIZE(sprite_var_list);
+static int num_world_vars = ARRAY_SIZE(world_var_list);
+static int num_board_vars = ARRAY_SIZE(board_var_list);
+static int num_robot_vars = ARRAY_SIZE(robot_var_list);
+static int num_sprite_vars = ARRAY_SIZE(sprite_var_list);
+
+#define match_counter(_name) (strlen(_name) == len && !strcasecmp(name, _name))
+
+int get_counter_safe(struct world *mzx_world, const char *name, int id)
+{
+  // This is a safe wrapper for get_counter(). Some counters, when read,
+  // could alter world data in a way we don't want to happen here.
+  // So detect and block them.
+
+  size_t len = strlen(name);
+
+  if(match_counter("fread"))          return -1;
+  if(match_counter("fread_counter"))  return -1;
+
+  return get_counter(mzx_world, name, id);
+}
 
 #define match_var(_name) (!strcmp(var, _name))
 
@@ -299,7 +315,7 @@ static void read_var(struct world *mzx_world, char *var_buffer)
     }
     else
     {
-      int_value = get_counter(mzx_world, var, 0);
+      int_value = get_counter_safe(mzx_world, var, 0);
       if(int_value == 0)
         var[-1] = 0;
     }
@@ -467,14 +483,14 @@ static void read_var(struct world *mzx_world, char *var_buffer)
       // Matched sprN but no var matched
       else
       {
-        int_value = get_counter(mzx_world, real_var, index);
+        int_value = get_counter_safe(mzx_world, real_var, index);
       }
     }
 
     // No special var matched
     else
     {
-      int_value = get_counter(mzx_world, real_var, index);
+      int_value = get_counter_safe(mzx_world, real_var, index);
     }
 
     free(real_var);
@@ -1487,7 +1503,7 @@ static void input_counter_value(struct world *mzx_world, char *var_buffer)
     if(var[-2])
     {
       snprintf(name, 69, "Edit: counter %s", var);
-      sprintf(new_value, "%d", get_counter(mzx_world, var, id));
+      sprintf(new_value, "%d", get_counter_safe(mzx_world, var, id));
     }
     else
     {
@@ -1640,7 +1656,7 @@ static int new_counter_dialog(struct world *mzx_world, char *name)
     // Counter
     else
     {
-      if(!get_counter(mzx_world, name, 0))
+      if(!get_counter_safe(mzx_world, name, 0))
         set_counter(mzx_world, name, 0, 0);
 
       return 1;

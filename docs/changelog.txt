@@ -296,6 +296,9 @@ BUGFIXES
 + Fixed a bug where SAVE_GAME on the first cycle of a board
   would cause the game to be faded out on load. This still
   affects legacy worlds. (Lancer-X)
++ Fixed a bug where trying to create new counters called "fread"
+  or "fread_counter" in the counter debugger would cause the
+  file being read to advance.
 
 DEVELOPERS
 
