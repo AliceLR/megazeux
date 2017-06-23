@@ -1348,9 +1348,20 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 #ifdef CONFIG_EDITOR
     if(mzx_world->editing && debug_robot_break)
     {
-      // Returns 1 if the user chose to stop the program.
-      if(debug_robot_break(mzx_world, cur_robot, id, lines_run))
-        goto breaker;
+      switch(debug_robot_break(mzx_world, cur_robot, id, lines_run))
+      {
+        case DEBUG_EXIT:
+          break;
+
+        case DEBUG_GOTO:
+          // Restart the loop on the new destination command.
+          // Don't count the goto as a command.
+          lines_run--;
+          continue;
+
+        case DEBUG_HALT:
+          goto breaker;
+      }
     }
 #endif
 
@@ -5862,8 +5873,18 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
     if(mzx_world->editing && debug_robot_watch)
     {
       // Returns 1 if the user chose to stop the program.
-      if(debug_robot_watch(mzx_world, cur_robot, id, lines_run))
-        goto breaker;
+      switch(debug_robot_watch(mzx_world, cur_robot, id, lines_run))
+      {
+        case DEBUG_EXIT:
+          break;
+
+        case DEBUG_GOTO:
+          gotoed = 1;
+          break;
+
+        case DEBUG_HALT:
+          goto breaker;
+      }
     }
 #endif
 

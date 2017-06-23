@@ -51,6 +51,10 @@ __M_BEGIN_DECLS
 #define LABEL_GOOPTOUCHED 12
 #define LABEL_PLAYERHURT 13
 
+#define DEBUG_EXIT 1
+#define DEBUG_GOTO 2
+#define DEBUG_HALT 3
+
 #ifdef CONFIG_DEBYTECODE
 
 // This is the version where programs became source code instead of
@@ -139,12 +143,15 @@ void clear_scroll(struct scroll *cur_scroll);
 void clear_sensor(struct sensor *cur_sensor);
 void reallocate_scroll(struct scroll *scroll, size_t size);
 
+CORE_LIBSPEC void send_robot(struct world *mzx_world, char *name,
+ const char *mesg, int ignore_lock);
+CORE_LIBSPEC int send_robot_id(struct world *mzx_world, int id,
+ const char *mesg, int ignore_lock);
+CORE_LIBSPEC char *tr_msg_ext(struct world *mzx_world, char *mesg, int id,
+ char *buffer, char terminating_char);
+
 int find_robot(struct board *src_board, const char *name,
  int *first, int *last);
-void send_robot(struct world *mzx_world, char *name, const char *mesg,
- int ignore_lock);
-int send_robot_id(struct world *mzx_world, int id, const char *mesg,
- int ignore_lock);
 void send_robot_all(struct world *mzx_world, const char *mesg);
 int send_robot_self(struct world *mzx_world, struct robot *src_robot,
  const char *mesg, int ignore_lock);
@@ -175,9 +182,6 @@ void robot_box_display(struct world *mzx_world, char *program,
 void push_sensor(struct world *mzx_world, int id);
 void step_sensor(struct world *mzx_world, int id);
 int get_robot_id(struct board *src_board, const char *name);
-
-CORE_LIBSPEC char *tr_msg_ext(struct world *mzx_world, char *mesg, int id,
- char *buffer, char terminating_char);
 
 static inline char *tr_msg(struct world *mzx_world, char *mesg, int id,
  char *buffer)
