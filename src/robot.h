@@ -72,7 +72,6 @@ void prepare_robot_bytecode(struct world *mzx_world, struct robot *cur_robot);
 
 CORE_LIBSPEC void reallocate_robot(struct robot *robot, int size);
 
-
 void clear_label_cache(struct label **label_list, int num_labels);
 void change_robot_name(struct board *src_board, struct robot *cur_robot,
  char *new_name);

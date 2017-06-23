@@ -20,6 +20,9 @@
 
 #include "robot.h"
 
+#include "../legacy_rasm.h"
+#include "../util.h"
+
 #include <string.h>
 
 // TODO: This might have to be something different.
@@ -165,4 +168,63 @@ int duplicate_robot_source(struct world *mzx_world, struct board *src_board,
   return dest_id;
 }
 
-#endif // CONFIG_DEBYTECODE
+#else // !CONFIG_DEBYTECODE
+
+void prepare_robot_source(struct robot *cur_robot)
+{
+  // Disassemble the robot to source. Used by the robot debugger.
+  if(!cur_robot->program_source)
+  {
+    disassemble_and_map_program(
+     cur_robot->program_bytecode, cur_robot->program_bytecode_length,
+     &cur_robot->program_source, &cur_robot->program_source_length,
+     &cur_robot->command_map, &cur_robot->command_map_length
+    );
+  }
+}
+
+#endif // !CONFIG_DEBYTECODE
+
+
+int get_current_program_line(struct robot *cur_robot)
+{
+  struct command_mapping *cmd_map = cur_robot->command_map;
+
+  int program_pos = cur_robot->cur_prog_line;
+
+  int b = cur_robot->command_map_length - 1;
+  int a = 0;
+  int i;
+
+  int d;
+
+  // If mapping information is available, we can binary search.
+  if(cmd_map)
+  {
+    while(a != b)
+    {
+      i = (b - a)/2 + a;
+
+      d = cmd_map[i].bc_pos - program_pos;
+
+      if(d >= 0) b = i;
+      if(d <= 0) a = i;
+    }
+  }
+
+  // Otherwise, step through the program line by line.
+  else
+  {
+    char *bc = cur_robot->program_bytecode;
+    char *end = bc + program_pos;
+    a = 1;
+
+    while(bc < end)
+    {
+      bc += *bc + 2;
+      a++;
+    }
+  }
+
+  return a;
+}

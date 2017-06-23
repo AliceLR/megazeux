@@ -380,7 +380,24 @@ static void read_var(struct world *mzx_world, char *var_buffer)
 
     if(match_var("robot_name*"))
     {
+#ifdef CONFIG_DEBYTECODE
+      // In debytecode, it is possible to encounter situations where
+      // debug information is missing, so add a display for it.
+
+      struct robot *cur_robot = cur_board->robot_list[index];
+      const char *yn[] = { "N", "Y" };
+
+      memset(buf, ' ', SVALUE_SIZE);
+      snprintf(buf, strlen(cur_robot->robot_name), cur_robot->robot_name);
+      sprintf(buf + SVALUE_SIZE - CVALUE_SIZE, "(debug: %s)",
+       yn[cur_robot->command_map != NULL]);
+
+      buf[SVALUE_SIZE] = 0;
+      char_value = buf;
+#else
       char_value = cur_board->robot_list[index]->robot_name;
+#endif
+
       int_value = strlen(char_value);
     }
     else

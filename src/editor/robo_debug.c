@@ -22,6 +22,7 @@
 
 #include "robo_debug.h"
 #include "debug.h"
+#include "robot.h"
 
 #include "../event.h"
 #include "../graphics.h"
@@ -31,7 +32,6 @@
 #include "../world_struct.h"
 #include "../board_struct.h"
 #include "../robot_struct.h"
-#include "../legacy_rasm.h"
 
 static int robo_debugger_enabled = 0;
 static int robo_debugger_override = 0;
@@ -44,9 +44,6 @@ static bool step = false;
 static int selected = 0;
 static int position = 1;
 
-static char line_buffer[256] = { 0 };
-static int line_size = 0;
-static int line_num = 0;
 
 /*********************/
 /* Breakpoint editor */
@@ -349,7 +346,8 @@ static const char *action_strings[] = {
   "enabled;",
 };
 
-// FIXME: make it NOT come here every command while editing, maybe. Just a thought
+static const char *no_source_available = "<no source available>";
+
 // If the return value != 0, the robot ignores the current command and ends
 int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
  int lines_run)
@@ -359,11 +357,14 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
   bool stop_robot = false;
   int action = ACTION_STEPPED;
 
-  char *program;
-  char *cmd_ptr;
+  int line_length = 0;
+  int line_num = 0;
+  int real_line_num = 0;
+  int offset;
 
-#ifndef CONFIG_DEBYTECODE
-  // FIXME this should exist for debytecode as well
+  char *src_ptr;
+
+  // Enable and trigger a break if a robot seems to be out of control.
   if(lines_run - cur_robot->commands_caught >= mzx_world->commands_stop)
   {
     if(!robo_debugger_enabled)
@@ -379,42 +380,51 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
     robo_debugger_enabled = 1;
     step = 1;
   }
-#endif
 
   if(!robo_debugger_enabled)
     return 0;
 
-  program = cur_robot->program_bytecode;
-  cmd_ptr = program + cur_robot->cur_prog_line;
+#ifndef CONFIG_DEBYTECODE
+  // Make sure source exists for debugging.
+  prepare_robot_source(cur_robot);
+#endif
 
-#ifdef CONFIG_DEBYTECODE
-  // FIXME: these two lines stop compiler warnings
-  if(line_size){}
-  if(cmd_ptr){}
+  // Get the current line.
+  line_num = get_current_program_line(cur_robot);
 
-  // FIXME: implement
-  confirm(mzx_world, "Robotic debugger not yet supported by debytecode");
-  robo_debugger_enabled = 0;
-  return 0;
-
-#else //!CONFIG_DEBYTECODE
+  if(cur_robot->program_source)
   {
-    char *c;
-    char *next;
-    int print_ignores = 1, base = 10;
+    struct command_mapping *cmd_map = cur_robot->command_map;
 
-    disassemble_line(cmd_ptr, &next, line_buffer, NULL, &line_size, print_ignores, NULL, NULL, base);
+    real_line_num = cmd_map[line_num].real_line;
 
+    offset = cmd_map[line_num].src_pos;
+    src_ptr = cur_robot->program_source + offset;
+
+    if(line_num < cur_robot->command_map_length)
+    {
+      line_length = cmd_map[line_num + 1].src_pos - offset - 1;
+    }
+    else
+    {
+      line_length = strlen(src_ptr);
+    }
+
+    // Attempt to match a breakpoint
     if(!step)
     {
       bool match = false;
       for(i = 0; i < num_break_points; i++)
       {
         struct break_point *b = break_points[i];
-        if(strlen(b->match_name) && !strstr(cur_robot->robot_name, b->match_name))
+
+        // Make sure the robot name is correct
+        if(strlen(b->match_name) &&
+         !strstr(cur_robot->robot_name, b->match_name))
           continue;
 
-        if(!boyer_moore_search((void *)line_buffer, strlen(line_buffer),
+        // Try to find the match pattern in the line
+        if(!boyer_moore_search((void *)src_ptr, line_length,
          (void *)b->match_string, strlen(b->match_string), b->index, true))
           continue;
 
@@ -427,16 +437,22 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
         return 0;
     }
 
-    // figure out our line number
-    line_num = 1;
-    c = program + 1;
-    while(c < cmd_ptr)
-    {
-      c += *c + 2;
-      line_num++;
-    }
+    // Get rid of the linebreak at the end.
+    if(src_ptr[line_length - 1] == '\n')
+      line_length--;
   }
-#endif
+
+  else
+  {
+    // If there isn't any source information available, we can't do much.
+    if(!step)
+      return 0;
+
+    real_line_num = line_num;
+
+    src_ptr = (char *) no_source_available;
+    line_length = strlen(src_ptr);
+  }
 
   // Keep running track of the last position we were caught at.
   cur_robot->commands_caught = lines_run;
@@ -451,7 +467,7 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
   do
   {
     int button_line;
-    int num_lines = 0;
+    int code_height = 0;
     struct element *elements[10];
 
     int dialog_y = 0;
@@ -460,33 +476,37 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
 
     char info[77] = { 0 };
     char label[4][77] = { { 0 } };
-    char *line_pos = line_buffer;
+    char *line_pos = src_ptr;
+    char *line_end = src_ptr + line_length;
 
     snprintf(info, 76, "Robot Debugger - %s `%s` (%i@%i,%i) at line %i:",
      action_strings[action],
-     cur_robot->robot_name, id, cur_robot->xpos, cur_robot->ypos, line_num);
+     cur_robot->robot_name, id, cur_robot->xpos, cur_robot->ypos, real_line_num);
     info[76] = 0;
+
     for(i = 0; i < 4; i++)
     {
-      if(line_pos < line_buffer + strlen(line_buffer))
+      if(line_pos)
       {
+        memsafegets(label[i], 77, &line_pos, line_end);
         label[i][76] = 0;
-        strncpy(label[i], line_pos, MIN(strlen(line_pos) + 1, 76));
-        line_pos += 76;
-        num_lines++;
+        code_height++;
       }
       else
+      {
         label[i][0] = 0;
+      }
 
-      elements[9 - i] = construct_label(2, num_lines, label[i]);
+      elements[9 - i] = construct_label(2, code_height, label[i]);
+
       // FIXME: hack
       ((struct label_element *)(elements[9 - i]))->respect_colors = false;
     }
-    num_lines = MAX(num_lines, 1);
+    code_height = MAX(code_height, 1);
 
-    button_line = num_lines + 2;
+    button_line = code_height + 2;
     if(position)
-      dialog_y = 25 - (num_lines + 4);
+      dialog_y = 25 - (code_height + 4);
 
     elements[0]  = construct_button( 3, button_line, "Continue", -1);
     elements[1]  = construct_button(15, button_line, "Step", 0);
@@ -496,7 +516,7 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
     elements[5]  = construct_button(64, button_line, "Breakpoints", 4);
 
     construct_dialog_ext(&di, info, 0, dialog_y,
-     80, num_lines + 4, elements, ARRAY_SIZE(elements), 0, 0, selected,
+     80, code_height + 4, elements, ARRAY_SIZE(elements), 0, 0, selected,
      debug_robot_idle_function);
 
     set_context(CTX_ROBOT_DEBUG);
@@ -531,7 +551,7 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
         done = true;
         break;
       }
-      // Stop all
+      // Halt all
       case 2:
       {
         struct board *cur_board = mzx_world->current_board;
@@ -549,7 +569,7 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
           }
         }
       }
-      // Stop
+      // Halt
       case 1:
       {
         stop_robot = true;

@@ -4413,7 +4413,9 @@ static char *assemble_command(char *src, char **_output)
   return NULL;
 }
 
-char *assemble_program(char *program_source, int *_bytecode_length)
+void assemble_program(char *program_source, char **_bytecode,
+ int *_bytecode_length, struct command_mapping **_command_map,
+ int *_command_map_length)
 {
   int bytecode_length = 1;
   int bytecode_offset = 1;
@@ -4425,10 +4427,53 @@ char *assemble_program(char *program_source, int *_bytecode_length)
 
   int command_length;
 
+  int cmd_map_length = 1;
+  int cmd_map_allocated = 256;
+  struct command_mapping *cmd_map = NULL;
+  char *src_start = program_source;
+  char *line_start = NULL;
+  int real_line = 1;
+
+  if(_command_map)
+  {
+    cmd_map = malloc(cmd_map_allocated * sizeof(struct command_mapping));
+    cmd_map[0].real_line = 0;
+    cmd_map[0].bc_pos = 0;
+    cmd_map[0].src_pos = 0;
+  }
+
   program_bytecode[0] = 0xFF;
 
   do
   {
+    // If we're creating a command mapping, record this line.
+    if(cmd_map)
+    {
+      line_start = program_source;
+
+      // Find real line start and line number.
+      // FIXME this is a hack.
+      while(whitespace_until_newline(line_start, &line_start))
+      {
+        real_line++;
+        if(!*line_start)
+          break;
+      }
+
+      cmd_map[cmd_map_length].real_line = real_line;
+      cmd_map[cmd_map_length].bc_pos = bytecode_offset;
+      cmd_map[cmd_map_length].src_pos = line_start - src_start;
+      cmd_map_length++;
+      real_line++;
+
+      if(cmd_map_length >= cmd_map_allocated)
+      {
+        cmd_map_allocated *= 2;
+        cmd_map =
+         realloc(cmd_map, cmd_map_allocated * sizeof(struct command_mapping));
+      }
+    }
+
     // Disassemble command into command_buffer.
     output = command_buffer;
     program_source = assemble_command(program_source, &output);
@@ -4461,9 +4506,18 @@ char *assemble_program(char *program_source, int *_bytecode_length)
   bytecode_length++;
   program_bytecode = realloc(program_bytecode, bytecode_length);
   program_bytecode[bytecode_offset] = 0;
+
+  *_bytecode = program_bytecode;
   *_bytecode_length = bytecode_length;
 
-  return program_bytecode;
+  // Shrink the command mapping.
+  if(cmd_map)
+  {
+    cmd_map = realloc(cmd_map, cmd_map_length * sizeof(struct command_mapping));
+
+    *_command_map = cmd_map;
+    *_command_map_length = cmd_map_length;
+  }
 }
 
 
