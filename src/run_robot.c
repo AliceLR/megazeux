@@ -52,8 +52,10 @@
  parsedir(mzx_world, a, b, c, d, _bl[0], _bl[1], _bl[2], _bl[3])
 
 #ifdef CONFIG_EDITOR
-int (*debug_robot)(struct world *mzx_world, struct robot *cur_robot, int id,
- int lines_run);
+int (*debug_robot_break)(struct world *mzx_world, struct robot *cur_robot,
+ int id, int lines_run);
+int (*debug_robot_watch)(struct world *mzx_world, struct robot *cur_robot,
+ int id, int lines_run);
 #endif
 
 static const char *const item_to_counter[9] =
@@ -1344,11 +1346,11 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
     cmd = cmd_ptr[0];
 
 #ifdef CONFIG_EDITOR
-    if(debug_robot && mzx_world->editing)
+    if(mzx_world->editing && debug_robot_break)
     {
       // Returns 1 if the user chose to stop the program.
-      if(debug_robot(mzx_world, cur_robot, id, lines_run))
-        cmd = ROBOTIC_CMD_END;
+      if(debug_robot_break(mzx_world, cur_robot, id, lines_run))
+        goto breaker;
     }
 #endif
 
@@ -5854,6 +5856,16 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
       cur_robot->pos_within_line = 0;
       break;
     }
+
+#ifdef CONFIG_EDITOR
+    // Check the watchpoints before incrementing the program.
+    if(mzx_world->editing && debug_robot_watch)
+    {
+      // Returns 1 if the user chose to stop the program.
+      if(debug_robot_watch(mzx_world, cur_robot, id, lines_run))
+        goto breaker;
+    }
+#endif
 
     // If we're returning from a subroutine, we don't want to set the
     // pos_within_line. Other sends will set it to zero anyway.

@@ -174,9 +174,10 @@ void robot_box_display(struct world *mzx_world, char *program,
  char *label_storage, int id);
 void push_sensor(struct world *mzx_world, int id);
 void step_sensor(struct world *mzx_world, int id);
-char *tr_msg_ext(struct world *mzx_world, char *mesg, int id, char *buffer,
- char terminating_char);
 int get_robot_id(struct board *src_board, const char *name);
+
+CORE_LIBSPEC char *tr_msg_ext(struct world *mzx_world, char *mesg, int id,
+ char *buffer, char terminating_char);
 
 static inline char *tr_msg(struct world *mzx_world, char *mesg, int id,
  char *buffer)

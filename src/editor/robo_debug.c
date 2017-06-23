@@ -24,8 +24,10 @@
 #include "debug.h"
 #include "robot.h"
 
+#include "../counter.h"
 #include "../event.h"
 #include "../graphics.h"
+#include "../robot.h"
 #include "../window.h"
 #include "../util.h"
 
@@ -33,16 +35,94 @@
 #include "../board_struct.h"
 #include "../robot_struct.h"
 
+
+struct breakpoint
+{
+  char match_name[15];
+  char match_string[61];
+  int index[256];
+};
+
+struct watchpoint
+{
+  char match_name[61];
+  int last_value;
+};
+
+static int num_breakpoints = 0;
+static int num_breakpoints_allocated = 0;
+static struct breakpoint **breakpoints = NULL;
+
+static int num_watchpoints = 0;
+static int num_watchpoints_allocated = 0;
+static struct watchpoint **watchpoints = NULL;
+
+// Whether or not the robot debugger is enabled
 static int robo_debugger_enabled = 0;
+
+// Whether or not the user has explicitly enabled/disabled it yet
 static int robo_debugger_override = 0;
 
-static int num_break_points = 0;
-static int num_break_points_allocated = 0;
-static struct break_point **break_points = NULL;
-
+// Whether or not the debugger is stepping through code
 static bool step = false;
+
+// Last positions selected
+static int br_selected = 0;
+static int wt_selected = 0;
+
+// The last debugger option chosen
 static int selected = 0;
+
+// The debugger's position on-screen (1=bottom)
 static int position = 1;
+
+
+static inline int  hash_string(char *data, size_t length)
+{
+  unsigned int i;
+  int x = *data;
+
+  for(i = 1; i < length; i++)
+  {
+    data++;
+    x ^= (x << 5) + (x >> 2) + *data;
+  }
+
+  return x;
+}
+
+static inline int get_watchpoint_value(struct world *mzx_world,
+ struct watchpoint *wt)
+{
+  if(is_string(wt->match_name))
+  {
+    struct string src_string;
+
+    if(get_string(mzx_world, wt->match_name, &src_string, -1))
+    {
+      return hash_string(src_string.value, src_string.length);
+    }
+  }
+
+  else
+  {
+    return get_counter_safe(mzx_world, wt->match_name, -1);
+  }
+
+  return 0;
+}
+
+void update_watchpoint_last_values(struct world *mzx_world)
+{
+  struct watchpoint *wt;
+  int i;
+
+  for(i = 0; i < num_watchpoints; i++)
+  {
+    wt = watchpoints[i];
+    wt->last_value = get_watchpoint_value(mzx_world, wt);
+  }
+}
 
 
 /*********************/
@@ -50,19 +130,22 @@ static int position = 1;
 /*********************/
 
 static int edit_breakpoint_dialog(struct world *mzx_world,
- struct break_point *br, const char *title)
+ struct breakpoint *br, const char *title)
 {
   int result;
   struct element *elements[4];
   struct dialog di;
 
-  elements[0] = construct_input_box(2, 2, "Match robot name (optional):", 14, 0, br->match_name);
-  elements[1] = construct_input_box(2, 3, "Match text:", 60, 0, br->match_string);
+  elements[0] = construct_input_box(2, 2,
+   "Match text:", 60, 0, br->match_string);
+
+  elements[1] = construct_input_box(2, 3,
+   "Match robot name (optional):", 14, 0, br->match_name);
+
   elements[2] = construct_button(9, 5, "Confirm", 0);
   elements[3] = construct_button(23, 5, "Cancel", -1);
   
-  construct_dialog_ext(&di, title, 0, 6,
-   80, 8, elements, ARRAY_SIZE(elements), 0, 0, 0, NULL);
+  construct_dialog(&di, title, 2, 6, 76, 8, elements, ARRAY_SIZE(elements), 0);
 
   result = run_dialog(mzx_world, &di);
   destruct_dialog(&di);
@@ -70,13 +153,90 @@ static int edit_breakpoint_dialog(struct world *mzx_world,
   return result;
 }
 
-static int edit_breakpoints_idle_function(struct world *mzx_world,
+static int edit_watchpoint_dialog(struct world *mzx_world,
+ struct watchpoint *wt, const char *title)
+{
+  int result;
+  struct element *elements[3];
+  struct dialog di;
+
+  elements[0] = construct_input_box(2, 2,
+   "Variable:", 60, 0, wt->match_name);
+
+  elements[1] = construct_button(9, 4, "Confirm", 0);
+  elements[2] = construct_button(23, 4, "Cancel", -1);
+
+  construct_dialog(&di, title, 2, 7, 76, 7, elements, ARRAY_SIZE(elements), 0);
+
+  result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  return result;
+}
+
+static void new_breakpoint(struct world *mzx_world)
+{
+  struct breakpoint *br = ccalloc(sizeof(struct breakpoint), 1);
+
+  if(!edit_breakpoint_dialog(mzx_world, br, "New Breakpoint"))
+  {
+    if(num_breakpoints == num_breakpoints_allocated)
+    {
+      num_breakpoints_allocated = MAX(32, num_breakpoints_allocated * 2);
+      breakpoints = crealloc(breakpoints,
+       num_breakpoints_allocated * sizeof(struct breakpoint *));
+    }
+
+    boyer_moore_index(br->match_string, strlen(br->match_string),
+     br->index, true);
+
+    breakpoints[num_breakpoints] = br;
+    num_breakpoints++;
+
+    if(!robo_debugger_override)
+      robo_debugger_enabled = 1;
+  }
+
+  else
+  {
+    free(br);
+  }
+}
+
+static void new_watchpoint(struct world *mzx_world)
+{
+  struct watchpoint *wt = ccalloc(sizeof(struct watchpoint), 1);
+
+  if(!edit_watchpoint_dialog(mzx_world, wt, "New Watchpoint"))
+  {
+    if(num_watchpoints == num_watchpoints_allocated)
+    {
+      num_watchpoints_allocated = MAX(32, num_watchpoints_allocated * 2);
+      watchpoints = crealloc(watchpoints,
+       num_watchpoints_allocated * sizeof(struct watchpoint *));
+    }
+
+    watchpoints[num_watchpoints] = wt;
+    num_watchpoints++;
+
+    if(!robo_debugger_override)
+      robo_debugger_enabled = 1;
+  }
+
+  else
+  {
+    free(wt);
+  }
+}
+
+static int debug_config_idle_function(struct world *mzx_world,
  struct dialog *di, int key)
 {
   switch(key)
   {
     // Add 
     case IKEY_a:
+    case IKEY_n:
     {
       if(get_alt_status(keycode_internal))
       {
@@ -90,7 +250,7 @@ static int edit_breakpoints_idle_function(struct world *mzx_world,
     {
       if(get_alt_status(keycode_internal))
       {
-        di->return_value = 3;
+        di->return_value = 2;
         di->done = 1;
         return 0;
       }
@@ -100,7 +260,7 @@ static int edit_breakpoints_idle_function(struct world *mzx_world,
     {
       if(get_alt_status(keycode_internal))
       {
-        di->return_value = 2;
+        di->return_value = 0;
         di->done = 1;
         return 0;
       }
@@ -110,115 +270,210 @@ static int edit_breakpoints_idle_function(struct world *mzx_world,
   return key;
 }
 
-void __edit_breakpoints(struct world *mzx_world)
+/* Results:
+ * -1 : close
+ *  0 : edit
+ *  1 : add/new
+ *  2 : delete
+ *  3 : enable/disable debugger
+ */
+
+void __debug_robot_config(struct world *mzx_world)
 {
+  const char *enable_text[] = {
+   "Enable Debugger ",
+   "Disable Debugger",
+  };
+
+  struct breakpoint *br;
+  struct watchpoint *wt;
   int i;
 
   int result = 0;
-  struct element *elements[8];
+  struct element *elements[11];
   struct dialog di;
 
-  int selected = 0;
-  int focus = 0;
+  int br_element = 7;
+  int wt_element = 8;
 
-  const char *enable_text[] = {
-   "Enable Robot Debugger ",
-   "Disable Robot Debugger",
-  };
+  int focus = br_element;
+
+  br_selected = MIN(br_selected, num_breakpoints);
+  wt_selected = MIN(wt_selected, num_watchpoints);
 
   set_context(CTX_BREAKPOINT_EDITOR);
 
   m_show();
 
-  do {
-    int list_size = num_break_points;
-    char **list = ccalloc(list_size, sizeof(char *));
-    for(i = 0; i < list_size; i++)
-    {
-      list[i] = cmalloc(77);
-      memset(list[i], ' ', 76);
-      list[i][76] = 0;
+  do
+  {
+    char **br_list = ccalloc(num_breakpoints + 1, sizeof(char *));
+    char **wt_list = ccalloc(num_watchpoints + 1, sizeof(char *));
+    int br_list_size = num_breakpoints;
+    int wt_list_size = num_watchpoints;
 
-      strncpy(list[i], break_points[i]->match_name, strlen(break_points[i]->match_name));
-      strcpy(list[i] + 15, break_points[i]->match_string);
+    for(i = 0; i < num_breakpoints; i++)
+    {
+      char *line = ccalloc(77, 1);
+      memset(line, ' ', 60);
+
+      br = breakpoints[i];
+
+      memcpy(line, br->match_string, strlen(br->match_string));
+      strcpy(line + 60, br->match_name);
+
+      br_list[i] = line;
     }
 
-    elements[0] = construct_list_box(2, 2, (const char **)list, num_break_points,
-     19, 76, 0, &selected, NULL, false);
-    elements[1] = construct_button(4, 22, "Add", 1);
-    elements[2] = construct_button(11, 22, "Edit", 2);
-    elements[3] = construct_button(19, 22, "Delete", 3);
-    elements[4] = construct_button(37, 22, enable_text[robo_debugger_enabled], 4);
-    elements[5] = construct_button(70, 22, "Done", -1);
-    elements[6] = construct_label(2, 1, "Name substr.");
-    elements[7] = construct_label(17, 1, "Line substring");
+    for(i = 0; i < num_watchpoints; i++)
+    {
+      char *line = ccalloc(77, 1);
+      memset(line, ' ', 60);
 
-    construct_dialog_ext(&di, "Edit Breakpoints", 0, 0, 80, 25, elements,
-     ARRAY_SIZE(elements), 0, 0, focus, edit_breakpoints_idle_function);
+      wt = watchpoints[i];
+
+      memcpy(line, wt->match_name, strlen(wt->match_name));
+
+      if(is_string(wt->match_name))
+      {
+        sprintf(line + 60, "<string>");
+      }
+      else
+      {
+        snprintf(line + 60, 12, "%d", wt->last_value);
+      }
+
+      wt_list[i] = line;
+    }
+
+    br_list[num_breakpoints] = (char *) "(new)";
+    wt_list[num_watchpoints] = (char *) "(new)";
+
+    elements[0] = construct_label(3, 23, "Alt+N : New");
+    elements[1] = construct_label(17, 23, "Enter : Edit");
+    elements[2] = construct_label(32, 23, "Alt+D : Delete");
+
+    elements[3] = construct_label(2, 1, "Breakpoint substring");
+    elements[4] = construct_label(62, 1, "Name substr.");
+
+    elements[5] = construct_label(2, 12, "Watchpoint variable");
+    elements[6] = construct_label(62, 12, "Last value");
+
+    elements[br_element] = construct_list_box(2, 2,
+     (const char **)br_list, num_breakpoints + 1,
+     9, 76, 0, &br_selected, NULL, false);
+
+    elements[wt_element] = construct_list_box(2, 13,
+     (const char **)wt_list, num_watchpoints + 1,
+     9, 76, 0, &wt_selected, NULL, false);
+
+    elements[9] = construct_button(50, 23,
+     enable_text[robo_debugger_enabled], 3);
+
+    elements[10] = construct_button(70, 23, "Done", -1);
+
+    construct_dialog_ext(&di, "Configure Robot Debugger", 0, 0, 80, 25,
+     elements, ARRAY_SIZE(elements), 0, 0, focus, debug_config_idle_function);
 
     result = run_dialog(mzx_world, &di);
+    focus = di.current_element;
 
     switch(result)
     {
+      // Edit
+      case 0:
+      {
+        if(focus == br_element)
+        {
+          if(br_selected < num_breakpoints)
+          {
+            br = breakpoints[br_selected];
+
+            if(!edit_breakpoint_dialog(mzx_world, br, "Edit Breakpoint"))
+            {
+              boyer_moore_index(br->match_string, strlen(br->match_string),
+               br->index, true);
+            }
+          }
+          else
+
+          if(br_selected == num_breakpoints)
+          {
+            new_breakpoint(mzx_world);
+          }
+        }
+        else
+
+        if(focus == wt_element)
+        {
+          if(wt_selected < num_watchpoints)
+          {
+            wt = watchpoints[wt_selected];
+
+            edit_watchpoint_dialog(mzx_world, wt, "Edit Watchpoint");
+          }
+          else
+
+          if(wt_selected == num_watchpoints)
+          {
+            new_watchpoint(mzx_world);
+          }
+        }
+        break;
+      }
+
       // Add
       case 1:
       {
-        struct break_point *temp = ccalloc(sizeof(struct break_point), 1);
-
-        if(!edit_breakpoint_dialog(mzx_world, temp, "Add Breakpoint"))
+        if(focus == br_element)
         {
-          if(num_break_points == num_break_points_allocated)
-          {
-            num_break_points_allocated = MAX(32, num_break_points_allocated * 2);
-            break_points = crealloc(break_points,
-             num_break_points_allocated * sizeof(struct break_point *));
-          }
-
-          boyer_moore_index(temp->match_string, strlen(temp->match_string), temp->index, true);
-
-          break_points[num_break_points] = temp;
-          num_break_points++;
-
-          if(!robo_debugger_override)
-            robo_debugger_enabled = 1;
+          new_breakpoint(mzx_world);
         }
         else
-          free(temp);
 
-        break;
-      }
-      // Edit
-      case 0:
-      case 2:
-      {
-        if(selected < num_break_points)
+        if(focus == wt_element)
         {
-          struct break_point *temp = break_points[selected];
-
-          if(!edit_breakpoint_dialog(mzx_world, temp, "Edit Breakpoint"))
-            boyer_moore_index(temp->match_string, strlen(temp->match_string), temp->index, true);
+          new_watchpoint(mzx_world);
         }
         break;
       }
+
       // Delete
-      case 3:
+      case 2:
       {
-        if(selected < num_break_points)
+        if(focus == br_element && br_selected < num_breakpoints)
         {
           if(!confirm(mzx_world, "Delete breakpoint?"))
           {
-            free(break_points[selected]);
-            memmove(break_points + selected, break_points + selected + 1,
-             (num_break_points - selected - 1) * sizeof(struct break_point *));
-            num_break_points--;
-            if(selected == num_break_points && selected > 0)
-              selected--;
+            free(breakpoints[br_selected]);
+            memmove(breakpoints + br_selected, breakpoints + br_selected + 1,
+             (num_breakpoints - br_selected - 1) * sizeof(struct breakpoint *));
+
+            num_breakpoints--;
+            if(br_selected == num_breakpoints && br_selected > 0)
+              br_selected--;
+          }
+        }
+        else
+
+        if(focus == wt_element && wt_selected < num_watchpoints)
+        {
+          if(!confirm(mzx_world, "Delete watchpoint?"))
+          {
+            free(watchpoints[wt_selected]);
+            memmove(watchpoints + wt_selected, watchpoints + wt_selected + 1,
+             (num_watchpoints - wt_selected - 1) * sizeof(struct watchpoint *));
+
+            num_watchpoints--;
+            if(wt_selected == num_watchpoints && wt_selected > 0)
+              wt_selected--;
           }
         }
         break;
       }
+
       // Enable/Disable
-      case 4:
+      case 3:
       {
         robo_debugger_enabled ^= 1;
         robo_debugger_override = 1;
@@ -227,11 +482,19 @@ void __edit_breakpoints(struct world *mzx_world)
     }
 
     destruct_dialog(&di);
-    for(i = 0; i < list_size; i++)
-      free(list[i]);
-    free(list);
 
-  } while (result > -1);
+    update_watchpoint_last_values(mzx_world);
+
+    for(i = 0; i < br_list_size; i++)
+      free(br_list[i]);
+
+    for(i = 0; i < wt_list_size; i++)
+      free(wt_list[i]);
+
+    free(br_list);
+    free(wt_list);
+  }
+  while(result > -1);
 
   m_hide();
   pop_context();
@@ -251,20 +514,30 @@ void free_breakpoints(void)
 {
   int i;
 
-  for(i = 0; i < num_break_points; i++)
-    free(break_points[i]);
+  if(breakpoints)
+    for(i = 0; i < num_breakpoints; i++)
+      free(breakpoints[i]);
 
-  if(break_points)
-    free(break_points);
+  if(watchpoints)
+    for(i = 0; i < num_watchpoints; i++)
+      free(watchpoints[i]);
 
-  break_points = NULL;
-  num_break_points = 0;
-  num_break_points_allocated = 0;
+  free(breakpoints);
+  free(watchpoints);
+
+  breakpoints = NULL;
+  num_breakpoints = 0;
+  num_breakpoints_allocated = 0;
+
+  watchpoints = NULL;
+  num_watchpoints = 0;
+  num_watchpoints_allocated = 0;
 
   robo_debugger_enabled = 0;
   robo_debugger_override = 0;
   step = false;
 }
+
 
 /********************/
 /* Robotic debugger */
@@ -336,6 +609,7 @@ enum actions {
   ACTION_MATCHED,
   ACTION_CAUGHT,
   ACTION_CAUGHT_AUTO,
+  ACTION_WATCH,
 };
 
 // Don't exceed 8 chars.
@@ -344,115 +618,26 @@ static const char *action_strings[] = {
   "matched",
   "caught",
   "enabled;",
+  "watch:",
 };
 
-static const char *no_source_available = "<no source available>";
+static void debug_robot_title(char buffer[77], struct robot *cur_robot, int id, int action,
+ int line_number)
+{
+  snprintf(buffer, 76, "Robot Debugger - %s `%s` (%i@%i,%i) at line %i:",
+   action_strings[action],
+   cur_robot->robot_name, id, cur_robot->xpos, cur_robot->ypos, line_number);
+
+  buffer[76] = 0;
+}
 
 // If the return value != 0, the robot ignores the current command and ends
-int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
- int lines_run)
+static int debug_robot(struct world *mzx_world, struct robot *cur_robot,
+ char title[77], char info[77], char *src_ptr, int src_length, int lines_run)
 {
-  int i;
+  bool breaker = false;
   bool done = false;
-  bool stop_robot = false;
-  int action = ACTION_STEPPED;
-
-  int line_length = 0;
-  int line_num = 0;
-  int real_line_num = 0;
-  int offset;
-
-  char *src_ptr;
-
-  // Enable and trigger a break if a robot seems to be out of control.
-  if(lines_run - cur_robot->commands_caught >= mzx_world->commands_stop)
-  {
-    if(!robo_debugger_enabled)
-    {
-      action = ACTION_CAUGHT_AUTO;
-    }
-
-    else
-    {
-      action = ACTION_CAUGHT;
-    }
-
-    robo_debugger_enabled = 1;
-    step = 1;
-  }
-
-  if(!robo_debugger_enabled)
-    return 0;
-
-#ifndef CONFIG_DEBYTECODE
-  // Make sure source exists for debugging.
-  prepare_robot_source(cur_robot);
-#endif
-
-  // Get the current line.
-  line_num = get_current_program_line(cur_robot);
-
-  if(cur_robot->program_source)
-  {
-    struct command_mapping *cmd_map = cur_robot->command_map;
-
-    real_line_num = cmd_map[line_num].real_line;
-
-    offset = cmd_map[line_num].src_pos;
-    src_ptr = cur_robot->program_source + offset;
-
-    if(line_num < cur_robot->command_map_length)
-    {
-      line_length = cmd_map[line_num + 1].src_pos - offset - 1;
-    }
-    else
-    {
-      line_length = strlen(src_ptr);
-    }
-
-    // Attempt to match a breakpoint
-    if(!step)
-    {
-      bool match = false;
-      for(i = 0; i < num_break_points; i++)
-      {
-        struct break_point *b = break_points[i];
-
-        // Make sure the robot name is correct
-        if(strlen(b->match_name) &&
-         !strstr(cur_robot->robot_name, b->match_name))
-          continue;
-
-        // Try to find the match pattern in the line
-        if(!boyer_moore_search((void *)src_ptr, line_length,
-         (void *)b->match_string, strlen(b->match_string), b->index, true))
-          continue;
-
-        match = true;
-        action = ACTION_MATCHED;
-        break;
-      }
-
-      if(!match)
-        return 0;
-    }
-
-    // Get rid of the linebreak at the end.
-    if(src_ptr[line_length - 1] == '\n')
-      line_length--;
-  }
-
-  else
-  {
-    // If there isn't any source information available, we can't do much.
-    if(!step)
-      return 0;
-
-    real_line_num = line_num;
-
-    src_ptr = (char *) no_source_available;
-    line_length = strlen(src_ptr);
-  }
+  int i;
 
   // Keep running track of the last position we were caught at.
   cur_robot->commands_caught = lines_run;
@@ -468,21 +653,28 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
   {
     int button_line;
     int code_height = 0;
-    struct element *elements[10];
+    struct element *elements[11];
+    int num_elements = 11;
 
     int dialog_y = 0;
     int dialog_result;
     struct dialog di;
 
-    char info[77] = { 0 };
     char label[4][77] = { { 0 } };
     char *line_pos = src_ptr;
-    char *line_end = src_ptr + line_length;
+    char *line_end = src_ptr + src_length;
 
-    snprintf(info, 76, "Robot Debugger - %s `%s` (%i@%i,%i) at line %i:",
-     action_strings[action],
-     cur_robot->robot_name, id, cur_robot->xpos, cur_robot->ypos, real_line_num);
-    info[76] = 0;
+    if(info && info[0])
+    {
+      code_height++;
+      elements[10] = construct_label(2, code_height, info);
+      code_height++;
+    }
+
+    else
+    {
+      num_elements--;
+    }
 
     for(i = 0; i < 4; i++)
     {
@@ -512,12 +704,11 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
     elements[1]  = construct_button(15, button_line, "Step", 0);
     elements[2]  = construct_button(23, button_line, "Halt", 1);
     elements[3]  = construct_button(31, button_line, "Halt all", 2);
-    elements[4]  = construct_button(52, button_line, "Counters", 3);
-    elements[5]  = construct_button(64, button_line, "Breakpoints", 4);
+    elements[4]  = construct_button(57, button_line, "Counters", 3);
+    elements[5]  = construct_button(69, button_line, "Config", 4);
 
-    construct_dialog_ext(&di, info, 0, dialog_y,
-     80, code_height + 4, elements, ARRAY_SIZE(elements), 0, 0, selected,
-     debug_robot_idle_function);
+    construct_dialog_ext(&di, title, 0, dialog_y, 80, code_height + 4,
+     elements, num_elements, 0, 0, selected, debug_robot_idle_function);
 
     set_context(CTX_ROBOT_DEBUG);
     m_show();
@@ -572,7 +763,12 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
       // Halt
       case 1:
       {
-        stop_robot = true;
+        cur_robot->status = 1;
+        cur_robot->walk_dir = 0;
+        cur_robot->cur_prog_line = 0;
+        cur_robot->pos_within_line = 0;
+
+        breaker = true;
         step = false;
         done = true;
         break;
@@ -583,10 +779,10 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
         __debug_counters(mzx_world);
         break;
       }
-      // Edit breakpoints
+      // Robot debugger config
       case 4:
       {
-        __edit_breakpoints(mzx_world);
+        __debug_robot_config(mzx_world);
         break;
       }
     }
@@ -600,5 +796,194 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
 
   update_event_status();
 
-  return stop_robot;
+  return breaker;
+}
+
+static inline void get_src_line(struct robot *cur_robot, char **_src_ptr,
+ int *_src_length, int *_real_line_num)
+{
+  struct command_mapping *cmd_map = cur_robot->command_map;
+  int line_num = get_current_program_line(cur_robot);
+
+  char *src_ptr;
+  int src_length;
+  int offset;
+
+  if(cmd_map)
+  {
+    offset = cmd_map[line_num].src_pos;
+    src_ptr = cur_robot->program_source + offset;
+
+    if(line_num < cur_robot->command_map_length)
+    {
+      src_length = cmd_map[line_num + 1].src_pos - offset - 1;
+    }
+    else
+    {
+      src_length = strlen(src_ptr);
+    }
+
+    *_src_ptr = src_ptr;
+    *_src_length = src_length;
+    *_real_line_num = cmd_map[line_num].real_line;
+  }
+
+  else
+  {
+    *_src_ptr = (char *) "<no source available>";
+    *_src_length = strlen(*_src_ptr);
+    *_real_line_num = line_num;
+  }
+}
+
+int __debug_robot_break(struct world *mzx_world, struct robot *cur_robot,
+ int id, int lines_run)
+{
+  char title[77];
+  int action = ACTION_STEPPED;
+  int line_number = 0;
+  int src_length = 0;
+  char *src_ptr = NULL;
+
+  int i;
+
+  // Enable and trigger a break if a robot seems to be out of control.
+  if(lines_run - cur_robot->commands_caught >= mzx_world->commands_stop)
+  {
+    if(!robo_debugger_enabled)
+    {
+      action = ACTION_CAUGHT_AUTO;
+    }
+
+    else
+    {
+      action = ACTION_CAUGHT;
+    }
+
+    robo_debugger_enabled = 1;
+    step = 1;
+  }
+
+  if(!robo_debugger_enabled)
+    return 0;
+
+#ifndef CONFIG_DEBYTECODE
+  // Make sure source exists for debugging.
+  prepare_robot_source(cur_robot);
+#endif
+
+  // Get the current line.
+  get_src_line(cur_robot, &src_ptr, &src_length, &line_number);
+
+  if(cur_robot->program_source)
+  {
+    // Attempt to match a breakpoint
+    if(!step)
+    {
+      bool match = false;
+      for(i = 0; i < num_breakpoints; i++)
+      {
+        struct breakpoint *b = breakpoints[i];
+
+        // Make sure the robot name is correct
+        if(strlen(b->match_name) &&
+         !strstr(cur_robot->robot_name, b->match_name))
+          continue;
+
+        // Try to find the match pattern in the line
+        if(!boyer_moore_search((void *)src_ptr, src_length,
+         (void *)b->match_string, strlen(b->match_string), b->index, true))
+          continue;
+
+        match = true;
+        action = ACTION_MATCHED;
+        break;
+      }
+
+      if(!match)
+        return 0;
+    }
+  }
+
+  else
+  {
+    // If there isn't any source information available, we can't do much.
+    if(!step)
+      return 0;
+  }
+
+  // FIXME Get rid of the linebreak at the end.
+  if(src_ptr[src_length - 1] == '\n')
+    src_length--;
+
+  // Run the robot debugger
+  debug_robot_title(title, cur_robot, id, action, line_number);
+  return debug_robot(mzx_world, cur_robot, title, NULL, src_ptr, src_length,
+   lines_run);
+}
+
+int __debug_robot_watch(struct world *mzx_world, struct robot *cur_robot,
+ int id, int lines_run)
+{
+  char title[77];
+  char info[77];
+
+  int line_number = 0;
+  int src_length = 0;
+  char *src_ptr = NULL;
+
+  struct watchpoint *wt;
+  bool match = false;
+  int value = 0;
+  int i;
+
+  if(!robo_debugger_enabled)
+    return 0;
+
+  info[0] = 0;
+
+  for(i = 0; i < num_watchpoints; i++)
+  {
+    wt = watchpoints[i];
+
+    value = get_watchpoint_value(mzx_world, wt);
+
+    // String
+    if(is_string(wt->match_name))
+    {
+      snprintf(info, 76, "changed: '%s'", wt->match_name);
+      info[76] = 0;
+    }
+
+    // Counter
+    else
+    {
+      snprintf(info, 76, "%d \x1A %d: '%s'",
+       wt->last_value, value, wt->match_name);
+
+      info[76] = 0;
+    }
+
+    if(value != wt->last_value)
+    {
+      wt->last_value = value;
+      match = true;
+      break;
+    }
+  }
+
+  if(!match)
+    return 0;
+
+  // Get the current line.
+  get_src_line(cur_robot, &src_ptr, &src_length, &line_number);
+
+  // FIXME Get rid of the linebreak at the end.
+  if(src_ptr[src_length - 1] == '\n')
+    src_length--;
+
+  // Run the robot debugger
+  debug_robot_title(title, cur_robot, id, ACTION_WATCH, line_number);
+  return debug_robot(mzx_world, cur_robot, title, info, src_ptr, src_length,
+   lines_run);
 }
