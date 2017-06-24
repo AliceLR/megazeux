@@ -201,7 +201,7 @@ int get_current_program_line(struct robot *cur_robot)
   // If mapping information is available, we can binary search.
   if(cmd_map)
   {
-    while(a != b)
+    while(b-a > 1)
     {
       i = (b - a)/2 + a;
 
@@ -210,6 +210,9 @@ int get_current_program_line(struct robot *cur_robot)
       if(d >= 0) b = i;
       if(d <= 0) a = i;
     }
+
+    if(program_pos >= cmd_map[b].bc_pos)
+      a = b;
   }
 
   // Otherwise, step through the program line by line.
