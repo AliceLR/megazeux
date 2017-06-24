@@ -44,6 +44,7 @@ struct breakpoint
   char match_name[15];
   char match_string[61];
   int index[256];
+  int line_number;
 };
 
 struct watchpoint
@@ -135,23 +136,41 @@ void update_watchpoint_last_values(struct world *mzx_world)
 static int edit_breakpoint_dialog(struct world *mzx_world,
  struct breakpoint *br, const char *title)
 {
-  int result;
-  struct element *elements[4];
-  struct dialog di;
+  char match_string[61];
+  char match_name[15];
+  int line_number;
 
-  elements[0] = construct_input_box(2, 2,
-   "Match text:", 60, 0, br->match_string);
+  struct element *elements[5];
+  struct dialog di;
+  int result;
+
+  memcpy(match_string, br->match_string, 61);
+  memcpy(match_name, br->match_name, 15);
+  line_number = br->line_number;
+
+  elements[0] = construct_input_box(2, 1,
+   "Match text:", 60, 0, match_string);
 
   elements[1] = construct_input_box(2, 3,
-   "Match robot name (optional):", 14, 0, br->match_name);
+   "Match robot name:", 14, 0, match_name);
 
-  elements[2] = construct_button(9, 5, "Confirm", 0);
-  elements[3] = construct_button(23, 5, "Cancel", -1);
+  elements[2] = construct_number_box(38, 3,
+   "Match line number:", 0, 99999, 0, &line_number);
+
+  elements[3] = construct_button(22, 5, "Confirm", 0);
+  elements[4] = construct_button(45, 5, "Cancel", -1);
   
-  construct_dialog(&di, title, 2, 6, 76, 8, elements, ARRAY_SIZE(elements), 0);
+  construct_dialog(&di, title, 2, 7, 76, 7, elements, ARRAY_SIZE(elements), 0);
 
   result = run_dialog(mzx_world, &di);
   destruct_dialog(&di);
+
+  if(!result)
+  {
+    memcpy(br->match_string, match_string, 61);
+    memcpy(br->match_name, match_name, 15);
+    br->line_number = line_number;
+  }
 
   return result;
 }
@@ -159,20 +178,29 @@ static int edit_breakpoint_dialog(struct world *mzx_world,
 static int edit_watchpoint_dialog(struct world *mzx_world,
  struct watchpoint *wt, const char *title)
 {
-  int result;
+  char match_name[61];
+
   struct element *elements[3];
   struct dialog di;
+  int result;
 
-  elements[0] = construct_input_box(2, 2,
+  memcpy(match_name, wt->match_name, 61);
+
+  elements[0] = construct_input_box(3, 1,
    "Variable:", 60, 0, wt->match_name);
 
-  elements[1] = construct_button(9, 4, "Confirm", 0);
-  elements[2] = construct_button(23, 4, "Cancel", -1);
+  elements[1] = construct_button(22, 3, "Confirm", 0);
+  elements[2] = construct_button(45, 3, "Cancel", -1);
 
-  construct_dialog(&di, title, 2, 7, 76, 7, elements, ARRAY_SIZE(elements), 0);
+  construct_dialog(&di, title, 2, 8, 76, 5, elements, ARRAY_SIZE(elements), 0);
 
   result = run_dialog(mzx_world, &di);
   destruct_dialog(&di);
+
+  if(!result)
+  {
+    memcpy(wt->match_name, match_name, 61);
+  }
 
   return result;
 }
@@ -293,11 +321,11 @@ void __debug_robot_config(struct world *mzx_world)
   int i;
 
   int result = 0;
-  struct element *elements[11];
+  struct element *elements[12];
   struct dialog di;
 
-  int br_element = 7;
-  int wt_element = 8;
+  int br_element = 8;
+  int wt_element = 9;
 
   int focus = br_element;
 
@@ -323,6 +351,13 @@ void __debug_robot_config(struct world *mzx_world)
       br = breakpoints[i];
 
       memcpy(line, br->match_string, strlen(br->match_string));
+
+      if(br->line_number)
+      {
+        sprintf(line + 53, "%d", br->line_number);
+        line[strlen(line)] = ' ';
+      }
+
       strcpy(line + 60, br->match_name);
 
       br_list[i] = line;
@@ -357,10 +392,11 @@ void __debug_robot_config(struct world *mzx_world)
     elements[2] = construct_label(32, 23, "Alt+D : Delete");
 
     elements[3] = construct_label(2, 1, "Breakpoint substring");
-    elements[4] = construct_label(62, 1, "Name substr.");
+    elements[4] = construct_label(55, 1, "Line");
+    elements[5] = construct_label(62, 1, "Robot name");
 
-    elements[5] = construct_label(2, 12, "Watchpoint variable");
-    elements[6] = construct_label(62, 12, "Last value");
+    elements[6] = construct_label(2, 12, "Watchpoint variable");
+    elements[7] = construct_label(62, 12, "Last value");
 
     elements[br_element] = construct_list_box(2, 2,
      (const char **)br_list, num_breakpoints + 1,
@@ -370,10 +406,10 @@ void __debug_robot_config(struct world *mzx_world)
      (const char **)wt_list, num_watchpoints + 1,
      9, 76, 0, &wt_selected, NULL, false);
 
-    elements[9] = construct_button(50, 23,
+    elements[10] = construct_button(50, 23,
      enable_text[robo_debugger_enabled], 3);
 
-    elements[10] = construct_button(70, 23, "Done", -1);
+    elements[11] = construct_button(70, 23, "Done", -1);
 
     construct_dialog_ext(&di, "Configure Robot Debugger", 0, 0, 80, 25,
      elements, ARRAY_SIZE(elements), 0, 0, focus, debug_config_idle_function);
@@ -612,7 +648,7 @@ static int goto_send_dialog(struct world *mzx_world, int robot_id)
         name_tr = cmalloc(ROBOT_MAX_TR);
         tr_msg(mzx_world, name_in, robot_id, name_tr);
 
-        send_robot(mzx_world, name_tr, label_tr, 0);
+        send_robot(mzx_world, name_tr, label_tr, ignore[0]);
 
         free(name_tr);
         break;
@@ -622,7 +658,7 @@ static int goto_send_dialog(struct world *mzx_world, int robot_id)
       case 2:
       {
         sprintf(name_in, "all");
-        send_robot(mzx_world, name_in, label_tr, 0);
+        send_robot(mzx_world, name_in, label_tr, ignore[0]);
         break;
       }
     }
@@ -692,14 +728,14 @@ static int debug_robot_idle_function(struct world *mzx_world,
     case IKEY_PAGEUP:
     {
       position = 0;
-      di->return_value = OP_DO_NOTHING; //do nothing
+      di->return_value = OP_DO_NOTHING;
       di->done = 1;
       break;
     }
     case IKEY_PAGEDOWN:
     {
       position = 1;
-      di->return_value = OP_DO_NOTHING; //do nothing
+      di->return_value = OP_DO_NOTHING;
       di->done = 1;
       break;
     }
@@ -953,6 +989,10 @@ static inline void get_src_line(struct robot *cur_robot, char **_src_ptr,
       src_length = strlen(src_ptr);
     }
 
+    // Remove any trailing newlines that might have made it in
+    while(src_length > 0 && src_ptr[src_length - 1] == '\n')
+      src_length--;
+
     *_src_ptr = src_ptr;
     *_src_length = src_length;
     *_real_line_num = cmd_map[line_num].real_line;
@@ -1010,23 +1050,42 @@ int __debug_robot_break(struct world *mzx_world, struct robot *cur_robot,
     // Attempt to match a breakpoint
     if(!step)
     {
+      struct breakpoint *b;
+      size_t match_string_len;
+      size_t match_name_len;
+      int match_line;
+
       bool match = false;
+
       for(i = 0; i < num_breakpoints; i++)
       {
-        struct breakpoint *b = breakpoints[i];
+        b = breakpoints[i];
+        match_string_len = strlen(b->match_string);
+        match_name_len = strlen(b->match_name);
+        match_line = b->line_number;
+
+        // Make sure the line number is correct
+        if(match_line && match_line != line_number)
+          continue;
 
         // Make sure the robot name is correct
-        if(strlen(b->match_name) &&
-         !strstr(cur_robot->robot_name, b->match_name))
+        if(match_name_len &&
+         strcasecmp(cur_robot->robot_name, b->match_name))
           continue;
 
         // Try to find the match pattern in the line
-        if(!boyer_moore_search((void *)src_ptr, src_length,
-         (void *)b->match_string, strlen(b->match_string), b->index, true))
+        if(match_string_len && src_length)
+          if(!boyer_moore_search((void *)src_ptr, src_length,
+           (void *)b->match_string, match_string_len, b->index, true))
+            continue;
+
+        // Verify a meaningful match has actually occured
+        if((!match_string_len || !src_length) &&
+         !match_name_len && !match_line)
           continue;
 
-        match = true;
         action = ACTION_MATCHED;
+        match = true;
         break;
       }
 
@@ -1041,10 +1100,6 @@ int __debug_robot_break(struct world *mzx_world, struct robot *cur_robot,
     if(!step)
       return 0;
   }
-
-  // FIXME Get rid of the linebreak at the end.
-  if(src_ptr[src_length - 1] == '\n')
-    src_length--;
 
   // Run the robot debugger
   debug_robot_title(title, cur_robot, id, action, line_number);
@@ -1107,10 +1162,6 @@ int __debug_robot_watch(struct world *mzx_world, struct robot *cur_robot,
 
   // Get the current line.
   get_src_line(cur_robot, &src_ptr, &src_length, &line_number);
-
-  // FIXME Get rid of the linebreak at the end.
-  if(src_ptr[src_length - 1] == '\n')
-    src_length--;
 
   // Run the robot debugger
   debug_robot_title(title, cur_robot, id, ACTION_WATCH, line_number);

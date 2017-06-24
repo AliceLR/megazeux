@@ -152,7 +152,7 @@ CORE_LIBSPEC char *tr_msg_ext(struct world *mzx_world, char *mesg, int id,
 
 int find_robot(struct board *src_board, const char *name,
  int *first, int *last);
-void send_robot_all(struct world *mzx_world, const char *mesg);
+void send_robot_all(struct world *mzx_world, const char *mesg, int ignore_lock);
 int send_robot_self(struct world *mzx_world, struct robot *src_robot,
  const char *mesg, int ignore_lock);
 int move_dir(struct board *src_board, int *x, int *y, enum dir dir);
