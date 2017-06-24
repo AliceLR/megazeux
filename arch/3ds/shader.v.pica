@@ -19,6 +19,7 @@
 ; Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 .fvec projection[4]
+.fvec offset
 
 .out outpos position
 .out outtc0 texcoord0

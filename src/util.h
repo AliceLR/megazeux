@@ -101,7 +101,6 @@ ssize_t __get_path(const char *file_name, char *dest, unsigned int buf_len);
 CORE_LIBSPEC void split_path_filename(const char *source,
  char *destpath, unsigned int path_buffer_len,
  char *destfile, unsigned int file_buffer_len);
-CORE_LIBSPEC void join_path_names(char* target, int max_len, char* path1, char* path2);
 
 CORE_LIBSPEC int create_path_if_not_exists(const char *filename);
 

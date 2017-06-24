@@ -19,6 +19,7 @@
 ; Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 .fvec projection[4]
+.fvec offset
 
 .out outpos position
 .out outtc0 texcoord0
@@ -28,13 +29,12 @@
 .alias intc0 v1
 .alias inclr v2
 
-.constf SCALES(0.03125, 0.0546875,0.00392156862745098, 1.0)
+.constf SCALES(0.0009765625, 0.001953125, -1, 1)
 .constf RGBS(0.00392156862745098, 0.00392156862745098, 0.00392156862745098, 0.00392156862745098)
 .constf POSSCALE(8.0, 14.0, 1.0, 1.0)
-
 .proc main
 	mov r1, POSSCALE
-	mul r0, inpos, r1
+	mad r0, inpos, r1, offset
 
 	dp4 outpos.x, projection[0], r0
 	dp4 outpos.y, projection[1], r0
@@ -43,6 +43,7 @@
 
 	mov r1, SCALES
 	mul outtc0, intc0, r1
+
         mov r1, RGBS
 	mul outclr, inclr.wzyx, r1
 

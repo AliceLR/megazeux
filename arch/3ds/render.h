@@ -26,37 +26,20 @@
 #include <3ds.h>
 #include <citro3d.h>
 
-#define MAP_QUADS ((80 * 25 * 3) + 2)
-#define MAP_CHAR_SIZE ((MAP_QUADS - 2) * 4)
-
 struct ctr_shader_data
 {
   DVLB_s* dvlb;
   shaderProgram_s program;
-  int proj_loc;
+  int proj_loc, offs_loc;
   C3D_AttrInfo attr;
 };
 
-struct ctr_charset_data
+struct ctr_layer
 {
-  C3D_Tex texture;
-  short *buffer;
-};
-
-struct ctr_render_data
-{
-  u32 *buffer;
-  struct ctr_charset_data charset[3];
-  bool charset_dirty;
-  unsigned int last_smzx_mode;
-  struct v_char *map;
-  struct ctr_shader_data shader, shader_accel;
-  C3D_Mtx projection;
-  u32 *bg_buf;
-  C3D_Tex bg_tex;
-  C3D_RenderTarget *playfield, *target_top, *target_bottom;
-  u8 cursor_on, mouse_on;
-  u32 focus_x, focus_y;
+  Uint32 w, h, mode;
+  int draw_order;
+  struct v_char *foreground;
+  C3D_Tex background;
 };
 
 typedef struct {
@@ -70,8 +53,7 @@ typedef struct {
 struct v_char
 {
   float x, y, z;
-  u8 u, v;
-  u16 dud;
+  s16 u, v;
   u32 col;
 };
 
@@ -87,6 +69,19 @@ struct linear_ptr_list_entry
   struct linear_ptr_list_entry* next;
 };
 
+struct ctr_render_data
+{
+  C3D_Tex charset[4];
+  struct v_char *cursor_map, *mouse_map;
+  bool charset_dirty, rendering_frame;
+  struct ctr_shader_data shader, shader_accel;
+  C3D_Mtx projection;
+  C3D_RenderTarget *playfield, *target_top, *target_bottom;
+  u8 cursor_on, mouse_on;
+  u32 focus_x, focus_y;
+  u32 layer_num;
+};
+
 C3D_Tex* ctr_load_png(const char *name);
 
 void ctr_init_shader(struct ctr_shader_data *shader, const void* data, int size);
@@ -94,6 +89,6 @@ void ctr_bind_shader(struct ctr_shader_data *shader);
 
 void ctr_draw_2d_texture(struct ctr_render_data *render_data, C3D_Tex* texture,
   int tx, int ty, int tw, int th,
-  float x, float y, float w, float h, float z);
+  float x, float y, float w, float h, float z, bool flipy);
 
 #endif /* __3DS_RENDER_H__ */

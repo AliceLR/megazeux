@@ -51,8 +51,9 @@ bool __update_event_status(void)
   return retval;
 }
 
-void __wait_event(void)
+void __wait_event(int timeout)
 {
+  // TODO: implement timeout?
   gspWaitForVBlank();
 }
 
