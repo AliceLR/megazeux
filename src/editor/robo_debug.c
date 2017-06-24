@@ -187,7 +187,7 @@ static int edit_watchpoint_dialog(struct world *mzx_world,
   memcpy(match_name, wt->match_name, 61);
 
   elements[0] = construct_input_box(3, 1,
-   "Variable:", 60, 0, wt->match_name);
+   "Variable:", 60, 0, match_name);
 
   elements[1] = construct_button(22, 3, "Confirm", 0);
   elements[2] = construct_button(45, 3, "Cancel", -1);
@@ -321,11 +321,11 @@ void __debug_robot_config(struct world *mzx_world)
   int i;
 
   int result = 0;
-  struct element *elements[12];
+  struct element *elements[10];
   struct dialog di;
 
-  int br_element = 8;
-  int wt_element = 9;
+  int br_element = 6;
+  int wt_element = 7;
 
   int focus = br_element;
 
@@ -387,16 +387,15 @@ void __debug_robot_config(struct world *mzx_world)
     br_list[num_breakpoints] = (char *) "(new)";
     wt_list[num_watchpoints] = (char *) "(new)";
 
-    elements[0] = construct_label(3, 23, "Alt+N : New");
-    elements[1] = construct_label(17, 23, "Enter : Edit");
-    elements[2] = construct_label(32, 23, "Alt+D : Delete");
+    elements[0] = construct_label(3, 23,
+     "~9Alt+N : New   Enter : Edit   Alt+D : Delete");
 
-    elements[3] = construct_label(2, 1, "Breakpoint substring");
-    elements[4] = construct_label(55, 1, "Line");
-    elements[5] = construct_label(62, 1, "Robot name");
+    elements[1] = construct_label(2, 1, "Breakpoint substring");
+    elements[2] = construct_label(55, 1, "Line");
+    elements[3] = construct_label(62, 1, "Robot name");
 
-    elements[6] = construct_label(2, 12, "Watchpoint variable");
-    elements[7] = construct_label(62, 12, "Last value");
+    elements[4] = construct_label(2, 12, "Watchpoint variable");
+    elements[5] = construct_label(62, 12, "Last value");
 
     elements[br_element] = construct_list_box(2, 2,
      (const char **)br_list, num_breakpoints + 1,
@@ -406,10 +405,10 @@ void __debug_robot_config(struct world *mzx_world)
      (const char **)wt_list, num_watchpoints + 1,
      9, 76, 0, &wt_selected, NULL, false);
 
-    elements[10] = construct_button(50, 23,
+    elements[8] = construct_button(50, 23,
      enable_text[robo_debugger_enabled], 3);
 
-    elements[11] = construct_button(70, 23, "Done", -1);
+    elements[9] = construct_button(70, 23, "Done", -1);
 
     construct_dialog_ext(&di, "Configure Robot Debugger", 0, 0, 80, 25,
      elements, ARRAY_SIZE(elements), 0, 0, focus, debug_config_idle_function);
@@ -683,32 +682,43 @@ enum operation {
 static int debug_robot_idle_function(struct world *mzx_world,
  struct dialog *di, int key)
 {
-  // Do nothing if the key is being held.
-  if(get_key_status(keycode_internal, key) != 1)
-    return 0;
+  // For most of these, do nothing if the key is being held.
+  int is_press = (get_key_status(keycode_internal, key) == 1);
 
   switch(key)
   {
     case IKEY_c:
     {
+      if(!is_press)
+        return 0;
+
       di->return_value = OP_CONTINUE;
       di->done = 1;
       break;
     }
     case IKEY_s:
     {
+      if(!is_press)
+        return 0;
+
       di->return_value = OP_STEP;
       di->done = 1;
       break;
     }
     case IKEY_g:
     {
+      if(!is_press)
+        return 0;
+
       di->return_value = OP_GOTO;
       di->done = 1;
       break;
     }
     case IKEY_h:
     {
+      if(!is_press)
+        return 0;
+
       if(get_alt_status(keycode_internal))
         di->return_value = OP_HALT_ALL;
       else
@@ -718,6 +728,9 @@ static int debug_robot_idle_function(struct world *mzx_world,
     }
     case IKEY_F11:
     {
+      if(!is_press)
+        return 0;
+
       if(get_alt_status(keycode_internal))
         di->return_value = OP_CONFIG;
       else
@@ -727,6 +740,9 @@ static int debug_robot_idle_function(struct world *mzx_world,
     }
     case IKEY_PAGEUP:
     {
+      if(!is_press)
+        return 0;
+
       position = 0;
       di->return_value = OP_DO_NOTHING;
       di->done = 1;
@@ -734,6 +750,9 @@ static int debug_robot_idle_function(struct world *mzx_world,
     }
     case IKEY_PAGEDOWN:
     {
+      if(!is_press)
+        return 0;
+
       position = 1;
       di->return_value = OP_DO_NOTHING;
       di->done = 1;
@@ -778,8 +797,100 @@ static void debug_robot_title(char buffer[77], struct robot *cur_robot, int id,
 static int debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
  char title[77], char info[77], char *src_ptr, int src_length, int lines_run)
 {
+  // TODO: when limitations on command length are lifted,
+  // this needs to be extended.
+  char buffer[ROBOT_MAX_TR] = { 0 };
+  int buffer_len = ARRAY_SIZE(buffer);
+
+  char *buffer_pos;
+  int buffer_left;
+
+  char *src_end = src_ptr + src_length;
+  char *src_pos;
+
+  struct dialog di;
+  struct element *elements[8];
+  int num_elements = ARRAY_SIZE(elements);
+
+  int dialog_result;
+  int dialog_y = 0;
+
   int ret_val = 0;
+  int height;
+  int ypos;
+  int len;
+
+  char t;
   int i;
+
+  // Build the code/info text display
+  src_pos = src_ptr;
+  buffer_pos = buffer;
+  buffer_left = buffer_len - 1;
+  ypos = 0;
+
+  if(info && info[0])
+  {
+    strncpy(buffer_pos, info, 76);
+    buffer_pos[76] = 0;
+
+    len = strlen(buffer_pos);
+    buffer_pos[len++] = '\n';
+    buffer_pos[len++] = '\n';
+    buffer_pos[len] = 0;
+
+    buffer_pos += len;
+    buffer_left -= len;
+    ypos += 2;
+  }
+
+  strcpy(buffer_pos, "~b");
+  len = strlen(buffer_pos);
+  buffer_pos += len;
+  buffer_left -= len;
+
+  while(buffer_left && src_pos < src_end)
+  {
+    t = *src_pos;
+    src_pos++;
+
+    switch(t)
+    {
+      case '~':
+      {
+        if(buffer_left > 1)
+        {
+          *buffer_pos = '~';
+          buffer_pos++;
+          buffer_left--;
+        }
+        break;
+      }
+
+      case '@':
+      {
+        if(buffer_left > 1)
+        {
+          *buffer_pos = '@';
+          buffer_pos++;
+          buffer_left--;
+        }
+        break;
+      }
+
+      case '\n':
+        ypos++;
+    }
+
+    *buffer_pos = t;
+    buffer_pos++;
+    buffer_left--;
+  }
+
+  *buffer_pos = 0;
+  ypos += 3;
+
+  height = ypos + 2;
 
   // Keep running track of the last position we were caught at.
   cur_robot->commands_caught = lines_run;
@@ -795,78 +906,22 @@ static int debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
   // Open debug dialog
   do
   {
-    int button_line;
-    int code_height = 0;
-    struct element *elements[12];
-    int num_elements = ARRAY_SIZE(elements);
-
-    int label_idx = (num_elements - 1);
-
-    int dialog_y = 0;
-    int dialog_result;
-    struct dialog di;
-
-    char label[4][77] = { { 0 } };
-    char *line_pos = src_ptr;
-    char *line_end = src_ptr + src_length;
-
-    if(info && info[0])
-    {
-      code_height++;
-      elements[label_idx] = construct_label(2, code_height, info);
-      code_height++;
-    }
-
-    else
-    {
-      num_elements--;
-    }
-
-    label_idx--;
-
-    for(i = 0; i < 4; i++)
-    {
-      if(line_pos)
-      {
-        memsafegets(label[i], 77, &line_pos, line_end);
-        label[i][76] = 0;
-        code_height++;
-      }
-      else
-      {
-        label[i][0] = 0;
-      }
-
-      elements[label_idx] = construct_label(2, code_height, label[i]);
-
-      // FIXME: hack
-      ((struct label_element *)(elements[label_idx]))->respect_colors = false;
-
-      label_idx--;
-    }
-
-    code_height = MAX(code_height, 1);
-
-    button_line = code_height + 2;
     if(position)
-      dialog_y = 25 - (code_height + 4);
+      dialog_y = 25 - height;
 
-    elements[0]  = construct_button( 3, button_line, "Continue", OP_CONTINUE);
-    elements[1]  = construct_button(15, button_line, "Step", OP_STEP);
-    elements[2]  = construct_button(23, button_line, "Goto", OP_GOTO);
-    elements[3]  = construct_button(31, button_line, "Halt", OP_HALT);
-    elements[4]  = construct_button(39, button_line, "Halt all", OP_HALT_ALL);
-    elements[5]  = construct_button(57, button_line, "Counters", OP_COUNTERS);
-    elements[6]  = construct_button(69, button_line, "Config", OP_CONFIG);
+    elements[0]  = construct_button( 3, ypos, "Continue", OP_CONTINUE);
+    elements[1]  = construct_button(15, ypos, "Step", OP_STEP);
+    elements[2]  = construct_button(23, ypos, "Goto", OP_GOTO);
+    elements[3]  = construct_button(31, ypos, "Halt", OP_HALT);
+    elements[4]  = construct_button(39, ypos, "Halt all", OP_HALT_ALL);
+    elements[5]  = construct_button(57, ypos, "Counters", OP_COUNTERS);
+    elements[6]  = construct_button(69, ypos, "Config", OP_CONFIG);
+    elements[7]  = construct_label(2, 1, buffer);
 
-    // This should be the same as the last button ID.
-    assert(label_idx == 6);
-
-    construct_dialog_ext(&di, title, 0, dialog_y, 80, code_height + 4,
+    construct_dialog_ext(&di, title, 0, dialog_y, 80, height,
      elements, num_elements, 0, 0, selected, debug_robot_idle_function);
 
     m_show();
-    update_screen();
     dialog_result = run_dialog(mzx_world, &di);
 
     if(dialog_result > OP_DO_NOTHING)
@@ -937,12 +992,14 @@ static int debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
       case OP_COUNTERS:
       {
         __debug_counters(mzx_world);
+        update_screen();
         break;
       }
 
       case OP_CONFIG:
       {
         __debug_robot_config(mzx_world);
+        update_screen();
         break;
       }
     }
@@ -1010,12 +1067,16 @@ int __debug_robot_break(struct world *mzx_world, struct robot *cur_robot,
  int id, int lines_run)
 {
   char title[77];
+  char info[77];
+
   int action = ACTION_STEPPED;
   int line_number = 0;
   int src_length = 0;
   char *src_ptr = NULL;
 
   int i;
+
+  info[0] = 0;
 
   // Enable and trigger a break if a robot seems to be out of control.
   if(lines_run - cur_robot->commands_caught >= mzx_world->commands_stop)
@@ -1029,6 +1090,9 @@ int __debug_robot_break(struct world *mzx_world, struct robot *cur_robot,
     {
       action = ACTION_CAUGHT;
     }
+
+    sprintf(info, "~9Commands run exceeded ~c`COMMANDS_STOP`~9 value ~a%d~9.",
+     mzx_world->commands_stop);
 
     robo_debugger_enabled = 1;
     step = 1;
@@ -1103,7 +1167,7 @@ int __debug_robot_break(struct world *mzx_world, struct robot *cur_robot,
 
   // Run the robot debugger
   debug_robot_title(title, cur_robot, id, action, line_number);
-  return debug_robot(mzx_world, cur_robot, id, title, NULL, src_ptr, src_length,
+  return debug_robot(mzx_world, cur_robot, id, title, info, src_ptr, src_length,
    lines_run);
 }
 
@@ -1136,14 +1200,14 @@ int __debug_robot_watch(struct world *mzx_world, struct robot *cur_robot,
     // String
     if(is_string(wt->match_name))
     {
-      snprintf(info, 76, "changed: `%s`", wt->match_name);
+      snprintf(info, 76, "~a@0 changed ~9@1: watch ~c`%s`", wt->match_name);
       info[76] = 0;
     }
 
     // Counter
     else
     {
-      snprintf(info, 76, "%d \x1A %d: `%s`",
+      snprintf(info, 76, "~a@0 %d ~8\x1A ~a%d ~9@1: watch ~c`%s`",
        wt->last_value, value, wt->match_name);
 
       info[76] = 0;

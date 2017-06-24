@@ -5879,7 +5879,9 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           break;
 
         case DEBUG_GOTO:
-          gotoed = 1;
+          // If this robot received a label, don't advance the program.
+          if(old_pos != cur_robot->cur_prog_line)
+            gotoed = 1;
           break;
 
         case DEBUG_HALT:
