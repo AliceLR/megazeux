@@ -101,6 +101,7 @@ struct zip_archive
 
   struct zip_file_header **files;
   struct zip_file_header *streaming_file;
+  uint32_t stream_crc_position;
   uint32_t stream_left;
   uint32_t stream_crc32;
 

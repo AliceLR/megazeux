@@ -32,6 +32,9 @@
 #define ZIP_VERSION 20
 #define ZIP_VERSION_MINIMUM 20
 
+// Uncomment to enable writing data descriptors.
+// #define ZIP_WRITE_DATA_DESCRIPTOR
+
 #define ZIP_DEFAULT_NUM_FILES 4
 
 #define ZIP_S_READ_RAW 0
@@ -285,12 +288,17 @@ int zip_bound_total_header_usage(int num_files, int max_name_size)
   // Expected:
   // max_name_size = 8 for MZX world data
   //               = 5 for MZM data
+  int extra = 0;
+
+#ifdef ZIP_WRITE_DATA_DESCRIPTOR
+  extra = num_files * 12;                             // data descriptor size
+#endif
 
   return num_files *
    // base + file name     extra field header + data
    (30 + max_name_size +   4 + ZIP_MZX_PROP_SIZE +    // Local
     46 + max_name_size +   4 + ZIP_MZX_PROP_SIZE) +   // Central directory
-    22;                                               // EOCD record
+    22 + extra;                                       // EOCD record
 }
 
 
@@ -378,7 +386,7 @@ static char file_sig_central[] =
 };
 
 static enum zip_error zip_read_file_header(struct zip_archive *zp,
- struct zip_file_header *fh, int is_central)
+ struct zip_file_header *fh, uint32_t expected_c_size, int is_central)
 {
   int n, m, k, i;
   int method;
@@ -571,8 +579,6 @@ static enum zip_error zip_read_file_header(struct zip_archive *zp,
     // We might need to look at the data descriptor, though.
     if(flags & ZIP_F_DATA_DESCRIPTOR)
     {
-      uint32_t expected_c_size = fh->compressed_size;
-
       // Find the data descriptor
       if(vseek(fp, expected_c_size, SEEK_CUR))
         return ZIP_MISSING_DATA_DESCRIPTOR;
@@ -642,6 +648,9 @@ static enum zip_error zip_write_file_header(struct zip_archive *zp,
   // File last modification time
   // File last modification date
   vputd(zip_get_dos_date_time(), fp);
+
+  // Record this position for streaming.
+  zp->stream_crc_position = zp->vtell(fp);
 
   // CRC-32
   vputd(fh->crc32, fp);
@@ -1094,15 +1103,7 @@ enum zip_error zip_read_open_file_stream(struct zip_archive *zp,
   method = central_fh->method;
 
   // Check for unsupported methods
-  if(method == ZIP_M_NONE)
-  {
-    //debug("File: %s type: no compression\n", central_fh->file_name);
-  }
-  else if (method == ZIP_M_DEFLATE)
-  {
-    //debug("File: %s type: DEFLATE\n", central_fh->file_name);
-  }
-  else
+  if(method != ZIP_M_NONE && method != ZIP_M_DEFLATE)
   {
     result = ZIP_UNSUPPORTED_COMPRESSION;
     goto err_out;
@@ -1120,14 +1121,12 @@ enum zip_error zip_read_open_file_stream(struct zip_archive *zp,
     }
   }
 
-  // Read the local header -- but first, give it the expected
+  // Read the local header --  give it the expected
   // compressed size just in the case there's a data descriptor.
 
-  local_fh.compressed_size = c_size;
-  result = zip_read_file_header(zp, &local_fh, 0);
+  result = zip_read_file_header(zp, &local_fh, c_size, 0);
   if(result)
     goto err_out;
-
 
   // Verify correctness between headers
   if(f_crc32 != local_fh.crc32 ||
@@ -1288,11 +1287,10 @@ enum zip_error zip_read_open_mem_stream(struct zip_archive *zp,
     }
   }
 
-  // Read the local header -- but first, give it the expected
+  // Read the local header -- give it the expected
   // compressed size just in the case there's a data descriptor.
 
-  local_fh.compressed_size = c_size;
-  result = zip_read_file_header(zp, &local_fh, 0);
+  result = zip_read_file_header(zp, &local_fh, c_size, 0);
   if(result)
     goto err_out;
 
@@ -1659,6 +1657,49 @@ err_out:
 }
 
 
+/* Writes the data descriptor for a file, unless data descriptors are turned
+ * off, in which case, it goes back and adds the data into the local header.
+ */
+
+static inline enum zip_error zip_write_data_descriptor(struct zip_archive *zp,
+ struct zip_file_header *fh)
+{
+  void (*vputd)(int, void *) = zp->vputd;
+  void *fp = zp->fp;
+
+#ifdef ZIP_WRITE_DATA_DESCRIPTOR
+  {
+    // Write data descriptor
+    vputd(fh->crc32, fp);
+    vputd(fh->compressed_size, fp);
+    vputd(fh->uncompressed_size, fp);
+  }
+#else
+  {
+    // Go back and write sizes and CRC32
+    int (*vseek)(void *, int, int) = zp->vseek;
+    int return_position = zp->vtell(fp);
+
+    if(vseek(fp, zp->stream_crc_position, SEEK_SET))
+    {
+      return ZIP_SEEK_ERROR;
+    }
+
+    vputd(fh->crc32, fp);
+    vputd(fh->compressed_size, fp);
+    vputd(fh->uncompressed_size, fp);
+
+    if(vseek(fp, return_position, SEEK_SET))
+    {
+      return ZIP_SEEK_ERROR;
+    }
+  }
+#endif // !ZIP_WRITE_DATA_DESCRIPTOR
+
+  return ZIP_SUCCESS;
+}
+
+
 /* Open a file writing stream. This works in raw writing mode; when the file
  * write is done, the archive will be in file writing mode.
  */
@@ -1688,20 +1729,7 @@ enum zip_error zip_write_open_file_stream(struct zip_archive *zp,
   }
 
   // Check to make sure we're using a valid method
-  // No compression
-  if(method == ZIP_M_NONE)
-  {
-    //debug("File: %s type: no compression\n", name);
-  }
-
-  else
-  // DEFLATE
-  if(method == ZIP_M_DEFLATE)
-  {
-    //debug("File: %s type: DEFLATE\n", name);
-  }
-
-  else
+  if(method != ZIP_M_NONE && method != ZIP_M_DEFLATE)
   {
     result = ZIP_UNSUPPORTED_COMPRESSION;
     goto err_out;
@@ -1717,7 +1745,11 @@ enum zip_error zip_write_open_file_stream(struct zip_archive *zp,
   fh->mzx_board_id = board_id;
   fh->mzx_robot_id = robot_id;
 
+#ifdef ZIP_WRITE_DATA_DESCRIPTOR
+  fh->flags = ZIP_F_DATA_DESCRIPTOR;
+#else
   fh->flags = 0;
+#endif
   fh->method = method;
   fh->crc32 = 0;
   fh->compressed_size = 0;
@@ -1757,12 +1789,6 @@ err_out:
 enum zip_error zip_write_close_stream(struct zip_archive *zp)
 {
   struct zip_file_header *fh;
-
-  void *fp;
-  void (*vputd)(int, void *);
-  int (*vseek)(void *, int, int);
-  int seek_value;
-
   enum zip_error result;
 
   result = (zp ? zp->write_stream_error : ZIP_NULL);
@@ -1774,33 +1800,10 @@ enum zip_error zip_write_close_stream(struct zip_archive *zp)
   fh->crc32 = zp->stream_crc32;
   fh->compressed_size = zp->stream_left;
 
-  // Go back and write sizes and CRC32
-  // Could use a data descriptor instead...
-
-  fp = zp->fp;
-  vputd = zp->vputd;
-  vseek = zp->vseek;
-
-  // Compressed data + file name
-  seek_value = fh->compressed_size + fh->file_name_length
-  // + extra field + extra field length + file name length
-   + (4 + ZIP_MZX_PROP_SIZE) + 2 + 2;
-
-  if(vseek(fp, -12-seek_value, SEEK_CUR))
-  {
-    result = ZIP_SEEK_ERROR;
+  // Write the missing fields to the local header.
+  result = zip_write_data_descriptor(zp, fh);
+  if(result)
     goto err_out;
-  }
-
-  vputd(fh->crc32, fp);
-  vputd(fh->compressed_size, fp);
-  vputd(fh->uncompressed_size, fp);
-
-  if(vseek(fp, seek_value, SEEK_CUR))
-  {
-    result = ZIP_SEEK_ERROR;
-    goto err_out;
-  }
 
   // Put the file header into the zip archive
   if(zp->pos == zp->files_alloc)
@@ -1873,7 +1876,11 @@ enum zip_error zip_write_open_mem_stream(struct zip_archive *zp,
   fh->mzx_board_id = board_id;
   fh->mzx_robot_id = robot_id;
 
+#ifdef ZIP_WRITE_DATA_DESCRIPTOR
+  fh->flags = ZIP_F_DATA_DESCRIPTOR;
+#else
   fh->flags = 0;
+#endif
   fh->method = ZIP_M_NONE;
   fh->crc32 = 0;
   fh->compressed_size = 0;
@@ -1918,11 +1925,6 @@ enum zip_error zip_write_close_mem_stream(struct zip_archive *zp,
 {
   struct zip_file_header *fh;
 
-  void *fp;
-  void (*vputd)(int, void *);
-  int (*vseek)(void *, int, int);
-  int seek_value;
-
   char *start;
   char *end;
   uint32_t length;
@@ -1953,34 +1955,10 @@ enum zip_error zip_write_close_mem_stream(struct zip_archive *zp,
   fh->compressed_size = length;
   fh->uncompressed_size = length;
 
-  // Go back and write sizes and CRC32
-  // Could use a data descriptor instead...
-
-  fp = zp->fp;
-  vputd = zp->vputd;
-  vseek = zp->vseek;
-
-  // Compressed data + file name
-  seek_value = fh->compressed_size + fh->file_name_length
-  // + extra field + extra field length + file name length
-   + (4 + ZIP_MZX_PROP_SIZE) + 2 + 2;
-
-  // Add the length back to the seek since we're still actually at the start.
-  if(vseek(fp, -12-seek_value + length, SEEK_CUR))
-  {
-    result = ZIP_SEEK_ERROR;
+  // Write the missing fields to the local header.
+  result = zip_write_data_descriptor(zp, fh);
+  if(result)
     goto err_out;
-  }
-
-  vputd(fh->crc32, fp);
-  vputd(fh->compressed_size, fp);
-  vputd(fh->uncompressed_size, fp);
-
-  if(vseek(fp, seek_value, SEEK_CUR))
-  {
-    result = ZIP_SEEK_ERROR;
-    goto err_out;
-  }
 
   // Put the file header into the zip archive
   if(zp->pos == zp->files_alloc)
@@ -2257,7 +2235,7 @@ enum zip_error zip_read_directory(struct zip_archive *zp)
       f[i] = cmalloc(sizeof(struct zip_file_header));
       zp->files_alloc++;
 
-      result = zip_read_file_header(zp, f[i], 1);
+      result = zip_read_file_header(zp, f[i], 0, 1);
       if(result)
         goto err_out;
     }
@@ -2384,7 +2362,6 @@ enum zip_error zip_close(struct zip_archive *zp, uint32_t *final_length)
 
   if(!zp->closing)
   {
-    //debug("Finalizing and closing zip file.\n");
     zp->closing = 1;
     zp->pos = 0;
 
