@@ -172,7 +172,7 @@ CORE_LIBSPEC void mfputw(int ch, struct memfile *mf);
 CORE_LIBSPEC void mfputd(int ch, struct memfile *mf);
 CORE_LIBSPEC int mfread(void *dest, size_t len, size_t count, struct memfile *mf);
 CORE_LIBSPEC int mfwrite(const void *src, size_t len, size_t count, struct memfile *mf);
-CORE_LIBSPEC int mfseek(struct memfile *mf, int offs, int code);
+CORE_LIBSPEC int mfseek(struct memfile *mf, long int offs, long int code);
 CORE_LIBSPEC int mftell(struct memfile *mf);
 
 #if defined(__WIN32__) && defined(__STRICT_ANSI__)

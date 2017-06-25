@@ -394,7 +394,7 @@ static enum zip_error zip_read_file_header(struct zip_archive *zp,
 
   void *fp = zp->fp;
 
-  int (*vseek)(void *, int, int) = zp->vseek;
+  int (*vseek)(void *, long int, long int) = zp->vseek;
   int (*vgetc)(void *) = zp->vgetc;
   int (*vgetw)(void *) = zp->vgetw;
   int (*vgetd)(void *) = zp->vgetd;
@@ -580,7 +580,7 @@ static enum zip_error zip_read_file_header(struct zip_archive *zp,
     if(flags & ZIP_F_DATA_DESCRIPTOR)
     {
       // Find the data descriptor
-      if(vseek(fp, expected_c_size, SEEK_CUR))
+      if(vseek(fp, (long int)expected_c_size, SEEK_CUR))
         return ZIP_MISSING_DATA_DESCRIPTOR;
 
       // crc32
@@ -600,7 +600,7 @@ static enum zip_error zip_read_file_header(struct zip_archive *zp,
         return ZIP_READ_ERROR;
 
       // Go back to the start of the file.
-      vseek(fp, -expected_c_size-12, SEEK_CUR);
+      vseek(fp, -((long int)expected_c_size)-12, SEEK_CUR);
     }
   }
 
@@ -1363,7 +1363,7 @@ enum zip_error zip_read_close_mem_stream(struct zip_archive *zp)
     goto err_out;
   }
 
-  zp->vseek(fp, c_size, SEEK_CUR);
+  zp->vseek(fp, (long int)c_size, SEEK_CUR);
 
   return ZIP_SUCCESS;
 
@@ -1677,7 +1677,7 @@ static inline enum zip_error zip_write_data_descriptor(struct zip_archive *zp,
 #else
   {
     // Go back and write sizes and CRC32
-    int (*vseek)(void *, int, int) = zp->vseek;
+    int (*vseek)(void *, long int, long int) = zp->vseek;
     int return_position = zp->vtell(fp);
 
     if(vseek(fp, zp->stream_crc_position, SEEK_SET))
@@ -2081,7 +2081,7 @@ enum zip_error zip_read_directory(struct zip_archive *zp)
 
   void *fp;
 
-  int (*vseek)(void *, int, int);
+  int (*vseek)(void *, long int, long int);
   int (*vgetc)(void *);
   int (*vgetw)(void *);
   int (*vgetd)(void *);
@@ -2509,7 +2509,7 @@ static struct zip_archive *zip_get_archive_file(FILE *fp)
   zp->vputd = (void(*)(int, void *)) fputd;
   zp->vread = (int(*)(void *, size_t, size_t, void *)) fread;
   zp->vwrite = (int(*)(const void *, size_t, size_t, void *)) fwrite;
-  zp->vseek = (int(*)(void *, int, int)) fseek;
+  zp->vseek = (int(*)(void *, long int, long int)) fseek;
   zp->vtell = (int(*)(void *)) ftell;
   zp->verror = (int(*)(void *)) ferror;
   zp->vclose = (int(*)(void *)) fclose;
@@ -2593,7 +2593,7 @@ static struct zip_archive *zip_get_archive_mem(struct memfile *mf)
   zp->vputd = (void(*)(int, void *)) mfputd;
   zp->vread = (int(*)(void *, size_t, size_t, void *)) mfread;
   zp->vwrite = (int(*)(const void *, size_t, size_t, void *)) mfwrite;
-  zp->vseek = (int(*)(void *, int, int)) mfseek;
+  zp->vseek = (int(*)(void *, long int, long int)) mfseek;
   zp->vtell = (int(*)(void *)) mftell;
   zp->verror = NULL;
   zp->vclose = (int(*)(void *)) mfclose;

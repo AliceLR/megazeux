@@ -901,7 +901,7 @@ int mfwrite(const void *src, size_t len, size_t count, struct memfile *mf)
   return i;
 }
 
-int mfseek(struct memfile *mf, int offs, int code)
+int mfseek(struct memfile *mf, long int offs, long int code)
 {
   char *ptr;
   switch(code)
