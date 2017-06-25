@@ -617,6 +617,7 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer, int file
             {
               zp = zip_open_mem_read(buffer, file_length);
               zip_read_directory(zp);
+              assign_fprops(zp, 1);
             }
 
             // If we're loading a "runtime MZM" then it means that we're loading

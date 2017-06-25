@@ -31,7 +31,7 @@ __M_BEGIN_DECLS
 #define ZIP_M_NONE 0
 #define ZIP_M_DEFLATE 8
 
-#define ZIP_F_DATA_DESCRIPTOR 1<<3
+#define ZIP_F_DATA_DESCRIPTOR (1<<3)
 
 enum zip_error {
   ZIP_SUCCESS = 0,
@@ -156,9 +156,6 @@ CORE_LIBSPEC
 enum zip_error zip_get_next_prop(struct zip_archive *zp,
  unsigned int *prop_id, unsigned int *board_id, unsigned int *robot_id);
 
-enum zip_error zip_set_next_prop(struct zip_archive *zp,
- unsigned int prop_id, unsigned int board_id, unsigned int robot_id);
-
 enum zip_error zip_get_next_method(struct zip_archive *zp, uint32_t *method);
 
 enum zip_error zip_get_next_uncompressed_size(struct zip_archive *zp,
@@ -205,7 +202,6 @@ enum zip_error zip_write_file(struct zip_archive *zp, const char *name,
  const void *src, uint32_t srcLen, int method, uint32_t prop_id, char board_id,
  char robot_id);
 
-enum zip_error zip_sort_by_prop(struct zip_archive *zp);
 CORE_LIBSPEC enum zip_error zip_read_directory(struct zip_archive *zp);
 CORE_LIBSPEC enum zip_error zip_close(struct zip_archive *zp,
  uint32_t *final_length);

@@ -90,13 +90,12 @@ static struct board *legacy_load_board_allocate_direct(struct world *mzx_world,
   return cur_board;
 }
 
-static int find_first_board(struct zip_archive *zp, int is_retry)
+static int find_first_board(struct zip_archive *zp)
 {
   unsigned int file_id;
   unsigned int board_id;
 
-  // Make sure we're at the start.
-  zip_rewind(zp);
+  assign_fprops(zp, 1);
 
   while(ZIP_SUCCESS == zip_get_next_prop(zp, &file_id, &board_id, NULL))
   {
@@ -104,14 +103,6 @@ static int find_first_board(struct zip_archive *zp, int is_retry)
       return (int)board_id;
 
     zip_skip_file(zp);
-  }
-
-  if(!is_retry)
-  {
-    // This is a fallback for idiots who extracted and rearchived their world.
-    // Try to fix its properties and try again.
-    assign_fprops(zp, 1);
-    return find_first_board(zp, 1);
   }
 
   return -1;
@@ -157,7 +148,7 @@ void replace_current_board(struct world *mzx_world, char *name)
       if(ZIP_SUCCESS == zip_read_directory(zp))
       {
         // Make sure the zip contains a board.
-        board_id = find_first_board(zp, 0);
+        board_id = find_first_board(zp);
 
         if(board_id >= 0)
         {

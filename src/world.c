@@ -1810,6 +1810,19 @@ err:
 
 #define match_name(str) ((sizeof(str)-1 == len) && !strcmp(str, next))
 
+static int __fprop_cmp(const void *a, const void *b)
+{
+  struct zip_file_header *A = *(struct zip_file_header **)a;
+  struct zip_file_header *B = *(struct zip_file_header **)b;
+  int ab = A->mzx_board_id;
+  int bb = B->mzx_board_id;
+  int ap = A->mzx_prop_id;
+  int bp = B->mzx_prop_id;
+
+  return  (ab!=bb) ? (ab-bb) :
+          (ap!=bp) ? (ap-bp) : (int)A->mzx_robot_id - (int)B->mzx_robot_id;
+}
+
 static inline void parse_board_file_name(char *next, unsigned int *_file_id,
  unsigned int *_board_id, unsigned int *_robot_id)
 {
@@ -1922,119 +1935,172 @@ static inline void parse_board_file_name(char *next, unsigned int *_file_id,
   *_robot_id = robot_id;
 }
 
-void assign_fprops(struct zip_archive *zp, int board_file)
+/* This needs to be done once before every single world, board, and MZM load. */
+
+void assign_fprops(struct zip_archive *zp, int not_a_world)
 {
   // Assign property IDs if they don't already exist
+  struct zip_file_header **fh_list = zp->files;
+  struct zip_file_header *fh;
+  int num_fh = zp->num_files;
+
   unsigned int file_id;
   unsigned int board_id;
   unsigned int robot_id;
-  char name[32];
   char *next;
   int len;
+  int i;
 
-  zip_rewind(zp);
-  while(ZIP_SUCCESS == zip_get_next_name(zp, name, 31))
+  // Special handling for non-worlds.
+  if(not_a_world)
   {
-    next = name;
-    len = strlen(next);
-    file_id = 0;
     board_id = 0;
-    robot_id = 0;
 
-    if(next[0] == 'b')
+    for(i = 0; i < num_fh; i++)
     {
-      parse_board_file_name(next, &file_id, &board_id, &robot_id);
+      fh = fh_list[i];
+      next = fh->file_name;
+      len = strlen(next);
+
+      file_id = 0;
+      robot_id = 0;
+
+      if(next[0] == 'r')
+      {
+        // Shorthand for robot on board 0
+        // Goes first to speed up MZM loads.
+        robot_id = strtoul(next+1, &next, 16);
+        file_id = FPROP_ROBOT;
+      }
+      else
+
+      if(next[0] == 'b')
+      {
+        parse_board_file_name(next, &file_id, &board_id, &robot_id);
+
+        // Non-world files shouldn't boards > 0
+        if(board_id)
+        {
+          board_id = 0;
+          continue;
+        }
+      }
+
+      // Set the properties
+      fh->mzx_prop_id = file_id;
+      fh->mzx_board_id = board_id;
+      fh->mzx_robot_id = robot_id;
     }
-    else
-
-    if(!board_file)
-    {
-      if(match_name("world"))
-      {
-        file_id = FPROP_WORLD_INFO;
-      }
-      else
-
-      if(match_name("gr"))
-      {
-        file_id = FPROP_WORLD_GLOBAL_ROBOT;
-      }
-      else
-
-      if(match_name("sfx"))
-      {
-        file_id = FPROP_WORLD_SFX;
-      }
-      else
-
-      if(match_name("chars"))
-      {
-        file_id = FPROP_WORLD_CHARS;
-      }
-      else
-
-      if(match_name("pal"))
-      {
-        file_id = FPROP_WORLD_PAL;
-      }
-      else
-
-      if(match_name("palidx"))
-      {
-        file_id = FPROP_WORLD_PAL_INDEX;
-      }
-      else
-
-      if(match_name("palint"))
-      {
-        file_id = FPROP_WORLD_PAL_INTENSITY;
-      }
-      else
-
-      if(match_name("vco"))
-      {
-        file_id = FPROP_WORLD_VCO;
-      }
-      else
-
-      if(match_name("vch"))
-      {
-        file_id = FPROP_WORLD_VCH;
-      }
-      else
-
-      if(match_name("spr"))
-      {
-        file_id = FPROP_WORLD_SPRITES;
-      }
-      else
-
-      if(match_name("counter"))
-      {
-        file_id = FPROP_WORLD_COUNTERS;
-      }
-      else
-
-      if(match_name("string"))
-      {
-        file_id = FPROP_WORLD_STRINGS;
-      }
-    }
-
-    // Set the property
-    zip_set_next_prop(zp, file_id, board_id, robot_id);
-
-    // Don't actually want to do anything with the file.
-    zip_skip_file(zp);
   }
 
-  // Resort the archive
-  zip_sort_by_prop(zp);
+  // Regular world/save files.
+  else
+  {
+    for(i = 0; i < num_fh; i++)
+    {
+      fh = fh_list[i];
+      next = fh->file_name;
+      len = strlen(next);
+
+      file_id = 0;
+      board_id = 0;
+      robot_id = 0;
+
+      if(next[0] == 'b')
+      {
+        parse_board_file_name(next, &file_id, &board_id, &robot_id);
+      }
+      else
+
+      if(!not_a_world)
+      {
+        if(match_name("world"))
+        {
+          file_id = FPROP_WORLD_INFO;
+        }
+        else
+
+        if(match_name("gr"))
+        {
+          file_id = FPROP_WORLD_GLOBAL_ROBOT;
+        }
+        else
+
+        if(match_name("sfx"))
+        {
+          file_id = FPROP_WORLD_SFX;
+        }
+        else
+
+        if(match_name("chars"))
+        {
+          file_id = FPROP_WORLD_CHARS;
+        }
+        else
+
+        if(match_name("pal"))
+        {
+          file_id = FPROP_WORLD_PAL;
+        }
+        else
+
+        if(match_name("palidx"))
+        {
+          file_id = FPROP_WORLD_PAL_INDEX;
+        }
+        else
+
+        if(match_name("palint"))
+        {
+          file_id = FPROP_WORLD_PAL_INTENSITY;
+        }
+        else
+
+        if(match_name("vco"))
+        {
+          file_id = FPROP_WORLD_VCO;
+        }
+        else
+
+        if(match_name("vch"))
+        {
+          file_id = FPROP_WORLD_VCH;
+        }
+        else
+
+        if(match_name("spr"))
+        {
+          file_id = FPROP_WORLD_SPRITES;
+        }
+        else
+
+        if(match_name("counter"))
+        {
+          file_id = FPROP_WORLD_COUNTERS;
+        }
+        else
+
+        if(match_name("string"))
+        {
+          file_id = FPROP_WORLD_STRINGS;
+        }
+      }
+
+      // Set the properties
+      fh->mzx_prop_id = file_id;
+      fh->mzx_board_id = board_id;
+      fh->mzx_robot_id = robot_id;
+    }
+  }
+
+  // Sort the archive and reset to the beginning
+  qsort(fh_list, num_fh, sizeof(struct zip_file_header *), __fprop_cmp);
+  zp->pos = 0;
 }
 
 
 static enum val_result validate_world_zip(struct world *mzx_world,
- struct zip_archive *zp, int savegame, int *file_version, int is_retry)
+ struct zip_archive *zp, int savegame, int *file_version)
 {
   unsigned int file_id;
   int result;
@@ -2046,8 +2112,7 @@ static enum val_result validate_world_zip(struct world *mzx_world,
   int has_string = 0;
 
   // The directory has already been read by this point.
-  // Make sure we're at the start.
-  zip_rewind(zp);
+  assign_fprops(zp, 0);
 
   // Step through the directory and make sure the mandatory files exist.
   while(ZIP_SUCCESS == zip_get_next_prop(zp, &file_id, NULL, NULL))
@@ -2119,14 +2184,6 @@ err_out:
     free(mzx_world->raw_world_info);
     mzx_world->raw_world_info = NULL;
     mzx_world->raw_world_info_size = 0;
-  }
-
-  if(!is_retry)
-  {
-    // This is a fallback for idiots who extracted and rearchived their world.
-    // Try to fix its properties and try again.
-    assign_fprops(zp, 0);
-    return validate_world_zip(mzx_world, zp, savegame, file_version, 1);
   }
 
   return VAL_MISSING;
@@ -2885,7 +2942,7 @@ static struct zip_archive *try_load_zip_world(struct world *mzx_world,
   if(result != ZIP_SUCCESS)
     goto err_close;
 
-  result = validate_world_zip(mzx_world, zp, savegame, file_version, 0);
+  result = validate_world_zip(mzx_world, zp, savegame, file_version);
 
   if(result != VAL_SUCCESS)
     goto err_close;
