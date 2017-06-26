@@ -318,7 +318,8 @@ int error_message(enum error_code id, int parameter, const char *string)
       break;
 
     case E_BOARD_FILE_FUTURE_VERSION:
-      sprintf(error_mesg, "Board file is from a future version");
+      sprintf(error_mesg, "Board file is from a future version (%s)",
+       version_string);
       code = 0x4041;
       break;
 
