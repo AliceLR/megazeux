@@ -1826,8 +1826,6 @@ static int __fprop_cmp(const void *a, const void *b)
 static inline void parse_board_file_name(char *next, unsigned int *_file_id,
  unsigned int *_board_id, unsigned int *_robot_id)
 {
-  unsigned int file_id = 0;
-  unsigned int board_id = 0;
   unsigned int robot_id = 0;
   int len = strlen(next);
   char temp = 0;
@@ -1838,8 +1836,10 @@ static inline void parse_board_file_name(char *next, unsigned int *_file_id,
     next[3] = 0;
   }
 
-  board_id = strtoul(next+1, &next, 16);
+  *_board_id = strtoul(next+1, &next, 16);
   next[0] = temp;
+
+  len = strlen(next);
 
   if(next[0])
   {
@@ -1848,8 +1848,10 @@ static inline void parse_board_file_name(char *next, unsigned int *_file_id,
       robot_id = strtoul(next+1, &next, 16);
       if(robot_id != 0)
       {
-        file_id = FPROP_ROBOT;
+        *_file_id = FPROP_ROBOT;
       }
+
+      *_robot_id = robot_id;
     }
     else
 
@@ -1860,7 +1862,7 @@ static inline void parse_board_file_name(char *next, unsigned int *_file_id,
         robot_id = strtoul(next+2, &next, 16);
         if(robot_id != 0)
         {
-          file_id = FPROP_SCROLL;
+          *_file_id = FPROP_SCROLL;
         }
       }
       else
@@ -1870,69 +1872,66 @@ static inline void parse_board_file_name(char *next, unsigned int *_file_id,
         robot_id = strtoul(next+1, &next, 16);
         if(robot_id != 0)
         {
-          file_id = FPROP_SENSOR;
+          *_file_id = FPROP_SENSOR;
         }
       }
-    }
 
-    len = strlen(next);
+      *_robot_id = robot_id;
+    }
+    else
 
     if(match_name("bid"))
     {
-      file_id = FPROP_BOARD_BID;
+      *_file_id = FPROP_BOARD_BID;
     }
     else
 
     if(match_name("bpr"))
     {
-      file_id = FPROP_BOARD_BPR;
+      *_file_id = FPROP_BOARD_BPR;
     }
     else
 
     if(match_name("bco"))
     {
-      file_id = FPROP_BOARD_BCO;
+      *_file_id = FPROP_BOARD_BCO;
     }
     else
 
     if(match_name("uid"))
     {
-      file_id = FPROP_BOARD_UID;
+      *_file_id = FPROP_BOARD_UID;
     }
     else
 
     if(match_name("upr"))
     {
-      file_id = FPROP_BOARD_UPR;
+      *_file_id = FPROP_BOARD_UPR;
     }
     else
 
     if(match_name("uco"))
     {
-      file_id = FPROP_BOARD_UCO;
+      *_file_id = FPROP_BOARD_UCO;
     }
     else
 
     if(match_name("och"))
     {
-      file_id = FPROP_BOARD_OCH;
+      *_file_id = FPROP_BOARD_OCH;
     }
     else
 
     if(match_name("oco"))
     {
-      file_id = FPROP_BOARD_OCO;
+      *_file_id = FPROP_BOARD_OCO;
     }
   }
 
   else
   {
-    file_id = FPROP_BOARD_INFO;
+    *_file_id = FPROP_BOARD_INFO;
   }
-
-  *_file_id = file_id;
-  *_board_id = board_id;
-  *_robot_id = robot_id;
 }
 
 /* This needs to be done once before every single world, board, and MZM load. */
