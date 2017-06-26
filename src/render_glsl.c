@@ -625,13 +625,8 @@ static void glsl_update_colors(struct graphics_data *graphics,
   Uint32 i;
   for(i = 0; i < count; i++)
   {
-#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
-    graphics->flat_intensity_palette[i] = (palette[i].r << 24) |
-     (palette[i].g << 16) | (palette[i].b << 8) | (0xFF);
-#else
     graphics->flat_intensity_palette[i] = (0xFF << 24) | (palette[i].b << 16) |
      (palette[i].g << 8) | palette[i].r;
-#endif
     render_data->palette[i*3  ] = (GLubyte)palette[i].r;
     render_data->palette[i*3+1] = (GLubyte)palette[i].g;
     render_data->palette[i*3+2] = (GLubyte)palette[i].b;
