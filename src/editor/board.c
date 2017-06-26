@@ -20,6 +20,7 @@
 #include "board.h"
 
 #include "../board.h"
+#include "../error.h"
 #include "../extmem.h"
 #include "../legacy_board.h"
 #include "../world.h"
@@ -82,7 +83,6 @@ static struct board *legacy_load_board_allocate_direct(struct world *mzx_world,
   board_end = ftell(fp);
   fseek(fp, board_start, SEEK_SET);
 
-  // FIXME zip support
   cur_board->world_version = version;
   legacy_load_board_direct(mzx_world, cur_board, fp, (board_end - board_start), 0,
    version);
@@ -93,16 +93,19 @@ static struct board *legacy_load_board_allocate_direct(struct world *mzx_world,
 static int find_first_board(struct zip_archive *zp)
 {
   unsigned int file_id;
-  unsigned int board_id;
 
   assign_fprops(zp, 1);
 
-  while(ZIP_SUCCESS == zip_get_next_prop(zp, &file_id, &board_id, NULL))
+  // The first file after sorting should be the board info for ID 0.
+  // If it isn't, this isn't a board file.
+
+  if(ZIP_SUCCESS == zip_get_next_prop(zp, &file_id, NULL, NULL))
   {
     if(file_id == FPROP_BOARD_INFO)
-      return (int)board_id;
-
-    zip_skip_file(zp);
+    {
+      // Loading board ID 0:
+      return 0;
+    }
   }
 
   return -1;
@@ -136,8 +139,9 @@ void replace_current_board(struct world *mzx_world, char *name)
       success = 1;
       fclose(fp);
     }
-
     else
+
+    if(file_version <= WORLD_VERSION)
     {
       int board_id;
 
@@ -161,7 +165,15 @@ void replace_current_board(struct world *mzx_world, char *name)
         }
       }
 
+      if(!success)
+        error_message(E_BOARD_FILE_INVALID, 0, NULL);
+
       zip_close(zp, NULL);
+    }
+
+    else
+    {
+      error_message(E_BOARD_FILE_FUTURE_VERSION, 0, NULL);
     }
 
     if(success)

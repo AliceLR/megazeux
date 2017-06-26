@@ -942,7 +942,11 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
       }
 
       default:
+      {
+        // Whatever it is, it can't be loaded here.
+        zip_skip_file(zp);
         break;
+      }
     }
   }
 

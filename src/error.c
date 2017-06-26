@@ -317,6 +317,11 @@ int error_message(enum error_code id, int parameter, const char *string)
       code = 0x4040;
       break;
 
+    case E_BOARD_FILE_FUTURE_VERSION:
+      sprintf(error_mesg, "Board file is from a future version");
+      code = 0x4041;
+      break;
+
     case E_BOARD_ROBOT_CORRUPT:
       sprintf(error_mesg, "Robot @ %Xh is truncated or corrupt", parameter);
       code = 0x0D03;
@@ -376,36 +381,44 @@ int error_message(enum error_code id, int parameter, const char *string)
 
     case E_ZIP_BOARD_CORRUPT:
       sprintf(error_mesg, "Board # %d is corrupt", lo);
+      code = 0x9000;
       break;
 
     case E_ZIP_BOARD_MISSING_DATA:
       sprintf(error_mesg, "Board # %d is missing data:", lo);
+      code = 0x9001;
       break;
 
     case E_ZIP_ROBOT_CORRUPT:
       sprintf(error_mesg, "Robot # %d on board # %d is corrupt", lo, hi);
+      code = 0x9002;
       break;
 
     case E_ZIP_SCROLL_CORRUPT:
       sprintf(error_mesg, "Scroll # %d on board # %d is corrupt", lo, hi);
+      code = 0x9003;
       break;
 
     case E_ZIP_SENSOR_CORRUPT:
       sprintf(error_mesg, "Sensor # %d on board # %d is corrupt", lo, hi);
+      code = 0x9004;
       break;
 
     case E_ZIP_ROBOT_MISSING_FROM_BOARD:
       sprintf(error_mesg, "Robot # %d does not exist on board # %d", lo, hi);
+      code = 0x9005;
       break;
 
     case E_ZIP_ROBOT_MISSING_FROM_DATA:
       sprintf(error_mesg,
        "Robot # %d exists on board # %d, but was not found", lo, hi);
+      code = 0x9006;
       break;
 
     case E_ZIP_ROBOT_DUPLICATED:
       sprintf(error_mesg,
        "Robot # %d contains duplicates on board # %d", lo, hi);
+      code = 0x9007;
       break;
 
 #ifdef CONFIG_DEBYTECODE
@@ -424,6 +437,8 @@ int error_message(enum error_code id, int parameter, const char *string)
 #endif
 
     case E_ZIP:
+      code = 0xEEEE;
+
     case E_DEFAULT:
     default:
       snprintf(error_mesg, 79, "%s", string);

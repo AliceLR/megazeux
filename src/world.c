@@ -1980,8 +1980,9 @@ void assign_fprops(struct zip_archive *zp, int not_a_world)
         // Non-world files shouldn't boards > 0
         if(board_id)
         {
+          file_id = 0;
           board_id = 0;
-          continue;
+          robot_id = 0;
         }
       }
 
