@@ -2077,7 +2077,11 @@ void dump_screen(void)
     palette_size = make_palette(palette);
     for (i = 0; i < palette_size; i++)
     {
+      #if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
+      graphics.flat_intensity_palette[i] = (palette[i].r << 8) | (palette[i].g << 16) | (palette[i].b << 24);
+      #else
       graphics.flat_intensity_palette[i] = (palette[i].r << 16) | (palette[i].g << 8) | (palette[i].b << 0);
+      #endif /* PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN */
     }
     
     for (layer = 0; layer < graphics.layer_count; layer++)

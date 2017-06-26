@@ -262,6 +262,7 @@ BUGFIXES
   slashes in their names would fail to be recognized as the same
   mod.
 + Fixed a bug where SMZX palette intensities were not saved.
++ Made the opengl2 and glsl renderers endian-correct. (Lancer-X)
 + Fixed a bug where keystrokes were getting lost during event
   processing. (Lancer-X)
 + The UI now uses the regular MZX mode and the protected palette
