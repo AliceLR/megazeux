@@ -544,6 +544,51 @@ static enum keycode emit_keysym_wrt_numlock(enum keycode key)
   return key;
 }
 
+static enum keycode reverse_keysym_numlock(enum keycode key)
+{
+  const struct buffered_status *status = load_status();
+
+  if(status->numlock_status)
+  {
+    switch(key)
+    {
+      case IKEY_0:         return IKEY_KP0;
+      case IKEY_1:         return IKEY_KP1;
+      case IKEY_2:         return IKEY_KP2;
+      case IKEY_3:         return IKEY_KP3;
+      case IKEY_4:         return IKEY_KP4;
+      case IKEY_5:         return IKEY_KP5;
+      case IKEY_6:         return IKEY_KP6;
+      case IKEY_7:         return IKEY_KP7;
+      case IKEY_8:         return IKEY_KP8;
+      case IKEY_9:         return IKEY_KP9;
+      case IKEY_PERIOD:    return IKEY_KP_PERIOD;
+      case IKEY_RETURN:    return IKEY_KP_ENTER;
+      default: break;
+    }
+  }
+  else
+  {
+    switch(key)
+    {
+      case IKEY_INSERT:    return IKEY_KP0;
+      case IKEY_END:       return IKEY_KP1;
+      case IKEY_DOWN:      return IKEY_KP2;
+      case IKEY_PAGEDOWN:  return IKEY_KP3;
+      case IKEY_LEFT:      return IKEY_KP4;
+      case IKEY_SPACE:     return IKEY_KP5; // kinda arbitrary
+      case IKEY_RIGHT:     return IKEY_KP6;
+      case IKEY_HOME:      return IKEY_KP7;
+      case IKEY_UP:        return IKEY_KP8;
+      case IKEY_PAGEUP:    return IKEY_KP9;
+      case IKEY_DELETE:    return IKEY_KP_PERIOD;
+      case IKEY_RETURN:    return IKEY_KP_ENTER;
+      default: break;
+    }
+  }
+  return key;
+}
+
 Uint32 get_key(enum keycode_type type)
 {
   const struct buffered_status *status = load_status();
@@ -575,7 +620,8 @@ Uint32 get_key_status(enum keycode_type type, Uint32 index)
     }
 
     case keycode_internal:
-      return status->keymap[index];
+      return status->keymap[index] ||
+        status->keymap[reverse_keysym_numlock(index)];
 
     default:
       return 0;

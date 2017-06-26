@@ -451,14 +451,7 @@ static bool process_event(SDL_Event *event)
       {
         status->caps_status = false;
       }
-
-      status->keymap[ckey] = 0;
-      if(status->key_repeat == ckey)
-      {
-        status->key_repeat = IKEY_UNKNOWN;
-        status->unicode_repeat = 0;
-      }
-      status->key_release = ckey;
+      key_release(status, ckey);
       break;
     }
 
