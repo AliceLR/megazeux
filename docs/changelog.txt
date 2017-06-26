@@ -299,6 +299,9 @@ BUGFIXES
 + Fixed a bug where trying to create new counters called "fread"
   or "fread_counter" in the counter debugger would cause the
   file being read to advance.
++ Fixed a bug where the numpad was unable to be used to control
+  the player, despite being identical to the cursor keys for
+  every other situation. (Lancer-X)
 
 DEVELOPERS
 
