@@ -1,6 +1,8 @@
-<!DOCTYPE xhtml>
-<html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
  <head>
+ <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <style>
     body {
       /*width: 1260px;*/
@@ -12,18 +14,29 @@
       border: 0px solid black;
       padding: 0px;
     }
+
+    table.navigation {
+      float: right;
+      border-spacing: 3px;
+    }
     table.numpad {
       float: right;
       border-spacing: 3px;
     }
+    table.main {
+    }
+    table.key {
+    }
 
     td {
       width: 48px;
-      height: 72px;
+      height: 64px;
       border-width: 1px 3px 6px 1px;
       border-style: solid;
       border-color: black;
       margin: 1px;
+      padding-top: 0px;
+      padding-bottom: 0px;
 
       background-color: #EEF;
       color: #007;
@@ -125,6 +138,10 @@
    <hr/>
   </div>
 
+
+<!------------------------------------------------------------->
+
+
   <table class="numpad">
    <tr>
     <td class="none">&nbsp;
@@ -216,7 +233,7 @@
       <p>281<sup class="numlockoff">&nbsp;</sup></p>
     </td>
     <td rowspan="2" class="warn">
-      Return
+      Enter
       <b>28</b>
       <p>13<sup class="badkey">&nbsp;</sup></p>
     </td>
@@ -233,9 +250,125 @@
       <p>127<sup class="numlockoff">&nbsp;</sup></p>
     </td>
    </tr>
+   <tr class="space">
+   </tr>
   </table>
 
-  <table>
+
+<!------------------------------------------------------------->
+
+
+  <table class="navigation">
+   <tr>
+    <td class="bad">
+      SysRq
+      <b>n/a<sup class="badkey">&nbsp;</sup></b>
+      <p>1<sup class="badkey">&nbsp;</sup></p>
+    </td>
+    <td class="warn">
+      ScLock
+      <b>70</b>
+      <p>302</p>
+    </td>
+    <td class="warn">
+      Break
+      <b>197</b>
+      <p>318</p>
+    </td>
+    <td class="space">
+    </td>
+   </tr>
+   <tr class="space">
+   </tr>
+   <tr>
+    <td class="game">
+      Insert
+      <b>82</b>
+      <p>277</p>
+    </td>
+    <td class="warn">
+      Home
+      <b>71</b>
+      <p>278</p>
+    </td>
+    <td class="warn">
+      PageUp
+      <b>73</b>
+      <p>280</p>
+    </td>
+    <td class="space">
+    </td>
+   </tr>
+   <tr>
+    <td class="game">
+      Delete
+      <b>83</b>
+      <p>127</p>
+    </td>
+    <td class="warn">
+      End
+      <b>79</b>
+      <p>279</p>
+    </td>
+    <td class="warn">
+      PageDn
+      <b>81</b>
+      <p>281</p>
+    </td>
+    <td class="space">
+    </td>
+   </tr>
+   <tr>
+    <td class="none">&nbsp;
+    </td>
+    <td class="none">&nbsp;
+    </td>
+    <td class="none">&nbsp;
+    </td>
+    <td class="space">
+    </td>
+   </tr>
+   <tr>
+    <td class="none">&nbsp;
+    </td>
+    <td class="game">
+      &#x2191;
+      <b>72</b>
+      <p>273</p>
+    </td>
+    <td class="none">&nbsp;
+    </td>
+    <td class="space">
+    </td>
+   </tr>
+   <tr>
+    <td class="game">
+      &#x2190;
+      <b>75</b>
+      <p>276</p>
+    </td>
+    <td class="game">
+      &#x2193;
+      <b>80</b>
+      <p>274</p>
+    </td>
+    <td class="game">
+      &#x2192;
+      <b>77</b>
+      <p>275</p>
+    </td>
+    <td class="space">
+    </td>
+   </tr>
+   <tr class="space">
+   </tr>
+  </table>
+
+
+<!------------------------------------------------------------->
+
+
+  <table class="main">
    <tr>
     <td class="game">
       Esc
@@ -310,30 +443,13 @@
     </td>
     <td class="space">
     </td>
-    <td class="bad">
-      SysRq
-      <b>n/a<sup class="badkey">&nbsp;</sup></b>
-      <p>1<sup class="badkey">&nbsp;</sup></p>
-    </td>
-    <td class="warn">
-      ScLock
-      <b>70</b>
-      <p>302</p>
-    </td>
-    <td class="warn">
-      Break
-      <b>197</b>
-      <p>318</p>
-    </td>
-    <td class="space">
-    </td>
    </tr>
 
    <tr class="space">
    </tr>
   </table>
 
-  <table>
+  <table class="main">
    <tr>
     <td class="warn">
       `
@@ -407,27 +523,10 @@
     </td>
     <td class="space">
     </td>
-    <td class="game">
-      Insert
-      <b>82</b>
-      <p>277</p>
-    </td>
-    <td class="warn">
-      Home
-      <b>71</b>
-      <p>278</p>
-    </td>
-    <td class="warn">
-      PageUp
-      <b>73</b>
-      <p>280</p>
-    </td>
-    <td class="space">
-    </td>
    </tr>
   </table>
 
-  <table>
+  <table class="main">
    <tr>
     <td class="wide">
       Tab
@@ -501,27 +600,10 @@
     </td>
     <td class="space">
     </td>
-    <td class="game">
-      Delete
-      <b>83</b>
-      <p>127</p>
-    </td>
-    <td class="warn">
-      End
-      <b>79</b>
-      <p>279</p>
-    </td>
-    <td class="warn">
-      PageDn
-      <b>81</b>
-      <p>281</p>
-    </td>
-    <td class="space">
-    </td>
    </tr>
   </table>
   
-  <table>
+  <table class="main">
    <tr>
     <td class="extrawide">
       Caps Lock<sup class="capslock">&nbsp;</sup>
@@ -584,27 +666,19 @@
       <p>39</p>
     </td>
     <td class="extrawide game">
-      Enter/Return
+      Enter
       <b>28</b>
       <p>13</p>
-    </td>
-    <td class="space">
-    </td>
-    <td class="none">&nbsp;
-    </td>
-    <td class="none">&nbsp;
-    </td>
-    <td class="none">&nbsp;
     </td>
     <td class="space">
     </td>
    </tr>
   </table>
 
-  <table>
+  <table class="main">
    <tr>
     <td class="double">
-      Left Shift
+      L. Shift
       <b>42</b>
       <p>304</p>
     </td>
@@ -659,30 +733,19 @@
       <p>47</p>
     </td>
     <td class="double">
-      Right Shift
+      R. Shift
       <b>54</b>
       <p>303</p>
     </td>
     <td class="space">&nbsp;
     </td>
-    <td class="none">&nbsp;
-    </td>
-    <td class="game">
-      Up
-      <b>72</b>
-      <p>273</p>
-    </td>
-    <td class="none">&nbsp;
-    </td>
-    <td class="space">
-    </td>
    </tr>
   </table>
 
-  <table>
+  <table class="main">
    <tr>
     <td class="wide">
-      L. Control
+      L. Ctrl
       <b>29</b>
       <p>306</p>
     </td>
@@ -717,35 +780,22 @@
       <p>1<sup class="badkey">&nbsp;</sup></p>
     </td>
     <td class="wide">
-      R. Control
+      R. Ctrl
       <b>29</b>
       <p>305</p>
     </td>
     <td class="space">&nbsp;
-    </td>
-    <td class="game">
-      Left
-      <b>75</b>
-      <p>276</p>
-    </td>
-    <td class="game">
-      Down
-      <b>80</b>
-      <p>274</p>
-    </td>
-    <td class="game">
-      Right
-      <b>77</b>
-      <p>275</p>
-    </td>
-    <td class="space">
     </td>
    </tr>
    <tr class="space">
    </tr>
   </table>
 
-  <table>
+
+<!------------------------------------------------------------->
+
+
+  <table class="key">
    <tr>
     <td class="spacebar none">
      Key:
@@ -779,6 +829,10 @@
     </td>
    </tr>
   </table>
+
+
+<!------------------------------------------------------------->
+
 
   <hr/>
   <div>
