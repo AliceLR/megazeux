@@ -173,7 +173,7 @@ void replace_current_board(struct world *mzx_world, char *name)
 
     else
     {
-      error_message(E_BOARD_FILE_FUTURE_VERSION, 0, NULL);
+      error_message(E_BOARD_FILE_FUTURE_VERSION, file_version, NULL);
     }
 
     if(success)
