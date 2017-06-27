@@ -131,7 +131,7 @@ struct zip_archive
   int (*vread)(void *, size_t, size_t, void *);
   int (*vwrite)(const void *, size_t, size_t, void *);
 
-  int (*vseek)(void *, long int, long int);
+  int (*vseek)(void *, long int, int);
   int (*vtell)(void *);
   int (*verror)(void *);
 

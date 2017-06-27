@@ -397,7 +397,7 @@ static enum zip_error zip_read_file_header(struct zip_archive *zp,
   int (*vgetc)(void *) = zp->vgetc;
   int (*vgetd)(void *) = zp->vgetd;
   int (*vread)(void *, size_t, size_t, void *) = zp->vread;
-  int (*vseek)(void *, long int, long int) = zp->vseek;
+  int (*vseek)(void *, long int, int) = zp->vseek;
   int (*hasspace)(size_t, void *) = zp->hasspace;
 
   char *magic = is_central ? file_sig_central : file_sig;
@@ -1053,7 +1053,7 @@ enum zip_error zip_read_open_file_stream(struct zip_archive *zp,
   read_pos = zp->vtell(fp);
   if(read_pos != central_fh->offset)
   {
-    if(zp->vseek(fp, central_fh->offset - read_pos, SEEK_CUR))
+    if(zp->vseek(fp, central_fh->offset, SEEK_SET))
     {
       result = ZIP_SEEK_ERROR;
       goto err_out;
@@ -1616,7 +1616,7 @@ static inline enum zip_error zip_write_data_descriptor(struct zip_archive *zp,
 #else
   {
     // Go back and write sizes and CRC32
-    int (*vseek)(void *, long int, long int) = zp->vseek;
+    int (*vseek)(void *, long int, int) = zp->vseek;
     int return_position = zp->vtell(fp);
 
     if(vseek(fp, zp->stream_crc_position, SEEK_SET))
@@ -2005,7 +2005,7 @@ enum zip_error zip_read_directory(struct zip_archive *zp)
 
   void *fp;
 
-  int (*vseek)(void *, long int, long int);
+  int (*vseek)(void *, long int, int);
   int (*vgetc)(void *);
   int (*vgetw)(void *);
   int (*vgetd)(void *);
@@ -2439,7 +2439,7 @@ static struct zip_archive *zip_get_archive_file(FILE *fp)
   zp->vputd = (void(*)(int, void *)) fputd;
   zp->vread = (int(*)(void *, size_t, size_t, void *)) fread;
   zp->vwrite = (int(*)(const void *, size_t, size_t, void *)) fwrite;
-  zp->vseek = (int(*)(void *, long int, long int)) fseek;
+  zp->vseek = (int(*)(void *, long int, int)) fseek;
   zp->vtell = (int(*)(void *)) ftell;
   zp->verror = (int(*)(void *)) ferror;
   zp->vclose = (int(*)(void *)) fclose;
@@ -2523,7 +2523,7 @@ static struct zip_archive *zip_get_archive_mem(struct memfile *mf)
   zp->vputd = (void(*)(int, void *)) mfputd;
   zp->vread = (int(*)(void *, size_t, size_t, void *)) mfread;
   zp->vwrite = (int(*)(const void *, size_t, size_t, void *)) mfwrite;
-  zp->vseek = (int(*)(void *, long int, long int)) mfseek;
+  zp->vseek = (int(*)(void *, long int, int)) mfseek;
   zp->vtell = (int(*)(void *)) mftell;
   zp->verror = NULL;
   zp->vclose = (int(*)(void *)) mfclose;
