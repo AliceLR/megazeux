@@ -54,20 +54,7 @@ void main( void )
       }
     }
 
-    int mzx_col = bg_color * 16 + fg_color;
+    int mzx_col = int(mod(float(bg_color), 16.0)) * 16 + int(mod(float(fg_color), 16.0));
     int real_col = int(texture2D( baseMap, vec2(1.0 / 512.0 * float(mzx_col), (897.0 + float(smzx_col))/1024.0)).r * 255.0);
-    
-    //if(texture2D(baseMap, vec2(fract(tileinfo.z*7.96875) + (fract(vTexcoord.x*256.0)*0.03125), (floor(tileinfo.z*7.9689) + fract(vTexcoord.y) + tileinfo.w*2048.0) * 0.0546875)).x > 0.5)
-    /*
-    if(pixset)
-    {
-      gl_FragColor = texture2D( baseMap, vec2(1.0 / 512.0 * fg_color, 896.0/1024.0));
-    }
-    else
-    {
-      gl_FragColor = texture2D( baseMap, vec2(1.0 / 512.0 * bg_color, 896.0/1024.0));
-    }
-    */
-    //gl_FragColor.rgb = float(smzx_col) / 3.0;
     gl_FragColor = texture2D( baseMap, vec2(1.0 / 512.0 * float(real_col), 896.0/1024.0));
 }
