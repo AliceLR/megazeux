@@ -184,6 +184,8 @@ CORE_LIBSPEC void erase_char(Uint32 x, Uint32 y);
 
 CORE_LIBSPEC void write_string_ext(const char *string, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed, Uint32 offset, Uint32 c_offset);
+CORE_LIBSPEC void draw_char_mixed_pal_ext(Uint8 chr, Uint8 bg_color,
+ Uint8 fg_color, Uint32 x, Uint32 y, Uint32 offset);
 CORE_LIBSPEC void draw_char_ext(Uint8 chr, Uint8 color, Uint32 x,
  Uint32 y, Uint32 offset, Uint32 c_offset);
 CORE_LIBSPEC void draw_char_linear_ext(Uint8 color, Uint8 chr,

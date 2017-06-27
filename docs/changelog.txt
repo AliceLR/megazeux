@@ -12,8 +12,12 @@ FEATURES
   name and label inputs support expression parsing and string/
   counter interpolation.
 + The robot debugger can now use line numbers in breakpoints.
++ The palette editor help can now be hidden with Alt+H.
 
 BUGFIXES
+
++ The palette editor now displays the SMZX mode 1 palette
+  correctly.
 
 DEVELOPERS
 

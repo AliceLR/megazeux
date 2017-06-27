@@ -1761,6 +1761,21 @@ void fill_line_ext(Uint32 length, Uint32 x, Uint32 y,
   }
 }
 
+void draw_char_mixed_pal_ext(Uint8 chr, Uint8 bg_color,
+ Uint8 fg_color, Uint32 x, Uint32 y, Uint32 offset)
+{
+  struct char_element *dest = graphics.current_video + offset_adjust((y * SCREEN_W) + x);
+  struct char_element *dest_copy = graphics.text_video + (y * SCREEN_W) + x;
+  dest->char_value = chr + offset;
+
+  dest->bg_color = bg_color & 31;
+  dest->fg_color = fg_color & 31;
+
+  *(dest_copy++) = *dest;
+
+  if((fg_color|bg_color) >= 16) dirty_ui();
+}
+
 void draw_char_ext(Uint8 chr, Uint8 color, Uint32 x,
  Uint32 y, Uint32 offset, Uint32 c_offset)
 {

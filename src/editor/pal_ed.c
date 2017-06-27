@@ -1,6 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
+ * Copyright (C) 2017 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -52,72 +53,215 @@
 //       Menu=Do command
 //       RGB #'s=Raise/Lower R/G/B
 
+#define PAL_ED_16_X1          17
+#define PAL_ED_16_Y1          3
+#define PAL_ED_16_X2          63
+#define PAL_ED_16_Y2          19
+
+#define PAL_ED_16_Y1_MINIMAL  0
+#define PAL_ED_16_Y2_MINIMAL  5
+
+static int content_x;
+static int content_y;
+
 static int saved_r = -1;
 static int saved_g = -1;
 static int saved_b = -1;
 
+static int current_color = 0;
+static int minimal_help = 0;
+
+static void palette_editor_redraw_window_16(void)
+{
+  int y1, y2;
+  int i;
+
+  content_x = PAL_ED_16_X1 + 2;
+
+  if(minimal_help)
+  {
+    y1 = PAL_ED_16_Y1_MINIMAL;
+    y2 = PAL_ED_16_Y2_MINIMAL;
+    content_y = y1 + 1;
+  }
+
+  else
+  {
+    y1 = PAL_ED_16_Y1;
+    y2 = PAL_ED_16_Y2;
+    content_y = y1 + 2;
+  }
+
+  // Draw window
+  draw_window_box(PAL_ED_16_X1, y1, PAL_ED_16_X2, y2,
+   DI_GREY_DARK, DI_GREY, DI_GREY_CORNER, 1, 1);
+
+  // Erase the spot where the palette will go and the line below it.
+  for(i = 0; i < 32*4; i++)
+    erase_char(i % 32 + content_x, i / 32 + content_y);
+
+  // Write RBG info
+  write_string(
+   "Color #00-\n"
+   " Red 00/63\n"
+   " Grn 00/63\n"
+   " Blu 00/63",
+   content_x + 33,
+   content_y,
+   DI_GREY_TEXT,
+   0
+  );
+
+  if(!minimal_help)
+  {
+    // Write menu
+    write_string
+    (
+      "\x1d- Select color   Alt+D- Default palette\n"
+      "R- Increase Red   Alt+R- Decrease Red\n"
+      "G- Increase Grn   Alt+G- Decrease Grn\n"
+      "B- Increase Blu   Alt+B- Decrease Blu\n"
+      "A- Increase All   Alt+A- Decrease All\n"
+      "0- Blacken color\tF2- Store color\n"
+      "Alt+H- Hide help\tF3- Retrieve color",
+      content_x,
+      content_y + 6,
+      DI_GREY_TEXT,
+      1
+    );
+  }
+}
+
+static void palette_editor_update_window_16(void)
+{
+  int screen_mode = get_screen_mode();
+  unsigned int bg_color;
+  unsigned int fg_color;
+  unsigned int chr;
+  unsigned char r;
+  unsigned char g;
+  unsigned char b;
+  int i;
+  int x;
+  int y;
+
+  // Draw palette bars
+  for(bg_color = 0; bg_color < 16; bg_color++)
+  {
+    x = bg_color * 2 + content_x;
+    y = content_y;
+
+    get_rgb(bg_color, &r, &g, &b);
+
+    // The foreground color is white or black in the protected palette.
+
+    fg_color = ((r * .3) + (g * .59) + (b * .11) < 32) ? 31 : 16;
+
+    // FIXME: in SMZX modes 2 and 3, fg_color alters the color here
+    // eventually, they should get their own palette editor.
+    if(screen_mode >= 2)
+      fg_color = 0;
+
+    select_layer(OVERLAY_LAYER);
+
+    // Draw the palette colors
+    for(i = 0; i < 8; i++)
+    {
+      chr = ' ';
+
+      // FIXME: These will look ugly in SMZX mode, so only draw them in regular mode.
+      if(!screen_mode)
+      {
+        if((i == 5) && (bg_color >= 10))
+          chr = '1';
+
+        if(i == 6)
+          chr = '0' + (bg_color % 10);
+      }
+
+      draw_char_mixed_pal_ext(chr, bg_color, fg_color,
+       x + (i/4), y + (i%4), PRO_CH);
+    }
+
+    select_layer(UI_LAYER);
+
+    // Clear the bottom
+    if(minimal_help)
+    {
+      draw_char('\xC4', DI_GREY, x, y + 4);
+      draw_char('\xC4', DI_GREY, x+1, y + 4);
+    }
+    else
+    {
+      draw_char(' ', DI_GREY, x, y + 4);
+      draw_char(' ', DI_GREY, x+1, y + 4);
+    }
+
+    //write_string("\x20\x20", x, y + 4, DI_GREY_TEXT, 0);
+
+    if((int)bg_color == current_color)
+    {
+      // Write rgb and color #
+      write_number(current_color, DI_GREY_TEXT, content_x + 41, content_y, 2, 1, 10);
+      write_number(r, DI_GREY_TEXT, content_x + 39, content_y + 1, 2, 1, 10);
+      write_number(g, DI_GREY_TEXT, content_x + 39, content_y + 2, 2, 1, 10);
+      write_number(b, DI_GREY_TEXT, content_x + 39, content_y + 3, 2, 1, 10);
+
+      // Draw '^^'
+      write_string("\x1e\x1e",
+       x, y + 4, DI_GREY_TEXT, 0);
+    }
+  }
+}
+
+static void palette_editor_redraw_window(void)
+{
+  restore_screen();
+  save_screen();
+  palette_editor_redraw_window_16();
+}
+
+static void palette_editor_update_window(void)
+{
+  palette_editor_update_window_16();
+}
+
 void palette_editor(struct world *mzx_world)
 {
-  int i, i2, key, chr, color;
-  int current_color = 0;
-  unsigned char current_r, current_g, current_b;
+  unsigned char current_r;
+  unsigned char current_g;
+  unsigned char current_b;
+  int refresh_window = 1;
+  int refresh_input = 1;
+  int key;
 
   cursor_off();
   set_context(CTX_PALETTE_EDITOR);
   save_screen();
 
-  // Draw window
-  draw_window_box(17, 3, 63, 19, 128, 143, 135, 1, 1);
-  // Draw palette bars
-  for(i = 0; i < 32; i++)
-  {
-    for(i2 = 0; i2 < 4; i2++)
-    {
-      chr = ' ';
-      if((i & 1) && (i2 == 1) && (i > 19))
-        chr = '1';
-      if((i & 1) && (i2 == 2))
-        chr = '0' + ((i / 2) % 10);
-      color = ((i & 30) * 8);
-      if(i < 20)
-        color += 15;
-      draw_char_ext(chr, color, i + 19, i2 + 5, PRO_CH, 0);
-    }
-  }
-
-  // Write rgb info stuff
-  write_string("Color #00-\n Red 00/63\n Grn 00/63\n Blu 00/63",
-   52, 5, 143, 0);
-
-  // Write menu
-  write_string
-  (
-    "\x1d- Select color   Alt+D- Default palette\n"
-    "R- Increase Red   Alt+R- Decrease Red\n"
-    "G- Increase Grn   Alt+G- Decrease Grn\n"
-    "B- Increase Blu   Alt+B- Decrease Blu\n"
-    "A- Increase All   Alt+A- Decrease All\n"
-    "0- Blacken color\tF2- Store color\n"
-    "Q- Quit editing\t F3- Retrieve color", 19, 11, 143, 1
-  );
-
   do
   {
-    // Write rgb and color #
-    get_rgb(current_color, &current_r, &current_g, &current_b);
-    write_number(current_color, 143, 60, 5, 2, 1, 10);
-    write_number(current_r, 143, 58, 6, 2, 1, 10);
-    write_number(current_g, 143, 58, 7, 2, 1, 10);
-    write_number(current_b, 143, 58, 8, 2, 1, 10);
-    // Draw '^^', get key, erase '^^'
-    write_string("\x1e\x1e", (current_color * 2) + 19, 9, 143, 0);
+    if(refresh_window)
+    {
+      // Draw the palette editor window.
+      palette_editor_redraw_window();
+      refresh_window = 0;
+    }
+
+    if(refresh_input)
+    {
+      // Update the palette editor window.
+      palette_editor_update_window();
+    }
 
     update_screen();
     update_event_status_delay();
 
+    // Get the current color
+    get_rgb(current_color, &current_r, &current_g, &current_b);
+
     key = get_key(keycode_internal);
-    write_string("\x20\x20", (current_color * 2) + 19, 9, 143, 0);
-    // Process
+    refresh_input = 1;
 
     // Exit event -- mimic Escape
     if(get_exit_status())
@@ -128,11 +272,13 @@ void palette_editor(struct world *mzx_world)
       int mouse_x, mouse_y;
       get_mouse_position(&mouse_x, &mouse_y);
 
-      if((mouse_x > 18) && (mouse_x < 51) &&
-       (mouse_y > 4) && (mouse_y < 9))
+      // A position in the palette: select the color
+
+      if((mouse_x >= content_x) && (mouse_x < content_x + 32) &&
+       (mouse_y >= content_y) && (mouse_y < content_y + 4))
       {
-        current_color = (mouse_x - 19) * 2;
-        break;
+        current_color = (mouse_x - content_x) / 2;
+        continue;
       }
     }
 
@@ -159,6 +305,16 @@ void palette_editor(struct world *mzx_world)
       case IKEY_q:
       {
         key = IKEY_ESCAPE;
+        break;
+      }
+
+      case IKEY_h:
+      {
+        if(get_alt_status(keycode_internal))
+        {
+          minimal_help ^= 1;
+          refresh_window = 1;
+        }
         break;
       }
 
@@ -296,15 +452,22 @@ void palette_editor(struct world *mzx_world)
       }
 
 #ifdef CONFIG_HELPSYS
-      case IKEY_F1: // F1
+      case IKEY_F1:
       {
         m_show();
         help_system(mzx_world);
         break;
       }
 #endif
+
+      default:
+      {
+        refresh_input = 0;
+        break;
+      }
     }
   } while(key != IKEY_ESCAPE);
+
   restore_screen();
   pop_context();
 }
