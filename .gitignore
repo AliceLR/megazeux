@@ -38,6 +38,8 @@ src/config.h
 src/editor/.build/
 src/network/.build/
 src/utils/.build/
+src/utils/ccv.exe
+src/utils/ccv
 src/utils/checkres.exe
 src/utils/checkres
 src/utils/downver.exe
