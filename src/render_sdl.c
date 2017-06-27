@@ -228,9 +228,6 @@ bool gl_set_video_mode(struct graphics_data *graphics, int width, int height,
   if(render_data->context)
     SDL_GL_DeleteContext(render_data->context);
 
-  if(render_data->renderer)
-    SDL_DestroyRenderer(render_data->renderer);
-
   if(render_data->window)
     SDL_DestroyWindow(render_data->window);
 
@@ -244,21 +241,12 @@ bool gl_set_video_mode(struct graphics_data *graphics, int width, int height,
     goto err_out;
   }
 
-  render_data->renderer =
-   SDL_CreateRenderer(render_data->window, -1, SDL_RENDERER_ACCELERATED);
-
-  if(!render_data->renderer)
-  {
-    warn("Failed to create renderer: %s\n", SDL_GetError());
-    goto err_destroy_window;
-  }
-
   render_data->context = SDL_GL_CreateContext(render_data->window);
 
   if(!render_data->context)
   {
     warn("Failed to create context: %s\n", SDL_GetError());
-    goto err_destroy_renderer;
+    goto err_destroy_window;
   }
 
   if(SDL_GL_MakeCurrent(render_data->window, render_data->context))
@@ -286,9 +274,6 @@ bool gl_set_video_mode(struct graphics_data *graphics, int width, int height,
 err_delete_context:
   SDL_GL_DeleteContext(render_data->context);
   render_data->context = NULL;
-err_destroy_renderer:
-  SDL_DestroyRenderer(render_data->renderer);
-  render_data->renderer = NULL;
 err_destroy_window:
   SDL_DestroyWindow(render_data->window);
   render_data->window = NULL;
