@@ -117,7 +117,7 @@ __editor_maybe_static void (*debug_counters)(struct world *mzx_world);
 __editor_maybe_static void (*draw_debug_box)(struct world *mzx_world,
  int x, int y, int d_x, int d_y);
 
-__editor_maybe_static void (*edit_breakpoints)(struct world *mzx_world);
+__editor_maybe_static void (*debug_robot_config)(struct world *mzx_world);
 
 static const char *const save_ext[] = { ".SAV", NULL };
 static int update_music;
@@ -2529,9 +2529,9 @@ __editor_maybe_static void play_game(struct world *mzx_world)
           // Breakpoint editor
           if(get_alt_status(keycode_internal))
           {
-            if(edit_breakpoints && editing)
+            if(editing && debug_robot_config)
             {
-              edit_breakpoints(mzx_world);
+              debug_robot_config(mzx_world);
 
               update_event_status();
             }

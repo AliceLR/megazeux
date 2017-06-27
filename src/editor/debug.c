@@ -20,6 +20,7 @@
  */
 
 #include "debug.h"
+#include "robo_debug.h"
 #include "window.h"
 
 #include "../audio.h"
@@ -2117,6 +2118,9 @@ void __debug_counters(struct world *mzx_world)
   m_hide();
 
   pop_context();
+
+  // Make sure the robot debugger watchpoints have updated values
+  update_watchpoint_last_values(mzx_world);
 
   // Copy the last selected var to the previous field.
   if(var_selected < num_vars)

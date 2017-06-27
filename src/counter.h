@@ -45,6 +45,7 @@ CORE_LIBSPEC void new_counter(struct world *mzx_world, const char *name,
  int value, int id);
 CORE_LIBSPEC struct string *new_string(struct world *mzx_world, const char *name,
  size_t length, int id);
+CORE_LIBSPEC bool is_string(char *buffer);
 
 void initialize_gateway_functions(struct world *mzx_world);
 void inc_counter(struct world *mzx_world, const char *name, int value, int id);
@@ -63,7 +64,6 @@ void load_string_board(struct world *mzx_world, const char *expression,
  int w, int h, char l, char *src, int width);
 int set_counter_special(struct world *mzx_world, char *char_value,
  int value, int id);
-bool is_string(char *buffer);
 
 struct counter *load_new_counter(const char *name, int name_length, int value);
 struct string *load_new_string(const char *name, int name_length,

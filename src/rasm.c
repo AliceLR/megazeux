@@ -4432,6 +4432,7 @@ void assemble_program(char *program_source, char **_bytecode,
   struct command_mapping *cmd_map = NULL;
   char *src_start = program_source;
   char *line_start = NULL;
+  char *line_text = NULL;
   int real_line = 1;
 
   if(_command_map)
@@ -4446,25 +4447,20 @@ void assemble_program(char *program_source, char **_bytecode,
 
   do
   {
-    // If we're creating a command mapping, record this line.
     if(cmd_map)
     {
       line_start = program_source;
+      line_text = program_source;
 
-      // Find real line start and line number.
-      // FIXME this is a hack.
-      while(whitespace_until_newline(line_start, &line_start))
+      // Count whitespace lines until start of token.
+      // FIXME this is a hack
+      while(whitespace_until_newline(line_text, &line_text))
       {
+        line_start = line_text;
         real_line++;
-        if(!*line_start)
+        if(!*line_text)
           break;
       }
-
-      cmd_map[cmd_map_length].real_line = real_line;
-      cmd_map[cmd_map_length].bc_pos = bytecode_offset;
-      cmd_map[cmd_map_length].src_pos = line_start - src_start;
-      cmd_map_length++;
-      real_line++;
 
       if(cmd_map_length >= cmd_map_allocated)
       {
@@ -4472,11 +4468,37 @@ void assemble_program(char *program_source, char **_bytecode,
         cmd_map =
          realloc(cmd_map, cmd_map_allocated * sizeof(struct command_mapping));
       }
+
+      cmd_map[cmd_map_length].real_line = real_line;
+      cmd_map[cmd_map_length].bc_pos = bytecode_offset;
+      cmd_map[cmd_map_length].src_pos = line_start - src_start;
+      cmd_map_length++;
+
+      // Disassemble command into command_buffer.
+      output = command_buffer;
+      program_source = assemble_command(program_source, &output);
+
+      // Comment? backtrack
+      if(output == command_buffer)
+        cmd_map_length--;
+
+      // Count the number of lines passed during assembly.
+      // FIXME this is a hack
+      while(line_text < program_source)
+      {
+        if(*line_text == '\n')
+          real_line++;
+
+        line_text++;
+      }
     }
 
-    // Disassemble command into command_buffer.
-    output = command_buffer;
-    program_source = assemble_command(program_source, &output);
+    else
+    {
+      // Disassemble command into command_buffer.
+      output = command_buffer;
+      program_source = assemble_command(program_source, &output);
+    }
 
     // See if it's valid
     if(program_source)

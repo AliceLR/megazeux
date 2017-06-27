@@ -2,6 +2,17 @@ GIT
 
 FEATURES
 
++ The robot debugger now supports monitoring the values of
+  counters and strings. Use the config menu/breakpoint editor to
+  add watchpoints; when the debugger detects a change in a
+  watchpoint counter/string AFTER a command has been executed,
+  the robot debugger will open.
++ The robot debugger can now send robots labels. Use 'G' or
+  select 'Goto' in the robot debugger to use this feature. The
+  name and label inputs support expression parsing and string/
+  counter interpolation.
++ The robot debugger can now use line numbers in breakpoints.
+
 BUGFIXES
 
 DEVELOPERS

@@ -1401,14 +1401,14 @@ int send_robot_id_def(struct world *mzx_world, int robot_id, const char *mesg,
 void send_robot_all_def(struct world *mzx_world, const char *mesg)
 {
   char submesg[ROBOT_MAX_TR];
-  send_robot_all(mzx_world, mesg);
+  send_robot_all(mzx_world, mesg, 0);
 
   //now, attempt to send the subroutine version of it
   if(mzx_world->version >= 0x0254)
   {
     strcpy(submesg, "#");
     strncat(submesg, mesg, ROBOT_MAX_TR - 2);
-    send_robot_all(mzx_world, submesg);
+    send_robot_all(mzx_world, submesg, 0);
   }
 }
 
@@ -1466,11 +1466,11 @@ void send_robot_def(struct world *mzx_world, int robot_id, int mesg_id)
       break;
 
     case LABEL_JUSTLOADED: //no subroutine version
-      send_robot_all(mzx_world, "JUSTLOADED");
+      send_robot_all(mzx_world, "JUSTLOADED", 0);
       break;
 
     case LABEL_JUSTENTERED: //no subroutine version
-      send_robot_all(mzx_world, "JUSTENTERED");
+      send_robot_all(mzx_world, "JUSTENTERED", 0);
       break;
 
     case LABEL_GOOPTOUCHED:
@@ -1921,7 +1921,7 @@ void send_robot(struct world *mzx_world, char *name, const char *mesg,
 
   if(!strcasecmp(name, "all"))
   {
-    send_robot_all(mzx_world, mesg);
+    send_robot_all(mzx_world, mesg, ignore_lock);
   }
   else
   {
@@ -1960,20 +1960,21 @@ int send_robot_self(struct world *mzx_world, struct robot *src_robot,
   return send_robot_direct(mzx_world, src_robot, mesg, ignore_lock, 1);
 }
 
-void send_robot_all(struct world *mzx_world, const char *mesg)
+void send_robot_all(struct world *mzx_world, const char *mesg, int ignore_lock)
 {
   struct board *src_board = mzx_world->current_board;
   int i;
 
   if(mzx_world->global_robot.used)
   {
-    send_robot_direct(mzx_world, &mzx_world->global_robot, mesg, 0, 0);
+    send_robot_direct(mzx_world, &mzx_world->global_robot,
+     mesg, ignore_lock, 0);
   }
 
   for(i = 0; i < src_board->num_robots_active; i++)
   {
     send_robot_direct(mzx_world, src_board->robot_list_name_sorted[i],
-     mesg, 0, 0);
+     mesg, ignore_lock, 0);
   }
 }
 

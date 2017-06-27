@@ -4119,8 +4119,9 @@ void editor_init(void)
   edit_world = __edit_world;
   draw_debug_box = __draw_debug_box;
   debug_counters = __debug_counters;
-  edit_breakpoints = __edit_breakpoints;
-  debug_robot = __debug_robot;
+  debug_robot_break = __debug_robot_break;
+  debug_robot_watch = __debug_robot_watch;
+  debug_robot_config = __debug_robot_config;
   load_editor_charsets();
 }
 
