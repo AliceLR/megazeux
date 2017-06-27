@@ -70,7 +70,5 @@ ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 		assets/shaders/scaler.vert \
 		assets/shaders/tilemap.frag \
 		assets/shaders/tilemap.vert \
-		assets/shaders/tilemap.smzx12.frag \
-		assets/shaders/tilemap.smzx3.frag \
 		${DESTDIR}${SHAREDIR}/megazeux/assets/shaders
 endif
