@@ -1,7 +1,7 @@
 Source: megazeux
 Section: games
 Priority: extra
-Maintainer: Alistair John Strachan <alistair@devzero.co.uk>
+Maintainer: Dylan James Morrison <dylanjmorrison611@gmail.com>
 Build-Depends: debhelper (>= 5), libsdl1.2-dev, libvorbis-dev, libpng-dev, zlib1g-dev
 Standards-Version: 3.8.0
 
