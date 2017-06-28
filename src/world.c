@@ -2874,6 +2874,14 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
      mzx_world->board_list[mzx_world->current_board_id]);
   }
 
+  // If this is a pre-port world, limit the number of samples
+  // playing to 4 (the maximum number in pre-port MZX)
+  // Otherwise the maximum is infinity
+  if (mzx_world->version < 0x0250)
+    set_max_samples(4);
+  else
+    set_max_samples(-1);
+
   mzx_world->active = 1;
 
   // Remove any null boards
