@@ -414,7 +414,7 @@ echo "#define CONFDIR \"$SYSCONFDIR/\"" >> src/config.h
 if [ "$PLATFORM" = "unix" ]; then
 	echo "#define CONFFILE \"megazeux-config\""        >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR/megazeux/\""    >> src/config.h
-	echo "#define USERCONFFILE \"~/.megazeux-config\"" >> src/config.h
+	echo "#define USERCONFFILE \".megazeux-config\"" >> src/config.h
 elif [ "$PLATFORM" = "nds" ]; then
 	SHAREDIR=/games/megazeux
 	GAMESDIR=$SHAREDIR
@@ -433,7 +433,7 @@ elif [ "$PLATFORM" = "darwin" ]; then
 	BINDIR=$SHAREDIR
 	echo "#define CONFFILE \"config.txt\""             >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""              >> src/config.h
-	echo "#define USERCONFFILE \"~/.megazeux-config\"" >> src/config.h
+	echo "#define USERCONFFILE \".megazeux-config\"" >> src/config.h
 elif [ "$PLATFORM" = "android" ]; then
 	SHAREDIR=/data/megazeux
 	GAMESDIR=/data/megazeux
