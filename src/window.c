@@ -2528,7 +2528,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
 
             for(i = 0; wildcards[i] != NULL; i++)
             {
-              if(!strcasecmp(file_name + ext_pos, wildcards[i]))
+              if(ext_pos >= 0 && !strcasecmp(file_name + ext_pos, wildcards[i]))
               {
                 file_list[num_files] = cmalloc(56 + file_name_length + 1);
 
