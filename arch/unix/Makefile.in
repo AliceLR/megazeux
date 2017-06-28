@@ -57,7 +57,8 @@ ifeq (${BUILD_UTILS},1)
 	@${install} -m 0755 -d ${DESTDIR}${BINDIR} && \
 	 ${install} -m 0755 ${checkres} ${DESTDIR}${BINDIR}/ && \
 	 ${install} -m 0755 ${hlp2txt} ${DESTDIR}${BINDIR}/ && \
-	 ${install} -m 0755 ${txt2hlp} ${DESTDIR}${BINDIR}/
+	 ${install} -m 0755 ${txt2hlp} ${DESTDIR}${BINDIR}/ && \
+         ${install} -m 0755 ${ccv} ${DESTDIR}${BINDIR}/
 endif
 ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 	@${install} -m 0755 -d \
@@ -70,5 +71,22 @@ ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 		assets/shaders/scaler.vert \
 		assets/shaders/tilemap.frag \
 		assets/shaders/tilemap.vert \
-		${DESTDIR}${SHAREDIR}/megazeux/assets/shaders
+		assets/shaders/tilemap.smzx.frag \
+		${DESTDIR}${SHAREDIR}/megazeux/assets/shaders/
+endif
+ifeq (${BUILD_RENDER_GL_PROGRAM},1)
+	@${install} -m 0755 -d \
+		${DESTDIR}${SHAREDIR}/megazeux/assets/shaders/extra && \
+	 ${install} -m 0644 assets/shaders/extra/crt.frag \
+		assets/shaders/extra/emboss.frag \
+		assets/shaders/extra/epx.frag \
+		assets/shaders/extra/greyscale.frag \
+		assets/shaders/extra/hqscale.frag \
+		assets/shaders/extra/hqscale.vert \
+		assets/shaders/extra/nearest.frag \
+		assets/shaders/extra/README.txt \
+		assets/shaders/extra/semisoft.frag \
+		assets/shaders/extra/sepia.frag \
+		assets/shaders/extra/simple.frag \
+		${DESTDIR}${SHAREDIR}/megazeux/assets/shaders/extra/
 endif
