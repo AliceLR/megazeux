@@ -238,21 +238,23 @@ static unsigned char copy_buffer[COPY_BUFFER_SIZE];
 char *mzx_res_get_by_id(enum resource_id id)
 {
   #ifdef USERCONFFILE
+  static char userconfpath[MAX_PATH];
   if (id == CONFIG_TXT)
   {
     // Special handling for CONFIG_TXT to allow for user
     // configuration files
-
+    sprintf(userconfpath, "%s/%s", getenv("HOME"), USERCONFFILE);
+    
     // Check if the file can be opened for reading
-    FILE *fp = fopen_unsafe(USERCONFFILE, "rb");
+    FILE *fp = fopen_unsafe(userconfpath, "rb");
     
     if (fp)
     {
       fclose(fp);
-      return (char *)USERCONFFILE;
+      return (char *)userconfpath;
     }
     // Otherwise, try to open the file for writing
-    fp = fopen_unsafe(USERCONFFILE, "wb");
+    fp = fopen_unsafe(userconfpath, "wb");
     if (fp)
     {
       FILE *original = fopen_unsafe(mzx_res[id].path, "rb");
@@ -269,7 +271,7 @@ char *mzx_res_get_by_id(enum resource_id id)
         }
         fclose(fp);
         fclose(original);
-        return (char *)USERCONFFILE;
+        return (char *)userconfpath;
       }
       fclose(fp);
     }
