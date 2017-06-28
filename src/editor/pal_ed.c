@@ -31,6 +31,17 @@
 
 #include "pal_ed.h"
 
+
+static int content_x;
+static int content_y;
+
+static int saved_r = -1;
+static int saved_g = -1;
+static int saved_b = -1;
+
+static int current_color = 0;
+static int minimal_help = 0;
+
 //---------------------------------------------
 //
 // ##..##..##..##..##..##..##..##.. Color #00-
@@ -53,6 +64,9 @@
 //       Menu=Do command
 //       RGB #'s=Raise/Lower R/G/B
 
+// Note: the Menu and RGB #s functionality has been broken since 2.80
+// If mouse support is readded, it should probably be in a less awful way.
+
 #define PAL_ED_16_X1          17
 #define PAL_ED_16_Y1          3
 #define PAL_ED_16_X2          63
@@ -60,16 +74,6 @@
 
 #define PAL_ED_16_Y1_MINIMAL  0
 #define PAL_ED_16_Y2_MINIMAL  5
-
-static int content_x;
-static int content_y;
-
-static int saved_r = -1;
-static int saved_g = -1;
-static int saved_b = -1;
-
-static int current_color = 0;
-static int minimal_help = 0;
 
 static void palette_editor_redraw_window_16(void)
 {
@@ -214,6 +218,54 @@ static void palette_editor_update_window_16(void)
   }
 }
 
+static int palette_editor_input_16(int key)
+{
+  if(get_mouse_press())
+  {
+    int mouse_x, mouse_y;
+    get_mouse_position(&mouse_x, &mouse_y);
+
+    // A position in the palette: select the color
+
+    if((mouse_x >= content_x) && (mouse_x < content_x + 32) &&
+     (mouse_y >= content_y) && (mouse_y < content_y + 4))
+    {
+      current_color = (mouse_x - content_x) / 2;
+      return -1;
+    }
+  }
+
+  switch(key)
+  {
+    case IKEY_LEFT:
+    case IKEY_MINUS:
+    case IKEY_KP_MINUS:
+    {
+      if(current_color > 0)
+        current_color--;
+      break;
+    }
+
+    case IKEY_RIGHT:
+    case IKEY_EQUALS:
+    case IKEY_KP_PLUS:
+    {
+      if(current_color < 15)
+        current_color++;
+      break;
+    }
+
+    default:
+    {
+      // Pass the key through to the common handler.
+      return key;
+    }
+  }
+
+  // Update the display.
+  return -1;
+}
+
 static void palette_editor_redraw_window(void)
 {
   restore_screen();
@@ -226,13 +278,18 @@ static void palette_editor_update_window(void)
   palette_editor_update_window_16();
 }
 
+static int palette_editor_input(int key)
+{
+  return palette_editor_input_16(key);
+}
+
 void palette_editor(struct world *mzx_world)
 {
   unsigned char current_r;
   unsigned char current_g;
   unsigned char current_b;
   int refresh_window = 1;
-  int refresh_input = 1;
+  int refresh_palette = 1;
   int key;
 
   cursor_off();
@@ -248,11 +305,12 @@ void palette_editor(struct world *mzx_world)
       refresh_window = 0;
     }
 
-    if(refresh_input)
+    if(refresh_palette)
     {
       // Update the palette editor window.
       palette_editor_update_window();
     }
+    refresh_palette = 1;
 
     update_screen();
     update_event_status_delay();
@@ -261,47 +319,20 @@ void palette_editor(struct world *mzx_world)
     get_rgb(current_color, &current_r, &current_g, &current_b);
 
     key = get_key(keycode_internal);
-    refresh_input = 1;
 
     // Exit event -- mimic Escape
     if(get_exit_status())
       key = IKEY_ESCAPE;
 
-    if(get_mouse_press())
-    {
-      int mouse_x, mouse_y;
-      get_mouse_position(&mouse_x, &mouse_y);
+    // Run it through the editor-specific handling first.
+    key = palette_editor_input(key);
 
-      // A position in the palette: select the color
-
-      if((mouse_x >= content_x) && (mouse_x < content_x + 32) &&
-       (mouse_y >= content_y) && (mouse_y < content_y + 4))
-      {
-        current_color = (mouse_x - content_x) / 2;
-        continue;
-      }
-    }
+    // A key of <0 means the display needs to be refreshed.
+    if(key < 0)
+      continue;
 
     switch(key)
     {
-      case IKEY_LEFT:
-      case IKEY_MINUS:
-      case IKEY_KP_MINUS:
-      {
-        if(current_color > 0)
-          current_color--;
-        break;
-      }
-
-      case IKEY_RIGHT:
-      case IKEY_EQUALS:
-      case IKEY_KP_PLUS:
-      {
-        if(current_color < 15)
-          current_color++;
-        break;
-      }
-
       case IKEY_q:
       {
         key = IKEY_ESCAPE;
@@ -462,7 +493,7 @@ void palette_editor(struct world *mzx_world)
 
       default:
       {
-        refresh_input = 0;
+        refresh_palette = 0;
         break;
       }
     }
