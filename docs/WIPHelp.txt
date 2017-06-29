@@ -14,7 +14,6 @@
 >#CONTROLS.HLP:ctr:Controls
 >#NONDESCR.HLP:091:Nondescript Play Tips
 >#BUILTINS.HLP:1st:The Mirth of Built-ins
->#CONFGINI.HLP:1st:MegaZeux Options
 >#THEWORLD.HLP:1st:The World Editor
 >#GENERALE.HLP:1st:General Editing Tips
 >#EDITINGK.HLP:080:Editing Keys and Options Reference
@@ -30,7 +29,8 @@
 >#ROBOTSWH.HLP:1st:Robots - What They Are and How to Use Them
 >#ROBOTICT.HLP:1st:Robotic Tutorial
 >#ROBOTICR.HLP:087:Robotic Reference Manual
->#DBGMODE.HLP:dbg:Debug Mode
+>#UPDATER.HLP:099:The MegaZeux Updater
+>#DBGMODE.HLP:dbg:Debug Modes
 >#ERRORMES.HLP:1st:Error Messages
 >#MEGAZEUX.HLP:1st:MegaZeux Limitations
 >#IFYOUFIN.HLP:1st:If You Find a Bug...
@@ -366,9 +366,9 @@ NUMBER LINE - This is a line of numbers, with one highlighted.
 It functions in a manner similar to the above, but in a limited
 range.
 
-CHARACTER - This is where you can select a single character.
-Press a character to use that character; click on it or press
-Enter to get a large menu of characters to select from.
+CHARACTER - This is where you can select characters. Press a
+character to use that character; click on it or press Enter to
+get a large menu of characters (32x8) to select from.
 
 COLOR - This is where you can select a single color. Press
 Enter or click on it to get a large menu of colors to choose
@@ -461,10 +461,16 @@ volume, and PC Speaker SFX). Speed 1 is the fastest; speed 16
 is the slowest. A speed of 1 will run MZX as fast as possible
 and as such acts differently between computers; it will also
 cause flicker in fullscreen mode, so it is not recommended
-unless it is your only option. Please note that some games may
-have the speed change by itself; the next load will change to
-the default speed unless otherwise prompted. Some games may
-block access to the F2 menu entirely.
+unless it is your only option. (Please note that some games
+may have the speed change by itself; the next load will change
+to the default speed unless otherwise prompted.) 
+
+In addition to these settings, one can change the current
+scaling shader if running MegaZeux with the GLSL renderer.
+Unlike the rest of these settings, this setting is applied
+globally.
+
+Note that some games may block access to the F2 menu entirely.
 
 F3 - Save Game
 This will prompt you for a filename, allowing the saving of the
@@ -528,14 +534,24 @@ This will reload the last game saved using F3 or F9. If no
 game has been saved since MegaZeux was started, the default
 save filename will be used.
 
-F11 - Debug Mode
+F11 - Counter Debug Mode
 This will load a screen listing which counters and strings
 have been set, as well as values for default counters and
-strings. Debug mode allows considerable manipulation of
-counters and strings, among other things. For more detail, go
-to its specific section.
+strings. Counter debug mode allows considerable manipulation of
+counters and strings, among other things. This shortcut only
+works when playtesting in the editor. For more detail, go to its
+specific section.
 
->#DBGMODE.HLP:dbg:Debug Mode
+>#DBGMODE.HLP:100:Debug Modes - Counter Debug Mode
+
+Alt+F11 - Robotic Debugger
+This will launch the built-in Robotic debugger. The Robotic
+debugger can monitor running Robotic code and allow
+step-by-step reading and manipulation of running Robots as
+they execute. This shortcut only works when playtesting in the
+editor. For more detail, go to its specific section.
+
+>DBGMODE.HLP:101:Debug Modes - The Robotic Debugger
 
 F12 - Take Screenshot
 Pressing F12 will make a 640x350 screenshot (in PNG format by
@@ -1261,13 +1277,14 @@ the appropriate help sections for more information.
 >#MAIN.HLP:072:Table of Contents
 #CONFGINI.HLP
 :1st: 
-$~9MegaZeux Options
+$~9The Config File
 
-Now you should be familiar with MegaZeux enough to where you
-might want to change some of its options. Go open config.txt in
-any text editor.  There is ample commentary to let the user
-know how to change the options.  Make sure to remove the # sign
-from any option you want set!
+One of the first things a new MegaZeux user should do is edit
+the options in the config file; even experienced MZXers may find
+some of the customization options novel and useful. Go open
+config.txt in any text editor.  There is ample commentary to let
+the user know how to change the options. Make sure to remove
+the # sign from any option you want set!
 
 Editing the options can result in better sound, better / more
 customizable graphics, more fitting defaults, a more
@@ -1287,9 +1304,12 @@ writing:
 
 Check the reports on DigitalMZX's Bug Tracker
 (http://www.digitalmzx.net/forums/index.php?app=tracker) to see
-if your problem has already been addressed. Active problems are
-listed, as of this writing, in the "MegaZeux" category, while
-the fixed bugs are in the "Closed MegaZeux Bugs" category.
+if your problem has already been addressed. Active problems and
+bugs that are only fixed in a development version of MegaZeux
+are listed, as of this writing, in the "MegaZeux" category,
+while the bugs that are fixed in a stable version are in the
+"Closed MegaZeux Bugs" category. Feature Requests are handled
+similarly.
 
 To make things sane for all parties, do this before submitting:
   1) Make sure you have the most current version of MegaZeux.
@@ -1316,8 +1336,7 @@ To make things sane for all parties, do this before submitting:
 $~9Frequently Asked Questions
 
 The following is a list of questions that have been received
-through mail, E-mail, or message board posts about MegaZeux
-innumerable times..
+about MegaZeux innumerable times in some form or another.
 
 Q: I hate that MegaZeux is always windowed! Could you change
   this?
@@ -1335,11 +1354,11 @@ Q: Are there any MZX-specific tools that can make developing an
   MZX game easier?
 
 A: Yes, plenty! MegaZeux comes with two helpful tools: 
-  "Checkres" will detect what files referenced by an MZX world
-  are present, and "downver" can change the given MZX world's
-  version to its preceding version. There are several graphical
-  conversion programs such as CharCon, and SMZX palette tools
-  such as Palzor and PalMaster.  
+  "Checkres" will detect what files are referenced by an MZX
+  world and which are present, and "ccv" can take an image file
+  and output a conversion of it in .chr/.mzm form for MZX use.
+  There are several graphical conversion programs such as
+  CharCon, and SMZX palette tools such as Palzor and PalMaster.
   MZX has natural time-savers, of course. Automated backups,
   macros, Robotic code import/export, expressions, repeated
   block copying and other features can help speed up
@@ -1349,15 +1368,16 @@ Q: This MZX game has some neat things in it! Can I use some of
   these things in my own game?
   
 A: It's usually okay to do this, as long as you give definite
-  credit to the original creator(s). Unless MZXers made it,
-  music and sound generally don't need direct attribution, but
-  re-used artwork and code definitely should get attribution.
-  If you're unsure whether the original creator(s) would like
-  you using their work in your own game, ask! What we don't
-  want to see, though, is passing other's work, especially
-  graphics and code, as your own. DON'T PLAGIARIZE. JUST
-  BECAUSE THEY DID NOT EXPLICITLY FORBID YOU FROM USING THEIR
-  WORK DOES NOT MEAN YOU CAN PASS IT OFF AS YOUR OWN.
+  credit to the original creator(s). Unless it was made
+  specifically for the game, music and sound from other MZX
+  games generally doesn't need direct attribution, but re-used
+  artwork and code definitely should get attribution. If you're
+  unsure whether the original creator(s) would like you using
+  their work in your own game, ask! What we don't want to see,
+  though, is passing the work of others, especially graphics
+  and code, as your own. DON'T PLAGIARIZE. JUST BECAUSE THEY
+  DID NOT EXPLICITLY FORBID YOU FROM USING THEIR WORK DOES NOT
+  MEAN YOU CAN PASS IT OFF AS YOUR OWN.
 
 Q: Can I distribute a world I made with MegaZeux? Is it legal?
   Must I/can I include MegaZeux with it? Can they be shareware
@@ -1403,7 +1423,9 @@ A: Before you go bugging the maintainer(s) of MegaZeux to add
   4) It's technically possible to add new commands, but
      currently the method of storing Robotic severely limits
      the amount of new commands. Until this system is retooled,
-     there will be no new commands.
+     there will be no new commands. Features that are most
+	 cleanly implemented through a new command may possibly be
+	 implemented in other ways, however.
      
 Q: Is adding network capabilities to MegaZeux planned?
 
@@ -1422,10 +1444,20 @@ A: Short answer: Not really. This has been discussed at-length;
 Q: Will MegaZeux games ever be playable without MegaZeux
   itself?
 
-A: Likely not. It's a consensus among most developers that the
-  possible hassle saved for newbies and for those who would
-  instantly refuse to play a game because it can't be launched
-  directly is not worth implementing this feature.
+A: In a sense, they can be now. It was a long-held consensus
+  among most of MegaZeux's developers that the possible hassle
+  saved for newbies and for those who would instantly refuse to
+  play a game because it can't be launched directly is not
+  worth implementing this feature. However, this has changed.
+  MZXRun, the editor-less version of MegaZeux, can now be
+  set to run in "standalone mode", which can be configured to
+  only play one specific world, and changes several MZX
+  mannerisms to better accomodate a standalone version of a
+  game. The title screen can also be completely skipped.
+  Additions to Robotic (such as exiting the game through code or
+  blocking the default escape menu) have also facilitated
+  standalone releases. Read the comments for standalone_mode in
+  config.txt for more information, if interested.
 
 Q: I need more than 256 characters! Could you help with this?
 
@@ -1440,6 +1472,9 @@ A: Then you'll need to carefully utilize the Robot command
   shown when other characters are and replace them with
   characters you WILL use (such as the alphanumeric
   characters).
+  
+  Alternatively, make use of unbound sprites. Unbound sprites
+  can access 15 full character sets instead of just one.
   
 >#PARTIAL.HLP:par:Partial Character Sets
   
@@ -1537,7 +1572,20 @@ Q: Why does MegaZeux slow to a crawl or even lock up completely
 A: You're likely using an idle loop without a CYCLE 1 or WAIT 1
   command inserted. Add one; if you're wary about possible
   delay effects, rest assured that adding either of these will
-  not unnecessarily add delays. It will simply end a cycle.
+  not unnecessarily add delays. It will simply end a cycle. For
+  further information, look up the Cycles and Board Scans
+  section.
+  
+>#PROCESS.HLP:prc:Cycles and Board Scans - How MZX Processes Robots
+  
+Q: I don't like that anyone can open up my game and see how it
+  works, or that anyone can use the editor functions to cheat
+  at my game. Is there an easy way to prevent people from
+  opening my game in the editor?
+
+A: Nope. MegaZeux used to be able to protect worlds from being
+  edited or even played without a password, but this feature
+  has long since been removed.
   
 Q: I heard only certain graphics cards can properly show Super
   MZX mode games. Is this true?
@@ -1545,7 +1593,7 @@ Q: I heard only certain graphics cards can properly show Super
 A: Not anymore. Any computer that can display normal games in
   MegaZeux can now display Super MZX mode games.
 
-Q: How can I get "mod *" to work?
+Q: How can I get "mod *" as the default board mod?
 
 A: Alt+8 and Alt+*, the old "mod *" keys, have a new function
   now. To "mod *" in the port, use either Shift+8 or the
@@ -1555,14 +1603,14 @@ Q: What's with these "~~roboclp.tmp" files packed with so many
   games?
 
 A: Those held clipboard information in DOS versions of MegaZeux.
-  They are useless and should be freely deleted.
+  They are useless and can be freely deleted.
   
 Q: Why doesn't [ work for taking screenshots?
 
 A: It has been changed to F12 and now works in any area in MZX,
-  including any part of the editor. It currently outputs PNG
-  files by default, but will output MS BMP format files on
-  platforms unable to support PNG.
+  including any part of the editor. Instead of PCX, it now
+  currently outputs PNG files by default, but will output MS
+  BMP format files on platforms unable to support PNG.
 
 >#MAIN.HLP:072:Table of Contents
 #MEGAZEUX.HLP
@@ -1574,8 +1622,8 @@ worldfile compatibility with MZX 2.x worldfiles.
 
 $Memory Limitations
 
-No single Robot, sign, or Scroll can exceed 64k in size
-(including the global).
+No single Robot can exceed 2 megabytes in size.
+No single sign or Scroll can exceed 64 kilobytes in size.
 
 $Quantity Limitations
 
@@ -1586,7 +1634,7 @@ Scrolls/Signs       255 per board
 Sensors             255 per board
 Boards              250 per world
 Local Counters      32 per Robot plus specialized local counters
-                    (loopcount, lava_walk, bullettype)
+                    (e.g. loopcount, lava_walk, bullettype)
 
 $Length Limitations
                 
@@ -1600,8 +1648,10 @@ Mod Filename Length 512 characters (including subdirectories,
 
 $Theoretical Limitations
 
-Board size maximum is roughly 16.7 million characters (2^24).
-Vlayer size maximum is roughly 16.7 million characters (2^24).
+Board size maximum is roughly 16.7 million characters
+((2^24) - 1).
+Vlayer size maximum is roughly 16.7 million characters
+((2^24) - 1).
 Board width or height maximum is 32767.
 The maximum number of counters and strings depends on
 the platform (e.g. between 32 or 64-bit) but is sufficiently
@@ -1847,7 +1897,7 @@ what each one does.
 
 >Ar:Arrow     - Move
 >AltAr:Alt+Arrow - Move 10
->BkSp:BackSpace - Delete
+>BkSp:BackSpace - Delete (Main Layer Only)
 >Del:Delete    - Delete
 >End:End       - L/R Corner
 >En:Enter     - Modify+Grab [Board Mode]
@@ -2141,9 +2191,11 @@ You can export a board file (MZB) unique to MegaZeux, good for
 giving single boards to others. (The character set, palette,
 and global info aren't included!) You can export the character
 set (CHR) for later game use or to edit in Fontutil or another
-third party app. Finally, you can export palettes (PAL) [full,
-partial, and SMZX] and sound effect settings (SFX) for
-transportation. Both are file formats unique to MegaZeux.
+third party app. You can export palettes (PAL) [full, partial,
+and SMZX] and sound effect settings (SFX) for transportation.
+Both are file formats unique to MegaZeux. Finally, you can
+export the current world, but using the last version's world
+format, with the "Downver. world (MZX)" option.
 
 Files like MZMs and SAVs can be exported with Robotic code. See
 their respective areas for details. Other file types such as
@@ -2155,7 +2207,8 @@ facilities and charset counters.
 Alt+Y will toggle a red box in the lower corner of the screen.
 This box shows (on labeled lines) the current position of the
 cursor, the current Robot memory situation, and the presently
-playing module. This is the same as F6 in-game.
+playing module, and lists the MZX version of the current world
+at the top. This is the same as F6 in-game.
 
 :AltZ:~EAlt+Z - Clear (board)
 
@@ -2267,11 +2320,13 @@ Alt plus the arrow keys will move the cursor ten spaces at a
 time, or up to the board's edge if under ten spaces away. These
 also jump numbers by 10 in dialog boxes.
 
-:BkSp:~EBackspace - Delete
+:BkSp:~EBackSpace - Delete (Main Layer Only)
 :Del:~EDel - Delete
 
-These two keys will delete everything under the cursor. The
-current thing is not affected.
+The Del key will delete everything under the cursor, while
+BackSpace will delete the object on the main layer and move any
+object on the under layer to the main layer. The current thing
+is not affected.
 
 :End:~EEnd - L/R Corner
 
@@ -2616,7 +2671,7 @@ This is the name of the board. It is mainly for internal
 reference; however, the name of the first board (the title
 screen) is also used to represent the entire world on a file
 listing, and its value can be accessed through the BOARD_NAME
-string in Robotic.
+string counter in Robotic.
 
 $Can Shoot/Bomb
 
@@ -2656,6 +2711,11 @@ $Restart if Hurt
 When on, the player will be teleported to the place on the
 current board that it originally entered every time it loses
 health.
+
+$Reset Board on Entry
+When on, every time the board is entered, it will reset the
+board, acting as if the player is entering the board for the
+first time.
 
 $Player Locked N/S
 
@@ -2712,6 +2772,16 @@ to no overlay in that none is shown, but it allows you to edit
 it so that one may appear later. Overlays are discussed in full
 in another section.
 
+>#TOVERLAY.HLP:081:Editing and Using the Overlay
+
+$Load Charset on Entry
+This can be set to load a specific charset every time the board
+is entered, or set to do nothing.
+
+$Load Palette on Entry
+This can be set to load a specific palette every time the board
+is entered, or set to do nothing.
+
 One can set the current board's settings as the default
 settings for all new boards made for this world file. Select
 the "Set as defaults" button at the bottom and click or press
@@ -2719,7 +2789,6 @@ Space/Enter. This will save a .cnf file for the current world.
 There will be no confirmation. The current world must have been
 saved in order to do this.
 
->#TOVERLAY.HLP:081:Editing and Using the Overlay
 >#EDITINGK.HLP:080:Editing Keys and Options Reference
 >#MAIN.HLP:072:Table of Contents
 #SOUNDEFX.HLP
@@ -2930,7 +2999,7 @@ $"&FILENAME.WAV&3C"
 
 $"&SHOT.WAV&6F#_+C-C"
 
-  The above will play SHOT.WAV at 48KHz (F-sharp, 6th octave)
+  The above will play SHOT.WAV at 4.8KHz (F-sharp, 6th octave)
   if digitized sound is on, OTHERWISE it will play the normal
   shooting sound of "+C-C".
 
@@ -3069,7 +3138,7 @@ These questions are answered in the Frequently Asked Questions
 section of help.
 
 >#FAQ.HLP:1st:Frequently Asked Questions
->#CONFGINI.HLP:1st:External MegaZeux Options
+>#CONFGINI.HLP:1st:The Config File
 >#MAIN.HLP:072:Table of Contents
 #TOVERLAY.HLP
 :081: 
@@ -3291,21 +3360,28 @@ Signs per board. This limit shouldn't ever be a problem.
 >#MAIN.HLP:072:Table of Contents
 #DBGMODE.HLP
 :dbg:
-$~9Debug Mode
+$~9Debug Modes
 
-The debug mode is a powerful tool. The debug mode not only can
-pause all current MZX world action and display all of the
-counters and strings the world has set, but also can manipulate
-these values and even add new ones.
+The debug modes are powerful tools. MegaZeux contains two types
+of debug modes: the Counter Debug Mode and the Robotic
+Debugger.
 
-The left side of the debug mode shows the current selection of
-counters/strings. Built-in counters ending with an asterisk (*)
-are read-only. Highlighting a counter/string and either
-clicking it or pressing Enter/Space while on it will bring up a
-box, allowing the value of the counter/string to be changed.
-Type in the desired new value, and press Enter to set the
-counter/string to the new value. Press Escape to cancel setting
-a new value.
+$Counter Debug Mode
+:100:
+The counter debug mode - accessed by pressing F11 while running
+a world during playtesting in the editor - not only can pause
+all current MZX world action and display all of the counters
+and strings the world has set, but also can manipulate these
+values and even add new ones.
+
+The left side of the counter debug mode shows the current
+selection of counters/strings. Built-in counters ending with an
+asterisk (*) are read-only. Highlighting a counter/string and
+either clicking it or pressing Enter/Space while on it will
+bring up a box, allowing the value of the counter/string to be
+changed. Type in the desired new value, and press Enter to set
+the counter/string to the new value. Press Escape to cancel
+setting a new value.
 
 (PLEASE NOTE: Strings can only show and set its first 68
 characters when attempting to set a new value. If a string
@@ -3356,15 +3432,25 @@ Robot on the board. Each list displays that Robot's local
 counters and their values (as well as their robot_name
 strings).
 
+In addition, certain special values can be accessed in this
+menu.
+-The number of commands that the given Robot has processed is
+listed under its commands_total value.
+-The number of commands that the given Robot has executed in
+the current cycle is listed under its commands_cycle value.
+This value is read-only.
+-Whether the given Robot is locked or unlocked is denoted by
+the value of lockself (0 for unlocked, 1 for locked).
+
 Outside of directly displaying and setting values of counters
-and strings, the debug mode has several other tools at its
-disposal. They are given buttons in the lower-right corner, and
-are as follows:
+and strings, the counter debug mode has several other tools at
+its disposal. They are given buttons in the lower-right corner,
+and are as follows:
 
 ~ASearch~F: Locates names and values in any of the counters/strings
-listed in the debug mode. Type the desired search string and
-select from the given options, then press Enter. The search
-begins from the last highlighted line. This menu can be
+listed in the counter debug mode. Type the desired search
+string and select from the given options, then press Enter. The
+search begins from the last highlighted line. This menu can be
 directly accessed with Ctrl+F, and an instant repeat of the
 last search can be done with Ctrl+R. Options:
 -Search names: Searches counter and string names.
@@ -3397,6 +3483,75 @@ counters in the Counters parent list, to their current values.
 If overwriting a current file is chosen, MZX will ask for
 confirmation.
 
+$The Robotic Debugger
+:101:
+Ever have problems with a Robot choking your game to a crawl?
+Can't figure out how someone else's code works from a simple
+lookthrough? Are your Robots just not interacting the way you'd
+planned? The Robotic Debugger might help. The Robotic Debugger
+can enable controlled line-by-line execution of Robots, or even
+halt Robot execution altogether.
+:102:
+Since stepping through code line-by-line can be very, very
+tedious if unneeded, the debugger only starts allowing such
+control after meeting given conditions. The conditions that
+tell the debugger when to begin stepping through lines are
+called breakpoints.
+
+MegaZeux does not provide default breakpoints (with one notable
+exception explained later), so suitable breakpoints must be
+created. Pressing Alt+F11 during playtesting in the editor will
+load the Breakpoint Editor.
+
+Breakpoints can be added via the Add button, or by using Alt+A.
+Breakpoints will activate stepping when characters in a line of
+code match a given string, or additionally only for Robots
+whose names contain the characters in another given string.
+String matches, like MegaZeux string comparisons in general, do
+not have to match case. Also, as implied, the string
+comparisons are not for the whole line or Robot name; the lines
+or names must merely contain the given strings.
+
+Editing breakpoints is done via the Edit button, or by pressing
+Space.
+
+Deleting breakpoints is done via the Delete button, or by
+pressing Alt+D.
+
+The Robotic debugger defaults to off. Clicking the Enable
+Robotic Debugger button activates the debugger from that point
+on. Once done editing breakpoints, click the Done button.
+
+In addition to user-defined breakpoints, MegaZeux also
+activates stepping through the debugger when Robot processing
+reaches very high amounts; if the debugger was currently off,
+hitting this condition forces it on. By default, this happens
+when a Robot executes over 2,000,000 commands in a single
+cycle, but this can be changed by changing the value of the
+COMMANDS_STOP counter.
+
+Once a breakpoint is hit, MegaZeux halts execution of all
+actions and opens up a menu. Actions are as follows:
+
+~AContinue~F: Stops stepping through code until the next
+breakpoint is hit.
+
+~AStep~F: Steps through the current line, executing it, and
+prompts the user for further action at the next line.
+
+~AHalt~F: Makes the Robot running the current line immediately
+stop processing commands. Note that this does not permanently
+stop the Robot from processing commands in the future (e.g. due
+to being sent to a label); it merely prevents it from running
+its currently planned commands.
+
+~AHalt All~F: Immediately makes ALL Robots stop processing
+commands.
+
+~ACounters~F: Opens up the Counter Debug Mode.
+
+~ABreakpoints~F: Opens up the Breakpoint Editor.
+
 >#MAIN.HLP:072:Table of Contents
 #ERRORMES.HLP
 :1st: 
@@ -3408,17 +3563,19 @@ remedies. MegaZeux silently ignores many other possible errors.
 
 MegaZeux General Errors:
 
->era:Cannot decrypt write-protected world.
+>era:Cannot decrypt write-protected world; check permissions
 >erb:Cannot overwrite the player- move it first
->erc:Directory rename failed.
->erd:Error saving world
->ere:Error swapping to next world
->erf:(Filename) already exists.
->erg:File rename failed.
->erh:Overlay mode is not on (see Board Info)
->eri:Save would overwrite older world. Aborted.
->erj:Windowing code bug
->erk:You can only play this game via a swap from another game
+>erc:Current renderer lacks advanced graphical features; features
+  ~Fdisabled
+>erd:Directory rename failed.
+>ere:Error saving world; file may be write protected
+>erf:Error swapping to next world
+>erg:(Filename) already exists.
+>erh:File rename failed.
+>eri:Overlay mode is not on (see Board Info)
+>erj:Save would overwrite older world. Aborted.
+>erk:Windowing code bug
+>erl:You can only play this game via a swap from another game
 
 MegaZeux Validation Errors:
 
@@ -3430,26 +3587,41 @@ MegaZeux Validation Errors:
 >evf:Board @@ (hex location) is irrecoverably truncated or corrupt
 >evg:Board @@ (hex location) is truncated, but could be partially
   ~Frecovered
->evh:Bytecode file (filename) failed validation check
->evi:Cannot load password protected world.
->evj:File doesn't exist!
->evk:File is not a board file or is corrupt
->evl:File is not an MZM or is corrupt
->evm:File is not a valid .SAV file or is corrupt
->evn:File is not a valid world file or is corrupt
->evo:MZM file of a more recent version (version) -- robots will
->evo:be dummied out
->evp:Post validation IO error occurred
->evq:Robot @@ (hex location) is truncated or corrupt
->evr:Runtime robots incompatible with editor -- robots will be
-  ~Fdummied out
->evs:.SAV files from newer versions of MZX (version) are not
+>evh:Board file is from a future version (version)
+>evi:Bytecode file (filename) failed validation check
+>evj:Cannot load password protected world
+>evk:File doesn't exist!
+>evl:File is not a board file or is corrupt
+>evm:File is not an MZM or is corrupt
+>evn:File is not a valid .SAV file or is corrupt
+>evo:File is not a valid world file or is corrupt
+>evp:MZM contains runtime robots; dummying out
+>evq:MZM doesn't exist
+>evr:MZM from more recent version (version); dummying out robots
+>evs:MZM is missing robots or contains corrupt robot
+>evt:Post validation IO error occurred
+>evu:Robot @@ (hex location) could not be found
+>evv:Robot @@ (hex location) is truncated or corrupt
+>evw:.SAV files from newer versions of MZX (version) are not
   ~Fsupported
->evt:.SAV files from older versions of MZX (version) are not
+>evx:.SAV files from older versions of MZX (version) are not
   ~Fsupported
->evu:This world may be password protected.
->evv:World is from a more recent version (version)
->evw:World is from old version (version); use converter
+>evy:Scroll @@ (hex location) is truncated or corrupt
+>evz:Sensor @@ (hex location) is truncated or corrupt
+>ev1:This world may be password protected.
+>ev2:World is from a more recent version (version)
+>ev3:World is from old version (version); use converter
+
+MegaZeux Validation Errors (ZIP World Format):
+
+>eza:Board # (number) is corrupt
+>ezb:Board # (number) is missing data:
+>ezc:Robot # (number) contains duplicates on board # (number)
+>ezd:Robot # (number) does not exist on board # (number)
+>eze:Robot # (number) exists on board # (number), but was not found
+>ezf:Robot # (number) on board # (number) is corrupt
+>ezg:Scroll # (number) on board # (number) is corrupt
+>ezh:Sensor # (number) on board # (number) is corrupt
 
 MegaZeux Updater Errors:
 
@@ -3471,7 +3643,7 @@ MegaZeux Updater Errors:
 
 ~9MZX General Errors
 
-:era:~ACannot decrypt write-protected world.
+:era:~ACannot decrypt write-protected world; check permissions
 
 This can be caused by file errors or a hard disk space
 shortage. It can also result from an attempt to overwrite a
@@ -3483,49 +3655,56 @@ The user attempted to place an object over the player. The
 player must be moved from its current location if something
 else is desired at that location.
 
-:erc:~ADirectory rename failed.
-:erg:~AFile rename failed.
+:erc:~ACurrent renderer lacks advanced graphical features; features
+~Adisabled
+
+Certain graphics renderers (at present, the overlay2 renderer)
+are unable to utilize some newer features. Try running MegaZeux
+under a different renderer.
+
+:erd:~ADirectory rename failed.
+:erh:~AFile rename failed.
 
 The user attempted to rename a directory or file, respectively,
 but failed. This could be due to trying to change a read-only
 file, trying to change a locked file, or due to some other
 error.
 
-:erd:~AError saving world
+:ere:~AError saving world; file may be write protected
 
 This can be caused by file errors or a hard disk space
 shortage. It can also result from an attempt to overwrite a
 read-only file.
 
-:ere:~AError swapping to next world
+:erf:~AError swapping to next world
 
 A Robotic command, SWAP to WORLD, was issued, but the stated
 world could not be found or otherwise could not be swapped to,
 due to version conflicts, file errors, etc.
 
-:erf:~A(Filename) already exists.
+:erg:~A(Filename) already exists.
 
 The user attempted to create a new file, but a file with that
 name already exists.
 
-:erh:~AOverlay mode is not on (see Board Info)
+:eri:~AOverlay mode is not on (see Board Info)
 
 You cannot edit or copy to the Overlay if it is Off; go to
 Board Info and turn it to Normal, Static, or Transparent.
 
-:eri:~ASave would overwrite older world. Aborted.
+:erj:~ASave would overwrite older world. Aborted.
 
 A save was attempted in the debytecode version of MegaZeux that
 would overwrite a non-debytecode world file. Due to the present
 instability of debytecode, this is forcibly prevented.
 
-:erj:~AWindowing code bug
+:erk:~AWindowing code bug
 
 This is an internal error. Try to isolate the reason for the
 problem and notify the maintainer(s), as this error signifies a
 severe bug in MegaZeux.
 
-:erk:~AYou can only play this game via a swap from another game
+:erl:~AYou can only play this game via a swap from another game
 
 This error occurs when the user tries to play a game that has
 the option set to disallow normal gameplay. The world can only
@@ -3561,81 +3740,151 @@ will be replaced with a blank board.
 Only part of the board was found, but what board info remained
 is placed at that location.
 
-:evh:~ABytecode file (filename) failed validation check
+:evh:~ABoard file is from a future version (version)
+
+Load of a board file from a more recent version of MegaZeux was
+attempted. You must use the version of MegaZeux listed or higher
+in order to import this board file.
+
+:evi:~ABytecode file failed validation check
 
 An attempt to load a bytecode file has failed validation checks
 and will not be loaded.
 
-:evi:~ACannot load password protected world.
+:evj:~ACannot load password protected world
 
 Since MegaZeux 2.80, worlds that are password protected have to
 be stripped of the password to run. This error is seen when the
 user refuses to decrypt the password-protected file.
 
-:evj:~AFile doesn't exist!
+:evk:~AFile doesn't exist!
 
 An import of a file was attempted, but the file does not exist.
 
-:evk:~AFile is not a board file or is corrupt
-:evl:~AFile is not an MZM or is corrupt
-:evm:~AFile is not a valid .SAV file or is corrupt
-:evn:~AFile is not a valid world file or is corrupt
+:evl:~AFile is not a board file or is corrupt
+:evm:~AFile is not an MZM or is corrupt
+:evn:~AFile is not a valid .SAV file or is corrupt
+:evo:~AFile is not a valid world file or is corrupt
 
 An import of the given type was halted due to being unrecognized
 as a valid file, or due to corruption.
 
-:evo:~AMZM file of a more recent version (version) -- robots will
-~Abe dummied out
-
-Load of an MZM file with Robots from a more recent version of
-MZX was attempted. The Robots will be replaced with CustomBlock
-facsimiles, as if the file were loaded as a layer-type MZM.
-
-:evp:~APost validation IO error occurred
-
-The given file passed validation, but some other problem is
-preventing it from loading.
-
-:evq:~ARobot @@ (hex location) is truncated or corrupt
-
-The Robot at the given location is unrecoverable, and will be
-replaced with an empty Robot at that location.
-
-:evr:~ARuntime robots incompatible with editor -- robots will be
-~Adummied out
+:evp:~AMZM contains runtime robots; dummying out
 
 Load of an MZM containing Robots and saved during a running
 game was attempted. The Robots will be replaced with
 CustomBlock facsimiles, as if the file were loaded as a
 layer-type MZM.
 
-:evs:~A.SAV files from newer versions of MZX (version) are not
+:evq:~AMZM doesn't exist
+
+Loading an MZM file was attempted, but the given file does not
+exist.
+
+:evr:~AMZM from more recent version (version); dummying out robots
+
+Load of an MZM file with Robots from a more recent version of
+MZX was attempted. The Robots will be replaced with CustomBlock
+facsimiles, as if the file were loaded as a layer-type MZM.
+
+:evs:~AMZM is missing robots or contains corrupt robot
+
+The loaded MZM file indicates that a Robot should be at a
+certain location of the MZM, but found either no code or
+corrupt code.
+
+:evt:~APost validation IO error occurred
+
+The given file passed validation, but some other problem is
+preventing it from loading.
+
+:evu:~ARobot @@ (hex location) could not be found
+
+The board file indicates a Robot should be present at the given
+location, but no Robot exists there.
+
+:evv:~ARobot @@ (hex location) is truncated or corrupt
+
+The Robot at the given location is unrecoverable, and will be
+replaced with an empty Robot at that location.
+
+:evw:~A.SAV files from newer versions of MZX (version) are not
 ~Asupported
-:evt:~A.SAV files from older versions of MZX (version) are not
+:evx:~A.SAV files from older versions of MZX (version) are not
 ~Asupported
 
 The .SAV file the user attempted to load is a different format
 than the current version's .SAV and cannot be loaded.
 
-:evu:~AThis world may be password protected.
+:evy:~AScroll @@ (hex location) is truncated or corrupt
+
+The Scroll at the given location is unrecoverable, and will be
+replaced with an empty Scroll at that location.
+
+:evz:~ASensor @@ (hex location) is truncated or corrupt
+
+The Sensor at the given location is unrecoverable, and will be
+replaced with a Sensor with default attributes at that location.
+
+:ev1:~AThis world may be password protected.
 
 Worlds saved with password protection (some worlds made before
 MZX2.51s3.2) cannot natively run in MegaZeux. MegaZeux will
 then prompt the user to decrypt the file.
 
-:evv:~AWorld is from a more recent version (version)
+:ev2:~AWorld is from a more recent version (version)
 
 The .MZX file you tried to load or import is from a more
 current version of MegaZeux. You must upgrade MegaZeux to the
 given version or higher to play this worldfile.
 
-:evw:~AWorld is from old version (version); use converter
+:ev3:~AWorld is from old version (version); use converter
 
 The user tried to load a .MZX file from version 1.00g, 1.01,
 1.02, or 1.03 of MegaZeux. In order to use these worlds, they
 must first be converted to 2.51 format using the included
 VER1TO2 program. Run VER1TO2 without any command line arguments
 for further instructions.
+
+~9MegaZeux Validation Errors (ZIP World Format):
+
+:eza:~ABoard # (number) is corrupt
+
+The board with the given number is corrupt beyond repair.
+
+:ezb:~ABoard # (number) is missing data:
+
+The given board lacks data that its structure indicates it
+should have.
+
+:ezc:~ARobot # (number) contains duplicates on board # (number)
+
+A Robot is found in multiple places in the given board's data.
+
+:ezd:~ARobot # (number) does not exist on board # (number)
+
+A Robot should exist on the given board, according to the board
+data, but does not.
+
+:eze:~ARobot # (number) exists on board # (number), but was not found
+
+A Robot exists on the given board, but the board data for that
+Robot is absent.
+
+:ezf:~ARobot # (number) on board # (number) is corrupt
+
+The Robot on the board with the given number is corrupt beyond
+repair.
+
+:ezg:~AScroll # (number) on board # (number) is corrupt
+
+The Scroll on the board with the given number is corrupt beyond
+repair.
+
+:ezh:~ASensor # (number) on board # (number) is corrupt
+
+The Sensor on the board with the given number is corrupt beyond
+repair.
 
 ~9MZX Updater Errors
 
@@ -3711,12 +3960,13 @@ only on Sensors," and then the player can only save when
 standing on a Sensor.
 
 The second use is more complex, and requires knowledge of
-Robotic. Sensors are like controllable CustomFloors. When
-creating one, give it a name and a character, then enter the
-name of a Robot with which it will interact. This use of
-sensors is easily replicable through Robotic now, so this use
-of sensors is deprecated. However, if one wants to use sensors,
-this information will easily help.
+Robotic. Sensors are like controllable CustomFloors (albeit
+CustomFloors that can be pushed by many objects). When creating
+one, give it a name and a character, then enter the name of a
+Robot with which it will interact. This use of sensors is easily
+replicable through Robotic now, so this use of sensors is
+deprecated. However, if one wants to use sensors, this
+information will easily help.
 
 Sensors interact with Robots using labels (messages) and SEND
 commands, just like Robots interact with each other. Any Robot
@@ -3817,13 +4067,14 @@ Use the following help links to see your desired topic(s).
 >#VLAYER.HLP:vla:The Vlayer
 >#MZM.HLP:mzm:Using MZMs
 >#TRIG.HLP:tri:Trigonometric Functions
+>#PROCESS.HLP:prc:Cycles and Board Scans - How MZX Processes Robots
 >#PARTIAL.HLP:par:Partial Character Sets
 >#BULLETTY.HLP:1st:Bullet Types
 >#CHANGECH.HLP:1st:CHANGE CHAR ID - The CHAR ID Table
 
 >#ROBOTSWH.HLP:1st:Robots - What They Are and How to Use Them
 >#ROBOTICT.HLP:1st:Robotic Tutorial
->#BADPRACT.HLP:101:Robotic Usages That Should be Avoided
+>#BADPRACT.HLP:bad:Robotic Usages That Should be Avoided
 >#MAIN.HLP:072:Table of Contents
 #COMMANDS.HLP
 :1st: 
@@ -3918,12 +4169,13 @@ values:
 
 A color of c?? will be inserted into commands when you do not
 put down anything for the color. Examples of legal colors: cF9,
-c02, c?5, c??, "Colored".
+c02, c?5, c??, "Color".
 
 While detecting colors of ?? is generally an accepted practice,
-it's extremely discouraged to change to or put colors of ??.
+it's extremely discouraged to put colors of ?? or change to
+them.
 
->#BADPRACT.HLP:101:Robotic Usages That Should be Avoided
+>#BADPRACT.HLP:bad:Robotic Usages That Should be Avoided
 
 ~E[char]
 
@@ -5149,6 +5401,7 @@ to "thud" and "edge" are exceptions.)
 :_v3:~AVOLUME #
 
 Changes the volume of the MOD playing, from 0 (silent) to 255.
+This change is specific to the current board.
 
 :_cM:~ACOPYROBOT "Robot"
 :_cN:~ACOPYROBOT # #
@@ -5500,13 +5753,14 @@ coordinates.
 
 NOTE: DO NOT normally use COPY # # # # to copy Robots; use
 DUPLICATE SELF or COPYROBOT. It is useful for copying by Robot
-id, however; use COPY r&id&.thisx and r&id&.thisy as the first
-pair of coordinates.
+id, however; use COPY rN.thisx and rN.thisy as the first pair
+of coordinates.
 
 Using COPY # # # # on a Robot will no longer cause the Robot
 copy to start where the parent left off.
 
->#BADPRACT.HLP:101:Robotic Usages That Should be Avoided
+>#COUNTERS.HLP:rnc:Rn.<counter>
+>#BADPRACT.HLP:bad:Robotic Usages That Should be Avoided
 >#COMMANDS.HLP:dir:Directions
 
 :_cJ:~ACOPY BLOCK # # # # # #
@@ -5659,7 +5913,15 @@ inner quotes).
 Character sets can be loaded to the middle of the current
 charset by prefixing the "file" name with +offset, where offset
 is a hexadecimal number, or @@offset where offset is a decimal
-number.
+number. Up to 14 additional charsets can be loaded for use with
+unbound sprites. To set and access these, set the decimal
+offset number to (256*extra palette number); hexadecimal
+offsetting cannot access additional charsets. Naturally,
+offsets within these charsets can be set as well by adding the
+desired offset value to these numbers.
+
+These commands can also take string inputs in place of
+hard-coded filenames.
 
 >#PARTIAL.HLP:par:Partial Character Sets
 >#STRINGS.HLP:1st:Strings, Special Formatting, and Their Place in Robotic
@@ -6539,7 +6801,7 @@ Local counters, on the other hand, only hold their values for
 one Robot. These are useful because multiple Robots can set
 local counters with the exact same names without causing
 conflicts. There are several local counters explicitly reserved
-for use; these are the "local" & "local2" thru "local32"
+for use; these are the "local" & "local2" through "local32"
 counters.
 
 To display a counter's number, enclose the counter in
@@ -6547,6 +6809,12 @@ ampersands. (e.g. &counter&). This displays the counter value
 in decimal. Sometimes hexadecimal is needed, like in certain
 MegaZeux commands. To output a counter number in hex, add a
 + to the front of the enclosed counter (e.g. &+hexcount&).
+Lastly, other MegaZeux commands might require a two-digit
+hex number; for these, add a # to the front of the enclosed
+counter (e.g. &#twodigithex&). Note that in this case, only the
+two most significant digits will be used (e.x. the number
+'abcdef' becomes 'AB') and single-digit numbers will gain a
+trailing zero (e.x. the number '8' will become '08').
 
 Also, characters can be used as counters in commands. For
 example: SET "boom" to '0' would come out as SET "boom" to 48.
@@ -6555,9 +6823,9 @@ It's quite a difference!
 The following is a list of built-in counters, which all have
 special meanings. There are three types of built-in counters:
 Global, which affect everything; Local, which are different for
-each Robot and are only available to read by that Robot; and
-Board, which are specific to the current board. Some built-in
-counters are read-only; a few are write-only.
+each Robot and require special handling for other Robots to
+manipulate; and Board, which are specific to the current board.
+Some built-in counters are read-only; a few are write-only.
 
 MegaZeux utilizes a large number of built-in counters to
 maximize flexibility. For this reference, they have been
@@ -6643,7 +6911,8 @@ set to THISX-XPOS and THISY-YPOS.
 The current type of bullet shot by the Robot: 0 for Player, 1
 for Neutral, and 2 for Enemy. Technically, this counter can
 hold any number from 0 to 255, but only 0, 1 and 2 have
-defined behavior. Use the others at your own risk!
+defined behavior. The others essentially set the Robot to shoot
+Enemy bullets, if actually used to affect shot bullets.
 
 >#BULLETTY.HLP:1st:Bullet Types
 
@@ -6681,6 +6950,7 @@ with "rid"; instead, it ends at -1 (since the Robot the counter
 is trying to find, like "dles" (for "riddles"), will most
 likely not exist). Older games will allow this, but only for
 compatibility reasons.
+:rnc:
 
 ~BRn.<counter>
 
@@ -6715,6 +6985,9 @@ any number can be used, not just 2-32; the counter accessed by
 it would be N%32 (so, for example, any change to "local0" would
 have the same effect as changing "local32"). LOCAL is the same
 as LOCAL1.
+
+~BGOOP_WALK (local)
+Controls whether the Robot can walk on goop or not.
 
 $Board Counters
 :brd:
@@ -6975,15 +7248,19 @@ respectively. The first forms save/load the current Robot,
 while the second forms save/load the Robot with the Robot ID of
 the number n.
 
-~BSAVE_WORLD (function)
-
-Saves MZX worldfiles. The syntax is the same as the file
-opening series.
+Keep in mind that due to slated changes in MegaZeux, saving out
+Robots (in either text or bytecode form) is considered a
+deprecated function and may be removed entirely in the future.
 
 ~BSAVE_GAME (function)
 ~BLOAD_GAME (function)
 
 Saves or loads MZX savegames, respectively.
+
+~BSAVE_COUNTERS (function)
+~BLOAD_COUNTERS (function)
+
+Saves or loads MZX counter files, respectively.
 
 >#FILEACSS.HLP:fil:File Access
 >#STRINGS.HLP:1st:Strings, Special Formatting, and Their Place in Robotic
@@ -6995,12 +7272,13 @@ $Sprite Counters
 
 A list of flagged collisions after a collision test was
 performed. Values of n from 0 to (SPR_COLLISIONS - 1) are
-valid. If the background collided, SPR_CLIST0 is always set to
+valid. If the foreground collided, SPR_CLIST0 is always set to
 -1 to indicate this.
 
 ~BSPR_COLLISIONS (read-only)
 
-The number of sprites/background listed in SPR_CLISTn.
+The number of sprites/foreground collisions listed in
+SPR_CLISTn.
 
 ~BSPR_NUM
 
@@ -7019,9 +7297,10 @@ their numbers.
 ~BSPRn_CCHECK (write-only)
 
 If set to 1, overlapping char 32s will not cause a collision
-between sprites or the background. If set to 2, char 32s and
+between sprites or the foreground. If set to 2, char 32s and
 blank chars will also not collide, and blank characters will
-not be drawn.
+not be drawn. The given sprite can be set to both modes in
+tandem, and will act as usual when SPRn_CCHECK is set to 0.
 
 ~BSPRn_CWIDTH
 ~BSPRn_CHEIGHT
@@ -7095,6 +7374,29 @@ The current position of the sprite. This can be used to set the
 sprite outside the edges of the board, whereas PUT c?? Sprite
 p?? X Y disallows this.
 
+~BSPRn_UNBOUND
+
+If set to 1, unbinds the given sprite n from the grid, making
+its coordinates refer to pixel positions instead of tile
+positions. Its dimensions (SPRn_HEIGHT, SPRn_WIDTH) and
+reference coordinates (SPRn_REFX, SPRn_REFY) will still be
+relative to tiles, but its current position (SPRn_X, SPRn_Y)
+and collision box counters (SPRn_CX, SPRn_CY, SPRn_CWIDTH,
+SPRn_CHEIGHT) will adhere to this change. See the Unbound
+Sprites section in the Sprites help for more information.
+
+~BSPRn_TCOL
+
+Sets which color provides transparency for a given unbound
+sprite n.
+
+~BSPRn_OFFSET
+
+Internally alters any number that refers to a character for a
+given sprite n. In the case of unbound sprites, this number will
+often be a multiple of 256 in order to access a hidden charset,
+but offset values within char sets may also be used.
+
 >#SPRITES.HLP:spr:Sprites
 
 $String Counters
@@ -7162,9 +7464,17 @@ respectively. These counters also work outside of SMZX modes;
 in normal mode, numbers 0-15 alter the normal palette while
 16-31 alter the protected palette.
 
+~BSMZX_IDXx,y
+
+Reads or sets the color of a tile with a given color x's yth
+color. For example, ~ESET "SMZX_IDX191,0" to 50~F would set the
+color number of the base color (color 0 out of 0-3) of a c1a
+(color 191) tile to color 50. This applies to SMZX mode 3 only,
+and only to renderers that support unbound sprites.
+
 ~BSMZX_PALETTE (read-only)
 
-Loads a Super MZX palette. This command is deprecated; please
+Loads a Super MZX palette. This counter is deprecated; please
 use load palette instead.
 
 $Character Edit Counters
@@ -7274,10 +7584,20 @@ relative to the board.
 
 ~BBUTTONS (read-only)
 
-Reads which mouse buttons are being pressed. Outputs 0 for
-none, +1 for the left, +2 for the right and +4 for the middle.
+Reads which mouse buttons are currently being pressed. The
+counter value is based as follows:
+0 for no input pressed
++1 for left button
++2 for right button
++4 for middle button
++8 for wheel up
++16 for wheel down
++32 for wheel left
++64 for wheel right
++128 for extra button 1
++256 for extra button 2
 E.G., left by itself would output 1, and left+middle would
-output 5.
+output 5 (1 + 4).
 
 ~BCURSORSTATE
 
@@ -7290,6 +7610,11 @@ $Defaults Counters
 
 Determines whether the built-in status window is loaded when
 the enter key is pressed. 1 (or any non-zero value) is yes, 0
+is no. The default is 1 (yes).
+
+~BESCAPE_MENU
+Determines whether the built-in game exit dialog is loaded when
+the escape key is pressed. 1 (or any non-zero value) is yes, 0
 is no. The default is 1 (yes).
 
 ~BHELP_MENU
@@ -7312,7 +7637,7 @@ yes, 0 is no. The default is 1 (yes).
 
 ~BBIMESG (write-only)
 
-Controls built-in game messages (e.g. the message given for
+Controls built-in game messages (e.g. the message given when
 touching goop); 1 (or any non-zero value) is on while 0 is off.
 The default is 1 (on).
 
@@ -7358,16 +7683,35 @@ $Miscellaneous Counters
 :msc:
 ~BMZX_SPEED
 
-The current game speed (1-16) of MegaZeux. Once the speed is
-set with this counter, the player cannot change the speed in
-the F2 menu until MZX_SPEED is set to 0. Setting MZX_SPEED to 0
-will not affect the current speed. Neither MZX speed nor speed
-locking is preserved in saves, so games that change the speed
-must alter the speed using the "justloaded" label to stay
-consistent. MZX_SPEED will revert back to the default value
-listed in the configuration file upon loading a different game.
+The current game speed (1-16) of MegaZeux. MZX_SPEED 1 is 
+processor-bound and executes as many cycles per second as
+possible. Other speeds execute cycles according to this
+formula:
+
+~E62.5 / (MZX_SPEED - 1)
+
+Once the speed is set with this counter, the player cannot
+change the speed in the F2 menu until MZX_SPEED is set to 0.
+Setting MZX_SPEED to 0 will not affect the current speed.
+MZX_SPEED will revert back to the default value listed in the
+configuration file upon loading a different game.
 
 >#CONFGINI.HLP:1st:The Config File
+
+~BCOMMANDS_STOP
+
+A special counter active only while playtesting in the editor.
+COMMAND_STOP will activate stepping in the Robotic debugger,
+even if the debugger was currently disabled, once the number of
+commands any specific Robot executes in a single cycle exceeds
+COMMAND_STOP's value. By default, COMMAND_STOP holds a value of
+2000000.
+
+~BEXIT_GAME
+
+If this counter is set to a non-zero value, the current
+MegaZeux world will exit to the title screen. This counter does
+nothing on the title screen.
 
 ~BCURRENT_COLOR
 ~BRED_VALUE
@@ -7443,8 +7787,9 @@ negative numbers will not work. "Autorepeat" affects
 KEY_PRESSED, so if you hold down a key you will get the value,
 then get zeros for a period, then get the values again. This is
 useful for many applications.
-KEY acts like KEY_PRESSED, but lacks autorepeat.
-KEY_CODE acts the same as KEY_PRESSED but lacks autorepeat and
+KEY acts like KEY_PRESSED, but lacks autorepeat, and retains
+its value until another key is pressed.
+KEY_CODE acts similar to KEY_PRESSED but lacks autorepeat and
 has different keycodes. Its keycode set is more limited, making
 KEY_CODE only preferable if autorepeat has to be off.
 
@@ -8071,7 +8416,7 @@ WAIT causes the Robot to stop and sit for an amount of time,
 the amount of time specified as a number. The time is in
 cycles, which is the amount of time it takes to update the
 board once, moving all the enemies and bullets, etc. Robots can
-cycle at different speeds; the default is speed 1 (fastest,
+cycle at different speeds; the default is cycle 1 (fastest,
 runs every real cycle) unless a cycle command is placed inside
 the Robot.
 
@@ -8109,7 +8454,7 @@ on every board of the game. It is immobile (technically off the
 board, but listed as at {-1,-1}), has a ROBOT_ID of 0, and
 cannot be destroyed or changed into another object, even
 through deliberate attempts to do so such as the EXPLODE
-command. All other traits of Robots, such as 64k of Robot
+command. All other traits of Robots, such as 2MB of Robot
 memory, reserved local counters and the ability to be copied,
 apply to the global.
 
@@ -8121,9 +8466,10 @@ The global is important because it not only exists on all
 boards, but also continues its state across boards. This allows
 for easy management of continuous global engines such as an
 inventory, status bars, and sidescrolling control, among
-others. If the global did not exist, a copy of the engine would
-be needed on every board, and the states of each such Robot
-would be separate (possibly leading to management problems).
+other possibilities. If the global did not exist, a copy of the
+engine would be needed on every board, and the states of each
+such Robot would be separate (possibly leading to management
+problems).
 
 Certain commands (as hinted above) are worthless in the global.
 Obvious commands such as BECOME, EXPLODE, COLOR/CHAR and all
@@ -8141,7 +8487,7 @@ things.
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
 #BADPRACT.HLP
-:101: 
+:bad: 
 $~9Robotic Usages That Should be Avoided
 
 There are several coding pitfalls in Robotic; while some are
@@ -8153,15 +8499,17 @@ are several practices to avoid, as well as proper replacements.
 ~cBAD: Creating anything with c?? or p??
   Anything that has an undefined value will use a default
   that may be undesirable. The correct action would therefore
-  be to define the object's color and parameter values.
-~9GOOD: Putting in any set value for colors and parameters.
+  be to define the object's color and parameter values. c?? and
+  p?? exist for the sake of Robotic comparisons and conditional
+  branching, not for being applied to actual objects.
+~9GOOD: Putting in set values for colors and parameters.
 
 ~cBAD: Using global counters for temporary or localized work.
   There are several counters that are Robot-specific and don't
   eat up global counter space. local through local32 per Robot
   should be enough for almost everyone, and the local counters
   can be written to and read by other robots as well (using the
-  r&id&.local# counter form).
+  rN.local# counter form).
 ~9GOOD: Using local counters for temporary or localized work.
 
 ~CBAD: Breaking a subroutine without returning or entering the
@@ -8175,15 +8523,27 @@ are several practices to avoid, as well as proper replacements.
 ~9GOOD: Using goto "label&number&" regarding one variable.
 
 ~CBAD: Looping without using cycle-ending commands of any kind.
-  Looping without CYCLE 1 in idle loops is more severe than
-  many think. Coupled with the "commands" counter set to a high
-  number, loops without CYCLE 1 can absolutely choke a game's
-  speed, especially idle loops, and potentially FREEZE MZX.
-~9GOOD: Including CYCLE 1 in every loop except loops that are
-  ~9designed to get a finite length task done as quickly as
-  ~9possible.
-  You should add a CYCLE 1 for any loop that constantly checks
-  for events (such as keypresses or board status).
+  Looping without CYCLE 1 or WAIT 1 in idle loops is more
+  severe than one might think. Coupled with the "commands"
+  counter set to a high number, loops without CYCLE 1 or WAIT 1
+  can absolutely choke a game's speed, especially idle loops,
+  and potentially FREEZE MZX.
+~9GOOD: Including CYCLE 1 or WAIT 1 in every loop except loops
+  ~9that are designed to get a finite length task done as
+  ~9quickly as possible.
+  You should add a CYCLE 1 or WAIT 1 for any loop that
+  constantly checks for events (such as keypresses or board
+  status).
+  
+~CBAD: Setting the COMMANDS value to maximum.
+  It's generally unneeded, and a loop without a cycle-ending
+  command coupled with this change is a guaranteed way to freeze
+  MZX.
+~9GOOD: Setting the COMMANDS counter to a reasonably high value.
+  Your code can utilize the extra processing speed higher
+  commands-per-cycle allows, and if a loop without a
+  cycle-ending command is accidentally created, it becomes
+  apparent without requiring closing MZX once hit.
 
 ~cBAD: Ending Robots with a label.
 ~9GOOD: Ending Robots with the END command.
@@ -8402,23 +8762,27 @@ operand (one's complement); i.e. changes each bit in a number.
 Using an 8-bit counter for clarity's sake, (~~10) [00001010]
 would return -11. [11110101]
 
+Ternary operators (value - operator token - value - operator
+token - value):
+
+~E?: Conditional Operator~F: Evaluates expressions based on the
+value of the first given expression. This operator is often
+simply called the ternary operator. If the expression to the
+left of the question mark is non-zero, the expression between
+the question mark and colon is evaluated; otherwise, the
+expression to the right of the colon is evaluated. For example,
+If "local" is 35, SET ('local'<60?'local'+2:'local'+1) would set
+the value of "local" to 37, as the first expression evaluates to
+1 and the second expression ('local'+2) is then evaluated.
+
 Special usages:
 
 -Using a constant expression "(n)" is the only way to directly
 use numbers over 32767 or under -32768. This can not be changed
 due to the way the world file format is coded. This is also the
 only way to use octal (base 8) and full-sized hexadecimal
-numbers; octal numbers always begin with a 0 (ex: 01745) and
-hex numbers begin with 0x (ex: 0xDEAF).
--The ~E#~F character returns the value of the last sub 
-expression. For example, if the previous expression was
-(2+(2*3)), then # would return 8. Keep in mind that expressions
-evaluate from left to right, so, for example, consecutive
-expressions (2+2) and ((10/5)+#)) would yield 4 for the second
-expression instead of the expected 6 (since # would evaluate to
-(10/5) and not (2+2). This function is slated to be removed,
-with no backwards compatibility checks to support it, so use at
-YOUR OWN RISK.
+numbers; octal numbers always begin with a 0 (ex: 01745) and hex
+numbers begin with 0x (ex: 0xDEAF).
 
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
@@ -8444,6 +8808,8 @@ MegaZeux has some ways of saving standard formats in-game:
 These commands can save Robotic code to text files and import
 text files into a Robot. The first forms use the current Robot,
 while the second forms use the Robot with the given Robot ID n.
+String inputs are also accepted in place of hard-coded file
+names.
 
 ~ASET "file.bc" to "SAVE_BC"
 ~ASET "file.bc" to "LOAD_BC"
@@ -8460,14 +8826,20 @@ Note that for loading Robotic code via LOAD_ROBOT(n) or
 LOAD_BC(n), any and all local counters previously set in the
 Robot will retain their value.
 
-~ASET "file.mzx" to "SAVE_WORLD"
-
-This command saves MZX worldfiles.
-
 ~ASET "file.sav" to "SAVE_GAME"
 ~ASET "file.sav" to "LOAD_GAME"
 
 These commands save or load MZX savegames, respectively.
+
+~ASET "file.sav" to "SAVE_COUNTERS"
+~ASET "file.sav" to "LOAD_COUNTERS"
+
+These commands respectively save or load a counters file.
+Counter files only contain counter and string data and do not
+require version checks. Saving will dump the current contents
+of the current world's counters and strings; loading will set
+the current world's counter and string values to the values
+given in the file.
 
 MegaZeux can manipulate any type of file with certain Robotic
 commands. There are some basic things to remember when using
@@ -8691,10 +9063,10 @@ spr15_y. For example, using:
 
 will move the sprite to the northeast by 1.
 
-Now that you have sprites setup and displayed you can do
-collision tests; these check if moving sprites will cause
-collision (i.e. overlapping) with either the background (i.e.
-customblocks) or with other sprites. This way you can prevent
+Now that you have sprites set up and displayed, you can do
+collision tests. These check if moving sprites will cause
+collision (i.e. overlapping) with either the foreground (i.e.
+customblocks) or with other sprites. This way, you can prevent
 sprites from moving on top of walls or on top of other
 characters, or allow a sprite to damage another one when
 striking.
@@ -8711,17 +9083,84 @@ absolute board coordinates instead.
 If collision is gone to, then the spr_clistN counters will be
 set to what it collided with and spr_collisions will be set to
 the number of things that the sprite collided with. If the
-sprite will have collided with the background spr_clist0 will
+sprite will have collided with the foreground, spr_clist0 will
 be set to -1. If for instance, the sprite also collided with
 sprites 2 and 3 spr_collisions will be set to 3 and spr_clist1
 will be 2, spr_clist2 will be 3. The values of spr_clistN with
 values of n greater than spr_collisions - 1 are undefined.
 
+Sprites can be set to ignore certain types of blocks in
+collision checks by setting the sprN_ccheck value of a given
+sprite N.
+
 sprN_static uses the SCROLLEDX and SCROLLEDY counters instead
 of absolute board coordinates for determining collisions.
 
+Sprites can also have modified collision boxes, instead of them
+being limited to covering the sprite. Use the SPRn_CX/SPRn_CY
+counters to set the respective [x,y] coordinates of the
+upper-left corner of the collision box, and use
+SPRn_CWIDTH/SPRn_CHEIGHT to set its respective width and height
+(in tiles).
+
+$~9Unbound Sprites
+
+Unbound sprites are a special implementation of sprites, with
+significantly greater precision and character pools afforded to
+them. They have their own setup, their own quirks, and their
+own unique restrictions.
+
+A sprite can be set as unbound by setting the SPRn_UNBOUND
+counter to 1 for a given sprite number n. Once this is done, the
+sprite becomes "unbound" from the tile grid and immediately
+starts using pixels as reference for the collision box (SPRn_CX,
+SPRn_CY, SPRn_CWIDTH, SPRn_CHEIGHT) and sprite location (SPRn_X,
+SPRn_Y). Other attributes, such as reference location and sprite
+dimensions, are left in terms of tiles. Essentially, this means
+that sprite control and collision checks can now be easily
+pixel-based.
+
+(If, for whatever reason, a sprite is given tile-based x/y
+parameters and placed before setting as an unbound sprite, the
+sprite will not adjust its x/y location in pixels to match and
+will keep the literal x/y values, adjusting them to be in terms
+of pixels instead of tiles once the unbound status is set.)
+
+On top of pixel-based manipulation, unbound sprites have
+extended display options at their disposal. Unlike other
+sprites, unbound sprites are allowed access to up to 14 "extra"
+character sets.
+
+First, one must place characters in the extra locations.
+This can be done in two ways: with the LOAD CHAR SET command or
+the CHAR EDIT command. With LOAD CHAR SET, extra character sets
+can be loaded into their proper places by using the @@ prefix to
+load it into proper positions. The first extra character set
+begins at position 256, the second at 512, the third at 768, and
+so on. (One could also load a character set file that is much
+larger than normal to fill these positions.) CHAR EDIT can
+manipulate individual characters of an extra charset by being
+given similar numbers, but the command cannot take them
+directly; one must feed it a counter with the desired number
+instead.
+
+Second, the sprite must be set to access these charsets. This is
+done by setting an offset for that sprite using the SPRn_OFFSET
+counter. For example, setting SPR0_OFFSET to 256 will change all
+character references done by sprite 0 to the first extra
+character set.
+
+Unbound sprites will not ignore the same types of blocks typical
+sprites can (char 32 blocks and blank characters). Instead, they
+can be set on a per-sprite basis to allow a certain color as its
+transparent color with the SPRn_TCOL counter.
+
+Unfortunately, unbound sprites cannot be used with all MZX
+renderers. At present, the overlay2 renderer is incompatible
+with unbound sprites.
+
 See the Sprite Counters and Robotic sections for other features
-of sprites.
+of sprites not noted here.
 
 >#COUNTERS.HLP:spc:Sprite Counters
 >#ROBOTICR.HLP:087:Robotic Reference Manual
@@ -8946,7 +9385,8 @@ copying non-graphical data (primarily Robots); 1 is proper for
 copying graphical data, as the block's appearance will stay as
 exactly as it was when saved. The last case is for saving from
 the vlayer to MZM. The {x,y} coordinates MUST be in "#x" "#y"
-format, and the m MUST exist.
+format, and the m MUST exist. Any valid MZX string can take the
+place of a filename.
 
 The Robotic method of loading MZMs is:
 
@@ -8954,7 +9394,8 @@ The Robotic method of loading MZMs is:
 
 filename is the name of the MZM file (after the required @@),
 x and y are the upper-left corner's coordinates, and NN is 00
-for board, 01 for overlay, 02 for vlayer.
+for board, 01 for overlay, 02 for vlayer. Again, any valid
+string can take the place of a filename.
 
 Finally, MZMs will neither be saved nor loaded if at the edge
 of a board.
@@ -9021,6 +9462,79 @@ like "&sinlocal&" will not work, but "&sin('local')&" will.
 >#COUNTERS.HLP:mth:Mathematical Counters
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
+#PROCESS.HLP
+:prc:
+$~9Cycles and Board Scans - How MZX Processes Robots
+
+Knowing MZX's commands is important for coding, obviously, but
+knowing how and when they get executed can be just as
+paramount.
+
+After executing code in the global Robot, MegaZeux executes
+Robotic code by scanning the board from the top-leftmost Robot
+first, then proceeding from left-to-right, jumping down to the
+beginning of the next line when at the end of its current line,
+and ending at the Robot in the bottom-right corner. This action
+is called a BOARD SCAN. MegaZeux then does a clean-up scan in
+reverse to catch certain actions. This complete act of scanning
+a board and executing any Robotic commands is called a CYCLE,
+and when a Robot completes all of its commands for that cycle,
+it's called ENDING A CYCLE for that Robot. After a cycle is
+executed, the display is updated, so MegaZeux's internal frame
+rate is essentially the same rate as the number of cycles
+executed per second.
+
+By default, MegaZeux will run up to 40 commands per Robot in a
+cycle. Setting the COMMANDS counter can set the number of
+commands processed per Robot per cycle to be lower or
+(significantly) higher. Some commands, however, have the ability
+to end processing prematurely; these are called cycle-ending
+commands.
+
+As a simple room of thumb, commands that move anything on the
+board generally end a cycle, especially moving the player,
+though this is not always the case.
+
+The amount of cycles MegaZeux processes per second is set by the
+MZX_SPEED value. Speed 1 is completely processor-bound, and will
+execute as many cycles per second as possible. Other speeds
+process cycles according to this formula:
+
+~E62.5 / (MZX_SPEED - 1)
+
+Simplified, this means that MegaZeux can be set to consistent
+rates ranging from 62 1/2 cycles per second (speed 2) all the
+way down to 4 1/6 cycles per second (speed 16).
+
+The CYCLE command dictates how often a Robot is active. By
+default, Robots will execute commands on every cycle, but the
+CYCLE command can cause a Robot to spend a certain number of
+cycles idling before executing commands. Robots can go from
+executing 1 out of every 1 cycles (i.e. every cycle) to 1 out
+of every 255.
+
+Special care should be given to the scan that happens in reverse
+to clean up certain actions. This scan ensures that if a Robot
+sends a Robot that has already executed its commands to a label,
+then the target Robot can actually be sent to the proper label.
+Certain commands in the target Robot - specifically, the
+cycle-ending commands that can act across multiple cycles - can
+cause that Robot to execute the new label commands in the very
+same cycle. The global Robot is exempt from this process.
+
+Commands that can prompt this behavior are:
+
+>#COMMANDR.HLP:__5:/ "string"
+>#COMMANDR.HLP:_e1:END
+>#COMMANDR.HLP:_g4:GO [dir] #
+>#COMMANDR.HLP:_t7:TRY [dir] "label"
+>#COMMANDR.HLP:_w1:WAIT #
+
+For more detailed information about what commands end cycles and
+when, read cycles_and_commands.txt in the additional
+documentation.
+
+>#MAIN.HLP:072:Table of Contents
 #PARTIAL.HLP
 :par: 
 $~9Partial Character Sets
@@ -9032,10 +9546,10 @@ Heavy animations and changes that keep part of the character
 set intact (such as the alphanumeric characters) are two issues
 best tackled with partial character sets.
 
-One can save a partial character set in the editor by
-selecting a starting character value (aka "offset") and a
-length value. These fields show up when you export a character
-set, under the filename input.
+One can save a partial character set in the editor by selecting
+a starting character value (aka "offset") and a length value.
+These fields show up when you export a character set, under the
+filename input.
 
 To load partial character sets into your current set, you have
 two options. You can firstly load it as you would a normal
@@ -9045,30 +9559,420 @@ Secondly, you can load the partial set into a non-0 position of
 the target character set.  In the editor, this can be done by
 setting the offset field in the import character dialog, under
 the filename input. The @@xxx prefix allows this in Robotic;
-xxx is the number (in decimal) of the first character to
-replace in the target character set.
+xxx is the number (in decimal) of the first character to replace
+in the target character set.
 
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
+
+#UPDATER.HLP
+:099:
+$~9The MegaZeux Updater
+
+Modern MegaZeux versions on supported platforms, such as
+Windows, have the ability to update MegaZeux from MegaZeux
+itself. The updater can be set to run by pressing either F7 or U
+on any title screen.
+
+MegaZeux checks the sites listed under the config.txt settings,
+in order. By default, the updater checks the Stable branch of
+MegaZeux, but can be set in config.txt to other branches (such
+as Unstable or Debytecode).
+
+If a host reports back that your version of MegaZeux is current,
+the next host can be checked to see if they differ.
+
+If a new version of MegaZeux is detected, MegaZeux offers the
+user these choices:
+-Upgrading to the new version using the "Upgrade" button.
+-Updating the current version to whatever minor "refreshed"
+ version may exist (where the version number remains the same,
+ but a small issue or two not caught before release is fixed)
+ using the "Update Old" button.
+-Cancelling out of the update process with the "Cancel" button.
+ No changes are made.
+ 
+Once the option is chosen, MegaZeux lists what files will be
+added, changed, or deleted by the pending update. At this point,
+the user can still cancel out of updating with the Escape key.
+Pressing Enter at this point begins the updating process.
+
+The updater will then attempt to download the necessary files
+for the update. The download indicator lists the current file
+being downloaded, its size in bytes, and current file number
+out of total files to be downloaded. If all files are properly
+downloaded, MegaZeux will apply the update and notify the user
+of a restart. Click "OK" and MegaZeux will restart, fully
+updated.
+
+>#MAIN.HLP:072:Table of Contents
+
 #NEWINVER.HLP
 :1st: 
 $~9NEW in MegaZeux!
 
+June 29, 2017 - MZX 2.90
+
+Hey, it's been a while! Didn't mean to keep everyone waiting.
+To make up for it as much as possible, we've prepared an extra
+special release of MegaZeux here for you. Yeah, you!
+
+I don't even know where to start with this release, as there's
+simply a lot to talk about. MZX's world formats and rendering
+architecture have gone through major overhauls, and a multitude
+of bugs have been fixed (60+). Particularly the MZX UI graphical
+glitch that occurred when an SMZX mode was enabled.
+
+Some notable new features are unbound sprites (MZX's new native
+pixel precision support), loading character sets/palettes/source
+code/MZMs from strings, saving MZMs to strings, a new Robotic
+debugger, the SAVE_COUNTERS and LOAD_COUNTERS function counters,
+options to help create standalone game releases, the ability to
+assign character sets/palettes to a board to load on entry, and
+resetting boards on entry. The size limit of Robotic bytecode
+has been increased to 2MB.
+
+Other important mentions: MegaZeux has been updated to use
+SDL 2.0 and libmodplug 0.8.9.0. The SAVE_WORLD function counter
+has been permanently removed. The downver utility has been
+temporarily discontinued, as adapting it to this release would
+have been a considerable amount of work. Instead, there is a new
+option in the Export menu in the editor to export a 2.84 world.
+
+Enjoy, and try not to get overwhelmed by all of the new stuff!
+
+FEATURES
+
++ Added a built-in robot debugger. See the Debug Mode section of
+  the help file for details.
++ Added the COMMANDS_STOP special counter to MegaZeux. When a
+  robot executes a number of commands exceeding this value while
+  testing, the robot debugger will be enabled automatically and
+  will open. During regular gameplay, it will be ignored. The
+  default value of COMMANDS_STOP is 2000000.
++ The counter debugger now remembers its previous position after
+  being reopened.
++ Added commands_cycle and commands_total variables to the Robot
+  section of the counter debugger. See the Debug Mode section of
+  the help file for details.
++ Certain types specified as 255 on the char ID table are now
+  treated as Custom* types when placed and selected in the
+  editor. If you switched a type to char ID 255 in a game that
+  already had that type, the parameters will not be changed
+  (and the types will still be char 0 if they were already
+  placed in the world). When making a type a Custom* type from
+  the global chars dialog, it will appear visually different in
+  the list and in the character selection window, and also ask
+  for confirmation.
++ The enter menu can be closed with escape now.
++ In the editor, the Backspace key now removes the top layer
+  and brings the under layer to the top, as a compliment to Del.
+  This does not affect the text entry behavior.
++ Seeking in the String section of the counter debugger will now
+  ignore the $ prefix.
++ Tentative joypad POV hat support added: joyNhat = U, D, L, R
++ The BUTTONS counter has been extended to support the mouse
+  wheel and X1/X2 buttons.
++ Strings can now be used in the LOAD PALETTE "file" command in
+  place of a file name, i.e. LOAD PALETTE "$string+10".
++ Strings can now be used in the LOAD CHAR SET "file" command in
+  place of a file name, i.e. LOAD CHAR SET "@@240$chars".
++ Strings can now be used for the special counter LOAD_ROBOT in
+  place of a file name, i.e. set "$str" "LOAD_ROBOT".
++ Strings can now be used for saving and loading MZMs in place
+  of a file name, i.e. put "@$str" image_file... (Lancer-X)
++ Added ESCAPE_MENU counter. When set to 0, this counter will
+  prevent pressing escape from opening the exit gameplay menu.
+  This will not affect any other escape menus in MZX, and the
+  exit gameplay menu can still be opened by other means, such as
+  ALT+F4, CTRL+C, the window close button, etc.
++ Added EXIT_GAME function counter. When set to anything but 0,
+  this will cause MegaZeux to exit to the title screen. This has
+  no effect on the title screen.
++ Added the ternary operator (?:) to expressions. If the value
+  to the left of ? is not equal to zero, the expression between
+  the ? and the : will be evaluated. If the value to the left of
+  ? is equal to zero, the expression to the right of : will be
+  evaluated.
++ Added SAVE_COUNTERS and LOAD_COUNTERS special counters. These
+  will save and load files containing every counter and string
+  from the world they're used in, respectively. These files are
+  not version checked, and may be used like save files.
++ Robots now keep their robot IDs after reloading saves.
++ Added standalone mode. The config parameters standalone_mode
+  and no_titlescreen can now be used (from MZXRun only) to
+  create standalone versions of MZX with the ability to fully
+  customise the player's experience. See config.txt for details.
+  (Lancer-X)
++ The minimal help bar now displays robot memory and the current
+  board mod when contextually appropriate.
++ The minimal help options for the board and robot editors are
+  now enabled by default.
++ Shaders can now be changed from the F2 menu when using the
+  GLSL renderer. The user can select a fragment shader from the
+  assets/shaders/extra/ directory. If a matching vertex shader
+  exists, it will be loaded alongside the fragment shader.
+  Otherwise, MZX will fall back to the default vertex shader.
++ On Linux and Mac OS X the configuration file will be copied
+  into the user's home directory and given the name
+  .megazeux-config if it is not already present. This config
+  file will then be used instead of the global one. (Lancer-X)
++ Added unbound sprites. Sprites can be unbound from the grid by
+  setting spr#_unbound to 1. Their coordinates will now refer to
+  the sprite's location in pixels, not tiles. spr#_width,
+  height, refx and refy still refer to chars; however, spr#_x,
+  y, cx, cy, cwidth and cheight are all in pixels. Unbound
+  sprites do not work with all renderers; currently, out of the
+  renderers available on the PC platforms, the overlay2 renderer
+  lacks this functionality. (Lancer-X)
++ Unbound sprites do not let char 32 or blank characters (when
+  in ccheck 2) through like regular sprites do. Instead, set
+  spr#_tcol to a color that will be transparent when the unbound
+  sprite is drawn. (Lancer-X)
++ Unbound sprites can make use of additional hidden charsets.
+  There are an additional 14 charsets beyond the default that
+  can be modified through using load char set or char edit.
+  (e.g. load char set "@@256charset.chr")
+  A sprite can be set to refer to these later chars with the
+  spr#_offset counter. The offset value is then added to each
+  char in the sprite. You can use this to refer to higher char
+  sets.
+  (e.g. set "spr0_offset" 256)
+  Offset values can also be set to locations within a char set.
+  (Lancer-X)
++ To allow you to access the extended charsets, the @ option to
+  load char set now takes up to 4 digits, rather than merely 3.
+  The + option still only allows 2 hex digits. (Lancer-X)
++ The colors used by tiles of a given color # in SMZX mode 3
+  can now be rebound using the "smzx_idx#,#" counters.
+  (e.g. set "smzx_idx7,0" 32)
+  Now if you put down a c07 tile, all 00 pixels will refer to
+  color 32 (as opposed to color 0 in SMZX mode 2 or color 7 in
+  SMZX mode 1). These values are reset whenever the SMZX mode is
+  changed. Once again, this is only available to renderers that
+  support unbound sprites. (Lancer-X)
++ Edited worlds now retain their world version until resaved.
+  Before, they would lose their world version after testing.
++ Added world version display to the debug window.
++ Added GOOP_WALK counter for robots.
++ Added "Reset board on entry" parameter for boards. When set,
+  the board will reset to its original state when the board is
+  entered during gameplay. This setting can be saved as a board
+  default.
++ Added "Load charset on entry" parameter for boards. When set,
+  MegaZeux will load the selected charset file when the board
+  is entered during gameplay. This setting can be saved as a
+  board default.
++ Added "Load palette on entry" parameter for boards. When set,
+  MegaZeux will load the selected palette file when the board
+  is entered during gameplay. This setting can be saved as a
+  board default.
++ Maximum robot size has been increased from 64kb to 2mb.
+  (Lancer-X)
+
++ Debytecode: the LOAD_SOURCE_FILE special counter can now be
+  used to load and compile a robot program from source code.
+  This can be used with either a file or a string as input.
++ Debytecode: the robot editor's import robot menu now supports
+  loading legacy source code.
+
+BUGFIXES
+
++ Fixed crash bug when using ALT+Z (Clear Board).
++ Fixed crash bug when attempting to view the help file in the
+  updater.
++ Fixed crash bug when attempting to use SMZX_R/G/B with out-of-
+  range indexes.
++ Fixed crash on exit when the config file did not explicitly
+  specify update hosts.
++ Fixed memory leak involving bounds-breaking FREADn calls.
++ Fixed counter debugger issue where counters and strings
+  starting with chars over 'Z' would cause everything in their
+  section to be placed into the '#' list.
++ Dialog window labels can not be put into focus by clicking
+  them with the mouse anymore.
++ Dialog windows closed by pressing escape will now close only
+  on a new press instead of whenever the key is held.
++ Load (F4)/quickload (F10) on invalid save files in-game leaves
+  the current game running instead of exiting to the titlescreen
+  or editor.
++ Fixed issue where counter debugger would display wrong values
+  for the robot LOCAL counters.
++ Fixed robot editor issue where global robot coords would be
+  reloaded as 65535.
++ Fixed issue where board defaults would be reset after leaving
+  testing until the world was manually reloaded.
++ Fixed issue where the Board Info dialog would not close when
+  'Cancel' was selected.
++ Fixed bug where chars 254 and 255 would not be reverted back
+  to their defaults via F4/F5.
++ Fixed bug where player would move onto goop when walking into
+  enemys on top of goop.
++ Fixed bug where 'enter' would be detected in loaded save files
+  when loading from a title screen.
++ Fixed issue where MZX was using the world file version instead
+  of the internal MZX version when saving MZMs and determining
+  whether it could load MZMs both within the editor and in game.
++ Changed the caption behavior in the world editor as to refresh
+  only when board values are synchronized.
++ Fixed bug where, when exiting gameplay, the world would keep
+  running on the title screen if MegaZeux lost read access to
+  the world file.
++ Fixed minor bug where trying to load a nonexistant mod would
+  change MOD_NAME's output while the previous mod still played.
++ Fixed a Windows-only bug, where attempting to load a Robotic
+  file in the Robot Editor or with LOAD_ROBOT would not load the
+  entire file if the file contained 0x1A (char 26).
++ Fixed a bug where the lazer animation would fail to complete.
++ Fixed bug where the VOLUME # and MOD FADE # # inputs could go
+  out of range, resulting in ear-piercing white noise. Inputs
+  now wrap between 0 and 255 for compatibility reasons.
++ Fixed bug where certain unicode values could crash MZX in the
+  character selection dialog.
++ Fixed bug where : "keyN" would not work on the Pandora.
++ Fixed a bug where FREAD could create a string larger than the
+  maximum string size.
++ In the sprite section of the counter debugger, the spr_clistN
+  values were incorrectly labelled as "spr_collisionN". Fixed.
++ Fixed counter debugger crash when selecting certain strings
+  containing escaped values.
++ Added compatibility for the cycle-ending SHOOT, SHOOTMISSILE,
+  SHOOTSEEKER, and SPITFIRE commands from MegaZeux 2.83.
++ Fixed crash bug when attempting to use file counters with
+  paths equal to or longer than 512 chars in length. MegaZeux
+  will now ignore such paths.
++ Fixed bug where MZX would crash with out-of-bounds joystick
+  key mappings.
++ Fixed a bug where robots could not push the SliderNS type to
+  the south.
++ Fixed a bug where a robot using #return or #top multiple times
+  within a single command could cause a crash.
++ Fixed a port regression where IF ANY would continue to iterate
+  over the board after finding a match, potentially triggering
+  multiple subroutines, #return, or #top labels.
++ Fixed a bug where MZM error messages could repeat indefinitely
+  and lock up MZX.
++ Fixed a bug where the (#)PUSHED label would not be sent to the
+  first object in a row of pushed objects if that object was a
+  robot.
++ Fixed support for PPC Linux builds. (Insidious)
++ Fixed a bug where a robot sent a subroutine would restart the
+  command it was executing upon #return if the command was a
+  multi-cycle command. This fix applies to worlds saved in 2.90
+  and later only.
++ Fixed a bug where ALT+F4 would cause menus to open instead of/
+  in addition to triggering an exit event.
++ Fixed a bug where subdirectory mods with different types of
+  slashes in their names would fail to be recognized as the same
+  mod.
++ Fixed a bug where SMZX palette intensities were not saved.
++ Made the opengl2 and glsl renderers endian-correct. (Lancer-X)
++ Fixed a bug where keystrokes were getting lost during event
+  processing. (Lancer-X)
++ The UI now uses the regular MZX mode and the protected palette
+  when playing SMZX games. This is only available to renderers
+  that support unbound sprites. (Lancer-X)
++ Changing from SMZX mode 1 to 0 correctly restores the palette.
+  (Lancer-X)
++ Fixed a bug where the tree list in the counter debugger would
+  rapidly scroll through elements when clicked.
++ Fixed a bug where the updater, on failing to receive data from
+  the server, would consume large amounts of CPU before timing
+  out. (Lancer-X)
++ Fixed various bugs related to the pushing of sensors.
+  (Lancer-X)
++ Fixed a bug where MZX would crash in some cases when testing
+  after adding/importing new boards into a world.
++ Made KEY a board counter <=2.70. Also added masking <=2.62 to
+  make Oath Demo work again. (Lancer-X)
++ Bullet types shot by robots clamped to 0-2. (Lancer-X)
++ SAVE_GAME and SAVE_WORLD now happen at the end of a cycle, not
+  immediately. (Lancer-X)
++ SAVE_WORLD no longer exists. (Lancer-X)
++ Labels at the end of a program no longer get randomly sorted
+  first and stop the actual first instance of that label being
+  called. This fixes a bug in the Dark Corner 'Zane' demo.
+  (Lancer-X)
++ Copy and copy block in pre-port MZX games now preserves the
+  state of any robots copied. (Lancer-X)
++ Copying and pasting robot code with LF line endings on Windows
+  now works. (Lancer-X)
++ MegaZeux can now be exited during an infinite loop. (Lancer-X)
++ Fixed a bug where SAVE_GAME on the first cycle of a board
+  would cause the game to be faded out on load. This still
+  affects legacy worlds. (Lancer-X)
++ Fixed a bug where trying to create new counters called "fread"
+  or "fread_counter" in the counter debugger would cause the
+  file being read to advance.
++ Fixed a bug where the numpad was unable to be used to control
+  the player, despite being identical to the cursor keys for
+  every other situation. (Lancer-X)
++ Fixed a bug where pre-port worlds could play any number of
+  concurrent samples. This makes portions of Bernard the Bard
+  quite cacophonous. (Lancer-X)
++ Fixed a bug where per-game config files could set options they
+  weren't supposed to be able to.
+
+DEVELOPERS
+
++ Fixed linking bug when attempting to make a modular build of
+  MegaZeux in Debian/armhf. -fPIC is now enabled for modular
+  builds on all platforms. (Insidious, ajs)
++ Added SDL 2.0 support. At the moment, the overlay renderers
+  are not accelerated by SDL 2.0 and may be slower than their
+  SDL 1.2 counterparts. Other minor inconsistencies may exist
+  between the two versions. (ajs)
++ Keycode help diagram replaced with an HTML file (from the
+  older PNG file). This will make future updates much easier.
++ Updated NDS, Wii and PSP ports to latest devkitpro toolchains.
++ Updated libmodplug to version 0.8.9.0. (asiekierka)
++ Added experimental libxmp support. (asiekierka)
++ Added experimental libopenmpt support. (asiekierka)
++ New rendering architecture that mostly sits alongside the old
+  rendering architecture. There is a new function implemented by
+  supporting renderers: render_layer(). This provides a layer
+  in a similar form to the text_video array in graphics and
+  expects that to be drawn on the screen. This is called once
+  for each layer that is drawn- this means the board, overlay,
+  UI and sprites. Each layer can have a different SMZX mode,
+  although at the moment this is only used to allow the UI to
+  remain in regular MZX mode while the game or editor is in SMZX
+  mode. The render_layer() function is only called if it is
+  implemented by the renderer and if there is something on the
+  screen that can only be drawn by the renderer (e.g. unbound
+  sprites, or UI elements in an SMZX game) (Lancer-X)
++ LibSDL2 support is now the default. It can still be disabled
+  by passing --disable-libsdl2 to config.sh. (Lancer-X)
+
+>#284CLOG.HLP:284:New in Versions 2.84 to 2.84c
+>#2823CLOG.HLP:283:New in Versions 2.82 to 2.83
+>#281CLOG.HLP:281:New in Versions 2.81 to 2.81h
+>#280CLOG.HLP:280:New in Versions 2.80 to 2.80h
+>#OLDERVER.HLP:260:New in Versions 2.60 to 2.70
+>#OLDESVER.HLP:201:New in Versions 2.01 to 2.60
+>#NEWIN200.HLP:1st:New in Version 2.00
+>#ANCENVER.HLP:1xx:New in Versions Through 1.03
+>#MAIN.HLP:072:Table of Contents
+
+#284CLOG.HLP
+:284:
+$~9New in Versions 2.84 to 2.84c
+
 December 24, 2012 - MZX 2.84c
 
-Hey all, new version of MegaZeux here! And hopefully without
-any crashes this time around!  Haha yeah right.
+Hey all, new version of MegaZeux here! And hopefully without any
+crashes this time around!  Haha yeah right.
 
 The most notable thing this release (besides fixed crash bugs,
-as usual) is the new counter debugger! Give it a try and tell
-us what you think!
+as usual) is the new counter debugger! Give it a try and tell us
+what you think!
 
 Counter binary search has been replaced with a hash table in
 versions of MegaZeux for most platforms. This has resulted in
 slightly faster counter lookups, and MUCH faster creation of
 counters, since MegaZeux doesn't have to keep the list ordered.
-The hash table is turned off for NDS builds for now due to
-tight memory constraints.
+The hash table is turned off for NDS builds for now due to tight
+memory constraints.
 
 Otherwise, most of the new features are editor enhancements and
 modifications. Notable mentions are reordering the board list
@@ -9079,15 +9983,14 @@ FEATURES
 + The functionality of the F11 counter/string debugger has been
   expanded to include sprites, robots, and miscellaneous world
   and board variables. The ability to modify many of these vars
-  is limited and a large portion are read-only. In addition,
-  you may add new counters and strings, hide empty
-  counters/strings (does not affect built-in variables), and
-  search by name and contents. Export is still limited to
-  counters and strings.
-+ Max string length has been increased from 1MiB (1048576
-  bytes) to 4MiB (4194304 bytes).
-+ Board mods may now be selected from subdirectories of the
-  game folder in the ALT+N dialog.
+  is limited and a large portion are read-only. In addition, you
+  may add new counters and strings, hide empty counters/strings
+  (does not affect built-in variables), and search by name and
+  contents. Export is still limited to counters and strings.
++ Max string length has been increased from 1MiB (1048576 bytes)
+  to 4MiB (4194304 bytes).
++ Board mods may now be selected from subdirectories of the game
+  folder in the ALT+N dialog.
 + The title bar now displays the world and editing board/robot
   names based on context.
 + Fire Burns Space and Fire Burns Forever are off by default.
@@ -9100,13 +10003,12 @@ FEATURES
 + You may now move the current board anywhere in the board list
   with M. You may not move the title screen board.
 + View mode in the board editor (V) will start from the current
-  location of the screen now rather than at the top-left
-  corner.
+  location of the screen now rather than at the top-left corner.
 + Config file options for default board settings added, as well
   as the ability to save these per-world from the editor.
 + Ctrl+G - Goto board position at X,Y.
-+ png2smzx now requires less arguments and has an option to
-  skip a char (generally char 32 will be useful to skip).
++ png2smzx now requires less arguments and has an option to skip
+  a char (generally char 32 will be useful to skip).
 
 + Debytecode: The robotic editor now asks for a confirmation to
   save the program on exit.
@@ -9117,9 +10019,9 @@ BUGFIXES
   color to be ignored (always white). This caused the cursor to
   not be visible if shown on a white background. (ajs)
 + Setting $string.length will not cause memory corruption now.
-  In addition, its pre-2.84 behavior of intentionally
-  allocating the string past the set length has been restored,
-  but the length itself will still be set to the correct value.
+  In addition, its pre-2.84 behavior of intentionally allocating
+  the string past the set length has been restored, but the
+  length itself will still be set to the correct value.
 + Added bounds check to INC "$string" "value". Attempts to
   increase a string past its maximum length (4 MiB, or 4194304
   bytes) will now fail.
@@ -9136,12 +10038,12 @@ BUGFIXES
   freezing both normally AND after loading a save. Robots will
   not be incorrectly versioned with the save format magic now.
 + Fixed bug where ALT+M wouldn't always edit non-stored types.
-+ Fixed bug where ! could not be used as a substitute for ~~.
++ Fixed bug where ! could not be used as a substitute for ~.
 + Fixed a bug where tab-draw and block actions would carry
   between board and overlay editing. ALT+O now sets the drawing
   mode back to normal on a switch.
-+ ALT+M now edits the overlay instead of the board while
-  editing the overlay.
++ ALT+M now edits the overlay instead of the board while editing
+  the overlay.
 + Quick-load (F10 during gameplay) will not work if the load
   menu (F4) has been disabled with the LOAD_MENU counter.
 + Fixed a bug where the listening mod directory would stay the
@@ -9150,40 +10052,39 @@ BUGFIXES
   changes, and also after the board mod has been changed by
   ALT+N or Shift+8/*.
 + LOAD_GAME will not incorrectly trigger JUSTENTERED anymore.
-+ Palette/intensity changes made on the same cycle as a
-  teleport player command are now properly taken into account.
-  This fixes a game-stopping regression in Sponkgo's Legendary
-  Journey where leaving the second stage's bonus area would
-  leave the color intensity at 0.
++ Palette/intensity changes made on the same cycle as a teleport
+  player command are now properly taken into account. This fixes
+  a game-stopping regression in Sponkgo's Legendary Journey
+  where leaving the second stage's bonus area would leave the
+  color intensity at 0.
 + SMZX mode is now disabled when leaving the editor if it was
   enabled in the editor via F11.
 + Fixed potential crash bug where robot bytecode files were not
   being validated before being loaded with LOAD_BC.
-+ Fixed minor message box bug dating back to DOS where a
-  message box starting with an unavailable option would begin
-  with the cursor on a blank line.
++ Fixed minor message box bug dating back to DOS where a message
+  box starting with an unavailable option would begin with the
+  cursor on a blank line.
 + Fixed crash that happened when typing over bounds while
   renaming a file in a file manager dialog. File and directory
   renaming now use a popup dialog akin to ALT+N.
 + Files with names longer than 55 chars may now be selected in
-  file managers. The limit for typing in a file name is still
-  55 chars.  You may not enter a blank line as a file name
-  anymore.
+  file managers. The limit for typing in a file name is still 55
+  chars.  You may not enter a blank line as a file name anymore.
 + Fixed segfault when attempting to read THIS_COLOR for the
   global robot. It will now always return -1.
 
 DEVELOPERS
 
 + Overhauled txt2hlp. Error messages now differentiate between
-  hyperlinks and labels and will take the display chars ~~ and &
+  hyperlinks and labels and will take the display chars ~ and &
   into account. Eventually, the goal should be to get rid of
   txt2hlp altogether and have MZX load straight from the .txt
   file.
 + Added compile option to use uthash for counter/string lookups
   as opposed to binary search. Ideally, this will vastly improve
   lookup speeds for large numbers of counters/strings, but will
-  consume more memory. (Thanks to Lancer-X for the modified
-  uthash header file.)
+  consume more memory. (thanks to Lancer-X for the modified
+  uthash header file)
   
 >#MAIN.HLP:072:Table of Contents
 
@@ -9557,13 +10458,14 @@ DEVELOPERS
 + Introduced SOCKS4/4a/5 support transparently into the network
   layer. (MZXGiant)
 
+>#NEWINVER.HLP:1st:NEW in MegaZeux!
 >#2823CLOG.HLP:283:New in Versions 2.82 to 2.83
 >#281CLOG.HLP:281:New in Versions 2.81 to 2.81h
 >#280CLOG.HLP:280:New in Versions 2.80 to 2.80h
->#OLDERVER.HLP:099:New in Versions 2.60 to 2.70
->#OLDESVER.HLP:100:New in Versions 2.01 to 2.60
+>#OLDERVER.HLP:260:New in Versions 2.60 to 2.70
+>#OLDESVER.HLP:201:New in Versions 2.01 to 2.60
 >#NEWIN200.HLP:1st:New in Version 2.00
->#ANCENVER.HLP:103:New in Versions Through 1.03
+>#ANCENVER.HLP:1xx:New in Versions Through 1.03
 >#MAIN.HLP:072:Table of Contents
 
 #2823CLOG.HLP
@@ -10194,12 +11096,13 @@ DEVELOPERS
   feature right away (see config.sh). (Mr_Alert)
 
 >#NEWINVER.HLP:1st:NEW in MegaZeux!
+>#284CLOG.HLP:284:New in Versions 2.84 to 2.84c
 >#281CLOG.HLP:281:New in Versions 2.81 to 2.81h
 >#280CLOG.HLP:280:New in Versions 2.80 to 2.80h
->#OLDERVER.HLP:099:New in Versions 2.60 to 2.70
->#OLDESVER.HLP:100:New in Versions 2.01 to 2.60
+>#OLDERVER.HLP:260:New in Versions 2.60 to 2.70
+>#OLDESVER.HLP:201:New in Versions 2.01 to 2.60
 >#NEWIN200.HLP:1st:New in Version 2.00
->#ANCENVER.HLP:103:New in Versions Through 1.03
+>#ANCENVER.HLP:1xx:New in Versions Through 1.03
 >#MAIN.HLP:072:Table of Contents
 #281CLOG.HLP
 :281:
@@ -10954,12 +11857,13 @@ November 20, 2005 - MZX 2.81
   changes in the save format.
 
 >#NEWINVER.HLP:1st:NEW in MegaZeux!
+>#284CLOG.HLP:284:New in Versions 2.84 to 2.84c
 >#2823CLOG.HLP:283:New in Versions 2.82 to 2.83
 >#280CLOG.HLP:280:New in Versions 2.80 to 2.80h
->#OLDERVER.HLP:099:New in Versions 2.60 to 2.70
->#OLDESVER.HLP:100:New in Versions 2.01 to 2.60
+>#OLDERVER.HLP:260:New in Versions 2.60 to 2.70
+>#OLDESVER.HLP:201:New in Versions 2.01 to 2.60
 >#NEWIN200.HLP:1st:New in Version 2.00
->#ANCENVER.HLP:103:New in Versions Through 1.03
+>#ANCENVER.HLP:1xx:New in Versions Through 1.03
 >#MAIN.HLP:072:Table of Contents
 #280CLOG.HLP
 :280: 
@@ -11653,15 +12557,16 @@ August 9, 2004 - First release, MZX 2.80 BETA
   before new values were set. They will not work here.
 
 >#NEWINVER.HLP:1st:NEW in MegaZeux!
+>#284CLOG.HLP:284:New in Versions 2.84 to 2.84c
 >#2823CLOG.HLP:283:New in Versions 2.82 to 2.83
 >#281CLOG.HLP:281:New in Versions 2.81 to 2.81h
->#OLDERVER.HLP:099:New in Versions 2.60 to 2.70
->#OLDESVER.HLP:100:New in Versions 2.01 to 2.60
+>#OLDERVER.HLP:260:New in Versions 2.60 to 2.70
+>#OLDESVER.HLP:201:New in Versions 2.01 to 2.60
 >#NEWIN200.HLP:1st:New in Version 2.00
->#ANCENVER.HLP:103:New in Versions Through 1.03
+>#ANCENVER.HLP:1xx:New in Versions Through 1.03
 >#MAIN.HLP:072:Table of Contents
 #OLDERVER.HLP
-:099: 
+:260: 
 $~9New in Versions 2.60 to 2.70
 
 **NEW in 2.70***
@@ -11807,15 +12712,16 @@ $~9New in Versions 2.60 to 2.70
 $***
 
 >#NEWINVER.HLP:1st:NEW in MegaZeux!
+>#284CLOG.HLP:284:New in Versions 2.84 to 2.84c
 >#2823CLOG.HLP:283:New in Versions 2.82 to 2.83
 >#281CLOG.HLP:281:New in Versions 2.81 to 2.81h
 >#280CLOG.HLP:280:New in Versions 2.80 to 2.80h
->#OLDESVER.HLP:100:New in Versions 2.01 to 2.60
+>#OLDESVER.HLP:201:New in Versions 2.01 to 2.60
 >#NEWIN200.HLP:1st:New in Version 2.00
->#ANCENVER.HLP:103:New in Versions Through 1.03
+>#ANCENVER.HLP:1xx:New in Versions Through 1.03
 >#MAIN.HLP:072:Table of Contents
 #OLDESVER.HLP
-:100: 
+:201: 
 $~9New in Versions 2.01 to 2.60
 
 ~E2.60 release:
@@ -12268,12 +13174,13 @@ before, you probably won't understand much of this list.
  * Fill in editor now works with board sizes over 127x127
 
 >#NEWINVER.HLP:1st:NEW in MegaZeux!
+>#284CLOG.HLP:284:New in Versions 2.84 to 2.84c
 >#2823CLOG.HLP:283:New in Versions 2.82 to 2.83
 >#281CLOG.HLP:281:New in Versions 2.81 to 2.81h
 >#280CLOG.HLP:280:New in Versions 2.80 to 2.80h
->#OLDERVER.HLP:099:New in Versions 2.60 to 2.70
+>#OLDERVER.HLP:260:New in Versions 2.60 to 2.70
 >#NEWIN200.HLP:1st:New in Version 2.00
->#ANCENVER.HLP:103:New in Versions Through 1.03
+>#ANCENVER.HLP:1xx:New in Versions Through 1.03
 >#MAIN.HLP:072:Table of Contents
 #NEWIN200.HLP
 :1st: 
@@ -12506,15 +13413,16 @@ $~9New in Version 2.00:
  * Different player pics per direction.
 
 >#NEWINVER.HLP:1st:NEW in MegaZeux!
+>#284CLOG.HLP:284:New in Versions 2.84 to 2.84c
 >#2823CLOG.HLP:283:New in Versions 2.82 to 2.83
 >#281CLOG.HLP:281:New in Versions 2.81 to 2.81h
 >#280CLOG.HLP:280:New in Versions 2.80 to 2.80h
->#OLDERVER.HLP:099:New in Versions 2.60 to 2.70
->#OLDESVER.HLP:100:New in Versions 2.01 to 2.60
->#ANCENVER.HLP:103:New in Versions Through 1.03
+>#OLDERVER.HLP:260:New in Versions 2.60 to 2.70
+>#OLDESVER.HLP:201:New in Versions 2.01 to 2.60
+>#ANCENVER.HLP:1xx:New in Versions Through 1.03
 >#MAIN.HLP:072:Table of Contents
 #ANCENVER.HLP
-:103: 
+:1xx: 
 $~9New in Versions Through 1.03
 
 1.03 release: QUICK FIXES, LIMITED DISTRIBUTION
@@ -12808,11 +13716,12 @@ $~9New in Versions Through 1.03
  * Optimized code
 
 >#NEWINVER.HLP:1st:NEW in MegaZeux!
+>#284CLOG.HLP:284:New in Versions 2.84 to 2.84c
 >#2823CLOG.HLP:283:New in Versions 2.82 to 2.83
 >#281CLOG.HLP:281:New in Versions 2.81 to 2.81h
 >#280CLOG.HLP:280:New in Versions 2.80 to 2.80h
->#OLDERVER.HLP:099:New in versions 2.60 to 2.70
->#OLDESVER.HLP:100:New in versions 2.01 to 2.60
+>#OLDERVER.HLP:260:New in versions 2.60 to 2.70
+>#OLDESVER.HLP:201:New in versions 2.01 to 2.60
 >#NEWIN200.HLP:1st:New in version 2.00
 >#MAIN.HLP:072:Table of Contents
 @
