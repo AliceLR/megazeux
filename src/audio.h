@@ -117,6 +117,9 @@ struct audio
 
 extern struct audio audio;
 
+CORE_LIBSPEC void set_max_samples(int max_samples);
+CORE_LIBSPEC int get_max_samples(void);
+
 CORE_LIBSPEC void init_audio(struct config_info *conf);
 CORE_LIBSPEC void quit_audio(void);
 CORE_LIBSPEC int load_module(char *filename, bool safely, int volume);

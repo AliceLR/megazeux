@@ -294,6 +294,9 @@ BUGFIXES
 + Fixed a bug where the numpad was unable to be used to control
   the player, despite being identical to the cursor keys for
   every other situation. (Lancer-X)
++ Fixed a bug where pre-port worlds could play any number of
+  concurrent samples. This makes portions of Bernard the Bard
+  quite cacophonous. (Lancer-X)
 
 DEVELOPERS
 

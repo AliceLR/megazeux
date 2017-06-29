@@ -122,6 +122,18 @@ struct audio audio;
 
 static volatile int locked = 0;
 static volatile char last_lock[16];
+static int max_simultaneous_samples = -1;
+
+void set_max_samples(int max_samples)
+{
+  // -1 is unlimited
+  max_simultaneous_samples = max_samples;
+}
+
+int get_max_samples(void)
+{
+  return max_simultaneous_samples;
+}
 
 static void lock(const char *file, int line)
 {
@@ -1699,6 +1711,54 @@ void end_module(void)
   audio.primary_stream = NULL;
 }
 
+static void limit_samples(int max)
+{
+  int samples_playing = 0;
+  int cancel_num = 0;
+  struct audio_stream *current_astream = audio.stream_list_base;
+  struct audio_stream *next_astream;
+
+  if (max == -1) return; // No limit
+
+  // We want to limit the # of samples playing.
+
+  LOCK();
+
+  while(current_astream)
+  {
+    next_astream = current_astream->next;
+
+    if((current_astream != audio.primary_stream) &&
+     (current_astream != (struct audio_stream *)(audio.pcs_stream)))
+    {
+      samples_playing++;
+    }
+
+    current_astream = next_astream;
+  }
+
+  cancel_num = samples_playing - max;
+  if (cancel_num > 0) {
+    current_astream = audio.stream_list_base;
+    while(current_astream)
+    {
+      next_astream = current_astream->next;
+
+      if((current_astream != audio.primary_stream) &&
+      (current_astream != (struct audio_stream *)(audio.pcs_stream)))
+      {
+        current_astream->destruct(current_astream);
+        cancel_num--;
+        if (cancel_num <= 0) break;
+      }
+
+      current_astream = next_astream;
+    }
+  }
+
+  UNLOCK();
+}
+
 void play_sample(int freq, char *filename, bool safely)
 {
   Uint32 vol = 255 * audio.sound_volume / 8;
@@ -1724,6 +1784,8 @@ void play_sample(int freq, char *filename, bool safely)
     construct_stream_audio_file(filename,
      (freq_conversion / freq) / 2, vol, 0);
   }
+
+  limit_samples(max_simultaneous_samples);
 }
 
 void end_sample(void)
