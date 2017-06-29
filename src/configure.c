@@ -96,10 +96,13 @@
 #endif
 #endif /* CONFIG_UPDATER */
 
+static bool is_startup = false;
+
 struct config_entry
 {
   char option_name[OPTION_NAME_LEN];
   config_function change_option;
+  bool allow_in_game_config;
 };
 
 #ifdef CONFIG_NETWORK
@@ -482,54 +485,54 @@ static void config_set_num_buffered_events(struct config_info *conf,
  */
 static const struct config_entry config_options[] =
 {
-  { "audio_buffer", config_set_audio_buffer },
-  { "audio_sample_rate", config_set_audio_freq },
-  { "disassemble_base", config_disassemble_base },
-  { "disassemble_extras", config_disassemble_extras },
-  { "enable_oversampling", config_enable_oversampling },
-  { "enable_resizing", config_enable_resizing },
-  { "force_bpp", config_force_bpp },
-  { "fullscreen", config_set_fullscreen },
-  { "fullscreen_resolution", config_set_resolution },
-  { "gl_filter_method", config_set_gl_filter_method },
-  { "gl_vsync", config_gl_vsync },
-  { "include", include2_config },
-  { "include*", include_config },
-  { "joy!axis!", joy_axis_set },
-  { "joy!button!", joy_button_set },
-  { "joy!hat", joy_hat_set },
-  { "mask_midchars", config_mask_midchars },
-  { "modplug_resample_mode", config_mp_resample_mode },
-  { "music_on", config_set_music },
-  { "music_volume", config_set_mod_volume },
-  { "mzx_speed", config_set_mzx_speed },
+  { "audio_buffer", config_set_audio_buffer, false },
+  { "audio_sample_rate", config_set_audio_freq, false },
+  { "disassemble_base", config_disassemble_base, false },
+  { "disassemble_extras", config_disassemble_extras, false },
+  { "enable_oversampling", config_enable_oversampling, false },
+  { "enable_resizing", config_enable_resizing, false },
+  { "force_bpp", config_force_bpp, false },
+  { "fullscreen", config_set_fullscreen, false },
+  { "fullscreen_resolution", config_set_resolution, false },
+  { "gl_filter_method", config_set_gl_filter_method, false },
+  { "gl_vsync", config_gl_vsync, false },
+  { "include", include2_config, true },
+  { "include*", include_config, true },
+  { "joy!axis!", joy_axis_set, true },
+  { "joy!button!", joy_button_set, true },
+  { "joy!hat", joy_hat_set, true },
+  { "mask_midchars", config_mask_midchars, false },
+  { "modplug_resample_mode", config_mp_resample_mode, false },
+  { "music_on", config_set_music, false },
+  { "music_volume", config_set_mod_volume, false },
+  { "mzx_speed", config_set_mzx_speed, true },
 #ifdef CONFIG_NETWORK
-  { "network_enabled", config_set_network_enabled },
+  { "network_enabled", config_set_network_enabled, false },
 #endif
-  { "no_titlescreen", config_no_titlescreen },
-  { "num_buffered_events", config_set_num_buffered_events },
-  { "pause_on_unfocus", pause_on_unfocus },
-  { "pc_speaker_on", config_set_pc_speaker },
-  { "pc_speaker_volume", config_set_sfx_volume },
-  { "resample_mode", config_resample_mode },
-  { "sample_volume", config_set_sam_volume },
-  { "save_file", config_save_file },
+  { "no_titlescreen", config_no_titlescreen, false },
+  { "num_buffered_events", config_set_num_buffered_events, false },
+  { "pause_on_unfocus", pause_on_unfocus, false },
+  { "pc_speaker_on", config_set_pc_speaker, false },
+  { "pc_speaker_volume", config_set_sfx_volume, false },
+  { "resample_mode", config_resample_mode, false },
+  { "sample_volume", config_set_sam_volume, false },
+  { "save_file", config_save_file, false },
 #ifdef CONFIG_NETWORK
-  { "socks_host", config_set_socks_host },
-  { "socks_port", config_set_socks_port },
+  { "socks_host", config_set_socks_host, false },
+  { "socks_port", config_set_socks_port, false },
 #endif
-  { "standalone_mode", config_standalone_mode },
-  { "startup_editor", config_startup_editor },
-  { "startup_file", config_startup_file },
-  { "startup_path", config_startup_path },
-  { "system_mouse", config_system_mouse },
+  { "standalone_mode", config_standalone_mode, false },
+  { "startup_editor", config_startup_editor, false },
+  { "startup_file", config_startup_file, false },
+  { "startup_path", config_startup_path, false },
+  { "system_mouse", config_system_mouse, false },
 #ifdef CONFIG_UPDATER
-  { "update_branch_pin", config_update_branch_pin },
-  { "update_host", config_update_host },
+  { "update_branch_pin", config_update_branch_pin, false },
+  { "update_host", config_update_host, false },
 #endif
-  { "video_output", config_set_video_output },
-  { "video_ratio", config_set_video_ratio },
-  { "window_resolution", config_window_resolution }
+  { "video_output", config_set_video_output, false },
+  { "video_ratio", config_set_video_ratio, false },
+  { "window_resolution", config_window_resolution, false }
 };
 
 static const int num_config_options =
@@ -623,7 +626,8 @@ static void config_change_option(void *conf, char *name,
    config_options, num_config_options);
 
   if(current_option)
-    current_option->change_option(conf, name, value, extended_data);
+    if(current_option->allow_in_game_config || is_startup)
+      current_option->change_option(conf, name, value, extended_data);
 }
 
 __editor_maybe_static void __set_config_from_file(
@@ -783,6 +787,14 @@ void set_config_from_file(struct config_info *conf, const char *conf_file_name)
   __set_config_from_file(config_change_option, conf, conf_file_name);
 }
 
+void set_config_from_file_startup(struct config_info *conf,
+ const char *conf_file_name)
+{
+  is_startup = true;
+  set_config_from_file(conf, conf_file_name);
+  is_startup = false;
+}
+
 void default_config(struct config_info *conf)
 {
   memcpy(conf, &default_options, sizeof(struct config_info));
@@ -810,7 +822,9 @@ void default_config(struct config_info *conf)
 void set_config_from_command_line(struct config_info *conf,
  int *argc, char *argv[])
 {
+  is_startup = true;
   __set_config_from_command_line(config_change_option, conf, argc, argv);
+  is_startup = false;
 }
 
 void free_config(struct config_info *conf)

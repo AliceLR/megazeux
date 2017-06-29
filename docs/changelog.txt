@@ -321,6 +321,8 @@ BUGFIXES
 + Fixed a bug where pre-port worlds could play any number of
   concurrent samples. This makes portions of Bernard the Bard
   quite cacophonous. (Lancer-X)
++ Fixed a bug where per-game config files could set options they
+  weren't supposed to be able to.
 
 DEVELOPERS
 
