@@ -94,6 +94,8 @@ typedef void (* config_function)(struct config_info *conf,
 
 CORE_LIBSPEC void set_config_from_file(struct config_info *conf,
  const char *conf_file_name);
+CORE_LIBSPEC void set_config_from_file_startup(struct config_info *conf,
+ const char *conf_file_name);
 CORE_LIBSPEC void default_config(struct config_info *conf);
 CORE_LIBSPEC void set_config_from_command_line(struct config_info *conf,
  int *argc, char *argv[]);

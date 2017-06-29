@@ -103,7 +103,7 @@ __libspec int main(int argc, char *argv[])
   chdir(config_dir);
 
   default_config(&mzx_world.conf);
-  set_config_from_file(&mzx_world.conf, mzx_res_get_by_id(CONFIG_TXT));
+  set_config_from_file_startup(&mzx_world.conf, mzx_res_get_by_id(CONFIG_TXT));
   set_config_from_command_line(&mzx_world.conf, &argc, argv);
 
   load_editor_config(&mzx_world, &argc, argv);
