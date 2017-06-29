@@ -551,7 +551,7 @@ step-by-step reading and manipulation of running Robots as
 they execute. This shortcut only works when playtesting in the
 editor. For more detail, go to its specific section.
 
->DBGMODE.HLP:101:Debug Modes - The Robotic Debugger
+>#DBGMODE.HLP:101:Debug Modes - The Robotic Debugger
 
 F12 - Take Screenshot
 Pressing F12 will make a 640x350 screenshot (in PNG format by
