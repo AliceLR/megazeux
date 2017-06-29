@@ -3244,6 +3244,14 @@ int set_counter_special(struct world *mzx_world, char *char_value,
           cur_robot->label_list =
            cache_robot_labels(cur_robot, &cur_robot->num_labels);
 
+          // Free the robot's source and command map
+          free(cur_robot->program_source);
+          free(cur_robot->command_map);
+          cur_robot->program_source_length = 0;
+          cur_robot->command_map_length = 0;
+          cur_robot->program_source = NULL;
+          cur_robot->command_map = NULL;
+
           // Restart this robot if either it was just a LOAD_ROBOT
           // OR LOAD_ROBOTn was used where n is &robot_id&.
           if(value == -1 || value == id)
@@ -3289,6 +3297,14 @@ int set_counter_special(struct world *mzx_world, char *char_value,
           cur_robot->stack_pointer = 0;
           cur_robot->label_list =
            cache_robot_labels(cur_robot, &cur_robot->num_labels);
+
+          // Free the robot's source and command map
+          free(cur_robot->program_source);
+          free(cur_robot->command_map);
+          cur_robot->program_source_length = 0;
+          cur_robot->command_map_length = 0;
+          cur_robot->program_source = NULL;
+          cur_robot->command_map = NULL;
 
           // Restart this robot if either it was just a LOAD_BC
           // OR LOAD_BCn was used where n is &robot_id&.
