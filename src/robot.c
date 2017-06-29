@@ -3423,15 +3423,26 @@ void duplicate_robot_direct(struct world *mzx_world, struct robot *cur_robot,
     memcpy(copy_robot->program_source, cur_robot->program_source,
      cur_robot->program_source_length);
     copy_robot->program_source_length = cur_robot->program_source_length;
+
+    // And the command map
+    copy_robot->command_map = cmalloc(cur_robot->command_map_length);
+    memcpy(copy_robot->command_map, cur_robot->command_map,
+     cur_robot->command_map_length);
+    copy_robot->command_map_length = cur_robot->command_map_length;
   }
   // Otherwise we want to at least know it doesn't exist
   else
-#endif
+#endif /* CONFIG_EDITOR */
+#endif /* CONFIG_DEBYTECODE */
   {
+    // Don't give this robot source; if we're debugging, it will get regenerated
     copy_robot->program_source = NULL;
     copy_robot->program_source_length = 0;
+
+    // Don't give this robot a command map; if we're debugging, it will get regenerated
+    copy_robot->command_map = NULL;
+    copy_robot->command_map_length = 0;
   }
-#endif
 
   if (preserve_state && mzx_world->version < 0x0250) {
     // Prior to 2.80, copy and copy block preserved the current robot state
