@@ -218,7 +218,7 @@ SEND # # "label"                                        |     NO      |
 SEND "Robot" "label"                                    |     NO      |
 SEND [dir] "label"                                      |     NO      |
 SEND [dir] PLAYER "label"                               |     NO      |
-SET "counter" #                                         |    NO(8)    |
+SET "counter" #                                         |  NO(8)(11)  |
 SET "counter" RANDOM # #                                |     NO      |
 SET "$string" "text"                                    |     NO      |
 SET "$string1" "$string2"                               |     NO      |
@@ -228,11 +228,11 @@ SET EDGE COLOR [color]                                  |     NO      |
 SET MAXHEALTH #                                         |     NO      |
 SET MESG COLUMN #                                       |     NO      |
 SFX #                                                   |     NO      |
-SHOOT [dir]                                             |     NO(10)  |
-SHOOTMISSILE [dir]                                      |     NO(10)  |
-SHOOTSEEKER [dir]                                       |     NO(10)  |
+SHOOT [dir]                                             |    NO(10)   |
+SHOOTMISSILE [dir]                                      |    NO(10)   |
+SHOOTSEEKER [dir]                                       |    NO(10)   |
 SLOWTIME #                                              |     NO      |
-SPITFIRE [dir]                                          |     NO(10)  |
+SPITFIRE [dir]                                          |    NO(10)   |
 STATUS COUNTER # "counter"                              |     NO      |
 SWAP WORLD "file"                                       |     NO      |
 SWITCH [dir] [dir]                                      |     NO      |
@@ -265,6 +265,7 @@ ZAP "label" #                                           |     NO      |
 (5) = Attempting to jump to labels that do not exist does not consume a cycle.
 (6) = Does not end a cycle if all # is/are 0.
 (7) = A special case exists where it currently executes a cycle end going through a transporter.
-(8) = A special case exists for the SAVE_GAME and SAVE_WORLD "special" counters which do end the cycle if used.
+(8) = A special case exists for the SAVE_GAME "special" counter which does end the cycle if used.
 (9) = Does not end a cycle if any or all of the affected objects do not move.
-(10) = Ends a cycle in MZX v2.83 and worlds made in MZX v2.83
+(10) = Ends a cycle in MZX v2.83 and worlds made in MZX v2.83.
+(11) = If the SAVE_GAME "special" counter is used with this command, the action happens at the very end of the cycle.
