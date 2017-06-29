@@ -107,6 +107,8 @@ struct vorbis_stream
   Uint32 loop_end;
 };
 
+static int max_simultaneous_samples = -1;
+
 static const int default_period = 428;
 
 // May be used by audio plugins
@@ -122,18 +124,6 @@ struct audio audio;
 
 static volatile int locked = 0;
 static volatile char last_lock[16];
-static int max_simultaneous_samples = -1;
-
-void set_max_samples(int max_samples)
-{
-  // -1 is unlimited
-  max_simultaneous_samples = max_samples;
-}
-
-int get_max_samples(void)
-{
-  return max_simultaneous_samples;
-}
 
 static void lock(const char *file, int line)
 {
@@ -1709,6 +1699,17 @@ void end_module(void)
   }
 
   audio.primary_stream = NULL;
+}
+
+void set_max_samples(int max_samples)
+{
+  // -1 is unlimited
+  max_simultaneous_samples = max_samples;
+}
+
+int get_max_samples(void)
+{
+  return max_simultaneous_samples;
 }
 
 static void limit_samples(int max)
