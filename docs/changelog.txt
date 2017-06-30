@@ -18,6 +18,8 @@ BUGFIXES
 
 + The palette editor now displays the SMZX mode 1 palette
   correctly.
++ Sprite collisions now correctly ignore the sprite's visual
+  width and height.
 
 DEVELOPERS
 

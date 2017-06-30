@@ -1060,9 +1060,6 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *spr,
     if (!constrain_rectangle(board_full_rect, &collision_rect))
       return -1;
   }
-  if (!constrain_rectangle(sprite_rect, &collision_rect))
-    return -1;
-  
   
   if (spr->flags & SPRITE_UNBOUND &&
       spr->flags & SPRITE_CHAR_CHECK &&
@@ -1110,8 +1107,6 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *spr,
       if (!constrain_rectangle(board_full_rect, &target_col_rect))
         continue;
     }
-    if (!constrain_rectangle(target_spr_rect, &target_col_rect))
-      continue;
     sprite_collided = false;
 
     // ccheck between bound sprites works by looking at the flags of the sprite doing the collision
