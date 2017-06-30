@@ -20,6 +20,8 @@ BUGFIXES
   correctly.
 + Sprite collisions now correctly ignore the sprite's visual
   width and height.
++ Blank lines are no longer skipped when copy-pasting text into
+  the robot editor. (Lancer-X)
 
 DEVELOPERS
 

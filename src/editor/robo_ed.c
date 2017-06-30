@@ -1295,8 +1295,17 @@ static bool copy_selection_to_buffer(struct robot_state *rstate)
       line_buffer[line_length] = 0;
       add_line(rstate, -1);
       src_ptr += line_length;
-      while(src_ptr && (*src_ptr == '\r' || *src_ptr == '\n'))
+
+      if (*src_ptr == '\r')
+      {
         src_ptr++;
+        if (*src_ptr == '\n')
+          src_ptr++;
+      }
+      else if (*src_ptr == '\n')
+      {
+        src_ptr++;
+      }
     }
 
     GlobalUnlock(global_memory);
