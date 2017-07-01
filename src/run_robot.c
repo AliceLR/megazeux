@@ -1754,7 +1754,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
       case ROBOTIC_CMD_IF: // if c?n l
       {
-        int difference = 0;
+        int dest_value = 0, src_value = 0;
         char *dest_string = cmd_ptr + 2;
         char *p2 = next_param_pos(cmd_ptr + 1);
         char *src_string = p2 + 3;
@@ -1794,55 +1794,65 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             src.length = strlen(src_buffer);
           }
 
-          difference = compare_strings(&dest, &src);
+          dest_value = compare_strings(&dest, &src);
+          src_value = 0;
         }
         else
         {
-          int dest_value = parse_param(mzx_world, cmd_ptr + 1, id);
-          int src_value = parse_param(mzx_world, src_string, id);
-          difference = dest_value - src_value;
+          dest_value = parse_param(mzx_world, cmd_ptr + 1, id);
+          src_value = parse_param(mzx_world, src_string, id);
+        }
+
+        if (mzx_world->version < 0x025a) {
+          // In port releases prior to 2.90b there was a horrible
+          // bug stopping comparisons between numbers with a
+          // difference greater than 2^31-1.
+          // To our great regret we must support this functionality
+          // for older worlds.
+          dest_value = dest_value - src_value;
+          src_value = 0;
         }
 
         switch(comparison)
         {
           case EQUAL:
           {
-            if(!difference)
+            if(dest_value == src_value)
               success = 1;
             break;
           }
 
           case LESS_THAN:
           {
-            if(difference < 0)
+            if(dest_value < src_value)
               success = 1;
             break;
           }
 
           case GREATER_THAN:
           {
-            if(difference > 0)
+            if(dest_value > src_value)
               success = 1;
             break;
           }
 
           case GREATER_THAN_OR_EQUAL:
           {
-            if(difference >= 0)
+            if(dest_value >= src_value)
               success = 1;
             break;
           }
 
           case LESS_THAN_OR_EQUAL:
           {
-            if(difference <= 0)
+            if(dest_value <= src_value)
               success = 1;
             break;
           }
 
           case NOT_EQUAL:
           {
-            if(difference)
+            if(dest_value != src_value)
               success = 1;
             break;
           }
