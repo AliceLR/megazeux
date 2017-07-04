@@ -24,6 +24,8 @@ BUGFIXES
   width and height.
 + Blank lines are no longer skipped when copy-pasting text into
   the robot editor. (Lancer-X)
++ Fixed a bug where key presses in dialogs could be detected in
+  games, and keypresses could still carry between other dialogs.
 
 DEVELOPERS
 

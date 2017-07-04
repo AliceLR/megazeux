@@ -814,6 +814,14 @@ void force_last_key(enum keycode_type type, int val)
   }
 }
 
+void force_release_all_keys(void)
+{
+  struct buffered_status *status = store_status();
+
+  force_last_key(keycode_internal, 0);
+  memset(status->keymap, 0, sizeof(status->keymap));
+}
+
 bool get_alt_status(enum keycode_type type)
 {
   return get_key_status(type, IKEY_LALT) ||

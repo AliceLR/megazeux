@@ -2574,6 +2574,8 @@ __editor_maybe_static void play_game(struct world *mzx_world)
             write_string(game_menu_4, 10, 13, 31, 1);
 
             show_status(mzx_world); // Status screen too
+
+            force_release_all_keys();
             update_screen();
             m_show();
 
@@ -2592,9 +2594,8 @@ __editor_maybe_static void play_game(struct world *mzx_world)
              (key != IKEY_RETURN && key != IKEY_ESCAPE) || (status != 1)
             );
 
+            force_release_all_keys();
             restore_screen();
-
-            update_event_status();
           }
           break;
         }
@@ -3159,6 +3160,8 @@ void title_screen(struct world *mzx_world)
           if(edit_world)
             write_string(main_menu_5, 30, 13, 31, 1);
           write_string(main_menu_6, 30, 15, 31, 1);
+
+          force_release_all_keys();
           update_screen();
           m_show();
 
@@ -3174,9 +3177,9 @@ void title_screen(struct world *mzx_world)
 
           } while((key != IKEY_RETURN && key != IKEY_ESCAPE) || status!=1);
 
+          force_release_all_keys();
           restore_screen();
           update_screen();
-          update_event_status();
           break;
         }
 

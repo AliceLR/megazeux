@@ -711,6 +711,8 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
 
   memset(vid_usage, -1, 2000);
 
+  force_release_all_keys();
+
   // Draw elements and set vid usage
   for(i = 0; i < di->num_elements; i++)
   {
@@ -929,12 +931,14 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
     if(exit)
     {
       // Restore screen, set current, and return -1
+      force_release_all_keys();
       pop_context();
       return -1;
     }
 
   } while(di->done != 1);
 
+  force_release_all_keys();
   pop_context();
 
   return di->return_value;

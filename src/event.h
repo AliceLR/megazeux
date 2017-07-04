@@ -164,6 +164,7 @@ bool __peek_exit_input(void);
 void wait_event(int timeout);
 Uint32 get_last_key(enum keycode_type type);
 void force_last_key(enum keycode_type type, int val);
+void force_release_all_keys(void);
 void warp_mouse_x(Uint32 x);
 void warp_mouse_y(Uint32 y);
 void warp_real_mouse_x(Uint32 x);
