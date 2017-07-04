@@ -424,6 +424,7 @@ static void config_set_video_output(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
   strncpy(conf->video_output, value, 16);
+  conf->video_output[15] = 0;
 }
 
 static void config_enable_resizing(struct config_info *conf, char *name,
@@ -436,6 +437,14 @@ static void config_set_gl_filter_method(struct config_info *conf,
  char *name, char *value, char *extended_data)
 {
   strncpy(conf->gl_filter_method, value, 16);
+  conf->gl_filter_method[15] = 0;
+}
+
+static void config_set_gl_scaling_shader(struct config_info *conf,
+ char *name, char *value, char *extended_data)
+{
+  strncpy(conf->gl_scaling_shader, value, 16);
+  conf->gl_scaling_shader[15] = 0;
 }
 
 static void config_gl_vsync(struct config_info *conf, char *name,
@@ -495,6 +504,7 @@ static const struct config_entry config_options[] =
   { "fullscreen", config_set_fullscreen, false },
   { "fullscreen_resolution", config_set_resolution, false },
   { "gl_filter_method", config_set_gl_filter_method, false },
+  { "gl_scaling_shader", config_set_gl_scaling_shader, true },
   { "gl_vsync", config_gl_vsync, false },
   { "include", include2_config, true },
   { "include*", include_config, true },
@@ -575,6 +585,7 @@ static const struct config_info default_options =
   FORCE_BPP_DEFAULT,            // force_bpp
   RATIO_STRETCH,                // video_ratio
   "linear",                     // opengl filter method
+  "",                           // opengl default scaling shader
   0,                            // opengl vsync mode
 
   // Audio options

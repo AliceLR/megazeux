@@ -2,6 +2,9 @@ GIT
 
 FEATURES
 
++ The default scaling shader can now be set in the config file
+  using the gl_scaling_shader option. If not defined, MegaZeux
+  will load assets/shaders/scaler.frag.
 + The robot debugger now supports monitoring the values of
   counters and strings. Use the config menu/breakpoint editor to
   add watchpoints; when the debugger detects a change in a

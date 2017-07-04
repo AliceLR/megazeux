@@ -621,6 +621,7 @@ static void set_3_mesg(struct world *mzx_world, const char *str1, int num,
 #ifdef CONFIG_RENDER_GL_PROGRAM
 // Note- we search for .frags, then load the matching .vert too if present.
 static const char *shader_exts[] = { ".frag", NULL };
+static char shader_default_text[20];
 static char shader_path[MAX_PATH];
 static char shader_name[MAX_PATH];
 #endif
@@ -656,6 +657,16 @@ static void game_settings(struct world *mzx_world)
 #ifdef CONFIG_RENDER_GL_PROGRAM
   if(!strcmp(mzx_world->conf.video_output, "glsl"))
   {
+    if(!shader_default_text[0])
+    {
+      if(mzx_world->conf.gl_scaling_shader[0])
+        snprintf(shader_default_text, 19, "<conf: %s>",
+         mzx_world->conf.gl_scaling_shader);
+
+      else
+        strcpy(shader_default_text, "<default: semisoft>");
+    }
+
     shader_option = 3;
     num_elements++;
   }
@@ -688,7 +699,7 @@ static void game_settings(struct world *mzx_world)
 
       elements[6] = construct_file_selector(3, 13 + speed_option,
        "Scaling shader-", "Choose a scaling shader...", shader_exts,
-       "<default: nearest>", 21, 0, shader_path, shader_name, 2);
+       shader_default_text, 21, 0, shader_path, shader_name, 2);
 
       ok_pos++;
       cancel_pos++;

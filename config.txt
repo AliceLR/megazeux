@@ -102,6 +102,15 @@
 
 # gl_filter_method = nearest
 
+# The GLSL renderer uses scaling shaders to determine the scaling method
+# instead of gl_filter_method. The default shader to be loaded when MZX
+# starts is assets/shaders/scaler.frag (which is "semisoft" by default).
+# Change this config option to specify a different shader to load on startup.
+# For a list of valid options, see the F2 menu or the extra shaders folder.
+# Do not include an extension.
+
+# gl_scaling_shader = semisoft
+
 # Some OpenGL driver settings may default vertical sync on, which looks
 # visually better (especially on CRTs) but can cause "speed 1" to run
 # noticably slower than with other renderers. For consistency with other

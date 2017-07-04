@@ -1,3 +1,4 @@
+#version 110
 uniform sampler2D baseMap;
 
 varying vec2 vTexcoord;
@@ -7,5 +8,9 @@ varying vec2 vTexcoord;
 #define AY 0.5/YS
 void main( void )
 {
-    gl_FragColor = texture2D( baseMap, vec2(floor(vTexcoord.x*XS)/XS+AX, floor(vTexcoord.y*YS)/YS+AY));
+    vec2 tcbase = (floor(vTexcoord*vec2(XS, YS) + 0.5) + 0.5)/vec2(XS, YS);
+    vec2 tcdiff = vTexcoord-tcbase;
+    vec2 sdiff = sign(tcdiff);
+    vec2 adiff = pow(abs(tcdiff)*vec2(XS, YS), vec2(2.0));
+    gl_FragColor = texture2D(baseMap, tcbase + sdiff*adiff/vec2(XS, YS));
 }

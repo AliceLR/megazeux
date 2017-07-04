@@ -160,6 +160,7 @@ struct graphics_data
   Uint32 cursor_flipflop;
   Uint32 default_smzx_loaded;
   char *gl_filter_method;
+  char *gl_scaling_shader;
   int gl_vsync;
 
   Uint8 default_charset[CHAR_SIZE * CHARSET_SIZE];

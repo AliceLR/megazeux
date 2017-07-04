@@ -240,6 +240,7 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
 {
   struct glsl_render_data *render_data = graphics->render_data;
   int index = res - SHADERS_SCALER_VERT;
+  int loaded_config = 0;
   GLenum shader;
 
   assert(res >= SHADERS_SCALER_VERT && res <= SHADERS_CURSOR_FRAG);
@@ -249,11 +250,54 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
 
   if(!source_cache[index])
   {
-    source_cache[index] = glsl_load_string(mzx_res_get_by_id(res));
-    if(!source_cache[index])
+    if((res == SHADERS_SCALER_VERT || res == SHADERS_SCALER_FRAG) &&
+     graphics->gl_scaling_shader[0])
     {
-      warn("Failed to load shader '%s'\n", mzx_res_get_by_id(res));
-      return 0;
+      // Try to load these from config before loading the default.
+
+      char *path = cmalloc(MAX_PATH);
+
+      mzx_res_get_extra_shader_dir(path);
+
+      switch(res)
+      {
+        case SHADERS_SCALER_VERT:
+          sprintf(path + strlen(path), "%s%s.vert",
+           DIR_SEPARATOR, graphics->gl_scaling_shader);
+          break;
+
+        case SHADERS_SCALER_FRAG:
+          sprintf(path + strlen(path), "%s%s.frag",
+           DIR_SEPARATOR, graphics->gl_scaling_shader);
+          break;
+
+        default:
+          break;
+      }
+
+      source_cache[index] = glsl_load_string(path);
+
+      if(source_cache[index])
+      {
+        loaded_config = 1;
+      }
+      else
+      {
+        debug("Failed to load shader '%s'; falling back to default\n", path);
+      }
+
+      loaded_config = source_cache[index] ? 1 : 0;
+      free(path);
+    }
+
+    if(!loaded_config)
+    {
+      source_cache[index] = glsl_load_string(mzx_res_get_by_id(res));
+      if(!source_cache[index])
+      {
+        warn("Failed to load shader '%s'\n", mzx_res_get_by_id(res));
+        return 0;
+      }
     }
   }
 
@@ -424,6 +468,7 @@ static bool glsl_init_video(struct graphics_data *graphics,
   graphics->gl_vsync = conf->gl_vsync;
   graphics->allow_resize = conf->allow_resize;
   graphics->gl_filter_method = conf->gl_filter_method;
+  graphics->gl_scaling_shader = conf->gl_scaling_shader;
   graphics->bits_per_pixel = 32;
 
   // OpenGL only supports 16/32bit colour
