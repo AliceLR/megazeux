@@ -1124,7 +1124,20 @@ static void init_layers(void)
 
   select_layer(UI_LAYER);
 
+  graphics.video_layers[BOARD_LAYER].mode = graphics.screen_mode;
+  graphics.video_layers[OVERLAY_LAYER].mode = graphics.screen_mode;
+  graphics.video_layers[UI_LAYER].mode = 0;
+
   blank_layers();
+}
+
+void enable_gui_mode0(void)
+{
+  graphics.video_layers[UI_LAYER].mode = 0;
+}
+void disable_gui_mode0(void)
+{
+  graphics.video_layers[UI_LAYER].mode = graphics.screen_mode;
 }
 
 void select_layer(Uint32 layer)
@@ -1156,9 +1169,7 @@ void blank_layers(void)
    sizeof(struct char_element) * SCREEN_W * SCREEN_H);
   memset(graphics.video_layers[UI_LAYER].data, 0xFF,
    sizeof(struct char_element) * SCREEN_W * SCREEN_H);
-  graphics.video_layers[BOARD_LAYER].mode = graphics.screen_mode;
-  graphics.video_layers[OVERLAY_LAYER].mode = graphics.screen_mode;
-  graphics.video_layers[UI_LAYER].mode = 0;
+
   for (i = 3; i < graphics.layer_count; i++)
   {
     if (graphics.video_layers[i].data)

@@ -35,6 +35,8 @@ BUGFIXES
   the robot editor. (Lancer-X)
 + Fixed a bug where key presses in dialogs could be detected in
   games, and keypresses could still carry between other dialogs.
++ [ message boxes now use the same screen mode as everything
+  else. Same with scrolls. (Lancer-X)
 
 DEVELOPERS
 
