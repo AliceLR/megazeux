@@ -179,6 +179,12 @@ static void redit_hhelp(struct editor_config_info *conf,
   conf->redit_hhelp = strtol(value, NULL, 10);
 }
 
+static void pedit_hhelp(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
+{
+  conf->pedit_hhelp = strtol(value, NULL, 10);
+}
+
 static void backup_count(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
@@ -521,6 +527,7 @@ static const struct editor_config_entry editor_config_options[] =
   { "editor_space_toggles", config_editor_space_toggles },
   { "editor_tab_focuses_view", config_editor_tab_focus },
   { "macro_*", config_macro },
+  { "palette_editor_hide_help", pedit_hhelp },
   { "robot_editor_hide_help", redit_hhelp },
   { "saved_position", config_saved_positions },
   { "undo_history_size", config_undo_history_size },
@@ -587,6 +594,9 @@ static const struct editor_config_info default_editor_options =
   1,                            // overlay_enabled (default = enabled)
   "",                           // charset_path
   "",                           // palette_path
+
+  // Palette editor options
+  0,                            // palette_editor_hide_help
 
   // Char editor options
   10,                           // Undo history size

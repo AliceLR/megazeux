@@ -71,6 +71,9 @@ struct editor_config_info
   char charset_path[MAX_PATH];
   char palette_path[MAX_PATH];
 
+  // Palette editor options
+  int pedit_hhelp;
+
   // Char editor options
   int undo_history_size;
 

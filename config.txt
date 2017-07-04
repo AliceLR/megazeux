@@ -292,6 +292,11 @@
 
 # board_editor_hide_help = 1
 
+# Set to 1 if you want the palette editor to hide the hotkey help
+# when MegaZeux starts (default: don't hide).
+
+# palette_editor_hide_help = 0
+
 # The length of the char editor undo history. Each step of the
 # history stores the whole char set, so it may be wise to use a
 # lower number here on memory-scarce platforms. Please note that

@@ -90,7 +90,7 @@ static struct color_status saved_color = {
 
 static int content_x;
 static int content_y;
-static int minimal_help = 0;
+static int minimal_help = -1;
 
 static unsigned int current_id = 0;
 static int current_mode_id = 0;
@@ -1042,6 +1042,11 @@ void palette_editor(struct world *mzx_world)
   int refresh_window = 1;
   int refresh_palette = 1;
   int key;
+
+  if(minimal_help == -1)
+  {
+    minimal_help = mzx_world->editor_conf.pedit_hhelp;
+  }
 
   cursor_off();
   set_context(CTX_PALETTE_EDITOR);
