@@ -22,6 +22,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include "../helpsys.h"
 #include "../window.h"
@@ -32,111 +33,865 @@
 #include "pal_ed.h"
 
 
+//----------------------------------/ /-----------------------------------------/
+// ##..##..##..##..##..##..##..##.. / / Color # 00-             RGB  HSV  Lab   /
+// ##..##..##..##..##..#1.1#1.1#1.1 / / R    0 [----|----|----|----|----|----|] /
+// #0.1#2.3#4.5#6.7#8.9#0.1#2.3#4.5 / / G    0 [----|----|----|----|----|----|] /
+// ##..##..##..##..##..##..##..##.. / / B    0 [----|----|----|----|----|----|] /
+//-^^-------------------------------/ /-----------------------------------------/
+
+//----------------------------------------------------------------/
+//
+// %- Select color    Alt+D- Default pal.   PgDn- Prev. mode
+// R- Increase Red    Alt+R- Decrease Red   PgUp- Next mode
+// G- Increase Green  Alt+G- Decrease Green   F2- Store color
+// B- Increase Blue   Alt+B- Decrease Blue    F3- Retrieve color
+// A- Increase All    Alt+A- Decrease All
+// 0- Blacken color   Alt+H- Hide help         Q- Quit editing
+//
+//----------------------------------------------------------------/
+
+// Note: the help menu mouse functionality has been broken since 2.80.
+
+#define PAL_ED_COL_X1         37
+#define PAL_ED_COL_X2         79
+#define PAL_ED_COL_Y1         0
+#define PAL_ED_COL_Y2         5
+
+#define PAL_ED_16_X1          0
+#define PAL_ED_16_X2          35
+#define PAL_ED_16_Y1          0
+#define PAL_ED_16_Y2          5
+
+#define PAL_ED_16_HELP_X1     7
+#define PAL_ED_16_HELP_Y1     7
+#define PAL_ED_16_HELP_X2     73
+#define PAL_ED_16_HELP_Y2     16
+
+
+struct color_status {
+  unsigned char r;
+  unsigned char g;
+  unsigned char b;
+
+  unsigned int h;
+  unsigned int s;
+  unsigned int v;
+
+  unsigned int CL;
+  int Ca;
+  int Cb;
+};
+
+bool saved_color_active = false;
+static struct color_status saved_color = {
+  0, 0, 0, 0, 0, 0, 0, 0, 0
+};
+
 static int content_x;
 static int content_y;
-
-static int saved_r = -1;
-static int saved_g = -1;
-static int saved_b = -1;
-
-static int current_color = 0;
 static int minimal_help = 0;
 
-//---------------------------------------------
-//
-// ##..##..##..##..##..##..##..##.. Color #00-
-// ##..##..##..##..##..#1.1#1.1#1.1  Red 00/63
-// #0.1#2.3#4.5#6.7#8.9#0.1#2.3#4.5  Grn 00/63
-// ##..##..##..##..##..##..##..##..  Blu 00/63
-// ^^
-//
-// %- Select color   Alt+D- Default palette
-// R- Increase Red   Alt+R- Decrease Red
-// G- Increase Grn   Alt+G- Decrease Grn
-// B- Increase Blu   Alt+B- Decrease Blu
-// A- Increase All   Alt+A- Decrease All
-// 0- Blacken color     F2- Store color
-// Q- Quit editing      F3- Retrieve color
-//
-//---------------------------------------------
+static unsigned int current_id = 0;
+static int current_mode_id = 0;
 
-//Mouse- Color=Change color
-//       Menu=Do command
-//       RGB #'s=Raise/Lower R/G/B
 
-// Note: the Menu and RGB #s functionality has been broken since 2.80
-// If mouse support is readded, it should probably be in a less awful way.
+// -----------------------------------------------------------------------------
 
-#define PAL_ED_16_X1          17
-#define PAL_ED_16_Y1          3
-#define PAL_ED_16_X2          63
-#define PAL_ED_16_Y2          19
 
-#define PAL_ED_16_Y1_MINIMAL  0
-#define PAL_ED_16_Y2_MINIMAL  5
-
-static void palette_editor_redraw_window_16(void)
+static void rgb_to_hsv(struct color_status *current)
 {
-  int y1, y2;
+  float r = (float)(current->r) / 63.0;
+  float g = (float)(current->g) / 63.0;
+  float b = (float)(current->b) / 63.0;
+
+  float M = MAX(r, MAX(g, b));
+  float m = MIN(r, MIN(g, b));
+  float c = M - m;
+
+  float h =
+   (c == 0) ? 0 :
+   (M == r) ? fmod((g - b)/c + 6, 6.0)  : // Add 6 to bypass C's shit modulo
+   (M == g) ? ((b - r)/c) + 2           :
+   (M == b) ? ((r - g)/c) + 4           : 0;
+
+  current->h = (unsigned int)( fmod(h * 60, 360.0) );
+
+  current->s = (unsigned int)( M ? c/M * 100 : 0 );
+
+  current->v = (unsigned int)( M * 100 );
+}
+
+static void hsv_to_rgb(struct color_status *current)
+{
+  float v = (float)( current->v ) / 100.0;
+  float c = (float)( current->s ) * v / 100.0;
+  float h = (float)( current->h ) / 60.0;
+  float m = v - c;
+
+  float x = c * (1 - fabs( fmod(h, 2.0) - 1 ));
+
+  int fh = floor(h);
+
+  float r =
+   (fh == 0) || (fh == 5) ? c+m :
+   (fh == 1) || (fh == 4) ? x+m : m;
+
+  float g =
+   (fh == 1) || (fh == 2) ? c+m :
+   (fh == 0) || (fh == 3) ? x+m : m;
+
+  float b =
+   (fh == 3) || (fh == 4) ? c+m :
+   (fh == 2) || (fh == 5) ? x+m : m;
+
+  current->r = (unsigned char)(r * 63.0);
+  current->g = (unsigned char)(g * 63.0);
+  current->b = (unsigned char)(b * 63.0);
+}
+
+static void rgb_to_lab(struct color_status *current)
+{
+  float r = (float)(current->r) / 63.0;
+  float g = (float)(current->g) / 63.0;
+  float b = (float)(current->b) / 63.0;
+
+  float x = 0.4124564*r + 0.3575761*g + 0.1804375*b;
+  float y = 0.2126729*r + 0.7151522*g + 0.0721750*b;
+  float z = 0.0193339*r + 0.1191920*g + 0.9503041*b;
+
+  float fx = (x > 0.008856) ? cbrt(x) : (903.3 * x + 16)/116.0;
+  float fy = (y > 0.008856) ? cbrt(y) : (903.3 * y + 16)/116.0;
+  float fz = (z > 0.008856) ? cbrt(z) : (903.3 * z + 16)/116.0;
+
+  current->CL = (unsigned int)( 116 * fy - 16 );
+  current->Ca = (int)( 500 * (fx - fy) );
+  current->Cb = (int)( 200 * (fy - fz) );
+}
+
+static void lab_to_rgb(struct color_status *current)
+{
+  float CL = (float)(current->CL);
+  float Ca = current->Ca;
+  float Cb = current->Cb;
+
+  float fy = (CL + 16) / 116.0;
+  float fx = fy + Ca / 500.0;
+  float fz = fy - Cb / 200.0;
+
+  float x = (fx > 0.205893) ? pow(fx, 3.0) : 0.128414 * (fx - 0.137931);
+  float y = (fy > 0.205893) ? pow(fy, 3.0) : 0.128414 * (fy - 0.137931);
+  float z = (fz > 0.205893) ? pow(fz, 3.0) : 0.128414 * (fz - 0.137931);
+
+  float r =  3.2404542*x + -1.5371385*y + -0.4985314*z;
+  float g = -0.9692660*x +  1.8760108*y +  0.0415560*z;
+  float b =  0.0556434*x + -0.2040259*y +  1.0572252*z;
+
+  current->r = (unsigned int)(CLAMP(r, 0.0, 1.0) * 63.0);
+  current->g = (unsigned int)(CLAMP(g, 0.0, 1.0) * 63.0);
+  current->b = (unsigned int)(CLAMP(b, 0.0, 1.0) * 63.0);
+}
+
+static void update_color(struct color_status *current, int id)
+{
+  get_rgb(id, &(current->r), &(current->g), &(current->b));
+  rgb_to_hsv(current);
+  rgb_to_lab(current);
+  current_id = id;
+}
+
+static void set_color_rgb(struct color_status *current)
+{
+  rgb_to_hsv(current);
+  rgb_to_lab(current);
+  set_rgb(current_id, current->r, current->g, current->b);
+  update_palette();
+}
+
+
+static void set_color_hsv(struct color_status *current)
+{
+  hsv_to_rgb(current);
+  rgb_to_lab(current);
+  set_rgb(current_id, current->r, current->g, current->b);
+  update_palette();
+}
+
+
+static void set_color_lab(struct color_status *current)
+{
+  lab_to_rgb(current);
+  rgb_to_hsv(current);
+  set_rgb(current_id, current->r, current->g, current->b);
+  update_palette();
+}
+
+static int get_color_rgb(struct color_status *current, int component)
+{
+  switch(component)
+  {
+    case 0: return (int)current->r;
+    case 1: return (int)current->g;
+    case 2: return (int)current->b;
+  }
+  return -1;
+}
+
+static int get_color_hsv(struct color_status *current, int component)
+{
+  switch(component)
+  {
+    case 0: return (int)current->h;
+    case 1: return (int)current->s;
+    case 2: return (int)current->v;
+  }
+  return -1;
+}
+
+static int get_color_lab(struct color_status *current, int component)
+{
+  switch(component)
+  {
+    case 0: return (int)current->CL;
+    case 1: return (int)current->Ca;
+    case 2: return (int)current->Cb;
+  }
+  return -1;
+}
+
+static void set_color_rgb_bar(struct color_status *current, int component,
+ int value)
+{
+  switch(component)
+  {
+    case 0:
+      current->r = value;
+      break;
+
+    case 1:
+      current->g = value;
+      break;
+
+    case 2:
+      current->b = value;
+      break;
+  }
+  set_color_rgb(current);
+}
+
+static void set_color_hsv_bar(struct color_status *current, int component,
+ int value)
+{
+  switch(component)
+  {
+    case 0:
+      current->h = value;
+      break;
+
+    case 1:
+      current->s = value;
+      break;
+
+    case 2:
+      current->v = value;
+      break;
+  }
+  set_color_hsv(current);
+}
+
+static void set_color_lab_bar(struct color_status *current, int component,
+ int value)
+{
+  switch(component)
+  {
+    case 0:
+      current->CL = value;
+      break;
+
+    case 1:
+      current->Ca = value;
+      break;
+
+    case 2:
+      current->Cb = value;
+      break;
+  }
+  set_color_lab(current);
+}
+
+static int key_color_rgb(struct color_status *current, int key)
+{
+  switch(key)
+  {
+    case IKEY_r:
+    {
+      if(get_alt_status(keycode_internal))
+      {
+        if(current->r)
+        {
+          current->r--;
+        }
+      }
+      else
+      {
+        if(current->r < 63)
+        {
+          current->r++;
+        }
+      }
+
+      set_color_rgb(current);
+      return -1;
+    }
+
+    case IKEY_g:
+    {
+      if(get_alt_status(keycode_internal))
+      {
+        if(current->g)
+        {
+          current->g--;
+        }
+      }
+      else
+      {
+        if(current->g < 63)
+        {
+          current->g++;
+        }
+      }
+
+      set_color_rgb(current);
+      return -1;
+    }
+
+    case IKEY_b:
+    {
+      if(get_alt_status(keycode_internal))
+      {
+        if(current->b)
+        {
+          current->b--;
+        }
+      }
+      else
+      {
+        if(current->b < 63)
+        {
+          current->b++;
+        }
+      }
+
+      set_color_rgb(current);
+      return -1;
+    }
+
+    case IKEY_a:
+    {
+      if(get_alt_status(keycode_internal))
+      {
+        if(current->r)
+          current->r--;
+        if(current->g)
+          current->g--;
+        if(current->b)
+          current->b--;
+      }
+      else
+      {
+        if(current->r < 63)
+          current->r++;
+        if(current->g < 63)
+          current->g++;
+        if(current->b < 63)
+          current->b++;
+      }
+
+      set_color_rgb(current);
+      return -1;
+    }
+  }
+
+  return key;
+}
+
+static int key_color_hsv(struct color_status *current, int key)
+{
+  switch(key)
+  {
+    case IKEY_h:
+    {
+      if(get_alt_status(keycode_internal))
+      {
+        if(current->h)
+        {
+          current->h--;
+        }
+      }
+      else
+      {
+        if(current->h < 359)
+        {
+          current->h++;
+        }
+      }
+
+      set_color_hsv(current);
+      return -1;
+    }
+
+    case IKEY_s:
+    {
+      if(get_alt_status(keycode_internal))
+      {
+        if(current->s)
+        {
+          current->s--;
+        }
+      }
+      else
+      {
+        if(current->s < 100)
+        {
+          current->s++;
+        }
+      }
+
+      set_color_hsv(current);
+      return -1;
+    }
+
+    case IKEY_v:
+    {
+      if(get_alt_status(keycode_internal))
+      {
+        if(current->v)
+        {
+          current->v--;
+        }
+      }
+      else
+      {
+        if(current->v < 100)
+        {
+          current->v++;
+        }
+      }
+
+      set_color_hsv(current);
+      return -1;
+    }
+  }
+
+  return key;
+}
+
+static int key_color_lab(struct color_status *current, int key)
+{
+  switch(key)
+  {
+    case IKEY_a:
+    {
+      if(get_alt_status(keycode_internal))
+      {
+        if(current->Ca > -128)
+        {
+          current->Ca--;
+        }
+      }
+      else
+      {
+        if(current->Ca < 128)
+        {
+          current->Ca++;
+        }
+      }
+
+      set_color_lab(current);
+      return -1;
+    }
+
+    case IKEY_b:
+    {
+      if(get_alt_status(keycode_internal))
+      {
+        if(current->Cb > -128)
+        {
+          current->Cb--;
+        }
+      }
+      else
+      {
+        if(current->Cb < 128)
+        {
+          current->Cb++;
+        }
+      }
+
+      set_color_lab(current);
+      return -1;
+    }
+
+    case IKEY_v:
+    {
+      if(get_alt_status(keycode_internal))
+      {
+        if(current->CL)
+        {
+          current->CL--;
+        }
+      }
+      else
+      {
+        if(current->CL < 100)
+        {
+          current->CL++;
+        }
+      }
+
+      set_color_lab(current);
+      return -1;
+    }
+  }
+
+  return key;
+}
+
+struct color_mode_component {
+  const char *name_long;
+  const char *name_short;
+  const char *key;
+  char left_col;
+  char right_col;
+  int min_val;
+  int max_val;
+};
+
+struct color_mode {
+  const char *name;
+  struct color_mode_component components[3];
+  void (*set_function)(struct color_status *);
+  int (*get_function)(struct color_status *, int);
+  int (*input_function)(struct color_status *, int);
+  void (*input_bar_function)(struct color_status *, int, int);
+  bool allow_all;
+};
+
+static const struct color_mode mode_list[] =
+{
+  { "RGB",
+    {
+      { "Red",   "Red ", "R", 12,  0,    0,  63 },
+      { "Green", "Grn ", "G", 10,  0,    0,  63 },
+      { "Blue",  "Blu ", "B",  9,  0,    0,  63 },
+    },
+    set_color_rgb,
+    get_color_rgb,
+    key_color_rgb,
+    set_color_rgb_bar,
+    true,
+  },
+
+  { "HSV",
+    {
+      { "Hue",   "H",    "H",  4,  4,    0, 359 },
+      { "Sat.",  "S",    "S",  7,  0,    0, 100 },
+      { "Value", "V",    "V", 15,  0,    0, 100 },
+    },
+    set_color_hsv,
+    get_color_hsv,
+    key_color_hsv,
+    set_color_hsv_bar,
+    false,
+  },
+
+  { "Lab",
+    {
+      { "L*",    "L*",   "V", 15,  0,    0, 100 },
+      { "a*",    "a*",   "A",  4,  2, -128, 128 },
+      { "b*",    "b*",   "B",  6,  1, -128, 128 },
+    },
+    set_color_lab,
+    get_color_lab,
+    key_color_lab,
+    set_color_lab_bar,
+    false,
+  },
+};
+
+
+// -----------------------------------------------------------------------------
+
+static char hue_chars[32] = {
+  0xDB, 0xB0, 0xB0, 0xB1, 0xB2,  0xDB, 0xDB, 0xB0, 0xB1, 0xB2,
+  0xDB, 0xDB, 0xB0, 0xB1, 0xB2,  0xDB, 0xB0, 0xB1, 0xB1, 0xB2,
+  0xB2, 0xDB, 0xB0, 0xB1, 0xB2,  0xDB, 0xDB, 0xB0, 0xB1, 0xB2,
+  0xDB, 0xDB
+};
+
+static char hue_colors[32] = {
+  0xCC, 0xC6, 0xCE, 0xCE, 0xCE,  0xEE, 0xEE, 0xEA, 0xEA, 0xEA,
+  0xAA, 0xAA, 0xAB, 0xAB, 0xAB,  0xBB, 0xB3, 0xB3, 0xB9, 0xB9,
+  0x39, 0x99, 0x9D, 0x9D, 0x9D,  0xDD, 0xDD, 0xDC, 0xDC, 0xDC,
+  0xCC, 0xCC
+};
+
+static void draw_hue_bar(int value, unsigned int x, unsigned int y,
+ int min_val, int max_val)
+{
   int i;
 
+  value = ((value - min_val)*31 + (max_val - min_val)/2) / (max_val - min_val);
+
+  for(i = 0; i < 32; i++)
+  {
+    draw_char(hue_chars[i], hue_colors[i], x+i, y);
+  }
+
+  draw_char(0xDB, 0xFF, x+value, y);
+}
+
+static void draw_color_bar(int value, unsigned int x, unsigned int y,
+ int min_val, int max_val, char left_col, char right_col)
+{
+  char bg_col;
+  char fg_col;
+  int i;
+  int j;
+
+  value = ((value - min_val)*63 + (max_val - min_val)/2) / (max_val - min_val);
+
+  for(i = 0, j = 0; i < 32; i++)
+  {
+    bg_col =
+     (value > j) ? left_col  :
+     (value < j) ? right_col : 15;
+    j++;
+
+    fg_col =
+     (value > j) ? left_col  :
+     (value < j) ? right_col : 15;
+    j++;
+
+    draw_char('\xDE', (bg_col << 4) + fg_col, x+i, y);
+  }
+}
+
+static void palette_editor_redraw_color_window(struct color_status *current,
+ const struct color_mode *mode)
+{
+  char color;
+  int x;
+  int i;
+
+  draw_window_box(PAL_ED_COL_X1, PAL_ED_COL_Y1, PAL_ED_COL_X2, PAL_ED_COL_Y2,
+   DI_GREY_DARK, DI_GREY, DI_GREY_CORNER, 1, 1);
+
+  // Write Color #
+  write_string(
+   "Color #",
+   PAL_ED_COL_X1 + 2,
+   PAL_ED_COL_Y1 + 1,
+   DI_GREY_TEXT,
+   0
+  );
+
+  // Modes
+  x = 41;
+  for(i = ARRAY_SIZE(mode_list) - 1; i >= 0; i--)
+  {
+    color = (i == current_mode_id) ? DI_GREY : DI_GREY_DARK;
+
+    x -= strlen( mode_list[i].name ) + 2;
+    write_string(
+     mode_list[i].name,
+     PAL_ED_COL_X1 + x,
+     PAL_ED_COL_Y1 + 1,
+     color,
+     0
+    );
+  }
+}
+
+static void palette_editor_update_color_window(struct color_status *current,
+ const struct color_mode *mode)
+{
+  const struct color_mode_component *c;
+  char buffer[5];
+  int value;
+  int i;
+
+  // Color #
+  write_number(current_id, DI_GREY_TEXT,
+   PAL_ED_COL_X1 + 12, PAL_ED_COL_Y1 + 1, 3, 1, 10);
+
+  for(i = 0; i < 3; i++)
+  {
+    value = mode->get_function(current, i);
+    c = &(mode->components[i]);
+
+    sprintf(buffer, "%4d", value);
+
+    write_string(
+     buffer,
+     PAL_ED_COL_X1 + 4,
+     PAL_ED_COL_Y1 + 2 + i,
+     DI_GREY_TEXT,
+     0
+    );
+
+    write_string(
+     c->name_short,
+     PAL_ED_COL_X1 + 2,
+     PAL_ED_COL_Y1 + 2 + i,
+     DI_GREY_TEXT,
+     0
+    );
+
+    if((current_mode_id == 1) && (i == 0))
+    {
+      // Special case - the hue bar
+      draw_hue_bar(value, PAL_ED_COL_X1 + 9, PAL_ED_COL_Y1 + 2 + i,
+       c->min_val, c->max_val);
+    }
+
+    else
+    {
+      // Otherwise, draw a regular bar
+      draw_color_bar(value, PAL_ED_COL_X1 + 9, PAL_ED_COL_Y1 + 2 + i,
+       c->min_val, c->max_val, c->left_col, c->right_col);
+    }
+  }
+}
+
+static int palette_editor_input_color_window(struct color_status *current,
+ const struct color_mode *mode, int key)
+{
+  if(get_mouse_press())
+  {
+    int mouse_x;
+    int mouse_y;
+    int mouse_px;
+    int mouse_py;
+
+    get_mouse_position(&mouse_x, &mouse_y);
+    get_real_mouse_position(&mouse_px, &mouse_py);
+
+    // Component bars
+
+    if((mouse_x >= PAL_ED_COL_X1 + 9) && (mouse_x < PAL_ED_COL_X1 + 9 + 32) &&
+     (mouse_y >= PAL_ED_COL_Y1 + 2) && (mouse_y < PAL_ED_COL_Y1 + 5))
+    {
+      const struct color_mode_component *c;
+      int component = mouse_y - PAL_ED_COL_Y1 - 2;
+
+      float value = (mouse_x - PAL_ED_COL_X1 - 9) + ((mouse_px % 8) / 8.0);
+
+      c = &(mode->components[component]);
+
+      value = (value * (c->max_val - c->min_val) + 16) / 32.0 + c->min_val;
+
+      mode->input_bar_function(current, component, (int)value);
+
+      // Snap the mouse to the center of the bar.
+      warp_real_mouse_y(mouse_y * 14 + 7);
+      return -1;
+    }
+    else
+
+    // Mode select
+
+    if(0)
+    {
+      // FIXME implement this if there's demand for it. It's close to the slider
+      // bars and may be easy to accidentally click, which might be unpleasant.
+      //return -2;
+    }
+  }
+
+  key = mode->input_function(current, key);
+  return key;
+}
+
+
+// -----------------------------------------------------------------------------
+
+
+static void palette_editor_redraw_window_16(struct color_status *current,
+ const struct color_mode *mode)
+{
+  const struct color_mode_component *c;
+  int i;
+  int x;
+  int y;
+
   content_x = PAL_ED_16_X1 + 2;
-
-  if(minimal_help)
-  {
-    y1 = PAL_ED_16_Y1_MINIMAL;
-    y2 = PAL_ED_16_Y2_MINIMAL;
-    content_y = y1 + 1;
-  }
-
-  else
-  {
-    y1 = PAL_ED_16_Y1;
-    y2 = PAL_ED_16_Y2;
-    content_y = y1 + 2;
-  }
+  content_y = PAL_ED_16_Y1 + 1;
 
   // Draw window
-  draw_window_box(PAL_ED_16_X1, y1, PAL_ED_16_X2, y2,
+  draw_window_box(PAL_ED_16_X1, PAL_ED_16_Y1, PAL_ED_16_X2, PAL_ED_16_Y2,
    DI_GREY_DARK, DI_GREY, DI_GREY_CORNER, 1, 1);
 
   // Erase the spot where the palette will go and the line below it.
   for(i = 0; i < 32*4; i++)
     erase_char(i % 32 + content_x, i / 32 + content_y);
 
-  // Write RBG info
-  write_string(
-   "Color #00-\n"
-   " Red 00/63\n"
-   " Grn 00/63\n"
-   " Blu 00/63",
-   content_x + 33,
-   content_y,
-   DI_GREY_TEXT,
-   0
-  );
-
   if(!minimal_help)
   {
+    draw_window_box(PAL_ED_16_HELP_X1, PAL_ED_16_HELP_Y1, PAL_ED_16_HELP_X2,
+     PAL_ED_16_HELP_Y2, DI_GREY_DARK, DI_GREY, DI_GREY_CORNER, 1, 1);
+
     // Write menu
     write_string
     (
-      "\x1d- Select color   Alt+D- Default palette\n"
-      "R- Increase Red   Alt+R- Decrease Red\n"
-      "G- Increase Grn   Alt+G- Decrease Grn\n"
-      "B- Increase Blu   Alt+B- Decrease Blu\n"
-      "A- Increase All   Alt+A- Decrease All\n"
-      "0- Blacken color\tF2- Store color\n"
-      "Alt+H- Hide help\tF3- Retrieve color",
-      content_x,
-      content_y + 6,
+      "\x1d- Select color    Alt+D- Default pal.   PgUp- Prev. mode\n"
+      " - Increase        Alt+ - Decrease       PgDn- Next mode\n"
+      " - Increase        Alt+ - Decrease         F2- Store color\n"
+      " - Increase        Alt+ - Decrease         F3- Retrieve color\n"
+      "\n"
+      "0- Blacken color   Alt+H- Hide help         Q- Quit editing\n",
+      PAL_ED_16_HELP_X1 + 3,
+      PAL_ED_16_HELP_Y1 + 2,
       DI_GREY_TEXT,
       1
     );
+
+    // Component instructions
+    y = PAL_ED_16_HELP_Y1 + 3;
+    for(i = 0; i < 3; i++, y++)
+    {
+      c = &(mode->components[i]);
+      x = PAL_ED_16_HELP_X1 + 3;
+
+      write_string(c->key, x, y, DI_GREY_TEXT, 1);
+      x += 12;
+
+      write_string(c->name_long, x, y, DI_GREY_TEXT, 1);
+      x += 11;
+
+      write_string(c->key, x, y, DI_GREY_TEXT, 1);
+      x += 12;
+
+      write_string(c->name_long, x, y, DI_GREY_TEXT, 1);
+    }
+
+    // All
+    if(mode->allow_all)
+    {
+      write_string
+      (
+       "A- Increase All    Alt+A- Decrease All",
+       PAL_ED_16_HELP_X1 + 3,
+       PAL_ED_16_HELP_Y1 + 6,
+       DI_GREY_TEXT,
+       1
+      );
+    }
   }
 }
 
-static void palette_editor_update_window_16(void)
+static void palette_editor_update_window_16(struct color_status *current,
+ const struct color_mode *mode)
 {
   int screen_mode = get_screen_mode();
   unsigned int bg_color;
@@ -190,27 +945,11 @@ static void palette_editor_update_window_16(void)
     select_layer(UI_LAYER);
 
     // Clear the bottom
-    if(minimal_help)
-    {
-      draw_char('\xC4', DI_GREY, x, y + 4);
-      draw_char('\xC4', DI_GREY, x+1, y + 4);
-    }
-    else
-    {
-      draw_char(' ', DI_GREY, x, y + 4);
-      draw_char(' ', DI_GREY, x+1, y + 4);
-    }
+    draw_char('\xC4', DI_GREY, x, y + 4);
+    draw_char('\xC4', DI_GREY, x+1, y + 4);
 
-    //write_string("\x20\x20", x, y + 4, DI_GREY_TEXT, 0);
-
-    if((int)bg_color == current_color)
+    if(bg_color == current_id)
     {
-      // Write rgb and color #
-      write_number(current_color, DI_GREY_TEXT, content_x + 41, content_y, 2, 1, 10);
-      write_number(r, DI_GREY_TEXT, content_x + 39, content_y + 1, 2, 1, 10);
-      write_number(g, DI_GREY_TEXT, content_x + 39, content_y + 2, 2, 1, 10);
-      write_number(b, DI_GREY_TEXT, content_x + 39, content_y + 3, 2, 1, 10);
-
       // Draw '^^'
       write_string("\x1e\x1e",
        x, y + 4, DI_GREY_TEXT, 0);
@@ -218,7 +957,8 @@ static void palette_editor_update_window_16(void)
   }
 }
 
-static int palette_editor_input_16(int key)
+static int palette_editor_input_16(struct color_status *current,
+ const struct color_mode *mode, int key)
 {
   if(get_mouse_press())
   {
@@ -230,7 +970,7 @@ static int palette_editor_input_16(int key)
     if((mouse_x >= content_x) && (mouse_x < content_x + 32) &&
      (mouse_y >= content_y) && (mouse_y < content_y + 4))
     {
-      current_color = (mouse_x - content_x) / 2;
+      current_id = (mouse_x - content_x) / 2;
       return -1;
     }
   }
@@ -241,8 +981,8 @@ static int palette_editor_input_16(int key)
     case IKEY_MINUS:
     case IKEY_KP_MINUS:
     {
-      if(current_color > 0)
-        current_color--;
+      if(current_id > 0)
+        current_id--;
       break;
     }
 
@@ -250,8 +990,8 @@ static int palette_editor_input_16(int key)
     case IKEY_EQUALS:
     case IKEY_KP_PLUS:
     {
-      if(current_color < 15)
-        current_color++;
+      if(current_id < 15)
+        current_id++;
       break;
     }
 
@@ -266,28 +1006,39 @@ static int palette_editor_input_16(int key)
   return -1;
 }
 
-static void palette_editor_redraw_window(void)
+
+// -----------------------------------------------------------------------------
+
+
+static void palette_editor_redraw_window(struct color_status *current_color,
+ const struct color_mode *current_mode)
 {
   restore_screen();
   save_screen();
-  palette_editor_redraw_window_16();
+  palette_editor_redraw_color_window(current_color, current_mode);
+  palette_editor_redraw_window_16(current_color, current_mode);
 }
 
-static void palette_editor_update_window(void)
+static void palette_editor_update_window(struct color_status *current_color,
+ const struct color_mode *current_mode)
 {
-  palette_editor_update_window_16();
+  palette_editor_update_color_window(current_color, current_mode);
+  palette_editor_update_window_16(current_color, current_mode);
 }
 
-static int palette_editor_input(int key)
+static int palette_editor_input(struct color_status *current_color,
+ const struct color_mode *current_mode, int key)
 {
-  return palette_editor_input_16(key);
+  key = palette_editor_input_color_window(current_color, current_mode, key);
+  key = palette_editor_input_16(current_color, current_mode, key);
+  return key;
 }
 
 void palette_editor(struct world *mzx_world)
 {
-  unsigned char current_r;
-  unsigned char current_g;
-  unsigned char current_b;
+  const struct color_mode *current_mode;
+  struct color_status current_color;
+  unsigned int last_id = 10000;
   int refresh_window = 1;
   int refresh_palette = 1;
   int key;
@@ -298,25 +1049,30 @@ void palette_editor(struct world *mzx_world)
 
   do
   {
+    current_mode = &(mode_list[current_mode_id]);
+
+    if(last_id != current_id)
+    {
+      update_color(&current_color, current_id);
+      last_id = current_id;
+    }
+
     if(refresh_window)
     {
       // Draw the palette editor window.
-      palette_editor_redraw_window();
+      palette_editor_redraw_window(&current_color, current_mode);
       refresh_window = 0;
     }
 
     if(refresh_palette)
     {
       // Update the palette editor window.
-      palette_editor_update_window();
+      palette_editor_update_window(&current_color, current_mode);
     }
     refresh_palette = 1;
 
     update_screen();
     update_event_status_delay();
-
-    // Get the current color
-    get_rgb(current_color, &current_r, &current_g, &current_b);
 
     key = get_key(keycode_internal);
 
@@ -324,15 +1080,24 @@ void palette_editor(struct world *mzx_world)
     if(get_exit_status())
       key = IKEY_ESCAPE;
 
-    // Run it through the editor-specific handling first.
-    key = palette_editor_input(key);
-
-    // A key of <0 means the display needs to be refreshed.
-    if(key < 0)
-      continue;
+    // Run it through the editor-specific handling.
+    key = palette_editor_input(&current_color, current_mode, key);
 
     switch(key)
     {
+      case -2:
+      {
+        // Redraw entire window.
+        refresh_window = 1;
+        break;
+      }
+
+      case -1:
+      {
+        // Redraw window elements.
+        break;
+      }
+
       case IKEY_q:
       {
         key = IKEY_ESCAPE;
@@ -349,105 +1114,33 @@ void palette_editor(struct world *mzx_world)
         break;
       }
 
-      case IKEY_r:
+      case IKEY_PAGEUP:
       {
-        if(get_alt_status(keycode_internal))
-        {
-          if(current_r)
-          {
-            current_r--;
-          }
-        }
-        else
-        {
-          if(current_r < 63)
-          {
-            current_r++;
-          }
-        }
+        if(current_mode_id == 0)
+          current_mode_id = ARRAY_SIZE(mode_list);
 
-        set_red_component(current_color, current_r);
-        update_palette();
+        current_mode_id--;
+        refresh_window = 1;
         break;
       }
 
-      case IKEY_g:
+      case IKEY_PAGEDOWN:
       {
-        if(get_alt_status(keycode_internal))
-        {
-          if(current_g)
-          {
-            current_g--;
-          }
-        }
-        else
-        {
-          if(current_g < 63)
-          {
-            current_g++;
-          }
-        }
+        current_mode_id++;
 
-        set_green_component(current_color, current_g);
-        update_palette();
-        break;
-      }
+        if(current_mode_id == ARRAY_SIZE(mode_list))
+          current_mode_id = 0;
 
-      case IKEY_b:
-      {
-        if(get_alt_status(keycode_internal))
-        {
-          if(current_b)
-          {
-            current_b--;
-          }
-        }
-        else
-        {
-          if(current_b < 63)
-          {
-            current_b++;
-          }
-        }
-
-        set_blue_component(current_color, current_b);
-        update_palette();
-        break;
-      }
-
-      case IKEY_a:
-      {
-        if(get_alt_status(keycode_internal))
-        {
-          if(current_r)
-            current_r--;
-          if(current_g)
-            current_g--;
-          if(current_b)
-            current_b--;
-        }
-        else
-        {
-          if(current_r < 63)
-            current_r++;
-          if(current_g < 63)
-            current_g++;
-          if(current_b < 63)
-            current_b++;
-        }
-
-        set_rgb(current_color, current_r, current_g, current_b);
-        update_palette();
+        refresh_window = 1;
         break;
       }
 
       case IKEY_0:
       {
-        current_r = 0;
-        current_g = 0;
-        current_b = 0;
-        set_rgb(current_color, current_r, current_g, current_b);
-        update_palette();
+        current_color.r = 0;
+        current_color.g = 0;
+        current_color.b = 0;
+        set_color_rgb(&current_color);
         break;
       }
 
@@ -456,29 +1149,26 @@ void palette_editor(struct world *mzx_world)
         if(get_alt_status(keycode_internal))
         {
           default_palette();
+          update_color(&current_color, current_id);
         }
         break;
       }
 
       case IKEY_F2:
       {
-        saved_r = current_r;
-        saved_g = current_g;
-        saved_b = current_b;
-
+        memcpy(&saved_color, &current_color, sizeof(struct color_status));
+        saved_color_active = true;
         break;
       }
 
       case IKEY_F3:
       {
-        if(saved_r != -1)
+        if(saved_color_active)
         {
-          current_r = saved_r;
-          current_g = saved_g;
-          current_b = saved_b;
+          memcpy(&current_color, &saved_color, sizeof(struct color_status));
+
+          set_color_rgb(&current_color);
         }
-        set_rgb(current_color, current_r, current_g, current_b);
-        update_palette();
         break;
       }
 

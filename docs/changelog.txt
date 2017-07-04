@@ -13,6 +13,10 @@ FEATURES
   counter interpolation.
 + The robot debugger can now use line numbers in breakpoints.
 + The palette editor help can now be hidden with Alt+H.
++ The palette editor's mouse functionality has been improved.
+  Behavior when clicking the palette has been restored, and
+  component sliders have been added.
++ The palette editor now supports alternate color spaces.
 
 BUGFIXES
 
