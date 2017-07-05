@@ -141,7 +141,7 @@ li {
 <td>ARMv7-a (ELF)<br/>i686 (ELF)</td>
 <td>PPC (Mach-O)<br/>i686 (Mach-O)</td>
 <td>ARM9 (ELF)</td>
-<td>x86 (PE COFF)</td>
+<td>x86 (PE COFF)<br/>x64 (PE+ COFF)</td>
 <td>x86 (PE COFF)<br/>x64 (PE+ COFF)</td>
 <td>ARM9 (ELF)</td>
 <td>MIPS (ELF)</td>
@@ -171,7 +171,7 @@ li {
 <td>gcc 4.2.1<br/>binutils 2.17<br/>bionic</td>
 <td>gcc 4.0.1<br/>cctools 667.3<br/>10.3 (min ver)</td>
 <td>gcc 4.1.1<br/>binutils 2.16.1<br/>glibc 2.3.6<br/>(open2x)</td>
-<td>gcc 4.4.0<br/>binutils 2.19.1</td>
+<td>gcc 6.3.0<br/>binutils 2.28</td>
 <td>Visual Studio 2008</td>
 <td>gcc 4.7.1<br/>binutils 2.22<br/>(dk r41)</td>
 <td>gcc 4.6.2<br/>binutils 2.22<br/>(dk r16)</td>
@@ -228,17 +228,17 @@ li {
 
 <tr>
 <th>Module Engine</th>
-<td class="std">ModPlug</td>
-<td class="std">ModPlug</td>
-<td class="std">ModPlug</td>
+<td class="std">xmp</td>
+<td class="std">xmp</td>
+<td class="std">xmp</td>
 <td>MikMod</td>
-<td class="std">ModPlug</td>
-<td class="std">ModPlug</td>
+<td class="std">xmp</td>
+<td class="std">xmp</td>
 <td class="na">N/A</td>
-<td class="std">ModPlug</td>
-<td class="std">ModPlug</td>
-<td class="std">ModPlug</td>
-<td class="std">ModPlug</td>
+<td class="std">xmp</td>
+<td class="std">xmp</td>
+<td class="std">xmp</td>
+<td class="std">xmp</td>
 </tr>
 
 <tr>
@@ -394,17 +394,17 @@ li {
 
 <tr>
 <th>UPDATER</th>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
+<td class="no2">NO<a href="#note5">[5]</a></td>
+<td class="no2">NO<a href="#note5">[5]</a></td>
+<td class="no2">NO<a href="#note5">[5]</a></td>
+<td class="no2">NO<a href="#note5">[5]</a></td>
 <td class="yes">YES</td>
 <td class="yes">YES</td>
 <td class="no">NO</td>
+<td class="no">NO</td>
+<td class="no2">NO<a href="#note6">[6]</a></td>
 <td class="no">NO</td>
 <td class="no2">NO<a href="#note5">[5]</a></td>
-<td class="no">NO</td>
-<td class="yes">YES</td>
 </tr>
 
 
@@ -431,10 +431,10 @@ li {
 <td class="yes">YES</td>
 <td class="yes">YES</td>
 <td class="yes">YES</td>
-<td class="no2">NO<a href="#note6">[6]</a></td>
-<td class="no2">NO<a href="#note6">[6]</a></td>
+<td class="no2">NO<a href="#note7">[7]</a></td>
+<td class="no2">NO<a href="#note7">[7]</a></td>
 <td class="yes">YES</td>
-<td class="no2">NO<a href="#note6">[6]</a></td>
+<td class="no2">NO<a href="#note7">[7]</a></td>
 <td class="yes">YES</td>
 </tr>
 
@@ -454,6 +454,21 @@ li {
 </tr>
 
 <tr>
+<th>UTHASH</th>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="no2">NO<a href="#note4">[4]</a></td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+</tr>
+
+<tr>
 <th>LOADSAVE_METER</th>
 <td class="std">NO</td>
 <td class="std">NO</td>
@@ -465,6 +480,21 @@ li {
 <td class="yes">YES</td>
 <td class="std">NO</td>
 <td class="yes">YES</td>
+<td class="std">NO</td>
+</tr>
+
+<tr>
+<th>FPS</th>
+<td class="std">NO</td>
+<td class="std">NO</td>
+<td class="std">NO</td>
+<td class="std">NO</td>
+<td class="std">NO</td>
+<td class="std">NO</td>
+<td class="std">NO</td>
+<td class="std">NO</td>
+<td class="std">NO</td>
+<td class="std">NO</td>
 <td class="std">NO</td>
 </tr>
 
@@ -494,10 +524,15 @@ in conjunction with C++ exceptions with some MinGW compilers.
 <li><a name="note4"/>The editor and help system features are disabled
 to conserve cache on embedded platforms. The features build and work
 on these platforms, but they are basically unusable due to the lack of any
-on-screen keyboard.
+on-screen keyboard. Additionally, uthash has been disabled on the NDS to
+conserve memory.
 </li>
 
-<li><a name="note5"/>The updater is typically disabled in the Linux
+<li><a name="note5"/>The updater may or may not work on these platforms, but
+no builds are currently provided by the official update hosts.
+</li>
+
+<li><a name="note6"/>The updater is typically disabled in the Linux
 binaries that are shipped (for distributions like Debian or Fedora), even
 though the feature can easily be enabled.<br/>The issue is that MegaZeux is
 installed system-wide on these platforms and overwrites cannot be
@@ -505,7 +540,7 @@ guaranteed.<br/>Additionally, it is felt that the advanced package management
 on these platforms supercedes any usefulness of the built-in updater.
 </li>
 
-<li><a name="note6"/>Not had the opportunity to cross compile the
+<li><a name="note7"/>Not had the opportunity to cross compile the
 required libraries (zlib and libpng).<br/>Future developments may depend on
 these libraries, such as networking and the archive browser. Currently, the
 bloat cannot be justified, and these platforms do not yet have functioning
