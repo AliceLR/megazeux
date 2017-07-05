@@ -10,11 +10,20 @@ MSYSTEM=$6
 cd /mzx-build-workingdir/megazeux
 git checkout $5
 git pull origin $5
+
 ./config.sh --platform $2 $3 --enable-release
 make clean
-make -j8
+
+# Override XMP flags until it's available from pacman
+
+make -j8 \
+XMP_CFLAGS="-I/mzx-build-workingdir/megazeux/contrib/libxmp/include" \
+XMP_LDFLAGS="-L/mzx-build-workingdir/megazeux/contrib/libxmp/lib -lxmp$1"
+
 rm -rf build
+
 CUSTOM_SDL_DLL_DIR=contrib/precompiled-sdl/$1 make build
+
 mkdir -p /mzx-build-workingdir/releases/$4
 rm -rf /mzx-build-workingdir/releases/$4/windows-$1
 mv build/windows-$1/ /mzx-build-workingdir/releases/$4/

@@ -48,9 +48,9 @@ usage() {
 	echo "  --disable-gl-prog     Disable GL renderers for programmable h/w."
 	echo "  --disable-overlay     Disable all overlay renderers."
 	echo "  --enable-gp2x         Enables half-res software renderer."
-	echo "  --disable-modplug     Disable ModPlug music engine."
+	echo "  --disable-xmp         Disable XMP music engine."
+	echo "  --enable-modplug      Enables ModPlug music engine."
 	echo "  --enable-mikmod       Enables MikMod music engine."
-	echo "  --enable-xmp          Enables XMP music engine."
 	echo "  --enable-openmpt      Enables OpenMPT music engine."
 	echo "  --disable-libpng      Disable PNG screendump support."
 	echo "  --disable-audio       Disable all audio (sound + music)."
@@ -101,9 +101,9 @@ GL_FIXED="true"
 GL_PROGRAM="true"
 OVERLAY="true"
 GP2X="false"
-MODPLUG="true"
+XMP="true"
+MODPLUG="false"
 MIKMOD="false"
-XMP="false"
 OPENMPT="false"
 LIBPNG="true"
 AUDIO="true"
@@ -858,11 +858,11 @@ fi
 # Keep the default at the bottom so it doesn't override others.
 #
 
-if [ "$XMP" = "true" ]; then
-	echo "Selected XMP music engine."
+if [ "$MODPLUG" = "true" ]; then
+	echo "Selected Modplug music engine."
 	echo "#define CONFIG_AUDIO_MOD_SYSTEM" >> src/config.h
-	echo "#define CONFIG_XMP" >> src/config.h
-	echo "BUILD_XMP=1" >> platform.inc
+	echo "#define CONFIG_MODPLUG" >> src/config.h
+	echo "BUILD_MODPLUG=1" >> platform.inc
 elif [ "$MIKMOD" = "true" ]; then
 	echo "Selected Mikmod music engine."
 	echo "#define CONFIG_AUDIO_MOD_SYSTEM" >> src/config.h
@@ -873,11 +873,11 @@ elif [ "$OPENMPT" = "true" ]; then
 	echo "#define CONFIG_AUDIO_MOD_SYSTEM" >> src/config.h
 	echo "#define CONFIG_OPENMPT" >> src/config.h
 	echo "BUILD_OPENMPT=1" >> platform.inc
-elif [ "$MODPLUG" = "true" ]; then
-	echo "Selected Modplug music engine."
+elif [ "$XMP" = "true" ]; then
+	echo "Selected XMP music engine."
 	echo "#define CONFIG_AUDIO_MOD_SYSTEM" >> src/config.h
-	echo "#define CONFIG_MODPLUG" >> src/config.h
-	echo "BUILD_MODPLUG=1" >> platform.inc
+	echo "#define CONFIG_XMP" >> src/config.h
+	echo "BUILD_XMP=1" >> platform.inc
 else
 	echo "Music engine disabled."
 fi

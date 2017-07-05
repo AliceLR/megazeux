@@ -316,4 +316,11 @@ help_check: ${hlp2txt} assets/help.fil
 	@diff --strip-trailing-cr -q docs/WIPHelp.txt help.txt
 	@rm -f help.txt
 
+xmp:
+	cd contrib/libxmp/          ;\
+	./configure --enable-static ;\
+	make -j4                    ;\
+	make install                ;\
+	make clean
+
 endif

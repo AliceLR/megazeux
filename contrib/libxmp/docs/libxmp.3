@@ -1,0 +1,1499 @@
+.\" Man page generated from reStructuredText.
+.
+.TH LIBXMP 3 "Nov 2013" "4.2" "Extended Module Player"
+.SH NAME
+libxmp \- A tracker module player library
+.
+.nr rst2man-indent-level 0
+.
+.de1 rstReportMargin
+\\$1 \\n[an-margin]
+level \\n[rst2man-indent-level]
+level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
+-
+\\n[rst2man-indent0]
+\\n[rst2man-indent1]
+\\n[rst2man-indent2]
+..
+.de1 INDENT
+.\" .rstReportMargin pre:
+. RS \\$1
+. nr rst2man-indent\\n[rst2man-indent-level] \\n[an-margin]
+. nr rst2man-indent-level +1
+.\" .rstReportMargin post:
+..
+.de UNINDENT
+. RE
+.\" indent \\n[an-margin]
+.\" old: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.nr rst2man-indent-level -1
+.\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.in \\n[rst2man-indent\\n[rst2man-indent-level]]u
+..
+.SH INTRODUCTION
+.sp
+Libxmp is a module player library supporting many mainstream and obscure
+module formats including Protracker MOD, Scream Tracker III S3M and
+Impulse Tracker IT. Libxmp loads the module and renders the sound as
+linear PCM samples in a buffer at rate and format specified by the user,
+one frame at a time (standard modules usually play at 50 frames per second).
+.sp
+Possible applications for libxmp include stand\-alone module players, module
+player plugins for other players, module information extractors, background
+music replayers for games and other applications, module\-to\-mp3 renderers, etc.
+.SS Concepts
+.INDENT 0.0
+.IP \(bu 2
+\fBPlayer context:\fP
+Most libxmp functions require a handle that identifies the module player
+context. Each context is independent and multiple contexts can be defined
+simultaneously.
+.IP \(bu 2
+\fBSequence:\fP
+Each group of positions in the order list that loops over itself, also
+known as "subsong". Most modules have only one sequence, but some modules,
+especially modules used in games can have multiple sequences. "Hidden
+patterns" outside the main song are also listed as extra sequences, certain
+module authors such as Skaven commonly place extra patterns at the end of
+the module.
+.IP \(bu 2
+\fBState:\fP \fI[Added in libxmp 4.2]\fP
+The player can be in one of three possible states: \fIunloaded\fP, \fIloaded\fP,
+or \fIplaying\fP\&. The player is in unloaded state after context creation,
+changing to other states when a module is loaded or played.
+.IP \(bu 2
+\fBExternal sample mixer:\fP \fI[Added in libxmp 4.2]\fP
+Special sound channels can be reserved using \fIxmp_start_smix()\fP
+to play module instruments or external samples. This is useful when
+libxmp is used to provide background music to games or other applications
+where sound effects can be played in response to events or user actions
+.IP \(bu 2
+\fBAmiga mixer:\fP \fI[Added in libxmp 4.4]\fP
+Certain formats may use special mixers modeled after the original hardware
+used to play the format, providing more realistic sound at the expense of
+CPU usage. Currently Amiga formats such as Protracker can use a mixer
+modeled after the Amiga 500, with or without the led filter.
+.UNINDENT
+.SS A simple example
+.sp
+This example loads a module, plays it at 44.1kHz and writes it to a raw
+sound file:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+#include <stdio.h>
+#include <stdlib.h>
+#include <xmp.h>
+
+int main(int argc, char **argv)
+{
+    xmp_context c;
+    struct xmp_frame_info mi;
+    FILE *f;
+
+    /* The output raw file */
+    f = fopen("out.raw", "wb");
+    if (f == NULL) {
+        fprintf(stderr, "can\(aqt open output file\en");
+        exit(EXIT_FAILURE);
+    }
+
+    /* Create the player context */
+    c = xmp_create_context();
+
+    /* Load our module */
+    if (xmp_load_module(c, argv[1]) != 0) {
+        fprintf(stderr, "can\(aqt load module\en");
+        exit(EXIT_FAILURE);
+    }
+
+    /* Play the module */
+    xmp_start_player(c, 44100, 0);
+    while (xmp_play_frame(c) == 0) {
+        xmp_get_frame_info(c, &mi);
+
+        if (mi.loop_count > 0)    /* exit before looping */
+            break;
+
+        fwrite(mi.buffer, mi.buffer_size, 1, f);  /* write audio data */
+    }
+    xmp_end_player(c);
+    xmp_release_module(c);        /* unload module */
+    xmp_free_context(c);          /* destroy the player context */
+
+    fclose(f);
+
+    exit(EXIT_SUCCESS);
+}
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+A player context can load and play a single module at a time. Multiple
+contexts can be defined if needed.
+.sp
+Use \fI\%xmp_test_module()\fP to check if the file is a valid module and
+retrieve the module name and type. Use \fI\%xmp_load_module()\fP to load
+the module to memory. These two calls return 0 on success or <0 in case of
+error. Error codes are:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+\-XMP_ERROR_INTERNAL   /* Internal error */
+\-XMP_ERROR_FORMAT     /* Unsupported module format */
+\-XMP_ERROR_LOAD       /* Error loading file */
+\-XMP_ERROR_DEPACK     /* Error depacking file */
+\-XMP_ERROR_SYSTEM     /* System error */
+\-XMP_ERROR_STATE      /* Incorrect player state */
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+If a system error occurs, the specific error is set in \fBerrno\fP\&.
+.sp
+Parameters to \fI\%xmp_start_player()\fP are the sampling
+rate (up to 48kHz) and a bitmapped integer holding one or more of the
+following mixer flags:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+XMP_MIX_8BIT          /* Mix to 8\-bit instead of 16 */
+XMP_MIX_UNSIGNED      /* Mix to unsigned samples */
+XMP_MIX_MONO          /* Mix to mono instead of stereo */
+XMP_MIX_NEAREST       /* Mix using nearest neighbor interpolation */
+XMP_MIX_NOFILTER      /* Disable lowpass filter */
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+After \fI\%xmp_start_player()\fP is called, each call to \fI\%xmp_play_frame()\fP
+will render an audio frame. Call \fI\%xmp_get_frame_info()\fP to retrieve the
+buffer address and size. \fI\%xmp_play_frame()\fP returns 0 on success or \-1
+if replay should stop.
+.sp
+Use \fI\%xmp_end_player()\fP, \fI\%xmp_release_module()\fP and
+\fI\%xmp_free_context()\fP to release memory and end replay.
+.SS SDL example
+.sp
+To use libxmp with SDL, just provide a callback function that renders module
+data. The module will play when \fBSDL_PauseAudio(0)\fP is called:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+#include <SDL/SDL.h>
+#include <xmp.h>
+
+static void fill_audio(void *udata, unsigned char *stream, int len)
+{
+    xmp_play_buffer(udata, stream, len, 0);
+}
+
+int sound_init(xmp_context ctx, int sampling_rate, int channels)
+{
+    SDL_AudioSpec a;
+
+    a.freq = sampling_rate;
+    a.format = (AUDIO_S16);
+    a.channels = channels;
+    a.samples = 2048;
+    a.callback = fill_audio;
+    a.userdata = ctx;
+
+    if (SDL_OpenAudio(&a, NULL) < 0) {
+            fprintf(stderr, "%s\en", SDL_GetError());
+            return \-1;
+    }
+}
+
+int main(int argc, char **argv)
+{
+    xmp_context ctx;
+
+    if ((ctx = xmp_create_context()) == NULL)
+            return 1;
+
+    sound_init(ctx, 44100, 2);
+    xmp_load_module(ctx, argv[1]);
+    xmp_start_player(ctx, 44100, 0);
+
+    SDL_PauseAudio(0);
+
+    sleep(10);              // Do something important here
+
+    SDL_PauseAudio(1);
+
+    xmp_end_player(ctx);
+    xmp_release_module(ctx);
+    xmp_free_context(ctx);
+
+    SDL_CloseAudio();
+    return 0;
+}
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+SDL callbacks run in a separate thread, so don\(aqt forget to protect sections
+that manipulate module data with \fBSDL_LockAudio()\fP and \fBSDL_UnlockAudio()\fP\&.
+.SH API REFERENCE
+.SS Version and player information
+.SS const char *xmp_version
+.INDENT 0.0
+.INDENT 3.5
+A string containing the library version, such as "4.0.0".
+.UNINDENT
+.UNINDENT
+.SS const unsigned int xmp_vercode
+.INDENT 0.0
+.INDENT 3.5
+The library version encoded in a integer value. Bits 23\-16 contain the
+major version number, bits 15\-8 contain the minor version number, and
+bits 7\-0 contain the release number.
+.UNINDENT
+.UNINDENT
+.SS char **xmp_get_format_list()
+.INDENT 0.0
+.INDENT 3.5
+Query the list of supported module formats.
+.INDENT 0.0
+.TP
+.B \fBReturns:\fP
+a NULL\-terminated array of strings containing the names
+of all supported module formats.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS Context creation
+.SS xmp_context xmp_create_context()
+.INDENT 0.0
+.INDENT 3.5
+Create a new player context and return an opaque handle to be used in
+subsequent accesses to this context.
+.INDENT 0.0
+.TP
+.B \fBReturns:\fP
+the player context handle.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS void xmp_free_context(xmp_context c)
+.INDENT 0.0
+.INDENT 3.5
+Destroy a player context previously created using \fI\%xmp_create_context()\fP\&.
+.INDENT 0.0
+.TP
+.B \fBParameters:\fP
+.INDENT 7.0
+.TP
+.B c
+the player context handle.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS Module loading
+.SS int xmp_test_module(char *path, struct xmp_test_info *test_info)
+.INDENT 0.0
+.INDENT 3.5
+Test if a file is a valid module. Testing a file does not affect the
+current player context or any currently loaded module.
+.INDENT 0.0
+.TP
+.B \fBParameters:\fP
+.INDENT 7.0
+.TP
+.B path
+pathname of the module to test.
+.TP
+.B test_info
+NULL, or a pointer to a structure used to retrieve the
+module title and format if the file is a valid module.
+\fBstruct xmp_test_info\fP is defined as:
+.INDENT 7.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+struct xmp_test_info {
+    char name[XMP_NAME_SIZE];      /* Module title */
+    char type[XMP_NAME_SIZE];      /* Module format */
+};
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.TP
+.B \fBReturns:\fP
+0 if the file is a valid module, or a negative error code
+in case of error. Error codes can be \fB\-XMP_ERROR_FORMAT\fP in case of an
+unrecognized file format, \fB\-XMP_ERROR_DEPACK\fP if the file is compressed
+and uncompression failed, or \fB\-XMP_ERROR_SYSTEM\fP in case of system error
+(the system error code is set in \fBerrno\fP).
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS int xmp_load_module(xmp_context c, char *path)
+.INDENT 0.0
+.INDENT 3.5
+Load a module into the specified player context. (Certain player flags,
+such as \fBXMP_PLAYER_SMPCTL\fP and \fBXMP_PLAYER_DEFPAN\fP, must be set
+before loading the module, see \fI\%xmp_set_player()\fP for more information.)
+.INDENT 0.0
+.TP
+.B \fBParameters:\fP
+.INDENT 7.0
+.TP
+.B c
+the player context handle.
+.TP
+.B path
+pathname of the module to load.
+.UNINDENT
+.TP
+.B \fBReturns:\fP
+0 if sucessful, or a negative error code in case of error.
+Error codes can be \fB\-XMP_ERROR_FORMAT\fP in case of an unrecognized file
+format, \fB\-XMP_ERROR_DEPACK\fP if the file is compressed and uncompression
+failed, \fB\-XMP_ERROR_LOAD\fP if the file format was recognized but the
+file loading failed, or \fB\-XMP_ERROR_SYSTEM\fP in case of system error
+(the system error code is set in \fBerrno\fP).
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS int xmp_load_module_from_memory(xmp_context c, void *mem, long size)
+.INDENT 0.0
+.INDENT 3.5
+\fI[Added in libxmp 4.2]\fP Load a module from memory into the specified
+player context.
+.INDENT 0.0
+.TP
+.B \fBParameters:\fP
+.INDENT 7.0
+.TP
+.B c
+the player context handle.
+.TP
+.B mem
+a pointer to the module file image in memory. Multi\-file modules
+or compressed modules can\(aqt be loaded from memory.
+.TP
+.B size
+the size of the module, or 0 if the size is unknown or not
+specified. If size is set to 0 certain module formats won\(aqt be
+recognized, the MD5 digest will not be set, and module\-specific
+quirks won\(aqt be applied.
+.UNINDENT
+.TP
+.B \fBReturns:\fP
+0 if sucessful, or a negative error code in case of error.
+Error codes can be \fB\-XMP_ERROR_FORMAT\fP in case of an unrecognized file
+format, \fB\-XMP_ERROR_LOAD\fP if the file format was recognized but the
+file loading failed, or \fB\-XMP_ERROR_SYSTEM\fP in case of system error
+(the system error code is set in \fBerrno\fP).
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS int xmp_load_module_from_file(xmp_context c, FILE *f, long size)
+.INDENT 0.0
+.INDENT 3.5
+\fI[Added in libxmp 4.3]\fP Load a module from a stream into the specified
+player context.
+.INDENT 0.0
+.TP
+.B \fBParameters:\fP
+.INDENT 7.0
+.TP
+.B c
+the player context handle.
+.TP
+.B f
+the file stream. On return, the stream position is undefined.
+.TP
+.B size
+the size of the module, or 0 if the size is unknown or not
+specified. If size is set to 0 certain module formats won\(aqt be
+recognized, the MD5 digest will not be set, and module\-specific
+quirks won\(aqt be applied.
+.UNINDENT
+.TP
+.B \fBReturns:\fP
+0 if sucessful, or a negative error code in case of error.
+Error codes can be \fB\-XMP_ERROR_FORMAT\fP in case of an unrecognized file
+format, \fB\-XMP_ERROR_LOAD\fP if the file format was recognized but the
+file loading failed, or \fB\-XMP_ERROR_SYSTEM\fP in case of system error
+(the system error code is set in \fBerrno\fP).
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS void xmp_release_module(xmp_context c)
+.INDENT 0.0
+.INDENT 3.5
+Release memory allocated by a module from the specified player context.
+.INDENT 0.0
+.TP
+.B \fBParameters:\fP
+.INDENT 7.0
+.TP
+.B c
+the player context handle.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS void xmp_scan_module(xmp_context c)
+.INDENT 0.0
+.INDENT 3.5
+Scan the loaded module for sequences and timing. Scanning is automatically
+performed by \fI\%xmp_load_module()\fP and this function should be called only
+if \fI\%xmp_set_player()\fP is used to change player timing (with parameter
+\fBXMP_PLAYER_VBLANK\fP) in libxmp 4.0.2 or older.
+.INDENT 0.0
+.TP
+.B \fBParameters:\fP
+.INDENT 7.0
+.TP
+.B c
+the player context handle.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS void xmp_get_module_info(xmp_context c, struct xmp_module_info *info)
+.INDENT 0.0
+.INDENT 3.5
+Retrieve current module data.
+.INDENT 0.0
+.TP
+.B \fBParameters:\fP
+.INDENT 7.0
+.TP
+.B c
+the player context handle.
+.TP
+.B info
+pointer to structure containing the module data.
+\fBstruct xmp_module_info\fP is defined as follows:
+.INDENT 7.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+struct xmp_module_info {
+    unsigned char md5[16];          /* MD5 message digest */
+    int vol_base;                   /* Volume scale */
+    struct xmp_module *mod;         /* Pointer to module data */
+    char *comment;                  /* Comment text, if any */
+    int num_sequences;              /* Number of valid sequences */
+    struct xmp_sequence *seq_data;  /* Pointer to sequence data */
+};
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Detailed module data is exposed in the \fBmod\fP field:
+.INDENT 7.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+struct xmp_module {
+    char name[XMP_NAME_SIZE];       /* Module title */
+    char type[XMP_NAME_SIZE];       /* Module format */
+    int pat;                        /* Number of patterns */
+    int trk;                        /* Number of tracks */
+    int chn;                        /* Tracks per pattern */
+    int ins;                        /* Number of instruments */
+    int smp;                        /* Number of samples */
+    int spd;                        /* Initial speed */
+    int bpm;                        /* Initial BPM */
+    int len;                        /* Module length in patterns */
+    int rst;                        /* Restart position */
+    int gvl;                        /* Global volume */
+
+    struct xmp_pattern **xxp;       /* Patterns */
+    struct xmp_track **xxt;         /* Tracks */
+    struct xmp_instrument *xxi;     /* Instruments */
+    struct xmp_sample *xxs;         /* Samples */
+    struct xmp_channel xxc[64];     /* Channel info */
+    unsigned char xxo[XMP_MAX_MOD_LENGTH];  /* Orders */
+};
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+See the header file for more information about pattern and instrument
+data.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS Module playing
+.SS int xmp_start_player(xmp_context c, int rate, int format)
+.INDENT 0.0
+.INDENT 3.5
+Start playing the currently loaded module.
+.INDENT 0.0
+.TP
+.B \fBParameters:\fP
+.INDENT 7.0
+.TP
+.B c
+the player context handle.
+.TP
+.B rate
+the sampling rate to use, in Hz (typically 44100). Valid values
+range from 8kHz to 48kHz.
+.TP
+.B flags
+bitmapped configurable player flags, one or more of the
+following:
+.INDENT 7.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+XMP_FORMAT_8BIT         /* Mix to 8\-bit instead of 16 */
+XMP_FORMAT_UNSIGNED     /* Mix to unsigned samples */
+XMP_FORMAT_MONO         /* Mix to mono instead of stereo */
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.TP
+.B \fBReturns:\fP
+0 if sucessful, or a negative error code in case of error.
+Error codes can be \fB\-XMP_ERROR_INTERNAL\fP in case of a internal player
+error, \fB\-XMP_ERROR_INVALID\fP if the sampling rate is invalid, or
+\fB\-XMP_ERROR_SYSTEM\fP in case of system error (the system error
+code is set in \fBerrno\fP).
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS int xmp_play_frame(xmp_context c)
+.INDENT 0.0
+.INDENT 3.5
+Play one frame of the module. Modules usually play at 50 frames per second.
+Use \fI\%xmp_get_frame_info()\fP to retrieve the buffer containing audio data.
+.INDENT 0.0
+.TP
+.B \fBParameters:\fP
+.INDENT 7.0
+.TP
+.B c
+the player context handle.
+.UNINDENT
+.TP
+.B \fBReturns:\fP
+0 if sucessful, \fB\-XMP_END\fP if the module ended or was stopped, or
+\fB\-XMP_ERROR_STATE\fP if the player is not in playing state.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS int xmp_play_buffer(xmp_context c, void *buffer, int size, int loop)
+.INDENT 0.0
+.INDENT 3.5
+\fI[Added in libxmp 4.1]\fP Fill the buffer with PCM data up to the specified
+size. This is a convenience function that calls \fI\%xmp_play_frame()\fP
+internally to fill the user\-supplied buffer. \fBDon\(aqt call both
+xmp_play_frame() and xmp_play_buffer() in the same replay loop.\fP
+If you don\(aqt need equally sized data chunks, \fI\%xmp_play_frame()\fP
+may result in better performance. Also note that silence is added
+at the end of a buffer if the module ends and no loop is to be performed.
+.INDENT 0.0
+.TP
+.B \fBParameters:\fP
+.INDENT 7.0
+.TP
+.B c
+the player context handle.
+.TP
+.B buffer
+the buffer to fill with PCM data, or NULL to reset the
+internal state.
+.TP
+.B size
+the buffer size in bytes.
+.TP
+.B loop
+stop replay when the loop counter reaches the specified
+value, or 0 to disable loop checking.
+.UNINDENT
+.TP
+.B \fBReturns:\fP
+0 if sucessful, \fB\-XMP_END\fP if module was stopped or the loop counter
+was reached, or \fB\-XMP_ERROR_STATE\fP if the player is not in playing
+state.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS void xmp_get_frame_info(xmp_context c, struct xmp_frame_info *info)
+.INDENT 0.0
+.INDENT 3.5
+Retrieve the current frame data.
+.INDENT 0.0
+.TP
+.B \fBParameters:\fP
+.INDENT 7.0
+.TP
+.B c
+the player context handle.
+.TP
+.B info
+pointer to structure containing current frame data.
+\fBstruct xmp_frame_info\fP is defined as follows:
+.INDENT 7.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+struct xmp_frame_info {           /* Current frame information */
+    int pos;            /* Current position */
+    int pattern;        /* Current pattern */
+    int row;            /* Current row in pattern */
+    int num_rows;       /* Number of rows in current pattern */
+    int frame;          /* Current frame */
+    int speed;          /* Current replay speed */
+    int bpm;            /* Current bpm */
+    int time;           /* Current module time in ms */
+    int total_time;     /* Estimated replay time in ms*/
+    int frame_time;     /* Frame replay time in us */
+    void *buffer;       /* Pointer to sound buffer */
+    int buffer_size;    /* Used buffer size */
+    int total_size;     /* Total buffer size */
+    int volume;         /* Current master volume */
+    int loop_count;     /* Loop counter */
+    int virt_channels;  /* Number of virtual channels */
+    int virt_used;      /* Used virtual channels */
+    int sequence;       /* Current sequence */
+
+    struct xmp_channel_info {     /* Current channel information */
+        unsigned int period;      /* Sample period */
+        unsigned int position;    /* Sample position */
+        short pitchbend;          /* Linear bend from base note*/
+        unsigned char note;       /* Current base note number */
+        unsigned char instrument; /* Current instrument number */
+        unsigned char sample;     /* Current sample number */
+        unsigned char volume;     /* Current volume */
+        unsigned char pan;        /* Current stereo pan */
+        unsigned char reserved;   /* Reserved */
+        struct xmp_event event;   /* Current track event */
+    } channel_info[XMP_MAX_CHANNELS];
+};
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+This function should be used to retrieve sound buffer data after
+\fI\%xmp_play_frame()\fP is called. Fields \fBbuffer\fP and \fBbuffer_size\fP
+contain the pointer to the sound buffer PCM data and its size. The
+buffer size will be no larger than \fBXMP_MAX_FRAMESIZE\fP\&.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS void xmp_end_player(xmp_context c)
+.INDENT 0.0
+.INDENT 3.5
+End module replay and release player memory.
+.INDENT 0.0
+.TP
+.B \fBParameters:\fP
+.INDENT 7.0
+.TP
+.B c
+the player context handle.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS Player control
+.SS int xmp_next_position(xmp_context c)
+.INDENT 0.0
+.INDENT 3.5
+Skip replay to the start of the next position.
+.INDENT 0.0
+.TP
+.B \fBParameters:\fP
+.INDENT 7.0
+.TP
+.B c
+the player context handle.
+.UNINDENT
+.TP
+.B \fBReturns:\fP
+The new position index, or \fB\-XMP_ERROR_STATE\fP if the player is not
+in playing state.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS int xmp_prev_position(xmp_context c)
+.INDENT 0.0
+.INDENT 3.5
+Skip replay to the start of the previous position.
+.INDENT 0.0
+.TP
+.B \fBParameters:\fP
+.INDENT 7.0
+.TP
+.B c
+the player context handle.
+.UNINDENT
+.TP
+.B \fBReturns:\fP
+The new position index, or \fB\-XMP_ERROR_STATE\fP if the player is not
+in playing state.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS int xmp_set_position(xmp_context c, int pos)
+.INDENT 0.0
+.INDENT 3.5
+Skip replay to the start of the given position.
+.INDENT 0.0
+.TP
+.B \fBParameters:\fP
+.INDENT 7.0
+.TP
+.B c
+the player context handle.
+.TP
+.B pos
+the position index to set.
+.UNINDENT
+.TP
+.B \fBReturns:\fP
+The new position index, \fB\-XMP_ERROR_INVALID\fP of the new position is
+invalid or \fB\-XMP_ERROR_STATE\fP if the player is not in playing state.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS void xmp_stop_module(xmp_context c)
+.INDENT 0.0
+.INDENT 3.5
+Stop the currently playing module.
+.INDENT 0.0
+.TP
+.B \fBParameters:\fP
+.INDENT 7.0
+.TP
+.B c
+the player context handle.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS void xmp_restart_module(xmp_context c)
+.INDENT 0.0
+.INDENT 3.5
+Restart the currently playing module.
+.INDENT 0.0
+.TP
+.B \fBParameters:\fP
+.INDENT 7.0
+.TP
+.B c
+the player context handle.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS int xmp_seek_time(xmp_context c, int time)
+.INDENT 0.0
+.INDENT 3.5
+Skip replay to the specified time.
+.INDENT 0.0
+.TP
+.B \fBParameters:\fP
+.INDENT 7.0
+.TP
+.B c
+the player context handle.
+.TP
+.B time
+time to seek in milliseconds.
+.UNINDENT
+.TP
+.B \fBReturns:\fP
+The new position index, or \fB\-XMP_ERROR_STATE\fP if the player is not
+in playing state.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS int xmp_channel_mute(xmp_context c, int chn, int status)
+.INDENT 0.0
+.INDENT 3.5
+Mute or unmute the specified channel.
+.INDENT 0.0
+.TP
+.B \fBParameters:\fP
+.INDENT 7.0
+.TP
+.B c
+the player context handle.
+.TP
+.B chn
+the channel to mute or unmute.
+.TP
+.B status
+0 to mute channel, 1 to unmute or \-1 to query the
+current channel status.
+.UNINDENT
+.TP
+.B \fBReturns:\fP
+The previous channel status, or \fB\-XMP_ERROR_STATE\fP if the player is not
+in playing state.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS int xmp_channel_vol(xmp_context c, int chn, int vol)
+.INDENT 0.0
+.INDENT 3.5
+Set or retrieve the volume of the specified channel.
+.INDENT 0.0
+.TP
+.B \fBParameters:\fP
+.INDENT 7.0
+.TP
+.B c
+the player context handle.
+.TP
+.B chn
+the channel to set or get volume.
+.TP
+.B vol
+a value from 0\-100 to set the channel volume, or \-1 to retrieve
+the current volume.
+.UNINDENT
+.TP
+.B \fBReturns:\fP
+The previous channel volume, or \fB\-XMP_ERROR_STATE\fP if the player is not
+in playing state.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS void xmp_inject_event(xmp_context c, int chn, struct xmp_event *event)
+.INDENT 0.0
+.INDENT 3.5
+Dynamically insert a new event into a playing module.
+.INDENT 0.0
+.TP
+.B \fBParameters:\fP
+.INDENT 7.0
+.TP
+.B c
+the player context handle.
+.TP
+.B chn
+the channel to insert the new event.
+.TP
+.B event
+the event to insert.
+\fBstruct xmp_event\fP is defined as:
+.INDENT 7.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+struct xmp_event {
+    unsigned char note;   /* Note number (0 means no note) */
+    unsigned char ins;    /* Patch number */
+    unsigned char vol;    /* Volume (0 to basevol) */
+    unsigned char fxt;    /* Effect type */
+    unsigned char fxp;    /* Effect parameter */
+    unsigned char f2t;    /* Secondary effect type */
+    unsigned char f2p;    /* Secondary effect parameter */
+    unsigned char _flag;  /* Internal (reserved) flags */
+};
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS Player parameter setting
+.SS int xmp_set_instrument_path(xmp_context c, char *path)
+.INDENT 0.0
+.INDENT 3.5
+Set the path to retrieve external instruments or samples. Used by some
+formats (such as MED2) to read sample files from a different directory
+in the filesystem.
+.INDENT 0.0
+.TP
+.B \fBParameters:\fP
+.INDENT 7.0
+.TP
+.B c
+the player context handle.
+.TP
+.B path
+the path to retrieve instrument files.
+.UNINDENT
+.TP
+.B \fBReturns:\fP
+0 if the instrument path was correctly set, or \fB\-XMP_ERROR_SYSTEM\fP
+in case of error (the system error code is set in \fBerrno\fP).
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS int xmp_get_player(xmp_context c, int param)
+.INDENT 0.0
+.INDENT 3.5
+Retrieve current value of the specified player parameter.
+.INDENT 0.0
+.TP
+.B \fBParameters:\fP
+.INDENT 7.0
+.TP
+.B c
+the player context handle.
+.TP
+.B param
+player parameter to get.
+Valid parameters are:
+.INDENT 7.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+XMP_PLAYER_AMP         /* Amplification factor */
+XMP_PLAYER_MIX         /* Stereo mixing */
+XMP_PLAYER_INTERP      /* Interpolation type */
+XMP_PLAYER_DSP         /* DSP effect flags */
+XMP_PLAYER_FLAGS       /* Player flags */
+XMP_PLAYER_CFLAGS      /* Player flags for current module*/
+XMP_PLAYER_SMPCTL      /* Control sample loading */
+XMP_PLAYER_VOLUME      /* Player master volume */
+XMP_PLAYER_STATE       /* Current player state (read only) */
+XMP_PLAYER_SMIX_VOLUME /* SMIX Volume */
+XMP_PLAYER_DEFPAN      /* Default pan separation */
+XMP_PLAYER_MODE        /* Player personality */
+XMP_PLAYER_MIXER_TYPE  /* Current mixer (read only) */
+XMP_PLAYER_VOICES      /* Maximum number of mixer voices */
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Valid states are:
+.INDENT 7.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+XMP_STATE_UNLOADED     /* Context created */
+XMP_STATE_LOADED       /* Module loaded */
+XMP_STATE_PLAYING      /* Module playing */
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Valid mixer types are:
+.INDENT 7.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+XMP_MIXER_STANDARD      /* Standard mixer */
+XMP_MIXER_A500          /* Amiga 500 */
+XMP_MIXER_A500F         /* Amiga 500 with led filter */
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+See \fBxmp_set_player\fP for the rest of valid values for each parameter.
+.UNINDENT
+.TP
+.B \fBReturns:\fP
+The parameter value, or \fB\-XMP_ERROR_STATE\fP if the parameter is not
+\fBXMP_PLAYER_STATE\fP and the player is not in playing state.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS int xmp_set_player(xmp_context c, int param, int val)
+.INDENT 0.0
+.INDENT 3.5
+Set player parameter with the specified value.
+.INDENT 0.0
+.TP
+.B \fBParameters:\fP
+.INDENT 7.0
+.TP
+.B param
+player parameter to set.
+Valid parameters are:
+.INDENT 7.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+XMP_PLAYER_AMP         /* Amplification factor */
+XMP_PLAYER_MIX         /* Stereo mixing */
+XMP_PLAYER_INTERP      /* Interpolation type */
+XMP_PLAYER_DSP         /* DSP effect flags */
+XMP_PLAYER_FLAGS       /* Player flags */
+XMP_PLAYER_CFLAGS      /* Player flags for current module*/
+XMP_PLAYER_SMPCTL      /* Control sample loading */
+XMP_PLAYER_VOLUME      /* Player master volume */
+XMP_PLAYER_SMIX_VOLUME /* SMIX Volume */
+XMP_PLAYER_DEFPAN      /* Default pan separation */
+XMP_PLAYER_MODE        /* Player personality */
+XMP_PLAYER_VOICES      /* Maximum number of mixer voices */
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.TP
+.B val
+the value to set. Valid values depend on the parameter being set.
+.UNINDENT
+.sp
+\fBValid values:\fP
+.INDENT 7.0
+.IP \(bu 2
+Amplification factor: ranges from 0 to 3. Default value is 1.
+.IP \(bu 2
+Stereo mixing: percentual left/right channel separation.  Default is 70.
+.IP \(bu 2
+Interpolation type: can be one of the following values:
+.INDENT 2.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+XMP_INTERP_NEAREST  /* Nearest neighbor */
+XMP_INTERP_LINEAR   /* Linear (default) */
+XMP_INTERP_SPLINE   /* Cubic spline */
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.IP \(bu 2
+DSP effects flags: enable or disable DSP effects. Valid effects are:
+.INDENT 2.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+XMP_DSP_LOWPASS     /* Lowpass filter effect */
+XMP_DSP_ALL         /* All effects */
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.IP \(bu 2
+Player flags: tweakable player parameters. Valid flags are:
+.INDENT 2.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+XMP_FLAGS_VBLANK    /* Use vblank timing */
+XMP_FLAGS_FX9BUG    /* Emulate Protracker 2.x FX9 bug */
+XMP_FLAGS_FIXLOOP   /* Make sample loop value / 2 */
+XMP_FLAGS_A500      /* Use Paula mixer in Amiga modules */
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.IP \(bu 2
+\fI[Added in libxmp 4.1]\fP Player flags for current module: same flags
+as above but after applying module\-specific quirks (if any).
+.IP \(bu 2
+\fI[Added in libxmp 4.1]\fP Sample control: Valid values are:
+.INDENT 2.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+XMP_SMPCTL_SKIP     /* Don\(aqt load samples */
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.IP \(bu 2
+Disabling sample loading when loading a module allows allows
+computation of module duration without decompressing and
+loading large sample data, and is useful when duration information
+is needed for a module that won\(aqt be played immediately.
+.IP \(bu 2
+\fI[Added in libxmp 4.2]\fP Player volumes: Set the player master volume
+or the external sample mixer master volume. Valid values are 0 to 100.
+.IP \(bu 2
+\fI[Added in libxmp 4.3]\fP Default pan separation: percentual left/right
+pan separation in formats with only left and right channels. Default
+is 100%.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.\" 
+.
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.INDENT 3.5
+.INDENT 0.0
+.IP \(bu 2
+\fI[Added in libxmp 4.4]\fP Player personality: The player can be forced to
+emulate a specific tracker in cases where the module relies on a format
+quirk and tracker detection fails. Valid modes are:
+.INDENT 2.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+XMP_MODE_AUTO         /* Autodetect mode (default) */
+XMP_MODE_MOD          /* Play as a generic MOD player */
+XMP_MODE_NOISETRACKER /* Play using Noisetracker quirks */
+XMP_MODE_PROTRACKER   /* Play using Protracker 1/2 quirks */
+XMP_MODE_S3M          /* Play as a generic S3M player */
+XMP_MODE_ST3          /* Play using ST3 bug emulation */
+XMP_MODE_ST3GUS       /* Play using ST3+GUS quirks */
+XMP_MODE_XM           /* Play as a generic XM player */
+XMP_MODE_FT2          /* Play using FT2 bug emulation */
+XMP_MODE_IT           /* Play using IT quirks */
+XMP_MODE_ITSMP        /* Play using IT sample mode quirks */
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+By default, formats similar to S3M such as PTM or IMF will use S3M
+replayer (without Scream Tracker 3 quirks/bug emulation), and formats
+similar to XM such as RTM and MDL will use the XM replayer (without             FT2 quirks/bug emulation).
+.sp
+Multichannel MOD files will use the XM replayer, and Scream Tracker 3
+MOD files will use S3M replayer with ST3 quirks. S3M files will use
+the most appropriate replayer according to the tracker used to create
+the file, and enable Scream Tracker 3 quirks and bugs only if created
+using ST3. XM files will be played with FT2 bugs and quirks only if
+created using Fast Tracker II.
+.sp
+Modules created with OpenMPT will be played with all bugs and quirks
+of the original trackers.
+.IP \(bu 2
+\fI[Added in libxmp 4.4]\fP Maximum number of mixer voices: the maximum
+number of virtual channels that can be used to play the module. If
+set too high, modules with voice leaks can cause excessive CPU usage.
+Default is 128.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.INDENT 0.0
+.TP
+.B \fBReturns:\fP
+0 if parameter was correctly set, \fB\-XMP_ERROR_INVALID\fP if
+parameter or values are out of the valid ranges, or \fB\-XMP_ERROR_STATE\fP
+if the player is not in playing state.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SH EXTERNAL SAMPLE MIXER API
+.sp
+Libxmp 4.2 includes a mini\-API that can be used to add sound effects to
+games and similar applications, provided that you have a low latency sound
+system. It allows module instruments or external sample files in WAV format
+to be played in response to arbitrary events.
+.SS Example
+.sp
+This example using SDL loads a module and a sound sample, plays the module
+as background music, and plays the sample when a key is pressed:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+#include <SDL/SDL.h>
+#include <xmp.h>
+
+static void fill_audio(void *udata, unsigned char *stream, int len)
+{
+    xmp_play_buffer(udata, stream, len, 0);
+}
+
+int sound_init(xmp_context ctx, int sampling_rate, int channels)
+{
+    SDL_AudioSpec a;
+
+    a.freq = sampling_rate;
+    a.format = (AUDIO_S16);
+    a.channels = channels;
+    a.samples = 2048;
+    a.callback = fill_audio;
+    a.userdata = ctx;
+
+    if (SDL_OpenAudio(&a, NULL) < 0) {
+            fprintf(stderr, "%s\en", SDL_GetError());
+            return \-1;
+    }
+}
+
+int video_init()
+{
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+        fprintf(stderr, "%s\en", SDL_GetError());
+        return \-1;
+    }
+    if (SDL_SetVideoMode(640, 480, 8, 0) == NULL) {
+        fprintf(stderr, "%s\en", SDL_GetError());
+        return \-1;
+    }
+    atexit(SDL_Quit);
+}
+
+int main(int argc, char **argv)
+{
+    SDL_Event event;
+    xmp_context ctx;
+
+    if ((ctx = xmp_create_context()) == NULL)
+            return 1;
+
+    video_init();
+    sound_init(ctx, 44100, 2);
+
+    xmp_start_smix(ctx, 1, 1);
+    xmp_smix_load_sample(ctx, 0, "blip.wav");
+
+    xmp_load_module(ctx, "music.mod");
+    xmp_start_player(ctx, 44100, 0);
+    xmp_set_player(ctx, XMP_PLAYER_VOLUME, 40);
+
+    SDL_PauseAudio(0);
+
+    while (1) {
+        if (SDL_WaitEvent(&event)) {
+            if (event.type == SDL_KEYDOWN) {
+                if (event.key.keysym.sym == SDLK_ESCAPE)
+                    break;
+                xmp_smix_play_sample(ctx, 0, 60, 64, 0);
+            }
+        }
+    }
+
+    SDL_PauseAudio(1);
+
+    xmp_end_player(ctx);
+    xmp_release_module(ctx);
+    xmp_free_context(ctx);
+    xmp_end_smix(ctx);
+
+    SDL_CloseAudio();
+    return 0;
+}
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.SS SMIX API reference
+.SS int xmp_start_smix(xmp_context c, int nch, int nsmp)
+.INDENT 0.0
+.INDENT 3.5
+Initialize the external sample mixer subsystem with the given number of
+reserved channels and samples.
+.INDENT 0.0
+.TP
+.B \fBParameters:\fP
+.INDENT 7.0
+.TP
+.B c
+the player context handle.
+.TP
+.B nch
+number of reserved sound mixer channels (1 to 64).
+.TP
+.B nsmp
+number of external samples.
+.UNINDENT
+.TP
+.B \fBReturns:\fP
+0 if the external sample mixer system was correctly initialized,
+\fB\-XMP_ERROR_INVALID\fP in case of invalid parameters, \fB\-XMP_ERROR_STATE\fP
+if the player is already in playing state, or \fB\-XMP_ERROR_SYSTEM\fP in case
+of system error (the system error code is set in \fBerrno\fP).
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS int xmp_smix_play_instrument(xmp_context c, int ins, int note, int vol, int chn)
+.INDENT 0.0
+.INDENT 3.5
+Play a note using an instrument from the currently loaded module in
+one of the reserved sound mixer channels.
+.INDENT 0.0
+.TP
+.B \fBParameters:\fP
+.INDENT 7.0
+.TP
+.B c
+the player context handle.
+.TP
+.B ins
+the instrument to play.
+.TP
+.B note
+the note number to play (60 = middle C).
+.TP
+.B vol
+the volume to use (range: 0 to the maximum volume value used by the
+current module).
+.TP
+.B chn
+the reserved channel to use to play the instrument.
+.UNINDENT
+.TP
+.B \fBReturns:\fP
+0 if the instrument was correctly played, \fB\-XMP_ERROR_INVALID\fP in
+case of invalid parameters, or \fB\-XMP_ERROR_STATE\fP if the player is not
+in playing state.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS int xmp_smix_play_sample(xmp_context c, int ins, int vol, int chn)
+.INDENT 0.0
+.INDENT 3.5
+Play an external sample file in one of the reserved sound channels.
+The sample must have been previously loaded using
+\fI\%xmp_smix_load_sample()\fP\&.
+.INDENT 0.0
+.TP
+.B \fBParameters:\fP
+.INDENT 7.0
+.TP
+.B c
+the player context handle.
+.TP
+.B ins
+the sample to play.
+.TP
+.B vol
+the volume to use (0 to the maximum volume value used by the
+current module.
+.TP
+.B chn
+the reserved channel to use to play the sample.
+.UNINDENT
+.TP
+.B \fBReturns:\fP
+0 if the sample was correctly played, \fB\-XMP_ERROR_INVALID\fP in
+case of invalid parameters, or \fB\-XMP_ERROR_STATE\fP if the player is not
+in playing state.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS int xmp_smix_channel_pan(xmp_context c, int chn, int pan)
+.INDENT 0.0
+.INDENT 3.5
+Set the reserved channel pan value.
+.INDENT 0.0
+.TP
+.B \fBParameters:\fP
+.INDENT 7.0
+.TP
+.B c
+the player context handle.
+.TP
+.B chn
+the reserved channel number.
+.TP
+.B pan
+the pan value to set (0 to 255).
+.UNINDENT
+.TP
+.B \fBReturns:\fP
+0 if the pan value was set, or \fB\-XMP_ERROR_INVALID\fP if parameters
+are invalid.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS int xmp_smix_load_sample(xmp_context c, int num, char *path)
+.INDENT 0.0
+.INDENT 3.5
+Load a sound sample from a file. Samples should be in mono WAV (RIFF)
+format.
+.INDENT 0.0
+.TP
+.B \fBParameters:\fP
+.INDENT 7.0
+.TP
+.B c
+the player context handle.
+.TP
+.B num
+the slot number of the external sample to load.
+.TP
+.B path
+pathname of the file to load.
+.UNINDENT
+.TP
+.B \fBReturns:\fP
+0 if the sample was correctly loaded, \fB\-XMP_ERROR_INVALID\fP if the
+sample slot number is invalid (not reserved using \fI\%xmp_start_smix()\fP),
+\fB\-XMP_ERROR_FORMAT\fP if the file format is unsupported, or
+\fB\-XMP_ERROR_SYSTEM\fP in case of system error (the system error code is
+set in \fBerrno\fP).
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS int xmp_smix_release_sample(xmp_context c, int num)
+.INDENT 0.0
+.INDENT 3.5
+Release memory allocated by an external sample in the specified player
+context.
+.INDENT 0.0
+.TP
+.B \fBParameters:\fP
+.INDENT 7.0
+.TP
+.B c
+the player context handle.
+.TP
+.B num
+the sample slot number to release.
+.UNINDENT
+.TP
+.B \fBReturns:\fP
+0 if memory was correctly released, or \fB\-XMP_ERROR_INVALID\fP if the
+sample slot number is invalid.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SS void xmp_end_smix(xmp_context c)
+.INDENT 0.0
+.INDENT 3.5
+Deinitialize and resease memory used by the external sample mixer subsystem.
+.INDENT 0.0
+.TP
+.B \fBParameters:\fP
+.INDENT 7.0
+.TP
+.B c
+the player context handle.
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.UNINDENT
+.SH AUTHOR
+Claudio Matsuoka and Hipolito Carraro Jr.
+.\" Generated by docutils manpage writer.
+.
