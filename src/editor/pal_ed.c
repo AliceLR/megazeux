@@ -76,7 +76,7 @@ struct color_status {
 
   unsigned int h;
   unsigned int s;
-  unsigned int v;
+  unsigned int l;
 
   unsigned int CL;
   int Ca;
@@ -115,19 +115,24 @@ static void rgb_to_hsv(struct color_status *current)
    (M == g) ? ((b - r)/c) + 2           :
    (M == b) ? ((r - g)/c) + 4           : 0;
 
+  float l = (M+m)/2.0;
+
   current->h = (unsigned int)( fmod(h * 60, 360.0) );
 
-  current->s = (unsigned int)( M ? c/M * 100 : 0 );
+  current->s = (unsigned int)( l < 1  ?  c/(1 - fabs(M+m-1)) * 100 : 0 );
 
-  current->v = (unsigned int)( M * 100 );
+  current->l = (unsigned int)( l * 100 );
 }
 
 static void hsv_to_rgb(struct color_status *current)
 {
-  float v = (float)( current->v ) / 100.0;
-  float c = (float)( current->s ) * v / 100.0;
+  float l = (float)( current->l ) / 100.0;
+  float s = (float)( current->s ) / 100.0;
   float h = (float)( current->h ) / 60.0;
-  float m = v - c;
+
+  float c = (1 - fabs(2*l - 1)) * s;
+
+  float m = l - c/2.0;
 
   float x = c * (1 - fabs( fmod(h, 2.0) - 1 ));
 
@@ -150,19 +155,43 @@ static void hsv_to_rgb(struct color_status *current)
   current->b = (unsigned char)(b * 63.0);
 }
 
+static const double Xn = 0.9505;
+static const double Yn = 1.0000;
+static const double Zn = 1.0890;
+
+static inline double srgb_comp_to_linear(double c)
+{
+  return (c <= 0.04045)  ?  c / 12.92  :  pow((c + 0.055)/(1.055), 2.4);
+}
+
+static inline double srgb_linear_to_comp(double l)
+{
+  return (l <= 0.0031308)  ?  l * 12.92  :  (1.055)*pow(l, 1/2.4) - 0.055;
+}
+
+static inline double xyz_to_lab_comp_transform(double c)
+{
+  return (c > 0.008856)  ?  cbrt(c)  :  (903.3 * c + 16)/116.0;
+}
+
+static inline double lab_to_xyz_comp_transform(double c)
+{
+  return (c > 0.205893)  ?  pow(c, 3.0)  :  0.128414 * (c - 0.137931);
+}
+
 static void rgb_to_lab(struct color_status *current)
 {
-  float r = (float)(current->r) / 63.0;
-  float g = (float)(current->g) / 63.0;
-  float b = (float)(current->b) / 63.0;
+  double r = srgb_comp_to_linear( (double)(current->r) / 63.0 );
+  double g = srgb_comp_to_linear( (double)(current->g) / 63.0 );
+  double b = srgb_comp_to_linear( (double)(current->b) / 63.0 );
 
-  float x = 0.4124564*r + 0.3575761*g + 0.1804375*b;
-  float y = 0.2126729*r + 0.7151522*g + 0.0721750*b;
-  float z = 0.0193339*r + 0.1191920*g + 0.9503041*b;
+  double x = 0.4124564*r + 0.3575761*g + 0.1804375*b;
+  double y = 0.2126729*r + 0.7151522*g + 0.0721750*b;
+  double z = 0.0193339*r + 0.1191920*g + 0.9503041*b;
 
-  float fx = (x > 0.008856) ? cbrt(x) : (903.3 * x + 16)/116.0;
-  float fy = (y > 0.008856) ? cbrt(y) : (903.3 * y + 16)/116.0;
-  float fz = (z > 0.008856) ? cbrt(z) : (903.3 * z + 16)/116.0;
+  double fx = xyz_to_lab_comp_transform( x / Xn );
+  double fy = xyz_to_lab_comp_transform( y / Yn );
+  double fz = xyz_to_lab_comp_transform( z / Zn );
 
   current->CL = (unsigned int)( 116 * fy - 16 );
   current->Ca = (int)( 500 * (fx - fy) );
@@ -171,21 +200,25 @@ static void rgb_to_lab(struct color_status *current)
 
 static void lab_to_rgb(struct color_status *current)
 {
-  float CL = (float)(current->CL);
-  float Ca = current->Ca;
-  float Cb = current->Cb;
+  double CL = (double)(current->CL);
+  double Ca = current->Ca;
+  double Cb = current->Cb;
 
-  float fy = (CL + 16) / 116.0;
-  float fx = fy + Ca / 500.0;
-  float fz = fy - Cb / 200.0;
+  double fy = (CL + 16) / 116.0;
+  double fx = fy + Ca / 500.0;
+  double fz = fy - Cb / 200.0;
 
-  float x = (fx > 0.205893) ? pow(fx, 3.0) : 0.128414 * (fx - 0.137931);
-  float y = (fy > 0.205893) ? pow(fy, 3.0) : 0.128414 * (fy - 0.137931);
-  float z = (fz > 0.205893) ? pow(fz, 3.0) : 0.128414 * (fz - 0.137931);
+  double x = Xn * lab_to_xyz_comp_transform( fx );
+  double y = Yn * lab_to_xyz_comp_transform( fy );
+  double z = Zn * lab_to_xyz_comp_transform( fz );
 
-  float r =  3.2404542*x + -1.5371385*y + -0.4985314*z;
-  float g = -0.9692660*x +  1.8760108*y +  0.0415560*z;
-  float b =  0.0556434*x + -0.2040259*y +  1.0572252*z;
+  double r =  3.2404542*x + -1.5371385*y + -0.4985314*z;
+  double g = -0.9692660*x +  1.8760108*y +  0.0415560*z;
+  double b =  0.0556434*x + -0.2040259*y +  1.0572252*z;
+
+  r = srgb_linear_to_comp( r );
+  g = srgb_linear_to_comp( g );
+  b = srgb_linear_to_comp( b );
 
   current->r = (unsigned int)(CLAMP(r, 0.0, 1.0) * 63.0);
   current->g = (unsigned int)(CLAMP(g, 0.0, 1.0) * 63.0);
@@ -243,7 +276,7 @@ static int get_color_hsv(struct color_status *current, int component)
   {
     case 0: return (int)current->h;
     case 1: return (int)current->s;
-    case 2: return (int)current->v;
+    case 2: return (int)current->l;
   }
   return -1;
 }
@@ -293,7 +326,7 @@ static void set_color_hsv_bar(struct color_status *current, int component,
       break;
 
     case 2:
-      current->v = value;
+      current->l = value;
       break;
   }
   set_color_hsv(current);
@@ -465,16 +498,16 @@ static int key_color_hsv(struct color_status *current, int key)
     {
       if(get_alt_status(keycode_internal))
       {
-        if(current->v)
+        if(current->l)
         {
-          current->v--;
+          current->l--;
         }
       }
       else
       {
-        if(current->v < 100)
+        if(current->l < 100)
         {
-          current->v++;
+          current->l++;
         }
       }
 
@@ -592,11 +625,11 @@ static const struct color_mode mode_list[] =
     true,
   },
 
-  { "HSV",
+  { "HSL",
     {
       { "Hue",   "H",    "H",  4,  4,    0, 359 },
       { "Sat.",  "S",    "S",  7,  0,    0, 100 },
-      { "Value", "V",    "V", 15,  0,    0, 100 },
+      { "Light", "L",    "V", 15,  0,    0, 100 },
     },
     set_color_hsv,
     get_color_hsv,
