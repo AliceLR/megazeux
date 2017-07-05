@@ -26,14 +26,14 @@ REAL_ARCH := amd64
 else
 
 ifeq (${ARCH},ppc)
-CC        := ${CROSS_COMPILE_PPC_CC}  -mmacosx-version-min=10.6
-CXX       := ${CROSS_COMPILE_PPC_CXX} -mmacosx-version-min=10.6
+CC        := ${CROSS_COMPILE_PPC_CC}  -mmacosx-version-min=10.4
+CXX       := ${CROSS_COMPILE_PPC_CXX} -mmacosx-version-min=10.4
 REAL_ARCH := ppc
 else
 
 ifeq (${ARCH},ppc64)
-CC        := ${CROSS_COMPILE_PPC_CC}  -m64 -mmacosx-version-min=10.6
-CXX       := ${CROSS_COMPILE_PPC_CXX} -m64 -mmacosx-version-min=10.6
+CC        := ${CROSS_COMPILE_PPC_CC}  -m64 -mmacosx-version-min=10.4
+CXX       := ${CROSS_COMPILE_PPC_CXX} -m64 -mmacosx-version-min=10.4
 REAL_ARCH := ppc64
 else
 
