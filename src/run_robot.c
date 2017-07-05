@@ -5957,8 +5957,10 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
   breaker:
 
+#ifdef CONFIG_EDITOR
   cur_robot->commands_total += lines_run;
   cur_robot->commands_cycle = lines_run;
+#endif
 
   cur_robot->cycle_count = 0; // In case a label changed it
   // Reset x/y (from movements)

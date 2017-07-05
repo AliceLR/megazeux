@@ -3253,11 +3253,13 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
           // Free the robot's source and command map
           free(cur_robot->program_source);
-          free(cur_robot->command_map);
-          cur_robot->program_source_length = 0;
-          cur_robot->command_map_length = 0;
           cur_robot->program_source = NULL;
+          cur_robot->program_source_length = 0;
+#ifdef CONFIG_EDITOR
+          free(cur_robot->command_map);
+          cur_robot->command_map_length = 0;
           cur_robot->command_map = NULL;
+#endif
 
           // Restart this robot if either it was just a LOAD_ROBOT
           // OR LOAD_ROBOTn was used where n is &robot_id&.
@@ -3307,11 +3309,13 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
           // Free the robot's source and command map
           free(cur_robot->program_source);
-          free(cur_robot->command_map);
-          cur_robot->program_source_length = 0;
-          cur_robot->command_map_length = 0;
           cur_robot->program_source = NULL;
+          cur_robot->program_source_length = 0;
+#ifdef CONFIG_EDITOR
+          free(cur_robot->command_map);
+          cur_robot->command_map_length = 0;
           cur_robot->command_map = NULL;
+#endif
 
           // Restart this robot if either it was just a LOAD_BC
           // OR LOAD_BCn was used where n is &robot_id&.

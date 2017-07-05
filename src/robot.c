@@ -58,11 +58,15 @@
  (PROP_HEADER_SIZE * COUNT_ROBOT_SAVE_PROPS + BOUND_ROBOT_SAVE_PROPS)
 
 #ifdef CONFIG_DEBYTECODE
+#ifdef CONFIG_EDITOR
+
 #define COUNT_ROBOT_DBC_EDIT_PROPS (2)
 #define BOUND_ROBOT_DBC_EDIT_PROPS (0) // +prog +map
 
 #define ROBOT_DBC_EDIT_PROPS_SIZE \
  (PROP_HEADER_SIZE * COUNT_ROBOT_DBC_EDIT_PROPS + BOUND_ROBOT_DBC_EDIT_PROPS)
+
+#endif
 #endif
 
 enum robot_prop {
@@ -311,6 +315,7 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
 
       case RPROP_PROGRAM_MAP:
       {
+#ifdef CONFIG_EDITOR
         err_if_skipped(RPROP_YPOS);
 
         if(cur_robot->command_map)
@@ -328,7 +333,7 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
             cur_robot->command_map[i].src_pos = mfgetd(&prop);
           }
         }
-
+#endif
         break;
       }
 
@@ -339,7 +344,11 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
         if(cur_robot->program_source)
           break;
 
+#ifdef CONFIG_EDITOR
         if(!savegame || mzx_world->editing)
+#else
+        if(!savegame)
+#endif
         {
           // This program is source, just load it straight
           cur_robot->program_source = cmalloc(size + 1);
@@ -672,6 +681,7 @@ size_t save_robot_calculate_size(struct world *mzx_world,
     prepare_robot_bytecode(mzx_world, cur_robot);
     size += cur_robot->program_bytecode_length;
 
+#ifdef CONFIG_EDITOR
     if(mzx_world->editing)
     {
       // When editing, save these too.
@@ -681,6 +691,7 @@ size_t save_robot_calculate_size(struct world *mzx_world,
       size += cur_robot->command_map_length *
        sizeof(struct command_mapping);
     }
+#endif
   }
 
 #else // !CONFIG_DEBYTECODE
@@ -703,6 +714,7 @@ static void save_robot_to_memory(struct robot *cur_robot,
   save_prop_w(RPROP_YPOS, cur_robot->ypos, mf);
 
 #ifdef CONFIG_DEBYTECODE
+#ifdef CONFIG_EDITOR
   if(cur_robot->command_map)
   {
     int map_len = cur_robot->command_map_length *
@@ -718,6 +730,7 @@ static void save_robot_to_memory(struct robot *cur_robot,
       mfputd(cur_robot->command_map[i].src_pos, &prop);
     }
   }
+#endif
 
   if(cur_robot->program_source)
   {
@@ -3441,9 +3454,11 @@ void duplicate_robot_direct(struct world *mzx_world, struct robot *cur_robot,
     copy_robot->program_source = NULL;
     copy_robot->program_source_length = 0;
 
+#ifdef CONFIG_EDITOR
     // Don't give this robot a command map; if we're debugging, it will get regenerated
     copy_robot->command_map = NULL;
     copy_robot->command_map_length = 0;
+#endif
   }
 
   if (preserve_state && mzx_world->version < 0x0250) {
