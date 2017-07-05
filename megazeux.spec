@@ -46,7 +46,7 @@ rm -rf "$RPM_BUILD_ROOT"
 
 %files
 %defattr(-,root,root,-)
-%doc docs/changelog.txt docs/port.txt docs/macro.txt
+%doc docs/changelog.txt docs/macro.txt
 %{_bindir}/
 %{_prefix}/games
 %{_libdir}/megazeux
