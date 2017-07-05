@@ -2233,7 +2233,14 @@ __editor_maybe_static void play_game(struct world *mzx_world)
 
     if(key && !exit)
     {
+#ifdef CONFIG_PANDORA
+      // The Pandora (at least, at one point) did not have proper support for
+      // keycode_unicode. This is a workaround to get the "keyN" labels to work
+      // at all. This will break certain keyN labels, such as "key$", however.
       int key_char = get_key(keycode_internal);
+#else
+      int key_char = get_key(keycode_unicode);
+#endif
 
 #ifdef CONFIG_EDITOR
       if(edit_world)
