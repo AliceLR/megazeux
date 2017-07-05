@@ -505,9 +505,10 @@ static const char def_colors[128] =
 };
 
 static const char *const mod_ext[] =
-{
-  ".xm", ".s3m", ".mod", ".med", ".mtm", ".stm", ".it", ".669", ".ult",
-  ".wav", ".dsm", ".far", ".okt", ".amf", ".ogg", NULL
+{ ".ogg", ".mod", ".s3m", ".xm", ".it", ".gdm",
+  ".669", ".amf", ".dsm", ".far", ".med",
+  ".mtm", ".okt", ".stm", ".ult", ".wav",
+  NULL
 };
 
 static const char drawmode_help[5][32] =
