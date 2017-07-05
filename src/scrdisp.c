@@ -118,7 +118,7 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
 
   // Draw screen
   save_screen();
-
+  disable_gui_mode0();
   dialog_fadein();
 
   if(editing)
@@ -383,7 +383,7 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
   } while(key != IKEY_ESCAPE);
   // Restore screen and exit
   restore_screen();
-
+  enable_gui_mode0();
   dialog_fadeout();
 }
 

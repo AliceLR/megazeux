@@ -1020,12 +1020,19 @@ static void spr_setview_write(struct world *mzx_world,
   src_board->scroll_x = 0;
   src_board->scroll_y = 0;
   calculate_xytop(mzx_world, &n_scroll_x, &n_scroll_y);
-  src_board->scroll_x =
-   (cur_sprite->x + (cur_sprite->width >> 1)) -
-   (src_board->viewport_width >> 1) - n_scroll_x;
-  src_board->scroll_y =
-   (cur_sprite->y + (cur_sprite->height >> 1)) -
-   (src_board->viewport_height >> 1) - n_scroll_y;
+  if (cur_sprite->flags & SPRITE_UNBOUND) {
+    src_board->scroll_x = ((cur_sprite->x + cur_sprite->width * 4
+     - src_board->viewport_width * 4) - n_scroll_x * 8) / 8;
+    src_board->scroll_y = ((cur_sprite->y + cur_sprite->height * 7
+     - src_board->viewport_height * 7) - n_scroll_x * 14) / 14;
+  } else {
+    src_board->scroll_x =
+    (cur_sprite->x + (cur_sprite->width >> 1)) -
+    (src_board->viewport_width >> 1) - n_scroll_x;
+    src_board->scroll_y =
+    (cur_sprite->y + (cur_sprite->height >> 1)) -
+    (src_board->viewport_height >> 1) - n_scroll_y;
+  }
   return;
 }
 

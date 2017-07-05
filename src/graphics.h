@@ -245,6 +245,8 @@ CORE_LIBSPEC void insta_fadeout(void);
 CORE_LIBSPEC void dialog_fadein(void);
 CORE_LIBSPEC void dialog_fadeout(void);
 CORE_LIBSPEC void default_palette(void);
+CORE_LIBSPEC void disable_gui_mode0(void);
+CORE_LIBSPEC void enable_gui_mode0(void);
 
 CORE_LIBSPEC void m_hide(void);
 CORE_LIBSPEC void m_show(void);

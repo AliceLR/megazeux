@@ -35,6 +35,11 @@ BUGFIXES
   the robot editor. (Lancer-X)
 + Fixed a bug where key presses in dialogs could be detected in
   games, and keypresses could still carry between other dialogs.
++ [ message boxes now use the same screen mode as everything
+  else. Same with scrolls. (Lancer-X)
++ spr#_setview now works with unbound sprites. It's pretty nasty
+  as the viewport can't scroll with pixel precision, but the new
+  behavior should still be better than the old. (Lancer-X)
 
 DEVELOPERS
 

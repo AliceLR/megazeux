@@ -2719,6 +2719,7 @@ void robot_box_display(struct world *mzx_world, char *program,
 
   // Draw screen
   save_screen();
+  disable_gui_mode0();
   m_show();
 
   dialog_fadein();
@@ -2920,6 +2921,7 @@ void robot_box_display(struct world *mzx_world, char *program,
   // Restore screen and exit
   m_hide();
   restore_screen();
+  enable_gui_mode0();
   update_event_status();
 }
 
