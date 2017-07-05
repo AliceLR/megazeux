@@ -34,7 +34,7 @@
 
 
 //----------------------------------/ /-----------------------------------------/
-// ##..##..##..##..##..##..##..##.. / / Color # 00-             RGB  HSV  Lab   /
+// ##..##..##..##..##..##..##..##.. / / Color # 00-             RGB  HSL  Lab   /
 // ##..##..##..##..##..#1.1#1.1#1.1 / / R    0 [----|----|----|----|----|----|] /
 // #0.1#2.3#4.5#6.7#8.9#0.1#2.3#4.5 / / G    0 [----|----|----|----|----|----|] /
 // ##..##..##..##..##..##..##..##.. / / B    0 [----|----|----|----|----|----|] /
@@ -99,7 +99,7 @@ static int current_mode_id = 0;
 // -----------------------------------------------------------------------------
 
 
-static void rgb_to_hsv(struct color_status *current)
+static void rgb_to_hsl(struct color_status *current)
 {
   float r = (float)(current->r) / 63.0;
   float g = (float)(current->g) / 63.0;
@@ -124,7 +124,7 @@ static void rgb_to_hsv(struct color_status *current)
   current->l = (unsigned int)( l * 100 );
 }
 
-static void hsv_to_rgb(struct color_status *current)
+static void hsl_to_rgb(struct color_status *current)
 {
   float l = (float)( current->l ) / 100.0;
   float s = (float)( current->s ) / 100.0;
@@ -228,23 +228,23 @@ static void lab_to_rgb(struct color_status *current)
 static void update_color(struct color_status *current, int id)
 {
   get_rgb(id, &(current->r), &(current->g), &(current->b));
-  rgb_to_hsv(current);
+  rgb_to_hsl(current);
   rgb_to_lab(current);
   current_id = id;
 }
 
 static void set_color_rgb(struct color_status *current)
 {
-  rgb_to_hsv(current);
+  rgb_to_hsl(current);
   rgb_to_lab(current);
   set_rgb(current_id, current->r, current->g, current->b);
   update_palette();
 }
 
 
-static void set_color_hsv(struct color_status *current)
+static void set_color_hsl(struct color_status *current)
 {
-  hsv_to_rgb(current);
+  hsl_to_rgb(current);
   rgb_to_lab(current);
   set_rgb(current_id, current->r, current->g, current->b);
   update_palette();
@@ -254,7 +254,7 @@ static void set_color_hsv(struct color_status *current)
 static void set_color_lab(struct color_status *current)
 {
   lab_to_rgb(current);
-  rgb_to_hsv(current);
+  rgb_to_hsl(current);
   set_rgb(current_id, current->r, current->g, current->b);
   update_palette();
 }
@@ -270,7 +270,7 @@ static int get_color_rgb(struct color_status *current, int component)
   return -1;
 }
 
-static int get_color_hsv(struct color_status *current, int component)
+static int get_color_hsl(struct color_status *current, int component)
 {
   switch(component)
   {
@@ -312,7 +312,7 @@ static void set_color_rgb_bar(struct color_status *current, int component,
   set_color_rgb(current);
 }
 
-static void set_color_hsv_bar(struct color_status *current, int component,
+static void set_color_hsl_bar(struct color_status *current, int component,
  int value)
 {
   switch(component)
@@ -329,7 +329,7 @@ static void set_color_hsv_bar(struct color_status *current, int component,
       current->l = value;
       break;
   }
-  set_color_hsv(current);
+  set_color_hsl(current);
 }
 
 static void set_color_lab_bar(struct color_status *current, int component,
@@ -448,7 +448,7 @@ static int key_color_rgb(struct color_status *current, int key)
   return key;
 }
 
-static int key_color_hsv(struct color_status *current, int key)
+static int key_color_hsl(struct color_status *current, int key)
 {
   switch(key)
   {
@@ -460,6 +460,10 @@ static int key_color_hsv(struct color_status *current, int key)
         {
           current->h--;
         }
+        else
+        {
+          current->h = 359;
+        }
       }
       else
       {
@@ -467,9 +471,13 @@ static int key_color_hsv(struct color_status *current, int key)
         {
           current->h++;
         }
+        else
+        {
+          current->h = 0;
+        }
       }
 
-      set_color_hsv(current);
+      set_color_hsl(current);
       return -1;
     }
 
@@ -490,7 +498,7 @@ static int key_color_hsv(struct color_status *current, int key)
         }
       }
 
-      set_color_hsv(current);
+      set_color_hsl(current);
       return -1;
     }
 
@@ -511,7 +519,7 @@ static int key_color_hsv(struct color_status *current, int key)
         }
       }
 
-      set_color_hsv(current);
+      set_color_hsl(current);
       return -1;
     }
   }
@@ -631,10 +639,10 @@ static const struct color_mode mode_list[] =
       { "Sat.",  "S",    "S",  7,  0,    0, 100 },
       { "Light", "L",    "V", 15,  0,    0, 100 },
     },
-    set_color_hsv,
-    get_color_hsv,
-    key_color_hsv,
-    set_color_hsv_bar,
+    set_color_hsl,
+    get_color_hsl,
+    key_color_hsl,
+    set_color_hsl_bar,
     false,
   },
 
