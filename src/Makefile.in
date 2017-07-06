@@ -243,7 +243,7 @@ endif
 endif
 
 core_cflags := ${ZLIB_CFLAGS} ${core_cflags}
-core_ldflags := ${ZLIB_LDFLAGS} ${core_ldflags} 
+core_ldflags := ${ZLIB_LDFLAGS} ${core_ldflags}
 
 ifeq (${BUILD_NETWORK},1)
 core_cobjs += ${network_obj}/host.o ${network_obj}/manifest.o
@@ -297,10 +297,10 @@ include src/editor/Makefile.in
 
 mzx_objs := ${mzx_objs} ${core_obj}/main.o
 
-ifeq (${PLATFORM},darwin)
-mzx_objs += arch/darwin/SDLMain.o
-mzx_ldflags += -framework Cocoa
-endif
+#ifeq (${PLATFORM},darwin)
+#mzx_objs += arch/darwin/SDLMain.o
+#mzx_ldflags += -framework Cocoa
+#endif
 
 -include ${mzx_objs:.o=.d}
 
@@ -338,10 +338,10 @@ ifeq (${BUILD_MZXRUN},1)
 
 mzxrun_objs := ${core_obj}/main.o ${core_obj}/run_stubs.o
 
-ifeq (${PLATFORM},darwin)
-mzxrun_objs += arch/darwin/SDLMain.o
-mzxrun_ldflags += -framework Cocoa
-endif
+#ifeq (${PLATFORM},darwin)
+#mzxrun_objs += arch/darwin/SDLMain.o
+#mzxrun_ldflags += -framework Cocoa
+#endif
 
 -include ${mzxrun_objs:.o=.d}
 

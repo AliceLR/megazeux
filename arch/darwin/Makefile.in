@@ -14,14 +14,14 @@ ARCH := i686
 endif
 
 ifeq (${ARCH},i686)
-CC        := ${CROSS_COMPILE_X86_CC}  -mmacosx-version-min=10.4
-CXX       := ${CROSS_COMPILE_X86_CXX} -mmacosx-version-min=10.4
+CC        := ${CROSS_COMPILE_X86_CC}  -mmacosx-version-min=10.6
+CXX       := ${CROSS_COMPILE_X86_CXX} -mmacosx-version-min=10.6
 REAL_ARCH := i686
 else
 
 ifeq (${ARCH},amd64)
-CC        := ${CROSS_COMPILE_X86_CC}  -m64 -mmacosx-version-min=10.5
-CXX       := ${CROSS_COMPILE_X86_CXX} -m64 -mmacosx-version-min=10.5
+CC        := ${CROSS_COMPILE_X86_CC}  -m64 -mmacosx-version-min=10.6
+CXX       := ${CROSS_COMPILE_X86_CXX} -m64 -mmacosx-version-min=10.6
 REAL_ARCH := amd64
 else
 
