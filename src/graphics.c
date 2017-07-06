@@ -1169,6 +1169,14 @@ void blank_layers(void)
    sizeof(struct char_element) * SCREEN_W * SCREEN_H);
   memset(graphics.video_layers[UI_LAYER].data, 0xFF,
    sizeof(struct char_element) * SCREEN_W * SCREEN_H);
+  
+  // Fix the layer modes
+  if (graphics.video_layers[BOARD_LAYER].mode != graphics.screen_mode)
+  {
+    graphics.video_layers[BOARD_LAYER].mode = graphics.screen_mode;
+    graphics.video_layers[OVERLAY_LAYER].mode = graphics.screen_mode;
+    graphics.video_layers[UI_LAYER].mode = 0;
+  }
 
   for (i = 3; i < graphics.layer_count; i++)
   {
