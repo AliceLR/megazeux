@@ -898,8 +898,9 @@ static void glsl_render_layer(struct graphics_data *graphics, struct video_layer
   
   if (layer->transparent_col != -1)
     render_data->background_texture[layer->transparent_col] = 0x00000000;
+  render_data->background_texture[FULL_PAL_SIZE] = 0x00000000;
 
-  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 896, FULL_PAL_SIZE, 1, GL_RGBA,
+  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 896, FULL_PAL_SIZE + 1, 1, GL_RGBA,
    GL_UNSIGNED_BYTE, render_data->background_texture);
   gl_check_error();
 
