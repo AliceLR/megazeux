@@ -34,37 +34,37 @@ void main( void )
     int char_num = ti_byte3 / 4 + ti_byte4 * 64;
     if (fg_color == 272 || bg_color == 272) {
       gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
-      return;
-    }
-    //char_num = mod_(char_num, 256);
-    
-    int px = int_(mod_(float(x), 8.0));
-    int py = int_(mod_(float(y), 14.0));
-    /*
-    if (px == 0 && py == 13)
-      gl_FragColor = texture2D( baseMap, vec2(1.0 / 512.0 * fg_color, 896.0/1024.0));
-    else
-      gl_FragColor = texture2D( baseMap, vec2(1.0 / 512.0 * bg_color, 896.0/1024.0));
-    */
-    int char_x = int_(mod_(float(char_num), 64.0)) * 8 + (px / 2 * 2);
-    int char_y = char_num / 64 * 14 + py;
-    
-    int smzx_col;
-    if (texture2D(baseMap, vec2(1.0 / 512.0 * float(char_x), 1.0 / 1024.0 * float(char_y))).x < 0.5) {
-      if (texture2D(baseMap, vec2(1.0 / 512.0 * float(char_x + 1), 1.0 / 1024.0 * float(char_y))).x < 0.5) {
-        smzx_col = 0;
-      } else {
-        smzx_col = 1;
-      }
     } else {
-      if (texture2D(baseMap, vec2(1.0 / 512.0 * float(char_x + 1), 1.0 / 1024.0 * float(char_y))).x < 0.5) {
-        smzx_col = 2;
+      //char_num = mod_(char_num, 256);
+      
+      int px = int_(mod_(float(x), 8.0));
+      int py = int_(mod_(float(y), 14.0));
+      /*
+      if (px == 0 && py == 13)
+        gl_FragColor = texture2D( baseMap, vec2(1.0 / 512.0 * fg_color, 896.0/1024.0));
+      else
+        gl_FragColor = texture2D( baseMap, vec2(1.0 / 512.0 * bg_color, 896.0/1024.0));
+      */
+      int char_x = int_(mod_(float(char_num), 64.0)) * 8 + (px / 2 * 2);
+      int char_y = char_num / 64 * 14 + py;
+      
+      int smzx_col;
+      if (texture2D(baseMap, vec2(1.0 / 512.0 * float(char_x), 1.0 / 1024.0 * float(char_y))).x < 0.5) {
+        if (texture2D(baseMap, vec2(1.0 / 512.0 * float(char_x + 1), 1.0 / 1024.0 * float(char_y))).x < 0.5) {
+          smzx_col = 0;
+        } else {
+          smzx_col = 1;
+        }
       } else {
-        smzx_col = 3;
+        if (texture2D(baseMap, vec2(1.0 / 512.0 * float(char_x + 1), 1.0 / 1024.0 * float(char_y))).x < 0.5) {
+          smzx_col = 2;
+        } else {
+          smzx_col = 3;
+        }
       }
-    }
 
-    int mzx_col = int_(mod_(float(bg_color), 16.0)) * 16 + int_(mod_(float(fg_color), 16.0));
-    int real_col = int_(texture2D( baseMap, vec2(1.0 / 512.0 * float(mzx_col), (897.0 + float(smzx_col))/1024.0)).r * 255.0);
-    gl_FragColor = texture2D( baseMap, vec2(1.0 / 512.0 * float(real_col), 896.0/1024.0));
+      int mzx_col = int_(mod_(float(bg_color), 16.0)) * 16 + int_(mod_(float(fg_color), 16.0));
+      int real_col = int_(texture2D( baseMap, vec2(1.0 / 512.0 * float(mzx_col), (897.0 + float(smzx_col))/1024.0)).r * 255.0);
+      gl_FragColor = texture2D( baseMap, vec2(1.0 / 512.0 * float(real_col), 896.0/1024.0));
+    }
 }
