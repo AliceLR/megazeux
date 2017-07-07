@@ -202,7 +202,6 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
         if(buf_pos >= buf_alloc)
         {
           // Truncate the counter name and continue.
-          warn("Hit end of expression buffer while parsing operand.\n");
           buf_pos = buf_alloc - 1;
           *buf_pos = '\0';
           break;
@@ -250,7 +249,6 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
         if(current_char == '\0')
         {
           // Invalid -- truncated operand
-          warn("Encountered null while parsing operand.\n");
           *error = 1;
           goto err_out;
         }
@@ -276,9 +274,7 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
     if(state & (EXPR_STATE_PUSH|EXPR_STATE_PUSH_INTERPOLATION))
     {
       if(pos >= stack_alloc)
-      //if(pos >= EXPR_STACK_SIZE)
       {
-        warn("Hit top of expression stack.\n");
         *error = 3;
         goto err_out;
       }
@@ -375,7 +371,6 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
       if(len > (buf_alloc - buf_pos))
       {
         // Truncate the interpolated value and continue
-        warn("Hit end of expression buffer while interpolating.\n");
         len = buf_alloc - buf_pos;
       }
 
@@ -392,7 +387,6 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
       }
       else
       {
-        warn("Hit bottom of expression stack unexpectedly while interpolating.\n");
         *error = 4;
         goto err_out;
       }
@@ -725,7 +719,6 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
             if(len+1 > (buf_alloc - buf_pos))
             {
               // Truncate the interpolated value and continue.
-              warn("Hit end of buffer at closing parenthesis.\n");
               len = buf_alloc - buf_pos - 1;
             }
 
