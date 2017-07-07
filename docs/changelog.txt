@@ -45,6 +45,9 @@ BUGFIXES
 + spr#_setview now works with unbound sprites. It's pretty nasty
   as the viewport can't scroll with pixel precision, but the new
   behavior should still be better than the old. (Lancer-X)
++ Fixed a bug affecting certain Intel HD Graphics cards and the
+  GLSL renderer that appears to have been around since that
+  renderer was first introduced. (Lancer-X)
 
 DEVELOPERS
 
