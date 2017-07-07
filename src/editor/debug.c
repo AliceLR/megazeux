@@ -2140,15 +2140,18 @@ void __debug_counters(struct world *mzx_world)
   free(var_list);
 }
 
-/********************/
-/* HAHAHA DEBUG BOX */
-/********************/
+/************************************************/
+/* Debug box, which shows actually useful stuff */
+/************************************************/
 
-void __draw_debug_box(struct world *mzx_world, int x, int y, int d_x, int d_y)
+void __draw_debug_box(struct world *mzx_world, int x, int y, int d_x, int d_y,
+ int show_keys)
 {
   struct board *src_board = mzx_world->current_board;
   char version_string[16];
   int version_string_len;
+  char key_string[4];
+  int key;
   int robot_mem = 0;
   int i;
 
@@ -2165,6 +2168,27 @@ void __draw_debug_box(struct world *mzx_world, int x, int y, int d_x, int d_y)
 
   version_string_len = get_version_string(version_string, mzx_world->version);
   write_string(version_string, x + 19 - version_string_len, y, DI_DEBUG_BOX, 0);
+
+  if(show_keys)
+  {
+    // key_code
+    key = get_last_key(keycode_pc_xt);
+    if(key && show_keys)
+    {
+      sprintf(key_string, "%d", key);
+      write_string(key_string, x + 15 - strlen(key_string), y + 5,
+       DI_DEBUG_BOX_DARK + 0x0A, 0);
+    }
+
+    // key_pressed
+    key = get_last_key(keycode_internal);
+    if(key && show_keys)
+    {
+      sprintf(key_string, "%d", key);
+      write_string(key_string, x + 19 - strlen(key_string), y + 5,
+       DI_DEBUG_BOX_DARK + 0x0D, 0);
+    }
+  }
 
   write_number(d_x, DI_DEBUG_NUMBER, x + 8, y + 1, 5, 0, 10);
   write_number(d_y, DI_DEBUG_NUMBER, x + 14, y + 1, 5, 0, 10);

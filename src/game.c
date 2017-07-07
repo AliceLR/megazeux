@@ -115,7 +115,7 @@ __editor_maybe_static void (*edit_world)(struct world *mzx_world,
  int reload_curr_file);
 __editor_maybe_static void (*debug_counters)(struct world *mzx_world);
 __editor_maybe_static void (*draw_debug_box)(struct world *mzx_world,
- int x, int y, int d_x, int d_y);
+ int x, int y, int d_x, int d_y, int show_keys);
 
 __editor_maybe_static void (*debug_robot_config)(struct world *mzx_world);
 
@@ -1859,7 +1859,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
     if(draw_debug_box && debug_mode)
     {
       draw_debug_box(mzx_world, 60, 19, mzx_world->player_x,
-       mzx_world->player_y);
+       mzx_world->player_y, 1);
     }
 
     // note-- pal_update was previously here

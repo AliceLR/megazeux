@@ -22,6 +22,9 @@ FEATURES
   Behavior when clicking the palette has been restored, and
   component sliders have been added.
 + The palette editor now supports alternate color spaces.
++ The debug window now displays the last key_code (green) and
+  key_pressed (magenta) values detected during gameplay. These
+  values are located in the bottom right corner of the window.
 
 BUGFIXES
 
@@ -42,9 +45,6 @@ BUGFIXES
 + spr#_setview now works with unbound sprites. It's pretty nasty
   as the viewport can't scroll with pixel precision, but the new
   behavior should still be better than the old. (Lancer-X)
-+ fixed a bug affecting certain Intel HD Graphics cards and the
-  GLSL renderer that appears to have been around since that
-  renderer was first introduced. (Lancer-X)
 
 DEVELOPERS
 

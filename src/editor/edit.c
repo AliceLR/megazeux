@@ -1406,7 +1406,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
     if(debug_mode)
     {
       draw_debug_box(mzx_world, debug_x, edit_screen_height - 6,
-       cursor_board_x, cursor_board_y);
+       cursor_board_x, cursor_board_y, 0);
     }
 
     text_place = 0;
