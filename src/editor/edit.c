@@ -1414,7 +1414,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
     update_screen();
 
     update_event_status_delay();
-    key = get_key(keycode_internal);
+    key = get_key(keycode_internal_wrt_numlock);
 
     // Exit event - ignore other input
     exit = get_exit_status();
@@ -3502,7 +3502,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             update_screen();
 
             update_event_status_delay();
-            v_key = get_key(keycode_internal);
+            v_key = get_key(keycode_internal_wrt_numlock);
 
             if(get_exit_status())
               v_key = IKEY_ESCAPE;

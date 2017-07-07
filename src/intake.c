@@ -201,7 +201,7 @@ int intake(struct world *mzx_world, char *string, int max_len,
     {
       update_screen();
       update_event_status_intake();
-      key = get_key(keycode_internal);
+      key = get_key(keycode_internal_wrt_numlock);
       place = 0;
 
       cur_char = get_key(keycode_unicode);

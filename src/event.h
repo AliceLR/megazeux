@@ -118,10 +118,13 @@ struct input_status
   bool unfocus_pause;
 };
 
+// regular keycode_internal treats numpad keys as unique keys
+// wrt_numlock translates them to numeric/navigation based on numlock status
 enum keycode_type
 {
   keycode_pc_xt,
   keycode_internal,
+  keycode_internal_wrt_numlock,
   keycode_unicode
 };
 

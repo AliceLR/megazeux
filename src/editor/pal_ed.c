@@ -1120,7 +1120,7 @@ void palette_editor(struct world *mzx_world)
     update_screen();
     update_event_status_delay();
 
-    key = get_key(keycode_internal);
+    key = get_key(keycode_internal_wrt_numlock);
 
     // Exit event -- mimic Escape
     if(get_exit_status())

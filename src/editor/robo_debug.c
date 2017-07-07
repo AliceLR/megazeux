@@ -683,7 +683,7 @@ static int debug_robot_idle_function(struct world *mzx_world,
  struct dialog *di, int key)
 {
   // For most of these, do nothing if the key is being held.
-  int is_press = (get_key_status(keycode_internal, key) == 1);
+  int is_press = (get_key_status(keycode_internal_wrt_numlock, key) == 1);
 
   switch(key)
   {

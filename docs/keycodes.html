@@ -110,12 +110,6 @@
     sup.capslock:after {
       content: "C";
     }
-    sup.numlockon:after {
-      content: "On"
-    }
-    sup.numlockoff:after {
-      content: "Off"
-    }
     span.annotation {
       font-size: .9em;
     }
@@ -124,9 +118,9 @@
  <body>
   <div>
    <h1>MegaZeux US Key-Mapping Guide</h1>
-   <h3>MegaZeux 2.90 &mdash; Lachesis 2010-2017</h2>
+   <h3>MegaZeux 2.90b &mdash; Lachesis 2010-2017</h2>
    <p>
-    This guide is current as of June 29th, 2017, and contains
+    This guide is current as of July 7th, 2017, and contains
     updated warnings, annotations, and information for SDL 2.0.
    </p>
    <p>
@@ -158,96 +152,96 @@
    <tr>
     <td class="bad">
       NLock
-      <b>n/a<sup class="badsdl2">&nbsp;</sup></b>
-      <p>n/a<sup class="badsdl2">&nbsp;</sup></p>
+      <b>n/a<sup class="badkey">&nbsp;</sup></b>
+      <p>n/a<sup class="badkey">&nbsp;</sup></p>
     </td>
     <td class="warn">
       /
       <b>53</p>
-      <p>267<sup class="badkey">&nbsp;</sup></p>
+      <p>267</p>
     </td>
     <td class="warn">
       *
       <b>55</p>
-      <p>268<sup class="badkey">&nbsp;</sup></p>
+      <p>268</p>
     </td>
     <td class="warn">
       -
       <b>74</p>
-      <p>269<sup class="badkey">&nbsp;</sup></p>
+      <p>269</p>
     </td>
    </tr>
    <tr>
     <td class="warn">
       Home7
       <b>71</b>
-      <p>278<sup class="numlockoff">&nbsp;</sup></p>
+      <p>263</p>
     </td>
     <td class="warn">
       Up8
       <b>72</b>
-      <p>273<sup class="numlockoff">&nbsp;</sup></p>
+      <p>264</p>
     </td>
     <td class="warn">
       PgUp7
       <b>73</b>
-      <p>280<sup class="numlockoff">&nbsp;</sup></p>
+      <p>265</p>
     </td>
     <td rowspan="2" class="warn">
       +
       <b>78</b>
-      <p>270<sup class="badkey">&nbsp;</sup></p>
+      <p>270</p>
     </td>
    </tr>
    <tr>
     <td class="warn">
       Left4
       <b>75</b>
-      <p>276<sup class="numlockoff">&nbsp;</sup></p>
+      <p>260</p>
     </td>
     <td class="warn">
       Num5
       <b>76</b>
-      <p>32<sup class="numlockoff">&nbsp;</sup></p>
+      <p>261</p>
     </td>
     <td class="warn">
       Right6
       <b>77</b>
-      <p>275<sup class="numlockoff">&nbsp;</sup></p>
+      <p>262</p>
     </td>
    </tr>
    <tr>
     <td class="warn">
       End1
       <b>79</b>
-      <p>279<sup class="numlockoff">&nbsp;</sup></p>
+      <p>257</p>
     </td>
     <td class="warn">
       Down2
       <b>80</b>
-      <p>274<sup class="numlockoff">&nbsp;</sup></p>
+      <p>258</p>
     </td>
     <td class="warn">
       PgDn3
       <b>81</b>
-      <p>281<sup class="numlockoff">&nbsp;</sup></p>
+      <p>259</p>
     </td>
     <td rowspan="2" class="warn">
       Enter
       <b>28</b>
-      <p>13<sup class="badkey">&nbsp;</sup></p>
+      <p>271</p>
     </td>
    </tr>
    <tr>
     <td colspan="2" class="warn">
       Insert 0
       <b>82</b>
-      <p>277<sup class="numlockoff">&nbsp;</sup></p>
+      <p>256</p>
     </td>
     <td class="warn">
       Del .
       <b>83</b>
-      <p>127<sup class="numlockoff">&nbsp;</sup></p>
+      <p>266</p>
     </td>
    </tr>
    <tr class="space">
@@ -836,13 +830,6 @@
 
   <hr/>
   <div>
-   <p>
-    <sup class="numlockoff">&nbsp;</sup>
-    <span class="annotation">
-     This is the result when numlock is off. When numlock is on, this key will return the KEY_PRESSED value corresponding to its numeric counterpart.
-    </span>
-   </p>
-
    <p>
     <sup class="f12">&nbsp;</sup>
     <span class="annotation">

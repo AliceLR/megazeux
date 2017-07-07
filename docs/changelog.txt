@@ -48,6 +48,10 @@ BUGFIXES
 + Fixed a bug affecting certain Intel HD Graphics cards and the
   GLSL renderer that appears to have been around since that
   renderer was first introduced. (Lancer-X)
++ Fixed a bug where the numeric numpad keys were inappropriately
+  translated to regular keys based on numlock when they were
+  read from KEY_PRESSED. This behavior is now locked to 2.84X
+  worlds.
 
 DEVELOPERS
 

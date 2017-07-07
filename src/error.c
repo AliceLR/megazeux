@@ -131,7 +131,7 @@ int error(const char *string, unsigned int type, unsigned int options,
   do
   {
     wait_event(0);
-    t1 = get_key(keycode_internal);
+    t1 = get_key(keycode_internal_wrt_numlock);
 
     //Exit event--mimic Escape
     if(get_exit_status())

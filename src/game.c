@@ -1369,25 +1369,26 @@ static int update(struct world *mzx_world, int game, int *fadein)
   if(game && (!mzx_world->dead))
   {
     // Shoot
-    if(get_key_status(keycode_internal, IKEY_SPACE) && mzx_world->bi_shoot_status)
+    if(get_key_status(keycode_internal_wrt_numlock, IKEY_SPACE)
+     && mzx_world->bi_shoot_status)
     {
       if((!reload) && (!src_board->player_attack_locked))
       {
         int move_dir = -1;
 
-        if(get_key_status(keycode_internal, IKEY_UP))
+        if(get_key_status(keycode_internal_wrt_numlock, IKEY_UP))
           move_dir = 0;
         else
 
-        if(get_key_status(keycode_internal, IKEY_DOWN))
+        if(get_key_status(keycode_internal_wrt_numlock, IKEY_DOWN))
           move_dir = 1;
         else
 
-        if(get_key_status(keycode_internal, IKEY_RIGHT))
+        if(get_key_status(keycode_internal_wrt_numlock, IKEY_RIGHT))
           move_dir = 2;
         else
 
-        if(get_key_status(keycode_internal, IKEY_LEFT))
+        if(get_key_status(keycode_internal_wrt_numlock, IKEY_LEFT))
           move_dir = 3;
 
         if(move_dir != -1)
@@ -1416,7 +1417,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
     }
     else
 
-    if((get_key_status(keycode_internal, IKEY_UP)) &&
+    if((get_key_status(keycode_internal_wrt_numlock, IKEY_UP)) &&
      (!src_board->player_ns_locked))
     {
       int key_up_delay = mzx_world->key_up_delay;
@@ -1430,7 +1431,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
     }
     else
 
-    if((get_key_status(keycode_internal, IKEY_DOWN)) &&
+    if((get_key_status(keycode_internal_wrt_numlock, IKEY_DOWN)) &&
      (!src_board->player_ns_locked))
     {
       int key_down_delay = mzx_world->key_down_delay;
@@ -1445,7 +1446,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
     }
     else
 
-    if((get_key_status(keycode_internal, IKEY_RIGHT)) &&
+    if((get_key_status(keycode_internal_wrt_numlock, IKEY_RIGHT)) &&
      (!src_board->player_ew_locked))
     {
       int key_right_delay = mzx_world->key_right_delay;
@@ -1460,7 +1461,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
     }
     else
 
-    if((get_key_status(keycode_internal, IKEY_LEFT)) &&
+    if((get_key_status(keycode_internal_wrt_numlock, IKEY_LEFT)) &&
      (!src_board->player_ew_locked))
     {
       int key_left_delay = mzx_world->key_left_delay;
@@ -1482,7 +1483,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
     }
 
     // Bomb
-    if(get_key_status(keycode_internal, IKEY_DELETE) &&
+    if(get_key_status(keycode_internal_wrt_numlock, IKEY_DELETE) &&
      (!src_board->player_attack_locked))
     {
       int d_offset =
@@ -2226,8 +2227,8 @@ __editor_maybe_static void play_game(struct world *mzx_world)
 
     // Keycheck
 
-    key = get_key(keycode_internal);
-    key_status = get_key_status(keycode_internal, key);
+    key = get_key(keycode_internal_wrt_numlock);
+    key_status = get_key_status(keycode_internal_wrt_numlock, key);
 
     exit = get_exit_status();
 
@@ -2237,7 +2238,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
       // The Pandora (at least, at one point) did not have proper support for
       // keycode_unicode. This is a workaround to get the "keyN" labels to work
       // at all. This will break certain keyN labels, such as "key$", however.
-      int key_char = get_key(keycode_internal);
+      int key_char = key;
 #else
       int key_char = get_key(keycode_unicode);
 #endif
@@ -2602,8 +2603,8 @@ __editor_maybe_static void play_game(struct world *mzx_world)
               update_event_status_delay();
               update_screen();
 
-              key = get_key(keycode_internal);
-              status = get_key_status(keycode_internal, key);
+              key = get_key(keycode_internal_wrt_numlock);
+              status = get_key_status(keycode_internal_wrt_numlock, key);
 
               if(get_exit_status())
                 break;
@@ -2731,7 +2732,8 @@ void title_screen(struct world *mzx_world)
 
   do
   {
-    if (!conf->no_titlescreen) {
+    if (!conf->no_titlescreen)
+    {
       // Focus on center
       if(fadein)
       {
@@ -2768,8 +2770,8 @@ void title_screen(struct world *mzx_world)
       update_event_status();
 
       // Keycheck
-      key = get_key(keycode_internal);
-      key_status = get_key_status(keycode_internal, key);
+      key = get_key(keycode_internal_wrt_numlock);
+      key_status = get_key_status(keycode_internal_wrt_numlock, key);
 
       exit = get_exit_status();
       if (conf->standalone_mode)
@@ -3187,8 +3189,8 @@ void title_screen(struct world *mzx_world)
           {
             update_event_status_delay();
             update_screen();
-            key = get_key(keycode_internal);
-            status = get_key_status(keycode_internal, key);
+            key = get_key(keycode_internal_wrt_numlock);
+            status = get_key_status(keycode_internal_wrt_numlock, key);
 
             if(get_exit_status())
               break;

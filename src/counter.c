@@ -1111,6 +1111,10 @@ static int key_code_read(struct world *mzx_world,
 static int key_pressed_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
+  // In 2.84X, this erroneously applied numlock translations to the keycode.
+  if(mzx_world->version == 0x0254)
+    return get_key(keycode_internal_wrt_numlock);
+
   return get_key(keycode_internal);
 }
 

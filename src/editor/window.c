@@ -149,7 +149,7 @@ int list_menu(const char *const *choices, int choice_size, const char *title,
     update_event_status_delay();
 
     // Act upon it
-    key = get_key(keycode_internal);
+    key = get_key(keycode_internal_wrt_numlock);
 
     exit = get_exit_status();
 
@@ -491,7 +491,7 @@ int color_selection(int current, int allow_wild)
     // Get key
 
     update_event_status_delay();
-    key = get_key(keycode_internal);
+    key = get_key(keycode_internal_wrt_numlock);
 
     // Exit event -- mimic Escape
     if(get_exit_status())

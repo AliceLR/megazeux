@@ -180,7 +180,7 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
     else
     {
       update_event_status_delay();
-      key = get_key(keycode_internal);
+      key = get_key(keycode_internal_wrt_numlock);
     }
 
     // Exit event -- mimic Escape
@@ -600,7 +600,7 @@ void help_display(struct world *mzx_world, char *help, int offs, char *file,
       key = IKEY_ESCAPE;
     }
 
-    key = get_key(keycode_internal);
+    key = get_key(keycode_internal_wrt_numlock);
 
     // Exit event -- mimic Escape
     if(get_exit_status())

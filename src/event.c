@@ -599,6 +599,9 @@ Uint32 get_key(enum keycode_type type)
       return convert_internal_xt(status->key);
 
     case keycode_internal:
+      return status->key;
+
+    case keycode_internal_wrt_numlock:
       return emit_keysym_wrt_numlock(status->key);
 
     default:
@@ -620,6 +623,9 @@ Uint32 get_key_status(enum keycode_type type, Uint32 index)
     }
 
     case keycode_internal:
+      return status->keymap[index];
+
+    case keycode_internal_wrt_numlock:
       return status->keymap[index] ||
         status->keymap[reverse_keysym_numlock(index)];
 
@@ -638,6 +644,9 @@ Uint32 get_last_key(enum keycode_type type)
       return convert_internal_xt(status->key_pressed);
 
     case keycode_internal:
+      return status->key_pressed;
+
+    case keycode_internal_wrt_numlock:
       return emit_keysym_wrt_numlock(status->key_pressed);
 
     default:
@@ -655,6 +664,9 @@ Uint32 get_last_key_released(enum keycode_type type)
       return convert_internal_xt(status->key_release);
 
     case keycode_internal:
+      return status->key_release;
+
+    case keycode_internal_wrt_numlock:
       return emit_keysym_wrt_numlock(status->key_release);
 
     default:
@@ -804,6 +816,7 @@ void force_last_key(enum keycode_type type, int val)
     }
 
     case keycode_internal:
+    case keycode_internal_wrt_numlock:
     {
       status->key_pressed = (enum keycode)val;
       break;

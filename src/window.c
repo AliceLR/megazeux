@@ -414,7 +414,7 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
 
     // Get key
     update_event_status_delay();
-    key = get_key(keycode_internal);
+    key = get_key(keycode_internal_wrt_numlock);
 
     exit = get_exit_status();
 
@@ -727,7 +727,7 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
 
     current_element = di->elements[current_element_num];
     update_event_status_delay();
-    current_key = get_key(keycode_internal);
+    current_key = get_key(keycode_internal_wrt_numlock);
 
     new_key = 0;
 
@@ -1299,7 +1299,7 @@ static int key_button(struct world *mzx_world, struct dialog *di,
       // 0=not pressed (i.e. this is a fake press from clicking)
       // 1=pressed
       // 2=repeat. We want to ignore that.
-      if (get_key_status(keycode_internal, key) > 1)
+      if (get_key_status(keycode_internal_wrt_numlock, key) > 1)
         return 0;
 
       // Flag that the dialog is done processing
