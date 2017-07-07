@@ -66,12 +66,12 @@ static struct mzx_resource mzx_res[] = {
 #endif
 #ifdef CONFIG_RENDER_GL_PROGRAM
 #define SHADERS ASSETS "shaders/"
+#define SCALERS SHADERS "scalers/"
   { SHADERS "scaler.vert",         NULL, false },
-  { SHADERS "scaler.frag",         NULL, false },
+  { SCALERS "semisoft.frag",       NULL, false },
   { SHADERS "tilemap.vert",        NULL, false },
   { SHADERS "tilemap.frag",        NULL, false },
-  { SHADERS "tilemap.smzx.frag", NULL, false },
-  //{ SHADERS "tilemap.smzx3.frag",  NULL, false },
+  { SHADERS "tilemap.smzx.frag",   NULL, false },
   { SHADERS "mouse.vert",          NULL, false },
   { SHADERS "mouse.frag",          NULL, false },
   { SHADERS "cursor.vert",         NULL, false },
@@ -283,28 +283,9 @@ char *mzx_res_get_by_id(enum resource_id id)
 }
 
 #ifdef CONFIG_RENDER_GL_PROGRAM
-void mzx_res_get_extra_shader_dir(char *dest)
+void mzx_res_get_scaler_dir(char *dest)
 {
-  char *path = cmalloc(MAX_PATH);
-  char *name = cmalloc(MAX_PATH);
-
-  // A file we know will always exist in the shaders folder.
-  char *res_path = mzx_res[SHADERS_SCALER_VERT].path;
-
-  split_path_filename(res_path, path, MAX_PATH, name, MAX_PATH);
-
-  if(!change_dir_name(path, "extra"))
-  {
-    strcpy(dest, path);
-  }
-
-  else
-  {
-    dest[0] = 0;
-  }
-
-  free(path);
-  free(name);
+  strcpy(dest, SCALERS);
 }
 #endif
 
@@ -418,64 +399,6 @@ ssize_t get_path(const char *file_name, char *dest, unsigned int buf_len)
   return __get_path(file_name, dest, buf_len);
 }
 
-void split_path_filename(const char *source,
- char *destpath, unsigned int dest_buffer_len,
- char *destfile, unsigned int file_buffer_len)
-{
-  char temppath[MAX_PATH];
-  struct stat path_info;
-  int stat_res = stat(source, &path_info);
-
-  // If the entirety of source is a directory
-  if((stat_res >= 0) && S_ISDIR(path_info.st_mode))
-  {
-    if(dest_buffer_len)
-      strncpy(destpath, source, dest_buffer_len);
-
-    if(file_buffer_len)
-      strcpy(destfile, "");
-  }
-  else
-  // If source has a directory and a file
-  if((source[0] != '\0') && get_path(source, temppath, MAX_PATH))
-  {
-    // get_path leaves off trailing /, add 1 to offset.
-    if(dest_buffer_len)
-      strncpy(destpath, temppath, dest_buffer_len);
-
-    if(file_buffer_len)
-      strncpy(destfile, &(source[strlen(temppath) + 1]), file_buffer_len);
-  }
-  // Source is just a file or blank.
-  else
-  {
-    if(dest_buffer_len)
-      strcpy(destpath, "");
-
-    if(file_buffer_len)
-      strncpy(destfile, source, file_buffer_len);
-  }
-}
-
-int create_path_if_not_exists(const char *filename)
-{
-  struct stat stat_info;
-  char parent_directory[MAX_PATH];
-
-  if(!get_path(filename, parent_directory, MAX_PATH))
-    return 1;
-
-  if(!stat(parent_directory, &stat_info))
-    return 2;
-
-  create_path_if_not_exists(parent_directory);
-
-  if(mkdir(parent_directory, 0755))
-    return 3;
-
-  return 0;
-}
-
 static int isslash(char n)
 {
   return n=='\\' || n=='/';
@@ -508,7 +431,64 @@ static void clean_path_slashes(const char *src, char *dest, size_t buf_size)
 
   if((p >= 2) && (dest[p-1] == DIR_SEPARATOR_CHAR) && (dest[p-2] != ':'))
     dest[p-1] = '\0';
+}
 
+void split_path_filename(const char *source,
+ char *destpath, unsigned int dest_buffer_len,
+ char *destfile, unsigned int file_buffer_len)
+{
+  char temppath[MAX_PATH];
+  struct stat path_info;
+  int stat_res = stat(source, &path_info);
+
+  // If the entirety of source is a directory
+  if((stat_res >= 0) && S_ISDIR(path_info.st_mode))
+  {
+    if(dest_buffer_len)
+      clean_path_slashes(source, destpath, dest_buffer_len);
+
+    if(file_buffer_len)
+      strcpy(destfile, "");
+  }
+  else
+  // If source has a directory and a file
+  if((source[0] != '\0') && get_path(source, temppath, MAX_PATH))
+  {
+    // get_path leaves off trailing /, add 1 to offset.
+    if(dest_buffer_len)
+      clean_path_slashes(temppath, destpath, dest_buffer_len);
+
+    if(file_buffer_len)
+      strncpy(destfile, &(source[strlen(temppath) + 1]), file_buffer_len);
+  }
+  // Source is just a file or blank.
+  else
+  {
+    if(dest_buffer_len)
+      strcpy(destpath, "");
+
+    if(file_buffer_len)
+      strncpy(destfile, source, file_buffer_len);
+  }
+}
+
+int create_path_if_not_exists(const char *filename)
+{
+  struct stat stat_info;
+  char parent_directory[MAX_PATH];
+
+  if(!get_path(filename, parent_directory, MAX_PATH))
+    return 1;
+
+  if(!stat(parent_directory, &stat_info))
+    return 2;
+
+  create_path_if_not_exists(parent_directory);
+
+  if(mkdir(parent_directory, 0755))
+    return 3;
+
+  return 0;
 }
 
 // Navigate a path name.

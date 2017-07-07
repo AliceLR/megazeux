@@ -295,11 +295,11 @@ ifeq (${BUILD_UTILS},1)
 	fi
 endif
 ifeq (${BUILD_RENDER_GL_PROGRAM},1)
-	${MKDIR} -p ${build}/assets/shaders/extra
+	${MKDIR} -p ${build}/assets/shaders/scalers
 	${CP} assets/shaders/*.vert ${build}/assets/shaders
 	${CP} assets/shaders/*.frag ${build}/assets/shaders
-	${CP} assets/shaders/extra/*.frag assets/shaders/extra/*.vert \
-		assets/shaders/extra/README.txt ${build}/assets/shaders/extra
+	${CP} assets/shaders/scalers/*.frag assets/shaders/scalers/*.vert \
+		assets/shaders/scalers/README.txt ${build}/assets/shaders/scalers
 endif
 
 distclean: clean

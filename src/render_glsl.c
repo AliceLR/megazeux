@@ -257,7 +257,7 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
 
       char *path = cmalloc(MAX_PATH);
 
-      mzx_res_get_extra_shader_dir(path);
+      mzx_res_get_scaler_dir(path);
 
       switch(res)
       {

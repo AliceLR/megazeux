@@ -70,7 +70,6 @@ enum resource_id
   SHADERS_TILEMAP_VERT,
   SHADERS_TILEMAP_FRAG,
   SHADERS_TILEMAP_SMZX_FRAG,
-  //SHADERS_TILEMAP_SMZX3_FRAG,
   SHADERS_MOUSE_VERT,
   SHADERS_MOUSE_FRAG,
   SHADERS_CURSOR_VERT,
@@ -84,7 +83,7 @@ CORE_LIBSPEC void mzx_res_free(void);
 CORE_LIBSPEC char *mzx_res_get_by_id(enum resource_id id);
 
 #ifdef CONFIG_RENDER_GL_PROGRAM
-void mzx_res_get_extra_shader_dir(char *dest);
+void mzx_res_get_scaler_dir(char *dest);
 #endif
 
 // Code to load multi-byte ints from little endian file

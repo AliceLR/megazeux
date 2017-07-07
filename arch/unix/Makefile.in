@@ -76,17 +76,17 @@ ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 endif
 ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 	@${install} -m 0755 -d \
-		${DESTDIR}${SHAREDIR}/megazeux/assets/shaders/extra && \
-	 ${install} -m 0644 assets/shaders/extra/crt.frag \
-		assets/shaders/extra/emboss.frag \
-		assets/shaders/extra/epx.frag \
-		assets/shaders/extra/greyscale.frag \
-		assets/shaders/extra/hqscale.frag \
-		assets/shaders/extra/hqscale.vert \
-		assets/shaders/extra/nearest.frag \
-		assets/shaders/extra/README.txt \
-		assets/shaders/extra/semisoft.frag \
-		assets/shaders/extra/sepia.frag \
-		assets/shaders/extra/simple.frag \
-		${DESTDIR}${SHAREDIR}/megazeux/assets/shaders/extra/
+		${DESTDIR}${SHAREDIR}/megazeux/assets/shaders/scalers && \
+	 ${install} -m 0644 assets/shaders/scalers/crt.frag \
+		assets/shaders/scalers/emboss.frag \
+		assets/shaders/scalers/epx.frag \
+		assets/shaders/scalers/greyscale.frag \
+		assets/shaders/scalers/hqscale.frag \
+		assets/shaders/scalers/hqscale.vert \
+		assets/shaders/scalers/nearest.frag \
+		assets/shaders/scalers/README.txt \
+		assets/shaders/scalers/semisoft.frag \
+		assets/shaders/scalers/sepia.frag \
+		assets/shaders/scalers/simple.frag \
+		${DESTDIR}${SHAREDIR}/megazeux/assets/shaders/scalers/
 endif
