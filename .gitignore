@@ -17,6 +17,7 @@ Core.lib
 Core.pdb
 core.dll
 libcore.so
+libcore.dylib
 Editor.exp
 Editor.ilk
 Editor.lib
@@ -24,6 +25,7 @@ Editor.map
 Editor.pdb
 editor.dll
 libeditor.so
+libeditor.dylib
 MegaZeux.ilk
 MegaZeux.pdb
 megazeux.exe
