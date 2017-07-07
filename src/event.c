@@ -638,7 +638,7 @@ Uint32 get_last_key(enum keycode_type type)
       return convert_internal_xt(status->key_pressed);
 
     case keycode_internal:
-      return status->key_pressed;
+      return emit_keysym_wrt_numlock(status->key_pressed);
 
     default:
       return 0;
@@ -655,7 +655,7 @@ Uint32 get_last_key_released(enum keycode_type type)
       return convert_internal_xt(status->key_release);
 
     case keycode_internal:
-      return status->key_release;
+      return emit_keysym_wrt_numlock(status->key_release);
 
     default:
       return 0;
