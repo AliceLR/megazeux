@@ -25,6 +25,9 @@ FEATURES
 + The debug window now displays the last key_code (green) and
   key_pressed (magenta) values detected during gameplay. These
   values are located in the bottom right corner of the window.
++ The default fullscreen resolution for scalable renderers is
+  now 1280,720. The default fullscreen resolution for 'software'
+  is still 640,480. The default aspect ratio is now 'modern'.
 
 BUGFIXES
 

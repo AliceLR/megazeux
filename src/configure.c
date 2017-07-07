@@ -583,7 +583,7 @@ static const struct config_info default_options =
   1,                            // allow_resize
   VIDEO_OUTPUT_DEFAULT,         // video_output
   FORCE_BPP_DEFAULT,            // force_bpp
-  RATIO_STRETCH,                // video_ratio
+  RATIO_MODERN_64_35,           // video_ratio
   "linear",                     // opengl filter method
   "",                           // opengl default scaling shader
   0,                            // opengl vsync mode

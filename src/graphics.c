@@ -1224,13 +1224,24 @@ bool init_video(struct config_info *conf, const char *caption)
   if(!set_graphics_output(conf))
     return false;
 
-  // By default, use a resolution of 640x480 if nothing else was
-  // provided. We should communicate with the renderer to get
-  // the desktop resolution.
+  // FIXME- We should communicate with the renderer to get the desktop resolution.
   if(conf->resolution_width == -1 && conf->resolution_height == -1)
   {
-    graphics.resolution_width = 640;
-    graphics.resolution_height = 480;
+    // FIXME hack- default resolution assignment should occur
+    // somewhere else on a per-renderer basis (probably init_video)
+    if(strcmp(conf->video_output, "software"))
+    {
+      // "Safe" resolution for scalable renderers
+      graphics.resolution_width = 1280;
+      graphics.resolution_height = 720;
+    }
+
+    else
+    {
+      // "Safe" resolution for software renderer
+      graphics.resolution_width = 640;
+      graphics.resolution_height = 480;
+    }
   }
 
   strncpy(graphics.default_caption, caption, 32);
