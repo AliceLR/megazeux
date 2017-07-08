@@ -28,6 +28,7 @@ __M_BEGIN_DECLS
 
 #include <stdio.h>
 
+#include "world.h"
 #include "world_struct.h"
 
 
