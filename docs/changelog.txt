@@ -60,6 +60,8 @@ BUGFIXES
 + Fixed a bug where warping the mouse on one axis would snap the
   mouse to the nearest pixel on the other axis, causing problems
   for upscaled windows.
++ Fixed a bug where mouse control would not respect video_ratio
+  settings aside from "stretch".
 
 DEVELOPERS
 

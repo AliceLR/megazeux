@@ -138,7 +138,6 @@ struct gl2_render_data
   Uint8 remap_texture;
   Uint8 remap_char[FULL_CHARSET_SIZE];
   Uint8 ignore_linear;
-  enum ratio_type ratio;
   GLubyte color_array[BG_WIDTH * BG_HEIGHT * 4 * 4];
   float tex_coord_array[BG_WIDTH * BG_HEIGHT * 8];
   float vertex_array[BG_WIDTH * BG_HEIGHT * 8];
@@ -170,6 +169,7 @@ static bool gl2_init_video(struct graphics_data *graphics,
   graphics->gl_vsync = conf->gl_vsync;
   graphics->allow_resize = conf->allow_resize;
   graphics->gl_filter_method = conf->gl_filter_method;
+  graphics->ratio = conf->video_ratio;
   graphics->bits_per_pixel = 32;
 
   // OpenGL only supports 16/32bit colour
@@ -183,7 +183,6 @@ static bool gl2_init_video(struct graphics_data *graphics,
   if(!render_data->pixels)
     goto err_free_render_data;
 
-  render_data->ratio = conf->video_ratio;
   if(!set_video_mode())
     goto err_free_render_data;
 
@@ -241,7 +240,7 @@ static void gl2_resize_screen(struct graphics_data *graphics,
   else
     render_data->ignore_linear = false;
 
-  fix_viewport_ratio(width, height, &v_width, &v_height, render_data->ratio);
+  fix_viewport_ratio(width, height, &v_width, &v_height, graphics->ratio);
   gl2.glViewport((width - v_width) >> 1, (height - v_height) >> 1,
    v_width, v_height);
   gl_check_error();
@@ -1043,7 +1042,7 @@ static void gl2_sync_screen(struct graphics_data *graphics)
      (width - 640) >> 1, (height - 350) >> 1, 1024, 512, 0);
     gl_check_error();
 
-    fix_viewport_ratio(width, height, &v_width, &v_height, render_data->ratio);
+    fix_viewport_ratio(width, height, &v_width, &v_height, graphics->ratio);
     gl2.glViewport((width - v_width) >> 1, (height - v_height) >> 1,
      v_width, v_height);
     gl_check_error();

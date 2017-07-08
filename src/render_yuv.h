@@ -50,7 +50,6 @@ struct yuv_render_data
   Uint32 y0mask;
   Uint32 y1mask;
   Uint32 uvmask;
-  enum ratio_type ratio;
   bool is_yuy2;
 };
 

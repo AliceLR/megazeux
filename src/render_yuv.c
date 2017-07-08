@@ -165,7 +165,7 @@ bool yuv_init_video(struct graphics_data *graphics, struct config_info *conf)
 
   graphics->render_data = render_data;
   graphics->allow_resize = conf->allow_resize;
-  render_data->ratio = conf->video_ratio;
+  graphics->ratio = conf->video_ratio;
 
   if(!set_video_mode())
     return false;
@@ -254,7 +254,7 @@ void yuv_sync_screen(struct graphics_data *graphics)
   SDL_Rect rect;
 
   // FIXME: Putting this here is suboptimal
-  fix_viewport_ratio(width, height, &v_width, &v_height, render_data->ratio);
+  fix_viewport_ratio(width, height, &v_width, &v_height, graphics->ratio);
 
   rect.x = (width - v_width) >> 1;
   rect.y = (height - v_height) >> 1;

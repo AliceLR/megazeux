@@ -168,7 +168,6 @@ struct glsl_render_data
   GLubyte palette[3 * FULL_PAL_SIZE];
   Uint8 remap_texture;
   Uint8 remap_char[FULL_CHARSET_SIZE];
-  enum ratio_type ratio;
   GLuint scaler_program;
   GLuint tilemap_program;
   GLuint tilemap_smzx_program;
@@ -469,6 +468,7 @@ static bool glsl_init_video(struct graphics_data *graphics,
   graphics->allow_resize = conf->allow_resize;
   graphics->gl_filter_method = conf->gl_filter_method;
   graphics->gl_scaling_shader = conf->gl_scaling_shader;
+  graphics->ratio = conf->video_ratio;
   graphics->bits_per_pixel = 32;
 
   // OpenGL only supports 16/32bit colour
@@ -480,7 +480,6 @@ static bool glsl_init_video(struct graphics_data *graphics,
   if(!render_data->pixels)
     goto err_free;
 
-  render_data->ratio = conf->video_ratio;
   if(!set_video_mode())
     goto err_free;
 
@@ -1016,7 +1015,7 @@ static void glsl_sync_screen(struct graphics_data *graphics)
   int v_width, v_height, width, height;
 
   get_context_width_height(graphics, &width, &height);
-  fix_viewport_ratio(width, height, &v_width, &v_height, render_data->ratio);
+  fix_viewport_ratio(width, height, &v_width, &v_height, graphics->ratio);
   glsl.glViewport((width - v_width) >> 1, (height - v_height) >> 1,
    v_width, v_height);
 
