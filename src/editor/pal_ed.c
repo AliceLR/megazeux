@@ -117,11 +117,11 @@ static void rgb_to_hsl(struct color_status *current)
 
   float l = (M+m)/2.0;
 
-  current->h = (unsigned int)( fmod(h * 60, 360.0) );
+  current->h = (unsigned int) round( fmod(h * 60, 360.0) );
 
-  current->s = (unsigned int)( l < 1  ?  c/(1 - fabs(M+m-1)) * 100 : 0 );
+  current->s = (unsigned int) round( l < 1  ?  c/(1 - fabs(M+m-1)) * 100 : 0 );
 
-  current->l = (unsigned int)( l * 100 );
+  current->l = (unsigned int) round( l * 100 );
 }
 
 static void hsl_to_rgb(struct color_status *current)
@@ -150,9 +150,9 @@ static void hsl_to_rgb(struct color_status *current)
    (fh == 3) || (fh == 4) ? c+m :
    (fh == 2) || (fh == 5) ? x+m : m;
 
-  current->r = (unsigned char)(r * 63.0);
-  current->g = (unsigned char)(g * 63.0);
-  current->b = (unsigned char)(b * 63.0);
+  current->r = (unsigned char) round(r * 63.0);
+  current->g = (unsigned char) round(g * 63.0);
+  current->b = (unsigned char) round(b * 63.0);
 }
 
 static const double Xn = 0.9505;
@@ -193,9 +193,9 @@ static void rgb_to_lab(struct color_status *current)
   double fy = xyz_to_lab_comp_transform( y / Yn );
   double fz = xyz_to_lab_comp_transform( z / Zn );
 
-  current->CL = (unsigned int)( 116 * fy - 16 );
-  current->Ca = (int)( 500 * (fx - fy) );
-  current->Cb = (int)( 200 * (fy - fz) );
+  current->CL = (unsigned int) round( 116 * fy - 16 );
+  current->Ca = (int) round( 500 * (fx - fy) );
+  current->Cb = (int) round( 200 * (fy - fz) );
 }
 
 static void lab_to_rgb(struct color_status *current)
@@ -220,9 +220,9 @@ static void lab_to_rgb(struct color_status *current)
   g = srgb_linear_to_comp( g );
   b = srgb_linear_to_comp( b );
 
-  current->r = (unsigned int)(CLAMP(r, 0.0, 1.0) * 63.0);
-  current->g = (unsigned int)(CLAMP(g, 0.0, 1.0) * 63.0);
-  current->b = (unsigned int)(CLAMP(b, 0.0, 1.0) * 63.0);
+  current->r = (unsigned int) round(CLAMP(r, 0.0, 1.0) * 63.0);
+  current->g = (unsigned int) round(CLAMP(g, 0.0, 1.0) * 63.0);
+  current->b = (unsigned int) round(CLAMP(b, 0.0, 1.0) * 63.0);
 }
 
 static void update_color(struct color_status *current, int id)
@@ -230,7 +230,6 @@ static void update_color(struct color_status *current, int id)
   get_rgb(id, &(current->r), &(current->g), &(current->b));
   rgb_to_hsl(current);
   rgb_to_lab(current);
-  current_id = id;
 }
 
 static void set_color_rgb(struct color_status *current)
@@ -1075,19 +1074,41 @@ static int palette_editor_input(struct color_status *current_color,
   return key;
 }
 
+static struct color_status *rebuild_palette(struct color_status *palette)
+{
+  int palette_size = (get_screen_mode() >= 2) ? 256 : 16;
+  int i;
+
+  if(!palette)
+  {
+    palette = cmalloc(palette_size * sizeof(struct color_status));
+  }
+
+  for(i = 0; i < palette_size; i++)
+  {
+    update_color(&(palette[i]), i);
+  }
+
+  current_id %= palette_size;
+
+  return palette;
+}
+
 void palette_editor(struct world *mzx_world)
 {
   const struct color_mode *current_mode;
-  struct color_status current_color;
-  unsigned int last_id = 10000;
+  struct color_status *current_color;
+  struct color_status *palette;
   int refresh_window = 1;
-  int refresh_palette = 1;
+  int refresh_elements = 1;
   int key;
 
   if(minimal_help == -1)
   {
     minimal_help = mzx_world->editor_conf.pedit_hhelp;
   }
+
+  palette = rebuild_palette(NULL);
 
   cursor_off();
   set_context(CTX_PALETTE_EDITOR);
@@ -1096,26 +1117,21 @@ void palette_editor(struct world *mzx_world)
   do
   {
     current_mode = &(mode_list[current_mode_id]);
-
-    if(last_id != current_id)
-    {
-      update_color(&current_color, current_id);
-      last_id = current_id;
-    }
+    current_color = &(palette[current_id]);
 
     if(refresh_window)
     {
       // Draw the palette editor window.
-      palette_editor_redraw_window(&current_color, current_mode);
+      palette_editor_redraw_window(current_color, current_mode);
       refresh_window = 0;
     }
 
-    if(refresh_palette)
+    if(refresh_elements)
     {
       // Update the palette editor window.
-      palette_editor_update_window(&current_color, current_mode);
+      palette_editor_update_window(current_color, current_mode);
     }
-    refresh_palette = 1;
+    refresh_elements = 1;
 
     update_screen();
     update_event_status_delay();
@@ -1127,7 +1143,7 @@ void palette_editor(struct world *mzx_world)
       key = IKEY_ESCAPE;
 
     // Run it through the editor-specific handling.
-    key = palette_editor_input(&current_color, current_mode, key);
+    key = palette_editor_input(current_color, current_mode, key);
 
     switch(key)
     {
@@ -1183,10 +1199,10 @@ void palette_editor(struct world *mzx_world)
 
       case IKEY_0:
       {
-        current_color.r = 0;
-        current_color.g = 0;
-        current_color.b = 0;
-        set_color_rgb(&current_color);
+        current_color->r = 0;
+        current_color->g = 0;
+        current_color->b = 0;
+        set_color_rgb(current_color);
         break;
       }
 
@@ -1195,14 +1211,14 @@ void palette_editor(struct world *mzx_world)
         if(get_alt_status(keycode_internal))
         {
           default_palette();
-          update_color(&current_color, current_id);
+          rebuild_palette(palette);
         }
         break;
       }
 
       case IKEY_F2:
       {
-        memcpy(&saved_color, &current_color, sizeof(struct color_status));
+        memcpy(&saved_color, current_color, sizeof(struct color_status));
         saved_color_active = true;
         break;
       }
@@ -1211,9 +1227,9 @@ void palette_editor(struct world *mzx_world)
       {
         if(saved_color_active)
         {
-          memcpy(&current_color, &saved_color, sizeof(struct color_status));
+          memcpy(current_color, &saved_color, sizeof(struct color_status));
 
-          set_color_rgb(&current_color);
+          set_color_rgb(current_color);
         }
         break;
       }
@@ -1229,7 +1245,7 @@ void palette_editor(struct world *mzx_world)
 
       default:
       {
-        refresh_palette = 0;
+        refresh_elements = 0;
         break;
       }
     }
@@ -1237,4 +1253,6 @@ void palette_editor(struct world *mzx_world)
 
   restore_screen();
   pop_context();
+
+  free(palette);
 }
