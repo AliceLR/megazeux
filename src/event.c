@@ -318,7 +318,8 @@ static bool update_autorepeat(void)
   // of joypad support.  All invalid keys use the last position because that's
   // better than crashing.
   struct buffered_status *status = store_status();
-  enum keycode status_key = CLAMP(status->key_repeat, 0, STATUS_NUM_KEYCODES -1);
+  enum keycode status_key =
+   MIN((unsigned int) status->key_repeat, STATUS_NUM_KEYCODES - 1);
   bool rval = false;
 
   // Repeat code
@@ -911,7 +912,7 @@ void key_release(struct buffered_status *status, enum keycode key)
 void joystick_key_press(struct buffered_status *status,
  enum keycode key, Uint16 unicode_key)
 {
-  enum keycode status_key = CLAMP(key, 0, STATUS_NUM_KEYCODES - 1);
+  enum keycode status_key = MIN((unsigned int) key, STATUS_NUM_KEYCODES - 1);
 
   if(status_key && (status->keymap[status_key] == 0))
   {
@@ -929,7 +930,7 @@ void joystick_key_press(struct buffered_status *status,
 void joystick_key_release(struct buffered_status *status,
   enum keycode key)
 {
-  enum keycode status_key = CLAMP(key, 0, STATUS_NUM_KEYCODES - 1);
+  enum keycode status_key = MIN((unsigned int) key, STATUS_NUM_KEYCODES - 1);
 
   if(status_key)
   {
