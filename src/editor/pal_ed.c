@@ -53,7 +53,7 @@
 
 // Note: the help menu mouse functionality has been broken since 2.80.
 
-#define PAL_ED_COL_X1         37
+#define PAL_ED_COL_X1         36
 #define PAL_ED_COL_X2         79
 #define PAL_ED_COL_Y1         0
 #define PAL_ED_COL_Y2         5
@@ -634,9 +634,9 @@ static const struct color_mode mode_list[] =
 
   { "HSL",
     {
-      { "Hue",   "H",    "H",  4,  4,    0, 359 },
-      { "Sat.",  "S",    "S",  7,  0,    0, 100 },
-      { "Light", "L",    "V", 15,  0,    0, 100 },
+      { "Hue",   "Hue",  "H",  4,  4,    0, 359 },
+      { "Sat.",  "Sat",  "S",  7,  0,    0, 100 },
+      { "Light", "Lgt",  "V", 15,  0,    0, 100 },
     },
     set_color_hsl,
     get_color_hsl,
@@ -661,6 +661,7 @@ static const struct color_mode mode_list[] =
 
 
 // -----------------------------------------------------------------------------
+
 
 static char hue_chars[32] = {
   0xDB, 0xB0, 0xB0, 0xB1, 0xB2,  0xDB, 0xDB, 0xB0, 0xB1, 0xB2,
@@ -725,7 +726,8 @@ static void palette_editor_redraw_color_window(struct color_status *current,
   int i;
 
   draw_window_box(PAL_ED_COL_X1, PAL_ED_COL_Y1, PAL_ED_COL_X2, PAL_ED_COL_Y2,
-   DI_GREY_DARK, DI_GREY, DI_GREY_CORNER, 1, 1);
+   //DI_GREY_DARK, DI_GREY, DI_GREY_CORNER, 1, 1);
+   DI_GREY, DI_GREY_DARK, DI_GREY_CORNER, 1, 1);
 
   // Write Color #
   write_string(
@@ -737,7 +739,7 @@ static void palette_editor_redraw_color_window(struct color_status *current,
   );
 
   // Modes
-  x = 41;
+  x = 42;
   for(i = ARRAY_SIZE(mode_list) - 1; i >= 0; i--)
   {
     color = (i == current_mode_id) ? DI_GREY : DI_GREY_DARK;
@@ -774,7 +776,7 @@ static void palette_editor_update_color_window(struct color_status *current,
 
     write_string(
      buffer,
-     PAL_ED_COL_X1 + 4,
+     PAL_ED_COL_X1 + 5,
      PAL_ED_COL_Y1 + 2 + i,
      DI_GREY_TEXT,
      0
@@ -791,14 +793,14 @@ static void palette_editor_update_color_window(struct color_status *current,
     if((current_mode_id == 1) && (i == 0))
     {
       // Special case - the hue bar
-      draw_hue_bar(value, PAL_ED_COL_X1 + 9, PAL_ED_COL_Y1 + 2 + i,
+      draw_hue_bar(value, PAL_ED_COL_X1 + 10, PAL_ED_COL_Y1 + 2 + i,
        c->min_val, c->max_val);
     }
 
     else
     {
       // Otherwise, draw a regular bar
-      draw_color_bar(value, PAL_ED_COL_X1 + 9, PAL_ED_COL_Y1 + 2 + i,
+      draw_color_bar(value, PAL_ED_COL_X1 + 10, PAL_ED_COL_Y1 + 2 + i,
        c->min_val, c->max_val, c->left_col, c->right_col);
     }
   }
@@ -1055,22 +1057,22 @@ static void palette_editor_redraw_window(struct color_status *current_color,
 {
   restore_screen();
   save_screen();
-  palette_editor_redraw_color_window(current_color, current_mode);
   palette_editor_redraw_window_16(current_color, current_mode);
+  palette_editor_redraw_color_window(current_color, current_mode);
 }
 
 static void palette_editor_update_window(struct color_status *current_color,
  const struct color_mode *current_mode)
 {
-  palette_editor_update_color_window(current_color, current_mode);
   palette_editor_update_window_16(current_color, current_mode);
+  palette_editor_update_color_window(current_color, current_mode);
 }
 
 static int palette_editor_input(struct color_status *current_color,
  const struct color_mode *current_mode, int key)
 {
-  key = palette_editor_input_color_window(current_color, current_mode, key);
   key = palette_editor_input_16(current_color, current_mode, key);
+  key = palette_editor_input_color_window(current_color, current_mode, key);
   return key;
 }
 
