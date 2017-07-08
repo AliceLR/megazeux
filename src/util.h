@@ -65,6 +65,7 @@ enum resource_id
   MZX_HELP_FIL,
 #endif
 #ifdef CONFIG_RENDER_GL_PROGRAM
+  SHADERS_SCALER_DIRECTORY,
   SHADERS_SCALER_VERT,
   SHADERS_SCALER_FRAG,
   SHADERS_TILEMAP_VERT,
@@ -81,10 +82,6 @@ enum resource_id
 CORE_LIBSPEC int mzx_res_init(const char *argv0, bool editor);
 CORE_LIBSPEC void mzx_res_free(void);
 CORE_LIBSPEC char *mzx_res_get_by_id(enum resource_id id);
-
-#ifdef CONFIG_RENDER_GL_PROGRAM
-void mzx_res_get_scaler_dir(char *dest);
-#endif
 
 // Code to load multi-byte ints from little endian file
 int fgetw(FILE *fp);

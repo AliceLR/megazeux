@@ -67,6 +67,7 @@ static struct mzx_resource mzx_res[] = {
 #ifdef CONFIG_RENDER_GL_PROGRAM
 #define SHADERS ASSETS "shaders/"
 #define SCALERS SHADERS "scalers/"
+  { SCALERS,                       NULL, false },
   { SHADERS "scaler.vert",         NULL, false },
   { SCALERS "semisoft.frag",       NULL, false },
   { SHADERS "tilemap.vert",        NULL, false },
@@ -281,13 +282,6 @@ char *mzx_res_get_by_id(enum resource_id id)
   #endif /* USERCONFFILE */
   return mzx_res[id].path;
 }
-
-#ifdef CONFIG_RENDER_GL_PROGRAM
-void mzx_res_get_scaler_dir(char *dest)
-{
-  strcpy(dest, SCALERS);
-}
-#endif
 
 // Get 2 bytes, little endian
 
