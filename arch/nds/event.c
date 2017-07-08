@@ -53,8 +53,16 @@ void __wait_event(int timeout)
   process_event(&event);
 }
 
-void real_warp_mouse(Uint32 x, Uint32 y)
+void real_warp_mouse(int x, int y)
 {
+  const struct buffered_status *status = load_status();
+
+  if(x < 0)
+    x = status->real_mouse_x;
+
+  if(y < 0)
+    y = status->real_mouse_y;
+
   // Since we can't warp a touchscreen stylus, focus there instead.
   focus_pixel(x, y);
 }

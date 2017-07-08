@@ -764,7 +764,7 @@ void warp_mouse_x(Uint32 x)
   status->real_mouse_x = mx;
 
   set_screen_coords(mx, status->real_mouse_y, &mx_real, &my_real);
-  real_warp_mouse(mx_real, my_real);
+  real_warp_mouse(mx_real, -1);
 }
 
 void warp_mouse_y(Uint32 y)
@@ -776,7 +776,7 @@ void warp_mouse_y(Uint32 y)
   status->real_mouse_y = my;
 
   set_screen_coords(status->real_mouse_x, my, &mx_real, &my_real);
-  real_warp_mouse(mx_real, my_real);
+  real_warp_mouse(-1, my_real);
 }
 
 void warp_real_mouse_x(Uint32 mx)
@@ -788,7 +788,7 @@ void warp_real_mouse_x(Uint32 mx)
   status->real_mouse_x = mx;
 
   set_screen_coords(mx, status->real_mouse_y, &mx_real, &my_real);
-  real_warp_mouse(mx_real, my_real);
+  real_warp_mouse(mx_real, -1);
 }
 
 void warp_real_mouse_y(Uint32 my)
@@ -800,7 +800,7 @@ void warp_real_mouse_y(Uint32 my)
   status->real_mouse_y = my;
 
   set_screen_coords(status->real_mouse_x, my, &mx_real, &my_real);
-  real_warp_mouse(mx_real, my_real);
+  real_warp_mouse(-1, my_real);
 }
 
 void force_last_key(enum keycode_type type, int val)

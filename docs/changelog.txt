@@ -57,6 +57,9 @@ BUGFIXES
   translated to regular keys based on numlock when they were
   read from KEY_PRESSED. This behavior is now locked to 2.84X
   worlds.
++ Fixed a bug where warping the mouse on one axis would snap the
+  mouse to the nearest pixel on the other axis, causing problems
+  for upscaled windows.
 
 DEVELOPERS
 

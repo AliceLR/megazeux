@@ -190,7 +190,7 @@ void joystick_key_press(struct buffered_status *status,
 void joystick_key_release(struct buffered_status *status,
  enum keycode key);
 
-void real_warp_mouse(Uint32 x, Uint32 y);
+void real_warp_mouse(int x, int y);
 
 #if defined(CONFIG_SDL)
 #if !SDL_VERSION_ATLEAST(2,0,0)

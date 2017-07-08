@@ -74,7 +74,7 @@ Uint32 __update_event_status(void)
   return 0;
 }
 
-void real_warp_mouse(Uint32 x, Uint32 y)
+void real_warp_mouse(int x, int y)
 {
   // stub
 }

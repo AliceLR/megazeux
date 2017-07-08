@@ -1084,7 +1084,7 @@ void __wait_event(int timeout)
   }
 }
 
-void real_warp_mouse(Uint32 x, Uint32 y)
+void real_warp_mouse(int x, int y)
 {
   // Mouse warping doesn't work too well with the Wiimote
 }
