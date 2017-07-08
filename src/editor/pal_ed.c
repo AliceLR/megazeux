@@ -451,7 +451,7 @@ static int key_color_hsl(struct color_status *current, int key)
 {
   switch(key)
   {
-    case IKEY_h:
+    case IKEY_c:
     {
       if(get_alt_status(keycode_internal))
       {
@@ -634,7 +634,7 @@ static const struct color_mode mode_list[] =
 
   { "HSL",
     {
-      { "Hue",   "Hue",  "H",  4,  4,    0, 359 },
+      { "Hue",   "Hue",  "C",  4,  4,    0, 359 },
       { "Sat.",  "Sat",  "S",  7,  0,    0, 100 },
       { "Light", "Lgt",  "V", 15,  0,    0, 100 },
     },
