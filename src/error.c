@@ -439,6 +439,7 @@ int error_message(enum error_code id, int parameter, const char *string)
 
     case E_ZIP:
       code = 0xEEEE;
+      /* fallthrough */
 
     case E_DEFAULT:
     default:

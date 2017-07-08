@@ -1889,6 +1889,8 @@ void __debug_counters(struct world *mzx_world)
         }
       }
 
+      /* fallthrough */
+
       // Repeat search (Ctrl+R)
       case -3:
       {

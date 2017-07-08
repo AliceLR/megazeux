@@ -1393,7 +1393,11 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
       }
 
       *(src->result) = result;
+
+      // Fall through to allow for an empty box.
     }
+
+    /* fallthrough */
 
     default:
     {

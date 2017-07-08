@@ -1077,6 +1077,7 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
             level_param[i] = 'S';
             level_color[i] = 0xDF;
           }
+          break;
         }
 
         default:

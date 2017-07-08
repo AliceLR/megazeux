@@ -686,6 +686,8 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
         // Proceed into the ')' handler:
       }
 
+      /* fallthrough */
+
       // End of expression
       case ')':
       {

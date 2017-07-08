@@ -2935,6 +2935,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           update_blocked = 1;
           break;
         }
+        break;
       }
 
       case ROBOTIC_CMD_SWITCH: // switch dir dir

@@ -1448,6 +1448,7 @@ void color_string_ext_special(const char *str, Uint32 x, Uint32 y,
 
         break;
       }
+
       case '~':
       {
         str++;
@@ -1481,6 +1482,7 @@ void color_string_ext_special(const char *str, Uint32 x, Uint32 y,
 
         break;
       }
+
       // Newline
       case '\n':
       {
@@ -1491,8 +1493,10 @@ void color_string_ext_special(const char *str, Uint32 x, Uint32 y,
           dest_copy = graphics.text_video + (y * SCREEN_W) + x;
           break;
         }
-        // Fall thru
       }
+
+      /* fallthrough */
+
       default:
       {
         dest->char_value = cur_char + offset;
@@ -1548,6 +1552,7 @@ void write_string_ext(const char *str, Uint32 x, Uint32 y,
         dest_copy = graphics.text_video + (y * SCREEN_W) + x;
         break;
       }
+
       case '\t':
       {
         if(tab_allowed)
@@ -1557,6 +1562,9 @@ void write_string_ext(const char *str, Uint32 x, Uint32 y,
           break;
         }
       }
+
+      /* fallthrough */
+
       default:
       {
         dest->char_value = cur_char + offset;
@@ -1598,6 +1606,7 @@ void write_string_mask(const char *str, Uint32 x, Uint32 y,
         dest_copy = graphics.text_video + (y * SCREEN_W) + x;
         break;
       }
+
       case '\t':
       {
         if(tab_allowed)
@@ -1607,6 +1616,9 @@ void write_string_mask(const char *str, Uint32 x, Uint32 y,
           break;
         }
       }
+
+      /* fallthrough */
+
       default:
       {
         if((cur_char >= 32) && (cur_char <= 127))
@@ -1657,6 +1669,9 @@ void write_line_ext(const char *str, Uint32 x, Uint32 y,
           break;
         }
       }
+
+      /* fallthrough */
+
       default:
       {
         dest->char_value = cur_char + offset;
@@ -1697,6 +1712,9 @@ void write_line_mask(const char *str, Uint32 x, Uint32 y,
           break;
         }
       }
+
+      /* fallthrough */
+
       default:
       {
         if((cur_char >= 32) && (cur_char <= 127))

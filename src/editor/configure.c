@@ -659,7 +659,7 @@ void save_local_editor_config(struct editor_config_info *conf,
   int mzx_file_len = strlen(mzx_file_path) - 4;
   char config_file_name[MAX_PATH];
 
-  char buf[60] = { 0 };
+  char buf[MAX_PATH + 60] = { 0 };
   char buf2[20] = { 0 };
 
   const char *comment =

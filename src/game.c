@@ -2845,9 +2845,10 @@ void title_screen(struct world *mzx_world)
           // ALT+F4 - do nothing.
           if(get_alt_status(keycode_internal))
             break;
-
-          // Continue to IKEY_r
         }
+
+        /* fallthrough */
+
         case IKEY_r:
         {
           char save_file_name[MAX_PATH] = { 0 };
@@ -3055,6 +3056,8 @@ void title_screen(struct world *mzx_world)
         case IKEY_F8:
         case IKEY_n:
           reload_curr_world_in_editor = 0;
+
+          /* fallthrough */
 
         case IKEY_F9:
         case IKEY_e:

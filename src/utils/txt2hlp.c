@@ -215,6 +215,8 @@ int main(int argc, char *argv[])
         // we can't stop here this is bat country
       }
 
+      /* fallthrough */
+
 
 
       // Normal line that can start with reserved char
@@ -364,6 +366,9 @@ int main(int argc, char *argv[])
         save_last_file:
         end_of_file = 1;
       }
+
+      /* fallthrough */
+
       // New file
       case '#':
       {

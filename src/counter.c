@@ -3618,6 +3618,8 @@ int match_function_counter(const char *dest, const char *src)
         // Fall through, skip remaining numbers
       }
 
+      /* fallthrough */
+
       // Skip 0 or more number characters
       case '?':
       {

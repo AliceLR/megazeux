@@ -3202,13 +3202,10 @@ __editor_maybe_static void default_global_data(struct world *mzx_world)
   for(i = 0; i < 8; i++)
   {
     mzx_world->pl_saved_x[i] = 0;
+    mzx_world->pl_saved_y[i] = 0;
+    mzx_world->pl_saved_board[i] = 0;
   }
 
-  for(i = 0; i < 8; i++)
-  {
-    mzx_world->pl_saved_y[i] = 0;
-  }
-  memset(mzx_world->pl_saved_board, 0, 8);
   mzx_world->saved_pl_color = 27;
   mzx_world->player_restart_x = 0;
   mzx_world->player_restart_y = 0;

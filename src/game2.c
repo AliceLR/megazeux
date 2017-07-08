@@ -1431,9 +1431,9 @@ void update_board(struct world *mzx_world)
           }
 
           level_param[level_offset] = current_param;
-
-          // Fall through
         }
+
+        /* fallthrough */
 
         case BULLET_GUN:
         {
@@ -2752,6 +2752,8 @@ enum dir parsedir(struct world *mzx_world, enum dir old_dir, int x, int y,
       bls ^= 1;
       ble ^= 1;
       blw ^= 1;
+
+      /* fallthrough */
 
     case RANDB:
     {

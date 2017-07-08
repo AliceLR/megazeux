@@ -1258,6 +1258,8 @@ void global_info(struct world *mzx_world)
           break;
       }
 
+      /* fallthrough */
+
       case 0:
       {
         if(radio_result_1 == 2)

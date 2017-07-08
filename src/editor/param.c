@@ -1124,6 +1124,9 @@ int edit_param(struct world *mzx_world, int id, int param)
         return 0;
       }
     }
+
+    /* fallthrough */
+
     // Character
     case -3:
     {
@@ -1148,6 +1151,7 @@ int edit_param(struct world *mzx_world, int id, int param)
 
       return new_param;
     }
+
     // Board
     case -4:
     {

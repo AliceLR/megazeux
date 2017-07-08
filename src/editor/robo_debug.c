@@ -275,6 +275,7 @@ static int debug_config_idle_function(struct world *mzx_world,
         di->done = 1;
         return 0;
       }
+      break;
     }
     // Delete selection
     case IKEY_d:
@@ -285,6 +286,7 @@ static int debug_config_idle_function(struct world *mzx_world,
         di->done = 1;
         return 0;
       }
+      break;
     }
     // Edit selection
     case IKEY_e:
@@ -295,6 +297,7 @@ static int debug_config_idle_function(struct world *mzx_world,
         di->done = 1;
         return 0;
       }
+      break;
     }
   }
 
@@ -976,6 +979,8 @@ static int debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
         }
         // continue to OP_HALT
       }
+
+      /* fallthrough */
 
       case OP_HALT:
       {
