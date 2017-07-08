@@ -211,7 +211,7 @@ static void save_mzm_common(struct world *mzx_world, int start_x, int start_y, i
           // Write robots into the zip
           for(i = 0; i < num_robots; i++)
           {
-            sprintf(name, "r%2.2X", i);
+            sprintf(name, "r%2.2X", (unsigned char) i);
 
             // Save each robot
             save_robot(mzx_world, robot_list[robot_numbers[i]], zp,

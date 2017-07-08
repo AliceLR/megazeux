@@ -1283,8 +1283,10 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
      ((get_ticks() - backup_timestamp) > (backup_interval * 1000)))
     {
       char backup_name_formatted[MAX_PATH];
-      sprintf(backup_name_formatted,
+      snprintf(backup_name_formatted, MAX_PATH,
        "%s%d%s", backup_name, backup_num + 1, backup_ext);
+
+      backup_name_formatted[MAX_PATH - 1] = 0;
 
       create_path_if_not_exists(backup_name);
 

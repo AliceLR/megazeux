@@ -1784,7 +1784,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
         timer_color = (edge_color << 4) + 15;
 
       sprintf(tmp_str, "%d:%02d",
-       time_remaining / 60, time_remaining % 60);
+       (unsigned short)(time_remaining / 60), (time_remaining % 60) );
       write_string(tmp_str, 1, 24, timer_color, 0);
 
       // Border with spaces

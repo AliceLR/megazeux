@@ -258,7 +258,7 @@ int save_board(struct world *mzx_world, struct board *cur_board,
       cur_robot = cur_board->robot_list[i];
       if(cur_robot)
       {
-        sprintf(name+4, "%2.2X", i);
+        sprintf(name+4, "%2.2X", (unsigned char) i);
         save_robot(mzx_world, cur_robot, zp, savegame, file_version,
          name, FPROP_ROBOT, board_id, i);
       }
@@ -276,7 +276,7 @@ int save_board(struct world *mzx_world, struct board *cur_board,
       cur_scroll = cur_board->scroll_list[i];
       if(cur_scroll)
       {
-        sprintf(name+5, "%2.2X", i);
+        sprintf(name+5, "%2.2X", (unsigned char) i);
         save_scroll(cur_scroll, zp, name, FPROP_SCROLL, board_id, i);
       }
     }
@@ -293,7 +293,7 @@ int save_board(struct world *mzx_world, struct board *cur_board,
       cur_sensor = cur_board->sensor_list[i];
       if(cur_sensor)
       {
-        sprintf(name+5, "%2.2X", i);
+        sprintf(name+5, "%2.2X", (unsigned char) i);
         save_sensor(cur_sensor, zp, name, FPROP_SENSOR, board_id, i);
       }
     }
