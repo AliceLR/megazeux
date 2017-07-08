@@ -85,7 +85,7 @@ bool gl_load_syms(const struct dso_syms_map *map)
 
   for(i = 0; map[i].name != NULL; i++)
   {
-    *map[i].sym_ptr = GL_GetProcAddress(map[i].name);
+    *map[i].sym_ptr = (fn_ptr) GL_GetProcAddress(map[i].name);
     if(!*map[i].sym_ptr)
     {
       warn("Failed to load GL function '%s', aborting..\n", map[i].name);
