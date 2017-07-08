@@ -645,7 +645,7 @@ static const struct color_mode mode_list[] =
     false,
   },
 
-  { "Lab",
+  { "CIELAB",
     {
       { "L*",    "L*",   "V", 15,  0,    0, 100 },
       { "a*",    "a*",   "A",  4,  2, -128, 128 },
@@ -726,7 +726,6 @@ static void palette_editor_redraw_color_window(struct color_status *current,
   int i;
 
   draw_window_box(PAL_ED_COL_X1, PAL_ED_COL_Y1, PAL_ED_COL_X2, PAL_ED_COL_Y2,
-   //DI_GREY_DARK, DI_GREY, DI_GREY_CORNER, 1, 1);
    DI_GREY, DI_GREY_DARK, DI_GREY_CORNER, 1, 1);
 
   // Write Color #
@@ -821,19 +820,30 @@ static int palette_editor_input_color_window(struct color_status *current,
 
     // Component bars
 
-    if((mouse_x >= PAL_ED_COL_X1 + 9) && (mouse_x < PAL_ED_COL_X1 + 9 + 32) &&
-     (mouse_y >= PAL_ED_COL_Y1 + 2) && (mouse_y < PAL_ED_COL_Y1 + 5))
+    // -1 and +1 to allow going past the actual bounds slightly to make setting
+    // to the minimum and maximum values easier.
+
+    if(
+     (mouse_x >= PAL_ED_COL_X1 + 10 - 1) &&
+     (mouse_x <  PAL_ED_COL_X1 + 10 + 32 + 1) &&
+     (mouse_y >= PAL_ED_COL_Y1 + 2) &&
+     (mouse_y <  PAL_ED_COL_Y1 + 5))
     {
       const struct color_mode_component *c;
       int component = mouse_y - PAL_ED_COL_Y1 - 2;
 
-      float value = (mouse_x - PAL_ED_COL_X1 - 9) + ((mouse_px % 8) / 8.0);
+      float value =
+       CLAMP((mouse_x - PAL_ED_COL_X1 - 10) + ((mouse_px % 8) / 8.0), 0, 32);
 
       c = &(mode->components[component]);
 
       value = (value * (c->max_val - c->min_val) + 16) / 32.0 + c->min_val;
 
       mode->input_bar_function(current, component, (int)value);
+
+      // FIXME warp_real_mouse_y(), which is intended for setting MOUSEPY, will
+      // actually warp the real X to the nearest MZX pixel position as well.
+      // This causes major issues with upscaled and non-integer scaling ratios.
 
       // Snap the mouse to the center of the bar.
       warp_real_mouse_y(mouse_y * 14 + 7);
