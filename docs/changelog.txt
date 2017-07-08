@@ -63,6 +63,7 @@ DEVELOPERS
 + libxmp is now the default module sound engine. Use "make xmp"
   to make and install libxmp if it is not available on your
   platform.
++ Mac OS X portability improved. (Spectere and Why-Fi)
 
 
 June 29, 2017 - MZX 2.90
