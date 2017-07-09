@@ -2955,6 +2955,14 @@ static struct zip_archive *try_load_zip_world(struct world *mzx_world,
   if(result != VAL_SUCCESS)
     goto err_close;
 
+  // Should never happen, but if it did, it's totally invalid.
+  if(*file_version <= WORLD_LEGACY_FORMAT_VERSION)
+    goto err_close;
+
+  v = *file_version;
+  if(v > WORLD_VERSION)
+    goto err_close;
+
   zip_rewind(zp);
 
   reset_error_suppression();

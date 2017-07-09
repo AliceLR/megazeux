@@ -62,6 +62,8 @@ BUGFIXES
   for upscaled windows.
 + Fixed a bug where mouse control would not respect video_ratio
   settings aside from "stretch".
+* Fixed a bug where MZX would attempt to load certain invalid
+  worlds that should have been caught by validation.
 
 DEVELOPERS
 
