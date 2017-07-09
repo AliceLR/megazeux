@@ -2183,7 +2183,15 @@ void __draw_debug_box(struct world *mzx_world, int x, int y, int d_x, int d_y,
     }
 
     // key_pressed
-    key = get_last_key(keycode_internal);
+
+    // In 2.82X through 2.84X, this erroneously applied
+    // numlock translations to the keycode.
+    if(mzx_world->version >= 0x0252 && mzx_world->version <= 0x0254)
+      key = get_last_key(keycode_internal_wrt_numlock);
+
+    else
+      key = get_last_key(keycode_internal);
+
     if(key && show_keys)
     {
       sprintf(key_string, "%d", key);
