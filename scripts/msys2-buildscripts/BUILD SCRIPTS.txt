@@ -13,6 +13,11 @@ server is configured for. You may also need to modify
 mingw-uploadrelease-ssh.sh if your don't want to upload to the
 directory you land at when SSHing to your server.
 
-Then run the 4 numbered batch files in order to perform the entire
-process. Each batch file will pause at the end to allow you to check for
-any errors.
+Run the 4 numbered batch files in order to perform the entire
+process. Each batch file will pause at the end to allow you to
+check for any errors.
+
+Note that, the first time you run 1_PrepareReleaseEnvironment.bat
+it will ask you to close the terminal without returning to the
+shell. Close the terminal, ignoring any warnings that there are
+processes still running, then rerun 1_PrepareReleaseEnvironment.bat
