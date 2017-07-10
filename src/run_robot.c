@@ -902,6 +902,17 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
   prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
    src_width, src_height);
 
+  // Clip and verify; the prefixer already handled the
+  // base coordinates, so just handle the width/height
+  if(width < 1)
+    width = 1;
+  if(height < 1)
+    height = 1;
+  if((src_x + width) > src_width)
+    width = src_width - src_x;
+  if((src_y + height) > src_height)
+    height = src_height - src_y;
+
   // Process for dest type and handle prefixing if we aren't already done
   switch(dest_type)
   {
@@ -979,17 +990,8 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
 
   prefix_last_xy_var(mzx_world, &dest_x, &dest_y, x, y,
    dest_width, dest_height);
-
-  // Clip and verify; the prefixers already handled the
-  // base coordinates, so just handle the width/height
-  if(width < 1)
-    width = 1;
-  if(height < 1)
-    height = 1;
-  if((src_x + width) > src_width)
-    width = src_width - src_x;
-  if((src_y + height) > src_height)
-    height = src_height - src_y;
+  
+  // Clip to destination dimensions as well
   if((dest_x + width) > dest_width)
     width = dest_width - dest_x;
   if((dest_y + height) > dest_height)
