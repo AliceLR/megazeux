@@ -31,6 +31,7 @@
 #include "robot.h"
 #include "legacy_world.h"
 #include "legacy_robot.h"
+#include "world_prop.h"
 #include "zip.h"
 
 

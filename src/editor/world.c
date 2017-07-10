@@ -256,8 +256,6 @@ static bool append_world_legacy(struct world *mzx_world, FILE *fp,
 }
 
 
-#define WPROP_NUM_BOARDS 0x0008
-
 static int append_world_zip_get_num_boards(const void *buffer, int buf_size)
 {
   struct memfile mf;

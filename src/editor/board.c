@@ -24,6 +24,7 @@
 #include "../extmem.h"
 #include "../legacy_board.h"
 #include "../world.h"
+#include "../world_prop.h"
 #include "../util.h"
 #include "../zip.h"
 

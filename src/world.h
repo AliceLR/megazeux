@@ -126,38 +126,6 @@ __M_BEGIN_DECLS
 #define WORLD_VERSION_PREV 0x025A
 #endif
 
-enum file_prop
-{
-  FPROP_NONE                  = 0x0000,
-  FPROP_WORLD_INFO            = 0x0001, // properties file
-  FPROP_WORLD_GLOBAL_ROBOT    = 0x0004, // properties file
-  FPROP_WORLD_SFX             = 0x0008, // data, NUM_SFX * SFX_SIZE
-  FPROP_WORLD_CHARS           = 0x000A, // data, 3584
-  FPROP_WORLD_PAL             = 0x000C, // data, SMZX_PAL_SIZE * 3
-  FPROP_WORLD_PAL_INDEX       = 0x000D, // data, 1024
-  FPROP_WORLD_PAL_INTENSITY   = 0x000E, // data, SMZX_PAL_SIZE * 1
-
-  FPROP_WORLD_VCO             = 0x0080, // data
-  FPROP_WORLD_VCH             = 0x0081, // data
-  FPROP_WORLD_SPRITES         = 0x0084, // properties file
-  FPROP_WORLD_COUNTERS        = 0x0085, // counter format, use stream
-  FPROP_WORLD_STRINGS         = 0x0086, // string format, use stream
-
-  FPROP_BOARD_INFO            = 0x0100, // properties file (board_id)
-  FPROP_BOARD_BID             = 0x0101, // data
-  FPROP_BOARD_BPR             = 0x0102, // data
-  FPROP_BOARD_BCO             = 0x0103, // data
-  FPROP_BOARD_UID             = 0x0104, // data
-  FPROP_BOARD_UPR             = 0x0105, // data
-  FPROP_BOARD_UCO             = 0x0106, // data
-  FPROP_BOARD_OCH             = 0x0107, // data
-  FPROP_BOARD_OCO             = 0x0108, // data
-
-  FPROP_ROBOT                 = 0x1000, // properties file (board_id + robot_id)
-  FPROP_SCROLL                = 0x2000, // properties file (board_id + robot_id)
-  FPROP_SENSOR                = 0x3000  // properties file (board_id + robot_id)
-};
-
 enum val_result
 {
   VAL_SUCCESS,
