@@ -1,6 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
+ * Copyright (C) 2017 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -25,6 +26,7 @@
 
 #include "const.h"
 #include "error.h"
+#include "memfile.h"
 #include "legacy_board.h"
 #include "robot.h"
 #include "world.h"

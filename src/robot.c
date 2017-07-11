@@ -42,6 +42,7 @@
 #include "rasm.h"
 #include "legacy_rasm.h"
 #include "world_prop.h"
+#include "memfile.h"
 #include "zip.h"
 
 

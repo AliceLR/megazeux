@@ -23,11 +23,12 @@
 
 #include <zlib.h>
 
-#include "zip.h"
+// This needs to stay self-sufficient - don't use core functions.
+// Including util.h for the macros only...
 
-#include "error.h"
+#include "memfile.h"
 #include "util.h"
-
+#include "zip.h"
 
 #define ZIP_VERSION 20
 #define ZIP_VERSION_MINIMUM 20
@@ -63,6 +64,48 @@
  * pointers from it.
  */
 
+
+// Extended file reading functions duplicated from util.h
+
+// Get 2 bytes, little endian
+
+static int _fgetw(FILE *fp)
+{
+  int a = fgetc(fp), b = fgetc(fp);
+  if((a == EOF) || (b == EOF))
+    return EOF;
+
+  return (b << 8) | a;
+}
+
+// Get 4 bytes, little endian
+
+static int _fgetd(FILE *fp)
+{
+  int a = fgetc(fp), b = fgetc(fp), c = fgetc(fp), d = fgetc(fp);
+  if((a == EOF) || (b == EOF) || (c == EOF) || (d == EOF))
+    return EOF;
+
+  return (d << 24) | (c << 16) | (b << 8) | a;
+}
+
+// Put 2 bytes, little endian
+
+static void _fputw(int src, FILE *fp)
+{
+  fputc(src & 0xFF, fp);
+  fputc(src >> 8, fp);
+}
+
+// Put 4 bytes, little endian
+
+static void _fputd(int src, FILE *fp)
+{
+  fputc(src & 0xFF, fp);
+  fputc((src >> 8) & 0xFF, fp);
+  fputc((src >> 16) & 0xFF, fp);
+  fputc((src >> 24) & 0xFF, fp);
+}
 
 static int zip_get_dos_date_time(void)
 {
@@ -164,9 +207,12 @@ static const char *zip_error_string(enum zip_error code)
 
 static void zip_error(const char *func, enum zip_error code)
 {
-  char buffer[80];
-  snprintf(buffer, 80, "%s: %s", func, zip_error_string(code));
-  error_message(E_ZIP, 0, buffer);
+  //char buffer[80];
+  //snprintf(buffer, 80, "%s: %s", func, zip_error_string(code));
+  //error_message(E_ZIP, 0, buffer);
+
+  fprintf(stderr, "ERROR - %s: %s\n", func, zip_error_string(code));
+  fflush(stderr);
 }
 
 
@@ -396,7 +442,7 @@ static enum zip_error zip_read_file_header(struct zip_archive *zp,
   void *fp = zp->fp;
   int (*vgetc)(void *) = zp->vgetc;
   int (*vgetd)(void *) = zp->vgetd;
-  int (*vread)(void *, size_t, size_t, void *) = zp->vread;
+  size_t (*vread)(void *, size_t, size_t, void *) = zp->vread;
   int (*vseek)(void *, long int, int) = zp->vseek;
   int (*hasspace)(size_t, void *) = zp->hasspace;
 
@@ -589,7 +635,7 @@ static enum zip_error zip_write_file_header(struct zip_archive *zp,
   int (*vputc)(int, void *) = zp->vputc;
   void (*vputw)(int, void *) = zp->vputw;
   void (*vputd)(int, void *) = zp->vputd;
-  int (*vwrite)(const void *, size_t, size_t, void *) = zp->vwrite;
+  size_t (*vwrite)(const void *, size_t, size_t, void *) = zp->vwrite;
 
   char *magic = is_central ? file_sig_central : file_sig;
 
@@ -1108,7 +1154,7 @@ enum zip_error zip_read_close_stream(struct zip_archive *zp)
   char buffer[128];
   int size;
 
-  int (*vread)(void *, size_t, size_t, void *);
+  size_t (*vread)(void *, size_t, size_t, void *);
   void *fp;
 
   enum zip_error result;
@@ -2272,7 +2318,7 @@ enum zip_error zip_close(struct zip_archive *zp, uint32_t *final_length)
   int i;
 
   void *fp;
-  int (*vtell)(void *);
+  long int (*vtell)(void *);
 
   if(!zp)
   {
@@ -2432,15 +2478,15 @@ static struct zip_archive *zip_get_archive_file(FILE *fp)
   zp->fp = fp;
   zp->hasspace = NULL;
   zp->vgetc = (int(*)(void *)) fgetc;
-  zp->vgetw = (int(*)(void *)) fgetw;
-  zp->vgetd = (int(*)(void *)) fgetd;
+  zp->vgetw = (int(*)(void *)) _fgetw;
+  zp->vgetd = (int(*)(void *)) _fgetd;
   zp->vputc = (int(*)(int, void *)) fputc;
-  zp->vputw = (void(*)(int, void *)) fputw;
-  zp->vputd = (void(*)(int, void *)) fputd;
-  zp->vread = (int(*)(void *, size_t, size_t, void *)) fread;
-  zp->vwrite = (int(*)(const void *, size_t, size_t, void *)) fwrite;
+  zp->vputw = (void(*)(int, void *)) _fputw;
+  zp->vputd = (void(*)(int, void *)) _fputd;
+  zp->vread = (size_t(*)(void *, size_t, size_t, void *)) fread;
+  zp->vwrite = (size_t(*)(const void *, size_t, size_t, void *)) fwrite;
   zp->vseek = (int(*)(void *, long int, int)) fseek;
-  zp->vtell = (int(*)(void *)) ftell;
+  zp->vtell = (long int(*)(void *)) ftell;
   zp->verror = (int(*)(void *)) ferror;
   zp->vclose = (int(*)(void *)) fclose;
   return zp;
@@ -2457,7 +2503,10 @@ struct zip_archive *zip_open_fp_read(FILE *fp)
   if(fp)
   {
     struct zip_archive *zp = zip_get_archive_file(fp);
-    zp->end_in_file = ftell_and_rewind(fp);
+
+    fseek(fp, 0, SEEK_END);
+    zp->end_in_file = ftell(fp);
+    rewind(fp);
 
     precalculate_read_errors(zp);
     precalculate_write_errors(zp);
@@ -2521,10 +2570,10 @@ static struct zip_archive *zip_get_archive_mem(struct memfile *mf)
   zp->vputc = (int(*)(int, void *)) mfputc;
   zp->vputw = (void(*)(int, void *)) mfputw;
   zp->vputd = (void(*)(int, void *)) mfputd;
-  zp->vread = (int(*)(void *, size_t, size_t, void *)) mfread;
-  zp->vwrite = (int(*)(const void *, size_t, size_t, void *)) mfwrite;
+  zp->vread = (size_t(*)(void *, size_t, size_t, void *)) mfread;
+  zp->vwrite = (size_t(*)(const void *, size_t, size_t, void *)) mfwrite;
   zp->vseek = (int(*)(void *, long int, int)) mfseek;
-  zp->vtell = (int(*)(void *)) mftell;
+  zp->vtell = (long int(*)(void *)) mftell;
   zp->verror = NULL;
   zp->vclose = (int(*)(void *)) mfclose;
   return zp;

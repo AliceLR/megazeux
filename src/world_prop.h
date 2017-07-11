@@ -24,8 +24,7 @@
 
 __M_BEGIN_DECLS
 
-
-#include "util.h"
+#include "memfile.h"
 
 // Data and functions for world/board/robot IO.
 

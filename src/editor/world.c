@@ -29,7 +29,7 @@
 #include "../world.h"
 #include "../legacy_board.h"
 #include "../idput.h"
-#include "../util.h"
+#include "../memfile.h"
 #include "../zip.h"
 
 #include "../world_prop.h"

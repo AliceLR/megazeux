@@ -53,6 +53,7 @@
 #include "game.h"
 #include "audio.h"
 #include "extmem.h"
+#include "memfile.h"
 #include "util.h"
 
 

@@ -149,28 +149,6 @@ void mem_putw(int src, unsigned char **ptr);
  
 CORE_LIBSPEC int memsafegets(char *dest, int size, char **src, char *end);
 
-struct memfile
-{
-  char *current;
-  char *start;
-  char *end;
-};
-
-CORE_LIBSPEC struct memfile *mfopen(const void *src, size_t len);
-CORE_LIBSPEC void mfopen_static(const void *src, size_t len, struct memfile *mf);
-CORE_LIBSPEC int mfclose(struct memfile *mf);
-CORE_LIBSPEC int mfhasspace(size_t len, struct memfile *mf);
-CORE_LIBSPEC int mfgetc(struct memfile *mf);
-CORE_LIBSPEC int mfgetw(struct memfile *mf);
-CORE_LIBSPEC int mfgetd(struct memfile *mf);
-CORE_LIBSPEC int mfputc(int ch, struct memfile *mf);
-CORE_LIBSPEC void mfputw(int ch, struct memfile *mf);
-CORE_LIBSPEC void mfputd(int ch, struct memfile *mf);
-CORE_LIBSPEC int mfread(void *dest, size_t len, size_t count, struct memfile *mf);
-CORE_LIBSPEC int mfwrite(const void *src, size_t len, size_t count, struct memfile *mf);
-CORE_LIBSPEC int mfseek(struct memfile *mf, long int offs, int code);
-CORE_LIBSPEC int mftell(struct memfile *mf);
-
 #if defined(__WIN32__) && defined(__STRICT_ANSI__)
 CORE_LIBSPEC int strcasecmp(const char *s1, const char *s2);
 CORE_LIBSPEC int strncasecmp(const char *s1, const char *s2, size_t n);

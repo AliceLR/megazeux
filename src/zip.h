@@ -26,7 +26,7 @@ __M_BEGIN_DECLS
 
 #include <stdint.h>
 
-#include "util.h"
+#include "memfile.h"
 
 #define ZIP_M_NONE 0
 #define ZIP_M_DEFLATE 8
@@ -128,11 +128,11 @@ struct zip_archive
   void (*vputw)(int, void *);
   void (*vputd)(int, void *);
 
-  int (*vread)(void *, size_t, size_t, void *);
-  int (*vwrite)(const void *, size_t, size_t, void *);
+  size_t (*vread)(void *, size_t, size_t, void *);
+  size_t (*vwrite)(const void *, size_t, size_t, void *);
 
   int (*vseek)(void *, long int, int);
-  int (*vtell)(void *);
+  long int (*vtell)(void *);
   int (*verror)(void *);
 
   int (*vclose)(void *);
@@ -152,7 +152,6 @@ enum zip_error zread(void *destBuf, uint32_t readLen, struct zip_archive *zp);
 enum zip_error zip_get_next_name(struct zip_archive *zp,
  char *name, int name_buffer_size);
 
-CORE_LIBSPEC
 enum zip_error zip_get_next_prop(struct zip_archive *zp,
  unsigned int *prop_id, unsigned int *board_id, unsigned int *robot_id);
 
@@ -171,18 +170,16 @@ enum zip_error zip_read_open_mem_stream(struct zip_archive *zp,
 
 enum zip_error zip_read_close_mem_stream(struct zip_archive *zp);
 
-CORE_LIBSPEC
 enum zip_error zip_rewind(struct zip_archive *zp);
 
-CORE_LIBSPEC
 enum zip_error zip_skip_file(struct zip_archive *zp);
 
 enum zip_error zip_read_file(struct zip_archive *zp,
  void *destBuf, uint32_t destLen, uint32_t *readLen);
 
-CORE_LIBSPEC enum zip_error zputc(int value, struct zip_archive *zp);
-CORE_LIBSPEC enum zip_error zputw(int value, struct zip_archive *zp);
-CORE_LIBSPEC enum zip_error zputd(int value, struct zip_archive *zp);
+enum zip_error zputc(int value, struct zip_archive *zp);
+enum zip_error zputw(int value, struct zip_archive *zp);
+enum zip_error zputd(int value, struct zip_archive *zp);
 enum zip_error zwrite(const void *src, uint32_t srcLen, struct zip_archive *zp);
 
 enum zip_error zip_write_open_file_stream(struct zip_archive *zp,
@@ -202,16 +199,16 @@ enum zip_error zip_write_file(struct zip_archive *zp, const char *name,
  const void *src, uint32_t srcLen, int method, uint32_t prop_id, char board_id,
  char robot_id);
 
-CORE_LIBSPEC enum zip_error zip_read_directory(struct zip_archive *zp);
-CORE_LIBSPEC enum zip_error zip_close(struct zip_archive *zp,
+enum zip_error zip_read_directory(struct zip_archive *zp);
+enum zip_error zip_close(struct zip_archive *zp,
  uint32_t *final_length);
 
-CORE_LIBSPEC struct zip_archive *zip_open_fp_read(FILE *fp);
-CORE_LIBSPEC struct zip_archive *zip_open_fp_write(FILE *fp);
-CORE_LIBSPEC struct zip_archive *zip_open_file_read(const char *file_name);
-CORE_LIBSPEC struct zip_archive *zip_open_file_write(const char *file_name);
-CORE_LIBSPEC struct zip_archive *zip_open_mem_read(const void *src, uint32_t len);
-CORE_LIBSPEC struct zip_archive *zip_open_mem_write(void *src, uint32_t len);
+struct zip_archive *zip_open_fp_read(FILE *fp);
+struct zip_archive *zip_open_fp_write(FILE *fp);
+struct zip_archive *zip_open_file_read(const char *file_name);
+struct zip_archive *zip_open_file_write(const char *file_name);
+struct zip_archive *zip_open_mem_read(const void *src, uint32_t len);
+struct zip_archive *zip_open_mem_write(void *src, uint32_t len);
 
 enum zip_error zip_expand(struct zip_archive *zp, char **src, uint32_t new_size);
 
