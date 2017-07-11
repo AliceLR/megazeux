@@ -64,6 +64,8 @@ BUGFIXES
   settings aside from "stretch".
 * Fixed a bug where MZX would attempt to load certain invalid
   worlds that should have been caught by validation.
++ Copy block to MZM no longer crashes when the MZM is partially
+  overlapping the board edge. (Lancer-X)
 
 DEVELOPERS
 
