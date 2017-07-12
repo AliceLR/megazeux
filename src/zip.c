@@ -207,16 +207,12 @@ static const char *zip_error_string(enum zip_error code)
 
 static void zip_error(const char *func, enum zip_error code)
 {
-  //char buffer[80];
-  //snprintf(buffer, 80, "%s: %s", func, zip_error_string(code));
-  //error_message(E_ZIP, 0, buffer);
-
   fprintf(stderr, "ERROR - %s: %s\n", func, zip_error_string(code));
   fflush(stderr);
 }
 
 
-static inline uint32_t zip_crc32(uint32_t crc, const char *src, uint32_t srcLen)
+static inline uint32_t zip_crc32(uint32_t crc, const void *src, uint32_t srcLen)
 {
   return crc32(crc, (Bytef *) src, (uLong) srcLen);
 }
@@ -540,6 +536,7 @@ static enum zip_error zip_read_file_header(struct zip_archive *zp,
     // File comment length          2
 
     n = mfgetw(&mf);
+    fh->file_name_length = n;
     data_position = zp->vtell(fp) + n + mfgetw(&mf) + mfgetw(&mf);
 
     // Disk number of file start    2
@@ -1910,8 +1907,8 @@ enum zip_error zip_write_close_mem_stream(struct zip_archive *zp,
 {
   struct zip_file_header *fh;
 
-  char *start;
-  char *end;
+  unsigned char *start;
+  unsigned char *end;
   uint32_t length;
   uint32_t crc32;
 
@@ -2636,11 +2633,11 @@ struct zip_archive *zip_open_mem_write(void *src, uint32_t len)
  * write function fails with ZIP_ALLOC_MORE_SPACE.
  */
 
-enum zip_error zip_expand(struct zip_archive *zp, char **src, uint32_t new_size)
+enum zip_error zip_expand(struct zip_archive *zp, void **src, uint32_t new_size)
 {
   struct memfile *mf;
   uint32_t current_offset;
-  char *start;
+  unsigned char *start;
 
   int result;
 

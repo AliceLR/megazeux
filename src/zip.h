@@ -26,6 +26,9 @@ __M_BEGIN_DECLS
 
 #include <stdint.h>
 
+// This needs to stay self-sufficient.
+// Don't use core features, don't extern anything.
+
 #include "memfile.h"
 
 #define ZIP_M_NONE 0
@@ -210,7 +213,7 @@ struct zip_archive *zip_open_file_write(const char *file_name);
 struct zip_archive *zip_open_mem_read(const void *src, uint32_t len);
 struct zip_archive *zip_open_mem_write(void *src, uint32_t len);
 
-enum zip_error zip_expand(struct zip_archive *zp, char **src, uint32_t new_size);
+enum zip_error zip_expand(struct zip_archive *zp, void **src, uint32_t new_size);
 
 __M_END_DECLS
 

@@ -30,6 +30,10 @@ FEATURES
 + The default fullscreen resolution for scalable renderers is
   now 1280,720. The default fullscreen resolution for 'software'
   is still 640,480. The default aspect ratio is now 'modern'.
++ The checkres utility has been updated to support 2.90X worlds,
+  worlds in subdirectories of zip archives, multiple input files
+  to test, and the ability to specify secondary directories and
+  zips to search (e.g. for games with separate music zips).
 
 BUGFIXES
 

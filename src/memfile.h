@@ -28,18 +28,18 @@ __M_BEGIN_DECLS
 
 struct memfile
 {
-  char *current;
-  char *start;
-  char *end;
+  unsigned char *current;
+  unsigned char *start;
+  unsigned char *end;
 };
 
 static inline struct memfile *mfopen(const void *src, size_t len)
 {
   struct memfile *mf = cmalloc(sizeof(struct memfile));
 
-  mf->start = (char *)src;
-  mf->current = (char *)src;
-  mf->end = (char *)src + len;
+  mf->start = (unsigned char *)src;
+  mf->current = (unsigned char *)src;
+  mf->end = (unsigned char *)src + len;
 
   return mf;
 }
@@ -47,9 +47,9 @@ static inline struct memfile *mfopen(const void *src, size_t len)
 static inline void mfopen_static(const void *src, size_t len,
  struct memfile *mf)
 {
-  mf->start = (char *)src;
-  mf->current = (char *)src;
-  mf->end = (char *)src + len;
+  mf->start = (unsigned char *)src;
+  mf->current = (unsigned char *)src;
+  mf->end = (unsigned char *)src + len;
 }
 
 static inline int mfclose(struct memfile *mf)
@@ -122,7 +122,7 @@ static inline size_t mfread(void *dest, size_t len, size_t count,
  struct memfile *mf)
 {
   unsigned int i;
-  char *pos = dest;
+  unsigned char *pos = dest;
   for(i = 0; i < count; i++)
   {
     if(mf->current + len > mf->end)
@@ -140,7 +140,7 @@ static inline size_t mfwrite(const void *src, size_t len, size_t count,
  struct memfile *mf)
 {
   unsigned int i;
-  char *pos = (char *)src;
+  unsigned char *pos = (unsigned char *)src;
   for(i = 0; i < count; i++)
   {
     if(mf->current + len > mf->end)
@@ -156,7 +156,7 @@ static inline size_t mfwrite(const void *src, size_t len, size_t count,
 
 static inline int mfseek(struct memfile *mf, long int offs, int code)
 {
-  char *ptr;
+  unsigned char *ptr;
   switch(code)
   {
     case SEEK_SET:

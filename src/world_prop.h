@@ -25,8 +25,14 @@
 __M_BEGIN_DECLS
 
 #include "memfile.h"
+#include "zip.h"
 
-// Data and functions for world/board/robot IO.
+// Data and functions for the ZIP-based world/board/robot format.
+
+
+/*********/
+/* Files */
+/*********/
 
 enum file_prop
 {
@@ -60,6 +66,300 @@ enum file_prop
   FPROP_SENSOR                = 0x3000  // properties file (board_id + robot_id)
 };
 
+#define FPROP_MATCH(str) ((sizeof(str)-1 == len) && !strcmp(str, next))
+
+static inline int __fprop_cmp(const void *a, const void *b)
+{
+  struct zip_file_header *A = *(struct zip_file_header **)a;
+  struct zip_file_header *B = *(struct zip_file_header **)b;
+  int ab = A->mzx_board_id;
+  int bb = B->mzx_board_id;
+  int ap = A->mzx_prop_id;
+  int bp = B->mzx_prop_id;
+
+  return  (ab!=bb) ? (ab-bb) :
+          (ap!=bp) ? (ap-bp) : (int)A->mzx_robot_id - (int)B->mzx_robot_id;
+}
+
+static inline void assign_fprops_parse_board(char *next, unsigned int *_file_id,
+ unsigned int *_board_id, unsigned int *_robot_id)
+{
+  unsigned int robot_id = 0;
+  int len = strlen(next);
+  char temp = 0;
+
+  if(len > 3)
+  {
+    temp = next[3];
+    next[3] = 0;
+  }
+
+  *_board_id = strtoul(next+1, &next, 16);
+  next[0] = temp;
+
+  len = strlen(next);
+
+  if(next[0])
+  {
+    if(next[0] == 'r')
+    {
+      robot_id = strtoul(next+1, &next, 16);
+      if(robot_id != 0)
+      {
+        *_file_id = FPROP_ROBOT;
+      }
+
+      *_robot_id = robot_id;
+    }
+    else
+
+    if(next[0] == 's')
+    {
+      if(next[1] == 'c')
+      {
+        robot_id = strtoul(next+2, &next, 16);
+        if(robot_id != 0)
+        {
+          *_file_id = FPROP_SCROLL;
+        }
+      }
+      else
+
+      if(next[1] == 'e')
+      {
+        robot_id = strtoul(next+1, &next, 16);
+        if(robot_id != 0)
+        {
+          *_file_id = FPROP_SENSOR;
+        }
+      }
+
+      *_robot_id = robot_id;
+    }
+    else
+
+    if(FPROP_MATCH("bid"))
+    {
+      *_file_id = FPROP_BOARD_BID;
+    }
+    else
+
+    if(FPROP_MATCH("bpr"))
+    {
+      *_file_id = FPROP_BOARD_BPR;
+    }
+    else
+
+    if(FPROP_MATCH("bco"))
+    {
+      *_file_id = FPROP_BOARD_BCO;
+    }
+    else
+
+    if(FPROP_MATCH("uid"))
+    {
+      *_file_id = FPROP_BOARD_UID;
+    }
+    else
+
+    if(FPROP_MATCH("upr"))
+    {
+      *_file_id = FPROP_BOARD_UPR;
+    }
+    else
+
+    if(FPROP_MATCH("uco"))
+    {
+      *_file_id = FPROP_BOARD_UCO;
+    }
+    else
+
+    if(FPROP_MATCH("och"))
+    {
+      *_file_id = FPROP_BOARD_OCH;
+    }
+    else
+
+    if(FPROP_MATCH("oco"))
+    {
+      *_file_id = FPROP_BOARD_OCO;
+    }
+  }
+
+  else
+  {
+    *_file_id = FPROP_BOARD_INFO;
+  }
+}
+
+/* This needs to be done once before every single world, board, and MZM load. */
+
+static inline void assign_fprops(struct zip_archive *zp, int not_a_world)
+{
+  // Assign property IDs if they don't already exist
+  struct zip_file_header **fh_list = zp->files;
+  struct zip_file_header *fh;
+  int num_fh = zp->num_files;
+
+  unsigned int file_id;
+  unsigned int board_id;
+  unsigned int robot_id;
+  char *next;
+  int len;
+  int i;
+
+  // Special handling for non-worlds.
+  if(not_a_world)
+  {
+    board_id = 0;
+
+    for(i = 0; i < num_fh; i++)
+    {
+      fh = fh_list[i];
+      next = fh->file_name;
+      len = strlen(next);
+
+      file_id = 0;
+      robot_id = 0;
+
+      if(next[0] == 'r')
+      {
+        // Shorthand for robot on board 0
+        // Goes first to speed up MZM loads.
+        robot_id = strtoul(next+1, &next, 16);
+        file_id = FPROP_ROBOT;
+      }
+      else
+
+      if(next[0] == 'b')
+      {
+        assign_fprops_parse_board(next, &file_id, &board_id, &robot_id);
+
+        // Non-world files shouldn't boards > 0
+        if(board_id)
+        {
+          file_id = 0;
+          board_id = 0;
+          robot_id = 0;
+        }
+      }
+
+      // Set the properties
+      fh->mzx_prop_id = file_id;
+      fh->mzx_board_id = board_id;
+      fh->mzx_robot_id = robot_id;
+    }
+  }
+
+  // Regular world/save files.
+  else
+  {
+    for(i = 0; i < num_fh; i++)
+    {
+      fh = fh_list[i];
+      next = fh->file_name;
+      len = strlen(next);
+
+      file_id = 0;
+      board_id = 0;
+      robot_id = 0;
+
+      if(next[0] == 'b')
+      {
+        assign_fprops_parse_board(next, &file_id, &board_id, &robot_id);
+      }
+      else
+
+      if(!not_a_world)
+      {
+        if(FPROP_MATCH("world"))
+        {
+          file_id = FPROP_WORLD_INFO;
+        }
+        else
+
+        if(FPROP_MATCH("gr"))
+        {
+          file_id = FPROP_WORLD_GLOBAL_ROBOT;
+        }
+        else
+
+        if(FPROP_MATCH("sfx"))
+        {
+          file_id = FPROP_WORLD_SFX;
+        }
+        else
+
+        if(FPROP_MATCH("chars"))
+        {
+          file_id = FPROP_WORLD_CHARS;
+        }
+        else
+
+        if(FPROP_MATCH("pal"))
+        {
+          file_id = FPROP_WORLD_PAL;
+        }
+        else
+
+        if(FPROP_MATCH("palidx"))
+        {
+          file_id = FPROP_WORLD_PAL_INDEX;
+        }
+        else
+
+        if(FPROP_MATCH("palint"))
+        {
+          file_id = FPROP_WORLD_PAL_INTENSITY;
+        }
+        else
+
+        if(FPROP_MATCH("vco"))
+        {
+          file_id = FPROP_WORLD_VCO;
+        }
+        else
+
+        if(FPROP_MATCH("vch"))
+        {
+          file_id = FPROP_WORLD_VCH;
+        }
+        else
+
+        if(FPROP_MATCH("spr"))
+        {
+          file_id = FPROP_WORLD_SPRITES;
+        }
+        else
+
+        if(FPROP_MATCH("counter"))
+        {
+          file_id = FPROP_WORLD_COUNTERS;
+        }
+        else
+
+        if(FPROP_MATCH("string"))
+        {
+          file_id = FPROP_WORLD_STRINGS;
+        }
+      }
+
+      // Set the properties
+      fh->mzx_prop_id = file_id;
+      fh->mzx_board_id = board_id;
+      fh->mzx_robot_id = robot_id;
+    }
+  }
+
+  // Sort the archive and reset to the beginning
+  qsort(fh_list, num_fh, sizeof(struct zip_file_header *), __fprop_cmp);
+  zp->pos = 0;
+}
+
+
+/*******************/
+/* Properties Data */
+/*******************/
 
 #define PROP_HEADER_SIZE 6
 
@@ -423,8 +723,8 @@ static inline int load_prop_int(int length, struct memfile *prop)
 static inline int next_prop(struct memfile *prop, int *ident, int *length,
  struct memfile *mf)
 {
-  char *end = mf->end;
-  char *cur;
+  unsigned char *end = mf->end;
+  unsigned char *cur;
   int len;
 
   if((end - mf->current)<PROP_HEADER_SIZE)

@@ -4,6 +4,7 @@
  *
  * Copyright (C) 2007 Alistair John Strachan <alistair@devzero.co.uk>
  * Copyright (C) 2007 Josh Matthews <josh@joshmatthews.net>
+ * Copyright (C) 2017 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -20,60 +21,64 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#define USAGE \
+ "Usage: checkres [-a -A -h -q] " \
+ "mzx/mzb/zip file [-extra path/zip file [-in relative path] ...] ... \n" \
+ "  -a  Display all found and missing files.\n"                           \
+ "  -A  Display missing files and files that may be created by Robotic.\n"\
+ "  -h  Display this message.\n"                                          \
+ "  -q  Do not display any messages.\n"                                   \
+ "\n"
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #ifdef __WIN32__
 #include <strings.h>
 #endif
 
-// From MZX itself
+// From MZX itself:
 #define SKIP_SDL
-#include "../fsafeopen.h"
+
+// Safe- self sufficient or completely macros/static inlines
 #include "../const.h"
+#include "../memfile.h"
+#include "../uthash_caseinsensitive.h"
+#include "../world_prop.h"
+#include "../zip.h"
+
+// Avoid CORE_LIBSPEC functions
+#include "../fsafeopen.h"
 #include "../util.h"
 
-#include "unzip.h"
+// From world.h
+#define WORLD_VERSION               0x025A
+#define WORLD_LEGACY_FORMAT_VERSION 0x0254
 
+// From const.h (copied here for convenience)
 #define BOARD_NAME_SIZE 25
-
-// "You may now have up to 250 boards." -- port.txt
 #define MAX_BOARDS 250
+
+// From data.h
+#define IMAGE_FILE 100
 
 // From sfx.h
 #define NUM_SFX 50
+#define LEGACY_SFX_SIZE 69
 
-#define WORLD_PROTECTED_OFFSET      BOARD_NAME_SIZE
-#define WORLD_GLOBAL_OFFSET_OFFSET  4230
+#define LEGACY_WORLD_PROTECTED_OFFSET      BOARD_NAME_SIZE
+#define LEGACY_WORLD_GLOBAL_OFFSET_OFFSET  4230
 
-#define HASH_TABLE_SIZE 100
+static const char *found_append = "FOUND";
+static const char *created_append = "CREATED";
+static const char *not_found_append = "NOT FOUND";
 
-#define EOS EOF
-
-enum stream_type
-{
-  FILE_STREAM,
-  BUFFER_STREAM
-};
-
-struct stream
-{
-  enum stream_type type;
-
-  union
-  {
-    FILE *fp;
-    struct
-    {
-      unsigned long int index;
-      unsigned char *buf;
-      unsigned long int len;
-      unzFile f;
-    } buffer;
-  } stream;
-};
+static int quiet_mode = 0;
+static int display_found = 0;
+static int display_created = 0;
 
 enum status
 {
@@ -88,388 +93,10 @@ enum status
   MALLOC_FAILED,
   PROTECTED_WORLD,
   MAGIC_CHECK_FAILED,
-  UNZ_FAILED,
+  ZIP_FAILED,
   NO_WORLD,
   MISSING_FILE
 };
-
-static struct board
-{
-  unsigned int size;
-  unsigned int offset;
-}
-board_list[MAX_BOARDS];
-
-// FIXME: Fix this better
-int error(const char *string, unsigned int type, unsigned int options,
- unsigned int code)
-{
-  return 0;
-}
-
-static char **hash_table[HASH_TABLE_SIZE];
-
-//From http://nothings.org/stb.h, by Sean
-static unsigned int stb_hash(char *str)
-{
-  unsigned int hash = 0;
-  while(*str)
-    hash = (hash << 7) + (hash >> 25) + *str++;
-  return hash + (hash >> 16);
-}
-
-static enum status add_to_hash_table(char *stack_str)
-{
-  unsigned int slot;
-  int count = 0;
-  size_t len;
-  char *str;
-
-  len = strlen(stack_str);
-  if(!len)
-    return SUCCESS;
-
-  str = malloc(len + 1);
-  if(!str)
-    return MALLOC_FAILED;
-
-  strncpy(str, stack_str, len);
-  str[len] = '\0';
-
-  slot = stb_hash(stack_str) % HASH_TABLE_SIZE;
-
-  if(!hash_table[slot])
-  {
-    hash_table[slot] = malloc(sizeof(char *) * 2);
-    if(!hash_table[slot])
-      return MALLOC_FAILED;
-  }
-  else
-  {
-    while(hash_table[slot][count])
-    {
-      if(!strcasecmp(stack_str, hash_table[slot][count]))
-      {
-        free(str);
-        return SUCCESS;
-      }
-      count++;
-    }
-
-    hash_table[slot] = realloc(hash_table[slot], sizeof(char *) * (count + 2));
-  }
-
-  hash_table[slot][count] = str;
-  hash_table[slot][count + 1] = NULL;
-
-  return SUCCESS;
-}
-
-static bool is_zip_file(const char *filename)
-{
-  int signature = 0;
-  FILE *fp;
-
-  fp = fopen_unsafe(filename, "rb");
-  if(!fp)
-    return false;
-
-  signature |= fgetc(fp) << 0;
-  signature |= fgetc(fp) << 8;
-  signature |= fgetc(fp) << 16;
-  signature |= fgetc(fp) << 24;
-  fclose(fp);
-
-  // Zip file header obtained from:
-  //   http://www.pkware.com/documents/casestudies/APPNOTE.TXT
-  return (strcasecmp(filename + strlen(filename) - 3, "zip") == 0 ||
-          signature == 0x04034b50);
-}
-
-static enum status s_open(const char *filename, const char *mode,
- struct stream **s)
-{
-  unz_file_info info;
-  enum status ret;
-  unzFile f;
-
-  *s = malloc(sizeof(struct stream));
-
-  if(!is_zip_file(filename))
-  {
-    char path[MAX_PATH];
-    int path_len;
-
-    /* Move into the world's directory first; this lets us look up
-     * resources relative to the world.
-     */
-    path_len = __get_path(filename, path, MAX_PATH);
-
-    if(path_len < 0)
-    {
-      ret = GET_PATH_FAILED;
-      goto exit_free_stream;
-    }
-
-    if(path_len > 0)
-    {
-      if(chdir(path))
-      {
-        ret = CHDIR_FAILED;
-        goto exit_free_stream;
-      }
-
-      filename += path_len + 1;
-    }
-
-    (*s)->type = FILE_STREAM;
-    (*s)->stream.fp = fopen_unsafe(filename, mode);
-    if(!(*s)->stream.fp)
-    {
-      ret = FOPEN_FAILED;
-      goto exit_free_stream;
-    }
-    return SUCCESS;
-  }
-
-  // otherwise, it's a ZIP file, proceed with buffer logic
-  (*s)->type = BUFFER_STREAM;
-  f = unzOpen(filename);
-  if(!f)
-  {
-    ret = MALLOC_FAILED;
-    goto exit_free_stream;
-  }
-
-  if(unzGoToFirstFile(f) != UNZ_OK)
-  {
-    ret = UNZ_FAILED;
-    goto exit_free_stream_close;
-  }
-
-  while(1)
-  {
-    char fname[FILENAME_MAX];
-    int unzRet;
-
-    // get the filename for the current ZIP file entry
-    unzGetCurrentFileInfo(f, &info, fname, FILENAME_MAX, NULL, 0, NULL, 0);
-
-    // not a MZX file; don't care
-    if(!strcasecmp(fname + strlen(fname) - 3, "mzx"))
-      break;
-
-    // error occurred, or no files left
-    unzRet = unzGoToNextFile(f);
-    if(unzRet != UNZ_OK)
-    {
-      if(unzRet == UNZ_END_OF_LIST_OF_FILE)
-        ret = NO_WORLD;
-      else
-        ret = UNZ_FAILED;
-
-      goto exit_free_stream_close;
-    }
-  }
-
-  if(unzOpenCurrentFile(f) != UNZ_OK)
-  {
-    ret = UNZ_FAILED;
-    goto exit_free_stream_close;
-  }
-
-  (*s)->stream.buffer.len = info.uncompressed_size;
-  (*s)->stream.buffer.buf = malloc((*s)->stream.buffer.len);
-  if(!(*s)->stream.buffer.buf)
-  {
-    ret = MALLOC_FAILED;
-    goto exit_free_stream_close_both;
-  }
-
-  if(unzReadCurrentFile(f, (*s)->stream.buffer.buf,
-                           (*s)->stream.buffer.len) <= 0)
-  {
-    ret = UNZ_FAILED;
-    goto exit_free_stream_close_both_free_buffer;
-  }
-
-  (*s)->stream.buffer.f = f;
-  unzCloseCurrentFile(f);
-  return SUCCESS;
-
-exit_free_stream_close_both_free_buffer:
-  free((*s)->stream.buffer.buf);
-exit_free_stream_close_both:
-  unzCloseCurrentFile(f);
-exit_free_stream_close:
-  unzClose(f);
-exit_free_stream:
-  free(*s);
-  *s = NULL;
-  return ret;
-}
-
-static int sclose(struct stream *s)
-{
-  FILE *f;
-
-  switch(s->type)
-  {
-    case FILE_STREAM:
-      f = s->stream.fp;
-      free(s);
-      return fclose(f);
-
-    case BUFFER_STREAM:
-      unzClose(s->stream.buffer.f);
-      free(s->stream.buffer.buf);
-      free(s);
-      return 0;
-
-    default:
-      return EOS;
-  }
-}
-
-static int sgetc(struct stream *s)
-{
-  switch(s->type)
-  {
-    case FILE_STREAM:
-      return fgetc(s->stream.fp);
-
-    case BUFFER_STREAM:
-      if(s->stream.buffer.index == s->stream.buffer.len)
-        return EOS;
-      else
-        return s->stream.buffer.buf[s->stream.buffer.index++];
-
-    default:
-      return EOS;
-  }
-}
-
-static size_t sread(void *ptr, size_t size, size_t count, struct stream *s)
-{
-  switch(s->type)
-  {
-    case FILE_STREAM:
-      return fread(ptr, size, count, s->stream.fp);
-
-    case BUFFER_STREAM:
-      if(s->stream.buffer.index + size * count >= s->stream.buffer.len)
-      {
-        size_t n = (s->stream.buffer.len - s->stream.buffer.index) / size;
-        memcpy(ptr, s->stream.buffer.buf + s->stream.buffer.index, n * size);
-        s->stream.buffer.index = s->stream.buffer.len;
-        return n;
-      }
-      else
-      {
-        memcpy(ptr, s->stream.buffer.buf + s->stream.buffer.index, count * size);
-        s->stream.buffer.index += count * size;
-        return count;
-      }
-
-    default:
-      return EOS;
-  }
-}
-
-static int sseek(struct stream *s, long int offset, int origin)
-{
-  switch(s->type)
-  {
-    case FILE_STREAM:
-      return fseek(s->stream.fp, offset, origin);
-
-    case BUFFER_STREAM:
-      switch(origin)
-      {
-        case SEEK_SET:
-          s->stream.buffer.index = offset;
-          break;
-        case SEEK_CUR:
-          s->stream.buffer.index += offset;
-          break;
-        case SEEK_END:
-          s->stream.buffer.index = s->stream.buffer.len + offset;
-          break;
-      }
-
-      if(s->stream.buffer.index >= s->stream.buffer.len)
-        return EOS;
-      return 0;
-
-    default:
-      return EOS;
-  }
-}
-
-static long int stell(struct stream *s)
-{
-  switch(s->type)
-  {
-    case FILE_STREAM:
-      return ftell(s->stream.fp);
-    case BUFFER_STREAM:
-      return s->stream.buffer.index;
-    default:
-      return EOS;
-  }
-}
-
-static unsigned int sgetud(struct stream *s)
-{
-  return (sgetc(s) << 0)  | (sgetc(s) << 8) |
-         (sgetc(s) << 16) | (sgetc(s) << 24);
-}
-
-static unsigned short sgetus(struct stream *s)
-{
-  return (sgetc(s) << 0) | (sgetc(s) << 8);
-}
-
-static int world_magic(const unsigned char magic_string[3])
-{
-  if(magic_string[0] == 'M')
-  {
-    if(magic_string[1] == 'Z')
-    {
-      switch(magic_string[2])
-      {
-        case '2':
-          return 0x0205;
-        case 'A':
-          return 0x0208;
-      }
-    }
-    else
-    {
-      if((magic_string[1] > 1) && (magic_string[1] < 10))
-        return ((int)magic_string[1] << 8) + (int)magic_string[2];
-    }
-  }
-
-  return 0;
-}
-
-static int board_magic(const unsigned char magic_string[4])
-{
-  if(magic_string[0] == 0xFF)
-  {
-    if(magic_string[1] == 'M')
-    {
-      if(magic_string[2] == 'B' && magic_string[3] == '2')
-        return 0x0200;
-
-      if((magic_string[2] > 1) && (magic_string[2] < 10))
-        return ((int)magic_string[2] << 8) + (int)magic_string[3];
-    }
-  }
-
-  return 0;
-}
 
 static const char *decode_status(enum status status)
 {
@@ -493,7 +120,7 @@ static const char *decode_status(enum status status)
       return "Protected worlds currently unsupported.";
     case MAGIC_CHECK_FAILED:
       return "File magic not consistent with 2.00 world or board.";
-    case UNZ_FAILED:
+    case ZIP_FAILED:
       return "Something is wrong with the zip file.";
     case NO_WORLD:
       return "No world file present.";
@@ -502,7 +129,552 @@ static const char *decode_status(enum status status)
   }
 }
 
-static enum status parse_sfx(char *sfx_buf)
+// FIXME: hack to prevent error.c messages from triggering.
+int error(const char *string, unsigned int type, unsigned int options,
+ unsigned int code)
+{
+  char *head;
+
+  switch(type)
+  {
+    case 0:
+      head = "WARNING";
+      break;
+
+    case 1:
+      head = "ERROR";
+      break;
+
+    case 2:
+      head = "FATAL ERROR";
+      break;
+
+    case 3:
+      head = "CRITICAL ERROR";
+      break;
+
+    default:
+      head = "<UNKNOWN ERROR>";
+      break;
+  }
+
+  fprintf(stderr, "%s: %s (code %Xh)\n", head, string, code);
+  fflush(stderr);
+  return 0;
+}
+
+int error_message(int id, int parameter,
+ const char *string)
+{
+  char buffer[128] = {0};
+  snprintf(buffer, 127, "ID %Xh :: %d :: %s", id, parameter,
+   string);
+  return error(buffer, 1, 0, 0xFFFF);
+}
+
+static void _get_path(char *dest, const char *src)
+{
+  int i;
+
+  // Copy the file's path to the path string.
+  i = strlen(src)-1;
+  while((src[i] != '/') && (src[i] != '\\') && i)
+    i--;
+
+  strncpy(dest, src, i);
+  dest[i] = 0;
+}
+
+static void join_path(char *dest, const char *dir, const char *file)
+{
+  if(dir && dir[0])
+  {
+    if(file && file[0])
+    {
+      if(dir[strlen(dir) - 1] != '/')
+        snprintf(dest, MAX_PATH, "%s/%s", dir, file);
+
+      else
+        snprintf(dest, MAX_PATH, "%s%s", dir, file);
+    }
+
+    else
+      strcpy(dest, dir);
+  }
+
+  else
+  {
+    strcpy(dest, file);
+  }
+
+  dest[MAX_PATH - 1] = 0;
+}
+
+static bool is_simple_path(char *src)
+{
+  size_t len = strlen(src);
+  unsigned int i;
+
+  // No strings.
+  if(len >= 1)
+    if(src[0] == '$')
+      return false;
+
+  for(i = 0; i < len; i++)
+  {
+    // No interpolation. A single & at the end of an expression is a
+    // valid interpolation due to a longstanding MZX bug.
+
+    if(src[i] == '&')
+      if(i+1 == len || src[i+1] != '&')
+        return false;
+
+    // No expressions.
+    if(src[i] == '(')
+      return false;
+  }
+
+  return true;
+}
+
+static void strcpy_fsafe(char *dest, const char *src)
+{
+  int result = fsafetranslate(src, dest);
+
+  // SUCCESS - file was actually found physically
+  // MATCH_FAILED - no file was found physically, which is fine here
+  // MATCHED_DIRECTORY - a physical directory was found, which is fine here
+
+  if(result != FSAFE_SUCCESS && result != -FSAFE_MATCH_FAILED &&
+   result != -FSAFE_MATCHED_DIRECTORY)
+    dest[0] = 0;
+}
+
+static int started_table = 0;
+static unsigned int parent_max_len = 12;
+static unsigned int resource_max_len = 16;
+
+static void output(const char *required_by, const char *resource_path,
+ const char *status, const char *found_in)
+{
+  char *req_by = malloc(parent_max_len + 1);
+  char *res_path = malloc(resource_max_len + 1);
+
+  req_by[parent_max_len] = 0;
+  res_path[resource_max_len] = 0;
+
+  found_in = found_in ?: "";
+
+  if(!started_table)
+  {
+    fprintf(stdout, "\n");
+
+    memset(req_by, 32, parent_max_len);
+    memset(res_path, 32, resource_max_len);
+
+    strncpy(req_by, "Required by", strlen("Required by"));
+    strncpy(res_path, "Resource path", strlen("Resource path"));
+
+    fprintf(stdout, "%s  %s  %-10s %s\n",
+     req_by, res_path, "Status", "Found in");
+
+    memset(req_by, 32, parent_max_len);
+    memset(res_path, 32, resource_max_len);
+
+    strncpy(req_by, "-----------", strlen("-----------"));
+    strncpy(res_path, "-------------", strlen("-------------"));
+
+    fprintf(stdout, "%s  %s  %-10s %s\n",
+     req_by, res_path, "------", "--------");
+
+    started_table = 1;
+  }
+
+  memset(req_by, 32, parent_max_len);
+  memset(res_path, 32, resource_max_len);
+
+  strncpy(req_by, required_by, strlen(required_by));
+  strncpy(res_path, resource_path, strlen(resource_path));
+
+  fprintf(stdout, "%s  %s  %-10s %s\n",
+   req_by, res_path, status, found_in);
+}
+
+
+/*******************/
+/* Data processing */
+/*******************/
+
+struct zip_file_path {
+  char file_path[MAX_PATH];
+  UT_hash_handle hh;
+};
+
+struct base_path {
+  char actual_path[MAX_PATH];
+  char relative_path[MAX_PATH];
+  struct zip_archive *zp;
+  struct zip_file_path *file_list_head;
+};
+
+struct base_file {
+  char file_name[MAX_PATH];
+  char relative_path[MAX_PATH];
+  int world_version;
+};
+
+struct resource {
+  char path[MAX_PATH];
+  struct base_file *parent;
+  UT_hash_handle hh;
+};
+
+// NULL is important
+static struct resource *requirement_head = NULL;
+static struct resource *resource_head = NULL;
+
+static struct resource *add_requirement(char *src, struct base_file *file)
+{
+  // A resource file required by a world/board.
+
+  struct resource *req = NULL;
+  char file_buffer[MAX_PATH];
+
+  // Offset the required file's path with the relative path of its parent
+  join_path(file_buffer, file->relative_path, src);
+
+  HASH_FIND_STR(requirement_head, file_buffer, req);
+
+  if(!req && is_simple_path(src))
+  {
+    req = malloc(sizeof(struct resource));
+
+    strcpy_fsafe(req->path, file_buffer);
+    req->parent = file;
+
+    // Calculate these values for the output table as we go along
+    resource_max_len = MAX(resource_max_len, strlen(file_buffer));
+    parent_max_len = MAX(parent_max_len, strlen(file->file_name));
+
+    HASH_ADD_STR(requirement_head, path, req);
+  }
+
+  return req;
+}
+
+static struct resource *add_resource(char *src, struct base_file *file)
+{
+  // A filename found in Robotic code that may fulfill a requirement for a file.
+
+  struct resource *res = NULL;
+  char file_buffer[MAX_PATH];
+
+  // Offset the required file's path with the relative path of its parent
+  join_path(file_buffer, file->relative_path, src);
+
+  HASH_FIND_STR(resource_head, file_buffer, res);
+
+  if(!res && is_simple_path(src))
+  {
+    res = malloc(sizeof(struct resource));
+
+    strcpy_fsafe(res->path, file_buffer);
+
+    // Calculate these values for the output table as we go along
+    resource_max_len = MAX(resource_max_len, strlen(file_buffer));
+    parent_max_len = MAX(parent_max_len, strlen(file->file_name));
+
+    HASH_ADD_STR(resource_head, path, res);
+  }
+
+  return res;
+}
+
+static void build_base_path_table(struct base_path *path,
+ struct zip_archive *zp)
+{
+  struct zip_file_path *entry;
+  struct zip_file_path *has_entry;
+
+  struct zip_file_header **files = zp->files;
+  struct zip_file_header *fh;
+  int num_files = zp->num_files;
+  int i;
+
+  for(i = 0; i < num_files; i++)
+  {
+    fh = files[i];
+    entry = malloc(sizeof(struct zip_file_path));
+    strncpy(entry->file_path, fh->file_name, MAX_PATH);
+    entry->file_path[MAX_PATH - 1] = 0;
+
+    HASH_FIND_STR(path->file_list_head, entry->file_path, has_entry);
+
+    if(!has_entry)
+      HASH_ADD_STR(path->file_list_head, file_path, entry);
+  }
+}
+
+static void change_base_path_dir(struct base_path *current_path,
+ const char *new_relative_path)
+{
+  fsafetranslate(new_relative_path, current_path->relative_path);
+}
+
+static struct base_path *add_base_path(const char *path_name,
+ struct base_path ***path_list, int *path_list_size, int *path_list_alloc)
+{
+  struct base_path *new_path = calloc(1, sizeof(struct base_path));
+  int alloc = *path_list_alloc;
+  int size = *path_list_size;
+
+  if(!strcasecmp(path_name + strlen(path_name) - 4, ".ZIP"))
+  {
+    struct zip_archive *zp = zip_open_file_read(path_name);
+    int result = zip_read_directory(zp);
+
+    if(result != ZIP_SUCCESS)
+    {
+      free(new_path);
+      return NULL;
+    }
+
+    build_base_path_table(new_path, zp);
+    new_path->zp = zp;
+  }
+
+  strcpy(new_path->actual_path, path_name);
+
+  if(size == alloc)
+  {
+    if(alloc == 0)
+    {
+      *path_list_alloc = 4;
+      alloc = 4;
+    }
+
+    *path_list = realloc(*path_list, 2 * alloc * sizeof(struct base_path *));
+    *path_list_alloc *= 2;
+  }
+
+  (*path_list)[size] = new_path;
+  (*path_list_size)++;
+
+  return new_path;
+}
+
+static struct base_file *add_base_file(const char *path_name,
+ struct base_file ***file_list, int *file_list_size, int *file_list_alloc)
+{
+  struct base_file *new_file = calloc(1, sizeof(struct base_file));
+  int alloc = *file_list_alloc;
+  int size = *file_list_size;
+
+  strcpy(new_file->file_name, path_name);
+
+  if(size == alloc)
+  {
+    if(alloc == 0)
+    {
+      *file_list_alloc = 4;
+      alloc = 4;
+    }
+
+    *file_list = realloc(*file_list, 2 * alloc * sizeof(struct base_file *));
+    *file_list_alloc *= 2;
+  }
+
+  (*file_list)[size] = new_file;
+  (*file_list_size)++;
+
+  return new_file;
+}
+
+static void process_requirements(struct base_path **path_list,
+ int path_list_size)
+{
+  struct stat stat_info;
+  struct base_path *current_path;
+  struct zip_file_path *zfp;
+  struct resource *req;
+  struct resource *res;
+  struct resource *tmp;
+  char path_buffer[MAX_PATH];
+  char *translated_path;
+  size_t len;
+  int found;
+  int i;
+
+  // Now actually process the requirements
+  HASH_ITER(hh, requirement_head, req, tmp)
+  {
+    found = 0;
+
+    for(i = 0; i < path_list_size; i++)
+    {
+      current_path = path_list[i];
+      len = strlen(current_path->relative_path);
+
+      // The required resource's path must start with the relative path
+      if(strncasecmp(req->path, current_path->relative_path, len))
+        continue;
+
+      translated_path = req->path + len;
+
+      if(current_path->zp)
+      {
+        // Try to find the file in the zip's hash table
+        HASH_FIND_STR(current_path->file_list_head, translated_path, zfp);
+
+        if(zfp)
+        {
+          found = 1;
+          break;
+        }
+      }
+
+      else
+      {
+        // Try to find an actual file
+        join_path(path_buffer, current_path->actual_path, translated_path);
+
+        if(!stat(path_buffer, &stat_info))
+        {
+          found = 1;
+          break;
+        }
+      }
+    }
+
+    if(found)
+    {
+      if(!quiet_mode && display_found)
+        output(req->parent->file_name, req->path, found_append,
+         current_path->actual_path);
+
+    }
+    else
+    {
+      // Try to find in the created resources table
+      HASH_FIND_STR(resource_head, req->path, res);
+
+      if(res)
+      {
+        if(!quiet_mode && display_created)
+        output(req->parent->file_name, req->path, created_append, NULL);
+      }
+      else
+      {
+        if(!quiet_mode)
+          output(req->parent->file_name, req->path, not_found_append, NULL);
+      }
+    }
+  }
+
+  // Reset these for next time
+  started_table = 0;
+  parent_max_len = 12;
+  resource_max_len = 16;
+}
+
+static void clear_data(struct base_path **path_list,
+ int path_list_size, struct base_file **file_list, int file_list_size)
+{
+  struct base_path *bp;
+  struct resource *res;
+  struct resource *tmp;
+  struct zip_file_path *fp;
+  struct zip_file_path *tmpfp;
+  int i;
+
+  HASH_ITER(hh, requirement_head, res, tmp)
+  {
+    HASH_DELETE(hh, requirement_head, res);
+    free(res);
+  }
+  requirement_head = NULL;
+
+  HASH_ITER(hh, resource_head, res, tmp)
+  {
+    HASH_DELETE(hh, resource_head, res);
+    free(res);
+  }
+  resource_head = NULL;
+
+  for(i = 0; i < path_list_size; i++)
+  {
+    bp = path_list[i];
+
+    HASH_ITER(hh, bp->file_list_head, fp, tmpfp)
+    {
+      HASH_DELETE(hh, bp->file_list_head, fp);
+      free(fp);
+    }
+
+    if(bp->zp)
+      zip_close(bp->zp, NULL);
+
+    free(bp);
+  }
+  free(path_list);
+
+  for(i = 0; i < file_list_size; i++)
+    free(file_list[i]);
+
+  free(file_list);
+}
+
+
+/**********/
+/* Common */
+/**********/
+
+// From world.c
+static int world_magic(const unsigned char magic_string[3])
+{
+  if(magic_string[0] == 'M')
+  {
+    if(magic_string[1] == 'Z')
+    {
+      switch(magic_string[2])
+      {
+        case 'X':
+          return 0x0100;
+        case '2':
+          return 0x0205;
+        case 'A':
+          return 0x0208;
+      }
+    }
+    else
+    {
+      if((magic_string[1] > 1) && (magic_string[1] < 10))
+        return ((int)magic_string[1] << 8) + (int)magic_string[2];
+    }
+  }
+
+  return 0;
+}
+
+// From editor/board.c
+static int board_magic(const unsigned char magic_string[4])
+{
+  if(magic_string[0] == 0xFF)
+  {
+    if(magic_string[1] == 'M')
+    {
+      if(magic_string[2] == 'B' && magic_string[3] == '2')
+        return 0x0200;
+
+      if((magic_string[2] > 1) && (magic_string[2] < 10))
+        return ((int)magic_string[2] << 8) + (int)magic_string[3];
+    }
+  }
+
+  return 0;
+}
+
+static enum status parse_sfx(char *sfx_buf, struct base_file *file)
 {
   char *start, *end = sfx_buf - 1, str_buf_len;
   enum status ret = SUCCESS;
@@ -526,238 +698,415 @@ static enum status parse_sfx(char *sfx_buf)
     *end = 0;
 
     debug("SFX (class): %s\n", start + 1);
-    ret = add_to_hash_table(start + 1);
-    if(ret != SUCCESS)
-      break;
+
+    add_requirement(start + 1, file);
   }
 
   return ret;
 }
 
-static enum status parse_robot(struct stream *s)
+
+#define match(s, reqv) ((world_version >= reqv) && \
+ (fn_len == sizeof(s)-1) && (!strcasecmp(function_counter, s)))
+
+#define match_partial(s, reqv) ((world_version >= reqv) && \
+ (fn_len >= sizeof(s)-1) && (!strncasecmp(function_counter, s, fn_len)))
+
+
+static enum status parse_legacy_bytecode(struct memfile *mf,
+ unsigned int program_size, struct base_file *file)
 {
-  unsigned short robot_size;
+  int world_version = file->world_version;
   enum status ret = SUCCESS;
-  char tmp[256], tmp2[256];
-  long start;
-  int i;
+  int command_length;
+  int command;
 
-  // robot's size
-  robot_size = sgetus(s);
+  char function_counter[256];
+  size_t fn_len;
 
-  // skip to robot code
-  if(sseek(s, 40 - 2 + 1, SEEK_CUR) != 0)
-    return FSEEK_FAILED;
-
-  start = stell(s);
-
+  char src[256];
+  size_t src_len;
+  
   // skip 0xff marker
-  if(sgetc(s) != 0xff)
+  if(mfgetc(mf) != 0xff)
     return CORRUPT_WORLD;
 
   while(1)
   {
-    int command, command_length, str_len;
-
-    if(stell(s) - start >= robot_size)
+    if(mftell(mf) >= (long int)program_size)
       return CORRUPT_WORLD;
 
-    command_length = sgetc(s);
+    command_length = mfgetc(mf);
     if(command_length == 0)
       break;
 
-    command = sgetc(s);
+    command = mfgetc(mf);
+
+    // These constants may eventually change in debytecode versions.
+    // Since this is for legacy bytecode, leave the fixed numbers.
     switch(command)
     {
-      case 0xa:
-        str_len = sgetc(s);
+      case 10: // ROBOTIC_CMD_SET
+      {
+        src_len = mfgetc(mf);
 
-        if(sread(tmp, 1, str_len, s) != (size_t)str_len)
+        if(mfread(src, 1, src_len, mf) != src_len)
           return FREAD_FAILED;
 
-        str_len = sgetc(s);
+        fn_len = mfgetc(mf);
 
-        if(str_len == 0)
+        // Int parameter
+        if(fn_len == 0)
         {
-          sgetus(s);
+          mfgetw(mf);
           break;
         }
 
-        if(sread(tmp2, 1, str_len, s) != (size_t)str_len)
+        // String parameter
+        if(mfread(function_counter, 1, fn_len, mf) != fn_len)
           return FREAD_FAILED;
 
-        if(!strcasecmp(tmp2, "FREAD_OPEN")
-          || !strcasecmp(tmp2, "SMZX_PALETTE")
-          || !strcasecmp(tmp2, "LOAD_GAME")
-          || !strncasecmp(tmp2, "LOAD_BC", 7)
-          || !strncasecmp(tmp2, "LOAD_ROBOT", 10))
+        if(strlen(function_counter) == 0)
+          break;
+
+        if( match("FREAD_OPEN", 0x0209)
+         || match("SMZX_PALETTE", 0x0245)
+         || match("LOAD_COUNTERS", 0x025A)
+         || match("LOAD_GAME", 0x0244)
+         || match_partial("LOAD_BC", 0x0249)
+         || match_partial("LOAD_ROBOT", 0x0249))
         {
-          debug("SET: %s (%s)\n", tmp, tmp2);
-          ret = add_to_hash_table(tmp);
-          if(ret != SUCCESS)
-            return ret;
+          debug("SET: %s (%s)\n", src, function_counter);
+          add_requirement(src, file);
+          break;
         }
+
+        if( match("FWRITE_OPEN", 0x0209)
+         || match("FWRITE_APPEND", 0x0209)
+         || match("FWRITE_MODIFY", 0x0209)
+         || match("SAVE_COUNTERS", 0x025A)
+         || match("SAVE_GAME", 0x0244)
+         || match_partial("SAVE_BC", 0x0249)
+         || match_partial("SAVE_ROBOT", 0x0249))
+        {
+          debug("SET: %s (%s)\n", src, function_counter);
+          add_resource(src, file);
+          break;
+        }
+
+        if( match("SAVE_WORLD", 0x0248) )
+        {
+          // Maximum version
+          if(world_version < 0x025A)
+          {
+            debug("SET: %s (%s)\n", src, function_counter);
+            add_resource(src, file);
+          }
+          break;
+        }
+
         break;
+      }
 
-      case 0x26:
-        str_len = sgetc(s);
+      case 38: // ROBOTIC_CMD_MOD
+      {
+        // Filename
+        src_len = mfgetc(mf);
 
-        if(sread(tmp, 1, str_len, s) != (size_t)str_len)
+        if(mfread(src, 1, src_len, mf) != src_len)
           return FREAD_FAILED;
 
         // ignore MOD *
-        if(!strcmp(tmp, "*"))
+        if(!strcmp(src, "*"))
           break;
 
-        // FIXME: Should only match pairs?
-        if(strstr(tmp, "&"))
-          break;
+        // Clip filename.mod*
+        if(src[src_len - 1] == '*')
+          src[src_len - 1] = 0;
 
-        debug("MOD: %s\n", tmp);
-        ret = add_to_hash_table(tmp);
+        debug("MOD: %s\n", src);
+        add_requirement(src, file);
+        break;
+      }
+
+      case 39: // ROBOTIC_CMD_SAM
+      {
+        // Frequency
+        src_len = mfgetc(mf);
+
+        if(src_len == 0)
+          mfgetw(mf);
+        else
+          mfseek(mf, src_len, SEEK_CUR);
+
+        // Filename
+        src_len = mfgetc(mf);
+
+        if(mfread(src, 1, src_len, mf) != src_len)
+          return FREAD_FAILED;
+
+        debug("SAM: %s\n", src);
+        add_requirement(src, file);
+        break;
+      }
+
+      case 43: // ROBOTIC_CMD_PLAY
+      case 45: // ROBOITC_CMD_WAIT_THEN_PLAY
+      case 49: // ROBOTIC_CMD_PLAY_IF_SILENT
+      {
+        // Play string
+        src_len = mfgetc(mf);
+
+        if(mfread(src, 1, src_len, mf) != src_len)
+          return FREAD_FAILED;
+
+        ret = parse_sfx(src, file);
         if(ret != SUCCESS)
           return ret;
         break;
+      }
 
-      case 0x27:
-        str_len = sgetc(s);
+      case 79: // ROBOTIC_CMD_PUT_XY
+      {
+        // Filename... maybe.
+        src_len = mfgetc(mf);
 
-        if(str_len == 0)
-          sgetus(s);
+        if(src_len != 0)
+        {
+          if(mfread(src, 1, src_len, mf) != src_len)
+            return FREAD_FAILED;
+
+          fn_len = mfgetc(mf);
+
+          // Thing
+          if(fn_len == 0)
+          {
+            if(mfgetw(mf) == IMAGE_FILE && src[0] == '@')
+            {
+              debug("PUT @file: %s\n", src + 1);
+              add_requirement(src + 1, file);
+            }
+          }
+          else
+          {
+            mfseek(mf, fn_len, SEEK_CUR);
+          }
+        }
         else
         {
-          for(i = 0; i < str_len; i++)
-            sgetc(s);
+          mfgetw(mf);
+
+          // Thing
+          src_len = mfgetc(mf);
+          mfseek(mf, src_len ? src_len : 2, SEEK_CUR);
         }
 
-        str_len = sgetc(s);
+        // Param
+        src_len = mfgetc(mf);
+        mfseek(mf, src_len ? src_len : 2, SEEK_CUR);
 
-        if(sread(tmp, 1, str_len, s) != (size_t)str_len)
-          return FREAD_FAILED;
+        // x
+        src_len = mfgetc(mf);
+        mfseek(mf, src_len ? src_len : 2, SEEK_CUR);
 
-        // FIXME: Should only match pairs?
-        if(strstr(tmp, "&"))
-            break;
-
-        debug("SAM: %s\n", tmp);
-        ret = add_to_hash_table(tmp);
-        if(ret != SUCCESS)
-          return ret;
+        // y
+        src_len = mfgetc(mf);
+        mfseek(mf, src_len ? src_len : 2, SEEK_CUR);
         break;
+      }
 
-      case 0x2b:
-      case 0x2d:
-      case 0x31:
-        str_len = sgetc(s);
+      case 200: // ROBOTIC_CMD_MOD_FADE_IN
+      {
+        // Filename
+        src_len = mfgetc(mf);
 
-        if(sread(tmp, 1, str_len, s) != (size_t)str_len)
+        if(mfread(src, 1, src_len, mf) != src_len)
           return FREAD_FAILED;
 
-        ret = parse_sfx(tmp);
-        if(ret != SUCCESS)
-          return ret;
+        debug("MOD FADE IN: %s\n", src);
+        add_requirement(src, file);
         break;
+      }
 
-      case 0xc8:
-        str_len = sgetc(s);
+      case 201: // ROBOTIC_CMD_COPY_BLOCK
+      {
+        // x1
+        src_len = mfgetc(mf);
+        mfseek(mf, src_len ? src_len : 2, SEEK_CUR);
 
-        if(sread(tmp, 1, str_len, s) != (size_t)str_len)
-          return FREAD_FAILED;
+        // y1
+        src_len = mfgetc(mf);
+        mfseek(mf, src_len ? src_len : 2, SEEK_CUR);
 
-        debug("MOD FADE IN: %s\n", tmp);
-        ret = add_to_hash_table(tmp);
-        if(ret != SUCCESS)
-          return ret;
-        break;
+        // w
+        src_len = mfgetc(mf);
+        mfseek(mf, src_len ? src_len : 2, SEEK_CUR);
 
-      case 0xd8:
-        str_len = sgetc(s);
+        // h
+        src_len = mfgetc(mf);
+        mfseek(mf, src_len ? src_len : 2, SEEK_CUR);
 
-        if(sread(tmp, 1, str_len, s) != (size_t)str_len)
-          return FREAD_FAILED;
-
-        debug("LOAD CHAR SET: %s\n", tmp);
-
-        if(tmp[0] == '+')
+        // x2 or @filename
+        src_len = mfgetc(mf);
+        if(src_len != 0)
         {
-          char *rest, tempc = tmp[3];
-          tmp[3] = 0;
-          strtol(tmp + 1, &rest, 16);
-          tmp[3] = tempc;
-          memmove(tmp, rest, str_len - (rest - tmp));
+          if(mfread(src, 1, src_len, mf) != src_len)
+            return FREAD_FAILED;
+
+          if(src[0] == '@')
+          {
+            debug("COPY BLOCK @file: %s\n", src + 1);
+            add_resource(src + 1, file);
+          }
         }
-        else if(tmp[0] == '@')
+        else
         {
-          char *rest, tempc = tmp[4];
-          tmp[4] = 0;
-          strtol(tmp + 1, &rest, 10);
-          tmp[4] = tempc;
-          memmove(tmp, rest, str_len - (rest - tmp));
+          mfseek(mf, src_len ? src_len : 2, SEEK_CUR);
         }
 
-        ret = add_to_hash_table(tmp);
-        if(ret != SUCCESS)
-          return ret;
+        // y2
+        src_len = mfgetc(mf);
+        mfseek(mf, src_len ? src_len : 2, SEEK_CUR);
         break;
+      }
 
-      case 0xde:
-        str_len = sgetc(s);
+      case 216: // ROBOTIC_CMD_LOAD_CHAR_SET
+      {
+        char *rest = src;
 
-        if(sread(tmp, 1, str_len, s) != (size_t)str_len)
+        // Filename
+        src_len = mfgetc(mf);
+
+        if(mfread(src, 1, src_len, mf) != src_len)
           return FREAD_FAILED;
 
-        debug("LOAD PALETTE: %s\n", tmp);
-        ret = add_to_hash_table(tmp);
-        if(ret != SUCCESS)
-          return ret;
+        if(src[0] == '+')
+        {
+          char tempc = src[3];
+
+          src[3] = 0;
+          strtol(src + 1, &rest, 16);
+          src[3] = tempc;
+        }
+
+        else if(src[0] == '@')
+        {
+          char tempc;
+          int maxlen;
+
+          if(world_version < 0x025A)
+            maxlen = 3;
+          else
+            maxlen = 4;
+
+          tempc = src[maxlen+1];
+          src[maxlen+1] = 0;
+          strtol(src + 1, &rest, 10);
+          src[maxlen+1] = tempc;
+        }
+
+        debug("LOAD CHAR SET: %s\n", rest);
+        add_requirement(rest, file);
         break;
+      }
 
-      case 0xe2:
-        str_len = sgetc(s);
+      case 222: // ROBOTIC_CMD_LOAD_PALETTE
+      {
+        // Filename
+        src_len = mfgetc(mf);
 
-        if(sread(tmp, 1, str_len, s) != (size_t)str_len)
+        if(mfread(src, 1, src_len, mf) != src_len)
           return FREAD_FAILED;
 
-        debug("SWAP WORLD: %s\n", tmp);
-        ret = add_to_hash_table(tmp);
-        if(ret != SUCCESS)
-          return ret;
+        debug("LOAD PALETTE: %s\n", src);
+        add_requirement(src, file);
         break;
+      }
+
+      case 226: // ROBOTIC_CMD_SWAP_WORLD
+      {
+        // Filename
+        src_len = mfgetc(mf);
+
+        if(mfread(src, 1, src_len, mf) != src_len)
+          return FREAD_FAILED;
+
+        debug("SWAP WORLD: %s\n", src);
+        add_requirement(src, file);
+        break;
+      }
 
       default:
-        if(sseek(s, command_length - 1, SEEK_CUR) != 0)
+      {
+        if(mfseek(mf, command_length - 1, SEEK_CUR) != 0)
           return FSEEK_FAILED;
         break;
+      }
     }
 
-    if(sgetc(s) != command_length)
+    if(ret != SUCCESS)
+      return ret;
+
+    if(mfgetc(mf) != command_length)
       return CORRUPT_WORLD;
   }
 
   return ret;
 }
 
-static enum status parse_board_direct(struct stream *s, int version)
+
+/*****************/
+/* Legacy Worlds */
+/*****************/
+
+static enum status parse_legacy_robot(struct memfile *mf,
+ struct base_file *file)
+{
+  unsigned int program_size;
+  struct memfile prog;
+
+  enum status ret = SUCCESS;
+
+  // robot's size
+  program_size = mfgetw(mf);
+
+  // skip to robot code
+  if(mfseek(mf, 40 - 2 + 1, SEEK_CUR) != 0)
+    return FSEEK_FAILED;
+
+  if(program_size)
+  {
+    mfopen_static(mf->current, program_size, &prog);
+
+    ret = parse_legacy_bytecode(&prog, program_size, file);
+  }
+
+  mfseek(mf, program_size, SEEK_CUR);
+  return ret;
+}
+
+static enum status parse_legacy_board(struct memfile *mf,
+ struct base_file *file)
 {
   int i, num_robots, skip_rle_blocks = 6, skip_bytes;
   unsigned short board_mod_len;
   enum status ret = SUCCESS;
-  char tmp[MAX_PATH];
+  char board_mod[MAX_PATH];
 
   // junk the undocumented (and unused) board_mode
-  sgetc(s);
+  mfgetc(mf);
 
   // whether the overlay is enabled or not
-  if(sgetc(s))
+  if(mfgetc(mf))
   {
     // not enabled, so rewind this last read
-    if(sseek(s, -1, SEEK_CUR) != 0)
+    if(mfseek(mf, -1, SEEK_CUR) != 0)
       return FSEEK_FAILED;
   }
   else
   {
     // junk overlay_mode
-    sgetc(s);
+    mfgetc(mf);
     skip_rle_blocks += 2;
   }
 
@@ -765,14 +1114,14 @@ static enum status parse_board_direct(struct stream *s, int version)
   // ..or 8 blocks (with overlay enabled on board)
   for(i = 0; i < skip_rle_blocks; i++)
   {
-    unsigned short w = sgetus(s);
-    unsigned short h = sgetus(s);
+    unsigned short w = mfgetw(mf);
+    unsigned short h = mfgetw(mf);
     int pos = 0;
 
     /* RLE "decoder"; just to skip stuff */
     while(pos < w * h)
     {
-      unsigned char c = (unsigned char)sgetc(s);
+      unsigned char c = (unsigned char)mfgetc(mf);
 
       if(!(c & 0x80))
         pos++;
@@ -780,45 +1129,44 @@ static enum status parse_board_direct(struct stream *s, int version)
       {
         c &= ~0x80;
         pos += c;
-        sgetc(s);
+        mfgetc(mf);
       }
     }
   }
 
   // get length of board MOD string
-  if(version < 0x0253)
+  if(file->world_version < 0x0253)
     board_mod_len = 12;
   else
-    board_mod_len = sgetus(s);
+    board_mod_len = mfgetw(mf);
 
   // grab board's default MOD
-  if(sread(tmp, 1, board_mod_len, s) != board_mod_len)
-      return FREAD_FAILED;
-  tmp[board_mod_len] = '\0';
+  if(mfread(board_mod, 1, board_mod_len, mf) != board_mod_len)
+    return FREAD_FAILED;
+
+  board_mod[board_mod_len] = '\0';
 
   // check the board MOD exists
-  if(strlen(tmp) > 0 && strcmp(tmp, "*"))
+  if(strlen(board_mod) > 0 && strcmp(board_mod, "*"))
   {
-    debug("BOARD MOD: %s\n", tmp);
-    ret = add_to_hash_table(tmp);
-    if(ret != SUCCESS)
-      return ret;
+    debug("BOARD MOD: %s\n", board_mod);
+    add_requirement(board_mod, file);
   }
 
-  if(version < 0x0253)
+  if(file->world_version < 0x0253)
     skip_bytes = 208;
   else
     skip_bytes = 25;
 
   // skip to the robot count
-  if(sseek(s, skip_bytes, SEEK_CUR) != 0)
+  if(mfseek(mf, skip_bytes, SEEK_CUR) != 0)
     return FSEEK_FAILED;
 
   // walk the robot list, scan the robotic
-  num_robots = sgetc(s);
+  num_robots = mfgetc(mf);
   for(i = 0; i < num_robots; i++)
   {
-    ret = parse_robot(s);
+    ret = parse_legacy_robot(mf, file);
     if(ret != SUCCESS)
       break;
   }
@@ -826,77 +1174,53 @@ static enum status parse_board_direct(struct stream *s, int version)
   return ret;
 }
 
-// same as internal boards except for a 4 byte magic header
+struct legacy_board {
+  int offset;
+  int size;
+};
 
-static enum status parse_board(struct stream *s)
+static enum status parse_legacy_world(struct memfile *mf,
+ struct base_file *file)
 {
-  unsigned char magic[4];
-  int version;
+  int global_robot_offset;
+  struct legacy_board board_list[MAX_BOARDS];
+  int num_boards;
+  int i;
 
-  if(sread(magic, 1, 4, s) != (size_t)4)
-    return FREAD_FAILED;
-
-  version = board_magic(magic);
-  if(version <= 0)
-    return MAGIC_CHECK_FAILED;
-
-  return parse_board_direct(s, version);
-}
-
-static enum status parse_world(struct stream *s)
-{
-  int version, i, num_boards, global_robot_offset;
   enum status ret = SUCCESS;
-  unsigned char magic[3];
-
-  // skip to protected byte; don't care about world name
-  if(sseek(s, WORLD_PROTECTED_OFFSET, SEEK_SET) != 0)
-    return FSEEK_FAILED;
-
-  // can't yet support protected worlds
-  if(sgetc(s) != 0)
-    return PROTECTED_WORLD;
-
-  // read in world magic (version)
-  if(sread(magic, 1, 3, s) != (size_t)3)
-    return FREAD_FAILED;
-
-  // can only support 2.00+ versioned worlds
-  version = world_magic(magic);
-  if(version <= 0)
-    return MAGIC_CHECK_FAILED;
 
   // Jump to the global robot offset
-  if(sseek(s, WORLD_GLOBAL_OFFSET_OFFSET, SEEK_SET) != 0)
+  if(mfseek(mf, LEGACY_WORLD_GLOBAL_OFFSET_OFFSET, SEEK_SET) != 0)
     return FSEEK_FAILED;
 
   // Absolute offset (in bytes) of global robot
-  global_robot_offset = sgetud(s);
+  global_robot_offset = mfgetd(mf);
 
   // num_boards doubles as the check for custom sfx, if zero
-  num_boards = sgetc(s);
+  num_boards = mfgetc(mf);
 
   // if we have custom sfx, check them for resources
   if(num_boards == 0)
   {
-    unsigned short sfx_len_total = sgetus(s);
+    unsigned short sfx_len_total = mfgetw(mf);
+    char sfx_buf[LEGACY_SFX_SIZE];
+    int sfx_len;
+
+    debug("SFX table (input length: %d)\n", sfx_len_total);
 
     for(i = 0; i < NUM_SFX; i++)
     {
-      unsigned short sfx_len;
-      char sfx_buf[70];
-
-      sfx_len = sgetc(s);
-      if(sfx_len > 69)
+      sfx_len = mfgetc(mf);
+      if(sfx_len >= LEGACY_SFX_SIZE)
         return CORRUPT_WORLD;
 
       if(sfx_len > 0)
       {
-        if(sread(sfx_buf, 1, sfx_len, s) != (size_t)sfx_len)
+        if(mfread(sfx_buf, 1, sfx_len, mf) != (size_t)sfx_len)
           return FREAD_FAILED;
         sfx_buf[sfx_len] = 0;
 
-        ret = parse_sfx(sfx_buf);
+        ret = parse_sfx(sfx_buf, file);
         if(ret != SUCCESS)
           return ret;
       }
@@ -907,166 +1231,556 @@ static enum status parse_world(struct stream *s)
 
     // better check we moved by whole amount
     if(sfx_len_total != 0)
+    {
+      debug("Failed sfx total check: remaining is %d\n", sfx_len_total);
       return CORRUPT_WORLD;
+    }
 
     // read the "real" num_boards
-    num_boards = sgetc(s);
+    num_boards = mfgetc(mf);
   }
 
   // skip board names; we simply don't care
-  if(sseek(s, num_boards * BOARD_NAME_SIZE, SEEK_CUR) != 0)
+  if(mfseek(mf, num_boards * BOARD_NAME_SIZE, SEEK_CUR) != 0)
     return FSEEK_FAILED;
 
   // grab the board sizes/offsets
   for(i = 0; i < num_boards; i++)
   {
-    board_list[i].size = sgetud(s);
-    board_list[i].offset = sgetud(s);
+    board_list[i].size = mfgetd(mf);
+    board_list[i].offset = mfgetd(mf);
   }
 
   // walk all boards
   for(i = 0; i < num_boards; i++)
   {
-    struct board *board = &board_list[i];
+    struct legacy_board *board = &board_list[i];
+
+    debug("Board %d\n", i);
 
     // don't care about deleted boards
     if(board->size == 0)
       continue;
 
     // seek to board offset within world
-    if(sseek(s, board->offset, SEEK_SET) != 0)
+    if(mfseek(mf, board->offset, SEEK_SET) != 0)
       return FSEEK_FAILED;
 
     // parse this board atomically
-    ret = parse_board_direct(s, version);
+    ret = parse_legacy_board(mf, file);
     if(ret != SUCCESS)
       goto err_out;
   }
 
+  debug("Global robot\n");
+
   // Do the global robot too..
-  if(sseek(s, global_robot_offset, SEEK_SET) != 0)
+  if(mfseek(mf, global_robot_offset, SEEK_SET) != 0)
     return FSEEK_FAILED;
-  ret = parse_robot(s);
+
+  ret = parse_legacy_robot(mf, file);
 
 err_out:
   return ret;
 }
 
-static enum status file_exists(const char *file, struct stream *s)
+
+/*****************/
+/* Modern Worlds */
+/*****************/
+
+static enum status parse_robot_info(struct memfile *mf, struct base_file *file)
 {
-  char newpath[MAX_PATH];
+  struct memfile prop;
+  int ident;
+  int len;
 
-  switch(s->type)
+  while(next_prop(&prop, &ident, &len, mf))
   {
-    case FILE_STREAM:
-      if(fsafetranslate(file, newpath) == FSAFE_SUCCESS)
-        return SUCCESS;
-      return MISSING_FILE;
-
-    case BUFFER_STREAM:
-      if(unzLocateFile(s->stream.buffer.f, file, 2) == UNZ_OK)
-        return SUCCESS;
-      return MISSING_FILE;
-
-    default:
-      return MISSING_FILE;
+    if(ident == RPROP_PROGRAM_BYTECODE)
+      return parse_legacy_bytecode(&prop, (unsigned int)len, file);
   }
+
+  return ZIP_SUCCESS;
 }
 
-int main(int argc, char *argv[])
+static enum status parse_board_info(struct memfile *mf, struct base_file *file)
 {
-  const char *found_append = " - FOUND", *not_found_append = " - NOT FOUND";
-  int i, len, print_all_files = 0, got_world = 0, quiet_mode = 0;
-  struct stream *s;
-  enum status ret;
+  struct memfile prop;
+  int ident;
+  int len;
 
-  if(argc < 2)
-  {
-    fprintf(stderr, "usage: %s [-q] [-a] [mzx/mzb/zip file]\n\n", argv[0]);
-    fprintf(stderr, "  -q  Do not print summary \"FOUND\"/\"NOT FOUND\".\n");
-    fprintf(stderr, "  -a  Print found files as well as missing files.\n");
-    fprintf(stderr, "\n");
-    return INVALID_ARGUMENTS;
-  }
+  char buffer[MAX_PATH+1];
 
-  for(i = 1; i < argc - 1; i++)
+  while(next_prop(&prop, &ident, &len, mf))
   {
-    if(!strcmp(argv[i], "-q"))
+    switch(ident)
     {
-      quiet_mode = 1;
-      found_append = "";
-      not_found_append = "";
-    }
-    else if(!strcmp(argv[i], "-a"))
-      print_all_files = 1;
-  }
-
-  len = strlen(argv[argc - 1]);
-  if(len < 4)
-  {
-    fprintf(stderr, "'%s' is not a valid input filename.\n", argv[argc - 1]);
-    return INVALID_ARGUMENTS;
-  }
-
-  if(!strcasecmp(&argv[argc - 1][len - 4], ".MZX"))
-    got_world = 1;
-  else if(!strcasecmp(&argv[argc - 1][len - 4], ".MZB"))
-    got_world = 0;
-  else if(!strcasecmp(&argv[argc -1][len -4], ".ZIP"))
-    got_world = 1;
-  else
-  {
-    fprintf(stderr, "'%s' is not a .MZX (world), .MZB (board) "
-                    "or .ZIP (archive) file.\n", argv[argc - 1]);
-    return INVALID_ARGUMENTS;
-  }
-
-  ret = s_open(argv[argc - 1], "rb", &s);
-  if(s)
-  {
-    if(got_world)
-      ret = parse_world(s);
-    else
-      ret = parse_board(s);
-
-    for(i = 0; i < HASH_TABLE_SIZE; i++)
-    {
-      char **p = hash_table[i];
-
-      if(!p)
-        continue;
-
-      while(*p)
+      case BPROP_MOD_PLAYING:
       {
-        if(ret == SUCCESS)
+        // No * for the mod
+        if(len && *(prop.start) != '*')
         {
-          if(file_exists(*p, s) == SUCCESS)
-          {
-            if(print_all_files)
-              fprintf(stdout, "%s%s\n", *p, found_append);
-          }
-          else
-            fprintf(stdout, "%s%s\n", *p, not_found_append);
-        }
+          mfread(buffer, len, 1, &prop);
+          buffer[len] = 0;
 
-        free(*p);
-        p++;
+          add_requirement(buffer, file);
+        }
+        break;
+      }
+      case BPROP_CHARSET_PATH:
+      case BPROP_PALETTE_PATH:
+      {
+        if(len)
+        {
+          mfread(buffer, len, 1, &prop);
+          buffer[len] = 0;
+
+          add_requirement(buffer, file);
+        }
+        break;
+      }
+    }
+  }
+
+  return ZIP_SUCCESS;
+}
+
+static enum status parse_world(struct memfile *mf, struct base_file *file,
+ int not_a_world)
+{
+  struct zip_archive *zp = zip_open_mem_read(mf->start,
+   mf->end - mf->start);
+
+  char *buffer;
+  struct memfile buf_file;
+  unsigned int actual_size;
+  unsigned int file_id;
+
+  int ret = ZIP_SUCCESS;
+
+  if(ZIP_SUCCESS != zip_read_directory(zp))
+  {
+    ret = CORRUPT_WORLD;
+    goto err_close;
+  }
+
+  assign_fprops(zp, not_a_world);
+
+  while(ZIP_SUCCESS == zip_get_next_prop(zp, &file_id, NULL, NULL))
+  {
+    switch(file_id)
+    {
+      case FPROP_BOARD_INFO:
+      case FPROP_ROBOT:
+      {
+        zip_get_next_uncompressed_size(zp, &actual_size);
+        buffer = malloc(actual_size);
+        zip_read_file(zp, buffer, actual_size, &actual_size);
+        mfopen_static(buffer, actual_size, &buf_file);
+
+        if(file_id == FPROP_BOARD_INFO)
+          ret = parse_board_info(&buf_file, file);
+
+        else if(file_id == FPROP_ROBOT)
+          ret = parse_robot_info(&buf_file, file);
+
+        free(buffer);
+        break;
       }
 
-      free(hash_table[i]);
+      default:
+      {
+        zip_skip_file(zp);
+        break;
+      }
     }
 
-    sclose(s);
+    if(ret != SUCCESS)
+      goto err_close;
   }
 
-  if(ret != SUCCESS)
-    fprintf(stderr, "ERROR: %s\n", decode_status(ret));
+err_close:
+  zip_close(zp, NULL);
+  return ret;
+}
+
+
+/******************/
+/* Common Formats */
+/******************/
+
+// same as internal boards except for a 4 byte magic header
+
+static enum status parse_board_file(struct memfile *mf, struct base_file *file)
+{
+  unsigned char magic[4];
+  int file_version;
+
+  if(mfread(magic, 1, 4, mf) != 4)
+    return FREAD_FAILED;
+
+  file_version = board_magic(magic);
+  if(file_version <= 0)
+    return MAGIC_CHECK_FAILED;
+
+  file->world_version = file_version;
+
+  if(file_version <= WORLD_LEGACY_FORMAT_VERSION)
+    return parse_legacy_board(mf, file);
+
+  if(file_version <= WORLD_VERSION)
+    return parse_world(mf, file, 1);
+
+  return MAGIC_CHECK_FAILED;
+}
+
+static enum status parse_world_file(struct memfile *mf, struct base_file *file)
+{
+  unsigned char magic[3];
+  int file_version;
+
+  // skip to protected byte; don't care about world name
+  if(mfseek(mf, LEGACY_WORLD_PROTECTED_OFFSET, SEEK_SET) != 0)
+    return FSEEK_FAILED;
+
+  // can't yet support protected worlds
+  if(mfgetc(mf) != 0)
+    return PROTECTED_WORLD;
+
+  // read in world magic (version)
+  if(mfread(magic, 1, 3, mf) != 3)
+    return FREAD_FAILED;
+
+  // can only support 2.00+ versioned worlds
+  file_version = world_magic(magic);
+  if(file_version <= 0)
+    return MAGIC_CHECK_FAILED;
+
+  file->world_version = file_version;
+
+  if(file_version <= WORLD_LEGACY_FORMAT_VERSION)
+    return parse_legacy_world(mf, file);
+
+  if(file_version <= WORLD_VERSION)
+    return parse_world(mf, file, 0);
+
+  return MAGIC_CHECK_FAILED;
+}
+
+static char *load_file(FILE *fp, size_t *buf_size)
+{
+  char *buffer;
+
+  fseek(fp, 0, SEEK_END);
+  *buf_size = ftell(fp);
+  rewind(fp);
+
+  buffer = malloc(*buf_size);
+  fread(buffer, *buf_size, 1, fp);
+
+  return buffer;
+}
+
+static enum status parse_file(const char *file_name,
+ struct base_path **path_list, int path_list_size)
+{
+  char file_dir[MAX_PATH];
+
+  int path_list_alloc = path_list_size;
+
+  struct base_file **file_list = NULL;
+  struct base_file *current_file;
+  int file_list_alloc = 0;
+  int file_list_size = 0;
+
+  int len = strlen(file_name);
+  char *ext;
+
+  struct memfile mf;
+  char *buffer = NULL;
+  size_t buf_size;
+  FILE *fp;
+
+  enum status ret = SUCCESS;
+
+  if(len < 4)
+  {
+    fprintf(stderr, "'%s' is not a valid input filename.\n", file_name);
+    return INVALID_ARGUMENTS;
+  }
+
+  fp = fopen_unsafe(file_name, "rb");
+
+  if(!fp)
+  {
+    fprintf(stderr, "'%s' could not be opened.\n", file_name);
+    return FOPEN_FAILED;
+  }
+
+  len = strlen(file_name);
+  ext = (char *)file_name + len - 4;
+
+  _get_path(file_dir, file_name);
+
+  if(!strcasecmp(ext, ".MZX"))
+  {
+    buffer = load_file(fp, &buf_size);
+    fclose(fp);
+
+    // Add the containing directory as a base path
+    add_base_path(file_dir, &path_list, &path_list_size, &path_list_alloc);
+
+    current_file = add_base_file(file_name,
+     &file_list, &file_list_size, &file_list_alloc);
+    mfopen_static(buffer, buf_size, &mf);
+
+    ret = parse_world_file(&mf, current_file);
+    free(buffer);
+  }
+  else
+
+  if(!strcasecmp(ext, ".MZB"))
+  {
+    buffer = load_file(fp, &buf_size);
+    fclose(fp);
+
+    // Add the containing directory as a base path
+    add_base_path(file_dir, &path_list, &path_list_size, &path_list_alloc);
+
+    current_file = add_base_file(file_name,
+     &file_list, &file_list_size, &file_list_alloc);
+    mfopen_static(buffer, buf_size, &mf);
+
+    ret = parse_board_file(&mf, current_file);
+    free(buffer);
+  }
+  else
+
+  if(!strcasecmp(ext, ".ZIP"))
+  {
+    struct base_path *zip_base;
+    struct zip_archive *zp;
+
+    unsigned int actual_size;
+    char name_buffer[MAX_PATH];
+
+    fclose(fp);
+
+    // Add the zip as a base path
+    // This will open the zip and read its directory
+
+    zip_base = add_base_path(file_name, &path_list,
+     &path_list_size, &path_list_alloc);
+
+    zp = zip_base->zp;
+
+    // Iterate the ZIP
+    while(ZIP_SUCCESS == zip_get_next_uncompressed_size(zp, &actual_size))
+    {
+      zip_get_next_name(zp, name_buffer, MAX_PATH-1);
+
+      len = strlen(name_buffer);
+      ext = (char *)name_buffer + len - 4;
+
+      if(!strcasecmp(ext, ".MZX"))
+      {
+        buffer = malloc(actual_size);
+        zip_read_file(zp, buffer, actual_size, &actual_size);
+
+        current_file = add_base_file(name_buffer,
+         &file_list, &file_list_size, &file_list_alloc);
+
+        // Files in zips need a relative path.
+        _get_path(current_file->relative_path, name_buffer);
+
+        mfopen_static(buffer, actual_size, &mf);
+
+        // FIXME do something with ret
+        ret = parse_world_file(&mf, current_file);
+        free(buffer);
+      }
+      else
+
+      if(!strcasecmp(ext, ".MZB"))
+      {
+        buffer = malloc(actual_size);
+        zip_read_file(zp, buffer, actual_size, &actual_size);
+
+        current_file = add_base_file(name_buffer,
+         &file_list, &file_list_size, &file_list_alloc);
+
+        // Files in zips need a relative path.
+        _get_path(current_file->relative_path, name_buffer);
+
+        mfopen_static(buffer, actual_size, &mf);
+
+        // FIXME do something with ret
+        ret = parse_board_file(&mf, current_file);
+        free(buffer);
+      }
+
+      else
+      {
+        zip_skip_file(zp);
+      }
+    }
+
+    // The file and zip will be closed in clear_data().
+  }
+
   else
   {
-    if(!quiet_mode)
-      fprintf(stdout, "Finished processing '%s'.\n", argv[argc - 1]);
+    fclose(fp);
+    fprintf(stderr, "'%s' is not a .MZX (world), .MZB (board) "
+                    "or .ZIP (archive) file.\n", file_name);
+    return INVALID_ARGUMENTS;
   }
+
+  process_requirements(path_list, path_list_size);
+
+  clear_data(path_list, path_list_size,
+   file_list, file_list_size);
+
+  if(!quiet_mode)
+   fprintf(stdout, "\nFinished processing '%s'.\n\n", file_name);
+
+  fflush(stdout);
 
   return ret;
 }
 
+int main(int argc, char *argv[])
+{
+  struct base_path **path_list = NULL;
+  int path_list_alloc = 0;
+  int path_list_size = 0;
+  enum status ret;
+  int i;
+
+  struct base_path *current_path = NULL;
+  char *file_name = NULL;
+  char *param;
+
+  if(argc < 2)
+  {
+    fprintf(stderr, USAGE);
+    return INVALID_ARGUMENTS;
+  }
+
+  for(i = 1; i < argc; i++)
+  {
+    if(argv[i][0] == '-')
+    {
+      param = argv[i] + 1;
+
+      if(!strcmp(param, "extra"))
+      {
+        if(file_name)
+        {
+          i++;
+          if(i < argc)
+          {
+            current_path = add_base_path(argv[i], &path_list, &path_list_size,
+             &path_list_alloc);
+          }
+          else
+          {
+            fprintf(stderr, "ERROR: expected path or zip file\n");
+            return INVALID_ARGUMENTS;
+          }
+        }
+        else
+        {
+          fprintf(stderr, "ERROR: -extra must follow base file\n");
+          return INVALID_ARGUMENTS;
+        }
+      }
+      else
+      if(!strcmp(param, "in"))
+      {
+        if(current_path)
+        {
+          i++;
+          if(i < argc)
+          {
+            change_base_path_dir(current_path, argv[i]);
+            current_path = NULL;
+          }
+          else
+          {
+            fprintf(stderr, "ERROR: expected relative path\n");
+            return INVALID_ARGUMENTS;
+          }
+        }
+        else
+        {
+          fprintf(stderr, "ERROR: -in must follow extra\n");
+          return INVALID_ARGUMENTS;
+        }
+      }
+      else
+      if(!strcmp(param, "q"))
+      {
+        quiet_mode = 1;
+      }
+      else
+      if(!strcmp(param, "a"))
+      {
+        display_found = 1;
+        display_created = 1;
+      }
+      else
+      if(!strcmp(param, "A"))
+      {
+        display_found = 0;
+        display_created = 1;
+      }
+      else
+      if(!strcmp(param, "h"))
+      {
+        if(i == 1)
+        {
+          fprintf(stderr, USAGE);
+          return SUCCESS;
+        }
+      }
+      else
+      {
+        fprintf(stderr, "Unrecognized argument: -%s\n", param);
+        return INVALID_ARGUMENTS;
+      }
+    }
+
+    else
+    {
+      // Parse the previous base file.
+      if(file_name)
+      {
+        ret = parse_file(file_name, path_list, path_list_size);
+
+        path_list = NULL;
+        path_list_size = 0;
+        path_list_alloc = 0;
+
+        if(ret != SUCCESS)
+          break;
+      }
+      file_name = argv[i];
+      current_path = NULL;
+    }
+  }
+
+  // Parse the final base file
+  if(file_name && ret == SUCCESS)
+  {
+    ret = parse_file(file_name, path_list, path_list_size);
+  }
+
+  if(ret != SUCCESS)
+  {
+    fprintf(stderr, "ERROR: %s\n", decode_status(ret));
+  }
+
+  return ret;
+}

@@ -18,7 +18,7 @@ utils_cflags := ${LIBPNG_CFLAGS}
 
 checkres := ${utils_src}/checkres${BINEXT}
 checkres_objs := ${utils_obj}/checkres.o ${core_obj}/fsafeopen.o
-checkres_objs += ${core_obj}/util.o ${unzip_objs}
+checkres_objs += ${core_obj}/util.o ${core_obj}/zip.o
 checkres_ldflags := ${ZLIB_LDFLAGS}
 
 hlp2txt := ${utils_src}/hlp2txt${BINEXT}
@@ -38,7 +38,7 @@ ccv_objs := ${utils_obj}/ccv.o
 ${utils_obj}/%.o: ${utils_src}/%.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${CFLAGS} ${utils_cflags} -I${core_src} \
-	  -I${unzip_src} ${ZLIB_CFLAGS} -c $< -o $@
+	  ${ZLIB_CFLAGS} -c $< -o $@
 
 -include $(checkres_objs:.o=.d)
 -include $(hlp2txt_objs:.o=.d)

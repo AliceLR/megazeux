@@ -148,8 +148,6 @@ CORE_LIBSPEC void clear_world(struct world *mzx_world);
 CORE_LIBSPEC void clear_global_data(struct world *mzx_world);
 CORE_LIBSPEC void default_scroll_values(struct world *mzx_world);
 
-CORE_LIBSPEC void assign_fprops(struct zip_archive *zp, int board_file);
-
 CORE_LIBSPEC void change_board(struct world *mzx_world, int board_id);
 CORE_LIBSPEC void change_board_load_assets(struct world *mzx_world);
 
