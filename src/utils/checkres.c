@@ -766,7 +766,10 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
         if(mfread(function_counter, 1, fn_len, mf) != fn_len)
           return FREAD_FAILED;
 
-        if(strlen(function_counter) == 0)
+        // Subtract off the null terminator
+        fn_len--;
+
+        if(fn_len == 0)
           break;
 
         if( match("FREAD_OPEN", 0x0209)
