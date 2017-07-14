@@ -245,7 +245,8 @@ static inline int save_world_info(struct world *mzx_world,
  struct zip_archive *zp, int savegame, int file_version,
  const char *name, enum file_prop file_id)
 {
-  char buffer[WORLD_PROP_TOTAL_SIZE];
+  char *buffer;
+  unsigned int buf_size = WORLD_PROP_SIZE;
   struct memfile _mf;
   struct memfile _prop;
   struct memfile *mf = &_mf;
@@ -253,7 +254,14 @@ static inline int save_world_info(struct world *mzx_world,
   int size;
   int i;
 
-  mfopen_static(buffer, WORLD_PROP_TOTAL_SIZE, mf);
+  int result;
+
+  if(savegame)
+    buf_size += SAVE_PROP_SIZE;
+
+  buffer = cmalloc(buf_size);
+
+  mfopen_static(buffer, buf_size, mf);
 
   // Save everything sorted.
 
@@ -375,7 +383,10 @@ static inline int save_world_info(struct world *mzx_world,
 
   size = mftell(mf);
 
-  return zip_write_file(zp, name, buffer, size, ZIP_M_NONE, file_id, 0, 0);
+  result = zip_write_file(zp, name, buffer, size, ZIP_M_NONE, file_id, 0, 0);
+
+  free(buffer);
+  return result;
 }
 
 #define check(id) {                                                           \
