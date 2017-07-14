@@ -317,10 +317,10 @@ help_check: ${hlp2txt} assets/help.fil
 	@rm -f help.txt
 
 xmp:
-	cd contrib/libxmp/          ;\
-	./configure --enable-static ;\
-	make -j4                    ;\
-	make install                ;\
+	cd contrib/libxmp/                        ;\
+	./configure --enable-static --prefix /usr ;\
+	make -j8                                  ;\
+	make install                              ;\
 	make clean
 
 endif
