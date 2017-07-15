@@ -8,18 +8,20 @@
 
 libxmp_base = contrib/libxmp
 
-libxmp_cflags = -I${libxmp_base}/include -I${libxmp_base}/src \
+libxmp_include = -I${libxmp_base}/include -I${libxmp_base}/src \
  -I${libxmp_base}/src/loaders -I${libxmp_base}/src/loaders/prowizard \
- -I${libxmp_base}/src/depackers -I${libxmp_base}/src/win32 -w -O3
+ -I${libxmp_base}/src/depackers
+
+libxmp_cflags = -I${libxmp_base}/src/win32 ${libxmp_include} -w -O3
 
 
-WIN32_OBJS	= ptpopen.o debug.o
-WIN32_DFILES	= Makefile $(WIN32_OBJS:.o=.c) unistd.h ptpopen.h \
-		  osdcomm.h sys
+WIN32_OBJS	= ptpopen.o
+
 WIN32_PATH = $(libxmp_base)/src/win32
+WIN32_OBJ = $(WIN32_PATH)/.build
 
 
-libxmp_objs += $(addprefix $(WIN32_PATH)/.build/,$(WIN32_OBJS))
+libxmp_objs += $(addprefix $(WIN32_OBJ)/,$(WIN32_OBJS))
 
 
 SRC_OBJS	= virtual.o format.o period.o player.o read_event.o dataio.o \
@@ -28,16 +30,11 @@ SRC_OBJS	= virtual.o format.o period.o player.o read_event.o dataio.o \
 		  load_helpers.o load.o hio.o hmn_extras.o extras.o smix.o \
 		  memio.o tempfile.o mix_paula.o
 
-SRC_DFILES	= Makefile $(SRC_OBJS:.o=.c) common.h effects.h \
-		  format.h lfo.h list.h mixer.h period.h player.h virtual.h \
-		  fnmatch.h md5.h precomp_lut.h tempfile.h med_extras.h hio.h \
-		  hmn_extras.h extras.h memio.h mdataio.h depacker.h paula.h \
-		  precomp_blep.h
-
 SRC_PATH	= $(libxmp_base)/src
+SRC_OBJ = $(SRC_PATH)/.build
 
 
-libxmp_objs += $(addprefix $(SRC_PATH)/.build/,$(SRC_OBJS))
+libxmp_objs += $(addprefix $(SRC_OBJ)/,$(SRC_OBJS))
 
 
 LOADERS	= xm_load.o mod_load.o s3m_load.o stm_load.o 669_load.o far_load.o \
@@ -51,13 +48,12 @@ LOADERS	= xm_load.o mod_load.o s3m_load.o stm_load.o 669_load.o far_load.o \
 	  hmn_load.o mgt_load.o chip_load.o abk_load.o
 
 LOADERS_OBJS	= common.o iff.o itsex.o asif.o voltable.o sample.o $(LOADERS)
-LOADERS_DFILES	= Makefile $(LOADERS_OBJS:.o=.c) \
-		  asif.h iff.h it.h loader.h med.h mod.h s3m.h xm.h
 
 LOADERS_PATH	= $(libxmp_base)/src/loaders
+LOADERS_OBJ	= $(LOADERS_PATH)/.build
 
 
-libxmp_objs += $(addprefix $(LOADERS_PATH)/.build/,$(LOADERS_OBJS))
+libxmp_objs += $(addprefix $(LOADERS_OBJ)/,$(LOADERS_OBJS))
 
 
 PROWIZ_OBJS	= prowiz.o ptktable.o tuning.o ac1d.o di.o eureka.o \
@@ -67,12 +63,12 @@ PROWIZ_OBJS	= prowiz.o ptktable.o tuning.o ac1d.o di.o eureka.o \
 		  tp1.o tp3.o p40.o xann.o theplayer.o pp10.o pp21.o \
 		  starpack.o titanics.o skyt.o novotrade.o hrt.o noiserun.o
 PROWIZ_OBJS2	= pm.o pm01.o pm20.o pm40.o pp30.o
-PROWIZ_DFILES	= Makefile $(PROWIZ_OBJS:.o=.c) $(PROWIZ_OBJS2:.o=.c) prowiz.h
 
 PROWIZ_PATH	= $(libxmp_base)/src/loaders/prowizard
+PROWIZ_OBJ = $(PROWIZ_PATH)/.build
 
 
-libxmp_objs += $(addprefix $(PROWIZ_PATH)/.build/, $(PROWIZ_OBJS))
+libxmp_objs += $(addprefix $(PROWIZ_OBJ)/, $(PROWIZ_OBJS))
 
 
 DEPACKERS_OBJS	= ppdepack.o unsqsh.o mmcmp.o readrle.o readlzw.o \
@@ -80,33 +76,30 @@ DEPACKERS_OBJS	= ppdepack.o unsqsh.o mmcmp.o readrle.o readlzw.o \
 		  unzip.o gunzip.o uncompress.o unxz.o bunzip2.o unlha.o \
 		  xz_dec_lzma2.o xz_dec_stream.o oxm.o vorbis.o crc32.o
 
-DEPACKERS_DFILES = Makefile $(DEPACKERS_OBJS:.o=.c) readhuff.h readlzw.h \
-		  readrle.h inflate.h xz_lzma2.h README.unxz xz.h \
-		  xz_private.h xz_stream.h xz_config.h vorbis.h crc32.h
-
 DEPACKERS_PATH	= $(libxmp_base)/src/depackers
+DEPACKERS_OBJ = $(DEPACKERS_PATH)/.build
 
 
-libxmp_objs += $(addprefix $(DEPACKERS_PATH)/.build/,$(DEPACKERS_OBJS))
+libxmp_objs += $(addprefix $(DEPACKERS_OBJ)/,$(DEPACKERS_OBJS))
 
 
-${SRC_PATH}/.build/%.o: ${SRC_PATH}/%.c
+${SRC_OBJ}/%.o: ${SRC_PATH}/%.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${CFLAGS} ${libxmp_cflags} -c $< -o $@
 
-${LOADERS_PATH}/.build/%.o: ${LOADERS_PATH}/%.c
+${LOADERS_OBJ}/%.o: ${LOADERS_PATH}/%.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${CFLAGS} ${libxmp_cflags} -c $< -o $@
 
-${PROWIZ_PATH}/.build/%.o: ${PROWIZ_PATH}/%.c
+${PROWIZ_OBJ}/%.o: ${PROWIZ_PATH}/%.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${CFLAGS} ${libxmp_cflags} -c $< -o $@
 
-${DEPACKERS_PATH}/.build/%.o: ${DEPACKERS_PATH}/%.c
+${DEPACKERS_OBJ}/%.o: ${DEPACKERS_PATH}/%.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${CFLAGS} ${libxmp_cflags} -c $< -o $@
 
-${WIN32_PATH}/.build/%.o: ${WIN32_PATH}/%.c
+${WIN32_OBJ}/%.o: ${WIN32_PATH}/%.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${CFLAGS} ${libxmp_cflags} -c $< -o $@
 
@@ -114,20 +107,20 @@ ${WIN32_PATH}/.build/%.o: ${WIN32_PATH}/%.c
 -include $(libxmp_objs:.o=.d)
 
 
-BUILD_DIRS = ${SRC_PATH}/.build ${LOADERS_PATH}/.build \
- ${PROWIZ_PATH}/.build ${DEPACKERS_PATH}/.build ${WIN32_PATH}/.build
-
-$(libxmp_objs): $(BUILD_DIRS)
-
+$(libxmp_objs): $(filter-out $(wildcard ${SRC_OBJ}), ${SRC_OBJ})
+$(libxmp_objs): $(filter-out $(wildcard ${WIN32_OBJ}), ${WIN32_OBJ})
+$(libxmp_objs): $(filter-out $(wildcard ${LOADERS_OBJ}), ${LOADERS_OBJ})
+$(libxmp_objs): $(filter-out $(wildcard ${PROWIZ_OBJ}), ${PROWIZ_OBJ})
+$(libxmp_objs): $(filter-out $(wildcard ${DEPACKERS_OBJ}), ${DEPACKERS_OBJ})
 
 libxmp_clean:
-	$(if ${V},,@echo "  RM      " ${SRC_PATH}/.build)
-	${RM} -r ${SRC_PATH}/.build
-	$(if ${V},,@echo "  RM      " ${LOADERS_PATH}/.build)
-	${RM} -r ${LOADERS_PATH}/.build
-	$(if ${V},,@echo "  RM      " ${PROWIZ_PATH}/.build)
-	${RM} -r ${PROWIZ_PATH}/.build
-	$(if ${V},,@echo "  RM      " ${DEPACKERS_PATH}/.build)
-	${RM} -r ${DEPACKERS_PATH}/.build
-	$(if ${V},,@echo "  RM      " ${WIN32_PATH}/.build)
-	${RM} -r ${WIN32_PATH}/.build
+	$(if ${V},,@echo "  RM      " ${SRC_OBJ})
+	${RM} -r ${SRC_OBJ}
+	$(if ${V},,@echo "  RM      " ${LOADERS_OBJ})
+	${RM} -r ${LOADERS_OBJ}
+	$(if ${V},,@echo "  RM      " ${PROWIZ_OBJ})
+	${RM} -r ${PROWIZ_OBJ}
+	$(if ${V},,@echo "  RM      " ${DEPACKERS_OBJ})
+	${RM} -r ${DEPACKERS_OBJ}
+	$(if ${V},,@echo "  RM      " ${WIN32_OBJ})
+	${RM} -r ${WIN32_OBJ}
