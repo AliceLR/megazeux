@@ -57,8 +57,13 @@ endif
 MIKMOD_CFLAGS  ?= -I${PREFIX}/include
 MIKMOD_LDFLAGS ?= -L${PREFIX}/lib -lmikmod
 
-XMP_CFLAGS  ?= -I${PREFIX}/include
-XMP_LDFLAGS ?= -L${PREFIX}/lib -lxmp
+libxmp_src   = contrib/libxmp
+XMP_CFLAGS  ?= -I${libxmp_src}/include
+XMP_LDFLAGS ?= -L${libxmp_src}/lib -lxmp
+
+# Remove the above lines and uncomment these when we don't need to contrib xmp.
+#XMP_CFLAGS  ?= -I${PREFIX}/include
+#XMP_LDFLAGS ?= -L${PREFIX}/lib -lxmp
 
 OPENMPT_CFLAGS  ?= -I${PREFIX}/include
 OPENMPT_LDFLAGS ?= -L${PREFIX}/lib -lopenmpt
@@ -317,10 +322,8 @@ help_check: ${hlp2txt} assets/help.fil
 	@rm -f help.txt
 
 xmp:
-	cd contrib/libxmp/                        ;\
-	./configure --enable-static --prefix /usr ;\
-	make -j8                                  ;\
-	make install                              ;\
-	make clean
+	cd contrib/libxmp/          ;\
+	./configure --enable-static ;\
+	make -j8
 
 endif

@@ -857,6 +857,7 @@ fi
 # GP2X needs Mikmod, other platforms can pick
 # Keep the default at the bottom so it doesn't override others.
 #
+SHOW_XMP_MESG="false"
 
 if [ "$MODPLUG" = "true" ]; then
 	echo "Selected Modplug music engine."
@@ -878,6 +879,7 @@ elif [ "$XMP" = "true" ]; then
 	echo "#define CONFIG_AUDIO_MOD_SYSTEM" >> src/config.h
 	echo "#define CONFIG_XMP" >> src/config.h
 	echo "BUILD_XMP=1" >> platform.inc
+  SHOW_XMP_MESG="true"
 else
 	echo "Music engine disabled."
 fi
@@ -1044,6 +1046,14 @@ if [ "$FPSCOUNTER" = "true" ]; then
 	echo "#define CONFIG_FPS" >> src/config.h
 else
 	echo "fps counter disabled."
+fi
+
+#
+# Notify the user to use make xmp.
+#
+if [ "$SHOW_XMP_MESG" = "true" ]; then
+	echo
+	echo "Use \"make xmp\" to build the xmp module engine."
 fi
 
 echo
