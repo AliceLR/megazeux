@@ -263,7 +263,7 @@ static void output(const char *required_by, const char *resource_path,
   req_by[parent_max_len] = 0;
   res_path[resource_max_len] = 0;
 
-  found_in = found_in ?: "";
+  found_in = found_in ? found_in : "";
 
   if(!started_table)
   {
