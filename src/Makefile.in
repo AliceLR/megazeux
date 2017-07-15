@@ -5,6 +5,7 @@
 include contrib/gdm2s3m/src/Makefile.in
 include contrib/icons/Makefile.in
 include contrib/libmodplug/src/Makefile.in
+include contrib/libxmp/Makefile.megazeux
 
 .PHONY: mzx_clean core_target_clean
 
@@ -186,6 +187,8 @@ ifeq (${BUILD_XMP},1)
 core_cflags += ${XMP_CFLAGS}
 core_ldflags := ${XMP_LDFLAGS} ${core_ldflags}
 core_cobjs += ${core_obj}/audio_xmp.o
+core_flags += ${libxmp_cflags}
+core_cobjs += ${libxmp_objs}
 endif
 
 ifeq (${BUILD_OPENMPT},1)
@@ -371,7 +374,7 @@ ${mzxrun}.debug:
 
 endif
 
-mzx_clean: core_target_clean gdm2s3m_clean icons_clean libmodplug_clean
+mzx_clean: core_target_clean gdm2s3m_clean icons_clean libmodplug_clean libxmp_clean
 	$(if ${V},,@echo "  RM      " ${core_obj} ${network_obj})
 	${RM} -r ${core_obj} ${network_obj}
 	$(if ${V},,@echo "  RM      " ${mzxrun} ${mzxrun}.debug)

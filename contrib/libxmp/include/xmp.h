@@ -11,6 +11,12 @@ extern "C" {
 #define XMP_VER_MINOR 4
 #define XMP_VER_RELEASE 1
 
+/* Suppress unwanted debug messages */
+#undef DEBUG
+
+/* Force libxmp to build static */
+#define BUILDING_STATIC
+
 #if defined(_WIN32) && !defined(__CYGWIN__)
 # if defined(BUILDING_STATIC)
 #  define EXPORT

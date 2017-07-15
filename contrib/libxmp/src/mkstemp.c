@@ -37,6 +37,9 @@
  * SUCH DAMAGE.
  */
 
+/* Fixes a bug where this file wouldn't build because of pid_t. */
+#include <sys/types.h>
+
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>

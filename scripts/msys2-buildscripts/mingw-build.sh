@@ -13,12 +13,7 @@ git pull origin $5
 
 ./config.sh --platform $2 $3 --enable-release
 make clean
-
-# Override XMP flags until it's available from pacman
-
-make -j8 \
-XMP_CFLAGS="-I/mzx-build-workingdir/megazeux/contrib/libxmp/include" \
-XMP_LDFLAGS="-L/mzx-build-workingdir/megazeux/contrib/libxmp/lib -lxmp$1"
+make -j8
 
 rm -rf build
 
