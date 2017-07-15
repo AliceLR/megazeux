@@ -25,10 +25,9 @@
 #include "const.h"
 #include "util.h"
 
-// Necessary for libxmp
-#ifdef __WIN32__
-#define BUILDING_STATIC
-#endif
+//#ifdef __WIN32__
+//#define BUILDING_STATIC
+//#endif
 
 #include <xmp.h>
 

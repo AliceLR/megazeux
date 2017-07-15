@@ -187,7 +187,7 @@ ifeq (${BUILD_XMP},1)
 core_cflags += ${XMP_CFLAGS}
 core_ldflags := ${XMP_LDFLAGS} ${core_ldflags}
 core_cobjs += ${core_obj}/audio_xmp.o
-core_flags += ${libxmp_cflags}
+core_flags += ${libxmp_include}
 core_cobjs += ${libxmp_objs}
 endif
 
