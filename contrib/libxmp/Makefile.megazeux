@@ -10,12 +10,12 @@ libxmp_base = contrib/libxmp
 
 libxmp_include = -I${libxmp_base}/include -I${libxmp_base}/src \
  -I${libxmp_base}/src/loaders -I${libxmp_base}/src/loaders/prowizard \
- -I${libxmp_base}/src/depackers -I${libxmp_base}/src/win32
+ -I${libxmp_base}/src/depackers
 
-libxmp_cflags = ${libxmp_include} -w -O3
+libxmp_cflags = -I${libxmp_base}/src/win32 ${libxmp_include} -w -O3
 
 
-WIN32_OBJS	= ptpopen.o debug.o
+WIN32_OBJS	= ptpopen.o
 
 WIN32_PATH = $(libxmp_base)/src/win32
 WIN32_OBJ = $(WIN32_PATH)/.build
