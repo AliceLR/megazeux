@@ -70,6 +70,8 @@ BUGFIXES
   worlds that should have been caught by validation.
 + Copy block to MZM no longer crashes when the MZM is partially
   overlapping the board edge. (Lancer-X)
++ Fixed bug where MegaZeux would sometimes exit immediately on
+  loading a game or would immediately exit testing.
 
 DEVELOPERS
 

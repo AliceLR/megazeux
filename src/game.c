@@ -2178,7 +2178,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
 {
   // We have the world loaded, on the proper scene.
   // We are faded out. Commence playing!
-  int exit;
+  int exit = 0;
   int confirm_exit = 0;
   int key = -1;
   int key_status = 0;
@@ -2669,7 +2669,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
 
 void title_screen(struct world *mzx_world)
 {
-  int exit;
+  int exit = 0;
   int confirm_exit = 0;
   int fadein = 1;
   int key = 0;
