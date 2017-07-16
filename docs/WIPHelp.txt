@@ -7392,7 +7392,12 @@ Turns the given sprite off if it is on.
 ~BSPRn_OVERLAY (write-only)
 
 If either is set to 1, these draw the given sprite n over the
-overlay as opposed to underneath.
+overlay as opposed to underneath. Note that this has different
+behaviour depending on whether unbound sprites are present. If
+there are any unbound sprites on the screen all overlaid sprites
+will be drawn above all non-overlaid sprites. If unbound sprites
+are not in use overlaid sprites will be drawn above the overlay
+but will otherwise respect the standard sprite draw order.
 
 ~BSPRn_REFX
 ~BSPRn_REFY
