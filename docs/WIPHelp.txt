@@ -496,11 +496,16 @@ and Low Strength.
 
 F6 - Debug Window
 This will bring up a small box in the lower left corner of the
-screen, detailing your position, board number, the currently
-playing module and the amount of memory used by Robots. It is
-generally only necessary when testing and fixing your own
-games. Press F6 again to turn the box off. This will only work
-during playtesting in the editor.
+screen, detailing several statistics. The top-right of the box
+displays the world version of the current world; X/Y lists the
+current {x,y} position of the player; Board lists the current
+board number; Robot mem lists the amount of Robot memory
+currently consumed by the current board's Robots; the space
+below lists the currently playing music, with "(no module)" for
+none and "*" for the module wildcard; finally, the bottom right
+numbers list the key_code (green) and key_pressed (magenta)
+values of the last pressed key. Press F6 again to turn the box
+off. This will only work during playtesting in the editor.
 
 F7 - Items Cheat
 
@@ -545,11 +550,12 @@ specific section.
 >#DBGMODE.HLP:100:Debug Modes - Counter Debug Mode
 
 Alt+F11 - Robotic Debugger
-This will launch the built-in Robotic debugger. The Robotic
-debugger can monitor running Robotic code and allow
-step-by-step reading and manipulation of running Robots as
-they execute. This shortcut only works when playtesting in the
-editor. For more detail, go to its specific section.
+This will launch the config menu for the built-in Robotic
+debugger. The Robotic debugger can monitor running Robotic code
+and allow step-by-step reading and manipulation of running
+Robots as they execute. This shortcut only works when
+playtesting in the editor. For more detail, go to its specific
+section.
 
 >#DBGMODE.HLP:101:Debug Modes - The Robotic Debugger
 
@@ -2489,45 +2495,82 @@ to the Super MZX Modes section for more information on this.
 :093: 
 $~9The Palette Editor
 
-The built-in palette editor can certainly spruce up a game. It
-allows you to change the appearance of the 16 different
-available colors. It is the only way to get a decent orange
-color, for example.
+MegaZeux is not limited to the colors it sets as default. The
+built-in palette editor can modify colors, which is very helpful
+in designing a game. It allows you to change the appearance of
+the 16 currently-available colors, and is more user-friendly
+than having to change values through code. MegaZeux worlds can
+only have one active palette at a time, but can load different
+palettes as frequently as desired, so MegaZeux designers can
+create different palettes that fit different parts of their
+game.
 
-To use it, press Alt+E in the editor. The palette editing screen
-will appear. The current palette will be shown along the top,
-with the current color marked. The RGB values of the current
-color are shown along the right side of the screen, and the menu
-is shown on the lower half.
+To use the palette editor, press Alt+E while in the MegaZeux
+editor. The palette editing screen will appear. The current
+palette will be shown to the left, with the current color
+marked. By default, the RGB values of the current color and the
+current color creation mode are shown to the right of the
+visible palette, and the menu is shown below.
 
-Some color theory is in order here. Computer monitors display
-colors by projecting various amounts of Red, Green, and Blue
-light. Combined, these three colors can produce almost any shade
-and hue of color. This is how colors are represented in MegaZeux
-as well. Each color has a Red, Green, and Blue value, each
-ranging from 0 to 63. 0 is off, 63 is full brightness, and the
-other values range in shade.
+Several functions are consistent across all modes. Alt+D will
+reset the palette to its default colors (you will NOT be asked
+for confirmation). 0 will blacken the current color. Alt+H will
+toggle the shortcut display. The PgUp and PgDn keys select the
+current color model. Finally, F2 will store the current color to
+an internal buffer, while F3 will paste the buffered color to
+the current color.
+
+In addition to the keyboard shortcuts listed in the below menu,
+users can click colors in the palette to select them. Users can
+also use the mouse to change color values by clicking on the
+relevant areas, and hold down the mouse button to act as a
+slider.
+
+Some color theory is in order. Computer monitors display colors
+by projecting various amounts of Red, Green, and Blue light. 
+Combined, these three colors can produce almost any shade and
+hue of color. This is one way colors are represented in MegaZeux
+as well. In RGB mode (the default), each color has a Red, Green,
+and Blue value, each ranging from 0 to 63. 0 is "off" while 63
+is "full intensity".
 
 To make colors other than red, green, and blue, you must mix
 them. Purple is red plus blue, cyan is green plus blue, and
 yellow is red plus green. (Really.) Whites and grays are made
-from equal amounts of all three. For example, red 42 blue 42
-green 0 would be a deep purple, and all as 20 would be a dark
-gray. To brighten a color, raise all the numbers, or lower them
-to darken it. Orange is made with full red and 31 green.
+from equal amounts of all three. For example, Red at 42, Blue at
+42 and Green at 0 would be a deep purple, and all as 20 would be
+a dark gray. Orange is made with full red, green set to 31 and
+blue zeroed out.To brighten a color, raise all the numbers, or
+lower them to darken it.
 
-Anyway, back to the editor. Use the arrow keys to select the
-current color. R, G, B, and A will increase Red, Green, Blue,
-and All, respectively. Alt+RGBA will decrease the same values.
-Alt+D will reset the palette to its default colors (you will
-NOT be asked for confirmation). 0 will blacken the current
-color. Finally, F2 will store the current color to an internal
-buffer, while F3 will paste the buffer color to the current
-color.
+For RGB mode, use the arrow keys to select the current color. R,
+G, B, and A will respectively increase Red, Green, Blue, and
+All, while Alt+R, Alt+G,Alt+B and Alt+A will respectively
+decrease the values.
 
-The default MZX palette editor will be unhelpful for Super MZX
-modes; see the Super MZX section for details on working with
-SMZX modes.
+If one is more familiar with other color models, MegaZeux can
+create colors with two alternate models: HSL and CIELAB.
+
+HSL creates colors by setting hue (base color), saturation
+(color strength) and lightness (brightness relative to white).
+Hue can take values of 0-360; saturation and lightness take
+values of 0-100. The keyboard shortcuts in this mode are C, S
+and V for increasing Hue, Saturation, and Luminance, 
+respectively, while alt key combinations of these keys reduce
+these values.
+
+CIELAB creates colors through a combination of lightness (L*)
+and color values represented by the opponent pair colors of
+red-green (a*) and yellow-blue (b*). L* values range from 0-100,
+and opponent color values can range from -128 (fully one color
+of the pair) to +128 (fully the other color). The keyboard
+shortcuts in this mode are V, A and B for increasing L*, a* and
+b*, respectively, while alt key combinations of these keys
+reduce these values.
+
+Unfortunately, the default MZX palette editor will be unhelpful
+for Super MZX modes; see the Super MZX section for details on
+working with SMZX modes.
 
 >#EDITINGK.HLP:080:Editing Keys and Options Reference
 >#SMZXMODE.HLP:095:Super MZX Modes
@@ -2796,8 +2839,8 @@ saved in order to do this.
 $~9MegaZeux's Sound System
 
 MegaZeux has two types of sound: Digitized sound, played
-through a sound card, and sound effects, which are emulated PCS
-effects.
+through a sound card, and sound effects, which are emulated PC
+Speaker effects.
 
 MegaZeux's many sound options can be accessed through the
 config.txt file. Please see this section for details.
@@ -2809,39 +2852,27 @@ $Music Files
 Music files, referred to as MODULES, can be any one of the
 following formats:
 
+* OGG
 * MOD (or NST/WOW/OCT)
-* GDM
 * S3M
 * XM
 * IT
+* GDM
 * WAV
-* OGG
 * Other formats {STM, MTM, 669, ULT, FAR, MED (MMD0), DSM, OKT,
   AMF}
 * MT2, AMS, MDL, DMF, PTM, DBM, PSM, J2B, UMX, MID, ABC and PAT
   are in ModPlug, but not supported in MZX.
 
-MZX does not support GDMs natively. Instead, when a GDM is
-loaded, it is converted to an S3M file. The S3M file is loaded
-in all future incidences. To discourage loading of GDMs, it is
-impossible to select a GDM file from the board's music
-selection menu (ALT+N). Thus, if you want to use a GDM in your
-game, you should instead use one of the following:
- * The original audio file prior to conversion, if you have it.
- * The GDM converted to S3M - this can be done by using ajs's
-   convertor or by using a Robot in MZX to load the GDM, which
-   will automatically make the S3M appear. You can then select
-   it normally.
+The default module engine is XMP. It is still possible to build
+using ModPlug, and possible to build using MikMod to support
+platforms that cannot handle anything else. OGGs and WAVs are
+handled outside of the module engines, while GDMs load natively
+in XMP/MikMod, but not in ModPlug. When a GDM is loaded with
+ModPlug as the music engine, it is converted to an S3M file. The
+S3M file is then loaded in all future incidences.
 
-NOTE: The above text only applies to ModPlug (the default
-module engine). It is now possible to build using MikMod, to
-support platforms that cannot handle ModPlug. It can play these
-formats: {669, AMF, APUN, DSM, FAR, GDM, IT, IMF, MOD, MED,
-MTM, OKT, S3M, STM, STX, ULT, UNI, XM}, while MZX will natively
-play the WAV and OGG formats. GDMs load natively in MikMod, in
-contrast to ModPlug.
-
-Formats common to both engines are MOD, S3M, XM, IT, STM, MTM,
+Formats common to all engines are MOD, S3M, XM, IT, STM, MTM,
 669, ULT, FAR, MED, DSM, OKT and AMF. All other formats 
 (excluding WAV/OGG/SAM/GDM) are locked out of MZX by default.
 
@@ -2867,7 +2898,8 @@ Simply make sure that the proper module files are in the
 current directory, or in a subdirectory of the current
 directory, and use Alt+N to select music for a board. Press
 Alt+N to turn it back off again. To set it to play the same
-music as the last board (mod *), press Shift+8.
+music as the last board (mod *), press Shift+8 or the numpad's
+asterisk key.
 
 >#EDITINGK.HLP:AltN:Details on Alt+N
 
@@ -2913,17 +2945,17 @@ sound and music.
 
 $SAM Files in the Port
 
-Much like GDMs, SAM files are not directly supported in MZX.
-WAV files are created on first loading the SAM, and are
-exclusively used thereafter. An easy way to convert SAM files
-is by using Alt+L and playing each. However, using WAVs as the
-original source is preferred, as conversion can degrade quality
-(not to mention that SAMs, as ~~8KHz mono files, aren't
-high-quality to begin with). For large sound effects such as
-voice, try using OGGs; while lossy, the OGG format can provide
-very good compression and still sound the same (or extremely
-similar) to the human ear. You may also use module formats with
-the SAM command, which has its uses.
+SAM files are not directly supported in MZX. WAV files are
+created on first loading the SAM, and are exclusively used
+thereafter. An easy way to convert SAM files is by using Alt+L
+and playing each. However, using WAVs as the original source is
+preferred, as conversion can degrade quality (not to mention
+that SAMs, as ~~8KHz mono files, aren't high-quality to begin
+with). For large sound effects such as voice, try using OGGs;
+while lossy, the OGG format can provide very good compression
+and still sound the same (or extremely similar) to the human
+ear. You may also use module formats with the SAM command, which
+has its uses.
 
 $Format for Sound Effects
 
@@ -3501,56 +3533,89 @@ called breakpoints.
 MegaZeux does not provide default breakpoints (with one notable
 exception explained later), so suitable breakpoints must be
 created. Pressing Alt+F11 during playtesting in the editor will
-load the Breakpoint Editor.
+load the config screen for the Robotic Debugger.
 
-Breakpoints can be added via the Add button, or by using Alt+A.
-Breakpoints will activate stepping when characters in a line of
-code match a given string, or additionally only for Robots
-whose names contain the characters in another given string.
-String matches, like MegaZeux string comparisons in general, do
-not have to match case. Also, as implied, the string
-comparisons are not for the whole line or Robot name; the lines
-or names must merely contain the given strings.
+Breakpoints can be added by using Alt+N or Alt+A, or by clicking
+the "(new)" text. Breakpoints will activate stepping when
+characters in a line of code match a given string, preventing
+the line triggering the breakpoint from executing. Additionally,
+the breakpoint can be set to trigger only for Robots whose names
+contain the characters in another given string, or only when the
+condition is met on a given line number.
 
-Editing breakpoints is done via the Edit button, or by pressing
-Space.
+A blank string can be set as a breakpoint. In this case, all
+lines running in Robots matching the given Robot name string
+will trigger the debugger, and all line numbers matching a given
+line number will likewise always trigger. However, leaving all
+string fields blank and line number at 0 will have no notable
+effect.
 
-Deleting breakpoints is done via the Delete button, or by
-pressing Alt+D.
+String matches for breakpoints, like MegaZeux string comparisons
+in general, do not have to match case. Also, as implied, the
+string comparisons are not for the whole line or Robot name; the
+lines or names must merely contain the given strings.
+
+Similar to breakpoints are watchpoints. Watchpoints activate
+stepping as well, but are based off of the values of counters
+and strings, and only activate stepping after a relevant value
+is changed, not right when one is seen. Unlike with breakpoints,
+the watchpoint string has to exactly match (although case
+insensitive).
+
+Editing breakpoints/watchpoints is done by pressing Space.
+Deleting breakpoints/watchpoints is done by pressing Alt+D.
 
 The Robotic debugger defaults to off. Clicking the Enable
-Robotic Debugger button activates the debugger from that point
-on. Once done editing breakpoints, click the Done button.
+Robotic Debugger button, or adding a breakpoint or watchpoint,
+activates the debugger from that point on. Once done editing
+breakpoints and watchpoints, click the Done button.
 
-In addition to user-defined breakpoints, MegaZeux also
-activates stepping through the debugger when Robot processing
-reaches very high amounts; if the debugger was currently off,
-hitting this condition forces it on. By default, this happens
-when a Robot executes over 2,000,000 commands in a single
-cycle, but this can be changed by changing the value of the
-COMMANDS_STOP counter.
+In addition to user-defined breakpoints and watchpoints,
+MegaZeux also activates stepping through the debugger when Robot
+processing reaches very high amounts; if the debugger was
+currently off, hitting this condition forces it on. By default,
+this happens when a Robot executes over 2,000,000 commands in a
+single cycle, but this can be changed by changing the value of
+the COMMANDS_STOP counter.
 
-Once a breakpoint is hit, MegaZeux halts execution of all
-actions and opens up a menu. Actions are as follows:
+Once a breakpoint or watchpoint is hit, MegaZeux halts execution
+of all actions and opens up a menu. Actions, and the keys that
+activate them, are as follows:
 
 ~AContinue~F: Stops stepping through code until the next
-breakpoint is hit.
+breakpoint/watchpoint is hit. (C or Escape)
 
 ~AStep~F: Steps through the current line, executing it, and
-prompts the user for further action at the next line.
+prompts the user for further action at the next line. (S)
+
+~AGoto~F: Opens up a menu to send Robots to a given label. (G)
+All Robots that match the given Name string (or all Robots for
+blank) will be sent to the given label. The Goto option will
+send the relevant Robots to the given label regardless of locked
+status; the Send option will act as a normal label send; the
+Send All option will act as a normal label send to all Robots.
+Select the "Send/send all ignores locked status?" option to have
+these ignore locked states as well.
+
+The strings given here do not have to be constants; expression
+outputs and interpolated strings will evaluate correctly for
+these values.
 
 ~AHalt~F: Makes the Robot running the current line immediately
 stop processing commands. Note that this does not permanently
 stop the Robot from processing commands in the future (e.g. due
 to being sent to a label); it merely prevents it from running
-its currently planned commands.
+its currently planned commands. (H)
 
 ~AHalt All~F: Immediately makes ALL Robots stop processing
-commands.
+commands. (Alt+H)
 
-~ACounters~F: Opens up the Counter Debug Mode.
+~ACounters~F: Opens up the Counter Debug Mode. (F11)
 
-~ABreakpoints~F: Opens up the Breakpoint Editor.
+~ABreakpoints~F: Opens up the Robotic Debugger config. (Alt+F11)
+
+The PgUp and PgDn keys can shift the debugger window to the top
+or bottom of the screen, respectively.
 
 >#MAIN.HLP:072:Table of Contents
 #ERRORMES.HLP
@@ -7472,6 +7537,9 @@ color number of the base color (color 0 out of 0-3) of a c1a
 (color 191) tile to color 50. This applies to SMZX mode 3 only,
 and only to renderers that support unbound sprites.
 
+Keep in mind that all re-ordered indices will be set to normal
+values when SMZX_MODE is changed.
+
 ~BSMZX_PALETTE (read-only)
 
 Loads a Super MZX palette. This counter is deprecated; please
@@ -7713,6 +7781,13 @@ If this counter is set to a non-zero value, the current
 MegaZeux world will exit to the title screen. This counter does
 nothing on the title screen.
 
+~BPLAY_GAME
+
+If this counter is set to a non-zero value when MZXRun is in
+standalone mode and on the title screen, the game will be
+started. Instances outside of the title screen and outside of
+MZXRun will be ignored.
+
 ~BCURRENT_COLOR
 ~BRED_VALUE
 ~BGREEN_VALUE
@@ -7775,7 +7850,7 @@ instead of the current 32). Follow the link below to read more.
 >#EXPRESS.HLP:exp:Expressions
 
 ~BKEY_PRESSED (read-only)
-~BKEY (read-only)
+~BKEY
 ~BKEY_CODE (read-only)
 
 Tests whether any key (each referenced by a number) is
@@ -7787,8 +7862,9 @@ negative numbers will not work. "Autorepeat" affects
 KEY_PRESSED, so if you hold down a key you will get the value,
 then get zeros for a period, then get the values again. This is
 useful for many applications.
-KEY acts like KEY_PRESSED, but lacks autorepeat, and retains
-its value until another key is pressed.
+KEY acts like KEY_PRESSED, but lacks autorepeat, returns
+uppercase letter values, and retains its value until another key
+is pressed.
 KEY_CODE acts similar to KEY_PRESSED but lacks autorepeat and
 has different keycodes. Its keycode set is more limited, making
 KEY_CODE only preferable if autorepeat has to be off.
@@ -9610,6 +9686,120 @@ updated.
 #NEWINVER.HLP
 :1st: 
 $~9NEW in MegaZeux!
+
+July 16, 2017 - MZX 2.90b
+
+It's been two weeks, so here's a bugfix release for MZX 2.90.
+There isn't a whole lot that's new to talk about.
+
+Firstly, the palette editor has gone through an overhaul. This
+is mostly internal preparation for an eventual SMZX palette
+editor, but the new features include the partial restoration of
+mouse input (which was removed in 2.80X), the addition of color
+sliders, the ability to hide the palette editor help, and two
+new colorspaces (HSL and CIELAB) to aid in the selection of
+palette colors.
+
+Next, the robot debugger introduced in 2.90 has new features.
+You can now set "watchpoints" to watch the status of particular
+variables, and you can send labels/goto from the robot debugger.
+The robot debugger config screen has been visually improved, and
+line number breakpoints can be defined. Another notable feature
+is that KEY_PRESSED and KEY_CODE values are now displayed in the
+debug window during gameplay.
+
+libxmp is now the default sound engine for modules, fixing a
+longstanding bug where certain S3Ms would have muted channels.
+GDM modules are now supported by MZX again. If you notice any
+inaccuracies with mod files, please report them to the tracker.
+
+Fixed bugs include a major overhaul of the glsl shaders for
+compatibility with almost any system, various sprite, text box,
+and input bugs, a crash fix when MZMs were saved from out of
+bounds board locations, and a bug where opening worlds or
+testing from the editor could cause MegaZeux to exit.
+
+FEATURES
+
++ The "shaders/extra" folder is now "shaders/scalers". The
+  default vertex shader is still located in the shaders folder.
++ The default scaling shader can now be set in the config file
+  using the gl_scaling_shader option. If not defined, MegaZeux
+  will load assets/shaders/scalers/semisoft.frag.
++ The robot debugger now supports monitoring the values of
+  counters and strings. Use the config menu/breakpoint editor to
+  add watchpoints; when the debugger detects a change in a
+  watchpoint counter/string AFTER a command has been executed,
+  the robot debugger will open.
++ The robot debugger can now send robots labels. Use 'G' or
+  select 'Goto' in the robot debugger to use this feature. The
+  name and label inputs support expression parsing and string/
+  counter interpolation.
++ The robot debugger can now use line numbers in breakpoints.
++ The palette editor help can now be hidden with Alt+H. The
+  default behavior for this can be set in the config file. The
+  palette editor help is visible by default.
++ The palette editor's mouse functionality has been improved.
+  Behavior when clicking the palette has been restored, and
+  component sliders have been added.
++ The palette editor now supports alternate color spaces.
++ The debug window now displays the last key_code (green) and
+  key_pressed (magenta) values detected during gameplay. These
+  values are located in the bottom right corner of the window.
++ The default fullscreen resolution for scalable renderers is
+  now 1280,720. The default fullscreen resolution for 'software'
+  is still 640,480. The default aspect ratio is now 'modern'.
++ The checkres utility has been updated to support 2.90X worlds,
+  worlds in subdirectories of zip archives, multiple input files
+  to test, and the ability to specify secondary directories and
+  zips to search (e.g. for games with separate music zips).
+
+BUGFIXES
+
++ Fixed a bug where certain "keyN" labels, such as "key$", would
+  not work correctly.
++ Integer comparisons between numbers greater than 2^31-1 apart
+  now work correctly. (Lancer-X)
++ The palette editor now displays the SMZX mode 1 palette
+  correctly.
++ Sprite collisions now correctly ignore the sprite's visual
+  width and height.
++ Blank lines are no longer skipped when copy-pasting text into
+  the robot editor. (Lancer-X)
++ Fixed a bug where key presses in dialogs could be detected in
+  games, and keypresses could still carry between other dialogs.
++ [ message boxes now use the same screen mode as everything
+  else. Same with scrolls. (Lancer-X)
++ spr#_setview now works with unbound sprites. It's pretty nasty
+  as the viewport can't scroll with pixel precision, but the new
+  behavior should still be better than the old. (Lancer-X)
++ Fixed a bug affecting certain Intel HD Graphics cards and the
+  GLSL renderer that appears to have been around since that
+  renderer was first introduced. (Lancer-X)
++ Fixed a bug where the numeric numpad keys were inappropriately
+  translated to regular keys based on numlock when they were
+  read from KEY_PRESSED. This behavior is now locked to worlds
+  from 2.82X through 2.84X.
++ Fixed a bug where warping the mouse on one axis would snap the
+  mouse to the nearest pixel on the other axis, causing problems
+  for upscaled windows.
++ Fixed a bug where mouse control would not respect video_ratio
+  settings aside from "stretch".
+* Fixed a bug where MZX would attempt to load certain invalid
+  worlds that should have been caught by validation.
++ Copy block to MZM no longer crashes when the MZM is partially
+  overlapping the board edge. (Lancer-X)
++ Fixed bug where MegaZeux would sometimes exit immediately on
+  loading a game or would immediately exit testing.
+
+DEVELOPERS
+
++ libxmp is now the default module sound engine. Use "make xmp"
+  to make and install libxmp if it is not available on your
+  platform.
++ Mac OS X portability improved. (Spectere and Why-Fi)
+
+>#MAIN.HLP:072:Table of Contents
 
 June 29, 2017 - MZX 2.90
 
