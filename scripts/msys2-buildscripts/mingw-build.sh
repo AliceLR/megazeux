@@ -8,8 +8,8 @@
 MSYSTEM=$6
 . /etc/profile
 cd /mzx-build-workingdir/megazeux
-git checkout $5
-git pull origin $5
+git fetch
+git checkout origin/$5
 
 ./config.sh --platform $2 $3 --enable-release
 make clean

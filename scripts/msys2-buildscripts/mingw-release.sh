@@ -25,14 +25,13 @@ do
   for A in $archs
   do
     pushd $A
-    rm -f /mzx-build-workingdir/zips/$T-$A.zip
-    zip -r /mzx-build-workingdir/zips/$T-$A.zip *
-    /mzx-build-scripts/builddir-to-updatedir.sh
+    /mingw-release-single.sh $T $A &
     popd
   done
   popd
   echo "Current-$1: $T" >> updates-uncompressed.txt
   shift
 done
+wait
 /mzx-build-scripts/releasedir-to-tar.sh
 popd
