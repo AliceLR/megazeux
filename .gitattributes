@@ -1,4 +1,4 @@
-docs/changelog.txt -crlf
+docs/changelog.txt merge=union -crlf
 docs/cycles_and_commands.txt -crlf
 docs/idle_direction_oddities.txt -crlf
 docs/macro.txt -crlf
