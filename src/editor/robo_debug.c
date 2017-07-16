@@ -81,10 +81,10 @@ static int selected = 0;
 static int position = 1;
 
 
-static inline int  hash_string(char *data, size_t length)
+static inline int hash_string(char *data, size_t length)
 {
   unsigned int i;
-  int x = *data;
+  int x = length ? *data : 0;
 
   for(i = 1; i < length; i++)
   {
@@ -541,12 +541,17 @@ void __debug_robot_config(struct world *mzx_world)
   pop_context();
 }
 
-// Turn off the debugger without clearing the breakpoints
+// Turn off the debugger without clearing the breakpoints.
 // For now we'll just have this disable the step, since starting
-// with the debugger on may have very useful applications
-void pause_robot_debugger(void)
+// with the debugger on may have very useful applications.
+// Also, reset the watchpoint values.
+void reset_robot_debugger(void)
 {
-  //robo_debugger_enabled = 0;
+  int i;
+
+  for(i = 0; i < num_watchpoints; i++)
+    watchpoints[i]->last_value = 0;
+
   step = false;
 }
 

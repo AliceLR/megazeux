@@ -3585,7 +3585,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
             load_board_module(mzx_world, src_board);
 
-            pause_robot_debugger();
+            reset_robot_debugger();
 
             play_game(mzx_world);
 

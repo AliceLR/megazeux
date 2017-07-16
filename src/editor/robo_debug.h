@@ -28,8 +28,8 @@ EDITOR_LIBSPEC int __debug_robot_break(struct world *mzx_world,
 EDITOR_LIBSPEC int __debug_robot_watch(struct world *mzx_world,
  struct robot *cur_robot, int id, int lines_run);
 
+EDITOR_LIBSPEC void reset_robot_debugger(void);
 EDITOR_LIBSPEC void free_breakpoints(void);
-EDITOR_LIBSPEC void pause_robot_debugger(void);
 
 void update_watchpoint_last_values(struct world *mzx_world);
 
