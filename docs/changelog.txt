@@ -1,4 +1,34 @@
-GIT
+July 16, 2017 - MZX 2.90b
+
+It's been two weeks, so here's a bugfix release for MZX 2.90.
+There isn't a whole lot that's new to talk about.
+
+Firstly, the palette editor has gone through an overhaul. This
+is mostly internal preparation for an eventual SMZX palette
+editor, but the new features include the partial restoration of
+mouse input (which was removed in 2.80X), the addition of color
+sliders, the ability to hide the palette editor help, and two
+new colorspaces (HSL and CIELAB) to aid in the selection of
+palette colors.
+
+Next, the robot debugger introduced in 2.90 has new features.
+You can now set "watchpoints" to watch the status of particular
+variables, and you can send labels/goto from the robot debugger.
+The robot debugger config screen has been visually improved, and
+line number breakpoints can be defined. Another notable feature
+is that KEY_PRESSED and KEY_CODE values are now displayed in the
+debug window during gameplay.
+
+libxmp is now the default sound engine for modules, fixing a
+longstanding bug where certain S3Ms would have muted channels.
+GDM modules are now supported by MZX again. If you notice any
+inaccuracies with mod files, please report them to the tracker.
+
+Fixed bugs include a major overhaul of the glsl shaders for
+compatibility with almost any system, various sprite, text box,
+and input bugs, a crash fix when MZMs were saved from out of
+bounds board locations, and a bug where opening worlds or
+testing from the editor could cause MegaZeux to exit.
 
 FEATURES
 
