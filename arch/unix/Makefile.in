@@ -67,7 +67,6 @@ ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 		assets/shaders/cursor.vert \
 		assets/shaders/mouse.frag \
 		assets/shaders/mouse.vert \
-		assets/shaders/scaler.frag \
 		assets/shaders/scaler.vert \
 		assets/shaders/tilemap.frag \
 		assets/shaders/tilemap.vert \
