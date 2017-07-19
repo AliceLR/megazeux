@@ -183,7 +183,7 @@ struct audio_stream *construct_xmp_stream(char *filename, Uint32 frequency,
     {
       struct xmp_stream *xmp_stream = cmalloc(sizeof(struct xmp_stream));
       xmp_stream->ctx = ctx;
-      xmp_start_player(ctx, 44100, 0);
+      xmp_start_player(ctx, audio.output_frequency, 0);
 
       xmp_get_module_info(ctx, &info);
       for(i = 0, row_pos = 0; i < XMP_MAX_MOD_LENGTH; i++)
