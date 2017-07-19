@@ -1,3 +1,14 @@
+GIT
+
+FEATURES
+
+FIXES
+
++ Fixed bug where --disable-modular builds would fail to link.
+
+DEVELOPERS
+
+
 July 16, 2017 - MZX 2.90b
 
 It's been two weeks, so here's a bugfix release for MZX 2.90.
