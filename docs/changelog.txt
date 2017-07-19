@@ -5,6 +5,7 @@ FEATURES
 FIXES
 
 + Fixed bug where --disable-modular builds would fail to link.
++ Fixed bug where libxmp would not play mods as sound effects.
 + Fixed bug where libxmp would assume audio_sample_rate was
   44100, causing mods to play at incorrect pitches with other
   rates.

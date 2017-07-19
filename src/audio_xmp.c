@@ -44,7 +44,6 @@ static int xmp_resample_mode;
 static Uint32 audio_xmp_mix_data(struct audio_stream *a_src, Sint32 *buffer,
  Uint32 len)
 {
-  Uint32 read_len;
   struct xmp_stream *stream = (struct xmp_stream *)a_src;
   Uint32 read_wanted = stream->s.allocated_data_length -
    stream->s.stream_offset;
@@ -52,11 +51,11 @@ static Uint32 audio_xmp_mix_data(struct audio_stream *a_src, Sint32 *buffer,
    stream->s.stream_offset;
   Uint32 r_val = 0;
 
-  read_len = xmp_play_buffer(stream->ctx, read_buffer, read_wanted, a_src->repeat ? 0 : 1);
+  int xmp_r_val =
+   xmp_play_buffer(stream->ctx, read_buffer, read_wanted, a_src->repeat ? 0 : 1);
 
-  if(read_len < read_wanted && !a_src->repeat)
+  if(xmp_r_val == -XMP_END && !a_src->repeat)
   {
-    memset(read_buffer + read_len, 0, read_wanted - read_len);
     r_val = 1;
   }
 
