@@ -634,14 +634,18 @@ static const struct editor_config_info default_editor_options =
 
 };
 
-static void editor_config_change_option(void *conf, char *name, char *value,
+static int editor_config_change_option(void *conf, char *name, char *value,
  char *extended_data)
 {
   const struct editor_config_entry *current_option = find_editor_option(name,
    editor_config_options, num_editor_config_options);
 
   if(current_option)
+  {
     current_option->change_option(conf, name, value, extended_data);
+    return 1;
+  }
+  return 0;
 }
 
 void set_editor_config_from_file(struct editor_config_info *conf,

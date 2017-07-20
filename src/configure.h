@@ -102,7 +102,7 @@ CORE_LIBSPEC void set_config_from_command_line(struct config_info *conf,
  int *argc, char *argv[]);
 CORE_LIBSPEC void free_config(struct config_info *conf);
 
-typedef void (* find_change_option)(void *conf, char *name, char *value,
+typedef int (* find_change_option)(void *conf, char *name, char *value,
  char *extended_data);
 
 #ifdef CONFIG_EDITOR

@@ -630,15 +630,21 @@ static const struct config_info default_options =
 #endif /* CONFIG_UPDATER */
 };
 
-static void config_change_option(void *conf, char *name,
+static int config_change_option(void *conf, char *name,
  char *value, char *extended_data)
 {
   const struct config_entry *current_option = find_option(name,
    config_options, num_config_options);
 
   if(current_option)
+  {
     if(current_option->allow_in_game_config || is_startup)
+    {
       current_option->change_option(conf, name, value, extended_data);
+      return 1;
+    }
+  }
+  return 0;
 }
 
 __editor_maybe_static void __set_config_from_file(
@@ -748,6 +754,7 @@ __editor_maybe_static void __set_config_from_command_line(
   char current_char, *input_position, *output_position;
   char *equals_position, line_buffer[256], *value;
   int i = 1;
+  int j;
 
   while(i < *argc)
   {
@@ -776,20 +783,21 @@ __editor_maybe_static void __set_config_from_command_line(
 
     if(equals_position && line_buffer[0])
     {
-      int j;
-
       *equals_position = 0;
       value = equals_position + 1;
-      find_change_handler(conf, line_buffer, value, NULL);
 
-      for(j = i; j < *argc - 1; j++)
-        argv[j] = argv[j + 1];
-      (*argc)--;
+      if(find_change_handler(conf, line_buffer, value, NULL))
+      {
+        // Found the option; remove it from argv and make sure i stays the same
+        for(j = i; j < *argc - 1; j++)
+          argv[j] = argv[j + 1];
+        (*argc)--;
+        i--;
+      }
+      // Otherwise, leave it for the editor config.
     }
-    else
-    {
-      i++;
-    }
+
+    i++;
   }
 }
 
