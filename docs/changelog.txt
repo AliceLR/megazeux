@@ -2,6 +2,8 @@ GIT
 
 FEATURES
 
++ Save files from 2.84X worlds can now be loaded.
+
 FIXES
 
 + Fixed bug where --disable-modular builds would fail to link.
