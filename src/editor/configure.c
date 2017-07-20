@@ -221,6 +221,12 @@ static void config_editor_enter_splits(struct editor_config_info *conf,
   conf->editor_enter_splits = strtol(value, NULL, 10);
 }
 
+static void config_editor_load_board_assets(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
+{
+  conf->editor_load_board_assets = strtol(value, NULL, 10);
+}
+
 static void config_editor_tab_focus(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
@@ -524,6 +530,7 @@ static const struct editor_config_entry editor_config_options[] =
   { "color_coding_on", config_ccode_on },
   { "default_invalid_status", config_default_invald },
   { "editor_enter_splits", config_editor_enter_splits },
+  { "editor_load_board_assets", config_editor_load_board_assets },
   { "editor_space_toggles", config_editor_space_toggles },
   { "editor_tab_focuses_view", config_editor_tab_focus },
   { "macro_*", config_macro },
@@ -566,6 +573,7 @@ static const struct editor_config_info default_editor_options =
   0,                            // editor_space_toggles
   1,                            // board_editor_hide_help
   0,                            // editor_tab_focuses_view
+  0,                            // editor_load_board_assets
 
   // Defaults for new boards
   0,                            // viewport_x

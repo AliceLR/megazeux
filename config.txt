@@ -276,8 +276,8 @@
 
 # Whether or not the spacebar can be used to toggle between
 # your active buffer and the meta character "SPACE". If you
-# set this, it will behave like older MegaZeux's, but it will
-# allow you to overwrite robots, for instance.
+# set this, it will behave like older MegaZeux versions, but it
+# will allow you to overwrite robots, for instance.
 #
 # If the setting is disabled (the default), replacing params
 # will your new buffer will not require a toggle, and robots
@@ -290,6 +290,11 @@
 # following line to enable.
 
 # editor_tab_focuses_view = 1
+
+# Whether or not the editor will load board char sets and
+# palettes when the board is changed. Disabled by default.
+
+# editor_load_board_assets = 1
 
 # If this is set to 1 (the default), enter can be used to split
 # a line in the robot editor. However, the classic behaviour is

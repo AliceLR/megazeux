@@ -3,6 +3,12 @@ GIT
 FEATURES
 
 + Save files from 2.84X worlds can now be loaded.
++ The editor can be configured to automatically load board
+  charsets and palettes now. Use the 'editor_load_board_assets'
+  config file option to enable this behavior. This behavior is
+  disabled by default. Note that this will OVERWRITE THE CURRENT
+  WORLD CHARSET AND PALETTE and your changes will NOT be saved
+  automatically.
 
 FIXES
 

@@ -2704,8 +2704,13 @@ void change_board_load_assets(struct world *mzx_world)
 
   // Does this board need a palette loaded? (2.90+)
   if(mzx_world->version >= 0x025A && cur_board->palette_path[0])
+  {
     if(fsafetranslate(cur_board->palette_path, translated_name) == FSAFE_SUCCESS)
+    {
       load_palette(translated_name);
+      update_palette();
+    }
+  }
 }
 
 // This needs to happen before a world is loaded if clear_global_data was used.

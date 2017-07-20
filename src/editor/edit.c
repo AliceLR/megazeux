@@ -4032,11 +4032,14 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
        &scroll_y, cursor_x, cursor_y, board_width, board_height,
        edit_screen_height);
 
-      new_board = -1;
+      // Load the board charset and palette
+      if(mzx_world->editor_conf.editor_load_board_assets)
+        change_board_load_assets(mzx_world);
 
       draw_memory_timer = DRAW_MEMORY_TIMER_MAX / 2;
       draw_mod_timer = DRAW_MOD_TIMER_MAX;
 
+      new_board = -1;
       modified = 1;
     }
 
