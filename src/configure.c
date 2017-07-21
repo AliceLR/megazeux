@@ -55,7 +55,7 @@
 #endif
 
 #ifndef VIDEO_OUTPUT_DEFAULT
-#define VIDEO_OUTPUT_DEFAULT "software"
+#define VIDEO_OUTPUT_DEFAULT "glsl"
 #endif
 
 #ifndef AUDIO_BUFFER_SIZE
