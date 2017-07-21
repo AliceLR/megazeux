@@ -19,6 +19,8 @@ FIXES
   rates.
 + Fixed bug where editor config file options would be ignored at
   the command line.
++ Fixed bug where string interpolation into a label/counter name
+  could cause MZX to crash with very long strings.
 
 DEVELOPERS
 

@@ -295,7 +295,7 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
         // Load legacy bytecode, and compile it, if necessary.
         if(file_version < VERSION_PROGRAM_SOURCE)
         {
-          char *program_legacy_bytecode = prop.start;
+          char *program_legacy_bytecode = (char *)prop.start;
           int v_size;
 
           v_size = validate_legacy_bytecode(program_legacy_bytecode, size);
@@ -2892,7 +2892,7 @@ char *tr_msg_ext(struct world *mzx_world, char *mesg, int id, char *buffer,
   int dest_pos = 0;
   int val, error;
 
-  while((current_char != terminating_char) && (dest_pos < ROBOT_MAX_TR))
+  while((current_char != terminating_char) && (dest_pos < ROBOT_MAX_TR-1))
   {
     switch(current_char)
     {
@@ -2947,7 +2947,7 @@ char *tr_msg_ext(struct world *mzx_world, char *mesg, int id, char *buffer,
         int expr_length;
         src_ptr++;
         expr_length = parse_string_expression(mzx_world, &src_ptr, id,
-         buffer + dest_pos);
+         buffer + dest_pos, ROBOT_MAX_TR - dest_pos - 1);
         dest_pos += expr_length;
         break;
       }
@@ -3137,7 +3137,7 @@ char *tr_msg_ext(struct world *mzx_world, char *mesg, int id, char *buffer,
       src_ptr++;
       dest_pos++;
     }
-  } while(current_char && (dest_pos < ROBOT_MAX_TR));
+  } while(current_char && (dest_pos < ROBOT_MAX_TR - 1));
 
   buffer[dest_pos] = 0;
   return buffer;

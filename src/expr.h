@@ -31,7 +31,7 @@ int parse_expression(struct world *mzx_world, char **expression, int *error,
 
 #ifdef CONFIG_DEBYTECODE
 int parse_string_expression(struct world *mzx_world, char **_expression,
- int id, char *output);
+ int id, char *output, size_t output_left);
 #endif
 
 __M_END_DECLS

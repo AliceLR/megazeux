@@ -1097,6 +1097,8 @@ static int parse_argument(struct world *mzx_world, char **_argument,
       }
     }
 
+    /* fallthrough */
+
     // One's complement
     case '~':
     {
@@ -1602,10 +1604,11 @@ err_out:
 #ifdef CONFIG_DEBYTECODE
 
 int parse_string_expression(struct world *mzx_world, char **_expression,
- int id, char *output)
+ int id, char *output, size_t output_left)
 {
   char *expression = *_expression;
-  int expression_length = 0;
+  size_t expression_length = output_left;
+  size_t copy_length;
 
   while(1)
   {
@@ -1623,30 +1626,37 @@ int parse_string_expression(struct world *mzx_world, char **_expression,
          tr_msg_ext(mzx_world, expression, id, name_translated, '`');
 
         get_string(mzx_world, name_translated, &string, id);
+        copy_length = string.length;
 
-        memcpy(output, string.value, string.length);
-        output += string.length;
+        if(copy_length > output_left)
+          copy_length = output_left;
 
-        expression_length += string.length;
+        memcpy(output, string.value, copy_length);
+        output += copy_length;
+
+        output_left -= copy_length;
         break;
       }
 
       case '"':
       {
-        int literal_length;
         expression++;
 
         expression = tr_msg_ext(mzx_world, expression, id, output, '"');
-        literal_length = strlen(output);
+        copy_length = strlen(output);
 
-        output += literal_length;
-        expression_length += literal_length;
+        if(copy_length > output_left)
+          copy_length = output_left;
+
+        output += copy_length;
+        output_left -= copy_length;
         break;
       }
 
       case '>':
         expression++;
         *_expression = expression;
+        expression_length -= output_left;
         return expression_length;
 
       default:
@@ -1661,12 +1671,16 @@ int parse_string_expression(struct world *mzx_world, char **_expression,
         *next = 0;
         get_string(mzx_world, expression, &string, id);
         *next = temp;
-
         expression = next;
 
-        memcpy(output, string.value, string.length);
-        output += string.length;
-        expression_length += string.length;
+        copy_length = string.length;
+
+        if(copy_length > output_left)
+          copy_length = output_left;
+
+        memcpy(output, string.value, copy_length);
+        output += copy_length;
+        output_left -= copy_length;
         break;
       }
     }
