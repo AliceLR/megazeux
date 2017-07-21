@@ -9,6 +9,7 @@ FEATURES
   disabled by default. Note that this will OVERWRITE THE CURRENT
   WORLD CHARSET AND PALETTE and your changes will NOT be saved
   automatically.
++ GLSL is now the default renderer. (Lancer-X)
 
 FIXES
 
