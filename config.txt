@@ -1,5 +1,5 @@
 # Configuration file for MegaZeux
-# Jul 16th, 2017
+# Jul 25th, 2017
 
 # Comments begin with #. Whitespace is ignored. Empty lines are
 # ignored as well.

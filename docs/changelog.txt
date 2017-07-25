@@ -1,4 +1,16 @@
-GIT
+July 25, 2017 - MZX 2.90c
+
+This is a small fix release mostly cleaning up issues from the
+previous release.
+
+Notable fixes include a crash on certain instances of string
+interpolation into counters/labels/text. Playing mods as sound
+effects works again, and the audio_sample_rate config file
+option now works correctly.
+
+This release also includes support for loading save files from
+MegaZeux 2.84X and experimental editor behavior for handling
+board charsets and palettes.
 
 FEATURES
 
@@ -14,16 +26,15 @@ FEATURES
 FIXES
 
 + Fixed bug where --disable-modular builds would fail to link.
-+ Fixed bug where libxmp would not play mods as sound effects.
-+ Fixed bug where libxmp would assume audio_sample_rate was
-  44100, causing mods to play at incorrect pitches with other
-  rates.
++ Fixed bug with libxmp integration where mods could not be
+  played as sound effects.
++ Fixed bug with libxmp integration where MZX would assume
+  audio_sample_rate was 44100, causing mods to play at incorrect
+  pitches with other rates.
 + Fixed bug where editor config file options would be ignored at
   the command line.
 + Fixed bug where string interpolation into a label/counter name
   could cause MZX to crash with very long strings.
-
-DEVELOPERS
 
 
 July 16, 2017 - MZX 2.90b
