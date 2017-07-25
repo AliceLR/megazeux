@@ -484,7 +484,12 @@ This will let you select a saved game from a list of filenames.
 The game will then be reloaded from the same point you left
 off. While most games will allow loading anywhere, some will
 restrict loading to certain times or will use a custom
-mechanism for loading games instead.
+mechanism for loading games instead. In general, MegaZeux can
+only load saves made in MegaZeux versions sharing the current
+version number (e.g. 2.81c can load saves made in 2.81 through
+2.81h), but current versions of MegaZeux allow direct loading of
+saves made in 2.84 versions as well as saves made in the current
+version.
 
 NOTE: A few games may save or load automatically, and
 high-caliber games may have completely different methods of
@@ -537,7 +542,8 @@ config.txt file.
 F10 - Quickload
 This will reload the last game saved using F3 or F9. If no
 game has been saved since MegaZeux was started, the default
-save filename will be used.
+save filename will be used. The same caveats about save versions
+still apply here.
 
 F11 - Counter Debug Mode
 This will load a screen listing which counters and strings
@@ -2540,7 +2546,7 @@ yellow is red plus green. (Really.) Whites and grays are made
 from equal amounts of all three. For example, Red at 42, Blue at
 42 and Green at 0 would be a deep purple, and all as 20 would be
 a dark gray. Orange is made with full red, green set to 31 and
-blue zeroed out.To brighten a color, raise all the numbers, or
+blue zeroed out. To brighten a color, raise all the numbers, or
 lower them to darken it.
 
 For RGB mode, use the arrow keys to select the current color. R,
@@ -5631,17 +5637,23 @@ player doesn't have.
 :_t1:~ATAKE # [item]
 :_t2:~ATAKE # [item] "label"
 
-Gives or takes a number of a certain item. The third form jumps
-to a label if the player doesn't have enough of the stated
-item.
+Gives or takes a number of a certain item. If the player does
+not have enough of this type of item to take, nothing is taken.
+The third form jumps to a given label if the player doesn't have
+enough of the stated item.
 
 :_t6:~ATRADE # [item] # [item] "label"
 
 Gives the player a number of the first item and takes a number
 of the second item in exchange. If the player doesn't have
-enough of the second item, jumps to label and has no other
-effect. This command eases the writing of simple shops and
-vendors.
+enough of the second item, this command jumps to the given label
+and has no other effect. This command eases the writing of
+simple shops and vendors.
+
+Keep in mind that trades involving healths and lives can end up
+with either at 0, leading to potential deaths and endgames if
+the player has the exact amount of health/lives being traded
+away.
 
 :_l6:~ALOCKPLAYER
 :_l9:~ALOCKPLAYER NS
@@ -7393,10 +7405,10 @@ Turns the given sprite off if it is on.
 
 If either is set to 1, these draw the given sprite n over the
 overlay as opposed to underneath. Note that this has different
-behaviour depending on whether unbound sprites are present. If
-there are any unbound sprites on the screen all overlaid sprites
-will be drawn above all non-overlaid sprites. If unbound sprites
-are not in use overlaid sprites will be drawn above the overlay
+behavior depending on whether unbound sprites are present. If
+there are any unbound sprites active, all overlaid sprites will
+be drawn above all non-overlaid sprites. If unbound sprites are
+not in use, overlaid sprites will be drawn above the overlay,
 but will otherwise respect the standard sprite draw order.
 
 ~BSPRn_REFX
@@ -8852,9 +8864,10 @@ simply called the ternary operator. If the expression to the
 left of the question mark is non-zero, the expression between
 the question mark and colon is evaluated; otherwise, the
 expression to the right of the colon is evaluated. For example,
-If "local" is 35, SET ('local'<60?'local'+2:'local'+1) would set
-the value of "local" to 37, as the first expression evaluates to
-1 and the second expression ('local'+2) is then evaluated.
+If "local" is 35, SET "local" ('local'<60?'local'+2:'local'+1)
+would set the value of "local" to 37, as the first expression
+evaluates to 1 and the second expression ('local'+2) is then
+evaluated.
 
 Special usages:
 
@@ -9691,6 +9704,46 @@ updated.
 #NEWINVER.HLP
 :1st: 
 $~9NEW in MegaZeux!
+
+July 25, 2017 - MZX 2.90c
+
+This is a small fix release mostly cleaning up issues from the
+previous release.
+
+Notable fixes include a crash on certain instances of string
+interpolation into counters/labels/text. Playing mods as sound
+effects works again, and the audio_sample_rate config file
+option now works correctly.
+
+This release also includes support for loading save files from
+MegaZeux 2.84X and experimental editor behavior for handling
+board charsets and palettes.
+
+FEATURES
+
++ Save files from 2.84X worlds can now be loaded.
++ The editor can be configured to automatically load board
+  charsets and palettes now. Use the 'editor_load_board_assets'
+  config file option to enable this behavior. This behavior is
+  disabled by default. Note that this will OVERWRITE THE CURRENT
+  WORLD CHARSET AND PALETTE and your changes will NOT be saved
+  automatically.
++ GLSL is now the default renderer. (Lancer-X)
+
+FIXES
+
++ Fixed bug where --disable-modular builds would fail to link.
++ Fixed bug with libxmp integration where mods could not be
+  played as sound effects.
++ Fixed bug with libxmp integration where MZX would assume
+  audio_sample_rate was 44100, causing mods to play at incorrect
+  pitches with other rates.
++ Fixed bug where editor config file options would be ignored at
+  the command line.
++ Fixed bug where string interpolation into a label/counter name
+could cause MZX to crash with very long strings.
+
+>#MAIN.HLP:072:Table of Contents
 
 July 16, 2017 - MZX 2.90b
 
