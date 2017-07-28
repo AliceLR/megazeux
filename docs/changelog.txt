@@ -1,3 +1,16 @@
+GIT
+
+FEATURES
+
+FIXES
+
++ Fixed a bug where the ternary operator would fail to find the
+  correct colon when the middle term contained a second ternary
+  operator in a nested expression.
+
+DEVELOPERS
+
+
 July 25, 2017 - MZX 2.90c
 
 This is a small fix release mostly cleaning up issues from the
