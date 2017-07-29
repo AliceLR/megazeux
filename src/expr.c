@@ -628,10 +628,12 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
             if(current_char == ':')
             {
               if(paren_level == 0)
+              {
                 if(ternary_level <= 0)
                   break;
 
-              ternary_level--;
+                ternary_level--;
+              }
             }
           }
           state = 0;
