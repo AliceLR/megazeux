@@ -37,6 +37,14 @@
 
 static u8 isNot2DS;
 
+FILE *popen(const char *command, const char *type) {
+	return NULL;
+}
+
+int pclose(FILE *stream) {
+	return 0;
+}
+
 void delay(Uint32 ms)
 {
   if(ms > 0)
@@ -84,7 +92,7 @@ void initialize_joysticks(void)
   // stub - hardcoded
 }
 
-void real_warp_mouse(Uint32 x, Uint32 y)
+void real_warp_mouse(int x, int y)
 {
   // Since we can't warp a touchscreen stylus, focus there instead.
   focus_pixel(x, y);

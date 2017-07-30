@@ -76,6 +76,7 @@ struct ctr_render_data
   bool charset_dirty, rendering_frame;
   struct ctr_shader_data shader, shader_accel;
   C3D_Mtx projection;
+  C3D_Tex playfield_tex;
   C3D_RenderTarget *playfield, *target_top, *target_bottom;
   u8 cursor_on, mouse_on;
   u32 focus_x, focus_y;

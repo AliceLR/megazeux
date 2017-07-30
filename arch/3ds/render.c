@@ -233,7 +233,10 @@ static bool ctr_init_video(struct graphics_data *graphics,
 
   render_data.rendering_frame = false;
 
-  render_data.playfield = C3D_RenderTargetCreate(1024, 512, GPU_RB_RGB8, GPU_RB_DEPTH16);
+  C3D_TexInit(&render_data.playfield_tex, 1024, 512, GPU_RGB8);
+  C3D_TexSetFilter(&render_data.playfield_tex, GPU_LINEAR, GPU_LINEAR);
+
+  render_data.playfield = C3D_RenderTargetCreateFromTex(&render_data.playfield_tex, GPU_TEXFACE_2D, 0, GPU_RB_DEPTH16);
   render_data.target_top = C3D_RenderTargetCreate(240, 400, GPU_RB_RGB8, GPU_RB_DEPTH16);
   render_data.target_bottom = C3D_RenderTargetCreate(240, 320, GPU_RB_RGB8, GPU_RB_DEPTH16);
 
@@ -254,8 +257,6 @@ static bool ctr_init_video(struct graphics_data *graphics,
   AttrInfo_AddLoader(&render_data.shader_accel.attr, 0, GPU_FLOAT, 3); // v0 = position
   AttrInfo_AddLoader(&render_data.shader_accel.attr, 1, GPU_SHORT, 2); // v1 = texcoord
   AttrInfo_AddLoader(&render_data.shader_accel.attr, 2, GPU_UNSIGNED_BYTE, 4); // v2 = color
-
-  C3D_TexSetFilter(&render_data.playfield->renderBuf.colorBuf, GPU_LINEAR, GPU_LINEAR);
 
   for (int i = 0; i < 4; i++)
   {
@@ -704,20 +705,20 @@ static inline void ctr_draw_playfield(struct ctr_render_data *render_data, bool 
     if ((x + width) > 640) { x = 640 - width; }
 
     if (height > 350) {
-      ctr_draw_2d_texture(render_data, &render_data->playfield->renderBuf.colorBuf, x, 512 - 350, width, 350, 0, (240 - (240 * 350 / height)) / 2, 400, 240 * 350 / height, 2.0f, true);
+      ctr_draw_2d_texture(render_data, &render_data->playfield_tex, x, 512 - 350, width, 350, 0, (240 - (240 * 350 / height)) / 2, 400, 240 * 350 / height, 2.0f, true);
     } else {
       if (y < 0) { y = 0; }
       if ((y + height) > 350) { y = 350 - height; }
 
-      ctr_draw_2d_texture(render_data, &render_data->playfield->renderBuf.colorBuf, x, 512 - y - height, width, height, 0, 0, 400, 240, 2.0f, true);
+      ctr_draw_2d_texture(render_data, &render_data->playfield_tex, x, 512 - y - height, width, height, 0, 0, 400, 240, 2.0f, true);
     }
   }
   else
   {
     if (get_bottom_screen_mode() == BOTTOM_SCREEN_MODE_KEYBOARD)
-      ctr_draw_2d_texture(render_data, &render_data->playfield->renderBuf.colorBuf, 0, 512 - 350, 640, 350, 80, 12.75, 160, 87.5, 2.0f, true);
+      ctr_draw_2d_texture(render_data, &render_data->playfield_tex, 0, 512 - 350, 640, 350, 80, 12.75, 160, 87.5, 2.0f, true);
     else
-      ctr_draw_2d_texture(render_data, &render_data->playfield->renderBuf.colorBuf, 0, 512 - 350, 640, 350, 0, 32, 320, 175, 2.0f, true);
+      ctr_draw_2d_texture(render_data, &render_data->playfield_tex, 0, 512 - 350, 640, 350, 0, 32, 320, 175, 2.0f, true);
   }
 }
 
