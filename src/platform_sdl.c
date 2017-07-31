@@ -20,21 +20,10 @@
  */
 
 #include "compat.h"
-
-#ifdef CONFIG_PSP
-#define _COMPILING_NEWLIB
-#endif
-
 #include "platform.h"
 #include "util.h"
 
 #include "SDL.h"
-
-#ifdef CONFIG_PSP
-#include <pspsdk.h>
-#include <psppower.h>
-PSP_MAIN_THREAD_STACK_SIZE_KB(512);
-#endif
 
 #ifdef CONFIG_GP2X
 #include <unistd.h> //for chdir, execl
@@ -97,10 +86,3 @@ void platform_quit(void)
   execl("/usr/gp2x/gp2xmenu", "/usr/gp2x/gp2xmenu", NULL);
 #endif
 }
-
-#ifdef CONFIG_PSP
-int _isatty(int fd)
-{
-  return isatty(fd);
-}
-#endif

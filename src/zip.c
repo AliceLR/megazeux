@@ -1021,7 +1021,7 @@ err_out:
  * zip_read_directory() is called.
  */
 
-enum zip_error zip_get_next_method(struct zip_archive *zp, unsigned int *method)
+enum zip_error zip_get_next_method(struct zip_archive *zp, uint32_t *method)
 {
   enum zip_error result;
 
