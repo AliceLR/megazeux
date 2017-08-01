@@ -106,6 +106,10 @@ CORE_LIBSPEC int create_path_if_not_exists(const char *filename);
 
 CORE_LIBSPEC int change_dir_name(char *path_name, const char *dest);
 
+CORE_LIBSPEC void join_path_names(char* target, int max_len, const char* path1, const char* path2);
+
+CORE_LIBSPEC void clean_path_slashes(const char *source, char *dest, size_t buf_size);
+
 typedef void (*fn_ptr)(void);
 
 struct dso_syms_map

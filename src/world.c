@@ -2862,8 +2862,7 @@ bool reload_world(struct world *mzx_world, const char *file, int *faded)
     getcwd(current_dir, MAX_PATH);
 
     split_path_filename(curr_sav, NULL, 0, save_name, MAX_PATH);
-    snprintf(curr_sav, MAX_PATH, "%s%s%s",
-     current_dir, DIR_SEPARATOR, save_name);
+    join_path_names(curr_sav, MAX_PATH, current_dir, save_name);
   }
 
   return true;
@@ -2923,8 +2922,7 @@ bool reload_swap(struct world *mzx_world, const char *file, int *faded)
   // Give curr_file a full path
   getcwd(full_path, MAX_PATH);
   split_path_filename(file, NULL, 0, file_name, MAX_PATH);
-  snprintf(curr_file, MAX_PATH, "%s%s%s",
-   full_path, DIR_SEPARATOR, file_name);
+  join_path_names(curr_file, MAX_PATH, full_path, file_name);
 
   return true;
 }

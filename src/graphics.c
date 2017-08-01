@@ -738,7 +738,7 @@ void update_screen(void)
     graphics.cursor_timestamp = ticks;
   }
 
-  if (graphics.requires_extended && graphics.renderer.render_layer) {
+  if ((graphics.requires_extended || !graphics.renderer.render_graph) && graphics.renderer.render_layer) {
     for (layer = 0; layer < graphics.layer_count; layer++)
     {
       graphics.sorted_video_layers[layer] = &graphics.video_layers[layer];

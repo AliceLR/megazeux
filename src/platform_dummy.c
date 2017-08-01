@@ -68,7 +68,7 @@ void initialize_joysticks(void)
   // stub
 }
 
-Uint32 __update_event_status(void)
+bool __update_event_status(void)
 {
   // stub
   return 0;
