@@ -2720,9 +2720,7 @@ skip_dir:
           change_dir_name(current_dir_name, ret_path);
 
         if(ret_file[0])
-          snprintf(ret, MAX_PATH, "%s%s%s",
-           current_dir_name, DIR_SEPARATOR, ret_file);
-
+          join_path_names(ret, MAX_PATH, current_dir_name, ret_file);
       }
     }
 
@@ -2758,8 +2756,7 @@ skip_dir:
         // the complete name
         if(di.current_element == FILESEL_FILE_LIST &&
          strcmp(ret_file, file_list[chosen_file] + 56))
-          snprintf(ret, MAX_PATH, "%s%s%s",
-           current_dir_name, DIR_SEPARATOR, file_list[chosen_file] + 56);
+          join_path_names(ret, MAX_PATH, current_dir_name, file_list[chosen_file] + 56);
 
         if(default_ext)
           add_ext(ret, default_ext);
@@ -2823,8 +2820,7 @@ skip_dir:
         if(!confirm_input(mzx_world, "Create New Directory",
          "New directory name:", new_name))
         {
-          snprintf(full_name, MAX_PATH, "%s%s%s",
-            current_dir_name, DIR_SEPARATOR, new_name);
+          join_path_names(full_name, MAX_PATH, current_dir_name, new_name);
 
           if(stat(full_name, &file_info) < 0)
           {
@@ -2873,10 +2869,8 @@ skip_dir:
 
         if(!confirm_input(mzx_world, "Rename File", "New file name:", new_name))
         {
-          snprintf(old_path, MAX_PATH, "%s%s%s", current_dir_name,
-           DIR_SEPARATOR, file_list[chosen_file] + 56);
-          snprintf(new_path, MAX_PATH, "%s%s%s", current_dir_name,
-           DIR_SEPARATOR, new_name);
+          join_path_names(old_path, MAX_PATH, current_dir_name, file_list[chosen_file] + 56);
+          join_path_names(new_path, MAX_PATH, current_dir_name, new_name);
 
           if(strcmp(old_path, new_path))
             if(rename(old_path, new_path))
@@ -2904,8 +2898,7 @@ skip_dir:
           if(!confirm(mzx_world, confirm_string))
           {
             char file_name_ch[MAX_PATH];
-            snprintf(file_name_ch, MAX_PATH, "%s%s%s",
-             current_dir_name, DIR_SEPARATOR, dir_list[chosen_dir]);
+            join_path_names(file_name_ch, MAX_PATH, current_dir_name, dir_list[chosen_dir]);
 
             if(!ask_yes_no(mzx_world,
              (char *)"Delete subdirectories recursively?"))
@@ -2937,10 +2930,8 @@ skip_dir:
 
           if(!confirm_input(mzx_world, "Rename Directory", "New directory name:", new_name))
           {
-            snprintf(old_path, MAX_PATH, "%s%s%s", current_dir_name,
-             DIR_SEPARATOR, dir_list[chosen_dir]);
-            snprintf(new_path, MAX_PATH, "%s%s%s", current_dir_name,
-             DIR_SEPARATOR, new_name);
+            join_path_names(old_path, MAX_PATH, current_dir_name, dir_list[chosen_dir]);
+            join_path_names(new_path, MAX_PATH, current_dir_name, new_name);
 
             if(strcmp(old_path, new_path))
               if(rename(old_path, new_path))

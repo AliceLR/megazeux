@@ -100,14 +100,7 @@ static void audio_xmp_set_frequency(struct sampled_stream *s_src, Uint32 frequen
 {
   if(frequency == 0)
   {
-    ((struct xmp_stream *)s_src)->effective_frequency = 44100;
     frequency = audio.output_frequency;
-  }
-  else
-  {
-    ((struct xmp_stream *)s_src)->effective_frequency = frequency;
-    frequency = (Uint32)((float)frequency *
-     audio.output_frequency / 44100);
   }
 
   s_src->frequency = frequency;

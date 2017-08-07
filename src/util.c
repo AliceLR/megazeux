@@ -156,7 +156,7 @@ int mzx_res_init(const char *argv0, bool editor)
   for(i = 0; i < END_RESOURCE_ID_T; i++)
   {
     size_t p_dir_len, base_name_len = strlen(mzx_res[i].base_name);
-    char *full_path;
+    char *full_path_base, *full_path;
 
     if(i == CONFIG_TXT)
       chdir(CONFDIR);
@@ -174,10 +174,14 @@ int mzx_res_init(const char *argv0, bool editor)
     p_dir[p_dir_len++] = '/';
     p_dir[p_dir_len] = 0;
 
+    full_path_base = cmalloc(p_dir_len + base_name_len + 1);
     full_path = cmalloc(p_dir_len + base_name_len + 1);
-    memcpy(full_path, p_dir, p_dir_len);
-    memcpy(full_path + p_dir_len, mzx_res[i].base_name, base_name_len);
-    full_path[p_dir_len + base_name_len] = 0;
+    memcpy(full_path_base, p_dir, p_dir_len);
+    memcpy(full_path_base + p_dir_len, mzx_res[i].base_name, base_name_len);
+    full_path_base[p_dir_len + base_name_len] = 0;
+
+    clean_path_slashes(full_path_base, full_path, p_dir_len + base_name_len);
+    free(full_path_base);
 
     // Attempt to load it from this new path
     if(!stat(full_path, &file_info))
@@ -400,7 +404,7 @@ static int isslash(char n)
   return n=='\\' || n=='/';
 }
 
-static void clean_path_slashes(const char *src, char *dest, size_t buf_size)
+void clean_path_slashes(const char *src, char *dest, size_t buf_size)
 {
   unsigned int i = 0;
   unsigned int p = 0;
@@ -466,6 +470,14 @@ void split_path_filename(const char *source,
     if(file_buffer_len)
       strncpy(destfile, source, file_buffer_len);
   }
+}
+
+void join_path_names(char* target, int max_len, const char* path1, const char* path2)
+{
+  if(path1[strlen(path1)-1] == DIR_SEPARATOR_CHAR)
+    snprintf(target, max_len, "%s%s", path1, path2);
+  else
+    snprintf(target, max_len, "%s%s%s", path1, DIR_SEPARATOR, path2);
 }
 
 int create_path_if_not_exists(const char *filename)
@@ -575,7 +587,7 @@ int change_dir_name(char *path_name, const char *dest)
       return 0;
   }
 
-  snprintf(path, MAX_PATH, "%s%s%s", path_name, DIR_SEPARATOR, dest);
+  join_path_names(path, MAX_PATH, path_name, dest);
   path[MAX_PATH - 1] = 0;
 
   if(stat(path, &stat_info) >= 0)
