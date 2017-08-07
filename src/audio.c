@@ -1084,6 +1084,46 @@ static void* get_riff_chunk_by_id(FILE *fp, int filesize,
   return get_riff_chunk(fp, filesize, NULL, size);
 }
 
+// Simple SAM loader.
+
+static int load_sam_file(const char *file, struct wav_info *spec,
+ Uint8 **audio_buf, Uint32 *audio_len)
+{
+  Uint32 source_length;
+  void *buf;
+  int ret = 0;
+  FILE *fp;
+
+  fp = fopen_unsafe(file, "rb");
+  if(!fp)
+    goto exit_out;
+  source_length = ftell_and_rewind(fp);
+
+  // Default to no loop
+  spec->channels = 1;
+  spec->freq = freq_conversion / default_period;
+  spec->format = SAMPLE_S8;
+  spec->loop_start = 0;
+  spec->loop_end = 0;
+
+  buf = cmalloc(source_length);
+  if (fread(buf, 1, source_length, fp) < 1)
+  {
+    free(buf);
+    goto exit_close;
+  }
+  *audio_len = source_length;
+  *audio_buf = buf;
+  goto exit_close_success;
+
+exit_close_success:
+  ret = 1;
+exit_close:
+  fclose(fp);
+exit_out:
+  return ret;
+}
+
 // More lenient than SDL's WAV loader, but only supports
 // uncompressed PCM files (for now.)
 
@@ -1094,11 +1134,17 @@ static int load_wav_file(const char *file, struct wav_info *spec,
   int smpl_size, numloops;
   Uint32 loop_start, loop_end;
   char *fmt_chunk, *smpl_chunk, tmp_buf[4];
+  ssize_t sam_ext_pos = (ssize_t)strlen(file) - 4;
   int ret = 0;
   FILE *fp;
 #ifdef CONFIG_SDL
   SDL_AudioSpec sdlspec;
 #endif
+
+  // First, check if this isn't actually a SAM file. If so,
+  // route to load_sam_file instead.
+  if((sam_ext_pos > 0) && !strcasecmp(file + sam_ext_pos, ".sam"))
+    return load_sam_file(file, spec, audio_buf, audio_len);
 
   fp = fopen_unsafe(file, "rb");
   if(!fp)
@@ -1243,125 +1289,6 @@ exit_out:
   return ret;
 }
 
-// Props to madbrain for his WAV writing code which the following
-// is loosely based off of.
-
-static void write_little_endian32(Uint8 *dest, Uint32 value)
-{
-  dest[0] = value;
-  dest[1] = value >> 8;
-  dest[2] = value >> 16;
-  dest[3] = value >> 24;
-}
-
-static void write_little_endian16(Uint8 *dest, Uint32 value)
-{
-  dest[0] = value;
-  dest[1] = value >> 8;
-}
-
-static void write_chars(Uint8 *dest, const char *str)
-{
-  memcpy(dest, str, strlen(str));
-}
-
-static void convert_sam_to_wav(const char *source_name, const char *dest_name)
-{
-  Uint32 source_length, dest_length;
-  FILE *source, *dest;
-  Uint32 frequency;
-  Uint8 *data;
-  Uint32 i;
-
-  source = fopen_unsafe(source_name, "rb");
-  if(!source)
-    return;
-
-  dest = fopen_unsafe(dest_name, "wb");
-  if(!dest)
-    goto err_close_source;
-
-  source_length = ftell_and_rewind(source);
-
-  frequency = freq_conversion / default_period;
-  dest_length = source_length + 44;
-  data = cmalloc(dest_length);
-
-  write_chars(data, "RIFF");
-  write_little_endian32(data + 4, dest_length);
-  write_chars(data + 8, "WAVEfmt ");
-  write_little_endian32(data + 16, 16);
-  // PCM
-  write_little_endian16(data + 20, 1);
-  // Mono
-  write_little_endian16(data + 22, 2);
-  // Frequency (bytes per second, x2)
-  write_little_endian32(data + 24, frequency);
-  write_little_endian32(data + 28, frequency);
-  // Bytes per sample
-  write_little_endian16(data + 32, 1);
-  // Bit depth
-  write_little_endian16(data + 34, 8);
-  write_chars(data + 36, "data");
-  // Source length
-  write_little_endian32(data + 40, source_length);
-
-  // Read in the actual sample data from the SAM
-  fread(data + 44, source_length, 1, source);
-
-  // Convert from signed to unsigned
-  for(i = 44; i < dest_length; i++)
-    data[i] += 128;
-
-  fwrite(data, dest_length, 1, dest);
-
-  free(data);
-  fclose(dest);
-err_close_source:
-  fclose(source);
-}
-
-static void convert_sam_to_wav_translate(const char *src, const char *dest)
-{
-  char translated_filename_src[MAX_PATH];
-  fsafetranslate(src, translated_filename_src);
-  convert_sam_to_wav(translated_filename_src, dest);
-}
-
-__sam_to_wav_maybe_static int check_ext_for_sam_and_convert(
- const char *filename, char *new_file)
-{
-  char translated_filename_dest[MAX_PATH];
-  ssize_t ext_pos = (ssize_t)strlen(filename) - 4;
-
-  // this could end up being the same, or it might be modified
-  // (if a SAM conversion is possible).
-  strcpy(new_file, filename);
-
-  if((ext_pos > 0) && !strcasecmp(filename + ext_pos, ".sam"))
-  {
-    // SAM -> WAV
-    memcpy(new_file + ext_pos, ".wav", 4);
-
-    /* If the destination WAV already exists, check its size.
-     * If it doesn't exist, or the size is zero, recreate the WAV.
-     */
-    if(!fsafetranslate(new_file, translated_filename_dest))
-    {
-      FILE *f = fopen_unsafe(translated_filename_dest, "r");
-      if(ftell_and_rewind(f) == 0)
-        convert_sam_to_wav_translate(filename, new_file);
-      fclose(f);
-    }
-    else
-      convert_sam_to_wav_translate(filename, new_file);
-
-    return 1;
-  }
-
-  return 0;
-}
-
 #ifdef CONFIG_MODPLUG
 
 int check_ext_for_gdm_and_convert(const char *filename, char *new_file)
@@ -1409,13 +1336,10 @@ static struct audio_stream *construct_wav_stream(char *filename,
 {
   struct wav_info w_info = {0,0,0,0,0};
   struct audio_stream *ret_val = NULL;
-  char new_file[MAX_PATH];
   Uint32 data_length = 0;
   Uint8 *wav_data = NULL;
 
-  check_ext_for_sam_and_convert(filename, new_file);
-
-  if(load_wav_file(new_file, &w_info, &wav_data, &data_length))
+  if(load_wav_file(filename, &w_info, &wav_data, &data_length))
   {
     // Surround WAVs not supported yet..
     if(w_info.channels <= 2)
