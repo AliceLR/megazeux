@@ -116,6 +116,10 @@ core_cobjs += arch/wii/audio.o
 endif
 endif
 
+ifeq (${BUILD_PSP},1)
+core_cobjs += arch/psp/platform.o
+endif
+
 #
 # Other modular stuff
 #

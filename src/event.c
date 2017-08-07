@@ -42,7 +42,10 @@ struct buffered_status *store_status(void)
   return &input.buffer[input.store_offset];
 }
 
-static const struct buffered_status *load_status(void)
+#ifndef CONFIG_NDS
+static
+#endif
+const struct buffered_status *load_status(void)
 {
   return (const struct buffered_status *)&input.buffer[input.load_offset];
 }
@@ -57,7 +60,6 @@ static void bump_status(void)
   // No event buffering; nothing to do
   if(input.store_offset == input.load_offset)
     return;
-
   // Some events can "echo" from the previous buffer
   memcpy(store_status(), &input.buffer[last_store_offset],
          sizeof(struct buffered_status));
