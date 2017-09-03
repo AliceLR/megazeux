@@ -16,6 +16,8 @@ FIXES
   exiting testing with EXIT_GAME.
 + Fixed a bug where the listening mod would not restart after
   exiting testing.
++ Fixed a bug where the robot debugger would not wrap long lines
+  of Robotic code correctly.
 + Fixed a bug where sprN_setview would scroll the viewport to
   the wrong side of the screen if the sprite is unbound and is
   close to the top or left edge of the board. (Lancer-X)

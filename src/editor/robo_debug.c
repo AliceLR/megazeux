@@ -828,6 +828,7 @@ static int debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
   int ypos;
   int len;
 
+  int line_len;
   char t;
   int i;
 
@@ -857,13 +858,25 @@ static int debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
   buffer_pos += len;
   buffer_left -= len;
 
+  line_len = 0;
   while(buffer_left && src_pos < src_end)
   {
+    // Wrap line.
+    if(line_len >= 76 && buffer_left > 1)
+    {
+      *buffer_pos = '\n';
+      buffer_pos++;
+      buffer_left--;
+      line_len = 0;
+      ypos++;
+    }
+
     t = *src_pos;
     src_pos++;
 
     switch(t)
     {
+      // Insert an extra ~ or @ so they display instead of changing the color.
       case '~':
       {
         if(buffer_left > 1)
@@ -887,12 +900,14 @@ static int debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
       }
 
       case '\n':
+        line_len = 0;
         ypos++;
     }
 
     *buffer_pos = t;
     buffer_pos++;
     buffer_left--;
+    line_len++;
   }
 
   *buffer_pos = 0;
