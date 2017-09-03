@@ -1782,7 +1782,10 @@ static int save_world_zip(struct world *mzx_world, const char *file,
   int meter_target = 2 + mzx_world->num_boards + mzx_world->temporary_board;
 
   if(!zp)
+  {
+    error_message(E_WORLD_IO_SAVING, 0, NULL);
     return -1;
+  }
 
   meter_initial_draw(meter_curr, meter_target, "Saving...");
 

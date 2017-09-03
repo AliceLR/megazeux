@@ -21,6 +21,8 @@ FIXES
   exiting testing.
 + Fixed a bug where the robot debugger would not wrap long lines
   of Robotic code correctly.
++ Attempting to save a world in a write-protected location
+  correctly displays an error message again.
 + Fixed a bug where sprN_setview would scroll the viewport to
   the wrong side of the screen if the sprite is unbound and is
   close to the top or left edge of the board. (Lancer-X)

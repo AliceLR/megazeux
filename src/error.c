@@ -285,7 +285,7 @@ int error_message(enum error_code id, int parameter, const char *string)
       break;
 
     case E_WORLD_IO_SAVING:
-      sprintf(error_mesg, "Error saving world; file may be write protected");
+      sprintf(error_mesg, "Error saving; file/directory may be write protected");
       code = 0x0D01;
       break;
 
