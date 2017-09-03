@@ -1223,10 +1223,13 @@ static int parse_argument(struct world *mzx_world, char **_argument,
 
           if(first_char == ':')
           {
-            if(ternary_level <= 0)
-              break;
+            if(paren_level == 0)
+            {
+              if(ternary_level <= 0)
+                break;
 
-            ternary_level--;
+              ternary_level--;
+            }
           }
         }
       }
