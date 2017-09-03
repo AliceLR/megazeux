@@ -27,6 +27,8 @@ FIXES
 
 DEVELOPERS
 
++ Fixed PSP and NDS ports. (asiekierka)
+
 
 July 25, 2017 - MZX 2.90c
 
