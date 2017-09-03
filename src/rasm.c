@@ -5421,13 +5421,29 @@ static char *legacy_disassemble_arg(enum arg_type arg_type, char *src,
     src += 3;
 
     if(arg_type & ARG_TYPE_ITEM)
-      write_arg_word(item_names[compiled_arg_value]);
+    {
+      if(compiled_arg_value < (int)ARRAY_SIZE(item_names))
+      {
+        write_arg_word(item_names[compiled_arg_value]);
+      }
+      else
+      {
+        write_arg_word("INVALID_ITEM");
+      }
+    }
 
     if(arg_type & ARG_TYPE_CONDITION)
     {
       int condition = compiled_arg_value & 0xFF;
       int direction = compiled_arg_value >> 8;
-      const char *_str = condition_names[condition];
+      const char *_str;
+
+      if(condition < (int)ARRAY_SIZE(condition_names))
+        _str = condition_names[condition];
+
+      else
+        _str = "invalid_condition";
+
       strcpy(output, _str);
       output += strlen(_str);
 
@@ -5450,10 +5466,28 @@ static char *legacy_disassemble_arg(enum arg_type arg_type, char *src,
     }
 
     if(arg_type & ARG_TYPE_EQUALITY)
-      write_arg_word(equality_names[compiled_arg_value]);
+    {
+      if(compiled_arg_value < (int)ARRAY_SIZE(equality_names))
+      {
+        write_arg_word(equality_names[compiled_arg_value]);
+      }
+      else
+      {
+        write_arg_word("??");
+      }
+    }
 
     if(arg_type & ARG_TYPE_THING)
-      write_arg_word(thing_names[compiled_arg_value]);
+    {
+      if(compiled_arg_value < (int)ARRAY_SIZE(thing_names))
+      {
+        write_arg_word(thing_names[compiled_arg_value]);
+      }
+      else
+      {
+        write_arg_word("Invalid_thing");
+      }
+    }
 
     if(arg_type & ARG_TYPE_DIRECTION)
     {
