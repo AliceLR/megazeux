@@ -2488,13 +2488,22 @@ __editor_maybe_static int disassemble_line(char *cpos, char **next,
           case EQUALITY:
           {
             int equality = *(input_position + 1);
+            input_position += 3;
 
             if(arg_types)
               arg_types[words] = S_EQUALITY;
 
-            input_position += 3;
-            strcpy(output_position, equality_types[equality]);
-            output_position += strlen(equality_types[equality]);
+            // Is this actually a valid operator?
+            if(equality < (int)ARRAY_SIZE(equality_types))
+            {
+              strcpy(output_position, equality_types[equality]);
+              output_position += strlen(equality_types[equality]);
+            }
+            else
+            {
+              strcpy(output_position, "??");
+              output_position += 2;
+            }
             break;
           }
 

@@ -4,6 +4,8 @@ FEATURES
 
 FIXES
 
++ Fixed a bug where MegaZeux would crash when editing a robot
+  with an invalid IF command operator.
 + Fixed a bug where the ternary operator would fail to find the
   correct colon when the middle term contained a second ternary
   operator in a nested expression.
