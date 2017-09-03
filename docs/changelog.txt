@@ -12,6 +12,8 @@ FIXES
 + Fixed a bug where the ternary operator would fail to find the
   correct colon when the middle term contained a second ternary
   operator in a nested expression.
++ Fixed a bug where the built-in cursor would disappear after
+  exiting testing with EXIT_GAME.
 + Fixed a bug where sprN_setview would scroll the viewport to
   the wrong side of the screen if the sprite is unbound and is
   close to the top or left edge of the board. (Lancer-X)

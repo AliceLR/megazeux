@@ -3612,6 +3612,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             }
 
             load_editor_palette();
+            m_show();
 
             scroll_color = 15;
             mzx_world->current_board_id = current_board_id;
