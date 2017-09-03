@@ -2,6 +2,7 @@ GIT
 
 FEATURES
 
++ Updated checkres.bat and checkres documentation.
 + The robot debugger configuration screen is now accessible from
   the editor via Alt+F11.
 + Removed SAM to WAV converter. MegaZeux now has native SAM
@@ -23,6 +24,10 @@ FIXES
   of Robotic code correctly.
 + Attempting to save a world in a write-protected location
   correctly displays an error message again.
++ checkres will no longer report empty filenames as dependencies
+  e.g. SET "" TO "FWRITE_OPEN".
++ The -q flag in checkres will now correctly output filenames
+  instead of nothing.
 + Fixed a bug where sprN_setview would scroll the viewport to
   the wrong side of the screen if the sprite is unbound and is
   close to the top or left edge of the board. (Lancer-X)

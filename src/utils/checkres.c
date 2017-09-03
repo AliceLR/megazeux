@@ -27,7 +27,7 @@
  "  -a  Display all found and missing files.\n"                           \
  "  -A  Display missing files and files that may be created by Robotic.\n"\
  "  -h  Display this message.\n"                                          \
- "  -q  Do not display any messages.\n"                                   \
+ "  -q  Display only file paths i.e. no extra info.\n"                    \
  "\n"
 
 #include <stdlib.h>
@@ -215,6 +215,10 @@ static bool is_simple_path(char *src)
   size_t len = strlen(src);
   unsigned int i;
 
+  // No empty filename.
+  if(len == 0)
+    return false;
+
   // No strings.
   if(len >= 1)
     if(src[0] == '$')
@@ -257,47 +261,55 @@ static unsigned int resource_max_len = 16;
 static void output(const char *required_by, const char *resource_path,
  const char *status, const char *found_in)
 {
-  char *req_by = malloc(parent_max_len + 1);
-  char *res_path = malloc(resource_max_len + 1);
-
-  req_by[parent_max_len] = 0;
-  res_path[resource_max_len] = 0;
-
-  found_in = found_in ? found_in : "";
-
-  if(!started_table)
+  if(!quiet_mode)
   {
-    fprintf(stdout, "\n");
+    char *req_by = malloc(parent_max_len + 1);
+    char *res_path = malloc(resource_max_len + 1);
+
+    req_by[parent_max_len] = 0;
+    res_path[resource_max_len] = 0;
+
+    found_in = found_in ? found_in : "";
+
+    if(!started_table)
+    {
+      fprintf(stdout, "\n");
+
+      memset(req_by, 32, parent_max_len);
+      memset(res_path, 32, resource_max_len);
+
+      strncpy(req_by, "Required by", strlen("Required by"));
+      strncpy(res_path, "Resource path", strlen("Resource path"));
+
+      fprintf(stdout, "%s  %s  %-10s %s\n",
+       req_by, res_path, "Status", "Found in");
+
+      memset(req_by, 32, parent_max_len);
+      memset(res_path, 32, resource_max_len);
+
+      strncpy(req_by, "-----------", strlen("-----------"));
+      strncpy(res_path, "-------------", strlen("-------------"));
+
+      fprintf(stdout, "%s  %s  %-10s %s\n",
+       req_by, res_path, "------", "--------");
+
+      started_table = 1;
+    }
 
     memset(req_by, 32, parent_max_len);
     memset(res_path, 32, resource_max_len);
 
-    strncpy(req_by, "Required by", strlen("Required by"));
-    strncpy(res_path, "Resource path", strlen("Resource path"));
+    strncpy(req_by, required_by, strlen(required_by));
+    strncpy(res_path, resource_path, strlen(resource_path));
 
     fprintf(stdout, "%s  %s  %-10s %s\n",
-     req_by, res_path, "Status", "Found in");
-
-    memset(req_by, 32, parent_max_len);
-    memset(res_path, 32, resource_max_len);
-
-    strncpy(req_by, "-----------", strlen("-----------"));
-    strncpy(res_path, "-------------", strlen("-------------"));
-
-    fprintf(stdout, "%s  %s  %-10s %s\n",
-     req_by, res_path, "------", "--------");
-
-    started_table = 1;
+     req_by, res_path, status, found_in);
   }
-
-  memset(req_by, 32, parent_max_len);
-  memset(res_path, 32, resource_max_len);
-
-  strncpy(req_by, required_by, strlen(required_by));
-  strncpy(res_path, resource_path, strlen(resource_path));
-
-  fprintf(stdout, "%s  %s  %-10s %s\n",
-   req_by, res_path, status, found_in);
+  else
+  {
+    // Quiet mode- just print the resource paths
+    fprintf(stdout, "%s\n", resource_path);
+  }
 }
 
 
@@ -548,10 +560,9 @@ static void process_requirements(struct base_path **path_list,
 
     if(found)
     {
-      if(!quiet_mode && display_found)
+      if(display_found)
         output(req->parent->file_name, req->path, found_append,
          current_path->actual_path);
-
     }
     else
     {
@@ -560,13 +571,12 @@ static void process_requirements(struct base_path **path_list,
 
       if(res)
       {
-        if(!quiet_mode && display_created)
-        output(req->parent->file_name, req->path, created_append, NULL);
+        if(display_created)
+          output(req->parent->file_name, req->path, created_append, NULL);
       }
       else
       {
-        if(!quiet_mode)
-          output(req->parent->file_name, req->path, not_found_append, NULL);
+        output(req->parent->file_name, req->path, not_found_append, NULL);
       }
     }
   }
