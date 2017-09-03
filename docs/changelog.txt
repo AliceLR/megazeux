@@ -2,6 +2,8 @@ GIT
 
 FEATURES
 
++ The robot debugger configuration screen is now accessible from
+  the editor via Alt+F11.
 + Removed SAM to WAV converter. MegaZeux now has native SAM
   support (asiekierka).
 

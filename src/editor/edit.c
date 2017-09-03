@@ -3408,9 +3408,17 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
       case IKEY_F11:
       {
-        // SMZX Mode
-        save_editor_palette();
-        set_screen_mode(get_screen_mode() + 1);
+        if(get_alt_status(keycode_internal))
+        {
+          // Robot debugger configuration
+          debug_robot_config(mzx_world);
+        }
+        else
+        {
+          // SMZX Mode (FIXME- needs real dialog)
+          save_editor_palette();
+          set_screen_mode(get_screen_mode() + 1);
+        }
         break;
       }
 
