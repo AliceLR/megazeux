@@ -2,6 +2,9 @@ GIT
 
 FEATURES
 
++ Removed SAM to WAV converter. MegaZeux now has native SAM
+  support (asiekierka).
+
 FIXES
 
 + Fixed a bug where MegaZeux would crash when editing a robot

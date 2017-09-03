@@ -175,11 +175,8 @@ struct audio_stream *construct_modplug_stream(char *filename, Uint32 frequency,
 
   if(!check_ext_for_gdm_and_convert(filename, new_file))
   {
-    if(!check_ext_for_sam_and_convert(filename, new_file))
-    {
-      strncpy(new_file, filename, MAX_PATH - 1);
-      new_file[MAX_PATH - 1] = '\0';
-    }
+    strncpy(new_file, filename, MAX_PATH - 1);
+    new_file[MAX_PATH - 1] = '\0';
   }
 
   input_file = fopen_unsafe(new_file, "rb");

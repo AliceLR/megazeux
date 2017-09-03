@@ -157,7 +157,6 @@ void init_audio_platform(struct config_info *conf);
 void quit_audio_platform(void);
 
 #ifdef CONFIG_MODPLUG
-int check_ext_for_sam_and_convert(const char *filename, char *new_file);
 int check_ext_for_gdm_and_convert(const char *filename, char *new_file);
 #define __sam_to_wav_maybe_static __audio_c_maybe_static
 #else
