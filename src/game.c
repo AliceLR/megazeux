@@ -3161,6 +3161,9 @@ void title_screen(struct world *mzx_world)
 
         case IKEY_RETURN: // Enter
         {
+          const char *title = " MegaZeux " VERSION " ";
+          int title_x = 40 - strlen(title) / 2;
+
           int key, status;
           int enter_menu_status =
            get_counter(mzx_world, "ENTER_MENU", 0);
@@ -3173,7 +3176,7 @@ void title_screen(struct world *mzx_world)
 
           save_screen();
           draw_window_box(28, 4, 51, 16, 25, 16, 24, 1, 1);
-          write_string(" Main Menu ", 35, 4, 30, 0);
+          write_string(title, title_x, 4, 30, 0);
           write_string(main_menu_1, 30, 5, 31, 1);
           if(mzx_world->help_file)
             write_string(main_menu_2, 30, 7, 31, 1);

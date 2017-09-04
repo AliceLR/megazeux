@@ -2,6 +2,10 @@ GIT
 
 FEATURES
 
++ The current MegaZeux version is now visible from the enter
+  menu on the title screen. This is to assist identifying the
+  version on platforms that don't respect window title changes
+  or have no window border.
 + Updated checkres.bat and checkres documentation.
 + The robot debugger configuration screen is now accessible from
   the editor via Alt+F11.
