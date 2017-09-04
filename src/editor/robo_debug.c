@@ -883,7 +883,7 @@ static int debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
   buffer_left -= len;
 
   line_len = 0;
-  while(buffer_left && src_pos < src_end)
+  while(buffer_left && src_pos < src_end && ypos <= 20)
   {
     // Wrap line.
     if(line_len >= 76 && buffer_left > 1)
@@ -893,6 +893,7 @@ static int debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
       buffer_left--;
       line_len = 0;
       ypos++;
+      continue;
     }
 
     t = *src_pos;
@@ -935,7 +936,9 @@ static int debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
   }
 
   *buffer_pos = 0;
-  ypos += 3;
+
+  // Add 3 to get the button position. ypos may go over 20, so clamp it.
+  ypos = MIN(ypos, 20) + 3;
 
   height = ypos + 2;
 
