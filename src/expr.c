@@ -90,6 +90,64 @@ static struct expr_stack stack[EXPR_STACK_SIZE];
 static int stack_alloc = EXPR_STACK_SIZE;
 static char *buf_alloc = buffer + EXPR_BUFFER_SIZE;
 
+// Push a null onto the buffer to help with unary operator processing.
+
+#define PUSH_STACK(st)                \
+{                                     \
+  if(pos >= stack_alloc)              \
+  {                                   \
+    *error = 3;                       \
+    goto err_out;                     \
+  }                                   \
+                                      \
+  stack[pos].buf_start = buf_start;   \
+  stack[pos].operator = operator;     \
+  stack[pos].operand = operand_a;     \
+  stack[pos].state = st;              \
+  pos++;                              \
+                                      \
+  *buf_pos = '\0';                    \
+  buf_pos++;                          \
+                                      \
+  buf_start = buf_pos - buffer;       \
+  operator = OP_ADDITION;             \
+  operand_a = 0;                      \
+}
+
+// if err is true, error out at the bottom of the stack
+// if err is false, exit successfully at the bottom of the stack
+
+#define POP_STACK(err)                \
+{                                     \
+  pos--;                              \
+  if(pos >= 0)                        \
+  {                                   \
+    buf_start = stack[pos].buf_start; \
+    operator = stack[pos].operator;   \
+    operand_a = stack[pos].operand;   \
+    state = stack[pos].state;         \
+  }                                   \
+  else if(err)                        \
+  {                                   \
+    *error = 4;                       \
+    goto err_out;                     \
+  }                                   \
+  else                                \
+  {                                   \
+    continue;                         \
+  }                                   \
+}
+
+static inline void skip_spaces(char **_expression)
+{
+  char *expression = *_expression;
+
+  while(isspace(*expression))
+    expression++;
+
+  *_expression = expression;
+}
+
 int parse_expression(struct world *mzx_world, char **_expression, int *error,
  int id)
 {
@@ -129,8 +187,7 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
     if(!(state & EXPR_STATE_START_OPERAND))
     {
       // We need to skip spaces, first
-      while(isspace(*expression))
-        expression++;
+      skip_spaces(&expression);
 
       current_char = *expression;
       expression++;
@@ -273,22 +330,10 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
     // Push state onto stack for expressions and interpolation
     if(state & (EXPR_STATE_PUSH|EXPR_STATE_PUSH_INTERPOLATION))
     {
-      if(pos >= stack_alloc)
-      {
-        *error = 3;
-        goto err_out;
-      }
-
-      stack[pos].buf_start = buf_start;
-      stack[pos].operator = operator;
-      stack[pos].operand = operand_a;
-      stack[pos].state = state & ~EXPR_STATE_PUSH &
+      char push_state = state & ~EXPR_STATE_PUSH &
        ~EXPR_STATE_PUSH_INTERPOLATION;
-      pos++;
 
-      // Push a null to help unary operator processing
-      *buf_pos = '\0';
-      buf_pos++;
+      PUSH_STACK(push_state);
 
       // Set up for interpolating a counter/string
       if(state & EXPR_STATE_PUSH_INTERPOLATION)
@@ -296,15 +341,11 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
         state = EXPR_STATE_START_OPERAND | EXPR_STATE_PARSE_OPERAND
          | EXPR_STATE_AMP | EXPR_STATE_INTERPOLATING;
       }
-
       else
       {
         state = 0;
       }
 
-      buf_start = buf_pos - buffer;
-      operand_a = 0;
-      operator = OP_ADDITION;
       continue;
     }
 
@@ -377,19 +418,7 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
       memcpy(buf_pos, src, len);
       buf_pos += len;
 
-      pos--;
-      if(pos >= 0)
-      {
-        buf_start = stack[pos].buf_start;
-        operator = stack[pos].operator;
-        operand_a = stack[pos].operand;
-        state = stack[pos].state;
-      }
-      else
-      {
-        *error = 4;
-        goto err_out;
-      }
+      POP_STACK(true);
 
       continue;
     }
@@ -564,8 +593,7 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
 
     // Get next operator -- we need to skip any spaces first
     // Prefix operators are handled during the operand search, not here.
-    while(isspace(*expression))
-      expression++;
+    skip_spaces(&expression);
 
     current_char = *expression;
     expression++;
@@ -581,6 +609,7 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
         // True
         if(operand_a)
         {
+          PUSH_STACK(state);
           state = EXPR_STATE_TERNARY_MIDDLE;
         }
 
@@ -636,7 +665,8 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
               }
             }
           }
-          state = 0;
+          // Preserve ternary middle state in case these are nested
+          state = state & EXPR_STATE_TERNARY_MIDDLE;
         }
         operator = OP_ADDITION;
         operand_a = 0;
@@ -646,6 +676,8 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
       // Ternary operator right
       case ':':
       {
+        int value = operand_a;
+        int ternary_level = 0;
         int paren_level = 0;
 
         if(mzx_world->version < 0x025A)
@@ -657,7 +689,7 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
           goto err_out;
         }
 
-        state = 0;
+        POP_STACK(true);
 
         // Seek next ')'
         while(1)
@@ -669,6 +701,35 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
           {
             *error = 2;
             goto err_out;
+          }
+          else
+
+          // Validate ternary operators while we're at it (actually necessary)
+          if(current_char == '?' && paren_level == 0)
+          {
+            ternary_level++;
+          }
+          else
+
+          if(current_char == ':' && paren_level == 0)
+          {
+            if(ternary_level == 0)
+            {
+              // Unroll ternary stack levels as-needed
+              if(state & EXPR_STATE_TERNARY_MIDDLE)
+              {
+                POP_STACK(true);
+              }
+              else
+              {
+                *error = 2;
+                goto err_out;
+              }
+            }
+            else
+            {
+              ternary_level--;
+            }
           }
           else
 
@@ -686,6 +747,9 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
             paren_level--;
           }
         }
+
+        operand_a = value;
+
         // Proceed into the ')' handler:
       }
 
@@ -694,6 +758,9 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
       // End of expression
       case ')':
       {
+        int value = operand_a;
+        int len;
+
         // Invalid end of expression where : should exist
         if(state & EXPR_STATE_TERNARY_MIDDLE)
         {
@@ -701,41 +768,31 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
           goto err_out;
         }
 
-        pos--;
-        if(pos >= 0)
+        POP_STACK(false);
+
+        // If we're in the middle of an operand, print to the buffer
+        if(state & EXPR_STATE_PARSE_OPERAND)
         {
-          int value = operand_a;
-          int len;
+          // Overwrite the unary operators' null terminator
+          buf_pos--;
 
-          buf_start = stack[pos].buf_start;
-          operator = stack[pos].operator;
-          operand_a = stack[pos].operand;
-          state = stack[pos].state;
+          sprintf(number_buffer, "%d", value);
+          len = strlen(number_buffer);
 
-          // If we're in the middle of an operand, print to the buffer
-          if(state & EXPR_STATE_PARSE_OPERAND)
+          if(len+1 > (buf_alloc - buf_pos))
           {
-            // Overwrite the unary operators' null terminator
-            buf_pos--;
-
-            sprintf(number_buffer, "%d", value);
-            len = strlen(number_buffer);
-
-            if(len+1 > (buf_alloc - buf_pos))
-            {
-              // Truncate the interpolated value and continue.
-              len = buf_alloc - buf_pos - 1;
-            }
-
-            strcpy(buf_pos, number_buffer);
-            buf_pos += len;
+            // Truncate the interpolated value and continue.
+            len = buf_alloc - buf_pos - 1;
           }
 
-          // Otherwise, this is the new operand
-          else
-          {
-            operand_b = value;
-          }
+          strcpy(buf_pos, number_buffer);
+          buf_pos += len;
+        }
+
+        // Otherwise, this is the new operand
+        else
+        {
+          operand_b = value;
         }
         continue;
       }

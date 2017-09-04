@@ -16,6 +16,7 @@ FIXES
 + Fixed a bug where the ternary operator would fail to find the
   correct colon when the middle term contained a second ternary
   operator in a nested expression.
++ Nested ternary operators should now behave as expected.
 + Fixed a bug where the built-in cursor would disappear after
   exiting testing with EXIT_GAME.
 + Fixed a bug where the listening mod would not restart after
