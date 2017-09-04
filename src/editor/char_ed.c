@@ -646,6 +646,9 @@ int char_editor(struct world *mzx_world)
   char smzx_colors[4] = { 0x8, 0x2, 0x3, 0x7 };
   unsigned char saved_rgb[4][3];
 
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
   // Prepare the history
   history_pos = 0;
   history_size = mzx_world->editor_conf.undo_history_size;
@@ -1359,6 +1362,9 @@ int char_editor(struct world *mzx_world)
           run_dialog(mzx_world, &di);
           destruct_dialog(&di);
 
+          // Prevent UI keys from carrying through.
+          force_release_all_keys();
+
           for(i = 0; i < num_factors; i++)
             free(radio_button_substrings[i]);
           free(radio_button_substrings);
@@ -1904,6 +1910,9 @@ int char_editor(struct world *mzx_world)
       save_history();
     }
   } while(key != IKEY_ESCAPE);
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
 
   set_mouse_mul(8, 14);
 

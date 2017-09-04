@@ -279,6 +279,9 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
   int start_x = 0;
   int start_y = 0;
 
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
   if(allow_multichar)
   {
     width = *width_ptr;
@@ -467,6 +470,9 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
           current = ((y - 7) * 32) + (x - 23);
         }
 
+        // Prevent UI keys from carrying through.
+        force_release_all_keys();
+
         // Selected
         pop_context();
         restore_screen();
@@ -531,6 +537,9 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
     // ESC or exit event
     if(exit)
     {
+      // Prevent UI keys from carrying through.
+      force_release_all_keys();
+
       pop_context();
       restore_screen();
 

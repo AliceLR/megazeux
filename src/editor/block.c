@@ -24,6 +24,7 @@
 #include "../helpsys.h"
 #include "../idput.h"
 #include "../error.h"
+#include "../event.h"
 #include "../window.h"
 #include "../data.h"
 #include "../idarray.h"
@@ -65,6 +66,9 @@ int block_cmd(struct world *mzx_world)
     "Save as MZM"
   };
 
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
   set_context(CTX_BLOCK_CMD);
   elements[0] = construct_radio_button(2, 2, radio_button_strings,
    9, 21, &block_operation);
@@ -78,6 +82,9 @@ int block_cmd(struct world *mzx_world)
   pop_context();
 
   destruct_dialog(&di);
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
 
   if(dialog_result)
     return -1;
@@ -98,6 +105,9 @@ int rtoo_obj_type(struct world *mzx_world)
     "Text"
   };
 
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
   set_context(CTX_BLOCK_TYPE);
   elements[0] = construct_radio_button(6, 4, radio_button_strings,
    3, 12, &object_type);
@@ -111,6 +121,9 @@ int rtoo_obj_type(struct world *mzx_world)
 
   destruct_dialog(&di);
   pop_context();
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
 
   if(dialog_result)
     return -1;
@@ -132,6 +145,9 @@ int choose_char_set(struct world *mzx_world)
     "Blank set"
   };
 
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
   set_context(CTX_CHOOSE_CHARSET);
   elements[0] = construct_radio_button(4, 4, radio_button_strings,
    4, 16, &charset_type);
@@ -145,6 +161,9 @@ int choose_char_set(struct world *mzx_world)
 
   destruct_dialog(&di);
   pop_context();
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
 
   if(dialog_result)
     return -1;
@@ -167,6 +186,9 @@ int export_type(struct world *mzx_world)
     "Downver. world (MZX)",
   };
 
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
   set_context(CTX_IMPORTEXPORT_TYPE);
 
   elements[0] = construct_radio_button(2, 3, radio_strings,
@@ -180,6 +202,9 @@ int export_type(struct world *mzx_world)
   dialog_result = run_dialog(mzx_world, &di);
   destruct_dialog(&di);
   pop_context();
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
 
   if(dialog_result)
     return -1;
@@ -203,6 +228,9 @@ int import_type(struct world *mzx_world)
     "MZM (choose pos.)"
   };
 
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
   set_context(CTX_IMPORTEXPORT_TYPE);
 
   elements[0] = construct_radio_button(2, 3, radio_strings,
@@ -216,6 +244,9 @@ int import_type(struct world *mzx_world)
   dialog_result = run_dialog(mzx_world, &di);
   destruct_dialog(&di);
   pop_context();
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
 
   if(dialog_result)
     return -1;

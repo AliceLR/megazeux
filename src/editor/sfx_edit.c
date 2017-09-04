@@ -24,6 +24,7 @@
 #include "../helpsys.h"
 #include "../sfx.h"
 #include "../window.h"
+#include "../event.h"
 #include "../data.h"
 
 #include "sfx_edit.h"
@@ -136,6 +137,9 @@ void sfx_edit(struct world *mzx_world)
 
   struct element *b_elements[21];
 
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
   set_context(CTX_SFX_EDITOR);
 
   construct_dialog(&a_di, "Choose SFX mode", 26, 7, 28, 8,
@@ -221,6 +225,9 @@ void sfx_edit(struct world *mzx_world)
   }
 
   destruct_dialog(&a_di);
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
 
   // Done!
   pop_context();

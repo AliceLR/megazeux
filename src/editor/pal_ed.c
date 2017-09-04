@@ -1122,6 +1122,9 @@ void palette_editor(struct world *mzx_world)
 
   palette = rebuild_palette(NULL);
 
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
   cursor_off();
   set_context(CTX_PALETTE_EDITOR);
   save_screen();
@@ -1262,6 +1265,9 @@ void palette_editor(struct world *mzx_world)
       }
     }
   } while(key != IKEY_ESCAPE);
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
 
   restore_screen();
   pop_context();

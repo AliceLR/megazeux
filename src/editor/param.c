@@ -1025,6 +1025,9 @@ int edit_sensor(struct world *mzx_world, struct sensor *cur_sensor)
   struct element *elements[5];
   int dialog_result;
 
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
   set_context(CTX_SENSOR_EDITOR);
   strcpy(sensor_name, cur_sensor->sensor_name);
   strcpy(sensor_robot, cur_sensor->robot_to_mesg);
@@ -1042,6 +1045,9 @@ int edit_sensor(struct world *mzx_world, struct sensor *cur_sensor)
 
   dialog_result = run_dialog(mzx_world, &di);
   destruct_dialog(&di);
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
 
   pop_context();
 
@@ -1108,6 +1114,9 @@ int edit_robot(struct world *mzx_world, struct robot *cur_robot)
 // use default or load up a new robot/scroll/sign.
 int edit_param(struct world *mzx_world, int id, int param)
 {
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
   // Switch default params to handle the basic stuff
   switch(def_params[id])
   {
@@ -1366,6 +1375,10 @@ int edit_param(struct world *mzx_world, int id, int param)
       break;
     }
   }
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
+
   // Return param
   return param;
 }

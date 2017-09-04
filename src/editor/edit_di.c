@@ -538,6 +538,9 @@ void status_counter_info(struct world *mzx_world)
   };
   int i;
 
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
   set_confirm_buttons(elements);
   set_context(CTX_STATUS_COUNTERS);
 
@@ -557,6 +560,9 @@ void status_counter_info(struct world *mzx_world)
 
   run_dialog(mzx_world, &di);
   destruct_dialog(&di);
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
 
   pop_context();
 }
@@ -613,6 +619,9 @@ void size_pos(struct world *mzx_world)
     src_board->board_width, src_board->board_height
   };
 
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
   set_context(CTX_BOARD_SIZES);
 
   do
@@ -638,6 +647,9 @@ void size_pos(struct world *mzx_world)
 
     dialog_result = run_dialog(mzx_world, &di);
     destruct_dialog(&di);
+
+    // Prevent previous keys from carrying through.
+    force_release_all_keys();
 
     // Fix sizes
     if(results[2] > results[4])
@@ -799,6 +811,9 @@ void board_info(struct world *mzx_world)
 
   int pos = 3;
 
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
   set_context(CTX_BOARD_INFO);
 
   strcpy(title_string, src_board->board_name);
@@ -841,6 +856,9 @@ void board_info(struct world *mzx_world)
     dialog_result = run_dialog(mzx_world, &di);
     pos = di.current_element;
     destruct_dialog(&di);
+
+    // Prevent UI keys from carrying through.
+    force_release_all_keys();
 
     // Save defaults
     if(dialog_result == 1)
@@ -916,6 +934,10 @@ static void global_chars(struct world *mzx_world)
   int results[24];
   struct element *elements[27];
   struct dialog di;
+
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
   set_context(CTX_CHANGE_CHAR_IDS);
 
   do
@@ -984,6 +1006,9 @@ static void global_chars(struct world *mzx_world)
     // Run
     dialog_result = run_dialog(mzx_world, &di);
     destruct_dialog(&di);
+
+    // Prevent UI keys from carrying through.
+    force_release_all_keys();
 
     if(dialog_result == -1)
       break;
@@ -1078,6 +1103,9 @@ static void global_dmg(struct world *mzx_world)
   int results[22];
   int i;
 
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
   set_context(CTX_CHANGE_DAMAGE);
   set_confirm_buttons(elements);
 
@@ -1110,6 +1138,10 @@ static void global_dmg(struct world *mzx_world)
       id_dmg[(int)dmg_ids[i]] = results[i];
     }
   }
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
+
   pop_context();
 }
 
@@ -1158,6 +1190,9 @@ void global_info(struct world *mzx_world)
   int dialog_result;
   int redo = 0;
 
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
   do
   {
     set_confirm_buttons(a_elements);
@@ -1190,6 +1225,10 @@ void global_info(struct world *mzx_world)
 
     dialog_result = run_dialog(mzx_world, &a_di);
     destruct_dialog(&a_di);
+
+    // Prevent UI keys from carrying through.
+    force_release_all_keys();
+
     pop_context();
 
     switch(dialog_result)
@@ -1352,6 +1391,9 @@ void global_robot(struct world *mzx_world)
   }
   else
   {
+    // Prevent UI keys from carrying through.
+    force_release_all_keys();
+
     restore_screen();
   }
 }
@@ -1379,6 +1421,9 @@ int board_goto(struct world *mzx_world,
   int board_width = cur_board->board_width;
   int board_height = cur_board->board_height;
 
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
   elements[0] = construct_button( 7, 4, "  Ok  ", 0);
   elements[1] = construct_button(23, 4, "Cancel", 1);
   elements[2] = construct_number_box( 3, 2, "X-",
@@ -1397,6 +1442,9 @@ int board_goto(struct world *mzx_world,
     *cursor_board_x = goto_x;
     *cursor_board_y = goto_y;
   }
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
 
   return result;
 }

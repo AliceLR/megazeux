@@ -1213,11 +1213,17 @@ static int block_menu(struct world *mzx_world)
     construct_button(15, 7, "Cancel", -1)
   };
 
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
   construct_dialog(&di, "Choose Block Command", 26, 6, 28, 10,
    elements, 3, 0);
 
   dialog_result = run_dialog(mzx_world, &di);
   destruct_dialog(&di);
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
 
   if(dialog_result == -1)
     return -1;
@@ -1942,6 +1948,9 @@ static void edit_settings(struct world *mzx_world)
   };
   char new_macros[5][64];
 
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
   memcpy(new_macros, macros, 64 * 5);
 
   construct_dialog(&di, "Edit Settings", 10, 6, 60, 12,
@@ -1949,6 +1958,9 @@ static void edit_settings(struct world *mzx_world)
 
   dialog_result = run_dialog(mzx_world, &di);
   destruct_dialog(&di);
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
 
   if(dialog_result)
     memcpy(macros, new_macros, 64 * 5);
@@ -2080,6 +2092,9 @@ static void goto_position(struct world *mzx_world, struct robot_state *rstate)
     construct_button(14, 5, "Cancel", -1)
   };
 
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
   construct_dialog(&di, "Goto position", 28, 8, 25, 7,
    elements, 4, 0);
 
@@ -2091,6 +2106,9 @@ static void goto_position(struct world *mzx_world, struct robot_state *rstate)
     rstate->current_x = column_number;
     goto_line(rstate, line_number);
   }
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
 }
 
 static void replace_current_line(struct robot_state *rstate,
@@ -2222,11 +2240,17 @@ static void find_replace_action(struct robot_state *rstate)
     construct_button(44, 7, "Cancel", -1)
   };
 
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
   construct_dialog(&di, "Search and Replace", 10, 7, 70, 10,
    elements, 8, 0);
 
   last_find_option = run_dialog(rstate->mzx_world, &di);
   destruct_dialog(&di);
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
 
   wrap_option = check_result_1[0];
   case_option = check_result_2[0];
@@ -2617,9 +2641,15 @@ static void execute_macro(struct robot_state *rstate,
    start_y, nominal_width, nominal_height, elements,
    total_dialog_elements, 0, 1, 2, NULL);
 
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
   do
   {
     dialog_value = run_dialog(mzx_world, &di);
+
+    // Prevent UI keys from carrying through.
+    force_release_all_keys();
 
     switch(dialog_value)
     {
@@ -3004,7 +3034,11 @@ static int validate_lines(struct robot_state *rstate, int show_none)
   int dialog_result;
   int num_ignore = 0;
   int current_size = rstate->size;
+  int current_element = 4;
   int i;
+
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
 
   // First, collect the number of errors, and process error messages
   // by calling assemble_line.
@@ -3136,15 +3170,17 @@ static int validate_lines(struct robot_state *rstate, int show_none)
       }
 
       construct_dialog(&di, "Command Summary", 5, 2, 70, 21,
-       elements, element_pos, 1);
+       elements, element_pos, current_element);
 
       dialog_result = run_dialog(mzx_world, &di);
+      current_element = di.current_element;
       destruct_dialog(&di);
 
       if(dialog_result == -1)
       {
         // Cancel - bails
         redo = 0;
+        break;
       }
       else
 
@@ -3169,6 +3205,7 @@ static int validate_lines(struct robot_state *rstate, int show_none)
         }
 
         rstate->size = current_size;
+        continue;
       }
       else
 
@@ -3222,15 +3259,36 @@ static int validate_lines(struct robot_state *rstate, int show_none)
       if(dialog_result == 1)
       {
         start_line -= 12;
+        current_element = 4;
+        continue;
       }
       else
 
       if(dialog_result == 2)
       {
         start_line += 12;
+        current_element = 4;
+        continue;
       }
+
+      // Next issue
+      current_element += 4;
+      if(current_element >= element_pos)
+      {
+        // Next
+        if(num_errors - start_line > 12)
+          current_element = element_pos - 1;
+
+        // Okay
+        else
+          current_element = 1;
+      }
+
     } while(redo);
   }
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
 
   update_current_line(rstate);
   return num_ignore;
@@ -3287,6 +3345,9 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
   struct robot_line *current_rline = NULL;
   char arg_types[32], *next;
 #endif
+
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
 
   set_caption(mzx_world, mzx_world->current_board, cur_robot, 1);
 
@@ -4341,6 +4402,9 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
     }
 
   } while(!exit);
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
 
 #ifndef CONFIG_DEBYTECODE
   // Package time
