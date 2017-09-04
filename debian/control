@@ -10,7 +10,7 @@ Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: A simple game creation system (GCS)
  MegaZeux is a Game Creation System (GCS), inspired by Epic MegaGames' ZZT,
- first released by Gregory Janson in 1994. It was recently ported from 16bit
+ first released by Alexis Janson in 1994. It was recently ported from 16bit
  MSDOS C/ASM to portable SDL C/C++, improving its platform support and
  hardware compatibility.
  .
