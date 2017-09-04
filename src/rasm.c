@@ -2851,32 +2851,47 @@ static char *get_character_string_expressions(char *src, char terminator,
  int *contains_expressions);
 static char *get_expression(char *src);
 
+enum is_op_type
+{
+  NOT_OPERATOR = 0,
+  IS_OPERATOR_UNARY = 0, // ignore these; they'll get picked up as token pieces.
+
+  IS_OPERATOR = 1,
+  IS_OPERATOR_MINUS = 2,
+  IS_OPERATOR_TERNARY_OPEN = 3,
+  IS_OPERATOR_TERNARY_CLOSE = 4,
+};
+
 static char *get_expr_binary_operator_token(char *src, int *_is_operator)
 {
-  int is_operator = 1;
+  int is_operator = IS_OPERATOR;
 
   switch(*src)
   {
     // One char operators, not the start of a two char one.
     case '+':
-    case '-':
+    case '-': // Can be a regular operator or a unary operator.
     case '/':
     case '%':
     case '&':
     case '|':
     case '^':
-    case '~':
     case '=':
+      break;
+
+    // Unary only.
+    case '~':
+      is_operator = IS_OPERATOR_UNARY;
       break;
 
     // Ternary operator special case - this needs to be counted
     case '?':
-      is_operator = 2;
+      is_operator = IS_OPERATOR_TERNARY_OPEN;
       break;
 
     // Ternary operator special case - this needs to be counted
     case ':':
-      is_operator = 3;
+      is_operator = IS_OPERATOR_TERNARY_CLOSE;
       break;
 
     case '*':
@@ -2911,11 +2926,17 @@ static char *get_expr_binary_operator_token(char *src, int *_is_operator)
 
     case '!':
       if(src[1] == '=')
+      {
         src++;
+      }
+      else
+      {
+        is_operator = IS_OPERATOR_UNARY;
+      }
       break;
 
     default:
-      is_operator = 0;
+      is_operator = NOT_OPERATOR;
       break;
   }
 
@@ -2931,7 +2952,7 @@ static char *get_expr_value_token(char *src)
   char *next = src;
 
   // Unary operators are okay, just eats up spaces until next ones.
-  while((*next == '-') || (*next == '~'))
+  while((*next == '-') || (*next == '~') || (*next == '!'))
     next = skip_whitespace(next + 1);
 
   switch(*next)
@@ -2980,8 +3001,15 @@ static char *get_expr_value_token(char *src)
 
     default:
     {
+      char *start = next;
+
       // Grab a valid identifier out of this.
       next = find_non_identifier_char(next);
+
+      // After skipping spaces/unaries, we're at a non-identifier char? Invalid
+      if(next == start)
+        return src;
+
       break;
     }
   }
@@ -3019,7 +3047,12 @@ static char *get_expression(char *src)
     if(!is_operator)
       return src;
 
-    ternary_level += (is_operator == 2) - (is_operator == 3);
+    if(is_operator == IS_OPERATOR_TERNARY_OPEN)
+      ternary_level++;
+
+    else if(is_operator == IS_OPERATOR_TERNARY_CLOSE)
+      ternary_level--;
+
     if(ternary_level < 0)
       return src;
 
