@@ -711,8 +711,6 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
 
   memset(vid_usage, -1, 2000);
 
-  force_release_all_keys();
-
   // Draw elements and set vid usage
   for(i = 0; i < di->num_elements; i++)
   {
@@ -938,7 +936,6 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
 
   } while(di->done != 1);
 
-  force_release_all_keys();
   pop_context();
 
   return di->return_value;
@@ -2114,6 +2111,9 @@ int confirm(struct world *mzx_world, const char *str)
   struct element *elements[2];
   int dialog_result;
 
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
   elements[0] = construct_button(15, 2, "OK", 0);
   elements[1] = construct_button(37, 2, "Cancel", 1);
   construct_dialog(&di, str, 10, 9, 60, 5, elements,
@@ -2121,6 +2121,9 @@ int confirm(struct world *mzx_world, const char *str)
 
   dialog_result = run_dialog(mzx_world, &di);
   destruct_dialog(&di);
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
 
   return dialog_result;
 }
@@ -2135,6 +2138,9 @@ int confirm_input(struct world *mzx_world, const char *name,
 
   int input_length = 32;
 
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
   // Don't pass anything through that isn't this big plz
   str[input_length] = '\0';
 
@@ -2145,6 +2151,9 @@ int confirm_input(struct world *mzx_world, const char *name,
 
   dialog_result = run_dialog(mzx_world, &di);
   destruct_dialog(&di);
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
 
   return dialog_result;
 }
@@ -2160,6 +2169,9 @@ int ask_yes_no(struct world *mzx_world, char *str)
 
   int yes_button_pos;
   int no_button_pos;
+
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
 
   // Is this string too long for the normal ask dialog?
   if(str_length > 56)
@@ -2199,6 +2211,9 @@ int ask_yes_no(struct world *mzx_world, char *str)
 
   dialog_result = run_dialog(mzx_world, &di);
   destruct_dialog(&di);
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
 
   return dialog_result;
 }
@@ -2454,6 +2469,9 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
   char ret_path[MAX_PATH];
   char ret_file[MAX_PATH];
 
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
   // These are stack heavy so put them on the heap
   // This function is not performance sensitive anyway.
   file_name = cmalloc(PATH_BUF_LEN);
@@ -2704,6 +2722,9 @@ skip_dir:
      last_element, file_dialog_function);
 
     dialog_result = run_dialog(mzx_world, &di);
+
+    // Prevent UI keys from carrying through.
+    force_release_all_keys();
 
     // If there's a path on ret, change to it.  Make ret absolute.
     switch(dialog_result)

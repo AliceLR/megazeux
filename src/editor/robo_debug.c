@@ -144,6 +144,9 @@ static int edit_breakpoint_dialog(struct world *mzx_world,
   struct dialog di;
   int result;
 
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
   memcpy(match_string, br->match_string, 61);
   memcpy(match_name, br->match_name, 15);
   line_number = br->line_number;
@@ -172,6 +175,9 @@ static int edit_breakpoint_dialog(struct world *mzx_world,
     br->line_number = line_number;
   }
 
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
+
   return result;
 }
 
@@ -183,6 +189,9 @@ static int edit_watchpoint_dialog(struct world *mzx_world,
   struct element *elements[3];
   struct dialog di;
   int result;
+
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
 
   memcpy(match_name, wt->match_name, 61);
 
@@ -201,6 +210,9 @@ static int edit_watchpoint_dialog(struct world *mzx_world,
   {
     memcpy(wt->match_name, match_name, 61);
   }
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
 
   return result;
 }
@@ -334,6 +346,9 @@ void __debug_robot_config(struct world *mzx_world)
 
   br_selected = MIN(br_selected, num_breakpoints);
   wt_selected = MIN(wt_selected, num_watchpoints);
+
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
 
   set_context(CTX_BREAKPOINT_EDITOR);
 
@@ -537,6 +552,9 @@ void __debug_robot_config(struct world *mzx_world)
   }
   while(result > -1);
 
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
+
   m_hide();
   pop_context();
 }
@@ -614,6 +632,9 @@ static int goto_send_dialog(struct world *mzx_world, int robot_id)
   struct dialog di;
   int result;
 
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
   elements[0] = construct_radio_button(2, 1,
    target_strs, ARRAY_SIZE(target_strs), 8, &target);
 
@@ -634,6 +655,9 @@ static int goto_send_dialog(struct world *mzx_world, int robot_id)
 
   result = run_dialog(mzx_world, &di);
   destruct_dialog(&di);
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
 
   if(!result)
   {
@@ -924,6 +948,9 @@ static int debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
 
   dialog_fadein();
 
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
   set_context(CTX_ROBOT_DEBUG);
 
   // Open debug dialog
@@ -1042,7 +1069,8 @@ static int debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
   cur_robot->commands_total -= lines_run;
   cur_robot->commands_cycle = 0;
 
-  update_event_status();
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
 
   return ret_val;
 }

@@ -135,6 +135,7 @@ struct buffered_status *store_status(void);
 CORE_LIBSPEC bool update_event_status(void);
 CORE_LIBSPEC Uint32 update_event_status_delay(void);
 CORE_LIBSPEC void update_event_status_intake(void);
+CORE_LIBSPEC void force_release_all_keys(void);
 CORE_LIBSPEC Uint32 get_key(enum keycode_type type);
 CORE_LIBSPEC Uint32 get_last_key(enum keycode_type type);
 CORE_LIBSPEC Uint32 get_key_status(enum keycode_type type, Uint32 index);
@@ -169,7 +170,6 @@ bool __peek_exit_input(void);
 
 void wait_event(int timeout);
 void force_last_key(enum keycode_type type, int val);
-void force_release_all_keys(void);
 void warp_mouse_x(Uint32 x);
 void warp_mouse_y(Uint32 y);
 Uint32 get_mouse_x(void);

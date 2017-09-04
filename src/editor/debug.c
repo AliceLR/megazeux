@@ -1583,6 +1583,9 @@ static int search_dialog(struct world *mzx_world,
   int wrap =     (*search_flags & VAR_SEARCH_WRAP) > 0;
   int local =    (*search_flags & VAR_SEARCH_LOCAL) > 0;
 
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
   elements[0] = construct_input_box( 2, 1, "Search: ", VAR_SEARCH_MAX, 0, string);
   elements[1] = construct_check_box( 2, 2, name_opt,    1, strlen(name_opt[0]),    &names);
   elements[2] = construct_check_box(20, 2, value_opt,   1, strlen(value_opt[0]),   &values);
@@ -1602,7 +1605,10 @@ static int search_dialog(struct world *mzx_world,
    (wrap * VAR_SEARCH_WRAP) + (local * VAR_SEARCH_LOCAL);
   
   destruct_dialog(&di);
-  
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
+
   return result;
 }
 
@@ -1617,6 +1623,9 @@ static int new_counter_dialog(struct world *mzx_world, char *name)
   struct element *elements[3];
   struct dialog di;
 
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
   elements[0] = construct_input_box(2, 2, "Name:", VAR_ADD_MAX, 0, name);
   elements[1] = construct_button(9, 4, "Confirm", 0);
   elements[2] = construct_button(23, 4, "Cancel", -1);
@@ -1628,6 +1637,9 @@ static int new_counter_dialog(struct world *mzx_world, char *name)
   result = run_dialog(mzx_world, &di);
 
   destruct_dialog(&di);
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
 
   if(!result && (strlen(name) > 0))
   {
@@ -1773,6 +1785,9 @@ void __debug_counters(struct world *mzx_world)
   int search_pos = 0;
 
   int reopened = 0;
+
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
 
   set_context(CTX_COUNTER_DEBUG);
 
@@ -2140,6 +2155,9 @@ void __debug_counters(struct world *mzx_world)
   // We don't need to free anything this list points
   // to because clear_debug_tree already did it.
   free(var_list);
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
 }
 
 /************************************************/

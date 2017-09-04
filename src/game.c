@@ -652,6 +652,9 @@ static void game_settings(struct world *mzx_world)
   };
   struct element *elements[10];
 
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
   set_context(CTX_F2_MENU);
 
 #ifdef CONFIG_RENDER_GL_PROGRAM
@@ -738,6 +741,9 @@ static void game_settings(struct world *mzx_world)
     dialog_result = run_dialog(mzx_world, &di);
     start_option = di.current_element;
     destruct_dialog(&di);
+
+    // Prevent UI keys from carrying through.
+    force_release_all_keys();
 
     if(!dialog_result)
     {

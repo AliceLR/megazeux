@@ -29,6 +29,8 @@ FIXES
   of Robotic code correctly.
 + Attempting to save a world in a write-protected location
   correctly displays an error message again.
++ Fixed a bug where key repeat would not work when scrolling
+  through the counter debugger tree list.
 + checkres will no longer report empty filenames as dependencies
   e.g. SET "" TO "FWRITE_OPEN".
 + The -q flag in checkres will now correctly output filenames
