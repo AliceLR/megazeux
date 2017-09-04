@@ -4915,7 +4915,7 @@ static char *legacy_disassemble_print_expression(char *src, char **_output,
  int *_string_length);
 static char *legacy_disassemble_print_string_expressions(char *src,
  char **_output, int *_string_length, int early_terminator,
- int escape_char);
+ int escape_char, int is_expression_interpolation);
 
 static char *legacy_disassemble_print_binary_operator(char *src,
  char **_output, int *_string_length)
@@ -5092,7 +5092,7 @@ static char *legacy_disassemble_print_expr_value_token(char *src,
       char *base_output = output;
 
       next_next = legacy_disassemble_print_string_expressions(next + 1,
-       &output, &string_length, base_char, '`');
+       &output, &string_length, base_char, '`', false);
 
       name_length = output - base_output;
 
@@ -5236,7 +5236,7 @@ static bool legacy_disassembled_field_is_string(char *src, char *end)
 // If you don't want an early terminator then give this -1.
 static char *legacy_disassemble_print_string_expressions(char *src,
  char **_output, int *_string_length, int early_terminator,
- int escape_char)
+ int escape_char, int is_expression_interpolation)
 {
   char current_char = *src;
   char *output = *_output;
@@ -5244,6 +5244,11 @@ static char *legacy_disassemble_print_string_expressions(char *src,
 
   while(string_length && (current_char != early_terminator))
   {
+    // Hack: legacy Robotic allowed unclosed interpolation in expression
+    // identifiers to work, so we need to as well.
+    if(current_char == '\'' && is_expression_interpolation)
+      break;
+
     if(current_char == '(')
     {
       char *next = legacy_disassemble_print_expression(src, &output,
@@ -5304,10 +5309,12 @@ static char *legacy_disassemble_print_string_expressions(char *src,
         name_offset = output;
 
         next = legacy_disassemble_print_string_expressions(src, &output,
-         &string_length, '&', -1);
+         &string_length, '&', -1, true);
 
         name_length = output - name_offset;
 
+        // Consume the terminating char if it's an &. Interpolation can also
+        // terminate with a null or a ' (due to a bug); in these cases, don't.
         if(*next == '&')
         {
           string_length--;
@@ -5612,14 +5619,14 @@ static char *legacy_disassemble_arg(enum arg_type arg_type, char *src,
       if(is_simple_identifier_name(src, arg_length, false))
       {
         src = legacy_disassemble_print_string_expressions(src, &output,
-         &arg_length, -1, -1);
+         &arg_length, -1, -1, false);
       }
       else
       {
         *output = '`';
         output++;
         src = legacy_disassemble_print_string_expressions(src, &output,
-         &arg_length, -1, '`');
+         &arg_length, -1, '`', false);
         *output = '`';
         output++;
       }
@@ -5633,7 +5640,7 @@ static char *legacy_disassemble_arg(enum arg_type arg_type, char *src,
       *output = '"';
       output++;
       src = legacy_disassemble_print_string_expressions(src, &output,
-       &arg_length, -1, '"');
+       &arg_length, -1, '"', false);
       *output = '"';
 
       *_output = output + 1;
