@@ -2922,7 +2922,7 @@ char *tr_msg_ext(struct world *mzx_world, char *mesg, int id, char *buffer,
         }
         else
 
-        if(!strncasecmp(src_ptr, "input", 5))
+        if(!strncasecmp(src_ptr, "input)", 6))
         {
           dest_pos += sprintf(buffer + dest_pos, "%s",
            src_board->input_string);
