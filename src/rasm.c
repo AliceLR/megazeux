@@ -2857,9 +2857,8 @@ enum is_op_type
   IS_OPERATOR_UNARY = 0, // ignore these; they'll get picked up as token pieces.
 
   IS_OPERATOR = 1,
-  IS_OPERATOR_MINUS = 2,
-  IS_OPERATOR_TERNARY_OPEN = 3,
-  IS_OPERATOR_TERNARY_CLOSE = 4,
+  IS_OPERATOR_TERNARY_OPEN = 2,
+  IS_OPERATOR_TERNARY_CLOSE = 3,
 };
 
 static char *get_expr_binary_operator_token(char *src, int *_is_operator)
