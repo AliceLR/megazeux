@@ -1093,7 +1093,7 @@ static inline void get_src_line(struct robot *cur_robot, char **_src_ptr,
     offset = cmd_map[line_num].src_pos;
     src_ptr = cur_robot->program_source + offset;
 
-    if(line_num < cur_robot->command_map_length)
+    if(line_num + 1 < cur_robot->command_map_length)
     {
       src_length = cmd_map[line_num + 1].src_pos - offset - 1;
     }

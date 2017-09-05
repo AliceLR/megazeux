@@ -2637,7 +2637,7 @@ void disassemble_and_map_program(char *program, int program_length,
 
   int ret;
 
-  cmd_map_length = get_program_line_count(program, program_length) + 1;
+  cmd_map_length = get_program_line_count(program, program_length);
   cmd_map = cmalloc(cmd_map_length * sizeof(struct command_mapping));
 
   cmd_map[0].real_line = 0;
