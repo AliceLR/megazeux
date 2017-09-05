@@ -1902,6 +1902,7 @@ what each one does.
 >F11:F11 - Toggle Super MZX Mode
 >F12:F12 - Take Screenshot
 
+>AF11:Alt+F11 - Robotic Debugger
 >ShF1:Shift+F1 - Show InvisWalls
 >ShF2:Shift+F2 - Show Robots
 >ShF3:Shift+F3 - Show Fakes
@@ -2310,6 +2311,14 @@ editor; it will not carry into games by itself.
 Pressing F12 will make a 640x350 screenshot (in PNG format by
 default) in the working directory, using the software renderer.
 The file naming starts from "screen0".
+
+:AF11:~EAlt+F11 - Robotic Debugger
+
+Alt plus F11 will launch the configuration screen for the
+Robotic Debugger. For more information on the Robotic Debugger,
+go to its relevant section.
+
+>#DBGMODE.HLP:101:Debug Modes - The Robotic Debugger
 
 :ShF1:~ESh+F1 - Show InvisWalls
 :ShF2:~ESh+F2 - Show Robots
@@ -2951,17 +2960,12 @@ sound and music.
 
 $SAM Files in the Port
 
-SAM files are not directly supported in MZX. WAV files are
-created on first loading the SAM, and are exclusively used
-thereafter. An easy way to convert SAM files is by using Alt+L
-and playing each. However, using WAVs as the original source is
-preferred, as conversion can degrade quality (not to mention
-that SAMs, as ~~8KHz mono files, aren't high-quality to begin
-with). For large sound effects such as voice, try using OGGs;
-while lossy, the OGG format can provide very good compression
-and still sound the same (or extremely similar) to the human
-ear. You may also use module formats with the SAM command, which
-has its uses.
+SAM files, formerly the only format for playing sounds in MZX,
+are directly supported. However, using OGGs or WAVs as the
+original source, if possible, is preferred as SAMs are low
+quality (~~8KHz mono) compared to typical WAV and OGG quality
+settings. SAM support is mostly kept in for supporting older
+games, not for usage in designing games.
 
 $Format for Sound Effects
 
@@ -3017,10 +3021,10 @@ format effectively. The commands are:
   triplets in regular music, except it affects ALL subsequent
   notes.
 ~A &
-  & is a very special command. It is used to play SAM files
-  (digitized sounds) within an sfx string. It allows digitized
-  sounds within the sound effects editor. The general format
-  for & is as follows:
+  & is a very special command. It is used to play SAM/WAV/OGG
+  files (digitized sounds) within an sfx string. It allows
+  digitized sounds within the sound effects editor. The general
+  format for & is as follows:
 
 $"&FILENAME.WAV&3C"
 
@@ -3159,7 +3163,8 @@ To convert frequencies from MZX to real, use these formulae:
  Actual frequency = 1789682 / MZX frequency
  MZX frequency = 1789682 / actual frequency
 
-WAVs converted from SAMs play at a natural frequency of 8363Hz.
+WAVs converted from SAMs by older versions of MZX play at a
+natural frequency of 8363Hz.
 
 Finally, tracked modules have a normal frequency of 44100 Hz;
 other types such as OGG and WAV have normal frequencies at
@@ -3538,8 +3543,9 @@ called breakpoints.
 
 MegaZeux does not provide default breakpoints (with one notable
 exception explained later), so suitable breakpoints must be
-created. Pressing Alt+F11 during playtesting in the editor will
-load the config screen for the Robotic Debugger.
+created. Pressing Alt+F11 while in the editor or during an
+editor testplay will load the config screen for the Robotic
+Debugger.
 
 Breakpoints can be added by using Alt+N or Alt+A, or by clicking
 the "(new)" text. Breakpoints will activate stepping when
@@ -8727,6 +8733,18 @@ be done in MegaZeux by inputting "(5 + 3)".
 Counters can be used inside expressions using single quotes or
 ampersands like so: "(&five& + 'three')".
 
+Unlike in many other programming languages, MegaZeux does not
+follow a strict order of operations. Items in parentheses take
+precedence, with other operator precedence solely determined by
+their position (from left to right).
+
+For example, "(5 - 4 * 20 / (21 - 16))" would evaulate to 4.
+5 - 4 evaluates to 1; 1 * 20 evaluates to 20; 20 / (21 - 16)
+first evaluates to 20 / 5, which becomes 4.
+
+Whitespace between operators is not necessary. (5+3) is as valid
+as (5 + 3).
+
 MegaZeux cannot decipher directly nested ampersands or single
 quotes; such will cause MegaZeux to misinterpret your
 expression in different ways, depending on which you used.
@@ -9157,6 +9175,9 @@ spr15_y. For example, using:
 
 will move the sprite to the northeast by 1.
 
+As with the overlay, any instance of char 32 in the sprite will
+not be shown, instead displaying the next underlying layer.
+
 Now that you have sprites set up and displayed, you can do
 collision tests. These check if moving sprites will cause
 collision (i.e. overlapping) with either the foreground (i.e.
@@ -9185,7 +9206,9 @@ values of n greater than spr_collisions - 1 are undefined.
 
 Sprites can be set to ignore certain types of blocks in
 collision checks by setting the sprN_ccheck value of a given
-sprite N.
+sprite N. In addition, setting a sprite's ccheck value to 2 will
+cause blank characters in a sprite from being shown, much like
+char 32.
 
 sprN_static uses the SCROLLEDX and SCROLLEDY counters instead
 of absolute board coordinates for determining collisions.
@@ -9244,10 +9267,17 @@ counter. For example, setting SPR0_OFFSET to 256 will change all
 character references done by sprite 0 to the first extra
 character set.
 
-Unbound sprites will not ignore the same types of blocks typical
-sprites can (char 32 blocks and blank characters). Instead, they
-can be set on a per-sprite basis to allow a certain color as its
-transparent color with the SPRn_TCOL counter.
+In addition to access to larger numbers of characters, unbound
+sprites can provide transparency effects on a per-sprite basis,
+instead of treating certain characters as transparent. Each
+unbound sprite has its own transparent color, which is set with
+the SPRn_TCOL counter. All pixels of that color in that unbound
+sprite will not display, and show the next underlying layer.
+
+Lastly, when assigned a ccheck value with SPRn_CCHECK, an
+unbound sprite will only apply its personal value in collision
+tests instead of the value of the sprite that initiated the
+check.
 
 Unfortunately, unbound sprites cannot be used with all MZX
 renderers. At present, the overlay2 renderer is incompatible
@@ -9704,6 +9734,62 @@ updated.
 #NEWINVER.HLP
 :1st: 
 $~9NEW in MegaZeux!
+
+September 4, 2017 - MZX 2.90d
+
+Here's another bugfix release. This is mostly assorted small
+fixes, but there are also a couple of major fixes here: first,
+the ternary operator now works correctly when nested both with
+and without expressions, and second, sprN_setview does not break
+in conjunction with certain unbound sprites. Additionally, SAMs
+will not be converted to WAV files anymore (and are now natively
+supported) and the robot debugger config is accessible from the
+editor.
+
+FEATURES
+
++ The current MegaZeux version is now visible from the enter
+  menu on the title screen. This is to assist identifying the
+  version on platforms that don't respect window title changes
+  or have no window border.
++ Updated checkres.bat and checkres documentation.
++ The robot debugger configuration screen is now accessible from
+  the editor via Alt+F11.
++ Removed SAM to WAV converter. MegaZeux now has native SAM
+  support. (asiekierka)
++ Added crt-wave.frag, updated crt.frag. (astral)
+
+FIXES
+
++ Fixed a bug where MegaZeux would crash when editing a robot
+  with an invalid IF command operator.
++ Fixed a bug where the ternary operator would fail to find the
+  correct colon when the middle term contained a second ternary
+  operator in a nested expression.
++ Nested ternary operators should now behave as expected.
++ Fixed a bug where the built-in cursor would disappear after
+  exiting testing with EXIT_GAME.
++ Fixed a bug where the listening mod would not restart after
+  exiting testing.
++ Fixed a bug where the robot debugger would not wrap long lines
+  of Robotic code correctly.
++ Attempting to save a world in a write-protected location
+  correctly displays an error message again.
++ Fixed a bug where key repeat would not work when scrolling
+  through the counter debugger tree list.
++ checkres will no longer report empty filenames as dependencies
+  e.g. SET "" TO "FWRITE_OPEN".
++ The -q flag in checkres will now correctly output filenames
+  instead of nothing.
++ Fixed a bug where sprN_setview would scroll the viewport to
+  the wrong side of the screen if the sprite is unbound and is
+  close to the top or left edge of the board. (Lancer-X)
+
+DEVELOPERS
+
++ Fixed PSP and NDS ports. (asiekierka)
+
+>#MAIN.HLP:072:Table of Contents
 
 July 25, 2017 - MZX 2.90c
 
