@@ -931,29 +931,22 @@ void clear_label_cache(struct label **label_list, int num_labels)
 
 void clear_robot_contents(struct robot *cur_robot)
 {
-  if(cur_robot->stack)
-  {
-    free(cur_robot->stack);
-    cur_robot->stack = NULL;
-  }
+  free(cur_robot->stack);
+  cur_robot->stack = NULL;
 
 #ifdef CONFIG_EDITOR
-  if(cur_robot->command_map)
-  {
-    free(cur_robot->command_map);
-    cur_robot->command_map = NULL;
-    cur_robot->command_map_length = 0;
-  }
+
+  free(cur_robot->command_map);
+  cur_robot->command_map = NULL;
+  cur_robot->command_map_length = 0;
+
 #endif
 
   // If it was created by the game or loaded via a save file
   // then it won't have source code.
-  if(cur_robot->program_source)
-  {
-    free(cur_robot->program_source);
-    cur_robot->program_source = NULL;
-    cur_robot->program_source_length = 0;
-  }
+  free(cur_robot->program_source);
+  cur_robot->program_source = NULL;
+  cur_robot->program_source_length = 0;
 
   // It could be in the editor, or possibly it was never executed.
   if(cur_robot->program_bytecode)
@@ -3352,20 +3345,22 @@ void duplicate_robot_direct(struct world *mzx_world, struct robot *cur_robot,
   }
 
 #ifdef CONFIG_DEBYTECODE
+#ifdef CONFIG_EDITOR
   // If we're in the editor, we want to give the new robot a brand new duplicate
   // of our source code.
-#ifdef CONFIG_EDITOR
   if(mzx_world->editing)
   {
+    int cmd_map_size =
+     cur_robot->command_map_length * sizeof(struct command_mapping);
+
     copy_robot->program_source = cmalloc(cur_robot->program_source_length);
     memcpy(copy_robot->program_source, cur_robot->program_source,
      cur_robot->program_source_length);
     copy_robot->program_source_length = cur_robot->program_source_length;
 
     // And the command map
-    copy_robot->command_map = cmalloc(cur_robot->command_map_length);
-    memcpy(copy_robot->command_map, cur_robot->command_map,
-     cur_robot->command_map_length);
+    copy_robot->command_map = cmalloc(cmd_map_size);
+    memcpy(copy_robot->command_map, cur_robot->command_map, cmd_map_size);
     copy_robot->command_map_length = cur_robot->command_map_length;
   }
   // Otherwise we want to at least know it doesn't exist
