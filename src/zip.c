@@ -625,94 +625,111 @@ static enum zip_error zip_read_file_header(struct zip_archive *zp,
 static enum zip_error zip_write_file_header(struct zip_archive *zp,
  struct zip_file_header *fh, int is_central)
 {
-  int i;
+  enum zip_error result = ZIP_SUCCESS;
 
   void *fp = zp->fp;
 
-  int (*vputc)(int, void *) = zp->vputc;
-  void (*vputw)(int, void *) = zp->vputw;
-  void (*vputd)(int, void *) = zp->vputd;
-  size_t (*vwrite)(const void *, size_t, size_t, void *) = zp->vwrite;
+  char *magic;
+  char *buffer;
+  struct memfile mf;
+  int header_size;
+  int i;
 
-  char *magic = is_central ? file_sig_central : file_sig;
+  if(is_central)
+  {
+    // Position to write CRC, sizes after file write
+    zp->stream_crc_position = zp->vtell(fp) + 16;
+    header_size = fh->file_name_length + 46;
+    magic = file_sig_central;
+  }
+  else
+  {
+    zp->stream_crc_position = zp->vtell(fp) + 14;
+    header_size = fh->file_name_length + 30;
+    magic = file_sig;
+  }
 
-  // Memfiles - we know there's enough space, because it was already
-  // checked in zip_write_file or zip_close
+  buffer = cmalloc(header_size);
+  mfopen_static(buffer, header_size, &mf);
 
   // Signature
   for(i = 0; i<4; i++)
   {
-    if(vputc(magic[i], fp) == EOF)
-      return ZIP_WRITE_ERROR;
+    mfputc(magic[i], &mf);
   }
 
   // Version made by
-  vputw(ZIP_VERSION, fp);
+  mfputw(ZIP_VERSION, &mf);
 
   // Version needed to extract (central directory only)
   if(is_central)
-    vputw(ZIP_VERSION_MINIMUM, fp);
+    mfputw(ZIP_VERSION_MINIMUM, &mf);
 
   // General purpose bit flag
-  vputw(fh->flags, fp);
+  mfputw(fh->flags, &mf);
 
   // Compression method
-  vputw(fh->method, fp);
+  mfputw(fh->method, &mf);
 
   // File last modification time
   // File last modification date
-  vputd(zip_get_dos_date_time(), fp);
+  mfputd(zip_get_dos_date_time(), &mf);
 
-  // Record this position for streaming.
-  zp->stream_crc_position = zp->vtell(fp);
+  // note: zp->stream_crc_position should be here.
 
   // CRC-32
-  vputd(fh->crc32, fp);
+  mfputd(fh->crc32, &mf);
 
   // Compressed size
-  vputd(fh->compressed_size, fp);
+  mfputd(fh->compressed_size, &mf);
 
   // Uncompressed size
-  vputd(fh->uncompressed_size, fp);
+  mfputd(fh->uncompressed_size, &mf);
 
   // File name length
-  vputw(fh->file_name_length, fp);
+  mfputw(fh->file_name_length, &mf);
 
   // Extra field length
-  vputw(0, fp);
+  mfputw(0, &mf);
 
   // (central directory only fields)
   if(is_central)
   {
     // File comment length
-    vputw(0, fp);
+    mfputw(0, &mf);
 
     // Disk number where file starts
-    vputw(0, fp);
+    mfputw(0, &mf);
 
     // Internal file attributes
-    vputw(0, fp);
+    mfputw(0, &mf);
 
     // External file attributes
-    vputd(0, fp);
+    mfputd(0, &mf);
 
     // Relative offset of local file header
-    vputd(fh->offset, fp);
+    mfputd(fh->offset, &mf);
   }
 
   // File name
-  if(!vwrite(fh->file_name, fh->file_name_length, 1, fp))
-    return ZIP_WRITE_ERROR;
+  mfwrite(fh->file_name, fh->file_name_length, 1, &mf);
 
-  // Extra field (is zero bytes)
+  // Extra field (zero bytes)
 
-  // File commend (is zero bytes)
+  // File comment (zero bytes)
+
+  if(!zp->vwrite(buffer, 1, header_size, fp))
+    result = ZIP_WRITE_ERROR;
+
+  // Memfile zips - we know there's enough space, because it was already
+  // checked in zip_write_file or zip_close
 
   // Check for errors.
   if(zp->verror && zp->verror(fp))
-    return ZIP_WRITE_ERROR;
+    result = ZIP_WRITE_ERROR;
 
-  return ZIP_SUCCESS;
+  free(buffer);
+  return result;
 }
 
 
