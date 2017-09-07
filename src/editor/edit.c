@@ -63,8 +63,10 @@
 #include <unistd.h>
 #endif
 
-#define EDIT_SCREEN_EXTENDED 24
-#define EDIT_SCREEN_NORMAL   19
+#define NEW_WORLD_TITLE       "Untitled world"
+
+#define EDIT_SCREEN_EXTENDED  24
+#define EDIT_SCREEN_NORMAL    19
 
 #define DRAW_MEMORY_TIMER_MAX 120
 #define DRAW_MOD_TIMER_MAX    300
@@ -1145,8 +1147,8 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
   struct sensor copy_sensor;
 
   int i;
-  int exit;
   int fade;
+  int exit = 0;
   int cursor_board_x = 0, cursor_board_y = 0;
   int cursor_x = 0, cursor_y = 0;
   int scroll_x = 0, scroll_y = 0;
@@ -1163,6 +1165,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
   int block_dest_x = -1, block_dest_y = -1;
   int block_command = -1;
   struct board *block_board = NULL;
+  int first_board_prompt = 0;
   int new_board = -1;
   int text_place;
   int text_start_x = -1;
@@ -1253,6 +1256,9 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
       mzx_world->active = 1;
 
       create_blank_world(mzx_world);
+
+      // Prompt for the creation of a first board.
+      first_board_prompt = 1;
 
       default_palette();
       save_editor_palette();
@@ -1414,6 +1420,23 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
     text_place = 0;
 
     update_screen();
+
+    if(first_board_prompt)
+    {
+      // If the user creates a second board, name the title board
+      // for disambiguation.
+
+      if(add_board(mzx_world, 1) >= 0)
+      {
+        strcpy(mzx_world->name, NEW_WORLD_TITLE);
+        strcpy(mzx_world->board_list[0]->board_name, NEW_WORLD_TITLE);
+        mzx_world->first_board = 1;
+        new_board = 1;
+      }
+
+      first_board_prompt = 0;
+      continue;
+    }
 
     update_event_status_delay();
     key = get_key(keycode_internal_wrt_numlock);
