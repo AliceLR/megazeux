@@ -87,13 +87,6 @@ void free_editor_config(struct world *mzx_world)
     free(mzx_world->editor_conf.extended_macros);
     mzx_world->editor_conf.extended_macros = NULL;
   }
-
-  // Jump Points
-  if(mzx_world->editor_conf.jump_points)
-  {
-    free(mzx_world->editor_conf.jump_points);
-    mzx_world->editor_conf.jump_points = NULL;
-  }
 }
 
 void load_editor_config(struct world *mzx_world, int *argc, char *argv[])
@@ -129,12 +122,6 @@ static bool editor_reload_world(struct world *mzx_world, const char *file,
   // We don't want to lose these.  If they're any different, the backup
   // version has already been freed/reallocated, so just copy the pointer.
   backup->extended_macros = conf->extended_macros;
-
-  // Same for jump points, except we don't want to keep them
-  backup->jump_points = NULL;
-
-  if(conf->jump_points)
-    free(conf->jump_points);
 
   memcpy(conf, backup, sizeof(struct editor_config_info));
 
@@ -1191,13 +1178,6 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
   char current_listening_dir[MAX_PATH] = { 0 };
   char current_listening_mod[MAX_PATH] = { 0 };
   int listening_flag = 0;
-  int saved_scroll_x[16] = { 0 };
-  int saved_scroll_y[16] = { 0 };
-  int saved_cursor_x[16] = { 0 };
-  int saved_cursor_y[16] = { 0 };
-  int saved_board[16] = { 0 };
-  int saved_debug_x[16] =
-   { 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60 };
 
   const char *mzb_ext[] = { ".MZB", NULL };
   const char *sfx_ext[] = { ".SFX", NULL };
@@ -1512,36 +1492,63 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
     if((key >= IKEY_0) && (key <= IKEY_9))
     {
+      struct editor_config_info *conf = &(mzx_world->editor_conf);
+      char mesg[80];
+
       int s_num = key - IKEY_0;
 
       if(get_ctrl_status(keycode_internal))
       {
-        saved_cursor_x[s_num] = cursor_board_x;
-        saved_cursor_y[s_num] = cursor_board_y;
-        saved_scroll_x[s_num] = scroll_x;
-        saved_scroll_y[s_num] = scroll_y;
-        saved_debug_x[s_num] = debug_x;
-        saved_board[s_num] = mzx_world->current_board_id;
+        sprintf(mesg, "Save '%s' @ %d,%d to pos %d?",
+         mzx_world->current_board->board_name, cursor_board_x,
+         cursor_board_y, s_num);
+
+        if(!confirm(mzx_world, mesg))
+        {
+          conf->saved_board[s_num] = mzx_world->current_board_id;
+          conf->saved_cursor_x[s_num] = cursor_board_x;
+          conf->saved_cursor_y[s_num] = cursor_board_y;
+          conf->saved_scroll_x[s_num] = scroll_x;
+          conf->saved_scroll_y[s_num] = scroll_y;
+          conf->saved_debug_x[s_num] = debug_x;
+          save_local_editor_config(conf, curr_file);
+        }
       }
       else
 
       if(get_alt_status(keycode_internal))
       {
-        cursor_board_x = saved_cursor_x[s_num];
-        cursor_board_y = saved_cursor_y[s_num];
-        scroll_x = saved_scroll_x[s_num];
-        scroll_y = saved_scroll_y[s_num];
-        debug_x = saved_debug_x[s_num];
+        int s_board = conf->saved_board[s_num];
 
-        if(mzx_world->current_board_id != saved_board[s_num])
+        if(s_board < mzx_world->num_boards &&
+         mzx_world->board_list[s_board])
         {
-          fix_board(mzx_world, saved_board[s_num]);
-          synchronize_board_values(mzx_world, &src_board, &board_width,
-           &board_height, &level_id, &level_param, &level_color, &overlay,
-           &overlay_color);
-          fix_mod(mzx_world, src_board, listening_flag);
-          fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
-           cursor_x, cursor_y, board_width, board_height, edit_screen_height);
+          sprintf(mesg, "Go to '%s' @ %d,%d (pos %d)?",
+           mzx_world->board_list[s_board]->board_name,
+           conf->saved_cursor_x[s_num],
+           conf->saved_cursor_y[s_num],
+           s_num);
+
+          if(!confirm(mzx_world, mesg))
+          {
+            cursor_board_x = conf->saved_cursor_x[s_num];
+            cursor_board_y = conf->saved_cursor_y[s_num];
+            scroll_x = conf->saved_scroll_x[s_num];
+            scroll_y = conf->saved_scroll_y[s_num];
+            debug_x = conf->saved_debug_x[s_num];
+
+            if(mzx_world->current_board_id != s_board)
+            {
+              fix_board(mzx_world, s_board);
+              synchronize_board_values(mzx_world, &src_board, &board_width,
+               &board_height, &level_id, &level_param, &level_color, &overlay,
+               &overlay_color);
+              fix_mod(mzx_world, src_board, listening_flag);
+            }
+
+            fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
+             cursor_x, cursor_y, board_width, board_height, edit_screen_height);
+          }
         }
       }
     }

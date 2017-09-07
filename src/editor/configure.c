@@ -242,41 +242,27 @@ static void config_undo_history_size(struct editor_config_info *conf,
 static void config_saved_positions(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  int p = conf->num_jump_points;
-  char *board_id = NULL, *board_x = NULL, *board_y = NULL;
+  unsigned int pos;
+  unsigned int board_num;
+  unsigned int board_x;
+  unsigned int board_y;
+  unsigned int scroll_x;
+  unsigned int scroll_y;
+  unsigned int debug_x;
 
-  if(!(board_id = strchr(value, ',')))
+  sscanf(name, "saved_position%u", &pos);
+  sscanf(value, "%u, %u, %u, %u, %u, %u",
+   &board_num, &board_x, &board_y, &scroll_x, &scroll_y, &debug_x);
+
+  if(pos >= NUM_SAVED_POSITIONS)
     return;
-  board_id[0] = '\0';
-  board_id++;
 
-  if(!(board_x = strchr(board_id, ',')))
-    return;
-  board_x[0] = '\0';
-  board_x++;
-
-  if(!(board_y = strchr(board_x, ',')))
-    return;
-  board_y[0] = '\0';
-  board_y++;
-
-  // Verification of this will have to be done when the editor
-  // attempts to do a jump.
-
-  // Add to the list
-
-  if(conf->num_jump_points == 0)
-    conf->jump_points = cmalloc(0);
-
-  conf->num_jump_points++;
-  conf->jump_points = crealloc(conf->jump_points,
-   sizeof(struct jump_point) * conf->num_jump_points);
-
-  conf->jump_points[p].board_id = strtol(board_id, NULL, 10);
-  conf->jump_points[p].dest_x = strtol(board_x, NULL, 10);
-  conf->jump_points[p].dest_y = strtol(board_y, NULL, 10);
-  strncpy(conf->jump_points[p].name, value, BOARD_NAME_SIZE);
-  conf->jump_points[p].name[BOARD_NAME_SIZE] = '\0';
+  conf->saved_board[pos] = board_num;
+  conf->saved_cursor_x[pos] = board_x;
+  conf->saved_cursor_y[pos] = board_y;
+  conf->saved_scroll_x[pos] = scroll_x;
+  conf->saved_scroll_y[pos] = scroll_y;
+  conf->saved_debug_x[pos] = debug_x ? 60 : 0;
 }
 
 /******************/
@@ -536,7 +522,7 @@ static const struct editor_config_entry editor_config_options[] =
   { "macro_*", config_macro },
   { "palette_editor_hide_help", pedit_hhelp },
   { "robot_editor_hide_help", redit_hhelp },
-  { "saved_position", config_saved_positions },
+  { "saved_position!", config_saved_positions },
   { "undo_history_size", config_undo_history_size },
 };
 
@@ -628,9 +614,13 @@ static const struct editor_config_info default_editor_options =
   0,
   NULL,
 
-  // Jump points
-  0,
-  NULL,
+  // Saved positions
+  { 0 },
+  { 0 },
+  { 0 },
+  { 0 },
+  { 0 },
+  { 60, 60, 60, 60, 60, 60, 60, 60, 60, 60 },
 
 };
 
@@ -681,6 +671,7 @@ void save_local_editor_config(struct editor_config_info *conf,
   const char *comment_b =
     "\n#####        End editor generated configuration        #####";
   FILE *fp;
+  int i;
 
   if(mzx_file_len <= 0)
     return;
@@ -851,16 +842,19 @@ void save_local_editor_config(struct editor_config_info *conf,
   sprintf(buf, "board_default_overlay = %s\n", buf2);
   fwrite(buf, 1, strlen(buf), fp);
 
-  if(conf->num_jump_points)
+  fwrite("\n", 1, 1, fp);
+  for(i = 0; i < NUM_SAVED_POSITIONS; i++)
   {
-    int i;
-
-    fwrite("\n", 1, 1, fp);
-    for(i = 0; i < conf->num_jump_points; i++)
-    {
-      struct jump_point *j = &(conf->jump_points[i]);
-      sprintf(buf, "saved_position = %s,%i,%i,%i\n", j->name, j->board_id, j->dest_x, j->dest_y);
-    }
+    sprintf(buf, "saved_position%u = %u, %u, %u, %u, %u, %u\n",
+     i,
+     conf->saved_board[i],
+     conf->saved_cursor_x[i],
+     conf->saved_cursor_y[i],
+     conf->saved_scroll_x[i],
+     conf->saved_scroll_y[i],
+     conf->saved_debug_x[i]
+    );
+    fwrite(buf, 1, strlen(buf), fp);
   }
 
   fwrite(comment, 1, strlen(comment), fp);

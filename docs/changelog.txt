@@ -6,6 +6,8 @@ FEATURES
   board when opened. If a new board is created, the global first
   board will be set to the new board and the title board will be
   renamed.
++ Saved positions now have confirmation dialogs. Saved positions
+  are saved to/loaded from the editor.cnf file for each world.
 
 FIXES
 
