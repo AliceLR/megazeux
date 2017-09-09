@@ -30,22 +30,14 @@
 
 #include <stddef.h>
 
-#define clinearAlloc(size) check_linearAlloc(size, __FILE__, __LINE__)
-void *check_linearAlloc(size_t size, const char *file, int line);
-
-#define clinearRealloc(ptr, size) check_linearRealloc(ptr, size, __FILE__, __LINE__)
-void *check_linearRealloc(void *ptr, size_t size, const char *file, int line);
+#define clinearAlloc(size, alignment) check_linearAlloc(size, alignment, __FILE__, __LINE__)
+void *check_linearAlloc(size_t size, size_t alignment, const char *file, int line);
 
 #else
 
 static inline void clinearAlloc(size_t size)
 {
   return linearAlloc(size);
-}
-
-static inline void clinearRealloc(void *ptr, size_t size)
-{
-  return linearRealloc(ptr, size);
 }
 
 #endif /* CONFIG_CHECK_ALLOC */

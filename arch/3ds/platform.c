@@ -112,16 +112,9 @@ static void out_of_linear_memory_check(void *p, const char *file, int line)
   }
 }
 
-void *check_linearAlloc(size_t size, const char *file, int line)
+void *check_linearAlloc(size_t size, size_t alignment, const char *file, int line)
 {
-  void *result = linearAlloc(size);
-  out_of_linear_memory_check(result, file, line);
-  return result;
-}
-
-void *check_linearRealloc(void *ptr, size_t size, const char *file, int line)
-{
-  void *result = linearRealloc(ptr, size);
+  void *result = linearMemAlign(size, alignment);
   out_of_linear_memory_check(result, file, line);
   return result;
 }

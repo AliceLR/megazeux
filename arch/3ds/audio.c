@@ -63,7 +63,7 @@ void init_audio_platform(struct config_info *conf)
   ndspSetOutputCount(1);
   ndspSetMasterVol(1.0f);
 
-  audio_buffer = clinearAlloc(buffer_size * 2);
+  audio_buffer = clinearAlloc(buffer_size * 2, 0x80);
   memset(audio_buffer, 0, buffer_size * 2);
   ndspSetCallback(ndsp_callback, audio_buffer);
 
