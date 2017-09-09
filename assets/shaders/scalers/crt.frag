@@ -4,6 +4,8 @@
  * -- David (astral) Cravens 2017 (decravens@gmail.com)
  */
 
+#version 110
+
 uniform sampler2D baseMap;
 
 varying vec2 vTexcoord;
@@ -17,7 +19,7 @@ varying vec2 vTexcoord;
 
 #define XS 1024.0
 #define YS 512.0
-#define TS vec2(XS,XY)
+#define TS vec2(XS,YS)
 
 float CalcScanLineWeight(float dist)
 {
