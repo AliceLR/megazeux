@@ -34,9 +34,16 @@ STRIP  = /bin/true
 #
 
 EXTRA_INCLUDES = -isystem $(CTRULIB)/include -isystem $(DEVKITPRO)/portlibs/armv6k/include
-EXTRA_LIBS = -L$(CTRULIB)/lib -L$(DEVKITPRO)/portlibs/armv6k/lib -L$(DEVKITARM)/arm-none-eabi/lib/armv6k/fpu -lcitro3d -lctru -lpng16 -lz
+ifeq (${DEBUG},1)
+  ARCH_CFLAGS += -Og
+  EXTRA_LIBS = -L$(CTRULIB)/lib -L$(DEVKITPRO)/portlibs/armv6k/lib -L$(DEVKITARM)/arm-none-eabi/lib/armv6k/fpu -lcitro3dd -lctrud -lpng16 -lz
+else
+  OPTIMIZE_CFLAGS = -O3 -fomit-frame-pointer -ffunction-sections
+# OPTIMIZE_CFLAGS = -flto
+  EXTRA_LIBS = -L$(CTRULIB)/lib -L$(DEVKITPRO)/portlibs/armv6k/lib -L$(DEVKITARM)/arm-none-eabi/lib/armv6k/fpu -lcitro3d -lctru -lpng16 -lz
+endif
 
-MACHDEP = -march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft
+MACHDEP = -march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft -mword-relocations
 
 ARCH_CFLAGS   += ${EXTRA_INCLUDES} ${MACHDEP} -DARM11 -D__3DS__ -Iarch/3ds
 ARCH_CXXFLAGS += ${ARCH_CFLAGS}

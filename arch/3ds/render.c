@@ -210,7 +210,7 @@ static bool ctr_init_video(struct graphics_data *graphics,
   C3D_TexEnv* texEnv;
 
 #ifdef RDR_DEBUG
-  consoleInit(GFX_BOTTOM, NULL);
+  consoleInit(GFX_TOP, NULL);
 #endif
 
   memset(&render_data, 0, sizeof(struct ctr_render_data));
@@ -221,11 +221,11 @@ static bool ctr_init_video(struct graphics_data *graphics,
   for (int i = 0; i < 4; i++)
   {
     render_data.cursor_map[i].z = 1;
-    render_data.cursor_map[i].u = 32*8;
-    render_data.cursor_map[i].v = 2*16;
+    render_data.cursor_map[i].u = 0;
+    render_data.cursor_map[i].v = (NUM_CHARSETS-1)*32;
     render_data.mouse_map[i].z = 1;
-    render_data.mouse_map[i].u = 32*8;
-    render_data.mouse_map[i].v = 2*16;
+    render_data.mouse_map[i].u = 0;
+    render_data.mouse_map[i].v = (NUM_CHARSETS-1)*32;
   }
 
   C3D_Init(0x100000);
@@ -260,11 +260,11 @@ static bool ctr_init_video(struct graphics_data *graphics,
 
   for (int i = 0; i < 4; i++)
   {
-    C3D_TexInit(&render_data.charset[i], 1024, 512, GPU_LA4);
+    C3D_TexInit(&render_data.charset[i], 1024, NUM_CHARSETS * 32, GPU_LA4);
     C3D_TexSetFilter(&render_data.charset[i], GPU_NEAREST, GPU_NEAREST);
     C3D_TexSetWrap(&render_data.charset[i], GPU_REPEAT, GPU_REPEAT);
 
-    C3D_TexInitVRAM(&render_data.charset_vram[i], 1024, 512, GPU_LA4);
+    C3D_TexInitVRAM(&render_data.charset_vram[i], 1024, NUM_CHARSETS * 32, GPU_LA4);
     C3D_TexSetFilter(&render_data.charset_vram[i], GPU_NEAREST, GPU_NEAREST);
     C3D_TexSetWrap(&render_data.charset_vram[i], GPU_REPEAT, GPU_REPEAT);
   }
@@ -396,7 +396,7 @@ static inline void ctr_do_remap_char(struct graphics_data *graphics,
   for(i = 0; i < 14; i++, c++)
     ctr_char_bitmask_to_texture(render_data, *c, offset, i);
 
-  render_data->charset_dirty |= (1 << (chr >> 9));
+  render_data->charset_dirty |= (1 << (chr >> 7));
 }
 
 static void ctr_do_remap_charbyte(struct graphics_data *graphics,
@@ -411,7 +411,7 @@ static void ctr_do_remap_charbyte(struct graphics_data *graphics,
 
   ctr_char_bitmask_to_texture(render_data, *c, ((chr & 127)*64) + ((chr >> 7)*16384), byte);
 
-  render_data->charset_dirty |= (1 << (chr >> 8));
+  render_data->charset_dirty |= (1 << (chr >> 7));
 }
 
 static bool ctr_should_render(struct ctr_render_data *render_data)
@@ -438,9 +438,12 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
   int tcol = vlayer->transparent_col;
   int offset = vlayer->offset;
   u32 bufsize = 4 * vlayer->w * vlayer->h * (vlayer->mode > 0 ? 3 : 1);
+  u32 max_bufsize = 4 * vlayer->w * vlayer->h * 3;
   int k, l, m, n, col, col2, col3, col4, idx;
   s16 u, v;
-  u32 i, j;
+  u32 i, j, ch;
+  u32 protected_pal_position = graphics->protected_pal_position;
+  bool has_content = false;
 
   if (!ctr_should_render(render_data))
     return;
@@ -452,18 +455,19 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
     free(layer);
     layer = NULL;
   }
+
   if (layer == NULL)
   {
     layer = malloc(sizeof(struct ctr_layer));
     layer->w = vlayer->w; layer->h = vlayer->h; layer->draw_order = vlayer->draw_order;
-    layer->foreground = linearAlloc(sizeof(struct v_char) * 12 * vlayer->w * vlayer->h);
+    layer->foreground = linearAlloc(sizeof(struct v_char) * max_bufsize);
     layer->background.data = NULL;
-    C3D_TexInit(&(layer->background), next_power_of_two(layer->w), next_power_of_two(layer->h), GPU_RGBA8);
+    C3D_TexInit(&(layer->background), next_power_of_two(layer->w < 8 ? 8 : layer->w), next_power_of_two(layer->h < 8 ? 8 : layer->h), GPU_RGBA8);
     C3D_TexSetFilter(&(layer->background), GPU_NEAREST, GPU_NEAREST);
     vlayer->platform_layer_data = layer;
-    for (i = 0; i < bufsize; i++)
+    for (i = 0; i < max_bufsize; i++)
     {
-      layer->foreground[i].z = ((2000 - layer->draw_order) * 3) + 1;
+      layer->foreground[i].z = (2000 - layer->draw_order) * 3 + 1;
       if ((i & 3) != 0) continue;
       layer->foreground[i + 0].x = ((i >> 2) % layer->w);
       layer->foreground[i + 0].y = (((i >> 2) / layer->w) % layer->h);
@@ -495,10 +499,28 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
           layer->foreground[l++].col = 0;
           continue;
         }
-        u = ((src->char_value + offset) & 127) << 3;
-        v = 512-(((src->char_value + offset) >> 7) << 4);
-        col = src->bg_color == tcol ? 0 : graphics->flat_intensity_palette[src->bg_color];
-        col2 = src->fg_color == tcol ? 0 : graphics->flat_intensity_palette[src->fg_color];
+        has_content = true;
+        ch = src->char_value;
+        if (ch >= 0x100)
+          ch = (ch & 0xFF) + PROTECTED_CHARSET_POSITION;
+        else
+          ch = (ch + offset) % PROTECTED_CHARSET_POSITION;
+        u = (ch & 127) << 3;
+        v = (NUM_CHARSETS * 32)-((ch >> 7) << 4);
+	col = src->bg_color;
+        if (col == tcol) col = 0;
+        else
+        {
+          if (col >= 16) col = ((col - 16) & 0xF) + protected_pal_position;
+          col = graphics->flat_intensity_palette[col];
+        }
+	col2 = src->fg_color;
+        if (col2 == tcol) col2 = 0;
+        else
+        {
+          if (col2 >= 16) col2 = ((col2 - 16) & 0xF) + protected_pal_position;
+          col2 = graphics->flat_intensity_palette[col2];
+        }
         ((u32*) layer->background.data)[k] = col;
         layer->foreground[l].u = u;
         layer->foreground[l].v = v;
@@ -544,12 +566,18 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
           continue;
         }
         idx = ((src->bg_color << 6) | (src->fg_color << 2));
-        u = ((src->char_value + offset) & 127) << 3;
-        v = 512-(((src->char_value + offset) >> 7) << 4);
+        has_content = true;
+        ch = src->char_value;
+        if (ch >= 0x100)
+          ch = (ch & 0xFF) + PROTECTED_CHARSET_POSITION;
+        else
+          ch = (ch + offset) % PROTECTED_CHARSET_POSITION;
+        u = (ch & 127) << 3;
+        v = (NUM_CHARSETS * 32)-((ch >> 7) << 4);
         col = graphics->smzx_indices[idx + 0] == tcol ? 0 : graphics->flat_intensity_palette[graphics->smzx_indices[idx + 0]];
         col2 = graphics->smzx_indices[idx + 2] == tcol ? 0 : graphics->flat_intensity_palette[graphics->smzx_indices[idx + 2]];
         col3 = graphics->smzx_indices[idx + 1] == tcol ? 0 : graphics->flat_intensity_palette[graphics->smzx_indices[idx + 1]];
-        col4 = graphics->smzx_indices[idx + 3] == tcol ? 0 : graphics->flat_intensity_palette[graphics->smzx_indices[idx + 03]];
+        col4 = graphics->smzx_indices[idx + 3] == tcol ? 0 : graphics->flat_intensity_palette[graphics->smzx_indices[idx + 3]];
         ((u32*) layer->background.data)[k] = col;
         layer->foreground[l].u = u;
         layer->foreground[l].v = v;
@@ -593,8 +621,10 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
     }
   }
 
+  if (!has_content)
+    return;
+
   C3D_TexFlush(&layer->background);
-  GSPGPU_FlushDataCache(layer->foreground, sizeof(struct v_char) * bufsize);
 
   C3D_CullFace(GPU_CULL_FRONT_CCW);
   ctr_draw_2d_texture(render_data, &layer->background, 0, layer->background.height - layer->h, layer->w, layer->h, vlayer->x, vlayer->y,
@@ -602,19 +632,28 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
   C3D_CullFace(GPU_CULL_BACK_CCW);
 
   ctr_prepare_accel(render_data, layer->foreground, vlayer->x, vlayer->y);
+  GSPGPU_FlushDataCache(layer->foreground, sizeof(struct v_char) * bufsize);
 
   if (render_data->charset_dirty != 0)
   {
-    int size = 0;
+    int coffs = 0;
+    int csize = 0;
+    int cincr = 1024*16;
+    while ((render_data->charset_dirty & 1) == 0)
+    {
+      coffs += cincr;
+      render_data->charset_dirty >>= 1;
+    }
     while (render_data->charset_dirty != 0)
     {
-      size += 1024*16;
+      csize += cincr;
       render_data->charset_dirty >>= 1;
     }
     for (int i = 0; i < 4; i++)
     {
-      C3D_SafeTextureCopy(render_data->charset[i].data, 0,
-        render_data->charset_vram[i].data, 0, size, 8);
+      GSPGPU_FlushDataCache((u8*)(render_data->charset[i].data) + coffs, csize);
+      C3D_SafeTextureCopy((u8*)(render_data->charset[i].data) + coffs, 0,
+        (u8*)(render_data->charset_vram[i].data) + coffs, 0, csize, 8);
       gspWaitForPPF();
     }
   }
@@ -755,10 +794,11 @@ static void ctr_sync_screen(struct graphics_data *graphics)
   if (!ctr_should_render(render_data))
     return;
 
+#ifndef RDR_DEBUG
   C3D_FrameDrawOn(render_data->target_top);
   ctr_draw_playfield(render_data, true);
+#endif
 
-#ifndef RDR_DEBUG
   C3D_FrameDrawOn(render_data->target_bottom);
   if (get_bottom_screen_mode() == BOTTOM_SCREEN_MODE_KEYBOARD)
   {
@@ -767,7 +807,6 @@ static void ctr_sync_screen(struct graphics_data *graphics)
   }
 
   ctr_draw_playfield(render_data, false);
-#endif
 
   render_data->cursor_on = 0;
   render_data->mouse_on = 0;

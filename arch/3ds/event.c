@@ -53,8 +53,9 @@ bool __update_event_status(void)
 
 void __wait_event(int timeout)
 {
-  // TODO: implement timeout?
-  gspWaitForVBlank();
+  if (timeout) delay(timeout);
+  while (!__update_event_status())
+    delay(1);
 }
 
 // Taken from arch/nds/event.c
