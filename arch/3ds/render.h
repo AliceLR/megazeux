@@ -61,6 +61,7 @@ struct vertex
 {
   vector_3f position;
   vector_2f texcoord;
+  u32 color;
 };
 
 struct linear_ptr_list_entry
@@ -92,6 +93,6 @@ void ctr_bind_shader(struct ctr_shader_data *shader);
 
 void ctr_draw_2d_texture(struct ctr_render_data *render_data, C3D_Tex* texture,
   int tx, int ty, int tw, int th,
-  float x, float y, float w, float h, float z, bool flipy);
+  float x, float y, float w, float h, float z, u32 color, bool flipy);
 
 #endif /* __3DS_RENDER_H__ */

@@ -27,8 +27,10 @@
 
 .alias inpos v0
 .alias intc0 v1
+.alias inclr v2
 
 .constf const(0.0, 1.0, 1.0, 1.0)
+.constf RGBS(0.00392156862745098, 0.00392156862745098, 0.00392156862745098, 0.00392156862745098)
 .alias ZEROS const.xxxx
 .alias  ONES const.yyyy
 
@@ -42,7 +44,9 @@
 	dp4 outpos.w, projection[3], r0
 
 	mov outtc0, intc0
-	mov outclr, ONES
+
+        mov r1, RGBS
+	mul outclr, inclr.wzyx, r1
 
 	end
 .end

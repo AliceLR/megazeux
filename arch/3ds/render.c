@@ -119,6 +119,7 @@ static inline void ctr_prepare_accel(struct ctr_render_data *render_data, struct
 C3D_Tex* ctr_load_png(const char* name)
 {
   C3D_Tex* output;
+  u16 width, height;
   u32 *data, *dataBuf;
 
   output = png_read_file(name, NULL, NULL, tex_w_h_constraint,
@@ -132,6 +133,12 @@ C3D_Tex* ctr_load_png(const char* name)
 
     for (int i = 0; i < output->size >> 2; i++)
       dataBuf[i] = __builtin_bswap32(data[i]);
+
+    width = output->width;
+    height = output->height;
+    C3D_TexDelete(output);
+    C3D_TexInitVRAM(output, width, height, GPU_RGBA8);
+    data = (u32*) output->data;
 
     GSPGPU_FlushDataCache(dataBuf, output->size);
     C3D_SafeDisplayTransfer(dataBuf, GX_BUFFER_DIM(output->width, output->height),
@@ -158,7 +165,7 @@ static struct vertex* vertex_heap;
 
 void ctr_draw_2d_texture(struct ctr_render_data *render_data, C3D_Tex* texture,
   int tx, int ty, int tw, int th,
-  float x, float y, float w, float h, float z, bool flipy)
+  float x, float y, float w, float h, float z, u32 color, bool flipy)
 {
   struct vertex* vertices;
   float umin, umax, vmin, vmax;
@@ -203,9 +210,14 @@ void ctr_draw_2d_texture(struct ctr_render_data *render_data, C3D_Tex* texture,
   vertices[2].texcoord = (vector_2f){umin, vmax};
   vertices[3].texcoord = (vector_2f){umax, vmax};
 
+  vertices[0].color = color;
+  vertices[1].color = color;
+  vertices[2].color = color;
+  vertices[3].color = color;
+
   bufInfo = C3D_GetBufInfo();
   BufInfo_Init(bufInfo);
-  BufInfo_Add(bufInfo, vertices, sizeof(struct vertex), 2, 0x10);
+  BufInfo_Add(bufInfo, vertices, sizeof(struct vertex), 3, 0x210);
 
   C3D_TexBind(0, texture);
   C3D_DrawArrays(GPU_TRIANGLE_STRIP, 0, 4);
@@ -270,6 +282,7 @@ static bool ctr_init_video(struct graphics_data *graphics,
 
   AttrInfo_AddLoader(&render_data.shader.attr, 0, GPU_FLOAT, 3); // v0 = position
   AttrInfo_AddLoader(&render_data.shader.attr, 1, GPU_FLOAT, 2); // v1 = texcoord
+  AttrInfo_AddLoader(&render_data.shader.attr, 2, GPU_UNSIGNED_BYTE, 4); // v2 = color
 
   AttrInfo_AddLoader(&render_data.shader_accel.attr, 0, GPU_FLOAT, 3); // v0 = position
   AttrInfo_AddLoader(&render_data.shader_accel.attr, 1, GPU_SHORT, 2); // v1 = texcoord
@@ -698,7 +711,7 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
 
     C3D_CullFace(GPU_CULL_FRONT_CCW);
     ctr_draw_2d_texture(render_data, &layer->background, 0, layer->background.height - layer->h, layer->w, layer->h, vlayer->x, vlayer->y,
-      layer->w * 8, layer->h * 14, (2000 - layer->draw_order) * 3.0f + 2.0f, false);
+      layer->w * 8, layer->h * 14, (2000 - layer->draw_order) * 3.0f + 2.0f, 0xffffffff, false);
     C3D_CullFace(GPU_CULL_BACK_CCW);
   }
 
@@ -852,20 +865,20 @@ static inline void ctr_draw_playfield(struct ctr_render_data *render_data, bool 
     if ((x + width) > 640) { x = 640 - width; }
 
     if (height > 350) {
-      ctr_draw_2d_texture(render_data, &render_data->playfield_tex, x, 512 - 350, width, 350, 0, (240 - (240 * 350 / height)) / 2, 400, 240 * 350 / height, 2.0f, true);
+      ctr_draw_2d_texture(render_data, &render_data->playfield_tex, x, 512 - 350, width, 350, 0, (240 - (240 * 350 / height)) / 2, 400, 240 * 350 / height, 2.0f, 0xffffffff, true);
     } else {
       if (y < 0) { y = 0; }
       if ((y + height) > 350) { y = 350 - height; }
 
-      ctr_draw_2d_texture(render_data, &render_data->playfield_tex, x, 512 - y - height, width, height, 0, 0, 400, 240, 2.0f, true);
+      ctr_draw_2d_texture(render_data, &render_data->playfield_tex, x, 512 - y - height, width, height, 0, 0, 400, 240, 2.0f, 0xffffffff, true);
     }
   }
   else
   {
     if (get_bottom_screen_mode() == BOTTOM_SCREEN_MODE_KEYBOARD)
-      ctr_draw_2d_texture(render_data, &render_data->playfield_tex, 0, 512 - 350, 640, 350, 80, 12.75, 160, 87.5, 2.0f, true);
+      ctr_draw_2d_texture(render_data, &render_data->playfield_tex, 0, 512 - 350, 640, 350, 80, 12.75, 160, 87.5, 2.0f, 0xffffffff, true);
     else
-      ctr_draw_2d_texture(render_data, &render_data->playfield_tex, 0, 512 - 350, 640, 350, 0, 32, 320, 175, 2.0f, true);
+      ctr_draw_2d_texture(render_data, &render_data->playfield_tex, 0, 512 - 350, 640, 350, 0, 32, 320, 175, 2.0f, 0xffffffff, true);
   }
 }
 

@@ -147,11 +147,11 @@ void ctr_keyboard_draw(struct ctr_render_data *render_data)
 {
   Uint32 i, j;
 
-  ctr_draw_2d_texture(render_data, keyboard_tex, 0, 0, 320, 240, 0, 0, 320, 240, 4.0f, false);
+  ctr_draw_2d_texture(render_data, keyboard_tex, 0, 0, 320, 240, 0, 0, 320, 240, 4.0f, 0xffffffff, false);
 
   if (ctr_is_2d())
   {
-    ctr_draw_2d_texture(render_data, keyboard_tex, force_zoom_out ? 16 : 0, 240, 16, 16, 302, 2, 16, 16, 3.0f, false);
+    ctr_draw_2d_texture(render_data, keyboard_tex, force_zoom_out ? 16 : 0, 240, 16, 16, 302, 2, 16, 16, 3.0f, 0xffffffff, false);
   }
 
   if (keys_down_count > 0)
@@ -163,8 +163,8 @@ void ctr_keyboard_draw(struct ctr_render_data *render_data)
       {
         if (keys_down[j] == area->keycode)
         {
-          ctr_draw_2d_texture(render_data, keyboard_tex, 320 + area->x, 240 - area->y - area->h, area->w, area->h,
-            area->x, area->y, area->w, area->h, 3.0f, false);
+          ctr_draw_2d_texture(render_data, keyboard_tex, area->x, 240 - area->y - area->h, area->w, area->h,
+            area->x, area->y + 1, area->w, area->h - 1, 3.0f, 0x808080ff, false);
           break;
         }
       }
