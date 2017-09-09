@@ -27,12 +27,13 @@
 
 #include "event.h"
 #include "keyboard.h"
+#include "platform.h"
 #include "render.h"
 
 #include "shader_shbin.h"
 #include "shader_accel_shbin.h"
 
-// #define RDR_DEBUG
+#define RDR_DEBUG
 
 static u8 morton_lut[64] = {
         0x00, 0x01, 0x04, 0x05, 0x10, 0x11, 0x14, 0x15, 0x02, 0x03, 0x06, 0x07, 0x12, 0x13, 0x16, 0x17,
@@ -59,7 +60,7 @@ static void* tex_alloc_png_surface(png_uint_32 w, png_uint_32 h,
 {
   C3D_Tex* tex;
 
-  tex = calloc(1, sizeof(C3D_Tex));
+  tex = ccalloc(1, sizeof(C3D_Tex));
   *stride = w << 2;
 
   if (!C3D_TexInit(tex, w, h, GPU_RGBA8))
@@ -112,7 +113,7 @@ C3D_Tex* ctr_load_png(const char* name)
   {
     C3D_TexSetWrap(output, GPU_CLAMP_TO_BORDER, GPU_CLAMP_TO_BORDER);
     data = (u32*) output->data;
-    dataBuf = (u32*) linearAlloc(output->size);
+    dataBuf = (u32*) clinearAlloc(output->size);
 
     for (int i = 0; i < output->size >> 2; i++)
       dataBuf[i] = __builtin_bswap32(data[i]);
@@ -157,12 +158,12 @@ void ctr_draw_2d_texture(struct ctr_render_data *render_data, C3D_Tex* texture,
   if (vertex_heap_len == 0)
   {
     vertex_heap_len = 256;
-    vertex_heap = linearAlloc(sizeof(struct vertex) * vertex_heap_len);
+    vertex_heap = clinearAlloc(sizeof(struct vertex) * vertex_heap_len);
   }
   else if (vertex_heap_pos + 4 > vertex_heap_len)
   {
     vertex_heap_len *= 2;
-    vertex_heap = linearRealloc(vertex_heap, sizeof(struct vertex) * vertex_heap_len);
+    vertex_heap = clinearRealloc(vertex_heap, sizeof(struct vertex) * vertex_heap_len);
   }
 
   vertices = &vertex_heap[vertex_heap_pos];
@@ -215,8 +216,8 @@ static bool ctr_init_video(struct graphics_data *graphics,
 
   memset(&render_data, 0, sizeof(struct ctr_render_data));
   graphics->render_data = &render_data;
-  render_data.cursor_map = linearAlloc(sizeof(struct v_char) * 4);
-  render_data.mouse_map = linearAlloc(sizeof(struct v_char) * 4);
+  render_data.cursor_map = clinearAlloc(sizeof(struct v_char) * 4);
+  render_data.mouse_map = clinearAlloc(sizeof(struct v_char) * 4);
 
   for (int i = 0; i < 4; i++)
   {
@@ -458,9 +459,9 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
 
   if (layer == NULL)
   {
-    layer = malloc(sizeof(struct ctr_layer));
+    layer = cmalloc(sizeof(struct ctr_layer));
     layer->w = vlayer->w; layer->h = vlayer->h; layer->draw_order = vlayer->draw_order;
-    layer->foreground = linearAlloc(sizeof(struct v_char) * max_bufsize);
+    layer->foreground = clinearAlloc(sizeof(struct v_char) * max_bufsize);
     layer->background.data = NULL;
     C3D_TexInit(&(layer->background), next_power_of_two(layer->w < 8 ? 8 : layer->w), next_power_of_two(layer->h < 8 ? 8 : layer->h), GPU_RGBA8);
     C3D_TexSetFilter(&(layer->background), GPU_NEAREST, GPU_NEAREST);

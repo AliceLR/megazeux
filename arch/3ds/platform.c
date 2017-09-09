@@ -25,6 +25,7 @@
 
 #include "../../src/util.h"
 #include "../../src/event.h"
+#include "../../src/error.h"
 #include "../../src/graphics.h"
 
 #include <unistd.h>
@@ -98,12 +99,39 @@ void real_warp_mouse(int x, int y)
   focus_pixel(x, y);
 }
 
+#ifdef CONFIG_CHECK_ALLOC
+
+static void out_of_linear_memory_check(void *p, const char *file, int line)
+{
+  char msgbuf[128];
+  if(!p)
+  {
+    snprintf(msgbuf, sizeof(msgbuf), "Out of linear memory in %s:%d", file, line);
+    msgbuf[sizeof(msgbuf)-1] = '\0';
+    error(msgbuf, 2, 4, 0);
+  }
+}
+
+void *check_linearAlloc(size_t size, const char *file, int line)
+{
+  void *result = linearAlloc(size);
+  out_of_linear_memory_check(result, file, line);
+  return result;
+}
+
+void *check_linearRealloc(void *ptr, size_t size, const char *file, int line)
+{
+  void *result = linearRealloc(ptr, size);
+  out_of_linear_memory_check(result, file, line);
+  return result;
+}
+
+#endif
+
 int main(int argc, char *argv[])
 {
   static char *_argv[] = {"/"};
-  int retval;
   chdir("/");
-
-  retval = real_main(1, _argv);
+  real_main(1, _argv);
   return 0;
 }
