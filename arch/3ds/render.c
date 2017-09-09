@@ -33,13 +33,28 @@
 #include "shader_shbin.h"
 #include "shader_accel_shbin.h"
 
-#define RDR_DEBUG
+// #define RDR_DEBUG
 
 static u8 morton_lut[64] = {
         0x00, 0x01, 0x04, 0x05, 0x10, 0x11, 0x14, 0x15, 0x02, 0x03, 0x06, 0x07, 0x12, 0x13, 0x16, 0x17,
         0x08, 0x09, 0x0c, 0x0d, 0x18, 0x19, 0x1c, 0x1d, 0x0a, 0x0b, 0x0e, 0x0f, 0x1a, 0x1b, 0x1e, 0x1f,
         0x20, 0x21, 0x24, 0x25, 0x30, 0x31, 0x34, 0x35, 0x22, 0x23, 0x26, 0x27, 0x32, 0x33, 0x36, 0x37,
         0x28, 0x29, 0x2c, 0x2d, 0x38, 0x39, 0x3c, 0x3d, 0x2a, 0x2b, 0x2e, 0x2f, 0x3a, 0x3b, 0x3e, 0x3f
+};
+
+static u8 morton_lut4[32] = {
+	0x00, 0x02, 0x08, 0x0a, 0x01, 0x03, 0x09, 0x0b,
+	0x04, 0x06, 0x0c, 0x0e, 0x05, 0x07, 0x0d, 0x0f,
+	0x10, 0x12, 0x18, 0x1a, 0x11, 0x13, 0x19, 0x1b,
+	0x14, 0x16, 0x1c, 0x1e, 0x15, 0x17, 0x1d, 0x1f
+};
+
+static u8 bitmask_mzx[4] = { 0x00, 0xf0, 0x0f, 0xff };
+static u8 bitmask_smzx[4][16] = {
+	{ 0xff, 0x0f, 0x0f, 0x0f, 0xf0, 0x00, 0x00, 0x00, 0xf0, 0x00, 0x00, 0x00, 0xf0, 0x00, 0x00, 0x00 },
+	{ 0x00, 0xf0, 0x00, 0x00, 0x0f, 0xff, 0x0f, 0x0f, 0x00, 0xf0, 0x00, 0x00, 0x00, 0xf0, 0x00, 0x00 },
+	{ 0x00, 0x00, 0xf0, 0x00, 0x00, 0x00, 0xf0, 0x00, 0x0f, 0x0f, 0xff, 0x0f, 0x00, 0x00, 0xf0, 0x00 },
+	{ 0x00, 0x00, 0x00, 0xf0, 0x00, 0x00, 0x00, 0xf0, 0x00, 0x00, 0x00, 0xf0, 0x0f, 0x0f, 0x0f, 0xff }
 };
 
 // texture PNG dimensions must be powers of two
@@ -210,7 +225,6 @@ static bool ctr_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
   static struct ctr_render_data render_data;
-  C3D_TexEnv* texEnv;
 
 #ifdef RDR_DEBUG
   consoleInit(GFX_TOP, NULL);
@@ -261,21 +275,29 @@ static bool ctr_init_video(struct graphics_data *graphics,
   AttrInfo_AddLoader(&render_data.shader_accel.attr, 1, GPU_SHORT, 2); // v1 = texcoord
   AttrInfo_AddLoader(&render_data.shader_accel.attr, 2, GPU_UNSIGNED_BYTE, 4); // v2 = color
 
-  for (int i = 0; i < 4; i++)
+  for (int i = 0; i < 6; i++)
   {
-    C3D_TexInit(&render_data.charset[i], 1024, NUM_CHARSETS * 32, GPU_LA4);
+    C3D_TexInit(&render_data.charset[i], 1024, NUM_CHARSETS * 32, GPU_A4);
     C3D_TexSetFilter(&render_data.charset[i], GPU_NEAREST, GPU_NEAREST);
     C3D_TexSetWrap(&render_data.charset[i], GPU_REPEAT, GPU_REPEAT);
 
-    C3D_TexInitVRAM(&render_data.charset_vram[i], 1024, NUM_CHARSETS * 32, GPU_LA4);
+    C3D_TexInitVRAM(&render_data.charset_vram[i], 1024, NUM_CHARSETS * 32, GPU_A4);
     C3D_TexSetFilter(&render_data.charset_vram[i], GPU_NEAREST, GPU_NEAREST);
     C3D_TexSetWrap(&render_data.charset_vram[i], GPU_REPEAT, GPU_REPEAT);
   }
 
-  texEnv = C3D_GetTexEnv(0);
-  C3D_TexEnvSrc(texEnv, C3D_Both, GPU_TEXTURE0, 0, 0);
-  C3D_TexEnvOp(texEnv, C3D_Both, 0, 0, 0);
-  C3D_TexEnvFunc(texEnv, C3D_Both, GPU_MODULATE);
+  TexEnv_Init(&(render_data.env_normal));
+  C3D_TexEnvSrc(&(render_data.env_normal), C3D_Both, GPU_TEXTURE0, 0, 0);
+  C3D_TexEnvOp(&(render_data.env_normal), C3D_Both, 0, 0, 0);
+  C3D_TexEnvFunc(&(render_data.env_normal), C3D_Both, GPU_MODULATE);
+
+  TexEnv_Init(&(render_data.env_playfield));
+  C3D_TexEnvSrc(&(render_data.env_playfield), C3D_Both, 0, GPU_TEXTURE0, 0);
+  C3D_TexEnvOp(&(render_data.env_playfield), C3D_RGB, 0, 2, 0);
+  C3D_TexEnvOp(&(render_data.env_playfield), C3D_Alpha, 0, 0, 0);
+  C3D_TexEnvFunc(&(render_data.env_playfield), C3D_Both, GPU_MODULATE);
+
+  C3D_SetTexEnv(0, &(render_data.env_normal));
 
   C3D_AlphaTest(true, GPU_GREATER, 0x80);
   C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
@@ -297,7 +319,7 @@ static void ctr_free_video(struct graphics_data *graphics)
 {
   // TODO: more freeing!
   struct ctr_render_data *render_data = graphics->render_data;
-  for (int i = 0; i < 4; i++)
+  for (int i = 0; i < 6; i++)
   {
     C3D_TexDelete(&render_data->charset[i]);
     C3D_TexDelete(&render_data->charset_vram[i]);
@@ -333,38 +355,43 @@ static void ctr_update_colors(struct graphics_data *graphics,
   }
 }
 
-static inline void ctr_char_bitmask_to_texture(struct ctr_render_data *render_data, signed char c, u32 offset, int y)
+static inline void ctr_char_bitmask_to_texture(struct ctr_render_data *render_data, u8 c, u32 offset, int y)
 {
-  int y_lut = (y & 7) << 3;
-  u8 *p, *p2, *p3;
+  int y_lut = (y & 7) << 2;
+  u8 *p, *p2, *p3, *p4;
   u8 t, i;
 
   offset += ((y & 8) << 10);
-  p = ((u8*) render_data->charset[0].data) + offset;
+  offset >>= 1;
+  p = ((u8*) render_data->charset[1].data) + offset;
+  p2 = ((u8*) render_data->charset[0].data) + offset;
+  p[morton_lut4[y_lut + 0]] = bitmask_mzx[(c >> 6) & 0x03];
+  p[morton_lut4[y_lut + 1]] = bitmask_mzx[(c >> 4) & 0x03];
+  p[morton_lut4[y_lut + 2]] = bitmask_mzx[(c >> 2) & 0x03];
+  p[morton_lut4[y_lut + 3]] = bitmask_mzx[(c >> 0) & 0x03];
 
-  // SMZX MODE 0
-  p[morton_lut[y_lut++]] = (c << 24 >> 31);
-  p[morton_lut[y_lut++]] = (c << 25 >> 31);
-  p[morton_lut[y_lut++]] = (c << 26 >> 31);
-  p[morton_lut[y_lut++]] = (c << 27 >> 31);
-  p[morton_lut[y_lut++]] = (c << 28 >> 31);
-  p[morton_lut[y_lut++]] = (c << 29 >> 31);
-  p[morton_lut[y_lut++]] = (c << 30 >> 31);
-  p[morton_lut[y_lut++]] = (c << 31 >> 31);
-  y_lut -= 8;
+  c ^= 0xFF;
+
+  p2[morton_lut4[y_lut + 0]] = bitmask_mzx[(c >> 6) & 0x03];
+  p2[morton_lut4[y_lut + 1]] = bitmask_mzx[(c >> 4) & 0x03];
+  p2[morton_lut4[y_lut + 2]] = bitmask_mzx[(c >> 2) & 0x03];
+  p2[morton_lut4[y_lut + 3]] = bitmask_mzx[(c >> 0) & 0x03];
+
+  c ^= 0xFF;
 
   // SMZX MODE 1+ (oh dear)
-  p = ((u8*) render_data->charset[1].data) + offset;
-  p2 = ((u8*) render_data->charset[2].data) + offset;
-  p3 = ((u8*) render_data->charset[3].data) + offset;
+  p = ((u8*) render_data->charset[2].data) + offset;
+  p2 = ((u8*) render_data->charset[3].data) + offset;
+  p3 = ((u8*) render_data->charset[4].data) + offset;
+  p4 = ((u8*) render_data->charset[5].data) + offset;
 
-  for (i = 0; i < 4; i++)
+  for (i = 0; i < 2; i++)
   {
-    t = (c >> (6 - i*2)) & 3;
-    *((u8*) (p + morton_lut[y_lut])) = (t == 1) ? 0xFF : 0x00;
-    *((u8*) (p2 + morton_lut[y_lut])) = (t == 2) ? 0xFF : 0x00;
-    *((u8*) (p3 + morton_lut[y_lut])) = (t == 3) ? 0xFF : 0x00;
-    y_lut++;
+    t = (c >> ((i ^ 1) << 2)) & 15;
+    p[morton_lut4[y_lut + i]] = bitmask_smzx[0][t];
+    p2[morton_lut4[y_lut + i]] = bitmask_smzx[1][t];
+    p3[morton_lut4[y_lut + i]] = bitmask_smzx[2][t];
+    p4[morton_lut4[y_lut + i]] = bitmask_smzx[3][t];
   }
 }
 
@@ -440,13 +467,13 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
   struct char_element *src = vlayer->data;
   int tcol = vlayer->transparent_col;
   int offset = vlayer->offset;
-  u32 bufsize = 4 * vlayer->w * vlayer->h * (vlayer->mode > 0 ? 3 : 1);
-  u32 max_bufsize = 4 * vlayer->w * vlayer->h * 3;
-  int k, l, m, n, col, col2, col3, col4, idx;
+  u32 bufsize = 4 * vlayer->w * vlayer->h * (vlayer->mode > 0 ? 4 : 2);
+  u32 max_bufsize = 4 * vlayer->w * vlayer->h * 4;
+  int k, l, m, n, o, col, col2, col3, col4, idx;
   s16 u, v;
   u32 i, j, ch;
   u32 protected_pal_position = graphics->protected_pal_position;
-  bool has_content = false;
+  bool has_content = false, has_inversions = false;
 
   if (!ctr_should_render(render_data))
     return;
@@ -488,6 +515,7 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
   if(layer->mode == 0)
   {
     l = 0;
+    m = layer->w * layer->h * 4;
     for (j = 0; j < layer->h; j++)
     {
       for (i = 0; i < layer->w; i++, src++)
@@ -500,6 +528,11 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
           layer->foreground[l++].col = 0;
           layer->foreground[l++].col = 0;
           layer->foreground[l++].col = 0;
+
+          layer->foreground[m++].col = 0;
+          layer->foreground[m++].col = 0;
+          layer->foreground[m++].col = 0;
+          layer->foreground[m++].col = 0;
           continue;
         }
         has_content = true;
@@ -518,7 +551,7 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
           col = graphics->flat_intensity_palette[col];
         }
 	col2 = src->fg_color;
-        if (col2 == tcol) col2 = 0;
+        if (col2 == tcol) { col2 = 0; has_inversions = true; }
         else
         {
           if (col2 >= 16) col2 = ((col2 - 16) & 0xF) + protected_pal_position;
@@ -527,16 +560,29 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
         ((u32*) layer->background.data)[k] = col;
         layer->foreground[l].u = u;
         layer->foreground[l].v = v;
-        layer->foreground[l++].col = col2;
+        layer->foreground[l++].col = col;
         layer->foreground[l].u = u+8;
         layer->foreground[l].v = v;
-        layer->foreground[l++].col = col2;
+        layer->foreground[l++].col = col;
         layer->foreground[l].u = u;
         layer->foreground[l].v = v-14;
-        layer->foreground[l++].col = col2;
+        layer->foreground[l++].col = col;
         layer->foreground[l].u = u+8;
         layer->foreground[l].v = v-14;
-        layer->foreground[l++].col = col2;
+        layer->foreground[l++].col = col;
+
+        layer->foreground[m].u = u;
+        layer->foreground[m].v = v;
+        layer->foreground[m++].col = col2;
+        layer->foreground[m].u = u+8;
+        layer->foreground[m].v = v;
+        layer->foreground[m++].col = col2;
+        layer->foreground[m].u = u;
+        layer->foreground[m].v = v-14;
+        layer->foreground[m++].col = col2;
+        layer->foreground[m].u = u+8;
+        layer->foreground[m].v = v-14;
+        layer->foreground[m++].col = col2;
       }
     }
   }
@@ -546,6 +592,7 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
     l = 0;
     m = layer->w * layer->h * 4;
     n = m * 2;
+    o = m * 3;
     for (j = 0; j < layer->h; j++)
     {
       for (i = 0; i < layer->w; i++, src++)
@@ -566,6 +613,10 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
           layer->foreground[n++].col = 0;
           layer->foreground[n++].col = 0;
           layer->foreground[n++].col = 0;
+          layer->foreground[o++].col = 0;
+          layer->foreground[o++].col = 0;
+          layer->foreground[o++].col = 0;
+          layer->foreground[o++].col = 0;
           continue;
         }
         idx = ((src->bg_color << 6) | (src->fg_color << 2));
@@ -578,48 +629,62 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
         u = (ch & 127) << 3;
         v = (NUM_CHARSETS * 32)-((ch >> 7) << 4);
         col = graphics->smzx_indices[idx + 0] == tcol ? 0 : graphics->flat_intensity_palette[graphics->smzx_indices[idx + 0]];
-        col2 = graphics->smzx_indices[idx + 2] == tcol ? 0 : graphics->flat_intensity_palette[graphics->smzx_indices[idx + 2]];
-        col3 = graphics->smzx_indices[idx + 1] == tcol ? 0 : graphics->flat_intensity_palette[graphics->smzx_indices[idx + 1]];
+        col2 = graphics->smzx_indices[idx + 1] == tcol ? 0 : graphics->flat_intensity_palette[graphics->smzx_indices[idx + 1]];
+        col3 = graphics->smzx_indices[idx + 2] == tcol ? 0 : graphics->flat_intensity_palette[graphics->smzx_indices[idx + 2]];
         col4 = graphics->smzx_indices[idx + 3] == tcol ? 0 : graphics->flat_intensity_palette[graphics->smzx_indices[idx + 3]];
+	if ((col2 & col3 & col4) == 0) has_inversions = true;
         ((u32*) layer->background.data)[k] = col;
         layer->foreground[l].u = u;
         layer->foreground[l].v = v;
-        layer->foreground[l++].col = col2;
+        layer->foreground[l++].col = col;
         layer->foreground[l].u = u+4;
         layer->foreground[l].v = v;
-        layer->foreground[l++].col = col2;
+        layer->foreground[l++].col = col;
         layer->foreground[l].u = u;
         layer->foreground[l].v = v-14;
-        layer->foreground[l++].col = col2;
+        layer->foreground[l++].col = col;
         layer->foreground[l].u = u+4;
         layer->foreground[l].v = v-14;
-        layer->foreground[l++].col = col2;
+        layer->foreground[l++].col = col;
 
         layer->foreground[m].u = u;
         layer->foreground[m].v = v;
-        layer->foreground[m++].col = col3;
+        layer->foreground[m++].col = col2;
         layer->foreground[m].u = u+4;
         layer->foreground[m].v = v;
-        layer->foreground[m++].col = col3;
+        layer->foreground[m++].col = col2;
         layer->foreground[m].u = u;
         layer->foreground[m].v = v-14;
-        layer->foreground[m++].col = col3;
+        layer->foreground[m++].col = col2;
         layer->foreground[m].u = u+4;
         layer->foreground[m].v = v-14;
-        layer->foreground[m++].col = col3;
+        layer->foreground[m++].col = col2;
 
         layer->foreground[n].u = u;
         layer->foreground[n].v = v;
-        layer->foreground[n++].col = col4;
+        layer->foreground[n++].col = col3;
         layer->foreground[n].u = u+4;
         layer->foreground[n].v = v;
-        layer->foreground[n++].col = col4;
+        layer->foreground[n++].col = col3;
         layer->foreground[n].u = u;
         layer->foreground[n].v = v-14;
-        layer->foreground[n++].col = col4;
+        layer->foreground[n++].col = col3;
         layer->foreground[n].u = u+4;
         layer->foreground[n].v = v-14;
-        layer->foreground[n++].col = col4;
+        layer->foreground[n++].col = col3;
+
+        layer->foreground[o].u = u;
+        layer->foreground[o].v = v;
+        layer->foreground[o++].col = col4;
+        layer->foreground[o].u = u+4;
+        layer->foreground[o].v = v;
+        layer->foreground[o++].col = col4;
+        layer->foreground[o].u = u;
+        layer->foreground[o].v = v-14;
+        layer->foreground[o++].col = col4;
+        layer->foreground[o].u = u+4;
+        layer->foreground[o].v = v-14;
+        layer->foreground[o++].col = col4;
       }
     }
   }
@@ -627,12 +692,15 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
   if (!has_content)
     return;
 
-  C3D_TexFlush(&layer->background);
+  if (!has_inversions)
+  {
+    C3D_TexFlush(&layer->background);
 
-  C3D_CullFace(GPU_CULL_FRONT_CCW);
-  ctr_draw_2d_texture(render_data, &layer->background, 0, layer->background.height - layer->h, layer->w, layer->h, vlayer->x, vlayer->y,
-    layer->w * 8, layer->h * 14, (2000 - layer->draw_order) * 3.0f + 2.0f, false);
-  C3D_CullFace(GPU_CULL_BACK_CCW);
+    C3D_CullFace(GPU_CULL_FRONT_CCW);
+    ctr_draw_2d_texture(render_data, &layer->background, 0, layer->background.height - layer->h, layer->w, layer->h, vlayer->x, vlayer->y,
+      layer->w * 8, layer->h * 14, (2000 - layer->draw_order) * 3.0f + 2.0f, false);
+    C3D_CullFace(GPU_CULL_BACK_CCW);
+  }
 
   ctr_prepare_accel(render_data, layer->foreground, vlayer->x, vlayer->y);
   GSPGPU_FlushDataCache(layer->foreground, sizeof(struct v_char) * bufsize);
@@ -641,7 +709,7 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
   {
     int coffs = 0;
     int csize = 0;
-    int cincr = 1024*16;
+    int cincr = 1024*16/2;
     while ((render_data->charset_dirty & 1) == 0)
     {
       coffs += cincr;
@@ -652,7 +720,7 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
       csize += cincr;
       render_data->charset_dirty >>= 1;
     }
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < 6; i++)
     {
       GSPGPU_FlushDataCache((u8*)(render_data->charset[i].data) + coffs, csize);
       C3D_SafeTextureCopy((u8*)(render_data->charset[i].data) + coffs, 0,
@@ -661,20 +729,32 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
     }
   }
 
+  C3D_SetTexEnv(0, &(render_data->env_playfield));
   if (layer->mode == 0)
   {
-    C3D_TexBind(0, &render_data->charset_vram[0]);
-    C3D_DrawArrays(GPU_TRIANGLE_STRIP, 0, layer->w * layer->h * 4);
+    if (has_inversions)
+    {
+      C3D_TexBind(0, &render_data->charset_vram[0]);
+      C3D_DrawArrays(GPU_TRIANGLE_STRIP, 0, layer->w * layer->h * 4);
+    }
+    C3D_TexBind(0, &render_data->charset_vram[1]);
+    C3D_DrawArrays(GPU_TRIANGLE_STRIP, layer->w * layer->h * 4, layer->w * layer->h * 4);
   }
   else
   {
-    C3D_TexBind(0, &render_data->charset_vram[2]);
-    C3D_DrawArrays(GPU_TRIANGLE_STRIP, 0, layer->w * layer->h * 4);
-    C3D_TexBind(0, &render_data->charset_vram[1]);
-    C3D_DrawArrays(GPU_TRIANGLE_STRIP, layer->w * layer->h * 4, layer->w * layer->h * 4);
+    if (has_inversions)
+    {
+      C3D_TexBind(0, &render_data->charset_vram[2]);
+      C3D_DrawArrays(GPU_TRIANGLE_STRIP, 0, layer->w * layer->h * 4);
+    }
     C3D_TexBind(0, &render_data->charset_vram[3]);
+    C3D_DrawArrays(GPU_TRIANGLE_STRIP, layer->w * layer->h * 4, layer->w * layer->h * 4);
+    C3D_TexBind(0, &render_data->charset_vram[4]);
     C3D_DrawArrays(GPU_TRIANGLE_STRIP, layer->w * layer->h * 8, layer->w * layer->h * 4);
+    C3D_TexBind(0, &render_data->charset_vram[5]);
+    C3D_DrawArrays(GPU_TRIANGLE_STRIP, layer->w * layer->h * 12, layer->w * layer->h * 4);
   }
+  C3D_SetTexEnv(0, &(render_data->env_normal));
 
   render_data->layer_num++;
 }
@@ -705,7 +785,7 @@ static void ctr_render_cursor(struct graphics_data *graphics,
   map[3].col = flatcolor;
 
   ctr_prepare_accel(render_data, map, 0, 0);
-  C3D_TexBind(0, &render_data->charset_vram[0]);
+  C3D_TexBind(0, &render_data->charset_vram[1]);
   C3D_DrawArrays(GPU_TRIANGLE_STRIP, 0, 4);
 }
 
@@ -736,7 +816,7 @@ static void ctr_render_mouse(struct graphics_data *graphics,
 
   C3D_AlphaBlend(GPU_BLEND_SUBTRACT, GPU_BLEND_ADD, GPU_SRC_COLOR, GPU_DST_COLOR, GPU_SRC_ALPHA, GPU_DST_ALPHA);
   ctr_prepare_accel(render_data, map, 0, 0);
-  C3D_TexBind(0, &render_data->charset_vram[0]);
+  C3D_TexBind(0, &render_data->charset_vram[1]);
   C3D_DrawArrays(GPU_TRIANGLE_STRIP, 0, 4);
   C3D_AlphaBlend(GPU_BLEND_ADD, GPU_BLEND_ADD, GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA, GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA);
 }
