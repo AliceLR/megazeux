@@ -263,6 +263,10 @@ static bool ctr_init_video(struct graphics_data *graphics,
     C3D_TexInit(&render_data.charset[i], 1024, 512, GPU_LA4);
     C3D_TexSetFilter(&render_data.charset[i], GPU_NEAREST, GPU_NEAREST);
     C3D_TexSetWrap(&render_data.charset[i], GPU_REPEAT, GPU_REPEAT);
+
+    C3D_TexInitVRAM(&render_data.charset_vram[i], 1024, 512, GPU_LA4);
+    C3D_TexSetFilter(&render_data.charset_vram[i], GPU_NEAREST, GPU_NEAREST);
+    C3D_TexSetWrap(&render_data.charset_vram[i], GPU_REPEAT, GPU_REPEAT);
   }
 
   texEnv = C3D_GetTexEnv(0);
@@ -291,7 +295,10 @@ static void ctr_free_video(struct graphics_data *graphics)
   // TODO: more freeing!
   struct ctr_render_data *render_data = graphics->render_data;
   for (int i = 0; i < 4; i++)
+  {
     C3D_TexDelete(&render_data->charset[i]);
+    C3D_TexDelete(&render_data->charset_vram[i]);
+  }
   linearFree(render_data->cursor_map);
   linearFree(render_data->mouse_map);
   C3D_RenderTargetDelete(render_data->playfield);
@@ -371,7 +378,7 @@ static inline void ctr_do_remap_charsets(struct graphics_data *graphics)
     for(j = 0; j < 14; j++, c++)
       ctr_char_bitmask_to_texture(render_data, *c, ((i & 127)*64) + ((i >> 7)*16384), j);
 
-  render_data->charset_dirty = 1;
+  render_data->charset_dirty = ((u64) 1 << (NUM_CHARSETS * 2)) - 1;
 }
 
 static inline void ctr_do_remap_char(struct graphics_data *graphics,
@@ -389,7 +396,7 @@ static inline void ctr_do_remap_char(struct graphics_data *graphics,
   for(i = 0; i < 14; i++, c++)
     ctr_char_bitmask_to_texture(render_data, *c, offset, i);
 
-  render_data->charset_dirty = 1;
+  render_data->charset_dirty |= (1 << (chr >> 9));
 }
 
 static void ctr_do_remap_charbyte(struct graphics_data *graphics,
@@ -404,7 +411,7 @@ static void ctr_do_remap_charbyte(struct graphics_data *graphics,
 
   ctr_char_bitmask_to_texture(render_data, *c, ((chr & 127)*64) + ((chr >> 7)*16384), byte);
 
-  render_data->charset_dirty = 1;
+  render_data->charset_dirty |= (1 << (chr >> 8));
 }
 
 static bool ctr_should_render(struct ctr_render_data *render_data)
@@ -430,7 +437,7 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
   struct char_element *src = vlayer->data;
   int tcol = vlayer->transparent_col;
   int offset = vlayer->offset;
-  u32 bufsize = 4 * vlayer->w * vlayer->h * ((vlayer->mode > 0) ? 3 : 1);
+  u32 bufsize = 4 * vlayer->w * vlayer->h * (vlayer->mode > 0 ? 3 : 1);
   int k, l, m, n, col, col2, col3, col4, idx;
   s16 u, v;
   u32 i, j;
@@ -438,7 +445,7 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
   if (!ctr_should_render(render_data))
     return;
 
-  if (layer != NULL && (layer->w != vlayer->w || layer->h != vlayer->h || layer->mode != vlayer->mode || layer->draw_order != vlayer->draw_order))
+  if (layer != NULL && (layer->w != vlayer->w || layer->h != vlayer->h || layer->draw_order != vlayer->draw_order))
   {
     linearFree(layer->foreground);
     C3D_TexDelete(&(layer->background));
@@ -448,8 +455,8 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
   if (layer == NULL)
   {
     layer = malloc(sizeof(struct ctr_layer));
-    layer->w = vlayer->w; layer->h = vlayer->h; layer->mode = vlayer->mode; layer->draw_order = vlayer->draw_order;
-    layer->foreground = linearAlloc(sizeof(struct v_char) * bufsize);
+    layer->w = vlayer->w; layer->h = vlayer->h; layer->draw_order = vlayer->draw_order;
+    layer->foreground = linearAlloc(sizeof(struct v_char) * 12 * vlayer->w * vlayer->h);
     layer->background.data = NULL;
     C3D_TexInit(&(layer->background), next_power_of_two(layer->w), next_power_of_two(layer->h), GPU_RGBA8);
     C3D_TexSetFilter(&(layer->background), GPU_NEAREST, GPU_NEAREST);
@@ -468,6 +475,8 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
       layer->foreground[i + 3].y = (((i >> 2) / layer->w) % layer->h) + 1;
     }
   }
+
+  layer->mode = vlayer->mode;
 
   if(layer->mode == 0)
   {
@@ -594,18 +603,34 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
 
   ctr_prepare_accel(render_data, layer->foreground, vlayer->x, vlayer->y);
 
+  if (render_data->charset_dirty != 0)
+  {
+    int size = 0;
+    while (render_data->charset_dirty != 0)
+    {
+      size += 1024*16;
+      render_data->charset_dirty >>= 1;
+    }
+    for (int i = 0; i < 4; i++)
+    {
+      C3D_SafeTextureCopy(render_data->charset[i].data, 0,
+        render_data->charset_vram[i].data, 0, size, 8);
+      gspWaitForPPF();
+    }
+  }
+
   if (layer->mode == 0)
   {
-    C3D_TexBind(0, &render_data->charset[0]);
+    C3D_TexBind(0, &render_data->charset_vram[0]);
     C3D_DrawArrays(GPU_TRIANGLE_STRIP, 0, layer->w * layer->h * 4);
   }
   else
   {
-    C3D_TexBind(0, &render_data->charset[2]);
+    C3D_TexBind(0, &render_data->charset_vram[2]);
     C3D_DrawArrays(GPU_TRIANGLE_STRIP, 0, layer->w * layer->h * 4);
-    C3D_TexBind(0, &render_data->charset[1]);
+    C3D_TexBind(0, &render_data->charset_vram[1]);
     C3D_DrawArrays(GPU_TRIANGLE_STRIP, layer->w * layer->h * 4, layer->w * layer->h * 4);
-    C3D_TexBind(0, &render_data->charset[3]);
+    C3D_TexBind(0, &render_data->charset_vram[3]);
     C3D_DrawArrays(GPU_TRIANGLE_STRIP, layer->w * layer->h * 8, layer->w * layer->h * 4);
   }
 
@@ -638,7 +663,7 @@ static void ctr_render_cursor(struct graphics_data *graphics,
   map[3].col = flatcolor;
 
   ctr_prepare_accel(render_data, map, 0, 0);
-  C3D_TexBind(0, &render_data->charset[0]);
+  C3D_TexBind(0, &render_data->charset_vram[0]);
   C3D_DrawArrays(GPU_TRIANGLE_STRIP, 0, 4);
 }
 
@@ -669,7 +694,7 @@ static void ctr_render_mouse(struct graphics_data *graphics,
 
   C3D_AlphaBlend(GPU_BLEND_SUBTRACT, GPU_BLEND_ADD, GPU_SRC_COLOR, GPU_DST_COLOR, GPU_SRC_ALPHA, GPU_DST_ALPHA);
   ctr_prepare_accel(render_data, map, 0, 0);
-  C3D_TexBind(0, &render_data->charset[0]);
+  C3D_TexBind(0, &render_data->charset_vram[0]);
   C3D_DrawArrays(GPU_TRIANGLE_STRIP, 0, 4);
   C3D_AlphaBlend(GPU_BLEND_ADD, GPU_BLEND_ADD, GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA, GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA);
 }
