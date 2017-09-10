@@ -30,8 +30,8 @@
 #include "platform.h"
 #include "render.h"
 
-#include "shader_shbin.h"
-#include "shader_accel_shbin.h"
+#include "shader_2d_shbin.h"
+#include "shader_playfield_shbin.h"
 
 // #define RDR_DEBUG
 
@@ -94,8 +94,6 @@ static inline void ctr_set_2d_projection(struct ctr_render_data *render_data, in
     Mtx_OrthoTilt(&render_data->projection, 0, width, height, 0, -1.0, 12100.0, true);
   else
     Mtx_Ortho(&render_data->projection, 0, width, 0, height, -1.0, 12100.0, true);
-  C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, render_data->shader.proj_loc, &render_data->projection);
-  C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, render_data->shader_accel.proj_loc, &render_data->projection);
 }
 
 static inline void ctr_set_2d_projection_screen(struct ctr_render_data *render_data, bool top_screen)
@@ -103,7 +101,19 @@ static inline void ctr_set_2d_projection_screen(struct ctr_render_data *render_d
   ctr_set_2d_projection(render_data, top_screen ? 400 : 320, 240, true);
 }
 
-static inline void ctr_prepare_accel(struct ctr_render_data *render_data, struct v_char *array, float xo, float yo)
+static inline void ctr_prepare_2d(struct ctr_render_data *render_data, struct vertex *array)
+{
+  C3D_BufInfo *bufInfo;
+
+  bufInfo = C3D_GetBufInfo();
+  BufInfo_Init(bufInfo);
+  BufInfo_Add(bufInfo, array, sizeof(struct vertex), 4, 0x3210);
+
+  ctr_bind_shader(&render_data->shader_2d);
+  C3D_FVUnifMtx4x4(GPU_GEOMETRY_SHADER, render_data->shader_2d.proj_loc, &render_data->projection);
+}
+
+static inline void ctr_prepare_playfield(struct ctr_render_data *render_data, struct v_char *array, float xo, float yo, bool geo, int mode)
 {
   C3D_BufInfo *bufInfo;
 
@@ -111,9 +121,10 @@ static inline void ctr_prepare_accel(struct ctr_render_data *render_data, struct
   BufInfo_Init(bufInfo);
   BufInfo_Add(bufInfo, array, sizeof(struct v_char), 3, 0x210);
 
-  ctr_bind_shader(&render_data->shader_accel);
-
-  C3D_FVUnifSet(GPU_VERTEX_SHADER, render_data->shader_accel.offs_loc, (float) xo, (float) yo, 0.0f, 0.0f);
+  ctr_bind_shader(&render_data->shader_playfield);
+  C3D_FVUnifMtx4x4(GPU_GEOMETRY_SHADER, render_data->shader_playfield.proj_loc, &render_data->projection);
+  C3D_FVUnifSet(GPU_GEOMETRY_SHADER, render_data->shader_playfield.offs_loc, (float) xo, (float) yo, 0.0f, 0.0f);
+  C3D_FVUnifSet(GPU_GEOMETRY_SHADER, render_data->shader_playfield.uvoffs_loc, (float) (mode > 0 ? 4 : 8), (float) -14, 0.0f, 0.0f);
 }
 
 C3D_Tex* ctr_load_png(const char* name)
@@ -137,7 +148,7 @@ C3D_Tex* ctr_load_png(const char* name)
     width = output->width;
     height = output->height;
     C3D_TexDelete(output);
-    C3D_TexInitVRAM(output, width, height, GPU_RGBA8);
+    C3D_TexInit(output, width, height, GPU_RGBA8);
     data = (u32*) output->data;
 
     GSPGPU_FlushDataCache(dataBuf, output->size);
@@ -169,7 +180,6 @@ void ctr_draw_2d_texture(struct ctr_render_data *render_data, C3D_Tex* texture,
 {
   struct vertex* vertices;
   float umin, umax, vmin, vmax;
-  C3D_BufInfo* bufInfo;
 
   if (flipy)
   {
@@ -182,7 +192,7 @@ void ctr_draw_2d_texture(struct ctr_render_data *render_data, C3D_Tex* texture,
     vertex_heap_len = 256;
     vertex_heap = clinearAlloc(sizeof(struct vertex) * vertex_heap_len, 0x80);
   }
-  else if (vertex_heap_pos + 4 > vertex_heap_len)
+  else if (vertex_heap_pos + 1 > vertex_heap_len)
   {
     vertex_heap_len *= 2;
     struct vertex* vertex_heap_new = clinearAlloc(sizeof(struct vertex) * vertex_heap_len, 0x80);
@@ -191,45 +201,35 @@ void ctr_draw_2d_texture(struct ctr_render_data *render_data, C3D_Tex* texture,
   }
 
   vertices = &vertex_heap[vertex_heap_pos];
-  vertex_heap_pos += 4;
+  vertex_heap_pos++;
 
-  ctr_bind_shader(&render_data->shader);
-
-  vertices[0].position = (vector_3f){x, y+h, z};
-  vertices[1].position = (vector_3f){x+w, y+h, z};
-  vertices[2].position = (vector_3f){x, y, z};
-  vertices[3].position = (vector_3f){x+w, y, z};
-
-  umin = ((float) (tx)) / ((float) texture->width);
-  umax = ((float) (tx + tw)) / ((float) texture->width);
-  vmin = ((float) (ty)) / ((float) texture->height);
-  vmax = ((float) (ty + th)) / ((float) texture->height);
-
-  vertices[0].texcoord = (vector_2f){umin, vmin};
-  vertices[1].texcoord = (vector_2f){umax, vmin};
-  vertices[2].texcoord = (vector_2f){umin, vmax};
-  vertices[3].texcoord = (vector_2f){umax, vmax};
-
+  vertices[0].x = x;
+  vertices[0].y = y;
+  vertices[0].w = w;
+  vertices[0].h = h;
+  vertices[0].z = z;
   vertices[0].color = color;
-  vertices[1].color = color;
-  vertices[2].color = color;
-  vertices[3].color = color;
+  vertices[0].tx = tx / ((float) texture->width);
+  vertices[0].ty = ty / ((float) texture->height);
+  vertices[0].tw = tw / ((float) texture->width);
+  vertices[0].th = th / ((float) texture->height);
 
-  bufInfo = C3D_GetBufInfo();
-  BufInfo_Init(bufInfo);
-  BufInfo_Add(bufInfo, vertices, sizeof(struct vertex), 3, 0x210);
+  ctr_prepare_2d(render_data, vertex_heap);
 
   C3D_TexBind(0, texture);
-  C3D_DrawArrays(GPU_TRIANGLE_STRIP, 0, 4);
+  C3D_DrawArrays(GPU_GEOMETRY_PRIM, vertex_heap_pos - 1, 1);
 }
 
-void ctr_init_shader(struct ctr_shader_data *shader, const void* data, int size)
+void ctr_init_shader(struct ctr_shader_data *shader, const void* data, int size, int geo_count)
 {
   shader->dvlb = DVLB_ParseFile((u32 *) data, size);
+  shader->geo_count = geo_count;
   shaderProgramInit(&shader->program);
   shaderProgramSetVsh(&shader->program, &shader->dvlb->DVLE[0]);
-  shader->proj_loc = shaderInstanceGetUniformLocation(shader->program.vertexShader, "projection");
-  shader->offs_loc = shaderInstanceGetUniformLocation(shader->program.vertexShader, "offset");
+  shaderProgramSetGsh(&shader->program, &shader->dvlb->DVLE[1], geo_count);
+  shader->proj_loc = shaderInstanceGetUniformLocation(shader->program.geometryShader, "projection");
+  shader->offs_loc = shaderInstanceGetUniformLocation(shader->program.geometryShader, "offset");
+  shader->uvoffs_loc = shaderInstanceGetUniformLocation(shader->program.geometryShader, "uvoffset");
   AttrInfo_Init(&shader->attr);
 }
 
@@ -255,13 +255,14 @@ static bool ctr_init_video(struct graphics_data *graphics,
     render_data.mouse_map[i].uv = ((NUM_CHARSETS-1)*32) << 16;
   }
 
-  C3D_Init(0x100000);
+  C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
+  C3D_CullFace(GPU_CULL_FRONT_CCW);
   gfxSet3D(false);
 
   render_data.rendering_frame = false;
   render_data.checked_frame = false;
 
-  C3D_TexInit(&render_data.playfield_tex, 1024, 512, GPU_RGB8);
+  C3D_TexInitVRAM(&render_data.playfield_tex, 1024, 512, GPU_RGB8);
   C3D_TexSetFilter(&render_data.playfield_tex, GPU_LINEAR, GPU_LINEAR);
 
   render_data.playfield = C3D_RenderTargetCreateFromTex(&render_data.playfield_tex, GPU_TEXFACE_2D, 0, GPU_RB_DEPTH16);
@@ -276,16 +277,17 @@ static bool ctr_init_video(struct graphics_data *graphics,
   C3D_RenderTargetSetOutput(render_data.target_bottom, GFX_BOTTOM, GFX_LEFT,
     GX_TRANSFER_IN_FORMAT(GX_TRANSFER_FMT_RGB8) | GX_TRANSFER_OUT_FORMAT(GX_TRANSFER_FMT_RGB8));
 
-  ctr_init_shader(&render_data.shader, shader_shbin, shader_shbin_size);
-  ctr_init_shader(&render_data.shader_accel, shader_accel_shbin, shader_accel_shbin_size);
+  ctr_init_shader(&render_data.shader_2d, shader_2d_shbin, shader_2d_shbin_size, 4);
+  ctr_init_shader(&render_data.shader_playfield, shader_playfield_shbin, shader_playfield_shbin_size, 3);
 
-  AttrInfo_AddLoader(&render_data.shader.attr, 0, GPU_FLOAT, 3); // v0 = position
-  AttrInfo_AddLoader(&render_data.shader.attr, 1, GPU_FLOAT, 2); // v1 = texcoord
-  AttrInfo_AddLoader(&render_data.shader.attr, 2, GPU_UNSIGNED_BYTE, 4); // v2 = color
+  AttrInfo_AddLoader(&render_data.shader_2d.attr, 0, GPU_FLOAT, 4); // v0 = x,y,w,h
+  AttrInfo_AddLoader(&render_data.shader_2d.attr, 1, GPU_FLOAT, 1); // v1 = z
+  AttrInfo_AddLoader(&render_data.shader_2d.attr, 2, GPU_FLOAT, 4); // v2 = tx,ty,tw,th
+  AttrInfo_AddLoader(&render_data.shader_2d.attr, 3, GPU_UNSIGNED_BYTE, 4); // v3 = color
 
-  AttrInfo_AddLoader(&render_data.shader_accel.attr, 0, GPU_SHORT, 4); // v0 = position
-  AttrInfo_AddLoader(&render_data.shader_accel.attr, 1, GPU_SHORT, 2); // v1 = texcoord
-  AttrInfo_AddLoader(&render_data.shader_accel.attr, 2, GPU_UNSIGNED_BYTE, 4); // v2 = color
+  AttrInfo_AddLoader(&render_data.shader_playfield.attr, 0, GPU_SHORT, 4); // v0 = position
+  AttrInfo_AddLoader(&render_data.shader_playfield.attr, 1, GPU_SHORT, 2); // v1 = texcoord
+  AttrInfo_AddLoader(&render_data.shader_playfield.attr, 2, GPU_UNSIGNED_BYTE, 4); // v2 = color
 
   for (int i = 0; i < 5; i++)
   {
@@ -302,6 +304,11 @@ static bool ctr_init_video(struct graphics_data *graphics,
   C3D_TexEnvSrc(&(render_data.env_normal), C3D_Both, GPU_TEXTURE0, 0, 0);
   C3D_TexEnvOp(&(render_data.env_normal), C3D_Both, 0, 0, 0);
   C3D_TexEnvFunc(&(render_data.env_normal), C3D_Both, GPU_MODULATE);
+
+  TexEnv_Init(&(render_data.env_no_texture));
+  C3D_TexEnvSrc(&(render_data.env_no_texture), C3D_Both, 0, 0, 0);
+  C3D_TexEnvOp(&(render_data.env_no_texture), C3D_Both, 0, 0, 0);
+  C3D_TexEnvFunc(&(render_data.env_no_texture), C3D_Both, GPU_MODULATE);
 
   TexEnv_Init(&(render_data.env_playfield));
   C3D_TexEnvSrc(&(render_data.env_playfield), C3D_RGB, 0, 0, 0);
@@ -320,7 +327,7 @@ static bool ctr_init_video(struct graphics_data *graphics,
   C3D_SetTexEnv(0, &(render_data.env_normal));
 
   C3D_AlphaTest(true, GPU_GREATER, 0x80);
-  C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
+  C3D_DepthTest(true, GPU_ALWAYS, GPU_WRITE_ALL);
 
   graphics->allow_resize = 0;
   graphics->bits_per_pixel = 32;
@@ -379,7 +386,7 @@ static inline void ctr_char_bitmask_to_texture(struct ctr_render_data *render_da
 {
   int y_lut = (y & 7) << 2;
   u8 *p, *p2, *p3, *p4;
-  u8 t, i;
+  u8 t;
 
   offset += ((y & 8) << 10);
   offset >>= 1;
@@ -482,8 +489,8 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
   struct char_element *src = vlayer->data;
   int tcol = vlayer->transparent_col;
   int offset = vlayer->offset;
-  u32 bufsize = 4 * vlayer->w * vlayer->h * (vlayer->mode > 0 ? 4 : 2);
-  u32 max_bufsize = 4 * vlayer->w * vlayer->h * 4;
+  u32 bufsize = vlayer->w * vlayer->h * (vlayer->mode > 0 ? 4 : 2);
+  u32 max_bufsize = vlayer->w * vlayer->h * 4;
   int k, l, m, n, o, col, col2, col3, col4, idx;
   u32 uv;
   u32 i, j, ch;
@@ -521,17 +528,10 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
     vlayer->platform_layer_data = layer;
     for (i = 0; i < max_bufsize; i++)
     {
+      layer->foreground[i].x = (i % layer->w);
+      layer->foreground[i].y = ((i / layer->w) % layer->h);
       layer->foreground[i].z = (2000 - layer->draw_order) * 3 + 1;
       layer->foreground[i].uv = 0xFFFFFFFF;
-      if ((i & 3) != 0) continue;
-      layer->foreground[i + 0].x = ((i >> 2) % layer->w);
-      layer->foreground[i + 0].y = (((i >> 2) / layer->w) % layer->h);
-      layer->foreground[i + 1].x = ((i >> 2) % layer->w) + 1;
-      layer->foreground[i + 1].y = (((i >> 2) / layer->w) % layer->h);
-      layer->foreground[i + 2].x = ((i >> 2) % layer->w);
-      layer->foreground[i + 2].y = (((i >> 2) / layer->w) % layer->h) + 1;
-      layer->foreground[i + 3].x = ((i >> 2) % layer->w) + 1;
-      layer->foreground[i + 3].y = (((i >> 2) / layer->w) % layer->h) + 1;
     }
   }
 
@@ -540,7 +540,7 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
   if(layer->mode == 0)
   {
     l = 0;
-    m = layer->w * layer->h * 4;
+    m = layer->w * layer->h;
     for (j = 0; j < layer->h; j++)
     {
       for (i = 0; i < layer->w; i++, src++)
@@ -551,13 +551,6 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
         {
           ((u32*) layer->background.data)[k] = 0;
           layer->foreground[l++].col = 0;
-          layer->foreground[l++].col = 0;
-          layer->foreground[l++].col = 0;
-          layer->foreground[l++].col = 0;
-
-          layer->foreground[m++].col = 0;
-          layer->foreground[m++].col = 0;
-          layer->foreground[m++].col = 0;
           layer->foreground[m++].col = 0;
           continue;
         }
@@ -584,20 +577,8 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
         ((u32*) layer->background.data)[k] = col;
         layer->foreground[l].uv = uv;
         layer->foreground[l++].col = col;
-        layer->foreground[l].uv = uv + 8;
-        layer->foreground[l++].col = col;
-        layer->foreground[l].uv = uv - 0xE0000;
-        layer->foreground[l++].col = col;
-        layer->foreground[l].uv = uv + 8 - 0xE0000;
-        layer->foreground[l++].col = col;
 
         layer->foreground[m].uv = uv;
-        layer->foreground[m++].col = col2;
-        layer->foreground[m].uv = uv + 8;
-        layer->foreground[m++].col = col2;
-        layer->foreground[m].uv = uv - 0xE0000;
-        layer->foreground[m++].col = col2;
-        layer->foreground[m].uv = uv + 8 - 0xE0000;
         layer->foreground[m++].col = col2;
       }
     }
@@ -606,7 +587,7 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
   {
     k = 0;
     l = 0;
-    m = layer->w * layer->h * 4;
+    m = layer->w * layer->h;
     n = m * 2;
     o = m * 3;
     for (j = 0; j < layer->h; j++)
@@ -619,20 +600,8 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
         {
           ((u32*) layer->background.data)[k] = 0;
           layer->foreground[l++].col = 0;
-          layer->foreground[l++].col = 0;
-          layer->foreground[l++].col = 0;
-          layer->foreground[l++].col = 0;
-          layer->foreground[m++].col = 0;
-          layer->foreground[m++].col = 0;
-          layer->foreground[m++].col = 0;
           layer->foreground[m++].col = 0;
           layer->foreground[n++].col = 0;
-          layer->foreground[n++].col = 0;
-          layer->foreground[n++].col = 0;
-          layer->foreground[n++].col = 0;
-          layer->foreground[o++].col = 0;
-          layer->foreground[o++].col = 0;
-          layer->foreground[o++].col = 0;
           layer->foreground[o++].col = 0;
           continue;
         }
@@ -651,38 +620,11 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
         ((u32*) layer->background.data)[k] = col;
         layer->foreground[l].uv = uv;
         layer->foreground[l++].col = col;
-        layer->foreground[l].uv = uv + 4;
-        layer->foreground[l++].col = col;
-        layer->foreground[l].uv = uv - 0xE0000;
-        layer->foreground[l++].col = col;
-        layer->foreground[l].uv = uv + 4 - 0xE0000;
-        layer->foreground[l++].col = col;
-
         layer->foreground[m].uv = uv;
         layer->foreground[m++].col = col2;
-        layer->foreground[m].uv = uv + 4;
-        layer->foreground[m++].col = col2;
-        layer->foreground[m].uv = uv - 0xE0000;
-        layer->foreground[m++].col = col2;
-        layer->foreground[m].uv = uv + 4 - 0xE0000;
-        layer->foreground[m++].col = col2;
-
         layer->foreground[n].uv = uv;
         layer->foreground[n++].col = col3;
-        layer->foreground[n].uv = uv + 4;
-        layer->foreground[n++].col = col3;
-        layer->foreground[n].uv = uv - 0xE0000;
-        layer->foreground[n++].col = col3;
-        layer->foreground[n].uv = uv + 4 - 0xE0000;
-        layer->foreground[n++].col = col3;
-
         layer->foreground[o].uv = uv;
-        layer->foreground[o++].col = col4;
-        layer->foreground[o].uv = uv + 4;
-        layer->foreground[o++].col = col4;
-        layer->foreground[o].uv = uv - 0xE0000;
-        layer->foreground[o++].col = col4;
-        layer->foreground[o].uv = uv + 4 - 0xE0000;
         layer->foreground[o++].col = col4;
       }
     }
@@ -695,13 +637,12 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
   {
     C3D_TexFlush(&layer->background);
 
-    C3D_CullFace(GPU_CULL_FRONT_CCW);
+    C3D_CullFace(GPU_CULL_BACK_CCW);
     ctr_draw_2d_texture(render_data, &layer->background, 0, layer->background.height - layer->h, layer->w, layer->h, vlayer->x, vlayer->y,
       layer->w * 8, layer->h * 14, (2000 - layer->draw_order) * 3.0f + 2.0f, 0xffffffff, false);
-    C3D_CullFace(GPU_CULL_BACK_CCW);
   }
 
-  ctr_prepare_accel(render_data, layer->foreground, vlayer->x, vlayer->y);
+  ctr_prepare_playfield(render_data, layer->foreground, vlayer->x, vlayer->y, true, layer->mode);
   GSPGPU_FlushDataCache(layer->foreground, sizeof(struct v_char) * bufsize);
 
   if (render_data->charset_dirty != 0)
@@ -722,22 +663,23 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
     for (int i = 0; i < 5; i++)
     {
       GSPGPU_FlushDataCache((u8*)(render_data->charset[i].data) + coffs, csize);
-      C3D_SafeTextureCopy((u8*)(render_data->charset[i].data) + coffs, 0,
-        (u8*)(render_data->charset_vram[i].data) + coffs, 0, csize, 8);
+      C3D_SafeTextureCopy((u32*)((u8*)(render_data->charset[i].data) + coffs), 0,
+        (u32*)((u8*)(render_data->charset_vram[i].data) + coffs), 0, csize, 8);
       gspWaitForPPF();
     }
   }
 
+  C3D_CullFace(GPU_CULL_FRONT_CCW);
   if (layer->mode == 0)
   {
     C3D_TexBind(0, &render_data->charset_vram[0]);
     if (has_inversions)
     {
       C3D_SetTexEnv(0, &(render_data->env_playfield_inv));
-      C3D_DrawArrays(GPU_TRIANGLE_STRIP, 0, layer->w * layer->h * 4);
+      C3D_DrawArrays(GPU_GEOMETRY_PRIM, 0, layer->w * layer->h);
     }
     C3D_SetTexEnv(0, &(render_data->env_playfield));
-    C3D_DrawArrays(GPU_TRIANGLE_STRIP, layer->w * layer->h * 4, layer->w * layer->h * 4);
+    C3D_DrawArrays(GPU_GEOMETRY_PRIM, layer->w * layer->h, layer->w * layer->h);
   }
   else
   {
@@ -745,14 +687,14 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
     if (has_inversions)
     {
       C3D_TexBind(0, &render_data->charset_vram[1]);
-      C3D_DrawArrays(GPU_TRIANGLE_STRIP, 0, layer->w * layer->h * 4);
+      C3D_DrawArrays(GPU_GEOMETRY_PRIM, 0, layer->w * layer->h);
     }
     C3D_TexBind(0, &render_data->charset_vram[2]);
-    C3D_DrawArrays(GPU_TRIANGLE_STRIP, layer->w * layer->h * 4, layer->w * layer->h * 4);
+    C3D_DrawArrays(GPU_GEOMETRY_PRIM, layer->w * layer->h, layer->w * layer->h);
     C3D_TexBind(0, &render_data->charset_vram[3]);
-    C3D_DrawArrays(GPU_TRIANGLE_STRIP, layer->w * layer->h * 8, layer->w * layer->h * 4);
+    C3D_DrawArrays(GPU_GEOMETRY_PRIM, layer->w * layer->h * 2, layer->w * layer->h);
     C3D_TexBind(0, &render_data->charset_vram[4]);
-    C3D_DrawArrays(GPU_TRIANGLE_STRIP, layer->w * layer->h * 12, layer->w * layer->h * 4);
+    C3D_DrawArrays(GPU_GEOMETRY_PRIM, layer->w * layer->h * 3, layer->w * layer->h);
   }
   C3D_SetTexEnv(0, &(render_data->env_normal));
 
@@ -768,7 +710,7 @@ static void ctr_render_cursor(struct graphics_data *graphics,
   float y2 = (y + (offset / 14.0f));
   struct v_char *map = render_data->cursor_map;
 
-  if (!ctr_should_render(render_data))
+//  if (!ctr_should_render(render_data))
     return;
 
   map[0].x = x;
@@ -784,7 +726,7 @@ static void ctr_render_cursor(struct graphics_data *graphics,
   map[3].y = y2;
   map[3].col = flatcolor;
 
-  ctr_prepare_accel(render_data, map, 0, 0);
+  ctr_prepare_playfield(render_data, map, 0, 0, false, 0);
   C3D_TexBind(0, &render_data->charset_vram[1]);
   C3D_DrawArrays(GPU_TRIANGLE_STRIP, 0, 4);
 }
@@ -798,7 +740,7 @@ static void ctr_render_mouse(struct graphics_data *graphics,
   float y2 = (y / 14.0f);
   struct v_char *map = render_data->mouse_map;
 
-  if (!ctr_should_render(render_data))
+//  if (!ctr_should_render(render_data))
     return;
 
   map[0].x = x / 8.0f;
@@ -815,7 +757,7 @@ static void ctr_render_mouse(struct graphics_data *graphics,
   map[3].col = col;
 
   C3D_AlphaBlend(GPU_BLEND_SUBTRACT, GPU_BLEND_ADD, GPU_SRC_COLOR, GPU_DST_COLOR, GPU_SRC_ALPHA, GPU_DST_ALPHA);
-  ctr_prepare_accel(render_data, map, 0, 0);
+  ctr_prepare_playfield(render_data, map, 0, 0, false, 0);
   C3D_TexBind(0, &render_data->charset_vram[1]);
   C3D_DrawArrays(GPU_TRIANGLE_STRIP, 0, 4);
   C3D_AlphaBlend(GPU_BLEND_ADD, GPU_BLEND_ADD, GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA, GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA);

@@ -30,7 +30,7 @@ struct ctr_shader_data
 {
   DVLB_s* dvlb;
   shaderProgram_s program;
-  int proj_loc, offs_loc;
+  int proj_loc, offs_loc, uvoffs_loc, geo_count;
   C3D_AttrInfo attr;
 };
 
@@ -42,14 +42,6 @@ struct ctr_layer
   C3D_Tex background;
 };
 
-typedef struct {
-  float u, v;
-} vector_2f;
-
-typedef struct {
-  float x, y, z;
-} vector_3f;
-
 struct v_char
 {
   s16 x, y, z, w;
@@ -59,8 +51,9 @@ struct v_char
 
 struct vertex
 {
-  vector_3f position;
-  vector_2f texcoord;
+  float x, y, w, h;
+  float z;
+  float tx, ty, tw, th;
   u32 color;
 };
 
@@ -76,10 +69,10 @@ struct ctr_render_data
   struct v_char *cursor_map, *mouse_map;
   u64 charset_dirty;
   bool rendering_frame, checked_frame;
-  struct ctr_shader_data shader, shader_accel;
+  struct ctr_shader_data shader_2d, shader_playfield;
   C3D_Mtx projection;
   C3D_Tex playfield_tex;
-  C3D_TexEnv env_normal, env_playfield, env_playfield_inv;
+  C3D_TexEnv env_normal, env_no_texture, env_playfield, env_playfield_inv;
   C3D_RenderTarget *playfield, *target_top, *target_bottom;
   u8 cursor_on, mouse_on;
   u32 focus_x, focus_y;
@@ -88,7 +81,7 @@ struct ctr_render_data
 
 C3D_Tex* ctr_load_png(const char *name);
 
-void ctr_init_shader(struct ctr_shader_data *shader, const void* data, int size);
+void ctr_init_shader(struct ctr_shader_data *shader, const void* data, int size, int geo_count);
 void ctr_bind_shader(struct ctr_shader_data *shader);
 
 void ctr_draw_2d_texture(struct ctr_render_data *render_data, C3D_Tex* texture,
