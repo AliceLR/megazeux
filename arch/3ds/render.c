@@ -63,9 +63,9 @@ static bool tex_w_h_constraint(png_uint_32 w, png_uint_32 h)
   return w > 0 && h > 0 && ((w & (w - 1)) == 0) && ((h & (h - 1)) == 0);
 }
 
-static inline int next_power_of_two(int v)
+static inline int to_texture_size(int v)
 {
-  for (int i = 1; i <= 65536; i *= 2)
+  for (int i = 8; i <= 65536; i *= 2)
     if (i >= v) return i;
   return v;
 }
@@ -288,7 +288,7 @@ static bool ctr_init_video(struct graphics_data *graphics,
   AttrInfo_AddLoader(&render_data.shader_accel.attr, 1, GPU_SHORT, 2); // v1 = texcoord
   AttrInfo_AddLoader(&render_data.shader_accel.attr, 2, GPU_UNSIGNED_BYTE, 4); // v2 = color
 
-  for (int i = 0; i < 6; i++)
+  for (int i = 0; i < 5; i++)
   {
     C3D_TexInit(&render_data.charset[i], 1024, NUM_CHARSETS * 32, GPU_A4);
     C3D_TexSetFilter(&render_data.charset[i], GPU_NEAREST, GPU_NEAREST);
@@ -305,10 +305,18 @@ static bool ctr_init_video(struct graphics_data *graphics,
   C3D_TexEnvFunc(&(render_data.env_normal), C3D_Both, GPU_MODULATE);
 
   TexEnv_Init(&(render_data.env_playfield));
-  C3D_TexEnvSrc(&(render_data.env_playfield), C3D_Both, 0, GPU_TEXTURE0, 0);
+  C3D_TexEnvSrc(&(render_data.env_playfield), C3D_RGB, 0, 0, 0);
+  C3D_TexEnvSrc(&(render_data.env_playfield), C3D_Alpha, 0, GPU_TEXTURE0, 0);
   C3D_TexEnvOp(&(render_data.env_playfield), C3D_RGB, 0, 2, 0);
   C3D_TexEnvOp(&(render_data.env_playfield), C3D_Alpha, 0, 0, 0);
   C3D_TexEnvFunc(&(render_data.env_playfield), C3D_Both, GPU_MODULATE);
+
+  TexEnv_Init(&(render_data.env_playfield_inv));
+  C3D_TexEnvSrc(&(render_data.env_playfield_inv), C3D_RGB, 0, 0, 0);
+  C3D_TexEnvSrc(&(render_data.env_playfield_inv), C3D_Alpha, 0, GPU_TEXTURE0, 0);
+  C3D_TexEnvOp(&(render_data.env_playfield_inv), C3D_RGB, 0, 2, 0);
+  C3D_TexEnvOp(&(render_data.env_playfield_inv), C3D_Alpha, 1, 0, 0);
+  C3D_TexEnvFunc(&(render_data.env_playfield_inv), C3D_Both, GPU_MODULATE);
 
   C3D_SetTexEnv(0, &(render_data.env_normal));
 
@@ -332,7 +340,7 @@ static void ctr_free_video(struct graphics_data *graphics)
 {
   // TODO: more freeing!
   struct ctr_render_data *render_data = graphics->render_data;
-  for (int i = 0; i < 6; i++)
+  for (int i = 0; i < 5; i++)
   {
     C3D_TexDelete(&render_data->charset[i]);
     C3D_TexDelete(&render_data->charset_vram[i]);
@@ -376,36 +384,30 @@ static inline void ctr_char_bitmask_to_texture(struct ctr_render_data *render_da
 
   offset += ((y & 8) << 10);
   offset >>= 1;
+  offset += morton_lut4[y_lut];
+
+  p = ((u8*) render_data->charset[0].data) + offset;
+  p[0] = bitmask_mzx[(c >> 6) & 0x03];
+  p[2] = bitmask_mzx[(c >> 4) & 0x03];
+  p[8] = bitmask_mzx[(c >> 2) & 0x03];
+  p[10] = bitmask_mzx[(c >> 0) & 0x03];
+
   p = ((u8*) render_data->charset[1].data) + offset;
-  p2 = ((u8*) render_data->charset[0].data) + offset;
-  p[morton_lut4[y_lut + 0]] = bitmask_mzx[(c >> 6) & 0x03];
-  p[morton_lut4[y_lut + 1]] = bitmask_mzx[(c >> 4) & 0x03];
-  p[morton_lut4[y_lut + 2]] = bitmask_mzx[(c >> 2) & 0x03];
-  p[morton_lut4[y_lut + 3]] = bitmask_mzx[(c >> 0) & 0x03];
+  p2 = ((u8*) render_data->charset[2].data) + offset;
+  p3 = ((u8*) render_data->charset[3].data) + offset;
+  p4 = ((u8*) render_data->charset[4].data) + offset;
 
-  c ^= 0xFF;
+  t = (c >> 4);
+  p[0] = bitmask_smzx[0][t];
+  p2[0] = bitmask_smzx[1][t];
+  p3[0] = bitmask_smzx[2][t];
+  p4[0] = bitmask_smzx[3][t];
 
-  p2[morton_lut4[y_lut + 0]] = bitmask_mzx[(c >> 6) & 0x03];
-  p2[morton_lut4[y_lut + 1]] = bitmask_mzx[(c >> 4) & 0x03];
-  p2[morton_lut4[y_lut + 2]] = bitmask_mzx[(c >> 2) & 0x03];
-  p2[morton_lut4[y_lut + 3]] = bitmask_mzx[(c >> 0) & 0x03];
-
-  c ^= 0xFF;
-
-  // SMZX MODE 1+ (oh dear)
-  p = ((u8*) render_data->charset[2].data) + offset;
-  p2 = ((u8*) render_data->charset[3].data) + offset;
-  p3 = ((u8*) render_data->charset[4].data) + offset;
-  p4 = ((u8*) render_data->charset[5].data) + offset;
-
-  for (i = 0; i < 2; i++)
-  {
-    t = (c >> ((i ^ 1) << 2)) & 15;
-    p[morton_lut4[y_lut + i]] = bitmask_smzx[0][t];
-    p2[morton_lut4[y_lut + i]] = bitmask_smzx[1][t];
-    p3[morton_lut4[y_lut + i]] = bitmask_smzx[2][t];
-    p4[morton_lut4[y_lut + i]] = bitmask_smzx[3][t];
-  }
+  t = (c & 15);
+  p[2] = bitmask_smzx[0][t];
+  p2[2] = bitmask_smzx[1][t];
+  p3[2] = bitmask_smzx[2][t];
+  p4[2] = bitmask_smzx[3][t];
 }
 
 static inline void ctr_do_remap_charsets(struct graphics_data *graphics)
@@ -491,7 +493,16 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
   if (!ctr_should_render(render_data))
     return;
 
-  if (layer != NULL && (layer->w != vlayer->w || layer->h != vlayer->h || layer->draw_order != vlayer->draw_order))
+  if (layer != NULL && (layer->draw_order != vlayer->draw_order))
+  {
+    layer->draw_order = vlayer->draw_order;
+    for (i = 0; i < max_bufsize; i++)
+    {
+      layer->foreground[i].z = (2000 - layer->draw_order) * 3 + 1;
+    }
+  }
+
+  if (layer != NULL && (layer->w != vlayer->w || layer->h != vlayer->h))
   {
     linearFree(layer->foreground);
     C3D_TexDelete(&(layer->background));
@@ -505,12 +516,14 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
     layer->w = vlayer->w; layer->h = vlayer->h; layer->draw_order = vlayer->draw_order;
     layer->foreground = clinearAlloc(sizeof(struct v_char) * max_bufsize, 0x80);
     layer->background.data = NULL;
-    C3D_TexInit(&(layer->background), next_power_of_two(layer->w < 8 ? 8 : layer->w), next_power_of_two(layer->h < 8 ? 8 : layer->h), GPU_RGBA8);
+    C3D_TexInit(&(layer->background), to_texture_size(layer->w), to_texture_size(layer->h), GPU_RGBA8);
     C3D_TexSetFilter(&(layer->background), GPU_NEAREST, GPU_NEAREST);
     vlayer->platform_layer_data = layer;
     for (i = 0; i < max_bufsize; i++)
     {
       layer->foreground[i].z = (2000 - layer->draw_order) * 3 + 1;
+      layer->foreground[i].u = -1;
+      layer->foreground[i].v = -1;
       if ((i & 3) != 0) continue;
       layer->foreground[i + 0].x = ((i >> 2) % layer->w);
       layer->foreground[i + 0].y = (((i >> 2) / layer->w) % layer->h);
@@ -733,7 +746,7 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
       csize += cincr;
       render_data->charset_dirty >>= 1;
     }
-    for (int i = 0; i < 6; i++)
+    for (int i = 0; i < 5; i++)
     {
       GSPGPU_FlushDataCache((u8*)(render_data->charset[i].data) + coffs, csize);
       C3D_SafeTextureCopy((u8*)(render_data->charset[i].data) + coffs, 0,
@@ -742,29 +755,30 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
     }
   }
 
-  C3D_SetTexEnv(0, &(render_data->env_playfield));
   if (layer->mode == 0)
   {
+    C3D_TexBind(0, &render_data->charset_vram[0]);
     if (has_inversions)
     {
-      C3D_TexBind(0, &render_data->charset_vram[0]);
+      C3D_SetTexEnv(0, &(render_data->env_playfield_inv));
       C3D_DrawArrays(GPU_TRIANGLE_STRIP, 0, layer->w * layer->h * 4);
     }
-    C3D_TexBind(0, &render_data->charset_vram[1]);
+    C3D_SetTexEnv(0, &(render_data->env_playfield));
     C3D_DrawArrays(GPU_TRIANGLE_STRIP, layer->w * layer->h * 4, layer->w * layer->h * 4);
   }
   else
   {
+    C3D_SetTexEnv(0, &(render_data->env_playfield));
     if (has_inversions)
     {
-      C3D_TexBind(0, &render_data->charset_vram[2]);
+      C3D_TexBind(0, &render_data->charset_vram[1]);
       C3D_DrawArrays(GPU_TRIANGLE_STRIP, 0, layer->w * layer->h * 4);
     }
-    C3D_TexBind(0, &render_data->charset_vram[3]);
+    C3D_TexBind(0, &render_data->charset_vram[2]);
     C3D_DrawArrays(GPU_TRIANGLE_STRIP, layer->w * layer->h * 4, layer->w * layer->h * 4);
-    C3D_TexBind(0, &render_data->charset_vram[4]);
+    C3D_TexBind(0, &render_data->charset_vram[3]);
     C3D_DrawArrays(GPU_TRIANGLE_STRIP, layer->w * layer->h * 8, layer->w * layer->h * 4);
-    C3D_TexBind(0, &render_data->charset_vram[5]);
+    C3D_TexBind(0, &render_data->charset_vram[4]);
     C3D_DrawArrays(GPU_TRIANGLE_STRIP, layer->w * layer->h * 12, layer->w * layer->h * 4);
   }
   C3D_SetTexEnv(0, &(render_data->env_normal));

@@ -72,14 +72,14 @@ struct linear_ptr_list_entry
 
 struct ctr_render_data
 {
-  C3D_Tex charset[6], charset_vram[6];
+  C3D_Tex charset[5], charset_vram[5];
   struct v_char *cursor_map, *mouse_map;
   u64 charset_dirty;
   bool rendering_frame;
   struct ctr_shader_data shader, shader_accel;
   C3D_Mtx projection;
   C3D_Tex playfield_tex;
-  C3D_TexEnv env_normal, env_playfield;
+  C3D_TexEnv env_normal, env_playfield, env_playfield_inv;
   C3D_RenderTarget *playfield, *target_top, *target_bottom;
   u8 cursor_on, mouse_on;
   u32 focus_x, focus_y;
