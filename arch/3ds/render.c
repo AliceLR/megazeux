@@ -250,17 +250,16 @@ static bool ctr_init_video(struct graphics_data *graphics,
   for (int i = 0; i < 4; i++)
   {
     render_data.cursor_map[i].z = 1;
-    render_data.cursor_map[i].u = 0;
-    render_data.cursor_map[i].v = (NUM_CHARSETS-1)*32;
+    render_data.cursor_map[i].uv = ((NUM_CHARSETS-1)*32) << 16;
     render_data.mouse_map[i].z = 1;
-    render_data.mouse_map[i].u = 0;
-    render_data.mouse_map[i].v = (NUM_CHARSETS-1)*32;
+    render_data.mouse_map[i].uv = ((NUM_CHARSETS-1)*32) << 16;
   }
 
   C3D_Init(0x100000);
   gfxSet3D(false);
 
   render_data.rendering_frame = false;
+  render_data.checked_frame = false;
 
   C3D_TexInit(&render_data.playfield_tex, 1024, 512, GPU_RGB8);
   C3D_TexSetFilter(&render_data.playfield_tex, GPU_LINEAR, GPU_LINEAR);
@@ -284,7 +283,7 @@ static bool ctr_init_video(struct graphics_data *graphics,
   AttrInfo_AddLoader(&render_data.shader.attr, 1, GPU_FLOAT, 2); // v1 = texcoord
   AttrInfo_AddLoader(&render_data.shader.attr, 2, GPU_UNSIGNED_BYTE, 4); // v2 = color
 
-  AttrInfo_AddLoader(&render_data.shader_accel.attr, 0, GPU_FLOAT, 3); // v0 = position
+  AttrInfo_AddLoader(&render_data.shader_accel.attr, 0, GPU_SHORT, 4); // v0 = position
   AttrInfo_AddLoader(&render_data.shader_accel.attr, 1, GPU_SHORT, 2); // v1 = texcoord
   AttrInfo_AddLoader(&render_data.shader_accel.attr, 2, GPU_UNSIGNED_BYTE, 4); // v2 = color
 
@@ -463,7 +462,8 @@ static bool ctr_should_render(struct ctr_render_data *render_data)
 {
   if (!render_data->rendering_frame)
   {
-    if (!C3D_FrameBegin(0)) {
+    if (render_data->checked_frame || !C3D_FrameBegin(C3D_FRAME_NONBLOCK)) {
+      render_data->checked_frame = true;
       return false;
     }
     render_data->rendering_frame = true;
@@ -485,7 +485,7 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
   u32 bufsize = 4 * vlayer->w * vlayer->h * (vlayer->mode > 0 ? 4 : 2);
   u32 max_bufsize = 4 * vlayer->w * vlayer->h * 4;
   int k, l, m, n, o, col, col2, col3, col4, idx;
-  s16 u, v;
+  u32 uv;
   u32 i, j, ch;
   u32 protected_pal_position = graphics->protected_pal_position;
   bool has_content = false, has_inversions = false;
@@ -522,8 +522,7 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
     for (i = 0; i < max_bufsize; i++)
     {
       layer->foreground[i].z = (2000 - layer->draw_order) * 3 + 1;
-      layer->foreground[i].u = -1;
-      layer->foreground[i].v = -1;
+      layer->foreground[i].uv = 0xFFFFFFFF;
       if ((i & 3) != 0) continue;
       layer->foreground[i + 0].x = ((i >> 2) % layer->w);
       layer->foreground[i + 0].y = (((i >> 2) / layer->w) % layer->h);
@@ -547,7 +546,8 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
       for (i = 0; i < layer->w; i++, src++)
       {
         k = ( morton_lut[(i & 7) + ((j & 7) << 3)] + ((i & (~7)) << 3) + ((j & (~7)) * layer->background.width) );
-        if (src->char_value == INVISIBLE_CHAR)
+        ch = src->char_value;
+        if (ch == INVISIBLE_CHAR)
         {
           ((u32*) layer->background.data)[k] = 0;
           layer->foreground[l++].col = 0;
@@ -562,13 +562,11 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
           continue;
         }
         has_content = true;
-        ch = src->char_value;
         if (ch >= 0x100)
           ch = (ch & 0xFF) + PROTECTED_CHARSET_POSITION;
         else
           ch = (ch + offset) % PROTECTED_CHARSET_POSITION;
-        u = (ch & 127) << 3;
-        v = (NUM_CHARSETS * 32)-((ch >> 7) << 4);
+        uv = ((ch & 127) << 3) | (((NUM_CHARSETS * 32)-((ch >> 7) << 4)) << 16);
 	col = src->bg_color;
         if (col == tcol) col = 0;
         else
@@ -584,30 +582,22 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
           col2 = graphics->flat_intensity_palette[col2];
         }
         ((u32*) layer->background.data)[k] = col;
-        layer->foreground[l].u = u;
-        layer->foreground[l].v = v;
+        layer->foreground[l].uv = uv;
         layer->foreground[l++].col = col;
-        layer->foreground[l].u = u+8;
-        layer->foreground[l].v = v;
+        layer->foreground[l].uv = uv + 8;
         layer->foreground[l++].col = col;
-        layer->foreground[l].u = u;
-        layer->foreground[l].v = v-14;
+        layer->foreground[l].uv = uv - 0xE0000;
         layer->foreground[l++].col = col;
-        layer->foreground[l].u = u+8;
-        layer->foreground[l].v = v-14;
+        layer->foreground[l].uv = uv + 8 - 0xE0000;
         layer->foreground[l++].col = col;
 
-        layer->foreground[m].u = u;
-        layer->foreground[m].v = v;
+        layer->foreground[m].uv = uv;
         layer->foreground[m++].col = col2;
-        layer->foreground[m].u = u+8;
-        layer->foreground[m].v = v;
+        layer->foreground[m].uv = uv + 8;
         layer->foreground[m++].col = col2;
-        layer->foreground[m].u = u;
-        layer->foreground[m].v = v-14;
+        layer->foreground[m].uv = uv - 0xE0000;
         layer->foreground[m++].col = col2;
-        layer->foreground[m].u = u+8;
-        layer->foreground[m].v = v-14;
+        layer->foreground[m].uv = uv + 8 - 0xE0000;
         layer->foreground[m++].col = col2;
       }
     }
@@ -624,7 +614,8 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
       for (i = 0; i < layer->w; i++, src++)
       {
         k = ( morton_lut[(i & 7) + ((j & 7) << 3)] + ((i & (~7)) << 3) + ((j & (~7)) * layer->background.width) );
-        if (src->char_value == INVISIBLE_CHAR)
+        ch = src->char_value;
+        if (ch == INVISIBLE_CHAR)
         {
           ((u32*) layer->background.data)[k] = 0;
           layer->foreground[l++].col = 0;
@@ -647,69 +638,51 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
         }
         idx = ((src->bg_color << 6) | (src->fg_color << 2));
         has_content = true;
-        ch = src->char_value;
         if (ch >= 0x100)
           ch = (ch & 0xFF) + PROTECTED_CHARSET_POSITION;
         else
           ch = (ch + offset) % PROTECTED_CHARSET_POSITION;
-        u = (ch & 127) << 3;
-        v = (NUM_CHARSETS * 32)-((ch >> 7) << 4);
+        uv = ((ch & 127) << 3) | (((NUM_CHARSETS * 32)-((ch >> 7) << 4)) << 16);
         col = graphics->smzx_indices[idx + 0] == tcol ? 0 : graphics->flat_intensity_palette[graphics->smzx_indices[idx + 0]];
         col2 = graphics->smzx_indices[idx + 1] == tcol ? 0 : graphics->flat_intensity_palette[graphics->smzx_indices[idx + 1]];
         col3 = graphics->smzx_indices[idx + 2] == tcol ? 0 : graphics->flat_intensity_palette[graphics->smzx_indices[idx + 2]];
         col4 = graphics->smzx_indices[idx + 3] == tcol ? 0 : graphics->flat_intensity_palette[graphics->smzx_indices[idx + 3]];
 	if ((col2 & col3 & col4) == 0) has_inversions = true;
         ((u32*) layer->background.data)[k] = col;
-        layer->foreground[l].u = u;
-        layer->foreground[l].v = v;
+        layer->foreground[l].uv = uv;
         layer->foreground[l++].col = col;
-        layer->foreground[l].u = u+4;
-        layer->foreground[l].v = v;
+        layer->foreground[l].uv = uv + 4;
         layer->foreground[l++].col = col;
-        layer->foreground[l].u = u;
-        layer->foreground[l].v = v-14;
+        layer->foreground[l].uv = uv - 0xE0000;
         layer->foreground[l++].col = col;
-        layer->foreground[l].u = u+4;
-        layer->foreground[l].v = v-14;
+        layer->foreground[l].uv = uv + 4 - 0xE0000;
         layer->foreground[l++].col = col;
 
-        layer->foreground[m].u = u;
-        layer->foreground[m].v = v;
+        layer->foreground[m].uv = uv;
         layer->foreground[m++].col = col2;
-        layer->foreground[m].u = u+4;
-        layer->foreground[m].v = v;
+        layer->foreground[m].uv = uv + 4;
         layer->foreground[m++].col = col2;
-        layer->foreground[m].u = u;
-        layer->foreground[m].v = v-14;
+        layer->foreground[m].uv = uv - 0xE0000;
         layer->foreground[m++].col = col2;
-        layer->foreground[m].u = u+4;
-        layer->foreground[m].v = v-14;
+        layer->foreground[m].uv = uv + 4 - 0xE0000;
         layer->foreground[m++].col = col2;
 
-        layer->foreground[n].u = u;
-        layer->foreground[n].v = v;
+        layer->foreground[n].uv = uv;
         layer->foreground[n++].col = col3;
-        layer->foreground[n].u = u+4;
-        layer->foreground[n].v = v;
+        layer->foreground[n].uv = uv + 4;
         layer->foreground[n++].col = col3;
-        layer->foreground[n].u = u;
-        layer->foreground[n].v = v-14;
+        layer->foreground[n].uv = uv - 0xE0000;
         layer->foreground[n++].col = col3;
-        layer->foreground[n].u = u+4;
-        layer->foreground[n].v = v-14;
+        layer->foreground[n].uv = uv + 4 - 0xE0000;
         layer->foreground[n++].col = col3;
 
-        layer->foreground[o].u = u;
-        layer->foreground[o].v = v;
+        layer->foreground[o].uv = uv;
         layer->foreground[o++].col = col4;
-        layer->foreground[o].u = u+4;
-        layer->foreground[o].v = v;
+        layer->foreground[o].uv = uv + 4;
         layer->foreground[o++].col = col4;
-        layer->foreground[o].u = u;
-        layer->foreground[o].v = v-14;
+        layer->foreground[o].uv = uv - 0xE0000;
         layer->foreground[o++].col = col4;
-        layer->foreground[o].u = u+4;
-        layer->foreground[o].v = v-14;
+        layer->foreground[o].uv = uv + 4 - 0xE0000;
         layer->foreground[o++].col = col4;
       }
     }
@@ -902,7 +875,10 @@ static void ctr_sync_screen(struct graphics_data *graphics)
   render_data = graphics->render_data;
 
   if (!ctr_should_render(render_data))
+  {
+    render_data->checked_frame = false;
     return;
+  }
 
 #ifndef RDR_DEBUG
   C3D_FrameDrawOn(render_data->target_top);
@@ -923,6 +899,7 @@ static void ctr_sync_screen(struct graphics_data *graphics)
 
   C3D_FrameEnd(0);
   render_data->rendering_frame = false;
+  render_data->checked_frame = false;
 }
 
 static void ctr_focus_pixel(struct graphics_data *graphics, Uint32 x, Uint32 y)

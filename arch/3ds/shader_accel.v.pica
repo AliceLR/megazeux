@@ -31,10 +31,11 @@
 
 .constf SCALES(0.0009765625, 0.001953125, -1, 1)
 .constf RGBS(0.00392156862745098, 0.00392156862745098, 0.00392156862745098, 0.00392156862745098)
-.constf POSSCALE(8.0, 14.0, 1.0, 1.0)
+.constf POSSCALE(8.0, 14.0, 1.0, 0.0)
 .proc main
 	mov r1, POSSCALE
 	mad r0, inpos, r1, offset
+	mov r0.w, SCALES.w
 
 	dp4 outpos.x, projection[0], r0
 	dp4 outpos.y, projection[1], r0
