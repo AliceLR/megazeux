@@ -51,7 +51,7 @@ VORBIS_CFLAGS  ?= -I${PREFIX}/include -DOV_EXCLUDE_STATIC_CALLBACKS
 ifneq (${TREMOR},1)
 VORBIS_LDFLAGS ?= -L${PREFIX}/lib -lvorbisfile -lvorbis -logg
 else
-VORBIS_LDFLAGS ?= -L${PREFIX}/lib -lvorbisidec -logg
+VORBIS_LDFLAGS ?= -L${PREFIX}/lib -lvorbisidec
 endif
 
 MIKMOD_CFLAGS  ?= -I${PREFIX}/include
