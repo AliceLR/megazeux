@@ -2006,13 +2006,6 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
       // Transport
       case IKEY_F7:
       {
-        if(get_shift_status(keycode_internal))
-        {
-          save_editor_palette();
-          set_screen_mode(get_screen_mode() + 1);
-        }
-        else
-
         if(!overlay_edit)
         {
           thing_menu(mzx_world, 4, &current_id, &current_color,
@@ -2058,6 +2051,22 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
            &current_param, &copy_robot, &copy_scroll, &copy_sensor,
            cursor_board_x, cursor_board_y);
           modified = 1;
+        }
+        break;
+      }
+
+      case IKEY_F11:
+      {
+        if(get_alt_status(keycode_internal))
+        {
+          // Robot debugger configuration
+          debug_robot_config(mzx_world);
+        }
+        else
+        {
+          // SMZX Mode (FIXME- needs real dialog)
+          save_editor_palette();
+          set_screen_mode(get_screen_mode() + 1);
         }
         break;
       }
@@ -3440,22 +3449,6 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           }
         }
 
-        break;
-      }
-
-      case IKEY_F11:
-      {
-        if(get_alt_status(keycode_internal))
-        {
-          // Robot debugger configuration
-          debug_robot_config(mzx_world);
-        }
-        else
-        {
-          // SMZX Mode (FIXME- needs real dialog)
-          save_editor_palette();
-          set_screen_mode(get_screen_mode() + 1);
-        }
         break;
       }
 
