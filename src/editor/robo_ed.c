@@ -3169,6 +3169,9 @@ static int validate_lines(struct robot_state *rstate, int show_none)
         }
       }
 
+      if(current_element >= element_pos)
+        current_element = 1;
+
       construct_dialog(&di, "Command Summary", 5, 2, 70, 21,
        elements, element_pos, current_element);
 
