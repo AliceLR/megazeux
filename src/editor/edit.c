@@ -1807,6 +1807,14 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         }
         else
         {
+          if(overlay_edit)
+          {
+            place_current_at_xy(mzx_world, SPACE, 7, 32, cursor_board_x,
+             cursor_board_y, &copy_robot, &copy_scroll, &copy_sensor,
+             overlay_edit);
+          }
+          else
+
           if((cursor_board_x != mzx_world->player_x) ||
            (cursor_board_y != mzx_world->player_y))
           {

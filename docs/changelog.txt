@@ -17,6 +17,8 @@ FIXES
   when releasing a key while holding another key.
 + Attempting to open the robot validator with no errors will no
   longer crash MegaZeux.
++ Backspace now mirrors delete in overlay mode instead of
+  affecting the board.
 
 DEVELOPERS
 
