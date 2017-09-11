@@ -133,7 +133,6 @@ static bool editor_reload_world(struct world *mzx_world, const char *file,
   if(world_loaded && stat(config_file_name, &file_info) >= 0)
     set_editor_config_from_file(conf, config_file_name);
 
-  draw_memory_timer = DRAW_MEMORY_TIMER_MAX / 2;
   draw_mod_timer = DRAW_MOD_TIMER_MAX;
 
   return world_loaded;
@@ -4082,7 +4081,6 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
       if(mzx_world->editor_conf.editor_load_board_assets)
         change_board_load_assets(mzx_world);
 
-      draw_memory_timer = DRAW_MEMORY_TIMER_MAX / 2;
       draw_mod_timer = DRAW_MOD_TIMER_MAX;
 
       new_board = -1;
