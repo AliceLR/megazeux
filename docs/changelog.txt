@@ -13,6 +13,8 @@ FIXES
 
 + Fixed crash that would occur when loading a saved position on
   the same board referring to out-of-bounds coordinates.
++ Fixed a bug where key repeat would be prematurely terminated
+  when releasing a key while holding another key.
 
 DEVELOPERS
 

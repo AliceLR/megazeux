@@ -332,8 +332,13 @@ static bool process_event(SDL_Event *event)
       Uint16 unicode = 0;
 
 #if SDL_VERSION_ATLEAST(2,0,0)
-      // FIXME: SDL 2.0 finally implements proper key repeat.
-      // We should probably use it instead of our hand-rolled stuff.
+      // SDL 2.0 uses proper key repeat, but derives its timing from the OS.
+      // Our hand-rolled key repeat is more friendly to use than SDL 2.0's
+      // (with Windows, at least) and is consistent across all platforms.
+
+      // To enable SDL 2.0 key repeat, remove this check/break and see the
+      // update_autorepeat() function in event.c
+
       if(event->key.repeat)
         break;
 #endif
@@ -420,13 +425,6 @@ static bool process_event(SDL_Event *event)
 
     case SDL_KEYUP:
     {
-#if SDL_VERSION_ATLEAST(2,0,0)
-      // FIXME: SDL 2.0 finally implements proper key repeat.
-      // We should probably use it instead of our hand-rolled stuff.
-      if(event->key.repeat)
-        break;
-#endif
-
       ckey = convert_SDL_internal(event->key.keysym.sym);
       if(!ckey)
       {

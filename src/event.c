@@ -328,6 +328,14 @@ static bool update_autorepeat(void)
   Uint8 last_key_state = status->keymap[status_key];
   Uint8 last_mouse_state = status->mouse_repeat_state;
 
+#ifdef CONFIG_SDL
+#if SDL_VERSION_ATLEAST(2,0,0)
+  // If you enable SDL 2.0 key repeat, uncomment these lines:
+  //last_key_state = 0;
+  //input.repeat_stack_pointer = 0;
+#endif
+#endif
+
   if(last_key_state)
   {
     Uint32 new_time = get_ticks();
@@ -903,9 +911,13 @@ void key_press(struct buffered_status *status, enum keycode key,
 void key_release(struct buffered_status *status, enum keycode key)
 {
   status->keymap[key] = 0;
-  status->key_repeat = IKEY_UNKNOWN;
-  status->unicode_repeat = 0;
   status->key_release = key;
+
+  if(status->key_repeat == key)
+  {
+    status->key_repeat = IKEY_UNKNOWN;
+    status->unicode_repeat = 0;
+  }
 }
 
 /* Additional checks for joystick button presses, especially for
@@ -937,9 +949,13 @@ void joystick_key_release(struct buffered_status *status,
   if(status_key)
   {
     status->keymap[status_key] = 0;
-    status->key_repeat = IKEY_UNKNOWN;
-    status->unicode_repeat = 0;
     status->key_release = key;
+
+    if(status->key_repeat == status_key)
+    {
+      status->key_repeat = IKEY_UNKNOWN;
+      status->unicode_repeat = 0;
+    }
   }
 }
 
