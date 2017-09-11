@@ -8,6 +8,8 @@ FEATURES
   renamed.
 + Saved positions now have confirmation dialogs. Saved positions
   are saved to/loaded from the editor.cnf file for each world.
+- Removed the undocumented Shift+F7 shortcut in the editor. This
+  shortcut was redundant with F11.
 
 FIXES
 
