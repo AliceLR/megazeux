@@ -9,7 +9,7 @@ libraries/tools:
   - bannertool (https://github.com/Steveice10/bannertool)
   - makerom (https://github.com/profi200/Project_CTR)
 
-You also need to install zlib, libpng, libogg and libtremor.
+You also need to install zlib, libpng and libtremor.
 For this, you can use either:
 
   - devkitPro's portlibs (https://github.com/devkitPro/3ds_portlibs)

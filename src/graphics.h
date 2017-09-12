@@ -117,7 +117,9 @@ struct video_layer {
   Uint32 w, h, mode;
   int x, y;
   struct char_element *data;
+#if defined(CONFIG_3DS)
   void *platform_layer_data;
+#endif /* CONFIG_3DS */
   int draw_order;
   int transparent_col;
   int offset;
