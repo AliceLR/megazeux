@@ -40,12 +40,13 @@
 .proc gmain
 	mov r4, POSSCALE
 	mov r2, intc0
-	mov r3, inpos
+	mov r3.xy, inpos
+	mov r3.z, uvoffset.z
 	mad r0, r3, r4, offset
 
 	mov r11, SCALES
 	mov r0.w, POSSCALE.w
-	mul r5, uvoffset, r11
+	mul r5.xy, uvoffset.xy, r11.xy
 	mul r6, r2, r11
 
 	setemit 0

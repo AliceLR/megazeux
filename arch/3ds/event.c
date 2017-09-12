@@ -55,7 +55,7 @@ void __wait_event(int timeout)
 {
   if (timeout) delay(timeout);
   while (!__update_event_status())
-    delay(1);
+    gspWaitForVBlank();
 }
 
 // Taken from arch/nds/event.c

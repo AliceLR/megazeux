@@ -37,6 +37,7 @@ struct ctr_shader_data
 struct ctr_layer
 {
   Uint32 w, h, mode;
+  float z;
   int draw_order;
   struct v_char *foreground;
   C3D_Tex background;
@@ -44,7 +45,7 @@ struct ctr_layer
 
 struct v_char
 {
-  s16 x, y, z, w;
+  s16 x, y;
   u32 uv;
   u32 col;
 };
@@ -66,8 +67,7 @@ struct linear_ptr_list_entry
 struct ctr_render_data
 {
   C3D_Tex charset[5], charset_vram[5];
-  struct v_char *cursor_map, *mouse_map;
-  u64 charset_dirty;
+  u64 charset_dirty/*, smzx_charset_dirty*/;
   bool rendering_frame, checked_frame;
   struct ctr_shader_data shader_2d, shader_playfield;
   C3D_Mtx projection;
