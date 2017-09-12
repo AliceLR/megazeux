@@ -245,8 +245,8 @@ static const char draw_names[7][10] =
 static const char *const menu_lines[NUM_MENUS][2]=
 {
   {
-    " L:Load     S:Save  G:Global Info    Alt+R:Restart  Alt+T:Test",
-    " Alt+S:Status Info  Alt+C:Char Edit  Alt+E:Palette  Alt+F:Sound Effects"
+    " L:Load   S:Save  G:Global Info  Alt+G:Global Robot  Alt+R:Reset   Alt+T:Test",
+    " Alt+C:Char Edit  Alt+E:Palette  Alt+S:Status Info   Alt+V:Vlayer  Alt+F:SFX"
   },
   {
     " Alt+Z:Clear  Alt+I:Import  Alt+P:Size/Pos  I:Info   M:Move  A:Add  D:Delete",
@@ -261,12 +261,12 @@ static const char *const menu_lines[NUM_MENUS][2]=
           " F:Fill   Tab:Draw     F2:Text            Alt+B:Block   Alt+\x12\x1d:Move 10"
   },
   {
-    " Shift+F1:Show InvisWalls  Shift+F2:Show robots  Shift+F3:Show Fakes",
-    " Shift+F4:Show Spaces"
+    " Shift+F1:Show InvisWalls   Shift+F2:Show Robots   Alt+F11:Robot Debugger",
+    " Shift+F3:Show Fakes        Shift+F4:Show Spaces   Alt+Y:Debug Window"
   },
   {
     " F1:Help    Home/End:Corner  Alt+A:Select Char Set  Alt+D:Default Colors",
-    " ESC:Exit   Alt+L:Test SAM   Alt+Y:Debug Mode       Alt+N:Music    *:Mod *"
+    " ESC:Exit   F11:Screen Mode  Alt+L:Test SAM         Alt+N:Music  *:Mod *"
   }
 };
 
