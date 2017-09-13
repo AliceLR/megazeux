@@ -200,27 +200,6 @@ CORE_LIBSPEC void duplicate_sensor_direct(struct sensor *cur_sensor,
  struct sensor *copy_sensor);
 
 #ifdef CONFIG_EDITOR
-CORE_LIBSPEC void copy_buffer_to_layer(int x, int y, int width, int height,
- char *src_char, char *src_color, char *dest_char,
- char *dest_color, int layer_width);
-CORE_LIBSPEC void copy_layer_to_board(struct board *src_board, int x, int y,
- int width, int height, char *src_char, char *src_color,
- int src_width, enum thing convert_id);
-CORE_LIBSPEC void copy_layer_to_buffer(int x,  int y, int width, int height,
- char *src_char, char *src_color, char *dest_char,
- char *dest_color, int layer_width);
-CORE_LIBSPEC void copy_board_to_board_buffer(struct world *mzx_world,
- struct board *src_board, int x, int y, int width, int height, char *dest_id,
- char *dest_param, char *dest_color, char *dest_under_id, char *dest_under_param,
- char *dest_under_color, struct board *dest_board);
-CORE_LIBSPEC void copy_board_buffer_to_board(struct board *src_board,
- int x, int y, int width, int height, char *src_id, char *src_param,
- char *src_color, char *src_under_id, char *src_under_param,
- char *src_under_color);
-CORE_LIBSPEC void copy_board_to_layer(struct board *src_board,
- int x, int y, int width, int height, char *dest_char, char *dest_color,
- int dest_width);
-
 CORE_LIBSPEC extern const int def_params[128];
 #endif // CONFIG_EDITOR
 

@@ -2,7 +2,7 @@
  *
  * Copyright (C) 1996 Greg Janson
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
- * Copyright (C) 2012 Alice Lauren Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2017 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -24,6 +24,7 @@
 #include <time.h>
 #include <string.h>
 
+#include "block.h"
 #include "error.h"
 #include "intake.h"
 #include "graphics.h"
@@ -576,282 +577,6 @@ static void copy_xy_to_xy(struct world *mzx_world, int src_x, int src_y,
   }
 }
 
-__editor_maybe_static void copy_board_to_board_buffer(struct world *mzx_world,
- struct board *src_board,
- int x, int y, int width, int height, char *dest_id, char *dest_param,
- char *dest_color, char *dest_under_id, char *dest_under_param,
- char *dest_under_color, struct board *dest_board)
-{
-  int board_width = src_board->board_width;
-  int src_offset = x + (y * board_width);
-  int src_skip = board_width - width;
-  int dest_offset = 0;
-  char *level_id = src_board->level_id;
-  char *level_param = src_board->level_param;
-  char *level_color = src_board->level_color;
-  char *level_under_id = src_board->level_under_id;
-  char *level_under_param = src_board->level_under_param;
-  char *level_under_color = src_board->level_under_color;
-  enum thing src_id;
-  int src_param;
-  int i, i2;
-
-  for(i = 0; i < height; i++, src_offset += src_skip)
-  {
-    for(i2 = 0; i2 < width; i2++, src_offset++,
-     dest_offset++)
-    {
-      src_id = (enum thing)level_id[src_offset];
-      src_param = level_param[src_offset];
-      if(is_robot(src_id))
-      {
-        struct robot *src_robot = src_board->robot_list[src_param];
-        src_param = duplicate_robot(mzx_world, dest_board, src_robot,
-         0, 0, 1);
-      }
-      else
-
-      if(is_signscroll(src_id))
-      {
-        struct scroll *src_scroll = src_board->scroll_list[src_param];
-        src_param = duplicate_scroll(dest_board, src_scroll);
-      }
-      else
-
-      if(src_id == SENSOR)
-      {
-        struct sensor *src_sensor = src_board->sensor_list[src_param];
-        src_param = duplicate_sensor(dest_board, src_sensor);
-      }
-
-      // Now perform the copy to the buffer sections
-      if(src_param != -1)
-      {
-        dest_id[dest_offset] = src_id;
-        dest_param[dest_offset] = src_param;
-        dest_color[dest_offset] = level_color[src_offset];
-        dest_under_id[dest_offset] = level_under_id[src_offset];
-        dest_under_param[dest_offset] = level_under_param[src_offset];
-        dest_under_color[dest_offset] = level_under_color[src_offset];
-      }
-      else
-      {
-        dest_id[dest_offset] = level_under_id[src_offset];
-        dest_param[dest_offset] = level_under_param[src_offset];
-        dest_color[dest_offset] = level_under_color[src_offset];
-        dest_under_id[dest_offset] = level_under_id[src_offset];
-        dest_under_param[dest_offset] = level_under_param[src_offset];
-        dest_under_color[dest_offset] = level_under_color[src_offset];
-      }
-    }
-  }
-}
-
-__editor_maybe_static void copy_board_buffer_to_board(struct board *src_board,
- int x, int y, int width, int height, char *src_id, char *src_param,
- char *src_color, char *src_under_id, char *src_under_param,
- char *src_under_color)
-{
-  int board_width = src_board->board_width;
-  int dest_offset = x + (y * board_width);
-  int dest_skip = board_width - width;
-  int src_offset = 0;
-  char *level_id = src_board->level_id;
-  char *level_param = src_board->level_param;
-  char *level_color = src_board->level_color;
-  char *level_under_id = src_board->level_under_id;
-  char *level_under_param = src_board->level_under_param;
-  char *level_under_color = src_board->level_under_color;
-  enum thing src_id_cur, dest_id;
-  int dest_param;
-  int i, i2;
-
-  for(i = 0; i < height; i++, dest_offset += dest_skip)
-  {
-    for(i2 = 0; i2 < width; i2++, src_offset++, dest_offset++)
-    {
-      dest_id = (enum thing)level_id[dest_offset];
-      src_id_cur = (enum thing)src_id[src_offset];
-
-      if(dest_id != PLAYER)
-      {
-        dest_param = level_param[dest_offset];
-
-        if(dest_id == SENSOR)
-        {
-          clear_sensor_id(src_board, dest_param);
-        }
-        else
-
-        if(is_signscroll(dest_id))
-        {
-          clear_scroll_id(src_board, dest_param);
-        }
-        else
-
-        if(is_robot(dest_id))
-        {
-          clear_robot_id(src_board, dest_param);
-        }
-
-        if(is_robot(src_id_cur))
-        {
-          int idx = src_param[src_offset];
-          (src_board->robot_list[idx])->xpos = x + i2;
-          (src_board->robot_list[idx])->ypos = y + i;
-        }
-
-        if(src_id_cur != PLAYER)
-        {
-          level_id[dest_offset] = src_id_cur;
-          level_param[dest_offset] = src_param[src_offset];
-          level_color[dest_offset] = src_color[src_offset];
-          level_under_id[dest_offset] = src_under_id[src_offset];
-          level_under_param[dest_offset] = src_under_param[src_offset];
-          level_under_color[dest_offset] = src_under_color[src_offset];
-        }
-        else
-        {
-          level_id[dest_offset] = src_under_id[src_offset];
-          level_param[dest_offset] = src_under_param[src_offset];
-          level_color[dest_offset] = src_under_color[src_offset];
-        }
-      }
-    }
-  }
-}
-
-__editor_maybe_static void copy_layer_to_buffer(int x, int y,
- int width, int height, char *src_char, char *src_color,
- char *dest_char, char *dest_color, int layer_width)
-{
-  int src_offset = x + (y * layer_width);
-  int src_skip = layer_width - width;
-  int dest_offset = 0;
-  int i, i2;
-
-  for(i = 0; i < height; i++, src_offset += src_skip)
-  {
-    for(i2 = 0; i2 < width; i2++, src_offset++,
-     dest_offset++)
-    {
-      // Now perform the copy to the buffer sections
-      dest_char[dest_offset] = src_char[src_offset];
-      dest_color[dest_offset] = src_color[src_offset];
-    }
-  }
-}
-
-__editor_maybe_static void copy_buffer_to_layer(int x, int y,
- int width, int height, char *src_char, char *src_color,
- char *dest_char, char *dest_color, int layer_width)
-{
-  int dest_offset = x + (y * layer_width);
-  int dest_skip = layer_width - width;
-  int src_offset = 0;
-  int i, i2;
-
-  for(i = 0; i < height; i++, dest_offset += dest_skip)
-  {
-    for(i2 = 0; i2 < width; i2++, src_offset++,
-     dest_offset++)
-    {
-      // Now perform the copy to the buffer sections
-      dest_char[dest_offset] = src_char[src_offset];
-      dest_color[dest_offset] = src_color[src_offset];
-    }
-  }
-}
-
-static void copy_layer_to_layer(int src_x, int src_y, int dest_x, int dest_y,
- int width, int height, char *src_char, char *src_color, char *dest_char,
- char *dest_color, int src_width, int dest_width)
-{
-  int dest_offset = dest_x + (dest_y * dest_width);
-  int dest_skip = dest_width - width;
-  int src_offset = src_x + (src_y * src_width);
-  int src_skip = src_width - width;
-  int src_char_cur;
-  int i, i2;
-
-  for(i = 0; i < height; i++, dest_offset += dest_skip,
-   src_offset += src_skip)
-  {
-    for(i2 = 0; i2 < width; i2++, src_offset++,
-     dest_offset++)
-    {
-      src_char_cur = src_char[src_offset];
-      if(src_char_cur != 32)
-      {
-        // Now perform the copy, if src != 32
-        dest_char[dest_offset] = src_char_cur;
-        dest_color[dest_offset] = src_color[src_offset];
-      }
-    }
-  }
-}
-
-__editor_maybe_static void copy_board_to_layer(struct board *src_board,
- int x, int y, int width, int height,
- char *dest_char, char *dest_color, int dest_width)
-{
-  int board_width = src_board->board_width;
-  int src_offset = x + (y * board_width);
-  int src_skip = board_width - width;
-  int dest_skip = dest_width - width;
-  int dest_offset = 0;
-  int src_char;
-  int i, i2;
-
-  for(i = 0; i < height; i++, src_offset += src_skip,
-   dest_offset += dest_skip)
-  {
-    for(i2 = 0; i2 < width; i2++, src_offset++,
-     dest_offset++)
-    {
-      src_char = get_id_char(src_board, src_offset);
-      if(src_char != 32)
-      {
-        dest_char[dest_offset] = get_id_char(src_board, src_offset);
-        dest_color[dest_offset] = get_id_color(src_board, src_offset);
-      }
-    }
-  }
-}
-
-// Make sure convert ID is a custom_*, otherwise this could get ugly
-__editor_maybe_static void copy_layer_to_board(struct board *src_board,
- int x, int y, int width, int height, char *src_char, char *src_color,
- int src_width, enum thing convert_id)
-{
-  int board_width = src_board->board_width;
-  int dest_offset = x + (y * board_width);
-  int dest_skip = src_board->board_width - width;
-  int src_skip = src_width - width;
-  int src_offset = 0;
-  char *level_id = src_board->level_id;
-  char *level_param = src_board->level_param;
-  char *level_color = src_board->level_color;
-  int src_char_cur;
-  int i, i2;
-
-  for(i = 0; i < height; i++, src_offset += src_skip,
-   dest_offset += dest_skip)
-  {
-    for(i2 = 0; i2 < width; i2++, src_offset++,
-     dest_offset++)
-    {
-      src_char_cur = src_char[src_offset];
-      if(src_char_cur != 32 && level_id[dest_offset] != PLAYER)
-      {
-        level_id[dest_offset] = (char)convert_id;
-        level_param[dest_offset] = src_char_cur;
-        level_color[dest_offset] = src_color[src_offset];
-      }
-    }
-  }
-}
-
 void setup_overlay(struct board *src_board, int mode)
 {
   if(!mode && src_board->overlay_mode)
@@ -882,6 +607,8 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
   int src_height = src_board->board_height;
   int dest_width = src_board->board_width;
   int dest_height = src_board->board_height;
+  int src_offset;
+  int dest_offset;
 
   // Process for source type and handle prefixing
   switch(src_type)
@@ -913,6 +640,9 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
   if((src_y + height) > src_height)
     height = src_height - src_y;
 
+  // Get the offset that will generally be used.
+  src_offset = src_x + (src_y * src_width);
+
   // Process for dest type and handle prefixing if we aren't already done
   switch(dest_type)
   {
@@ -927,7 +657,7 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
         {
           // Board to string
           load_string_board(mzx_world, str_buffer, width, height,
-           dest_param, src_board->level_param + src_x + (src_y * src_width),
+           dest_param, src_board->level_param + src_offset,
            src_width);
           break;
         }
@@ -935,16 +665,14 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
         {
           // Overlay to string
           load_string_board(mzx_world, str_buffer, width, height,
-           dest_param, src_board->overlay + src_x +
-           (src_y * src_width), src_width);
+           dest_param, src_board->overlay + src_offset, src_width);
           break;
         }
         case 2:
         {
           // Vlayer to string
           load_string_board(mzx_world, str_buffer, width, height,
-           dest_param, mzx_world->vlayer_chars + src_x +
-           (src_y * src_width), src_width);
+           dest_param, mzx_world->vlayer_chars + src_offset, src_width);
           break;
         }
       }
@@ -962,9 +690,16 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
       if(dest_param && !src_type)
         src_type = 3;
 
-      if(mzx_world->version >= 0x025A && is_string(name_buffer)) {
-        save_mzm_string(mzx_world, name_buffer, src_x, src_y, width, height, src_type, 1, id);
-      } else {
+      // Save MZM to string (2.90+)
+      if(mzx_world->version >= 0x025A && is_string(name_buffer))
+      {
+        save_mzm_string(mzx_world, name_buffer, src_x, src_y,
+         width, height, src_type, 1, id);
+      }
+
+      // Save MZM to file
+      else
+      {
         err = fsafetranslate(name_buffer, translated_name);
         if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
         {
@@ -997,55 +732,38 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
   if((dest_y + height) > dest_height)
     height = dest_height - dest_y;
 
+  // Get the offset that will generally be used.
+  dest_offset = dest_x + (dest_y * dest_width);
+
   switch((dest_type << 2) | (src_type))
   {
     // Board to board
     case 0:
     {
-      char *id_buffer = cmalloc(width * height);
-      char *param_buffer = cmalloc(width * height);
-      char *color_buffer = cmalloc(width * height);
-      char *under_id_buffer = cmalloc(width * height);
-      char *under_param_buffer = cmalloc(width * height);
-      char *under_color_buffer = cmalloc(width * height);
+      copy_board_to_board(mzx_world,
+       src_board, src_offset,
+       src_board, dest_offset,
+       width, height);
 
-      copy_board_to_board_buffer(mzx_world, src_board, src_x, src_y, width,
-       height, id_buffer, param_buffer, color_buffer,
-       under_id_buffer, under_param_buffer, under_color_buffer,
-       src_board);
-      copy_board_buffer_to_board(src_board, dest_x, dest_y, width,
-       height, id_buffer, param_buffer, color_buffer,
-       under_id_buffer, under_param_buffer, under_color_buffer);
-
-      free(under_color_buffer);
-      free(under_param_buffer);
-      free(under_id_buffer);
-      free(color_buffer);
-      free(param_buffer);
-      free(id_buffer);
       break;
     }
     // Overlay to board
     case 1:
     {
-      int overlay_offset = src_x + (src_y * src_width);
-
-      copy_layer_to_board(src_board, dest_x, dest_y, width, height,
-       src_board->overlay + overlay_offset,
-       src_board->overlay_color + overlay_offset, src_width,
-       CUSTOM_BLOCK);
+      copy_layer_to_board(
+       src_board->overlay, src_board->overlay_color, src_width, src_offset,
+       src_board, dest_offset,
+       width, height, CUSTOM_BLOCK);
 
       break;
     }
     // Vlayer to board
     case 2:
     {
-      int vlayer_offset = src_x + (src_y * src_width);
-
-      copy_layer_to_board(src_board, dest_x, dest_y, width, height,
-       mzx_world->vlayer_chars + vlayer_offset,
-       mzx_world->vlayer_colors + vlayer_offset, src_width,
-       CUSTOM_BLOCK);
+      copy_layer_to_board(
+       mzx_world->vlayer_chars, mzx_world->vlayer_colors, src_width, src_offset,
+       src_board, dest_offset,
+       width, height, CUSTOM_BLOCK);
 
       break;
     }
@@ -1053,41 +771,30 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
     // Board to overlay
     case 4:
     {
-      int overlay_offset = dest_x + (dest_y * dest_width);
-
-      copy_board_to_layer(src_board, src_x, src_y, width, height,
-       src_board->overlay + overlay_offset,
-       src_board->overlay_color + overlay_offset, src_width);
+      copy_board_to_layer(
+       src_board, src_offset,
+       src_board->overlay, src_board->overlay_color, dest_width, dest_offset,
+       width, height);
 
       break;
     }
     // Overlay to overlay
     case 5:
     {
-      if(src_board->overlay_mode)
-      {
-        char *char_buffer = cmalloc(width * height);
-        char *color_buffer = cmalloc(width * height);
-        copy_layer_to_buffer(src_x, src_y, width, height,
-         src_board->overlay, src_board->overlay_color,
-         char_buffer, color_buffer, src_width);
-        copy_buffer_to_layer(dest_x, dest_y, width, height,
-         char_buffer, color_buffer, src_board->overlay,
-         src_board->overlay_color, dest_width);
-
-        free(color_buffer);
-        free(char_buffer);
-      }
+      copy_layer_to_layer(
+       src_board->overlay, src_board->overlay_color, src_width, src_offset,
+       src_board->overlay, src_board->overlay_color, dest_width, dest_offset,
+       width, height);
 
       break;
     }
     // Vlayer to overlay
     case 6:
     {
-      copy_layer_to_layer(src_x, src_y, dest_x, dest_y, width,
-       height, mzx_world->vlayer_chars, mzx_world->vlayer_colors,
-       src_board->overlay, src_board->overlay_color, src_width,
-       dest_width);
+      copy_layer_to_layer(
+       mzx_world->vlayer_chars, mzx_world->vlayer_colors, src_width, src_offset,
+       src_board->overlay, src_board->overlay_color, dest_width, dest_offset,
+       width, height);
 
       break;
     }
@@ -1095,39 +802,31 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
     // Board to vlayer
     case 8:
     {
-      int vlayer_offset = dest_x + (dest_y * dest_width);
-
-      copy_board_to_layer(src_board, src_x, src_y, width, height,
-       mzx_world->vlayer_chars + vlayer_offset,
-       mzx_world->vlayer_colors + vlayer_offset, dest_width);
+      copy_board_to_layer(
+       src_board, src_offset,
+       mzx_world->vlayer_chars, mzx_world->vlayer_colors, dest_width, dest_offset,
+       width, height);
 
       break;
     }
     // Overlay to vlayer
     case 9:
     {
-      copy_layer_to_layer(src_x, src_y, dest_x, dest_y, width,
-       height, src_board->overlay, src_board->overlay_color,
-       mzx_world->vlayer_chars, mzx_world->vlayer_colors,
-       src_width, dest_width);
+      copy_layer_to_layer(
+       src_board->overlay, src_board->overlay_color, src_width, src_offset,
+       mzx_world->vlayer_chars, mzx_world->vlayer_colors, dest_width, dest_offset,
+       width, height);
 
       break;
     }
     // Vlayer to vlayer
     case 10:
     {
-      char *char_buffer = cmalloc(width * height);
-      char *color_buffer = cmalloc(width * height);
+      copy_layer_to_layer(
+       mzx_world->vlayer_chars, mzx_world->vlayer_colors, src_width, src_offset,
+       mzx_world->vlayer_chars, mzx_world->vlayer_colors, dest_width, dest_offset,
+       width, height);
 
-      copy_layer_to_buffer(src_x, src_y, width, height,
-       mzx_world->vlayer_chars, mzx_world->vlayer_colors,
-       char_buffer, color_buffer, src_width);
-      copy_buffer_to_layer(dest_x, dest_y, width, height,
-       char_buffer, color_buffer, mzx_world->vlayer_chars,
-       mzx_world->vlayer_colors, dest_width);
-
-      free(color_buffer);
-      free(char_buffer);
       break;
     }
   }

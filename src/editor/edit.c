@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "../block.h"
 #include "../platform.h"
 #include "../helpsys.h"
 #include "../scrdisp.h"
@@ -50,6 +51,7 @@
 #include "pal_ed.h"
 #include "param.h"
 #include "robot.h"
+#include "select.h"
 #include "sfx_edit.h"
 #include "window.h"
 #include "world.h"
@@ -854,80 +856,6 @@ static void flash_thing(struct world *mzx_world, int start, int end,
   for(i = 0, i2 = start; i2 < end + 1; i++, i2++)
   {
     id_chars[i2] = backup[i];
-  }
-}
-
-static void clear_layer_block(int src_x, int src_y, int width,
- int height, char *dest_char, char *dest_color, int dest_width)
-{
-  int dest_offset = src_x + (src_y * dest_width);
-  int dest_skip = dest_width - width;
-  int i, i2;
-
-  for(i = 0; i < height; i++, dest_offset += dest_skip)
-  {
-    for(i2 = 0; i2 < width; i2++, dest_offset++)
-    {
-      // Now perform the copy to the buffer sections
-      dest_char[dest_offset] = 32;
-      dest_color[dest_offset] = 7;
-    }
-  }
-}
-
-static void clear_board_block(struct board *src_board, int x, int y,
- int width, int height)
-{
-  int board_width = src_board->board_width;
-  int dest_offset = x + (y * board_width);
-  int dest_skip = board_width - width;
-  int src_offset = 0;
-  char *level_id = src_board->level_id;
-  char *level_param = src_board->level_param;
-  char *level_color = src_board->level_color;
-  char *level_under_id = src_board->level_under_id;
-  char *level_under_param = src_board->level_under_param;
-  char *level_under_color = src_board->level_under_color;
-  enum thing dest_id;
-  int dest_param;
-  int i, i2;
-
-  for(i = 0; i < height; i++, dest_offset += dest_skip)
-  {
-    for(i2 = 0; i2 < width; i2++, src_offset++,
-     dest_offset++)
-    {
-      dest_id = (enum thing)level_id[dest_offset];
-      if(dest_id != PLAYER)
-      {
-        dest_param = level_param[dest_offset];
-
-        if(dest_id == SENSOR)
-        {
-          clear_sensor_id(src_board, dest_param);
-        }
-        else
-
-        if(is_signscroll(dest_id))
-        {
-          clear_scroll_id(src_board, dest_param);
-        }
-        else
-
-        if(is_robot(dest_id))
-        {
-          clear_robot_id(src_board, dest_param);
-        }
-
-        level_id[dest_offset] = (char)SPACE;
-        level_param[dest_offset] = 0;
-        level_color[dest_offset] = 7;
-      }
-
-      level_under_id[dest_offset] = (char)SPACE;
-      level_under_param[dest_offset] = 0;
-      level_under_color[dest_offset] = 7;
-    }
   }
 }
 
@@ -2763,13 +2691,14 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
       case IKEY_RETURN:
       {
+        // Block selection
         if(draw_mode == 3)
         {
           int start_x = block_x;
           int start_y = block_y;
-          int block_width, block_height;
-
-          block_board = src_board;
+          int block_width;
+          int block_height;
+          int src_offset;
 
           if(start_x > cursor_board_x)
           {
@@ -2791,8 +2720,12 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             block_height = cursor_board_y - block_y + 1;
           }
 
+          src_offset = start_x + (start_y * board_width);
+
           // Select block command
           block_command = block_cmd(mzx_world);
+
+          block_board = src_board;
 
           block_dest_x = cursor_board_x;
           block_dest_y = cursor_board_y;
@@ -2819,12 +2752,13 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
               // Clear block
               if(overlay_edit)
               {
-                clear_layer_block(start_x, start_y, block_width,
-                 block_height, overlay, overlay_color, board_width);
+                clear_layer_block(
+                 overlay, overlay_color, board_width, src_offset,
+                 block_width, block_height);
               }
               else
               {
-                clear_board_block(src_board, start_x, start_y,
+                clear_board_block(src_board, src_offset,
                  block_width, block_height);
               }
 
@@ -2836,148 +2770,36 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             case 4:
             {
               // Flip block
-              char *temp_buffer = malloc (sizeof(char) * block_width);
-              int start_offset = start_x + (start_y * board_width);
-              int end_offset = start_x + ((start_y + block_height - 1) *
-               board_width);
-
               if(overlay_edit)
               {
-                for(i = 0; i < (block_height / 2); i++, start_offset
-                 += board_width, end_offset -= board_width)
-                {
-                  memcpy(temp_buffer, overlay + start_offset,
-                   block_width);
-                  memcpy(overlay + start_offset, overlay + end_offset,
-                   block_width);
-                  memcpy(overlay + end_offset, temp_buffer,
-                   block_width);
-                  memcpy(temp_buffer, overlay_color + start_offset,
-                   block_width);
-                  memcpy(overlay_color + start_offset,
-                   overlay_color + end_offset, block_width);
-                  memcpy(overlay_color + end_offset, temp_buffer,
-                   block_width);
-                }
+                flip_layer_block(
+                 overlay, overlay_color, board_width, src_offset,
+                 block_width, block_height);
               }
               else
               {
-                char *level_under_id = src_board->level_under_id;
-                char *level_under_color = src_board->level_under_color;
-                char *level_under_param = src_board->level_under_param;
-
-                for(i = 0; i < (block_height / 2); i++, start_offset
-                 += board_width, end_offset -= board_width)
-                {
-                  memcpy(temp_buffer, level_id + start_offset,
-                   block_width);
-                  memcpy(level_id + start_offset,
-                   level_id + end_offset, block_width);
-                  memcpy(level_id + end_offset, temp_buffer,
-                   block_width);
-                  memcpy(temp_buffer, level_color + start_offset,
-                   block_width);
-                  memcpy(level_color + start_offset,
-                   level_color + end_offset, block_width);
-                  memcpy(level_color + end_offset, temp_buffer,
-                   block_width);
-                  memcpy(temp_buffer, level_param + start_offset,
-                   block_width);
-                  memcpy(level_param + start_offset,
-                   level_param + end_offset, block_width);
-                  memcpy(level_param + end_offset, temp_buffer,
-                   block_width);
-                  memcpy(temp_buffer, level_under_id + start_offset,
-                   block_width);
-                  memcpy(level_under_id + start_offset,
-                   level_under_id + end_offset, block_width);
-                  memcpy(level_under_id + end_offset, temp_buffer,
-                   block_width);
-                  memcpy(temp_buffer,
-                   level_under_color + start_offset, block_width);
-                  memcpy(level_under_color + start_offset,
-                   level_under_color + end_offset, block_width);
-                  memcpy(level_under_color + end_offset,
-                   temp_buffer, block_width);
-                  memcpy(temp_buffer,
-                   level_under_param + start_offset, block_width);
-                  memcpy(level_under_param + start_offset,
-                   level_under_param + end_offset, block_width);
-                  memcpy(level_under_param + end_offset, temp_buffer,
-                   block_width);
-                }
+                flip_board_block(src_board, src_offset,
+                 block_width, block_height);
               }
 
               draw_mode = 0;
               modified = 1;
-
-              free(temp_buffer);
               break;
             }
 
             case 5:
             {
               // Mirror block
-              int temp, i2;
-              int start_offset = start_x + (start_y * board_width);
-              int previous_offset;
-              int end_offset;
-
               if(overlay_edit)
               {
-                for(i = 0; i < block_height; i++)
-                {
-                  previous_offset = start_offset;
-                  end_offset = start_offset + block_width - 1;
-                  for(i2 = 0; i2 < (block_width / 2);
-                   i2++, start_offset++, end_offset--)
-                  {
-                    temp = overlay[start_offset];
-                    overlay[start_offset] = overlay[end_offset];
-                    overlay[end_offset] = temp;
-                    temp = overlay_color[start_offset];
-                    overlay_color[start_offset] = overlay_color[end_offset];
-                    overlay_color[end_offset] = temp;
-                  }
-                  start_offset = previous_offset + board_width;
-                }
+                mirror_layer_block(
+                 overlay, overlay_color, board_width, src_offset,
+                 block_width, block_height);
               }
               else
               {
-                char *level_under_id = src_board->level_under_id;
-                char *level_under_color = src_board->level_under_color;
-                char *level_under_param = src_board->level_under_param;
-
-                for(i = 0; i < block_height; i++)
-                {
-                  previous_offset = start_offset;
-                  end_offset = start_offset + block_width - 1;
-                  for(i2 = 0; i2 < (block_width / 2);
-                   i2++, start_offset++, end_offset--)
-                  {
-                    temp = level_id[start_offset];
-                    level_id[start_offset] = level_id[end_offset];
-                    level_id[end_offset] = temp;
-                    temp = level_color[start_offset];
-                    level_color[start_offset] = level_color[end_offset];
-                    level_color[end_offset] = temp;
-                    temp = level_param[start_offset];
-                    level_param[start_offset] = level_param[end_offset];
-                    level_param[end_offset] = temp;
-                    temp = level_under_id[start_offset];
-                    level_under_id[start_offset] = level_under_id[end_offset];
-                    level_under_id[end_offset] = temp;
-                    temp = level_under_color[start_offset];
-                    level_under_color[start_offset] =
-                     level_under_color[end_offset];
-                    level_under_color[end_offset] = temp;
-                    temp = level_under_param[start_offset];
-                    level_under_param[start_offset] =
-                     level_under_param[end_offset];
-                    level_under_param[end_offset] = temp;
-                  }
-                  start_offset = previous_offset + board_width;
-                }
+                mirror_board_block(src_board, src_offset,
+                 block_width, block_height);
               }
 
               draw_mode = 0;
@@ -2988,28 +2810,19 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             case 6:
             {
               // Paint
-              int i2;
-              int skip = board_width - block_width;
-              char *dest_offset;
-
               if(overlay_edit)
               {
-                dest_offset =
-                 overlay_color + start_x + (start_y * board_width);
+                paint_layer_block(
+                 overlay_color, board_width, src_offset,
+                 block_width, block_height, current_color);
               }
               else
               {
-                dest_offset =
-                 level_color + start_x + (start_y * board_width);
+                paint_layer_block(
+                 level_color, board_width, src_offset,
+                 block_width, block_height, current_color);
               }
 
-              for(i = 0; i < block_height; i++, dest_offset += skip)
-              {
-                for(i2 = 0; i2 < block_width; i2++, dest_offset++)
-                {
-                  *dest_offset = current_color;
-                }
-              }
               draw_mode = 0;
               modified = 1;
               break;
@@ -3017,6 +2830,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
             case 7:
             {
+              // Copy to/from overlay
               if(!overlay_edit)
               {
                 if(!src_board->overlay_mode)
@@ -3054,6 +2868,230 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
               modified = 1;
               draw_mode = 0;
               break;
+            }
+          }
+        }
+        else
+
+        // Block placement
+        if(draw_mode > 3)
+        {
+          int start_x = block_x;
+          int start_y = block_y;
+          int block_width;
+          int block_height;
+          int src_offset;
+
+          int dest_x = cursor_board_x;
+          int dest_y = cursor_board_y;
+          int original_width;
+          int original_height;
+          int dest_offset;
+
+          if(start_x > block_dest_x)
+          {
+            start_x = block_dest_x;
+            block_width = block_x - block_dest_x + 1;
+          }
+          else
+          {
+            block_width = block_dest_x - block_x + 1;
+          }
+
+          if(start_y > block_dest_y)
+          {
+            start_y = block_dest_y;
+            block_height = block_y - block_dest_y + 1;
+          }
+          else
+          {
+            block_height = block_dest_y - block_y + 1;
+          }
+
+          // Trim the block size to fit the destination, but keep the old
+          // size so the old block can be cleared during the move command
+          original_width = block_width;
+          original_height = block_height;
+
+          if((dest_x + block_width) > board_width)
+            block_width = board_width - dest_x;
+
+          if((dest_y + block_height) > board_height)
+            block_height = board_height - dest_y;
+
+          src_offset = start_x + (start_y * board_width);
+          dest_offset = dest_x + (dest_y * board_width);
+
+          // Placing the block (generally) terminates block mode.
+          draw_mode = 0;
+
+          if(overlay_edit)
+          {
+            switch(block_command)
+            {
+              case 0:
+              case 1:
+              {
+                // Copy block
+                char *src_char = block_board->overlay;
+                char *src_color = block_board->overlay_color;
+
+                copy_layer_to_layer(
+                 src_char, src_color, block_board->board_width, src_offset,
+                 overlay, overlay_color, board_width, dest_offset,
+                 block_width, block_height);
+
+                // 1 is repeat copy
+                if(block_command == 1)
+                {
+                  draw_mode = 4;
+                  copy_repeat_width = block_width;
+                  copy_repeat_height = block_height;
+                }
+                modified = 1;
+                break;
+              }
+
+              case 2:
+              {
+                // Move block
+                char *src_char = block_board->overlay;
+                char *src_color = block_board->overlay_color;
+
+                move_layer_block(
+                 src_char, src_color, block_board->board_width, src_offset,
+                 overlay, overlay_color, board_width, dest_offset,
+                 block_width, block_height,
+                 original_width, original_height);
+
+                modified = 1;
+                break;
+              }
+
+              case 7:
+              {
+                // Copy from board
+                copy_board_to_layer(
+                 block_board, src_offset,
+                 overlay, overlay_color, board_width, dest_offset,
+                 block_width, block_height);
+
+                modified = 1;
+                break;
+              }
+
+              case 9:
+              {
+                // Load MZM
+                load_mzm(mzx_world, mzm_name_buffer, dest_x,
+                 dest_y, 1, 0);
+                modified = 1;
+                break;
+              }
+            }
+          }
+
+          // Board
+          else
+          {
+            switch(block_command)
+            {
+              case 0:
+              case 1:
+              {
+                // Copy block
+                copy_board_to_board(mzx_world,
+                 block_board, src_offset,
+                 src_board, dest_offset,
+                 block_width, block_height);
+
+                // 1 is repeat copy
+                if(block_command == 1)
+                {
+                  draw_mode = 4;
+                  copy_repeat_width = block_width;
+                  copy_repeat_height = block_height;
+                }
+
+                modified = 1;
+                break;
+              }
+
+              case 2:
+              {
+                // Move block
+                move_board_block(mzx_world,
+                 block_board, src_offset,
+                 src_board, dest_offset,
+                 block_width, block_height,
+                 original_width, original_height);
+
+                // Work around to move the player
+                if((mzx_world->player_x >= start_x) &&
+                 (mzx_world->player_y >= start_y) &&
+                 (mzx_world->player_x < (start_x + block_width)) &&
+                 (mzx_world->player_y < (start_y + block_height)) &&
+                 (block_board == src_board))
+                {
+                  place_player_xy(mzx_world,
+                   mzx_world->player_x - start_x + dest_x,
+                   mzx_world->player_y - start_y + dest_y);
+                }
+
+                modified = 1;
+                break;
+              }
+
+              case 7:
+              {
+                // Copy from overlay
+                int convert_select = layer_to_board_object_type(mzx_world);
+                enum thing convert_id = NO_ID;
+
+                switch(convert_select)
+                {
+                  case 0:
+                  {
+                    // Custom Block
+                    convert_id = CUSTOM_BLOCK;
+                    break;
+                  }
+
+                  case 1:
+                  {
+                    convert_id = CUSTOM_FLOOR;
+                    break;
+                  }
+
+                  case 2:
+                  {
+                    convert_id = __TEXT;
+                    break;
+                  }
+                }
+
+                if(convert_select != -1)
+                {
+                  char *src_char = block_board->overlay;
+                  char *src_color = block_board->overlay_color;
+
+                  copy_layer_to_board(
+                   src_char, src_color, block_board->board_width, src_offset,
+                   src_board, dest_offset,
+                   block_width, block_height, convert_id);
+
+                  modified = 1;
+                }
+                break;
+              }
+
+              case 9:
+              {
+                // Load MZM
+                load_mzm(mzx_world, mzm_name_buffer, dest_x, dest_y, 0, 0);
+                modified = 1;
+                break;
+              }
             }
           }
         }
@@ -3117,336 +3155,48 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         }
         else
 
+        // Normal/draw - overlay char
         if(overlay_edit)
         {
-          if(draw_mode > 3)
+          int new_param = char_selection(current_param);
+          if(new_param >= 0)
           {
-            int dest_x = cursor_board_x;
-            int dest_y = cursor_board_y;
-            int start_x = block_x;
-            int start_y = block_y;
-            int block_width, block_height;
-
-            if(start_x > block_dest_x)
-            {
-              start_x = block_dest_x;
-              block_width = block_x - block_dest_x + 1;
-            }
-            else
-            {
-              block_width = block_dest_x - block_x + 1;
-            }
-
-            if(start_y > block_dest_y)
-            {
-              start_y = block_dest_y;
-              block_height = block_y - block_dest_y + 1;
-            }
-            else
-            {
-              block_height = block_dest_y - block_y + 1;
-            }
-
-            if((dest_x + block_width) > board_width)
-              block_width = board_width - dest_x;
-
-            if((dest_y + block_height) > board_height)
-              block_height = board_height - dest_y;
-
-            draw_mode = 0;
-
-            switch(block_command)
-            {
-              case 0:
-              case 1:
-              {
-                // Copy block
-                char *char_buffer = cmalloc(block_width * block_height);
-                char *color_buffer = cmalloc(block_width * block_height);
-                copy_layer_to_buffer(start_x, start_y, block_width,
-                 block_height, block_board->overlay, block_board->overlay_color,
-                 char_buffer, color_buffer, block_board->board_width);
-                copy_buffer_to_layer(dest_x, dest_y, block_width,
-                 block_height, char_buffer, color_buffer, overlay,
-                 overlay_color, board_width);
-
-                // 1 is repeat copy
-                if(block_command == 1)
-                {
-                  draw_mode = 4;
-                  copy_repeat_width = block_width;
-                  copy_repeat_height = block_height;
-                }
-                modified = 1;
-
-                free(color_buffer);
-                free(char_buffer);
-                break;
-              }
-
-              case 2:
-              {
-                // Move block
-                char *char_buffer = cmalloc(block_width * block_height);
-                char *color_buffer = cmalloc(block_width * block_height);
-                copy_layer_to_buffer(start_x, start_y, block_width,
-                 block_height, block_board->overlay,
-                 block_board->overlay_color, char_buffer,
-                 color_buffer, block_board->board_width);
-                clear_layer_block(start_x, start_y, block_width,
-                 block_height, block_board->overlay,
-                 block_board->overlay_color, block_board->board_width);
-                copy_buffer_to_layer(dest_x, dest_y, block_width,
-                 block_height, char_buffer, color_buffer, overlay,
-                 overlay_color, board_width);
-
-                modified = 1;
-                free(color_buffer);
-                free(char_buffer);
-                break;
-              }
-
-              case 7:
-              {
-                // Copy from board
-                int overlay_offset = dest_x + (dest_y * board_width);
-                copy_board_to_layer(block_board, start_x, start_y,
-                 block_width, block_height, overlay + overlay_offset,
-                 overlay_color + overlay_offset, board_width);
-                modified = 1;
-                break;
-              }
-
-              case 9:
-              {
-                // Load MZM
-                load_mzm(mzx_world, mzm_name_buffer, dest_x,
-                 dest_y, 1, 0);
-                modified = 1;
-                break;
-              }
-            }
-          }
-          else
-          {
-            int new_param = char_selection(current_param);
-            if(new_param >= 0)
-            {
-              current_param = new_param;
-              modified = 1;
-            }
-          }
-        }
-        else
-        {
-          if(draw_mode > 2)
-          {
-            int dest_x = cursor_board_x;
-            int dest_y = cursor_board_y;
-            int start_x = block_x;
-            int start_y = block_y;
-            int block_width, block_height;
-            int original_width;
-            int original_height;
-
-            if(start_x > block_dest_x)
-            {
-              start_x = block_dest_x;
-              block_width = block_x - block_dest_x + 1;
-            }
-            else
-            {
-              block_width = block_dest_x - block_x + 1;
-            }
-
-            if(start_y > block_dest_y)
-            {
-              start_y = block_dest_y;
-              block_height = block_y - block_dest_y + 1;
-            }
-            else
-            {
-              block_height = block_dest_y - block_y + 1;
-            }
-
-            original_width = block_width;
-            original_height = block_height;
-
-            if((dest_x + block_width) > board_width)
-              block_width = board_width - dest_x;
-
-            if((dest_y + block_height) > board_height)
-              block_height = board_height - dest_y;
-
-            draw_mode = 0;
-
-            switch(block_command)
-            {
-              case 0:
-              case 1:
-              {
-                // Copy block
-                int block_size = block_width * block_height;
-                char *id_buffer = cmalloc(block_size);
-                char *param_buffer = cmalloc(block_size);
-                char *color_buffer = cmalloc(block_size);
-                char *under_id_buffer = cmalloc(block_size);
-                char *under_param_buffer = cmalloc(block_size);
-                char *under_color_buffer = cmalloc(block_size);
-                copy_board_to_board_buffer(mzx_world, block_board, start_x, start_y,
-                 block_width, block_height, id_buffer, param_buffer,
-                 color_buffer, under_id_buffer, under_param_buffer,
-                 under_color_buffer, src_board);
-                copy_board_buffer_to_board(src_board, dest_x, dest_y,
-                 block_width, block_height, id_buffer, param_buffer,
-                 color_buffer, under_id_buffer, under_param_buffer,
-                 under_color_buffer);
-
-                // 1 is repeat copy
-                if(block_command == 1)
-                {
-                  draw_mode = 4;
-                  copy_repeat_width = block_width;
-                  copy_repeat_height = block_height;
-                }
-
-                modified = 1;
-                free(under_color_buffer);
-                free(under_param_buffer);
-                free(under_id_buffer);
-                free(color_buffer);
-                free(param_buffer);
-                free(id_buffer);
-                break;
-              }
-
-              case 2:
-              {
-                // Move block
-                int block_size = block_width * block_height;
-                char *id_buffer = cmalloc(block_size);
-                char *param_buffer = cmalloc(block_size);
-                char *color_buffer = cmalloc(block_size);
-                char *under_id_buffer = cmalloc(block_size);
-                char *under_param_buffer = cmalloc(block_size);
-                char *under_color_buffer = cmalloc(block_size);
-                copy_board_to_board_buffer(mzx_world, block_board, start_x, start_y,
-                 block_width, block_height, id_buffer, param_buffer,
-                 color_buffer, under_id_buffer, under_param_buffer,
-                 under_color_buffer, src_board);
-                clear_board_block(block_board, start_x, start_y,
-                 original_width, original_height);
-
-                // Work around to move the player
-                if((mzx_world->player_x >= start_x) &&
-                 (mzx_world->player_y >= start_y) &&
-                 (mzx_world->player_x < (start_x + block_width)) &&
-                 (mzx_world->player_y < (start_y + block_height)) &&
-                 (block_board == src_board))
-                {
-                  place_player_xy(mzx_world,
-                   mzx_world->player_x - start_x + dest_x,
-                   mzx_world->player_y - start_y + dest_y);
-                }
-
-                copy_board_buffer_to_board(src_board, dest_x, dest_y,
-                 block_width, block_height, id_buffer, param_buffer,
-                 color_buffer, under_id_buffer, under_param_buffer,
-                 under_color_buffer);
-
-                modified = 1;
-                free(under_color_buffer);
-                free(under_param_buffer);
-                free(under_id_buffer);
-                free(color_buffer);
-                free(param_buffer);
-                free(id_buffer);
-                break;
-              }
-
-              case 7:
-              {
-                // Copy from overlay
-                int convert_select = rtoo_obj_type(mzx_world);
-                enum thing convert_id = NO_ID;
-
-                switch(convert_select)
-                {
-                  case 0:
-                  {
-                    // Custom Block
-                    convert_id = CUSTOM_BLOCK;
-                    break;
-                  }
-
-                  case 1:
-                  {
-                    convert_id = CUSTOM_FLOOR;
-                    break;
-                  }
-
-                  case 2:
-                  {
-                    convert_id = __TEXT;
-                    break;
-                  }
-                }
-
-                if(convert_select != -1)
-                {
-                  int overlay_offset = start_x +
-                   (start_y * block_board->board_width);
-                  copy_layer_to_board(src_board, dest_x, dest_y,
-                   block_width, block_height, block_board->overlay +
-                   overlay_offset, block_board->overlay_color +
-                   overlay_offset, block_board->board_width,
-                   convert_id);
-
-                  modified = 1;
-                }
-                break;
-              }
-
-              case 9:
-              {
-                // Load MZM
-                load_mzm(mzx_world, mzm_name_buffer, dest_x, dest_y, 0, 0);
-                modified = 1;
-                break;
-              }
-            }
-          }
-          else
-          {
-            int new_param;
-
-            grab_at_xy(mzx_world, &current_id, &current_color,
-             &current_param, &copy_robot, &copy_scroll, &copy_sensor,
-             cursor_board_x, cursor_board_y, overlay_edit);
-
-            copy_robot.xpos = cursor_board_x;
-            copy_robot.ypos = cursor_board_y;
-            new_param =
-             change_param(mzx_world, current_id, current_param,
-             &copy_robot, &copy_scroll, &copy_sensor);
-
-            // Kinda a hack, but should get the job done.
-            if(is_storageless(current_id) && (new_param >= 0))
-            {
-              src_board->level_param[(cursor_board_y * board_width) +
-               cursor_board_x] = new_param;
-
-              current_param = new_param;
-            }
-            else
-            {
-              current_param = place_current_at_xy(mzx_world,
-               current_id, current_color, new_param, cursor_board_x,
-               cursor_board_y, &copy_robot, &copy_scroll, &copy_sensor, 0);
-            }
-
+            current_param = new_param;
             modified = 1;
           }
+        }
+
+        // Normal/draw - modify+get
+        else
+        {
+          int new_param;
+
+          grab_at_xy(mzx_world, &current_id, &current_color,
+           &current_param, &copy_robot, &copy_scroll, &copy_sensor,
+           cursor_board_x, cursor_board_y, overlay_edit);
+
+          copy_robot.xpos = cursor_board_x;
+          copy_robot.ypos = cursor_board_y;
+          new_param =
+           change_param(mzx_world, current_id, current_param,
+           &copy_robot, &copy_scroll, &copy_sensor);
+
+          // Kinda a hack, but should get the job done.
+          if(is_storageless(current_id) && (new_param >= 0))
+          {
+            src_board->level_param[(cursor_board_y * board_width) +
+             cursor_board_x] = new_param;
+
+            current_param = new_param;
+          }
+          else
+          {
+            current_param = place_current_at_xy(mzx_world,
+             current_id, current_color, new_param, cursor_board_x,
+             cursor_board_y, &copy_robot, &copy_scroll, &copy_sensor, 0);
+          }
+
+          modified = 1;
         }
 
         break;

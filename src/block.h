@@ -19,42 +19,46 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __EDITOR_BLOCK_H
-#define __EDITOR_BLOCK_H
+#ifndef __BLOCK_H
+#define __BLOCK_H
 
-#include "../compat.h"
+#include "compat.h"
 
 __M_BEGIN_DECLS
 
-#include "../board_struct.h"
+#include "data.h"
+#include "world_struct.h"
 
-void clear_layer_block(
- char *dest_char, char *dest_color, int dest_width, int dest_offset,
- int block_width, int block_height);
-void clear_board_block(struct board *dest_board, int dest_offset,
- int block_width, int block_height);
-
-void flip_layer_block(
- char *dest_char, char *dest_color, int dest_width, int dest_offset,
- int block_width, int block_height);
-void flip_board_block(struct board *dest_board, int dest_offset,
+CORE_LIBSPEC void copy_board_to_board(struct world *mzx_world,
+ struct board *src_board, int src_offset,
+ struct board *dest_board, int dest_offset,
  int block_width, int block_height);
 
-void mirror_layer_block(
- char *dest_char, char *dest_color, int dest_width, int dest_offset,
- int block_width, int block_height);
-void mirror_board_block(struct board *dest_board, int dest_offset,
- int block_width, int block_height);
-
-void paint_layer_block(char *dest_color, int dest_width, int dest_offset,
- int block_width, int block_height, int paint_color);
-
-void move_layer_block(
+CORE_LIBSPEC void copy_layer_to_layer(
  char *src_char, char *src_color, int src_width, int src_offset,
  char *dest_char, char *dest_color, int dest_width, int dest_offset,
+ int block_width, int block_height);
+
+CORE_LIBSPEC void copy_board_to_layer(
+ struct board *src_board, int src_offset,
+ char *dest_char, char *dest_color, int dest_width, int dest_offset,
+ int block_width, int block_height);
+
+CORE_LIBSPEC void copy_layer_to_board(
+ char *src_char, char *src_color, int src_width, int src_offset,
+ struct board *dest_board, int dest_offset,
+ int block_width, int block_height, enum thing convert_id);
+
+#ifdef CONFIG_EDITOR
+
+CORE_LIBSPEC void move_board_block(struct world *mzx_world,
+ struct board *src_board, int src_offset,
+ struct board *dest_board, int dest_offset,
  int block_width, int block_height,
  int clear_width, int clear_height);
 
+#endif //CONFIG_EDITOR
+
 __M_END_DECLS
 
-#endif  // __EDITOR_BLOCK_H
+#endif // __BLOCK_H

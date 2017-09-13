@@ -1,6 +1,8 @@
 /* MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
+ * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
+ * Copyright (C) 2017 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,239 +19,361 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/* Block functions and dialogs */
+/* Block actions */
+/* For the selection dialogs that used to be called "block.c", see select.c */
+
+/* All bounds are expected to be checked before being passed here. */
 
 #include "block.h"
 
-#include "../helpsys.h"
-#include "../idput.h"
-#include "../error.h"
-#include "../event.h"
-#include "../window.h"
+#include "../board_struct.h"
 #include "../data.h"
-#include "../idarray.h"
-#include "../world_struct.h"
+#include "../robot.h"
 
-#include <stdio.h>
-
-//--------------------------
-//
-// ( ) Copy block
-// ( ) Move block
-// ( ) Clear block
-// ( ) Flip block
-// ( ) Mirror block
-// ( ) Paint block
-// ( ) Copy to/from overlay
-// ( ) Save as ANSi
-// ( ) Save as MZM
-//
-//    _OK_      _Cancel_
-//
-//--------------------------
-int block_cmd(struct world *mzx_world)
+void clear_layer_block(
+ char *dest_char, char *dest_color, int dest_width, int dest_offset,
+ int block_width, int block_height)
 {
-  int dialog_result;
-  struct element *elements[3];
-  struct dialog di;
-  int block_operation = 0;
-  const char *radio_button_strings[] =
+  int dest_skip = dest_width - block_width;
+  int i, i2;
+
+  for(i = 0; i < block_height; i++)
   {
-    "Copy block",
-    "Copy block (repeated)",
-    "Move block",
-    "Clear block",
-    "Flip block",
-    "Mirror block",
-    "Paint block",
-    "Copy to/from overlay",
-    "Save as MZM"
-  };
+    for(i2 = 0; i2 < block_width; i2++)
+    {
+      dest_char[dest_offset] = 32;
+      dest_color[dest_offset] = 7;
+      dest_offset++;
+    }
 
-  // Prevent previous keys from carrying through.
-  force_release_all_keys();
-
-  set_context(CTX_BLOCK_CMD);
-  elements[0] = construct_radio_button(2, 2, radio_button_strings,
-   9, 21, &block_operation);
-  elements[1] = construct_button(5, 12, "OK", 0);
-  elements[2] = construct_button(15, 12, "Cancel", -1);
-
-  construct_dialog(&di, "Choose block command", 26, 3, 29, 15,
-   elements, 3, 0);
-
-  dialog_result = run_dialog(mzx_world, &di);
-  pop_context();
-
-  destruct_dialog(&di);
-
-  // Prevent UI keys from carrying through.
-  force_release_all_keys();
-
-  if(dialog_result)
-    return -1;
-
-  return block_operation;
+    dest_offset += dest_skip;
+  }
 }
 
-int rtoo_obj_type(struct world *mzx_world)
+void clear_board_block(struct board *dest_board, int dest_offset,
+ int block_width, int block_height)
 {
-  int dialog_result;
-  struct element *elements[3];
-  struct dialog di;
-  int object_type = 0;
-  const char *radio_button_strings[] =
+  char *level_id = dest_board->level_id;
+  char *level_param = dest_board->level_param;
+  char *level_color = dest_board->level_color;
+  char *level_under_id = dest_board->level_under_id;
+  char *level_under_param = dest_board->level_under_param;
+  char *level_under_color = dest_board->level_under_color;
+
+  int dest_width = dest_board->board_width;
+  int dest_skip = dest_width - block_width;
+
+  enum thing dest_id;
+  int dest_param;
+  int i, i2;
+
+  for(i = 0; i < block_height; i++)
   {
-    "Custom Block",
-    "Custom Floor",
-    "Text"
-  };
+    for(i2 = 0; i2 < block_width; i2++)
+    {
+      dest_id = (enum thing)level_id[dest_offset];
+      if(dest_id != PLAYER)
+      {
+        dest_param = level_param[dest_offset];
 
-  // Prevent previous keys from carrying through.
-  force_release_all_keys();
+        if(dest_id == SENSOR)
+        {
+          clear_sensor_id(dest_board, dest_param);
+        }
+        else
 
-  set_context(CTX_BLOCK_TYPE);
-  elements[0] = construct_radio_button(6, 4, radio_button_strings,
-   3, 12, &object_type);
-  elements[1] = construct_button(5, 11, "OK", 0);
-  elements[2] = construct_button(15, 11, "Cancel", -1);
+        if(is_signscroll(dest_id))
+        {
+          clear_scroll_id(dest_board, dest_param);
+        }
+        else
 
-  construct_dialog(&di, "Object type", 26, 4, 28, 14,
-   elements, 3, 0);
+        if(is_robot(dest_id))
+        {
+          clear_robot_id(dest_board, dest_param);
+        }
 
-  dialog_result = run_dialog(mzx_world, &di);
+        level_id[dest_offset] = (char)SPACE;
+        level_param[dest_offset] = 0;
+        level_color[dest_offset] = 7;
+      }
 
-  destruct_dialog(&di);
-  pop_context();
+      level_under_id[dest_offset] = (char)SPACE;
+      level_under_param[dest_offset] = 0;
+      level_under_color[dest_offset] = 7;
 
-  // Prevent UI keys from carrying through.
-  force_release_all_keys();
+      dest_offset++;
+    }
 
-  if(dialog_result)
-    return -1;
-
-  return object_type;
+    dest_offset += dest_skip;
+  }
 }
 
-int choose_char_set(struct world *mzx_world)
+void flip_layer_block(
+ char *dest_char, char *dest_color, int dest_width, int dest_offset,
+ int block_width, int block_height)
 {
-  int dialog_result;
-  struct element *elements[3];
-  struct dialog di;
-  int charset_type = 0;
-  const char *radio_button_strings[] =
+  char *buffer = malloc(sizeof(char) * block_width);
+
+  int start_offset = dest_offset;
+  int end_offset = dest_offset + dest_width * (block_height - 1);
+
+  while(start_offset < end_offset)
   {
-    "MegaZeux default",
-    "ASCII set",
-    "SMZX set",
-    "Blank set"
-  };
+    memcpy(buffer, dest_char + start_offset,
+     block_width);
+    memcpy(dest_char + start_offset, dest_char + end_offset,
+     block_width);
+    memcpy(dest_char + end_offset, buffer,
+     block_width);
 
-  // Prevent previous keys from carrying through.
-  force_release_all_keys();
+    memcpy(buffer, dest_color + start_offset,
+     block_width);
+    memcpy(dest_color + start_offset, dest_color + end_offset,
+     block_width);
+    memcpy(dest_color + end_offset, buffer,
+     block_width);
 
-  set_context(CTX_CHOOSE_CHARSET);
-  elements[0] = construct_radio_button(4, 4, radio_button_strings,
-   4, 16, &charset_type);
-  elements[1] = construct_button(5, 11, "OK", 0);
-  elements[2] = construct_button(15, 11, "Cancel", -1);
+    start_offset += dest_width;
+    end_offset -= dest_width;
+  }
 
-  construct_dialog(&di, "Object type", 26, 4, 28, 14,
-   elements, 3, 0);
-
-  dialog_result = run_dialog(mzx_world, &di);
-
-  destruct_dialog(&di);
-  pop_context();
-
-  // Prevent UI keys from carrying through.
-  force_release_all_keys();
-
-  if(dialog_result)
-    return -1;
-
-  return charset_type;
+  free(buffer);
 }
 
-int export_type(struct world *mzx_world)
+void flip_board_block(struct board *dest_board, int dest_offset,
+ int block_width, int block_height)
 {
-  int export_choice = 0;
-  int dialog_result;
-  struct element *elements[3];
-  struct dialog di;
-  const char *radio_strings[] =
+  char *buffer = malloc(sizeof(char) * block_width);
+
+  char *level_id = dest_board->level_id;
+  char *level_color = dest_board->level_color;
+  char *level_param = dest_board->level_param;
+  char *level_under_id = dest_board->level_under_id;
+  char *level_under_color = dest_board->level_under_color;
+  char *level_under_param = dest_board->level_under_param;
+
+  int dest_width = dest_board->board_width;
+
+  int start_offset = dest_offset;
+  int end_offset = dest_offset + dest_width * (block_height - 1);
+
+  while(start_offset < end_offset)
   {
-    "Board file (MZB)",
-    "Character set (CHR)",
-    "Palette (PAL)",
-    "Sound effects (SFX)",
-    "Downver. world (MZX)",
-  };
+    memcpy(buffer, level_id + start_offset,
+     block_width);
+    memcpy(level_id + start_offset, level_id + end_offset,
+     block_width);
+    memcpy(level_id + end_offset, buffer,
+     block_width);
 
-  // Prevent previous keys from carrying through.
-  force_release_all_keys();
+    memcpy(buffer, level_color + start_offset,
+     block_width);
+    memcpy(level_color + start_offset, level_color + end_offset,
+     block_width);
+    memcpy(level_color + end_offset, buffer,
+     block_width);
 
-  set_context(CTX_IMPORTEXPORT_TYPE);
+    memcpy(buffer, level_param + start_offset,
+     block_width);
+    memcpy(level_param + start_offset,
+     level_param + end_offset, block_width);
+    memcpy(level_param + end_offset, buffer,
+     block_width);
 
-  elements[0] = construct_radio_button(2, 3, radio_strings,
-   5, 19, &export_choice);
-  elements[1] = construct_button(5, 9, "OK", 0);
-  elements[2] = construct_button(15, 9, "Cancel", -1);
+    memcpy(buffer, level_under_id + start_offset,
+     block_width);
+    memcpy(level_under_id + start_offset, level_under_id + end_offset,
+     block_width);
+    memcpy(level_under_id + end_offset, buffer,
+     block_width);
 
-  construct_dialog(&di, "Export as:", 26, 5, 28, 12,
-   elements, 3, 0);
+    memcpy(buffer, level_under_color + start_offset,
+     block_width);
+    memcpy(level_under_color + start_offset, level_under_color + end_offset,
+     block_width);
+    memcpy(level_under_color + end_offset, buffer,
+     block_width);
 
-  dialog_result = run_dialog(mzx_world, &di);
-  destruct_dialog(&di);
-  pop_context();
+    memcpy(buffer, level_under_param + start_offset,
+     block_width);
+    memcpy(level_under_param + start_offset, level_under_param + end_offset,
+     block_width);
+    memcpy(level_under_param + end_offset, buffer,
+     block_width);
 
-  // Prevent UI keys from carrying through.
-  force_release_all_keys();
+    start_offset += dest_width;
+    end_offset -= dest_width;
+  }
 
-  if(dialog_result)
-    return -1;
-
-  return export_choice;
+  free(buffer);
 }
 
-int import_type(struct world *mzx_world)
+void mirror_layer_block(
+ char *dest_char, char *dest_color, int dest_width, int dest_offset,
+ int block_width, int block_height)
 {
-  int import_choice = 0;
-  int dialog_result;
-  struct element *elements[3];
-  struct dialog di;
-  const char *radio_strings[] =
+  char t;
+  int i;
+  int a;
+  int b;
+
+  for(i = 0; i < block_height; i++)
   {
-    "Board file (MZB)",
-    "Character set (CHR)",
-    "World file (MZX)",
-    "Palette (PAL)",
-    "Sound effects (SFX)",
-    "MZM (choose pos.)"
-  };
+    a = dest_offset;
+    b = dest_offset + block_width - 1;
 
-  // Prevent previous keys from carrying through.
-  force_release_all_keys();
+    while(a < b)
+    {
+      t = dest_char[a];
+      dest_char[a] = dest_char[b];
+      dest_char[b] = t;
 
-  set_context(CTX_IMPORTEXPORT_TYPE);
+      t = dest_color[a];
+      dest_color[a] = dest_color[b];
+      dest_color[b] = t;
 
-  elements[0] = construct_radio_button(2, 3, radio_strings,
-   6, 19, &import_choice);
-  elements[1] = construct_button(5, 10, "OK", 0);
-  elements[2] = construct_button(15, 10, "Cancel", -1);
+      a++;
+      b--;
+    }
 
-  construct_dialog(&di, "Import:", 26, 4, 28, 13,
-   elements, 3, 0);
+    dest_offset += dest_width;
+  }
+}
 
-  dialog_result = run_dialog(mzx_world, &di);
-  destruct_dialog(&di);
-  pop_context();
+void mirror_board_block(struct board *dest_board, int dest_offset,
+ int block_width, int block_height)
+{
+  char *level_id = dest_board->level_id;
+  char *level_color = dest_board->level_color;
+  char *level_param = dest_board->level_param;
+  char *level_under_id = dest_board->level_under_id;
+  char *level_under_color = dest_board->level_under_color;
+  char *level_under_param = dest_board->level_under_param;
 
-  // Prevent UI keys from carrying through.
-  force_release_all_keys();
+  int dest_width = dest_board->board_width;
 
-  if(dialog_result)
-    return -1;
+  char t;
+  int i;
+  int a;
+  int b;
 
-  return import_choice;
+  for(i = 0; i < block_height; i++)
+  {
+    a = dest_offset;
+    b = dest_offset + block_width - 1;
+
+    while(a < b)
+    {
+      t = level_id[a];
+      level_id[a] = level_id[b];
+      level_id[b] = t;
+
+      t = level_color[a];
+      level_color[a] = level_color[b];
+      level_color[b] = t;
+
+      t = level_param[a];
+      level_param[a] = level_param[b];
+      level_param[b] = t;
+
+      t = level_under_id[a];
+      level_under_id[a] = level_under_id[b];
+      level_under_id[b] = t;
+
+      t = level_under_color[a];
+      level_under_color[a] = level_under_color[b];
+      level_under_color[b] = t;
+
+      t = level_under_param[a];
+      level_under_param[a] = level_under_param[b];
+      level_under_param[b] = t;
+
+      a++;
+      b--;
+    }
+
+    dest_offset += dest_width;
+  }
+}
+
+void paint_layer_block(char *dest_color, int dest_width, int dest_offset,
+ int block_width, int block_height, int paint_color)
+{
+  int dest_skip = dest_width - block_width;
+  int i;
+  int i2;
+
+  for(i = 0; i < block_height; i++)
+  {
+    for(i2 = 0; i2 < block_width; i2++)
+    {
+      dest_color[dest_offset] = paint_color;
+      dest_offset++;
+    }
+
+    dest_offset += dest_skip;
+  }
+}
+
+void move_layer_block(
+ char *src_char, char *src_color, int src_width, int src_offset,
+ char *dest_char, char *dest_color, int dest_width, int dest_offset,
+ int block_width, int block_height,
+ int clear_width, int clear_height)
+{
+  // Similar to copy_layer_to_layer_buffered, but deletes the source
+  // after copying to the buffer.
+
+  char *buffer_char = cmalloc(block_width * block_height);
+  char *buffer_color = cmalloc(block_width * block_height);
+
+  int start_offset = src_offset;
+  int buffer_offset = 0;
+
+  int src_skip = src_width - block_width;
+  int dest_skip = dest_width - block_width;
+
+  // Moving to the same layer; don't check for char 32s
+  int i, i2;
+
+  // Copy layer to buffer
+  for(i = 0; i < block_height; i++)
+  {
+    for(i2 = 0; i2 < block_width; i2++)
+    {
+      buffer_char[buffer_offset] = src_char[src_offset];
+      buffer_color[buffer_offset] = src_color[src_offset];
+
+      src_offset++;
+      buffer_offset++;
+    }
+
+    src_offset += src_skip;
+  }
+
+  // Clear the source
+  clear_layer_block(
+   src_char, src_color, src_width, start_offset,
+   clear_width, clear_height);
+
+  buffer_offset = 0;
+
+  // Copy buffer back to layer
+  for(i = 0; i < block_height; i++)
+  {
+    for(i2 = 0; i2 < block_width; i2++)
+    {
+      dest_char[dest_offset] = buffer_char[buffer_offset];
+      dest_color[dest_offset] = buffer_color[buffer_offset];
+
+      dest_offset++;
+      buffer_offset++;
+    }
+
+    dest_offset += dest_skip;
+  }
+
+  free(buffer_char);
+  free(buffer_color);
 }

@@ -21,6 +21,8 @@ FIXES
   longer crash MegaZeux.
 + Backspace now mirrors delete in overlay mode instead of
   affecting the board.
++ Moving an overlay block partially out of bounds in the editor
+  will now correctly clear the block's original position.
 
 DEVELOPERS
 
