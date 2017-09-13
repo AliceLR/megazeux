@@ -18,38 +18,38 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "../audio.h"
 #include "../block.h"
-#include "../platform.h"
+#include "../const.h"
+#include "../counter.h"
+#include "../data.h"
+#include "../error.h"
+#include "../event.h"
+#include "../game.h"
+#include "../graphics.h"
 #include "../helpsys.h"
+#include "../idarray.h"
+#include "../idput.h"
+#include "../intake.h"
+#include "../mzm.h"
+#include "../platform.h"
 #include "../scrdisp.h"
 #include "../sfx.h"
-#include "../counter.h"
-#include "../game.h"
-#include "../intake.h"
-#include "../error.h"
-#include "../idarray.h"
-#include "../data.h"
-#include "../const.h"
-#include "../graphics.h"
-#include "../window.h"
-#include "../idput.h"
-#include "../mzm.h"
-#include "../event.h"
-#include "../audio.h"
-#include "../world.h"
 #include "../util.h"
-#include "debug.h"
-#include "robo_debug.h"
+#include "../window.h"
+#include "../world.h"
 
 #include "block.h"
 #include "board.h"
 #include "char_ed.h"
+#include "debug.h"
 #include "edit.h"
 #include "edit_di.h"
 #include "fill.h"
 #include "graphics.h"
 #include "pal_ed.h"
 #include "param.h"
+#include "robo_debug.h"
 #include "robot.h"
 #include "select.h"
 #include "sfx_edit.h"
@@ -140,26 +140,6 @@ static bool editor_reload_world(struct world *mzx_world, const char *file,
   return world_loaded;
 }
 
-/* Edit menu- (w/box ends on sides) Current menu name is highlighted. The
-  bottom section zooms to show a list of options for the current menu,
-  although all keys are available at all times. PGUP/PGDN changes menu.
-  The menus are shown in listed order. [draw] can be [text]. (in which case
-  there is the words "Type to place text" after the ->) [draw] can also be
-  [place] or [block]. The options DRAW, __TEXT, DEBUG, BLOCK, MOD, and DEF.
-  COLORS are highlighted white (instead of green) when active. Debug mode
-  pops up a small window in the lower left corner, which rushes to the right
-  side and back when the cursor reaches 3/4 of the way towards it,
-  horizontally. The menu itself is 15 lines wide and 7 lines high. The
-  board display, w/o the debug menu, is 19 lines high and 80 lines wide.
-  Note: SAVE is highlighted white if the world has changed since last load
-  or save.
-
-  The commands with ! instead of : have not been implemented yet.
-
-  The menu line turns to "Overlay editing-" and the lower portion shows
-  overlay commands on overlay mode.
-*/
-
 static void synchronize_board_values(struct world *mzx_world,
  struct board **src_board, int *board_width, int *board_height,
  char **level_id, char **level_param, char **level_color,
@@ -228,6 +208,26 @@ static void fix_mod(struct world *mzx_world, struct board *src_board,
     }
   }
 }
+
+/* Edit menu- (w/box ends on sides) Current menu name is highlighted. The
+  bottom section zooms to show a list of options for the current menu,
+  although all keys are available at all times. PGUP/PGDN changes menu.
+  The menus are shown in listed order. [draw] can be [text]. (in which case
+  there is the words "Type to place text" after the ->) [draw] can also be
+  [place] or [block]. The options DRAW, __TEXT, DEBUG, BLOCK, MOD, and DEF.
+  COLORS are highlighted white (instead of green) when active. Debug mode
+  pops up a small window in the lower left corner, which rushes to the right
+  side and back when the cursor reaches 3/4 of the way towards it,
+  horizontally. The menu itself is 15 lines wide and 7 lines high. The
+  board display, w/o the debug menu, is 19 lines high and 80 lines wide.
+  Note: in DOS, SAVE was highlighted white if the world was changed since last
+  load or save.
+
+  The commands with ! instead of : have not been implemented yet.
+
+  The menu line turns to "Overlay editing-" and the lower portion shows
+  overlay commands on overlay mode.
+*/
 
 #define NUM_MENUS 6
 
@@ -1060,46 +1060,60 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
   struct scroll copy_scroll;
   struct sensor copy_sensor;
 
+  // Editor state
   int i;
+  int key;
   int fade;
   int exit = 0;
+  int modified = 0;
+  int new_board = -1;
+  int first_board_prompt = 0;
+
+  // Current board and cursor
+  int overlay_edit = 0;
+  int board_width, board_height;
   int cursor_board_x = 0, cursor_board_y = 0;
   int cursor_x = 0, cursor_y = 0;
   int scroll_x = 0, scroll_y = 0;
+  char *level_id;
+  char *level_param;
+  char *level_color;
+  char *overlay;
+  char *overlay_color;
+
+  // Buffer
   enum thing current_id = SPACE;
   int current_color = 7;
   int current_param = 0;
-  int board_width, board_height;
-  int key;
+
+  // Text mode
   int draw_mode = 0;
-  int overlay_edit = 0;
-  int current_menu = 0;
-  int show_level = 1;
-  int block_x = -1, block_y = -1;
-  int block_dest_x = -1, block_dest_y = -1;
-  int block_command = -1;
-  struct board *block_board = NULL;
-  int first_board_prompt = 0;
-  int new_board = -1;
   int text_place;
   int text_start_x = -1;
-  int modified = 0;
-  int debug_x = 60;
-  int saved_overlay_mode;
-  int edit_screen_height;
+
+  // Block mode
+  int block_command = -1;
+  int block_x = -1, block_y = -1;
+  int block_dest_x = -1, block_dest_y = -1;
+  struct board *block_board = NULL;
   int copy_repeat_width = -1;
   int copy_repeat_height = -1;
+
+  // Interface
+  int saved_overlay_mode;
+  int edit_screen_height;
+  int current_menu = 0;
+  int show_level = 1;
+  int debug_x = 60;
+
+  // Backups
   int backup_count = mzx_world->editor_conf.backup_count;
   unsigned int backup_interval = mzx_world->editor_conf.backup_interval;
   char *backup_name = mzx_world->editor_conf.backup_name;
   char *backup_ext = mzx_world->editor_conf.backup_ext;
   int backup_timestamp = get_ticks();
   int backup_num = 0;
-  char *level_id;
-  char *level_param;
-  char *level_color;
-  char *overlay;
-  char *overlay_color;
+
   char current_world[MAX_PATH] = { 0 };
   char mzm_name_buffer[MAX_PATH] = { 0 };
   char current_listening_dir[MAX_PATH] = { 0 };
