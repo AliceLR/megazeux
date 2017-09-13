@@ -22,13 +22,14 @@
 
 #include "select.h"
 
-#include "../helpsys.h"
-#include "../idput.h"
+#include "../data.h"
 #include "../error.h"
 #include "../event.h"
-#include "../window.h"
-#include "../data.h"
+#include "../graphics.h"
 #include "../idarray.h"
+#include "../idput.h"
+#include "../helpsys.h"
+#include "../window.h"
 #include "../world_struct.h"
 
 #include <stdio.h>
@@ -130,6 +131,65 @@ int layer_to_board_object_type(struct world *mzx_world)
     return -1;
 
   return object_type;
+}
+
+int select_screen_mode(struct world *mzx_world)
+{
+  int dialog_result;
+  struct element *elements[4];
+  struct dialog di;
+
+  int current_mode = get_screen_mode();
+  int new_mode = current_mode;
+
+  const char *radio_button_strings[] =
+  {
+    "Regular MZX      - 16 color palette",
+    "Super MZX Mode 1 - 16 color palette, interpolated",
+    "Super MZX Mode 2 - 256 color palette, fixed indexing",
+    "Super MZX Mode 3 - 256 color palette, variable indexing",
+  };
+
+  const char *help_message =
+   "~9  For additional information on the SMZX modes, press F1.";
+
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
+  set_context(CTX_SUPER_MEGAZEUX);
+
+  do
+  {
+    elements[0] = construct_radio_button(2, 2, radio_button_strings,
+     4, 55, &new_mode);
+    elements[1] = construct_button(21, 9, "OK", 0);
+    elements[2] = construct_button(35, 9, "Cancel", -1);
+    elements[3] = construct_label(2, 7, help_message);
+
+    construct_dialog(&di, "Select Screen Mode", 8, 5, 64, 12,
+     elements, 4, 0);
+
+    dialog_result = run_dialog(mzx_world, &di);
+
+    if(dialog_result == 0 && current_mode == 3 && new_mode != 3 &&
+     confirm(mzx_world, "This will delete all palette index data. Proceed?"))
+    {
+      dialog_result = 1;
+    }
+
+    destruct_dialog(&di);
+  }
+  while(dialog_result > 0);
+
+  if(new_mode == current_mode || dialog_result == -1)
+    new_mode = -1;
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
+
+  pop_context();
+
+  return new_mode;
 }
 
 int choose_char_set(struct world *mzx_world)

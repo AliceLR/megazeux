@@ -1992,9 +1992,16 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         }
         else
         {
-          // SMZX Mode (FIXME- needs real dialog)
-          save_editor_palette();
-          set_screen_mode(get_screen_mode() + 1);
+          // SMZX Mode
+          int selected_mode = select_screen_mode(mzx_world);
+
+          if(selected_mode >= 0)
+          {
+            save_editor_palette();
+            set_screen_mode(selected_mode);
+
+            modified = 1;
+          }
         }
         break;
       }
