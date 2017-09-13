@@ -712,7 +712,7 @@ static void grab_at_xy(struct world *mzx_world, enum thing *new_id,
 static void thing_menu(struct world *mzx_world, int menu_number,
  enum thing *new_id, int *new_color, int *new_param,
  struct robot *copy_robot, struct scroll *copy_scroll,
- struct sensor *copy_sensor, int x, int y)
+ struct sensor *copy_sensor, int use_default_color, int x, int y)
 {
   struct board *src_board = mzx_world->current_board;
   int color, param, chosen, old_id = *new_id;
@@ -734,7 +734,7 @@ static void thing_menu(struct world *mzx_world, int menu_number,
   {
     id = tmenu_thing_ids[menu_number][chosen];
 
-    if(def_colors[id])
+    if(def_colors[id] && use_default_color)
     {
       color = def_colors[id];
     }
@@ -861,7 +861,8 @@ static void flash_thing(struct world *mzx_world, int start, int end,
 
 static void draw_menu_status(int overlay_edit, int line, int draw_mode,
  int current_color, int current_id, char sensor_char, char robot_char,
- char *level_id, char *level_param, int current_param, struct board *src_board)
+ char *level_id, char *level_param, int current_param, struct board *src_board,
+ int use_default_color)
 {
   int display_next_pos;
 
@@ -937,12 +938,19 @@ static void draw_menu_status(int overlay_edit, int line, int draw_mode,
     }
 
     draw_char(')', EC_CURR_THING, display_next_pos, line);
+    display_next_pos++;
+
+    if(!use_default_color)
+    {
+      draw_char('\x07', EC_DEFAULT_COLOR, display_next_pos, line);
+    }
   }
 }
 
 static void draw_menu_normal(int overlay_edit, int draw_mode, int current_menu,
  int current_color, int current_id, char sensor_char, char robot_char,
- char *level_id, char *level_param, int current_param, struct board *src_board)
+ char *level_id, char *level_param, int current_param, struct board *src_board,
+ int use_default_color)
 {
   draw_window_box(0, 19, 79, 24, EC_MAIN_BOX, EC_MAIN_BOX_DARK,
    EC_MAIN_BOX_CORNER, 0, 1);
@@ -979,7 +987,7 @@ static void draw_menu_normal(int overlay_edit, int draw_mode, int current_menu,
 
   draw_menu_status(overlay_edit, EDIT_SCREEN_NORMAL + 1, draw_mode,
    current_color, current_id, sensor_char, robot_char, level_id,
-   level_param, current_param, src_board);
+   level_param, current_param, src_board, use_default_color);
 
   draw_char(196, EC_MAIN_BOX_CORNER, 78, 21);
   draw_char(217, EC_MAIN_BOX_DARK, 79, 21);
@@ -987,8 +995,8 @@ static void draw_menu_normal(int overlay_edit, int draw_mode, int current_menu,
 
 static void draw_menu_minimal(int overlay_edit, int draw_mode,
  int current_color, int current_id, char sensor_char, char robot_char,
- char *level_id, char *level_param, int current_param,
- struct board *src_board, int cursor_board_x, int cursor_board_y)
+ char *level_id, char *level_param, int current_param, struct board *src_board,
+ int use_default_color, int cursor_board_x, int cursor_board_y)
 {
   int i;
 
@@ -1050,7 +1058,7 @@ static void draw_menu_minimal(int overlay_edit, int draw_mode,
 
   draw_menu_status(overlay_edit, EDIT_SCREEN_EXTENDED, draw_mode,
    current_color, current_id, sensor_char, robot_char, level_id,
-   level_param, current_param, src_board);
+   level_param, current_param, src_board, use_default_color);
 }
 
 static void __edit_world(struct world *mzx_world, int reload_curr_file)
@@ -1085,6 +1093,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
   enum thing current_id = SPACE;
   int current_color = 7;
   int current_param = 0;
+  int use_default_color = 1;
 
   // Text mode
   int draw_mode = 0;
@@ -1269,13 +1278,14 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
       draw_mod_timer = 0;
       draw_menu_normal(overlay_edit, draw_mode, current_menu, current_color,
        current_id, copy_sensor.sensor_char, copy_robot.robot_char,
-       level_id, level_param, current_param, src_board);
+       level_id, level_param, current_param, src_board, use_default_color);
     }
     else
     {
       draw_menu_minimal(overlay_edit, draw_mode, current_color, current_id,
        copy_sensor.sensor_char, copy_robot.robot_char, level_id, level_param,
-       current_param, src_board, cursor_board_x, cursor_board_y);
+       current_param, src_board, use_default_color, cursor_board_x,
+       cursor_board_y);
     }
 
     if(draw_memory_timer > 0)
@@ -1886,7 +1896,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           {
             thing_menu(mzx_world, 0, &current_id, &current_color,
              &current_param, &copy_robot, &copy_scroll, &copy_sensor,
-             cursor_board_x, cursor_board_y);
+             use_default_color, cursor_board_x, cursor_board_y);
             modified = 1;
           }
         }
@@ -1912,7 +1922,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           {
             thing_menu(mzx_world, 1, &current_id, &current_color,
              &current_param, &copy_robot, &copy_scroll, &copy_sensor,
-             cursor_board_x, cursor_board_y);
+             use_default_color, cursor_board_x, cursor_board_y);
             modified = 1;
           }
         }
@@ -1926,7 +1936,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         {
           thing_menu(mzx_world, 2, &current_id, &current_color,
            &current_param, &copy_robot, &copy_scroll, &copy_sensor,
-           cursor_board_x, cursor_board_y);
+           use_default_color, cursor_board_x, cursor_board_y);
           modified = 1;
         }
         break;
@@ -1939,7 +1949,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         {
           thing_menu(mzx_world, 3, &current_id, &current_color,
            &current_param, &copy_robot, &copy_scroll, &copy_sensor,
-           cursor_board_x, cursor_board_y);
+           use_default_color, cursor_board_x, cursor_board_y);
           modified = 1;
         }
         break;
@@ -1952,7 +1962,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         {
           thing_menu(mzx_world, 4, &current_id, &current_color,
            &current_param, &copy_robot, &copy_scroll, &copy_sensor,
-           cursor_board_x, cursor_board_y);
+           use_default_color, cursor_board_x, cursor_board_y);
           modified = 1;
         }
         break;
@@ -1965,7 +1975,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         {
           thing_menu(mzx_world, 5, &current_id, &current_color,
            &current_param, &copy_robot, &copy_scroll, &copy_sensor,
-           cursor_board_x, cursor_board_y);
+           use_default_color, cursor_board_x, cursor_board_y);
           modified = 1;
         }
         break;
@@ -1978,7 +1988,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         {
           thing_menu(mzx_world, 6, &current_id, &current_color,
            &current_param, &copy_robot, &copy_scroll, &copy_sensor,
-           cursor_board_x, cursor_board_y);
+           use_default_color, cursor_board_x, cursor_board_y);
           modified = 1;
         }
         break;
@@ -1991,7 +2001,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         {
           thing_menu(mzx_world, 7, &current_id, &current_color,
            &current_param, &copy_robot, &copy_scroll, &copy_sensor,
-           cursor_board_x, cursor_board_y);
+           use_default_color, cursor_board_x, cursor_board_y);
           modified = 1;
         }
         break;
@@ -3533,11 +3543,8 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         {
           if(get_alt_status(keycode_internal))
           {
-            if (!confirm(mzx_world, "LOAD DEFAULT PALETTE - Are you sure?"))
-            {
-              default_palette();
-              update_palette();
-            }
+            // Toggle default built-in colors
+            use_default_color ^= 1;
           }
           else
           {

@@ -11,6 +11,11 @@ FEATURES
 + Block tiling movement (Ctrl+Arrows) now works with most block
   actions, and does not require an initial block placement to
   activate.
++ Restoring its DOS functionality, Alt+D now toggles the default
+  colors of built-in types in the editor. When disabled,
+  built-ins placed from thing menus will use the buffer color
+  instead of their default colors, and a red dot will appear on
+  the right side of the status bar.
 - Removed the undocumented Shift+F7 shortcut in the editor. This
   shortcut was redundant with F11.
 

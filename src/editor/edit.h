@@ -54,6 +54,7 @@ int place_current_at_xy(struct world *mzx_world, enum thing id, int color,
 #define EC_CURR_PARAM         23
 #define EC_OPTION             26
 #define EC_HIGHLIGHTED_OPTION 31
+#define EC_DEFAULT_COLOR      28
 #define EC_NA_FILL            1
 
 __M_END_DECLS
