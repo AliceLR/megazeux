@@ -7,6 +7,8 @@ arch/msvc/Deps/
 arch/msvc/MegaZeux.opensdf
 arch/msvc/MegaZeux.sdf
 arch/msvc/MegaZeux.v12.suo
+arch/nds/*.d
+arch/nds/*.o
 build
 contrib/gdm2s3m/src/.build/
 contrib/icons/.build/
