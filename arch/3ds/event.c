@@ -82,7 +82,7 @@ void do_unicode_key_event(struct buffered_status *status, bool down,
 void do_key_event(struct buffered_status *status, bool down,
  enum keycode code)
 {
-  do_unicode_key_event(status, down, code, code);
+  do_unicode_key_event(status, down, code, code >= 32 && code <= 126 ? code : 0);
 }
 
 // Send a joystick button up/down event to MZX.
