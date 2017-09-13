@@ -2870,6 +2870,13 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
               break;
             }
           }
+
+          // Enable block tiling movement if switching to block placement mode
+          if(draw_mode == 4)
+          {
+            copy_repeat_width = block_width;
+            copy_repeat_height = block_height;
+          }
         }
         else
 
@@ -2943,11 +2950,8 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
                 // 1 is repeat copy
                 if(block_command == 1)
-                {
                   draw_mode = 4;
-                  copy_repeat_width = block_width;
-                  copy_repeat_height = block_height;
-                }
+
                 modified = 1;
                 break;
               }
@@ -3007,11 +3011,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
                 // 1 is repeat copy
                 if(block_command == 1)
-                {
                   draw_mode = 4;
-                  copy_repeat_width = block_width;
-                  copy_repeat_height = block_height;
-                }
 
                 modified = 1;
                 break;
@@ -3093,6 +3093,13 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                 break;
               }
             }
+          }
+
+          // Disable block tiling movement if leaving block placement mode
+          if(draw_mode != 4)
+          {
+            copy_repeat_width = -1;
+            copy_repeat_height = -1;
           }
         }
         else

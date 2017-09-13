@@ -8,6 +8,9 @@ FEATURES
   renamed.
 + Saved positions now have confirmation dialogs. Saved positions
   are saved to/loaded from the editor.cnf file for each world.
++ Block tiling movement (Ctrl+Arrows) now works with most block
+  actions, and does not require an initial block placement to
+  activate.
 - Removed the undocumented Shift+F7 shortcut in the editor. This
   shortcut was redundant with F11.
 
