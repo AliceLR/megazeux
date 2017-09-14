@@ -977,6 +977,7 @@ static void draw_menu_normal(int overlay_edit, int draw_mode, int current_menu,
 
     write_string(menu_lines[current_menu][0], 1, 22, EC_OPTION, 1);
     write_string(menu_lines[current_menu][1], 1, 23, EC_OPTION, 1);
+    write_string("Pgup/Pgdn:Menu", 64, 24, EC_CURR_PARAM, 1);
   }
   else
   {
