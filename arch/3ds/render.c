@@ -326,8 +326,6 @@ static bool ctr_init_video(struct graphics_data *graphics,
   C3D_TexEnvOp(&(render_data.env_playfield_inv), C3D_Alpha, 1, 0, 0);
   C3D_TexEnvFunc(&(render_data.env_playfield_inv), C3D_Both, GPU_MODULATE);
 
-  C3D_SetTexEnv(0, &(render_data.env_normal));
-
   C3D_AlphaTest(false, GPU_GREATER, 0x80);
   C3D_DepthTest(false, GPU_GEQUAL, GPU_WRITE_ALL);
 
@@ -698,7 +696,6 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
     C3D_TexBind(0, &render_data->charset_vram[4]);
     C3D_DrawArrays(GPU_GEOMETRY_PRIM, layer->w * layer->h * 3, layer->w * layer->h);
   }
-  C3D_SetTexEnv(0, &(render_data->env_normal));
 
   render_data->layer_num++;
 }
