@@ -1522,7 +1522,6 @@ void palette_editor(struct world *mzx_world)
   // Prevent UI keys from carrying through.
   force_release_all_keys();
 
-  m_hide();
   restore_screen();
   pop_context();
 
