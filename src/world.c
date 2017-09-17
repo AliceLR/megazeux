@@ -3052,3 +3052,76 @@ void default_scroll_values(struct world *mzx_world)
   mzx_world->scroll_title_color = 143;
   mzx_world->scroll_arrow_color = 142;
 }
+
+void remap_vlayer(struct world *mzx_world,
+ int new_width, int new_height)
+{
+  // Given a new width and height, translate the vlayer such that the area
+  // where the old dimensions and the new dimensions overlap is the same, and
+  // everything else is blank.
+
+  char *vlayer_chars = mzx_world->vlayer_chars;
+  char *vlayer_colors = mzx_world->vlayer_colors;
+  int vlayer_size = mzx_world->vlayer_size;
+
+  int old_width = mzx_world->vlayer_width;
+  int old_height = mzx_world->vlayer_height;
+  int new_pos = 0;
+  int old_pos = 0;
+  int i;
+
+  if(old_width * old_height > vlayer_size)
+  {
+    old_height = vlayer_size / old_width;
+  }
+
+  if(new_width < old_width)
+  {
+    // Decreased width -- go from start to end
+
+    for(i = 0; i < old_height; i++)
+    {
+      memcpy(vlayer_chars + new_pos, vlayer_chars + old_pos, new_width);
+      memcpy(vlayer_colors + new_pos, vlayer_colors + old_pos, new_width);
+
+      old_pos += old_width;
+      new_pos += new_width;
+    }
+
+    // Clear everything else
+    memset(vlayer_chars + new_pos, 0, vlayer_size - new_pos);
+    memset(vlayer_colors + new_pos, 0, vlayer_size - new_pos);
+  }
+  else
+
+  if(new_width > old_width)
+  {
+    // Increased width -- go from end to start
+    // Clear blank areas after every copy
+    int clear_width = new_width - old_width;
+
+    new_pos = new_width * (new_height - 1);
+    old_pos = old_width * (new_height - 1);
+
+    for(i = 0; i < new_height; i++)
+    {
+      memcpy(vlayer_chars + new_pos, vlayer_chars + old_pos, new_width);
+      memcpy(vlayer_colors + new_pos, vlayer_colors + old_pos, new_width);
+
+      // Clear blank area
+      memset(vlayer_chars + new_pos + old_width, 0, clear_width);
+      memset(vlayer_colors + new_pos + old_width, 0, clear_width);
+
+      old_pos -= old_width;
+      new_pos -= new_width;
+    }
+
+    // Clear anything after the new end
+    new_pos = new_width * new_height;
+    memset(vlayer_chars + new_pos, 0, vlayer_size - new_pos);
+    memset(vlayer_colors + new_pos, 0, vlayer_size - new_pos);
+  }
+
+  mzx_world->vlayer_width = new_width;
+  mzx_world->vlayer_height = new_height;
+}

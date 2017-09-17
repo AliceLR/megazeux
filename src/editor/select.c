@@ -20,6 +20,7 @@
 /* Selection dialogs */
 /* Prior to 2.91, this was block.c */
 
+#include "edit.h"
 #include "select.h"
 
 #include "../data.h"
@@ -49,7 +50,7 @@
 //    _OK_      _Cancel_
 //
 //--------------------------
-int block_cmd(struct world *mzx_world)
+int block_cmd(struct world *mzx_world, int overlay_edit)
 {
   int dialog_result;
   struct element *elements[3];
@@ -64,20 +65,40 @@ int block_cmd(struct world *mzx_world)
     "Flip block",
     "Mirror block",
     "Paint block",
-    "Copy to/from overlay",
+    NULL,
+    NULL,
     "Save as MZM"
   };
+
+  switch(overlay_edit)
+  {
+    default:
+    case EDIT_BOARD:
+      radio_button_strings[7] = "Copy to overlay";
+      radio_button_strings[8] = "Copy to vlayer";
+      break;
+
+    case EDIT_OVERLAY:
+      radio_button_strings[7] = "Copy to board";
+      radio_button_strings[8] = "Copy to vlayer";
+      break;
+
+    case EDIT_VLAYER:
+      radio_button_strings[7] = "Copy to board";
+      radio_button_strings[8] = "Copy to overlay";
+      break;
+  }
 
   // Prevent previous keys from carrying through.
   force_release_all_keys();
 
   set_context(CTX_BLOCK_CMD);
   elements[0] = construct_radio_button(2, 2, radio_button_strings,
-   9, 21, &block_operation);
-  elements[1] = construct_button(5, 12, "OK", 0);
-  elements[2] = construct_button(15, 12, "Cancel", -1);
+   10, 21, &block_operation);
+  elements[1] = construct_button(5, 13, "OK", 0);
+  elements[2] = construct_button(15, 13, "Cancel", -1);
 
-  construct_dialog(&di, "Choose block command", 26, 3, 29, 15,
+  construct_dialog(&di, "Choose block command", 26, 3, 29, 16,
    elements, 3, 0);
 
   dialog_result = run_dialog(mzx_world, &di);

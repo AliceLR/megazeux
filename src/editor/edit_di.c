@@ -1,6 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
+ * Copyright (C) 2017 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -602,6 +603,18 @@ void board_exits(struct world *mzx_world)
   pop_context();
 }
 
+static void bound_board_size(int *width, int *height)
+{
+  if((*width) * (*height) > MAX_BOARD_SIZE)
+  {
+    if(*width > *height)
+      *height = MAX_BOARD_SIZE / *width;
+
+    else
+      *width = MAX_BOARD_SIZE / *height;
+  }
+}
+
 // Size/pos of board/viewport
 void size_pos(struct world *mzx_world)
 {
@@ -685,16 +698,12 @@ void size_pos(struct world *mzx_world)
         // Hack to prevent multiplies of 256, for now - only relevant
         // with overlay off, but we want to avoid complications if
         // the user turns the overlay off later
+
+        // As of the new format, this isn't really necessary.
         if((results[4] % 256) == 0)
           results[4]++;
 
-        if((results[4] * results[5]) > MAX_BOARD_SIZE)
-        {
-          if(results[4] > results[5])
-            results[5] = MAX_BOARD_SIZE / results[4];
-          else
-            results[4] = MAX_BOARD_SIZE / results[5];
-        }
+        bound_board_size(results + 4, results + 5);
 
         if(((results[4] >= src_board->board_width) &&
           (results[5] >= src_board->board_height)) ||
@@ -724,6 +733,90 @@ void size_pos(struct world *mzx_world)
       }
     }
   } while(redo);
+
+  pop_context();
+}
+
+// Size of vlayer
+void size_pos_vlayer(struct world *mzx_world)
+{
+  int dialog_result;
+  struct element *elements[4];
+  struct dialog di;
+
+  int results[2] = {
+    mzx_world->vlayer_width,
+    mzx_world->vlayer_height
+  };
+
+  int redo = 1;
+
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
+  // FIXME
+  set_context(CTX_BOARD_SIZES);
+
+  do
+  {
+    elements[0] = construct_button(23, 8, "OK", 0);
+    elements[1] = construct_button(29, 8, "Cancel", -1);
+
+    elements[2] = construct_number_box(15, 4, "Vlayer Width:    ",
+     1, 32767, 0, results + 0);
+    elements[3] = construct_number_box(15, 5, "Vlayer Height:   ",
+     1, 32767, 0, results + 1);
+
+    construct_dialog(&di, "Vlayer Size", 10, 7, 60, 11,
+     elements, 4, 2);
+
+    dialog_result = run_dialog(mzx_world, &di);
+    destruct_dialog(&di);
+
+    // Prevent UI keys from carrying through.
+    force_release_all_keys();
+
+    switch(dialog_result)
+    {
+      // Cancel
+      case -1:
+      {
+        redo = 0;
+        break;
+      }
+
+      // OK
+      case 0:
+      {
+        // The vlayer has the same size restrictions as boards.
+        bound_board_size(results + 0, results + 1);
+
+        if(((results[0] >= mzx_world->vlayer_width) &&
+          (results[1] >= mzx_world->vlayer_height)) ||
+          !confirm(mzx_world, "Reduce vlayer size- Are you sure?"))
+        {
+          int size = results[0] * results[1];
+          int old_size = mzx_world->vlayer_size;
+
+          redo = 0;
+
+          // Decreasing size-- remap first
+          if(size < old_size)
+            remap_vlayer(mzx_world, results[0], results[1]);
+
+          mzx_world->vlayer_size = size;
+          mzx_world->vlayer_chars = crealloc(mzx_world->vlayer_chars, size);
+          mzx_world->vlayer_colors = crealloc(mzx_world->vlayer_colors, size);
+
+          // Increasing size-- remap after
+          if(size >= old_size)
+            remap_vlayer(mzx_world, results[0], results[1]);
+        }
+        break;
+      }
+    }
+  }
+  while(redo);
 
   pop_context();
 }
@@ -1408,7 +1501,7 @@ void global_robot(struct world *mzx_world)
 * +------------------------------------+
 */
 
-int board_goto(struct world *mzx_world,
+int board_goto(struct world *mzx_world, int overlay_edit,
  int *cursor_board_x, int *cursor_board_y)
 {
   int result = 0;
@@ -1421,17 +1514,31 @@ int board_goto(struct world *mzx_world,
   int board_width = cur_board->board_width;
   int board_height = cur_board->board_height;
 
+  const char * const titles[] =
+  {
+    "Goto board location",
+    "Goto overlay location",
+    "Goto vlayer location"
+  };
+
   // Prevent previous keys from carrying through.
   force_release_all_keys();
 
+  if(overlay_edit == 2)
+  {
+    // Vlayer editing
+    board_width = mzx_world->vlayer_width;
+    board_height = mzx_world->vlayer_height;
+  }
+
   elements[0] = construct_button( 7, 4, "  Ok  ", 0);
-  elements[1] = construct_button(23, 4, "Cancel", 1);
+  elements[1] = construct_button(24, 4, "Cancel", 1);
   elements[2] = construct_number_box( 3, 2, "X-",
    0, board_width - 1, 0, &goto_x);
   elements[3] = construct_number_box(20, 2, "Y-",
    0, board_height - 1, 0, &goto_y);
 
-  construct_dialog(&di, "Goto board location",
+  construct_dialog(&di, titles[overlay_edit],
    21, 7, 38, 7, elements, ARRAY_SIZE(elements), 2);
 
   result = run_dialog(mzx_world, &di);

@@ -1,6 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
+ * Copyright (C) 2017 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -21,378 +22,165 @@
 
 #include "fill.h"
 
+#include "../util.h"
 #include "edit.h"
 
-/* Pseudo-code algorithm-
-
-  (MATCHES means that the id/color at that id is what we are
-   filling over. PLACING includes deleting the old, deleting programs,
-   and copying current program, if any. The STACK is an array for
-   keeping track of areas we need to continue filling at, and the
-   direction to fill in at that point. A PUSH onto the STACK moves the
-   stack pointer up one and inserts info, unless the STACK is full, in
-   which case the operation is cancelled. A STACK size of about 500
-   elements is usally enough for a fairly complex 100 by 100 section.)
-
-  (Note that the usual struct robot#0 code is NOT performed- If current is a
-   robot, it is already #0 and must stay that way for proper filling.)
-
-  1) Initialize fill stack and record what we are filling over.
-  2) Push current position going left.
-  3) Loop:
-
-    1) Take top element off of stack.
-    1.5) Verify it still matches (in case another branch got here)
-    2) Start at noted position. Set ABOVE_MATCH and BELOW_MATCH to 0.
-    3a) If direction is left, push onto stack-
-
-      1) Id above, going left, if matches. Set ABOVE_MATCH to 1.
-      2) Id below, going left, if matches. Set BELOW_MATCH to 1.
-      3) Id to the right, going right, if matches.
-
-    3b) If direction is right, push nothing.
-    4) Place at position.
-    6) Note what is above- If it DOESN'T match, set ABOVE_MATCH to 0.
-    7) Note what is below- If it DOESN'T match, set BELOW_MATCH to 0.
-    8) If above DOES match and ABOVE_MATCH is 0-
-
-      1) Push onto stack Id above, going left.
-      2) Set ABOVE_MATCH to 1.
-
-    9) If below DOES match and BELOW_MATCH is 0-
-
-      1) Push onto stack Id below, going left.
-      2) Set BELOW_MATCH to 1.
-
-    10) Go one step in direction. (left/right)
-    11) If position matches, jump to #4.
-    12) If any elements remain on stack, loop.
-
-  4) Done.
-*/
-
-#define match_position(off, new_x, new_y, d, check)     \
-  new_offset = off;                                     \
-  if((id_check[new_offset] == fill_over_id) &&          \
-   (param_check[new_offset] == fill_over_param) &&      \
-   (color_check[new_offset] == fill_over_color))        \
-  {                                                     \
-    if(stack_pos < STACK_SIZE)                          \
-    {                                                   \
-      stack_pos++;                                      \
-      stack[stack_pos].x = new_x;                       \
-      stack[stack_pos].y = new_y;                       \
-      stack[stack_pos].dir = d;                         \
-      check = 1;                                        \
-    }                                                   \
-  }                                                     \
-
-#define match_no_check(off, new_x, new_y, d)            \
-  new_offset = off;                                     \
-  if((id_check[new_offset] == fill_over_id) &&          \
-   (param_check[new_offset] == fill_over_param) &&      \
-   (color_check[new_offset] == fill_over_color))        \
-  {                                                     \
-    if(stack_pos < STACK_SIZE)                          \
-    {                                                   \
-      stack_pos++;                                      \
-      stack[stack_pos].x = new_x;                       \
-      stack[stack_pos].y = new_y;                       \
-      stack[stack_pos].dir = d;                         \
-    }                                                   \
-  }                                                     \
-
-#define no_match(off, check)                            \
-  new_offset = off;                                     \
-  if((id_check[new_offset] != fill_over_id) ||          \
-   (param_check[new_offset] != fill_over_param) ||      \
-   (color_check[new_offset] != fill_over_color))        \
-    check = 0;                                          \
-
-#define match_position_ov(off, new_x, new_y, d, check)  \
-  new_offset = off;                                     \
-  if((param_check[new_offset] == fill_over_param) &&    \
-   (color_check[new_offset] == fill_over_color))        \
-  {                                                     \
-    if(stack_pos < STACK_SIZE)                          \
-    {                                                   \
-      stack_pos++;                                      \
-      stack[stack_pos].x = new_x;                       \
-      stack[stack_pos].y = new_y;                       \
-      stack[stack_pos].dir = d;                         \
-      check = 1;                                        \
-    }                                                   \
-  }                                                     \
-
-#define match_no_check_ov(off, new_x, new_y, d)         \
-  new_offset = off;                                     \
-  if((param_check[new_offset] == fill_over_param) &&    \
-   (color_check[new_offset] == fill_over_color))        \
-  {                                                     \
-    if(stack_pos < STACK_SIZE)                          \
-    {                                                   \
-      stack_pos++;                                      \
-      stack[stack_pos].x = new_x;                       \
-      stack[stack_pos].y = new_y;                       \
-      stack[stack_pos].dir = d;                         \
-    }                                                   \
-  }                                                     \
-
-
-#define no_match_ov(off, check)                         \
-  new_offset = off;                                     \
-  if((param_check[new_offset] != fill_over_param) ||    \
-   (color_check[new_offset] != fill_over_color))        \
-    check = 0;                                          \
-
-// Structure for one element of the stack
-struct stack_elem
+struct queue_elem
 {
   short int x;
   short int y;
-  // -1 = Left, 1 = Right.
-  signed char dir;
 };
 
-// The stack
-#define STACK_SIZE 4096
+#define QUEUE_SIZE 8192
+
+#define MATCHING(off) (               \
+ (level_id[off] == fill_id) &&        \
+ (level_color[off] == fill_color) &&  \
+ (level_param[off] == fill_param)     \
+)
+
+#define QUEUE_NEXT() {                              \
+  x = queue[queue_first].x;                         \
+  y = queue[queue_first].y;                         \
+  queue_first = (queue_first + 1) % QUEUE_SIZE;     \
+  offset = x + (y * board_width);                   \
+}
+
+#define QUEUE_ADD(addx,addy) {                      \
+  queue[queue_next].x = addx;                       \
+  queue[queue_next].y = addy;                       \
+  queue_next = (queue_next + 1) % QUEUE_SIZE;       \
+}
 
 void fill_area(struct world *mzx_world, enum thing id, int color, int param,
  int x, int y, struct robot *copy_robot, struct scroll *copy_scroll, struct sensor *copy_sensor,
  int overlay_edit)
 {
-  struct board *src_board = mzx_world->current_board;
-  enum thing fill_over_id;
-  int fill_over_param, fill_over_color;
-  int dir, above_match, below_match;
-  int new_offset;
-  int board_width = src_board->board_width;
-  int board_height = src_board->board_height;
-  char *id_check;
-  char *param_check;
-  char *color_check;
-  int offset = x + (y * board_width);
+  struct board *cur_board = mzx_world->current_board;
 
-  int stack_pos; // Current element. -1 = empty.
-  struct stack_elem *stack = cmalloc(sizeof(struct stack_elem) * (STACK_SIZE + 1));
+  struct queue_elem *queue = cmalloc(QUEUE_SIZE * sizeof(struct queue_elem));
+  int queue_first = 0;
+  int queue_next = 1;
+  int matched_down;
+  int matched_up;
 
-  if(overlay_edit)
+  char *level_id;
+  char *level_color;
+  char *level_param;
+  int board_width;
+  int board_height;
+  int offset;
+
+  enum thing fill_id = 0;
+  int fill_color = 0;
+  int fill_param = 0;
+
+  switch(overlay_edit)
   {
-    param_check = src_board->overlay;
-    color_check = src_board->overlay_color;
+    default:
+    case EDIT_BOARD:
+      level_id = cur_board->level_id;
+      level_color = cur_board->level_color;
+      level_param = cur_board->level_param;
+      board_width = cur_board->board_width;
+      board_height = cur_board->board_height;
+      break;
 
-    // 1) Initialize fill stack and record what we are filling over.
-    fill_over_color = color_check[offset];
-    fill_over_param = param_check[offset];
+    case EDIT_OVERLAY:
+      // Use chars for id so we don't have to check for NULL
+      level_id = cur_board->overlay;
+      level_color = cur_board->overlay_color;
+      level_param = cur_board->overlay;
+      board_width = cur_board->board_width;
+      board_height = cur_board->board_height;
+      break;
 
-    if((fill_over_param == param) && (fill_over_color == color))
-      goto out_free_stack;
-
-    stack_pos = 0;
-    // 2) Push current position going left.
-    stack[0].x = x;
-    stack[0].y = y;
-    stack[0].dir = -1;
-
-    // 3) Loop:
-    do
-    {
-      // 1) Take top element off of stack.
-      x = stack[stack_pos].x;
-      y = stack[stack_pos].y;
-      dir = stack[stack_pos].dir;
-      offset = x + (y * board_width);
-      stack_pos--;
-
-      // 2) Start at noted position. Set ABOVE_MATCH and BELOW_MATCH to 0.
-      above_match = 0;
-      below_match = 0;
-      // 3a) If direction is left, push onto stack-
-      if(dir == -1)
-      {
-        // 1) Id above, going left, if matches. Set ABOVE_MATCH to 1.
-        if(y > 0)
-        {
-          match_position_ov(offset - board_width, x, y - 1, -1, above_match);
-        }
-        // 2) Id below, going left, if matches. Set BELOW_MATCH to 1.
-        if(y < (board_height - 1))
-        {
-          match_position_ov(offset + board_width, x, y + 1, -1, below_match);
-        }
-        // 3) Id to the right, going right, if matches.
-        if(x < (board_width - 1))
-        {
-          match_no_check_ov(offset + 1, x + 1, y, 1);
-        }
-      }
-      //  3b) If direction is right, push nothing.
-      //  4) Place at position.
-
-      do
-      {
-        if(place_current_at_xy(mzx_world, id, color, param, x, y, copy_robot,
-         copy_scroll, copy_sensor, overlay_edit) == -1)
-          goto out_free_stack;
-
-        // 6) Note what is above- If it DOESN'T match, set ABOVE_MATCH to 0.
-        if(y > 0)
-        {
-          no_match_ov(offset - board_width, above_match);
-        }
-
-        // 7) Note what is below- If it DOESN'T match, set BELOW_MATCH to 0.
-        if(y < (board_height -1))
-        {
-          no_match_ov(offset + board_width, below_match);
-        }
-
-        // 8) If above DOES match and ABOVE_MATCH is 0-
-        if((y > 0) && (above_match == 0))
-        {
-          match_position_ov(offset - board_width, x, y - 1, -1, above_match);
-        }
-        // 9) If below DOES match and BELOW_MATCH is 0-
-        if((y < (board_height - 1)) && (below_match == 0))
-        {
-          match_position_ov(offset + board_width, x, y + 1, -1, below_match);
-        }
-
-        // 10) Go one step in direction. (left/right)
-        x += dir;
-        offset += dir;
-        // 11) If position matches, jump to #4.
-
-        if((x >= 0) && (x < board_width))
-        {
-          if((param_check[offset] != fill_over_param) ||
-           (color_check[offset] != fill_over_color))
-          {
-            break;
-          }
-        }
-        else
-        {
-          break;
-        }
-      } while(1);
-
-      //  12) If any elements remain on stack, loop.
-    } while(stack_pos >= 0);
-  }
-  else
-  {
-    if(id == PLAYER)
-      goto out_free_stack;
-
-    id_check = src_board->level_id;
-    param_check = src_board->level_param;
-    color_check = src_board->level_color;
-
-    // 1) Initialize fill stack and record what we are filling over.
-    fill_over_id = (enum thing)id_check[offset];
-    fill_over_color = color_check[offset];
-    fill_over_param = param_check[offset];
-
-    if((fill_over_id == id) && (fill_over_param == param) &&
-     (fill_over_color == color))
-      goto out_free_stack;
-
-    stack_pos = 0;
-    // 2) Push current position going left.
-    stack[0].x = x;
-    stack[0].y = y;
-    stack[0].dir = -1;
-
-    // 3) Loop:
-    do
-    {
-      // 1) Take top element off of stack.
-      x = stack[stack_pos].x;
-      y = stack[stack_pos].y;
-      dir = stack[stack_pos].dir;
-      offset = x + (y * board_width);
-      stack_pos--;
-
-      // 2) Start at noted position. Set ABOVE_MATCH and BELOW_MATCH to 0.
-      above_match = 0;
-      below_match = 0;
-      // 3a) If direction is left, push onto stack-
-      if(dir == -1)
-      {
-        // 1) Id above, going left, if matches. Set ABOVE_MATCH to 1.
-        if(y > 0)
-        {
-          match_position(offset - board_width, x, y - 1, -1, above_match);
-        }
-        // 2) Id below, going left, if matches. Set BELOW_MATCH to 1.
-        if(y < (board_height - 1))
-        {
-          match_position(offset + board_width, x, y + 1, -1, below_match);
-        }
-        // 3) Id to the right, going right, if matches.
-        if(x < (board_width - 1))
-        {
-          match_no_check(offset + 1, x + 1, y, 1);
-        }
-      }
-      //  3b) If direction is right, push nothing.
-      //  4) Place at position.
-
-      do
-      {
-        if(place_current_at_xy(mzx_world, id, color, param, x, y, copy_robot,
-         copy_scroll, copy_sensor, overlay_edit) == -1)
-          goto out_free_stack;
-
-        // 6) Note what is above- If it DOESN'T match, set ABOVE_MATCH to 0.
-        if(y > 0)
-        {
-          no_match(offset - board_width, above_match);
-        }
-
-        // 7) Note what is below- If it DOESN'T match, set BELOW_MATCH to 0.
-        if(y < (board_height -1))
-        {
-          no_match(offset + board_width, below_match);
-        }
-
-        // 8) If above DOES match and ABOVE_MATCH is 0-
-        if((y > 0) && (above_match == 0))
-        {
-          match_position(offset - board_width, x, y - 1, -1, above_match);
-        }
-        // 9) If below DOES match and BELOW_MATCH is 0-
-        if((y < (board_height - 1)) && (below_match == 0))
-        {
-          match_position(offset + board_width, x, y + 1, -1, below_match);
-        }
-
-        // 10) Go one step in direction. (left/right)
-        x += dir;
-        offset += dir;
-        // 11) If position matches, jump to #4.
-
-        if((x >= 0) && (x < board_width))
-        {
-          if((id_check[offset] != fill_over_id) ||
-           (param_check[offset] != fill_over_param) ||
-           (color_check[offset] != fill_over_color))
-          {
-            break;
-          }
-        }
-        else
-        {
-          break;
-        }
-      } while(1);
-
-      //  12) If any elements remain on stack, loop.
-    } while(stack_pos >= 0);
+    case EDIT_VLAYER:
+      // Use chars for id so we don't have to check for NULL
+      level_id = mzx_world->vlayer_chars;
+      level_color = mzx_world->vlayer_colors;
+      level_param = mzx_world->vlayer_chars;
+      board_width = mzx_world->vlayer_width;
+      board_height = mzx_world->vlayer_height;
+      break;
   }
 
-out_free_stack:
-  free(stack);
+  offset = x + (y * board_width);
+  fill_id = level_id[offset];
+  fill_color = level_color[offset];
+  fill_param = level_param[offset];
+
+  // Fill same as buffer? Do nothing
+  if((fill_id == id) &&
+   (fill_color == color) &&
+   (fill_param == param))
+    goto err_free;
+
+  queue[0].x = x;
+  queue[0].y = y;
+
+  // Perform the fill
+  do
+  {
+    // Get next queue element
+    QUEUE_NEXT();
+
+    if(!MATCHING(offset))
+      continue;
+
+    // Seek left
+    do
+    {
+      offset--;
+      x--;
+    }
+    while((x >= 0) && MATCHING(offset));
+
+    matched_down = 0;
+    matched_up = 0;
+    offset++;
+    x++;
+
+    // Scan right
+    do
+    {
+      if(place_current_at_xy(mzx_world, id, color, param, x, y, copy_robot,
+       copy_scroll, copy_sensor, overlay_edit) == -1)
+        goto err_free;
+
+      if(y > 0 && MATCHING(offset - board_width))
+      {
+        if(!matched_up)
+        {
+          QUEUE_ADD(x, y-1);
+          matched_up = 1;
+        }
+      }
+      else
+      {
+        matched_up = 0;
+      }
+
+      if(y+1 < board_height && MATCHING(offset + board_width))
+      {
+        if(!matched_down)
+        {
+          QUEUE_ADD(x, y+1);
+          matched_down = 1;
+        }
+      }
+      else
+      {
+        matched_down = 0;
+      }
+
+      offset++;
+      x++;
+    }
+    while((x < board_width) && MATCHING(offset));
+  }
+  while(queue_first != queue_next);
+
+err_free:
+  free(queue);
 }
-
