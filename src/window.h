@@ -272,6 +272,8 @@ CORE_LIBSPEC void meter_interior(unsigned int progress, unsigned int out_of);
 #define DI_GREY_DARK        128
 #define DI_GREY_CORNER      135
 #define DI_GREY_TEXT        143
+#define DI_GREY_NUMBER      138
+#define DI_GREY_EDIT        127
 
 #define DI_INPUT_BOX        76
 #define DI_INPUT_BOX_DARK   64
