@@ -427,34 +427,36 @@ int color_selection(int current, int allow_wild)
     // Draw outer edge
     draw_window_box(14, 3, 31 + allow_wild, 20 + allow_wild,
      DI_DARK, DI_MAIN, DI_CORNER, 0, 0);
-    // Draw colors
-    for(y = 0; y < 16 + allow_wild; y++)
-    {
-      for(x = 0; x < 16 + allow_wild; x++)
-      {
-        if(x == 16)
-        {
-          if(y == 16)
-            draw_char_ext(CHAR_PAL_WILD, 135, 31, 20, PRO_CH, 0);
-          else
-            draw_char_ext(CHAR_PAL_WILD, fg_per_bk[y] + y * 16,
-             31, y + 4, PRO_CH, 0);
-        }
-        else
 
-        if(y == 16)
-        {
-          if(x == 0)
-            draw_char_ext(CHAR_PAL_WILD, 128, 15, 20, PRO_CH, 0);
-          else
-            draw_char_ext(CHAR_PAL_WILD, x, x + 15, 20, PRO_CH, 0);
-        }
-        else
-        {
-          draw_char_ext(palette_char, x + (y * 16), x + 15,
-           y + 4, PRO_CH, 0);
-        }
-      }
+    // Clear place for main palette
+    for(y = 0; y < 16; y++)
+      for(x = 0; x < 16; x++)
+        erase_char(x + 15, y + 4);
+
+    select_layer(OVERLAY_LAYER);
+
+    // Draw main palette
+    for(y = 0; y < 16; y++)
+      for(x = 0; x < 16; x++)
+        draw_char_ext(palette_char, x + (y * 16), x + 15, y + 4, PRO_CH, 0);
+
+    select_layer(UI_LAYER);
+
+    // Draw wildcards
+    if(allow_wild)
+    {
+      for(x = 1, y = 16; x < 16; x++)
+        draw_char_ext(CHAR_PAL_WILD, x, x + 15, 20, PRO_CH, 0);
+
+      for(y = 0, x = 16; y < 16; y++)
+        draw_char_ext(CHAR_PAL_WILD, fg_per_bk[y] + y * 16,
+         31, y + 4, PRO_CH, 0);
+
+      // x = 0, y = 16
+      draw_char_ext(CHAR_PAL_WILD, 128, 15, 20, PRO_CH, 0);
+
+      // x = 16, y = 16
+      draw_char_ext(CHAR_PAL_WILD, 135, 31, 20, PRO_CH, 0);
     }
 
     // Add selection box

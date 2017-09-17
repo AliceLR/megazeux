@@ -4,6 +4,9 @@ FIXME: size_pos_vlayer() needs a real help file context (edit_di.c, 747).
 
 FEATURES
 
++ Extended the palette editor to SMZX modes 2 and 3. The updated
+  palette editor allows the editing of all 256 SMZX mode 2/3
+  colors and editing color indices for SMZX 3.
 + Added a new vlayer editor. In the world editor, press Alt+V to
   switch to the vlayer editor. The vlayer is something like an
   invisible global overlay that can be used to store and
@@ -38,6 +41,8 @@ FIXES
   affecting the board.
 + Moving an overlay block partially out of bounds in the editor
   will now correctly clear the block's original position.
++ The color selector will now correctly display SMZX palettes in
+  SMZX mode instead of the default char 254.
 
 DEVELOPERS
 
