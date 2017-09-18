@@ -28,6 +28,8 @@ __M_BEGIN_DECLS
 
 void save_editor_palette(void);
 void load_editor_palette(void);
+void save_editor_indices(void);
+void load_editor_indices(void);
 void save_palette(char *fname);
 void draw_char_linear(Uint8 color, Uint8 chr, Uint32 offset);
 void clear_screen_no_update(void);

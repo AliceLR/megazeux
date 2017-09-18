@@ -24,12 +24,14 @@
 #include <string.h>
 #include <math.h>
 
-#include "../helpsys.h"
-#include "../window.h"
 #include "../data.h"
-#include "../graphics.h"
 #include "../event.h"
+#include "../graphics.h"
+#include "../helpsys.h"
+#include "../util.h"
+#include "../window.h"
 
+#include "graphics.h"
 #include "pal_ed.h"
 #include "window.h"
 
@@ -53,15 +55,15 @@
 //----------------------------------------------------------------/
 
 //----------------------------------/
-// Palette   0:FF  1:FF  2:FF  3:FF /
-//  # 000    ####  ####  ####  #### /
-//           ####  ####  ####  #### /
-//           ####  ####  ####  #### /
+// Palette  1:123 2:123 3:123 4:123 /
+//  # 000   ##### ##### ##### ##### /
+//          ##### ##### ##### ##### /
+// Hex: FF  ##### ##### ##### ##### /
 //----------------------------------/
 
 //-------/----------------------------------/ 36*18, color pos + 8
 //       / [][][][][][][][][][][][][][][][] /
-//       / ...
+//       / ... 16 + 2
 
 //------------------------------------------/
 //%%- Select color    Alt+D- Default pal.   /
@@ -889,10 +891,6 @@ static int palette_editor_input_color_window(struct color_status *current,
 
       mode->input_bar_function(current, component, (int)value);
 
-      // FIXME warp_real_mouse_y(), which is intended for setting MOUSEPY, will
-      // actually warp the real X to the nearest MZX pixel position as well.
-      // This causes major issues with upscaled and non-integer scaling ratios.
-
       // Snap the mouse to the center of the bar.
       warp_real_mouse_y(mouse_y * 14 + 7);
       return -1;
@@ -903,7 +901,7 @@ static int palette_editor_input_color_window(struct color_status *current,
 
     if(0)
     {
-      // FIXME implement this if there's demand for it. It's close to the slider
+      // Implement this if there's demand for it. It's close to the slider
       // bars and may be easy to accidentally click, which might be unpleasant.
       //return -2;
     }
@@ -1016,11 +1014,6 @@ static void palette_editor_update_window_16(struct color_status *current,
 
     fg_color = ((r * .3) + (g * .59) + (b * .11) < 32) ? 31 : 16;
 
-    // FIXME: in SMZX modes 2 and 3, fg_color alters the color here
-    // eventually, they should get their own palette editor.
-    if(screen_mode >= 2)
-      fg_color = 0;
-
     select_layer(OVERLAY_LAYER);
 
     // Draw the palette colors
@@ -1028,7 +1021,7 @@ static void palette_editor_update_window_16(struct color_status *current,
     {
       chr = ' ';
 
-      // FIXME: These will look ugly in SMZX mode, so only draw them in regular mode.
+      // These look ugly in SMZX mode 1, so only draw them in regular mode.
       if(!screen_mode)
       {
         if((i == 5) && (bg_color >= 10))
@@ -1128,7 +1121,7 @@ static void palette_editor_redraw_window_256(struct color_status *current,
 
   // Palette View contents
   write_string(
-   "Palette\n #",
+   "Palette\n #\n\nHex:",
    PAL_ED_256_PAL_X1 + 2,
    PAL_ED_256_PAL_Y1 + 1,
    DI_GREY_TEXT,
@@ -1217,10 +1210,6 @@ static void palette_editor_update_window_256(struct color_status *current,
 
   int lo = current_id & 0x0F;
   int hi = (current_id & 0xF0) >> 4;
-  int c0 = hi << 4 | hi;
-  int c1 = lo << 4 | hi;
-  int c2 = hi << 4 | lo;
-  int c3 = lo << 4 | lo;
   int co = current_id;
 
   int blink_cursor = graphics.cursor_flipflop;
@@ -1229,9 +1218,16 @@ static void palette_editor_update_window_256(struct color_status *current,
 
   if(smzx_mode == 2)
   {
+    int c0 = hi << 4 | hi;
+    int c1 = lo << 4 | hi;
+    int c2 = hi << 4 | lo;
+    int c3 = lo << 4 | lo;
+
     // Current subpalette number
     sprintf(buffer, "%03d", current_id);
     write_string(buffer, x + 5, y + 2, DI_GREY_TEXT, 0);
+    sprintf(buffer, "%02X", current_id);
+    write_string(buffer, x + 7, y + 4, DI_GREY_TEXT, 0);
 
     // Subpalette indices
     sprintf(buffer, "%03d", c0);
@@ -1286,13 +1282,39 @@ static void palette_editor_update_window_256(struct color_status *current,
   // Mode 3
   else
   {
-    // FIXME Current subpalette number
+    // Note indices 1 and 2 are swapped to make sense.
+    int sub = current_subpalette;
+    int c0 = graphics.editor_backup_indices[sub * 4 + 0];
+    int c1 = graphics.editor_backup_indices[sub * 4 + 2];
+    int c2 = graphics.editor_backup_indices[sub * 4 + 1];
+    int c3 = graphics.editor_backup_indices[sub * 4 + 3];
 
-    // FIXME Subpalette indices
+    // Current subpalette number
+    sprintf(buffer, "%03d", current_subpalette);
+    write_string(buffer, x + 5, y + 2, DI_GREY_TEXT, 0);
+    sprintf(buffer, "%02X", current_subpalette);
+    write_string(buffer, x + 7, y + 4, DI_GREY_TEXT, 0);
+
+    // Subpalette indices
+    sprintf(buffer, "%03d", c0);
+    write_string(buffer, x + 13, y + 1, DI_GREY_TEXT, 0);
+    sprintf(buffer, "%03d", c1);
+    write_string(buffer, x + 19, y + 1, DI_GREY_TEXT, 0);
+    sprintf(buffer, "%03d", c2);
+    write_string(buffer, x + 25, y + 1, DI_GREY_TEXT, 0);
+    sprintf(buffer, "%03d", c3);
+    write_string(buffer, x + 31, y + 1, DI_GREY_TEXT, 0);
 
     select_layer(OVERLAY_LAYER);
 
-    // FIXME draw the current subpalette
+    // Draw the current subpalette
+    for(i = 0; i < 15; i++)
+    {
+      draw_char_ext(0, c0, (i%5 + x + 11), (i/5 + y + 2), PRO_CH, 0);
+      draw_char_ext(0, c1, (i%5 + x + 17), (i/5 + y + 2), PRO_CH, 0);
+      draw_char_ext(0, c2, (i%5 + x + 23), (i/5 + y + 2), PRO_CH, 0);
+      draw_char_ext(0, c3, (i%5 + x + 29), (i/5 + y + 2), PRO_CH, 0);
+    }
 
     // Draw the palette
     for(i = 0; i < 32*16; i++)
@@ -1311,7 +1333,8 @@ static void palette_editor_update_window_256(struct color_status *current,
 
   select_layer(UI_LAYER);
 
-  if(!minimal_help)
+  // Always enable help during smzx_mode 3; the preview area is useless.
+  if(!minimal_help || smzx_mode==3)
   {
     draw_window_box(PAL_ED_256_HELP_X1, PAL_ED_256_HELP_Y1, PAL_ED_256_HELP_X2,
      PAL_ED_256_HELP_Y2, DI_GREY_DARK, DI_GREY, DI_GREY_CORNER, 1, 1);
@@ -1324,7 +1347,7 @@ static void palette_editor_update_window_256(struct color_status *current,
       " - Increase        Alt+ - Decrease       \n"
       " - Increase        Alt+ - Decrease       \n"
       "\n"
-      "0- Blacken color   Alt+H- Hide help      \n"
+      "0- Blacken color\n"
       "\n"
       "PgUp- Prev. mode   PgDn- Next mode       \n"
       "F2- Store color    F3- Retrieve color    \n",
@@ -1337,6 +1360,14 @@ static void palette_editor_update_window_256(struct color_status *current,
     if(smzx_mode == 2)
     {
       // SMZX mode 2 specific help
+      write_string
+      (
+        "Alt+H- Hide help",
+        PAL_ED_256_HELP_X1 + 21,
+        PAL_ED_256_HELP_Y1 + 8,
+        DI_GREY_TEXT,
+        1
+      );
       write_string
       (
         "Space- Toggle subpalette index cursors\n"
@@ -1398,22 +1429,78 @@ static void palette_editor_update_window_256(struct color_status *current,
 static int palette_editor_input_256(struct color_status *current,
  const struct color_mode *mode, int smzx_mode, int key)
 {
-  if(get_mouse_press())
+  int mouse_press = get_mouse_press_ext();
+
+  if(mouse_press)
   {
     int mouse_x, mouse_y;
     get_mouse_position(&mouse_x, &mouse_y);
 
-    if(mouse_x >= content_x && mouse_x < content_x + 32 &&
-     mouse_y >= content_y && mouse_y < content_y + 16)
+    if(mouse_press == MOUSE_BUTTON_WHEELUP)
+    {
+      // Previous palette
+      key = IKEY_MINUS;
+    }
+    else
+
+    if(mouse_press == MOUSE_BUTTON_WHEELDOWN)
+    {
+      // Next palette
+      key = IKEY_EQUALS;
+    }
+    else
+
+    if(mouse_press == MOUSE_BUTTON_MIDDLE)
+    {
+      // Palette selector/hide cursors
+      key = IKEY_SPACE;
+    }
+    else
+
+    if(mouse_press > MOUSE_BUTTON_RIGHT)
+    {
+      // Do nothing.
+    }
+    else
+
+    if((mouse_x >= content_x) && (mouse_x < content_x + 32) &&
+     (mouse_y >= content_y) && (mouse_y < content_y + 16))
     {
       // Palette- select color
       current_id = (mouse_x - content_x)/2 + (mouse_y - content_y) * 16;
       return -1;
     }
+    else
 
-    // FIXME
-    // A position on the left of the subpalette menu (mode 3)- select palette
-    // A position on one of the colors in the subpalette (mode 3)- assign current color to position
+    if((mouse_x >= PAL_ED_256_PAL_X1 + 1) &&
+     (mouse_x <= PAL_ED_256_PAL_X1 + 9) &&
+     (mouse_y >= PAL_ED_256_PAL_Y1 + 1) &&
+     (mouse_y <= PAL_ED_256_PAL_Y2 - 1))
+    {
+      // Left side of subpalette menu
+      if(smzx_mode == 3)
+      {
+        // Select palette- fake a space press
+        key = IKEY_SPACE;
+      }
+    }
+    else
+
+    if((mouse_x >= PAL_ED_256_PAL_X1 + 10) &&
+     (mouse_x <= PAL_ED_256_PAL_X2 - 2) &&
+     (mouse_y >= PAL_ED_256_PAL_Y1 + 1) &&
+     (mouse_y <= PAL_ED_256_PAL_Y2 - 1) &&
+     ((mouse_x - 10)%6 != 0))
+    {
+      // Subpalette colors
+      int col = (mouse_x - 10)/6;
+
+      if(smzx_mode == 3)
+      {
+        // Assign to index- fake a 1-4 keypress
+        key = IKEY_1 + col;
+      }
+    }
   }
 
   switch(key)
@@ -1431,9 +1518,16 @@ static int palette_editor_input_256(struct color_status *current,
       {
         // Mode 3- select subpalette
         int new_subpal;
+        // FIXME this breaks with GLSL (works for software, opengl1+2, overlay1)
         //hide_unbound_cursor();
 
+        // Load the actual indices
+        load_editor_indices();
+
         new_subpal = color_selection(current_subpalette, 0);
+
+        // Reset indices for editor
+        set_screen_mode(3);
 
         if(new_subpal >= 0)
           current_subpalette = new_subpal;
@@ -1512,7 +1606,14 @@ static int palette_editor_input_256(struct color_status *current,
       {
         // Assign current color to subpalette index
         int index = (key - IKEY_1);
-        set_smzx_index(current_subpalette, index, current_id);
+
+        // Indices 1 and 2 are swapped to make actual sense.
+        if(index == 1)      index = 2;
+        else if(index == 2) index = 1;
+
+        index += current_subpalette * 4;
+
+        graphics.editor_backup_indices[index] = current_id;
       }
       break;
     }
@@ -1607,6 +1708,14 @@ void palette_editor(struct world *mzx_world)
 
   palette = rebuild_palette(NULL);
 
+  if(smzx_mode == 3)
+  {
+    save_editor_indices();
+
+    // Reset the indices to default for display purposes.
+    set_screen_mode(3);
+  }
+
   // Prevent previous keys from carrying through.
   force_release_all_keys();
 
@@ -1664,7 +1773,9 @@ void palette_editor(struct world *mzx_world)
       {
         if(get_alt_status(keycode_internal))
         {
-          minimal_help ^= 1;
+          // SMZX mode 3 always has the help enabled, so don't allow toggling
+          if(smzx_mode != 3)
+            minimal_help ^= 1;
         }
         break;
       }
@@ -1699,10 +1810,20 @@ void palette_editor(struct world *mzx_world)
 
       case IKEY_d:
       {
-        // FIXME SMZX version
         if(get_alt_status(keycode_internal))
         {
-          default_palette();
+          // SMZX modes 0 and 1 use the default palette
+          if(smzx_mode <= 1)
+          {
+            default_palette();
+          }
+          // SMZX modes 2 and 3 need the externally stored SMZX palette
+          else
+          {
+            load_palette(mzx_res_get_by_id(SMZX_PAL));
+            update_palette();
+          }
+
           rebuild_palette(palette);
         }
         break;
@@ -1735,6 +1856,12 @@ void palette_editor(struct world *mzx_world)
 #endif
     }
   } while(key != IKEY_ESCAPE);
+
+  if(smzx_mode == 3)
+  {
+    // Apply the modified SMZX indices.
+    load_editor_indices();
+  }
 
   // Prevent UI keys from carrying through.
   force_release_all_keys();
