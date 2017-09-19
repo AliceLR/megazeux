@@ -37,7 +37,7 @@
 
 
 //----------------------------------//------------------------------------------/
-// ##..##..##..##..##..##..##..##.. // Color # 000              RGB  HSL  Lab   /
+// ##..##..##..##..##..##..##..##.. // Color # 000           RGB  HSL  CIELAB   /
 // ##..##..##..##..##..#1.1#1.1#1.1 // Red   0 [----|----|----|----|----|----|] /
 // #0.1#2.3#4.5#6.7#8.9#0.1#2.3#4.5 // G     0 [----|----|----|----|----|----|] /
 // ##..##..##..##..##..##..##..##.. // B     0 [----|----|----|----|----|----|] /
@@ -665,6 +665,7 @@ struct color_mode {
   int (*input_function)(struct color_status *, int);
   void (*input_bar_function)(struct color_status *, int, int);
   bool allow_all;
+  int draw_x;
 };
 
 static const struct color_mode mode_list[] =
@@ -680,6 +681,7 @@ static const struct color_mode mode_list[] =
     key_color_rgb,
     set_color_rgb_bar,
     true,
+    24
   },
 
   { "HSL",
@@ -693,6 +695,7 @@ static const struct color_mode mode_list[] =
     key_color_hsl,
     set_color_hsl_bar,
     false,
+    29
   },
 
   { "CIELAB",
@@ -706,6 +709,7 @@ static const struct color_mode mode_list[] =
     key_color_lab,
     set_color_lab_bar,
     false,
+    34
   },
 };
 
@@ -868,7 +872,6 @@ static void palette_editor_redraw_color_window(struct color_status *current,
  const struct color_mode *mode)
 {
   char color;
-  int x;
   int i;
 
   draw_window_box(PAL_ED_COL_X1, PAL_ED_COL_Y1, PAL_ED_COL_X2, PAL_ED_COL_Y2,
@@ -884,15 +887,13 @@ static void palette_editor_redraw_color_window(struct color_status *current,
   );
 
   // Modes
-  x = 42;
-  for(i = ARRAY_SIZE(mode_list) - 1; i >= 0; i--)
+  for(i = 0; i < (int)ARRAY_SIZE(mode_list); i++)
   {
     color = (i == current_mode_id) ? DI_GREY : DI_GREY_DARK;
 
-    x -= strlen( mode_list[i].name ) + 2;
     write_string(
      mode_list[i].name,
-     PAL_ED_COL_X1 + x,
+     PAL_ED_COL_X1 + mode_list[i].draw_x,
      PAL_ED_COL_Y1 + 1,
      color,
      0
@@ -1018,11 +1019,21 @@ static int palette_editor_input_color_window(struct color_status *current,
 
     // Mode select
 
-    if(0)
+    if(mouse_y == PAL_ED_COL_Y1 + 1)
     {
-      // Implement this if there's demand for it. It's close to the slider
-      // bars and may be easy to accidentally click, which might be unpleasant.
-      //return -2;
+      int i;
+
+      for(i = 0; i < (int)ARRAY_SIZE(mode_list); i++)
+      {
+        const struct color_mode *m = &(mode_list[i]);
+        if((mouse_x >= PAL_ED_COL_X1 + m->draw_x) &&
+         (mouse_x < (int)(PAL_ED_COL_X1 + m->draw_x + strlen(m->name))))
+        {
+          current_mode_id = i;
+          break;
+        }
+      }
+      return -2;
     }
   }
 
