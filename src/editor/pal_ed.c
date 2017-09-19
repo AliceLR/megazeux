@@ -713,6 +713,102 @@ static const struct color_mode mode_list[] =
 // -----------------------------------------------------------------------------
 
 
+static int palette_editor_input_component(int value, int min_val, int max_val,
+ int x, int y)
+{
+  int result = 0;
+  char buffer[6];
+  int buf_pos;
+  int temp;
+  int key;
+  int i;
+
+  save_screen();
+
+  sprintf(buffer, "%d", value);
+  buffer[5] = 0;
+
+  buf_pos = strlen(buffer);
+
+  do
+  {
+    draw_char(221, DI_GREY_CORNER, x+4, y);
+
+    for(i = 0; i < 4; i++)
+      draw_char(0, DI_GREY_EDIT, x+i, y);
+
+    write_string(buffer, x+4-buf_pos, y, DI_GREY_EDIT, 1);
+
+    update_screen();
+    update_event_status_delay();
+
+    key = get_key(keycode_internal_wrt_numlock);
+
+    // Exit event -- mimic Escape
+    if(get_exit_status())
+      key = IKEY_ESCAPE;
+
+    if((key >= IKEY_0) && (key <= IKEY_9) && (buf_pos < 5))
+    {
+      buffer[buf_pos] = (key - IKEY_0) + 48;
+      buf_pos++;
+    }
+
+    switch(key)
+    {
+      case IKEY_RETURN:
+      case IKEY_TAB:
+      {
+        key = IKEY_ESCAPE;
+        result = 1;
+        break;
+      }
+
+      case IKEY_BACKSPACE:
+      {
+        if(buf_pos > 0)
+        {
+          buf_pos--;
+          buffer[buf_pos] = 0;
+        }
+        break;
+      }
+
+      case IKEY_MINUS:
+      {
+        if(buf_pos == 0)
+        {
+          buffer[buf_pos] = '-';
+          buf_pos++;
+        }
+        break;
+      }
+    }
+
+    // Bound the input and clean up leading zeros by rewriting the number.
+    temp = strtol(buffer, NULL, 10);
+
+    if((buf_pos == 1 && buffer[0] != '-') || (buf_pos > 1))
+    {
+      temp = CLAMP(temp, min_val, max_val);
+      sprintf(buffer, "%d", temp);
+      buf_pos = strlen(buffer);
+    }
+  }
+  while(key != IKEY_ESCAPE);
+
+  restore_screen();
+
+  if(result)
+    value = CLAMP(temp, min_val, max_val);
+
+  return value;
+}
+
+
+// -----------------------------------------------------------------------------
+
+
 static char hue_chars[32] = {
   0xDB, 0xB0, 0xB0, 0xB1, 0xB2,  0xDB, 0xDB, 0xB0, 0xB1, 0xB2,
   0xDB, 0xDB, 0xB0, 0xB1, 0xB2,  0xDB, 0xB0, 0xB1, 0xB1, 0xB2,
@@ -827,7 +923,7 @@ static void palette_editor_update_color_window(struct color_status *current,
      buffer,
      PAL_ED_COL_X1 + 5,
      PAL_ED_COL_Y1 + 2 + i,
-     DI_GREY_TEXT,
+     DI_GREY_NUMBER,
      0
     );
 
@@ -893,6 +989,29 @@ static int palette_editor_input_color_window(struct color_status *current,
 
       // Snap the mouse to the center of the bar.
       warp_real_mouse_y(mouse_y * 14 + 7);
+      return -1;
+    }
+    else
+
+    // Component numbers
+
+    if(
+     (mouse_x >= PAL_ED_COL_X1 + 2) &&
+     (mouse_x < PAL_ED_COL_X1 + 10 - 1) &&
+     (mouse_y >= PAL_ED_COL_Y1 + 2) &&
+     (mouse_y < PAL_ED_COL_Y1 + 5))
+    {
+      const struct color_mode_component *c;
+      int component = mouse_y - PAL_ED_COL_Y1 - 2;
+      int value;
+
+      c = &(mode->components[component]);
+      value = mode->get_function(current, component);
+
+      value = palette_editor_input_component(value, c->min_val, c->max_val,
+       PAL_ED_COL_X1 + 5, PAL_ED_COL_Y1 + component + 2);
+
+      mode->input_bar_function(current, component, value);
       return -1;
     }
     else

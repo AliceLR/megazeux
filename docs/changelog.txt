@@ -7,6 +7,9 @@ FEATURES
 + Extended the palette editor to SMZX modes 2 and 3. The updated
   palette editor allows the editing of all 256 SMZX mode 2/3
   colors and editing color indices for SMZX 3.
++ Component numbers can now be typed in the palette editor by
+  clicking the component name or its number, e.g. clicking "Red"
+  allows you to type a red value.
 + Added a new vlayer editor. In the world editor, press Alt+V to
   switch to the vlayer editor. The vlayer is something like an
   invisible global overlay that can be used to store and
