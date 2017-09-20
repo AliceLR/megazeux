@@ -445,18 +445,20 @@ int color_selection(int current, int allow_wild)
     // Draw wildcards
     if(allow_wild)
     {
+      int wild_pal = get_screen_mode() ? 16 : 0;
+
       for(x = 1, y = 16; x < 16; x++)
-        draw_char_ext(CHAR_PAL_WILD, x, x + 15, 20, PRO_CH, 0);
+        draw_char_ext(CHAR_PAL_WILD, x, x + 15, 20, PRO_CH, wild_pal);
 
       for(y = 0, x = 16; y < 16; y++)
         draw_char_ext(CHAR_PAL_WILD, fg_per_bk[y] + y * 16,
-         31, y + 4, PRO_CH, 0);
+         31, y + 4, PRO_CH, wild_pal);
 
       // x = 0, y = 16
-      draw_char_ext(CHAR_PAL_WILD, 128, 15, 20, PRO_CH, 0);
+      draw_char_ext(CHAR_PAL_WILD, 128, 15, 20, PRO_CH, wild_pal);
 
       // x = 16, y = 16
-      draw_char_ext(CHAR_PAL_WILD, 135, 31, 20, PRO_CH, 0);
+      draw_char_ext(CHAR_PAL_WILD, 135, 31, 20, PRO_CH, wild_pal);
     }
 
     // Add selection box
