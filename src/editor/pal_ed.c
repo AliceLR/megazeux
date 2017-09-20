@@ -114,6 +114,12 @@
 #define PAL_ED_256_HELP_Y1    7
 #define PAL_ED_256_HELP_Y2    24
 
+#define CHAR_LINE_HORIZ '\xC4'
+#define CHAR_CORNER_TL  '\xDA'
+#define CHAR_CORNER_TR  '\xBF'
+#define CHAR_CORNER_BL  '\xC0'
+#define CHAR_CORNER_BR  '\xD9'
+
 struct color_status {
   unsigned char r;
   unsigned char g;
@@ -1168,8 +1174,8 @@ static void palette_editor_update_window_16(struct color_status *current,
     select_layer(UI_LAYER);
 
     // Clear the bottom
-    draw_char('\xC4', DI_GREY, x, y + 4);
-    draw_char('\xC4', DI_GREY, x+1, y + 4);
+    draw_char(CHAR_LINE_HORIZ, DI_GREY, x, y + 4);
+    draw_char(CHAR_LINE_HORIZ, DI_GREY, x+1, y + 4);
 
     if(bg_color == current_id)
     {
@@ -1236,7 +1242,10 @@ static int palette_editor_input_16(struct color_status *current,
 static void palette_editor_redraw_window_256(struct color_status *current,
  const struct color_mode *mode, int smzx_mode)
 {
+  const struct color_mode_component *c;
   int i;
+  int x;
+  int y;
 
   // Palette View
   draw_window_box(PAL_ED_256_PAL_X1, PAL_ED_256_PAL_Y1, PAL_ED_256_PAL_X2,
@@ -1278,14 +1287,99 @@ static void palette_editor_redraw_window_256(struct color_status *current,
   // Erase the spot where the palette will go.
   for(i = 0; i < 32*16; i++)
     erase_char(i % 32 + content_x, i / 32 + content_y);
-}
 
-#define CHAR_LINE_HORIZ '\xC4'
-//#define CHAR_LINE_VERT  '\xB3'
-#define CHAR_CORNER_TL  '\xDA'
-#define CHAR_CORNER_TR  '\xBF'
-#define CHAR_CORNER_BL  '\xC0'
-#define CHAR_CORNER_BR  '\xD9'
+  // Always enable help during smzx_mode 3; the preview area is useless.
+  if(!minimal_help || smzx_mode==3)
+  {
+    draw_window_box(PAL_ED_256_HELP_X1, PAL_ED_256_HELP_Y1, PAL_ED_256_HELP_X2,
+     PAL_ED_256_HELP_Y2, DI_GREY_DARK, DI_GREY, DI_GREY_CORNER, 1, 1);
+
+    // Write menu
+    write_string
+    (
+      "\x12\x1d- Select color   Alt+D- Default pal.   \n"
+      " - Increase        Alt+ - Decrease       \n"
+      " - Increase        Alt+ - Decrease       \n"
+      " - Increase        Alt+ - Decrease       \n"
+      "\n"
+      "0- Blacken color\n"
+      "\n"
+      "PgUp- Prev. mode   PgDn- Next mode       \n"
+      "F2- Store color    F3- Retrieve color    \n",
+      PAL_ED_256_HELP_X1 + 2,
+      PAL_ED_256_HELP_Y1 + 3,
+      DI_GREY_TEXT,
+      1
+    );
+
+    if(smzx_mode == 2)
+    {
+      // SMZX mode 2 specific help
+      write_string
+      (
+        "Alt+H- Hide help",
+        PAL_ED_256_HELP_X1 + 21,
+        PAL_ED_256_HELP_Y1 + 8,
+        DI_GREY_TEXT,
+        1
+      );
+      write_string
+      (
+        "Space- Toggle subpalette index cursors\n"
+        "Q- Quit editing\n",
+        PAL_ED_256_HELP_X1 + 2,
+        PAL_ED_256_HELP_Y1 + 13,
+        DI_GREY_TEXT,
+        1
+      );
+    }
+    else
+    {
+      // SMZX mode 3 specific help
+      write_string
+      (
+        "Space- Subpalette  1-4- Current color to \n"
+        "Q- Quit editing         subpalette index",
+        PAL_ED_256_HELP_X1 + 2,
+        PAL_ED_256_HELP_Y1 + 13,
+        DI_GREY_TEXT,
+        1
+      );
+    }
+
+    // Component instructions
+    y = PAL_ED_256_HELP_Y1 + 4;
+    for(i = 0; i < 3; i++, y++)
+    {
+      c = &(mode->components[i]);
+      x = PAL_ED_256_HELP_X1 + 2;
+
+      write_string(c->key, x, y, DI_GREY_TEXT, 1);
+      x += 12;
+
+      write_string(c->name_long, x, y, DI_GREY_TEXT, 1);
+      x += 11;
+
+      write_string(c->key, x, y, DI_GREY_TEXT, 1);
+      x += 12;
+
+      write_string(c->name_long, x, y, DI_GREY_TEXT, 1);
+    }
+
+    // All
+    if(mode->allow_all)
+    {
+      write_string
+      (
+       "A- Increase All    Alt+A- Decrease All",
+       PAL_ED_256_HELP_X1 + 2,
+       PAL_ED_256_HELP_Y1 + 7,
+       DI_GREY_TEXT,
+       1
+      );
+    }
+  }
+}
 
 static void draw_unbound_cursor_chars(Uint32 layer, int color)
 {
@@ -1332,7 +1426,6 @@ static void hide_unbound_cursor(void)
 static void palette_editor_update_window_256(struct color_status *current,
  const struct color_mode *mode, int smzx_mode)
 {
-  const struct color_mode_component *c;
   char buffer[5];
   char chr;
   int pal;
@@ -1462,98 +1555,6 @@ static void palette_editor_update_window_256(struct color_status *current,
   }
 
   select_layer(UI_LAYER);
-
-  // Always enable help during smzx_mode 3; the preview area is useless.
-  if(!minimal_help || smzx_mode==3)
-  {
-    draw_window_box(PAL_ED_256_HELP_X1, PAL_ED_256_HELP_Y1, PAL_ED_256_HELP_X2,
-     PAL_ED_256_HELP_Y2, DI_GREY_DARK, DI_GREY, DI_GREY_CORNER, 1, 1);
-
-    // Write menu
-    write_string
-    (
-      "\x12\x1d- Select color   Alt+D- Default pal.   \n"
-      " - Increase        Alt+ - Decrease       \n"
-      " - Increase        Alt+ - Decrease       \n"
-      " - Increase        Alt+ - Decrease       \n"
-      "\n"
-      "0- Blacken color\n"
-      "\n"
-      "PgUp- Prev. mode   PgDn- Next mode       \n"
-      "F2- Store color    F3- Retrieve color    \n",
-      PAL_ED_256_HELP_X1 + 2,
-      PAL_ED_256_HELP_Y1 + 3,
-      DI_GREY_TEXT,
-      1
-    );
-
-    if(smzx_mode == 2)
-    {
-      // SMZX mode 2 specific help
-      write_string
-      (
-        "Alt+H- Hide help",
-        PAL_ED_256_HELP_X1 + 21,
-        PAL_ED_256_HELP_Y1 + 8,
-        DI_GREY_TEXT,
-        1
-      );
-      write_string
-      (
-        "Space- Toggle subpalette index cursors\n"
-        "Q- Quit editing\n",
-        PAL_ED_256_HELP_X1 + 2,
-        PAL_ED_256_HELP_Y1 + 13,
-        DI_GREY_TEXT,
-        1
-      );
-    }
-    else
-    {
-      // SMZX mode 3 specific help
-      write_string
-      (
-        "Space- Subpalette  1-4- Current color to \n"
-        "Q- Quit editing         subpalette index",
-        PAL_ED_256_HELP_X1 + 2,
-        PAL_ED_256_HELP_Y1 + 13,
-        DI_GREY_TEXT,
-        1
-      );
-    }
-
-    // Component instructions
-    y = PAL_ED_256_HELP_Y1 + 4;
-    for(i = 0; i < 3; i++, y++)
-    {
-      c = &(mode->components[i]);
-      x = PAL_ED_256_HELP_X1 + 2;
-
-      write_string(c->key, x, y, DI_GREY_TEXT, 1);
-      x += 12;
-
-      write_string(c->name_long, x, y, DI_GREY_TEXT, 1);
-      x += 11;
-
-      write_string(c->key, x, y, DI_GREY_TEXT, 1);
-      x += 12;
-
-      write_string(c->name_long, x, y, DI_GREY_TEXT, 1);
-    }
-
-    // All
-    if(mode->allow_all)
-    {
-      write_string
-      (
-       "A- Increase All    Alt+A- Decrease All",
-       PAL_ED_256_HELP_X1 + 2,
-       PAL_ED_256_HELP_Y1 + 7,
-       DI_GREY_TEXT,
-       1
-      );
-    }
-  }
 }
 
 static int palette_editor_input_256(struct color_status *current,
