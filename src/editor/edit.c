@@ -3340,6 +3340,8 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                     src_offset = start_x + (start_y * mzx_world->vlayer_width);
                   }
 
+                  else break;
+
                   copy_layer_to_board(
                    src_char, src_color, src_width, src_offset,
                    src_board, dest_offset,
