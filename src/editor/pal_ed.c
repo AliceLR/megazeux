@@ -52,6 +52,8 @@
 // A- Increase All    Alt+A- Decrease All
 // 0- Blacken color   Alt+H- Hide help         Q- Quit editing
 //
+// Left click- edit component/activate   Right click- color (drag)
+//
 //----------------------------------------------------------------/
 
 //----------------------------------/
@@ -66,7 +68,7 @@
 //       / ... 16 + 2
 
 //------------------------------------------/
-//%%- Select color    Alt+D- Default pal.   /
+// %%- Select color   Alt+D- Default pal.   /
 // R- Increase Red    Alt+R- Decrease Red   /
 // G- Increase Green  Alt+G- Decrease Green /
 // B- Increase Blue   Alt+B- Decrease Blue  /
@@ -82,6 +84,12 @@
 // Space- Toggle subpalette index cursors
 // Q- Quit editing
 
+//
+//   Left click- edit component/activate
+//  Right click- change color (drag)
+// Middle/wheel- change subpalette
+//------------------------------------------/
+
 // Note: the help menu mouse functionality has been broken since 2.80.
 
 #define PAL_ED_COL_X1         36
@@ -95,9 +103,9 @@
 #define PAL_ED_16_Y2          5
 
 #define PAL_ED_16_HELP_X1     7
-#define PAL_ED_16_HELP_Y1     7
 #define PAL_ED_16_HELP_X2     73
-#define PAL_ED_16_HELP_Y2     16
+#define PAL_ED_16_HELP_Y1     7
+#define PAL_ED_16_HELP_Y2     18
 
 #define PAL_ED_256_SEL_X1     0
 #define PAL_ED_256_SEL_X2     35
@@ -758,6 +766,10 @@ static int palette_editor_input_component(int value, int min_val, int max_val,
     if(get_exit_status())
       key = IKEY_ESCAPE;
 
+    // New mouse press exits with changes.
+    if(get_mouse_press() && !get_mouse_drag())
+      key = IKEY_RETURN;
+
     if((key >= IKEY_0) && (key <= IKEY_9) && (buf_pos < 5))
     {
       buffer[buf_pos] = (key - IKEY_0) + 48;
@@ -770,6 +782,16 @@ static int palette_editor_input_component(int value, int min_val, int max_val,
       case IKEY_TAB:
       {
         key = IKEY_ESCAPE;
+        result = 1;
+        break;
+      }
+
+      case IKEY_DELETE:
+      case IKEY_PERIOD:
+      {
+        // Set to zero
+        key = IKEY_ESCAPE;
+        buffer[0] = 0;
         result = 1;
         break;
       }
@@ -961,7 +983,7 @@ static void palette_editor_update_color_window(struct color_status *current,
 static int palette_editor_input_color_window(struct color_status *current,
  const struct color_mode *mode, int key)
 {
-  if(get_mouse_press())
+  if(get_mouse_press() == MOUSE_BUTTON_LEFT)
   {
     int mouse_x;
     int mouse_y;
@@ -1003,6 +1025,7 @@ static int palette_editor_input_color_window(struct color_status *current,
     // Component numbers
 
     if(
+     !get_mouse_drag() &&
      (mouse_x >= PAL_ED_COL_X1 + 2) &&
      (mouse_x < PAL_ED_COL_X1 + 10 - 1) &&
      (mouse_y >= PAL_ED_COL_Y1 + 2) &&
@@ -1025,7 +1048,7 @@ static int palette_editor_input_color_window(struct color_status *current,
 
     // Mode select
 
-    if(mouse_y == PAL_ED_COL_Y1 + 1)
+    if(!get_mouse_drag() && (mouse_y == PAL_ED_COL_Y1 + 1))
     {
       int i;
 
@@ -1083,7 +1106,9 @@ static void palette_editor_redraw_window_16(struct color_status *current,
       " - Increase        Alt+ - Decrease         F2- Store color\n"
       " - Increase        Alt+ - Decrease         F3- Retrieve color\n"
       "\n"
-      "0- Blacken color   Alt+H- Hide help         Q- Quit editing\n",
+      "0- Blacken color   Alt+H- Hide help         Q- Quit editing\n"
+      "\n"
+      "Left click- edit component/activate  Right click- color (drag)\n",
       PAL_ED_16_HELP_X1 + 3,
       PAL_ED_16_HELP_Y1 + 2,
       DI_GREY_TEXT,
@@ -1189,7 +1214,7 @@ static void palette_editor_update_window_16(struct color_status *current,
 static int palette_editor_input_16(struct color_status *current,
  const struct color_mode *mode, int key)
 {
-  if(get_mouse_press())
+  if(get_mouse_press() == MOUSE_BUTTON_LEFT)
   {
     int mouse_x, mouse_y;
     get_mouse_position(&mouse_x, &mouse_y);
@@ -1307,7 +1332,7 @@ static void palette_editor_redraw_window_256(struct color_status *current,
       "PgUp- Prev. mode   PgDn- Next mode       \n"
       "F2- Store color    F3- Retrieve color    \n",
       PAL_ED_256_HELP_X1 + 2,
-      PAL_ED_256_HELP_Y1 + 3,
+      PAL_ED_256_HELP_Y1 + 1,
       DI_GREY_TEXT,
       1
     );
@@ -1319,16 +1344,20 @@ static void palette_editor_redraw_window_256(struct color_status *current,
       (
         "Alt+H- Hide help",
         PAL_ED_256_HELP_X1 + 21,
-        PAL_ED_256_HELP_Y1 + 8,
+        PAL_ED_256_HELP_Y1 + 6,
         DI_GREY_TEXT,
         1
       );
       write_string
       (
         "Space- Toggle subpalette index cursors\n"
-        "Q- Quit editing\n",
+        "Q- Quit editing\n"
+        "\n"
+        "  Left click- edit component/activate\n"
+        " Right click- change color (drag)\n"
+        "Middle/wheel- toggle subpalette cursors\n",
         PAL_ED_256_HELP_X1 + 2,
-        PAL_ED_256_HELP_Y1 + 13,
+        PAL_ED_256_HELP_Y1 + 11,
         DI_GREY_TEXT,
         1
       );
@@ -1339,16 +1368,20 @@ static void palette_editor_redraw_window_256(struct color_status *current,
       write_string
       (
         "Space- Subpalette  1-4- Current color to \n"
-        "Q- Quit editing         subpalette index",
+        "Q- Quit editing         subpalette index\n"
+        "\n"
+        "  Left click- edit component/activate\n"
+        " Right click- change color (drag)\n"
+        "Middle/wheel- change subpalette\n",
         PAL_ED_256_HELP_X1 + 2,
-        PAL_ED_256_HELP_Y1 + 13,
+        PAL_ED_256_HELP_Y1 + 11,
         DI_GREY_TEXT,
         1
       );
     }
 
     // Component instructions
-    y = PAL_ED_256_HELP_Y1 + 4;
+    y = PAL_ED_256_HELP_Y1 + 2;
     for(i = 0; i < 3; i++, y++)
     {
       c = &(mode->components[i]);
@@ -1373,7 +1406,7 @@ static void palette_editor_redraw_window_256(struct color_status *current,
       (
        "A- Increase All    Alt+A- Decrease All",
        PAL_ED_256_HELP_X1 + 2,
-       PAL_ED_256_HELP_Y1 + 7,
+       PAL_ED_256_HELP_Y1 + 5,
        DI_GREY_TEXT,
        1
       );
@@ -1588,13 +1621,8 @@ static int palette_editor_input_256(struct color_status *current,
     }
     else
 
-    if(mouse_press > MOUSE_BUTTON_RIGHT)
-    {
-      // Do nothing.
-    }
-    else
-
-    if((mouse_x >= content_x) && (mouse_x < content_x + 32) &&
+    if(mouse_press == MOUSE_BUTTON_LEFT &&
+     (mouse_x >= content_x) && (mouse_x < content_x + 32) &&
      (mouse_y >= content_y) && (mouse_y < content_y + 16))
     {
       // Palette- select color
@@ -1830,6 +1858,8 @@ void palette_editor(struct world *mzx_world)
   struct color_status *current_color;
   struct color_status *palette;
   int smzx_mode = get_screen_mode();
+  int mouse_last_x = -1;
+  int mouse_last_y = -1;
   int key;
 
   if(minimal_help == -1)
@@ -1875,6 +1905,42 @@ void palette_editor(struct world *mzx_world)
     // Exit event -- mimic Escape
     if(get_exit_status())
       key = IKEY_ESCAPE;
+
+    // Right click -- mimic directional presses
+    //if(get_mouse_status() & MOUSE_BUTTON(MOUSE_BUTTON_RIGHT))
+    if(!key && (get_mouse_press() == MOUSE_BUTTON_RIGHT))
+    {
+      int x;
+      int y;
+      get_mouse_position(&x, &y);
+
+      if(get_mouse_drag())
+      {
+        if(abs(x-mouse_last_x) > abs(y-mouse_last_y))
+        {
+          if(x > mouse_last_x)
+            key = IKEY_RIGHT;
+          if(x < mouse_last_x)
+            key = IKEY_LEFT;
+        }
+        else
+        {
+          if(y > mouse_last_y)
+            key = IKEY_DOWN;
+          if(y < mouse_last_y)
+            key = IKEY_UP;
+        }
+        // Only warp the mouse if there's movement registered.
+        // Otherwise, it will be unresponsive with precise mouse movements.
+        if(key)
+          warp_mouse(mouse_last_x, mouse_last_y);
+      }
+      else
+      {
+        mouse_last_x = x;
+        mouse_last_y = y;
+      }
+    }
 
     // Run it through the editor-specific handling.
     key = palette_editor_input(current_color, current_mode, smzx_mode, key);
