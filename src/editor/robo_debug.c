@@ -555,7 +555,6 @@ void __debug_robot_config(struct world *mzx_world)
   // Prevent UI keys from carrying through.
   force_release_all_keys();
 
-  m_hide();
   pop_context();
 }
 
@@ -1065,7 +1064,6 @@ static int debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
 
   pop_context();
 
-  m_hide();
   dialog_fadeout();
 
   // These aren't final yet, so change them back.

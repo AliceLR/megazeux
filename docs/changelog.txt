@@ -46,6 +46,8 @@ FIXES
   will now correctly clear the block's original position.
 + The color selector will now correctly display SMZX palettes in
   SMZX mode instead of the default char 254.
++ Fixed bug where the mouse cursor would vanish after using the
+  robot debugger configuration dialog in the editor.
 
 DEVELOPERS
 
