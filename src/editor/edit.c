@@ -1018,11 +1018,16 @@ static void draw_menu_status(int overlay_edit, int line, int draw_mode,
     }
 
     draw_char(' ', 7, display_next_pos, line);
+    erase_char(display_next_pos+1, line);
+
+    select_layer(OVERLAY_LAYER);
     draw_char_ext(display_char, display_color,
      display_next_pos + 1, line, 0, 0);
-    draw_char(' ', 7, display_next_pos + 2, line);
+    select_layer(UI_LAYER);
 
+    draw_char(' ', 7, display_next_pos + 2, line);
     display_next_pos += 4;
+
     draw_char('(', EC_CURR_THING, display_next_pos, line);
     draw_color_box(display_color, 0, display_next_pos + 1, line, 80);
     display_next_pos += 5;

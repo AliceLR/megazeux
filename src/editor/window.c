@@ -35,9 +35,6 @@
 
 #define check_on "[\xFB]"
 #define check_off "[ ]"
-#define color_blank ' '
-#define color_wild '\x3F'
-#define color_dot '\xFE'
 #define char_custom '\x3F'
 
 //Foreground colors that look nice for each background color
@@ -620,6 +617,8 @@ int color_selection(int current, int allow_wild)
 // Short function to display a color as a colored box
 void draw_color_box(int color, int q_bit, int x, int y, int x_limit)
 {
+  char palette_char = get_screen_mode() ? CHAR_PAL_SMZX : CHAR_PAL_REG;
+
   // If q_bit is set, there are unknowns
   if(q_bit)
   {
@@ -631,13 +630,13 @@ void draw_color_box(int color, int q_bit, int x, int y, int x_limit)
         color = 8;
 
       if(x < x_limit)
-        draw_char_ext(color_wild, color, x, y, PRO_CH, 0);
+        draw_char_ext(CHAR_PAL_WILD, color, x, y, PRO_CH, 0);
 
       if(x + 1 < x_limit)
-        draw_char_ext(color_dot, color, x + 1, y, PRO_CH, 0);
+        draw_char_ext(CHAR_PAL_REG, color, x + 1, y, PRO_CH, 0);
 
       if(x + 2 < x_limit)
-        draw_char_ext(color_wild, color, x + 2, y, PRO_CH, 0);
+        draw_char_ext(CHAR_PAL_WILD, color, x + 2, y, PRO_CH, 0);
     }
     else
 
@@ -649,37 +648,56 @@ void draw_color_box(int color, int q_bit, int x, int y, int x_limit)
       color = (color << 4) + fg_per_bk[color];
 
       if(x < x_limit)
-        draw_char_ext(color_wild, color, x, y, PRO_CH, 0);
+        draw_char_ext(CHAR_PAL_WILD, color, x, y, PRO_CH, 0);
 
       if(x + 1 < x_limit)
-        draw_char_ext(color_wild, color, x + 1, y, PRO_CH, 0);
+        draw_char_ext(CHAR_PAL_WILD, color, x + 1, y, PRO_CH, 0);
 
       if(x + 2 < x_limit)
-        draw_char_ext(color_wild, color, x + 2, y, PRO_CH, 0);
+        draw_char_ext(CHAR_PAL_WILD, color, x + 2, y, PRO_CH, 0);
     }
     else
     {
       // Both unknown
       if(x < x_limit)
-        draw_char(color_wild, 8, x, y);
+        draw_char(CHAR_PAL_WILD, 8, x, y);
 
       if(x + 1 < x_limit)
-        draw_char(color_wild, 135, x + 1, y);
+        draw_char(CHAR_PAL_WILD, 135, x + 1, y);
 
       if(x + 2 < x_limit)
-        draw_char(color_wild, 127, x + 2, y);
+        draw_char(CHAR_PAL_WILD, 127, x + 2, y);
     }
   }
   else
   {
+    // To respect SMZX, this needs to draw on the overlay.
+    // If a color box is ever planned to be drawn NOT on the UI layer,
+    // this needs to change.
+
     if(x < x_limit)
-      draw_char_ext(color_blank, color, x, y, PRO_CH, 0);
+    {
+      erase_char(x, y);
+      select_layer(OVERLAY_LAYER);
+      draw_char_ext(0, color, x, y, PRO_CH, 0);
+      select_layer(UI_LAYER);
+    }
 
     if(x + 1 < x_limit)
-      draw_char_ext(color_dot, color, x + 1, y, PRO_CH, 0);
+    {
+      erase_char(x+1, y);
+      select_layer(OVERLAY_LAYER);
+      draw_char_ext(palette_char, color, x + 1, y, PRO_CH, 0);
+      select_layer(UI_LAYER);
+    }
 
     if(x + 2 < x_limit)
-      draw_char_ext(color_blank, color, x + 2, y, PRO_CH, 0);
+    {
+      erase_char(x+2, y);
+      select_layer(OVERLAY_LAYER);
+      draw_char_ext(0, color, x + 2, y, PRO_CH, 0);
+      select_layer(UI_LAYER);
+    }
   }
 }
 
