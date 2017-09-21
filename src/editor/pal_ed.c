@@ -1907,7 +1907,6 @@ void palette_editor(struct world *mzx_world)
       key = IKEY_ESCAPE;
 
     // Right click -- mimic directional presses
-    //if(get_mouse_status() & MOUSE_BUTTON(MOUSE_BUTTON_RIGHT))
     if(!key && (get_mouse_press() == MOUSE_BUTTON_RIGHT))
     {
       int x;
