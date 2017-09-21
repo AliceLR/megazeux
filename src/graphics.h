@@ -132,7 +132,6 @@ struct graphics_data
   struct rgb_color protected_palette[PAL_SIZE];
   struct rgb_color intensity_palette[SMZX_PAL_SIZE];
   struct rgb_color backup_palette[SMZX_PAL_SIZE];
-  struct rgb_color editor_backup_palette[SMZX_PAL_SIZE];
   char smzx_indices[SMZX_PAL_SIZE * 4];
   Uint32 current_intensity[SMZX_PAL_SIZE];
   Uint32 saved_intensity[SMZX_PAL_SIZE];
@@ -174,6 +173,11 @@ struct graphics_data
   Uint32 protected_pal_position;
   struct renderer renderer;
   void *render_data;
+
+#ifdef CONFIG_EDITOR
+  struct rgb_color editor_backup_palette[SMZX_PAL_SIZE];
+  char editor_backup_indices[SMZX_PAL_SIZE * 4];
+#endif
 };
 
 CORE_LIBSPEC void color_string(const char *string, Uint32 x, Uint32 y,
@@ -211,6 +215,7 @@ CORE_LIBSPEC bool init_video(struct config_info *conf, const char *caption);
 CORE_LIBSPEC void destruct_layers(void);
 CORE_LIBSPEC Uint32 create_layer(int x, int y, Uint32 w, Uint32 h,
  int draw_order, int t_col, int offset, bool unbound);
+CORE_LIBSPEC void set_layer_mode(Uint32 layer, int mode);
 CORE_LIBSPEC void move_layer(Uint32 layer, int x, int y);
 CORE_LIBSPEC void select_layer(Uint32 layer);
 CORE_LIBSPEC void blank_layers(void);

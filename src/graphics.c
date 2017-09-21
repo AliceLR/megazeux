@@ -1104,6 +1104,13 @@ Uint32 create_layer(int x, int y, Uint32 w, Uint32 h, int draw_order, int t_col,
   return layer_idx;
 }
 
+void set_layer_mode(Uint32 layer, int mode)
+{
+  // In general, we want the layer to use the screen mode, but some
+  // UI elements need to be able to change this.
+  graphics.video_layers[layer].mode = mode;
+}
+
 void move_layer(Uint32 layer, int x, int y)
 {
   graphics.video_layers[layer].x = x;

@@ -24,32 +24,71 @@
 #include <string.h>
 #include <math.h>
 
-#include "../helpsys.h"
-#include "../window.h"
 #include "../data.h"
-#include "../graphics.h"
 #include "../event.h"
+#include "../graphics.h"
+#include "../helpsys.h"
+#include "../util.h"
+#include "../window.h"
 
+#include "graphics.h"
 #include "pal_ed.h"
+#include "window.h"
 
 
-//----------------------------------/ /-----------------------------------------/
-// ##..##..##..##..##..##..##..##.. / / Color # 00-             RGB  HSL  Lab   /
-// ##..##..##..##..##..#1.1#1.1#1.1 / / R    0 [----|----|----|----|----|----|] /
-// #0.1#2.3#4.5#6.7#8.9#0.1#2.3#4.5 / / G    0 [----|----|----|----|----|----|] /
-// ##..##..##..##..##..##..##..##.. / / B    0 [----|----|----|----|----|----|] /
-//-^^-------------------------------/ /-----------------------------------------/
+//----------------------------------//------------------------------------------/
+// ##..##..##..##..##..##..##..##.. // Color # 000           RGB  HSL  CIELAB   /
+// ##..##..##..##..##..#1.1#1.1#1.1 // Red   0 [----|----|----|----|----|----|] /
+// #0.1#2.3#4.5#6.7#8.9#0.1#2.3#4.5 // G     0 [----|----|----|----|----|----|] /
+// ##..##..##..##..##..##..##..##.. // B     0 [----|----|----|----|----|----|] /
+//-^^-------------------------------//------------------------------------------/
 
 //----------------------------------------------------------------/
 //
-// %- Select color    Alt+D- Default pal.   PgDn- Prev. mode
-// R- Increase Red    Alt+R- Decrease Red   PgUp- Next mode
+// %- Select color    Alt+D- Default pal.   PgUp- Prev. mode
+// R- Increase Red    Alt+R- Decrease Red   PgDn- Next mode
 // G- Increase Green  Alt+G- Decrease Green   F2- Store color
 // B- Increase Blue   Alt+B- Decrease Blue    F3- Retrieve color
 // A- Increase All    Alt+A- Decrease All
 // 0- Blacken color   Alt+H- Hide help         Q- Quit editing
 //
+// Left click- edit component/activate   Right click- color (drag)
+//
 //----------------------------------------------------------------/
+
+//----------------------------------/
+// Palette  1:123 2:123 3:123 4:123 /
+//  # 000   ##### ##### ##### ##### /
+//          ##### ##### ##### ##### /
+// Hex: FF  ##### ##### ##### ##### /
+//----------------------------------/
+
+//-------/----------------------------------/ 36*18, color pos + 8
+//       / [][][][][][][][][][][][][][][][] /
+//       / ... 16 + 2
+
+//------------------------------------------/
+// %%- Select color   Alt+D- Default pal.   /
+// R- Increase Red    Alt+R- Decrease Red   /
+// G- Increase Green  Alt+G- Decrease Green /
+// B- Increase Blue   Alt+B- Decrease Blue  /
+// A- Increase All    Alt+A- Decrease All   /
+// 0- Blacken color   Alt+H- Hide help      /
+//
+// PgUp- Prev. mode   PgDn- Next mode       /
+// F2- Store color    F3- Retrieve color    /
+//
+// Space- Subpalette  1-4- Current color to
+// Q- Quit editing         subpalette index
+
+// Space- Toggle subpalette index cursors
+// Q- Quit editing
+
+//
+//   Left click- edit component/activate
+//  Right click- change color (drag)
+// Middle/wheel- change subpalette
+//------------------------------------------/
 
 // Note: the help menu mouse functionality has been broken since 2.80.
 
@@ -64,10 +103,30 @@
 #define PAL_ED_16_Y2          5
 
 #define PAL_ED_16_HELP_X1     7
-#define PAL_ED_16_HELP_Y1     7
 #define PAL_ED_16_HELP_X2     73
-#define PAL_ED_16_HELP_Y2     16
+#define PAL_ED_16_HELP_Y1     7
+#define PAL_ED_16_HELP_Y2     18
 
+#define PAL_ED_256_SEL_X1     0
+#define PAL_ED_256_SEL_X2     35
+#define PAL_ED_256_SEL_Y1     7
+#define PAL_ED_256_SEL_Y2     24
+
+#define PAL_ED_256_PAL_X1     0
+#define PAL_ED_256_PAL_X2     35
+#define PAL_ED_256_PAL_Y1     0
+#define PAL_ED_256_PAL_Y2     5
+
+#define PAL_ED_256_HELP_X1    36
+#define PAL_ED_256_HELP_X2    79
+#define PAL_ED_256_HELP_Y1    7
+#define PAL_ED_256_HELP_Y2    24
+
+#define CHAR_LINE_HORIZ '\xC4'
+#define CHAR_CORNER_TL  '\xDA'
+#define CHAR_CORNER_TR  '\xBF'
+#define CHAR_CORNER_BL  '\xC0'
+#define CHAR_CORNER_BR  '\xD9'
 
 struct color_status {
   unsigned char r;
@@ -91,9 +150,14 @@ static struct color_status saved_color = {
 static int content_x;
 static int content_y;
 static int minimal_help = -1;
+static int mode2_extra_cursors = 1;
 
 static unsigned int current_id = 0;
+static unsigned int current_subpalette = 0;
 static int current_mode_id = 0;
+
+static Uint32 cursor_fg_layer;
+static Uint32 cursor_bg_layer;
 
 
 // -----------------------------------------------------------------------------
@@ -615,6 +679,7 @@ struct color_mode {
   int (*input_function)(struct color_status *, int);
   void (*input_bar_function)(struct color_status *, int, int);
   bool allow_all;
+  int draw_x;
 };
 
 static const struct color_mode mode_list[] =
@@ -630,6 +695,7 @@ static const struct color_mode mode_list[] =
     key_color_rgb,
     set_color_rgb_bar,
     true,
+    24
   },
 
   { "HSL",
@@ -643,6 +709,7 @@ static const struct color_mode mode_list[] =
     key_color_hsl,
     set_color_hsl_bar,
     false,
+    29
   },
 
   { "CIELAB",
@@ -656,8 +723,119 @@ static const struct color_mode mode_list[] =
     key_color_lab,
     set_color_lab_bar,
     false,
+    34
   },
 };
+
+
+// -----------------------------------------------------------------------------
+
+
+static int palette_editor_input_component(int value, int min_val, int max_val,
+ int x, int y)
+{
+  int result = 0;
+  char buffer[6];
+  int buf_pos;
+  int temp;
+  int key;
+  int i;
+
+  save_screen();
+
+  sprintf(buffer, "%d", value);
+  buffer[5] = 0;
+
+  buf_pos = strlen(buffer);
+
+  do
+  {
+    draw_char(221, DI_GREY_CORNER, x+4, y);
+
+    for(i = 0; i < 4; i++)
+      draw_char(0, DI_GREY_EDIT, x+i, y);
+
+    write_string(buffer, x+4-buf_pos, y, DI_GREY_EDIT, 1);
+
+    update_screen();
+    update_event_status_delay();
+
+    key = get_key(keycode_internal_wrt_numlock);
+
+    // Exit event -- mimic Escape
+    if(get_exit_status())
+      key = IKEY_ESCAPE;
+
+    // New mouse press exits with changes.
+    if(get_mouse_press() && !get_mouse_drag())
+      key = IKEY_RETURN;
+
+    if((key >= IKEY_0) && (key <= IKEY_9) && (buf_pos < 5))
+    {
+      buffer[buf_pos] = (key - IKEY_0) + 48;
+      buf_pos++;
+    }
+
+    switch(key)
+    {
+      case IKEY_RETURN:
+      case IKEY_TAB:
+      {
+        key = IKEY_ESCAPE;
+        result = 1;
+        break;
+      }
+
+      case IKEY_DELETE:
+      case IKEY_PERIOD:
+      {
+        // Set to zero
+        key = IKEY_ESCAPE;
+        buffer[0] = 0;
+        result = 1;
+        break;
+      }
+
+      case IKEY_BACKSPACE:
+      {
+        if(buf_pos > 0)
+        {
+          buf_pos--;
+          buffer[buf_pos] = 0;
+        }
+        break;
+      }
+
+      case IKEY_MINUS:
+      {
+        if(buf_pos == 0)
+        {
+          buffer[buf_pos] = '-';
+          buf_pos++;
+        }
+        break;
+      }
+    }
+
+    // Bound the input and clean up leading zeros by rewriting the number.
+    temp = strtol(buffer, NULL, 10);
+
+    if((buf_pos == 1 && buffer[0] != '-') || (buf_pos > 1))
+    {
+      temp = CLAMP(temp, min_val, max_val);
+      sprintf(buffer, "%d", temp);
+      buf_pos = strlen(buffer);
+    }
+  }
+  while(key != IKEY_ESCAPE);
+
+  restore_screen();
+
+  if(result)
+    value = CLAMP(temp, min_val, max_val);
+
+  return value;
+}
 
 
 // -----------------------------------------------------------------------------
@@ -722,7 +900,6 @@ static void palette_editor_redraw_color_window(struct color_status *current,
  const struct color_mode *mode)
 {
   char color;
-  int x;
   int i;
 
   draw_window_box(PAL_ED_COL_X1, PAL_ED_COL_Y1, PAL_ED_COL_X2, PAL_ED_COL_Y2,
@@ -738,15 +915,13 @@ static void palette_editor_redraw_color_window(struct color_status *current,
   );
 
   // Modes
-  x = 42;
-  for(i = ARRAY_SIZE(mode_list) - 1; i >= 0; i--)
+  for(i = 0; i < (int)ARRAY_SIZE(mode_list); i++)
   {
     color = (i == current_mode_id) ? DI_GREY : DI_GREY_DARK;
 
-    x -= strlen( mode_list[i].name ) + 2;
     write_string(
      mode_list[i].name,
-     PAL_ED_COL_X1 + x,
+     PAL_ED_COL_X1 + mode_list[i].draw_x,
      PAL_ED_COL_Y1 + 1,
      color,
      0
@@ -777,7 +952,7 @@ static void palette_editor_update_color_window(struct color_status *current,
      buffer,
      PAL_ED_COL_X1 + 5,
      PAL_ED_COL_Y1 + 2 + i,
-     DI_GREY_TEXT,
+     DI_GREY_NUMBER,
      0
     );
 
@@ -808,7 +983,7 @@ static void palette_editor_update_color_window(struct color_status *current,
 static int palette_editor_input_color_window(struct color_status *current,
  const struct color_mode *mode, int key)
 {
-  if(get_mouse_press())
+  if(get_mouse_press() == MOUSE_BUTTON_LEFT)
   {
     int mouse_x;
     int mouse_y;
@@ -841,23 +1016,53 @@ static int palette_editor_input_color_window(struct color_status *current,
 
       mode->input_bar_function(current, component, (int)value);
 
-      // FIXME warp_real_mouse_y(), which is intended for setting MOUSEPY, will
-      // actually warp the real X to the nearest MZX pixel position as well.
-      // This causes major issues with upscaled and non-integer scaling ratios.
-
       // Snap the mouse to the center of the bar.
       warp_real_mouse_y(mouse_y * 14 + 7);
       return -1;
     }
     else
 
+    // Component numbers
+
+    if(
+     !get_mouse_drag() &&
+     (mouse_x >= PAL_ED_COL_X1 + 2) &&
+     (mouse_x < PAL_ED_COL_X1 + 10 - 1) &&
+     (mouse_y >= PAL_ED_COL_Y1 + 2) &&
+     (mouse_y < PAL_ED_COL_Y1 + 5))
+    {
+      const struct color_mode_component *c;
+      int component = mouse_y - PAL_ED_COL_Y1 - 2;
+      int value;
+
+      c = &(mode->components[component]);
+      value = mode->get_function(current, component);
+
+      value = palette_editor_input_component(value, c->min_val, c->max_val,
+       PAL_ED_COL_X1 + 5, PAL_ED_COL_Y1 + component + 2);
+
+      mode->input_bar_function(current, component, value);
+      return -1;
+    }
+    else
+
     // Mode select
 
-    if(0)
+    if(!get_mouse_drag() && (mouse_y == PAL_ED_COL_Y1 + 1))
     {
-      // FIXME implement this if there's demand for it. It's close to the slider
-      // bars and may be easy to accidentally click, which might be unpleasant.
-      //return -2;
+      int i;
+
+      for(i = 0; i < (int)ARRAY_SIZE(mode_list); i++)
+      {
+        const struct color_mode *m = &(mode_list[i]);
+        if((mouse_x >= PAL_ED_COL_X1 + m->draw_x) &&
+         (mouse_x < (int)(PAL_ED_COL_X1 + m->draw_x + strlen(m->name))))
+        {
+          current_mode_id = i;
+          break;
+        }
+      }
+      return -2;
     }
   }
 
@@ -901,7 +1106,9 @@ static void palette_editor_redraw_window_16(struct color_status *current,
       " - Increase        Alt+ - Decrease         F2- Store color\n"
       " - Increase        Alt+ - Decrease         F3- Retrieve color\n"
       "\n"
-      "0- Blacken color   Alt+H- Hide help         Q- Quit editing\n",
+      "0- Blacken color   Alt+H- Hide help         Q- Quit editing\n"
+      "\n"
+      "Left click- edit component/activate  Right click- color (drag)\n",
       PAL_ED_16_HELP_X1 + 3,
       PAL_ED_16_HELP_Y1 + 2,
       DI_GREY_TEXT,
@@ -968,11 +1175,6 @@ static void palette_editor_update_window_16(struct color_status *current,
 
     fg_color = ((r * .3) + (g * .59) + (b * .11) < 32) ? 31 : 16;
 
-    // FIXME: in SMZX modes 2 and 3, fg_color alters the color here
-    // eventually, they should get their own palette editor.
-    if(screen_mode >= 2)
-      fg_color = 0;
-
     select_layer(OVERLAY_LAYER);
 
     // Draw the palette colors
@@ -980,7 +1182,7 @@ static void palette_editor_update_window_16(struct color_status *current,
     {
       chr = ' ';
 
-      // FIXME: These will look ugly in SMZX mode, so only draw them in regular mode.
+      // These look ugly in SMZX mode 1, so only draw them in regular mode.
       if(!screen_mode)
       {
         if((i == 5) && (bg_color >= 10))
@@ -997,8 +1199,8 @@ static void palette_editor_update_window_16(struct color_status *current,
     select_layer(UI_LAYER);
 
     // Clear the bottom
-    draw_char('\xC4', DI_GREY, x, y + 4);
-    draw_char('\xC4', DI_GREY, x+1, y + 4);
+    draw_char(CHAR_LINE_HORIZ, DI_GREY, x, y + 4);
+    draw_char(CHAR_LINE_HORIZ, DI_GREY, x+1, y + 4);
 
     if(bg_color == current_id)
     {
@@ -1012,7 +1214,7 @@ static void palette_editor_update_window_16(struct color_status *current,
 static int palette_editor_input_16(struct color_status *current,
  const struct color_mode *mode, int key)
 {
-  if(get_mouse_press())
+  if(get_mouse_press() == MOUSE_BUTTON_LEFT)
   {
     int mouse_x, mouse_y;
     get_mouse_position(&mouse_x, &mouse_y);
@@ -1062,26 +1264,570 @@ static int palette_editor_input_16(struct color_status *current,
 // -----------------------------------------------------------------------------
 
 
+static void palette_editor_redraw_window_256(struct color_status *current,
+ const struct color_mode *mode, int smzx_mode)
+{
+  const struct color_mode_component *c;
+  int i;
+  int x;
+  int y;
+
+  // Palette View
+  draw_window_box(PAL_ED_256_PAL_X1, PAL_ED_256_PAL_Y1, PAL_ED_256_PAL_X2,
+   PAL_ED_256_PAL_Y2, DI_GREY_DARK, DI_GREY, DI_GREY_CORNER, 1, 1);
+
+  // Color Selector
+  draw_window_box(PAL_ED_256_SEL_X1, PAL_ED_256_SEL_Y1, PAL_ED_256_SEL_X2,
+   PAL_ED_256_SEL_Y2, DI_GREY, DI_GREY_DARK, DI_GREY_CORNER, 1, 1);
+
+  content_x = PAL_ED_256_SEL_X1 + 2;
+  content_y = PAL_ED_256_SEL_Y1 + 1;
+
+  // Palette View contents
+  write_string(
+   "Palette\n #\n\nHex:",
+   PAL_ED_256_PAL_X1 + 2,
+   PAL_ED_256_PAL_Y1 + 1,
+   DI_GREY_TEXT,
+   0
+  );
+
+  write_string(
+   "1:    2:    3:    4:",
+   PAL_ED_256_PAL_X1 + 11,
+   PAL_ED_256_PAL_Y1 + 1,
+   DI_GREY_CORNER,
+   0
+  );
+
+  // Erase spots where palette colors will go
+  for(i = 0; i < 15; i++)
+  {
+    erase_char(i % 5 + PAL_ED_256_PAL_X1 + 11, i / 5 + PAL_ED_256_PAL_Y1 + 2);
+    erase_char(i % 5 + PAL_ED_256_PAL_X1 + 17, i / 5 + PAL_ED_256_PAL_Y1 + 2);
+    erase_char(i % 5 + PAL_ED_256_PAL_X1 + 23, i / 5 + PAL_ED_256_PAL_Y1 + 2);
+    erase_char(i % 5 + PAL_ED_256_PAL_X1 + 29, i / 5 + PAL_ED_256_PAL_Y1 + 2);
+  }
+
+  // Erase the spot where the palette will go.
+  for(i = 0; i < 32*16; i++)
+    erase_char(i % 32 + content_x, i / 32 + content_y);
+
+  // Always enable help during smzx_mode 3; the preview area is useless.
+  if(!minimal_help || smzx_mode==3)
+  {
+    draw_window_box(PAL_ED_256_HELP_X1, PAL_ED_256_HELP_Y1, PAL_ED_256_HELP_X2,
+     PAL_ED_256_HELP_Y2, DI_GREY_DARK, DI_GREY, DI_GREY_CORNER, 1, 1);
+
+    // Write menu
+    write_string
+    (
+      "\x12\x1d- Select color   Alt+D- Default pal.   \n"
+      " - Increase        Alt+ - Decrease       \n"
+      " - Increase        Alt+ - Decrease       \n"
+      " - Increase        Alt+ - Decrease       \n"
+      "\n"
+      "0- Blacken color\n"
+      "\n"
+      "PgUp- Prev. mode   PgDn- Next mode       \n"
+      "F2- Store color    F3- Retrieve color    \n",
+      PAL_ED_256_HELP_X1 + 2,
+      PAL_ED_256_HELP_Y1 + 1,
+      DI_GREY_TEXT,
+      1
+    );
+
+    if(smzx_mode == 2)
+    {
+      // SMZX mode 2 specific help
+      write_string
+      (
+        "Alt+H- Hide help",
+        PAL_ED_256_HELP_X1 + 21,
+        PAL_ED_256_HELP_Y1 + 6,
+        DI_GREY_TEXT,
+        1
+      );
+      write_string
+      (
+        "Space- Toggle subpalette index cursors\n"
+        "Q- Quit editing\n"
+        "\n"
+        "  Left click- edit component/activate\n"
+        " Right click- change color (drag)\n"
+        "Middle/wheel- toggle subpalette cursors\n",
+        PAL_ED_256_HELP_X1 + 2,
+        PAL_ED_256_HELP_Y1 + 11,
+        DI_GREY_TEXT,
+        1
+      );
+    }
+    else
+    {
+      // SMZX mode 3 specific help
+      write_string
+      (
+        "Space- Subpalette  1-4- Current color to \n"
+        "Q- Quit editing         subpalette index\n"
+        "\n"
+        "  Left click- edit component/activate\n"
+        " Right click- change color (drag)\n"
+        "Middle/wheel- change subpalette\n",
+        PAL_ED_256_HELP_X1 + 2,
+        PAL_ED_256_HELP_Y1 + 11,
+        DI_GREY_TEXT,
+        1
+      );
+    }
+
+    // Component instructions
+    y = PAL_ED_256_HELP_Y1 + 2;
+    for(i = 0; i < 3; i++, y++)
+    {
+      c = &(mode->components[i]);
+      x = PAL_ED_256_HELP_X1 + 2;
+
+      write_string(c->key, x, y, DI_GREY_TEXT, 1);
+      x += 12;
+
+      write_string(c->name_long, x, y, DI_GREY_TEXT, 1);
+      x += 11;
+
+      write_string(c->key, x, y, DI_GREY_TEXT, 1);
+      x += 12;
+
+      write_string(c->name_long, x, y, DI_GREY_TEXT, 1);
+    }
+
+    // All
+    if(mode->allow_all)
+    {
+      write_string
+      (
+       "A- Increase All    Alt+A- Decrease All",
+       PAL_ED_256_HELP_X1 + 2,
+       PAL_ED_256_HELP_Y1 + 5,
+       DI_GREY_TEXT,
+       1
+      );
+    }
+  }
+}
+
+static void draw_unbound_cursor_chars(Uint32 layer, int color)
+{
+  select_layer(layer);
+  set_layer_mode(layer, 0);
+  // Note: mode 0, so offset by 16 (PAL_SIZE) for the protected palette.
+  draw_char_to_layer(color, CHAR_CORNER_TL, 0, 0, 0, PAL_SIZE);
+  draw_char_to_layer(color, CHAR_CORNER_TR, 2, 0, 0, PAL_SIZE);
+  draw_char_to_layer(color, CHAR_CORNER_BL, 0, 1, 0, PAL_SIZE);
+  draw_char_to_layer(color, CHAR_CORNER_BR, 2, 1, 0, PAL_SIZE);
+  draw_char_to_layer(color, CHAR_LINE_HORIZ, 1, 0, 0, PAL_SIZE);
+  draw_char_to_layer(color, CHAR_LINE_HORIZ, 1, 1, 0, PAL_SIZE);
+}
+
+static void draw_unbound_cursor(int x, int y, int fg, int bg, int offset)
+{
+  // Cursor for mode 2/3 palette selector
+  int order;
+
+  x = x * CHAR_W - 3;
+  y = y * CHAR_H - 5;
+  fg += 0xD0;
+  bg += 0xD0;
+
+  // Shadow
+  order = LAYER_DRAWORDER_UI + offset*2 + 1;
+  cursor_bg_layer = create_layer(x, y, 3, 2, order, 0x10D, PRO_CH, 1);
+  draw_unbound_cursor_chars(cursor_bg_layer, bg);
+
+  // FG
+  x -= 2;
+  y--;
+  order++;
+  cursor_fg_layer = create_layer(x, y, 3, 2, order, 0x10D, PRO_CH, 1);
+  draw_unbound_cursor_chars(cursor_fg_layer, fg);
+}
+
+static void hide_unbound_cursor(void)
+{
+  move_layer(cursor_fg_layer, -50, -50);
+  move_layer(cursor_bg_layer, -50, -50);
+}
+
+static void palette_editor_update_window_256(struct color_status *current,
+ const struct color_mode *mode, int smzx_mode)
+{
+  char buffer[5];
+  char chr;
+  int pal;
+  int i, i2;
+
+  int lo = current_id & 0x0F;
+  int hi = (current_id & 0xF0) >> 4;
+  int co = current_id;
+
+  int blink_cursor = graphics.cursor_flipflop;
+  int x = PAL_ED_256_PAL_X1;
+  int y = PAL_ED_256_PAL_Y1;
+
+  if(smzx_mode == 2)
+  {
+    int c0 = hi << 4 | hi;
+    int c1 = lo << 4 | hi;
+    int c2 = hi << 4 | lo;
+    int c3 = lo << 4 | lo;
+
+    // Current subpalette number
+    sprintf(buffer, "%03d", current_id);
+    write_string(buffer, x + 5, y + 2, DI_GREY_TEXT, 0);
+    sprintf(buffer, "%02X", current_id);
+    write_string(buffer, x + 7, y + 4, DI_GREY_TEXT, 0);
+
+    // Subpalette indices
+    sprintf(buffer, "%03d", c0);
+    write_string(buffer, x + 13, y + 1, DI_GREY_TEXT, 0);
+    sprintf(buffer, "%03d", c1);
+    write_string(buffer, x + 19, y + 1, DI_GREY_TEXT, 0);
+    sprintf(buffer, "%03d", c2);
+    write_string(buffer, x + 25, y + 1, DI_GREY_TEXT, 0);
+    sprintf(buffer, "%03d", c3);
+    write_string(buffer, x + 31, y + 1, DI_GREY_TEXT, 0);
+
+    select_layer(OVERLAY_LAYER);
+
+    // Draw the current subpalette
+    for(i = 0; i < 15; i++)
+    {
+      draw_char_ext(CHAR_SMZX_C0, co, (i%5 + x + 11), (i/5 + y + 2), PRO_CH, 0);
+      draw_char_ext(CHAR_SMZX_C1, co, (i%5 + x + 17), (i/5 + y + 2), PRO_CH, 0);
+      draw_char_ext(CHAR_SMZX_C2, co, (i%5 + x + 23), (i/5 + y + 2), PRO_CH, 0);
+      draw_char_ext(CHAR_SMZX_C3, co, (i%5 + x + 29), (i/5 + y + 2), PRO_CH, 0);
+    }
+
+    // Draw the palette
+    for(i = 0; i < 32; i++)
+    {
+      for(i2 = 0; i2 < 16; i2++)
+      {
+        pal = i2 << 4 | (i/2);
+        chr = CHAR_SMZX_C2;
+        draw_char_ext(chr, pal, (i + content_x), (i2 + content_y), PRO_CH, 0);
+      }
+    }
+
+    // Extra mode 2 cursors
+    if(mode2_extra_cursors)
+    {
+      if(blink_cursor)
+      {
+        draw_unbound_cursor(hi * 2 + content_x, hi + content_y, 0xC, 0x4, 0);
+        draw_unbound_cursor(hi * 2 + content_x, lo + content_y, 0xC, 0x4, 1);
+        draw_unbound_cursor(lo * 2 + content_x, lo + content_y, 0xC, 0x4, 2);
+      }
+      else
+      {
+        draw_unbound_cursor(hi * 2 + content_x, hi + content_y, 0x4, 0x0, 0);
+        draw_unbound_cursor(hi * 2 + content_x, lo + content_y, 0x4, 0x0, 1);
+        draw_unbound_cursor(lo * 2 + content_x, lo + content_y, 0x4, 0x0, 2);
+      }
+    }
+  }
+
+  // Mode 3
+  else
+  {
+    // Note indices 1 and 2 are swapped to make sense.
+    int sub = current_subpalette;
+    int c0 = graphics.editor_backup_indices[sub * 4 + 0];
+    int c1 = graphics.editor_backup_indices[sub * 4 + 2];
+    int c2 = graphics.editor_backup_indices[sub * 4 + 1];
+    int c3 = graphics.editor_backup_indices[sub * 4 + 3];
+
+    // Current subpalette number
+    sprintf(buffer, "%03d", current_subpalette);
+    write_string(buffer, x + 5, y + 2, DI_GREY_TEXT, 0);
+    sprintf(buffer, "%02X", current_subpalette);
+    write_string(buffer, x + 7, y + 4, DI_GREY_TEXT, 0);
+
+    // Subpalette indices
+    sprintf(buffer, "%03d", c0);
+    write_string(buffer, x + 13, y + 1, DI_GREY_TEXT, 0);
+    sprintf(buffer, "%03d", c1);
+    write_string(buffer, x + 19, y + 1, DI_GREY_TEXT, 0);
+    sprintf(buffer, "%03d", c2);
+    write_string(buffer, x + 25, y + 1, DI_GREY_TEXT, 0);
+    sprintf(buffer, "%03d", c3);
+    write_string(buffer, x + 31, y + 1, DI_GREY_TEXT, 0);
+
+    select_layer(OVERLAY_LAYER);
+
+    // Draw the current subpalette
+    for(i = 0; i < 15; i++)
+    {
+      draw_char_ext(0, c0, (i%5 + x + 11), (i/5 + y + 2), PRO_CH, 0);
+      draw_char_ext(0, c1, (i%5 + x + 17), (i/5 + y + 2), PRO_CH, 0);
+      draw_char_ext(0, c2, (i%5 + x + 23), (i/5 + y + 2), PRO_CH, 0);
+      draw_char_ext(0, c3, (i%5 + x + 29), (i/5 + y + 2), PRO_CH, 0);
+    }
+
+    // Draw the palette
+    for(i = 0; i < 32*16; i++)
+      draw_char_ext(0, i/2, (i%32 + content_x), (i/32 + content_y), 0, 0);
+  }
+
+  // Main cursor
+  if(blink_cursor)
+  {
+    draw_unbound_cursor(lo * 2 + content_x, hi + content_y, 0xF, 0x8, 3);
+  }
+  else
+  {
+    draw_unbound_cursor(lo * 2 + content_x, hi + content_y, 0x7, 0x0, 3);
+  }
+
+  select_layer(UI_LAYER);
+}
+
+static int palette_editor_input_256(struct color_status *current,
+ const struct color_mode *mode, int smzx_mode, int key)
+{
+  int mouse_press = get_mouse_press_ext();
+
+  if(mouse_press)
+  {
+    int mouse_x, mouse_y;
+    get_mouse_position(&mouse_x, &mouse_y);
+
+    if(mouse_press == MOUSE_BUTTON_WHEELUP)
+    {
+      // Previous palette
+      key = IKEY_MINUS;
+    }
+    else
+
+    if(mouse_press == MOUSE_BUTTON_WHEELDOWN)
+    {
+      // Next palette
+      key = IKEY_EQUALS;
+    }
+    else
+
+    if(mouse_press == MOUSE_BUTTON_MIDDLE)
+    {
+      // Palette selector/hide cursors
+      key = IKEY_SPACE;
+    }
+    else
+
+    if(mouse_press == MOUSE_BUTTON_LEFT &&
+     (mouse_x >= content_x) && (mouse_x < content_x + 32) &&
+     (mouse_y >= content_y) && (mouse_y < content_y + 16))
+    {
+      // Palette- select color
+      current_id = (mouse_x - content_x)/2 + (mouse_y - content_y) * 16;
+      return -1;
+    }
+    else
+
+    if((mouse_x >= PAL_ED_256_PAL_X1 + 1) &&
+     (mouse_x <= PAL_ED_256_PAL_X1 + 9) &&
+     (mouse_y >= PAL_ED_256_PAL_Y1 + 1) &&
+     (mouse_y <= PAL_ED_256_PAL_Y2 - 1))
+    {
+      // Left side of subpalette menu
+      if(smzx_mode == 3)
+      {
+        // Select palette- fake a space press
+        key = IKEY_SPACE;
+      }
+    }
+    else
+
+    if((mouse_x >= PAL_ED_256_PAL_X1 + 10) &&
+     (mouse_x <= PAL_ED_256_PAL_X2 - 2) &&
+     (mouse_y >= PAL_ED_256_PAL_Y1 + 1) &&
+     (mouse_y <= PAL_ED_256_PAL_Y2 - 1) &&
+     ((mouse_x - 10)%6 != 0))
+    {
+      // Subpalette colors
+      int col = (mouse_x - 10)/6;
+
+      if(smzx_mode == 3)
+      {
+        // Assign to index- fake a 1-4 keypress
+        key = IKEY_1 + col;
+      }
+    }
+  }
+
+  switch(key)
+  {
+    case IKEY_SPACE:
+    {
+      if(smzx_mode == 2)
+      {
+        // Mode 2- toggle the extra palette cursors
+        mode2_extra_cursors ^= 1;
+      }
+      else
+
+      if(smzx_mode == 3)
+      {
+        // Mode 3- select subpalette
+        int new_subpal;
+        // FIXME this breaks with GLSL (works for software, opengl1+2, overlay1)
+        //hide_unbound_cursor();
+
+        // Load the actual indices
+        load_editor_indices();
+
+        new_subpal = color_selection(current_subpalette, 0);
+
+        // Reset indices for editor
+        set_screen_mode(3);
+
+        if(new_subpal >= 0)
+          current_subpalette = new_subpal;
+      }
+      break;
+    }
+
+    case IKEY_UP:
+    {
+      if(current_id / 16 > 0)
+        current_id -= 16;
+      break;
+    }
+
+    case IKEY_DOWN:
+    {
+      if(current_id / 16 < 15)
+        current_id += 16;
+      break;
+    }
+
+    case IKEY_LEFT:
+    {
+      if(current_id % 16 > 0)
+        current_id--;
+      break;
+    }
+
+    case IKEY_RIGHT:
+    {
+      if(current_id % 16 < 15)
+        current_id++;
+      break;
+    }
+
+    case IKEY_MINUS:
+    case IKEY_KP_MINUS:
+    {
+      if(smzx_mode == 3)
+      {
+        if(current_subpalette > 0)
+          current_subpalette--;
+      }
+      else
+      {
+        if(current_id > 0)
+          current_id--;
+      }
+
+      break;
+    }
+
+    case IKEY_EQUALS:
+    case IKEY_KP_PLUS:
+    {
+      if(smzx_mode == 3)
+      {
+        if(current_subpalette < 255)
+          current_subpalette++;
+      }
+      else
+      {
+        if(current_id < 255)
+          current_id++;
+      }
+
+      break;
+    }
+
+    case IKEY_1:
+    case IKEY_2:
+    case IKEY_3:
+    case IKEY_4:
+    {
+      if(smzx_mode == 3)
+      {
+        // Assign current color to subpalette index
+        int index = (key - IKEY_1);
+
+        // Indices 1 and 2 are swapped to make actual sense.
+        if(index == 1)      index = 2;
+        else if(index == 2) index = 1;
+
+        index += current_subpalette * 4;
+
+        graphics.editor_backup_indices[index] = current_id;
+      }
+      break;
+    }
+
+    default:
+    {
+      // Pass the key through to the common handler.
+      return key;
+    }
+  }
+
+  // Update the display.
+  return -1;
+}
+
+
+// -----------------------------------------------------------------------------
+
+
 static void palette_editor_redraw_window(struct color_status *current_color,
- const struct color_mode *current_mode)
+ const struct color_mode *current_mode, int smzx_mode)
 {
   restore_screen();
   save_screen();
-  palette_editor_redraw_window_16(current_color, current_mode);
+
+  if(smzx_mode < 2)
+    palette_editor_redraw_window_16(current_color, current_mode);
+
+  else
+    palette_editor_redraw_window_256(current_color, current_mode, smzx_mode);
+
   palette_editor_redraw_color_window(current_color, current_mode);
 }
 
 static void palette_editor_update_window(struct color_status *current_color,
- const struct color_mode *current_mode)
+ const struct color_mode *current_mode, int smzx_mode)
 {
-  palette_editor_update_window_16(current_color, current_mode);
+  if(smzx_mode < 2)
+    palette_editor_update_window_16(current_color, current_mode);
+
+  else
+    palette_editor_update_window_256(current_color, current_mode, smzx_mode);
+
   palette_editor_update_color_window(current_color, current_mode);
 }
 
 static int palette_editor_input(struct color_status *current_color,
- const struct color_mode *current_mode, int key)
+ const struct color_mode *current_mode, int smzx_mode, int key)
 {
-  key = palette_editor_input_16(current_color, current_mode, key);
+  if(smzx_mode <2)
+    key = palette_editor_input_16(current_color, current_mode, key);
+
+  else
+    key = palette_editor_input_256(current_color, current_mode, smzx_mode, key);
+
   key = palette_editor_input_color_window(current_color, current_mode, key);
   return key;
 }
@@ -1111,8 +1857,9 @@ void palette_editor(struct world *mzx_world)
   const struct color_mode *current_mode;
   struct color_status *current_color;
   struct color_status *palette;
-  int refresh_window = 1;
-  int refresh_elements = 1;
+  int smzx_mode = get_screen_mode();
+  int mouse_last_x = -1;
+  int mouse_last_y = -1;
   int key;
 
   if(minimal_help == -1)
@@ -1122,8 +1869,18 @@ void palette_editor(struct world *mzx_world)
 
   palette = rebuild_palette(NULL);
 
+  if(smzx_mode == 3)
+  {
+    save_editor_indices();
+
+    // Reset the indices to default for display purposes.
+    set_screen_mode(3);
+  }
+
   // Prevent previous keys from carrying through.
   force_release_all_keys();
+
+  m_show();
 
   cursor_off();
   set_context(CTX_PALETTE_EDITOR);
@@ -1131,22 +1888,14 @@ void palette_editor(struct world *mzx_world)
 
   do
   {
+    blank_layers();
+    select_layer(UI_LAYER);
+
     current_mode = &(mode_list[current_mode_id]);
     current_color = &(palette[current_id]);
 
-    if(refresh_window)
-    {
-      // Draw the palette editor window.
-      palette_editor_redraw_window(current_color, current_mode);
-      refresh_window = 0;
-    }
-
-    if(refresh_elements)
-    {
-      // Update the palette editor window.
-      palette_editor_update_window(current_color, current_mode);
-    }
-    refresh_elements = 1;
+    palette_editor_redraw_window(current_color, current_mode, smzx_mode);
+    palette_editor_update_window(current_color, current_mode, smzx_mode);
 
     update_screen();
     update_event_status_delay();
@@ -1157,15 +1906,50 @@ void palette_editor(struct world *mzx_world)
     if(get_exit_status())
       key = IKEY_ESCAPE;
 
+    // Right click -- mimic directional presses
+    if(!key && (get_mouse_press() == MOUSE_BUTTON_RIGHT))
+    {
+      int x;
+      int y;
+      get_mouse_position(&x, &y);
+
+      if(get_mouse_drag())
+      {
+        if(abs(x-mouse_last_x) > abs(y-mouse_last_y))
+        {
+          if(x > mouse_last_x)
+            key = IKEY_RIGHT;
+          if(x < mouse_last_x)
+            key = IKEY_LEFT;
+        }
+        else
+        {
+          if(y > mouse_last_y)
+            key = IKEY_DOWN;
+          if(y < mouse_last_y)
+            key = IKEY_UP;
+        }
+        // Only warp the mouse if there's movement registered.
+        // Otherwise, it will be unresponsive with precise mouse movements.
+        if(key)
+          warp_mouse(mouse_last_x, mouse_last_y);
+      }
+      else
+      {
+        mouse_last_x = x;
+        mouse_last_y = y;
+      }
+    }
+
     // Run it through the editor-specific handling.
-    key = palette_editor_input(current_color, current_mode, key);
+    key = palette_editor_input(current_color, current_mode, smzx_mode, key);
 
     switch(key)
     {
       case -2:
       {
         // Redraw entire window.
-        refresh_window = 1;
+        // This gets done anyway now because of the layer effects.
         break;
       }
 
@@ -1185,8 +1969,9 @@ void palette_editor(struct world *mzx_world)
       {
         if(get_alt_status(keycode_internal))
         {
-          minimal_help ^= 1;
-          refresh_window = 1;
+          // SMZX mode 3 always has the help enabled, so don't allow toggling
+          if(smzx_mode != 3)
+            minimal_help ^= 1;
         }
         break;
       }
@@ -1197,7 +1982,6 @@ void palette_editor(struct world *mzx_world)
           current_mode_id = ARRAY_SIZE(mode_list);
 
         current_mode_id--;
-        refresh_window = 1;
         break;
       }
 
@@ -1208,7 +1992,6 @@ void palette_editor(struct world *mzx_world)
         if(current_mode_id == ARRAY_SIZE(mode_list))
           current_mode_id = 0;
 
-        refresh_window = 1;
         break;
       }
 
@@ -1225,7 +2008,18 @@ void palette_editor(struct world *mzx_world)
       {
         if(get_alt_status(keycode_internal))
         {
-          default_palette();
+          // SMZX modes 0 and 1 use the default palette
+          if(smzx_mode <= 1)
+          {
+            default_palette();
+          }
+          // SMZX modes 2 and 3 need the externally stored SMZX palette
+          else
+          {
+            load_palette(mzx_res_get_by_id(SMZX_PAL));
+            update_palette();
+          }
+
           rebuild_palette(palette);
         }
         break;
@@ -1252,19 +2046,18 @@ void palette_editor(struct world *mzx_world)
 #ifdef CONFIG_HELPSYS
       case IKEY_F1:
       {
-        m_show();
         help_system(mzx_world);
         break;
       }
 #endif
-
-      default:
-      {
-        refresh_elements = 0;
-        break;
-      }
     }
   } while(key != IKEY_ESCAPE);
+
+  if(smzx_mode == 3)
+  {
+    // Apply the modified SMZX indices.
+    load_editor_indices();
+  }
 
   // Prevent UI keys from carrying through.
   force_release_all_keys();

@@ -353,11 +353,6 @@ int list_menu(const char *const *choices, int choice_size, const char *title,
   } while(1);
 }
 
-// For color selection screen
-
-#define color_sel_char '\xFE'
-#define color_sel_wild '\x3F'
-
 // Color selection screen colors- see char selection screen.
 
 // Put up a color selection box. Returns selected, or negative selected
@@ -374,6 +369,8 @@ int color_selection(int current, int allow_wild)
   int key;
   int selected;
   int currx, curry;
+
+  char palette_char = get_screen_mode() ? CHAR_PAL_SMZX : CHAR_PAL_REG;
 
   // Save screen
   save_screen();
@@ -430,34 +427,38 @@ int color_selection(int current, int allow_wild)
     // Draw outer edge
     draw_window_box(14, 3, 31 + allow_wild, 20 + allow_wild,
      DI_DARK, DI_MAIN, DI_CORNER, 0, 0);
-    // Draw colors
-    for(y = 0; y < 16 + allow_wild; y++)
-    {
-      for(x = 0; x < 16 + allow_wild; x++)
-      {
-        if(x == 16)
-        {
-          if(y == 16)
-            draw_char_ext(color_sel_wild, 135, 31, 20, PRO_CH, 0);
-          else
-            draw_char_ext(color_sel_wild, fg_per_bk[y] + y * 16,
-             31, y + 4, PRO_CH, 0);
-        }
-        else
 
-        if(y == 16)
-        {
-          if(x == 0)
-            draw_char_ext(color_sel_wild, 128, 15, 20, PRO_CH, 0);
-          else
-            draw_char_ext(color_sel_wild, x, x + 15, 20, PRO_CH, 0);
-        }
-        else
-        {
-          draw_char_ext(color_sel_char, x + (y * 16), x + 15,
-           y + 4, PRO_CH, 0);
-        }
-      }
+    // Clear place for main palette
+    for(y = 0; y < 16; y++)
+      for(x = 0; x < 16; x++)
+        erase_char(x + 15, y + 4);
+
+    select_layer(OVERLAY_LAYER);
+
+    // Draw main palette
+    for(y = 0; y < 16; y++)
+      for(x = 0; x < 16; x++)
+        draw_char_ext(palette_char, x + (y * 16), x + 15, y + 4, PRO_CH, 0);
+
+    select_layer(UI_LAYER);
+
+    // Draw wildcards
+    if(allow_wild)
+    {
+      int wild_pal = get_screen_mode() ? 16 : 0;
+
+      for(x = 1, y = 16; x < 16; x++)
+        draw_char_ext(CHAR_PAL_WILD, x, x + 15, 20, PRO_CH, wild_pal);
+
+      for(y = 0, x = 16; y < 16; y++)
+        draw_char_ext(CHAR_PAL_WILD, fg_per_bk[y] + y * 16,
+         31, y + 4, PRO_CH, wild_pal);
+
+      // x = 0, y = 16
+      draw_char_ext(CHAR_PAL_WILD, 128, 15, 20, PRO_CH, wild_pal);
+
+      // x = 16, y = 16
+      draw_char_ext(CHAR_PAL_WILD, 135, 31, 20, PRO_CH, wild_pal);
     }
 
     // Add selection box

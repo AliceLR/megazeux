@@ -28,6 +28,15 @@ __M_BEGIN_DECLS
 #include "../window.h"
 #include "../world_struct.h"
 
+#define CHAR_PAL_REG    254
+#define CHAR_PAL_SMZX   184
+#define CHAR_PAL_WILD    63
+
+#define CHAR_SMZX_C0      0
+#define CHAR_SMZX_C1    182
+#define CHAR_SMZX_C2    183
+#define CHAR_SMZX_C3    219
+
 EDITOR_LIBSPEC int list_menu(const char *const *choices, int choice_size,
  const char *title, int current, int num_choices, int xpos, int ypos);
 int color_selection(int current, int allow_wild);

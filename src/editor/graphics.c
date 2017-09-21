@@ -50,6 +50,18 @@ void load_editor_palette(void)
   set_gui_palette();
 }
 
+void save_editor_indices(void)
+{
+  memcpy(graphics.editor_backup_indices, graphics.smzx_indices,
+   SMZX_PAL_SIZE * 4);
+}
+
+void load_editor_indices(void)
+{
+  memcpy(graphics.smzx_indices, graphics.editor_backup_indices,
+   SMZX_PAL_SIZE * 4);
+}
+
 void save_palette(char *fname)
 {
   FILE *pal_file = fopen_unsafe(fname, "wb");
