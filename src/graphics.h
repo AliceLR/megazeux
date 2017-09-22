@@ -213,6 +213,7 @@ CORE_LIBSPEC void move_cursor(Uint32 x, Uint32 y);
 
 CORE_LIBSPEC bool init_video(struct config_info *conf, const char *caption);
 CORE_LIBSPEC void destruct_layers(void);
+CORE_LIBSPEC void destruct_extra_layers(void);
 CORE_LIBSPEC Uint32 create_layer(int x, int y, Uint32 w, Uint32 h,
  int draw_order, int t_col, int offset, bool unbound);
 CORE_LIBSPEC void set_layer_mode(Uint32 layer, int mode);

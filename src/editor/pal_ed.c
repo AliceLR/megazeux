@@ -1450,12 +1450,6 @@ static void draw_unbound_cursor(int x, int y, int fg, int bg, int offset)
   draw_unbound_cursor_chars(cursor_fg_layer, fg);
 }
 
-static void hide_unbound_cursor(void)
-{
-  move_layer(cursor_fg_layer, -50, -50);
-  move_layer(cursor_bg_layer, -50, -50);
-}
-
 static void palette_editor_update_window_256(struct color_status *current,
  const struct color_mode *mode, int smzx_mode)
 {
@@ -1677,8 +1671,6 @@ static int palette_editor_input_256(struct color_status *current,
       {
         // Mode 3- select subpalette
         int new_subpal;
-        // FIXME this breaks with GLSL (works for software, opengl1+2, overlay1)
-        //hide_unbound_cursor();
 
         // Load the actual indices
         load_editor_indices();
@@ -1888,7 +1880,6 @@ void palette_editor(struct world *mzx_world)
 
   do
   {
-    blank_layers();
     select_layer(UI_LAYER);
 
     current_mode = &(mode_list[current_mode_id]);
@@ -1899,6 +1890,9 @@ void palette_editor(struct world *mzx_world)
 
     update_screen();
     update_event_status_delay();
+
+    // Get rid of the extra cursor layers
+    destruct_extra_layers();
 
     key = get_key(keycode_internal_wrt_numlock);
 

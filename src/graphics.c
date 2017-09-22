@@ -1153,22 +1153,9 @@ void select_layer(Uint32 layer)
   graphics.current_video = graphics.video_layers[layer].data;
 }
 
-static int offset_adjust(int offset)
-{
-  // Transform the given offset from screen space to layer space
-  struct video_layer *layer;
-  int x, y;
-  layer = &graphics.video_layers[graphics.current_layer];
-  x = (offset % SCREEN_W) - (layer->x / CHAR_W);
-  y = (offset / SCREEN_W) - (layer->y / CHAR_H);
-  return y * layer->w + x;
-}
-
 void blank_layers(void)
 {
   // This clears the first 3 layers and deletes all other layers
-
-  Uint32 i;
 
   memset(graphics.video_layers[BOARD_LAYER].data, 0x00,
    sizeof(struct char_element) * SCREEN_W * SCREEN_H);
@@ -1185,21 +1172,23 @@ void blank_layers(void)
     graphics.video_layers[UI_LAYER].mode = 0;
   }
 
-  for (i = 3; i < graphics.layer_count; i++)
+  // Delete the rest of the layers
+  destruct_extra_layers();
+}
+
+void destruct_extra_layers(void)
+{
+  // Deletes every layer after the main three
+  Uint32 i;
+  for(i = 3; i < graphics.layer_count; i++)
   {
-    if (graphics.video_layers[i].data)
+    if(graphics.video_layers[i].data)
       free(graphics.video_layers[i].data);
   }
   graphics.layer_count = 3;
-  graphics.requires_extended = false;
-}
 
-static void dirty_ui(void)
-{
-  if (graphics.requires_extended) return;
-  if (graphics.current_layer != UI_LAYER) return;
-  if (graphics.screen_mode == 0) return;
-  graphics.requires_extended = true;
+  // If this is still needed, dirty_ui() or create_layer() will fix it
+  graphics.requires_extended = false;
 }
 
 void destruct_layers(void)
@@ -1211,6 +1200,25 @@ void destruct_layers(void)
       free(graphics.video_layers[i].data);
   }
   graphics.layer_count = 0;
+}
+
+static void dirty_ui(void)
+{
+  if (graphics.requires_extended) return;
+  if (graphics.current_layer != UI_LAYER) return;
+  if (graphics.screen_mode == 0) return;
+  graphics.requires_extended = true;
+}
+
+static int offset_adjust(int offset)
+{
+  // Transform the given offset from screen space to layer space
+  struct video_layer *layer;
+  int x, y;
+  layer = &graphics.video_layers[graphics.current_layer];
+  x = (offset % SCREEN_W) - (layer->x / CHAR_W);
+  y = (offset / SCREEN_W) - (layer->y / CHAR_H);
+  return y * layer->w + x;
 }
 
 bool init_video(struct config_info *conf, const char *caption)
