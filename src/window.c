@@ -2,7 +2,7 @@
  *
  * Copyright (C) 1996 Greg Janson
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
- * Copyright (C) 2012 Alice Lauren Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2012 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -937,7 +937,6 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
     // ESC or exit event
     if(exit)
     {
-      // Restore screen, set current, and return -1
       force_release_all_keys();
       pop_context();
       return -1;

@@ -48,6 +48,8 @@ FIXES
   SMZX mode instead of the default char 254.
 + Fixed bug where the mouse cursor would vanish after using the
   robot debugger configuration dialog in the editor.
++ Fixed a bug where the counter debugger could sometimes display
+  behind the robot debugger after exiting the counter debugger.
 
 DEVELOPERS
 

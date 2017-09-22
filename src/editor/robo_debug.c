@@ -1046,14 +1046,12 @@ static int debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
       case OP_COUNTERS:
       {
         __debug_counters(mzx_world);
-        update_screen();
         break;
       }
 
       case OP_CONFIG:
       {
         __debug_robot_config(mzx_world);
-        update_screen();
         break;
       }
     }

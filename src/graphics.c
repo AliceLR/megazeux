@@ -1929,7 +1929,7 @@ void set_screen(struct char_element *src, Uint32 layer)
 {
   memcpy(graphics.video_layers[layer].data, src,
    SCREEN_W * SCREEN_H * sizeof(struct char_element));
-  memcpy(graphics.text_video, src + SCREEN_W * SCREEN_H * sizeof(struct char_element),
+  memcpy(graphics.text_video, src + SCREEN_W * SCREEN_H,
    SCREEN_W * SCREEN_H * sizeof(struct char_element));
 }
 
@@ -1937,7 +1937,7 @@ void get_screen(struct char_element *dest, Uint32 layer)
 {
   memcpy(dest, graphics.video_layers[layer].data,
    SCREEN_W * SCREEN_H * sizeof(struct char_element));
-  memcpy(dest + SCREEN_W * SCREEN_H * sizeof(struct char_element), graphics.text_video,
+  memcpy(dest + SCREEN_W * SCREEN_H, graphics.text_video,
    SCREEN_W * SCREEN_H * sizeof(struct char_element));
 }
 
