@@ -953,7 +953,19 @@ static int find_entry(const char **choices, char *name, int total_num)
 {
   int current_entry;
   int cmpval = 0;
+  int offset = 0;
   size_t name_length = strlen(name);
+
+  // Hack so seeking works on the string counter debugger without
+  // having to press '$'. Probably shouldn't be here, but oh well.
+  // Most lists are alphabetically sorted or have things like (new)
+  // at the end, so only enable if the first and last elements start
+  // with '$'.
+
+  if(choices[0][0] == '$' && choices[total_num - 1][0] == '$')
+  {
+    offset = 1;
+  }
 
   for(current_entry = 0; current_entry < total_num; current_entry++)
   {
@@ -967,7 +979,7 @@ static int find_entry(const char **choices, char *name, int total_num)
     else
 #endif
 
-    cmpval = strncasecmp(name, choices[current_entry]+(int)(choices[current_entry][0] == '$'), name_length);
+    cmpval = strncasecmp(name, choices[current_entry] + offset, name_length);
 
     if(cmpval == 0)
     {
