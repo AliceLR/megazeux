@@ -795,9 +795,9 @@ static void glsl_render_layer(struct graphics_data *graphics, struct video_layer
   Uint32 char_value, fg_color, bg_color;
 
   float v_left = 1.0f * (layer->x) / 640.0f * 2.0f - 1.0f;
-  float v_right = 1.0f * (layer->x + layer->w * CHAR_W) / 640.0f * 2.0f - 1.0f;
+  float v_right = 1.0f * (layer->x + (int)layer->w * CHAR_W) / 640.0f * 2.0f - 1.0f;
   float v_top = 1.0f * (layer->y) / 350.0f * 2.0f - 1.0f;  
-  float v_bottom = 1.0f * (layer->y + layer->h * CHAR_H) / 350.0f * 2.0f - 1.0f;  
+  float v_bottom = 1.0f * (layer->y + (int)layer->h * CHAR_H) / 350.0f * 2.0f - 1.0f;
 
   float vertex_array_single[2 * 4] = {
     v_left, -v_top,
@@ -807,9 +807,9 @@ static void glsl_render_layer(struct graphics_data *graphics, struct video_layer
   };
   
   float t_left = 1.0f * (layer->x) / 640.0f * 25.0f / 80.0f;
-  float t_right = 1.0f * (layer->x + layer->w * CHAR_W) / 640.0f * 25.0f / 80.0f;
+  float t_right = 1.0f * (layer->x + (int)layer->w * CHAR_W) / 640.0f * 25.0f / 80.0f;
   float t_top = 1.0f * (layer->y) / 350.0f * 25.0f;
-  float t_bottom = 1.0f * (layer->y + layer->h * CHAR_H)  / 350.0f * 25.0f;
+  float t_bottom = 1.0f * (layer->y + (int)layer->h * CHAR_H)  / 350.0f * 25.0f;
 
   float tex_coord_array_single[2 * 4] = {
     t_left - t_left, t_top - t_top,
@@ -817,6 +817,7 @@ static void glsl_render_layer(struct graphics_data *graphics, struct video_layer
     t_right - t_left, t_top - t_top,
     t_right - t_left, t_bottom - t_top,
   };
+
   get_context_width_height(graphics, &width, &height);
   if(width < 640 || height < 350)
   {
