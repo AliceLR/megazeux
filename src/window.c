@@ -962,7 +962,7 @@ static int find_entry(const char **choices, char *name, int total_num)
   // at the end, so only enable if the first and last elements start
   // with '$'.
 
-  if(choices[0][0] == '$' && choices[total_num - 1][0] == '$')
+  if(total_num && choices[0][0] == '$' && choices[total_num - 1][0] == '$')
   {
     offset = 1;
   }
