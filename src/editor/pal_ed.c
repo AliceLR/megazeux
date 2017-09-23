@@ -1625,7 +1625,8 @@ static int palette_editor_input_256(struct color_status *current,
     }
     else
 
-    if((mouse_x >= PAL_ED_256_PAL_X1 + 1) &&
+    if(mouse_press == MOUSE_BUTTON_LEFT &&
+     (mouse_x >= PAL_ED_256_PAL_X1 + 1) &&
      (mouse_x <= PAL_ED_256_PAL_X1 + 9) &&
      (mouse_y >= PAL_ED_256_PAL_Y1 + 1) &&
      (mouse_y <= PAL_ED_256_PAL_Y2 - 1))
@@ -1639,7 +1640,8 @@ static int palette_editor_input_256(struct color_status *current,
     }
     else
 
-    if((mouse_x >= PAL_ED_256_PAL_X1 + 10) &&
+    if(mouse_press == MOUSE_BUTTON_LEFT &&
+     (mouse_x >= PAL_ED_256_PAL_X1 + 10) &&
      (mouse_x <= PAL_ED_256_PAL_X2 - 2) &&
      (mouse_y >= PAL_ED_256_PAL_Y1 + 1) &&
      (mouse_y <= PAL_ED_256_PAL_Y2 - 1) &&
