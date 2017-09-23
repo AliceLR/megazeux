@@ -201,13 +201,16 @@ static void strip_caption_string(char *output, char *input) {
 
 __editor_maybe_static
 void set_caption(struct world *mzx_world, struct board *board,
- struct robot *robot, int editor)
+ struct robot *robot, int editor, int modified)
 {
   char *default_caption = get_default_caption();
   char *caption = cmalloc(MAX_CAPTION_SIZE);
   char *buffer = cmalloc(MAX_CAPTION_SIZE);
   char *stripped_name = cmalloc(MAX_CAPTION_SIZE);
   caption[0] = '\0';
+
+  if(modified)
+    strcpy(caption, "*");
 
   if(robot)
   {
@@ -254,11 +257,13 @@ void set_caption(struct world *mzx_world, struct board *board,
   #ifdef CONFIG_FPS
   if(mzx_world && !editor && !robot && !board)
   {
-    snprintf(buffer, MAX_CAPTION_SIZE, "%s %s FPS: %f", caption, CAPTION_SPACER, average_fps);
+    snprintf(buffer, MAX_CAPTION_SIZE, "%s %s FPS: %f", caption,
+     CAPTION_SPACER, average_fps);
     strcpy(caption, buffer);
   }
   #endif /* CONFIG_FPS */
 
+  caption[MAX_CAPTION_SIZE - 1] = 0;
   set_window_caption(caption);
 
   free(stripped_name);
@@ -393,7 +398,7 @@ static void load_world_file(struct world *mzx_world, char *name)
     if(curr_file != name)
       strcpy(curr_file, name);
 
-    set_caption(mzx_world, NULL, NULL, 0);
+    set_caption(mzx_world, NULL, NULL, 0, 0);
 
     send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
 
@@ -1291,8 +1296,9 @@ static int update(struct world *mzx_world, int game, int *fadein)
         total_fps -= min_fps;
         if (fps_history_count > 2)
         {
-          average_fps = 1.0 * total_fps / (fps_history_count - 2) * (1000.0 / FPS_INTERVAL);
-          set_caption(mzx_world, NULL, NULL, 0);
+          average_fps =
+           1.0 * total_fps / (fps_history_count - 2) * (1000.0 / FPS_INTERVAL);
+          set_caption(mzx_world, NULL, NULL, mzx_world->editing, 0);
         }
         fps_previous_ticks += FPS_INTERVAL;
 

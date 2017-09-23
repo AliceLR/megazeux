@@ -52,7 +52,7 @@ extern bool pal_update;
 CORE_LIBSPEC void play_game(struct world *mzx_world);
 CORE_LIBSPEC void draw_viewport(struct world *src_board);
 CORE_LIBSPEC void set_caption(struct world *mzx_world, struct board *board,
- struct robot *robot, int editor);
+ struct robot *robot, int editor, int modified);
  
 CORE_LIBSPEC extern bool debug_mode;
 CORE_LIBSPEC extern const char *const world_ext[2];

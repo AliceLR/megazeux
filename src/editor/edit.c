@@ -197,9 +197,12 @@ static void synchronize_board_values(struct world *mzx_world,
   }
 
   clear_screen_no_update();
+}
 
+static void fix_caption(struct world *mzx_world, int modified)
+{
   // Fix the window caption for the editor
-  set_caption(mzx_world, *src_board, NULL, 1);
+  set_caption(mzx_world, mzx_world->current_board, NULL, 1, modified);
 }
 
 static void fix_scroll(int *cursor_board_x, int *cursor_board_y,
@@ -590,8 +593,11 @@ static int change_param(struct world *mzx_world, enum thing id, int param,
 
   if(is_robot(id))
   {
+    int r_value = edit_robot(mzx_world, copy_robot);
+
     draw_memory_timer = DRAW_MEMORY_TIMER_MAX;
-    return edit_robot(mzx_world, copy_robot);
+    fix_caption(mzx_world, 1);
+    return r_value;
   }
   else
 
@@ -1200,6 +1206,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
   int fade;
   int exit = 0;
   int modified = 0;
+  int prev_modified = 0;
   int new_board = -1;
   int first_board_prompt = 0;
 
@@ -1335,6 +1342,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
    &level_id, &level_param, &level_color, &overlay, &overlay_color,
    &vlayer_chars, &vlayer_colors, overlay_edit);
 
+  fix_caption(mzx_world, modified);
   update_screen();
 
   insta_fadein();
@@ -2689,6 +2697,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             global_info(mzx_world);
           }
 
+          fix_caption(mzx_world, modified);
           modified = 1;
         }
         else
@@ -4209,6 +4218,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
               {
                 draw_memory_timer = DRAW_MEMORY_TIMER_MAX;
                 edit_robot(mzx_world, src_board->robot_list[d_param]);
+                fix_caption(mzx_world, modified);
                 modified = 1;
               }
               else
@@ -4414,6 +4424,12 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
       }
     }
 
+    if(modified != prev_modified)
+    {
+      fix_caption(mzx_world, modified);
+      prev_modified = modified;
+    }
+
     // Exit event and Escape
     if(exit)
     {
@@ -4448,7 +4464,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
   set_screen_mode(0);
   default_palette();
 
-  set_caption(mzx_world, NULL, NULL, 0);
+  set_caption(mzx_world, NULL, NULL, 0, 0);
 
   // Clear the copy stuff.
   if(copy_robot.used)
