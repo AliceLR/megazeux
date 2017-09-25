@@ -313,12 +313,9 @@
 
 # palette_editor_hide_help = 0
 
-# The length of the char editor undo history. Each step of the
-# history stores the whole char set, so it may be wise to use a
-# lower number here on memory-scarce platforms. Please note that
-# the current step is part of the history. Defaults to 10.
+# The length of the char editor undo history. Defaults to 100.
 
-# undo_history_size = 10
+# undo_history_size = 100
 
 # Defaults for new boards. Put these in [filename].editor.cnf to customize
 # for each individual game, E.G. caverns.editor.cnf.  Viewport width/height

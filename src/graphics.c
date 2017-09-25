@@ -249,9 +249,10 @@ void ec_mem_load_set_var(char *chars, size_t len, Uint16 pos, int version)
 void ec_mem_save_set_var(Uint8 *chars, size_t len, Uint16 pos)
 {
   Uint32 offset = pos * CHAR_SIZE;
-  Uint32 size = MIN(PROTECTED_CHARSET_POSITION - pos, (int)len) * CHAR_SIZE;
+  Uint32 size = MIN(PROTECTED_CHARSET_POSITION * CHAR_SIZE - offset, len);
 
-  memcpy(chars, graphics.charset + offset, size);
+  if(pos < PROTECTED_CHARSET_POSITION)
+    memcpy(chars, graphics.charset + offset, size);
 }
 
 __editor_maybe_static void ec_load_mzx(void)

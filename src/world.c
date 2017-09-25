@@ -941,7 +941,7 @@ static inline int save_world_chars(struct world *mzx_world,
     size = CHARSET_SIZE;
 
   buffer = cmalloc(size * CHAR_SIZE);
-  ec_mem_save_set_var(buffer, size, 0);
+  ec_mem_save_set_var(buffer, size * CHAR_SIZE, 0);
 
   result = zip_write_file(zp, name, buffer, size * CHAR_SIZE,
    ZIP_M_DEFLATE, file_id, 0, 0);

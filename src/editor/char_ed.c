@@ -20,18 +20,19 @@
 
 #include "char_ed.h"
 
-#include "../helpsys.h"
-#include "../window.h"
-#include "../graphics.h"
 #include "../data.h"
 #include "../event.h"
+#include "../graphics.h"
+#include "../helpsys.h"
+#include "../window.h"
 #include "../world.h"
 
 #include "graphics.h"
+#include "undo.h"
 
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 
 //----------------------------------------------
 //  +----------------+ Current char-     (#000)
@@ -68,10 +69,6 @@ static int highlight_height = 1;
 static int num_files = 1;
 
 static int char_copy_use_offset = 0;
-
-static Uint8 **history = NULL;
-static int history_size = 0;
-static int history_pos = 0;
 
 static void fill_region(char *buffer, int x, int y,
  int buffer_width, int buffer_height, int check, int draw)
@@ -167,7 +164,7 @@ static void expand_buffer(char *buffer, int width, int height,
 }
 
 static void collapse_buffer(char *buffer, int width, int height,
- int cwidth, int cheight, int offset, int smzx)
+ int cwidth, int cheight, int offset, int smzx, struct undo_history *h)
 {
   char char_buffer[32 * 14];
   char *buffer_ptr = buffer;
@@ -177,6 +174,9 @@ static void collapse_buffer(char *buffer, int width, int height,
   int cskip = 32 - cwidth;
   char *last_ptr, *last_ptr2;
   int current_row;
+
+  if(h)
+    add_charset_undo_frame(h, current_char, cwidth, cheight);
 
   if(smzx)
   {
@@ -242,6 +242,9 @@ static void collapse_buffer(char *buffer, int width, int height,
       ec_change_char(current_char, cbuffer_ptr);
     }
   }
+
+  if(h)
+    update_undo_frame(h);
 }
 
 static void draw_multichar(char *buffer, int start_x, int start_y,
@@ -499,120 +502,11 @@ static void replace_filenum(char *src, char *dest, int num)
   *dest_ptr = 0;
 }
 
-
-/****************/
-/* UNDO HISTORY */
-/****************/
-
-// It's nice to have this stuff separated out in functions
-// so it can maybe be replaced with something that gobbles
-// less memory at a later point.
-
-// We're saving the CURRENT frame here, not the previous.
-static void save_history(void)
-{
-  if(history_size < 2)
-    return;
-
-  if(!history)
-  {
-    int i;
-    history = ccalloc(history_size, sizeof(Uint8 *));
-
-    for(i = 0; i < history_size; i++)
-      history[i] = NULL;
-
-    // Decrement it so the first save populates pos 0
-    history_pos--;
-  }
-
-  if(history_pos == (history_size - 1))
-  {
-    Uint8 **buffer = ccalloc(history_size, sizeof(Uint8 *));
-
-    // We're about to overwrite this version of the char set,
-    // so free it.
-    free(history[0]);
-
-    memcpy(buffer, history + 1,
-     sizeof(Uint8 *) * (history_size - 1));
-    buffer[history_size - 1] = NULL;
-    memcpy(history, buffer,
-     sizeof(Uint8 *) * history_size);
-    free(buffer);
-  }
-  else
-    history_pos++;
-
-  // If we have it, we might as well keep it
-  if(!history[history_pos])
-    history[history_pos] = cmalloc(14 * 256);
-
-  ec_mem_save_set(history[history_pos]);
-
-  // If there's still space on the undo buffer, free the next
-  // slot and put a null so we can't redo undone history.
-  if(history_pos < (history_size - 1))
-  {
-    free(history[history_pos + 1]);
-    history[history_pos + 1] = NULL;
-  }
-}
-
-static void restore_history(void)
-{
-  if(history_size < 2)
-    return;
-
-  if(history_pos < 1)
-    return;
-
-  history_pos--;
-
-  ec_mem_load_set(history[history_pos]);
-}
-
-static void redo_history(void)
-{
-  if(history_size < 2)
-    return;
-
-  if(history_pos == (history_size - 1))
-    return;
-
-  // If the next point in history isn't null
-  if(history[history_pos + 1])
-  {
-    history_pos++;
-
-    ec_mem_load_set(history[history_pos]);
-  }
-}
-
-static void free_history(void)
-{
-  int i;
-
-  if(history)
-  {
-    for(i = 0; i < history_size; i++)
-      if(history[i])
-        free(history[i]);
-
-    free(history);
-  }
-  history = NULL;
-  history_pos = 0;
-}
-
-/********************/
-/* END UNDO HISTORY */
-/********************/
-
-
-
 int char_editor(struct world *mzx_world)
 {
+  struct undo_history *h;
+  int changed = 1;
+
   int x = 0;
   int y = 0;
   int draw = 0;
@@ -650,9 +544,7 @@ int char_editor(struct world *mzx_world)
   force_release_all_keys();
 
   // Prepare the history
-  history_pos = 0;
-  history_size = mzx_world->editor_conf.undo_history_size;
-  save_history();
+  h = construct_charset_undo_history(mzx_world->editor_conf.undo_history_size);
 
   if(screen_mode)
   {
@@ -1089,18 +981,32 @@ int char_editor(struct world *mzx_world)
           last_x = x;
           last_y = y;
 
+          if(changed)
+            add_charset_undo_frame(h, current_char,
+             highlight_width, highlight_height);
+
           collapse_buffer(buffer, current_width,
            current_height, highlight_width, highlight_height,
-           current_char, screen_mode);
+           current_char, screen_mode, NULL);
 
-          save_history();
+          update_undo_frame(h);
         }
       }
     }
     else
+
+    if(get_mouse_press() && !block_mode)
+    {
+      add_charset_undo_frame(h, current_char,
+       highlight_width, highlight_height);
+    }
+
+    else
     {
       last_x = -1;
     }
+
+    changed = 0;
 
     switch(key)
     {
@@ -1123,9 +1029,7 @@ int char_editor(struct world *mzx_world)
 
           collapse_buffer(buffer, current_width,
            current_height, highlight_width, highlight_height,
-           current_char, screen_mode);
-
-          save_history();
+           current_char, screen_mode, h);
         }
         else
         {
@@ -1158,9 +1062,7 @@ int char_editor(struct world *mzx_world)
 
           collapse_buffer(buffer, current_width,
            current_height, highlight_width, highlight_height,
-           current_char, screen_mode);
-
-          save_history();
+           current_char, screen_mode, h);
         }
         else
         {
@@ -1194,9 +1096,7 @@ int char_editor(struct world *mzx_world)
           memcpy(buffer_ptr, wrap_row, block_width);
           collapse_buffer(buffer, current_width,
            current_height, highlight_width, highlight_height,
-           current_char, screen_mode);
-
-          save_history();
+           current_char, screen_mode, h);
 
           free(wrap_row);
         }
@@ -1233,9 +1133,7 @@ int char_editor(struct world *mzx_world)
           memcpy(buffer_ptr, wrap_row, block_width);
           collapse_buffer(buffer, current_width,
            current_height, highlight_width, highlight_height,
-           current_char, screen_mode);
-
-          save_history();
+           current_char, screen_mode, h);
 
           free(wrap_row);
         }
@@ -1254,6 +1152,7 @@ int char_editor(struct world *mzx_world)
       case IKEY_KP_MINUS:
       case IKEY_MINUS:
       {
+        changed = 1;
         current_char -= highlight_width;
         expand_buffer(buffer, current_width, current_height,
          highlight_width, highlight_height, current_char, screen_mode);
@@ -1263,6 +1162,7 @@ int char_editor(struct world *mzx_world)
       case IKEY_KP_PLUS:
       case IKEY_EQUALS:
       {
+        changed = 1;
         current_char += highlight_width;
         expand_buffer(buffer, current_width, current_height,
          highlight_width, highlight_height, current_char, screen_mode);
@@ -1278,9 +1178,8 @@ int char_editor(struct world *mzx_world)
 
         collapse_buffer(buffer, current_width,
          current_height, highlight_width, highlight_height,
-         current_char, screen_mode);
+         current_char, screen_mode, h);
 
-        save_history();
         break;
       }
 
@@ -1381,6 +1280,7 @@ int char_editor(struct world *mzx_world)
         expand_buffer(buffer, current_width, current_height,
          highlight_width, highlight_height, current_char, screen_mode);
 
+        changed = 1;
         break;
       }
 
@@ -1402,9 +1302,8 @@ int char_editor(struct world *mzx_world)
         }
         collapse_buffer(buffer, current_width,
          current_height, highlight_width, highlight_height,
-         current_char, screen_mode);
+         current_char, screen_mode, h);
 
-        save_history();
         break;
       }
 
@@ -1476,9 +1375,8 @@ int char_editor(struct world *mzx_world)
 
         collapse_buffer(buffer, current_width,
          current_height, highlight_width, highlight_height,
-         current_char, screen_mode);
+         current_char, screen_mode, h);
 
-        save_history();
         break;
       }
 
@@ -1507,9 +1405,8 @@ int char_editor(struct world *mzx_world)
 
         collapse_buffer(buffer, current_width,
          current_height, highlight_width, highlight_height,
-         current_char, screen_mode);
+         current_char, screen_mode, h);
 
-        save_history();
         break;
       }
 
@@ -1530,7 +1427,7 @@ int char_editor(struct world *mzx_world)
              check, fill);
             collapse_buffer(buffer, current_width,
              current_height, highlight_width, highlight_height,
-             current_char, screen_mode);
+             current_char, screen_mode, h);
           }
         }
         else
@@ -1555,12 +1452,10 @@ int char_editor(struct world *mzx_world)
 
           collapse_buffer(buffer, current_width,
            current_height, highlight_width, highlight_height,
-           current_char, screen_mode);
+           current_char, screen_mode, h);
 
           free(temp_buffer);
         }
-
-        save_history();
         break;
       }
 
@@ -1614,18 +1509,17 @@ int char_editor(struct world *mzx_world)
 
         collapse_buffer(buffer, current_width,
          current_height, highlight_width, highlight_height,
-         current_char, screen_mode);
+         current_char, screen_mode, h);
 
-        save_history();
         break;
       }
 
-      case IKEY_r:
+      case IKEY_y:
       {
         // Redo
-        if(get_alt_status(keycode_internal))
+        if(get_ctrl_status(keycode_internal))
         {
-          redo_history();
+          apply_redo(h);
 
           expand_buffer(buffer, current_width, current_height,
            highlight_width, highlight_height, current_char,
@@ -1634,12 +1528,12 @@ int char_editor(struct world *mzx_world)
         break;
       }
 
-      case IKEY_u:
+      case IKEY_z:
       {
         // Undo
-        if(get_alt_status(keycode_internal))
+        if(get_ctrl_status(keycode_internal))
         {
-          restore_history();
+          apply_undo(h);
 
           expand_buffer(buffer, current_width, current_height,
            highlight_width, highlight_height, current_char,
@@ -1658,6 +1552,9 @@ int char_editor(struct world *mzx_world)
         if(get_alt_status(keycode_internal))
           break;
 
+        add_charset_undo_frame(h, current_char,
+         highlight_width, highlight_height);
+
         for(i = 0; i < highlight_height; i++,
          char_offset += skip)
         {
@@ -1669,7 +1566,7 @@ int char_editor(struct world *mzx_world)
           }
         }
 
-        save_history();
+        update_undo_frame(h);
 
         expand_buffer(buffer, current_width, current_height,
          highlight_width, highlight_height, current_char, screen_mode);
@@ -1683,6 +1580,9 @@ int char_editor(struct world *mzx_world)
         int char_offset = current_char;
         int skip = 32 - highlight_width;
 
+        add_charset_undo_frame(h, current_char,
+         highlight_width, highlight_height);
+
         for(i = 0; i < highlight_height; i++,
          char_offset += skip)
         {
@@ -1694,10 +1594,11 @@ int char_editor(struct world *mzx_world)
           }
         }
 
+        update_undo_frame(h);
+
         expand_buffer(buffer, current_width, current_height,
          highlight_width, highlight_height, current_char, screen_mode);
 
-        save_history();
         break;
       }
 
@@ -1796,6 +1697,10 @@ int char_editor(struct world *mzx_world)
           {
             int num_files_present = num_files;
 
+            // Save the whole charset to the history because the
+            // resulting behavior here is hard to define
+            add_charset_undo_frame(h, 0, 256, 1);
+
             if(strchr(import_string, '#') == NULL)
               num_files_present = 1;
 
@@ -1812,7 +1717,7 @@ int char_editor(struct world *mzx_world)
                 char_offset += char_size;
             }
 
-            save_history();
+            update_undo_frame(h);
 
             expand_buffer(buffer, current_width, current_height,
              highlight_width, highlight_height, current_char, screen_mode);
@@ -1905,9 +1810,7 @@ int char_editor(struct world *mzx_world)
       }
       collapse_buffer(buffer, current_width,
        current_height, highlight_width, highlight_height,
-       current_char, screen_mode);
-
-      save_history();
+       current_char, screen_mode, h);
     }
   } while(key != IKEY_ESCAPE);
 
@@ -1932,7 +1835,7 @@ int char_editor(struct world *mzx_world)
     set_screen_mode(screen_mode);
   }
 
-  free_history();
+  destruct_undo_history(h);
 
   free(buffer);
 

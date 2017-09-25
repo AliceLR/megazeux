@@ -593,7 +593,7 @@ static const struct editor_config_info default_editor_options =
   0,                            // palette_editor_hide_help
 
   // Char editor options
-  10,                           // Undo history size
+  100,                          // Undo history size
 
   // Robot editor options
   true,
