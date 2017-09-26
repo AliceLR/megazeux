@@ -54,6 +54,7 @@
 #include "robot.h"
 #include "select.h"
 #include "sfx_edit.h"
+#include "undo.h"
 #include "window.h"
 #include "world.h"
 
@@ -76,6 +77,10 @@
 
 static int draw_memory_timer = 0;
 static int draw_mod_timer = 0;
+
+static struct undo_history *board_history = NULL;
+static struct undo_history *overlay_history = NULL;
+static struct undo_history *vlayer_history = NULL;
 
 void free_editor_config(struct world *mzx_world)
 {
@@ -1249,6 +1254,11 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
   int copy_repeat_width = -1;
   int copy_repeat_height = -1;
 
+  // Undo
+  int clear_board_history = 1;
+  int clear_overlay_history = 1;
+  int clear_vlayer_history = 1;
+
   // Interface
   int saved_overlay_mode;
   int edit_screen_height;
@@ -1498,6 +1508,30 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
     {
       draw_debug_box(mzx_world, debug_x, edit_screen_height - 6,
        cursor_board_x, cursor_board_y, 0);
+    }
+
+    if(clear_board_history)
+    {
+      clear_board_history = 0;
+      destruct_undo_history(board_history);
+      board_history =
+       construct_board_undo_history(mzx_world->editor_conf.undo_history_size);
+    }
+
+    if(clear_overlay_history)
+    {
+      clear_overlay_history = 0;
+      destruct_undo_history(overlay_history);
+      overlay_history =
+       construct_layer_undo_history(mzx_world->editor_conf.undo_history_size);
+    }
+
+    if(clear_vlayer_history)
+    {
+      clear_vlayer_history = 0;
+      destruct_undo_history(vlayer_history);
+      vlayer_history =
+       construct_layer_undo_history(mzx_world->editor_conf.undo_history_size);
     }
 
     text_place = 0;
@@ -4270,6 +4304,22 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
       case IKEY_y:
       {
+        if(get_ctrl_status(keycode_internal))
+        {
+          // Redo
+          if(overlay_edit == EDIT_BOARD)
+            apply_redo(board_history);
+
+          else if(overlay_edit == EDIT_OVERLAY)
+            apply_redo(overlay_history);
+
+          else if(overlay_edit == EDIT_VLAYER)
+            apply_redo(vlayer_history);
+
+          modified = 1;
+        }
+        else
+
         if(get_alt_status(keycode_internal))
         {
           debug_mode = !debug_mode;
@@ -4286,6 +4336,22 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
       case IKEY_z:
       {
+        if(get_ctrl_status(keycode_internal))
+        {
+          // Undo
+          if(overlay_edit == EDIT_BOARD)
+            apply_undo(board_history);
+
+          else if(overlay_edit == EDIT_OVERLAY)
+            apply_undo(overlay_history);
+
+          else if(overlay_edit == EDIT_VLAYER)
+            apply_undo(vlayer_history);
+
+          modified = 1;
+        }
+        else
+
         if(get_alt_status(keycode_internal))
         {
           if(overlay_edit == EDIT_VLAYER)
@@ -4383,6 +4449,10 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
       if(mzx_world->editor_conf.editor_load_board_assets)
         change_board_load_assets(mzx_world);
 
+      // Clear the local undo histories
+      clear_board_history = 1;
+      clear_overlay_history = 1;
+
       draw_mod_timer = DRAW_MOD_TIMER_MAX;
 
       new_board = -1;
@@ -4454,6 +4524,14 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
   clear_screen(32, 7);
   insta_fadeout();
   strcpy(curr_file, current_world);
+
+  // Free the undo data
+  destruct_undo_history(board_history);
+  destruct_undo_history(overlay_history);
+  destruct_undo_history(vlayer_history);
+  board_history = NULL;
+  overlay_history = NULL;
+  vlayer_history = NULL;
 
   // Free the robot debugger data
   free_breakpoints();

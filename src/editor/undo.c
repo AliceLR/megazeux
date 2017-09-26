@@ -182,14 +182,17 @@ void destruct_undo_history(struct undo_history *h)
   struct undo_frame *f;
   int i;
 
-  for(i = 0; i < h->size; i++)
+  if(h)
   {
-    f = h->frames[i];
-    if(f)
-      h->clear_function(f);
-  }
+    for(i = 0; i < h->size; i++)
+    {
+      f = h->frames[i];
+      if(f)
+        h->clear_function(f);
+    }
 
-  free(h);
+    free(h);
+  }
 }
 
 
