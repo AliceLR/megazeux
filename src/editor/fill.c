@@ -75,6 +75,10 @@ void fill_area(struct world *mzx_world, enum thing id, int color, int param,
   int fill_color = 0;
   int fill_param = 0;
 
+  // Do nothing if the player is in the buffer
+  if(id == PLAYER)
+    return;
+
   switch(overlay_edit)
   {
     default:
