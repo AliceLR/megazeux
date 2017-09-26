@@ -1010,6 +1010,16 @@ int char_editor(struct world *mzx_world)
 
     switch(key)
     {
+      case IKEY_ESCAPE:
+      {
+        if(block_mode == 2)
+        {
+          block_mode = 0;
+          key = 0;
+        }
+        break;
+      }
+
       case IKEY_LEFT:
       {
         if(get_alt_status(keycode_internal))
@@ -1149,26 +1159,6 @@ int char_editor(struct world *mzx_world)
         break;
       }
 
-      case IKEY_KP_MINUS:
-      case IKEY_MINUS:
-      {
-        changed = 1;
-        current_char -= highlight_width;
-        expand_buffer(buffer, current_width, current_height,
-         highlight_width, highlight_height, current_char, screen_mode);
-        break;
-      }
-
-      case IKEY_KP_PLUS:
-      case IKEY_EQUALS:
-      {
-        changed = 1;
-        current_char += highlight_width;
-        expand_buffer(buffer, current_width, current_height,
-         highlight_width, highlight_height, current_char, screen_mode);
-        break;
-      }
-
       case IKEY_SPACE:
       {
         if(screen_mode)
@@ -1284,9 +1274,23 @@ int char_editor(struct world *mzx_world)
         break;
       }
 
-      case IKEY_q:
+      case IKEY_HOME:
       {
-        key = IKEY_ESCAPE;
+        x = 0;
+        y = 0;
+        break;
+      }
+
+      case IKEY_END:
+      {
+        x = buffer_width - 1;
+        y = buffer_height - 1;
+        break;
+      }
+
+      case IKEY_INSERT:
+      {
+        current_pixel = buffer[x + (y * buffer_width)];
         break;
       }
 
@@ -1306,6 +1310,34 @@ int char_editor(struct world *mzx_world)
 
         break;
       }
+
+      case IKEY_TAB:
+      {
+        if(draw)
+        {
+          draw = 0;
+        }
+        else
+        {
+          if(get_shift_status(keycode_internal))
+            draw = 2;
+          else
+            draw = 1;
+
+          draw_new = 1;
+        }
+
+        break;
+      }
+
+#ifdef CONFIG_HELPSYS
+      case IKEY_F1:
+      {
+        m_show();
+        help_system(mzx_world);
+        break;
+      }
+#endif
 
       case IKEY_F2:
       {
@@ -1380,168 +1412,6 @@ int char_editor(struct world *mzx_world)
         break;
       }
 
-      case IKEY_m:
-      {
-        // Mirror
-        int temp, i2;
-        int start_offset = block_start_x +
-         (block_start_y * buffer_width);
-        int previous_offset;
-        int end_offset;
-
-        for(i = 0; i < block_height; i++)
-        {
-          previous_offset = start_offset;
-          end_offset = start_offset + block_width - 1;
-          for(i2 = 0; i2 < (block_width / 2);
-           i2++, start_offset++, end_offset--)
-          {
-            temp = buffer[start_offset];
-            buffer[start_offset] = buffer[end_offset];
-            buffer[end_offset] = temp;
-          }
-          start_offset = previous_offset + buffer_width;
-        }
-
-        collapse_buffer(buffer, current_width,
-         current_height, highlight_width, highlight_height,
-         current_char, screen_mode, h);
-
-        break;
-      }
-
-      case IKEY_f:
-      {
-        if(get_alt_status(keycode_internal))
-        {
-          // Flood fill
-          int check = buffer[x + (y * buffer_width)];
-          int fill = check ^ 1;
-
-          if(screen_mode)
-            fill = current_pixel;
-
-          if(check != fill)
-          {
-            fill_region(buffer, x, y, buffer_width, buffer_height,
-             check, fill);
-            collapse_buffer(buffer, current_width,
-             current_height, highlight_width, highlight_height,
-             current_char, screen_mode, h);
-          }
-        }
-        else
-        {
-          // Flip
-          char *temp_buffer = cmalloc(sizeof(char) * block_width);
-          int start_offset = block_start_x +
-           (block_start_y * buffer_width);
-          int end_offset = start_offset +
-           ((block_height - 1) * buffer_width);
-
-          for(i = 0; i < (block_height / 2); i++,
-           start_offset += buffer_width, end_offset -= buffer_width)
-          {
-            memcpy(temp_buffer, buffer + start_offset,
-             block_width);
-            memcpy(buffer + start_offset, buffer + end_offset,
-             block_width);
-            memcpy(buffer + end_offset, temp_buffer,
-             block_width);
-          }
-
-          collapse_buffer(buffer, current_width,
-           current_height, highlight_width, highlight_height,
-           current_char, screen_mode, h);
-
-          free(temp_buffer);
-        }
-        break;
-      }
-
-      case IKEY_TAB:
-      {
-        if(draw)
-        {
-          draw = 0;
-        }
-        else
-        {
-          if(get_shift_status(keycode_internal))
-            draw = 2;
-          else
-            draw = 1;
-
-          draw_new = 1;
-        }
-
-        break;
-      }
-
-      case IKEY_n:
-      {
-        // Negative
-        char *buffer_ptr = buffer +
-         block_start_x + (block_start_y * buffer_width);
-
-        if(screen_mode)
-        {
-          for(i = 0; i < block_height; i++,
-           buffer_ptr += (buffer_width - block_width))
-          {
-            for(i2 = 0; i2 < block_width; i2++, buffer_ptr++)
-            {
-              *buffer_ptr = 3 - *buffer_ptr;
-            }
-          }
-        }
-        else
-        {
-          for(i = 0; i < block_height; i++,
-           buffer_ptr += (buffer_width - block_width))
-          {
-            for(i2 = 0; i2 < block_width; i2++, buffer_ptr++)
-            {
-              *buffer_ptr ^= 1;
-            }
-          }
-        }
-
-        collapse_buffer(buffer, current_width,
-         current_height, highlight_width, highlight_height,
-         current_char, screen_mode, h);
-
-        break;
-      }
-
-      case IKEY_y:
-      {
-        // Redo
-        if(get_ctrl_status(keycode_internal))
-        {
-          apply_redo(h);
-
-          expand_buffer(buffer, current_width, current_height,
-           highlight_width, highlight_height, current_char,
-           screen_mode);
-        }
-        break;
-      }
-
-      case IKEY_z:
-      {
-        // Undo
-        if(get_ctrl_status(keycode_internal))
-        {
-          apply_undo(h);
-
-          expand_buffer(buffer, current_width, current_height,
-           highlight_width, highlight_height, current_char,
-           screen_mode);
-        }
-        break;
-      }
-
       case IKEY_F4:
       {
         // ASCII Default
@@ -1602,26 +1472,217 @@ int char_editor(struct world *mzx_world)
         break;
       }
 
-#ifdef CONFIG_HELPSYS
-      case IKEY_F1:
+      case IKEY_KP1:
+      case IKEY_1:
       {
-        m_show();
-        help_system(mzx_world);
-        break;
-      }
-#endif
-
-      case IKEY_HOME:
-      {
-        x = 0;
-        y = 0;
+        current_pixel = 0;
         break;
       }
 
-      case IKEY_END:
+      case IKEY_KP2:
+      case IKEY_2:
       {
-        x = buffer_width - 1;
-        y = buffer_height - 1;
+        current_pixel = 2;
+        break;
+      }
+
+      case IKEY_KP3:
+      case IKEY_3:
+      {
+        current_pixel = 1;
+        break;
+      }
+
+      case IKEY_KP4:
+      case IKEY_4:
+      {
+        current_pixel = 3;
+        break;
+      }
+
+      case IKEY_KP_MINUS:
+      case IKEY_MINUS:
+      {
+        changed = 1;
+        current_char -= highlight_width;
+        expand_buffer(buffer, current_width, current_height,
+         highlight_width, highlight_height, current_char, screen_mode);
+        break;
+      }
+
+      case IKEY_KP_PLUS:
+      case IKEY_EQUALS:
+      {
+        changed = 1;
+        current_char += highlight_width;
+        expand_buffer(buffer, current_width, current_height,
+         highlight_width, highlight_height, current_char, screen_mode);
+        break;
+      }
+
+      case IKEY_b:
+      {
+        if(get_alt_status(keycode_internal))
+        {
+          block_mode = 2;
+          block_x = x;
+          block_y = y;
+          block_start_x = x;
+          block_start_y = y;
+          block_width = 1;
+          block_height = 1;
+          shifted = 1;
+        }
+
+        break;
+      }
+
+      case IKEY_f:
+      {
+        if(get_alt_status(keycode_internal))
+        {
+          // Flood fill
+          int check = buffer[x + (y * buffer_width)];
+          int fill = check ^ 1;
+
+          if(screen_mode)
+            fill = current_pixel;
+
+          if(check != fill)
+          {
+            fill_region(buffer, x, y, buffer_width, buffer_height,
+             check, fill);
+            collapse_buffer(buffer, current_width,
+             current_height, highlight_width, highlight_height,
+             current_char, screen_mode, h);
+          }
+        }
+        else
+        {
+          // Flip
+          char *temp_buffer = cmalloc(sizeof(char) * block_width);
+          int start_offset = block_start_x +
+           (block_start_y * buffer_width);
+          int end_offset = start_offset +
+           ((block_height - 1) * buffer_width);
+
+          for(i = 0; i < (block_height / 2); i++,
+           start_offset += buffer_width, end_offset -= buffer_width)
+          {
+            memcpy(temp_buffer, buffer + start_offset,
+             block_width);
+            memcpy(buffer + start_offset, buffer + end_offset,
+             block_width);
+            memcpy(buffer + end_offset, temp_buffer,
+             block_width);
+          }
+
+          collapse_buffer(buffer, current_width,
+           current_height, highlight_width, highlight_height,
+           current_char, screen_mode, h);
+
+          free(temp_buffer);
+        }
+        break;
+      }
+
+      case IKEY_m:
+      {
+        // Mirror
+        int temp, i2;
+        int start_offset = block_start_x +
+         (block_start_y * buffer_width);
+        int previous_offset;
+        int end_offset;
+
+        for(i = 0; i < block_height; i++)
+        {
+          previous_offset = start_offset;
+          end_offset = start_offset + block_width - 1;
+          for(i2 = 0; i2 < (block_width / 2);
+           i2++, start_offset++, end_offset--)
+          {
+            temp = buffer[start_offset];
+            buffer[start_offset] = buffer[end_offset];
+            buffer[end_offset] = temp;
+          }
+          start_offset = previous_offset + buffer_width;
+        }
+
+        collapse_buffer(buffer, current_width,
+         current_height, highlight_width, highlight_height,
+         current_char, screen_mode, h);
+
+        break;
+      }
+
+      case IKEY_n:
+      {
+        // Negative
+        char *buffer_ptr = buffer +
+         block_start_x + (block_start_y * buffer_width);
+
+        if(screen_mode)
+        {
+          for(i = 0; i < block_height; i++,
+           buffer_ptr += (buffer_width - block_width))
+          {
+            for(i2 = 0; i2 < block_width; i2++, buffer_ptr++)
+            {
+              *buffer_ptr = 3 - *buffer_ptr;
+            }
+          }
+        }
+        else
+        {
+          for(i = 0; i < block_height; i++,
+           buffer_ptr += (buffer_width - block_width))
+          {
+            for(i2 = 0; i2 < block_width; i2++, buffer_ptr++)
+            {
+              *buffer_ptr ^= 1;
+            }
+          }
+        }
+
+        collapse_buffer(buffer, current_width,
+         current_height, highlight_width, highlight_height,
+         current_char, screen_mode, h);
+
+        break;
+      }
+
+      case IKEY_q:
+      {
+        key = IKEY_ESCAPE;
+        break;
+      }
+
+      case IKEY_y:
+      {
+        // Redo
+        if(get_ctrl_status(keycode_internal))
+        {
+          apply_redo(h);
+
+          expand_buffer(buffer, current_width, current_height,
+           highlight_width, highlight_height, current_char,
+           screen_mode);
+        }
+        break;
+      }
+
+      case IKEY_z:
+      {
+        // Undo
+        if(get_ctrl_status(keycode_internal))
+        {
+          apply_undo(h);
+
+          expand_buffer(buffer, current_width, current_height,
+           highlight_width, highlight_height, current_char,
+           screen_mode);
+        }
         break;
       }
 
@@ -1725,68 +1786,6 @@ int char_editor(struct world *mzx_world)
         }
         break;
       }
-
-      case IKEY_b:
-      {
-        if(get_alt_status(keycode_internal))
-        {
-          block_mode = 2;
-          block_x = x;
-          block_y = y;
-          block_start_x = x;
-          block_start_y = y;
-          block_width = 1;
-          block_height = 1;
-          shifted = 1;
-        }
-
-        break;
-      }
-
-      case IKEY_ESCAPE:
-      {
-        if(block_mode == 2)
-        {
-          block_mode = 0;
-          key = 0;
-        }
-        break;
-      }
-
-      case IKEY_KP1:
-      case IKEY_1:
-      {
-        current_pixel = 0;
-        break;
-      }
-
-      case IKEY_KP2:
-      case IKEY_2:
-      {
-        current_pixel = 2;
-        break;
-      }
-
-      case IKEY_KP3:
-      case IKEY_3:
-      {
-        current_pixel = 1;
-        break;
-      }
-
-      case IKEY_KP4:
-      case IKEY_4:
-      {
-        current_pixel = 3;
-        break;
-      }
-
-      case IKEY_INSERT:
-      {
-        current_pixel = buffer[x + (y * buffer_width)];
-        break;
-      }
-
     }
 
     if(draw_new)
