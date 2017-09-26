@@ -19,9 +19,11 @@
 
 #include "undo.h"
 
+#include "../block.h"
 #include "../graphics.h"
 #include "../platform.h"
 #include "../world.h"
+#include "../world_struct.h"
 
 static struct undo_history *construct_undo_history(int max_size)
 {
@@ -285,4 +287,124 @@ void add_charset_undo_frame(struct undo_history *h, int offset,
   current->current_chars = cmalloc(width * height * CHAR_SIZE);
 
   read_charset_data(current->prev_chars, offset, width, height);
+}
+
+
+/****************************/
+/* Board specific functions */
+/****************************/
+
+struct undo_history *construct_board_undo_history(int max_size)
+{
+  // FIXME
+  return NULL;
+}
+
+
+void add_board_undo_frame(struct undo_history *h, struct board *src_board,
+ int board_offset, int width, int height)
+{
+  // FIXME
+}
+
+
+/****************************/
+/* Layer specific functions */
+/****************************/
+
+struct layer_undo_frame
+{
+  int type;
+  int width;
+  int height;
+  int layer_width;
+  int layer_offset;
+  char *layer_chars;
+  char *layer_colors;
+  char *prev_chars;
+  char *prev_colors;
+  char *current_chars;
+  char *current_colors;
+};
+
+static void apply_layer_undo(struct undo_frame *f)
+{
+  struct layer_undo_frame *lf = (struct layer_undo_frame *)f;
+
+  copy_layer_to_layer(
+   lf->prev_chars, lf->prev_colors, lf->width, 0,
+   lf->layer_chars, lf->layer_colors, lf->layer_width, lf->layer_offset,
+   lf->width, lf->height
+  );
+}
+
+static void apply_layer_redo(struct undo_frame *f)
+{
+  struct layer_undo_frame *lf = (struct layer_undo_frame *)f;
+
+  copy_layer_to_layer(
+   lf->current_chars, lf->current_colors, lf->width, 0,
+   lf->layer_chars, lf->layer_colors, lf->layer_width, lf->layer_offset,
+   lf->width, lf->height
+  );
+}
+
+static void apply_layer_update(struct undo_frame *f)
+{
+  struct layer_undo_frame *lf = (struct layer_undo_frame *)f;
+
+  copy_layer_to_layer(
+   lf->layer_chars, lf->layer_colors, lf->layer_width, lf->layer_offset,
+   lf->current_chars, lf->current_colors, lf->width, 0,
+   lf->width, lf->height
+  );
+}
+
+static void apply_layer_clear(struct undo_frame *f)
+{
+  struct layer_undo_frame *current = (struct layer_undo_frame *)f;
+
+  free(current->prev_chars);
+  free(current->prev_colors);
+  free(current->current_chars);
+  free(current->current_colors);
+  free(current);
+}
+
+struct undo_history *construct_layer_undo_history(int max_size)
+{
+  struct undo_history *h = construct_undo_history(max_size);
+
+  h->undo_function = apply_layer_undo;
+  h->redo_function = apply_layer_redo;
+  h->update_function = apply_layer_update;
+  h->clear_function = apply_layer_clear;
+  return h;
+}
+
+void add_layer_undo_frame(struct undo_history *h, char *layer_chars,
+ char *layer_colors, int layer_width, int layer_offset, int width, int height)
+{
+  struct layer_undo_frame *current =
+   cmalloc(sizeof(struct layer_undo_frame));
+
+  add_undo_frame(h, current);
+
+  current->width = width;
+  current->height = height;
+  current->layer_width = layer_width;
+  current->layer_offset = layer_offset;
+  current->layer_chars = layer_chars;
+  current->layer_colors = layer_colors;
+
+  current->prev_chars = cmalloc(width * height);
+  current->prev_colors = cmalloc(width * height);
+  current->current_chars = cmalloc(width * height);
+  current->current_colors = cmalloc(width * height);
+
+  copy_layer_to_layer(
+   layer_chars, layer_colors, layer_width, layer_offset,
+   current->prev_chars, current->prev_colors, width, 0,
+   width, height
+  );
 }

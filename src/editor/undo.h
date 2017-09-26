@@ -24,6 +24,8 @@
 
 __M_BEGIN_DECLS
 
+#include "world_struct.h"
+
 struct undo_frame
 {
   int type;
@@ -49,9 +51,17 @@ void update_undo_frame(struct undo_history *h);
 void destruct_undo_history(struct undo_history *h);
 
 struct undo_history *construct_charset_undo_history(int max_size);
+struct undo_history *construct_board_undo_history(int max_size);
+struct undo_history *construct_layer_undo_history(int max_size);
 
 void add_charset_undo_frame(struct undo_history *h, int offset,
  int width, int height);
+
+void add_board_undo_frame(struct undo_history *h, struct board *src_board,
+ int board_offset, int width, int height);
+
+void add_layer_undo_frame(struct undo_history *h, char *layer_chars,
+ char *layer_colors, int layer_width, int layer_offset, int width, int height);
 
 __M_END_DECLS
 
