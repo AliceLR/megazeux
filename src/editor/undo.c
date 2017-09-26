@@ -28,6 +28,23 @@
 #include "../world.h"
 #include "../world_struct.h"
 
+/* Operations for handling undo histories:
+ *   Construct a history buffer of some size
+ *   Add a new frame to the history, clearing old frames as-needed
+ *   Update the current frame of the history (primarily for mouse input)
+ *   Perform an undo operation: apply previous version, then step back
+ *   Perform a redo operation: step forward, then apply current version
+ *   Destruct a history buffer
+ *
+ * Most of these options are generalizable and use the same functions,
+ * but the creation of a history buffer and adding a new frame require
+ * implementation-specific functions.
+ *
+ * All necessary data regarding the scope of the frame must be given when
+ * a new frame is created; this information can't change easily due to the
+ * way e.g. boards are stored.
+ */
+
 static struct undo_history *construct_undo_history(int max_size)
 {
   struct undo_history *h = cmalloc(sizeof(struct undo_history));
