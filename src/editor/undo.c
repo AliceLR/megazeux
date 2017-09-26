@@ -24,7 +24,6 @@
 #include "../board.h"
 #include "../graphics.h"
 #include "../platform.h"
-#include "../robot.h"
 #include "../world.h"
 #include "../world_struct.h"
 
