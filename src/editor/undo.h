@@ -57,8 +57,8 @@ struct undo_history *construct_layer_undo_history(int max_size);
 void add_charset_undo_frame(struct undo_history *h, int offset,
  int width, int height);
 
-void add_board_undo_frame(struct undo_history *h, struct board *src_board,
- int board_offset, int width, int height);
+void add_board_undo_frame(struct world *mzx_world, struct undo_history *h,
+ struct board *src_board, int src_offset, int width, int height);
 
 void add_layer_undo_frame(struct undo_history *h, char *layer_chars,
  char *layer_colors, int layer_width, int layer_offset, int width, int height);

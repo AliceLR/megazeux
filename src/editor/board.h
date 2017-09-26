@@ -31,6 +31,7 @@ __M_BEGIN_DECLS
 
 void replace_current_board(struct world *mzx_world, char *name);
 struct board *create_blank_board(struct editor_config_info *conf);
+struct board *create_buffer_board(int width, int height);
 void save_board_file(struct world *mzx_world, struct board *cur_board, char *name);
 void change_board_size(struct board *src_board, int new_width, int new_height);
 

@@ -17,11 +17,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "board.h"
 #include "undo.h"
 
 #include "../block.h"
+#include "../board.h"
 #include "../graphics.h"
 #include "../platform.h"
+#include "../robot.h"
 #include "../world.h"
 #include "../world_struct.h"
 
@@ -294,17 +297,100 @@ void add_charset_undo_frame(struct undo_history *h, int offset,
 /* Board specific functions */
 /****************************/
 
-struct undo_history *construct_board_undo_history(int max_size)
+// Using full boards here seems tacky, but no one cares about memory usage
+// in the editor, these are small boards, and there's not much of a clean
+// way to partition the board struct to ignore extra setting fields
+
+struct board_undo_frame
 {
-  // FIXME
-  return NULL;
+  struct world *mzx_world;
+  int type;
+  int width;
+  int height;
+  int src_offset;
+  struct board *src_board;
+  struct board *prev_board;
+  struct board *current_board;
+};
+
+static void apply_board_undo(struct undo_frame *f)
+{
+  struct board_undo_frame *current = (struct board_undo_frame *)f;
+
+  copy_board_to_board(current->mzx_world,
+   current->prev_board, 0, current->src_board, current->src_offset,
+   current->width, current->height
+  );
 }
 
-
-void add_board_undo_frame(struct undo_history *h, struct board *src_board,
- int board_offset, int width, int height)
+static void apply_board_redo(struct undo_frame *f)
 {
-  // FIXME
+  struct board_undo_frame *current = (struct board_undo_frame *)f;
+
+  copy_board_to_board(current->mzx_world,
+   current->current_board, 0, current->src_board, current->src_offset,
+   current->width, current->height
+  );
+}
+
+static void apply_board_update(struct undo_frame *f)
+{
+  struct board_undo_frame *current = (struct board_undo_frame *)f;
+
+  // Updates override previous updates (mostly applies to mouse usage)
+  if(current->current_board)
+    clear_board(current->current_board);
+
+  current->current_board = create_buffer_board(current->width, current->height);
+
+  copy_board_to_board(current->mzx_world,
+   current->src_board, current->src_offset, current->current_board, 0,
+   current->width, current->height
+  );
+}
+
+static void apply_board_clear(struct undo_frame *f)
+{
+  struct board_undo_frame *current = (struct board_undo_frame *)f;
+
+  clear_board(current->prev_board);
+  clear_board(current->current_board);
+  free(current);
+}
+
+struct undo_history *construct_board_undo_history(int max_size)
+{
+  struct undo_history *h = construct_undo_history(max_size);
+
+  h->undo_function = apply_board_undo;
+  h->redo_function = apply_board_redo;
+  h->update_function = apply_board_update;
+  h->clear_function = apply_board_clear;
+  return h;
+}
+
+void add_board_undo_frame(struct world *mzx_world, struct undo_history *h,
+ struct board *src_board, int src_offset, int width, int height)
+{
+  struct board_undo_frame *current =
+   cmalloc(sizeof(struct board_undo_frame));
+
+  add_undo_frame(h, current);
+
+  current->mzx_world = mzx_world;
+
+  current->width = width;
+  current->height = height;
+  current->src_offset = src_offset;
+  current->src_board = src_board;
+
+  current->prev_board = create_buffer_board(width, height);
+  current->current_board = NULL;
+
+  copy_board_to_board(mzx_world,
+   src_board, src_offset, current->prev_board, 0,
+   width, height
+  );
 }
 
 

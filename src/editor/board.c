@@ -294,6 +294,27 @@ struct board *create_blank_board(struct editor_config_info *conf)
   return cur_board;
 }
 
+struct board *create_buffer_board(int width, int height)
+{
+  // Create a dummy board to be used as a buffer for undo block actions
+  struct board *src_board = ccalloc(1, sizeof(struct board *));
+  int layer_size = width * height;
+
+  src_board->board_width = width;
+  src_board->board_height = height;
+
+  src_board->robot_list = ccalloc(1, sizeof(struct robot *));
+  src_board->scroll_list = ccalloc(1, sizeof(struct scroll *));
+  src_board->sensor_list = ccalloc(1, sizeof(struct sensor *));
+
+  src_board->level_id = cmalloc(layer_size);
+  src_board->level_color = cmalloc(layer_size);
+  src_board->level_param = cmalloc(layer_size);
+  src_board->level_under_id = cmalloc(layer_size);
+  src_board->level_under_color = cmalloc(layer_size);
+  src_board->level_under_param = cmalloc(layer_size);
+}
+
 void change_board_size(struct board *src_board, int new_width, int new_height)
 {
   int board_width = src_board->board_width;
