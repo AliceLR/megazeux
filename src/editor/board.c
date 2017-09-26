@@ -313,6 +313,8 @@ struct board *create_buffer_board(int width, int height)
   src_board->level_under_id = cmalloc(layer_size);
   src_board->level_under_color = cmalloc(layer_size);
   src_board->level_under_param = cmalloc(layer_size);
+
+  return src_board;
 }
 
 void change_board_size(struct board *src_board, int new_width, int new_height)
