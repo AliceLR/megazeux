@@ -49,6 +49,11 @@ void mirror_board_block(struct board *dest_board, int dest_offset,
 void paint_layer_block(char *dest_color, int dest_width, int dest_offset,
  int block_width, int block_height, int paint_color);
 
+void copy_layer_buffer_to_buffer(
+ char *src_char, char *src_color, int src_width, int src_offset,
+ char *dest_char, char *dest_color, int dest_width, int dest_offset,
+ int block_width, int block_height);
+
 void move_layer_block(
  char *src_char, char *src_color, int src_width, int src_offset,
  char *dest_char, char *dest_color, int dest_width, int dest_offset,

@@ -53,8 +53,8 @@ struct queue_elem
 }
 
 void fill_area(struct world *mzx_world, enum thing id, int color, int param,
- int x, int y, struct robot *copy_robot, struct scroll *copy_scroll, struct sensor *copy_sensor,
- int overlay_edit)
+ int x, int y, struct robot *copy_robot, struct scroll *copy_scroll,
+ struct sensor *copy_sensor, int overlay_edit)
 {
   struct board *cur_board = mzx_world->current_board;
 
@@ -149,7 +149,7 @@ void fill_area(struct world *mzx_world, enum thing id, int color, int param,
     do
     {
       if(place_current_at_xy(mzx_world, id, color, param, x, y, copy_robot,
-       copy_scroll, copy_sensor, overlay_edit) == -1)
+       copy_scroll, copy_sensor, overlay_edit, 0) == -1)
         goto err_free;
 
       if(y > 0 && MATCHING(offset - board_width))

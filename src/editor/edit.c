@@ -617,8 +617,8 @@ static int change_param(struct world *mzx_world, enum thing id, int param,
 }
 
 int place_current_at_xy(struct world *mzx_world, enum thing id, int color,
- int param, int x, int y, struct robot *copy_robot,
- struct scroll *copy_scroll, struct sensor *copy_sensor, int overlay_edit)
+ int param, int x, int y, struct robot *copy_robot, struct scroll *copy_scroll,
+ struct sensor *copy_sensor, int overlay_edit, int save_history)
 {
   struct board *src_board = mzx_world->current_board;
   int offset = x + (y * src_board->board_width);
@@ -629,6 +629,9 @@ int place_current_at_xy(struct world *mzx_world, enum thing id, int color,
   {
     if(old_id != PLAYER)
     {
+      if(save_history)
+        add_board_undo_frame(mzx_world, board_history, src_board, offset, 1, 1);
+
       if(id == PLAYER)
       {
         id_remove_top(mzx_world, mzx_world->player_x, mzx_world->player_y);
@@ -645,6 +648,10 @@ int place_current_at_xy(struct world *mzx_world, enum thing id, int color,
           replace_robot_source(mzx_world, src_board, copy_robot, old_param);
           src_board->level_color[offset] = color;
           src_board->level_id[offset] = id;
+
+          if(save_history)
+            update_undo_frame(board_history);
+
           return old_param;
         }
 
@@ -666,6 +673,10 @@ int place_current_at_xy(struct world *mzx_world, enum thing id, int color,
           replace_scroll(src_board, copy_scroll, old_param);
           src_board->level_color[offset] = color;
           src_board->level_id[offset] = id;
+
+          if(save_history)
+            update_undo_frame(board_history);
+
           return old_param;
         }
 
@@ -682,6 +693,10 @@ int place_current_at_xy(struct world *mzx_world, enum thing id, int color,
           int old_param = src_board->level_param[offset];
           replace_sensor(src_board, copy_sensor, old_param);
           src_board->level_color[offset] = color;
+
+          if(save_history)
+            update_undo_frame(board_history);
+
           return old_param;
         }
 
@@ -694,21 +709,39 @@ int place_current_at_xy(struct world *mzx_world, enum thing id, int color,
       {
         place_at_xy(mzx_world, id, color, param, x, y);
       }
+
+      if(save_history)
+        update_undo_frame(board_history);
     }
   }
   else
 
   if(overlay_edit == EDIT_OVERLAY)
   {
+    if(save_history)
+      add_layer_undo_frame(overlay_history, src_board->overlay,
+       src_board->overlay_color, src_board->board_width, offset, 1, 1);
+
     src_board->overlay[offset] = param;
     src_board->overlay_color[offset] = color;
+
+    if(save_history)
+      update_undo_frame(overlay_history);
   }
 
   else // EDIT_VLAYER
   {
     int offset = x + (y * mzx_world->vlayer_width);
+
+    if(save_history)
+      add_layer_undo_frame(vlayer_history, mzx_world->vlayer_chars,
+       mzx_world->vlayer_colors, mzx_world->vlayer_width, offset, 1, 1);
+
     mzx_world->vlayer_chars[offset] = param;
     mzx_world->vlayer_colors[offset] = color;
+
+    if(save_history)
+      update_undo_frame(vlayer_history);
   }
 
   return param;
@@ -854,7 +887,7 @@ static void thing_menu(struct world *mzx_world, int menu_number,
     if(param >= 0)
     {
       param = place_current_at_xy(mzx_world, id, color, param,
-       x, y, copy_robot, copy_scroll, copy_sensor, 0);
+       x, y, copy_robot, copy_scroll, copy_sensor, EDIT_BOARD, 1);
 
       *new_id = id;
       *new_param = param;
@@ -1619,9 +1652,10 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         }
         else
         {
+          // FIXME history-- needs to be handled manually for mouse input
           current_param = place_current_at_xy(mzx_world, current_id,
            current_color, current_param, cursor_board_x, cursor_board_y,
-           &copy_robot, &copy_scroll, &copy_sensor, overlay_edit);
+           &copy_robot, &copy_scroll, &copy_sensor, overlay_edit, 0);
           modified = 1;
         }
       }
@@ -1726,7 +1760,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           {
             current_param = place_current_at_xy(mzx_world, current_id,
              current_color, current_param, cursor_board_x, cursor_board_y,
-             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit);
+             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit, 1);
             modified = 1;
           }
 
@@ -1768,7 +1802,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           {
             current_param = place_current_at_xy(mzx_world, current_id,
              current_color, current_param, cursor_board_x, cursor_board_y,
-             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit);
+             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit, 1);
             modified = 1;
           }
 
@@ -1812,7 +1846,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           {
             current_param = place_current_at_xy(mzx_world, current_id,
              current_color, current_param, cursor_board_x, cursor_board_y,
-             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit);
+             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit, 1);
             modified = 1;
           }
 
@@ -1861,7 +1895,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           {
             current_param = place_current_at_xy(mzx_world, current_id,
              current_color, current_param, cursor_board_x, cursor_board_y,
-             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit);
+             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit, 1);
             modified = 1;
           }
 
@@ -1885,7 +1919,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         {
           place_current_at_xy(mzx_world, __TEXT, current_color,
            ' ', cursor_board_x, cursor_board_y, &copy_robot,
-           &copy_scroll, &copy_sensor, overlay_edit);
+           &copy_scroll, &copy_sensor, overlay_edit, 1);
 
           if(cursor_board_x < (board_width - 1))
             cursor_board_x++;
@@ -1920,7 +1954,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           {
             place_current_at_xy(mzx_world, SPACE, 7, 0, cursor_board_x,
              cursor_board_y, &copy_robot, &copy_scroll, &copy_sensor,
-             overlay_edit);
+             overlay_edit, 1);
           }
           else
           {
@@ -1934,7 +1968,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             {
               current_param = place_current_at_xy(mzx_world, current_id,
                current_color, current_param, cursor_board_x, cursor_board_y,
-               &copy_robot, &copy_scroll, &copy_sensor, overlay_edit);
+               &copy_robot, &copy_scroll, &copy_sensor, overlay_edit, 1);
             }
           }
         }
@@ -1954,7 +1988,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
           place_current_at_xy(mzx_world, __TEXT, current_color,
            ' ', cursor_board_x, cursor_board_y, &copy_robot,
-           &copy_scroll, &copy_sensor, overlay_edit);
+           &copy_scroll, &copy_sensor, overlay_edit, 1);
           modified = 1;
         }
         else
@@ -1964,7 +1998,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             // Overlay and vlayer
             place_current_at_xy(mzx_world, SPACE, 7, 32, cursor_board_x,
              cursor_board_y, &copy_robot, &copy_scroll, &copy_sensor,
-             overlay_edit);
+             overlay_edit, 1);
           }
           else
 
@@ -1991,7 +2025,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             draw_mode = 1;
             current_param = place_current_at_xy(mzx_world, current_id,
              current_color, current_param, cursor_board_x, cursor_board_y,
-             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit);
+             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit, 1);
             modified = 1;
           }
         }
@@ -2013,22 +2047,18 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         {
           place_current_at_xy(mzx_world, __TEXT, current_color, ' ',
            cursor_board_x, cursor_board_y, &copy_robot,
-           &copy_scroll, &copy_sensor, overlay_edit);
+           &copy_scroll, &copy_sensor, overlay_edit, 1);
         }
         else
         {
-          if(overlay_edit)
-          {
-            place_current_at_xy(mzx_world, SPACE, 7, 32, cursor_board_x,
-             cursor_board_y, &copy_robot, &copy_scroll, &copy_sensor,
-             overlay_edit);
-          }
-          else
-          {
-            place_current_at_xy(mzx_world, SPACE, 7, 0, cursor_board_x,
-             cursor_board_y, &copy_robot, &copy_scroll, &copy_sensor,
-             overlay_edit);
-          }
+          int new_param = 0;
+
+          // On layers, the blank char is a space char
+          if(overlay_edit) new_param = 32;
+
+          place_current_at_xy(mzx_world, SPACE, 7, new_param, cursor_board_x,
+           cursor_board_y, &copy_robot, &copy_scroll, &copy_sensor,
+           overlay_edit, 1);
         }
         modified = 1;
         break;
@@ -3077,9 +3107,9 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           }
           else
           {
-            current_param = place_current_at_xy(mzx_world,
-             current_id, current_color, new_param, cursor_board_x,
-             cursor_board_y, &copy_robot, &copy_scroll, &copy_sensor, 0);
+            current_param = place_current_at_xy(mzx_world, current_id,
+             current_color, new_param, cursor_board_x, cursor_board_y,
+             &copy_robot, &copy_scroll, &copy_sensor, EDIT_BOARD, 1);
           }
 
           modified = 1;
@@ -4474,7 +4504,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
       {
         place_current_at_xy(mzx_world, __TEXT, current_color,
          key, cursor_board_x, cursor_board_y, &copy_robot,
-         &copy_scroll, &copy_sensor, overlay_edit);
+         &copy_scroll, &copy_sensor, overlay_edit, 1);
 
         if(cursor_board_x < (board_width - 1))
           cursor_board_x++;

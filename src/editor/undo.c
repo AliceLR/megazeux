@@ -17,6 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "block.h"
 #include "board.h"
 #include "undo.h"
 
@@ -24,6 +25,7 @@
 #include "../board.h"
 #include "../graphics.h"
 #include "../platform.h"
+#include "../robot.h"
 #include "../world.h"
 #include "../world_struct.h"
 
@@ -42,6 +44,9 @@
  * All necessary data regarding the scope of the frame must be given when
  * a new frame is created; this information can't change easily due to the
  * way e.g. boards are stored.
+ *
+ * A special case currently exists where the undo actions will operate
+ * outside of the undo frame; moving the player on the board.
  */
 
 static struct undo_history *construct_undo_history(int max_size)
@@ -326,6 +331,11 @@ struct board_undo_frame
   int type;
   int width;
   int height;
+  int move_player;
+  int prev_player_x;
+  int prev_player_y;
+  int current_player_x;
+  int current_player_y;
   int src_offset;
   struct board *src_board;
   struct board *prev_board;
@@ -336,6 +346,11 @@ static void apply_board_undo(struct undo_frame *f)
 {
   struct board_undo_frame *current = (struct board_undo_frame *)f;
 
+  // Copy won't overwrite the player, so move the player first
+  if(current->move_player)
+    place_player_xy(current->mzx_world,
+     current->prev_player_x, current->prev_player_y);
+
   copy_board_to_board(current->mzx_world,
    current->prev_board, 0, current->src_board, current->src_offset,
    current->width, current->height
@@ -345,6 +360,11 @@ static void apply_board_undo(struct undo_frame *f)
 static void apply_board_redo(struct undo_frame *f)
 {
   struct board_undo_frame *current = (struct board_undo_frame *)f;
+
+  // Copy won't overwrite the player, so move the player first
+  if(current->move_player)
+    place_player_xy(current->mzx_world,
+     current->current_player_x, current->current_player_y);
 
   copy_board_to_board(current->mzx_world,
    current->current_board, 0, current->src_board, current->src_offset,
@@ -366,6 +386,16 @@ static void apply_board_update(struct undo_frame *f)
    current->src_board, current->src_offset, current->current_board, 0,
    current->width, current->height
   );
+
+  current->current_player_x = current->mzx_world->player_x;
+  current->current_player_y = current->mzx_world->player_y;
+
+  if((current->current_player_x != current->prev_player_x) ||
+   (current->current_player_y != current->prev_player_y))
+    current->move_player = 1;
+
+  else
+    current->move_player = 0;
 }
 
 static void apply_board_clear(struct undo_frame *f)
@@ -403,6 +433,11 @@ void add_board_undo_frame(struct world *mzx_world, struct undo_history *h,
   current->src_offset = src_offset;
   current->src_board = src_board;
 
+  // If the player is moved in this frame, we need these.
+  current->prev_player_x = mzx_world->player_x;
+  current->prev_player_y = mzx_world->player_y;
+  current->move_player = 0;
+
   current->prev_board = create_buffer_board(width, height);
   current->current_board = NULL;
 
@@ -436,7 +471,7 @@ static void apply_layer_undo(struct undo_frame *f)
 {
   struct layer_undo_frame *lf = (struct layer_undo_frame *)f;
 
-  copy_layer_to_layer(
+  copy_layer_buffer_to_buffer(
    lf->prev_chars, lf->prev_colors, lf->width, 0,
    lf->layer_chars, lf->layer_colors, lf->layer_width, lf->layer_offset,
    lf->width, lf->height
@@ -447,7 +482,7 @@ static void apply_layer_redo(struct undo_frame *f)
 {
   struct layer_undo_frame *lf = (struct layer_undo_frame *)f;
 
-  copy_layer_to_layer(
+  copy_layer_buffer_to_buffer(
    lf->current_chars, lf->current_colors, lf->width, 0,
    lf->layer_chars, lf->layer_colors, lf->layer_width, lf->layer_offset,
    lf->width, lf->height
@@ -458,7 +493,7 @@ static void apply_layer_update(struct undo_frame *f)
 {
   struct layer_undo_frame *lf = (struct layer_undo_frame *)f;
 
-  copy_layer_to_layer(
+  copy_layer_buffer_to_buffer(
    lf->layer_chars, lf->layer_colors, lf->layer_width, lf->layer_offset,
    lf->current_chars, lf->current_colors, lf->width, 0,
    lf->width, lf->height
@@ -507,7 +542,7 @@ void add_layer_undo_frame(struct undo_history *h, char *layer_chars,
   current->current_chars = cmalloc(width * height);
   current->current_colors = cmalloc(width * height);
 
-  copy_layer_to_layer(
+  copy_layer_buffer_to_buffer(
    layer_chars, layer_colors, layer_width, layer_offset,
    current->prev_chars, current->prev_colors, width, 0,
    width, height

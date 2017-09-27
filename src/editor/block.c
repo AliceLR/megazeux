@@ -316,6 +316,32 @@ void paint_layer_block(char *dest_color, int dest_width, int dest_offset,
   }
 }
 
+void copy_layer_buffer_to_buffer(
+ char *src_char, char *src_color, int src_width, int src_offset,
+ char *dest_char, char *dest_color, int dest_width, int dest_offset,
+ int block_width, int block_height)
+{
+  int src_skip = src_width - block_width;
+  int dest_skip = dest_width - block_width;
+  int i, i2;
+
+  // Like a direct layer-to-layer copy, but without the char 32 checks
+  for(i = 0; i < block_height; i++)
+  {
+    for(i2 = 0; i2 < block_width; i2++)
+    {
+      dest_char[dest_offset] = src_char[src_offset];
+      dest_color[dest_offset] = src_color[src_offset];
+
+      src_offset++;
+      dest_offset++;
+    }
+
+    src_offset += src_skip;
+    dest_offset += dest_skip;
+  }
+}
+
 void move_layer_block(
  char *src_char, char *src_color, int src_width, int src_offset,
  char *dest_char, char *dest_color, int dest_width, int dest_offset,
@@ -328,51 +354,22 @@ void move_layer_block(
   char *buffer_char = cmalloc(block_width * block_height);
   char *buffer_color = cmalloc(block_width * block_height);
 
-  int start_offset = src_offset;
-  int buffer_offset = 0;
-
-  int src_skip = src_width - block_width;
-  int dest_skip = dest_width - block_width;
-
-  // Moving to the same layer; don't check for char 32s
-  int i, i2;
-
-  // Copy layer to buffer
-  for(i = 0; i < block_height; i++)
-  {
-    for(i2 = 0; i2 < block_width; i2++)
-    {
-      buffer_char[buffer_offset] = src_char[src_offset];
-      buffer_color[buffer_offset] = src_color[src_offset];
-
-      src_offset++;
-      buffer_offset++;
-    }
-
-    src_offset += src_skip;
-  }
+  // Copy source to buffer
+  copy_layer_buffer_to_buffer(
+   src_char, src_color, src_width, src_offset,
+   buffer_char, buffer_color, block_width, 0,
+   block_width, block_height);
 
   // Clear the source
   clear_layer_block(
-   src_char, src_color, src_width, start_offset,
+   src_char, src_color, src_width, src_offset,
    clear_width, clear_height);
 
-  buffer_offset = 0;
-
-  // Copy buffer back to layer
-  for(i = 0; i < block_height; i++)
-  {
-    for(i2 = 0; i2 < block_width; i2++)
-    {
-      dest_char[dest_offset] = buffer_char[buffer_offset];
-      dest_color[dest_offset] = buffer_color[buffer_offset];
-
-      dest_offset++;
-      buffer_offset++;
-    }
-
-    dest_offset += dest_skip;
-  }
+  // Copy buffer to destination
+  copy_layer_buffer_to_buffer(
+   buffer_char, buffer_color, block_width, 0,
+   dest_char, dest_color, dest_width, dest_offset,
+   block_width, block_height);
 
   free(buffer_char);
   free(buffer_color);
