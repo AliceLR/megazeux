@@ -65,6 +65,7 @@ usage() {
 	echo "  --enable-egl          Enables EGL backend (if SDL disabled)."
 	echo "  --disable-check-alloc Disables memory allocator error handling."
 	echo "  --disable-uthash      Disables hash counter/string lookups."
+  echo "  --disable-undo        Disables undo/redo operations in the editor."
 	echo "  --enable-debytecode   Enable experimental 'debytecode' transform."
 	echo "  --disable-libsdl2     Disable SDL 2.0 support (falls back on 1.2)."
 	echo "  --enable-fps          Enable frames-per-second counter."
@@ -119,6 +120,7 @@ SDL="true"
 EGL="false"
 CHECK_ALLOC="true"
 UTHASH="true"
+UNDO="true"
 DEBYTECODE="false"
 LIBSDL2="true"
 FPSCOUNTER="false"
@@ -261,6 +263,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--enable-uthash" ]  && UTHASH="true"
 	[ "$1" = "--disable-uthash" ] && UTHASH="false"
+
+	[ "$1" = "--enable-undo" ]  && UNDO="true"
+	[ "$1" = "--disable-undo" ] && UNDO="false"
 
 	[ "$1" = "--enable-debytecode" ]  && DEBYTECODE="true"
 	[ "$1" = "--disable-debytecode" ] && DEBYTECODE="false"
@@ -1013,6 +1018,18 @@ if [ "$UTHASH" = "true" ]; then
 	echo "#define CONFIG_UTHASH" >> src/config.h
 else
 	echo "uthash counter/string lookup disabled (using binary search)."
+fi
+
+#
+# Allow use of undo/redo in the editor
+#
+if [ "$EDITOR" = "true" ]; then
+	if [ "$UNDO" = "true" ]; then
+		echo "undo/redo enabled."
+		echo "#define CONFIG_UNDO" >> src/config.h
+	else
+		echo "undo/redo disabled."
+	fi
 fi
 
 #
