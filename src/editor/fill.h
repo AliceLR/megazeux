@@ -26,11 +26,13 @@
 
 __M_BEGIN_DECLS
 
+#include "undo.h"
+
 #include "../world_struct.h"
 
-void fill_area(struct world *mzx_world, enum thing id, int color, int param,
- int x, int y, struct robot *copy_robot, struct scroll *copy_scroll,
- struct sensor *copy_sensor, int overlay_edit);
+void fill_area(struct world *mzx_world, struct undo_history *h,
+ enum thing id, int color, int param, int x, int y, struct robot *copy_robot,
+ struct scroll *copy_scroll, struct sensor *copy_sensor, int overlay_edit);
 
 __M_END_DECLS
 

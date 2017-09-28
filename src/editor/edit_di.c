@@ -616,12 +616,14 @@ static void bound_board_size(int *width, int *height)
 }
 
 // Size/pos of board/viewport
-void size_pos(struct world *mzx_world)
+// Returns 1 if the board was resized
+int size_pos(struct world *mzx_world)
 {
   struct board *src_board = mzx_world->current_board;
   int dialog_result;
   struct element *elements[9];
   struct dialog di;
+  int resized = 0;
 
   int redo = 1;
 
@@ -705,6 +707,14 @@ void size_pos(struct world *mzx_world)
 
         bound_board_size(results + 4, results + 5);
 
+        if(results[4] == src_board->board_width &&
+         results[5] == src_board->board_height)
+        {
+          resized = 0;
+          redo = 0;
+        }
+        else
+
         if(((results[4] >= src_board->board_width) &&
           (results[5] >= src_board->board_height)) ||
           !confirm(mzx_world, "Reduce board size- Are you sure?"))
@@ -715,6 +725,7 @@ void size_pos(struct world *mzx_world)
           src_board->viewport_y = results[1];
           src_board->viewport_width = results[2];
           src_board->viewport_height = results[3];
+          resized = 1;
         }
         break;
       }
@@ -735,14 +746,18 @@ void size_pos(struct world *mzx_world)
   } while(redo);
 
   pop_context();
+
+  return resized;
 }
 
 // Size of vlayer
-void size_pos_vlayer(struct world *mzx_world)
+// Returns 1 if the vlayer was resized
+int size_pos_vlayer(struct world *mzx_world)
 {
   int dialog_result;
   struct element *elements[4];
   struct dialog di;
+  int resized = 0;
 
   int results[2] = {
     mzx_world->vlayer_width,
@@ -791,6 +806,14 @@ void size_pos_vlayer(struct world *mzx_world)
         // The vlayer has the same size restrictions as boards.
         bound_board_size(results + 0, results + 1);
 
+        if(results[0] == mzx_world->vlayer_width &&
+         results[1] == mzx_world->vlayer_height)
+        {
+          resized = 0;
+          redo = 0;
+        }
+        else
+
         if(((results[0] >= mzx_world->vlayer_width) &&
           (results[1] >= mzx_world->vlayer_height)) ||
           !confirm(mzx_world, "Reduce vlayer size- Are you sure?"))
@@ -811,6 +834,8 @@ void size_pos_vlayer(struct world *mzx_world)
           // Increasing size-- remap after
           if(size >= old_size)
             remap_vlayer(mzx_world, results[0], results[1]);
+
+          resized = 1;
         }
         break;
       }
@@ -819,6 +844,8 @@ void size_pos_vlayer(struct world *mzx_world)
   while(redo);
 
   pop_context();
+
+  return resized;
 }
 
 //Dialog- (board info)

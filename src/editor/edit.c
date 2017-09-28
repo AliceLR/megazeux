@@ -630,7 +630,8 @@ int place_current_at_xy(struct world *mzx_world, enum thing id, int color,
     if(old_id != PLAYER)
     {
       if(save_history)
-        add_board_undo_frame(mzx_world, board_history, src_board, offset, 1, 1);
+        add_board_undo_frame(mzx_world, board_history, id, color, param, x, y,
+         copy_robot, copy_scroll, copy_sensor);
 
       if(id == PLAYER)
       {
@@ -747,7 +748,7 @@ int place_current_at_xy(struct world *mzx_world, enum thing id, int color,
   return param;
 }
 
-static void grab_at_xy(struct world *mzx_world, enum thing *new_id,
+void grab_at_xy(struct world *mzx_world, enum thing *new_id,
  int *new_color, int *new_param, struct robot *copy_robot,
  struct scroll *copy_scroll, struct sensor *copy_sensor,
  int x, int y, int overlay_edit)
@@ -1252,6 +1253,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
   int overlay_edit = EDIT_BOARD;
   int board_width, board_height;
   int cursor_board_x = 0, cursor_board_y = 0;
+  int cursor_move_x = 0, cursor_move_y = 0;
   int cursor_x = 0, cursor_y = 0;
   int scroll_x = 0, scroll_y = 0;
   char *level_id;
@@ -1730,185 +1732,89 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
     {
       case IKEY_UP:
       {
-        int i, move_amount = 1;
-
         if(get_shift_status(keycode_internal))
         {
           // Move to adjacent board
-          // Doesn't make sense on the vlayer.
           if(src_board->board_dir[0] != NO_BOARD && overlay_edit != EDIT_VLAYER)
             new_board = src_board->board_dir[0];
-
           break;
         }
+        else
+
+        cursor_move_y = -1;
 
         if(get_alt_status(keycode_internal))
-          move_amount = 10;
+          cursor_move_y = -10;
 
         if(get_ctrl_status(keycode_internal) &&
          (draw_mode == 4) && (copy_repeat_height >= 0))
-          move_amount = copy_repeat_height;
+          cursor_move_y = -copy_repeat_height;
 
-        for(i = 0; i < move_amount; i++)
-        {
-          if(!cursor_board_y)
-            break;
-
-          cursor_board_y--;
-
-          if(draw_mode == 1)
-          {
-            current_param = place_current_at_xy(mzx_world, current_id,
-             current_color, current_param, cursor_board_x, cursor_board_y,
-             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit, 1);
-            modified = 1;
-          }
-
-          if(((cursor_board_y - scroll_y) < 3) && scroll_y)
-            scroll_y--;
-        }
         break;
       }
 
       case IKEY_DOWN:
       {
-        int i, move_amount = 1;
-
         if(get_shift_status(keycode_internal))
         {
           // Move to adjacent board
-          // Doesn't make sense on the vlayer.
           if(src_board->board_dir[1] != NO_BOARD && overlay_edit != EDIT_VLAYER)
             new_board = src_board->board_dir[1];
-
           break;
         }
 
+        cursor_move_y = 1;
+
         if(get_alt_status(keycode_internal))
-          move_amount = 10;
+          cursor_move_y = 10;
 
         if(get_ctrl_status(keycode_internal) &&
          (draw_mode == 4) && (copy_repeat_height >= 0))
-          move_amount = copy_repeat_height;
+          cursor_move_y = copy_repeat_height;
 
-        for(i = 0; i < move_amount; i++)
-        {
-          if(cursor_board_y == (board_height - 1))
-            break;
-
-          cursor_board_y++;
-
-          if(draw_mode == 1)
-          {
-            current_param = place_current_at_xy(mzx_world, current_id,
-             current_color, current_param, cursor_board_x, cursor_board_y,
-             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit, 1);
-            modified = 1;
-          }
-
-          // Scroll board position if there's room to
-          if(((cursor_board_y - scroll_y) > (edit_screen_height - 5)) &&
-           (scroll_y < (board_height - edit_screen_height)))
-            scroll_y++;
-        }
         break;
       }
 
       case IKEY_LEFT:
       {
-        int i, move_amount = 1;
-
         if(get_shift_status(keycode_internal))
         {
           // Move to adjacent board
-          // Doesn't make sense on the vlayer.
           if(src_board->board_dir[3] != NO_BOARD && overlay_edit != EDIT_VLAYER)
             new_board = src_board->board_dir[3];
-
           break;
         }
 
+        cursor_move_x = -1;
+
         if(get_alt_status(keycode_internal))
-          move_amount = 10;
+          cursor_move_x = -10;
 
         if(get_ctrl_status(keycode_internal) &&
          (draw_mode == 4) && (copy_repeat_width >= 0))
-          move_amount = copy_repeat_width;
-
-        for(i = 0; i < move_amount; i++)
-        {
-          if(!cursor_board_x)
-            break;
-
-          cursor_board_x--;
-
-          if(draw_mode == 1)
-          {
-            current_param = place_current_at_xy(mzx_world, current_id,
-             current_color, current_param, cursor_board_x, cursor_board_y,
-             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit, 1);
-            modified = 1;
-          }
-
-          if(((cursor_board_x - scroll_x) < 5) && scroll_x)
-            scroll_x--;
-        }
-
-        if((cursor_board_x - scroll_x) < (debug_x + 25))
-        {
-          debug_x = 60;
-          clear_screen_no_update();
-        }
+          cursor_move_x = -copy_repeat_width;
 
         break;
       }
 
       case IKEY_RIGHT:
       {
-        int i, move_amount = 1;
-
         if(get_shift_status(keycode_internal))
         {
           // Move to adjacent board
-          // Doesn't make sense on the vlayer.
           if(src_board->board_dir[2] != NO_BOARD && overlay_edit != EDIT_VLAYER)
             new_board = src_board->board_dir[2];
-
           break;
         }
 
+        cursor_move_x = 1;
+
         if(get_alt_status(keycode_internal))
-          move_amount = 10;
+          cursor_move_x = 10;
 
         if(get_ctrl_status(keycode_internal) &&
          (draw_mode == 4) && (copy_repeat_width >= 0))
-          move_amount = copy_repeat_width;
-
-        for(i = 0; i < move_amount; i++)
-        {
-          if(cursor_board_x == (board_width - 1))
-            break;
-
-          cursor_board_x++;
-
-          if(draw_mode == 1)
-          {
-            current_param = place_current_at_xy(mzx_world, current_id,
-             current_color, current_param, cursor_board_x, cursor_board_y,
-             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit, 1);
-            modified = 1;
-          }
-
-          if(((cursor_board_x - scroll_x) > 74) &&
-           (scroll_x < (board_width - 80)))
-            scroll_x++;
-        }
-
-        if((cursor_board_x - scroll_x) > (debug_x - 5))
-        {
-          debug_x = 0;
-          clear_screen_no_update();
-        }
+          cursor_move_x = copy_repeat_width;
 
         break;
       }
@@ -1989,23 +1895,33 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           place_current_at_xy(mzx_world, __TEXT, current_color,
            ' ', cursor_board_x, cursor_board_y, &copy_robot,
            &copy_scroll, &copy_sensor, overlay_edit, 1);
+
           modified = 1;
         }
         else
         {
+          int offset = cursor_board_x + (board_width * cursor_board_y);
+
           if(overlay_edit)
           {
-            // Overlay and vlayer
+            // Delete under cursor (overlay and vlayer)
             place_current_at_xy(mzx_world, SPACE, 7, 32, cursor_board_x,
              cursor_board_y, &copy_robot, &copy_scroll, &copy_sensor,
              overlay_edit, 1);
+
+            modified = 1;
           }
           else
 
-          if((cursor_board_x != mzx_world->player_x) ||
-           (cursor_board_y != mzx_world->player_y))
+          if(level_id[offset] != PLAYER)
           {
+            // Remove from top (board only)
+            add_block_undo_frame(mzx_world, board_history,
+             src_board, offset, 1, 1);
+
             id_remove_top(mzx_world, cursor_board_x, cursor_board_y);
+
+            update_undo_frame(board_history);
             modified = 1;
           }
         }
@@ -3100,9 +3016,9 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           // Kinda a hack, but should get the job done.
           if(is_storageless(current_id) && (new_param >= 0))
           {
-            src_board->level_param[(cursor_board_y * board_width) +
-             cursor_board_x] = new_param;
+            int offset = cursor_board_x + (cursor_board_y * board_width);
 
+            level_param[offset] = new_param;
             current_param = new_param;
           }
           else
@@ -3301,9 +3217,26 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           }
           else
           {
-            fill_area(mzx_world, current_id, current_color,
-             current_param, cursor_board_x, cursor_board_y,
-             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit);
+            struct undo_history *h;
+
+            switch(overlay_edit)
+            {
+              case EDIT_BOARD:
+                h = board_history;
+                break;
+
+              case EDIT_OVERLAY:
+                h = overlay_history;
+                break;
+
+              case EDIT_VLAYER:
+                h = vlayer_history;
+                break;
+            }
+
+            fill_area(mzx_world, h, current_id, current_color, current_param,
+             cursor_board_x, cursor_board_y, &copy_robot, &copy_scroll,
+             &copy_sensor, overlay_edit);
             modified = 1;
           }
         }
@@ -3325,7 +3258,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             if(!board_goto(mzx_world, overlay_edit,
              &cursor_board_x, &cursor_board_y))
             {
-              // This will get fixed if necessary.
+              // This will get fixed by fix_scroll
               scroll_x = cursor_board_x - 39;
               scroll_y = cursor_board_y - edit_screen_height / 2;
 
@@ -3364,8 +3297,8 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             edit_screen_height = EDIT_SCREEN_EXTENDED;
             clear_screen_no_update();
 
-            if((scroll_y + 25) > board_height)
-              scroll_y = board_height - 25;
+            if((scroll_y + 24) > board_height)
+              scroll_y = board_height - 24;
 
             if(scroll_y < 0)
               scroll_y = 0;
@@ -3429,6 +3362,9 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                   if((draw_mode > 3) &&
                    (block_board == (mzx_world->current_board)))
                     draw_mode = 0;
+
+                  clear_board_history = 1;
+                  clear_overlay_history = 1;
 
                   modified = 1;
                 }
@@ -3532,14 +3468,18 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             if(mzx_world->current_board_id == 0)
               strcpy(mzx_world->name, src_board->board_name);
 
-            // Mostly doing this to update the caption
             synchronize_board_values(mzx_world, &src_board, &board_width,
              &board_height, &level_id, &level_param, &level_color,
              &overlay, &overlay_color, &vlayer_chars, &vlayer_colors,
              overlay_edit);
 
+            fix_caption(mzx_world, modified);
+
             if(!src_board->overlay_mode && overlay_edit == EDIT_OVERLAY)
+            {
+              clear_overlay_history = 1;
               overlay_edit = EDIT_BOARD;
+            }
 
             modified = 1;
           }
@@ -3571,9 +3511,9 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           if(!modified || !confirm(mzx_world,
            "Load: World has not been saved, are you sure?"))
           {
-            char last_world[MAX_PATH];
+            char prev_world[MAX_PATH];
             char load_world[MAX_PATH];
-            strcpy(last_world, current_world);
+            strcpy(prev_world, current_world);
             strcpy(load_world, current_world);
 
             if(!choose_file_ch(mzx_world, world_ext, load_world,
@@ -3581,17 +3521,14 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             {
               int fade;
 
-              //end_module();
-
               // Load world curr_file
               strcpy(current_world, load_world);
               if(!editor_reload_world(mzx_world, current_world, &fade))
               {
-                strcpy(current_world, last_world);
+                strcpy(current_world, prev_world);
 
                 fix_mod(mzx_world, src_board, listening_flag);
                 break;
-                //create_blank_world(mzx_world);
               }
               strcpy(curr_file, current_world);
 
@@ -3599,9 +3536,6 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
               mzx_world->current_board =
                mzx_world->board_list[mzx_world->current_board_id];
               src_board = mzx_world->current_board;
-
-              if(draw_mode > 3)
-                draw_mode = 0;
 
               insta_fadein();
 
@@ -3623,6 +3557,13 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
               if(!src_board->overlay_mode && overlay_edit == EDIT_OVERLAY)
                 overlay_edit = EDIT_BOARD;
+
+              if(draw_mode > 3)
+                draw_mode = 0;
+
+              clear_board_history = 1;
+              clear_overlay_history = 1;
+              clear_vlayer_history = 1;
 
               modified = 0;
             }
@@ -3650,33 +3591,49 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
               int d_param = level_param[offset];
               int new_param;
 
-              if(d_id == SENSOR)
+              if(is_storageless(d_id))
               {
-                edit_sensor(mzx_world, src_board->sensor_list[d_param]);
-                modified = 1;
+                new_param =
+                 change_param(mzx_world, d_id, d_param, NULL, NULL, NULL);
+
+                if(new_param >= 0 && new_param != d_param)
+                {
+                  add_block_undo_frame(mzx_world, board_history,
+                   src_board, offset, 1, 1);
+
+                  level_param[offset] = new_param;
+
+                  update_undo_frame(board_history);
+                  modified = 1;
+                }
               }
               else
 
-              if(is_robot(d_id))
+              if(d_id != PLAYER)
               {
-                draw_memory_timer = DRAW_MEMORY_TIMER_MAX;
-                edit_robot(mzx_world, src_board->robot_list[d_param]);
-                fix_caption(mzx_world, modified);
-                modified = 1;
-              }
-              else
+                add_block_undo_frame(mzx_world, board_history,
+                 src_board, offset, 1, 1);
 
-              if(is_signscroll(d_id))
-              {
-                edit_scroll(mzx_world, src_board->scroll_list[d_param]);
-                modified = 1;
-              }
-              else
+                if(d_id == SENSOR)
+                {
+                  edit_sensor(mzx_world, src_board->sensor_list[d_param]);
+                }
+                else
 
-              if(is_storageless(d_id) &&
-               (0 <= (new_param = change_param(mzx_world, d_id, d_param, NULL, NULL, NULL))))
-              {
-                src_board->level_param[offset] = new_param;
+                if(is_robot(d_id))
+                {
+                  edit_robot(mzx_world, src_board->robot_list[d_param]);
+                  draw_memory_timer = DRAW_MEMORY_TIMER_MAX;
+                  fix_caption(mzx_world, modified);
+                }
+                else
+
+                if(is_signscroll(d_id))
+                {
+                  edit_scroll(mzx_world, src_board->scroll_list[d_param]);
+                }
+
+                update_undo_frame(board_history);
                 modified = 1;
               }
             }
@@ -3684,12 +3641,16 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
             if(overlay_edit == EDIT_OVERLAY)
             {
-              int o_ch = src_board->overlay[offset];
-              int new_ch;
+              int new_ch = char_selection(overlay[offset]);
 
-              if((new_ch = char_selection(o_ch)) >= 0)
+              if(new_ch >= 0)
               {
-                src_board->overlay[offset] = new_ch;
+                add_layer_undo_frame(overlay_history, overlay, overlay_color,
+                 board_width, offset, 1, 1);
+
+                overlay[offset] = new_ch;
+
+                update_undo_frame(overlay_history);
                 modified = 1;
               }
             }
@@ -3700,7 +3661,12 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
               if(new_ch >= 0)
               {
+                add_layer_undo_frame(vlayer_history, vlayer_chars,
+                 vlayer_colors, board_width, offset, 1, 1);
+
                 vlayer_chars[offset] = new_ch;
+
+                update_undo_frame(vlayer_history);
                 modified = 1;
               }
             }
@@ -3867,12 +3833,18 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           {
             if(overlay_edit == EDIT_VLAYER)
             {
-              size_pos_vlayer(mzx_world);
+              if(size_pos_vlayer(mzx_world))
+                clear_vlayer_history = 1;
             }
             else
             {
-              size_pos(mzx_world);
-              set_update_done_current(mzx_world);
+              if(size_pos(mzx_world))
+              {
+                set_update_done_current(mzx_world);
+
+                clear_board_history = 1;
+                clear_overlay_history = 1;
+              }
             }
 
             synchronize_board_values(mzx_world, &src_board, &board_width,
@@ -3940,6 +3912,10 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
             fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
              &debug_x, board_width, board_height, edit_screen_height);
+
+            clear_board_history = 1;
+            clear_overlay_history = 1;
+            clear_vlayer_history = 1;
 
             end_module();
 
@@ -4085,6 +4061,10 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             // Do this in case a different world was loaded/created
             fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
              &debug_x, board_width, board_height, edit_screen_height);
+
+            clear_board_history = 1;
+            clear_overlay_history = 1;
+            clear_vlayer_history = 1;
 
             insta_fadein();
 
@@ -4338,15 +4318,13 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         {
           // Redo
           if(overlay_edit == EDIT_BOARD)
-            apply_redo(board_history);
+            modified |= apply_redo(board_history);
 
           else if(overlay_edit == EDIT_OVERLAY)
-            apply_redo(overlay_history);
+            modified |= apply_redo(overlay_history);
 
           else if(overlay_edit == EDIT_VLAYER)
-            apply_redo(vlayer_history);
-
-          modified = 1;
+            modified |= apply_redo(vlayer_history);
         }
         else
 
@@ -4370,15 +4348,13 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         {
           // Undo
           if(overlay_edit == EDIT_BOARD)
-            apply_undo(board_history);
+            modified |= apply_undo(board_history);
 
           else if(overlay_edit == EDIT_OVERLAY)
-            apply_undo(overlay_history);
+            modified |= apply_undo(overlay_history);
 
           else if(overlay_edit == EDIT_VLAYER)
-            apply_undo(vlayer_history);
-
-          modified = 1;
+            modified |= apply_undo(vlayer_history);
         }
         else
 
@@ -4396,6 +4372,8 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
               {
                 draw_mode = 0;
               }
+
+              clear_vlayer_history = 1;
             }
           }
           else
@@ -4417,6 +4395,9 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             src_board->mod_playing[0] = 0;
             strcpy(mzx_world->real_mod_playing,
              src_board->mod_playing);
+
+            clear_board_history = 1;
+            clear_overlay_history = 1;
 
             if((draw_mode > 3) &&
              (block_board == (mzx_world->current_board)))
@@ -4470,6 +4451,8 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
        &scroll_y, &debug_x, board_width, board_height,
        edit_screen_height);
 
+      fix_caption(mzx_world, modified);
+
       if(strcmp(src_board->mod_playing, "*") &&
        strcasecmp(src_board->mod_playing,
        mzx_world->real_mod_playing))
@@ -4489,12 +4472,121 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
       modified = 1;
     }
 
+    if(cursor_move_x || cursor_move_y)
+    {
+      // Move the cursor
+      // Bound movement within the dimensions of the board
+      cursor_move_x =
+       CLAMP(cursor_move_x, -cursor_board_x, board_width - cursor_board_x - 1);
+
+      cursor_move_y =
+       CLAMP(cursor_move_y, -cursor_board_y, board_height - cursor_board_y - 1);
+
+      if(cursor_move_x || cursor_move_y)
+      {
+        int offset = cursor_board_x + (board_width * cursor_board_y);
+        int move_x = SGN(cursor_move_x);
+        int move_y = SGN(cursor_move_y);
+        int width = abs(cursor_move_x) + 1;
+        int height = abs(cursor_move_y) + 1;
+
+        if(move_x)
+        {
+          cursor_move_y = 0;
+          move_y = 0;
+          if(move_x < 0)
+            offset -= width;
+        }
+        else
+        {
+          if(move_y < 0)
+            offset -= board_width * height;
+        }
+
+        if(draw_mode == 1)
+        {
+          switch(overlay_edit)
+          {
+            case EDIT_BOARD:
+              add_block_undo_frame(
+               mzx_world, board_history, src_board, offset, width, height);
+              break;
+
+            case EDIT_OVERLAY:
+              add_layer_undo_frame(overlay_history,
+               overlay, overlay_color, board_width, offset, width, height);
+              break;
+
+            case EDIT_VLAYER:
+              add_layer_undo_frame(vlayer_history,
+               vlayer_chars, vlayer_colors, board_width, offset, width, height);
+              break;
+          }
+        }
+
+        do
+        {
+          cursor_board_x += move_x;
+          cursor_board_y += move_y;
+
+          if(draw_mode == 1)
+          {
+            current_param = place_current_at_xy(mzx_world, current_id,
+             current_color, current_param, cursor_board_x, cursor_board_y,
+             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit, 0);
+            modified = 1;
+          }
+
+          // Scroll board position (fix later)
+          if(cursor_board_x - scroll_x < 5)
+            scroll_x--;
+
+          if(cursor_board_x - scroll_x > 74)
+            scroll_x++;
+
+          if(cursor_board_y - scroll_y < 3)
+            scroll_y--;
+
+          if(cursor_board_y - scroll_y > (edit_screen_height - 5))
+            scroll_y++;
+
+          cursor_move_x -= move_x;
+          cursor_move_y -= move_y;
+        }
+        while(cursor_move_x || cursor_move_y);
+
+        fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x,
+         &scroll_y, &debug_x, board_width, board_height,
+         edit_screen_height);
+
+        if(draw_mode == 1)
+        {
+          switch(overlay_edit)
+          {
+            case EDIT_BOARD:
+              update_undo_frame(board_history);
+              break;
+
+            case EDIT_OVERLAY:
+              update_undo_frame(overlay_history);
+              break;
+
+            case EDIT_VLAYER:
+              update_undo_frame(vlayer_history);
+              break;
+          }
+        }
+      }
+    }
+
     if(draw_mode == 1 && mzx_world->editor_conf.editor_tab_focuses_view)
     {
-      scroll_x = CLAMP(cursor_board_x - 40,
-       0, MAX(0, src_board->board_width - 80));
-      scroll_y = CLAMP(cursor_board_y - (edit_screen_height / 2),
-       0, MAX(0, src_board->board_height - edit_screen_height));
+      scroll_x = cursor_board_x - 40;
+      scroll_y = cursor_board_y - (edit_screen_height / 2);
+
+      fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x,
+       &scroll_y, &debug_x, board_width, board_height,
+       edit_screen_height);
     }
 
     if(text_place)
@@ -4509,15 +4601,12 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         if(cursor_board_x < (board_width - 1))
           cursor_board_x++;
 
-        if((cursor_board_x > 74) && (cursor_board_x < (board_width - 5)) &&
-         (scroll_x < (board_width - 80)))
+        if(cursor_board_x - scroll_x > 74)
           scroll_x++;
 
-        if((cursor_board_x - scroll_x) > (debug_x - 5))
-        {
-          debug_x = 0;
-          clear_screen_no_update();
-        }
+        fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x,
+         &scroll_y, &debug_x, board_width, board_height,
+         edit_screen_height);
 
         modified = 1;
       }

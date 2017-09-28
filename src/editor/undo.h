@@ -24,6 +24,7 @@
 
 __M_BEGIN_DECLS
 
+#include "data.h"
 #include "world_struct.h"
 
 struct undo_frame
@@ -45,8 +46,8 @@ struct undo_history
   void (*clear_function)(struct undo_frame *);
 };
 
-void apply_undo(struct undo_history *h);
-void apply_redo(struct undo_history *h);
+int apply_undo(struct undo_history *h);
+int apply_redo(struct undo_history *h);
 void update_undo_frame(struct undo_history *h);
 void destruct_undo_history(struct undo_history *h);
 
@@ -58,6 +59,12 @@ void add_charset_undo_frame(struct undo_history *h, int offset,
  int width, int height);
 
 void add_board_undo_frame(struct world *mzx_world, struct undo_history *h,
+ enum thing id, int color, int param, int x, int y, struct robot *copy_robot,
+ struct scroll *copy_scroll, struct sensor *copy_sensor);
+
+void add_board_undo_position(struct undo_history *h, int x, int y);
+
+void add_block_undo_frame(struct world *mzx_world, struct undo_history *h,
  struct board *src_board, int src_offset, int width, int height);
 
 void add_layer_undo_frame(struct undo_history *h, char *layer_chars,
