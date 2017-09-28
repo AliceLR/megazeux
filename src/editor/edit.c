@@ -3984,8 +3984,21 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
       {
         if(get_alt_status(keycode_internal))
         {
+          // Test world
           int fade;
           int current_board_id = mzx_world->current_board_id;
+
+          // Clear undo histories and prepare to reset them
+          // We don't want the undo buffer wasting memory while testing
+          destruct_undo_history(board_history);
+          destruct_undo_history(overlay_history);
+          destruct_undo_history(vlayer_history);
+          board_history = NULL;
+          overlay_history = NULL;
+          vlayer_history = NULL;
+          clear_board_history = 1;
+          clear_overlay_history = 1;
+          clear_vlayer_history = 1;
 
           if(!save_world(mzx_world, "__test.mzx", 0, WORLD_VERSION))
           {
@@ -4061,10 +4074,6 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             // Do this in case a different world was loaded/created
             fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
              &debug_x, board_width, board_height, edit_screen_height);
-
-            clear_board_history = 1;
-            clear_overlay_history = 1;
-            clear_vlayer_history = 1;
 
             insta_fadein();
 
