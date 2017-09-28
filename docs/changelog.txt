@@ -1,6 +1,15 @@
 MZX GIT
 
 FIXME: size_pos_vlayer() needs a real help file context (edit_di.c, 747).
+FIXME: board undo notes:
+  * Board/overlay/vlayer histories reset on world load, clear
+    world (Alt+R), testing (Alt+T), and exiting the editor.
+  * Board/overlay histories reset on board change, clear board
+    (Alt+Z), board resize (Alt+P), and import board (Alt+I).
+  * Vlayer history resets on clear vlayer (Alt+Z) and resize
+    vlayer (Alt+P).
+  * Changes in world/board settings, status counters, etc. are
+    not included in the history.
 
 FEATURES
 
@@ -15,6 +24,9 @@ FEATURES
   invisible global overlay that can be used to store and
   retrieve graphical data through Robotic. See the editor help
   and the Robotic reference manual for more details.
++ Added undo/redo functionality to the world editor. Use Ctrl+Z
+  to undo changes to the board/overlay/vlayer and Ctrl+Y to
+  redo.
 + The default size of the char editor undo history has been
   extended to 100 levels. The undo/redo shortcuts are now Ctrl+Z
   for undo and Ctrl+Y for redo.
