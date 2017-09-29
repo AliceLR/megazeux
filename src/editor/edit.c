@@ -4491,43 +4491,43 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
       cursor_move_y =
        CLAMP(cursor_move_y, -cursor_board_y, board_height - cursor_board_y - 1);
 
+      if(cursor_move_x)
+        cursor_move_y = 0;
+
       if(cursor_move_x || cursor_move_y)
       {
+        struct undo_history *h;
         int offset = cursor_board_x + (board_width * cursor_board_y);
         int move_x = SGN(cursor_move_x);
         int move_y = SGN(cursor_move_y);
         int width = abs(cursor_move_x) + 1;
         int height = abs(cursor_move_y) + 1;
 
-        if(move_x)
-        {
-          cursor_move_y = 0;
-          move_y = 0;
-          if(move_x < 0)
-            offset -= width;
-        }
-        else
-        {
-          if(move_y < 0)
-            offset -= board_width * height;
-        }
+        if(move_x < 0)
+          offset -= width;
+
+        if(move_y < 0)
+          offset -= board_width * height;
 
         if(draw_mode == 1)
         {
           switch(overlay_edit)
           {
             case EDIT_BOARD:
+              h = board_history;
               add_block_undo_frame(
-               mzx_world, board_history, src_board, offset, width, height);
+               mzx_world, h, src_board, offset, width, height);
               break;
 
             case EDIT_OVERLAY:
-              add_layer_undo_frame(overlay_history,
+              h = overlay_history;
+              add_layer_undo_frame(h,
                overlay, overlay_color, board_width, offset, width, height);
               break;
 
             case EDIT_VLAYER:
-              add_layer_undo_frame(vlayer_history,
+              h = vlayer_history;
+              add_layer_undo_frame(h,
                vlayer_chars, vlayer_colors, board_width, offset, width, height);
               break;
           }
@@ -4537,6 +4537,8 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         {
           cursor_board_x += move_x;
           cursor_board_y += move_y;
+          cursor_move_x -= move_x;
+          cursor_move_y -= move_y;
 
           if(draw_mode == 1)
           {
@@ -4546,7 +4548,6 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             modified = 1;
           }
 
-          // Scroll board position (fix later)
           if(cursor_board_x - scroll_x < 5)
             scroll_x--;
 
@@ -4558,33 +4559,15 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
           if(cursor_board_y - scroll_y > (edit_screen_height - 5))
             scroll_y++;
-
-          cursor_move_x -= move_x;
-          cursor_move_y -= move_y;
         }
         while(cursor_move_x || cursor_move_y);
+
+        if(draw_mode == 1)
+          update_undo_frame(h);
 
         fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x,
          &scroll_y, &debug_x, board_width, board_height,
          edit_screen_height);
-
-        if(draw_mode == 1)
-        {
-          switch(overlay_edit)
-          {
-            case EDIT_BOARD:
-              update_undo_frame(board_history);
-              break;
-
-            case EDIT_OVERLAY:
-              update_undo_frame(overlay_history);
-              break;
-
-            case EDIT_VLAYER:
-              update_undo_frame(vlayer_history);
-              break;
-          }
-        }
       }
     }
 
