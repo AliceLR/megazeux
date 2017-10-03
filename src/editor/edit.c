@@ -3013,15 +3013,10 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
            change_param(mzx_world, current_id, current_param,
            &copy_robot, &copy_scroll, &copy_sensor);
 
-          // Kinda a hack, but should get the job done.
-          if(is_storageless(current_id) && (new_param >= 0))
-          {
-            int offset = cursor_board_x + (cursor_board_y * board_width);
-
-            level_param[offset] = new_param;
-            current_param = new_param;
-          }
-          else
+          // Place the buffer back on the board
+          // Ignore non-storage objects with no change.
+          if(!is_storageless(current_id) ||
+           (new_param >= 0 && new_param != current_param))
           {
             current_param = place_current_at_xy(mzx_world, current_id,
              current_color, new_param, cursor_board_x, cursor_board_y,
