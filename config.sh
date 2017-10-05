@@ -65,7 +65,7 @@ usage() {
 	echo "  --enable-egl          Enables EGL backend (if SDL disabled)."
 	echo "  --disable-check-alloc Disables memory allocator error handling."
 	echo "  --disable-uthash      Disables hash counter/string lookups."
-  echo "  --disable-undo        Disables undo/redo operations in the editor."
+	echo "  --disable-undo        Disables undo/redo operations in the editor."
 	echo "  --enable-debytecode   Enable experimental 'debytecode' transform."
 	echo "  --disable-libsdl2     Disable SDL 2.0 support (falls back on 1.2)."
 	echo "  --enable-fps          Enable frames-per-second counter."
