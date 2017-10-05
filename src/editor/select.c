@@ -50,7 +50,7 @@
 //    _OK_      _Cancel_
 //
 //--------------------------
-int block_cmd(struct world *mzx_world, int overlay_edit)
+int select_block_command(struct world *mzx_world, int overlay_edit)
 {
   int dialog_result;
   struct element *elements[3];
