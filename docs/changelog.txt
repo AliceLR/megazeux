@@ -36,6 +36,13 @@ FEATURES
   renamed.
 + Saved positions now have confirmation dialogs. Saved positions
   are saved to/loaded from the editor.cnf file for each world.
++ Pressing Enter/Return on the overlay (and vlayer) now acts the
+  same as on the board, changing both the buffer and the current
+  layer being edited.
++ Pressing P on the overlay (and vlayer) now acts the same as on
+  the board, changing the character in the buffer but NOT on the
+  current layer. This is equivalent to the original overlay
+  behavior for Enter.
 + Block tiling movement (Ctrl+Arrows) now works with most block
   actions, and does not require an initial block placement to
   activate.

@@ -331,16 +331,16 @@ static const char *const menu_lines[NUM_MENUS][2]=
 static const char *const overlay_menu_lines[4] =
 {
   " OVERLAY EDITING- (Alt+O to end)",
-  " \x12\x1d:Move  Enter:Character  Space:Place  Ins:Grab  Del:Delete        F:Fill",
-  " C:Color  Alt+\x12\x1d:Move 10   Alt+B:Block  Tab:Draw  Alt+S:Show level  F2:Text",
+  " \x12\x1d:Move  Enter:Modify+Grab  Space:Place  Ins:Grab  Del:Delete        F:Fill",
+  " C:Color  Alt+\x12\x1d:Move 10     Alt+B:Block  Tab:Draw  Alt+S:Show level  F2:Text",
   "Character"
 };
 
 static const char *const vlayer_menu_lines[4] =
 {
   " VLAYER EDITING- (Alt+V to end)",
-  " \x12\x1d:Move  Enter:Character  Space:Place  Ins:Grab  Del:Delete  F:Fill",
-  " C:Color  Alt+\x12\x1d:Move 10   Alt+B:Block  Tab:Draw  Alt+P:Size  F2:Text",
+  " \x12\x1d:Move  Enter:Modify+Grab  Space:Place  Ins:Grab  Del:Delete  F:Fill",
+  " C:Color  Alt+\x12\x1d:Move 10     Alt+B:Block  Tab:Draw  Alt+P:Size  F2:Text",
   "Character"
 };
 
@@ -2985,45 +2985,46 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
               scroll_y++;
           }
         }
-        else
-
-        // Normal/draw - overlay char
-        if(overlay_edit)
-        {
-          int new_param = char_selection(current_param);
-          if(new_param >= 0)
-          {
-            current_param = new_param;
-            modified = 1;
-          }
-        }
 
         // Normal/draw - modify+get
         else
         {
+          int edited_storage = 0;
           int new_param;
 
           grab_at_xy(mzx_world, &current_id, &current_color,
            &current_param, &copy_robot, &copy_scroll, &copy_sensor,
            cursor_board_x, cursor_board_y, overlay_edit);
 
-          copy_robot.xpos = cursor_board_x;
-          copy_robot.ypos = cursor_board_y;
-          new_param =
-           change_param(mzx_world, current_id, current_param,
-           &copy_robot, &copy_scroll, &copy_sensor);
-
-          // Place the buffer back on the board
-          // Ignore non-storage objects with no change.
-          if(!is_storageless(current_id) ||
-           (new_param >= 0 && new_param != current_param))
+          if(overlay_edit == EDIT_BOARD)
           {
-            current_param = place_current_at_xy(mzx_world, current_id,
-             current_color, new_param, cursor_board_x, cursor_board_y,
-             &copy_robot, &copy_scroll, &copy_sensor, EDIT_BOARD, 1);
+            // Board- param
+            copy_robot.xpos = cursor_board_x;
+            copy_robot.ypos = cursor_board_y;
+
+            new_param =
+             change_param(mzx_world, current_id, current_param,
+             &copy_robot, &copy_scroll, &copy_sensor);
+
+            if(!is_storageless(current_id))
+              edited_storage = 1;
+          }
+          else
+          {
+            // Overlay and vlayer- char
+            new_param = char_selection(current_param);
           }
 
-          modified = 1;
+          // Ignore non-storage objects with no change.
+          if((new_param >= 0 && new_param != current_param) || edited_storage)
+          {
+            // Place the buffer back on the board/layer
+            current_param = place_current_at_xy(mzx_world, current_id,
+             current_color, new_param, cursor_board_x, cursor_board_y,
+             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit, 1);
+
+            modified = 1;
+          }
         }
 
         break;
@@ -3826,6 +3827,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         {
           if(get_alt_status(keycode_internal))
           {
+            // Size and position
             if(overlay_edit == EDIT_VLAYER)
             {
               if(size_pos_vlayer(mzx_world))
@@ -3864,6 +3866,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
           if(!overlay_edit)
           {
+            // Board- buffer param
             if(current_id < SENSOR)
             {
               int new_param = change_param(mzx_world, current_id,
@@ -3871,9 +3874,16 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
               if(new_param >= 0)
                 current_param = new_param;
-
-              modified = 1;
             }
+          }
+
+          else
+          {
+            // Layer- buffer char
+            int new_param = char_selection(current_param);
+
+            if(new_param >= 0)
+              current_param = new_param;
           }
         }
         else
