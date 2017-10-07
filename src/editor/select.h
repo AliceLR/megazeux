@@ -28,7 +28,7 @@ __M_BEGIN_DECLS
 
 #include "../world_struct.h"
 
-int block_cmd(struct world *mzx_world, int overlay_edit);
+int select_block_command(struct world *mzx_world, int overlay_edit);
 int layer_to_board_object_type(struct world *mzx_world);
 int select_screen_mode(struct world *mzx_world);
 int choose_char_set(struct world *mzx_world);

@@ -20,10 +20,11 @@
 
 /* Fill function. */
 
+#include "edit.h"
 #include "fill.h"
+#include "undo.h"
 
 #include "../util.h"
-#include "edit.h"
 
 struct queue_elem
 {
@@ -52,13 +53,13 @@ struct queue_elem
   queue_next = (queue_next + 1) % QUEUE_SIZE;       \
 }
 
-void fill_area(struct world *mzx_world, enum thing id, int color, int param,
- int x, int y, struct robot *copy_robot, struct scroll *copy_scroll, struct sensor *copy_sensor,
- int overlay_edit)
+void fill_area(struct world *mzx_world, struct undo_history *h,
+ enum thing id, int color, int param, int x, int y, struct robot *copy_robot,
+ struct scroll *copy_scroll, struct sensor *copy_sensor, int overlay_edit)
 {
   struct board *cur_board = mzx_world->current_board;
 
-  struct queue_elem *queue = cmalloc(QUEUE_SIZE * sizeof(struct queue_elem));
+  struct queue_elem *queue;
   int queue_first = 0;
   int queue_next = 1;
   int matched_down;
@@ -75,9 +76,12 @@ void fill_area(struct world *mzx_world, enum thing id, int color, int param,
   int fill_color = 0;
   int fill_param = 0;
 
+  // Do nothing if the player is in the buffer
+  if(id == PLAYER)
+    return;
+
   switch(overlay_edit)
   {
-    default:
     case EDIT_BOARD:
       level_id = cur_board->level_id;
       level_color = cur_board->level_color;
@@ -93,8 +97,10 @@ void fill_area(struct world *mzx_world, enum thing id, int color, int param,
       level_param = cur_board->overlay;
       board_width = cur_board->board_width;
       board_height = cur_board->board_height;
+      id = param;
       break;
 
+    default:
     case EDIT_VLAYER:
       // Use chars for id so we don't have to check for NULL
       level_id = mzx_world->vlayer_chars;
@@ -102,6 +108,7 @@ void fill_area(struct world *mzx_world, enum thing id, int color, int param,
       level_param = mzx_world->vlayer_chars;
       board_width = mzx_world->vlayer_width;
       board_height = mzx_world->vlayer_height;
+      id = param;
       break;
   }
 
@@ -114,8 +121,20 @@ void fill_area(struct world *mzx_world, enum thing id, int color, int param,
   if((fill_id == id) &&
    (fill_color == color) &&
    (fill_param == param))
-    goto err_free;
+    return;
 
+  // Start the undo frame for this fill
+  if(overlay_edit == EDIT_BOARD)
+    add_board_undo_frame(mzx_world, h, id, color, param, x, y,
+     copy_robot, copy_scroll, copy_sensor);
+
+  // Layers don't have variable size undo frames because they're
+  // much lighter than the board; just save the whole thing
+  else
+    add_layer_undo_frame(h, level_id, level_color, board_width, 0,
+     board_width, board_height);
+
+  queue = cmalloc(QUEUE_SIZE * sizeof(struct queue_elem));
   queue[0].x = x;
   queue[0].y = y;
 
@@ -144,9 +163,13 @@ void fill_area(struct world *mzx_world, enum thing id, int color, int param,
     // Scan right
     do
     {
+      // Update the undo frame for the new position, then fill
+      if(overlay_edit == EDIT_BOARD)
+        add_board_undo_position(h, x, y);
+
       if(place_current_at_xy(mzx_world, id, color, param, x, y, copy_robot,
-       copy_scroll, copy_sensor, overlay_edit) == -1)
-        goto err_free;
+       copy_scroll, copy_sensor, overlay_edit, 0) == -1)
+        goto out_free;
 
       if(y > 0 && MATCHING(offset - board_width))
       {
@@ -181,6 +204,9 @@ void fill_area(struct world *mzx_world, enum thing id, int color, int param,
   }
   while(queue_first != queue_next);
 
-err_free:
+out_free:
+  // Finalize the undo frame
+  update_undo_frame(h);
+
   free(queue);
 }

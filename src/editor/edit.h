@@ -40,8 +40,13 @@ EDITOR_LIBSPEC void refactor_saved_positions(struct world *mzx_world,
 */
 
 int place_current_at_xy(struct world *mzx_world, enum thing id, int color,
- int param, int x, int y, struct robot *copy_robot,
- struct scroll *copy_scroll, struct sensor *copy_sensor, int overlay_edit);
+ int param, int x, int y, struct robot *copy_robot, struct scroll *copy_scroll,
+ struct sensor *copy_sensor, int overlay_edit, int save_history);
+
+void grab_at_xy(struct world *mzx_world, enum thing *new_id,
+ int *new_color, int *new_param, struct robot *copy_robot,
+ struct scroll *copy_scroll, struct sensor *copy_sensor,
+ int x, int y, int overlay_edit);
 
 #define EDIT_BOARD            0
 #define EDIT_OVERLAY          1

@@ -35,8 +35,8 @@ void board_info(struct world *mzx_world);
 void board_exits(struct world *mzx_world);
 void global_info(struct world *mzx_world);
 void global_robot(struct world *mzx_world);
-void size_pos(struct world *mzx_world);
-void size_pos_vlayer(struct world *mzx_world);
+int size_pos(struct world *mzx_world);
+int size_pos_vlayer(struct world *mzx_world);
 void set_confirm_buttons(struct element **elements);
 void status_counter_info(struct world *mzx_world);
 

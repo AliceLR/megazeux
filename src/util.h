@@ -40,6 +40,8 @@ __M_BEGIN_DECLS
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
 
+#define SGN(x) ((x > 0) - (x < 0))
+
 #ifndef DIR_SEPARATOR
 #ifdef __WIN32__
 #define DIR_SEPARATOR "\\"

@@ -54,6 +54,7 @@
 #include "robot.h"
 #include "select.h"
 #include "sfx_edit.h"
+#include "undo.h"
 #include "window.h"
 #include "world.h"
 
@@ -76,6 +77,10 @@
 
 static int draw_memory_timer = 0;
 static int draw_mod_timer = 0;
+
+static struct undo_history *board_history = NULL;
+static struct undo_history *overlay_history = NULL;
+static struct undo_history *vlayer_history = NULL;
 
 void free_editor_config(struct world *mzx_world)
 {
@@ -205,6 +210,22 @@ static void fix_caption(struct world *mzx_world, int modified)
   set_caption(mzx_world, mzx_world->current_board, NULL, 1, modified);
 }
 
+static void fix_cursor(int *cursor_board_x, int *cursor_board_y,
+ int scroll_x, int scroll_y, int *debug_x, int board_width, int board_height)
+{
+  if(*cursor_board_x >= board_width)
+    *cursor_board_x = (board_width - 1);
+
+  if(*cursor_board_y >= board_height)
+    *cursor_board_y = (board_height - 1);
+
+  if((*cursor_board_x - scroll_x) < (*debug_x + 25))
+    *debug_x = 60;
+
+  if((*cursor_board_x - scroll_x) > (*debug_x - 5))
+    *debug_x = 0;
+}
+
 static void fix_scroll(int *cursor_board_x, int *cursor_board_y,
  int *scroll_x, int *scroll_y, int *debug_x, int board_width, int board_height,
  int edit_screen_height)
@@ -222,18 +243,8 @@ static void fix_scroll(int *cursor_board_x, int *cursor_board_y,
   if(*scroll_y < 0)
     *scroll_y = 0;
 
-
-  if(*cursor_board_x >= board_width)
-    *cursor_board_x = (board_width - 1);
-
-  if(*cursor_board_y >= board_height)
-    *cursor_board_y = (board_height - 1);
-
-  if((*cursor_board_x - *scroll_x) < (*debug_x + 25))
-    *debug_x = 60;
-
-  if((*cursor_board_x - *scroll_x) > (*debug_x - 5))
-    *debug_x = 0;
+  fix_cursor(cursor_board_x, cursor_board_y, *scroll_x, *scroll_y, debug_x,
+   board_width, board_height);
 }
 
 static void fix_board(struct world *mzx_world, int new_board)
@@ -326,16 +337,16 @@ static const char *const menu_lines[NUM_MENUS][2]=
 static const char *const overlay_menu_lines[4] =
 {
   " OVERLAY EDITING- (Alt+O to end)",
-  " \x12\x1d:Move  Enter:Character  Space:Place  Ins:Grab  Del:Delete        F:Fill",
-  " C:Color  Alt+\x12\x1d:Move 10   Alt+B:Block  Tab:Draw  Alt+S:Show level  F2:Text",
+  " \x12\x1d:Move  Enter:Modify+Grab  Space:Place  Ins:Grab  Del:Delete        F:Fill",
+  " C:Color  Alt+\x12\x1d:Move 10     Alt+B:Block  Tab:Draw  Alt+S:Show level  F2:Text",
   "Character"
 };
 
 static const char *const vlayer_menu_lines[4] =
 {
   " VLAYER EDITING- (Alt+V to end)",
-  " \x12\x1d:Move  Enter:Character  Space:Place  Ins:Grab  Del:Delete  F:Fill",
-  " C:Color  Alt+\x12\x1d:Move 10   Alt+B:Block  Tab:Draw  Alt+P:Size  F2:Text",
+  " \x12\x1d:Move  Enter:Modify+Grab  Space:Place  Ins:Grab  Del:Delete  F:Fill",
+  " C:Color  Alt+\x12\x1d:Move 10     Alt+B:Block  Tab:Draw  Alt+P:Size  F2:Text",
   "Character"
 };
 
@@ -612,8 +623,8 @@ static int change_param(struct world *mzx_world, enum thing id, int param,
 }
 
 int place_current_at_xy(struct world *mzx_world, enum thing id, int color,
- int param, int x, int y, struct robot *copy_robot,
- struct scroll *copy_scroll, struct sensor *copy_sensor, int overlay_edit)
+ int param, int x, int y, struct robot *copy_robot, struct scroll *copy_scroll,
+ struct sensor *copy_sensor, int overlay_edit, int save_history)
 {
   struct board *src_board = mzx_world->current_board;
   int offset = x + (y * src_board->board_width);
@@ -624,6 +635,10 @@ int place_current_at_xy(struct world *mzx_world, enum thing id, int color,
   {
     if(old_id != PLAYER)
     {
+      if(save_history)
+        add_board_undo_frame(mzx_world, board_history, id, color, param, x, y,
+         copy_robot, copy_scroll, copy_sensor);
+
       if(id == PLAYER)
       {
         id_remove_top(mzx_world, mzx_world->player_x, mzx_world->player_y);
@@ -640,6 +655,10 @@ int place_current_at_xy(struct world *mzx_world, enum thing id, int color,
           replace_robot_source(mzx_world, src_board, copy_robot, old_param);
           src_board->level_color[offset] = color;
           src_board->level_id[offset] = id;
+
+          if(save_history)
+            update_undo_frame(board_history);
+
           return old_param;
         }
 
@@ -661,6 +680,10 @@ int place_current_at_xy(struct world *mzx_world, enum thing id, int color,
           replace_scroll(src_board, copy_scroll, old_param);
           src_board->level_color[offset] = color;
           src_board->level_id[offset] = id;
+
+          if(save_history)
+            update_undo_frame(board_history);
+
           return old_param;
         }
 
@@ -677,6 +700,10 @@ int place_current_at_xy(struct world *mzx_world, enum thing id, int color,
           int old_param = src_board->level_param[offset];
           replace_sensor(src_board, copy_sensor, old_param);
           src_board->level_color[offset] = color;
+
+          if(save_history)
+            update_undo_frame(board_history);
+
           return old_param;
         }
 
@@ -689,27 +716,45 @@ int place_current_at_xy(struct world *mzx_world, enum thing id, int color,
       {
         place_at_xy(mzx_world, id, color, param, x, y);
       }
+
+      if(save_history)
+        update_undo_frame(board_history);
     }
   }
   else
 
   if(overlay_edit == EDIT_OVERLAY)
   {
+    if(save_history)
+      add_layer_undo_frame(overlay_history, src_board->overlay,
+       src_board->overlay_color, src_board->board_width, offset, 1, 1);
+
     src_board->overlay[offset] = param;
     src_board->overlay_color[offset] = color;
+
+    if(save_history)
+      update_undo_frame(overlay_history);
   }
 
   else // EDIT_VLAYER
   {
     int offset = x + (y * mzx_world->vlayer_width);
+
+    if(save_history)
+      add_layer_undo_frame(vlayer_history, mzx_world->vlayer_chars,
+       mzx_world->vlayer_colors, mzx_world->vlayer_width, offset, 1, 1);
+
     mzx_world->vlayer_chars[offset] = param;
     mzx_world->vlayer_colors[offset] = color;
+
+    if(save_history)
+      update_undo_frame(vlayer_history);
   }
 
   return param;
 }
 
-static void grab_at_xy(struct world *mzx_world, enum thing *new_id,
+void grab_at_xy(struct world *mzx_world, enum thing *new_id,
  int *new_color, int *new_param, struct robot *copy_robot,
  struct scroll *copy_scroll, struct sensor *copy_sensor,
  int x, int y, int overlay_edit)
@@ -786,6 +831,459 @@ static void grab_at_xy(struct world *mzx_world, enum thing *new_id,
   }
 }
 
+static void do_block_command(struct world *mzx_world, int block_command,
+ int block_edit, int block_x, int block_y, int block_width, int block_height,
+ struct board *block_board, int overlay_edit, int dest_x, int dest_y,
+ char *mzm_name_buffer, int current_color)
+{
+  char *src_char;
+  char *src_color;
+  int src_width;
+  int src_offset;
+
+  struct board *dest_board;
+  char *dest_char;
+  char *dest_color;
+  int dest_width;
+  int dest_height;
+  int dest_offset;
+
+  // The history size is generally this, but move block adds complications
+  int history_x = dest_x;
+  int history_y = dest_y;
+  int history_width;
+  int history_height;
+  int history_offset;
+
+  // Trim the block size to fit the destination, but keep the old
+  // size so the old block can be cleared during the move command
+  int original_width = block_width;
+  int original_height = block_height;
+  int place_width = block_width;
+  int place_height = block_height;
+
+  // Set up source
+  switch(block_edit)
+  {
+    case EDIT_BOARD:
+      src_color = block_board->level_color;
+      src_width = block_board->board_width;
+      break;
+
+    case EDIT_OVERLAY:
+      src_char = block_board->overlay;
+      src_color = block_board->overlay_color;
+      src_width = block_board->board_width;
+      break;
+
+    case EDIT_VLAYER:
+      src_char = mzx_world->vlayer_chars;
+      src_color = mzx_world->vlayer_colors;
+      src_width = mzx_world->vlayer_width;
+      break;
+  }
+
+  // Set up destination
+  switch(overlay_edit)
+  {
+    case EDIT_BOARD:
+      dest_board = mzx_world->current_board;
+      dest_width = dest_board->board_width;
+      dest_height = dest_board->board_height;
+      break;
+
+    case EDIT_OVERLAY:
+      dest_board = mzx_world->current_board;
+      dest_char = dest_board->overlay;
+      dest_color = dest_board->overlay_color;
+      dest_width = dest_board->board_width;
+      dest_height = dest_board->board_height;
+      break;
+
+    case EDIT_VLAYER:
+      dest_char = mzx_world->vlayer_chars;
+      dest_color = mzx_world->vlayer_colors;
+      dest_width = mzx_world->vlayer_width;
+      dest_height = mzx_world->vlayer_height;
+      break;
+  }
+
+  // Trim the block for the destination
+  if((dest_x + place_width) > dest_width)
+    place_width = dest_width - dest_x;
+
+  if((dest_y + place_height) > dest_height)
+    place_height = dest_height - dest_y;
+
+  history_width = place_width;
+  history_height = place_height;
+
+  // TODO In-place move block adds some complications to history
+  // For now, just save the smallest possible space containing both blocks
+  if((block_command == 2) &&
+   (block_edit == overlay_edit) &&
+   ((overlay_edit == EDIT_VLAYER) || (block_board == dest_board)))
+  {
+    if(block_x > dest_x)
+    {
+      history_x = dest_x;
+      history_width = place_width + block_x - dest_x;
+    }
+    else
+    {
+      history_x = block_x;
+      history_width = place_width + dest_x - block_x;
+    }
+
+    if(block_y > dest_y)
+    {
+      history_y = dest_y;
+      history_height = place_height + block_y - dest_y;
+    }
+    else
+    {
+      history_y = block_y;
+      history_height = place_height + dest_y - block_y;
+    }
+  }
+
+  src_offset = block_x + (block_y * src_width);
+  dest_offset = dest_x + (dest_y * dest_width);
+  history_offset = history_x + (history_y * dest_width);
+
+  // Perform the block action
+  if(overlay_edit == EDIT_BOARD)
+  {
+    add_block_undo_frame(mzx_world, board_history, dest_board,
+     history_offset, history_width, history_height);
+
+    switch(block_command)
+    {
+      case 0:
+      case 1:
+      {
+        // Copy block
+        copy_board_to_board(mzx_world,
+         block_board, src_offset,
+         dest_board, dest_offset,
+         place_width, place_height);
+        break;
+      }
+
+      case 2:
+      {
+        // Move block
+        move_board_block(mzx_world,
+         block_board, src_offset,
+         dest_board, dest_offset,
+         place_width, place_height,
+         original_width, original_height);
+
+        // Work around to move the player
+        if((mzx_world->player_x >= block_x) &&
+         (mzx_world->player_y >= block_y) &&
+         (mzx_world->player_x < (block_x + block_width)) &&
+         (mzx_world->player_y < (block_y + block_height)) &&
+         (block_board == dest_board))
+        {
+          place_player_xy(mzx_world,
+           mzx_world->player_x - block_x + dest_x,
+           mzx_world->player_y - block_y + dest_y);
+        }
+        break;
+      }
+
+      case 3:
+      {
+        // Clear block
+        clear_board_block(block_board, src_offset,
+         block_width, block_height);
+        break;
+      }
+
+      case 4:
+      {
+        // Flip block
+        flip_board_block(block_board, src_offset,
+         block_width, block_height);
+        break;
+      }
+
+      case 5:
+      {
+        // Mirror block
+        mirror_board_block(block_board, src_offset,
+         block_width, block_height);
+        break;
+      }
+
+      case 6:
+      {
+        // Paint block
+        paint_layer_block(
+         src_color, src_width, src_offset,
+         block_width, block_height, current_color);
+        break;
+      }
+
+      case 7:
+      {
+        // Copy from overlay/vlayer
+        if(block_edit != EDIT_BOARD)
+        {
+          int convert_select = layer_to_board_object_type(mzx_world);
+          enum thing convert_id = NO_ID;
+
+          switch(convert_select)
+          {
+            case 0:
+              convert_id = CUSTOM_BLOCK;
+              break;
+
+            case 1:
+              convert_id = CUSTOM_FLOOR;
+              break;
+
+            case 2:
+              convert_id = __TEXT;
+              break;
+          }
+
+          if(convert_select != -1)
+          {
+            copy_layer_to_board(
+             src_char, src_color, src_width, src_offset,
+             dest_board, dest_offset,
+             place_width, place_height, convert_id);
+          }
+        }
+        else
+        {
+          warn("Invalid block action! (board, 7)\n");
+        }
+        break;
+      }
+
+      case 8:
+      {
+        // There is no block action 8 with the board as the destination
+        warn("Invalid block action! (board, 8)\n");
+        break;
+      }
+
+      case 10:
+      {
+        // Load MZM
+        load_mzm(mzx_world, mzm_name_buffer, dest_x, dest_y, overlay_edit, 0);
+        break;
+      }
+    }
+
+    update_undo_frame(board_history);
+  }
+  else
+
+  if(overlay_edit == EDIT_OVERLAY)
+  {
+    add_layer_undo_frame(overlay_history, dest_char, dest_color, dest_width,
+     history_offset, history_width, history_height);
+
+    switch(block_command)
+    {
+      case 0:
+      case 1:
+      {
+        // Copy block
+        copy_layer_to_layer(
+         src_char, src_color, src_width, src_offset,
+         dest_char, dest_color, dest_width, dest_offset,
+         place_width, place_height);
+        break;
+      }
+
+      case 2:
+      {
+        move_layer_block(
+         src_char, src_color, src_width, src_offset,
+         dest_char, dest_color, dest_width, dest_offset,
+         place_width, place_height,
+         original_width, original_height);
+        break;
+      }
+
+      case 3:
+      {
+        // Clear block
+        clear_layer_block(
+         src_char, src_color, src_width, src_offset,
+         block_width, block_height);
+        break;
+      }
+
+      case 4:
+      {
+        // Flip block
+        flip_layer_block(
+         src_char, src_color, src_width, src_offset,
+         block_width, block_height);
+        break;
+      }
+
+      case 5:
+      {
+        // Mirror block
+        mirror_layer_block(
+         src_char, src_color, src_width, src_offset,
+         block_width, block_height);
+        break;
+      }
+
+      case 6:
+      {
+        // Paint block
+        paint_layer_block(
+         src_color, src_width, src_offset,
+         block_width, block_height, current_color);
+        break;
+      }
+
+      case 7:
+      {
+        // Copy from board
+        copy_board_to_layer(
+         block_board, src_offset,
+         dest_char, dest_color, dest_width, dest_offset,
+         place_width, place_height);
+        break;
+      }
+
+      case 8:
+      {
+        // Copy from vlayer
+        copy_layer_to_layer(
+         src_char, src_color, src_width, src_offset,
+         dest_char, dest_color, dest_width, dest_offset,
+         place_width, place_height);
+        break;
+      }
+
+      case 10:
+      {
+        // Load MZM
+        load_mzm(mzx_world, mzm_name_buffer, dest_x, dest_y, overlay_edit, 0);
+        break;
+      }
+    }
+
+    update_undo_frame(overlay_history);
+  }
+
+  else // EDIT_VLAYER
+  {
+    add_layer_undo_frame(vlayer_history, dest_char, dest_color, dest_width,
+     history_offset, history_width, history_height);
+
+    switch(block_command)
+    {
+      case 0:
+      case 1:
+      {
+        // Copy block
+        copy_layer_to_layer(
+         src_char, src_color, src_width, src_offset,
+         dest_char, dest_color, dest_width, dest_offset,
+         place_width, place_height);
+        break;
+      }
+
+      case 2:
+      {
+        // Move block
+        move_layer_block(
+         src_char, src_color, src_width, src_offset,
+         dest_char, dest_color, dest_width, dest_offset,
+         place_width, place_height,
+         original_width, original_height);
+        break;
+      }
+
+      case 3:
+      {
+        // Clear block
+        clear_layer_block(
+         src_char, src_color, src_width, src_offset,
+         block_width, block_height);
+        break;
+      }
+
+      case 4:
+      {
+        // Flip block
+        flip_layer_block(
+         src_char, src_color, src_width, src_offset,
+         block_width, block_height);
+        break;
+      }
+
+      case 5:
+      {
+        // Mirror block
+        mirror_layer_block(
+         src_char, src_color, src_width, src_offset,
+         block_width, block_height);
+        break;
+      }
+
+      case 6:
+      {
+        // Paint block
+        paint_layer_block(
+         src_color, src_width, src_offset,
+         block_width, block_height, current_color);
+        break;
+      }
+
+      case 7:
+      {
+        // No block action 7 with a destination of the vlayer exists
+        warn("Invalid block action! (vlayer, 7)\n");
+        break;
+      }
+
+      case 8:
+      {
+        // Copy from board/overlay
+        if(block_edit == EDIT_BOARD)
+        {
+          copy_board_to_layer(
+           block_board, src_offset,
+           dest_char, dest_color, dest_width, dest_offset,
+           place_width, place_height);
+        }
+        else
+
+        if(block_edit == EDIT_OVERLAY)
+        {
+          copy_layer_to_layer(
+           src_char, src_color, src_width, src_offset,
+           dest_char, dest_color, dest_width, dest_offset,
+           place_width, place_height);
+        }
+        break;
+      }
+
+      case 10:
+      {
+        // Load MZM
+        load_mzm(mzx_world, mzm_name_buffer, dest_x, dest_y, overlay_edit, 0);
+        break;
+      }
+    }
+
+    update_undo_frame(vlayer_history);
+  }
+}
+
 static void thing_menu(struct world *mzx_world, int menu_number,
  enum thing *new_id, int *new_color, int *new_param,
  struct robot *copy_robot, struct scroll *copy_scroll,
@@ -849,7 +1347,7 @@ static void thing_menu(struct world *mzx_world, int menu_number,
     if(param >= 0)
     {
       param = place_current_at_xy(mzx_world, id, color, param,
-       x, y, copy_robot, copy_scroll, copy_sensor, 0);
+       x, y, copy_robot, copy_scroll, copy_sensor, EDIT_BOARD, 1);
 
       *new_id = id;
       *new_param = param;
@@ -1214,6 +1712,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
   int overlay_edit = EDIT_BOARD;
   int board_width, board_height;
   int cursor_board_x = 0, cursor_board_y = 0;
+  int cursor_move_x = 0, cursor_move_y = 0;
   int cursor_x = 0, cursor_y = 0;
   int scroll_x = 0, scroll_y = 0;
   char *level_id;
@@ -1243,11 +1742,17 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
   // Block mode
   int block_command = -1;
   int block_edit = -1;
-  int block_x = -1, block_y = -1;
-  int block_dest_x = -1, block_dest_y = -1;
+  int block_x = -1;
+  int block_y = -1;
+  int block_width = -1;
+  int block_height = -1;
   struct board *block_board = NULL;
-  int copy_repeat_width = -1;
-  int copy_repeat_height = -1;
+
+  // Undo
+  int clear_board_history = 1;
+  int clear_overlay_history = 1;
+  int clear_vlayer_history = 1;
+  int continue_mouse_history = 0;
 
   // Interface
   int saved_overlay_mode;
@@ -1500,6 +2005,30 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
        cursor_board_x, cursor_board_y, 0);
     }
 
+    if(clear_board_history)
+    {
+      clear_board_history = 0;
+      destruct_undo_history(board_history);
+      board_history =
+       construct_board_undo_history(mzx_world->editor_conf.undo_history_size);
+    }
+
+    if(clear_overlay_history)
+    {
+      clear_overlay_history = 0;
+      destruct_undo_history(overlay_history);
+      overlay_history =
+       construct_layer_undo_history(mzx_world->editor_conf.undo_history_size);
+    }
+
+    if(clear_vlayer_history)
+    {
+      clear_vlayer_history = 0;
+      destruct_undo_history(vlayer_history);
+      vlayer_history =
+       construct_layer_undo_history(mzx_world->editor_conf.undo_history_size);
+    }
+
     text_place = 0;
 
     update_screen();
@@ -1529,24 +2058,37 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
     if(exit)
       key = 0;
 
-    if(get_mouse_press())
+    // Mouse history frame interrupted (by key or non-left press)?
+    if(continue_mouse_history && (key ||
+     get_mouse_status() != MOUSE_BUTTON(MOUSE_BUTTON_LEFT)))
     {
-      int mouse_x, mouse_y;
+      // Finalize frame
+      update_undo_frame(board_history);
+      continue_mouse_history = 0;
+    }
+
+    if(get_mouse_status() && !key)
+    {
+      int mouse_press = get_mouse_press_ext();
+      int mouse_status = get_mouse_status();
+      int mouse_x;
+      int mouse_y;
+
       get_mouse_position(&mouse_x, &mouse_y);
 
       if((mouse_y == 20) && (edit_screen_height < 20))
       {
         if((mouse_x >= 1) && (mouse_x <= 41))
         {
+          // Select current help menu
           current_menu = menu_positions[mouse_x - 1] - '1';
         }
         else
 
         if((mouse_x >= 56) && (mouse_x <= 58))
         {
-          int new_color;
-          cursor_off();
-          new_color = color_selection(current_color, 0);
+          // Change current color
+          int new_color = color_selection(current_color, 0);
           if(new_color >= 0)
             current_color = new_color;
         }
@@ -1558,37 +2100,44 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         cursor_board_x = mouse_x + scroll_x;
         cursor_board_y = mouse_y + scroll_y;
 
-        if((mouse_x >= debug_x) && (mouse_x < debug_x + 20))
+        fix_cursor(&cursor_board_x, &cursor_board_y, scroll_x, scroll_y,
+         &debug_x, board_width, board_height);
+
+        if((cursor_board_x == mouse_x + scroll_x) &&
+         (cursor_board_y == mouse_y + scroll_y))
         {
-          if(debug_x == 60)
-            debug_x = 0;
+          // Mouse is in-bounds
+
+          if(mouse_status & MOUSE_BUTTON(MOUSE_BUTTON_RIGHT))
+          {
+            grab_at_xy(mzx_world, &current_id, &current_color,
+             &current_param, &copy_robot, &copy_scroll, &copy_sensor,
+             cursor_board_x, cursor_board_y, overlay_edit);
+          }
           else
-            debug_x = 60;
-        }
 
-        if((cursor_board_x >= board_width) ||
-         (cursor_board_y >= board_height))
-        {
-          if(cursor_board_x >= board_width)
-            cursor_board_x = board_width - 1;
+          if(mouse_press == MOUSE_BUTTON_LEFT)
+          {
+            if(!continue_mouse_history)
+            {
+              // Add new frame
+              add_board_undo_frame(mzx_world, board_history, current_id,
+               current_color, current_param, cursor_board_x, cursor_board_y,
+               &copy_robot, &copy_scroll, &copy_sensor);
+              continue_mouse_history = 1;
+            }
+            else
+            {
+              // Continue frame
+              add_board_undo_position(board_history,
+               cursor_board_x, cursor_board_y);
+            }
 
-          if(cursor_board_y >= board_height)
-            cursor_board_y = board_height - 1;
-        }
-        else
-
-        if(get_mouse_status() & MOUSE_BUTTON(MOUSE_BUTTON_RIGHT))
-        {
-          grab_at_xy(mzx_world, &current_id, &current_color,
-           &current_param, &copy_robot, &copy_scroll, &copy_sensor,
-           cursor_board_x, cursor_board_y, overlay_edit);
-        }
-        else
-        {
-          current_param = place_current_at_xy(mzx_world, current_id,
-           current_color, current_param, cursor_board_x, cursor_board_y,
-           &copy_robot, &copy_scroll, &copy_sensor, overlay_edit);
-          modified = 1;
+            current_param = place_current_at_xy(mzx_world, current_id,
+             current_color, current_param, cursor_board_x, cursor_board_y,
+             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit, 0);
+            modified = 1;
+          }
         }
       }
     }
@@ -1662,185 +2211,89 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
     {
       case IKEY_UP:
       {
-        int i, move_amount = 1;
-
         if(get_shift_status(keycode_internal))
         {
           // Move to adjacent board
-          // Doesn't make sense on the vlayer.
           if(src_board->board_dir[0] != NO_BOARD && overlay_edit != EDIT_VLAYER)
             new_board = src_board->board_dir[0];
-
           break;
         }
+        else
+
+        cursor_move_y = -1;
 
         if(get_alt_status(keycode_internal))
-          move_amount = 10;
+          cursor_move_y = -10;
 
         if(get_ctrl_status(keycode_internal) &&
-         (draw_mode == 4) && (copy_repeat_height >= 0))
-          move_amount = copy_repeat_height;
+         (draw_mode == 4) && (block_height >= 0))
+          cursor_move_y = -block_height;
 
-        for(i = 0; i < move_amount; i++)
-        {
-          if(!cursor_board_y)
-            break;
-
-          cursor_board_y--;
-
-          if(draw_mode == 1)
-          {
-            current_param = place_current_at_xy(mzx_world, current_id,
-             current_color, current_param, cursor_board_x, cursor_board_y,
-             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit);
-            modified = 1;
-          }
-
-          if(((cursor_board_y - scroll_y) < 3) && scroll_y)
-            scroll_y--;
-        }
         break;
       }
 
       case IKEY_DOWN:
       {
-        int i, move_amount = 1;
-
         if(get_shift_status(keycode_internal))
         {
           // Move to adjacent board
-          // Doesn't make sense on the vlayer.
           if(src_board->board_dir[1] != NO_BOARD && overlay_edit != EDIT_VLAYER)
             new_board = src_board->board_dir[1];
-
           break;
         }
 
+        cursor_move_y = 1;
+
         if(get_alt_status(keycode_internal))
-          move_amount = 10;
+          cursor_move_y = 10;
 
         if(get_ctrl_status(keycode_internal) &&
-         (draw_mode == 4) && (copy_repeat_height >= 0))
-          move_amount = copy_repeat_height;
+         (draw_mode == 4) && (block_height >= 0))
+          cursor_move_y = block_height;
 
-        for(i = 0; i < move_amount; i++)
-        {
-          if(cursor_board_y == (board_height - 1))
-            break;
-
-          cursor_board_y++;
-
-          if(draw_mode == 1)
-          {
-            current_param = place_current_at_xy(mzx_world, current_id,
-             current_color, current_param, cursor_board_x, cursor_board_y,
-             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit);
-            modified = 1;
-          }
-
-          // Scroll board position if there's room to
-          if(((cursor_board_y - scroll_y) > (edit_screen_height - 5)) &&
-           (scroll_y < (board_height - edit_screen_height)))
-            scroll_y++;
-        }
         break;
       }
 
       case IKEY_LEFT:
       {
-        int i, move_amount = 1;
-
         if(get_shift_status(keycode_internal))
         {
           // Move to adjacent board
-          // Doesn't make sense on the vlayer.
           if(src_board->board_dir[3] != NO_BOARD && overlay_edit != EDIT_VLAYER)
             new_board = src_board->board_dir[3];
-
           break;
         }
 
+        cursor_move_x = -1;
+
         if(get_alt_status(keycode_internal))
-          move_amount = 10;
+          cursor_move_x = -10;
 
         if(get_ctrl_status(keycode_internal) &&
-         (draw_mode == 4) && (copy_repeat_width >= 0))
-          move_amount = copy_repeat_width;
-
-        for(i = 0; i < move_amount; i++)
-        {
-          if(!cursor_board_x)
-            break;
-
-          cursor_board_x--;
-
-          if(draw_mode == 1)
-          {
-            current_param = place_current_at_xy(mzx_world, current_id,
-             current_color, current_param, cursor_board_x, cursor_board_y,
-             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit);
-            modified = 1;
-          }
-
-          if(((cursor_board_x - scroll_x) < 5) && scroll_x)
-            scroll_x--;
-        }
-
-        if((cursor_board_x - scroll_x) < (debug_x + 25))
-        {
-          debug_x = 60;
-          clear_screen_no_update();
-        }
+         (draw_mode == 4) && (block_width >= 0))
+          cursor_move_x = -block_width;
 
         break;
       }
 
       case IKEY_RIGHT:
       {
-        int i, move_amount = 1;
-
         if(get_shift_status(keycode_internal))
         {
           // Move to adjacent board
-          // Doesn't make sense on the vlayer.
           if(src_board->board_dir[2] != NO_BOARD && overlay_edit != EDIT_VLAYER)
             new_board = src_board->board_dir[2];
-
           break;
         }
 
+        cursor_move_x = 1;
+
         if(get_alt_status(keycode_internal))
-          move_amount = 10;
+          cursor_move_x = 10;
 
         if(get_ctrl_status(keycode_internal) &&
-         (draw_mode == 4) && (copy_repeat_width >= 0))
-          move_amount = copy_repeat_width;
-
-        for(i = 0; i < move_amount; i++)
-        {
-          if(cursor_board_x == (board_width - 1))
-            break;
-
-          cursor_board_x++;
-
-          if(draw_mode == 1)
-          {
-            current_param = place_current_at_xy(mzx_world, current_id,
-             current_color, current_param, cursor_board_x, cursor_board_y,
-             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit);
-            modified = 1;
-          }
-
-          if(((cursor_board_x - scroll_x) > 74) &&
-           (scroll_x < (board_width - 80)))
-            scroll_x++;
-        }
-
-        if((cursor_board_x - scroll_x) > (debug_x - 5))
-        {
-          debug_x = 0;
-          clear_screen_no_update();
-        }
+         (draw_mode == 4) && (block_width >= 0))
+          cursor_move_x = block_width;
 
         break;
       }
@@ -1851,7 +2304,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         {
           place_current_at_xy(mzx_world, __TEXT, current_color,
            ' ', cursor_board_x, cursor_board_y, &copy_robot,
-           &copy_scroll, &copy_sensor, overlay_edit);
+           &copy_scroll, &copy_sensor, overlay_edit, 1);
 
           if(cursor_board_x < (board_width - 1))
             cursor_board_x++;
@@ -1886,7 +2339,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           {
             place_current_at_xy(mzx_world, SPACE, 7, 0, cursor_board_x,
              cursor_board_y, &copy_robot, &copy_scroll, &copy_sensor,
-             overlay_edit);
+             overlay_edit, 1);
           }
           else
           {
@@ -1900,7 +2353,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             {
               current_param = place_current_at_xy(mzx_world, current_id,
                current_color, current_param, cursor_board_x, cursor_board_y,
-               &copy_robot, &copy_scroll, &copy_sensor, overlay_edit);
+               &copy_robot, &copy_scroll, &copy_sensor, overlay_edit, 1);
             }
           }
         }
@@ -1920,35 +2373,37 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
           place_current_at_xy(mzx_world, __TEXT, current_color,
            ' ', cursor_board_x, cursor_board_y, &copy_robot,
-           &copy_scroll, &copy_sensor, overlay_edit);
+           &copy_scroll, &copy_sensor, overlay_edit, 1);
+
           modified = 1;
         }
         else
         {
+          int offset = cursor_board_x + (board_width * cursor_board_y);
+
           if(overlay_edit)
           {
-            // Overlay and vlayer
+            // Delete under cursor (overlay and vlayer)
             place_current_at_xy(mzx_world, SPACE, 7, 32, cursor_board_x,
              cursor_board_y, &copy_robot, &copy_scroll, &copy_sensor,
-             overlay_edit);
+             overlay_edit, 1);
+
+            modified = 1;
           }
           else
 
-          if((cursor_board_x != mzx_world->player_x) ||
-           (cursor_board_y != mzx_world->player_y))
+          if(level_id[offset] != PLAYER)
           {
+            // Remove from top (board only)
+            add_block_undo_frame(mzx_world, board_history,
+             src_board, offset, 1, 1);
+
             id_remove_top(mzx_world, cursor_board_x, cursor_board_y);
+
+            update_undo_frame(board_history);
             modified = 1;
           }
         }
-        break;
-      }
-
-      case IKEY_INSERT:
-      {
-        grab_at_xy(mzx_world, &current_id, &current_color, &current_param,
-         &copy_robot, &copy_scroll, &copy_sensor, cursor_board_x,
-         cursor_board_y, overlay_edit);
         break;
       }
 
@@ -1965,11 +2420,19 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             draw_mode = 1;
             current_param = place_current_at_xy(mzx_world, current_id,
              current_color, current_param, cursor_board_x, cursor_board_y,
-             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit);
+             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit, 1);
             modified = 1;
           }
         }
 
+        break;
+      }
+
+      case IKEY_INSERT:
+      {
+        grab_at_xy(mzx_world, &current_id, &current_color, &current_param,
+         &copy_robot, &copy_scroll, &copy_sensor, cursor_board_x,
+         cursor_board_y, overlay_edit);
         break;
       }
 
@@ -1979,24 +2442,121 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         {
           place_current_at_xy(mzx_world, __TEXT, current_color, ' ',
            cursor_board_x, cursor_board_y, &copy_robot,
-           &copy_scroll, &copy_sensor, overlay_edit);
+           &copy_scroll, &copy_sensor, overlay_edit, 1);
         }
         else
         {
-          if(overlay_edit)
-          {
-            place_current_at_xy(mzx_world, SPACE, 7, 32, cursor_board_x,
-             cursor_board_y, &copy_robot, &copy_scroll, &copy_sensor,
-             overlay_edit);
-          }
-          else
-          {
-            place_current_at_xy(mzx_world, SPACE, 7, 0, cursor_board_x,
-             cursor_board_y, &copy_robot, &copy_scroll, &copy_sensor,
-             overlay_edit);
-          }
+          int new_param = 0;
+
+          // On layers, the blank char is a space char
+          if(overlay_edit) new_param = 32;
+
+          place_current_at_xy(mzx_world, SPACE, 7, new_param, cursor_board_x,
+           cursor_board_y, &copy_robot, &copy_scroll, &copy_sensor,
+           overlay_edit, 1);
         }
         modified = 1;
+        break;
+      }
+
+      case IKEY_HOME:
+      {
+        cursor_board_x = 0;
+        cursor_board_y = 0;
+        scroll_x = 0;
+        scroll_y = 0;
+
+        if((cursor_board_x - scroll_x) < (debug_x + 25))
+        {
+          debug_x = 60;
+          clear_screen_no_update();
+        }
+
+        break;
+      }
+
+      case IKEY_END:
+      {
+        cursor_board_x = board_width - 1;
+        cursor_board_y = board_height - 1;
+        scroll_x = board_width - 80;
+        scroll_y = board_height - edit_screen_height;
+
+        if(scroll_x < 0)
+          scroll_x = 0;
+
+        if(scroll_y < 0)
+          scroll_y = 0;
+
+        if((cursor_board_x - scroll_x) > (debug_x - 5))
+        {
+          debug_x = 0;
+          clear_screen_no_update();
+        }
+
+        break;
+      }
+
+      case IKEY_PAGEDOWN:
+      {
+        current_menu++;
+
+        if(current_menu == 6)
+          current_menu = 0;
+
+        break;
+      }
+
+      case IKEY_PAGEUP:
+      {
+        current_menu--;
+
+        if(current_menu == -1)
+          current_menu = 5;
+
+        break;
+      }
+
+      case IKEY_ESCAPE:
+      {
+        if(draw_mode)
+        {
+          draw_mode = 0;
+          key = 0;
+        }
+        else
+
+        if(overlay_edit)
+        {
+          if(overlay_edit == EDIT_VLAYER)
+          {
+            // Disable vlayer mode and fix the display
+            set_vlayer_mode(EDIT_BOARD, &overlay_edit,
+             &cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
+             &cursor_vlayer_x, &cursor_vlayer_y, &vscroll_x, &vscroll_y);
+
+            synchronize_board_values(mzx_world, &src_board, &board_width,
+             &board_height, &level_id, &level_param, &level_color,
+             &overlay, &overlay_color, &vlayer_chars, &vlayer_colors,
+             overlay_edit);
+
+            fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x,
+             &scroll_y, &debug_x, board_width, board_height,
+             edit_screen_height);
+          }
+
+          overlay_edit = EDIT_BOARD;
+          current_id = SPACE;
+          current_param = 0;
+          current_color = 7;
+          key = 0;
+        }
+
+        else
+        {
+          exit = 1;
+        }
+
         break;
       }
 
@@ -2197,192 +2757,26 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         break;
       }
 
-      case IKEY_c:
+      case IKEY_8:
+      case IKEY_KP_MULTIPLY:
       {
-        if(draw_mode != 2)
-        {
-          cursor_off();
-          if(get_alt_status(keycode_internal))
-          {
-            char_editor(mzx_world);
-            modified = 1;
-          }
-          else
-          {
-            int new_color = color_selection(current_color, 0);
-            if(new_color >= 0)
-              current_color = new_color;
-          }
-        }
-        else
+        if(draw_mode == 2)
         {
           text_place = 1;
         }
-        break;
-      }
-
-      case IKEY_o:
-      {
-        if(draw_mode != 2)
-        {
-          if(get_alt_status(keycode_internal))
-          {
-            if(overlay_edit != EDIT_OVERLAY)
-            {
-              if(!src_board->overlay_mode)
-              {
-                error("Overlay mode is not on (see Board Info)",
-                 0, 8, 0x1103);
-              }
-              else
-              {
-                if(overlay_edit == EDIT_VLAYER)
-                {
-                  // Disable vlayer mode and fix the display
-                  set_vlayer_mode(EDIT_OVERLAY, &overlay_edit,
-                   &cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
-                   &cursor_vlayer_x, &cursor_vlayer_y, &vscroll_x, &vscroll_y);
-
-                  synchronize_board_values(mzx_world, &src_board, &board_width,
-                   &board_height, &level_id, &level_param, &level_color,
-                   &overlay, &overlay_color, &vlayer_chars, &vlayer_colors,
-                   overlay_edit);
-
-                  fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x,
-                   &scroll_y, &debug_x, board_width, board_height,
-                   edit_screen_height);
-                }
-
-                draw_mode = 0;
-                overlay_edit = EDIT_OVERLAY;
-                current_param = 32;
-                current_color = 7;
-              }
-            }
-            else
-            {
-              draw_mode = 0;
-              overlay_edit = EDIT_BOARD;
-              current_id = SPACE;
-              current_param = 0;
-              current_color = 7;
-            }
-          }
-        }
         else
+
+        if(get_shift_status(keycode_internal) ||
+         (key == IKEY_KP_MULTIPLY))
         {
-          text_place = 1;
-        }
-        break;
-      }
+          src_board->mod_playing[0] = '*';
+          src_board->mod_playing[1] = 0;
+          fix_mod(mzx_world, src_board, listening_flag);
+          draw_mod_timer = DRAW_MOD_TIMER_MAX;
 
-      case IKEY_s:
-      {
-        if(draw_mode != 2)
-        {
-          if(get_alt_status(keycode_internal))
-          {
-            if(overlay_edit == EDIT_OVERLAY)
-            {
-              show_level ^= 1;
-            }
-            else
-            {
-              status_counter_info(mzx_world);
-              modified = 1;
-            }
-          }
-          else
-          {
-            char world_name[MAX_PATH];
-            char new_path[MAX_PATH];
-            strcpy(world_name, current_world);
-            if(!new_file(mzx_world, world_ext, ".mzx", world_name,
-             "Save world", 1))
-            {
-              debug("Save path: %s\n", world_name);
-              // Save entire game
-              strcpy(current_world, world_name);
-              strcpy(curr_file, current_world);
-              save_world(mzx_world, current_world, 0, WORLD_VERSION);
-
-              // It's now officially WORLD_VERSION
-              mzx_world->version = WORLD_VERSION;
-
-              get_path(world_name, new_path, MAX_PATH);
-              if(new_path[0])
-                chdir(new_path);
-
-              modified = 0;
-            }
-          }
-        }
-        else
-        {
-          text_place = 1;
+          modified = 1;
         }
 
-        break;
-      }
-
-      case IKEY_HOME:
-      {
-        cursor_board_x = 0;
-        cursor_board_y = 0;
-        scroll_x = 0;
-        scroll_y = 0;
-
-        if((cursor_board_x - scroll_x) < (debug_x + 25))
-        {
-          debug_x = 60;
-          clear_screen_no_update();
-        }
-
-        break;
-      }
-
-      case IKEY_END:
-      {
-        cursor_board_x = board_width - 1;
-        cursor_board_y = board_height - 1;
-        scroll_x = board_width - 80;
-        scroll_y = board_height - edit_screen_height;
-
-        if(scroll_x < 0)
-          scroll_x = 0;
-
-        if(scroll_y < 0)
-          scroll_y = 0;
-
-        if((cursor_board_x - scroll_x) > (debug_x - 5))
-        {
-          debug_x = 0;
-          clear_screen_no_update();
-        }
-
-        break;
-      }
-
-      case IKEY_b:
-      {
-        if(draw_mode != 2)
-        {
-          if(get_alt_status(keycode_internal))
-          {
-            block_x = cursor_board_x;
-            block_y = cursor_board_y;
-            draw_mode = 3;
-          }
-          else
-            new_board =
-             choose_board(mzx_world, mzx_world->current_board_id,
-             "Select current board:", 0);
-
-        }
-        else
-        {
-          text_place = 1;
-        }
         break;
       }
 
@@ -2419,62 +2813,109 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         break;
       }
 
-      case IKEY_l:
+      case IKEY_RETURN:
       {
-        if(get_alt_status(keycode_internal))
+        if(draw_mode == 3)
         {
-          char test_wav[MAX_PATH] = { 0, };
-          const char *const sam_ext[] = { ".WAV", ".SAM", ".OGG", NULL };
+          // Block selection
+          block_command = select_block_command(mzx_world, overlay_edit);
 
-          if(!choose_file(mzx_world, sam_ext, test_wav,
-           "Choose a wav file", 1))
+          block_edit = overlay_edit;
+          block_board = src_board;
+
+          // Fix coords
+          if(block_x > cursor_board_x)
           {
-            play_sample(0, test_wav, false);
+            block_width = block_x - cursor_board_x + 1;
+            block_x = cursor_board_x;
           }
-        }
-        else
-
-        if(draw_mode != 2)
-        {
-          if(!modified || !confirm(mzx_world,
-           "Load: World has not been saved, are you sure?"))
+          else
           {
-            char last_world[MAX_PATH];
-            char load_world[MAX_PATH];
-            strcpy(last_world, current_world);
-            strcpy(load_world, current_world);
+            block_width = cursor_board_x - block_x + 1;
+          }
 
-            if(!choose_file_ch(mzx_world, world_ext, load_world,
-             "Load World", 1))
+          if(block_y > cursor_board_y)
+          {
+            block_height = block_y - cursor_board_y + 1;
+            block_y = cursor_board_y;
+          }
+          else
+          {
+            block_height = cursor_board_y - block_y + 1;
+          }
+
+          // Some of these are done automatically
+          switch(block_command)
+          {
+            case -1:
             {
-              int fade;
+              draw_mode = 0;
+              break;
+            }
 
-              //end_module();
+            case 0:
+            case 1:
+            case 2:
+            {
+              // Copy/Copy repeated/Move
+              draw_mode = 4;
+              break;
+            }
 
-              // Load world curr_file
-              strcpy(current_world, load_world);
-              if(!editor_reload_world(mzx_world, current_world, &fade))
+            case 3:
+            case 4:
+            case 5:
+            case 6:
+            {
+              // Clear block
+              // Flip block
+              // Mirror block
+              // Paint block
+
+              do_block_command(mzx_world, block_command, block_edit,
+               block_x, block_y, block_width, block_height, block_board,
+               overlay_edit, block_x, block_y, mzm_name_buffer, current_color);
+
+              draw_mode = 0;
+              modified = 1;
+              break;
+            }
+
+            case 7:
+            case 8:
+            {
+              // Copy to board/overlay/vlayer
+              int target_mode;
+
+              if((block_command == 7 && overlay_edit == EDIT_BOARD) ||
+               (block_command == 8 && overlay_edit == EDIT_VLAYER))
               {
-                strcpy(current_world, last_world);
-
-                fix_mod(mzx_world, src_board, listening_flag);
-                break;
-                //create_blank_world(mzx_world);
+                if(!src_board->overlay_mode)
+                {
+                  error("Overlay mode is not on (see Board Info)", 0, 8,
+                   0x1103);
+                  draw_mode = 0;
+                  break;
+                }
+                else
+                {
+                  target_mode = EDIT_OVERLAY;
+                }
               }
-              strcpy(curr_file, current_world);
+              else
 
-              mzx_world->current_board_id = mzx_world->first_board;
-              mzx_world->current_board =
-               mzx_world->board_list[mzx_world->current_board_id];
-              src_board = mzx_world->current_board;
+              if(block_command == 7 && overlay_edit != EDIT_BOARD)
+              {
+                target_mode = EDIT_BOARD;
+              }
 
-              if(draw_mode > 3)
-                draw_mode = 0;
-
-              insta_fadein();
+              else // block_command == 8, overlay_edit != EDIT_VLAYER
+              {
+                target_mode = EDIT_VLAYER;
+              }
 
               // Exit vlayer mode if necessary.
-              set_vlayer_mode(EDIT_BOARD, &overlay_edit,
+              set_vlayer_mode(target_mode, &overlay_edit,
                &cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
                &cursor_vlayer_x, &cursor_vlayer_y, &vscroll_x, &vscroll_y);
 
@@ -2487,19 +2928,429 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                &scroll_y, &debug_x, board_width, board_height,
                edit_screen_height);
 
-              fix_mod(mzx_world, src_board, listening_flag);
-
-              if(!src_board->overlay_mode && overlay_edit == EDIT_OVERLAY)
-                overlay_edit = EDIT_BOARD;
-
-              modified = 0;
+              overlay_edit = target_mode;
+              draw_mode = 4;
+              break;
             }
+
+            case 9:
+            {
+              // Save as MZM
+              mzm_name_buffer[0] = 0;
+
+              if(!new_file(mzx_world, mzm_ext, ".mzm", mzm_name_buffer,
+               "Export MZM", 1))
+              {
+                save_mzm(mzx_world, mzm_name_buffer, block_x,
+                 block_y, block_width, block_height,
+                 overlay_edit, 0);
+              }
+              draw_mode = 0;
+              break;
+            }
+          }
+        }
+        else
+
+        if(draw_mode > 3)
+        {
+          // Block placement
+          do_block_command(mzx_world, block_command, block_edit,
+           block_x, block_y, block_width, block_height, block_board,
+           overlay_edit, cursor_board_x, cursor_board_y, mzm_name_buffer, 0);
+
+          // Reset the block mode unless this is repeat copy
+          if(block_command != 1)
+            draw_mode = 0;
+
+          modified = 1;
+        }
+        else
+
+        if(draw_mode == 2)
+        {
+          // Go to next line
+          int dif_x = cursor_board_x - text_start_x;
+          if(dif_x > 0)
+          {
+            for(i = 0; i < dif_x; i++)
+            {
+              if(!cursor_board_x)
+                break;
+
+              cursor_board_x--;
+
+              if(((cursor_board_x - scroll_x) < 5) && scroll_x)
+                scroll_x--;
+            }
+
+            if((cursor_board_x - scroll_x) < (debug_x + 25))
+            {
+              debug_x = 60;
+              clear_screen_no_update();
+            }
+          }
+          else
+
+          if(dif_x < 0)
+          {
+            for(i = 0; i < -dif_x; i++)
+            {
+              if(cursor_board_x >= board_width)
+                break;
+
+              cursor_board_x++;
+
+              if(((cursor_board_x - scroll_x) > 74) &&
+               (scroll_x < (board_width - 80)))
+                scroll_x++;
+
+              if((cursor_board_x - scroll_x) > (debug_x - 5))
+              {
+                debug_x = 0;
+                clear_screen_no_update();
+              }
+            }
+          }
+
+          if(cursor_board_y < (board_height - 1))
+          {
+            cursor_board_y++;
+
+            // Scroll board position if there's room to
+            if(((cursor_board_y - scroll_y) > (edit_screen_height - 5)) &&
+             (scroll_y < (board_height - edit_screen_height)))
+              scroll_y++;
+          }
+        }
+
+        // Normal/draw - modify+get
+        else
+        {
+          int edited_storage = 0;
+          int new_param;
+
+          grab_at_xy(mzx_world, &current_id, &current_color,
+           &current_param, &copy_robot, &copy_scroll, &copy_sensor,
+           cursor_board_x, cursor_board_y, overlay_edit);
+
+          if(overlay_edit == EDIT_BOARD)
+          {
+            // Board- param
+            copy_robot.xpos = cursor_board_x;
+            copy_robot.ypos = cursor_board_y;
+
+            new_param =
+             change_param(mzx_world, current_id, current_param,
+             &copy_robot, &copy_scroll, &copy_sensor);
+
+            if(!is_storageless(current_id))
+              edited_storage = 1;
+          }
+          else
+          {
+            // Overlay and vlayer- char
+            new_param = char_selection(current_param);
+          }
+
+          // Ignore non-storage objects with no change.
+          if((new_param >= 0 && new_param != current_param) || edited_storage)
+          {
+            // Place the buffer back on the board/layer
+            current_param = place_current_at_xy(mzx_world, current_id,
+             current_color, new_param, cursor_board_x, cursor_board_y,
+             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit, 1);
+
+            modified = 1;
+          }
+        }
+
+        break;
+      }
+
+      case IKEY_a:
+      {
+        if(get_alt_status(keycode_internal))
+        {
+          int charset_load = choose_char_set(mzx_world);
+
+          switch(charset_load)
+          {
+            case 0:
+            {
+              ec_load_mzx();
+              break;
+            }
+
+            case 1:
+            {
+              ec_load_ascii();
+              break;
+            }
+
+            case 2:
+            {
+              ec_load_smzx();
+              break;
+            }
+
+            case 3:
+            {
+              ec_load_blank();
+              break;
+            }
+          }
+
+          modified = 1;
+        }
+        else
+
+        if(draw_mode != 2)
+        {
+          // Add board, find first free
+          for(i = 0; i < mzx_world->num_boards; i++)
+          {
+            if(mzx_world->board_list[i] == NULL)
+              break;
+          }
+
+          if(i < MAX_BOARDS)
+          {
+            if(add_board(mzx_world, i) >= 0)
+              new_board = i;
           }
         }
         else
         {
           text_place = 1;
         }
+        break;
+      }
+
+      case IKEY_b:
+      {
+        if(draw_mode != 2)
+        {
+          if(get_alt_status(keycode_internal))
+          {
+            block_x = cursor_board_x;
+            block_y = cursor_board_y;
+            draw_mode = 3;
+          }
+          else
+            new_board =
+             choose_board(mzx_world, mzx_world->current_board_id,
+             "Select current board:", 0);
+
+        }
+        else
+        {
+          text_place = 1;
+        }
+        break;
+      }
+
+      case IKEY_c:
+      {
+        if(draw_mode != 2)
+        {
+          cursor_off();
+          if(get_alt_status(keycode_internal))
+          {
+            char_editor(mzx_world);
+            modified = 1;
+          }
+          else
+          {
+            int new_color = color_selection(current_color, 0);
+            if(new_color >= 0)
+              current_color = new_color;
+          }
+        }
+        else
+        {
+          text_place = 1;
+        }
+        break;
+      }
+
+      case IKEY_d:
+      {
+        if(draw_mode != 2)
+        {
+          if(get_alt_status(keycode_internal))
+          {
+            // Toggle default built-in colors
+            use_default_color ^= 1;
+          }
+          else
+          {
+            int del_board =
+             choose_board(mzx_world, mzx_world->current_board_id,
+             "Delete board:", 0);
+
+            if((del_board > 0) &&
+             !confirm(mzx_world, "DELETE BOARD - Are you sure?"))
+            {
+              int current_board_id = mzx_world->current_board_id;
+              clear_board(mzx_world->board_list[del_board]);
+              mzx_world->board_list[del_board] = NULL;
+
+              // Remove null board from list
+              optimize_null_boards(mzx_world);
+
+              if(del_board == current_board_id)
+              {
+                new_board = 0;
+              }
+              else
+              {
+                synchronize_board_values(mzx_world, &src_board, &board_width,
+                 &board_height, &level_id, &level_param, &level_color,
+                 &overlay, &overlay_color, &vlayer_chars, &vlayer_colors,
+                 overlay_edit);
+              }
+            }
+          }
+
+          modified = 1;
+        }
+        else
+        {
+          text_place = 1;
+        }
+        break;
+      }
+
+      case IKEY_e:
+      {
+        if(draw_mode != 2)
+        {
+          if(get_alt_status(keycode_internal))
+          {
+            palette_editor(mzx_world);
+            modified = 1;
+          }
+        }
+        else
+        {
+          text_place = 1;
+        }
+
+        break;
+      }
+
+      case IKEY_f:
+      {
+        if(draw_mode != 2)
+        {
+          if(get_alt_status(keycode_internal))
+          {
+            sfx_edit(mzx_world);
+            modified = 1;
+          }
+          else
+          {
+            struct undo_history *h;
+
+            switch(overlay_edit)
+            {
+              case EDIT_BOARD:
+                h = board_history;
+                break;
+
+              case EDIT_OVERLAY:
+                h = overlay_history;
+                break;
+
+              case EDIT_VLAYER:
+                h = vlayer_history;
+                break;
+            }
+
+            fill_area(mzx_world, h, current_id, current_color, current_param,
+             cursor_board_x, cursor_board_y, &copy_robot, &copy_scroll,
+             &copy_sensor, overlay_edit);
+            modified = 1;
+          }
+        }
+        else
+        {
+          text_place = 1;
+        }
+
+        break;
+      }
+
+      case IKEY_g:
+      {
+        if(draw_mode != 2)
+        {
+          if(get_ctrl_status(keycode_internal))
+          {
+            // Goto board position
+            if(!board_goto(mzx_world, overlay_edit,
+             &cursor_board_x, &cursor_board_y))
+            {
+              // This will get fixed by fix_scroll
+              scroll_x = cursor_board_x - 39;
+              scroll_y = cursor_board_y - edit_screen_height / 2;
+
+              fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
+               &debug_x, board_width, board_height, edit_screen_height);
+            }
+          }
+          else
+
+          if(get_alt_status(keycode_internal))
+          {
+            global_robot(mzx_world);
+          }
+
+          else
+          {
+            global_info(mzx_world);
+          }
+
+          fix_caption(mzx_world, modified);
+          modified = 1;
+        }
+        else
+        {
+          text_place = 1;
+        }
+        break;
+      }
+
+      case IKEY_h:
+      {
+        if(get_alt_status(keycode_internal))
+        {
+          if(edit_screen_height == EDIT_SCREEN_NORMAL)
+          {
+            edit_screen_height = EDIT_SCREEN_EXTENDED;
+            clear_screen_no_update();
+
+            if((scroll_y + 24) > board_height)
+              scroll_y = board_height - 24;
+
+            if(scroll_y < 0)
+              scroll_y = 0;
+          }
+          else
+          {
+            edit_screen_height = EDIT_SCREEN_NORMAL;
+            if((cursor_board_y - scroll_y) > 18)
+              scroll_y += cursor_board_y - scroll_y - 18;
+          }
+        }
+        else
+
+        if(draw_mode == 2)
+        {
+          text_place = 1;
+        }
+
         break;
       }
 
@@ -2545,6 +3396,9 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                   if((draw_mode > 3) &&
                    (block_board == (mzx_world->current_board)))
                     draw_mode = 0;
+
+                  clear_board_history = 1;
+                  clear_overlay_history = 1;
 
                   modified = 1;
                 }
@@ -2648,14 +3502,18 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             if(mzx_world->current_board_id == 0)
               strcpy(mzx_world->name, src_board->board_name);
 
-            // Mostly doing this to update the caption
             synchronize_board_values(mzx_world, &src_board, &board_width,
              &board_height, &level_id, &level_param, &level_color,
              &overlay, &overlay_color, &vlayer_chars, &vlayer_colors,
              overlay_edit);
 
+            fix_caption(mzx_world, modified);
+
             if(!src_board->overlay_mode && overlay_edit == EDIT_OVERLAY)
+            {
+              clear_overlay_history = 1;
               overlay_edit = EDIT_BOARD;
+            }
 
             modified = 1;
           }
@@ -2667,38 +3525,332 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         break;
       }
 
-      case IKEY_g:
+      case IKEY_l:
+      {
+        if(get_alt_status(keycode_internal))
+        {
+          char test_wav[MAX_PATH] = { 0, };
+          const char *const sam_ext[] = { ".WAV", ".SAM", ".OGG", NULL };
+
+          if(!choose_file(mzx_world, sam_ext, test_wav,
+           "Choose a wav file", 1))
+          {
+            play_sample(0, test_wav, false);
+          }
+        }
+        else
+
+        if(draw_mode != 2)
+        {
+          if(!modified || !confirm(mzx_world,
+           "Load: World has not been saved, are you sure?"))
+          {
+            char prev_world[MAX_PATH];
+            char load_world[MAX_PATH];
+            strcpy(prev_world, current_world);
+            strcpy(load_world, current_world);
+
+            if(!choose_file_ch(mzx_world, world_ext, load_world,
+             "Load World", 1))
+            {
+              int fade;
+
+              // Load world curr_file
+              strcpy(current_world, load_world);
+              if(!editor_reload_world(mzx_world, current_world, &fade))
+              {
+                strcpy(current_world, prev_world);
+
+                fix_mod(mzx_world, src_board, listening_flag);
+                break;
+              }
+              strcpy(curr_file, current_world);
+
+              mzx_world->current_board_id = mzx_world->first_board;
+              mzx_world->current_board =
+               mzx_world->board_list[mzx_world->current_board_id];
+              src_board = mzx_world->current_board;
+
+              insta_fadein();
+
+              // Exit vlayer mode if necessary.
+              set_vlayer_mode(EDIT_BOARD, &overlay_edit,
+               &cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
+               &cursor_vlayer_x, &cursor_vlayer_y, &vscroll_x, &vscroll_y);
+
+              synchronize_board_values(mzx_world, &src_board, &board_width,
+               &board_height, &level_id, &level_param, &level_color,
+               &overlay, &overlay_color, &vlayer_chars, &vlayer_colors,
+               overlay_edit);
+
+              fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x,
+               &scroll_y, &debug_x, board_width, board_height,
+               edit_screen_height);
+
+              fix_mod(mzx_world, src_board, listening_flag);
+
+              if(!src_board->overlay_mode && overlay_edit == EDIT_OVERLAY)
+                overlay_edit = EDIT_BOARD;
+
+              if(draw_mode > 3)
+                draw_mode = 0;
+
+              clear_board_history = 1;
+              clear_overlay_history = 1;
+              clear_vlayer_history = 1;
+
+              modified = 0;
+            }
+          }
+        }
+        else
+        {
+          text_place = 1;
+        }
+        break;
+      }
+
+      case IKEY_m:
       {
         if(draw_mode != 2)
         {
-          if(get_ctrl_status(keycode_internal))
+          // Modify
+          if(get_alt_status(keycode_internal))
           {
-            // Goto board position
-            if(!board_goto(mzx_world, overlay_edit,
-             &cursor_board_x, &cursor_board_y))
-            {
-              // This will get fixed if necessary.
-              scroll_x = cursor_board_x - 39;
-              scroll_y = cursor_board_y - edit_screen_height / 2;
+            int offset = cursor_board_x + (cursor_board_y * board_width);
 
-              fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
-               &debug_x, board_width, board_height, edit_screen_height);
+            if(overlay_edit == EDIT_BOARD)
+            {
+              enum thing d_id = (enum thing)level_id[offset];
+              int d_param = level_param[offset];
+              int new_param;
+
+              if(is_storageless(d_id))
+              {
+                new_param =
+                 change_param(mzx_world, d_id, d_param, NULL, NULL, NULL);
+
+                if(new_param >= 0 && new_param != d_param)
+                {
+                  add_block_undo_frame(mzx_world, board_history,
+                   src_board, offset, 1, 1);
+
+                  level_param[offset] = new_param;
+
+                  update_undo_frame(board_history);
+                  modified = 1;
+                }
+              }
+              else
+
+              if(d_id != PLAYER)
+              {
+                add_block_undo_frame(mzx_world, board_history,
+                 src_board, offset, 1, 1);
+
+                if(d_id == SENSOR)
+                {
+                  edit_sensor(mzx_world, src_board->sensor_list[d_param]);
+                }
+                else
+
+                if(is_robot(d_id))
+                {
+                  edit_robot(mzx_world, src_board->robot_list[d_param]);
+                  draw_memory_timer = DRAW_MEMORY_TIMER_MAX;
+                  fix_caption(mzx_world, modified);
+                }
+                else
+
+                if(is_signscroll(d_id))
+                {
+                  edit_scroll(mzx_world, src_board->scroll_list[d_param]);
+                }
+
+                update_undo_frame(board_history);
+                modified = 1;
+              }
+            }
+            else
+
+            if(overlay_edit == EDIT_OVERLAY)
+            {
+              int new_ch = char_selection(overlay[offset]);
+
+              if(new_ch >= 0)
+              {
+                add_layer_undo_frame(overlay_history, overlay, overlay_color,
+                 board_width, offset, 1, 1);
+
+                overlay[offset] = new_ch;
+
+                update_undo_frame(overlay_history);
+                modified = 1;
+              }
+            }
+
+            else // EDIT_VLAYER
+            {
+              int new_ch = char_selection(vlayer_chars[offset]);
+
+              if(new_ch >= 0)
+              {
+                add_layer_undo_frame(vlayer_history, vlayer_chars,
+                 vlayer_colors, board_width, offset, 1, 1);
+
+                vlayer_chars[offset] = new_ch;
+
+                update_undo_frame(vlayer_history);
+                modified = 1;
+              }
             }
           }
           else
 
+          // Move current board
+          // Doesn't make sense on the vlayer
+          if(overlay_edit != EDIT_VLAYER)
+          {
+            int new_position;
+
+            if(mzx_world->current_board_id == 0)
+              break;
+
+            new_position =
+             choose_board(mzx_world, mzx_world->current_board_id,
+             "Move board to position:", 0);
+
+            if((new_position > 0) && (new_position < mzx_world->num_boards) &&
+             (new_position != mzx_world->current_board_id))
+            {
+              move_current_board(mzx_world, new_position);
+              new_board = new_position;
+              modified = 1;
+            }
+          }
+        }
+        else
+          text_place = 1;
+
+        break;
+      }
+
+      case IKEY_n:
+      {
+        if(draw_mode != 2)
+        {
+          // Board mod
+          // Doesn't make sense on the vlayer
+          if(get_alt_status(keycode_internal) && overlay_edit != EDIT_VLAYER)
+          {
+            if(!src_board->mod_playing[0])
+            {
+              char new_mod[MAX_PATH] = { 0 };
+
+              if(!choose_file(mzx_world, mod_ext, new_mod,
+               "Choose a module file", 2)) // 2:subdirsonly
+              {
+                strcpy(src_board->mod_playing, new_mod);
+                strcpy(mzx_world->real_mod_playing, new_mod);
+                fix_mod(mzx_world, src_board, listening_flag);
+                draw_mod_timer = DRAW_MOD_TIMER_MAX;
+              }
+            }
+            else
+            {
+              src_board->mod_playing[0] = 0;
+              mzx_world->real_mod_playing[0] = 0;
+              fix_mod(mzx_world, src_board, listening_flag);
+              draw_mod_timer = DRAW_MOD_TIMER_MAX;
+            }
+            modified = 1;
+          }
+          else
+
+          if(get_ctrl_status(keycode_internal))
+          {
+            if(!listening_flag)
+            {
+              char current_dir[MAX_PATH];
+              char new_mod[MAX_PATH] = { 0 } ;
+
+              getcwd(current_dir, MAX_PATH);
+              chdir(current_listening_dir);
+
+              if(!choose_file(mzx_world, mod_gdm_ext, new_mod,
+               "Choose a module file (listening only)", 1))
+              {
+                load_module(new_mod, false, 255);
+                strcpy(current_listening_mod, new_mod);
+                get_path(new_mod, current_listening_dir, MAX_PATH);
+                listening_flag = 1;
+              }
+
+              chdir(current_dir);
+            }
+            else
+            {
+              end_module();
+              listening_flag = 0;
+              if(mzx_world->real_mod_playing[0])
+                load_module(mzx_world->real_mod_playing, true, 255);
+            }
+          }
+        }
+        else
+        {
+          text_place = 1;
+        }
+        break;
+      }
+
+      case IKEY_o:
+      {
+        if(draw_mode != 2)
+        {
           if(get_alt_status(keycode_internal))
           {
-            global_robot(mzx_world);
-          }
+            if(overlay_edit != EDIT_OVERLAY)
+            {
+              if(!src_board->overlay_mode)
+              {
+                error("Overlay mode is not on (see Board Info)",
+                 0, 8, 0x1103);
+              }
+              else
+              {
+                if(overlay_edit == EDIT_VLAYER)
+                {
+                  // Disable vlayer mode and fix the display
+                  set_vlayer_mode(EDIT_OVERLAY, &overlay_edit,
+                   &cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
+                   &cursor_vlayer_x, &cursor_vlayer_y, &vscroll_x, &vscroll_y);
 
-          else
-          {
-            global_info(mzx_world);
-          }
+                  synchronize_board_values(mzx_world, &src_board, &board_width,
+                   &board_height, &level_id, &level_param, &level_color,
+                   &overlay, &overlay_color, &vlayer_chars, &vlayer_colors,
+                   overlay_edit);
 
-          fix_caption(mzx_world, modified);
-          modified = 1;
+                  fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x,
+                   &scroll_y, &debug_x, board_width, board_height,
+                   edit_screen_height);
+                }
+
+                draw_mode = 0;
+                overlay_edit = EDIT_OVERLAY;
+                current_param = 32;
+                current_color = 7;
+              }
+            }
+            else
+            {
+              draw_mode = 0;
+              overlay_edit = EDIT_BOARD;
+              current_id = SPACE;
+              current_param = 0;
+              current_color = 7;
+            }
+          }
         }
         else
         {
@@ -2713,14 +3865,21 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         {
           if(get_alt_status(keycode_internal))
           {
+            // Size and position
             if(overlay_edit == EDIT_VLAYER)
             {
-              size_pos_vlayer(mzx_world);
+              if(size_pos_vlayer(mzx_world))
+                clear_vlayer_history = 1;
             }
             else
             {
-              size_pos(mzx_world);
-              set_update_done_current(mzx_world);
+              if(size_pos(mzx_world))
+              {
+                set_update_done_current(mzx_world);
+
+                clear_board_history = 1;
+                clear_overlay_history = 1;
+              }
             }
 
             synchronize_board_values(mzx_world, &src_board, &board_width,
@@ -2745,6 +3904,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
           if(!overlay_edit)
           {
+            // Board- buffer param
             if(current_id < SENSOR)
             {
               int new_param = change_param(mzx_world, current_id,
@@ -2752,9 +3912,332 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
               if(new_param >= 0)
                 current_param = new_param;
+            }
+          }
 
+          else
+          {
+            // Layer- buffer char
+            int new_param = char_selection(current_param);
+
+            if(new_param >= 0)
+              current_param = new_param;
+          }
+        }
+        else
+        {
+          text_place = 1;
+        }
+        break;
+      }
+
+      case IKEY_r:
+      {
+        if(get_alt_status(keycode_internal))
+        {
+          // Clear world
+          if(!confirm(mzx_world, "Clear ALL - Are you sure?"))
+          {
+            clear_world(mzx_world);
+            create_blank_world(mzx_world);
+
+            if(draw_mode > 3)
+              draw_mode = 0;
+
+            // Disable vlayer editing if we're in it
+            set_vlayer_mode(EDIT_BOARD, &overlay_edit,
+             &cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
+             &cursor_vlayer_x, &cursor_vlayer_y, &vscroll_x, &vscroll_y);
+
+            synchronize_board_values(mzx_world, &src_board, &board_width,
+             &board_height, &level_id, &level_param, &level_color, &overlay,
+             &overlay_color, &vlayer_chars, &vlayer_colors, overlay_edit);
+
+            fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
+             &debug_x, board_width, board_height, edit_screen_height);
+
+            clear_board_history = 1;
+            clear_overlay_history = 1;
+            clear_vlayer_history = 1;
+
+            end_module();
+
+            modified = 1;
+          }
+        }
+        else
+
+        if(draw_mode == 2)
+        {
+          text_place = 1;
+        }
+        break;
+      }
+
+      case IKEY_s:
+      {
+        if(draw_mode != 2)
+        {
+          if(get_alt_status(keycode_internal))
+          {
+            if(overlay_edit == EDIT_OVERLAY)
+            {
+              show_level ^= 1;
+            }
+            else
+            {
+              status_counter_info(mzx_world);
               modified = 1;
             }
+          }
+          else
+          {
+            char world_name[MAX_PATH];
+            char new_path[MAX_PATH];
+            strcpy(world_name, current_world);
+            if(!new_file(mzx_world, world_ext, ".mzx", world_name,
+             "Save world", 1))
+            {
+              debug("Save path: %s\n", world_name);
+              // Save entire game
+              strcpy(current_world, world_name);
+              strcpy(curr_file, current_world);
+              save_world(mzx_world, current_world, 0, WORLD_VERSION);
+
+              // It's now officially WORLD_VERSION
+              mzx_world->version = WORLD_VERSION;
+
+              get_path(world_name, new_path, MAX_PATH);
+              if(new_path[0])
+                chdir(new_path);
+
+              modified = 0;
+            }
+          }
+        }
+        else
+        {
+          text_place = 1;
+        }
+
+        break;
+      }
+
+      case IKEY_t:
+      {
+        if(get_alt_status(keycode_internal))
+        {
+          // Test world
+          int fade;
+          int current_board_id = mzx_world->current_board_id;
+
+          // Clear undo histories and prepare to reset them
+          // We don't want the undo buffer wasting memory while testing
+          destruct_undo_history(board_history);
+          destruct_undo_history(overlay_history);
+          destruct_undo_history(vlayer_history);
+          board_history = NULL;
+          overlay_history = NULL;
+          vlayer_history = NULL;
+          clear_board_history = 1;
+          clear_overlay_history = 1;
+          clear_vlayer_history = 1;
+
+          if(!save_world(mzx_world, "__test.mzx", 0, WORLD_VERSION))
+          {
+            int world_version = mzx_world->version;
+            char *return_dir = cmalloc(MAX_PATH);
+            getcwd(return_dir, MAX_PATH);
+
+            save_editor_palette();
+            vquick_fadeout();
+            cursor_off();
+
+            set_update_done(mzx_world);
+
+            // Changes to the board, duplicates if reset on entry
+            change_board(mzx_world, current_board_id);
+            change_board_load_assets(mzx_world);
+            src_board = mzx_world->current_board;
+
+            set_counter(mzx_world, "TIME", src_board->time_limit, 0);
+            send_robot_def(mzx_world, 0, LABEL_JUSTENTERED);
+            send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
+            find_player(mzx_world);
+
+            mzx_world->player_restart_x = mzx_world->player_x;
+            mzx_world->player_restart_y = mzx_world->player_y;
+
+            load_board_module(mzx_world, src_board);
+
+            reset_robot_debugger();
+
+            play_game(mzx_world);
+
+            chdir(return_dir);
+
+            if(!reload_world(mzx_world, "__test.mzx", &fade))
+            {
+              if(!editor_reload_world(mzx_world, current_world, &fade))
+                create_blank_world(mzx_world);
+
+              current_board_id = mzx_world->current_board_id;
+              board_width = mzx_world->current_board->board_width;
+              board_height = mzx_world->current_board->board_height;
+
+              // Disable vlayer editing if necessary
+              set_vlayer_mode(EDIT_BOARD, &overlay_edit,
+               &cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
+               &cursor_vlayer_x, &cursor_vlayer_y, &vscroll_x, &vscroll_y);
+
+              modified = 0;
+            }
+
+            else
+            {
+              // Set it back to the original version.
+              mzx_world->version = world_version;
+            }
+
+            load_editor_palette();
+            m_show();
+
+            scroll_color = 15;
+            mzx_world->current_board_id = current_board_id;
+            mzx_world->current_board =
+             mzx_world->board_list[current_board_id];
+
+            if(draw_mode > 3)
+              draw_mode = 0;
+
+            synchronize_board_values(mzx_world, &src_board, &board_width,
+             &board_height, &level_id, &level_param, &level_color, &overlay,
+             &overlay_color, &vlayer_chars, &vlayer_colors, overlay_edit);
+
+            // Do this in case a different world was loaded/created
+            fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
+             &debug_x, board_width, board_height, edit_screen_height);
+
+            insta_fadein();
+
+            if(listening_flag)
+            {
+              load_module(current_listening_mod, false, 255);
+            }
+            else
+            {
+              fix_mod(mzx_world, src_board, listening_flag);
+            }
+
+            unlink("__test.mzx");
+
+            free(return_dir);
+          }
+        }
+        else
+
+        if(draw_mode == 2)
+        {
+          text_place = 1;
+        }
+
+        break;
+      }
+
+      case IKEY_v:
+      {
+        if(draw_mode != 2)
+        {
+          if(get_alt_status(keycode_internal))
+          {
+            // Toggle vlayer editing
+            int target_mode = EDIT_VLAYER;
+
+            if(overlay_edit == EDIT_VLAYER)
+            {
+              target_mode = EDIT_BOARD;
+            }
+
+            set_vlayer_mode(target_mode, &overlay_edit,
+             &cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
+             &cursor_vlayer_x, &cursor_vlayer_y, &vscroll_x, &vscroll_y);
+
+            synchronize_board_values(mzx_world, &src_board, &board_width,
+             &board_height, &level_id, &level_param, &level_color,
+             &overlay, &overlay_color, &vlayer_chars, &vlayer_colors,
+             overlay_edit);
+
+            fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x,
+             &scroll_y, &debug_x, board_width, board_height,
+             edit_screen_height);
+
+            draw_mode = 0;
+            current_id = SPACE;
+            current_param = 32;
+            current_color = 7;
+            break;
+          }
+          else
+
+          if(overlay_edit != EDIT_VLAYER)
+          {
+            // View mode
+            int viewport_width = src_board->viewport_width;
+            int viewport_height = src_board->viewport_height;
+            int v_scroll_x = scroll_x;
+            int v_scroll_y = CLAMP(scroll_y, 0,
+             src_board->board_height - src_board->viewport_height);
+            int v_key;
+
+            cursor_off();
+            m_hide();
+
+            do
+            {
+              draw_viewport(mzx_world);
+              draw_game_window(src_board, v_scroll_x, v_scroll_y);
+              update_screen();
+
+              update_event_status_delay();
+              v_key = get_key(keycode_internal_wrt_numlock);
+
+              if(get_exit_status())
+                v_key = IKEY_ESCAPE;
+
+              switch(v_key)
+              {
+                case IKEY_LEFT:
+                {
+                  if(v_scroll_x)
+                    v_scroll_x--;
+                  break;
+                }
+
+                case IKEY_RIGHT:
+                {
+                  if(v_scroll_x < (board_width - viewport_width))
+                    v_scroll_x++;
+                  break;
+                }
+
+                case IKEY_UP:
+                {
+                  if(v_scroll_y)
+                    v_scroll_y--;
+                  break;
+                }
+
+                case IKEY_DOWN:
+                {
+                  if(v_scroll_y < (board_height - viewport_height))
+                    v_scroll_y++;
+                  break;
+                }
+              }
+            } while(v_key != IKEY_ESCAPE);
+
+            m_show();
+            clear_screen_no_update();
           }
         }
         else
@@ -2881,1061 +4364,25 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         break;
       }
 
-      case IKEY_n:
+      case IKEY_y:
       {
-        if(draw_mode != 2)
+        if(get_ctrl_status(keycode_internal))
         {
-          // Board mod
-          // Doesn't make sense on the vlayer
-          if(get_alt_status(keycode_internal) && overlay_edit != EDIT_VLAYER)
-          {
-            if(!src_board->mod_playing[0])
-            {
-              char new_mod[MAX_PATH] = { 0 };
-
-              if(!choose_file(mzx_world, mod_ext, new_mod,
-               "Choose a module file", 2)) // 2:subdirsonly
-              {
-                strcpy(src_board->mod_playing, new_mod);
-                strcpy(mzx_world->real_mod_playing, new_mod);
-                fix_mod(mzx_world, src_board, listening_flag);
-                draw_mod_timer = DRAW_MOD_TIMER_MAX;
-              }
-            }
-            else
-            {
-              src_board->mod_playing[0] = 0;
-              mzx_world->real_mod_playing[0] = 0;
-              fix_mod(mzx_world, src_board, listening_flag);
-              draw_mod_timer = DRAW_MOD_TIMER_MAX;
-            }
-            modified = 1;
-          }
-          else
-
-          if(get_ctrl_status(keycode_internal))
-          {
-            if(!listening_flag)
-            {
-              char current_dir[MAX_PATH];
-              char new_mod[MAX_PATH] = { 0 } ;
-
-              getcwd(current_dir, MAX_PATH);
-              chdir(current_listening_dir);
-
-              if(!choose_file(mzx_world, mod_gdm_ext, new_mod,
-               "Choose a module file (listening only)", 1))
-              {
-                load_module(new_mod, false, 255);
-                strcpy(current_listening_mod, new_mod);
-                get_path(new_mod, current_listening_dir, MAX_PATH);
-                listening_flag = 1;
-              }
-
-              chdir(current_dir);
-            }
-            else
-            {
-              end_module();
-              listening_flag = 0;
-              if(mzx_world->real_mod_playing[0])
-                load_module(mzx_world->real_mod_playing, true, 255);
-            }
-          }
-        }
-        else
-        {
-          text_place = 1;
-        }
-        break;
-      }
-
-      case IKEY_RETURN:
-      {
-        // Block selection
-        if(draw_mode == 3)
-        {
-          int start_x = block_x;
-          int start_y = block_y;
-          int block_width;
-          int block_height;
-          int src_offset;
-
-          if(start_x > cursor_board_x)
-          {
-            start_x = cursor_board_x;
-            block_width = block_x - cursor_board_x + 1;
-          }
-          else
-          {
-            block_width = cursor_board_x - block_x + 1;
-          }
-
-          if(start_y > cursor_board_y)
-          {
-            start_y = cursor_board_y;
-            block_height = block_y - cursor_board_y + 1;
-          }
-          else
-          {
-            block_height = cursor_board_y - block_y + 1;
-          }
-
-          src_offset = start_x + (start_y * board_width);
-
-          // Select block command
-          block_command = block_cmd(mzx_world, overlay_edit);
-
-          block_edit = overlay_edit;
-          block_board = src_board;
-
-          block_dest_x = cursor_board_x;
-          block_dest_y = cursor_board_y;
-
-          // Some block commands are done automatically
-          switch(block_command)
-          {
-            case -1:
-            {
-              draw_mode = 0;
-              break;
-            }
-
-            case 0:
-            case 1:
-            case 2:
-            {
-              draw_mode = 4;
-              break;
-            }
-
-            case 3:
-            {
-              // Clear block
-              if(overlay_edit == EDIT_BOARD)
-              {
-                clear_board_block(src_board, src_offset,
-                 block_width, block_height);
-              }
-              else
-
-              if(overlay_edit == EDIT_OVERLAY)
-              {
-                clear_layer_block(
-                 overlay, overlay_color, board_width, src_offset,
-                 block_width, block_height);
-              }
-
-              else // EDIT_VLAYER
-              {
-                clear_layer_block(
-                 vlayer_chars, vlayer_colors, board_width, src_offset,
-                 block_width, block_height);
-              }
-
-              draw_mode = 0;
-              modified = 1;
-              break;
-            }
-
-            case 4:
-            {
-              // Flip block
-              if(overlay_edit == EDIT_BOARD)
-              {
-                flip_board_block(src_board, src_offset,
-                 block_width, block_height);
-              }
-              else
-
-              if(overlay_edit == EDIT_OVERLAY)
-              {
-                flip_layer_block(
-                 overlay, overlay_color, board_width, src_offset,
-                 block_width, block_height);
-              }
-
-              else // EDIT_VLAYER
-              {
-                flip_layer_block(
-                 vlayer_chars, vlayer_colors, board_width, src_offset,
-                 block_width, block_height);
-              }
-
-              draw_mode = 0;
-              modified = 1;
-              break;
-            }
-
-            case 5:
-            {
-              // Mirror block
-              if(overlay_edit == EDIT_BOARD)
-              {
-                mirror_board_block(src_board, src_offset,
-                 block_width, block_height);
-              }
-              else
-
-              if(overlay_edit == EDIT_OVERLAY)
-              {
-                mirror_layer_block(
-                 overlay, overlay_color, board_width, src_offset,
-                 block_width, block_height);
-              }
-
-              else
-              {
-                mirror_layer_block(
-                 vlayer_chars, vlayer_colors, board_width, src_offset,
-                 block_width, block_height);
-              }
-
-              draw_mode = 0;
-              modified = 1;
-              break;
-            }
-
-            case 6:
-            {
-              // Paint
-              if(overlay_edit == EDIT_BOARD)
-              {
-                paint_layer_block(
-                 level_color, board_width, src_offset,
-                 block_width, block_height, current_color);
-              }
-              else
-
-              if(overlay_edit == EDIT_OVERLAY)
-              {
-                paint_layer_block(
-                 overlay_color, board_width, src_offset,
-                 block_width, block_height, current_color);
-              }
-
-              else
-              {
-                paint_layer_block(
-                 vlayer_colors, board_width, src_offset,
-                 block_width, block_height, current_color);
-              }
-
-              draw_mode = 0;
-              modified = 1;
-              break;
-            }
-
-            case 7:
-            case 8:
-            {
-              // Copy to board/overlay/vlayer
-              int target_mode;
-
-              if((block_command == 7 && overlay_edit == EDIT_BOARD) ||
-               (block_command == 8 && overlay_edit == EDIT_VLAYER))
-              {
-                if(!src_board->overlay_mode)
-                {
-                  error("Overlay mode is not on (see Board Info)", 0, 8,
-                   0x1103);
-                  draw_mode = 0;
-                  break;
-                }
-                else
-                {
-                  target_mode = EDIT_OVERLAY;
-                }
-              }
-              else
-
-              if(block_command == 7 && overlay_edit != EDIT_BOARD)
-              {
-                target_mode = EDIT_BOARD;
-              }
-
-              else // block_command == 8, overlay_edit != EDIT_VLAYER
-              {
-                target_mode = EDIT_VLAYER;
-              }
-
-              // Exit vlayer mode if necessary.
-              set_vlayer_mode(target_mode, &overlay_edit,
-               &cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
-               &cursor_vlayer_x, &cursor_vlayer_y, &vscroll_x, &vscroll_y);
-
-              synchronize_board_values(mzx_world, &src_board, &board_width,
-               &board_height, &level_id, &level_param, &level_color,
-               &overlay, &overlay_color, &vlayer_chars, &vlayer_colors,
-               overlay_edit);
-
-              fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x,
-               &scroll_y, &debug_x, board_width, board_height,
-               edit_screen_height);
-
-              overlay_edit = target_mode;
-              draw_mode = 4;
-              break;
-            }
-
-            case 9:
-            {
-              // Save as MZM
-              mzm_name_buffer[0] = 0;
-
-              if(!new_file(mzx_world, mzm_ext, ".mzm", mzm_name_buffer,
-               "Export MZM", 1))
-              {
-                save_mzm(mzx_world, mzm_name_buffer, start_x,
-                 start_y, block_width, block_height,
-                 overlay_edit, 0);
-              }
-              modified = 1;
-              draw_mode = 0;
-              break;
-            }
-          }
-
-          // Enable block tiling movement if switching to block placement mode
-          if(draw_mode == 4)
-          {
-            copy_repeat_width = block_width;
-            copy_repeat_height = block_height;
-          }
-        }
-        else
-
-        // Block placement
-        if(draw_mode > 3)
-        {
-          int start_x = block_x;
-          int start_y = block_y;
-          int block_width;
-          int block_height;
-          int src_offset;
-
-          int dest_x = cursor_board_x;
-          int dest_y = cursor_board_y;
-          int original_width;
-          int original_height;
-          int dest_offset;
-
-          if(start_x > block_dest_x)
-          {
-            start_x = block_dest_x;
-            block_width = block_x - block_dest_x + 1;
-          }
-          else
-          {
-            block_width = block_dest_x - block_x + 1;
-          }
-
-          if(start_y > block_dest_y)
-          {
-            start_y = block_dest_y;
-            block_height = block_y - block_dest_y + 1;
-          }
-          else
-          {
-            block_height = block_dest_y - block_y + 1;
-          }
-
-          // Trim the block size to fit the destination, but keep the old
-          // size so the old block can be cleared during the move command
-          original_width = block_width;
-          original_height = block_height;
-
-          if((dest_x + block_width) > board_width)
-            block_width = board_width - dest_x;
-
-          if((dest_y + block_height) > board_height)
-            block_height = board_height - dest_y;
-
-          src_offset = start_x + (start_y * block_board->board_width);
-          dest_offset = dest_x + (dest_y * board_width);
-
-          // Placing the block (generally) terminates block mode.
-          draw_mode = 0;
-
+          // Redo
           if(overlay_edit == EDIT_BOARD)
-          {
-            switch(block_command)
-            {
-              case 0:
-              case 1:
-              {
-                // Copy block
-                copy_board_to_board(mzx_world,
-                 block_board, src_offset,
-                 src_board, dest_offset,
-                 block_width, block_height);
+            modified |= apply_redo(board_history);
 
-                // 1 is repeat copy
-                if(block_command == 1)
-                  draw_mode = 4;
+          else if(overlay_edit == EDIT_OVERLAY)
+            modified |= apply_redo(overlay_history);
 
-                modified = 1;
-                break;
-              }
-
-              case 2:
-              {
-                // Move block
-                move_board_block(mzx_world,
-                 block_board, src_offset,
-                 src_board, dest_offset,
-                 block_width, block_height,
-                 original_width, original_height);
-
-                // Work around to move the player
-                if((mzx_world->player_x >= start_x) &&
-                 (mzx_world->player_y >= start_y) &&
-                 (mzx_world->player_x < (start_x + block_width)) &&
-                 (mzx_world->player_y < (start_y + block_height)) &&
-                 (block_board == src_board))
-                {
-                  place_player_xy(mzx_world,
-                   mzx_world->player_x - start_x + dest_x,
-                   mzx_world->player_y - start_y + dest_y);
-                }
-
-                modified = 1;
-                break;
-              }
-
-              case 7:
-              {
-                // Copy from overlay/vlayer
-                int convert_select = layer_to_board_object_type(mzx_world);
-                enum thing convert_id = NO_ID;
-
-                switch(convert_select)
-                {
-                  case 0:
-                  {
-                    // Custom Block
-                    convert_id = CUSTOM_BLOCK;
-                    break;
-                  }
-
-                  case 1:
-                  {
-                    convert_id = CUSTOM_FLOOR;
-                    break;
-                  }
-
-                  case 2:
-                  {
-                    convert_id = __TEXT;
-                    break;
-                  }
-                }
-
-                if(convert_select != -1)
-                {
-                  char *src_char;
-                  char *src_color;
-                  int src_width;
-
-                  // Where is the block coming from?
-                  if(block_edit == EDIT_OVERLAY)
-                  {
-                    src_char = block_board->overlay;
-                    src_color = block_board->overlay_color;
-                    src_width = block_board->board_width;
-                  }
-                  else
-
-                  if(block_edit == EDIT_VLAYER)
-                  {
-                    src_char = vlayer_chars;
-                    src_color = vlayer_colors;
-                    src_width = mzx_world->vlayer_width;
-                    src_offset = start_x + (start_y * mzx_world->vlayer_width);
-                  }
-
-                  else break;
-
-                  copy_layer_to_board(
-                   src_char, src_color, src_width, src_offset,
-                   src_board, dest_offset,
-                   block_width, block_height, convert_id);
-
-                  modified = 1;
-                }
-                break;
-              }
-
-              case 8:
-              {
-                // There is no block action 8 with the board as the destination
-                warn("Invalid block action! (board, 8)\n");
-                break;
-              }
-
-              case 10:
-              {
-                // Load MZM
-                load_mzm(mzx_world, mzm_name_buffer, dest_x, dest_y, 0, 0);
-                modified = 1;
-                break;
-              }
-            }
-          }
-          else
-
-          if(overlay_edit == EDIT_OVERLAY)
-          {
-            switch(block_command)
-            {
-              case 0:
-              case 1:
-              {
-                // Copy block
-                char *src_char = block_board->overlay;
-                char *src_color = block_board->overlay_color;
-
-                copy_layer_to_layer(
-                 src_char, src_color, block_board->board_width, src_offset,
-                 overlay, overlay_color, board_width, dest_offset,
-                 block_width, block_height);
-
-                // 1 is repeat copy
-                if(block_command == 1)
-                  draw_mode = 4;
-
-                modified = 1;
-                break;
-              }
-
-              case 2:
-              {
-                // Move block
-                char *src_char = block_board->overlay;
-                char *src_color = block_board->overlay_color;
-
-                move_layer_block(
-                 src_char, src_color, block_board->board_width, src_offset,
-                 overlay, overlay_color, board_width, dest_offset,
-                 block_width, block_height,
-                 original_width, original_height);
-
-                modified = 1;
-                break;
-              }
-
-              case 7:
-              {
-                // Copy from board
-                copy_board_to_layer(
-                 block_board, src_offset,
-                 overlay, overlay_color, board_width, dest_offset,
-                 block_width, block_height);
-
-                modified = 1;
-                break;
-              }
-
-              case 8:
-              {
-                // Copy from vlayer
-                src_offset = start_x + (start_y * mzx_world->vlayer_width);
-
-                copy_layer_to_layer(
-                 vlayer_chars, vlayer_colors, mzx_world->vlayer_width, src_offset,
-                 overlay, overlay_color, board_width, dest_offset,
-                 block_width, block_height);
-
-                modified = 1;
-                break;
-              }
-
-              case 10:
-              {
-                // Load MZM
-                load_mzm(mzx_world, mzm_name_buffer, dest_x,
-                 dest_y, 1, 0);
-                modified = 1;
-                break;
-              }
-            }
-          }
-
-          else // EDIT_VLAYER
-          {
-            switch(block_command)
-            {
-              case 0:
-              case 1:
-              {
-                // Copy block
-                src_offset = start_x + (start_y * mzx_world->vlayer_width);
-
-                copy_layer_to_layer(
-                 vlayer_chars, vlayer_colors, board_width, src_offset,
-                 vlayer_chars, vlayer_colors, board_width, dest_offset,
-                 block_width, block_height);
-
-                // 1 is repeat copy
-                if(block_command == 1)
-                  draw_mode = 4;
-
-                modified = 1;
-                break;
-              }
-
-              case 2:
-              {
-                // Move block
-                src_offset = start_x + (start_y * mzx_world->vlayer_width);
-
-                move_layer_block(
-                 vlayer_chars, vlayer_colors, board_width, src_offset,
-                 vlayer_chars, vlayer_colors, board_width, dest_offset,
-                 block_width, block_height,
-                 original_width, original_height);
-
-                modified = 1;
-                break;
-              }
-
-              case 7:
-              {
-                // No block action 7 with a destination of the vlayer exists
-                warn("Invalid block action! (vlayer, 7)\n");
-
-                modified = 1;
-                break;
-              }
-
-              case 8:
-              {
-                // Copy from board/overlay
-                if(block_edit == EDIT_BOARD)
-                {
-                  copy_board_to_layer(
-                   block_board, src_offset,
-                   vlayer_chars, vlayer_colors, board_width, dest_offset,
-                   block_width, block_height);
-                }
-                else
-
-                if(block_edit == EDIT_OVERLAY)
-                {
-                  copy_layer_to_layer(
-                   overlay, overlay_color, block_board->board_width, src_offset,
-                   vlayer_chars, vlayer_colors, board_width, dest_offset,
-                   block_width, block_height);
-                }
-
-                modified = 1;
-                break;
-              }
-
-              case 10:
-              {
-                // Load MZM
-                load_mzm(mzx_world, mzm_name_buffer, dest_x,
-                 dest_y, 2, 0);
-                modified = 1;
-                break;
-              }
-            }
-          }
+          else if(overlay_edit == EDIT_VLAYER)
+            modified |= apply_redo(vlayer_history);
         }
         else
 
-        if(draw_mode == 2)
-        {
-          // Go to next line
-          int dif_x = cursor_board_x - text_start_x;
-          if(dif_x > 0)
-          {
-            for(i = 0; i < dif_x; i++)
-            {
-              if(!cursor_board_x)
-                break;
-
-              cursor_board_x--;
-
-              if(((cursor_board_x - scroll_x) < 5) && scroll_x)
-                scroll_x--;
-            }
-
-            if((cursor_board_x - scroll_x) < (debug_x + 25))
-            {
-              debug_x = 60;
-              clear_screen_no_update();
-            }
-          }
-          else
-
-          if(dif_x < 0)
-          {
-            for(i = 0; i < -dif_x; i++)
-            {
-              if(cursor_board_x >= board_width)
-                break;
-
-              cursor_board_x++;
-
-              if(((cursor_board_x - scroll_x) > 74) &&
-               (scroll_x < (board_width - 80)))
-                scroll_x++;
-
-              if((cursor_board_x - scroll_x) > (debug_x - 5))
-              {
-                debug_x = 0;
-                clear_screen_no_update();
-              }
-            }
-          }
-
-          if(cursor_board_y < (board_height - 1))
-          {
-            cursor_board_y++;
-
-            // Scroll board position if there's room to
-            if(((cursor_board_y - scroll_y) > (edit_screen_height - 5)) &&
-             (scroll_y < (board_height - edit_screen_height)))
-              scroll_y++;
-          }
-        }
-        else
-
-        // Normal/draw - overlay char
-        if(overlay_edit)
-        {
-          int new_param = char_selection(current_param);
-          if(new_param >= 0)
-          {
-            current_param = new_param;
-            modified = 1;
-          }
-        }
-
-        // Normal/draw - modify+get
-        else
-        {
-          int new_param;
-
-          grab_at_xy(mzx_world, &current_id, &current_color,
-           &current_param, &copy_robot, &copy_scroll, &copy_sensor,
-           cursor_board_x, cursor_board_y, overlay_edit);
-
-          copy_robot.xpos = cursor_board_x;
-          copy_robot.ypos = cursor_board_y;
-          new_param =
-           change_param(mzx_world, current_id, current_param,
-           &copy_robot, &copy_scroll, &copy_sensor);
-
-          // Kinda a hack, but should get the job done.
-          if(is_storageless(current_id) && (new_param >= 0))
-          {
-            src_board->level_param[(cursor_board_y * board_width) +
-             cursor_board_x] = new_param;
-
-            current_param = new_param;
-          }
-          else
-          {
-            current_param = place_current_at_xy(mzx_world,
-             current_id, current_color, new_param, cursor_board_x,
-             cursor_board_y, &copy_robot, &copy_scroll, &copy_sensor, 0);
-          }
-
-          modified = 1;
-        }
-
-        break;
-      }
-
-      case IKEY_e:
-      {
-        if(draw_mode != 2)
-        {
-          if(get_alt_status(keycode_internal))
-          {
-            palette_editor(mzx_world);
-            modified = 1;
-          }
-        }
-        else
-        {
-          text_place = 1;
-        }
-
-        break;
-      }
-
-      case IKEY_f:
-      {
-        if(draw_mode != 2)
-        {
-          if(get_alt_status(keycode_internal))
-          {
-            sfx_edit(mzx_world);
-            modified = 1;
-          }
-          else
-          {
-            fill_area(mzx_world, current_id, current_color,
-             current_param, cursor_board_x, cursor_board_y,
-             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit);
-            modified = 1;
-          }
-        }
-        else
-        {
-          text_place = 1;
-        }
-
-        break;
-      }
-
-      case IKEY_ESCAPE:
-      {
-        if(draw_mode)
-        {
-          draw_mode = 0;
-          key = 0;
-        }
-        else
-
-        if(overlay_edit)
-        {
-          if(overlay_edit == EDIT_VLAYER)
-          {
-            // Disable vlayer mode and fix the display
-            set_vlayer_mode(EDIT_BOARD, &overlay_edit,
-             &cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
-             &cursor_vlayer_x, &cursor_vlayer_y, &vscroll_x, &vscroll_y);
-
-            synchronize_board_values(mzx_world, &src_board, &board_width,
-             &board_height, &level_id, &level_param, &level_color,
-             &overlay, &overlay_color, &vlayer_chars, &vlayer_colors,
-             overlay_edit);
-
-            fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x,
-             &scroll_y, &debug_x, board_width, board_height,
-             edit_screen_height);
-          }
-
-          overlay_edit = EDIT_BOARD;
-          current_id = SPACE;
-          current_param = 0;
-          current_color = 7;
-          key = 0;
-        }
-
-        else
-        {
-          exit = 1;
-        }
-
-        break;
-      }
-
-      case IKEY_v:
-      {
-        if(draw_mode != 2)
-        {
-          if(get_alt_status(keycode_internal))
-          {
-            // Toggle vlayer editing
-            int target_mode = EDIT_VLAYER;
-
-            if(overlay_edit == EDIT_VLAYER)
-            {
-              target_mode = EDIT_BOARD;
-            }
-
-            set_vlayer_mode(target_mode, &overlay_edit,
-             &cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
-             &cursor_vlayer_x, &cursor_vlayer_y, &vscroll_x, &vscroll_y);
-
-            synchronize_board_values(mzx_world, &src_board, &board_width,
-             &board_height, &level_id, &level_param, &level_color,
-             &overlay, &overlay_color, &vlayer_chars, &vlayer_colors,
-             overlay_edit);
-
-            fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x,
-             &scroll_y, &debug_x, board_width, board_height,
-             edit_screen_height);
-
-            draw_mode = 0;
-            current_id = SPACE;
-            current_param = 32;
-            current_color = 7;
-            break;
-          }
-          else
-
-          if(overlay_edit != EDIT_VLAYER)
-          {
-            // View mode
-            int viewport_width = src_board->viewport_width;
-            int viewport_height = src_board->viewport_height;
-            int v_scroll_x = scroll_x;
-            int v_scroll_y = CLAMP(scroll_y, 0,
-             src_board->board_height - src_board->viewport_height);
-            int v_key;
-
-            cursor_off();
-            m_hide();
-
-            do
-            {
-              draw_viewport(mzx_world);
-              draw_game_window(src_board, v_scroll_x, v_scroll_y);
-              update_screen();
-
-              update_event_status_delay();
-              v_key = get_key(keycode_internal_wrt_numlock);
-
-              if(get_exit_status())
-                v_key = IKEY_ESCAPE;
-
-              switch(v_key)
-              {
-                case IKEY_LEFT:
-                {
-                  if(v_scroll_x)
-                    v_scroll_x--;
-                  break;
-                }
-
-                case IKEY_RIGHT:
-                {
-                  if(v_scroll_x < (board_width - viewport_width))
-                    v_scroll_x++;
-                  break;
-                }
-
-                case IKEY_UP:
-                {
-                  if(v_scroll_y)
-                    v_scroll_y--;
-                  break;
-                }
-
-                case IKEY_DOWN:
-                {
-                  if(v_scroll_y < (board_height - viewport_height))
-                    v_scroll_y++;
-                  break;
-                }
-              }
-            } while(v_key != IKEY_ESCAPE);
-
-            m_show();
-            clear_screen_no_update();
-          }
-        }
-        else
-        {
-          text_place = 1;
-        }
-        break;
-      }
-
-      case IKEY_t:
-      {
         if(get_alt_status(keycode_internal))
         {
-          int fade;
-          int current_board_id = mzx_world->current_board_id;
-
-          if(!save_world(mzx_world, "__test.mzx", 0, WORLD_VERSION))
-          {
-            int world_version = mzx_world->version;
-            char *return_dir = cmalloc(MAX_PATH);
-            getcwd(return_dir, MAX_PATH);
-
-            save_editor_palette();
-            vquick_fadeout();
-            cursor_off();
-
-            set_update_done(mzx_world);
-
-            // Changes to the board, duplicates if reset on entry
-            change_board(mzx_world, current_board_id);
-            change_board_load_assets(mzx_world);
-            src_board = mzx_world->current_board;
-
-            set_counter(mzx_world, "TIME", src_board->time_limit, 0);
-            send_robot_def(mzx_world, 0, LABEL_JUSTENTERED);
-            send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
-            find_player(mzx_world);
-
-            mzx_world->player_restart_x = mzx_world->player_x;
-            mzx_world->player_restart_y = mzx_world->player_y;
-
-            load_board_module(mzx_world, src_board);
-
-            reset_robot_debugger();
-
-            play_game(mzx_world);
-
-            chdir(return_dir);
-
-            if(!reload_world(mzx_world, "__test.mzx", &fade))
-            {
-              if(!editor_reload_world(mzx_world, current_world, &fade))
-                create_blank_world(mzx_world);
-
-              current_board_id = mzx_world->current_board_id;
-              board_width = mzx_world->current_board->board_width;
-              board_height = mzx_world->current_board->board_height;
-
-              // Disable vlayer editing if necessary
-              set_vlayer_mode(EDIT_BOARD, &overlay_edit,
-               &cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
-               &cursor_vlayer_x, &cursor_vlayer_y, &vscroll_x, &vscroll_y);
-
-              modified = 0;
-            }
-
-            else
-            {
-              // Set it back to the original version.
-              mzx_world->version = world_version;
-            }
-
-            load_editor_palette();
-            m_show();
-
-            scroll_color = 15;
-            mzx_world->current_board_id = current_board_id;
-            mzx_world->current_board =
-             mzx_world->board_list[current_board_id];
-
-            if(draw_mode > 3)
-              draw_mode = 0;
-
-            synchronize_board_values(mzx_world, &src_board, &board_width,
-             &board_height, &level_id, &level_param, &level_color, &overlay,
-             &overlay_color, &vlayer_chars, &vlayer_colors, overlay_edit);
-
-            // Do this in case a different world was loaded/created
-            fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
-             &debug_x, board_width, board_height, edit_screen_height);
-
-            insta_fadein();
-
-            if(listening_flag)
-            {
-              load_module(current_listening_mod, false, 255);
-            }
-            else
-            {
-              fix_mod(mzx_world, src_board, listening_flag);
-            }
-
-            unlink("__test.mzx");
-
-            free(return_dir);
-          }
+          debug_mode = !debug_mode;
         }
         else
 
@@ -3944,118 +4391,25 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           text_place = 1;
         }
 
-        break;
-      }
-
-      case IKEY_a:
-      {
-        if(get_alt_status(keycode_internal))
-        {
-          int charset_load = choose_char_set(mzx_world);
-
-          switch(charset_load)
-          {
-            case 0:
-            {
-              ec_load_mzx();
-              break;
-            }
-
-            case 1:
-            {
-              ec_load_ascii();
-              break;
-            }
-
-            case 2:
-            {
-              ec_load_smzx();
-              break;
-            }
-
-            case 3:
-            {
-              ec_load_blank();
-              break;
-            }
-          }
-
-          modified = 1;
-        }
-        else
-
-        if(draw_mode != 2)
-        {
-          // Add board, find first free
-          for(i = 0; i < mzx_world->num_boards; i++)
-          {
-            if(mzx_world->board_list[i] == NULL)
-              break;
-          }
-
-          if(i < MAX_BOARDS)
-          {
-            if(add_board(mzx_world, i) >= 0)
-              new_board = i;
-          }
-        }
-        else
-        {
-          text_place = 1;
-        }
-        break;
-      }
-
-      case IKEY_d:
-      {
-        if(draw_mode != 2)
-        {
-          if(get_alt_status(keycode_internal))
-          {
-            // Toggle default built-in colors
-            use_default_color ^= 1;
-          }
-          else
-          {
-            int del_board =
-             choose_board(mzx_world, mzx_world->current_board_id,
-             "Delete board:", 0);
-
-            if((del_board > 0) &&
-             !confirm(mzx_world, "DELETE BOARD - Are you sure?"))
-            {
-              int current_board_id = mzx_world->current_board_id;
-              clear_board(mzx_world->board_list[del_board]);
-              mzx_world->board_list[del_board] = NULL;
-
-              // Remove null board from list
-              optimize_null_boards(mzx_world);
-
-              if(del_board == current_board_id)
-              {
-                new_board = 0;
-              }
-              else
-              {
-                synchronize_board_values(mzx_world, &src_board, &board_width,
-                 &board_height, &level_id, &level_param, &level_color,
-                 &overlay, &overlay_color, &vlayer_chars, &vlayer_colors,
-                 overlay_edit);
-              }
-            }
-          }
-
-          modified = 1;
-        }
-        else
-        {
-          text_place = 1;
-        }
         break;
       }
 
       case IKEY_z:
       {
+        if(get_ctrl_status(keycode_internal))
+        {
+          // Undo
+          if(overlay_edit == EDIT_BOARD)
+            modified |= apply_undo(board_history);
+
+          else if(overlay_edit == EDIT_OVERLAY)
+            modified |= apply_undo(overlay_history);
+
+          else if(overlay_edit == EDIT_VLAYER)
+            modified |= apply_undo(vlayer_history);
+        }
+        else
+
         if(get_alt_status(keycode_internal))
         {
           if(overlay_edit == EDIT_VLAYER)
@@ -4070,6 +4424,8 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
               {
                 draw_mode = 0;
               }
+
+              clear_vlayer_history = 1;
             }
           }
           else
@@ -4092,6 +4448,9 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             strcpy(mzx_world->real_mod_playing,
              src_board->mod_playing);
 
+            clear_board_history = 1;
+            clear_overlay_history = 1;
+
             if((draw_mode > 3) &&
              (block_board == (mzx_world->current_board)))
             {
@@ -4109,237 +4468,6 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         }
         break;
       }
-
-      case IKEY_r:
-      {
-        if(get_alt_status(keycode_internal))
-        {
-          // Clear world
-          if(!confirm(mzx_world, "Clear ALL - Are you sure?"))
-          {
-            clear_world(mzx_world);
-            create_blank_world(mzx_world);
-
-            if(draw_mode > 3)
-              draw_mode = 0;
-
-            // Disable vlayer editing if we're in it
-            set_vlayer_mode(EDIT_BOARD, &overlay_edit,
-             &cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
-             &cursor_vlayer_x, &cursor_vlayer_y, &vscroll_x, &vscroll_y);
-
-            synchronize_board_values(mzx_world, &src_board, &board_width,
-             &board_height, &level_id, &level_param, &level_color, &overlay,
-             &overlay_color, &vlayer_chars, &vlayer_colors, overlay_edit);
-
-            fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
-             &debug_x, board_width, board_height, edit_screen_height);
-
-            end_module();
-
-            modified = 1;
-          }
-        }
-        else
-
-        if(draw_mode == 2)
-        {
-          text_place = 1;
-        }
-        break;
-      }
-
-      case IKEY_PAGEDOWN:
-      {
-        current_menu++;
-
-        if(current_menu == 6)
-          current_menu = 0;
-
-        break;
-      }
-
-      case IKEY_PAGEUP:
-      {
-        current_menu--;
-
-        if(current_menu == -1)
-          current_menu = 5;
-
-        break;
-      }
-
-      case IKEY_8:
-      case IKEY_KP_MULTIPLY:
-      {
-        if(draw_mode == 2)
-        {
-          text_place = 1;
-        }
-        else
-
-        if(get_shift_status(keycode_internal) ||
-         (key == IKEY_KP_MULTIPLY))
-        {
-          src_board->mod_playing[0] = '*';
-          src_board->mod_playing[1] = 0;
-          fix_mod(mzx_world, src_board, listening_flag);
-          draw_mod_timer = DRAW_MOD_TIMER_MAX;
-
-          modified = 1;
-        }
-
-        break;
-      }
-
-      case IKEY_m:
-      {
-        if(draw_mode != 2)
-        {
-          // Modify
-          if(get_alt_status(keycode_internal))
-          {
-            int offset = cursor_board_x + (cursor_board_y * board_width);
-
-            if(overlay_edit == EDIT_BOARD)
-            {
-              enum thing d_id = (enum thing)level_id[offset];
-              int d_param = level_param[offset];
-              int new_param;
-
-              if(d_id == SENSOR)
-              {
-                edit_sensor(mzx_world, src_board->sensor_list[d_param]);
-                modified = 1;
-              }
-              else
-
-              if(is_robot(d_id))
-              {
-                draw_memory_timer = DRAW_MEMORY_TIMER_MAX;
-                edit_robot(mzx_world, src_board->robot_list[d_param]);
-                fix_caption(mzx_world, modified);
-                modified = 1;
-              }
-              else
-
-              if(is_signscroll(d_id))
-              {
-                edit_scroll(mzx_world, src_board->scroll_list[d_param]);
-                modified = 1;
-              }
-              else
-
-              if(is_storageless(d_id) &&
-               (0 <= (new_param = change_param(mzx_world, d_id, d_param, NULL, NULL, NULL))))
-              {
-                src_board->level_param[offset] = new_param;
-                modified = 1;
-              }
-            }
-            else
-
-            if(overlay_edit == EDIT_OVERLAY)
-            {
-              int o_ch = src_board->overlay[offset];
-              int new_ch;
-
-              if((new_ch = char_selection(o_ch)) >= 0)
-              {
-                src_board->overlay[offset] = new_ch;
-                modified = 1;
-              }
-            }
-
-            else // EDIT_VLAYER
-            {
-              int new_ch = char_selection(vlayer_chars[offset]);
-
-              if(new_ch >= 0)
-              {
-                vlayer_chars[offset] = new_ch;
-                modified = 1;
-              }
-            }
-          }
-          else
-
-          // Move current board
-          // Doesn't make sense on the vlayer
-          if(overlay_edit != EDIT_VLAYER)
-          {
-            int new_position;
-
-            if(mzx_world->current_board_id == 0)
-              break;
-
-            new_position =
-             choose_board(mzx_world, mzx_world->current_board_id,
-             "Move board to position:", 0);
-
-            if((new_position > 0) && (new_position < mzx_world->num_boards) &&
-             (new_position != mzx_world->current_board_id))
-            {
-              move_current_board(mzx_world, new_position);
-              new_board = new_position;
-              modified = 1;
-            }
-          }
-        }
-        else
-          text_place = 1;
-
-        break;
-      }
-
-      case IKEY_y:
-      {
-        if(get_alt_status(keycode_internal))
-        {
-          debug_mode = !debug_mode;
-        }
-        else
-
-        if(draw_mode == 2)
-        {
-          text_place = 1;
-        }
-
-        break;
-      }
-
-      case IKEY_h:
-      {
-        if(get_alt_status(keycode_internal))
-        {
-          if(edit_screen_height == EDIT_SCREEN_NORMAL)
-          {
-            edit_screen_height = EDIT_SCREEN_EXTENDED;
-            clear_screen_no_update();
-
-            if((scroll_y + 25) > board_height)
-              scroll_y = board_height - 25;
-
-            if(scroll_y < 0)
-              scroll_y = 0;
-          }
-          else
-          {
-            edit_screen_height = EDIT_SCREEN_NORMAL;
-            if((cursor_board_y - scroll_y) > 18)
-              scroll_y += cursor_board_y - scroll_y - 18;
-          }
-        }
-        else
-
-        if(draw_mode == 2)
-        {
-          text_place = 1;
-        }
-
-        break;
-      }
-
 
       case 0:
       {
@@ -4375,6 +4503,8 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
        &scroll_y, &debug_x, board_width, board_height,
        edit_screen_height);
 
+      fix_caption(mzx_world, modified);
+
       if(strcmp(src_board->mod_playing, "*") &&
        strcasecmp(src_board->mod_playing,
        mzx_world->real_mod_playing))
@@ -4384,18 +4514,114 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
       if(mzx_world->editor_conf.editor_load_board_assets)
         change_board_load_assets(mzx_world);
 
+      // Clear the local undo histories
+      clear_board_history = 1;
+      clear_overlay_history = 1;
+
       draw_mod_timer = DRAW_MOD_TIMER_MAX;
 
       new_board = -1;
       modified = 1;
     }
 
+    if(cursor_move_x || cursor_move_y)
+    {
+      // Move the cursor
+      // Bound movement within the dimensions of the board
+      cursor_move_x =
+       CLAMP(cursor_move_x, -cursor_board_x, board_width - cursor_board_x - 1);
+
+      cursor_move_y =
+       CLAMP(cursor_move_y, -cursor_board_y, board_height - cursor_board_y - 1);
+
+      if(cursor_move_x)
+        cursor_move_y = 0;
+
+      if(cursor_move_x || cursor_move_y)
+      {
+        struct undo_history *h;
+        int offset = cursor_board_x + (board_width * cursor_board_y);
+        int move_x = SGN(cursor_move_x);
+        int move_y = SGN(cursor_move_y);
+        int width = abs(cursor_move_x) + 1;
+        int height = abs(cursor_move_y) + 1;
+
+        if(move_x < 0)
+          offset -= width;
+
+        if(move_y < 0)
+          offset -= board_width * height;
+
+        if(draw_mode == 1)
+        {
+          switch(overlay_edit)
+          {
+            case EDIT_BOARD:
+              h = board_history;
+              add_block_undo_frame(
+               mzx_world, h, src_board, offset, width, height);
+              break;
+
+            case EDIT_OVERLAY:
+              h = overlay_history;
+              add_layer_undo_frame(h,
+               overlay, overlay_color, board_width, offset, width, height);
+              break;
+
+            case EDIT_VLAYER:
+              h = vlayer_history;
+              add_layer_undo_frame(h,
+               vlayer_chars, vlayer_colors, board_width, offset, width, height);
+              break;
+          }
+        }
+
+        do
+        {
+          cursor_board_x += move_x;
+          cursor_board_y += move_y;
+          cursor_move_x -= move_x;
+          cursor_move_y -= move_y;
+
+          if(draw_mode == 1)
+          {
+            current_param = place_current_at_xy(mzx_world, current_id,
+             current_color, current_param, cursor_board_x, cursor_board_y,
+             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit, 0);
+            modified = 1;
+          }
+
+          if(cursor_board_x - scroll_x < 5)
+            scroll_x--;
+
+          if(cursor_board_x - scroll_x > 74)
+            scroll_x++;
+
+          if(cursor_board_y - scroll_y < 3)
+            scroll_y--;
+
+          if(cursor_board_y - scroll_y > (edit_screen_height - 5))
+            scroll_y++;
+        }
+        while(cursor_move_x || cursor_move_y);
+
+        if(draw_mode == 1)
+          update_undo_frame(h);
+
+        fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x,
+         &scroll_y, &debug_x, board_width, board_height,
+         edit_screen_height);
+      }
+    }
+
     if(draw_mode == 1 && mzx_world->editor_conf.editor_tab_focuses_view)
     {
-      scroll_x = CLAMP(cursor_board_x - 40,
-       0, MAX(0, src_board->board_width - 80));
-      scroll_y = CLAMP(cursor_board_y - (edit_screen_height / 2),
-       0, MAX(0, src_board->board_height - edit_screen_height));
+      scroll_x = cursor_board_x - 40;
+      scroll_y = cursor_board_y - (edit_screen_height / 2);
+
+      fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x,
+       &scroll_y, &debug_x, board_width, board_height,
+       edit_screen_height);
     }
 
     if(text_place)
@@ -4405,20 +4631,17 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
       {
         place_current_at_xy(mzx_world, __TEXT, current_color,
          key, cursor_board_x, cursor_board_y, &copy_robot,
-         &copy_scroll, &copy_sensor, overlay_edit);
+         &copy_scroll, &copy_sensor, overlay_edit, 1);
 
         if(cursor_board_x < (board_width - 1))
           cursor_board_x++;
 
-        if((cursor_board_x > 74) && (cursor_board_x < (board_width - 5)) &&
-         (scroll_x < (board_width - 80)))
+        if(cursor_board_x - scroll_x > 74)
           scroll_x++;
 
-        if((cursor_board_x - scroll_x) > (debug_x - 5))
-        {
-          debug_x = 0;
-          clear_screen_no_update();
-        }
+        fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x,
+         &scroll_y, &debug_x, board_width, board_height,
+         edit_screen_height);
 
         modified = 1;
       }
@@ -4455,6 +4678,14 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
   clear_screen(32, 7);
   insta_fadeout();
   strcpy(curr_file, current_world);
+
+  // Free the undo data
+  destruct_undo_history(board_history);
+  destruct_undo_history(overlay_history);
+  destruct_undo_history(vlayer_history);
+  board_history = NULL;
+  overlay_history = NULL;
+  vlayer_history = NULL;
 
   // Free the robot debugger data
   free_breakpoints();
