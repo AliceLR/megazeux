@@ -210,6 +210,22 @@ static void fix_caption(struct world *mzx_world, int modified)
   set_caption(mzx_world, mzx_world->current_board, NULL, 1, modified);
 }
 
+static void fix_cursor(int *cursor_board_x, int *cursor_board_y,
+ int scroll_x, int scroll_y, int *debug_x, int board_width, int board_height)
+{
+  if(*cursor_board_x >= board_width)
+    *cursor_board_x = (board_width - 1);
+
+  if(*cursor_board_y >= board_height)
+    *cursor_board_y = (board_height - 1);
+
+  if((*cursor_board_x - scroll_x) < (*debug_x + 25))
+    *debug_x = 60;
+
+  if((*cursor_board_x - scroll_x) > (*debug_x - 5))
+    *debug_x = 0;
+}
+
 static void fix_scroll(int *cursor_board_x, int *cursor_board_y,
  int *scroll_x, int *scroll_y, int *debug_x, int board_width, int board_height,
  int edit_screen_height)
@@ -227,18 +243,8 @@ static void fix_scroll(int *cursor_board_x, int *cursor_board_y,
   if(*scroll_y < 0)
     *scroll_y = 0;
 
-
-  if(*cursor_board_x >= board_width)
-    *cursor_board_x = (board_width - 1);
-
-  if(*cursor_board_y >= board_height)
-    *cursor_board_y = (board_height - 1);
-
-  if((*cursor_board_x - *scroll_x) < (*debug_x + 25))
-    *debug_x = 60;
-
-  if((*cursor_board_x - *scroll_x) > (*debug_x - 5))
-    *debug_x = 0;
+  fix_cursor(cursor_board_x, cursor_board_y, *scroll_x, *scroll_y, debug_x,
+   board_width, board_height);
 }
 
 static void fix_board(struct world *mzx_world, int new_board)
@@ -1746,6 +1752,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
   int clear_board_history = 1;
   int clear_overlay_history = 1;
   int clear_vlayer_history = 1;
+  int continue_mouse_history = 0;
 
   // Interface
   int saved_overlay_mode;
@@ -2051,24 +2058,37 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
     if(exit)
       key = 0;
 
-    if(get_mouse_press())
+    // Mouse history frame interrupted (by key or non-left press)?
+    if(continue_mouse_history && (key ||
+     get_mouse_status() != MOUSE_BUTTON(MOUSE_BUTTON_LEFT)))
     {
-      int mouse_x, mouse_y;
+      // Finalize frame
+      update_undo_frame(board_history);
+      continue_mouse_history = 0;
+    }
+
+    if(get_mouse_status() && !key)
+    {
+      int mouse_press = get_mouse_press_ext();
+      int mouse_status = get_mouse_status();
+      int mouse_x;
+      int mouse_y;
+
       get_mouse_position(&mouse_x, &mouse_y);
 
       if((mouse_y == 20) && (edit_screen_height < 20))
       {
         if((mouse_x >= 1) && (mouse_x <= 41))
         {
+          // Select current help menu
           current_menu = menu_positions[mouse_x - 1] - '1';
         }
         else
 
         if((mouse_x >= 56) && (mouse_x <= 58))
         {
-          int new_color;
-          cursor_off();
-          new_color = color_selection(current_color, 0);
+          // Change current color
+          int new_color = color_selection(current_color, 0);
           if(new_color >= 0)
             current_color = new_color;
         }
@@ -2080,38 +2100,44 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         cursor_board_x = mouse_x + scroll_x;
         cursor_board_y = mouse_y + scroll_y;
 
-        if((mouse_x >= debug_x) && (mouse_x < debug_x + 20))
+        fix_cursor(&cursor_board_x, &cursor_board_y, scroll_x, scroll_y,
+         &debug_x, board_width, board_height);
+
+        if((cursor_board_x == mouse_x + scroll_x) &&
+         (cursor_board_y == mouse_y + scroll_y))
         {
-          if(debug_x == 60)
-            debug_x = 0;
+          // Mouse is in-bounds
+
+          if(mouse_status & MOUSE_BUTTON(MOUSE_BUTTON_RIGHT))
+          {
+            grab_at_xy(mzx_world, &current_id, &current_color,
+             &current_param, &copy_robot, &copy_scroll, &copy_sensor,
+             cursor_board_x, cursor_board_y, overlay_edit);
+          }
           else
-            debug_x = 60;
-        }
 
-        if((cursor_board_x >= board_width) ||
-         (cursor_board_y >= board_height))
-        {
-          if(cursor_board_x >= board_width)
-            cursor_board_x = board_width - 1;
+          if(mouse_press == MOUSE_BUTTON_LEFT)
+          {
+            if(!continue_mouse_history)
+            {
+              // Add new frame
+              add_board_undo_frame(mzx_world, board_history, current_id,
+               current_color, current_param, cursor_board_x, cursor_board_y,
+               &copy_robot, &copy_scroll, &copy_sensor);
+              continue_mouse_history = 1;
+            }
+            else
+            {
+              // Continue frame
+              add_board_undo_position(board_history,
+               cursor_board_x, cursor_board_y);
+            }
 
-          if(cursor_board_y >= board_height)
-            cursor_board_y = board_height - 1;
-        }
-        else
-
-        if(get_mouse_status() & MOUSE_BUTTON(MOUSE_BUTTON_RIGHT))
-        {
-          grab_at_xy(mzx_world, &current_id, &current_color,
-           &current_param, &copy_robot, &copy_scroll, &copy_sensor,
-           cursor_board_x, cursor_board_y, overlay_edit);
-        }
-        else
-        {
-          // FIXME history-- needs to be handled manually for mouse input
-          current_param = place_current_at_xy(mzx_world, current_id,
-           current_color, current_param, cursor_board_x, cursor_board_y,
-           &copy_robot, &copy_scroll, &copy_sensor, overlay_edit, 0);
-          modified = 1;
+            current_param = place_current_at_xy(mzx_world, current_id,
+             current_color, current_param, cursor_board_x, cursor_board_y,
+             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit, 0);
+            modified = 1;
+          }
         }
       }
     }

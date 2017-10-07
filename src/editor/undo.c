@@ -667,6 +667,10 @@ void add_board_undo_position(struct undo_history *h, int x, int y)
   int grab_color;
   int grab_param;
 
+  // Can't place over player
+  if(src_board->level_id[offset] == PLAYER)
+    return;
+
   if(prev_size == prev_alloc)
   {
     if(!prev_alloc)
