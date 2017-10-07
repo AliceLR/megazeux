@@ -31,8 +31,6 @@
 #include "../world.h"
 #include "../world_struct.h"
 
-#ifdef CONFIG_UNDO
-
 /* Operations for handling undo histories:
  *   Construct a history buffer of some size
  *   Add a new frame to the history, clearing old frames as-needed
@@ -880,5 +878,3 @@ void add_layer_undo_frame(struct undo_history *h, char *layer_chars,
    width, height
   );
 }
-
-#endif // CONFIG_UNDO
