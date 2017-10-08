@@ -83,6 +83,8 @@ FIXES
   when editing in SMZX modes 2 or 3.
 + Fixed screen corruption bug when resizing the char editor in
   SMZX modes.
++ Fixed a bug where multichar editing wouldn't correctly wrap to
+  the start of the charset.
 
 DEVELOPERS
 

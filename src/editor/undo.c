@@ -238,6 +238,7 @@ static void read_charset_data(char *buffer,
      copy_size, charset_offset);
 
     charset_offset += CHARSET_WIDTH;
+    charset_offset &= 0xFF; // Bind to the first charset
     buffer_offset += copy_size;
   }
 }
@@ -257,6 +258,7 @@ static void write_charset_data(char *buffer,
      copy_size, charset_offset, WORLD_VERSION);
 
     charset_offset += CHARSET_WIDTH;
+    charset_offset &= 0xFF; // Bind to the first charset
     buffer_offset += copy_size;
   }
 }

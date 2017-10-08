@@ -204,6 +204,7 @@ static void expand_buffer(char *buffer, int width, int height,
     for(cx = 0; cx < cwidth; cx++, current_char++,
      cbuffer_ptr += 14)
     {
+      current_char &= 0xFF; // Bind to the first charset
       ec_read_char(current_char, cbuffer_ptr);
     }
   }
@@ -336,6 +337,7 @@ static void collapse_buffer(char *buffer, int width, int height,
     for(cx = 0; cx < cwidth; cx++, current_char++,
      cbuffer_ptr += 14)
     {
+      current_char &= 0xFF; // Bind to the first charset
       ec_change_char(current_char, cbuffer_ptr);
     }
   }
