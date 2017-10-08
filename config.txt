@@ -507,7 +507,7 @@
 # (you may have to experiment to find out which button is which number),
 # and A is the key whose press is emulated when this button is pressed.
 
-# Hat mapping looks as follos:
+# Hat mapping looks as follows:
 
 # joyXhat = U, D, L, R
 
