@@ -70,6 +70,39 @@ static int num_files = 1;
 
 static int char_copy_use_offset = 0;
 
+static const char *help_text[2] =
+{
+  "\x12\x1d\t Move cursor\n"
+  "-+\t Change char\n"
+  "Space   Toggle pixel\n"
+  "Enter   Select char\n"
+  "Del\tClear char\n"
+  "N\t  'Negative'\n"
+  "M\t  'Mirror'\n"
+  "F\t  'Flip'\n"
+  "Alt+F   'Fill'\n"
+  "H\t  More...\n"
+  "\n"
+  "C\t  Palette\n"
+  "Tab\tDraw"
+  ,
+  "\x12\x1d\t Move cursor\n"
+  "Alt+\x12\x1d  Shift char\n"
+  "Ctrl+Z  Undo\n"
+  "Ctrl+Y  Redo\n"
+  "Alt+B   Block (Shift+\x12\x1d)\n"
+  "F2\t Copy to buffer\n"
+  "F3\t Copy from buffer\n"
+  "F4\t Revert to ASCII\n"
+  "F5\t Revert to MZX\n"
+  "H\t  Back...\n"
+  "\n"
+  "C\t  Palette\n"
+  "Tab\tDraw"
+};
+
+static const char *help_text_smzx = "Ins/1-4 Select";
+
 static void fill_region(char *buffer, int x, int y,
  int buffer_width, int buffer_height, int check, int draw)
 {
@@ -538,7 +571,7 @@ int char_editor(struct world *mzx_world)
   int screen_mode = get_screen_mode();
   int current_pixel = 0;
   char smzx_colors[4] = { 0x8, 0x2, 0x3, 0x7 };
-  unsigned char saved_rgb[4][3];
+  int help_page = 0;
 
   // Prevent previous keys from carrying through.
   force_release_all_keys();
@@ -548,19 +581,11 @@ int char_editor(struct world *mzx_world)
 
   if(screen_mode)
   {
-    if(screen_mode != 1)
-      set_screen_mode(1);
-
-    for(i = 0; i < 4; i++)
-    {
-      get_rgb(i + 2, saved_rgb[i], saved_rgb[i] + 1,
-       saved_rgb[i] + 2);
-    }
-
-    set_rgb(2, 35, 35, 35);
-    set_rgb(3, 28, 28, 28);
-    set_rgb(4, 14, 42, 56);
-    set_rgb(5, 7, 21, 49);
+    // These colors (and 6 and 14) are safe to overwrite for our purposes
+    set_protected_rgb(2, 35, 35, 35);
+    set_protected_rgb(3, 28, 28, 28);
+    set_protected_rgb(4, 14, 42, 56);
+    set_protected_rgb(5, 7, 21, 49);
     update_palette();
   }
 
@@ -630,86 +655,68 @@ int char_editor(struct world *mzx_world)
 
     restore_screen();
     save_screen();
+
     draw_window_box(dialog_x, dialog_y,
      dialog_x + dialog_width - 1,
      dialog_y + dialog_height - 1, 143, 128, 135, 1, 1);
-    // Draw in static elements
     draw_window_box(chars_x - 1, chars_y - 1,
      chars_x + chars_width, chars_y + chars_height,
      128, 143, 135, 0, 0);
-    write_string("Current char-\t(#000)",
-     info_x, info_y, 143, 1);
+
+    // Current character
+    write_string("Current char-\t(#000)", info_x, info_y, 0x8F, 1);
+    write_number(current_char, 0x8F, info_x + 20, info_y, 3, 0, 10);
+
+    // Help
+    write_string(help_text[help_page],
+     info_x, info_y + pad_height + 1, 0x8F, 1);
 
     if(screen_mode)
     {
-      write_string
-      (
-        "\x12\x1d\t Move cursor\n"
-        "-+\t Change char\n"
-        "Space   Place pixel\n"
-        "Enter   Select char\n"
-        "Del\tClear char\n"
-        "N\t  'Negative'\n"
-        "Alt+\x12\x1d  Shift char\n"
-        "M\t  'Mirror'\n"
-        "F\t  'Flip'\n"
-        "F2\t Copy to buffer\n"
-        "F3\t Copy from buffer\n"
-        "Tab\tDraw\n"
-        "1-4\tSelect\n"
-        "F5\t Revert to SMZX",
-         info_x, info_y + pad_height + 1, 143, 1
-      );
+      // Correct "Toggle pixel" to "Place pixel"
+      if(help_page == 0)
+        write_string("Place pixel ",
+         info_x + 8, info_y + pad_height + 3, 0x8F, 1);
 
-      erase_char(info_x + 16, info_y + pad_height + 13);
-      erase_char(info_x + 17, info_y + pad_height + 13);
-      erase_char(info_x + 18, info_y + pad_height + 13);
-      erase_char(info_x + 19, info_y + pad_height + 13);
-      select_layer(OVERLAY_LAYER);
+      // Correct F5 to "SMZX"
+      if(help_page == 1)
+        write_string("SMZX",
+         info_x + 18, info_y + pad_height + 9, 0x8F, 1);
+
+      // 1-4 Select
+      write_string(help_text_smzx,
+       info_x, info_y + pad_height + 14, 0x8F, 1);
+
       if(current_pixel)
       {
         write_string("\xDB\xDB\xDB\xDB", info_x + 16,
-         info_y + pad_height + 13, smzx_colors[current_pixel], 1);
+         info_y + pad_height + 14, smzx_colors[current_pixel], 1);
       }
       else
       {
         write_string("\xFA\xFA\xFA\xFA", info_x + 16,
-         info_y + pad_height + 13, 0x87, 1);
-      }
-      select_layer(UI_LAYER);
-    }
-    else
-    {
-      write_string
-      (
-        "\x12\x1d\t Move cursor\n"
-        "-+\t Change char\n"
-        "Space   Toggle pixel\n"
-        "Enter   Select char\n"
-        "Del\tClear char\n"
-        "N\t  'Negative'\n"
-        "Alt+\x12\x1d  Shift char\n"
-        "M\t  'Mirror'\n"
-        "F\t  'Flip'\n"
-        "F2\t Copy to buffer\n"
-        "F3\t Copy from buffer\n"
-        "Tab\tDraw\n"
-        "F4\t Revert to ASCII\n"
-        "F5\t Revert to MZX",
-         info_x, info_y + pad_height + 1, 143, 1
-      );
-    }
-    {
-      int x, y;
-      for (y = chars_y; y < chars_y + chars_height; y++) {
-        for (x = chars_x; x < chars_x + chars_width; x++) {
-          erase_char(x, y);
-        }
+         info_y + pad_height + 14, 0x87, 1);
       }
     }
 
+    switch(draw)
+    {
+      case 0:
+        write_string("(off)   ", info_x + 16,
+         info_y + pad_height + 13, 0x8F, 0);
+        break;
 
-    select_layer(OVERLAY_LAYER);
+      case 1:
+        write_string("(set)   ", info_x + 16,
+         info_y + pad_height + 13, 0x8F, 0);
+        break;
+
+      case 2:
+        write_string("(clear) ", info_x + 16,
+         info_y + pad_height + 13, 0x8F, 0);
+        break;
+    }
+
     // Update char
     if(block_mode)
     {
@@ -739,28 +746,6 @@ int char_editor(struct world *mzx_world)
          current_width, current_height, x, y, 1, 1);
       }
     }
-    select_layer(UI_LAYER);
-    switch(draw)
-    {
-      case 0:
-        write_string("(off)   ", info_x + 14,
-         info_y + pad_height + 12, 143, 0);
-        break;
-
-      case 1:
-        write_string("(set)   ", info_x + 14,
-         info_y + pad_height + 12, 143, 0);
-        break;
-
-      case 2:
-        write_string("(clear) ", info_x + 14,
-         info_y + pad_height + 12, 143, 0);
-        break;
-    }
-
-    // Current character
-    write_number(current_char, 143, info_x + 20, info_y, 3, 0, 10);
-    
 
     for(i = 0, offset = 0; i < highlight_height; i++)
     {
@@ -1586,6 +1571,13 @@ int char_editor(struct world *mzx_world)
         break;
       }
 
+      case IKEY_h:
+      {
+        // Switch help page
+        help_page ^= 1;
+        break;
+      }
+
       case IKEY_m:
       {
         // Mirror
@@ -1824,14 +1816,8 @@ int char_editor(struct world *mzx_world)
 
   if(screen_mode)
   {
-    for(i = 0; i < 4; i++)
-    {
-      set_rgb(i + 2, saved_rgb[i][0], saved_rgb[i][1],
-       saved_rgb[i][2]);
-    }
-
-    update_palette();
-    set_screen_mode(screen_mode);
+    // Reset the protected palette
+    default_protected_palette();
   }
 
   destruct_undo_history(h);

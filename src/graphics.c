@@ -302,7 +302,7 @@ static Uint32 make_palette(struct rgb_color *palette)
      sizeof(struct rgb_color) * PAL_SIZE);
     paletteSize = PAL_SIZE;
   }
-  memcpy(palette + paletteSize, default_pal,
+  memcpy(palette + paletteSize, graphics.protected_palette,
    sizeof(struct rgb_color) * PROTECTED_PAL_SIZE);
   graphics.protected_pal_position = paletteSize;
 
@@ -345,6 +345,8 @@ static void init_palette(void)
 
   memcpy(graphics.palette, default_pal,
    sizeof(struct rgb_color) * PAL_SIZE);
+  memcpy(graphics.protected_palette, default_pal,
+   sizeof(struct rgb_color) * PAL_SIZE);
   memcpy(graphics.intensity_palette, default_pal,
    sizeof(struct rgb_color) * PAL_SIZE);
   memset(graphics.current_intensity, 0,
@@ -359,6 +361,16 @@ static void init_palette(void)
   update_palette();
 }
 
+static int intensity(int component, int percent)
+{
+  component = (component * percent) / 100;
+
+  if(component > 255)
+    component = 255;
+
+  return component;
+}
+
 void set_color_intensity(Uint32 color, Uint32 percent)
 {
   if(graphics.fade_status)
@@ -367,18 +379,9 @@ void set_color_intensity(Uint32 color, Uint32 percent)
   }
   else
   {
-    int r = (graphics.palette[color].r * percent) / 100;
-    int g = (graphics.palette[color].g * percent) / 100;
-    int b = (graphics.palette[color].b * percent) / 100;
-
-    if(r > 255)
-      r = 255;
-
-    if(g > 255)
-      g = 255;
-
-    if(b > 255)
-      b = 255;
+    int r = intensity(graphics.palette[color].r, percent);
+    int g = intensity(graphics.palette[color].g, percent);
+    int b = intensity(graphics.palette[color].b, percent);
 
     graphics.intensity_palette[color].r = r;
     graphics.intensity_palette[color].g = g;
@@ -405,64 +408,56 @@ void set_palette_intensity(Uint32 percent)
 
 void set_rgb(Uint32 color, Uint32 r, Uint32 g, Uint32 b)
 {
-  int intensity = graphics.current_intensity[color];
+  int percent = graphics.current_intensity[color];
   r = r * 255 / 63;
   g = g * 255 / 63;
   b = b * 255 / 63;
 
   graphics.palette[color].r = r;
-  r = (r * intensity) / 100;
-  if(r > 255)
-    r = 255;
-  graphics.intensity_palette[color].r = r;
+  graphics.intensity_palette[color].r = intensity(r, percent);
 
   graphics.palette[color].g = g;
-  g = (g * intensity) / 100;
-  if(g > 255)
-    g = 255;
-  graphics.intensity_palette[color].g = g;
+  graphics.intensity_palette[color].g = intensity(g, percent);
 
   graphics.palette[color].b = b;
-  b = (b * intensity) / 100;
-  if(b > 255)
-    b = 255;
-  graphics.intensity_palette[color].b = b;
+  graphics.intensity_palette[color].b = intensity(b, percent);
+}
+
+void set_protected_rgb(Uint32 color, Uint32 r, Uint32 g, Uint32 b)
+{
+  r = r * 255 / 63;
+  g = g * 255 / 63;
+  b = b * 255 / 63;
+  graphics.protected_palette[color].r = r;
+  graphics.protected_palette[color].g = g;
+  graphics.protected_palette[color].b = b;
 }
 
 void set_red_component(Uint32 color, Uint32 r)
 {
+  int percent = graphics.current_intensity[color];
   r = r * 255 / 63;
+
   graphics.palette[color].r = r;
-
-  r = r * graphics.current_intensity[color] / 100;
-  if(r > 255)
-    r = 255;
-
-  graphics.intensity_palette[color].r = r;
+  graphics.intensity_palette[color].r = intensity(r, percent);
 }
 
 void set_green_component(Uint32 color, Uint32 g)
 {
+  int percent = graphics.current_intensity[color];
   g = g * 255 / 63;
+
   graphics.palette[color].g = g;
-
-  g = g * graphics.current_intensity[color] / 100;
-  if(g > 255)
-    g = 255;
-
-  graphics.intensity_palette[color].g = g;
+  graphics.intensity_palette[color].g = intensity(g, percent);
 }
 
 void set_blue_component(Uint32 color, Uint32 b)
 {
+  int percent = graphics.current_intensity[color];
   b = b * 255 / 63;
+
   graphics.palette[color].b = b;
-
-  b = b * graphics.current_intensity[color] / 100;
-  if(b > 255)
-    b = 255;
-
-  graphics.intensity_palette[color].b = b;
+  graphics.intensity_palette[color].b = intensity(b, percent);
 }
 
 Uint32 get_smzx_index(Uint32 col, Uint32 offset)
@@ -946,6 +941,13 @@ void default_palette(void)
   memcpy(graphics.palette, default_pal,
    sizeof(struct rgb_color) * PAL_SIZE);
   memcpy(graphics.intensity_palette, default_pal,
+   sizeof(struct rgb_color) * PAL_SIZE);
+  update_palette();
+}
+
+void default_protected_palette(void)
+{
+  memcpy(graphics.protected_palette, default_pal,
    sizeof(struct rgb_color) * PAL_SIZE);
   update_palette();
 }

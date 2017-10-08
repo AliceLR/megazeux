@@ -24,12 +24,15 @@ FEATURES
   invisible global overlay that can be used to store and
   retrieve graphical data through Robotic. See the editor help
   and the Robotic reference manual for more details.
++ The character editor help now covers several shortcuts that
+  were previously missing (Alt+B, Shift+Arrows, etc...).
++ The undo/redo shortcuts in the character editor are now Ctrl+Z
+  for undo and Ctrl+Y for redo.
 + Added undo/redo functionality to the world editor. Use Ctrl+Z
   to undo changes to the board/overlay/vlayer and Ctrl+Y to
   redo.
-+ The default size of the char editor undo history has been
-  extended to 100 levels. The undo/redo shortcuts are now Ctrl+Z
-  for undo and Ctrl+Y for redo.
++ The default editor undo history stack size has been extended
+  to 100 levels.
 + The editor will now prompt the user to create a new starting
   board when opened. If a new board is created, the global first
   board will be set to the new board and the title board will be

@@ -241,6 +241,7 @@ CORE_LIBSPEC void set_screen_mode(Uint32 mode);
 CORE_LIBSPEC Uint32 get_screen_mode(void);
 CORE_LIBSPEC void set_palette_intensity(Uint32 percent);
 CORE_LIBSPEC void set_rgb(Uint32 color, Uint32 r, Uint32 g, Uint32 b);
+CORE_LIBSPEC void set_protected_rgb(Uint32 color, Uint32 r, Uint32 g, Uint32 b);
 CORE_LIBSPEC Uint32 get_smzx_index(Uint32 col, Uint32 offset);
 CORE_LIBSPEC void set_smzx_index(Uint32 col, Uint32 offset, Uint32 value);
 CORE_LIBSPEC void set_red_component(Uint32 color, Uint32 r);
@@ -256,6 +257,7 @@ CORE_LIBSPEC void insta_fadeout(void);
 CORE_LIBSPEC void dialog_fadein(void);
 CORE_LIBSPEC void dialog_fadeout(void);
 CORE_LIBSPEC void default_palette(void);
+CORE_LIBSPEC void default_protected_palette(void);
 CORE_LIBSPEC void disable_gui_mode0(void);
 CORE_LIBSPEC void enable_gui_mode0(void);
 
