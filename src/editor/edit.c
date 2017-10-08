@@ -124,8 +124,7 @@ static bool editor_reload_world(struct world *mzx_world, const char *file,
   if(!world_loaded)
     return world_loaded;
 
-  // Part 1: Reset as much of the config file as we can, also clear up
-  // any jump points that were put in the global files.
+  // Part 1: Reset as much of the config file as we can.
 
   // We don't want to lose these.  If they're any different, the backup
   // version has already been freed/reallocated, so just copy the pointer.
