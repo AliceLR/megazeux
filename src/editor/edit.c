@@ -1833,7 +1833,9 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
       create_blank_world(mzx_world);
 
       // Prompt for the creation of a first board.
-      first_board_prompt = 1;
+      // Holding alt while opening the editor bypasses this.
+      if(!get_alt_status(keycode_internal))
+        first_board_prompt = 1;
 
       default_palette();
       save_editor_palette();
