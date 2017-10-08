@@ -24,6 +24,9 @@ FEATURES
   invisible global overlay that can be used to store and
   retrieve graphical data through Robotic. See the editor help
   and the Robotic reference manual for more details.
++ Added color selection to the character editor. Press C to
+  choose a color to preview and edit chars with, and press Alt+C
+  to revert back to the default grey.
 + The character editor help now covers several shortcuts that
   were previously missing (Alt+B, Shift+Arrows, etc...).
 + The undo/redo shortcuts in the character editor are now Ctrl+Z
@@ -76,6 +79,8 @@ FIXES
 + Fixed a bug where the counter debugger could sometimes display
   behind the robot debugger after exiting the counter debugger.
 + Undo in the char editor now works correctly with the mouse.
++ The char editor no longer forces the screen to SMZX mode 1
+  when editing in SMZX modes 2 or 3.
 
 DEVELOPERS
 

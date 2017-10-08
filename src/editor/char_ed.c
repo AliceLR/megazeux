@@ -29,6 +29,7 @@
 
 #include "graphics.h"
 #include "undo.h"
+#include "window.h"
 
 #include <math.h>
 #include <stdlib.h>
@@ -36,21 +37,21 @@
 
 //----------------------------------------------
 //  +----------------+ Current char-     (#000)
-//  |................|    ..........0..........
-//  |................| %%      Move cursor
-//  |................| -+      Change char
-//  |................| Space   Toggle pixel
-//  |................| Enter   Select char
-//  |................| Del     Clear char
-//  |................| N       'Negative'
-//  |................| Alt+%%  Shift char
-//  |................| M       'Mirror'
-//  |................| F       'Flip'
-//  |................| F2      Copy to buffer
-//  |................| F3      Copy from buffer
-//  |................| Tab     Draw (off)
-//  |................| F4      Revert to ASCII
-//  +----------------+ F5      Revert to MZX
+//  |................|    ..........0..........   Alternate:
+//  |................|              ^
+//  |................| %%      Move cursor        Alt+F   'Fill'
+//  |................| -+      Change char        Alt+%%  Shift char
+//  |................| Space   Toggle pixel       Ctrl+Z  Undo
+//  |................| Enter   Select char        Ctrl+Y  Redo
+//  |................| Del     Clear char         Alt+B   Block (Shift+%%)
+//  |................| N       'Negative'         F2      Copy to buffer
+//  |................| M       'Mirror'           F3      Copy from buffer
+//  |................| F       'Flip'             F4      Revert to ASCII
+//  |................| H       More help          F5      Revert to MZX
+//  |................| 
+//  |................| C       Palette [ ]
+//  |................| Tab     Draw    (off)
+//  +----------------+ Ins/1-4 Select  [  ]
 //----------------------------------------------
 
 //Mouse- Menu=Command
@@ -66,6 +67,8 @@ static int current_width = 1;
 static int current_height = 1;
 static int highlight_width = 1;
 static int highlight_height = 1;
+static int current_palette = 0x08;
+static int use_default_palette = 1;
 static int num_files = 1;
 
 static int char_copy_use_offset = 0;
@@ -80,13 +83,12 @@ static const char *help_text[2] =
   "N\t  'Negative'\n"
   "M\t  'Mirror'\n"
   "F\t  'Flip'\n"
-  "Alt+F   'Fill'\n"
-  "H\t  More...\n"
+  "H\t  More help\n"
   "\n"
-  "C\t  Palette\n"
+  "C\t  Palette (   )\n"
   "Tab\tDraw"
   ,
-  "\x12\x1d\t Move cursor\n"
+  "Alt+F   'Fill'\n"
   "Alt+\x12\x1d  Shift char\n"
   "Ctrl+Z  Undo\n"
   "Ctrl+Y  Redo\n"
@@ -95,13 +97,49 @@ static const char *help_text[2] =
   "F3\t Copy from buffer\n"
   "F4\t Revert to ASCII\n"
   "F5\t Revert to MZX\n"
-  "H\t  Back...\n"
   "\n"
-  "C\t  Palette\n"
+  "C\t  Palette (   )\n"
   "Tab\tDraw"
 };
 
 static const char *help_text_smzx = "Ins/1-4 Select";
+
+static void char_editor_default_colors(void)
+{
+  // Char display
+  set_protected_rgb(2, 21, 21, 21);
+  set_protected_rgb(3, 35, 35, 35);
+  set_protected_rgb(4, 28, 28, 28);
+  set_protected_rgb(5, 42, 42, 42);
+  // Selection
+  set_protected_rgb(6, 14, 42, 56);
+  set_protected_rgb(13, 7, 21, 49);
+  update_palette();
+}
+
+static void copy_color_to_protected(int from, int to)
+{
+  // Hack
+  memcpy(&(graphics.protected_palette[to]), &(graphics.palette[from]),
+   sizeof(struct rgb_color));
+}
+
+static void char_editor_update_colors(void)
+{
+  // Char display
+  // Hack
+  char *index = graphics.smzx_indices + (current_palette * 4);
+
+  copy_color_to_protected(*(index++), 2);
+  copy_color_to_protected(*(index++), 3);
+  copy_color_to_protected(*(index++), 4);
+  copy_color_to_protected(*(index++), 5);
+
+  // Selection
+  set_protected_rgb(6, 14, 42, 56);
+  set_protected_rgb(13, 7, 21, 49);
+  update_palette();
+}
 
 static void fill_region(char *buffer, int x, int y,
  int buffer_width, int buffer_height, int check, int draw)
@@ -287,19 +325,40 @@ static void draw_multichar(char *buffer, int start_x, int start_y,
   char *buffer_ptr = buffer;
   int offset = start_x + (start_y * 80);
   int buffer_width = width * 8;
+  char highlight[2] = { 0x11, 0x1B };
+  char colors[2];
+  int protected;
+  int color;
   int x, y;
+
+  if(use_default_palette)
+  {
+    colors[0] = 0x18;
+    colors[1] = 0x17;
+    color = 0x87;
+    protected = 1;
+  }
+  else
+  {
+    color = current_palette;
+    colors[0] = (color & 0xF0) >> 4;
+    colors[1] = (color & 0x0F);
+    protected = 0;
+  }
 
   if((height == 1) && (width <= 3))
   {
     int skip = 80 - (buffer_width * 2);
     char chars[2] = { 250, 219 };
+    int index;
 
     for(y = 0; y < 14; y++, offset += skip)
     {
       for(x = 0; x < (width * 8); x++, offset += 2, buffer_ptr++)
       {
-        draw_char_linear(135, chars[(int)(*buffer_ptr)], offset);
-        draw_char_linear(135, chars[(int)(*buffer_ptr)], offset + 1);
+        index = *buffer_ptr;
+        draw_char_linear(color, chars[index], offset, protected);
+        draw_char_linear(color, chars[index], offset + 1, protected);
       }
     }
 
@@ -311,19 +370,21 @@ static void draw_multichar(char *buffer, int start_x, int start_y,
   }
   else
   {
-    char half_chars[4] = { 32, 223, 220, 219 };
+    char half_chars[4] = { 0x20, 0xDF, 0xDC, 0xDB };
     int skip = 80 - buffer_width;
-    int skip2 = buffer_width;
     int current_char;
+    int upper;
+    int lower;
 
     for(y = 0; y < (height * 7); y++, offset += skip,
-     buffer_ptr += skip2)
+     buffer_ptr += buffer_width)
     {
-      for(x = 0; x < skip2; x++, offset++, buffer_ptr++)
+      for(x = 0; x < buffer_width; x++, offset++, buffer_ptr++)
       {
-        current_char = (*buffer_ptr) |
-         (*(buffer_ptr + skip2) << 1);
-        draw_char_linear(135, half_chars[current_char], offset);
+        upper = *buffer_ptr;
+        lower = *(buffer_ptr + buffer_width);
+        current_char = (lower << 1) + upper;
+        draw_char_linear(color, half_chars[current_char], offset, protected);
       }
     }
 
@@ -331,15 +392,15 @@ static void draw_multichar(char *buffer, int start_x, int start_y,
     y = highlight_height;
     if(current_y & 1)
     {
-      char colors[4] = { 0x81, 0x71, 0x8B, 0x7B };
-      buffer_ptr = buffer + ((current_y - 1) * buffer_width)
-       + current_x;
-      for(x = 0; x < highlight_width; x++, offset++, buffer_ptr++)
+      buffer_ptr = buffer + ((current_y - 1) * buffer_width) + current_x;
+
+      for(x = 0; x < highlight_width; x++, buffer_ptr++)
       {
-        current_char =
-         *(buffer_ptr) | (*(buffer_ptr + buffer_width) << 1);
-        draw_char(half_chars[2], colors[current_char], start_x +
-         x + current_x, start_y + (current_y / 2));
+        upper = *buffer_ptr;
+        lower = *(buffer_ptr + buffer_width);
+
+        draw_char_mixed_pal(half_chars[2], colors[upper], highlight[lower],
+         start_x + x + current_x, start_y + (current_y / 2));
       }
       current_y++;
       y--;
@@ -356,14 +417,15 @@ static void draw_multichar(char *buffer, int start_x, int start_y,
 
     if(y)
     {
-      char colors[4] = { 0x81, 0x8B, 0x71, 0x7B };
       buffer_ptr = buffer + (current_y * buffer_width) + current_x;
-      for(x = 0; x < highlight_width; x++, offset++, buffer_ptr++)
+
+      for(x = 0; x < highlight_width; x++, buffer_ptr++)
       {
-        current_char =
-         *(buffer_ptr) | (*(buffer_ptr + buffer_width) << 1);
-        draw_char(half_chars[1], colors[current_char], start_x +
-         x + current_x, start_y + (current_y / 2));
+        upper = *buffer_ptr;
+        lower = *(buffer_ptr + buffer_width);
+
+        draw_char_mixed_pal(half_chars[1], colors[lower], highlight[upper],
+         start_x + x + current_x, start_y + (current_y / 2));
       }
     }
   }
@@ -375,8 +437,9 @@ static void draw_multichar_smzx(char *buffer, int start_x, int start_y,
 {
   char *buffer_ptr = buffer;
   char current_color;
-  char base_colors[4] = { 0x8, 0x2, 0x3, 0x7 };
-  char highlight_colors[4] = { 0x1, 0x4, 0x5, 0xB };
+  char base_colors[4] = { 0x2, 0x3, 0x4, 0x5 };
+  char highlight_colors[4] = { 0x1, 0x6, 0xD, 0xB };
+  int bg_color = (base_colors[0] << 4) + base_colors[3];
   int offset = start_x + (start_y * 80);
   int buffer_width = width * 4;
 
@@ -402,7 +465,7 @@ static void draw_multichar_smzx(char *buffer, int start_x, int start_y,
         else
         {
           write_string("\xFA\xFA\xFA\xFA", start_x + (x * 4),
-           start_y + y, 0x87, 1);
+           start_y + y, bg_color, 1);
         }
       }
     }
@@ -444,8 +507,8 @@ static void draw_multichar_smzx(char *buffer, int start_x, int start_y,
       {
         current_color = (base_colors[(int)(*buffer_ptr)]) |
          ((base_colors[(int)(*(buffer_ptr + buffer_width))]) << 4);
-        draw_char_linear(current_color, 223, offset);
-        draw_char_linear(current_color, 223, offset + 1);
+        draw_char_linear(current_color, 223, offset, 1);
+        draw_char_linear(current_color, 223, offset + 1, 1);
       }
     }
 
@@ -464,8 +527,8 @@ static void draw_multichar_smzx(char *buffer, int start_x, int start_y,
       {
         current_color = (base_colors[(int)(*buffer_ptr)]) |
          ((highlight_colors[(int)(*(buffer_ptr + buffer_width))]) << 4);
-        draw_char_linear(current_color, 223, offset);
-        draw_char_linear(current_color, 223, offset + 1);
+        draw_char_linear(current_color, 223, offset, 1);
+        draw_char_linear(current_color, 223, offset + 1, 1);
       }
 
       buffer_ptr += (skip2 * 2);
@@ -485,8 +548,8 @@ static void draw_multichar_smzx(char *buffer, int start_x, int start_y,
       {
         current_color = (highlight_colors[(int)(*buffer_ptr)]) |
          ((highlight_colors[(int)(*(buffer_ptr + buffer_width))]) << 4);
-        draw_char_linear(current_color, 223, offset);
-        draw_char_linear(current_color, 223, offset + 1);
+        draw_char_linear(current_color, 223, offset, 1);
+        draw_char_linear(current_color, 223, offset + 1, 1);
       }
       buffer_ptr += (skip2 * 2);
       offset += skip3;
@@ -504,8 +567,8 @@ static void draw_multichar_smzx(char *buffer, int start_x, int start_y,
       {
         current_color = (highlight_colors[(int)(*buffer_ptr)]) |
          ((base_colors[(int)(*(buffer_ptr + buffer_width))]) << 4);
-        draw_char_linear(current_color, 223, offset);
-        draw_char_linear(current_color, 223, offset + 1);
+        draw_char_linear(current_color, 223, offset, 1);
+        draw_char_linear(current_color, 223, offset + 1, 1);
       }
     }
   }
@@ -570,7 +633,7 @@ int char_editor(struct world *mzx_world)
   int small_chars;
   int screen_mode = get_screen_mode();
   int current_pixel = 0;
-  char smzx_colors[4] = { 0x8, 0x2, 0x3, 0x7 };
+  char smzx_colors[4] = { 0x2, 0x3, 0x4, 0x5 };
   int help_page = 0;
 
   // Prevent previous keys from carrying through.
@@ -581,12 +644,12 @@ int char_editor(struct world *mzx_world)
 
   if(screen_mode)
   {
-    // These colors (and 6 and 14) are safe to overwrite for our purposes
-    set_protected_rgb(2, 35, 35, 35);
-    set_protected_rgb(3, 28, 28, 28);
-    set_protected_rgb(4, 14, 42, 56);
-    set_protected_rgb(5, 7, 21, 49);
-    update_palette();
+    // Set up colors for SMZX char editing
+    if(use_default_palette)
+      char_editor_default_colors();
+
+    else
+      char_editor_update_colors();
   }
 
   set_context(CTX_CHAR_EDIT);
@@ -669,14 +732,14 @@ int char_editor(struct world *mzx_world)
 
     // Help
     write_string(help_text[help_page],
-     info_x, info_y + pad_height + 1, 0x8F, 1);
+     info_x, info_y + pad_height + 2, 0x8F, 1);
 
     if(screen_mode)
     {
       // Correct "Toggle pixel" to "Place pixel"
       if(help_page == 0)
         write_string("Place pixel ",
-         info_x + 8, info_y + pad_height + 3, 0x8F, 1);
+         info_x + 8, info_y + pad_height + 4, 0x8F, 1);
 
       // Correct F5 to "SMZX"
       if(help_page == 1)
@@ -695,9 +758,12 @@ int char_editor(struct world *mzx_world)
       else
       {
         write_string("\xFA\xFA\xFA\xFA", info_x + 16,
-         info_y + pad_height + 14, 0x87, 1);
+         info_y + pad_height + 14, (smzx_colors[0] << 4) + smzx_colors[3], 1);
       }
     }
+
+    draw_color_box(current_palette, 0, info_x + 17,
+     info_y + pad_height + 12, info_x + 20);
 
     switch(draw)
     {
@@ -1519,6 +1585,26 @@ int char_editor(struct world *mzx_world)
           shifted = 1;
         }
 
+        break;
+      }
+
+      case IKEY_c:
+      {
+        if(get_alt_status(keycode_internal))
+        {
+          char_editor_default_colors();
+          use_default_palette = 1;
+        }
+        else
+        {
+          int new_color = color_selection(current_palette, 0);
+          if(new_color >= 0)
+          {
+            current_palette = new_color;
+            char_editor_update_colors();
+            use_default_palette = 0;
+          }
+        }
         break;
       }
 
