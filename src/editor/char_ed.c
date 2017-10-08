@@ -127,13 +127,39 @@ static void copy_color_to_protected(int from, int to)
 static void char_editor_update_colors(void)
 {
   // Char display
-  // Hack
-  char *index = graphics.smzx_indices + (current_palette * 4);
+  switch(get_screen_mode())
+  {
+    case 1:
+    {
+      // Interpolate the middle colors
+      Uint32 upper = (current_palette & 0xF0) >> 4;
+      Uint32 lower = (current_palette & 0x0F);
+      Uint8 r0, g0, b0;
+      Uint8 r3, g3, b3;
 
-  copy_color_to_protected(*(index++), 2);
-  copy_color_to_protected(*(index++), 3);
-  copy_color_to_protected(*(index++), 4);
-  copy_color_to_protected(*(index++), 5);
+      get_rgb(upper, &r0, &g0, &b0);
+      get_rgb(lower, &r3, &g3, &b3);
+
+      copy_color_to_protected((int)upper, 2);
+      set_protected_rgb(3, (r3*2 + r0)/3, (g3*2 + g0)/3, (b3*2 + b0)/3);
+      set_protected_rgb(4, (r0*2 + r3)/3, (g0*2 + g3)/3, (b0*2 + b3)/3);
+      copy_color_to_protected((int)lower, 5);
+      break;
+    }
+
+    case 2:
+    case 3:
+    {
+      // Hack
+      char *index = graphics.smzx_indices + (current_palette * 4);
+
+      copy_color_to_protected(*(index++), 2);
+      copy_color_to_protected(*(index++), 3);
+      copy_color_to_protected(*(index++), 4);
+      copy_color_to_protected(*(index++), 5);
+      break;
+    }
+  }
 
   // Selection
   set_protected_rgb(6, 14, 42, 56);
@@ -744,7 +770,7 @@ int char_editor(struct world *mzx_world)
       // Correct F5 to "SMZX"
       if(help_page == 1)
         write_string("SMZX",
-         info_x + 18, info_y + pad_height + 9, 0x8F, 1);
+         info_x + 18, info_y + pad_height + 10, 0x8F, 1);
 
       // 1-4 Select
       write_string(help_text_smzx,
@@ -813,6 +839,7 @@ int char_editor(struct world *mzx_world)
       }
     }
 
+    // FIXME mini buffer
     for(i = 0, offset = 0; i < highlight_height; i++)
     {
       for(i2 = 0; i2 < highlight_width; i2++, offset++)
