@@ -313,7 +313,8 @@
 
 # palette_editor_hide_help = 0
 
-# The length of the char editor undo history. Defaults to 100.
+# The size of the board, overlay, vlayer, and char editor undo history
+# stacks. Valid values are between 0 and 1000. Defaults to 100.
 
 # undo_history_size = 100
 

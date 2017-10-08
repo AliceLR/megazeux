@@ -236,7 +236,7 @@ static void config_editor_tab_focus(struct editor_config_info *conf,
 static void config_undo_history_size(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  conf->undo_history_size = strtol(value, NULL, 10);
+  conf->undo_history_size = CLAMP(strtol(value, NULL, 10), 0, 1000);
 }
 
 static void config_saved_positions(struct editor_config_info *conf,
