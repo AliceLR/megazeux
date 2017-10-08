@@ -81,6 +81,8 @@ FIXES
 + Undo in the char editor now works correctly with the mouse.
 + The char editor no longer forces the screen to SMZX mode 1
   when editing in SMZX modes 2 or 3.
++ Fixed screen corruption bug when resizing the char editor in
+  SMZX modes.
 
 DEVELOPERS
 
