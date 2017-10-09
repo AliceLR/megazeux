@@ -216,7 +216,7 @@ static void save_mzm_common(struct world *mzx_world, int start_x, int start_y, i
 
             // Save each robot
             save_robot(mzx_world, robot_list[robot_numbers[i]], zp,
-             savegame, WORLD_VERSION, name, FPROP_ROBOT, 0, i);
+             savegame, WORLD_VERSION, name);
           }
         }
 

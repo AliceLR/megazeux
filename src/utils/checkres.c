@@ -1366,8 +1366,8 @@ static enum status parse_world(struct memfile *mf, struct base_file *file,
    mf->end - mf->start);
 
   char *buffer;
+  size_t actual_size;
   struct memfile buf_file;
-  unsigned int actual_size;
   unsigned int file_id;
 
   int ret = ZIP_SUCCESS;
@@ -1575,7 +1575,7 @@ static enum status parse_file(const char *file_name,
     struct base_path *zip_base;
     struct zip_archive *zp;
 
-    unsigned int actual_size;
+    size_t actual_size;
     char name_buffer[MAX_PATH];
 
     fclose(fp);

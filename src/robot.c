@@ -413,7 +413,7 @@ void load_robot(struct world *mzx_world, struct robot *cur_robot,
  struct zip_archive *zp, int savegame, int file_version)
 {
   char *buffer = NULL;
-  unsigned int actual_size;
+  size_t actual_size;
   struct memfile mf;
 
   unsigned int method;
@@ -472,7 +472,7 @@ struct scroll *load_scroll_allocate(struct zip_archive *zp)
 {
   struct scroll *cur_scroll = ccalloc(1, sizeof(struct scroll));
 
-  unsigned int actual_size;
+  size_t actual_size;
   void *buffer;
   struct memfile mf;
   struct memfile prop;
@@ -531,7 +531,7 @@ struct sensor *load_sensor_allocate(struct zip_archive *zp)
 {
   struct sensor *cur_sensor = ccalloc(1, sizeof(struct sensor));
 
-  unsigned int actual_size;
+  size_t actual_size;
   void *buffer;
   struct memfile mf;
   struct memfile prop;
@@ -710,8 +710,7 @@ static void save_robot_to_memory(struct robot *cur_robot,
 }
 
 void save_robot(struct world *mzx_world, struct robot *cur_robot,
- struct zip_archive *zp, int savegame, int file_version,
- const char *name, int file_id, int board_id, int id)
+ struct zip_archive *zp, int savegame, int file_version, const char *name)
 {
   struct memfile mf;
   void *buffer = NULL;
@@ -732,7 +731,7 @@ void save_robot(struct world *mzx_world, struct robot *cur_robot,
 
     if(zp->is_memory)
     {
-      zip_write_open_mem_stream(zp, &mf, name, file_id, board_id, id);
+      zip_write_open_mem_stream(zp, &mf, name);
     }
 
     else
@@ -753,8 +752,7 @@ void save_robot(struct world *mzx_world, struct robot *cur_robot,
 
     else
     {
-      zip_write_file(zp, name, buffer, actual_size,
-       ZIP_M_NONE, file_id, board_id, id);
+      zip_write_file(zp, name, buffer, actual_size, ZIP_M_NONE);
 
       free(buffer);
     }
@@ -762,7 +760,7 @@ void save_robot(struct world *mzx_world, struct robot *cur_robot,
 }
 
 void save_scroll(struct scroll *cur_scroll, struct zip_archive *zp,
- const char *name, int file_id, int board_id, int id)
+ const char *name)
 {
   void *buffer;
   struct memfile mf;
@@ -781,15 +779,14 @@ void save_scroll(struct scroll *cur_scroll, struct zip_archive *zp,
     save_prop_w(SCRPROP_NUM_LINES, cur_scroll->num_lines, &mf);
     save_prop_s(SCRPROP_MESG, cur_scroll->mesg, scroll_size, 1, &mf);
 
-    zip_write_file(zp, name, buffer, actual_size,
-     ZIP_M_NONE, file_id, board_id, id);
+    zip_write_file(zp, name, buffer, actual_size, ZIP_M_NONE);
 
     free(buffer);
   }
 }
 
 void save_sensor(struct sensor *cur_sensor, struct zip_archive *zp,
- const char *name, int file_id, int board_id, int id)
+ const char *name)
 {
   char buffer[SENSOR_PROPS_SIZE];
   struct memfile mf;
@@ -802,8 +799,7 @@ void save_sensor(struct sensor *cur_sensor, struct zip_archive *zp,
     save_prop_c(SENPROP_SENSOR_CHAR, cur_sensor->sensor_char, &mf);
     save_prop_s(SENPROP_ROBOT_TO_MESG, cur_sensor->robot_to_mesg, 15, 1, &mf);
 
-    zip_write_file(zp, name, buffer, SENSOR_PROPS_SIZE,
-     ZIP_M_NONE, file_id, board_id, id);
+    zip_write_file(zp, name, buffer, SENSOR_PROPS_SIZE, ZIP_M_NONE);
   }
 }
 

@@ -243,10 +243,10 @@ int get_version_string(char buffer[16], int world_version)
 // World info
 static inline int save_world_info(struct world *mzx_world,
  struct zip_archive *zp, int savegame, int file_version,
- const char *name, enum file_prop file_id)
+ const char *name)
 {
   char *buffer;
-  unsigned int buf_size = WORLD_PROP_SIZE;
+  size_t buf_size = WORLD_PROP_SIZE;
   struct memfile _mf;
   struct memfile _prop;
   struct memfile *mf = &_mf;
@@ -383,7 +383,7 @@ static inline int save_world_info(struct world *mzx_world,
 
   size = mftell(mf);
 
-  result = zip_write_file(zp, name, buffer, size, ZIP_M_NONE, file_id, 0, 0);
+  result = zip_write_file(zp, name, buffer, size, ZIP_M_NONE);
 
   free(buffer);
   return result;
@@ -407,7 +407,7 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
   char *buffer;
   struct memfile mf;
   struct memfile prop;
-  unsigned int actual_size;
+  size_t actual_size;
 
   int missing_ident;
   int last_ident = -1;
@@ -518,7 +518,7 @@ static inline void load_world_info(struct world *mzx_world,
   struct memfile _prop;
   struct memfile *mf = &_mf;
   struct memfile *prop = &_prop;
-  unsigned int actual_size;
+  size_t actual_size;
   int ident = -1;
   int size;
   int v;
@@ -875,11 +875,10 @@ static inline void load_world_info(struct world *mzx_world,
 
 // Global robot
 static inline int save_world_global_robot(struct world *mzx_world,
- struct zip_archive *zp, int savegame, int file_version, const char *name,
- enum file_prop file_id)
+ struct zip_archive *zp, int savegame, int file_version, const char *name)
 {
-  save_robot(mzx_world, &mzx_world->global_robot, zp, savegame, file_version,
-   name, file_id, 0, 0);
+  save_robot(mzx_world, &mzx_world->global_robot, zp, savegame,
+   file_version, name);
 
   return 0;
 }
@@ -894,13 +893,13 @@ static inline int load_world_global_robot(struct world *mzx_world,
 
 // SFX
 static inline int save_world_sfx(struct world *mzx_world,
- struct zip_archive *zp, const char *name, enum file_prop file_id)
+ struct zip_archive *zp, const char *name)
 {
   // Only save if custom SFX are enabled
   if(mzx_world->custom_sfx_on)
   {
     return zip_write_file(zp, name, mzx_world->custom_sfx, NUM_SFX * SFX_SIZE,
-     ZIP_M_NONE, file_id, 0, 0);
+     ZIP_M_NONE);
   }
 
   return ZIP_SUCCESS;
@@ -926,7 +925,7 @@ static inline int load_world_sfx(struct world *mzx_world,
 
 // Charset
 static inline int save_world_chars(struct world *mzx_world,
- struct zip_archive *zp, int savegame, const char *name, enum file_prop file_id)
+ struct zip_archive *zp, int savegame, const char *name)
 {
   unsigned char *buffer;
   size_t size;
@@ -943,8 +942,7 @@ static inline int save_world_chars(struct world *mzx_world,
   buffer = cmalloc(size * CHAR_SIZE);
   ec_mem_save_set_var(buffer, size * CHAR_SIZE, 0);
 
-  result = zip_write_file(zp, name, buffer, size * CHAR_SIZE,
-   ZIP_M_DEFLATE, file_id, 0, 0);
+  result = zip_write_file(zp, name, buffer, size * CHAR_SIZE, ZIP_M_DEFLATE);
 
   free(buffer);
   return result;
@@ -954,7 +952,7 @@ static inline int load_world_chars(struct world *mzx_world,
  struct zip_archive *zp, int savegame)
 {
   char *buffer;
-  unsigned int actual_size;
+  size_t actual_size;
   int result;
 
   zip_get_next_uncompressed_size(zp, &actual_size);
@@ -980,7 +978,7 @@ static inline int load_world_chars(struct world *mzx_world,
 
 // Palette
 static inline int save_world_pal(struct world *mzx_world,
- struct zip_archive *zp, const char *name, enum file_prop file_id)
+ struct zip_archive *zp, const char *name)
 {
   unsigned char buffer[SMZX_PAL_SIZE * 3];
   unsigned char *cur = buffer;
@@ -992,8 +990,7 @@ static inline int save_world_pal(struct world *mzx_world,
     cur += 3;
   }
 
-  return zip_write_file(zp, name, buffer, SMZX_PAL_SIZE * 3,
-   ZIP_M_NONE, file_id, 0, 0);
+  return zip_write_file(zp, name, buffer, SMZX_PAL_SIZE * 3, ZIP_M_NONE);
 }
 
 static inline int load_world_pal(struct world *mzx_world,
@@ -1001,8 +998,8 @@ static inline int load_world_pal(struct world *mzx_world,
 {
   unsigned char buffer[SMZX_PAL_SIZE * 3];
   unsigned char *cur;
-  unsigned int size;
   unsigned int i;
+  size_t size;
   int result;
 
   result = zip_read_file(zp, buffer, SMZX_PAL_SIZE*3, &size);
@@ -1024,15 +1021,14 @@ static inline int load_world_pal(struct world *mzx_world,
 
 // Palette index
 static inline int save_world_pal_index(struct world *mzx_world,
- struct zip_archive *zp, const char *name, enum file_prop file_id)
+ struct zip_archive *zp, const char *name)
 {
   char *buffer = cmalloc(SMZX_PAL_SIZE * 4);
   int result;
 
   save_indices(buffer);
 
-  result = zip_write_file(zp, name, buffer, SMZX_PAL_SIZE * 4,
-   ZIP_M_NONE, file_id, 0, 0);
+  result = zip_write_file(zp, name, buffer, SMZX_PAL_SIZE * 4, ZIP_M_NONE);
 
   free(buffer);
   return result;
@@ -1058,7 +1054,7 @@ static inline int load_world_pal_index(struct world *mzx_world,
 
 // Palette intensities
 static inline int save_world_pal_inten(struct world *mzx_world,
- struct zip_archive *zp, const char *name, enum file_prop file_id)
+ struct zip_archive *zp, const char *name)
 {
   char buffer[SMZX_PAL_SIZE];
   char *cur = buffer;
@@ -1067,8 +1063,7 @@ static inline int save_world_pal_inten(struct world *mzx_world,
   for(i = 0; i < SMZX_PAL_SIZE; i++, cur++)
     *cur = get_color_intensity(i);
 
-  return zip_write_file(zp, name, buffer, SMZX_PAL_SIZE,
-   ZIP_M_NONE, file_id, 0, 0);
+  return zip_write_file(zp, name, buffer, SMZX_PAL_SIZE, ZIP_M_NONE);
 }
 
 static inline int load_world_pal_inten(struct world *mzx_world,
@@ -1076,7 +1071,7 @@ static inline int load_world_pal_inten(struct world *mzx_world,
 {
   char buffer[SMZX_PAL_SIZE];
   char *cur;
-  unsigned int size;
+  size_t size;
   unsigned int i;
   int result;
 
@@ -1095,11 +1090,10 @@ static inline int load_world_pal_inten(struct world *mzx_world,
 
 // Vlayer colors
 static inline int save_world_vco(struct world *mzx_world,
- struct zip_archive *zp, const char *name, enum file_prop file_id)
+ struct zip_archive *zp, const char *name)
 {
   return zip_write_file(zp, name,
-   mzx_world->vlayer_colors, mzx_world->vlayer_size,
-   ZIP_M_DEFLATE, file_id, 0, 0);
+   mzx_world->vlayer_colors, mzx_world->vlayer_size, ZIP_M_DEFLATE);
 }
 
 static inline int load_world_vco(struct world *mzx_world,
@@ -1112,11 +1106,10 @@ static inline int load_world_vco(struct world *mzx_world,
 
 // Vlayer chars
 static inline int save_world_vch(struct world *mzx_world,
- struct zip_archive *zp, const char *name, enum file_prop file_id)
+ struct zip_archive *zp, const char *name)
 {
   return zip_write_file(zp, name,
-   mzx_world->vlayer_chars, mzx_world->vlayer_size,
-   ZIP_M_DEFLATE, file_id, 0, 0);
+   mzx_world->vlayer_chars, mzx_world->vlayer_size, ZIP_M_DEFLATE);
 }
 
 static inline int load_world_vch(struct world *mzx_world,
@@ -1130,7 +1123,7 @@ static inline int load_world_vch(struct world *mzx_world,
 
 // Sprites
 static inline int save_world_sprites(struct world *mzx_world,
- struct zip_archive *zp, const char *name, enum file_prop file_id)
+ struct zip_archive *zp, const char *name)
 {
   char *buffer;
   struct sprite *spr;
@@ -1169,8 +1162,7 @@ static inline int save_world_sprites(struct world *mzx_world,
 
   save_prop_eof(&mf);
 
-  zip_write_file(zp, name, buffer, SPRITE_PROPS_SIZE,
-   ZIP_M_DEFLATE, file_id, 0, 0);
+  zip_write_file(zp, name, buffer, SPRITE_PROPS_SIZE, ZIP_M_DEFLATE);
 
   free(buffer);
   return 0;
@@ -1180,7 +1172,7 @@ static inline int load_world_sprites(struct world *mzx_world,
  struct zip_archive *zp)
 {
   char *buffer;
-  unsigned int actual_size;
+  size_t actual_size;
 
   struct sprite *spr = NULL;
   struct memfile mf;
@@ -1289,14 +1281,14 @@ err_free:
 
 // Counters
 static inline int save_world_counters(struct world *mzx_world,
- struct zip_archive *zp, const char *name, enum file_prop file_id)
+ struct zip_archive *zp, const char *name)
 {
   struct counter *src_counter;
   size_t name_length;
   int result;
   int i;
 
-  result = zip_write_open_file_stream(zp, name, ZIP_M_NONE, file_id, 0, 0);
+  result = zip_write_open_file_stream(zp, name, ZIP_M_NONE);
   if(result != ZIP_SUCCESS)
     return result;
 
@@ -1344,7 +1336,7 @@ static inline int load_world_counters(struct world *mzx_world,
 
   else
   {
-    unsigned int actual_size;
+    size_t actual_size;
 
     zip_get_next_uncompressed_size(zp, &actual_size);
     buffer = cmalloc(actual_size);
@@ -1413,7 +1405,7 @@ static inline int load_world_counters(struct world *mzx_world,
 
 // Strings
 static inline int save_world_strings(struct world *mzx_world,
- struct zip_archive *zp, const char *name, enum file_prop file_id)
+ struct zip_archive *zp, const char *name)
 {
   struct string *src_string;
   size_t name_length;
@@ -1421,7 +1413,7 @@ static inline int save_world_strings(struct world *mzx_world,
   int result;
   int i;
 
-  result = zip_write_open_file_stream(zp, name, ZIP_M_NONE, file_id, 0, 0);
+  result = zip_write_open_file_stream(zp, name, ZIP_M_NONE);
   if(result != ZIP_SUCCESS)
     return result;
 
@@ -1467,7 +1459,7 @@ static inline int load_world_strings_mem(struct world *mzx_world,
 
   else
   {
-    unsigned int actual_size;
+    size_t actual_size;
 
     zip_get_next_uncompressed_size(zp, &actual_size);
     buffer = cmalloc(actual_size);
@@ -1622,8 +1614,8 @@ void save_counters_file(struct world *mzx_world, const char *file)
 
   zwrite("COUNTERS", 8, zp);
 
-  save_world_counters(mzx_world, zp,      "counter",FPROP_WORLD_COUNTERS);
-  save_world_strings(mzx_world, zp,       "string", FPROP_WORLD_STRINGS);
+  save_world_counters(mzx_world, zp,      "counter");
+  save_world_strings(mzx_world, zp,       "string");
 
   zip_close(zp, NULL);
 }
@@ -1817,25 +1809,23 @@ static int save_world_zip(struct world *mzx_world, const char *file,
     zputc(mzx_world->current_board_id, zp);
   }
 
-  save_world_info(mzx_world, zp, savegame, file_version,
-   "world", FPROP_WORLD_INFO);
+  save_world_info(mzx_world, zp, savegame, file_version, "world");
 
-  save_world_global_robot(mzx_world, zp, savegame, file_version,
-   "gr", FPROP_WORLD_GLOBAL_ROBOT);
+  save_world_global_robot(mzx_world, zp, savegame, file_version, "gr");
 
-  save_world_sfx(mzx_world, zp,           "sfx",    FPROP_WORLD_SFX);
-  save_world_chars(mzx_world, zp, savegame, "chars",  FPROP_WORLD_CHARS);
-  save_world_pal(mzx_world, zp,           "pal",    FPROP_WORLD_PAL);
+  save_world_sfx(mzx_world, zp,             "sfx");
+  save_world_chars(mzx_world, zp, savegame, "chars");
+  save_world_pal(mzx_world, zp,             "pal");
 
   if(savegame)
   {
-    save_world_pal_index(mzx_world, zp,   "palidx", FPROP_WORLD_PAL_INDEX);
-    save_world_pal_inten(mzx_world, zp,   "palint", FPROP_WORLD_PAL_INTENSITY);
-    save_world_vco(mzx_world, zp,         "vco",    FPROP_WORLD_VCO);
-    save_world_vch(mzx_world, zp,         "vch",    FPROP_WORLD_VCH);
-    save_world_sprites(mzx_world, zp,     "spr",    FPROP_WORLD_SPRITES);
-    save_world_counters(mzx_world, zp,    "counter",FPROP_WORLD_COUNTERS);
-    save_world_strings(mzx_world, zp,     "string", FPROP_WORLD_STRINGS);
+    save_world_pal_index(mzx_world, zp,     "palidx");
+    save_world_pal_inten(mzx_world, zp,     "palint");
+    save_world_vco(mzx_world, zp,           "vco");
+    save_world_vch(mzx_world, zp,           "vch");
+    save_world_sprites(mzx_world, zp,       "spr");
+    save_world_counters(mzx_world, zp,      "counter");
+    save_world_strings(mzx_world, zp,       "string");
   }
 
   meter_update_screen(&meter_curr, meter_target);

@@ -36,12 +36,12 @@
 
 
 static void save_board_info(struct board *cur_board, struct zip_archive *zp,
- int savegame, int file_version, const char *name, int file_id, int board_id)
+ int savegame, int file_version, const char *name)
 {
   char *buffer;
   struct memfile mf;
 
-  unsigned int size = BOARD_PROPS_SIZE;
+  size_t size = BOARD_PROPS_SIZE;
   int length;
 
   if(savegame)
@@ -123,7 +123,7 @@ static void save_board_info(struct board *cur_board, struct zip_archive *zp,
 
   size = mftell(&mf);
 
-  zip_write_file(zp, name, buffer, size, ZIP_M_NONE, file_id, board_id, 0);
+  zip_write_file(zp, name, buffer, size, ZIP_M_NONE);
 
   free(buffer);
 }
@@ -138,42 +138,41 @@ int save_board(struct world *mzx_world, struct board *cur_board,
 
   sprintf(name, "b%2.2X", (unsigned char)board_id);
 
-  save_board_info(cur_board, zp, savegame, file_version,
-   name, FPROP_BOARD_INFO, board_id);
+  save_board_info(cur_board, zp, savegame, file_version, name);
 
   sprintf(name+3, "bid");
   zip_write_file(zp, name, cur_board->level_id,
-   board_size, ZIP_M_DEFLATE, FPROP_BOARD_BID, board_id, 0);
+   board_size, ZIP_M_DEFLATE);
 
   sprintf(name+3, "bpr");
   zip_write_file(zp, name, cur_board->level_param,
-   board_size, ZIP_M_DEFLATE, FPROP_BOARD_BPR, board_id, 0);
+   board_size, ZIP_M_DEFLATE);
 
   sprintf(name+3, "bco");
   zip_write_file(zp, name, cur_board->level_color,
-   board_size, ZIP_M_DEFLATE, FPROP_BOARD_BCO, board_id, 0);
+   board_size, ZIP_M_DEFLATE);
 
   sprintf(name+3, "uid");
   zip_write_file(zp, name, cur_board->level_under_id,
-   board_size, ZIP_M_DEFLATE, FPROP_BOARD_UID, board_id, 0);
+   board_size, ZIP_M_DEFLATE);
 
   sprintf(name+3, "upr");
   zip_write_file(zp, name, cur_board->level_under_param,
-   board_size, ZIP_M_DEFLATE, FPROP_BOARD_UPR, board_id, 0);
+   board_size, ZIP_M_DEFLATE);
 
   sprintf(name+3, "uco");
   zip_write_file(zp, name, cur_board->level_under_color,
-   board_size, ZIP_M_DEFLATE, FPROP_BOARD_UCO, board_id, 0);
+   board_size, ZIP_M_DEFLATE);
 
   if(cur_board->overlay_mode)
   {
     sprintf(name+3, "och");
     zip_write_file(zp, name, cur_board->overlay,
-     board_size, ZIP_M_DEFLATE, FPROP_BOARD_OCH, board_id, 0);
+     board_size, ZIP_M_DEFLATE);
 
     sprintf(name+3, "oco");
     zip_write_file(zp, name, cur_board->overlay_color,
-     board_size, ZIP_M_DEFLATE, FPROP_BOARD_OCO, board_id, 0);
+     board_size, ZIP_M_DEFLATE);
   }
 
   name[3] = 'r';
@@ -188,8 +187,7 @@ int save_board(struct world *mzx_world, struct board *cur_board,
       if(cur_robot)
       {
         sprintf(name+4, "%2.2X", (unsigned char) i);
-        save_robot(mzx_world, cur_robot, zp, savegame, file_version,
-         name, FPROP_ROBOT, board_id, i);
+        save_robot(mzx_world, cur_robot, zp, savegame, file_version, name);
       }
     }
   }
@@ -206,7 +204,7 @@ int save_board(struct world *mzx_world, struct board *cur_board,
       if(cur_scroll)
       {
         sprintf(name+5, "%2.2X", (unsigned char) i);
-        save_scroll(cur_scroll, zp, name, FPROP_SCROLL, board_id, i);
+        save_scroll(cur_scroll, zp, name);
       }
     }
   }
@@ -223,7 +221,7 @@ int save_board(struct world *mzx_world, struct board *cur_board,
       if(cur_sensor)
       {
         sprintf(name+5, "%2.2X", (unsigned char) i);
-        save_sensor(cur_sensor, zp, name, FPROP_SENSOR, board_id, i);
+        save_sensor(cur_sensor, zp, name);
       }
     }
   }
@@ -322,7 +320,7 @@ static int load_board_info(struct board *cur_board, struct zip_archive *zp,
  int savegame, int *file_version)
 {
   char *buffer;
-  unsigned int actual_size;
+  size_t actual_size;
   struct memfile mf;
   struct memfile prop;
   int last_ident = -1;

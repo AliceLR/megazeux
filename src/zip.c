@@ -831,7 +831,7 @@ int zgetd(struct zip_archive *zp, enum zip_error *err)
   return zp->vgetd(zp->fp);
 }
 
-enum zip_error zread(void *destBuf, uint32_t readLen, struct zip_archive *zp)
+enum zip_error zread(void *destBuf, size_t readLen, struct zip_archive *zp)
 {
   struct zip_file_header *fh;
   char *src;
@@ -1009,7 +1009,7 @@ err_out:
  */
 
 enum zip_error zip_get_next_uncompressed_size(struct zip_archive *zp,
- uint32_t *u_size)
+ size_t *u_size)
 {
   enum zip_error result;
 
@@ -1038,7 +1038,7 @@ err_out:
  * zip_read_directory() is called.
  */
 
-enum zip_error zip_get_next_method(struct zip_archive *zp, uint32_t *method)
+enum zip_error zip_get_next_method(struct zip_archive *zp, unsigned int *method)
 {
   enum zip_error result;
 
@@ -1070,7 +1070,7 @@ err_out:
  */
 
 enum zip_error zip_read_open_file_stream(struct zip_archive *zp,
- uint32_t *destLen)
+ size_t *destLen)
 {
   struct zip_file_header *central_fh;
   struct zip_file_header local_fh;
@@ -1429,9 +1429,9 @@ err_out:
  */
 
 enum zip_error zip_read_file(struct zip_archive *zp,
- void *destBuf, uint32_t destLen, uint32_t *readLen)
+ void *destBuf, size_t destLen, size_t *readLen)
 {
-  uint32_t u_size;
+  size_t u_size;
   enum zip_error result;
 
   // No need to check mode; the functions used here will
@@ -1550,7 +1550,7 @@ enum zip_error zputd(int value, struct zip_archive *zp)
   return ZIP_SUCCESS;
 }
 
-enum zip_error zwrite(const void *src, uint32_t srcLen, struct zip_archive *zp)
+enum zip_error zwrite(const void *src, size_t srcLen, struct zip_archive *zp)
 {
   struct zip_file_header *fh;
   char *buffer = NULL;
@@ -1704,8 +1704,7 @@ static inline enum zip_error zip_write_data_descriptor(struct zip_archive *zp,
  */
 
 enum zip_error zip_write_open_file_stream(struct zip_archive *zp,
- const char *name, int method, uint32_t prop_id, char board_id,
- char robot_id)
+ const char *name, int method)
 {
   struct zip_file_header *fh;
   char *file_name;
@@ -1740,10 +1739,6 @@ enum zip_error zip_write_open_file_stream(struct zip_archive *zp,
   fp = zp->fp;
 
   // Set up the header
-  fh->mzx_prop_id = prop_id;
-  fh->mzx_board_id = board_id;
-  fh->mzx_robot_id = robot_id;
-
 #ifdef ZIP_WRITE_DATA_DESCRIPTOR
   fh->flags = ZIP_F_DATA_DESCRIPTOR;
 #else
@@ -1836,8 +1831,7 @@ err_out:
  */
 
 enum zip_error zip_write_open_mem_stream(struct zip_archive *zp,
- struct memfile *mf, const char *name, uint32_t prop_id, char board_id,
- char robot_id)
+ struct memfile *mf, const char *name)
 {
   struct zip_file_header *fh;
   char *file_name;
@@ -1871,10 +1865,6 @@ enum zip_error zip_write_open_mem_stream(struct zip_archive *zp,
   fp = zp->fp;
 
   // Set up the header
-  fh->mzx_prop_id = prop_id;
-  fh->mzx_board_id = board_id;
-  fh->mzx_robot_id = robot_id;
-
 #ifdef ZIP_WRITE_DATA_DESCRIPTOR
   fh->flags = ZIP_F_DATA_DESCRIPTOR;
 #else
@@ -1995,15 +1985,13 @@ err_out:
  */
 
 enum zip_error zip_write_file(struct zip_archive *zp, const char *name,
- const void *src, uint32_t srcLen, int method, uint32_t prop_id, char board_id,
- char robot_id)
+ const void *src, size_t srcLen, int method)
 {
   enum zip_error result;
 
   // No need to check mode; the functions used here will
 
-  result = zip_write_open_file_stream(zp, name, method, prop_id, board_id,
-   robot_id);
+  result = zip_write_open_file_stream(zp, name, method);
 
   if(result)
     goto err_out;
@@ -2325,7 +2313,7 @@ static enum zip_error zip_write_eocd_record(struct zip_archive *zp)
  * reallocate using zip_expand and call zip_close again.
  */
 
-enum zip_error zip_close(struct zip_archive *zp, uint32_t *final_length)
+enum zip_error zip_close(struct zip_archive *zp, size_t *final_length)
 {
   int result = ZIP_SUCCESS;
   int mode;
@@ -2599,7 +2587,7 @@ static struct zip_archive *zip_get_archive_mem(struct memfile *mf)
  * is called. Afterward, the archive will be in file read mode.
  */
 
-struct zip_archive *zip_open_mem_read(const void *src, uint32_t len)
+struct zip_archive *zip_open_mem_read(const void *src, size_t len)
 {
   struct zip_archive *zp;
   struct memfile *mf;
@@ -2625,7 +2613,7 @@ struct zip_archive *zip_open_mem_read(const void *src, uint32_t len)
  * is called. Afterward, the archive will be in file write mode.
  */
 
-struct zip_archive *zip_open_mem_write(void *src, uint32_t len)
+struct zip_archive *zip_open_mem_write(void *src, size_t len)
 {
   struct zip_archive *zp;
   struct memfile *mf;
@@ -2650,7 +2638,7 @@ struct zip_archive *zip_open_mem_write(void *src, uint32_t len)
  * write function fails with ZIP_ALLOC_MORE_SPACE.
  */
 
-enum zip_error zip_expand(struct zip_archive *zp, void **src, uint32_t new_size)
+enum zip_error zip_expand(struct zip_archive *zp, void **src, size_t new_size)
 {
   struct memfile *mf;
   uint32_t current_offset;
