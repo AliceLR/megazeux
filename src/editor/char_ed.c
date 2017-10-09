@@ -59,6 +59,8 @@
 //       "Current Char-"=Enter
 //       "..0.."=Change char
 
+#define CHARS_SHOW_WIDTH 22
+
 static char char_copy_buffer[8 * 14 * 32];
 static int char_copy_width = 8;
 static int char_copy_height = 14;
@@ -602,6 +604,92 @@ static void draw_multichar_smzx(char *buffer, int start_x, int start_y,
   }
 }
 
+static void draw_mini_buffer(int info_x, int info_y, int current_width,
+ int current_height, int highlight_width, int highlight_height, int screen_mode)
+{
+  char mini_buffer[32];
+  int chars_show_width;
+  int chars_show_x;
+  int chars_show_y;
+  int draw_pos;
+  int draw_char;
+  int offset;
+  int x;
+  int y;
+
+  // 0- not highlight, 1- highlight
+  char use_color[] = { 0x80, 0x8F };
+  char use_offset[] = { 16, 16 };
+  int use_overlay[] = { 0, 0 };
+  int is_highlight;
+
+  // Apply user-defined palette to the highlight as-needed
+  if(!use_default_palette)
+  {
+    use_color[1] = current_palette;
+    use_offset[1] = 0;
+
+    // The protected palette and SMZX modes simply do not work well together.
+    // Display on the overlay only when using a custom palette.
+    if(screen_mode)
+      use_overlay[1] = 1;
+  }
+
+  // Mini buffer
+  for(y = 0, offset = 0; y < highlight_height; y++)
+  {
+    for(x = 0; x < highlight_width; x++, offset++)
+    {
+      mini_buffer[offset] = current_char + x + (y * 32);
+    }
+  }
+
+  for(y = 0, offset = 0; y < current_height; y++)
+  {
+    for(x = 0; x < current_width; x++, offset++)
+    {
+      select_layer(UI_LAYER);
+      if(use_overlay[1])
+      {
+        erase_char(x + info_x, info_y + y + 1);
+        select_layer(OVERLAY_LAYER);
+      }
+      draw_char_ext(mini_buffer[offset], use_color[1],
+       info_x + x, info_y + y + 1, 0, use_offset[1]);
+    }
+  }
+
+  // Charset display
+  chars_show_width = CHARS_SHOW_WIDTH - current_width;
+  chars_show_x = info_x + current_width + 2;
+  chars_show_y = info_y + 1;
+
+  draw_pos = (chars_show_width - highlight_width + 1)/2;
+
+  for(y = 0; y < highlight_height; y++)
+  {
+    for(x = 0; x < chars_show_width; x++)
+    {
+      // Adjust by draw_pos; the current char should be in the center
+      draw_char = current_char + x - draw_pos + (y * 32);
+      draw_char &= 0xFF;
+
+      is_highlight = (x >= draw_pos) &&
+       (x < draw_pos + highlight_width) &&
+       (y < highlight_height);
+
+      select_layer(UI_LAYER);
+      if(use_overlay[is_highlight])
+      {
+        erase_char(chars_show_x + x, chars_show_y + y);
+        select_layer(OVERLAY_LAYER);
+      }
+      draw_char_ext(draw_char, use_color[is_highlight],
+       chars_show_x + x, chars_show_y + y, 0, use_offset[is_highlight]);
+    }
+  }
+}
+
 static void replace_filenum(char *src, char *dest, int num)
 {
   char *src_ptr = src;
@@ -643,9 +731,7 @@ int char_editor(struct world *mzx_world)
   int buffer_height = current_height * 14;
   int dialog_width, dialog_height;
   int dialog_x, dialog_y;
-  int chars_show_width;
   char *buffer = cmalloc(8 * 14 * 32);
-  char mini_buffer[32];
   int last_x = -1, last_y = 0;
   int block_x = 0;
   int block_y = 0;
@@ -655,7 +741,6 @@ int char_editor(struct world *mzx_world)
   int block_height = buffer_height;
   int block_mode = 0;
   int shifted = 0;
-  int offset;
   int i, i2, key;
   int pad_height;
   int small_chars;
@@ -741,8 +826,6 @@ int char_editor(struct world *mzx_world)
     chars_y = dialog_y + (dialog_height / 2) - (chars_height / 2);
     info_x = chars_x + chars_width + 2;
     info_y = dialog_y + (dialog_height / 2) - (info_height / 2);
-
-    chars_show_width = 22 - current_width;
 
     restore_screen();
     save_screen();
@@ -841,55 +924,8 @@ int char_editor(struct world *mzx_world)
       }
     }
 
-    // FIXME mini buffer
-    for(i = 0, offset = 0; i < highlight_height; i++)
-    {
-      for(i2 = 0; i2 < highlight_width; i2++, offset++)
-      {
-        mini_buffer[offset] = current_char + i2 + (i * 32);
-      }
-    }
-
-    for(i = 0, offset = 0; i < current_height; i++)
-    {
-      for(i2 = 0; i2 < current_width; i2++, offset++)
-      {
-        select_layer(UI_LAYER);
-        erase_char(i2 + info_x, info_y + i + 1);
-        select_layer(OVERLAY_LAYER);
-        draw_char_ext(mini_buffer[offset], 143,
-         i2 + info_x, info_y + i + 1, 0, 16);
-      }
-    }
-
-    for(i = 0; i < highlight_height; i++)
-    {
-      for(i2 = -(chars_show_width / 2);
-       i2 < -(chars_show_width / 2) + chars_show_width; i2++)
-      {
-        if((i2 >= 0) && (i2 < highlight_width) &&
-         (i < highlight_height))
-        {
-          select_layer(UI_LAYER);
-          erase_char(i2 + info_x + current_width + 11,
-           info_y + i + 1);
-          select_layer(OVERLAY_LAYER);
-          draw_char_ext(current_char + i2 + (i * 32),
-           143, i2 + info_x + current_width + 11,
-           info_y + i + 1, 0, 16);
-        }
-        else
-        {
-          select_layer(UI_LAYER);
-          erase_char(i2 + info_x + current_width + 11,
-           info_y + i + 1);
-          select_layer(OVERLAY_LAYER);
-          draw_char_ext(current_char + i2 + (i * 32),
-           128, i2 + info_x + current_width + 11,
-           info_y + i + 1, 0, 16);
-        }
-      }
-    }
+    draw_mini_buffer(info_x, info_y, current_width, current_height,
+     highlight_width, highlight_height, screen_mode);
 
     select_layer(UI_LAYER);
 
