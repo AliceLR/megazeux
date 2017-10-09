@@ -117,21 +117,6 @@ void draw_char_linear(Uint8 color, Uint8 chr, Uint32 offset,
   draw_char_linear_ext(color, chr, offset, PRO_CH, use_protected_pal ? 16 : 0);
 }
 
-void clear_screen_no_update(void)
-{
-  struct char_element *dest = graphics.text_video;
-  Uint32 i;
-
-  for(i = 0; i < (SCREEN_W * SCREEN_H); i++)
-  {
-    // use protected charset and palette
-    dest->char_value = 177 + PRO_CH;
-    dest->fg_color = 1 + 16;
-    dest->bg_color = 0 + 16;
-    dest++;
-  }
-}
-
 void ec_save_set_var(char *name, Uint8 offset, Uint32 size)
 {
   FILE *fp = fopen_unsafe(name, "wb");

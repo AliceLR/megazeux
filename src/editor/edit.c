@@ -199,8 +199,6 @@ static void synchronize_board_values(struct world *mzx_world,
     *board_width = mzx_world->vlayer_width;
     *board_height = mzx_world->vlayer_height;
   }
-
-  clear_screen_no_update();
 }
 
 static void fix_caption(struct world *mzx_world, int modified)
@@ -1419,6 +1417,50 @@ static void draw_vlayer_window(struct world *mzx_world, int array_x, int array_y
   select_layer(UI_LAYER);
 }
 
+static void draw_out_of_bounds(int in_x, int in_y, int in_width, int in_height)
+{
+  int offset = 0;
+  int start;
+  int skip;
+  int x;
+  int y;
+
+  if(in_x + in_width > SCREEN_W)
+    in_width = SCREEN_W - in_x;
+
+  if(in_y + in_height > SCREEN_H)
+    in_height = SCREEN_H - in_y;
+
+  start = in_x + (in_y * in_width);
+  skip = SCREEN_W - in_width;
+
+  // Clear everything before the in-bounds area
+  while(offset < start)
+  {
+    draw_char_linear_ext(1, 177, offset, PRO_CH, 16);
+    offset++;
+  }
+
+  // Clear everything between the in-bounds area
+  for(y = 0; y < in_height; y++)
+  {
+    offset += in_width;
+
+    for(x = 0; x < skip; x++)
+    {
+      draw_char_linear_ext(1, 177, offset, PRO_CH, 16);
+      offset++;
+    }
+  }
+
+  // Clear everything after the in-bounds area
+  while(offset < SCREEN_W * SCREEN_H)
+  {
+    draw_char_linear_ext(1, 177, offset, PRO_CH, 16);
+    offset++;
+  }
+}
+
 static void flash_thing(struct world *mzx_world, int start, int end,
  int flash_one, int flash_two, int scroll_x, int scroll_y,
  int edit_screen_height)
@@ -1896,8 +1938,6 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
     saved_overlay_mode = src_board->overlay_mode;
 
-    clear_screen_no_update();
-
     if(overlay_edit == EDIT_BOARD)
     {
       src_board->overlay_mode = 0;
@@ -1928,6 +1968,8 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
       draw_vlayer_window(mzx_world, scroll_x, scroll_y,
        edit_screen_height);
     }
+
+    draw_out_of_bounds(0, 0, board_width, board_height);
 
     src_board->overlay_mode = saved_overlay_mode;
 
@@ -2469,10 +2511,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         scroll_y = 0;
 
         if((cursor_board_x - scroll_x) < (debug_x + 25))
-        {
           debug_x = 60;
-          clear_screen_no_update();
-        }
 
         break;
       }
@@ -2491,10 +2530,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           scroll_y = 0;
 
         if((cursor_board_x - scroll_x) > (debug_x - 5))
-        {
           debug_x = 0;
-          clear_screen_no_update();
-        }
 
         break;
       }
@@ -2987,10 +3023,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             }
 
             if((cursor_board_x - scroll_x) < (debug_x + 25))
-            {
               debug_x = 60;
-              clear_screen_no_update();
-            }
           }
           else
 
@@ -3008,10 +3041,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                 scroll_x++;
 
               if((cursor_board_x - scroll_x) > (debug_x - 5))
-              {
                 debug_x = 0;
-                clear_screen_no_update();
-              }
             }
           }
 
@@ -3331,7 +3361,6 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           if(edit_screen_height == EDIT_SCREEN_NORMAL)
           {
             edit_screen_height = EDIT_SCREEN_EXTENDED;
-            clear_screen_no_update();
 
             if((scroll_y + 24) > board_height)
               scroll_y = board_height - 24;
@@ -4248,7 +4277,6 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             } while(v_key != IKEY_ESCAPE);
 
             m_show();
-            clear_screen_no_update();
           }
         }
         else

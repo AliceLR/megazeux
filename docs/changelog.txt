@@ -85,6 +85,8 @@ FIXES
   SMZX modes.
 + Fixed a bug where multichar editing wouldn't correctly wrap to
   the start of the charset.
++ The editing area outside of the current board is now correctly
+  drawn when SMZX is enabled.
 
 DEVELOPERS
 
