@@ -106,6 +106,9 @@ static const char *help_text[2] =
 
 static const char *help_text_smzx = "Ins/1-4 Select";
 
+static const int prev_pixel[] = { 3, 2, 0, 1 };
+static const int next_pixel[] = { 2, 3, 1, 0 };
+
 static void char_editor_default_colors(void)
 {
   // Char display
@@ -990,15 +993,44 @@ int char_editor(struct world *mzx_world)
       block_start_y = 0;
     }
 
-    if(get_mouse_drag())
+    if(get_mouse_press_ext())
     {
-      int mouse_x, mouse_y;
+      int mouse_press = get_mouse_press_ext();
+
+      if(mouse_press == MOUSE_BUTTON_WHEELUP)
+      {
+        // Previous pixel
+        current_pixel = prev_pixel[current_pixel];
+      }
+      else
+
+      if(mouse_press == MOUSE_BUTTON_WHEELDOWN)
+      {
+        // Next pixel
+        current_pixel = next_pixel[current_pixel];
+      }
+      else
+
+      if(mouse_press == MOUSE_BUTTON_MIDDLE)
+      {
+        // Char selector
+        key = IKEY_RETURN;
+      }
+    }
+
+    if(get_mouse_status())
+    {
+      int mouse_status = get_mouse_status();
+      int mouse_x;
+      int mouse_y;
       int draw_pixel;
+
       get_mouse_position(&mouse_x, &mouse_y);
 
-      if((mouse_x >= chars_x) &&
-       (mouse_x < chars_x + chars_width) &&
+      if(
+       (mouse_x >= chars_x) &&
        (mouse_y >= chars_y) &&
+       (mouse_x < chars_x + chars_width) &&
        (mouse_y < chars_y + chars_height))
       {
         // Grid.
@@ -1027,102 +1059,81 @@ int char_editor(struct world *mzx_world)
 
         if(!block_mode)
         {
-          if(get_mouse_status() & MOUSE_BUTTON(MOUSE_BUTTON_LEFT))
+          int mouse_draw = 0;
+
+          if(mouse_status & MOUSE_BUTTON(MOUSE_BUTTON_LEFT))
           {
-            int dx = x - last_x;
-            int dy = y - last_y;
-            int first_x, first_y;
-            int draw_x, draw_y;
+            // Draw current pixel
+            mouse_draw = 1;
+          }
+          else
 
-            if(((last_x != x) || (last_y != y)) && (last_x != -1))
+          if(mouse_status & MOUSE_BUTTON(MOUSE_BUTTON_RIGHT))
+          {
+            if(screen_mode)
             {
-              if(abs(dx) > abs(dy))
-              {
-                if(dx < 0)
-                {
-                  first_x = x;
-                  first_y = y;
-                  dx *= -1;
-                  dy *= -1;
-                }
-                else
-                {
-                  first_x = last_x;
-                  first_y = last_y;
-                }
+              // Grab
+              current_pixel = buffer[x + (buffer_width * y)];
+            }
+            else
+            {
+              // Clear
+              draw_pixel = 0;
+              mouse_draw = 1;
+            }
+          }
 
-                for(i = 0; i <= dx; i++)
-                {
-                  draw_y = (dy * i / dx) + first_y;
-                  buffer[(first_x + i) + (buffer_width * draw_y)] =
-                   draw_pixel;
-                }
-              }
-              else
-              {
-                if(dy < 0)
-                {
-                  first_x = x;
-                  first_y = y;
-                  dx *= -1;
-                  dy *= -1;
-                }
-                else
-                {
-                  first_x = last_x;
-                  first_y = last_y;
-                }
+          if(mouse_draw && (last_x != x || last_y != y))
+          {
+            if(last_x != -1)
+            {
+              int dx = x - last_x;
+              int dy = y - last_y;
+              int draw_x;
+              int draw_y;
 
-                for(i = 0; i <= dy; i++)
-                {
-                  draw_x = (dx * i / dy) + first_x;
-                  buffer[draw_x + (buffer_width * (first_y + i))] =
-                   draw_pixel;
-                }
+              int mx = MAX(abs(dx), abs(dy));
+
+              for(i = 0; i <= mx; i++)
+              {
+                draw_x = (dx * i / mx) + last_x;
+                draw_y = (dy * i / mx) + last_y;
+                buffer[draw_x + (buffer_width * draw_y)] = draw_pixel;
               }
             }
             else
             {
               buffer[x + (buffer_width * y)] = draw_pixel;
             }
+
+            if(changed)
+              add_charset_undo_frame(h, current_char,
+               highlight_width, highlight_height);
+
+            collapse_buffer(buffer, current_width,
+             current_height, highlight_width, highlight_height,
+             current_char, screen_mode, NULL);
+
+            update_undo_frame(h);
+
+            changed = 0;
+            last_x = x;
+            last_y = y;
           }
-          else
-          {
-            if(screen_mode)
-              current_pixel = buffer[x + (buffer_width * y)];
-            else
-              buffer[x + (buffer_width * y)] = 0;
-          }
-
-          last_x = x;
-          last_y = y;
-
-          if(changed)
-            add_charset_undo_frame(h, current_char,
-             highlight_width, highlight_height);
-
-          collapse_buffer(buffer, current_width,
-           current_height, highlight_width, highlight_height,
-           current_char, screen_mode, NULL);
-
-          update_undo_frame(h);
         }
+      }
+      else
+      {
+        // Mouse not in frame
+        last_x = -1;
       }
     }
     else
-
-    if(get_mouse_press() && !block_mode)
     {
-      add_charset_undo_frame(h, current_char,
-       highlight_width, highlight_height);
-    }
-
-    else
-    {
+      // Mouse not pressed
+      changed = 1;
       last_x = -1;
     }
-
-    changed = 0;
 
     switch(key)
     {
@@ -1811,6 +1822,7 @@ int char_editor(struct world *mzx_world)
           expand_buffer(buffer, current_width, current_height,
            highlight_width, highlight_height, current_char,
            screen_mode);
+          changed = 1;
         }
         break;
       }
@@ -1825,6 +1837,7 @@ int char_editor(struct world *mzx_world)
           expand_buffer(buffer, current_width, current_height,
            highlight_width, highlight_height, current_char,
            screen_mode);
+          changed = 1;
         }
         break;
       }
