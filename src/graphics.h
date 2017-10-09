@@ -84,6 +84,8 @@ struct char_element
 #define LAYER_DRAWORDER_OVERLAY 1000
 #define LAYER_DRAWORDER_UI 2000
 
+#define SET_SCREEN_SIZE (SCREEN_W * SCREEN_H * 3)
+
 struct graphics_data;
 struct video_layer;
 
@@ -287,8 +289,8 @@ void cursor_underline(void);
 bool set_video_mode(void);
 void toggle_fullscreen(void);
 void resize_screen(Uint32 w, Uint32 h);
-void set_screen(struct char_element *src, Uint32 layer);
-void get_screen(struct char_element *dest, Uint32 layer);
+void set_screen(struct char_element *src);
+void get_screen(struct char_element *dest);
 
 void ec_change_byte(Uint16 chr, Uint8 byte, Uint8 new_value);
 Uint8 ec_read_byte(Uint16 chr, Uint8 byte);

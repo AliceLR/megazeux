@@ -85,9 +85,16 @@ void save_palette(char *fname)
   }
 }
 
-void draw_char_linear(Uint8 color, Uint8 chr, Uint32 offset)
+void draw_char_mixed_pal(Uint8 chr, Uint8 bg_color, Uint8 fg_color,
+ Uint32 x, Uint32 y)
 {
-  draw_char_linear_ext(color, chr, offset, PRO_CH, 16);
+  draw_char_mixed_pal_ext(chr, bg_color, fg_color, x, y, PRO_CH);
+}
+
+void draw_char_linear(Uint8 color, Uint8 chr, Uint32 offset,
+ bool use_protected_pal)
+{
+  draw_char_linear_ext(color, chr, offset, PRO_CH, use_protected_pal ? 16 : 0);
 }
 
 void clear_screen_no_update(void)

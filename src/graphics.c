@@ -1936,20 +1936,32 @@ void clear_screen(Uint8 chr, Uint8 color)
   update_screen();
 }
 
-void set_screen(struct char_element *src, Uint32 layer)
+void set_screen(struct char_element *src)
 {
-  memcpy(graphics.video_layers[layer].data, src,
-   SCREEN_W * SCREEN_H * sizeof(struct char_element));
-  memcpy(graphics.text_video, src + SCREEN_W * SCREEN_H,
-   SCREEN_W * SCREEN_H * sizeof(struct char_element));
+  int offset = SCREEN_W * SCREEN_H;
+  int size = offset * sizeof(struct char_element);
+
+  memcpy(graphics.video_layers[UI_LAYER].data, src, size);
+  src += offset;
+
+  memcpy(graphics.video_layers[OVERLAY_LAYER].data, src, size);
+  src += offset;
+
+  memcpy(graphics.text_video, src, size);
 }
 
-void get_screen(struct char_element *dest, Uint32 layer)
+void get_screen(struct char_element *dest)
 {
-  memcpy(dest, graphics.video_layers[layer].data,
-   SCREEN_W * SCREEN_H * sizeof(struct char_element));
-  memcpy(dest + SCREEN_W * SCREEN_H, graphics.text_video,
-   SCREEN_W * SCREEN_H * sizeof(struct char_element));
+  int offset = SCREEN_W * SCREEN_H;
+  int size = offset * sizeof(struct char_element);
+
+  memcpy(dest, graphics.video_layers[UI_LAYER].data, size);
+  dest += offset;
+
+  memcpy(dest, graphics.video_layers[OVERLAY_LAYER].data, size);
+  dest += offset;
+
+  memcpy(dest, graphics.text_video, size);
 }
 
 void cursor_underline(void)
