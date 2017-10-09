@@ -28,7 +28,6 @@ __M_BEGIN_DECLS
 
 #include <stdio.h>
 
-#include "world.h"
 #include "world_struct.h"
 
 
@@ -96,10 +95,6 @@ __M_BEGIN_DECLS
  *
  * (block 3)
  */
-
-#ifdef CONFIG_EDITOR
-int legacy_save_world(struct world *mzx_world, const char *file, int savegame);
-#endif
 
 void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
  bool savegame, int file_version, char *name, int *faded);
