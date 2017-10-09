@@ -428,6 +428,7 @@ void create_blank_world(struct world *mzx_world)
 
   ec_load_mzx();
   default_palette();
+  default_vlayer(mzx_world);
   default_global_data(mzx_world);
 }
 

@@ -39,17 +39,17 @@ enum file_prop
   FPROP_NONE                      = 0x0000,
   FPROP_WORLD_INFO                = 0x0001, // properties file
   FPROP_WORLD_GLOBAL_ROBOT        = 0x0004, // properties file
-  FPROP_WORLD_SFX                 = 0x0008, // data, NUM_SFX * SFX_SIZE
-  FPROP_WORLD_CHARS               = 0x000A, // data, 3584*15
-  FPROP_WORLD_PAL                 = 0x000C, // data, SMZX_PAL_SIZE * 3
-  FPROP_WORLD_PAL_INDEX           = 0x000D, // data, 1024
-  FPROP_WORLD_PAL_INTENSITY       = 0x000E, // data, SMZX_PAL_SIZE * 1
+  FPROP_WORLD_SFX                 = 0x0007, // data, NUM_SFX * SFX_SIZE
+  FPROP_WORLD_CHARS               = 0x0008, // data, 3584*15
+  FPROP_WORLD_PAL                 = 0x0009, // data, SMZX_PAL_SIZE * 3
+  FPROP_WORLD_PAL_INDEX           = 0x000A, // data, 1024
+  FPROP_WORLD_PAL_INTENSITY       = 0x000B, // data, SMZX_PAL_SIZE * 1
+  FPROP_WORLD_VCO                 = 0x000C, // data
+  FPROP_WORLD_VCH                 = 0x000D, // data
 
-  FPROP_WORLD_VCO                 = 0x0080, // data
-  FPROP_WORLD_VCH                 = 0x0081, // data
-  FPROP_WORLD_SPRITES             = 0x0084, // properties file
-  FPROP_WORLD_COUNTERS            = 0x0085, // counter format, use stream
-  FPROP_WORLD_STRINGS             = 0x0086, // string format, use stream
+  FPROP_WORLD_SPRITES             = 0x0080, // properties file
+  FPROP_WORLD_COUNTERS            = 0x0081, // counter format, use stream
+  FPROP_WORLD_STRINGS             = 0x0082, // string format, use stream
 
   FPROP_BOARD_INFO                = 0x0100, // properties file (board_id)
   FPROP_BOARD_BID                 = 0x0101, // data
@@ -364,15 +364,15 @@ static inline void assign_fprops(struct zip_archive *zp, int not_a_world)
 #define PROP_HEADER_SIZE  6
 #define PROP_EOF_SIZE     2
 
-#define STAT_COUNTERS_SIZE NUM_STATUS_COUNTERS * COUNTER_NAME_SIZE
+#define STATS_SIZE NUM_STATUS_COUNTERS * COUNTER_NAME_SIZE
 
 // IF YOU ADD ANYTHING, MAKE SURE THIS GETS UPDATED!
 
-#define COUNT_WORLD_PROPS (              1 + 3 +   4 + 16 +                  1)
-#define BOUND_WORLD_PROPS (BOARD_NAME_SIZE + 5 + 455 + 24 + STAT_COUNTERS_SIZE)
+#define COUNT_WORLD_PROPS (              1 + 3 +   4 + 16 + 4 +          1)
+#define BOUND_WORLD_PROPS (BOARD_NAME_SIZE + 5 + 455 + 24 + 9 + STATS_SIZE)
 
-#define COUNT_SAVE_PROPS  ( 2 +   4 +  30 +          3 +        1)
-#define BOUND_SAVE_PROPS  ( 2 +   9 + 100 + 3*MAX_PATH + NUM_KEYS)
+#define COUNT_SAVE_PROPS  ( 2 +  30 +          3 +        1)
+#define BOUND_SAVE_PROPS  ( 2 + 100 + 3*MAX_PATH + NUM_KEYS)
 
 // For world files, use WORLD_PROP_SIZE
 // For save files, use WORLD_PROP_SIZE + SAVE_PROP_SIZE
@@ -429,7 +429,7 @@ enum world_prop
   WPROP_CLEAR_ON_EXIT             = 0x002E, //   1
   WPROP_ONLY_FROM_SWAP            = 0x002F, //   1
 
-  // Temporarily save-only               4       9
+  // Global properties II                4       9
   WPROP_SMZX_MODE                 = 0x8030, //   1
   WPROP_VLAYER_WIDTH              = 0x8031, //   2
   WPROP_VLAYER_HEIGHT             = 0x8032, //   2

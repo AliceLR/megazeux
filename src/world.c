@@ -245,6 +245,8 @@ static inline int save_world_info(struct world *mzx_world,
  struct zip_archive *zp, int savegame, int file_version,
  const char *name)
 {
+  int world_version = mzx_world->version;
+
   char *buffer;
   size_t buf_size = WORLD_PROP_SIZE;
   struct memfile _mf;
@@ -271,7 +273,7 @@ static inline int save_world_info(struct world *mzx_world,
 
   if(savegame)
   {
-    save_prop_w(WPROP_WORLD_VERSION, mzx_world->version, mf);
+    save_prop_w(WPROP_WORLD_VERSION, world_version, mf);
     save_prop_c(WPROP_SAVE_START_BOARD, mzx_world->current_board_id, mf);
     save_prop_c(WPROP_SAVE_TEMPORARY_BOARD, mzx_world->temporary_board, mf);
   }
@@ -315,14 +317,17 @@ static inline int save_world_info(struct world *mzx_world,
   save_prop_c(WPROP_CLEAR_ON_EXIT,      mzx_world->clear_on_exit, mf);
   save_prop_c(WPROP_ONLY_FROM_SWAP,     mzx_world->only_from_swap, mf);
 
-  if(savegame)
+  // SMZX and vlayer are global properties 2.91+
+  if(savegame || world_version >= 0x025B)
   {
-    // Temporarily save-only
     save_prop_c(WPROP_SMZX_MODE,        get_screen_mode(), mf);
     save_prop_w(WPROP_VLAYER_WIDTH,     mzx_world->vlayer_width, mf);
     save_prop_w(WPROP_VLAYER_HEIGHT,    mzx_world->vlayer_height, mf);
     save_prop_d(WPROP_VLAYER_SIZE,      mzx_world->vlayer_size, mf);
+  }
 
+  if(savegame)
+  {
     // Save properties
     size = strlen(mzx_world->real_mod_playing) + 1;
     save_prop_s(WPROP_REAL_MOD_PLAYING, mzx_world->real_mod_playing, size, 1, mf);
@@ -404,6 +409,8 @@ static inline int save_world_info(struct world *mzx_world,
 static inline enum val_result validate_world_info(struct world *mzx_world,
  struct zip_archive *zp, int savegame, int *file_version)
 {
+  int world_version;
+
   char *buffer;
   struct memfile mf;
   struct memfile prop;
@@ -425,9 +432,13 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
   mzx_world->raw_world_info = buffer;
   mzx_world->raw_world_info_size = actual_size;
 
-  // Check everything sorted.
+  // Get the file version out of order.
   check(WPROP_FILE_VERSION);
   *file_version = load_prop_int(size, &prop);
+
+  // Check everything else sorted.
+  check(WPROP_WORLD_VERSION);
+  world_version = load_prop_int(size, &prop);
 
   check(WPROP_NUM_BOARDS);
   check(WPROP_ID_CHARS);
@@ -452,7 +463,7 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
   check(WPROP_CLEAR_ON_EXIT);
   check(WPROP_ONLY_FROM_SWAP);
 
-  if(!savegame)
+  if(!savegame && world_version < 0x025B)
   {
     return VAL_SUCCESS;
   }
@@ -461,6 +472,11 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
   check(WPROP_VLAYER_WIDTH);
   check(WPROP_VLAYER_HEIGHT);
   check(WPROP_VLAYER_SIZE);
+
+  if(!savegame)
+  {
+    return VAL_SUCCESS;
+  }
 
   check(WPROP_REAL_MOD_PLAYING);
   check(WPROP_MZX_SPEED);
@@ -503,6 +519,7 @@ err_free:
   fprintf(stderr,
    "load_world_info: expected ID %xh not found (found %xh, last %xh)\n",
    missing_ident, ident, last_ident);
+  fflush(stderr);
 
   free(buffer);
   mzx_world->raw_world_info = NULL;
@@ -673,7 +690,7 @@ static inline void load_world_info(struct world *mzx_world,
         mzx_world->only_from_swap = load_prop_int(size, prop);
         break;
 
-      // Temporarily save-only
+      // Global properties II
       case WPROP_SMZX_MODE:
         set_screen_mode(load_prop_int(size, prop));
         break;
@@ -1816,13 +1833,13 @@ static int save_world_zip(struct world *mzx_world, const char *file,
   save_world_sfx(mzx_world, zp,             "sfx");
   save_world_chars(mzx_world, zp, savegame, "chars");
   save_world_pal(mzx_world, zp,             "pal");
+  save_world_pal_index(mzx_world, zp,       "palidx");
+  save_world_vco(mzx_world, zp,             "vco");
+  save_world_vch(mzx_world, zp,             "vch");
 
   if(savegame)
   {
-    save_world_pal_index(mzx_world, zp,     "palidx");
     save_world_pal_inten(mzx_world, zp,     "palint");
-    save_world_vco(mzx_world, zp,           "vco");
-    save_world_vch(mzx_world, zp,           "vch");
     save_world_sprites(mzx_world, zp,       "spr");
     save_world_counters(mzx_world, zp,      "counter");
     save_world_strings(mzx_world, zp,       "string");
@@ -1857,13 +1874,16 @@ static int save_world_zip(struct world *mzx_world, const char *file,
 }
 
 
-#define if_savegame if(!savegame) { zip_skip_file(zp); break; }
+#define if_savegame         if(!savegame) { zip_skip_file(zp); break; }
+#define if_savegame_or_291  if(!savegame && mzx_world->version < 0x025B) \
+                             { zip_skip_file(zp); break; }
 
 static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
  int savegame, int file_version, int *faded)
 {
   unsigned int file_id;
   unsigned int board_id;
+  enum zip_error err;
 
   int loaded_global_robot = 0;
 
@@ -1876,6 +1896,8 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
 
   while(ZIP_SUCCESS == zip_get_next_prop(zp, &file_id, &board_id, NULL))
   {
+    err = ZIP_SUCCESS;
+
     switch(file_id)
     {
       case FPROP_NONE:
@@ -1897,55 +1919,55 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
       }
 
       case FPROP_WORLD_GLOBAL_ROBOT:
-        load_world_global_robot(mzx_world, zp, savegame, file_version);
+        err = load_world_global_robot(mzx_world, zp, savegame, file_version);
         loaded_global_robot = 1;
         break;
 
       case FPROP_WORLD_SFX:
-        load_world_sfx(mzx_world, zp);
+        err = load_world_sfx(mzx_world, zp);
         break;
 
       case FPROP_WORLD_CHARS:
-        load_world_chars(mzx_world, zp, savegame);
+        err = load_world_chars(mzx_world, zp, savegame);
         break;
 
       case FPROP_WORLD_PAL:
-        load_world_pal(mzx_world, zp);
+        err = load_world_pal(mzx_world, zp);
         break;
 
       case FPROP_WORLD_PAL_INDEX:
-        if_savegame
-        load_world_pal_index(mzx_world, zp);
+        if_savegame_or_291
+        err = load_world_pal_index(mzx_world, zp);
         break;
 
       case FPROP_WORLD_PAL_INTENSITY:
         if_savegame
-        load_world_pal_inten(mzx_world, zp);
+        err = load_world_pal_inten(mzx_world, zp);
         break;
 
       case FPROP_WORLD_VCO:
-        if_savegame
-        load_world_vco(mzx_world, zp);
+        if_savegame_or_291
+        err = load_world_vco(mzx_world, zp);
         break;
 
       case FPROP_WORLD_VCH:
-        if_savegame
-        load_world_vch(mzx_world, zp);
+        if_savegame_or_291
+        err = load_world_vch(mzx_world, zp);
         break;
 
       case FPROP_WORLD_SPRITES:
         if_savegame
-        load_world_sprites(mzx_world, zp);
+        err = load_world_sprites(mzx_world, zp);
         break;
 
       case FPROP_WORLD_COUNTERS:
         if_savegame
-        load_world_counters(mzx_world, zp);
+        err = load_world_counters(mzx_world, zp);
         break;
 
       case FPROP_WORLD_STRINGS:
         if_savegame
-        load_world_strings(mzx_world, zp);
+        err = load_world_strings(mzx_world, zp);
         break;
 
       // Defer to the board loader.
@@ -1987,6 +2009,14 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
         // Should never, ever encounter these here.
         zip_skip_file(zp);
         break;
+    }
+
+    // File failed to load? Skip it
+    if(err != ZIP_SUCCESS)
+    {
+      zip_skip_file(zp);
+      fprintf(stderr, "ERROR - Read error @ file ID %u\n", file_id);
+      fflush(stderr);
     }
   }
 
@@ -2090,12 +2120,15 @@ int save_world(struct world *mzx_world, const char *file, int savegame,
 #ifdef CONFIG_EDITOR
   if(world_version == WORLD_VERSION_PREV)
   {
-    return legacy_save_world(mzx_world, file, savegame);
-    // TODO: The version that's actually getting passed into these save
-    // functions is the file version; to save a compatibility world, both
-    // the file version and the mzx world version need to be WORLD_VERSION_PREV.
-    // So get mzx_world->version, temporarily store it, save with it equal to
-    // WORLD_VERSION_PREV, and reset it.
+    // Temporarily replace the world version with the previous version
+    int actual_world_version = mzx_world->version;
+    int ret_val;
+    mzx_world->version = WORLD_VERSION_PREV;
+
+    ret_val = save_world_zip(mzx_world, file, savegame, WORLD_VERSION_PREV);
+
+    mzx_world->version = actual_world_version;
+    return ret_val;
   }
   else
 #endif
@@ -2110,6 +2143,7 @@ int save_world(struct world *mzx_world, const char *file, int savegame,
     fprintf(stderr,
      "ERROR: Attempted to save incompatible world version %d.%d! Aborting!\n",
      (world_version >> 8) & 0xFF, world_version & 0xFF);
+    fflush(stderr);
 
     return -1;
   }
@@ -2719,6 +2753,20 @@ static void default_sprite_data(struct world *mzx_world)
   mzx_world->sprite_num = 0;
 }
 
+// This also needs to happen before a world is loaded.
+
+__editor_maybe_static void default_vlayer(struct world *mzx_world)
+{
+  // Allocate space for vlayer.
+  mzx_world->vlayer_size = 0x8000;
+  mzx_world->vlayer_width = 256;
+  mzx_world->vlayer_height = 128;
+  mzx_world->vlayer_chars = cmalloc(0x8000);
+  mzx_world->vlayer_colors = cmalloc(0x8000);
+  memset(mzx_world->vlayer_chars, 32, 0x8000);
+  memset(mzx_world->vlayer_colors, 7, 0x8000);
+}
+
 // After loading, use this to get default values. Use
 // for loading of worlds (as opposed to save games).
 
@@ -2758,16 +2806,6 @@ __editor_maybe_static void default_global_data(struct world *mzx_world)
   mzx_world->fwrite_delimiter = '*';
   mzx_world->bi_shoot_status = 1;
   mzx_world->bi_mesg_status = 1;
-
-  // And vlayer
-  // Allocate space for vlayer.
-  mzx_world->vlayer_size = 0x8000;
-  mzx_world->vlayer_width = 256;
-  mzx_world->vlayer_height = 128;
-  mzx_world->vlayer_chars = cmalloc(0x8000);
-  mzx_world->vlayer_colors = cmalloc(0x8000);
-  memset(mzx_world->vlayer_chars, 32, 0x8000);
-  memset(mzx_world->vlayer_colors, 7, 0x8000);
 
   // Default values for global params
   memset(mzx_world->keys, NO_KEY, NUM_KEYS);
@@ -2837,6 +2875,7 @@ bool reload_world(struct world *mzx_world, const char *file, int *faded)
   set_palette_intensity(100);
 
   default_sprite_data(mzx_world);
+  default_vlayer(mzx_world);
 
   load_world(mzx_world, zp, fp, file, false, version, name, faded);
   default_global_data(mzx_world);
@@ -2876,6 +2915,7 @@ bool reload_savegame(struct world *mzx_world, const char *file, int *faded)
   }
 
   default_sprite_data(mzx_world);
+  default_vlayer(mzx_world);
 
   // And load the new one
   load_world(mzx_world, zp, fp, file, true, version, NULL, faded);

@@ -55,7 +55,7 @@
 #include "../util.h"
 
 // From world.h
-#define WORLD_VERSION               0x025A
+#define WORLD_VERSION               0x025B
 #define WORLD_LEGACY_FORMAT_VERSION 0x0254
 
 // From const.h (copied here for convenience)

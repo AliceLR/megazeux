@@ -102,7 +102,7 @@ __M_BEGIN_DECLS
  * such as altering semantics or actually changing the binary format, this
  * value MUST be bumped.
  */
-#define WORLD_VERSION      0x025A
+#define WORLD_VERSION      0x025B
 
 /* The world version that worlds will be saved as when Export Downver. World
  * is used from the editor. This function was previously fulfilled by downver,
@@ -113,7 +113,7 @@ __M_BEGIN_DECLS
  * previous value. Therefore, users can always downgrade their work to an
  * older version (if it at all makes sense to do so).
  */
-#define WORLD_VERSION_PREV 0x0254
+#define WORLD_VERSION_PREV 0x025A
 
 // This is the last version of MegaZeux to use the legacy world format.
 #define WORLD_LEGACY_FORMAT_VERSION 0x0254
@@ -123,7 +123,7 @@ __M_BEGIN_DECLS
 #undef  WORLD_VERSION
 #define WORLD_VERSION      0x0300
 #undef  WORLD_VERSION_PREV
-#define WORLD_VERSION_PREV 0x025A
+#define WORLD_VERSION_PREV 0x025B
 #endif
 
 enum val_result
@@ -171,6 +171,7 @@ CORE_LIBSPEC void try_load_world(struct world *mzx_world,
  struct zip_archive **zp, FILE **fp, const char *file, bool savegame,
  int *file_version, char *name);
 
+CORE_LIBSPEC void default_vlayer(struct world *mzx_world);
 CORE_LIBSPEC void default_global_data(struct world *mzx_world);
 
 CORE_LIBSPEC void set_update_done(struct world *mzx_world);

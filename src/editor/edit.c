@@ -4009,13 +4009,14 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
              "Save world", 1))
             {
               debug("Save path: %s\n", world_name);
+
+              // It's now officially WORLD_VERSION
+              mzx_world->version = WORLD_VERSION;
+
               // Save entire game
               strcpy(current_world, world_name);
               strcpy(curr_file, current_world);
               save_world(mzx_world, current_world, 0, WORLD_VERSION);
-
-              // It's now officially WORLD_VERSION
-              mzx_world->version = WORLD_VERSION;
 
               get_path(world_name, new_path, MAX_PATH);
               if(new_path[0])
