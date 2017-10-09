@@ -362,12 +362,13 @@ unsigned int Random(unsigned long long range)
 // FIXME: This function should probably die. It's unsafe.
 void add_ext(char *src, const char *ext)
 {
-  size_t len = strlen(src);
+  size_t src_len = strlen(src);
+  size_t ext_len = strlen(ext);
 
-  if((len < 4) || ((src[len - 4] != '.') && (src[len - 3] != '.')
-   && (src[len - 2] != '.')))
+  if((src_len < ext_len) || (src[src_len - ext_len] != '.') ||
+   strcasecmp(src + src_len - ext_len, ext))
   {
-    strncat(src, ext, 4);
+    strncat(src, ext, ext_len);
   }
 }
 

@@ -238,6 +238,7 @@ CORE_LIBSPEC void update_palette(void);
 CORE_LIBSPEC void set_gui_palette(void);
 CORE_LIBSPEC void load_palette(const char *fname);
 CORE_LIBSPEC void load_palette_mem(char *pal, size_t len);
+CORE_LIBSPEC void load_index_file(const char *fname);
 CORE_LIBSPEC void smzx_palette_loaded(int val);
 CORE_LIBSPEC void set_screen_mode(Uint32 mode);
 CORE_LIBSPEC Uint32 get_screen_mode(void);

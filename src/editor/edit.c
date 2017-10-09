@@ -1775,10 +1775,11 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
   int listening_flag = 0;
 
   const char *mzb_ext[] = { ".MZB", NULL };
+  const char *mzm_ext[] = { ".MZM", NULL };
   const char *sfx_ext[] = { ".SFX", NULL };
   const char *chr_ext[] = { ".CHR", NULL };
   const char *pal_ext[] = { ".PAL", NULL };
-  const char *mzm_ext[] = { ".MZM", NULL };
+  const char *idx_ext[] = { ".PALIDX", NULL };
 
   getcwd(current_listening_dir, MAX_PATH);
 
@@ -3447,7 +3448,6 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
               {
                 // Palette
                 // Character set
-                const char *pal_ext[] = { ".PAL", NULL };
                 if(!choose_file(mzx_world, pal_ext, import_name,
                  "Choose palette to import", 1))
                 {
@@ -3455,13 +3455,23 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                   update_palette();
                   modified = 1;
                 }
+
+                import_name[0] = 0;
+                if((get_screen_mode() == 3) &&
+                 !choose_file(mzx_world, idx_ext, import_name,
+                  "Choose indices to import (.PALIDX)", 1))
+                {
+                  load_index_file(import_name);
+                  update_palette();
+                  modified = 1;
+                }
+
                 break;
               }
 
               case 4:
               {
                 // Sound effects
-                const char *sfx_ext[] = { ".SFX", NULL };
                 if(!choose_file(mzx_world, sfx_ext, import_name,
                  "Choose SFX file to import", 1))
                 {
@@ -3479,7 +3489,6 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
               case 5:
               {
                 // MZM file
-                const char *mzm_ext[] = { ".MZM", NULL };
                 if(!choose_file(mzx_world, mzm_ext,
                  mzm_name_buffer, "Choose image file to import", 1))
                 {
@@ -4302,6 +4311,14 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                  "Export palette", 1))
                 {
                   save_palette(export_name);
+                }
+
+                export_name[0] = 0;
+                if((get_screen_mode() == 3) &&
+                 !new_file(mzx_world, idx_ext, ".palidx", export_name,
+                  "Export indices (.PALIDX)", 1))
+                {
+                  save_index_file(export_name);
                 }
 
                 break;

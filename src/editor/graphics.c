@@ -85,6 +85,26 @@ void save_palette(char *fname)
   }
 }
 
+void save_index_file(char *fname)
+{
+  FILE *idx_file = fopen_unsafe(fname, "wb");
+
+  if(idx_file)
+  {
+    int i;
+
+    for(i = 0; i < SMZX_PAL_SIZE; i++)
+    {
+      fputc(get_smzx_index(i, 0), idx_file);
+      fputc(get_smzx_index(i, 1), idx_file);
+      fputc(get_smzx_index(i, 2), idx_file);
+      fputc(get_smzx_index(i, 3), idx_file);
+    }
+
+    fclose(idx_file);
+  }
+}
+
 void draw_char_mixed_pal(Uint8 chr, Uint8 bg_color, Uint8 fg_color,
  Uint32 x, Uint32 y)
 {

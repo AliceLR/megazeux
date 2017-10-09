@@ -568,6 +568,29 @@ void load_palette_mem(char *pal, size_t len)
   }
 }
 
+void load_index_file(const char *fname)
+{
+  FILE *idx_file;
+  int i;
+
+  if(get_screen_mode() != 3)
+    return;
+
+  idx_file = fopen_unsafe(fname, "rb");
+  if(idx_file)
+  {
+    for(i = 0; i < SMZX_PAL_SIZE; i++)
+    {
+      set_smzx_index(i, 0, fgetc(idx_file));
+      set_smzx_index(i, 1, fgetc(idx_file));
+      set_smzx_index(i, 2, fgetc(idx_file));
+      set_smzx_index(i, 3, fgetc(idx_file));
+    }
+
+    fclose(idx_file);
+  }
+}
+
 void save_indices(void *buffer)
 {
   memcpy(buffer, graphics.smzx_indices, SMZX_PAL_SIZE * 4);

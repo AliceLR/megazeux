@@ -31,6 +31,7 @@ void load_editor_palette(void);
 void save_editor_indices(void);
 void load_editor_indices(void);
 void save_palette(char *fname);
+void save_index_file(char *fname);
 void draw_char_mixed_pal(Uint8 chr, Uint8 bg_color, Uint8 fg_color,
  Uint32 x, Uint32 y);
 void draw_char_linear(Uint8 color, Uint8 chr, Uint32 offset,
