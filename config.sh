@@ -721,14 +721,14 @@ else
 fi
 
 #
-# User may want to compile utils (checkres, txt2hlp)
+# User may want to compile utils (checkres, downver, txt2hlp)
 #
 if [ "$UTILS" = "true" ]; then
-	echo "Building utils (checkres, png2smzx, hlp2txt, txt2hlp)."
+	echo "Building utils (checkres, downver, png2smzx, hlp2txt, txt2hlp)."
 	echo "BUILD_UTILS=1" >> platform.inc
 	echo "#define CONFIG_UTILS" >> src/config.h
 else
-	echo "Disabled utils (checkres, png2smzx, hlp2txt, txt2hlp)."
+	echo "Disabled utils (checkres, downver, png2smzx, hlp2txt, txt2hlp)."
 fi
 
 #

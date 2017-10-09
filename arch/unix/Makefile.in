@@ -56,6 +56,7 @@ endif
 ifeq (${BUILD_UTILS},1)
 	@${install} -m 0755 -d ${DESTDIR}${BINDIR} && \
 	 ${install} -m 0755 ${checkres} ${DESTDIR}${BINDIR}/ && \
+	 ${install} -m 0755 ${downver} ${DESTDIR}${BINDIR}/ && \
 	 ${install} -m 0755 ${hlp2txt} ${DESTDIR}${BINDIR}/ && \
 	 ${install} -m 0755 ${txt2hlp} ${DESTDIR}${BINDIR}/ && \
          ${install} -m 0755 ${ccv} ${DESTDIR}${BINDIR}/

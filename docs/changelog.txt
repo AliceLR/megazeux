@@ -57,6 +57,7 @@ FEATURES
   built-ins placed from thing menus will use the buffer color
   instead of their default colors, and a red dot will appear on
   the right side of the status bar.
++ Readded the downver utility.
 - Removed the undocumented Shift+F7 shortcut in the editor. This
   shortcut was redundant with F11.
 

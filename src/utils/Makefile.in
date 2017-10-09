@@ -2,8 +2,6 @@
 # MegaZeux Utils Makefile fragment
 ##
 
-include contrib/unzip/src/Makefile.in
-
 #
 # FIXME: This whole file is a giant wart on the new build system
 #        and needs some love (and refactoring) to fix it
@@ -20,6 +18,9 @@ checkres := ${utils_src}/checkres${BINEXT}
 checkres_objs := ${utils_obj}/checkres.o ${core_obj}/fsafeopen.o
 checkres_objs += ${core_obj}/util.o ${core_obj}/zip.o
 checkres_ldflags := ${ZLIB_LDFLAGS}
+
+downver := ${utils_src}/downver${BINEXT}
+downver_objs := ${utils_obj}/downver.o
 
 hlp2txt := ${utils_src}/hlp2txt${BINEXT}
 hlp2txt_objs := ${utils_obj}/hlp2txt.o
@@ -41,6 +42,7 @@ ${utils_obj}/%.o: ${utils_src}/%.c
 	  ${ZLIB_CFLAGS} -c $< -o $@
 
 -include $(checkres_objs:.o=.d)
+-include $(downver_objs:.o=.d)
 -include $(hlp2txt_objs:.o=.d)
 -include $(txt2hlp_objs:.o=.d)
 -include $(png2smzx_objs:.o=.d)
@@ -49,6 +51,11 @@ ${checkres}: ${checkres_objs}
 	$(if ${V},,@echo "  LINK    " ${checkres})
 	${CC} ${checkres_objs} -o ${checkres} \
 	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${checkres_ldflags}
+
+${downver}: ${downver_objs}
+	$(if ${V},,@echo "  LINK    " ${downver})
+	${CC} ${downver_objs} -o ${downver} \
+	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS}
 
 ${hlp2txt}: ${hlp2txt_objs}
 	$(if ${V},,@echo "  LINK    " ${hlp2txt})
@@ -72,20 +79,23 @@ ${ccv}: ${ccv_objs}
 
 utils: $(filter-out $(wildcard ${utils_obj}), ${utils_obj})
 
-utils: ${checkres} ${hlp2txt} ${txt2hlp} ${ccv}
+utils: ${checkres} ${downver} ${hlp2txt} ${txt2hlp} ${ccv}
 
 ifeq (${LIBPNG},1)
 utils: ${png2smzx}
+utils.debug: ${png2smzx}.debug
 endif
 
-utils.debug: ${checkres}.debug ${hlp2txt}.debug
-utils.debug: ${txt2hlp}.debug ${png2smzx}.debug
+utils.debug: ${checkres}.debug ${downver}.debug
+utils.debug: ${hlp2txt}.debug ${txt2hlp}.debug
 
-utils_clean: unzip_clean
+utils_clean:
 	$(if ${V},,@echo "  RM      " ${utils_obj})
 	${RM} -r ${utils_obj}
 	$(if ${V},,@echo "  RM      " ${checkres} ${checkres}.debug)
 	${RM} ${checkres} ${checkres}.debug
+	$(if ${V},,@echo "  RM      " ${downver} ${downver}.debug)
+	${RM} ${downver} ${downver}.debug
 	$(if ${V},,@echo "  RM      " ${hlp2txt} ${hlp2txt}.debug)
 	${RM} ${hlp2txt} ${hlp2txt}.debug
 	$(if ${V},,@echo "  RM      " ${txt2hlp} ${txt2hlp}.debug)
