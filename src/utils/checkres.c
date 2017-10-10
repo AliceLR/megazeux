@@ -744,6 +744,7 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
 
         if( match("FREAD_OPEN", 0x0209)
          || match("SMZX_PALETTE", 0x0245)
+         || match("SMZX_INDICES", 0x025B)
          || match("LOAD_COUNTERS", 0x025A)
          || match("LOAD_GAME", 0x0244)
          || match_partial("LOAD_BC", 0x0249)

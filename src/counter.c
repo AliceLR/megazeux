@@ -1696,6 +1696,13 @@ static int smzx_palette_read(struct world *mzx_world,
   return 0;
 }
 
+static int smzx_indices_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  mzx_world->special_counter_return = FOPEN_SMZX_INDICES;
+  return 0;
+}
+
 static void exit_game_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
@@ -2748,6 +2755,7 @@ static const struct function_counter builtin_counters[] =
   { "smzx_b!", 0x0245, smzx_b_read, smzx_b_write },                  // 2.69
   { "smzx_g!", 0x0245, smzx_g_read, smzx_g_write },                  // 2.69
   { "smzx_idx!,!", 0x025A, smzx_idx_read, smzx_idx_write },          // 2.90
+  { "smzx_indices", 0x025B, smzx_indices_read, NULL },               // 2.91
   { "smzx_mode", 0x0245, smzx_mode_read, smzx_mode_write },          // 2.69
   { "smzx_palette", 0x0245, smzx_palette_read, NULL },               // 2.69
   { "smzx_r!", 0x0245, smzx_r_read, smzx_r_write },                  // 2.69
@@ -2958,6 +2966,22 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       if(err == -FSAFE_SUCCESS)
       {
         load_palette(translated_path);
+        pal_update = true;
+      }
+
+      free(translated_path);
+      break;
+    }
+
+    case FOPEN_SMZX_INDICES:
+    {
+      char *translated_path = cmalloc(MAX_PATH);
+      int err;
+
+      err = fsafetranslate(char_value, translated_path);
+      if(err == -FSAFE_SUCCESS)
+      {
+        load_index_file(translated_path);
         pal_update = true;
       }
 
