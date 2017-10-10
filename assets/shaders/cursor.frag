@@ -1,3 +1,5 @@
+#version 110
+
 varying vec3 vColor;
 
 void main(void)
