@@ -36,20 +36,6 @@ static Uint8 ascii_charset[CHAR_SIZE * CHARSET_SIZE];
 static Uint8 blank_charset[CHAR_SIZE * CHARSET_SIZE];
 static Uint8 smzx_charset[CHAR_SIZE * CHARSET_SIZE];
 
-void save_editor_palette(void)
-{
-  if(graphics.screen_mode < 2)
-    memcpy(graphics.editor_backup_palette, graphics.palette,
-     sizeof(struct rgb_color) * SMZX_PAL_SIZE);
-}
-
-void load_editor_palette(void)
-{
-  memcpy(graphics.palette, graphics.editor_backup_palette,
-   sizeof(struct rgb_color) * SMZX_PAL_SIZE);
-  set_gui_palette();
-}
-
 void save_editor_indices(void)
 {
   memcpy(graphics.editor_backup_indices, graphics.smzx_indices,

@@ -177,7 +177,6 @@ struct graphics_data
   void *render_data;
 
 #ifdef CONFIG_EDITOR
-  struct rgb_color editor_backup_palette[SMZX_PAL_SIZE];
   char editor_backup_indices[SMZX_PAL_SIZE * 4];
 #endif
 };

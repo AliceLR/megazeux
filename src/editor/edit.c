@@ -1881,7 +1881,6 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         first_board_prompt = 1;
 
       default_palette();
-      save_editor_palette();
     }
   }
 
@@ -2786,7 +2785,6 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
           if(selected_mode >= 0)
           {
-            save_editor_palette();
             set_screen_mode(selected_mode);
 
             modified = 1;
@@ -4089,7 +4087,6 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             char *return_dir = cmalloc(MAX_PATH);
             getcwd(return_dir, MAX_PATH);
 
-            save_editor_palette();
             vquick_fadeout();
             cursor_off();
 
@@ -4139,7 +4136,6 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
               mzx_world->version = world_version;
             }
 
-            load_editor_palette();
             m_show();
 
             scroll_color = 15;

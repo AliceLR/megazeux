@@ -26,8 +26,6 @@ __M_BEGIN_DECLS
 
 #include "../platform.h"
 
-void save_editor_palette(void);
-void load_editor_palette(void);
 void save_editor_indices(void);
 void load_editor_indices(void);
 void save_palette(char *fname);
