@@ -57,6 +57,10 @@ FEATURES
   built-ins placed from thing menus will use the buffer color
   instead of their default colors, and a red dot will appear on
   the right side of the status bar.
++ Color selection now supports typing in the hex value of a
+  color/subpalette to select the given color/subpalette. For
+  example, typing "4c" will select background color 4 and
+  foreground color 12.
 + Readded the downver utility.
 - Removed the undocumented Shift+F7 shortcut in the editor. This
   shortcut was redundant with F11.

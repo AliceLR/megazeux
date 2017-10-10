@@ -366,6 +366,8 @@ int color_selection(int current, int allow_wild)
   int key;
   int selected;
   int currx, curry;
+  int last_keypress_time = 0;
+  int last_input = 0;
 
   char palette_char = get_screen_mode() ? CHAR_PAL_SMZX : CHAR_PAL_REG;
 
@@ -608,6 +610,46 @@ int color_selection(int current, int allow_wild)
 
       default:
       {
+        int value = -1;
+
+        if(key >= IKEY_0 && key <= IKEY_9)
+        {
+          value = key - IKEY_0;
+        }
+        else
+
+        if(key >= IKEY_a && key <= IKEY_f)
+        {
+          value = 10 + (key - IKEY_a);
+        }
+
+        if(key == IKEY_SLASH && allow_wild)
+          value = 16;
+
+        if(value >= 0)
+        {
+          int ticks = get_ticks();
+          if(ticks - last_keypress_time >= TIME_SUSPEND)
+          {
+            last_input = 0;
+            currx = 0;
+            curry = 0;
+          }
+
+          switch(last_input)
+          {
+            case 0:
+              curry = value;
+              break;
+
+            case 1:
+              currx = value;
+              break;
+          }
+
+          last_keypress_time = ticks;
+          last_input++;
+        }
         break;
       }
     }
