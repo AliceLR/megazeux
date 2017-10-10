@@ -15,12 +15,13 @@ utils_obj = src/utils/.build
 utils_cflags := ${LIBPNG_CFLAGS}
 
 checkres := ${utils_src}/checkres${BINEXT}
-checkres_objs := ${utils_obj}/checkres.o ${core_obj}/fsafeopen.o
-checkres_objs += ${core_obj}/util.o ${core_obj}/zip.o
+checkres_objs := ${utils_obj}/checkres.o ${core_obj}/fsafeopen.o \
+                 ${core_obj}/zip.o
 checkres_ldflags := ${ZLIB_LDFLAGS}
 
 downver := ${utils_src}/downver${BINEXT}
-downver_objs := ${utils_obj}/downver.o
+downver_objs := ${utils_obj}/downver.o ${core_obj}/zip.o
+downver_ldflags := ${ZLIB_LDFLAGS}
 
 hlp2txt := ${utils_src}/hlp2txt${BINEXT}
 hlp2txt_objs := ${utils_obj}/hlp2txt.o
@@ -55,7 +56,7 @@ ${checkres}: ${checkres_objs}
 ${downver}: ${downver_objs}
 	$(if ${V},,@echo "  LINK    " ${downver})
 	${CC} ${downver_objs} -o ${downver} \
-	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS}
+	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${downver_ldflags}
 
 ${hlp2txt}: ${hlp2txt_objs}
 	$(if ${V},,@echo "  LINK    " ${hlp2txt})

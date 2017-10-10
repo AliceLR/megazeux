@@ -527,6 +527,9 @@ err_free:
   return VAL_INVALID;
 }
 
+#define if_savegame         if(!savegame) { break; }
+#define if_savegame_or_291  if(!savegame && *file_version < 0x025B) { break; }
+
 static inline void load_world_info(struct world *mzx_world,
  struct zip_archive *zp, int savegame, int *file_version, int *faded)
 {
@@ -692,20 +695,25 @@ static inline void load_world_info(struct world *mzx_world,
 
       // Global properties II
       case WPROP_SMZX_MODE:
+        if_savegame_or_291
         set_screen_mode(load_prop_int(size, prop));
         break;
 
       case WPROP_VLAYER_WIDTH:
+        if_savegame_or_291
         mzx_world->vlayer_width = load_prop_int(size, prop);
         break;
 
       case WPROP_VLAYER_HEIGHT:
+        if_savegame_or_291
         mzx_world->vlayer_height = load_prop_int(size, prop);
         break;
 
       case WPROP_VLAYER_SIZE:
       {
         unsigned int vlayer_size;
+        if_savegame_or_291
+
         vlayer_size = load_prop_int(size, prop);
         vlayer_size = MAX(1, vlayer_size);
 
@@ -727,28 +735,34 @@ static inline void load_world_info(struct world *mzx_world,
 
       // Save properties
       case WPROP_REAL_MOD_PLAYING:
+        if_savegame
         size = MIN(size, MAX_PATH-1);
         mfread(mzx_world->real_mod_playing, size, 1, prop);
         mzx_world->real_mod_playing[size] = 0;
         break;
 
       case WPROP_MZX_SPEED:
+        if_savegame
         mzx_world->mzx_speed = load_prop_int(size, prop);
         break;
 
       case WPROP_LOCK_SPEED:
+        if_savegame
         mzx_world->lock_speed = load_prop_int(size, prop);
         break;
 
       case WPROP_COMMANDS:
+        if_savegame
         mzx_world->commands = load_prop_int(size, prop);
         break;
 
       case WPROP_COMMANDS_STOP:
+        if_savegame
         mzx_world->commands_stop = load_prop_int(size, prop);
         break;
 
       case WPROP_SAVED_POSITIONS:
+        if_savegame
         if(size >= 40)
         {
           for(i = 0; i < 8; i++)
@@ -761,6 +775,7 @@ static inline void load_world_info(struct world *mzx_world,
         break;
 
       case WPROP_UNDER_PLAYER:
+        if_savegame
         if(size >= 3)
         {
           mzx_world->under_player_id = mfgetc(prop);
@@ -770,114 +785,141 @@ static inline void load_world_info(struct world *mzx_world,
         break;
 
       case WPROP_PLAYER_RESTART_X:
+        if_savegame
         mzx_world->player_restart_x = load_prop_int(size, prop);
         break;
 
       case WPROP_PLAYER_RESTART_Y:
+        if_savegame
         mzx_world->player_restart_y = load_prop_int(size, prop);
         break;
 
       case WPROP_SAVED_PL_COLOR:
+        if_savegame
         mzx_world->saved_pl_color = load_prop_int(size, prop);
         break;
 
       case WPROP_KEYS:
+        if_savegame
         mfread(mzx_world->keys, NUM_KEYS, 1, prop);
         break;
 
       case WPROP_BLIND_DUR:
+        if_savegame
         mzx_world->blind_dur = load_prop_int(size, prop);
         break;
 
       case WPROP_FIREWALKER_DUR:
+        if_savegame
         mzx_world->firewalker_dur = load_prop_int(size, prop);
         break;
 
       case WPROP_FREEZE_TIME_DUR:
+        if_savegame
         mzx_world->freeze_time_dur = load_prop_int(size, prop);
         break;
 
       case WPROP_SLOW_TIME_DUR:
+        if_savegame
         mzx_world->slow_time_dur = load_prop_int(size, prop);
         break;
 
       case WPROP_WIND_DUR:
+        if_savegame
         mzx_world->wind_dur = load_prop_int(size, prop);
         break;
 
       case WPROP_SCROLL_BASE_COLOR:
+        if_savegame
         mzx_world->scroll_base_color = load_prop_int(size, prop);
         break;
 
       case WPROP_SCROLL_CORNER_COLOR:
+        if_savegame
         mzx_world->scroll_corner_color = load_prop_int(size, prop);
         break;
 
       case WPROP_SCROLL_POINTER_COLOR:
+        if_savegame
         mzx_world->scroll_pointer_color = load_prop_int(size, prop);
         break;
 
       case WPROP_SCROLL_TITLE_COLOR:
+        if_savegame
         mzx_world->scroll_title_color = load_prop_int(size, prop);
         break;
 
       case WPROP_SCROLL_ARROW_COLOR:
+        if_savegame
         mzx_world->scroll_arrow_color = load_prop_int(size, prop);
         break;
 
       case WPROP_MESG_EDGES:
+        if_savegame
         mzx_world->mesg_edges = load_prop_int(size, prop);
         break;
 
       case WPROP_BI_SHOOT_STATUS:
+        if_savegame
         mzx_world->bi_shoot_status = load_prop_int(size, prop);
         break;
 
       case WPROP_BI_MESG_STATUS:
+        if_savegame
         mzx_world->bi_mesg_status = load_prop_int(size, prop);
         break;
 
       case WPROP_FADED:
+        if_savegame
         *faded = load_prop_int(size, prop);
         break;
 
       case WPROP_INPUT_FILE_NAME:
+        if_savegame
         size = MIN(size, MAX_PATH - 1);
         mfread(mzx_world->input_file_name, size, 1, prop);
         mzx_world->input_file_name[size] = 0;
         break;
 
       case WPROP_INPUT_POS:
+        if_savegame
         mzx_world->temp_input_pos = load_prop_int(size, prop);
         break;
 
       case WPROP_FREAD_DELIMITER:
+        if_savegame
         mzx_world->fread_delimiter = load_prop_int(size, prop);
         break;
 
       case WPROP_OUTPUT_FILE_NAME:
+        if_savegame
         size = MIN(size, MAX_PATH - 1);
         mfread(mzx_world->output_file_name, size, 1, prop);
         mzx_world->output_file_name[size] = 0;
         break;
 
       case WPROP_OUTPUT_POS:
+        if_savegame
         mzx_world->temp_output_pos = load_prop_int(size, prop);
         break;
 
       case WPROP_FWRITE_DELIMITER:
+        if_savegame
         mzx_world->fwrite_delimiter = load_prop_int(size, prop);
         break;
 
       case WPROP_MULTIPLIER:
+        if_savegame
         mzx_world->multiplier = load_prop_int(size, prop);
         break;
 
       case WPROP_DIVIDER:
+        if_savegame
         mzx_world->divider = load_prop_int(size, prop);
         break;
 
       case WPROP_C_DIVISIONS:
+        if_savegame
         mzx_world->c_divisions = load_prop_int(size, prop);
         break;
 
@@ -1873,6 +1915,8 @@ static int save_world_zip(struct world *mzx_world, const char *file,
   return 0;
 }
 
+#undef if_savegame
+#undef if_savegame_or_291
 
 #define if_savegame         if(!savegame) { zip_skip_file(zp); break; }
 #define if_savegame_or_291  if(!savegame && mzx_world->version < 0x025B) \

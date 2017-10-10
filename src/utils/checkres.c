@@ -54,6 +54,9 @@
 #include "../fsafeopen.h"
 #include "../util.h"
 
+// Set up non-core check alloc functions
+#include "checkalloc.h"
+
 // From world.h
 #define WORLD_VERSION               0x025B
 #define WORLD_LEGACY_FORMAT_VERSION 0x0254
@@ -127,49 +130,6 @@ static const char *decode_status(enum status status)
     default:
       return "Unknown error.";
   }
-}
-
-// FIXME: hack to prevent error.c messages from triggering.
-int error(const char *string, unsigned int type, unsigned int options,
- unsigned int code)
-{
-  char *head;
-
-  switch(type)
-  {
-    case 0:
-      head = "WARNING";
-      break;
-
-    case 1:
-      head = "ERROR";
-      break;
-
-    case 2:
-      head = "FATAL ERROR";
-      break;
-
-    case 3:
-      head = "CRITICAL ERROR";
-      break;
-
-    default:
-      head = "<UNKNOWN ERROR>";
-      break;
-  }
-
-  fprintf(stderr, "%s: %s (code %Xh)\n", head, string, code);
-  fflush(stderr);
-  return 0;
-}
-
-int error_message(int id, int parameter,
- const char *string)
-{
-  char buffer[128] = {0};
-  snprintf(buffer, 127, "ID %Xh :: %d :: %s", id, parameter,
-   string);
-  return error(buffer, 1, 0, 0xFFFF);
 }
 
 static void _get_path(char *dest, const char *src)

@@ -24,6 +24,7 @@
 
 __M_BEGIN_DECLS
 
+#include <stdlib.h>
 #include <string.h>
 
 struct memfile
@@ -62,9 +63,28 @@ static inline int mfclose(struct memfile *mf)
   return -1;
 }
 
+static inline void mfsync(void **src, size_t *len,
+ struct memfile *mf)
+{
+  *src = mf->start;
+  *len = (mf->end - mf->start);
+}
+
 static inline int mfhasspace(size_t len, struct memfile *mf)
 {
   return (len + mf->current) <= mf->end;
+}
+
+static inline void mfresize(size_t len, struct memfile *mf)
+{
+  size_t pos = mf->current - mf->start;
+
+  mf->start = realloc(mf->start, len);
+  mf->current = mf->start + pos;
+  mf->end = mf->start + len;
+
+  if(mf->current > mf->end)
+    mf->current = mf->end;
 }
 
 static inline int mfgetc(struct memfile *mf)
