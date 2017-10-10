@@ -784,30 +784,74 @@ void update_screen(void)
     Uint32 cursor_solid = 0xFFFFFFFF;
     Uint32 *char_offset = (Uint32 *)(graphics.charset +
      (cursor_char * CHAR_SIZE));
+    Uint32 fg_color = cursor_element->fg_color;
     Uint32 bg_color = cursor_element->bg_color;
+    bool use_protected = false;
 
     // Choose FG
-    cursor_color = cursor_element->fg_color;
+    cursor_color = fg_color;
 
-    // See if the cursor char is completely solid or completely empty
-    for(i = 0; i < 3; i++)
+    if(fg_color != bg_color)
     {
-      cursor_solid &= *char_offset;
-      char_offset++;
-    }
-    cursor_solid &= (*((Uint16 *)char_offset)) | 0xFFFF0000;
-    if(cursor_solid == 0xFFFFFFFF)
-    {
-      // But wait! What if the background is the same as the foreground?
-      // If so, use +8 instead.
-      if(bg_color == cursor_color)
-        cursor_color = bg_color ^ 8;
-      else
+      // See if the cursor char is completely solid
+      for(i = 0; i < 3; i++)
+      {
+        cursor_solid &= *char_offset;
+        char_offset++;
+      }
+      cursor_solid &= (*((Uint16 *)char_offset)) | 0xFFFF0000;
+
+      if(cursor_solid == 0xFFFFFFFF)
         cursor_color = bg_color;
     }
     else
-      if(bg_color == cursor_color)
-        cursor_color = cursor_color ^ 8;
+    {
+      /*
+      // Shift by 8 if the background is the same as the foreground
+      cursor_color = cursor_color ^ 8;
+      */
+      use_protected = true;
+    }
+
+    if(graphics.screen_mode && !use_protected)
+    {
+      if(graphics.screen_mode >= 2)
+        use_protected = true;
+
+      else
+        cursor_color = (cursor_color << 4) | (cursor_color & 0x0F);
+      /*
+      if(graphics.screen_mode != 3)
+        cursor_color = (cursor_color << 4) | (cursor_color & 0x0F);
+      else
+        cursor_color = ((bg_color << 4) | (cursor_color & 0x0F)) + 3;
+      */
+    }
+
+    // FIXME need 16-bit cursor_color
+    if(use_protected)
+    {
+      float sum = 0;
+
+      if(graphics.screen_mode >= 2)
+      {
+        // 4 colors
+      }
+      else
+      {
+        sum += graphics.palette[bg_color].r * .30;
+        sum += graphics.palette[bg_color].g * .59;
+        sum += graphics.palette[bg_color].b * .11;
+        sum += graphics.palette[fg_color].r * .30;
+        sum += graphics.palette[fg_color].g * .59;
+        sum += graphics.palette[fg_color].b * .11;
+
+        if(sum < 256)
+          cursor_color = graphics.protected_pal_position + 15;
+        else
+          cursor_color = graphics.protected_pal_position;
+      }
+    }
 
     switch(graphics.cursor_mode)
     {
@@ -821,14 +865,6 @@ void update_screen(void)
         break;
       case cursor_mode_invisible:
         break;
-    }
-
-    if(graphics.screen_mode)
-    {
-      if(graphics.screen_mode != 3)
-        cursor_color = (cursor_color << 4) | (cursor_color & 0x0F);
-      else
-        cursor_color = ((bg_color << 4) | (cursor_color & 0x0F)) + 3;
     }
 
     graphics.renderer.render_cursor(&graphics,
