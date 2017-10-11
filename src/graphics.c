@@ -885,7 +885,7 @@ void update_screen(void)
       else
       {
         if(fg_luma + bg_luma < 256)
-           cursor_color |= 0x0F;
+          cursor_color |= 0x0F;
       }
     }
 
