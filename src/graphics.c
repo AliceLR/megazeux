@@ -766,20 +766,29 @@ void update_screen(void)
     graphics.cursor_timestamp = ticks;
   }
 
-  if ((graphics.requires_extended || !graphics.renderer.render_graph) && graphics.renderer.render_layer) {
-    for (layer = 0; layer < graphics.layer_count; layer++)
+  if((graphics.requires_extended || !graphics.renderer.render_graph)
+   && graphics.renderer.render_layer)
+  {
+    for(layer = 0; layer < graphics.layer_count; layer++)
     {
       graphics.sorted_video_layers[layer] = &graphics.video_layers[layer];
     }
-    qsort(graphics.sorted_video_layers, graphics.layer_count, sizeof(struct video_layer *), compare_layers);
-    for (layer = 0; layer < graphics.layer_count; layer++)
+
+    qsort(graphics.sorted_video_layers, graphics.layer_count,
+     sizeof(struct video_layer *), compare_layers);
+
+    for(layer = 0; layer < graphics.layer_count; layer++)
     {
-      graphics.renderer.render_layer(&graphics, graphics.sorted_video_layers[layer]);
+      graphics.renderer.render_layer(&graphics,
+       graphics.sorted_video_layers[layer]);
     }
-  } else {
+  }
+  else
+  {
     // Fallback if the layer renderer is unavailable or unnecessary
     graphics.renderer.render_graph(&graphics);
   }
+
   if(graphics.cursor_flipflop &&
    (graphics.cursor_mode != cursor_mode_invisible))
   {
@@ -897,6 +906,7 @@ void update_screen(void)
     graphics.renderer.render_cursor(&graphics,
      graphics.cursor_x, graphics.cursor_y, cursor_color, lines, offset);
   }
+
   if(graphics.mouse_status)
   {
     int mouse_x, mouse_y;
@@ -908,6 +918,7 @@ void update_screen(void)
     graphics.renderer.render_mouse(&graphics, mouse_x, mouse_y,
      graphics.mouse_width_mul, graphics.mouse_height_mul);
   }
+
   graphics.renderer.sync_screen(&graphics);
 }
 
