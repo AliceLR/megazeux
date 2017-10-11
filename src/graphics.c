@@ -507,6 +507,15 @@ Uint32 get_blue_component(Uint32 color)
   return ((graphics.palette[color].b * 126) + 255) / 510;
 }
 
+Uint32 get_color_luma(Uint32 color)
+{
+  int r = graphics.palette[color].r;
+  int g = graphics.palette[color].g;
+  int b = graphics.palette[color].b;
+
+  return (Uint32)((r * .299) + (g * .587) + (b * .114) + .5);
+}
+
 void load_palette(const char *fname)
 {
   int file_size, i, r, g, b;
@@ -776,7 +785,7 @@ void update_screen(void)
   {
     struct char_element *cursor_element =
      graphics.text_video + graphics.cursor_x + (graphics.cursor_y * SCREEN_W);
-    Uint8 cursor_color;
+    Uint16 cursor_color;
     Uint32 cursor_char = cursor_element->char_value;
     Uint32 lines = 0;
     Uint32 offset = 0;
@@ -786,70 +795,88 @@ void update_screen(void)
      (cursor_char * CHAR_SIZE));
     Uint32 fg_color = cursor_element->fg_color;
     Uint32 bg_color = cursor_element->bg_color;
+    int fg_luma = get_color_luma(fg_color);
+    int bg_luma = get_color_luma(bg_color);
     bool use_protected = false;
 
     // Choose FG
     cursor_color = fg_color;
 
-    if(fg_color != bg_color)
+    if(fg_color < 0x10 && bg_color < 0x10)
     {
-      // See if the cursor char is completely solid
-      for(i = 0; i < 3; i++)
-      {
-        cursor_solid &= *char_offset;
-        char_offset++;
-      }
-      cursor_solid &= (*((Uint16 *)char_offset)) | 0xFFFF0000;
-
-      if(cursor_solid == 0xFFFFFFFF)
-        cursor_color = bg_color;
-    }
-    else
-    {
-      /*
-      // Shift by 8 if the background is the same as the foreground
-      cursor_color = cursor_color ^ 8;
-      */
-      use_protected = true;
-    }
-
-    if(graphics.screen_mode && !use_protected)
-    {
-      if(graphics.screen_mode >= 2)
+      // If the fg and bg colors are close in brightness or the same color,
+      // neither color fits well, so choose a protected palette color.
+      if(abs(fg_luma - bg_luma) < 32)
         use_protected = true;
-
-      else
-        cursor_color = (cursor_color << 4) | (cursor_color & 0x0F);
-      /*
-      if(graphics.screen_mode != 3)
-        cursor_color = (cursor_color << 4) | (cursor_color & 0x0F);
-      else
-        cursor_color = ((bg_color << 4) | (cursor_color & 0x0F)) + 3;
-      */
     }
 
-    // FIXME need 16-bit cursor_color
+    // If the char under the cursor is completely solid, use the background
+    for(i = 0; i < 3; i++)
+    {
+      cursor_solid &= *char_offset;
+      char_offset++;
+    }
+    cursor_solid &= (*((Uint16 *)char_offset)) | 0xFFFF0000;
+
+    if(cursor_solid == 0xFFFFFFFF)
+      cursor_color = bg_color;
+
+    // Protected colors- use white or black
+    if(cursor_color >= 0x10)
+    {
+      if(cursor_color >= 0x19)
+        cursor_color = 0x1F;
+
+      else
+        cursor_color = 0x10;
+    }
+
+    if(graphics.screen_mode)
+    {
+      if(cursor_color >= 0x10)
+      {
+        // Protected? Adjust offset
+        cursor_color =
+         graphics.protected_pal_position + (cursor_color & 0x0F);
+      }
+      else
+
+      if(graphics.screen_mode == 1)
+      {
+        // Mode 1 picks the equivalent color on the diagonal
+        cursor_color = (cursor_color << 4) | (cursor_color & 0x0F);
+      }
+
+      else
+      {
+        // Modes 2 and 3 have no reliable options otherwise
+        use_protected = true;
+      }
+    }
+
     if(use_protected)
     {
+      // If the lumas average under half intensity, use white, otherwise black
       float sum = 0;
+      cursor_color = graphics.protected_pal_position;
 
       if(graphics.screen_mode >= 2)
       {
-        // 4 colors
+        bg_color &= 0x0F;
+        fg_color &= 0x0F;
+
+        sum += get_color_luma((bg_color << 4) | bg_color);
+        sum += get_color_luma((fg_color << 4) | bg_color);
+        sum += get_color_luma((bg_color << 4) | fg_color);
+        sum += get_color_luma((fg_color << 4) | fg_color);
+
+        if(sum < 512)
+          cursor_color |= 0x0F;
       }
       else
       {
-        sum += graphics.palette[bg_color].r * .30;
-        sum += graphics.palette[bg_color].g * .59;
-        sum += graphics.palette[bg_color].b * .11;
-        sum += graphics.palette[fg_color].r * .30;
-        sum += graphics.palette[fg_color].g * .59;
-        sum += graphics.palette[fg_color].b * .11;
-
-        if(sum < 256)
-          cursor_color = graphics.protected_pal_position + 15;
-        else
-          cursor_color = graphics.protected_pal_position;
+        if(fg_luma + bg_luma < 256)
+           cursor_color |= 0x0F;
       }
     }
 
