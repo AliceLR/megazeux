@@ -143,7 +143,7 @@ static void soft_render_graph(struct graphics_data *graphics)
 }
 
 static void soft_render_cursor(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint8 color, Uint8 lines, Uint8 offset)
+ Uint32 x, Uint32 y, Uint16 color, Uint8 lines, Uint8 offset)
 {
   struct sdl_render_data *render_data = graphics->render_data;
   SDL_Surface *screen = soft_get_screen_surface(render_data);
@@ -157,9 +157,14 @@ static void soft_render_cursor(struct graphics_data *graphics,
   pixels += (screen->w - 640) * bpp / 64;
 
   if(bpp == 8)
+  {
+    color &= 0xFF;
     flatcolor = (color << 24) | (color << 16) | (color << 8) | color;
+  }
   else
+  {
     flatcolor = graphics->flat_intensity_palette[color];
+  }
 
   if(bpp == 16)
     flatcolor |= flatcolor << 16;

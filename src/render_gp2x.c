@@ -293,7 +293,7 @@ static void gp2x_render_graph(struct graphics_data *graphics)
 }
 
 static void gp2x_render_cursor(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint8 color, Uint8 lines, Uint8 offset)
+ Uint32 x, Uint32 y, Uint16 color, Uint8 lines, Uint8 offset)
 {
   struct gp2x_render_data *render_data = graphics->render_data;
   Uint32 flatcolor = graphics->flat_intensity_palette[color];

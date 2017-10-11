@@ -284,7 +284,7 @@ static void gl1_render_layer(struct graphics_data *graphics, struct video_layer 
 }
 
 static void gl1_render_cursor(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint8 color, Uint8 lines, Uint8 offset)
+ Uint32 x, Uint32 y, Uint16 color, Uint8 lines, Uint8 offset)
 {
   struct gl1_render_data *render_data = graphics->render_data;
 

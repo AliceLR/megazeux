@@ -1156,9 +1156,6 @@ static void palette_editor_update_window_16(struct color_status *current,
   unsigned int bg_color;
   unsigned int fg_color;
   unsigned int chr;
-  unsigned char r;
-  unsigned char g;
-  unsigned char b;
   int i;
   int x;
   int y;
@@ -1169,11 +1166,9 @@ static void palette_editor_update_window_16(struct color_status *current,
     x = bg_color * 2 + content_x;
     y = content_y;
 
-    get_rgb(bg_color, &r, &g, &b);
-
     // The foreground color is white or black in the protected palette.
 
-    fg_color = ((r * .3) + (g * .59) + (b * .11) < 32) ? 31 : 16;
+    fg_color = (get_color_luma(bg_color) < 128) ? 31 : 16;
 
     select_layer(OVERLAY_LAYER);
 

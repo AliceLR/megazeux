@@ -507,6 +507,15 @@ Uint32 get_blue_component(Uint32 color)
   return ((graphics.palette[color].b * 126) + 255) / 510;
 }
 
+Uint32 get_color_luma(Uint32 color)
+{
+  int r = graphics.palette[color].r;
+  int g = graphics.palette[color].g;
+  int b = graphics.palette[color].b;
+
+  return (Uint32)((r * .299) + (g * .587) + (b * .114) + .5);
+}
+
 void load_palette(const char *fname)
 {
   int file_size, i, r, g, b;
@@ -757,26 +766,35 @@ void update_screen(void)
     graphics.cursor_timestamp = ticks;
   }
 
-  if ((graphics.requires_extended || !graphics.renderer.render_graph) && graphics.renderer.render_layer) {
-    for (layer = 0; layer < graphics.layer_count; layer++)
+  if((graphics.requires_extended || !graphics.renderer.render_graph)
+   && graphics.renderer.render_layer)
+  {
+    for(layer = 0; layer < graphics.layer_count; layer++)
     {
       graphics.sorted_video_layers[layer] = &graphics.video_layers[layer];
     }
-    qsort(graphics.sorted_video_layers, graphics.layer_count, sizeof(struct video_layer *), compare_layers);
-    for (layer = 0; layer < graphics.layer_count; layer++)
+
+    qsort(graphics.sorted_video_layers, graphics.layer_count,
+     sizeof(struct video_layer *), compare_layers);
+
+    for(layer = 0; layer < graphics.layer_count; layer++)
     {
-      graphics.renderer.render_layer(&graphics, graphics.sorted_video_layers[layer]);
+      graphics.renderer.render_layer(&graphics,
+       graphics.sorted_video_layers[layer]);
     }
-  } else {
+  }
+  else
+  {
     // Fallback if the layer renderer is unavailable or unnecessary
     graphics.renderer.render_graph(&graphics);
   }
+
   if(graphics.cursor_flipflop &&
    (graphics.cursor_mode != cursor_mode_invisible))
   {
     struct char_element *cursor_element =
      graphics.text_video + graphics.cursor_x + (graphics.cursor_y * SCREEN_W);
-    Uint8 cursor_color;
+    Uint16 cursor_color;
     Uint32 cursor_char = cursor_element->char_value;
     Uint32 lines = 0;
     Uint32 offset = 0;
@@ -784,30 +802,92 @@ void update_screen(void)
     Uint32 cursor_solid = 0xFFFFFFFF;
     Uint32 *char_offset = (Uint32 *)(graphics.charset +
      (cursor_char * CHAR_SIZE));
+    Uint32 fg_color = cursor_element->fg_color;
     Uint32 bg_color = cursor_element->bg_color;
+    int fg_luma = get_color_luma(fg_color);
+    int bg_luma = get_color_luma(bg_color);
+    bool use_protected = false;
 
     // Choose FG
-    cursor_color = cursor_element->fg_color;
+    cursor_color = fg_color;
 
-    // See if the cursor char is completely solid or completely empty
+    if(fg_color < 0x10 && bg_color < 0x10)
+    {
+      // If the fg and bg colors are close in brightness or the same color,
+      // neither color fits well, so choose a protected palette color.
+      if(abs(fg_luma - bg_luma) < 32)
+        use_protected = true;
+    }
+
+    // If the char under the cursor is completely solid, use the background
     for(i = 0; i < 3; i++)
     {
       cursor_solid &= *char_offset;
       char_offset++;
     }
     cursor_solid &= (*((Uint16 *)char_offset)) | 0xFFFF0000;
+
     if(cursor_solid == 0xFFFFFFFF)
+      cursor_color = bg_color;
+
+    // Protected colors- use white or black
+    if(cursor_color >= 0x10)
     {
-      // But wait! What if the background is the same as the foreground?
-      // If so, use +8 instead.
-      if(bg_color == cursor_color)
-        cursor_color = bg_color ^ 8;
+      if(cursor_color >= 0x19)
+        cursor_color = 0x1F;
+
       else
-        cursor_color = bg_color;
+        cursor_color = 0x10;
     }
-    else
-      if(bg_color == cursor_color)
-        cursor_color = cursor_color ^ 8;
+
+    if(graphics.screen_mode)
+    {
+      if(cursor_color >= 0x10)
+      {
+        // Protected? Adjust offset
+        cursor_color =
+         graphics.protected_pal_position + (cursor_color & 0x0F);
+      }
+      else
+
+      if(graphics.screen_mode == 1)
+      {
+        // Mode 1 picks the equivalent color on the diagonal
+        cursor_color = (cursor_color << 4) | (cursor_color & 0x0F);
+      }
+
+      else
+      {
+        // Modes 2 and 3 have no reliable options otherwise
+        use_protected = true;
+      }
+    }
+
+    if(use_protected)
+    {
+      // If the lumas average under half intensity, use white, otherwise black
+      float sum = 0;
+      cursor_color = graphics.protected_pal_position;
+
+      if(graphics.screen_mode >= 2)
+      {
+        bg_color &= 0x0F;
+        fg_color &= 0x0F;
+
+        sum += get_color_luma((bg_color << 4) | bg_color);
+        sum += get_color_luma((fg_color << 4) | bg_color);
+        sum += get_color_luma((bg_color << 4) | fg_color);
+        sum += get_color_luma((fg_color << 4) | fg_color);
+
+        if(sum < 512)
+          cursor_color |= 0x0F;
+      }
+      else
+      {
+        if(fg_luma + bg_luma < 256)
+          cursor_color |= 0x0F;
+      }
+    }
 
     switch(graphics.cursor_mode)
     {
@@ -823,17 +903,10 @@ void update_screen(void)
         break;
     }
 
-    if(graphics.screen_mode)
-    {
-      if(graphics.screen_mode != 3)
-        cursor_color = (cursor_color << 4) | (cursor_color & 0x0F);
-      else
-        cursor_color = ((bg_color << 4) | (cursor_color & 0x0F)) + 3;
-    }
-
     graphics.renderer.render_cursor(&graphics,
      graphics.cursor_x, graphics.cursor_y, cursor_color, lines, offset);
   }
+
   if(graphics.mouse_status)
   {
     int mouse_x, mouse_y;
@@ -845,6 +918,7 @@ void update_screen(void)
     graphics.renderer.render_mouse(&graphics, mouse_x, mouse_y,
      graphics.mouse_width_mul, graphics.mouse_height_mul);
   }
+
   graphics.renderer.sync_screen(&graphics);
 }
 

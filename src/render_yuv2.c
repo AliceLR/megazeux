@@ -73,11 +73,15 @@ static void yuv2_render_graph(struct graphics_data *graphics)
 }
 
 static void yuv2_render_cursor(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint8 color, Uint8 lines, Uint8 offset)
+ Uint32 x, Uint32 y, Uint16 color, Uint8 lines, Uint8 offset)
 {
   struct yuv_render_data *render_data = graphics->render_data;
   Uint32 *pixels;
   int pitch;
+
+  // FIXME no layer support
+  color &= 0xFF;
+  // end FIXME
 
   yuv_lock_overlay(render_data);
 

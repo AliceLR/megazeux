@@ -107,7 +107,7 @@ struct renderer
   void (*switch_shader)    (struct graphics_data *, const char *v, const char *f);
   void (*render_graph)     (struct graphics_data *);
   void (*render_layer)     (struct graphics_data *, struct video_layer *);
-  void (*render_cursor)    (struct graphics_data *, Uint32, Uint32, Uint8,
+  void (*render_cursor)    (struct graphics_data *, Uint32, Uint32, Uint16,
                              Uint8, Uint8);
   void (*render_mouse)     (struct graphics_data *, Uint32, Uint32, Uint8,
                              Uint8);
@@ -253,6 +253,7 @@ CORE_LIBSPEC void get_rgb(Uint32 color, Uint8 *r, Uint8 *g, Uint8 *b);
 CORE_LIBSPEC Uint32 get_red_component(Uint32 color);
 CORE_LIBSPEC Uint32 get_green_component(Uint32 color);
 CORE_LIBSPEC Uint32 get_blue_component(Uint32 color);
+CORE_LIBSPEC Uint32 get_color_luma(Uint32 color);
 CORE_LIBSPEC void vquick_fadeout(void);
 CORE_LIBSPEC void insta_fadein(void);
 CORE_LIBSPEC void insta_fadeout(void);
