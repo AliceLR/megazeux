@@ -36,7 +36,9 @@ struct xmp_stream
   struct sampled_stream s;
   xmp_context ctx;
   int row_tbl[XMP_MAX_MOD_LENGTH];
-  Uint32 effective_frequency, repeat;
+  Uint32 effective_frequency;
+  Uint32 total_rows;
+  Uint32 repeat;
 };
 
 static int xmp_resample_mode;
@@ -67,7 +69,8 @@ static Uint32 audio_xmp_mix_data(struct audio_stream *a_src, Sint32 *buffer,
 static void audio_xmp_set_volume(struct audio_stream *a_src, Uint32 volume)
 {
   a_src->volume = volume;
-  xmp_set_player(((struct xmp_stream *)a_src)->ctx, XMP_PLAYER_VOLUME, volume * 100 / 255);
+  xmp_set_player(((struct xmp_stream *)a_src)->ctx, XMP_PLAYER_VOLUME,
+   volume * 100 / 255);
 }
 
 static void audio_xmp_set_repeat(struct audio_stream *a_src, Uint32 repeat)
@@ -80,8 +83,8 @@ static void audio_xmp_set_position(struct audio_stream *a_src, Uint32 position)
   struct xmp_frame_info info;
   int i;
   xmp_get_frame_info(((struct xmp_stream *)a_src)->ctx, &info);
-  // FIXME: xmp does not have a way to set the position accurately. Here, we try to
-  // narrow it down to the nearest order.
+  // FIXME: xmp does not have a way to set the position accurately. Here, we try
+  // to narrow it down to the nearest order.
   for (i = 1; i < XMP_MAX_MOD_LENGTH; i++)
     if ((Uint32) ((struct xmp_stream *)a_src)->row_tbl[i] > position)
     {
@@ -96,7 +99,8 @@ static void audio_xmp_set_order(struct audio_stream *a_src, Uint32 order)
   xmp_set_position(((struct xmp_stream *)a_src)->ctx, order);
 }
 
-static void audio_xmp_set_frequency(struct sampled_stream *s_src, Uint32 frequency)
+static void audio_xmp_set_frequency(struct sampled_stream *s_src,
+ Uint32 frequency)
 {
   if(frequency == 0)
   {
@@ -120,6 +124,13 @@ static Uint32 audio_xmp_get_position(struct audio_stream *a_src)
   struct xmp_frame_info info;
   xmp_get_frame_info(((struct xmp_stream *)a_src)->ctx, &info);
   return ((struct xmp_stream *)a_src)->row_tbl[info.pos] + info.row;
+}
+
+static Uint32 audio_xmp_get_length(struct audio_stream *a_src)
+{
+  struct xmp_stream *stream = (struct xmp_stream *)a_src;
+
+  return stream->total_rows;
 }
 
 static Uint32 audio_xmp_get_frequency(struct sampled_stream *s_src)
@@ -174,17 +185,22 @@ struct audio_stream *construct_xmp_stream(char *filename, Uint32 frequency,
     if(xmp_load_module(ctx, filename) == 0)
     {
       struct xmp_stream *xmp_stream = cmalloc(sizeof(struct xmp_stream));
+      int num_orders;
+
       xmp_stream->ctx = ctx;
       xmp_start_player(ctx, audio.output_frequency, 0);
 
       xmp_get_module_info(ctx, &info);
-      for(i = 0, row_pos = 0; i < XMP_MAX_MOD_LENGTH; i++)
+      num_orders = info.mod->len;
+
+      for(i = 0, row_pos = 0; i < num_orders; i++)
       {
         xmp_stream->row_tbl[i] = row_pos;
         ord = info.mod->xxo[i];
-        if (ord < info.mod->pat)
-          row_pos += info.mod->xxp[info.mod->xxo[i]]->rows;
+        if(ord < info.mod->pat)
+          row_pos += info.mod->xxp[ord]->rows;
       }
+      xmp_stream->total_rows = row_pos;
 
       initialize_sampled_stream((struct sampled_stream *)xmp_stream,
        audio_xmp_set_frequency, audio_xmp_get_frequency, frequency, 2, 0);
@@ -192,8 +208,9 @@ struct audio_stream *construct_xmp_stream(char *filename, Uint32 frequency,
       ret_val = (struct audio_stream *)xmp_stream;
 
       construct_audio_stream((struct audio_stream *)xmp_stream,
-       audio_xmp_mix_data, audio_xmp_set_volume, audio_xmp_set_repeat, audio_xmp_set_order,
-       audio_xmp_set_position, audio_xmp_get_order, audio_xmp_get_position, audio_xmp_destruct,
+       audio_xmp_mix_data, audio_xmp_set_volume, audio_xmp_set_repeat,
+       audio_xmp_set_order, audio_xmp_set_position, audio_xmp_get_order,
+       audio_xmp_get_position, audio_xmp_get_length, audio_xmp_destruct,
        volume, repeat);
     }
   }

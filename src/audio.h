@@ -51,6 +51,7 @@ struct audio_stream
   void (* set_position)(struct audio_stream *a_src, Uint32 pos);
   Uint32 (* get_order)(struct audio_stream *a_src);
   Uint32 (* get_position)(struct audio_stream *a_src);
+  Uint32 (* get_length)(struct audio_stream *a_src);
   void (* destruct)(struct audio_stream *a_src);
 };
 
@@ -137,6 +138,7 @@ void shift_frequency(int freq);
 int get_frequency(void);
 void set_position(int pos);
 int get_position(void);
+int audio_get_length(void);
 int free_sam_cache(char clear_all);
 void fix_global_volumes(void);
 void sound(int frequency, int duration);
@@ -183,6 +185,7 @@ void construct_audio_stream(struct audio_stream *a_src,
  void (* set_position)(struct audio_stream *a_src, Uint32 pos),
  Uint32 (* get_order)(struct audio_stream *a_src),
  Uint32 (* get_position)(struct audio_stream *a_src),
+ Uint32 (* get_length)(struct audio_stream *a_src),
  void (* destruct)(struct audio_stream *a_src),
  Uint32 volume, Uint32 repeat);
 
@@ -215,6 +218,7 @@ static inline int get_music_volume(void) { return 0; }
 static inline int get_sound_volume(void) { return 0; }
 static inline int get_sfx_volume(void) { return 0; }
 static inline int get_position(void) { return 0; }
+static inline int get_length(void) { return 0; }
 static inline int get_order(void) { return 0; }
 static inline int get_frequency(void) { return 0; }
 
