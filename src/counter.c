@@ -2607,6 +2607,12 @@ static void mod_position_write(struct world *mzx_world,
   set_position(value);
 }
 
+static int mod_length_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  return audio_get_length();
+}
+
 static int mod_freq_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
@@ -2720,6 +2726,7 @@ static const struct function_counter builtin_counters[] =
   { "mboardy", 0x0208, mboardy_read, NULL },                         // 2.51s1
   { "min!,!", 0x0254, minval_read, NULL },                           // 2.84
   { "mod_frequency", 0x0251, mod_freq_read, mod_freq_write },        // 2.81
+  { "mod_length", 0x025B, mod_length_read, NULL },                   // 2.91
   { "mod_order", 0x023E, mod_order_read, mod_order_write },          // 2.62
   { "mod_position", 0x0251, mod_position_read, mod_position_write }, // 2.81
   { "mousepx", 0x0252, mousepx_read, mousepx_write },                // 2.82

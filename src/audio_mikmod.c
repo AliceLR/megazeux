@@ -168,6 +168,13 @@ static Uint32 mm_get_position(struct audio_stream *a_src)
   return mm_get_order(a_src);
 }
 
+// FIXME: position is unsupported by mikmod; furthermore, there
+// doesn't appear to be a good way of getting order count?
+static Uint32 mm_get_length(struct audio_stream *a_src)
+{
+  return 0;
+}
+
 static Uint32 mm_get_frequency(struct sampled_stream *s_src)
 {
   return ((struct mikmod_stream *)s_src)->effective_frequency;
@@ -213,8 +220,8 @@ struct audio_stream *construct_mikmod_stream(char *filename, Uint32 frequency,
 
       construct_audio_stream((struct audio_stream *)mm_stream,
        mm_mix_data, mm_set_volume, mm_set_repeat, mm_set_order,
-       mm_set_position, mm_get_order, mm_get_position, mm_destruct,
-       volume, repeat);
+       mm_set_position, mm_get_order, mm_get_position, mm_get_length,
+       mm_destruct, volume, repeat);
     }
 
     fclose(input_file);

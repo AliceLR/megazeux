@@ -31,9 +31,10 @@
 struct openmpt_stream
 {
   struct sampled_stream s;
+  openmpt_module *module_data;
   Uint32 *row_tbl;
   int row_tbl_size;
-  openmpt_module *module_data;
+  Uint32 total_rows;
 };
 
 static int openmpt_resample_mode;
@@ -41,15 +42,18 @@ static int openmpt_resample_mode;
 static Uint32 omp_mix_data(struct audio_stream *a_src, Sint32 *buffer,
  Uint32 len)
 {
-  Uint32 read_len;
   struct openmpt_stream *omp_stream = (struct openmpt_stream *)a_src;
-  Uint32 read_wanted = omp_stream->s.allocated_data_length - omp_stream->s.stream_offset;
-  Uint8 *read_buffer = (Uint8 *)omp_stream->s.output_data + omp_stream->s.stream_offset;
+  struct sampled_stream *s = (struct sampled_stream *)a_src;
+
+  Uint32 read_wanted = s->allocated_data_length - s->stream_offset;
+  Uint8 *read_buffer = (Uint8 *)s->output_data + s->stream_offset;
   Uint32 r_val = 0;
+  Uint32 read_len;
 
   read_len = openmpt_module_read_interleaved_stereo(omp_stream->module_data,
-omp_stream->s.frequency, read_wanted/4, (int16_t*) read_buffer) * 4;
-  sampled_mix_data((struct sampled_stream *)omp_stream, buffer, len);
+   s->frequency, read_wanted/4, (int16_t*) read_buffer) * 4;
+
+  sampled_mix_data(s, buffer, len);
 
   if(read_len < read_wanted && !a_src->repeat)
   {
@@ -62,33 +66,47 @@ omp_stream->s.frequency, read_wanted/4, (int16_t*) read_buffer) * 4;
 
 static void omp_set_volume(struct audio_stream *a_src, Uint32 volume)
 {
+  struct openmpt_stream *omp_stream = (struct openmpt_stream *)a_src;
   a_src->volume = volume;
-  openmpt_module_set_render_param(((struct openmpt_stream *)a_src)->module_data,
-    OPENMPT_MODULE_RENDER_MASTERGAIN_MILLIBEL,
-    volume == 0 ? -2147483648 : (volume - 255) * 15);
+
+  if(volume == 0)
+    volume = INT_MIN;
+
+  else
+    volume = (volume - 255) * 15;
+
+  openmpt_module_set_render_param(omp_stream->module_data,
+    OPENMPT_MODULE_RENDER_MASTERGAIN_MILLIBEL, volume);
 }
 
 static void omp_set_repeat(struct audio_stream *a_src, Uint32 repeat)
 {
+  struct openmpt_stream *omp_stream = (struct openmpt_stream *)a_src;
   a_src->repeat = repeat;
-  openmpt_module_set_repeat_count(((struct openmpt_stream *)a_src)->module_data, repeat ? -1 : 0);
+
+  openmpt_module_set_repeat_count(omp_stream->module_data, repeat ? -1 : 0);
 }
 
 static void omp_set_order(struct audio_stream *a_src, Uint32 order)
 {
-  openmpt_module_set_position_order_row(((struct openmpt_stream *)a_src)->module_data, order, 0);
+  struct openmpt_stream *omp_stream = (struct openmpt_stream *)a_src;
+
+  openmpt_module_set_position_order_row(omp_stream->module_data, order, 0);
 }
 
 static void omp_set_position(struct audio_stream *a_src, Uint32 position)
 {
-  int i;
   struct openmpt_stream *omp_stream = (struct openmpt_stream *)a_src;
+  int ord;
+  int row;
 
-  for (i = 1; i < omp_stream->row_tbl_size; i++)
+  for(ord = 1; ord < omp_stream->row_tbl_size; ord++)
   {
-    if (position < omp_stream->row_tbl[i])
+    if(position < omp_stream->row_tbl[ord])
     {
-      openmpt_module_set_position_order_row(omp_stream->module_data, i, position - omp_stream->row_tbl_size);
+      row = position - omp_stream->row_tbl_size;
+
+      openmpt_module_set_position_order_row(omp_stream->module_data, ord, row);
       return;
     }
   }
@@ -105,13 +123,26 @@ static void omp_set_frequency(struct sampled_stream *s_src, Uint32 frequency)
 
 static Uint32 omp_get_order(struct audio_stream *a_src)
 {
-  return openmpt_module_get_current_order(((struct openmpt_stream *)a_src)->module_data);
+  struct openmpt_stream *omp_stream = (struct openmpt_stream *)a_src;
+
+  return openmpt_module_get_current_order(omp_stream->module_data);
 }
 
 static Uint32 omp_get_position(struct audio_stream *a_src)
 {
-  Uint32 order = (Uint32) openmpt_module_get_current_order(((struct openmpt_stream *)a_src)->module_data);
-  return ((struct openmpt_stream *)a_src)->row_tbl[order] + (Uint32) openmpt_module_get_current_row(((struct openmpt_stream *)a_src)->module_data);
+  struct openmpt_stream *omp_stream = (struct openmpt_stream *)a_src;
+
+  int ord = openmpt_module_get_current_order(omp_stream->module_data);
+
+  return omp_stream->row_tbl[ord] +
+   openmpt_module_get_current_row(omp_stream->module_data);
+}
+
+static Uint32 omp_get_length(struct audio_stream *a_src)
+{
+  struct openmpt_stream *omp_stream = (struct openmpt_stream *)a_src;
+
+  return omp_stream->row_tbl[omp_stream->row_tbl_size - 1];
 }
 
 static Uint32 omp_get_frequency(struct sampled_stream *s_src)
@@ -121,8 +152,10 @@ static Uint32 omp_get_frequency(struct sampled_stream *s_src)
 
 static void omp_destruct(struct audio_stream *a_src)
 {
-  openmpt_module_destroy(((struct openmpt_stream *)a_src)->module_data);
-  free(((struct openmpt_stream *)a_src)->row_tbl);
+  struct openmpt_stream *omp_stream = (struct openmpt_stream *)a_src;
+
+  openmpt_module_destroy(omp_stream->module_data);
+  free(omp_stream->row_tbl);
   sampled_destruct(a_src);
 }
 
@@ -137,33 +170,40 @@ static void omp_log(const char *message, void *data)
 struct audio_stream *construct_openmpt_stream(char *filename, Uint32 frequency,
  Uint32 volume, Uint32 repeat)
 {
-  FILE *input_file;
-  int i, row_pos;
   struct audio_stream *ret_val = NULL;
+  FILE *input_file;
+  int row_pos;
+  int ord;
+  int i;
 
   input_file = fopen_unsafe(filename, "rb");
 
   if(input_file)
   {
-    openmpt_module *open_file = openmpt_module_create(openmpt_stream_get_file_callbacks(),
-      input_file, &omp_log, NULL, NULL );
+    openmpt_module *open_file =
+     openmpt_module_create(openmpt_stream_get_file_callbacks(), input_file,
+     &omp_log, NULL, NULL);
 
     if(open_file)
     {
       struct openmpt_stream *omp_stream = cmalloc(sizeof(struct openmpt_stream));
       omp_stream->module_data = open_file;
+
       omp_stream->row_tbl_size = openmpt_module_get_num_orders(open_file) + 1;
       omp_stream->row_tbl = malloc(sizeof(int) * omp_stream->row_tbl_size);
+
       for(i = 0, row_pos = 0; i < omp_stream->row_tbl_size; i++)
       {
         omp_stream->row_tbl[i] = row_pos;
+        ord = openmpt_module_get_order_pattern(open_file, i);
         if (i < omp_stream->row_tbl_size - 1)
-          row_pos += openmpt_module_get_pattern_num_rows(open_file, openmpt_module_get_order_pattern(open_file, i));
+          row_pos += openmpt_module_get_pattern_num_rows(open_file, ord);
       }
 
       openmpt_module_set_render_param(omp_stream->module_data,
-        OPENMPT_MODULE_RENDER_INTERPOLATIONFILTER_LENGTH,
-        openmpt_resample_mode);
+       OPENMPT_MODULE_RENDER_INTERPOLATIONFILTER_LENGTH,
+       openmpt_resample_mode);
+
       openmpt_module_set_repeat_count(omp_stream->module_data, -1);
 
       initialize_sampled_stream((struct sampled_stream *)omp_stream,
@@ -173,8 +213,8 @@ struct audio_stream *construct_openmpt_stream(char *filename, Uint32 frequency,
 
       construct_audio_stream((struct audio_stream *)omp_stream,
        omp_mix_data, omp_set_volume, omp_set_repeat, omp_set_order,
-       omp_set_position, omp_get_order, omp_get_position, omp_destruct,
-       volume, repeat);
+       omp_set_position, omp_get_order, omp_get_position, omp_get_length,
+       omp_destruct, volume, repeat);
     }
 
     fclose(input_file);

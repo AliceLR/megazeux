@@ -315,11 +315,16 @@ case num:                                                               \
 //   "Specifies big or little endian byte packing.
 //   0 for little endian, 1 for big endian. Typical value is 0."
 
+// Tremor (as of r19494) doesn't use this, so suppress the warning...
+#ifndef CONFIG_TREMOR
+
 #if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
 static const int ENDIAN_PACKING = 1;
 #else
 static const int ENDIAN_PACKING = 0;
 #endif
+
+#endif // !CONFIG_TREMOR
 
 static void sampled_negative_threshold(struct sampled_stream *s_src)
 {
@@ -528,6 +533,12 @@ static Uint32 vorbis_get_position(struct audio_stream *a_src)
   return (Uint32)ov_pcm_tell(&v->vorbis_file_handle);
 }
 
+static Uint32 vorbis_get_length(struct audio_stream *a_src)
+{
+  struct vorbis_stream *v = (struct vorbis_stream *)a_src;
+  return (Uint32)ov_pcm_total(&v->vorbis_file_handle, -1);
+}
+
 static Uint32 vorbis_get_frequency(struct sampled_stream *s_src)
 {
   return s_src->frequency;
@@ -694,6 +705,13 @@ static Uint32 wav_get_position(struct audio_stream *a_src)
   return w_stream->data_offset / w_stream->bytes_per_sample;
 }
 
+static Uint32 wav_get_length(struct audio_stream *a_src)
+{
+  struct wav_stream *w_stream = (struct wav_stream *)a_src;
+
+  return w_stream->data_length / w_stream->bytes_per_sample;
+}
+
 static Uint32 wav_get_frequency(struct sampled_stream *s_src)
 {
   return s_src->frequency;
@@ -850,6 +868,7 @@ __audio_c_maybe_static void construct_audio_stream(
  void (* set_position)(struct audio_stream *a_src, Uint32 pos),
  Uint32 (* get_order)(struct audio_stream *a_src),
  Uint32 (* get_position)(struct audio_stream *a_src),
+ Uint32 (* get_length)(struct audio_stream *a_src),
  void (* destruct)(struct audio_stream *a_src),
  Uint32 volume, Uint32 repeat)
 {
@@ -860,6 +879,7 @@ __audio_c_maybe_static void construct_audio_stream(
   a_src->set_position = set_position;
   a_src->get_order = get_order;
   a_src->get_position = get_position;
+  a_src->get_length = get_length;
   a_src->destruct = destruct;
 
   if(set_volume)
@@ -963,7 +983,7 @@ static struct audio_stream *construct_vorbis_stream(char *filename,
         construct_audio_stream((struct audio_stream *)v_stream,
          vorbis_mix_data, vorbis_set_volume, vorbis_set_repeat,
          NULL, vorbis_set_position, NULL, vorbis_get_position,
-         vorbis_destruct, volume, repeat);
+         vorbis_get_length, vorbis_destruct, volume, repeat);
       }
       else
       {
@@ -1367,8 +1387,8 @@ static struct audio_stream *construct_wav_stream(char *filename,
 
       construct_audio_stream((struct audio_stream *)w_stream,
        wav_mix_data, wav_set_volume, wav_set_repeat,
-       NULL, wav_set_position, NULL, wav_get_position, wav_destruct,
-       volume, repeat);
+       NULL, wav_set_position, NULL, wav_get_position, wav_get_length,
+       wav_destruct, volume, repeat);
     }
   }
 
@@ -1385,7 +1405,7 @@ static struct audio_stream *construct_pc_speaker_stream(void)
   pcs_stream = ccalloc(1, sizeof(struct pc_speaker_stream));
 
   construct_audio_stream((struct audio_stream *)pcs_stream, pcs_mix_data,
-   pcs_set_volume, NULL, NULL, NULL, NULL, NULL, pcs_destruct,
+   pcs_set_volume, NULL, NULL, NULL, NULL, NULL, NULL, pcs_destruct,
    audio.sfx_volume * 255 / 8, 0);
 
   return (struct audio_stream *)pcs_stream;
@@ -1872,6 +1892,22 @@ int get_position(void)
     UNLOCK();
 
     return pos;
+  }
+
+  return 0;
+}
+
+int audio_get_length(void)
+{
+  if(audio.primary_stream && audio.primary_stream->get_length)
+  {
+    int length;
+
+    LOCK();
+    length = audio.primary_stream->get_length(audio.primary_stream);
+    UNLOCK();
+
+    return length;
   }
 
   return 0;
