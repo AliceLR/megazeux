@@ -334,6 +334,10 @@ elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 	elif [ "`echo $MACH | sed 's,^arm.*,arm,'`" = "arm" ]; then
 		ARCHNAME=arm
 		LIBDIR=lib
+		if [ "$MODULAR" = "true" ]; then
+			echo "ARCH_CFLAGS+=-fPIC" >> platform.inc
+			echo "ARCH_CXXFLAGS+=-fPIC" >> platform.inc
+		fi
 	elif [ "$MACH" == "ppc" ]; then
 		ARCHNAME=ppc
 		LIBDIR=lib
