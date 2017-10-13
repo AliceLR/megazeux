@@ -74,8 +74,7 @@ enum status
 
 // MegaZeux's obtuse architecture requires this for the time being.
 // This function is used in out_of_memory_check (util.c), and check alloc
-// is required by zip.c (as it should be). util.c is also required by the
-// directory reading functions in fsafeopen.c on non-Win32 platforms.
+// is required by zip.c (as it should be).
 
 int error(const char *message, unsigned int a, unsigned int b, unsigned int c)
 {
