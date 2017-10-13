@@ -102,9 +102,17 @@ static void audio_xmp_set_order(struct audio_stream *a_src, Uint32 order)
 static void audio_xmp_set_frequency(struct sampled_stream *s_src,
  Uint32 frequency)
 {
+  struct xmp_stream *stream = (struct xmp_stream *)s_src;
+
   if(frequency == 0)
   {
+    stream->effective_frequency = 44100;
     frequency = audio.output_frequency;
+  }
+  else
+  {
+    stream->effective_frequency = frequency;
+    frequency = (Uint32)((float)frequency * audio.output_frequency / 44100);
   }
 
   s_src->frequency = frequency;

@@ -32,6 +32,7 @@ struct openmpt_stream
 {
   struct sampled_stream s;
   openmpt_module *module_data;
+  Uint32 effective_frequency;
   Uint32 *row_tbl;
   int row_tbl_size;
   Uint32 total_rows;
@@ -117,7 +118,20 @@ static void omp_set_position(struct audio_stream *a_src, Uint32 position)
 
 static void omp_set_frequency(struct sampled_stream *s_src, Uint32 frequency)
 {
-  s_src->frequency = frequency > 0 ? frequency : 48000;
+  struct openmpt_stream *omp_stream = (struct openmpt_stream *)s_src;
+
+  if(frequency == 0)
+  {
+    omp_stream->effective_frequency = 44100;
+    frequency = audio.output_frequency;
+  }
+  else
+  {
+    omp_stream->effective_frequency = frequency;
+    frequency = (Uint32)((float)frequency * audio.output_frequency / 44100);
+  }
+
+  s_src->frequency = frequency;
   sampled_set_buffer(s_src);
 }
 
