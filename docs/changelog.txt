@@ -14,7 +14,9 @@ FIXME: board undo notes:
 FEATURES
 
 + Added SMZX_INDICES special counter to load SMZX indices. This
-  counter will be ignored outside of mode 3.
+  counter works with either a filename or a string, e.g.
+  set "file.palidx" "SMZX_INDICES", and will do nothing outside
+  of mode 3.
 + Added MOD_LENGTH counter. The value of this counter is length
   of the current playing music in rows for modules, or in samples
   for PCM audio.

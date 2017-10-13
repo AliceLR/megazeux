@@ -4125,6 +4125,15 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
   }
   else
 
+  // Load SMZX indices from a string
+
+  if(special_name("smzx_indices"))
+  {
+    load_indices(dest->value, dest->length);
+    pal_update = true;
+  }
+  else
+
   // Load source code from a string
 
 #ifdef CONFIG_DEBYTECODE
