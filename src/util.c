@@ -121,11 +121,14 @@ int mzx_res_init(const char *argv0, bool editor)
 {
   size_t i, bin_path_len = 0;
   struct stat file_info;
+  char *full_path_base;
+  char *full_path;
   char *bin_path;
   ssize_t g_ret;
   char *p_dir;
   int ret = 0;
 
+  full_path_base = cmalloc(MAX_PATH);
   bin_path = cmalloc(MAX_PATH);
   p_dir = cmalloc(MAX_PATH);
 
@@ -156,8 +159,8 @@ int mzx_res_init(const char *argv0, bool editor)
    */
   for(i = 0; i < END_RESOURCE_ID_T; i++)
   {
-    size_t p_dir_len, base_name_len = strlen(mzx_res[i].base_name);
-    char *full_path_base, *full_path;
+    size_t base_name_len = strlen(mzx_res[i].base_name);
+    size_t p_dir_len;
 
     if(i == CONFIG_TXT)
       chdir(CONFDIR);
@@ -167,23 +170,22 @@ int mzx_res_init(const char *argv0, bool editor)
     getcwd(p_dir, MAX_PATH);
     p_dir_len = strlen(p_dir);
 
-    // since we can't add the path delimeter we should really fail hard
-    if(p_dir_len >= MAX_PATH)
+    // if we can't add the path we should really fail hard
+    if(p_dir_len + base_name_len + 1 >= MAX_PATH)
       continue;
 
     // append the trailing '/'
     p_dir[p_dir_len++] = '/';
     p_dir[p_dir_len] = 0;
 
-    full_path_base = cmalloc(p_dir_len + base_name_len + 1);
-    full_path = cmalloc(p_dir_len + base_name_len + 1);
     memcpy(full_path_base, p_dir, p_dir_len);
     memcpy(full_path_base + p_dir_len, mzx_res[i].base_name, base_name_len);
     full_path_base[p_dir_len + base_name_len] = 0;
 
-    clean_path_slashes(full_path_base, full_path, p_dir_len + base_name_len);
-    free(full_path_base);
+    full_path = cmalloc(MAX_PATH);
+    clean_path_slashes(full_path_base, full_path, MAX_PATH);
 
+    debug("%s %s\n", full_path_base, full_path);
     // Attempt to load it from this new path
     if(!stat(full_path, &file_info))
     {
@@ -224,7 +226,7 @@ int mzx_res_init(const char *argv0, bool editor)
 
   free(p_dir);
   free(bin_path);
-
+  free(full_path_base);
   return ret;
 }
 

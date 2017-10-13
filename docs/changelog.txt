@@ -75,6 +75,8 @@ FEATURES
 
 FIXES
 
++ Fixed a bug that would cause Linux binaries to fail to find
+  most resources.
 + Fixed crash that would occur when loading a saved position on
   the same board referring to out-of-bounds coordinates.
 + Fixed a bug where key repeat would be prematurely terminated
