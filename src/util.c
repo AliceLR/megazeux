@@ -185,7 +185,6 @@ int mzx_res_init(const char *argv0, bool editor)
     full_path = cmalloc(MAX_PATH);
     clean_path_slashes(full_path_base, full_path, MAX_PATH);
 
-    debug("%s %s\n", full_path_base, full_path);
     // Attempt to load it from this new path
     if(!stat(full_path, &file_info))
     {
