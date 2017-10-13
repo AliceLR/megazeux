@@ -50,21 +50,11 @@
 #include "../world_prop.h"
 #include "../zip.h"
 
-// Set up non-core check alloc functions
-#include "checkalloc.h"
-
-
 #define DOWNVER_WORLD_VERSION 0x025B
 
 #if WORLD_VERSION != DOWNVER_WORLD_VERSION
   #error "Update downver for the new world version."
 #else
-
-#define error(...) \
-  { \
-    fprintf(stderr, __VA_ARGS__); \
-    fflush(stderr); \
-  }
 
 #define WORLD_VERSION_HI ((WORLD_VERSION >> 8) & 0xff)
 #define WORLD_VERSION_LO (WORLD_VERSION & 0xff)
@@ -81,6 +71,23 @@ enum status
   WRITE_ERROR,
   SEEK_ERROR,
 };
+
+// MegaZeux's obtuse architecture requires this for the time being.
+// This function is used in out_of_memory_check (util.c), and check alloc
+// is required by zip.c (as it should be). util.c is also required by the
+// directory reading functions in fsafeopen.c on non-Win32 platforms.
+
+int error(const char *message, unsigned int a, unsigned int b, unsigned int c)
+{
+  fprintf(stderr, "%s\n", message);
+  exit(-1);
+}
+
+#define error(...) \
+  { \
+    fprintf(stderr, __VA_ARGS__); \
+    fflush(stderr); \
+  }
 
 static inline void save_prop_p(int ident, struct memfile *prop,
  struct memfile *mf)

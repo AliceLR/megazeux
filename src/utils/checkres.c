@@ -54,9 +54,6 @@
 #include "../fsafeopen.h"
 #include "../util.h"
 
-// Set up non-core check alloc functions
-#include "checkalloc.h"
-
 // From world.h
 #define WORLD_VERSION               0x025B
 #define WORLD_LEGACY_FORMAT_VERSION 0x0254
@@ -100,6 +97,16 @@ enum status
   NO_WORLD,
   MISSING_FILE
 };
+
+// MegaZeux's obtuse architecture requires this for the time being.
+// This function is used in out_of_memory_check (util.c), and check alloc
+// is required by zip.c (as it should be).
+
+int error(const char *message, unsigned int a, unsigned int b, unsigned int c)
+{
+  fprintf(stderr, "%s\n", message);
+  exit(-1);
+}
 
 static const char *decode_status(enum status status)
 {
