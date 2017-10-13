@@ -218,9 +218,9 @@ static inline int get_music_volume(void) { return 0; }
 static inline int get_sound_volume(void) { return 0; }
 static inline int get_sfx_volume(void) { return 0; }
 static inline int get_position(void) { return 0; }
-static inline int get_length(void) { return 0; }
 static inline int get_order(void) { return 0; }
 static inline int get_frequency(void) { return 0; }
+static inline int audio_get_length(void) { return 0; }
 
 #endif // CONFIG_AUDIO
 

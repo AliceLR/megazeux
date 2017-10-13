@@ -152,6 +152,12 @@ static Uint32 mp_get_position(struct audio_stream *a_src)
    mSoundFile.GetCurrentPos();
 }
 
+static Uint32 mp_get_length(struct audio_stream *a_src)
+{
+  return ((struct modplug_stream *)a_src)->module_data->
+   mSoundFile.GetMaxPosition();
+}
+
 static Uint32 mp_get_frequency(struct sampled_stream *s_src)
 {
   return ((struct modplug_stream *)s_src)->effective_frequency;
@@ -212,7 +218,8 @@ struct audio_stream *construct_modplug_stream(char *filename, Uint32 frequency,
 
       construct_audio_stream((struct audio_stream *)mp_stream, mp_mix_data,
        mp_set_volume, mp_set_repeat, mp_set_order, mp_set_position,
-       mp_get_order, mp_get_position, mp_destruct, volume, repeat);
+       mp_get_order, mp_get_position, mp_get_length, mp_destruct,
+       volume, repeat);
     }
 
     free(input_buffer);

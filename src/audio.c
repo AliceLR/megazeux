@@ -315,11 +315,16 @@ case num:                                                               \
 //   "Specifies big or little endian byte packing.
 //   0 for little endian, 1 for big endian. Typical value is 0."
 
+// Tremor (as of r19494) doesn't use this, so suppress the warning...
+#ifndef CONFIG_TREMOR
+
 #if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
 static const int ENDIAN_PACKING = 1;
 #else
 static const int ENDIAN_PACKING = 0;
 #endif
+
+#endif // !CONFIG_TREMOR
 
 static void sampled_negative_threshold(struct sampled_stream *s_src)
 {

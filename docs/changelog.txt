@@ -15,6 +15,9 @@ FEATURES
 
 + Added SMZX_INDICES special counter to load SMZX indices. This
   counter will be ignored outside of mode 3.
++ Added MOD_LENGTH counter. The value of this counter is length
+  of the current playing music in rows for modules, or in samples
+  for PCM audio.
 
 + Extended the palette editor to SMZX modes 2 and 3. The updated
   palette editor allows the editing of all 256 SMZX mode 2/3

@@ -151,9 +151,10 @@ struct audio_stream *construct_xmp_stream(char *filename, Uint32 frequency,
 {
   struct audio_stream *ret_val = NULL;
   struct xmp_module_info info;
-  int i, row_pos;
-  unsigned char ord;
   xmp_context ctx;
+  unsigned char ord;
+  int row_pos;
+  int i;
 
   ctx = xmp_create_context();
   if(ctx)
