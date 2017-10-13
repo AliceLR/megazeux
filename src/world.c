@@ -1082,14 +1082,18 @@ static inline int load_world_pal(struct world *mzx_world,
 static inline int save_world_pal_index(struct world *mzx_world,
  struct zip_archive *zp, const char *name)
 {
-  char *buffer = cmalloc(SMZX_PAL_SIZE * 4);
-  int result;
+  int result = ZIP_SUCCESS;
 
-  save_indices(buffer);
+  // Only save these while in the SMZX mode where they matter
+  if(get_screen_mode() == 3)
+  {
+    char *buffer = cmalloc(SMZX_PAL_SIZE * 4);
+    save_indices(buffer);
 
-  result = zip_write_file(zp, name, buffer, SMZX_PAL_SIZE * 4, ZIP_M_NONE);
+    result = zip_write_file(zp, name, buffer, SMZX_PAL_SIZE * 4, ZIP_M_NONE);
 
-  free(buffer);
+    free(buffer);
+  }
   return result;
 }
 
@@ -1097,13 +1101,19 @@ static inline int load_world_pal_index(struct world *mzx_world,
  struct zip_archive *zp)
 {
   char *buffer = cmalloc(SMZX_PAL_SIZE * 4);
+  size_t actual_size;
   int result;
 
-  result = zip_read_file(zp, buffer, SMZX_PAL_SIZE * 4, NULL);
+  result = zip_read_file(zp, buffer, SMZX_PAL_SIZE * 4, &actual_size);
 
   if(result == ZIP_SUCCESS)
   {
-    load_indices(buffer);
+    if(mzx_world->version >= 0x025B)
+      load_indices(buffer, actual_size);
+
+    // 2.90 stored the internal indices instead of user-friendly indices
+    else
+      memcpy(graphics.smzx_indices, buffer, actual_size);
   }
 
   free(buffer);

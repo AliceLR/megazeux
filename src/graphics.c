@@ -602,12 +602,42 @@ void load_index_file(const char *fname)
 
 void save_indices(void *buffer)
 {
-  memcpy(buffer, graphics.smzx_indices, SMZX_PAL_SIZE * 4);
+  Uint8 *copy_buffer = buffer;
+  int i;
+
+  if(get_screen_mode() != 3)
+    return;
+
+  for(i = 0; i < SMZX_PAL_SIZE; i++)
+  {
+    *(copy_buffer++) = get_smzx_index(i, 0);
+    *(copy_buffer++) = get_smzx_index(i, 1);
+    *(copy_buffer++) = get_smzx_index(i, 2);
+    *(copy_buffer++) = get_smzx_index(i, 3);
+  }
 }
 
-void load_indices(void *buffer)
+void load_indices(void *buffer, size_t size)
 {
-  memcpy(graphics.smzx_indices, buffer, SMZX_PAL_SIZE * 4);
+  Uint8 *copy_buffer = buffer;
+  unsigned int i;
+
+  if(get_screen_mode() != 3)
+    return;
+
+  if(size > SMZX_PAL_SIZE)
+    size = SMZX_PAL_SIZE;
+
+  // Truncate incomplete colors
+  size -= (size & 3);
+
+  for(i = 0; i < size; i++)
+  {
+    set_smzx_index(i, 0, *(copy_buffer++));
+    set_smzx_index(i, 1, *(copy_buffer++));
+    set_smzx_index(i, 2, *(copy_buffer++));
+    set_smzx_index(i, 3, *(copy_buffer++));
+  }
 }
 
 void smzx_palette_loaded(int val)
