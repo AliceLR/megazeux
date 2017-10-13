@@ -324,10 +324,6 @@ elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 		LIBDIR=lib64
 		# FIXME: FreeBSD amd64 hack
 		[ "$UNIX" = "freebsd" ] && LIBDIR=lib
-		if [ "$MODULAR" = "true" ]; then
-			echo "ARCH_CFLAGS+=-fPIC" >> platform.inc
-			echo "ARCH_CXXFLAGS+=-fPIC" >> platform.inc
-		fi
 	elif [ "`echo $MACH | sed 's,i.86,x86,'`" = "x86" ]; then
 		ARCHNAME=x86
 		LIBDIR=lib

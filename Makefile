@@ -152,15 +152,15 @@ CXXFLAGS += -fstack-protector-all
 endif
 endif
 
+endif
+endif
+
 #
-# Enabling this across the board for modular builds.
+# Enable position-independent code across the board for modular builds.
 #
 ifeq (${BUILD_MODULAR},1)
 CFLAGS += -fPIC
 CXXFLAGS += -fPIC
-endif
-
-endif
 endif
 
 #
