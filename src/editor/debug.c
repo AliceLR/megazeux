@@ -180,16 +180,15 @@ static void unescape_string(char *buf, int *len)
 // We'll read off of these when we construct the tree
 static const char *world_var_list[] = {
   "bimesg", //no read
-  "blue_value",
-  "green_value",
-  "red_value",
   "c_divisions",
   "commands",
   "commands_stop",
   "divider",
   "fread_delimiter", //no read
   "fwrite_delimiter", //no read
+  "max_samples",
   "mod_frequency",
+  "mod_length*",
   "mod_name*",
   "mod_order",
   "mod_position",
