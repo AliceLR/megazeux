@@ -107,8 +107,6 @@ struct vorbis_stream
   Uint32 loop_end;
 };
 
-static int max_simultaneous_samples = -1;
-
 static const int default_period = 428;
 
 // May be used by audio plugins
@@ -1559,6 +1557,9 @@ void init_audio(struct config_info *conf)
   audio.output_frequency = conf->output_frequency;
   audio.master_resample_mode = conf->resample_mode;
 
+  audio.max_simultaneous_samples = -1;
+  audio.max_simultaneous_samples_config = conf->max_simultaneous_samples;
+
 #ifdef CONFIG_MODPLUG
   init_modplug(conf);
 #endif
@@ -1648,12 +1649,20 @@ void end_module(void)
 void set_max_samples(int max_samples)
 {
   // -1 is unlimited
-  max_simultaneous_samples = max_samples;
+  int max_samples_config = audio.max_simultaneous_samples_config;
+
+  if(max_samples_config >= 0)
+  {
+    if((max_samples_config < max_samples) || (max_samples < 0))
+      max_samples = max_samples_config;
+  }
+
+  audio.max_simultaneous_samples = max_samples;
 }
 
 int get_max_samples(void)
 {
-  return max_simultaneous_samples;
+  return audio.max_simultaneous_samples;
 }
 
 static void limit_samples(int max)
@@ -1730,7 +1739,7 @@ void play_sample(int freq, char *filename, bool safely)
      (freq_conversion / freq) / 2, vol, 0);
   }
 
-  limit_samples(max_simultaneous_samples);
+  limit_samples(audio.max_simultaneous_samples);
 }
 
 void end_sample(void)

@@ -382,6 +382,7 @@ static inline int save_world_info(struct world *mzx_world,
     save_prop_d(WPROP_MULTIPLIER,       mzx_world->multiplier, mf);
     save_prop_d(WPROP_DIVIDER,          mzx_world->divider, mf);
     save_prop_d(WPROP_C_DIVISIONS,      mzx_world->c_divisions, mf);
+    save_prop_d(WPROP_MAX_SAMPLES,      mzx_world->max_samples, mf);
   }
 
   save_prop_eof(mf);
@@ -512,6 +513,12 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
   check(WPROP_MULTIPLIER);
   check(WPROP_DIVIDER);
   check(WPROP_C_DIVISIONS);
+
+  if(world_version >= 0x025B)
+  {
+    // Added in 2.91
+    check(WPROP_MAX_SAMPLES);
+  }
 
   return VAL_SUCCESS;
 
@@ -921,6 +928,13 @@ static inline void load_world_info(struct world *mzx_world,
       case WPROP_C_DIVISIONS:
         if_savegame
         mzx_world->c_divisions = load_prop_int(size, prop);
+        break;
+
+      // Added in 2.91
+      case WPROP_MAX_SAMPLES:
+        if_savegame
+        if(mzx_world->version >= 0x025B)
+        mzx_world->max_samples = load_prop_int(size, prop);
         break;
 
       default:
@@ -2532,11 +2546,11 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
 
   // If this is a pre-port world, limit the number of samples
   // playing to 4 (the maximum number in pre-port MZX)
-  // Otherwise the maximum is infinity
-  if (mzx_world->version < 0x0250)
-    set_max_samples(4);
-  else
-    set_max_samples(-1);
+  if(mzx_world->version < 0x0250)
+    mzx_world->max_samples = 4;
+
+  // This will be -1 (no limit) or whatever was loaded from a save
+  set_max_samples(mzx_world->max_samples);
 
   mzx_world->active = 1;
 
@@ -2865,6 +2879,7 @@ __editor_maybe_static void default_global_data(struct world *mzx_world)
   memset(mzx_world->keys, NO_KEY, NUM_KEYS);
   mzx_world->mesg_edges = 1;
   mzx_world->real_mod_playing[0] = 0;
+  mzx_world->max_samples = -1;
 
   mzx_world->blind_dur = 0;
   mzx_world->firewalker_dur = 0;

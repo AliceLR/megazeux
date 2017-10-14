@@ -55,6 +55,7 @@ struct config_info
   int oversampling_on;
   int resample_mode;
   int modplug_resample_mode;
+  int max_simultaneous_samples;
   int music_volume;
   int sam_volume;
   int pc_speaker_volume;

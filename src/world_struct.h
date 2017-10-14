@@ -76,6 +76,7 @@ struct world
   int scroll_title_color;
   int scroll_arrow_color;
   char real_mod_playing[MAX_PATH];
+  int max_samples;
 
   int edge_color;
   int first_board;

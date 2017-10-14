@@ -489,6 +489,13 @@ static void config_set_num_buffered_events(struct config_info *conf,
   set_num_buffered_events(v);
 }
 
+static void config_max_simultaneous_samples(struct config_info *conf,
+ char *name, char *value, char *extended_data)
+{
+  int v = MAX( strtol(value, NULL, 10), -1 );
+  conf->max_simultaneous_samples = v;
+}
+
 /* FAT NOTE: This is searched as a binary tree, the nodes must be
  *           sorted alphabetically, or they risk being ignored.
  */
@@ -512,6 +519,7 @@ static const struct config_entry config_options[] =
   { "joy!button!", joy_button_set, true },
   { "joy!hat", joy_hat_set, true },
   { "mask_midchars", config_mask_midchars, false },
+  { "max_simultaneous_samples", config_max_simultaneous_samples, false },
   { "modplug_resample_mode", config_mp_resample_mode, false },
   { "music_on", config_set_music, false },
   { "music_volume", config_set_mod_volume, false },
@@ -594,6 +602,7 @@ static const struct config_info default_options =
   0,                            // oversampling_on
   1,                            // resample_mode
   2,                            // modplug_resample_mode
+  -1,                           // max_simultaneous_samples
   8,                            // music_volume
   8,                            // sam_volume
   8,                            // pc_speaker_volume

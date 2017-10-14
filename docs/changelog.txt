@@ -20,6 +20,12 @@ FEATURES
 + Added MOD_LENGTH counter. The value of this counter is length
   of the current playing music in rows for modules, or in samples
   for PCM audio.
++ Added MAX_SAMPLES counter. When set, MegaZeux will limit the
+  maximum number of samples that will play simultaneously. Set
+  to -1 to disable the sample limit.
++ Added 'max_simultaneous_samples' config file option. This
+  behaves the same as the MAX_SAMPLES counter, but applies
+  globally.
 
 + Extended the palette editor to SMZX modes 2 and 3. The updated
   palette editor allows the editing of all 256 SMZX mode 2/3

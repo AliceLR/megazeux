@@ -225,6 +225,11 @@
 
 # pc_speaker_volume = 8
 
+# The maximum number of samples that can be played simultaneously.
+# Set to -1 for an unlimited number of samples.
+
+# max_simultaneous_samples = -1
+
 
 ### Game options ###
 

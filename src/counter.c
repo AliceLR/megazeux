@@ -2626,6 +2626,22 @@ static void mod_freq_write(struct world *mzx_world,
     shift_frequency(value);
 }
 
+static int max_samples_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  return get_max_samples();
+}
+
+static void max_samples_write(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int value, int id)
+{
+  // -1 for unlimited samples, or 0+ for an explicit number of samples
+  value = MAX(-1, value);
+
+  mzx_world->max_samples = value;
+  set_max_samples(value);
+}
+
 // Make sure this is in the right alphabetical (non-case sensitive) order
 // ? specifies 0 or more numbers
 // ! specifies 1 or more numbers
@@ -2642,6 +2658,8 @@ static void mod_freq_write(struct world *mzx_world,
  *       2.68 and no compatibility layer was implemented.
  *       FREAD_PAGE, FWRITE_PAGE were removed in 2.80 and no compatibility
  *       layer was implemented.
+ *       SAVE_WORLD was removed in 2.90 and no compatibility layer was
+ *       implemented.
  */
 
 /* NOTE: fread_counter/fwrite_counter read only a single DOS word (16bit)
@@ -2722,6 +2740,7 @@ static const struct function_counter builtin_counters[] =
   { "local?", 0x0208, local_read, local_write },                     // 2.51s1
   { "loopcount", 0, loopcount_read, loopcount_write },               // <=2.51
   { "max!,!", 0x0254, maxval_read, NULL },                           // 2.84
+  { "max_samples", 0x025B, max_samples_read, max_samples_write },    // 2.91
   { "mboardx", 0x0208, mboardx_read, NULL },                         // 2.51s1
   { "mboardy", 0x0208, mboardy_read, NULL },                         // 2.51s1
   { "min!,!", 0x0254, minval_read, NULL },                           // 2.84

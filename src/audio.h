@@ -101,6 +101,8 @@ struct audio
 
   Uint32 output_frequency;
   Uint32 master_resample_mode;
+  Sint32 max_simultaneous_samples;
+  Sint32 max_simultaneous_samples_config;
 
   struct audio_stream *primary_stream;
   struct pc_speaker_stream *pcs_stream;

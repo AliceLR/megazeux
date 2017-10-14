@@ -371,8 +371,8 @@ static inline void assign_fprops(struct zip_archive *zp, int not_a_world)
 #define COUNT_WORLD_PROPS (              1 + 3 +   4 + 16 + 4 +          1)
 #define BOUND_WORLD_PROPS (BOARD_NAME_SIZE + 5 + 455 + 24 + 9 + STATS_SIZE)
 
-#define COUNT_SAVE_PROPS  ( 2 +  30 +          3 +        1)
-#define BOUND_SAVE_PROPS  ( 2 + 100 + 3*MAX_PATH + NUM_KEYS)
+#define COUNT_SAVE_PROPS  ( 2 +  31 +          3 +        1)
+#define BOUND_SAVE_PROPS  ( 2 + 104 + 3*MAX_PATH + NUM_KEYS)
 
 // For world files, use WORLD_PROP_SIZE
 // For save files, use WORLD_PROP_SIZE + SAVE_PROP_SIZE
@@ -435,7 +435,7 @@ enum world_prop
   WPROP_VLAYER_HEIGHT             = 0x8032, //   2
   WPROP_VLAYER_SIZE               = 0x8033, //   4
 
-  // Save properties                  30+4     100 + 3 MAX_PATH + NUM_KEYS
+  // Save properties                  31+4     104 + 3 MAX_PATH + NUM_KEYS
   WPROP_REAL_MOD_PLAYING          = 0x8040, // MAX_PATH
   WPROP_MZX_SPEED                 = 0x8041, //   1
   WPROP_LOCK_SPEED                = 0x8042, //   1
@@ -470,6 +470,7 @@ enum world_prop
   WPROP_MULTIPLIER                = 0x8080, //   4
   WPROP_DIVIDER                   = 0x8081, //   4
   WPROP_C_DIVISIONS               = 0x8082, //   4
+  WPROP_MAX_SAMPLES               = 0x8090, //   4
 };
 
 
