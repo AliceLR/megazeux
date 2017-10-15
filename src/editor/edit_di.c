@@ -707,25 +707,22 @@ int size_pos(struct world *mzx_world)
 
         bound_board_size(results + 4, results + 5);
 
-        if(results[4] == src_board->board_width &&
-         results[5] == src_board->board_height)
-        {
-          resized = 0;
-          redo = 0;
-        }
-        else
-
         if(((results[4] >= src_board->board_width) &&
           (results[5] >= src_board->board_height)) ||
           !confirm(mzx_world, "Reduce board size- Are you sure?"))
         {
-          redo = 0;
-          change_board_size(src_board, results[4], results[5]);
+          if(results[4] != src_board->board_width &&
+           results[5] != src_board->board_height)
+          {
+            change_board_size(src_board, results[4], results[5]);
+            resized = 1;
+          }
+
           src_board->viewport_x = results[0];
           src_board->viewport_y = results[1];
           src_board->viewport_width = results[2];
           src_board->viewport_height = results[3];
-          resized = 1;
+          redo = 0;
         }
         break;
       }
