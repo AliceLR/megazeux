@@ -625,11 +625,14 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
 
       default:
       {
-        // If this is from 32 to 255, jump there.
-        int key_char = get_key(keycode_unicode);
+        if(!current_charset)
+        {
+          // If this is from 32 to 255, jump there.
+          int key_char = get_key(keycode_unicode);
 
-        if(key_char >= 32 && key_char <= 255)
-          current = key_char;
+          if(key_char >= 32 && key_char <= 255)
+            current = key_char;
+        }
 
         break;
       }
@@ -638,7 +641,10 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
 
   // Get rid of the extra layers required for extended charsets
   if(select_charset)
-    destruct_extra_layers();
+  {
+    destruct_extra_layers(chars_layer);
+    destruct_extra_layers(pal_layer);
+  }
 
   // Prevent UI keys from carrying through.
   force_release_all_keys();

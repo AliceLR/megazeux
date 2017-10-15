@@ -1888,8 +1888,10 @@ void palette_editor(struct world *mzx_world)
     update_screen();
     update_event_status_delay();
 
-    // Get rid of the extra cursor layers
-    destruct_extra_layers();
+    // Get rid of the extra cursor layers now because they display OVER the UI!
+    // TODO should be called on each cursor layer
+    // in case layer architecture changes
+    destruct_extra_layers(0);
 
     key = get_key(keycode_internal_wrt_numlock);
 

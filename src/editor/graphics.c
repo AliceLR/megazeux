@@ -143,8 +143,10 @@ void ec_load_ascii(void)
 
 void ec_load_char_ascii(Uint32 char_number)
 {
+  Uint32 ascii_number = char_number & 0xFF;
+
   memcpy(graphics.charset + (char_number * CHAR_SIZE),
-   ascii_charset + (char_number * CHAR_SIZE), CHAR_SIZE);
+   ascii_charset + (ascii_number * CHAR_SIZE), CHAR_SIZE);
 
   // some renderers may want to map charsets to textures
   if(graphics.renderer.remap_charsets)
@@ -153,8 +155,10 @@ void ec_load_char_ascii(Uint32 char_number)
 
 void ec_load_char_mzx(Uint32 char_number)
 {
+  Uint32 default_number = char_number & 0xFF;
+
   memcpy(graphics.charset + (char_number * CHAR_SIZE),
-   graphics.default_charset + (char_number * CHAR_SIZE), CHAR_SIZE);
+   graphics.default_charset + (default_number * CHAR_SIZE), CHAR_SIZE);
 
   // some renderers may want to map charsets to textures
   if(graphics.renderer.remap_charsets)

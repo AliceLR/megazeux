@@ -43,6 +43,9 @@ FEATURES
 + Added color selection to the character editor. Press C to
   choose a color to preview and edit chars with, and press Alt+C
   to revert back to the default grey.
++ Added extended charset support to the char editor. Extended
+  charsets can be selected during char selection. Note that in
+  gameplay these chars can be accessed only by unbound sprites.
 + The character editor help now covers several shortcuts that
   were previously missing (Alt+B, Shift+Arrows, etc...).
 + The undo/redo shortcuts in the character editor are now Ctrl+Z

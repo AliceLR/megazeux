@@ -55,7 +55,7 @@ struct undo_history *construct_charset_undo_history(int max_size);
 struct undo_history *construct_board_undo_history(int max_size);
 struct undo_history *construct_layer_undo_history(int max_size);
 
-void add_charset_undo_frame(struct undo_history *h, int offset,
+void add_charset_undo_frame(struct undo_history *h, int charset, int first_char,
  int width, int height);
 
 void add_board_undo_frame(struct world *mzx_world, struct undo_history *h,

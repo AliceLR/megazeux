@@ -809,8 +809,9 @@ void update_screen(void)
 
     for(layer = 0; layer < graphics.layer_count; layer++)
     {
-      graphics.renderer.render_layer(&graphics,
-       graphics.sorted_video_layers[layer]);
+      if(graphics.sorted_video_layers[layer]->data)
+        graphics.renderer.render_layer(&graphics,
+         graphics.sorted_video_layers[layer]);
     }
   }
   else
@@ -1270,6 +1271,7 @@ static void init_layers(void)
   graphics.video_layers[OVERLAY_LAYER].mode = graphics.screen_mode;
   graphics.video_layers[UI_LAYER].mode = 0;
 
+  graphics.layer_count = 3;
   blank_layers();
 }
 
@@ -1308,30 +1310,37 @@ void blank_layers(void)
   }
 
   // Delete the rest of the layers
-  destruct_extra_layers();
+  destruct_extra_layers(0);
 }
 
-void destruct_extra_layers(void)
+void destruct_extra_layers(Uint32 first)
 {
-  // Deletes every layer after the main three
+  // Deletes every extra layer starting from 'first' onward
   Uint32 i;
-  for(i = 3; i < graphics.layer_count; i++)
-  {
-    if(graphics.video_layers[i].data)
-      free(graphics.video_layers[i].data);
-  }
-  graphics.layer_count = 3;
 
-  // If this is still needed, dirty_ui() or create_layer() will fix it
-  graphics.requires_extended = false;
+  if(first <= UI_LAYER)
+    first = UI_LAYER + 1;
+
+  for(i = first; i < graphics.layer_count; i++)
+  {
+    free(graphics.video_layers[i].data);
+    graphics.video_layers[i].data = NULL;
+  }
+
+  if(graphics.layer_count > first)
+    graphics.layer_count = first;
+
+  // Extended graphics may be no longer needed after destroying layers
+  if(graphics.layer_count == 3)
+    graphics.requires_extended = false;
 }
 
 void destruct_layers(void)
 {
   Uint32 i;
-  for (i = 0; i < graphics.layer_count; i++)
+  for(i = 0; i < graphics.layer_count; i++)
   {
-    if (graphics.video_layers[i].data)
+    if(graphics.video_layers[i].data)
       free(graphics.video_layers[i].data);
   }
   graphics.layer_count = 0;

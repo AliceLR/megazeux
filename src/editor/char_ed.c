@@ -61,6 +61,8 @@
 
 #define CHARS_SHOW_WIDTH 22
 
+Uint32 mini_draw_layer = -1;
+Uint32 mini_highlight_layer = -1;
 static char char_copy_buffer[8 * 14 * 32];
 static int char_copy_width = 8;
 static int char_copy_height = 14;
@@ -69,6 +71,7 @@ static int current_width = 1;
 static int current_height = 1;
 static int highlight_width = 1;
 static int highlight_height = 1;
+static int current_charset = 0;
 static int current_palette = 0x08;
 static int use_default_palette = 1;
 static int num_files = 1;
@@ -194,27 +197,26 @@ static void fill_region(char *buffer, int x, int y,
 }
 
 static void expand_buffer(char *buffer, int width, int height,
- int cwidth, int cheight, int offset, int smzx)
+ int cwidth, int cheight, int current_char, int current_charset)
 {
   char char_buffer[32 * 14];
   char *buffer_ptr = buffer;
   char *cbuffer_ptr = char_buffer;
-  int current_char = offset;
   int cx, cy, x, y, i, shift;
   int cskip = 32 - cwidth;
   char *last_ptr, *last_ptr2;
 
   for(cy = 0; cy < cheight; cy++, current_char += cskip)
   {
-    for(cx = 0; cx < cwidth; cx++, current_char++,
-     cbuffer_ptr += 14)
+    for(cx = 0; cx < cwidth; cx++, current_char++, cbuffer_ptr += 14)
     {
-      current_char &= 0xFF; // Bind to the first charset
-      ec_read_char(current_char, cbuffer_ptr);
+      // Bind to the current charset
+      current_char &= 0xFF;
+      ec_read_char(current_char + (current_charset * 256), cbuffer_ptr);
     }
   }
 
-  if(smzx)
+  if(get_screen_mode())
   {
     int skip = (width - 1) * 4;
     int skip2 = width * 4 * 14;
@@ -267,21 +269,21 @@ static void expand_buffer(char *buffer, int width, int height,
 }
 
 static void collapse_buffer(char *buffer, int width, int height,
- int cwidth, int cheight, int offset, int smzx, struct undo_history *h)
+ int cwidth, int cheight, int current_char, int current_charset,
+ struct undo_history *h)
 {
   char char_buffer[32 * 14];
   char *buffer_ptr = buffer;
   char *cbuffer_ptr = char_buffer;
-  int current_char = offset;
   int cx, cy, x, y, i, shift;
   int cskip = 32 - cwidth;
   char *last_ptr, *last_ptr2;
   int current_row;
 
   if(h)
-    add_charset_undo_frame(h, current_char, cwidth, cheight);
+    add_charset_undo_frame(h, current_charset, current_char, cwidth, cheight);
 
-  if(smzx)
+  if(get_screen_mode())
   {
     int skip = (width - 1) * 4;
     int skip2 = width * 4 * 14;
@@ -336,14 +338,15 @@ static void collapse_buffer(char *buffer, int width, int height,
     }
   }
 
-  for(cbuffer_ptr = char_buffer, cy = 0; cy < cheight;
-   cy++, current_char += cskip)
+  cbuffer_ptr = char_buffer;
+
+  for(cy = 0; cy < cheight; cy++, current_char += cskip)
   {
-    for(cx = 0; cx < cwidth; cx++, current_char++,
-     cbuffer_ptr += 14)
+    for(cx = 0; cx < cwidth; cx++, current_char++, cbuffer_ptr += 14)
     {
-      current_char &= 0xFF; // Bind to the first charset
-      ec_change_char(current_char, cbuffer_ptr);
+      // Bind to the current charset
+      current_char &= 0xFF;
+      ec_change_char(current_char + (current_charset * 256), cbuffer_ptr);
     }
   }
 
@@ -607,8 +610,9 @@ static void draw_multichar_smzx(char *buffer, int start_x, int start_y,
   }
 }
 
-static void draw_mini_buffer(int info_x, int info_y, int current_width,
- int current_height, int highlight_width, int highlight_height, int screen_mode)
+static void draw_mini_buffer(int info_x, int info_y, int current_charset,
+ int current_char, int current_width, int current_height,
+ int highlight_width, int highlight_height)
 {
   char mini_buffer[32];
   int chars_show_width;
@@ -623,19 +627,30 @@ static void draw_mini_buffer(int info_x, int info_y, int current_width,
   // 0- not highlight, 1- highlight
   char use_color[] = { 0x80, 0x8F };
   char use_offset[] = { 16, 16 };
-  int use_overlay[] = { 0, 0 };
+  Uint32 use_layer[] = { 0, 0 };
   int is_highlight;
 
-  // Apply user-defined palette to the highlight as-needed
+  mini_draw_layer = create_layer(0, 0, 80, 25, LAYER_DRAWORDER_UI - 10,
+   -1, (current_charset * 256), 1);
+
+  set_layer_mode(mini_draw_layer, 0);
+  use_layer[0] = mini_draw_layer;
+  use_layer[1] = mini_draw_layer;
+
   if(!use_default_palette)
   {
+    // Apply user-defined palette to the highlight and create a layer for it
+    mini_highlight_layer = create_layer(0, 0, 80, 25, LAYER_DRAWORDER_UI - 9,
+     -1, (current_charset * 256), 1);
+
+    use_layer[1] = mini_highlight_layer;
     use_color[1] = current_palette;
     use_offset[1] = 0;
-
+  }
+  else
+  {
     // The protected palette and SMZX modes simply do not work well together.
-    // Display on the overlay only when using a custom palette.
-    if(screen_mode)
-      use_overlay[1] = 1;
+    mini_highlight_layer = -1;
   }
 
   // Mini buffer
@@ -652,11 +667,10 @@ static void draw_mini_buffer(int info_x, int info_y, int current_width,
     for(x = 0; x < current_width; x++, offset++)
     {
       select_layer(UI_LAYER);
-      if(use_overlay[1])
-      {
-        erase_char(x + info_x, info_y + y + 1);
-        select_layer(OVERLAY_LAYER);
-      }
+      erase_char(info_x + x, info_y + y + 1);
+
+      select_layer(use_layer[1]);
+
       draw_char_ext(mini_buffer[offset], use_color[1],
        info_x + x, info_y + y + 1, 0, use_offset[1]);
     }
@@ -682,11 +696,10 @@ static void draw_mini_buffer(int info_x, int info_y, int current_width,
        (y < highlight_height);
 
       select_layer(UI_LAYER);
-      if(use_overlay[is_highlight])
-      {
-        erase_char(chars_show_x + x, chars_show_y + y);
-        select_layer(OVERLAY_LAYER);
-      }
+      erase_char(chars_show_x + x, chars_show_y + y);
+
+      select_layer(use_layer[is_highlight]);
+
       draw_char_ext(draw_char, use_color[is_highlight],
        chars_show_x + x, chars_show_y + y, 0, use_offset[is_highlight]);
     }
@@ -772,9 +785,9 @@ int char_editor(struct world *mzx_world)
 
   m_show();
   // Get char
-  expand_buffer(buffer, current_width,
-   current_height, highlight_width, highlight_height,
-   current_char, screen_mode);
+  expand_buffer(buffer, current_width, current_height,
+   highlight_width, highlight_height, current_char,
+   current_charset);
 
   save_screen();
 
@@ -842,7 +855,8 @@ int char_editor(struct world *mzx_world)
 
     // Current character
     write_string("Current char-\t(#000)", info_x, info_y, 0x8F, 1);
-    write_number(current_char, 0x8F, info_x + 20, info_y, 3, 0, 10);
+    write_number(current_char + (current_charset * 256), 0x8F,
+     info_x + 22, info_y, 3, 3, 10);
 
     // Help
     write_string(help_text[help_page],
@@ -927,8 +941,8 @@ int char_editor(struct world *mzx_world)
       }
     }
 
-    draw_mini_buffer(info_x, info_y, current_width, current_height,
-     highlight_width, highlight_height, screen_mode);
+    draw_mini_buffer(info_x, info_y, current_charset, current_char,
+     current_width, current_height, highlight_width, highlight_height);
 
     select_layer(UI_LAYER);
 
@@ -1107,12 +1121,12 @@ int char_editor(struct world *mzx_world)
             }
 
             if(changed)
-              add_charset_undo_frame(h, current_char,
+              add_charset_undo_frame(h, current_charset, current_char,
                highlight_width, highlight_height);
 
-            collapse_buffer(buffer, current_width,
-             current_height, highlight_width, highlight_height,
-             current_char, screen_mode, NULL);
+            collapse_buffer(buffer, current_width, current_height,
+             highlight_width, highlight_height, current_char,
+             current_charset, NULL);
 
             update_undo_frame(h);
 
@@ -1164,9 +1178,9 @@ int char_editor(struct world *mzx_world)
             buffer_ptr[block_width - 1] = wrap;
           }
 
-          collapse_buffer(buffer, current_width,
-           current_height, highlight_width, highlight_height,
-           current_char, screen_mode, h);
+          collapse_buffer(buffer, current_width, current_height,
+           highlight_width, highlight_height, current_char,
+           current_charset, h);
         }
         else
         {
@@ -1197,9 +1211,9 @@ int char_editor(struct world *mzx_world)
             buffer_ptr[0] = wrap;
           }
 
-          collapse_buffer(buffer, current_width,
-           current_height, highlight_width, highlight_height,
-           current_char, screen_mode, h);
+          collapse_buffer(buffer, current_width, current_height,
+           highlight_width, highlight_height, current_char,
+           current_charset, h);
         }
         else
         {
@@ -1231,9 +1245,9 @@ int char_editor(struct world *mzx_world)
           }
 
           memcpy(buffer_ptr, wrap_row, block_width);
-          collapse_buffer(buffer, current_width,
-           current_height, highlight_width, highlight_height,
-           current_char, screen_mode, h);
+          collapse_buffer(buffer, current_width, current_height,
+           highlight_width, highlight_height, current_char,
+           current_charset, h);
 
           free(wrap_row);
         }
@@ -1268,9 +1282,9 @@ int char_editor(struct world *mzx_world)
           }
 
           memcpy(buffer_ptr, wrap_row, block_width);
-          collapse_buffer(buffer, current_width,
-           current_height, highlight_width, highlight_height,
-           current_char, screen_mode, h);
+          collapse_buffer(buffer, current_width, current_height,
+           highlight_width, highlight_height, current_char,
+           current_charset, h);
 
           free(wrap_row);
         }
@@ -1293,9 +1307,9 @@ int char_editor(struct world *mzx_world)
         else
           buffer[x + (y * buffer_width)] ^= 1;
 
-        collapse_buffer(buffer, current_width,
-         current_height, highlight_width, highlight_height,
-         current_char, screen_mode, h);
+        collapse_buffer(buffer, current_width, current_height,
+         highlight_width, highlight_height, current_char,
+         current_charset, h);
 
         break;
       }
@@ -1303,11 +1317,10 @@ int char_editor(struct world *mzx_world)
       case IKEY_RETURN:
       {
         int show_palette = use_default_palette ? -1 : current_palette;
-        int FIXME = 0;
 
         int new_char =
          char_selection_ext(current_char, 1, &highlight_width,
-         &highlight_height, &FIXME, show_palette);
+         &highlight_height, &current_charset, show_palette);
 
         int highlight_size = highlight_width * highlight_height;
         int search_order[16];
@@ -1399,7 +1412,8 @@ int char_editor(struct world *mzx_world)
           current_char = new_char;
 
         expand_buffer(buffer, current_width, current_height,
-         highlight_width, highlight_height, current_char, screen_mode);
+         highlight_width, highlight_height, current_char,
+         current_charset);
 
         changed = 1;
         break;
@@ -1435,9 +1449,9 @@ int char_editor(struct world *mzx_world)
         {
           memset(buffer_ptr, 0, block_width);
         }
-        collapse_buffer(buffer, current_width,
-         current_height, highlight_width, highlight_height,
-         current_char, screen_mode, h);
+        collapse_buffer(buffer, current_width, current_height,
+         highlight_width, highlight_height, current_char,
+         current_charset, h);
 
         break;
       }
@@ -1536,9 +1550,9 @@ int char_editor(struct world *mzx_world)
           memcpy(buffer_ptr, src_ptr, copy_width);
         }
 
-        collapse_buffer(buffer, current_width,
-         current_height, highlight_width, highlight_height,
-         current_char, screen_mode, h);
+        collapse_buffer(buffer, current_width, current_height,
+         highlight_width, highlight_height, current_char,
+         current_charset, h);
 
         break;
       }
@@ -1546,6 +1560,7 @@ int char_editor(struct world *mzx_world)
       case IKEY_F4:
       {
         // ASCII Default
+        int charset_offset = current_charset * 256;
         int char_offset = current_char;
         int skip = 32 - highlight_width;
 
@@ -1553,7 +1568,8 @@ int char_editor(struct world *mzx_world)
         if(get_alt_status(keycode_internal))
           break;
 
-        add_charset_undo_frame(h, current_char,
+        if(current_charset )
+        add_charset_undo_frame(h, current_charset, current_char,
          highlight_width, highlight_height);
 
         for(i = 0; i < highlight_height; i++,
@@ -1562,15 +1578,17 @@ int char_editor(struct world *mzx_world)
           for(i2 = 0; i2 < highlight_width; i2++,
            char_offset++)
           {
-            char_offset = char_offset % 256; // Wrap away from the protected set
-            ec_load_char_ascii(char_offset);
+            // Wrap to current charset
+            char_offset = char_offset % 256;
+            ec_load_char_ascii(char_offset + charset_offset);
           }
         }
 
         update_undo_frame(h);
 
         expand_buffer(buffer, current_width, current_height,
-         highlight_width, highlight_height, current_char, screen_mode);
+         highlight_width, highlight_height, current_char,
+         current_charset);
 
         break;
       }
@@ -1578,10 +1596,11 @@ int char_editor(struct world *mzx_world)
       case IKEY_F5:
       {
         // MZX Default
+        int charset_offset = current_charset * 256;
         int char_offset = current_char;
         int skip = 32 - highlight_width;
 
-        add_charset_undo_frame(h, current_char,
+        add_charset_undo_frame(h, current_charset, current_char,
          highlight_width, highlight_height);
 
         for(i = 0; i < highlight_height; i++,
@@ -1590,15 +1609,17 @@ int char_editor(struct world *mzx_world)
           for(i2 = 0; i2 < highlight_width; i2++,
            char_offset++)
           {
-            char_offset = char_offset % 256; // Wrap away from the protected set
-            ec_load_char_mzx(char_offset);
+            // Wrap to current charset
+            char_offset = char_offset % 256;
+            ec_load_char_mzx(char_offset + charset_offset);
           }
         }
 
         update_undo_frame(h);
 
         expand_buffer(buffer, current_width, current_height,
-         highlight_width, highlight_height, current_char, screen_mode);
+         highlight_width, highlight_height, current_char,
+         current_charset);
 
         break;
       }
@@ -1637,7 +1658,8 @@ int char_editor(struct world *mzx_world)
         changed = 1;
         current_char -= highlight_width;
         expand_buffer(buffer, current_width, current_height,
-         highlight_width, highlight_height, current_char, screen_mode);
+         highlight_width, highlight_height, current_char,
+         current_charset);
         break;
       }
 
@@ -1647,7 +1669,8 @@ int char_editor(struct world *mzx_world)
         changed = 1;
         current_char += highlight_width;
         expand_buffer(buffer, current_width, current_height,
-         highlight_width, highlight_height, current_char, screen_mode);
+         highlight_width, highlight_height, current_char,
+         current_charset);
         break;
       }
 
@@ -1705,9 +1728,9 @@ int char_editor(struct world *mzx_world)
           {
             fill_region(buffer, x, y, buffer_width, buffer_height,
              check, fill);
-            collapse_buffer(buffer, current_width,
-             current_height, highlight_width, highlight_height,
-             current_char, screen_mode, h);
+            collapse_buffer(buffer, current_width, current_height,
+             highlight_width, highlight_height, current_char,
+             current_charset, h);
           }
         }
         else
@@ -1730,9 +1753,9 @@ int char_editor(struct world *mzx_world)
              block_width);
           }
 
-          collapse_buffer(buffer, current_width,
-           current_height, highlight_width, highlight_height,
-           current_char, screen_mode, h);
+          collapse_buffer(buffer, current_width, current_height,
+           highlight_width, highlight_height, current_char,
+           current_charset, h);
 
           free(temp_buffer);
         }
@@ -1769,9 +1792,9 @@ int char_editor(struct world *mzx_world)
           start_offset = previous_offset + buffer_width;
         }
 
-        collapse_buffer(buffer, current_width,
-         current_height, highlight_width, highlight_height,
-         current_char, screen_mode, h);
+        collapse_buffer(buffer, current_width, current_height,
+         highlight_width, highlight_height, current_char,
+         current_charset, h);
 
         break;
       }
@@ -1805,9 +1828,9 @@ int char_editor(struct world *mzx_world)
           }
         }
 
-        collapse_buffer(buffer, current_width,
-         current_height, highlight_width, highlight_height,
-         current_char, screen_mode, h);
+        collapse_buffer(buffer, current_width, current_height,
+         highlight_width, highlight_height, current_char,
+         current_charset, h);
 
         break;
       }
@@ -1827,7 +1850,7 @@ int char_editor(struct world *mzx_world)
 
           expand_buffer(buffer, current_width, current_height,
            highlight_width, highlight_height, current_char,
-           screen_mode);
+           current_charset);
           changed = 1;
         }
         break;
@@ -1842,7 +1865,7 @@ int char_editor(struct world *mzx_world)
 
           expand_buffer(buffer, current_width, current_height,
            highlight_width, highlight_height, current_char,
-           screen_mode);
+           current_charset);
           changed = 1;
         }
         break;
@@ -1922,7 +1945,7 @@ int char_editor(struct world *mzx_world)
 
             // Save the whole charset to the history because the
             // resulting behavior here is hard to define
-            add_charset_undo_frame(h, 0, 256, 1);
+            add_charset_undo_frame(h, current_charset, 0, 256, 1);
 
             if(strchr(import_string, '#') == NULL)
               num_files_present = 1;
@@ -1943,7 +1966,8 @@ int char_editor(struct world *mzx_world)
             update_undo_frame(h);
 
             expand_buffer(buffer, current_width, current_height,
-             highlight_width, highlight_height, current_char, screen_mode);
+             highlight_width, highlight_height, current_char,
+             current_charset);
           }
         }
         break;
@@ -1969,10 +1993,15 @@ int char_editor(struct world *mzx_world)
           break;
         }
       }
-      collapse_buffer(buffer, current_width,
-       current_height, highlight_width, highlight_height,
-       current_char, screen_mode, h);
+      collapse_buffer(buffer, current_width, current_height,
+       highlight_width, highlight_height, current_char,
+       current_charset, h);
     }
+
+    // Destroy the mini buffer layers
+    destruct_extra_layers(mini_draw_layer);
+    destruct_extra_layers(mini_highlight_layer);
+
   } while(key != IKEY_ESCAPE);
 
   // Prevent UI keys from carrying through.
