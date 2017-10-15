@@ -241,6 +241,7 @@ int draw_window_box_ext(int x1, int y1, int x2, int y2, int color,
 #define radio_on "(\x07)"
 #define radio_off "( )"
 #define num_buttons " \x18  \x19 "
+#define list_button " \x1F "
 
 #define char_sel_arrows_0 '\x1E'
 #define char_sel_arrows_1 '\x1F'
@@ -263,49 +264,100 @@ int draw_window_box_ext(int x1, int y1, int x2, int y2, int color,
 // ID editor only.
 
 __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
- int allow_multichar, int *width_ptr, int *height_ptr)
+ int *width_ptr, int *height_ptr, int *select_charset, int selection_pal)
 {
-  int exit;
-  int width = 1;
-  int height = 1;
-  int x, y;
-  int i, i2;
-  int key;
+  Uint32 pal_layer = OVERLAY_LAYER;
+  Uint32 chars_layer = UI_LAYER;
+  int allow_multichar = 0;
+  int current_charset = 0;
+  int screen_mode = 0;
   int shifted = 0;
   int highlight_x = 0;
   int highlight_y = 0;
   int start_x = 0;
   int start_y = 0;
+  int width = 1;
+  int height = 1;
+  int exit = 0;
+  int bottom = 16;
+  int x, y;
+  int i, i2;
+  int key;
 
-  // Prevent previous keys from carrying through.
-  force_release_all_keys();
-
-  if(allow_multichar)
+  if(width_ptr && height_ptr)
   {
+    allow_multichar = 1;
     width = *width_ptr;
     height = *height_ptr;
   }
 
-  // Save screen
-  save_screen();
+  if(select_charset)
+  {
+    pal_layer = create_layer(0, 0, 80, 25, LAYER_DRAWORDER_UI - 2,
+     -1, *select_charset * 256, 1);
 
-  if(context == CTX_MAIN)
-    set_context(CTX_DIALOG_BOX);
-  else
-    set_context(context);
+    chars_layer = create_layer(0, 0, 80, 25, LAYER_DRAWORDER_UI - 1,
+     -1, *select_charset * 256, 1);
+
+    set_layer_mode(chars_layer, 0);
+
+    current_charset = *select_charset;
+    screen_mode = get_screen_mode();
+    bottom++;
+  }
+
+  if(selection_pal < 0)
+  {
+    selection_pal = DI_ACTIVE;
+    screen_mode = 0;
+  }
+
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+  save_screen();
 
   cursor_off();
 
-  // Draw box
-  draw_window_box(20, 5, 57, 16, DI_MAIN, DI_DARK, DI_CORNER, 1, 1);
-  // Add title
-  if(allow_multichar)
-    write_string(" Select characters ", 22, 5, DI_TITLE, 0);
-  else
-    write_string(" Select a character ", 22, 5, DI_TITLE, 0);
-
   do
   {
+    // Draw box and inner box
+    draw_window_box(20, 5, 57, bottom, DI_MAIN, DI_DARK, DI_CORNER, 1, 1);
+    draw_window_box(22, 6, 55, 15, DI_DARK, DI_MAIN, DI_CORNER, 0, 0);
+
+    // Add title
+    if(allow_multichar)
+      write_string(" Select characters ", 22, 5, DI_TITLE, 0);
+    else
+      write_string(" Select a character ", 22, 5, DI_TITLE, 0);
+
+    if(select_charset)
+    {
+      // Shift layer offsets to display the current charset
+      set_layer_offset(pal_layer, current_charset * 256);
+      set_layer_offset(chars_layer, current_charset * 256);
+
+      write_string("X PgUp \t\t\t\t PgDn X", 22, 16, DI_NONACTIVE, 1);
+      draw_char(char_sel_arrows_3, DI_NONACTIVE, 22, 16);
+      draw_char(char_sel_arrows_2, DI_NONACTIVE, 55, 16);
+
+      if(current_charset)
+      {
+        write_string("Extended Set ## ", 32, 16, DI_TEXT_GREY, 0);
+        write_number(current_charset, DI_TEXT_GREY, 46, 16, 2, 1, 10);
+      }
+      else
+      {
+        write_string(" Main Charset  ", 32, 16, DI_TEXT_GREY, 0);
+      }
+
+      // Clear the UI where the char display will appear
+      for(x = 0; x < 32; x++)
+        for(y = 0; y < 8; y++)
+          erase_char(x + 23, y + 7);
+    }
+
+    select_layer(chars_layer);
+
     // Draw character set
     for(x = 0; x < 32; x++)
     {
@@ -316,11 +368,12 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
       }
     }
 
-    // Calculate x/y
     x = (current & 31) + 23;
     y = (current >> 5) + 7;
+
     if(get_shift_status(keycode_internal) && allow_multichar)
     {
+      // Update selection
       if(!shifted)
       {
         highlight_x = x;
@@ -365,6 +418,7 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
       // Highlight active character(s)
       int char_offset;
       int skip = 32 - width;
+      int x2, y2;
 
       if(shifted == 1)
       {
@@ -390,34 +444,52 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
       {
         for(i2 = 0; i2 < width; i2++, char_offset++)
         {
-          draw_char_ext(char_offset, DI_ACTIVE,
-           (char_offset & 31) + 23, ((char_offset & 255) >> 5) + 7, 0, 16);
+          x2 = (char_offset & 31) + 23;
+          y2 = ((char_offset & 255) >> 5) + 7;
+
+          if(screen_mode)
+          {
+            select_layer(chars_layer);
+            erase_char(x2, y2);
+            select_layer(pal_layer);
+            draw_char_ext(char_offset, selection_pal, x2, y2, 0, 0);
+          }
+          else
+          {
+            draw_char_ext(char_offset, selection_pal, x2, y2, 0, 16);
+          }
         }
       }
     }
 
+    select_layer(UI_LAYER);
+
     // Special display for allow_char_255 == 0
     if(!allow_char_255)
     {
-      draw_char('?', 0x05 + (current == 255) * 0x08, 31+23, 7+7);
+      int color = 0x05;
+
+      if(current == 255)
+        color = 0x0D;
+
+      draw_char('?', color, 31+23, 7+7);
     }
 
     // Draw arrows
-    draw_window_box(22, 6, 55, 15, DI_DARK, DI_MAIN, DI_CORNER, 0, 0);
     draw_char(char_sel_arrows_0, DI_TEXT, x, 15);
     draw_char(char_sel_arrows_1, DI_TEXT, x, 6);
     draw_char(char_sel_arrows_2, DI_TEXT, 22, y);
     draw_char(char_sel_arrows_3, DI_TEXT, 55, y);
+
     // Write number of character
-    write_number(current, DI_MAIN, 53, 16, 3, 0, 10);
+    write_number(current, DI_MAIN, 53, bottom, 3, 0, 10);
 
     update_screen();
-
-    // Get key
     update_event_status_delay();
     key = get_key(keycode_internal_wrt_numlock);
 
-    exit = get_exit_status();
+    if(get_exit_status())
+      key = IKEY_ESCAPE;
 
     if(get_mouse_press())
     {
@@ -444,6 +516,12 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
     {
       case IKEY_ESCAPE:
       {
+        if(current == 0)
+          current = -256;
+
+        else
+          current = -current;
+
         exit = 1;
         break;
       }
@@ -468,20 +546,19 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
           current = ((y - 7) * 32) + (x - 23);
         }
 
-        // Prevent UI keys from carrying through.
-        force_release_all_keys();
-
-        // Selected
-        pop_context();
-        restore_screen();
-
         if(allow_multichar)
         {
           *width_ptr = width;
           *height_ptr = height;
         }
 
-        return current;
+        if(select_charset)
+        {
+          *select_charset = current_charset;
+        }
+
+        exit = 1;
+        break;
       }
 
       case IKEY_UP:
@@ -520,6 +597,32 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
         break;
       }
 
+      case IKEY_PAGEUP:
+      {
+        if(select_charset)
+        {
+          current_charset--;
+
+          if(current_charset < 0)
+            current_charset = NUM_CHARSETS - 2;
+        }
+
+        break;
+      }
+
+      case IKEY_PAGEDOWN:
+      {
+        if(select_charset)
+        {
+          current_charset++;
+
+          if(current_charset == NUM_CHARSETS - 1)
+            current_charset = 0;
+        }
+
+        break;
+      }
+
       default:
       {
         // If this is from 32 to 255, jump there.
@@ -531,28 +634,22 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
         break;
       }
     }
+  } while(!exit);
 
-    // ESC or exit event
-    if(exit)
-    {
-      // Prevent UI keys from carrying through.
-      force_release_all_keys();
+  // Get rid of the extra layers required for extended charsets
+  if(select_charset)
+    destruct_extra_layers();
 
-      pop_context();
-      restore_screen();
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
+  restore_screen();
 
-      if(current == 0)
-        return -256;
-      else
-        return -current;
-    }
-
-  } while(1);
+  return current;
 }
 
 int char_selection(int current)
 {
-  return char_selection_ext(current, 1, 0, NULL, NULL);
+  return char_selection_ext(current, 1, NULL, NULL, NULL, -1);
 }
 
 __editor_maybe_static void construct_element(struct element *e, int x, int y,
@@ -905,20 +1002,17 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
 
       case IKEY_ESCAPE: // ESC
       {
-        //Only work on press.  Ignore autorepeat.
-        if (get_key_status(keycode_internal, IKEY_ESCAPE) == 1)
+        // Only work on press.  Ignore autorepeat.
+        if(get_key_status(keycode_internal, IKEY_ESCAPE) == 1)
           exit = 1;
 
-        //if (new_key == current_key)
-        //  exit = 1;
         break;
       }
 
 #ifdef CONFIG_HELPSYS
       case IKEY_F1: // F1
       {
-        if (!conf->standalone_mode ||
-         get_counter(mzx_world, "HELP_MENU", 0))
+        if(!conf->standalone_mode || get_counter(mzx_world, "HELP_MENU", 0))
         {
           help_system(mzx_world);
         }
@@ -1110,8 +1204,6 @@ static void draw_number_box(struct world *mzx_world, struct dialog *di,
     write_string(num_buttons, x + 7, y, DI_ARROWBUTTON, 0);
   }
 }
-
-#define list_button " \x1F "
 
 static void draw_file_selector(struct world *mzx_world, struct dialog *di,
  struct element *e, int color, int active)

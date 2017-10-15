@@ -1302,9 +1302,13 @@ int char_editor(struct world *mzx_world)
 
       case IKEY_RETURN:
       {
+        int show_palette = use_default_palette ? -1 : current_palette;
+        int FIXME = 0;
+
         int new_char =
-         char_selection_ext(current_char, 1, 1, &highlight_width,
-         &highlight_height);
+         char_selection_ext(current_char, 1, &highlight_width,
+         &highlight_height, &FIXME, show_palette);
+
         int highlight_size = highlight_width * highlight_height;
         int search_order[16];
         int factors[6];
@@ -1677,8 +1681,10 @@ int char_editor(struct world *mzx_world)
           if(new_color >= 0)
           {
             current_palette = new_color;
-            char_editor_update_colors();
             use_default_palette = 0;
+
+            if(screen_mode)
+              char_editor_update_colors();
           }
         }
         break;

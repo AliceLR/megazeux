@@ -909,11 +909,16 @@ static int key_char_box(struct world *mzx_world, struct dialog *di,
     case IKEY_RETURN:
     {
       int current_char =
-       char_selection_ext(*(src->result), src->allow_char_255, 0, NULL, NULL);
+       char_selection_ext(*(src->result), src->allow_char_255,
+        NULL, NULL, NULL, -1);
 
-      if((current_char == 255) && !(src->allow_char_255) &&
-       confirm(mzx_world, "Use param for the char of this type (like CustomBlock)?"))
-        current_char = -1; //don't change the char if the user cancels.
+      if((current_char == 255) && !(src->allow_char_255))
+      {
+        // Don't change the char if the user cancels.
+        if(confirm(mzx_world,
+         "Use param for the char of this type (like CustomBlock)?"))
+          current_char = -1;
+      }
 
       if(current_char >= 0)
         *(src->result) = current_char;

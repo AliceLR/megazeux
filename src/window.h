@@ -252,6 +252,7 @@ CORE_LIBSPEC void meter_interior(unsigned int progress, unsigned int out_of);
 #define DI_TITLE            31
 #define DI_LINE             16
 #define DI_TEXT             27
+#define DI_TEXT_GREY        23
 #define DI_NONACTIVE        25
 #define DI_ACTIVE           31
 #define DI_INPUT            159
@@ -311,6 +312,8 @@ CORE_LIBSPEC void construct_element(struct element *e, int x, int y,
   struct element *e, int mouse_button, int mouse_x, int mouse_y),
  int (* idle_function)(struct world *mzx_world, struct dialog *di,
   struct element *e));
+CORE_LIBSPEC struct element *construct_input_box(int x, int y,
+ const char *question, int max_length, int input_flags, char *result);
 CORE_LIBSPEC struct element *construct_list_box(int x, int y,
  const char **choices, int num_choices, int num_choices_visible,
  int choice_length, int return_value, int *result, int *result_offset,
@@ -321,9 +324,7 @@ CORE_LIBSPEC void construct_dialog_ext(struct dialog *src, const char *title,
  int (* idle_function)(struct world *mzx_world, struct dialog *di, int key));
 
 CORE_LIBSPEC int char_selection_ext(int current, int allow_char_255,
- int allow_multichar, int *width_ptr, int *height_ptr);
-CORE_LIBSPEC struct element *construct_input_box(int x, int y,
- const char *question, int max_length, int input_flags, char *result);
+ int *width_ptr, int *height_ptr, int *charset, int selection_pal);
 CORE_LIBSPEC int file_manager(struct world *mzx_world,
  const char *const *wildcards, const char *default_ext, char *ret,
  const char *title, int dirs_okay, int allow_new,
