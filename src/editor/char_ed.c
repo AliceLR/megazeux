@@ -112,6 +112,77 @@ static const char *help_text_smzx = "Ins/1-4 Select";
 static const int prev_pixel[] = { 3, 2, 0, 1 };
 static const int next_pixel[] = { 2, 3, 1, 0 };
 
+static int char_select_next_tile(int current_char, int direction,
+ int highlight_width, int highlight_height)
+{
+  // -1 is previous, 1 is next
+  int x = current_char & 31;
+  int y = (current_char & 0xFF) >> 5;
+
+  int mod_x = x % highlight_width;
+  int mod_y = y % highlight_height;
+
+  int tiles_width = (32 - mod_x) / highlight_width;
+  int tiles_height = (8 - mod_y) / highlight_height;
+
+  int last_x = (tiles_width - 1) * highlight_width + mod_x;
+  int last_y = (tiles_height - 1) * highlight_height + mod_y;
+
+  if(direction > 0)
+  {
+    if(highlight_height == 1)
+    {
+      // No need for tiling with N x 1 selection
+      x += highlight_width;
+    }
+    else
+
+    if(x == last_x)
+    {
+      x = mod_x;
+
+      if(y == last_y)
+        y = mod_y;
+
+      else
+        y += highlight_height;
+    }
+    else
+    {
+      x += highlight_width;
+    }
+  }
+  else
+
+  if(direction < 0)
+  {
+    if(highlight_height == 1)
+    {
+      x -= highlight_width;
+    }
+    else
+
+    if(x == mod_x)
+    {
+      x = last_x;
+
+      if(y == mod_y)
+        y = last_y;
+
+      else
+        y -= highlight_height;
+    }
+    else
+    {
+      x -= highlight_width;
+    }
+  }
+
+  current_char = (x + (y * 32)) & 0xFF;
+
+  return current_char;
+}
+
 static void char_editor_default_colors(void)
 {
   // Char display
@@ -1655,22 +1726,26 @@ int char_editor(struct world *mzx_world)
       case IKEY_KP_MINUS:
       case IKEY_MINUS:
       {
-        changed = 1;
-        current_char -= highlight_width;
+        current_char = char_select_next_tile(current_char, -1,
+         highlight_width, highlight_height);
+
         expand_buffer(buffer, current_width, current_height,
          highlight_width, highlight_height, current_char,
          current_charset);
+        changed = 1;
         break;
       }
 
       case IKEY_KP_PLUS:
       case IKEY_EQUALS:
       {
-        changed = 1;
-        current_char += highlight_width;
+        current_char = char_select_next_tile(current_char, 1,
+         highlight_width, highlight_height);
+
         expand_buffer(buffer, current_width, current_height,
          highlight_width, highlight_height, current_char,
          current_charset);
+        changed = 1;
         break;
       }
 

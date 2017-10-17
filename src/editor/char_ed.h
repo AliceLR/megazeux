@@ -30,9 +30,6 @@ __M_BEGIN_DECLS
 #include "../world_struct.h"
 
 int char_editor(struct world *mzx_world);
-int char_editor_ext(struct world *mzx_world);
-int smzx_char_editor(struct world *mzx_world);
-void fill_region_smzx(char *matrix, int x, int y, int check, int draw);
 
 __M_END_DECLS
 
