@@ -90,3 +90,34 @@ ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 		assets/shaders/scalers/simple.frag \
 		${DESTDIR}${SHAREDIR}/megazeux/assets/shaders/scalers/
 endif
+
+# Linux os specific uninstall target
+uninstall:
+	 ${RM} -rf \
+		${DESTDIR}${SHAREDIR}/megazeux \
+		${DESTDIR}${SHAREDIR}/megazeux/assets \
+		${DESTDIR}${SHAREDIR}/icons/megazeux.png \
+		${DESTDIR}${SHAREDIR}/applications/megazeux.desktop \
+		${DESTDIR}${SYSCONFDIR}/megazeux-config
+ifeq (${BUILD_MODULAR},1)
+	@${RM} -f \
+		${DESTDIR}${LIBDIR}/${core_target} \
+		${DESTDIR}${LIBDIR}/${editor_target}
+endif
+ifeq (${BUILD_MZXRUN},1)
+	@${RM} -f \
+		${DESTDIR}${GAMESDIR}/${mzxrun} \
+		${DESTDIR}${SHAREDIR}/applications/mzxrun.desktop
+endif
+ifeq (${BUILD_EDITOR},1)
+	@${RM} -f \
+		${DESTDIR}${GAMESDIR}/${mzx}
+endif
+ifeq (${BUILD_UTILS},1)
+	@${RM} -f \
+		${DESTDIR}${BINDIR}/checkres \
+		${DESTDIR}${BINDIR}/downver \
+		${DESTDIR}${BINDIR}/hlp2txt \
+		${DESTDIR}${BINDIR}/txt2hlp \
+		${DESTDIR}${BINDIR}/ccv
+endif
