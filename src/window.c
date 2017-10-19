@@ -263,6 +263,78 @@ int draw_window_box_ext(int x1, int y1, int x2, int y2, int color,
 // display corresponding to Custom* type behavior. This is meant for the char
 // ID editor only.
 
+// TODO this shouldn't really be here, but it's the best place for now.
+__editor_maybe_static int char_select_next_tile(int current_char,
+ int direction, int highlight_width, int highlight_height)
+{
+  // -1 is previous, 1 is next
+  int x = current_char & 31;
+  int y = (current_char & 0xFF) >> 5;
+
+  int mod_x = x % highlight_width;
+  int mod_y = y % highlight_height;
+
+  int tiles_width = (32 - mod_x) / highlight_width;
+  int tiles_height = (8 - mod_y) / highlight_height;
+
+  int last_x = (tiles_width - 1) * highlight_width + mod_x;
+  int last_y = (tiles_height - 1) * highlight_height + mod_y;
+
+  if(direction > 0)
+  {
+    if(highlight_height == 1)
+    {
+      // No need for tiling with N x 1 selection
+      x += highlight_width;
+    }
+    else
+
+    if(x == last_x)
+    {
+      x = mod_x;
+
+      if(y == last_y)
+        y = mod_y;
+
+      else
+        y += highlight_height;
+    }
+    else
+    {
+      x += highlight_width;
+    }
+  }
+  else
+
+  if(direction < 0)
+  {
+    if(highlight_height == 1)
+    {
+      x -= highlight_width;
+    }
+    else
+
+    if(x == mod_x)
+    {
+      x = last_x;
+
+      if(y == mod_y)
+        y = last_y;
+
+      else
+        y -= highlight_height;
+    }
+    else
+    {
+      x -= highlight_width;
+    }
+  }
+
+  current_char = (x + (y * 32)) & 0xFF;
+
+  return current_char;
+}
+
 __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
  int *width_ptr, int *height_ptr, int *select_charset, int selection_pal)
 {
@@ -620,6 +692,22 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
             current_charset = 0;
         }
 
+        break;
+      }
+
+      case IKEY_KP_MINUS:
+      case IKEY_MINUS:
+      {
+        // Move in tile increment
+        current = char_select_next_tile(current, -1, width, height);
+        break;
+      }
+
+      case IKEY_KP_PLUS:
+      case IKEY_EQUALS:
+      {
+        // Move in tile increment
+        current = char_select_next_tile(current, 1, width, height);
         break;
       }
 
