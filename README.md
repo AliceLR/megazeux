@@ -19,12 +19,12 @@ Windows releases are packaged with a copy of the game Caverns of Zeux.
 &nbsp; [![MacOS       ][arch-osx]][megazeux-osx]
 &nbsp; [![Source code ][arch-src]][megazeux-src]
 
-[arch-w64]: http://digitalmzx.net/archicons/windows64.png "Windows x64"
-[arch-w32]: http://digitalmzx.net/archicons/windows32.png "Windows x86"
-[arch-u64]: http://digitalmzx.net/archicons/ubuntu64.png  "Ubuntu AMD64"
-[arch-u32]: http://digitalmzx.net/archicons/ubuntu32.png  "Ubuntu i386"
-[arch-osx]: http://digitalmzx.net/archicons/osx.png       "MacOS"
-[arch-src]: http://digitalmzx.net/archicons/src.png   "Source code"
+[arch-w64]: http://vault.digitalmzx.net/css/arch/windows64.png "Windows x64"
+[arch-w32]: http://vault.digitalmzx.net/css/arch/windows32.png "Windows x86"
+[arch-u64]: http://vault.digitalmzx.net/css/arch/ubuntu64.png  "Ubuntu AMD64"
+[arch-u32]: http://vault.digitalmzx.net/css/arch/ubuntu32.png  "Ubuntu i386"
+[arch-osx]: http://vault.digitalmzx.net/css/arch/osx.png       "MacOS"
+[arch-src]: http://vault.digitalmzx.net/css/arch/src.png       "Source code"
 
 [megazeux-w64]: http://vault.digitalmzx.net/download.php?latest=windows64
 [megazeux-w32]: http://vault.digitalmzx.net/download.php?latest=windows32
