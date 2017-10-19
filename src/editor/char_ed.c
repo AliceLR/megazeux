@@ -877,13 +877,17 @@ static void char_import(struct world *mzx_world, int char_offset, int charset,
     construct_number_box(28, 20, "First: ",
      0, 255, 0, &current_file),
     construct_number_box(52, 20, "Count: ",
-     1, 256, 0, &num_files)
+     1, 256, 0, &num_files),
+    construct_label(28, 21, "~9Use \"file#.chr\" to import multiple charsets."),
   };
 
   int import_mode = 1;
 
   if(highlight_height > 1)
     import_mode = select_export_mode(mzx_world, "Import mode");
+
+  if(import_mode == -1)
+    return;
 
   if(import_mode)
   {
@@ -923,8 +927,9 @@ static void char_import(struct world *mzx_world, int char_offset, int charset,
 
       if(import_mode)
       {
+        // Version needs to be sufficiently high for extended charsets
         char_size =
-         ec_load_set_var(import_name, charset * 256 + char_offset, 0);
+         ec_load_set_var(import_name, charset * 256 + char_offset, INT_MAX);
 
         if(char_size != -1)
         {
@@ -972,13 +977,17 @@ static void char_export(struct world *mzx_world, int char_offset, int charset,
     construct_number_box(28, 20, "First: ",
      0, 255, 0, &current_file),
     construct_number_box(52, 20, "Count: ",
-     1, 256, 0, &num_files)
+     1, 256, 0, &num_files),
+    construct_label(28, 21, "~9Use \"file#.chr\" to export multiple charsets."),
   };
 
   int export_mode = 1;
 
   if(highlight_height > 1)
     export_mode = select_export_mode(mzx_world, "Export mode");
+
+  if(export_mode == -1)
+    return;
 
   if(export_mode)
   {

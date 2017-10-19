@@ -2444,11 +2444,11 @@ static int sort_function(const void *dest_str_ptr, const void *src_str_ptr)
 
 #define FILESEL_MAX_ELEMENTS  64
 #define FILESEL_BASE_ELEMENTS 7
-#define FILESEL_FILE_LIST     0
-#define FILESEL_DIR_LIST      1
-#define FILESEL_FILENAME      2
-#define FILESEL_OKAY_BUTTON   3
-#define FILESEL_CANCEL_BUTTON 4
+#define FILESEL_OKAY_BUTTON   0
+#define FILESEL_CANCEL_BUTTON 1
+#define FILESEL_FILE_LIST     2
+#define FILESEL_DIR_LIST      3
+#define FILESEL_FILENAME      4
 #define FILESEL_FILES_LABEL   5
 #define FILESEL_DIRS_LABEL    6
 
