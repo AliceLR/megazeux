@@ -786,7 +786,8 @@ static int char_import_tile(const char *name, int char_offset, int charset,
  int highlight_width, int highlight_height)
 {
   int charset_skip = 32 - highlight_width;
-  size_t buffer_size;
+  size_t buffer_size = highlight_width * highlight_height * CHAR_SIZE;
+  size_t data_size;
   char *buffer;
   char *cur_buffer;
   int x;
@@ -795,9 +796,13 @@ static int char_import_tile(const char *name, int char_offset, int charset,
   FILE *fp = fopen_unsafe(name, "rb");
   if(fp)
   {
-    buffer_size = ftell_and_rewind(fp);
-    buffer = cmalloc(buffer_size);
-    fread(buffer, 1, buffer_size, fp);
+    buffer = ccalloc(buffer_size, 1);
+
+    data_size = ftell_and_rewind(fp);
+    if(data_size > buffer_size)
+      data_size = buffer_size;
+
+    fread(buffer, 1, data_size, fp);
     fclose(fp);
 
     cur_buffer = buffer;
@@ -834,7 +839,7 @@ static void char_export_tile(const char *name, int char_offset, int charset,
   FILE *fp = fopen_unsafe(name, "wb");
   if(fp)
   {
-    buffer = cmalloc(buffer_size);
+    buffer = ccalloc(buffer_size, 1);
     cur_buffer = buffer;
 
     for(y = 0; y < highlight_height; y++)
@@ -898,7 +903,7 @@ static void char_import(struct world *mzx_world, int char_offset, int charset,
   }
   else
   {
-    sprintf(offset_buf, "~9Offset:  ~f%d", char_offset);
+    sprintf(offset_buf, "~9Offset:  ~f%d", charset * 256 + char_offset);
     sprintf(size_buf,   "~9Size:    ~f%d x %d",
      highlight_width, highlight_height);
 
@@ -998,7 +1003,7 @@ static void char_export(struct world *mzx_world, int char_offset, int charset,
   }
   else
   {
-    sprintf(offset_buf, "~9Offset:  ~f%d", char_offset);
+    sprintf(offset_buf, "~9Offset:  ~f%d", charset * 256 + char_offset);
     sprintf(size_buf,   "~9Size:    ~f%d x %d",
      highlight_width, highlight_height);
 
