@@ -330,7 +330,9 @@ __editor_maybe_static int char_select_next_tile(int current_char,
     }
   }
 
-  current_char = (x + (y * 32)) & 0xFF;
+  // Clear the char bits of current_char and replace with the new position
+  current_char &= (~0xFF);
+  current_char |= (x + (y * 32)) & 0xFF;
 
   return current_char;
 }

@@ -74,11 +74,14 @@ static int highlight_height = 1;
 static int current_charset = 0;
 static int current_palette = 0x08;
 static int use_default_palette = 1;
+static int export_mode = 0;
 static int num_files = 1;
 
 static int char_copy_use_offset = 0;
 
-static const char *help_text[2] =
+static const char *chr_ext[] = { ".CHR", NULL };
+
+static const char *help_text[3] =
 {
   "\x12\x1d\t Move cursor\n"
   "-+\t Change char\n"
@@ -95,13 +98,26 @@ static const char *help_text[2] =
   ,
   "Alt+F   'Fill'\n"
   "Alt+\x12\x1d  Shift char\n"
-  "Ctrl+Z  Undo\n"
-  "Ctrl+Y  Redo\n"
   "Alt+B   Block (Shift+\x12\x1d)\n"
   "F2\t Copy to buffer\n"
   "F3\t Copy from buffer\n"
   "F4\t Revert to ASCII\n"
   "F5\t Revert to MZX\n"
+  "\n"
+  "H\t  More help\n"
+  "\n"
+  "C\t  Palette (   )\n"
+  "Tab\tDraw"
+  ,
+  "PgUp    Prev. charset\n"
+  "PgDn    Next charset\n"
+  "Alt+X   Export\n"
+  "Alt+I   Import\n"
+  "Ctrl+Z  Undo\n"
+  "Ctrl+Y  Redo\n"
+  "\n"
+  "\n"
+  "H\t  Back\n"
   "\n"
   "C\t  Palette (   )\n"
   "Tab\tDraw"
@@ -728,6 +744,290 @@ static void replace_filenum(char *src, char *dest, int num)
   }
 
   *dest_ptr = 0;
+}
+
+static int select_export_mode(struct world *mzx_world, const char *title)
+{
+  // Select the mode for import and export
+  struct dialog di;
+  int result;
+
+  const char *choices[] =
+  {
+    "Current selection (tile)",
+    "Offset (linear)",
+  };
+
+  struct element *elements[] =
+  {
+    construct_button( 5, 5, "  OK  ", 0),
+    construct_button(19, 5, "Cancel", -1),
+    construct_radio_button(2, 2, choices, ARRAY_SIZE(choices), 24, &export_mode)
+  };
+
+  construct_dialog(&di, title, 24, 9, 32, 7,
+   elements, ARRAY_SIZE(elements), 2);
+
+  result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  // Prevent UI keys from carrying through
+  force_release_all_keys();
+
+  if(!result)
+  {
+    return export_mode;
+  }
+
+  return result;
+}
+
+static int char_import_tile(const char *name, int char_offset, int charset,
+ int highlight_width, int highlight_height)
+{
+  int charset_skip = 32 - highlight_width;
+  size_t buffer_size;
+  char *buffer;
+  char *cur_buffer;
+  int x;
+  int y;
+
+  FILE *fp = fopen_unsafe(name, "rb");
+  if(fp)
+  {
+    buffer_size = ftell_and_rewind(fp);
+    buffer = cmalloc(buffer_size);
+    fread(buffer, 1, buffer_size, fp);
+    fclose(fp);
+
+    cur_buffer = buffer;
+
+    for(y = 0; y < highlight_height; y++)
+    {
+      for(x = 0; x < highlight_width; x++)
+      {
+        ec_change_char((Uint16)(charset * 256 + char_offset), cur_buffer);
+        cur_buffer += CHAR_SIZE;
+
+        char_offset++;
+        char_offset &= 0xFF;
+      }
+      char_offset += charset_skip;
+    }
+
+    free(buffer);
+    return 0;
+  }
+  return -1;
+}
+
+static void char_export_tile(const char *name, int char_offset, int charset,
+ int highlight_width, int highlight_height)
+{
+  int charset_skip = 32 - highlight_width;
+  size_t buffer_size = highlight_width * highlight_height * CHAR_SIZE;
+  char *buffer;
+  char *cur_buffer;
+  int x;
+  int y;
+
+  FILE *fp = fopen_unsafe(name, "wb");
+  if(fp)
+  {
+    buffer = cmalloc(buffer_size);
+    cur_buffer = buffer;
+
+    for(y = 0; y < highlight_height; y++)
+    {
+      for(x = 0; x < highlight_width; x++)
+      {
+        ec_read_char((Uint16)(charset * 256 + char_offset), cur_buffer);
+        cur_buffer += CHAR_SIZE;
+
+        char_offset++;
+        char_offset &= 0xFF;
+      }
+      char_offset += charset_skip;
+    }
+
+    fwrite(buffer, 1, buffer_size, fp);
+    fclose(fp);
+
+    free(buffer);
+  }
+}
+
+static void char_import(struct world *mzx_world, int char_offset, int charset,
+ int highlight_width, int highlight_height, struct undo_history *h)
+{
+  char import_string[256] = { 0, };
+  char import_name[256];
+  int current_file = 0;
+  int char_limit = 256;
+  int char_size;
+  int i;
+
+  char offset_buf[20];
+  char size_buf[20];
+
+  struct element *elements[] =
+  {
+    NULL,
+    NULL,
+    construct_number_box(28, 20, "First: ",
+     0, 255, 0, &current_file),
+    construct_number_box(52, 20, "Count: ",
+     1, 256, 0, &num_files)
+  };
+
+  int import_mode = 1;
+
+  if(highlight_height > 1)
+    import_mode = select_export_mode(mzx_world, "Import mode");
+
+  if(import_mode)
+  {
+    elements[0] = construct_number_box(3, 20, "Offset:  ",
+     0, 255, 0, &char_offset);
+    elements[1] = construct_number_box(3, 21, "Max size:",
+     1, 256, 0, &char_limit);
+  }
+  else
+  {
+    sprintf(offset_buf, "~9Offset:  ~f%d", char_offset);
+    sprintf(size_buf,   "~9Size:    ~f%d x %d",
+     highlight_width, highlight_height);
+
+    elements[0] = construct_label(3, 20, offset_buf);
+    elements[1] = construct_label(3, 21, size_buf);
+  }
+
+  if(!file_manager(mzx_world, chr_ext, NULL, import_string,
+   "Import character set(s)", 1, 2, elements, ARRAY_SIZE(elements), 2))
+  {
+    int num_files_present = num_files;
+
+    // Save the whole charset to the history because the
+    // resulting behavior here is hard to define
+    add_charset_undo_frame(h, current_charset, 0, 256, 1);
+
+    if(strchr(import_string, '#') == NULL)
+      num_files_present = 1;
+
+    for(i = 0; i < num_files_present; i++, current_file++)
+    {
+      replace_filenum(import_string, import_name,
+       current_file);
+
+      add_ext(import_name, ".chr");
+
+      if(import_mode)
+      {
+        char_size =
+         ec_load_set_var(import_name, charset * 256 + char_offset, 0);
+
+        if(char_size != -1)
+        {
+          if(char_size < char_limit)
+            char_offset += char_size;
+          else
+            char_offset += char_limit;
+
+          char_offset &= 0xFF;
+        }
+      }
+      else
+      {
+        int ret = char_import_tile(import_name, char_offset, charset,
+         highlight_width, highlight_height);
+
+        if(ret != -1)
+        {
+          char_offset = char_select_next_tile(char_offset, 1,
+           highlight_width, highlight_height);
+        }
+      }
+    }
+
+    update_undo_frame(h);
+  }
+}
+
+static void char_export(struct world *mzx_world, int char_offset, int charset,
+ int highlight_width, int highlight_height)
+{
+  char export_string[256] = { 0, };
+  char export_name[256];
+  int current_file = 0;
+  int char_size = highlight_width * highlight_height;
+  int i;
+
+  char offset_buf[20];
+  char size_buf[20];
+
+  struct element *elements[] =
+  {
+    NULL,
+    NULL,
+    construct_number_box(28, 20, "First: ",
+     0, 255, 0, &current_file),
+    construct_number_box(52, 20, "Count: ",
+     1, 256, 0, &num_files)
+  };
+
+  int export_mode = 1;
+
+  if(highlight_height > 1)
+    export_mode = select_export_mode(mzx_world, "Export mode");
+
+  if(export_mode)
+  {
+    elements[0] = construct_number_box(3, 20, "Offset:  ",
+     0, 255, 0, &char_offset);
+    elements[1] = construct_number_box(3, 21, "Size:    ",
+     1, 256, 0, &char_size);
+  }
+  else
+  {
+    sprintf(offset_buf, "~9Offset:  ~f%d", char_offset);
+    sprintf(size_buf,   "~9Size:    ~f%d x %d",
+     highlight_width, highlight_height);
+
+    elements[0] = construct_label(3, 20, offset_buf);
+    elements[1] = construct_label(3, 21, size_buf);
+  }
+
+  if(!file_manager(mzx_world, chr_ext, ".chr", export_string,
+   "Export character set(s)", 1, 1, elements, ARRAY_SIZE(elements), 2))
+  {
+    int num_files_present = num_files;
+
+    if(strchr(export_string, '#') == NULL)
+      num_files_present = 1;
+
+    for(i = 0; i < num_files_present; i++, current_file++)
+    {
+      replace_filenum(export_string, export_name,
+       current_file);
+
+      add_ext(export_name, ".chr");
+
+      if(export_mode)
+      {
+        ec_save_set_var(export_name, charset * 256 + char_offset, char_size);
+        char_offset += char_size;
+        char_offset &= 0xFF;
+      }
+      else
+      {
+        char_export_tile(export_name, char_offset, charset,
+         highlight_width, highlight_height);
+
+        char_offset = char_select_next_tile(char_offset, 1,
+         highlight_width, highlight_height);
+      }
+    }
+  }
 }
 
 int char_editor(struct world *mzx_world)
@@ -1678,6 +1978,33 @@ int char_editor(struct world *mzx_world)
         break;
       }
 
+      case IKEY_PAGEUP:
+      {
+        current_charset--;
+
+        if(current_charset < 0)
+          current_charset = NUM_CHARSETS - 2;
+
+        expand_buffer(buffer, current_width, current_height,
+         highlight_width, highlight_height, current_char,
+         current_charset);
+        changed = 1;
+        break;
+      }
+
+      case IKEY_PAGEDOWN:
+      {
+        current_charset++;
+
+        if(current_charset >= NUM_CHARSETS - 1)
+          current_charset = 0;
+
+        expand_buffer(buffer, current_width, current_height,
+         highlight_width, highlight_height, current_char,
+         current_charset);
+        changed = 1;
+        break;
+      }
       case IKEY_b:
       {
         if(get_alt_status(keycode_internal))
@@ -1769,7 +2096,22 @@ int char_editor(struct world *mzx_world)
       case IKEY_h:
       {
         // Switch help page
-        help_page ^= 1;
+        help_page = (help_page + 1) % 3;
+        break;
+      }
+
+      case IKEY_i:
+      {
+        // Import
+        if(get_alt_status(keycode_internal))
+        {
+          char_import(mzx_world, current_char, current_charset,
+           highlight_width, highlight_height, h);
+
+          expand_buffer(buffer, current_width, current_height,
+           highlight_width, highlight_height, current_char,
+           current_charset);
+        }
         break;
       }
 
@@ -1845,6 +2187,17 @@ int char_editor(struct world *mzx_world)
         break;
       }
 
+      case IKEY_x:
+      {
+        // Export
+        if(get_alt_status(keycode_internal))
+        {
+          char_export(mzx_world, current_char, current_charset,
+           highlight_width, highlight_height);
+        }
+        break;
+      }
+
       case IKEY_y:
       {
         // Redo
@@ -1871,108 +2224,6 @@ int char_editor(struct world *mzx_world)
            highlight_width, highlight_height, current_char,
            current_charset);
           changed = 1;
-        }
-        break;
-      }
-
-      case IKEY_x:
-      {
-        if(get_alt_status(keycode_internal))
-        {
-          // Character set
-          const char *chr_ext[] = { ".CHR", NULL };
-          char export_string[256] = { 0, };
-          char export_name[256];
-          int char_offset = current_char;
-          int char_size = current_width * current_height;
-          int current_file = 0;
-
-          struct element *elements[] =
-          {
-            construct_number_box(3, 20, "Offset:  ",
-             0, 255, 0, &char_offset),
-            construct_number_box(28, 20, "First: ",
-             0, 255, 0, &current_file),
-            construct_number_box(52, 20, "Count: ",
-             1, 256, 0, &num_files)
-          };
-
-          if(!file_manager(mzx_world, chr_ext, ".chr", export_string,
-           "Export character set(s)", 1, 1, elements, 3, 2))
-          {
-            int num_files_present = num_files;
-
-            if(strchr(export_string, '#') == NULL)
-              num_files_present = 1;
-
-            for(i = 0; i < num_files_present; i++, current_file++,
-             char_offset += char_size)
-            {
-              replace_filenum(export_string, export_name,
-               current_file);
-
-              add_ext(export_name, ".chr");
-              ec_save_set_var(export_name, char_offset,
-               char_size);
-            }
-          }
-        }
-        break;
-      }
-
-      case IKEY_i:
-      {
-        if(get_alt_status(keycode_internal))
-        {
-          // Character set
-          const char *chr_ext[] = { ".CHR", NULL };
-          char import_string[256] = { 0, };
-          char import_name[256];
-          int char_offset = current_char;
-          int current_file = 0;
-          int char_size;
-
-          struct element *elements[] =
-          {
-            construct_number_box(3, 20, "Offset:  ",
-             0, 255, 0, &char_offset),
-            construct_number_box(28, 20, "First: ",
-             0, 255, 0, &current_file),
-            construct_number_box(52, 20, "Count: ",
-             1, 256, 0, &num_files)
-          };
-
-          if(!file_manager(mzx_world, chr_ext, NULL, import_string,
-           "Import character set(s)", 1, 2, elements, 3, 2))
-          {
-            int num_files_present = num_files;
-
-            // Save the whole charset to the history because the
-            // resulting behavior here is hard to define
-            add_charset_undo_frame(h, current_charset, 0, 256, 1);
-
-            if(strchr(import_string, '#') == NULL)
-              num_files_present = 1;
-
-            for(i = 0; i < num_files_present; i++, current_file++)
-            {
-              replace_filenum(import_string, import_name,
-               current_file);
-
-              add_ext(import_name, ".chr");
-              char_size =
-               ec_load_set_var(import_name, char_offset, 0);
-
-              if(char_size != -1)
-                char_offset += char_size;
-            }
-
-            update_undo_frame(h);
-
-            expand_buffer(buffer, current_width, current_height,
-             highlight_width, highlight_height, current_char,
-             current_charset);
-          }
         }
         break;
       }

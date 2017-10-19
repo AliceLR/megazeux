@@ -34,7 +34,7 @@ void draw_char_mixed_pal(Uint8 chr, Uint8 bg_color, Uint8 fg_color,
  Uint32 x, Uint32 y);
 void draw_char_linear(Uint8 color, Uint8 chr, Uint32 offset,
  bool use_protected_pal);
-void ec_save_set_var(char *name, Uint8 offset, Uint32 size);
+void ec_save_set_var(char *name, Uint16 offset, Uint32 size);
 void load_editor_charsets(void);
 void ec_load_smzx(void);
 void ec_load_blank(void);

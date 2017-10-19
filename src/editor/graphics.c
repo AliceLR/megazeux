@@ -103,15 +103,15 @@ void draw_char_linear(Uint8 color, Uint8 chr, Uint32 offset,
   draw_char_linear_ext(color, chr, offset, PRO_CH, use_protected_pal ? 16 : 0);
 }
 
-void ec_save_set_var(char *name, Uint8 offset, Uint32 size)
+void ec_save_set_var(char *name, Uint16 offset, Uint32 size)
 {
   FILE *fp = fopen_unsafe(name, "wb");
 
   if(fp)
   {
-    if(size + offset > CHARSET_SIZE)
+    if(size + offset > PROTECTED_CHARSET_POSITION)
     {
-      size = CHARSET_SIZE - offset;
+      size = PROTECTED_CHARSET_POSITION - offset;
     }
 
     fwrite(graphics.charset + (offset * CHAR_SIZE), CHAR_SIZE, size, fp);
