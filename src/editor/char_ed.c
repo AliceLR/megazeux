@@ -79,6 +79,11 @@ static int num_files = 1;
 
 static int char_copy_use_offset = 0;
 
+static int selected_subdivision[19] =
+{
+  -1, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, -1, 0, -1, -1, 0, -1, -1, 0
+};
+
 static const char *chr_ext[] = { ".CHR", NULL };
 
 static const char *help_text[3] =
@@ -1591,7 +1596,7 @@ int char_editor(struct world *mzx_world)
         int factors[6];
         int num_factors = 0;
         int low, high;
-        int subdivision = 0;
+        int subdivision = selected_subdivision[highlight_size];
 
         // The first choice should be about the square root,
         // biased high.
@@ -1668,6 +1673,8 @@ int char_editor(struct world *mzx_world)
           free(radio_button_strings);
           free(elements);
         }
+
+        selected_subdivision[highlight_size] = subdivision;
 
         current_width = factors[subdivision];
         current_height = highlight_size / factors[subdivision];
