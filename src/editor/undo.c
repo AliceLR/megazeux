@@ -20,6 +20,7 @@
 #include "block.h"
 #include "board.h"
 #include "edit.h"
+#include "graphics.h"
 #include "robot.h"
 #include "undo.h"
 
@@ -212,84 +213,39 @@ void destruct_undo_history(struct undo_history *h)
 /* Charset specific functions */
 /******************************/
 
-#define CHARSET_WIDTH 32
-
 struct charset_undo_frame
 {
   int type;
-  int first;
-  int charset;
-  int width;
-  int height;
+  Uint8 offset;
+  Uint8 charset;
+  Uint8 width;
+  Uint8 height;
   char *prev_chars;
   char *current_chars;
 };
-
-static void read_charset_data(char *buffer,
- int charset, int offset, int width, int height)
-{
-  size_t copy_size = width * CHAR_SIZE;
-  Uint16 buffer_offset = 0;
-  Uint16 charset_offset;
-  int i;
-
-  for(i = 0; i < height; i++)
-  {
-    charset_offset = offset + (charset << 8);
-
-    ec_mem_save_set_var((Uint8 *)buffer + buffer_offset,
-     copy_size, charset_offset);
-
-    buffer_offset += copy_size;
-    offset += CHARSET_WIDTH;
-    offset &= 0xFF;
-  }
-}
-
-static void write_charset_data(char *buffer,
- int charset, int offset, int width, int height)
-{
-  size_t copy_size = width * CHAR_SIZE;
-  Uint16 buffer_offset = 0;
-  Uint16 charset_offset;
-  int i;
-
-  for(i = 0; i < height; i++)
-  {
-    charset_offset = offset + (charset << 8);
-
-    // Need to pass the world version because this was intended for runtime use
-    ec_mem_load_set_var(buffer + buffer_offset,
-     copy_size, charset_offset, WORLD_VERSION);
-
-    buffer_offset += copy_size;
-    offset += CHARSET_WIDTH;
-    offset &= 0xFF;
-  }
-}
 
 static void apply_charset_undo(struct undo_frame *f)
 {
   struct charset_undo_frame *current = (struct charset_undo_frame *)f;
 
-  write_charset_data(current->prev_chars, current->charset, current->first,
-   current->width, current->height);
+  ec_change_block(current->offset, current->charset,
+   current->width, current->height, current->prev_chars);
 }
 
 static void apply_charset_redo(struct undo_frame *f)
 {
   struct charset_undo_frame *current = (struct charset_undo_frame *)f;
 
-  write_charset_data(current->current_chars, current->charset, current->first,
-   current->width, current->height);
+  ec_change_block(current->offset, current->charset,
+   current->width, current->height, current->current_chars);
 }
 
 static void apply_charset_update(struct undo_frame *f)
 {
   struct charset_undo_frame *current = (struct charset_undo_frame *)f;
 
-  read_charset_data(current->current_chars, current->charset, current->first,
-   current->width, current->height);
+  ec_read_block(current->offset, current->charset,
+   current->width, current->height, current->current_chars);
 }
 
 static void apply_charset_clear(struct undo_frame *f)
@@ -326,7 +282,7 @@ void add_charset_undo_frame(struct undo_history *h, int charset, int first_char,
 
     add_undo_frame(h, current);
 
-    current->first = first_char;
+    current->offset = first_char;
     current->charset = charset;
     current->width = width;
     current->height = height;
@@ -334,7 +290,8 @@ void add_charset_undo_frame(struct undo_history *h, int charset, int first_char,
     current->prev_chars = cmalloc(width * height * CHAR_SIZE);
     current->current_chars = cmalloc(width * height * CHAR_SIZE);
 
-    read_charset_data(current->prev_chars, charset, first_char, width, height);
+    ec_read_block(current->offset, current->charset,
+     current->width, current->height, current->prev_chars);
   }
 }
 

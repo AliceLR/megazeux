@@ -748,7 +748,6 @@ static void replace_filenum(char *src, char *dest, int num)
 
 static int select_export_mode(struct world *mzx_world, const char *title)
 {
-  // Select the mode for import and export
   struct dialog di;
   int result;
 
@@ -771,7 +770,6 @@ static int select_export_mode(struct world *mzx_world, const char *title)
   result = run_dialog(mzx_world, &di);
   destruct_dialog(&di);
 
-  // Prevent UI keys from carrying through
   force_release_all_keys();
 
   if(!result)
@@ -785,40 +783,22 @@ static int select_export_mode(struct world *mzx_world, const char *title)
 static int char_import_tile(const char *name, int char_offset, int charset,
  int highlight_width, int highlight_height)
 {
-  int charset_skip = 32 - highlight_width;
-  size_t buffer_size = highlight_width * highlight_height * CHAR_SIZE;
-  size_t data_size;
-  char *buffer;
-  char *cur_buffer;
-  int x;
-  int y;
-
   FILE *fp = fopen_unsafe(name, "rb");
   if(fp)
   {
-    buffer = ccalloc(buffer_size, 1);
+    size_t buffer_size = highlight_width * highlight_height * CHAR_SIZE;
+    char *buffer = ccalloc(buffer_size, 1);
 
-    data_size = ftell_and_rewind(fp);
+    size_t data_size = ftell_and_rewind(fp);
+
     if(data_size > buffer_size)
       data_size = buffer_size;
 
     fread(buffer, 1, data_size, fp);
     fclose(fp);
 
-    cur_buffer = buffer;
-
-    for(y = 0; y < highlight_height; y++)
-    {
-      for(x = 0; x < highlight_width; x++)
-      {
-        ec_change_char((Uint16)(charset * 256 + char_offset), cur_buffer);
-        cur_buffer += CHAR_SIZE;
-
-        char_offset++;
-        char_offset &= 0xFF;
-      }
-      char_offset += charset_skip;
-    }
+    ec_change_block((Uint8)char_offset, (Uint8)charset,
+     (Uint8)highlight_width, (Uint8)highlight_height, buffer);
 
     free(buffer);
     return 0;
@@ -829,31 +809,14 @@ static int char_import_tile(const char *name, int char_offset, int charset,
 static void char_export_tile(const char *name, int char_offset, int charset,
  int highlight_width, int highlight_height)
 {
-  int charset_skip = 32 - highlight_width;
-  size_t buffer_size = highlight_width * highlight_height * CHAR_SIZE;
-  char *buffer;
-  char *cur_buffer;
-  int x;
-  int y;
-
   FILE *fp = fopen_unsafe(name, "wb");
   if(fp)
   {
-    buffer = ccalloc(buffer_size, 1);
-    cur_buffer = buffer;
+    size_t buffer_size = highlight_width * highlight_height * CHAR_SIZE;
+    char *buffer = ccalloc(buffer_size, 1);
 
-    for(y = 0; y < highlight_height; y++)
-    {
-      for(x = 0; x < highlight_width; x++)
-      {
-        ec_read_char((Uint16)(charset * 256 + char_offset), cur_buffer);
-        cur_buffer += CHAR_SIZE;
-
-        char_offset++;
-        char_offset &= 0xFF;
-      }
-      char_offset += charset_skip;
-    }
+    ec_read_block((Uint8)char_offset, (Uint8)charset,
+     (Uint8)highlight_width, (Uint8)highlight_height, buffer);
 
     fwrite(buffer, 1, buffer_size, fp);
     fclose(fp);
@@ -868,60 +831,53 @@ static void char_import(struct world *mzx_world, int char_offset, int charset,
   char import_string[256] = { 0, };
   char import_name[256];
   int current_file = 0;
-  int char_limit = 256;
-  int char_size;
   int i;
 
+  struct element *elements[5];
   char offset_buf[20];
   char size_buf[20];
 
-  struct element *elements[] =
+  int import_mode = select_export_mode(mzx_world, "Import mode");
+
+  switch(import_mode)
   {
-    NULL,
-    NULL,
-    construct_number_box(28, 20, "First: ",
-     0, 255, 0, &current_file),
-    construct_number_box(52, 20, "Count: ",
-     1, 256, 0, &num_files),
-    construct_label(28, 21, "~9Use \"file#.chr\" to import multiple charsets."),
-  };
+    case -1:
+      return;
 
-  int import_mode = 1;
+    case 0:
+      sprintf(offset_buf, "~9Offset:  ~f%d", charset * 256 + char_offset);
+      sprintf(size_buf,   "~9Size:    ~f%d x %d",
+       highlight_width, highlight_height);
 
-  if(highlight_height > 1)
-    import_mode = select_export_mode(mzx_world, "Import mode");
+      elements[0] = construct_label(3, 20, offset_buf);
+      elements[1] = construct_label(3, 21, size_buf);
+      break;
 
-  if(import_mode == -1)
-    return;
-
-  if(import_mode)
-  {
-    elements[0] = construct_number_box(3, 20, "Offset:  ",
-     0, 255, 0, &char_offset);
-    elements[1] = construct_number_box(3, 21, "Max size:",
-     1, 256, 0, &char_limit);
+    case 1:
+      elements[0] =
+       construct_number_box(3, 20, "Offset:  ", 0, 255, 0, &char_offset);
+      elements[1] =
+       construct_label(3, 21, "~9Size:    auto");
+      break;
   }
-  else
-  {
-    sprintf(offset_buf, "~9Offset:  ~f%d", charset * 256 + char_offset);
-    sprintf(size_buf,   "~9Size:    ~f%d x %d",
-     highlight_width, highlight_height);
 
-    elements[0] = construct_label(3, 20, offset_buf);
-    elements[1] = construct_label(3, 21, size_buf);
-  }
+  elements[2] =
+   construct_number_box(28, 20, "First: ", 0, 255, 0, &current_file);
+  elements[3] =
+   construct_number_box(52, 20, "Count: ", 1, 256, 0, &num_files);
+  elements[4] =
+   construct_label(28, 21, "~9Use \"file#.chr\" to import multiple charsets.");
 
   if(!file_manager(mzx_world, chr_ext, NULL, import_string,
    "Import character set(s)", 1, 2, elements, ARRAY_SIZE(elements), 2))
   {
     int num_files_present = num_files;
 
-    // Save the whole charset to the history because the
-    // resulting behavior here is hard to define
-    add_charset_undo_frame(h, current_charset, 0, 256, 1);
-
     if(strchr(import_string, '#') == NULL)
       num_files_present = 1;
+
+    // Save the whole charset to the history to keep things simple
+    add_charset_undo_frame(h, charset, 0, 32, 8);
 
     for(i = 0; i < num_files_present; i++, current_file++)
     {
@@ -933,16 +889,12 @@ static void char_import(struct world *mzx_world, int char_offset, int charset,
       if(import_mode)
       {
         // Version needs to be sufficiently high for extended charsets
-        char_size =
+        int char_size =
          ec_load_set_var(import_name, charset * 256 + char_offset, INT_MAX);
 
         if(char_size != -1)
         {
-          if(char_size < char_limit)
-            char_offset += char_size;
-          else
-            char_offset += char_limit;
-
+          char_offset += char_size;
           char_offset &= 0xFF;
         }
       }
@@ -972,44 +924,42 @@ static void char_export(struct world *mzx_world, int char_offset, int charset,
   int char_size = highlight_width * highlight_height;
   int i;
 
+  struct element *elements[5];
   char offset_buf[20];
   char size_buf[20];
-
-  struct element *elements[] =
-  {
-    NULL,
-    NULL,
-    construct_number_box(28, 20, "First: ",
-     0, 255, 0, &current_file),
-    construct_number_box(52, 20, "Count: ",
-     1, 256, 0, &num_files),
-    construct_label(28, 21, "~9Use \"file#.chr\" to export multiple charsets."),
-  };
-
   int export_mode = 1;
 
   if(highlight_height > 1)
     export_mode = select_export_mode(mzx_world, "Export mode");
 
-  if(export_mode == -1)
-    return;
-
-  if(export_mode)
+  switch(export_mode)
   {
-    elements[0] = construct_number_box(3, 20, "Offset:  ",
-     0, 255, 0, &char_offset);
-    elements[1] = construct_number_box(3, 21, "Size:    ",
-     1, 256, 0, &char_size);
-  }
-  else
-  {
-    sprintf(offset_buf, "~9Offset:  ~f%d", charset * 256 + char_offset);
-    sprintf(size_buf,   "~9Size:    ~f%d x %d",
-     highlight_width, highlight_height);
+    case -1:
+      return;
 
-    elements[0] = construct_label(3, 20, offset_buf);
-    elements[1] = construct_label(3, 21, size_buf);
+    case 0:
+      sprintf(offset_buf, "~9Offset:  ~f%d", charset * 256 + char_offset);
+      sprintf(size_buf,   "~9Size:    ~f%d x %d",
+       highlight_width, highlight_height);
+
+      elements[0] = construct_label(3, 20, offset_buf);
+      elements[1] = construct_label(3, 21, size_buf);
+      break;
+
+    case 1:
+      elements[0] =
+       construct_number_box(3, 20, "Offset:  ", 0, 255, 0, &char_offset);
+      elements[1] =
+       construct_number_box(3, 21, "Size:    ", 1, 256, 0, &char_size);
+      break;
   }
+
+  elements[2] =
+   construct_number_box(28, 20, "First: ", 0, 255, 0, &current_file);
+  elements[3] =
+   construct_number_box(52, 20, "Count: ", 1, 256, 0, &num_files);
+  elements[4] =
+   construct_label(28, 21, "~9Use \"file#.chr\" to export multiple charsets.");
 
   if(!file_manager(mzx_world, chr_ext, ".chr", export_string,
    "Export character set(s)", 1, 1, elements, ARRAY_SIZE(elements), 2))

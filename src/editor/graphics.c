@@ -119,6 +119,57 @@ void ec_save_set_var(char *name, Uint16 offset, Uint32 size)
   }
 }
 
+void ec_change_block(Uint8 offset, Uint8 charset,
+ Uint8 width, Uint8 height, char *matrix)
+{
+  // Change a block of chars on the 32x8 charset
+  int skip;
+  int x;
+  int y;
+
+  width = CLAMP(width, 1, 32);
+  height = CLAMP(height, 1, 8);
+
+  skip = 32 - width;
+
+  // No need to bound offset (Uint8)
+  for(y = 0; y < height; y++)
+  {
+    for(x = 0; x < width; x++)
+    {
+      ec_change_char((charset * 256) + offset, matrix);
+      matrix += CHAR_SIZE;
+      offset++;
+    }
+    offset += skip;
+  }
+}
+
+void ec_read_block(Uint8 offset, Uint8 charset,
+ Uint8 width, Uint8 height, char *matrix)
+{
+  // Read a block of chars from the 32x8 charset
+  int skip;
+  int x;
+  int y;
+
+  width = CLAMP(width, 1, 32);
+  height = CLAMP(height, 1, 8);
+
+  skip = 32 - width;
+
+  for(y = 0; y < height; y++)
+  {
+    for(x = 0; x < width; x++)
+    {
+      ec_read_char((charset * 256) + offset, matrix);
+      matrix += CHAR_SIZE;
+      offset++;
+    }
+    offset += skip;
+  }
+}
+
 void load_editor_charsets(void)
 {
   ec_load_set_secondary(mzx_res_get_by_id(MZX_ASCII_CHR), ascii_charset);
