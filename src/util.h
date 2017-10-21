@@ -92,6 +92,10 @@ void fputw(int src, FILE *fp);
 void fputd(int src, FILE *fp);
 
 CORE_LIBSPEC long ftell_and_rewind(FILE *f);
+
+CORE_LIBSPEC void rng_seed_init(void);
+unsigned long long rng_get_seed(void);
+void rng_set_seed(unsigned long long seed);
 unsigned int Random(unsigned long long range);
 
 CORE_LIBSPEC void add_ext(char *src, const char *ext);

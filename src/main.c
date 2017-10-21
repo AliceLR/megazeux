@@ -128,6 +128,8 @@ __libspec int main(int argc, char *argv[])
 
   counter_fsg();
 
+  rng_seed_init();
+
   initialize_joysticks();
 
   set_mouse_mul(8, 14);
