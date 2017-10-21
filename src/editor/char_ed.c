@@ -637,13 +637,16 @@ static void draw_mini_buffer(int info_x, int info_y, int current_charset,
 {
   char mini_buffer[32];
   int chars_show_width;
+  int chars_show_num;
   int chars_show_x;
   int chars_show_y;
-  int draw_pos;
-  int draw_char;
+  int highlight_num;
+  int highlight_pos;
+  Uint8 draw_char;
   int offset;
   int x;
   int y;
+  int i;
 
   // 0- not highlight, 1- highlight
   char use_color[] = { 0x80, 0x8F };
@@ -702,28 +705,49 @@ static void draw_mini_buffer(int info_x, int info_y, int current_charset,
   chars_show_x = info_x + current_width + 2;
   chars_show_y = info_y + 1;
 
-  draw_pos = (chars_show_width - highlight_width + 1)/2;
+  chars_show_num = (chars_show_width + highlight_width - 1) / highlight_width;
+  chars_show_num |= 1;
 
-  for(y = 0; y < highlight_height; y++)
+  highlight_pos = (chars_show_width - highlight_width) / 2;
+  highlight_num = (chars_show_num + 1) / 2 - 1;
+
+  // Select "tiles" backward from the highlight
+  for(i = 0; i < highlight_num; i++)
+    current_char = char_select_next_tile(current_char, -1,
+     highlight_width, highlight_height);
+
+  for(i = 0; i < chars_show_num; i++)
   {
-    for(x = 0; x < chars_show_width; x++)
+    // Adjust by highlight_pos; the current char should be in the center
+    int adj_x = highlight_pos + (i - highlight_num)*highlight_width;
+
+    is_highlight = (i == highlight_num);
+
+    // Draw the current "tile"
+    for(x = 0; x < highlight_width; x++)
     {
-      // Adjust by draw_pos; the current char should be in the center
-      draw_char = current_char + x - draw_pos + (y * 32);
-      draw_char &= 0xFF;
+      // Ignore chars outside of the drawing area
+      if((adj_x + x < 0) || (adj_x + x >= chars_show_width))
+        continue;
 
-      is_highlight = (x >= draw_pos) &&
-       (x < draw_pos + highlight_width) &&
-       (y < highlight_height);
+      for(y = 0; y < highlight_height; y++)
+      {
+        draw_char = current_char + x + (y * 32);
 
-      select_layer(UI_LAYER);
-      erase_char(chars_show_x + x, chars_show_y + y);
+        select_layer(UI_LAYER);
+        erase_char(chars_show_x + adj_x + x, chars_show_y + y);
 
-      select_layer(use_layer[is_highlight]);
+        select_layer(use_layer[is_highlight]);
 
-      draw_char_ext(draw_char, use_color[is_highlight],
-       chars_show_x + x, chars_show_y + y, 0, use_offset[is_highlight]);
+        draw_char_ext(draw_char, use_color[is_highlight],
+         chars_show_x + adj_x + x, chars_show_y + y,
+         0, use_offset[is_highlight]);
+      }
     }
+
+    // Select the next "tile"
+    current_char = char_select_next_tile(current_char, 1,
+     highlight_width, highlight_height);
   }
 }
 

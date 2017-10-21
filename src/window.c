@@ -442,8 +442,8 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
       }
     }
 
-    x = (current & 31) + 23;
-    y = (current >> 5) + 7;
+    x = (current & 31);
+    y = (current >> 5);
 
     if(get_shift_status(keycode_internal) && allow_multichar)
     {
@@ -483,7 +483,7 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
 
         for(i = 0; i < height; i++)
         {
-          color_line(width, start_x, start_y + i, 0x9F);
+          color_line(width, start_x + 23, start_y + i + 7, 0x9F);
         }
       }
     }
@@ -508,7 +508,7 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
 
         x = start_x;
         y = start_y;
-        current = ((y - 7) * 32) + (x - 23);
+        current = (y * 32) + x;
       }
 
       char_offset = current;
@@ -550,10 +550,10 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
     }
 
     // Draw arrows
-    draw_char(char_sel_arrows_0, DI_TEXT, x, 15);
-    draw_char(char_sel_arrows_1, DI_TEXT, x, 6);
-    draw_char(char_sel_arrows_2, DI_TEXT, 22, y);
-    draw_char(char_sel_arrows_3, DI_TEXT, 55, y);
+    draw_char(char_sel_arrows_0, DI_TEXT, x + 23, 15);
+    draw_char(char_sel_arrows_1, DI_TEXT, x + 23, 6);
+    draw_char(char_sel_arrows_2, DI_TEXT, 22, y + 7);
+    draw_char(char_sel_arrows_3, DI_TEXT, 55, y + 7);
 
     // Write number of character
     write_number(current, DI_MAIN, 53, bottom, 3, 0, 10);
@@ -613,15 +613,37 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
           {
             width = 1;
             height = 1;
+            break;
           }
 
           x = start_x;
           y = start_y;
-          current = ((y - 7) * 32) + (x - 23);
+          current = (y * 32) + x;
         }
 
         if(allow_multichar)
         {
+          if(height > 1)
+          {
+            // Clip if the selection wraps around the edge
+            int abort = 0;
+
+            if(width + x > 32)
+            {
+              width = 32 - x;
+              abort = 1;
+            }
+
+            if(height + y > 8)
+            {
+              height = 8 - y;
+              abort = 1;
+            }
+
+            if(abort)
+              break;
+          }
+
           *width_ptr = width;
           *height_ptr = height;
         }
