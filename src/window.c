@@ -263,6 +263,80 @@ int draw_window_box_ext(int x1, int y1, int x2, int y2, int color,
 // display corresponding to Custom* type behavior. This is meant for the char
 // ID editor only.
 
+// TODO this shouldn't really be here, but it's the best place for now.
+__editor_maybe_static int char_select_next_tile(int current_char,
+ int direction, int highlight_width, int highlight_height)
+{
+  // -1 is previous, 1 is next
+  int x = current_char & 31;
+  int y = (current_char & 0xFF) >> 5;
+
+  int mod_x = x % highlight_width;
+  int mod_y = y % highlight_height;
+
+  int tiles_width = (32 - mod_x) / highlight_width;
+  int tiles_height = (8 - mod_y) / highlight_height;
+
+  int last_x = (tiles_width - 1) * highlight_width + mod_x;
+  int last_y = (tiles_height - 1) * highlight_height + mod_y;
+
+  if(direction > 0)
+  {
+    if(highlight_height == 1)
+    {
+      // No need for tiling with N x 1 selection
+      x += highlight_width;
+    }
+    else
+
+    if(x == last_x)
+    {
+      x = mod_x;
+
+      if(y == last_y)
+        y = mod_y;
+
+      else
+        y += highlight_height;
+    }
+    else
+    {
+      x += highlight_width;
+    }
+  }
+  else
+
+  if(direction < 0)
+  {
+    if(highlight_height == 1)
+    {
+      x -= highlight_width;
+    }
+    else
+
+    if(x == mod_x)
+    {
+      x = last_x;
+
+      if(y == mod_y)
+        y = last_y;
+
+      else
+        y -= highlight_height;
+    }
+    else
+    {
+      x -= highlight_width;
+    }
+  }
+
+  // Clear the char bits of current_char and replace with the new position
+  current_char &= (~0xFF);
+  current_char |= (x + (y * 32)) & 0xFF;
+
+  return current_char;
+}
+
 __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
  int *width_ptr, int *height_ptr, int *select_charset, int selection_pal)
 {
@@ -368,8 +442,8 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
       }
     }
 
-    x = (current & 31) + 23;
-    y = (current >> 5) + 7;
+    x = (current & 31);
+    y = (current >> 5);
 
     if(get_shift_status(keycode_internal) && allow_multichar)
     {
@@ -409,7 +483,7 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
 
         for(i = 0; i < height; i++)
         {
-          color_line(width, start_x, start_y + i, 0x9F);
+          color_line(width, start_x + 23, start_y + i + 7, 0x9F);
         }
       }
     }
@@ -434,7 +508,7 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
 
         x = start_x;
         y = start_y;
-        current = ((y - 7) * 32) + (x - 23);
+        current = (y * 32) + x;
       }
 
       char_offset = current;
@@ -476,10 +550,10 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
     }
 
     // Draw arrows
-    draw_char(char_sel_arrows_0, DI_TEXT, x, 15);
-    draw_char(char_sel_arrows_1, DI_TEXT, x, 6);
-    draw_char(char_sel_arrows_2, DI_TEXT, 22, y);
-    draw_char(char_sel_arrows_3, DI_TEXT, 55, y);
+    draw_char(char_sel_arrows_0, DI_TEXT, x + 23, 15);
+    draw_char(char_sel_arrows_1, DI_TEXT, x + 23, 6);
+    draw_char(char_sel_arrows_2, DI_TEXT, 22, y + 7);
+    draw_char(char_sel_arrows_3, DI_TEXT, 55, y + 7);
 
     // Write number of character
     write_number(current, DI_MAIN, 53, bottom, 3, 0, 10);
@@ -539,15 +613,37 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
           {
             width = 1;
             height = 1;
+            break;
           }
 
           x = start_x;
           y = start_y;
-          current = ((y - 7) * 32) + (x - 23);
+          current = (y * 32) + x;
         }
 
         if(allow_multichar)
         {
+          if(height > 1)
+          {
+            // Clip if the selection wraps around the edge
+            int abort = 0;
+
+            if(width + x > 32)
+            {
+              width = 32 - x;
+              abort = 1;
+            }
+
+            if(height + y > 8)
+            {
+              height = 8 - y;
+              abort = 1;
+            }
+
+            if(abort)
+              break;
+          }
+
           *width_ptr = width;
           *height_ptr = height;
         }
@@ -620,6 +716,22 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
             current_charset = 0;
         }
 
+        break;
+      }
+
+      case IKEY_KP_MINUS:
+      case IKEY_MINUS:
+      {
+        // Move in tile increment
+        current = char_select_next_tile(current, -1, width, height);
+        break;
+      }
+
+      case IKEY_KP_PLUS:
+      case IKEY_EQUALS:
+      {
+        // Move in tile increment
+        current = char_select_next_tile(current, 1, width, height);
         break;
       }
 
@@ -2354,11 +2466,11 @@ static int sort_function(const void *dest_str_ptr, const void *src_str_ptr)
 
 #define FILESEL_MAX_ELEMENTS  64
 #define FILESEL_BASE_ELEMENTS 7
-#define FILESEL_FILE_LIST     0
-#define FILESEL_DIR_LIST      1
-#define FILESEL_FILENAME      2
-#define FILESEL_OKAY_BUTTON   3
-#define FILESEL_CANCEL_BUTTON 4
+#define FILESEL_OKAY_BUTTON   0
+#define FILESEL_CANCEL_BUTTON 1
+#define FILESEL_FILE_LIST     2
+#define FILESEL_DIR_LIST      3
+#define FILESEL_FILENAME      4
 #define FILESEL_FILES_LABEL   5
 #define FILESEL_DIRS_LABEL    6
 

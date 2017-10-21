@@ -325,6 +325,9 @@ CORE_LIBSPEC void construct_dialog_ext(struct dialog *src, const char *title,
 
 CORE_LIBSPEC int char_selection_ext(int current, int allow_char_255,
  int *width_ptr, int *height_ptr, int *charset, int selection_pal);
+CORE_LIBSPEC int char_select_next_tile(int current_char,
+ int direction, int highlight_width, int highlight_height);
+
 CORE_LIBSPEC int file_manager(struct world *mzx_world,
  const char *const *wildcards, const char *default_ext, char *ret,
  const char *title, int dirs_okay, int allow_new,

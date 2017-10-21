@@ -49,6 +49,13 @@ FEATURES
 + Added extended charset support to the char editor. Extended
   charsets can be selected during char selection. Note that in
   gameplay these chars can be accessed only by unbound sprites.
++ Selected blocks of chars with a height greater than one
+  (before selecting a subdivision) are now properly supported.
+  Using -/+ with these selections will move in a tiled manner,
+  with no overlap between chars in "tiles". Charsets can also be
+  exported/imported using this tiling behavior.
++ The -/+ keys now behave the same in the char selection screen
+  as they do in the char editor.
 + The character editor help now covers several shortcuts that
   were previously missing (Alt+B, Shift+Arrows, etc...).
 + The undo/redo shortcuts in the character editor are now Ctrl+Z
