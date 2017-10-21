@@ -346,19 +346,36 @@ long ftell_and_rewind(FILE *f)
 
 // Random function, returns an integer [0-range)
 
+static unsigned long long rng_state;
+
+// Seed the RNG from system time on startup
+void rng_seed_init(void)
+{
+  unsigned long long seed = (((unsigned long long)time(NULL)) << 32) | clock();
+  rng_set_seed(seed);
+}
+
+unsigned long long rng_get_seed(void)
+{
+  return rng_state;
+}
+
+void rng_set_seed(unsigned long long seed)
+{
+  rng_state = seed;
+}
+
+// xorshift*
+// Implementation from https://en.wikipedia.org/wiki/Xorshift
 unsigned int Random(unsigned long long range)
 {
-  static unsigned long long seed = 0;
-  unsigned long long value;
-
-  // If the seed is 0, initialise it with time and clock
-  if(seed == 0)
-    seed = time(NULL) + clock();
-
-  seed = seed * 1664525 + 1013904223;
-
-  value = (seed & 0xFFFFFFFF) * range / 0xFFFFFFFF;
-  return (unsigned int)value;
+	unsigned long long x = rng_state;
+  if (x == 0) x = 1;
+	x ^= x >> 12; // a
+	x ^= x << 25; // b
+	x ^= x >> 27; // c
+	rng_state = x;
+	return ((x * 0x2545F4914F6CDD1D) >> 32) * range / 0xFFFFFFFF;
 }
 
 // FIXME: This function should probably die. It's unsafe.

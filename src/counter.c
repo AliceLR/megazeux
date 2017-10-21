@@ -1201,6 +1201,25 @@ static int time_seconds_read(struct world *mzx_world,
   return t->tm_sec;
 }
 
+static int random_seed_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  int idx = strtol(name + 11, NULL, 10) % 2;
+  unsigned int seed = rng_get_seed() >> (32 * idx) & 0xFFFFFFFF;
+  return *((signed int *)&seed);
+}
+
+static void random_seed_write(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int value, int id)
+{
+  int idx = strtol(name + 11, NULL, 10) % 2;
+  unsigned long long seed = rng_get_seed();
+  unsigned long long mask = ~(0xFFFFFFFFULL << (32 * idx));
+  unsigned long long insert = *((unsigned int *)&value);
+  seed = (seed & mask) | (insert << (32 * idx));
+  rng_set_seed(seed);
+}
+
 static int vch_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
@@ -2767,6 +2786,7 @@ static const struct function_counter builtin_counters[] =
   { "playery", 0x0208, playery_read, NULL },                         // 2.51s1
   { "play_game", 0x025A, NULL, play_game_write },                    // 2.90
   { "r!.*", 0x0241, r_read, r_write },                               // 2.65
+  { "random_seed!", 0x025B, random_seed_read, random_seed_write },   // 2.91
   { "red_value", 0x0209, red_value_read, red_value_write },          // 2.60
   { "rid*", 0x0246, rid_read, NULL },                                // 2.69b
   { "robot_id", 0x0209, robot_id_read, NULL },                       // 2.60

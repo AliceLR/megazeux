@@ -26,6 +26,9 @@ FEATURES
 + Added 'max_simultaneous_samples' config file option. This
   behaves the same as the MAX_SAMPLES counter, but applies
   globally.
++ Added 'random_seed#' counters to read and write the random
+  seed, 32 bits at a time (random_seed0 controls the low 32 bits
+  and random_seed1 controls the high 32 bits. (Lancer-X)
 
 + Extended the palette editor to SMZX modes 2 and 3. The updated
   palette editor allows the editing of all 256 SMZX mode 2/3
