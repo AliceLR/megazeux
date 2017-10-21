@@ -2001,6 +2001,7 @@ int char_editor(struct world *mzx_world)
         changed = 1;
         break;
       }
+
       case IKEY_b:
       {
         if(get_alt_status(keycode_internal))
