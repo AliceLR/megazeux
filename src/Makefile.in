@@ -104,6 +104,13 @@ core_cobjs += arch/nds/extmem.o
 endif
 endif
 
+ifeq (${BUILD_3DS},1)
+core_cobjs += arch/3ds/shader_2d.shbin.o arch/3ds/shader_playfield.shbin.o
+core_cobjs += arch/3ds/platform.o arch/3ds/render.o
+core_cobjs += arch/3ds/event.o arch/3ds/audio.o
+core_cobjs += arch/3ds/keyboard.o
+endif
+
 ifeq (${PLATFORM},android)
 core_cxxobjs += arch/android/sfwrapper.o
 LINK_CC := ${CXX}
@@ -232,7 +239,7 @@ endif
 
 else
 
-ifeq ($(or ${BUILD_WII},${BUILD_NDS}),)
+ifeq ($(or ${BUILD_WII},${BUILD_NDS},${BUILD_3DS}),)
 
 core_cobjs += ${core_obj}/platform_dummy.o
 

@@ -1,0 +1,92 @@
+; MegaZeux
+;
+; Copyright (C) 2004-2006 Gilead Kutnick <exophase@adelphia.net>
+; Copyright (C) 2007 Alistair John Strachan <alistair@devzero.co.uk>
+; Copyright (C) 2007 Alan Williams <mralert@gmail.com>
+;
+; This program is free software; you can redistribute it and/or
+; modify it under the terms of the GNU General Public License as
+; published by the Free Software Foundation; either version 2 of
+; the License, or (at your option) any later version.
+;
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+; General Public License for more details.
+;
+; You should have received a copy of the GNU General Public License
+; along with this program; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+
+.gsh point c0
+
+.fvec projection[4]
+.fvec uvoffset
+.fvec offset
+
+.out outpos position
+.out outtc0 texcoord0
+.out outclr color
+
+.alias inpos v0
+.alias intc0 v1
+.alias inclr v2
+
+.constf SCALES(0.0009765625, 0.001953125, -1, 1)
+.constf UVOFF(8, -14, 0, 0)
+.constf POSSCALE(8.0, 14.0, 1.0, 1.0)
+
+.entry gmain
+.proc gmain
+	mov r4, POSSCALE
+	mov r2, intc0
+	mov r3.xy, inpos
+	mov r3.z, uvoffset.z
+	mad r0, r3, r4, offset
+
+	mov r11, SCALES
+	mov r0.w, POSSCALE.w
+	mul r5.xy, uvoffset.xy, r11.xy
+	mul r6, r2, r11
+
+	setemit 0
+	add r8.xy, r0.xy, r4.xy
+	add r10.xy, r6.xy, r5.xy
+	call emit_vertex
+	emit
+
+	setemit 1
+	mov r8.y, r0.y
+	add r8.x, r0.x, r4.x
+	mov r10.y, r6.y
+	add r10.x, r6.x, r5.x
+	call emit_vertex
+	emit
+
+	setemit 2, prim
+	mov r8, r0
+	mov r10, r6
+	call emit_vertex
+	emit
+
+	setemit 1, prim inv
+	mov r8.x, r0.x
+	add r8.y, r0.y, r4.y
+	mov r10.x, r6.x
+	add r10.y, r6.y, r5.y
+	call emit_vertex
+	emit
+
+	end
+.end
+
+.proc emit_vertex
+	dp4 outpos.x, projection[0], r8
+	dp4 outpos.y, projection[1], r8
+	dp4 outpos.z, projection[2], r8
+	dp4 outpos.w, projection[3], r8
+
+	mov outclr, inclr
+	mov outtc0, r10
+.end
+

@@ -936,6 +936,10 @@ static struct audio_stream *construct_vorbis_stream(char *filename,
   {
     OggVorbis_File open_file;
 
+#ifdef CONFIG_3DS
+    setvbuf(input_file, NULL, _IOFBF, 32768);
+#endif
+
     if(!ov_open(input_file, &open_file, NULL, 0))
     {
       vorbis_info *vorbis_file_info = ov_info(&open_file, -1);

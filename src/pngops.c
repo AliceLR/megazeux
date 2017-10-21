@@ -218,7 +218,6 @@ void *png_read_file(const char *name, png_uint_32 *_w, png_uint_32 *_h,
 
   if(png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
     png_set_tRNS_to_alpha(png_ptr);
-
   else if(!(type & PNG_COLOR_MASK_ALPHA))
     png_set_add_alpha(png_ptr, 0xff, PNG_FILLER_AFTER);
 

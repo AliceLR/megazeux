@@ -1,0 +1,85 @@
+#
+# Nintendo 3DS Makefile
+#
+
+include $(DEVKITARM)/3ds_rules
+
+.PHONY: package
+
+ifeq ($(strip $(DEVKITPRO)),)
+$(error "DEVKITPRO must be set in your environment.")
+endif
+
+ifeq ($(strip $(DEVKITARM)),)
+$(error "DEVKITARM must be set in your environment.")
+endif
+
+CC      := arm-none-eabi-gcc
+CXX     := arm-none-eabi-g++
+AR      := arm-none-eabi-ar
+OBJCOPY := arm-none-eabi-objcopy
+
+APP_TITLE = MegaZeux
+APP_DESCRIPTION = \"Game creation system\"
+APP_AUTHOR = \"MegaZeux Developers\"
+APP_ICON = arch/3ds/banner/megazeux-icon.png
+
+#
+# 3DS target rules
+#
+STRIP  = /bin/true
+
+#
+# Override library paths.
+#
+
+EXTRA_INCLUDES = -isystem $(CTRULIB)/include -isystem $(DEVKITPRO)/portlibs/armv6k/include
+ifeq (${DEBUG},1)
+  ARCH_CFLAGS += -Og
+  EXTRA_LIBS = -L$(CTRULIB)/lib -L$(DEVKITPRO)/portlibs/armv6k/lib -L$(DEVKITARM)/arm-none-eabi/lib/armv6k/fpu -lcitro3dd -lctrud -lpng16 -lz
+else
+  OPTIMIZE_CFLAGS = -O3 -fomit-frame-pointer -ffunction-sections
+# OPTIMIZE_CFLAGS = -flto
+  EXTRA_LIBS = -L$(CTRULIB)/lib -L$(DEVKITPRO)/portlibs/armv6k/lib -L$(DEVKITARM)/arm-none-eabi/lib/armv6k/fpu -lcitro3d -lctru -lpng16 -lz
+endif
+
+MACHDEP = -march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft -mword-relocations
+
+ARCH_CFLAGS   += ${EXTRA_INCLUDES} ${MACHDEP} -DARM11 -D__3DS__ -Iarch/3ds
+ARCH_CXXFLAGS += ${ARCH_CFLAGS}
+ARCH_LDFLAGS  += ${EXTRA_LIBS} ${MACHDEP} -specs=3dsx.specs
+
+#
+# Vile hack, remove me ASAP
+#
+arch/3ds/%.o: arch/3ds/%.c
+	$(if ${V},,@echo "  CC      " $<)
+	${CC} -MD ${core_cflags} ${core_flags} -Wno-unused-macros -c $< -o $@
+
+arch/3ds/%.shbin.o : arch/3ds/%.v.pica arch/3ds/%.g.pica
+	$(eval CURLOC := $(patsubst %.shbin.o,%.shbin,$@))
+	$(eval CURBIN := $(patsubst %.shbin.o,%.shbin,$(notdir $@)))
+	picasso -o $(CURLOC) $^
+	bin2s $(CURLOC) | $(AS) -o $@
+	echo "extern const u8" `(echo $(CURBIN) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"_end[];" > `(echo $(CURLOC) | tr . _)`.h
+	echo "extern const u8" `(echo $(CURBIN) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"[];" >> `(echo $(CURLOC) | tr . _)`.h
+	echo "extern const u32" `(echo $(CURBIN) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`_size";" >> `(echo $(CURLOC) | tr . _)`.h
+
+package: mzx mzxrun.smdh
+	3dsxtool ${mzxrun} ${mzxrun}.3dsx --smdh=${mzxrun}.smdh	--romfs=arch/3ds/romfs
+	bannertool makebanner -i arch/3ds/banner/megazeux-banner.png \
+		-a arch/3ds/banner/silence.wav -o megazeux-cia.bnr
+	bannertool makesmdh -s "MegaZeux" -l "MegaZeux game player" -p "MegaZeux developers" \
+		-i arch/3ds/banner/megazeux-icon.png -o megazeux-cia.smdh -r regionfree
+	makerom -f cia -elf ${mzxrun} -icon megazeux-cia.smdh -banner megazeux-cia.bnr \
+		-desc app:4 -v -o ${mzxrun}.cia -target t -exefslogo -rsf arch/3ds/banner/megazeux.rsf
+
+
+build := build/${SUBPLATFORM}/3ds/megazeux
+build: package ${build}
+	${CP} arch/3ds/pad.config ${build}
+	${CP} ${mzxrun}.3dsx ${build}/../
+	${CP} ${mzxrun}.cia ${build}/../../
+	${RM} ${build}/${mzxrun} ${build}/${mzxrun}.debug
+
+include arch/zip.inc

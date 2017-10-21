@@ -34,7 +34,7 @@
 #define __M_BEGIN_DECLS
 #define __M_END_DECLS
 
-#if !defined(CONFIG_WII) && !defined(CONFIG_NDS)
+#if !defined(CONFIG_WII) && !defined(CONFIG_NDS) && !defined(CONFIG_3DS)
 
 #undef false
 #undef true
@@ -49,6 +49,10 @@ typedef enum
 #endif // !CONFIG_WII && !CONFIG_NDS
 
 #endif /* __cplusplus */
+
+#ifdef CONFIG_3DS
+#include <3ds.h>
+#endif
 
 #ifdef CONFIG_NDS
 #include <nds.h>
