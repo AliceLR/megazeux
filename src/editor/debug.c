@@ -178,6 +178,11 @@ static void unescape_string(char *buf, int *len)
  ***********************/
 
 // We'll read off of these when we construct the tree
+static const char *config_var_list[] = {
+  "random_seed0",
+  "random_seed1",
+};
+
 static const char *world_var_list[] = {
   "bimesg", //no read
   "c_divisions",
@@ -263,6 +268,7 @@ static const char *sprite_var_list[] = {
   "vlayer", // no read
 };
 
+static int num_config_vars = ARRAY_SIZE(config_var_list);
 static int num_world_vars = ARRAY_SIZE(world_var_list);
 static int num_board_vars = ARRAY_SIZE(board_var_list);
 static int num_robot_vars = ARRAY_SIZE(robot_var_list);
@@ -1113,9 +1119,10 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
   struct debug_node *counters = &(root->nodes[0]);
   struct debug_node *strings = &(root->nodes[1]);
   struct debug_node *sprites = &(root->nodes[2]);
-  struct debug_node *world = &(root->nodes[3]);
-  struct debug_node *board = &(root->nodes[4]);
-  struct debug_node *robots = &(root->nodes[5]);
+  struct debug_node *config = &(root->nodes[3]);
+  struct debug_node *world = &(root->nodes[4]);
+  struct debug_node *board = &(root->nodes[5]);
+  struct debug_node *robots = &(root->nodes[6]);
 
   int num_counter_nodes = 27;
   int num_string_nodes = 27;
@@ -1144,6 +1151,7 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
   clear_debug_node(counters, true);
   clear_debug_node(strings, true);
   clear_debug_node(sprites, true);
+  clear_debug_node(config, true);
   clear_debug_node(world, true);
   clear_debug_node(board, true);
   clear_debug_node(robots, true);
@@ -1301,7 +1309,17 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
   else
     free(sprite_nodes);
 
-  // And finish sprites
+  /**********/
+  /* Config */
+  /**********/
+
+  config->counters = ccalloc(num_config_vars, sizeof(char *));
+  for(n = 0; n < num_config_vars; n++)
+  {
+    build_var_buffer( &(config->counters[n]), config_var_list[n], 0, NULL, 0);
+    read_var(mzx_world, config->counters[n]);
+  }
+  config->num_counters = num_config_vars;
 
   /*********/
   /* World */
@@ -1378,7 +1396,7 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
 // Create the base tree structure, except for sprites and robots
 static void build_debug_tree(struct world *mzx_world, struct debug_node *root)
 {
-  int num_root_nodes = 6;
+  int num_root_nodes = 7;
   struct debug_node *root_nodes =
    ccalloc(num_root_nodes, sizeof(struct debug_node));
 
@@ -1431,6 +1449,18 @@ static void build_debug_tree(struct world *mzx_world, struct debug_node *root)
     NULL
   };
 
+  struct debug_node config = {
+    "Universal",
+    false,
+    true,
+    false,
+    0,
+    0,
+    root,
+    NULL,
+    NULL
+  };
+
   struct debug_node world = {
     "World",
     false,
@@ -1471,9 +1501,10 @@ static void build_debug_tree(struct world *mzx_world, struct debug_node *root)
   memcpy(&root_nodes[0], &counters, sizeof(struct debug_node));
   memcpy(&root_nodes[1], &strings, sizeof(struct debug_node));
   memcpy(&root_nodes[2], &sprites, sizeof(struct debug_node));
-  memcpy(&root_nodes[3], &world, sizeof(struct debug_node));
-  memcpy(&root_nodes[4], &board, sizeof(struct debug_node));
-  memcpy(&root_nodes[5], &robots, sizeof(struct debug_node));
+  memcpy(&root_nodes[3], &config, sizeof(struct debug_node));
+  memcpy(&root_nodes[4], &world, sizeof(struct debug_node));
+  memcpy(&root_nodes[5], &board, sizeof(struct debug_node));
+  memcpy(&root_nodes[6], &robots, sizeof(struct debug_node));
 
   repopulate_tree(mzx_world, root);
 }

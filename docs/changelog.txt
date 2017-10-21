@@ -1,5 +1,6 @@
 MZX GIT
 
+FIXME: help description for "Universal" counter debugger category
 FIXME: size_pos_vlayer() needs a real help file context (edit_di.c, 747).
 FIXME: board undo notes:
   * Board/overlay/vlayer histories reset on world load, clear
