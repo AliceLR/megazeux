@@ -127,6 +127,7 @@ FIXES
 
 DEVELOPERS
 
++ Added Nintendo 3DS port. (asiekierka)
 + Added "make uninstall" option to the Linux makefile.
 
 
