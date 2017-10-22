@@ -1122,6 +1122,26 @@ static void show_status(struct world *mzx_world)
     write_string("-B-", 59, 21, 25, 0);
 }
 
+static Uint32 get_viewport_layer(struct world *mzx_world)
+{
+  // Creates a new layer if needed to prevent graphical discrepancies between
+  // the fallback and layer rendering. This can happen in SMZX mode if:
+  // 1) there is a visible viewport border or
+  // 2) the message is active.
+
+  struct board *src_board = mzx_world->current_board;
+
+  if(get_screen_mode())
+  {
+    if((src_board->viewport_width < 80) ||
+     (src_board->viewport_height < 25) ||
+     (src_board->b_mesg_timer > 0))
+      return create_layer(0, 0, 80, 25, LAYER_DRAWORDER_UI - 1, -1, 0, 1);
+  }
+
+  return UI_LAYER;
+}
+
 __editor_maybe_static void draw_viewport(struct world *mzx_world)
 {
   int i, i2;
@@ -1728,12 +1748,15 @@ static int update(struct world *mzx_world, int game, int *fadein)
 
   if(mzx_world->target_where != TARGET_TELEPORT)
   {
-    int top_x, top_y;
+    Uint32 viewport_layer;
+    int top_x;
+    int top_y;
     
     blank_layers();
-    
+
     // Draw border
-    select_layer(UI_LAYER);
+    viewport_layer = get_viewport_layer(mzx_world);
+    select_layer(viewport_layer);
     draw_viewport(mzx_world);
 
     // Draw screen
@@ -1783,7 +1806,6 @@ static int update(struct world *mzx_world, int game, int *fadein)
     // Add sprites
     draw_sprites(mzx_world);
     
-    select_layer(UI_LAYER);
     // Add time limit
     time_remaining = get_counter(mzx_world, "TIME", 0);
     if(time_remaining)
@@ -1794,6 +1816,8 @@ static int update(struct world *mzx_world, int game, int *fadein)
         timer_color = 0xF0; // Prevent white on white for timer
       else
         timer_color = (edge_color << 4) + 15;
+
+      select_layer(UI_LAYER);
 
       sprintf(tmp_str, "%d:%02d",
        (unsigned short)(time_remaining / 60), (time_remaining % 60) );
@@ -1811,6 +1835,8 @@ static int update(struct world *mzx_world, int game, int *fadein)
       Uint8 tmp_color = scroll_color;
       char *lines[25];
       int i = 1, j;
+
+      select_layer(viewport_layer);
 
       /* Always at least one line.. */
       lines[0] = src_board->bottom_mesg;
@@ -1866,6 +1892,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
         *(lines[j] - 1) = '\n';
     }
 
+    select_layer(UI_LAYER);
     draw_intro_mesg(mzx_world);
 
     // Add debug box

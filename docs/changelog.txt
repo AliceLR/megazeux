@@ -124,6 +124,11 @@ FIXES
   the start of the charset.
 + The editing area outside of the current board is now correctly
   drawn when SMZX is enabled.
++ The viewport is now correctly drawn when SMZX is enabled and
+  the UI or unbound sprites are active.
++ The editor bar no longer appears while SMZX is enabled in view
+  mode.
++ Messages are now drawn correctly in SMZX mode.
 
 DEVELOPERS
 

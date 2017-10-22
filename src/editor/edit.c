@@ -4230,6 +4230,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
             do
             {
+              blank_layers();
               draw_viewport(mzx_world);
               draw_game_window(src_board, v_scroll_x, v_scroll_y);
               update_screen();
