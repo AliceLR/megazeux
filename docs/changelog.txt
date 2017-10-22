@@ -129,6 +129,8 @@ FIXES
 + The editor bar no longer appears while SMZX is enabled in view
   mode.
 + Messages are now drawn correctly in SMZX mode.
++ Unbound sprites are now clipped correctly against the viewport
+  when the viewport origin is not 0,0. (Lancer-X)
 
 DEVELOPERS
 
