@@ -666,6 +666,13 @@ int size_pos(struct world *mzx_world)
     // Prevent previous keys from carrying through.
     force_release_all_keys();
 
+    // Center
+    if(dialog_result == 1)
+    {
+      results[0] = 40 - (results[2] / 2);
+      results[1] = 12 - (results[3] / 2);
+    }
+
     // Fix sizes
     if(results[2] > results[4])
       results[2] = results[4];
@@ -678,14 +685,6 @@ int size_pos(struct world *mzx_world)
 
     switch(dialog_result)
     {
-      default:
-      {
-        // Center
-        results[0] = 40 - (results[2] / 2);
-        results[1] = 12 - (results[3] / 2);
-        break;
-      }
-
       case -1:
       {
         redo = 0;
