@@ -268,10 +268,10 @@ void draw_sprites(struct world *mzx_world)
           draw_height -= start_y / -CHAR_H;
           start_y += (start_y / -CHAR_H) * CHAR_H;
         }
-        if (start_x + draw_width * CHAR_W >= (viewport_width + 1) * CHAR_W) {
+        if (start_x + draw_width * CHAR_W >= (viewport_width + viewport_x + 1) * CHAR_W) {
           draw_width += (((viewport_width + viewport_x + 1) * CHAR_W) - (start_x + draw_width * CHAR_W)) / CHAR_W;
         }
-        if (start_y + draw_height * CHAR_H >= (viewport_height + 1) * CHAR_H) {
+        if (start_y + draw_height * CHAR_H >= (viewport_height + viewport_y + 1) * CHAR_H) {
           draw_height += (((viewport_height + viewport_y + 1) * CHAR_H) - (start_y + draw_height * CHAR_H)) / CHAR_H;
         }
 
