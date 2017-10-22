@@ -300,6 +300,7 @@ void get_screen(struct char_element *dest);
 void ec_change_byte(Uint16 chr, Uint8 byte, Uint8 new_value);
 Uint8 ec_read_byte(Uint16 chr, Uint8 byte);
 Sint32 ec_load_set(char *name);
+void ec_clear_set(void);
 
 void set_color_intensity(Uint32 color, Uint32 percent);
 Uint32 get_color_intensity(Uint32 color);

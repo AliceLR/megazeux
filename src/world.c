@@ -1008,17 +1008,10 @@ static inline int load_world_sfx(struct world *mzx_world,
 static inline int save_world_chars(struct world *mzx_world,
  struct zip_archive *zp, int savegame, const char *name)
 {
-  unsigned char *buffer;
-  size_t size;
-  int result;
-
   // Save every charset
-  if(savegame)
-    size = PROTECTED_CHARSET_POSITION;
-
-  // Only save the first charset
-  else
-    size = CHARSET_SIZE;
+  unsigned char *buffer;
+  size_t size = PROTECTED_CHARSET_POSITION;
+  int result;
 
   buffer = cmalloc(size * CHAR_SIZE);
   ec_mem_save_set_var(buffer, size * CHAR_SIZE, 0);
@@ -1042,14 +1035,16 @@ static inline int load_world_chars(struct world *mzx_world,
   result = zip_read_file(zp, buffer, actual_size, &actual_size);
   if(result == ZIP_SUCCESS)
   {
-    // Load every charset
-    if(savegame)
-      ec_mem_load_set_var(buffer, PROTECTED_CHARSET_POSITION * CHAR_SIZE,
-       0, WORLD_VERSION);
+    // Load every charset (all saves, 2.91+ worlds)
+    if(savegame || mzx_world->version >= 0x025B)
+      actual_size = MIN(actual_size, PROTECTED_CHARSET_POSITION * CHAR_SIZE);
 
     // Load only the first charset
     else
-      ec_mem_load_set((Uint8 *)buffer);
+      actual_size = MIN(actual_size, CHARSET_SIZE * CHAR_SIZE);
+
+    ec_clear_set();
+    ec_mem_load_set_var(buffer, actual_size, 0, WORLD_VERSION);
   }
 
   free(buffer);

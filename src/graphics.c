@@ -142,6 +142,11 @@ void ec_read_char(Uint16 chr, char *matrix)
   memcpy(matrix, graphics.charset + (chr * CHAR_SIZE), CHAR_SIZE);
 }
 
+void ec_clear_set(void)
+{
+  memset(graphics.charset, 0, PROTECTED_CHARSET_POSITION * CHAR_SIZE);
+}
+
 Sint32 ec_load_set(char *name)
 {
   FILE *fp = fopen_unsafe(name, "rb");
