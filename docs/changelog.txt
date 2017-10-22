@@ -27,6 +27,9 @@ FEATURES
 + Added 'max_simultaneous_samples' config file option. This
   behaves the same as the MAX_SAMPLES counter, but applies
   globally.
++ Added SMZX_MESSAGE counter. When set to 0 with SMZX active,
+  messages will display in normal MZX mode instead of SMZX
+  using the first 16 colors of the SMZX palette.
 + Added 'random_seed#' counters to read and write the random
   seed, 32 bits at a time (random_seed0 controls the low 32 bits
   and random_seed1 controls the high 32 bits. (Lancer-X)

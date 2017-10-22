@@ -383,6 +383,7 @@ static inline int save_world_info(struct world *mzx_world,
     save_prop_d(WPROP_DIVIDER,          mzx_world->divider, mf);
     save_prop_d(WPROP_C_DIVISIONS,      mzx_world->c_divisions, mf);
     save_prop_d(WPROP_MAX_SAMPLES,      mzx_world->max_samples, mf);
+    save_prop_c(WPROP_SMZX_MESSAGE,     mzx_world->smzx_message, mf);
   }
 
   save_prop_eof(mf);
@@ -518,6 +519,7 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
   {
     // Added in 2.91
     check(WPROP_MAX_SAMPLES);
+    check(WPROP_SMZX_MESSAGE);
   }
 
   return VAL_SUCCESS;
@@ -935,6 +937,12 @@ static inline void load_world_info(struct world *mzx_world,
         if_savegame
         if(mzx_world->version >= 0x025B)
         mzx_world->max_samples = load_prop_int(size, prop);
+        break;
+
+      case WPROP_SMZX_MESSAGE:
+        if_savegame
+        if(mzx_world->version >= 0x025B)
+        mzx_world->smzx_message = load_prop_int(size, prop);
         break;
 
       default:
@@ -2880,6 +2888,7 @@ __editor_maybe_static void default_global_data(struct world *mzx_world)
   mzx_world->mesg_edges = 1;
   mzx_world->real_mod_playing[0] = 0;
   mzx_world->max_samples = -1;
+  mzx_world->smzx_message = 1;
 
   mzx_world->blind_dur = 0;
   mzx_world->firewalker_dur = 0;

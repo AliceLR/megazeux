@@ -671,6 +671,21 @@ static void smzx_idx_write(struct world *mzx_world,
   pal_update = true;
 }
 
+static int smzx_message_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  return mzx_world->smzx_message;
+}
+
+static void smzx_message_write(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int value, int id)
+{
+  if(value)
+    mzx_world->smzx_message = 1;
+  else
+    mzx_world->smzx_message = 0;
+}
+
 static int spr_clist_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
@@ -2802,6 +2817,7 @@ static const struct function_counter builtin_counters[] =
   { "smzx_g!", 0x0245, smzx_g_read, smzx_g_write },                  // 2.69
   { "smzx_idx!,!", 0x025A, smzx_idx_read, smzx_idx_write },          // 2.90
   { "smzx_indices", 0x025B, smzx_indices_read, NULL },               // 2.91
+  { "smzx_message", 0x025B, smzx_message_read, smzx_message_write }, // 2.91
   { "smzx_mode", 0x0245, smzx_mode_read, smzx_mode_write },          // 2.69
   { "smzx_palette", 0x0245, smzx_palette_read, NULL },               // 2.69
   { "smzx_r!", 0x0245, smzx_r_read, smzx_r_write },                  // 2.69

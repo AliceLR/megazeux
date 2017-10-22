@@ -1836,7 +1836,10 @@ static int update(struct world *mzx_world, int game, int *fadein)
       char *lines[25];
       int i = 1, j;
 
-      select_layer(viewport_layer);
+      if(mzx_world->smzx_message)
+        select_layer(viewport_layer);
+      else
+        select_layer(UI_LAYER);
 
       /* Always at least one line.. */
       lines[0] = src_board->bottom_mesg;

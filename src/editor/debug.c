@@ -199,6 +199,7 @@ static const char *world_var_list[] = {
   "mod_position",
   "multiplier",
   "mzx_speed",
+  "smzx_message",
   "smzx_mode*",
   "spacelock", //no read
   "vlayer_size*",
