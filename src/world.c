@@ -3186,8 +3186,8 @@ void remap_vlayer(struct world *mzx_world,
     }
 
     // Clear everything else
-    memset(vlayer_chars + new_pos, 0, vlayer_size - new_pos);
-    memset(vlayer_colors + new_pos, 0, vlayer_size - new_pos);
+    memset(vlayer_chars + new_pos, 32, vlayer_size - new_pos);
+    memset(vlayer_colors + new_pos, 7, vlayer_size - new_pos);
   }
   else
 
@@ -3206,8 +3206,8 @@ void remap_vlayer(struct world *mzx_world,
       memcpy(vlayer_colors + new_pos, vlayer_colors + old_pos, new_width);
 
       // Clear blank area
-      memset(vlayer_chars + new_pos + old_width, 0, clear_width);
-      memset(vlayer_colors + new_pos + old_width, 0, clear_width);
+      memset(vlayer_chars + new_pos + old_width, 32, clear_width);
+      memset(vlayer_colors + new_pos + old_width, 7, clear_width);
 
       old_pos -= old_width;
       new_pos -= new_width;
@@ -3215,8 +3215,8 @@ void remap_vlayer(struct world *mzx_world,
 
     // Clear anything after the new end
     new_pos = new_width * new_height;
-    memset(vlayer_chars + new_pos, 0, vlayer_size - new_pos);
-    memset(vlayer_colors + new_pos, 0, vlayer_size - new_pos);
+    memset(vlayer_chars + new_pos, 32, vlayer_size - new_pos);
+    memset(vlayer_colors + new_pos, 7, vlayer_size - new_pos);
   }
 
   mzx_world->vlayer_width = new_width;

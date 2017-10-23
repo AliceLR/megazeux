@@ -2013,33 +2013,22 @@ static void r_write(struct world *mzx_world,
   }
 }
 
-static int vlayer_height_read(struct world *mzx_world,
- const struct function_counter *counter, const char *name, int id)
-{
-  return mzx_world->vlayer_height;
-}
-
 static int vlayer_size_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
   return mzx_world->vlayer_size;
 }
 
+static int vlayer_height_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  return mzx_world->vlayer_height;
+}
+
 static int vlayer_width_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
   return mzx_world->vlayer_width;
-}
-
-static void vlayer_height_write(struct world *mzx_world,
- const struct function_counter *counter, const char *name, int value, int id)
-{
-  if(value <= 0)
-    value = 1;
-  if(value > mzx_world->vlayer_size)
-    value = mzx_world->vlayer_size;
-  mzx_world->vlayer_height = value;
-  mzx_world->vlayer_width = mzx_world->vlayer_size / value;
 }
 
 static void vlayer_size_write(struct world *mzx_world,
@@ -2052,12 +2041,13 @@ static void vlayer_size_write(struct world *mzx_world,
   {
     int vlayer_width = mzx_world->vlayer_width;
     int vlayer_height = mzx_world->vlayer_height;
+    int old_size = mzx_world->vlayer_size;
 
     mzx_world->vlayer_chars = crealloc(mzx_world->vlayer_chars, value);
     mzx_world->vlayer_colors = crealloc(mzx_world->vlayer_colors, value);
     mzx_world->vlayer_size = value;
 
-    if(vlayer_width * vlayer_height > value)
+    if(old_size > value)
     {
       vlayer_height = value / vlayer_width;
       mzx_world->vlayer_height = vlayer_height;
@@ -2068,18 +2058,67 @@ static void vlayer_size_write(struct world *mzx_world,
         mzx_world->vlayer_height = 1;
       }
     }
+    else
+
+    if(old_size < value && mzx_world->version >= 0x025B)
+    {
+      // Clear new vlayer area (2.91+)
+      memset(mzx_world->vlayer_chars + old_size, 32, value - old_size);
+      memset(mzx_world->vlayer_colors + old_size, 7, value - old_size);
+    }
+  }
+}
+
+static void vlayer_height_write(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int value, int id)
+{
+  int new_width;
+  int new_height;
+
+  if(value <= 0)
+    value = 1;
+  if(value > mzx_world->vlayer_size)
+    value = mzx_world->vlayer_size;
+
+  new_width = mzx_world->vlayer_size / value;
+  new_height = value;
+
+  if(mzx_world->version >= 0x025B)
+  {
+    // Manipulate vlayer data so its contents change little as possible (2.91+)
+    remap_vlayer(mzx_world, new_width, new_height);
+  }
+  else
+  {
+    mzx_world->vlayer_width = new_width;
+    mzx_world->vlayer_height = new_height;
   }
 }
 
 static void vlayer_width_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
+  int new_width;
+  int new_height;
+
   if(value <= 0)
     value = 1;
   if(value > mzx_world->vlayer_size)
     value = mzx_world->vlayer_size;
-  mzx_world->vlayer_width = value;
-  mzx_world->vlayer_height = mzx_world->vlayer_size / value;
+
+  new_width = value;
+  new_height = mzx_world->vlayer_size / value;
+
+  if(mzx_world->version >= 0x025B)
+  {
+    // Manipulate vlayer data so its contents change little as possible (2.91+)
+    remap_vlayer(mzx_world, new_width, new_height);
+  }
+  else
+  {
+    mzx_world->vlayer_width = new_width;
+    mzx_world->vlayer_height = new_height;
+  }
 }
 
 static int buttons_read(struct world *mzx_world,

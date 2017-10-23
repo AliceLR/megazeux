@@ -136,6 +136,10 @@ FIXES
   and height of the viewport.
 + Unbound sprites are now clipped correctly against the viewport
   when the viewport origin is not 0,0. (Lancer-X)
++ The VLAYER_SIZE counter now clears new vlayer area added when
+  it is increased. This applies only to 2.91+ worlds.
++ The VLAYER_WIDTH and VLAYER_HEIGHT counters now preserve data
+  on the vlayer when set. This applies only to 2.91+ worlds.
 
 DEVELOPERS
 

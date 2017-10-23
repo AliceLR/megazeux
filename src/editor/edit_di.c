@@ -829,7 +829,12 @@ int size_pos_vlayer(struct world *mzx_world)
 
           // Increasing size-- remap after
           if(size >= old_size)
+          {
+            // Clear new area
+            memset(mzx_world->vlayer_chars + old_size, 32, size - old_size);
+            memset(mzx_world->vlayer_colors + old_size, 7, size - old_size);
             remap_vlayer(mzx_world, results[0], results[1]);
+          }
 
           resized = 1;
         }
