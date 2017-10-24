@@ -3863,7 +3863,8 @@ void counter_fsg(void)
 }
 
 // Create a new counter from loading a save file. This skips find_counter.
-struct counter *load_new_counter(const char *name, int name_length, int value)
+void load_new_counter(struct counter **counter_list, int index,
+ const char *name, int name_length, int value)
 {
   struct counter *src_counter =
    cmalloc(sizeof(struct counter) + name_length);
@@ -3880,7 +3881,20 @@ struct counter *load_new_counter(const char *name, int name_length, int value)
   hash_add_counter(src_counter);
 #endif
 
-  return src_counter;
+  counter_list[index] = src_counter;
+}
+
+static int counter_sort_fcn(const void *a, const void *b)
+{
+  return strcasecmp(
+   (*(const struct counter **)a)->name,
+   (*(const struct counter **)b)->name);
+}
+
+void sort_counter_list(struct counter **counter_list, int num_counters)
+{
+  qsort(counter_list, (size_t)num_counters,
+   sizeof(struct counter *), counter_sort_fcn);
 }
 
 void free_counter_list(struct counter **counter_list, int num_counters)

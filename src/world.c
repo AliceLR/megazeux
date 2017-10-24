@@ -1464,8 +1464,8 @@ static inline int load_world_counters(struct world *mzx_world,
     // Otherwise, put them in the list manually.
     else
     {
-      mzx_world->counter_list[i] =
-       load_new_counter(name_buffer, name_length, value);
+      load_new_counter(mzx_world->counter_list, i,
+       name_buffer, name_length, value);
     }
   }
 
@@ -1473,6 +1473,11 @@ static inline int load_world_counters(struct world *mzx_world,
   // the new number of counters.
   if(!num_prev_allocated)
     mzx_world->num_counters = i;
+
+#ifndef CONFIG_UTHASH
+  // Versions without the hash table require this to be sorted at all times
+  sort_counter_list(mzx_world->counter_list, mzx_world->num_counters);
+#endif
 
   if(zp->is_memory && method == ZIP_M_NONE)
   {
@@ -1576,7 +1581,7 @@ static inline int load_world_strings_mem(struct world *mzx_world,
     if(!mfread(name_buffer, name_length, 1, &mf))
       break;
 
-    // If there were already string, use new_string to set or add them
+    // If there were already strings, use new_string to set or add them
     // into the existing strings as-needed.
     if(num_prev_allocated)
     {
@@ -1587,9 +1592,8 @@ static inline int load_world_strings_mem(struct world *mzx_world,
     // Otherwise, put them in the list manually.
     else
     {
-      src_string = load_new_string(name_buffer, name_length, str_length);
-      mzx_world->string_list[i] = src_string;
-      mzx_world->string_list[i]->list_ind = i;
+      src_string = load_new_string(mzx_world->string_list, i,
+       name_buffer, name_length, str_length);
     }
 
     mfread(src_string->value, str_length, 1, &mf);
@@ -1600,6 +1604,11 @@ static inline int load_world_strings_mem(struct world *mzx_world,
   // the new number of strings.
   if(!num_prev_allocated)
     mzx_world->num_strings = i;
+
+#ifndef CONFIG_UTHASH
+  // Versions without the hash table require this to be sorted at all times
+  sort_string_list(mzx_world->string_list, mzx_world->num_strings);
+#endif
 
   if(zp->is_memory && method == ZIP_M_NONE)
   {
@@ -1672,9 +1681,8 @@ static inline int load_world_strings(struct world *mzx_world,
     // Otherwise, put them in the list manually.
     else
     {
-      src_string = load_new_string(name_buffer, name_length, str_length);
-      mzx_world->string_list[i] = src_string;
-      mzx_world->string_list[i]->list_ind = i;
+      src_string = load_new_string(mzx_world->string_list, i,
+       name_buffer, name_length, str_length);
     }
 
     zread(src_string->value, str_length, zp);
@@ -1685,6 +1693,11 @@ static inline int load_world_strings(struct world *mzx_world,
   // the new number of strings.
   if(!num_prev_allocated)
     mzx_world->num_strings = i;
+
+#ifndef CONFIG_UTHASH
+  // Versions without the hash table require this to be sorted at all times
+  sort_string_list(mzx_world->string_list, mzx_world->num_strings);
+#endif
 
   return zip_read_close_stream(zp);
 }

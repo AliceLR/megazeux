@@ -44,6 +44,8 @@ CORE_LIBSPEC int set_string(struct world *mzx_world, const char *name,
 CORE_LIBSPEC struct string *new_string(struct world *mzx_world,
  const char *name, size_t length, int id);
 CORE_LIBSPEC bool is_string(char *buffer);
+CORE_LIBSPEC void sort_string_list(struct string **string_list,
+ int num_strings);
 
 int string_read_as_counter(struct world *mzx_world,
  const char *name, int id);
@@ -58,10 +60,9 @@ int compare_strings(struct string *dest, struct string *src);
 
 void load_string_board(struct world *mzx_world, const char *expression,
  int w, int h, char l, char *src, int width);
-struct string *load_new_string(const char *name, int name_length,
- int str_length);
-struct string *load_set_string(struct world *mzx_world, const char *name,
- int name_length, int str_length);
+
+struct string *load_new_string(struct string **string_list, int index,
+ const char *name, int name_length, int str_length);
 
 void free_string_list(struct string **string_list, int num_strings);
 

@@ -1103,8 +1103,8 @@ bool is_string(char *buffer)
 }
 
 // Create a new string from loading a save file. This skips find_string.
-struct string *load_new_string(const char *name, int name_length,
- int str_length)
+struct string *load_new_string(struct string **string_list, int index,
+ const char *name, int name_length, int str_length)
 {
   struct string *src_string =
    cmalloc(sizeof(struct string) + name_length + str_length);
@@ -1117,12 +1117,34 @@ struct string *load_new_string(const char *name, int name_length,
 
   src_string->length = str_length;
   src_string->allocated_length = str_length;
+  src_string->list_ind = index;
 
 #ifdef CONFIG_UTHASH
   hash_add_string(src_string);
 #endif
 
+  string_list[index] = src_string;
   return src_string;
+}
+
+static int string_sort_fcn(const void *a, const void *b)
+{
+  return strcasecmp(
+   (*(const struct string **)a)->name,
+   (*(const struct string **)b)->name);
+}
+
+void sort_string_list(struct string **string_list, int num_strings)
+{
+  int i;
+
+  qsort(string_list, (size_t)num_strings,
+   sizeof(struct string *), string_sort_fcn);
+
+  // IMPORTANT: Make sure we reset each string's list_ind since we just
+  // sorted them, it's only polite (and also will make MZX not crash)
+  for(i = 0; i < num_strings; i++)
+    string_list[i]->list_ind = i;
 }
 
 void free_string_list(struct string **string_list, int num_strings)

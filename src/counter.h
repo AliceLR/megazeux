@@ -37,6 +37,8 @@ CORE_LIBSPEC void set_counter(struct world *mzx_world, const char *name,
 CORE_LIBSPEC void counter_fsg(void);
 CORE_LIBSPEC void new_counter(struct world *mzx_world, const char *name,
  int value, int id);
+CORE_LIBSPEC void sort_counter_list(struct counter **counter_list,
+ int num_counters);
 
 void initialize_gateway_functions(struct world *mzx_world);
 void inc_counter(struct world *mzx_world, const char *name, int value, int id);
@@ -48,10 +50,8 @@ void mod_counter(struct world *mzx_world, const char *name, int value, int id);
 int set_counter_special(struct world *mzx_world, char *char_value,
  int value, int id);
 
-struct counter *load_new_counter(const char *name, int name_length, int value);
-
-void load_set_counter(struct world *mzx_world, const char *name,
- int name_length, int value);
+void load_new_counter(struct counter **counter_list, int index,
+ const char *name, int name_length, int value);
 
 void free_counter_list(struct counter **counter_list, int num_counters);
 

@@ -56,7 +56,8 @@ static inline void meter_initial_draw(int curr, int target, const char *title) {
 
 static char name_buffer[ROBOT_MAX_TR];
 
-static inline struct counter *legacy_load_counter(struct world *mzx_world, FILE *fp)
+static inline bool legacy_load_counter(struct world *mzx_world,
+ FILE *fp, struct counter **counter_list, int index)
 {
   int value = fgetd(fp);
   int name_length = fgetd(fp);
@@ -67,19 +68,21 @@ static inline struct counter *legacy_load_counter(struct world *mzx_world, FILE 
   if(!strncasecmp(name_buffer, "mzx_speed", name_length))
   {
     mzx_world->mzx_speed = value;
-    return NULL;
+    return false;
   }
 
   if(!strncasecmp(name_buffer, "_____lock_speed", name_length))
   {
     mzx_world->lock_speed = value;
-    return NULL;
+    return false;
   }
 
-  return load_new_counter(name_buffer, name_length, value);
+  load_new_counter(counter_list, index, name_buffer, name_length, value);
+  return true;
 }
 
-static inline struct string *legacy_load_string(FILE *fp)
+static inline void legacy_load_string(FILE *fp,
+ struct string **string_list, int index)
 {
   int name_length = fgetd(fp);
   int str_length = fgetd(fp);
@@ -88,11 +91,10 @@ static inline struct string *legacy_load_string(FILE *fp)
 
   fread(name_buffer, name_length, 1, fp);
 
-  src_string = load_new_string(name_buffer, name_length, str_length);
+  src_string = load_new_string(string_list, index,
+   name_buffer, name_length, str_length);
 
   fread(src_string->value, str_length, 1, fp);
-
-  return src_string;
 }
 
 static const char magic_code[16] =
@@ -734,7 +736,8 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
 
     for(i = 0, j = 0; i < num_counters; i++)
     {
-      struct counter *counter = legacy_load_counter(mzx_world, fp);
+      bool counter = legacy_load_counter(mzx_world, fp,
+       mzx_world->counter_list, j);
 
       /* We loaded a special counter, this doesn't need to be
        * loaded into the regular list.
@@ -745,7 +748,6 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
         continue;
       }
 
-      mzx_world->counter_list[j] = counter;
       j++;
     }
 
@@ -757,9 +759,14 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
 
     for(i = 0; i < num_strings; i++)
     {
-      mzx_world->string_list[i] = legacy_load_string(fp);
-      mzx_world->string_list[i]->list_ind = i;
+      legacy_load_string(fp, mzx_world->string_list, i);
     }
+
+#ifndef CONFIG_UTHASH
+  // Versions without the hash table require these to be sorted at all times
+  sort_counter_list(mzx_world->counter_list, mzx_world->num_counters);
+  sort_string_list(mzx_world->string_list, mzx_world->num_strings);
+#endif
 
     // Sprite data
     for(i = 0; i < MAX_SPRITES; i++)

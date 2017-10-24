@@ -1090,19 +1090,6 @@ static int start_var_search(struct world *mzx_world, struct debug_node *node,
 /******* MAKE THE TREE CODE *******/
 /**********************************/
 
-static int counter_sort_fcn(const void *a, const void *b)
-{
-  return strcasecmp(
-   (*(const struct counter **)a)->name,
-   (*(const struct counter **)b)->name);
-}
-static int string_sort_fcn(const void *a, const void *b)
-{
-  return strcasecmp(
-   (*(const struct string **)a)->name,
-   (*(const struct string **)b)->name);
-}
-
 // Create new counter lists.
 // (Re)make the child nodes
 static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
@@ -1142,12 +1129,8 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
 
   struct robot **robot_list = mzx_world->current_board->robot_list;
 
-  qsort(
-   mzx_world->counter_list, (size_t)num_counters, sizeof(struct counter *),
-   counter_sort_fcn);
-  qsort(
-   mzx_world->string_list, (size_t)num_strings, sizeof(struct string *),
-   string_sort_fcn);
+  sort_counter_list(mzx_world->counter_list, mzx_world->num_counters);
+  sort_string_list(mzx_world->string_list, mzx_world->num_strings);
 
   // We want to start off on a clean slate here
   clear_debug_node(counters, true);
@@ -1209,12 +1192,9 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
   /* Strings */
   /***********/
 
-  // IMPORTANT: Make sure we reset each string's list_ind since we just
-  // sorted them, it's only polite (and also will make MZX not crash)
   for(i = 0, n = 0; i < num_strings; i++)
   {
     char first = tolower((int)mzx_world->string_list[i]->name[1]);
-    mzx_world->string_list[i]->list_ind = i;
 
     // We need to switch child nodes
     if((first > n+96 && n<27) || i == 0)
