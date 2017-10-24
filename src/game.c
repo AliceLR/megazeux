@@ -2963,6 +2963,7 @@ void title_screen(struct world *mzx_world)
               else
               {
                 clear_world(mzx_world);
+                clear_global_data(mzx_world);
               }
               vquick_fadeout();
               fadein = 1;
@@ -3190,6 +3191,7 @@ void title_screen(struct world *mzx_world)
             else
             {
               clear_world(mzx_world);
+              clear_global_data(mzx_world);
             }
             vquick_fadeout();
             fadein = 1;

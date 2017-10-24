@@ -102,6 +102,9 @@ FIXES
 
 + Fixed a bug that would cause Linux binaries to fail to find
   most resources.
++ Fixed a bug where loading a save from the titlescreen, exiting
+  gameplay to a world that doesn't exist, and then loading a
+  second save would corrupt the counter and string hash tables.
 + Fixed crash that would occur when loading a saved position on
   the same board referring to out-of-bounds coordinates.
 + Fixed a bug where key repeat would be prematurely terminated
