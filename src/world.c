@@ -33,29 +33,28 @@
 #include "world.h"
 #include "world_prop.h"
 #include "legacy_world.h"
-#include "zip.h"
 
+#include "audio.h"
 #include "board.h"
-#include "robot.h"
 #include "configure.h"
-#include "sfx.h"
-#include "error.h"
-#include "window.h"
 #include "const.h"
 #include "counter.h"
-#include "sprite.h"
-#include "counter.h"
-#include "graphics.h"
-#include "event.h"
 #include "data.h"
-#include "idput.h"
+#include "error.h"
+#include "event.h"
+#include "extmem.h"
 #include "fsafeopen.h"
 #include "game.h"
-#include "audio.h"
-#include "extmem.h"
+#include "graphics.h"
+#include "idput.h"
 #include "memfile.h"
+#include "robot.h"
+#include "sfx.h"
+#include "sprite.h"
+#include "str.h"
 #include "util.h"
-
+#include "window.h"
+#include "zip.h"
 
 #ifdef CONFIG_LOADSAVE_METER
 
@@ -3101,7 +3100,7 @@ void clear_global_data(struct world *mzx_world)
   free_counter_list(counter_list, num_counters);
   mzx_world->counter_list = NULL;
 
-  // Let counter.c handle this
+  // Let str.c handle this
   free_string_list(string_list, num_strings);
   mzx_world->string_list = NULL;
 

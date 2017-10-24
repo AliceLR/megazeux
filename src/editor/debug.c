@@ -24,13 +24,14 @@
 #include "window.h"
 
 #include "../audio.h"
-#include "../graphics.h"
 #include "../counter.h"
-#include "../sprite.h"
-#include "../window.h"
-#include "../intake.h"
 #include "../event.h"
+#include "../graphics.h"
+#include "../intake.h"
+#include "../sprite.h"
+#include "../str.h"
 #include "../util.h"
+#include "../window.h"
 #include "../world.h"
 
 #include <string.h>

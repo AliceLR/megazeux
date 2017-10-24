@@ -24,13 +24,15 @@
 #include <assert.h>
 
 #include "mzm.h"
+
 #include "data.h"
 #include "error.h"
 #include "idput.h"
-#include "world.h"
-#include "robot.h"
-#include "legacy_world.h"
 #include "legacy_robot.h"
+#include "legacy_world.h"
+#include "robot.h"
+#include "str.h"
+#include "world.h"
 #include "world_prop.h"
 #include "zip.h"
 

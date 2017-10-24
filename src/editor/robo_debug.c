@@ -31,13 +31,10 @@
 #include "../event.h"
 #include "../graphics.h"
 #include "../robot.h"
+#include "../str.h"
 #include "../window.h"
-#include "../util.h"
-
 #include "../world_struct.h"
-#include "../board_struct.h"
-#include "../robot_struct.h"
-
+#include "../util.h"
 
 struct breakpoint
 {

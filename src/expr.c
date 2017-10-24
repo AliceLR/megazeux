@@ -24,10 +24,11 @@
 
 #include "expr.h"
 
-#include "world_struct.h"
 #include "counter.h"
-#include "robot.h"
 #include "rasm.h"
+#include "robot.h"
+#include "str.h"
+#include "world_struct.h"
 
 enum op
 {
