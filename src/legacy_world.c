@@ -763,9 +763,9 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
     }
 
 #ifndef CONFIG_UTHASH
-  // Versions without the hash table require these to be sorted at all times
-  sort_counter_list(mzx_world->counter_list, mzx_world->num_counters);
-  sort_string_list(mzx_world->string_list, mzx_world->num_strings);
+    // Versions without the hash table require these to be sorted at all times
+    sort_counter_list(mzx_world->counter_list, mzx_world->num_counters);
+    sort_string_list(mzx_world->string_list, mzx_world->num_strings);
 #endif
 
     // Sprite data
