@@ -107,6 +107,7 @@ FIXES
   second save would corrupt the counter and string hash tables.
 + Fixed crash that would occur when loading a saved position on
   the same board referring to out-of-bounds coordinates.
++ LOAD_COUNTERS now works as intended.
 + Fixed a bug where key repeat would be prematurely terminated
   when releasing a key while holding another key.
 + Attempting to open the robot validator with no errors will no

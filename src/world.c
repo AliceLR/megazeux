@@ -1738,9 +1738,11 @@ int load_counters_file(struct world *mzx_world, const char *file)
 
   if(strcmp(magic, "COUNTERS"))
     goto err;
-
+  
   if(ZIP_SUCCESS != zip_read_directory(zp))
     goto err;
+
+  assign_fprops(zp, 0);
 
   while(ZIP_SUCCESS == zip_get_next_prop(zp, &prop_id, NULL, NULL))
   {
