@@ -27,6 +27,7 @@
 #include "error.h"
 #include "game.h"
 #include "graphics.h"
+#include "memcasecmp.h"
 #include "rasm.h"
 #include "robot.h"
 #include "util.h"
@@ -1100,6 +1101,19 @@ bool is_string(char *buffer)
 
   // Valid string
   return true;
+}
+
+int compare_strings(struct string *dest, struct string *src)
+{
+  size_t cmp_length = dest->length;
+
+  if(src->length < cmp_length)
+    return 1;
+
+  if(src->length > cmp_length)
+    return -1;
+
+  return memcasecmp(src->value, dest->value, cmp_length);
 }
 
 // Create a new string from loading a save file. This skips find_string.

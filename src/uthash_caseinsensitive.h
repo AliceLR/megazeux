@@ -29,18 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>   /* exit() */
 #include <ctype.h> /* tolower() */
 
-inline static int memcasecmp(const void *A, const void *B, int len)
-{
-  const char *a = A;
-  const char *b = B;
-  int i;
-  for (i = 0; i < len; i++) {
-    if (tolower((int)*a) != tolower((int)*b)) return tolower((int)*a) - tolower((int)*b);
-    a++;
-    b++;
-  }
-  return 0;
-}
+#include "memcasecmp.h"
 
 /* These macros use decltype or the earlier __typeof GNU extension.
    As decltype is only available in newer compilers (VS2010 or gcc 4.3+
