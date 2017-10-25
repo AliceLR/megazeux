@@ -2720,7 +2720,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       int err;
 
       err = fsafetranslate(char_value, translated_path);
-      if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
+      if(err == -FSAFE_SUCCESS)
         load_counters_file(mzx_world, translated_path);
 
       free(translated_path);
