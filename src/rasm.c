@@ -3356,21 +3356,30 @@ static char *get_token(char *src, struct token *token)
         token->arg_value.equality_type = NOT_EQUAL;
         next += 1;
       }
+      else
+      {
+        token_type |= TOKEN_TYPE_INVALID;
+      }
       break;
 
     // Match ?= or ?==
     case '?':
       token_type = TOKEN_TYPE_EQUALITY;
+      next = src + 1;
       if(src[1] == '=')
       {
-        next = src + 2;
         token->arg_value.equality_type = WILD_EQUAL;
+        next++;
 
         if(src[2] == '=')
         {
           token->arg_value.equality_type = WILD_EXACTLY_EQUAL;
           next++;
         }
+      }
+      else
+      {
+        token_type |= TOKEN_TYPE_INVALID;
       }
       break;
 
