@@ -1152,20 +1152,13 @@ static int compare_wildcard(const char *str, size_t str_len,
       case '?':
       {
         // Matches the next character if the previous character was matched
-        new_left = (size_t)-1;
-        new_right = 0;
+        memmove(str_matched + left, str_matched + left - 1, right - left + 1);
 
-        for(j = right; j >= left; j--)
-        {
-          str_matched[j] = str_matched[j-1];
-          if(str_matched[j])
-          {
-            new_left = j+1;
-            if(!new_right)
-              new_right = j+1;
-          }
-        }
-        break;
+        left++;
+        if(right < str_len)
+          right++;
+
+        continue;
       }
 
       case '\\':
