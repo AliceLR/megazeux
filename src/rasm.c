@@ -2176,14 +2176,17 @@ static const char *const dir_names[20] =
   "RANDNOT"
 };
 
-static const char *const equality_names[6] =
+static const char *const equality_names[] =
 {
   "=",
   "<",
   ">",
   ">=",
   "<=",
-  "!="
+  "!=",
+  "===",
+  "?=",
+  "?=="
 };
 
 static const char *const condition_names[18] =
