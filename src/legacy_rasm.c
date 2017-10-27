@@ -830,10 +830,13 @@ static const struct search_entry_short sorted_argument_list[] =
   { "=",                0,   S_EQUALITY  },
   { "=<",               4,   S_EQUALITY  },
   { "==",               0,   S_EQUALITY  },
+  { "===",              6,   S_EQUALITY  },
   { "=>",               3,   S_EQUALITY  },
   { ">",                2,   S_EQUALITY  },
   { "><",               5,   S_EQUALITY  },
   { ">=",               3,   S_EQUALITY  },
+  { "?=",               7,   S_EQUALITY  },
+  { "?==",              8,   S_EQUALITY  },
   { "a",                2,   S_EXTRA     },
   { "aligned",          5,   S_CONDITION },
   { "alignedew",        7,   S_CONDITION },
@@ -2241,9 +2244,9 @@ __editor_maybe_static int disassemble_line(char *cpos, char **next,
  char *output_buffer, char *error_buffer, int *total_bytes,
  int print_ignores, char *arg_types, int *arg_count, int base)
 {
-  static const char *const equality_types[6] =
+  static const char *const equality_types[9] =
   {
-    "=", "<", ">", ">=", "<=", "!="
+    "=", "<", ">", ">=", "<=", "!=", "===", "?=", "?=="
   };
 
   static const char *const condition_types[18] =

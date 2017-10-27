@@ -33,6 +33,14 @@ FEATURES
 + Added 'random_seed#' counters to read and write the random
   seed, 32 bits at a time (random_seed0 controls the low 32 bits
   and random_seed1 controls the high 32 bits. (Lancer-X)
++ Added a case-sensitive string equality operator:
+  IF "$string" === "ABC" then "label".
++ Added wildcard-matching string equality operators:
+  IF "$string" ?= "a?%" then "label"
+  IF "$string" ?== "a?%" then "label" (case-sensitive).
+  The character '?' will match exactly one of any character in
+  $string, and '%' will match any number of any character in
+  $string (including no characters).
 
 + Extended the palette editor to SMZX modes 2 and 3. The updated
   palette editor allows the editing of all 256 SMZX mode 2/3

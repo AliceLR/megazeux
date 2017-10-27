@@ -250,7 +250,10 @@ enum equality
   GREATER_THAN          = 2,
   GREATER_THAN_OR_EQUAL = 3,
   LESS_THAN_OR_EQUAL    = 4,
-  NOT_EQUAL             = 5
+  NOT_EQUAL             = 5,
+  EXACTLY_EQUAL         = 6,
+  WILD_EQUAL            = 7,
+  WILD_EXACTLY_EQUAL    = 8
 };
 
 enum condition

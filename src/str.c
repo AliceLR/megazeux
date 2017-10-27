@@ -1103,17 +1103,155 @@ bool is_string(char *buffer)
   return true;
 }
 
-int compare_strings(struct string *dest, struct string *src)
+// Example pattern:
+//      z a b c d e f g
+//    Y
+// z  Y Y - - - - - - -
+// ?  Y - Y - - - - - -
+// %  Y - Y Y Y Y Y Y Y (fill left to end with Y)
+// c  Y - - N Y N N N N (attempt from left to right)
+// %  Y - - - Y Y Y Y Y (fill left to end with Y)
+// g  Y - - - - N N N Y
+
+static int compare_wildcard(const char *str, size_t str_len,
+ const char *pat, size_t pat_len, int exact_case)
+{
+  char *str_matched = calloc(1, str_len + 1);
+  size_t left = 1;
+  size_t right = 1;
+  size_t new_left = 1;
+  size_t i = 0;
+  size_t j;
+  char next = 0;
+  char prev;
+  int res = -1;
+
+  str_matched[0] = 1;
+
+  while(i < pat_len && left <= str_len)
+  {
+    prev = next;
+    next = exact_case ? pat[i] : toupper(pat[i]);
+    i++;
+
+    switch(next)
+    {
+      case '%':
+      {
+        // Can match the entire string or nothing. Ignore duplicate %s
+        if(prev != '%')
+        {
+          right = str_len;
+          for(j = right; j >= left; j--)
+          {
+            str_matched[j] = 1;
+          }
+        }
+        continue;
+      }
+
+      case '?':
+      {
+        // Matches the next character if the previous character was matched
+        new_left = (size_t)-1;
+
+        for(j = right; j >= left; j--)
+        {
+          str_matched[j] = str_matched[j-1];
+          if(str_matched[j])
+            new_left = j+1;
+        }
+        break;
+      }
+
+      case '\\':
+      {
+        // Might be an escaped character
+        if(i < pat_len)
+        {
+          if(pat[i] == '%' || pat[i] == '?' || pat[i] == '\\')
+          {
+            next = pat[i];
+            i++;
+          }
+        }
+      }
+
+      /* fallthrough */
+
+      default:
+      {
+        // Matches next character if previous character matched and
+        // the current character is the same as the pattern
+        new_left = (size_t)-1;
+
+        if(exact_case)
+        {
+          for(j = right; j >= left; j--)
+          {
+            str_matched[j] = str_matched[j-1] && (str[j-1] == next);
+            if(str_matched[j])
+              new_left = j+1;
+          }
+        }
+        else
+        {
+          for(j = right; j >= left; j--)
+          {
+            str_matched[j] = str_matched[j-1] && (toupper(str[j-1]) == next);
+            if(str_matched[j])
+              new_left = j+1;
+          }
+        }
+        break;
+      }
+    }
+
+    if(right < str_len)
+      right++;
+
+    left = new_left;
+  }
+
+  // Consume any trailing multiple wildcards
+  while(i < pat_len && pat[i] == '%')
+    i++;
+
+  if(str_matched[str_len] && i == pat_len)
+    res = 0;
+
+  free(str_matched);
+  return res;
+}
+
+int compare_strings(struct string *dest, struct string *src,
+ int exact_case, int allow_wildcards)
 {
   size_t cmp_length = dest->length;
 
-  if(src->length < cmp_length)
-    return 1;
+  if(!allow_wildcards)
+  {
+    if(src->length < cmp_length)
+      return 1;
 
-  if(src->length > cmp_length)
-    return -1;
+    if(src->length > cmp_length)
+      return -1;
 
-  return memcasecmp(src->value, dest->value, cmp_length);
+    if(exact_case)
+    {
+      return memcmp(dest->value, src->value, cmp_length);
+    }
+    else
+    {
+      return memcasecmp(dest->value, src->value, cmp_length);
+    }
+  }
+
+  else
+  {
+    return compare_wildcard(dest->value, cmp_length, src->value,
+     src->length, exact_case);
+  }
 }
 
 // Create a new string from loading a save file. This skips find_string.

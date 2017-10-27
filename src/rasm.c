@@ -3312,7 +3312,7 @@ static char *get_token(char *src, struct token *token)
 
       break;
 
-    // Match =, ==, =<, or =>
+    // Match =, ==, ===, =<, or =>
     case '=':
       token_type = TOKEN_TYPE_EQUALITY;
       token->arg_value.equality_type = EQUAL;
@@ -3320,6 +3320,11 @@ static char *get_token(char *src, struct token *token)
       next = src + 1;
       if(src[1] == '=')
       {
+        if(src[2] == '=')
+        {
+          token->arg_value.equality_type = EXACTLY_EQUAL;
+          next++;
+        }
         next++;
       }
       else
@@ -3347,6 +3352,22 @@ static char *get_token(char *src, struct token *token)
       {
         token->arg_value.equality_type = NOT_EQUAL;
         next += 1;
+      }
+      break;
+
+    // Match ?= or ?==
+    case '?':
+      token_type = TOKEN_TYPE_EQUALITY;
+      if(src[1] == '=')
+      {
+        next = src + 2;
+        token->arg_value.equality_type = WILD_EQUAL;
+
+        if(src[2] == '=')
+        {
+          token->arg_value.equality_type = WILD_EXACTLY_EQUAL;
+          next++;
+        }
       }
       break;
 

@@ -1468,6 +1468,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         {
           struct string dest;
           struct string src;
+          int allow_wildcards = 0;
+          int exact_case = 0;
 
           tr_msg(mzx_world, dest_string, id, dest_buffer);
           // Get a pointer to the dest string
@@ -1495,8 +1497,19 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             src.length = strlen(src_buffer);
           }
 
-          dest_value = compare_strings(&dest, &src);
+          // String equality extensions (2.91+)
+          if(mzx_world->version >= 0x025B)
+          {
+            if(comparison == EXACTLY_EQUAL || comparison == WILD_EXACTLY_EQUAL)
+              exact_case = 1;
+
+            if(comparison == WILD_EQUAL || comparison == WILD_EXACTLY_EQUAL)
+              allow_wildcards = 1;
+          }
+
           src_value = 0;
+          dest_value = compare_strings(&dest, &src,
+           exact_case, allow_wildcards);
         }
         else
         {
@@ -1517,6 +1530,9 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         switch(comparison)
         {
           case EQUAL:
+          case EXACTLY_EQUAL:
+          case WILD_EQUAL:
+          case WILD_EXACTLY_EQUAL:
           {
             if(dest_value == src_value)
               success = 1;
