@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -1120,6 +1121,7 @@ static int compare_wildcard(const char *str, size_t str_len,
   size_t left = 1;
   size_t right = 1;
   size_t new_left = 1;
+  size_t new_right;
   size_t i = 0;
   size_t j;
   char next = 0;
@@ -1141,11 +1143,8 @@ static int compare_wildcard(const char *str, size_t str_len,
         // Can match the entire string or nothing. Ignore duplicate %s
         if(prev != '%')
         {
+          memset(str_matched + left, 1, str_len - left + 1);
           right = str_len;
-          for(j = right; j >= left; j--)
-          {
-            str_matched[j] = 1;
-          }
         }
         continue;
       }
@@ -1154,12 +1153,17 @@ static int compare_wildcard(const char *str, size_t str_len,
       {
         // Matches the next character if the previous character was matched
         new_left = (size_t)-1;
+        new_right = 0;
 
         for(j = right; j >= left; j--)
         {
           str_matched[j] = str_matched[j-1];
           if(str_matched[j])
+          {
             new_left = j+1;
+            if(!new_right)
+              new_right = j+1;
+          }
         }
         break;
       }
@@ -1184,6 +1188,7 @@ static int compare_wildcard(const char *str, size_t str_len,
         // Matches next character if previous character matched and
         // the current character is the same as the pattern
         new_left = (size_t)-1;
+        new_right = 0;
 
         if(exact_case)
         {
@@ -1191,7 +1196,11 @@ static int compare_wildcard(const char *str, size_t str_len,
           {
             str_matched[j] = str_matched[j-1] && (str[j-1] == next);
             if(str_matched[j])
+            {
               new_left = j+1;
+              if(!new_right)
+                new_right = j+1;
+            }
           }
         }
         else
@@ -1200,17 +1209,19 @@ static int compare_wildcard(const char *str, size_t str_len,
           {
             str_matched[j] = str_matched[j-1] && (toupper(str[j-1]) == next);
             if(str_matched[j])
+            {
               new_left = j+1;
+              if(!new_right)
+                new_right = j+1;
+            }
           }
         }
         break;
       }
     }
 
-    if(right < str_len)
-      right++;
-
     left = new_left;
+    right = new_right;
   }
 
   // Consume any trailing multiple wildcards
