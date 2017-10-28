@@ -863,6 +863,7 @@ static void do_block_command(struct world *mzx_world, int block_command,
   switch(block_edit)
   {
     case EDIT_BOARD:
+      src_char = NULL;
       src_color = block_board->level_color;
       src_width = block_board->board_width;
       break;
@@ -878,6 +879,9 @@ static void do_block_command(struct world *mzx_world, int block_command,
       src_color = mzx_world->vlayer_colors;
       src_width = mzx_world->vlayer_width;
       break;
+
+    default:
+      return;
   }
 
   // Set up destination
@@ -885,6 +889,8 @@ static void do_block_command(struct world *mzx_world, int block_command,
   {
     case EDIT_BOARD:
       dest_board = mzx_world->current_board;
+      dest_char = NULL;
+      dest_color = NULL;
       dest_width = dest_board->board_width;
       dest_height = dest_board->board_height;
       break;
@@ -898,11 +904,15 @@ static void do_block_command(struct world *mzx_world, int block_command,
       break;
 
     case EDIT_VLAYER:
+      dest_board = NULL;
       dest_char = mzx_world->vlayer_chars;
       dest_color = mzx_world->vlayer_colors;
       dest_width = mzx_world->vlayer_width;
       dest_height = mzx_world->vlayer_height;
       break;
+
+    default:
+      return;
   }
 
   // Trim the block for the destination
