@@ -20,6 +20,9 @@
  */
 
 #include "debug.h"
+
+#include "char_ed.h"
+#include "pal_ed.h"
 #include "robo_debug.h"
 #include "window.h"
 
@@ -1720,6 +1723,26 @@ static int counter_debugger_idle_function(struct world *mzx_world,
 
   switch(key)
   {
+    // Char editor
+    case IKEY_c:
+    {
+      if(get_alt_status(keycode_internal))
+      {
+        char_editor(mzx_world);
+        return 0;
+      }
+      break;
+    }
+    // Palette editor
+    case IKEY_e:
+    {
+      if(get_alt_status(keycode_internal))
+      {
+        palette_editor(mzx_world);
+        return 0;
+      }
+      break;
+    }
     // Search dialog
     case IKEY_f:
     {
