@@ -26,10 +26,12 @@ int png_write_screen(Uint8 *pixels, struct rgb_color *pal, int count,
  const char *name)
 {
   png_structp png_ptr = NULL;
-  png_bytep *row_ptrs = NULL;
-  png_colorp pal_ptr = NULL;
   png_infop info_ptr = NULL;
-  int i, type, ret = false;
+  png_bytep * volatile row_ptrs = NULL;
+  png_colorp volatile pal_ptr = NULL;
+  int volatile ret = false;
+  int type;
+  int i;
   FILE *f;
 
   f = fopen_unsafe(name, "wb");
@@ -97,9 +99,11 @@ exit_out:
 int png_write_screen_32bpp(Uint32 *pixels, const char *name)
 {
   png_structp png_ptr = NULL;
-  png_bytep *row_ptrs = NULL;
   png_infop info_ptr = NULL;
-  int i, type, ret = false;
+  png_bytep * volatile row_ptrs = NULL;
+  int volatile ret = false;
+  int type;
+  int i;
   FILE *f;
 
   f = fopen_unsafe(name, "wb");
@@ -161,12 +165,14 @@ void *png_read_file(const char *name, png_uint_32 *_w, png_uint_32 *_h,
  check_w_h_constraint_t constraint, rgba_surface_allocator_t allocator)
 {
   png_uint_32 i, w, h, stride;
-  png_structp png_ptr = NULL;
-  png_bytep *row_ptrs = NULL;
-  png_infop info_ptr = NULL;
-  void *pixels, *s = NULL;
   png_byte header[8];
-  int type, bpp;
+  png_structp png_ptr = NULL;
+  png_infop info_ptr = NULL;
+  png_bytep * volatile row_ptrs = NULL;
+  void * volatile s = NULL;
+  void *pixels;
+  int type;
+  int bpp;
   FILE *f;
 
   f = fopen_unsafe(name, "rb");
