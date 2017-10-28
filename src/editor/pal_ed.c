@@ -1414,12 +1414,12 @@ static void draw_unbound_cursor_chars(Uint32 layer, int color)
   select_layer(layer);
   set_layer_mode(layer, 0);
   // Note: mode 0, so offset by 16 (PAL_SIZE) for the protected palette.
-  draw_char_to_layer(color, CHAR_CORNER_TL, 0, 0, 0, PAL_SIZE);
-  draw_char_to_layer(color, CHAR_CORNER_TR, 2, 0, 0, PAL_SIZE);
-  draw_char_to_layer(color, CHAR_CORNER_BL, 0, 1, 0, PAL_SIZE);
-  draw_char_to_layer(color, CHAR_CORNER_BR, 2, 1, 0, PAL_SIZE);
-  draw_char_to_layer(color, CHAR_LINE_HORIZ, 1, 0, 0, PAL_SIZE);
-  draw_char_to_layer(color, CHAR_LINE_HORIZ, 1, 1, 0, PAL_SIZE);
+  draw_char_to_layer(color, CHAR_CORNER_TL, 0, 0, PRO_CH, PAL_SIZE);
+  draw_char_to_layer(color, CHAR_CORNER_TR, 2, 0, PRO_CH, PAL_SIZE);
+  draw_char_to_layer(color, CHAR_CORNER_BL, 0, 1, PRO_CH, PAL_SIZE);
+  draw_char_to_layer(color, CHAR_CORNER_BR, 2, 1, PRO_CH, PAL_SIZE);
+  draw_char_to_layer(color, CHAR_LINE_HORIZ, 1, 0, PRO_CH, PAL_SIZE);
+  draw_char_to_layer(color, CHAR_LINE_HORIZ, 1, 1, PRO_CH, PAL_SIZE);
 }
 
 static void draw_unbound_cursor(int x, int y, int fg, int bg, int offset)
@@ -1434,14 +1434,14 @@ static void draw_unbound_cursor(int x, int y, int fg, int bg, int offset)
 
   // Shadow
   order = LAYER_DRAWORDER_UI + offset*2 + 1;
-  cursor_bg_layer = create_layer(x, y, 3, 2, order, 0x10D, PRO_CH, 1);
+  cursor_bg_layer = create_layer(x, y, 3, 2, order, 0x10D, 0, 1);
   draw_unbound_cursor_chars(cursor_bg_layer, bg);
 
   // FG
   x -= 2;
   y--;
   order++;
-  cursor_fg_layer = create_layer(x, y, 3, 2, order, 0x10D, PRO_CH, 1);
+  cursor_fg_layer = create_layer(x, y, 3, 2, order, 0x10D, 0, 1);
   draw_unbound_cursor_chars(cursor_fg_layer, fg);
 }
 
@@ -1563,7 +1563,7 @@ static void palette_editor_update_window_256(struct color_status *current,
 
     // Draw the palette
     for(i = 0; i < 32*16; i++)
-      draw_char_ext(0, i/2, (i%32 + content_x), (i/32 + content_y), 0, 0);
+      draw_char_ext(0, i/2, (i%32 + content_x), (i/32 + content_y), PRO_CH, 0);
   }
 
   // Main cursor
