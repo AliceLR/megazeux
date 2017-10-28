@@ -301,44 +301,121 @@ static void force_string_move(struct world *mzx_world, const char *name,
     memmove((*str)->value + offset, src, *size);
 }
 
+static void get_string_dot_value(char *dot_ptr, int *index,
+ size_t *size, bool *index_specified)
+{
+  char *error;
+
+  if(dot_ptr[0])
+  {
+    // Index
+    *index = strtol(dot_ptr, &error, 10);
+
+    // Multi-byte index
+    if(error[0] == '#' && error[1])
+    {
+      int result = strtoul(error + 1, &error, 10);
+
+      *size = CLAMP(result, 1, 4);
+    }
+
+    if(!error[0])
+    {
+      *index_specified = true;
+    }
+  }
+}
+
+static int get_string_real_index(struct string *src, int index)
+{
+  // Handle negative indexing
+  int length = src->length;
+
+  if(index < 0)
+  {
+    index += length;
+
+    if(index < 0)
+    {
+      // Invalid index
+      return -1;
+    }
+  }
+  return index;
+}
+
 int string_read_as_counter(struct world *mzx_world,
  const char *name, int id)
 {
-  char *dot_ptr = (char *)strrchr(name + 1, '.');
+  char *dot_ptr = strchr(name + 1, '.');
   struct string src;
 
   // User may have provided $str.N or $str.length explicitly
   if(dot_ptr)
   {
+    struct string *src;
+    int next;
+
     *dot_ptr = 0;
+    src = find_string(mzx_world, name, &next);
+
+    // Fix the dot because currently stuff like inc/dec/multiply
+    // does a read function call followed by a write function call
+    *dot_ptr = '.';
     dot_ptr++;
 
-    if(!strncasecmp(dot_ptr, "length", 6))
+    if(!src)
     {
-      // str.length handler
-      int next;
-
-      // If the user's string is found, return the length of it
-      struct string *src = find_string(mzx_world, name, &next);
-
-      *(dot_ptr - 1) = '.';
-
-      if(src)
-        return (int)src->length;
+      return 0;
     }
     else
+
+    if(!strcasecmp(dot_ptr, "length"))
     {
-      // char offset handler
-      unsigned int str_num = strtol(dot_ptr, NULL, 10);
-      bool found_string = get_string(mzx_world, name, &src, id);
+      // str.length
+      return (int)src->length;
+    }
 
-      *(dot_ptr - 1) = '.';
+    else
+    {
+      // string.[index]
+      bool index_specified = false;
+      size_t real_index;
+      size_t size = 1;
+      int index;
+      int value = 0;
 
-      if(found_string)
+      // Check to see if there's a valid string indexing
+      get_string_dot_value(dot_ptr, &index, &size, &index_specified);
+
+      if(index_specified)
       {
+        // Negative indices and multiple indexing (2.91+)
+        if(mzx_world->version >= 0x025B)
+        {
+          real_index = get_string_real_index(src, index);
+
+          if(src->length < size + real_index)
+            size = src->length - real_index;
+        }
+        else
+        {
+          real_index = index;
+          size = 1;
+        }
+
         // If we're in bounds return the char at this offset
-        if(str_num < src.length)
-          return (int)src.value[str_num];
+        if(real_index < src->length)
+        {
+          switch(size)
+          {
+            case 4: value |= (int)src->value[real_index + 3] << 24; // fallthru
+            case 3: value |= (int)src->value[real_index + 2] << 16; // fallthru
+            case 2: value |= (int)src->value[real_index + 1] << 8;  // fallthru
+            case 1: value |= (int)src->value[real_index];
+          }
+          return value;
+        }
       }
     }
   }
@@ -371,9 +448,13 @@ void string_write_as_counter(struct world *mzx_world,
   if(dot_ptr)
   {
     struct string *src;
-    size_t old_length, new_length, alloc_length;
-    int next, write_value = false;
-    int str_num = 0;
+    bool index_specified = false;
+    size_t old_length;
+    size_t new_length;
+    size_t alloc_length;
+    size_t write_size = 1;
+    size_t write_index;
+    int next;
 
     *dot_ptr = 0;
     dot_ptr++;
@@ -381,7 +462,7 @@ void string_write_as_counter(struct world *mzx_world,
     /* As a special case, alter the string's length if '$str.length'
      * is written to.
      */
-    if(!strncasecmp(dot_ptr, "length", 6))
+    if(!strcasecmp(dot_ptr, "length"))
     {
       // Ignore impossible lengths
       if(value < 0)
@@ -394,21 +475,41 @@ void string_write_as_counter(struct world *mzx_world,
 
       new_length = value;
       alloc_length = new_length + 1;
-
     }
+
     else
     {
-      // Extract the offset within the string to write to
-      str_num = strtol(dot_ptr, NULL, 10);
-      if(str_num < 0)
+      int index;
+
+      // Check to see if there's a valid string indexing
+      get_string_dot_value(dot_ptr, &index, &write_size, &index_specified);
+      if(!index_specified)
         return;
 
-      // Tentatively increase the string's length to cater for this write
-      new_length = str_num + 1;
-      alloc_length = new_length;
-
       src = find_string(mzx_world, name, &next);
-      write_value = true;
+
+      if(index < 0)
+      {
+        // Negative indices require the string to already exist (2.91+)
+        if(!src || mzx_world->version < 0x025B)
+          return;
+
+        index = get_string_real_index(src, index);
+
+        // Invalid negative index
+        if(index < 0)
+          return;
+      }
+
+      // Multiple size (2.91+)
+      if(mzx_world->version < 0x025B)
+        write_size = 1;
+
+      write_index = index;
+
+      // Tentatively increase the string's length to cater for this write
+      new_length = write_index + write_size;
+      alloc_length = new_length;
     }
 
     if(new_length > MAX_STRING_LEN)
@@ -437,11 +538,17 @@ void string_write_as_counter(struct world *mzx_world,
 
     force_string_length(mzx_world, name, next, &src, &alloc_length);
 
-    if(write_value)
+    if(index_specified)
     {
-      src->value[str_num] = value;
-      if(src->length <= (unsigned int)str_num)
-        src->length = str_num + 1;
+      switch(write_size)
+      {
+        case 4: src->value[write_index + 3] = value >> 24; // fallthru
+        case 3: src->value[write_index + 2] = value >> 16; // fallthru
+        case 2: src->value[write_index + 1] = value >> 8; // fallthru
+        case 1: src->value[write_index] = value;
+      }
+      if(src->length < new_length)
+        src->length = new_length;
     }
     else
     {
