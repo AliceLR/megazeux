@@ -16,7 +16,7 @@ FIXME: board undo notes:
   * Changes in world/board settings, status counters, etc. are
     not included in the history.
 
-FEATURES
+FEATURES (ROBOTIC)
 
 + Added SMZX_INDICES special counter to load SMZX indices. This
   counter works with either a filename or a string, e.g.
@@ -54,6 +54,8 @@ FEATURES
   as a single 8*Y bit number. This works for values of Y between
   1 and 4, with 4 characters providing the same functionality as
   a counter.
+
+FEATURES (EDITOR)
 
 + Extended the palette editor to SMZX modes 2 and 3. The updated
   palette editor allows the editing of all 256 SMZX mode 2/3
@@ -167,6 +169,7 @@ FIXES
   on the vlayer when set. This applies only to 2.91+ worlds.
 + Fixed several bugs with string length and offset parsing that
   would allow invalid string accesses to work in certain cases.
++ COPY BLOCK $string now works correctly with string splices.
 
 DEVELOPERS
 

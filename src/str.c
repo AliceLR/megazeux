@@ -581,7 +581,7 @@ static void add_string(struct world *mzx_world, const char *name,
   memcpy(dest->value, src->value, src->length);
 }
 
-static void get_string_size_offset(char *name, size_t *ssize,
+static bool get_string_size_offset(char *name, size_t *ssize,
  bool *size_specified, size_t *soffset, bool *offset_specified)
 {
   int offset_position = -1, size_position = -1;
@@ -621,6 +621,10 @@ static void get_string_size_offset(char *name, size_t *ssize,
       *size_specified = true;
       *ssize = ret;
     }
+    else
+    {
+      return true;
+    }
   }
 
   if(offset_position != -1)
@@ -631,43 +635,83 @@ static void get_string_size_offset(char *name, size_t *ssize,
       *offset_specified = true;
       *soffset = ret;
     }
+    else
+    {
+      return true;
+    }
   }
+
+  return false;
 }
 
-static int load_string_board_direct(struct world *mzx_world,
- struct string *str, int next, int w, int h, char l, char *src, int width)
+static int load_string_board_direct(char *dest_chars, int dest_size,
+ char *src_chars, int src_width, int block_width, int block_height,
+ char terminator)
 {
+  char *dest_pos = dest_chars;
+  int dest_height = dest_size / block_width;
+  int dest_left = dest_size % block_width;
   int i;
-  int size = w * h;
-  char *str_value;
-  char *t_pos;
 
-  str_value = str->value;
-  t_pos = str_value;
-
-  for(i = 0; i < h; i++)
+  for(i = 0; i < dest_height; i++)
   {
-    memcpy(t_pos, src, w);
-    t_pos += w;
-    src += width;
+    memcpy(dest_pos, src_chars, block_width);
+    dest_pos += block_width;
+    src_chars += src_width;
   }
 
-  if(l)
+  if(dest_left)
+    memcpy(dest_pos, src_chars, dest_left);
+
+  if(terminator)
   {
-    for(i = 0; i < size; i++)
+    for(i = 0; i < dest_size; i++)
     {
-      if(str_value[i] == l)
+      if(dest_chars[i] == terminator)
         break;
     }
 
-    str->length = i;
     return i;
   }
-  else
-  {
-    str->length = size;
-    return size;
-  }
+
+  return dest_size;
+}
+
+void load_string_board(struct world *mzx_world, const char *name,
+ char *src_chars, int src_width, int block_width, int block_height,
+ char terminator)
+{
+  bool offset_specified = false;
+  bool size_specified = false;
+  size_t dest_size = (size_t)(block_width * block_height);
+  size_t dest_offset = 0;
+  size_t copy_size;
+  struct string *dest;
+  char *copy_buffer;
+  int next;
+
+  bool error = get_string_size_offset((char *)name, &dest_size, &size_specified,
+   &dest_offset, &offset_specified);
+
+  if(error)
+    return;
+
+  // Size/offset support (2.91+)
+  if(mzx_world->version < 0x025B && (offset_specified || size_specified))
+    return;
+
+  // Copying to a buffer makes this slower but consistent with set.
+  copy_buffer = cmalloc(dest_size);
+
+  copy_size = load_string_board_direct(copy_buffer, dest_size,
+   src_chars, src_width, block_width, block_height, terminator);
+
+  dest = find_string(mzx_world, name, &next);
+
+  force_string_move(mzx_world, name, next, &dest, copy_size,
+   dest_offset, offset_specified, &dest_size, size_specified, copy_buffer);
+
+  free(copy_buffer);
 }
 
 int set_string(struct world *mzx_world, const char *name, struct string *src,
@@ -848,9 +892,9 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
       if((board_pos + read_length) > board_size)
         read_length = board_size - board_pos;
 
-      load_string_board_direct(mzx_world, dest, next,
-       (int)read_length, 1, '*', src_board->level_param + board_pos,
-       board_width);
+      dest->length = load_string_board_direct(dest->value,
+       (int)read_length, src_board->level_param + board_pos, board_width,
+       (int)read_length, 1, '*');
     }
   }
   else
@@ -1171,20 +1215,6 @@ void dec_string_int(struct world *mzx_world, const char *name, int value,
     else
       dest->length -= value;
   }
-}
-
-void load_string_board(struct world *mzx_world, const char *name, int w, int h,
- char l, char *src, int width)
-{
-  size_t length = (size_t)(w * h);
-  struct string *src_str;
-  int next;
-
-  src_str = find_string(mzx_world, name, &next);
-  force_string_length(mzx_world, name, next, &src_str, &length);
-
-  src_str->length = load_string_board_direct(mzx_world, src_str, next,
-   w, h, l, src, width);
 }
 
 bool is_string(char *buffer)

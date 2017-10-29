@@ -656,23 +656,25 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
         case 0:
         {
           // Board to string
-          load_string_board(mzx_world, str_buffer, width, height,
-           dest_param, src_board->level_param + src_offset,
-           src_width);
+          load_string_board(mzx_world, str_buffer,
+           src_board->level_param + src_offset, src_width,
+           width, height, dest_param);
           break;
         }
         case 1:
         {
           // Overlay to string
-          load_string_board(mzx_world, str_buffer, width, height,
-           dest_param, src_board->overlay + src_offset, src_width);
+          load_string_board(mzx_world, str_buffer,
+           src_board->overlay + src_offset, src_width,
+           width, height, dest_param);
           break;
         }
         case 2:
         {
           // Vlayer to string
-          load_string_board(mzx_world, str_buffer, width, height,
-           dest_param, mzx_world->vlayer_chars + src_offset, src_width);
+          load_string_board(mzx_world, str_buffer,
+           mzx_world->vlayer_chars + src_offset, src_width,
+           width, height, dest_param);
           break;
         }
       }
