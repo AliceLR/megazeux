@@ -1118,8 +1118,11 @@ struct string *new_string(struct world *mzx_world, const char *name,
 int get_string(struct world *mzx_world, const char *name, struct string *dest,
  int id)
 {
-  bool offset_specified = false, size_specified = false;
-  size_t size = 0, offset = 0;
+  bool error;
+  bool offset_specified = false;
+  bool size_specified = false;
+  size_t offset = 0;
+  size_t size = 0;
   struct string *src;
   char *trimmed_name;
   int next;
@@ -1127,30 +1130,35 @@ int get_string(struct world *mzx_world, const char *name, struct string *dest,
   trimmed_name = malloc(strlen(name) + 1);
   memcpy(trimmed_name, name, strlen(name) + 1);
 
-  get_string_size_offset(trimmed_name, &size, &size_specified,
+  error = get_string_size_offset(trimmed_name, &size, &size_specified,
    &offset, &offset_specified);
 
-  src = find_string(mzx_world, trimmed_name, &next);
-  free(trimmed_name);
-
-  if(src)
+  if(!error)
   {
-    if((size == 0 && !size_specified) || size > src->length)
-      size = src->length;
+    src = find_string(mzx_world, trimmed_name, &next);
 
-    if(offset > src->length)
-      offset = src->length;
+    if(src)
+    {
+      if((size == 0 && !size_specified) || size > src->length)
+        size = src->length;
 
-    if(offset + size > src->length)
-      size = src->length - offset;
+      if(offset > src->length)
+        offset = src->length;
 
-    dest->list_ind = src->list_ind;
-    dest->value = src->value + offset;
-    dest->length = size;
-    return 1;
+      if(offset + size > src->length)
+        size = src->length - offset;
+
+      dest->list_ind = src->list_ind;
+      dest->value = src->value + offset;
+      dest->length = size;
+
+      free(trimmed_name);
+      return 1;
+    }
   }
 
   dest->length = 0;
+  free(trimmed_name);
   return 0;
 }
 
