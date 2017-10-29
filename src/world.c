@@ -2488,6 +2488,7 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
 
   // Some initial setting(s)
   mzx_world->custom_sfx_on = 0;
+  mzx_world->max_samples = -1;
 
   // If we're here, there's either a zip (regular) or a file (legacy).
   if(zp)
@@ -2896,7 +2897,6 @@ __editor_maybe_static void default_global_data(struct world *mzx_world)
   memset(mzx_world->keys, NO_KEY, NUM_KEYS);
   mzx_world->mesg_edges = 1;
   mzx_world->real_mod_playing[0] = 0;
-  mzx_world->max_samples = -1;
   mzx_world->smzx_message = 1;
 
   mzx_world->blind_dur = 0;
