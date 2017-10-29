@@ -326,22 +326,26 @@ static void get_string_dot_value(char *dot_ptr, int *index,
   }
 }
 
-static int get_string_real_index(struct string *src, int index)
+static bool get_string_real_index(struct string *src, int index, size_t *real)
 {
   // Handle negative indexing
-  int length = src->length;
-
   if(index < 0)
   {
-    index += length;
+    // Negative indexes only work with existing strings
+    if(!src)
+      return true;
+
+    index += src->length;
 
     if(index < 0)
     {
       // Invalid index
-      return -1;
+      return true;
     }
   }
-  return index;
+
+  *real = index;
+  return false;
 }
 
 int string_read_as_counter(struct world *mzx_world,
@@ -393,7 +397,8 @@ int string_read_as_counter(struct world *mzx_world,
         // Negative indices and multiple indexing (2.91+)
         if(mzx_world->version >= 0x025B)
         {
-          real_index = get_string_real_index(src, index);
+          if(get_string_real_index(src, index, &real_index))
+            return 0;
 
           if(src->length < size + real_index)
             size = src->length - real_index;
@@ -488,24 +493,16 @@ void string_write_as_counter(struct world *mzx_world,
 
       src = find_string(mzx_world, name, &next);
 
-      if(index < 0)
-      {
-        // Negative indices require the string to already exist (2.91+)
-        if(!src || mzx_world->version < 0x025B)
-          return;
+      // Negative indices (2.91+)
+      if(index < 0 && mzx_world->version < 0x025B)
+        return;
 
-        index = get_string_real_index(src, index);
-
-        // Invalid negative index
-        if(index < 0)
-          return;
-      }
+      if(get_string_real_index(src, index, &write_index))
+        return;
 
       // Multiple size (2.91+)
       if(mzx_world->version < 0x025B)
         write_size = 1;
-
-      write_index = index;
 
       // Tentatively increase the string's length to cater for this write
       new_length = write_index + write_size;
@@ -582,11 +579,10 @@ static void add_string(struct world *mzx_world, const char *name,
 }
 
 static bool get_string_size_offset(const char *name, size_t *ssize,
- bool *size_specified, size_t *soffset, bool *offset_specified)
+ bool *size_specified, int *soffset, bool *offset_specified)
 {
   char *offset_position = strchr(name, '+');
   char *size_position = strchr(name, '#');
-  unsigned int ret;
   char *error;
 
   if(size_position)
@@ -597,7 +593,7 @@ static bool get_string_size_offset(const char *name, size_t *ssize,
 
   if(size_position)
   {
-    ret = strtoul(size_position + 1, &error, 10);
+    size_t ret = strtoul(size_position + 1, &error, 10);
 
     if(error[0])
       return true;
@@ -608,7 +604,7 @@ static bool get_string_size_offset(const char *name, size_t *ssize,
 
   if(offset_position)
   {
-    ret = strtoul(offset_position + 1, &error, 10);
+    int ret = strtol(offset_position + 1, &error, 10);
 
     if(error[0])
       return true;
@@ -661,13 +657,14 @@ void load_string_board(struct world *mzx_world, const char *name,
   bool size_specified = false;
   size_t dest_size = (size_t)(block_width * block_height);
   size_t dest_offset = 0;
-  size_t copy_size;
+  int input_offset = 0;
   struct string *dest;
   char *copy_buffer;
+  size_t copy_size;
   int next;
 
   bool error = get_string_size_offset(name, &dest_size, &size_specified,
-   &dest_offset, &offset_specified);
+   &input_offset, &offset_specified);
 
   if(error)
     return;
@@ -676,13 +673,16 @@ void load_string_board(struct world *mzx_world, const char *name,
   if(mzx_world->version < 0x025B && (offset_specified || size_specified))
     return;
 
+  dest = find_string(mzx_world, name, &next);
+
+  if(get_string_real_index(dest, input_offset, &dest_offset))
+    return;
+
   // Copying to a buffer makes this slower but consistent with set.
   copy_buffer = cmalloc(dest_size);
 
   copy_size = load_string_board_direct(copy_buffer, dest_size,
    src_chars, src_width, block_width, block_height, terminator);
-
-  dest = find_string(mzx_world, name, &next);
 
   force_string_move(mzx_world, name, next, &dest, copy_size,
    dest_offset, offset_specified, &dest_size, size_specified, copy_buffer);
@@ -693,20 +693,30 @@ void load_string_board(struct world *mzx_world, const char *name,
 int set_string(struct world *mzx_world, const char *name, struct string *src,
  int id)
 {
-  bool offset_specified = false, size_specified = false;
+  bool offset_specified = false;
+  bool size_specified = false;
+  size_t offset = 0;
+  size_t size = 0;
+  int input_offset = 0;
   size_t src_length = src->length;
   char *src_value = src->value;
-  size_t size = 0, offset = 0;
   struct string *dest;
   int next = 0;
 
   bool error = get_string_size_offset(name, &size, &size_specified,
-   &offset, &offset_specified);
+   &input_offset, &offset_specified);
 
   if(error)
     return 0;
 
   dest = find_string(mzx_world, name, &next);
+
+  // Negative offsets (2.91+)
+  if(input_offset < 0 && mzx_world->version < 0x025B)
+    return 0;
+
+  if(get_string_real_index(dest, input_offset, &offset))
+    return 0;
 
   if(special_name_partial("fread") &&
    !mzx_world->input_is_dir && mzx_world->input_file)
@@ -1098,44 +1108,54 @@ int get_string(struct world *mzx_world, const char *name, struct string *dest,
   bool error;
   bool offset_specified = false;
   bool size_specified = false;
-  size_t offset = 0;
   size_t size = 0;
+  size_t offset = 0;
+  int input_offset = 0;
   struct string *src;
   char *trimmed_name;
   int next;
+
+  dest->length = 0;
 
   trimmed_name = malloc(strlen(name) + 1);
   memcpy(trimmed_name, name, strlen(name) + 1);
 
   error = get_string_size_offset(trimmed_name, &size, &size_specified,
-   &offset, &offset_specified);
+   &input_offset, &offset_specified);
 
-  if(!error)
+  if(error)
   {
-    src = find_string(mzx_world, trimmed_name, &next);
-
-    if(src)
-    {
-      if((size == 0 && !size_specified) || size > src->length)
-        size = src->length;
-
-      if(offset > src->length)
-        offset = src->length;
-
-      if(offset + size > src->length)
-        size = src->length - offset;
-
-      dest->list_ind = src->list_ind;
-      dest->value = src->value + offset;
-      dest->length = size;
-
-      free(trimmed_name);
-      return 1;
-    }
+    free(trimmed_name);
+    return 0;
   }
 
-  dest->length = 0;
+  src = find_string(mzx_world, trimmed_name, &next);
   free(trimmed_name);
+
+  if(src)
+  {
+    // Negative offsets (2.91+)
+    if(input_offset < 0 && mzx_world->version < 0x025B)
+      return 0;
+
+    if(get_string_real_index(src, input_offset, &offset))
+      return 0;
+
+    if((size == 0 && !size_specified) || size > src->length)
+      size = src->length;
+
+    if(offset > src->length)
+      offset = src->length;
+
+    if(offset + size > src->length)
+      size = src->length - offset;
+
+    dest->list_ind = src->list_ind;
+    dest->value = src->value + offset;
+    dest->length = size;
+    return 1;
+  }
+
   return 0;
 }
 
@@ -1183,8 +1203,8 @@ void inc_string(struct world *mzx_world, const char *name, struct string *src,
     // Make sure this isn't a splice, malformed or otherwise.
     bool offset_specified = false;
     bool size_specified = false;
-    size_t offset;
     size_t size;
+    int offset;
 
     bool error = get_string_size_offset(name, &size,
      &size_specified, &offset, &offset_specified);

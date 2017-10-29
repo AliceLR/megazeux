@@ -48,6 +48,7 @@ FEATURES (ROBOTIC)
 + Added negative indexing for strings, e.g. SET "$string.-X" 32.
   This manipulates the string at the Xth character starting from
   the end of the string (with -1 for the final character).
++ Added negative offsets for strings, e.g. SET "$string+-X" "a".
 + Added multiple character indexing for strings. When a length
   is provided with a string index, e.g. SET "$string.X#Y" 12345,
   the characters at positions X, X+1, ..., X+Y-1 will be treated
