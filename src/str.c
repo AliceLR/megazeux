@@ -724,13 +724,14 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
   struct string *dest;
   int next = 0;
 
-  // this generates an unfixable warning at -O3
-  get_string_size_offset((char *)name, &size, &size_specified,
+  bool error = get_string_size_offset((char *)name, &size, &size_specified,
    &offset, &offset_specified);
+
+  if(error)
+    return 0;
 
   dest = find_string(mzx_world, name, &next);
 
-  // TODO - Make terminating chars variable, but how..
   if(special_name_partial("fread") &&
    !mzx_world->input_is_dir && mzx_world->input_file)
   {
