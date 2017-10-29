@@ -1195,6 +1195,18 @@ void inc_string(struct world *mzx_world, const char *name, struct string *src,
   }
   else
   {
+    // Make sure this isn't a splice, malformed or otherwise.
+    bool offset_specified = false;
+    bool size_specified = false;
+    size_t offset;
+    size_t size;
+
+    bool error = get_string_size_offset((char *)name, &size,
+     &size_specified, &offset, &offset_specified);
+
+    if(error || offset_specified || size_specified)
+      return;
+
     add_string(mzx_world, name, src, next);
   }
 }
