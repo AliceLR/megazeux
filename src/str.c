@@ -581,64 +581,40 @@ static void add_string(struct world *mzx_world, const char *name,
   memcpy(dest->value, src->value, src->length);
 }
 
-static bool get_string_size_offset(char *name, size_t *ssize,
+static bool get_string_size_offset(const char *name, size_t *ssize,
  bool *size_specified, size_t *soffset, bool *offset_specified)
 {
-  int offset_position = -1, size_position = -1;
-  char current_char = name[0];
-  int current_position = 0;
+  char *offset_position = strchr(name, '+');
+  char *size_position = strchr(name, '#');
   unsigned int ret;
   char *error;
 
-  while(current_char)
+  if(size_position)
+    *size_position = 0;
+
+  if(offset_position)
+    *offset_position = 0;
+
+  if(size_position)
   {
-    if(current_char == '#')
-    {
-      size_position = current_position;
-    }
-    else
+    ret = strtoul(size_position + 1, &error, 10);
 
-    if(current_char == '+')
-    {
-      offset_position = current_position;
-    }
+    if(error[0])
+      return true;
 
-    current_position++;
-    current_char = name[current_position];
+    *size_specified = true;
+    *ssize = ret;
   }
 
-  if(size_position != -1)
-    name[size_position] = 0;
-
-  if(offset_position != -1)
-    name[offset_position] = 0;
-
-  if(size_position != -1)
+  if(offset_position)
   {
-    ret = strtoul(name + size_position + 1, &error, 10);
-    if(!error[0])
-    {
-      *size_specified = true;
-      *ssize = ret;
-    }
-    else
-    {
-      return true;
-    }
-  }
+    ret = strtoul(offset_position + 1, &error, 10);
 
-  if(offset_position != -1)
-  {
-    ret = strtoul(name + offset_position + 1, &error, 10);
-    if(!error[0])
-    {
-      *offset_specified = true;
-      *soffset = ret;
-    }
-    else
-    {
+    if(error[0])
       return true;
-    }
+
+    *offset_specified = true;
+    *soffset = ret;
   }
 
   return false;
@@ -690,7 +666,7 @@ void load_string_board(struct world *mzx_world, const char *name,
   char *copy_buffer;
   int next;
 
-  bool error = get_string_size_offset((char *)name, &dest_size, &size_specified,
+  bool error = get_string_size_offset(name, &dest_size, &size_specified,
    &dest_offset, &offset_specified);
 
   if(error)
@@ -724,7 +700,7 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
   struct string *dest;
   int next = 0;
 
-  bool error = get_string_size_offset((char *)name, &size, &size_specified,
+  bool error = get_string_size_offset(name, &size, &size_specified,
    &offset, &offset_specified);
 
   if(error)
@@ -1210,7 +1186,7 @@ void inc_string(struct world *mzx_world, const char *name, struct string *src,
     size_t offset;
     size_t size;
 
-    bool error = get_string_size_offset((char *)name, &size,
+    bool error = get_string_size_offset(name, &size,
      &size_specified, &offset, &offset_specified);
 
     if(error || offset_specified || size_specified)
