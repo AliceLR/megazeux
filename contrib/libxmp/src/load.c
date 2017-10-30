@@ -53,29 +53,6 @@ int  libxmp_prepare_scan(struct context_data *);
 
 #ifndef LIBXMP_CORE_PLAYER
 
-#include "depacker.h"
-
-static struct depacker *depacker_list[] = {
-#if defined __AMIGA__ && !defined __AROS__
-	&libxmp_depacker_xfd,
-#endif
-	&libxmp_depacker_zip,
-	&libxmp_depacker_lha,
-	&libxmp_depacker_gzip,
-	&libxmp_depacker_bzip2,
-	&libxmp_depacker_xz,
-	&libxmp_depacker_compress,
-	&libxmp_depacker_pp,
-	&libxmp_depacker_sqsh,
-	&libxmp_depacker_arcfs,
-	&libxmp_depacker_mmcmp,
-	&libxmp_depacker_muse,
-	&libxmp_depacker_lzx,
-	&libxmp_depacker_s404,
-	&libxmp_depacker_arc,
-	NULL
-};
-
 int test_oxm		(FILE *);
 
 #define BUFLEN 16384
@@ -113,108 +90,6 @@ static int execute_command(char *cmd, char *filename, FILE *t)
 	pclose (p);
 
 	return 0;
-}
-
-static int decrunch(HIO_HANDLE **h, char *filename, char **temp)
-{
-	unsigned char b[1024];
-	char *cmd;
-	FILE *f, *t;
-	int res;
-	int headersize;
-	int i;
-	struct depacker *depacker = NULL;
-
-	cmd = NULL;
-	res = 0;
-	*temp = NULL;
-	f = (*h)->handle.file;
-
-	headersize = fread(b, 1, 1024, f);
-	if (headersize < 100) {	/* minimum valid file size */
-		return 0;
-	}
-
-	/* Check built-in depackers */
-	for (i = 0; depacker_list[i] != NULL; i++) {
-		if (depacker_list[i]->test(b)) {
-			depacker = depacker_list[i];
-			D_(D_INFO "Use depacker %d", i);
-			break;
-		}
-	}
-
-	/* Check external commands */
-	if (depacker == NULL) {
-		if (b[0] == 'M' && b[1] == 'O' && b[2] == '3') {
-			/* MO3 */
-			D_(D_INFO "mo3");
-			cmd = "unmo3 -s \"%s\" STDOUT";
-		} else if (memcmp(b, "Rar", 3) == 0) {
-			/* rar */
-			D_(D_INFO "rar");
-			cmd = "unrar p -inul -xreadme -x*.diz -x*.nfo -x*.txt "
-			    "-x*.exe -x*.com \"%s\"";
-		} else if (test_oxm(f) == 0) {
-			/* oggmod */
-			D_(D_INFO "oggmod");
-			depacker = &libxmp_depacker_oxm;
-		}
-	}
-
-	if (fseek(f, 0, SEEK_SET) < 0) {
-		goto err;
-	}
-
-	if (depacker == NULL && cmd == NULL) {
-		D_(D_INFO "Not packed");
-		return 0;
-	}
-
-#if defined __ANDROID__ || defined __native_client__
-	/* Don't use external helpers in android */
-	if (cmd) {
-		return 0;
-	}
-#endif
-
-	D_(D_WARN "Depacking file... ");
-
-	if ((t = make_temp_file(temp)) == NULL) {
-		goto err;
-	}
-
-	/* Depack file */
-	if (cmd) {
-		D_(D_INFO "External depacker: %s", cmd);
-		if (execute_command(cmd, filename, t) < 0) {
-			D_(D_CRIT "failed");
-			goto err2;
-		}
-	} else if (depacker) {
-		D_(D_INFO "Internal depacker");
-		if (depacker->depack(f, t) < 0) {
-			D_(D_CRIT "failed");
-			goto err2;
-		}
-	}
-
-	D_(D_INFO "done");
-
-	if (fseek(t, 0, SEEK_SET) < 0) {
-		D_(D_CRIT "fseek error");
-		goto err2;
-	}
-
-	hio_close(*h);
-	*h = hio_open_file(t);
-
-	return res;
-
-    err2:
-	fclose(t);
-    err:
-	return -1;
 }
 
 static void set_md5sum(HIO_HANDLE *f, unsigned char *digest)
@@ -293,19 +168,6 @@ int xmp_test_module(char *path, struct xmp_test_info *info)
 
 	if ((h = hio_open(path, "rb")) == NULL)
 		return -XMP_ERROR_SYSTEM;
-
-#ifndef LIBXMP_CORE_PLAYER
-	if (decrunch(&h, path, &temp) < 0) {
-		ret = -XMP_ERROR_DEPACK;
-		goto err;
-	}
-
-	/* get size after decrunch */
-	if (hio_size(h) < 256) {	/* set minimum valid module size */
-		ret = -XMP_ERROR_FORMAT;
-		goto err;
-	}
-#endif
 
 	if (info != NULL) {
 		*info->name = 0;	/* reset name prior to testing */
@@ -480,20 +342,6 @@ int xmp_load_module(xmp_context opaque, char *path)
 	if ((h = hio_open(path, "rb")) == NULL) {
 		return -XMP_ERROR_SYSTEM;
 	}
-
-#ifndef LIBXMP_CORE_PLAYER
-	D_(D_INFO "decrunch");
-	if (decrunch(&h, path, &temp_name) < 0) {
-		ret = -XMP_ERROR_DEPACK;
-		goto err;
-	}
-
-	size = hio_size(h);
-	if (size < 256) {		/* get size after decrunch */
-		ret = -XMP_ERROR_FORMAT;
-		goto err;
-	}
-#endif
 
 	if (ctx->state > XMP_STATE_UNLOADED)
 		xmp_release_module(opaque);
