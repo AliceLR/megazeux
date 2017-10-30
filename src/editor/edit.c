@@ -3291,7 +3291,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           }
           else
           {
-            struct undo_history *h;
+            struct undo_history *h = NULL;
 
             switch(overlay_edit)
             {
@@ -4593,7 +4593,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
       if(cursor_move_x || cursor_move_y)
       {
-        struct undo_history *h;
+        struct undo_history *h = NULL;
         int offset = cursor_board_x + (board_width * cursor_board_y);
         int move_x = SGN(cursor_move_x);
         int move_y = SGN(cursor_move_y);
