@@ -40,13 +40,14 @@
 #include <strings.h>
 #endif
 
+#include <utcasehash.h>
+
 // From MZX itself:
 #define SKIP_SDL
 
 // Safe- self sufficient or completely macros/static inlines
 #include "../const.h"
 #include "../memfile.h"
-#include "../uthash_caseinsensitive.h"
 #include "../world_prop.h"
 #include "../zip.h"
 

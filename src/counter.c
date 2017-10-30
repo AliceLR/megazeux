@@ -47,7 +47,7 @@
 #include "world.h"
 
 #ifdef CONFIG_UTHASH
-#include "uthash_caseinsensitive.h"
+#include <utcasehash.h>
 struct counter *counter_head = NULL;
 
 // Wrapper functions for uthash macros

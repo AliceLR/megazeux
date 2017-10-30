@@ -1039,6 +1039,7 @@ fi
 if [ "$UTHASH" = "true" ]; then
 	echo "uthash counter/string lookup enabled."
 	echo "#define CONFIG_UTHASH" >> src/config.h
+	echo "BUILD_UTHASH=1" >> platform.inc
 else
 	echo "uthash counter/string lookup disabled (using binary search)."
 fi

@@ -34,7 +34,7 @@
 #include "util.h"
 
 #ifdef CONFIG_UTHASH
-#include "uthash_caseinsensitive.h"
+#include <utcasehash.h>
 
 struct string *string_head = NULL;
 

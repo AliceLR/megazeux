@@ -26,7 +26,7 @@
 __M_BEGIN_DECLS
 
 #ifdef CONFIG_UTHASH
-#include "uthash_caseinsensitive.h"
+#include <utcasehash.h>
 #endif
 
 struct world;

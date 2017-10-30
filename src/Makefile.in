@@ -215,6 +215,10 @@ core_ldflags := ${LIBPNG_LDFLAGS} ${core_ldflags}
 core_cobjs += ${core_obj}/pngops.o
 endif
 
+ifeq (${BUILD_UTHASH},1)
+core_flags += -Icontrib/uthash/
+endif
+
 ifeq (${BUILD_AUDIO},1)
 core_cobjs += ${core_obj}/audio.o
 core_flags += ${VORBIS_CFLAGS}
