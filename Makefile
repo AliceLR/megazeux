@@ -103,9 +103,9 @@ endif
 # Always generate debug information; this may end up being
 # stripped (on embedded platforms) or objcopy'ed out.
 #
-CFLAGS   += -g -W -Wall -Wno-unused-parameter -std=gnu99
+CFLAGS   += -g -W -Wall -Wno-unused-parameter -Wno-unused-result -std=gnu99
 CFLAGS   += -Wdeclaration-after-statement ${ARCH_CFLAGS}
-CXXFLAGS += -g -W -Wall -Wno-unused-parameter -std=gnu++98
+CXXFLAGS += -g -W -Wall -Wno-unused-parameter -Wno-unused-result -std=gnu++98
 CXXFLAGS += -fno-exceptions -fno-rtti ${ARCH_CXXFLAGS}
 LDFLAGS  += ${ARCH_LDFLAGS}
 
