@@ -32,6 +32,7 @@
 #include "undo.h"
 #include "window.h"
 
+#include <limits.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
