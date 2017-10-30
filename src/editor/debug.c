@@ -1082,7 +1082,11 @@ static int start_var_search(struct world *mzx_world, struct debug_node *node,
     stop_var = find_last_var(node);
   }
 
-  while(!result)
+  result = find_variable(mzx_world, node, search_var, search_node,
+   search_pos, match_text, index, match_length, search_flags, &stop_var);
+
+  // Wrap? Try again from the start
+  if(!result && (search_flags & VAR_SEARCH_WRAP))
     result = find_variable(mzx_world, node, search_var, search_node,
      search_pos, match_text, index, match_length, search_flags, &stop_var);
 

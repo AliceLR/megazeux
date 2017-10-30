@@ -131,6 +131,8 @@ FIXES
   second save would corrupt the counter and string hash tables.
 + Fixed crash that would occur when loading a saved position on
   the same board referring to out-of-bounds coordinates.
++ Fixed a freeze that could occur opening the counter debugger
+  to an empty list or searching for a counter in an empty list.
 + LOAD_COUNTERS now works as intended.
 + Fixed a bug where key repeat would be prematurely terminated
   when releasing a key while holding another key.
