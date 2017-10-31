@@ -17,6 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -1206,7 +1207,8 @@ enum zip_error zip_read_close_stream(struct zip_archive *zp)
   // Check the CRC-32 of the stream
   if(expected_crc32 != stream_crc32)
   {
-    warn("crc check: expected %x, got %x\n", expected_crc32, stream_crc32);
+    warn("crc check: expected %"PRIx32", got %"PRIx32"\n",
+     expected_crc32, stream_crc32);
     result = ZIP_CRC32_MISMATCH;
     goto err_out;
   }

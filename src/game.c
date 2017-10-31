@@ -21,6 +21,7 @@
 
 // Main title screen/gaming code
 
+#include <ctype.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

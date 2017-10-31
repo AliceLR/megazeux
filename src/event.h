@@ -168,6 +168,10 @@ bool __update_event_status(void);
 bool __peek_exit_input(void);
 #endif
 
+#ifdef CONFIG_NDS
+const struct buffered_status *load_status(void);
+#endif
+
 void wait_event(int timeout);
 void force_last_key(enum keycode_type type, int val);
 void warp_mouse_x(Uint32 x);

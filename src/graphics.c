@@ -2294,7 +2294,7 @@ static void dump_screen_real_32bpp(Uint32 *pix, const char *name)
 
 #endif // CONFIG_PNG
 
-#define MAX_NAME_SIZE 16
+#define MAX_NAME_SIZE 20
 
 void dump_screen(void)
 {

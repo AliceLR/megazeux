@@ -909,7 +909,6 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
   signed char vid_usage[2000];
   int current_key, new_key;
   int i;
-  struct config_info *conf = &mzx_world->conf;
 
   if(context == CTX_MAIN)
     set_context(CTX_DIALOG_BOX);
@@ -1130,7 +1129,8 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
 #ifdef CONFIG_HELPSYS
       case IKEY_F1: // F1
       {
-        if(!conf->standalone_mode || get_counter(mzx_world, "HELP_MENU", 0))
+        if(!mzx_world->conf.standalone_mode ||
+         get_counter(mzx_world, "HELP_MENU", 0))
         {
           help_system(mzx_world);
         }
