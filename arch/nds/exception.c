@@ -54,6 +54,7 @@
 
 #ifdef CONFIG_NDS
 
+#include <inttypes.h>
 #include <stdio.h>
 
 //---------------------------------------------------------------------------------
@@ -278,17 +279,17 @@ static void mzxExceptionHandler() {
 		exceptionAddress = codeAddress;
 	}
 
-	iprintf("  pc: %08X addr: %08X\n\n",codeAddress,exceptionAddress);
+	iprintf("  pc: %08"PRIX32" addr: %08"PRIX32"\n\n",codeAddress,exceptionAddress);
 
 	for ( i=0; i < 8; i++ ) {
-		iprintf(	"  %s: %08X   %s: %08X\n",
-					registerNames[i], (unsigned int)exceptionRegisters[i],
-					registerNames[i+8], (unsigned int)exceptionRegisters[i+8]);
+		iprintf(	"  %s: %08"PRIX32"   %s: %08"PRIX32"\n",
+					registerNames[i], (u32)exceptionRegisters[i],
+					registerNames[i+8], (u32)exceptionRegisters[i+8]);
 	}
 	iprintf("\n");
 	stack = (u32 *)exceptionRegisters[13];
 	for ( i=0; i<10; i++ ) {
-		iprintf( "\x1b[%d;2H%08X: %08X %08X", i + 14, (u32)&stack[i*2],stack[i*2], stack[(i*2)+1] );
+		iprintf( "\x1b[%d;2H%08"PRIX32": %08"PRIX32" %08"PRIX32, i + 14, (u32)&stack[i*2],stack[i*2], stack[(i*2)+1] );
 	}
 	while(1);
 

@@ -176,6 +176,8 @@ static bool process_event(NDSEvent *event)
       key_down = true;
     }
 
+    /* fallthrough */
+
     // Continuing from NDS_EVENT_KEY_DOWN...
     case NDS_EVENT_KEY_UP:
     {
@@ -231,6 +233,8 @@ static bool process_event(NDSEvent *event)
     {
       key_down = true;
     }
+
+    /* fallthrough */
 
     // Continuing from NDS_EVENT_KEYBOARD_UP...
     case NDS_EVENT_KEYBOARD_UP:
