@@ -38,14 +38,9 @@ libxmp_objs += $(addprefix $(SRC_OBJ)/,$(SRC_OBJS))
 
 
 LOADERS	= xm_load.o mod_load.o s3m_load.o stm_load.o 669_load.o far_load.o \
-	  mtm_load.o ptm_load.o okt_load.o ult_load.o mdl_load.o it_load.o \
-	  stx_load.o pt3_load.o sfx_load.o flt_load.o st_load.o emod_load.o \
-	  imf_load.o digi_load.o fnk_load.o ice_load.o liq_load.o ims_load.o \
-	  masi_load.o amf_load.o psm_load.o stim_load.o mmd_common.o \
-	  mmd1_load.o mmd3_load.o rtm_load.o dt_load.o no_load.o arch_load.o \
-	  sym_load.o med2_load.o med3_load.o med4_load.o dbm_load.o umx_load.o \
-	  gdm_load.o pw_load.o gal5_load.o gal4_load.o mfp_load.o asylum_load.o \
-	  hmn_load.o mgt_load.o chip_load.o abk_load.o
+	  mtm_load.o okt_load.o ult_load.o it_load.o amf_load.o asylum_load.o \
+	  mmd_common.o mmd1_load.o mmd3_load.o med2_load.o med3_load.o med4_load.o \
+	  gdm_load.o
 
 LOADERS_OBJS	= common.o iff.o itsex.o asif.o voltable.o sample.o $(LOADERS)
 
@@ -56,43 +51,11 @@ LOADERS_OBJ	= $(LOADERS_PATH)/.build
 libxmp_objs += $(addprefix $(LOADERS_OBJ)/,$(LOADERS_OBJS))
 
 
-PROWIZ_OBJS	= prowiz.o ptktable.o tuning.o ac1d.o di.o eureka.o \
-		  fc-m.o fuchs.o fuzzac.o gmc.o heatseek.o ksm.o \
-		  mp.o np1.o np2.o np3.o p61a.o pm10c.o pm18a.o \
-		  pha.o prun1.o prun2.o tdd.o unic.o unic2.o wn.o zen.o \
-		  tp1.o tp3.o p40.o xann.o theplayer.o pp10.o pp21.o \
-		  starpack.o titanics.o skyt.o novotrade.o hrt.o noiserun.o
-PROWIZ_OBJS2	= pm.o pm01.o pm20.o pm40.o pp30.o
-
-PROWIZ_PATH	= $(libxmp_base)/src/loaders/prowizard
-PROWIZ_OBJ = $(PROWIZ_PATH)/.build
-
-
-libxmp_objs += $(addprefix $(PROWIZ_OBJ)/, $(PROWIZ_OBJS))
-
-
-DEPACKERS_OBJS	= readlzw.o readrle.o
-
-DEPACKERS_PATH	= $(libxmp_base)/src/depackers
-DEPACKERS_OBJ = $(DEPACKERS_PATH)/.build
-
-
-libxmp_objs += $(addprefix $(DEPACKERS_OBJ)/,$(DEPACKERS_OBJS))
-
-
 ${SRC_OBJ}/%.o: ${SRC_PATH}/%.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${CFLAGS} ${libxmp_cflags} -c $< -o $@
 
 ${LOADERS_OBJ}/%.o: ${LOADERS_PATH}/%.c
-	$(if ${V},,@echo "  CC      " $<)
-	${CC} -MD ${CFLAGS} ${libxmp_cflags} -c $< -o $@
-
-${PROWIZ_OBJ}/%.o: ${PROWIZ_PATH}/%.c
-	$(if ${V},,@echo "  CC      " $<)
-	${CC} -MD ${CFLAGS} ${libxmp_cflags} -c $< -o $@
-
-${DEPACKERS_OBJ}/%.o: ${DEPACKERS_PATH}/%.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${CFLAGS} ${libxmp_cflags} -c $< -o $@
 
@@ -107,17 +70,11 @@ ${WIN32_OBJ}/%.o: ${WIN32_PATH}/%.c
 $(libxmp_objs): $(filter-out $(wildcard ${SRC_OBJ}), ${SRC_OBJ})
 $(libxmp_objs): $(filter-out $(wildcard ${WIN32_OBJ}), ${WIN32_OBJ})
 $(libxmp_objs): $(filter-out $(wildcard ${LOADERS_OBJ}), ${LOADERS_OBJ})
-$(libxmp_objs): $(filter-out $(wildcard ${PROWIZ_OBJ}), ${PROWIZ_OBJ})
-$(libxmp_objs): $(filter-out $(wildcard ${DEPACKERS_OBJ}), ${DEPACKERS_OBJ})
 
 libxmp_clean:
 	$(if ${V},,@echo "  RM      " ${SRC_OBJ})
 	${RM} -r ${SRC_OBJ}
 	$(if ${V},,@echo "  RM      " ${LOADERS_OBJ})
 	${RM} -r ${LOADERS_OBJ}
-	$(if ${V},,@echo "  RM      " ${PROWIZ_OBJ})
-	${RM} -r ${PROWIZ_OBJ}
-	$(if ${V},,@echo "  RM      " ${DEPACKERS_OBJ})
-	${RM} -r ${DEPACKERS_OBJ}
 	$(if ${V},,@echo "  RM      " ${WIN32_OBJ})
 	${RM} -r ${WIN32_OBJ}

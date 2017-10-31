@@ -179,14 +179,6 @@ int xmp_test_module(char *path, struct xmp_test_info *info)
 		if (format_loader[i]->test(h, buf, 0) == 0) {
 			int is_prowizard = 0;
 
-#ifndef LIBXMP_CORE_PLAYER
-			if (strcmp(format_loader[i]->name, "prowizard") == 0) {
-				hio_seek(h, 0, SEEK_SET);
-				pw_test_format(h, buf, 0, info);
-				is_prowizard = 1;
-			}
-#endif
-
 			fclose(h->handle.file);
 
 #ifndef LIBXMP_CORE_PLAYER
