@@ -1,4 +1,4 @@
-SET DEVKITPRO="/c/devkitpro"
-SET DEVKITARM="/c/devkitpro/devkitARM"
-SET DEVKITPPC="/c/devkitpro/devkitPPC"
-SET DEVKITPSP="/c/devkitpro/devkitPSP"
+SET DEVKITPRO=/c/devkitpro
+SET DEVKITARM=%DEVKITPRO%/devkitARM
+SET DEVKITPPC=%DEVKITPRO%/devkitPPC
+SET DEVKITPSP=%DEVKITPRO%/devkitPSP
