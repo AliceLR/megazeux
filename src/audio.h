@@ -205,6 +205,7 @@ static inline void set_music_on(int val) {}
 static inline void set_sfx_on(int val) {}
 static inline void set_sfx_volume(int volume) {}
 static inline void set_max_samples(int max_samples) {}
+static inline int get_max_samples(void) { return 0; }
 static inline void end_sample(void) {}
 static inline void end_module(void) {}
 static inline int load_module(char *filename, bool safely, int volume) { return 1; }
@@ -223,6 +224,7 @@ static inline int get_position(void) { return 0; }
 static inline int get_order(void) { return 0; }
 static inline int get_frequency(void) { return 0; }
 static inline int audio_get_length(void) { return 0; }
+
 
 #endif // CONFIG_AUDIO
 
