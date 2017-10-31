@@ -30,11 +30,13 @@ STRIP  = /bin/true
 # Override library paths.
 #
 
-EXTRA_INCLUDES = -isystem arch/nds/ndsScreens/build \
+EXTRA_INCLUDES = -isystem arch/nds/zlib/include \
+                 -isystem arch/nds/ndsScreens/build \
                  -isystem $(DEVKITPRO)/libfat-nds/include \
                  -isystem $(LIBNDS)/include
 
-EXTRA_LIBS = -Larch/nds/ndsScreens/lib \
+EXTRA_LIBS = -Larch/nds/zlib/lib \
+             -Larch/nds/ndsScreens/lib \
              -L$(DEVKITPRO)/libfat-nds/lib \
              -L$(LIBNDS)/lib -lfat -lm -lnds9
 
