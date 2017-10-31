@@ -209,8 +209,7 @@ static const char *zip_error_string(enum zip_error code)
 
 static void zip_error(const char *func, enum zip_error code)
 {
-  fprintf(stderr, "ERROR - %s: %s\n", func, zip_error_string(code));
-  fflush(stderr);
+  warn("%s: %s\n", func, zip_error_string(code));
 }
 
 

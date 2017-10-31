@@ -23,6 +23,7 @@
 #include "../../src/platform.h"
 #undef main
 
+#include "../../src/graphics.h"
 #include "../../src/util.h"
 
 #include <fat.h>
@@ -30,6 +31,8 @@
 #include "ram.h"
 #include "dlmalloc.h"
 #include "exception.h"
+
+static unsigned int y = 0;
 
 // from arch/nds/event.c
 extern void nds_update_input(void);
@@ -83,6 +86,21 @@ void handle_debug_info(const char *type, const char *format, va_list args)
     fflush(stdout);
   }
   // TODO: Have a debug console on the subscreen show these.
+  else
+  {
+    // This is just a hack right now :(
+    char buffer[81];
+    size_t len;
+
+    sprintf(buffer, "%s: ", type);
+    len = strlen(buffer);
+
+    vsnprintf(buffer + len, 80 - len, format, args);
+    buffer[80] = 0;
+
+    write_string(buffer, 0, y, 0x4F, 1);
+    y = (y+1)&7;
+  }
 }
 
 void info(const char *format, ...)
