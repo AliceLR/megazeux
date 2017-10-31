@@ -7,6 +7,9 @@ arch/msvc/Deps/
 arch/msvc/MegaZeux.opensdf
 arch/msvc/MegaZeux.sdf
 arch/msvc/MegaZeux.v12.suo
+arch/nds/mzxrun.arm7.elf
+arch/nds/ndsScreens/
+arch/nds/zlib/
 arch/nds/*.d
 arch/nds/*.o
 build
@@ -39,6 +42,7 @@ megazeux.exe
 megazeux
 mzxrun.exe
 mzxrun
+mzxrun.nds
 platform.inc
 SDL.dll
 SDL2.dll
