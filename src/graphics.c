@@ -648,6 +648,11 @@ void load_indices(void *buffer, size_t size)
   }
 }
 
+void load_indices_direct(void *buffer, size_t size)
+{
+  memcpy(graphics.smzx_indices, buffer, size);
+}
+
 void smzx_palette_loaded(int val)
 {
   graphics.default_smzx_loaded = val;

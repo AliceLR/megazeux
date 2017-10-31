@@ -307,6 +307,7 @@ Uint32 get_color_intensity(Uint32 color);
 Uint32 get_fade_status(void);
 void save_indices(void *buffer);
 void load_indices(void *buffer, size_t size);
+void load_indices_direct(void *buffer, size_t size);
 void vquick_fadein(void);
 void dump_screen(void);
 void dump_char(Uint16 char_idx, Uint8 color, int mode, Uint8 *buffer);

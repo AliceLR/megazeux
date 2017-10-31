@@ -1129,7 +1129,7 @@ static inline int load_world_pal_index(struct world *mzx_world,
 
     // 2.90 stored the internal indices instead of user-friendly indices
     else
-      memcpy(graphics.smzx_indices, buffer, actual_size);
+      load_indices_direct(buffer, actual_size);
   }
 
   free(buffer);
