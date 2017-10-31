@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 #include <time.h>
 
 #include <zlib.h>
@@ -109,6 +110,25 @@ static void _fputd(int src, FILE *fp)
   fputc((src >> 24) & 0xFF, fp);
 }
 
+static int _fseekend(FILE *fp)
+{
+  if(fseek(fp, 0, SEEK_END))
+  {
+    struct stat file_info;
+
+    if(fstat(fileno(fp), &file_info))
+    {
+      return 1;
+    }
+
+    if(fseek(fp, file_info.st_size, SEEK_SET))
+    {
+      return 1;
+    }
+  }
+  return 0;
+}
+
 static int zip_get_dos_date_time(void)
 {
   time_t current_time = time(NULL);
@@ -141,6 +161,8 @@ static const char *zip_error_string(enum zip_error code)
       return "function received null archive";
     case ZIP_NULL_BUF:
       return "function received null buffer";
+    case ZIP_SEEK_END_UNSUPPORTED:
+      return "SEEK_END not supported for binary streams";
     case ZIP_SEEK_ERROR:
       return "could not seek to position";
     case ZIP_READ_ERROR:
@@ -2048,56 +2070,27 @@ static signed char eocd_tbl[] = {
   5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
 };
 
-enum zip_error zip_read_directory(struct zip_archive *zp)
+static enum zip_error zip_find_eocd(struct zip_archive *zp)
 {
-  int n, i, j;
-  int result;
+  int (*vseek)(void *, long int, int) = zp->vseek;
+  int (*vgetc)(void *) = zp->vgetc;
 
-  void *fp;
+  void *fp = zp->fp;
 
-  int (*vseek)(void *, long int, int);
-  int (*vgetc)(void *);
-  int (*vgetw)(void *);
-  int (*vgetd)(void *);
-
-  if(!zp)
-  {
-    result = ZIP_NULL;
-    goto err_out;
-  }
-
-  if(zp->closing)
-  {
-    result = ZIP_INVALID_WHILE_CLOSING;
-    goto err_out;
-  }
-
-  // This only works in raw reading mode
-  if(zp->mode != ZIP_S_READ_RAW)
-  {
-    if(zp->mode == ZIP_S_READ_FILES)
-    {
-      result = ZIP_INVALID_DIRECTORY_READ_IN_FILE_MODE;
-      goto err_out;
-    }
-    result = ZIP_INVALID_WRITE_IN_READ_MODE;
-    goto err_out;
-  }
-
-  fp = zp->fp;
-  vseek = zp->vseek;
-  vgetc = zp->vgetc;
-  vgetw = zp->vgetw;
-  vgetd = zp->vgetd;
+  int i;
+  int j;
+  int n;
 
   // Go to the end of the file.
-  vseek(fp, 0, SEEK_END);
+  if(vseek(fp, zp->end_in_file, SEEK_SET))
+  {
+    return ZIP_NO_EOCD;
+  }
 
   // Go back to the latest position the EOCD might be.
   if(vseek(fp, -22, SEEK_CUR))
   {
-    result = ZIP_NO_EOCD;
-    goto err_out;
+    return ZIP_NO_EOCD;
   }
 
   // Find the end of central directory signature.
@@ -2138,9 +2131,57 @@ enum zip_error zip_read_directory(struct zip_archive *zp)
 
   if(i < 4)
   {
-    result = ZIP_NO_EOCD;
+    return ZIP_NO_EOCD;
+  }
+
+  return ZIP_SUCCESS;
+}
+
+enum zip_error zip_read_directory(struct zip_archive *zp)
+{
+  int i;
+  int n;
+  int result;
+
+  void *fp;
+
+  int (*vseek)(void *, long int, int);
+  int (*vgetw)(void *);
+  int (*vgetd)(void *);
+
+  if(!zp)
+  {
+    result = ZIP_NULL;
     goto err_out;
   }
+
+  if(zp->closing)
+  {
+    result = ZIP_INVALID_WHILE_CLOSING;
+    goto err_out;
+  }
+
+  // This only works in raw reading mode
+  if(zp->mode != ZIP_S_READ_RAW)
+  {
+    if(zp->mode == ZIP_S_READ_FILES)
+    {
+      result = ZIP_INVALID_DIRECTORY_READ_IN_FILE_MODE;
+      goto err_out;
+    }
+    result = ZIP_INVALID_WRITE_IN_READ_MODE;
+    goto err_out;
+  }
+
+  fp = zp->fp;
+  vseek = zp->vseek;
+  vgetw = zp->vgetw;
+  vgetd = zp->vgetd;
+
+  // This will take us to the start of the EOCD
+  result = zip_find_eocd(zp);
+  if(result)
+    goto err_out;
 
   // Number of this disk
   n = vgetw(fp);
@@ -2508,7 +2549,13 @@ struct zip_archive *zip_open_fp_read(FILE *fp)
   {
     struct zip_archive *zp = zip_get_archive_file(fp);
 
-    fseek(fp, 0, SEEK_END);
+    if(_fseekend(fp))
+    {
+      zip_error("zip_open_fp_read", ZIP_SEEK_END_UNSUPPORTED);
+      fclose(fp);
+      return NULL;
+    }
+
     zp->end_in_file = ftell(fp);
     rewind(fp);
 
