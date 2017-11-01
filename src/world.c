@@ -1873,13 +1873,10 @@ static int save_world_zip(struct world *mzx_world, const char *file,
   int meter_curr = 0;
   int meter_target = 2 + mzx_world->num_boards + mzx_world->temporary_board;
 
-  if(!zp)
-  {
-    error_message(E_WORLD_IO_SAVING, 0, NULL);
-    return -1;
-  }
-
   meter_initial_draw(meter_curr, meter_target, "Saving...");
+
+  if(!zp)
+    goto err;
 
   // Header
   if(!savegame)
@@ -1909,23 +1906,25 @@ static int save_world_zip(struct world *mzx_world, const char *file,
     zputc(mzx_world->current_board_id, zp);
   }
 
-  save_world_info(mzx_world, zp, savegame, file_version, "world");
+  if(save_world_info(mzx_world, zp, savegame, file_version, "world"))
+    goto err_close;
 
-  save_world_global_robot(mzx_world, zp, savegame, file_version, "gr");
+  if(save_world_global_robot(mzx_world, zp, savegame, file_version, "gr"))
+    goto err_close;
 
-  save_world_sfx(mzx_world, zp,             "sfx");
-  save_world_chars(mzx_world, zp, savegame, "chars");
-  save_world_pal(mzx_world, zp,             "pal");
-  save_world_pal_index(mzx_world, zp,       "palidx");
-  save_world_vco(mzx_world, zp,             "vco");
-  save_world_vch(mzx_world, zp,             "vch");
+  if(save_world_sfx(mzx_world, zp,              "sfx"))     goto err_close;
+  if(save_world_chars(mzx_world, zp, savegame,  "chars"))   goto err_close;
+  if(save_world_pal(mzx_world, zp,              "pal"))     goto err_close;
+  if(save_world_pal_index(mzx_world, zp,        "palidx"))  goto err_close;
+  if(save_world_vco(mzx_world, zp,              "vco"))     goto err_close;
+  if(save_world_vch(mzx_world, zp,              "vch"))     goto err_close;
 
   if(savegame)
   {
-    save_world_pal_inten(mzx_world, zp,     "palint");
-    save_world_sprites(mzx_world, zp,       "spr");
-    save_world_counters(mzx_world, zp,      "counter");
-    save_world_strings(mzx_world, zp,       "string");
+    if(save_world_pal_inten(mzx_world, zp,     "palint"))   goto err_close;
+    if(save_world_sprites(mzx_world, zp,       "spr"))      goto err_close;
+    if(save_world_counters(mzx_world, zp,      "counter"))  goto err_close;
+    if(save_world_strings(mzx_world, zp,       "string"))   goto err_close;
   }
 
   meter_update_screen(&meter_curr, meter_target);
@@ -1935,15 +1934,17 @@ static int save_world_zip(struct world *mzx_world, const char *file,
     cur_board = mzx_world->board_list[i];
 
     if(cur_board)
-      save_board(mzx_world, cur_board, zp, savegame, file_version, i);
+      if(save_board(mzx_world, cur_board, zp, savegame, file_version, i))
+        goto err_close;
 
     meter_update_screen(&meter_curr, meter_target);
   }
 
   if(mzx_world->temporary_board)
   {
-    save_board(mzx_world, mzx_world->current_board, zp, savegame,
-     file_version, TEMPORARY_BOARD);
+    if(save_board(mzx_world, mzx_world->current_board, zp, savegame,
+     file_version, TEMPORARY_BOARD))
+      goto err_close;
 
     meter_update_screen(&meter_curr, meter_target);
   }
@@ -1954,6 +1955,14 @@ static int save_world_zip(struct world *mzx_world, const char *file,
 
   zip_close(zp, NULL);
   return 0;
+
+err_close:
+  zip_close(zp, NULL);
+
+err:
+  error_message(E_WORLD_IO_SAVING, 0, NULL);
+  meter_restore_screen();
+  return -1;
 }
 
 #undef if_savegame

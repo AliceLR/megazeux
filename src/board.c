@@ -35,11 +35,12 @@
 #include "zip.h"
 
 
-static void save_board_info(struct board *cur_board, struct zip_archive *zp,
+static int save_board_info(struct board *cur_board, struct zip_archive *zp,
  int savegame, int file_version, const char *name)
 {
   char *buffer;
   struct memfile mf;
+  int result;
 
   size_t size = BOARD_PROPS_SIZE;
   int length;
@@ -123,9 +124,10 @@ static void save_board_info(struct board *cur_board, struct zip_archive *zp,
 
   size = mftell(&mf);
 
-  zip_write_file(zp, name, buffer, size, ZIP_M_NONE);
+  result = zip_write_file(zp, name, buffer, size, ZIP_M_NONE);
 
   free(buffer);
+  return result;
 }
 
 int save_board(struct world *mzx_world, struct board *cur_board,
@@ -138,41 +140,50 @@ int save_board(struct world *mzx_world, struct board *cur_board,
 
   sprintf(name, "b%2.2X", (unsigned char)board_id);
 
-  save_board_info(cur_board, zp, savegame, file_version, name);
+  if(save_board_info(cur_board, zp, savegame, file_version, name))
+    goto err;
 
   sprintf(name+3, "bid");
-  zip_write_file(zp, name, cur_board->level_id,
-   board_size, ZIP_M_DEFLATE);
+  if(zip_write_file(zp, name, cur_board->level_id,
+   board_size, ZIP_M_DEFLATE))
+    goto err;
 
   sprintf(name+3, "bpr");
-  zip_write_file(zp, name, cur_board->level_param,
-   board_size, ZIP_M_DEFLATE);
+  if(zip_write_file(zp, name, cur_board->level_param,
+   board_size, ZIP_M_DEFLATE))
+    goto err;
 
   sprintf(name+3, "bco");
-  zip_write_file(zp, name, cur_board->level_color,
-   board_size, ZIP_M_DEFLATE);
+  if(zip_write_file(zp, name, cur_board->level_color,
+   board_size, ZIP_M_DEFLATE))
+    goto err;
 
   sprintf(name+3, "uid");
-  zip_write_file(zp, name, cur_board->level_under_id,
-   board_size, ZIP_M_DEFLATE);
+  if(zip_write_file(zp, name, cur_board->level_under_id,
+   board_size, ZIP_M_DEFLATE))
+    goto err;
 
   sprintf(name+3, "upr");
-  zip_write_file(zp, name, cur_board->level_under_param,
-   board_size, ZIP_M_DEFLATE);
+  if(zip_write_file(zp, name, cur_board->level_under_param,
+   board_size, ZIP_M_DEFLATE))
+    goto err;
 
   sprintf(name+3, "uco");
-  zip_write_file(zp, name, cur_board->level_under_color,
-   board_size, ZIP_M_DEFLATE);
+  if(zip_write_file(zp, name, cur_board->level_under_color,
+   board_size, ZIP_M_DEFLATE))
+    goto err;
 
   if(cur_board->overlay_mode)
   {
     sprintf(name+3, "och");
-    zip_write_file(zp, name, cur_board->overlay,
-     board_size, ZIP_M_DEFLATE);
+    if(zip_write_file(zp, name, cur_board->overlay,
+     board_size, ZIP_M_DEFLATE))
+      goto err;
 
     sprintf(name+3, "oco");
-    zip_write_file(zp, name, cur_board->overlay_color,
-     board_size, ZIP_M_DEFLATE);
+    if(zip_write_file(zp, name, cur_board->overlay_color,
+     board_size, ZIP_M_DEFLATE))
+      goto err;
   }
 
   name[3] = 'r';
@@ -227,6 +238,9 @@ int save_board(struct world *mzx_world, struct board *cur_board,
   }
 
   return 0;
+
+err:
+  return -1;
 }
 
 static void default_board(struct board *cur_board)
