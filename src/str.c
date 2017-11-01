@@ -1287,7 +1287,7 @@ static int compare_wildcard(const char *str, size_t str_len,
   while(i < pat_len && left <= str_len)
   {
     prev = next;
-    next = exact_case ? pat[i] : toupper(pat[i]);
+    next = exact_case ? pat[i] : toupper((int)pat[i]);
     i++;
 
     switch(next)
@@ -1354,7 +1354,7 @@ static int compare_wildcard(const char *str, size_t str_len,
         {
           for(j = right; j >= left; j--)
           {
-            str_matched[j] = str_matched[j-1] && (toupper(str[j-1]) == next);
+            str_matched[j] = str_matched[j-1] && toupper((int)str[j-1]) == next;
             if(str_matched[j])
             {
               new_left = j+1;

@@ -143,7 +143,7 @@ static inline void skip_spaces(char **_expression)
 {
   char *expression = *_expression;
 
-  while(isspace(*expression))
+  while(isspace((int)*expression))
     expression++;
 
   *_expression = expression;

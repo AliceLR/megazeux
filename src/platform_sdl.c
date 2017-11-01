@@ -25,6 +25,10 @@
 
 #include "SDL.h"
 
+#ifdef CONFIG_PSP
+#include <psppower.h>
+#endif
+
 #ifdef CONFIG_GP2X
 #include <unistd.h> //for chdir, execl
 #endif

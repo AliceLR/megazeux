@@ -12,6 +12,8 @@ arch/nds/ndsScreens/
 arch/nds/zlib/
 arch/nds/*.d
 arch/nds/*.o
+arch/psp/*.d
+arch/psp/*.o
 build
 contrib/gdm2s3m/src/.build/
 contrib/icons/.build/
