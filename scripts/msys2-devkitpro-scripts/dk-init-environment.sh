@@ -4,4 +4,4 @@
 pacman --needed --noconfirm -S p7zip
 
 # Required for psp
-pacman --needed --noconfirm -S autoconf automake imagemagick libtool patch
+pacman --needed --noconfirm -S autoconf automake libtool patch mingw-w64-x86_64-imagemagick
