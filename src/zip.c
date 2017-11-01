@@ -122,16 +122,10 @@ static void _fputd(int src, FILE *fp)
 // NDS libfat fseek will always fail if a function pointer to it
 // is used, so it needs to be wrapped in another function to work.
 
-#ifdef CONFIG_NDS
-
 static int _fseekwrapper(void *vp, long int offset, int code)
 {
   return fseek((FILE *)vp, offset, code);
 }
-
-#else
-static const int(*_fseekwrapper)(void *, long int, int) = fseek;
-#endif
 
 static long int _fstatlen(FILE *fp)
 {
