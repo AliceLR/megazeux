@@ -173,6 +173,8 @@ FIXES
 + Fixed several bugs with string length and offset parsing that
   would allow invalid string accesses to work in certain cases.
 + COPY BLOCK $string now works correctly with string splices.
++ Fixed a bug where saving and loading 2.90X files wouldn't work
+  on the Nintendo DS.
 
 DEVELOPERS
 

@@ -18,6 +18,7 @@
  */
 
 #include <inttypes.h>
+#include <limits.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,8 +37,16 @@
 #define ZIP_VERSION 20
 #define ZIP_VERSION_MINIMUM 20
 
-// Uncomment to enable writing data descriptors.
-// #define ZIP_WRITE_DATA_DESCRIPTOR
+// Data descriptors are short areas after the compressed file containing the
+// uncompressed size, compressed size, and CRC-32 checksum of the file, and
+// are useful for platforms where seeking backward is impossible/infeasible.
+
+// The NDS libfat library may have a bug with seeking backwards from the end of
+// the file. Enable data descriptors so the save can be handled in one pass.
+
+#ifdef CONFIG_NDS
+#define ZIP_WRITE_DATA_DESCRIPTOR
+#endif // CONFIG_NDS
 
 #define ZIP_DEFAULT_NUM_FILES 4
 
@@ -110,23 +119,30 @@ static void _fputd(int src, FILE *fp)
   fputc((src >> 24) & 0xFF, fp);
 }
 
-static int _fseekend(FILE *fp)
+// NDS libfat fseek will always fail if a function pointer to it
+// is used, so it needs to be wrapped in another function to work.
+
+#ifdef CONFIG_NDS
+
+static int _fseekwrapper(void *vp, long int offset, int code)
 {
-  if(fseek(fp, 0, SEEK_END))
+  return fseek((FILE *)vp, offset, code);
+}
+
+#else
+static const int(*_fseekwrapper)(void *, long int, int) = fseek;
+#endif
+
+static long int _fstatlen(FILE *fp)
+{
+  struct stat file_info;
+
+  if(fstat(fileno(fp), &file_info))
   {
-    struct stat file_info;
-
-    if(fstat(fileno(fp), &file_info))
-    {
-      return 1;
-    }
-
-    if(fseek(fp, file_info.st_size, SEEK_SET))
-    {
-      return 1;
-    }
+    return -1;
   }
-  return 0;
+
+  return file_info.st_size;
 }
 
 static int zip_get_dos_date_time(void)
@@ -161,8 +177,8 @@ static const char *zip_error_string(enum zip_error code)
       return "function received null archive";
     case ZIP_NULL_BUF:
       return "function received null buffer";
-    case ZIP_SEEK_END_UNSUPPORTED:
-      return "SEEK_END not supported for binary streams";
+    case ZIP_STAT_ERROR:
+      return "fstat failed for input file";
     case ZIP_SEEK_ERROR:
       return "could not seek to position";
     case ZIP_READ_ERROR:
@@ -2081,14 +2097,8 @@ static enum zip_error zip_find_eocd(struct zip_archive *zp)
   int j;
   int n;
 
-  // Go to the end of the file.
-  if(vseek(fp, zp->end_in_file, SEEK_SET))
-  {
-    return ZIP_NO_EOCD;
-  }
-
-  // Go back to the latest position the EOCD might be.
-  if(vseek(fp, -22, SEEK_CUR))
+  // Go to the latest position the EOCD might be.
+  if(vseek(fp, (long int)(zp->end_in_file - 22), SEEK_SET))
   {
     return ZIP_NO_EOCD;
   }
@@ -2530,7 +2540,7 @@ static struct zip_archive *zip_get_archive_file(FILE *fp)
   zp->vputd = (void(*)(int, void *)) _fputd;
   zp->vread = (size_t(*)(void *, size_t, size_t, void *)) fread;
   zp->vwrite = (size_t(*)(const void *, size_t, size_t, void *)) fwrite;
-  zp->vseek = (int(*)(void *, long int, int)) fseek;
+  zp->vseek = (int(*)(void *, long int, int)) _fseekwrapper;
   zp->vtell = (long int(*)(void *)) ftell;
   zp->verror = (int(*)(void *)) ferror;
   zp->vclose = (int(*)(void *)) fclose;
@@ -2548,16 +2558,25 @@ struct zip_archive *zip_open_fp_read(FILE *fp)
   if(fp)
   {
     struct zip_archive *zp = zip_get_archive_file(fp);
+    long int file_len = _fstatlen(fp);
 
-    if(_fseekend(fp))
+    if(file_len < 0)
     {
-      zip_error("zip_open_fp_read", ZIP_SEEK_END_UNSUPPORTED);
+      zip_error("zip_open_fp_read", ZIP_STAT_ERROR);
       fclose(fp);
+      free(zp);
       return NULL;
     }
 
-    zp->end_in_file = ftell(fp);
-    rewind(fp);
+    if(file_len > INT_MAX)
+    {
+      zip_error("zip_open_fp_read", ZIP_UNSUPPORTED_ZIP64);
+      fclose(fp);
+      free(zp);
+      return NULL;
+    }
+
+    zp->end_in_file = (uint32_t)file_len;
 
     precalculate_read_errors(zp);
     precalculate_write_errors(zp);
