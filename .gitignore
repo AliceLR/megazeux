@@ -1,5 +1,6 @@
 arch/3ds/*.d
 arch/3ds/*.o
+arch/3ds/*shbin*
 arch/mingw/pefix.d
 arch/mingw/pefix.exe
 arch/mingw/pefix.o
@@ -22,9 +23,7 @@ contrib/icons/.build/
 contrib/libmodplug/src/.build/
 contrib/libxmp/src/.build/
 contrib/libxmp/src/win32/.build/
-contrib/libxmp/src/depackers/.build/
 contrib/libxmp/src/loaders/.build/
-contrib/libxmp/src/loaders/prowizard/.build/
 contrib/unzip/src/.build/
 Core.exp
 Core.lib
@@ -40,13 +39,16 @@ Editor.pdb
 editor.dll
 libeditor.so
 libeditor.dylib
+megazeux-cia.*
 MegaZeux.ilk
 MegaZeux.pdb
 megazeux.exe
 megazeux
 mzxrun.exe
-mzxrun
+mzxrun.3dsx
+mzxrun.cia
 mzxrun.nds
+mzxrun
 platform.inc
 SDL.dll
 SDL2.dll
