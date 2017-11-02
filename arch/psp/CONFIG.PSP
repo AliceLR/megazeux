@@ -1,3 +1,5 @@
+#!/bin/bash
+
 ./config.sh --platform psp --prefix $DEVKITPSP/psp --optimize-size \
             --disable-editor --disable-helpsys --disable-utils \
             --disable-libsdl2 --enable-release --enable-meter
