@@ -12,5 +12,6 @@ usr\bin\bash -l /dk-init-environment.sh
 :: Set up dependencies for target platforms.
 usr\bin\bash -l /dk-nds-dependencies.sh %DEVKITPRO% %DEVKITARM%
 usr\bin\bash -l /dk-psp-dependencies.sh %DEVKITPRO% %DEVKITPSP%
+usr\bin\bash -l /dk-3ds-dependencies.sh %DEVKITPRO% %DEVKITPSP%
 
 pause

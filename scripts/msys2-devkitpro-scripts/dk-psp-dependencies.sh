@@ -22,9 +22,8 @@ git clone $PORTS_REPO "psp-ports"
 # devkitPro is missing an include. If the include is missing,
 # patch it back in.
 
-cd /
 if ! grep -q "psptypes" $DEVKITPSP/psp/sdk/include/pspge.h ; then
-  patch $DEVKITPSP/psp/sdk/include/pspge.h pspge.patch
+  patch $DEVKITPSP/psp/sdk/include/pspge.h /dk-patches/pspge.patch
 fi
 
 

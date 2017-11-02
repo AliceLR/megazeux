@@ -1,3 +1,5 @@
+arch/3ds/*.d
+arch/3ds/*.o
 arch/mingw/pefix.d
 arch/mingw/pefix.exe
 arch/mingw/pefix.o

@@ -4,7 +4,7 @@
 
 include $(DEVKITARM)/3ds_rules
 
-.PHONY: package
+.PHONY: package clean
 
 ifeq ($(strip $(DEVKITPRO)),)
 $(error "DEVKITPRO must be set in your environment.")
@@ -59,7 +59,7 @@ arch/3ds/%.o: arch/3ds/%.c
 arch/3ds/%.shbin.o : arch/3ds/%.v.pica arch/3ds/%.g.pica
 	$(eval CURLOC := $(patsubst %.shbin.o,%.shbin,$@))
 	$(eval CURBIN := $(patsubst %.shbin.o,%.shbin,$(notdir $@)))
-	picasso -o $(CURLOC) $?
+	picasso -o $(CURLOC) $^
 	bin2s $(CURLOC) | $(AS) -o $@
 	echo "extern const u8" `(echo $(CURBIN) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"_end[];" > `(echo $(CURLOC) | tr . _)`.h
 	echo "extern const u8" `(echo $(CURBIN) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"[];" >> `(echo $(CURLOC) | tr . _)`.h
@@ -74,6 +74,8 @@ package: mzx mzxrun.smdh
 	makerom -f cia -elf ${mzxrun} -icon megazeux-cia.smdh -banner megazeux-cia.bnr \
 		-desc app:4 -v -o ${mzxrun}.cia -target t -exefslogo -rsf arch/3ds/banner/megazeux.rsf
 
+clean:
+	@rm -f ${mzxrun}.smdh arch/3ds/*.{d,o} arch/3ds/*shbin*
 
 build := build/${SUBPLATFORM}/3ds/megazeux
 build: package ${build}
