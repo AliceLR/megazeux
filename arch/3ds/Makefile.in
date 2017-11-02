@@ -59,7 +59,7 @@ arch/3ds/%.o: arch/3ds/%.c
 arch/3ds/%.shbin.o : arch/3ds/%.v.pica arch/3ds/%.g.pica
 	$(eval CURLOC := $(patsubst %.shbin.o,%.shbin,$@))
 	$(eval CURBIN := $(patsubst %.shbin.o,%.shbin,$(notdir $@)))
-	picasso -o $(CURLOC) $^
+	picasso -o $(CURLOC) $?
 	bin2s $(CURLOC) | $(AS) -o $@
 	echo "extern const u8" `(echo $(CURBIN) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"_end[];" > `(echo $(CURLOC) | tr . _)`.h
 	echo "extern const u8" `(echo $(CURBIN) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"[];" >> `(echo $(CURLOC) | tr . _)`.h
