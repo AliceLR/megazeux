@@ -15,7 +15,6 @@ MSYSTEM=MSYS
 
 cd /mzx-build-workingdir
 mkdir -p uploads
-mkdir -p zips
 rm -rf releases-update
 cp -r releases releases-update
 pushd releases-update
@@ -25,7 +24,8 @@ do
   for A in $archs
   do
     pushd $A
-    /mingw-release-single.sh $T $A &
+    /mzx-build-scripts/builddir-to-updatedir.sh &
+    #/mingw-release-single.sh $T $A &
     popd
   done
   popd

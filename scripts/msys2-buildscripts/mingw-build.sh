@@ -13,11 +13,18 @@ git checkout origin/$5
 
 ./config.sh --platform $2 $3 --enable-release
 make clean
-make -j8
+make -j8 debuglink
 
 rm -rf build
 
 CUSTOM_SDL_DLL_DIR=contrib/precompiled-sdl/$1 make build
+
+/mingw-build-debug.sh $1 $4
+
+make archive
+
+mkdir -p /mzx-build-workingdir/zips/$4
+mv build/dist/windows-$1/* /mzx-build-workingdir/zips/$4
 
 mkdir -p /mzx-build-workingdir/releases/$4
 rm -rf /mzx-build-workingdir/releases/$4/windows-$1
