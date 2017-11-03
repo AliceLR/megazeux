@@ -32,8 +32,6 @@
 #include <ogc/video.h>
 #include <ogc/usbmouse.h>
 #include <wiikeyboard/keyboard.h>
-// Use of anonymous union in wiiuse header
-#pragma GCC diagnostic ignored "-pedantic"
 #include <wiiuse/wpad.h>
 #undef BOOL
 
