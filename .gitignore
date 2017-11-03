@@ -12,7 +12,6 @@ arch/msvc/MegaZeux.sdf
 arch/msvc/MegaZeux.v12.suo
 arch/nds/mzxrun.arm7.elf
 arch/nds/ndsScreens/
-arch/nds/zlib/
 arch/nds/*.d
 arch/nds/*.o
 arch/psp/*.d

@@ -27,10 +27,8 @@ echo "/************/"
 
 cd /mzx-build-workingdir/nds-portlibs
 
-make zlib           PORTLIBS_PATH=../.build-zlib -j8
-make install-zlib   PORTLIBS_PATH=../.build-zlib
-
-cp -r .build-zlib/armv5te /mzx-build-workingdir/megazeux/arch/nds/zlib
+make zlib -j8
+make install-zlib
 
 
 echo ""
