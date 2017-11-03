@@ -638,10 +638,10 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
         else
           ch = (ch + offset) % PROTECTED_CHARSET_POSITION;
         uv = ((ch & 127) << 3) | (((NUM_CHARSETS * 32)-((ch >> 7) << 4)) << 16);
-        col = graphics->smzx_indices[idx + 0] == tcol ? 0 : graphics->flat_intensity_palette[graphics->smzx_indices[idx + 0]];
-        col2 = graphics->smzx_indices[idx + 1] == tcol ? 0 : graphics->flat_intensity_palette[graphics->smzx_indices[idx + 1]];
-        col3 = graphics->smzx_indices[idx + 2] == tcol ? 0 : graphics->flat_intensity_palette[graphics->smzx_indices[idx + 2]];
-        col4 = graphics->smzx_indices[idx + 3] == tcol ? 0 : graphics->flat_intensity_palette[graphics->smzx_indices[idx + 3]];
+        col = graphics->smzx_indices[idx + 0] == tcol ? 0 : graphics->flat_intensity_palette[(u8)graphics->smzx_indices[idx + 0]];
+        col2 = graphics->smzx_indices[idx + 1] == tcol ? 0 : graphics->flat_intensity_palette[(u8)graphics->smzx_indices[idx + 1]];
+        col3 = graphics->smzx_indices[idx + 2] == tcol ? 0 : graphics->flat_intensity_palette[(u8)graphics->smzx_indices[idx + 2]];
+        col4 = graphics->smzx_indices[idx + 3] == tcol ? 0 : graphics->flat_intensity_palette[(u8)graphics->smzx_indices[idx + 3]];
 	if ((col2 & col3 & col4) == 0) has_inversions = true;
         ((u32*) layer->background.data)[k] = col;
         layer->foreground[l].uv = uv;
@@ -701,7 +701,7 @@ static void ctr_render_layer(struct graphics_data *graphics, struct video_layer 
 }
 
 static void ctr_render_cursor(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint8 color, Uint8 lines, Uint8 offset)
+ Uint32 x, Uint32 y, Uint16 color, Uint8 lines, Uint8 offset)
 {
   struct ctr_render_data *render_data = graphics->render_data;
   Uint32 flatcolor = graphics->flat_intensity_palette[color];

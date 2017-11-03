@@ -22,6 +22,8 @@
 #ifndef __3DS_PLATFORM_H__
 #define __3DS_PLATFORM_H__
 
+#include "../../src/compat.h"
+
 #include <stdlib.h>
 #include <3ds.h>
 #include <citro3d.h>
@@ -35,7 +37,7 @@ void *check_linearAlloc(size_t size, size_t alignment, const char *file, int lin
 
 #else
 
-static inline void clinearAlloc(size_t size)
+static inline void *clinearAlloc(size_t size)
 {
   return linearAlloc(size);
 }

@@ -20,6 +20,8 @@
 
 #include <stdarg.h>
 
+#include "platform.h"
+
 #include "../../src/platform.h"
 #undef main
 
@@ -123,7 +125,7 @@ void *check_linearAlloc(size_t size, size_t alignment, const char *file, int lin
 
 int main(int argc, char *argv[])
 {
-  static char *_argv[] = {"/"};
+  static char *_argv[] = { (char *)"/" };
   chdir("/");
   real_main(1, _argv);
   return 0;
