@@ -15,7 +15,8 @@ git checkout $3
 
 arch/psp/CONFIG.PSP
 make clean
-make package -j8
+make debuglink -j8
+make package
 make archive
 
 mv build/dist/psp/* /mzx-build-workingdir/zips/

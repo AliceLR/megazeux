@@ -15,7 +15,8 @@ git checkout $3
 
 arch/nds/CONFIG.NDS
 make clean
-make package -j8
+make debuglink -j8
+make package
 make archive
 
 mv build/dist/nds/* /mzx-build-workingdir/zips/
