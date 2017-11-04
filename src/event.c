@@ -844,6 +844,12 @@ void force_release_all_keys(void)
 
   force_last_key(keycode_internal, 0);
   memset(status->keymap, 0, sizeof(status->keymap));
+
+  status->mouse_button = 0;
+  status->mouse_repeat = 0;
+  status->mouse_button_state = 0;
+  status->mouse_repeat_state = 0;
+  status->mouse_drag_state = 0;
 }
 
 bool get_alt_status(enum keycode_type type)
