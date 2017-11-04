@@ -182,6 +182,7 @@ DEVELOPERS
 
 + Added Nintendo 3DS port. (asiekierka)
 + Added "make uninstall" option to the Linux makefile.
++ Added devkitPro portlibs paths to the NDS and Wii Makefiles.
 - Removed the depackers and non-MegaZeux formats from libxmp.
 
 
