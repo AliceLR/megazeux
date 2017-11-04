@@ -1114,7 +1114,7 @@ static inline int save_world_pal_index(struct world *mzx_world,
 }
 
 static inline int load_world_pal_index(struct world *mzx_world,
- struct zip_archive *zp)
+ int file_version, struct zip_archive *zp)
 {
   char *buffer = cmalloc(SMZX_PAL_SIZE * 4);
   size_t actual_size;
@@ -1124,7 +1124,7 @@ static inline int load_world_pal_index(struct world *mzx_world,
 
   if(result == ZIP_SUCCESS)
   {
-    if(mzx_world->version >= 0x025B)
+    if(file_version >= 0x025B)
       load_indices(buffer, actual_size);
 
     // 2.90 stored the internal indices instead of user-friendly indices
@@ -2031,7 +2031,7 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
 
       case FPROP_WORLD_PAL_INDEX:
         if_savegame_or_291
-        err = load_world_pal_index(mzx_world, zp);
+        err = load_world_pal_index(mzx_world, file_version, zp);
         break;
 
       case FPROP_WORLD_PAL_INTENSITY:
