@@ -151,7 +151,8 @@ int main(int argc, char *argv[])
         int link;
 
         // Get upcoming link
-        fscanf(source, "%3d", &link);
+        if(!fscanf(source, "%3d", &link))
+          break;
 
         // Get next char
         current_char = fgetc(source);

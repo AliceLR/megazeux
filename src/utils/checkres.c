@@ -1460,7 +1460,7 @@ static char *load_file(FILE *fp, size_t *buf_size)
   rewind(fp);
 
   buffer = malloc(*buf_size);
-  fread(buffer, *buf_size, 1, fp);
+  *buf_size = fread(buffer, 1, *buf_size, fp);
 
   return buffer;
 }
@@ -1638,7 +1638,7 @@ int main(int argc, char *argv[])
   struct base_path **path_list = NULL;
   int path_list_alloc = 0;
   int path_list_size = 0;
-  enum status ret;
+  enum status ret = SUCCESS;
   int i;
 
   struct base_path *current_path = NULL;
