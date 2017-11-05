@@ -6,6 +6,556 @@
 
 <head>
 <title>MegaZeux Platform Support Matrix</title>
+<script language="JavaScript">
+
+function note_link(note) {
+  return '<a href="#note' + note + '">[' + note + ']</a>';
+}
+
+function defunct(_v) {
+  // Historically supported platform
+  return _v + note_link(1);
+}
+
+function _yes(_v="YES") {
+  // Ideal
+  return {c: "yes", v: _v};
+}
+
+function std(_v, note=0) {
+  // Normal
+  if(note) _v += note_link(note);
+  return {c: "std", v: _v};
+}
+
+function subopt(_v="NO", note=0)
+{
+  // Supoptimal, trivially fixable
+  if(note) _v += note_link(note);
+  return {c: "no2", v: _v};
+}
+
+function _FAULTY(_v="NO", note=0)
+{
+  // Faulty, not trivially fixable
+  if(note) _v += note_link(note);
+  return {c: "no", v: _v};
+}
+
+// Some common values
+var yes = _yes();
+var no = std("NO");
+
+var no_mingw_stack_protector = subopt("NO", 4);
+var no_low_memory = subopt("NO", 5);
+var no_updater = subopt("NO", 6);
+var no_updater_unix = subopt("NO", 7);
+var no_sdl_wii = std("NO", 9);
+var yes_but_8bpp = subopt("YES (8bpp)", 10);
+
+var ZIP = _yes("ZIP");
+var DMG = _yes("DMG");
+var LHA = _yes("LHA");
+
+var xmp = std("xmp");
+var libvorbis = std("libvorbis");
+var tremor = "tremor";
+
+var render_ctr = std("render_ctr");
+var render_nds = std("render_nds");
+var render_gp2x = std("render_gp2x");
+var render_gx = std("render_gx");
+
+var speed = "Speed";
+var size = "Size";
+
+
+var fields =
+{
+  platform:         "$PLATFORM",
+  description:      "Description",
+  architecture:     "Architecutre(s)<br />(Tested Only)",
+  endian:           "Endian",
+  toolchain:        "Toolchain",
+  packaged:         "Packaged",
+  visibility:       "Optimized Visibility" + note_link(3),
+  stack_protector:  "Stack Protector",
+  layer_rendering:  "Layer Rendering",
+  module_engine:    "Module Engine",
+  ogg_vorbis:       "Ogg Vorbis",
+  optimization:     "Optimization",
+  sdl:              "SDL",
+  editor:           "EDITOR",
+  helpsys:          "HELPSYS",
+  audio:            "AUDIO",
+  software:         "SOFTWARE",
+  gl:               "GL",
+  overlay:          "OVERLAY",
+  glsl:             "GLSL",
+  updater:          "UPDATER",
+  modular:          "MODULAR",
+  png:              "PNG",
+  x11:              "X11",
+  uthash:           "UTHASH",
+  loadsave_meter:   "LOADSAVE_METER",
+};
+
+var archs =
+{
+  _3ds:
+  {
+    platform:         "3ds",
+    description:      "Nintendo 3DS",
+    architecture:     "ARM11 (ELF)",
+    endian:           "Little",
+    toolchain:        "gcc 7.1.0 <br /> binutils 2.28 <br /> (dk r47)",
+    packaged:         ZIP,
+    stack_protector:  _FAULTY(),
+    layer_rendering:  yes,
+    module_engine:    xmp,
+    ogg_vorbis:       tremor,
+    optimization:     speed,
+    sdl:              no,
+    editor:           no_low_memory,
+    helpsys:          no_low_memory,
+    audio:            yes,
+    software:         render_ctr,
+    updater:          no_updater,
+    png:              yes,
+    uthash:           yes,
+    loadsave_meter:   yes,
+  },
+
+  darwin:
+  {
+    platform:         "darwin",
+    description:      "MacOS 10.x",
+    architecture:     "x86_64 (Mach-O) <br /> i686 (Mach-O) <br /> PPC (Mach-O)",
+    endian:           "Varies",
+    toolchain:        "FIXME",
+    packaged:         DMG,
+    visibility:       yes,
+    stack_protector:  yes,
+    layer_rendering:  yes,
+    module_engine:    xmp,
+    ogg_vorbis:       libvorbis,
+    optimization:     speed,
+    sdl:              yes,
+    editor:           yes,
+    helpsys:          yes,
+    audio:            yes,
+    software:         yes,
+    gl:               yes,
+    overlay:          yes,
+    glsl:             yes,
+    updater:          no_updater,
+    modular:          yes,
+    png:              yes,
+    uthash:           yes,
+    loadsave_meter:   no,
+  },
+
+  mingw:
+  {
+    platform:         "mingw",
+    description:      "Windows <br /> (GNU toolchain)",
+    architecture:     "x64 (PE+ COFF) <br /> x86 (PE COFF)",
+    endian:           "Little",
+    toolchain:        "gcc 7.2.0 <br /> binutils 2.29.1",
+    packaged:         ZIP,
+    visibility:       yes,
+    stack_protector:  no_mingw_stack_protector,
+    layer_rendering:  yes,
+    module_engine:    xmp,
+    ogg_vorbis:       libvorbis,
+    optimization:     speed,
+    sdl:              yes,
+    editor:           yes,
+    helpsys:          yes,
+    audio:            yes,
+    software:         yes,
+    gl:               yes,
+    overlay:          yes,
+    glsl:             yes,
+    updater:          yes,
+    modular:          yes,
+    png:              yes,
+    uthash:           yes,
+    loadsave_meter:   no,
+  },
+
+  nds:
+  {
+    platform:         "nds",
+    description:      "Nintendo DS",
+    architecture:     "ARM9 (ELF)",
+    endian:           "Little",
+    toolchain:        "gcc 7.1.0 <br /> binutils 2.28 <br /> (dk r47)",
+    packaged:         ZIP,
+    stack_protector:  _FAULTY(),
+    layer_rendering:  _FAULTY(),
+    module_engine:    _FAULTY(),
+    ogg_vorbis:       _FAULTY(),
+    optimization:     size,
+    sdl:              no,
+    editor:           no_low_memory,
+    helpsys:          no_low_memory,
+    audio:            _FAULTY(),
+    software:         render_nds,
+    updater:          no_updater,
+    png:              no_low_memory,
+    uthash:           no_low_memory,
+    loadsave_meter:   yes,
+  },
+
+  psp:
+  {
+    platform:         "psp",
+    description:      "PlayStation Portable",
+    architecture:     "MIPS (ELF)",
+    endian:           "Little",
+    toolchain:        "gcc 4.6.2 <br /> binutils 2.22 <br /> (dk r16)",
+    packaged:         ZIP,
+    stack_protector:  _FAULTY(),
+    layer_rendering:  yes_but_8bpp,
+    module_engine:    xmp,
+    ogg_vorbis:       tremor,
+    optimization:     size,
+    sdl:              yes,
+    editor:           no_low_memory,
+    helpsys:          no_low_memory,
+    audio:            yes,
+    software:         yes,
+    updater:          no_updater,
+    png:              yes,
+    uthash:           yes,
+    loadsave_meter:   yes,
+  },
+
+  unix:
+  {
+    platform:         "unix",
+    description:      "Linux, BSD, Solaris, HaikuOS, etc.",
+    architecture:     "AMD64 (ELF) <br /> i386 (ELF) <br /> PPC64 (ELF)",
+    endian:           "Varies",
+    toolchain:        "Various",
+    packaged:         _yes("Various"),
+    visibility:       yes,
+    stack_protector:  yes,
+    layer_rendering:  yes,
+    module_engine:    xmp,
+    ogg_vorbis:       libvorbis,
+    optimization:     speed,
+    sdl:              yes,
+    editor:           yes,
+    helpsys:          yes,
+    audio:            yes,
+    software:         yes,
+    gl:               yes,
+    overlay:          yes,
+    glsl:             yes,
+    updater:          no_updater_unix,
+    modular:          yes,
+    png:              yes,
+    x11:              yes,
+    uthash:           yes,
+    loadsave_meter:   no,
+  },
+
+  wii:
+  {
+    platform:         "wii",
+    description:      "Nintendo Wii",
+    architecture:     "PPC (ELF)",
+    endian:           "Big",
+    toolchain:        "gcc 6.3.0 <br /> binutils 2.27 <br /> (dk r29)",
+    packaged:         ZIP,
+    stack_protector:  _FAULTY(),
+    layer_rendering:  _FAULTY("NO", 9),
+    module_engine:    xmp,
+    ogg_vorbis:       libvorbis,
+    optimization:     size,
+    sdl:              no_sdl_wii,
+    editor:           yes,
+    helpsys:          yes,
+    audio:            yes,
+    software:         render_gx,
+    updater:          no_updater,
+    png:              _FAULTY(),
+    uthash:           yes,
+    loadsave_meter:   yes,
+  },
+
+  _0: "spacer",
+
+  amiga:
+  {
+    platform:         defunct("amiga"),
+    description:      "AmigaOS 4.x",
+    architecture:     "PPC (ELF)",
+    endian:           "Big",
+    toolchain:        "gcc 4.2.2 <br /> binutils 2.14 <br /> clib2",
+    packaged:         LHA,
+    visibility:       yes,
+    stack_protector:  yes,
+    layer_rendering:  yes,
+    module_engine:    xmp,
+    ogg_vorbis:       libvorbis,
+    optimization:     speed,
+    sdl:              yes,
+    editor:           yes,
+    helpsys:          yes,
+    audio:            yes,
+    software:         yes,
+    gl:               yes,
+    overlay:          yes,
+    glsl:             yes,
+    updater:          no_updater,
+    modular:          yes,
+    png:              yes,
+    uthash:           yes,
+    loadsave_meter:   no,
+  },
+
+  android:
+  {
+    platform:         defunct("android"),
+    description:      "Android",
+    architecture:     "ARMv7-a (ELF) <br /> i686 (ELF)",
+    endian:           "Little",
+    toolchain:        "gcc 4.2.1 <br /> binutils 2.17 <br /> bionic",
+    packaged:         _FAULTY("TBD", 8),
+    visibility:       yes,
+    stack_protector:  _FAULTY("NO", 8),
+    layer_rendering:  _FAULTY("NO", 8),
+    module_engine:    xmp,
+    ogg_vorbis:       tremor,
+    optimization:     size,
+    sdl:              no,
+    editor:           yes,
+    helpsys:          yes,
+    audio:            _FAULTY("TBD", 8),
+    software:         no,
+    gl:               yes,
+    overlay:          _FAULTY("NO", 8),
+    glsl:             yes,
+    updater:          no_updater,
+    modular:          yes,
+    png:              yes,
+    uthash:           yes,
+    loadsave_meter:   no,
+  },
+
+  gp2x:
+  {
+    platform:         defunct("gp2x"),
+    description:      "GP2x",
+    architecture:     "ARM9 (ELF)",
+    endian:           "Little",
+    toolchain:        "gcc 4.1.1 <br /> binutils 2.16.1 <br /> glibc2.3.7 <br /> (open2x)",
+    packaged:         ZIP,
+    stack_protector:  _FAULTY(),
+    layer_rendering:  _FAULTY(),
+    module_engine:    xmp,
+    ogg_vorbis:       tremor,
+    optimization:     size,
+    sdl:              yes,
+    editor:           no_low_memory,
+    helpsys:          no_low_memory,
+    audio:            yes,
+    software:         render_gp2x,
+    updater:          no_updater,
+    png:              yes,
+    uthash:           yes,
+    loadsave_meter:   yes,
+  },
+
+  msvc:
+  {
+    platform:         defunct("msvc"),
+    description:      "Windows <br /> (Visual Studio)",
+    architecture:     "x64 (PE+ COFF) <br /> x86 (PE COFF)",
+    endian:           "Little",
+    toolchain:        "Visual Studio 2008",
+    packaged:         subopt("NO", 2),
+    visibility:       yes,
+    stack_protector:  _FAULTY(),
+    layer_rendering:  yes,
+    module_engine:    xmp,
+    ogg_vorbis:       libvorbis,
+    optimization:     speed,
+    sdl:              yes,
+    editor:           yes,
+    helpsys:          yes,
+    audio:            yes,
+    software:         yes,
+    gl:               yes,
+    overlay:          yes,
+    glsl:             yes,
+    updater:          yes,
+    modular:          yes,
+    png:              yes,
+    uthash:           yes,
+    loadsave_meter:   no,
+  },
+
+  pandora:
+  {
+    platform:         defunct("pandora"),
+    description:      "Pandora",
+    architecture:     "ARMv7-a (ELF)",
+    endian:           "Little",
+    toolchain:        "gcc 4.4.1 <br /> binutils 2.19.51 <br /> (CS 2009q3)",
+    packaged:         subopt("ZIP (PND?)"),
+    visibility:       yes,
+    stack_protector:  yes,
+    layer_rendering:  yes,
+    module_engine:    xmp,
+    ogg_vorbis:       tremor,
+    optimization:     speed,
+    sdl:              yes,
+    editor:           yes,
+    helpsys:          yes,
+    audio:            yes,
+    software:         yes,
+    gl:               _FAULTY(),
+    overlay:          _FAULTY(),
+    glsl:             _FAULTY(),
+    updater:          no_updater,
+    png:              yes,
+    x11:              subopt(),
+    uthash:           yes,
+    loadsave_meter:   no,
+  },
+
+/*
+  your_arch_here:
+  {
+    platform:         
+    description:      
+    architecture:     
+    endian:           
+    toolchain:        
+    packaged:         
+    visibility:       
+    stack_protector:  
+    module_engine:    
+    ogg_vorbis:       
+    optimization:     
+    sdl:              
+    editor:           
+    helpsys:          
+    audio:            
+    software:         
+    gl:               
+    overlay:          
+    glsl:             
+    updater:          
+    modular:          
+    png:              
+    x11:              
+    uthash:           
+    loadsave_meter:   
+  },
+*/
+};
+
+function build_table()
+{
+  var content = ""
+  var i = 0;
+
+  function th(_data)
+  {
+    content += '<th>';
+
+    if(typeof(_data) === 'object')
+    {
+      content += _data.v;
+    }
+    else
+
+    if(typeof(_data) === 'string')
+    {
+      content += _data;
+    }
+
+    else
+    {
+      content += 'N/A';
+    }
+    content += '</th>\n';
+  }
+
+  function td(_data)
+  {
+    if(typeof(_data) === 'object')
+    {
+      content += '<td class="' + _data.c + '">';
+      content += _data.v;
+    }
+    else
+
+    if(typeof(_data) === 'string')
+    {
+      content += '<td>';
+      content += _data;
+    }
+
+    else
+    {
+      content += '<td class="na">';
+      content += 'N/A';
+    }
+    content += '</td>\n';
+  }
+
+  function spacer()
+  {
+    content += '<td class="spacer"></td>\n';
+  }
+
+  for(var f in fields)
+  {
+    content += '<tr>\n';
+    th(fields[f]);
+
+    if(i == 0)
+    {
+      // Header row
+      for(var a in archs)
+      {
+        if(archs[a] === "spacer")
+          spacer();
+
+        else
+          th(archs[a][f]);
+      }
+
+      i = 1;
+    }
+    else
+    {
+      // Data row
+      for(var a in archs)
+      {
+        if(archs[a] === "spacer")
+          spacer();
+
+        else
+          td(archs[a][f]);
+      }
+    }
+
+    content += "</tr>\n";
+  }
+
+  document.getElementById('matrix').innerHTML = content;
+}
+
+window.onload = build_table;
+
+</script>
 <style type="text/css">
 body {
 	font-family : "Verdana", "Bitstream Vera Sans";
@@ -23,7 +573,7 @@ table {
 	border-collapse : collapse;
 	border : 2px solid black;
 	border-spacing : 0;
-	width : 120em;
+	width : 150em;
 }
 
 td, th {
@@ -77,6 +627,13 @@ span.yes, span.no, span.no2, span.na, span.std {
 	background-color : rgb(150,255,150);
 }
 
+.spacer {
+  border-top : none;
+  border-bottom : none;
+  padding-left : 10px;
+  width : 2%;
+}
+
 a {
 	font-weight : normal;
 	font-size : 8pt;
@@ -92,7 +649,7 @@ li {
 <body>
 
 <h1>MegaZeux Platform Support Matrix</h1>
-<p>Best viewed with &gt;=1280 pixel monitor.</p>
+<p>Best viewed with &gt;=1920 pixel monitor. Requires Javascript.</p>
 
 <p id="legend">
 <b>Legend:</b>
@@ -103,461 +660,47 @@ li {
 <span class="no">Faulty, Not trivially fixable</span>
 </p>
 
-<table>
-
-<tr>
-<th>$PLATFORM</th>
-<th>3ds</th>
-<th>amiga</th>
-<th>android</th>
-<th>darwin</th>
-<th>gp2x</th>
-<th>mingw</th>
-<th>msvc</th>
-<th>nds</th>
-<th>psp</th>
-<th>unix</th>
-<th>wii</th>
-<th>pandora</th>
-</tr>
-
-<tr>
-<th>Description</th>
-<td>Nintendo 3DS</td>
-<td>AmigaOS 4.x</td>
-<td>Android</td>
-<td>MacOS 10.x</td>
-<td>GP2X</td>
-<td>Windows<br/>(GNU toolchain)</td>
-<td>Windows<br/>(Visual Studio)</td>
-<td>Nintendo DS</td>
-<td>Playstation Portable</td>
-<td>Linux, BSD, Solaris<br/>HaikuOS, etc.</td>
-<td>Nintendo Wii</td>
-<td>Pandora</td>
-</tr>
-
-<tr>
-<th>Architecture(s)<br/>(Tested Only)</th>
-<td>ARM11 (ELF)</td>
-<td>PPC (ELF)</td>
-<td>ARMv7-a (ELF)<br/>i686 (ELF)</td>
-<td>PPC (Mach-O)<br/>i686 (Mach-O)</td>
-<td>ARM9 (ELF)</td>
-<td>x86 (PE COFF)<br/>x64 (PE+ COFF)</td>
-<td>x86 (PE COFF)<br/>x64 (PE+ COFF)</td>
-<td>ARM9 (ELF)</td>
-<td>MIPS (ELF)</td>
-<td>x86 (ELF)<br/>AMD64 (ELF)<br/>PPC64 (ELF)</td>
-<td>PPC (ELF)</td>
-<td>ARMv7-a (ELF)</td>
-</tr>
-
-<tr>
-<th>Endian</th>
-<td>Little</td>
-<td>Big</td>
-<td>Little</td>
-<td>Varies</td>
-<td>Little</td>
-<td>Little</td>
-<td>Little</td>
-<td>Little</td>
-<td>Little</td>
-<td>Varies</td>
-<td>Big</td>
-<td>Little</td>
-</tr>
-
-<tr>
-<th>Toolchain</th>
-<td>gcc 7.1.0<br/>binutils 2.28<br/>(dk r47)</td>
-<td>gcc 4.2.2<br/>binutils 2.14<br/>clib2</td>
-<td>gcc 4.2.1<br/>binutils 2.17<br/>bionic</td>
-<td>gcc 4.0.1<br/>cctools 667.3<br/>10.3 (min ver)</td>
-<td>gcc 4.1.1<br/>binutils 2.16.1<br/>glibc 2.3.6<br/>(open2x)</td>
-<td>gcc 7.1.0<br/>binutils 2.28</td>
-<td>Visual Studio 2008</td>
-<td>gcc 4.7.1<br/>binutils 2.22<br/>(dk r41)</td>
-<td>gcc 4.6.2<br/>binutils 2.22<br/>(dk r16)</td>
-<td>Various</td>
-<td>gcc 4.6.3<br/>binutils 2.22<br/>(dk r26)</td>
-<td>gcc 4.4.1<br/>binutils 2.19.51<br/>(CS 2009q3)</td>
-
-</tr>
-
-<tr>
-<th>Packaged</th>
-<td class="yes">ZIP</td>
-<td class="yes">LHA</td>
-<td class="no">TBD</td>
-<td class="yes">DMG</td>
-<td class="yes">ZIP</td>
-<td class="yes">ZIP</td>
-<td class="no2">NO<a href="#note1">[1]</a></td>
-<td class="yes">ZIP</td>
-<td class="yes">ZIP</td>
-<td class="yes">Various</td>
-<td class="yes">ZIP</td>
-<td class="no2">ZIP (PND?)</td>
-</tr>
-
-<tr>
-<th>Optimized<br/>Visibility<a href="#note2">[2]</a></th>
-<td class="na">N/A</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="na">N/A</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="na">N/A</td>
-<td class="na">N/A</td>
-<td class="yes">YES</td>
-<td class="na">N/A</td>
-<td class="yes">YES</td>
-</tr>
-
-<tr>
-<th>Stack Protector</th>
-<td class="no">NO</td>
-<td class="yes">YES</td>
-<td class="no">NO</td>
-<td class="yes">YES</td>
-<td class="no">NO</td>
-<td class="no2">NO<a href="#note3">[3]</a></td>
-<td class="no">NO</td>
-<td class="no">NO</td>
-<td class="no">NO</td>
-<td class="yes">YES</td>
-<td class="no">NO</td>
-<td class="yes">YES</td>
-</tr>
-
-<tr>
-<th>Module Engine</th>
-<td class="std">xmp</td>
-<td class="std">xmp</td>
-<td class="std">xmp</td>
-<td class="std">xmp</td>
-<td>MikMod</td>
-<td class="std">xmp</td>
-<td class="std">xmp</td>
-<td class="na">N/A</td>
-<td class="std">xmp</td>
-<td class="std">xmp</td>
-<td class="std">xmp</td>
-<td class="std">xmp</td>
-</tr>
-
-<tr>
-<th>Ogg Vorbis</th>
-<td>tremor</td>
-<td class="std">libvorbis</td>
-<td>tremor</td>
-<td class="std">libvorbis</td>
-<td>tremor</td>
-<td class="std">libvorbis</td>
-<td class="std">libvorbis</td>
-<td class="na">N/A</td>
-<td>tremor</td>
-<td class="std">libvorbis</td>
-<td class="std">libvorbis</td>
-<td>tremor</td>
-</tr>
-
-
-<tr>
-<th>Optimization</th>
-<td>Speed</td>
-<td>Speed</td>
-<td>Size</td>
-<td>Speed</td>
-<td>Size</td>
-<td>Speed</td>
-<td>Speed</td>
-<td>Size</td>
-<td>Size</td>
-<td>Speed</td>
-<td>Size</td>
-<td>Speed</td>
-</tr>
-
-<tr>
-<th>SDL</th>
-<td class="std">NO</td>
-<td class="yes">YES</td>
-<td class="std">NO</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="std">NO</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="std">NO</td>
-<td class="yes">YES</td>
-</tr>
-
-<tr>
-<th>EDITOR</th>
-<td class="no2">NO<a href="#note4">[4]</a></td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="no2">NO<a href="#note4">[4]</a></td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="no2">NO<a href="#note4">[4]</a></td>
-<td class="no2">NO<a href="#note4">[4]</a></td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-</tr>
-
-<tr>
-<th>HELPSYS</th>
-<td class="no2">NO<a href="#note4">[4]</a></td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="no2">NO<a href="#note4">[4]</a></td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="no2">NO<a href="#note4">[4]</a></td>
-<td class="no2">NO<a href="#note4">[4]</a></td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-</tr>
-
-<tr>
-<th>AUDIO</th>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="no">TBD</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="no">NO</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-</tr>
-
-<tr>
-<th>SOFTWARE</th>
-<td class="std">render_ctr</td>
-<td class="yes">YES</td>
-<td class="std">NO</td>
-<td class="yes">YES</td>
-<td class="std">render_gp2x</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="std">render_nds</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="std">render_gx</td>
-<td class="yes">YES</td>
-</tr>
-
-<tr>
-<th>GL</th>
-<td class="na">N/A</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="na">N/A</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="no">NO</td>
-<td class="no">NO</td>
-<td class="yes">YES</td>
-<td class="no">NO</td>
-<td class="no2">NO</td>
-</tr>
-
-<tr>
-<th>OVERLAY</th>
-<td class="na">N/A</td>
-<td class="yes">YES</td>
-<td class="no">NO</td>
-<td class="yes">YES</td>
-<td class="no">NO</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="no">NO</td>
-<td class="no">NO</td>
-<td class="yes">YES</td>
-<td class="no">NO</td>
-<td class="no2">NO</td>
-</tr>
-
-<tr>
-<th>GLSL</th>
-<td class="na">N/A</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="na">N/A</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="na">N/A</td>
-<td class="na">N/A</td>
-<td class="yes">YES</td>
-<td class="na">N/A</td>
-<td class="no2">NO</td>
-</tr>
-
-<tr>
-<th>UPDATER</th>
-<td class="no2">NO<a href="#note5">[5]</a></td>
-<td class="no2">NO<a href="#note5">[5]</a></td>
-<td class="no2">NO<a href="#note5">[5]</a></td>
-<td class="no2">NO<a href="#note5">[5]</a></td>
-<td class="no2">NO<a href="#note5">[5]</a></td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="no">NO</td>
-<td class="no">NO</td> 
-<td class="no2">NO<a href="#note6">[6]</a></td>
-<td class="no">NO</td>
-<td class="no2">NO<a href="#note5">[5]</a></td>
-</tr>
-
-<tr>
-<th>MODULAR</th>
-<td class="na">N/A</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="na">N/A</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="na">N/A</td>
-<td class="na">N/A</td>
-<td class="yes">YES</td>
-<td class="na">N/A</td>
-<td class="na">N/A</td>
-</tr>
-
-<tr>
-<th>PNG</th>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="no2">NO<a href="#note7">[7]</a></td>
-<td class="no2">NO<a href="#note7">[7]</a></td>
-<td class="yes">YES</td>
-<td class="no2">NO<a href="#note7">[7]</a></td>
-<td class="yes">YES</td>
-</tr>
-
-<tr>
-<th>X11</th>
-<td class="na">N/A</td>
-<td class="na">N/A</td>
-<td class="na">N/A</td>
-<td class="na">N/A</td>
-<td class="na">N/A</td>
-<td class="na">N/A</td>
-<td class="na">N/A</td>
-<td class="na">N/A</td>
-<td class="na">N/A</td>
-<td class="yes">YES</td>
-<td class="na">N/A</td>
-<td class="no2">NO</td>
-</tr>
-
-<tr>
-<th>UTHASH</th>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="no2">NO<a href="#note4">[4]</a></td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-</tr>
-
-<tr>
-<th>LOADSAVE_METER</th>
-<td class="yes">YES</td>
-<td class="std">NO</td>
-<td class="std">NO</td>
-<td class="std">NO</td>
-<td class="yes">YES</td>
-<td class="std">NO</td>
-<td class="std">NO</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="std">NO</td>
-<td class="yes">YES</td>
-<td class="std">NO</td>
-</tr>
-
-<tr>
-<th>FPS</th>
-<td class="std">NO</td>
-<td class="std">NO</td>
-<td class="std">NO</td>
-<td class="std">NO</td>
-<td class="std">NO</td>
-<td class="std">NO</td>
-<td class="std">NO</td>
-<td class="std">NO</td>
-<td class="std">NO</td>
-<td class="std">NO</td>
-<td class="std">NO</td>
-<td class="std">NO</td>
-</tr>
-
-</table>
+<table id="matrix"></table>
 
 <h3>Platform Notes</h3>
 
 <ol>
 
-<li><a name="note1"/>Could use existing `package.sh' however this does
+<li><a name="note1"/>These platforms are currently unsupported due to lack
+of available hardware to test on, lack of working toolchains, inherent
+compatibility issues with MegaZeux, or simply lack of interest. Information
+based on last known working builds.
+</li>
+
+<li><a name="note2"/>Could use existing `package.sh' however this does
 not handle PDB files.<br/>
 MSVC binaries are replicate of MinGW binaries and require a non-free, non
 cross-capable compiler.
 </li>
 
-<li><a name="note2"/>&quot;Optimized Visibility&quot; refers to the
+<li><a name="note3"/>&quot;Optimized Visibility&quot; refers to the
 hiding of library symbols which are not required or referenced
 outside of that library. An &quot;optimized&quot; library is smaller
 and loads faster.<br/>
 Required on Win32. Only applicable with CONFIG_MODULAR=y builds.
 </li>
 
-<li><a name="note3"/>Disabled due to miscompilation of stack protector
-in conjunction with C++ exceptions with some MinGW compilers.
+<li><a name="note4"/>Disabled due to miscompilation of stack protector in
+conjunction with C++ exceptions with some MinGW compilers.
 </li>
 
-<li><a name="note4"/>The editor and help system features are disabled
+<li><a name="note5"/>The editor and help system features are disabled
 to conserve cache on embedded platforms. The features build and work
 on these platforms, but they are basically unusable due to the lack of any
 on-screen keyboard. Additionally, uthash has been disabled on the NDS to
 conserve memory.
 </li>
 
-<li><a name="note5"/>The updater may or may not work on these platforms, but
+<li><a name="note6"/>The updater may or may not work on these platforms, but
 no builds are currently provided by the official update hosts.
 </li>
 
-<li><a name="note6"/>The updater is typically disabled in the Linux
+<li><a name="note7"/>The updater is typically disabled in the Linux
 binaries that are shipped (for distributions like Debian or Fedora), even
 though the feature can easily be enabled.<br/>The issue is that MegaZeux is
 installed system-wide on these platforms and overwrites cannot be
@@ -565,13 +708,20 @@ guaranteed.<br/>Additionally, it is felt that the advanced package management
 on these platforms supercedes any usefulness of the built-in updater.
 </li>
 
-<li><a name="note7"/>Not had the opportunity to cross compile the
-required libraries (zlib and libpng).<br/>Future developments may depend on
-these libraries, such as networking and the archive browser. Currently, the
-bloat cannot be justified, and these platforms do not yet have functioning
-network APIs.
+<li><a name="note8"/>The Android platform, while having been listed in this
+table for a long time, has never really been supported. What little work exists
+is extremely old, and no viable build has ever been created.
 </li>
 
+<li><a name="note9"/>Building MZX with SDL Wii is viable, but produces much
+larger binaries than desired, may not support some features, and SDL Wii is
+considered unstable.
+</li>
+
+<li><a name="note10"/>Layer rendering is supported on this platform by default
+as it uses the SDL software renderer, but this platform does not support a color
+depth of greater than 8bpp, so the UI palette will not be protected in SMZX mode.
+</li>
 </ol>
 
 <h3>Copyright</h3>
