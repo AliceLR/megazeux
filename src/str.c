@@ -458,7 +458,7 @@ void string_write_as_counter(struct world *mzx_world,
     size_t new_length;
     size_t alloc_length;
     size_t write_size = 1;
-    size_t write_index;
+    size_t write_index = 0;
     int next;
 
     *dot_ptr = 0;
