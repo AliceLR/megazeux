@@ -438,10 +438,10 @@ static bool socket_load_syms(void)
 
   for(i = 0; socksyms_map[i].name; i++)
   {
-    *socksyms_map[i].sym_ptr =
-     SDL_LoadFunction(socksyms.handle, socksyms_map[i].name);
+    void **sym_ptr = (void **)socksyms_map[i].sym_ptr;
+    *sym_ptr = SDL_LoadFunction(socksyms.handle, socksyms_map[i].name);
 
-    if(!*socksyms_map[i].sym_ptr)
+    if(!*sym_ptr)
     {
       // Skip these NT 5.1 WS2 extensions; we can fall back
       if((strcmp(socksyms_map[i].name, "freeaddrinfo") == 0) ||
