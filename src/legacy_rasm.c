@@ -46,7 +46,9 @@
 #define ERR_BADCHARACTER   2
 #define ERR_INVALID        3
 
-#define CMD                (1 << 31)
+// 1 << 31 generates compiler warnings.
+
+#define CMD                (1 << 30)
 #define CMD_NOT            CMD | 0
 #define CMD_ANY            CMD | 1
 #define CMD_PLAYER         CMD | 2
@@ -116,7 +118,7 @@
 #define CMD_DUPLICATE      CMD | 67
 #define CMD_NO             CMD | 68
 
-#define IGNORE_TYPE             (1 << 30)
+#define IGNORE_TYPE             (1 << 29)
 #define IGNORE_TYPE_A           IGNORE_TYPE | 2
 #define IGNORE_TYPE_AN          IGNORE_TYPE | 3
 #define IGNORE_TYPE_AND         IGNORE_TYPE | 4
