@@ -122,9 +122,12 @@ LINK_CC := ${CXX}
 endif
 
 ifeq (${BUILD_WII},1)
+# SDL and platform_sdl.c takes care of all of this when enabled.
+ifeq (${BUILD_SDL},)
 core_cobjs += arch/wii/event.o arch/wii/platform.o
 ifeq (${BUILD_AUDIO},1)
 core_cobjs += arch/wii/audio.o
+endif
 endif
 endif
 

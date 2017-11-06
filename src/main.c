@@ -87,6 +87,11 @@ __libspec int main(int argc, char *argv[])
   }
 #endif // __APPLE__
 
+#ifdef CONFIG_WII
+  // argc may be 0 if the loader doesn't set args
+  argv[0] = (char *)(SHAREDIR "megazeux");
+#endif
+
   if(mzx_res_init(argv[0], is_editor()))
     goto err_free_res;
 

@@ -33,6 +33,11 @@
 #include <unistd.h> //for chdir, execl
 #endif
 
+#ifdef CONFIG_WII
+#include <sys/iosupport.h>
+#include <fat.h>
+#endif
+
 void delay(Uint32 ms)
 {
   SDL_Delay(ms);
@@ -49,6 +54,11 @@ bool platform_init(void)
 
 #ifdef CONFIG_PSP
   scePowerSetClockFrequency(333, 333, 166);
+#endif
+
+#ifdef CONFIG_WII
+  if(!fatInitDefault())
+    return false;
 #endif
 
 #ifdef DEBUG
@@ -84,6 +94,16 @@ bool platform_init(void)
 void platform_quit(void)
 {
   SDL_Quit();
+
+#ifdef CONFIG_WII
+  {
+    int i;
+
+    for(i = 0; i < STD_MAX; i++)
+      if(devoptab_list[i] && devoptab_list[i]->chdir_r)
+        fatUnmount(devoptab_list[i]->name);
+  }
+#endif
 
 #ifdef CONFIG_GP2X
   chdir("/usr/gp2x");

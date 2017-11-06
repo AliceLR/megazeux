@@ -465,11 +465,7 @@ echo "SHAREDIR=$SHAREDIR"     >> platform.inc
 if [ "$PLATFORM" = "wii" ]; then
 	echo "#define CONFIG_WII" >> src/config.h
 	echo "BUILD_WII=1" >> platform.inc
-fi
-
-if [ "$PLATFORM" = "wii" ]; then
-	echo "Disabling SDL (Wii)."
-	SDL="false"
+	LIBSDL2="false"
 fi
 
 if [ "$PLATFORM" = "3ds" ]; then
@@ -864,7 +860,7 @@ fi
 #
 # GX renderer (Wii and GameCube)
 #
-if [ "$PLATFORM" = "wii" ]; then
+if [ "$PLATFORM" = "wii" -a "$SDL" = "false" ]; then
 	echo "Building custom GX renderer."
 	echo "#define CONFIG_RENDER_GX" >> src/config.h
 	echo "BUILD_RENDER_GX=1" >> platform.inc

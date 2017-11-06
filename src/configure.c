@@ -33,22 +33,40 @@
 #include "util.h"
 #include "sys/stat.h"
 
-#if defined(CONFIG_NDS)
+// Arch-specific config.
+#ifdef CONFIG_NDS
 #define VIDEO_OUTPUT_DEFAULT "nds"
-#elif defined(CONFIG_GP2X)
+#endif
+
+#ifdef CONFIG_GP2X
 #define VIDEO_OUTPUT_DEFAULT "gp2x"
 #define AUDIO_BUFFER_SIZE 128
-#elif defined(CONFIG_PSP)
+#endif
+
+#ifdef CONFIG_PSP
 #define FULLSCREEN_WIDTH_DEFAULT 640
 #define FULLSCREEN_HEIGHT_DEFAULT 363
 #define FORCE_BPP_DEFAULT 8
 #define FULLSCREEN_DEFAULT 1
-#elif defined(CONFIG_WII)
+#endif
+
+#ifdef CONFIG_WII
 #define AUDIO_SAMPLE_RATE 48000
-#elif defined(ANDROID)
+#ifdef CONFIG_SDL
+#define VIDEO_OUTPUT_DEFAULT "software"
+#define FULLSCREEN_WIDTH_DEFAULT 640
+#define FULLSCREEN_HEIGHT_DEFAULT 480
 #define FORCE_BPP_DEFAULT 16
 #define FULLSCREEN_DEFAULT 1
 #endif
+#endif
+
+#ifdef ANDROID
+#define FORCE_BPP_DEFAULT 16
+#define FULLSCREEN_DEFAULT 1
+#endif
+
+// End arch-specific config.
 
 #ifndef FORCE_BPP_DEFAULT
 #define FORCE_BPP_DEFAULT 32
