@@ -2415,10 +2415,15 @@ void focus_pixel(int x, int y)
     graphics.renderer.focus_pixel(&graphics, x, y);
 }
 
-void switch_shader(const char *vert_path, const char *frag_path)
+bool switch_shader(const char *name)
 {
-  if (graphics.renderer.switch_shader)
-    graphics.renderer.switch_shader(&graphics, vert_path, frag_path);
+  if(graphics.renderer.switch_shader)
+    graphics.renderer.switch_shader(&graphics, name);
+
+  if(graphics.gl_scaling_shader[0])
+    return true;
+
+  return false;
 }
 
 bool layer_renderer_check(bool show_error)

@@ -177,6 +177,10 @@ FIXES
   on the Nintendo DS.
 + Fixed a bug where mouse clicks would carry through from the UI
   into games.
++ Invalid gl_scaling_shader values should no longer appear as
+  the current loaded scaler.
++ MegaZeux now falls back to the default scaling shader when a
+  selected scaling shader fails to compile.
 
 DEVELOPERS
 

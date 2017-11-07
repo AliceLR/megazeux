@@ -793,25 +793,26 @@ static void game_settings(struct world *mzx_world)
     else
 
     // Shader selection
-    if(dialog_result == 2)
+    if(dialog_result == 2 && shader_name[0])
     {
-      // Reuse the path for the vertex shader.
-      char *vert = shader_path;
-      char *frag = shader_name;
-      struct stat path_info;
+      size_t offset = strlen(shader_path) + 1;
+      bool shader_res;
+      char *pos;
 
-      if(frag[0])
+      if(strlen(shader_name) > offset)
       {
-        strcpy(vert, frag);
-        strcpy(vert + strlen(vert) - 4, "vert");
+        pos = strrchr(shader_name + offset, '.');
 
-        // If there isn't a matching vertex shader, fall back to the default.
-        if(stat(vert, &path_info))
+        if(pos) *pos = 0;
+        shader_res = switch_shader(shader_name + offset);
+        if(pos) *pos = '.';
+
+        if(!shader_res)
         {
-          strcpy(vert, mzx_res_get_by_id(SHADERS_SCALER_VERT));
+          // If the shader failed to load, the default should have been loaded.
+          strcpy(shader_default_text, "<default: semisoft>");
+          shader_name[0] = 0;
         }
-
-        switch_shader(vert, frag);
       }
     }
 #endif

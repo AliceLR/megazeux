@@ -88,6 +88,7 @@ static struct
   GLenum (GL_APIENTRY *glGetError)(void);
   void (GL_APIENTRY *glGetProgramInfoLog)(GLuint program, GLsizei bufsize,
    GLsizei *len, char *infolog);
+  void (GL_APIENTRY *glGetShaderiv)(GLuint shader, GLenum pname, GLint *params);
   void (GL_APIENTRY *glGetShaderInfoLog)(GLuint shader, GLsizei bufsize,
    GLsizei *len, char *infolog);
   const GLubyte* (GL_APIENTRY *glGetString)(GLenum name);
@@ -139,6 +140,7 @@ static const struct dso_syms_map glsl_syms_map[] =
   { "glGetError",                 (fn_ptr *)&glsl.glGetError },
   { "glGetProgramInfoLog",        (fn_ptr *)&glsl.glGetProgramInfoLog },
   { "glGetShaderInfoLog",         (fn_ptr *)&glsl.glGetShaderInfoLog },
+  { "glGetShaderiv",              (fn_ptr *)&glsl.glGetShaderiv },
   { "glGetString",                (fn_ptr *)&glsl.glGetString },
   { "glLinkProgram",              (fn_ptr *)&glsl.glLinkProgram },
   { "glShaderSource",             (fn_ptr *)&glsl.glShaderSource },
@@ -179,17 +181,24 @@ static char *source_cache[SHADERS_CURSOR_FRAG - SHADERS_SCALER_VERT + 1];
 
 #define INFO_MAX 1000
 
-static void glsl_verify_compile(struct glsl_render_data *render_data,
+static GLint glsl_verify_compile(struct glsl_render_data *render_data,
  GLenum shader)
 {
+  GLint compile_status;
   char buffer[INFO_MAX];
   int len = 0;
 
+  glsl.glGetShaderiv(shader, GL_COMPILE_STATUS, &compile_status);
   glsl.glGetShaderInfoLog(shader, INFO_MAX - 1, &len, buffer);
   buffer[len] = 0;
 
   if(len > 0)
     warn("%s", buffer);
+
+  if(compile_status == GL_FALSE)
+    warn("Shader compilation failed!\n");
+
+  return compile_status;
 }
 
 static void glsl_verify_link(struct glsl_render_data *render_data,
@@ -240,17 +249,21 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
   struct glsl_render_data *render_data = graphics->render_data;
   int index = res - SHADERS_SCALER_VERT;
   int loaded_config = 0;
+  bool is_user_scaler;
+  GLint compile_status;
   GLenum shader;
 
   assert(res >= SHADERS_SCALER_VERT && res <= SHADERS_CURSOR_FRAG);
+
+  is_user_scaler = (res == SHADERS_SCALER_VERT || res == SHADERS_SCALER_FRAG) &&
+     graphics->gl_scaling_shader[0];
 
   // If we've already seen this shader, it's loaded, and we don't
   // need to do any more file I/O.
 
   if(!source_cache[index])
   {
-    if((res == SHADERS_SCALER_VERT || res == SHADERS_SCALER_FRAG) &&
-     graphics->gl_scaling_shader[0])
+    if(is_user_scaler)
     {
       // Try to load these from config before loading the default.
 
@@ -282,19 +295,24 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
       }
       else
       {
-        debug("Failed to load shader '%s'; falling back to default\n", path);
+        debug("Failed to find shader '%s'; falling back to default\n", path);
+        loaded_config = 0;
       }
 
-      loaded_config = source_cache[index] ? 1 : 0;
       free(path);
     }
 
     if(!loaded_config)
     {
+      is_user_scaler = false;
+
+      if(res == SHADERS_SCALER_FRAG)
+        graphics->gl_scaling_shader[0] = 0;
+
       source_cache[index] = glsl_load_string(mzx_res_get_by_id(res));
       if(!source_cache[index])
       {
-        warn("Failed to load shader '%s'\n", mzx_res_get_by_id(res));
+        warn("Failed to find required shader '%s'\n", mzx_res_get_by_id(res));
         return 0;
       }
     }
@@ -323,7 +341,25 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
 #endif
 
   glsl.glCompileShader(shader);
-  glsl_verify_compile(render_data, shader);
+  compile_status = glsl_verify_compile(render_data, shader);
+
+  if(compile_status == GL_FALSE)
+  {
+    if(is_user_scaler)
+    {
+      // Attempt the default shader
+      graphics->gl_scaling_shader[0] = 0;
+      free(source_cache[index]);
+      source_cache[index] = NULL;
+
+      return glsl_load_shader(graphics, res, type);
+    }
+    else
+    {
+      warn("Required shader '%s' failed to compile.\n", mzx_res_get_by_id(res));
+      return 0;
+    }
+  }
 
   return shader;
 }
@@ -1079,17 +1115,19 @@ static void glsl_sync_screen(struct graphics_data *graphics)
 }
 
 static void glsl_switch_shader(struct graphics_data *graphics,
- const char *v, const char *f)
+ const char *name)
 {
   struct glsl_render_data *render_data = graphics->render_data;
   int res = SHADERS_SCALER_VERT - SHADERS_SCALER_VERT;
-  if (source_cache[res]) free(source_cache[res]);
-  source_cache[res] = glsl_load_string(v);
+  if(source_cache[res]) free(source_cache[res]);
+  source_cache[res] = NULL;
 
   res = SHADERS_SCALER_FRAG - SHADERS_SCALER_VERT;
-  if (source_cache[res]) free(source_cache[res]);
-  source_cache[res] = glsl_load_string(f);
-  
+  if(source_cache[res]) free(source_cache[res]);
+  source_cache[res] = NULL;
+
+  strcpy(graphics->gl_scaling_shader, name);
+
   glsl.glDeleteProgram(render_data->scaler_program);
   gl_check_error();
   render_data->scaler_program = glsl_load_program(graphics,

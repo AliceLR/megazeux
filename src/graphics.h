@@ -104,7 +104,7 @@ struct renderer
   void (*get_screen_coords)(struct graphics_data *, int, int, int *, int *,
                              int *, int *, int *, int *);
   void (*set_screen_coords)(struct graphics_data *, int, int, int *, int *);
-  void (*switch_shader)    (struct graphics_data *, const char *v, const char *f);
+  void (*switch_shader)    (struct graphics_data *, const char *name);
   void (*render_graph)     (struct graphics_data *);
   void (*render_layer)     (struct graphics_data *, struct video_layer *);
   void (*render_cursor)    (struct graphics_data *, Uint32, Uint32, Uint16,
@@ -316,7 +316,7 @@ void get_screen_coords(int screen_x, int screen_y, int *x, int *y,
  int *min_x, int *min_y, int *max_x, int *max_y);
 void set_screen_coords(int x, int y, int *screen_x, int *screen_y);
 
-CORE_LIBSPEC void switch_shader(const char *v, const char *f);
+CORE_LIBSPEC bool switch_shader(const char *name);
 CORE_LIBSPEC bool layer_renderer_check(bool show_error);
 
 /* Renderers might have the facility to center a screen on a given
