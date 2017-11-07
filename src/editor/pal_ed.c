@@ -1271,6 +1271,9 @@ static void palette_editor_redraw_window_256(struct color_status *current,
   draw_window_box(PAL_ED_256_PAL_X1, PAL_ED_256_PAL_Y1, PAL_ED_256_PAL_X2,
    PAL_ED_256_PAL_Y2, DI_GREY_DARK, DI_GREY, DI_GREY_CORNER, 1, 1);
 
+  // Fill the char missed by the shadow (it looks bad w/ the color selector).
+  draw_char(0, 0, PAL_ED_256_PAL_X1, PAL_ED_256_PAL_Y2 + 1);
+
   // Color Selector
   draw_window_box(PAL_ED_256_SEL_X1, PAL_ED_256_SEL_Y1, PAL_ED_256_SEL_X2,
    PAL_ED_256_SEL_Y2, DI_GREY, DI_GREY_DARK, DI_GREY_CORNER, 1, 1);
