@@ -256,7 +256,7 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
   assert(res >= SHADERS_SCALER_VERT && res <= SHADERS_CURSOR_FRAG);
 
   is_user_scaler = (res == SHADERS_SCALER_VERT || res == SHADERS_SCALER_FRAG) &&
-     graphics->gl_scaling_shader[0];
+   graphics->gl_scaling_shader[0];
 
   // If we've already seen this shader, it's loaded, and we don't
   // need to do any more file I/O.
@@ -1126,7 +1126,8 @@ static void glsl_switch_shader(struct graphics_data *graphics,
   if(source_cache[res]) free(source_cache[res]);
   source_cache[res] = NULL;
 
-  strcpy(graphics->gl_scaling_shader, name);
+  strncpy(graphics->gl_scaling_shader, name, 32);
+  graphics->gl_scaling_shader[31] = 0;
 
   glsl.glDeleteProgram(render_data->scaler_program);
   gl_check_error();

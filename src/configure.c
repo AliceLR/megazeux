@@ -443,8 +443,8 @@ static void config_set_gl_filter_method(struct config_info *conf,
 static void config_set_gl_scaling_shader(struct config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  strncpy(conf->gl_scaling_shader, value, 16);
-  conf->gl_scaling_shader[15] = 0;
+  strncpy(conf->gl_scaling_shader, value, 32);
+  conf->gl_scaling_shader[31] = 0;
 }
 
 static void config_gl_vsync(struct config_info *conf, char *name,

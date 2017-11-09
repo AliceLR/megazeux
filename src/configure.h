@@ -46,7 +46,7 @@ struct config_info
   int force_bpp;
   enum ratio_type video_ratio;
   char gl_filter_method[16];
-  char gl_scaling_shader[16];
+  char gl_scaling_shader[32];
   int gl_vsync;
 
   // Audio options
