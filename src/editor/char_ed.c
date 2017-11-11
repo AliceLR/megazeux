@@ -2024,7 +2024,9 @@ int char_editor(struct world *mzx_world)
       {
         if(get_alt_status(keycode_internal))
         {
-          char_editor_default_colors();
+          if(screen_mode)
+            char_editor_default_colors();
+
           use_default_palette = 1;
         }
         else
