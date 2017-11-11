@@ -1034,8 +1034,9 @@ static inline int load_world_chars(struct world *mzx_world,
   result = zip_read_file(zp, buffer, actual_size, &actual_size);
   if(result == ZIP_SUCCESS)
   {
-    // Load every charset (all saves, 2.91+ worlds)
-    if(savegame || mzx_world->version >= 0x025B)
+    // Load every charset (2.90 saves, 2.91+ worlds)
+    if((mzx_world->version >= 0x025B) ||
+     (savegame && mzx_world->version == 0x025A))
       actual_size = MIN(actual_size, PROTECTED_CHARSET_POSITION * CHAR_SIZE);
 
     // Load only the first charset
