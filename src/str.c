@@ -1345,7 +1345,7 @@ static int compare_wildcard(const char *str, size_t str_len,
             if(str_matched[j])
             {
               new_left = j+1;
-              if(!new_right)
+              if(!new_right && j < str_len)
                 new_right = j+1;
             }
           }
@@ -1358,7 +1358,7 @@ static int compare_wildcard(const char *str, size_t str_len,
             if(str_matched[j])
             {
               new_left = j+1;
-              if(!new_right)
+              if(!new_right && j < str_len)
                 new_right = j+1;
             }
           }
