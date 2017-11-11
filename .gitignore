@@ -44,7 +44,6 @@ ICON0.PNG
 libeditor.so
 libeditor.dylib
 megazeux-cia.*
-megazeux.debug
 megazeux.dol
 megazeux.exe
 MegaZeux.ilk
@@ -52,7 +51,6 @@ MegaZeux.pdb
 megazeux
 mzxrun.3dsx
 mzxrun.cia
-mzxrun.debug
 mzxrun.dol
 mzxrun.exe
 mzxrun.nds
@@ -79,8 +77,10 @@ src/utils/txt2hlp.exe
 src/utils/txt2hlp
 src/utils/png2smzx.exe
 src/utils/png2smzx
+src/utils/*.debug
 stdout.txt
 stderr.txt
+*.debug
 *.mzx
 *.sav
 *.mzm
