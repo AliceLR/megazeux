@@ -50,8 +50,9 @@ var no_mingw_stack_protector = subopt("NO", 4);
 var no_low_memory = subopt("NO", 5);
 var no_updater = subopt("NO", 6);
 var no_updater_unix = subopt("NO", 7);
-var no_sdl_wii = std("NO", 9);
-var yes_but_8bpp = subopt("YES (8bpp)", 10);
+var no_sdl_3ds = std("NO", 9);
+var no_sdl_wii = std("NO", 10);
+var yes_but_8bpp = subopt("YES (8bpp)", 11);
 
 var ZIP = _yes("ZIP");
 var DMG = _yes("DMG");
@@ -115,7 +116,7 @@ var archs =
     module_engine:    xmp,
     ogg_vorbis:       tremor,
     optimization:     speed,
-    sdl:              no,
+    sdl:              no_sdl_3ds,
     editor:           no_low_memory,
     helpsys:          no_low_memory,
     audio:            yes,
@@ -271,10 +272,10 @@ var archs =
     toolchain:        "gcc 6.3.0 <br /> binutils 2.27 <br /> (dk r29)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
-    layer_rendering:  _FAULTY("NO", 9),
+    layer_rendering:  _FAULTY(),
     module_engine:    xmp,
     ogg_vorbis:       libvorbis,
-    optimization:     size,
+    optimization:     speed,
     sdl:              no_sdl_wii,
     editor:           yes,
     helpsys:          yes,
@@ -669,7 +670,7 @@ li {
 <li><a name="note1"/>These platforms are currently unsupported due to lack
 of available hardware to test on, lack of working toolchains, inherent
 compatibility issues with MegaZeux, or simply lack of interest. Information
-based on last known working builds.
+based on last known working builds (if any).
 </li>
 
 <li><a name="note2"/>Could use existing `package.sh' however this does
@@ -713,12 +714,18 @@ table for a long time, has never really been supported. What little work exists
 is extremely old, and no viable build has ever been created.
 </li>
 
-<li><a name="note9"/>Building MZX with SDL Wii is viable, but produces much
+<li><a name="note9"/>Building MZX with SDL on the 3DS is viable, but the
+software renderer is far slower, currently offers no additional functionality,
+and doesn't allow for special features such as screen dragging. Furthermore,
+SDL significantly increases the size of the MZX executable.
+</li>
+
+<li><a name="note10"/>Building MZX with SDL Wii is viable, but produces much
 larger binaries than desired, may not support some features, and SDL Wii is
 considered unstable.
 </li>
 
-<li><a name="note10"/>Layer rendering is supported on this platform by default
+<li><a name="note11"/>Layer rendering is supported on this platform by default
 as it uses the SDL software renderer, but this platform does not support a color
 depth of greater than 8bpp, so the UI palette will not be protected in SMZX mode.
 </li>
