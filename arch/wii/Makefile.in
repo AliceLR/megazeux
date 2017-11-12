@@ -47,7 +47,7 @@ EXTRA_LIBS     = -L$(DEVKITPRO)/libogc/lib/wii \
                  -L$(DEVKITPRO)/libfat-ogc/lib/wii \
                  -L$(DEVKITPRO)/portlibs/wii/lib \
                  $(if $(BUILD_SDL), -lSDL,) \
-                 -lz -lfat -lasnd -lwiikeyboard -lwiiuse -lbte -logc -lstdc++ -lm
+                 -lfat -lasnd -lwiikeyboard -lwiiuse -lbte -logc -lstdc++ -lm
 
 
 MACHDEP = -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
