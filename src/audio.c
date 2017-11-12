@@ -1618,7 +1618,7 @@ int load_module(char *filename, bool safely,
   {
     if(fsafetranslate(filename, translated_filename) != FSAFE_SUCCESS)
     {
-      warn("Module filename '%s' failed safety checks\n", filename);
+      debug("Module filename '%s' failed safety checks\n", filename);
       return 0;
     }
 
@@ -1726,7 +1726,7 @@ void play_sample(int freq, char *filename, bool safely)
   {
     if(fsafetranslate(filename, translated_filename) != FSAFE_SUCCESS)
     {
-      warn("Sample filename '%s' failed safety checks\n", filename);
+      debug("Sample filename '%s' failed safety checks\n", filename);
       return;
     }
 
