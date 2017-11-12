@@ -1,0 +1,98 @@
+### Wiimotes (1 to 4) ###
+
+# The mappings for SDL Wii work different than the normal MZX Wii mappings.
+#
+# Button      None  Nunchuk  Classic  
+# ------------------------------------
+# A           1     -        -
+# B           2     -        -
+# 1           3     -        -
+# 2           4     -        -
+# Minus       5     -        -
+# Plus        6     -        -
+# Home        7     -        -
+#
+# Z           -     8        -
+# C           -     9        -
+#
+# a           -     -        10
+# b           -     -        11
+# x           -     -        12
+# y           -     -        13
+# L           -     -        14
+# R           -     -        15
+# ZL          -     -        16
+# ZR          -     -        17
+# Minus       -     -        18
+# Plus        -     -        19
+# Home        -     -        20
+#
+# Axes:
+# 1/2 Nunchuk
+# 1/2 Classic Left stick
+# 3/4 Classic Right stick
+# 5/6 Classic L/R (positive values only)
+#
+# When the Classic Controller is plugged in, the hat is the Classic Controller d-pad.
+# Otherwise, the hat is the Wii Remote d-pad.
+
+# General
+joy1hat = 273, 274, 276, 275
+joy1axis1 = 276, 275
+joy1axis2 = 273, 274
+
+# Wii Remote
+joy1button1 = 284    # A     -> F3 (load world/save game)
+joy1button2 = 285    # B     -> F4 (load saved game)
+joy1button3 = 13     # 1     -> Enter
+joy1button4 = 32     # 2     -> Space
+joy1button5 = 283    # Minus -> F2 (settings)
+joy1button6 = 286    # Plus  -> F5 (play/switch bomb type)
+joy1button7 = 27     # Home  -> Escape
+
+# Nunchuk
+joy1button8 = 32     # Z     -> Space
+joy1button9 = 127    # C     -> Delete
+
+# Classic Controller
+joy1axis3 = 276, 275
+joy1axis4 = 273, 274
+joy1button10 = 13    # a     -> Enter
+joy1button11 = 32    # b     -> Space
+joy1button12 = 115   # x     -> S
+joy1button13 = 127   # y     -> Delete
+joy1button14 = 284   # L     -> F3 (load world/save game)
+joy1button15 = 285   # R     -> F4 (load saved game)
+#joy1button16 =      # ZL    -> unmapped
+#joy1button17 =      # ZR    -> unmapped
+joy1button18 = 283   # Minus -> F2 (settings)
+joy1button19 = 286   # Plus  -> F5 (play/switch bomb type)
+joy1button20 = 27    # Home  -> Escape
+
+### GameCube controllers (5 to 8) ###
+
+#  1 A
+#  2 B
+#  3 X
+#  4 Y
+#  5 Z
+#  6 L
+#  7 R
+#  8 Start
+
+# 1/2 Analog stick
+# 3/4 C stick
+# 5/6 L/R (positive values only)
+
+joy5axis1 = 276, 275
+joy5axis2 = 273, 274
+joy5axis3 = 276, 275
+joy5axis4 = 273, 274
+joy5button1 = 32     # A     -> Space
+joy5button2 = 13     # B     -> Enter
+joy5button3 = 115    # X     -> S
+joy5button4 = 127    # Y     -> Delete
+joy5button5 = 27     # Z     -> Escape
+joy5button6 = 284    # L     -> F3 (load world/save)
+joy5button7 = 285    # R     -> F4 (load save)
+joy5button8 = 286    # Start -> F5 (play/switch bomb type)

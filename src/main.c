@@ -67,6 +67,7 @@
 
 __libspec int main(int argc, char *argv[])
 {
+  char *_backup_argv[] = { (char*) SHAREDIR "/megazeux" };
   int err = 1;
 
   // Keep this 7.2k structure off the stack..
@@ -86,6 +87,13 @@ __libspec int main(int argc, char *argv[])
     snprintf(current_dir, MAX_PATH, "/Users/%s", user);
   }
 #endif // __APPLE__
+
+  // argc may be 0 on e.g. some Wii homebrew loaders.
+  if(argc == 0)
+  {
+    argv = _backup_argv;
+    argc = 1;
+  }
 
   if(mzx_res_init(argv[0], is_editor()))
     goto err_free_res;

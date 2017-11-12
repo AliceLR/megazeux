@@ -1,4 +1,4 @@
 #!/bin/bash
 
-./config.sh --platform wii --prefix $DEVKITPPC --optimize-size \
+./config.sh --platform wii --prefix $DEVKITPPC --disable-sdl --enable-release \
             --disable-utils --disable-libpng --enable-meter
