@@ -1,4 +1,4 @@
 #!/bin/bash
 
-./config.sh --platform wii --prefix $DEVKITPPC --optimize-speed --enable-release \
+./config.sh --platform wii --prefix $DEVKITPPC --enable-release \
             --disable-utils --disable-libpng --enable-meter

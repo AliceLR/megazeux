@@ -67,6 +67,7 @@
 
 __libspec int main(int argc, char *argv[])
 {
+  char *_backup_argv[] = { (char*) SHAREDIR "/megazeux" };
   int err = 1;
 
   // Keep this 7.2k structure off the stack..
@@ -87,10 +88,12 @@ __libspec int main(int argc, char *argv[])
   }
 #endif // __APPLE__
 
-#ifdef CONFIG_WII
-  // argc may be 0 if the loader doesn't set args
-  argv[0] = (char *)(SHAREDIR "megazeux");
-#endif
+  // argc may be 0 on e.g. some Wii homebrew loaders.
+  if(argc == 0)
+  {
+    argv = _backup_argv;
+    argc = 1;
+  }
 
   if(mzx_res_init(argv[0], is_editor()))
     goto err_free_res;
