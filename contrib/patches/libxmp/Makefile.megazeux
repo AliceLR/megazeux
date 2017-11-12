@@ -12,7 +12,8 @@ libxmp_include = -I${libxmp_base}/include -I${libxmp_base}/src \
  -I${libxmp_base}/src/loaders -I${libxmp_base}/src/loaders/prowizard \
  -I${libxmp_base}/src/depackers
 
-libxmp_cflags = -I${libxmp_base}/src/win32 ${libxmp_include} -w -O3
+libxmp_cflags = -I${libxmp_base}/src/win32 ${libxmp_include} -w -O3 \
+ -include src/platform_endian.h
 
 
 WIN32_OBJS	= ptpopen.o
