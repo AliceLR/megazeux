@@ -51,7 +51,8 @@ var no_low_memory = subopt("NO", 5);
 var no_updater = subopt("NO", 6);
 var no_updater_unix = subopt("NO", 7);
 var no_sdl_3ds = std("NO", 9);
-var no_sdl_wii = std("NO", 10);
+var optional_sdl_wii = std("OPTIONAL", 10);
+var yes_with_sdl = subopt("YES (SDL)", 10);
 var yes_but_8bpp = subopt("YES (8bpp)", 11);
 
 var ZIP = _yes("ZIP");
@@ -272,17 +273,17 @@ var archs =
     toolchain:        "gcc 6.3.0 <br /> binutils 2.27 <br /> (dk r29)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
-    layer_rendering:  _FAULTY(),
+    layer_rendering:  yes_with_sdl,
     module_engine:    xmp,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
-    sdl:              no_sdl_wii,
+    sdl:              optional_sdl_wii,
     editor:           yes,
     helpsys:          yes,
     audio:            yes,
     software:         render_gx,
     updater:          no_updater,
-    png:              _FAULTY(),
+    png:              no,
     uthash:           yes,
     loadsave_meter:   yes,
   },
@@ -720,14 +721,16 @@ and doesn't allow for special features such as screen dragging. Furthermore,
 SDL significantly increases the size of the MZX executable.
 </li>
 
-<li><a name="note10"/>Building MZX with SDL Wii is viable, but produces much
-larger binaries than desired, may not support some features, and SDL Wii is
-considered unstable.
+<li><a name="note10"/>Building MZX with SDL Wii is viable, but produces larger
+binaries than desired, relies on the slow SDL software renderer, and SDL Wii is
+considered unstable. However, the SDL software renderer supports all layer
+rendering features (unlike the gx renderer) and the regular Wii port is
+currently non-functional, so SDL is currently the better option.
 </li>
 
-<li><a name="note11"/>Layer rendering is supported on this platform by default
-as it uses the SDL software renderer, but this platform does not support a color
-depth of greater than 8bpp, so the UI palette will not be protected in SMZX mode.
+<li><a name="note11"/>Layer rendering is supported on this platform by as it
+uses the SDL software renderer, but this port does not currently support a color
+depth greater than 8bpp, so the UI palette will not be protected in SMZX mode.
 </li>
 </ol>
 
