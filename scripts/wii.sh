@@ -9,7 +9,7 @@ platform_enter_hook() {
 
 	BUILD_FLAGS="debuglink"
 	CONFIG_FLAGS="$CONFIG_FLAGS --platform wii --prefix $DEVKITPPC \
-	              --optimize-size --disable-utils --disable-libpng \
+	              --enable-release --disable-utils --enable-tremor \
 	              --enable-meter"
 }
 

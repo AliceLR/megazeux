@@ -19,6 +19,8 @@ AR      := powerpc-eabi-ar
 OBJCOPY := powerpc-eabi-objcopy
 ELF2DOL := elf2dol
 
+PORTLIBS := $(DEVKITPRO)/portlibs/wii
+
 #
 # Wii target rules
 #
@@ -36,16 +38,19 @@ STRIP  = /bin/true
 SDL_CFLAGS     = -isystem $(DEVKITPRO)/libogc/include/SDL
 SDL_LDFLAGS    = $(SDL_CFLAGS)
 
-VORBIS_CFLAGS  = -Iarch/wii/libvorbis/include -Iarch/wii/libogg/include
-VORBIS_LDFLAGS = -Larch/wii/libvorbis/lib -Larch/wii/libogg/lib \
-                 -lvorbisfile -lvorbis -logg
+VORBIS_CFLAGS  = -I$(PORTLIBS)/include
+ifeq (${TREMOR},)
+VORBIS_LDFLAGS = -L$(PORTLIBS)/lib -lvorbisfile -lvorbis -logg
+else
+VORBIS_LDFLAGS = -L$(PORTLIBS)/lib -lvorbisidec
+endif
 
 EXTRA_INCLUDES = -isystem $(DEVKITPRO)/libogc/include \
                  -isystem $(DEVKITPRO)/libfat-ogc/include \
-                 -isystem $(DEVKITPRO)/portlibs/wii/include
+                 -isystem $(PORTLIBS)/include
 EXTRA_LIBS     = -L$(DEVKITPRO)/libogc/lib/wii \
                  -L$(DEVKITPRO)/libfat-ogc/lib/wii \
-                 -L$(DEVKITPRO)/portlibs/wii/lib \
+                 -L$(PORTLIBS)/lib \
                  $(if $(BUILD_SDL), -lSDL,) \
                  -lfat -lasnd -lwiikeyboard -lwiiuse -lbte -logc -lstdc++ -lm
 

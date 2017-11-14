@@ -2,6 +2,9 @@
 # $1 = $DEVKITPRO
 # $2 = $DEVKITPPC
 
+[ -z "$1" ] && { echo "argument 1 required."; exit 1; }
+[ -z "$2" ] && { echo "argument 2 required."; exit 1; }
+
 export SDL_WII_REPO=https://github.com/dborth/sdl-wii.git
 
 # This needs to be run after dk-3ds-dependencies.sh
@@ -10,11 +13,7 @@ export SDL_WII_REPO=https://github.com/dborth/sdl-wii.git
 export DEVKITPRO=$1
 export DEVKITPPC=$2
 export PATH="$PATH:$DEVKITPPC/bin"
-
-# The following scripts need this on the path.
-export PATH="$PATH:/mzx-build-workingdir/3ds_portlibs/utils"
-
-cd /mzx-build-workingdir/3ds_portlibs
+export PATH="/mzx-build-workingdir/3ds_portlibs/utils:$PATH"
 
 
 echo ""
@@ -27,18 +26,18 @@ pkg-build-wii zlib
 
 echo ""
 echo "/**************/"
-echo "  Wii - libogg  "
+echo "  Wii - libpng  "
 echo "/**************/"
 
-pkg-build-wii libogg
+pkg-build-wii libpng
 
 
 echo ""
 echo "/*****************/"
-echo "  Wii - libvorbis  "
+echo "  Wii - libtremor  "
 echo "/*****************/"
 
-pkg-build-wii libvorbis
+pkg-build-wii libtremor-lowmem
 
 
 echo ""

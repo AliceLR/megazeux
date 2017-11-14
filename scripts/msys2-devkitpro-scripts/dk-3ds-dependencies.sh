@@ -2,15 +2,17 @@
 # $1 = $DEVKITPRO
 # $2 = $DEVKITARM
 
-export   PORTLIBS_REPO=https://github.com/asiekierka/3ds_portlibs.git
+[ -z "$1" ] && { echo "argument 1 required."; exit 1; }
+[ -z "$2" ] && { echo "argument 2 required."; exit 1; }
+
 export BANNERTOOL_REPO=https://github.com/Steveice10/bannertool
 export BUILDTOOLS_REPO=https://github.com/Steveice10/buildtools
 export    MAKEROM_REPO=https://github.com/profi200/Project_CTR
 
 export DEVKITPRO=$1
 export DEVKITARM=$2
-export PATH="$PATH:$DEVKITARM/bin"
-
+export PATH="$DEVKITARM/bin:$PATH"
+export PATH="/mzx-build-workingdir/3ds_portlibs/utils:$PATH"
 
 echo ""
 echo "/******************/"
@@ -49,23 +51,6 @@ cp makerom.exe $DEVKITARM/bin
 
 
 echo ""
-echo "/****************/"
-echo "  3DS - portlibs  "
-echo "/****************/"
-
-cd /mzx-build-workingdir
-rm -rf 3ds_portlibs
-git clone $PORTLIBS_REPO "3ds_portlibs"
-cd 3ds_portlibs
-
-# portlibs will fail without this folder, but doesn't currently produce it.
-mkdir -p "files"
-
-# The following scripts need this on the path.
-export PATH="$PATH:/mzx-build-workingdir/3ds_portlibs/utils"
-
-
-echo ""
 echo "/************/"
 echo "  3DS - zlib  "
 echo "/************/"
@@ -85,10 +70,5 @@ echo ""
 echo "/*****************/"
 echo "  3DS - libtremor  "
 echo "/*****************/"
-
-# FIXME the libtremor portlibs builds requires libogg, which we don't want,
-# so use this version that points to the lowmem branch.
-
-cp /dk-patches/libtremor-lowmem packages/
 
 pkg-build libtremor-lowmem

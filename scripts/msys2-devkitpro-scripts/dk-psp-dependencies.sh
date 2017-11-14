@@ -2,6 +2,9 @@
 # $1 = $DEVKITPRO
 # $2 = $DEVKITPSP
 
+[ -z "$1" ] && { echo "argument 1 required."; exit 1; }
+[ -z "$2" ] && { echo "argument 2 required."; exit 1; }
+
 export PORTS_REPO=https://github.com/pspdev/psp-ports.git
 
 export DEVKITPRO=$1

@@ -2,6 +2,9 @@
 # $1 = $DEVKITPRO
 # $2 = $DEVKITARM
 
+[ -z "$1" ] && { echo "argument 1 required."; exit 1; }
+[ -z "$2" ] && { echo "argument 2 required."; exit 1; }
+
 export PORTLIBS_REPO=https://github.com/sypherce/nds_portlibs.git
 
 export DEVKITPRO=$1
