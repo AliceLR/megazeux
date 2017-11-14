@@ -1,0 +1,21 @@
+This set of scripts is meant to complement the Windows MSYS2 build scripts.
+These scripts should be run only after "1_PrepareReleaseEnvironment.bat"
+from the Windows scripts has been run.
+
+These scripts also require the latest version of devkitPro to be installed.
+Copy the contents of this folder to the root of your MSYS2 directory tree and
+modify DevkitProSettings.bat to point to the path of your devkitPro installation.
+
+Individual script info:
+
+DK1_PrepareReleaseEnvironment.bat -- installs extra required tools with pacman.
+
+DK2_BuildDependencies.bat -- collects dependencies required for MegaZeux from
+various repositories and builds them.  All work is done in the same working
+directory used by the Windows scripts. Only necessary if your devkitPro install
+lacks these dependencies; 
+
+DK3_NDS.bat -- generates an NDS build and moves it to the "zips" folder.
+DK4_3DS.bat -- generates a 3DS build and moves it to the "zips" folder.
+DK5_Wii.bat -- generates a Wii build and moves it to the "zips" folder.
+DK6_PSP.bat -- generates a PSP build and moves it to the "zips" folder.

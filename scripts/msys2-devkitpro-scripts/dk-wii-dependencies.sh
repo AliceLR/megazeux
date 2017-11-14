@@ -2,6 +2,8 @@
 # $1 = $DEVKITPRO
 # $2 = $DEVKITPPC
 
+export SDL_WII_REPO=https://github.com/dborth/sdl-wii.git
+
 # This needs to be run after dk-3ds-dependencies.sh
 # Wii portlibs are provided by the same repository as the 3DS.
 
@@ -37,3 +39,16 @@ echo "  Wii - libvorbis  "
 echo "/*****************/"
 
 pkg-build-wii libvorbis
+
+
+echo ""
+echo "/***************/"
+echo "  Wii - SDL Wii  "
+echo "/***************/"
+
+rm -rf /mzx-build-workingdir/sdl-wii
+git clone $SDL_WII_REPO /mzx-build-workingdir/sdl-wii
+cd /mzx-build-workingdir/sdl-wii/SDL
+
+make -j8
+make install
