@@ -58,6 +58,54 @@ Older versions are available at [DigitalMZX](http://vault.digitalmzx.net/).
 &nbsp; [![PlayStation Portable][arch-psp]][megazeux-psp]
 &nbsp; [![Source code         ][arch-src]][megazeux-src]
 
+## Credits
+
+| MegaZeux 2.9x     |                                  |
+| ----------------- | -------------------------------- |
+| Alice Rowan       | Developer/current maintainer     |
+| Dr. Lancer X      | Developer (layer rendering)      |
+| Adrian Siekierka  | Developer (3DS port)             |
+| Alistair Strachan | Developer (SDL 2 support)        |
+| Terryn            | Help file                        |
+| Spectere          | Mac OS X builds                  |
+| Insidious         | Ubuntu/Debian builds             |
+| Others            | Various                          |
+
+#### MegaZeux Credits
+
+Programming and Overall Design by Gilead Kutnick (Exophase),
+Alistair Strachan (ajs), Alice Rowan (Lachesis) and Lancer-X.
+
+Based off of original program and source code by Alexis Janson.
+
+Help file by Terryn.
+
+Default SMZX palette by Joel Lamontagne (LogiCow).
+
+ccv utility by Lancer-X.  
+png2smzx utility by Alan Williams (Mr_Alert).  
+checkres utility by Josh Matthews (Revvy), ajs and Lachesis.
+
+Port contributors: Adrian Siekierka (asiekierka) [3DS],
+Mr_Alert [Wii], Kevin Vance [NDS], Simon Parzer [GP2X].
+
+Renderer code contributors: LogiCow, Mr_Alert.  
+Shader code contributors: David Cravens (astral), GreaseMonkey.
+
+Icon by Quantum P.; Extra icons by LogiCow.  
+GDM conversion by ajs and MadBrain.  
+Other past contributors: Spider124, Koji, JZig, Akwende, MenTaLguY.
+
+#### Special Thanks
+
+Insidious (.deb Builds)  
+mzxgiant (MSVC Testing, Bug Fixes)  
+mzxrules (Testing)  
+Quantum P. (OS X Testing / Builds)  
+Spectere (OS X Builds)  
+Terryn (Testing)  
+Wervyn (Testing)
+
 ## License
 
 This program is free software; you can redistribute it and/or
@@ -74,37 +122,20 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-## Credits
-
-|     |     |
-| --- | --- |
-| Alice Rowan      | Developer/current maintainer     |
-| Dr. Lancer X     | Developer (layer rendering)      |
-| Adrian Siekierka | Developer (3DS port)             |
-| Terryn           | Documentation                    |
-| Spectere         | Mac OS X builds                  |
-| Insidious        | Ubuntu/Debian builds             |
-
 ## Contact
 
 Want to talk about MegaZeux? Encountered a bug or would like a new feature?
 The MegaZeux community and development team can be contacted through Discord,
 GitHub, or the DigitalMZX forums.
 
-[MegaZeux Discord](https://discord.gg/XJCvb4P)
-
-[DigitalMZX forums](http://digitalmzx.net/forums/)
-
-[MegaZeux Bug tracker](http://www.digitalmzx.net/forums/index.php?app=tracker&showproject=4)
-
-[MegaZeux Feature requests](http://www.digitalmzx.net/forums/index.php?app=tracker&showproject=9)
-
-[AliceLR on GitHub](https://github.com/AliceLR)
+[MegaZeux Discord](https://discord.gg/XJCvb4P) <br/>
+[DigitalMZX forums](http://digitalmzx.net/forums/) <br/>
+[MegaZeux Bug tracker](http://www.digitalmzx.net/forums/index.php?app=tracker&showproject=4) <br/>
+[MegaZeux Feature requests](http://www.digitalmzx.net/forums/index.php?app=tracker&showproject=9) <br/>
+[AliceLR on GitHub](https://github.com/AliceLR) <br/>
 
 ## Resources
 
-[Official MegaZeux game archive](http://vault.digitalmzx.net/)
-
-[MegaZeux help file](http://vault.digitalmzx.net/help.php)
-
+[Official MegaZeux game archive](http://vault.digitalmzx.net/) <br/>
+[MegaZeux help file](http://vault.digitalmzx.net/help.php) <br/>
 [Development roadmap](http://www.digitalmzx.net/forums/index.php?showtopic=15226)
