@@ -75,6 +75,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 "ccv input.bmp -dither sierra\n" \
 "ccv input.bmp -dither stevenson-arce\n" \
 ".. converts input.bmp to input.chr using the given error-diffusion kernel. Note that you can abbreviate it (i.e. 'floyd', 'jarvis') as it only has to match part of the name. Note that the -threshold value, if supplied, is still used here.\n" \
+"ccv -q input.bmp\n" \
+".. suppress output to stdout\n" \
 
 void Usage()
 {
@@ -251,6 +253,10 @@ Config *LoadConfig(int argc, char **argv)
     if (arg_used[i]) continue;
     if (argv[i][0] == '-') { // Argument
       int args_left = argc - i - 1;
+      if (Option("-q", 0, argv[i], args_left)) {
+        cfg->quiet = 1;
+        continue;
+      }
       if (Option("-w", 1, argv[i], args_left)) {
         cfg->w = atoi(argv[i+1]);
         arg_used[i+1] = 1;
