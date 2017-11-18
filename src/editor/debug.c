@@ -567,6 +567,7 @@ static void write_var(struct world *mzx_world, char *var_buffer, int int_val, ch
 
         volume_module(int_val);
       }
+      else
 
       if(match_var("lockself"))
       {
