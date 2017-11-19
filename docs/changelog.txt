@@ -181,6 +181,8 @@ FIXES
   the current loaded scaler.
 + MegaZeux now falls back to the default scaling shader when a
   selected scaling shader fails to compile.
++ Blank sprite chars are now drawn when ccheck is 3. (Lancer-X)
++ The sprite color is used with ccheck 3 collisions. (Lancer-X)
 
 DEVELOPERS
 
