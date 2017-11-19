@@ -183,6 +183,9 @@ FIXES
   selected scaling shader fails to compile.
 + Blank sprite chars are now drawn when ccheck is 3. (Lancer-X)
 + The sprite color is used with ccheck 3 collisions. (Lancer-X)
++ When spr_yorder is enabled, sprites with the same (sprN_y +
+  sprN_cy) value are now consistently ordered by their sprite
+  numbers.
 
 DEVELOPERS
 

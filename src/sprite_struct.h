@@ -42,6 +42,7 @@ struct sprite
   unsigned int col_height;
   int transparent_color;
   int offset;
+  int qsort_order;
 };
 
 struct collision_list

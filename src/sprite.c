@@ -39,8 +39,9 @@ static int compare_spr(const void *dest, const void *src)
   int dest_y = spr_dest->y * (spr_dest->flags & SPRITE_UNBOUND ? 1 : CHAR_H);
   int src_y = spr_src->y * (spr_src->flags & SPRITE_UNBOUND ? 1 : CHAR_H);
 
-  return ((dest_y + spr_dest->col_y) -
-   (src_y + spr_src->col_y));
+  int diff = ((dest_y + spr_dest->col_y) - (src_y + spr_src->col_y));
+
+  return diff ? diff : (spr_dest->qsort_order - spr_src->qsort_order);
 }
 
 static inline int is_blank(Uint16 c)
@@ -123,6 +124,8 @@ void draw_sprites(struct world *mzx_world)
     // and the inactive sprites in the end.
     for(i = 0, i2 = 0, i3 = MAX_SPRITES - 1; i < MAX_SPRITES; i++)
     {
+      // Stabilize the sort
+      sprite_list[i]->qsort_order = i;
       if((sprite_list[i])->flags & SPRITE_INITIALIZED)
       {
         draw_order[i2] = sprite_list[i];
