@@ -339,7 +339,7 @@ void draw_sprites(struct world *mzx_world)
           {
             if (unbound || ch != 32)
             {
-              if(!(cur_sprite->flags & SPRITE_CHAR_CHECK2) || !is_blank((ch + cur_sprite->offset) % PROTECTED_CHARSET_POSITION))
+              if((cur_sprite->flags & (SPRITE_CHAR_CHECK | SPRITE_CHAR_CHECK2)) != SPRITE_CHAR_CHECK2 || !is_blank((ch + cur_sprite->offset) % PROTECTED_CHARSET_POSITION))
               {
                 if (!unbound)
                   draw_char_linear_ext(color, ch, i5, 0, 0);
@@ -848,6 +848,9 @@ static inline void get_sprite_tile(const struct sprite *spr, int x, int y, struc
       *ch = -1;
       if (col) *col = -1;
     }
+  }
+  if (col && !(spr->flags & SPRITE_SRC_COLORS)) {
+    *col = spr->color;
   }
 }
 
