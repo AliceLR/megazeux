@@ -382,7 +382,6 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
 
   if(selection_pal < 0)
   {
-    selection_pal = DI_ACTIVE;
     screen_mode = 0;
   }
 
@@ -529,8 +528,15 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
             draw_char_ext(char_offset, selection_pal, x2, y2, 0, 0);
           }
           else
+
+          if(selection_pal >= 0)
           {
-            draw_char_ext(char_offset, selection_pal, x2, y2, 0, 16);
+            draw_char_ext(char_offset, selection_pal, x2, y2, 0, 0);
+          }
+
+          else
+          {
+            draw_char_ext(char_offset, DI_ACTIVE, x2, y2, 0, 16);
           }
         }
       }
