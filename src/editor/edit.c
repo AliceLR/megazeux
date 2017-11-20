@@ -2246,15 +2246,16 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
             if(mzx_world->current_board_id != s_board)
             {
-              fix_board(mzx_world, s_board);
-              synchronize_board_values(mzx_world, &src_board, &board_width,
-               &board_height, &level_id, &level_param, &level_color, &overlay,
-               &overlay_color, &vlayer_chars, &vlayer_colors, overlay_edit);
-              fix_mod(mzx_world, src_board, listening_flag);
+              new_board = s_board;
             }
 
-            fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
-             &debug_x, board_width, board_height, edit_screen_height);
+            else
+            {
+              // The saved position might be out of bounds. new_board handling
+              // fixes this separately.
+              fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
+               &debug_x, board_width, board_height, edit_screen_height);
+            }
           }
         }
       }
