@@ -190,6 +190,8 @@ FIXES
 + When spr_yorder is enabled, sprites with the same (sprN_y +
   sprN_cy) value are now consistently ordered by their sprite
   numbers.
++ The collision rectangles of ccheck 3 sprites now constrained
+  to the sprite dimensions (Lancer-X).
 
 DEVELOPERS
 

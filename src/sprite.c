@@ -1071,6 +1071,8 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *spr,
       spr->flags & SPRITE_CHAR_CHECK &&
       spr->flags & SPRITE_CHAR_CHECK2)
   {
+    if (!constrain_rectangle(sprite_rect, &collision_rect))
+      return -1;
     spr_mask = allocate_mask(&collision_sprite);
     spr_mask_allocated = true;
   }
@@ -1134,6 +1136,8 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *spr,
           target_spr->flags & SPRITE_CHAR_CHECK &&
           target_spr->flags & SPRITE_CHAR_CHECK2)
       {
+        if (!constrain_rectangle(target_spr_rect, &target_col_rect))
+          continue;
         target_mask = allocate_mask(target_spr);
         target_mask_allocated = true;
       }
