@@ -1,22 +1,26 @@
-MZX GIT
+November 22, 2017 - MZX 2.91
 
-FIXME: Char editor and pal editor accessible from counter debugger
-  should/shouldn't be documented? Removed? Made accessible from
-  normal testing instead? (e.g. Alt+F6, Alt+F7, Alt+F8) (requires changes to
-  palette editor layer handling)
-FIXME: help description for "Universal" counter debugger category
-FIXME: size_pos_vlayer() needs a real help file context (edit_di.c, 747).
-FIXME: board undo notes:
-  * Board/overlay/vlayer histories reset on world load, clear
-    world (Alt+R), testing (Alt+T), and exiting the editor.
-  * Board/overlay histories reset on board change, clear board
-    (Alt+Z), board resize (Alt+P), and import board (Alt+I).
-  * Vlayer history resets on clear vlayer (Alt+Z) and resize
-    vlayer (Alt+P).
-  * Changes in world/board settings, status counters, etc. are
-    not included in the history.
+This release introduces mostly new editor features, but also a
+a few Robotic features to note. It also fixes over 30 bugs.
 
-FEATURES (ROBOTIC)
+MegaZeux now features a palette editor for SMZX modes 2 and 3,
+and worlds can be saved and loaded in SMZX mode. The char editor
+has been changed to allow preview palettes (mostly to aid with
+SMZX editing), and can now access the extended character sets.
+The new vlayer editor allows the vlayer to be edited directly.
+
+On the Robotic side of things, LOAD_COUNTERS actually works now,
+SMZX mode 3 indices can be loaded from a file, the message row
+can be configured to use normal MZX mode in SMZX modes, and new
+string features such as simple wildcard matching and negative
+offsets have been added. String support has been improved to
+disallow invalid or nonsense string splices that previously had
+undefined behavior.
+
+Additionally, Asiekierka's new Nintendo 3DS port has been merged
+into MZX, and optional SDL support has been added for the Wii.
+
+FEATURES
 
 + Added SMZX_INDICES special counter to load SMZX indices. This
   counter works with either a filename or a string, e.g.
@@ -55,9 +59,6 @@ FEATURES (ROBOTIC)
   as a single 8*Y bit number. This works for values of Y between
   1 and 4, with 4 characters providing the same functionality as
   a counter.
-
-FEATURES (EDITOR)
-
 + Extended the palette editor to SMZX modes 2 and 3. The updated
   palette editor allows the editing of all 256 SMZX mode 2/3
   colors and editing color indices for SMZX 3.
