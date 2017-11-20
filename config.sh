@@ -539,8 +539,8 @@ if [ "$PLATFORM" = "nds" ]; then
 	echo "Building custom NDS renderer."
 	SOFTWARE="false"
 
-    echo "Force-disabling hash tables on NDS."
-    UTHASH="false"
+	echo "Force-disabling hash tables on NDS."
+	UTHASH="false"
 fi
 
 #
@@ -618,10 +618,10 @@ if [ "$GL" = "false" ]; then
 fi
 
 #
-# Force-enable tremor on PSP/GP2X
+# Force-enable tremor on PSP/GP2X/3DS
 #
 if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" \
-  -o "$PLATFORM" = "android" ]; then
+  -o "$PLATFORM" = "android" -o "$PLATFORM" = "3ds"]; then
 	echo "Force-switching ogg/vorbis to tremor."
 	TREMOR="true"
 fi
