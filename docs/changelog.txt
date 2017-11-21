@@ -17,7 +17,7 @@ offsets have been added. String support has been improved to
 disallow invalid or nonsense string splices that previously had
 undefined behavior.
 
-Additionally, Asiekierka's new Nintendo 3DS port has been merged
+Additionally, asiekierka's new Nintendo 3DS port has been merged
 into MZX, and optional SDL support has been added for the Wii.
 
 FEATURES
