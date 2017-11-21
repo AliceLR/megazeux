@@ -1280,8 +1280,13 @@ static void paste_buffer(struct robot_state *rstate)
     while(*src_ptr)
     {
       line_length = (int)strcspn(src_ptr, "\r\n");
-      memcpy(line_buffer, src_ptr, line_length);
-      line_buffer[line_length] = 0;
+
+      copy_length = line_length;
+      if(copy_length >= COMMAND_BUFFER_LEN)
+        copy_length = COMMAND_BUFFER_LEN - 1;
+
+      memcpy(line_buffer, src_ptr, copy_length);
+      line_buffer[copy_length] = 0;
       add_line(rstate, -1);
       src_ptr += line_length;
 
