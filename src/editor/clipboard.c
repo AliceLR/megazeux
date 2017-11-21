@@ -205,7 +205,7 @@ void copy_buffer_to_clipboard(char **buffer, int lines, int total_length)
 char *get_clipboard_buffer(void)
 {
   SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
-  int selection_format, line_length, ret_type;
+  int selection_format, ret_type;
   unsigned long int nbytes, overflow;
   unsigned char *src_data;
   char *dest_data = NULL;
