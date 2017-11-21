@@ -372,9 +372,9 @@ err_release:
 
 #else // !__WIN32__ && !(CONFIG_X11 && CONFIG_SDL) && !SDL_VIDEO_DRIVER_QUARTZ
 
-void copy_buffer_to_selection(char **buffer, int lines, int total_length) {}
+void copy_buffer_to_clipboard(char **buffer, int lines, int total_length) {}
 
-char *copy_selection_to_buffer(void)
+char *get_clipboard_buffer(void)
 {
   return NULL;
 }
