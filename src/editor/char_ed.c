@@ -1865,7 +1865,6 @@ int char_editor(struct world *mzx_world)
         if(get_alt_status(keycode_internal))
           break;
 
-        if(current_charset )
         add_charset_undo_frame(h, current_charset, current_char,
          highlight_width, highlight_height);
 
