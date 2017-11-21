@@ -10,15 +10,15 @@ SMZX editing), and can now access the extended character sets.
 The new vlayer editor allows the vlayer to be edited directly.
 
 On the Robotic side of things, LOAD_COUNTERS actually works now,
-SMZX mode 3 indices can be loaded from a file, the message row
+SMZX mode 3 indices can be loaded from a file, the message line
 can be configured to use normal MZX mode in SMZX modes, and new
 string features such as simple wildcard matching and negative
 offsets have been added. String support has been improved to
 disallow invalid or nonsense string splices that previously had
 undefined behavior.
 
-Additionally, asiekierka's new Nintendo 3DS port has been merged
-into MZX, and optional SDL support has been added for the Wii.
+Additionally, asie's new Nintendo 3DS port has been merged into
+MZX, and optional SDL support has been added for the Wii.
 
 FEATURES
 
