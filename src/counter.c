@@ -995,8 +995,13 @@ static void spr_swap_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
-  struct sprite *src = mzx_world->sprite_list[spr_num];
-  struct sprite *dest = mzx_world->sprite_list[value];
+  struct sprite *src;
+  struct sprite *dest;
+
+  value &= (MAX_SPRITES - 1);
+
+  src = mzx_world->sprite_list[spr_num];
+  dest = mzx_world->sprite_list[value];
   mzx_world->sprite_list[value] = src;
   mzx_world->sprite_list[spr_num] = dest;
 }

@@ -194,6 +194,8 @@ FIXES
   to the sprite dimensions (Lancer-X).
 + MZX no longer crashes when a line of length 512 characters or
   longer is pasted into the robot editor.
++ Fixed a crash bug when trying to swap a sprite with an
+  invalid sprite index.
 
 DEVELOPERS
 
