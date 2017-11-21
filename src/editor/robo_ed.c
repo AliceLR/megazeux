@@ -44,20 +44,11 @@
 #include "../error.h"
 
 #include "char_ed.h"
+#include "clipboard.h"
 #include "edit.h"
 #include "param.h"
 #include "robo_ed.h"
 #include "window.h"
-
-#ifndef __WIN32__
-#include <limits.h>
-#endif
-
-#if defined(CONFIG_X11) && defined(CONFIG_SDL)
-#include "SDL.h"
-#include "SDL_syswm.h"
-#include "render_sdl.h"
-#endif
 
 #define combine_colors(a, b)  \
   (a) | (b << 4)              \
@@ -1231,385 +1222,6 @@ static int block_menu(struct world *mzx_world)
     return block_op;
 }
 
-#ifdef __WIN32__
-
-static void copy_buffer_to_selection(void)
-{
-  HANDLE global_memory;
-  size_t line_length;
-  char *dest_data;
-  char *dest_ptr;
-  int i;
-
-  // Room for \r's
-  copy_buffer_total_length += copy_buffer_lines - 1;
-
-  global_memory = GlobalAlloc(GMEM_MOVEABLE | GMEM_DDESHARE,
-    copy_buffer_total_length);
-  if(!global_memory)
-    return;
-
-  if(!OpenClipboard(NULL))
-    return;
-
-  dest_data = (char *)GlobalLock(global_memory);
-  dest_ptr = dest_data;
-
-  for(i = 0; i < copy_buffer_lines - 1; i++)
-  {
-    line_length = strlen(copy_buffer[i]);
-    memcpy(dest_ptr, copy_buffer[i], line_length);
-    dest_ptr += line_length;
-    dest_ptr[0] = '\r';
-    dest_ptr[1] = '\n';
-    dest_ptr += 2;
-  }
-
-  line_length = strlen(copy_buffer[i]);
-  memcpy(dest_ptr, copy_buffer[i], line_length);
-  dest_ptr[line_length] = 0;
-
-  GlobalUnlock(global_memory);
-  EmptyClipboard();
-  SetClipboardData(CF_TEXT, global_memory);
-
-  CloseClipboard();
-}
-
-static bool copy_selection_to_buffer(struct robot_state *rstate)
-{
-  char line_buffer[COMMAND_BUFFER_LEN];
-  char *src_data, *src_ptr;
-  HANDLE global_memory;
-  int line_length;
-
-  if(!IsClipboardFormatAvailable(CF_TEXT) || !OpenClipboard(NULL))
-    return FALSE;
-
-  rstate->command_buffer = line_buffer;
-
-  global_memory = GetClipboardData(CF_TEXT);
-  if(global_memory != NULL )
-  {
-    src_data = (char *)GlobalLock(global_memory);
-    src_ptr = src_data;
-
-    while(*src_ptr)
-    {
-      line_length = (int)strcspn(src_ptr, "\r\n");
-      memcpy(line_buffer, src_ptr, line_length);
-      line_buffer[line_length] = 0;
-      add_line(rstate, -1);
-      src_ptr += line_length;
-
-      if (*src_ptr == '\r')
-      {
-        src_ptr++;
-        if (*src_ptr == '\n')
-          src_ptr++;
-      }
-      else if (*src_ptr == '\n')
-      {
-        src_ptr++;
-      }
-    }
-
-    GlobalUnlock(global_memory);
-    CloseClipboard();
-  }
-
-  rstate->command_buffer = rstate->command_buffer_space;
-  return TRUE;
-}
-
-#elif defined(CONFIG_X11) && defined(CONFIG_SDL)
-
-#if SDL_VERSION_ATLEAST(2,0,0)
-static int copy_buffer_to_X11_selection(void *userdata, SDL_Event *event)
-#else
-static int copy_buffer_to_X11_selection(const SDL_Event *event)
-#endif
-{
-  XSelectionRequestEvent *request;
-#if SDL_VERSION_ATLEAST(2,0,0)
-  SDL_Window *window = userdata;
-#else
-  SDL_Window *window = NULL;
-#endif
-  char *dest_data, *dest_ptr;
-  XEvent response, *xevent;
-  SDL_SysWMinfo info;
-  int i, line_length;
-  Display *display;
-
-  if(event->type != SDL_SYSWMEVENT)
-    return 1;
-
-  xevent = SDL_SysWMmsg_GetXEvent(event->syswm.msg);
-  if(xevent->type != SelectionRequest || !copy_buffer)
-    return 0;
-
-  SDL_VERSION(&info.version);
-  SDL_GetWindowWMInfo(window, &info);
-
-  display = info.info.x11.display;
-  dest_data = cmalloc(copy_buffer_total_length + 1);
-  dest_ptr = dest_data;
-
-  for(i = 0; i < copy_buffer_lines - 1; i++)
-  {
-    line_length = strlen(copy_buffer[i]);
-    memcpy(dest_ptr, copy_buffer[i], line_length);
-    dest_ptr += line_length;
-    dest_ptr[0] = '\n';
-    dest_ptr++;
-  }
-
-  line_length = strlen(copy_buffer[i]);
-  memcpy(dest_ptr, copy_buffer[i], line_length);
-  dest_ptr[line_length] = 0;
-
-  request = &(SDL_SysWMmsg_GetXEvent(event->syswm.msg)->xselectionrequest);
-  response.xselection.type = SelectionNotify;
-  response.xselection.display = request->display;
-  response.xselection.selection = request->selection;
-  response.xselection.target = XA_STRING;
-  response.xselection.property = request->property;
-  response.xselection.requestor = request->requestor;
-  response.xselection.time = request->time;
-
-  XChangeProperty(display, request->requestor, request->property,
-    XA_STRING, 8, PropModeReplace, (const unsigned char *)dest_data,
-    copy_buffer_total_length);
-
-  free(dest_data);
-
-  XSendEvent(display, request->requestor, True, 0, &response);
-  XFlush(display);
-  return 0;
-}
-
-static void copy_buffer_to_selection(void)
-{
-  SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
-  SDL_SysWMinfo info;
-
-  SDL_VERSION(&info.version);
-
-  if(!SDL_GetWindowWMInfo(window, &info) || (info.subsystem != SDL_SYSWM_X11))
-    return;
-
-  XSetSelectionOwner(info.info.x11.display, XA_PRIMARY,
-    info.info.x11.window, CurrentTime);
-
-  SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE);
-  SDL_SetEventFilter(copy_buffer_to_X11_selection, window);
-}
-
-static bool copy_selection_to_buffer(struct robot_state *rstate)
-{
-  SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
-  int selection_format, line_length, ret_type;
-  char line_buffer[COMMAND_BUFFER_LEN];
-  unsigned long int nbytes, overflow;
-  unsigned char *src_data, *src_ptr;
-  Window xwindow, owner;
-  Atom selection_type;
-  SDL_SysWMinfo info;
-  Display *display;
-  bool ret = false;
-
-  SDL_VERSION(&info.version);
-
-  if(!SDL_GetWindowWMInfo(window, &info) || (info.subsystem != SDL_SYSWM_X11))
-    return ret;
-
-  display = info.info.x11.display;
-  xwindow = info.info.x11.window;
-  owner = XGetSelectionOwner(display, XA_PRIMARY);
-
-  if((owner == None) || (owner == xwindow))
-    return ret;
-
-  XConvertSelection(display, XA_PRIMARY, XA_STRING, None,
-    owner, CurrentTime);
-
-  XLockDisplay(display);
-
-  ret_type =
-    XGetWindowProperty(display, owner,
-    XA_STRING, 0, INT_MAX / 4, False, AnyPropertyType, &selection_type,
-    &selection_format, &nbytes, &overflow, &src_data);
-
-  if((ret_type != Success) || ((selection_type != XA_STRING) &&
-    (selection_type != XInternAtom(display, "TEXT", False)) &&
-    (selection_type != XInternAtom(display, "COMPOUND_TEXT", False)) &&
-    (selection_type != XInternAtom(display, "UTF8_STRING", False))))
-    goto err_unlock;
-
-  rstate->command_buffer = line_buffer;
-  src_ptr = src_data;
-
-  while(*src_ptr)
-  {
-    line_length = strcspn((const char *)src_ptr, "\n");
-    memcpy(line_buffer, src_ptr, line_length);
-    line_buffer[line_length] = 0;
-    add_line(rstate, -1);
-    src_ptr += line_length;
-    if(*src_ptr)
-      src_ptr++;
-  }
-
-  XFree(src_data);
-  rstate->command_buffer = rstate->command_buffer_space;
-  ret = true;
-
-err_unlock:
-  XUnlockDisplay(display);
-  return ret;
-}
-
-#elif defined(SDL_VIDEO_DRIVER_QUARTZ)
-
-#define decimal decimal_
-#define Random Random_
-#include <Carbon/Carbon.h>
-
-static const CFStringRef PLAIN = CFSTR("com.apple.traditional-mac-plain-text");
-
-static void copy_buffer_to_selection(void)
-{
-  PasteboardSyncFlags syncFlags;
-  char *dest_data, *dest_ptr;
-  PasteboardRef clipboard;
-  CFDataRef textData;
-  int i, line_length;
-
-  if(PasteboardCreate(kPasteboardClipboard, &clipboard) != noErr)
-    return;
-
-  if(PasteboardClear(clipboard) != noErr)
-    goto err_release;
-
-  syncFlags = PasteboardSynchronize(clipboard);
-  if((syncFlags & kPasteboardModified) ||
-    !(syncFlags & kPasteboardClientIsOwner))
-    goto err_release;
-
-  dest_data = cmalloc(copy_buffer_total_length + 1);
-  dest_ptr = dest_data;
-
-  for(i = 0; i < copy_buffer_lines - 1; i++)
-  {
-    line_length = strlen(copy_buffer[i]);
-    memcpy(dest_ptr, copy_buffer[i], line_length);
-    dest_ptr += line_length;
-    dest_ptr[0] = '\n';
-    dest_ptr++;
-  }
-
-  line_length = strlen(copy_buffer[i]);
-  memcpy(dest_ptr, copy_buffer[i], line_length);
-  dest_ptr[line_length] = 0;
-
-  textData = CFDataCreate(kCFAllocatorDefault,
-   (const UInt8 *)dest_data, copy_buffer_total_length + 1);
-  free(dest_data);
-
-  if(!textData)
-    goto err_release;
-
-  if(PasteboardPutItemFlavor(clipboard, (PasteboardItemID)1,
-   PLAIN, textData, 0) != noErr)
-    goto err_release;
-
-err_release:
-  CFRelease(clipboard);
-}
-
-static bool copy_selection_to_buffer(struct robot_state *rstate)
-{
-  PasteboardRef clipboard;
-  ItemCount itemCount;
-  UInt32 itemIndex;
-  bool ret = false;
-
-  if(PasteboardCreate(kPasteboardClipboard, &clipboard) != noErr)
-    return false;
-
-  if(PasteboardGetItemCount(clipboard, &itemCount) != noErr)
-    goto err_release;
-
-  for(itemIndex = 1; itemIndex <= itemCount; itemIndex++)
-  {
-    CFIndex flavorCount, flavorIndex;
-    CFArrayRef flavorTypeArray;
-    PasteboardItemID itemID;
-
-    if(PasteboardGetItemIdentifier(clipboard, itemIndex, &itemID) != noErr)
-      goto err_release;
-
-    if(PasteboardCopyItemFlavors(clipboard, itemID, &flavorTypeArray) != noErr)
-      goto err_release;
-
-    flavorCount = CFArrayGetCount(flavorTypeArray);
-
-    for(flavorIndex = 0; flavorIndex < flavorCount; flavorIndex++)
-    {
-      char line_buffer[COMMAND_BUFFER_LEN];
-      char *src_data, *src_ptr;
-      CFDataRef flavorData;
-      int line_length;
-
-      CFStringRef flavorType =
-       (CFStringRef)CFArrayGetValueAtIndex(flavorTypeArray, flavorIndex);
-
-      if(!UTTypeConformsTo(flavorType, PLAIN))
-        continue;
-
-      if(PasteboardCopyItemFlavorData(clipboard, itemID,
-       flavorType, &flavorData) != noErr)
-        continue;
-
-      rstate->command_buffer = line_buffer;
-
-      src_data = (char *)CFDataGetBytePtr(flavorData);
-      src_ptr = src_data;
-
-      while(*src_ptr)
-      {
-        line_length = strcspn((const char *)src_ptr, "\n");
-        memcpy(line_buffer, src_ptr, line_length);
-        line_buffer[line_length] = 0;
-        add_line(rstate, -1);
-        src_ptr += line_length;
-        if(*src_ptr)
-          src_ptr++;
-      }
-
-      rstate->command_buffer = rstate->command_buffer_space;
-      CFRelease(flavorData);
-      ret = true;
-    }
-  }
-
-err_release:
-  CFRelease(clipboard);
-  return ret;
-}
-
-#else // !__WIN32__ && !(CONFIG_X11 && CONFIG_SDL) && !SDL_VIDEO_DRIVER_QUARTZ
-
-static inline void copy_buffer_to_selection(void) {}
-
-static inline bool copy_selection_to_buffer(struct robot_state *rstate)
-{
-  return false;
-}
-
-#endif
-
 static void copy_block_to_buffer(struct robot_state *rstate)
 {
   struct robot_line *current_rline = rstate->mark_start_rline;
@@ -1645,7 +1257,60 @@ static void copy_block_to_buffer(struct robot_state *rstate)
   /* It may be possible to copy this buffer out of process,
    * to an operating system clipboard.
    */
-  copy_buffer_to_selection();
+  copy_buffer_to_clipboard(copy_buffer, copy_buffer_lines,
+   copy_buffer_total_length);
+}
+
+static void paste_buffer(struct robot_state *rstate)
+{
+  char *ext_buffer = get_clipboard_buffer();
+  int i;
+
+  // If we can use an OS buffer, do so
+  if(ext_buffer)
+  {
+    char line_buffer[COMMAND_BUFFER_LEN];
+    char *src_ptr;
+    int line_length;
+    int copy_length;
+
+    rstate->command_buffer = line_buffer;
+    src_ptr = ext_buffer;
+
+    while(*src_ptr)
+    {
+      line_length = (int)strcspn(src_ptr, "\r\n");
+      memcpy(line_buffer, src_ptr, line_length);
+      line_buffer[line_length] = 0;
+      add_line(rstate, -1);
+      src_ptr += line_length;
+
+#ifdef __WIN32__
+      if(*src_ptr == '\r')
+        src_ptr++;
+
+      if(*src_ptr == '\n')
+        src_ptr++;
+#else
+      if(*src_ptr)
+        src_ptr++;
+#endif
+    }
+
+    free(ext_buffer);
+  }
+  else
+
+  if(copy_buffer)
+  {
+    for(i = 0; i < copy_buffer_lines; i++)
+    {
+      rstate->command_buffer = copy_buffer[i];
+      add_line(rstate, -1);
+    }
+  }
+
+  rstate->command_buffer = rstate->command_buffer_space;
 }
 
 static void clear_block(struct robot_state *rstate)
@@ -3298,26 +2963,6 @@ static int validate_lines(struct robot_state *rstate, int show_none)
 }
 
 #endif /* !CONFIG_DEBYTECODE */
-
-static void paste_buffer(struct robot_state *rstate)
-{
-  int i;
-
-  // If we can use an OS buffer instead, do so
-  if(copy_selection_to_buffer(rstate))
-    return;
-
-  if(copy_buffer)
-  {
-    for(i = 0; i < copy_buffer_lines; i++)
-    {
-      rstate->command_buffer = copy_buffer[i];
-      add_line(rstate, -1);
-    }
-  }
-
-  rstate->command_buffer = rstate->command_buffer_space;
-}
 
 void robot_editor(struct world *mzx_world, struct robot *cur_robot)
 {
