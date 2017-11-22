@@ -4005,6 +4005,8 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
              &debug_x, board_width, board_height, edit_screen_height);
 
+            fix_caption(mzx_world, modified);
+
             clear_board_history = 1;
             clear_overlay_history = 1;
             clear_vlayer_history = 1;
@@ -4503,6 +4505,11 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             src_board->mod_playing[0] = 0;
             strcpy(mzx_world->real_mod_playing,
              src_board->mod_playing);
+
+            if(mzx_world->current_board_id == 0)
+              mzx_world->name[0] = 0;
+
+            fix_caption(mzx_world, modified);
 
             clear_board_history = 1;
             clear_overlay_history = 1;
