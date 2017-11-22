@@ -710,7 +710,7 @@ int size_pos(struct world *mzx_world)
           (results[5] >= src_board->board_height)) ||
           !confirm(mzx_world, "Reduce board size- Are you sure?"))
         {
-          if(results[4] != src_board->board_width &&
+          if(results[4] != src_board->board_width ||
            results[5] != src_board->board_height)
           {
             change_board_size(src_board, results[4], results[5]);
