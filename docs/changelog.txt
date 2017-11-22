@@ -27,8 +27,8 @@ FEATURES
   set "file.palidx" "SMZX_INDICES", and will do nothing outside
   of mode 3.
 + Added MOD_LENGTH counter. The value of this counter is length
-  of the current playing music in rows for modules, or in samples
-  for PCM audio.
+  of the current playing music in rows for modules, or in
+  samples for PCM audio.
 + Added MAX_SAMPLES counter. When set, MegaZeux will limit the
   maximum number of samples that will play simultaneously. Set
   to -1 to disable the sample limit.
