@@ -625,11 +625,12 @@ int place_current_at_xy(struct world *mzx_world, enum thing id, int color,
 {
   struct board *src_board = mzx_world->current_board;
   int offset = x + (y * src_board->board_width);
-  char *level_id = src_board->level_id;
-  enum thing old_id = (enum thing)level_id[offset];
 
   if(overlay_edit == EDIT_BOARD)
   {
+    char *level_id = src_board->level_id;
+    enum thing old_id = (enum thing)level_id[offset];
+
     if(old_id != PLAYER)
     {
       if(save_history)
