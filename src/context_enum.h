@@ -50,6 +50,7 @@ enum help_context {
   CTX_COUNTER_DEBUG = 100,
   CTX_ROBOT_DEBUG = 101,
   CTX_BREAKPOINT_EDITOR = 102,
+  CTX_VLAYER_SIZES = 103,
 };
 
 #endif /* __CONTEXT_ENUM */

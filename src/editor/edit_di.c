@@ -765,8 +765,7 @@ int size_pos_vlayer(struct world *mzx_world)
   // Prevent previous keys from carrying through.
   force_release_all_keys();
 
-  // FIXME
-  set_context(CTX_BOARD_SIZES);
+  set_context(CTX_VLAYER_SIZES);
 
   do
   {

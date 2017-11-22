@@ -38,7 +38,34 @@
 
 $** Credits and Acknowledgments **
 
-$MegaZeux SDL Thanks & Beta Testers:
+$Programming and Overall Design by Gilead Kutnick (Exophase),
+$Alistair Strachan (ajs), Alice Rowan (Lachesis) and Lancer-X
+$Based off of original program and source code by Alexis Janson
+$Help file by Terryn
+$Default SMZX palette by Joel Lamontagne (LogiCow)
+$ccv utility by Lancer-X
+$png2smzx utility by Alan Williams (Mr_Alert)
+$checkres utility by Josh Matthews (Revvy), ajs and Lachesis
+$Port contributors: Adrian Siekierka (asiekierka) [3DS],
+$Mr_Alert [Wii], Kevin Vance [NDS], Simon Parzer [GP2X]
+$Renderer code contributors: LogiCow, Mr_Alert
+$Shader code contributors: David Cravens (astral), GreaseMonkey
+$Icon by Quantum P.; Extra icons by LogiCow
+$GDM conversion by ajs and MadBrain
+$Other past contributors: Spider124, Koji, JZig, Akwende,
+$MenTaLguY.
+
+$** Special Thanks **
+
+$Insidious (.deb Builds)
+$mzxgiant (MSVC Testing, Bug Fixes)
+$mzxrules (Testing)
+$Quantum P. (OS X Testing / Builds)
+$Spectere (OS X Builds)
+$Terryn (Testing)
+$Wervyn (Testing)
+
+$MegaZeux 2.80 Thanks & Beta Testers:
 $Exophase
 $ZoMbIeGuY
 $Wervyn
@@ -48,15 +75,6 @@ $KenOhki2112
 $Terryn
 $Inuchance (Macintosh testing)
 $Everyone who submitted a bug report
-
-$Programming and Overall Design by Gilead Kutnick (Exophase)
-$Based off of original program and source code by Gregory Janson
-$Music/Sound code by modplug with patch by Alistair Strachan
-$GDM conversion by Alistair Strachan (ajs) and MadBrain
-$Help file by Terryn
-$Pack-in SMZX utility and default SMZX palette by LogiCow
-$Other past contributors: Spider124, Koji, MadBrain, JZig,
-$Akwende, MenTaLguY, CapnKev.
 
 >072:Table of Contents
 #HELPONHE.HLP
@@ -467,8 +485,9 @@ to the default speed unless otherwise prompted.)
 
 In addition to these settings, one can change the current
 scaling shader if running MegaZeux with the GLSL renderer.
-Unlike the rest of these settings, this setting is applied
-globally.
+
+Settings for game speed will only apply for the current world;
+all other settings are global.
 
 Note that some games may block access to the F2 menu entirely.
 
@@ -1696,28 +1715,36 @@ Ready to start creating your own worlds? Then, let's get
 started! This section is a short editor tutorial. It will
 teach you the basics of creating your own worlds.
 
-To get into the editor, press E from the title screen. You
-will be presented with a blank board with a small menu at the
-bottom. You can use PageUp and PageDown to change the
-currently shown menu, and you will be presented with various
-keys and options. The mouse also works here. Feel free to
-fool around with these various options. Press Alt+R to restart
-and clear everything.
+To get into the editor, press N or F8 from the title screen. You
+will be asked to name a starting board: one can type an
+appropriate name and create a second starting board, or press
+Escape to cancel and remain on your new world's title screen.
+When this prompt is dealt with, you will be presented with a
+blank board with a small status bar at the bottom. You can use
+Alt+H to pop up a listing of key shortcuts at the bottom. PageUp
+and PageDown change its currently shown key shortcuts. The mouse
+also works here. Feel free to play around with these various
+options. Press Alt+R to restart and clear everything (you will
+be asked for confirmation, to make sure you really want to go
+through with it).
 
-For your first world, you should start simple. The screen you
-begin on is your title screen, so pick a simple name for your
-game, such as "Redolent Obsequience". Press I for board info.
-This screen will display a bunch of options; the important
-option is the "Board name" option. Type in the name of your
-game and then click on "OK" or press Tab until OK is
+For your first world, you should start simple. The very first
+board in the board listings is the title screen, so name that
+board after your game. (If you opted to create a starting board,
+you have to switch to the first board with the B key.) Press I
+for board info. This screen will display a bunch of options; the
+important option is the "Board name" option. Type in the name of
+your game and then click on "OK" or press Tab until OK is
 highlighted and press Enter. Now that the title screen is
 named, its design begins... or is put aside for later (or even
 the end).
 
-Now you need to create the first playable board, or location,
-of your game. Press A to add a board, then type in a short
-description of the board, such as "Starting Board". Press Enter
-to go to this new board.
+If you skipped making a starting board, you may need to create
+the first playable board, or location, of your game. Press A to
+add a board, then type in a short description of the board, such
+as "Starting Board". Press Enter to go to this new board.
+Otherwise, simply press the B key and select the starting board
+made earlier.
 
 Now you are free to doodle around. Use C to change the active
 color. Use F3 through F9 to bring up menus of items, terrains,
@@ -1885,6 +1912,8 @@ what each one does.
 >AltNu:Alt+Number           - Load Editor Position
 >CtrG:Ctrl+G               - Goto Position
 >CtrN:Ctrl+N               - Test Music
+>CtrY:Ctrl+Y               - Redo
+>CtrZ:Ctrl+Z               - Undo
 >CtrNu:Ctrl+Number          - Save Editor Position
 >Sft8:Shift+8 OR Numpad *  - Mod Wildcard
 >SftAr:Shift+Arrow         - Goto Linked Board
@@ -1899,7 +1928,7 @@ what each one does.
 >F8:F8  - Element
 >F9:F9  - Misc. (thing)
 >F10:F10 - Objects
->F11:F11 - Toggle Super MZX Mode
+>F11:F11 - Select Screen Mode
 >F12:F12 - Take Screenshot
 
 >AF11:Alt+F11 - Robotic Debugger
@@ -1952,30 +1981,45 @@ board is created.
 
 :073:~EAlt+B - Block
 
-Press Alt+B to start block mode. Then move the cursor to the
-opposite corner of a rectangular block, and press Alt+B again.
-You can then select an action to perform upon the block. Copy
-will allow you to duplicate the block by moving the cursor to
-a destination and pressing Enter. The cursor marks the new
-UPPER LEFT corner. Copy (repeated) will allow same as Copy,
-but will allow copying the same block several times. Move will
-allow you to move the block to a new location. Clear will
-erase the contents of the block. Flip will flip the block
-upside down. Mirror will flip the block left to right. Paint
-will change the entire block to the current color. Copy
-to/from overlay will copy the block to or from the overlay,
-depending on where it currently is. Destinations for Move and
-Copy can overlap the original block safely. Save as MZM will
-save the block as a "board" type MZM.
+Press Alt+B to start block mode, then move the cursor to the
+opposite corner of a rectangular block and press Alt+B again.
+You can then select an action to perform upon the block. In all
+copy/move operations, the cursor marks the new UPPER LEFT
+corner.
 
-You can block copy to other boards now by going to the desired
-board when prompted to pick the destination of the block. Just
-press B and pick the desired board.
+Copy block will allow you to duplicate the block by moving the
+cursor to a destination and pressing Enter.
+Copy block (repeated) will allow same as Copy block, but will
+allow copying the same block to multiple places.
+Move block will allow you to move the block to a new location.
+Clear block will erase the contents of the block.
+Flip block will flip the block upside down.
+Mirror block will flip the block left to right.
+Paint block will change the entire block to the current color.
+Copy to overlay will copy the block to the given spot of the
+overlay.
+Copy to vlayer will copy the block to the given spot of the
+vlayer.
+Save as MZM will save the block as a layer-type MZM file.
+
+Destinations for Move and Copy can overlap the original block
+safely.
+
+You can block copy to other boards by going to the desired board
+when prompted to pick the destination of the block; just press B
+and pick the desired board.
+
+Also, one can move the cursor across the width or height of the
+block by using Ctrl+Dir. This is very helpful for tiling blocks
+using the repeated copy function.
 
 :_C:~EC - Color
 
 Press C to select a new current color from a menu. The thing
-under the cursor is not affected.
+under the cursor is not affected. One can jump to a color by
+typing its hex code in the color menu; for example, typing "0D"
+would jump to color 013 (background color 0, foreground color
+D).
 
 :AltC:~EAlt+C - Char Edit
 
@@ -1995,9 +2039,12 @@ desired action.
 
 :AltD:~EAlt+D - Default Colors
 
-Press Alt+D to revert to the default colors. The palette prior
-to the switch will be destroyed, so save the current palette if
-keeping it is necessary. You will be asked for confirmation.
+Press Alt+D to toggle forcing default colors for placing
+built-ins (defaults to on). Turning this off causes built-ins to
+be placed with the colors of the object held in the buffer. The
+buffer object listed in the status bar will have a red dot at
+the end when default colors are off. Only some types of
+built-ins, such as creatures and items, have default colors.
 
 :AltE:~EAlt+E - Palette
 
@@ -2079,9 +2126,12 @@ into the current board or world. You can import a board file
 to the end of the list of boards. The global of the imported
 world will be ignored. (Unlike old versions of MegaZeux, all
 exits in an imported world will work.) You can import a palette
-(.PAL) file or a sound effects (.SFX) file, both unique to
-MegaZeux. Finally, you can import an MZM file at a given
-position.
+(.PAL) file (including a palette indices (.PALIDX) file in SMZX
+mode 3) or a sound effects (.SFX) file, all unique to MegaZeux.
+Finally, you can import an MZM file at a given position.
+
+Importing boards or worlds will clear the board and overlay undo
+histories.
 
 :_L:~EL - Load
 
@@ -2092,8 +2142,8 @@ world as-is has not been saved yet.
 :AltL:~EAlt+L - Test WAV
 
 Alt+L brings up a list of WAV/SAM/OGG files in the current
-directory. Selecting one will play it at its natural frequency.
-This has no effect on the actual board or world.
+directory. Selecting one will play it once at its natural
+frequency. This has no effect on the actual board or world.
 
 :_M:~EM - Move Board
 
@@ -2143,13 +2193,14 @@ the buffer. The object under the cursor is not affected.
 
 Alt+P allows you to change the size of the current board, the
 viewport size, and location. See another section for details.
+This action will clear the board and overlay undo histories.
 
 >#GENERALE.HLP:sizepos:Board Sizes
 
 :AltR:~EAlt+R - Restart
 
 Alt+R will clear the entire world. You will be asked for
-confirmation.
+confirmation. All undo histories will also be cleared.
 
 :076:~ES - Save
 
@@ -2178,7 +2229,8 @@ to YES).
 Alt+T will allow you to test the current world, starting on the
 current board. Games CAN be loaded and saved in this mode,
 making it especially helpful for debugging. Quitting will
-return to the editor.
+return to the editor. Note that entering a test session will
+clear all editor undo histories.
 
 :_V:~EV - View
 
@@ -2202,18 +2254,21 @@ and that their linking boundaries are of the same size.
 Alt+X will allow you to export a number of different file types.
 You can export a board file (MZB) unique to MegaZeux, good for
 giving single boards to others. (The character set, palette,
-and global info aren't included!) You can export the character
-set (CHR) for later game use or to edit in Fontutil or another
-third party app. You can export palettes (PAL) [full, partial,
-and SMZX] and sound effect settings (SFX) for transportation.
-Both are file formats unique to MegaZeux. Finally, you can
-export the current world, but using the last version's world
-format, with the "Downver. world (MZX)" option.
+vlayer and global info aren't included!) You can export the
+character set (CHR) for later game use or to edit in Fontutil or
+another third party app. You can export palettes (PAL) [full,
+partial, SMZX] and sound effect settings (SFX) for
+transportation. Both are file formats unique to MegaZeux.
+Finally, you can export the current world, but using the last
+version's world format, with the "Downver. world (MZX)" option.
 
 Files like MZMs and SAVs can be exported with Robotic code. See
 their respective areas for details. Other file types such as
 character sets can be exported generically through file writing
-facilities and charset counters.
+facilities and charset counters. SMZX indices (PALIDX) can be
+exported using the Export Palette (PAL) option in SMZX mode 3;
+its export dialogue will appear after the palette export
+dialogue.
 
 :AltY:~EAlt+Y - Debug Window
 
@@ -2226,15 +2281,24 @@ at the top. This is the same as F6 in-game.
 :AltZ:~EAlt+Z - Clear (board)
 
 Alt+Z will clear the current board entirely. You will be asked
-for confirmation.
+for confirmation. Clearing the board will clear the board undo
+history as well.
+
+:CtrZ:~ECtrl+Z - Undo
+:CtrY:~ECtrl+Y - Redo
+
+Ctrl+Z will undo an action; Ctrl+Y will redo any previously
+undone action. Action depth is determined by config file
+settings, with 100 as default.
 
 :CtrNu:~ECtrl+Number - Save Editor Position
 :AltNu:~EAlt+Number  - Load Editor Position
 
 These save and load up to 10 cursor positions in the editor
-(0 thru 9). These positions save boards, so one can save
-position on one board and load position from another board.
-These positions are not saved with the MZX file.
+(0 through 9). These positions save both current board
+coordinates and active board, so one can save position on one
+board and load position from another board. These positions are
+saved for that world in its .editor.cnf file.
 
 :Sft8:~EShift+8 OR Numpad * - Mod Wildcard
 
@@ -2299,12 +2363,19 @@ except for certain Robotic programming situations.
 >#ROBOTICT.HLP:1st:Robotic Tutorial
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 
-:F11:~EF11 - Toggle Super MZX Mode
+:F11:~EF11 - Select Screen Mode
 
-Pressing F11 will change the currently set SMZX mode, in this
-order: From OFF to Mode 1; From Mode 1 to Mode 2; From Mode 2
-to Mode 3; From Mode 3 to OFF. This setting only holds for the
-editor; it will not carry into games by itself.
+Pressing F11 will open a menu, allowing the user to select an
+MZX display mode (normal mode and Super MZX modes 1-3). This
+setting will persist in editor tests until overridden in-game;
+if editor tests are left while in a different SMZX mode, it will
+be reverted to the setting given here upon returning to the
+editor.
+
+Setting the screen mode is a prerequisite for editing palettes
+and character sets in Super MZX modes.
+
+>#SMZXMODE.HLP:095:Super MZX Modes
 
 :F12:~EF12 - Take Screenshot
 
@@ -2425,8 +2496,8 @@ example, one can make bricks, rockets, stones, and demons;
 using multiple characters, one can make much grander things.
 The default pixel resolution is fair - 8x14 per character for a
 total of 640x350 for the entire screen. Other modes (known as
-Super MZX modes) increase colors at a cost of halving
-horizontal resolution, but the difficulties of character
+Super MZX modes) increase colors at a cost of effectively
+halving horizontal resolution, but the difficulties of character
 editing in those modes are best covered elsewhere.
 
 To use the character editor, press Alt+C in the editor. You
@@ -2435,13 +2506,18 @@ of options, a list of numbers, and a row of characters. The
 numbers are only important for certain Robotic programming
 situations.
 
-To edit the character, move the cursor with the keys and use
-Spacebar to toggle pixels on and off (or left-click and
-right-click, respectively). Use + and - to move one character
-(or character block) up or down through the character set. Use
-Enter to select the current character (or block) from the
-entire set. The current character(s) are highlighted on the row
-in the upper right corner.
+The current character(s) being edited are displayed on the left
+edge of the character bar, and also highlighted and shown in
+relative position in the middle of the bar. To edit the
+character(s), move the cursor with the keys and use Spacebar to
+toggle pixels on and off (or left-click and right-click,
+respectively). Use + and - to move one character (or character
+block) up or down through the character set.
+
+Use Enter to select the current character (or block) from the
+entire set. When selecting from the entire set, one can move by
+one character using the arrows, or by one block using the -/+
+keys.
 
 Use Del to clear the character. Use N to make a "negative", or
 inverse, of the character, turning all on pixels off and all
@@ -2450,21 +2526,32 @@ character to one direction. Pixels shifted off of one edge
 wraparound to the other edge.
 
 Use M to mirror the character, flipping it left to right. Use
-F to flip the character top to bottom. F2 will copy the current
-character to an internal buffer, while F3 will paste the buffer
-contents to the current character. The buffer is retained
-between uses of the character editor.
+F to flip the character top to bottom.
 
 Hold Shift to select multiple pixels at a time. The selection
 box will vanish once Shift is released. Alt+B will also create
 a similar selection box, but will not vanish until the Escape
 key is pressed.
 
-Alt+U will undo actions done in the editor (up to the limit
+F2 will copy the current character to an internal buffer, while
+F3 will paste the buffer contents to the current character
+space. The buffer can contain a selection of pixels instead of a
+character by pressing F2 when selecting a group of pixels. When
+copying a single character and pasting to another single
+character, the new content simply replaces the old; in other
+circumstances, the new content is placed starting with the
+cursor position as its upper-left corner with no wraparound. The
+buffer is retained between uses of the character editor.
+
+Ctrl+Z will undo actions done in the editor (up to the limit
 defined in the config file). Keep in mind that the current
 frame is counted in the amount of undo actions.
 
-Alt+R will redo any undone actions.
+Ctrl+Y will redo any undone actions.
+
+C will allow selection of colors used in the char editor. This
+can be helpful in crafting characters for a specific palette.
+Use Alt+C to switch colors back to the default.
 
 Alt+F will flood fill any highlighted area.
 
@@ -2475,12 +2562,19 @@ Shift+Tab will turn toggle (clear) mode. (clear) mode will turn
 all pixels crossed OFF.
 
 Multiple characters can be edited at one time. To select a
-group of characters, press and hold Enter in the character
-editor while highlighting the desired group of characters. If
-more than one viable block can be made from the selected
-characters, the user can choose the desired block (e.g. six
-characters can be 3x2, 2x3 or 6x1). The largest block one can
-edit is 6x3.
+group of characters, press Enter in the character editor, hold
+Shift on the upper-left corner of your desired block of
+characters to edit, and finally highlight your block of
+characters, release Shift, and press Enter. If more than one
+viable character space can be made from the selected characters,
+the user can choose the desired space size (e.g. six characters
+can be a 3x2, a 2x3 or a 6x1 space). The largest character space
+one can use for editing is 18 characters large (6x3).
+
+The extra character sets accessible by unbound sprites can also
+be edited in the character editor. Press PgUp and PgDown to
+switch character sets, either on the main character edit screen
+or on the character selection menu.
 
 Alt+I will import character sets while in the character editor;
 Alt+X will export. This can be done with one full set or series
@@ -2513,9 +2607,9 @@ $~9The Palette Editor
 MegaZeux is not limited to the colors it sets as default. The
 built-in palette editor can modify colors, which is very helpful
 in designing a game. It allows you to change the appearance of
-the 16 currently-available colors, and is more user-friendly
-than having to change values through code. MegaZeux worlds can
-only have one active palette at a time, but can load different
+the currently-available colors, and is more user-friendly than
+having to change values through code. MegaZeux worlds can only
+have one active palette at a time, but can load different
 palettes as frequently as desired, so MegaZeux designers can
 create different palettes that fit different parts of their
 game.
@@ -2527,27 +2621,13 @@ marked. By default, the RGB values of the current color and the
 current color creation mode are shown to the right of the
 visible palette, and the menu is shown below.
 
-Several functions are consistent across all modes. Alt+D will
-reset the palette to its default colors (you will NOT be asked
-for confirmation). 0 will blacken the current color. Alt+H will
-toggle the shortcut display. The PgUp and PgDn keys select the
-current color model. Finally, F2 will store the current color to
-an internal buffer, while F3 will paste the buffered color to
-the current color.
-
-In addition to the keyboard shortcuts listed in the below menu,
-users can click colors in the palette to select them. Users can
-also use the mouse to change color values by clicking on the
-relevant areas, and hold down the mouse button to act as a
-slider.
-
 Some color theory is in order. Computer monitors display colors
 by projecting various amounts of Red, Green, and Blue light. 
 Combined, these three colors can produce almost any shade and
 hue of color. This is one way colors are represented in MegaZeux
-as well. In RGB mode (the default), each color has a Red, Green,
-and Blue value, each ranging from 0 to 63. 0 is "off" while 63
-is "full intensity".
+as well. In the RGB color model (the default), each color has a
+Red, Green, and Blue value, each ranging from 0 to 63. 0 is
+"off" while 63 is "full intensity".
 
 To make colors other than red, green, and blue, you must mix
 them. Purple is red plus blue, cyan is green plus blue, and
@@ -2558,10 +2638,25 @@ a dark gray. Orange is made with full red, green set to 31 and
 blue zeroed out. To brighten a color, raise all the numbers, or
 lower them to darken it.
 
-For RGB mode, use the arrow keys to select the current color. R,
-G, B, and A will respectively increase Red, Green, Blue, and
-All, while Alt+R, Alt+G,Alt+B and Alt+A will respectively
-decrease the values.
+For the RGB color model, use the arrow keys to select the
+current color. R, G, B, and A will respectively increase Red,
+Green, Blue, and All, while Alt+R, Alt+G,Alt+B and Alt+A will
+respectively decrease the values.
+
+Several functions are consistent across all color models. Alt+D
+will reset the palette to its default colors (you will NOT be
+asked for confirmation). 0 will blacken the current color. Alt+H
+will toggle the shortcut display. The PgUp and PgDn keys select
+the current color model. Finally, F2 will store the current
+color to an internal buffer, while F3 will paste the buffered
+color to the current color.
+
+In addition to the keyboard shortcuts listed in the below menu,
+users can click colors in the palette to select them. Users can
+also use the mouse to change color values by clicking on the
+relevant areas, and hold down the mouse button to act as a
+slider. Color values can also be clicked on and then typed in
+directly.
 
 If one is more familiar with other color models, MegaZeux can
 create colors with two alternate models: HSL and CIELAB.
@@ -2583,9 +2678,68 @@ shortcuts in this mode are V, A and B for increasing L*, a* and
 b*, respectively, while alt key combinations of these keys
 reduce these values.
 
-Unfortunately, the default MZX palette editor will be unhelpful
-for Super MZX modes; see the Super MZX section for details on
-working with SMZX modes.
+$~9The Palette Editor in Super MZX Modes
+
+Super MZX Modes allow 256 colors at once, and have their own
+quirks; therefore, the palette editor changes considerably to
+accomodate them. The palette editor for each SMZX mode is noted
+below.
+
+$Super MZX Mode 1 Palette Editor
+
+Super MZX Mode 1 does not require any changes, since it merely
+interpolates colors. Therefore, palette editing in this mode
+acts the exact same as it does in normal MZX mode.
+
+$Super MZX Mode 2 Palette Editor
+
+Super MZX Mode 2's color selection is shown as a 16x16 set of
+colors. Each color also represents the four-color palette (also
+known as a subpalette) used when an item is assigned that color.
+The palette number, as well as its hex number and the four
+colors that comprise it, are shown in the upper-left corner. By
+default, the color selector shows the current color/palette
+highlighted by a white box, with red boxes showing the other
+colors of the palette.
+
+The base values of the current color and the current color
+creation mode are shown in the upper-right, and the help menu
+is shown below.
+
+On top of the functions allowed in the normal palette editor,
+SMZX Mode 2 adds this hotkey:
+
+~ESpacebar / Middle Click~F: Toggle Subpalette Index Cursors.
+Turns the display of the red boxes highlighting the other
+component colors of the given palette on or off.
+
+$Super MZX Mode 3 Palette Editor
+
+Super MZX Mode 3's color selection is shown as a 16x16 set of
+colors. The palette number, as well as its hex number and the
+four colors that comprise it, are shown in the upper-left
+corner.
+
+The base values of the current color and the current color
+creation mode are shown in the upper-right, and the help menu
+is shown below.
+
+In this mode, the highlighted color only corresponds to a color,
+NOT to a subpalette; therefore, one can be editing a different
+color and subpalette at the same time, and changing highlighted
+color will NOT change the current subpalette.
+
+To change the current subpalette, press Space or click the
+middle mouse button, and then choose the subpallete to edit.
+Each color can be assigned to a color slot in the current
+subpalette; to place a color in a subpalette slot, press 1-4 to
+put the current color in the corresponding slot (for example,
+pressing 2 while on color #120 would make the second color of
+the current subpalette color #120).
+
+With the exception of hiding the help, all functions available
+to the palette editor in normal MZX mode are available in the
+SMZX mode 3 editor.
 
 >#EDITINGK.HLP:080:Editing Keys and Options Reference
 >#SMZXMODE.HLP:095:Super MZX Modes
@@ -2874,10 +3028,9 @@ following formats:
 * IT
 * GDM
 * WAV
-* Other formats {STM, MTM, 669, ULT, FAR, MED (MMD0), DSM, OKT,
-  AMF}
-* MT2, AMS, MDL, DMF, PTM, DBM, PSM, J2B, UMX, MID, ABC and PAT
-  are in ModPlug, but not supported in MZX.
+* Other formats {STM, MTM, 669, ULT, FAR, MED, DSM, OKT, AMF}
+* Several other formats are in ModPlug or XMP, but are not
+  supported in MZX.
 
 The default module engine is XMP. It is still possible to build
 using ModPlug, and possible to build using MikMod to support
@@ -2890,6 +3043,11 @@ S3M file is then loaded in all future incidences.
 Formats common to all engines are MOD, S3M, XM, IT, STM, MTM,
 669, ULT, FAR, MED, DSM, OKT and AMF. All other formats 
 (excluding WAV/OGG/SAM/GDM) are locked out of MZX by default.
+
+MED support is the most inconsistent between module engines,
+due to its multiple subversions and the engines' varying
+accuracy on dealing with them, so use of this format is not
+generally advised.
 
 MZX supports loop markers for WAVE and OGG files. WAVE formats
 with the "smpl" marker will be recognized, and forward loop
@@ -3163,8 +3321,8 @@ To convert frequencies from MZX to real, use these formulae:
  Actual frequency = 1789682 / MZX frequency
  MZX frequency = 1789682 / actual frequency
 
-WAVs converted from SAMs by older versions of MZX play at a
-natural frequency of 8363Hz.
+SAMs and WAVs converted from SAMs by older versions of MZX play
+at a natural frequency of 8363Hz.
 
 Finally, tracked modules have a normal frequency of 44100 Hz;
 other types such as OGG and WAV have normal frequencies at
@@ -3221,34 +3379,45 @@ following keys and options:
 
 :074:~EAlt+B - Block
 
-Press Alt+B to start block mode. Then move the cursor to the
-opposite corner of a rectangular block, and press Alt+B again.
-You can then select an action to perform upon the block. Copy
-will allow you to duplicate the block by moving the cursor to
-a destination and pressing Enter. The cursor marks the new
-UPPER LEFT corner. Copy (repeated) is the same as Copy but can
-allow copying of the same block to multiple places. Move will
-allow you to move the block to a new location. Clear will erase
-the contents of the block. Flip will flip the block upside
-down. Mirror will flip the block left to right. Paint will
-change the entire block to the current color. Copy to/from
-overlay will copy the block to the main level from the overlay.
-You will have to select the type of thing it will be copied as:
-Floor, Text, etc. Save as MZM will save the block as a 
-layer-type MZM file. Destinations for Move and Copy can
-overlap the original block safely. Ctrl+Dir is especially
-helpful when doing a repeated copy block; it moves the cursor
-the width of the block, ensuring no overlap when pasting.
+Press Alt+B to start block mode, then move the cursor to the
+opposite corner of a rectangular block and press Alt+B again.
+You can then select an action to perform upon the block. In all
+copy/move operations, the cursor marks the new UPPER LEFT
+corner.
 
-Like normal Block functions, one can now copy between boards by
+Copy block will allow you to duplicate the block by moving the
+cursor to a destination and pressing Enter.
+Copy block (repeated) is the same as Copy block but can allow
+copying of the same block to multiple places.
+Move block will allow you to move the block to a new location.
+Clear block will erase the contents of the block.
+Flip block will flip the block upside down.
+Mirror block will flip the block left to right.
+Paint block will change the entire block to the current color.
+Copy to board will copy the block to the given spot of the
+board. You can choose to place it as either Custom Block, Custom
+Floor, or Text.
+Copy to vlayer will copy the block to the given spot of the
+vlayer.
+Save as MZM will save the block as a layer-type MZM file.
+
+Destinations for Move and Copy can overlap the original block
+safely. Ctrl+Dir is especially helpful when doing a repeated
+copy block; it moves the cursor the width or height of the
+block, ensuring no overlap when pasting.
+
+Like normal Block functions, one can copy between boards by
 selecting the board when the editor prompts the user for the
 block's destination.  Use the B key to select the destination
 board.
 
 :_C:~EC - Color
 
-Press C to select a new current color from a menu. The character
-under the cursor is not affected.
+Press C to select a new current color from a menu. The thing
+under the cursor is not affected. One can jump to a color by
+typing its hex code in the color menu; for example, typing "0D"
+would jump to color 013 (background color 0, foreground color
+D).
 
 :_F:~EF - Fill
 
@@ -3303,13 +3472,13 @@ current character is not affected.
 
 :End:~EEnd - L/R Corner
 
-End will jump the cursor to the lower left corner of the entire
+End will jump the cursor to the lower-right corner of the entire
 overlay.
 
 :Enter2:~EEnter - Character
 
-Enter will change the current character. Select it from a menu
-and then press Enter to confirm your choice.
+Enter will alter the current character on the overlay. Select it
+from a menu and then press Enter to confirm your choice.
 
 :ESC:~EESC - Exit/Cancel Mode
 
@@ -3327,18 +3496,29 @@ entire overlay.
 Ins will select the character and color under the cursor
 as the current. The actual character is not affected.
 
-:Sp:~ESpace - Place
+:Sp:~ESpacebar - Place
 
-Space will copy the current character and color to the location
-under the cursor. Trying to place something over itself will
-instead delete it. Other things will be deleted if they are in
-the way.
+Spacebar will copy the current character and color to the
+location under the cursor. Other things will be deleted if they
+are in the way.
 
 :Tab:~ETab - Draw
 
 Tab will toggle the current draw mode. When drawing is on, you
 will place a copy of the current character every time you move
 the cursor.
+
+~EP - Change Buffer Character
+
+P will act much like Enter, but only change the character in the
+buffer; no character on the overlay is changed with this action.
+
+:CtrZ:~ECtrl+Z - Undo
+:CtrY:~ECtrl+Y - Redo
+
+Ctrl+Z will undo an action; Ctrl+Y will redo any previously
+undone action. Action depth is determined by config file
+settings, with 100 as default.
 
 The basic method of editing the overlay is to use C and Enter to
 select characters and colors, and use Space, arrows, and Tab to
@@ -3361,7 +3541,7 @@ overlays.
 
 >#COMMAND2.HLP:_c4:CHANGE OVERLAY [color] [char] [color] [char]
 >#COMMAND2.HLP:_c5:CHANGE OVERLAY [color] [color]
->#COMMAND2.HLP:_cJ:~ACOPY BLOCK # # # # # #
+>#COMMAND2.HLP:_cJ:COPY BLOCK # # # # # #
 >#COMMAND2.HLP:_cL:COPY OVERLAY BLOCK # # # # # #
 >#COMMAND2.HLP:_cR:COPY OVERLAY BLOCK # # # # "@@filename" #
 >#COMMAND2.HLP:_cS:COPY OVERLAY BLOCK "#x" "#y" # # "@@filename" #
@@ -3463,6 +3643,9 @@ Expanding this list will allow selection of lists sorted by
 relevant sprite - "spr1","spr2", and so on. Each spr# list
 shows all of each sprite's relevant counters.
 
+~AUniversal~F: Lists counters which persist throughout an entire
+session of MegaZeux, as well as their values.
+
 ~AWorld~F: Lists built-in world counters/strings and their values.
 
 ~ABoard~F: Lists built-in board counters/strings and their values.
@@ -3525,6 +3708,11 @@ the current user-defined counters and strings, and the built-in
 counters in the Counters parent list, to their current values.
 If overwriting a current file is chosen, MZX will ask for
 confirmation.
+
+In addition to its considerable power, accessing the counter
+debug mode can allow access to the character editor (via Alt+C)
+or the palette editor (via Alt+E) for further manipulation and
+testing.
 
 $The Robotic Debugger
 :101:
@@ -4623,20 +4811,35 @@ certain functions.
 
 $Robotic Usage - Comparing Strings
 
+String comparisons are case-insensitive unless stated otherwise.
+Allowed comparisons are to a line of text, to another string and
+to a number. However, the string is required to be the first
+item, and string counters such as "MOD_NAME", "BOARD_SCAN", etc.
+are not valid comparisons.
+
 Strings can be compared through these commands:
 
-~BIF "$string" = "value" then "label"
-~BIF "$string" != "value" then "label"
-~BIF "$string" > "value" "label"
-~BIF "$string" < "value" "label"
-~BIF "$string" >= "value" "label"
-~BIF "$string" <= "value" "label"
+~BIF "$string" = "value" then "label" (equality)
+~BIF "$string" != "value" then "label" (inequality)
+~BIF "$string" > "value" "label" (greater than)
+~BIF "$string" < "value" "label" (less than)
+~BIF "$string" >= "value" "label" (greater than or equal to)
+~BIF "$string" <= "value" "label" (less than or equal to)
+~BIF "$string" === "value" then "label" (case-sensitive equality)
 
-String comparisons are case-insensitive. Allowed comparisons
-are to a line of text, to another string and to a number.
-However, the string is required to be the first item, and
-string counters such as "MOD_NAME", "BOARD_SCAN", etc. are not
-valid comparisons.
+Strings can also be compared using wildcards. There are two
+special wildcard characters: the ? character in the value being
+compared against matches any one character, while the %
+character matches any number of any characters (including zero).
+The wildcard commands are:
+
+~BIF "$string" ?= "value" then "label"
+~BIF "$string" ?== "value" then "label" (case-sensitive)
+
+Due to their use as a token, actual ? and % characters must be
+escaped to be checked for in wildcard comparisons. Use \\? and
+\\% to have values that check for literal use of these
+characters.
 
 $Robotic Usage - Manipulating Strings
 
@@ -4645,7 +4848,9 @@ Firstly, strings can be offset and limited ("spliced").
 ~B$strname#X~F will cap the string to X characters in length.
 
 ~B$strname+X~F will offset the start of the string by X
-characters.
+characters. Using a negative number will offset the start of
+the string backwards from the end of the string by X characters,
+with -1 as the end character.
 
 ~B$strname+X#Y~F will offset the string by X characters and limit
 the string to Y characters in length.
@@ -4659,15 +4864,15 @@ manipulate a portion of the string. For instance:
 ~Bset "$str" "hello"
 ~Bset "$str+1" "LOL"
 
-Will cause $str to have the value "hLOLo"
+Will cause $str to have the value "hLOLo".
 
-Writing to parts of strings also changes how the string limit
-works; the cap will limit how much of the spliced-in material
-is inserted instead of limiting the string length in total. For
-instance:
+Writing to parts of strings with an offset also changes how the
+string limit works; any length cap will limit how much of the
+spliced-in material is inserted instead of limiting the string
+length in total. For instance:
 
 ~B set "$str" "Baby steps."
-~B set "$str#4" "Long journey."
+~B set "$str+0#4" "Long journey."
 
 Will cause $str to have the value "Long steps."
 
@@ -4679,6 +4884,15 @@ command works well with char immediates:
 E.G. SET "$string.0" 'S' . When setting the character in a
 string it will make the string length one larger than X, so be
 careful when using very large values.
+Using negative numbers will manipulate using the end of the
+string as its basis: -X will manipulate the Xth character from
+the end of the string, with -1 being the end character.
+
+~B$strname.X#Y~F will manipulate characters in the string from the
+Xth character (starting from 0), up to character (X+Y-1). Y can
+be a number from 1 to 4; all other values for Y are clamped to
+fit this range. The string given or output acts as a number 8*Y
+bits in length.
 
 ~B$str.length~F will give the length of the given string.
 
@@ -6060,10 +6274,10 @@ the player moves. The screen will not scroll.
 
 :_c0:~ACHAR EDIT [char] # # # # # # # # # # # # # #
 
-Changes the appearance of the given character, using a 
-14-number code from the character editor. To insert these codes
-easily, use F5 in the Robot editor, select the desired
-character, and press ESC.
+Changes the appearance of the given character, using a 14-number
+code of 8-bit numbers derived from which pixels are set per
+horizontal line. To insert these codes easily, use F5 in the
+Robot editor, select the desired character, and press ESC.
 
 :_m5:~AMOD FADE IN "file"
 
@@ -6322,7 +6536,8 @@ same manner as a CW Rotate or CCW Rotate object.
 :_s4:~ASCROLL CHAR [char] [dir]
 
 The character picture of the stated character is scrolled one
-pixel in the given direction, with wraparound in effect.
+pixel in the given direction, with wraparound in effect. This
+command will not work as expected in SMZX modes.
 
 >#COMMANDS.HLP:dir:Directions
 
@@ -6904,11 +7119,13 @@ example: SET "boom" to '0' would come out as SET "boom" to 48.
 It's quite a difference!
 
 The following is a list of built-in counters, which all have
-special meanings. There are three types of built-in counters:
+special meanings. There are four types of built-in counters:
 Global, which affect everything; Local, which are different for
 each Robot and require special handling for other Robots to
-manipulate; and Board, which are specific to the current board.
-Some built-in counters are read-only; a few are write-only.
+manipulate; Board, which are specific to the current board; and
+Universal, which persist for the entire time MegaZeux is
+running. Some built-in counters are read-only; a few are
+write-only.
 
 MegaZeux utilizes a large number of built-in counters to
 maximize flexibility. For this reference, they have been
@@ -7208,6 +7425,12 @@ Controls the current mod order of the currently playing mod.
 Controls the current row in tracked modules, or the current PCM
 sample in other types of audio files.
 
+~BMOD_LENGTH (read-only, board)
+
+Displays the length of the currently playing mod. This counter's
+value shows number of rows for module files and number of
+samples for WAV/OGG files.
+
 $Mathematical Counters
 :mth:
 
@@ -7382,8 +7605,10 @@ their numbers.
 If set to 1, overlapping char 32s will not cause a collision
 between sprites or the foreground. If set to 2, char 32s and
 blank chars will also not collide, and blank characters will
-not be drawn. The given sprite can be set to both modes in
-tandem, and will act as usual when SPRn_CCHECK is set to 0.
+not be drawn. If set to 3, the given unbound sprite will undergo
+pixel-precise collision checks, and transparent colors will not
+cause a collision. Setting to 0 will cancel any previously set
+ccheck modes for that given sprite.
 
 ~BSPRn_CWIDTH
 ~BSPRn_CHEIGHT
@@ -7563,6 +7788,16 @@ and only to renderers that support unbound sprites.
 Keep in mind that all re-ordered indices will be set to normal
 values when SMZX_MODE is changed.
 
+~BSMZX_INDICES (function)
+
+Loads SMZX indices files. This only applies for SMZX Mode 3.
+
+~BSMZX_MESSAGE
+
+Controls whether messages in the message row are displayed with
+SMZX characters and colors in SMZX modes. 1 is yes, 0 is no
+(displays in normal mode); the default value is 1.
+
 ~BSMZX_PALETTE (read-only)
 
 Loads a Super MZX palette. This counter is deprecated; please
@@ -7665,7 +7900,7 @@ relative to the screen in characters.
 
 Reads/sets the mouse cursor's x or y-coordinates (respectively)
 in pixels. Always scales to terms of 640x350, regardless of the
-actual resolution.
+actual resolution or current SMZX mode.
 
 ~BMBOARDX (read-only, board)
 ~BMBOARDY (read-only, board)
@@ -7901,6 +8136,19 @@ released. These display/use the same keycodes as KEY_CODE.
 Results are unsigned, so checking for negative numbers will not
 work.
 
+~BRANDOM_SEED0 (universal)
+~BRANDOM_SEED1 (universal)
+
+These counters allow reading and controlling MegaZeux's random
+seed. RANDOM_SEED0 controls the low 32 bits of the seed, while
+RANDOM_SEED1 controls the high 32 bits. The random seed is not
+retained by save files.
+
+~BMAX_SAMPLES
+
+Sets number of samples that can play at once. -1 sets no limit,
+0 mutes all samples. PC Speaker emulated sounds are unaffected.
+
 ~BXPOS
 ~BYPOS
 
@@ -7962,7 +8210,7 @@ colors. cXX-type color codes will be shown as their actual
 color. The current line is shown in a solid color and color
 codes are shown in the usual cXX format.
 
-The following keys are active within the editor.
+The following keys are active within the Robotic editor:
 
 >_ar:F1 - Help
 >_br:F2 - Color
@@ -8491,7 +8739,7 @@ ZAP command lets programmers give out different reactions for
 going to the same label. In this case, we get to go to the
 second "shot" label after we went to the first.
 
-~B: "bombed"
+~E: "bombed"
 
 When the Robot is bombed, or otherwise hit by an explosion,
 it is sent this message.
@@ -8953,6 +9201,12 @@ of the current world's counters and strings; loading will set
 the current world's counter and string values to the values
 given in the file.
 
+~ASET "file.palidx" to "SMZX_INDICES"
+
+This command loads an SMZX indices file. SMZX indices are
+essentially miniature palettes and will only load in SMZX Mode
+3.
+
 MegaZeux can manipulate any type of file with certain Robotic
 commands. There are some basic things to remember when using
 file access.
@@ -9274,10 +9528,16 @@ unbound sprite has its own transparent color, which is set with
 the SPRn_TCOL counter. All pixels of that color in that unbound
 sprite will not display, and show the next underlying layer.
 
-Lastly, when assigned a ccheck value with SPRn_CCHECK, an
-unbound sprite will only apply its personal value in collision
-tests instead of the value of the sprite that initiated the
-check.
+When assigned a ccheck value with SPRn_CCHECK, an unbound sprite
+will only apply its personal value in collision tests instead of
+the value of the sprite that initiated the check. In addition,
+unbound sprites can use a special ccheck value (3) to ignore
+transparent colors in collision checks.
+
+Finally, SMZX modes do not affect unbound sprite movement and
+manipulation. This fact can be exploited to overlap SMZX sprites
+and potentially raise detail to normal MZX mode levels while
+retaining much of SMZX's palette benefits.
 
 Unfortunately, unbound sprites cannot be used with all MZX
 renderers. At present, the overlay2 renderer is incompatible
@@ -9299,10 +9559,9 @@ per character doubles to four, while the number of total max
 colors on-screen at one time squares to 256. However, each mode
 works differently and has different limitations and uses.
 
-In the editor, F11 switches between Super MZX modes (in the
-order of normal->1->2->3->normal). To set Super MZX modes in a
-game, use the ~Aset "smzx_mode" # ~FRobotic command, where # is
-the SMZX mode.
+In the editor, F11 switches between display modes. To set Super
+MZX modes in a game, use the ~Aset "smzx_mode" # ~FRobotic
+command, where # is the SMZX mode (0 to revert to normal mode).
 
 Super MZX mode 1 is the simplest mode and the easiest mode to
 use. SMZX mode 1 simply blends the foreground and background
@@ -9332,12 +9591,18 @@ second digit. (For example, if foreground color is 10, the hex
 number of color IV is AA.)
 
 Super MZX mode 3 is the best for dynamic usage of the palette,
-and the easiest to edit in general. Its colors are determined
-around a base value in hex (background color number as first
-digit, foreground color number as second). Color I's number is
-the base, II's is base+1, III's is base+2, and IV's is base+3.
-The numbers wrap around (so if your base is, for example, FF,
-color II would be 00).
+and the easiest to edit in general. By default, its colors are
+determined around a base value in hex (background color number
+as first digit, foreground color number as second). Color I's
+number is the base, II's is base+1, III's is base+2, and IV's
+is base+3. The numbers wrap around (so if your base is, for
+example, FF, color II would be 00).
+
+However, one can also directly change each value, disregarding
+these rules. This essentially allows 256 subpalettes of four
+colors each. These overrides, called SMZX indices, are loaded
+and saved out separately from the normal palette. These changes
+can only apply for renderers that can show unbound sprites.
 
 Character editing in Super MZX modes is noticeably different.
 While the character set can be edited in MegaZeux's internal
@@ -9349,26 +9614,37 @@ during SMZX char editing; keep this in mind if you have a
 visible character pool outside of the editor window to help
 visualize.
 
-Palette editing for SMZX modes cannot be done in MegaZeux's
-editor. Palette editing and creation must be done through
-Robotic. Thankfully, people have created MZX files that greatly
-ease the problem of creating SMZX palettes. PalzorII and Pal_ed
-are two such programs. The commands for changing the palette
-are:
+Palette editing for SMZX modes is also accommodated by MZX's
+palette editor. However, the user needs to be in the relevant
+SMZX mode before loading the palette editor.
+
+On top of direct editing through the editor, SMZX palettes can
+be changed on the fly with Robotic. The counters for SMZX
+palettes are:
 
 ~BSMZX_Rn
 ~BSMZX_Bn
 ~BSMZX_Gn
 
-These change or read the value of color n's red/blue/green
-value, respectively. n ranges from 0 to 255.
+Manipulation of these counters can change or read the value of
+color n's red/blue/green value, respectively. n ranges from 0
+to 255.
+
+The SMZX indices can also be directly read or changed with the
+~BSMZX_IDXx,y~F counter. x is the palette color ranging from 0
+to 255; y is one of the given color's indices ranging from 0 to
+3.
 
 Lastly, SMZX palettes and character sets can be loaded and
-saved like any other palette or character set. However, this
-wasn't the case in DOS, so there is a deprecated way to load
-an SMZX palette (SET "filename" "smzx_palette").
+saved like any other palette or character set. SMZX indices must
+be loaded in a special manner in Robotic:
+~ESET "filename" "SMZX_INDICES"~F. 
+There is a deprecated way to load an SMZX palette in Robotic
+(SET "filename" "smzx_palette") due to constraints DOS imposed,
+but it is no longer necessary. 
 
 >#COUNTERS.HLP:szc:Super MZX Counters
+>#PALEEDIT.HLP:093:The Palette Editor
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#CHAREDIT.HLP:079:The Character Editor
 >#MAIN.HLP:072:Table of Contents
@@ -9390,27 +9666,179 @@ exploited to create the semblance of an extra overlay layer.
 
 The vlayer defaults to 32768 characters large (256x128); its
 size can be as large as roughly 16.7 million characters (2^24).
-Its size can be determined by setting the counter "vlayer_size"
-to the desired length of the vlayer. Doing this only sets the
-maximum size; the actual vlayer will not be this large unless
-the vlayer's dimensions are changed. All attempts to set the
-vlayer's size above the maximum will be ignored.
 
-To change the vlayer's dimensions, use the counters
-"vlayer_width" and "vlayer_height". When one dimension is
-given, the other becomes as large as possible to fill the given
-vlayer. For example, if one has a vlayer 50000 characters large
-and sets vlayer_height to 499, the vlayer's width will become
-100 characters wide (for a total vlayer size of 49900
-characters). 
+While in the editor, press Alt+V to enter the Vlayer Editor. The
+vlayer editor accepts the following commands:
 
-All bad values of vlayer_size, vlayer_height and vlayer_width
-(0 and below) will be changed to 1.
+:074:~EAlt+B - Block
 
-To manipulate the vlayer, instead of pure numbers in copy
-commands, "#n" is used instead. For example, if copying a 2x2
-block from {6,6} of the board to {0,0} of the vlayer is wanted,
-the command would be:
+Press Alt+B to start block mode, then move the cursor to the
+opposite corner of a rectangular block and press Alt+B again.
+You can then select an action to perform upon the block. In all
+copy/move operations, the cursor marks the new UPPER LEFT
+corner.
+
+Copy block will allow you to duplicate the block by moving the
+cursor to a destination and pressing Enter.
+Copy block (repeated) is the same as Copy block but can allow
+copying of the same block to multiple places.
+Move block will allow you to move the block to a new location.
+Clear block will erase the contents of the block.
+Flip block will flip the block upside down.
+Mirror block will flip the block left to right.
+Paint block will change the entire block to the current color.
+Copy to board will copy the block to the given spot of the
+board. You can choose to place it as either Custom Block, Custom
+Floor, or Text.
+Copy to overlay will copy the block to the given spot of the
+overlay.
+Save as MZM will save the block as a layer-type MZM file.
+
+Destinations for Move and Copy can overlap the original block
+safely. Ctrl+Dir is especially helpful when doing a repeated
+copy block; it moves the cursor the width or height of the
+block, ensuring no overlap when pasting.
+
+Like normal Block functions, one can copy between boards by
+selecting the board when the editor prompts the user for the
+block's destination.  Use the B key to select the destination
+board.
+
+:_C:~EC - Color
+
+Press C to select a new current color from a menu. The thing
+under the cursor is not affected. One can jump to a color by
+typing its hex code in the color menu; for example, typing "0D"
+would jump to color 013 (background color 0, foreground color
+D).
+
+:_F:~EF - Fill
+
+Press F to fill in an enclosed area with the current character
+and color. The area must be completely surrounded by characters
+other than the character beneath the cursor. For example, you
+can fill over a solid square of As with something else. The
+current fill command may not work correctly for very large and
+complex areas - in this case, you must move to the unfilled
+areas and press F to continue filling. However, this happens
+very rarely.
+
+:AltV:~EAlt+V - Edit Vlayer Editor
+
+Alt+V will exit vlayer mode and return to editing the main
+board.
+
+:103:~EAlt+P - Size
+
+Alt+P will open the vlayer size menu. From here, one can change
+the dimensions of the vlayer; if the vlayer is shrank in one or
+both dimensions, the user will be asked for confirmation. Any
+characters removed by shrinking vlayer dimensions are lost, and
+any dimension settings that would cause the vlayer to go over
+its maximum size will be limited to the largest size possible by
+reducing the smallest given dimension until the vlayer is within
+size limits (if both given dimensions are the same size, width
+is reduced). Changing the size of the vlayer will clear the undo
+history of the vlayer.
+
+:F1:~EF1 - Help
+
+F1 will bring up help on the current action. You can press F1
+at almost any time.
+
+:F2:~EF2 - Text
+
+F2 will toggle text mode on and off. When text mode is on, Enter
+will go to the next line, and Backspace will delete going
+backwards. All printable characters will type in as text.
+
+:Ar:~EArrow - Move
+
+The arrow keys will move the cursor. The edit window will scroll
+when necessary.
+
+:AltAr:~EAlt+Arrow - Move 10
+
+Alt with the arrow keys will move the cursor up to ten spaces at
+a time.
+
+:BkSp:~EBackspace - Delete
+:Del:~EDel - Delete
+
+These two keys will delete everything under the cursor. The
+current character is not affected.
+
+:End:~EEnd - L/R Corner
+
+End will jump the cursor to the lower-right corner of the entire
+vlayer.
+
+:Enter2:~EEnter - Character
+
+Enter will alter the current character on the vlayer. Select it
+from a menu and then press Enter to confirm your choice.
+
+:ESC:~EESC - Exit/Cancel Mode
+
+ESC will exit vlayer mode. If you are in block, text, or draw
+mode, ESC will instead cancel the current mode and return to
+normal vlayer editing.
+
+:Home:~EHome - U/L Corner
+
+Home will jump the cursor to the upper-left corner of the
+entire vlayer.
+
+:Ins:~EIns - Grab
+
+Ins will select the character and color under the cursor
+as the current. The actual character is not affected.
+
+:Sp:~ESpacebar - Place
+
+Spacebar will copy the current character and color to the
+location under the cursor. Other things will be deleted if they
+are in the way.
+
+:Tab:~ETab - Draw
+
+Tab will toggle the current draw mode. When drawing is on, you
+will place a copy of the current character every time you move
+the cursor.
+
+:CtrG:~ECtrl+G - Goto Position
+
+Ctrl+G will pop up a window, displaying target {x,y}
+coordinates. Set the coordinates by either typing in or
+selecting the desired X and Y values, and select OK to go to
+those coordinates on the vlayer. Choosing Cancel or pressing
+Escape cancels.
+
+~EP - Change Buffer Character
+
+P will act much like Enter, but only change the character in the
+buffer; no character on the overlay is changed with this action.
+
+~EAlt+Z - Clear (Vlayer)
+
+Alt+Z will clear the vlayer entirely. You will be asked for
+confirmation. Clearing the vlayer will clear the vlayer undo
+history as well.
+
+:CtrZ:~ECtrl+Z - Undo
+:CtrY:~ECtrl+Y - Redo
+
+Ctrl+Z will undo an action; Ctrl+Y will redo any previously
+undone action. Action depth is determined by config file
+settings, with 100 as default.
+
+---
+
+On top of being modifiable in the editor, the vlayer can be
+changed in a running MZX world with Robotic. To manipulate the
+vlayer in Robotic, "#n" is used instead of pure numbers in copy
+commands. For example, if copying a 2x2 block from {6,6} of the
+board to {0,0} of the vlayer is wanted, the command would be:
 
 ~ECOPY BLOCK 6 6 2 2 "#0" "#0"
 
@@ -9455,6 +9883,23 @@ sign.
 black.
 ~ESET "temp" "vch10,10"~f sets temp to whatever the character at
 {10,10} of the vlayer is.
+
+Vlayer size can be changed by setting the counter "vlayer_size"
+to the desired length of the vlayer. Doing this only sets the
+maximum size; the actual vlayer will not be this large unless
+the vlayer's dimensions are changed. All attempts to set the
+vlayer's size above the maximum will be ignored.
+
+To change the vlayer's dimensions in Robotic, use the counters
+"vlayer_width" and "vlayer_height". When one dimension is
+given, the other becomes as large as possible to fill the given
+vlayer. For example, if one has a vlayer 50000 characters large
+and sets vlayer_height to 499, the vlayer's width will become
+100 characters wide (for a total vlayer size of 49900
+characters). 
+
+All bad values of vlayer_size, vlayer_height and vlayer_width
+(0 and below) will be changed to 1.
 
 Remember that the vlayer is global. If many vlayers are wanted,
 liberal usage of MZM saving and loading will help get around
@@ -9615,7 +10060,7 @@ commands processed per Robot per cycle to be lower or
 to end processing prematurely; these are called cycle-ending
 commands.
 
-As a simple room of thumb, commands that move anything on the
+As a simple rule of thumb, commands that move anything on the
 board generally end a cycle, especially moving the player,
 though this is not always the case.
 
@@ -9734,6 +10179,214 @@ updated.
 #NEWINVER.HLP
 :1st: 
 $~9NEW in MegaZeux!
+
+November 22, 2017 - MZX 2.91
+
+This release introduces mostly new editor features, but also a
+a few Robotic features to note. It also fixes over 30 bugs.
+
+MegaZeux now features a palette editor for SMZX modes 2 and 3,
+and worlds can be saved and loaded in SMZX mode. The char editor
+has been changed to allow preview palettes (mostly to aid with
+SMZX editing), and can now access the extended character sets.
+The new vlayer editor allows the vlayer to be edited directly.
+
+On the Robotic side of things, LOAD_COUNTERS actually works now,
+SMZX mode 3 indices can be loaded from a file, the message line
+can be configured to use normal MZX mode in SMZX modes, and new
+string features such as simple wildcard matching and negative
+offsets have been added. String support has been improved to
+disallow invalid or nonsense string splices that previously had
+undefined behavior.
+
+Additionally, asie's new Nintendo 3DS port has been merged into
+MZX, and optional SDL support has been added for the Wii.
+
+FEATURES
+
++ Added SMZX_INDICES special counter to load SMZX indices. This
+  counter works with either a filename or a string, e.g.
+  set "file.palidx" "SMZX_INDICES", and will do nothing outside
+  of mode 3.
++ Added MOD_LENGTH counter. The value of this counter is length
+  of the current playing music in rows for modules, or in
+  samples for PCM audio.
++ Added MAX_SAMPLES counter. When set, MegaZeux will limit the
+  maximum number of samples that will play simultaneously. Set
+  to -1 to disable the sample limit.
++ Added 'max_simultaneous_samples' config file option. This
+  behaves the same as the MAX_SAMPLES counter, but applies
+  globally.
++ Added SMZX_MESSAGE counter. When set to 0 with SMZX active,
+  messages will display in normal MZX mode instead of SMZX
+  using the first 16 colors of the SMZX palette.
++ Added 'random_seed#' counters to read and write the random
+  seed, 32 bits at a time (random_seed0 controls the low 32 bits
+  and random_seed1 controls the high 32 bits. (Lancer-X)
++ Added a case-sensitive string equality operator:
+  IF "$string" === "ABC" then "label".
++ Added wildcard-matching string equality operators:
+  IF "$string" ?= "a?%" then "label"
+  IF "$string" ?== "a?%" then "label" (case-sensitive).
+  The character '?' will match exactly one of any character in
+  $string, and '%' will match any number of any character in
+  $string (including no characters).
++ Added negative indexing for strings, e.g. SET "$string.-X" 32.
+  This manipulates the string at the Xth character starting from
+  the end of the string (with -1 for the final character).
++ Added negative offsets for strings, e.g. SET "$string+-X" "a".
++ Added multiple character indexing for strings. When a length
+  is provided with a string index, e.g. SET "$string.X#Y" 12345,
+  the characters at positions X, X+1, ..., X+Y-1 will be treated
+  as a single 8*Y bit number. This works for values of Y between
+  1 and 4, with 4 characters providing the same functionality as
+  a counter.
++ The palette editor and character editor are now accessible
+  while testing. Press Alt+E or Alt+C respectively to access
+  them from the counter debugger.
++ Extended the palette editor to SMZX modes 2 and 3. The updated
+  palette editor allows the editing of all 256 SMZX mode 2/3
+  colors and editing color indices for SMZX 3.
++ Component numbers can now be typed in the palette editor by
+  clicking the component name or its number, e.g. clicking "Red"
+  allows you to type a red value.
++ SMZX indices can now be imported/exported while editing in
+  mode 3 using import/export palette.
++ Added a new vlayer editor. In the world editor, press Alt+V to
+  switch to the vlayer editor. The vlayer is something like an
+  invisible global overlay that can be used to store and
+  retrieve graphical data through Robotic. See the editor help
+  and the Robotic reference manual for more details.
++ Added color selection to the character editor. Press C to
+  choose a color to preview and edit chars with, and press Alt+C
+  to revert back to the default grey.
++ Added extended charset support to the char editor. Extended
+  charsets can be selected during char selection. Note that in
+  gameplay these chars can be accessed only by unbound sprites.
++ Selected blocks of chars with a height greater than one
+  (before selecting a subdivision) are now properly supported.
+  Using -/+ with these selections will move in a tiled manner,
+  with no overlap between chars in "tiles". Charsets can also be
+  exported/imported using this tiling behavior.
++ The -/+ keys now behave the same in the char selection screen
+  as they do in the char editor.
++ The character editor help now covers several shortcuts that
+  were previously missing (Alt+B, Shift+Arrows, etc...).
++ The undo/redo shortcuts in the character editor are now Ctrl+Z
+  for undo and Ctrl+Y for redo.
++ Added undo/redo functionality to the world editor. Use Ctrl+Z
+  to undo changes to the board/overlay/vlayer and Ctrl+Y to
+  redo.
++ The default editor undo history stack size has been extended
+  to 100 levels.
++ The editor will now prompt the user to create a new starting
+  board when opened. If a new board is created, the global first
+  board will be set to the new board and the title board will be
+  renamed.
++ Saved positions now have confirmation dialogs. Saved positions
+  are saved to/loaded from the editor.cnf file for each world.
++ Pressing Enter/Return on the overlay (and vlayer) now acts the
+  same as on the board, changing both the buffer and the current
+  layer being edited.
++ Pressing P on the overlay (and vlayer) now acts the same as on
+  the board, changing the character in the buffer but NOT on the
+  current layer. This is equivalent to the original overlay
+  behavior for Enter.
++ Block tiling movement (Ctrl+Arrows) now works with most block
+  actions, and does not require an initial block placement to
+  activate.
++ Restoring its DOS functionality, Alt+D now toggles the default
+  colors of built-in types in the editor. When disabled,
+  built-ins placed from thing menus will use the buffer color
+  instead of their default colors, and a red dot will appear on
+  the right side of the status bar.
++ Color selection now supports typing in the hex value of a
+  color/subpalette to select the given color/subpalette. For
+  example, typing "4c" will select background color 4 and
+  foreground color 12.
++ Readded the downver utility.
+- Removed the undocumented Shift+F7 shortcut in the editor. This
+  shortcut was redundant with F11.
+
+FIXES
+
++ Fixed a bug that would cause Linux binaries to fail to find
+  most resources.
++ Fixed a bug where loading a save from the titlescreen, exiting
+  gameplay to a world that doesn't exist, and then loading a
+  second save would corrupt the counter and string hash tables.
++ Fixed crash that would occur when loading a saved position on
+  the same board referring to out-of-bounds coordinates.
++ Fixed a freeze that could occur opening the counter debugger
+  to an empty list or searching for a counter in an empty list.
++ LOAD_COUNTERS now works as intended.
++ Fixed a bug where key repeat would be prematurely terminated
+  when releasing a key while holding another key.
++ Attempting to open the robot validator with no errors will no
+  longer crash MegaZeux.
++ Backspace now mirrors delete in overlay mode instead of
+  affecting the board.
++ Moving an overlay block partially out of bounds in the editor
+  will now correctly clear the block's original position.
++ The color selector will now correctly display SMZX palettes in
+  SMZX mode instead of the default char 254.
++ Fixed bug where the mouse cursor would vanish after using the
+  robot debugger configuration dialog in the editor.
++ Fixed a bug where the counter debugger could sometimes display
+  behind the robot debugger after exiting the counter debugger.
++ Undo in the char editor now works correctly with the mouse.
++ The char editor no longer forces the screen to SMZX mode 1
+  when editing in SMZX modes 2 or 3.
++ Fixed screen corruption bug when resizing the char editor in
+  SMZX modes.
++ Fixed a bug where multichar editing wouldn't correctly wrap to
+  the start of the charset.
++ The editing area outside of the current board is now correctly
+  drawn when SMZX is enabled.
++ The viewport is now correctly drawn when SMZX is enabled and
+  the UI or unbound sprites are active.
++ The editor bar no longer appears while SMZX is enabled in view
+  mode.
++ Messages are now drawn correctly in SMZX mode.
++ Fixed bug where centering the viewport could change the width
+  and height of the viewport.
++ Unbound sprites are now clipped correctly against the viewport
+  when the viewport origin is not 0,0. (Lancer-X)
++ The VLAYER_SIZE counter now clears new vlayer area added when
+  it is increased. This applies only to 2.91+ worlds.
++ The VLAYER_WIDTH and VLAYER_HEIGHT counters now preserve data
+  on the vlayer when set. This applies only to 2.91+ worlds.
++ Fixed several bugs with string length and offset parsing that
+  would allow invalid string accesses to work in certain cases.
++ COPY BLOCK $string now works correctly with string splices.
++ Fixed a bug where saving and loading 2.90X files wouldn't work
+  on the Nintendo DS.
++ Fixed a bug where mouse clicks would carry through from the UI
+  into games.
++ Invalid gl_scaling_shader values should no longer appear as
+  the current loaded scaler.
++ MegaZeux now falls back to the default scaling shader when a
+  selected scaling shader fails to compile.
++ Blank sprite chars are now drawn when ccheck is 3. (Lancer-X)
++ The sprite color is used with ccheck 3 collisions. (Lancer-X)
++ When spr_yorder is enabled, sprites with the same (sprN_y +
+  sprN_cy) value are now consistently ordered by their sprite
+  numbers.
++ The collision rectangles of ccheck 3 sprites now constrained
+  to the sprite dimensions (Lancer-X).
++ MZX no longer crashes when a line of length 512 characters or
+  longer is pasted into the robot editor.
++ Fixed a crash bug when trying to swap a sprite with an
+  invalid sprite index.
+
+DEVELOPERS
+
++ Added Nintendo 3DS port. (asiekierka)
++ Added "make uninstall" option to the Linux makefile.
++ Added devkitPro portlibs paths to the NDS and Wii Makefiles.
+- Removed the depackers and non-MegaZeux formats from libxmp.
+
+>#MAIN.HLP:072:Table of Contents
 
 September 4, 2017 - MZX 2.90d
 
