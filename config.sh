@@ -621,7 +621,7 @@ fi
 # Force-enable tremor on PSP/GP2X/3DS
 #
 if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" \
-  -o "$PLATFORM" = "android" -o "$PLATFORM" = "3ds"]; then
+  -o "$PLATFORM" = "android" -o "$PLATFORM" = "3ds" ]; then
 	echo "Force-switching ogg/vorbis to tremor."
 	TREMOR="true"
 fi
