@@ -1,8 +1,7 @@
 BUILDING MEGAZEUX WITH MICROSOFT VISUAL STUDIO
 
 This document covers the rationale and caveats regarding MegaZeux
-compilation with Microsoft's Visual C++ 2013 Preview compiler
-(henceforth MSVC).
+compilation with Microsoft's Visual C++ 2017 compiler (henceforth MSVC).
 
 RATIONALE
 
@@ -31,24 +30,14 @@ However, MSVC has the following constraints:
       MSVC internally defines most of this anyway, so we simply do not
       #include it in MSVC builds.
 
-  - No extensions support for mixing code and variable declarations
-      MegaZeux did not depend on this anyway, and it is fairly sloppy
-      to rely on this in C89 programs. C++ and C99 permit such mixes,
-      but I simply recoded the failure points to not mix code and
-      declarations.
-
-  - No C99 support
-     MegaZeux also uses C99 to declare variable length arrays on the
-     stack. Such support could be expressed with alloca(), but I simply
-     rewrote it to rely on heap functions.
-
 
 OPENING THE PROJECT
 
 The pre-built project files can be found in this directory as "MegaZeux.sln".
 The solution may not always work, as it is not tested often. At the time of
-writing, Visual Studio 2013 Preview was the minimum working version required
-to open it. You must also build MZX's dependencies into a "Deps" folder
+writing, Visual Studio 2017 was the minimum working version required to open
+it. It may work using Visual Studio 2013 and/or 2015, but those versions have
+not been tested. You must also build MZX's dependencies into a "Deps" folder
 alongside the solution, or use these prebuilt Deps:
 
 https://github.com/AliceLR/megazeux/raw/master/scripts/deps/msvc.zip
@@ -57,4 +46,4 @@ There may be instability with the MSVC binary that is not present in the GCC
 builds. If you find such instability, please report it (fixes are also
 welcome).
 
---ajs (20130711)
+--ajs (20130711) / spectere (20171123)
