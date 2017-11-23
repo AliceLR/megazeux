@@ -40,7 +40,7 @@ struct sdl_render_data
   SDL_Surface *shadow;
 };
 
-extern Uint32 sdl_window_id;
+extern CORE_LIBSPEC Uint32 sdl_window_id;
 
 #ifdef CONFIG_RENDER_YUV
 int sdl_flags(int depth, bool fullscreen, bool resize);

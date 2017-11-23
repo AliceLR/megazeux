@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\src\editor\block.c" />
+    <ClCompile Include="..\..\src\editor\board.c" />
+    <ClCompile Include="..\..\src\editor\char_ed.c" />
+    <ClCompile Include="..\..\src\editor\configure.c" />
+    <ClCompile Include="..\..\src\editor\debug.c" />
+    <ClCompile Include="..\..\src\editor\edit.c" />
+    <ClCompile Include="..\..\src\editor\edit_di.c" />
+    <ClCompile Include="..\..\src\editor\fill.c" />
+    <ClCompile Include="..\..\src\editor\graphics.c" />
+    <ClCompile Include="..\..\src\editor\macro.c" />
+    <ClCompile Include="..\..\src\editor\pal_ed.c" />
+    <ClCompile Include="..\..\src\editor\param.c" />
+    <ClCompile Include="..\..\src\editor\robot.c" />
+    <ClCompile Include="..\..\src\editor\robo_debug.c" />
+    <ClCompile Include="..\..\src\editor\robo_ed.c" />
+    <ClCompile Include="..\..\src\editor\sfx_edit.c" />
+    <ClCompile Include="..\..\src\editor\window.c" />
+    <ClCompile Include="..\..\src\editor\world.c" />
+    <ClCompile Include="..\..\src\zip.c">
+      <Filter>coredep</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\src\editor\block.h" />
+    <ClInclude Include="..\..\src\editor\board.h" />
+    <ClInclude Include="..\..\src\editor\char_ed.h" />
+    <ClInclude Include="..\..\src\editor\configure.h" />
+    <ClInclude Include="..\..\src\editor\debug.h" />
+    <ClInclude Include="..\..\src\editor\edit.h" />
+    <ClInclude Include="..\..\src\editor\edit_di.h" />
+    <ClInclude Include="..\..\src\editor\fill.h" />
+    <ClInclude Include="..\..\src\editor\graphics.h" />
+    <ClInclude Include="..\..\src\editor\macro.h" />
+    <ClInclude Include="..\..\src\editor\pal_ed.h" />
+    <ClInclude Include="..\..\src\editor\param.h" />
+    <ClInclude Include="..\..\src\editor\robot.h" />
+    <ClInclude Include="..\..\src\editor\robo_debug.h" />
+    <ClInclude Include="..\..\src\editor\robo_ed.h" />
+    <ClInclude Include="..\..\src\editor\sfx_edit.h" />
+    <ClInclude Include="..\..\src\editor\window.h" />
+    <ClInclude Include="..\..\src\editor\world.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="coredep">
+      <UniqueIdentifier>{c54ef17b-aed6-4e27-9e2d-62347f723a5c}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
