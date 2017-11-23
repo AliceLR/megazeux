@@ -186,6 +186,35 @@ var archs =
     loadsave_meter:   no,
   },
 
+  msvc:
+  {
+    platform:         "msvc",
+    description:      "Windows <br /> (Visual Studio)",
+    architecture:     "x64 (PE+ COFF) <br /> x86 (PE COFF)",
+    endian:           "Little",
+    toolchain:        "Visual Studio 2017",
+    packaged:         subopt("NO", 2),
+    visibility:       yes,
+    stack_protector:  _FAULTY(),
+    layer_rendering:  yes,
+    module_engine:    xmp,
+    ogg_vorbis:       libvorbis,
+    optimization:     speed,
+    sdl:              yes,
+    editor:           yes,
+    helpsys:          yes,
+    audio:            yes,
+    software:         yes,
+    gl:               yes,
+    overlay:          yes,
+    glsl:             yes,
+    updater:          yes,
+    modular:          yes,
+    png:              yes,
+    uthash:           yes,
+    loadsave_meter:   no,
+  },
+
   nds:
   {
     platform:         "nds",
@@ -370,35 +399,6 @@ var archs =
     png:              yes,
     uthash:           yes,
     loadsave_meter:   yes,
-  },
-
-  msvc:
-  {
-    platform:         defunct("msvc"),
-    description:      "Windows <br /> (Visual Studio)",
-    architecture:     "x64 (PE+ COFF) <br /> x86 (PE COFF)",
-    endian:           "Little",
-    toolchain:        "Visual Studio 2008",
-    packaged:         subopt("NO", 2),
-    visibility:       yes,
-    stack_protector:  _FAULTY(),
-    layer_rendering:  yes,
-    module_engine:    xmp,
-    ogg_vorbis:       libvorbis,
-    optimization:     speed,
-    sdl:              yes,
-    editor:           yes,
-    helpsys:          yes,
-    audio:            yes,
-    software:         yes,
-    gl:               yes,
-    overlay:          yes,
-    glsl:             yes,
-    updater:          yes,
-    modular:          yes,
-    png:              yes,
-    uthash:           yes,
-    loadsave_meter:   no,
   },
 
   pandora:
@@ -676,7 +676,7 @@ based on last known working builds (if any).
 
 <li><a name="note2"/>Could use existing `package.sh' however this does
 not handle PDB files.<br/>
-MSVC binaries are replicate of MinGW binaries and require a non-free, non
+MSVC binaries are replicate of MinGW binaries and require a proprietary non
 cross-capable compiler.
 </li>
 
