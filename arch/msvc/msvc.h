@@ -1,6 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2007 Alistair John Strachan <alistair@devzero.co.uk>
+ * Copyright (C) 2017 Ian Burgmyer <spectere@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -34,7 +35,11 @@
 #define execv       _execv
 #define getcwd      _getcwd
 #define rmdir       _rmdir
+
+#if _MSC_VER <= 1800 /* VS2015+ */
 #define snprintf    _snprintf
+#endif
+
 #define unlink      _unlink
 
 #ifndef strcasecmp
@@ -49,7 +54,7 @@
 
 #define inline __inline
 
-#ifdef MS_WIN64
+#ifdef _WIN64
 typedef __int64 ssize_t;
 #else
 typedef _W64 int ssize_t;

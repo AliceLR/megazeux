@@ -34,7 +34,6 @@
 #include "format.h"
 #include "list.h"
 #include "hio.h"
-#include "tempfile.h"
 
 #ifndef LIBXMP_CORE_PLAYER
 #if !defined(HAVE_POPEN) && defined(WIN32)
@@ -152,9 +151,6 @@ int xmp_test_module(char *path, struct xmp_test_info *info)
 	char buf[XMP_NAME_SIZE];
 	int i;
 	int ret = -XMP_ERROR_FORMAT;
-#ifndef LIBXMP_CORE_PLAYER
-	char *temp = NULL;
-#endif
 
 	if (stat(path, &st) < 0)
 		return -XMP_ERROR_SYSTEM;
@@ -181,10 +177,6 @@ int xmp_test_module(char *path, struct xmp_test_info *info)
 
 			fclose(h->handle.file);
 
-#ifndef LIBXMP_CORE_PLAYER
-			unlink_temp_file(temp);
-#endif
-
 			if (info != NULL && !is_prowizard) {
 				strncpy(info->name, buf, XMP_NAME_SIZE - 1);
 				strncpy(info->type, format_loader[i]->name,
@@ -197,7 +189,6 @@ int xmp_test_module(char *path, struct xmp_test_info *info)
 #ifndef LIBXMP_CORE_PLAYER
     err:
 	hio_close(h);
-	unlink_temp_file(temp);
 #else
 	hio_close(h);
 #endif
@@ -312,7 +303,6 @@ int xmp_load_module(xmp_context opaque, char *path)
 #ifndef LIBXMP_CORE_PLAYER
 	struct module_data *m = &ctx->m;
 	long size;
-	char *temp_name;
 #endif
 	HIO_HANDLE *h;
 	struct stat st;
@@ -358,16 +348,11 @@ int xmp_load_module(xmp_context opaque, char *path)
 	ret = load_module(opaque, h);
 	hio_close(h);
 
-#ifndef LIBXMP_CORE_PLAYER
-	unlink_temp_file(temp_name);
-#endif
-
 	return ret;
 
 #ifndef LIBXMP_CORE_PLAYER
     err:
 	hio_close(h);
-	unlink_temp_file(temp_name);
 	return ret;
 #endif
 }

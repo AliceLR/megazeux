@@ -20,12 +20,12 @@
 #ifndef __EDITOR_UNDO_H
 #define __EDITOR_UNDO_H
 
-#include "compat.h"
+#include "../compat.h"
 
 __M_BEGIN_DECLS
 
-#include "data.h"
-#include "world_struct.h"
+#include "../data.h"
+#include "../world_struct.h"
 
 struct undo_frame
 {
