@@ -22,6 +22,9 @@
     <ClCompile Include="..\..\src\zip.c">
       <Filter>coredep</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\editor\clipboard.c" />
+    <ClCompile Include="..\..\src\editor\select.c" />
+    <ClCompile Include="..\..\src\editor\undo.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\editor\block.h" />
@@ -42,6 +45,9 @@
     <ClInclude Include="..\..\src\editor\sfx_edit.h" />
     <ClInclude Include="..\..\src\editor\window.h" />
     <ClInclude Include="..\..\src\editor\world.h" />
+    <ClInclude Include="..\..\src\editor\clipboard.h" />
+    <ClInclude Include="..\..\src\editor\select.h" />
+    <ClInclude Include="..\..\src\editor\undo.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="coredep">
