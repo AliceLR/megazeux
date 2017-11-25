@@ -1,3 +1,18 @@
+GIT
+
+FEATURES
+
+FIXES
+
++ Fixed a bug where MZMs could sometimes fail to load in the
+  editor.
++ MZMs loaded in the editor now behave correctly when undone.
+
+DEVELOPERS
+
++ Updated MSVC for Visual Studio 2017. (Spectere)
+
+
 November 22, 2017 - MZX 2.91
 
 This release introduces mostly new editor features, but also a

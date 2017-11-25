@@ -3533,6 +3533,9 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                 {
                   draw_mode = 5;
                   block_command = 10;
+                  block_board = src_board;
+                  block_edit = overlay_edit;
+                  load_mzm_size(mzm_name_buffer, &block_width, &block_height);
                 }
 
                 break;

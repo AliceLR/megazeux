@@ -34,6 +34,7 @@ CORE_LIBSPEC int load_mzm(struct world *mzx_world, char *name,
  int start_x, int start_y, int mode, int savegame);
 CORE_LIBSPEC int load_mzm_memory(struct world *mzx_world, char *name, int start_x,
  int start_y, int mode, int savegame, const void *buffer, size_t length);
+CORE_LIBSPEC void load_mzm_size(char *name, int *width, int *height);
 
 __M_END_DECLS
 
