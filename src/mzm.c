@@ -1027,6 +1027,8 @@ void load_mzm_size(char *name, int *width, int *height)
   if(input_file)
   {
     read_length = fread(buffer, 1, 20, input_file);
+    fclose(input_file);
+
     bufferptr = (const unsigned char *)buffer;
 
     load_mzm_header(&bufferptr, read_length, width, height,
