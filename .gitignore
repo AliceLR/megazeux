@@ -97,3 +97,5 @@ stderr.txt
 *.mzx
 *.sav
 *.mzm
+.DS_Store
+xcuserdata/
