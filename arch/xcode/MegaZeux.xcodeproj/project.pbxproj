@@ -330,7 +330,6 @@
 		BF10127E1FCCA7C2008EEDB6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		BF1012811FCCA7C2008EEDB6 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		BF1012831FCCA7C2008EEDB6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		BF1012861FCCA7C2008EEDB6 /* MegaZeux.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MegaZeux.entitlements; sourceTree = "<group>"; };
 		BF1012901FCCA957008EEDB6 /* libCore.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libCore.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		BF1012981FCCA97D008EEDB6 /* libEditor.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libEditor.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		BF1012A01FCCA993008EEDB6 /* MZXRun.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MZXRun.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -339,7 +338,6 @@
 		BF1012A51FCCA993008EEDB6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		BF1012A81FCCA993008EEDB6 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		BF1012AA1FCCA993008EEDB6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		BF1012AD1FCCA993008EEDB6 /* MZXRun.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MZXRun.entitlements; sourceTree = "<group>"; };
 		BF1012B71FCCABB4008EEDB6 /* Vorbis.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Vorbis.framework; sourceTree = "<group>"; };
 		BF1012B91FCCABB5008EEDB6 /* Ogg.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Ogg.framework; sourceTree = "<group>"; };
 		BF1012C01FCCABF0008EEDB6 /* SDL2.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = SDL2.framework; sourceTree = "<group>"; };
@@ -657,7 +655,6 @@
 				BF10127E1FCCA7C2008EEDB6 /* Assets.xcassets */,
 				BF1012801FCCA7C2008EEDB6 /* MainMenu.xib */,
 				BF1012831FCCA7C2008EEDB6 /* Info.plist */,
-				BF1012861FCCA7C2008EEDB6 /* MegaZeux.entitlements */,
 			);
 			path = MegaZeux;
 			sourceTree = "<group>";
@@ -670,7 +667,6 @@
 				BF1012A51FCCA993008EEDB6 /* Assets.xcassets */,
 				BF1012A71FCCA993008EEDB6 /* MainMenu.xib */,
 				BF1012AA1FCCA993008EEDB6 /* Info.plist */,
-				BF1012AD1FCCA993008EEDB6 /* MZXRun.entitlements */,
 				BFFF18A41FCDEAF400BDEC58 /* run_stubs.c */,
 				BFFF18A51FCDEAF400BDEC58 /* run_stubs.h */,
 			);
