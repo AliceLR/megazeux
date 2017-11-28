@@ -263,6 +263,7 @@
 		BFFF189C1FCDEA5700BDEC58 /* libCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012901FCCA957008EEDB6 /* libCore.dylib */; };
 		BFFF189E1FCDEA5D00BDEC58 /* libCore.dylib in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012901FCCA957008EEDB6 /* libCore.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		BFFF18A71FCDEAF400BDEC58 /* run_stubs.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF18A41FCDEAF400BDEC58 /* run_stubs.c */; };
+		BFFF18A81FCE146E00BDEC58 /* SDL2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C01FCCABF0008EEDB6 /* SDL2.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -549,7 +550,7 @@
 		BFFF18391FCDCF6500BDEC58 /* select.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = select.c; path = ../../src/editor/select.c; sourceTree = "<group>"; };
 		BFFF183A1FCDCF6600BDEC58 /* debug.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = debug.c; path = ../../src/editor/debug.c; sourceTree = "<group>"; };
 		BFFF183B1FCDCF6600BDEC58 /* world.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = world.c; path = ../../src/editor/world.c; sourceTree = "<group>"; };
-		BFFF183C1FCDCF6600BDEC58 /* clipboard.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = clipboard.c; path = ../../src/editor/clipboard.c; sourceTree = "<group>"; };
+		BFFF183C1FCDCF6600BDEC58 /* clipboard.c */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 2; lastKnownFileType = sourcecode.c.c; name = clipboard.c; path = ../../src/editor/clipboard.c; sourceTree = "<group>"; tabWidth = 2; };
 		BFFF183D1FCDCF6600BDEC58 /* graphics.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = graphics.c; path = ../../src/editor/graphics.c; sourceTree = "<group>"; };
 		BFFF183E1FCDCF6600BDEC58 /* robo_debug.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = robo_debug.c; path = ../../src/editor/robo_debug.c; sourceTree = "<group>"; };
 		BFFF183F1FCDCF6600BDEC58 /* board.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = board.c; path = ../../src/editor/board.c; sourceTree = "<group>"; };
@@ -597,6 +598,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BFFF18A81FCE146E00BDEC58 /* SDL2.framework in Frameworks */,
 				BFFF188A1FCDD2DC00BDEC58 /* libCore.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1613,8 +1615,13 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				EXECUTABLE_PREFIX = lib;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+				);
 				GCC_CHAR_IS_UNSIGNED_CHAR = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu89;
+				GCC_PREPROCESSOR_DEFINITIONS = "DEBUG=1";
 				HEADER_SEARCH_PATHS = SDL2.framework/Headers;
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1628,8 +1635,13 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				EXECUTABLE_PREFIX = lib;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+				);
 				GCC_CHAR_IS_UNSIGNED_CHAR = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu89;
+				GCC_PREPROCESSOR_DEFINITIONS = "";
 				HEADER_SEARCH_PATHS = SDL2.framework/Headers;
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRODUCT_NAME = "$(TARGET_NAME)";
