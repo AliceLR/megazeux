@@ -8,9 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		BF10127F1FCCA7C2008EEDB6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BF10127E1FCCA7C2008EEDB6 /* Assets.xcassets */; };
-		BF1012821FCCA7C2008EEDB6 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = BF1012801FCCA7C2008EEDB6 /* MainMenu.xib */; };
 		BF1012A61FCCA993008EEDB6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BF1012A51FCCA993008EEDB6 /* Assets.xcassets */; };
-		BF1012A91FCCA993008EEDB6 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = BF1012A71FCCA993008EEDB6 /* MainMenu.xib */; };
 		BF1012BA1FCCABB5008EEDB6 /* Vorbis.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012B71FCCABB4008EEDB6 /* Vorbis.framework */; };
 		BF1012BB1FCCABB5008EEDB6 /* Vorbis.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012B71FCCABB4008EEDB6 /* Vorbis.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		BF1012BE1FCCABB5008EEDB6 /* Ogg.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012B91FCCABB5008EEDB6 /* Ogg.framework */; };
@@ -326,18 +324,12 @@
 
 /* Begin PBXFileReference section */
 		BF1012781FCCA7C2008EEDB6 /* MegaZeux.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MegaZeux.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		BF10127B1FCCA7C2008EEDB6 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
-		BF10127C1FCCA7C2008EEDB6 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
 		BF10127E1FCCA7C2008EEDB6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		BF1012811FCCA7C2008EEDB6 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		BF1012831FCCA7C2008EEDB6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		BF1012901FCCA957008EEDB6 /* libCore.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libCore.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		BF1012981FCCA97D008EEDB6 /* libEditor.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libEditor.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		BF1012A01FCCA993008EEDB6 /* MZXRun.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MZXRun.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		BF1012A21FCCA993008EEDB6 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
-		BF1012A31FCCA993008EEDB6 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
 		BF1012A51FCCA993008EEDB6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		BF1012A81FCCA993008EEDB6 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		BF1012AA1FCCA993008EEDB6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		BF1012B71FCCABB4008EEDB6 /* Vorbis.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Vorbis.framework; sourceTree = "<group>"; };
 		BF1012B91FCCABB5008EEDB6 /* Ogg.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Ogg.framework; sourceTree = "<group>"; };
@@ -652,10 +644,7 @@
 			isa = PBXGroup;
 			children = (
 				BFFF188B1FCDE74B00BDEC58 /* main.c */,
-				BF10127B1FCCA7C2008EEDB6 /* AppDelegate.h */,
-				BF10127C1FCCA7C2008EEDB6 /* AppDelegate.m */,
 				BF10127E1FCCA7C2008EEDB6 /* Assets.xcassets */,
-				BF1012801FCCA7C2008EEDB6 /* MainMenu.xib */,
 				BF1012831FCCA7C2008EEDB6 /* Info.plist */,
 			);
 			path = MegaZeux;
@@ -664,10 +653,7 @@
 		BF1012A11FCCA993008EEDB6 /* MZXRun */ = {
 			isa = PBXGroup;
 			children = (
-				BF1012A21FCCA993008EEDB6 /* AppDelegate.h */,
-				BF1012A31FCCA993008EEDB6 /* AppDelegate.m */,
 				BF1012A51FCCA993008EEDB6 /* Assets.xcassets */,
-				BF1012A71FCCA993008EEDB6 /* MainMenu.xib */,
 				BF1012AA1FCCA993008EEDB6 /* Info.plist */,
 				BFFF18A41FCDEAF400BDEC58 /* run_stubs.c */,
 				BFFF18A51FCDEAF400BDEC58 /* run_stubs.h */,
@@ -1190,7 +1176,6 @@
 				BFFF18961FCDE8B400BDEC58 /* assets in Resources */,
 				BF10127F1FCCA7C2008EEDB6 /* Assets.xcassets in Resources */,
 				BFFF18991FCDE8FE00BDEC58 /* config.txt in Resources */,
-				BF1012821FCCA7C2008EEDB6 /* MainMenu.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1201,7 +1186,6 @@
 				BFFF18971FCDE8B400BDEC58 /* assets in Resources */,
 				BF1012A61FCCA993008EEDB6 /* Assets.xcassets in Resources */,
 				BFFF189A1FCDE8FE00BDEC58 /* config.txt in Resources */,
-				BF1012A91FCCA993008EEDB6 /* MainMenu.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1381,25 +1365,6 @@
 			targetProxy = BFFF189F1FCDEA5D00BDEC58 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
-
-/* Begin PBXVariantGroup section */
-		BF1012801FCCA7C2008EEDB6 /* MainMenu.xib */ = {
-			isa = PBXVariantGroup;
-			children = (
-				BF1012811FCCA7C2008EEDB6 /* Base */,
-			);
-			name = MainMenu.xib;
-			sourceTree = "<group>";
-		};
-		BF1012A71FCCA993008EEDB6 /* MainMenu.xib */ = {
-			isa = PBXVariantGroup;
-			children = (
-				BF1012A81FCCA993008EEDB6 /* Base */,
-			);
-			name = MainMenu.xib;
-			sourceTree = "<group>";
-		};
-/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		BF1012871FCCA7C2008EEDB6 /* Debug */ = {

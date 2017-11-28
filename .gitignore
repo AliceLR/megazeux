@@ -56,7 +56,7 @@ MegaZeux.iobj
 MegaZeux.ipdb
 MegaZeux.lib
 MegaZeux.pdb
-megazeux
+/megazeux
 mzxrun.3dsx
 mzxrun.cia
 mzxrun.dol
@@ -68,7 +68,7 @@ mzxrun.lib
 mzxrun.nds
 mzxrun.pdb
 mzxrun.smdh
-mzxrun
+/mzxrun
 PARAM.SFO
 platform.inc
 SDL.dll
