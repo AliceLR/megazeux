@@ -7,14 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		BF10127D1FCCA7C2008EEDB6 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = BF10127C1FCCA7C2008EEDB6 /* AppDelegate.m */; };
 		BF10127F1FCCA7C2008EEDB6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BF10127E1FCCA7C2008EEDB6 /* Assets.xcassets */; };
 		BF1012821FCCA7C2008EEDB6 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = BF1012801FCCA7C2008EEDB6 /* MainMenu.xib */; };
-		BF1012851FCCA7C2008EEDB6 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = BF1012841FCCA7C2008EEDB6 /* main.m */; };
-		BF1012A41FCCA993008EEDB6 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = BF1012A31FCCA993008EEDB6 /* AppDelegate.m */; };
 		BF1012A61FCCA993008EEDB6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BF1012A51FCCA993008EEDB6 /* Assets.xcassets */; };
 		BF1012A91FCCA993008EEDB6 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = BF1012A71FCCA993008EEDB6 /* MainMenu.xib */; };
-		BF1012AC1FCCA993008EEDB6 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = BF1012AB1FCCA993008EEDB6 /* main.m */; };
 		BF1012BA1FCCABB5008EEDB6 /* Vorbis.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012B71FCCABB4008EEDB6 /* Vorbis.framework */; };
 		BF1012BB1FCCABB5008EEDB6 /* Vorbis.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012B71FCCABB4008EEDB6 /* Vorbis.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		BF1012BE1FCCABB5008EEDB6 /* Ogg.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012B91FCCABB5008EEDB6 /* Ogg.framework */; };
@@ -23,8 +19,6 @@
 		BF1012C21FCCABF0008EEDB6 /* SDL2.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C01FCCABF0008EEDB6 /* SDL2.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		BF1012C41FCCB02F008EEDB6 /* libpng.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C31FCCB02F008EEDB6 /* libpng.framework */; };
 		BF1012C51FCCB02F008EEDB6 /* libpng.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C31FCCB02F008EEDB6 /* libpng.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		BFFF16221FCDC53400BDEC58 /* libCore.dylib in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012901FCCA957008EEDB6 /* libCore.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		BFFF16251FCDC53700BDEC58 /* libEditor.dylib in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012981FCCA97D008EEDB6 /* libEditor.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		BFFF16281FCDC55000BDEC58 /* libpng.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C31FCCB02F008EEDB6 /* libpng.framework */; };
 		BFFF16291FCDC55000BDEC58 /* libpng.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C31FCCB02F008EEDB6 /* libpng.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		BFFF162A1FCDC55000BDEC58 /* SDL2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C01FCCABF0008EEDB6 /* SDL2.framework */; };
@@ -33,7 +27,6 @@
 		BFFF162D1FCDC55000BDEC58 /* Ogg.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012B91FCCABB5008EEDB6 /* Ogg.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		BFFF162E1FCDC55000BDEC58 /* Vorbis.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012B71FCCABB4008EEDB6 /* Vorbis.framework */; };
 		BFFF162F1FCDC55000BDEC58 /* Vorbis.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012B71FCCABB4008EEDB6 /* Vorbis.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		BFFF16311FCDC55400BDEC58 /* libCore.dylib in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012901FCCA957008EEDB6 /* libCore.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		BFFF16341FCDC57B00BDEC58 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C61FCCB0F9008EEDB6 /* libz.tbd */; };
 		BFFF16B81FCDC76900BDEC58 /* audio_sdl.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF16A11FCDC6D200BDEC58 /* audio_sdl.c */; };
 		BFFF16B91FCDC76900BDEC58 /* audio_xmp.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF16A21FCDC6D200BDEC58 /* audio_xmp.c */; };
@@ -257,24 +250,37 @@
 		BFFF18841FCDCF7C00BDEC58 /* world.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF183B1FCDCF6600BDEC58 /* world.c */; };
 		BFFF18851FCDCF7C00BDEC58 /* world.h in Headers */ = {isa = PBXBuildFile; fileRef = BFFF18201FCDCF6200BDEC58 /* world.h */; };
 		BFFF188A1FCDD2DC00BDEC58 /* libCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012901FCCA957008EEDB6 /* libCore.dylib */; };
+		BFFF188C1FCDE74B00BDEC58 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF188B1FCDE74B00BDEC58 /* main.c */; };
+		BFFF188D1FCDE81600BDEC58 /* libCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012901FCCA957008EEDB6 /* libCore.dylib */; };
+		BFFF188E1FCDE81900BDEC58 /* libEditor.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012981FCCA97D008EEDB6 /* libEditor.dylib */; };
+		BFFF188F1FCDE81D00BDEC58 /* libCore.dylib in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012901FCCA957008EEDB6 /* libCore.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		BFFF18921FCDE82100BDEC58 /* libEditor.dylib in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012981FCCA97D008EEDB6 /* libEditor.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		BFFF18961FCDE8B400BDEC58 /* assets in Resources */ = {isa = PBXBuildFile; fileRef = BFFF18951FCDE8B300BDEC58 /* assets */; };
+		BFFF18971FCDE8B400BDEC58 /* assets in Resources */ = {isa = PBXBuildFile; fileRef = BFFF18951FCDE8B300BDEC58 /* assets */; };
+		BFFF18991FCDE8FE00BDEC58 /* config.txt in Resources */ = {isa = PBXBuildFile; fileRef = BFFF18981FCDE8FD00BDEC58 /* config.txt */; };
+		BFFF189A1FCDE8FE00BDEC58 /* config.txt in Resources */ = {isa = PBXBuildFile; fileRef = BFFF18981FCDE8FD00BDEC58 /* config.txt */; };
+		BFFF189B1FCDE93900BDEC58 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF188B1FCDE74B00BDEC58 /* main.c */; };
+		BFFF189C1FCDEA5700BDEC58 /* libCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012901FCCA957008EEDB6 /* libCore.dylib */; };
+		BFFF189E1FCDEA5D00BDEC58 /* libCore.dylib in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012901FCCA957008EEDB6 /* libCore.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		BFFF18A71FCDEAF400BDEC58 /* run_stubs.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF18A41FCDEAF400BDEC58 /* run_stubs.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		BFFF16231FCDC53400BDEC58 /* PBXContainerItemProxy */ = {
+		BFFF18901FCDE81D00BDEC58 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = BF1012701FCCA7C1008EEDB6 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = BF10128F1FCCA957008EEDB6;
 			remoteInfo = Core;
 		};
-		BFFF16261FCDC53700BDEC58 /* PBXContainerItemProxy */ = {
+		BFFF18931FCDE82100BDEC58 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = BF1012701FCCA7C1008EEDB6 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = BF1012971FCCA97D008EEDB6;
 			remoteInfo = Editor;
 		};
-		BFFF16321FCDC55400BDEC58 /* PBXContainerItemProxy */ = {
+		BFFF189F1FCDEA5D00BDEC58 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = BF1012701FCCA7C1008EEDB6 /* Project object */;
 			proxyType = 1;
@@ -291,9 +297,9 @@
 			dstSubfolderSpec = 10;
 			files = (
 				BF1012C51FCCB02F008EEDB6 /* libpng.framework in Embed Frameworks */,
-				BFFF16221FCDC53400BDEC58 /* libCore.dylib in Embed Frameworks */,
+				BFFF188F1FCDE81D00BDEC58 /* libCore.dylib in Embed Frameworks */,
 				BF1012BF1FCCABB5008EEDB6 /* Ogg.framework in Embed Frameworks */,
-				BFFF16251FCDC53700BDEC58 /* libEditor.dylib in Embed Frameworks */,
+				BFFF18921FCDE82100BDEC58 /* libEditor.dylib in Embed Frameworks */,
 				BF1012BB1FCCABB5008EEDB6 /* Vorbis.framework in Embed Frameworks */,
 				BF1012C21FCCABF0008EEDB6 /* SDL2.framework in Embed Frameworks */,
 			);
@@ -307,7 +313,7 @@
 			dstSubfolderSpec = 10;
 			files = (
 				BFFF162D1FCDC55000BDEC58 /* Ogg.framework in Embed Frameworks */,
-				BFFF16311FCDC55400BDEC58 /* libCore.dylib in Embed Frameworks */,
+				BFFF189E1FCDEA5D00BDEC58 /* libCore.dylib in Embed Frameworks */,
 				BFFF162F1FCDC55000BDEC58 /* Vorbis.framework in Embed Frameworks */,
 				BFFF16291FCDC55000BDEC58 /* libpng.framework in Embed Frameworks */,
 				BFFF162B1FCDC55000BDEC58 /* SDL2.framework in Embed Frameworks */,
@@ -324,7 +330,6 @@
 		BF10127E1FCCA7C2008EEDB6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		BF1012811FCCA7C2008EEDB6 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		BF1012831FCCA7C2008EEDB6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		BF1012841FCCA7C2008EEDB6 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		BF1012861FCCA7C2008EEDB6 /* MegaZeux.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MegaZeux.entitlements; sourceTree = "<group>"; };
 		BF1012901FCCA957008EEDB6 /* libCore.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libCore.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		BF1012981FCCA97D008EEDB6 /* libEditor.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libEditor.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -334,7 +339,6 @@
 		BF1012A51FCCA993008EEDB6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		BF1012A81FCCA993008EEDB6 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		BF1012AA1FCCA993008EEDB6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		BF1012AB1FCCA993008EEDB6 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		BF1012AD1FCCA993008EEDB6 /* MZXRun.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MZXRun.entitlements; sourceTree = "<group>"; };
 		BF1012B71FCCABB4008EEDB6 /* Vorbis.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Vorbis.framework; sourceTree = "<group>"; };
 		BF1012B91FCCABB5008EEDB6 /* Ogg.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Ogg.framework; sourceTree = "<group>"; };
@@ -558,6 +562,11 @@
 		BFFF18441FCDCF6700BDEC58 /* undo.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = undo.h; path = ../../src/editor/undo.h; sourceTree = "<group>"; };
 		BFFF18451FCDCF6700BDEC58 /* graphics.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = graphics.h; path = ../../src/editor/graphics.h; sourceTree = "<group>"; };
 		BFFF18461FCDCF6800BDEC58 /* block.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = block.h; path = ../../src/editor/block.h; sourceTree = "<group>"; };
+		BFFF188B1FCDE74B00BDEC58 /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = main.c; path = ../../../src/main.c; sourceTree = "<group>"; };
+		BFFF18951FCDE8B300BDEC58 /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; name = assets; path = ../../assets; sourceTree = "<group>"; };
+		BFFF18981FCDE8FD00BDEC58 /* config.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = config.txt; path = ../../config.txt; sourceTree = "<group>"; };
+		BFFF18A41FCDEAF400BDEC58 /* run_stubs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = run_stubs.c; path = ../../../src/run_stubs.c; sourceTree = "<group>"; };
+		BFFF18A51FCDEAF400BDEC58 /* run_stubs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = run_stubs.h; path = ../../../src/run_stubs.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -565,6 +574,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BFFF188E1FCDE81900BDEC58 /* libEditor.dylib in Frameworks */,
+				BFFF188D1FCDE81600BDEC58 /* libCore.dylib in Frameworks */,
 				BF1012C41FCCB02F008EEDB6 /* libpng.framework in Frameworks */,
 				BF1012BE1FCCABB5008EEDB6 /* Ogg.framework in Frameworks */,
 				BF1012BA1FCCABB5008EEDB6 /* Vorbis.framework in Frameworks */,
@@ -596,6 +607,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BFFF189C1FCDEA5700BDEC58 /* libCore.dylib in Frameworks */,
 				BFFF162C1FCDC55000BDEC58 /* Ogg.framework in Frameworks */,
 				BFFF162E1FCDC55000BDEC58 /* Vorbis.framework in Frameworks */,
 				BFFF16281FCDC55000BDEC58 /* libpng.framework in Frameworks */,
@@ -610,14 +622,16 @@
 			isa = PBXGroup;
 			children = (
 				BFFF17101FCDC81000BDEC58 /* config.h */,
+				BFFF18981FCDE8FD00BDEC58 /* config.txt */,
+				BFFF18951FCDE8B300BDEC58 /* assets */,
 				BFFF16351FCDC5AE00BDEC58 /* Core */,
 				BFFF181C1FCDCEE800BDEC58 /* Editor */,
+				BF10127A1FCCA7C2008EEDB6 /* MegaZeux */,
+				BF1012A11FCCA993008EEDB6 /* MZXRun */,
 				BF1012C31FCCB02F008EEDB6 /* libpng.framework */,
 				BF1012C01FCCABF0008EEDB6 /* SDL2.framework */,
 				BF1012B91FCCABB5008EEDB6 /* Ogg.framework */,
 				BF1012B71FCCABB4008EEDB6 /* Vorbis.framework */,
-				BF10127A1FCCA7C2008EEDB6 /* MegaZeux */,
-				BF1012A11FCCA993008EEDB6 /* MZXRun */,
 				BF1012791FCCA7C2008EEDB6 /* Products */,
 				BF1012B11FCCAB0D008EEDB6 /* Frameworks */,
 			);
@@ -637,12 +651,12 @@
 		BF10127A1FCCA7C2008EEDB6 /* MegaZeux */ = {
 			isa = PBXGroup;
 			children = (
+				BFFF188B1FCDE74B00BDEC58 /* main.c */,
 				BF10127B1FCCA7C2008EEDB6 /* AppDelegate.h */,
 				BF10127C1FCCA7C2008EEDB6 /* AppDelegate.m */,
 				BF10127E1FCCA7C2008EEDB6 /* Assets.xcassets */,
 				BF1012801FCCA7C2008EEDB6 /* MainMenu.xib */,
 				BF1012831FCCA7C2008EEDB6 /* Info.plist */,
-				BF1012841FCCA7C2008EEDB6 /* main.m */,
 				BF1012861FCCA7C2008EEDB6 /* MegaZeux.entitlements */,
 			);
 			path = MegaZeux;
@@ -656,8 +670,9 @@
 				BF1012A51FCCA993008EEDB6 /* Assets.xcassets */,
 				BF1012A71FCCA993008EEDB6 /* MainMenu.xib */,
 				BF1012AA1FCCA993008EEDB6 /* Info.plist */,
-				BF1012AB1FCCA993008EEDB6 /* main.m */,
 				BF1012AD1FCCA993008EEDB6 /* MZXRun.entitlements */,
+				BFFF18A41FCDEAF400BDEC58 /* run_stubs.c */,
+				BFFF18A51FCDEAF400BDEC58 /* run_stubs.h */,
 			);
 			path = MZXRun;
 			sourceTree = "<group>";
@@ -1050,8 +1065,8 @@
 			buildRules = (
 			);
 			dependencies = (
-				BFFF16241FCDC53400BDEC58 /* PBXTargetDependency */,
-				BFFF16271FCDC53700BDEC58 /* PBXTargetDependency */,
+				BFFF18911FCDE81D00BDEC58 /* PBXTargetDependency */,
+				BFFF18941FCDE82100BDEC58 /* PBXTargetDependency */,
 			);
 			name = MegaZeux;
 			productName = MegaZeux;
@@ -1104,7 +1119,7 @@
 			buildRules = (
 			);
 			dependencies = (
-				BFFF16331FCDC55400BDEC58 /* PBXTargetDependency */,
+				BFFF18A01FCDEA5D00BDEC58 /* PBXTargetDependency */,
 			);
 			name = MZXRun;
 			productName = MZXRun;
@@ -1123,6 +1138,11 @@
 					BF1012771FCCA7C2008EEDB6 = {
 						CreatedOnToolsVersion = 9.1;
 						ProvisioningStyle = Automatic;
+						SystemCapabilities = {
+							com.apple.Sandbox = {
+								enabled = 0;
+							};
+						};
 					};
 					BF10128F1FCCA957008EEDB6 = {
 						CreatedOnToolsVersion = 9.1;
@@ -1135,6 +1155,11 @@
 					BF10129F1FCCA993008EEDB6 = {
 						CreatedOnToolsVersion = 9.1;
 						ProvisioningStyle = Automatic;
+						SystemCapabilities = {
+							com.apple.Sandbox = {
+								enabled = 0;
+							};
+						};
 					};
 				};
 			};
@@ -1164,7 +1189,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BFFF18961FCDE8B400BDEC58 /* assets in Resources */,
 				BF10127F1FCCA7C2008EEDB6 /* Assets.xcassets in Resources */,
+				BFFF18991FCDE8FE00BDEC58 /* config.txt in Resources */,
 				BF1012821FCCA7C2008EEDB6 /* MainMenu.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1173,7 +1200,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BFFF18971FCDE8B400BDEC58 /* assets in Resources */,
 				BF1012A61FCCA993008EEDB6 /* Assets.xcassets in Resources */,
+				BFFF189A1FCDE8FE00BDEC58 /* config.txt in Resources */,
 				BF1012A91FCCA993008EEDB6 /* MainMenu.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1185,8 +1214,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				BF1012851FCCA7C2008EEDB6 /* main.m in Sources */,
-				BF10127D1FCCA7C2008EEDB6 /* AppDelegate.m in Sources */,
+				BFFF188C1FCDE74B00BDEC58 /* main.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1331,28 +1359,28 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				BF1012AC1FCCA993008EEDB6 /* main.m in Sources */,
-				BF1012A41FCCA993008EEDB6 /* AppDelegate.m in Sources */,
+				BFFF189B1FCDE93900BDEC58 /* main.c in Sources */,
+				BFFF18A71FCDEAF400BDEC58 /* run_stubs.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		BFFF16241FCDC53400BDEC58 /* PBXTargetDependency */ = {
+		BFFF18911FCDE81D00BDEC58 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = BF10128F1FCCA957008EEDB6 /* Core */;
-			targetProxy = BFFF16231FCDC53400BDEC58 /* PBXContainerItemProxy */;
+			targetProxy = BFFF18901FCDE81D00BDEC58 /* PBXContainerItemProxy */;
 		};
-		BFFF16271FCDC53700BDEC58 /* PBXTargetDependency */ = {
+		BFFF18941FCDE82100BDEC58 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = BF1012971FCCA97D008EEDB6 /* Editor */;
-			targetProxy = BFFF16261FCDC53700BDEC58 /* PBXContainerItemProxy */;
+			targetProxy = BFFF18931FCDE82100BDEC58 /* PBXContainerItemProxy */;
 		};
-		BFFF16331FCDC55400BDEC58 /* PBXTargetDependency */ = {
+		BFFF18A01FCDEA5D00BDEC58 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = BF10128F1FCCA957008EEDB6 /* Core */;
-			targetProxy = BFFF16321FCDC55400BDEC58 /* PBXContainerItemProxy */;
+			targetProxy = BFFF189F1FCDEA5D00BDEC58 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -1483,7 +1511,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = MegaZeux/MegaZeux.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -1491,6 +1518,9 @@
 					"$(LOCAL_LIBRARY_DIR)/Frameworks",
 					"$(PROJECT_DIR)",
 				);
+				GCC_CHAR_IS_UNSIGNED_CHAR = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu89;
+				HEADER_SEARCH_PATHS = SDL2.framework/Headers;
 				INFOPLIST_FILE = MegaZeux/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
@@ -1503,7 +1533,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = MegaZeux/MegaZeux.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -1511,6 +1540,9 @@
 					"$(LOCAL_LIBRARY_DIR)/Frameworks",
 					"$(PROJECT_DIR)",
 				);
+				GCC_CHAR_IS_UNSIGNED_CHAR = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu89;
+				HEADER_SEARCH_PATHS = SDL2.framework/Headers;
 				INFOPLIST_FILE = MegaZeux/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
@@ -1531,6 +1563,12 @@
 					"$(inherited)",
 					"$(LOCAL_LIBRARY_DIR)/Frameworks",
 					"$(PROJECT_DIR)",
+				);
+				GCC_CHAR_IS_UNSIGNED_CHAR = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu89;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					NEED_PNG_WRITE_SCREEN,
+					"DEBUG=1",
 				);
 				HEADER_SEARCH_PATHS = (
 					SDL2.framework/Headers,
@@ -1557,6 +1595,9 @@
 					"$(LOCAL_LIBRARY_DIR)/Frameworks",
 					"$(PROJECT_DIR)",
 				);
+				GCC_CHAR_IS_UNSIGNED_CHAR = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu89;
+				GCC_PREPROCESSOR_DEFINITIONS = NEED_PNG_WRITE_SCREEN;
 				HEADER_SEARCH_PATHS = (
 					SDL2.framework/Headers,
 					libpng.framework/Headers,
@@ -1576,6 +1617,8 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				EXECUTABLE_PREFIX = lib;
+				GCC_CHAR_IS_UNSIGNED_CHAR = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu89;
 				HEADER_SEARCH_PATHS = SDL2.framework/Headers;
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1589,6 +1632,8 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				EXECUTABLE_PREFIX = lib;
+				GCC_CHAR_IS_UNSIGNED_CHAR = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu89;
 				HEADER_SEARCH_PATHS = SDL2.framework/Headers;
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1599,13 +1644,15 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = MZXRun/MZXRun.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
+				GCC_CHAR_IS_UNSIGNED_CHAR = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu89;
+				HEADER_SEARCH_PATHS = SDL2.framework/Headers;
 				INFOPLIST_FILE = MZXRun/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
@@ -1618,13 +1665,15 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = MZXRun/MZXRun.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
+				GCC_CHAR_IS_UNSIGNED_CHAR = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu89;
+				HEADER_SEARCH_PATHS = SDL2.framework/Headers;
 				INFOPLIST_FILE = MZXRun/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 10.6;

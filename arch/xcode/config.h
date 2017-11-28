@@ -1,5 +1,5 @@
 #define PLATFORM "xcode"
-#define VERSION "macOS"
+#define VERSION "Xcode"
 #define CONFDIR "../Resources"
 #define CONFFILE "config.txt"
 #define SHAREDIR "../Resources"
@@ -18,4 +18,3 @@
 #define CONFIG_MODULAR
 #define CONFIG_NETWORK
 #define CONFIG_CHECK_ALLOC
-#define NEED_PNG_WRITE_SCREEN
