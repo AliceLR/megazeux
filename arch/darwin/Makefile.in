@@ -102,6 +102,7 @@ build:
 	${CP} contrib/icons/quantump.icns ${build}/MegaZeux.icns
 	${RM} ${build}/*.debug ${build}/utils/*.debug
 	${MV} ${build}/docs ${build}/../../..
+	${MV} ${build}/LICENSE ${build}/../../../docs/
 	${MV} ${build}/${mzx} ${build}/../MacOS/MegaZeux
 	${MV} ${build}/${mzxrun} ${build}/../MacOS/MZXRun
 	${MV} ${build}/*.dylib ${build}/../MacOS
