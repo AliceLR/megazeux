@@ -627,7 +627,9 @@
 				BF1012791FCCA7C2008EEDB6 /* Products */,
 				BF1012B11FCCAB0D008EEDB6 /* Frameworks */,
 			);
+			indentWidth = 2;
 			sourceTree = "<group>";
+			tabWidth = 2;
 		};
 		BF1012791FCCA7C2008EEDB6 /* Products */ = {
 			isa = PBXGroup;
