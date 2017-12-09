@@ -103,3 +103,5 @@ utils_clean:
 	${RM} ${txt2hlp} ${txt2hlp}.debug
 	$(if ${V},,@echo "  RM      " ${png2smzx} ${png2smzx}.debug)
 	${RM} ${png2smzx} ${png2smzx}.debug
+	$(if ${V},,@echo "  RM      " ${ccv} ${ccv}.debug)
+	${RM} ${ccv} ${ccv}.debug
