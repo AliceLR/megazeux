@@ -152,7 +152,8 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
       memcpy(program_legacy_bytecode, bufferPtr, program_length);
       bufferPtr += program_length;
 
-      validated_length = validate_legacy_bytecode(program_legacy_bytecode, program_length);
+      validated_length = validate_legacy_bytecode(program_legacy_bytecode,
+       program_length);
 
       if(validated_length <= 0)
       {
@@ -162,7 +163,8 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
 
       else if(validated_length < program_length)
       {
-        program_legacy_bytecode = crealloc(program_legacy_bytecode, validated_length);
+        program_legacy_bytecode = crealloc(program_legacy_bytecode,
+         validated_length);
         program_length = validated_length;
       }
 
@@ -229,7 +231,8 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
         memcpy(program_legacy_bytecode, bufferPtr, program_length);
         bufferPtr += program_length;
 
-        validated_length = validate_legacy_bytecode(program_legacy_bytecode, program_length);
+        validated_length = validate_legacy_bytecode(program_legacy_bytecode,
+         program_length);
 
         if(validated_length <= 0)
         {
@@ -239,7 +242,8 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
 
         else if(validated_length < program_length)
         {
-          program_legacy_bytecode = crealloc(program_legacy_bytecode, validated_length);
+          program_legacy_bytecode = crealloc(program_legacy_bytecode,
+           validated_length);
           program_length = validated_length;
         }
 
@@ -283,14 +287,16 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
     memcpy(cur_robot->program_bytecode, bufferPtr, program_length);
     bufferPtr += program_length;
 
-    validated_length = validate_legacy_bytecode(cur_robot->program_bytecode, program_length);
+    validated_length = validate_legacy_bytecode(cur_robot->program_bytecode,
+     program_length);
 
     if(validated_length <= 0)
       goto err_invalid;
 
     else if(validated_length < program_length)
     {
-      cur_robot->program_bytecode = crealloc(cur_robot->program_bytecode, validated_length);
+      cur_robot->program_bytecode = crealloc(cur_robot->program_bytecode,
+       validated_length);
       cur_robot->program_bytecode_length = validated_length;
     }
 
@@ -324,8 +330,9 @@ size_t legacy_calculate_partial_robot_size(int savegame, int version)
 
   size_t partial_robot_size = 41;
 
-  if (savegame) {
-    if (version >= 0x0254)
+  if(savegame)
+  {
+    if(version >= 0x0254)
       partial_robot_size += 4; // loopcount
     partial_robot_size += 32 * 4; // 32 local counters
     partial_robot_size += 2 * 4; // stack size and position
@@ -356,17 +363,19 @@ size_t legacy_load_robot_calculate_size(const void *buffer, int savegame,
     program_length &= 0xFFFF;
   
   // Next, if this is a savegame robot, read the stack size
-  if (savegame) {
+  if(savegame)
+  {
     bufferPtr = (unsigned char *)buffer + 41;
-    if (version >= 0x0254) bufferPtr += 4; // Skip over loopcount
+    if(version >= 0x0254) bufferPtr += 4; // Skip over loopcount
     bufferPtr += 32 * 4; // Skip over 32 local counters
     stack_size = mem_getd(&bufferPtr);
   }
 
   // Now calculate the robot size
   robot_size = 41;
-  if (savegame) {
-    if (version >= 0x0254) robot_size += 4;
+  if(savegame)
+  {
+    if(version >= 0x0254) robot_size += 4;
     robot_size += 32 * 4 + 2 * 4 + stack_size * 4;
   }
   robot_size += program_length;
@@ -386,15 +395,20 @@ void legacy_load_robot(struct world *mzx_world, struct robot *cur_robot,
   full_size = legacy_load_robot_calculate_size(buffer, savegame, version);
 
   buffer = crealloc(buffer, full_size);
-  total_read += fread((unsigned char *)buffer + partial_size, full_size - partial_size, 1, fp) * (full_size - partial_size);
+  total_read += fread((unsigned char *)buffer + partial_size,
+   full_size - partial_size, 1, fp) * (full_size - partial_size);
 
-  if (total_read != full_size) {
+  create_blank_robot(cur_robot);
+
+  if(total_read != full_size)
+  {
     error_message(E_BOARD_ROBOT_CORRUPT, robot_location, NULL);
-    create_blank_robot(cur_robot);
     create_blank_robot_program(cur_robot);
     strcpy(cur_robot->robot_name, "<<error>>");
     fseek(fp, 0, SEEK_END);
-  } else {
+  }
+  else
+  {
     legacy_load_robot_from_memory(mzx_world, cur_robot, buffer, savegame,
      version, robot_location);
   }
