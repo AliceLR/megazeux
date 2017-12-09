@@ -46,6 +46,8 @@ struct undo_history
   void (*clear_function)(struct undo_frame *);
 };
 
+#ifdef CONFIG_UNDO
+
 int apply_undo(struct undo_history *h);
 int apply_redo(struct undo_history *h);
 void update_undo_frame(struct undo_history *h);
@@ -69,6 +71,32 @@ void add_block_undo_frame(struct world *mzx_world, struct undo_history *h,
 
 void add_layer_undo_frame(struct undo_history *h, char *layer_chars,
  char *layer_colors, int layer_width, int layer_offset, int width, int height);
+
+#else
+
+static inline int apply_undo(void *h) { return 0; }
+static inline int apply_redo(void *h) { return 0; }
+static inline void update_undo_frame(void *h) { }
+static inline void destruct_undo_history(void *h) { }
+
+static inline void *construct_charset_undo_history(int m) { return NULL; }
+static inline void *construct_board_undo_history(int m) { return NULL; }
+static inline void *construct_layer_undo_history(int m) { return NULL; }
+
+static inline void add_charset_undo_frame(void *h, int o, int wi, int hi) { }
+
+static inline void add_board_undo_frame(void *m, void *h, int i, int c, int p,
+ int x, int y, void *r, void *sc, void *se) { }
+
+static inline void add_board_undo_position(void *h, int x, int y) { }
+
+static inline void add_block_undo_frame(void *m, void *h, void *b, int o,
+ int wi, int hi) { }
+
+static inline void add_layer_undo_frame(void *h, void *ch, void *co, int lw,
+ int o, int wi, int hi) { }
+
+#endif
 
 __M_END_DECLS
 
