@@ -14,12 +14,12 @@ ifeq ($(filter -r,$(MAKEFLAGS)),)
 MAKEFLAGS += -r
 endif
 
-.PHONY: clean help_check mzx mzx.debug build build_clean source
+.PHONY: all clean help_check mzx mzx.debug build build_clean source
 
 -include platform.inc
 include version.inc
 
-all: mzx
+all: mzx assets/help.fil
 debuglink: all mzx.debug
 
 -include arch/${PLATFORM}/Makefile.in
