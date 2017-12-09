@@ -1,8 +1,8 @@
-docs/changelog.txt merge=union -crlf
-docs/cycles_and_commands.txt -crlf
-docs/idle_direction_oddities.txt -crlf
-docs/macro.txt -crlf
-docs/port.txt -crlf
-docs/push_and_transport.txt -crlf
-docs/WIPHelp.txt -crlf
-config.txt -crlf
+docs/changelog.txt merge=union text
+docs/cycles_and_commands.txt text
+docs/idle_direction_oddities.txt text
+docs/macro.txt text
+docs/port.txt text
+docs/push_and_transport.txt text
+docs/WIPHelp.txt text
+config.txt text
