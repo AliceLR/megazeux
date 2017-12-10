@@ -83,7 +83,7 @@ static int save_board_info(struct board *cur_board, struct zip_archive *zp,
   save_prop_c(BPROP_BOARD_E, cur_board->board_dir[2], &mf);
   save_prop_c(BPROP_BOARD_W, cur_board->board_dir[3], &mf);
   save_prop_c(BPROP_RESTART_IF_ZAPPED, cur_board->restart_if_zapped, &mf);
-  save_prop_c(BPROP_TIME_LIMIT, cur_board->time_limit, &mf);
+  save_prop_w(BPROP_TIME_LIMIT, cur_board->time_limit, &mf);
   save_prop_c(BPROP_PLAYER_NS_LOCKED, cur_board->player_ns_locked, &mf);
   save_prop_c(BPROP_PLAYER_EW_LOCKED, cur_board->player_ew_locked, &mf);
   save_prop_c(BPROP_PLAYER_ATTACK_LOCKED, cur_board->player_attack_locked, &mf);

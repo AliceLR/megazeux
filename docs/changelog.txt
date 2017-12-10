@@ -8,6 +8,8 @@ USERS
 + Fixed bug where GOOP_WALK wouldn't always be 0 when loading
   old worlds.
 + Values of GOOP_WALK greater than 1 no longer cause issues.
++ Board time limits greater than 255 are no longer truncated
+  when saving worlds/saves.
 
 DEVELOPERS
 
