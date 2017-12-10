@@ -37,6 +37,7 @@ struct editor_config_info
   int bedit_hhelp;
   int editor_tab_focuses_view;
   int editor_load_board_assets;
+  int editor_thing_menu_places;
 
   // Defaults for new boards
   int viewport_x;

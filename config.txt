@@ -301,6 +301,11 @@
 
 # editor_load_board_assets = 1
 
+# Whether or not the thing menus (F3-F10) will place an object on
+# the board when that object is selected. Enabled by default.
+
+# editor_thing_menu_places = 1
+
 # If this is set to 1 (the default), enter can be used to split
 # a line in the robot editor. However, the classic behaviour is
 # that enter moves the cursor down a line. If you would like to

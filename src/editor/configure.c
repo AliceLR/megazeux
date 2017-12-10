@@ -233,6 +233,12 @@ static void config_editor_tab_focus(struct editor_config_info *conf,
   conf->editor_tab_focuses_view = CLAMP(strtol(value, NULL, 10), 0, 1);
 }
 
+static void config_editor_thing_menu_places(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
+{
+  conf->editor_thing_menu_places = CLAMP(strtol(value, NULL, 10), 0, 1);
+}
+
 static void config_undo_history_size(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
@@ -519,6 +525,7 @@ static const struct editor_config_entry editor_config_options[] =
   { "editor_load_board_assets", config_editor_load_board_assets },
   { "editor_space_toggles", config_editor_space_toggles },
   { "editor_tab_focuses_view", config_editor_tab_focus },
+  { "editor_thing_menu_places", config_editor_thing_menu_places },
   { "macro_*", config_macro },
   { "palette_editor_hide_help", pedit_hhelp },
   { "robot_editor_hide_help", redit_hhelp },
@@ -560,6 +567,7 @@ static const struct editor_config_info default_editor_options =
   1,                            // board_editor_hide_help
   0,                            // editor_tab_focuses_view
   0,                            // editor_load_board_assets
+  1,                            // editor_thing_menu_places
 
   // Defaults for new boards
   0,                            // viewport_x

@@ -1302,7 +1302,7 @@ static void thing_menu(struct world *mzx_world, int menu_number,
   enum thing id;
 
   id = (enum thing)src_board->level_id[x + (y * src_board->board_width)];
-  if(id == PLAYER)
+  if(id == PLAYER && mzx_world->editor_conf.editor_thing_menu_places)
   {
     error("Cannot overwrite the player- move it first", 0, 8, 0x0000);
     return;
@@ -1354,8 +1354,9 @@ static void thing_menu(struct world *mzx_world, int menu_number,
 
     if(param >= 0)
     {
-      param = place_current_at_xy(mzx_world, id, color, param,
-       x, y, copy_robot, copy_scroll, copy_sensor, EDIT_BOARD, 1);
+      if(mzx_world->editor_conf.editor_thing_menu_places)
+        param = place_current_at_xy(mzx_world, id, color, param,
+         x, y, copy_robot, copy_scroll, copy_sensor, EDIT_BOARD, 1);
 
       *new_id = id;
       *new_param = param;

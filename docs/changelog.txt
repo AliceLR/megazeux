@@ -2,6 +2,10 @@ GIT
 
 USERS
 
++ Added the config file option "editor_thing_menu_places". When
+  set to 0, selecting an object from the thing menus (F3-F10)
+  will place the object in the buffer but not on the board.
+  Defaults to 1.
 + Fixed a bug where MZMs could sometimes fail to load in the
   editor.
 + MZMs loaded in the editor now behave correctly when undone.
