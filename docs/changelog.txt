@@ -20,6 +20,8 @@ USERS
 DEVELOPERS
 
 + Updated MSVC for Visual Studio 2017. (Spectere)
++ "make all" now makes the help file. (pgimeno)
++ "make clean" now deletes ccv. (pgimeno)
 
 
 November 22, 2017 - MZX 2.91
