@@ -158,7 +158,8 @@ static void draw_intro_mesg(struct world *mzx_world)
 
   if(intro_mesg_timer == 0)
     return;
-  if (conf->standalone_mode)
+
+  if(conf->standalone_mode)
     return;
 
   if(mzx_world->help_file)
@@ -172,11 +173,13 @@ static void draw_intro_mesg(struct world *mzx_world)
   }
 }
 
-static void strip_caption_string(char *output, char *input) {
+static void strip_caption_string(char *output, char *input)
+{
   unsigned int i, j;
   output[0] = '\0';
 
-  for (i = 0, j = 0; i < strlen(input); i++) {
+  for(i = 0, j = 0; i < strlen(input); i++)
+  {
     if(input[i] < 32 || input[i] > 126)
       continue;
 
@@ -189,7 +192,7 @@ static void strip_caption_string(char *output, char *input) {
 
     output[j] = input[i];
 
-    if (output[j] != ' ' || (j > 0 && output[j - 1] != ' '))
+    if(output[j] != ' ' || (j > 0 && output[j - 1] != ' '))
       j++;
   }
 
@@ -255,14 +258,14 @@ void set_caption(struct world *mzx_world, struct board *board,
     strcpy(caption, buffer);
   }
 
-  #ifdef CONFIG_FPS
+#ifdef CONFIG_FPS
   if(mzx_world && !editor && !robot && !board)
   {
     snprintf(buffer, MAX_CAPTION_SIZE, "%s %s FPS: %f", caption,
      CAPTION_SPACER, average_fps);
     strcpy(caption, buffer);
   }
-  #endif /* CONFIG_FPS */
+#endif /* CONFIG_FPS */
 
   caption[MAX_CAPTION_SIZE - 1] = 0;
   set_window_caption(caption);
@@ -1271,67 +1274,75 @@ static int update(struct world *mzx_world, int game, int *fadein)
   char *level_under_color = src_board->level_under_color;
   char *level_under_param = src_board->level_under_param;
   int total_ticks;
-  #ifdef CONFIG_FPS
-  #define FPS_HISTORY_SIZE 5
-  #define FPS_INTERVAL 1000
+
+#ifdef CONFIG_FPS
+#define FPS_HISTORY_SIZE 5
+#define FPS_INTERVAL 1000
+  static int fps_history[FPS_HISTORY_SIZE];
   static int fps_previous_ticks = -1;
   static int frames_counted;
-  static int fps_history[FPS_HISTORY_SIZE];
-
   {
-    int i;
+    int ticks_delta = start_ticks - fps_previous_ticks;
     int min_fps, max_fps, total_fps;
     int fps_history_count;
-    int ticks_delta = start_ticks - fps_previous_ticks;
+    int i;
 
-    if (fps_previous_ticks == -1) {
+    if(fps_previous_ticks == -1)
+    {
       fps_previous_ticks = start_ticks;
       frames_counted = 0;
-      for (i = 0; i < FPS_HISTORY_SIZE; i++)
+      for(i = 0; i < FPS_HISTORY_SIZE; i++)
         fps_history[i] = -1;
-    } else {
-      if (ticks_delta >= FPS_INTERVAL) {
-        for (i = FPS_HISTORY_SIZE - 1; i >= 1; i--)
-        {
-          fps_history[i] = fps_history[i - 1];
-        }
-        fps_history[0] = frames_counted;
-        min_fps = fps_history[0];
-        max_fps = fps_history[0];
-        total_fps = 0;
-        fps_history_count = 0;
-        for (i = 0; i < FPS_HISTORY_SIZE; i++)
-        {
-          if (fps_history[i] > -1)
-          {
-            if (fps_history[i] > max_fps)
-              max_fps = fps_history[i];
-            if (fps_history[i] < min_fps)
-              min_fps = fps_history[i];
-            total_fps += fps_history[i];
-            fps_history_count++;
-          }
-        }
+    }
+    else
 
-         // Subtract off highest and lowest scores (outliers)
-        total_fps -= max_fps;
-        total_fps -= min_fps;
-        if (fps_history_count > 2)
-        {
-          average_fps =
-           1.0 * total_fps / (fps_history_count - 2) * (1000.0 / FPS_INTERVAL);
-          set_caption(mzx_world, NULL, NULL, mzx_world->editing, 0);
-        }
-        fps_previous_ticks += FPS_INTERVAL;
-
-        frames_counted = 0;
-      } else {
-        frames_counted++;
+    if(ticks_delta >= FPS_INTERVAL)
+    {
+      for(i = FPS_HISTORY_SIZE - 1; i >= 1; i--)
+      {
+        fps_history[i] = fps_history[i - 1];
       }
+
+      fps_history[0] = frames_counted;
+      min_fps = fps_history[0];
+      max_fps = fps_history[0];
+      total_fps = 0;
+      fps_history_count = 0;
+
+      for(i = 0; i < FPS_HISTORY_SIZE; i++)
+      {
+        if(fps_history[i] > -1)
+        {
+          if(fps_history[i] > max_fps)
+            max_fps = fps_history[i];
+
+          if(fps_history[i] < min_fps)
+            min_fps = fps_history[i];
+
+          total_fps += fps_history[i];
+          fps_history_count++;
+        }
+      }
+      // Subtract off highest and lowest scores (outliers)
+      total_fps -= max_fps;
+      total_fps -= min_fps;
+      if(fps_history_count > 2)
+      {
+        average_fps =
+         1.0 * total_fps / (fps_history_count - 2) * (1000.0 / FPS_INTERVAL);
+        set_caption(mzx_world, NULL, NULL, mzx_world->editing, 0);
+      }
+      fps_previous_ticks += FPS_INTERVAL;
+
+      frames_counted = 0;
+    }
+
+    else
+    {
+      frames_counted++;
     }
   }
-
-  #endif /* CONFIG_FPS */
+#endif /* CONFIG_FPS */
 
   pal_update = false;
 
@@ -2247,7 +2258,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
       if(mzx_world->change_game_state == CHANGE_STATE_EXIT_GAME_ROBOTIC ||
        mzx_world->change_game_state == CHANGE_STATE_REQUEST_EXIT)
       {
-        if (conf->no_titlescreen)
+        if(conf->no_titlescreen)
         {
           mzx_world->full_exit = true;
         }
@@ -2262,10 +2273,9 @@ __editor_maybe_static void play_game(struct world *mzx_world)
     src_board = mzx_world->current_board;
 
     // Has the game/world been saved from robotic?
-    if (mzx_world->robotic_save_type == SAVE_GAME)
+    if(mzx_world->robotic_save_type == SAVE_GAME)
     {
-      save_world(mzx_world, mzx_world->robotic_save_path, 1,
-      WORLD_VERSION);
+      save_world(mzx_world, mzx_world->robotic_save_path, 1, WORLD_VERSION);
       mzx_world->robotic_save_type = SAVE_NONE;
     }
 
@@ -2297,11 +2307,11 @@ __editor_maybe_static void play_game(struct world *mzx_world)
         keylbl[3] = key_char;
         send_robot_all_def(mzx_world, keylbl);
         // In MZX versions <=2.70 key was a board counter
-        if (mzx_world->version <= 0x0249)
+        if(mzx_world->version <= 0x0249)
         {
           char keych = toupper(key_char);
           // <2.60 it only supported 1-9 and A-Z
-          if (mzx_world->version >= 0x0232 ||
+          if(mzx_world->version >= 0x0232 ||
            (keych >= 'A' && keych <= 'Z') |
            (keych >= '1' && keych <= '9'))
           {
@@ -2688,13 +2698,12 @@ __editor_maybe_static void play_game(struct world *mzx_world)
     {
       // Special behaviour in standalone- only escape exits
       // ask for confirmation
-      if (conf->no_titlescreen ||
-       (conf->standalone_mode && !confirm_exit))
+      if(conf->no_titlescreen || (conf->standalone_mode && !confirm_exit))
       {
         mzx_world->full_exit = true;
       }
       
-      if (confirm_exit || !conf->standalone_mode)
+      if(confirm_exit || !conf->standalone_mode)
       {
         confirm_exit = 0;
         m_show();
@@ -2739,7 +2748,7 @@ void title_screen(struct world *mzx_world)
 
   // First, disable standalone mode if this is a build of MZX
   // with the editor enabled
-  if (edit_world)
+  if(edit_world)
   {
     conf->standalone_mode = 0;
   }
@@ -2766,7 +2775,7 @@ void title_screen(struct world *mzx_world)
   }
 
   // if standalone mode is disabled, also disable no_titlescreen
-  if (!conf->standalone_mode)
+  if(!conf->standalone_mode)
     conf->no_titlescreen = 0;
 
   src_board = mzx_world->current_board;
@@ -2776,7 +2785,7 @@ void title_screen(struct world *mzx_world)
 
   do
   {
-    if (!conf->no_titlescreen)
+    if(!conf->no_titlescreen)
     {
       // Focus on center
       if(fadein)
@@ -2791,13 +2800,13 @@ void title_screen(struct world *mzx_world)
       {
         if(update(mzx_world, 0, &fadein))
         {
-          if (conf->standalone_mode &&
-           mzx_world->change_game_state ==
-           CHANGE_STATE_EXIT_GAME_ROBOTIC)
+          if(conf->standalone_mode &&
+           mzx_world->change_game_state == CHANGE_STATE_EXIT_GAME_ROBOTIC)
             break;
-          if (mzx_world->change_game_state ==
-           CHANGE_STATE_REQUEST_EXIT)
+
+          if(mzx_world->change_game_state == CHANGE_STATE_REQUEST_EXIT)
             break;
+
           update_event_status();
           continue;
         }
@@ -2818,13 +2827,14 @@ void title_screen(struct world *mzx_world)
       key_status = get_key_status(keycode_internal_wrt_numlock, key);
 
       exit = get_exit_status();
-      if (conf->standalone_mode)
+      if(conf->standalone_mode)
       {
-        switch (mzx_world->change_game_state)
+        switch(mzx_world->change_game_state)
         {
           case CHANGE_STATE_PLAY_GAME_ROBOTIC:
             key = IKEY_p;
             break;
+
           default:
             break;
         }
@@ -2875,7 +2885,9 @@ void title_screen(struct world *mzx_world)
         case IKEY_F3:
         case IKEY_l:
         {
-          if (conf->standalone_mode) break;
+          if(conf->standalone_mode)
+            break;
+
           load_world_selection(mzx_world);
           fadein = 1;
           src_board = mzx_world->current_board;
@@ -2942,7 +2954,10 @@ void title_screen(struct world *mzx_world)
 
               update_event_status();
               play_game(mzx_world);
-              if (mzx_world->full_exit) break;
+
+              if(mzx_world->full_exit)
+                break;
+
               // Done playing- load world again
               // Already faded out from play_game()
               end_module();
@@ -3044,7 +3059,10 @@ void title_screen(struct world *mzx_world)
               change_board_load_assets(mzx_world);
 
               play_game(mzx_world);
-              if (mzx_world->full_exit) break;
+
+              if(mzx_world->full_exit)
+                break;
+
               // Done playing- load world again
               // Already faded out from play_game()
               end_module();
@@ -3170,7 +3188,10 @@ void title_screen(struct world *mzx_world)
             vquick_fadeout();
 
             play_game(mzx_world);
-            if (mzx_world->full_exit) break;
+
+            if(mzx_world->full_exit)
+              break;
+
             // Done playing- load world again
             // Already faded out from play_game()
             end_module();
@@ -3217,7 +3238,8 @@ void title_screen(struct world *mzx_world)
           // Ignore if this isn't a fresh press
           if(key_status != 1)
             break;
-          if (conf->standalone_mode && !enter_menu_status)
+
+          if(conf->standalone_mode && !enter_menu_status)
             break;
 
           save_screen();
@@ -3284,7 +3306,7 @@ void title_screen(struct world *mzx_world)
     {
       // Special behaviour in standalone- only escape exits
       // ask for confirmation
-      if (confirm_exit || !conf->standalone_mode)
+      if(confirm_exit || !conf->standalone_mode)
       {
         confirm_exit = 0;
         m_show();
@@ -3296,7 +3318,8 @@ void title_screen(struct world *mzx_world)
       }
     }
 
-    if (mzx_world->full_exit) break;
+    if(mzx_world->full_exit)
+      break;
 
   } while(!exit && !mzx_world->full_exit);
 
