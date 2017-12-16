@@ -200,7 +200,7 @@ int place_at_xy(struct world *mzx_world, enum thing id, int color, int param,
   struct board *src_board = mzx_world->current_board;
   int board_width = src_board->board_width;
   int offset = x + (y * board_width);
-  enum thing new_id = (enum thing)src_board->level_id[offset];
+  enum thing old_id = (enum thing)src_board->level_id[offset];
 
   // Okay, I'm really stabbing at behavior here.
   // Wildcard param, use source but only if id matches and isn't
@@ -209,7 +209,7 @@ int place_at_xy(struct world *mzx_world, enum thing id, int color, int param,
   {
     // The param must represent the char for this to happen,
     // nothing else will give.
-    if((id_chars[new_id] != 255)  || (id_chars[id] != 255))
+    if((id_chars[old_id] != 255) || (id_chars[id] != 255))
     {
       if(def_params[id] > 0)
         param = def_params[id];
@@ -222,32 +222,32 @@ int place_at_xy(struct world *mzx_world, enum thing id, int color, int param,
     }
   }
 
-  if(new_id == SENSOR)
+  if(old_id == SENSOR)
   {
     // Okay to put player on sensor; it won't destroy the sensor
-    if (id != PLAYER)
+    if(id != PLAYER)
     {
-      int new_param = src_board->level_param[offset];
-      clear_sensor_id(src_board, new_param);
+      int old_param = src_board->level_param[offset];
+      clear_sensor_id(src_board, old_param);
     }
   }
   else
 
-  if(is_signscroll(new_id))
+  if(is_signscroll(old_id))
   {
-    int new_param = src_board->level_param[offset];
-    clear_scroll_id(src_board, new_param);
+    int old_param = src_board->level_param[offset];
+    clear_scroll_id(src_board, old_param);
   }
   else
 
-  if(is_robot(new_id))
+  if(is_robot(old_id))
   {
-    int new_param = src_board->level_param[offset];
-    clear_robot_id(src_board, new_param);
+    int old_param = src_board->level_param[offset];
+    clear_robot_id(src_board, old_param);
   }
   else
 
-  if(new_id == PLAYER)
+  if(old_id == PLAYER)
   {
     return 0; // Don't allow the player to be overwritten
   }

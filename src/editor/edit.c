@@ -2451,10 +2451,17 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           if(level_id[offset] != PLAYER)
           {
             // Remove from top (board only)
+            // Actually just places the under on top, but it's functionally
+            // equivalent.
+            enum thing id = src_board->level_under_id[offset];
+            int color = src_board->level_under_color[offset];
+            int param = src_board->level_under_param[offset];
+
             add_block_undo_frame(mzx_world, board_history,
              src_board, offset, 1, 1);
 
-            id_remove_top(mzx_world, cursor_board_x, cursor_board_y);
+            place_at_xy(mzx_world, id, color, param,
+             cursor_board_x, cursor_board_y);
 
             update_undo_frame(board_history);
             modified = 1;
