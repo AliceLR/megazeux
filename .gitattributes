@@ -1,3 +1,4 @@
+.gitignore merge=union text
 docs/changelog.txt merge=union text
 docs/cycles_and_commands.txt text
 docs/idle_direction_oddities.txt text
