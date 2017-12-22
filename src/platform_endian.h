@@ -28,7 +28,7 @@
 #define PLATFORM_LIL_ENDIAN 0x1234
 #define PLATFORM_BIG_ENDIAN 0x4321
 
-#ifdef CONFIG_SDL
+#if defined(CONFIG_SDL) && !defined(SKIP_SDL)
 
 #include <SDL.h>
 

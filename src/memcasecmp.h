@@ -21,17 +21,18 @@
 #define __MEMCASECMP_H
 
 #include <inttypes.h>
+#include "platform_endian.h"
 
 static inline int memcasecmp(const void *A, const void *B, size_t cmp_length)
 {
   // Compare 32bits at a time, should be mostly portable now
-  const char *src_value = (const char *)A;
-  const char *dest_value = (const char *)B;
+  const char *src_value = (const char *)B;
+  const char *dest_value = (const char *)A;
   char val_src;
   char val_dest;
   size_t length_32b = cmp_length / 4;
-  uint32_t *src_value_32b = (uint32_t *)A;
-  uint32_t *dest_value_32b = (uint32_t *)B;
+  uint32_t *src_value_32b = (uint32_t *)B;
+  uint32_t *dest_value_32b = (uint32_t *)A;
   uint32_t val_src_32b;
   uint32_t val_dest_32b;
   uint32_t difference;
@@ -44,6 +45,34 @@ static inline int memcasecmp(const void *A, const void *B, size_t cmp_length)
 
     if(val_src_32b != val_dest_32b)
     {
+#if PLATFORM_BYTE_ORDER == PLATFORM_LIL_ENDIAN
+
+      difference = toupper(val_dest_32b & 0xFF) -
+       toupper(val_src_32b & 0xFF);
+
+      if(difference)
+        return difference;
+
+      difference = toupper((val_dest_32b >> 8) & 0xFF) -
+       toupper((val_src_32b >> 8) & 0xFF);
+
+      if(difference)
+        return difference;
+
+      difference = toupper((val_dest_32b >> 16) & 0xFF) -
+       toupper((val_src_32b >> 16) & 0xFF);
+
+      if(difference)
+        return difference;
+
+      difference =
+       toupper(val_dest_32b >> 24) - toupper(val_src_32b >> 24);
+
+      if(difference)
+        return difference;
+
+#else // PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
+
       difference =
        toupper(val_dest_32b >> 24) - toupper(val_src_32b >> 24);
 
@@ -67,6 +96,7 @@ static inline int memcasecmp(const void *A, const void *B, size_t cmp_length)
 
       if(difference)
         return difference;
+#endif
     }
   }
 

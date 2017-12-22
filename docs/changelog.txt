@@ -16,6 +16,8 @@ USERS
   when saving worlds/saves.
 + Fixed bug where "robot not found" errors could result from
   using backspace on robots in the editor.
++ Fixed backwards string inequality evaluation.
++ String inequality compares are now endian-safe.
 
 DEVELOPERS
 
