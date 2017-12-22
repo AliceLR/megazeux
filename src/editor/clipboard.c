@@ -411,10 +411,9 @@ char *get_clipboard_buffer(void)
   return buffer;
 }
 
-#else // !__WIN32__ && !(CONFIG_X11 && CONFIG_SDL) && !SDL_VIDEO_DRIVER_QUARTZ && !SDL_VERSION_ATLEAST(2,0,0)
+#else // No system clipboard handler
 
-void copy_buffer_to_clipboard(char **buffer, int lines, int total_length) {
-}
+void copy_buffer_to_clipboard(char **buffer, int lines, int total_length) { }
 
 char *get_clipboard_buffer(void)
 {
