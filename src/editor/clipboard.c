@@ -1,6 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
+ * Copyright (C) 2017 Ian Burgmyer <spectere@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -29,8 +30,11 @@
 #include <limits.h>
 #endif
 
-#if defined(CONFIG_X11) && defined(CONFIG_SDL)
+#if defined(CONFIG_SDL)
 #include "SDL.h"
+#endif
+
+#if defined(CONFIG_X11) && defined(CONFIG_SDL)
 #include "SDL_syswm.h"
 #include "render_sdl.h"
 #endif
@@ -370,9 +374,47 @@ err_release:
   return dest_data;
 }
 
-#else // !__WIN32__ && !(CONFIG_X11 && CONFIG_SDL) && !SDL_VIDEO_DRIVER_QUARTZ
+#elif SDL_VERSION_ATLEAST(2,0,0)
 
-void copy_buffer_to_clipboard(char **buffer, int lines, int total_length) {}
+void copy_buffer_to_clipboard(char **buffer, int lines, int total_length)
+{
+  int i;
+  unsigned long line_length;
+  char *dest_data, *dest_ptr;
+  
+  dest_data = cmalloc(total_length + 1);
+  dest_ptr = dest_data;
+  
+  for(i = 0; i < lines; i++)
+  {
+    line_length = strlen(buffer[i]);
+    memcpy(dest_ptr, buffer[i], line_length);
+    dest_ptr += line_length;
+    dest_ptr[0] = '\n';
+    dest_ptr++;
+  }
+  
+  dest_ptr[-1] = 0;
+  SDL_SetClipboardText(dest_data);
+  
+  free(dest_data);
+}
+
+char *get_clipboard_buffer(void)
+{
+  char *buffer;
+  
+  if(!SDL_HasClipboardText())
+    return NULL;
+  
+  buffer = SDL_GetClipboardText();
+  return buffer;
+}
+
+#else // !__WIN32__ && !(CONFIG_X11 && CONFIG_SDL) && !SDL_VIDEO_DRIVER_QUARTZ && !SDL_VERSION_ATLEAST(2,0,0)
+
+void copy_buffer_to_clipboard(char **buffer, int lines, int total_length) {
+}
 
 char *get_clipboard_buffer(void)
 {

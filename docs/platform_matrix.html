@@ -317,6 +317,35 @@ var archs =
     loadsave_meter:   yes,
   },
 
+  xcode:
+  {
+    platform:         "xcode",
+    description:      ">= MacOS 10.6",
+    architecture:     "x86_64 (Mach-O) <br /> i686 (Mach-O)",
+    endian:           "Little",
+    toolchain:        "clang 900.0.38 <br /> LLVM 9.0.0",
+    packaged:         DMG,
+    visibility:       yes,
+    stack_protector:  yes,
+    layer_rendering:  yes,
+    module_engine:    xmp,
+    ogg_vorbis:       libvorbis,
+    optimization:     speed,
+    sdl:              yes,
+    editor:           yes,
+    helpsys:          yes,
+    audio:            yes,
+    software:         yes,
+    gl:               yes,
+    overlay:          yes,
+    glsl:             yes,
+    updater:          no_updater,
+    modular:          yes,
+    png:              yes,
+    uthash:           yes,
+    loadsave_meter:   no,
+  },
+
   _0: "spacer",
 
   amiga:
