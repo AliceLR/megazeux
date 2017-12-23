@@ -134,6 +134,28 @@
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
       <AdditionalDependencies>SDL2main.lib;SDL2.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>cd /d $(SolutionDir)..\..
+rd /s /q build\dist\$(PlatformTarget)
+mkdir build\dist\$(PlatformTarget)
+
+copy MegaZeux.exe build\dist\$(PlatformTarget)
+copy MZXRun.exe build\dist\$(PlatformTarget)
+copy Core.dll build\dist\$(PlatformTarget)
+copy Editor.dll build\dist\$(PlatformTarget)
+copy config.txt build\dist\$(PlatformTarget)
+copy contrib\precompiled-sdl\$(PlatformTarget)\SDL2.dll build\dist\$(PlatformTarget) 
+
+mkdir build\dist\$(PlatformTarget)\assets
+xcopy /e assets build\dist\$(PlatformTarget)\assets
+
+mkdir build\dist\$(PlatformTarget)\docs
+copy docs\changelog.txt build\dist\$(PlatformTarget)\docs
+copy LICENSE build\dist\$(PlatformTarget)\docs\COPYING.DOC
+copy docs\keycodes.html build\dist\$(PlatformTarget)\docs
+copy docs\macro.txt build\dist\$(PlatformTarget)\docs
+copy docs\platform_matrix.html build\dist\$(PlatformTarget)\docs</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -152,6 +174,28 @@
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
       <AdditionalDependencies>SDL2main.lib;SDL2.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>cd /d $(SolutionDir)..\..
+rd /s /q build\dist\$(PlatformTarget)
+mkdir build\dist\$(PlatformTarget)
+
+copy MegaZeux.exe build\dist\$(PlatformTarget)
+copy MZXRun.exe build\dist\$(PlatformTarget)
+copy Core.dll build\dist\$(PlatformTarget)
+copy Editor.dll build\dist\$(PlatformTarget)
+copy config.txt build\dist\$(PlatformTarget)
+copy contrib\precompiled-sdl\$(PlatformTarget)\SDL2.dll build\dist\$(PlatformTarget) 
+
+mkdir build\dist\$(PlatformTarget)\assets
+xcopy /e assets build\dist\$(PlatformTarget)\assets
+
+mkdir build\dist\$(PlatformTarget)\docs
+copy docs\changelog.txt build\dist\$(PlatformTarget)\docs
+copy LICENSE build\dist\$(PlatformTarget)\docs\COPYING.DOC
+copy docs\keycodes.html build\dist\$(PlatformTarget)\docs
+copy docs\macro.txt build\dist\$(PlatformTarget)\docs
+copy docs\platform_matrix.html build\dist\$(PlatformTarget)\docs</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\main.c" />
