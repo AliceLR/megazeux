@@ -4,6 +4,7 @@ arch/3ds/*shbin*
 arch/mingw/pefix.d
 arch/mingw/pefix.exe
 arch/mingw/pefix.o
+arch/msvc/.vs
 arch/msvc/*.user
 arch/msvc/Deps/
 arch/msvc/MegaZeux.opensdf
@@ -28,6 +29,7 @@ contrib/libxmp/src/loaders/.build/
 contrib/unzip/src/.build/
 boot.dol
 Core.exp
+Core.ilk
 Core.iobj
 Core.ipdb
 Core.lib
@@ -62,6 +64,7 @@ mzxrun.cia
 mzxrun.dol
 mzxrun.exe
 mzxrun.exp
+mzxrun.ilk
 mzxrun.iobj
 mzxrun.ipdb
 mzxrun.lib

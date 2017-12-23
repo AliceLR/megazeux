@@ -1,57 +1,231 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="..\..\src\editor\block.c" />
-    <ClCompile Include="..\..\src\editor\board.c" />
-    <ClCompile Include="..\..\src\editor\char_ed.c" />
-    <ClCompile Include="..\..\src\editor\configure.c" />
-    <ClCompile Include="..\..\src\editor\debug.c" />
-    <ClCompile Include="..\..\src\editor\edit.c" />
-    <ClCompile Include="..\..\src\editor\edit_di.c" />
-    <ClCompile Include="..\..\src\editor\fill.c" />
-    <ClCompile Include="..\..\src\editor\graphics.c" />
-    <ClCompile Include="..\..\src\editor\macro.c" />
-    <ClCompile Include="..\..\src\editor\pal_ed.c" />
-    <ClCompile Include="..\..\src\editor\param.c" />
-    <ClCompile Include="..\..\src\editor\robot.c" />
-    <ClCompile Include="..\..\src\editor\robo_debug.c" />
-    <ClCompile Include="..\..\src\editor\robo_ed.c" />
-    <ClCompile Include="..\..\src\editor\sfx_edit.c" />
-    <ClCompile Include="..\..\src\editor\window.c" />
-    <ClCompile Include="..\..\src\editor\world.c" />
-    <ClCompile Include="..\..\src\zip.c">
-      <Filter>coredep</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\editor\clipboard.c" />
-    <ClCompile Include="..\..\src\editor\select.c" />
-    <ClCompile Include="..\..\src\editor\undo.c" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\src\editor\block.h" />
-    <ClInclude Include="..\..\src\editor\board.h" />
-    <ClInclude Include="..\..\src\editor\char_ed.h" />
-    <ClInclude Include="..\..\src\editor\configure.h" />
-    <ClInclude Include="..\..\src\editor\debug.h" />
-    <ClInclude Include="..\..\src\editor\edit.h" />
-    <ClInclude Include="..\..\src\editor\edit_di.h" />
-    <ClInclude Include="..\..\src\editor\fill.h" />
-    <ClInclude Include="..\..\src\editor\graphics.h" />
-    <ClInclude Include="..\..\src\editor\macro.h" />
-    <ClInclude Include="..\..\src\editor\pal_ed.h" />
-    <ClInclude Include="..\..\src\editor\param.h" />
-    <ClInclude Include="..\..\src\editor\robot.h" />
-    <ClInclude Include="..\..\src\editor\robo_debug.h" />
-    <ClInclude Include="..\..\src\editor\robo_ed.h" />
-    <ClInclude Include="..\..\src\editor\sfx_edit.h" />
-    <ClInclude Include="..\..\src\editor\window.h" />
-    <ClInclude Include="..\..\src\editor\world.h" />
-    <ClInclude Include="..\..\src\editor\clipboard.h" />
-    <ClInclude Include="..\..\src\editor\select.h" />
-    <ClInclude Include="..\..\src\editor\undo.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <Filter Include="coredep">
-      <UniqueIdentifier>{c54ef17b-aed6-4e27-9e2d-62347f723a5c}</UniqueIdentifier>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\Core">
+      <UniqueIdentifier>{a8db9dff-f29e-4772-b263-6c082aa6175d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Core">
+      <UniqueIdentifier>{0ac55d42-d96d-443f-b3a7-242380bcdce6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\MSVC">
+      <UniqueIdentifier>{6131c0a7-9bce-4b74-aeb9-f3f30e620e77}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\editor\world.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\editor\window.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\editor\undo.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\editor\sfx_edit.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\editor\select.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\editor\robot.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\editor\robo_ed.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\editor\robo_debug.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\editor\param.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\editor\pal_ed.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\editor\macro.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\editor\graphics.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\editor\fill.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\editor\edit_di.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\editor\edit.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\editor\debug.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\editor\configure.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\editor\clipboard.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\editor\char_ed.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\editor\board.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\editor\block.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\zip.c">
+      <Filter>Source Files\Core</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\src\editor\block.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\editor\board.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\editor\char_ed.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\editor\clipboard.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\editor\configure.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\editor\debug.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\editor\edit.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\editor\edit_di.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\editor\fill.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\editor\graphics.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\editor\macro.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\editor\pal_ed.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\editor\param.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\editor\robo_debug.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\editor\robo_ed.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\editor\robot.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\editor\select.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\editor\sfx_edit.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\editor\undo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\editor\window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\editor\world.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\zip.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="config.h">
+      <Filter>Header Files\MSVC</Filter>
+    </ClInclude>
+    <ClInclude Include="dirent.h">
+      <Filter>Header Files\MSVC</Filter>
+    </ClInclude>
+    <ClInclude Include="msvc.h">
+      <Filter>Header Files\MSVC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\audio.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\block.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\const.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\counter.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\data.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\error.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\event.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\graphics.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\helpsys.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\idarray.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\idput.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\intake.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\mzm.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\platform.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\scrdisp.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\sfx.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\util.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\window.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\world.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

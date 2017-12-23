@@ -36,10 +36,6 @@
 #define getcwd      _getcwd
 #define rmdir       _rmdir
 
-#if _MSC_VER <= 1800 /* VS2015+ */
-#define snprintf    _snprintf
-#endif
-
 #define unlink      _unlink
 
 #ifndef strcasecmp
