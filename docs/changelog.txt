@@ -26,6 +26,8 @@ DEVELOPERS
 + "make all" now makes the help file. (pgimeno)
 + "make clean" now deletes ccv. (pgimeno)
 + Fixed creeping CRLF usage. (Lachesis, pgimeno, Spectere)
++ Fixed a bug where the MSYS2 build scripts could inadvertently
+  include non-portable SDL2 binaries in Windows builds.
 
 
 November 22, 2017 - MZX 2.91

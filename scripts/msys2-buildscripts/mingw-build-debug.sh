@@ -1,26 +1,17 @@
 #!/bin/bash
 # $1 - x64 or x86
-# $2 - 2.90 or master or debytecode
 
-# Clear the debug files out of the build folder and put them in their own archive.
+# Clear the debug files out of the release folder (used for the updater).
 
-cd /mzx-build-workingdir/megazeux/build
+cd /mzx-build-workingdir/megazeux/build/windows-$1/
+find . -type f -name '*.debug' -delete
 
-source ../version.inc
+# Clear the debug files out of the archive and put them in their own archive.
 
-rm -rf windows-$1-debug
-mkdir windows-$1-debug
-mkdir windows-$1-debug/utils
+cd /mzx-build-workingdir/megazeux/build/dist/windows-$1/
+source ../../../version.inc
 
-mv windows-$1/*.debug       windows-$1-debug/
-mv windows-$1/utils/*.debug windows-$1-debug/utils/
-
-cd windows-$1-debug
-rm -f ../dist/windows-$1/$TARGET-$1-debug.zip
-7za a -tzip ../dist/windows-$1/$TARGET-$1-debug.zip *
-
-cd ..
-rm -rf windows-$1-debug
-
-mkdir -p /mzx-build-workingdir/zips/$2
-mv dist/windows-$1/$TARGET-$1-debug.zip /mzx-build-workingdir/zips/$2
+7za e $TARGET-$1.zip              *.debug -r
+7za d $TARGET-$1.zip              *.debug -r
+7za a -tzip $TARGET-$1-debug.zip  *.debug
+rm *.debug
