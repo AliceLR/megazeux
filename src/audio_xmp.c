@@ -35,7 +35,7 @@ struct xmp_stream
 {
   struct sampled_stream s;
   xmp_context ctx;
-  int row_tbl[XMP_MAX_MOD_LENGTH];
+  Uint32 row_tbl[XMP_MAX_MOD_LENGTH];
   Uint32 effective_frequency;
   Uint32 total_rows;
   Uint32 repeat;
@@ -80,18 +80,24 @@ static void audio_xmp_set_repeat(struct audio_stream *a_src, Uint32 repeat)
 
 static void audio_xmp_set_position(struct audio_stream *a_src, Uint32 position)
 {
+  struct xmp_stream *stream = (struct xmp_stream *)a_src;
   struct xmp_frame_info info;
   int i;
-  xmp_get_frame_info(((struct xmp_stream *)a_src)->ctx, &info);
-  // FIXME: xmp does not have a way to set the position accurately. Here, we try
-  // to narrow it down to the nearest order.
-  for (i = 1; i < XMP_MAX_MOD_LENGTH; i++)
-    if ((Uint32) ((struct xmp_stream *)a_src)->row_tbl[i] > position)
+
+  xmp_get_frame_info(stream->ctx, &info);
+
+  for(i = 1; i < XMP_MAX_MOD_LENGTH; i++)
+  {
+    if(stream->row_tbl[i] > position)
     {
-      xmp_set_position(((struct xmp_stream *)a_src)->ctx, i - 1);
+      // TODO patch xmp_set_row into our copy of xmp and uncomment these lines
+      //int position_row = position - stream->row_tbl[i - 1];
+      xmp_set_position(stream->ctx, i - 1);
+      //xmp_set_row(stream->ctx, position_row);
       return;
     }
-  xmp_set_position(((struct xmp_stream *)a_src)->ctx, 0);
+  }
+  xmp_set_position(stream->ctx, 0);
 }
 
 static void audio_xmp_set_order(struct audio_stream *a_src, Uint32 order)
@@ -161,7 +167,7 @@ struct audio_stream *construct_xmp_stream(char *filename, Uint32 frequency,
   struct xmp_module_info info;
   xmp_context ctx;
   unsigned char ord;
-  int row_pos;
+  Uint32 row_pos;
   int i;
 
   ctx = xmp_create_context();
