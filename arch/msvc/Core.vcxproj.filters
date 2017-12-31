@@ -1,397 +1,654 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="..\..\src\audio.c" />
-    <ClCompile Include="..\..\src\audio_sdl.c" />
-    <ClCompile Include="..\..\src\board.c" />
-    <ClCompile Include="..\..\src\configure.c" />
-    <ClCompile Include="..\..\src\counter.c" />
-    <ClCompile Include="..\..\src\data.c" />
-    <ClCompile Include="..\..\src\event.c" />
-    <ClCompile Include="..\..\src\event_sdl.c" />
-    <ClCompile Include="..\..\src\expr.c" />
-    <ClCompile Include="..\..\src\fsafeopen.c" />
-    <ClCompile Include="..\..\src\game.c" />
-    <ClCompile Include="..\..\src\game2.c" />
-    <ClCompile Include="..\..\src\graphics.c" />
-    <ClCompile Include="..\..\src\helpsys.c" />
-    <ClCompile Include="..\..\src\idarray.c" />
-    <ClCompile Include="..\..\src\idput.c" />
-    <ClCompile Include="..\..\src\intake.c" />
-    <ClCompile Include="..\..\src\legacy_rasm.c" />
-    <ClCompile Include="..\..\src\mzm.c" />
-    <ClCompile Include="..\..\src\network\host.c" />
-    <ClCompile Include="..\..\src\network\manifest.c" />
-    <ClCompile Include="..\..\src\network\network.c" />
-    <ClCompile Include="..\..\src\network\sha256.c" />
-    <ClCompile Include="..\..\src\platform_sdl.c" />
-    <ClCompile Include="..\..\src\pngops.c" />
-    <ClCompile Include="..\..\src\rasm.c" />
-    <ClCompile Include="..\..\src\render.c" />
-    <ClCompile Include="..\..\src\render_gl.c" />
-    <ClCompile Include="..\..\src\render_gl1.c" />
-    <ClCompile Include="..\..\src\render_gl2.c" />
-    <ClCompile Include="..\..\src\render_glsl.c" />
-    <ClCompile Include="..\..\src\render_sdl.c" />
-    <ClCompile Include="..\..\src\render_soft.c" />
-    <ClCompile Include="..\..\src\render_yuv.c" />
-    <ClCompile Include="..\..\src\render_yuv1.c" />
-    <ClCompile Include="..\..\src\render_yuv2.c" />
-    <ClCompile Include="..\..\src\robot.c" />
-    <ClCompile Include="..\..\src\run_robot.c" />
-    <ClCompile Include="..\..\src\scrdisp.c" />
-    <ClCompile Include="..\..\src\sfx.c" />
-    <ClCompile Include="..\..\src\sprite.c" />
-    <ClCompile Include="..\..\src\util.c" />
-    <ClCompile Include="..\..\src\window.c" />
-    <ClCompile Include="..\..\src\world.c" />
-    <ClCompile Include="..\..\contrib\libxmp\src\control.c">
-      <Filter>libxmp</Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\MSVC">
+      <UniqueIdentifier>{d14bf040-4f3e-4535-80a4-5fb0ccf167c5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\network">
+      <UniqueIdentifier>{7da1fec0-bfed-4357-bce7-d9fb9e745a6f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\network">
+      <UniqueIdentifier>{34b97daa-d17e-476b-906c-0b729806d748}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\contrib">
+      <UniqueIdentifier>{8a9e0782-2347-4780-bc6c-0c3235801faa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\contrib\gdm2s3m">
+      <UniqueIdentifier>{cfd89b63-1e51-451d-b0a2-94ac57152826}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\contrib\libxmp">
+      <UniqueIdentifier>{107eb3a2-bd41-481c-a305-4f34cfaca719}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\contrib\libxmp\loaders">
+      <UniqueIdentifier>{05fc379c-d617-4ea0-ad3f-444ccf74fba8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\contrib">
+      <UniqueIdentifier>{c590945c-346c-429f-8553-b432ae68e7b7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\contrib\gdm2s3m">
+      <UniqueIdentifier>{6f918c8b-e2c0-4be0-8b34-53d061c7d5df}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\contrib\libxmp">
+      <UniqueIdentifier>{38d84df2-712f-43ad-bc11-fa34314f80d3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\contrib\libxmp\loaders">
+      <UniqueIdentifier>{0d372dc8-2fe5-4af1-87a0-7bdb6ea3b8b8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\contrib\libxmp\win32">
+      <UniqueIdentifier>{526cc8dd-11ed-4a21-8442-97a5e0f30d3a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\block.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\contrib\libxmp\src\dataio.c">
-      <Filter>libxmp</Filter>
+    <ClCompile Include="..\..\src\board.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\contrib\libxmp\src\effects.c">
-      <Filter>libxmp</Filter>
+    <ClCompile Include="..\..\src\configure.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\contrib\libxmp\src\extras.c">
-      <Filter>libxmp</Filter>
+    <ClCompile Include="..\..\src\counter.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\contrib\libxmp\src\filter.c">
-      <Filter>libxmp</Filter>
+    <ClCompile Include="..\..\src\data.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\contrib\libxmp\src\fnmatch.c">
-      <Filter>libxmp</Filter>
+    <ClCompile Include="..\..\src\error.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\contrib\libxmp\src\format.c">
-      <Filter>libxmp</Filter>
+    <ClCompile Include="..\..\src\event.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\contrib\libxmp\src\hio.c">
-      <Filter>libxmp</Filter>
+    <ClCompile Include="..\..\src\expr.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\contrib\libxmp\src\hmn_extras.c">
-      <Filter>libxmp</Filter>
+    <ClCompile Include="..\..\src\fsafeopen.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\contrib\libxmp\src\lfo.c">
-      <Filter>libxmp</Filter>
+    <ClCompile Include="..\..\src\game.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\contrib\libxmp\src\load.c">
-      <Filter>libxmp</Filter>
+    <ClCompile Include="..\..\src\game2.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\contrib\libxmp\src\load_helpers.c">
-      <Filter>libxmp</Filter>
+    <ClCompile Include="..\..\src\graphics.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\contrib\libxmp\src\md5.c">
-      <Filter>libxmp</Filter>
+    <ClCompile Include="..\..\src\idarray.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\contrib\libxmp\src\med_extras.c">
-      <Filter>libxmp</Filter>
+    <ClCompile Include="..\..\src\idput.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\contrib\libxmp\src\memio.c">
-      <Filter>libxmp</Filter>
+    <ClCompile Include="..\..\src\intake.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\contrib\libxmp\src\mix_all.c">
-      <Filter>libxmp</Filter>
+    <ClCompile Include="..\..\src\legacy_board.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\contrib\libxmp\src\mix_paula.c">
-      <Filter>libxmp</Filter>
+    <ClCompile Include="..\..\src\legacy_rasm.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\contrib\libxmp\src\mixer.c">
-      <Filter>libxmp</Filter>
+    <ClCompile Include="..\..\src\legacy_robot.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\contrib\libxmp\src\mkstemp.c">
-      <Filter>libxmp</Filter>
+    <ClCompile Include="..\..\src\legacy_world.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\contrib\libxmp\src\period.c">
-      <Filter>libxmp</Filter>
+    <ClCompile Include="..\..\src\mzm.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\contrib\libxmp\src\player.c">
-      <Filter>libxmp</Filter>
+    <ClCompile Include="..\..\src\render.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\contrib\libxmp\src\read_event.c">
-      <Filter>libxmp</Filter>
+    <ClCompile Include="..\..\src\render_layer.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\contrib\libxmp\src\scan.c">
-      <Filter>libxmp</Filter>
+    <ClCompile Include="..\..\src\robot.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\contrib\libxmp\src\smix.c">
-      <Filter>libxmp</Filter>
+    <ClCompile Include="..\..\src\run_robot.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\contrib\libxmp\src\virtual.c">
-      <Filter>libxmp</Filter>
+    <ClCompile Include="..\..\src\scrdisp.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\audio_xmp.c" />
+    <ClCompile Include="..\..\src\sfx.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sprite.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\str.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\util.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\window.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\world.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\zip.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\669_load.c">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Source Files\contrib\libxmp\loaders</Filter>
     </ClCompile>
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\amf_load.c">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Source Files\contrib\libxmp\loaders</Filter>
     </ClCompile>
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\asif.c">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Source Files\contrib\libxmp\loaders</Filter>
     </ClCompile>
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\asylum_load.c">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Source Files\contrib\libxmp\loaders</Filter>
     </ClCompile>
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\common.c">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Source Files\contrib\libxmp\loaders</Filter>
     </ClCompile>
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\far_load.c">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Source Files\contrib\libxmp\loaders</Filter>
     </ClCompile>
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\gdm_load.c">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Source Files\contrib\libxmp\loaders</Filter>
     </ClCompile>
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\iff.c">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Source Files\contrib\libxmp\loaders</Filter>
     </ClCompile>
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\it_load.c">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Source Files\contrib\libxmp\loaders</Filter>
     </ClCompile>
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\itsex.c">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Source Files\contrib\libxmp\loaders</Filter>
     </ClCompile>
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\med2_load.c">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Source Files\contrib\libxmp\loaders</Filter>
     </ClCompile>
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\med3_load.c">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Source Files\contrib\libxmp\loaders</Filter>
     </ClCompile>
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\med4_load.c">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Source Files\contrib\libxmp\loaders</Filter>
     </ClCompile>
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\mmd_common.c">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Source Files\contrib\libxmp\loaders</Filter>
     </ClCompile>
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\mmd1_load.c">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Source Files\contrib\libxmp\loaders</Filter>
     </ClCompile>
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\mmd3_load.c">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Source Files\contrib\libxmp\loaders</Filter>
     </ClCompile>
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\mod_load.c">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Source Files\contrib\libxmp\loaders</Filter>
     </ClCompile>
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\mtm_load.c">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Source Files\contrib\libxmp\loaders</Filter>
     </ClCompile>
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\okt_load.c">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Source Files\contrib\libxmp\loaders</Filter>
     </ClCompile>
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\s3m_load.c">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Source Files\contrib\libxmp\loaders</Filter>
     </ClCompile>
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\sample.c">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Source Files\contrib\libxmp\loaders</Filter>
     </ClCompile>
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\stm_load.c">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Source Files\contrib\libxmp\loaders</Filter>
     </ClCompile>
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\ult_load.c">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Source Files\contrib\libxmp\loaders</Filter>
     </ClCompile>
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\voltable.c">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Source Files\contrib\libxmp\loaders</Filter>
     </ClCompile>
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\xm_load.c">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Source Files\contrib\libxmp\loaders</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\block.c" />
-    <ClCompile Include="..\..\src\legacy_board.c" />
-    <ClCompile Include="..\..\src\legacy_robot.c" />
-    <ClCompile Include="..\..\src\legacy_world.c" />
-    <ClCompile Include="..\..\src\render_layer.c" />
-    <ClCompile Include="..\..\src\str.c" />
-    <ClCompile Include="..\..\src\zip.c" />
+    <ClCompile Include="..\..\contrib\libxmp\src\control.c">
+      <Filter>Source Files\contrib\libxmp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\dataio.c">
+      <Filter>Source Files\contrib\libxmp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\effects.c">
+      <Filter>Source Files\contrib\libxmp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\extras.c">
+      <Filter>Source Files\contrib\libxmp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\filter.c">
+      <Filter>Source Files\contrib\libxmp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\fnmatch.c">
+      <Filter>Source Files\contrib\libxmp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\format.c">
+      <Filter>Source Files\contrib\libxmp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\hio.c">
+      <Filter>Source Files\contrib\libxmp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\hmn_extras.c">
+      <Filter>Source Files\contrib\libxmp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\lfo.c">
+      <Filter>Source Files\contrib\libxmp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\load.c">
+      <Filter>Source Files\contrib\libxmp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\load_helpers.c">
+      <Filter>Source Files\contrib\libxmp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\md5.c">
+      <Filter>Source Files\contrib\libxmp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\med_extras.c">
+      <Filter>Source Files\contrib\libxmp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\memio.c">
+      <Filter>Source Files\contrib\libxmp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\mix_all.c">
+      <Filter>Source Files\contrib\libxmp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\mix_paula.c">
+      <Filter>Source Files\contrib\libxmp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\mixer.c">
+      <Filter>Source Files\contrib\libxmp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\mkstemp.c">
+      <Filter>Source Files\contrib\libxmp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\period.c">
+      <Filter>Source Files\contrib\libxmp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\player.c">
+      <Filter>Source Files\contrib\libxmp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\read_event.c">
+      <Filter>Source Files\contrib\libxmp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\scan.c">
+      <Filter>Source Files\contrib\libxmp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\smix.c">
+      <Filter>Source Files\contrib\libxmp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\virtual.c">
+      <Filter>Source Files\contrib\libxmp</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\contrib\gdm2s3m\src\error.c">
-      <Filter>gdm2s3m</Filter>
+      <Filter>Source Files\contrib\gdm2s3m</Filter>
     </ClCompile>
     <ClCompile Include="..\..\contrib\gdm2s3m\src\gdm.c">
-      <Filter>gdm2s3m</Filter>
+      <Filter>Source Files\contrib\gdm2s3m</Filter>
     </ClCompile>
     <ClCompile Include="..\..\contrib\gdm2s3m\src\gdm2s3m.c">
-      <Filter>gdm2s3m</Filter>
+      <Filter>Source Files\contrib\gdm2s3m</Filter>
     </ClCompile>
     <ClCompile Include="..\..\contrib\gdm2s3m\src\s3m.c">
-      <Filter>gdm2s3m</Filter>
+      <Filter>Source Files\contrib\gdm2s3m</Filter>
     </ClCompile>
     <ClCompile Include="..\..\contrib\gdm2s3m\src\utility.c">
-      <Filter>gdm2s3m</Filter>
+      <Filter>Source Files\contrib\gdm2s3m</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\error.c" />
+    <ClCompile Include="..\..\src\platform_sdl.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\event_sdl.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\audio_sdl.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\render_sdl.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\audio.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\audio_xmp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\render_gl.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\render_gl1.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\render_gl2.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\render_glsl.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\render_soft.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\render_yuv.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\render_yuv1.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\render_yuv2.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\helpsys.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\pngops.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\network\host.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\network\manifest.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\network\network.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\network\sha256.c">
+      <Filter>Source Files\network</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\audio.h" />
-    <ClInclude Include="..\..\src\board.h" />
-    <ClInclude Include="..\..\src\board_struct.h" />
-    <ClInclude Include="..\..\src\compat.h" />
-    <ClInclude Include="..\..\src\configure.h" />
-    <ClInclude Include="..\..\src\const.h" />
-    <ClInclude Include="..\..\src\counter.h" />
-    <ClInclude Include="..\..\src\counter_struct.h" />
-    <ClInclude Include="..\..\src\data.h" />
-    <ClInclude Include="..\..\src\event.h" />
-    <ClInclude Include="..\..\src\expr.h" />
-    <ClInclude Include="..\..\src\extmem.h" />
-    <ClInclude Include="..\..\src\fsafeopen.h" />
-    <ClInclude Include="..\..\src\game.h" />
-    <ClInclude Include="..\..\src\game2.h" />
-    <ClInclude Include="..\..\src\graphics.h" />
-    <ClInclude Include="..\..\src\helpsys.h" />
-    <ClInclude Include="..\..\src\idarray.h" />
-    <ClInclude Include="..\..\src\idput.h" />
-    <ClInclude Include="..\..\src\intake.h" />
-    <ClInclude Include="..\..\src\keysym.h" />
-    <ClInclude Include="..\..\src\legacy_rasm.h" />
-    <ClInclude Include="..\..\src\mzm.h" />
-    <ClInclude Include="..\..\src\network\host.h" />
-    <ClInclude Include="..\..\src\network\manifest.h" />
-    <ClInclude Include="..\..\src\network\network.h" />
-    <ClInclude Include="..\..\src\network\sha256.h" />
-    <ClInclude Include="..\..\src\platform.h" />
-    <ClInclude Include="..\..\src\platform_endian.h" />
-    <ClInclude Include="..\..\src\platform_sdl.h" />
-    <ClInclude Include="..\..\src\pngops.h" />
-    <ClInclude Include="..\..\src\rasm.h" />
-    <ClInclude Include="..\..\src\render.h" />
-    <ClInclude Include="..\..\src\renderers.h" />
-    <ClInclude Include="..\..\src\render_gl.h" />
-    <ClInclude Include="..\..\src\render_sdl.h" />
-    <ClInclude Include="..\..\src\render_yuv.h" />
-    <ClInclude Include="..\..\src\robot.h" />
-    <ClInclude Include="..\..\src\robot_struct.h" />
-    <ClInclude Include="..\..\src\scrdisp.h" />
-    <ClInclude Include="..\..\src\sfx.h" />
-    <ClInclude Include="..\..\src\sprite.h" />
-    <ClInclude Include="..\..\src\sprite_struct.h" />
-    <ClInclude Include="..\..\src\util.h" />
-    <ClInclude Include="..\..\src\window.h" />
-    <ClInclude Include="..\..\src\world.h" />
-    <ClInclude Include="..\..\src\world_struct.h" />
-    <ClInclude Include="config.h" />
-    <ClInclude Include="dirent.h" />
-    <ClInclude Include="msvc.h" />
+    <ClInclude Include="..\..\src\block.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\board.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\configure.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\counter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\data.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\error.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\event.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\expr.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\fsafeopen.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game2.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\graphics.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\idarray.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\idput.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\intake.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\legacy_board.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\legacy_rasm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\legacy_robot.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\legacy_world.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\mzm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\render.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\render_layer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\robot.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\scrdisp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\sfx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\sprite.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\str.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\util.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\world.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\zip.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="config.h">
+      <Filter>Header Files\MSVC</Filter>
+    </ClInclude>
+    <ClInclude Include="dirent.h">
+      <Filter>Header Files\MSVC</Filter>
+    </ClInclude>
+    <ClInclude Include="msvc.h">
+      <Filter>Header Files\MSVC</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\common.h">
-      <Filter>libxmp</Filter>
+      <Filter>Header Files\contrib\libxmp</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\effects.h">
-      <Filter>libxmp</Filter>
+      <Filter>Header Files\contrib\libxmp</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\extras.h">
-      <Filter>libxmp</Filter>
+      <Filter>Header Files\contrib\libxmp</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\fnmatch.h">
-      <Filter>libxmp</Filter>
+      <Filter>Header Files\contrib\libxmp</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\format.h">
-      <Filter>libxmp</Filter>
+      <Filter>Header Files\contrib\libxmp</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\hio.h">
-      <Filter>libxmp</Filter>
+      <Filter>Header Files\contrib\libxmp</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\hmn_extras.h">
-      <Filter>libxmp</Filter>
+      <Filter>Header Files\contrib\libxmp</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\lfo.h">
-      <Filter>libxmp</Filter>
+      <Filter>Header Files\contrib\libxmp</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\list.h">
-      <Filter>libxmp</Filter>
+      <Filter>Header Files\contrib\libxmp</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\md5.h">
-      <Filter>libxmp</Filter>
+      <Filter>Header Files\contrib\libxmp</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\mdataio.h">
-      <Filter>libxmp</Filter>
+      <Filter>Header Files\contrib\libxmp</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\med_extras.h">
-      <Filter>libxmp</Filter>
+      <Filter>Header Files\contrib\libxmp</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\memio.h">
-      <Filter>libxmp</Filter>
+      <Filter>Header Files\contrib\libxmp</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\mixer.h">
-      <Filter>libxmp</Filter>
+      <Filter>Header Files\contrib\libxmp</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\paula.h">
-      <Filter>libxmp</Filter>
+      <Filter>Header Files\contrib\libxmp</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\period.h">
-      <Filter>libxmp</Filter>
+      <Filter>Header Files\contrib\libxmp</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\player.h">
-      <Filter>libxmp</Filter>
+      <Filter>Header Files\contrib\libxmp</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\precomp_blep.h">
-      <Filter>libxmp</Filter>
+      <Filter>Header Files\contrib\libxmp</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\precomp_lut.h">
-      <Filter>libxmp</Filter>
+      <Filter>Header Files\contrib\libxmp</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\virtual.h">
-      <Filter>libxmp</Filter>
+      <Filter>Header Files\contrib\libxmp</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\audio_xmp.h" />
     <ClInclude Include="..\..\contrib\libxmp\src\loaders\asif.h">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Header Files\contrib\libxmp\loaders</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\loaders\iff.h">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Header Files\contrib\libxmp\loaders</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\loaders\it.h">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Header Files\contrib\libxmp\loaders</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\loaders\loader.h">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Header Files\contrib\libxmp\loaders</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\loaders\med.h">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Header Files\contrib\libxmp\loaders</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\loaders\mod.h">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Header Files\contrib\libxmp\loaders</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\loaders\s3m.h">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Header Files\contrib\libxmp\loaders</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\libxmp\src\loaders\xm.h">
-      <Filter>libxmp\loaders</Filter>
+      <Filter>Header Files\contrib\libxmp\loaders</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\block.h" />
-    <ClInclude Include="..\..\src\legacy_board.h" />
-    <ClInclude Include="..\..\src\legacy_robot.h" />
-    <ClInclude Include="..\..\src\legacy_world.h" />
-    <ClInclude Include="..\..\src\render_layer.h" />
-    <ClInclude Include="..\..\src\str.h" />
-    <ClInclude Include="..\..\src\zip.h" />
+    <ClInclude Include="..\..\contrib\libxmp\src\win32\osdcomm.h">
+      <Filter>Header Files\contrib\libxmp\win32</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\contrib\libxmp\src\win32\ptpopen.h">
+      <Filter>Header Files\contrib\libxmp\win32</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\contrib\libxmp\src\win32\unistd.h">
+      <Filter>Header Files\contrib\libxmp\win32</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\contrib\gdm2s3m\src\error.h">
-      <Filter>gdm2s3m</Filter>
+      <Filter>Header Files\contrib\gdm2s3m</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\gdm2s3m\src\gdm.h">
-      <Filter>gdm2s3m</Filter>
+      <Filter>Header Files\contrib\gdm2s3m</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\gdm2s3m\src\gdm2s3m.h">
-      <Filter>gdm2s3m</Filter>
+      <Filter>Header Files\contrib\gdm2s3m</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\gdm2s3m\src\s3m.h">
-      <Filter>gdm2s3m</Filter>
+      <Filter>Header Files\contrib\gdm2s3m</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\gdm2s3m\src\types.h">
-      <Filter>gdm2s3m</Filter>
+      <Filter>Header Files\contrib\gdm2s3m</Filter>
     </ClInclude>
     <ClInclude Include="..\..\contrib\gdm2s3m\src\utility.h">
-      <Filter>gdm2s3m</Filter>
+      <Filter>Header Files\contrib\gdm2s3m</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\error.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <Filter Include="libxmp">
-      <UniqueIdentifier>{8ed6a5f9-1fb6-4c88-aa2b-fc67d763ede1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="libxmp\loaders">
-      <UniqueIdentifier>{101de999-d702-4aba-a0b9-d15d3947704d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="gdm2s3m">
-      <UniqueIdentifier>{7b6554ac-a389-4489-97b8-aee0f333b130}</UniqueIdentifier>
-    </Filter>
+    <ClInclude Include="..\..\src\render_sdl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\mutex_sdl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\compat.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\audio.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\audio_xmp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\render_gl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\render_yuv.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\helpsys.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\pngops.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\network\host.h">
+      <Filter>Header Files\network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\network\manifest.h">
+      <Filter>Header Files\network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\network\network.h">
+      <Filter>Header Files\network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\network\sha256.h">
+      <Filter>Header Files\network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\const.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\keysym.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\platform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\platform_endian.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\renderers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\robot_struct.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\sprite_struct.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\world_struct.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
