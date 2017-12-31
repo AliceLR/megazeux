@@ -18,6 +18,8 @@ USERS
   using backspace on robots in the editor.
 + Fixed backwards string inequality evaluation.
 + String inequality compares are now endian-safe.
++ Fixed a bug where certain mods (e.g. FR_TOWER.MOD, Neve.s3m)
+  could repeat to the wrong order after reaching the end.
 
 DEVELOPERS
 

@@ -102,7 +102,8 @@ static void audio_xmp_set_position(struct audio_stream *a_src, Uint32 position)
 
 static void audio_xmp_set_order(struct audio_stream *a_src, Uint32 order)
 {
-  xmp_set_position(((struct xmp_stream *)a_src)->ctx, order);
+  struct xmp_stream *stream = (struct xmp_stream *)a_src;
+  xmp_set_position(stream->ctx, order);
 }
 
 static void audio_xmp_set_frequency(struct sampled_stream *s_src,
@@ -143,7 +144,6 @@ static Uint32 audio_xmp_get_position(struct audio_stream *a_src)
 static Uint32 audio_xmp_get_length(struct audio_stream *a_src)
 {
   struct xmp_stream *stream = (struct xmp_stream *)a_src;
-
   return stream->total_rows;
 }
 
@@ -216,6 +216,14 @@ struct audio_stream *construct_xmp_stream(char *filename, Uint32 frequency,
           row_pos += info.mod->xxp[ord]->rows;
       }
       xmp_stream->total_rows = row_pos;
+
+      // xmp tries to be clever and uses "sequences" to make certain mods loop
+      // to orders that aren't the start of the mod. This breaks legacy mods
+      // that rely on looping to the start, so zero all of their entry points.
+      for(i = 0; i < info.num_sequences; i++)
+      {
+        info.seq_data[i].entry_point = 0;
+      }
 
       initialize_sampled_stream((struct sampled_stream *)xmp_stream,
        audio_xmp_set_frequency, audio_xmp_get_frequency, frequency, 2, 0);
