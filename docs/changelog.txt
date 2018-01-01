@@ -20,6 +20,8 @@ USERS
 + String inequality compares are now endian-safe.
 + Fixed a bug where certain mods (e.g. FR_TOWER.MOD, Neve.s3m)
   could repeat to the wrong order after reaching the end.
++ Setting mod_position in libxmp now works for positions in the
+  middle of orders (NoSuck).
 
 DEVELOPERS
 

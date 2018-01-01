@@ -90,10 +90,9 @@ static void audio_xmp_set_position(struct audio_stream *a_src, Uint32 position)
   {
     if(stream->row_tbl[i] > position)
     {
-      // TODO patch xmp_set_row into our copy of xmp and uncomment these lines
-      //int position_row = position - stream->row_tbl[i - 1];
+      int position_row = position - stream->row_tbl[i - 1];
       xmp_set_position(stream->ctx, i - 1);
-      //xmp_set_row(stream->ctx, position_row);
+      xmp_set_row(stream->ctx, position_row);
       return;
     }
   }
