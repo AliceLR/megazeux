@@ -1,4 +1,9 @@
-GIT
+January 6, 2018 - MZX 2.91b
+
+Here's a fairly significant update for MegaZeux 2.91, fixing
+several major Robotic, audio, and editor related bugs, as well
+as issues that mostly affected Linux platforms. Also of note is
+the updated MSVC and Xcode support by Spectere.
 
 USERS
 
