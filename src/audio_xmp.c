@@ -68,9 +68,14 @@ static Uint32 audio_xmp_mix_data(struct audio_stream *a_src, Sint32 *buffer,
 
 static void audio_xmp_set_volume(struct audio_stream *a_src, Uint32 volume)
 {
+  struct xmp_stream *stream = (struct xmp_stream *)a_src;
   a_src->volume = volume;
-  xmp_set_player(((struct xmp_stream *)a_src)->ctx, XMP_PLAYER_VOLUME,
-   volume * 100 / 255);
+
+  // xmp uses SMIX volume for all extra channels, but some files can generate
+  // these channels through normal behavior. Since we don't use SMIX, we can
+  // safely set both volumes to the same value.
+  xmp_set_player(stream->ctx, XMP_PLAYER_VOLUME, volume * 100 / 255);
+  xmp_set_player(stream->ctx, XMP_PLAYER_SMIX_VOLUME, volume * 100 / 255);
 }
 
 static void audio_xmp_set_repeat(struct audio_stream *a_src, Uint32 repeat)
