@@ -19,7 +19,7 @@ endif
 -include platform.inc
 include version.inc
 
-all: mzx assets/help.fil
+all: mzx
 debuglink: all mzx.debug
 
 -include arch/${PLATFORM}/Makefile.in
