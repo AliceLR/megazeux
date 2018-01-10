@@ -100,18 +100,20 @@ static inline void legacy_load_string(FILE *fp,
 static const char magic_code[16] =
  "\xE6\x52\xEB\xF2\x6D\x4D\x4A\xB7\x87\xB2\x92\x88\xDE\x91\x24";
 
+#define MAX_PASSWORD_LENGTH 15
+
 static int get_pw_xor_code(char *password, int pro_method)
 {
   int work = 85; // Start with 85... (01010101)
   size_t i;
   // Clear pw after first null
 
-  for(i = strlen(password); i < 16; i++)
+  for(i = strlen(password); i < MAX_PASSWORD_LENGTH; i++)
   {
     password[i] = 0;
   }
 
-  for(i = 0; i < 15; i++)
+  for(i = 0; i < MAX_PASSWORD_LENGTH; i++)
   {
     //For each byte, roll once to the left and xor in pw byte if it
     //is an odd character, or add in pw byte if it is an even character.
@@ -158,7 +160,7 @@ static void decrypt(const char *file_name)
   char num_boards;
   char offset_low_byte;
   char xor_val;
-  char password[15];
+  char password[MAX_PASSWORD_LENGTH];
   char *file_buffer;
   char *src_ptr;
   char backup_name[MAX_PATH];
@@ -198,10 +200,10 @@ static void decrypt(const char *file_name)
   src_ptr++;
 
   // Get password
-  memcpy(password, src_ptr, 15);
+  memcpy(password, src_ptr, MAX_PASSWORD_LENGTH);
   src_ptr += 18;
   // First, normalize password...
-  for(i = 0; i < 15; i++)
+  for(i = 0; i < MAX_PASSWORD_LENGTH; i++)
   {
     password[i] ^= magic_code[i];
     password[i] -= 0x12 + pro_method;
@@ -232,16 +234,16 @@ static void decrypt(const char *file_name)
     }
   }
 
-  meter_curr = file_length + (file_length - 15) - 1;
+  meter_curr = file_length + (file_length - MAX_PASSWORD_LENGTH) - 1;
   meter_update_screen(&meter_curr, meter_target);
 
-  // Must fix all the absolute file positions so that they're 15
+  // Must fix all the absolute file positions so that they're MAX_PASSWORD_LENGTH
   // less now
   src_ptr = file_buffer + 4245;
   fseek(dest, 4230, SEEK_SET);
   offset_low_byte = src_ptr[0] ^ xor_val;
-  fputc(offset_low_byte - 15, dest);
-  if(offset_low_byte < 15)
+  fputc(offset_low_byte - MAX_PASSWORD_LENGTH, dest);
+  if(offset_low_byte < MAX_PASSWORD_LENGTH)
   {
     fputc((src_ptr[1] ^ xor_val) - 1, dest);
   }
@@ -278,7 +280,7 @@ static void decrypt(const char *file_name)
   // Skip titles
   src_ptr += (25 * num_boards);
   // Synchronize source and dest positions
-  fseek(dest, (long)(src_ptr - file_buffer - 15), SEEK_SET);
+  fseek(dest, (long)(src_ptr - file_buffer - MAX_PASSWORD_LENGTH), SEEK_SET);
 
   // Offset boards
   for(i = 0; i < num_boards; i++)
@@ -289,8 +291,8 @@ static void decrypt(const char *file_name)
 
     // Get offset
     offset_low_byte = src_ptr[0] ^ xor_val;
-    fputc(offset_low_byte - 15, dest);
-    if(offset_low_byte < 15)
+    fputc(offset_low_byte - MAX_PASSWORD_LENGTH, dest);
+    if(offset_low_byte < MAX_PASSWORD_LENGTH)
     {
       fputc((src_ptr[1] ^ xor_val) - 1, dest);
     }
