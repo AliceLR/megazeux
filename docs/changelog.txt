@@ -1,4 +1,9 @@
-GIT
+January 6, 2018 - MZX 2.91b
+
+Here's a fairly significant update for MegaZeux 2.91, fixing
+several major Robotic, audio, and editor related bugs, as well
+as issues that mostly affected Linux platforms. Also of note is
+the updated MSVC and Xcode support by Spectere.
 
 USERS
 
@@ -18,6 +23,12 @@ USERS
   using backspace on robots in the editor.
 + Fixed backwards string inequality evaluation.
 + String inequality compares are now endian-safe.
++ Fixed a bug where certain mods (e.g. FR_TOWER.MOD, Neve.s3m)
+  could repeat to the wrong order after reaching the end.
++ Fixed a bug where certain .it channels could partially ignore
+  the volume command.
++ Setting mod_position in libxmp now works for positions in the
+  middle of orders (NoSuck).
 
 DEVELOPERS
 
@@ -26,6 +37,8 @@ DEVELOPERS
 + "make all" now makes the help file. (pgimeno)
 + "make clean" now deletes ccv. (pgimeno)
 + Fixed creeping CRLF usage. (Lachesis, pgimeno, Spectere)
++ Fixed a bug where the MSYS2 build scripts could inadvertently
+  include non-portable SDL2 binaries in Windows builds.
 
 
 November 22, 2017 - MZX 2.91

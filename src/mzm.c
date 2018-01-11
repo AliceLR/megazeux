@@ -417,6 +417,9 @@ static int load_mzm_header(const unsigned char **_bufferptr, int file_length,
     bufferptr += 3; // unused
   }
 
+  else
+    return -1;
+
   *_bufferptr = bufferptr;
   return 0;
 }

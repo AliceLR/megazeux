@@ -302,7 +302,6 @@ int xmp_load_module(xmp_context opaque, char *path)
 	struct context_data *ctx = (struct context_data *)opaque;
 #ifndef LIBXMP_CORE_PLAYER
 	struct module_data *m = &ctx->m;
-	long size;
 #endif
 	HIO_HANDLE *h;
 	struct stat st;
@@ -342,7 +341,6 @@ int xmp_load_module(xmp_context opaque, char *path)
 	}
 
 	m->filename = path;	/* For ALM, SSMT, etc */
-	m->size = size;
 #endif
 
 	ret = load_module(opaque, h);

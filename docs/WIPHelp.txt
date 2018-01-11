@@ -647,14 +647,18 @@ can apply your settings to the new file!
 
 F8 or N - New World
 This will quit the gaming portion of MegaZeux and enter the
-integrated World Editor, set to an empty MZX world.
+integrated World Editor, set to an empty MZX world. Alt+N will
+act the same, but skip the prompt to name and create a starting
+board.
 
 F9 or E - Edit World
 This will quit the gaming portion of MegaZeux and enter the
 integrated World Editor, set to edit the currently-loaded
-world. Note that "MZXRun" builds of MegaZeux will disallow
-using the editor. For detailed info on using the World Editor,
-view the appropriate help sections.
+world. When no world is loaded, this acts the same as New World,
+and Alt+E with no world loaded will also skip the prompt to name
+and create a starting board. Note that "MZXRun" builds of
+MegaZeux will disallow using the editor. For detailed info on
+using the World Editor, view the appropriate help sections.
 
 >#THEWORLD.HLP:1st:The World Editor
 
@@ -1483,7 +1487,7 @@ A: In a sense, they can be now. It was a long-held consensus
   MZXRun, the editor-less version of MegaZeux, can now be
   set to run in "standalone mode", which can be configured to
   only play one specific world, and changes several MZX
-  mannerisms to better accomodate a standalone version of a
+  mannerisms to better accommodate a standalone version of a
   game. The title screen can also be completely skipped.
   Additions to Robotic (such as exiting the game through code or
   blocking the default escape menu) have also facilitated
@@ -2682,7 +2686,7 @@ $~9The Palette Editor in Super MZX Modes
 
 Super MZX Modes allow 256 colors at once, and have their own
 quirks; therefore, the palette editor changes considerably to
-accomodate them. The palette editor for each SMZX mode is noted
+accommodate them. The palette editor for each SMZX mode is noted
 below.
 
 $Super MZX Mode 1 Palette Editor
@@ -4221,7 +4225,7 @@ $~9Sensors - What They Are and How to Use Them
 Sensors have two real purposes. The first is to act as save
 points. The second is to interact with Robots as a type of
 floor. The first use is simple - just set the board to "Save
-only on Sensors," and then the player can only save when
+only on Sensors", and then the player can only save when
 standing on a Sensor.
 
 The second use is more complex, and requires knowledge of
@@ -7674,8 +7678,8 @@ function is set.
 If set to 1, the sprite is referenced from the vlayer instead
 of the board.
 
-~BSPRn_HEIGHT
 ~BSPRn_WIDTH
+~BSPRn_HEIGHT
 
 The dimensions of the sprite. (x and y dimensions,
 respectively.)
@@ -8147,7 +8151,10 @@ retained by save files.
 ~BMAX_SAMPLES
 
 Sets number of samples that can play at once. -1 sets no limit,
-0 mutes all samples. PC Speaker emulated sounds are unaffected.
+0 mutes all samples; -1 is the default setting. The actual
+sample limit will be the smaller of the limit set by this
+counter and the limit set by the max_simultaneous_samples config
+file setting. PC Speaker emulated sounds are unaffected.
 
 ~BXPOS
 ~BYPOS
@@ -8229,7 +8236,7 @@ The following keys are active within the Robotic editor:
 >_or:Alt+V - Verify
 >_pr:Alt+X - Export
 >_qr:Alt+BackSpace - Delete Entire Line
->_rr:Alt+Ins - Paste
+>_rr:Alt+Ins OR Alt+P - Paste
 >_sr:Ctrl+F - Find/Replace
 >_tr:Ctrl+G - Goto Position
 >_ur:Ctrl+R - Repeat Find/Replace
@@ -8336,11 +8343,11 @@ use the text file in other ways.
 The currently selected line is blanked. The empty line itself
 will remain.
 
-:_rr:~EAlt+Ins - Paste
+:_rr:~EAlt+Ins OR Alt+P - Paste
 
-Alt+Ins will paste in the block last copied to the internal
-clipboard. The clipboard used is the OS clipboard, and as such
-is preserved between Robots and even between worlds.
+Alt+Ins or Alt+P will paste in the block last copied to the
+internal clipboard. The clipboard used is the OS clipboard, and
+as such is preserved between Robots and even between worlds.
 
 :_sr:~ECtrl+F - Find/Replace
 
@@ -9609,10 +9616,7 @@ While the character set can be edited in MegaZeux's internal
 character editor, certain changes occur. 1-4 selects the
 desired color; space no longer toggles between colors (it
 always sets here); right click no longer clears; clear mode is
-gone. Also note that the char editor sets itself to mode 1
-during SMZX char editing; keep this in mind if you have a
-visible character pool outside of the editor window to help
-visualize.
+gone.
 
 Palette editing for SMZX modes is also accommodated by MZX's
 palette editor. However, the user needs to be in the relevant
@@ -10179,6 +10183,50 @@ updated.
 #NEWINVER.HLP
 :1st: 
 $~9NEW in MegaZeux!
+
+January 6, 2018 - MZX 2.91b
+
+Here's a fairly significant update for MegaZeux 2.91, fixing
+several major Robotic, audio, and editor related bugs, as well
+as issues that mostly affected Linux platforms. Also of note is
+the updated MSVC and Xcode support by Spectere.
+
+USERS
+
++ Added the config file option "editor_thing_menu_places". When
+  set to 0, selecting an object from the thing menus (F3-F10)
+  will place the object in the buffer but not on the board.
+  Defaults to 1.
++ Fixed a bug where MZMs could sometimes fail to load in the
+  editor.
++ MZMs loaded in the editor now behave correctly when undone.
++ Fixed bug where GOOP_WALK wouldn't always be 0 when loading
+  old worlds.
++ Values of GOOP_WALK greater than 1 no longer cause issues.
++ Board time limits greater than 255 are no longer truncated
+  when saving worlds/saves.
++ Fixed bug where "robot not found" errors could result from
+  using backspace on robots in the editor.
++ Fixed backwards string inequality evaluation.
++ String inequality compares are now endian-safe.
++ Fixed a bug where certain mods (e.g. FR_TOWER.MOD, Neve.s3m)
+  could repeat to the wrong order after reaching the end.
++ Fixed a bug where certain .it channels could partially ignore
+  the volume command.
++ Setting mod_position in libxmp now works for positions in the
+  middle of orders (NoSuck).
+
+DEVELOPERS
+
++ Updated MSVC for Visual Studio 2017. (Spectere)
++ Added xcode support. (Spectere)
++ "make all" now makes the help file. (pgimeno)
++ "make clean" now deletes ccv. (pgimeno)
++ Fixed creeping CRLF usage. (Lachesis, pgimeno, Spectere)
++ Fixed a bug where the MSYS2 build scripts could inadvertently
+include non-portable SDL2 binaries in Windows builds.
+
+>#MAIN.HLP:072:Table of Contents
 
 November 22, 2017 - MZX 2.91
 
