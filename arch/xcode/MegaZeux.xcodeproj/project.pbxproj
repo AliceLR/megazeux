@@ -336,6 +336,7 @@
 		BF1012C01FCCABF0008EEDB6 /* SDL2.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = SDL2.framework; sourceTree = "<group>"; };
 		BF1012C31FCCB02F008EEDB6 /* libpng.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = libpng.framework; sourceTree = "<group>"; };
 		BF1012C61FCCB0F9008EEDB6 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
+		BFE5EB622006DB4300E15CC0 /* version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = version.h; sourceTree = "<group>"; };
 		BFFF16361FCDC64600BDEC58 /* util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = util.h; path = ../../src/util.h; sourceTree = "<group>"; };
 		BFFF16371FCDC64600BDEC58 /* zip.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = zip.h; path = ../../src/zip.h; sourceTree = "<group>"; };
 		BFFF16381FCDC64600BDEC58 /* board.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = board.h; path = ../../src/board.h; sourceTree = "<group>"; };
@@ -614,6 +615,7 @@
 			isa = PBXGroup;
 			children = (
 				BFFF17101FCDC81000BDEC58 /* config.h */,
+				BFE5EB622006DB4300E15CC0 /* version.h */,
 				BFFF18981FCDE8FD00BDEC58 /* config.txt */,
 				BFFF18951FCDE8B300BDEC58 /* assets */,
 				BFFF16351FCDC5AE00BDEC58 /* Core */,
@@ -1063,6 +1065,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = BF1012911FCCA957008EEDB6 /* Build configuration list for PBXNativeTarget "Core" */;
 			buildPhases = (
+				BFE5EB632006E09B00E15CC0 /* Update Version Header */,
 				BF10128C1FCCA957008EEDB6 /* Sources */,
 				BF10128D1FCCA957008EEDB6 /* Frameworks */,
 				BF10128E1FCCA957008EEDB6 /* Headers */,
@@ -1192,6 +1195,23 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		BFE5EB632006E09B00E15CC0 /* Update Version Header */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Update Version Header";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = ./update_version.sh;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		BF1012741FCCA7C2008EEDB6 /* Sources */ = {
