@@ -1,3 +1,15 @@
+GIT
+
+USERS
+
++ Fixed a bug where checkres would fail on legacy worlds with
+  very long custom SFX.
++ Checkres no longer ignores the SFX tables of 2.90+ worlds.
++ Fixed a bug where world decryption could crash. (Revvy)
+
+DEVELOPERS
+
+
 January 6, 2018 - MZX 2.91b
 
 Here's a fairly significant update for MegaZeux 2.91, fixing

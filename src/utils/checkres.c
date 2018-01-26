@@ -684,7 +684,6 @@ static enum status parse_sfx(char *sfx_buf, struct base_file *file)
   return ret;
 }
 
-
 #define match(s, reqv) ((world_version >= reqv) && \
  (fn_len == sizeof(s)-1) && (!strcasecmp(function_counter, s)))
 
@@ -1186,7 +1185,7 @@ static enum status parse_legacy_world(struct memfile *mf,
   if(num_boards == 0)
   {
     unsigned short sfx_len_total = mfgetw(mf);
-    char sfx_buf[LEGACY_SFX_SIZE];
+    char sfx_buf[LEGACY_SFX_SIZE + 1];
     int sfx_len;
 
     debug("SFX table (input length: %d)\n", sfx_len_total);
@@ -1194,7 +1193,7 @@ static enum status parse_legacy_world(struct memfile *mf,
     for(i = 0; i < NUM_SFX; i++)
     {
       sfx_len = mfgetc(mf);
-      if(sfx_len >= LEGACY_SFX_SIZE)
+      if(sfx_len > LEGACY_SFX_SIZE)
         return CORRUPT_WORLD;
 
       if(sfx_len > 0)
@@ -1284,7 +1283,7 @@ static enum status parse_robot_info(struct memfile *mf, struct base_file *file)
       return parse_legacy_bytecode(&prop, (unsigned int)len, file);
   }
 
-  return ZIP_SUCCESS;
+  return SUCCESS;
 }
 
 static enum status parse_board_info(struct memfile *mf, struct base_file *file)
@@ -1326,7 +1325,31 @@ static enum status parse_board_info(struct memfile *mf, struct base_file *file)
     }
   }
 
-  return ZIP_SUCCESS;
+  return SUCCESS;
+}
+
+static enum status parse_sfx_file(struct memfile *mf, struct base_file *file)
+{
+  char sfx_buf[LEGACY_SFX_SIZE + 1];
+  int i;
+
+  enum status ret = SUCCESS;
+
+  debug("SFX table found\n");
+
+  for(i = 0; i < NUM_SFX; i++)
+  {
+    if(!mfread(sfx_buf, LEGACY_SFX_SIZE, 1, mf))
+      return FREAD_FAILED;
+
+    sfx_buf[LEGACY_SFX_SIZE] = 0;
+
+    ret = parse_sfx(sfx_buf, file);
+    if(ret != SUCCESS)
+      return ret;
+  }
+
+  return SUCCESS;
 }
 
 static enum status parse_world(struct memfile *mf, struct base_file *file,
@@ -1340,7 +1363,7 @@ static enum status parse_world(struct memfile *mf, struct base_file *file,
   struct memfile buf_file;
   unsigned int file_id;
 
-  int ret = ZIP_SUCCESS;
+  enum status ret = SUCCESS;
 
   if(ZIP_SUCCESS != zip_read_directory(zp))
   {
@@ -1356,6 +1379,7 @@ static enum status parse_world(struct memfile *mf, struct base_file *file,
     {
       case FPROP_BOARD_INFO:
       case FPROP_ROBOT:
+      case FPROP_WORLD_SFX:
       {
         zip_get_next_uncompressed_size(zp, &actual_size);
         buffer = malloc(actual_size);
@@ -1367,6 +1391,9 @@ static enum status parse_world(struct memfile *mf, struct base_file *file,
 
         else if(file_id == FPROP_ROBOT)
           ret = parse_robot_info(&buf_file, file);
+
+        else if(file_id == FPROP_WORLD_SFX)
+          ret = parse_sfx_file(&buf_file, file);
 
         free(buffer);
         break;
