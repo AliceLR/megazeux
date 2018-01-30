@@ -120,6 +120,7 @@ static char *buf_alloc = buffer + EXPR_BUFFER_SIZE;
 
 #define POP_STACK(err)                \
 {                                     \
+  buf_pos--;                          \
   pos--;                              \
   if(pos >= 0)                        \
   {                                   \
@@ -407,8 +408,8 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
         len = strlen(number_buffer);
       }
 
-      // Overwrite the unary operators' null terminator
-      buf_pos--;
+      // Pop before writing to remove the unary null terminator
+      POP_STACK(true);
 
       if(len > (buf_alloc - buf_pos))
       {
@@ -418,9 +419,6 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
 
       memcpy(buf_pos, src, len);
       buf_pos += len;
-
-      POP_STACK(true);
-
       continue;
     }
 
@@ -769,14 +767,12 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
           goto err_out;
         }
 
+        // Pop before writing to (if necessary) overwrite the unary null
         POP_STACK(false);
 
         // If we're in the middle of an operand, print to the buffer
         if(state & EXPR_STATE_PARSE_OPERAND)
         {
-          // Overwrite the unary operators' null terminator
-          buf_pos--;
-
           sprintf(number_buffer, "%d", value);
           len = strlen(number_buffer);
 
