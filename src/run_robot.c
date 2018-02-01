@@ -1903,7 +1903,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             gotoed = send_self_label_tr(mzx_world,  p4 + 1, id);
 
             // 2.80 through 2.84 allowed this to iterate the entire board.
-            if(WORLD_VERSION >= 0x255 || WORLD_VERSION < 0x250)
+            if(mzx_world->version < 0x250 || mzx_world->version > 0x254)
               break;
           }
         }
