@@ -10,10 +10,10 @@ within MegaZeux itself. Run the full sequence of tests with `run.sh`.
 
 Test worlds are named in the format
 
-```VVV-##### [short description].mzx```
+```VVV #XXXXX [short description].mzx```
 
-where `VVV` is the MegaZeux version associated with the world (e.g. 2.51)
-and ##### is the test number.
+where `VVV` is the MegaZeux version associated with the world (e.g. `2.51`)
+and #XXXXX is the test number (e.g. `#12345`).
 
 Example version strings:
 * `2.02` for 2.02
