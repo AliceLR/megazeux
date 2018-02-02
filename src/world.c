@@ -2587,6 +2587,7 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
 
   // Resize this array if necessary
   set_update_done(mzx_world);
+  mzx_world->slow_down = 0;
 
   // Find the player
   find_player(mzx_world);

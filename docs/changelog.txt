@@ -12,6 +12,7 @@ USERS
 + Fixed faulty IF ANY compatibility behavior.
 + SMZX mode 1 palettes are now exported correctly as 16 colors
   instead of as 256 colors.
++ Fixed subtly inconsistent timing in certain built-ins.
 + Fixed a bug where world decryption could crash. (Revvy)
 
 DEVELOPERS
