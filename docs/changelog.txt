@@ -2,6 +2,8 @@ GIT
 
 USERS
 
++ Sound effects in subdirectories can now be used in the SFX
+  editor.
 + Fixed a bug where checkres would fail on legacy worlds with
   very long custom SFX.
 + Checkres no longer ignores the SFX tables of 2.90+ worlds.
