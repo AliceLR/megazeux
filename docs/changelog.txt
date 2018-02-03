@@ -14,6 +14,8 @@ USERS
   instead of as 256 colors.
 + Fixed subtly inconsistent timing in certain built-ins.
 + Fixed bug where wind and transporters could clone the player.
++ MegaZeux now restarts correctly in paths containing spaces
+  when the updater is run.
 + Fixed a bug where world decryption could crash. (Revvy)
 
 DEVELOPERS

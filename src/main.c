@@ -144,7 +144,7 @@ __libspec int main(int argc, char *argv[])
 
   if(network_layer_init(&mzx_world.conf))
   {
-    if(!updater_init(argv))
+    if(!updater_init(argc, argv))
       info("Updater disabled.\n");
   }
   else

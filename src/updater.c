@@ -65,6 +65,50 @@ static long final_size = -1;
 static bool cancel_update;
 
 static char **process_argv;
+static int process_argc;
+
+static char **rewrite_argv_for_execv(int argc, char **argv)
+{
+  char **new_argv = cmalloc((argc+1) * sizeof(char *));
+  char *arg;
+  int length;
+  int pos;
+  int i;
+  int i2;
+
+  // Due to a bug in execv, args with spaces present are treated as multiple
+  // args in the new process. Each arg in argv must be wrapped in double quotes
+  // to work properly. Because of this, " and \ must also be escaped.
+
+  for(i = 0; i < argc; i++)
+  {
+    length = strlen(argv[i]);
+    arg = cmalloc(length * 2 + 2);
+    arg[0] = '"';
+
+    for(i2 = 0, pos = 1; i2 < length; i2++, pos++)
+    {
+      switch(argv[i][i2])
+      {
+        case '"':
+        case '\\':
+          arg[pos] = '\\';
+          pos++;
+          break;
+      }
+      arg[pos] = argv[i][i2];
+    }
+
+    arg[pos] = '"';
+    arg[pos + 1] = '\0';
+
+    new_argv[i] = arg;
+  }
+
+  new_argv[argc] = NULL;
+
+  return new_argv;
+}
 
 static bool check_prune_basedir(const char *file)
 {
@@ -786,7 +830,7 @@ err_out:
    */
   if(ret)
   {
-    const void *argv = process_argv;
+    char **new_argv;
     struct element *elements[2];
     struct dialog di;
 
@@ -798,7 +842,8 @@ err_out:
     run_dialog(mzx_world, &di);
     destruct_dialog(&di);
 
-    execv(process_argv[0], argv);
+    new_argv = rewrite_argv_for_execv(process_argc, process_argv);
+    execv(process_argv[0], (const void *)new_argv);
     perror("execv");
 
     error("Attempt to invoke self failed!", 1, 8, 0);
@@ -806,12 +851,13 @@ err_out:
   }
 }
 
-bool updater_init(char *argv[])
+bool updater_init(int argc, char *argv[])
 {
   struct manifest_entry *e;
   bool ret;
   FILE *f;
 
+  process_argc = argc;
   process_argv = argv;
 
   if(!swivel_current_dir(false))
