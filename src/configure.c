@@ -184,6 +184,13 @@ static void config_update_branch_pin(struct config_info *conf, char *name,
   conf->update_branch_pin[256 - 1] = 0;
 }
 
+static void config_update_check_startup(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  int new_value = strtol(value, NULL, 10);
+  conf->update_check_on_startup = CLAMP(new_value, 0, 1);
+}
+
 #endif // CONFIG_UPDATER
 
 static void config_disassemble_extras(struct config_info *conf, char *name,
@@ -564,6 +571,7 @@ static const struct config_entry config_options[] =
   { "system_mouse", config_system_mouse, false },
 #ifdef CONFIG_UPDATER
   { "update_branch_pin", config_update_branch_pin, false },
+  { "update_check_on_startup", config_update_check_startup, false },
   { "update_host", config_update_host, false },
 #endif
   { "video_output", config_set_video_output, false },
@@ -654,6 +662,7 @@ static const struct config_info default_options =
 #else /* !CONFIG_DEBYTECODE */
   "Stable",                     // update_branch_pin
 #endif /* !CONFIG_DEBYTECODE */
+  1,                            // update_check_on_startup
 #endif /* CONFIG_UPDATER */
 };
 

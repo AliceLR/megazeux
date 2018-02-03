@@ -88,6 +88,7 @@ struct config_info
   int update_host_count;
   char **update_hosts;
   char update_branch_pin[256];
+  int update_check_on_startup;
 #endif
 };
 

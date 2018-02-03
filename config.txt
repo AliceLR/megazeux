@@ -585,4 +585,9 @@
 
 # update_branch_pin = Stable
 
+# By default, MZX will check for updates on startup. To disable this behavior,
+# uncomment this line:
+
+# update_check_on_startup = 0
+
 include pad.config

@@ -2,6 +2,10 @@ GIT
 
 USERS
 
++ MegaZeux can now automatically run the updater on startup
+  on applicable platforms. This can be configured with the
+  'update_check_on_startup' config file option, and is enabled
+  by default.
 + Sound effects in subdirectories can now be used in the SFX
   editor.
 + Fixed a bug where checkres would fail on legacy worlds with

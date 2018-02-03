@@ -387,7 +387,8 @@ err_out:
   return ret;
 }
 
-static void __check_for_updates(struct world *mzx_world, struct config_info *conf)
+static void __check_for_updates(struct world *mzx_world, struct config_info *conf,
+ int is_automatic)
 {
   int cur_host;
   char *update_host;
@@ -598,6 +599,9 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
     {
       struct element *elements[3];
       struct dialog di;
+
+      if(is_automatic)
+        goto err_free_update_manifests;
 
       elements[0] = construct_label(2, 2, "This client is already current.");
       elements[1] = construct_button(7, 4, "OK", 0);
@@ -853,5 +857,10 @@ bool updater_init(char *argv[])
 
 err_swivel_back:
   swivel_current_dir_back(false);
+  return true;
+}
+
+bool is_updater(void)
+{
   return true;
 }

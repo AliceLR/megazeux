@@ -142,19 +142,30 @@ __libspec int main(int argc, char *argv[])
 
   set_mouse_mul(8, 14);
 
-  if(network_layer_init(&mzx_world.conf))
-  {
-    if(!updater_init(argv))
-      info("Updater disabled.\n");
-  }
-  else
-    info("Network layer disabled.\n");
-
   init_event();
 
   if(!init_video(&mzx_world.conf, CAPTION))
-    goto err_network_layer_exit;
+    goto err_free_config;
   init_audio(&(mzx_world.conf));
+
+  if(network_layer_init(&mzx_world.conf))
+  {
+    if(is_updater())
+    {
+      // FIXME force disable the updater for probable repo builds
+      if(!strcmp(VERSION, "GIT") &&
+       !strcmp(mzx_world.conf.update_branch_pin, "Stable"))
+        mzx_world.conf.update_check_on_startup = 0;
+
+      if(!updater_init(argv))
+        info("Updater disabled.\n");
+
+      else if(mzx_world.conf.update_check_on_startup)
+        check_for_updates(&mzx_world, &(mzx_world.conf), 1);
+    }
+  }
+  else
+    info("Network layer disabled.\n");
 
   warp_mouse(39, 12);
   cursor_off();
@@ -189,11 +200,11 @@ __libspec int main(int argc, char *argv[])
   help_close(&mzx_world);
 #endif
 
+  network_layer_exit(&mzx_world.conf);
   quit_audio();
 
   err = 0;
-err_network_layer_exit:
-  network_layer_exit(&mzx_world.conf);
+err_free_config:
   if(mzx_world.update_done)
     free(mzx_world.update_done);
   free_config(&mzx_world.conf);

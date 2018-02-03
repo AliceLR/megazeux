@@ -110,7 +110,7 @@ static const char game_menu_4[] =
  "Delete- Bomb";
 
 __updater_maybe_static void (*check_for_updates)(struct world *mzx_world,
- struct config_info *conf);
+ struct config_info *conf, int is_automatic);
 
 __editor_maybe_static void (*edit_world)(struct world *mzx_world,
  int reload_curr_file);
@@ -3109,7 +3109,7 @@ void title_screen(struct world *mzx_world)
             set_music_volume(0);
             if(mzx_world->active)
               volume_module(0);
-            check_for_updates(mzx_world, &mzx_world->conf);
+            check_for_updates(mzx_world, &mzx_world->conf, 0);
             set_sfx_volume(current_sfx_vol);
             set_music_volume(current_music_vol);
             if(mzx_world->active)
