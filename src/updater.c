@@ -460,6 +460,10 @@ err_delete_failed:
       buf[71] = 0;
 
       error(buf, 1, 8, 0);
+
+      if(e_next)
+        e->next = e_next->next;
+
       continue;
     }
   }
