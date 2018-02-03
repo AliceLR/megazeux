@@ -157,7 +157,7 @@ __libspec int main(int argc, char *argv[])
        !strcmp(mzx_world.conf.update_branch_pin, "Stable"))
         mzx_world.conf.update_check_on_startup = 0;
 
-      if(!updater_init(argv))
+      if(!updater_init(argc, argv))
         info("Updater disabled.\n");
 
       else if(mzx_world.conf.update_check_on_startup)
