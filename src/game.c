@@ -1407,6 +1407,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
       src_board->player_last_dir =
        (src_board->player_last_dir & 0xF0) + wind_dir;
       move_player(mzx_world, wind_dir);
+      find_player(mzx_world);
     }
   }
 
