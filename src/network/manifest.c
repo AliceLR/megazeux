@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <time.h>
 
 #define BLOCK_SIZE    4096UL
 #define LINE_BUF_LEN  256
@@ -61,7 +62,7 @@ static bool manifest_parse_size(char *p, unsigned long *size)
   return true;
 }
 
-static void manifest_entry_free(struct manifest_entry *e)
+void manifest_entry_free(struct manifest_entry *e)
 {
   free(e->name);
   free(e);
@@ -418,7 +419,7 @@ bool manifest_entry_download_replace(struct host *h, const char *basedir,
   f = fopen_unsafe(e->name, "w+b");
   if(!f)
   {
-    snprintf(buf, LINE_BUF_LEN, "%s~", e->name);
+    snprintf(buf, LINE_BUF_LEN, "%s-%u~", e->name, (unsigned int)time(NULL));
     if(rename(e->name, buf))
     {
       warn("Failed to rename in-use file '%s' to '%s'\n", e->name, buf);
@@ -460,4 +461,3 @@ err_close:
 err_out:
   return valid;
 }
-
