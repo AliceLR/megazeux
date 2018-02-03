@@ -27,6 +27,19 @@ build-stamp: configure-stamp
 	$(MAKE)
 	touch $@
 
+test: test-stamp
+test-stamp: build-stamp
+	dh_testdir
+	./testworlds/run.sh
+	cat ./testworlds/log/summary | grep FAIL
+	if [ $? -eq 0 ]
+	then
+		echo "Tests failed. Aborting package build."
+	else
+		touch test-stamp
+		echo "Tests passed."
+	fi
+
 clean:
 	dh_testdir
 	dh_testroot
@@ -34,7 +47,7 @@ clean:
 	$(MAKE) distclean
 	dh_clean 
 
-install: build
+install: test
 	dh_testdir
 	dh_testroot
 	dh_clean -k 
