@@ -142,6 +142,12 @@ __libspec int main(int argc, char *argv[])
 
   set_mouse_mul(8, 14);
 
+  init_event();
+
+  if(!init_video(&mzx_world.conf, CAPTION))
+    goto err_free_config;
+  init_audio(&(mzx_world.conf));
+
   if(network_layer_init(&mzx_world.conf))
   {
     if(!updater_init(argc, argv))
@@ -149,12 +155,6 @@ __libspec int main(int argc, char *argv[])
   }
   else
     info("Network layer disabled.\n");
-
-  init_event();
-
-  if(!init_video(&mzx_world.conf, CAPTION))
-    goto err_network_layer_exit;
-  init_audio(&(mzx_world.conf));
 
   warp_mouse(39, 12);
   cursor_off();
@@ -189,11 +189,11 @@ __libspec int main(int argc, char *argv[])
   help_close(&mzx_world);
 #endif
 
+  network_layer_exit(&mzx_world.conf);
   quit_audio();
 
   err = 0;
-err_network_layer_exit:
-  network_layer_exit(&mzx_world.conf);
+err_free_config:
   if(mzx_world.update_done)
     free(mzx_world.update_done);
   free_config(&mzx_world.conf);
