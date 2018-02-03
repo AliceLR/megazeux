@@ -383,6 +383,92 @@ static bool restore_original_manifest(bool ret)
   return true;
 }
 
+static bool write_delete_list(void)
+{
+  struct manifest_entry *e;
+  FILE *f;
+
+  if(delete_list)
+  {
+    f = fopen_unsafe(DELETE_TXT, "ab");
+    if(!f)
+    {
+      error("Failed to create \"" DELETE_TXT "\". Check permissions.", 1, 8, 0);
+      return false;
+    }
+
+    for(e = delete_list; e; e = e->next)
+    {
+      fprintf(f, "%08x%08x%08x%08x%08x%08x%08x%08x %lu %s\n",
+       e->sha256[0], e->sha256[1], e->sha256[2], e->sha256[3],
+       e->sha256[4], e->sha256[5], e->sha256[6], e->sha256[7],
+       e->size, e->name);
+    }
+
+    fclose(f);
+  }
+  return true;
+}
+
+static void apply_delete_list(void)
+{
+  struct manifest_entry *e_next = delete_list;
+  struct manifest_entry *e;
+  struct stat s;
+  bool ret;
+  FILE *f;
+
+  while(e_next)
+  {
+    e = e_next;
+    e_next = e->next;
+
+    if(!stat(e->name, &s))
+    {
+      f = fopen_unsafe(e->name, "rb");
+      if(!f)
+        goto err_delete_failed;
+
+      ret = manifest_entry_check_validity(e, f);
+      fclose(f);
+
+      if(ret)
+      {
+        if(unlink(e->name))
+          goto err_delete_failed;
+
+        /* Obtain the path for this file. If the file isn't at the top
+         * level, and the directory is empty (rmdir ensures this)
+         * the directory will be pruned.
+         */
+        check_prune_basedir(e->name);
+      }
+    }
+
+    // File was removed, doesn't exist, or is non-applicable; remove from list
+    if(delete_list == e)
+      delete_list = e_next;
+
+    manifest_entry_free(e);
+    continue;
+
+err_delete_failed:
+    {
+      char buf[72];
+      snprintf(buf, 72, "Failed to delete \"%.30s\". Check permissions.",
+       e->name);
+      buf[71] = 0;
+
+      error(buf, 1, 8, 0);
+
+      if(e_next)
+        e->next = e_next->next;
+
+      continue;
+    }
+  }
+}
+
 static bool reissue_connection(struct config_info *conf, struct host **h, char *host_name)
 {
   bool ret = false;
@@ -787,25 +873,8 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
       }
     }
 
-    if(delete_list)
-    {
-      f = fopen_unsafe(DELETE_TXT, "wb");
-      if(!f)
-      {
-        error("Failed to create \"" DELETE_TXT "\". Check permissions.", 1, 8, 0);
-        goto err_free_delete_list;
-      }
-
-      for(e = delete_list; e; e = e->next)
-      {
-        fprintf(f, "%08x%08x%08x%08x%08x%08x%08x%08x %lu %s\n",
-         e->sha256[0], e->sha256[1], e->sha256[2], e->sha256[3],
-         e->sha256[4], e->sha256[5], e->sha256[6], e->sha256[7],
-         e->size, e->name);
-      }
-
-      fclose(f);
-    }
+    if(!write_delete_list())
+      goto err_free_delete_list;
 
     try_next_host = false;
     ret = true;
@@ -857,8 +926,6 @@ err_out:
 
 bool updater_init(int argc, char *argv[])
 {
-  struct manifest_entry *e;
-  bool ret;
   FILE *f;
 
   process_argc = argc;
@@ -876,30 +943,16 @@ bool updater_init(int argc, char *argv[])
   delete_list = manifest_list_create(f);
   fclose(f);
 
-  for(e = delete_list; e; e = e->next)
-  {
-    f = fopen_unsafe(e->name, "rb");
-    if(!f)
-      continue;
-
-    ret = manifest_entry_check_validity(e, f);
-    fclose(f);
-
-    if(!ret)
-      continue;
-
-    if(unlink(e->name))
-      continue;
-
-    /* Obtain the path for this file. If the file isn't at the top
-     * level, and the directory is empty (rmdir ensures this)
-     * the directory will be pruned.
-     */
-    check_prune_basedir(e->name);
-  }
-
-  manifest_list_free(&delete_list);
+  apply_delete_list();
   unlink(DELETE_TXT);
+
+  if(delete_list)
+  {
+    write_delete_list();
+    manifest_list_free(&delete_list);
+    error("Failed to delete files; check permissions and restart MegaZeux",
+     1, 8, 0);
+  }
 
 err_swivel_back:
   swivel_current_dir_back(false);

@@ -44,6 +44,7 @@ UPDATER_LIBSPEC bool manifest_entry_check_validity(struct manifest_entry *e,
  FILE *f);
 UPDATER_LIBSPEC struct manifest_entry *manifest_list_create(FILE *f);
 
+UPDATER_LIBSPEC void manifest_entry_free(struct manifest_entry *e);
 UPDATER_LIBSPEC void manifest_list_free(struct manifest_entry **head);
 UPDATER_LIBSPEC bool manifest_get_updates(struct host *h, const char *basedir,
  struct manifest_entry **removed, struct manifest_entry **replaced,
