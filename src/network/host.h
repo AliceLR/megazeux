@@ -139,6 +139,14 @@ UPDATER_LIBSPEC enum host_status host_recv_file(struct host *h,
  const char *url, FILE *file, const char *expected_type);
 
 /**
+ * Sets the timeout for sending and receiving packets (default is 10s).
+ *
+ * @param h           Host to set timeout for
+ * @param timeout_ms  Timeout in ms
+ */
+UPDATER_LIBSPEC void host_set_timeout_ms(struct host *h, int timeout_ms);
+
+/**
  * Set send/recv callbacks which will be called (potentially many times) as
  * the library fills the send/recv buffers for "block transfers". HTTP headers
  * and other preambles are explicitly ignored. Raw transfers are always fully
