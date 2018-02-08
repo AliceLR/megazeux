@@ -584,8 +584,8 @@ static const struct config_entry config_options[] =
   { "startup_path", config_startup_path, false },
   { "system_mouse", config_system_mouse, false },
 #ifdef CONFIG_UPDATER
-  { "update_branch_pin", config_update_branch_pin, false },
   { "update_auto_check", config_update_auto_check, false },
+  { "update_branch_pin", config_update_branch_pin, false },
   { "update_host", config_update_host, false },
 #endif
   { "video_output", config_set_video_output, false },
