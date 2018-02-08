@@ -2,7 +2,12 @@
 
 This folder contains a set of worlds that test various aspects of MZX and
 particularly Robotic that can be determined to be correct or incorrect from
-within MegaZeux itself. Run the full sequence of tests with `run.sh`.
+within MegaZeux itself. Run the full sequence of tests with `run.sh`, or
+use the `make test` rule.
+
+This system currently requires an `mzxrun` executable in the parent directory.
+Currently, the only applicable target architectures are `win64`, `win32`, and
+`unix-devel`. These tests will NOT WORK with any other architecture!
 
 ## Conventions
 
