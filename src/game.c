@@ -3118,6 +3118,7 @@ void title_screen(struct world *mzx_world)
             if(mzx_world->active)
               volume_module(0);
             check_for_updates(mzx_world, &mzx_world->conf, 0);
+            set_caption(mzx_world, NULL, NULL, 0, 0);
             set_sfx_volume(current_sfx_vol);
             set_music_volume(current_music_vol);
             if(mzx_world->active)
