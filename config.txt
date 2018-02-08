@@ -585,9 +585,11 @@
 
 # update_branch_pin = Stable
 
-# By default, MZX will check for updates on startup. To disable this behavior,
-# uncomment this line:
+# By default, MZX will check for updates on startup. There are three modes:
+# "on", which will display most messages; "silent", which will only display
+# certain errors; and "off", which disables this feature altogether. The
+# default setting is "silent".
 
-# update_check_on_startup = 0
+# update_auto-check = silent
 
 include pad.config

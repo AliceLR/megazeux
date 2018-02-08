@@ -153,14 +153,16 @@ __libspec int main(int argc, char *argv[])
     if(is_updater())
     {
       // FIXME force disable the updater for probable repo builds
+      /*
       if(!strcmp(VERSION, "GIT") &&
        !strcmp(mzx_world.conf.update_branch_pin, "Stable"))
-        mzx_world.conf.update_check_on_startup = 0;
+        mzx_world.conf.update_auto_check = UPDATE_AUTO_CHECK_OFF;
+        */
 
       if(!updater_init(argc, argv))
         info("Updater disabled.\n");
 
-      else if(mzx_world.conf.update_check_on_startup)
+      else if(mzx_world.conf.update_auto_check)
         check_for_updates(&mzx_world, &(mzx_world.conf), 1);
     }
   }

@@ -184,11 +184,25 @@ static void config_update_branch_pin(struct config_info *conf, char *name,
   conf->update_branch_pin[256 - 1] = 0;
 }
 
-static void config_update_check_startup(struct config_info *conf, char *name,
+static void config_update_auto_check(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  int new_value = strtol(value, NULL, 10);
-  conf->update_check_on_startup = CLAMP(new_value, 0, 1);
+  if(!strcmp(value, "off"))
+  {
+    conf->update_auto_check = UPDATE_AUTO_CHECK_OFF;
+  }
+  else
+
+  if(!strcmp(value, "on"))
+  {
+    conf->update_auto_check = UPDATE_AUTO_CHECK_ON;
+  }
+  else
+
+  if(!strcmp(value, "silent"))
+  {
+    conf->update_auto_check = UPDATE_AUTO_CHECK_SILENT;
+  }
 }
 
 #endif // CONFIG_UPDATER
@@ -571,7 +585,7 @@ static const struct config_entry config_options[] =
   { "system_mouse", config_system_mouse, false },
 #ifdef CONFIG_UPDATER
   { "update_branch_pin", config_update_branch_pin, false },
-  { "update_check_on_startup", config_update_check_startup, false },
+  { "update_auto_check", config_update_auto_check, false },
   { "update_host", config_update_host, false },
 #endif
   { "video_output", config_set_video_output, false },
@@ -662,7 +676,8 @@ static const struct config_info default_options =
 #else /* !CONFIG_DEBYTECODE */
   "Stable",                     // update_branch_pin
 #endif /* !CONFIG_DEBYTECODE */
-  1,                            // update_check_on_startup
+  UPDATE_AUTO_CHECK_SILENT,     // update_auto_check
+  0,                            // update_available
 #endif /* CONFIG_UPDATER */
 };
 

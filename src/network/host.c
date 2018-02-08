@@ -702,7 +702,7 @@ struct host *host_create(enum host_type type, enum host_family fam)
   h->proto = proto;
   h->af = af;
   h->fd = fd;
-  h->timeout_ms = 10 * 1000;
+  h->timeout_ms = HOST_TIMEOUT_DEFAULT;
   return h;
 }
 

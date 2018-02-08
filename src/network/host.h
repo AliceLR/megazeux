@@ -27,6 +27,8 @@ __M_BEGIN_DECLS
 
 #include <stdio.h> // for FILE
 
+#define HOST_TIMEOUT_DEFAULT (10 * 1000)
+
 struct host;
 
 enum host_family

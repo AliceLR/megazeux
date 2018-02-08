@@ -238,7 +238,7 @@ void set_caption(struct world *mzx_world, struct board *board,
     strcpy(caption, buffer);
   }
 
-  if(mzx_world)
+  if(mzx_world->active)
   {
     strip_caption_string(stripped_name, mzx_world->name);
     if(!strlen(stripped_name))
@@ -258,8 +258,15 @@ void set_caption(struct world *mzx_world, struct board *board,
     strcpy(caption, buffer);
   }
 
+  if(mzx_world->conf.update_available)
+  {
+    snprintf(buffer, MAX_CAPTION_SIZE, "%s %s", caption,
+     "*** UPDATES AVAILABLE ***");
+    strcpy(caption, buffer);
+  }
+
 #ifdef CONFIG_FPS
-  if(mzx_world && !editor && !robot && !board)
+  if(mzx_world->active && !editor && !robot && !board)
   {
     snprintf(buffer, MAX_CAPTION_SIZE, "%s %s FPS: %f", caption,
      CAPTION_SPACER, average_fps);
@@ -2735,6 +2742,7 @@ void title_screen(struct world *mzx_world)
   char *current_dir;
   struct config_info *conf = &mzx_world->conf;
 
+  set_caption(mzx_world, NULL, NULL, 0, 0);
   debug_mode = false;
 
   // Clear screen
