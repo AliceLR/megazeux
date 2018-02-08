@@ -15,15 +15,25 @@ mkdir -p log
 
 # Color code PASS/FAIL tags and important numbers.
 
-echo -e "$(\
-  cat log/failures \
-  | sed --expression='s/\[PASS\]/\[\\e\[92m\\e\[1mPASS\\e\[0m\]/g' \
-  | sed --expression='s/\[FAIL\]/\[\\e\[91m\\e\[1mFAIL\\e\[0m\]/g' \
-  | sed --expression='s/\[[?][?][?][?]]/\[\\e\[93m\\e\[1m????\\e\[0m\]/g' \
-  | sed --expression='s/passes: \([1-9][0-9]*\)/passes: \\e\[92m\\e\[1m\1\\e\[0m/g' \
-  | sed --expression='s/failures: \([1-9][0-9]*\)/failures: \\e\[91m\\e\[1m\1\\e\[0m/g' \
-  )"
+if [ -z $1 ] || [ $1 != "-q" ];
+then
+	echo -e "$(\
+	  cat log/failures \
+	  | sed --expression='s/\[PASS\]/\[\\e\[92m\\e\[1mPASS\\e\[0m\]/g' \
+	  | sed --expression='s/\[FAIL\]/\[\\e\[91m\\e\[1mFAIL\\e\[0m\]/g' \
+	  | sed --expression='s/\[[?][?][?][?]]/\[\\e\[93m\\e\[1m????\\e\[0m\]/g' \
+	  | sed --expression='s/passes: \([1-9][0-9]*\)/passes: \\e\[92m\\e\[1m\1\\e\[0m/g' \
+	  | sed --expression='s/failures: \([1-9][0-9]*\)/failures: \\e\[91m\\e\[1m\1\\e\[0m/g' \
+	  )"
 
-# The pizza's done!
+	echo -ne "\007"
+fi
 
-echo -ne "\007"
+# Exit 1 if there are any failures.
+
+if grep -q "FAIL" log/failures;
+then
+	exit 1
+else
+	exit 0
+fi
