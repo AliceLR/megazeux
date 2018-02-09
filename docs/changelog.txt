@@ -8,6 +8,9 @@ USERS
 + Fixed a bug where interpolated expressions containing ternary
   operators could terminate counter names early.
 + Fixed faulty IF ANY compatibility behavior.
++ Fixed a bug where FWRITE functions could change the case of
+  user-defined filenames when creating new files on non-Windows
+  platforms.
 + Fixed a bug where world decryption could crash. (Revvy)
 
 DEVELOPERS

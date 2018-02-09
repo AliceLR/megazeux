@@ -2,7 +2,12 @@
 
 This folder contains a set of worlds that test various aspects of MZX and
 particularly Robotic that can be determined to be correct or incorrect from
-within MegaZeux itself. Run the full sequence of tests with `run.sh`.
+within MegaZeux itself. Run the full sequence of tests with `run.sh`, or
+use the `make test` rule.
+
+This system currently requires an `mzxrun` executable in the parent directory.
+Currently, the only applicable target architectures are `win64`, `win32`, and
+`unix-devel`. These tests will NOT WORK with any other architecture!
 
 ## Conventions
 
@@ -37,29 +42,35 @@ Additionally, test worlds must conform to the following conventions:
 1) The world must not be encrypted, and must have a properly configured
 starting board. A title is helpful but not necessary.
 
-2) The robot performing the tests must be clearly marked or the global.
+2) The world will perform exactly one test or a group of closely related tests
+(e.g. testing various COPY BLOCK uses) and will be created and versioned for the
+earliest possible MegaZeux version it is applicable for. If versioned compatibility
+behavior exists, create a version of the test for each behavior with similar
+filenames and titles using the earliest applicable MZX versions for each.
 
 3) The test must assume it will be operating at MZX_SPEED 1 and with unbounded
 COMMANDS, unless the purpose of the test requires a different MZX_SPEED or
 COMMANDS value. Setting these defaults explicitly is not necessary.
 
-4) The first line(s) of the testing robot must be setting the `$title` string
+4) The robot driving the tests must be clearly visible.
+
+5) The first line(s) of the testing robot must be setting the `$title` string
 to the title of the test, the `$author` string to your identifier, and the
 `$desc` string to a description of the test. This must be wrapped to fit the
 robot editor window with `inc "$desc" "[more description]"` as-needed.
 (EXCEPTION: MegaZeux worlds from versions under 2.80 are not capable of this.
 Include this information in comments instead.)
 
-5) Upon completion or failure, the counter `result` must be set to the
+6) Upon completion or failure, the counter `result` must be set to the
 counter `PASS` or the counter `FAIL`.
 
-6) Extra testing notes may be included in the `$result` string.
+7) Extra testing notes may be included in the `$result` string.
 (EXCEPTION: MegaZeux worlds from versions under 2.80 are not capable of this.)
 
-7) Counter and string names beginning with two underscores (e.g. `__abc`,
+8) Counter and string names beginning with two underscores (e.g. `__abc`,
 `$__def`) are reserved and should not be used.
 
-8) When the test is finished running, the following snippet of code
+9) When the test is finished running, the following snippet of code
 MUST be executed:
 
 ```
