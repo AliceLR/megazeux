@@ -31,7 +31,7 @@ test: test-stamp
 test-stamp: build-stamp
 	dh_testdir
 	cp config.txt megazeux-config
-	./testworlds/run.sh
+	$(MAKE) test
 	rm megazeux-config
 	touch test-stamp
 
