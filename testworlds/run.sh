@@ -3,6 +3,10 @@
 cd "$(dirname "$0")"
 mkdir -p log
 
+# Force mzxrun to use the libraries in its directory instead of any installed libraries.
+
+export LD_LIBRARY_PATH=".."
+
 # Standalone mode will allow tests.mzx to terminate MZX and no_titlescreen mode
 # simplifies things. Use the software renderer because we don't care about video
 # output performance.
@@ -15,15 +19,20 @@ mkdir -p log
 
 # Color code PASS/FAIL tags and important numbers.
 
+COL_END="`tput sgr0`"
+COL_RED="`tput bold``tput setaf 1`"
+COL_GREEN="`tput bold``tput setaf 2`"
+COL_YELLOW="`tput bold``tput setaf 3`"
+
 if [ -z $1 ] || [ $1 != "-q" ];
 then
-	echo -e "$(\
+	echo "$(\
 	  cat log/failures \
-	  | sed --expression='s/\[PASS\]/\[\\e\[92m\\e\[1mPASS\\e\[0m\]/g' \
-	  | sed --expression='s/\[FAIL\]/\[\\e\[91m\\e\[1mFAIL\\e\[0m\]/g' \
-	  | sed --expression='s/\[[?][?][?][?]]/\[\\e\[93m\\e\[1m????\\e\[0m\]/g' \
-	  | sed --expression='s/passes: \([1-9][0-9]*\)/passes: \\e\[92m\\e\[1m\1\\e\[0m/g' \
-	  | sed --expression='s/failures: \([1-9][0-9]*\)/failures: \\e\[91m\\e\[1m\1\\e\[0m/g' \
+	  | sed --expression="s/\[PASS\]/\[${COL_GREEN}PASS${COL_END}\]/g" \
+	  | sed --expression="s/\[FAIL\]/\[${COL_RED}FAIL${COL_END}\]/g" \
+	  | sed --expression="s/\[[?][?][?][?]]/\[${COL_YELLOW}????${COL_END}\]/g" \
+	  | sed --expression="s/passes: \([1-9][0-9]*\)/passes: ${COL_GREEN}\1${COL_END}/g" \
+	  | sed --expression="s/failures: \([1-9][0-9]*\)/failures: ${COL_RED}\1${COL_END}/g" \
 	  )"
 
 	echo -ne "\007"
