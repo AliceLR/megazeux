@@ -11,7 +11,7 @@ export LD_LIBRARY_PATH=".."
 # simplifies things. Use the software renderer because we don't care about video
 # output performance.
 
-../mzxrun \
+SDL_VIDEODRIVER=dummy ../mzxrun \
   video_output=software \
   standalone_mode=1 \
   no_titlescreen=1 \
