@@ -99,8 +99,6 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   struct scroll *cur_scroll;
   struct sensor *cur_sensor;
 
-  char *test_buffer;
-
   int board_location = ftell(fp);
 
   cur_board->num_robots = 0;
@@ -168,16 +166,10 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
     if(load_RLE2_plane(cur_board->overlay, fp, size))
       goto err_freeoverlay;
 
-    test_buffer = cmalloc(1024);
-    free(test_buffer);
-
     // Skip sizes
     if(fseek(fp, 4, SEEK_CUR) ||
      load_RLE2_plane(cur_board->overlay_color, fp, size))
       goto err_freeoverlay;
-
-    test_buffer = cmalloc(1024);
-    free(test_buffer);
   }
   else
   {
