@@ -24,7 +24,7 @@
 
 __M_BEGIN_DECLS
 
-bool updater_init(char *argv[]);
+bool updater_init(int argc, char *argv[]);
 
 __M_END_DECLS
 

@@ -1167,7 +1167,7 @@ int char_editor(struct world *mzx_world)
       // Correct F5 to "SMZX"
       if(help_page == 1)
         write_string("SMZX",
-         info_x + 18, info_y + pad_height + 10, 0x8F, 1);
+         info_x + 18, info_y + pad_height + 8, 0x8F, 1);
 
       // 1-4 Select
       write_string(help_text_smzx,
@@ -1798,12 +1798,17 @@ int char_editor(struct world *mzx_world)
 
         if(get_ctrl_status(keycode_internal))
         {
+          // Cut to buffer
           for(i = 0; i < block_height; i++,
            buffer_ptr += buffer_width, dest_ptr += block_width)
           {
             memcpy(dest_ptr, buffer_ptr, block_width);
             memset(buffer_ptr, 0, block_width);
           }
+
+          collapse_buffer(buffer, current_width, current_height,
+           highlight_width, highlight_height, current_char,
+           current_charset, h);
         }
         else
         {

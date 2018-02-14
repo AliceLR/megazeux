@@ -1407,6 +1407,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
       src_board->player_last_dir =
        (src_board->player_last_dir & 0xF0) + wind_dir;
       move_player(mzx_world, wind_dir);
+      find_player(mzx_world);
     }
   }
 
@@ -2008,6 +2009,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
     mzx_world->under_player_id = (char)SPACE;
     mzx_world->under_player_param = 0;
     mzx_world->under_player_color = 7;
+    mzx_world->slow_down = 0;
 
     if(mzx_world->current_board_id != target_board)
     {

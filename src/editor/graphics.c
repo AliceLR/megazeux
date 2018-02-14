@@ -54,11 +54,11 @@ void save_palette(char *fname)
 
   if(pal_file)
   {
-    int num_colors = SMZX_PAL_SIZE;
+    int num_colors = PAL_SIZE;
     int i;
 
-    if(!graphics.screen_mode)
-      num_colors = PAL_SIZE;
+    if(graphics.screen_mode >= 2)
+      num_colors = SMZX_PAL_SIZE;
 
     for(i = 0; i < num_colors; i++)
     {
