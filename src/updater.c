@@ -651,6 +651,7 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
 
       conf->update_available = 1;
 
+      // If this is an auto check and silent mode is enabled, we can stop here.
       if(is_automatic && conf->update_auto_check == UPDATE_AUTO_CHECK_SILENT)
       {
         try_next_host = false;
