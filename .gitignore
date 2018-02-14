@@ -103,3 +103,10 @@ stderr.txt
 *~
 .DS_Store
 xcuserdata/
+
+# This MUST go after the *.mzx rule.
+!testworlds/*.mzx
+!testworlds/old/*.mzx
+testworlds/backup*
+testworlds/log
+testworlds/next
