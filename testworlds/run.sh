@@ -37,7 +37,7 @@ then
 	  | sed --expression="s/failures: \([1-9][0-9]*\)/failures: ${COL_RED}\1${COL_END}/g" \
 	  )"
 
-	echo -ne "\007"
+	tput bel
 fi
 
 # Exit 1 if there are any failures.
