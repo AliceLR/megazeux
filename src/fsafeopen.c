@@ -357,6 +357,8 @@ int fsafetranslate(const char *path, char *newpath)
   }
   else
   {
+    // Replace the failed translation with the user-supplied path
+    strcpy(newpath, path);
     debug("%s:%d: failed to translate %s (err %d).\n",
      __FILE__, __LINE__, path, ret);
   }

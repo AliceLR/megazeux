@@ -27,6 +27,14 @@ build-stamp: configure-stamp
 	$(MAKE)
 	touch $@
 
+test: test-stamp
+test-stamp: build-stamp
+	dh_testdir
+	cp config.txt megazeux-config
+	$(MAKE) test
+	rm megazeux-config
+	touch test-stamp
+
 clean:
 	dh_testdir
 	dh_testroot
@@ -34,7 +42,7 @@ clean:
 	$(MAKE) distclean
 	dh_clean 
 
-install: build
+install: test
 	dh_testdir
 	dh_testroot
 	dh_clean -k 

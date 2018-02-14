@@ -13,6 +13,9 @@ USERS
 + Fixed a bug where interpolated expressions containing ternary
   operators could terminate counter names early.
 + Fixed faulty IF ANY compatibility behavior.
++ Fixed a bug where FWRITE functions could change the case of
+  user-defined filenames when creating new files on non-Windows
+  platforms.
 + SMZX mode 1 palettes are now exported correctly as 16 colors
   instead of as 256 colors.
 + Fixed subtly inconsistent timing in certain built-ins.
