@@ -9,10 +9,10 @@ MSYSTEM=$6
 . /etc/profile
 cd /mzx-build-workingdir/megazeux
 git fetch
-git checkout origin/$5
+git checkout $5
+git pull
 
 ./config.sh --platform $2 $3 --enable-release
-make clean
 make -j8 debuglink
 
 rm -rf build
@@ -27,3 +27,5 @@ mv build/dist/windows-$1/* /mzx-build-workingdir/zips/$4
 mkdir -p /mzx-build-workingdir/releases/$4
 rm -rf /mzx-build-workingdir/releases/$4/windows-$1
 mv build/windows-$1/ /mzx-build-workingdir/releases/$4/
+
+make distclean

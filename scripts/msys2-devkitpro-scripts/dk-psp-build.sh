@@ -18,9 +18,10 @@ cd megazeux
 git checkout $3
 
 arch/psp/CONFIG.PSP
-make clean
 make debuglink -j8
 make package
 make archive
 
 mv build/dist/psp/* /mzx-build-workingdir/zips/
+
+make distclean
