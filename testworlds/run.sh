@@ -4,14 +4,16 @@ cd "$(dirname "$0")"
 mkdir -p log
 
 # Force mzxrun to use the libraries in its directory instead of any installed libraries.
-
 export LD_LIBRARY_PATH=".."
 
-# Standalone mode will allow tests.mzx to terminate MZX and no_titlescreen mode
-# simplifies things. Use the software renderer because we don't care about video
-# output performance.
+# Coupled with the software renderer, this will disable video in MZX, speeding things up
+# and allowing for automated testing.
+export SDL_VIDEODRIVER=dummy
 
-SDL_VIDEODRIVER=dummy ../mzxrun \
+# Standalone mode will allow tests.mzx to terminate MZX and no_titlescreen mode
+# simplifies things.
+
+../mzxrun \
   video_output=software \
   standalone_mode=1 \
   no_titlescreen=1 \
