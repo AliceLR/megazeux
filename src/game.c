@@ -258,12 +258,14 @@ void set_caption(struct world *mzx_world, struct board *board,
     strcpy(caption, buffer);
   }
 
+#ifdef CONFIG_UPDATER
   if(mzx_world->conf.update_available)
   {
     snprintf(buffer, MAX_CAPTION_SIZE, "%s %s", caption,
      "*** UPDATES AVAILABLE ***");
     strcpy(caption, buffer);
   }
+#endif
 
 #ifdef CONFIG_FPS
   if(mzx_world->active && !editor && !robot && !board)

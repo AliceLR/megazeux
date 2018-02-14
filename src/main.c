@@ -150,21 +150,23 @@ __libspec int main(int argc, char *argv[])
 
   if(network_layer_init(&mzx_world.conf))
   {
+#ifdef CONFIG_UPDATER
     if(is_updater())
     {
-      // FIXME force disable the updater for probable repo builds
-      /*
-      if(!strcmp(VERSION, "GIT") &&
-       !strcmp(mzx_world.conf.update_branch_pin, "Stable"))
-        mzx_world.conf.update_auto_check = UPDATE_AUTO_CHECK_OFF;
-        */
+      if(updater_init(argc, argv))
+      {
+        // No auto update checks on repo builds.
+        if(!strcmp(VERSION, "GIT") &&
+         !strcmp(mzx_world.conf.update_branch_pin, "Stable"))
+          mzx_world.conf.update_auto_check = UPDATE_AUTO_CHECK_OFF;
 
-      if(!updater_init(argc, argv))
+        if(mzx_world.conf.update_auto_check)
+          check_for_updates(&mzx_world, &(mzx_world.conf), 1);
+      }
+      else
         info("Updater disabled.\n");
-
-      else if(mzx_world.conf.update_auto_check)
-        check_for_updates(&mzx_world, &(mzx_world.conf), 1);
     }
+#endif
   }
   else
     info("Network layer disabled.\n");
