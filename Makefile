@@ -321,7 +321,7 @@ help_check: ${hlp2txt} assets/help.fil
 	@diff --strip-trailing-cr -q docs/WIPHelp.txt help.txt
 	@rm -f help.txt
 
-test: ${mzxrun}
+test: mzx
 	@testworlds/run.sh
 
 endif
