@@ -11,10 +11,11 @@ export LD_LIBRARY_PATH=".."
 export SDL_VIDEODRIVER=dummy
 
 # Standalone mode will allow tests.mzx to terminate MZX and no_titlescreen mode
-# simplifies things.
+# simplifies things. Disable auto update checking to save time.
 
 ../mzxrun \
   video_output=software \
+  update_auto_check=off \
   standalone_mode=1 \
   no_titlescreen=1 \
   tests.mzx
