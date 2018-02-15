@@ -1346,7 +1346,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
 
   pal_update = false;
 
-  if(game && mzx_world->version >= 0x0208 &&
+  if(game && mzx_world->version >= V251s1 &&
    get_counter(mzx_world, "CURSORSTATE", 0))
   {
     // Turn on mouse
@@ -1685,7 +1685,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
       /* I can't imagine anything actually relied on this obtuse misbehavior
        * but it's good to version lock anyhow.
        */
-      if((mzx_world->version <= 0x0253) || mzx_world->bi_mesg_status)
+      if((mzx_world->version <= V283) || mzx_world->bi_mesg_status)
       {
         src_board->b_mesg_row = 24;
         src_board->b_mesg_col = -1;
@@ -2277,7 +2277,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
     // Has the game/world been saved from robotic?
     if(mzx_world->robotic_save_type == SAVE_GAME)
     {
-      save_world(mzx_world, mzx_world->robotic_save_path, 1, WORLD_VERSION);
+      save_world(mzx_world, mzx_world->robotic_save_path, 1, MZX_VERSION);
       mzx_world->robotic_save_type = SAVE_NONE;
     }
 
@@ -2308,13 +2308,13 @@ __editor_maybe_static void play_game(struct world *mzx_world)
       {
         keylbl[3] = key_char;
         send_robot_all_def(mzx_world, keylbl);
-        // In MZX versions <=2.70 key was a board counter
-        if(mzx_world->version <= 0x0249)
+        // In pre-port MZX versions key was a board counter
+        if(mzx_world->version < VPORT)
         {
           char keych = toupper(key_char);
           // <2.60 it only supported 1-9 and A-Z
-          if(mzx_world->version >= 0x0232 ||
-           (keych >= 'A' && keych <= 'Z') |
+          if(mzx_world->version >= V260 ||
+           (keych >= 'A' && keych <= 'Z') ||
            (keych >= '1' && keych <= '9'))
           {
             src_board->last_key = keych;
@@ -2327,7 +2327,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
 #ifdef CONFIG_HELPSYS
         case IKEY_F1:
         {
-          if(mzx_world->version < 0x0209 ||
+          if(mzx_world->version < V260 ||
            get_counter(mzx_world, "HELP_MENU", 0))
           {
             m_show();
@@ -2341,7 +2341,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
         case IKEY_F2:
         {
           // Settings
-          if(mzx_world->version < 0x0209 ||
+          if(mzx_world->version < V260 ||
            get_counter(mzx_world, "F2_MENU", 0) ||
            !mzx_world->active)
           {
@@ -2376,7 +2376,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
               {
                 strcpy(curr_sav, save_game);
                 // Save entire game
-                save_world(mzx_world, curr_sav, 1, WORLD_VERSION);
+                save_world(mzx_world, curr_sav, 1, MZX_VERSION);
               }
 
               update_event_status();
@@ -2391,7 +2391,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
           if(get_alt_status(keycode_internal))
             break;
 
-          if(mzx_world->version < 0x0252 ||
+          if(mzx_world->version < V282 ||
            get_counter(mzx_world, "LOAD_MENU", 0))
           {
             // Restore
@@ -2564,7 +2564,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
              SENSOR)))
             {
               // Save entire game
-              save_world(mzx_world, curr_sav, 1, WORLD_VERSION);
+              save_world(mzx_world, curr_sav, 1, MZX_VERSION);
             }
           }
           break;
@@ -2573,7 +2573,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
         // Quick load
         case IKEY_F10:
         {
-          if(mzx_world->version < 0x0252 ||
+          if(mzx_world->version < V282 ||
            get_counter(mzx_world, "LOAD_MENU", 0))
           {
             struct stat file_info;
@@ -2634,7 +2634,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
           if(key_status != 1)
             break;
 
-          if(mzx_world->version < 0x0209 || enter_menu_status)
+          if(mzx_world->version < V260 || enter_menu_status)
           {
             int key, status;
             save_screen();
@@ -2681,7 +2681,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
           int escape_menu_status =
            get_counter(mzx_world, "ESCAPE_MENU", 0);
 
-          if(mzx_world->version < 0x025A || escape_menu_status)
+          if(mzx_world->version < V290 || escape_menu_status)
           {
             if(key_status == 1)
             {
@@ -3287,7 +3287,7 @@ void title_screen(struct world *mzx_world)
           
           // Escape menu only works on the title screen if the
           // standalone_mode config option is set
-          if(mzx_world->version < 0x025A || escape_menu_status ||
+          if(mzx_world->version < V290 || escape_menu_status ||
            !conf->standalone_mode)
           {
             if(key_status == 1)

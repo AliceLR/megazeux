@@ -364,7 +364,7 @@ enum val_result validate_legacy_world_file(const char *file,
     if(!v)
       goto err_invalid;
 
-    else if (v > WORLD_LEGACY_FORMAT_VERSION)
+    else if(v > MZX_LEGACY_FORMAT_VERSION)
     {
       error_message(E_SAVE_VERSION_TOO_RECENT, v, NULL);
       result = VAL_VERSION;
@@ -373,8 +373,8 @@ enum val_result validate_legacy_world_file(const char *file,
 
     // This enables 2.84 save loading.
     // If we ever want to remove this, change this check.
-    //else if (v < WORLD_VERSION)
-    else if (v < WORLD_LEGACY_FORMAT_VERSION)
+    //else if (v < MZX_VERSION)
+    else if(v < MZX_LEGACY_FORMAT_VERSION)
     {
       error_message(E_SAVE_VERSION_OLD, v, NULL);
       result = VAL_VERSION;
@@ -520,13 +520,14 @@ enum val_result validate_legacy_world_file(const char *file,
     if(v == 0)
       goto err_invalid;
 
-    else if (v < 0x0205)
+    else if(v < V251)
     {
       error_message(E_WORLD_FILE_VERSION_OLD, v, NULL);
       result = VAL_VERSION;
       goto err_close;
     }
-    else if (v > WORLD_LEGACY_FORMAT_VERSION)
+
+    else if(v > MZX_LEGACY_FORMAT_VERSION)
     {
       error_message(E_WORLD_FILE_VERSION_TOO_RECENT, v, NULL);
       result = VAL_VERSION;
@@ -559,7 +560,7 @@ enum val_result validate_legacy_world_file(const char *file,
     int sfx_size = fgetw(f);
     int sfx_off = ftell(f);
 
-    for (i = 0; i < NUM_SFX; i++)
+    for(i = 0; i < NUM_SFX; i++)
     {
       if(fseek(f, fgetc(f), SEEK_CUR))
         break;

@@ -29,8 +29,9 @@
 #include "legacy_rasm.h"
 #include "rasm.h"
 #include "robot.h"
-#include "world_struct.h"
 #include "util.h"
+#include "world.h"
+#include "world_struct.h"
 
 
 struct robot *legacy_load_robot_allocate(struct world *mzx_world, FILE *fp,
@@ -107,7 +108,7 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
   // Skip local - these are in the save files now
   bufferPtr += 2;
   cur_robot->used = mem_getc(&bufferPtr);
-  if(version <= 0x0253)
+  if(version <= V283)
     cur_robot->loop_count = mem_getw(&bufferPtr);
   else
     bufferPtr += 2;
@@ -121,7 +122,7 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
   {
     int stack_size;
 
-    if(version >= 0x0254)
+    if(version >= V284)
       cur_robot->loop_count = mem_getd(&bufferPtr);
 
     for(i = 0; i < 32; i++)
@@ -332,7 +333,7 @@ size_t legacy_calculate_partial_robot_size(int savegame, int version)
 
   if(savegame)
   {
-    if(version >= 0x0254)
+    if(version >= V284)
       partial_robot_size += 4; // loopcount
     partial_robot_size += 32 * 4; // 32 local counters
     partial_robot_size += 2 * 4; // stack size and position
@@ -366,7 +367,7 @@ size_t legacy_load_robot_calculate_size(const void *buffer, int savegame,
   if(savegame)
   {
     bufferPtr = (unsigned char *)buffer + 41;
-    if(version >= 0x0254) bufferPtr += 4; // Skip over loopcount
+    if(version >= V284) bufferPtr += 4; // Skip over loopcount
     bufferPtr += 32 * 4; // Skip over 32 local counters
     stack_size = mem_getd(&bufferPtr);
   }
@@ -375,7 +376,7 @@ size_t legacy_load_robot_calculate_size(const void *buffer, int savegame,
   robot_size = 41;
   if(savegame)
   {
-    if(version >= 0x0254) robot_size += 4;
+    if(version >= V284) robot_size += 4;
     robot_size += 32 * 4 + 2 * 4 + stack_size * 4;
   }
   robot_size += program_length;

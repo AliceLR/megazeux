@@ -82,7 +82,7 @@ size_t legacy_save_robot_calculate_size(struct world *mzx_world,
 
   if(savegame)
   {
-    if(version >= 0x0254)
+    if(version >= V284)
       robot_size += 4; // 4 bytes added for loopcount
     robot_size += 4 * 32; // 32 local counters
     robot_size += 4; // stack size
@@ -166,7 +166,7 @@ void legacy_save_robot_to_memory(struct robot *cur_robot, void *buffer, int save
   mem_putw(0, &bufferPtr);
   mem_putc(cur_robot->used, &bufferPtr);
   // loop_count
-  if(version <= 0x0253)
+  if(version <= V283)
     mem_putw(cur_robot->loop_count, &bufferPtr);
   else // junk
     mem_putw(0, &bufferPtr);
@@ -177,7 +177,7 @@ void legacy_save_robot_to_memory(struct robot *cur_robot, void *buffer, int save
     int stack_size = cur_robot->stack_size;
 
     // Write the local counters
-    if(version >= 0x0254)
+    if(version >= V284)
       mem_putd(cur_robot->loop_count, &bufferPtr);
 
     for(i = 0; i < 32; i++)
@@ -479,7 +479,7 @@ static inline void legacy_save_string(FILE *fp, struct string *src_string)
 
 int legacy_save_world(struct world *mzx_world, const char *file, int savegame)
 {
-  int file_version = WORLD_LEGACY_FORMAT_VERSION;
+  int file_version = MZX_LEGACY_FORMAT_VERSION;
 
   int i, num_boards;
   int gl_rob_position, gl_rob_save_position;

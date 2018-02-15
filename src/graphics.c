@@ -194,13 +194,13 @@ Sint32 ec_load_set_var(char *name, Uint16 pos, int version)
   Uint32 size = CHARSET_SIZE;
   FILE *fp = fopen_unsafe(name, "rb");
   Uint32 maxChars = PROTECTED_CHARSET_POSITION;
-  if (version < 0x025A) maxChars = 256; // Prior to 2.90
+  if(version < V290) maxChars = 256; // Prior to 2.90
 
   if(!fp)
     return -1;
   
   size = ftell_and_rewind(fp) / CHAR_SIZE;
-  if (size + pos >= 256 && maxChars > 256 && !layer_renderer_check(true))
+  if(size + pos >= 256 && maxChars > 256 && !layer_renderer_check(true))
     maxChars = 256;
   
   if(size + pos > maxChars)
@@ -241,7 +241,7 @@ void ec_mem_load_set_var(char *chars, size_t len, Uint16 pos, int version)
   Uint32 offset = pos * CHAR_SIZE;
   Uint32 size;
   Uint32 maxChars = PROTECTED_CHARSET_POSITION;
-  if(version < 0x025A) maxChars = 256; // Prior to 2.90
+  if(version < V290) maxChars = 256; // Prior to 2.90
   if(len + offset > 256 * CHAR_SIZE && !layer_renderer_check(true))
     maxChars = 256;
 

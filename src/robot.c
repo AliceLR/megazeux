@@ -861,7 +861,7 @@ struct label **cache_robot_labels(struct robot *robot, int *num_labels)
       else
       {
         //compatibility fix for 2.80 to 2.83
-        if (robot->world_version >= 0x0250 && robot->world_version <= 0x0253)
+        if(robot->world_version >= V280 && robot->world_version <= V283)
           current_label->position = next + 1;
         else
           current_label->position = i;
@@ -1313,7 +1313,7 @@ int send_robot_id_def(struct world *mzx_world, int robot_id, const char *mesg,
   int result = send_robot_id(mzx_world, robot_id, mesg, ignore_lock), subresult;
 
   //now, attempt to send the subroutine version of it
-  if(mzx_world->version >= 0x0254)
+  if(mzx_world->version >= V284)
   {
     strcpy(submesg, "#");
     strncat(submesg, mesg, ROBOT_MAX_TR - 2);
@@ -1330,7 +1330,7 @@ void send_robot_all_def(struct world *mzx_world, const char *mesg)
   send_robot_all(mzx_world, mesg, 0);
 
   //now, attempt to send the subroutine version of it
-  if(mzx_world->version >= 0x0254)
+  if(mzx_world->version >= V284)
   {
     strcpy(submesg, "#");
     strncat(submesg, mesg, ROBOT_MAX_TR - 2);
@@ -1801,7 +1801,7 @@ static int send_robot_direct(struct world *mzx_world, struct robot *cur_robot,
           return_position = robot_position;
 
           // 2.90+: we want the pos_within_line too.
-          if(cur_robot->world_version >= 0x025A)
+          if(cur_robot->world_version >= V290)
             return_position_in_line = cur_robot->pos_within_line;
 
           if(send_self)
@@ -3376,13 +3376,16 @@ void duplicate_robot_direct(struct world *mzx_world, struct robot *cur_robot,
 #endif
   }
 
-  if (preserve_state && mzx_world->version < 0x0250) {
-    // Prior to 2.80, copy and copy block preserved the current robot state
+  if(preserve_state && mzx_world->version < VPORT)
+  {
+    // In DOS versions, copy and copy block preserved the current robot state
     // Therefore leave all robot vars alone and copy the stack over
     size_t stack_capacity = copy_robot->stack_size * sizeof(int);
     copy_robot->stack = cmalloc(stack_capacity);
     memcpy(copy_robot->stack, cur_robot->stack, stack_capacity);
-  } else {
+  }
+  else
+  {
     // Give the robot an empty stack.
     copy_robot->stack = NULL;
     copy_robot->stack_size = 0;
