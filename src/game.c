@@ -2313,7 +2313,8 @@ __editor_maybe_static void play_game(struct world *mzx_world)
         {
           char keych = toupper(key_char);
           // <2.60 it only supported 1-9 and A-Z
-          if(mzx_world->version >= V260 ||
+          // This is difficult to version check, so apply it to <2.62
+          if(mzx_world->version >= V262 ||
            (keych >= 'A' && keych <= 'Z') ||
            (keych >= '1' && keych <= '9'))
           {
