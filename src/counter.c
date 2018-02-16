@@ -3242,7 +3242,7 @@ static int score_gateway(struct world *mzx_world, struct counter *counter,
  const char *name, int value, int id)
 {
   // Protection for score < 0, as per the behavior in DOS MZX.
-  if((value < 0) && (mzx_world->version <= 0x249))
+  if((value < 0) && (mzx_world->version < VPORT))
     return 0;
 
   return value;

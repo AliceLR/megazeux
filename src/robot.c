@@ -2308,7 +2308,7 @@ int parse_param(struct world *mzx_world, char *program, int id)
   }
 
   // Expressions - Exo
-  if((program[1] == '(') && mzx_world->version >= 0x244)
+  if((program[1] == '(') && mzx_world->version >= V268)
   {
     char *e_ptr = program + 2;
     int val, error;
@@ -2977,7 +2977,7 @@ char *tr_msg_ext(struct world *mzx_world, char *mesg, int id, char *buffer,
   {
     current_char = *src_ptr;
 
-    if((current_char == '(') && (mzx_world->version >= 0x244))
+    if((current_char == '(') && (mzx_world->version >= V268))
     {
       src_ptr++;
       old_ptr = src_ptr;
@@ -3018,7 +3018,7 @@ char *tr_msg_ext(struct world *mzx_world, char *mesg, int id, char *buffer,
 
         while(current_char)
         {
-          if(current_char == '(' && (mzx_world->version >= 0x244))
+          if(current_char == '(' && (mzx_world->version >= V268))
           {
             src_ptr++;
             val = parse_expression(mzx_world, &src_ptr, &error, id);

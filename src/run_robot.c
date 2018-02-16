@@ -1903,8 +1903,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             char *p4 = next_param_pos(p3);
             gotoed = send_self_label_tr(mzx_world,  p4 + 1, id);
 
-            // 2.80 through 2.84 allowed this to iterate the entire board.
-            if(mzx_world->version < 0x250 || mzx_world->version > 0x254)
+            // The port up through 2.84 allowed this to iterate the entire board.
+            if(mzx_world->version < VPORT || mzx_world->version > V284)
               break;
           }
         }
