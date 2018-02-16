@@ -439,7 +439,7 @@ static int board_color_read(struct world *mzx_world,
   unsigned int offset = get_board_x_board_y_offset(mzx_world, id);
   int ignore_under = 1;
 
-  if((mzx_world->version >= 0x0250) && (mzx_world->version <= 0x0253))
+  if((mzx_world->version >= V280) && (mzx_world->version <= V283))
     ignore_under = 0;
 
   return get_id_board_color(mzx_world->current_board, offset, ignore_under);
@@ -810,7 +810,7 @@ static void spr_ccheck_write(struct world *mzx_world,
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   struct sprite *cur_sprite = mzx_world->sprite_list[spr_num];
 
-  if (mzx_world->version < 0x025A)
+  if(mzx_world->version < V290)
   {  // Old (somewhat dodgy) behaviour tied to <2.90
     value %= 3;
     switch(value)
@@ -861,7 +861,7 @@ static void spr_cx_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
-  if (mzx_world->version < 0x025A) // Before 2.90 these fields were chars.
+  if(mzx_world->version < V290) // Before 2.90 these fields were chars.
     value = (signed char) value;
   (mzx_world->sprite_list[spr_num])->col_x = value;
 }
@@ -870,7 +870,7 @@ static void spr_cy_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
-  if (mzx_world->version < 0x025A) // Before 2.90 these fields were chars.
+  if(mzx_world->version < V290) // Before 2.90 these fields were chars.
     value = (signed char) value;
   (mzx_world->sprite_list[spr_num])->col_y = value;
 }
@@ -886,7 +886,7 @@ static void spr_offset_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
-  if (layer_renderer_check(true))
+  if(layer_renderer_check(true))
     (mzx_world->sprite_list[spr_num])->offset = value;
 }
 
@@ -894,7 +894,8 @@ static void spr_unbound_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
-  if (layer_renderer_check(true)) {
+  if(layer_renderer_check(true))
+  {
     (mzx_world->sprite_list[spr_num])->flags &= ~SPRITE_UNBOUND;
     (mzx_world->sprite_list[spr_num])->flags |= value ? SPRITE_UNBOUND : 0;
   }
@@ -904,7 +905,7 @@ static void spr_height_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
-  if (mzx_world->version < 0x025A) // Before 2.90 these fields were chars.
+  if(mzx_world->version < V290) // Before 2.90 these fields were chars.
     value = (char) value;
   (mzx_world->sprite_list[spr_num])->height = value;
 }
@@ -913,7 +914,7 @@ static void spr_width_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
-  if (mzx_world->version < 0x025A) // Before 2.90 these fields were chars.
+  if(mzx_world->version < V290) // Before 2.90 these fields were chars.
     value = (char) value;
   (mzx_world->sprite_list[spr_num])->width = value;
 }
@@ -1010,7 +1011,7 @@ static void spr_cwidth_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
-  if (mzx_world->version < 0x025A) // Before 2.90 these fields were chars.
+  if(mzx_world->version < V290) // Before 2.90 these fields were chars.
     value = (char) value;
   (mzx_world->sprite_list[spr_num])->col_width = value;
 }
@@ -1019,7 +1020,7 @@ static void spr_cheight_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
-  if (mzx_world->version < 0x025A) // Before 2.90 these fields were chars.
+  if(mzx_world->version < V290) // Before 2.90 these fields were chars.
     value = (char) value;
   (mzx_world->sprite_list[spr_num])->col_height = value;
 }
@@ -1034,12 +1035,15 @@ static void spr_setview_write(struct world *mzx_world,
   src_board->scroll_x = 0;
   src_board->scroll_y = 0;
   calculate_xytop(mzx_world, &n_scroll_x, &n_scroll_y);
-  if (cur_sprite->flags & SPRITE_UNBOUND) {
+  if(cur_sprite->flags & SPRITE_UNBOUND)
+  {
     src_board->scroll_x = ((cur_sprite->x + (signed)cur_sprite->width * 4
      - src_board->viewport_width * 4) - n_scroll_x * 8) / 8;
     src_board->scroll_y = ((cur_sprite->y + (signed)cur_sprite->height * 7
      - src_board->viewport_height * 7) - n_scroll_x * 14) / 14;
-  } else {
+  }
+  else
+  {
     src_board->scroll_x =
     (cur_sprite->x + (cur_sprite->width >> 1)) -
     (src_board->viewport_width >> 1) - n_scroll_x;
@@ -1090,8 +1094,8 @@ static void input_write(struct world *mzx_world,
 static int key_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  // In versions <=2.70 key was a board counter
-  if (mzx_world->version <= 0x0249)
+  // In DOS versions key was a board counter
+  if(mzx_world->version < VERSION_PORT)
   {
     return mzx_world->current_board->last_key;
   }
@@ -1101,8 +1105,8 @@ static int key_read(struct world *mzx_world,
 static void key_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
-  // In versions <=2.70 key was a board counter
-  if (mzx_world->version <= 0x0249)
+  // In DOS versions key was a board counter
+  if(mzx_world->version < VERSION_PORT)
   {
     mzx_world->current_board->last_key = CLAMP(value, 0, 255);
   }
@@ -1127,7 +1131,7 @@ static int key_pressed_read(struct world *mzx_world,
 {
   // In 2.82X through 2.84X, this erroneously applied
   // numlock translations to the keycode.
-  if(mzx_world->version >= 0x0252 && mzx_world->version <= 0x0254)
+  if(mzx_world->version >= V282 && mzx_world->version <= V284)
     return get_key(keycode_internal_wrt_numlock);
 
   return get_key(keycode_internal);
@@ -1553,7 +1557,7 @@ static int char_byte_read(struct world *mzx_world,
   Uint16 char_num = get_counter(mzx_world, "CHAR", id);
 
   // Prior to 2.90 char params are clipped
-  if (mzx_world->version < 0x025A) char_num &= 0xFF;
+  if(mzx_world->version < V290) char_num &= 0xFF;
   
   return ec_read_byte(char_num,
    get_counter(mzx_world, "BYTE", id));
@@ -1565,8 +1569,8 @@ static void char_byte_write(struct world *mzx_world,
   Uint16 char_num = get_counter(mzx_world, "CHAR", id);
 
   // Prior to 2.90 char params are clipped
-  if (mzx_world->version < 0x025A) char_num &= 0xFF;
-  if (char_num > 0xFF && !layer_renderer_check(true)) return;
+  if(mzx_world->version < V290) char_num &= 0xFF;
+  if(char_num > 0xFF && !layer_renderer_check(true)) return;
 
   ec_change_byte(char_num,
    get_counter(mzx_world, "BYTE", id), value);
@@ -1852,7 +1856,7 @@ static int fread_counter_read(struct world *mzx_world,
 {
   if(!mzx_world->input_is_dir && mzx_world->input_file)
   {
-    if(mzx_world->version < 0x0252)
+    if(mzx_world->version < V282)
       return fgetw(mzx_world->input_file);
     else
       return fgetd(mzx_world->input_file);
@@ -1933,7 +1937,7 @@ static void fwrite_counter_write(struct world *mzx_world,
 {
   if(mzx_world->output_file)
   {
-    if(mzx_world->version < 0x0252)
+    if(mzx_world->version < V282)
       fputw(value, mzx_world->output_file);
     else
       fputd(value, mzx_world->output_file);
@@ -2059,7 +2063,7 @@ static void vlayer_size_write(struct world *mzx_world,
     }
     else
 
-    if(old_size < value && mzx_world->version >= 0x025B)
+    if(old_size < value && mzx_world->version >= V291)
     {
       // Clear new vlayer area (2.91+)
       memset(mzx_world->vlayer_chars + old_size, 32, value - old_size);
@@ -2082,7 +2086,7 @@ static void vlayer_height_write(struct world *mzx_world,
   new_width = mzx_world->vlayer_size / value;
   new_height = value;
 
-  if(mzx_world->version >= 0x025B)
+  if(mzx_world->version >= V291)
   {
     // Manipulate vlayer data so its contents change little as possible (2.91+)
     remap_vlayer(mzx_world, new_width, new_height);
@@ -2108,7 +2112,7 @@ static void vlayer_width_write(struct world *mzx_world,
   new_width = value;
   new_height = mzx_world->vlayer_size / value;
 
-  if(mzx_world->version >= 0x025B)
+  if(mzx_world->version >= V291)
   {
     // Manipulate vlayer data so its contents change little as possible (2.91+)
     remap_vlayer(mzx_world, new_width, new_height);
@@ -2136,34 +2140,34 @@ static int buttons_read(struct world *mzx_world,
    * second bit and middle the third, we'll map every button.
    */
 
-  if (raw_status & MOUSE_BUTTON(MOUSE_BUTTON_LEFT))
+  if(raw_status & MOUSE_BUTTON(MOUSE_BUTTON_LEFT))
     buttons_formatted |= MOUSE_BUTTON(1);
 
-  if (raw_status & MOUSE_BUTTON(MOUSE_BUTTON_RIGHT))
+  if(raw_status & MOUSE_BUTTON(MOUSE_BUTTON_RIGHT))
     buttons_formatted |= MOUSE_BUTTON(2);
 
-  if (raw_status & MOUSE_BUTTON(MOUSE_BUTTON_MIDDLE))
+  if(raw_status & MOUSE_BUTTON(MOUSE_BUTTON_MIDDLE))
     buttons_formatted |= MOUSE_BUTTON(3);
 
   // For 2.90+, also map the wheel and side buttons
-  if( mzx_world->version >= 0x025A )
+  if(mzx_world->version >= V290)
   {
-    if (raw_status_ext == MOUSE_BUTTON_WHEELUP)
+    if(raw_status_ext == MOUSE_BUTTON_WHEELUP)
       buttons_formatted |= MOUSE_BUTTON(4);
 
-    if (raw_status_ext == MOUSE_BUTTON_WHEELDOWN)
+    if(raw_status_ext == MOUSE_BUTTON_WHEELDOWN)
       buttons_formatted |= MOUSE_BUTTON(5);
 
-    if (raw_status_ext == MOUSE_BUTTON_WHEELLEFT)
+    if(raw_status_ext == MOUSE_BUTTON_WHEELLEFT)
       buttons_formatted |= MOUSE_BUTTON(6);
 
-    if (raw_status_ext == MOUSE_BUTTON_WHEELRIGHT)
+    if(raw_status_ext == MOUSE_BUTTON_WHEELRIGHT)
       buttons_formatted |= MOUSE_BUTTON(7);
 
-    if (raw_status & MOUSE_BUTTON(MOUSE_BUTTON_X1))
+    if(raw_status & MOUSE_BUTTON(MOUSE_BUTTON_X1))
       buttons_formatted |= MOUSE_BUTTON(8);
 
-    if (raw_status & MOUSE_BUTTON(MOUSE_BUTTON_X2))
+    if(raw_status & MOUSE_BUTTON(MOUSE_BUTTON_X2))
       buttons_formatted |= MOUSE_BUTTON(9);
   }
 
@@ -2363,166 +2367,168 @@ static void max_samples_write(struct world *mzx_world,
  *       in these versions. This is unfortunately not fixable.
  */
 
+#define ALL VERSION_ALL
+
 static const struct function_counter builtin_counters[] =
 {
-  { "$*", 0x023E, string_counter_read, string_counter_write },       // 2.62
-  { "abs!", 0x0244, abs_read, NULL },                                // 2.68
-  { "acos!", 0x0244, acos_read, NULL },                              // 2.68
-  { "arctan!,!", 0x0254, atan2_read, NULL },                         // 2.84
-  { "asin!", 0x0244, asin_read, NULL },                              // 2.68
-  { "atan!", 0x0244, atan_read, NULL },                              // 2.68
-  { "bch!,!", 0x0254, bch_read, NULL },                              // 2.84
-  { "bco!,!", 0x0254, bco_read, NULL },                              // 2.84
-  { "bid!,!", 0x0254, bid_read, bid_write },                         // 2.84
-  { "bimesg", 0x0209, NULL, bimesg_write },                          // 2.51s3.2
-  { "blue_value", 0x0209, blue_value_read, blue_value_write },       // 2.60
-  { "board_char", 0x0209, board_char_read, NULL },                   // 2.60
-  { "board_color", 0x0209, board_color_read, NULL },                 // 2.60
-  { "board_h", 0x0241, board_h_read, NULL },                         // 2.65
-  { "board_id", 0x0241, board_id_read, board_id_write },             // 2.65
-  { "board_param", 0x0241, board_param_read, board_param_write },    // 2.65
-  { "board_w", 0x0241, board_w_read, NULL },                         // 2.65
-  { "bpr!,!", 0x0254, bpr_read, bpr_write },                         // 2.84
-  { "bullettype", 0, bullettype_read, bullettype_write },            // <=2.51
-  { "buttons", 0x0208, buttons_read, NULL },                         // 2.51s1
-  { "char_byte", 0x0209, char_byte_read, char_byte_write },          // 2.60
-  { "commands", 0x0209, commands_read, commands_write },             // 2.60
-  { "commands_stop", 0x025A, commands_stop_read, commands_stop_write },// 2.90
-  { "cos!", 0x0244, cos_read, NULL },                                // 2.68
-  { "c_divisions", 0x0244, c_divisions_read, c_divisions_write },    // 2.68
-  { "date_day", 0x0209, date_day_read, NULL },                       // 2.60
-  { "date_month", 0x0209, date_month_read, NULL },                   // 2.60
-  { "date_year", 0x0209, date_year_read, NULL },                     // 2.60
-  { "divider", 0x0244, divider_read, divider_write },                // 2.68
-  { "exit_game", 0x025A, NULL, exit_game_write },                    // 2.90
-  { "fread", 0x0209, fread_read, NULL },                             // 2.60
-  { "fread_counter", 0x0241, fread_counter_read, NULL },             // 2.65
-  { "fread_delimiter", 0x0254, NULL, fread_delim_write },            // 2.84
-  { "fread_open", 0x0209, fread_open_read, NULL },                   // 2.60
-  { "fread_pos", 0x0209, fread_pos_read, fread_pos_write },          // 2.60
-  { "fwrite", 0x0209, NULL, fwrite_write },                          // 2.60
-  { "fwrite_append", 0x0209, fwrite_append_read, NULL },             // 2.60
-  { "fwrite_counter", 0x0241, NULL, fwrite_counter_write },          // 2.65
-  { "fwrite_delimiter", 0x0254, NULL, fwrite_delim_write },          // 2.84
-  { "fwrite_modify", 0x0248, fwrite_modify_read, NULL },             // 2.69c
-  { "fwrite_open", 0x0209, fwrite_open_read, NULL },                 // 2.60
-  { "fwrite_pos", 0x0209, fwrite_pos_read, fwrite_pos_write },       // 2.60
-  { "goop_walk", 0x025A, goop_walk_read, goop_walk_write },          // 2.90
-  { "green_value", 0x0209, green_value_read, green_value_write },    // 2.60
-  { "horizpld", 0, horizpld_read, NULL },                            // <=2.51
-  { "input", 0, input_read, input_write },                           // <=2.51
-  { "inputsize", 0, inputsize_read, inputsize_write },               // <=2.51
-  { "int2bin", 0x0209, int2bin_read, int2bin_write },                // 2.60
-  { "key", 0, key_read, key_write },                                 // <=2.51
-  { "key?", 0x0245, keyn_read, NULL },                               // 2.69
-  { "key_code", 0x0245, key_code_read, NULL },                       // 2.69
-  { "key_pressed", 0x0209, key_pressed_read, NULL },                 // 2.60
-  { "key_release", 0x0245, key_release_read, NULL },                 // 2.69
-  { "lava_walk", 0x0209, lava_walk_read, lava_walk_write },          // 2.60
-  { "load_bc?", 0x0249, load_bc_read, NULL },                        // 2.70
-  { "load_counters", 0x025A, load_counters_read, NULL },             // 2.90
-  { "load_game", 0x0244, load_game_read, NULL },                     // 2.68
-  { "load_robot?", 0x0249, load_robot_read, NULL },                  // 2.70
+  { "$*",               V262,   string_counter_read,  string_counter_write },
+  { "abs!",             V268,   abs_read,             NULL },
+  { "acos!",            V268,   acos_read,            NULL },
+  { "arctan!,!",        V284,   atan2_read,           NULL },
+  { "asin!",            V268,   asin_read,            NULL },
+  { "atan!",            V268,   atan_read,            NULL },
+  { "bch!,!",           V284,   bch_read,             NULL },
+  { "bco!,!",           V284,   bco_read,             NULL },
+  { "bid!,!",           V284,   bid_read,             bid_write },
+  { "bimesg",           V251s3, NULL,                 bimesg_write }, // s3.2
+  { "blue_value",       V260,   blue_value_read,      blue_value_write },
+  { "board_char",       V260,   board_char_read,      NULL },
+  { "board_color",      V260,   board_color_read,     NULL },
+  { "board_h",          V265,   board_h_read,         NULL },
+  { "board_id",         V265,   board_id_read,        board_id_write },
+  { "board_param",      V265,   board_param_read,     board_param_write },
+  { "board_w",          V265,   board_w_read,         NULL },
+  { "bpr!,!",           V284,   bpr_read,             bpr_write },
+  { "bullettype",       ALL,    bullettype_read,      bullettype_write },
+  { "buttons",          V251s1, buttons_read,         NULL },
+  { "char_byte",        V260,   char_byte_read,       char_byte_write },
+  { "commands",         V260,   commands_read,        commands_write },
+  { "commands_stop",    V290,   commands_stop_read,   commands_stop_write },
+  { "cos!",             V268,   cos_read,             NULL },
+  { "c_divisions",      V268,   c_divisions_read,     c_divisions_write },
+  { "date_day",         V260,   date_day_read,        NULL },
+  { "date_month",       V260,   date_month_read,      NULL },
+  { "date_year",        V260,   date_year_read,       NULL },
+  { "divider",          V268,   divider_read,         divider_write },
+  { "exit_game",        V290,   NULL,                 exit_game_write },
+  { "fread",            V260,   fread_read,           NULL },
+  { "fread_counter",    V265,   fread_counter_read,   NULL },
+  { "fread_delimiter",  V284,   NULL,                 fread_delim_write },
+  { "fread_open",       V260,   fread_open_read,      NULL },
+  { "fread_pos",        V260,   fread_pos_read,       fread_pos_write },
+  { "fwrite",           V260,   NULL,                 fwrite_write },
+  { "fwrite_append",    V260,   fwrite_append_read,   NULL },
+  { "fwrite_counter",   V265,   NULL,                 fwrite_counter_write },
+  { "fwrite_delimiter", V284,   NULL,                 fwrite_delim_write },
+  { "fwrite_modify",    V269c,  fwrite_modify_read,   NULL },
+  { "fwrite_open",      V260,   fwrite_open_read,     NULL },
+  { "fwrite_pos",       V260,   fwrite_pos_read,      fwrite_pos_write },
+  { "goop_walk",        V290,   goop_walk_read,       goop_walk_write },
+  { "green_value",      V260,   green_value_read,     green_value_write },
+  { "horizpld",         ALL,    horizpld_read,        NULL },
+  { "input",            ALL,    input_read,           input_write },
+  { "inputsize",        ALL,    inputsize_read,       inputsize_write },
+  { "int2bin",          V260,   int2bin_read,         int2bin_write },
+  { "key",              ALL,    key_read,             key_write },
+  { "key?",             V269,   keyn_read,            NULL },
+  { "key_code",         V269,   key_code_read,        NULL },
+  { "key_pressed",      V260,   key_pressed_read,     NULL },
+  { "key_release",      V269,   key_release_read,     NULL },
+  { "lava_walk",        V260,   lava_walk_read,       lava_walk_write },
+  { "load_bc?",         V270,   load_bc_read,         NULL },
+  { "load_counters",    V290,   load_counters_read,   NULL },
+  { "load_game",        V268,   load_game_read,       NULL },
+  { "load_robot?",      V270,   load_robot_read,      NULL },
 #ifdef CONFIG_DEBYTECODE
-  { "load_source_file?", 0x0300, load_source_file_read, NULL },      // Debytecode
+  { "load_source_file?", VERSION_SOURCE, load_source_file_read, NULL },
 #endif
-  { "local?", 0x0208, local_read, local_write },                     // 2.51s1
-  { "loopcount", 0, loopcount_read, loopcount_write },               // <=2.51
-  { "max!,!", 0x0254, maxval_read, NULL },                           // 2.84
-  { "max_samples", 0x025B, max_samples_read, max_samples_write },    // 2.91
-  { "mboardx", 0x0208, mboardx_read, NULL },                         // 2.51s1
-  { "mboardy", 0x0208, mboardy_read, NULL },                         // 2.51s1
-  { "min!,!", 0x0254, minval_read, NULL },                           // 2.84
-  { "mod_frequency", 0x0251, mod_freq_read, mod_freq_write },        // 2.81
-  { "mod_length", 0x025B, mod_length_read, NULL },                   // 2.91
-  { "mod_order", 0x023E, mod_order_read, mod_order_write },          // 2.62
-  { "mod_position", 0x0251, mod_position_read, mod_position_write }, // 2.81
-  { "mousepx", 0x0252, mousepx_read, mousepx_write },                // 2.82
-  { "mousepy", 0x0252, mousepy_read, mousepy_write },                // 2.82
-  { "mousex", 0x0208, mousex_read, mousex_write },                   // 2.51s1
-  { "mousey", 0x0208, mousey_read, mousey_write },                   // 2.51s1
-  { "multiplier", 0x0244, multiplier_read, multiplier_write },       // 2.68
-  { "mzx_speed", 0x0209, mzx_speed_read, mzx_speed_write },          // 2.60
-  { "och!,!", 0x0254, och_read, NULL },                              // 2.84
-  { "oco!,!", 0x0254, oco_read, NULL },                              // 2.84
-  { "overlay_char", 0x0209, overlay_char_read, NULL },               // 2.60
-  { "overlay_color", 0x0209, overlay_color_read, NULL },             // 2.60
-  { "overlay_mode", 0x0209, overlay_mode_read, NULL },               // 2.60
-  { "pixel", 0x0209, pixel_read, pixel_write },                      // 2.60
-  { "playerdist", 0, playerdist_read, NULL },                        // <=2.51
-  { "playerfacedir", 0, playerfacedir_read, playerfacedir_write },   // <=2.51
-  { "playerlastdir", 0, playerlastdir_read, playerlastdir_write },   // <=2.51
-  { "playerx", 0x0208, playerx_read, NULL },                         // 2.51s1
-  { "playery", 0x0208, playery_read, NULL },                         // 2.51s1
-  { "play_game", 0x025A, NULL, play_game_write },                    // 2.90
-  { "r!.*", 0x0241, r_read, r_write },                               // 2.65
-  { "random_seed!", 0x025B, random_seed_read, random_seed_write },   // 2.91
-  { "red_value", 0x0209, red_value_read, red_value_write },          // 2.60
-  { "rid*", 0x0246, rid_read, NULL },                                // 2.69b
-  { "robot_id", 0x0209, robot_id_read, NULL },                       // 2.60
-  { "robot_id_*", 0x0241, robot_id_n_read, NULL },                   // 2.65
-  { "save_bc?", 0x0249, save_bc_read, NULL },                        // 2.70
-  { "save_counters", 0x025A, save_counters_read, NULL},              // 2.90
-  { "save_game", 0x0244, save_game_read, NULL },                     // 2.68
-  { "save_robot?", 0x0249, save_robot_read, NULL },                  // 2.70
-  { "scrolledx", 0x0208, scrolledx_read, NULL },                     // 2.51s1
-  { "scrolledy", 0x0208, scrolledy_read, NULL },                     // 2.51s1
-  { "sin!", 0x0244, sin_read, NULL },                                // 2.68
-  { "smzx_b!", 0x0245, smzx_b_read, smzx_b_write },                  // 2.69
-  { "smzx_g!", 0x0245, smzx_g_read, smzx_g_write },                  // 2.69
-  { "smzx_idx!,!", 0x025A, smzx_idx_read, smzx_idx_write },          // 2.90
-  { "smzx_indices", 0x025B, smzx_indices_read, NULL },               // 2.91
-  { "smzx_message", 0x025B, smzx_message_read, smzx_message_write }, // 2.91
-  { "smzx_mode", 0x0245, smzx_mode_read, smzx_mode_write },          // 2.69
-  { "smzx_palette", 0x0245, smzx_palette_read, NULL },               // 2.69
-  { "smzx_r!", 0x0245, smzx_r_read, smzx_r_write },                  // 2.69
-  { "spacelock", 0x0254, NULL, spacelock_write },                    // 2.84
-  { "spr!_ccheck", 0x0241, NULL, spr_ccheck_write },                 // 2.65
-  { "spr!_cheight", 0x0241, spr_cheight_read, spr_cheight_write },   // 2.65
-  { "spr!_clist", 0x0241, NULL, spr_clist_write },                   // 2.65
-  { "spr!_cwidth", 0x0241, spr_cwidth_read, spr_cwidth_write },      // 2.65
-  { "spr!_cx", 0x0241, spr_cx_read, spr_cx_write },                  // 2.65
-  { "spr!_cy", 0x0241, spr_cy_read, spr_cy_write },                  // 2.65
-  { "spr!_height", 0x0241, spr_height_read, spr_height_write },      // 2.65
-  { "spr!_off", 0x0241, NULL, spr_off_write },                       // 2.65
-  { "spr!_offset", 0x025A, spr_offset_read, spr_offset_write },      // 2.90
-  { "spr!_overlaid", 0x0241, NULL, spr_overlaid_write },             // 2.65
-  { "spr!_overlay", 0x0248, NULL, spr_overlaid_write },              // 2.69c
-  { "spr!_refx", 0x0241, spr_refx_read, spr_refx_write },            // 2.65
-  { "spr!_refy", 0x0241, spr_refy_read, spr_refy_write },            // 2.65
-  { "spr!_setview", 0x0241, NULL, spr_setview_write },               // 2.65
-  { "spr!_static", 0x0241, NULL, spr_static_write },                 // 2.65
-  { "spr!_swap", 0x0241, NULL, spr_swap_write },                     // 2.65
-  { "spr!_tcol", 0x025A, spr_tcol_read, spr_tcol_write },            // 2.90
-  { "spr!_unbound", 0x025A, spr_unbound_read, spr_unbound_write },   // 2.90
-  { "spr!_vlayer", 0x0248, NULL, spr_vlayer_write },                 // 2.69c
-  { "spr!_width", 0x0241, spr_width_read, spr_width_write },         // 2.65
-  { "spr!_x", 0x0241, spr_x_read, spr_x_write },                     // 2.65
-  { "spr!_y", 0x0241, spr_y_read, spr_y_write },                     // 2.65
-  { "spr_clist!", 0x0241, spr_clist_read, NULL },                    // 2.65
-  { "spr_collisions", 0x0241, spr_collisions_read, NULL },           // 2.65
-  { "spr_num", 0x0241, spr_num_read, spr_num_write },                // 2.65
-  { "spr_yorder", 0x0241, NULL, spr_yorder_write },                  // 2.65
-  { "sqrt!", 0x0244, sqrt_read, NULL },                              // 2.68
-  { "tan!", 0x0244, tan_read, NULL },                                // 2.68
-  { "thisx", 0, thisx_read, NULL },                                  // <=2.51
-  { "thisy", 0, thisy_read, NULL },                                  // <=2.51
-  { "this_char", 0x0209, this_char_read, NULL },                     // 2.60
-  { "this_color", 0x0209, this_color_read, NULL },                   // 2.60
-  { "timereset", 0, timereset_read, timereset_write },               // <=2.51
-  { "time_hours", 0x0209, time_hours_read, NULL },                   // 2.60
-  { "time_minutes", 0x0209, time_minutes_read, NULL },               // 2.60
-  { "time_seconds", 0x0209, time_seconds_read, NULL },               // 2.60
-  { "uch!,!", 0x0254, uch_read, NULL },                              // 2.84
-  { "uco!,!", 0x0254, uco_read, NULL },                              // 2.84
-  { "uid!,!", 0x0254, uid_read, uid_write },                         // 2.84
-  { "upr!,!", 0x0254, upr_read, upr_write },                         // 2.84
-  { "vch!,!", 0x0248, vch_read, vch_write },                         // 2.69c
-  { "vco!,!", 0x0248, vco_read, vco_write },                         // 2.69c
-  { "vertpld", 0, vertpld_read, NULL },                              // <=2.51
-  { "vlayer_height", 0x0248, vlayer_height_read, vlayer_height_write },// 2.69c
-  { "vlayer_size", 0x0251, vlayer_size_read, vlayer_size_write },    // 2.81
-  { "vlayer_width", 0x0248, vlayer_width_read, vlayer_width_write }, // 2.69c
+  { "local?",           V251s1, local_read,           local_write },
+  { "loopcount",        ALL,    loopcount_read,       loopcount_write },
+  { "max!,!",           V284,   maxval_read,          NULL },
+  { "max_samples",      V291,   max_samples_read,     max_samples_write },
+  { "mboardx",          V251s1, mboardx_read,         NULL },
+  { "mboardy",          V251s1, mboardy_read,         NULL },
+  { "min!,!",           V284,   minval_read,          NULL },
+  { "mod_frequency",    V281,   mod_freq_read,        mod_freq_write },
+  { "mod_length",       V291,   mod_length_read,      NULL },
+  { "mod_order",        V262,   mod_order_read,       mod_order_write },
+  { "mod_position",     V281,   mod_position_read,    mod_position_write },
+  { "mousepx",          V282,   mousepx_read,         mousepx_write },
+  { "mousepy",          V282,   mousepy_read,         mousepy_write },
+  { "mousex",           V251s1, mousex_read,          mousex_write },
+  { "mousey",           V251s1, mousey_read,          mousey_write },
+  { "multiplier",       V268,   multiplier_read,      multiplier_write },
+  { "mzx_speed",        V260,   mzx_speed_read,       mzx_speed_write },
+  { "och!,!",           V284,   och_read,             NULL },
+  { "oco!,!",           V284,   oco_read,             NULL },
+  { "overlay_char",     V260,   overlay_char_read,    NULL },
+  { "overlay_color",    V260,   overlay_color_read,   NULL },
+  { "overlay_mode",     V260,   overlay_mode_read,    NULL },
+  { "pixel",            V260,   pixel_read,           pixel_write },
+  { "playerdist",       ALL,    playerdist_read,      NULL },
+  { "playerfacedir",    ALL,    playerfacedir_read,   playerfacedir_write },
+  { "playerlastdir",    ALL,    playerlastdir_read,   playerlastdir_write },
+  { "playerx",          V251s1, playerx_read,         NULL },
+  { "playery",          V251s1, playery_read,         NULL },
+  { "play_game",        V290,   NULL,                 play_game_write },
+  { "r!.*",             V265,   r_read,               r_write },
+  { "random_seed!",     V291,   random_seed_read,     random_seed_write },
+  { "red_value",        V260,   red_value_read,       red_value_write },
+  { "rid*",             V269b,  rid_read,             NULL },
+  { "robot_id",         V260,   robot_id_read,        NULL },
+  { "robot_id_*",       V265,   robot_id_n_read,      NULL },
+  { "save_bc?",         V270,   save_bc_read,         NULL },
+  { "save_counters",    V290,   save_counters_read,   NULL },
+  { "save_game",        V268,   save_game_read,       NULL },
+  { "save_robot?",      V270,   save_robot_read,      NULL },
+  { "scrolledx",        V251s1, scrolledx_read,       NULL },
+  { "scrolledy",        V251s1, scrolledy_read,       NULL },
+  { "sin!",             V268,   sin_read,             NULL },
+  { "smzx_b!",          V269,   smzx_b_read,          smzx_b_write },
+  { "smzx_g!",          V269,   smzx_g_read,          smzx_g_write },
+  { "smzx_idx!,!",      V290,   smzx_idx_read,        smzx_idx_write },
+  { "smzx_indices",     V291,   smzx_indices_read,    NULL },
+  { "smzx_message",     V291,   smzx_message_read,    smzx_message_write },
+  { "smzx_mode",        V269,   smzx_mode_read,       smzx_mode_write },
+  { "smzx_palette",     V269,   smzx_palette_read,    NULL },
+  { "smzx_r!",          V269,   smzx_r_read,          smzx_r_write },
+  { "spacelock",        V284,   NULL,                 spacelock_write },
+  { "spr!_ccheck",      V265,   NULL,                 spr_ccheck_write },
+  { "spr!_cheight",     V265,   spr_cheight_read,     spr_cheight_write },
+  { "spr!_clist",       V265,   NULL,                 spr_clist_write },
+  { "spr!_cwidth",      V265,   spr_cwidth_read,      spr_cwidth_write },
+  { "spr!_cx",          V265,   spr_cx_read,          spr_cx_write },
+  { "spr!_cy",          V265,   spr_cy_read,          spr_cy_write },
+  { "spr!_height",      V265,   spr_height_read,      spr_height_write },
+  { "spr!_off",         V265,   NULL,                 spr_off_write },
+  { "spr!_offset",      V290,   spr_offset_read,      spr_offset_write },
+  { "spr!_overlaid",    V265,   NULL,                 spr_overlaid_write },
+  { "spr!_overlay",     V269c,  NULL,                 spr_overlaid_write },
+  { "spr!_refx",        V265,   spr_refx_read,        spr_refx_write },
+  { "spr!_refy",        V265,   spr_refy_read,        spr_refy_write },
+  { "spr!_setview",     V265,   NULL,                 spr_setview_write },
+  { "spr!_static",      V265,   NULL,                 spr_static_write },
+  { "spr!_swap",        V265,   NULL,                 spr_swap_write },
+  { "spr!_tcol",        V290,   spr_tcol_read,        spr_tcol_write },
+  { "spr!_unbound",     V290,   spr_unbound_read,     spr_unbound_write },
+  { "spr!_vlayer",      V269c,  NULL,                 spr_vlayer_write },
+  { "spr!_width",       V265,   spr_width_read,       spr_width_write },
+  { "spr!_x",           V265,   spr_x_read,           spr_x_write },
+  { "spr!_y",           V265,   spr_y_read,           spr_y_write },
+  { "spr_clist!",       V265,   spr_clist_read,       NULL },
+  { "spr_collisions",   V265,   spr_collisions_read,  NULL },
+  { "spr_num",          V265,   spr_num_read,         spr_num_write },
+  { "spr_yorder",       V265,   NULL,                 spr_yorder_write },
+  { "sqrt!",            V268,   sqrt_read,            NULL },
+  { "tan!",             V268,   tan_read,             NULL },
+  { "thisx",            ALL,    thisx_read,           NULL },
+  { "thisy",            ALL,    thisy_read,           NULL },
+  { "this_char",        V260,   this_char_read,       NULL },
+  { "this_color",       V260,   this_color_read,      NULL },
+  { "timereset",        ALL,    timereset_read,       timereset_write },
+  { "time_hours",       V260,   time_hours_read,      NULL },
+  { "time_minutes",     V260,   time_minutes_read,    NULL },
+  { "time_seconds",     V260,   time_seconds_read,    NULL },
+  { "uch!,!",           V284,   uch_read,             NULL },
+  { "uco!,!",           V284,   uco_read,             NULL },
+  { "uid!,!",           V284,   uid_read,             uid_write },
+  { "upr!,!",           V284,   upr_read,             upr_write },
+  { "vch!,!",           V269c,  vch_read,             vch_write },
+  { "vco!,!",           V269c,  vco_read,             vco_write },
+  { "vertpld",          ALL,    vertpld_read,         NULL },
+  { "vlayer_height",    V269c,  vlayer_height_read,   vlayer_height_write },
+  { "vlayer_size",      V281,   vlayer_size_read,     vlayer_size_write },
+  { "vlayer_width",     V269c,  vlayer_width_read,    vlayer_width_write },
 };
 
 static int counter_first_letter[512];
@@ -2737,7 +2743,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       char *translated_path;
       int err;
 
-      if (mzx_world->version < 0x025A)
+      if(mzx_world->version < V290)
       {
         // Prior to 2.90, save_game took place immediately
         translated_path = cmalloc(MAX_PATH);
@@ -2750,7 +2756,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
         err = fsafetranslate(char_value, translated_path);
         if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
-          save_world(mzx_world, translated_path, 1, WORLD_VERSION);
+          save_world(mzx_world, translated_path, 1, MZX_VERSION);
 
         free(translated_path);
       }
@@ -3165,9 +3171,9 @@ static int health_dec_gateway(struct world *mzx_world, struct counter *counter,
  const char *name, int value, int id)
 {
   // Trying to decrease health? (legacy support)
-  // Only handle here if MZX world version <= 2.70
+  // Only handle here in pre-port MZX world versions
   // Otherwise, it will be handled in health_gateway()
-  if((value > 0) && (mzx_world->version <= 0x0249))
+  if((value > 0) && (mzx_world->version < VERSION_PORT))
   {
     value = hurt_player(mzx_world, value);
   }
@@ -3188,9 +3194,9 @@ static int health_gateway(struct world *mzx_world, struct counter *counter,
   }
 
   // Trying to decrease health?
-  // Only handle here if MZX world version > 2.70
+  // Only handle here in port MZX world versions
   // Otherwise, it will be handled in health_dec_gateway()
-  if((value < counter->value) && (mzx_world->version > 0x0249))
+  if((value < counter->value) && (mzx_world->version >= VERSION_PORT))
   {
     value = counter->value - hurt_player(mzx_world, counter->value - value);
   }
@@ -3238,7 +3244,7 @@ static int score_gateway(struct world *mzx_world, struct counter *counter,
  const char *name, int value, int id)
 {
   // Protection for score < 0, as per the behavior in DOS MZX.
-  if((value < 0) && (mzx_world->version <= 0x249))
+  if((value < 0) && (mzx_world->version < VERSION_PORT))
     return 0;
 
   return value;

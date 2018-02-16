@@ -88,7 +88,7 @@ static void save_mzm_common(struct world *mzx_world, int start_x, int start_y,
            cur_robot->ypos < start_y + height)
           {
             mzm_size += save_robot_calculate_size(mzx_world, cur_robot,
-             savegame, WORLD_VERSION);
+             savegame, MZX_VERSION);
             num_robots_alloc++;
           }
         }
@@ -112,7 +112,7 @@ static void save_mzm_common(struct world *mzx_world, int start_x, int start_y,
     mem_putc(storage_mode, &bufferPtr);
     mem_putc(0, &bufferPtr);
 
-    mem_putw(WORLD_VERSION, &bufferPtr);
+    mem_putw(MZX_VERSION, &bufferPtr);
     bufferPtr += 3;
 
     switch(mode)
@@ -217,7 +217,7 @@ static void save_mzm_common(struct world *mzx_world, int start_x, int start_y,
 
             // Save each robot
             save_robot(mzx_world, robot_list[robot_numbers[i]], zp,
-             savegame, WORLD_VERSION, name);
+             savegame, MZX_VERSION, name);
           }
         }
 
@@ -369,7 +369,7 @@ static int load_mzm_header(const unsigned char **_bufferptr, int file_length,
 
   // MegaZeux 2.83 is the last version that won't save the ver,
   // so if we don't have a ver, just act like it's 2.83
-  *mzm_world_version = 0x0253;
+  *mzm_world_version = V283;
 
   memcpy(magic_string, bufferptr, 4);
   magic_string[4] = 0;
@@ -406,7 +406,7 @@ static int load_mzm_header(const unsigned char **_bufferptr, int file_length,
       return -1;
 
     // MZM3 is like MZM2, except the robots are stored as source code if
-    // savegame_mode is 0 and version >= VERSION_PROGRAM_SOURCE.
+    // savegame_mode is 0 and version >= VERSION_SOURCE.
     *width = mem_getw(&bufferptr);
     *height = mem_getw(&bufferptr);
     *robots_location = mem_getd(&bufferptr);
@@ -460,7 +460,7 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer,
     goto err_invalid;
 
   // If the mzm version is newer than the MZX version, notify
-  if(mzm_world_version > WORLD_VERSION)
+  if(mzm_world_version > MZX_VERSION)
   {
     error_message(E_MZM_FILE_VERSION_TOO_RECENT, mzm_world_version, name);
   }
@@ -624,7 +624,7 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer,
             // Reset the error count.
             get_and_reset_error_count();
 
-            if(mzm_world_version <= WORLD_LEGACY_FORMAT_VERSION)
+            if(mzm_world_version <= MZX_LEGACY_FORMAT_VERSION)
             {
               robot_partial_size =
                legacy_calculate_partial_robot_size(savegame_mode,
@@ -649,7 +649,7 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer,
             // dummy out the robots.
 
             if((savegame_mode > savegame) ||
-              (WORLD_VERSION < mzm_world_version))
+              (MZX_VERSION < mzm_world_version))
             {
               dummy = 1;
             }
@@ -665,7 +665,7 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer,
               // chars for dummy robots on clipped MZMs might be off. This
               // shouldn't matter too often though.
 
-              if(mzm_world_version <= WORLD_LEGACY_FORMAT_VERSION)
+              if(mzm_world_version <= MZX_LEGACY_FORMAT_VERSION)
               {
                 create_blank_robot(cur_robot);
 
@@ -804,7 +804,7 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer,
               }
             }
 
-            if(mzm_world_version > WORLD_LEGACY_FORMAT_VERSION)
+            if(mzm_world_version > MZX_LEGACY_FORMAT_VERSION)
             {
               zip_close(zp, NULL);
             }

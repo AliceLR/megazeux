@@ -2244,7 +2244,7 @@ void __draw_debug_box(struct world *mzx_world, int x, int y, int d_x, int d_y,
 
     // In 2.82X through 2.84X, this erroneously applied
     // numlock translations to the keycode.
-    if(mzx_world->version >= 0x0252 && mzx_world->version <= 0x0254)
+    if(mzx_world->version >= V282 && mzx_world->version <= V284)
       key = get_last_key(keycode_internal_wrt_numlock);
 
     else

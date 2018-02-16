@@ -222,7 +222,7 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
 
   // Load board parameters
 
-  if(file_version < 0x0253)
+  if(file_version < V283)
   {
     fread(cur_board->mod_playing, LEGACY_MOD_FILENAME_MAX, 1, fp);
     cur_board->mod_playing[LEGACY_MOD_FILENAME_MAX] = 0;
@@ -273,7 +273,7 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   cur_board->restart_if_zapped = fgetc(fp);
   cur_board->time_limit = fgetw(fp);
 
-  if(file_version < 0x0253)
+  if(file_version < V283)
   {
     cur_board->last_key = fgetc(fp);
     cur_board->num_input = fgetw(fp);
@@ -334,7 +334,7 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   cur_board->player_ew_locked = fgetc(fp);
   cur_board->player_attack_locked = fgetc(fp);
 
-  if(file_version < 0x0253 || savegame)
+  if(file_version < V283 || savegame)
   {
     cur_board->volume = fgetc(fp);
     cur_board->volume_inc = fgetc(fp);

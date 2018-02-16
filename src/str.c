@@ -32,6 +32,7 @@
 #include "rasm.h"
 #include "robot.h"
 #include "util.h"
+#include "world.h"
 
 #ifdef CONFIG_UTHASH
 #include <utcasehash.h>
@@ -395,7 +396,7 @@ int string_read_as_counter(struct world *mzx_world,
       if(index_specified)
       {
         // Negative indices and multiple indexing (2.91+)
-        if(mzx_world->version >= 0x025B)
+        if(mzx_world->version >= V291)
         {
           if(get_string_real_index(src, index, &real_index))
             return 0;
@@ -494,14 +495,14 @@ void string_write_as_counter(struct world *mzx_world,
       src = find_string(mzx_world, name, &next);
 
       // Negative indices (2.91+)
-      if(index < 0 && mzx_world->version < 0x025B)
+      if(index < 0 && mzx_world->version < V291)
         return;
 
       if(get_string_real_index(src, index, &write_index))
         return;
 
       // Multiple size (2.91+)
-      if(mzx_world->version < 0x025B)
+      if(mzx_world->version < V291)
         write_size = 1;
 
       // Tentatively increase the string's length to cater for this write
@@ -553,7 +554,7 @@ void string_write_as_counter(struct world *mzx_world,
       src->length = new_length;
 
       // Before 2.84, the length would be set to the alloc_length
-      if(mzx_world->version < 0x0254)
+      if(mzx_world->version < V284)
         src->length = alloc_length;
     }
   }
@@ -670,7 +671,7 @@ void load_string_board(struct world *mzx_world, const char *name,
     return;
 
   // Size/offset support (2.91+)
-  if(mzx_world->version < 0x025B && (offset_specified || size_specified))
+  if(mzx_world->version < V291 && (offset_specified || size_specified))
     return;
 
   dest = find_string(mzx_world, name, &next);
@@ -712,7 +713,7 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
   dest = find_string(mzx_world, name, &next);
 
   // Negative offsets (2.91+)
-  if(input_offset < 0 && mzx_world->version < 0x025B)
+  if(input_offset < 0 && mzx_world->version < V291)
     return 0;
 
   if(get_string_real_index(dest, input_offset, &offset))
@@ -931,7 +932,7 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
   // Load source code from a string
 
 #ifdef CONFIG_DEBYTECODE
-  if(special_name_partial("load_robot") && mzx_world->version >= 0x025A)
+  if(special_name_partial("load_robot") && mzx_world->version >= V290)
   {
     // Load legacy source code (2.90+)
 
@@ -982,7 +983,7 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
   else
 
   if(special_name_partial("load_source_file") &&
-   mzx_world->version >= VERSION_PROGRAM_SOURCE)
+   mzx_world->version >= VERSION_SOURCE)
   {
     // Source code (DBC+)
 
@@ -1034,7 +1035,7 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
   }
 
 #else //!CONFIG_DEBYTECODE
-  if(special_name_partial("load_robot") && mzx_world->version >= 0x025A)
+  if(special_name_partial("load_robot") && mzx_world->version >= V290)
   {
     // Load robot from string (2.90+)
 
@@ -1135,7 +1136,7 @@ int get_string(struct world *mzx_world, const char *name, struct string *dest,
   if(src)
   {
     // Negative offsets (2.91+)
-    if(input_offset < 0 && mzx_world->version < 0x025B)
+    if(input_offset < 0 && mzx_world->version < V291)
       return 0;
 
     if(get_string_real_index(src, input_offset, &offset))

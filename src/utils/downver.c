@@ -50,19 +50,14 @@
 #include "../world_prop.h"
 #include "../zip.h"
 
-#define DOWNVER_WORLD_VERSION 0x025B
-
-#if WORLD_VERSION != DOWNVER_WORLD_VERSION
-  #error "Update downver for the new world version."
-#else
-
-#define WORLD_VERSION_HI ((WORLD_VERSION >> 8) & 0xff)
-#define WORLD_VERSION_LO (WORLD_VERSION & 0xff)
-
-#define WORLD_VERSION_PREV_HI ((WORLD_VERSION_PREV >> 8) & 0xff)
-#define WORLD_VERSION_PREV_LO (WORLD_VERSION_PREV & 0xff)
-
+#define DOWNVER_VERSION "2.91"
 #define DOWNVER_EXT ".290"
+
+#define MZX_VERSION_HI ((MZX_VERSION >> 8) & 0xff)
+#define MZX_VERSION_LO (MZX_VERSION & 0xff)
+
+#define MZX_VERSION_PREV_HI ((MZX_VERSION_PREV >> 8) & 0xff)
+#define MZX_VERSION_PREV_LO (MZX_VERSION_PREV & 0xff)
 
 enum status
 {
@@ -165,7 +160,7 @@ static void convert_291_to_290_world_info(struct memfile *dest,
       case WPROP_WORLD_VERSION:
       case WPROP_FILE_VERSION:
         // Replace the version number
-        save_prop_w(ident, WORLD_VERSION_PREV, dest);
+        save_prop_w(ident, MZX_VERSION_PREV, dest);
         break;
 
       default:
@@ -191,7 +186,7 @@ static void convert_291_to_290_board_info(struct memfile *dest,
     {
       case BPROP_FILE_VERSION:
         // Replace the version number
-        save_prop_w(ident, WORLD_VERSION_PREV, dest);
+        save_prop_w(ident, MZX_VERSION_PREV, dest);
         break;
 
       default:
@@ -262,6 +257,12 @@ int main(int argc, char *argv[])
   int byte;
   FILE *in;
   FILE *out;
+
+  if(strcmp(VERSION, DOWNVER_VERSION) < 0)
+  {
+    error("[ERROR] Update downver for " VERSION "!\n");
+    return 1;
+  }
 
   if(argc <= 1)
   {
@@ -379,10 +380,10 @@ int main(int argc, char *argv[])
     goto err_read;
   }
   else
-  if(byte != WORLD_VERSION_HI)
+  if(byte != MZX_VERSION_HI)
   {
     error("This tool only supports worlds or boards from %d.%d.\n",
-     WORLD_VERSION_HI, WORLD_VERSION_LO);
+     MZX_VERSION_HI, MZX_VERSION_LO);
     goto exit_close;
   }
 
@@ -392,10 +393,10 @@ int main(int argc, char *argv[])
     goto err_read;
   }
   else
-  if(byte != WORLD_VERSION_LO)
+  if(byte != MZX_VERSION_LO)
   {
     error("This tool only supports worlds or boards from %d.%d.\n",
-     WORLD_VERSION_HI, WORLD_VERSION_LO);
+     MZX_VERSION_HI, MZX_VERSION_LO);
     goto exit_close;
   }
 
@@ -403,11 +404,11 @@ int main(int argc, char *argv[])
 
   fputc('M', out);
 
-  byte = fputc(WORLD_VERSION_PREV_HI, out);
+  byte = fputc(MZX_VERSION_PREV_HI, out);
   if(byte == EOF)
     goto err_write;
 
-  byte = fputc(WORLD_VERSION_PREV_LO, out);
+  byte = fputc(MZX_VERSION_PREV_LO, out);
   if(byte == EOF)
     goto err_write;
 
@@ -429,8 +430,8 @@ int main(int argc, char *argv[])
   fprintf(stdout,
    "File '%s' successfully downgraded from %d.%d to %d.%d.\n"
    "Saved to '%s'.\n",
-   argv[1], WORLD_VERSION_HI, WORLD_VERSION_LO,
-   WORLD_VERSION_PREV_HI, WORLD_VERSION_PREV_LO, fname);
+   argv[1], MZX_VERSION_HI, MZX_VERSION_LO,
+   MZX_VERSION_PREV_HI, MZX_VERSION_PREV_LO, fname);
 
 exit_close:
   if(out)
@@ -453,5 +454,3 @@ err_write:
   error("Write error, aborting.\n");
   goto exit_close;
 }
-
-#endif // WORLD_VERSION == DOWNVER_WORLD_VERSION
