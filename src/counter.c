@@ -3169,9 +3169,9 @@ static int health_dec_gateway(struct world *mzx_world, struct counter *counter,
  const char *name, int value, int id)
 {
   // Trying to decrease health? (legacy support)
-  // Only handle here if MZX world version <= 2.70
+  // Only handle here in pre-port MZX world versions
   // Otherwise, it will be handled in health_gateway()
-  if((value > 0) && (mzx_world->version <= V270))
+  if((value > 0) && (mzx_world->version < VPORT))
   {
     value = hurt_player(mzx_world, value);
   }
@@ -3192,9 +3192,9 @@ static int health_gateway(struct world *mzx_world, struct counter *counter,
   }
 
   // Trying to decrease health?
-  // Only handle here if MZX world version > 2.70
+  // Only handle here in port MZX world versions
   // Otherwise, it will be handled in health_dec_gateway()
-  if((value < counter->value) && (mzx_world->version > V270))
+  if((value < counter->value) && (mzx_world->version >= VPORT))
   {
     value = counter->value - hurt_player(mzx_world, counter->value - value);
   }
