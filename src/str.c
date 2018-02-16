@@ -983,7 +983,7 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
   else
 
   if(special_name_partial("load_source_file") &&
-   mzx_world->version >= VERSION_PROGRAM_SOURCE)
+   mzx_world->version >= VERSION_SOURCE)
   {
     // Source code (DBC+)
 

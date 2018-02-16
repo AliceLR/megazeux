@@ -1095,7 +1095,7 @@ static int key_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
   // In DOS versions key was a board counter
-  if(mzx_world->version < VPORT)
+  if(mzx_world->version < VERSION_PORT)
   {
     return mzx_world->current_board->last_key;
   }
@@ -1106,7 +1106,7 @@ static void key_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   // In DOS versions key was a board counter
-  if(mzx_world->version < VPORT)
+  if(mzx_world->version < VERSION_PORT)
   {
     mzx_world->current_board->last_key = CLAMP(value, 0, 255);
   }
@@ -2367,6 +2367,8 @@ static void max_samples_write(struct world *mzx_world,
  *       in these versions. This is unfortunately not fixable.
  */
 
+#define ALL VERSION_ALL
+
 static const struct function_counter builtin_counters[] =
 {
   { "$*",               V262,   string_counter_read,  string_counter_write },
@@ -2387,7 +2389,7 @@ static const struct function_counter builtin_counters[] =
   { "board_param",      V265,   board_param_read,     board_param_write },
   { "board_w",          V265,   board_w_read,         NULL },
   { "bpr!,!",           V284,   bpr_read,             bpr_write },
-  { "bullettype",       Vall,   bullettype_read,      bullettype_write },
+  { "bullettype",       ALL,    bullettype_read,      bullettype_write },
   { "buttons",          V251s1, buttons_read,         NULL },
   { "char_byte",        V260,   char_byte_read,       char_byte_write },
   { "commands",         V260,   commands_read,        commands_write },
@@ -2413,11 +2415,11 @@ static const struct function_counter builtin_counters[] =
   { "fwrite_pos",       V260,   fwrite_pos_read,      fwrite_pos_write },
   { "goop_walk",        V290,   goop_walk_read,       goop_walk_write },
   { "green_value",      V260,   green_value_read,     green_value_write },
-  { "horizpld",         Vall,   horizpld_read,        NULL },
-  { "input",            Vall,   input_read,           input_write },
-  { "inputsize",        Vall,   inputsize_read,       inputsize_write },
+  { "horizpld",         ALL,    horizpld_read,        NULL },
+  { "input",            ALL,    input_read,           input_write },
+  { "inputsize",        ALL,    inputsize_read,       inputsize_write },
   { "int2bin",          V260,   int2bin_read,         int2bin_write },
-  { "key",              Vall,   key_read,             key_write },
+  { "key",              ALL,    key_read,             key_write },
   { "key?",             V269,   keyn_read,            NULL },
   { "key_code",         V269,   key_code_read,        NULL },
   { "key_pressed",      V260,   key_pressed_read,     NULL },
@@ -2428,10 +2430,10 @@ static const struct function_counter builtin_counters[] =
   { "load_game",        V268,   load_game_read,       NULL },
   { "load_robot?",      V270,   load_robot_read,      NULL },
 #ifdef CONFIG_DEBYTECODE
-  { "load_source_file?", VSOURCE, load_source_file_read, NULL },
+  { "load_source_file?", VERSION_SOURCE, load_source_file_read, NULL },
 #endif
   { "local?",           V251s1, local_read,           local_write },
-  { "loopcount",        Vall,   loopcount_read,       loopcount_write },
+  { "loopcount",        ALL,    loopcount_read,       loopcount_write },
   { "max!,!",           V284,   maxval_read,          NULL },
   { "max_samples",      V291,   max_samples_read,     max_samples_write },
   { "mboardx",          V251s1, mboardx_read,         NULL },
@@ -2453,9 +2455,9 @@ static const struct function_counter builtin_counters[] =
   { "overlay_color",    V260,   overlay_color_read,   NULL },
   { "overlay_mode",     V260,   overlay_mode_read,    NULL },
   { "pixel",            V260,   pixel_read,           pixel_write },
-  { "playerdist",       Vall,   playerdist_read,      NULL },
-  { "playerfacedir",    Vall,   playerfacedir_read,   playerfacedir_write },
-  { "playerlastdir",    Vall,   playerlastdir_read,   playerlastdir_write },
+  { "playerdist",       ALL,    playerdist_read,      NULL },
+  { "playerfacedir",    ALL,    playerfacedir_read,   playerfacedir_write },
+  { "playerlastdir",    ALL,    playerlastdir_read,   playerlastdir_write },
   { "playerx",          V251s1, playerx_read,         NULL },
   { "playery",          V251s1, playery_read,         NULL },
   { "play_game",        V290,   NULL,                 play_game_write },
@@ -2509,11 +2511,11 @@ static const struct function_counter builtin_counters[] =
   { "spr_yorder",       V265,   NULL,                 spr_yorder_write },
   { "sqrt!",            V268,   sqrt_read,            NULL },
   { "tan!",             V268,   tan_read,             NULL },
-  { "thisx",            Vall,   thisx_read,           NULL },
-  { "thisy",            Vall,   thisy_read,           NULL },
+  { "thisx",            ALL,    thisx_read,           NULL },
+  { "thisy",            ALL,    thisy_read,           NULL },
   { "this_char",        V260,   this_char_read,       NULL },
   { "this_color",       V260,   this_color_read,      NULL },
-  { "timereset",        Vall,   timereset_read,       timereset_write },
+  { "timereset",        ALL,    timereset_read,       timereset_write },
   { "time_hours",       V260,   time_hours_read,      NULL },
   { "time_minutes",     V260,   time_minutes_read,    NULL },
   { "time_seconds",     V260,   time_seconds_read,    NULL },
@@ -2523,7 +2525,7 @@ static const struct function_counter builtin_counters[] =
   { "upr!,!",           V284,   upr_read,             upr_write },
   { "vch!,!",           V269c,  vch_read,             vch_write },
   { "vco!,!",           V269c,  vco_read,             vco_write },
-  { "vertpld",          Vall,   vertpld_read,         NULL },
+  { "vertpld",          ALL,    vertpld_read,         NULL },
   { "vlayer_height",    V269c,  vlayer_height_read,   vlayer_height_write },
   { "vlayer_size",      V251,   vlayer_size_read,     vlayer_size_write },
   { "vlayer_width",     V269c,  vlayer_width_read,    vlayer_width_write },
@@ -3171,7 +3173,7 @@ static int health_dec_gateway(struct world *mzx_world, struct counter *counter,
   // Trying to decrease health? (legacy support)
   // Only handle here in pre-port MZX world versions
   // Otherwise, it will be handled in health_gateway()
-  if((value > 0) && (mzx_world->version < VPORT))
+  if((value > 0) && (mzx_world->version < VERSION_PORT))
   {
     value = hurt_player(mzx_world, value);
   }
@@ -3194,7 +3196,7 @@ static int health_gateway(struct world *mzx_world, struct counter *counter,
   // Trying to decrease health?
   // Only handle here in port MZX world versions
   // Otherwise, it will be handled in health_dec_gateway()
-  if((value < counter->value) && (mzx_world->version >= VPORT))
+  if((value < counter->value) && (mzx_world->version >= VERSION_PORT))
   {
     value = counter->value - hurt_player(mzx_world, counter->value - value);
   }
@@ -3242,7 +3244,7 @@ static int score_gateway(struct world *mzx_world, struct counter *counter,
  const char *name, int value, int id)
 {
   // Protection for score < 0, as per the behavior in DOS MZX.
-  if((value < 0) && (mzx_world->version < VPORT))
+  if((value < 0) && (mzx_world->version < VERSION_PORT))
     return 0;
 
   return value;

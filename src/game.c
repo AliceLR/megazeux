@@ -2309,7 +2309,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
         keylbl[3] = key_char;
         send_robot_all_def(mzx_world, keylbl);
         // In pre-port MZX versions key was a board counter
-        if(mzx_world->version < VPORT)
+        if(mzx_world->version < VERSION_PORT)
         {
           char keych = toupper(key_char);
           // <2.60 it only supported 1-9 and A-Z

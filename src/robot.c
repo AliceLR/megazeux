@@ -157,7 +157,7 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
       case RPROP_CUR_PROG_LINE:
 #ifdef CONFIG_DEBYTECODE
         // Legacy bytecode and DBC bytecode don't necessarily correspond.
-        if(file_version < VERSION_PROGRAM_SOURCE) break;
+        if(file_version < VERSION_SOURCE) break;
 #endif
         cur_robot->cur_prog_line = load_prop_int(size, &prop);
         break;
@@ -165,7 +165,7 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
       case RPROP_POS_WITHIN_LINE:
 #ifdef CONFIG_DEBYTECODE
         // Legacy bytecode and DBC bytecode don't necessarily correspond.
-        if(file_version < VERSION_PROGRAM_SOURCE) break;
+        if(file_version < VERSION_SOURCE) break;
 #endif
         cur_robot->pos_within_line = load_prop_int(size, &prop);
         break;
@@ -294,7 +294,7 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
           break;
 
         // Load legacy bytecode, and compile it, if necessary.
-        if(file_version < VERSION_PROGRAM_SOURCE)
+        if(file_version < VERSION_SOURCE)
         {
           char *program_legacy_bytecode = (char *)prop.start;
           int v_size;
@@ -3376,7 +3376,7 @@ void duplicate_robot_direct(struct world *mzx_world, struct robot *cur_robot,
 #endif
   }
 
-  if(preserve_state && mzx_world->version < VPORT)
+  if(preserve_state && mzx_world->version < VERSION_PORT)
   {
     // In DOS versions, copy and copy block preserved the current robot state
     // Therefore leave all robot vars alone and copy the stack over

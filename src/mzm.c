@@ -406,7 +406,7 @@ static int load_mzm_header(const unsigned char **_bufferptr, int file_length,
       return -1;
 
     // MZM3 is like MZM2, except the robots are stored as source code if
-    // savegame_mode is 0 and version >= VERSION_PROGRAM_SOURCE.
+    // savegame_mode is 0 and version >= VERSION_SOURCE.
     *width = mem_getw(&bufferptr);
     *height = mem_getw(&bufferptr);
     *robots_location = mem_getd(&bufferptr);

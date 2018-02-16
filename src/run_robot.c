@@ -1905,7 +1905,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             gotoed = send_self_label_tr(mzx_world,  p4 + 1, id);
 
             // The port up through 2.84 allowed this to iterate the entire board.
-            if(mzx_world->version < VPORT || mzx_world->version > V284)
+            if(mzx_world->version < VERSION_PORT || mzx_world->version > V284)
               break;
           }
         }
@@ -5576,7 +5576,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         // compatibility has been broken forever, so only do this for
         // old worlds.
 
-        if(mzx_world->version < VPORT)
+        if(mzx_world->version < VERSION_PORT)
         {
           if(last_label == cur_robot->cur_prog_line)
             goto breaker;

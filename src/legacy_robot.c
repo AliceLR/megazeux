@@ -69,7 +69,7 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
   cur_robot->num_labels = 0;
 
 #ifdef CONFIG_DEBYTECODE
-  if(version >= VERSION_PROGRAM_SOURCE)
+  if(version >= VERSION_SOURCE)
   {
     program_length = mem_getd(&bufferPtr);
   }
@@ -146,7 +146,7 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
     // a bad person and relies on savegame type MZMs (even though he claims
     // to have made them in the editor)
 
-    if(version < VERSION_PROGRAM_SOURCE)
+    if(version < VERSION_SOURCE)
     {
       // The program is bytecode and we have to convert it to sourcecode.
       char *program_legacy_bytecode = cmalloc(program_length);
@@ -223,7 +223,7 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
 
 #ifdef CONFIG_DEBYTECODE
     // World file loads source code.
-    if(version < VERSION_PROGRAM_SOURCE)
+    if(version < VERSION_SOURCE)
     {
       if((cur_robot->used) || (program_length >= 2))
       {
@@ -357,9 +357,9 @@ size_t legacy_load_robot_calculate_size(const void *buffer, int savegame,
   bufferPtr = (unsigned char *)buffer + 0;
   program_length = mem_getd(&bufferPtr);
 
-  // Prior to DBC / VERSION_PROGRAM_SOURCE the last two bytes are junk
+  // Prior to DBC / VERSION_SOURCE the last two bytes are junk
   #ifdef CONFIG_DEBYTECODE
-  if(version < VERSION_PROGRAM_SOURCE)
+  if(version < VERSION_SOURCE)
   #endif
     program_length &= 0xFFFF;
   

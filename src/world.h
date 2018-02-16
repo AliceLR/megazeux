@@ -99,33 +99,33 @@ __M_BEGIN_DECLS
 
 enum mzx_version
 {
-  Vall        = 0, // Used in versioned lists
-  V100        = 0x0100, // Magic: MZX
-  V251        = 0x0205, // Magic: MZ2
-  V251s1      = 0x0208, // Magic: MZA
-  V251s2      = 0x0209,
-  V251s3      = 0x0209,
-  V260        = 0x0209,
-  V261        = 0x0209,
-  VDECRYPTED  = 0x0211, // Special version used for decrypted worlds only.
-  V262        = 0x0232,
-  V262b       = 0x023E,
-  V265        = 0x0241,
-  V268        = 0x0244,
-  V269        = 0x0245,
-  V269b       = 0x0246,
-  V269c       = 0x0248,
-  V270        = 0x0249,
-  VPORT       = 0x0250, // For checks explicitly differentiating DOS and port
-  V280        = 0x0250,
-  V281        = 0x0251,
-  V282        = 0x0252,
-  V283        = 0x0253,
-  V284        = 0x0254,
-  V290        = 0x025A,
-  V291        = 0x025B,
+  VERSION_ALL     = 0,      // Used in versioned lists
+  V100            = 0x0100, // Magic: MZX
+  V251            = 0x0205, // Magic: MZ2
+  V251s1          = 0x0208, // Magic: MZA
+  V251s2          = 0x0209,
+  V251s3          = 0x0209,
+  V260            = 0x0209,
+  V261            = 0x0209,
+  VERSION_DECRYPT = 0x0211, // Special version used for decrypted worlds only.
+  V262            = 0x0232,
+  V262b           = 0x023E,
+  V265            = 0x0241,
+  V268            = 0x0244,
+  V269            = 0x0245,
+  V269b           = 0x0246,
+  V269c           = 0x0248,
+  V270            = 0x0249,
+  VERSION_PORT    = 0x0250, // For checks explicitly differentiating DOS and port
+  V280            = 0x0250,
+  V281            = 0x0251,
+  V282            = 0x0252,
+  V283            = 0x0253,
+  V284            = 0x0254,
+  V290            = 0x025A,
+  V291            = 0x025B,
 #ifdef CONFIG_DEBYTECODE
-  VSOURCE     = 0x0300, // For checks dependent on Robotic source changes
+  VERSION_SOURCE  = 0x0300, // For checks dependent on Robotic source changes
 #endif
 };
 

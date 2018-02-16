@@ -172,7 +172,7 @@ int get_version_string(char buffer[16], enum mzx_version version)
       sprintf(buffer, "2.51s2/2.61");
       break;
 
-    case VDECRYPTED:
+    case VERSION_DECRYPT:
       sprintf(buffer, "<decrypted>");
       break;
 
@@ -210,7 +210,7 @@ int get_version_string(char buffer[16], enum mzx_version version)
 
     default:
     {
-      if(version < VPORT)
+      if(version < VERSION_PORT)
       {
         sprintf(buffer, "<unknown %4.4Xh>", version);
       }
@@ -2166,7 +2166,7 @@ int save_world(struct world *mzx_world, const char *file, int savegame,
           int old_version = world_magic(tmp);
 
           // If it's non-debytecode, abort
-          if(old_version < VERSION_PROGRAM_SOURCE)
+          if(old_version < VERSION_SOURCE)
           {
             error_message(E_DBC_WORLD_OVERWRITE_OLD, old_version, NULL);
             fclose(fp);
@@ -2507,7 +2507,7 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
 
 #ifdef CONFIG_DEBYTECODE
   // Convert SFX strings if needed
-  if(file_version < VERSION_PROGRAM_SOURCE)
+  if(file_version < VERSION_SOURCE)
   {
     char *sfx_offset = mzx_world->custom_sfx;
     int i;
@@ -2565,7 +2565,7 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
 
   // If this is a pre-port world, limit the number of samples
   // playing to 4 (the maximum number in pre-port MZX)
-  if(mzx_world->version < VPORT)
+  if(mzx_world->version < VERSION_PORT)
     mzx_world->max_samples = 4;
 
   // This will be -1 (no limit) or whatever was loaded from a save
@@ -2669,6 +2669,7 @@ err_close:
     }
     else
 
+    // Allow the last pre-ZIP version, but none before it
     if(v > 0 && v < MZX_LEGACY_FORMAT_VERSION)
     {
       error_message(E_SAVE_VERSION_OLD, v, NULL);
@@ -2693,7 +2694,6 @@ err_close:
     {
       error_message(E_WORLD_FILE_VERSION_OLD, v, NULL);
     }
-
     else
 
     if(v == 0 || v > MZX_LEGACY_FORMAT_VERSION)
