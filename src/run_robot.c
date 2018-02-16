@@ -1871,8 +1871,9 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           }
         }
 
-        if(cmd == 19)
-          success ^= 1;     // Reverse truth if NOT is present
+        // Reverse truth if NOT is present
+        if(cmd == ROBOTIC_CMD_IF_NOT_CONDITION)
+          success ^= 1;
 
         if(success)
         {
@@ -2561,9 +2562,11 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
           // Move player
           move_player(mzx_world, dir_to_int(direction));
-          if((mzx_world->player_x == old_x) &&
+
+          if((cmd == ROBOTIC_CMD_MOVE_PLAYER_DIR_OR) &&
+           (mzx_world->player_x == old_x) &&
            (mzx_world->player_y == old_y) &&
-           (mzx_world->current_board_id == old_board) && (cmd == 62) &&
+           (mzx_world->current_board_id == old_board) &&
            (mzx_world->target_where == old_target))
           {
             char *p2 = next_param_pos(cmd_ptr + 1);
@@ -3376,7 +3379,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
              CAN_PUSH | CAN_TRANSPORT | CAN_FIREWALK | CAN_WATERWALK |
              CAN_LAVAWALK * cur_robot->can_lavawalk |
              (cur_robot->can_goopwalk ? CAN_GOOPWALK : 0))) &&
-             (cmd == 232))
+             (cmd == ROBOTIC_CMD_PERSISTENT_GO))
             {
               cur_robot->pos_within_line--; // persistent...
             }
@@ -4673,11 +4676,11 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         if((type[2] == type[3]) || ((type[2] > 2) && (type[3] == 0)))
           dest_type = type[2];
 
-        //something is wrong with the params, abort
+        // something is wrong with the params, abort
         if((src_type < 0) || (dest_type < 0))
           break;
 
-        if (cmd == ROBOTIC_CMD_COPY_OVERLAY_BLOCK)
+        if(cmd == ROBOTIC_CMD_COPY_OVERLAY_BLOCK)
         {
           if(src_type < 2)
             src_type ^= 1;
