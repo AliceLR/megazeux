@@ -2439,10 +2439,10 @@ static const struct function_counter builtin_counters[] =
   { "mboardx",          V251s1, mboardx_read,         NULL },
   { "mboardy",          V251s1, mboardy_read,         NULL },
   { "min!,!",           V284,   minval_read,          NULL },
-  { "mod_frequency",    V251,   mod_freq_read,        mod_freq_write },
+  { "mod_frequency",    V281,   mod_freq_read,        mod_freq_write },
   { "mod_length",       V291,   mod_length_read,      NULL },
   { "mod_order",        V262,   mod_order_read,       mod_order_write },
-  { "mod_position",     V251,   mod_position_read,    mod_position_write },
+  { "mod_position",     V281,   mod_position_read,    mod_position_write },
   { "mousepx",          V282,   mousepx_read,         mousepx_write },
   { "mousepy",          V282,   mousepy_read,         mousepy_write },
   { "mousex",           V251s1, mousex_read,          mousex_write },
@@ -2527,7 +2527,7 @@ static const struct function_counter builtin_counters[] =
   { "vco!,!",           V269c,  vco_read,             vco_write },
   { "vertpld",          ALL,    vertpld_read,         NULL },
   { "vlayer_height",    V269c,  vlayer_height_read,   vlayer_height_write },
-  { "vlayer_size",      V251,   vlayer_size_read,     vlayer_size_write },
+  { "vlayer_size",      V281,   vlayer_size_read,     vlayer_size_write },
   { "vlayer_width",     V269c,  vlayer_width_read,    vlayer_width_write },
 };
 
