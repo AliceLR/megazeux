@@ -58,14 +58,11 @@ COMMANDS value. Setting these defaults explicitly is not necessary.
 to the title of the test, the `$author` string to your identifier, and the
 `$desc` string to a description of the test. This must be wrapped to fit the
 robot editor window with `inc "$desc" "[more description]"` as-needed.
-(EXCEPTION: MegaZeux worlds from versions under 2.80 are not capable of this.
-Include this information in comments instead.)
 
 6) Upon completion or failure, the counter `result` must be set to the
 counter `PASS` or the counter `FAIL`.
 
 7) Extra testing notes may be included in the `$result` string.
-(EXCEPTION: MegaZeux worlds from versions under 2.80 are not capable of this.)
 
 8) Counter and string names beginning with two underscores (e.g. `__abc`,
 `$__def`) are reserved and should not be used.
@@ -79,3 +76,33 @@ end
 : "__swap"
 swap world "next"
 ```
+
+### Special Counters
+
+The following counters have special meaning:
+
+* `result`: indicates the result of the test. Set to `PASS` or `FAIL`.
+* `$result`: indicates more details about the result of a test.
+* `$world`: the filename of the current world.
+* `$title`: the title of the test.
+* `$author`: the author of the test.
+* `$desc`: a description of the test.
+
+Worlds from MZX versions 2.62 to 2.70 can use the following compatible strings:
+
+* `$string0`: the filename of the current world.
+* `$string1`: the title of the test.
+* `$string2`: the author of the test.
+* `$string3`: a description of the test.
+* `$string4`: indicates more deatils about the result of a test.
+
+
+### Compatibility Notes
+
+1) DOS worlds are not capable of the string operations described above. Strings
+were introduced in MegaZeux 2.62 in a very limited form. In versions 2.62, 2.62b,
+and 2.65, strings can be _ONLY **15** CHARACTERS LONG_. In versions 2.68 through
+2.70, strings can be up to **63** characters long. While it may be possible to
+set longer strings in old worlds using newer versions, it's recommended to stay
+within the original bounds and use the compatibility strings listed above. In
+worlds from before 2.62, title and author information should go in comments instead.
