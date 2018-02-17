@@ -1804,7 +1804,9 @@ static int send_robot_direct(struct world *mzx_world, struct robot *cur_robot,
           if(cur_robot->world_version >= V290)
             return_position_in_line = cur_robot->pos_within_line;
 
-          if(send_self)
+          // In DOS versions, ALL subroutine sends returned to the next command.
+          // Self sends in any version should also return to the next command.
+          if(send_self || cur_robot->world_version < VERSION_PORT)
             return_position += robot_program[robot_position] + 2;
         }
         else

@@ -19,6 +19,8 @@ USERS
 + Fixed bug where wind and transporters could clone the player.
 + MegaZeux now restarts correctly in paths containing spaces
   when the updater is run.
++ Subroutines in pre-port MZX worlds now always return to the
+  command after the subroutine was sent.
 + Fixed a bug where world decryption could crash. (Revvy)
 
 DEVELOPERS
