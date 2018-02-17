@@ -94,7 +94,7 @@ Worlds from MZX versions 2.62 to 2.70 can use the following compatible strings:
 * `$string1`: the title of the test.
 * `$string2`: the author of the test.
 * `$string3`: a description of the test.
-* `$string4`: indicates more deatils about the result of a test.
+* `$string4`: indicates more details about the result of a test.
 
 
 ### Compatibility Notes
