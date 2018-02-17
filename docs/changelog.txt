@@ -72,7 +72,6 @@ DEVELOPERS
 
 + Updated MSVC for Visual Studio 2017. (Spectere)
 + Added xcode support. (Spectere)
-+ "make all" now makes the help file. (pgimeno)
 + "make clean" now deletes ccv. (pgimeno)
 + Fixed creeping CRLF usage. (Lachesis, pgimeno, Spectere)
 + Fixed a bug where the MSYS2 build scripts could inadvertently
