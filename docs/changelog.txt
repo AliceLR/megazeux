@@ -23,6 +23,9 @@ USERS
 
 DEVELOPERS
 
++ Added .MZX-based unit testing system. Run with "make test".
+  See testworlds/README.md for more information.
+
 
 January 6, 2018 - MZX 2.91b
 
