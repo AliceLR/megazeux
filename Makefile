@@ -14,7 +14,7 @@ ifeq ($(filter -r,$(MAKEFLAGS)),)
 MAKEFLAGS += -r
 endif
 
-.PHONY: all clean help_check test mzx mzx.debug build build_clean source
+.PHONY: all clean help_check test test_clean mzx mzx.debug build build_clean source
 
 -include platform.inc
 include version.inc
@@ -240,7 +240,7 @@ endif
 
 include src/Makefile.in
 
-clean: mzx_clean
+clean: mzx_clean test_clean
 
 ifeq (${BUILD_UTILS},1)
 include src/utils/Makefile.in
@@ -323,5 +323,8 @@ help_check: ${hlp2txt} assets/help.fil
 
 test: mzx
 	@testworlds/run.sh
+
+test_clean:
+	@rm -rf testworlds/log
 
 endif
