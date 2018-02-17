@@ -5,9 +5,8 @@ particularly Robotic that can be determined to be correct or incorrect from
 within MegaZeux itself. Run the full sequence of tests with `run.sh`, or
 use the `make test` rule.
 
-This system currently requires an `mzxrun` executable in the parent directory.
-Currently, the only applicable target architectures are `win64`, `win32`, and
-`unix-devel`. These tests will NOT WORK with any other architecture!
+This system currently requires an `mzxrun` executable in the parent directory,
+and may not work correctly for all platforms.
 
 ## Conventions
 
@@ -88,7 +87,7 @@ The following counters have special meaning:
 * `$author`: the author of the test.
 * `$desc`: a description of the test.
 
-Worlds from MZX versions 2.62 to 2.70 can use the following compatible strings:
+Worlds from MZX versions 2.62 to 2.70 should use the following compatible strings:
 
 * `$string0`: the filename of the current world.
 * `$string1`: the title of the test.
