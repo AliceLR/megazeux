@@ -24,6 +24,8 @@ USERS
 + Typed color components now wrap from the maximum value to zero
   like dialog number inputs, and pressing minus will now negate
   the input number.
++ Copying chars in the char editor between regular and SMZX
+  screen modes now works properly.
 + Fixed a bug where world decryption could crash. (Revvy)
 
 DEVELOPERS

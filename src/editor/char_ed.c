@@ -68,6 +68,7 @@ Uint32 mini_highlight_layer = -1;
 static char char_copy_buffer[8 * 14 * 32];
 static int char_copy_width = 8;
 static int char_copy_height = 14;
+static int char_copy_mode = 0;
 static char current_char = 1;
 static int current_width = 1;
 static int current_height = 1;
@@ -375,6 +376,50 @@ static void collapse_buffer(char *buffer, int width, int height,
 
   if(h)
     update_undo_frame(h);
+}
+
+static void change_copy_buffer_mode(int new_mode)
+{
+  char *old_pos;
+  char *new_pos;
+
+  /* The SMZX copy buffer is stored different from the regular MZX copy buffer,
+   * which causes issues when attempting to copy between the two. Convert
+   * between them as-needed to fix this.
+   */
+
+  if(new_mode == 0 && char_copy_mode != 0)
+  {
+    old_pos = char_copy_buffer + char_copy_width * char_copy_height;
+    new_pos = char_copy_buffer + char_copy_width * char_copy_height * 2;
+
+    while(old_pos > char_copy_buffer)
+    {
+      old_pos--;
+      new_pos -= 2;
+      new_pos[0] = (*old_pos & 0x02) >> 1;
+      new_pos[1] = (*old_pos & 0x01);
+    }
+    char_copy_width *= 2;
+  }
+  else
+
+  if(new_mode != 0 && char_copy_mode == 0)
+  {
+    char *stop = char_copy_buffer + char_copy_width * char_copy_height;
+    old_pos = char_copy_buffer;
+    new_pos = char_copy_buffer;
+
+    while(old_pos < stop)
+    {
+      *new_pos = ((old_pos[0] & 0x01) << 1) | (old_pos[1] & 0x01);
+      old_pos += 2;
+      new_pos++;
+    }
+    char_copy_width /= 2;
+  }
+
+  char_copy_mode = new_mode;
 }
 
 static void draw_multichar(char *buffer, int start_x, int start_y,
@@ -1065,6 +1110,9 @@ int char_editor(struct world *mzx_world)
 
   // Prepare the history
   h = construct_charset_undo_history(mzx_world->editor_conf.undo_history_size);
+
+  // Make sure the copy buffer is in a usable format
+  change_copy_buffer_mode(screen_mode);
 
   if(screen_mode)
   {
