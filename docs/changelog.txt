@@ -26,6 +26,8 @@ USERS
   the input number.
 + Copying chars in the char editor between regular and SMZX
   screen modes now works properly.
++ Fixed a crash that could occur when placing things on a vlayer
+  larger than the current board.
 + Fixed a bug where world decryption could crash. (Revvy)
 
 DEVELOPERS

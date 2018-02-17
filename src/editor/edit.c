@@ -2389,9 +2389,11 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
            * block, and the user has selected legacy placement mode, toggle
            * the current param type with SPACE.
            */
-          if((!overlay_edit) && (current_id == level_id[offset]) &&
-             (current_color == level_color[offset]) &&
-             mzx_world->editor_conf.editor_space_toggles)
+          int at_match = (!overlay_edit) &&
+           (current_id == level_id[offset]) &&
+           (current_color == level_color[offset]);
+
+          if(at_match && mzx_world->editor_conf.editor_space_toggles)
           {
             place_current_at_xy(mzx_world, SPACE, 7, 0, cursor_board_x,
              cursor_board_y, &copy_robot, &copy_scroll, &copy_sensor,
@@ -2399,13 +2401,12 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           }
           else
           {
-            /* If what we're trying to overwrite is a robot, only allow
-             * the user to press "Delete" to remove it. Disallow rewrites
-             * and toggling in this mode. Otherwise, just write through
-             * as usual.
+            /* If what we're trying to overwrite is a robot, allow the
+             * user to overwrite it only if legacy placement is enabled.
              */
-            if(!((is_robot(level_id[offset]) && (!overlay_edit)) &&
-                 !mzx_world->editor_conf.editor_space_toggles))
+            int at_robot = (!overlay_edit) && is_robot(level_id[offset]);
+
+            if(!at_robot || mzx_world->editor_conf.editor_space_toggles)
             {
               current_param = place_current_at_xy(mzx_world, current_id,
                current_color, current_param, cursor_board_x, cursor_board_y,
