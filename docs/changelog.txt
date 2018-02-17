@@ -21,6 +21,9 @@ USERS
   when the updater is run.
 + Subroutines in pre-port MZX worlds now always return to the
   command after the subroutine was sent.
++ Typed color components now wrap from the maximum value to zero
+  like dialog number inputs, and pressing minus will now negate
+  the input number.
 + Fixed a bug where world decryption could crash. (Revvy)
 
 DEVELOPERS
