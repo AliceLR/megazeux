@@ -672,7 +672,7 @@ static void game_settings(struct world *mzx_world)
     if(!shader_default_text[0])
     {
       if(mzx_world->conf.gl_scaling_shader[0])
-        snprintf(shader_default_text, 19, "<conf: %s>",
+        snprintf(shader_default_text, 20, "<conf: %.11s>",
          mzx_world->conf.gl_scaling_shader);
 
       else

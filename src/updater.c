@@ -583,7 +583,7 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
       goto err_host_destroy;
     }
 
-    snprintf(update_branch, LINE_BUF_LEN, "Current-%s",
+    snprintf(update_branch, LINE_BUF_LEN, "Current-%.240s",
      conf->update_branch_pin);
 
     // Walk this list (of two, hopefully)

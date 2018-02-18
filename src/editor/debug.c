@@ -1364,8 +1364,9 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
        robot->local[(n-1)&31], NULL, i&255);
     }
 
-    snprintf(var, 14, "%i:%s", i, robot_list[i]->robot_name);
-    strcpy(robot_nodes[j].name, var);
+    snprintf(var, 20, "%i:%s", i, robot_list[i]->robot_name);
+    strncpy(robot_nodes[j].name, var, 14);
+    robot_nodes[j].name[14] = 0;
     robot_nodes[j].parent = robots;
     robot_nodes[j].num_nodes = 0;
     robot_nodes[j].nodes = NULL;
