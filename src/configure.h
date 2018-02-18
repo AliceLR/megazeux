@@ -33,6 +33,13 @@ enum ratio_type
   RATIO_STRETCH
 };
 
+enum update_auto_check_mode
+{
+  UPDATE_AUTO_CHECK_OFF = 0,
+  UPDATE_AUTO_CHECK_ON,
+  UPDATE_AUTO_CHECK_SILENT,
+};
+
 struct config_info
 {
   // Video options
@@ -88,6 +95,8 @@ struct config_info
   int update_host_count;
   char **update_hosts;
   char update_branch_pin[256];
+  int update_auto_check;
+  int update_available;
 #endif
 };
 

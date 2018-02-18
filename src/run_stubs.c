@@ -29,4 +29,5 @@ void load_editor_config(struct world *mzx_world, int *argc, char *argv[]) { }
 
 #ifdef CONFIG_UPDATER
 bool updater_init(int argc, char *argv[]) { return true; }
+bool is_updater(void) { return false; }
 #endif

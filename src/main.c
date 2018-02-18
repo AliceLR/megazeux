@@ -150,8 +150,23 @@ __libspec int main(int argc, char *argv[])
 
   if(network_layer_init(&mzx_world.conf))
   {
-    if(!updater_init(argc, argv))
-      info("Updater disabled.\n");
+#ifdef CONFIG_UPDATER
+    if(is_updater())
+    {
+      if(updater_init(argc, argv))
+      {
+        // No auto update checks on repo builds.
+        if(!strcmp(VERSION, "GIT") &&
+         !strcmp(mzx_world.conf.update_branch_pin, "Stable"))
+          mzx_world.conf.update_auto_check = UPDATE_AUTO_CHECK_OFF;
+
+        if(mzx_world.conf.update_auto_check)
+          check_for_updates(&mzx_world, &(mzx_world.conf), 1);
+      }
+      else
+        info("Updater disabled.\n");
+    }
+#endif
   }
   else
     info("Network layer disabled.\n");

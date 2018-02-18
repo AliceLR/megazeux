@@ -71,7 +71,7 @@ CORE_LIBSPEC extern void (*debug_robot_config)(struct world *mzx_world);
 
 #ifdef CONFIG_UPDATER
 CORE_LIBSPEC extern void (*check_for_updates)(struct world *mzx_world,
- struct config_info *conf);
+ struct config_info *conf, int is_automatic);
 #endif
 
 __M_END_DECLS

@@ -585,4 +585,12 @@
 
 # update_branch_pin = Stable
 
+# By default, MZX will check for updates on startup. There are three modes:
+# "on", which will display most messages; "silent", which will only display
+# certain errors and a message in the window caption; and "off", which disables
+# this feature altogether. The default setting is "silent". If you start MZX
+# in fullscreen, "on" is recommended.
+
+# update_auto_check = silent
+
 include pad.config

@@ -469,7 +469,8 @@ err_delete_failed:
   }
 }
 
-static bool reissue_connection(struct config_info *conf, struct host **h, char *host_name)
+static bool reissue_connection(struct config_info *conf, struct host **h,
+ char *host_name, int is_automatic)
 {
   bool ret = false;
   int buf_len;
@@ -485,7 +486,8 @@ static bool reissue_connection(struct config_info *conf, struct host **h, char *
   *h = host_create(HOST_TYPE_TCP, HOST_FAMILY_IPV4);
   if(!*h)
   {
-    error("Failed to create TCP client socket.", 1, 8, 0);
+    if(!is_automatic)
+      error("Failed to create TCP client socket.", 1, 8, 0);
     goto err_out;
   }
 
@@ -501,10 +503,13 @@ static bool reissue_connection(struct config_info *conf, struct host **h, char *
 
   if(!host_connect(*h, host_name, OUTBOUND_PORT))
   {
-    buf_len = snprintf(widget_buf, WIDGET_BUF_LEN,
-     "Connection to \"%s\" failed.", host_name);
-    widget_buf[WIDGET_BUF_LEN - 1] = 0;
-    error(widget_buf, 1, 8, 0);
+    if(!is_automatic)
+    {
+      buf_len = snprintf(widget_buf, WIDGET_BUF_LEN,
+       "Connection to \"%s\" failed.", host_name);
+      widget_buf[WIDGET_BUF_LEN - 1] = 0;
+      error(widget_buf, 1, 8, 0);
+    }
   }
   else
     ret = true;
@@ -517,7 +522,8 @@ err_out:
   return ret;
 }
 
-static void __check_for_updates(struct world *mzx_world, struct config_info *conf)
+static void __check_for_updates(struct world *mzx_world, struct config_info *conf,
+ int is_automatic)
 {
   int cur_host;
   char *update_host;
@@ -558,8 +564,11 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
 
     update_host = conf->update_hosts[cur_host];
 
-    if(!reissue_connection(conf, &h, update_host))
+    if(!reissue_connection(conf, &h, update_host, is_automatic))
       goto err_host_destroy;
+
+    if(is_automatic)
+      host_set_timeout_ms(h, 1000);
 
     for(retries = 0; retries < MAX_RETRIES; retries++)
     {
@@ -570,16 +579,19 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
       if(status == HOST_SUCCESS)
         break;
 
-      if(!reissue_connection(conf, &h, update_host))
+      if(!reissue_connection(conf, &h, update_host, is_automatic))
         goto err_host_destroy;
     }
 
     if(retries == MAX_RETRIES)
     {
-      snprintf(widget_buf, WIDGET_BUF_LEN, "Failed to download \""
-       UPDATES_TXT "\" (err=%d).\n", status);
-      widget_buf[WIDGET_BUF_LEN - 1] = 0;
-      error(widget_buf, 1, 8, 0);
+      if(!is_automatic)
+      {
+        snprintf(widget_buf, WIDGET_BUF_LEN, "Failed to download \""
+         UPDATES_TXT "\" (err=%d).\n", status);
+        widget_buf[WIDGET_BUF_LEN - 1] = 0;
+        error(widget_buf, 1, 8, 0);
+      }
       goto err_host_destroy;
     }
 
@@ -616,7 +628,8 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
      */
     if(!value)
     {
-      error("Failed to identify applicable update version.", 1, 8, 0);
+      if(!is_automatic)
+        error("Failed to identify applicable update version.", 1, 8, 0);
       goto err_host_destroy;
     }
 
@@ -635,6 +648,15 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
     {
       struct element *elements[6];
       struct dialog di;
+
+      conf->update_available = 1;
+
+      // If this is an auto check and silent mode is enabled, we can stop here.
+      if(is_automatic && conf->update_auto_check == UPDATE_AUTO_CHECK_SILENT)
+      {
+        try_next_host = false;
+        goto err_host_destroy;
+      }
 
       buf_len = snprintf(widget_buf, WIDGET_BUF_LEN,
        "A new major version is available (%s)", value);
@@ -669,6 +691,13 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
       // User pressed Upgrade, use new major
       if(result == 0)
         version = value;
+    }
+
+    // Switch back to the normal checking timeout for the rest of the process.
+    if(is_automatic)
+    {
+      host_set_timeout_ms(h, HOST_TIMEOUT_DEFAULT);
+      is_automatic = 0;
     }
 
     /* We can now compute a unique URL base for the updater. This will
@@ -711,7 +740,7 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
       if(m_ret)
         break;
 
-      if(!reissue_connection(conf, &h, update_host))
+      if(!reissue_connection(conf, &h, update_host, 0))
         goto err_roll_back_manifest;
     }
 
@@ -728,6 +757,9 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
     {
       struct element *elements[3];
       struct dialog di;
+
+      if(is_automatic)
+        goto err_free_update_manifests;
 
       elements[0] = construct_label(2, 2, "This client is already current.");
       elements[1] = construct_button(7, 4, "OK", 0);
@@ -854,7 +886,7 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
           goto err_free_delete_list;
         }
 
-        if(!reissue_connection(conf, &h, update_host))
+        if(!reissue_connection(conf, &h, update_host, 0))
           goto err_free_delete_list;
         host_set_callbacks(h, NULL, recv_cb, cancel_cb);
       }
@@ -952,5 +984,10 @@ bool updater_init(int argc, char *argv[])
 
 err_swivel_back:
   swivel_current_dir_back(false);
+  return true;
+}
+
+bool is_updater(void)
+{
   return true;
 }

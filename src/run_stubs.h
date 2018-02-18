@@ -44,9 +44,12 @@ static inline void load_editor_config(struct world *mzx_world,
 
 #ifdef CONFIG_UPDATER
 bool updater_init(int argc, char *argv[]);
+bool is_updater(void);
 #else
 static inline bool updater_init(int argc, char *argv[])
 { return true; }
+static inline bool is_updater(void)
+{ return false; }
 #endif
 
 __M_END_DECLS
