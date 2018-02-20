@@ -80,7 +80,7 @@ struct host
   int proto;
   int af;
   int fd;
-  int timeout_ms;
+  Uint32 timeout_ms;
 };
 
 static inline bool __host_last_error_fatal(void)
