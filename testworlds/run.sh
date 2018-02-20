@@ -28,7 +28,7 @@ disown
 
 i="0"
 
-while ps -efs | grep -q $mzxrun_pid
+while ps -sp $mzxrun_pid | grep -q $mzxrun_pid
 do
 	sleep 1
 	i=$[$i+1]
