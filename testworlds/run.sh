@@ -13,12 +13,34 @@ export SDL_VIDEODRIVER=dummy
 # Standalone mode will allow tests.mzx to terminate MZX and no_titlescreen mode
 # simplifies things. Disable auto update checking to save time.
 
-../mzxrun \
+mzxrun="../mzxrun \
   video_output=software \
   update_auto_check=off \
   standalone_mode=1 \
   no_titlescreen=1 \
-  tests.mzx
+  tests.mzx"
+
+# Run mzxrun and attempt to detect a hang (e.g. an error occurred).
+
+${mzxrun} &
+mzxrun_pid=$!
+disown
+
+i="0"
+
+while ps -efs | grep -q $mzxrun_pid
+do
+	sleep 1
+	i=$[$i+1]
+	printf "."
+	if [ $i -ge 10 ];
+	then
+		kill -9 $mzxrun_pid
+		echo "killing frozen process."
+		break
+	fi
+done
+echo ""
 
 # Color code PASS/FAIL tags and important numbers.
 
@@ -43,7 +65,7 @@ fi
 
 # Exit 1 if there are any failures.
 
-if grep -q "FAIL" log/failures;
+if [ ! -e log/failures ] || grep -q "FAIL" log/failures;
 then
 	exit 1
 else
