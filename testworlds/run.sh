@@ -14,11 +14,11 @@ export SDL_VIDEODRIVER=dummy
 # simplifies things. Disable auto update checking to save time.
 
 mzxrun="../mzxrun \
+  tests.mzx \
   video_output=software \
   update_auto_check=off \
   standalone_mode=1 \
-  no_titlescreen=1 \
-  tests.mzx"
+  no_titlescreen=1"
 
 # Run mzxrun and attempt to detect a hang (e.g. an error occurred).
 
