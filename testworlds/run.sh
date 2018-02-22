@@ -46,6 +46,11 @@ do
 done
 echo ""
 
+# Clean up some files that MegaZeux currently can't.
+
+rm -f LOCKED.MZX
+rm -f LOCKED.MZX.locked
+
 # Color code PASS/FAIL tags and important numbers.
 
 COL_END="`tput sgr0`"

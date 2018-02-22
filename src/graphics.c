@@ -1459,6 +1459,11 @@ bool init_video(struct config_info *conf, const char *caption)
 
 bool has_video_initialized(void)
 {
+#ifdef CONFIG_SDL
+  // Dummy SDL driver should act as headless.
+  const char *sdl_driver = SDL_GetCurrentVideoDriver();
+  if(sdl_driver && !strcmp(sdl_driver, "dummy")) return false;
+#endif
   return graphics_was_initialized;
 }
 

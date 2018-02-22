@@ -112,3 +112,4 @@ testworlds/log
 testworlds/next
 testworlds/temp/*
 !testworlds/temp/README.md
+!testworlds/data/*
