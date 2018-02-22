@@ -3,6 +3,10 @@
 cd "$(dirname "$0")"
 mkdir -p log
 
+# Clear out the temp folder.
+
+find temp/* ! -name README.md -exec rm -f {} \;
+
 # Force mzxrun to use the libraries in its directory instead of any installed libraries.
 export LD_LIBRARY_PATH=".."
 
