@@ -26,6 +26,8 @@
 
 extern const struct format_loader libxmp_loader_xm;
 extern const struct format_loader libxmp_loader_mod;
+extern const struct format_loader libxmp_loader_flt;
+extern const struct format_loader libxmp_loader_st;
 extern const struct format_loader libxmp_loader_it;
 extern const struct format_loader libxmp_loader_s3m;
 extern const struct format_loader libxmp_loader_stm;
@@ -42,12 +44,15 @@ extern const struct format_loader libxmp_loader_med4;
 extern const struct format_loader libxmp_loader_okt;
 extern const struct format_loader libxmp_loader_far;
 extern const struct format_loader libxmp_loader_669;
+extern const struct format_loader libxmp_loader_hmn;
 
 extern const struct pw_format *const pw_format[];
 
 const struct format_loader *const format_loader[NUM_FORMATS + 2] = {
 	&libxmp_loader_xm,
 	&libxmp_loader_mod,
+	&libxmp_loader_flt,
+	&libxmp_loader_st,
 	&libxmp_loader_it,
 	&libxmp_loader_s3m,
 	&libxmp_loader_stm,
@@ -63,6 +68,7 @@ const struct format_loader *const format_loader[NUM_FORMATS + 2] = {
 	&libxmp_loader_med4,
 	&libxmp_loader_okt,
 	&libxmp_loader_far,
+	&libxmp_loader_hmn,
 	&libxmp_loader_669,
 	NULL
 };

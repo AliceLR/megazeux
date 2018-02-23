@@ -9,8 +9,7 @@
 libxmp_base = contrib/libxmp
 
 libxmp_include = -I${libxmp_base}/include -I${libxmp_base}/src \
- -I${libxmp_base}/src/loaders -I${libxmp_base}/src/loaders/prowizard \
- -I${libxmp_base}/src/depackers
+ -I${libxmp_base}/src/loaders
 
 libxmp_cflags = -I${libxmp_base}/src/win32 ${libxmp_include} -w -O3 \
  -include src/platform_endian.h
@@ -22,11 +21,13 @@ WIN32_PATH = $(libxmp_base)/src/win32
 WIN32_OBJ = $(WIN32_PATH)/.build
 
 
+ifeq ($(OS),Windows_NT)
 libxmp_objs += $(addprefix $(WIN32_OBJ)/,$(WIN32_OBJS))
+endif
 
 
 SRC_OBJS	= virtual.o format.o period.o player.o read_event.o dataio.o \
-		  mkstemp.o fnmatch.o md5.o lfo.o scan.o control.o \
+		  fnmatch.o md5.o lfo.o scan.o control.o \
 		  med_extras.o filter.o effects.o mixer.o mix_all.o \
 		  load_helpers.o load.o hio.o hmn_extras.o extras.o smix.o \
 		  memio.o mix_paula.o
@@ -41,7 +42,7 @@ libxmp_objs += $(addprefix $(SRC_OBJ)/,$(SRC_OBJS))
 LOADERS	= xm_load.o mod_load.o s3m_load.o stm_load.o 669_load.o far_load.o \
 	  mtm_load.o okt_load.o ult_load.o it_load.o amf_load.o asylum_load.o \
 	  mmd_common.o mmd1_load.o mmd3_load.o med2_load.o med3_load.o med4_load.o \
-	  gdm_load.o
+	  gdm_load.o st_load.o flt_load.o hmn_load.o
 
 LOADERS_OBJS	= common.o iff.o itsex.o asif.o voltable.o sample.o $(LOADERS)
 
@@ -69,8 +70,11 @@ ${WIN32_OBJ}/%.o: ${WIN32_PATH}/%.c
 
 
 $(libxmp_objs): $(filter-out $(wildcard ${SRC_OBJ}), ${SRC_OBJ})
-$(libxmp_objs): $(filter-out $(wildcard ${WIN32_OBJ}), ${WIN32_OBJ})
 $(libxmp_objs): $(filter-out $(wildcard ${LOADERS_OBJ}), ${LOADERS_OBJ})
+
+ifeq ($(OS),Windows_NT)
+$(libxmp_objs): $(filter-out $(wildcard ${WIN32_OBJ}), ${WIN32_OBJ})
+endif
 
 libxmp_clean:
 	$(if ${V},,@echo "  RM      " ${SRC_OBJ})
