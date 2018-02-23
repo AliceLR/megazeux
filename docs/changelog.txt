@@ -1,4 +1,12 @@
-GIT
+TBA - MZX 2.91c
+
+This release contains an assortment of bugfixes ranging from
+player clone fixes to obscure compatibility patches. A handful
+of updater issues have been fixed (or at least addressed).
+
+MegaZeux can now automatically check for updates on startup on
+Windows platforms. This behavior can be configured, and by
+default will simply leave a message in the window caption.
 
 USERS
 
