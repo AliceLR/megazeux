@@ -3,8 +3,10 @@
 cd "$(dirname "$0")"
 mkdir -p log
 
-# Clear out the temp folder.
+# Clear out any backup files so they aren't mistaken for tests.
+rm -f backup*.mzx
 
+# Clear out the temp folder.
 find temp/* ! -name README.md -exec rm -f {} \;
 
 # Force mzxrun to use the libraries in its directory instead of any installed libraries.
@@ -48,6 +50,8 @@ echo ""
 
 # Clean up some files that MegaZeux currently can't.
 
+rm -f next
+rm -f saved.sav
 rm -f LOCKED.MZX
 rm -f LOCKED.MZX.locked
 
