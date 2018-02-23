@@ -970,7 +970,7 @@ static inline int save_world_sfx(struct world *mzx_world,
   if(mzx_world->custom_sfx_on)
   {
     return zip_write_file(zp, name, mzx_world->custom_sfx, NUM_SFX * SFX_SIZE,
-     ZIP_M_NONE);
+     ZIP_M_DEFLATE);
   }
 
   return ZIP_SUCCESS;
