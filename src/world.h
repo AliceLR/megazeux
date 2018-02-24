@@ -153,9 +153,9 @@ enum mzx_version
 // FIXME: hack
 #ifdef CONFIG_DEBYTECODE
 #undef  MZX_VERSION_PREV
-#define MZX_VERSION_PREV MZX_VERSION
+#define MZX_VERSION_PREV (V291)
 #undef  MZX_VERSION
-#define MZX_VERSION      (VSOURCE)
+#define MZX_VERSION      (VERSION_SOURCE)
 #endif
 
 enum val_result
