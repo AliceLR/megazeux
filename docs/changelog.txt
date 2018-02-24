@@ -41,6 +41,8 @@ USERS
   screen modes now works properly.
 + Fixed a crash that could occur when placing things on a vlayer
   larger than the current board.
++ Sharks and SpittingTigers with firing rates greater than 4 now
+  retain their firing rate when edited.
 + Fixed a bug where world decryption could crash. (Revvy)
 
 DEVELOPERS
