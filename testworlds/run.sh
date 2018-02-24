@@ -1,5 +1,24 @@
 #!/bin/bash
 
+# Use make test
+if [ -z $1 ] || [ $1 = "unix" -a -z $2 ]; then
+       echo "USAGE: ./run.sh {PLATFORM} {LIBDIR} (or use make test)";
+       exit 1
+fi
+
+# On unix platforms, installed libraries will override the ones we want used.
+# The user has to manually remove or rename them to test if they aren't correct.
+if [ $1 = "unix" ] && [ $2 != "." ] && [ -e "$2/libcore.so" ]; then
+       diff -u libcore.so $2/libcore.so
+       if [ $? -ne 0 ]; then
+               echo "ERROR: Remove or update $2/libcore.so and try again";
+               exit 1;
+       fi
+fi
+
+# Unix release builds will try to find this if it isn't installed.
+ln -s config.txt megazeux-config
+
 cd "$(dirname "$0")"
 mkdir -p log
 
@@ -9,7 +28,12 @@ rm -f backup*.mzx
 # Clear out the temp folder.
 find temp/* ! -name README.md -exec rm -f {} \;
 
-# Force mzxrun to use the libraries in its directory instead of any installed libraries.
+# Clear out the default logs
+rm -f log/detailed
+rm -f log/summary
+rm -f log/failures
+
+# Force mzxrun to use the libraries in its own directory.
 export LD_LIBRARY_PATH=".."
 
 # Coupled with the software renderer, this will disable video in MZX, speeding things up
@@ -54,6 +78,7 @@ rm -f next
 rm -f saved.sav
 rm -f LOCKED.MZX
 rm -f LOCKED.MZX.locked
+rm -f ../megazeux-config
 
 # Color code PASS/FAIL tags and important numbers.
 

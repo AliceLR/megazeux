@@ -322,7 +322,7 @@ help_check: ${hlp2txt} assets/help.fil
 	@rm -f help.txt
 
 test: mzx
-	@testworlds/run.sh
+	@testworlds/run.sh @{PLATFORM} @{LIBDIR}
 
 test_clean:
 	@rm -rf testworlds/log
