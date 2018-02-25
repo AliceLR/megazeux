@@ -2929,7 +2929,7 @@ __editor_maybe_static void default_global_data(struct world *mzx_world)
   scroll_color = 15;
 
   mzx_world->lock_speed = 0;
-  mzx_world->mzx_speed = mzx_world->default_speed;
+  mzx_world->mzx_speed = mzx_world->conf.mzx_speed;
 
   assert(mzx_world->input_file == NULL);
   assert(mzx_world->output_file == NULL);
