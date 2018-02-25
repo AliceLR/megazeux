@@ -73,7 +73,7 @@
 #endif
 
 #ifndef VIDEO_OUTPUT_DEFAULT
-#define VIDEO_OUTPUT_DEFAULT "glsl"
+#define VIDEO_OUTPUT_DEFAULT "auto_glsl"
 #endif
 
 #ifndef AUDIO_BUFFER_SIZE

@@ -175,6 +175,7 @@ struct glsl_render_data
   GLuint tilemap_smzx_program;
   GLuint mouse_program;
   GLuint cursor_program;
+  struct config_info *conf;
 };
 
 static char *source_cache[SHADERS_CURSOR_FRAG - SHADERS_SCALER_VERT + 1];
@@ -513,6 +514,7 @@ static bool glsl_init_video(struct graphics_data *graphics,
 
   render_data->pixels = cmalloc(sizeof(Uint32) * GL_POWER_2_WIDTH *
    GL_POWER_2_HEIGHT);
+  render_data->conf = conf;
   if(!render_data->pixels)
     goto err_free;
 
@@ -624,7 +626,7 @@ static bool glsl_set_video_mode(struct graphics_data *graphics,
         warn("Need >= OpenGL 2.0, got OpenGL %.1f.\n", version_float);
         return false;
       }
-
+      
       initialized = true;
     }
   }
@@ -632,6 +634,33 @@ static bool glsl_set_video_mode(struct graphics_data *graphics,
 
   glsl_resize_screen(graphics, width, height);
   return true;
+}
+
+static bool glsl_auto_set_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, bool fullscreen, bool resize)
+{
+  const char *renderer;
+  struct glsl_render_data *render_data = graphics->render_data;
+
+  if(glsl_set_video_mode(graphics, width, height, depth, fullscreen, resize))
+  {
+
+    // Driver blacklist. If the renderer is on the blacklist we want to fall
+    // back on software as these renderers have disastrous GLSL performance.
+
+    renderer = (const char *)glsl.glGetString(GL_RENDERER);
+    if(strstr(renderer, "llvmpipe"))
+    {
+      warn("Detected MESA software renderer. Disabling glsl.");
+      return false;
+    }
+
+    // Overwrite the original video_output now that we know glsl works
+    strcpy(render_data->conf->video_output, "glsl");
+
+    return true;
+  }
+  return false;
 }
 
 static void glsl_remap_char(struct graphics_data *graphics, Uint16 chr)
@@ -1165,4 +1194,10 @@ void render_glsl_register(struct renderer *renderer)
   renderer->render_mouse = glsl_render_mouse;
   renderer->sync_screen = glsl_sync_screen;
   renderer->switch_shader = glsl_switch_shader;
+}
+
+void render_auto_glsl_register(struct renderer *renderer)
+{
+  render_glsl_register(renderer);
+  renderer->set_video_mode = glsl_auto_set_video_mode;
 }
