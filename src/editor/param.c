@@ -780,7 +780,7 @@ static int pe_fish(struct world *mzx_world, int param)
 static int pe_shark(struct world *mzx_world, int param)
 {
   int intel = (param & 0x07) + 1;
-  int fire_rate = ((param >> 5) & 0x03) + 1;
+  int fire_rate = ((param >> 5) & 0x07) + 1;
   int fires = ((param >> 3) & 0x03);
   struct dialog di;
   struct element *elements[5];

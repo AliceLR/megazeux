@@ -496,7 +496,8 @@ enum val_result validate_legacy_world_file(const char *file,
 
       error_message(E_WORLD_PASSWORD_PROTECTED, 0, NULL);
 
-      if(!confirm(NULL, "Would you like to decrypt it?"))
+      if(!has_video_initialized() ||
+       !confirm(NULL, "Would you like to decrypt it?"))
       {
         fclose(f);
         decrypt(file);

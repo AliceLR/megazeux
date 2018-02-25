@@ -1,5 +1,4 @@
 diff --git a/include/xmp.h b/include/xmp.h
-index e3d223e..02008c9 100644
 --- a/include/xmp.h
 +++ b/include/xmp.h
 @@ -11,6 +11,12 @@ extern "C" {
@@ -15,17 +14,3 @@ index e3d223e..02008c9 100644
  #if defined(_WIN32) && !defined(__CYGWIN__)
  # if defined(BUILDING_STATIC)
  #  define EXPORT
-diff --git a/src/mkstemp.c b/src/mkstemp.c
-index 730074e..49c7e98 100644
---- a/src/mkstemp.c
-+++ b/src/mkstemp.c
-@@ -37,6 +37,9 @@
-  * SUCH DAMAGE.
-  */
- 
-+/* Fixes a bug where this file wouldn't build because of pid_t. */
-+#include <sys/types.h>
-+
- #include <string.h>
- #include <unistd.h>
- #include <fcntl.h>

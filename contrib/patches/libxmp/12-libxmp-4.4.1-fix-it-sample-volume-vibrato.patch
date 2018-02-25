@@ -1,7 +1,7 @@
 diff --git a/src/loaders/it_load.c b/src/loaders/it_load.c
 index 1009557..29736d7 100644
---- a/contrib/libxmp/src/loaders/it_load.c
-+++ b/contrib/libxmp/src/loaders/it_load.c
+--- a/src/loaders/it_load.c
++++ b/src/loaders/it_load.c
 @@ -782,6 +782,7 @@ static int load_it_sample(struct module_data *m, int i, int start,
  
  	if (sample_mode) {

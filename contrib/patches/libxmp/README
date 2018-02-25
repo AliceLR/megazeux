@@ -2,29 +2,84 @@ These patches are designed to get a fresh copy of libxmp 4.4.1 in line with
 MegaZeux's needs. Apply them in order (01, 02, ...) for best results. Then, copy
 Makefile.megazeux to the contrib/libxmp directory.
 
-After the depacker and format patches are applied, the depackers folder and all
-removed format loaders should be deleted.
+After the depacker and format patches are applied, the depackers folder, the
+prowizard folder, and all removed format loaders should be deleted:
+
+	src/depackers/
+	src/loaders/prowizard/
+	src/depacker.h
+	src/fmopl.c
+	src/fmopl.h
+	src/lutgen.c
+	src/mkstemp.c
+	src/tempfile.c
+	src/tempfile.h
+	src/loaders/abk_load.c
+	src/loaders/alm_load.c
+	src/loaders/amd_load.c
+	src/loaders/arch_load.c
+	src/loaders/chip_load.c
+	src/loaders/coco_load.c
+	src/loaders/dbm_load.c
+	src/loaders/digi_load.c
+	src/loaders/dmf_load.c
+	src/loaders/dt_load.c
+	src/loaders/dtt_load.c
+	src/loaders/emod_load.c
+	src/loaders/fcm_load.c
+	src/loaders/fnk_load.c
+	src/loaders/ftm_load.c
+	src/loaders/gal4_load.c
+	src/loaders/gal5_load.c
+	src/loaders/gtk_load.c
+	src/loaders/hsc_load.c
+	src/loaders/hvl_load.c
+	src/loaders/ice_load.c
+	src/loaders/imf_load.c
+	src/loaders/ims_load.c
+	src/loaders/liq_load.c
+	src/loaders/masi_load.c
+	src/loaders/mdl_load.c
+	src/loaders/mfp_load.c
+	src/loaders/mgt_load.c
+	src/loaders/no_load.c
+	src/loaders/polly_load.c
+	src/loaders/prowizard
+	src/loaders/psm_load.c
+	src/loaders/pt3_load.c
+	src/loaders/ptm_load.c
+	src/loaders/pw_load.c
+	src/loaders/rad_load.c
+	src/loaders/rtm_load.c
+	src/loaders/sfx_load.c
+	src/loaders/ssmt_load.c
+	src/loaders/stc_load.c
+	src/loaders/stim_load.c
+	src/loaders/stx_load.c
+	src/loaders/sym_load.c
+	src/loaders/tcb_load.c
+	src/loaders/umx_load.c
 
 Patch summary
 -------------
 
 01: Initial integration patch. Suppresses debug messages, forces static build.
-02: A hack required so unistd.h wouldn't cause issues. Should be revised.
-03: Fixes https://github.com/cmatsuoka/libxmp/issues/97. This has been merged
-    upstream in PR https://github.com/cmatsuoka/libxmp/pull/98.
-04: Fixes https://github.com/cmatsuoka/libxmp/issues/98. This has been merged
-    upstream in PR https://github.com/cmatsuoka/libxmp/pull/99.
-05: Disables USE_VERSIONED_SYMBOLS. Required to get our hacked libxmp to link
-    on unix platforms. Ideally these platforms will eventually dynamically link.
-06: Fixes https://github.com/cmatsuoka/libxmp/issues/102 (global sample volume)
-    and https://github.com/cmatsuoka/libxmp/issues/103 (sample vibrato).
-07: Removes the depackers (messy).
-08: Removes the less common formats that weren't supported by libmodplug.
-09: (by Spectere) cleans up part of the depacker removal mess. Merge with 07.
-10: (by Spectere) cleans up more of the depacker removal mess. Merge with 07.
-11: (by Spectere) cleans up more of the depacker removal mess. Merge with 07.
-12: (by NoSuck) adds https://github.com/cmatsuoka/libxmp/pull/105 (xmp_set_row),
+02: Removes the depackers. Cleaned up by Spectere.
+03: Removes less common formats that weren't supported by libmodplug.
+04: (by NoSuck) adds https://github.com/cmatsuoka/libxmp/pull/105 (xmp_set_row),
     putting libxmp's support for setting MOD_POSITION in line with libmodplug.
+
+10: Fixes https://github.com/cmatsuoka/libxmp/issues/97. This has been merged
+    upstream in PR https://github.com/cmatsuoka/libxmp/pull/98.
+11: Fixes https://github.com/cmatsuoka/libxmp/issues/98. This has been merged
+    upstream in PR https://github.com/cmatsuoka/libxmp/pull/99.
+12: Fixes https://github.com/cmatsuoka/libxmp/issues/102 (global sample volume)
+    and https://github.com/cmatsuoka/libxmp/issues/103 (sample vibrato).
+
+20: Disables USE_VERSIONED_SYMBOLS. Required to get our hacked libxmp to link
+    on unix platforms. Ideally these platforms will eventually dynamically link.
+30: (by Spectere) Compatibility patch for newever versions of MSVC, which
+    have snprintf and vnprintf.
 
 Unix note
 ---------

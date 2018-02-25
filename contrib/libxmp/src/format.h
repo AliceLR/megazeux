@@ -14,10 +14,7 @@ struct format_loader {
 char **format_list(void);
 
 #ifndef LIBXMP_CORE_PLAYER
-
-#define NUM_FORMATS 19
-
-int pw_test_format(HIO_HANDLE *, char *, const int, struct xmp_test_info *);
+#define NUM_FORMATS 22
 #endif
 
 #endif

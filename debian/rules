@@ -30,9 +30,7 @@ build-stamp: configure-stamp
 test: test-stamp
 test-stamp: build-stamp
 	dh_testdir
-	cp config.txt megazeux-config
 	$(MAKE) test
-	rm megazeux-config
 	touch test-stamp
 
 clean:
