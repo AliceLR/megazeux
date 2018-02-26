@@ -256,8 +256,10 @@ static struct audio_stream *modplug_convert_gdm(char *filename,
    * the real source path for it. Translate accordingly.
    */
   if(!have_s3m && !fsafetranslate(filename, translated_filename_dest))
-   convert_gdm_s3m(translated_filename_dest, new_file);
-    have_s3m = 1;
+  {
+    if(!convert_gdm_s3m(translated_filename_dest, new_file))
+      have_s3m = 1;
+  }
 
   /* If we have an S3M, we can now load it. Otherwise, abort.*/
   if(have_s3m)
