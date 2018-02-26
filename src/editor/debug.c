@@ -26,7 +26,6 @@
 #include "robo_debug.h"
 #include "window.h"
 
-#include "../audio.h"
 #include "../counter.h"
 #include "../event.h"
 #include "../graphics.h"
@@ -36,6 +35,8 @@
 #include "../util.h"
 #include "../window.h"
 #include "../world.h"
+
+#include "../audio/audio.h"
 
 #include <string.h>
 

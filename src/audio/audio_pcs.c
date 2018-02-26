@@ -24,7 +24,7 @@
 #include "audio_pcs.h"
 #include "sfx.h"
 
-#include "configure.h"
+#include "../configure.h"
 
 struct pc_speaker_stream
 {

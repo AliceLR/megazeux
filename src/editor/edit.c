@@ -19,7 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "../audio.h"
 #include "../block.h"
 #include "../const.h"
 #include "../counter.h"
@@ -35,10 +34,12 @@
 #include "../mzm.h"
 #include "../platform.h"
 #include "../scrdisp.h"
-#include "../sfx.h"
 #include "../util.h"
 #include "../window.h"
 #include "../world.h"
+
+#include "../audio/audio.h"
+#include "../audio/sfx.h"
 
 #include "block.h"
 #include "board.h"

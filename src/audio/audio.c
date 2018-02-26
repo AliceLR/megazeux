@@ -28,16 +28,16 @@
 
 #include <sys/stat.h>
 
-#include "platform.h"
-#include "data.h"
-#include "configure.h"
-#include "fsafeopen.h"
-#include "util.h"
-
 #include "audio.h"
 #include "audio_pcs.h"
 #include "stream_registry.h"
 #include "stream_sampled.h"
+
+#include "../configure.h"
+#include "../data.h"
+#include "../fsafeopen.h"
+#include "../platform.h"
+#include "../util.h"
 
 #if defined(CONFIG_MODPLUG) + defined(CONFIG_MIKMOD) + \
  defined(CONFIG_XMP) + defined(CONFIG_OPENMPT) > 1

@@ -33,27 +33,26 @@
 #include <unistd.h>
 #endif
 
-#include "platform.h"
-#include "event.h"
-#include "helpsys.h"
-#include "sfx.h"
-#include "error.h"
-#include "intake.h"
-#include "window.h"
-#include "graphics.h"
-#include "const.h"
-#include "data.h"
-#include "helpsys.h"
-#include "robot.h"
 #include "board.h"
+#include "const.h"
+#include "context_enum.h"
+#include "data.h"
+#include "error.h"
+#include "event.h"
+#include "graphics.h"
+#include "helpsys.h"
+#include "intake.h"
+#include "platform.h"
+#include "robot.h"
+#include "window.h"
 #include "world.h"
 #include "util.h"
+
+#include "audio/sfx.h"
 
 #ifdef CONFIG_WII
 #include <sys/iosupport.h>
 #endif
-
-#include "context_enum.h"
 
 // This context stuff was originally in helpsys, but it's actually
 // more of a property of the windowing system.

@@ -25,16 +25,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "game2.h"
-#include "game.h"
-#include "sfx.h"
+#include "const.h"
 #include "counter.h"
 #include "data.h"
-#include "idput.h"
-#include "const.h"
+#include "game.h"
+#include "game2.h"
 #include "idarray.h"
+#include "idput.h"
 #include "robot.h"
 #include "util.h"
+
+#include "audio/sfx.h"
 
 // For missile turning (directions)
 

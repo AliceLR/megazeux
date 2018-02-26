@@ -35,18 +35,19 @@
 #include "configure.h"
 #include "event.h"
 #include "helpsys.h"
-#include "sfx.h"
 #include "graphics.h"
 #include "window.h"
 #include "data.h"
 #include "game.h"
 #include "error.h"
 #include "idput.h"
-#include "audio.h"
 #include "util.h"
 #include "world.h"
 #include "counter.h"
 #include "run_stubs.h"
+
+#include "audio/audio.h"
+#include "audio/sfx.h"
 #include "network/network.h"
 
 #ifndef VERSION

@@ -23,12 +23,12 @@
 #ifndef __AUDIO_H
 #define __AUDIO_H
 
-#include "compat.h"
+#include "../compat.h"
 
 __M_BEGIN_DECLS
 
-#include "platform.h"
-#include "configure.h"
+#include "../platform.h"
+#include "../configure.h"
 
 #ifdef CONFIG_AUDIO
 

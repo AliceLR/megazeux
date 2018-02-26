@@ -27,8 +27,9 @@
 #include "audio_modplug.h"
 #include "stream_registry.h"
 #include "stream_sampled.h"
-#include "const.h"
-#include "util.h"
+
+#include "../const.h"
+#include "../util.h"
 
 struct _ModPlugFile
 {

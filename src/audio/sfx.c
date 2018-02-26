@@ -27,7 +27,7 @@
 #include "audio_pcs.h"
 #include "sfx.h"
 
-#include "data.h"
+#include "../data.h"
 
 static int topindex = 0;  // Marks the top of the queue
 static int backindex = 0; // Marks bottom of queue

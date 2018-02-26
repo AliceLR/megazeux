@@ -24,8 +24,9 @@
 #include "audio_xmp.h"
 #include "stream_registry.h"
 #include "stream_sampled.h"
-#include "const.h"
-#include "util.h"
+
+#include "../const.h"
+#include "../util.h"
 
 //#ifdef __WIN32__
 //#define BUILDING_STATIC

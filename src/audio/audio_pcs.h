@@ -1,6 +1,8 @@
 /* MegaZeux
  *
+ * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  * Copyright (C) 2007 Alistair John Strachan <alistair@devzero.co.uk>
+ * Copyright (C) 2018 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,17 +19,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/* Declarations */
+#ifndef __AUDIO_PCS_H
+#define __AUDIO_PCS_H
 
-#ifndef __AUDIO_OPENMPT_H
-#define __AUDIO_OPENMPT_H
-
-#include "compat.h"
+#include "../compat.h"
 
 __M_BEGIN_DECLS
 
-void init_openmpt(struct config_info *conf);
+void sound(int frequency, int duration);
+void nosound(int duration);
+
+void init_pc_speaker(struct config_info *conf);
 
 __M_END_DECLS
 
-#endif  // __AUDIO_OPENMPT_H
+#endif /* __AUDIO_PCS_H */

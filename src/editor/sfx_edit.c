@@ -21,8 +21,9 @@
 
 #include <string.h>
 
+#include "../audio/sfx.h"
+
 #include "../helpsys.h"
-#include "../sfx.h"
 #include "../window.h"
 #include "../event.h"
 #include "../data.h"

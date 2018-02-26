@@ -24,7 +24,6 @@
 #include <time.h>
 #include <string.h>
 
-#include "audio.h"
 #include "block.h"
 #include "const.h"
 #include "counter.h"
@@ -42,12 +41,14 @@
 #include "mzm.h"
 #include "robot.h"
 #include "scrdisp.h"
-#include "sfx.h"
 #include "sprite.h"
 #include "str.h"
 #include "util.h"
 #include "window.h"
 #include "world.h"
+
+#include "audio/audio.h"
+#include "audio/sfx.h"
 
 #define parsedir(a, b, c, d) \
  parsedir(mzx_world, a, b, c, d, _bl[0], _bl[1], _bl[2], _bl[3])

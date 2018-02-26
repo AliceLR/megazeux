@@ -25,7 +25,7 @@
 #include "event.h"
 
 #ifdef CONFIG_AUDIO
-#include "audio.h"
+#include "audio/audio.h"
 #endif
 
 #include <sys/time.h>

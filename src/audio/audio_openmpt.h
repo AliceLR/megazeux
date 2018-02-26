@@ -19,15 +19,15 @@
 
 /* Declarations */
 
-#ifndef __AUDIO_XMP_H
-#define __AUDIO_XMP_H
+#ifndef __AUDIO_OPENMPT_H
+#define __AUDIO_OPENMPT_H
 
-#include "compat.h"
+#include "../compat.h"
 
 __M_BEGIN_DECLS
 
-void init_xmp(struct config_info *conf);
+void init_openmpt(struct config_info *conf);
 
 __M_END_DECLS
 
-#endif  // __AUDIO_XMP_H
+#endif  // __AUDIO_OPENMPT_H

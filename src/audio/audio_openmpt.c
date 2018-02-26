@@ -24,8 +24,9 @@
 #include "audio_openmpt.h"
 #include "stream_registry.h"
 #include "stream_sampled.h"
-#include "const.h"
-#include "util.h"
+
+#include "../const.h"
+#include "../util.h"
 
 #include <libopenmpt/libopenmpt.h>
 #include <libopenmpt/libopenmpt_stream_callbacks_file.h>

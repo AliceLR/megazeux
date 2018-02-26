@@ -22,12 +22,12 @@
 #ifndef __AUDIO_STREAM_REGISTRY_H
 #define __AUDIO_STREAM_REGISTRY_H
 
-#include "compat.h"
+#include "../compat.h"
 
 __M_BEGIN_DECLS
 
+#include "../platform.h"
 #include "audio.h"
-#include "platform.h"
 
 typedef struct audio_stream *(*construct_stream_fn)(char *,
  Uint32, Uint32, Uint32);

@@ -23,7 +23,7 @@
 #include "audio.h"
 #include "stream_registry.h"
 
-#include "util.h"
+#include "../util.h"
 
 struct registry_entry
 {

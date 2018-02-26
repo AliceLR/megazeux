@@ -24,8 +24,9 @@
 #include "audio_mikmod.h"
 #include "stream_registry.h"
 #include "stream_sampled.h"
-#include "const.h"
-#include "util.h"
+
+#include "../const.h"
+#include "../util.h"
 
 // TODO: deSDL MikMod plugin
 #include "SDL.h"

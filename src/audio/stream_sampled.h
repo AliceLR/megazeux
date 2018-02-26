@@ -22,7 +22,7 @@
 #ifndef __AUDIO_STREAM_SAMPLED_H
 #define __AUDIO_STREAM_SAMPLED_H
 
-#include "compat.h"
+#include "../compat.h"
 
 __M_BEGIN_DECLS
 

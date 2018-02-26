@@ -28,7 +28,6 @@
 
 #include "counter.h"
 
-#include "audio.h"
 #include "data.h"
 #include "error.h"
 #include "event.h"
@@ -45,6 +44,8 @@
 #include "time.h"
 #include "util.h"
 #include "world.h"
+
+#include "audio/audio.h"
 
 #ifdef CONFIG_UTHASH
 #include <utcasehash.h>

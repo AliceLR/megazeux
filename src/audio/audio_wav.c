@@ -24,7 +24,7 @@
 #include "stream_registry.h"
 #include "stream_sampled.h"
 
-#include "util.h"
+#include "../util.h"
 
 // For WAV loader fallback
 #ifdef CONFIG_SDL

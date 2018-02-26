@@ -34,7 +34,6 @@
 #include "world_prop.h"
 #include "legacy_world.h"
 
-#include "audio.h"
 #include "board.h"
 #include "configure.h"
 #include "const.h"
@@ -49,12 +48,14 @@
 #include "idput.h"
 #include "memfile.h"
 #include "robot.h"
-#include "sfx.h"
 #include "sprite.h"
 #include "str.h"
 #include "util.h"
 #include "window.h"
 #include "zip.h"
+
+#include "audio/audio.h"
+#include "audio/sfx.h"
 
 #ifdef CONFIG_LOADSAVE_METER
 

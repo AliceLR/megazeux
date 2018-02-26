@@ -19,10 +19,10 @@
 
 /* Prototypes for SFX.CPP */
 
-#ifndef __SFX_H
-#define __SFX_H
+#ifndef __AUDIO_SFX_H
+#define __AUDIO_SFX_H
 
-#include "compat.h"
+#include "../compat.h"
 
 __M_BEGIN_DECLS
 
@@ -31,7 +31,8 @@ __M_BEGIN_DECLS
 #define SFX_SIZE        69
 #define LEGACY_SFX_SIZE 69
 
-#include "world_struct.h"
+// Requires NUM_SFX/SFX_SIZE, so include after.
+#include "../world_struct.h"
 
 // Size of sound queue
 #define NOISEMAX        4096
@@ -67,4 +68,4 @@ static inline int sfx_length_left(void) { return 0; }
 
 __M_END_DECLS
 
-#endif // __SFX_H
+#endif // __AUDIO_SFX_H
