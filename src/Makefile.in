@@ -236,7 +236,7 @@ core_flags += ${VORBIS_CFLAGS}
 core_ldflags := ${VORBIS_LDFLAGS} ${core_ldflags}
 else
 # Required anyway for sfx_strs...
-core_cobj += ${core_obj}/sfx.o
+core_cobjs += ${core_obj}/sfx.o
 endif
 
 ifeq (${BUILD_SDL},1)
