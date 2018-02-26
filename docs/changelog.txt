@@ -47,6 +47,9 @@ USERS
 + If the glsl renderer is selected by default, the detection of
   a software opengl driver will result in falling back to
   software. (Lancer-X)
++ Fixed a bug in the GLSL renderer where an additional window is
+  created if the OpenGL version is low enough to cause a
+  fallback to software. (Lancer-X)
 
 DEVELOPERS
 
