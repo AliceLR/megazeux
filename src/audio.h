@@ -86,9 +86,6 @@ struct audio
 
 extern struct audio audio;
 
-#define freq_conversion 3579364
-#define default_period 428
-
 CORE_LIBSPEC void set_max_samples(int max_samples);
 CORE_LIBSPEC int get_max_samples(void);
 
@@ -96,7 +93,7 @@ CORE_LIBSPEC void init_audio(struct config_info *conf);
 CORE_LIBSPEC void quit_audio(void);
 CORE_LIBSPEC int load_module(char *filename, bool safely, int volume);
 CORE_LIBSPEC void end_module(void);
-CORE_LIBSPEC void play_sample(int freq, char *filename, bool safely);
+CORE_LIBSPEC void play_sample(int period, char *filename, bool safely);
 CORE_LIBSPEC void volume_module(int vol);
 
 void end_sample(void);
@@ -125,6 +122,7 @@ void set_sfx_volume(int volume);
 // Internal functions
 void init_wav(struct config_info *conf);
 void init_vorbis(struct config_info *conf);
+int audio_get_real_frequency(int period);
 void destruct_audio_stream(struct audio_stream *a_src);
 void construct_audio_stream(struct audio_stream *a_src,
  Uint32 (* mix_data)(struct audio_stream *a_src, Sint32 *buffer, Uint32 len),
@@ -161,7 +159,7 @@ static inline void volume_module(int vol) {}
 static inline void set_position(int pos) {}
 static inline void jump_module(int order) {}
 static inline void shift_frequency(int freq) {}
-static inline void play_sample(int freq, char *filename, bool safely) {}
+static inline void play_sample(int period, char *filename, bool safely) {}
 static inline int get_music_on_state(void) { return 0; }
 static inline int get_sfx_on_state(void) { return 0; }
 static inline int get_music_volume(void) { return 0; }

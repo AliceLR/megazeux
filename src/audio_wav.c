@@ -37,6 +37,9 @@
 #define SAMPLE_S8     1
 #define SAMPLE_S16LSB 2
 
+// Default period for .SAM files.
+static const int default_period = 428;
+
 struct wav_info
 {
   Uint32 channels;
@@ -362,7 +365,7 @@ static int load_sam_file(const char *file, struct wav_info *spec,
 
   // Default to no loop
   spec->channels = 1;
-  spec->freq = freq_conversion / default_period;
+  spec->freq = audio_get_real_frequency(default_period);
   spec->format = SAMPLE_S8;
   spec->loop_start = 0;
   spec->loop_end = 0;

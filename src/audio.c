@@ -108,6 +108,14 @@ static void unlock(const char *file, int line)
 
 #endif // DEBUG
 
+static const int freq_conversion = 3579364;
+
+int audio_get_real_frequency(int period)
+{
+  /* Convert MZX's "frequencies" to an actual usable frequency. */
+  return freq_conversion / period;
+}
+
 void destruct_audio_stream(struct audio_stream *a_src)
 {
   if(a_src == audio.stream_list_base)
@@ -396,7 +404,7 @@ static void limit_samples(int max)
   UNLOCK();
 }
 
-void play_sample(int freq, char *filename, bool safely)
+void play_sample(int period, char *filename, bool safely)
 {
   Uint32 vol = 255 * audio.sound_volume / 8;
   char translated_filename[MAX_PATH];
@@ -412,14 +420,15 @@ void play_sample(int freq, char *filename, bool safely)
     filename = translated_filename;
   }
 
-  if(freq == 0)
+  if(period == 0)
   {
+    // Use 0 to instruct handler to get default frequency
     construct_stream_audio_file(filename, 0, vol, 0);
   }
   else
   {
     construct_stream_audio_file(filename,
-     (freq_conversion / freq) / 2, vol, 0);
+     audio_get_real_frequency(period * 2), vol, 0);
   }
 
   limit_samples(audio.max_simultaneous_samples);
