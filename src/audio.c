@@ -35,7 +35,7 @@
 #include "util.h"
 
 #include "audio.h"
-#include "stream_pcs.h"
+#include "audio_pcs.h"
 #include "stream_registry.h"
 #include "stream_sampled.h"
 

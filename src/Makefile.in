@@ -227,8 +227,8 @@ endif
 
 ifeq (${BUILD_AUDIO},1)
 core_cobjs += \
- ${core_obj}/audio.o ${core_obj}/audio_vorbis.o                      \
- ${core_obj}/audio_wav.o ${core_obj}/stream_pcs.o                    \
+ ${core_obj}/audio.o ${core_obj}/audio_pcs.o                         \
+ ${core_obj}/audio_vorbis.o ${core_obj}/audio_wav.o                  \
  ${core_obj}/stream_sampled.o ${core_obj}/stream_registry.o          \
  ${core_obj}/sfx.o
 

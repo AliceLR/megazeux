@@ -21,8 +21,8 @@
  */
 
 #include "audio.h"
+#include "audio_pcs.h"
 #include "sfx.h"
-#include "stream_pcs.h"
 
 #include "configure.h"
 

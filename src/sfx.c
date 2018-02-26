@@ -24,7 +24,7 @@
 #include <stdlib.h>
 
 #include "audio.h"
-#include "stream_pcs.h"
+#include "audio_pcs.h"
 #include "sfx.h"
 
 #include "data.h"

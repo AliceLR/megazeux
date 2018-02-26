@@ -61,6 +61,7 @@ static inline void clear_sfx_queue(void) {}
 static inline void play_sfx(struct world *mzx_world, int sfxn) {}
 static inline void play_str(char *str, int sfx_play) {}
 static inline char is_playing(void) { return 0; }
+static inline int sfx_length_left(void) { return 0; }
 
 #endif // CONFIG_AUDIO
 
