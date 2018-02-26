@@ -99,6 +99,7 @@ void rng_set_seed(unsigned long long seed);
 unsigned int Random(unsigned long long range);
 
 CORE_LIBSPEC void add_ext(char *src, const char *ext);
+CORE_LIBSPEC int get_ext_pos(const char *filename);
 CORE_LIBSPEC ssize_t get_path(const char *file_name, char *dest, unsigned int buf_len);
 #ifdef CONFIG_UTILS
 ssize_t __get_path(const char *file_name, char *dest, unsigned int buf_len);

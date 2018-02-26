@@ -23,12 +23,14 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "sfx.h"
-#include "data.h"
 #include "audio.h"
+#include "stream_pcs.h"
+#include "sfx.h"
 
-int topindex = 0;  // Marks the top of the queue
-int backindex = 0; // Marks bottom of queue
+#include "data.h"
+
+static int topindex = 0;  // Marks the top of the queue
+static int backindex = 0; // Marks bottom of queue
 
 #if defined(CONFIG_AUDIO) || defined(CONFIG_EDITOR)
 
@@ -368,7 +370,7 @@ void clear_sfx_queue(void)
   nosound(1);
 }
 
-void sound_system(void)
+void sfx_next_note(void)
 {
   int sfx_on = get_sfx_on_state();
 
@@ -404,6 +406,16 @@ void sound_system(void)
 char is_playing(void)
 {
   return sound_in_queue;
+}
+
+int sfx_length_left(void)
+{
+  int left = topindex - backindex;
+
+  if(left < 0)
+    left = topindex + (NOISEMAX - backindex);
+
+  return left;
 }
 
 #endif // CONFIG_AUDIO

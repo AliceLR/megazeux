@@ -391,6 +391,18 @@ void add_ext(char *src, const char *ext)
   }
 }
 
+int get_ext_pos(const char *filename)
+{
+  int filename_length = strlen(filename);
+  int ext_pos;
+
+  for(ext_pos = filename_length - 1; ext_pos >= 0; ext_pos--)
+    if(filename[ext_pos] == '.')
+      break;
+
+  return ext_pos;
+}
+
 __utils_maybe_static ssize_t __get_path(const char *file_name, char *dest,
  unsigned int buf_len)
 {

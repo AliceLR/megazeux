@@ -68,9 +68,8 @@ core_cobjs := \
   ${core_obj}/legacy_robot.o ${core_obj}/legacy_world.o              \
   ${core_obj}/mzm.o ${core_obj}/render.o ${core_obj}/render_layer.o  \
   ${core_obj}/robot.o ${core_obj}/run_robot.o ${core_obj}/scrdisp.o  \
-  ${core_obj}/sfx.o ${core_obj}/sprite.o ${core_obj}/str.o           \
-  ${core_obj}/util.o ${core_obj}/window.o ${core_obj}/world.o        \
-  ${core_obj}/zip.o
+  ${core_obj}/sprite.o ${core_obj}/str.o ${core_obj}/util.o          \
+  ${core_obj}/window.o ${core_obj}/world.o ${core_obj}/zip.o
 
 #
 # Lists mandatory C++ language sources (mangled to object names) required
@@ -227,9 +226,17 @@ core_flags += -Icontrib/uthash/
 endif
 
 ifeq (${BUILD_AUDIO},1)
-core_cobjs += ${core_obj}/audio.o
+core_cobjs += \
+ ${core_obj}/audio.o ${core_obj}/audio_vorbis.o                      \
+ ${core_obj}/audio_wav.o ${core_obj}/stream_pcs.o                    \
+ ${core_obj}/stream_sampled.o ${core_obj}/stream_registry.o          \
+ ${core_obj}/sfx.o
+
 core_flags += ${VORBIS_CFLAGS}
 core_ldflags := ${VORBIS_LDFLAGS} ${core_ldflags}
+else
+# Required anyway for sfx_strs...
+core_cobj += ${core_obj}/sfx.o
 endif
 
 ifeq (${BUILD_SDL},1)

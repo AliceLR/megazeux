@@ -2336,9 +2336,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
       // FIXME - This probably needs a different implementation
       case ROBOTIC_CMD_WAIT_THEN_PLAY: // wait play "str"
       {
-        int index_dif = topindex - backindex;
-        if(index_dif < 0)
-         index_dif = topindex + (NOISEMAX - backindex);
+        int index_dif = sfx_length_left();
 
         if(index_dif > 10)
           goto breaker;
@@ -2350,9 +2348,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
       case ROBOTIC_CMD_WAIT_PLAY: // wait play
       {
-        int index_dif = topindex - backindex;
-        if(index_dif < 0)
-         index_dif = topindex + (NOISEMAX - backindex);
+        int index_dif = sfx_length_left();
 
         if(index_dif > 10)
           goto breaker;
@@ -4315,17 +4311,9 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      // FIXME - There may be no way to get this to work.
-      // It may have to be removed.
       case ROBOTIC_CMD_MOD_SAM: // modsam freq num
       {
-        if(get_music_on_state())
-        {
-          int frequency = parse_param(mzx_world, cmd_ptr + 1, id);
-          char *p2 = next_param_pos(cmd_ptr + 1);
-          int sam_num = parse_param(mzx_world, p2, id);
-          spot_sample(frequency, sam_num);
-        }
+        // Removed.
         break;
       }
 

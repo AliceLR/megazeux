@@ -37,18 +37,23 @@ __M_BEGIN_DECLS
 #define NOISEMAX        4096
 
 #ifdef CONFIG_EDITOR
+//#ifdef CONFIG_AUDIO
+//AUDIO_LIBSPEC extern char sfx_strs[NUM_SFX][SFX_SIZE];
+//#else
+// FIXME this should probably be EDITOR_LIBSPEC
 CORE_LIBSPEC extern char sfx_strs[NUM_SFX][SFX_SIZE];
+//#endif // !CONFIG_AUDIO
 #endif // CONFIG_EDITOR
-
-extern int topindex, backindex;
 
 #ifdef CONFIG_AUDIO
 
-void play_sfx(struct world *mzx_world, int sfx);
-void clear_sfx_queue(void);
-void sound_system(void);
-char is_playing(void);
-void play_str(char *str, int sfx_play);
+void sfx_next_note(void);
+
+/*AUDIO_LIBSPEC*/ void play_sfx(struct world *mzx_world, int sfx);
+/*AUDIO_LIBSPEC*/ void clear_sfx_queue(void);
+/*AUDIO_LIBSPEC*/ char is_playing(void);
+/*AUDIO_LIBSPEC*/ void play_str(char *str, int sfx_play);
+/*AUDIO_LIBSPEC*/ int sfx_length_left(void);
 
 #else // !CONFIG_AUDIO
 

@@ -2793,9 +2793,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
           if(file_name_length >= 4)
           {
             // Find the extension.
-            for(ext_pos = file_name_length - 1; ext_pos >= 0; ext_pos--)
-              if(file_name[ext_pos] == '.')
-                break;
+            ext_pos = get_ext_pos(file_name);
 
             for(i = 0; wildcards[i] != NULL; i++)
             {

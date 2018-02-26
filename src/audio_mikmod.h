@@ -26,8 +26,6 @@
 
 __M_BEGIN_DECLS
 
-struct audio_stream *construct_mikmod_stream(char *filename, Uint32 frequency,
- Uint32 volume, Uint32 repeat);
 void init_mikmod(struct config_info *conf);
 
 __M_END_DECLS

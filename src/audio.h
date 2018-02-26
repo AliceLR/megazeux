@@ -29,7 +29,6 @@ __M_BEGIN_DECLS
 
 #include "platform.h"
 #include "configure.h"
-#include "board_struct.h"
 
 #ifdef CONFIG_AUDIO
 
@@ -55,39 +54,6 @@ struct audio_stream
   void (* destruct)(struct audio_stream *a_src);
 };
 
-struct sampled_stream
-{
-  struct audio_stream a;
-  Uint32 frequency;
-  Sint16 *output_data;
-  Uint32 data_window_length;
-  Uint32 allocated_data_length;
-  Uint32 prologue_length;
-  Uint32 epilogue_length;
-  Uint32 stream_offset;
-  Uint32 channels;
-  Uint32 negative_comp;
-  Uint32 use_volume;
-  Sint64 frequency_delta;
-  Sint64 sample_index;
-  void (* set_frequency)(struct sampled_stream *s_src, Uint32 frequency);
-  Uint32 (* get_frequency)(struct sampled_stream *s_src);
-};
-
-struct pc_speaker_stream
-{
-  struct audio_stream a;
-  Uint32 volume;
-  Uint32 playing;
-  Uint32 frequency;
-  Sint32 last_frequency;
-  Uint32 note_duration;
-  Uint32 last_duration;
-  Uint32 last_playing;
-  Uint32 sample_cutoff;
-  Uint32 last_increment_buffer;
-};
-
 struct audio
 {
 #ifdef CONFIG_MODPLUG
@@ -105,7 +71,7 @@ struct audio
   Sint32 max_simultaneous_samples_config;
 
   struct audio_stream *primary_stream;
-  struct pc_speaker_stream *pcs_stream;
+  struct audio_stream *pcs_stream;
   struct audio_stream *stream_list_base;
   struct audio_stream *stream_list_end;
 
@@ -119,6 +85,9 @@ struct audio
 };
 
 extern struct audio audio;
+
+#define freq_conversion 3579364
+#define default_period 428
 
 CORE_LIBSPEC void set_max_samples(int max_samples);
 CORE_LIBSPEC int get_max_samples(void);
@@ -135,7 +104,6 @@ void jump_module(int order);
 int get_order(void);
 void module_exit(void);
 void module_init(void);
-void spot_sample(int freq, int sample);
 void shift_frequency(int freq);
 int get_frequency(void);
 void set_position(int pos);
@@ -143,8 +111,6 @@ int get_position(void);
 int audio_get_length(void);
 int free_sam_cache(char clear_all);
 void fix_global_volumes(void);
-void sound(int frequency, int duration);
-void nosound(int duration);
 void set_music_on(int val);
 void set_sfx_on(int val);
 int get_music_on_state(void);
@@ -156,29 +122,10 @@ void set_music_volume(int volume);
 void set_sound_volume(int volume);
 void set_sfx_volume(int volume);
 
-void audio_callback(Sint16 *stream, int len);
-void init_audio_platform(struct config_info *conf);
-void quit_audio_platform(void);
-
-#ifdef CONFIG_MODPLUG
-int check_ext_for_gdm_and_convert(const char *filename, char *new_file);
-#define __sam_to_wav_maybe_static __audio_c_maybe_static
-#else
-#define __sam_to_wav_maybe_static static
-#endif
-
-/*** these should only be exported for audio plugins */
-
-#if defined(CONFIG_AUDIO_MOD_SYSTEM)
-
-void sampled_set_buffer(struct sampled_stream *s_src);
-void sampled_mix_data(struct sampled_stream *s_src, Sint32 *dest_buffer,
- Uint32 len);
-void sampled_destruct(struct audio_stream *a_src);
-void initialize_sampled_stream(struct sampled_stream *s_src,
-void (* set_frequency)(struct sampled_stream *s_src, Uint32 frequency),
- Uint32 (* get_frequency)(struct sampled_stream *s_src),
- Uint32 frequency, Uint32 channels, Uint32 use_volume);
+// Internal functions
+void init_wav(struct config_info *conf);
+void init_vorbis(struct config_info *conf);
+void destruct_audio_stream(struct audio_stream *a_src);
 void construct_audio_stream(struct audio_stream *a_src,
  Uint32 (* mix_data)(struct audio_stream *a_src, Sint32 *buffer, Uint32 len),
  void (* set_volume)(struct audio_stream *a_src, Uint32 volume),
@@ -191,9 +138,10 @@ void construct_audio_stream(struct audio_stream *a_src,
  void (* destruct)(struct audio_stream *a_src),
  Uint32 volume, Uint32 repeat);
 
-#endif // CONFIG_AUDIO_MOD_SYSTEM
-
-/*** end audio plugins exports */
+// Platform-related functions.
+void audio_callback(Sint16 *stream, int len);
+void init_audio_platform(struct config_info *conf);
+void quit_audio_platform(void);
 
 #else // !CONFIG_AUDIO
 
@@ -214,7 +162,6 @@ static inline void set_position(int pos) {}
 static inline void jump_module(int order) {}
 static inline void shift_frequency(int freq) {}
 static inline void play_sample(int freq, char *filename, bool safely) {}
-static inline void spot_sample(int freq, int sample) {}
 static inline int get_music_on_state(void) { return 0; }
 static inline int get_sfx_on_state(void) { return 0; }
 static inline int get_music_volume(void) { return 0; }
@@ -224,7 +171,6 @@ static inline int get_position(void) { return 0; }
 static inline int get_order(void) { return 0; }
 static inline int get_frequency(void) { return 0; }
 static inline int audio_get_length(void) { return 0; }
-
 
 #endif // CONFIG_AUDIO
 
