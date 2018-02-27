@@ -29,9 +29,6 @@
 
 #include "../data.h"
 
-static int topindex = 0;  // Marks the top of the queue
-static int backindex = 0; // Marks bottom of queue
-
 #if defined(CONFIG_AUDIO) || defined(CONFIG_EDITOR)
 
 __editor_maybe_static char sfx_strs[NUM_SFX][SFX_SIZE] =
@@ -98,6 +95,9 @@ __editor_maybe_static char sfx_strs[NUM_SFX][SFX_SIZE] =
 
 // Special freqs
 #define F_REST          1
+
+static int topindex = 0;  // Marks the top of the queue
+static int backindex = 0; // Marks bottom of queue
 
 struct noise
 {
