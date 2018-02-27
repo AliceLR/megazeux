@@ -57,6 +57,9 @@ void audio_register_ext(const char *ext, construct_stream_fn constructor)
 void audio_free_registry(void)
 {
   free(registry);
+  registry = NULL;
+  registry_size = 0;
+  registry_alloc = 0;
 }
 
 struct audio_stream *construct_stream_audio_file(char *filename,
