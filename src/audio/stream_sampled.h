@@ -47,10 +47,6 @@ struct sampled_stream
   Uint32 (* get_frequency)(struct sampled_stream *s_src);
 };
 
-/*** these should only be exported for audio plugins */
-
-#if defined(CONFIG_AUDIO_MOD_SYSTEM)
-
 void sampled_set_buffer(struct sampled_stream *s_src);
 void sampled_mix_data(struct sampled_stream *s_src, Sint32 *dest_buffer,
  Uint32 len);
@@ -60,8 +56,6 @@ void initialize_sampled_stream(struct sampled_stream *s_src,
  void (* set_frequency)(struct sampled_stream *s_src, Uint32 frequency),
  Uint32 (* get_frequency)(struct sampled_stream *s_src),
  Uint32 frequency, Uint32 channels, Uint32 use_volume);
-
-#endif // CONFIG_AUDIO_MOD_SYSTEM
 
 __M_END_DECLS
 

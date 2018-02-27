@@ -21,6 +21,7 @@
  */
 
 #include "audio.h"
+#include "audio_vorbis.h"
 #include "stream_registry.h"
 #include "stream_sampled.h"
 
