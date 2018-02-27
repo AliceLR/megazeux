@@ -77,7 +77,7 @@ struct audio audio;
 #define UNLOCK() unlock(__FILE__, __LINE__)
 
 static volatile int locked = 0;
-static volatile char last_lock[16];
+static volatile char last_lock[32];
 
 static void lock(const char *file, int line)
 {
@@ -90,7 +90,8 @@ static void lock(const char *file, int line)
   locked = 1;
 
   // store information on this lock
-  snprintf((char *)last_lock, 16, "%s:%d", file, line);
+  snprintf((char *)last_lock, 32, "%s:%d", file, line);
+  last_lock[31] = '\0';
 }
 
 static void unlock(const char *file, int line)
