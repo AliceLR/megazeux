@@ -45,6 +45,9 @@
 #error Can only have one module system enabled concurrently!
 #endif
 
+#include "audio_vorbis.h"
+#include "audio_wav.h"
+
 #ifdef CONFIG_MODPLUG
 #include "audio_modplug.h"
 #include "gdm2s3m.h"

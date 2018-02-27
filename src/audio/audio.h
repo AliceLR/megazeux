@@ -120,8 +120,6 @@ void set_sound_volume(int volume);
 void set_sfx_volume(int volume);
 
 // Internal functions
-void init_wav(struct config_info *conf);
-void init_vorbis(struct config_info *conf);
 int audio_get_real_frequency(int period);
 void destruct_audio_stream(struct audio_stream *a_src);
 void construct_audio_stream(struct audio_stream *a_src,
