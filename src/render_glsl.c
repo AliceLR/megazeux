@@ -524,18 +524,18 @@ static bool glsl_init_video(struct graphics_data *graphics,
   return true;
 
 err_free:
-  #if SDL_VERSION_ATLEAST(2,0,0)
-    if (render_data->sdl.context)
-    {
-      SDL_GL_DeleteContext(render_data->sdl.context);
-      render_data->sdl.context = NULL;
-    }
-    if (render_data->sdl.window)
-    {
-      SDL_DestroyWindow(render_data->sdl.window);
-      render_data->sdl.window = NULL;
-    }
-  #endif // SDL_VERSION_ATLEAST(2,0,0)
+#if SDL_VERSION_ATLEAST(2,0,0)
+  if(render_data->sdl.context)
+  {
+    SDL_GL_DeleteContext(render_data->sdl.context);
+    render_data->sdl.context = NULL;
+  }
+  if(render_data->sdl.window)
+  {
+    SDL_DestroyWindow(render_data->sdl.window);
+    render_data->sdl.window = NULL;
+  }
+#endif // SDL_VERSION_ATLEAST(2,0,0)
   free(render_data);
   return false;
 }
