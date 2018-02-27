@@ -152,18 +152,18 @@ void play_sfx(struct world *mzx_world, int sfxn)
   {
     if(mzx_world->custom_sfx_on)
     {
-      play_str(mzx_world->custom_sfx + (sfxn * SFX_SIZE), 1);
+      play_string(mzx_world->custom_sfx + (sfxn * SFX_SIZE), 1);
     }
     else
     {
-      play_str(sfx_strs[sfxn], 1);
+      play_string(sfx_strs[sfxn], 1);
     }
   }
 }
 
 // sfx_play = 1 to NOT play non-digi unless queue empty
 
-void play_str(char *str, int sfx_play)
+void play_string(char *str, int sfx_play)
 {
   int t1, oct = 3, note = 1, dur = 18, t2, last_note = -1,
    digi_st = -1, digi_end = -1, digi_played = 0;
@@ -364,7 +364,7 @@ void play_str(char *str, int sfx_play)
   }
 }
 
-void clear_sfx_queue(void)
+void sfx_clear_queue(void)
 {
   backindex = topindex = sound_in_queue = 0; // queue pointers
   nosound(1);
@@ -403,7 +403,7 @@ void sfx_next_note(void)
   }
 }
 
-char is_playing(void)
+char sfx_is_playing(void)
 {
   return sound_in_queue;
 }

@@ -401,7 +401,7 @@ static void load_world_file(struct world *mzx_world, char *name)
 
   // Load world
   end_module();
-  clear_sfx_queue();
+  sfx_clear_queue();
   //Clear screen
   clear_screen(32, 7);
   // Palette
@@ -1631,7 +1631,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
      && (!mzx_world->was_zapped))
     {
       int d_board = src_board->level_under_param[d_offset];
-      clear_sfx_queue(); // Since there is often a push sound
+      sfx_clear_queue(); // Since there is often a push sound
       play_sfx(mzx_world, 37);
 
       // Same board or nonexistant?
@@ -1715,7 +1715,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
     set_counter(mzx_world, "HEALTH", mzx_world->starting_health, 0);
     dec_counter(mzx_world, "Lives", 1, 0);
     set_mesg(mzx_world, "You have died...");
-    clear_sfx_queue();
+    sfx_clear_queue();
     play_sfx(mzx_world, 23);
 
     // Go somewhere else?
@@ -2730,7 +2730,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
   } while(!exit);
   pop_context();
   vquick_fadeout();
-  clear_sfx_queue();
+  sfx_clear_queue();
 }
 
 void title_screen(struct world *mzx_world)
@@ -2934,7 +2934,7 @@ void title_screen(struct world *mzx_world)
            "Choose game to restore", 1))
           {
             // Swap out current board...
-            clear_sfx_queue();
+            sfx_clear_queue();
             // Load game
             fadein = 0;
 
@@ -3063,7 +3063,7 @@ void title_screen(struct world *mzx_world)
 
               set_counter(mzx_world, "TIME", src_board->time_limit, 0);
 
-              clear_sfx_queue();
+              sfx_clear_queue();
               find_player(mzx_world);
               mzx_world->player_restart_x = mzx_world->player_x;
               mzx_world->player_restart_y = mzx_world->player_y;
@@ -3143,7 +3143,7 @@ void title_screen(struct world *mzx_world)
           if(edit_world)
           {
             // Editor
-            clear_sfx_queue();
+            sfx_clear_queue();
             vquick_fadeout();
             set_intro_mesg_timer(0);
             edit_world(mzx_world, reload_curr_world_in_editor);
@@ -3168,7 +3168,7 @@ void title_screen(struct world *mzx_world)
           m_show();
 
           // Swap out current board...
-          clear_sfx_queue();
+          sfx_clear_queue();
           // Load game
           fadein = 0;
 
@@ -3339,7 +3339,7 @@ void title_screen(struct world *mzx_world)
   } while(!exit && !mzx_world->full_exit);
 
   vquick_fadeout();
-  clear_sfx_queue();
+  sfx_clear_queue();
 
   free(current_dir);
 }

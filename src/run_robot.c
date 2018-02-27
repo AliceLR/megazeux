@@ -2324,13 +2324,13 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
       case ROBOTIC_CMD_PLAY: // Play notes
       {
-        play_str(cmd_ptr + 2, 0);
+        play_string(cmd_ptr + 2, 0);
         break;
       }
 
       case ROBOTIC_CMD_END_PLAY: // End play
       {
-        clear_sfx_queue();
+        sfx_clear_queue();
         break;
       }
 
@@ -2342,7 +2342,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         if(index_dif > 10)
           goto breaker;
 
-        play_str(cmd_ptr + 2, 0);
+        play_string(cmd_ptr + 2, 0);
 
         break;
       }
@@ -2366,8 +2366,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
       case ROBOTIC_CMD_PLAY_IF_SILENT: // play sfx notes
       {
-        if(!is_playing())
-          play_str(cmd_ptr + 2, 0);
+        if(!sfx_is_playing())
+          play_string(cmd_ptr + 2, 0);
 
         break;
       }

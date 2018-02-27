@@ -3232,7 +3232,7 @@ static int invinco_gateway(struct world *mzx_world, struct counter *counter,
   {
     if(!value)
     {
-      clear_sfx_queue();
+      sfx_clear_queue();
       play_sfx(mzx_world, 18);
       id_chars[player_color] = mzx_world->saved_pl_color;
     }

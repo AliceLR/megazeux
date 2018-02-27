@@ -38,30 +38,26 @@ __M_BEGIN_DECLS
 #define NOISEMAX        4096
 
 #ifdef CONFIG_EDITOR
-//#ifdef CONFIG_AUDIO
-//AUDIO_LIBSPEC extern char sfx_strs[NUM_SFX][SFX_SIZE];
-//#else
-// FIXME this should probably be EDITOR_LIBSPEC
 CORE_LIBSPEC extern char sfx_strs[NUM_SFX][SFX_SIZE];
-//#endif // !CONFIG_AUDIO
 #endif // CONFIG_EDITOR
 
 #ifdef CONFIG_AUDIO
 
+// Used by audio_pcs.c
 void sfx_next_note(void);
 
-/*AUDIO_LIBSPEC*/ void play_sfx(struct world *mzx_world, int sfx);
-/*AUDIO_LIBSPEC*/ void clear_sfx_queue(void);
-/*AUDIO_LIBSPEC*/ char is_playing(void);
-/*AUDIO_LIBSPEC*/ void play_str(char *str, int sfx_play);
-/*AUDIO_LIBSPEC*/ int sfx_length_left(void);
+void play_sfx(struct world *mzx_world, int sfx);
+void play_string(char *str, int sfx_play);
+void sfx_clear_queue(void);
+char sfx_is_playing(void);
+int sfx_length_left(void);
 
 #else // !CONFIG_AUDIO
 
-static inline void clear_sfx_queue(void) {}
 static inline void play_sfx(struct world *mzx_world, int sfxn) {}
-static inline void play_str(char *str, int sfx_play) {}
-static inline char is_playing(void) { return 0; }
+static inline void play_string(char *str, int sfx_play) {}
+static inline void sfx_clear_queue(void) {}
+static inline char sfx_is_playing(void) { return 0; }
 static inline int sfx_length_left(void) { return 0; }
 
 #endif // CONFIG_AUDIO
