@@ -43,16 +43,18 @@ export SDL_VIDEODRIVER=dummy
 # Standalone mode will allow tests.mzx to terminate MZX and no_titlescreen mode
 # simplifies things. Disable auto update checking to save time.
 
-mzxrun="../mzxrun \
+../mzxrun \
   tests.mzx \
   video_output=software \
   update_auto_check=off \
   standalone_mode=1 \
-  no_titlescreen=1"
+  no_titlescreen=1 \
+  audio_on=0 \
+  pc_speaker_on=0 \
+  &
 
-# Run mzxrun and attempt to detect a hang (e.g. an error occurred).
+# Attempt to detect a hang (e.g. an error occurred).
 
-${mzxrun} &
 mzxrun_pid=$!
 disown
 
