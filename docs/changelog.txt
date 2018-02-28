@@ -44,12 +44,19 @@ USERS
 + Sharks and SpittingTigers with firing rates greater than 4 now
   retain their firing rate when edited.
 + Fixed a bug where world decryption could crash. (Revvy)
++ If the glsl renderer is selected by default, the detection of
+  a software opengl driver will result in falling back to
+  software. (Lancer-X)
++ Fixed a bug in the GLSL renderer where an additional window is
+  created if the OpenGL version is low enough to cause a
+  fallback to software. (Lancer-X)
 
 DEVELOPERS
 
 + Added .MZX-based unit testing system. Run with "make test".
   See testworlds/README.md for more information.
-
++ The default renderer is now auto_glsl, which turns into glsl
+  if not using a blacklisted opengl driver. (Lancer-X)
 
 January 6, 2018 - MZX 2.91b
 
