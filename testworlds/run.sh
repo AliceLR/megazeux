@@ -19,6 +19,9 @@ fi
 # Unix release builds will try to find this if it isn't installed.
 ln -s config.txt megazeux-config
 
+# Give tests.mzx the MZX configuration so it can decide which tests to skip.
+cp src/config.h testworlds
+
 cd "$(dirname "$0")"
 mkdir -p log
 
@@ -81,6 +84,7 @@ rm -f saved.sav
 rm -f LOCKED.MZX
 rm -f LOCKED.MZX.locked
 rm -f ../megazeux-config
+rm -f config.h
 
 # Color code PASS/FAIL tags and important numbers.
 
