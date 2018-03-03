@@ -254,7 +254,7 @@ void init_xmp(struct config_info *conf)
 
   audio_register_ext("669", construct_xmp_stream);
   audio_register_ext("amf", construct_xmp_stream);
-  audio_register_ext("dsm", construct_xmp_stream);
+  //audio_register_ext("dsm", construct_xmp_stream);
   audio_register_ext("far", construct_xmp_stream);
   audio_register_ext("gdm", construct_xmp_stream);
   audio_register_ext("it", construct_xmp_stream);
