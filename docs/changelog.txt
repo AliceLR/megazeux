@@ -1,4 +1,4 @@
-TBA - MZX 2.91c
+March 4th, 2018 - MZX 2.91c
 
 This release contains an assortment of bugfixes ranging from
 player clone fixes to obscure compatibility patches. A handful
@@ -57,6 +57,7 @@ DEVELOPERS
   See testworlds/README.md for more information.
 + The default renderer is now auto_glsl, which turns into glsl
   if not using a blacklisted opengl driver. (Lancer-X)
+
 
 January 6, 2018 - MZX 2.91b
 
@@ -1828,7 +1829,7 @@ USERS
 + Setting vlayer_size, vlayer_width or vlayer_height to values less than or
   equal to zero would crash MegaZeux. Limit the smallest vlayer size to 1x1.
 + Setting vlayer_width or vlayer_height to a value larger than vlayer_size
-  would crash MegaZeux. Limit the largest size of either dimension to a 
+  would crash MegaZeux. Limit the largest size of either dimension to a
   maximum of vlayer_size.
 + If selecting a module with a non 8.3 filename, MZX will now ask you if you
   want to rename it to 8.3, and do so in an intelligent way. This means that
