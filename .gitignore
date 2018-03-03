@@ -101,6 +101,7 @@ stderr.txt
 *.sav
 *.mzm
 *~
+.vscode
 .DS_Store
 xcuserdata/
 
