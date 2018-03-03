@@ -236,7 +236,7 @@ ifeq (${BUILD_AUDIO},1)
 audio_cobjs := \
  ${audio_obj}/audio.o ${audio_obj}/audio_pcs.o                       \
  ${audio_obj}/audio_vorbis.o ${audio_obj}/audio_wav.o                \
- ${audio_obj}/stream_sampled.o ${audio_obj}/stream_registry.o        \
+ ${audio_obj}/stream_registry.o ${audio_obj}/stream_sampled.o        \
  ${audio_obj}/sfx.o
 
 core_cobjs += ${audio_cobjs}
