@@ -110,10 +110,23 @@ CXXFLAGS += -fno-exceptions -fno-rtti ${ARCH_CXXFLAGS}
 LDFLAGS  += ${ARCH_LDFLAGS}
 
 #
-# GCC version >= 4.x
+# GCC version >= 7.x
 #
 
 GCC_VER_MAJOR := ${shell ${CC} -dumpversion | cut -d. -f1}
+GCC_VER_MAJOR_GE_7 := ${shell test $(GCC_VER_MAJOR) -ge 7; echo $$?}
+
+ifeq ($(GCC_VER_MAJOR_GE_7),0)
+# This gives spurious warnings on Linux. The snprintf implementation on Linux
+# will terminate even in the case of truncation, making this largely useless.
+# It does not trigger using mingw, where it would actually matter.
+CFLAGS   += -Wno-format-truncation
+endif
+
+#
+# GCC version >= 4.x
+#
+
 GCC_VER_MAJOR_GE_4 := ${shell test $(GCC_VER_MAJOR) -ge 4; echo $$?}
 
 ifeq ($(GCC_VER_MAJOR_GE_4),0)
