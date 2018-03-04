@@ -771,6 +771,9 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
     // Switch back to the normal checking timeout for the rest of the process.
     if(is_automatic)
     {
+      if(conf->update_auto_check == UPDATE_AUTO_CHECK_SILENT)
+        goto err_free_update_manifests;
+
       host_set_timeout_ms(h, HOST_TIMEOUT_DEFAULT);
       is_automatic = 0;
     }
