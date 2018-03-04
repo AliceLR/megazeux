@@ -87,7 +87,7 @@ utils: ${png2smzx}
 utils.debug: ${png2smzx}.debug
 endif
 
-utils.debug: ${checkres}.debug ${downver}.debug
+utils.debug: ${checkres}.debug ${downver}.debug ${ccv}.debug
 utils.debug: ${hlp2txt}.debug ${txt2hlp}.debug
 
 utils_clean:
