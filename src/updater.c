@@ -693,13 +693,6 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
         version = value;
     }
 
-    // Switch back to the normal checking timeout for the rest of the process.
-    if(is_automatic)
-    {
-      host_set_timeout_ms(h, HOST_TIMEOUT_DEFAULT);
-      is_automatic = 0;
-    }
-
     /* We can now compute a unique URL base for the updater. This will
      * be composed of a user-selected version and a static platform-archicture
      * name.
@@ -773,6 +766,13 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
         try_next_host = true;
 
       goto err_free_update_manifests;
+    }
+
+    // Switch back to the normal checking timeout for the rest of the process.
+    if(is_automatic)
+    {
+      host_set_timeout_ms(h, HOST_TIMEOUT_DEFAULT);
+      is_automatic = 0;
     }
 
     for(e = removed; e; e = e->next, entries++)
