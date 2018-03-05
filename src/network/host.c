@@ -800,6 +800,18 @@ static bool __recv(struct host *h, void *buffer, unsigned int len)
 static struct addrinfo *connect_op(int fd, struct addrinfo *ais, void *priv)
 {
   struct addrinfo *ai;
+  struct timeval timeout;
+  fd_set mask;
+
+  FD_ZERO(&mask);
+  FD_SET(fd, &mask);
+
+  // Enforce a timeout of 1s on the connection
+  timeout.tv_sec = 1;
+  timeout.tv_usec = 0;
+
+  // Disable blocking on the socket so a timeout can be enforced.
+  platform_socket_blocking(fd, false);
 
 #ifdef CONFIG_IPV6
   /* First try to connect to an IPv6 address (if any)
@@ -809,7 +821,9 @@ static struct addrinfo *connect_op(int fd, struct addrinfo *ais, void *priv)
     if(ai->ai_family != AF_INET6)
       continue;
 
-    if(platform_connect(fd, ai->ai_addr, (socklen_t)ai->ai_addrlen) >= 0)
+    platform_connect(fd, ai->ai_addr, (socklen_t)ai->ai_addrlen);
+
+    if(platform_select(fd, &mask, &mask, NULL, &timeout) > 0)
       break;
 
     perror("connect");
@@ -826,11 +840,16 @@ static struct addrinfo *connect_op(int fd, struct addrinfo *ais, void *priv)
     if(ai->ai_family != AF_INET)
       continue;
 
-    if(platform_connect(fd, ai->ai_addr, (socklen_t)ai->ai_addrlen) >= 0)
+    platform_connect(fd, ai->ai_addr, (socklen_t)ai->ai_addrlen);
+
+    if(platform_select(fd, &mask, &mask, NULL, &timeout) > 0)
       break;
 
     perror("connect");
   }
+
+  // Restore blocking now that the connection is complete (or failed)
+  platform_socket_blocking(fd, true);
 
   return ai;
 }
