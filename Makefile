@@ -209,10 +209,17 @@ build_clean:
 
 source: build/${TARGET}src
 
+#
+# Build source target
+# Targetting unix primarily, so turn off autocrlf if necessary
+#
 build/${TARGET}src:
 	${RM} -r build/${TARGET}
 	${MKDIR} -p build/dist/source
+	@TEMP=$(git config core.autocrlf)
+	@git config core.autocrlf false
 	@git checkout-index -a --prefix build/${TARGET}/
+	@git config core.autocrlf ${TEMP}
 	${RM} -r build/${TARGET}/scripts
 	${RM} build/${TARGET}/.gitignore build/${TARGET}/.gitattributes
 	@cd build/${TARGET} && make distclean
