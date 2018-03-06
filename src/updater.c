@@ -491,6 +491,9 @@ static bool reissue_connection(struct config_info *conf, struct host **h,
     goto err_out;
   }
 
+  if(is_automatic)
+    host_set_timeout_ms(*h, 1000);
+
   m_hide();
 
   buf_len = snprintf(widget_buf, WIDGET_BUF_LEN,
@@ -566,9 +569,6 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
 
     if(!reissue_connection(conf, &h, update_host, is_automatic))
       goto err_host_destroy;
-
-    if(is_automatic)
-      host_set_timeout_ms(h, 1000);
 
     for(retries = 0; retries < MAX_RETRIES; retries++)
     {

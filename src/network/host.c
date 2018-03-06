@@ -797,18 +797,20 @@ static bool __recv(struct host *h, void *buffer, unsigned int len)
   return true;
 }
 
-static struct addrinfo *connect_op(int fd, struct addrinfo *ais, void *priv)
+static struct addrinfo *connect_op(int fd, struct addrinfo *ais, void *priv,
+ Uint32 timeout)
 {
   struct addrinfo *ai;
-  struct timeval timeout;
+  struct timeval tv;
   fd_set mask;
 
   FD_ZERO(&mask);
   FD_SET(fd, &mask);
 
-  // Enforce a timeout of 1s on the connection
-  timeout.tv_sec = 1;
-  timeout.tv_usec = 0;
+  // Enforce a timeout on the connection
+  debug("Using timeout %u\n", timeout);
+  tv.tv_sec = (timeout / 1000);
+  tv.tv_usec = (timeout % 1000) * 1000;
 
   // Disable blocking on the socket so a timeout can be enforced.
   platform_socket_blocking(fd, false);
@@ -823,7 +825,7 @@ static struct addrinfo *connect_op(int fd, struct addrinfo *ais, void *priv)
 
     platform_connect(fd, ai->ai_addr, (socklen_t)ai->ai_addrlen);
 
-    if(platform_select(fd, &mask, &mask, NULL, &timeout) > 0)
+    if(platform_select(fd, &mask, &mask, NULL, &tv) > 0)
       break;
 
     perror("connect");
@@ -842,7 +844,7 @@ static struct addrinfo *connect_op(int fd, struct addrinfo *ais, void *priv)
 
     platform_connect(fd, ai->ai_addr, (socklen_t)ai->ai_addrlen);
 
-    if(platform_select(fd, &mask, &mask, NULL, &timeout) > 0)
+    if(platform_select(fd, &mask, &mask, NULL, &tv) > 0)
       break;
 
     perror("connect");
@@ -855,8 +857,8 @@ static struct addrinfo *connect_op(int fd, struct addrinfo *ais, void *priv)
 }
 
 static bool host_address_op(struct host *h, const char *hostname,
- int port, void *priv,
- struct addrinfo *(*op)(int fd, struct addrinfo *ais, void *priv))
+ int port, void *priv, struct addrinfo *(*op)(int fd, struct addrinfo *ais,
+  void *priv, Uint32 timeout))
 {
   struct addrinfo hints, *ais, *ai;
   char port_str[6];
@@ -880,7 +882,7 @@ static bool host_address_op(struct host *h, const char *hostname,
     return false;
   }
 
-  ai = op(h->fd, ais, priv);
+  ai = op(h->fd, ais, priv, h->timeout_ms);
   platform_freeaddrinfo(ais);
 
   // None of the listed hosts (if any) were connectable
@@ -1570,8 +1572,10 @@ struct host *host_accept(struct host *s)
   return c;
 }
 
-static struct addrinfo *bind_op(int fd, struct addrinfo *ais, void *priv)
+static struct addrinfo *bind_op(int fd, struct addrinfo *ais, void *priv,
+ Uint32 timeout)
 {
+  // timeout currently unimplemented
   struct addrinfo *ai;
 
 #ifdef CONFIG_IPV6
@@ -1641,8 +1645,9 @@ struct buf_priv_data {
 };
 
 static struct addrinfo *recvfrom_raw_op(int fd, struct addrinfo *ais,
- void *priv)
+ void *priv, Uint32 timeout)
 {
+  // timeout currently unimplemented
   struct buf_priv_data *buf_priv = priv;
   unsigned int len = buf_priv->len;
   char *buffer = buf_priv->buffer;
@@ -1679,8 +1684,10 @@ static struct addrinfo *recvfrom_raw_op(int fd, struct addrinfo *ais,
   return ai;
 }
 
-static struct addrinfo *sendto_raw_op(int fd, struct addrinfo *ais, void *priv)
+static struct addrinfo *sendto_raw_op(int fd, struct addrinfo *ais, void *priv,
+ Uint32 timeout)
 {
+  // timeout currently unimplemented
   struct buf_priv_data *buf_priv = priv;
   unsigned int len = buf_priv->len;
   char *buffer = buf_priv->buffer;
