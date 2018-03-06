@@ -826,6 +826,7 @@ static struct addrinfo *connect_op(int fd, struct addrinfo *ais, void *priv,
   struct addrinfo *ai;
   struct timeval tv;
   fd_set mask;
+  int res;
 
   FD_ZERO(&mask);
   FD_SET(fd, &mask);
@@ -847,14 +848,25 @@ static struct addrinfo *connect_op(int fd, struct addrinfo *ais, void *priv,
 
     platform_connect(fd, ai->ai_addr, (socklen_t)ai->ai_addrlen);
 
-    if(platform_select(fd, &mask, &mask, NULL, &tv) > 0)
+    res = platform_select(fd, NULL, &mask, NULL, &tv);
+
+    if(res == 1)
       break;
 
-    platform_perror("connect");
+    if(res == 0)
+      info("Connection timed out.\n");
+
+    else
+      platform_perror("connect");
+
+    platform_close(fd);
   }
 
   if(ai)
+  {
+    platform_socket_blocking(fd, true);
     return ai;
+  }
 #endif
 
   /* No IPv6 addresses could be connected; try IPv4 (if any)
@@ -866,15 +878,21 @@ static struct addrinfo *connect_op(int fd, struct addrinfo *ais, void *priv,
 
     platform_connect(fd, ai->ai_addr, (socklen_t)ai->ai_addrlen);
 
-    if(platform_select(fd, &mask, &mask, NULL, &tv) > 0)
+    res = platform_select(fd, NULL, &mask, NULL, &tv);
+
+    if(res == 1)
       break;
 
-    platform_perror("connect");
+    if(res == 0)
+      info("Connection timed out.\n");
+
+    else
+      platform_perror("connect");
+
+    platform_close(fd);
   }
 
-  // Restore blocking now that the connection is complete (or failed)
   platform_socket_blocking(fd, true);
-
   return ai;
 }
 
