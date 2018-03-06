@@ -217,6 +217,11 @@ __network_maybe_static bool host_last_error_fatal(void)
   return __host_last_error_fatal();
 }
 
+static inline void platform_perror(const char *message)
+{
+  perror(message);
+}
+
 static inline int platform_accept(int sockfd,
  struct sockaddr *addr, socklen_t *addrlen)
 {
@@ -466,6 +471,24 @@ __network_maybe_static bool host_last_error_fatal(void)
   return __host_last_error_fatal();
 }
 
+static inline void platform_perror(const char *message)
+{
+  int code = socksyms.WSAGetLastError();
+  LPSTR err_message = NULL;
+
+  FormatMessage(
+    FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER,
+    0,
+    code,
+    0,
+    (LPSTR)&err_message,
+    0,
+    NULL
+  );
+
+  fprintf(stderr, "%s (code %d): %s", message, code, err_message);
+}
+
 static inline int platform_accept(int sockfd,
  struct sockaddr *addr, socklen_t *addrlen)
 {
@@ -649,7 +672,7 @@ struct host *host_create(enum host_type type, enum host_family fam)
 
   if(fd < 0)
   {
-    perror("socket");
+    platform_perror("socket");
     return NULL;
   }
 
@@ -660,7 +683,7 @@ struct host *host_create(enum host_type type, enum host_family fam)
     err = platform_setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&off, 4);
     if(err < 0)
     {
-      perror("setsockopt(IPV6_V6ONLY)");
+      platform_perror("setsockopt(IPV6_V6ONLY)");
       return NULL;
     }
   }
@@ -673,7 +696,7 @@ struct host *host_create(enum host_type type, enum host_family fam)
   err = platform_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (void *)&on, 4);
   if(err < 0)
   {
-    perror("setsockopt(SO_REUSEADDR)");
+    platform_perror("setsockopt(SO_REUSEADDR)");
     return NULL;
   }
 
@@ -689,7 +712,7 @@ struct host *host_create(enum host_type type, enum host_family fam)
      (void *)&linger, sizeof(struct linger));
     if(err < 0)
     {
-      perror("setsockopt(SO_LINGER)");
+      platform_perror("setsockopt(SO_LINGER)");
       return NULL;
     }
   }
@@ -808,7 +831,6 @@ static struct addrinfo *connect_op(int fd, struct addrinfo *ais, void *priv,
   FD_SET(fd, &mask);
 
   // Enforce a timeout on the connection
-  debug("Using timeout %u\n", timeout);
   tv.tv_sec = (timeout / 1000);
   tv.tv_usec = (timeout % 1000) * 1000;
 
@@ -828,7 +850,7 @@ static struct addrinfo *connect_op(int fd, struct addrinfo *ais, void *priv,
     if(platform_select(fd, &mask, &mask, NULL, &tv) > 0)
       break;
 
-    perror("connect");
+    platform_perror("connect");
   }
 
   if(ai)
@@ -847,7 +869,7 @@ static struct addrinfo *connect_op(int fd, struct addrinfo *ais, void *priv,
     if(platform_select(fd, &mask, &mask, NULL, &tv) > 0)
       break;
 
-    perror("connect");
+    platform_perror("connect");
   }
 
   // Restore blocking now that the connection is complete (or failed)
@@ -1565,7 +1587,7 @@ struct host *host_accept(struct host *s)
   else
   {
     if(host_last_error_fatal())
-      perror("accept");
+      platform_perror("accept");
   }
 
   free(addr);
@@ -1589,7 +1611,7 @@ static struct addrinfo *bind_op(int fd, struct addrinfo *ais, void *priv,
     if(platform_bind(fd, ai->ai_addr, ai->ai_addrlen) >= 0)
       break;
 
-    perror("bind");
+    platform_perror("bind");
   }
 
   if(ai)
@@ -1606,7 +1628,7 @@ static struct addrinfo *bind_op(int fd, struct addrinfo *ais, void *priv,
     if(platform_bind(fd, ai->ai_addr, ai->ai_addrlen) >= 0)
       break;
 
-    perror("bind");
+    platform_perror("bind");
   }
 
   return ai;
@@ -1621,7 +1643,7 @@ bool host_listen(struct host *h)
 {
   if(platform_listen(h->fd, 0) < 0)
   {
-    perror("listen");
+    platform_perror("listen");
     return false;
   }
   return true;
