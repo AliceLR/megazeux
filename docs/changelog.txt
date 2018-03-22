@@ -1,3 +1,10 @@
+GIT
+
+USERS
+
++ Fixed bug where breakpoints could trigger on the wrong line.
+
+
 March 4th, 2018 - MZX 2.91c
 
 This release contains an assortment of bugfixes ranging from

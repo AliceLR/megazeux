@@ -42,6 +42,8 @@ struct breakpoint
   char match_string[61];
   int index[256];
   int line_number;
+  int match_name_len;
+  int match_string_len;
 };
 
 struct watchpoint
@@ -170,6 +172,8 @@ static int edit_breakpoint_dialog(struct world *mzx_world,
     memcpy(br->match_string, match_string, 61);
     memcpy(br->match_name, match_name, 15);
     br->line_number = line_number;
+    br->match_string_len = strlen(match_string);
+    br->match_name_len = strlen(match_name);
   }
 
   // Prevent UI keys from carrying through.
@@ -227,7 +231,7 @@ static void new_breakpoint(struct world *mzx_world)
        num_breakpoints_allocated * sizeof(struct breakpoint *));
     }
 
-    boyer_moore_index(br->match_string, strlen(br->match_string),
+    boyer_moore_index(br->match_string, br->match_string_len,
      br->index, true);
 
     breakpoints[num_breakpoints] = br;
@@ -365,7 +369,7 @@ void __debug_robot_config(struct world *mzx_world)
 
       br = breakpoints[i];
 
-      memcpy(line, br->match_string, strlen(br->match_string));
+      memcpy(line, br->match_string, br->match_string_len);
 
       if(br->line_number)
       {
@@ -444,7 +448,7 @@ void __debug_robot_config(struct world *mzx_world)
 
             if(!edit_breakpoint_dialog(mzx_world, br, "Edit Breakpoint"))
             {
-              boyer_moore_index(br->match_string, strlen(br->match_string),
+              boyer_moore_index(br->match_string, br->match_string_len,
                br->index, true);
             }
           }
@@ -1164,8 +1168,6 @@ int __debug_robot_break(struct world *mzx_world, struct robot *cur_robot,
     if(!step)
     {
       struct breakpoint *b;
-      size_t match_string_len;
-      size_t match_name_len;
       int match_line;
 
       bool match = false;
@@ -1173,29 +1175,26 @@ int __debug_robot_break(struct world *mzx_world, struct robot *cur_robot,
       for(i = 0; i < num_breakpoints; i++)
       {
         b = breakpoints[i];
-        match_string_len = strlen(b->match_string);
-        match_name_len = strlen(b->match_name);
         match_line = b->line_number;
+
+        // Ignore empty breakpoints
+        if(!b->match_string_len && !b->match_name_len && !match_line)
+          continue;
 
         // Make sure the line number is correct
         if(match_line && match_line != line_number)
           continue;
 
         // Make sure the robot name is correct
-        if(match_name_len &&
+        if(b->match_name_len &&
          strcasecmp(cur_robot->robot_name, b->match_name))
           continue;
 
         // Try to find the match pattern in the line
-        if(match_string_len && src_length)
+        if(b->match_string_len)
           if(!boyer_moore_search((void *)src_ptr, src_length,
-           (void *)b->match_string, match_string_len, b->index, true))
+           (void *)b->match_string, b->match_string_len, b->index, true))
             continue;
-
-        // Verify a meaningful match has actually occured
-        if((!match_string_len || !src_length) &&
-         !match_name_len && !match_line)
-          continue;
 
         action = ACTION_MATCHED;
         match = true;
