@@ -66,8 +66,16 @@ int error(const char *string, unsigned int type, unsigned int options,
   // If graphics couldn't initialize, print the error to stderr and abort.
   if(!has_video_initialized())
   {
+    int scode = code ? (int)code : -1;
+
     fprintf(stderr, "%s%s\n", type_name, string);
-    exit(-1);
+
+    // Attempt to automatically handle this error if possible.
+    if(options & ERROR_OPT_EXIT) exit(scode);
+    if(options & ERROR_OPT_SUPPRESS) return ERROR_OPT_SUPPRESS;
+    if(options & ERROR_OPT_OK) return ERROR_OPT_OK;
+    if(options & ERROR_OPT_FAIL) return ERROR_OPT_FAIL;
+    exit(scode);
   }
 
   // Window

@@ -1,5 +1,5 @@
-# Configuration file for MegaZeux 2.91b
-# January 6th, 2018
+# Configuration file for MegaZeux 2.91c
+# March 4th, 2018
 
 # Comments begin with #. Whitespace is ignored. Empty lines are
 # ignored as well.
@@ -261,7 +261,7 @@
 #   when other builtin dialogs are open
 # - EXIT_GAME can be used on the title screen to exit MegaZeux
 # - The default title screen message does not appear
-# - PLAY_GAME can be set to 1 to start a game 
+# - PLAY_GAME can be set to 1 to start a game
 # - Using ALT-F4, closing the window or using other OS-specific
 #   ways of closing an application will exit MZX entirely,
 #   without asking for confirmation first
@@ -362,8 +362,8 @@
 # board_default_explosions_leave = ash
 # board_default_saving = enabled
 # board_default_overlay = enabled
-# board_default_charset_path = 
-# board_default_palette_path = 
+# board_default_charset_path =
+# board_default_palette_path =
 
 
 ### Robot editor options ###
@@ -584,5 +584,13 @@
 # change this to "Unstable". Third parties may use different branch names.
 
 # update_branch_pin = Stable
+
+# By default, MZX will check for updates on startup. There are three modes:
+# "on", which will display most messages; "silent", which will only display
+# certain errors and a message in the window caption; and "off", which disables
+# this feature altogether. The default setting is "silent". If you start MZX
+# in fullscreen, "on" is recommended.
+
+# update_auto_check = silent
 
 include pad.config

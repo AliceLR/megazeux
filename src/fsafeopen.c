@@ -335,6 +335,11 @@ int fsafetranslate(const char *path, char *newpath)
         if(stat(newpath, &file_info) != 0)
           ret = -FSAFE_MATCH_FAILED;
       }
+      else
+      {
+        // Replace the failed match with the original user-supplied path
+        fsafetest(path, newpath);
+      }
 #else
       // on WIN32 we can't, so fail hard
       ret = -FSAFE_MATCH_FAILED;

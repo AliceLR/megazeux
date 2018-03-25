@@ -42,7 +42,7 @@ static int board_magic(const char magic_string[4])
     {
       // MZX versions >= 2.00 && <= 2.51S1
       if(magic_string[2] == 'B' && magic_string[3] == '2')
-        return 0x0200;
+        return V251;
 
       // MZX versions >= 2.51S2 && <= 9.xx
       if((magic_string[2] > 1) && (magic_string[2] < 10))
@@ -64,10 +64,10 @@ void save_board_file(struct world *mzx_world, struct board *cur_board,
     zputc(0xFF, zp);
 
     zputc('M', zp);
-    zputc((WORLD_VERSION >> 8) & 0xFF, zp);
-    zputc(WORLD_VERSION & 0xFF, zp);
+    zputc((MZX_VERSION >> 8) & 0xFF, zp);
+    zputc(MZX_VERSION & 0xFF, zp);
 
-    save_board(mzx_world, cur_board, zp, 0, WORLD_VERSION, 0);
+    save_board(mzx_world, cur_board, zp, 0, MZX_VERSION, 0);
 
     zip_close(zp, NULL);
   }
@@ -129,7 +129,7 @@ void replace_current_board(struct world *mzx_world, char *name)
     fread(version_string, 4, 1, fp);
     file_version = board_magic(version_string);
 
-    if(file_version > 0 && file_version <= WORLD_LEGACY_FORMAT_VERSION)
+    if(file_version > 0 && file_version <= MZX_LEGACY_FORMAT_VERSION)
     {
       // Legacy board.
       clear_board(src_board);
@@ -142,7 +142,7 @@ void replace_current_board(struct world *mzx_world, char *name)
     }
     else
 
-    if(file_version <= WORLD_VERSION)
+    if(file_version <= MZX_VERSION)
     {
       int board_id;
 
@@ -175,6 +175,7 @@ void replace_current_board(struct world *mzx_world, char *name)
     else
     {
       error_message(E_BOARD_FILE_FUTURE_VERSION, file_version, NULL);
+      fclose(fp);
     }
 
     if(success)

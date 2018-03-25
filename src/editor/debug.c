@@ -1364,8 +1364,9 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
        robot->local[(n-1)&31], NULL, i&255);
     }
 
-    snprintf(var, 14, "%i:%s", i, robot_list[i]->robot_name);
-    strcpy(robot_nodes[j].name, var);
+    snprintf(var, 20, "%i:%s", i, robot_list[i]->robot_name);
+    strncpy(robot_nodes[j].name, var, 14);
+    robot_nodes[j].name[14] = 0;
     robot_nodes[j].parent = robots;
     robot_nodes[j].num_nodes = 0;
     robot_nodes[j].nodes = NULL;
@@ -2244,7 +2245,7 @@ void __draw_debug_box(struct world *mzx_world, int x, int y, int d_x, int d_y,
 
     // In 2.82X through 2.84X, this erroneously applied
     // numlock translations to the keycode.
-    if(mzx_world->version >= 0x0252 && mzx_world->version <= 0x0254)
+    if(mzx_world->version >= V282 && mzx_world->version <= V284)
       key = get_last_key(keycode_internal_wrt_numlock);
 
     else

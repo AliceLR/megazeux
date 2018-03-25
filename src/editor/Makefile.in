@@ -16,7 +16,7 @@ editor_spec := -DEDITOR_LIBSPEC="__declspec(dllexport)"
 endif
 
 ifeq (${PLATFORM},darwin)
-editor_ldflags += -framework Cocoa
+editor_ldflags += -framework Cocoa ${SDL_LDFLAGS}
 endif
 
 ifneq (${X11DIR},)

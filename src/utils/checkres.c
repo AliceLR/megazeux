@@ -54,10 +54,7 @@
 // Avoid CORE_LIBSPEC functions
 #include "../fsafeopen.h"
 #include "../util.h"
-
-// From world.h
-#define WORLD_VERSION               0x025B
-#define WORLD_LEGACY_FORMAT_VERSION 0x0254
+#include "../world.h"
 
 // From const.h (copied here for convenience)
 #define BOARD_NAME_SIZE 25
@@ -609,7 +606,7 @@ static void clear_data(struct base_path **path_list,
 /**********/
 
 // From world.c
-static int world_magic(const unsigned char magic_string[3])
+static int _world_magic(const unsigned char magic_string[3])
 {
   if(magic_string[0] == 'M')
   {
@@ -618,11 +615,11 @@ static int world_magic(const unsigned char magic_string[3])
       switch(magic_string[2])
       {
         case 'X':
-          return 0x0100;
+          return V100;
         case '2':
-          return 0x0205;
+          return V251;
         case 'A':
-          return 0x0208;
+          return V251s1;
       }
     }
     else
@@ -643,7 +640,7 @@ static int board_magic(const unsigned char magic_string[4])
     if(magic_string[1] == 'M')
     {
       if(magic_string[2] == 'B' && magic_string[3] == '2')
-        return 0x0200;
+        return V251;
 
       if((magic_string[2] > 1) && (magic_string[2] < 10))
         return ((int)magic_string[2] << 8) + (int)magic_string[3];
@@ -683,7 +680,6 @@ static enum status parse_sfx(char *sfx_buf, struct base_file *file)
 
   return ret;
 }
-
 
 #define match(s, reqv) ((world_version >= reqv) && \
  (fn_len == sizeof(s)-1) && (!strcasecmp(function_counter, s)))
@@ -751,36 +747,36 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
         if(fn_len == 0)
           break;
 
-        if( match("FREAD_OPEN", 0x0209)
-         || match("SMZX_PALETTE", 0x0245)
-         || match("SMZX_INDICES", 0x025B)
-         || match("LOAD_COUNTERS", 0x025A)
-         || match("LOAD_GAME", 0x0244)
-         || match_partial("LOAD_BC", 0x0249)
-         || match_partial("LOAD_ROBOT", 0x0249))
+        if( match("FREAD_OPEN", V260)
+         || match("SMZX_PALETTE", V269)
+         || match("SMZX_INDICES", V291)
+         || match("LOAD_COUNTERS", V290)
+         || match("LOAD_GAME", V268)
+         || match_partial("LOAD_BC", V270)
+         || match_partial("LOAD_ROBOT", V270))
         {
           debug("SET: %s (%s)\n", src, function_counter);
           add_requirement(src, file);
           break;
         }
 
-        if( match("FWRITE_OPEN", 0x0209)
-         || match("FWRITE_APPEND", 0x0209)
-         || match("FWRITE_MODIFY", 0x0209)
-         || match("SAVE_COUNTERS", 0x025A)
-         || match("SAVE_GAME", 0x0244)
-         || match_partial("SAVE_BC", 0x0249)
-         || match_partial("SAVE_ROBOT", 0x0249))
+        if( match("FWRITE_OPEN", V260)
+         || match("FWRITE_APPEND", V260)
+         || match("FWRITE_MODIFY", V260)
+         || match("SAVE_COUNTERS", V290)
+         || match("SAVE_GAME", V268)
+         || match_partial("SAVE_BC", V270)
+         || match_partial("SAVE_ROBOT", V270))
         {
           debug("SET: %s (%s)\n", src, function_counter);
           add_resource(src, file);
           break;
         }
 
-        if( match("SAVE_WORLD", 0x0248) )
+        if( match("SAVE_WORLD", V269c) )
         {
           // Maximum version
-          if(world_version < 0x025A)
+          if(world_version < V290)
           {
             debug("SET: %s (%s)\n", src, function_counter);
             add_resource(src, file);
@@ -977,7 +973,7 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
           char tempc;
           int maxlen;
 
-          if(world_version < 0x025A)
+          if(world_version < V290)
             maxlen = 3;
           else
             maxlen = 4;
@@ -1118,7 +1114,7 @@ static enum status parse_legacy_board(struct memfile *mf,
   }
 
   // get length of board MOD string
-  if(file->world_version < 0x0253)
+  if(file->world_version < V283)
     board_mod_len = 12;
   else
     board_mod_len = mfgetw(mf);
@@ -1136,7 +1132,7 @@ static enum status parse_legacy_board(struct memfile *mf,
     add_requirement(board_mod, file);
   }
 
-  if(file->world_version < 0x0253)
+  if(file->world_version < V283)
     skip_bytes = 208;
   else
     skip_bytes = 25;
@@ -1186,7 +1182,7 @@ static enum status parse_legacy_world(struct memfile *mf,
   if(num_boards == 0)
   {
     unsigned short sfx_len_total = mfgetw(mf);
-    char sfx_buf[LEGACY_SFX_SIZE];
+    char sfx_buf[LEGACY_SFX_SIZE + 1];
     int sfx_len;
 
     debug("SFX table (input length: %d)\n", sfx_len_total);
@@ -1194,7 +1190,7 @@ static enum status parse_legacy_world(struct memfile *mf,
     for(i = 0; i < NUM_SFX; i++)
     {
       sfx_len = mfgetc(mf);
-      if(sfx_len >= LEGACY_SFX_SIZE)
+      if(sfx_len > LEGACY_SFX_SIZE)
         return CORRUPT_WORLD;
 
       if(sfx_len > 0)
@@ -1284,7 +1280,7 @@ static enum status parse_robot_info(struct memfile *mf, struct base_file *file)
       return parse_legacy_bytecode(&prop, (unsigned int)len, file);
   }
 
-  return ZIP_SUCCESS;
+  return SUCCESS;
 }
 
 static enum status parse_board_info(struct memfile *mf, struct base_file *file)
@@ -1326,7 +1322,31 @@ static enum status parse_board_info(struct memfile *mf, struct base_file *file)
     }
   }
 
-  return ZIP_SUCCESS;
+  return SUCCESS;
+}
+
+static enum status parse_sfx_file(struct memfile *mf, struct base_file *file)
+{
+  char sfx_buf[LEGACY_SFX_SIZE + 1];
+  int i;
+
+  enum status ret = SUCCESS;
+
+  debug("SFX table found\n");
+
+  for(i = 0; i < NUM_SFX; i++)
+  {
+    if(!mfread(sfx_buf, LEGACY_SFX_SIZE, 1, mf))
+      return FREAD_FAILED;
+
+    sfx_buf[LEGACY_SFX_SIZE] = 0;
+
+    ret = parse_sfx(sfx_buf, file);
+    if(ret != SUCCESS)
+      return ret;
+  }
+
+  return SUCCESS;
 }
 
 static enum status parse_world(struct memfile *mf, struct base_file *file,
@@ -1340,7 +1360,7 @@ static enum status parse_world(struct memfile *mf, struct base_file *file,
   struct memfile buf_file;
   unsigned int file_id;
 
-  int ret = ZIP_SUCCESS;
+  enum status ret = SUCCESS;
 
   if(ZIP_SUCCESS != zip_read_directory(zp))
   {
@@ -1356,6 +1376,7 @@ static enum status parse_world(struct memfile *mf, struct base_file *file,
     {
       case FPROP_BOARD_INFO:
       case FPROP_ROBOT:
+      case FPROP_WORLD_SFX:
       {
         zip_get_next_uncompressed_size(zp, &actual_size);
         buffer = malloc(actual_size);
@@ -1367,6 +1388,9 @@ static enum status parse_world(struct memfile *mf, struct base_file *file,
 
         else if(file_id == FPROP_ROBOT)
           ret = parse_robot_info(&buf_file, file);
+
+        else if(file_id == FPROP_WORLD_SFX)
+          ret = parse_sfx_file(&buf_file, file);
 
         free(buffer);
         break;
@@ -1409,10 +1433,10 @@ static enum status parse_board_file(struct memfile *mf, struct base_file *file)
 
   file->world_version = file_version;
 
-  if(file_version <= WORLD_LEGACY_FORMAT_VERSION)
+  if(file_version <= MZX_LEGACY_FORMAT_VERSION)
     return parse_legacy_board(mf, file);
 
-  if(file_version <= WORLD_VERSION)
+  if(file_version <= MZX_VERSION)
     return parse_world(mf, file, 1);
 
   return MAGIC_CHECK_FAILED;
@@ -1436,16 +1460,16 @@ static enum status parse_world_file(struct memfile *mf, struct base_file *file)
     return FREAD_FAILED;
 
   // can only support 2.00+ versioned worlds
-  file_version = world_magic(magic);
+  file_version = _world_magic(magic);
   if(file_version <= 0)
     return MAGIC_CHECK_FAILED;
 
   file->world_version = file_version;
 
-  if(file_version <= WORLD_LEGACY_FORMAT_VERSION)
+  if(file_version <= MZX_LEGACY_FORMAT_VERSION)
     return parse_legacy_world(mf, file);
 
-  if(file_version <= WORLD_VERSION)
+  if(file_version <= MZX_VERSION)
     return parse_world(mf, file, 0);
 
   return MAGIC_CHECK_FAILED;

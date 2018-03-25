@@ -80,6 +80,7 @@ struct host
   int proto;
   int af;
   int fd;
+  Uint32 timeout_ms;
 };
 
 static inline bool __host_last_error_fatal(void)
@@ -701,6 +702,7 @@ struct host *host_create(enum host_type type, enum host_family fam)
   h->proto = proto;
   h->af = af;
   h->fd = fd;
+  h->timeout_ms = HOST_TIMEOUT_DEFAULT;
   return h;
 }
 
@@ -711,6 +713,11 @@ void host_destroy(struct host *h)
     platform_close(h->fd);
     free(h);
   }
+}
+
+void host_set_timeout_ms(struct host *h, int timeout_ms)
+{
+  h->timeout_ms = timeout_ms;
 }
 
 static bool __send(struct host *h, const void *buffer, size_t len)
@@ -727,8 +734,8 @@ static bool __send(struct host *h, const void *buffer, size_t len)
   {
     now = get_ticks();
 
-    // time out in 10 seconds if no data is sent
-    if(now - start > 10 * 1000)
+    // time out if no data is sent
+    if(now - start > h->timeout_ms)
       return false;
 
     // normally it won't all get through at once
@@ -766,8 +773,8 @@ static bool __recv(struct host *h, void *buffer, unsigned int len)
   {
     now = get_ticks();
 
-    // time out in 10 seconds if no data is received
-    if(now - start > 10 * 1000)
+    // time out if no data is received
+    if(now - start > h->timeout_ms)
       return false;
 
     // normally it won't all get through at once

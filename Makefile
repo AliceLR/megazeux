@@ -14,7 +14,7 @@ ifeq ($(filter -r,$(MAKEFLAGS)),)
 MAKEFLAGS += -r
 endif
 
-.PHONY: all clean help_check mzx mzx.debug build build_clean source
+.PHONY: all clean help_check test test_clean mzx mzx.debug build build_clean source
 
 -include platform.inc
 include version.inc
@@ -110,10 +110,23 @@ CXXFLAGS += -fno-exceptions -fno-rtti ${ARCH_CXXFLAGS}
 LDFLAGS  += ${ARCH_LDFLAGS}
 
 #
-# GCC version >= 4.x
+# GCC version >= 7.x
 #
 
 GCC_VER_MAJOR := ${shell ${CC} -dumpversion | cut -d. -f1}
+GCC_VER_MAJOR_GE_7 := ${shell test $(GCC_VER_MAJOR) -ge 7; echo $$?}
+
+ifeq ($(GCC_VER_MAJOR_GE_7),0)
+# This gives spurious warnings on Linux. The snprintf implementation on Linux
+# will terminate even in the case of truncation, making this largely useless.
+# It does not trigger using mingw, where it would actually matter.
+CFLAGS   += -Wno-format-truncation
+endif
+
+#
+# GCC version >= 4.x
+#
+
 GCC_VER_MAJOR_GE_4 := ${shell test $(GCC_VER_MAJOR) -ge 4; echo $$?}
 
 ifeq ($(GCC_VER_MAJOR_GE_4),0)
@@ -196,10 +209,17 @@ build_clean:
 
 source: build/${TARGET}src
 
+#
+# Build source target
+# Targetting unix primarily, so turn off autocrlf if necessary
+#
 build/${TARGET}src:
 	${RM} -r build/${TARGET}
 	${MKDIR} -p build/dist/source
+	@TEMP=$(git config core.autocrlf)
+	@git config core.autocrlf false
 	@git checkout-index -a --prefix build/${TARGET}/
+	@git config core.autocrlf ${TEMP}
 	${RM} -r build/${TARGET}/scripts
 	${RM} build/${TARGET}/.gitignore build/${TARGET}/.gitattributes
 	@cd build/${TARGET} && make distclean
@@ -240,7 +260,7 @@ endif
 
 include src/Makefile.in
 
-clean: mzx_clean
+clean: mzx_clean test_clean
 
 ifeq (${BUILD_UTILS},1)
 include src/utils/Makefile.in
@@ -320,5 +340,11 @@ help_check: ${hlp2txt} assets/help.fil
 	@echo @ >> help.txt
 	@diff --strip-trailing-cr -q docs/WIPHelp.txt help.txt
 	@rm -f help.txt
+
+test: mzx
+	@testworlds/run.sh @{PLATFORM} @{LIBDIR}
+
+test_clean:
+	@rm -rf testworlds/log
 
 endif

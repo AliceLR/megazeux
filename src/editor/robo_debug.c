@@ -1249,14 +1249,14 @@ int __debug_robot_watch(struct world *mzx_world, struct robot *cur_robot,
     // String
     if(is_string(wt->match_name))
     {
-      snprintf(info, 76, "~a@0 changed ~9@1: watch ~c`%s`", wt->match_name);
+      snprintf(info, 77, "~a@0 changed ~9@1: watch ~c`%.47s`", wt->match_name);
       info[76] = 0;
     }
 
     // Counter
     else
     {
-      snprintf(info, 76, "~a@0 %d ~8\x1A ~a%d ~9@1: watch ~c`%s`",
+      snprintf(info, 77, "~a@0 %d ~8\x1A ~a%d ~9@1: watch ~c`%.45s`",
        wt->last_value, value, wt->match_name);
 
       info[76] = 0;

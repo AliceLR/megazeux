@@ -5,5 +5,5 @@
 # NOTE: TARGET must NOT be kept in quotes, and spaces CANNOT be used.
 #
 
-VERSION="2.91b"
-TARGET=mzx291b
+VERSION="2.91c"
+TARGET=mzx291c

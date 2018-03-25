@@ -1,8 +1,8 @@
 diff --git a/src/format.c b/src/format.c
-index 86325290..f1fe1dc3 100644
+index 86325290..66244d0a 100644
 --- a/src/format.c
 +++ b/src/format.c
-@@ -22,29 +22,15 @@
+@@ -22,7 +22,6 @@
  
  #include <stdlib.h>
  #include <string.h>
@@ -10,9 +10,7 @@ index 86325290..f1fe1dc3 100644
  #include "format.h"
  
  extern const struct format_loader libxmp_loader_xm;
- extern const struct format_loader libxmp_loader_mod;
--extern const struct format_loader libxmp_loader_flt;
--extern const struct format_loader libxmp_loader_st;
+@@ -32,19 +31,8 @@ extern const struct format_loader libxmp_loader_st;
  extern const struct format_loader libxmp_loader_it;
  extern const struct format_loader libxmp_loader_s3m;
  extern const struct format_loader libxmp_loader_stm;
@@ -32,7 +30,7 @@ index 86325290..f1fe1dc3 100644
  extern const struct format_loader libxmp_loader_amf;
  extern const struct format_loader libxmp_loader_asylum;
  extern const struct format_loader libxmp_loader_gdm;
-@@ -53,64 +39,20 @@ extern const struct format_loader libxmp_loader_mmd3;
+@@ -53,40 +41,10 @@ extern const struct format_loader libxmp_loader_mmd3;
  extern const struct format_loader libxmp_loader_med2;
  extern const struct format_loader libxmp_loader_med3;
  extern const struct format_loader libxmp_loader_med4;
@@ -67,17 +65,13 @@ index 86325290..f1fe1dc3 100644
 -/* extern const struct format_loader libxmp_loader_polly; */
 -/* extern const struct format_loader libxmp_loader_stc; */
 -extern const struct format_loader libxmp_loader_pw;
--extern const struct format_loader libxmp_loader_hmn;
+ extern const struct format_loader libxmp_loader_hmn;
 -extern const struct format_loader libxmp_loader_chip;
 -extern const struct format_loader libxmp_loader_abk;
  
  extern const struct pw_format *const pw_format[];
  
- const struct format_loader *const format_loader[NUM_FORMATS + 2] = {
- 	&libxmp_loader_xm,
- 	&libxmp_loader_mod,
--	&libxmp_loader_flt,
--	&libxmp_loader_st,
+@@ -98,19 +56,8 @@ const struct format_loader *const format_loader[NUM_FORMATS + 2] = {
  	&libxmp_loader_it,
  	&libxmp_loader_s3m,
  	&libxmp_loader_stm,
@@ -97,7 +91,7 @@ index 86325290..f1fe1dc3 100644
  	&libxmp_loader_amf,
  	&libxmp_loader_asylum,
  	&libxmp_loader_gdm,
-@@ -119,44 +61,13 @@ const struct format_loader *const format_loader[NUM_FORMATS + 2] = {
+@@ -119,44 +66,14 @@ const struct format_loader *const format_loader[NUM_FORMATS + 2] = {
  	&libxmp_loader_med2,
  	&libxmp_loader_med3,
  	&libxmp_loader_med4,
@@ -119,7 +113,7 @@ index 86325290..f1fe1dc3 100644
 -	&libxmp_loader_sfx,
  	&libxmp_loader_far,
 -	&libxmp_loader_umx,
--	&libxmp_loader_hmn,
+ 	&libxmp_loader_hmn,
 -	&libxmp_loader_stim,
 -	/* &libxmp_loader_coco, */
 -	/* &libxmp_loader_mtp, */
@@ -143,7 +137,7 @@ index 86325290..f1fe1dc3 100644
  
  char **format_list()
  {
-@@ -165,15 +76,7 @@ char **format_list()
+@@ -165,15 +82,7 @@ char **format_list()
  	if (_farray[0] == NULL) {
  		for (count = i = 0; format_loader[i] != NULL; i++) {
  
@@ -161,24 +155,27 @@ index 86325290..f1fe1dc3 100644
  
  		_farray[count] = NULL;
 diff --git a/src/format.h b/src/format.h
-index 4d90458b..0c037171 100644
+index 4d90458b..d8cbdf06 100644
 --- a/src/format.h
 +++ b/src/format.h
-@@ -15,8 +15,7 @@ char **format_list(void);
+@@ -14,11 +14,7 @@ struct format_loader {
+ char **format_list(void);
  
  #ifndef LIBXMP_CORE_PLAYER
- 
+-
 -#define NUM_FORMATS 52
 -#define NUM_PW_FORMATS 43
-+#define NUM_FORMATS 19
+-
+-int pw_test_format(HIO_HANDLE *, char *, const int, struct xmp_test_info *);
++#define NUM_FORMATS 22
+ #endif
  
- int pw_test_format(HIO_HANDLE *, char *, const int, struct xmp_test_info *);
  #endif
 diff --git a/src/load.c b/src/load.c
-index 3e7dbbb7..b017d957 100644
+index 8bac0696..49231031 100644
 --- a/src/load.c
 +++ b/src/load.c
-@@ -179,14 +179,6 @@ int xmp_test_module(char *path, struct xmp_test_info *info)
+@@ -175,14 +175,6 @@ int xmp_test_module(char *path, struct xmp_test_info *info)
  		if (format_loader[i]->test(h, buf, 0) == 0) {
  			int is_prowizard = 0;
  
@@ -192,4 +189,4 @@ index 3e7dbbb7..b017d957 100644
 -
  			fclose(h->handle.file);
  
- #ifndef LIBXMP_CORE_PLAYER
+ 			if (info != NULL && !is_prowizard) {

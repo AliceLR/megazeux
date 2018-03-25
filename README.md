@@ -3,10 +3,10 @@
 
 MegaZeux is a game creation system (GCS) created by game developer Alexis Janson in 1994.
 Originally a DOS program, in 2005 a multi-platform port was released by Exophase. The most
-recent version of MegaZeux is 2.91b, which was released on January 7th, 2018.
+recent version of MegaZeux is 2.91c, which was released on March 4th, 2018.
 
-MegaZeux is officially supported on Windows, Linux, MacOS, as well as the NDS, 3DS, Wii,
-and PSP consoles. Historical support has also existed for BSD, GP2X, Pandora, and AmigaOS 4.
+MegaZeux is officially supported on Windows, Linux/BSD, MacOS, as well as the NDS, 3DS, Wii,
+and PSP consoles. Historical support has also existed for GP2X, Pandora, and AmigaOS 4.
 
 ## Downloads
 
@@ -16,12 +16,14 @@ Older versions are available at [DigitalMZX](http://vault.digitalmzx.net/).
 <!-- Download URLs. -->
 [megazeux-w64]: http://vault.digitalmzx.net/download.php?latest=windows64
 [megazeux-w32]: http://vault.digitalmzx.net/download.php?latest=windows32
+[megazeux-dos]: http://vault.digitalmzx.net/download.php?latest=dos
 [megazeux-osx]: http://vault.digitalmzx.net/download.php?latest=osx
 [megazeux-ppc]: http://vault.digitalmzx.net/download.php?latest=osxppc
 [megazeux-u64]: http://vault.digitalmzx.net/download.php?latest=ubuntu64
 [megazeux-u32]: http://vault.digitalmzx.net/download.php?latest=ubuntu32
 [megazeux-d64]: http://vault.digitalmzx.net/download.php?latest=debian64
 [megazeux-d32]: http://vault.digitalmzx.net/download.php?latest=debian32
+[megazeux-rpi]: http://vault.digitalmzx.net/download.php?latest=raspbian
 [megazeux-nds]: http://vault.digitalmzx.net/download.php?latest=nds
 [megazeux-3ds]: http://vault.digitalmzx.net/download.php?latest=3ds
 [megazeux-wii]: http://vault.digitalmzx.net/download.php?latest=wii
@@ -31,12 +33,15 @@ Older versions are available at [DigitalMZX](http://vault.digitalmzx.net/).
 <!-- Images for download links. -->
 [arch-w64]: contrib/archicons/windows64.png "Windows x64"
 [arch-w32]: contrib/archicons/windows32.png "Windows x86"
+[arch-dos]: contrib/archicons/dos.png       "MS DOS (MZX 2.70)"
 [arch-osx]: contrib/archicons/osx.png       "MacOS"
 [arch-ppc]: contrib/archicons/osxppc.png    "Mac OS X (PowerPC)"
 [arch-u64]: contrib/archicons/ubuntu64.png  "Ubuntu AMD64"
 [arch-u32]: contrib/archicons/ubuntu32.png  "Ubuntu i386"
 [arch-d64]: contrib/archicons/debian64.png  "Debian AMD64"
 [arch-d32]: contrib/archicons/debian32.png  "Debian i386"
+[arch-rpi]: contrib/archicons/raspbian.png  "Raspbian"
+[arch-aur]: contrib/archicons/archlinux.png "Arch Linux (via AUR)"
 [arch-nds]: contrib/archicons/nds.png       "Nintendo DS"
 [arch-3ds]: contrib/archicons/3ds.png       "Nintendo 3DS"
 [arch-wii]: contrib/archicons/wii.png       "Nintendo Wii"
@@ -47,7 +52,6 @@ Older versions are available at [DigitalMZX](http://vault.digitalmzx.net/).
 &nbsp; [![Windows x64         ][arch-w64]][megazeux-w64]
 &nbsp; [![Windows x86         ][arch-w32]][megazeux-w32]
 &nbsp; [![Mac OS X            ][arch-osx]][megazeux-osx]
-&nbsp; [![Mac OS X (PowerPC)  ][arch-ppc]][megazeux-ppc]
 &nbsp; [![Ubuntu AMD64        ][arch-u64]][megazeux-u64]
 &nbsp; [![Ubuntu i386         ][arch-u32]][megazeux-u32]
 &nbsp; [![Debian AMD64        ][arch-d64]][megazeux-d64]
@@ -57,6 +61,13 @@ Older versions are available at [DigitalMZX](http://vault.digitalmzx.net/).
 &nbsp; [![Nintendo Wii        ][arch-wii]][megazeux-wii]
 &nbsp; [![PlayStation Portable][arch-psp]][megazeux-psp]
 &nbsp; [![Source code         ][arch-src]][megazeux-src]
+
+Downloads are also available for the following platforms, but are not regularly updated:
+
+&nbsp; [![Mac OS X (PowerPC)  ][arch-ppc]][megazeux-ppc]
+&nbsp; [![Raspbian            ][arch-rpi]][megazeux-rpi]
+&nbsp; [![Arch Linux (via AUR)][arch-aur]](https://aur.archlinux.org/packages/megazeux/)
+&nbsp; [![MS DOS (MZX 2.70)   ][arch-dos]][megazeux-dos]
 
 ## Credits
 

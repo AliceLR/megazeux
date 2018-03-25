@@ -27,6 +27,12 @@ build-stamp: configure-stamp
 	$(MAKE)
 	touch $@
 
+test: test-stamp
+test-stamp: build-stamp
+	dh_testdir
+	$(MAKE) test
+	touch test-stamp
+
 clean:
 	dh_testdir
 	dh_testroot
@@ -34,7 +40,7 @@ clean:
 	$(MAKE) distclean
 	dh_clean 
 
-install: build
+install: test
 	dh_testdir
 	dh_testroot
 	dh_clean -k 

@@ -1845,7 +1845,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
   copy_sensor.used = 0;
   copy_scroll.used = 0;
 
-  mzx_world->version = WORLD_VERSION;
+  mzx_world->version = MZX_VERSION;
 
   set_palette_intensity(100);
 
@@ -1929,7 +1929,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
       create_path_if_not_exists(backup_name);
 
-      save_world(mzx_world, backup_name_formatted, 0, WORLD_VERSION);
+      save_world(mzx_world, backup_name_formatted, 0, MZX_VERSION);
       backup_num = (backup_num + 1) % backup_count;
       backup_timestamp = get_ticks();
     }
@@ -2389,9 +2389,11 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
            * block, and the user has selected legacy placement mode, toggle
            * the current param type with SPACE.
            */
-          if((!overlay_edit) && (current_id == level_id[offset]) &&
-             (current_color == level_color[offset]) &&
-             mzx_world->editor_conf.editor_space_toggles)
+          int at_match = (!overlay_edit) &&
+           (current_id == level_id[offset]) &&
+           (current_color == level_color[offset]);
+
+          if(at_match && mzx_world->editor_conf.editor_space_toggles)
           {
             place_current_at_xy(mzx_world, SPACE, 7, 0, cursor_board_x,
              cursor_board_y, &copy_robot, &copy_scroll, &copy_sensor,
@@ -2399,13 +2401,12 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           }
           else
           {
-            /* If what we're trying to overwrite is a robot, only allow
-             * the user to press "Delete" to remove it. Disallow rewrites
-             * and toggling in this mode. Otherwise, just write through
-             * as usual.
+            /* If what we're trying to overwrite is a robot, allow the
+             * user to overwrite it only if legacy placement is enabled.
              */
-            if(!((is_robot(level_id[offset]) && (!overlay_edit)) &&
-                 !mzx_world->editor_conf.editor_space_toggles))
+            int at_robot = (!overlay_edit) && is_robot(level_id[offset]);
+
+            if(!at_robot || mzx_world->editor_conf.editor_space_toggles)
             {
               current_param = place_current_at_xy(mzx_world, current_id,
                current_color, current_param, cursor_board_x, cursor_board_y,
@@ -4062,13 +4063,13 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             {
               debug("Save path: %s\n", world_name);
 
-              // It's now officially WORLD_VERSION
-              mzx_world->version = WORLD_VERSION;
+              // It's now officially the current MZX version
+              mzx_world->version = MZX_VERSION;
 
               // Save entire game
               strcpy(current_world, world_name);
               strcpy(curr_file, current_world);
-              save_world(mzx_world, current_world, 0, WORLD_VERSION);
+              save_world(mzx_world, current_world, 0, MZX_VERSION);
 
               get_path(world_name, new_path, MAX_PATH);
               if(new_path[0])
@@ -4106,7 +4107,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           clear_overlay_history = 1;
           clear_vlayer_history = 1;
 
-          if(!save_world(mzx_world, "__test.mzx", 0, WORLD_VERSION))
+          if(!save_world(mzx_world, "__test.mzx", 0, MZX_VERSION))
           {
             int world_version = mzx_world->version;
             char *return_dir = cmalloc(MAX_PATH);
@@ -4404,12 +4405,12 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                 char title[80];
 
                 sprintf(title, "Export world to previous version (%d.%d)",
-                 (WORLD_VERSION_PREV >> 8) & 0xFF, WORLD_VERSION_PREV & 0xFF);
+                 (MZX_VERSION_PREV >> 8) & 0xFF, MZX_VERSION_PREV & 0xFF);
 
                 if(!new_file(mzx_world, world_ext, ".mzx", export_name,
                  title, 1))
                 {
-                  save_world(mzx_world, export_name, 0, WORLD_VERSION_PREV);
+                  save_world(mzx_world, export_name, 0, MZX_VERSION_PREV);
                 }
               }
             }

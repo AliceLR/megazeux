@@ -73,7 +73,7 @@
 #endif
 
 #ifndef VIDEO_OUTPUT_DEFAULT
-#define VIDEO_OUTPUT_DEFAULT "glsl"
+#define VIDEO_OUTPUT_DEFAULT "auto_glsl"
 #endif
 
 #ifndef AUDIO_BUFFER_SIZE
@@ -182,6 +182,27 @@ static void config_update_branch_pin(struct config_info *conf, char *name,
 {
   strncpy(conf->update_branch_pin, value, 256);
   conf->update_branch_pin[256 - 1] = 0;
+}
+
+static void config_update_auto_check(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  if(!strcmp(value, "off"))
+  {
+    conf->update_auto_check = UPDATE_AUTO_CHECK_OFF;
+  }
+  else
+
+  if(!strcmp(value, "on"))
+  {
+    conf->update_auto_check = UPDATE_AUTO_CHECK_ON;
+  }
+  else
+
+  if(!strcmp(value, "silent"))
+  {
+    conf->update_auto_check = UPDATE_AUTO_CHECK_SILENT;
+  }
 }
 
 #endif // CONFIG_UPDATER
@@ -563,6 +584,7 @@ static const struct config_entry config_options[] =
   { "startup_path", config_startup_path, false },
   { "system_mouse", config_system_mouse, false },
 #ifdef CONFIG_UPDATER
+  { "update_auto_check", config_update_auto_check, false },
   { "update_branch_pin", config_update_branch_pin, false },
   { "update_host", config_update_host, false },
 #endif
@@ -654,6 +676,8 @@ static const struct config_info default_options =
 #else /* !CONFIG_DEBYTECODE */
   "Stable",                     // update_branch_pin
 #endif /* !CONFIG_DEBYTECODE */
+  UPDATE_AUTO_CHECK_SILENT,     // update_auto_check
+  0,                            // update_available
 #endif /* CONFIG_UPDATER */
 };
 

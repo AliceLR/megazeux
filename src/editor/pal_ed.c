@@ -735,21 +735,27 @@ static int palette_editor_input_component(int value, int min_val, int max_val,
  int x, int y)
 {
   int result = 0;
+  int new_value = value;
+  int update = true;
   char buffer[6];
   int buf_pos;
-  int temp;
   int key;
   int i;
 
   save_screen();
 
-  sprintf(buffer, "%d", value);
-  buffer[5] = 0;
-
-  buf_pos = strlen(buffer);
-
   do
   {
+    if(update)
+    {
+      new_value = CLAMP(new_value, min_val, max_val);
+      if(snprintf(buffer, 6, "%d", new_value))
+        buffer[5] = 0;
+
+      buf_pos = strlen(buffer);
+      update = false;
+    }
+
     draw_char(221, DI_GREY_CORNER, x+4, y);
 
     for(i = 0; i < 4; i++)
@@ -770,10 +776,25 @@ static int palette_editor_input_component(int value, int min_val, int max_val,
     if(get_mouse_press() && !get_mouse_drag())
       key = IKEY_RETURN;
 
+    // Get old buffer value
+    new_value = strtol(buffer, NULL, 10);
+    update = false;
+
     if((key >= IKEY_0) && (key <= IKEY_9) && (buf_pos < 5))
     {
-      buffer[buf_pos] = (key - IKEY_0) + 48;
-      buf_pos++;
+      // At exactly maximum/minimum, typing a number should wrap
+      if((new_value == min_val && min_val < 0)
+       || (new_value == max_val && max_val > 0))
+        new_value = 0;
+
+      else
+        new_value = abs(new_value) * 10 + (key - IKEY_0);
+
+      // Apply '-'
+      if(buffer[0] == '-')
+        new_value *= -1;
+
+      update = true;
     }
 
     switch(key)
@@ -808,23 +829,22 @@ static int palette_editor_input_component(int value, int min_val, int max_val,
 
       case IKEY_MINUS:
       {
-        if(buf_pos == 0)
+        // Add a leading '-'
+        if(buf_pos == 0 || buffer[0] == '0')
         {
-          buffer[buf_pos] = '-';
-          buf_pos++;
+          strcpy(buffer, "-");
+          buf_pos = 1;
+        }
+        else
+
+        // Negate the existing number
+        if(-new_value >= min_val && -new_value <= max_val)
+        {
+          new_value *= -1;
+          update = true;
         }
         break;
       }
-    }
-
-    // Bound the input and clean up leading zeros by rewriting the number.
-    temp = strtol(buffer, NULL, 10);
-
-    if((buf_pos == 1 && buffer[0] != '-') || (buf_pos > 1))
-    {
-      temp = CLAMP(temp, min_val, max_val);
-      sprintf(buffer, "%d", temp);
-      buf_pos = strlen(buffer);
     }
   }
   while(key != IKEY_ESCAPE);
@@ -832,7 +852,10 @@ static int palette_editor_input_component(int value, int min_val, int max_val,
   restore_screen();
 
   if(result)
-    value = CLAMP(temp, min_val, max_val);
+  {
+    value = strtol(buffer, NULL, 10);
+    value = CLAMP(value, min_val, max_val);
+  }
 
   return value;
 }

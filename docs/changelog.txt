@@ -1,3 +1,64 @@
+March 4th, 2018 - MZX 2.91c
+
+This release contains an assortment of bugfixes ranging from
+player clone fixes to obscure compatibility patches. A handful
+of updater issues have been fixed (or at least addressed).
+
+MegaZeux can now automatically check for updates on startup on
+Windows platforms. This behavior can be configured, and by
+default will simply leave a message in the window caption.
+
+USERS
+
++ MegaZeux can now automatically run the updater on startup
+  on applicable platforms. This can be configured with the
+  'update_auto_check' config file option.
++ Fixed a bug where several .MOD variants stopped working with
+  libxmp enabled.
++ Sound effects in subdirectories can now be used in the SFX
+  editor.
++ Fixed a bug where checkres would fail on legacy worlds with
+  very long custom SFX.
++ Checkres no longer ignores the SFX tables of 2.90+ worlds.
++ Fixed a bug where interpolated expressions containing ternary
+  operators could terminate counter names early.
++ Fixed faulty IF ANY compatibility behavior.
++ Fixed a bug where FWRITE functions could change the case of
+  user-defined filenames when creating new files on non-Windows
+  platforms.
++ SMZX mode 1 palettes are now exported correctly as 16 colors
+  instead of as 256 colors.
++ Fixed subtly inconsistent timing in certain built-ins.
++ Fixed bug where wind and transporters could clone the player.
++ MegaZeux now restarts correctly in paths containing spaces
+  when the updater is run.
++ Subroutines in pre-port MZX worlds now always return to the
+  command after the subroutine was sent.
++ Typed color components now wrap from the maximum value to zero
+  like dialog number inputs, and pressing minus will now negate
+  the input number.
++ Copying chars in the char editor between regular and SMZX
+  screen modes now works properly.
++ Fixed a crash that could occur when placing things on a vlayer
+  larger than the current board.
++ Sharks and SpittingTigers with firing rates greater than 4 now
+  retain their firing rate when edited.
++ Fixed a bug where world decryption could crash. (Revvy)
++ If the glsl renderer is selected by default, the detection of
+  a software opengl driver will result in falling back to
+  software. (Lancer-X)
++ Fixed a bug in the GLSL renderer where an additional window is
+  created if the OpenGL version is low enough to cause a
+  fallback to software. (Lancer-X)
+
+DEVELOPERS
+
++ Added .MZX-based unit testing system. Run with "make test".
+  See testworlds/README.md for more information.
++ The default renderer is now auto_glsl, which turns into glsl
+  if not using a blacklisted opengl driver. (Lancer-X)
+
+
 January 6, 2018 - MZX 2.91b
 
 Here's a fairly significant update for MegaZeux 2.91, fixing
@@ -34,7 +95,6 @@ DEVELOPERS
 
 + Updated MSVC for Visual Studio 2017. (Spectere)
 + Added xcode support. (Spectere)
-+ "make all" now makes the help file. (pgimeno)
 + "make clean" now deletes ccv. (pgimeno)
 + Fixed creeping CRLF usage. (Lachesis, pgimeno, Spectere)
 + Fixed a bug where the MSYS2 build scripts could inadvertently
@@ -1769,7 +1829,7 @@ USERS
 + Setting vlayer_size, vlayer_width or vlayer_height to values less than or
   equal to zero would crash MegaZeux. Limit the smallest vlayer size to 1x1.
 + Setting vlayer_width or vlayer_height to a value larger than vlayer_size
-  would crash MegaZeux. Limit the largest size of either dimension to a 
+  would crash MegaZeux. Limit the largest size of either dimension to a
   maximum of vlayer_size.
 + If selecting a module with a non 8.3 filename, MZX will now ask you if you
   want to rename it to 8.3, and do so in an intelligent way. This means that

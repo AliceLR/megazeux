@@ -96,11 +96,11 @@ int world_magic(const char magic_string[3])
       switch(magic_string[2])
       {
         case 'X':
-          return 0x0100;
+          return V100;
         case '2':
-          return 0x0205;
+          return V251;
         case 'A':
-          return 0x0208;
+          return V251s1;
       }
     }
     else
@@ -123,7 +123,7 @@ int save_magic(const char magic_string[5])
       case 'S':
         if((magic_string[3] == 'V') && (magic_string[4] == '2'))
         {
-          return 0x0205;
+          return V251;
         }
         else if((magic_string[3] >= 2) && (magic_string[3] <= 10))
         {
@@ -136,7 +136,7 @@ int save_magic(const char magic_string[5])
       case 'X':
         if((magic_string[3] == 'S') && (magic_string[4] == 'A'))
         {
-          return 0x0208;
+          return V251s1;
         }
         else
         {
@@ -152,83 +152,74 @@ int save_magic(const char magic_string[5])
   }
 }
 
-int get_version_string(char buffer[16], int world_version)
+int get_version_string(char buffer[16], enum mzx_version version)
 {
-  switch(world_version)
+  switch(version)
   {
-    // 1.xx
-    case 0x0100:
+    case V100:
       sprintf(buffer, "1.xx");
       break;
 
-    // <=2.51
-    case 0x0205:
+    case V251:
       sprintf(buffer, "2.xx/2.51");
       break;
 
-    // 2.51s1
-    case 0x0208:
+    case V251s1:
       sprintf(buffer, "2.51s1");
       break;
 
-    // 2.51s2 / 2.60 / 2.61
-    case 0x0209:
+    case V251s2: // through V261
       sprintf(buffer, "2.51s2/2.61");
       break;
 
-    // Decrypted worlds
-    case 0x0211:
+    case VERSION_DECRYPT:
       sprintf(buffer, "<decrypted>");
       break;
 
-    // 2.62
-    case 0x0232:
+    case V262:
       sprintf(buffer, "2.62");
       break;
 
-    // 2.62b
-    case 0x023E:
+    case V262b:
       sprintf(buffer, "2.62b");
       break;
 
-    // 2.65
-    case 0x0241:
+    case V265:
       sprintf(buffer, "2.65");
       break;
 
-    // 2.68
-    case 0x0244:
+    case V268:
       sprintf(buffer, "2.68");
       break;
 
-    case 0x0245:
+    case V269:
       sprintf(buffer, "2.69");
       break;
 
-    case 0x0246:
+    case V269b:
       sprintf(buffer, "2.69b");
       break;
 
-    case 0x0248:
+    case V269c:
       sprintf(buffer, "2.69c");
       break;
 
-    case 0x0249:
+    case V270:
       sprintf(buffer, "2.70");
       break;
 
     default:
     {
-      if(world_version < 0x0250)
+      if(version < VERSION_PORT)
       {
-        sprintf(buffer, "<unknown %4.4Xh>", world_version);
+        sprintf(buffer, "<unknown %4.4Xh>", version);
       }
 
       else
       {
         buffer[11] = 0;
         snprintf(buffer, 11, "%d.%2.2d",
-         (world_version >> 8) & 0xFF, world_version & 0xFF);
+         (version >> 8) & 0xFF, version & 0xFF);
       }
 
       break;
@@ -244,7 +235,7 @@ static inline int save_world_info(struct world *mzx_world,
  struct zip_archive *zp, int savegame, int file_version,
  const char *name)
 {
-  int world_version = mzx_world->version;
+  enum mzx_version world_version = mzx_world->version;
 
   char *buffer;
   size_t buf_size = WORLD_PROP_SIZE;
@@ -317,7 +308,7 @@ static inline int save_world_info(struct world *mzx_world,
   save_prop_c(WPROP_ONLY_FROM_SWAP,     mzx_world->only_from_swap, mf);
 
   // SMZX and vlayer are global properties 2.91+
-  if(savegame || world_version >= 0x025B)
+  if(savegame || world_version >= V291)
   {
     save_prop_c(WPROP_SMZX_MODE,        get_screen_mode(), mf);
     save_prop_w(WPROP_VLAYER_WIDTH,     mzx_world->vlayer_width, mf);
@@ -464,7 +455,7 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
   check(WPROP_CLEAR_ON_EXIT);
   check(WPROP_ONLY_FROM_SWAP);
 
-  if(!savegame && world_version < 0x025B)
+  if(!savegame && world_version < V291)
   {
     return VAL_SUCCESS;
   }
@@ -514,7 +505,7 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
   check(WPROP_DIVIDER);
   check(WPROP_C_DIVISIONS);
 
-  if(world_version >= 0x025B)
+  if(world_version >= V291)
   {
     // Added in 2.91
     check(WPROP_MAX_SAMPLES);
@@ -536,7 +527,7 @@ err_free:
 }
 
 #define if_savegame         if(!savegame) { break; }
-#define if_savegame_or_291  if(!savegame && *file_version < 0x025B) { break; }
+#define if_savegame_or_291  if(!savegame && *file_version < V291) { break; }
 
 static inline void load_world_info(struct world *mzx_world,
  struct zip_archive *zp, int savegame, int *file_version, int *faded)
@@ -934,13 +925,13 @@ static inline void load_world_info(struct world *mzx_world,
       // Added in 2.91
       case WPROP_MAX_SAMPLES:
         if_savegame
-        if(mzx_world->version >= 0x025B)
+        if(mzx_world->version >= V291)
         mzx_world->max_samples = load_prop_int(size, prop);
         break;
 
       case WPROP_SMZX_MESSAGE:
         if_savegame
-        if(mzx_world->version >= 0x025B)
+        if(mzx_world->version >= V291)
         mzx_world->smzx_message = load_prop_int(size, prop);
         break;
 
@@ -979,7 +970,7 @@ static inline int save_world_sfx(struct world *mzx_world,
   if(mzx_world->custom_sfx_on)
   {
     return zip_write_file(zp, name, mzx_world->custom_sfx, NUM_SFX * SFX_SIZE,
-     ZIP_M_NONE);
+     ZIP_M_DEFLATE);
   }
 
   return ZIP_SUCCESS;
@@ -1035,8 +1026,8 @@ static inline int load_world_chars(struct world *mzx_world,
   if(result == ZIP_SUCCESS)
   {
     // Load every charset (2.90 saves, 2.91+ worlds)
-    if((mzx_world->version >= 0x025B) ||
-     (savegame && mzx_world->version == 0x025A))
+    if((mzx_world->version >= V291) ||
+     (savegame && mzx_world->version == V290))
       actual_size = MIN(actual_size, PROTECTED_CHARSET_POSITION * CHAR_SIZE);
 
     // Load only the first charset
@@ -1044,7 +1035,7 @@ static inline int load_world_chars(struct world *mzx_world,
       actual_size = MIN(actual_size, CHARSET_SIZE * CHAR_SIZE);
 
     ec_clear_set();
-    ec_mem_load_set_var(buffer, actual_size, 0, WORLD_VERSION);
+    ec_mem_load_set_var(buffer, actual_size, 0, MZX_VERSION);
   }
 
   free(buffer);
@@ -1125,7 +1116,7 @@ static inline int load_world_pal_index(struct world *mzx_world,
 
   if(result == ZIP_SUCCESS)
   {
-    if(file_version >= 0x025B)
+    if(file_version >= V291)
       load_indices(buffer, actual_size);
 
     // 2.90 stored the internal indices instead of user-friendly indices
@@ -1970,7 +1961,7 @@ err:
 #undef if_savegame_or_291
 
 #define if_savegame         if(!savegame) { zip_skip_file(zp); break; }
-#define if_savegame_or_291  if(!savegame && mzx_world->version < 0x025B) \
+#define if_savegame_or_291  if(!savegame && mzx_world->version < V291) \
                              { zip_skip_file(zp); break; }
 
 static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
@@ -2156,7 +2147,7 @@ int save_world(struct world *mzx_world, const char *file, int savegame,
   // TODO we'll cross this bridge when we need to. That shouldn't be
   // until debytecode gets an actual release, though.
 
-  if(world_version == WORLD_VERSION_PREV)
+  if(world_version == MZX_VERSION_PREV)
   {
     error("Downver. not currently supported by debytecode.", 1, 8, 0);
     return -1;
@@ -2175,7 +2166,7 @@ int save_world(struct world *mzx_world, const char *file, int savegame,
           int old_version = world_magic(tmp);
 
           // If it's non-debytecode, abort
-          if(old_version < VERSION_PROGRAM_SOURCE)
+          if(old_version < VERSION_SOURCE)
           {
             error_message(E_DBC_WORLD_OVERWRITE_OLD, old_version, NULL);
             fclose(fp);
@@ -2213,14 +2204,14 @@ int save_world(struct world *mzx_world, const char *file, int savegame,
   }
 
 #ifdef CONFIG_EDITOR
-  if(world_version == WORLD_VERSION_PREV)
+  if(world_version == MZX_VERSION_PREV)
   {
     // Temporarily replace the world version with the previous version
     int actual_world_version = mzx_world->version;
     int ret_val;
-    mzx_world->version = WORLD_VERSION_PREV;
+    mzx_world->version = MZX_VERSION_PREV;
 
-    ret_val = save_world_zip(mzx_world, file, savegame, WORLD_VERSION_PREV);
+    ret_val = save_world_zip(mzx_world, file, savegame, MZX_VERSION_PREV);
 
     mzx_world->version = actual_world_version;
     return ret_val;
@@ -2228,9 +2219,9 @@ int save_world(struct world *mzx_world, const char *file, int savegame,
   else
 #endif
 
-  if(world_version == WORLD_VERSION)
+  if(world_version == MZX_VERSION)
   {
-    return save_world_zip(mzx_world, file, savegame, WORLD_VERSION);
+    return save_world_zip(mzx_world, file, savegame, MZX_VERSION);
   }
 
   else
@@ -2516,7 +2507,7 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
 
 #ifdef CONFIG_DEBYTECODE
   // Convert SFX strings if needed
-  if(file_version < VERSION_PROGRAM_SOURCE)
+  if(file_version < VERSION_SOURCE)
   {
     char *sfx_offset = mzx_world->custom_sfx;
     int i;
@@ -2574,7 +2565,7 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
 
   // If this is a pre-port world, limit the number of samples
   // playing to 4 (the maximum number in pre-port MZX)
-  if(mzx_world->version < 0x0250)
+  if(mzx_world->version < VERSION_PORT)
     mzx_world->max_samples = 4;
 
   // This will be -1 (no limit) or whatever was loaded from a save
@@ -2587,6 +2578,7 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
 
   // Resize this array if necessary
   set_update_done(mzx_world);
+  mzx_world->slow_down = 0;
 
   // Find the player
   find_player(mzx_world);
@@ -2636,7 +2628,7 @@ static struct zip_archive *try_load_zip_world(struct world *mzx_world,
   if(pr > 0 && pr <= 3 && strncmp(name, "PK", 2))
     goto err_protected;
 
-  if(v > 0 && v <= WORLD_LEGACY_FORMAT_VERSION)
+  if(v > 0 && v <= MZX_LEGACY_FORMAT_VERSION)
     goto err_close;
 
   // Get the actual file version out of the world metadata
@@ -2654,11 +2646,11 @@ static struct zip_archive *try_load_zip_world(struct world *mzx_world,
     goto err_close;
 
   // Should never happen, but if it did, it's totally invalid.
-  if(*file_version <= WORLD_LEGACY_FORMAT_VERSION)
+  if(*file_version <= MZX_LEGACY_FORMAT_VERSION)
     goto err_close;
 
   v = *file_version;
-  if(v > WORLD_VERSION)
+  if(v > MZX_VERSION)
     goto err_close;
 
   zip_rewind(zp);
@@ -2671,19 +2663,20 @@ err_close:
   // Display an appropriate error.
   if(savegame)
   {
-    if(v > WORLD_VERSION)
+    if(v > MZX_VERSION)
     {
       error_message(E_SAVE_VERSION_TOO_RECENT, v, NULL);
     }
     else
 
-    if(v > 0 && v < WORLD_LEGACY_FORMAT_VERSION)
+    // Allow the last pre-ZIP version, but none before it
+    if(v > 0 && v < MZX_LEGACY_FORMAT_VERSION)
     {
       error_message(E_SAVE_VERSION_OLD, v, NULL);
     }
     else
 
-    if(v != WORLD_LEGACY_FORMAT_VERSION)
+    if(v != MZX_LEGACY_FORMAT_VERSION)
     {
       error_message(E_SAVE_FILE_INVALID, 0, NULL);
     }
@@ -2691,20 +2684,19 @@ err_close:
 
   else
   {
-    if (v > WORLD_VERSION)
+    if (v > MZX_VERSION)
     {
       error_message(E_WORLD_FILE_VERSION_TOO_RECENT, v, NULL);
     }
     else
 
-    if(v > 0 && v < 0x0205)
+    if(v > 0 && v < V251)
     {
       error_message(E_WORLD_FILE_VERSION_OLD, v, NULL);
     }
-
     else
 
-    if(v == 0 || v > WORLD_LEGACY_FORMAT_VERSION)
+    if(v == 0 || v > MZX_LEGACY_FORMAT_VERSION)
     {
       error_message(E_WORLD_FILE_INVALID, 0, NULL);
     }
@@ -2767,7 +2759,7 @@ void try_load_world(struct world *mzx_world, struct zip_archive **zp,
   _zp = try_load_zip_world(mzx_world, file, savegame, &v, &protected, name);
 
   if(!_zp)
-    if(protected || (v >= 0x0205 && v <= WORLD_LEGACY_FORMAT_VERSION))
+    if(protected || (v >= V251 && v <= MZX_LEGACY_FORMAT_VERSION))
       _fp = try_load_legacy_world(file, savegame, &v, name);
 
   *zp = _zp;
@@ -2798,7 +2790,7 @@ void change_board(struct world *mzx_world, int board_id)
   cur_board = mzx_world->current_board;
 
   // Does this board need a duplicate? (2.90+)
-  if(mzx_world->version >= 0x025A && cur_board->reset_on_entry)
+  if(mzx_world->version >= V290 && cur_board->reset_on_entry)
   {
     struct board *dup_board = duplicate_board(mzx_world, cur_board);
     store_board_to_extram(cur_board);
@@ -2815,12 +2807,12 @@ void change_board_load_assets(struct world *mzx_world)
   char translated_name[MAX_PATH];
 
   // Does this board need a char set loaded? (2.90+)
-  if(mzx_world->version >= 0x025A && cur_board->charset_path[0])
+  if(mzx_world->version >= V290 && cur_board->charset_path[0])
     if(fsafetranslate(cur_board->charset_path, translated_name) == FSAFE_SUCCESS)
       ec_load_set(translated_name);
 
   // Does this board need a palette loaded? (2.90+)
-  if(mzx_world->version >= 0x025A && cur_board->palette_path[0])
+  if(mzx_world->version >= V290 && cur_board->palette_path[0])
   {
     if(fsafetranslate(cur_board->palette_path, translated_name) == FSAFE_SUCCESS)
     {
@@ -2937,7 +2929,7 @@ __editor_maybe_static void default_global_data(struct world *mzx_world)
   scroll_color = 15;
 
   mzx_world->lock_speed = 0;
-  mzx_world->mzx_speed = mzx_world->default_speed;
+  mzx_world->mzx_speed = mzx_world->conf.mzx_speed;
 
   assert(mzx_world->input_file == NULL);
   assert(mzx_world->output_file == NULL);

@@ -18,9 +18,10 @@ cd megazeux
 git checkout $3
 
 arch/nds/CONFIG.NDS
-make clean
 make debuglink -j8
 make package
 make archive
 
 mv build/dist/nds/* /mzx-build-workingdir/zips/
+
+make distclean

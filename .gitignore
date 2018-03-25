@@ -101,5 +101,16 @@ stderr.txt
 *.sav
 *.mzm
 *~
+.vscode
 .DS_Store
 xcuserdata/
+
+# This MUST go after the *.mzx rule.
+!testworlds/*.mzx
+!testworlds/old/*.mzx
+testworlds/backup*
+testworlds/log
+testworlds/next
+testworlds/temp/*
+!testworlds/temp/README.md
+!testworlds/data/*

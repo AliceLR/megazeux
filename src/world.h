@@ -97,33 +97,65 @@ __M_BEGIN_DECLS
  * necessitated, a numerical change must be enacted.
  */
 
+enum mzx_version
+{
+  VERSION_ALL     = 0,      // Used in versioned lists
+  V100            = 0x0100, // Magic: MZX
+  V251            = 0x0205, // Magic: MZ2
+  V251s1          = 0x0208, // Magic: MZA
+  V251s2          = 0x0209,
+  V251s3          = 0x0209,
+  V260            = 0x0209,
+  V261            = 0x0209,
+  VERSION_DECRYPT = 0x0211, // Special version used for decrypted worlds only.
+  V262            = 0x0232,
+  V262b           = 0x023E,
+  V265            = 0x0241,
+  V268            = 0x0244,
+  V269            = 0x0245,
+  V269b           = 0x0246,
+  V269c           = 0x0248,
+  V270            = 0x0249,
+  VERSION_PORT    = 0x0250, // For checks explicitly differentiating DOS and port
+  V280            = 0x0250,
+  V281            = 0x0251,
+  V282            = 0x0252,
+  V283            = 0x0253,
+  V284            = 0x0254,
+  V290            = 0x025A,
+  V291            = 0x025B,
+#ifdef CONFIG_DEBYTECODE
+  VERSION_SOURCE  = 0x0300, // For checks dependent on Robotic source changes
+#endif
+};
+
 /* The magic stamp for worlds, boards or SAV files created with this version
  * of MegaZeux. If you introduce a counter or any other incompatible change,
  * such as altering semantics or actually changing the binary format, this
  * value MUST be bumped.
  */
-#define WORLD_VERSION      0x025B
+#define MZX_VERSION      (V291)
 
 /* The world version that worlds will be saved as when Export Downver. World
  * is used from the editor. This function was previously fulfilled by downver,
  * but the increase in complexity of the world file made maintaining downver
  * infeasible.
  *
- * If you increase WORLD_VERSION, always make sure this is updated with its
+ * If you increase MZX_VERSION, always make sure this is updated with its
  * previous value. Therefore, users can always downgrade their work to an
  * older version (if it at all makes sense to do so).
  */
-#define WORLD_VERSION_PREV 0x025A
+#define MZX_VERSION_PREV (V290)
 
 // This is the last version of MegaZeux to use the legacy world format.
-#define WORLD_LEGACY_FORMAT_VERSION 0x0254
+#define MZX_LEGACY_FORMAT_VERSION (V284)
 
 // FIXME: hack
 #ifdef CONFIG_DEBYTECODE
-#undef  WORLD_VERSION
-#define WORLD_VERSION      0x0300
-#undef  WORLD_VERSION_PREV
-#define WORLD_VERSION_PREV 0x025B
+#undef  MZX_VERSION_PREV
+#define MZX_VERSION_PREV (V291)
+#undef  MZX_VERSION
+#define MZX_VERSION      (VERSION_SOURCE)
 #endif
 
 enum val_result
@@ -138,7 +170,7 @@ enum val_result
 
 CORE_LIBSPEC int world_magic(const char magic_string[3]);
 CORE_LIBSPEC int save_magic(const char magic_string[5]);
-CORE_LIBSPEC int get_version_string(char buffer[16], int world_version);
+CORE_LIBSPEC int get_version_string(char buffer[16], enum mzx_version version);
 
 CORE_LIBSPEC int save_world(struct world *mzx_world, const char *file,
  int savegame, int world_version);

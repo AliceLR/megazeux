@@ -65,6 +65,50 @@ static long final_size = -1;
 static bool cancel_update;
 
 static char **process_argv;
+static int process_argc;
+
+static char **rewrite_argv_for_execv(int argc, char **argv)
+{
+  char **new_argv = cmalloc((argc+1) * sizeof(char *));
+  char *arg;
+  int length;
+  int pos;
+  int i;
+  int i2;
+
+  // Due to a bug in execv, args with spaces present are treated as multiple
+  // args in the new process. Each arg in argv must be wrapped in double quotes
+  // to work properly. Because of this, " and \ must also be escaped.
+
+  for(i = 0; i < argc; i++)
+  {
+    length = strlen(argv[i]);
+    arg = cmalloc(length * 2 + 2);
+    arg[0] = '"';
+
+    for(i2 = 0, pos = 1; i2 < length; i2++, pos++)
+    {
+      switch(argv[i][i2])
+      {
+        case '"':
+        case '\\':
+          arg[pos] = '\\';
+          pos++;
+          break;
+      }
+      arg[pos] = argv[i][i2];
+    }
+
+    arg[pos] = '"';
+    arg[pos + 1] = '\0';
+
+    new_argv[i] = arg;
+  }
+
+  new_argv[argc] = NULL;
+
+  return new_argv;
+}
 
 static bool check_prune_basedir(const char *file)
 {
@@ -339,7 +383,94 @@ static bool restore_original_manifest(bool ret)
   return true;
 }
 
-static bool reissue_connection(struct config_info *conf, struct host **h, char *host_name)
+static bool write_delete_list(void)
+{
+  struct manifest_entry *e;
+  FILE *f;
+
+  if(delete_list)
+  {
+    f = fopen_unsafe(DELETE_TXT, "ab");
+    if(!f)
+    {
+      error("Failed to create \"" DELETE_TXT "\". Check permissions.", 1, 8, 0);
+      return false;
+    }
+
+    for(e = delete_list; e; e = e->next)
+    {
+      fprintf(f, "%08x%08x%08x%08x%08x%08x%08x%08x %lu %s\n",
+       e->sha256[0], e->sha256[1], e->sha256[2], e->sha256[3],
+       e->sha256[4], e->sha256[5], e->sha256[6], e->sha256[7],
+       e->size, e->name);
+    }
+
+    fclose(f);
+  }
+  return true;
+}
+
+static void apply_delete_list(void)
+{
+  struct manifest_entry *e_next = delete_list;
+  struct manifest_entry *e;
+  struct stat s;
+  bool ret;
+  FILE *f;
+
+  while(e_next)
+  {
+    e = e_next;
+    e_next = e->next;
+
+    if(!stat(e->name, &s))
+    {
+      f = fopen_unsafe(e->name, "rb");
+      if(!f)
+        goto err_delete_failed;
+
+      ret = manifest_entry_check_validity(e, f);
+      fclose(f);
+
+      if(ret)
+      {
+        if(unlink(e->name))
+          goto err_delete_failed;
+
+        /* Obtain the path for this file. If the file isn't at the top
+         * level, and the directory is empty (rmdir ensures this)
+         * the directory will be pruned.
+         */
+        check_prune_basedir(e->name);
+      }
+    }
+
+    // File was removed, doesn't exist, or is non-applicable; remove from list
+    if(delete_list == e)
+      delete_list = e_next;
+
+    manifest_entry_free(e);
+    continue;
+
+err_delete_failed:
+    {
+      char buf[72];
+      snprintf(buf, 72, "Failed to delete \"%.30s\". Check permissions.",
+       e->name);
+      buf[71] = 0;
+
+      error(buf, 1, 8, 0);
+
+      if(e_next)
+        e->next = e_next->next;
+
+      continue;
+    }
+  }
+}
+
+static bool reissue_connection(struct config_info *conf, struct host **h,
+ char *host_name, int is_automatic)
 {
   bool ret = false;
   int buf_len;
@@ -355,7 +486,8 @@ static bool reissue_connection(struct config_info *conf, struct host **h, char *
   *h = host_create(HOST_TYPE_TCP, HOST_FAMILY_IPV4);
   if(!*h)
   {
-    error("Failed to create TCP client socket.", 1, 8, 0);
+    if(!is_automatic)
+      error("Failed to create TCP client socket.", 1, 8, 0);
     goto err_out;
   }
 
@@ -371,10 +503,13 @@ static bool reissue_connection(struct config_info *conf, struct host **h, char *
 
   if(!host_connect(*h, host_name, OUTBOUND_PORT))
   {
-    buf_len = snprintf(widget_buf, WIDGET_BUF_LEN,
-     "Connection to \"%s\" failed.", host_name);
-    widget_buf[WIDGET_BUF_LEN - 1] = 0;
-    error(widget_buf, 1, 8, 0);
+    if(!is_automatic)
+    {
+      buf_len = snprintf(widget_buf, WIDGET_BUF_LEN,
+       "Connection to \"%s\" failed.", host_name);
+      widget_buf[WIDGET_BUF_LEN - 1] = 0;
+      error(widget_buf, 1, 8, 0);
+    }
   }
   else
     ret = true;
@@ -387,7 +522,8 @@ err_out:
   return ret;
 }
 
-static void __check_for_updates(struct world *mzx_world, struct config_info *conf)
+static void __check_for_updates(struct world *mzx_world, struct config_info *conf,
+ int is_automatic)
 {
   int cur_host;
   char *update_host;
@@ -428,8 +564,11 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
 
     update_host = conf->update_hosts[cur_host];
 
-    if(!reissue_connection(conf, &h, update_host))
+    if(!reissue_connection(conf, &h, update_host, is_automatic))
       goto err_host_destroy;
+
+    if(is_automatic)
+      host_set_timeout_ms(h, 1000);
 
     for(retries = 0; retries < MAX_RETRIES; retries++)
     {
@@ -440,20 +579,23 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
       if(status == HOST_SUCCESS)
         break;
 
-      if(!reissue_connection(conf, &h, update_host))
+      if(!reissue_connection(conf, &h, update_host, is_automatic))
         goto err_host_destroy;
     }
 
     if(retries == MAX_RETRIES)
     {
-      snprintf(widget_buf, WIDGET_BUF_LEN, "Failed to download \""
-       UPDATES_TXT "\" (err=%d).\n", status);
-      widget_buf[WIDGET_BUF_LEN - 1] = 0;
-      error(widget_buf, 1, 8, 0);
+      if(!is_automatic)
+      {
+        snprintf(widget_buf, WIDGET_BUF_LEN, "Failed to download \""
+         UPDATES_TXT "\" (err=%d).\n", status);
+        widget_buf[WIDGET_BUF_LEN - 1] = 0;
+        error(widget_buf, 1, 8, 0);
+      }
       goto err_host_destroy;
     }
 
-    snprintf(update_branch, LINE_BUF_LEN, "Current-%s",
+    snprintf(update_branch, LINE_BUF_LEN, "Current-%.240s",
      conf->update_branch_pin);
 
     // Walk this list (of two, hopefully)
@@ -486,7 +628,8 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
      */
     if(!value)
     {
-      error("Failed to identify applicable update version.", 1, 8, 0);
+      if(!is_automatic)
+        error("Failed to identify applicable update version.", 1, 8, 0);
       goto err_host_destroy;
     }
 
@@ -505,6 +648,15 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
     {
       struct element *elements[6];
       struct dialog di;
+
+      conf->update_available = 1;
+
+      // If this is an auto check and silent mode is enabled, we can stop here.
+      if(is_automatic && conf->update_auto_check == UPDATE_AUTO_CHECK_SILENT)
+      {
+        try_next_host = false;
+        goto err_host_destroy;
+      }
 
       buf_len = snprintf(widget_buf, WIDGET_BUF_LEN,
        "A new major version is available (%s)", value);
@@ -581,7 +733,7 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
       if(m_ret)
         break;
 
-      if(!reissue_connection(conf, &h, update_host))
+      if(!reissue_connection(conf, &h, update_host, 0))
         goto err_roll_back_manifest;
     }
 
@@ -599,6 +751,9 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
       struct element *elements[3];
       struct dialog di;
 
+      if(is_automatic)
+        goto err_free_update_manifests;
+
       elements[0] = construct_label(2, 2, "This client is already current.");
       elements[1] = construct_button(7, 4, "OK", 0);
       elements[2] = construct_button(13, 4, "Try next host", 1);
@@ -611,6 +766,16 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
         try_next_host = true;
 
       goto err_free_update_manifests;
+    }
+
+    // Switch back to the normal checking timeout for the rest of the process.
+    if(is_automatic)
+    {
+      if(conf->update_auto_check == UPDATE_AUTO_CHECK_SILENT)
+        goto err_free_update_manifests;
+
+      host_set_timeout_ms(h, HOST_TIMEOUT_DEFAULT);
+      is_automatic = 0;
     }
 
     for(e = removed; e; e = e->next, entries++)
@@ -724,7 +889,7 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
           goto err_free_delete_list;
         }
 
-        if(!reissue_connection(conf, &h, update_host))
+        if(!reissue_connection(conf, &h, update_host, 0))
           goto err_free_delete_list;
         host_set_callbacks(h, NULL, recv_cb, cancel_cb);
       }
@@ -739,25 +904,8 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
       }
     }
 
-    if(delete_list)
-    {
-      f = fopen_unsafe(DELETE_TXT, "wb");
-      if(!f)
-      {
-        error("Failed to create \"" DELETE_TXT "\". Check permissions.", 1, 8, 0);
-        goto err_free_delete_list;
-      }
-
-      for(e = delete_list; e; e = e->next)
-      {
-        fprintf(f, "%08x%08x%08x%08x%08x%08x%08x%08x %lu %s\n",
-         e->sha256[0], e->sha256[1], e->sha256[2], e->sha256[3],
-         e->sha256[4], e->sha256[5], e->sha256[6], e->sha256[7],
-         e->size, e->name);
-      }
-
-      fclose(f);
-    }
+    if(!write_delete_list())
+      goto err_free_delete_list;
 
     try_next_host = false;
     ret = true;
@@ -786,7 +934,7 @@ err_out:
    */
   if(ret)
   {
-    const void *argv = process_argv;
+    char **new_argv;
     struct element *elements[2];
     struct dialog di;
 
@@ -798,7 +946,8 @@ err_out:
     run_dialog(mzx_world, &di);
     destruct_dialog(&di);
 
-    execv(process_argv[0], argv);
+    new_argv = rewrite_argv_for_execv(process_argc, process_argv);
+    execv(process_argv[0], (const void *)new_argv);
     perror("execv");
 
     error("Attempt to invoke self failed!", 1, 8, 0);
@@ -806,12 +955,11 @@ err_out:
   }
 }
 
-bool updater_init(char *argv[])
+bool updater_init(int argc, char *argv[])
 {
-  struct manifest_entry *e;
-  bool ret;
   FILE *f;
 
+  process_argc = argc;
   process_argv = argv;
 
   if(!swivel_current_dir(false))
@@ -826,32 +974,23 @@ bool updater_init(char *argv[])
   delete_list = manifest_list_create(f);
   fclose(f);
 
-  for(e = delete_list; e; e = e->next)
-  {
-    f = fopen_unsafe(e->name, "rb");
-    if(!f)
-      continue;
-
-    ret = manifest_entry_check_validity(e, f);
-    fclose(f);
-
-    if(!ret)
-      continue;
-
-    if(unlink(e->name))
-      continue;
-
-    /* Obtain the path for this file. If the file isn't at the top
-     * level, and the directory is empty (rmdir ensures this)
-     * the directory will be pruned.
-     */
-    check_prune_basedir(e->name);
-  }
-
-  manifest_list_free(&delete_list);
+  apply_delete_list();
   unlink(DELETE_TXT);
+
+  if(delete_list)
+  {
+    write_delete_list();
+    manifest_list_free(&delete_list);
+    error("Failed to delete files; check permissions and restart MegaZeux",
+     1, 8, 0);
+  }
 
 err_swivel_back:
   swivel_current_dir_back(false);
+  return true;
+}
+
+bool is_updater(void)
+{
   return true;
 }

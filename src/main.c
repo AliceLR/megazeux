@@ -142,19 +142,34 @@ __libspec int main(int argc, char *argv[])
 
   set_mouse_mul(8, 14);
 
-  if(network_layer_init(&mzx_world.conf))
-  {
-    if(!updater_init(argv))
-      info("Updater disabled.\n");
-  }
-  else
-    info("Network layer disabled.\n");
-
   init_event();
 
   if(!init_video(&mzx_world.conf, CAPTION))
-    goto err_network_layer_exit;
+    goto err_free_config;
   init_audio(&(mzx_world.conf));
+
+  if(network_layer_init(&mzx_world.conf))
+  {
+#ifdef CONFIG_UPDATER
+    if(is_updater())
+    {
+      if(updater_init(argc, argv))
+      {
+        // No auto update checks on repo builds.
+        if(!strcmp(VERSION, "GIT") &&
+         !strcmp(mzx_world.conf.update_branch_pin, "Stable"))
+          mzx_world.conf.update_auto_check = UPDATE_AUTO_CHECK_OFF;
+
+        if(mzx_world.conf.update_auto_check)
+          check_for_updates(&mzx_world, &(mzx_world.conf), 1);
+      }
+      else
+        info("Updater disabled.\n");
+    }
+#endif
+  }
+  else
+    info("Network layer disabled.\n");
 
   warp_mouse(39, 12);
   cursor_off();
@@ -170,7 +185,6 @@ __libspec int main(int argc, char *argv[])
   curr_sav[MAX_PATH - 1] = '\0';
 
   mzx_world.mzx_speed = mzx_world.conf.mzx_speed;
-  mzx_world.default_speed = mzx_world.mzx_speed;
 
   // Run main game (mouse is hidden and palette is faded)
   title_screen(&mzx_world);
@@ -189,11 +203,11 @@ __libspec int main(int argc, char *argv[])
   help_close(&mzx_world);
 #endif
 
+  network_layer_exit(&mzx_world.conf);
   quit_audio();
 
   err = 0;
-err_network_layer_exit:
-  network_layer_exit(&mzx_world.conf);
+err_free_config:
   if(mzx_world.update_done)
     free(mzx_world.update_done);
   free_config(&mzx_world.conf);

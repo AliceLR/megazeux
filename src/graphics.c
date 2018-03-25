@@ -71,6 +71,7 @@ static const struct renderer_data renderers[] =
 #endif
 #if defined(CONFIG_RENDER_GL_PROGRAM)
   { "glsl", render_glsl_register },
+  { "auto_glsl", render_auto_glsl_register },
 #endif
 #if defined(CONFIG_RENDER_YUV)
   { "overlay1", render_yuv1_register },
@@ -194,15 +195,15 @@ Sint32 ec_load_set_var(char *name, Uint16 pos, int version)
   Uint32 size = CHARSET_SIZE;
   FILE *fp = fopen_unsafe(name, "rb");
   Uint32 maxChars = PROTECTED_CHARSET_POSITION;
-  if (version < 0x025A) maxChars = 256; // Prior to 2.90
+  if(version < V290) maxChars = 256; // Prior to 2.90
 
   if(!fp)
     return -1;
-  
+
   size = ftell_and_rewind(fp) / CHAR_SIZE;
-  if (size + pos >= 256 && maxChars > 256 && !layer_renderer_check(true))
+  if(size + pos >= 256 && maxChars > 256 && !layer_renderer_check(true))
     maxChars = 256;
-  
+
   if(size + pos > maxChars)
     size = maxChars - pos;
 
@@ -241,7 +242,7 @@ void ec_mem_load_set_var(char *chars, size_t len, Uint16 pos, int version)
   Uint32 offset = pos * CHAR_SIZE;
   Uint32 size;
   Uint32 maxChars = PROTECTED_CHARSET_POSITION;
-  if(version < 0x025A) maxChars = 256; // Prior to 2.90
+  if(version < V290) maxChars = 256; // Prior to 2.90
   if(len + offset > 256 * CHAR_SIZE && !layer_renderer_check(true))
     maxChars = 256;
 
@@ -1313,7 +1314,7 @@ void blank_layers(void)
    sizeof(struct char_element) * SCREEN_W * SCREEN_H);
   memset(graphics.video_layers[UI_LAYER].data, 0xFF,
    sizeof(struct char_element) * SCREEN_W * SCREEN_H);
-  
+
   // Fix the layer modes
   if (graphics.video_layers[BOARD_LAYER].mode != graphics.screen_mode)
   {
@@ -1459,6 +1460,14 @@ bool init_video(struct config_info *conf, const char *caption)
 
 bool has_video_initialized(void)
 {
+#ifdef CONFIG_SDL
+#if SDL_VERSION_ATLEAST(2,0,0)
+  // Dummy SDL driver should act as headless.
+  const char *sdl_driver = SDL_GetCurrentVideoDriver();
+  if(sdl_driver && !strcmp(sdl_driver, "dummy")) return false;
+#endif /* SDL_VERSION_ATLEAST(2,0,0) */
+#endif /* CONFIG_SDL */
+
   return graphics_was_initialized;
 }
 
@@ -2330,7 +2339,7 @@ void dump_screen(void)
       graphics.flat_intensity_palette[i] = (palette[i].r << 16) | (palette[i].g << 8) | (palette[i].b << 0);
       #endif /* PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN */
     }
-    
+
     for (layer = 0; layer < graphics.layer_count; layer++)
     {
       graphics.sorted_video_layers[layer] = &graphics.video_layers[layer];
@@ -2342,7 +2351,7 @@ void dump_screen(void)
     }
 
     memcpy(graphics.flat_intensity_palette, backup_palette, sizeof(Uint32) * FULL_PAL_SIZE);
-    
+
     //dump_screen_real(ss, palette, make_palette(palette), name);
     dump_screen_real_32bpp(ss, name);
     free(ss);
@@ -2357,7 +2366,7 @@ void dump_char(Uint16 char_idx, Uint8 color, int mode, Uint8 *buffer)
   if (mode == -1) mode = graphics.screen_mode;
   char_idx = char_idx % PROTECTED_CHARSET_POSITION;
   color = color % SMZX_PAL_SIZE;
-  
+
   if (mode == 0) {
     cols[0] = (color & 0xF0) >> 4;
     cols[1] = color & 0x0F;
