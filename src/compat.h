@@ -58,6 +58,10 @@ typedef enum
 #include <nds.h>
 #endif
 
+#ifdef CONFIG_SWITCH
+#include <switch.h>
+#endif
+
 #ifdef CONFIG_WII
 #define BOOL _BOOL
 #include <gctypes.h>

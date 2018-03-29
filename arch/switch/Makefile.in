@@ -1,0 +1,67 @@
+#
+# Nintendo Switch Makefile
+#
+
+include $(DEVKITPRO)/libnx/switch_rules
+
+.PHONY: package clean
+
+ifeq ($(strip $(DEVKITPRO)),)
+$(error "DEVKITPRO must be set in your environment.")
+endif
+
+ifeq ($(strip $(DEVKITA64)),)
+$(error "DEVKITA64 must be set in your environment.")
+endif
+
+BINEXT  := .elf
+CC      := aarch64-none-elf-gcc
+CXX     := aarch64-none-elf-g++
+AR      := aarch64-none-elf-ar
+OBJCOPY := aarch64-none-elf-objcopy
+
+APP_TITLE = MegaZeux
+APP_AUTHOR = \"MegaZeux Developers\"
+APP_ICON = arch/switch/icon.jpg
+
+STRIP  = /bin/true
+
+#
+# Override library paths.
+#
+
+EXTRA_INCLUDES = -isystem $(DEVKITPRO)/libnx/include -isystem $(DEVKITPRO)/portlibs/cortex-a57/include
+ifeq (${DEBUG},1)
+  ARCH_CFLAGS += -Og
+  EXTRA_LIBS = -L$(DEVKITPRO)/libnx/lib -L$(DEVKITPRO)/portlibs/cortex-a57/lib -L$(DEVKITA64)/aarch64-none-elf/lib/pic -lnxd -lpng16 -lz
+else
+  OPTIMIZE_CFLAGS = -O2 -ffunction-sections
+# OPTIMIZE_CFLAGS += -flto
+  EXTRA_LIBS = -L$(DEVKITPRO)/libnx/lib -L$(DEVKITPRO)/portlibs/cortex-a57/lib -L$(DEVKITA64)/aarch64-none-elf/lib/pic -lnx -lpng16 -lz
+endif
+
+MACHDEP = -march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE
+
+ARCH_CFLAGS   += ${EXTRA_INCLUDES} ${MACHDEP} -DSWITCH -Iarch/switch
+ARCH_CXXFLAGS += ${ARCH_CFLAGS} -fno-rtti -fno-exceptions
+ARCH_LDFLAGS  += ${EXTRA_LIBS} ${MACHDEP} -specs=$(DEVKITPRO)/libnx/switch.specs
+
+#
+# Vile hack, remove me ASAP
+#
+arch/switch/%.o: arch/switch/%.c
+	$(if ${V},,@echo "  CC      " $<)
+	${CC} -MD ${core_cflags} ${core_flags} -Wno-unused-macros -c $< -o $@
+
+package: mzx mzxrun.nro megazeux.nro mzxrun.nso megazeux.nso mzxrun.nacp megazeux.nacp
+
+clean:
+	@rm -f mzxrun.{nro,nso,pfs0,elf} megazeux.{nro,nso,pfs0,elf} arch/switch/*.{d,o}
+
+build := build/${SUBPLATFORM}/switch/megazeux
+build: package ${build}
+	${CP} arch/switch/pad.config ${build}
+	${CP} megazeux.nro ${build}
+	${RM} ${build}/${mzxrun} ${build}/${mzx}
+
+include arch/zip.inc

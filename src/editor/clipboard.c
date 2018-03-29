@@ -374,8 +374,9 @@ err_release:
   return dest_data;
 }
 
-#elif SDL_VERSION_ATLEAST(2,0,0)
+#elif defined(CONFIG_SDL)
 
+#if SDL_VERSION_ATLEAST(2,0,0)
 void copy_buffer_to_clipboard(char **buffer, int lines, int total_length)
 {
   int i;
@@ -410,6 +411,16 @@ char *get_clipboard_buffer(void)
   buffer = SDL_GetClipboardText();
   return buffer;
 }
+#else // SDL 1.2 lacks a clipboard handler
+
+void copy_buffer_to_clipboard(char **buffer, int lines, int total_length) { }
+
+char *get_clipboard_buffer(void)
+{
+  return NULL;
+}
+
+#endif
 
 #else // No system clipboard handler
 

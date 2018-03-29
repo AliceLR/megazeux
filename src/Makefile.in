@@ -116,6 +116,10 @@ core_cobjs += arch/3ds/event.o arch/3ds/audio.o
 core_cobjs += arch/3ds/keyboard.o
 endif
 
+ifeq (${BUILD_SWITCH},1)
+core_cobjs += arch/switch/platform.o arch/switch/event.o arch/switch/render.o
+endif
+
 ifeq (${PLATFORM},android)
 core_cxxobjs += arch/android/sfwrapper.o
 LINK_CC := ${CXX}
@@ -251,7 +255,7 @@ endif
 
 else
 
-ifeq ($(or ${BUILD_WII},${BUILD_NDS},${BUILD_3DS}),)
+ifeq ($(or ${BUILD_WII},${BUILD_NDS},${BUILD_3DS},${BUILD_SWITCH}),)
 
 core_cobjs += ${core_obj}/platform_dummy.o
 
