@@ -103,11 +103,21 @@ endif
 # Always generate debug information; this may end up being
 # stripped (on embedded platforms) or objcopy'ed out.
 #
-CFLAGS   += -g -W -Wall -Wno-unused-parameter -std=gnu99
+CFLAGS   += -g -W -Wall -Wno-unused-parameter
 CFLAGS   += -Wdeclaration-after-statement ${ARCH_CFLAGS}
-CXXFLAGS += -g -W -Wall -Wno-unused-parameter -std=gnu++98
+CXXFLAGS += -g -W -Wall -Wno-unused-parameter
 CXXFLAGS += -fno-exceptions -fno-rtti ${ARCH_CXXFLAGS}
 LDFLAGS  += ${ARCH_LDFLAGS}
+
+# libnx requires C11 features
+
+ifeq (${PLATFORM},switch)
+CFLAGS += -std=gnu11
+CXXFLAGS += -std=gnu++11
+else
+CFLAGS += -std=gnu99
+CXXFLAGS += -std=gnu++98
+endif
 
 #
 # GCC version >= 7.x
