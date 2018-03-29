@@ -118,6 +118,7 @@ endif
 
 ifeq (${BUILD_SWITCH},1)
 core_cobjs += arch/switch/platform.o arch/switch/event.o arch/switch/render.o
+core_cobjs += arch/switch/audio.o
 endif
 
 ifeq (${PLATFORM},android)

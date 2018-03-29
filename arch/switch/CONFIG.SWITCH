@@ -1,4 +1,4 @@
 #!/bin/bash
 
 ./config.sh --platform switch --enable-release --enable-meter \
-            --disable-helpsys --disable-utils --disable-audio
+            --disable-utils --disable-audio

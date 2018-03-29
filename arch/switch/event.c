@@ -179,6 +179,38 @@ static inline bool nx_update_touch(struct buffered_status *status, touchPosition
     return false;
 }
 
+bool check_kbd_modifier(struct buffered_status *status, HidKeyboardModifier modifier, Uint32 code)
+{
+  if(hidKeyboardModifierDown(modifier))
+  {
+    do_key_event(status, true, code);
+    return true;
+  }
+  else if(hidKeyboardModifierUp(modifier))
+  {
+    do_key_event(status, false, code);
+    return true;
+  }
+  else
+    return false;
+}
+
+bool check_kbd(struct buffered_status *status, HidKeyboardScancode scancode, Uint32 code)
+{
+  if(hidKeyboardDown(scancode))
+  {
+    do_key_event(status, true, code);
+    return true;
+  }
+  else if(hidKeyboardUp(scancode))
+  {
+    do_key_event(status, false, code);
+    return true;
+  }
+  else
+    return false;
+}
+
 bool update_hid(void)
 {
   struct buffered_status *status = store_status();
@@ -190,6 +222,117 @@ bool update_hid(void)
   down = hidKeysDown(CONTROLLER_P1_AUTO);
   held = hidKeysHeld(CONTROLLER_P1_AUTO);
   up = hidKeysUp(CONTROLLER_P1_AUTO);
+
+  retval |= check_kbd_modifier(status, KBD_MOD_LCTRL, IKEY_LCTRL);
+  retval |= check_kbd_modifier(status, KBD_MOD_LSHIFT, IKEY_LSHIFT);
+  retval |= check_kbd_modifier(status, KBD_MOD_LALT, IKEY_LALT);
+  retval |= check_kbd_modifier(status, KBD_MOD_LMETA, IKEY_LSUPER);
+  retval |= check_kbd_modifier(status, KBD_MOD_RCTRL, IKEY_RCTRL);
+  retval |= check_kbd_modifier(status, KBD_MOD_RSHIFT, IKEY_RSHIFT);
+  retval |= check_kbd_modifier(status, KBD_MOD_RALT, IKEY_RALT);
+  retval |= check_kbd_modifier(status, KBD_MOD_RMETA, IKEY_RSUPER);
+
+  retval |= check_kbd(status, KBD_A, IKEY_a);
+  retval |= check_kbd(status, KBD_B, IKEY_b);
+  retval |= check_kbd(status, KBD_C, IKEY_c);
+  retval |= check_kbd(status, KBD_D, IKEY_d);
+  retval |= check_kbd(status, KBD_E, IKEY_e);
+  retval |= check_kbd(status, KBD_F, IKEY_f);
+  retval |= check_kbd(status, KBD_G, IKEY_g);
+  retval |= check_kbd(status, KBD_H, IKEY_h);
+  retval |= check_kbd(status, KBD_I, IKEY_i);
+  retval |= check_kbd(status, KBD_J, IKEY_j);
+  retval |= check_kbd(status, KBD_K, IKEY_k);
+  retval |= check_kbd(status, KBD_L, IKEY_l);
+  retval |= check_kbd(status, KBD_M, IKEY_m);
+  retval |= check_kbd(status, KBD_N, IKEY_n);
+  retval |= check_kbd(status, KBD_O, IKEY_o);
+  retval |= check_kbd(status, KBD_P, IKEY_p);
+  retval |= check_kbd(status, KBD_Q, IKEY_q);
+  retval |= check_kbd(status, KBD_R, IKEY_r);
+  retval |= check_kbd(status, KBD_S, IKEY_s);
+  retval |= check_kbd(status, KBD_T, IKEY_t);
+  retval |= check_kbd(status, KBD_U, IKEY_u);
+  retval |= check_kbd(status, KBD_V, IKEY_v);
+  retval |= check_kbd(status, KBD_W, IKEY_w);
+  retval |= check_kbd(status, KBD_X, IKEY_x);
+  retval |= check_kbd(status, KBD_Y, IKEY_y);
+  retval |= check_kbd(status, KBD_Z, IKEY_z);
+
+  retval |= check_kbd(status, KBD_1, IKEY_1);
+  retval |= check_kbd(status, KBD_2, IKEY_2);
+  retval |= check_kbd(status, KBD_3, IKEY_3);
+  retval |= check_kbd(status, KBD_4, IKEY_4);
+  retval |= check_kbd(status, KBD_5, IKEY_5);
+  retval |= check_kbd(status, KBD_6, IKEY_6);
+  retval |= check_kbd(status, KBD_7, IKEY_7);
+  retval |= check_kbd(status, KBD_8, IKEY_8);
+  retval |= check_kbd(status, KBD_9, IKEY_9);
+  retval |= check_kbd(status, KBD_0, IKEY_0);
+
+  retval |= check_kbd(status, KBD_ENTER, IKEY_RETURN);
+  retval |= check_kbd(status, KBD_ESC, IKEY_ESCAPE);
+  retval |= check_kbd(status, KBD_BACKSPACE, IKEY_BACKSPACE);
+  retval |= check_kbd(status, KBD_TAB, IKEY_TAB);
+  retval |= check_kbd(status, KBD_SPACE, IKEY_SPACE);
+  retval |= check_kbd(status, KBD_MINUS, IKEY_MINUS);
+  retval |= check_kbd(status, KBD_EQUAL, IKEY_EQUALS);
+  retval |= check_kbd(status, KBD_LEFTBRACE, IKEY_LEFTBRACKET);
+  retval |= check_kbd(status, KBD_RIGHTBRACE, IKEY_RIGHTBRACKET);
+  retval |= check_kbd(status, KBD_BACKSLASH, IKEY_BACKSLASH);
+//  retval |= check_kbd(status, KBD_HASHTILDE, ); ??
+  retval |= check_kbd(status, KBD_SEMICOLON, IKEY_SEMICOLON);
+  retval |= check_kbd(status, KBD_APOSTROPHE, IKEY_QUOTE);
+  retval |= check_kbd(status, KBD_GRAVE, IKEY_BACKQUOTE);
+  retval |= check_kbd(status, KBD_COMMA, IKEY_COMMA);
+  retval |= check_kbd(status, KBD_DOT, IKEY_PERIOD);
+  retval |= check_kbd(status, KBD_SLASH, IKEY_SLASH);
+  retval |= check_kbd(status, KBD_CAPSLOCK, IKEY_CAPSLOCK);
+
+  retval |= check_kbd(status, KBD_F1, IKEY_F1);
+  retval |= check_kbd(status, KBD_F2, IKEY_F2);
+  retval |= check_kbd(status, KBD_F3, IKEY_F3);
+  retval |= check_kbd(status, KBD_F4, IKEY_F4);
+  retval |= check_kbd(status, KBD_F5, IKEY_F5);
+  retval |= check_kbd(status, KBD_F6, IKEY_F6);
+  retval |= check_kbd(status, KBD_F7, IKEY_F7);
+  retval |= check_kbd(status, KBD_F8, IKEY_F8);
+  retval |= check_kbd(status, KBD_F9, IKEY_F9);
+  retval |= check_kbd(status, KBD_F10, IKEY_F10);
+  retval |= check_kbd(status, KBD_F11, IKEY_F11);
+  retval |= check_kbd(status, KBD_F12, IKEY_F12);
+
+  retval |= check_kbd(status, KBD_SYSRQ, IKEY_SYSREQ);
+  retval |= check_kbd(status, KBD_SCROLLLOCK, IKEY_SCROLLOCK);
+  retval |= check_kbd(status, KBD_PAUSE, IKEY_BREAK);
+  retval |= check_kbd(status, KBD_INSERT, IKEY_INSERT);
+  retval |= check_kbd(status, KBD_HOME, IKEY_HOME);
+  retval |= check_kbd(status, KBD_PAGEUP, IKEY_PAGEUP);
+  retval |= check_kbd(status, KBD_DELETE, IKEY_DELETE);
+  retval |= check_kbd(status, KBD_END, IKEY_END);
+  retval |= check_kbd(status, KBD_PAGEDOWN, IKEY_PAGEDOWN);
+  retval |= check_kbd(status, KBD_RIGHT, IKEY_RIGHT);
+  retval |= check_kbd(status, KBD_LEFT, IKEY_LEFT);
+  retval |= check_kbd(status, KBD_DOWN, IKEY_DOWN);
+  retval |= check_kbd(status, KBD_UP, IKEY_UP);
+
+  retval |= check_kbd(status, KBD_NUMLOCK, IKEY_NUMLOCK);
+  retval |= check_kbd(status, KBD_KPSLASH, IKEY_KP_DIVIDE);
+  retval |= check_kbd(status, KBD_KPASTERISK, IKEY_KP_MULTIPLY);
+  retval |= check_kbd(status, KBD_KPMINUS, IKEY_KP_MINUS);
+  retval |= check_kbd(status, KBD_KPPLUS, IKEY_KP_PLUS);
+  retval |= check_kbd(status, KBD_KPENTER, IKEY_KP_ENTER);
+  retval |= check_kbd(status, KBD_KP1, IKEY_KP1);
+  retval |= check_kbd(status, KBD_KP2, IKEY_KP2);
+  retval |= check_kbd(status, KBD_KP3, IKEY_KP3);
+  retval |= check_kbd(status, KBD_KP4, IKEY_KP4);
+  retval |= check_kbd(status, KBD_KP5, IKEY_KP5);
+  retval |= check_kbd(status, KBD_KP6, IKEY_KP6);
+  retval |= check_kbd(status, KBD_KP7, IKEY_KP7);
+  retval |= check_kbd(status, KBD_KP8, IKEY_KP8);
+  retval |= check_kbd(status, KBD_KP9, IKEY_KP9);
+  retval |= check_kbd(status, KBD_KP0, IKEY_KP0);
+  retval |= check_kbd(status, KBD_KPDOT, IKEY_KP_PERIOD);
 
   retval |= check_key(status, down, up, KEY_UP, IKEY_UP);
   retval |= check_key(status, down, up, KEY_DOWN, IKEY_DOWN);
