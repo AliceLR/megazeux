@@ -346,7 +346,7 @@ void load_board_module(struct world *mzx_world, struct board *src_board)
   if(!filename[0])
   {
     mzx_world->real_mod_playing[0] = 0;
-    end_module();
+    audio_end_module();
     return;
   }
 
@@ -373,7 +373,7 @@ void load_board_module(struct world *mzx_world, struct board *src_board)
     return;
 
   // The safety check has already been done. So don't do it again (false).
-  result = load_module(translated_name, false, src_board->volume);
+  result = audio_play_module(translated_name, false, src_board->volume);
 
   // If the mod actually changed, update real mod playing.
   if(result)
@@ -391,7 +391,7 @@ static void load_savegame_module(struct world *mzx_world)
   struct board *cur_board = mzx_world->current_board;
 
   // For savegames, we need to load real_mod_playing instead of the board mod.
-  load_module(mzx_world->real_mod_playing, true, cur_board->volume);
+  audio_play_module(mzx_world->real_mod_playing, true, cur_board->volume);
 }
 
 static void load_world_file(struct world *mzx_world, char *name)
@@ -400,7 +400,7 @@ static void load_world_file(struct world *mzx_world, char *name)
   int fade = 0;
 
   // Load world
-  end_module();
+  audio_end_module();
   sfx_clear_queue();
   //Clear screen
   clear_screen(32, 7);
@@ -648,8 +648,8 @@ static char shader_name[MAX_PATH];
 static void game_settings(struct world *mzx_world)
 {
   struct board *src_board = mzx_world->current_board;
-  int mzx_speed, music, sfx;
-  int music_volume, sound_volume, sfx_volume;
+  int mzx_speed, music, pcs;
+  int music_volume, sound_volume, pcs_volume;
   struct dialog di;
   int dialog_result;
   int speed_option = 0;
@@ -702,11 +702,11 @@ static void game_settings(struct world *mzx_world)
   }
 
   mzx_speed = mzx_world->mzx_speed;
-  music = get_music_on_state() ^ 1;
-  sfx = get_sfx_on_state() ^ 1;
-  music_volume = get_music_volume();
-  sound_volume = get_sound_volume();
-  sfx_volume = get_sfx_volume();
+  music = !audio_get_music_on();
+  pcs = !audio_get_pcs_on();
+  music_volume = audio_get_music_volume();
+  sound_volume = audio_get_sound_volume();
+  pcs_volume = audio_get_pcs_volume();
 
   do
   {
@@ -738,7 +738,7 @@ static void game_settings(struct world *mzx_world)
     elements[0] = construct_radio_button(4, 2 + speed_option,
      radio_strings_1, 2, 19, &music);
     elements[1] = construct_radio_button(4, 5 + speed_option,
-     radio_strings_2, 2, 18, &sfx);
+     radio_strings_2, 2, 18, &pcs);
     elements[2] = construct_label(3, 8 + speed_option,
      "Audio volumes-");
     elements[3] = construct_number_box(3, 9 + speed_option,
@@ -746,7 +746,7 @@ static void game_settings(struct world *mzx_world)
     elements[4] = construct_number_box(3, 10 + speed_option,
      "SoundFX volume- ", 1, 8, 0, &sound_volume);
     elements[5] = construct_number_box(3, 11 + speed_option,
-     "PC Speaker SFX- ", 1, 8, 0, &sfx_volume);
+     "PC Speaker SFX- ", 1, 8, 0, &pcs_volume);
 
     elements[ok_pos] = construct_button(6, 13 + speed_option + shader_option,
      "OK", 0);
@@ -766,39 +766,39 @@ static void game_settings(struct world *mzx_world)
 
     if(!dialog_result)
     {
-      set_sfx_volume(sfx_volume);
+      audio_set_pcs_volume(pcs_volume);
 
-      if(music_volume != get_music_volume())
+      if(music_volume != audio_get_music_volume())
       {
-        set_music_volume(music_volume);
+        audio_set_music_volume(music_volume);
 
         if(mzx_world->active)
-          volume_module(src_board->volume);
+          audio_set_module_volume(src_board->volume);
       }
 
-      if(sound_volume != get_sound_volume())
-        set_sound_volume(sound_volume);
+      if(sound_volume != audio_get_sound_volume())
+        audio_set_sound_volume(sound_volume);
 
-      sfx ^= 1;
       music ^= 1;
+      pcs ^= 1;
 
-      set_sfx_on(sfx);
+      audio_set_pcs_on(pcs);
 
       if(!music)
       {
         // Turn off music.
-        if(get_music_on_state() && (mzx_world->active))
-          end_module();
+        if(audio_get_music_on() && (mzx_world->active))
+          audio_end_module();
       }
       else
 
-      if(!get_music_on_state() && (mzx_world->active))
+      if(!audio_get_music_on() && (mzx_world->active))
       {
         // Turn on music.
         load_board_module(mzx_world, src_board);
       }
 
-      set_music_on(music);
+      audio_set_music_on(music);
       mzx_world->mzx_speed = mzx_speed;
     }
 
@@ -1390,7 +1390,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
       }
     }
     src_board->volume = result_volume;
-    volume_module(volume);
+    audio_set_module_volume(volume);
   }
 
   // Slow_time- flip slowed
@@ -2974,7 +2974,7 @@ void title_screen(struct world *mzx_world)
 
               // Done playing- load world again
               // Already faded out from play_game()
-              end_module();
+              audio_end_module();
               // Clear screen
               clear_screen(32, 7);
               // Palette
@@ -3079,7 +3079,7 @@ void title_screen(struct world *mzx_world)
 
               // Done playing- load world again
               // Already faded out from play_game()
-              end_module();
+              audio_end_module();
               // Clear screen
               clear_screen(32, 7);
               // Palette
@@ -3103,7 +3103,7 @@ void title_screen(struct world *mzx_world)
             }
             else
             {
-              end_module();
+              audio_end_module();
               clear_screen(32, 7);
             }
           }
@@ -3115,18 +3115,20 @@ void title_screen(struct world *mzx_world)
         {
           if(check_for_updates)
           {
-            int current_sfx_vol = get_sfx_volume();
-            int current_music_vol = get_music_volume();
-            set_sfx_volume(0);
-            set_music_volume(0);
+            int current_music_vol = audio_get_music_volume();
+            int current_pcs_vol = audio_get_pcs_volume();
+            audio_set_music_volume(0);
+            audio_set_pcs_volume(0);
             if(mzx_world->active)
-              volume_module(0);
+              audio_set_module_volume(0);
+
             check_for_updates(mzx_world, &mzx_world->conf, 0);
             set_caption(mzx_world, NULL, NULL, 0, 0);
-            set_sfx_volume(current_sfx_vol);
-            set_music_volume(current_music_vol);
+
+            audio_set_pcs_volume(current_pcs_vol);
+            audio_set_music_volume(current_music_vol);
             if(mzx_world->active)
-              volume_module(src_board->volume);
+              audio_set_module_volume(src_board->volume);
           }
           break;
         }
@@ -3209,7 +3211,7 @@ void title_screen(struct world *mzx_world)
 
             // Done playing- load world again
             // Already faded out from play_game()
-            end_module();
+            audio_end_module();
             // Clear screen
             clear_screen(32, 7);
             // Palette

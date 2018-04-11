@@ -270,14 +270,14 @@ void init_audio(struct config_info *conf)
   init_openmpt(conf);
 #endif
 
-  set_music_volume(conf->music_volume);
-  set_sound_volume(conf->sam_volume);
-  set_music_on(conf->music_on);
-  set_sfx_on(conf->pc_speaker_on);
+  audio_set_music_volume(conf->music_volume);
+  audio_set_sound_volume(conf->sam_volume);
+  audio_set_music_on(conf->music_on);
+  audio_set_pcs_on(conf->pc_speaker_on);
 
   init_pc_speaker(conf);
 
-  set_sfx_volume(conf->pc_speaker_volume);
+  audio_set_pcs_volume(conf->pc_speaker_volume);
 
   init_audio_platform(conf);
 }
@@ -292,16 +292,15 @@ void quit_audio(void)
 /* If the mod was successfully changed, return 1.  This value is used
 *  to determine whether to change real_mod_playing.
 */
-int load_module(char *filename, bool safely,
- int volume)
+int audio_play_module(char *filename, bool safely, int volume)
 {
   char translated_filename[MAX_PATH];
   struct audio_stream *a_src;
 
-  // FIXME: Weird hack, why not use end_module() directly?
+  // FIXME: Weird hack, why not use audio_end_module() directly?
   if(!filename || !filename[0])
   {
-    end_module();
+    audio_end_module();
     return 1;
   }
 
@@ -316,7 +315,7 @@ int load_module(char *filename, bool safely,
     filename = translated_filename;
   }
 
-  end_module();
+  audio_end_module();
 
   a_src = construct_stream_audio_file(filename, 0,
    volume * audio.music_volume / 8, 1);
@@ -329,7 +328,7 @@ int load_module(char *filename, bool safely,
   return 1;
 }
 
-void end_module(void)
+void audio_end_module(void)
 {
   if(audio.primary_stream)
   {
@@ -341,7 +340,7 @@ void end_module(void)
   audio.primary_stream = NULL;
 }
 
-void set_max_samples(int max_samples)
+void audio_set_max_samples(int max_samples)
 {
   // -1 is unlimited
   int max_samples_config = audio.max_simultaneous_samples_config;
@@ -355,7 +354,7 @@ void set_max_samples(int max_samples)
   audio.max_simultaneous_samples = max_samples;
 }
 
-int get_max_samples(void)
+int audio_get_max_samples(void)
 {
   return audio.max_simultaneous_samples;
 }
@@ -408,7 +407,7 @@ static void limit_samples(int max)
   UNLOCK();
 }
 
-void play_sample(int period, char *filename, bool safely)
+void audio_play_sample(char *filename, bool safely, int period)
 {
   Uint32 vol = 255 * audio.sound_volume / 8;
   char translated_filename[MAX_PATH];
@@ -438,7 +437,7 @@ void play_sample(int period, char *filename, bool safely)
   limit_samples(audio.max_simultaneous_samples);
 }
 
-void end_sample(void)
+void audio_end_sample(void)
 {
   // Destroy all samples - something is a sample if it's not a
   // primary or PC speaker stream. This is a bit of a dirty way
@@ -465,11 +464,10 @@ void end_sample(void)
   UNLOCK();
 }
 
-void jump_module(int order)
+void audio_set_module_order(int order)
 {
-  // This is really just for modules, I can't imagine what an "order"
-  // might be for non-sequenced formats. It's also mostly here for
-  // legacy reasons; set_position rather supercedes it.
+  // This is intended for modules only, and should not be supported for any
+  // other formats.
 
   if(audio.primary_stream && audio.primary_stream->set_order)
   {
@@ -479,7 +477,7 @@ void jump_module(int order)
   }
 }
 
-int get_order(void)
+int audio_get_module_order(void)
 {
   if(audio.primary_stream && audio.primary_stream->get_order)
   {
@@ -497,18 +495,18 @@ int get_order(void)
   }
 }
 
-void volume_module(int vol)
+void audio_set_module_volume(int volume)
 {
   if(audio.primary_stream)
   {
     LOCK();
     audio.primary_stream->set_volume(audio.primary_stream,
-     vol * audio.music_volume / 8);
+     volume * audio.music_volume / 8);
     UNLOCK();
   }
 }
 
-void shift_frequency(int freq)
+void audio_set_module_frequency(int freq)
 {
   // Primary had better be a sampled stream (in reality I can't imagine
   // ever letting it be anything but, but if it comes up a type
@@ -529,7 +527,7 @@ void shift_frequency(int freq)
   }
 }
 
-int get_frequency(void)
+int audio_get_module_frequency(void)
 {
   if(audio.primary_stream)
   {
@@ -548,7 +546,7 @@ int get_frequency(void)
   }
 }
 
-void set_position(int pos)
+void audio_set_module_position(int pos)
 {
   // Position isn't a universal thing and instead depends on the
   // medium and what it supports.
@@ -561,7 +559,7 @@ void set_position(int pos)
   }
 }
 
-int get_position(void)
+int audio_get_module_position(void)
 {
   if(audio.primary_stream && audio.primary_stream->get_position)
   {
@@ -577,7 +575,7 @@ int get_position(void)
   return 0;
 }
 
-int audio_get_length(void)
+int audio_get_module_length(void)
 {
   if(audio.primary_stream && audio.primary_stream->get_length)
   {
@@ -593,56 +591,56 @@ int audio_get_length(void)
   return 0;
 }
 
-void set_music_on(int val)
+void audio_set_music_on(int val)
 {
   LOCK();
   audio.music_on = val;
   UNLOCK();
 }
 
-void set_sfx_on(int val)
+void audio_set_pcs_on(int val)
 {
   LOCK();
-  audio.sfx_on = val;
+  audio.pcs_on = val;
   UNLOCK();
 }
 
-// These don't have to be locked because only the same thread can
+// These don't have to be locked because only one thread can
 // modify them.
 
-int get_music_on_state(void)
+int audio_get_music_on(void)
 {
   return audio.music_on;
 }
 
-int get_sfx_on_state(void)
+int audio_get_pcs_on(void)
 {
-  return audio.sfx_on;
+  return audio.pcs_on;
 }
 
-int get_music_volume(void)
+int audio_get_music_volume(void)
 {
   return audio.music_volume;
 }
 
-int get_sound_volume(void)
+int audio_get_sound_volume(void)
 {
   return audio.sound_volume;
 }
 
-int get_sfx_volume(void)
+int audio_get_pcs_volume(void)
 {
-  return audio.sfx_volume;
+  return audio.pcs_volume;
 }
 
-void set_music_volume(int volume)
+void audio_set_music_volume(int volume)
 {
   LOCK();
   audio.music_volume = volume;
   UNLOCK();
 }
 
-void set_sound_volume(int volume)
+void audio_set_sound_volume(int volume)
 {
   struct audio_stream *current_astream = audio.stream_list_base;
 
@@ -665,14 +663,14 @@ void set_sound_volume(int volume)
   UNLOCK();
 }
 
-void set_sfx_volume(int volume)
+void audio_set_pcs_volume(int volume)
 {
   if(!audio.pcs_stream)
     return;
 
   LOCK();
 
-  audio.sfx_volume = volume;
+  audio.pcs_volume = volume;
   audio.pcs_stream->set_volume(audio.pcs_stream, volume * 255 / 8);
 
   UNLOCK();

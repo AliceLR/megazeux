@@ -171,7 +171,7 @@ void play_string(char *str, int sfx_play)
   // Note trans. table from 1-7 (a-z) to 1-12
   char nn[7] = { 10, 12, 1, 3, 5, 6, 8 };
 
-  if(!get_sfx_on_state())
+  if(!audio_get_pcs_on())
   {
     sfx_play = 1; // SFX off
   }
@@ -249,11 +249,11 @@ void play_string(char *str, int sfx_play)
       // Digi
       if(digi_st > 0)
       {
-        if(get_music_on_state())
+        if(audio_get_music_on())
         {
           str[digi_end] = 0;
 
-          play_sample(sam_freq[note - 1] >> oct, str + digi_st, true);
+          audio_play_sample(str + digi_st, true, sam_freq[note - 1] >> oct);
 
           str[digi_end] = close_char;
           digi_played = 1;
@@ -346,7 +346,7 @@ void play_string(char *str, int sfx_play)
 
     if(chr == '_')
     {
-      if(get_music_on_state())
+      if(audio_get_music_on())
         break;
 
       digi_st = -1;
@@ -358,7 +358,7 @@ void play_string(char *str, int sfx_play)
   {
     str[digi_end] = 0;
 
-    play_sample(0, str + digi_st, true);
+    audio_play_sample(str + digi_st, true, 0);
 
     str[digi_end] = close_char;
   }
@@ -372,7 +372,7 @@ void sfx_clear_queue(void)
 
 void sfx_next_note(void)
 {
-  int sfx_on = get_sfx_on_state();
+  int sfx_on = audio_get_pcs_on();
 
   if(sound_in_queue)
   {

@@ -2570,7 +2570,7 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
     mzx_world->max_samples = 4;
 
   // This will be -1 (no limit) or whatever was loaded from a save
-  set_max_samples(mzx_world->max_samples);
+  audio_set_max_samples(mzx_world->max_samples);
 
   mzx_world->active = 1;
 
@@ -3095,7 +3095,7 @@ void clear_world(struct world *mzx_world)
 
   mzx_world->active = 0;
 
-  end_sample();
+  audio_end_sample();
 }
 
 // This clears the rest of the stuff.
