@@ -2298,7 +2298,14 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
       case ROBOTIC_CMD_VOLUME2:
       case ROBOTIC_CMD_VOLUME: // Volume
       {
-        int volume = parse_param(mzx_world, cmd_ptr + 1, id) & 255;
+        int volume = parse_param(mzx_world, cmd_ptr + 1, id);
+
+        // Pre-port versions bounded volume by using a char.
+        if(mzx_world->version < VERSION_PORT)
+          volume &= 255;
+
+        else
+          volume = CLAMP(volume, 0, 255);
 
         src_board->volume = volume;
         src_board->volume_target = volume;
@@ -5145,10 +5152,17 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
       case ROBOTIC_CMD_MOD_FADE_TO: // Mod fade #t #s
       {
-        int volume_target = parse_param(mzx_world, cmd_ptr + 1, id) & 255;
+        int volume_target = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
         int volume = src_board->volume;
         int volume_inc = parse_param(mzx_world, p2, id);
+
+        // Pre-port versions bounded volume_target by using a char.
+        if(mzx_world->version < VERSION_PORT)
+          volume_target &= 255;
+
+        else
+          volume_target = CLAMP(volume_target, 0, 255);
 
         if(volume_target == volume)
         {
