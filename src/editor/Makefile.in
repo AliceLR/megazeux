@@ -39,6 +39,30 @@ editor_objs := \
   ${editor_obj}/robot.o ${editor_obj}/select.o ${editor_obj}/sfx_edit.o    \
   ${editor_obj}/undo.o ${editor_obj}/window.o ${editor_obj}/world.o
 
+ifeq (${BUILD_LIBSDL2},1)
+# Use the SDL2 clipboard handler unless we're building for win32.
+ifeq (${PLATFORM},mingw)
+editor_objs += ${editor_obj}/clipboard_win32.o
+else
+editor_objs += ${editor_obj}/clipboard_sdl2.o
+endif
+endif
+
+ifeq (${BUILD_LIBSDL2},)
+# Non-SDL2 clipboard handlers, by platform.
+ifeq (${PLATFORM},darwin)
+editor_objs += ${editor_obj}/clipboard_carbon.o
+endif
+
+ifeq (${PLATFORM},mingw)
+editor_objs += ${editor_obj}/clipboard_win32.o
+endif
+
+ifneq (${X11DIR},)
+editor_objs += ${editor_obj}/clipboard_x11.o
+endif
+endif
+
 -include ${editor_objs:.o=.d}
 
 ${editor_objs}: $(filter-out $(wildcard ${editor_obj}), ${editor_obj})

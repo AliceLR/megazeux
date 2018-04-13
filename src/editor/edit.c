@@ -43,6 +43,7 @@
 #include "block.h"
 #include "board.h"
 #include "char_ed.h"
+#include "clipboard.h"
 #include "debug.h"
 #include "edit.h"
 #include "edit_di.h"
@@ -4788,6 +4789,7 @@ void editor_init(void)
   debug_robot_watch = __debug_robot_watch;
   debug_robot_config = __debug_robot_config;
   load_editor_charsets();
+  clipboard_init();
 }
 
 bool is_editor(void)
