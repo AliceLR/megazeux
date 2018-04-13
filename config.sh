@@ -11,7 +11,7 @@ usage() {
 	echo "  --sysconfdir   Where the config should be read from."
 	echo "  --gamesdir     Where binaries should be installed."
 	echo "  --bindir       Where utilities should be installed."
-	echo "  --sharedir     Where resources should be installed." 
+	echo "  --sharedir     Where resources should be installed."
 	echo
 	echo "Supported [platform] values:"
 	echo
@@ -56,7 +56,7 @@ usage() {
 	echo "  --disable-libpng      Disable PNG screendump support."
 	echo "  --disable-audio       Disable all audio (sound + music)."
 	echo "  --enable-tremor       Switches out libvorbis for libtremor."
-	echo "  --disable-pthread     Use SDL's locking instead of pthread."
+	echo "  --disable-pthread     Use SDL's threads/locking instead of pthread."
 	echo "  --disable-icon        Do not try to brand executable."
 	echo "  --disable-modular     Disable dynamically shared objects."
 	echo "  --disable-updater     Disable built-in updater."
@@ -943,11 +943,11 @@ fi
 # Handle pthread mutexes, if enabled
 #
 if [ "$PTHREAD" = "true" ]; then
-	echo "Using pthread for locking primitives."
-	echo "#define CONFIG_PTHREAD_MUTEXES" >> src/config.h
+	echo "Using pthread for threads/locking primitives."
+	echo "#define CONFIG_PTHREAD" >> src/config.h
 	echo "PTHREAD=1" >> platform.inc
 else
-	echo "Not using pthread for locking primitives."
+	echo "Not using pthread for threads/locking primitives."
 fi
 
 #
