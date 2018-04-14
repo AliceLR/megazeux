@@ -19,6 +19,7 @@ arch/psp/*.d
 arch/psp/*.o
 arch/wii/*.d
 arch/wii/*.o
+arch/xcode/version.h
 build
 contrib/gdm2s3m/src/.build/
 contrib/icons/.build/
