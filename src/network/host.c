@@ -26,15 +26,13 @@
 
 #ifndef _MSC_VER
 #include <sys/time.h>
-#include <unistd.h>
 #endif
 
+#include <assert.h>
+#include <ctype.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
-#include <stdio.h>
-#include <errno.h>
-#include <ctype.h>
 
 // Suppress unfixable sign comparison warning.
 #if defined(__WIN32__) && defined(__GNUC__)

@@ -22,9 +22,16 @@
 #define __SOCKSYMS_H
 
 #include "../compat.h"
-#include "../configure.h"
 
 __M_BEGIN_DECLS
+
+#include "../configure.h"
+
+#include <errno.h>
+
+#ifndef _MSC_VER
+#include <unistd.h>
+#endif
 
 #ifdef __WIN32__
 #ifndef __WIN64__
