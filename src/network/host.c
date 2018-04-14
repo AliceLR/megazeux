@@ -265,12 +265,12 @@ static bool __recv(struct host *h, void *buffer, unsigned int len)
   return true;
 }
 
-static void reset_timeout(struct timeval *tv, Uint32 timeout_ms)
+static void reset_timeout(struct timeval *tv, Uint32 timeout)
 {
   /* Because of the way select() works on Unix platforms, this needs to
    * be reset every time select() is used on it. */
-  tv.tv_sec = (timeout / 1000);
-  tv.tv_usec = (timeout % 1000) * 1000;
+  tv->tv_sec = (timeout / 1000);
+  tv->tv_usec = (timeout % 1000) * 1000;
 }
 
 static struct addrinfo *connect_op(int fd, struct addrinfo *ais, void *priv,
