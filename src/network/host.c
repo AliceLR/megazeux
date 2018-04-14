@@ -371,7 +371,7 @@ static bool host_address_op(struct host *h, const char *hostname,
   hints.ai_family = h->af;
 
   // Look up host(s) matching hints
-  ret = dns_getaddrinfo(hostname, port_str, &hints, &ais);
+  ret = dns_getaddrinfo(hostname, port_str, &hints, &ais, h->timeout_ms);
   if(ret != 0)
   {
     warn("Failed to look up '%s' (%s)\n", hostname, platform_gai_strerror(ret));
@@ -511,7 +511,8 @@ static enum proxy_status socks5_connect(struct host *h,
 }
 
 // SOCKS Proxy support
-static enum proxy_status proxy_connect(struct host *h, const char *target_host, int target_port)
+static enum proxy_status proxy_connect(struct host *h, const char *target_host,
+ int target_port)
 {
   struct addrinfo target_hints, *target_ais, *target_ai;
   char port_str[6];
@@ -524,7 +525,8 @@ static enum proxy_status proxy_connect(struct host *h, const char *target_host, 
   target_hints.ai_socktype = (h->proto == IPPROTO_TCP) ? SOCK_STREAM : SOCK_DGRAM;
   target_hints.ai_protocol = h->proto;
   target_hints.ai_family = h->af;
-  ret = dns_getaddrinfo(target_host, port_str, &target_hints, &target_ais);
+  ret = dns_getaddrinfo(target_host, port_str, &target_hints, &target_ais,
+   h->timeout_ms);
 
   /* Some perimeter gateways block access to DNS [wifi hotspots are
    * particularly notorious for this] so we have to fall back to SOCKS4a

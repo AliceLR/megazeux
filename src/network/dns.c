@@ -159,12 +159,11 @@ static void destroy_dns_thread(struct dns_data *data)
   free_dns_thread_data(data, true);
 }
 
-static void wait_dns_thread(struct dns_data *data)
+static void wait_dns_thread(struct dns_data *data, Uint32 timeout)
 {
-  int i;
+  Uint32 i;
 
-  // FIXME variable timeout value
-  for(i = 0; i < 1000; i += DNS_DELAY)
+  for(i = 0; i < timeout; i += DNS_DELAY)
   {
     delay(DNS_DELAY);
     if(data->state == STATE_SUCCESS)
@@ -173,7 +172,7 @@ static void wait_dns_thread(struct dns_data *data)
 }
 
 int dns_getaddrinfo(const char *node, const char *service,
- const struct addrinfo *hints, struct addrinfo **res)
+ const struct addrinfo *hints, struct addrinfo **res, Uint32 timeout)
 {
   int ret;
   int i;
@@ -195,7 +194,7 @@ int dns_getaddrinfo(const char *node, const char *service,
       data->state = STATE_LOOKUP;
 
       debug("--DNS-- Waiting for response.\n");
-      wait_dns_thread(data);
+      wait_dns_thread(data, timeout);
 
       LOCK(data);
 

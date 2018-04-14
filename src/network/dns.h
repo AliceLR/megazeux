@@ -27,7 +27,7 @@ __M_BEGIN_DECLS
 #include "socksyms.h"
 
 int dns_getaddrinfo(const char *node, const char *service,
- const struct addrinfo *hints, struct addrinfo **res);
+ const struct addrinfo *hints, struct addrinfo **res, Uint32 timeout);
 
 bool dns_init(struct config_info *conf);
 void dns_exit(void);
