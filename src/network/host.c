@@ -265,6 +265,14 @@ static bool __recv(struct host *h, void *buffer, unsigned int len)
   return true;
 }
 
+static void reset_timeout(struct timeval *tv, Uint32 timeout_ms)
+{
+  /* Because of the way select() works on Unix platforms, this needs to
+   * be reset every time select() is used on it. */
+  tv.tv_sec = (timeout / 1000);
+  tv.tv_usec = (timeout % 1000) * 1000;
+}
+
 static struct addrinfo *connect_op(int fd, struct addrinfo *ais, void *priv,
  Uint32 timeout)
 {
@@ -275,10 +283,6 @@ static struct addrinfo *connect_op(int fd, struct addrinfo *ais, void *priv,
 
   FD_ZERO(&mask);
   FD_SET(fd, &mask);
-
-  // Enforce a timeout on the connection
-  tv.tv_sec = (timeout / 1000);
-  tv.tv_usec = (timeout % 1000) * 1000;
 
   // Disable blocking on the socket so a timeout can be enforced.
   platform_socket_blocking(fd, false);
@@ -293,7 +297,8 @@ static struct addrinfo *connect_op(int fd, struct addrinfo *ais, void *priv,
 
     platform_connect(fd, ai->ai_addr, (socklen_t)ai->ai_addrlen);
 
-    res = platform_select(fd, NULL, &mask, NULL, &tv);
+    reset_timeout(&tv, timeout);
+    res = platform_select(fd + 1, NULL, &mask, NULL, &tv);
 
     if(res == 1)
       break;
@@ -323,7 +328,8 @@ static struct addrinfo *connect_op(int fd, struct addrinfo *ais, void *priv,
 
     platform_connect(fd, ai->ai_addr, (socklen_t)ai->ai_addrlen);
 
-    res = platform_select(fd, NULL, &mask, NULL, &tv);
+    reset_timeout(&tv, timeout);
+    res = platform_select(fd + 1, NULL, &mask, NULL, &tv);
 
     if(res == 1)
       break;
