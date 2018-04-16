@@ -21,15 +21,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "clipboard_carbon.h"
-
 #define decimal decimal_
 #define Random Random_
 #include <Carbon/Carbon.h>
 
+#include "clipboard.h"
+#include "../compat.h"
+
 static const CFStringRef PLAIN = CFSTR("com.apple.traditional-mac-plain-text");
 
-void clipboard_set_carbon(char **buffer, int lines, int total_length)
+void copy_buffer_to_clipboard(char **buffer, int lines, int total_length)
 {
   PasteboardSyncFlags syncFlags;
   char *dest_data, *dest_ptr;
@@ -79,7 +80,7 @@ err_release:
   CFRelease(clipboard);
 }
 
-char *clipboard_get_carbon(void)
+char *get_clipboard_buffer(void)
 {
   PasteboardRef clipboard;
   ItemCount itemCount;

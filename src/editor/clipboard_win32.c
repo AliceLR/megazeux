@@ -21,9 +21,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "clipboard_win32.h"
+#include "clipboard.h"
+#include "../compat.h"
 
-void clipboard_set_win32(char **buffer, int lines, int total_length)
+void copy_buffer_to_clipboard(char **buffer, int lines, int total_length)
 {
   HANDLE global_memory;
   size_t line_length;
@@ -65,7 +66,7 @@ void clipboard_set_win32(char **buffer, int lines, int total_length)
   CloseClipboard();
 }
 
-char *clipboard_get_win32(void)
+char *get_clipboard_buffer(void)
 {
   HANDLE global_memory;
   char *dest_data;

@@ -22,12 +22,13 @@
 #include <string.h>
 #include <limits.h>
 
-#include "clipboard_x11.h"
-
 #if defined(CONFIG_SDL)
 #include "SDL_syswm.h"
 #include "render_sdl.h"
 #endif
+
+#include "clipboard.h"
+#include "../compat.h"
 
 static char **copy_buffer;
 static int copy_buffer_lines;
@@ -98,7 +99,7 @@ static int copy_buffer_to_X11_selection(const SDL_Event *event)
   return 0;
 }
 
-void clipboard_set_x11(char **buffer, int lines, int total_length)
+void copy_buffer_to_clipboard(char **buffer, int lines, int total_length)
 {
   SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
   SDL_SysWMinfo info;
@@ -119,7 +120,7 @@ void clipboard_set_x11(char **buffer, int lines, int total_length)
   SDL_SetEventFilter(copy_buffer_to_X11_selection, window);
 }
 
-char *clipboard_get_x11(void)
+char *get_clipboard_buffer(void)
 {
   SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
   int selection_format, ret_type;

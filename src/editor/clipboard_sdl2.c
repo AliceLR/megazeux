@@ -20,9 +20,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "clipboard_sdl2.h"
+#include "clipboard.h"
+#include "../compat.h"
 
-void clipboard_set_sdl2(char **buffer, int lines, int total_length)
+void copy_buffer_to_clipboard(char **buffer, int lines, int total_length)
 {
   int i;
   unsigned long line_length;
@@ -46,7 +47,7 @@ void clipboard_set_sdl2(char **buffer, int lines, int total_length)
   free(dest_data);
 }
 
-char *clipboard_get_sdl2(void)
+char *get_clipboard_buffer(void)
 {
   return SDL_GetClipboardText();
 }

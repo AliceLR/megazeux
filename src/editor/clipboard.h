@@ -25,8 +25,6 @@
 
 __M_BEGIN_DECLS
 
-void clipboard_init(void);
-
 void copy_buffer_to_clipboard(char **buffer, int lines, int total_length);
 
 char *get_clipboard_buffer(void);
