@@ -157,7 +157,7 @@
     <ClCompile Include="..\..\src\editor\block.c" />
     <ClCompile Include="..\..\src\editor\board.c" />
     <ClCompile Include="..\..\src\editor\char_ed.c" />
-    <ClCompile Include="..\..\src\editor\clipboard.c" />
+    <ClCompile Include="..\..\src\editor\clipboard_win32.c" />
     <ClCompile Include="..\..\src\editor\configure.c" />
     <ClCompile Include="..\..\src\editor\debug.c" />
     <ClCompile Include="..\..\src\editor\edit.c" />

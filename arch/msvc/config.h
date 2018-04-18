@@ -1,5 +1,6 @@
+#include "version.h"
+
 #define PLATFORM "msvc"
-#define VERSION "MSVC"
 #define CONFDIR "./"
 #define CONFFILE "config.txt"
 #define SHAREDIR "./"
