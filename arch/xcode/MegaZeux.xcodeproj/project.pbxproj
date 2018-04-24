@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		BF00DC0C2085644A00CD2DD2 /* clipboard_sdl2.c in Sources */ = {isa = PBXBuildFile; fileRef = BF00DC0B2085644A00CD2DD2 /* clipboard_sdl2.c */; };
 		BF10127F1FCCA7C2008EEDB6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BF10127E1FCCA7C2008EEDB6 /* Assets.xcassets */; };
 		BF1012A61FCCA993008EEDB6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BF1012A51FCCA993008EEDB6 /* Assets.xcassets */; };
 		BF1012BA1FCCABB5008EEDB6 /* Vorbis.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012B71FCCABB4008EEDB6 /* Vorbis.framework */; };
@@ -216,7 +217,6 @@
 		BFFF185F1FCDCF7C00BDEC58 /* board.h in Headers */ = {isa = PBXBuildFile; fileRef = BFFF18311FCDCF6400BDEC58 /* board.h */; };
 		BFFF18601FCDCF7C00BDEC58 /* char_ed.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF18401FCDCF6600BDEC58 /* char_ed.c */; };
 		BFFF18611FCDCF7C00BDEC58 /* char_ed.h in Headers */ = {isa = PBXBuildFile; fileRef = BFFF18271FCDCF6300BDEC58 /* char_ed.h */; };
-		BFFF18621FCDCF7C00BDEC58 /* clipboard.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF183C1FCDCF6600BDEC58 /* clipboard.c */; };
 		BFFF18631FCDCF7C00BDEC58 /* clipboard.h in Headers */ = {isa = PBXBuildFile; fileRef = BFFF18211FCDCF6200BDEC58 /* clipboard.h */; };
 		BFFF18641FCDCF7C00BDEC58 /* configure.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF18241FCDCF6300BDEC58 /* configure.c */; };
 		BFFF18651FCDCF7C00BDEC58 /* configure.h in Headers */ = {isa = PBXBuildFile; fileRef = BFFF18351FCDCF6500BDEC58 /* configure.h */; };
@@ -328,6 +328,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		BF00DC0B2085644A00CD2DD2 /* clipboard_sdl2.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = clipboard_sdl2.c; path = ../../src/editor/clipboard_sdl2.c; sourceTree = "<group>"; };
 		BF1012781FCCA7C2008EEDB6 /* MegaZeux.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MegaZeux.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BF10127E1FCCA7C2008EEDB6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		BF1012831FCCA7C2008EEDB6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -550,7 +551,6 @@
 		BFFF18391FCDCF6500BDEC58 /* select.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = select.c; path = ../../src/editor/select.c; sourceTree = "<group>"; };
 		BFFF183A1FCDCF6600BDEC58 /* debug.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = debug.c; path = ../../src/editor/debug.c; sourceTree = "<group>"; };
 		BFFF183B1FCDCF6600BDEC58 /* world.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = world.c; path = ../../src/editor/world.c; sourceTree = "<group>"; };
-		BFFF183C1FCDCF6600BDEC58 /* clipboard.c */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 2; lastKnownFileType = sourcecode.c.c; name = clipboard.c; path = ../../src/editor/clipboard.c; sourceTree = "<group>"; tabWidth = 2; };
 		BFFF183D1FCDCF6600BDEC58 /* graphics.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = graphics.c; path = ../../src/editor/graphics.c; sourceTree = "<group>"; };
 		BFFF183E1FCDCF6600BDEC58 /* robo_debug.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = robo_debug.c; path = ../../src/editor/robo_debug.c; sourceTree = "<group>"; };
 		BFFF183F1FCDCF6600BDEC58 /* board.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = board.c; path = ../../src/editor/board.c; sourceTree = "<group>"; };
@@ -896,8 +896,8 @@
 				BFFF18311FCDCF6400BDEC58 /* board.h */,
 				BFFF18401FCDCF6600BDEC58 /* char_ed.c */,
 				BFFF18271FCDCF6300BDEC58 /* char_ed.h */,
-				BFFF183C1FCDCF6600BDEC58 /* clipboard.c */,
 				BFFF18211FCDCF6200BDEC58 /* clipboard.h */,
+				BF00DC0B2085644A00CD2DD2 /* clipboard_sdl2.c */,
 				BFFF18241FCDCF6300BDEC58 /* configure.c */,
 				BFFF18351FCDCF6500BDEC58 /* configure.h */,
 				BFFF183A1FCDCF6600BDEC58 /* debug.c */,
@@ -1352,7 +1352,6 @@
 				BFFF18801FCDCF7C00BDEC58 /* undo.c in Sources */,
 				BFFF18741FCDCF7C00BDEC58 /* param.c in Sources */,
 				BFFF186E1FCDCF7C00BDEC58 /* graphics.c in Sources */,
-				BFFF18621FCDCF7C00BDEC58 /* clipboard.c in Sources */,
 				BFFF18601FCDCF7C00BDEC58 /* char_ed.c in Sources */,
 				BFFF185E1FCDCF7C00BDEC58 /* board.c in Sources */,
 				BFFF18661FCDCF7C00BDEC58 /* debug.c in Sources */,
@@ -1365,6 +1364,7 @@
 				BFFF18821FCDCF7C00BDEC58 /* window.c in Sources */,
 				BFFF18781FCDCF7C00BDEC58 /* robo_ed.c in Sources */,
 				BFFF187C1FCDCF7C00BDEC58 /* select.c in Sources */,
+				BF00DC0C2085644A00CD2DD2 /* clipboard_sdl2.c in Sources */,
 				BFFF186C1FCDCF7C00BDEC58 /* fill.c in Sources */,
 				BFFF187A1FCDCF7C00BDEC58 /* robot.c in Sources */,
 				BFFF18841FCDCF7C00BDEC58 /* world.c in Sources */,

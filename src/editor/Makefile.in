@@ -31,13 +31,35 @@ ${editor_obj}/%.o: ${editor_src}/%.c
 # FIXME get zip.o out of here, that's filthy.
 
 editor_objs := \
-  ${editor_obj}/board.o ${editor_obj}/block.o ${editor_obj}/clipboard.o    \
-  ${editor_obj}/configure.o ${editor_obj}/char_ed.o ${editor_obj}/debug.o  \
-  ${editor_obj}/edit.o ${editor_obj}/edit_di.o ${editor_obj}/fill.o        \
-  ${editor_obj}/graphics.o ${editor_obj}/macro.o ${editor_obj}/pal_ed.o    \
-  ${editor_obj}/param.o ${editor_obj}/robo_debug.o ${editor_obj}/robo_ed.o \
-  ${editor_obj}/robot.o ${editor_obj}/select.o ${editor_obj}/sfx_edit.o    \
-  ${editor_obj}/undo.o ${editor_obj}/window.o ${editor_obj}/world.o
+  ${editor_obj}/board.o ${editor_obj}/block.o ${editor_obj}/configure.o    \
+  ${editor_obj}/char_ed.o ${editor_obj}/debug.o ${editor_obj}/edit.o       \
+  ${editor_obj}/edit_di.o ${editor_obj}/fill.o ${editor_obj}/graphics.o    \
+  ${editor_obj}/macro.o ${editor_obj}/pal_ed.o ${editor_obj}/param.o       \
+  ${editor_obj}/robo_debug.o ${editor_obj}/robo_ed.o ${editor_obj}/robot.o \
+  ${editor_obj}/select.o ${editor_obj}/sfx_edit.o ${editor_obj}/undo.o     \
+  ${editor_obj}/window.o ${editor_obj}/world.o
+
+ifeq (${BUILD_LIBSDL2},1)
+# Use the SDL2 clipboard handler unless we're building for win32.
+ifeq (${PLATFORM},mingw)
+editor_objs += ${editor_obj}/clipboard_win32.o
+else
+editor_objs += ${editor_obj}/clipboard_sdl2.o
+endif
+endif
+
+ifeq (${BUILD_LIBSDL2},)
+# Non-SDL2 clipboard handlers, by platform.
+ifeq (${PLATFORM},darwin)
+editor_objs += ${editor_obj}/clipboard_carbon.o
+else ifeq (${PLATFORM},mingw)
+editor_objs += ${editor_obj}/clipboard_win32.o
+else ifneq (${X11DIR},)
+editor_objs += ${editor_obj}/clipboard_x11.o
+else
+editor_objs += ${editor_obj}/clipboard_null.o
+endif
+endif
 
 -include ${editor_objs:.o=.d}
 

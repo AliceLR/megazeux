@@ -276,9 +276,6 @@
     <ClCompile Include="..\..\contrib\libxmp\src\mixer.c">
       <Filter>Source Files\contrib\libxmp</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\contrib\libxmp\src\mkstemp.c">
-      <Filter>Source Files\contrib\libxmp</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\contrib\libxmp\src\period.c">
       <Filter>Source Files\contrib\libxmp</Filter>
     </ClCompile>
@@ -371,6 +368,15 @@
     </ClCompile>
     <ClCompile Include="..\..\src\network\sha256.c">
       <Filter>Source Files\network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\loaders\flt_load.c">
+      <Filter>Source Files\contrib\libxmp\loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\loaders\hmn_load.c">
+      <Filter>Source Files\contrib\libxmp\loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libxmp\src\loaders\st_load.c">
+      <Filter>Source Files\contrib\libxmp\loaders</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

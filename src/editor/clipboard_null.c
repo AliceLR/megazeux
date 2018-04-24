@@ -1,6 +1,5 @@
 /* MegaZeux
  *
- * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  * Copyright (C) 2017 Ian Burgmyer <spectere@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -18,17 +17,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __EDITOR_CLIPBOARD_H
-#define __EDITOR_CLIPBOARD_H
+#include "clipboard.h"
 
-#include "../compat.h"
+void copy_buffer_to_clipboard(char **buffer, int lines, int total_length) {
+  /* no op */
+}
 
-__M_BEGIN_DECLS
-
-void copy_buffer_to_clipboard(char **buffer, int lines, int total_length);
-
-char *get_clipboard_buffer(void);
-
-__M_END_DECLS
-
-#endif // __EDITOR_CLIPBOARD_H
+char *get_clipboard_buffer(void) {
+  return NULL;
+}
