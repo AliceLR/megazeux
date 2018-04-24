@@ -25,15 +25,23 @@
 __M_BEGIN_DECLS
 
 #define BOOL _BOOL
+#include <gctypes.h>
 #include <ogc/mutex.h>
 #undef BOOL
 
 typedef mutex_t platform_mutex;
+typedef lwp_t platform_thread;
+typedef (void *)(*platform_thread_fn)(void *);
 
 static inline void platform_mutex_init(platform_mutex *mutex)
 {
   // FIXME: Okay to ignore retval?
   LWP_MutexInit(mutex, false);
+}
+
+static inline void platform_mutex_destroy(platform_mutex *mutex)
+{
+  LWP_MutexDestroy(*mutex);
 }
 
 static inline bool platform_mutex_lock(platform_mutex *mutex)
@@ -48,6 +56,17 @@ static inline bool platform_mutex_unlock(platform_mutex *mutex)
   if(LWP_MutexUnlock(*mutex))
     return false;
   return true;
+}
+
+static inline int platform_thread_create(platform_thread *thread,
+ platform_thread_fn start_function, void *data)
+{
+  return LWP_CreateThread(thread, start_function, data, NULL, 0, 64);
+}
+
+static inline void platform_thread_join(platform_thread *thread)
+{
+  LWP_JoinThread(*thread, NULL);
 }
 
 __M_END_DECLS
