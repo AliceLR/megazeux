@@ -63,7 +63,7 @@ int real_main(int argc, char *argv[]);
 #elif defined(CONFIG_WII)
 #include "../arch/wii/mutex.h"
 #elif defined(CONFIG_3DS)
-#include "../arch/3ds/mutex.h"
+#include "../arch/3ds/thread.h"
 #else
 #error Provide a valid thread/mutex implementation for this platform!
 #endif
