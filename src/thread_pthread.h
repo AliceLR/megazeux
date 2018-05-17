@@ -29,7 +29,7 @@ __M_BEGIN_DECLS
 
 typedef pthread_mutex_t platform_mutex;
 typedef pthread_t platform_thread;
-typedef (void *)(*platform_thread_fn)(void *);
+typedef void *(*platform_thread_fn)(void *);
 
 static inline void platform_mutex_init(platform_mutex *mutex)
 {
@@ -63,7 +63,7 @@ static inline int platform_thread_create(platform_thread *thread,
 
 static inline void platform_thread_join(platform_thread *thread)
 {
-  pthread_join(thread, NULL);
+  pthread_join(*thread, NULL);
 }
 
 __M_END_DECLS
