@@ -649,7 +649,7 @@ static bool http_read_status(struct http_info *result, const char *status,
 
   result->status_message[0] = 0;
 
-  res = sscanf(status, "HTTP/1.%1s %3s %31s", ver, code,
+  res = sscanf(status, "HTTP/1.%1s %3s %31[^\r\n]", ver, code,
    result->status_message);
 
   debug("Status: %s (%s, %s, %s)\n", status, ver, code, result->status_message);
