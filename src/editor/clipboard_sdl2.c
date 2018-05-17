@@ -1,6 +1,5 @@
 /* MegaZeux
  *
- * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  * Copyright (C) 2017 Ian Burgmyer <spectere@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -18,17 +17,37 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __EDITOR_CLIPBOARD_H
-#define __EDITOR_CLIPBOARD_H
+#include <stdlib.h>
+#include <string.h>
 
+#include "clipboard.h"
 #include "../compat.h"
 
-__M_BEGIN_DECLS
+void copy_buffer_to_clipboard(char **buffer, int lines, int total_length)
+{
+  int i;
+  unsigned long line_length;
+  char *dest_data, *dest_ptr;
+  
+  dest_data = cmalloc(total_length + 1);
+  dest_ptr = dest_data;
+  
+  for(i = 0; i < lines; i++)
+  {
+    line_length = strlen(buffer[i]);
+    memcpy(dest_ptr, buffer[i], line_length);
+    dest_ptr += line_length;
+    dest_ptr[0] = '\n';
+    dest_ptr++;
+  }
+  
+  dest_ptr[-1] = 0;
+  SDL_SetClipboardText(dest_data);
+  
+  free(dest_data);
+}
 
-void copy_buffer_to_clipboard(char **buffer, int lines, int total_length);
-
-char *get_clipboard_buffer(void);
-
-__M_END_DECLS
-
-#endif // __EDITOR_CLIPBOARD_H
+char *get_clipboard_buffer(void)
+{
+  return SDL_GetClipboardText();
+}

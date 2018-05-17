@@ -10,6 +10,7 @@ USERS
 + Fixed bug where breakpoints could trigger on the wrong line.
 + Amended VOLUME/MOD FADE # # bounding to clamp values in port
   versions. DOS versions will still wrap between 0 and 255.
++ Added DOS compatibility fix for sprN_off.
 
 
 March 4th, 2018 - MZX 2.91c

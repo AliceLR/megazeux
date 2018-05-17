@@ -105,6 +105,13 @@
       <AdditionalDependencies>libogg_static.lib;libpng16.lib;libvorbis_static.lib;libvorbisfile_static.lib;SDL2.lib;SDL2main.lib;zlibstat.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
+    <PreBuildEvent>
+      <Command>call $(SolutionDir)update_version.cmd
+echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Updating version header</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -118,6 +125,13 @@
       <AdditionalDependencies>libogg_static.lib;libpng16.lib;libvorbis_static.lib;libvorbisfile_static.lib;SDL2.lib;SDL2main.lib;zlibstat.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
+    <PreBuildEvent>
+      <Command>call $(SolutionDir)update_version.cmd
+echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Updating version header</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -135,6 +149,13 @@
       <AdditionalDependencies>libogg_static.lib;libpng16.lib;libvorbis_static.lib;libvorbisfile_static.lib;SDL2.lib;SDL2main.lib;zlibstat.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
+    <PreBuildEvent>
+      <Command>call $(SolutionDir)update_version.cmd
+echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Updating version header</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -152,6 +173,13 @@
       <AdditionalDependencies>libogg_static.lib;libpng16.lib;libvorbis_static.lib;libvorbisfile_static.lib;SDL2.lib;SDL2main.lib;zlibstat.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
+    <PreBuildEvent>
+      <Command>call $(SolutionDir)update_version.cmd
+echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Updating version header</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\contrib\gdm2s3m\src\error.c">
@@ -201,7 +229,9 @@
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\asylum_load.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\common.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\far_load.c" />
+    <ClCompile Include="..\..\contrib\libxmp\src\loaders\flt_load.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\gdm_load.c" />
+    <ClCompile Include="..\..\contrib\libxmp\src\loaders\hmn_load.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\iff.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\itsex.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\it_load.c" />
@@ -217,6 +247,7 @@
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\s3m_load.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\sample.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\stm_load.c" />
+    <ClCompile Include="..\..\contrib\libxmp\src\loaders\st_load.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\ult_load.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\voltable.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\xm_load.c" />
@@ -227,7 +258,6 @@
     <ClCompile Include="..\..\contrib\libxmp\src\mixer.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\mix_all.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\mix_paula.c" />
-    <ClCompile Include="..\..\contrib\libxmp\src\mkstemp.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\period.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\player.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\read_event.c" />
@@ -384,4 +414,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
+  <PropertyGroup>
+    <BuildDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</BuildDate>
+  </PropertyGroup>
 </Project>
