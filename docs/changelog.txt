@@ -3,6 +3,10 @@ GIT
 USERS
 
 + Added timeouts to updater network operations.
++ Fixed bug where the updater would retry downloads without
+  regard to the status code.
++ The updater is now force-disabled for all non-Windows
+  platforms in config.sh.
 + Fixed bug where breakpoints could trigger on the wrong line.
 + Amended VOLUME/MOD FADE # # bounding to clamp values in port
   versions. DOS versions will still wrap between 0 and 255.
