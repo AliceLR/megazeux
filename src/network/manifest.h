@@ -46,9 +46,9 @@ UPDATER_LIBSPEC struct manifest_entry *manifest_list_create(FILE *f);
 
 UPDATER_LIBSPEC void manifest_entry_free(struct manifest_entry *e);
 UPDATER_LIBSPEC void manifest_list_free(struct manifest_entry **head);
-UPDATER_LIBSPEC bool manifest_get_updates(struct host *h, const char *basedir,
- struct manifest_entry **removed, struct manifest_entry **replaced,
- struct manifest_entry **added);
+UPDATER_LIBSPEC enum host_status manifest_get_updates(struct host *h,
+ const char *basedir, struct manifest_entry **removed,
+ struct manifest_entry **replaced, struct manifest_entry **added);
 UPDATER_LIBSPEC bool manifest_entry_download_replace(struct host *h,
  const char *basedir, struct manifest_entry *e,
  void (*delete_hook)(const char *file));

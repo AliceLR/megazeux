@@ -629,6 +629,44 @@ static ssize_t http_send_line(struct host *h, const char *message)
   return len;
 }
 
+static bool http_read_status(struct http_info *result, const char *status,
+ size_t status_len)
+{
+  /* These conditionals check the status line is formatted:
+   *   "HTTP/1.? XXX ..." (where ? is 0 or 1, XXX is the status code,
+   *                      and ... is the status message)
+   *
+   * This is because partially HTTP/1.1 capable servers supporting
+   * pipelining may not advertise full HTTP/1.1 compliance (e.g.
+   * `perlbal' httpd).
+   *
+   * MegaZeux only cares about pipelining.
+   */
+  char ver[2];
+  char code[4];
+  int res;
+  int c;
+
+  result->status_message[0] = 0;
+
+  res = sscanf(status, "HTTP/1.%1s %3s %31s", ver, code,
+   result->status_message);
+
+  debug("Status: %s (%s, %s, %s)\n", status, ver, code, result->status_message);
+  if(res != 3 || (ver[0] != '0' && ver[0] != '1'))
+    return false;
+
+  // Make sure the code is a 3-digit number
+  c = strtol(code, NULL, 10);
+  if(c < 100)
+    return false;
+
+  result->status_code = c;
+  result->status_type = c / 100;
+
+  return true;
+}
+
 static bool http_skip_headers(struct host *h)
 {
   char buffer[LINE_BUF_LEN];
@@ -693,8 +731,8 @@ static ssize_t zlib_skip_gzip_header(char *initial, unsigned long len)
   return gzip - (Bytef *)initial;
 }
 
-enum host_status host_recv_file(struct host *h, const char *url,
- FILE *file, const char *expected_type)
+enum host_status host_recv_file(struct host *h, struct http_info *req,
+ FILE *file)
 {
   bool mid_inflate = false, mid_chunk = false, deflated = false;
   unsigned int content_length = 0;
@@ -711,7 +749,7 @@ enum host_status host_recv_file(struct host *h, const char *url,
   } transfer_type = NONE;
 
   // Tell the server that we support pipelining
-  snprintf(line, LINE_BUF_LEN, "GET %s HTTP/1.1", url);
+  snprintf(line, LINE_BUF_LEN, "GET %s HTTP/1.1", req->url);
   line[LINE_BUF_LEN - 1] = 0;
   if(http_send_line(h, line) < 0)
     return -HOST_SEND_FAILED;
@@ -737,21 +775,26 @@ enum host_status host_recv_file(struct host *h, const char *url,
   // Read in the HTTP status line
   line_len = http_recv_line(h, line, LINE_BUF_LEN);
 
-  /* These two conditionals check the status line is formatted:
-   *   "HTTP/1.? 200 OK" (where ? is anything)
-   *
-   * This is because partially HTTP/1.1 capable servers supporting
-   * pipelining may not advertise full HTTP/1.1 compliance (e.g.
-   * `perlbal' httpd).
-   *
-   * MegaZeux only cares about pipelining.
-   */
-  if(line_len != 15 ||
-   strncmp(line, "HTTP/1.", 7) != 0 ||
-   strcmp(&line[7 + 1], " 200 OK") != 0)
+  if(!http_read_status(req, line, line_len))
   {
-    warn("Invalid status: %s\nFailed for url '%s'\n", line, url);
+    warn("Invalid status: %s\nFailed for url '%s'\n", line, req->url);
     return -HOST_HTTP_INVALID_STATUS;
+  }
+
+  // Unhandled status categories
+  switch(req->status_type)
+  {
+    case 1:
+      return -HOST_HTTP_INFO;
+
+    case 3:
+      return -HOST_HTTP_REDIRECT;
+
+    case 4:
+      return -HOST_HTTP_CLIENT_ERROR;
+
+    case 5:
+      return -HOST_HTTP_SERVER_ERROR;
   }
 
   // Now parse the HTTP headers, extracting only the pertinent fields
@@ -805,7 +848,9 @@ enum host_status host_recv_file(struct host *h, const char *url,
 
     else if(strcmp(key, "Content-Type") == 0)
     {
-      if(strcmp(value, expected_type) != 0)
+      strncpy(req->content_type, value, 63);
+
+      if(strcmp(value, req->expected_type) != 0)
         return -HOST_HTTP_INVALID_CONTENT_TYPE;
     }
 
