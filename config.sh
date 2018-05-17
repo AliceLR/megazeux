@@ -656,21 +656,29 @@ if [ "$PLATFORM" = "gp2x" -o "$PLATFORM" = "nds" \
 fi
 
 #
-# Force disable networking.
+# Force disable networking (unsupported platform or no editor build)
+# Also disable all network applications
 #
-if [ "$EDITOR" = "false" -o "$PLATFORM" = "unix" -o "$PLATFORM" = "psp" \
-  -o "$PLATFORM" = "3ds" \
-  -o "$PLATFORM" = "nds" -o "$PLATFORM" = "wii" ]; then
-	echo "Force-disabling networking (nonsensical or unsupported)."
+if [ "$EDITOR" = "false" -o "$PLATFORM" = "nds" ]; then
+	echo "Force-disabling networking (unsupported platform or editor disabled)."
 	NETWORK="false"
+	UPDATER="false"
 fi
 
 #
-# Force disable updater.
+# Force disable updater (unsupported platform)
 #
-if [ "$UPDATER" = "true" -a "$NETWORK" = "false" ]; then
-	echo "Force-disabling updater (networking disabled)."
+if [ "$PLATFORM" != "mingw" ]; then
+	echo "Force-disabling updater (unsupported platform)."
 	UPDATER="false"
+fi
+
+#
+# Force disable networking (no applications enabled)
+#
+if [ "$NETWORK" = "true" -a "$UPDATER" = "false" ]; then
+	echo "Force-disabling networking (no network applications enabled)."
+	NETWORK="false"
 fi
 
 #
