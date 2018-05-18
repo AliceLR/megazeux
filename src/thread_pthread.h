@@ -1,6 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2008 Alan Williams <mralert@gmail.com>
+ * Copyright (C) 2009 Alistair John Strachan <alistair@devzero.co.uk>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,36 +18,54 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __MUTEX_SDL_H
-#define __MUTEX_SDL_H
+#ifndef __THREAD_PTHREAD_H
+#define __THREAD_PTHREAD_H
 
 #include "compat.h"
 
 __M_BEGIN_DECLS
 
-#include "SDL_thread.h"
+#include "pthread.h"
 
-typedef SDL_mutex* platform_mutex;
+typedef pthread_mutex_t platform_mutex;
+typedef pthread_t platform_thread;
+typedef void *(*platform_thread_fn)(void *);
 
 static inline void platform_mutex_init(platform_mutex *mutex)
 {
-  *mutex = SDL_CreateMutex();
+  pthread_mutex_init(mutex, NULL);
+}
+
+static inline void platform_mutex_destroy(platform_mutex *mutex)
+{
+  pthread_mutex_destroy(mutex);
 }
 
 static inline bool platform_mutex_lock(platform_mutex *mutex)
 {
-  if(SDL_LockMutex(*mutex))
+  if(pthread_mutex_lock(mutex))
     return false;
   return true;
 }
 
 static inline bool platform_mutex_unlock(platform_mutex *mutex)
 {
-  if(SDL_UnlockMutex(*mutex))
+  if(pthread_mutex_unlock(mutex))
     return false;
   return true;
 }
 
+static inline int platform_thread_create(platform_thread *thread,
+ platform_thread_fn start_function, void *data)
+{
+  return pthread_create(thread, NULL, start_function, data);
+}
+
+static inline void platform_thread_join(platform_thread *thread)
+{
+  pthread_join(*thread, NULL);
+}
+
 __M_END_DECLS
 
-#endif // __MUTEX_SDL_H
+#endif // __THREAD_PTHREAD_H

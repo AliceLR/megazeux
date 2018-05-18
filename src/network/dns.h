@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2016 Adrian Siekierka <asiekierka@gmail.com>
+ * Copyright (C) 2018 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,35 +17,21 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __MUTEX_3DS_H
-#define __MUTEX_3DS_H
+#ifndef __DNS_H
+#define __DNS_H
 
-#include "compat.h"
+#include "../compat.h"
 
 __M_BEGIN_DECLS
 
-#include <3ds.h>
+#include "socksyms.h"
 
-typedef LightLock platform_mutex;
+int dns_getaddrinfo(const char *node, const char *service,
+ const struct addrinfo *hints, struct addrinfo **res, Uint32 timeout);
 
-static inline void platform_mutex_init(platform_mutex *mutex)
-{
-  LightLock_Init(mutex);
-}
-
-static inline bool platform_mutex_lock(platform_mutex *mutex)
-{
-  if(LightLock_TryLock(mutex))
-    return false;
-  return true;
-}
-
-static inline bool platform_mutex_unlock(platform_mutex *mutex)
-{
-  LightLock_Unlock(mutex);
-  return true;
-}
+bool dns_init(struct config_info *conf);
+void dns_exit(void);
 
 __M_END_DECLS
 
-#endif // __MUTEX_3DS_H
+#endif /* __DNS_H */
