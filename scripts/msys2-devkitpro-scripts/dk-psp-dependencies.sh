@@ -79,9 +79,9 @@ LDFLAGS="-L$(psp-config --pspsdk-path)/lib" LIBS="-lc -lpspuser" \
 
 # If you thought that pspge.h patch was pretty cool, then you should
 # know that this generated a worthless SDL_config.h. Replace it with
-# our own.
+# our own based on SDL2's PSP config.
 
-cp /dk-patches/SDL_config.h include
+cp /dk-patches/SDL_config_psp.h include/SDL_config.h
 
 make -j8
 make install
