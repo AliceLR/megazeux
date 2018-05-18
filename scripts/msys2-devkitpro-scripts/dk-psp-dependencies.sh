@@ -77,6 +77,12 @@ cd /mzx-build-workingdir/psp-ports/SDL
 LDFLAGS="-L$(psp-config --pspsdk-path)/lib" LIBS="-lc -lpspuser" \
  ./configure --host psp --prefix=$(psp-config --psp-prefix)
 
+# If you thought that pspge.h patch was pretty cool, then you should
+# know that this generated a worthless SDL_config.h. Replace it with
+# our own.
+
+cp /dk-patches/SDL_config.h include
+
 make -j8
 make install
 
