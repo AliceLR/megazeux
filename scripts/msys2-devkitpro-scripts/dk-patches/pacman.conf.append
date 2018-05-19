@@ -1,0 +1,8 @@
+
+# Enable devkitPro pacman repositories.
+
+[dkp-libs]
+Server = http://downloads.devkitpro.org/packages
+
+[dkp-windows]
+Server = http://downloads.devkitpro.org/packages/windows

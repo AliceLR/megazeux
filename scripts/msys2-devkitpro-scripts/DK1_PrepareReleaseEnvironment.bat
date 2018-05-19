@@ -5,6 +5,7 @@
 :: - DevkitPro is installed
 :: - DevkitProSettings.bat is correctly configured for %DEVKITPRO%
 
+usr\bin\bash -l /dk-install.sh
 usr\bin\bash -l /dk-init-environment.sh
 
 pause

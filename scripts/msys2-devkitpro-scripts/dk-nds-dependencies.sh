@@ -17,6 +17,8 @@ echo "/********************/"
 echo "  NDS - dependencies  "
 echo "/********************/"
 
+pacman --needed --noconfirm -S devkitARM libnds libfat-nds maxmod-nds ndstool dstools
+
 cd /mzx-build-workingdir
 rm -rf nds-portlibs
 git clone $PORTLIBS_REPO "nds-portlibs"

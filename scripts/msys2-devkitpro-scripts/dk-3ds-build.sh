@@ -10,6 +10,7 @@
 export DEVKITPRO=$1
 export DEVKITARM=$2
 export PATH="$PATH:$DEVKITARM/bin"
+export PATH="$PATH:$DEVKITPRO/tools/bin"
 
 cd /mzx-build-workingdir
 mkdir -p zips
