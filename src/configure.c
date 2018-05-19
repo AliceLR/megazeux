@@ -278,7 +278,7 @@ static void config_set_sam_volume(struct config_info *conf, char *name,
 static void config_save_file(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  strncpy(conf->default_save_name, value, 256);
+  snprintf(conf->default_save_name, 256, "%s", value);
 }
 
 static void config_startup_file(struct config_info *conf, char *name,
@@ -296,7 +296,7 @@ static void config_startup_path(struct config_info *conf, char *name,
    !S_ISDIR(stat_info.st_mode))
     return;
 
-  strncpy(conf->startup_path, value, 256);
+  snprintf(conf->startup_path, 256, "%s", value);
 }
 
 static void config_system_mouse(struct config_info *conf, char *name,
@@ -394,13 +394,13 @@ static void joy_hat_set(struct config_info *conf, char *name,
 {
   unsigned int joy_num;
   unsigned int joy_key_up, joy_key_down, joy_key_left, joy_key_right;
-  
+
   sscanf(name, "joy%uhat", &joy_num);
   sscanf(value, "%u, %u, %u, %u", &joy_key_up, &joy_key_down,
    &joy_key_left, &joy_key_right);
-  
+
   joy_num = CLAMP(joy_num, 1, 16);
-  
+
   map_joystick_hat(joy_num - 1, (enum keycode)joy_key_up,
    (enum keycode)joy_key_down, (enum keycode)joy_key_left,
    (enum keycode)joy_key_right);

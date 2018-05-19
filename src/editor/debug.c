@@ -64,8 +64,9 @@
 #define VAR_SEARCH_VALUES   2
 #define VAR_SEARCH_CASESENS 4
 #define VAR_SEARCH_REVERSE  8
-#define VAR_SEARCH_WRAP    16
-#define VAR_SEARCH_LOCAL   32
+#define VAR_SEARCH_WRAP     16
+#define VAR_SEARCH_LOCAL    32
+#define VAR_SEARCH_EXACT    64
 
 #define VAR_ADD_DIALOG_X 20
 #define VAR_ADD_DIALOG_Y 8
@@ -87,7 +88,7 @@ static void copy_substring_escaped(struct string *str, char *buf,
     {
       if(left < 3)
         break;
-        
+
       buf[i++] = '\\';
       buf[i] = '\\';
     }
@@ -95,7 +96,7 @@ static void copy_substring_escaped(struct string *str, char *buf,
     {
       if(left < 3)
         break;
-        
+
       buf[i++] = '\\';
       buf[i] = 'n';
     }
@@ -103,7 +104,7 @@ static void copy_substring_escaped(struct string *str, char *buf,
     {
       if(left < 3)
         break;
-        
+
       buf[i++] = '\\';
       buf[i] = 'r';
     }
@@ -111,7 +112,7 @@ static void copy_substring_escaped(struct string *str, char *buf,
     {
       if(left < 3)
         break;
-        
+
       buf[i++] = '\\';
       buf[i] = 't';
     }
@@ -119,7 +120,7 @@ static void copy_substring_escaped(struct string *str, char *buf,
     {
       if(left < 5)
         break;
-        
+
       buf[i++] = '\\';
       buf[i++] = 'x';
       buf[i++] = asc[str->value[j] >> 4];
@@ -304,7 +305,7 @@ static void read_var(struct world *mzx_world, char *var_buffer)
   int int_value = 0;
   char *char_value = NULL;
   char buf[SVALUE_SIZE + 1] = { 0 };
-  
+
   // Var info is stored after the visible portion of the buffer
   char *var = var_buffer + VAR_LIST_VAR;
 
@@ -620,13 +621,14 @@ static void build_var_buffer(char **var_buffer, const char *name,
 
   if(char_value)
   {
-    strncpy((*var_buffer), name, MIN(strlen(name), SVALUE_COL_OFFSET - 1));
-    memcpy((*var_buffer) + SVALUE_COL_OFFSET, char_value, MIN(SVALUE_SIZE, int_value));
+    snprintf(*var_buffer, SVALUE_COL_OFFSET, "%s", name);
+    snprintf(*var_buffer + SVALUE_COL_OFFSET, SVALUE_SIZE, "%.*s",
+     int_value, char_value);
   }
   else
   {
-    strncpy((*var_buffer), name, MIN(strlen(name), CVALUE_COL_OFFSET - 1));
-    snprintf((*var_buffer) + CVALUE_COL_OFFSET, CVALUE_SIZE, "%i", int_value);
+    snprintf(*var_buffer, CVALUE_COL_OFFSET, "%s", name);
+    snprintf(*var_buffer + CVALUE_COL_OFFSET, CVALUE_SIZE, "%i", int_value);
   }
 }
 
@@ -775,7 +777,7 @@ static void build_var_list(struct debug_node *node,
       added_size = j * sizeof(char *);
       added_num = j;
     }
-    
+
     if(added_num)
     {
       (*var_list) = crealloc(*var_list, vars_size + added_size);
@@ -868,7 +870,7 @@ static void get_node_name(struct debug_node *node, char *label, int max_length)
     get_node_name(node->parent, label, max_length);
     snprintf(label + strlen(label), max_length - strlen(label), " :: ");
   }
-  
+
   snprintf(label + strlen(label), max_length - strlen(label), "%s", node->name);
 }
 
@@ -889,7 +891,7 @@ static int select_var_buffer(struct debug_node *node, char *var_name,
       }
     }
   }
-  
+
   if(node->num_nodes)
     for(i = 0; i < node->num_nodes; i++)
       if(select_var_buffer(&(node->nodes[i]), var_name, new_focus, new_var_pos))
@@ -953,8 +955,17 @@ static int find_variable(struct world *mzx_world, struct debug_node *node,
 
     if(search_flags & VAR_SEARCH_NAMES)
     {
-      v = boyer_moore_search(var, strlen(var), match_text, match_length,
-           match_text_index, ignore_case);
+      if(search_flags & VAR_SEARCH_EXACT)
+      {
+        if((ignore_case && !strcasecmp(var, match_text)) ||
+         !strcmp(var, match_text))
+          v = var;
+      }
+      else
+      {
+        v = boyer_moore_search(var, strlen(var), match_text, match_length,
+         match_text_index, ignore_case);
+      }
     }
     if((search_flags & VAR_SEARCH_VALUES) && !v)
     {
@@ -988,8 +999,17 @@ static int find_variable(struct world *mzx_world, struct debug_node *node,
         length = strlen(value);
       }
 
-      v = boyer_moore_search(value, length, match_text, match_length,
-           match_text_index, ignore_case);
+      if(search_flags & VAR_SEARCH_EXACT)
+      {
+        if((ignore_case && !strcasecmp(value, match_text)) ||
+         !strcmp(value, match_text))
+          v = value;
+      }
+      else
+      {
+        v = boyer_moore_search(value, length, match_text, match_length,
+         match_text_index, ignore_case);
+      }
     }
 
     if(v)
@@ -1276,7 +1296,7 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
 
     list = &(sprite_nodes[j].counters);
     (*list) = ccalloc(num_sprite_vars, sizeof(char *));
-	
+
     for(n = 0; n < num_sprite_vars; n++)
     {
       snprintf(var, 20, "spr%i_%s", i, sprite_var_list[n]);
@@ -1342,7 +1362,7 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
   for(i = 0, j = 0; j < num_robot_nodes; i++, j++)
   {
     struct robot *robot = robot_list[i];
-    
+
     if(!robot || !robot->used)
     {
       j--;
@@ -1582,24 +1602,26 @@ static int search_dialog_idle_function(struct world *mzx_world,
 
   return key;
 }
- 
+
 static int search_dialog(struct world *mzx_world,
  const char *title, char *string, int *search_flags)
 {
   int result = 0;
-  struct element *elements[7];
+  struct element *elements[8];
   struct dialog di;
 
   const char *name_opt[] = { "Search names" };
   const char *value_opt[] = { "Search values" };
   const char *case_opt[] = { "Case sensitive" };
+  const char *exact_opt[] = { "Exact" };
   const char *reverse_opt[] = { "Reverse" };
-  const char *wrap_opt[] = { "Wrap search" };
-  const char *local_opt[] = { "Current list only" };
+  const char *wrap_opt[] = { "Wrap" };
+  const char *local_opt[] = { "Current list" };
 
   int names =    (*search_flags & VAR_SEARCH_NAMES) > 0;
   int values =   (*search_flags & VAR_SEARCH_VALUES) > 0;
   int casesens = (*search_flags & VAR_SEARCH_CASESENS) > 0;
+  int exact =    (*search_flags & VAR_SEARCH_EXACT) > 0;
   int reverse =  (*search_flags & VAR_SEARCH_REVERSE) > 0;
   int wrap =     (*search_flags & VAR_SEARCH_WRAP) > 0;
   int local =    (*search_flags & VAR_SEARCH_LOCAL) > 0;
@@ -1611,9 +1633,10 @@ static int search_dialog(struct world *mzx_world,
   elements[1] = construct_check_box( 2, 2, name_opt,    1, strlen(name_opt[0]),    &names);
   elements[2] = construct_check_box(20, 2, value_opt,   1, strlen(value_opt[0]),   &values);
   elements[3] = construct_check_box(39, 2, case_opt,    1, strlen(case_opt[0]),    &casesens);
-  elements[4] = construct_check_box( 4, 3, reverse_opt, 1, strlen(reverse_opt[0]), &reverse);
-  elements[5] = construct_check_box(17, 3, wrap_opt,    1, strlen(wrap_opt[0]),    &wrap);
-  elements[6] = construct_check_box(34, 3, local_opt,   1, strlen(local_opt[0]),   &local);
+  elements[4] = construct_check_box( 4, 3, exact_opt,   1, strlen(exact_opt[0]),   &exact);
+  elements[5] = construct_check_box(15, 3, reverse_opt, 1, strlen(reverse_opt[0]), &reverse);
+  elements[6] = construct_check_box(28, 3, wrap_opt,    1, strlen(wrap_opt[0]),    &wrap);
+  elements[7] = construct_check_box(38, 3, local_opt,   1, strlen(local_opt[0]),   &local);
 
   construct_dialog_ext(&di, title, VAR_SEARCH_DIALOG_X, VAR_SEARCH_DIALOG_Y,
    VAR_SEARCH_DIALOG_W, VAR_SEARCH_DIALOG_H, elements, ARRAY_SIZE(elements),
@@ -1623,8 +1646,9 @@ static int search_dialog(struct world *mzx_world,
 
   *search_flags = (names * VAR_SEARCH_NAMES) + (values * VAR_SEARCH_VALUES) +
    (casesens * VAR_SEARCH_CASESENS) + (reverse * VAR_SEARCH_REVERSE) +
-   (wrap * VAR_SEARCH_WRAP) + (local * VAR_SEARCH_LOCAL);
-  
+   (wrap * VAR_SEARCH_WRAP) + (exact * VAR_SEARCH_EXACT) +
+   (local * VAR_SEARCH_LOCAL);
+
   destruct_dialog(&di);
 
   // Prevent UI keys from carrying through.
@@ -1650,7 +1674,7 @@ static int new_counter_dialog(struct world *mzx_world, char *name)
   elements[0] = construct_input_box(2, 2, "Name:", VAR_ADD_MAX, 0, name);
   elements[1] = construct_button(9, 4, "Confirm", 0);
   elements[2] = construct_button(23, 4, "Cancel", -1);
-  
+
   construct_dialog_ext(&di, "New Counter/String", VAR_ADD_DIALOG_X, VAR_ADD_DIALOG_Y,
    VAR_ADD_DIALOG_W, VAR_ADD_DIALOG_H, elements, ARRAY_SIZE(elements),
    0, 0, 0, NULL);
@@ -1816,11 +1840,11 @@ void __debug_counters(struct world *mzx_world)
   int dialog_result;
   struct element *elements[8];
   struct dialog di;
-  
+
   char label[80] = "Counters";
   struct debug_node *focus;
   int hide_empty_vars = 0;
-  
+
   char search_text[VAR_SEARCH_MAX + 1] = { 0 };
   int search_flags = VAR_SEARCH_NAMES + VAR_SEARCH_VALUES + VAR_SEARCH_WRAP;
   int search_pos = 0;
@@ -1847,8 +1871,9 @@ void __debug_counters(struct world *mzx_world)
     if(previous_node)
     {
       focus = previous_node;
-      strncpy(search_text, previous_var, VAR_SEARCH_MAX);
-      search_flags = VAR_SEARCH_NAMES | VAR_SEARCH_LOCAL | VAR_SEARCH_WRAP;
+      snprintf(search_text, VAR_SEARCH_MAX, "%s", previous_var);
+      search_flags =
+       VAR_SEARCH_NAMES | VAR_SEARCH_LOCAL | VAR_SEARCH_WRAP | VAR_SEARCH_EXACT;
 
       reopened = 1;
     }
@@ -1909,7 +1934,7 @@ void __debug_counters(struct world *mzx_world)
       {
         // Tree list
         window_focus = 1;
-        
+
         if(last_node_selected != node_selected)// && (focus->num_counters || focus->show_child_contents))
         {
           rebuild_var_list(focus, &var_list, &num_vars, hide_empty_vars);
@@ -1920,7 +1945,7 @@ void __debug_counters(struct world *mzx_world)
         }
         break;
       }
-      
+
       // Tree node
       case 1:
       {

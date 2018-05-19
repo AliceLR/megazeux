@@ -1441,7 +1441,9 @@ bool init_video(struct config_info *conf, const char *caption)
    graphics.default_charset);
   ec_load_set_secondary(mzx_res_get_by_id(MZX_EDIT_CHR),
    graphics.charset + (PROTECTED_CHARSET_POSITION * CHAR_SIZE));
-  if (!layer_renderer_check(false))
+
+#if NUM_CHARSETS > 2
+  if(!layer_renderer_check(false))
   {
     // As the renderer doesn't support advanced features, it
     // may also not support the number of charsets we want
@@ -1451,6 +1453,7 @@ bool init_video(struct config_info *conf, const char *caption)
       graphics.charset + (PROTECTED_CHARSET_POSITION * CHAR_SIZE),
       CHARSET_SIZE * CHAR_SIZE);
   }
+#endif
 
   ec_load_mzx();
   init_palette();

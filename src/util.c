@@ -253,10 +253,10 @@ char *mzx_res_get_by_id(enum resource_id id)
     // Special handling for CONFIG_TXT to allow for user
     // configuration files
     sprintf(userconfpath, "%s/%s", getenv("HOME"), USERCONFFILE);
-    
+
     // Check if the file can be opened for reading
     fp = fopen_unsafe(userconfpath, "rb");
-    
+
     if (fp)
     {
       fclose(fp);
@@ -387,7 +387,7 @@ void add_ext(char *src, const char *ext)
   if((src_len < ext_len) || (src[src_len - ext_len] != '.') ||
    strcasecmp(src + src_len - ext_len, ext))
   {
-    strncat(src, ext, ext_len);
+    strcat(src, ext);
   }
 }
 
@@ -524,100 +524,112 @@ int change_dir_name(char *path_name, const char *dest)
 {
   struct stat stat_info;
   char path[MAX_PATH];
-  char *colon_loc;
-  int size;
+  const char *current;
+  const char *next;
+  const char *end;
+  char current_char;
+  size_t len;
 
   if(!dest || !dest[0])
-    return -2;
+    return -1;
 
   if(!path_name)
     return -1;
 
-  colon_loc = strchr(dest, ':');
+  current = dest;
+  end = dest + strlen(dest);
 
-  // Stop!  recursion time
-  if(strchr(dest, DIR_SEPARATOR_CHAR) || colon_loc)
+  // Destination starts with a root directory.
+#if defined(__WIN32__) || defined(CONFIG_WII)
+
+  if(dest[0] == DIR_SEPARATOR_CHAR)
+    return -1;
+
+  next = strchr(dest, ':');
+  if(next)
   {
-    char dir_element[MAX_PATH];
-    unsigned int i, dir_start = 0;
+    if(next[1] != DIR_SEPARATOR_CHAR && next[1] != 0)
+      return -1;
 
-    strncpy(path, dest, MAX_PATH - 1);
-    path[MAX_PATH - 1] = 0;
-
-    if(path[strlen(path) - 1] == ':')
-      strcat(path, DIR_SEPARATOR);
+    snprintf(path, MAX_PATH, "%.*s" DIR_SEPARATOR, (int)(next - dest + 1),
+     dest);
 
     if(stat(path, &stat_info) < 0)
-      return -20;
+      return -1;
 
-    for(i = 0; i <= strlen(path); i++)
-    {
-      if((path[i] == DIR_SEPARATOR_CHAR) || (i == strlen(path)))
-      {
-        // Root directory.  Remember colon_loc is relative to dest, not path
-        if((i == 0) || (colon_loc && (size_t)(colon_loc - dest) < i))
-        {
-          strncpy(path_name, path, i+1);
-          path_name[i + 1] = '\0';
-        }
-        else if (i != dir_start)
-        {
-          int res;
-          strncpy(dir_element, path + dir_start, i-dir_start);
-          dir_element[i - dir_start] = '\0';
-          res = change_dir_name(path_name, dir_element);
-          if(res)
-            return res;
-        }
-
-        dir_start = i + 1;
-      }
-    }
-
-    return 0;
+    current = next + 1;
+    if(current[0] == DIR_SEPARATOR_CHAR)
+      current++;
   }
-
-  // Check for the special . and ..
-  if(dest[0] == '.')
+  else
   {
-    if((dest[1] == '.') && (dest[2] == '\0'))
-    {
-      size = get_path(path_name, path, MAX_PATH);
-
-      // Fix ..ing to root paths
-      if(path[strlen(path) - 1] == ':')
-        strcat(path, DIR_SEPARATOR);
-
-      if(size > 0)
-      {
-        strcpy(path_name, path);
-        return 0;
-      }
-      else
-
-      //One step above root on unix-based systems
-      if(path_name[0] == '/')
-      {
-        strcpy(path_name, "/");
-        return 0;
-      }
-
-    }
-    else if (dest[1] == '\0')
-      return 0;
+    snprintf(path, MAX_PATH, "%s" DIR_SEPARATOR, path_name);
   }
 
-  join_path_names(path, MAX_PATH, path_name, dest);
-  path[MAX_PATH - 1] = 0;
+#else /* !defined(__WIN32__) && !defined(CONFIG_WII) */
+
+  if(dest[0] == DIR_SEPARATOR_CHAR)
+  {
+    strcpy(path, DIR_SEPARATOR);
+    current = dest + 1;
+  }
+  else
+  {
+    snprintf(path, MAX_PATH, "%s" DIR_SEPARATOR, path_name);
+  }
+
+#endif /* !defined(__WIN32__) && !defined(CONFIG_WII) */
+
+  current_char = current[0];
+  len = strlen(path);
+
+  // Apply directory fragments to the path.
+  while(current_char != 0)
+  {
+    // Increment next to skip the separator so it will be copied over.
+    next = strchr(current, DIR_SEPARATOR_CHAR);
+    if(!next) next = end;
+    else      next++;
+
+    // . does nothing, .. goes back one level
+    if(current_char == '.')
+    {
+      if(current[1] == '.')
+      {
+        // Skip the rightmost separator (current level) and look for the
+        // previous separator. If found, truncate the path to it.
+        char *pos = path + len - 1;
+        do
+        {
+          pos--;
+        }
+        while(pos >= path && *pos != DIR_SEPARATOR_CHAR);
+
+        if(pos >= path)
+        {
+          pos[1] = 0;
+          len = strlen(path);
+        }
+      }
+    }
+    else
+    {
+      snprintf(path + len, MAX_PATH - len, "%.*s", (int)(next - current),
+       current);
+      len = strlen(path);
+    }
+
+    current = next;
+    current_char = current[0];
+  }
 
   if(stat(path, &stat_info) >= 0)
   {
-    clean_path_slashes(path, path_name, MAX_PATH - 1);
-    path_name[MAX_PATH - 1] = 0;
+    clean_path_slashes(path, path_name, MAX_PATH);
     return 0;
   }
 
-  return -3;
+  return -1;
 }
 
 
@@ -951,8 +963,7 @@ bool dir_get_next_entry(struct mzx_dir *dir, char *entry)
     return false;
   }
 
-  strncpy(entry, inode->d_name, PATH_BUF_LEN - 1);
-  entry[PATH_BUF_LEN - 1] = 0;
+  snprintf(entry, PATH_BUF_LEN, "%s", inode->d_name);
   return true;
 }
 
