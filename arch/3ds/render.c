@@ -152,7 +152,7 @@ C3D_Tex* ctr_load_png(const char* name)
     data = (u32*) output->data;
 
     GSPGPU_FlushDataCache(dataBuf, output->size);
-    C3D_SafeDisplayTransfer(dataBuf, GX_BUFFER_DIM(output->width, output->height),
+    C3D_SyncDisplayTransfer(dataBuf, GX_BUFFER_DIM(output->width, output->height),
       data, GX_BUFFER_DIM(output->width, output->height),
       GX_TRANSFER_FLIP_VERT(0) | GX_TRANSFER_OUT_TILED(1) | GX_TRANSFER_RAW_COPY(0) |
       GX_TRANSFER_IN_FORMAT(GPU_RGBA8) | GX_TRANSFER_OUT_FORMAT(GPU_RGB8)
@@ -271,9 +271,9 @@ static bool ctr_init_video(struct graphics_data *graphics,
   render_data.target_top = C3D_RenderTargetCreate(240, 400, GPU_RB_RGB8, GPU_RB_DEPTH16);
   render_data.target_bottom = C3D_RenderTargetCreate(240, 320, GPU_RB_RGB8, GPU_RB_DEPTH16);
 
-  C3D_RenderTargetSetClear(render_data.playfield, C3D_CLEAR_ALL, 0x000000, 0);
-  C3D_RenderTargetSetClear(render_data.target_top, C3D_CLEAR_ALL, 0x000000, 0);
-  C3D_RenderTargetSetClear(render_data.target_bottom, C3D_CLEAR_ALL, 0x000000, 0);
+  C3D_RenderTargetClear(render_data.playfield, C3D_CLEAR_ALL, 0x000000, 0);
+  C3D_RenderTargetClear(render_data.target_top, C3D_CLEAR_ALL, 0x000000, 0);
+  C3D_RenderTargetClear(render_data.target_bottom, C3D_CLEAR_ALL, 0x000000, 0);
   C3D_RenderTargetSetOutput(render_data.target_top, GFX_TOP, GFX_LEFT,
     GX_TRANSFER_IN_FORMAT(GX_TRANSFER_FMT_RGB8) | GX_TRANSFER_OUT_FORMAT(GX_TRANSFER_FMT_RGB8));
   C3D_RenderTargetSetOutput(render_data.target_bottom, GFX_BOTTOM, GFX_LEFT,
@@ -302,28 +302,30 @@ static bool ctr_init_video(struct graphics_data *graphics,
     C3D_TexSetWrap(&render_data.charset_vram[i], GPU_REPEAT, GPU_REPEAT);
   }
 
-  TexEnv_Init(&(render_data.env_normal));
+  C3D_TexEnvInit(&(render_data.env_normal));
   C3D_TexEnvSrc(&(render_data.env_normal), C3D_Both, GPU_TEXTURE0, 0, 0);
-  C3D_TexEnvOp(&(render_data.env_normal), C3D_Both, 0, 0, 0);
+  C3D_TexEnvOpRgb(&(render_data.env_normal), 0, 0, 0);
+  C3D_TexEnvOpAlpha(&(render_data.env_normal), 0, 0, 0);
   C3D_TexEnvFunc(&(render_data.env_normal), C3D_Both, GPU_MODULATE);
 
-  TexEnv_Init(&(render_data.env_no_texture));
+  C3D_TexEnvInit(&(render_data.env_no_texture));
   C3D_TexEnvSrc(&(render_data.env_no_texture), C3D_Both, GPU_PRIMARY_COLOR, 0, 0);
-  C3D_TexEnvOp(&(render_data.env_no_texture), C3D_Both, 0, 0, 0);
+  C3D_TexEnvOpRgb(&(render_data.env_no_texture), 0, 0, 0);
+  C3D_TexEnvOpAlpha(&(render_data.env_no_texture), 0, 0, 0);
   C3D_TexEnvFunc(&(render_data.env_no_texture), C3D_Both, GPU_REPLACE);
 
-  TexEnv_Init(&(render_data.env_playfield));
+  C3D_TexEnvInit(&(render_data.env_playfield));
   C3D_TexEnvSrc(&(render_data.env_playfield), C3D_RGB, 0, 0, 0);
   C3D_TexEnvSrc(&(render_data.env_playfield), C3D_Alpha, 0, GPU_TEXTURE0, 0);
-  C3D_TexEnvOp(&(render_data.env_playfield), C3D_RGB, 0, 2, 0);
-  C3D_TexEnvOp(&(render_data.env_playfield), C3D_Alpha, 0, 0, 0);
+  C3D_TexEnvOpRgb(&(render_data.env_playfield), 0, 2, 0);
+  C3D_TexEnvOpAlpha(&(render_data.env_playfield), 0, 0, 0);
   C3D_TexEnvFunc(&(render_data.env_playfield), C3D_Both, GPU_MODULATE);
 
-  TexEnv_Init(&(render_data.env_playfield_inv));
+  C3D_TexEnvInit(&(render_data.env_playfield_inv));
   C3D_TexEnvSrc(&(render_data.env_playfield_inv), C3D_RGB, 0, 0, 0);
   C3D_TexEnvSrc(&(render_data.env_playfield_inv), C3D_Alpha, 0, GPU_TEXTURE0, 0);
-  C3D_TexEnvOp(&(render_data.env_playfield_inv), C3D_RGB, 0, 2, 0);
-  C3D_TexEnvOp(&(render_data.env_playfield_inv), C3D_Alpha, 1, 0, 0);
+  C3D_TexEnvOpRgb(&(render_data.env_playfield_inv), 0, 2, 0);
+  C3D_TexEnvOpAlpha(&(render_data.env_playfield_inv), 1, 0, 0);
   C3D_TexEnvFunc(&(render_data.env_playfield_inv), C3D_Both, GPU_MODULATE);
 
   C3D_AlphaTest(false, GPU_GREATER, 0x80);
@@ -486,7 +488,7 @@ static inline u64 ctr_refresh_charsets(struct ctr_render_data *render_data, u64 
   for (int i = from; i < to; i++)
   {
     GSPGPU_FlushDataCache((u8*)(render_data->charset[i].data) + coffs, csize);
-    C3D_SafeTextureCopy((u32*)((u8*)(render_data->charset[i].data) + coffs), 0,
+    C3D_SyncTextureCopy((u32*)((u8*)(render_data->charset[i].data) + coffs), 0,
       (u32*)((u8*)(render_data->charset_vram[i].data) + coffs), 0, csize, 8);
     gspWaitForPPF();
   }
