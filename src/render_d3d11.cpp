@@ -652,7 +652,7 @@ void draw_no_game_data(struct d3d11_render_data *render_data)
 }
 
 #ifdef D3D11_THREADED
-void* d3d11_draw_and_sync_threaded(void* data)
+static void *d3d11_draw_and_sync_threaded(void* data)
 {
   struct graphics_data *g = (graphics_data *)data;
   struct d3d11_render_data *render_data = (d3d11_render_data *)g->render_data;
@@ -663,19 +663,19 @@ void* d3d11_draw_and_sync_threaded(void* data)
     {
       SDL_Delay(0);
     }
-    pthread_mutex_lock(&render_data->game_data_mutex);
-    pthread_mutex_lock(&render_data->context_mutex);
+    platform_mutex_lock(&render_data->game_data_mutex);
+    platform_mutex_lock(&render_data->context_mutex);
     
     draw_set_data(g, render_data);
     
     render_data->render_frame += 1;
-    pthread_mutex_unlock(&render_data->game_data_mutex);
+    platform_mutex_unlock(&render_data->game_data_mutex);
     //Don't access graphics from this point on, d3d11_render_data is OK
     
     draw_no_game_data(render_data);
     render_data->layer_count = 0;
     
-    pthread_mutex_unlock(&render_data->context_mutex);
+    platform_mutex_unlock(&render_data->context_mutex);
   }
   
   return 0;
@@ -716,10 +716,10 @@ static bool d3d11_init_video(struct graphics_data *g,
   render_data->render_cursor = false;
   
 #ifdef D3D11_THREADED
-  pthread_mutex_init(&render_data->game_data_mutex, NULL);
-  pthread_mutex_init(&render_data->context_mutex, NULL);
-  pthread_mutex_lock(&render_data->game_data_mutex);
-  pthread_create(&render_data->render_thread, NULL, d3d11_draw_and_sync_threaded, g);
+  platform_mutex_init(&render_data->game_data_mutex);
+  platform_mutex_init(&render_data->context_mutex);
+  platform_mutex_lock(&render_data->game_data_mutex);
+  platform_thread_create(&render_data->render_thread, (platform_thread_fn)d3d11_draw_and_sync_threaded, g);
 #endif
   return true;
 }
@@ -825,13 +825,13 @@ static void d3d11_sync_screen_async(struct graphics_data *g)
 {
   struct d3d11_render_data *render_data = (struct d3d11_render_data *) g->render_data;
   render_data->game_frame += 1;
-  pthread_mutex_unlock(&render_data->game_data_mutex);
+  platform_mutex_unlock(&render_data->game_data_mutex);
   
   while(render_data->game_frame != render_data->render_frame)
   {
     SDL_Delay(0);
   }
-  pthread_mutex_lock(&render_data->game_data_mutex);
+  platform_mutex_lock(&render_data->game_data_mutex);
 }
 #else
 

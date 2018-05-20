@@ -34,10 +34,6 @@ __M_BEGIN_DECLS
 
 #define D3D11_THREADED
 
-#ifdef D3D11_THREADED
-#include <pthread.h>
-#endif
-
 struct d3d11_const_layer
 {
   INT32 x;
@@ -94,9 +90,9 @@ struct d3d11_render_data
   ID3D11Buffer *layers_constant_buffer_hw;
   
 #ifdef D3D11_THREADED
-  pthread_t render_thread;
-  pthread_mutex_t game_data_mutex;
-  pthread_mutex_t context_mutex;
+  platform_thread render_thread;
+  platform_mutex game_data_mutex;
+  platform_mutex context_mutex;
 #endif
   
   int game_frame;
@@ -134,7 +130,7 @@ void d3d11_init_screen_create_tileset(struct d3d11_render_data *s);
 void d3d11_init_screen_create_layer_data(struct d3d11_render_data *s);
 void d3d11_init_screen_create_shader(struct d3d11_render_data *s);
 
-void* d3d11_draw_and_sync_threaded(void* data);
+static void *d3d11_draw_and_sync_threaded(void* data);
 void d3d11_get_messages(void);
 
 
