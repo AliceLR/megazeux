@@ -608,6 +608,14 @@ if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" \
 fi
 
 #
+# Force-disable D3D11 on non-mingw
+#
+if [ "$PLATFORM" != "mingw" ]; then
+	echo "Force-disabling d3d11 (unsupported platform)."
+	D3D11="false"
+fi
+
+#
 # Must have at least one OpenGL renderer enabled
 #
 [ "$GL_FIXED" = "false" -a "$GL_PROGRAM" = "false" ] && GL="false"
