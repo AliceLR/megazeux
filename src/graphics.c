@@ -73,6 +73,9 @@ static const struct renderer_data renderers[] =
   { "glsl", render_glsl_register },
   { "auto_glsl", render_auto_glsl_register },
 #endif
+#if defined(CONFIG_RENDER_D3D11)
+  { "d3d11", render_d3d11_register },
+#endif
 #if defined(CONFIG_RENDER_YUV)
   { "overlay1", render_yuv1_register },
   { "overlay2", render_yuv2_register },

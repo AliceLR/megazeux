@@ -50,6 +50,9 @@ void render_yuv2_register(struct renderer *renderer);
 #if defined(CONFIG_RENDER_GP2X)
 void render_gp2x_register(struct renderer *renderer);
 #endif
+#if defined(CONFIG_RENDER_D3D11)
+void render_d3d11_register(struct renderer *renderer);
+#endif
 #if defined(CONFIG_NDS)
 void render_nds_register(struct renderer *renderer);
 #endif

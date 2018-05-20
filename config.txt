@@ -85,6 +85,7 @@
 # video_output = opengl1
 # video_output = opengl2
 # video_output = glsl
+# video_output = d3d11
 
 # The OpenGL and YUV overlay renderers can be configured to preserve aspect
 # ratio where possible, in window and fullscreen modes. The supported

@@ -162,6 +162,12 @@ ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 core_cobjs += ${core_obj}/render_glsl.o
 endif
 
+# D3D11
+ifeq (${BUILD_RENDER_D3D11},1)
+core_cobjs += ${core_obj}/render_d3d11.o
+core_ldflags += ${D3D11_LDFLAGS}
+endif
+
 #
 # Currently only usable with GL, but could theoretically be used
 # with OpenVG in the future.

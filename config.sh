@@ -203,6 +203,9 @@ while [ "$1" != "" ]; do
 	[ "$1" = "--disable-gl-prog" ] && GL_PROGRAM="false"
 	[ "$1" = "--enable-gl-prog" ]  && GL_PROGRAM="true"
 
+	[ "$1" = "--disable-d3d11" ] && D3D11="false"
+	[ "$1" = "--enable-d3d11" ]  && D3D11="true"
+
 	[ "$1" = "--disable-overlay" ] && OVERLAY="false"
 	[ "$1" = "--enable-overlay" ]  && OVERLAY="true"
 
@@ -852,6 +855,17 @@ if [ "$GL_PROGRAM" = "true" ]; then
 	echo "BUILD_RENDER_GL_PROGRAM=1" >> platform.inc
 else
 	echo "Programmable H/W OpenGL renderer disabled."
+fi
+
+#
+# D3D11 renderer
+#
+if [ "$D3D11" = "true" ]; then
+	echo "D3D11 renderer enabled."
+	echo "#define CONFIG_RENDER_D3D11" >> src/config.h
+	echo "BUILD_RENDER_D3D11=1" >> platform.inc
+else
+	echo "D3D11 renderer disabled."
 fi
 
 #

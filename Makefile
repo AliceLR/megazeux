@@ -73,6 +73,8 @@ LIBPNG_CFLAGS  ?= $(shell libpng-config --cflags)
 LIBPNG_LDFLAGS ?= $(shell libpng-config --ldflags)
 endif
 
+D3D11_LDFLAGS ?= -ld3d11 -lDXGI
+
 PTHREAD_LDFLAGS ?= -lpthread
 
 OPTIMIZE_CFLAGS ?= -O3
