@@ -660,6 +660,10 @@ static void *d3d11_draw_and_sync_threaded(void* data)
     while(render_data->game_frame == render_data->render_frame)
     {
       SDL_Delay(0);
+      if(render_data->stop_thread)
+      {
+        return 0;
+      }
     }
     platform_mutex_lock(&render_data->game_data_mutex);
     platform_mutex_lock(&render_data->context_mutex);
@@ -675,7 +679,6 @@ static void *d3d11_draw_and_sync_threaded(void* data)
     
     platform_mutex_unlock(&render_data->context_mutex);
   }
-  
   return 0;
 }
 #endif
@@ -722,6 +725,7 @@ static bool d3d11_init_video(struct graphics_data *g,
   platform_mutex_init(&render_data->context_mutex);
   platform_mutex_lock(&render_data->game_data_mutex);
   platform_thread_create(&render_data->render_thread, (platform_thread_fn)d3d11_draw_and_sync_threaded, g);
+  render_data->stop_thread = false;
 #endif
   return true;
 }
@@ -729,7 +733,15 @@ static bool d3d11_init_video(struct graphics_data *g,
 static void d3d11_free_video(struct graphics_data *g)
 {
   struct d3d11_render_data *s = (d3d11_render_data *)g->render_data;
+#ifdef D3D11_THREADED
+  s->stop_thread = true;
+  platform_mutex_lock(&s->context_mutex);
+#endif
   s->device->Release();
+#ifdef D3D11_THREADED
+  platform_mutex_unlock(&s->context_mutex);
+  platform_thread_join(&s->render_thread);
+#endif  
   free(g->render_data);
   g->render_data = NULL;
 }

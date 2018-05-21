@@ -92,6 +92,7 @@ struct d3d11_render_data
   platform_thread render_thread;
   platform_mutex game_data_mutex;
   platform_mutex context_mutex;
+  bool stop_thread;
 #endif
   
   int game_frame;
