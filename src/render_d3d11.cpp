@@ -128,7 +128,7 @@ void d3d11_init_screen_create_device(struct d3d11_render_data *s, struct config_
   swapChainDesc.OutputWindow = GetActiveWindow();
   swapChainDesc.SampleDesc.Count = 1;
   swapChainDesc.SampleDesc.Quality = 0;
-  swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+  swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
   swapChainDesc.Windowed = true;
   
   D3DCALL(D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL,
@@ -724,8 +724,8 @@ static bool d3d11_init_video(struct graphics_data *g,
   platform_mutex_init(&render_data->game_data_mutex);
   platform_mutex_init(&render_data->context_mutex);
   platform_mutex_lock(&render_data->game_data_mutex);
-  render_data->stop_thread = false;
   platform_thread_create(&render_data->render_thread, (platform_thread_fn)d3d11_draw_and_sync_threaded, g);
+  render_data->stop_thread = false;
 #endif
   return true;
 }
