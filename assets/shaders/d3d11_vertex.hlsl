@@ -57,14 +57,9 @@ VSOut main(VSIn In)
 	Out.smzx = (layer[layer_id].charOffset16_transparentColor10smzx6 >> 26) & 0x3F;
 
 	Out.pos = float4(
-		(pos_full_res.x * 2.0f / 640.0f) - 1.0f,
-		(pos_full_res.y * -2.0f / 350.0f) + 1.0f,
+		(pos_full_res.x * 2.0f / 639.9f) - 1.0f,
+		(pos_full_res.y * -2.0f / 349.9f) + 1.0f,
 		z,
 		1.0f);
-
-	//Out.pos = float4(vertex_id_pos,
-	//	0.0f,
-	//	1.0f);
-
 	return Out;
 }
