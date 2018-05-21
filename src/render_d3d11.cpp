@@ -724,8 +724,8 @@ static bool d3d11_init_video(struct graphics_data *g,
   platform_mutex_init(&render_data->game_data_mutex);
   platform_mutex_init(&render_data->context_mutex);
   platform_mutex_lock(&render_data->game_data_mutex);
-  platform_thread_create(&render_data->render_thread, (platform_thread_fn)d3d11_draw_and_sync_threaded, g);
   render_data->stop_thread = false;
+  platform_thread_create(&render_data->render_thread, (platform_thread_fn)d3d11_draw_and_sync_threaded, g);
 #endif
   return true;
 }
