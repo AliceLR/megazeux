@@ -28,7 +28,6 @@ __M_BEGIN_DECLS
 
 #include "graphics.h"
 #include "util.h"
-
 #include "d3d11.h"
 #include "dxgi.h"
 

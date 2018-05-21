@@ -79,6 +79,10 @@ static struct mzx_resource mzx_res[] = {
   { SHADERS "cursor.vert",         NULL, false },
   { SHADERS "cursor.frag",         NULL, false },
 #endif
+#ifdef CONFIG_RENDER_D3D11
+  { SHADERS "d3d11_vertex.cso", NULL, false},
+  { SHADERS "d3d11_pixel.cso", NULL, false},
+#endif
 };
 
 #ifdef CONFIG_CHECK_ALLOC

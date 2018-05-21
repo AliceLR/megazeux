@@ -19,7 +19,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-
+ 
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -348,12 +348,10 @@ void d3d11_init_screen_create_shader(struct d3d11_render_data *s)
   D3D11_DEPTH_STENCIL_DESC depth_desc;
   
   path = (char*)cmalloc(MAX_PATH);
-  strcpy(path, mzx_res_get_by_id(SHADERS_SCALER_DIRECTORY));
-  sprintf(path + strlen(path), "%s%s.cso", DIR_SEPARATOR, "VertexShader");
+  strcpy(path, mzx_res_get_by_id(SHADERS_D3D11_VERT));
   vertex_cso = d3d11_load_string(path, size_vertex_cso);
   
-  strcpy(path, mzx_res_get_by_id(SHADERS_SCALER_DIRECTORY));
-  sprintf(path + strlen(path), "%s%s.cso", DIR_SEPARATOR, "PixelShader");
+  strcpy(path, mzx_res_get_by_id(SHADERS_D3D11_FRAG));
   pixel_cso = d3d11_load_string(path, size_pixel_cso);
   
   D3DCALL(s->device->CreatePixelShader(pixel_cso, size_pixel_cso, NULL, &s->pixel_shader));
@@ -685,11 +683,15 @@ static void *d3d11_draw_and_sync_threaded(void* data)
 static bool d3d11_init_video(struct graphics_data *g,
  struct config_info *conf)
 {
-  struct d3d11_render_data *render_data;
-  render_data = (d3d11_render_data *) malloc(sizeof(struct d3d11_render_data));
+  struct d3d11_render_data *render_data = (d3d11_render_data *) cmalloc(sizeof(struct d3d11_render_data));
+  if(!render_data)
+    return false;
   memset(render_data, 0, sizeof(struct d3d11_render_data));
-  g->render_data = render_data;
+  
   g->allow_resize = conf->allow_resize;
+  g->ratio = conf->video_ratio;
+  g->bits_per_pixel = 32;
+  g->render_data = render_data;
   
   render_data->game_frame = 0;
   render_data->render_frame = 0;

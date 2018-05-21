@@ -40,11 +40,10 @@
 #undef true
 #undef bool
 
-typedef enum
-{
-  false = 0,
-  true  = 1,
-} bool;
+// Booleans that have the same size in C++ so structs have the same size
+#define bool unsigned char
+#define false 0
+#define true 1
 
 #endif // !CONFIG_WII && !CONFIG_NDS
 

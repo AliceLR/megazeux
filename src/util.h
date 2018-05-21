@@ -78,6 +78,10 @@ enum resource_id
   SHADERS_CURSOR_VERT,
   SHADERS_CURSOR_FRAG,
 #endif
+#ifdef CONFIG_RENDER_D3D11
+  SHADERS_D3D11_VERT,
+  SHADERS_D3D11_FRAG,
+#endif
   END_RESOURCE_ID_T // must be last
 };
 
