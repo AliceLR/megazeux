@@ -151,16 +151,18 @@ static void create_dns_thread(struct dns_data *data)
   platform_mutex_init(&(data->mutex));
   platform_cond_init(&(data->cond));
 
+  LOCK(data);
+
   if(platform_thread_create(&(data->thread),
    (platform_thread_fn)run_dns_thread, (void *)data))
   {
+    UNLOCK(data);
     platform_mutex_destroy(&(data->mutex));
     platform_cond_destroy(&(data->cond));
   }
   else
   {
     // Allow thread to initialize.
-    LOCK(data);
     WAIT(data);
     UNLOCK(data);
   }
