@@ -484,7 +484,7 @@ void draw_set_data(struct graphics_data *g, struct d3d11_render_data *render_dat
       const_layer[render_data->layer_count].w = 1;
       const_layer[render_data->layer_count].h = 1;
       const_layer[render_data->layer_count].z = 0;
-      const_layer[render_data->layer_count].char_offset = 0;
+      const_layer[render_data->layer_count].char_offset = PROTECTED_CHARSET_POSITION;
       const_layer[render_data->layer_count].transparent_color_10bit = 0;
       const_layer[render_data->layer_count].use_smzx_6bit = 0 << 2;
       
