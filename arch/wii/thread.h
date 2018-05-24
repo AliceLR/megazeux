@@ -28,15 +28,16 @@ __M_BEGIN_DECLS
 
 #define BOOL _BOOL
 #include <gctypes.h>
+#include <ogc/mutex.h>
 #include <ogc/cond.h>
 #include <ogc/lwp.h>
-#include <ogc/mutex.h>
+#include <ogc/lwp_watchdog.h>
 #undef BOOL
 
-typedef cont_t platform_cond;
+typedef cond_t platform_cond;
 typedef mutex_t platform_mutex;
 typedef lwp_t platform_thread;
-typedef (void *)(*platform_thread_fn)(void *);
+typedef void *(*platform_thread_fn)(void *);
 
 static inline void platform_mutex_init(platform_mutex *mutex)
 {
@@ -73,7 +74,7 @@ static inline void platform_cond_destroy(platform_cond *cond)
   LWP_CondDestroy(*cond);
 }
 
-static inline void platform_cond_wait(platform_cond *cond,
+static inline bool platform_cond_wait(platform_cond *cond,
  platform_mutex *mutex)
 {
   if(LWP_CondWait(*cond, *mutex))
@@ -81,27 +82,31 @@ static inline void platform_cond_wait(platform_cond *cond,
   return true;
 }
 
-static inline void platform_cond_timedwait(platform_cond *cond,
+static inline bool platform_cond_timedwait(platform_cond *cond,
  platform_mutex *mutex, unsigned int timeout_ms)
 {
   struct timespec timeout;
+  u64 ticks;
 
-  clock_gettime(CLOCK_REALTIME, &timeout);
-  timeout.tv_nsec += timeout_ms * 1000000;
+  // Use LWP watchdog to get a usable absolute time
+  ticks = gettime() + millisecs_to_ticks(timeout_ms);
+
+  timeout.tv_sec = ticks_to_secs(ticks);
+  timeout.tv_nsec = ticks_to_nanosecs(ticks) % 1000000000;
 
   if(LWP_CondTimedWait(*cond, *mutex, &timeout))
     return false;
   return true;
 }
 
-static inline void platform_cond_signal(platform_cond *cond)
+static inline bool platform_cond_signal(platform_cond *cond)
 {
   if(LWP_CondSignal(*cond))
     return false;
   return true;
 }
 
-static inline void platform_cond_broadcast(platform_cond *cond)
+static inline bool platform_cond_broadcast(platform_cond *cond)
 {
   if(LWP_CondBroadcast(*cond))
     return false;

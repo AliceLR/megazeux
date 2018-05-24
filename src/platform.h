@@ -58,12 +58,12 @@ int real_main(int argc, char *argv[]);
 
 #ifdef CONFIG_PTHREAD
 #include "thread_pthread.h"
-#elif defined(CONFIG_SDL)
-#include "thread_sdl.h"
 #elif defined(CONFIG_WII)
 #include "../arch/wii/thread.h"
 #elif defined(CONFIG_3DS)
 #include "../arch/3ds/thread.h"
+#elif defined(CONFIG_SDL)
+#include "thread_sdl.h"
 #else
 #error Provide a valid thread/mutex implementation for this platform!
 #endif
