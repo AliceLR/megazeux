@@ -109,7 +109,7 @@ void d3d11_init_screen_create_window(struct d3d11_render_data *s, struct config_
   {
     int scalex = (s->screen_width + 639) / 640;
     int scaley = (s->screen_height + 349) / 350;
-    int scale = scalex > scaley ? scalex : scaley;
+    int scale = scalex > scaley ? scaley : scalex;
     s->screen_width = scale * 640;
     s->screen_height = scale * 350;
   }
