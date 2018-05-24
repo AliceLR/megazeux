@@ -25,6 +25,7 @@
 
 __M_BEGIN_DECLS
 
+#include <sched.h>
 #include <time.h>
 #include "pthread.h"
 
@@ -59,12 +60,12 @@ static inline bool platform_mutex_unlock(platform_mutex *mutex)
 
 static inline void platform_cond_init(platform_cond *cond)
 {
-  pthread_cond_init(cond, &attr);
+  pthread_cond_init(cond, NULL);
 }
 
 static inline void platform_cond_destroy(platform_cond *cond)
 {
-  pthread_cond_destroy(cond, NULL);
+  pthread_cond_destroy(cond);
 }
 
 static inline bool platform_cond_wait(platform_cond *cond,
@@ -115,7 +116,7 @@ static inline void platform_thread_join(platform_thread *thread)
 
 static inline void platform_yield(void)
 {
-  pthread_yield();
+  sched_yield();
 }
 
 __M_END_DECLS
