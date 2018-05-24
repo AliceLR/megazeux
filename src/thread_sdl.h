@@ -26,6 +26,7 @@ __M_BEGIN_DECLS
 
 #include "SDL_thread.h"
 
+typedef SDL_cond* platform_cond;
 typedef SDL_mutex* platform_mutex;
 typedef SDL_Thread* platform_thread;
 typedef SDL_ThreadFunction platform_thread_fn;
@@ -54,6 +55,46 @@ static inline bool platform_mutex_unlock(platform_mutex *mutex)
   return true;
 }
 
+static inline void platform_cond_init(platform_cond *cond)
+{
+  *cond = SDL_CreateCond();
+}
+
+static inline void platform_cond_destroy(platform_cond *cond)
+{
+  SDL_DestroyCond(*cond);
+}
+
+static inline bool platform_cond_wait(platform_cond *cond,
+ platform_mutex *mutex)
+{
+  if(SDL_CondWait(*cond, *mutex))
+    return false;
+  return true;
+}
+
+static inline bool platform_cond_timedwait(platform_cond *cond,
+ platform_mutex *mutex, unsigned int timeout_ms)
+{
+  if(SDL_CondWaitTimeout(*cond, *mutex, (Uint32)timeout_ms))
+    return false;
+  return true;
+}
+
+static inline bool platform_cond_signal(platform_cond *cond)
+{
+  if(SDL_CondSignal(*cond))
+    return false;
+  return true;
+}
+
+static inline bool platform_cond_broadcast(platform_cond *cond)
+{
+  if(SDL_CondBroadcast(*cond))
+    return false;
+  return true;
+}
+
 static inline int platform_thread_create(platform_thread *thread,
  platform_thread_fn start_function, void *data)
 {
@@ -66,6 +107,12 @@ static inline int platform_thread_create(platform_thread *thread,
 static inline void platform_thread_join(platform_thread *thread)
 {
   SDL_WaitThread(*thread, NULL);
+}
+
+static inline void platform_yield(void)
+{
+  // FIXME
+  SDL_Delay(1);
 }
 
 __M_END_DECLS

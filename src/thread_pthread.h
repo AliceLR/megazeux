@@ -25,8 +25,10 @@
 
 __M_BEGIN_DECLS
 
+#include <time.h>
 #include "pthread.h"
 
+typedef pthread_cond_t platform_cond;
 typedef pthread_mutex_t platform_mutex;
 typedef pthread_t platform_thread;
 typedef void *(*platform_thread_fn)(void *);
@@ -55,6 +57,51 @@ static inline bool platform_mutex_unlock(platform_mutex *mutex)
   return true;
 }
 
+static inline void platform_cond_init(platform_cond *cond)
+{
+  pthread_cond_init(cond, &attr);
+}
+
+static inline void platform_cond_destroy(platform_cond *cond)
+{
+  pthread_cond_destroy(cond, NULL);
+}
+
+static inline bool platform_cond_wait(platform_cond *cond,
+ platform_mutex *mutex)
+{
+  if(pthread_cond_wait(cond, mutex))
+    return false;
+  return true;
+}
+
+static inline bool platform_cond_timedwait(platform_cond *cond,
+ platform_mutex *mutex, unsigned int timeout_ms)
+{
+  struct timespec timeout;
+
+  clock_gettime(CLOCK_REALTIME, &timeout);
+  timeout.tv_nsec += timeout_ms * 1000000;
+
+  if(pthread_cond_timedwait(cond, mutex, &timeout))
+    return false;
+  return true;
+}
+
+static inline bool platform_cond_signal(platform_cond *cond)
+{
+  if(pthread_cond_signal(cond))
+    return false;
+  return true;
+}
+
+static inline bool platform_cond_broadcast(platform_cond *cond)
+{
+  if(pthread_cond_broadcast(cond))
+    return false;
+  return true;
+}
+
 static inline int platform_thread_create(platform_thread *thread,
  platform_thread_fn start_function, void *data)
 {
@@ -64,6 +111,11 @@ static inline int platform_thread_create(platform_thread *thread,
 static inline void platform_thread_join(platform_thread *thread)
 {
   pthread_join(*thread, NULL);
+}
+
+static inline void platform_yield(void)
+{
+  pthread_yield();
 }
 
 __M_END_DECLS
