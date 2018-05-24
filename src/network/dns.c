@@ -26,11 +26,11 @@
 #include "../platform.h"
 #include "../util.h"
 
-// Time in ms for threads to sleep between checks.
-#define DNS_DELAY 50
-
-#define LOCK(d)   platform_mutex_lock(&(d->mutex))
-#define UNLOCK(d) platform_mutex_unlock(&(d->mutex))
+#define LOCK(d)         platform_mutex_lock(&(d->mutex))
+#define UNLOCK(d)       platform_mutex_unlock(&(d->mutex))
+#define WAIT(d)         platform_cond_wait(&(d->cond), &(d->mutex))
+#define TIMED_WAIT(d,t) platform_cond_timedwait(&(d->cond), &(d->mutex), t)
+#define SIGNAL(d)       platform_cond_signal(&(d->cond))
 
 enum dns_state
 {
@@ -46,6 +46,7 @@ struct dns_data
 {
   platform_thread thread;
   platform_mutex mutex;
+  platform_cond cond;
   enum dns_state state;
   char *node;
   char *service;
@@ -87,14 +88,17 @@ static void free_dns_thread_data(struct dns_data *data, bool free_result)
 static void *run_dns_thread(void *_data)
 {
   struct dns_data *data = (struct dns_data *)_data;
-  int ret;
+  int ret = -1;
 
   debug("--DNS-- New thread running.\n");
+  LOCK(data);
+  data->state = STATE_STANDBY;
 
   do
   {
-    while(data->state == STATE_STANDBY || data->state == STATE_SUCCESS)
-      delay(DNS_DELAY);
+    SIGNAL(data);
+    WAIT(data);
+    UNLOCK(data);
 
     if(data->state == STATE_LOOKUP)
     {
@@ -129,8 +133,6 @@ static void *run_dns_thread(void *_data)
         break;
       }
     }
-
-    UNLOCK(data);
   }
   while(true);
 }
@@ -138,13 +140,22 @@ static void *run_dns_thread(void *_data)
 static void create_dns_thread(struct dns_data *data)
 {
   platform_mutex_init(&(data->mutex));
-  data->state = STATE_STANDBY;
+  platform_cond_init(&(data->cond));
+
+  LOCK(data);
 
   if(platform_thread_create(&(data->thread),
    (platform_thread_fn)run_dns_thread, (void *)data))
   {
+    UNLOCK(data);
     platform_mutex_destroy(&(data->mutex));
-    data->state = STATE_INIT;
+    platform_cond_destroy(&(data->cond));
+  }
+  else
+  {
+    // Allow thread to initialize.
+    WAIT(data);
+    UNLOCK(data);
   }
 }
 
@@ -152,23 +163,13 @@ static void destroy_dns_thread(struct dns_data *data)
 {
   LOCK(data);
   data->state = STATE_EXIT;
+  SIGNAL(data);
   UNLOCK(data);
 
   platform_thread_join(&(data->thread));
   platform_mutex_destroy(&(data->mutex));
+  platform_cond_destroy(&(data->cond));
   free_dns_thread_data(data, true);
-}
-
-static void wait_dns_thread(struct dns_data *data, Uint32 timeout)
-{
-  Uint32 i;
-
-  for(i = 0; i < timeout; i += DNS_DELAY)
-  {
-    delay(DNS_DELAY);
-    if(data->state == STATE_SUCCESS)
-      return;
-  }
 }
 
 int dns_getaddrinfo(const char *node, const char *service,
@@ -190,19 +191,21 @@ int dns_getaddrinfo(const char *node, const char *service,
 
     if(data->state == STATE_STANDBY)
     {
+      debug("--DNS-- Using DNS thread %d.\n", i);
       set_dns_thread_data(data, node, service, hints);
       data->state = STATE_LOOKUP;
 
-      debug("--DNS-- Waiting for response.\n");
-      wait_dns_thread(data, timeout);
-
       LOCK(data);
+      SIGNAL(data);
+
+      debug("--DNS-- Waiting for response.\n");
+      TIMED_WAIT(data, timeout);
 
       if(data->state == STATE_SUCCESS)
       {
         ret = data->ret;
         *res = data->res;
-        debug("--DNS-- Completed successfully (return code %d)\n", ret);
+        debug("--DNS-- Received response (return code %d)\n", ret);
         free_dns_thread_data(data, false);
         data->state = STATE_STANDBY;
       }
