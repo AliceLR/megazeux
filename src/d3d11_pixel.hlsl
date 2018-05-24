@@ -26,8 +26,7 @@ float4 main(VSOut vs) : SV_TARGET
 
 	char += vs.charOffset;
 
-	uint row_idx = char * 14 + pos_in_char.y;
-	uint row = charset_texture.Load(int3(row_idx % (64 * 14), row_idx / (64 * 14), 0));
+	uint row = charset_texture.Load(int3(pos_in_char.y, char, 0));
 
 	uint color_fg;
 	uint color_bg; 
@@ -54,5 +53,6 @@ float4 main(VSOut vs) : SV_TARGET
 	}
 
 	float4 color = palette_texture.Load(int3(color_idx, 0, 0));
+
 	return color;
 }

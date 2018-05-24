@@ -50,7 +50,7 @@ VSOut main(VSIn In)
 	Out.tc = pos_in_layer;
 	Out.transparent = (layer[layer_id].charOffset16_transparentColor10smzx6 >> 16) & 0x3FF;
 	Out.charOffset = (layer[layer_id].charOffset16_transparentColor10smzx6 >> 0) & 0xFFFF;
-	if (Out.charOffset > 0x7FFF)
+	if (Out.charOffset > 0x7FFF) 
 	{
 		Out.charOffset = 0x10000 - Out.charOffset;
 	}

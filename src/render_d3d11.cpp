@@ -39,7 +39,7 @@
 
 #define D3DCALL(x) if(x != S_OK) { debug("D3D call fail at line %d in file %s \n", __LINE__, __FILE__); }
 
-#define LAYER_DATA_TEXTURE_WIDTH 2112
+#define LAYER_DATA_TEXTURE_WIDTH 2106
 
 extern CORE_LIBSPEC Uint32 sdl_window_id;
 static void d3d11_render_layer(struct graphics_data *g, struct video_layer *layer);
@@ -58,13 +58,10 @@ palette_hw: ARGB 8-bit unorm, we copy the UI palette to position 256 so
             first line is colors, second line is SMZX indices
             retrieve individual SMZX index by reading the ARGB color and keeping only the component we want
 
-tileset_hw: 8-bit unsigned, X coordinate is 64 characters wide for line alignment purposes so we don't need padding
-            as a side effect, any character modification requires changing the entire 64 wide row
+tileset_hw: 8-bit unsigned, X coordinate is 1 character wide
             pixel shader does the work of reading the 8-bit row and using bitwise ops to keep the pixel bit we want
 
-layer_data_hw: direct copy of char_element array. Texture is 81*26 wide + some padding, and 512 high to use 1 row per layer
-               technically means an 1x1 sprite requires a copy of the entire row so this could be improved.
-               Maybe split up the CopySubresourceRegion calls between large layers and small layers or something.
+layer_data_hw: direct copy of char_element array. Texture is 81*26 wide, and 512 high to use 1 row per layer
 
 layers_constant_buffer_staging: constant buffer using d3d11_const_layer struct
                                 I think it needs to be a multiple of 16 bytes
@@ -106,6 +103,21 @@ void d3d11_init_screen_create_window(struct d3d11_render_data *s, struct config_
   flags);
   
   sdl_window_id = SDL_GetWindowID(window);
+  
+  //make a smaller backbuffer
+  if(conf->fullscreen)
+  {
+    int scalex = (s->screen_width + 639) / 640;
+    int scaley = (s->screen_height + 349) / 350;
+    int scale = scalex > scaley ? scalex : scaley;
+    s->screen_width = scale * 640;
+    s->screen_height = scale * 350;
+  }
+  else
+  {
+    s->screen_width = 640;
+    s->screen_height = 350;
+  }
 }
 
 void d3d11_init_screen_create_device(struct d3d11_render_data *s, struct config_info *conf)
@@ -230,8 +242,8 @@ void d3d11_init_screen_create_tileset(struct d3d11_render_data *s)
   texture_desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
   texture_desc.CPUAccessFlags = 0;
   texture_desc.Format = DXGI_FORMAT_R8_UINT;
-  texture_desc.Height = FULL_CHARSET_SIZE / 64;
-  texture_desc.Width = 64 * 14;
+  texture_desc.Height = FULL_CHARSET_SIZE;
+  texture_desc.Width = 14;
   texture_desc.MipLevels = 1;
   texture_desc.SampleDesc.Count = 1;
   texture_desc.SampleDesc.Quality = 0;
@@ -405,6 +417,7 @@ void draw_set_data(struct graphics_data *g, struct d3d11_render_data *render_dat
   D3D11_MAPPED_SUBRESOURCE mappedResourceTex;
   D3D11_MAPPED_SUBRESOURCE mappedResourceCB;
   char_element* layer_data_tex;
+  int layer_data_tex_row_pitch;
   d3d11_const_layer* const_layer;
   char_element single_element;
   int last_layer;
@@ -415,6 +428,7 @@ void draw_set_data(struct graphics_data *g, struct d3d11_render_data *render_dat
   D3DCALL(render_data->context->Map(
    render_data->layer_data_staging, 0, D3D11_MAP_WRITE, 0, &mappedResourceTex));
   layer_data_tex = (char_element*)mappedResourceTex.pData;
+  layer_data_tex_row_pitch = mappedResourceTex.RowPitch / sizeof(char_element);
   
   D3DCALL(render_data->context->Map(
    render_data->layers_constant_buffer_staging, 0, D3D11_MAP_WRITE, 0, &mappedResourceCB));
@@ -440,7 +454,7 @@ void draw_set_data(struct graphics_data *g, struct d3d11_render_data *render_dat
     single_element.bg_color = (int)((single_element.bg_color & 0xF0) | (0xF - (single_element.bg_color & 0xF)));
     single_element.fg_color = (int)((single_element.fg_color & 0xF0) | (0xF - (single_element.fg_color & 0xF)));
     
-    layer_data_tex[render_data->layer_count * LAYER_DATA_TEXTURE_WIDTH] = single_element;
+    layer_data_tex[render_data->layer_count * layer_data_tex_row_pitch] = single_element;
     
     const_layer[render_data->layer_count].x = render_data->render_mouse_x;
     const_layer[render_data->layer_count].y = render_data->render_mouse_y;
@@ -449,7 +463,7 @@ void draw_set_data(struct graphics_data *g, struct d3d11_render_data *render_dat
     const_layer[render_data->layer_count].z = 0;
     const_layer[render_data->layer_count].char_offset = 0;
     const_layer[render_data->layer_count].transparent_color_10bit = -1;
-    const_layer[render_data->layer_count].use_smzx_6bit = (g->screen_mode << 2) | 1;
+    const_layer[render_data->layer_count].use_smzx_6bit = (g->sorted_video_layers[last_layer]->mode << 2) | 1;
     
     render_data->layer_count += 1;
   }
@@ -463,7 +477,7 @@ void draw_set_data(struct graphics_data *g, struct d3d11_render_data *render_dat
     
     for(int i = 0; i < render_data->render_cursor_h; i++)
     {
-      layer_data_tex[render_data->layer_count * LAYER_DATA_TEXTURE_WIDTH] = single_element;
+      layer_data_tex[render_data->layer_count * layer_data_tex_row_pitch] = single_element;
       
       const_layer[render_data->layer_count].x = render_data->render_cursor_x;
       const_layer[render_data->layer_count].y = render_data->render_cursor_y + i;
@@ -472,7 +486,7 @@ void draw_set_data(struct graphics_data *g, struct d3d11_render_data *render_dat
       const_layer[render_data->layer_count].z = 0;
       const_layer[render_data->layer_count].char_offset = 0;
       const_layer[render_data->layer_count].transparent_color_10bit = 0;
-      const_layer[render_data->layer_count].use_smzx_6bit = g->screen_mode << 2;
+      const_layer[render_data->layer_count].use_smzx_6bit = 0 << 2;
       
       render_data->layer_count += 1;
     }
@@ -481,7 +495,7 @@ void draw_set_data(struct graphics_data *g, struct d3d11_render_data *render_dat
   
   for(int i = g->layer_count - 1; i >= 0; i--)
   {
-    memcpy(&layer_data_tex[render_data->layer_count * LAYER_DATA_TEXTURE_WIDTH],
+    memcpy(&layer_data_tex[render_data->layer_count * layer_data_tex_row_pitch],
       g->sorted_video_layers[i]->data, 
       g->sorted_video_layers[i]->w * g->sorted_video_layers[i]->h * sizeof(char_element));
     
@@ -492,11 +506,7 @@ void draw_set_data(struct graphics_data *g, struct d3d11_render_data *render_dat
     const_layer[render_data->layer_count].z = 1;
     const_layer[render_data->layer_count].char_offset = g->sorted_video_layers[i]->offset;
     const_layer[render_data->layer_count].transparent_color_10bit = g->sorted_video_layers[i]->transparent_col;
-    const_layer[render_data->layer_count].use_smzx_6bit = g->sorted_video_layers[i]->mode << 2;
-    if(g->sorted_video_layers[i]->transparent_col == -1)
-    {
-      const_layer[render_data->layer_count].use_smzx_6bit |= 1;
-    }
+    const_layer[render_data->layer_count].use_smzx_6bit = (g->sorted_video_layers[i]->mode << 2) | ((g->sorted_video_layers[i]->transparent_col >> 8) & 0x3);
     
     render_data->layer_count += 1;
   }
@@ -524,12 +534,13 @@ void draw_set_data(struct graphics_data *g, struct d3d11_render_data *render_dat
   {
     D3DCALL(render_data->context->Map(render_data->tileset_staging, 0, D3D11_MAP_WRITE, 0, &mappedResourceTex));
     
-    render_data->remap_tileset_start = render_data->remap_tileset_start & (~63);
-    render_data->remap_tileset_end = render_data->remap_tileset_end | 63;
-    memcpy(
-     (UINT8*)mappedResourceTex.pData + 14*render_data->remap_tileset_start, 
-     g->charset + 14*render_data->remap_tileset_start,
-     sizeof(UINT8)*14*(render_data->remap_tileset_end - render_data->remap_tileset_start));
+    for(int i = 0; i < render_data->remap_tileset_end - render_data->remap_tileset_start; i++)
+    {
+      memcpy(
+       (UINT8*)mappedResourceTex.pData + mappedResourceTex.RowPitch * i, 
+       g->charset + (14 * (render_data->remap_tileset_start + i)),
+       sizeof(UINT8) * 14);
+    }
     render_data->context->Unmap(render_data->tileset_staging, 0);
   }
   
@@ -544,7 +555,7 @@ void draw_set_data(struct graphics_data *g, struct d3d11_render_data *render_dat
        g->flat_intensity_palette,
        sizeof(UINT32)*(FULL_PAL_SIZE));
       memcpy(
-       (UINT32*)mappedResourceTex.pData + FULL_PAL_SIZE + 16, 
+       (UINT32*)mappedResourceTex.pData + (mappedResourceTex.RowPitch / 4), 
        g->smzx_indices,
        sizeof(UINT32)*(SMZX_PAL_SIZE));
     }
@@ -571,13 +582,13 @@ void draw_no_game_data(struct d3d11_render_data *render_data)
   if(render_data->remap_tileset_start < render_data->remap_tileset_end)
   {
       copyRegion.left = 0;
-      copyRegion.right = 64 * 14;
-      copyRegion.top = render_data->remap_tileset_start / 64;
-      copyRegion.bottom = render_data->remap_tileset_end / 64;
+      copyRegion.right = 14;
+      copyRegion.top = 0;
+      copyRegion.bottom = render_data->remap_tileset_end - render_data->remap_tileset_start;
       copyRegion.back = 1;
       copyRegion.front = 0;
       render_data->context->CopySubresourceRegion(
-       render_data->tileset_hw, 0, 0, render_data->remap_tileset_start / 64, 0, render_data->tileset_staging, 0, &copyRegion);
+       render_data->tileset_hw, 0, 0, render_data->remap_tileset_start, 0, render_data->tileset_staging, 0, &copyRegion);
       
       render_data->remap_tileset_start = FULL_CHARSET_SIZE;
       render_data->remap_tileset_end = 0;
@@ -646,7 +657,8 @@ void draw_no_game_data(struct d3d11_render_data *render_data)
     
     render_data->context->Draw(render_data->layer_count * 6, 0);
     
-    D3DCALL(render_data->swap_chain->Present(render_data->vsync ? 1 : 0, 0));
+    //We typically use the D3DCALL macro but this will fail if mzx is minimized
+    render_data->swap_chain->Present(render_data->vsync ? 1 : 0, 0);
 }
 
 #ifdef D3D11_THREADED
@@ -655,22 +667,25 @@ static void *d3d11_draw_and_sync_threaded(void* data)
   struct graphics_data *g = (graphics_data *)data;
   struct d3d11_render_data *render_data = (d3d11_render_data *)g->render_data;
   
-  while(true)
+  while(!render_data->stop_thread)
   {
+    SDL_LockMutex(render_data->frame_lock);
     while(render_data->game_frame == render_data->render_frame)
     {
-      SDL_Delay(0);
-      if(render_data->stop_thread)
-      {
-        return 0;
-      }
+      SDL_CondWaitTimeout(render_data->frame_ready_cond, render_data->frame_lock, 10);
     }
+    SDL_UnlockMutex(render_data->frame_lock);
+    
     platform_mutex_lock(&render_data->game_data_mutex);
     platform_mutex_lock(&render_data->context_mutex);
     
     draw_set_data(g, render_data);
     
+    SDL_LockMutex(render_data->frame_lock);
     render_data->render_frame += 1;
+    SDL_CondSignal(render_data->frame_done_cond);
+    SDL_UnlockMutex(render_data->frame_lock);
+    
     platform_mutex_unlock(&render_data->game_data_mutex);
     //Don't access graphics from this point on, d3d11_render_data is OK
     
@@ -725,6 +740,11 @@ static bool d3d11_init_video(struct graphics_data *g,
   platform_mutex_init(&render_data->context_mutex);
   platform_mutex_lock(&render_data->game_data_mutex);
   render_data->stop_thread = false;
+  
+  render_data->frame_ready_cond = SDL_CreateCond();
+  render_data->frame_done_cond = SDL_CreateCond();
+  render_data->frame_lock = SDL_CreateMutex();
+  
   platform_thread_create(&render_data->render_thread, (platform_thread_fn)d3d11_draw_and_sync_threaded, g);
 #endif
   return true;
@@ -757,6 +777,21 @@ static void d3d11_resize_screen(struct graphics_data *g,
  int width, int height)
 {
   struct d3d11_render_data *render_data = (d3d11_render_data *)g->render_data;
+  
+  if(g->fullscreen)
+  {
+    int scalex = (width + 639) / 640;
+    int scaley = (height + 349) / 350;
+    int scale = scalex > scaley ? scalex : scaley;
+    width = scale * 640;
+    height = scale * 350;
+  }
+  else
+  {
+    width = 640;
+    height = 350;
+  }
+  
   render_data->render_target->Release();
   render_data->rtv->Release();
   render_data->depth_buffer->Release();
@@ -838,13 +873,21 @@ static void d3d11_render_mouse(struct graphics_data *g,
 static void d3d11_sync_screen_async(struct graphics_data *g)
 {
   struct d3d11_render_data *render_data = (struct d3d11_render_data *) g->render_data;
+  
+  SDL_LockMutex(render_data->frame_lock);
   render_data->game_frame += 1;
+  SDL_CondSignal(render_data->frame_ready_cond);
+  SDL_UnlockMutex(render_data->frame_lock);
+  
   platform_mutex_unlock(&render_data->game_data_mutex);
   
+  SDL_LockMutex(render_data->frame_lock);
   while(render_data->game_frame != render_data->render_frame)
   {
-    SDL_Delay(0);
+    SDL_CondWaitTimeout(render_data->frame_done_cond, render_data->frame_lock, 10);
   }
+  SDL_UnlockMutex(render_data->frame_lock);
+  
   platform_mutex_lock(&render_data->game_data_mutex);
 }
 #else

@@ -93,6 +93,9 @@ struct d3d11_render_data
   platform_mutex game_data_mutex;
   platform_mutex context_mutex;
   bool stop_thread;
+  SDL_cond *frame_ready_cond;
+  SDL_cond *frame_done_cond;
+  SDL_mutex *frame_lock;
 #endif
   
   int game_frame;
