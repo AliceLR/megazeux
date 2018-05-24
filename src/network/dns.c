@@ -88,20 +88,15 @@ static void free_dns_thread_data(struct dns_data *data, bool free_result)
 static void *run_dns_thread(void *_data)
 {
   struct dns_data *data = (struct dns_data *)_data;
-  int init = 1;
-  int ret;
+  int ret = -1;
 
   debug("--DNS-- New thread running.\n");
+  LOCK(data);
+  data->state = STATE_STANDBY;
 
   do
   {
-    LOCK(data);
-    if(init)
-    {
-      init = 0;
-      data->state = STATE_STANDBY;
-      SIGNAL(data);
-    }
+    SIGNAL(data);
     WAIT(data);
     UNLOCK(data);
 
@@ -138,10 +133,6 @@ static void *run_dns_thread(void *_data)
         break;
       }
     }
-
-    SIGNAL(data);
-    UNLOCK(data);
-    platform_yield();
   }
   while(true);
 }

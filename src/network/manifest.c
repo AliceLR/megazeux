@@ -216,6 +216,7 @@ static enum host_status manifest_get_remote(struct host *h,
   if(!f)
   {
     warn("Failed to open local " MANIFEST_TXT " for writing\n");
+    ret = HOST_FWRITE_FAILED;
     goto err_out;
   }
 
