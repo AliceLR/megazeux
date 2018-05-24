@@ -544,12 +544,12 @@ void draw_set_data(struct graphics_data *g, struct d3d11_render_data *render_dat
     render_data->context->Unmap(render_data->tileset_staging, 0);
   }
   
-  if(render_data->remap_palette_start < render_data->remap_palette_end)
+  render_data->remap_smzx = false;
+  if(g->screen_mode)
   {
     D3DCALL(render_data->context->Map(render_data->palette_staging, 0, D3D11_MAP_WRITE, 0, &mappedResourceTex));
-    if(g->screen_mode)
-    {
-      render_data->remap_smzx = true;
+    
+    render_data->remap_smzx = true;
       memcpy(
        (UINT32*)mappedResourceTex.pData, 
        g->flat_intensity_palette,
@@ -558,19 +558,20 @@ void draw_set_data(struct graphics_data *g, struct d3d11_render_data *render_dat
        (UINT32*)mappedResourceTex.pData + (mappedResourceTex.RowPitch / 4), 
        g->smzx_indices,
        sizeof(UINT32)*(SMZX_PAL_SIZE));
-    }
-    else
-    {
-      render_data->remap_smzx = false;
-      memcpy(
-       (UINT32*)mappedResourceTex.pData + render_data->remap_palette_start, 
-       g->flat_intensity_palette + render_data->remap_palette_start,
-       sizeof(UINT32)*render_data->remap_palette_end - render_data->remap_palette_start);
-      memcpy(
-       (UINT32*)mappedResourceTex.pData + SMZX_PAL_SIZE, 
-       g->protected_palette,
-       sizeof(UINT32)*(PAL_SIZE));
-    }
+    render_data->context->Unmap(render_data->palette_staging, 0);
+  }
+  else if(render_data->remap_palette_start < render_data->remap_palette_end)
+  {
+    D3DCALL(render_data->context->Map(render_data->palette_staging, 0, D3D11_MAP_WRITE, 0, &mappedResourceTex));
+    
+    memcpy(
+     (UINT32*)mappedResourceTex.pData + render_data->remap_palette_start, 
+     g->flat_intensity_palette + render_data->remap_palette_start,
+     sizeof(UINT32)*render_data->remap_palette_end - render_data->remap_palette_start);
+    memcpy(
+     (UINT32*)mappedResourceTex.pData + SMZX_PAL_SIZE, 
+     g->protected_palette,
+     sizeof(UINT32)*(PAL_SIZE));
     render_data->context->Unmap(render_data->palette_staging, 0);
   }
 }
@@ -594,27 +595,23 @@ void draw_no_game_data(struct d3d11_render_data *render_data)
       render_data->remap_tileset_end = 0;
     }
     
-    if(render_data->remap_palette_start < render_data->remap_palette_end)
+    if(render_data->remap_smzx)
     {
-      if(render_data->remap_smzx)
-      {
-        render_data->context->CopySubresourceRegion(
-         render_data->palette_hw, 0, 0, 0, 0, render_data->palette_staging, 0, NULL);
-      }
-      else
-      {
-        copyRegion.left = 0;
-        copyRegion.right = FULL_PAL_SIZE;
-        copyRegion.top = 0;
-        copyRegion.bottom = 1;
-        copyRegion.back = 1;
-        copyRegion.front = 0;
-        render_data->context->CopySubresourceRegion(render_data->palette_hw, 0, 0, 0, 0, render_data->palette_staging, 0, &copyRegion);
-      }
-      
-      render_data->remap_palette_start = FULL_PAL_SIZE;
-      render_data->remap_palette_end = 0;
+      render_data->context->CopySubresourceRegion(
+       render_data->palette_hw, 0, 0, 0, 0, render_data->palette_staging, 0, NULL);
     }
+    else if(render_data->remap_palette_start < render_data->remap_palette_end)
+    {
+      copyRegion.left = 0;
+      copyRegion.right = FULL_PAL_SIZE;
+      copyRegion.top = 0;
+      copyRegion.bottom = 1;
+      copyRegion.back = 1;
+      copyRegion.front = 0;
+      render_data->context->CopySubresourceRegion(render_data->palette_hw, 0, 0, 0, 0, render_data->palette_staging, 0, &copyRegion);
+    }
+    render_data->remap_palette_start = FULL_PAL_SIZE;
+    render_data->remap_palette_end = 0;
     
     render_data->context->RSSetViewports(1, &render_data->viewport);
     render_data->context->RSSetScissorRects(1, &render_data->rect);
