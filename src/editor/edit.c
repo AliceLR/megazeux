@@ -3650,6 +3650,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                edit_screen_height);
 
               fix_mod(mzx_world, src_board, listening_flag);
+              fix_caption(mzx_world, 0);
 
               if(!src_board->overlay_mode && overlay_edit == EDIT_OVERLAY)
                 overlay_edit = EDIT_BOARD;

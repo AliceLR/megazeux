@@ -11,6 +11,8 @@ USERS
 + Amended VOLUME/MOD FADE # # bounding to clamp values in port
   versions. DOS versions will still wrap between 0 and 255.
 + Added DOS compatibility fix for sprN_off.
++ Window caption is now properly updated when loading a world
+  from an unedited world in the editor.
 
 
 March 4th, 2018 - MZX 2.91c
