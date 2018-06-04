@@ -14,6 +14,7 @@ git pull
 
 ./config.sh --platform $2 $3 --enable-release
 make -j8 debuglink
+make test
 
 rm -rf build
 

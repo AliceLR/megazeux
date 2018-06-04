@@ -11,6 +11,7 @@ arch/msvc/MegaZeux.opensdf
 arch/msvc/MegaZeux.sdf
 arch/msvc/MegaZeux.v12.suo
 arch/msvc/obj
+arch/msvc/version.h
 arch/nds/mzxrun.arm7.elf
 arch/nds/ndsScreens/
 arch/nds/*.d
@@ -19,6 +20,7 @@ arch/psp/*.d
 arch/psp/*.o
 arch/wii/*.d
 arch/wii/*.o
+arch/xcode/version.h
 build
 contrib/gdm2s3m/src/.build/
 contrib/icons/.build/
@@ -102,6 +104,7 @@ stderr.txt
 *.sav
 *.mzm
 *~
+.vscode
 .DS_Store
 xcuserdata/
 

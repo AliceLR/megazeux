@@ -1,6 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
+ * Copyright (C) 2017 Ian Burgmyer <spectere@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as

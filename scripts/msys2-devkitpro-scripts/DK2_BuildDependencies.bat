@@ -5,11 +5,12 @@
 
 call DevkitProSettings.bat
 
-usr\bin\bash -l /dk-portlibs-repo.sh
+::usr\bin\bash -l /dk-portlibs-repo.sh
 
 usr\bin\bash -l /dk-nds-dependencies.sh %DEVKITPRO% %DEVKITARM%
 usr\bin\bash -l /dk-3ds-dependencies.sh %DEVKITPRO% %DEVKITARM%
 usr\bin\bash -l /dk-wii-dependencies.sh %DEVKITPRO% %DEVKITPPC%
 usr\bin\bash -l /dk-psp-dependencies.sh %DEVKITPRO% %DEVKITPSP%
+usr\bin\bash -l /dk-switch-dependencies.sh %DEVKITPRO% %DEVKITA64%
 
 pause

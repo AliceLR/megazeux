@@ -11,7 +11,7 @@ usage() {
 	echo "  --sysconfdir   Where the config should be read from."
 	echo "  --gamesdir     Where binaries should be installed."
 	echo "  --bindir       Where utilities should be installed."
-	echo "  --sharedir     Where resources should be installed." 
+	echo "  --sharedir     Where resources should be installed."
 	echo
 	echo "Supported [platform] values:"
 	echo
@@ -56,7 +56,7 @@ usage() {
 	echo "  --disable-libpng      Disable PNG screendump support."
 	echo "  --disable-audio       Disable all audio (sound + music)."
 	echo "  --enable-tremor       Switches out libvorbis for libtremor."
-	echo "  --disable-pthread     Use SDL's locking instead of pthread."
+	echo "  --disable-pthread     Use SDL's threads/locking instead of pthread."
 	echo "  --disable-icon        Do not try to brand executable."
 	echo "  --disable-modular     Disable dynamically shared objects."
 	echo "  --disable-updater     Disable built-in updater."
@@ -656,21 +656,29 @@ if [ "$PLATFORM" = "gp2x" -o "$PLATFORM" = "nds" \
 fi
 
 #
-# Force disable networking.
+# Force disable networking (unsupported platform or no editor build)
+# Also disable all network applications
 #
-if [ "$EDITOR" = "false" -o "$PLATFORM" = "unix" -o "$PLATFORM" = "psp" \
-  -o "$PLATFORM" = "3ds" \
-  -o "$PLATFORM" = "nds" -o "$PLATFORM" = "wii" ]; then
-	echo "Force-disabling networking (nonsensical or unsupported)."
+if [ "$EDITOR" = "false" -o "$PLATFORM" = "nds" ]; then
+	echo "Force-disabling networking (unsupported platform or editor disabled)."
 	NETWORK="false"
+	UPDATER="false"
 fi
 
 #
-# Force disable updater.
+# Force disable updater (unsupported platform)
 #
-if [ "$UPDATER" = "true" -a "$NETWORK" = "false" ]; then
-	echo "Force-disabling updater (networking disabled)."
+if [ "$PLATFORM" != "mingw" ]; then
+	echo "Force-disabling updater (unsupported platform)."
 	UPDATER="false"
+fi
+
+#
+# Force disable networking (no applications enabled)
+#
+if [ "$NETWORK" = "true" -a "$UPDATER" = "false" ]; then
+	echo "Force-disabling networking (no network applications enabled)."
+	NETWORK="false"
 fi
 
 #
@@ -943,11 +951,11 @@ fi
 # Handle pthread mutexes, if enabled
 #
 if [ "$PTHREAD" = "true" ]; then
-	echo "Using pthread for locking primitives."
-	echo "#define CONFIG_PTHREAD_MUTEXES" >> src/config.h
+	echo "Using pthread for threads/locking primitives."
+	echo "#define CONFIG_PTHREAD" >> src/config.h
 	echo "PTHREAD=1" >> platform.inc
 else
-	echo "Not using pthread for locking primitives."
+	echo "Not using pthread for threads/locking primitives."
 fi
 
 #

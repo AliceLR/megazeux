@@ -287,8 +287,9 @@ core_cflags := ${ZLIB_CFLAGS} ${core_cflags}
 core_ldflags := ${ZLIB_LDFLAGS} ${core_ldflags}
 
 ifeq (${BUILD_NETWORK},1)
-core_cobjs += ${network_obj}/host.o ${network_obj}/manifest.o
-core_cobjs += ${network_obj}/network.o ${network_obj}/sha256.o
+core_cobjs += ${network_obj}/dns.o ${network_obj}/host.o
+core_cobjs += ${network_obj}/manifest.o ${network_obj}/network.o
+core_cobjs += ${network_obj}/sha256.o ${network_obj}/socksyms.o
 
 ifeq (${BUILD_UPDATER},1)
 mzx_objs += ${core_obj}/updater.o

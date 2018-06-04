@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		BF00DC0C2085644A00CD2DD2 /* clipboard_sdl2.c in Sources */ = {isa = PBXBuildFile; fileRef = BF00DC0B2085644A00CD2DD2 /* clipboard_sdl2.c */; };
 		BF10127F1FCCA7C2008EEDB6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BF10127E1FCCA7C2008EEDB6 /* Assets.xcassets */; };
 		BF1012A61FCCA993008EEDB6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BF1012A51FCCA993008EEDB6 /* Assets.xcassets */; };
 		BF1012BA1FCCABB5008EEDB6 /* Vorbis.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012B71FCCABB4008EEDB6 /* Vorbis.framework */; };
@@ -17,6 +18,12 @@
 		BF1012C21FCCABF0008EEDB6 /* SDL2.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C01FCCABF0008EEDB6 /* SDL2.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		BF1012C41FCCB02F008EEDB6 /* libpng.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C31FCCB02F008EEDB6 /* libpng.framework */; };
 		BF1012C51FCCB02F008EEDB6 /* libpng.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C31FCCB02F008EEDB6 /* libpng.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		BFC0B26820681A9000D28296 /* hmn_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BFC0B26520681A9000D28296 /* hmn_load.c */; };
+		BFC0B26920681A9000D28296 /* flt_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BFC0B26620681A9000D28296 /* flt_load.c */; };
+		BFC0B26A20681A9000D28296 /* st_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BFC0B26720681A9000D28296 /* st_load.c */; };
+		BFC0B26B20681ACC00D28296 /* flt_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BFC0B26620681A9000D28296 /* flt_load.c */; };
+		BFC0B26C20681ACC00D28296 /* hmn_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BFC0B26520681A9000D28296 /* hmn_load.c */; };
+		BFC0B26D20681ACC00D28296 /* st_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BFC0B26720681A9000D28296 /* st_load.c */; };
 		BFFF16281FCDC55000BDEC58 /* libpng.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C31FCCB02F008EEDB6 /* libpng.framework */; };
 		BFFF16291FCDC55000BDEC58 /* libpng.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C31FCCB02F008EEDB6 /* libpng.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		BFFF162A1FCDC55000BDEC58 /* SDL2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C01FCCABF0008EEDB6 /* SDL2.framework */; };
@@ -141,7 +148,6 @@
 		BFFF17BA1FCDCCF300BDEC58 /* mix_all.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF17411FCDCBE400BDEC58 /* mix_all.c */; };
 		BFFF17BB1FCDCCF300BDEC58 /* mix_paula.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF17261FCDCBDB00BDEC58 /* mix_paula.c */; };
 		BFFF17BC1FCDCCF300BDEC58 /* mixer.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF17331FCDCBE200BDEC58 /* mixer.c */; };
-		BFFF17BD1FCDCCF300BDEC58 /* mkstemp.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF17471FCDCBE500BDEC58 /* mkstemp.c */; };
 		BFFF17BE1FCDCCF300BDEC58 /* period.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF17441FCDCBE400BDEC58 /* period.c */; };
 		BFFF17BF1FCDCCF300BDEC58 /* player.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF172C1FCDCBDF00BDEC58 /* player.c */; };
 		BFFF17C01FCDCCF300BDEC58 /* read_event.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF17241FCDCBDB00BDEC58 /* read_event.c */; };
@@ -211,7 +217,6 @@
 		BFFF185F1FCDCF7C00BDEC58 /* board.h in Headers */ = {isa = PBXBuildFile; fileRef = BFFF18311FCDCF6400BDEC58 /* board.h */; };
 		BFFF18601FCDCF7C00BDEC58 /* char_ed.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF18401FCDCF6600BDEC58 /* char_ed.c */; };
 		BFFF18611FCDCF7C00BDEC58 /* char_ed.h in Headers */ = {isa = PBXBuildFile; fileRef = BFFF18271FCDCF6300BDEC58 /* char_ed.h */; };
-		BFFF18621FCDCF7C00BDEC58 /* clipboard.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF183C1FCDCF6600BDEC58 /* clipboard.c */; };
 		BFFF18631FCDCF7C00BDEC58 /* clipboard.h in Headers */ = {isa = PBXBuildFile; fileRef = BFFF18211FCDCF6200BDEC58 /* clipboard.h */; };
 		BFFF18641FCDCF7C00BDEC58 /* configure.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF18241FCDCF6300BDEC58 /* configure.c */; };
 		BFFF18651FCDCF7C00BDEC58 /* configure.h in Headers */ = {isa = PBXBuildFile; fileRef = BFFF18351FCDCF6500BDEC58 /* configure.h */; };
@@ -323,6 +328,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		BF00DC0B2085644A00CD2DD2 /* clipboard_sdl2.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = clipboard_sdl2.c; path = ../../src/editor/clipboard_sdl2.c; sourceTree = "<group>"; };
 		BF1012781FCCA7C2008EEDB6 /* MegaZeux.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MegaZeux.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BF10127E1FCCA7C2008EEDB6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		BF1012831FCCA7C2008EEDB6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -336,6 +342,10 @@
 		BF1012C01FCCABF0008EEDB6 /* SDL2.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = SDL2.framework; sourceTree = "<group>"; };
 		BF1012C31FCCB02F008EEDB6 /* libpng.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = libpng.framework; sourceTree = "<group>"; };
 		BF1012C61FCCB0F9008EEDB6 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
+		BFC0B26520681A9000D28296 /* hmn_load.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = hmn_load.c; path = ../../contrib/libxmp/src/loaders/hmn_load.c; sourceTree = "<group>"; };
+		BFC0B26620681A9000D28296 /* flt_load.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = flt_load.c; path = ../../contrib/libxmp/src/loaders/flt_load.c; sourceTree = "<group>"; };
+		BFC0B26720681A9000D28296 /* st_load.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = st_load.c; path = ../../contrib/libxmp/src/loaders/st_load.c; sourceTree = "<group>"; };
+		BFE5EB622006DB4300E15CC0 /* version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = version.h; sourceTree = "<group>"; };
 		BFFF16361FCDC64600BDEC58 /* util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = util.h; path = ../../src/util.h; sourceTree = "<group>"; };
 		BFFF16371FCDC64600BDEC58 /* zip.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = zip.h; path = ../../src/zip.h; sourceTree = "<group>"; };
 		BFFF16381FCDC64600BDEC58 /* board.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = board.h; path = ../../src/board.h; sourceTree = "<group>"; };
@@ -467,7 +477,6 @@
 		BFFF17441FCDCBE400BDEC58 /* period.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = period.c; path = ../../contrib/libxmp/src/period.c; sourceTree = "<group>"; };
 		BFFF17451FCDCBE400BDEC58 /* load_helpers.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = load_helpers.c; path = ../../contrib/libxmp/src/load_helpers.c; sourceTree = "<group>"; };
 		BFFF17461FCDCBE400BDEC58 /* med_extras.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = med_extras.c; path = ../../contrib/libxmp/src/med_extras.c; sourceTree = "<group>"; };
-		BFFF17471FCDCBE500BDEC58 /* mkstemp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mkstemp.c; path = ../../contrib/libxmp/src/mkstemp.c; sourceTree = "<group>"; };
 		BFFF17481FCDCBE500BDEC58 /* mixer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = mixer.h; path = ../../contrib/libxmp/src/mixer.h; sourceTree = "<group>"; };
 		BFFF17491FCDCBE500BDEC58 /* list.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = list.h; path = ../../contrib/libxmp/src/list.h; sourceTree = "<group>"; };
 		BFFF174A1FCDCBE500BDEC58 /* control.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = control.c; path = ../../contrib/libxmp/src/control.c; sourceTree = "<group>"; };
@@ -542,7 +551,6 @@
 		BFFF18391FCDCF6500BDEC58 /* select.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = select.c; path = ../../src/editor/select.c; sourceTree = "<group>"; };
 		BFFF183A1FCDCF6600BDEC58 /* debug.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = debug.c; path = ../../src/editor/debug.c; sourceTree = "<group>"; };
 		BFFF183B1FCDCF6600BDEC58 /* world.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = world.c; path = ../../src/editor/world.c; sourceTree = "<group>"; };
-		BFFF183C1FCDCF6600BDEC58 /* clipboard.c */ = {isa = PBXFileReference; fileEncoding = 4; indentWidth = 2; lastKnownFileType = sourcecode.c.c; name = clipboard.c; path = ../../src/editor/clipboard.c; sourceTree = "<group>"; tabWidth = 2; };
 		BFFF183D1FCDCF6600BDEC58 /* graphics.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = graphics.c; path = ../../src/editor/graphics.c; sourceTree = "<group>"; };
 		BFFF183E1FCDCF6600BDEC58 /* robo_debug.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = robo_debug.c; path = ../../src/editor/robo_debug.c; sourceTree = "<group>"; };
 		BFFF183F1FCDCF6600BDEC58 /* board.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = board.c; path = ../../src/editor/board.c; sourceTree = "<group>"; };
@@ -614,6 +622,7 @@
 			isa = PBXGroup;
 			children = (
 				BFFF17101FCDC81000BDEC58 /* config.h */,
+				BFE5EB622006DB4300E15CC0 /* version.h */,
 				BFFF18981FCDE8FD00BDEC58 /* config.txt */,
 				BFFF18951FCDE8B300BDEC58 /* assets */,
 				BFFF16351FCDC5AE00BDEC58 /* Core */,
@@ -819,7 +828,6 @@
 				BFFF17261FCDCBDB00BDEC58 /* mix_paula.c */,
 				BFFF17331FCDCBE200BDEC58 /* mixer.c */,
 				BFFF17481FCDCBE500BDEC58 /* mixer.h */,
-				BFFF17471FCDCBE500BDEC58 /* mkstemp.c */,
 				BFFF17431FCDCBE400BDEC58 /* paula.h */,
 				BFFF17441FCDCBE400BDEC58 /* period.c */,
 				BFFF172A1FCDCBDC00BDEC58 /* period.h */,
@@ -846,7 +854,9 @@
 				BFFF17681FCDCBFD00BDEC58 /* asylum_load.c */,
 				BFFF177D1FCDCBFF00BDEC58 /* common.c */,
 				BFFF176B1FCDCBFE00BDEC58 /* far_load.c */,
+				BFC0B26620681A9000D28296 /* flt_load.c */,
 				BFFF17731FCDCBFE00BDEC58 /* gdm_load.c */,
+				BFC0B26520681A9000D28296 /* hmn_load.c */,
 				BFFF176C1FCDCBFE00BDEC58 /* iff.c */,
 				BFFF17761FCDCBFF00BDEC58 /* iff.h */,
 				BFFF17751FCDCBFF00BDEC58 /* it_load.c */,
@@ -867,6 +877,7 @@
 				BFFF17781FCDCBFF00BDEC58 /* s3m_load.c */,
 				BFFF17721FCDCBFE00BDEC58 /* s3m.h */,
 				BFFF17881FCDCC0100BDEC58 /* sample.c */,
+				BFC0B26720681A9000D28296 /* st_load.c */,
 				BFFF177C1FCDCBFF00BDEC58 /* stm_load.c */,
 				BFFF17741FCDCBFF00BDEC58 /* ult_load.c */,
 				BFFF17691FCDCBFD00BDEC58 /* voltable.c */,
@@ -885,8 +896,8 @@
 				BFFF18311FCDCF6400BDEC58 /* board.h */,
 				BFFF18401FCDCF6600BDEC58 /* char_ed.c */,
 				BFFF18271FCDCF6300BDEC58 /* char_ed.h */,
-				BFFF183C1FCDCF6600BDEC58 /* clipboard.c */,
 				BFFF18211FCDCF6200BDEC58 /* clipboard.h */,
+				BF00DC0B2085644A00CD2DD2 /* clipboard_sdl2.c */,
 				BFFF18241FCDCF6300BDEC58 /* configure.c */,
 				BFFF18351FCDCF6500BDEC58 /* configure.h */,
 				BFFF183A1FCDCF6600BDEC58 /* debug.c */,
@@ -1063,6 +1074,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = BF1012911FCCA957008EEDB6 /* Build configuration list for PBXNativeTarget "Core" */;
 			buildPhases = (
+				BFE5EB632006E09B00E15CC0 /* Update Version Header */,
 				BF10128C1FCCA957008EEDB6 /* Sources */,
 				BF10128D1FCCA957008EEDB6 /* Frameworks */,
 				BF10128E1FCCA957008EEDB6 /* Headers */,
@@ -1118,7 +1130,7 @@
 		BF1012701FCCA7C1008EEDB6 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0910;
+				LastUpgradeCheck = 0920;
 				ORGANIZATIONNAME = "MegaZeux Dev Team";
 				TargetAttributes = {
 					BF1012771FCCA7C2008EEDB6 = {
@@ -1193,12 +1205,32 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		BFE5EB632006E09B00E15CC0 /* Update Version Header */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Update Version Header";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = ./update_version.sh;
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		BF1012741FCCA7C2008EEDB6 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BFC0B26A20681A9000D28296 /* st_load.c in Sources */,
+				BFC0B26920681A9000D28296 /* flt_load.c in Sources */,
 				BFFF188C1FCDE74B00BDEC58 /* main.c in Sources */,
+				BFC0B26820681A9000D28296 /* hmn_load.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1306,8 +1338,10 @@
 				BFFF16F31FCDC76900BDEC58 /* render_yuv.c in Sources */,
 				BFFF16D61FCDC76900BDEC58 /* idarray.c in Sources */,
 				BFFF16F01FCDC76900BDEC58 /* render_sdl.c in Sources */,
-				BFFF17BD1FCDCCF300BDEC58 /* mkstemp.c in Sources */,
 				BFFF17FA1FCDCD1200BDEC58 /* itsex.c in Sources */,
+				BFC0B26B20681ACC00D28296 /* flt_load.c in Sources */,
+				BFC0B26C20681ACC00D28296 /* hmn_load.c in Sources */,
+				BFC0B26D20681ACC00D28296 /* st_load.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1318,7 +1352,6 @@
 				BFFF18801FCDCF7C00BDEC58 /* undo.c in Sources */,
 				BFFF18741FCDCF7C00BDEC58 /* param.c in Sources */,
 				BFFF186E1FCDCF7C00BDEC58 /* graphics.c in Sources */,
-				BFFF18621FCDCF7C00BDEC58 /* clipboard.c in Sources */,
 				BFFF18601FCDCF7C00BDEC58 /* char_ed.c in Sources */,
 				BFFF185E1FCDCF7C00BDEC58 /* board.c in Sources */,
 				BFFF18661FCDCF7C00BDEC58 /* debug.c in Sources */,
@@ -1331,6 +1364,7 @@
 				BFFF18821FCDCF7C00BDEC58 /* window.c in Sources */,
 				BFFF18781FCDCF7C00BDEC58 /* robo_ed.c in Sources */,
 				BFFF187C1FCDCF7C00BDEC58 /* select.c in Sources */,
+				BF00DC0C2085644A00CD2DD2 /* clipboard_sdl2.c in Sources */,
 				BFFF186C1FCDCF7C00BDEC58 /* fill.c in Sources */,
 				BFFF187A1FCDCF7C00BDEC58 /* robot.c in Sources */,
 				BFFF18841FCDCF7C00BDEC58 /* world.c in Sources */,
@@ -1417,7 +1451,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
@@ -1428,6 +1462,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
@@ -1466,7 +1501,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = macosx;
 			};
@@ -1485,7 +1520,10 @@
 				);
 				GCC_CHAR_IS_UNSIGNED_CHAR = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu89;
-				HEADER_SEARCH_PATHS = SDL2.framework/Headers;
+				HEADER_SEARCH_PATHS = (
+					SDL2.framework/Headers,
+					../../contrib/libxmp/include,
+				);
 				INFOPLIST_FILE = MegaZeux/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
@@ -1497,7 +1535,6 @@
 		BF10128B1FCCA7C2008EEDB6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -1508,7 +1545,10 @@
 				);
 				GCC_CHAR_IS_UNSIGNED_CHAR = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu89;
-				HEADER_SEARCH_PATHS = SDL2.framework/Headers;
+				HEADER_SEARCH_PATHS = (
+					SDL2.framework/Headers,
+					../../contrib/libxmp/include,
+				);
 				INFOPLIST_FILE = MegaZeux/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
@@ -1553,7 +1593,6 @@
 		BF1012931FCCA957008EEDB6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				CLANG_ENABLE_MODULES = NO;
 				CODE_SIGN_STYLE = Automatic;
 				DYLIB_COMPATIBILITY_VERSION = 1;
@@ -1606,7 +1645,6 @@
 		BF10129B1FCCA97D008EEDB6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				CODE_SIGN_STYLE = Automatic;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
@@ -1650,7 +1688,6 @@
 		BF1012B01FCCA993008EEDB6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;

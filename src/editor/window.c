@@ -826,11 +826,11 @@ static void draw_board_list(struct world *mzx_world, struct dialog *di,
     if(current_board <= mzx_world->num_boards)
     {
       src_board = mzx_world->board_list[current_board];
-      strncpy(board_name, src_board->board_name, BOARD_NAME_SIZE - 1);
+      snprintf(board_name, BOARD_NAME_SIZE, "%s", src_board->board_name);
     }
     else
     {
-      strncpy(board_name, "(no board)", BOARD_NAME_SIZE - 1);
+      snprintf(board_name, BOARD_NAME_SIZE, "(no board)");
     }
     board_name[BOARD_NAME_SIZE - 1] = '\0';
   }
@@ -1137,10 +1137,10 @@ int choose_board(struct world *mzx_world, int current, const char *title,
     board_names[i] = cmalloc(BOARD_NAME_SIZE);
 
     if(mzx_world->board_list[i] == NULL)
-      strncpy(board_names[i], "(no board)", BOARD_NAME_SIZE - 1);
+      snprintf(board_names[i], BOARD_NAME_SIZE, "(no board)");
     else
-      strncpy(board_names[i], (mzx_world->board_list[i])->board_name,
-       BOARD_NAME_SIZE - 1);
+      snprintf(board_names[i], BOARD_NAME_SIZE, "%s",
+       (mzx_world->board_list[i])->board_name);
 
     board_names[i][BOARD_NAME_SIZE - 1] = '\0';
   }
@@ -1153,7 +1153,7 @@ int choose_board(struct world *mzx_world, int current, const char *title,
   // Add (new board) to bottom
   if(i < MAX_BOARDS)
   {
-    strncpy(board_names[i], "(add board)", BOARD_NAME_SIZE - 1);
+    snprintf(board_names[i], BOARD_NAME_SIZE, "(add board)");
     board_names[i][BOARD_NAME_SIZE - 1] = '\0';
     i++;
   }
@@ -1161,7 +1161,7 @@ int choose_board(struct world *mzx_world, int current, const char *title,
   // Change top to (none) if needed
   if(board0_none)
   {
-    strncpy(board_names[0], "(no board)", BOARD_NAME_SIZE - 1);
+    snprintf(board_names[0], BOARD_NAME_SIZE, "(no board)");
     board_names[0][BOARD_NAME_SIZE - 1] = '\0';
   }
 

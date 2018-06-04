@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2016 Adrian Siekierka <asiekierka@gmail.com>
+ * Copyright (C) 2016, 2018 Adrian Siekierka <asiekierka@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -22,11 +22,15 @@
 
 #include "compat.h"
 
+#define STACK_SIZE_CTR 8096
+
 __M_BEGIN_DECLS
 
 #include <3ds.h>
 
 typedef LightLock platform_mutex;
+typedef Thread platform_thread;
+typedef ThreadFunc platform_thread_fn;
 
 static inline void platform_mutex_init(platform_mutex *mutex)
 {
@@ -44,6 +48,27 @@ static inline bool platform_mutex_unlock(platform_mutex *mutex)
 {
   LightLock_Unlock(mutex);
   return true;
+}
+
+static inline bool platform_mutex_destroy(platform_mutex *mutex)
+{
+  return true;
+}
+
+static inline int platform_thread_create(platform_thread *thread,
+ platform_thread_fn start_function, void *data)
+{
+  s32 priority;
+
+  svcGetThreadPriority(&priority, CUR_THREAD_HANDLE);
+  *thread = threadCreate(start_function, data, STACK_SIZE_CTR, priority-1, -1, true);
+
+  return (*thread == NULL) ? 1 : 0;
+}
+
+static inline void platform_thread_join(platform_thread *thread)
+{
+  threadJoin(*thread, U64_MAX);
 }
 
 __M_END_DECLS

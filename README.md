@@ -3,7 +3,7 @@
 
 MegaZeux is a game creation system (GCS) created by game developer Alexis Janson in 1994.
 Originally a DOS program, in 2005 a multi-platform port was released by Exophase. The most
-recent version of MegaZeux is 2.91b, which was released on January 7th, 2018.
+recent version of MegaZeux is 2.91c, which was released on March 4th, 2018.
 
 MegaZeux is officially supported on Windows, Linux/BSD, MacOS, as well as the NDS, 3DS, Wii,
 and PSP consoles. Historical support has also existed for GP2X, Pandora, and AmigaOS 4.

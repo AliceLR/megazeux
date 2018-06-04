@@ -1,7 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2008 Alan Williams <mralert@gmail.com>
- * Copyright (C) 2009 Alistair John Strachan <alistair@devzero.co.uk>
+ * Copyright (C) 2017 Ian Burgmyer <spectere@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -18,36 +17,37 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __MUTEX_PTHREAD_H
-#define __MUTEX_PTHREAD_H
+#include <stdlib.h>
+#include <string.h>
 
-#include "compat.h"
+#include "clipboard.h"
+#include "../compat.h"
 
-__M_BEGIN_DECLS
-
-#include "pthread.h"
-
-typedef pthread_mutex_t platform_mutex;
-
-static inline void platform_mutex_init(platform_mutex *mutex)
+void copy_buffer_to_clipboard(char **buffer, int lines, int total_length)
 {
-  pthread_mutex_init(mutex, NULL);
+  int i;
+  unsigned long line_length;
+  char *dest_data, *dest_ptr;
+  
+  dest_data = cmalloc(total_length + 1);
+  dest_ptr = dest_data;
+  
+  for(i = 0; i < lines; i++)
+  {
+    line_length = strlen(buffer[i]);
+    memcpy(dest_ptr, buffer[i], line_length);
+    dest_ptr += line_length;
+    dest_ptr[0] = '\n';
+    dest_ptr++;
+  }
+  
+  dest_ptr[-1] = 0;
+  SDL_SetClipboardText(dest_data);
+  
+  free(dest_data);
 }
 
-static inline bool platform_mutex_lock(platform_mutex *mutex)
+char *get_clipboard_buffer(void)
 {
-  if(pthread_mutex_lock(mutex))
-    return false;
-  return true;
+  return SDL_GetClipboardText();
 }
-
-static inline bool platform_mutex_unlock(platform_mutex *mutex)
-{
-  if(pthread_mutex_unlock(mutex))
-    return false;
-  return true;
-}
-
-__M_END_DECLS
-
-#endif // __MUTEX_PTHREAD_H

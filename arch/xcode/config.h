@@ -1,5 +1,5 @@
+#include "version.h"
 #define PLATFORM "xcode"
-#define VERSION "Xcode"
 #define CONFDIR "../Resources"
 #define CONFFILE "config.txt"
 #define SHAREDIR "../Resources"

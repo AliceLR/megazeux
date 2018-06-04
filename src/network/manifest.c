@@ -183,55 +183,58 @@ err_invalid_manifest:
   return head;
 }
 
-static struct manifest_entry *manifest_get_local(void)
+static void manifest_get_local(struct manifest_entry **manifest)
 {
-  struct manifest_entry *manifest;
   FILE *f;
+
+  *manifest = NULL;
 
   f = fopen_unsafe(MANIFEST_TXT, "rb");
   if(!f)
   {
     warn("Local " MANIFEST_TXT " is missing\n");
-    return NULL;
+    return;
   }
 
-  manifest = manifest_list_create(f);
+  *manifest = manifest_list_create(f);
   fclose(f);
-
-  return manifest;
 }
 
-static struct manifest_entry *manifest_get_remote(struct host *h,
- const char *base)
+static enum host_status manifest_get_remote(struct host *h,
+ const char *base, struct manifest_entry **manifest)
 {
-  struct manifest_entry *manifest = NULL;
-  char url[LINE_BUF_LEN];
+  struct http_info req;
   enum host_status ret;
   FILE *f;
 
-  snprintf(url, LINE_BUF_LEN, "%s/" MANIFEST_TXT, base);
+  *manifest = NULL;
+
+  snprintf(req.url, LINE_BUF_LEN, "%s/" MANIFEST_TXT, base);
+  strcpy(req.expected_type, "text/plain");
 
   f = fopen_unsafe(MANIFEST_TXT, "w+b");
   if(!f)
   {
     warn("Failed to open local " MANIFEST_TXT " for writing\n");
+    ret = HOST_FWRITE_FAILED;
     goto err_out;
   }
 
-  ret = host_recv_file(h, url, f, "text/plain");
+  ret = host_recv_file(h, &req, f);
   if(ret != HOST_SUCCESS)
   {
-    warn("Processing " MANIFEST_TXT " failed (error %d)\n", ret);
+    warn("Processing " MANIFEST_TXT " failed (code %d, error %d)\n",
+     req.status_code, ret);
     goto err_fclose;
   }
 
   rewind(f);
-  manifest = manifest_list_create(f);
+  *manifest = manifest_list_create(f);
 
 err_fclose:
   fclose(f);
 err_out:
-  return manifest;
+  return ret;
 }
 
 static void manifest_lists_remove_duplicate_names(
@@ -358,17 +361,18 @@ static void manifest_add_list_validate_augment(struct manifest_entry *local,
   }
 }
 
-bool manifest_get_updates(struct host *h, const char *basedir,
+enum host_status manifest_get_updates(struct host *h, const char *basedir,
  struct manifest_entry **removed, struct manifest_entry **replaced,
  struct manifest_entry **added)
 {
   struct manifest_entry *local, *remote;
+  enum host_status status;
 
-  local = manifest_get_local();
+  manifest_get_local(&local);
 
-  remote = manifest_get_remote(h, basedir);
-  if(!remote)
-    return false;
+  status = manifest_get_remote(h, basedir, &remote);
+  if(status != HOST_SUCCESS)
+    return status;
 
   *replaced = NULL;
   *removed = NULL;
@@ -401,13 +405,14 @@ bool manifest_get_updates(struct host *h, const char *basedir,
    */
   manifest_add_list_validate_augment(remote, replaced);
   manifest_list_free(&remote);
-  return true;
+  return HOST_SUCCESS;
 }
 
 bool manifest_entry_download_replace(struct host *h, const char *basedir,
  struct manifest_entry *e, void (*delete_hook)(const char *file))
 {
   char buf[LINE_BUF_LEN];
+  struct http_info req;
   enum host_status ret;
   bool valid = false;
   FILE *f;
@@ -437,14 +442,16 @@ bool manifest_entry_download_replace(struct host *h, const char *basedir,
     }
   }
 
-  snprintf(buf, LINE_BUF_LEN, "%s/%08x%08x%08x%08x%08x%08x%08x%08x", basedir,
+  strcpy(req.expected_type, "application/octet-stream");
+  snprintf(req.url, LINE_BUF_LEN, "%s/%08x%08x%08x%08x%08x%08x%08x%08x", basedir,
     e->sha256[0], e->sha256[1], e->sha256[2], e->sha256[3],
     e->sha256[4], e->sha256[5], e->sha256[6], e->sha256[7]);
 
-  ret = host_recv_file(h, buf, f, "application/octet-stream");
+  ret = host_recv_file(h, &req, f);
   if(ret != HOST_SUCCESS)
   {
-    warn("File '%s' could not be downloaded (error %d)\n", e->name, ret);
+    warn("File '%s' could not be downloaded (code %d, error %d)\n", e->name,
+     req.status_code, ret);
     goto err_close;
   }
 

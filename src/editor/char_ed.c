@@ -50,7 +50,7 @@
 //  |................| M       'Mirror'           F3      Copy from buffer
 //  |................| F       'Flip'             F4      Revert to ASCII
 //  |................| H       More help          F5      Revert to MZX
-//  |................| 
+//  |................|
 //  |................| C       Palette [ ]
 //  |................| Tab     Draw    (off)
 //  +----------------+ Ins/1-4 Select  [  ]
@@ -913,7 +913,11 @@ static void char_import(struct world *mzx_world, int char_offset, int charset,
   char offset_buf[20];
   char size_buf[20];
 
-  int import_mode = select_export_mode(mzx_world, "Import mode");
+  int import_mode = 1;
+
+  // Default to linear for 1x1 selections, otherwise prompt.
+  if(highlight_width * highlight_height != 1)
+    select_export_mode(mzx_world, "Import mode");
 
   switch(import_mode)
   {
@@ -1014,8 +1018,8 @@ static void char_export(struct world *mzx_world, int char_offset, int charset,
       return;
 
     case 0:
-      sprintf(offset_buf, "~9Offset:  ~f%d", charset * 256 + char_offset);
-      sprintf(size_buf,   "~9Size:    ~f%d x %d",
+      snprintf(offset_buf, 20, "~9Offset:  ~f%d", charset * 256 + char_offset);
+      snprintf(size_buf,   20, "~9Size:    ~f%d x %d",
        highlight_width, highlight_height);
 
       elements[0] = construct_label(3, 20, offset_buf);

@@ -200,13 +200,13 @@ static void backup_interval(struct editor_config_info *conf,
 static void backup_name(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  strncpy(conf->backup_name, value, 256);
+  snprintf(conf->backup_name, 256, "%s", value);
 }
 
 static void backup_ext(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  strncpy(conf->backup_ext, value, 256);
+  snprintf(conf->backup_ext, 256, "%s", value);
 }
 
 static void config_editor_space_toggles(struct editor_config_info *conf,
@@ -685,8 +685,8 @@ void save_local_editor_config(struct editor_config_info *conf,
     return;
 
   // Get our filename
-  strncpy(config_file_name, mzx_file_path, mzx_file_len);
-  strncpy(config_file_name + mzx_file_len, ".editor.cnf", 12);
+  snprintf(config_file_name, MAX_PATH, "%.*s.editor.cnf",
+   mzx_file_len, mzx_file_path);
 
   // Does it exist?
   fp = fopen_unsafe(config_file_name, "rb");

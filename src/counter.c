@@ -990,7 +990,10 @@ static void spr_off_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
-  (mzx_world->sprite_list[spr_num])->flags &= ~SPRITE_INITIALIZED;
+
+  // In DOS versions of MZX, this would be ignored if set to 0.
+  if(value || mzx_world->version >= VERSION_PORT)
+    (mzx_world->sprite_list[spr_num])->flags &= ~SPRITE_INITIALIZED;
 }
 
 static void spr_swap_write(struct world *mzx_world,

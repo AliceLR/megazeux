@@ -127,6 +127,13 @@ static int _fseekwrapper(void *vp, long int offset, int code)
   return fseek((FILE *)vp, offset, code);
 }
 
+// devkitARM's ftell has a nonstandard signature and needs to be wrapped, too.
+
+static long _ftellwrapper(FILE *fp)
+{
+  return (long)ftell(fp);
+}
+
 static long int _fstatlen(FILE *fp)
 {
   struct stat file_info;
@@ -271,7 +278,7 @@ static int zip_uncompress(char *dest, uint32_t *destLen, const char *src,
    */
 
   inflateInit2(&stream, -MAX_WBITS);
-  
+
   stream.next_out = (Bytef *) dest;
   stream.avail_out = (uInt) *destLen;
 
@@ -317,7 +324,7 @@ static int zip_compress(char **dest, uint32_t *destLen, const char *src,
   stream.avail_out = (uInt) _destLen;
 
   err = deflate(&stream, Z_FINISH);
-  
+
   *srcLen = (int) stream.total_in;
   *destLen = (int) stream.total_out;
 
@@ -2053,7 +2060,7 @@ err_out:
  * file read mode; read files using zip_read_file(). If this fails, the input
  * is probably not actually a zip archive, or uses features we don't support.
  */
- 
+
 static char eocd_sig[] = {
   0x50,
   0x4b,
@@ -2195,7 +2202,7 @@ enum zip_error zip_read_directory(struct zip_archive *zp)
     goto err_out;
   }
   else
-  
+
   if(n > 0)
   {
     result = ZIP_UNSUPPORTED_MULTIPLE_DISKS;
@@ -2237,7 +2244,7 @@ enum zip_error zip_read_directory(struct zip_archive *zp)
       result = ZIP_SEEK_ERROR;
       goto err_realloc;
     }
-      
+
     for(i = 0; i < n; i++)
     {
       f[i] = cmalloc(sizeof(struct zip_file_header));
@@ -2535,7 +2542,7 @@ static struct zip_archive *zip_get_archive_file(FILE *fp)
   zp->vread = (size_t(*)(void *, size_t, size_t, void *)) fread;
   zp->vwrite = (size_t(*)(const void *, size_t, size_t, void *)) fwrite;
   zp->vseek = (int(*)(void *, long int, int)) _fseekwrapper;
-  zp->vtell = (long int(*)(void *)) ftell;
+  zp->vtell = (long int(*)(void *)) _ftellwrapper;
   zp->verror = (int(*)(void *)) ferror;
   zp->vclose = (int(*)(void *)) fclose;
   return zp;

@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2008 Alan Williams <mralert@gmail.com>
+ * Copyright (C) 2017 Ian Burgmyer <spectere@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,36 +17,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __MUTEX_SDL_H
-#define __MUTEX_SDL_H
+#include "clipboard.h"
 
-#include "compat.h"
-
-__M_BEGIN_DECLS
-
-#include "SDL_thread.h"
-
-typedef SDL_mutex* platform_mutex;
-
-static inline void platform_mutex_init(platform_mutex *mutex)
-{
-  *mutex = SDL_CreateMutex();
+void copy_buffer_to_clipboard(char **buffer, int lines, int total_length) {
+  /* no op */
 }
 
-static inline bool platform_mutex_lock(platform_mutex *mutex)
-{
-  if(SDL_LockMutex(*mutex))
-    return false;
-  return true;
+char *get_clipboard_buffer(void) {
+  return NULL;
 }
-
-static inline bool platform_mutex_unlock(platform_mutex *mutex)
-{
-  if(SDL_UnlockMutex(*mutex))
-    return false;
-  return true;
-}
-
-__M_END_DECLS
-
-#endif // __MUTEX_SDL_H
