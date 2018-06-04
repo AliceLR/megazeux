@@ -18,8 +18,9 @@
  */
 
 #include "audio.h"
-#include "util.h"
 #include "SDL.h"
+
+#include "../util.h"
 
 #include <stdlib.h>
 

@@ -19,7 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "../audio.h"
 #include "../block.h"
 #include "../const.h"
 #include "../counter.h"
@@ -35,10 +34,12 @@
 #include "../mzm.h"
 #include "../platform.h"
 #include "../scrdisp.h"
-#include "../sfx.h"
 #include "../util.h"
 #include "../window.h"
 #include "../world.h"
+
+#include "../audio/audio.h"
+#include "../audio/sfx.h"
 
 #include "block.h"
 #include "board.h"
@@ -258,7 +259,7 @@ static void fix_mod(struct world *mzx_world, struct board *src_board,
   {
     if(!strcmp(src_board->mod_playing, "*"))
     {
-      end_module();
+      audio_end_module();
     }
 
     else
@@ -1849,7 +1850,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
   set_palette_intensity(100);
 
-  end_module();
+  audio_end_module();
 
   debug("%s\n", curr_file);
 
@@ -3596,7 +3597,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           if(!choose_file(mzx_world, sam_ext, test_wav,
            "Choose a wav file", 1))
           {
-            play_sample(0, test_wav, false);
+            audio_play_sample(test_wav, false, 0);
           }
         }
         else
@@ -3838,10 +3839,10 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
               getcwd(current_dir, MAX_PATH);
               chdir(current_listening_dir);
 
-              if(!choose_file(mzx_world, mod_gdm_ext, new_mod,
+              if(!choose_file(mzx_world, mod_ext, new_mod,
                "Choose a module file (listening only)", 1))
               {
-                load_module(new_mod, false, 255);
+                audio_play_module(new_mod, false, 255);
                 strcpy(current_listening_mod, new_mod);
                 get_path(new_mod, current_listening_dir, MAX_PATH);
                 listening_flag = 1;
@@ -3851,10 +3852,10 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             }
             else
             {
-              end_module();
+              audio_end_module();
               listening_flag = 0;
               if(mzx_world->real_mod_playing[0])
-                load_module(mzx_world->real_mod_playing, true, 255);
+                audio_play_module(mzx_world->real_mod_playing, true, 255);
             }
           }
         }
@@ -4023,7 +4024,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             clear_overlay_history = 1;
             clear_vlayer_history = 1;
 
-            end_module();
+            audio_end_module();
 
             modified = 1;
           }
@@ -4184,7 +4185,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
             if(listening_flag)
             {
-              load_module(current_listening_mod, false, 255);
+              audio_play_module(current_listening_mod, false, 255);
             }
             else
             {
@@ -4513,7 +4514,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
              &overlay_color, &vlayer_chars, &vlayer_colors, overlay_edit);
             fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
              &debug_x, board_width, board_height, edit_screen_height);
-            end_module();
+            audio_end_module();
             src_board->mod_playing[0] = 0;
             strcpy(mzx_world->real_mod_playing,
              src_board->mod_playing);
@@ -4747,8 +4748,8 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
   clear_world(mzx_world);
   clear_global_data(mzx_world);
+  audio_end_module();
   cursor_off();
-  end_module();
   m_hide();
   clear_screen(32, 7);
   insta_fadeout();

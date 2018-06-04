@@ -22,12 +22,10 @@
 #ifndef __AUDIO_OPENMPT_H
 #define __AUDIO_OPENMPT_H
 
-#include "compat.h"
+#include "../compat.h"
 
 __M_BEGIN_DECLS
 
-struct audio_stream *construct_openmpt_stream(char *filename, Uint32 frequency,
- Uint32 volume, Uint32 repeat);
 void init_openmpt(struct config_info *conf);
 
 __M_END_DECLS

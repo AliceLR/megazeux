@@ -22,8 +22,11 @@
 
 #include "audio.h"
 #include "audio_openmpt.h"
-#include "const.h"
-#include "util.h"
+#include "stream_registry.h"
+#include "stream_sampled.h"
+
+#include "../const.h"
+#include "../util.h"
 
 #include <libopenmpt/libopenmpt.h>
 #include <libopenmpt/libopenmpt_stream_callbacks_file.h>
@@ -181,8 +184,8 @@ static void omp_log(const char *message, void *data)
      fprintf(stderr, "%s\n", message);
 }
 
-struct audio_stream *construct_openmpt_stream(char *filename, Uint32 frequency,
- Uint32 volume, Uint32 repeat)
+static struct audio_stream *construct_openmpt_stream(char *filename,
+ Uint32 frequency, Uint32 volume, Uint32 repeat)
 {
   struct audio_stream *ret_val = NULL;
   FILE *input_file;
@@ -243,4 +246,19 @@ void init_openmpt(struct config_info *conf)
   // this "init" function does is store a global variable for usage
   // in module initialization.
   openmpt_resample_mode = 1 << conf->modplug_resample_mode;
+
+  audio_register_ext("669", construct_openmpt_stream);
+  audio_register_ext("amf", construct_openmpt_stream);
+  audio_register_ext("dsm", construct_openmpt_stream);
+  audio_register_ext("far", construct_openmpt_stream);
+  audio_register_ext("gdm", construct_openmpt_stream);
+  audio_register_ext("it", construct_openmpt_stream);
+  audio_register_ext("med", construct_openmpt_stream);
+  audio_register_ext("mod", construct_openmpt_stream);
+  audio_register_ext("mtm", construct_openmpt_stream);
+  audio_register_ext("okt", construct_openmpt_stream);
+  audio_register_ext("s3m", construct_openmpt_stream);
+  audio_register_ext("stm", construct_openmpt_stream);
+  audio_register_ext("ult", construct_openmpt_stream);
+  audio_register_ext("xm", construct_openmpt_stream);
 }

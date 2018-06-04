@@ -19,10 +19,10 @@
 
 /* Prototypes for SFX.CPP */
 
-#ifndef __SFX_H
-#define __SFX_H
+#ifndef __AUDIO_SFX_H
+#define __AUDIO_SFX_H
 
-#include "compat.h"
+#include "../compat.h"
 
 __M_BEGIN_DECLS
 
@@ -31,7 +31,8 @@ __M_BEGIN_DECLS
 #define SFX_SIZE        69
 #define LEGACY_SFX_SIZE 69
 
-#include "world_struct.h"
+// Requires NUM_SFX/SFX_SIZE, so include after.
+#include "../world_struct.h"
 
 // Size of sound queue
 #define NOISEMAX        4096
@@ -40,25 +41,27 @@ __M_BEGIN_DECLS
 CORE_LIBSPEC extern char sfx_strs[NUM_SFX][SFX_SIZE];
 #endif // CONFIG_EDITOR
 
-extern int topindex, backindex;
-
 #ifdef CONFIG_AUDIO
 
+// Used by audio_pcs.c
+void sfx_next_note(void);
+
 void play_sfx(struct world *mzx_world, int sfx);
-void clear_sfx_queue(void);
-void sound_system(void);
-char is_playing(void);
-void play_str(char *str, int sfx_play);
+void play_string(char *str, int sfx_play);
+void sfx_clear_queue(void);
+char sfx_is_playing(void);
+int sfx_length_left(void);
 
 #else // !CONFIG_AUDIO
 
-static inline void clear_sfx_queue(void) {}
 static inline void play_sfx(struct world *mzx_world, int sfxn) {}
-static inline void play_str(char *str, int sfx_play) {}
-static inline char is_playing(void) { return 0; }
+static inline void play_string(char *str, int sfx_play) {}
+static inline void sfx_clear_queue(void) {}
+static inline char sfx_is_playing(void) { return 0; }
+static inline int sfx_length_left(void) { return 0; }
 
 #endif // CONFIG_AUDIO
 
 __M_END_DECLS
 
-#endif // __SFX_H
+#endif // __AUDIO_SFX_H

@@ -14,6 +14,9 @@ LINK_CC := ${CC}
 core_src = src
 core_obj = src/.build
 
+audio_src = src/audio
+audio_obj = src/audio/.build
+
 network_src = src/network
 network_obj = src/network/.build
 
@@ -42,6 +45,10 @@ ${core_obj}/updater.o: ${core_src}/updater.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${core_cflags} ${core_flags} -c $< -o $@
 
+${audio_obj}/%.o: ${audio_src}/%.c
+	$(if ${V},,@echo "  CC      " $<)
+	${CC} -MD ${core_cflags} ${core_flags} ${core_spec} -c $< -o $@
+
 ${network_obj}/%.o: ${network_src}/%.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${core_cflags} ${core_flags} ${core_spec} -c $< -o $@
@@ -68,9 +75,8 @@ core_cobjs := \
   ${core_obj}/legacy_robot.o ${core_obj}/legacy_world.o              \
   ${core_obj}/mzm.o ${core_obj}/render.o ${core_obj}/render_layer.o  \
   ${core_obj}/robot.o ${core_obj}/run_robot.o ${core_obj}/scrdisp.o  \
-  ${core_obj}/sfx.o ${core_obj}/sprite.o ${core_obj}/str.o           \
-  ${core_obj}/util.o ${core_obj}/window.o ${core_obj}/world.o        \
-  ${core_obj}/zip.o
+  ${core_obj}/sprite.o ${core_obj}/str.o ${core_obj}/util.o          \
+  ${core_obj}/window.o ${core_obj}/world.o ${core_obj}/zip.o
 
 #
 # Lists mandatory C++ language sources (mangled to object names) required
@@ -192,20 +198,20 @@ ifeq (${BUILD_MODPLUG},1)
 core_cflags += -I${gdm2s3m_src}
 core_cobjs += ${gdm2s3m_objs}
 core_flags += -I${libmodplug_src} -I${libmodplug_src}/libmodplug
-core_cxxobjs += ${core_obj}/audio_modplug.o ${libmodplug_objs}
+core_cxxobjs += ${audio_obj}/audio_modplug.o ${libmodplug_objs}
 LINK_CC := ${CXX}
 endif
 
 ifeq (${BUILD_MIKMOD},1)
 core_flags += ${MIKMOD_CFLAGS}
 core_ldflags := ${MIKMOD_LDFLAGS} ${core_ldflags}
-core_cobjs += ${core_obj}/audio_mikmod.o
+core_cobjs += ${audio_obj}/audio_mikmod.o
 endif
 
 ifeq (${BUILD_XMP},1)
 core_cflags += ${XMP_CFLAGS}
 core_ldflags := ${XMP_LDFLAGS} ${core_ldflags}
-core_cobjs += ${core_obj}/audio_xmp.o
+core_cobjs += ${audio_obj}/audio_xmp.o
 core_flags += ${libxmp_include}
 core_cobjs += ${libxmp_objs}
 endif
@@ -213,7 +219,7 @@ endif
 ifeq (${BUILD_OPENMPT},1)
 core_flags += ${OPENMPT_CFLAGS}
 core_ldflags := ${OPENMPT_LDFLAGS} ${core_ldflags}
-core_cobjs += ${core_obj}/audio_openmpt.o
+core_cobjs += ${audio_obj}/audio_openmpt.o
 endif
 
 ifeq (${LIBPNG},1)
@@ -227,9 +233,20 @@ core_flags += -Icontrib/uthash/
 endif
 
 ifeq (${BUILD_AUDIO},1)
-core_cobjs += ${core_obj}/audio.o
+audio_cobjs := \
+ ${audio_obj}/audio.o ${audio_obj}/audio_pcs.o                       \
+ ${audio_obj}/audio_vorbis.o ${audio_obj}/audio_wav.o                \
+ ${audio_obj}/stream_registry.o ${audio_obj}/stream_sampled.o        \
+ ${audio_obj}/sfx.o
+
+core_cobjs += ${audio_cobjs}
 core_flags += ${VORBIS_CFLAGS}
 core_ldflags := ${VORBIS_LDFLAGS} ${core_ldflags}
+else
+# The editor needs this for sfx_strs...
+ifeq (${BUILD_EDITOR},1)
+core_cobjs += ${audio_obj}/sfx.o
+endif
 endif
 
 ifeq (${BUILD_SDL},1)
@@ -238,7 +255,7 @@ core_cobjs += ${core_obj}/event_sdl.o ${core_obj}/platform_sdl.o
 core_cobjs += ${core_obj}/render_sdl.o
 
 ifeq (${BUILD_AUDIO},1)
-core_cobjs += ${core_obj}/audio_sdl.o
+core_cobjs += ${audio_obj}/audio_sdl.o
 endif
 
 core_flags   += ${SDL_CFLAGS}
@@ -295,6 +312,7 @@ core_objs := ${core_cobjs} ${core_cxxobjs}
 -include ${core_objs:.o=.d}
 
 ${core_objs}: | $(filter-out $(wildcard ${core_obj}), ${core_obj})
+${core_objs}: | $(filter-out $(wildcard ${audio_obj}), ${audio_obj})
 ${core_objs}: | $(filter-out $(wildcard ${network_obj}), ${network_obj})
 
 ifeq (${BUILD_MODULAR},1)
@@ -399,8 +417,8 @@ ${mzxrun}.debug:
 endif
 
 mzx_clean: core_target_clean gdm2s3m_clean icons_clean libmodplug_clean libxmp_clean
-	$(if ${V},,@echo "  RM      " ${core_obj} ${network_obj})
-	${RM} -r ${core_obj} ${network_obj}
+	$(if ${V},,@echo "  RM      " ${core_obj} ${audio_obj} ${network_obj})
+	${RM} -r ${core_obj} ${audio_obj} ${network_obj}
 	$(if ${V},,@echo "  RM      " ${mzxrun} ${mzxrun}.debug)
 	${RM} ${mzxrun} ${mzxrun}.debug
 	$(if ${V},,@echo "  RM      " ${mzx} ${mzx}.debug)

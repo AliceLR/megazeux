@@ -80,6 +80,7 @@ SDL.dll
 SDL2.dll
 src/.build/
 src/config.h
+src/audio/.build/
 src/editor/.build/
 src/network/.build/
 src/utils/.build/

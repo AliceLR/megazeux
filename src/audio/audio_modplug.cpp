@@ -25,8 +25,11 @@
 
 #include "audio.h"
 #include "audio_modplug.h"
-#include "const.h"
-#include "util.h"
+#include "stream_registry.h"
+#include "stream_sampled.h"
+
+#include "../const.h"
+#include "../util.h"
 
 struct _ModPlugFile
 {
@@ -170,22 +173,15 @@ static void mp_destruct(struct audio_stream *a_src)
   sampled_destruct(a_src);
 }
 
-struct audio_stream *construct_modplug_stream(char *filename, Uint32 frequency,
- Uint32 volume, Uint32 repeat)
+static struct audio_stream *construct_modplug_stream(char *filename,
+ Uint32 frequency, Uint32 volume, Uint32 repeat)
 {
   ssize_t ext_pos = (ssize_t)strlen(filename) - 4;
   struct audio_stream *ret_val = NULL;
-  char new_file[MAX_PATH];
   char *input_buffer;
   FILE *input_file;
 
-  if(!check_ext_for_gdm_and_convert(filename, new_file))
-  {
-    strncpy(new_file, filename, MAX_PATH - 1);
-    new_file[MAX_PATH - 1] = '\0';
-  }
-
-  input_file = fopen_unsafe(new_file, "rb");
+  input_file = fopen_unsafe(filename, "rb");
 
   if(input_file)
   {
@@ -229,6 +225,50 @@ struct audio_stream *construct_modplug_stream(char *filename, Uint32 frequency,
   return ret_val;
 }
 
+static struct audio_stream *modplug_convert_gdm(char *filename,
+ Uint32 frequency, Uint32 volume, Uint32 repeat)
+{
+  /* Wrapper for construct_modplug_stream to convert .GDMs to .S3Ms. */
+  char translated_filename_dest[MAX_PATH];
+  char new_file[MAX_PATH];
+  int have_s3m = 0;
+
+  /* We know this file has a .gdm extension. */
+  ssize_t ext_pos = (ssize_t)strlen(filename) - 4;
+
+  /* Get the name of its .s3m counterpart */
+  memcpy(new_file, filename);
+  memcpy(new_file + ext_pos, ".s3m", 4);
+
+  /* If the destination S3M already exists, check its size. If it's
+   * non-zero in size, we can load it.
+   */
+  if(!fsafetranslate(new_file, translated_filename_dest))
+  {
+    FILE *f = fopen_unsafe(translated_filename_dest, "r");
+    long file_len = ftell_and_rewind(f);
+
+    fclose(f);
+    if(file_len > 0)
+      have_s3m = 1;
+  }
+
+  /* In the case we need to convert the GDM, we need to find
+   * the real source path for it. Translate accordingly.
+   */
+  if(!have_s3m && !fsafetranslate(filename, translated_filename_dest))
+  {
+    if(!convert_gdm_s3m(translated_filename_dest, new_file))
+      have_s3m = 1;
+  }
+
+  /* If we have an S3M, we can now load it. Otherwise, abort.*/
+  if(have_s3m)
+    return construct_modplug_stream(new_file, frequency, volume, repeat);
+
+  return NULL;
+}
+
 void init_modplug(struct config_info *conf)
 {
   if(conf->oversampling_on)
@@ -268,4 +308,19 @@ void init_modplug(struct config_info *conf)
   audio.mod_settings.mLoopCount = -1;
 
   ModPlug_SetSettings(&audio.mod_settings);
+
+  audio_register_ext("669", construct_modplug_stream);
+  audio_register_ext("amf", construct_modplug_stream);
+  audio_register_ext("dsm", construct_modplug_stream);
+  audio_register_ext("far", construct_modplug_stream);
+  audio_register_ext("gdm", modplug_convert_gdm);
+  audio_register_ext("it", construct_modplug_stream);
+  audio_register_ext("med", construct_modplug_stream);
+  audio_register_ext("mod", construct_modplug_stream);
+  audio_register_ext("mtm", construct_modplug_stream);
+  audio_register_ext("okt", construct_modplug_stream);
+  audio_register_ext("s3m", construct_modplug_stream);
+  audio_register_ext("stm", construct_modplug_stream);
+  audio_register_ext("ult", construct_modplug_stream);
+  audio_register_ext("xm", construct_modplug_stream);
 }

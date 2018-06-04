@@ -23,12 +23,11 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "sfx.h"
-#include "data.h"
 #include "audio.h"
+#include "audio_pcs.h"
+#include "sfx.h"
 
-int topindex = 0;  // Marks the top of the queue
-int backindex = 0; // Marks bottom of queue
+#include "../data.h"
 
 #if defined(CONFIG_AUDIO) || defined(CONFIG_EDITOR)
 
@@ -97,6 +96,9 @@ __editor_maybe_static char sfx_strs[NUM_SFX][SFX_SIZE] =
 // Special freqs
 #define F_REST          1
 
+static int topindex = 0;  // Marks the top of the queue
+static int backindex = 0; // Marks bottom of queue
+
 struct noise
 {
   int duration;//This is the struc of the sound queue
@@ -150,18 +152,18 @@ void play_sfx(struct world *mzx_world, int sfxn)
   {
     if(mzx_world->custom_sfx_on)
     {
-      play_str(mzx_world->custom_sfx + (sfxn * SFX_SIZE), 1);
+      play_string(mzx_world->custom_sfx + (sfxn * SFX_SIZE), 1);
     }
     else
     {
-      play_str(sfx_strs[sfxn], 1);
+      play_string(sfx_strs[sfxn], 1);
     }
   }
 }
 
 // sfx_play = 1 to NOT play non-digi unless queue empty
 
-void play_str(char *str, int sfx_play)
+void play_string(char *str, int sfx_play)
 {
   int t1, oct = 3, note = 1, dur = 18, t2, last_note = -1,
    digi_st = -1, digi_end = -1, digi_played = 0;
@@ -169,7 +171,7 @@ void play_str(char *str, int sfx_play)
   // Note trans. table from 1-7 (a-z) to 1-12
   char nn[7] = { 10, 12, 1, 3, 5, 6, 8 };
 
-  if(!get_sfx_on_state())
+  if(!audio_get_pcs_on())
   {
     sfx_play = 1; // SFX off
   }
@@ -247,11 +249,11 @@ void play_str(char *str, int sfx_play)
       // Digi
       if(digi_st > 0)
       {
-        if(get_music_on_state())
+        if(audio_get_music_on())
         {
           str[digi_end] = 0;
 
-          play_sample(sam_freq[note - 1] >> oct, str + digi_st, true);
+          audio_play_sample(str + digi_st, true, sam_freq[note - 1] >> oct);
 
           str[digi_end] = close_char;
           digi_played = 1;
@@ -344,7 +346,7 @@ void play_str(char *str, int sfx_play)
 
     if(chr == '_')
     {
-      if(get_music_on_state())
+      if(audio_get_music_on())
         break;
 
       digi_st = -1;
@@ -356,21 +358,21 @@ void play_str(char *str, int sfx_play)
   {
     str[digi_end] = 0;
 
-    play_sample(0, str + digi_st, true);
+    audio_play_sample(str + digi_st, true, 0);
 
     str[digi_end] = close_char;
   }
 }
 
-void clear_sfx_queue(void)
+void sfx_clear_queue(void)
 {
   backindex = topindex = sound_in_queue = 0; // queue pointers
   nosound(1);
 }
 
-void sound_system(void)
+void sfx_next_note(void)
 {
-  int sfx_on = get_sfx_on_state();
+  int sfx_on = audio_get_pcs_on();
 
   if(sound_in_queue)
   {
@@ -401,9 +403,19 @@ void sound_system(void)
   }
 }
 
-char is_playing(void)
+char sfx_is_playing(void)
 {
   return sound_in_queue;
+}
+
+int sfx_length_left(void)
+{
+  int left = topindex - backindex;
+
+  if(left < 0)
+    left = topindex + (NOISEMAX - backindex);
+
+  return left;
 }
 
 #endif // CONFIG_AUDIO

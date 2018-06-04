@@ -26,7 +26,6 @@
 #include "robo_debug.h"
 #include "window.h"
 
-#include "../audio.h"
 #include "../counter.h"
 #include "../event.h"
 #include "../graphics.h"
@@ -36,6 +35,8 @@
 #include "../util.h"
 #include "../window.h"
 #include "../world.h"
+
+#include "../audio/audio.h"
 
 #include <string.h>
 
@@ -566,7 +567,7 @@ static void write_var(struct world *mzx_world, char *var_buffer, int int_val, ch
         cur_board->volume = int_val;
         cur_board->volume_target = int_val;
 
-        volume_module(int_val);
+        audio_set_module_volume(int_val);
       }
       else
 

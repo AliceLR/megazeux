@@ -19,17 +19,15 @@
 
 /* Declarations */
 
-#ifndef __AUDIO_XMP_H
-#define __AUDIO_XMP_H
+#ifndef __AUDIO_MIKMOD_H
+#define __AUDIO_MIKMOD_H
 
-#include "compat.h"
+#include "../compat.h"
 
 __M_BEGIN_DECLS
 
-struct audio_stream *construct_xmp_stream(char *filename, Uint32 frequency,
- Uint32 volume, Uint32 repeat);
-void init_xmp(struct config_info *conf);
+void init_mikmod(struct config_info *conf);
 
 __M_END_DECLS
 
-#endif  // __AUDIO_XMP_H
+#endif  // __AUDIO_MIKMOD_H

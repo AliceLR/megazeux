@@ -37,13 +37,13 @@
 #include "game.h"
 #include "graphics.h"
 #include "idput.h"
-#include "sfx.h"
 #include "sprite.h"
 #include "str.h"
 #include "window.h"
 #include "world.h"
 #include "util.h"
 
+#include "audio/sfx.h"
 
 #ifndef CONFIG_LOADSAVE_METER
 

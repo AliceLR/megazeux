@@ -82,17 +82,6 @@ typedef enum
 #define __utils_maybe_static static
 #endif
 
-#ifdef CONFIG_AUDIO
-// One of the mod playback engines is enabled.
-#if defined(CONFIG_AUDIO_MOD_SYSTEM)
-#define __audio_c_maybe_static
-#else // !CONFIG_AUDIO_MOD_SYSTEM
-#define __audio_c_maybe_static static
-#endif // CONFIG_AUDIO_MOD_SYSTEM
-#else // !CONFIG_AUDIO
-#define __audio_c_maybe_static static
-#endif // CONFIG_AUDIO
-
 #ifdef _MSC_VER
 #include "msvc.h"
 #endif
@@ -127,6 +116,10 @@ typedef enum
 
 #ifndef EDITOR_LIBSPEC
 #define EDITOR_LIBSPEC LIBSPEC
+#endif
+
+#ifndef AUDIO_LIBSPEC
+#define AUDIO_LIBSPEC LIBSPEC
 #endif
 
 #ifdef CONFIG_UPDATER

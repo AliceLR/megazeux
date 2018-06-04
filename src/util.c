@@ -391,6 +391,18 @@ void add_ext(char *src, const char *ext)
   }
 }
 
+int get_ext_pos(const char *filename)
+{
+  int filename_length = strlen(filename);
+  int ext_pos;
+
+  for(ext_pos = filename_length - 1; ext_pos >= 0; ext_pos--)
+    if(filename[ext_pos] == '.')
+      break;
+
+  return ext_pos;
+}
+
 __utils_maybe_static ssize_t __get_path(const char *file_name, char *dest,
  unsigned int buf_len)
 {
@@ -966,21 +978,6 @@ bool dir_get_next_entry(struct mzx_dir *dir, char *entry)
   snprintf(entry, PATH_BUF_LEN, "%s", inode->d_name);
   return true;
 }
-
-#if defined(CONFIG_AUDIO) || defined(CONFIG_EDITOR)
-
-/* It would be nice if this could be static, but we can't put it in either
- * edit.c or audio.c, because one (but NOT the other) might be disabled.
- *
- * In this case, the code wouldn't be compiled (noticed by the PSP port).
- */
-const char *const mod_gdm_ext[] =
-{
-  ".xm", ".s3m", ".mod", ".med", ".mtm", ".stm", ".it", ".669", ".ult",
-  ".wav", ".dsm", ".far", ".okt", ".amf", ".ogg", ".gdm", NULL
-};
-
-#endif // CONFIG_AUDIO || CONFIG_EDITOR
 
 #if defined(__amigaos__)
 

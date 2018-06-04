@@ -22,8 +22,11 @@
 
 #include "audio.h"
 #include "audio_mikmod.h"
-#include "const.h"
-#include "util.h"
+#include "stream_registry.h"
+#include "stream_sampled.h"
+
+#include "../const.h"
+#include "../util.h"
 
 // TODO: deSDL MikMod plugin
 #include "SDL.h"
@@ -187,8 +190,8 @@ static void mm_destruct(struct audio_stream *a_src)
   sampled_destruct(a_src);
 }
 
-struct audio_stream *construct_mikmod_stream(char *filename, Uint32 frequency,
- Uint32 volume, Uint32 repeat)
+static struct audio_stream *construct_mikmod_stream(char *filename,
+ Uint32 frequency, Uint32 volume, Uint32 repeat)
 {
   FILE *input_file;
   char *input_buffer;
@@ -266,4 +269,19 @@ void init_mikmod(struct config_info *conf)
   // FIXME: Should break a lot more here
   if(MikMod_Init(NULL))
     fprintf(stderr, "MikMod Init failed: %s", MikMod_strerror(MikMod_errno));
+
+  audio_register_ext("669", construct_mikmod_stream);
+  //audio_register_ext("amf", construct_mikmod_stream);
+  audio_register_ext("dsm", construct_mikmod_stream);
+  audio_register_ext("far", construct_mikmod_stream);
+  audio_register_ext("gdm", construct_mikmod_stream);
+  audio_register_ext("it", construct_mikmod_stream);
+  audio_register_ext("med", construct_mikmod_stream);
+  audio_register_ext("mod", construct_mikmod_stream);
+  audio_register_ext("mtm", construct_mikmod_stream);
+  audio_register_ext("okt", construct_mikmod_stream);
+  audio_register_ext("s3m", construct_mikmod_stream);
+  audio_register_ext("stm", construct_mikmod_stream);
+  audio_register_ext("ult", construct_mikmod_stream);
+  //audio_register_ext("xm", construct_mikmod_stream);
 }

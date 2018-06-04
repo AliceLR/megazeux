@@ -33,27 +33,26 @@
 #include <unistd.h>
 #endif
 
-#include "platform.h"
-#include "event.h"
-#include "helpsys.h"
-#include "sfx.h"
-#include "error.h"
-#include "intake.h"
-#include "window.h"
-#include "graphics.h"
-#include "const.h"
-#include "data.h"
-#include "helpsys.h"
-#include "robot.h"
 #include "board.h"
+#include "const.h"
+#include "context_enum.h"
+#include "data.h"
+#include "error.h"
+#include "event.h"
+#include "graphics.h"
+#include "helpsys.h"
+#include "intake.h"
+#include "platform.h"
+#include "robot.h"
+#include "window.h"
 #include "world.h"
 #include "util.h"
+
+#include "audio/sfx.h"
 
 #ifdef CONFIG_WII
 #include <sys/iosupport.h>
 #endif
-
-#include "context_enum.h"
 
 // This context stuff was originally in helpsys, but it's actually
 // more of a property of the windowing system.
@@ -1464,8 +1463,8 @@ static int key_input_box(struct world *mzx_world, struct dialog *di,
    di->sfx_test_for_input)
   {
     // Play a sfx
-    clear_sfx_queue();
-    play_str(src->result, 0);
+    sfx_clear_queue();
+    play_string(src->result, 0);
   }
 
   return key;
@@ -2793,9 +2792,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
           if(file_name_length >= 4)
           {
             // Find the extension.
-            for(ext_pos = file_name_length - 1; ext_pos >= 0; ext_pos--)
-              if(file_name[ext_pos] == '.')
-                break;
+            ext_pos = get_ext_pos(file_name);
 
             for(i = 0; wildcards[i] != NULL; i++)
             {

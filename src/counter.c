@@ -28,7 +28,6 @@
 
 #include "counter.h"
 
-#include "audio.h"
 #include "data.h"
 #include "error.h"
 #include "event.h"
@@ -45,6 +44,8 @@
 #include "time.h"
 #include "util.h"
 #include "world.h"
+
+#include "audio/audio.h"
 
 #ifdef CONFIG_UTHASH
 #include <utcasehash.h>
@@ -2282,50 +2283,50 @@ static void bimesg_write(struct world *mzx_world,
 static int mod_order_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  return get_order();
+  return audio_get_module_order();
 }
 
 static void mod_order_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
-  jump_module(value);
+  audio_set_module_order(value);
 }
 
 static int mod_position_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  return get_position();
+  return audio_get_module_position();
 }
 
 static void mod_position_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
-  set_position(value);
+  audio_set_module_position(value);
 }
 
 static int mod_length_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  return audio_get_length();
+  return audio_get_module_length();
 }
 
 static int mod_freq_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  return get_frequency();
+  return audio_get_module_frequency();
 }
 
 static void mod_freq_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   if((value == 0) || ((value >= 16) && (value <= (2 << 20))))
-    shift_frequency(value);
+    audio_set_module_frequency(value);
 }
 
 static int max_samples_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  return get_max_samples();
+  return audio_get_max_samples();
 }
 
 static void max_samples_write(struct world *mzx_world,
@@ -2335,7 +2336,7 @@ static void max_samples_write(struct world *mzx_world,
   value = MAX(-1, value);
 
   mzx_world->max_samples = value;
-  set_max_samples(value);
+  audio_set_max_samples(value);
 }
 
 // Make sure this is in the right alphabetical (non-case sensitive) order
@@ -3234,7 +3235,7 @@ static int invinco_gateway(struct world *mzx_world, struct counter *counter,
   {
     if(!value)
     {
-      clear_sfx_queue();
+      sfx_clear_queue();
       play_sfx(mzx_world, 18);
       id_chars[player_color] = mzx_world->saved_pl_color;
     }

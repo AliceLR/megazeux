@@ -34,7 +34,6 @@
 #include "world_prop.h"
 #include "legacy_world.h"
 
-#include "audio.h"
 #include "board.h"
 #include "configure.h"
 #include "const.h"
@@ -49,12 +48,14 @@
 #include "idput.h"
 #include "memfile.h"
 #include "robot.h"
-#include "sfx.h"
 #include "sprite.h"
 #include "str.h"
 #include "util.h"
 #include "window.h"
 #include "zip.h"
+
+#include "audio/audio.h"
+#include "audio/sfx.h"
 
 #ifdef CONFIG_LOADSAVE_METER
 
@@ -2569,7 +2570,7 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
     mzx_world->max_samples = 4;
 
   // This will be -1 (no limit) or whatever was loaded from a save
-  set_max_samples(mzx_world->max_samples);
+  audio_set_max_samples(mzx_world->max_samples);
 
   mzx_world->active = 1;
 
@@ -3094,7 +3095,7 @@ void clear_world(struct world *mzx_world)
 
   mzx_world->active = 0;
 
-  end_sample();
+  audio_end_sample();
 }
 
 // This clears the rest of the stuff.

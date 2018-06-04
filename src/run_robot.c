@@ -24,7 +24,6 @@
 #include <time.h>
 #include <string.h>
 
-#include "audio.h"
 #include "block.h"
 #include "const.h"
 #include "counter.h"
@@ -42,12 +41,14 @@
 #include "mzm.h"
 #include "robot.h"
 #include "scrdisp.h"
-#include "sfx.h"
 #include "sprite.h"
 #include "str.h"
 #include "util.h"
 #include "window.h"
 #include "world.h"
+
+#include "audio/audio.h"
+#include "audio/sfx.h"
 
 #define parsedir(a, b, c, d) \
  parsedir(mzx_world, a, b, c, d, _bl[0], _bl[1], _bl[2], _bl[3])
@@ -98,7 +99,7 @@ static void magic_load_mod(struct world *mzx_world, char *filename)
   if(!filename[0])
   {
     mzx_world->real_mod_playing[0] = 0;
-    end_module();
+    audio_end_module();
     return;
   }
 
@@ -1860,13 +1861,13 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
           case MUSICON:
           {
-            success = get_music_on_state();
+            success = audio_get_music_on();
             break;
           }
 
           case SOUNDON:
           {
-            success = get_sfx_on_state();
+            success = audio_get_pcs_on();
             break;
           }
         }
@@ -2276,7 +2277,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         char mod_name_buffer[ROBOT_MAX_TR];
         tr_msg(mzx_world, cmd_ptr + 2, id, mod_name_buffer);
         magic_load_mod(mzx_world, mod_name_buffer);
-        volume_module(src_board->volume);
+        audio_set_module_volume(src_board->volume);
         break;
       }
 
@@ -2290,7 +2291,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         if(frequency < 0)
           frequency = 0;
 
-        play_sample(frequency, sam_name_buffer, true);
+        audio_play_sample(sam_name_buffer, true, frequency);
 
         break;
       }
@@ -2310,13 +2311,13 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         src_board->volume = volume;
         src_board->volume_target = volume;
 
-        volume_module(volume);
+        audio_set_module_volume(volume);
         break;
       }
 
       case ROBOTIC_CMD_END_MOD: // End mod
       {
-        end_module();
+        audio_end_module();
         src_board->mod_playing[0] = 0;
         mzx_world->real_mod_playing[0] = 0;
         break;
@@ -2324,42 +2325,38 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
       case ROBOTIC_CMD_END_SAM: // End sam
       {
-        end_sample();
+        audio_end_sample();
         break;
       }
 
       case ROBOTIC_CMD_PLAY: // Play notes
       {
-        play_str(cmd_ptr + 2, 0);
+        play_string(cmd_ptr + 2, 0);
         break;
       }
 
       case ROBOTIC_CMD_END_PLAY: // End play
       {
-        clear_sfx_queue();
+        sfx_clear_queue();
         break;
       }
 
       // FIXME - This probably needs a different implementation
       case ROBOTIC_CMD_WAIT_THEN_PLAY: // wait play "str"
       {
-        int index_dif = topindex - backindex;
-        if(index_dif < 0)
-         index_dif = topindex + (NOISEMAX - backindex);
+        int index_dif = sfx_length_left();
 
         if(index_dif > 10)
           goto breaker;
 
-        play_str(cmd_ptr + 2, 0);
+        play_string(cmd_ptr + 2, 0);
 
         break;
       }
 
       case ROBOTIC_CMD_WAIT_PLAY: // wait play
       {
-        int index_dif = topindex - backindex;
-        if(index_dif < 0)
-         index_dif = topindex + (NOISEMAX - backindex);
+        int index_dif = sfx_length_left();
 
         if(index_dif > 10)
           goto breaker;
@@ -2376,8 +2373,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
       case ROBOTIC_CMD_PLAY_IF_SILENT: // play sfx notes
       {
-        if(!is_playing())
-          play_str(cmd_ptr + 2, 0);
+        if(!sfx_is_playing())
+          play_string(cmd_ptr + 2, 0);
 
         break;
       }
@@ -4197,7 +4194,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
       case ROBOTIC_CMD_JUMP_MOD_ORDER: // jump mod order #
       {
-        jump_module(parse_param(mzx_world, cmd_ptr + 1, id));
+        audio_set_module_order(parse_param(mzx_world, cmd_ptr + 1, id));
         break;
       }
 
@@ -4322,17 +4319,9 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      // FIXME - There may be no way to get this to work.
-      // It may have to be removed.
       case ROBOTIC_CMD_MOD_SAM: // modsam freq num
       {
-        if(get_music_on_state())
-        {
-          int frequency = parse_param(mzx_world, cmd_ptr + 1, id);
-          char *p2 = next_param_pos(cmd_ptr + 1);
-          int sam_num = parse_param(mzx_world, p2, id);
-          spot_sample(frequency, sam_num);
-        }
+        // Removed.
         break;
       }
 
@@ -4648,7 +4637,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
         magic_load_mod(mzx_world, name_buffer);
         src_board->volume = 0;
-        volume_module(0);
+        audio_set_module_volume(0);
         break;
       }
 

@@ -22,8 +22,11 @@
 
 #include "audio.h"
 #include "audio_xmp.h"
-#include "const.h"
-#include "util.h"
+#include "stream_registry.h"
+#include "stream_sampled.h"
+
+#include "../const.h"
+#include "../util.h"
 
 //#ifdef __WIN32__
 //#define BUILDING_STATIC
@@ -164,8 +167,8 @@ static void audio_xmp_destruct(struct audio_stream *a_src)
   sampled_destruct(a_src);
 }
 
-struct audio_stream *construct_xmp_stream(char *filename, Uint32 frequency,
- Uint32 volume, Uint32 repeat)
+static struct audio_stream *construct_xmp_stream(char *filename,
+ Uint32 frequency, Uint32 volume, Uint32 repeat)
 {
   struct audio_stream *ret_val = NULL;
   struct xmp_module_info info;
@@ -248,4 +251,19 @@ struct audio_stream *construct_xmp_stream(char *filename, Uint32 frequency,
 void init_xmp(struct config_info *conf)
 {
   xmp_resample_mode = conf->modplug_resample_mode;
+
+  audio_register_ext("669", construct_xmp_stream);
+  audio_register_ext("amf", construct_xmp_stream);
+  //audio_register_ext("dsm", construct_xmp_stream);
+  audio_register_ext("far", construct_xmp_stream);
+  audio_register_ext("gdm", construct_xmp_stream);
+  audio_register_ext("it", construct_xmp_stream);
+  audio_register_ext("med", construct_xmp_stream);
+  audio_register_ext("mod", construct_xmp_stream);
+  audio_register_ext("mtm", construct_xmp_stream);
+  audio_register_ext("okt", construct_xmp_stream);
+  audio_register_ext("s3m", construct_xmp_stream);
+  audio_register_ext("stm", construct_xmp_stream);
+  audio_register_ext("ult", construct_xmp_stream);
+  audio_register_ext("xm", construct_xmp_stream);
 }
