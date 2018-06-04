@@ -157,7 +157,7 @@ int mem_getw(const unsigned char **ptr);
 void mem_putc(int src, unsigned char **ptr);
 void mem_putd(int src, unsigned char **ptr);
 void mem_putw(int src, unsigned char **ptr);
- 
+
 CORE_LIBSPEC int memsafegets(char *dest, int size, char **src, char *end);
 
 #if defined(__WIN32__) && defined(__STRICT_ANSI__)
@@ -186,10 +186,6 @@ CORE_LIBSPEC char *strsep(char **stringp, const char *delim);
 
 #if defined(__WIN32__) && !defined(_MSC_VER)
 #define mkdir(file,mode) mkdir(file)
-#endif
-
-#if defined(CONFIG_AUDIO) || defined(CONFIG_EDITOR)
-CORE_LIBSPEC extern const char *const mod_gdm_ext[];
 #endif
 
 #if defined(__amigaos__)

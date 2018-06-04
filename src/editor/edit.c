@@ -3839,7 +3839,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
               getcwd(current_dir, MAX_PATH);
               chdir(current_listening_dir);
 
-              if(!choose_file(mzx_world, mod_gdm_ext, new_mod,
+              if(!choose_file(mzx_world, mod_ext, new_mod,
                "Choose a module file (listening only)", 1))
               {
                 audio_play_module(new_mod, false, 255);
