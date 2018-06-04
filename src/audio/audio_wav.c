@@ -270,18 +270,28 @@ static void *get_riff_chunk(FILE *fp, int filesize, char *id, int *size)
     return NULL;
 
   if(id)
-    fread(id, 1, 4, fp);
+  {
+    if(fread(id, 1, 4, fp) < 4)
+      return NULL;
+  }
   else
+  {
     fseek(fp, 4, SEEK_CUR);
-  fread(size_buf, 1, 4, fp);
+  }
+
+  if(fread(size_buf, 1, 4, fp) < 4)
+    return NULL;
 
   *size = read_little_endian32(size_buf);
   if(*size > maxsize) *size = maxsize;
 
   buf = cmalloc(*size);
 
-  if(buf)
-    fread(buf, 1, *size, fp);
+  if((int)fread(buf, 1, *size, fp) < *size)
+  {
+    free(buf);
+    return NULL;
+  }
 
   // Realign if odd size unless padding byte isn't 0
   if(*size & 1)
@@ -299,7 +309,9 @@ static int get_next_riff_chunk_id(FILE *fp, int filesize, char *id)
   if(filesize - ftell(fp) < 8)
     return 0;
 
-  fread(id, 1, 4, fp);
+  if(fread(id, 1, 4, fp) < 4)
+    return 0;
+
   fseek(fp, -4, SEEK_CUR);
   return 1;
 }
@@ -313,7 +325,9 @@ static void skip_riff_chunk(FILE *fp, int filesize)
   if(maxsize >= 0)
   {
     fseek(fp, 4, SEEK_CUR);
-    fread(size_buf, 1, 4, fp);
+    if(fread(size_buf, 1, 4, fp) < 4)
+      return;
+
     s = read_little_endian32(size_buf);
     if(s > maxsize)
       s = maxsize;
@@ -323,7 +337,7 @@ static void skip_riff_chunk(FILE *fp, int filesize)
     if(s & 1)
     {
       c = fgetc(fp);
-      if ((c != 0) && (c != EOF))
+      if((c != 0) && (c != EOF))
         fseek(fp, -1, SEEK_CUR);
     }
   }
@@ -372,7 +386,7 @@ static int load_sam_file(const char *file, struct wav_info *spec,
   spec->loop_end = 0;
 
   buf = cmalloc(source_length);
-  if (fread(buf, 1, source_length, fp) < 1)
+  if(fread(buf, 1, source_length, fp) < source_length)
   {
     free(buf);
     goto exit_close;
@@ -416,17 +430,23 @@ static int load_wav_file(const char *file, struct wav_info *spec,
     goto exit_out;
 
   // If it doesn't start with "RIFF", it's not a WAV file.
-  fread(tmp_buf, 1, 4, fp);
+  if(fread(tmp_buf, 1, 4, fp) < 4)
+    goto exit_close;
+
   if(memcmp(tmp_buf, "RIFF", 4))
     goto exit_close;
 
   // Read reported file size (if the file turns out to be larger, this will be
   // used instead of the real file size.)
-  fread(tmp_buf, 1, 4, fp);
+  if(fread(tmp_buf, 1, 4, fp) < 4)
+    goto exit_close;
+
   riffsize = read_little_endian32(tmp_buf) + 8;
 
   // If the RIFF type isn't "WAVE", it's not a WAV file.
-  fread(tmp_buf, 1, 4, fp);
+  if(fread(tmp_buf, 1, 4, fp) < 4)
+    goto exit_close;
+
   if(memcmp(tmp_buf, "WAVE", 4))
     goto exit_close;
 
