@@ -243,8 +243,10 @@ core_cobjs += ${audio_cobjs}
 core_flags += ${VORBIS_CFLAGS}
 core_ldflags := ${VORBIS_LDFLAGS} ${core_ldflags}
 else
-# Required anyway for sfx_strs...
+# The editor needs this for sfx_strs...
+ifeq (${BUILD_EDITOR},1)
 core_cobjs += ${audio_obj}/sfx.o
+endif
 endif
 
 ifeq (${BUILD_SDL},1)
