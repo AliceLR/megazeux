@@ -20,7 +20,7 @@
 #include "../../src/event.h"
 #include "../../src/platform.h"
 #include "../../src/graphics.h"
-#include "../../src/audio.h"
+#include "../../src/audio/audio.h"
 
 #include <3ds.h>
 #include <string.h>

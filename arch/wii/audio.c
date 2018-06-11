@@ -17,7 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "audio.h"
+#include "audio/audio.h"
 
 #include <stdlib.h>
 #include <string.h>
