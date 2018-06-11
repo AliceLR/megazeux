@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __AUDIO_STREAM_REGISTRY_H
-#define __AUDIO_STREAM_REGISTRY_H
+#ifndef __AUDIO_EXT_H
+#define __AUDIO_EXT_H
 
 #include "../compat.h"
 
@@ -40,4 +40,4 @@ struct audio_stream *audio_ext_construct_stream(char *filename,
 
 __M_END_DECLS
 
-#endif /* __AUDIO_STREAMS_H */
+#endif /* __AUDIO_EXT_H */

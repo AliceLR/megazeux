@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __AUDIO_STREAM_SAMPLED_H
-#define __AUDIO_STREAM_SAMPLED_H
+#ifndef __AUDIO_SAMPLED_STREAM_H
+#define __AUDIO_SAMPLED_STREAM_H
 
 #include "../compat.h"
 
@@ -59,4 +59,4 @@ void initialize_sampled_stream(struct sampled_stream *s_src,
 
 __M_END_DECLS
 
-#endif /* __AUDIO_STREAM_SAMPLED_H */
+#endif /* __AUDIO_SAMPLED_STREAM_H */
