@@ -22,8 +22,8 @@
 
 #include "audio.h"
 #include "audio_xmp.h"
-#include "stream_registry.h"
-#include "stream_sampled.h"
+#include "ext.h"
+#include "sampled_stream.h"
 
 #include "../const.h"
 #include "../util.h"
@@ -252,18 +252,18 @@ void init_xmp(struct config_info *conf)
 {
   xmp_resample_mode = conf->modplug_resample_mode;
 
-  audio_register_ext("669", construct_xmp_stream);
-  audio_register_ext("amf", construct_xmp_stream);
-  //audio_register_ext("dsm", construct_xmp_stream);
-  audio_register_ext("far", construct_xmp_stream);
-  audio_register_ext("gdm", construct_xmp_stream);
-  audio_register_ext("it", construct_xmp_stream);
-  audio_register_ext("med", construct_xmp_stream);
-  audio_register_ext("mod", construct_xmp_stream);
-  audio_register_ext("mtm", construct_xmp_stream);
-  audio_register_ext("okt", construct_xmp_stream);
-  audio_register_ext("s3m", construct_xmp_stream);
-  audio_register_ext("stm", construct_xmp_stream);
-  audio_register_ext("ult", construct_xmp_stream);
-  audio_register_ext("xm", construct_xmp_stream);
+  audio_ext_register("669", construct_xmp_stream);
+  audio_ext_register("amf", construct_xmp_stream);
+  //audio_ext_register("dsm", construct_xmp_stream);
+  audio_ext_register("far", construct_xmp_stream);
+  audio_ext_register("gdm", construct_xmp_stream);
+  audio_ext_register("it", construct_xmp_stream);
+  audio_ext_register("med", construct_xmp_stream);
+  audio_ext_register("mod", construct_xmp_stream);
+  audio_ext_register("mtm", construct_xmp_stream);
+  audio_ext_register("okt", construct_xmp_stream);
+  audio_ext_register("s3m", construct_xmp_stream);
+  audio_ext_register("stm", construct_xmp_stream);
+  audio_ext_register("ult", construct_xmp_stream);
+  audio_ext_register("xm", construct_xmp_stream);
 }

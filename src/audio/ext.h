@@ -32,10 +32,10 @@ __M_BEGIN_DECLS
 typedef struct audio_stream *(*construct_stream_fn)(char *,
  Uint32, Uint32, Uint32);
 
-void audio_register_ext(const char *ext, construct_stream_fn constructor);
-void audio_free_registry(void);
+void audio_ext_register(const char *ext, construct_stream_fn constructor);
+void audio_ext_free_registry(void);
 
-struct audio_stream *construct_stream_audio_file(char *filename,
+struct audio_stream *audio_ext_construct_stream(char *filename,
  Uint32 frequency, Uint32 volume, Uint32 repeat);
 
 __M_END_DECLS

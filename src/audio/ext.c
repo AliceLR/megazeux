@@ -21,7 +21,7 @@
  */
 
 #include "audio.h"
-#include "stream_registry.h"
+#include "ext.h"
 
 #include "../util.h"
 
@@ -35,7 +35,7 @@ static struct registry_entry *registry = NULL;
 static int registry_size = 0;
 static int registry_alloc = 0;
 
-void audio_register_ext(const char *ext, construct_stream_fn constructor)
+void audio_ext_register(const char *ext, construct_stream_fn constructor)
 {
   if(registry_alloc <= registry_size)
   {
@@ -54,7 +54,7 @@ void audio_register_ext(const char *ext, construct_stream_fn constructor)
   registry_size++;
 }
 
-void audio_free_registry(void)
+void audio_ext_free_registry(void)
 {
   free(registry);
   registry = NULL;
@@ -62,7 +62,7 @@ void audio_free_registry(void)
   registry_alloc = 0;
 }
 
-struct audio_stream *construct_stream_audio_file(char *filename,
+struct audio_stream *audio_ext_construct_stream(char *filename,
  Uint32 frequency, Uint32 volume, Uint32 repeat)
 {
   struct audio_stream *a_return = NULL;

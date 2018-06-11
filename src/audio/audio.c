@@ -30,8 +30,8 @@
 
 #include "audio.h"
 #include "audio_pcs.h"
-#include "stream_registry.h"
-#include "stream_sampled.h"
+#include "ext.h"
+#include "sampled_stream.h"
 
 #include "../configure.h"
 #include "../data.h"
@@ -285,7 +285,7 @@ void init_audio(struct config_info *conf)
 void quit_audio(void)
 {
   quit_audio_platform();
-  audio_free_registry();
+  audio_ext_free_registry();
   free(audio.pcs_stream);
 }
 
@@ -317,7 +317,7 @@ int audio_play_module(char *filename, bool safely, int volume)
 
   audio_end_module();
 
-  a_src = construct_stream_audio_file(filename, 0,
+  a_src = audio_ext_construct_stream(filename, 0,
    volume * audio.music_volume / 8, 1);
 
   LOCK();
@@ -426,11 +426,11 @@ void audio_play_sample(char *filename, bool safely, int period)
   if(period == 0)
   {
     // Use 0 to instruct handler to get default frequency
-    construct_stream_audio_file(filename, 0, vol, 0);
+    audio_ext_construct_stream(filename, 0, vol, 0);
   }
   else
   {
-    construct_stream_audio_file(filename,
+    audio_ext_construct_stream(filename,
      audio_get_real_frequency(period * 2), vol, 0);
   }
 

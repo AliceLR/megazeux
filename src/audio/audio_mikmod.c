@@ -22,8 +22,8 @@
 
 #include "audio.h"
 #include "audio_mikmod.h"
-#include "stream_registry.h"
-#include "stream_sampled.h"
+#include "ext.h"
+#include "sampled_stream.h"
 
 #include "../const.h"
 #include "../util.h"
@@ -270,18 +270,18 @@ void init_mikmod(struct config_info *conf)
   if(MikMod_Init(NULL))
     fprintf(stderr, "MikMod Init failed: %s", MikMod_strerror(MikMod_errno));
 
-  audio_register_ext("669", construct_mikmod_stream);
-  //audio_register_ext("amf", construct_mikmod_stream);
-  audio_register_ext("dsm", construct_mikmod_stream);
-  audio_register_ext("far", construct_mikmod_stream);
-  audio_register_ext("gdm", construct_mikmod_stream);
-  audio_register_ext("it", construct_mikmod_stream);
-  audio_register_ext("med", construct_mikmod_stream);
-  audio_register_ext("mod", construct_mikmod_stream);
-  audio_register_ext("mtm", construct_mikmod_stream);
-  audio_register_ext("okt", construct_mikmod_stream);
-  audio_register_ext("s3m", construct_mikmod_stream);
-  audio_register_ext("stm", construct_mikmod_stream);
-  audio_register_ext("ult", construct_mikmod_stream);
-  //audio_register_ext("xm", construct_mikmod_stream);
+  audio_ext_register("669", construct_mikmod_stream);
+  //audio_ext_register("amf", construct_mikmod_stream);
+  audio_ext_register("dsm", construct_mikmod_stream);
+  audio_ext_register("far", construct_mikmod_stream);
+  audio_ext_register("gdm", construct_mikmod_stream);
+  audio_ext_register("it", construct_mikmod_stream);
+  audio_ext_register("med", construct_mikmod_stream);
+  audio_ext_register("mod", construct_mikmod_stream);
+  audio_ext_register("mtm", construct_mikmod_stream);
+  audio_ext_register("okt", construct_mikmod_stream);
+  audio_ext_register("s3m", construct_mikmod_stream);
+  audio_ext_register("stm", construct_mikmod_stream);
+  audio_ext_register("ult", construct_mikmod_stream);
+  //audio_ext_register("xm", construct_mikmod_stream);
 }

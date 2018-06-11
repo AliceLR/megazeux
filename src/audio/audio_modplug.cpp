@@ -25,8 +25,8 @@
 
 #include "audio.h"
 #include "audio_modplug.h"
-#include "stream_registry.h"
-#include "stream_sampled.h"
+#include "ext.h"
+#include "sampled_stream.h"
 
 #include "../const.h"
 #include "../util.h"
@@ -309,18 +309,18 @@ void init_modplug(struct config_info *conf)
 
   ModPlug_SetSettings(&audio.mod_settings);
 
-  audio_register_ext("669", construct_modplug_stream);
-  audio_register_ext("amf", construct_modplug_stream);
-  audio_register_ext("dsm", construct_modplug_stream);
-  audio_register_ext("far", construct_modplug_stream);
-  audio_register_ext("gdm", modplug_convert_gdm);
-  audio_register_ext("it", construct_modplug_stream);
-  audio_register_ext("med", construct_modplug_stream);
-  audio_register_ext("mod", construct_modplug_stream);
-  audio_register_ext("mtm", construct_modplug_stream);
-  audio_register_ext("okt", construct_modplug_stream);
-  audio_register_ext("s3m", construct_modplug_stream);
-  audio_register_ext("stm", construct_modplug_stream);
-  audio_register_ext("ult", construct_modplug_stream);
-  audio_register_ext("xm", construct_modplug_stream);
+  audio_ext_register("669", construct_modplug_stream);
+  audio_ext_register("amf", construct_modplug_stream);
+  audio_ext_register("dsm", construct_modplug_stream);
+  audio_ext_register("far", construct_modplug_stream);
+  audio_ext_register("gdm", modplug_convert_gdm);
+  audio_ext_register("it", construct_modplug_stream);
+  audio_ext_register("med", construct_modplug_stream);
+  audio_ext_register("mod", construct_modplug_stream);
+  audio_ext_register("mtm", construct_modplug_stream);
+  audio_ext_register("okt", construct_modplug_stream);
+  audio_ext_register("s3m", construct_modplug_stream);
+  audio_ext_register("stm", construct_modplug_stream);
+  audio_ext_register("ult", construct_modplug_stream);
+  audio_ext_register("xm", construct_modplug_stream);
 }

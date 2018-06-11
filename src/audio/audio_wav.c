@@ -22,8 +22,8 @@
 
 #include "audio.h"
 #include "audio_wav.h"
-#include "stream_registry.h"
-#include "stream_sampled.h"
+#include "ext.h"
+#include "sampled_stream.h"
 
 #include "../util.h"
 
@@ -620,6 +620,6 @@ static struct audio_stream *construct_wav_stream(char *filename,
 
 void init_wav(struct config_info *conf)
 {
-  audio_register_ext("sam", construct_wav_stream);
-  audio_register_ext("wav", construct_wav_stream);
+  audio_ext_register("sam", construct_wav_stream);
+  audio_ext_register("wav", construct_wav_stream);
 }

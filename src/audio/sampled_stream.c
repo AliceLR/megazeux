@@ -23,7 +23,7 @@
 // Common functions for sampled streams.
 
 #include "audio.h"
-#include "stream_sampled.h"
+#include "sampled_stream.h"
 
 #define FP_SHIFT      13
 #define FP_AND        ((1 << FP_SHIFT) - 1)

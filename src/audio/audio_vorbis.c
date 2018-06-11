@@ -22,8 +22,8 @@
 
 #include "audio.h"
 #include "audio_vorbis.h"
-#include "stream_registry.h"
-#include "stream_sampled.h"
+#include "ext.h"
+#include "sampled_stream.h"
 
 #ifdef CONFIG_TREMOR
 #include <tremor/ivorbiscodec.h>
@@ -260,5 +260,5 @@ static struct audio_stream *construct_vorbis_stream(char *filename,
 
 void init_vorbis(struct config_info *conf)
 {
-  audio_register_ext("ogg", construct_vorbis_stream);
+  audio_ext_register("ogg", construct_vorbis_stream);
 }
