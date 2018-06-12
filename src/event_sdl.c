@@ -21,6 +21,7 @@
 #include "event.h"
 #include "platform.h"
 #include "graphics.h"
+#include "compat_sdl.h"
 #include "render_sdl.h"
 
 #include "SDL.h"
@@ -518,7 +519,7 @@ static bool process_event(SDL_Event *event)
 
       break;
     }
-    
+
     case SDL_JOYHATMOTION:
     {
       int which = event->jhat.which;
@@ -527,7 +528,7 @@ static bool process_event(SDL_Event *event)
       enum keycode key_down = input.joystick_hat_map[which][1];
       enum keycode key_left = input.joystick_hat_map[which][2];
       enum keycode key_right = input.joystick_hat_map[which][3];
-      
+
       //if(dir & SDL_HAT_CENTERED)
       {
         joystick_key_release(status, key_up);
@@ -535,31 +536,31 @@ static bool process_event(SDL_Event *event)
         joystick_key_release(status, key_left);
         joystick_key_release(status, key_right);
       }
-    
+
       if(dir & SDL_HAT_UP)
       {
         if (key_up)
           joystick_key_press(status, key_up, key_up);
       }
-      
+
       if(dir & SDL_HAT_DOWN)
       {
         if (key_down)
           joystick_key_press(status, key_down, key_down);
       }
-      
+
       if(dir & SDL_HAT_LEFT)
       {
         if (key_left)
           joystick_key_press(status, key_left, key_left);
       }
-      
+
       if(dir & SDL_HAT_RIGHT)
       {
         if (key_right)
           joystick_key_press(status, key_right, key_right);
       }
-      
+
       break;
     }
 
@@ -585,27 +586,39 @@ bool __update_event_status(void)
 // Proper polling should be performed if the answer is yes.
 bool __peek_exit_input(void)
 {
-  #if SDL_VERSION_ATLEAST(2,0,0)
+#if SDL_VERSION_ATLEAST(2,0,0)
   SDL_Event events[256];
   int num_events, i;
+
   SDL_PumpEvents();
   num_events = SDL_PeepEvents(events, 256, SDL_PEEKEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT);
-  for (i = 0; i < num_events; i++) {
-    if (events[i].type == SDL_QUIT) return true;
-    if (events[i].type == SDL_KEYDOWN) {
+
+  for(i = 0; i < num_events; i++)
+  {
+    if(events[i].type == SDL_QUIT)
+      return true;
+
+    if(events[i].type == SDL_KEYDOWN)
+    {
       SDL_KeyboardEvent *ev = (SDL_KeyboardEvent *) &events[i];
-      if (ev->keysym.sym == SDLK_ESCAPE) return true;
-      if (ev->keysym.sym == SDLK_c && ev->keysym.mod & KMOD_CTRL) return true;
-      if (ev->keysym.sym == SDLK_F4 && ev->keysym.mod & KMOD_ALT) return true;
+
+      if(ev->keysym.sym == SDLK_ESCAPE)
+        return true;
+
+      if(ev->keysym.sym == SDLK_c && (ev->keysym.mod & KMOD_CTRL))
+        return true;
+
+      if(ev->keysym.sym == SDLK_F4 && (ev->keysym.mod & KMOD_ALT))
+        return true;
     }
   }
 
-  #else /* !SDL_VERSION_ATLEAST(2,0,0) */
+#else /* !SDL_VERSION_ATLEAST(2,0,0) */
 
   // FIXME: SDL supports SDL_PeepEvents but the implementation is
   // different
 
-  #endif /* SDL_VERSION_ATLEAST(2,0,0) */
+#endif /* SDL_VERSION_ATLEAST(2,0,0) */
 
   return false;
 }
@@ -627,7 +640,7 @@ static int SDL_WaitEventTimeout(SDL_Event *event, int timeout)
     anyEvent = SDL_PollEvent(event);
 
     // If an autorepeat triggers, it needs to be processed.
-    if(update_autorepeat_sdl())
+    if(update_autorepeat())
       break;
 
     // "Fix" awful intake cursor blinking

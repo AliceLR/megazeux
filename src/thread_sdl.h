@@ -24,7 +24,12 @@
 
 __M_BEGIN_DECLS
 
-#include "SDL_thread.h"
+#include <SDL_thread.h>
+#include <SDL_version.h>
+
+#if !SDL_VERSION_ATLEAST(2,0,0)
+typedef int(*SDL_ThreadFunction)(void *);
+#endif
 
 typedef SDL_cond* platform_cond;
 typedef SDL_mutex* platform_mutex;
@@ -98,7 +103,12 @@ static inline bool platform_cond_broadcast(platform_cond *cond)
 static inline int platform_thread_create(platform_thread *thread,
  platform_thread_fn start_function, void *data)
 {
+#if SDL_VERSION_ATLEAST(2,0,0)
   *thread = SDL_CreateThread(start_function, "", data);
+#else
+  *thread = SDL_CreateThread(start_function, data);
+#endif
+
   if(*thread)
     return 0;
   return -1;
@@ -112,7 +122,6 @@ static inline void platform_thread_join(platform_thread *thread)
 static inline void platform_yield(void)
 {
   // FIXME
-  SDL_Delay(1);
 }
 
 __M_END_DECLS

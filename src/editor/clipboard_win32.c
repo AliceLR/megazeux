@@ -21,8 +21,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
 #include "clipboard.h"
-#include "../compat.h"
 
 void copy_buffer_to_clipboard(char **buffer, int lines, int total_length)
 {

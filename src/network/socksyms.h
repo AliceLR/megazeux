@@ -26,6 +26,7 @@
 __M_BEGIN_DECLS
 
 #include "../configure.h"
+#include "../platform.h"
 
 #include <errno.h>
 

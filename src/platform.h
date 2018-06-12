@@ -28,7 +28,7 @@ __M_BEGIN_DECLS
 
 #ifdef CONFIG_SDL
 
-#include "SDL.h"
+#include "SDL_stdinc.h"
 
 #else // !CONFIG_SDL
 
