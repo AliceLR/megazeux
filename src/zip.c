@@ -127,13 +127,6 @@ static int _fseekwrapper(void *vp, long int offset, int code)
   return fseek((FILE *)vp, offset, code);
 }
 
-// devkitARM's ftell has a nonstandard signature and needs to be wrapped, too.
-
-static long _ftellwrapper(FILE *fp)
-{
-  return (long)ftell(fp);
-}
-
 static long int _fstatlen(FILE *fp)
 {
   struct stat file_info;
@@ -2542,7 +2535,7 @@ static struct zip_archive *zip_get_archive_file(FILE *fp)
   zp->vread = (size_t(*)(void *, size_t, size_t, void *)) fread;
   zp->vwrite = (size_t(*)(const void *, size_t, size_t, void *)) fwrite;
   zp->vseek = (int(*)(void *, long int, int)) _fseekwrapper;
-  zp->vtell = (long int(*)(void *)) _ftellwrapper;
+  zp->vtell = (long int(*)(void *)) ftell;
   zp->verror = (int(*)(void *)) ferror;
   zp->vclose = (int(*)(void *)) fclose;
   return zp;
