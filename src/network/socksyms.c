@@ -23,6 +23,7 @@
 #include "../util.h"
 
 #include <assert.h>
+#include <inttypes.h>
 
 #if defined(__WIN32__) || defined(__amigaos__)
 

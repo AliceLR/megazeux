@@ -22,6 +22,10 @@
 
 // Common functions for sampled streams.
 
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "audio.h"
 #include "sampled_stream.h"
 

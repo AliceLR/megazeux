@@ -20,7 +20,6 @@
 #include <string.h>
 #include <errno.h>
 
-#define SKIP_SDL
 #include "pngops.h"
 #include "smzxconv.h"
 

@@ -24,6 +24,7 @@
 
 __M_BEGIN_DECLS
 
+#include "../platform.h"
 #include "socksyms.h"
 
 int dns_getaddrinfo(const char *node, const char *service,

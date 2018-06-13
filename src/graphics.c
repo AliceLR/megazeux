@@ -50,6 +50,7 @@
 #ifdef CONFIG_ICON
 #include "SDL_syswm.h"
 #endif // CONFIG_ICON
+#include "compat_sdl.h"
 #include "render_sdl.h"
 #endif // CONFIG_SDL
 

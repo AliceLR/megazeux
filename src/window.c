@@ -33,6 +33,16 @@
 #include <unistd.h>
 #endif
 
+#ifdef __WIN32__
+// Required for GetLogicalDrives()
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
+#ifdef CONFIG_WII
+#include <sys/iosupport.h>
+#endif
+
 #include "board.h"
 #include "const.h"
 #include "context_enum.h"
@@ -49,10 +59,6 @@
 #include "util.h"
 
 #include "audio/sfx.h"
-
-#ifdef CONFIG_WII
-#include <sys/iosupport.h>
-#endif
 
 // This context stuff was originally in helpsys, but it's actually
 // more of a property of the windowing system.

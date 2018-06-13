@@ -50,6 +50,10 @@
 #include "audio/sfx.h"
 #include "network/network.h"
 
+#ifdef CONFIG_SDL
+#include <SDL.h>
+#endif
+
 #ifndef VERSION
 #error Must define VERSION for MegaZeux version string
 #endif

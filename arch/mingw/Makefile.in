@@ -81,4 +81,4 @@ endif
 	@arch/manifest.sh ${build}
 
 SUBARCH := ${shell echo ${SUBPLATFORM} | sed 's,windows-,,'}
-include arch/zip.inc 
+include arch/zip.inc

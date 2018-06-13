@@ -19,8 +19,8 @@
 
 #include "event.h"
 #include "graphics.h"
-#include "util.h"
 #include "platform.h"
+#include "util.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -314,7 +314,13 @@ static enum keycode convert_xt_internal(Uint32 key, enum keycode *second)
   }
 }
 
-static bool update_autorepeat(void)
+// event_sdl.c needs to call this for SDL 1.2 to catch autorepeat non-events
+// while performing wait_event with a timeout.
+
+#if !defined(CONFIG_SDL)
+static
+#endif
+bool update_autorepeat(void)
 {
   // The repeat key may not be a "valid" keycode due to the unbounded nature
   // of joypad support.  All invalid keys use the last position because that's
@@ -328,13 +334,13 @@ static bool update_autorepeat(void)
   Uint8 last_key_state = status->keymap[status_key];
   Uint8 last_mouse_state = status->mouse_repeat_state;
 
-#ifdef CONFIG_SDL
-#if SDL_VERSION_ATLEAST(2,0,0)
   // If you enable SDL 2.0 key repeat, uncomment these lines:
+//#ifdef CONFIG_SDL
+//#if SDL_VERSION_ATLEAST(2,0,0)
   //last_key_state = 0;
   //input.repeat_stack_pointer = 0;
-#endif
-#endif
+//#endif
+//#endif
 
   if(last_key_state)
   {
@@ -411,18 +417,6 @@ static bool update_autorepeat(void)
   bump_status();
   return rval;
 }
-
-// event_sdl.c needs this in SDL 1.2 for catching autorepeat non-events while
-// performing wait_event with a timeout.
-
-#if defined(CONFIG_SDL)
-#if !SDL_VERSION_ATLEAST(2,0,0)
-bool update_autorepeat_sdl(void)
-{
-  return update_autorepeat();
-}
-#endif /*SDL_VERSION_ATLEAST*/
-#endif /*CONFIG_SDL*/
 
 bool update_event_status(void)
 {

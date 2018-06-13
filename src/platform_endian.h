@@ -30,7 +30,7 @@
 
 #if defined(CONFIG_SDL) && !defined(SKIP_SDL)
 
-#include <SDL.h>
+#include <SDL_endian.h>
 
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
 #define PLATFORM_BYTE_ORDER PLATFORM_BIG_ENDIAN

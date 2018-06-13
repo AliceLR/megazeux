@@ -43,7 +43,6 @@
 #include <utcasehash.h>
 
 // From MZX itself:
-#define SKIP_SDL
 
 // Safe- self sufficient or completely macros/static inlines
 #include "../const.h"
@@ -701,7 +700,7 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
 
   char src[256];
   size_t src_len;
-  
+
   // skip 0xff marker
   if(mfgetc(mf) != 0xff)
     return CORRUPT_WORLD;
