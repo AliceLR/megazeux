@@ -432,18 +432,6 @@ bool update_event_status(void)
   rval  = __update_event_status();
   rval |= update_autorepeat();
 
-#ifdef CONFIG_SDL
-#if !SDL_VERSION_ATLEAST(2,0,0)
-  // ALT+F4 - will not trigger an exit event, so set the variable manually.
-  if(status->key == IKEY_F4 && get_alt_status(keycode_internal))
-  {
-    status->key = IKEY_UNKNOWN;
-    status->unicode = 0;
-    status->exit = 1;
-  }
-#endif /*SDL_VERSION_ATLEAST*/
-#endif /*CONFIG_SDL*/
-
   return rval;
 }
 

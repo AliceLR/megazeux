@@ -579,6 +579,22 @@ bool __update_event_status(void)
   while(SDL_PollEvent(&event))
     rval |= process_event(&event);
 
+#if !SDL_VERSION_ATLEAST(2,0,0)
+  {
+    // ALT+F4 - will not trigger an exit event, so set the variable manually.
+    struct buffered_status *status = store_status();
+
+    if(status->key_repeat == IKEY_F4 && get_alt_status(keycode_internal))
+    {
+      status->key = IKEY_UNKNOWN;
+      status->key_repeat = IKEY_UNKNOWN;
+      status->unicode = 0;
+      status->exit = 1;
+      return true;
+    }
+  }
+#endif /*SDL_VERSION_ATLEAST*/
+
   return rval;
 }
 
