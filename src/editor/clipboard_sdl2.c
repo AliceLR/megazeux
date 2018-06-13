@@ -21,17 +21,18 @@
 #include <string.h>
 
 #include "clipboard.h"
-#include "../compat.h"
+
+#include <SDL.h>
 
 void copy_buffer_to_clipboard(char **buffer, int lines, int total_length)
 {
   int i;
   unsigned long line_length;
   char *dest_data, *dest_ptr;
-  
+
   dest_data = cmalloc(total_length + 1);
   dest_ptr = dest_data;
-  
+
   for(i = 0; i < lines; i++)
   {
     line_length = strlen(buffer[i]);
@@ -40,10 +41,10 @@ void copy_buffer_to_clipboard(char **buffer, int lines, int total_length)
     dest_ptr[0] = '\n';
     dest_ptr++;
   }
-  
+
   dest_ptr[-1] = 0;
   SDL_SetClipboardText(dest_data);
-  
+
   free(dest_data);
 }
 
