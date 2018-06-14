@@ -1838,10 +1838,6 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
   getcwd(current_listening_dir, MAX_PATH);
 
-  chdir(config_dir);
-  set_config_from_file(&(mzx_world->conf), "editor.cnf");
-  chdir(current_listening_dir);
-
   copy_robot.used = 0;
   copy_sensor.used = 0;
   copy_scroll.used = 0;

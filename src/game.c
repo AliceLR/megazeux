@@ -1775,7 +1775,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
     Uint32 viewport_layer;
     int top_x;
     int top_y;
-    
+
     blank_layers();
 
     // Draw border
@@ -1829,7 +1829,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
 
     // Add sprites
     draw_sprites(mzx_world);
-    
+
     // Add time limit
     time_remaining = get_counter(mzx_world, "TIME", 0);
     if(time_remaining)
@@ -2715,7 +2715,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
       {
         mzx_world->full_exit = true;
       }
-      
+
       if(confirm_exit || !conf->standalone_mode)
       {
         confirm_exit = 0;
@@ -2743,7 +2743,6 @@ void title_screen(struct world *mzx_world)
   int fade;
   struct stat file_info;
   struct board *src_board;
-  char *current_dir;
   struct config_info *conf = &mzx_world->conf;
 
   set_caption(mzx_world, NULL, NULL, 0, 0);
@@ -2752,13 +2751,6 @@ void title_screen(struct world *mzx_world)
   // Clear screen
   clear_screen(32, 7);
   default_palette();
-
-  current_dir = cmalloc(MAX_PATH);
-  getcwd(current_dir, MAX_PATH);
-
-  chdir(config_dir);
-  set_config_from_file(&(mzx_world->conf), "title.cnf");
-  chdir(current_dir);
 
   // First, disable standalone mode if this is a build of MZX
   // with the editor enabled
@@ -2938,12 +2930,6 @@ void title_screen(struct world *mzx_world)
             // Load game
             fadein = 0;
 
-            getcwd(current_dir, MAX_PATH);
-
-            chdir(config_dir);
-            set_config_from_file(&(mzx_world->conf), "game.cnf");
-            chdir(current_dir);
-
             if(reload_savegame(mzx_world, save_file_name, &fadein))
             {
               src_board = mzx_world->current_board;
@@ -3033,12 +3019,6 @@ void title_screen(struct world *mzx_world)
             clear_screen(32, 7);
             // Palette
             default_palette();
-
-            getcwd(current_dir, MAX_PATH);
-
-            chdir(config_dir);
-            set_config_from_file(&(mzx_world->conf), "game.cnf");
-            chdir(current_dir);
 
             if(reload_world(mzx_world, curr_file, &fade))
             {
@@ -3165,7 +3145,7 @@ void title_screen(struct world *mzx_world)
            get_counter(mzx_world, "LOAD_MENU", 0);
           if(conf->standalone_mode && !load_menu_status)
             break;
-          
+
           // Restore
           m_show();
 
@@ -3173,12 +3153,6 @@ void title_screen(struct world *mzx_world)
           sfx_clear_queue();
           // Load game
           fadein = 0;
-
-          getcwd(current_dir, MAX_PATH);
-
-          chdir(config_dir);
-          set_config_from_file(&(mzx_world->conf), "game.cnf");
-          chdir(current_dir);
 
           if(!reload_savegame(mzx_world, curr_sav, &fadein))
           {
@@ -3299,7 +3273,7 @@ void title_screen(struct world *mzx_world)
           // ESCAPE_MENU (2.90+)
           int escape_menu_status =
            get_counter(mzx_world, "ESCAPE_MENU", 0);
-          
+
           // Escape menu only works on the title screen if the
           // standalone_mode config option is set
           if(mzx_world->version < V290 || escape_menu_status ||
@@ -3342,8 +3316,6 @@ void title_screen(struct world *mzx_world)
 
   vquick_fadeout();
   sfx_clear_queue();
-
-  free(current_dir);
 }
 
 void set_mesg(struct world *mzx_world, const char *str)

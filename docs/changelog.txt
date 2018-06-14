@@ -13,6 +13,10 @@ USERS
 + Added DOS compatibility fix for sprN_off.
 + Window caption is now properly updated when loading a world
   from an unedited world in the editor.
+- Removed undocumented support for "title.cnf", "game.cnf", and
+  "editor.cnf" config files, which would have been loaded from
+  the same directory as the main config (not to be confused with
+  world-specific config files, which are still supported).
 
 
 March 4th, 2018 - MZX 2.91c
