@@ -45,7 +45,7 @@
 
 #include "board.h"
 #include "const.h"
-#include "context_enum.h"
+#include "core.h"
 #include "data.h"
 #include "error.h"
 #include "event.h"
@@ -59,37 +59,6 @@
 #include "util.h"
 
 #include "audio/sfx.h"
-
-// This context stuff was originally in helpsys, but it's actually
-// more of a property of the windowing system.
-
-static int contexts[128];
-static int curr_context;
-
-// 72 = "No" context link
-__editor_maybe_static int context = CTX_MAIN;
-
-void set_context(int c)
-{
-  contexts[curr_context++] = context;
-  context = c;
-}
-
-void pop_context(void)
-{
-  if(curr_context > 0)
-    curr_context--;
-  context = contexts[curr_context];
-}
-
-#ifdef CONFIG_HELPSYS
-
-int get_context(void)
-{
-  return context;
-}
-
-#endif // CONFIG_HELPSYS
 
 #define NUM_SAVSCR 6
 
@@ -921,10 +890,10 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
   int current_key, new_key;
   int i;
 
-  if(context == CTX_MAIN)
+  if(get_context(NULL) == CTX_MAIN)
     set_context(CTX_DIALOG_BOX);
   else
-    set_context(context);
+    set_context(get_context(NULL));
 
   cursor_off();
 

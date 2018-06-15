@@ -23,6 +23,7 @@
 #include "edit.h"
 #include "select.h"
 
+#include "../core.h"
 #include "../data.h"
 #include "../error.h"
 #include "../event.h"

@@ -21,6 +21,7 @@
 
 #include "../block.h"
 #include "../const.h"
+#include "../core.h"
 #include "../counter.h"
 #include "../data.h"
 #include "../error.h"

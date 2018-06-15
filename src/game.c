@@ -33,6 +33,7 @@
 
 #include "board.h"
 #include "const.h"
+#include "core.h"
 #include "counter.h"
 #include "data.h"
 #include "error.h"
@@ -109,17 +110,6 @@ static const char game_menu_4[] =
  "Arrows- Move\n"
  "Space - Shoot (w/dir)\n"
  "Delete- Bomb";
-
-__updater_maybe_static void (*check_for_updates)(struct world *mzx_world,
- struct config_info *conf, int is_automatic);
-
-__editor_maybe_static void (*edit_world)(struct world *mzx_world,
- int reload_curr_file);
-__editor_maybe_static void (*debug_counters)(struct world *mzx_world);
-__editor_maybe_static void (*draw_debug_box)(struct world *mzx_world,
- int x, int y, int d_x, int d_y, int show_keys);
-
-__editor_maybe_static void (*debug_robot_config)(struct world *mzx_world);
 
 static const char *const save_ext[] = { ".SAV", NULL };
 static int update_music;

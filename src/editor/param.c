@@ -24,17 +24,18 @@
 
 #include <string.h>
 
-#include "../helpsys.h"
-#include "../graphics.h"
-#include "../intake.h"
-#include "../scrdisp.h"
-#include "../error.h"
-#include "../window.h"
+#include "../core.h"
 #include "../data.h"
-#include "../robot.h"
-#include "../rasm.h"
+#include "../error.h"
 #include "../event.h"
+#include "../graphics.h"
+#include "../helpsys.h"
 #include "../idput.h"
+#include "../intake.h"
+#include "../rasm.h"
+#include "../robot.h"
+#include "../scrdisp.h"
+#include "../window.h"
 
 #include "edit.h"
 #include "edit_di.h"

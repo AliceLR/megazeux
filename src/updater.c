@@ -16,14 +16,16 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#include "updater.h"
+
 #include "const.h"
+#include "core.h"
+#include "error.h"
 #include "event.h"
-#include "util.h"
 #include "game.h"
 #include "graphics.h"
+#include "updater.h"
+#include "util.h"
 #include "window.h"
-#include "error.h"
 
 #include "editor/window.h"
 

@@ -202,11 +202,14 @@ struct world
   // If we can change the speed from the F2 menu.
   int lock_speed;
 
+  // FIXME these need to be removed.
   struct config_info conf;
-
 #ifdef CONFIG_EDITOR
   struct editor_config_info editor_conf;
   struct editor_config_info editor_conf_backup;
+#endif
+
+#ifdef CONFIG_EDITOR
   bool editing;
 #endif
 

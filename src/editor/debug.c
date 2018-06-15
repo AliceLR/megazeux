@@ -26,6 +26,7 @@
 #include "robo_debug.h"
 #include "window.h"
 
+#include "../core.h"
 #include "../counter.h"
 #include "../event.h"
 #include "../graphics.h"

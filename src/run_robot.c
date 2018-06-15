@@ -26,6 +26,7 @@
 
 #include "block.h"
 #include "const.h"
+#include "core.h"
 #include "counter.h"
 #include "data.h"
 #include "error.h"
@@ -52,13 +53,6 @@
 
 #define parsedir(a, b, c, d) \
  parsedir(mzx_world, a, b, c, d, _bl[0], _bl[1], _bl[2], _bl[3])
-
-#ifdef CONFIG_EDITOR
-int (*debug_robot_break)(struct world *mzx_world, struct robot *cur_robot,
- int id, int lines_run);
-int (*debug_robot_watch)(struct world *mzx_world, struct robot *cur_robot,
- int id, int lines_run);
-#endif
 
 static const char *const item_to_counter[9] =
 {
@@ -728,7 +722,7 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
 
   prefix_last_xy_var(mzx_world, &dest_x, &dest_y, x, y,
    dest_width, dest_height);
-  
+
   // Clip to destination dimensions as well
   if((dest_x + width) > dest_width)
     width = dest_width - dest_x;
@@ -2894,7 +2888,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           if(mzx_world->version >= V290 && is_string(mzm_name_buffer))
           {
             struct string src;
-            
+
             if(get_string(mzx_world, mzm_name_buffer, &src, id))
               load_mzm_memory(mzx_world, mzm_name_buffer, put_x, put_y,
                put_param, 1, src.value, src.length);
@@ -4864,7 +4858,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         {
           // Prior to 2.90 char params are clipped
           if(mzx_world->version < V290) char_num &= 0xFF;
-          
+
           ec_read_char(char_num, char_buffer);
 
           switch(flip_dir)
@@ -4920,7 +4914,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           src_char &= 0xFF;
           dest_char &= 0xFF;
         }
-        
+
         ec_read_char(src_char, char_buffer);
         ec_change_char(dest_char, char_buffer);
         break;

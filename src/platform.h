@@ -50,6 +50,10 @@ int real_main(int argc, char *argv[]);
 
 #endif // CONFIG_SDL
 
+typedef Uint8 boolean;
+#define false 0
+#define true 1
+
 // Need threads and mutexes for DNS lookups.
 // Otherwise only need mutexes for audio, but the Wii port
 // uses them for events too

@@ -29,11 +29,6 @@ __M_BEGIN_DECLS
 
 #include "world_struct.h"
 
-#include "context_enum.h"
-
-CORE_LIBSPEC void set_context(int c);
-CORE_LIBSPEC void pop_context(void);
-
 // For name seeking in list_menu
 #define TIME_SUSPEND 500
 
@@ -297,8 +292,6 @@ CORE_LIBSPEC void meter_interior(unsigned int progress, unsigned int out_of);
 CORE_LIBSPEC int run_dialog(struct world *mzx_world, struct dialog *di);
 
 #ifdef CONFIG_EDITOR
-CORE_LIBSPEC extern int context;
-
 CORE_LIBSPEC void construct_element(struct element *e, int x, int y,
  int width, int height,
  void (* draw_function)(struct world *mzx_world, struct dialog *di,
@@ -333,10 +326,6 @@ CORE_LIBSPEC int file_manager(struct world *mzx_world,
  const char *title, int dirs_okay, int allow_new,
  struct element **dialog_ext, int num_ext, int ext_height);
 #endif // CONFIG_EDITOR
-
-#ifdef CONFIG_HELPSYS
-int get_context(void);
-#endif
 
 __M_END_DECLS
 

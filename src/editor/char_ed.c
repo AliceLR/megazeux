@@ -21,6 +21,7 @@
 
 #include "char_ed.h"
 
+#include "../core.h"
 #include "../data.h"
 #include "../event.h"
 #include "../graphics.h"
