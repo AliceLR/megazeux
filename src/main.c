@@ -197,7 +197,7 @@ __libspec int main(int argc, char *argv[])
   // FIXME
   //title_screen(&mzx_world);
   core_run(core_data);
-  core_quit(core_data);
+  core_free(core_data);
 
   vquick_fadeout();
 

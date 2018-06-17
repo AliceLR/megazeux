@@ -69,6 +69,7 @@ core_cobjs := \
   ${core_obj}/block.o         \
   ${core_obj}/board.o         \
   ${core_obj}/configure.o     \
+  ${core_obj}/configure_ed.o  \
   ${core_obj}/core.o          \
   ${core_obj}/counter.o       \
   ${core_obj}/data.o          \

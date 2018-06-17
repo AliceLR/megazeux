@@ -83,14 +83,14 @@ struct config_info
   // Misc options
   int mask_midchars;
   bool system_mouse;
-    
+
   // Network layer options
-#ifdef CONFIG_NETWORK    
+#ifdef CONFIG_NETWORK
   bool network_enabled;
   char socks_host[256];
   int socks_port;
 #endif
-    
+
 #ifdef CONFIG_UPDATER
   int update_host_count;
   char **update_hosts;
@@ -123,6 +123,10 @@ CORE_LIBSPEC void __set_config_from_command_line(
  find_change_option find_change_handler, void *conf, int *argc, char *argv[]);
 
 #endif // CONFIG_EDITOR
+
+// FIXME configure_ed.c
+#include "world_struct.h"
+void game_settings(struct world *mzx_world);
 
 __M_END_DECLS
 

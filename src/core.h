@@ -29,7 +29,9 @@ __M_BEGIN_DECLS
 #include "platform.h"
 #include "world_struct.h"
 
+#ifdef CONFIG_EDITOR
 #include "editor/configure.h"
+#endif
 
 enum help_index
 {
@@ -78,35 +80,50 @@ typedef struct core_context core_context;
 /** Contains information related to the current MegaZeux state/interface/etc. */
 typedef struct context
 {
-  struct global_data *data;
-  struct world *mzx_world;
-  core_context *root;
-  boolean draw_while_under;
-  boolean update_while_under;
-  boolean allow_events_to_interrupt;
   enum help_index help_index;
+  struct global_data *data;
+  struct world *world;
+  core_context *root;
+  boolean is_subcontext;
+  boolean allow_help_system;
+  boolean allow_configure_dialog;
+  boolean allow_events_to_interrupt;
   void (*draw_function)(struct context *);
-  boolean (*update_function)(struct context *);
+  boolean (*key_function)(struct context *, int *key);
+  boolean (*click_function)(struct context *, int *key,
+   int button, int x, int y);
+  boolean (*drag_function)(struct context *, int *key,
+   int button, int x, int y);
+  void (*idle_function)(struct context *);
   void (*destroy_function)(struct context *);
 }
 context;
 
 /**
  * Sets up a new context and adds it to the context stack. The new context
- * will be drawn last and update first, taking input precedence.
+ * will be drawn last and update first, taking input precedence. At least one
+ * update function must be provided.
  *
  * @param ctx               The new context to be initialized.
  * @param parent            The context which created this context.
  * @param help_index        A help file index associated with this context.
  * @param draw_function     Optional function to draw this context every frame.
- * @param update_function   Update function to be called every frame.
+ * @param key_function      Update function called to handle a keypress.
+ * @param click_function    Update function called to handle a mouse click.
+ * @param drag_function     Update function called to handle a mouse drag.
+ * @param idle_function     Update function called every frame.
  * @param destroy_function  Optional function to be called on destruction.
  */
 
-CORE_LIBSPEC void create_context(context *ctx, context *parent,
+CORE_LIBSPEC void run_context(context *ctx, context *parent,
  enum help_index help_index,
  void (*draw_function)(context *),
- boolean (*update_function)(context *),
+ boolean (*key_function)(struct context *, int *key),
+ boolean (*click_function)(struct context *, int *key,
+  int button, int x, int y),
+ boolean (*drag_function)(struct context *, int *key,
+  int button, int x, int y),
+ void (*idle_function)(context *),
  void (*destroy_function)(context *));
 
 /**
@@ -114,7 +131,7 @@ CORE_LIBSPEC void create_context(context *ctx, context *parent,
  * This will call the destroy function for every context destroyed. Contexts
  * will be destroys from the top of the stack down.
  *
- * @param ctx   The context to destroy.
+ * @param ctx           The context to destroy.
  */
 
 CORE_LIBSPEC void destroy_context(context *ctx);
@@ -122,13 +139,13 @@ CORE_LIBSPEC void destroy_context(context *ctx);
 /**
  * Initializes data for the core.
  *
- * @param mzx_world     A struct to contain MegaZeux world information.
- * @param global_data   A struct to contain global MegaZeux information.
+ * @param mzx_world     MegaZeux world information struct.
+ * @param data          Global information struct.
  * @return              A core context struct.
  */
 
 CORE_LIBSPEC core_context *core_init(struct world *mzx_world,
- struct global_data *global_data);
+ struct global_data *data);
 
 /**
  * Run MegaZeux using given context stack information.
@@ -139,12 +156,20 @@ CORE_LIBSPEC core_context *core_init(struct world *mzx_world,
 CORE_LIBSPEC void core_run(core_context *root);
 
 /**
- * Clean up MegaZeux core data for a given core context.
+ * Signal the core to abort all contexts and exit the current game loop.
  *
- * @param root          The core context to clean up.
+ * @param ctx           The current context.
  */
 
-CORE_LIBSPEC void core_quit(core_context *root);
+CORE_LIBSPEC void core_exit(context *ctx);
+
+/**
+ * Clean up MegaZeux all context data for a given core context.
+ *
+ * @param root          The core context to free.
+ */
+
+CORE_LIBSPEC void core_free(core_context *root);
 
 // Deprecated functions.
 
@@ -153,8 +178,6 @@ CORE_LIBSPEC void set_context(enum help_index idx);
 CORE_LIBSPEC void pop_context(void);
 
 // Editor external function pointers.
-
-#ifdef CONFIG_EDITOR
 
 CORE_LIBSPEC extern void (*edit_world)(struct world *mzx_world,
  int reload_curr_file);
@@ -167,27 +190,10 @@ CORE_LIBSPEC extern int (*debug_robot_watch)(struct world *mzx_world,
  struct robot *cur_robot, int id, int lines_run);
 CORE_LIBSPEC extern void (*debug_robot_config)(struct world *mzx_world);
 
-#else
-static inline void edit_world(struct world *mzx_world, int r) {}
-static inline void debug_counters(struct world *mzx_world) {}
-static inline void draw_debug_box(struct world *mzx_world,
- int x, int y, int d_x, int d_y, int show_keys) {}
-static inline int (*debug_robot_break)(struct world *mzx_world,
- struct robot *cur_robot, int id, int lines_run) { return 0; }
-static inline int (*debug_robot_watch)(struct world *mzx_world,
- struct robot *cur_robot, int id, int lines_run) { return 0; }
-static inline void (*debug_robot_config)(struct world *mzx_world) {}
-#endif
-
 // Network external function pointers.
 
-#ifdef CONFIG_UPDATER
 CORE_LIBSPEC extern void (*check_for_updates)(struct world *mzx_world,
  struct config_info *conf, int is_automatic);
-#else
-static inline void check_for_updates(struct world *mzx_world,
- struct config_info *conf, int is_automatic) {}
-#endif
 
 __M_END_DECLS
 
