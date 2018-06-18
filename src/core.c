@@ -22,12 +22,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "counter.h"
 #include "configure.h"
 #include "core.h"
 #include "error.h"
 #include "event.h"
 #include "graphics.h"
 #include "helpsys.h"
+#include "world.h"
 #include "world_struct.h"
 
 // Contains context stack information.
@@ -52,7 +54,7 @@ struct core_context
  */
 
 void run_context(context *ctx, context *parent,
- enum help_index help_index,
+ enum context_type context_type,
  void (*draw_function)(context *),
  boolean (*idle_function)(context *),
  boolean (*key_function)(struct context *, int *key),
@@ -71,10 +73,7 @@ void run_context(context *ctx, context *parent,
   ctx->root = root;
   ctx->data = parent->data;
   ctx->world = parent->world;
-  ctx->help_index = help_index;
-  ctx->is_subcontext = false;
-  ctx->allow_help_system = true;
-  ctx->allow_configure_dialog = true;
+  ctx->context_type = context_type;
   ctx->framerate = FRAMERATE_UI;
   ctx->draw_function = draw_function;
   ctx->key_function = key_function;
@@ -82,9 +81,6 @@ void run_context(context *ctx, context *parent,
   ctx->drag_function = drag_function;
   ctx->idle_function = idle_function;
   ctx->destroy_function = destroy_function;
-
-  if(help_index == CTX_INHERIT)
-    ctx->help_index = parent->help_index;
 
   if(root->ctx_stack_size >= root->ctx_stack_alloc)
   {
@@ -162,9 +158,11 @@ static void core_draw(core_context *root)
   context *ctx;
 
   // Find the first context to draw.
-  while(i >= 0 && root->ctx_stack[i]->is_subcontext)
+  for(; i > 0; i--)
   {
-    i--;
+    ctx = root->ctx_stack[i];
+    if(ctx->context_type == CTX_SUBCONTEXT)
+      break;
   }
 
   for(; i < root->ctx_stack_size; i++)
@@ -173,6 +171,79 @@ static void core_draw(core_context *root)
     if(ctx->draw_function)
       ctx->draw_function(ctx);
   }
+}
+
+/**
+ * Determine if a given context exists on the stack.
+ */
+static boolean is_on_stack(core_context *root, enum context_type type)
+{
+  int i = root->ctx_stack_size - 1;
+  context *ctx;
+
+  for(; i >= 0; i--)
+  {
+    ctx = root->ctx_stack[i];
+    if(ctx->context_type == type)
+      return true;
+  }
+
+  return false;
+}
+
+/**
+ * Determine if the help system is currently allowed.
+ */
+static boolean allow_help_system(core_context *root)
+{
+  struct world *mzx_world = ((context *)root)->world;
+  struct config_info *conf = &(mzx_world->conf); //FIXME
+
+  if(is_on_stack(root, CTX_HELP_SYSTEM))
+    return false;
+
+  if(mzx_world->active && mzx_world->version >= V260)
+  {
+    if(is_on_stack(root, CTX_PLAY_GAME) ||
+     (is_on_stack(root, CTX_TITLE_SCREEN) && conf->standalone_mode))
+    {
+      if(!get_counter(mzx_world, "HELP_MENU", 0))
+        return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Determine if the configure menu is currently allowed.
+ */
+static boolean allow_configure(core_context *root)
+{
+  struct world *mzx_world = ((context *)root)->world;
+  struct config_info *conf = &(mzx_world->conf); //FIXME
+
+  if(is_on_stack(root, CTX_CONFIGURE))
+    return false;
+
+  if(is_on_stack(root, CTX_HELP_SYSTEM))
+    return false;
+
+  // Bypass F2_MENU counter.
+  if(get_shift_status(keycode_internal) && !conf->standalone_mode)
+    return true;
+
+  if(mzx_world->active && mzx_world->version >= V260)
+  {
+    if(is_on_stack(root, CTX_PLAY_GAME) ||
+     (is_on_stack(root, CTX_TITLE_SCREEN) && conf->standalone_mode))
+    {
+      if(!get_counter(mzx_world, "F2_MENU", 0))
+        return false;
+    }
+  }
+
+  return true;
 }
 
 /**
@@ -244,7 +315,7 @@ static void core_update(core_context *root)
         return;
     }
   }
-  while(i >= 0 && ctx->is_subcontext);
+  while(i >= 0 && ctx->context_type == CTX_SUBCONTEXT);
 
   // Global key handler.
   if(!key_handled)
@@ -257,10 +328,9 @@ static void core_update(core_context *root)
       case IKEY_F1:
       {
         // Display help.
-        // FIXME HELP_MENU, standalone, etc
-        if(ctx->allow_help_system)
+        if(allow_help_system(root))
         {
-          m_show();
+          m_show(); // FIXME
           help_system(ctx->world);
         }
         break;
@@ -270,9 +340,9 @@ static void core_update(core_context *root)
       case IKEY_F2:
       {
         // Display settings menu.
-        // FIXME F2_MENU, standalone, etc
-        if(ctx->allow_configure_dialog)
+        if(allow_configure(root))
         {
+          m_show(); // FIXME
           game_settings(ctx->world);
         }
         break;
@@ -469,25 +539,46 @@ void core_free(core_context *root)
   free(root);
 }
 
-// Deprecated crap.
+// Deprecated.
+static enum context_type indices[128] = { CTX_MAIN };
+static int curr_index = 0;
 
-static enum help_index indices[128] = { CTX_MAIN };
-static enum help_index curr_index = 0;
+/**
+ * Get the most recent context ID associated with the help system.
+ * TODO rename after the deprecated features are no longer necessary.
+ */
 
-enum help_index get_context(context *ctx)
+enum context_type get_context(context *ctx)
 {
   if(!curr_index && ctx)
-    return ctx->help_index;
+  {
+    core_context *root = ctx->root;
+    enum context_type ctx_type;
+    int i;
+
+    for(i = root->ctx_stack_size - 1; i >= 0; i--)
+    {
+      ctx_type = root->ctx_stack[i]->context_type;
+
+      // Help system only cares about positive context values.
+      if(ctx_type > 0)
+        return ctx_type;
+    }
+
+    return CTX_MAIN;
+  }
 
   return indices[curr_index];
 }
 
-void set_context(enum help_index idx)
+// Deprecated.
+void set_context(enum context_type idx)
 {
   curr_index++;
   indices[curr_index] = idx;
 }
 
+// Deprecated.
 void pop_context(void)
 {
   if(curr_index > 0)

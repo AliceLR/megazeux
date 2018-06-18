@@ -90,7 +90,7 @@ void game_settings(struct world *mzx_world)
   // Prevent previous keys from carrying through.
   force_release_all_keys();
 
-  set_context(CTX_F2_MENU);
+  set_context(CTX_CONFIGURE);
 
 #ifdef CONFIG_RENDER_GL_PROGRAM
   if(!strcmp(mzx_world->conf.video_output, "glsl"))

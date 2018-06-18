@@ -33,43 +33,60 @@ __M_BEGIN_DECLS
 #include "editor/configure.h"
 #endif
 
-enum help_index
+/**
+ * The type of a given context. Used to identify particular contexts and to open
+ * help files contextually. Do not sort is enum by value.
+ *
+ * Numbers >0 correspond directly to a hyperlink in the help system.
+ * Numbers <=0 are used by contexts with no unique link in the help system.
+ */
+
+enum context_type
 {
-  CTX_INHERIT = 0,
-  CTX_MAIN = 72,
-  CTX_BLOCK_CMD = 73,
-  CTX_BLOCK_TYPE = 74,
-  CTX_CHOOSE_CHARSET = 75,
-  CTX_IMPORTEXPORT_TYPE = 77,
-  CTX_CHAR_EDIT = 79,
-  CTX_STATUS_COUNTERS = 82,
-  CTX_BOARD_EXITS = 83,
-  CTX_BOARD_SIZES = 84,
-  CTX_BOARD_INFO = 85,
-  CTX_CHANGE_CHAR_IDS = 89,
-  CTX_CHANGE_DAMAGE = 90,
-  CTX_GLOBAL_SETTINGS = 86,
-  CTX_GLOBAL_SETTINGS_2 = 88,
-  CTX_ROBO_ED = 87,
-  CTX_PALETTE_EDITOR = 93,
-  CTX_SENSOR_EDITOR = 94,
-  CTX_SUPER_MEGAZEUX = 95,
-  CTX_SFX_EDITOR = 97,
-  CTX_DIALOG_BOX = 98,
-  CTX_F2_MENU = 92,
-  CTX_PLAY_GAME = 91,
-  CTX_UPDATER = 99,
-  CTX_COUNTER_DEBUG = 100,
-  CTX_ROBOT_DEBUG = 101,
-  CTX_BREAKPOINT_EDITOR = 102,
-  CTX_VLAYER_SIZES = 103,
+  // Core contexts.
+  CTX_DEFAULT               = 0,
+  CTX_SUBCONTEXT            = -1,
+  CTX_TITLE_SCREEN          = -2,
+  CTX_MAIN                  = 72,
+  CTX_PLAY_GAME             = 91,
+  CTX_CONFIGURE             = 92,
+  CTX_DIALOG_BOX            = 98,
+  CTX_HELP_SYSTEM           = -3,
+
+  // Network contexts.
+  CTX_UPDATER               = 99,
+
+  // Editor contexts.
+  CTX_BLOCK_CMD             = 73,
+  CTX_BLOCK_TYPE            = 74,
+  CTX_CHOOSE_CHARSET        = 75,
+  CTX_IMPORTEXPORT_TYPE     = 77,
+  CTX_CHAR_EDIT             = 79,
+  CTX_STATUS_COUNTERS       = 82,
+  CTX_BOARD_EXITS           = 83,
+  CTX_BOARD_SIZES           = 84,
+  CTX_BOARD_INFO            = 85,
+  CTX_CHANGE_CHAR_IDS       = 89,
+  CTX_CHANGE_DAMAGE         = 90,
+  CTX_GLOBAL_SETTINGS       = 86,
+  CTX_GLOBAL_SETTINGS_2     = 88,
+  CTX_ROBO_ED               = 87,
+  CTX_PALETTE_EDITOR        = 93,
+  CTX_SENSOR_EDITOR         = 94,
+  CTX_SUPER_MEGAZEUX        = 95,
+  CTX_SFX_EDITOR            = 97,
+  CTX_COUNTER_DEBUG         = 100,
+  CTX_ROBOT_DEBUG           = 101,
+  CTX_BREAKPOINT_EDITOR     = 102,
+  CTX_VLAYER_SIZES          = 103,
 };
 
+/** The framerate rule that should be used for the active context. */
 enum framerate_type
 {
-  FRAMERATE_UI,
-  FRAMERATE_UI_INTERRUPT,
-  FRAMERATE_MZX_SPEED,
+  FRAMERATE_UI,             // Standard delay time.
+  FRAMERATE_UI_INTERRUPT,   // Standard delay time or until an event occurs.
+  FRAMERATE_MZX_SPEED,      // Delay according to mzx_speed.
 };
 
 /** Contains global MegaZeux information that needs to be readily accessible. */
@@ -88,13 +105,10 @@ typedef struct core_context core_context;
 /** Contains information related to the current MegaZeux state/interface/etc. */
 typedef struct context
 {
-  enum help_index help_index;
   struct global_data *data;
   struct world *world;
   core_context *root;
-  boolean is_subcontext;
-  boolean allow_help_system;
-  boolean allow_configure_dialog;
+  enum context_type context_type;
   enum framerate_type framerate;
   void (*draw_function)(struct context *);
   boolean (*idle_function)(struct context *);
@@ -114,7 +128,7 @@ context;
  *
  * @param ctx               The new context to be initialized.
  * @param parent            The context which created this context.
- * @param help_index        A help file index associated with this context.
+ * @param context_type      Used to identify contexts and by the help system.
  * @param draw_function     Optional function to draw this context every frame.
  * @param key_function      Update function called to handle a keypress.
  * @param click_function    Update function called to handle a mouse click.
@@ -124,7 +138,7 @@ context;
  */
 
 CORE_LIBSPEC void run_context(context *ctx, context *parent,
- enum help_index help_index,
+ enum context_type context_type,
  void (*draw_function)(context *),
  boolean (*idle_function)(context *),
  boolean (*key_function)(struct context *, int *key),
@@ -181,8 +195,8 @@ CORE_LIBSPEC void core_free(core_context *root);
 
 // Deprecated functions.
 
-CORE_LIBSPEC enum help_index get_context(context *);
-CORE_LIBSPEC void set_context(enum help_index idx);
+CORE_LIBSPEC enum context_type get_context(context *);
+CORE_LIBSPEC void set_context(enum context_type idx);
 CORE_LIBSPEC void pop_context(void);
 
 // Editor external function pointers.
