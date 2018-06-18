@@ -32,24 +32,18 @@
 #endif
 
 #include "configure.h"
-//#include "const.h"
+#include "const.h"
 #include "core.h"
 #include "counter.h"
 #include "data.h"
 #include "error.h"
 #include "event.h"
-#include "extmem.h"
 #include "fsafeopen.h"
 #include "game.h"
 #include "game_ops.h"
 #include "graphics.h"
 #include "helpsys.h"
-#include "idarray.h"
-#include "idput.h"
 #include "platform.h"
-#include "robot.h"
-#include "scrdisp.h"
-#include "sprite.h"
 #include "util.h"
 #include "window.h"
 #include "world.h"
@@ -60,119 +54,6 @@
 
 static const char *const world_ext[] = { ".MZX", NULL };
 static const char *const save_ext[] = { ".SAV", NULL };
-
-#define MAX_CAPTION_SIZE 120
-#define CAPTION_SPACER "::"
-
-static void strip_caption_string(char *output, char *input)
-{
-  unsigned int i, j;
-  output[0] = '\0';
-
-  for(i = 0, j = 0; i < strlen(input); i++)
-  {
-    if(input[i] < 32 || input[i] > 126)
-      continue;
-
-    if(input[i] == '~' || input[i] == '@')
-    {
-      i++;
-      if(input[i - 1] != input[i])
-        continue;
-    }
-
-    output[j] = input[i];
-
-    if(output[j] != ' ' || (j > 0 && output[j - 1] != ' '))
-      j++;
-  }
-
-  if(j > 0 && output[j - 1] == ' ')
-    j--;
-
-  output[j] = '\0';
-  return;
-}
-
-__editor_maybe_static
-void set_caption(struct world *mzx_world, struct board *board,
- struct robot *robot, int modified)
-{
-  const char *default_caption = get_default_caption();
-  char caption[MAX_CAPTION_SIZE];
-  char buffer[MAX_CAPTION_SIZE];
-  char stripped_name[MAX_CAPTION_SIZE];
-  caption[0] = '\0';
-
-  if(modified)
-    strcpy(caption, "*");
-
-  if(robot)
-  {
-    strip_caption_string(stripped_name, robot->robot_name);
-    if(!strlen(stripped_name))
-      strcpy(stripped_name, "Untitled robot");
-
-    snprintf(buffer, MAX_CAPTION_SIZE, "%s %s (%i,%i) %s", caption,
-     stripped_name, robot->xpos, robot->ypos, CAPTION_SPACER);
-    strcpy(caption, buffer);
-  }
-
-  if(board)
-  {
-    strip_caption_string(stripped_name, board->board_name);
-    if(!strlen(stripped_name))
-      strcpy(stripped_name, "Untitled board");
-
-    snprintf(buffer, MAX_CAPTION_SIZE, "%s %s %s", caption,
-     stripped_name, CAPTION_SPACER);
-    strcpy(caption, buffer);
-  }
-
-  if(mzx_world->active)
-  {
-    strip_caption_string(stripped_name, mzx_world->name);
-    if(!strlen(stripped_name))
-      strcpy(stripped_name, "Untitled world");
-
-    snprintf(buffer, MAX_CAPTION_SIZE, "%s %s %s", caption,
-     stripped_name, CAPTION_SPACER);
-    strcpy(caption, buffer);
-  }
-
-  snprintf(buffer, MAX_CAPTION_SIZE, "%s %s", caption, default_caption);
-  strcpy(caption, buffer);
-
-  if(mzx_world->editing)
-  {
-    snprintf(buffer, MAX_CAPTION_SIZE, "%s %s", caption, "(editor)");
-    strcpy(caption, buffer);
-  }
-
-#ifdef CONFIG_UPDATER
-  if(mzx_world->conf.update_available)
-  {
-    snprintf(buffer, MAX_CAPTION_SIZE, "%s %s", caption,
-     "*** UPDATES AVAILABLE ***");
-    strcpy(caption, buffer);
-  }
-#endif
-
-#ifdef CONFIG_FPS
-  if(mzx_world->active && !mzx_world->editing && !robot && !board)
-  {
-    // FIXME context
-    /*
-    snprintf(buffer, MAX_CAPTION_SIZE, "%s %s FPS: %f", caption,
-     CAPTION_SPACER, average_fps);
-    strcpy(caption, buffer);
-    */
-  }
-#endif /* CONFIG_FPS */
-
-  caption[MAX_CAPTION_SIZE - 1] = 0;
-  set_window_caption(caption);
-}
 
 boolean load_game_module(struct world *mzx_world, char *filename,
  boolean fail_if_same)

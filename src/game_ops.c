@@ -30,6 +30,8 @@
 #include "window.h"
 #include "world_struct.h"
 
+#include "audio/sfx.h"
+
 //Bit 1- +1
 //Bit 2- -1
 //Bit 4- +width

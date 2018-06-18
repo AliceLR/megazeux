@@ -32,6 +32,13 @@
 #include "world.h"
 #include "world_struct.h"
 
+#define MAX_CAPTION_SIZE 120
+#define CAPTION_SPACER " :: "
+
+#ifdef CONFIG_FPS
+static double average_fps;
+#endif
+
 // Contains context stack information.
 // Used as a context to help create the first actual context.
 struct core_context
@@ -43,6 +50,116 @@ struct core_context
   boolean full_exit;
   boolean context_destroyed;
 };
+
+/**
+ * Strip a string for display in the caption.
+ */
+
+static boolean strip_caption_string(char *output, char *input)
+{
+  int len = strlen(input);
+  int i, j;
+  output[0] = '\0';
+
+  for(i = 0, j = 0; i < len; i++)
+  {
+    if(input[i] < 32 || input[i] > 126)
+      continue;
+
+    if(input[i] == '~' || input[i] == '@')
+    {
+      i++;
+      if(input[i - 1] != input[i])
+        continue;
+    }
+
+    output[j] = input[i];
+
+    if(output[j] != ' ' || (j > 0 && output[j - 1] != ' '))
+      j++;
+  }
+
+  if(j > 0 && output[j - 1] == ' ')
+    j--;
+
+  output[j] = '\0';
+  return (j > 0);
+}
+
+/**
+ * Append a string to the caption.
+ */
+
+#define caption_append(caption, ...)                                \
+{                                                                   \
+  size_t len = strlen(caption);                                     \
+  if(len < MAX_CAPTION_SIZE - 1)                                    \
+    snprintf(caption + len, MAX_CAPTION_SIZE - len, __VA_ARGS__);   \
+}
+
+/**
+ * Sets the caption to reflect current MegaZeux state information.
+ */
+
+void set_caption(struct world *mzx_world, struct board *board,
+ struct robot *robot, boolean modified)
+{
+  char caption[MAX_CAPTION_SIZE];
+  char stripped_name[MAX_CAPTION_SIZE];
+  caption[0] = '\0';
+
+  if(modified)
+    strcpy(caption, "*");
+
+  if(robot)
+  {
+    if(!strip_caption_string(stripped_name, robot->robot_name))
+      strcpy(stripped_name, "Untitled robot");
+
+    caption_append(caption, "%s (%i,%i)" CAPTION_SPACER,
+     stripped_name, robot->xpos, robot->ypos);
+  }
+
+  if(board)
+  {
+    if(!strip_caption_string(stripped_name, board->board_name))
+      strcpy(stripped_name, "Untitled board");
+
+    caption_append(caption, "%s" CAPTION_SPACER, stripped_name);
+  }
+
+  if(mzx_world->active)
+  {
+    if(!strip_caption_string(stripped_name, mzx_world->name))
+      strcpy(stripped_name, "Untitled world");
+
+    caption_append(caption, "%s" CAPTION_SPACER, stripped_name);
+  }
+
+  caption_append(caption, "%s", get_default_caption());
+
+  if(mzx_world->editing)
+  {
+    caption_append(caption, " (editor)");
+  }
+
+#ifdef CONFIG_UPDATER
+  if(mzx_world->conf.update_available) // FIXME
+  {
+    caption_append(caption, " *** UPDATES AVAILABLE ***");
+  }
+#endif
+
+#ifdef CONFIG_FPS
+  if(mzx_world->active && !robot && !board)
+  {
+    caption_append(caption, CAPTION_SPACER "FPS: %.2f", average_fps);
+  }
+#endif /* CONFIG_FPS */
+
+  caption[MAX_CAPTION_SIZE - 1] = 0;
+  set_window_caption(caption);
+}
 
 /**
  * Configures a provided context and adds it to the context stack to be run
@@ -380,7 +497,6 @@ void core_run(core_context *root)
   int min_fps;
   int max_fps;
   int i;
-  double average_fps;
 #endif
 
   if(root->ctx_stack_size <= 0)
@@ -486,8 +602,7 @@ void core_run(core_context *root)
       {
         average_fps =
           1.0 * total_fps / (fps_history_count - 2) * (1000.0 / FPS_INTERVAL);
-        //FIXME
-        //set_caption(ctx->world, NULL, NULL, 0);
+        set_caption(ctx->world, NULL, NULL, 0);
       }
       fps_previous_ticks += FPS_INTERVAL;
 

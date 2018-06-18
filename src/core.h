@@ -122,6 +122,18 @@ typedef struct context
 context;
 
 /**
+ * Sets MegaZeux's caption according to various parameters.
+ *
+ * @param mzx_world         The active world.
+ * @param board             Optional: the active editor board.
+ * @param robot             Optional: the active editor robot.
+ * @param modified          Indicates whether the world has been modified.
+ */
+
+CORE_LIBSPEC void set_caption(struct world *mzx_world, struct board *board,
+ struct robot *robot, boolean modified);
+
+/**
  * Sets up a new context and adds it to the context stack. The new context
  * will be drawn last and update first, taking input precedence. At least one
  * update function must be provided.

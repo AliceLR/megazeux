@@ -23,25 +23,24 @@
 // Reconstructed robot editor. This is only a shell - the actual
 // robot assembly/disassembly code is in rasm.cpp.
 
-#include <string.h>
+#include <ctype.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
+#include <string.h>
 
-#include <math.h>
-
-#include "../rasm.h"
-#include "../game.h"
-#include "../world.h"
-#include "../event.h"
-#include "../window.h"
-#include "../graphics.h"
-#include "../intake.h"
-#include "../helpsys.h"
-#include "../fsafeopen.h"
 #include "../configure.h"
-#include "../util.h"
+#include "../core.h"
 #include "../error.h"
+#include "../event.h"
+#include "../fsafeopen.h"
+#include "../graphics.h"
+#include "../helpsys.h"
+#include "../intake.h"
+#include "../rasm.h"
+#include "../util.h"
+#include "../window.h"
+#include "../world.h"
 
 #include "char_ed.h"
 #include "clipboard.h"
