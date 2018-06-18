@@ -3002,7 +3002,7 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
   // Prevent previous keys from carrying through.
   force_release_all_keys();
 
-  set_caption(mzx_world, mzx_world->current_board, cur_robot, 1, 1);
+  set_caption(mzx_world, mzx_world->current_board, cur_robot, 1);
 
   rstate.current_line = 0;
   rstate.current_rline = &base;

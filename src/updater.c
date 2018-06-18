@@ -21,7 +21,6 @@
 #include "core.h"
 #include "error.h"
 #include "event.h"
-#include "game.h"
 #include "graphics.h"
 #include "updater.h"
 #include "util.h"

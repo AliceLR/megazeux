@@ -211,7 +211,7 @@ void game_settings(struct world *mzx_world)
       if(!audio_get_music_on() && (mzx_world->active))
       {
         // Turn on music.
-        load_board_module(mzx_world, src_board);
+        load_board_module(mzx_world);
       }
 
       audio_set_music_on(music);

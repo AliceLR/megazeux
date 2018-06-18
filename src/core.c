@@ -54,12 +54,12 @@ struct core_context
 void run_context(context *ctx, context *parent,
  enum help_index help_index,
  void (*draw_function)(context *),
+ boolean (*idle_function)(context *),
  boolean (*key_function)(struct context *, int *key),
  boolean (*click_function)(struct context *, int *key,
   int button, int x, int y),
  boolean (*drag_function)(struct context *, int *key,
   int button, int x, int y),
- void (*idle_function)(context *),
  void (*destroy_function)(context *))
 {
   core_context *root = parent->root;
@@ -75,13 +75,16 @@ void run_context(context *ctx, context *parent,
   ctx->is_subcontext = false;
   ctx->allow_help_system = true;
   ctx->allow_configure_dialog = true;
-  ctx->allow_events_to_interrupt = false;
+  ctx->framerate = FRAMERATE_UI;
   ctx->draw_function = draw_function;
   ctx->key_function = key_function;
   ctx->click_function = click_function;
   ctx->drag_function = drag_function;
   ctx->idle_function = idle_function;
   ctx->destroy_function = destroy_function;
+
+  if(help_index == CTX_INHERIT)
+    ctx->help_index = parent->help_index;
 
   if(root->ctx_stack_size >= root->ctx_stack_alloc)
   {
@@ -199,6 +202,18 @@ static void core_update(core_context *root)
     ctx = root->ctx_stack[i];
     i--;
 
+    if(ctx->idle_function)
+    {
+      if(ctx->idle_function(ctx))
+      {
+        mouse_handled = true;
+        key_handled = true;
+      }
+
+      if(root->context_destroyed || root->full_exit)
+        return;
+    }
+
     if(!mouse_handled)
     {
       if(mouse_drag_state)
@@ -224,14 +239,6 @@ static void core_update(core_context *root)
     {
       if(key && ctx->key_function)
         key_handled |= ctx->key_function(ctx, &key);
-
-      if(root->context_destroyed || root->full_exit)
-        return;
-    }
-
-    if(ctx->idle_function)
-    {
-      ctx->idle_function(ctx);
 
       if(root->context_destroyed || root->full_exit)
         return;
@@ -281,22 +288,6 @@ static void core_update(core_context *root)
   }
 }
 
-// FIXME debug context
-static boolean key_debug_context(context *ctx, int *key)
-{
-  switch(*key)
-  {
-    case IKEY_ESCAPE:
-      core_exit(ctx);
-      break;
-
-    default:
-      return false;
-  }
-  return true;
-}
-// FIXME end debug context
-
 /**
  * Run the main game loop.
  */
@@ -304,12 +295,23 @@ static boolean key_debug_context(context *ctx, int *key)
 void core_run(core_context *root)
 {
   context *ctx;
+  int start_ticks = get_ticks();
+  int delta_ticks;
+  int total_ticks;
 
-  // FIXME debug context
-  context *debug = cmalloc(sizeof(struct context));
-  run_context(debug, (context *)root, CTX_MAIN,
-   NULL, key_debug_context, NULL, NULL, NULL, NULL);
-  // FIXME end debug context
+#ifdef CONFIG_FPS
+#define FPS_HISTORY_SIZE 5
+#define FPS_INTERVAL 1000
+  int fps_history[FPS_HISTORY_SIZE];
+  int fps_previous_ticks = -1;
+  int fps_history_count;
+  int frames_counted;
+  int total_fps;
+  int min_fps;
+  int max_fps;
+  int i;
+  double average_fps;
+#endif
 
   if(root->ctx_stack_size <= 0)
     return;
@@ -322,13 +324,111 @@ void core_run(core_context *root)
     update_screen();
 
     // Delay and then handle events.
-    // Optionally allow the active context to accept events mid-frame.
     ctx = root->ctx_stack[root->ctx_stack_size - 1];
 
-    if(ctx->allow_events_to_interrupt)
-      update_event_status_intake();
+    switch(ctx->framerate)
+    {
+      case FRAMERATE_UI:
+      {
+        // Delay for a standard (fixed) amount of time.
+        update_event_status_delay();
+        break;
+      }
+
+      case FRAMERATE_UI_INTERRUPT:
+      {
+        // Delay for the standard amount of time or until an event is detected.
+        // Use for interfaces that need precise keypress detection, like typing.
+        update_event_status_intake();
+        break;
+      }
+
+      case FRAMERATE_MZX_SPEED:
+      {
+        // Delay according to mzx_speed and execution time.
+        if(ctx->world->mzx_speed > 1)
+        {
+          // Number of ms the update cycle took
+          delta_ticks = get_ticks() - start_ticks;
+          total_ticks = (16 * (ctx->world->mzx_speed - 1)) - delta_ticks;
+          if(total_ticks < 0)
+            total_ticks = 0;
+
+          // Delay for 16 * (speed - 1) since the beginning of the update
+          delay(total_ticks);
+        }
+
+        update_event_status();
+        break;
+      }
+
+      default:
+      {
+        error("Context code bug", 2, 4, 0x2B05);
+      }
+    }
+
+    start_ticks = get_ticks();
+
+#ifdef CONFIG_FPS
+    delta_ticks = start_ticks - fps_previous_ticks;
+
+    if(fps_previous_ticks == -1)
+    {
+      fps_previous_ticks = start_ticks;
+      frames_counted = 0;
+      for(i = 0; i < FPS_HISTORY_SIZE; i++)
+        fps_history[i] = -1;
+    }
     else
-      update_event_status_delay();
+
+    if(delta_ticks >= FPS_INTERVAL)
+    {
+      for(i = FPS_HISTORY_SIZE - 1; i >= 1; i--)
+      {
+        fps_history[i] = fps_history[i - 1];
+      }
+
+      fps_history[0] = frames_counted;
+      min_fps = fps_history[0];
+      max_fps = fps_history[0];
+      total_fps = 0;
+      fps_history_count = 0;
+
+      for(i = 0; i < FPS_HISTORY_SIZE; i++)
+      {
+        if(fps_history[i] > -1)
+        {
+          if(fps_history[i] > max_fps)
+            max_fps = fps_history[i];
+
+          if(fps_history[i] < min_fps)
+            min_fps = fps_history[i];
+
+          total_fps += fps_history[i];
+          fps_history_count++;
+        }
+      }
+      // Subtract off highest and lowest scores (outliers)
+      total_fps -= max_fps;
+      total_fps -= min_fps;
+      if(fps_history_count > 2)
+      {
+        average_fps =
+          1.0 * total_fps / (fps_history_count - 2) * (1000.0 / FPS_INTERVAL);
+        //FIXME
+        //set_caption(ctx->world, NULL, NULL, 0);
+      }
+      fps_previous_ticks += FPS_INTERVAL;
+
+      frames_counted = 0;
+    }
+
+    else
+    {
+      frames_counted++;
+    }
+#endif
 
     // This should not change at any point before the update function.
     if(root->full_exit)

@@ -35,6 +35,7 @@ __M_BEGIN_DECLS
 
 enum help_index
 {
+  CTX_INHERIT = 0,
   CTX_MAIN = 72,
   CTX_BLOCK_CMD = 73,
   CTX_BLOCK_TYPE = 74,
@@ -64,6 +65,13 @@ enum help_index
   CTX_VLAYER_SIZES = 103,
 };
 
+enum framerate_type
+{
+  FRAMERATE_UI,
+  FRAMERATE_UI_INTERRUPT,
+  FRAMERATE_MZX_SPEED,
+};
+
 /** Contains global MegaZeux information that needs to be readily accessible. */
 struct global_data
 {
@@ -87,14 +95,14 @@ typedef struct context
   boolean is_subcontext;
   boolean allow_help_system;
   boolean allow_configure_dialog;
-  boolean allow_events_to_interrupt;
+  enum framerate_type framerate;
   void (*draw_function)(struct context *);
+  boolean (*idle_function)(struct context *);
   boolean (*key_function)(struct context *, int *key);
   boolean (*click_function)(struct context *, int *key,
    int button, int x, int y);
   boolean (*drag_function)(struct context *, int *key,
    int button, int x, int y);
-  void (*idle_function)(struct context *);
   void (*destroy_function)(struct context *);
 }
 context;
@@ -118,12 +126,12 @@ context;
 CORE_LIBSPEC void run_context(context *ctx, context *parent,
  enum help_index help_index,
  void (*draw_function)(context *),
+ boolean (*idle_function)(context *),
  boolean (*key_function)(struct context *, int *key),
  boolean (*click_function)(struct context *, int *key,
   int button, int x, int y),
  boolean (*drag_function)(struct context *, int *key,
   int button, int x, int y),
- void (*idle_function)(context *),
  void (*destroy_function)(context *));
 
 /**

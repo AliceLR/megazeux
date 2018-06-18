@@ -33,6 +33,7 @@
 #include "event.h"
 #include "fsafeopen.h"
 #include "game.h"
+#include "game_ops.h"
 #include "graphics.h"
 #include "idarray.h"
 #include "idput.h"
@@ -1562,7 +1563,7 @@ static int char_byte_read(struct world *mzx_world,
 
   // Prior to 2.90 char params are clipped
   if(mzx_world->version < V290) char_num &= 0xFF;
-  
+
   return ec_read_byte(char_num,
    get_counter(mzx_world, "BYTE", id));
 }
@@ -2552,7 +2553,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
   if(strlen(char_value) >= MAX_PATH)
     return 0; // haha nope
-  
+
   switch(mzx_world->special_counter_return)
   {
     case FOPEN_FREAD:
@@ -2587,7 +2588,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
           mzx_world->input_file = fopen_unsafe(translated_path, "rb");
 
         if(mzx_world->input_file || mzx_world->input_is_dir)
-          strcpy(mzx_world->input_file_name, translated_path);    
+          strcpy(mzx_world->input_file_name, translated_path);
 
         free(translated_path);
       }

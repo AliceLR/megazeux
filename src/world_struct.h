@@ -209,9 +209,9 @@ struct world
   struct editor_config_info editor_conf_backup;
 #endif
 
-#ifdef CONFIG_EDITOR
-  bool editing;
-#endif
+  // Editor specific state flags.
+  boolean editing;
+  boolean debug_mode;
 
   // World validation: we don't want to alloc this file twice.
   char *raw_world_info;

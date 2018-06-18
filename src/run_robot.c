@@ -34,7 +34,7 @@
 #include "extmem.h"
 #include "fsafeopen.h"
 #include "game.h"
-#include "game2.h"
+#include "game_ops.h"
 #include "graphics.h"
 #include "idarray.h"
 #include "idput.h"
@@ -83,63 +83,17 @@ __editor_maybe_static const int def_params[128] =
 static void magic_load_mod(struct world *mzx_world, char *filename)
 {
   struct board *src_board = mzx_world->current_board;
-  char translated_name[MAX_PATH];
-  int mod_star = 0;
-  int n_result;
-
   size_t mod_name_size;
 
-  // Special case: mod "" ends the module.
-  if(!filename[0])
-  {
-    mzx_world->real_mod_playing[0] = 0;
-    audio_end_module();
-    return;
-  }
+  if(load_game_module(mzx_world, filename, false))
+    strcpy(src_board->mod_playing, filename);
 
-  // Temporarily remove *
+  // If a * was provided, set the current board mod to *.
   mod_name_size = strlen(filename);
   if(mod_name_size && filename[mod_name_size - 1] == '*')
   {
-    filename[mod_name_size - 1] = 0;
-    mod_star = 1;
-  }
-
-  // Get the translated name (the one we want to compare against now)
-  n_result = fsafetranslate(filename, translated_name);
-
-  // Add * back
-  if(mod_star)
-    filename[mod_name_size - 1] = '*';
-
-  if(n_result == FSAFE_SUCCESS)
-  {
-    // filename*
-    if(mod_star)
-    {
-      // Different names? Play the mod
-      if(strcasecmp(translated_name, mzx_world->real_mod_playing))
-      {
-        // This will update real_mod_playing
-        strcpy(src_board->mod_playing, translated_name);
-        load_board_module(mzx_world, src_board);
-      }
-
-      strcpy(src_board->mod_playing, "*");
-    }
-
-    // filename
-    else
-    {
-      // This will update real_mod_playing
-      strcpy(src_board->mod_playing, translated_name);
-      load_board_module(mzx_world, src_board);
-    }
-  }
-
-  // *
-  if (filename[0] == '*')
     strcpy(src_board->mod_playing, "*");
+  }
 }
 
 static void save_player_position(struct world *mzx_world, int pos)
@@ -1043,7 +997,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
     // Get command number
     cmd = cmd_ptr[0];
 
-#ifdef CONFIG_EDITOR
+    // Check to see if the current command triggers a breakpoint.
     if(mzx_world->editing && debug_robot_break)
     {
       switch(debug_robot_break(mzx_world, cur_robot, id, lines_run))
@@ -1061,7 +1015,6 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           goto breaker;
       }
     }
-#endif
 
     // Act according to command
     switch(cmd)
@@ -5606,8 +5559,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
       break;
     }
 
-#ifdef CONFIG_EDITOR
-    // Check the watchpoints before incrementing the program.
+    // Check to see if a watchpoint triggered before incrementing the program.
     if(mzx_world->editing && debug_robot_watch)
     {
       // Returns 1 if the user chose to stop the program.
@@ -5626,7 +5578,6 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           goto breaker;
       }
     }
-#endif
 
     // If we're returning from a subroutine, we don't want to set the
     // pos_within_line. Other sends will set it to zero anyway.

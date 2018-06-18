@@ -34,7 +34,6 @@
 #include "error.h"
 #include "extmem.h"
 #include "fsafeopen.h"
-#include "game.h"
 #include "graphics.h"
 #include "idput.h"
 #include "sprite.h"
@@ -171,7 +170,7 @@ static void decrypt(const char *file_name)
   file_length = ftell_and_rewind(source);
 
   meter_target = file_length + (file_length - 15) + 4;
- 
+
   meter_initial_draw(meter_curr, meter_target, "Decrypting...");
 
   file_buffer = cmalloc(file_length);
@@ -501,7 +500,7 @@ enum val_result validate_legacy_world_file(const char *file,
       {
         fclose(f);
         decrypt(file);
-  
+
         // Call this function again, but with decrypt_attempted = 1
         return validate_legacy_world_file(file, savegame, 1);
       }

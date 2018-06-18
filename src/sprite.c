@@ -24,11 +24,11 @@
 #include <stdlib.h>
 
 #include "data.h"
-#include "sprite.h"
+#include "error.h"
+#include "game_ops.h"
 #include "graphics.h"
 #include "idput.h"
-#include "error.h"
-#include "game.h"
+#include "sprite.h"
 #include "world.h"
 
 // For the qsort.
@@ -245,7 +245,7 @@ void draw_sprites(struct world *mzx_world)
 
       if((ref_y + draw_height) > bheight)
         draw_height = bheight - ref_y;
-      
+
       if (draw_width <= 0 || draw_height <= 0)
         continue;
       ub_offx = 0;
@@ -313,7 +313,7 @@ void draw_sprites(struct world *mzx_world)
         transparent_color = cur_sprite->transparent_color;
       else
         transparent_color = -1;
-      
+
       layer = create_layer(start_x * CHAR_W, start_y * CHAR_H, draw_width,
        draw_height, draw_layer_order, transparent_color, cur_sprite->offset,
        unbound);
@@ -359,7 +359,7 @@ void draw_sprites(struct world *mzx_world)
         i5 += skip2;
         i6 += skip3;
       }
-      
+
       if (unbound)
       {
         // Fix the x and y positions of this sprite
@@ -1004,7 +1004,7 @@ static inline bool collision_pix_between(const struct sprite *spr, struct mask s
           tx = x - targ_m.dim.x;
           sch = (sy / CHAR_H * spr->width + sx / CHAR_W);
           tch = (ty / CHAR_H * targ->width + tx / CHAR_W);
-          
+
           mask_alloc_chr(spr, spr_m, sch, mzx_world);
           mask_alloc_chr(targ, targ_m, tch, mzx_world);
 
@@ -1053,11 +1053,11 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *spr,
 
   if(!(spr->flags & SPRITE_INITIALIZED))
     return -1;
-  
+
   // Reset the collision list. To match old behaviour, this only happens
   // if the initialisation check passes
   *collisions = 0;
-  
+
   sprite_rect = sprite_rectangle(&collision_sprite);
   collision_rect = collision_rectangle(&collision_sprite);
   collision_rect.x += sprite_rect.x;
@@ -1066,7 +1066,7 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *spr,
     if (!constrain_rectangle(board_full_rect, &collision_rect))
       return -1;
   }
-  
+
   if (spr->flags & SPRITE_UNBOUND &&
       spr->flags & SPRITE_CHAR_CHECK &&
       spr->flags & SPRITE_CHAR_CHECK2)
@@ -1076,7 +1076,7 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *spr,
     spr_mask = allocate_mask(&collision_sprite);
     spr_mask_allocated = true;
   }
-  
+
   // Check the contents of the board
   collision_board_rect = board_rectangle(collision_rect);
   if (constrain_rectangle(board_rect, &collision_board_rect)) {
@@ -1165,7 +1165,7 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *spr,
         }
         if (sprite_collided) break; // We've already seen a collision with this sprite
       }
-      
+
       if (target_mask_allocated) {
         destroy_mask(target_mask);
       }

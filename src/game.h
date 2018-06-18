@@ -30,32 +30,28 @@ __M_BEGIN_DECLS
 
 #include "world_struct.h"
 
+// game.c
 CORE_LIBSPEC void title_screen(struct world *mzx_world);
-CORE_LIBSPEC void find_player(struct world *mzx_world);
-CORE_LIBSPEC void load_board_module(struct world *mzx_world,
- struct board *src_board);
+CORE_LIBSPEC void load_board_module(struct world *mzx_world);
+boolean load_game_module(struct world *mzx_world, char *filename,
+ boolean fail_if_same);
 
-void set_intro_mesg_timer(unsigned int time);
-void calculate_xytop(struct world *mzx_world, int *x, int *y);
-int move_player(struct world *mzx_world, int dir);
-int grab_item(struct world *mzx_world, int offset, int dir);
-void set_mesg(struct world *mzx_world, const char *str);
-void set_mesg_direct(struct board *src_board, const char *str);
-void rotate(struct world *mzx_world, int x, int y, int dir);
-void check_find_player(struct world *mzx_world);
-int take_key(struct world *mzx_world, int color);
-int give_key(struct world *mzx_world, int color);
+// game_menu.c
+void game_menu(struct world *mzx_world);
+void main_menu(struct world *mzx_world);
 
+// game_update.c
+int update(struct world *mzx_world, int game, int *fadein);
 extern bool pal_update;
+
+// game_update_board.c
+void update_board(struct world *mzx_world);
 
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC void play_game(struct world *mzx_world);
 CORE_LIBSPEC void draw_viewport(struct world *src_board);
 CORE_LIBSPEC void set_caption(struct world *mzx_world, struct board *board,
- struct robot *robot, int editor, int modified);
-
-CORE_LIBSPEC extern bool debug_mode;
-CORE_LIBSPEC extern const char *const world_ext[2];
+ struct robot *robot, int modified);
 #endif
 
 __M_END_DECLS

@@ -27,6 +27,7 @@
 #include "../error.h"
 #include "../event.h"
 #include "../game.h"
+#include "../game_ops.h"
 #include "../graphics.h"
 #include "../helpsys.h"
 #include "../idarray.h"
@@ -206,7 +207,7 @@ static void synchronize_board_values(struct world *mzx_world,
 static void fix_caption(struct world *mzx_world, int modified)
 {
   // Fix the window caption for the editor
-  set_caption(mzx_world, mzx_world->current_board, NULL, 1, modified);
+  set_caption(mzx_world, mzx_world->current_board, NULL, modified);
 }
 
 static void fix_cursor(int *cursor_board_x, int *cursor_board_y,
@@ -252,20 +253,19 @@ static void fix_board(struct world *mzx_world, int new_board)
   mzx_world->current_board = mzx_world->board_list[new_board];
 }
 
-static void fix_mod(struct world *mzx_world, struct board *src_board,
- int listening_flag)
+static void fix_mod(struct world *mzx_world, int listening_flag)
 {
   // If the listening mod is playing, do not load the board mod.
   if(!listening_flag)
   {
-    if(!strcmp(src_board->mod_playing, "*"))
+    if(!strcmp(mzx_world->current_board->mod_playing, "*"))
     {
       audio_end_module();
     }
 
     else
     {
-      load_board_module(mzx_world, src_board);
+      load_board_module(mzx_world);
     }
   }
 }
@@ -1830,6 +1830,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
   char current_listening_mod[MAX_PATH] = { 0 };
   int listening_flag = 0;
 
+  const char *world_ext[] = { ".MZX", NULL };
   const char *mzb_ext[] = { ".MZB", NULL };
   const char *mzm_ext[] = { ".MZM", NULL };
   const char *sfx_ext[] = { ".SFX", NULL };
@@ -1870,7 +1871,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
        mzx_world->board_list[mzx_world->current_board_id];
       src_board = mzx_world->current_board;
 
-      fix_mod(mzx_world, src_board, listening_flag);
+      fix_mod(mzx_world, listening_flag);
     }
     else
     {
@@ -2052,7 +2053,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
       }
     }
 
-    if(debug_mode)
+    if(mzx_world->debug_mode)
     {
       draw_debug_box(mzx_world, debug_x, edit_screen_height - 6,
        cursor_board_x, cursor_board_y, 0);
@@ -2826,7 +2827,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         {
           src_board->mod_playing[0] = '*';
           src_board->mod_playing[1] = 0;
-          fix_mod(mzx_world, src_board, listening_flag);
+          fix_mod(mzx_world, listening_flag);
           draw_mod_timer = DRAW_MOD_TIMER_MAX;
 
           modified = 1;
@@ -3439,7 +3440,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                   if(strcmp(src_board->mod_playing, "*") &&
                    strcasecmp(src_board->mod_playing,
                    mzx_world->real_mod_playing))
-                    fix_mod(mzx_world, src_board, listening_flag);
+                    fix_mod(mzx_world, listening_flag);
 
                   if((draw_mode > 3) &&
                    (block_board == (mzx_world->current_board)))
@@ -3620,7 +3621,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
               {
                 strcpy(current_world, prev_world);
 
-                fix_mod(mzx_world, src_board, listening_flag);
+                fix_mod(mzx_world, listening_flag);
                 break;
               }
               strcpy(curr_file, current_world);
@@ -3646,7 +3647,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                &scroll_y, &debug_x, board_width, board_height,
                edit_screen_height);
 
-              fix_mod(mzx_world, src_board, listening_flag);
+              fix_mod(mzx_world, listening_flag);
               fix_caption(mzx_world, 0);
 
               if(!src_board->overlay_mode && overlay_edit == EDIT_OVERLAY)
@@ -3812,7 +3813,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
               {
                 strcpy(src_board->mod_playing, new_mod);
                 strcpy(mzx_world->real_mod_playing, new_mod);
-                fix_mod(mzx_world, src_board, listening_flag);
+                fix_mod(mzx_world, listening_flag);
                 draw_mod_timer = DRAW_MOD_TIMER_MAX;
               }
             }
@@ -3820,7 +3821,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             {
               src_board->mod_playing[0] = 0;
               mzx_world->real_mod_playing[0] = 0;
-              fix_mod(mzx_world, src_board, listening_flag);
+              fix_mod(mzx_world, listening_flag);
               draw_mod_timer = DRAW_MOD_TIMER_MAX;
             }
             modified = 1;
@@ -4130,7 +4131,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             mzx_world->player_restart_x = mzx_world->player_x;
             mzx_world->player_restart_y = mzx_world->player_y;
 
-            load_board_module(mzx_world, src_board);
+            load_board_module(mzx_world);
 
             reset_robot_debugger();
 
@@ -4187,7 +4188,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             }
             else
             {
-              fix_mod(mzx_world, src_board, listening_flag);
+              fix_mod(mzx_world, listening_flag);
             }
 
             unlink("__test.mzx");
@@ -4451,7 +4452,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
         if(get_alt_status(keycode_internal))
         {
-          debug_mode = !debug_mode;
+          mzx_world->debug_mode = !(mzx_world->debug_mode);
         }
         else
 
@@ -4582,7 +4583,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
       if(strcmp(src_board->mod_playing, "*") &&
        strcasecmp(src_board->mod_playing,
        mzx_world->real_mod_playing))
-        fix_mod(mzx_world, src_board, listening_flag);
+        fix_mod(mzx_world, listening_flag);
 
       // Load the board charset and palette
       if(mzx_world->editor_conf.editor_load_board_assets)
@@ -4742,7 +4743,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
   update_event_status();
 
   mzx_world->editing = false;
-  debug_mode = false;
+  mzx_world->debug_mode = false;
 
   clear_world(mzx_world);
   clear_global_data(mzx_world);
@@ -4769,7 +4770,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
   set_screen_mode(0);
   default_palette();
 
-  set_caption(mzx_world, NULL, NULL, 0, 0);
+  set_caption(mzx_world, NULL, NULL, 0);
 
   // Clear the copy stuff.
   if(copy_robot.used)

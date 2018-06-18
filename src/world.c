@@ -43,7 +43,7 @@
 #include "event.h"
 #include "extmem.h"
 #include "fsafeopen.h"
-#include "game.h"
+#include "game_ops.h"
 #include "graphics.h"
 #include "idput.h"
 #include "memfile.h"
@@ -615,7 +615,7 @@ static inline void load_world_info(struct world *mzx_world,
       case WPROP_ID_BULLET_COLOR:
         mfread(bullet_color, 3, 1, prop);
         break;
-        
+
       case WPROP_ID_DMG:
         mfread(id_dmg, 128, 1, prop);
         break;
@@ -1731,7 +1731,7 @@ int load_counters_file(struct world *mzx_world, const char *file)
 
   if(strcmp(magic, "COUNTERS"))
     goto err;
-  
+
   if(ZIP_SUCCESS != zip_read_directory(zp))
     goto err;
 
@@ -2469,7 +2469,7 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
   struct stat file_info;
 
   get_path(file, file_path, MAX_PATH);
-  
+
   // chdir to game directory
   if(file_path[0])
   {
@@ -2884,7 +2884,7 @@ __editor_maybe_static void default_global_data(struct world *mzx_world)
   set_counter(mzx_world, "LOBOMBS", 0, 0);
   set_counter(mzx_world, "SCORE", 0, 0);
   set_counter(mzx_world, "TIME", 0, 0);
-  
+
   // Setup their gateways
   initialize_gateway_functions(mzx_world);
 
