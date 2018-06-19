@@ -822,8 +822,6 @@ void title_screen(struct world *mzx_world)
               send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
 
               find_player(mzx_world);
-              mzx_world->player_restart_x = mzx_world->player_x;
-              mzx_world->player_restart_y = mzx_world->player_y;
               vquick_fadeout();
 
               update_event_status();
@@ -1045,8 +1043,6 @@ void title_screen(struct world *mzx_world)
             send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
 
             find_player(mzx_world);
-            mzx_world->player_restart_x = mzx_world->player_x;
-            mzx_world->player_restart_y = mzx_world->player_y;
             vquick_fadeout();
 
             play_game(mzx_world);
