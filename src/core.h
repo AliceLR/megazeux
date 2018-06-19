@@ -26,7 +26,6 @@
 __M_BEGIN_DECLS
 
 #include "configure.h"
-#include "platform.h"
 #include "world_struct.h"
 
 #ifdef CONFIG_EDITOR
@@ -100,26 +99,25 @@ struct global_data
 #endif
 };
 
+typedef struct context context;
 typedef struct core_context core_context;
 
 /** Contains information related to the current MegaZeux state/interface/etc. */
-typedef struct context
+struct context
 {
   struct global_data *data;
   struct world *world;
   core_context *root;
   enum context_type context_type;
   enum framerate_type framerate;
-  void (*draw_function)(struct context *);
-  boolean (*idle_function)(struct context *);
-  boolean (*key_function)(struct context *, int *key);
-  boolean (*click_function)(struct context *, int *key,
-   int button, int x, int y);
-  boolean (*drag_function)(struct context *, int *key,
-   int button, int x, int y);
-  void (*destroy_function)(struct context *);
-}
-context;
+  void (*resume_function)(context *);
+  void (*draw_function)(context *);
+  boolean (*idle_function)(context *);
+  boolean (*key_function)(context *, int *key);
+  boolean (*click_function)(context *, int *key, int button, int x, int y);
+  boolean (*drag_function)(context *, int *key, int button, int x, int y);
+  void (*destroy_function)(context *);
+};
 
 /**
  * Sets MegaZeux's caption according to various parameters.
@@ -151,13 +149,12 @@ CORE_LIBSPEC void set_caption(struct world *mzx_world, struct board *board,
 
 CORE_LIBSPEC void run_context(context *ctx, context *parent,
  enum context_type context_type,
+ void (*resume_function)(context *),
  void (*draw_function)(context *),
  boolean (*idle_function)(context *),
- boolean (*key_function)(struct context *, int *key),
- boolean (*click_function)(struct context *, int *key,
-  int button, int x, int y),
- boolean (*drag_function)(struct context *, int *key,
-  int button, int x, int y),
+ boolean (*key_function)(context *, int *key),
+ boolean (*click_function)(context *, int *key, int button, int x, int y),
+ boolean (*drag_function)(context *, int *key, int button, int x, int y),
  void (*destroy_function)(context *));
 
 /**

@@ -48,7 +48,7 @@ struct core_context
   int ctx_stack_alloc;
   int ctx_stack_size;
   boolean full_exit;
-  boolean context_destroyed;
+  boolean context_changed;
 };
 
 /**
@@ -172,13 +172,12 @@ void set_caption(struct world *mzx_world, struct board *board,
 
 void run_context(context *ctx, context *parent,
  enum context_type context_type,
+ void (*resume_function)(context *),
  void (*draw_function)(context *),
  boolean (*idle_function)(context *),
- boolean (*key_function)(struct context *, int *key),
- boolean (*click_function)(struct context *, int *key,
-  int button, int x, int y),
- boolean (*drag_function)(struct context *, int *key,
-  int button, int x, int y),
+ boolean (*key_function)(context *, int *key),
+ boolean (*click_function)(context *, int *key, int button, int x, int y),
+ boolean (*drag_function)(context *, int *key, int button, int x, int y),
  void (*destroy_function)(context *))
 {
   core_context *root = parent->root;
@@ -192,6 +191,7 @@ void run_context(context *ctx, context *parent,
   ctx->world = parent->world;
   ctx->context_type = context_type;
   ctx->framerate = FRAMERATE_UI;
+  ctx->resume_function = resume_function;
   ctx->draw_function = draw_function;
   ctx->key_function = key_function;
   ctx->click_function = click_function;
@@ -213,6 +213,8 @@ void run_context(context *ctx, context *parent,
 
   root->ctx_stack[root->ctx_stack_size] = ctx;
   root->ctx_stack_size++;
+
+  root->context_changed = true;
 }
 
 /**
@@ -238,7 +240,7 @@ void destroy_context(context *target)
   }
   while(root->ctx_stack_size && ctx != target);
 
-  root->context_destroyed = true;
+  root->context_changed = true;
 }
 
 /**
@@ -259,9 +261,34 @@ core_context *core_init(struct world *mzx_world, struct global_data *data)
   root->ctx_stack_size = 0;
   root->ctx_stack_alloc = 0;
   root->full_exit = false;
-  root->context_destroyed = false;
+  root->context_changed = false;
 
   return root;
+}
+
+/**
+ * Execute the resume function for each current context after a context change.
+ */
+
+static void core_resume(core_context *root)
+{
+  int i = root->ctx_stack_size - 1;
+  context *ctx;
+
+  // Find the first context to resume.
+  for(; i > 0; i--)
+  {
+    ctx = root->ctx_stack[i];
+    if(ctx->context_type == CTX_SUBCONTEXT)
+      break;
+  }
+
+  for(; i < root->ctx_stack_size; i++)
+  {
+    ctx = root->ctx_stack[i];
+    if(ctx->resume_function)
+      ctx->resume_function(ctx);
+  }
 }
 
 /**
@@ -398,7 +425,7 @@ static void core_update(core_context *root)
         key_handled = true;
       }
 
-      if(root->context_destroyed || root->full_exit)
+      if(root->context_changed || root->full_exit)
         return;
     }
 
@@ -419,7 +446,7 @@ static void core_update(core_context *root)
             ctx->click_function(ctx, &key, mouse_press, mouse_x, mouse_y);
       }
 
-      if(root->context_destroyed || root->full_exit)
+      if(root->context_changed || root->full_exit)
         return;
     }
 
@@ -428,7 +455,7 @@ static void core_update(core_context *root)
       if(key && ctx->key_function)
         key_handled |= ctx->key_function(ctx, &key);
 
-      if(root->context_destroyed || root->full_exit)
+      if(root->context_changed || root->full_exit)
         return;
     }
   }
@@ -504,7 +531,11 @@ void core_run(core_context *root)
 
   do
   {
-    root->context_destroyed = false;
+    if(root->context_changed)
+    {
+      core_resume(root);
+      root->context_changed = false;
+    }
 
     core_draw(root);
     update_screen();
@@ -620,7 +651,7 @@ void core_run(core_context *root)
       error("Context code bug", 2, 4, 0x2B02);
 
     // This should not change at any point before the update function.
-    if(root->context_destroyed)
+    if(root->context_changed)
       error("Context code bug", 2, 4, 0x2B03);
 
     core_update(root);
