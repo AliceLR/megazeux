@@ -640,9 +640,6 @@ void title_screen(struct world *mzx_world)
 
   if(edit_world && mzx_world->conf.startup_editor)
   {
-    // Disable standalone mode
-    conf->standalone_mode = 0;
-
     set_intro_mesg_timer(0);
     edit_world(mzx_world, 0);
   }
@@ -823,8 +820,6 @@ void title_screen(struct world *mzx_world)
               // title screen or when no game is loaded; here we ONLY send
               // JUSTLOADED.
               send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
-
-              set_counter(mzx_world, "TIME", src_board->time_limit, 0);
 
               find_player(mzx_world);
               mzx_world->player_restart_x = mzx_world->player_x;
@@ -1048,8 +1043,6 @@ void title_screen(struct world *mzx_world)
             // title screen or when no game is loaded; here we ONLY send
             // JUSTLOADED.
             send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
-
-            set_counter(mzx_world, "TIME", src_board->time_limit, 0);
 
             find_player(mzx_world);
             mzx_world->player_restart_x = mzx_world->player_x;
