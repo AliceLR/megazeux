@@ -592,10 +592,8 @@ static void write_var(struct world *mzx_world, char *var_buffer, int int_val, ch
 static void build_var_buffer(char **var_buffer, const char *name,
  int int_value, char *char_value, int index)
 {
-  char *var;
-
-  (*var_buffer) = cmalloc(VAR_LIST_VAR + strlen(name) + 1);
-  var = (*var_buffer) + VAR_LIST_VAR;
+  char *buffer = cmalloc(VAR_LIST_VAR + strlen(name) + 1);
+  char *var = buffer + VAR_LIST_VAR;
 
   // Counter/String
   if(index == -1)
@@ -613,24 +611,22 @@ static void build_var_buffer(char **var_buffer, const char *name,
     var[-2] = 0;
   }
 
-  // Display
-  memset((*var_buffer), ' ', VAR_LIST_WIDTH);
-  (*var_buffer)[VAR_LIST_WIDTH - 1] = '\0';
-
   // Internal
   strcpy(var, name);
 
+  // Display
   if(char_value)
   {
-    snprintf(*var_buffer, SVALUE_COL_OFFSET, "%s", name);
-    snprintf(*var_buffer + SVALUE_COL_OFFSET, SVALUE_SIZE, "%.*s",
-     int_value, char_value);
+    snprintf(buffer, VAR_LIST_WIDTH, "%-*.*s %.*s",
+     SVALUE_COL_OFFSET - 1, SVALUE_COL_OFFSET - 1, name, int_value, char_value);
   }
   else
   {
-    snprintf(*var_buffer, CVALUE_COL_OFFSET, "%s", name);
-    snprintf(*var_buffer + CVALUE_COL_OFFSET, CVALUE_SIZE, "%i", int_value);
+    snprintf(buffer, VAR_LIST_WIDTH, "%-*.*s %i",
+     CVALUE_COL_OFFSET - 1, CVALUE_COL_OFFSET - 1, name, int_value);
   }
+
+  *var_buffer = buffer;
 }
 
 /************************
