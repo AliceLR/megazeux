@@ -211,7 +211,7 @@ CORE_LIBSPEC void pop_context(void);
 // Editor external function pointers.
 
 CORE_LIBSPEC extern void (*edit_world)(struct world *mzx_world,
- int reload_curr_file);
+ boolean reload_curr_file);
 CORE_LIBSPEC extern void (*debug_counters)(struct world *mzx_world);
 CORE_LIBSPEC extern void (*draw_debug_box)(struct world *mzx_world,
  int x, int y, int d_x, int d_y, int show_keys);

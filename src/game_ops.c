@@ -99,6 +99,127 @@ static void set_3_mesg(struct world *mzx_world, const char *str1, int num,
   }
 }
 
+boolean player_can_save(struct world *mzx_world)
+{
+  struct board *cur_board = mzx_world->current_board;
+  int offset;
+
+  if(cur_board->save_mode == CANT_SAVE)
+    return false;
+
+  if(cur_board->save_mode == CAN_SAVE_ON_SENSOR)
+  {
+    offset = xy_to_offset(cur_board, mzx_world->player_x, mzx_world->player_y);
+
+    if(cur_board->level_under_id[offset] != SENSOR)
+      return false;
+  }
+
+  return true;
+}
+
+void player_switch_bomb_type(struct world *mzx_world)
+{
+  struct board *cur_board = mzx_world->current_board;
+
+  mzx_world->bomb_type ^= 1;
+  if(!cur_board->player_attack_locked && cur_board->can_bomb)
+  {
+    play_sfx(mzx_world, 35);
+    if(mzx_world->bomb_type)
+    {
+      set_mesg(mzx_world, "You switch to high strength bombs.");
+    }
+    else
+    {
+      set_mesg(mzx_world, "You switch to low strength bombs.");
+    }
+  }
+}
+
+void player_cheat_give_all(struct world *mzx_world)
+{
+  struct board *cur_board = mzx_world->current_board;
+  int i;
+
+  set_counter(mzx_world, "AMMO", 32767, 1);
+  set_counter(mzx_world, "COINS", 32767, 1);
+  set_counter(mzx_world, "GEMS", 32767, 1);
+  set_counter(mzx_world, "HEALTH", 32767, 1);
+  set_counter(mzx_world, "HIBOMBS", 32767, 1);
+  set_counter(mzx_world, "LIVES", 32767, 1);
+  set_counter(mzx_world, "LOBOMBS", 32767, 1);
+  set_counter(mzx_world, "SCORE", 0, 1);
+  set_counter(mzx_world, "TIME", cur_board->time_limit, 1);
+
+  mzx_world->dead = 0;
+
+  for(i = 0; i < 16; i++)
+  {
+    mzx_world->keys[i] = i;
+  }
+
+  cur_board->player_ns_locked = 0;
+  cur_board->player_ew_locked = 0;
+  cur_board->player_attack_locked = 0;
+}
+
+void player_cheat_zap(struct world *mzx_world)
+{
+  int player_x = mzx_world->player_x;
+  int player_y = mzx_world->player_y;
+  int board_width = mzx_world->current_board->board_width;
+  int board_height = mzx_world->current_board->board_height;
+
+  if(player_x > 0)
+  {
+    place_at_xy(mzx_world, SPACE, 7, 0, player_x - 1,
+      player_y);
+
+    if(player_y > 0)
+    {
+      place_at_xy(mzx_world, SPACE, 7, 0, player_x - 1,
+        player_y - 1);
+    }
+
+    if(player_y < (board_height - 1))
+    {
+      place_at_xy(mzx_world, SPACE, 7, 0, player_x - 1,
+        player_y + 1);
+    }
+  }
+
+  if(player_x < (board_width - 1))
+  {
+    place_at_xy(mzx_world, SPACE, 7, 0, player_x + 1,
+      player_y);
+
+    if(player_y > 0)
+    {
+      place_at_xy(mzx_world, SPACE, 7, 0,
+        player_x + 1, player_y - 1);
+    }
+
+    if(player_y < (board_height - 1))
+    {
+      place_at_xy(mzx_world, SPACE, 7, 0,
+        player_x + 1, player_y + 1);
+    }
+  }
+
+  if(player_y > 0)
+  {
+    place_at_xy(mzx_world, SPACE, 7, 0,
+      player_x, player_y - 1);
+  }
+
+  if(player_y < (board_height - 1))
+  {
+    place_at_xy(mzx_world, SPACE, 7, 0,
+      player_x, player_y + 1);
+  }
+}
+
 static void place_player(struct world *mzx_world, int x, int y, int dir)
 {
   struct board *src_board = mzx_world->current_board;

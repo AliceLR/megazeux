@@ -733,7 +733,7 @@ void pop_context(void)
 
 // Editor external function pointers (NULL by default).
 
-void (*edit_world)(struct world *mzx_world, int reload_curr_file);
+void (*edit_world)(struct world *mzx_world, boolean reload_curr_file);
 void (*debug_counters)(struct world *mzx_world);
 void (*draw_debug_box)(struct world *mzx_world, int x, int y, int d_x, int d_y,
  int show_keys);

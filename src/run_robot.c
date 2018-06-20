@@ -5158,9 +5158,9 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
          * World validation prevents the bad swap from clearing data. */
         do
         {
-          int fade; // FIXME: Hack!
+          boolean ignore; // FIXME: Hack!
           redo_load = 0;
-          if(!reload_swap(mzx_world, translated_name, &fade))
+          if(!reload_swap(mzx_world, translated_name, &ignore))
             redo_load = error("Error swapping to next world", 1, 3, 0x2C01);
         } while(redo_load == 2);
 
@@ -5168,7 +5168,6 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         if(redo_load == 1)
           break;
 
-        // Exit to the main loop and let it know we're swapping worlds.
         mzx_world->change_game_state = CHANGE_STATE_SWAP_WORLD;
         free(translated_name);
         return;
@@ -5267,19 +5266,19 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
       case ROBOTIC_CMD_ENABLE_SAVING: // Enable saving
       {
-        src_board->save_mode = 0;
+        src_board->save_mode = CAN_SAVE;
         break;
       }
 
       case ROBOTIC_CMD_DISABLE_SAVING: // Disable saving
       {
-        src_board->save_mode = 1;
+        src_board->save_mode = CANT_SAVE;
         break;
       }
 
       case ROBOTIC_CMD_ENABLE_SENSORONLY_SAVING: // Enable sensoronly saving
       {
-        src_board->save_mode = 2;
+        src_board->save_mode = CAN_SAVE_ON_SENSOR;
         break;
       }
 
@@ -5604,28 +5603,25 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
     // Some commands can decrement lines_run, putting it at -1 here,
     // so add 2 to lines_run for the check.
-    if ((lines_run + 2) % 1000000 == 0) {
-      if (peek_exit_input()) {
-        bool exit = false;
+    if((lines_run + 2) % 1000000 == 0)
+    {
+      if(peek_exit_input())
+      {
         update_event_status();
-        if (get_exit_status()) {
-          exit = true;
-        } else {
-          if (get_key_status(keycode_internal, IKEY_ESCAPE)) {
-            exit = true;
-          }
-        }
-        if (exit) {
+
+        if(get_exit_status() || get_key_status(keycode_internal, IKEY_ESCAPE))
+        {
+          boolean exit_game;
           m_show();
           dialog_fadein();
-          exit = !confirm(mzx_world,
+          exit_game = !confirm(mzx_world,
            "MegaZeux appears to have frozen. Do you want to exit?");
           dialog_fadeout();
           update_screen();
-          if (exit)
+
+          if(exit_game)
           {
-            mzx_world->change_game_state =
-             CHANGE_STATE_REQUEST_EXIT;
+            mzx_world->change_game_state = CHANGE_STATE_REQUEST_EXIT;
             break;
           }
         }

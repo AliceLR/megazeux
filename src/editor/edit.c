@@ -114,7 +114,7 @@ void load_editor_config(struct world *mzx_world, int *argc, char *argv[])
 
 // Wrapper for reload_world so we can load an editor config
 static bool editor_reload_world(struct world *mzx_world, const char *file,
- int *faded)
+ boolean *faded)
 {
   struct stat file_info;
   struct editor_config_info *conf = &(mzx_world->editor_conf);
@@ -1746,7 +1746,7 @@ static void draw_menu_minimal(int overlay_edit, int draw_mode,
    level_param, current_param, src_board, use_default_color);
 }
 
-static void __edit_world(struct world *mzx_world, int reload_curr_file)
+static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
 {
   struct board *src_board;
   struct robot copy_robot;
@@ -1754,9 +1754,9 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
   struct sensor copy_sensor;
 
   // Editor state
+  boolean ignore;
   int i;
   int key;
-  int fade;
   int exit = 0;
   int modified = 0;
   int prev_modified = 0;
@@ -1862,7 +1862,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
     if(
      reload_curr_file &&
      curr_file[0] &&
-     editor_reload_world(mzx_world, curr_file, &fade))
+     editor_reload_world(mzx_world, curr_file, &ignore))
     {
       strncpy(current_world, curr_file, MAX_PATH);
 
@@ -1928,7 +1928,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
       create_path_if_not_exists(backup_name);
 
-      save_world(mzx_world, backup_name_formatted, 0, MZX_VERSION);
+      save_world(mzx_world, backup_name_formatted, false, MZX_VERSION);
       backup_num = (backup_num + 1) % backup_count;
       backup_timestamp = get_ticks();
     }
@@ -3613,11 +3613,9 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             if(!choose_file_ch(mzx_world, world_ext, load_world,
              "Load World", 1))
             {
-              int fade;
-
               // Load world curr_file
               strcpy(current_world, load_world);
-              if(!editor_reload_world(mzx_world, current_world, &fade))
+              if(!editor_reload_world(mzx_world, current_world, &ignore))
               {
                 strcpy(current_world, prev_world);
 
@@ -4069,7 +4067,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
               // Save entire game
               strcpy(current_world, world_name);
               strcpy(curr_file, current_world);
-              save_world(mzx_world, current_world, 0, MZX_VERSION);
+              save_world(mzx_world, current_world, false, MZX_VERSION);
 
               get_path(world_name, new_path, MAX_PATH);
               if(new_path[0])
@@ -4092,7 +4090,6 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         if(get_alt_status(keycode_internal))
         {
           // Test world
-          int fade;
           int current_board_id = mzx_world->current_board_id;
 
           // Clear undo histories and prepare to reset them
@@ -4107,7 +4104,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           clear_overlay_history = 1;
           clear_vlayer_history = 1;
 
-          if(!save_world(mzx_world, "__test.mzx", 0, MZX_VERSION))
+          if(!save_world(mzx_world, "__test.mzx", false, MZX_VERSION))
           {
             int world_version = mzx_world->version;
             char *return_dir = cmalloc(MAX_PATH);
@@ -4139,9 +4136,9 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
             chdir(return_dir);
 
-            if(!reload_world(mzx_world, "__test.mzx", &fade))
+            if(!reload_world(mzx_world, "__test.mzx", &ignore))
             {
-              if(!editor_reload_world(mzx_world, current_world, &fade))
+              if(!editor_reload_world(mzx_world, current_world, &ignore))
                 create_blank_world(mzx_world);
 
               current_board_id = mzx_world->current_board_id;
@@ -4410,7 +4407,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                 if(!new_file(mzx_world, world_ext, ".mzx", export_name,
                  title, 1))
                 {
-                  save_world(mzx_world, export_name, 0, MZX_VERSION_PREV);
+                  save_world(mzx_world, export_name, false, MZX_VERSION_PREV);
                 }
               }
             }
@@ -4750,7 +4747,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
   audio_end_module();
   cursor_off();
   m_hide();
-  clear_screen(32, 7);
+  clear_screen();
   insta_fadeout();
   strcpy(curr_file, current_world);
 

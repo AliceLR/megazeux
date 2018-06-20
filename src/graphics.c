@@ -707,7 +707,7 @@ void dialog_fadein(void)
 {
   if(get_fade_status())
   {
-    clear_screen(32, 0);
+    clear_screen();
     insta_fadein();
   }
 }
@@ -2082,19 +2082,17 @@ Uint8 get_color_linear(Uint32 offset)
   return (dest->bg_color << 4) | (dest->fg_color & 0x0F);
 }
 
-void clear_screen(Uint8 chr, Uint8 color)
+void clear_screen(void)
 {
   Uint32 i;
-  Uint8 fg_color = color & 0x0F;
-  Uint8 bg_color = color >> 4;
   struct char_element *dest = graphics.current_video;
   struct char_element *dest_copy = graphics.text_video;
 
   for(i = 0; i < (SCREEN_W * SCREEN_H); i++)
   {
-    dest->char_value = chr;
-    dest->fg_color = fg_color;
-    dest->bg_color = bg_color;
+    dest->char_value = 0;
+    dest->fg_color = 0;
+    dest->bg_color = 0;
     *(dest_copy++) = *dest;
     dest++;
   }

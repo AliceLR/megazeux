@@ -136,12 +136,10 @@ enum mzx_version
 #define MZX_VERSION      (V291)
 
 /* The world version that worlds will be saved as when Export Downver. World
- * is used from the editor. This function was previously fulfilled by downver,
- * but the increase in complexity of the world file made maintaining downver
- * infeasible.
+ * is used from the editor. This function is also fulfilled by the downver util.
  *
  * If you increase MZX_VERSION, always make sure this is updated with its
- * previous value. Therefore, users can always downgrade their work to an
+ * previous value; this way, users can always downgrade their work to an
  * older version (if it at all makes sense to do so).
  */
 #define MZX_VERSION_PREV (V290)
@@ -172,9 +170,9 @@ CORE_LIBSPEC int save_magic(const char magic_string[5]);
 CORE_LIBSPEC int get_version_string(char buffer[16], enum mzx_version version);
 
 CORE_LIBSPEC int save_world(struct world *mzx_world, const char *file,
- int savegame, int world_version);
-CORE_LIBSPEC bool reload_world(struct world *mzx_world, const char *file,
- int *faded);
+ boolean savegame, int world_version);
+CORE_LIBSPEC boolean reload_world(struct world *mzx_world, const char *file,
+ boolean *faded);
 CORE_LIBSPEC void clear_world(struct world *mzx_world);
 CORE_LIBSPEC void clear_global_data(struct world *mzx_world);
 CORE_LIBSPEC void default_scroll_values(struct world *mzx_world);
@@ -185,8 +183,9 @@ CORE_LIBSPEC void change_board_load_assets(struct world *mzx_world);
 CORE_LIBSPEC void remap_vlayer(struct world *mzx_world,
  int new_width, int new_height);
 
-bool reload_savegame(struct world *mzx_world, const char *file, int *faded);
-bool reload_swap(struct world *mzx_world, const char *file, int *faded);
+boolean reload_savegame(struct world *mzx_world, const char *file,
+ boolean *faded);
+boolean reload_swap(struct world *mzx_world, const char *file, boolean *faded);
 
 void save_counters_file(struct world *mzx_world, const char *file);
 int load_counters_file(struct world *mzx_world, const char *file);
@@ -199,7 +198,7 @@ void meter_initial_draw(int curr, int target, const char *title);
 
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC void try_load_world(struct world *mzx_world,
- struct zip_archive **zp, FILE **fp, const char *file, bool savegame,
+ struct zip_archive **zp, FILE **fp, const char *file, boolean savegame,
  int *file_version, char *name);
 
 CORE_LIBSPEC void default_vlayer(struct world *mzx_world);

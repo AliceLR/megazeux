@@ -341,7 +341,7 @@ __editor_maybe_static void draw_viewport(struct world *mzx_world)
 }
 
 // Returns non-0 to skip all keys this cycle
-int update(struct world *mzx_world, int game, int *fadein)
+int update(struct world *mzx_world, boolean is_title, boolean *fadein)
 {
   int time_remaining;
   static int reload = 0;
@@ -366,7 +366,7 @@ int update(struct world *mzx_world, int game, int *fadein)
 
   pal_update = false;
 
-  if(game && mzx_world->version >= V251s1 &&
+  if(!is_title && mzx_world->version >= V251s1 &&
    get_counter(mzx_world, "CURSORSTATE", 0))
   {
     // Turn on mouse
@@ -433,7 +433,7 @@ int update(struct world *mzx_world, int game, int *fadein)
   }
 
   // The following is during gameplay ONLY
-  if(game && (!mzx_world->dead))
+  if(!is_title && (!mzx_world->dead))
   {
     // Shoot
     if(get_key_status(keycode_internal_wrt_numlock, IKEY_SPACE)
@@ -789,7 +789,7 @@ int update(struct world *mzx_world, int game, int *fadein)
     draw_viewport(mzx_world);
 
     // Draw screen
-    if(!game)
+    if(is_title)
     {
       id_chars[player_color] = 0;
       id_chars[player_char + 0] = 32;
@@ -819,7 +819,7 @@ int update(struct world *mzx_world, int game, int *fadein)
       }
 
       // Find where player would be and draw.
-      if(game)
+      if(!is_title)
       {
         id_put(src_board, player_x - top_x + viewport_x,
          player_y - top_y + viewport_y, player_x,
@@ -957,7 +957,7 @@ int update(struct world *mzx_world, int game, int *fadein)
   if(*fadein)
   {
     vquick_fadein();
-    *fadein = 0;
+    *fadein = false;
   }
 
   switch(mzx_world->change_game_state)
@@ -967,10 +967,9 @@ int update(struct world *mzx_world, int game, int *fadein)
       // Load the new board's mod
       load_board_module(mzx_world);
 
-      // send both JUSTLOADED and JUSTENTERED respectively; the
-      // JUSTENTERED label will take priority if a robot defines it.
-      // This differs from pressing P on the title screen, where the
-      // order of precedence is swapped.
+      // Send both JUSTLOADED and JUSTENTERED; the JUSTENTERED label will take
+      // priority if a robot defines it (instead of JUSTLOADED like on the title
+      // screen).
       send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
       send_robot_def(mzx_world, 0, LABEL_JUSTENTERED);
 
@@ -1208,7 +1207,7 @@ int update(struct world *mzx_world, int game, int *fadein)
     {
       // Prepare for fadein
       if(!get_fade_status())
-        *fadein = 1;
+        *fadein = true;
       vquick_fadeout();
     }
 

@@ -36,6 +36,11 @@ void draw_intro_mesg(struct world *mzx_world);
 void set_mesg(struct world *mzx_world, const char *str);
 void set_mesg_direct(struct board *src_board, const char *str);
 
+boolean player_can_save(struct world *mzx_world);
+void player_switch_bomb_type(struct world *mzx_world);
+void player_cheat_give_all(struct world *mzx_world);
+void player_cheat_zap(struct world *mzx_world);
+
 void calculate_xytop(struct world *mzx_world, int *x, int *y);
 int move_player(struct world *mzx_world, int dir);
 int grab_item(struct world *mzx_world, int offset, int dir);

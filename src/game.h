@@ -41,7 +41,7 @@ void game_menu(struct world *mzx_world);
 void main_menu(struct world *mzx_world);
 
 // game_update.c
-int update(struct world *mzx_world, int game, int *fadein);
+int update(struct world *mzx_world, boolean is_title, boolean *fadein);
 extern bool pal_update;
 
 // game_update_board.c

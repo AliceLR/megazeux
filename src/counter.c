@@ -2761,7 +2761,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
         err = fsafetranslate(char_value, translated_path);
         if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
-          save_world(mzx_world, translated_path, 1, MZX_VERSION);
+          save_world(mzx_world, translated_path, true, MZX_VERSION);
 
         free(translated_path);
       }
@@ -2780,7 +2780,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
     case FOPEN_LOAD_GAME:
     {
       char *translated_path = cmalloc(MAX_PATH);
-      int faded;
+      boolean faded;
 
       if(!fsafetranslate(char_value, translated_path))
       {

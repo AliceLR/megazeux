@@ -209,7 +209,7 @@ CORE_LIBSPEC void draw_char_to_layer(Uint8 color, Uint8 chr,
 CORE_LIBSPEC void write_string_mask(const char *str, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed);
 
-CORE_LIBSPEC void clear_screen(Uint8 chr, Uint8 color);
+CORE_LIBSPEC void clear_screen(void);
 
 CORE_LIBSPEC void cursor_solid(void);
 CORE_LIBSPEC void cursor_off(void);

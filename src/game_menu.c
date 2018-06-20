@@ -29,7 +29,7 @@
 #include "world_struct.h"
 
 static const char *main_menu_title = " MegaZeux " VERSION " ";
-#define MAIN_MENU_TITLE_X ((40 - strlen(main_menu_title)) / 2)
+#define MAIN_MENU_TITLE_X ((80 - strlen(main_menu_title)) / 2)
 
 static const char main_menu_1[] =
  "Enter- Menu\n"
