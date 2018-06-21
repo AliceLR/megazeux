@@ -4132,7 +4132,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
 
             reset_robot_debugger();
 
-            play_game(mzx_world);
+            play_game(mzx_world, NULL);
 
             chdir(return_dir);
 

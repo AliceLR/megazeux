@@ -3,6 +3,7 @@
  * Copyright (C) 1996 Greg Janson
  * Copyright (C) 1999 Charles Goetzman
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
+ * Copyright (C) 2018 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -113,9 +114,65 @@ void load_board_module(struct world *mzx_world)
   load_game_module(mzx_world, mzx_world->current_board->mod_playing, false);
 }
 
-static boolean load_world_title(struct world *mzx_world, char *name)
+static boolean load_world_gameplay(struct world *mzx_world, char *name,
+ boolean *fadein)
 {
+  boolean was_faded = get_fade_status();
   boolean ignore;
+
+  struct board *cur_board;
+
+  // Save the name of the current playing mod; we'll want it to continue playing
+  // into gameplay if the first board has the same mod or mod *.
+  char old_mod_playing[MAX_PATH];
+  strcpy(old_mod_playing, mzx_world->real_mod_playing);
+
+  vquick_fadeout();
+  clear_screen();
+  *fadein = true;
+
+  if(reload_world(mzx_world, name, &ignore))
+  {
+    if(mzx_world->current_board_id != mzx_world->first_board)
+    {
+      change_board(mzx_world, mzx_world->first_board);
+    }
+
+    cur_board = mzx_world->current_board;
+
+    // Send both JUSTENTERED and JUSTLOADED; the JUSTLOADED label will
+    // take priority if a robot defines it.
+    send_robot_def(mzx_world, 0, LABEL_JUSTENTERED);
+    send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
+
+    change_board_set_values(mzx_world);
+    change_board_load_assets(mzx_world);
+
+    // Load the mod unless it's the mod from the title screen or *.
+    strcpy(mzx_world->real_mod_playing, old_mod_playing);
+    load_game_module(mzx_world, cur_board->mod_playing, true);
+    sfx_clear_queue();
+
+    set_caption(mzx_world, NULL, NULL, false);
+    set_intro_mesg_timer(0);
+    return true;
+  }
+
+  if(was_faded)
+    *fadein = false;
+
+  return false;
+}
+
+static boolean load_world_title(struct world *mzx_world, char *name,
+ boolean *fadein)
+{
+  boolean was_faded = get_fade_status();
+  boolean ignore;
+
+  vquick_fadeout();
+  clear_screen();
+  *fadein = true;
 
   if(reload_world(mzx_world, name, &ignore))
   {
@@ -123,15 +180,16 @@ static boolean load_world_title(struct world *mzx_world, char *name)
     if(curr_file != name)
       strcpy(curr_file, name);
 
-    set_caption(mzx_world, NULL, NULL, false);
-
     // Only send JUSTLOADED on the title screen.
     send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
+
+    change_board_set_values(mzx_world);
+    change_board_load_assets(mzx_world);
 
     load_board_module(mzx_world);
     sfx_clear_queue();
 
-    set_counter(mzx_world, "TIME", mzx_world->current_board->time_limit, 0);
+    set_caption(mzx_world, NULL, NULL, false);
     set_intro_mesg_timer(MESG_TIMEOUT);
     return true;
   }
@@ -143,27 +201,82 @@ static boolean load_world_title(struct world *mzx_world, char *name)
     clear_global_data(mzx_world);
   }
 
+  if(was_faded)
+    *fadein = false;
+
   return false;
 }
 
-static void load_world_selection(struct world *mzx_world)
+static boolean load_savegame(struct world *mzx_world, char *name,
+ boolean *fadein)
+{
+  boolean was_faded = get_fade_status();
+  boolean save_is_faded;
+
+  vquick_fadeout();
+  clear_screen();
+  *fadein = true;
+
+  if(reload_savegame(mzx_world, name, &save_is_faded))
+  {
+    if(curr_sav != name)
+      strcpy(curr_sav, name);
+
+    // Only send JUSTLOADED for savegames.
+    send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
+    find_player(mzx_world);
+
+    load_game_module(mzx_world, mzx_world->real_mod_playing, false);
+    sfx_clear_queue();
+
+    if(save_is_faded)
+      *fadein = false;
+
+    set_caption(mzx_world, NULL, NULL, false);
+    set_intro_mesg_timer(0);
+    return true;
+  }
+
+  if(was_faded)
+    *fadein = false;
+
+  return false;
+}
+
+static boolean load_world_title_selection(struct world *mzx_world,
+ boolean *fadein)
 {
   char world_name[MAX_PATH] = { 0 };
 
   m_show();
   if(!choose_file_ch(mzx_world, world_ext,
-   world_name, "Load World", 1))
+   world_name, "Load World", true))
   {
-    vquick_fadeout();
-    load_world_title(mzx_world, world_name);
+    return load_world_title(mzx_world, world_name, fadein);
   }
+
+  return false;
 }
 
-__editor_maybe_static void play_game(struct world *mzx_world)
+static boolean load_savegame_selection(struct world *mzx_world, boolean *fadein)
+{
+  char save_file_name[MAX_PATH] = { 0 };
+
+  m_show();
+  if(!choose_file_ch(mzx_world, save_ext, save_file_name,
+    "Choose game to restore", true))
+  {
+    return load_savegame(mzx_world, save_file_name, fadein);
+  }
+
+  return false;
+}
+
+__editor_maybe_static void play_game(struct world *mzx_world, boolean *_fadein)
 {
   // We have the world loaded, on the proper scene.
   // We are faded out. Commence playing!
-  boolean fadein = true;
+  boolean fadein = _fadein ? *_fadein : true;
   int exit = 0;
   int confirm_exit = 0;
   int key = -1;
@@ -304,31 +417,11 @@ __editor_maybe_static void play_game(struct world *mzx_world)
           if(get_alt_status(keycode_internal))
             break;
 
+          // Restore saved game
           if(mzx_world->version < V282 ||
            get_counter(mzx_world, "LOAD_MENU", 0))
           {
-            // Restore saved game
-            char save_file_name[MAX_PATH] = { 0 };
-            m_show();
-
-            if(!choose_file_ch(mzx_world, save_ext, save_file_name,
-             "Choose game to restore", 1))
-            {
-              boolean faded = false;
-              fadein = false;
-
-              if(!reload_savegame(mzx_world, save_file_name, &faded))
-                break;
-
-              load_game_module(mzx_world, mzx_world->real_mod_playing, false);
-
-              find_player(mzx_world);
-
-              strcpy(curr_sav, save_file_name);
-              send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
-              if(!faded)
-                fadein = true;
-            }
+            load_savegame_selection(mzx_world, &fadein);
           }
           break;
         }
@@ -390,21 +483,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
             struct stat file_info;
 
             if(!stat(curr_sav, &file_info))
-            {
-              boolean faded = false;
-              fadein = false;
-
-              if(!reload_savegame(mzx_world, curr_sav, &faded))
-                break;
-
-              load_game_module(mzx_world, mzx_world->real_mod_playing, false);
-
-              find_player(mzx_world);
-
-              send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
-              if(!faded)
-                fadein = true;
-            }
+              load_savegame(mzx_world, curr_sav, &fadein);
           }
           break;
         }
@@ -432,15 +511,14 @@ __editor_maybe_static void play_game(struct world *mzx_world)
 
         case IKEY_RETURN:
         {
-          int enter_menu_status =
-           get_counter(mzx_world, "ENTER_MENU", 0);
           send_robot_all_def(mzx_world, "KeyEnter");
 
           // Ignore if this isn't a fresh press
           if(key_status != 1)
             break;
 
-          if(mzx_world->version < V260 || enter_menu_status)
+          if(mzx_world->version < V260 ||
+           get_counter(mzx_world, "ENTER_MENU", 0))
             game_menu(mzx_world);
 
           break;
@@ -448,17 +526,16 @@ __editor_maybe_static void play_game(struct world *mzx_world)
 
         case IKEY_ESCAPE:
         {
-          // ESCAPE_MENU (2.90+)
-          int escape_menu_status =
-           get_counter(mzx_world, "ESCAPE_MENU", 0);
+          // Ignore if this isn't a fresh press
+          if(key_status != 1)
+            break;
 
-          if(mzx_world->version < V290 || escape_menu_status)
+          // ESCAPE_MENU (2.90+)
+          if(mzx_world->version < V290 ||
+           get_counter(mzx_world, "ESCAPE_MENU", 0))
           {
-            if(key_status == 1)
-            {
-              confirm_exit = 1;
-              exit = 1;
-            }
+            confirm_exit = 1;
+            exit = 1;
           }
 
           break;
@@ -488,7 +565,6 @@ __editor_maybe_static void play_game(struct world *mzx_world)
   } while(!exit);
   pop_context();
   vquick_fadeout();
-  default_palette();
   clear_screen();
   audio_end_module();
   sfx_clear_queue();
@@ -497,7 +573,6 @@ __editor_maybe_static void play_game(struct world *mzx_world)
 void title_screen(struct world *mzx_world)
 {
   boolean fadein = true;
-  boolean ignore;
   int exit = 0;
   int confirm_exit = 0;
   int key = 0;
@@ -526,12 +601,12 @@ void title_screen(struct world *mzx_world)
   }
   else
   {
-    if(!load_world_title(mzx_world, curr_file))
+    if(!load_world_title(mzx_world, curr_file, &fadein))
     {
       // Disable standalone mode
       conf->standalone_mode = 0;
 
-      load_world_selection(mzx_world);
+      load_world_title_selection(mzx_world, &fadein);
     }
   }
 
@@ -649,8 +724,7 @@ void title_screen(struct world *mzx_world)
           if(conf->standalone_mode)
             break;
 
-          load_world_selection(mzx_world);
-          fadein = true;
+          load_world_title_selection(mzx_world, &fadein);
           break;
         }
 
@@ -666,47 +740,18 @@ void title_screen(struct world *mzx_world)
         case IKEY_r:
         {
           // Restore saved game
-          char save_file_name[MAX_PATH] = { 0 };
-
           if(conf->standalone_mode && !get_counter(mzx_world, "LOAD_MENU", 0))
             break;
 
-          m_show();
-
-          if(!choose_file_ch(mzx_world, save_ext, save_file_name,
-           "Choose game to restore", 1))
+          if(load_savegame_selection(mzx_world, &fadein))
           {
-            boolean faded = false;
+            play_game(mzx_world, &fadein);
 
-            vquick_fadeout();
-            default_palette();
-            clear_screen();
-            fadein = true;
+            if(mzx_world->full_exit)
+              break;
 
-            // FIXME can't do anything with faded right now.
-            if(reload_savegame(mzx_world, save_file_name, &faded))
-            {
-              if(curr_sav != save_file_name)
-                strcpy(curr_sav, save_file_name);
-
-              load_game_module(mzx_world, mzx_world->real_mod_playing, false);
-              sfx_clear_queue();
-
-              set_intro_mesg_timer(0);
-
-              // Only send JUSTLOADED for savegames.
-              send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
-
-              find_player(mzx_world);
-
-              play_game(mzx_world);
-
-              if(mzx_world->full_exit)
-                break;
-
-              // Done playing- load world again
-              load_world_title(mzx_world, curr_file);
-            }
+            // Done playing- load world again
+            load_world_title(mzx_world, curr_file, &fadein);
           }
           break;
         }
@@ -717,62 +762,22 @@ void title_screen(struct world *mzx_world)
           // Play game
           if(mzx_world->active)
           {
-            char old_mod_playing[MAX_PATH];
-            strcpy(old_mod_playing, mzx_world->real_mod_playing);
-
             if(mzx_world->only_from_swap)
             {
-              m_show();
               error("You can only play this game via a swap"
                " from another game", 0, 24, 0x3101);
               break;
             }
 
-            // Load world curr_file
-            // Don't end mod- We want a smooth transition for that.
-
-            vquick_fadeout();
-            default_palette();
-            clear_screen();
-            fadein = true;
-
-            if(reload_world(mzx_world, curr_file, &ignore))
+            if(load_world_gameplay(mzx_world, curr_file, &fadein))
             {
-              if(mzx_world->current_board_id != mzx_world->first_board)
-              {
-                change_board(mzx_world, mzx_world->first_board);
-              }
-
-              src_board = mzx_world->current_board;
-
-              // Send both JUSTENTERED and JUSTLOADED; the JUSTLOADED label will
-              // take priority if a robot defines it.
-              send_robot_def(mzx_world, 0, LABEL_JUSTENTERED);
-              send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
-
-              // Load the mod unless it's the mod from the title screen or *.
-              strcpy(mzx_world->real_mod_playing, old_mod_playing);
-              load_game_module(mzx_world, src_board->mod_playing, true);
-              sfx_clear_queue();
-
-              set_intro_mesg_timer(0);
-
-              set_counter(mzx_world, "TIME", src_board->time_limit, 0);
-
-              find_player(mzx_world);
-              mzx_world->player_restart_x = mzx_world->player_x;
-              mzx_world->player_restart_y = mzx_world->player_y;
-
-              // Load board palette and charset
-              change_board_load_assets(mzx_world);
-
-              play_game(mzx_world);
+              play_game(mzx_world, NULL);
 
               if(mzx_world->full_exit)
                 break;
 
               // Done playing- load world again
-              load_world_title(mzx_world, curr_file);
+              load_world_title(mzx_world, curr_file, &fadein);
             }
           }
           break;
@@ -819,7 +824,7 @@ void title_screen(struct world *mzx_world)
             set_intro_mesg_timer(0);
             edit_world(mzx_world, reload_curr_world_in_editor);
 
-            load_world_title(mzx_world, curr_file);
+            load_world_title(mzx_world, curr_file, &fadein);
             set_intro_mesg_timer(0);
 
             fadein = true;
@@ -830,73 +835,47 @@ void title_screen(struct world *mzx_world)
         // Quickload saved game
         case IKEY_F10:
         {
-          boolean faded = false;
           if(conf->standalone_mode && !get_counter(mzx_world, "LOAD_MENU", 0))
             break;
 
-          m_show();
-
-          vquick_fadeout();
-          default_palette();
-          clear_screen();
-          fadein = true;
-
-          // FIXME can't do anything with faded right now.
-          if(reload_savegame(mzx_world, curr_sav, &faded))
+          if(load_savegame(mzx_world, curr_sav, &fadein))
           {
-            load_game_module(mzx_world, mzx_world->real_mod_playing, false);
-            sfx_clear_queue();
-
-            set_intro_mesg_timer(0);
-
-            // Only send JUSTLOADED for savegames.
-            send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
-
-            find_player(mzx_world);
-
-            play_game(mzx_world);
+            play_game(mzx_world, &fadein);
 
             if(mzx_world->full_exit)
               break;
 
             // Done playing- load world again
-            load_world_title(mzx_world, curr_file);
+            load_world_title(mzx_world, curr_file, &fadein);
           }
           break;
         }
 
         case IKEY_RETURN: // Enter
         {
-          int enter_menu_status =
-           get_counter(mzx_world, "ENTER_MENU", 0);
-
           // Ignore if this isn't a fresh press
           if(key_status != 1)
             break;
 
-          if(conf->standalone_mode && !enter_menu_status)
-            break;
+          if(!conf->standalone_mode || get_counter(mzx_world, "ENTER_MENU", 0))
+            main_menu(mzx_world);
 
-          main_menu(mzx_world);
           break;
         }
 
         case IKEY_ESCAPE:
         {
-          // ESCAPE_MENU (2.90+)
-          int escape_menu_status =
-           get_counter(mzx_world, "ESCAPE_MENU", 0);
+          // Ignore if this isn't a fresh press
+          if(key_status != 1)
+            break;
 
-          // Escape menu only works on the title screen if the
+          // ESCAPE_MENU (2.90+) only works on the title screen if the
           // standalone_mode config option is set
-          if(mzx_world->version < V290 || escape_menu_status ||
-           !conf->standalone_mode)
+          if(mzx_world->version < V290 || !conf->standalone_mode ||
+           get_counter(mzx_world, "ESCAPE_MENU", 0))
           {
-            if(key_status == 1)
-            {
-              confirm_exit = 1;
-              exit = 1;
-            }
+            confirm_exit = 1;
+            exit = 1;
           }
 
           break;
@@ -927,7 +906,6 @@ void title_screen(struct world *mzx_world)
   } while(!exit && !mzx_world->full_exit);
 
   vquick_fadeout();
-  default_palette();
   clear_screen();
   audio_end_module();
   sfx_clear_queue();

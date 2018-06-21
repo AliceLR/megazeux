@@ -2802,9 +2802,23 @@ void change_board(struct world *mzx_world, int board_id)
   }
 }
 
+void change_board_set_values(struct world *mzx_world)
+{
+  // The sequel to change_board; set special values on board (re)entry.
+  struct board *cur_board = mzx_world->current_board;
+
+  // Set the timer.
+  set_counter(mzx_world, "TIME", cur_board->time_limit, 0);
+
+  // Set the player restart position.
+  find_player(mzx_world);
+  mzx_world->player_restart_x = mzx_world->player_x;
+  mzx_world->player_restart_y = mzx_world->player_y;
+}
+
 void change_board_load_assets(struct world *mzx_world)
 {
-  // The sequel to change_board; use after the vquick_fadeout.
+  // The sequel to change_board; if there's a fadeout, use this after.
   struct board *cur_board = mzx_world->current_board;
   char translated_name[MAX_PATH];
 
@@ -3036,6 +3050,7 @@ boolean reload_swap(struct world *mzx_world, const char *file, boolean *faded)
 
   // Change to the first board of the new world.
   change_board(mzx_world, mzx_world->first_board);
+  change_board_set_values(mzx_world);
   change_board_load_assets(mzx_world);
 
   // Give curr_file a full path

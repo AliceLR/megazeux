@@ -16,6 +16,10 @@ USERS
 + Loading saves from the title screen no longer resets TIME.
 + Loading saves from the title screen no longer erroneously
   changes the player restart position.
++ Swapping worlds now sets the correct TIME and player restart
+  position values.
++ Fixed a bug where the fade out effect from COLOR FADE OUT
+  would be reset after any Robotic dialog.
 - Removed undocumented support for "title.cnf", "game.cnf", and
   "editor.cnf" config files, which would have been loaded from
   the same directory as the main config (not to be confused with

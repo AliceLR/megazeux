@@ -48,7 +48,7 @@ extern bool pal_update;
 void update_board(struct world *mzx_world);
 
 #ifdef CONFIG_EDITOR
-CORE_LIBSPEC void play_game(struct world *mzx_world);
+CORE_LIBSPEC void play_game(struct world *mzx_world, boolean *fadein);
 CORE_LIBSPEC void draw_viewport(struct world *src_board);
 #endif
 

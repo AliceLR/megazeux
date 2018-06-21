@@ -705,7 +705,8 @@ Uint32 get_fade_status(void)
 
 void dialog_fadein(void)
 {
-  if(get_fade_status())
+  graphics.dialog_fade_status = get_fade_status();
+  if(graphics.dialog_fade_status)
   {
     clear_screen();
     insta_fadein();
@@ -714,7 +715,7 @@ void dialog_fadein(void)
 
 void dialog_fadeout(void)
 {
-  if(get_fade_status())
+  if(graphics.dialog_fade_status)
   {
     insta_fadeout();
   }
@@ -2091,8 +2092,8 @@ void clear_screen(void)
   for(i = 0; i < (SCREEN_W * SCREEN_H); i++)
   {
     dest->char_value = 0;
-    dest->fg_color = 0;
-    dest->bg_color = 0;
+    dest->fg_color = 16; // Protected black
+    dest->bg_color = 16; // Protected black
     *(dest_copy++) = *dest;
     dest++;
   }

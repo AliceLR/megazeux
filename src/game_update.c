@@ -1044,8 +1044,6 @@ int update(struct world *mzx_world, boolean is_title, boolean *fadein)
     board_width = src_board->board_width;
     board_height = src_board->board_height;
 
-    set_counter(mzx_world, "TIME", src_board->time_limit, 0);
-
     // Find target x/y
     if(mzx_world->target_where == TARGET_ENTRANCE)
     {
@@ -1189,8 +1187,10 @@ int update(struct world *mzx_world, boolean is_title, boolean *fadein)
     }
 
     send_robot_def(mzx_world, 0, LABEL_JUSTENTERED);
-    mzx_world->player_restart_x = mzx_world->player_x;
-    mzx_world->player_restart_y = mzx_world->player_y;
+
+    // Set the time/restart position/etc even if the board hasn't changed.
+    change_board_set_values(mzx_world);
+
     // Now... Set player_last_dir for direction FACED
     src_board->player_last_dir = (src_board->player_last_dir & 0x0F) |
      (saved_player_last_dir & 0xF0);
@@ -1202,7 +1202,6 @@ int update(struct world *mzx_world, boolean is_title, boolean *fadein)
       src_board->player_last_dir = saved_player_last_dir;
     }
 
-    // Fix palette
     if(mzx_world->target_where != TARGET_TELEPORT)
     {
       // Prepare for fadein
