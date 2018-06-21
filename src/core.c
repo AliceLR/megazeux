@@ -51,6 +51,20 @@ struct core_context
   boolean context_changed;
 };
 
+// Contains internal context data used to run contexts.
+struct context_data
+{
+  enum context_type context_type;
+  enum framerate_type framerate;
+  void (*resume_function)(context *);
+  void (*draw_function)(context *);
+  boolean (*idle_function)(context *);
+  boolean (*key_function)(context *, int *key);
+  boolean (*click_function)(context *, int *key, int button, int x, int y);
+  boolean (*drag_function)(context *, int *key, int button, int x, int y);
+  void (*destroy_function)(context *);
+};
+
 /**
  * Strip a string for display in the caption.
  */
@@ -180,6 +194,7 @@ void run_context(context *ctx, context *parent,
  boolean (*drag_function)(context *, int *key, int button, int x, int y),
  void (*destroy_function)(context *))
 {
+  context_data *ctx_data = cmalloc(sizeof(struct context_data));
   core_context *root = parent->root;
 
   if(key_function == NULL && click_function == NULL &&
@@ -187,17 +202,18 @@ void run_context(context *ctx, context *parent,
     error("Context code bug", 2, 4, 0x2B01);
 
   ctx->root = root;
-  ctx->data = parent->data;
+  ctx->internal_data = ctx_data;
   ctx->world = parent->world;
-  ctx->context_type = context_type;
-  ctx->framerate = FRAMERATE_UI;
-  ctx->resume_function = resume_function;
-  ctx->draw_function = draw_function;
-  ctx->key_function = key_function;
-  ctx->click_function = click_function;
-  ctx->drag_function = drag_function;
-  ctx->idle_function = idle_function;
-  ctx->destroy_function = destroy_function;
+  ctx->data = parent->data;
+  ctx_data->context_type = context_type;
+  ctx_data->framerate = FRAMERATE_UI;
+  ctx_data->resume_function = resume_function;
+  ctx_data->draw_function = draw_function;
+  ctx_data->key_function = key_function;
+  ctx_data->click_function = click_function;
+  ctx_data->drag_function = drag_function;
+  ctx_data->idle_function = idle_function;
+  ctx_data->destroy_function = destroy_function;
 
   if(root->ctx_stack_size >= root->ctx_stack_alloc)
   {
@@ -218,6 +234,15 @@ void run_context(context *ctx, context *parent,
 }
 
 /**
+ * Set the framerate mode for the current context.
+ */
+
+void set_context_framerate_mode(context *ctx, enum framerate_type framerate)
+{
+  ctx->internal_data->framerate = framerate;
+}
+
+/**
  * Destroy the target context and all contexts above it.
  * Flag the core_context to abort further execution of the cycle.
  */
@@ -225,6 +250,7 @@ void run_context(context *ctx, context *parent,
 void destroy_context(context *target)
 {
   core_context *root = target->root;
+  context_data *ctx_data;
   context *ctx;
 
   if(!root->ctx_stack_size)
@@ -234,8 +260,10 @@ void destroy_context(context *target)
   {
     root->ctx_stack_size--;
     ctx = root->ctx_stack[root->ctx_stack_size];
-    if(ctx->destroy_function)
-      ctx->destroy_function(ctx);
+    ctx_data = ctx->internal_data;
+    if(ctx_data->destroy_function)
+      ctx_data->destroy_function(ctx);
+    free(ctx_data);
     free(ctx);
   }
   while(root->ctx_stack_size && ctx != target);
@@ -256,6 +284,7 @@ core_context *core_init(struct world *mzx_world, struct global_data *data)
   ctx->root = root;
   ctx->data = data;
   ctx->world = mzx_world;
+  ctx->internal_data = NULL;
 
   root->ctx_stack = NULL;
   root->ctx_stack_size = 0;
@@ -279,15 +308,15 @@ static void core_resume(core_context *root)
   for(; i > 0; i--)
   {
     ctx = root->ctx_stack[i];
-    if(ctx->context_type == CTX_SUBCONTEXT)
+    if(ctx->internal_data->context_type == CTX_SUBCONTEXT)
       break;
   }
 
   for(; i < root->ctx_stack_size; i++)
   {
     ctx = root->ctx_stack[i];
-    if(ctx->resume_function)
-      ctx->resume_function(ctx);
+    if(ctx->internal_data->resume_function)
+      ctx->internal_data->resume_function(ctx);
   }
 }
 
@@ -305,15 +334,15 @@ static void core_draw(core_context *root)
   for(; i > 0; i--)
   {
     ctx = root->ctx_stack[i];
-    if(ctx->context_type == CTX_SUBCONTEXT)
+    if(ctx->internal_data->context_type == CTX_SUBCONTEXT)
       break;
   }
 
   for(; i < root->ctx_stack_size; i++)
   {
     ctx = root->ctx_stack[i];
-    if(ctx->draw_function)
-      ctx->draw_function(ctx);
+    if(ctx->internal_data->draw_function)
+      ctx->internal_data->draw_function(ctx);
   }
 }
 
@@ -328,7 +357,7 @@ static boolean is_on_stack(core_context *root, enum context_type type)
   for(; i >= 0; i--)
   {
     ctx = root->ctx_stack[i];
-    if(ctx->context_type == type)
+    if(ctx->internal_data->context_type == type)
       return true;
   }
 
@@ -399,6 +428,7 @@ static boolean allow_configure(core_context *root)
 static void core_update(core_context *root)
 {
   context *ctx;
+  context_data *ctx_data;
   boolean mouse_handled = false;
   boolean key_handled = false;
 
@@ -415,11 +445,12 @@ static void core_update(core_context *root)
   do
   {
     ctx = root->ctx_stack[i];
+    ctx_data = ctx->internal_data;
     i--;
 
-    if(ctx->idle_function)
+    if(ctx_data->idle_function)
     {
-      if(ctx->idle_function(ctx))
+      if(ctx_data->idle_function(ctx))
       {
         mouse_handled = true;
         key_handled = true;
@@ -433,17 +464,17 @@ static void core_update(core_context *root)
     {
       if(mouse_drag_state)
       {
-        if(ctx->drag_function && (mouse_press <= MOUSE_BUTTON_RIGHT))
+        if(ctx_data->drag_function && (mouse_press <= MOUSE_BUTTON_RIGHT))
           mouse_handled |=
-            ctx->drag_function(ctx, &key, mouse_press, mouse_x, mouse_y);
+            ctx_data->drag_function(ctx, &key, mouse_press, mouse_x, mouse_y);
       }
       else
 
       if(mouse_press)
       {
-        if(ctx->click_function)
+        if(ctx_data->click_function)
           mouse_handled |=
-            ctx->click_function(ctx, &key, mouse_press, mouse_x, mouse_y);
+            ctx_data->click_function(ctx, &key, mouse_press, mouse_x, mouse_y);
       }
 
       if(root->context_changed || root->full_exit)
@@ -452,14 +483,14 @@ static void core_update(core_context *root)
 
     if(!key_handled)
     {
-      if(key && ctx->key_function)
-        key_handled |= ctx->key_function(ctx, &key);
+      if(key && ctx_data->key_function)
+        key_handled |= ctx_data->key_function(ctx, &key);
 
       if(root->context_changed || root->full_exit)
         return;
     }
   }
-  while(i >= 0 && ctx->context_type == CTX_SUBCONTEXT);
+  while(i >= 0 && ctx_data->context_type == CTX_SUBCONTEXT);
 
   // Global key handler.
   if(!key_handled)
@@ -543,7 +574,7 @@ void core_run(core_context *root)
     // Delay and then handle events.
     ctx = root->ctx_stack[root->ctx_stack_size - 1];
 
-    switch(ctx->framerate)
+    switch(ctx->internal_data->framerate)
     {
       case FRAMERATE_UI:
       {
@@ -704,7 +735,7 @@ enum context_type get_context(context *ctx)
 
     for(i = root->ctx_stack_size - 1; i >= 0; i--)
     {
-      ctx_type = root->ctx_stack[i]->context_type;
+      ctx_type = root->ctx_stack[i]->internal_data->context_type;
 
       // Help system only cares about positive context values.
       if(ctx_type > 0)

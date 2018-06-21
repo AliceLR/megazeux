@@ -100,23 +100,16 @@ struct global_data
 };
 
 typedef struct context context;
+typedef struct context_data context_data;
 typedef struct core_context core_context;
 
 /** Contains information related to the current MegaZeux state/interface/etc. */
 struct context
 {
+  core_context *root;
+  context_data *internal_data;
   struct global_data *data;
   struct world *world;
-  core_context *root;
-  enum context_type context_type;
-  enum framerate_type framerate;
-  void (*resume_function)(context *);
-  void (*draw_function)(context *);
-  boolean (*idle_function)(context *);
-  boolean (*key_function)(context *, int *key);
-  boolean (*click_function)(context *, int *key, int button, int x, int y);
-  boolean (*drag_function)(context *, int *key, int button, int x, int y);
-  void (*destroy_function)(context *);
 };
 
 /**
@@ -156,6 +149,16 @@ CORE_LIBSPEC void run_context(context *ctx, context *parent,
  boolean (*click_function)(context *, int *key, int button, int x, int y),
  boolean (*drag_function)(context *, int *key, int button, int x, int y),
  void (*destroy_function)(context *));
+
+/**
+ * Sets the framerate mode of the current context. See enum framerate_type for
+ * a list of valid values.
+ *
+ * @param ctx           The current context.
+ * @param framerate     The new framerate mode.
+ */
+
+void set_context_framerate_mode(context *ctx, enum framerate_type framerate);
 
 /**
  * Destroys a context and every context above it on the context stack.
