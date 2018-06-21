@@ -42,9 +42,14 @@ static const char ccw_offs[8] = { 10, 8, 9, 1, 5, 4, 6, 2 };
 // FIXME context
 static unsigned int intro_mesg_timer = MESG_TIMEOUT;
 
-void set_intro_mesg_timer(unsigned int time)
+void enable_intro_mesg(void)
 {
-  intro_mesg_timer = time;
+  intro_mesg_timer = MESG_TIMEOUT;
+}
+
+void clear_intro_mesg(void)
+{
+  intro_mesg_timer = 0;
 }
 
 void draw_intro_mesg(struct world *mzx_world)
@@ -85,7 +90,7 @@ void set_mesg_direct(struct board *src_board, const char *str)
   strncpy(src_board->bottom_mesg, str, ROBOT_MAX_TR - 1);
   src_board->bottom_mesg[ROBOT_MAX_TR - 1] = 0;
   src_board->b_mesg_timer = MESG_TIMEOUT;
-  set_intro_mesg_timer(0);
+  clear_intro_mesg();
 }
 
 static void set_3_mesg(struct world *mzx_world, const char *str1, int num,

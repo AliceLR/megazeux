@@ -4255,7 +4255,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
       case ROBOTIC_CMD_CLEAR_MESSAGE: // clear mesg
       {
         src_board->b_mesg_timer = 0;
-        set_intro_mesg_timer(0);
+        clear_intro_mesg();
         break;
       }
 

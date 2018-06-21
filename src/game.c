@@ -154,7 +154,6 @@ static boolean load_world_gameplay(struct world *mzx_world, char *name,
     sfx_clear_queue();
 
     set_caption(mzx_world, NULL, NULL, false);
-    set_intro_mesg_timer(0);
     return true;
   }
 
@@ -172,6 +171,7 @@ static boolean load_world_title(struct world *mzx_world, char *name,
 
   vquick_fadeout();
   clear_screen();
+  enable_intro_mesg();
   *fadein = true;
 
   if(reload_world(mzx_world, name, &ignore))
@@ -190,7 +190,6 @@ static boolean load_world_title(struct world *mzx_world, char *name,
     sfx_clear_queue();
 
     set_caption(mzx_world, NULL, NULL, false);
-    set_intro_mesg_timer(MESG_TIMEOUT);
     return true;
   }
   else
@@ -233,7 +232,6 @@ static boolean load_savegame(struct world *mzx_world, char *name,
       *fadein = false;
 
     set_caption(mzx_world, NULL, NULL, false);
-    set_intro_mesg_timer(0);
     return true;
   }
 
@@ -289,6 +287,7 @@ __editor_maybe_static void play_game(struct world *mzx_world, boolean *_fadein)
   // Mouse remains hidden unless menu/etc. is invoked
 
   set_context(CTX_PLAY_GAME);
+  clear_intro_mesg();
 
   if(!edit_world)
     mzx_world->editing = false;
@@ -596,8 +595,8 @@ void title_screen(struct world *mzx_world)
 
   if(edit_world && mzx_world->conf.startup_editor)
   {
-    set_intro_mesg_timer(0);
     edit_world(mzx_world, true);
+    load_world_title(mzx_world, curr_file, &fadein);
   }
   else
   {
@@ -615,7 +614,6 @@ void title_screen(struct world *mzx_world)
     conf->no_titlescreen = 0;
 
   src_board = mzx_world->current_board;
-  draw_intro_mesg(mzx_world);
 
   // Main game loop
 
@@ -646,17 +644,17 @@ void title_screen(struct world *mzx_world)
           update_event_status();
           continue;
         }
+        update_event_status();
       }
       else
       {
         // Give some delay time if nothing's loaded
-        update_event_status_delay();
+        draw_intro_mesg(mzx_world);
         update_screen();
+        update_event_status_delay();
       }
 
       src_board = mzx_world->current_board;
-
-      update_event_status();
 
       // Keycheck
       key = get_key(keycode_internal_wrt_numlock);
@@ -821,12 +819,9 @@ void title_screen(struct world *mzx_world)
             // Editor
             sfx_clear_queue();
             vquick_fadeout();
-            set_intro_mesg_timer(0);
             edit_world(mzx_world, reload_curr_world_in_editor);
 
             load_world_title(mzx_world, curr_file, &fadein);
-            set_intro_mesg_timer(0);
-
             fadein = true;
           }
           break;
@@ -881,7 +876,6 @@ void title_screen(struct world *mzx_world)
           break;
         }
       }
-      draw_intro_mesg(mzx_world);
     }
 
     // Quit
