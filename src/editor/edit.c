@@ -4117,18 +4117,12 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
 
             // Changes to the board, duplicates if reset on entry
             change_board(mzx_world, current_board_id);
+            change_board_set_values(mzx_world);
             change_board_load_assets(mzx_world);
-            src_board = mzx_world->current_board;
+            load_board_module(mzx_world);
 
-            set_counter(mzx_world, "TIME", src_board->time_limit, 0);
             send_robot_def(mzx_world, 0, LABEL_JUSTENTERED);
             send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
-            find_player(mzx_world);
-
-            mzx_world->player_restart_x = mzx_world->player_x;
-            mzx_world->player_restart_y = mzx_world->player_y;
-
-            load_board_module(mzx_world);
 
             reset_robot_debugger();
 
