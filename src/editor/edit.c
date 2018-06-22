@@ -4092,6 +4092,9 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
           // Test world
           int current_board_id = mzx_world->current_board_id;
 
+          // FIXME
+          break;
+
           // Clear undo histories and prepare to reset them
           // We don't want the undo buffer wasting memory while testing
           destruct_undo_history(board_history);
@@ -4126,7 +4129,8 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
 
             reset_robot_debugger();
 
-            play_game(mzx_world, NULL);
+            // FIXME
+            //play_game(mzx_world, NULL);
 
             chdir(return_dir);
 

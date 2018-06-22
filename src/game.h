@@ -28,10 +28,11 @@
 
 __M_BEGIN_DECLS
 
+#include "core.h"
 #include "world_struct.h"
 
 // game.c
-CORE_LIBSPEC void title_screen(struct world *mzx_world);
+CORE_LIBSPEC void title_screen(context *parent);
 CORE_LIBSPEC void load_board_module(struct world *mzx_world);
 boolean load_game_module(struct world *mzx_world, char *filename,
  boolean fail_if_same);
@@ -41,14 +42,15 @@ void game_menu(struct world *mzx_world);
 void main_menu(struct world *mzx_world);
 
 // game_update.c
-int update(struct world *mzx_world, boolean is_title, boolean *fadein);
+void update1(struct world *mzx_world, boolean is_title, boolean *fadein);
+boolean update2(struct world *mzx_world, boolean is_title, boolean *fadein);
 extern bool pal_update;
 
 // game_update_board.c
 void update_board(struct world *mzx_world);
 
 #ifdef CONFIG_EDITOR
-CORE_LIBSPEC void play_game(struct world *mzx_world, boolean *fadein);
+CORE_LIBSPEC void play_game(context *parent, boolean *_fade_in);
 CORE_LIBSPEC void draw_viewport(struct world *src_board);
 #endif
 

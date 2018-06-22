@@ -195,8 +195,7 @@ __libspec int main(int argc, char *argv[])
 
   // Run main game (mouse is hidden and palette is faded)
   core_data = core_init(&mzx_world, &global_data);
-  // FIXME
-  title_screen(&mzx_world);
+  title_screen((context *)core_data);
   core_run(core_data);
   core_free(core_data);
 

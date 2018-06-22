@@ -140,7 +140,7 @@ CORE_LIBSPEC void set_caption(struct world *mzx_world, struct board *board,
  * @param destroy_function  Optional function to be called on destruction.
  */
 
-CORE_LIBSPEC void run_context(context *ctx, context *parent,
+CORE_LIBSPEC void create_context(context *ctx, context *parent,
  enum context_type context_type,
  void (*resume_function)(context *),
  void (*draw_function)(context *),
@@ -151,16 +151,6 @@ CORE_LIBSPEC void run_context(context *ctx, context *parent,
  void (*destroy_function)(context *));
 
 /**
- * Sets the framerate mode of the current context. See enum framerate_type for
- * a list of valid values.
- *
- * @param ctx           The current context.
- * @param framerate     The new framerate mode.
- */
-
-void set_context_framerate_mode(context *ctx, enum framerate_type framerate);
-
-/**
  * Destroys a context and every context above it on the context stack.
  * This will call the destroy function for every context destroyed. Contexts
  * will be destroys from the top of the stack down.
@@ -169,6 +159,26 @@ void set_context_framerate_mode(context *ctx, enum framerate_type framerate);
  */
 
 CORE_LIBSPEC void destroy_context(context *ctx);
+
+/**
+ * Get config information for a particular context.
+ */
+
+static inline struct config_info *get_config(context *ctx)
+{
+  // FIXME return &(ctx->data->conf);
+  return &(ctx->world->conf);
+}
+
+/**
+ * Sets the framerate mode of the current context. See enum framerate_type for
+ * a list of valid values.
+ *
+ * @param ctx           The current context.
+ * @param framerate     The new framerate mode.
+ */
+
+void set_context_framerate_mode(context *ctx, enum framerate_type framerate);
 
 /**
  * Initializes data for the core.

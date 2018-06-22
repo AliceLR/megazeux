@@ -340,8 +340,16 @@ __editor_maybe_static void draw_viewport(struct world *mzx_world)
   }
 }
 
-// Returns non-0 to skip all keys this cycle
-int update(struct world *mzx_world, boolean is_title, boolean *fadein)
+/** FIXME fix this comically bad function name and rearrange some things between
+ * this function and its counterpart below. This function occurs as part of the
+ * drawing loop and should probably only draw things. This can be fixed by
+ * moving parts of this function to the end of "update2", although this would
+ * result in a minor change in the way gameplay is handled (initial frames on
+ * title/gameplay start, duplicate frames after focus returns from a different
+ * context).
+ */
+
+void update1(struct world *mzx_world, boolean is_title, boolean *fadein)
 {
   int time_remaining;
   static int reload = 0;
@@ -353,16 +361,9 @@ int update(struct world *mzx_world, boolean is_title, boolean *fadein)
   int volume_target = src_board->volume_target;
   int board_width = src_board->board_width;
   int board_height = src_board->board_height;
-  char *level_id = src_board->level_id;
-  char *level_color = src_board->level_color;
   char *level_under_id = src_board->level_under_id;
   char *level_under_color = src_board->level_under_color;
   char *level_under_param = src_board->level_under_param;
-
-  // FIXME remove
-  int start_ticks = get_ticks();
-  int delta_ticks;
-  int total_ticks;
 
   pal_update = false;
 
@@ -938,22 +939,22 @@ int update(struct world *mzx_world, boolean is_title, boolean *fadein)
 
     update_screen();
   }
+}
 
-  // FIXME REMOVE THIS
-  if(mzx_world->mzx_speed > 1)
-  {
-    // Number of ms the update cycle took
-    delta_ticks = get_ticks() - start_ticks;
-    total_ticks = (16 * (mzx_world->mzx_speed - 1)) - delta_ticks;
-    if(total_ticks < 0)
-      total_ticks = 0;
+/** FIXME fix this comically bad function name and rearrange some things between
+ * these functions. Note that this occurs BEFORE the key function, so key labels
+ * would have to move to the end of this function if parts of the main
+ * update function were to join this mess.
+ */
+boolean update2(struct world *mzx_world, boolean is_title, boolean *fadein)
+{
+  struct board *src_board = mzx_world->current_board;
+  int board_width = src_board->board_width;
+  int board_height = src_board->board_height;
+  char *level_id = src_board->level_id;
+  char *level_color = src_board->level_color;
+  char *level_under_id = src_board->level_under_id;
 
-    // Delay for 16 * (speed - 1) since the beginning of the update
-    delay(total_ticks);
-  }
-  // FIXME END REMOVE THIS
-
-  // FIXME everything here down needs to be the idle function.
   if(*fadein)
   {
     vquick_fadein();
@@ -973,7 +974,7 @@ int update(struct world *mzx_world, boolean is_title, boolean *fadein)
       send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
       send_robot_def(mzx_world, 0, LABEL_JUSTENTERED);
 
-      return 1;
+      return true;
     }
 
     case CHANGE_STATE_LOAD_GAME_ROBOTIC:
@@ -983,17 +984,17 @@ int update(struct world *mzx_world, boolean is_title, boolean *fadein)
       // Only send JUSTLOADED for savegames.
       send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
 
-      return 1;
+      return true;
     }
 
     case CHANGE_STATE_EXIT_GAME_ROBOTIC:
     case CHANGE_STATE_REQUEST_EXIT:
       // Exit game--skip input processing. The game state will exit.
-      return 1;
+      return true;
 
     case CHANGE_STATE_PLAY_GAME_ROBOTIC:
       // We need to continue input processing.
-      return 0;
+      return false;
 
     default:
       break;
@@ -1039,8 +1040,6 @@ int update(struct world *mzx_world, boolean is_title, boolean *fadein)
     level_id = src_board->level_id;
     level_color = src_board->level_color;
     level_under_id = src_board->level_under_id;
-    level_under_param = src_board->level_under_param;
-    level_under_color = src_board->level_under_color;
     board_width = src_board->board_width;
     board_height = src_board->board_height;
 
@@ -1222,8 +1221,8 @@ int update(struct world *mzx_world, boolean is_title, boolean *fadein)
 
     // Disallow any keypresses this cycle
 
-    return 1;
+    return true;
   }
 
-  return 0;
+  return false;
 }

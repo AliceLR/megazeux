@@ -176,6 +176,54 @@ void set_caption(struct world *mzx_world, struct board *board,
 }
 
 /**
+ * Debug: print the entire context stack to the terminal.
+ */
+
+static void print_ctx_stack(context *_ctx)
+{
+#ifdef DEBUG
+  core_context *root = _ctx->root;
+  context_data *ctx_data;
+  context *ctx;
+  char number[12];
+  const char *framerate_str;
+  int i;
+
+  fprintf(stderr, "CTX STACK        | Res Drw Idl Key Clk Drg Dst | Fr. \n");
+  fprintf(stderr, "-----------------|-----------------------------|-----\n");
+
+  for(i = root->ctx_stack_size - 1; i >= 0; i--)
+  {
+    ctx = root->ctx_stack[i];
+    ctx_data = ctx->internal_data;
+    sprintf(number, "%d", ctx_data->context_type);
+
+    switch(ctx_data->framerate)
+    {
+      case FRAMERATE_UI:            framerate_str = "UI "; break;
+      case FRAMERATE_UI_INTERRUPT:  framerate_str = "Int"; break;
+      case FRAMERATE_MZX_SPEED:     framerate_str = "MZX"; break;
+      default:                      framerate_str = "???"; break;
+    }
+
+    fprintf(stderr, "%-*.*s | %3s %3s %3s %3s %3s %3s %3s | %3s \n",
+      16, 16, number,
+      ctx_data->resume_function   ? "Yes" : "",
+      ctx_data->draw_function     ? "Yes" : "",
+      ctx_data->idle_function     ? "Yes" : "",
+      ctx_data->key_function      ? "Yes" : "",
+      ctx_data->click_function    ? "Yes" : "",
+      ctx_data->drag_function     ? "Yes" : "",
+      ctx_data->destroy_function  ? "Yes" : "",
+      framerate_str
+    );
+  }
+  fprintf(stderr, "\n");
+  fflush(stderr);
+#endif
+}
+
+/**
  * Configures a provided context and adds it to the context stack to be run
  * by the main loop. The assumption here is that ctx will be some other local
  * struct casted to a context.
@@ -184,7 +232,7 @@ void set_caption(struct world *mzx_world, struct board *board,
  * context; otherwise, MegaZeux would hang up trying to execute this context.
  */
 
-void run_context(context *ctx, context *parent,
+void create_context(context *ctx, context *parent,
  enum context_type context_type,
  void (*resume_function)(context *),
  void (*draw_function)(context *),
@@ -234,15 +282,6 @@ void run_context(context *ctx, context *parent,
 }
 
 /**
- * Set the framerate mode for the current context.
- */
-
-void set_context_framerate_mode(context *ctx, enum framerate_type framerate)
-{
-  ctx->internal_data->framerate = framerate;
-}
-
-/**
  * Destroy the target context and all contexts above it.
  * Flag the core_context to abort further execution of the cycle.
  */
@@ -269,6 +308,19 @@ void destroy_context(context *target)
   while(root->ctx_stack_size && ctx != target);
 
   root->context_changed = true;
+}
+
+/**
+ * Set the framerate mode for the current context.
+ */
+
+void set_context_framerate_mode(context *ctx, enum framerate_type framerate)
+{
+  if(ctx->internal_data->framerate != framerate)
+  {
+    ctx->internal_data->framerate = framerate;
+    print_ctx_stack(ctx);
+  }
 }
 
 /**
@@ -308,7 +360,7 @@ static void core_resume(core_context *root)
   for(; i > 0; i--)
   {
     ctx = root->ctx_stack[i];
-    if(ctx->internal_data->context_type == CTX_SUBCONTEXT)
+    if(ctx->internal_data->context_type != CTX_SUBCONTEXT)
       break;
   }
 
@@ -334,7 +386,7 @@ static void core_draw(core_context *root)
   for(; i > 0; i--)
   {
     ctx = root->ctx_stack[i];
-    if(ctx->internal_data->context_type == CTX_SUBCONTEXT)
+    if(ctx->internal_data->context_type != CTX_SUBCONTEXT)
       break;
   }
 
@@ -564,6 +616,7 @@ void core_run(core_context *root)
   {
     if(root->context_changed)
     {
+      print_ctx_stack((context *)root);
       core_resume(root);
       root->context_changed = false;
     }
@@ -709,7 +762,7 @@ void core_exit(context *ctx)
 void core_free(core_context *root)
 {
   // Destroy all contexts on the stack.
-  if(root->ctx_stack)
+  if(root->ctx_stack_size)
     destroy_context(root->ctx_stack[0]);
 
   free(root->ctx_stack);
