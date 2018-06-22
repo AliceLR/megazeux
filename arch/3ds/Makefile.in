@@ -33,14 +33,15 @@ STRIP  = /bin/true
 # Override library paths.
 #
 
-EXTRA_INCLUDES = -isystem $(CTRULIB)/include -isystem $(DEVKITPRO)/portlibs/armv6k/include
+EXTRA_INCLUDES = -isystem $(CTRULIB)/include -isystem $(DEVKITPRO)/portlibs/armv6k/include -isystem $(DEVKITPRO)/portlibs/3ds/include
+EXTRA_LIBS = -L$(CTRULIB)/lib -L$(DEVKITPRO)/portlibs/armv6k/lib -L$(DEVKITARM)/arm-none-eabi/lib/armv6k/fpu -L$(DEVKITPRO)/portlibs/3ds/lib
 ifeq (${DEBUG},1)
   ARCH_CFLAGS += -Og
-  EXTRA_LIBS = -L$(CTRULIB)/lib -L$(DEVKITPRO)/portlibs/armv6k/lib -L$(DEVKITARM)/arm-none-eabi/lib/armv6k/fpu -lcitro3dd -lctrud -lpng16 -lz
+  EXTRA_LIBS += -lcitro3dd -lctrud -lpng16 -lz
 else
   OPTIMIZE_CFLAGS = -O3 -fomit-frame-pointer -ffunction-sections
-# OPTIMIZE_CFLAGS = -flto
-  EXTRA_LIBS = -L$(CTRULIB)/lib -L$(DEVKITPRO)/portlibs/armv6k/lib -L$(DEVKITARM)/arm-none-eabi/lib/armv6k/fpu -lcitro3d -lctru -lpng16 -lz
+# OPTIMIZE_CFLAGS += -flto
+  EXTRA_LIBS += -lcitro3d -lctru -lpng16 -lz
 endif
 
 MACHDEP = -march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft -mword-relocations
