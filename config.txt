@@ -163,6 +163,11 @@
 
 # fullscreen = 1
 
+# Whether MZX should allow a screenshot to be taken when F12 is pressed.
+# Defaults to enabled.
+
+# allow_screenshots = 1
+
 ### Audio options ###
 
 # Sampling rate to output audio at. Higher values will sound

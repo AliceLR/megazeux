@@ -389,12 +389,6 @@ static bool process_event(SDL_Event *event)
         break;
       }
 
-      if(ckey == IKEY_F12)
-      {
-        dump_screen();
-        break;
-      }
-
       // Ignore alt + tab
       if((ckey == IKEY_TAB) && get_alt_status(keycode_internal))
       {

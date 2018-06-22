@@ -310,7 +310,6 @@ void save_indices(void *buffer);
 void load_indices(void *buffer, size_t size);
 void load_indices_direct(void *buffer, size_t size);
 void vquick_fadein(void);
-void dump_screen(void);
 void dump_char(Uint16 char_idx, Uint8 color, int mode, Uint8 *buffer);
 
 void get_screen_coords(int screen_x, int screen_y, int *x, int *y,
@@ -337,6 +336,10 @@ CORE_LIBSPEC void ec_load_set_secondary(const char *name, Uint8 *dest);
 void set_cursor_mode(enum cursor_mode_types mode);
 enum cursor_mode_types get_cursor_mode(void);
 #endif // CONFIG_HELPSYS
+
+#ifdef CONFIG_ENABLE_SCREENSHOTS
+void dump_screen(void);
+#endif
 
 __M_END_DECLS
 

@@ -55,6 +55,7 @@ struct config_info
   char gl_filter_method[16];
   char gl_scaling_shader[32];
   int gl_vsync;
+  boolean allow_screenshots;
 
   // Audio options
   int output_frequency;

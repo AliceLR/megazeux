@@ -2176,6 +2176,7 @@ void m_show(void)
     graphics.mouse_status = true;
 }
 
+#ifdef CONFIG_ENABLE_SCREENSHOTS
 #ifdef CONFIG_PNG
 
 #define DUMP_FMT_EXT "png"
@@ -2359,10 +2360,11 @@ void dump_screen(void)
     free(ss);
   }
 }
+#endif /* CONFIG_ENABLE_SCREENSHOTS */
 
 void dump_char(Uint16 char_idx, Uint8 color, int mode, Uint8 *buffer)
 {
-  // Dumps the specified char into the provided buffer. Expects CHAR_W * CHAR_H bytes
+  // Dumps the specified char into a buffer. Expects CHAR_W * CHAR_H bytes.
   int x, y;
   Uint8 cols[4];
   if (mode == -1) mode = graphics.screen_mode;

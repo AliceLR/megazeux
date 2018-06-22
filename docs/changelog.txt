@@ -2,6 +2,9 @@ GIT
 
 USERS
 
++ Added "allow_screenshots" config file option. Setting this
+  option to 0 will disable the built-in screenshot feature.
++ The F12 key can now be detected by Robotic.
 + Added timeouts to updater network operations.
 + Fixed bug where the updater would retry downloads without
   regard to the status code.

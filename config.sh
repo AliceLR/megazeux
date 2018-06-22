@@ -49,6 +49,7 @@ usage() {
 	echo "  --disable-gl-prog     Disable GL renderers for programmable h/w."
 	echo "  --disable-overlay     Disable all overlay renderers."
 	echo "  --enable-gp2x         Enables half-res software renderer."
+	echo "  --disable-screenshots Disable the screenshot hotkey."
 	echo "  --disable-xmp         Disable XMP music engine."
 	echo "  --enable-modplug      Enables ModPlug music engine."
 	echo "  --enable-mikmod       Enables MikMod music engine."
@@ -102,6 +103,7 @@ GL_FIXED="true"
 GL_PROGRAM="true"
 OVERLAY="true"
 GP2X="false"
+SCREENSHOTS="true"
 XMP="true"
 MODPLUG="false"
 MIKMOD="false"
@@ -208,6 +210,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--disable-gp2x" ] && GP2X="false"
 	[ "$1" = "--enable-gp2x" ]  && GP2X="true"
+
+	[ "$1" = "--disable-screenshots" ] && SCREENSHOTS="false"
+	[ "$1" = "--enable-screenshots" ]  && SCREENSHOTS="true"
 
 	[ "$1" = "--disable-modplug" ] && MODPLUG="false"
 	[ "$1" = "--enable-modplug" ]  && MODPLUG="true"
@@ -618,6 +623,16 @@ if [ "$GL" = "false" ]; then
 fi
 
 #
+# Force-disable PNG support on platforms without screenshots enabled.
+# The 3DS port requires PNG for other purposes.
+#
+if [ "$SCREENSHOTS" = "false" -a "$LIBPNG" = "true" \
+  -a "$PLATFORM" != "3ds" ]; then
+	echo "Force-disabling PNG support (screenshots disabled)"
+	LIBPNG="false"
+fi
+
+#
 # Force-enable tremor on PSP/GP2X/3DS
 #
 if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" \
@@ -886,6 +901,17 @@ else
 fi
 
 #
+# Screenshot hotkey
+#
+if [ "$SCREENSHOTS" = "true" ]; then
+	echo "Screenshot hotkey enabled."
+	echo "#define CONFIG_ENABLE_SCREENSHOTS" >> src/config.h
+	echo "BUILD_ENABLE_SCREENSHOTS=1" >> platform.inc
+else
+	echo "Screenshot hotkey disabled."
+fi
+
+#
 # GP2X needs Mikmod, other platforms can pick
 # Keep the default at the bottom so it doesn't override others.
 #
@@ -926,14 +952,14 @@ else
 fi
 
 #
-# Handle PNG screendump support, if enabled
+# Handle PNG support, if enabled
 #
 if [ "$LIBPNG" = "true" ]; then
-	echo "PNG screendump support enabled."
+	echo "PNG support enabled."
 	echo "#define CONFIG_PNG" >> src/config.h
 	echo "LIBPNG=1" >> platform.inc
 else
-	echo "PNG screendump support disabled."
+	echo "PNG support disabled."
 fi
 
 #

@@ -575,12 +575,15 @@ static void core_update(core_context *root)
         break;
       }
 
+#ifdef CONFIG_ENABLE_SCREENSHOTS
       case IKEY_F12:
       {
         // Take screenshot.
-        // FIXME
+        if(get_config(ctx)->allow_screenshots)
+          dump_screen();
         break;
       }
+#endif
     }
   }
 }
