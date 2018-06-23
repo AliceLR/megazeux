@@ -158,7 +158,6 @@ C3D_Tex* ctr_load_png(const char* name)
       GX_TRANSFER_IN_FORMAT(GPU_RGBA8) | GX_TRANSFER_OUT_FORMAT(GPU_RGB8)
       | GX_TRANSFER_SCALING(GX_TRANSFER_SCALE_NO));
 
-    gspWaitForPPF();
     linearFree(dataBuf);
   }
 
@@ -490,7 +489,6 @@ static inline u64 ctr_refresh_charsets(struct ctr_render_data *render_data, u64 
     GSPGPU_FlushDataCache((u8*)(render_data->charset[i].data) + coffs, csize);
     C3D_SyncTextureCopy((u32*)((u8*)(render_data->charset[i].data) + coffs), 0,
       (u32*)((u8*)(render_data->charset_vram[i].data) + coffs), 0, csize, 8);
-    gspWaitForPPF();
   }
   return 0;
 }
