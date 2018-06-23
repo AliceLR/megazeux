@@ -99,6 +99,7 @@ src/utils/png2smzx
 src/utils/*.debug
 stdout.txt
 stderr.txt
+Thumbs.db
 *.debug
 *.mzx
 *.sav
