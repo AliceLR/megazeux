@@ -1,0 +1,28 @@
+# editorconfig: https://EditorConfig.org
+
+# this is the top most editorconfig
+root = true
+
+# styles across most code files
+[*]
+max_line_length = 80
+# these are less widely supported,
+# see https://github.com/editorconfig/editorconfig/wiki/EditorConfig-Properties
+# for details
+trim_trailing_whitespace = true
+# some editors support these apparently, but they're "domain specific" and not
+# part of the standard
+spaces_around_operators = true
+curly_bracket_next_line = true
+
+[*.{c,h,cpp,txt,md,html}]
+# these are supported by pretty much all editorconfig plugins
+indent_style = space
+indent_size = 2
+
+[Makefile]
+indent_style = tab
+
+[*.sh]
+indent_style = tab
+
