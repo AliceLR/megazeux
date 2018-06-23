@@ -87,8 +87,7 @@ static void show_counter(struct world *mzx_world, const char *str,
   write_number(counter_value, 31, x + 16, y, 1, 0, 10); // Value
 }
 
-// Show status screen
-static void show_status(struct world *mzx_world)
+static void draw_game_status(struct world *mzx_world)
 {
   char *keys = mzx_world->keys;
   int i;
@@ -144,11 +143,8 @@ static void show_status(struct world *mzx_world)
     write_string("-B-", 59, 21, 25, 0);
 }
 
-void game_menu(struct world *mzx_world)
+static void draw_game_menu(struct world *mzx_world)
 {
-  int key, status;
-  save_screen();
-
   draw_window_box(8, 4, 35, 18, 25, 16, 24, 1, 1);
   write_string(" Game Menu ", 17, 4, 30, 0);
   if(mzx_world->help_file)
@@ -158,35 +154,11 @@ void game_menu(struct world *mzx_world)
     write_string(game_menu_3, 10, 12, 31, 1);
   write_string(game_menu_4, 10, 13, 31, 1);
 
-  show_status(mzx_world); // Status screen too
-
-  force_release_all_keys();
-  update_screen();
-  m_show();
-
-  do
-  {
-    update_event_status_delay();
-    update_screen();
-
-    key = get_key(keycode_internal_wrt_numlock);
-    status = get_key_status(keycode_internal_wrt_numlock, key);
-
-    if(get_exit_status())
-      break;
-
-  } while(
-    (key != IKEY_RETURN && key != IKEY_ESCAPE) || (status != 1)
-  );
-
-  force_release_all_keys();
-  restore_screen();
+  draw_game_status(mzx_world);
 }
 
-void main_menu(struct world *mzx_world)
+static void draw_main_menu(struct world *mzx_world)
 {
-  int key, status;
-  save_screen();
   draw_window_box(28, 4, 51, 16, 25, 16, 24, 1, 1);
   write_string(main_menu_title, MAIN_MENU_TITLE_X, 4, 30, 0);
   write_string(main_menu_1, 30, 5, 31, 1);
@@ -198,24 +170,55 @@ void main_menu(struct world *mzx_world)
   if(edit_world)
     write_string(main_menu_5, 30, 13, 31, 1);
   write_string(main_menu_6, 30, 15, 31, 1);
+}
 
-  force_release_all_keys();
-  update_screen();
+static boolean menu_key(context *ctx, int *key)
+{
+  if(get_exit_status() || *key == IKEY_RETURN || *key == IKEY_ESCAPE)
+  {
+    destroy_context(ctx);
+    return true;
+  }
+  return false;
+}
+
+static void menu_destroy(context *ctx)
+{
+  restore_screen();
+}
+
+void game_menu(context *parent)
+{
+  save_screen();
+  draw_game_menu(parent->world);
+
   m_show();
 
-  do
-  {
-    update_event_status_delay();
-    update_screen();
-    key = get_key(keycode_internal_wrt_numlock);
-    status = get_key_status(keycode_internal_wrt_numlock, key);
+  create_context(NULL, parent, CTX_GAME_MENU,
+    NULL,
+    NULL,
+    NULL,
+    menu_key,
+    NULL,
+    NULL,
+    menu_destroy
+  );
+}
 
-    if(get_exit_status())
-      break;
+void main_menu(context *parent)
+{
+  save_screen();
+  draw_main_menu(parent->world);
 
-  } while((key != IKEY_RETURN && key != IKEY_ESCAPE) || status!=1);
+  m_show();
 
-  force_release_all_keys();
-  restore_screen();
-  update_screen();
+  create_context(NULL, parent, CTX_MAIN_MENU,
+    NULL,
+    NULL,
+    NULL,
+    menu_key,
+    NULL,
+    NULL,
+    menu_destroy
+  );
 }

@@ -23,6 +23,7 @@ USERS
   position values.
 + Fixed a bug where the fade out effect from COLOR FADE OUT
   would be reset after any Robotic dialog.
++ Fixed an issue where UIs would execute redundant frames.
 - Removed undocumented support for "title.cnf", "game.cnf", and
   "editor.cnf" config files, which would have been loaded from
   the same directory as the main config (not to be confused with

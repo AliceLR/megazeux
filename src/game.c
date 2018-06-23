@@ -567,7 +567,7 @@ static boolean game_key(context *ctx, int *key)
           return true;
 
         if(mzx_world->version < V260 || get_counter(mzx_world, "ENTER_MENU", 0))
-          game_menu(mzx_world);
+          game_menu(ctx);
 
         return true;
       }
@@ -679,6 +679,7 @@ static void title_resume(context *ctx)
   }
 
   title->load_dialog_on_failed_load = false;
+  title->need_reload = false;
 }
 
 /**
@@ -840,7 +841,7 @@ static boolean title_key(context *ctx, int *key)
         return true;
 
       if(!conf->standalone_mode || get_counter(mzx_world, "ENTER_MENU", 0))
-        main_menu(mzx_world);
+        main_menu(ctx);
 
       return true;
     }

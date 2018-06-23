@@ -38,8 +38,8 @@ boolean load_game_module(struct world *mzx_world, char *filename,
  boolean fail_if_same);
 
 // game_menu.c
-void game_menu(struct world *mzx_world);
-void main_menu(struct world *mzx_world);
+void game_menu(context *parent);
+void main_menu(context *parent);
 
 // game_update.c
 void update1(struct world *mzx_world, boolean is_title, boolean *fadein);

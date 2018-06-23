@@ -242,12 +242,15 @@ void create_context(context *ctx, context *parent,
  boolean (*drag_function)(context *, int *key, int button, int x, int y),
  void (*destroy_function)(context *))
 {
-  context_data *ctx_data = cmalloc(sizeof(struct context_data));
   core_context *root = parent->root;
+  context_data *ctx_data;
 
   if(key_function == NULL && click_function == NULL &&
    drag_function == NULL && idle_function == NULL)
     error("Context code bug", 2, 4, 0x2B01);
+
+  if(!ctx) ctx = cmalloc(sizeof(struct context));
+  ctx_data = cmalloc(sizeof(struct context_data));
 
   ctx->root = root;
   ctx->internal_data = ctx_data;
@@ -620,6 +623,7 @@ void core_run(core_context *root)
     if(root->context_changed)
     {
       print_ctx_stack((context *)root);
+      force_release_all_keys();
       core_resume(root);
       root->context_changed = false;
     }

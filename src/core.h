@@ -51,6 +51,8 @@ enum context_type
   CTX_CONFIGURE             = 92,
   CTX_DIALOG_BOX            = 98,
   CTX_HELP_SYSTEM           = -3,
+  CTX_MAIN_MENU             = -4,
+  CTX_GAME_MENU             = -5,
 
   // Network contexts.
   CTX_UPDATER               = 99,
@@ -129,7 +131,7 @@ CORE_LIBSPEC void set_caption(struct world *mzx_world, struct board *board,
  * will be drawn last and update first, taking input precedence. At least one
  * update function must be provided.
  *
- * @param ctx               The new context to be initialized.
+ * @param ctx               Optional newly allocated context to be initialized.
  * @param parent            The context which created this context.
  * @param context_type      Used to identify contexts and by the help system.
  * @param draw_function     Optional function to draw this context every frame.
