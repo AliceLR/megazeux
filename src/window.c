@@ -112,14 +112,14 @@ int restore_screen(void)
 // is set to 0. (defaults to 1)
 
 int draw_window_box(int x1, int y1, int x2, int y2, int color,
- int dark_color, int corner_color, int shadow, int fill_center)
+ int dark_color, int corner_color, boolean shadow, boolean fill_center)
 {
   return draw_window_box_ext(x1, y1, x2, y2, color, dark_color,
    corner_color, shadow, fill_center, PRO_CH, 16);
 }
 
 int draw_window_box_ext(int x1, int y1, int x2, int y2, int color,
- int dark_color, int corner_color, int shadow, int fill_center,
+ int dark_color, int corner_color, boolean shadow, boolean fill_center,
  int offset, int c_offset)
 {
   int t1, t2;
