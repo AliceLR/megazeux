@@ -786,10 +786,12 @@ static void ctr_sync_screen(struct graphics_data *graphics)
   }
 
 #ifndef RDR_DEBUG
+  C3D_RenderTargetClear(render_data->target_top, C3D_CLEAR_ALL, 0x000000, 0);
   C3D_FrameDrawOn(render_data->target_top);
   ctr_draw_playfield(render_data, true);
 #endif
 
+  C3D_RenderTargetClear(render_data->target_bottom, C3D_CLEAR_ALL, 0x000000, 0);
   C3D_FrameDrawOn(render_data->target_bottom);
   if (get_bottom_screen_mode() == BOTTOM_SCREEN_MODE_KEYBOARD)
   {
