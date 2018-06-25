@@ -21,9 +21,9 @@ cd /mzx-build-workingdir
 rm -rf psp-ports
 git clone $PORTS_REPO "psp-ports"
 
-# The copy of the SDK distributed with the Windows version of
-# devkitPro is missing an include. If the include is missing,
-# patch it back in.
+# The copy of the SDK formerly distributed with the Windows version of
+# devkitPro was missing an include. If the include is missing, patch
+# it back in.
 
 if ! grep -q "psptypes" $DEVKITPSP/psp/sdk/include/pspge.h ; then
   patch $DEVKITPSP/psp/sdk/include/pspge.h /dk-patches/pspge.patch

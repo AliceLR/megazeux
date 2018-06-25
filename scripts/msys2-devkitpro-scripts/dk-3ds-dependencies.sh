@@ -12,7 +12,6 @@ export    MAKEROM_REPO=https://github.com/profi200/Project_CTR
 export DEVKITPRO=$1
 export DEVKITARM=$2
 export PATH="$DEVKITARM/bin:$PATH"
-#export PATH="/mzx-build-workingdir/3ds_portlibs/utils:$PATH"
 
 
 echo ""
@@ -58,27 +57,3 @@ git clone $MAKEROM_REPO "makerom"
 cd "makerom/makerom"
 make -j8
 cp makerom.exe $DEVKITPRO/tools/bin
-
-
-#echo ""
-#echo "/************/"
-#echo "  3DS - zlib  "
-#echo "/************/"
-
-#pkg-build zlib
-
-
-#echo ""
-#echo "/**************/"
-#echo "  3DS - libpng  "
-#echo "/**************/"
-
-#pkg-build libpng
-
-
-#echo ""
-#echo "/*****************/"
-#echo "  3DS - libtremor  "
-#echo "/*****************/"
-
-#pkg-build libtremor-lowmem

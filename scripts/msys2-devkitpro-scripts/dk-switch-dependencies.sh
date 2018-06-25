@@ -1,13 +1,12 @@
 #!/bin/bash
 # $1 = $DEVKITPRO
-# $2 = $DEVKITA64
+# $2 = Location of devkitA64
 
 [ -z "$1" ] && { echo "argument 1 required."; exit 1; }
 [ -z "$2" ] && { echo "argument 2 required."; exit 1; }
 
 export DEVKITPRO=$1
-export DEVKITA64=$2
-export PATH="$PATH:$DEVKITA64/bin"
+export PATH="$PATH:$2/bin"
 
 
 echo ""

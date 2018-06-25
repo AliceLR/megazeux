@@ -33,42 +33,44 @@ usage() {
 	echo
 	echo "Supported <option> values (negatives can be used):"
 	echo
-	echo "  --as-needed-hack      Pass --as-needed through to GNU ld."
-	echo "  --enable-release      Optimize and remove debugging code."
-	echo "  --enable-verbose      Build system is always verbose (V=1)."
-	echo "  --optimize-size       Perform size optimizations (-Os)."
-	echo "  --disable-datestamp   Disable adding date to version."
-	echo "  --disable-editor      Disable the built-in editor."
-	echo "  --disable-mzxrun      Disable generation of separate MZXRun."
-	echo "  --disable-helpsys     Disable the built-in help system."
-	echo "  --disable-utils       Disable compilation of utils."
-	echo "  --disable-x11         Disable X11, removing binary dependency."
-	echo "  --disable-software    Disable software renderer."
-	echo "  --disable-gl          Disable all GL renderers."
-	echo "  --disable-gl-fixed    Disable GL renderers for fixed-function h/w."
-	echo "  --disable-gl-prog     Disable GL renderers for programmable h/w."
-	echo "  --disable-overlay     Disable all overlay renderers."
-	echo "  --enable-gp2x         Enables half-res software renderer."
-	echo "  --disable-xmp         Disable XMP music engine."
-	echo "  --enable-modplug      Enables ModPlug music engine."
-	echo "  --enable-mikmod       Enables MikMod music engine."
-	echo "  --enable-openmpt      Enables OpenMPT music engine."
-	echo "  --disable-libpng      Disable PNG screendump support."
-	echo "  --disable-audio       Disable all audio (sound + music)."
-	echo "  --enable-tremor       Switches out libvorbis for libtremor."
-	echo "  --disable-pthread     Use SDL's threads/locking instead of pthread."
-	echo "  --disable-icon        Do not try to brand executable."
-	echo "  --disable-modular     Disable dynamically shared objects."
-	echo "  --disable-updater     Disable built-in updater."
-	echo "  --disable-network     Disable networking abilities."
-	echo "  --enable-meter        Enable load/save meter display."
-	echo "  --disable-sdl         Disables SDL dependencies and features."
-	echo "  --enable-egl          Enables EGL backend (if SDL disabled)."
-	echo "  --disable-check-alloc Disables memory allocator error handling."
-	echo "  --disable-uthash      Disables hash counter/string lookups."
-	echo "  --enable-debytecode   Enable experimental 'debytecode' transform."
-	echo "  --disable-libsdl2     Disable SDL 2.0 support (falls back on 1.2)."
-	echo "  --enable-fps          Enable frames-per-second counter."
+	echo "  --as-needed-hack        Pass --as-needed through to GNU ld."
+	echo "  --enable-release        Optimize and remove debugging code."
+	echo "  --enable-verbose        Build system is always verbose (V=1)."
+	echo "  --optimize-size         Perform size optimizations (-Os)."
+	echo "  --disable-datestamp     Disable adding date to version."
+	echo "  --disable-editor        Disable the built-in editor."
+	echo "  --disable-mzxrun        Disable generation of separate MZXRun."
+	echo "  --disable-helpsys       Disable the built-in help system."
+	echo "  --disable-utils         Disable compilation of utils."
+	echo "  --disable-x11           Disable X11, removing binary dependency."
+	echo "  --disable-software      Disable software renderer."
+	echo "  --disable-gl            Disable all GL renderers."
+	echo "  --disable-gl-fixed      Disable GL renderers for fixed-function h/w."
+	echo "  --disable-gl-prog       Disable GL renderers for programmable h/w."
+	echo "  --disable-overlay       Disable all overlay renderers."
+	echo "  --enable-gp2x           Enables half-res software renderer."
+	echo "  --disable-xmp           Disable XMP music engine."
+	echo "  --enable-modplug        Enables ModPlug music engine."
+	echo "  --enable-mikmod         Enables MikMod music engine."
+	echo "  --enable-openmpt        Enables OpenMPT music engine."
+	echo "  --disable-libpng        Disable PNG screendump support."
+	echo "  --disable-audio         Disable all audio (sound + music)."
+	echo "  --disable-vorbis        Disable ogg/vorbis support."
+	echo "  --enable-tremor         Switches out libvorbis for libvorbisidec."
+	echo "  --enable-tremor-lowmem  Switches out libvorbis for libvorbisidec (lowmem branch)."
+	echo "  --disable-pthread       Use SDL's threads/locking instead of pthread."
+	echo "  --disable-icon          Do not try to brand executable."
+	echo "  --disable-modular       Disable dynamically shared objects."
+	echo "  --disable-updater       Disable built-in updater."
+	echo "  --disable-network       Disable networking abilities."
+	echo "  --enable-meter          Enable load/save meter display."
+	echo "  --disable-sdl           Disables SDL dependencies and features."
+	echo "  --enable-egl            Enables EGL backend (if SDL disabled)."
+	echo "  --disable-check-alloc   Disables memory allocator error handling."
+	echo "  --disable-uthash        Disables hash counter/string lookups."
+	echo "  --enable-debytecode     Enable experimental 'debytecode' transform."
+	echo "  --disable-libsdl2       Disable SDL 2.0 support (falls back on 1.2)."
+	echo "  --enable-fps            Enable frames-per-second counter."
 	echo
 	echo "e.g.: ./config.sh --platform unix --prefix /usr"
 	echo "                  --sysconfdir /etc --disable-x11"
@@ -108,7 +110,7 @@ MIKMOD="false"
 OPENMPT="false"
 LIBPNG="true"
 AUDIO="true"
-TREMOR="false"
+VORBIS="true"
 PTHREAD="true"
 ICON="true"
 MODULAR="true"
@@ -227,8 +229,14 @@ while [ "$1" != "" ]; do
 	[ "$1" = "--disable-audio" ] && AUDIO="false"
 	[ "$1" = "--enable-audio" ]  && AUDIO="true"
 
-	[ "$1" = "--disable-tremor" ] && TREMOR="false"
-	[ "$1" = "--enable-tremor" ]  && TREMOR="true"
+	[ "$1" = "--disable-vorbis" ] && VORBIS="false"
+	[ "$1" = "--enable-vorbis" ]  && VORBIS="true"
+
+	[ "$1" = "--disable-tremor" ] && VORBIS="true"
+	[ "$1" = "--enable-tremor" ]  && VORBIS="tremor"
+
+	[ "$1" = "--disable-tremor-lowmem" ] && VORBIS="true"
+	[ "$1" = "--enable-tremor-lowmem" ]  && VORBIS="tremor-lowmem"
 
 	[ "$1" = "--disable-pthread" ] && PTHREAD="false"
 	[ "$1" = "--enable-pthread" ]  && PTHREAD="true"
@@ -618,12 +626,11 @@ if [ "$GL" = "false" ]; then
 fi
 
 #
-# Force-enable tremor on PSP/GP2X/3DS
+# Force-enable tremor-lowmem on GP2X
 #
-if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" \
-  -o "$PLATFORM" = "android" -o "$PLATFORM" = "3ds" ]; then
-	echo "Force-switching ogg/vorbis to tremor."
-	TREMOR="true"
+if [ "$PLATFORM" = "gp2x" -o "$PLATFORM" = "android" ]; then
+	echo "Force-switching ogg/vorbis to tremor-lowmem."
+	VORBIS="tremor-lowmem"
 fi
 
 #
@@ -937,14 +944,26 @@ else
 fi
 
 #
-# Handle libtremor support, if enabled
+# Handle vorbis support, if enabled
 #
-if [ "$TREMOR" = "true" ]; then
+if [ "$VORBIS" = "true" ]; then
+	echo "Using ogg/vorbis."
+	echo "#define CONFIG_VORBIS" >> src/config.h
+	echo "VORBIS=vorbis" >> platform.inc
+
+elif [ "$VORBIS" = "tremor" ]; then
 	echo "Using tremor in place of ogg/vorbis."
+	echo "#define CONFIG_VORBIS" >> src/config.h
 	echo "#define CONFIG_TREMOR" >> src/config.h
-	echo "TREMOR=1" >> platform.inc
+	echo "VORBIS=tremor" >> platform.inc
+
+elif [ "$VORBIS" = "tremor-lowmem" ]; then
+	echo "Using tremor (lowmem) in place of ogg/vorbis."
+	echo "#define CONFIG_VORBIS" >> src/config.h
+	echo "#define CONFIG_TREMOR" >> src/config.h
+	echo "VORBIS=tremor-lowmem" >> platform.inc
 else
-	echo "Not using tremor in place of ogg/vorbis."
+	echo "Ogg/vorbis disabled."
 fi
 
 #

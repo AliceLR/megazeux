@@ -10,12 +10,3 @@ if ! grep -q "dkp" /etc/pacman.conf ; then
 
   pacman --needed --no-confirm -S devkitpro-keyring
 fi
-
-
-# Set up symbolic links to map expected folders to devkitPro folders
-
-mkdir -p /opt/devkitpro/portlibs
-EXEC=`cygpath -w /dk-makelinks.bat`
-REALPATH=`cygpath -w /opt/devkitpro/portlibs`
-
-powershell -Command "Start-Process -filepath '$EXEC' -ArgumentList '$REALPATH' -Verb RunAs "
