@@ -635,11 +635,9 @@ int change_dir_name(char *path_name, const char *dest)
     current_char = current[0];
   }
 
-  if(stat(path, &stat_info) >= 0)
-  {
-    clean_path_slashes(path, path_name, MAX_PATH);
+  clean_path_slashes(path, path_name, MAX_PATH);
+  if(stat(path_name, &stat_info) >= 0)
     return 0;
-  }
 
   return -1;
 }
