@@ -458,7 +458,7 @@ static boolean allow_configure(core_context *root)
     return false;
 
   // Bypass F2_MENU counter.
-  if(get_shift_status(keycode_internal) && !conf->standalone_mode)
+  if(get_ctrl_status(keycode_internal) && !conf->standalone_mode)
     return true;
 
   if(mzx_world->active && mzx_world->version >= V260)

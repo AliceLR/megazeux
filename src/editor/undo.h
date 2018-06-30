@@ -26,28 +26,12 @@ __M_BEGIN_DECLS
 
 #include "../data.h"
 #include "../world_struct.h"
+#include "buffer_struct.h"
 
-struct undo_frame
-{
-  int type;
-};
+struct undo_history;
 
-struct undo_history
-{
-  struct undo_frame **frames;
-  struct undo_frame *current_frame;
-  int current;
-  int first;
-  int last;
-  int size;
-  void (*undo_function)(struct undo_frame *);
-  void (*redo_function)(struct undo_frame *);
-  void (*update_function)(struct undo_frame *);
-  void (*clear_function)(struct undo_frame *);
-};
-
-int apply_undo(struct undo_history *h);
-int apply_redo(struct undo_history *h);
+boolean apply_undo(struct undo_history *h);
+boolean apply_redo(struct undo_history *h);
 void update_undo_frame(struct undo_history *h);
 void destruct_undo_history(struct undo_history *h);
 
@@ -59,8 +43,7 @@ void add_charset_undo_frame(struct undo_history *h, int charset, int first_char,
  int width, int height);
 
 void add_board_undo_frame(struct world *mzx_world, struct undo_history *h,
- enum thing id, int color, int param, int x, int y, struct robot *copy_robot,
- struct scroll *copy_scroll, struct sensor *copy_sensor);
+ struct buffer_info *buffer, int x, int y);
 
 void add_board_undo_position(struct undo_history *h, int x, int y);
 

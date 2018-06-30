@@ -20,6 +20,7 @@
 
 /* Fill function. */
 
+#include "buffer.h"
 #include "edit.h"
 #include "fill.h"
 #include "undo.h"
@@ -53,17 +54,16 @@ struct queue_elem
   queue_next = (queue_next + 1) % QUEUE_SIZE;       \
 }
 
-void fill_area(struct world *mzx_world, struct undo_history *h,
- enum thing id, int color, int param, int x, int y, struct robot *copy_robot,
- struct scroll *copy_scroll, struct sensor *copy_sensor, int overlay_edit)
+void fill_area(struct world *mzx_world, struct buffer_info *buffer,
+ int x, int y, enum editor_mode mode, struct undo_history *history)
 {
   struct board *cur_board = mzx_world->current_board;
 
   struct queue_elem *queue;
   int queue_first = 0;
   int queue_next = 1;
-  int matched_down;
-  int matched_up;
+  boolean matched_down;
+  boolean matched_up;
 
   char *level_id;
   char *level_color;
@@ -77,10 +77,10 @@ void fill_area(struct world *mzx_world, struct undo_history *h,
   int fill_param = 0;
 
   // Do nothing if the player is in the buffer
-  if(id == PLAYER)
+  if(buffer->id == PLAYER)
     return;
 
-  switch(overlay_edit)
+  switch(mode)
   {
     case EDIT_BOARD:
       level_id = cur_board->level_id;
@@ -97,7 +97,7 @@ void fill_area(struct world *mzx_world, struct undo_history *h,
       level_param = cur_board->overlay;
       board_width = cur_board->board_width;
       board_height = cur_board->board_height;
-      id = param;
+      buffer->id = buffer->param;
       break;
 
     default:
@@ -108,7 +108,7 @@ void fill_area(struct world *mzx_world, struct undo_history *h,
       level_param = mzx_world->vlayer_chars;
       board_width = mzx_world->vlayer_width;
       board_height = mzx_world->vlayer_height;
-      id = param;
+      buffer->id = buffer->param;
       break;
   }
 
@@ -118,27 +118,37 @@ void fill_area(struct world *mzx_world, struct undo_history *h,
   fill_param = level_param[offset];
 
   // Fill same as buffer? Do nothing
-  if((fill_id == id) &&
-   (fill_color == color) &&
-   (fill_param == param))
+  if((fill_id == buffer->id) &&
+   (fill_color == buffer->color) &&
+   (fill_param == buffer->param))
     return;
 
   // Start the undo frame for this fill
-  if(overlay_edit == EDIT_BOARD)
-    add_board_undo_frame(mzx_world, h, id, color, param, x, y,
-     copy_robot, copy_scroll, copy_sensor);
-
-  // Layers don't have variable size undo frames because they're
-  // much lighter than the board; just save the whole thing
+  if(mode == EDIT_BOARD)
+  {
+    add_board_undo_frame(mzx_world, history, buffer, x, y);
+  }
   else
-    add_layer_undo_frame(h, level_id, level_color, board_width, 0,
+  {
+    // Layers don't have variable size undo frames because they're
+    // much lighter than the board; just save the whole thing
+    add_layer_undo_frame(history, level_id, level_color, board_width, 0,
      board_width, board_height);
+  }
 
   queue = cmalloc(QUEUE_SIZE * sizeof(struct queue_elem));
   queue[0].x = x;
   queue[0].y = y;
 
-  // Perform the fill
+  /**
+   * Strategy: for a given position, seek the left edge of its fillable region,
+   * then fill right. While filling right, check up and down for new fillable
+   * regions. When a new fillable region is detected in the row above or below,
+   * add the position it was detected at to the queue. Repeat until the queue
+   * is empty.
+   */
+
+  // Perform the fill.
   do
   {
     // Get next queue element
@@ -155,8 +165,8 @@ void fill_area(struct world *mzx_world, struct undo_history *h,
     }
     while((x >= 0) && MATCHING(offset));
 
-    matched_down = 0;
-    matched_up = 0;
+    matched_down = false;
+    matched_up = false;
     offset++;
     x++;
 
@@ -164,11 +174,12 @@ void fill_area(struct world *mzx_world, struct undo_history *h,
     do
     {
       // Update the undo frame for the new position, then fill
-      if(overlay_edit == EDIT_BOARD)
-        add_board_undo_position(h, x, y);
+      if(mode == EDIT_BOARD)
+        add_board_undo_position(history, x, y);
 
-      if(place_current_at_xy(mzx_world, id, color, param, x, y, copy_robot,
-       copy_scroll, copy_sensor, overlay_edit, 0) == -1)
+      // If we're filling storage objects, this will return -1 when we're out
+      // of IDs to assign to them. In this case, abort.
+      if(place_current_at_xy(mzx_world, buffer, x, y, mode, NULL) == -1)
         goto out_free;
 
       if(y > 0 && MATCHING(offset - board_width))
@@ -176,12 +187,12 @@ void fill_area(struct world *mzx_world, struct undo_history *h,
         if(!matched_up)
         {
           QUEUE_ADD(x, y-1);
-          matched_up = 1;
+          matched_up = true;
         }
       }
       else
       {
-        matched_up = 0;
+        matched_up = false;
       }
 
       if(y+1 < board_height && MATCHING(offset + board_width))
@@ -189,12 +200,12 @@ void fill_area(struct world *mzx_world, struct undo_history *h,
         if(!matched_down)
         {
           QUEUE_ADD(x, y+1);
-          matched_down = 1;
+          matched_down = true;
         }
       }
       else
       {
-        matched_down = 0;
+        matched_down = false;
       }
 
       offset++;
@@ -206,7 +217,7 @@ void fill_area(struct world *mzx_world, struct undo_history *h,
 
 out_free:
   // Finalize the undo frame
-  update_undo_frame(h);
+  update_undo_frame(history);
 
   free(queue);
 }

@@ -1,6 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
+ * Copyright (C) 2018 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,24 +18,44 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/* Declaration for FILL.CPP */
-
-#ifndef __EDITOR_FILL_H
-#define __EDITOR_FILL_H
+#ifndef __EDITOR_BUFFER_H
+#define __EDITOR_BUFFER_H
 
 #include "../compat.h"
 
 __M_BEGIN_DECLS
 
-#include "buffer.h"
+#include "../core.h"
+#include "../world_struct.h"
+#include "buffer_struct.h"
 #include "edit.h"
 #include "undo.h"
 
-#include "../world_struct.h"
+enum thing_menu_id
+{
+  THING_MENU_TERRAIN,
+  THING_MENU_ITEMS,
+  THING_MENU_CREATURES,
+  THING_MENU_PUZZLE,
+  THING_MENU_TRANSPORT,
+  THING_MENU_ELEMENTS,
+  THING_MENU_MISC,
+  THING_MENU_OBJECTS,
+  NUM_THING_MENUS
+};
 
-void fill_area(struct world *mzx_world, struct buffer_info *buffer,
+int change_param(struct world *mzx_world, struct buffer_info *buffer);
+
+int place_current_at_xy(struct world *mzx_world, struct buffer_info *buffer,
  int x, int y, enum editor_mode mode, struct undo_history *history);
+
+void grab_at_xy(struct world *mzx_world, struct buffer_info *buffer,
+ int x, int y, enum editor_mode mode);
+
+void thing_menu(context *ctx, enum thing_menu_id menu_number,
+ struct buffer_info *buffer, boolean use_default_color, int x, int y,
+ struct undo_history *history);
 
 __M_END_DECLS
 
-#endif // __EDITOR_FILL_H
+#endif /* __EDITOR_BUFFER_H */

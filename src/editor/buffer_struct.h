@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 1996 Greg Janson
+ * Copyright (C) 2018 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,22 +17,26 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/* Declarations */
-
-#ifndef __EDITOR_SELECT_H
-#define __EDITOR_SELECT_H
+#ifndef __EDITOR_BUFFER_STRUCT_H
+#define __EDITOR_BUFFER_STRUCT_H
 
 #include "../compat.h"
 
 __M_BEGIN_DECLS
 
+#include "../data.h"
 #include "../world_struct.h"
 
-int select_screen_mode(struct world *mzx_world);
-int choose_char_set(struct world *mzx_world);
-int export_type(struct world *mzx_world);
-int import_type(struct world *mzx_world);
+struct buffer_info
+{
+  struct robot *robot;
+  struct scroll *scroll;
+  struct sensor *sensor;
+  enum thing id;
+  int color;
+  int param;
+};
 
 __M_END_DECLS
 
-#endif  // __EDITOR_BLOCK_H
+#endif /* __EDITOR_BUFFER_STRUCT_H */

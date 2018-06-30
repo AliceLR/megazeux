@@ -155,7 +155,7 @@ CORE_LIBSPEC void create_context(context *ctx, context *parent,
 /**
  * Destroys a context and every context above it on the context stack.
  * This will call the destroy function for every context destroyed. Contexts
- * will be destroys from the top of the stack down.
+ * will be destroyed from the top of the stack down.
  *
  * @param ctx           The context to destroy.
  */
@@ -163,7 +163,7 @@ CORE_LIBSPEC void create_context(context *ctx, context *parent,
 CORE_LIBSPEC void destroy_context(context *ctx);
 
 /**
- * Get config information for a particular context.
+ * Get config information from a particular context.
  */
 
 static inline struct config_info *get_config(context *ctx)
@@ -171,6 +171,18 @@ static inline struct config_info *get_config(context *ctx)
   // FIXME return &(ctx->data->conf);
   return &(ctx->world->conf);
 }
+
+#ifdef CONFIG_EDITOR
+/**
+ * Get editor config information from a particular context.
+ */
+
+static inline struct editor_config_info *get_editor_config(context *ctx)
+{
+  // FIXME return &(ctx->data->editor_conf);
+  return &(ctx->world->editor_conf);
+}
+#endif
 
 /**
  * Sets the framerate mode of the current context. See enum framerate_type for

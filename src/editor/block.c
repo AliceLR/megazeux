@@ -22,15 +22,19 @@
 /* Block actions */
 /* For the selection dialogs that used to be called "block.c", see select.c */
 
-/* All bounds are expected to be checked before being passed here. */
-
 #include "block.h"
+#include "undo.h"
 
-#include "../board_struct.h"
+#include "../block.h"
+#include "../core.h"
 #include "../data.h"
+#include "../event.h"
+#include "../mzm.h"
 #include "../robot.h"
+#include "../window.h"
+#include "../world_struct.h"
 
-void clear_layer_block(
+static void clear_layer_block(
  char *dest_char, char *dest_color, int dest_width, int dest_offset,
  int block_width, int block_height)
 {
@@ -50,7 +54,7 @@ void clear_layer_block(
   }
 }
 
-void clear_board_block(struct board *dest_board, int dest_offset,
+static void clear_board_block(struct board *dest_board, int dest_offset,
  int block_width, int block_height)
 {
   char *level_id = dest_board->level_id;
@@ -109,7 +113,7 @@ void clear_board_block(struct board *dest_board, int dest_offset,
   }
 }
 
-void flip_layer_block(
+static void flip_layer_block(
  char *dest_char, char *dest_color, int dest_width, int dest_offset,
  int block_width, int block_height)
 {
@@ -141,7 +145,7 @@ void flip_layer_block(
   free(buffer);
 }
 
-void flip_board_block(struct board *dest_board, int dest_offset,
+static void flip_board_block(struct board *dest_board, int dest_offset,
  int block_width, int block_height)
 {
   char *buffer = malloc(sizeof(char) * block_width);
@@ -209,7 +213,7 @@ void flip_board_block(struct board *dest_board, int dest_offset,
   free(buffer);
 }
 
-void mirror_layer_block(
+static void mirror_layer_block(
  char *dest_char, char *dest_color, int dest_width, int dest_offset,
  int block_width, int block_height)
 {
@@ -241,7 +245,7 @@ void mirror_layer_block(
   }
 }
 
-void mirror_board_block(struct board *dest_board, int dest_offset,
+static void mirror_board_block(struct board *dest_board, int dest_offset,
  int block_width, int block_height)
 {
   char *level_id = dest_board->level_id;
@@ -297,7 +301,7 @@ void mirror_board_block(struct board *dest_board, int dest_offset,
   }
 }
 
-void paint_layer_block(char *dest_color, int dest_width, int dest_offset,
+static void paint_layer_block(char *dest_color, int dest_width, int dest_offset,
  int block_width, int block_height, int paint_color)
 {
   int dest_skip = dest_width - block_width;
@@ -342,7 +346,7 @@ void copy_layer_buffer_to_buffer(
   }
 }
 
-void move_layer_block(
+static void move_layer_block(
  char *src_char, char *src_color, int src_width, int src_offset,
  char *dest_char, char *dest_color, int dest_width, int dest_offset,
  int block_width, int block_height,
@@ -373,4 +377,554 @@ void move_layer_block(
 
   free(buffer_char);
   free(buffer_color);
+}
+
+void do_block_command(struct world *mzx_world, struct block_info *block,
+ struct undo_history *dest_history, char *mzm_name_buffer, int current_color)
+{
+  // Source is optional and mostly only matters for copy/move
+  struct board *src_board = NULL;
+  char *src_char = NULL;
+  char *src_color = NULL;
+  int src_width = 0;
+  int src_offset;
+  int src_x = block->src_x;
+  int src_y = block->src_y;
+
+  struct board *dest_board;
+  char *dest_char;
+  char *dest_color;
+  int dest_width;
+  int dest_height;
+  int dest_offset;
+  int dest_x = block->dest_x;
+  int dest_y = block->dest_y;
+
+  // History size is generally the block size, but move block adds complications
+  int history_x = block->dest_x;
+  int history_y = block->dest_y;
+  int history_width;
+  int history_height;
+  int history_offset;
+
+  // Trim the block size to fit the destination, but keep the old
+  // size so the old block can be cleared during the move command
+  int block_width = block->width;
+  int block_height = block->height;
+  int dest_block_width = block_width;
+  int dest_block_height = block_height;
+
+  if(block->command == BLOCK_CMD_NONE)
+    return;
+
+  // Set up source
+  switch(block->src_mode)
+  {
+    case EDIT_BOARD:
+      if(block->src_board == NULL) break;
+      src_board = block->src_board;
+      src_char = NULL;
+      src_color = src_board->level_color;
+      src_width = src_board->board_width;
+      break;
+
+    case EDIT_OVERLAY:
+      if(block->src_board == NULL) break;
+      src_board = block->src_board;
+      src_char = src_board->overlay;
+      src_color = src_board->overlay_color;
+      src_width = src_board->board_width;
+      break;
+
+    case EDIT_VLAYER:
+      src_board = NULL;
+      src_char = mzx_world->vlayer_chars;
+      src_color = mzx_world->vlayer_colors;
+      src_width = mzx_world->vlayer_width;
+      break;
+
+    default:
+      return;
+  }
+
+  // Set up destination
+  switch(block->dest_mode)
+  {
+    case EDIT_BOARD:
+      dest_board = mzx_world->current_board;
+      dest_char = NULL;
+      dest_color = dest_board->level_color;
+      dest_width = dest_board->board_width;
+      dest_height = dest_board->board_height;
+      break;
+
+    case EDIT_OVERLAY:
+      dest_board = mzx_world->current_board;
+      dest_char = dest_board->overlay;
+      dest_color = dest_board->overlay_color;
+      dest_width = dest_board->board_width;
+      dest_height = dest_board->board_height;
+      break;
+
+    case EDIT_VLAYER:
+      dest_board = NULL;
+      dest_char = mzx_world->vlayer_chars;
+      dest_color = mzx_world->vlayer_colors;
+      dest_width = mzx_world->vlayer_width;
+      dest_height = mzx_world->vlayer_height;
+      break;
+
+    default:
+      return;
+  }
+
+  // Trim the block for the destination
+  if((dest_x + dest_block_width) > dest_width)
+    dest_block_width = dest_width - dest_x;
+
+  if((dest_y + dest_block_height) > dest_height)
+    dest_block_height = dest_height - dest_y;
+
+  history_width = dest_block_width;
+  history_height = dest_block_height;
+
+  // In-place move block adds some complications to history.
+  // For now, just save the smallest possible space containing both blocks.
+  if((block->command == BLOCK_CMD_MOVE) &&
+   (block->src_mode == block->dest_mode) &&
+   ((block->src_mode == EDIT_VLAYER) || (src_board == dest_board)))
+  {
+    if(src_x > dest_x)
+    {
+      history_x = dest_x;
+      history_width = dest_block_width + src_x - dest_x;
+    }
+    else
+    {
+      history_x = src_x;
+      history_width = dest_block_width + dest_x - src_x;
+    }
+
+    if(src_y > dest_y)
+    {
+      history_y = dest_y;
+      history_height = dest_block_height + src_y - dest_y;
+    }
+    else
+    {
+      history_y = src_y;
+      history_height = dest_block_height + dest_y - src_y;
+    }
+  }
+
+  src_offset = src_x + (src_y * src_width);
+  dest_offset = dest_x + (dest_y * dest_width);
+  history_offset = history_x + (history_y * dest_width);
+
+  // Perform the block action
+  if(block->dest_mode == EDIT_BOARD)
+  {
+    add_block_undo_frame(mzx_world, dest_history, dest_board,
+     history_offset, history_width, history_height);
+
+    switch(block->command)
+    {
+      case BLOCK_CMD_NONE:
+        return;
+
+      case BLOCK_CMD_COPY:
+      case BLOCK_CMD_COPY_REPEATED:
+      {
+        switch(block->src_mode)
+        {
+          case EDIT_BOARD:
+            copy_board_to_board(mzx_world,
+             src_board, src_offset,
+             dest_board, dest_offset,
+             dest_block_width, dest_block_height);
+            break;
+
+          case EDIT_OVERLAY:
+          case EDIT_VLAYER:
+          {
+            enum thing convert_id = layer_to_board_object_type(mzx_world);
+
+            if(convert_id != NO_ID)
+            {
+              copy_layer_to_board(
+               src_char, src_color, src_width, src_offset,
+               dest_board, dest_offset,
+               dest_block_width, dest_block_height, convert_id);
+            }
+            break;
+          }
+        }
+        break;
+      }
+
+      case BLOCK_CMD_MOVE:
+      {
+        move_board_block(mzx_world,
+         src_board, src_offset,
+         dest_board, dest_offset,
+         dest_block_width, dest_block_height,
+         block_width, block_height); // Dimensions to clear old block
+
+        // Work around to move the player
+        if((mzx_world->player_x >= src_x) &&
+         (mzx_world->player_y >= src_y) &&
+         (mzx_world->player_x < (src_x + block_width)) &&
+         (mzx_world->player_y < (src_y + block_height)) &&
+         (src_board == dest_board))
+        {
+          place_player_xy(mzx_world,
+           mzx_world->player_x - src_x + dest_x,
+           mzx_world->player_y - src_y + dest_y);
+        }
+        break;
+      }
+
+      case BLOCK_CMD_CLEAR:
+      {
+        clear_board_block(dest_board, dest_offset,
+         dest_block_width, dest_block_height);
+        break;
+      }
+
+      case BLOCK_CMD_FLIP:
+      {
+        flip_board_block(dest_board, dest_offset,
+         dest_block_width, dest_block_height);
+        break;
+      }
+
+      case BLOCK_CMD_MIRROR:
+      {
+        mirror_board_block(dest_board, dest_offset,
+         dest_block_width, dest_block_height);
+        break;
+      }
+
+      case BLOCK_CMD_PAINT:
+      {
+        paint_layer_block(
+         dest_color, dest_width, dest_offset,
+         dest_block_width, dest_block_height, current_color);
+        break;
+      }
+
+      case BLOCK_CMD_SAVE_MZM:
+      {
+        // not handled here
+        break;
+      }
+
+      case BLOCK_CMD_LOAD_MZM:
+      {
+        load_mzm(mzx_world, mzm_name_buffer, dest_x, dest_y, block->dest_mode,
+         false);
+        break;
+      }
+    }
+
+    update_undo_frame(dest_history);
+  }
+  else
+
+  if((block->dest_mode == EDIT_OVERLAY) || (block->dest_mode == EDIT_VLAYER))
+  {
+    add_layer_undo_frame(dest_history, dest_char, dest_color, dest_width,
+     history_offset, history_width, history_height);
+
+    switch(block->command)
+    {
+      case BLOCK_CMD_NONE:
+        break;
+
+      case BLOCK_CMD_COPY:
+      case BLOCK_CMD_COPY_REPEATED:
+      {
+        switch(block->src_mode)
+        {
+          case EDIT_BOARD:
+            copy_board_to_layer(
+             src_board, src_offset,
+             dest_char, dest_color, dest_width, dest_offset,
+             dest_block_width, dest_block_height);
+            break;
+
+          case EDIT_OVERLAY:
+          case EDIT_VLAYER:
+            copy_layer_to_layer(
+             src_char, src_color, src_width, src_offset,
+             dest_char, dest_color, dest_width, dest_offset,
+             dest_block_width, dest_block_height);
+            break;
+        }
+        break;
+      }
+
+      case BLOCK_CMD_MOVE:
+      {
+        move_layer_block(
+         src_char, src_color, src_width, src_offset,
+         dest_char, dest_color, dest_width, dest_offset,
+         dest_block_width, dest_block_height,
+         block_width, block_height); // Dimensions to clear old block
+        break;
+      }
+
+      case BLOCK_CMD_CLEAR:
+      {
+        clear_layer_block(
+         dest_char, dest_color, dest_width, dest_offset,
+         dest_block_width, dest_block_height);
+        break;
+      }
+
+      case BLOCK_CMD_FLIP:
+      {
+        flip_layer_block(
+         dest_char, dest_color, dest_width, dest_offset,
+         dest_block_width, dest_block_height);
+        break;
+      }
+
+      case BLOCK_CMD_MIRROR:
+      {
+        mirror_layer_block(
+         dest_char, dest_color, dest_width, dest_offset,
+         dest_block_width, dest_block_height);
+        break;
+      }
+
+      case BLOCK_CMD_PAINT:
+      {
+        paint_layer_block(
+         dest_color, dest_width, dest_offset,
+         dest_block_width, dest_block_height, current_color);
+        break;
+      }
+
+      case BLOCK_CMD_SAVE_MZM:
+      {
+        // not handled here
+        break;
+      }
+
+      case BLOCK_CMD_LOAD_MZM:
+      {
+        load_mzm(mzx_world, mzm_name_buffer, dest_x, dest_y, block->dest_mode,
+         false);
+        break;
+      }
+    }
+
+    update_undo_frame(dest_history);
+  }
+}
+
+//--------------------------
+//
+// ( ) Copy block
+// ( ) Copy block (repeated)
+// ( ) Move block
+// ( ) Clear block
+// ( ) Flip block
+// ( ) Mirror block
+// ( ) Paint block
+// ( ) Copy to...
+// ( ) Copy to...
+// ( ) Save as MZM
+//
+//    _OK_      _Cancel_
+//
+//--------------------------
+boolean select_block_command(struct world *mzx_world, struct block_info *block,
+ enum editor_mode mode)
+{
+  int dialog_result;
+  struct element *elements[3];
+  struct dialog di;
+  int selection = 0;
+  const char *radio_button_strings[] =
+  {
+    "Copy block",
+    "Copy block (repeated)",
+    "Move block",
+    "Clear block",
+    "Flip block",
+    "Mirror block",
+    "Paint block",
+    NULL,
+    NULL,
+    "Save as MZM"
+  };
+
+  switch(mode)
+  {
+    default:
+    case EDIT_BOARD:
+      radio_button_strings[7] = "Copy to overlay";
+      radio_button_strings[8] = "Copy to vlayer";
+      break;
+
+    case EDIT_OVERLAY:
+      radio_button_strings[7] = "Copy to board";
+      radio_button_strings[8] = "Copy to vlayer";
+      break;
+
+    case EDIT_VLAYER:
+      radio_button_strings[7] = "Copy to board";
+      radio_button_strings[8] = "Copy to overlay";
+      break;
+  }
+
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
+  set_context(CTX_BLOCK_CMD);
+  elements[0] = construct_radio_button(2, 2, radio_button_strings,
+   10, 21, &selection);
+  elements[1] = construct_button(5, 13, "OK", 0);
+  elements[2] = construct_button(15, 13, "Cancel", -1);
+
+  construct_dialog(&di, "Choose block command", 26, 3, 29, 16,
+   elements, 3, 0);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  pop_context();
+
+  destruct_dialog(&di);
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
+
+  if(dialog_result)
+  {
+    block->selected = false;
+    return false;
+  }
+
+  // Translate selection to a real block command.
+  block->selected = true;
+  block->command = BLOCK_CMD_NONE;
+  block->src_mode = mode;
+  block->dest_mode = mode;
+
+  switch(selection)
+  {
+    case 0:
+      block->command = BLOCK_CMD_COPY;
+      break;
+
+    case 1:
+      block->command = BLOCK_CMD_COPY_REPEATED;
+      break;
+
+    case 2:
+      block->command = BLOCK_CMD_MOVE;
+      break;
+
+    case 3:
+      block->command = BLOCK_CMD_CLEAR;
+      break;
+
+    case 4:
+      block->command = BLOCK_CMD_FLIP;
+      break;
+
+    case 5:
+      block->command = BLOCK_CMD_MIRROR;
+      break;
+
+    case 6:
+      block->command = BLOCK_CMD_PAINT;
+      break;
+
+    case 7:
+    {
+      block->command = BLOCK_CMD_COPY;
+      switch(mode)
+      {
+        case EDIT_BOARD:
+          block->dest_mode = EDIT_OVERLAY;
+          break;
+
+        case EDIT_OVERLAY:
+        case EDIT_VLAYER:
+          block->dest_mode = EDIT_BOARD;
+          break;
+      }
+      break;
+    }
+
+    case 8:
+    {
+      block->command = BLOCK_CMD_COPY;
+      switch(mode)
+      {
+        case EDIT_BOARD:
+        case EDIT_OVERLAY:
+          block->dest_mode = EDIT_VLAYER;
+          break;
+
+        case EDIT_VLAYER:
+          block->dest_mode = EDIT_OVERLAY;
+          break;
+      }
+      break;
+    }
+
+    case 9:
+      block->command = BLOCK_CMD_SAVE_MZM;
+      break;
+  }
+  return true;
+}
+
+enum thing layer_to_board_object_type(struct world *mzx_world)
+{
+  int dialog_result;
+  struct element *elements[3];
+  struct dialog di;
+  int object_type = 0;
+  const char *radio_button_strings[] =
+  {
+    "Custom Block",
+    "Custom Floor",
+    "Text"
+  };
+
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
+  set_context(CTX_BLOCK_TYPE);
+  elements[0] = construct_radio_button(6, 4, radio_button_strings,
+   3, 12, &object_type);
+  elements[1] = construct_button(5, 11, "OK", 0);
+  elements[2] = construct_button(15, 11, "Cancel", -1);
+
+  construct_dialog(&di, "Object type", 26, 4, 28, 14,
+   elements, 3, 0);
+
+  dialog_result = run_dialog(mzx_world, &di);
+
+  destruct_dialog(&di);
+  pop_context();
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
+
+  if(dialog_result)
+    return NO_ID;
+
+  switch(object_type)
+  {
+    case 0: return CUSTOM_BLOCK;
+    case 1: return CUSTOM_FLOOR;
+    case 2: return __TEXT;
+  }
+
+  return NO_ID;
 }
