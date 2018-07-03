@@ -28,11 +28,24 @@ __M_BEGIN_DECLS
 
 #include "../world_struct.h"
 
+#define EDIT_SCREEN_EXTENDED    24
+#define EDIT_SCREEN_NORMAL      19
+
 enum editor_mode
 {
   EDIT_BOARD = 0,
   EDIT_OVERLAY = 1,
   EDIT_VLAYER = 2,
+};
+
+enum cursor_mode
+{
+  CURSOR_PLACE,
+  CURSOR_DRAW,
+  CURSOR_TEXT,
+  CURSOR_BLOCK_SELECT,
+  CURSOR_BLOCK_PLACE,
+  CURSOR_MZM_PLACE
 };
 
 EDITOR_LIBSPEC void free_editor_config(struct world *mzx_world);

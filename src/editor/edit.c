@@ -49,6 +49,7 @@
 #include "debug.h"
 #include "edit.h"
 #include "edit_di.h"
+#include "edit_menu.h"
 #include "fill.h"
 #include "graphics.h"
 #include "pal_ed.h"
@@ -72,25 +73,32 @@
 
 #define NEW_WORLD_TITLE       "Untitled world"
 
-#define EDIT_SCREEN_EXTENDED  24
-#define EDIT_SCREEN_NORMAL    19
+#define FLASH_THING_B         4
+#define FLASH_THING_MAX       8
 
-#define ROBOT_MEMORY_TIMER_MAX 120
-#define BOARD_MOD_TIMER_MAX    300
-
-enum cursor_mode
-{
-  CURSOR_PLACE,
-  CURSOR_DRAW,
-  CURSOR_TEXT,
-  CURSOR_BLOCK_SELECT,
-  CURSOR_BLOCK_PLACE,
-  CURSOR_MZM_PLACE
+// FIXME exts ought to go somewhere but I don't know where (also see game.c, robo_ed.c)
+static const char *const world_ext[] = { ".MZX", NULL };
+static const char *const mzb_ext[] = { ".MZB", NULL };
+static const char *const mzm_ext[] = { ".MZM", NULL };
+static const char *const sfx_ext[] = { ".SFX", NULL };
+static const char *const chr_ext[] = { ".CHR", NULL };
+static const char *const pal_ext[] = { ".PAL", NULL };
+static const char *const idx_ext[] = { ".PALIDX", NULL };
+static const char *const mod_ext[] =
+{ ".ogg", ".mod", ".s3m", ".xm", ".it", ".gdm",
+  ".669", ".amf", ".dsm", ".far", ".med",
+  ".mtm", ".okt", ".stm", ".ult", ".wav",
+  NULL
+};
+static const char *const sam_ext[] =
+{ ".WAV", ".SAM", ".OGG",
+  NULL
 };
 
 struct editor_context
 {
   context ctx;
+  subcontext *edit_menu;
 
   char current_world[MAX_PATH];
   char mzm_name_buffer[MAX_PATH];
@@ -106,7 +114,6 @@ struct editor_context
   boolean show_board_under_overlay; // = 1
   int backup_timestamp;             // = get_ticks()
   int backup_num;
-  int current_menu;
   int screen_height;
 
   // Buffer
@@ -117,7 +124,6 @@ struct editor_context
   boolean use_default_color;        // = 1
 
   // Current board
-  struct board *cur_board;
   int board_width;
   int board_height;
 
@@ -146,18 +152,16 @@ struct editor_context
   struct undo_history *board_history;
   struct undo_history *overlay_history;
   struct undo_history *vlayer_history;
-  boolean clear_board_history;      // = true
-  boolean clear_overlay_history;    // = true
-  boolean clear_vlayer_history;     // = true
-  boolean continue_mouse_history;   // = false
+  boolean continue_mouse_history;
 
-  // Etcetera
+  // Flash thing
+  boolean flashing;
+  unsigned char *flash_id;
   enum thing flash_start;
-  enum thing flash_end;
-  int flash_char;
+  int flash_len;
+  int flash_char_a;
+  int flash_char_b;
   int flash_timer;
-  int board_mod_timer;
-  int robot_memory_timer;
 };
 
 // TODO merge into configure.c
@@ -190,22 +194,27 @@ void load_editor_config(struct world *mzx_world, int *argc, char *argv[])
    sizeof(struct editor_config_info));
 }
 
-// Wrapper for reload_world so we can load an editor config
-static boolean editor_reload_world(struct world *mzx_world, const char *file,
- boolean *faded)
+/**
+ * Wrapper for reload_world that also loads world-specific editor config files.
+ */
+
+static boolean editor_reload_world(struct editor_context *editor,
+ const char *file)
 {
-  struct editor_config_info *editor_conf = &(mzx_world->editor_conf);
-  struct editor_config_info *backup = &(mzx_world->editor_conf_backup);
+  struct world *mzx_world = ((context *)editor)->world;
+  struct editor_config_info *editor_conf = get_editor_config((context *)editor);
+  struct editor_config_info *backup = &(mzx_world->editor_conf_backup); // FIXME
+
   size_t file_name_len = strlen(file) - 4;
   char config_file_name[MAX_PATH];
   struct stat file_info;
+  boolean ignore;
 
-  boolean world_loaded = reload_world(mzx_world, file, faded);
-
-  if(!world_loaded)
-    return world_loaded;
+  if(!reload_world(mzx_world, file, &ignore))
+    return false;
 
   // Part 1: Reset as much of the config file as we can.
+  // TODO this part probably ought to be handled by configure.c
 
   // We don't want to lose these.  If they're any different, the backup
   // version has already been freed/reallocated, so just copy the pointer.
@@ -218,13 +227,11 @@ static boolean editor_reload_world(struct world *mzx_world, const char *file,
   strncpy(config_file_name, file, file_name_len);
   strncpy(config_file_name + file_name_len, ".editor.cnf", 12);
 
-  if(world_loaded && stat(config_file_name, &file_info) >= 0)
+  if(stat(config_file_name, &file_info) >= 0)
     set_editor_config_from_file(editor_conf, config_file_name);
 
-  // FIXME
-  //editor->board_mod_timer = BOARD_MOD_TIMER_MAX;
-
-  return world_loaded;
+  edit_menu_show_board_mod(editor->edit_menu);
+  return true;
 }
 
 /**
@@ -251,6 +258,39 @@ static void fix_history(struct editor_context *editor)
       editor->cur_history = NULL;
       return;
   }
+}
+
+/**
+ * Clear or reset the current board undo history.
+ */
+
+static void clear_board_history(struct editor_context *editor)
+{
+  destruct_undo_history(editor->board_history);
+  editor->board_history = NULL;
+  fix_history(editor);
+}
+
+/**
+ * Clear or reset the current overlay undo history.
+ */
+
+static void clear_overlay_history(struct editor_context *editor)
+{
+  destruct_undo_history(editor->overlay_history);
+  editor->overlay_history = NULL;
+  fix_history(editor);
+}
+
+/**
+ * Clear or reset the current vlayer undo history.
+ */
+
+static void clear_vlayer_history(struct editor_context *editor)
+{
+  destruct_undo_history(editor->vlayer_history);
+  editor->vlayer_history = NULL;
+  fix_history(editor);
 }
 
 /**
@@ -301,7 +341,6 @@ static void synchronize_board_values(struct editor_context *editor)
   struct world *mzx_world = ((context *)editor)->world;
   struct board *cur_board = mzx_world->current_board;
 
-  editor->cur_board = cur_board;
   editor->board_width = cur_board->board_width;
   editor->board_height = cur_board->board_height;
 
@@ -320,8 +359,9 @@ static void synchronize_board_values(struct editor_context *editor)
 static void fix_caption(struct editor_context *editor)
 {
   struct world *mzx_world = ((context *)editor)->world;
+  struct board *cur_board = mzx_world->current_board;
 
-  set_caption(mzx_world, editor->cur_board, NULL, editor->modified);
+  set_caption(mzx_world, cur_board, NULL, editor->modified);
 }
 
 /**
@@ -405,10 +445,168 @@ static void fix_mod(struct editor_context *editor)
  * Set the active world's current board.
  */
 
-static void set_current_board(struct world *mzx_world, int new_board)
+static void set_current_board(struct editor_context *editor, int new_board)
 {
-  mzx_world->current_board_id = new_board;
-  mzx_world->current_board = mzx_world->board_list[new_board];
+  struct editor_config_info *editor_conf = get_editor_config((context *)editor);
+  struct world *mzx_world = ((context *)editor)->world;
+  struct board *cur_board;
+
+  if(new_board >= 0)
+  {
+    // Hopefully we won't be getting anything out of range but just in case
+    if(new_board >= mzx_world->num_boards)
+      new_board = mzx_world->num_boards - 1;
+
+    mzx_world->current_board_id = new_board;
+    mzx_world->current_board = mzx_world->board_list[new_board];
+    cur_board = mzx_world->current_board;
+
+    if(!cur_board->overlay_mode || editor->mode == EDIT_VLAYER)
+      set_editor_mode(editor, EDIT_BOARD);
+
+    synchronize_board_values(editor);
+    fix_scroll(editor);
+    fix_caption(editor);
+
+    if(strcmp(cur_board->mod_playing, "*") &&
+     strcasecmp(cur_board->mod_playing, mzx_world->real_mod_playing))
+      fix_mod(editor);
+
+    // Load the board charset and palette
+    if(editor_conf->editor_load_board_assets)
+      change_board_load_assets(mzx_world);
+
+    // Reset the local undo histories
+    clear_board_history(editor);
+    clear_overlay_history(editor);
+
+    edit_menu_show_board_mod(editor->edit_menu);
+    editor->modified = true;
+  }
+}
+
+/**
+ * Move the cursor on the board.
+ */
+
+static void move_edit_cursor(struct editor_context *editor,
+ int move_x, int move_y)
+{
+  struct editor_config_info *editor_conf = get_editor_config((context *)editor);
+  struct world *mzx_world = ((context *)editor)->world;
+  struct board *cur_board = mzx_world->current_board;
+  struct buffer_info *buffer = &(editor->buffer);
+
+  // Bound the movement within the board
+  if(editor->cursor_x + move_x < 0)
+    move_x = -editor->cursor_x;
+
+  if(move_x + editor->cursor_x > editor->board_width - 1)
+    move_x = editor->board_width - editor->cursor_x - 1;
+
+  if(editor->cursor_y + move_y < 0)
+    move_y = -editor->cursor_y;
+
+  if(move_y + editor->cursor_y > editor->board_height - 1)
+    move_y = editor->board_height - editor->cursor_y - 1;
+
+  if(move_x)
+    move_y = 0;
+
+  if(move_x || move_y)
+  {
+    int offset = editor->cursor_x + (editor->cursor_y * editor->board_width);
+    int step_x = SGN(move_x);
+    int step_y = SGN(move_y);
+    int width = abs(move_x) + 1;
+    int height = abs(move_y) + 1;
+
+    if(step_x < 0)
+      offset -= width;
+
+    if(step_y < 0)
+      offset -= editor->board_width * height;
+
+    if(editor->cursor_mode == CURSOR_DRAW)
+    {
+      switch(editor->mode)
+      {
+        case EDIT_BOARD:
+          add_block_undo_frame(
+           mzx_world, editor->cur_history, cur_board, offset, width, height);
+          break;
+
+        case EDIT_OVERLAY:
+          add_layer_undo_frame(editor->cur_history, cur_board->overlay,
+           cur_board->overlay_color, editor->board_width, offset, width, height);
+          break;
+
+        case EDIT_VLAYER:
+          add_layer_undo_frame(editor->cur_history, mzx_world->vlayer_chars,
+           mzx_world->vlayer_colors, editor->board_width, offset, width, height);
+          break;
+      }
+    }
+
+    do
+    {
+      editor->cursor_x += step_x;
+      editor->cursor_y += step_y;
+      move_x -= step_x;
+      move_y -= step_y;
+
+      if(editor->cursor_mode == CURSOR_DRAW)
+      {
+        // We're creating a history frame manually, so don't pass it.
+        buffer->param = place_current_at_xy(mzx_world, buffer,
+         editor->cursor_x, editor->cursor_y, editor->mode, NULL);
+      }
+    }
+    while(move_x || move_y);
+
+    if(editor->cursor_mode == CURSOR_DRAW)
+    {
+      update_undo_frame(editor->cur_history);
+      editor->modified = true;
+
+      if(editor_conf->editor_tab_focuses_view)
+      {
+        // Out-of-bounds will be fixed by fix_scroll
+        editor->scroll_x = editor->cursor_x - 40;
+        editor->scroll_y = editor->cursor_y - (editor->screen_height / 2);
+      }
+    }
+
+    fix_scroll(editor);
+  }
+}
+
+/**
+ * Place typed text on the board.
+ */
+
+static void place_text(struct editor_context *editor)
+{
+  struct world *mzx_world = ((context *)editor)->world;
+  struct buffer_info temp_buffer;
+
+  int key = get_key(keycode_unicode);
+
+  if(key != 0)
+  {
+    temp_buffer.id = __TEXT;
+    temp_buffer.param = key;
+    temp_buffer.color = editor->buffer.color;
+    place_current_at_xy(mzx_world, &temp_buffer,
+     editor->cursor_x, editor->cursor_y, editor->mode, editor->cur_history);
+
+    if(editor->cursor_x < (editor->board_width - 1))
+      editor->cursor_x++;
+
+    fix_scroll(editor);
+
+    editor->modified = true;
+  }
 }
 
 // FIXME context
@@ -475,153 +673,82 @@ static void view_board(struct world *mzx_world, int scroll_x, int scroll_y)
   m_show();
 }
 
-#define NUM_MENUS 6
-
-static const char menu_names[NUM_MENUS][9] =
+static void flash_thing(struct editor_context *editor,
+ enum thing start, enum thing end, int flash_char_a, int flash_char_b)
 {
-  " WORLD ", " BOARD ", " THING ", " CURSOR ", " SHOW ", " MISC "
-};
-
-static const char menu_positions[] =
-  "11111112222222333333344444444555555666666";
-
-static const char *const menu_lines[NUM_MENUS][2]=
-{
-  {
-    " L:Load   S:Save  G:Global Info  Alt+G:Global Robot  Alt+R:Reset   Alt+T:Test",
-    " Alt+C:Char Edit  Alt+E:Palette  Alt+S:Status Info   Alt+V:Vlayer  Alt+F:SFX"
-  },
-  {
-    " Alt+Z:Clear  Alt+I:Import  Alt+P:Size/Pos  I:Info   M:Move  A:Add  D:Delete",
-    " Ctrl+G:Goto  Alt+X:Export  Alt+O:Overlay   X:Exits  V:View  B:Select Board"
-  },
-  {
-    " F3:Terrain  F4:Item      F5:Creature  F6:Puzzle  F7:Transport  F8:Element",
-    " F9:Misc     F10:Objects  P:Parameter  C:Color"
-  },
-  {
-    " \x12\x1d:Move  Space:Place  Enter:Modify+Grab  Alt+M:Modify  Ins:Grab  Del:Delete",
-          " F:Fill   Tab:Draw     F2:Text            Alt+B:Block   Alt+\x12\x1d:Move 10"
-  },
-  {
-    " Shift+F1:Show InvisWalls   Shift+F2:Show Robots   Alt+F11:Robot Debugger",
-    " Shift+F3:Show Fakes        Shift+F4:Show Spaces   Alt+Y:Debug Window"
-  },
-  {
-    " F1:Help    Home/End:Corner  Alt+A:Select Char Set  Alt+D:Default Colors",
-    " ESC:Exit   F11:Screen Mode  Alt+L:Test SAM         Alt+N:Music  *:Mod *"
-  }
-};
-
-static const char *const overlay_menu_lines[4] =
-{
-  " OVERLAY EDITING- (Alt+O to end)",
-  " \x12\x1d:Move  Enter:Modify+Grab  Space:Place  Ins:Grab  Del:Delete        F:Fill",
-  " C:Color  Alt+\x12\x1d:Move 10     Alt+B:Block  Tab:Draw  Alt+S:Show level  F2:Text",
-  "Character"
-};
-
-static const char *const vlayer_menu_lines[4] =
-{
-  " VLAYER EDITING- (Alt+V to end)",
-  " \x12\x1d:Move  Enter:Modify+Grab  Space:Place  Ins:Grab  Del:Delete  F:Fill",
-  " C:Color  Alt+\x12\x1d:Move 10     Alt+B:Block  Tab:Draw  Alt+P:Size  F2:Text",
-  "Character"
-};
-
-static const char *const minimal_help_mode_mesg[3] =
-{
-  "Alt+H : Toggle Help",
-  "Alt+H : Overlay Help",
-  "Alt+H : Vlayer Help",
-};
-
-static const char *const world_ext[] = { ".MZX", NULL };
-static const char *const mzb_ext[] = { ".MZB", NULL };
-static const char *const mzm_ext[] = { ".MZM", NULL };
-static const char *const sfx_ext[] = { ".SFX", NULL };
-static const char *const chr_ext[] = { ".CHR", NULL };
-static const char *const pal_ext[] = { ".PAL", NULL };
-static const char *const idx_ext[] = { ".PALIDX", NULL };
-static const char *const mod_ext[] =
-{ ".ogg", ".mod", ".s3m", ".xm", ".it", ".gdm",
-  ".669", ".amf", ".dsm", ".far", ".med",
-  ".mtm", ".okt", ".stm", ".ult", ".wav",
-  NULL
-};
-static const char *const sam_ext[] =
-{ ".WAV", ".SAM", ".OGG",
-  NULL
-};
-
-static const char cursor_mode_names[6][10] =
-{
-  " Current:",
-  " Drawing:",
-  "    Text:",
-  "   Block:",
-  "   Block:",
-  "  Import:"
-};
-
-static const char cursor_mode_help[6][32] =
-{
-  "",
-  "",
-  "Type to place text",
-  "Press ENTER on other corner",
-  "Press ENTER to place block",
-  "Press ENTER to place MZM"
-};
-
-#define num2hex(x) ((x) > 9 ? 87 + (x) : 48 + (x))
-
-static void write_hex_byte(char byte, char color, int x, int y)
-{
-  int t1, t2;
-  t1 = (byte & 240) >> 4;
-  t1 = num2hex(t1);
-  t2 = byte & 15;
-  t2 = num2hex(t2);
-  draw_char(t1, color, x, y);
-  draw_char(t2, color, x + 1, y);
+  editor->flashing = true;
+  editor->flash_start = start;
+  editor->flash_len = end - start + 1;
+  editor->flash_char_a = flash_char_a;
+  editor->flash_char_b = flash_char_b;
+  editor->flash_timer = 0;
 }
 
-static void draw_edit_window(struct board *src_board, int array_x, int array_y,
- int window_height)
+static void flash_on(struct editor_context *editor)
 {
-  int viewport_width = 80, viewport_height = window_height;
+  unsigned char *id_backup;
+  int chr = editor->flash_char_a;
+
+  if(editor->flash_timer >= FLASH_THING_B)
+    chr = editor->flash_char_b;
+
+  id_backup = cmalloc(editor->flash_len);
+  memcpy(id_backup, id_chars + editor->flash_start, editor->flash_len);
+  memset(id_chars + editor->flash_start, chr, editor->flash_len);
+  editor->flash_id = id_backup;
+  cursor_off();
+}
+
+static void flash_off(struct editor_context *editor)
+{
+  memcpy(id_chars + editor->flash_start, editor->flash_id, editor->flash_len);
+  free(editor->flash_id);
+
+  editor->flash_timer = (editor->flash_timer + 1) % FLASH_THING_MAX;
+}
+
+static void draw_edit_window(struct editor_context *editor)
+{
+  struct world *mzx_world = ((context *)editor)->world;
+  struct board *cur_board = mzx_world->current_board;
+  int viewport_width = 80;
+  int viewport_height = editor->screen_height;
   int x, y;
   int a_x, a_y;
-  int board_width = src_board->board_width;
-  int board_height = src_board->board_height;
+
+  if(editor->flashing)
+    flash_on(editor);
 
   blank_layers();
 
-  if(board_width < viewport_width)
-    viewport_width = board_width;
-  if(board_height < viewport_height)
-    viewport_height = board_height;
+  if(viewport_width > cur_board->board_width)
+    viewport_width = cur_board->board_width;
 
-  for(y = 0, a_y = array_y; y < viewport_height; y++, a_y++)
+  if(viewport_height > cur_board->board_height)
+    viewport_height = cur_board->board_height;
+
+  for(y = 0, a_y = editor->scroll_y; y < viewport_height; y++, a_y++)
   {
-    for(x = 0, a_x = array_x; x < viewport_width; x++, a_x++)
+    for(x = 0, a_x = editor->scroll_x; x < viewport_width; x++, a_x++)
     {
-      id_put(src_board, x, y, a_x, a_y, a_x, a_y);
+      id_put(cur_board, x, y, a_x, a_y, a_x, a_y);
     }
   }
   select_layer(UI_LAYER);
+
+  if(editor->flashing)
+    flash_off(editor);
 }
 
-static void draw_vlayer_window(struct world *mzx_world, int array_x,
- int array_y, int window_height)
+static void draw_vlayer_window(struct editor_context *editor)
 {
-  int offset = array_x + (array_y * mzx_world->vlayer_width);
+  struct world *mzx_world = ((context *)editor)->world;
+  int offset = editor->scroll_x + (editor->scroll_y * mzx_world->vlayer_width);
   int skip;
 
   char *vlayer_chars = mzx_world->vlayer_chars;
   char *vlayer_colors = mzx_world->vlayer_colors;
-  int viewport_height = window_height;
+  int viewport_height = editor->screen_height;
   int viewport_width = 80;
   int x;
   int y;
@@ -630,10 +757,10 @@ static void draw_vlayer_window(struct world *mzx_world, int array_x,
 
   select_layer(BOARD_LAYER);
 
-  if(mzx_world->vlayer_width < viewport_width)
+  if(viewport_width > mzx_world->vlayer_width)
     viewport_width = mzx_world->vlayer_width;
 
-  if(mzx_world->vlayer_height < viewport_height)
+  if(viewport_height > mzx_world->vlayer_height)
    viewport_height = mzx_world->vlayer_height;
 
   skip = mzx_world->vlayer_width - viewport_width;
@@ -695,299 +822,6 @@ static void draw_out_of_bounds(int in_x, int in_y, int in_width, int in_height)
   }
 }
 
-// FIXME make part of editor context
-static void flash_thing(struct world *mzx_world, int start, int end,
- int flash_one, int flash_two, int scroll_x, int scroll_y,
- int edit_screen_height)
-{
-  struct board *src_board = mzx_world->current_board;
-  int backup[32];
-  int i, i2;
-
-  cursor_off();
-
-  for(i = 0, i2 = start; i2 < end + 1; i++, i2++)
-  {
-    backup[i] = id_chars[i2];
-  }
-
-  src_board->overlay_mode |= 0x80;
-
-  do
-  {
-    for(i = start; i < end + 1; i++)
-    {
-      id_chars[i] = flash_one;
-    }
-
-    draw_edit_window(src_board, scroll_x, scroll_y, edit_screen_height);
-
-    update_screen();
-    delay(UPDATE_DELAY * 2);
-
-    for(i = start; i < end + 1; i++)
-    {
-      id_chars[i] = flash_two;
-    }
-
-    draw_edit_window(src_board, scroll_x, scroll_y, edit_screen_height);
-
-    update_screen();
-    delay(UPDATE_DELAY * 2);
-
-    update_event_status();
-  } while(!get_key(keycode_internal));
-
-  update_event_status_delay();
-
-  src_board->overlay_mode &= 0x7F;
-
-  for(i = 0, i2 = start; i2 < end + 1; i++, i2++)
-  {
-    id_chars[i2] = backup[i];
-  }
-}
-
-static void draw_menu_status(struct editor_context *editor, int line)
-{
-  struct world *mzx_world = ((context *)editor)->world;
-  struct board *cur_board = mzx_world->current_board;
-  struct buffer_info *buffer = &(editor->buffer);
-  int display_next_pos;
-  const char *str;
-
-  str = cursor_mode_names[editor->cursor_mode];
-  write_string(str, 42, line, EC_MODE_STR, false);
-  display_next_pos = 42 + strlen(str) + 1;
-
-  switch(editor->cursor_mode)
-  {
-    case CURSOR_TEXT:
-    case CURSOR_BLOCK_SELECT:
-    case CURSOR_BLOCK_PLACE:
-    case CURSOR_MZM_PLACE:
-    {
-      write_string(cursor_mode_help[editor->cursor_mode],
-       (Uint32)display_next_pos, line, EC_MODE_HELP, false);
-      break;
-    }
-
-    case CURSOR_PLACE:
-    case CURSOR_DRAW:
-    {
-      int display_color;
-      int display_char;
-
-      if(editor->mode == EDIT_BOARD)
-      {
-        if(buffer->id == SENSOR)
-        {
-          display_char = buffer->sensor->sensor_char;
-          display_color = buffer->color;
-        }
-        else
-
-        if(is_robot(buffer->id))
-        {
-          display_char = buffer->robot->robot_char;
-          display_color = buffer->color;
-        }
-        else
-        {
-          // TODO Clean this up. Requires a refactor of idput.c
-          int temp_char = cur_board->level_id[0];
-          int temp_param = cur_board->level_param[0];
-          int temp_color = cur_board->level_color[0];
-          cur_board->level_id[0] = buffer->id;
-          cur_board->level_param[0] = buffer->param;
-          cur_board->level_color[0] = buffer->color;
-
-          display_char = get_id_char(cur_board, 0);
-          display_color = get_id_board_color(cur_board, 0, true);
-
-          cur_board->level_id[0] = temp_char;
-          cur_board->level_param[0] = temp_param;
-          cur_board->level_color[0] = temp_color;
-        }
-      }
-      else
-      {
-        display_char = buffer->param;
-        display_color = buffer->color;
-      }
-
-      draw_char(' ', 7, display_next_pos, line);
-      erase_char(display_next_pos+1, line);
-
-      select_layer(OVERLAY_LAYER);
-      draw_char_ext(display_char, display_color,
-      display_next_pos + 1, line, 0, 0);
-      select_layer(UI_LAYER);
-
-      draw_char(' ', 7, display_next_pos + 2, line);
-      display_next_pos += 4;
-
-      draw_char('(', EC_CURR_THING, display_next_pos, line);
-      draw_color_box(display_color, 0, display_next_pos + 1, line, 80);
-      display_next_pos += 5;
-
-      if(editor->mode != EDIT_BOARD)
-      {
-        // "Character" is in the overlay/vlayer arrays
-        write_string("Character", display_next_pos, line, EC_CURR_THING, 0);
-        display_next_pos += strlen("Character") + 1;
-
-        write_hex_byte(buffer->param, EC_CURR_PARAM, display_next_pos, line);
-        display_next_pos += 2;
-      }
-      else
-      {
-        str = thing_names[buffer->id];
-
-        write_string(str, display_next_pos, line, EC_CURR_THING, false);
-        display_next_pos += strlen(str) + 1;
-
-        draw_char('p', EC_CURR_PARAM, display_next_pos, line);
-        display_next_pos++;
-
-        write_hex_byte(buffer->param, EC_CURR_PARAM, display_next_pos, line);
-        display_next_pos += 2;
-      }
-
-      draw_char(')', EC_CURR_THING, display_next_pos, line);
-      display_next_pos++;
-
-      if(!editor->use_default_color)
-      {
-        draw_char('\x07', EC_DEFAULT_COLOR, display_next_pos, line);
-      }
-      break;
-    }
-  }
-}
-
-static void draw_menu_normal(struct editor_context *editor)
-{
-  draw_window_box(0, 19, 79, 24, EC_MAIN_BOX, EC_MAIN_BOX_DARK,
-   EC_MAIN_BOX_CORNER, 0, 1);
-  draw_window_box(0, 21, 79, 24, EC_MAIN_BOX, EC_MAIN_BOX_DARK,
-   EC_MAIN_BOX_CORNER, 0, 1);
-
-  if(editor->mode == EDIT_BOARD)
-  {
-    int i, write_color, x;
-    x = 1; // X position
-
-    for(i = 0; i < NUM_MENUS; i++)
-    {
-      if(i == editor->current_menu)
-        write_color = EC_CURR_MENU_NAME;
-      else
-        write_color = EC_MENU_NAME; // Pick the color
-
-      // Write it
-      write_string(menu_names[i], x, 20, write_color, 0);
-      // Add to x
-      x += (int)strlen(menu_names[i]);
-    }
-
-    write_string(menu_lines[editor->current_menu][0], 1, 22, EC_OPTION, 1);
-    write_string(menu_lines[editor->current_menu][1], 1, 23, EC_OPTION, 1);
-    write_string("Pgup/Pgdn:Menu", 64, 24, EC_CURR_PARAM, 1);
-  }
-  else
-
-  if(editor->mode == EDIT_OVERLAY)
-  {
-    write_string(overlay_menu_lines[0], 1, 20, EC_MENU_NAME, 1);
-    write_string(overlay_menu_lines[1], 1, 22, EC_OPTION, 1);
-    write_string(overlay_menu_lines[2], 1, 23, EC_OPTION, 1);
-  }
-
-  else // EDIT_VLAYER
-  {
-    write_string(vlayer_menu_lines[0], 1, 20, EC_MENU_NAME, 1);
-    write_string(vlayer_menu_lines[1], 1, 22, EC_OPTION, 1);
-    write_string(vlayer_menu_lines[2], 1, 23, EC_OPTION, 1);
-  }
-
-  draw_menu_status(editor, EDIT_SCREEN_NORMAL + 1);
-
-  draw_char(196, EC_MAIN_BOX_CORNER, 78, 21);
-  draw_char(217, EC_MAIN_BOX_DARK, 79, 21);
-}
-
-static void draw_menu_minimal(struct editor_context *editor)
-{
-  struct world *mzx_world = ((context *)editor)->world;
-  struct board *cur_board = mzx_world->current_board;
-  int i;
-
-  fill_line(80, 0, EDIT_SCREEN_EXTENDED, ' ', EC_MAIN_BOX);
-
-  // Display robot memory where the Alt+H message would usually go.
-  if(editor->robot_memory_timer > 0)
-  {
-    int robot_mem = 0;
-
-    for(i = 0; i < cur_board->num_robots_active; i++)
-    {
-      robot_mem +=
-#ifdef CONFIG_DEBYTECODE
-       (src_board->robot_list_name_sorted[i])->program_source_length;
-#else
-       (cur_board->robot_list_name_sorted[i])->program_bytecode_length;
-#endif
-    }
-
-    robot_mem = (robot_mem + 512) / 1024;
-
-    write_string("Robot mem:       kb", 2, EDIT_SCREEN_EXTENDED, EC_MODE_STR,
-     false);
-    write_number(robot_mem, 31, 2+11, EDIT_SCREEN_EXTENDED, 6, 0, 10);
-  }
-  else
-
-  // Display the board mod where the Alt+H message would usually go.
-  if(editor->board_mod_timer > 0)
-  {
-    char *mod_name = cur_board->mod_playing;
-    int len = strlen(mod_name);
-    int off = 0;
-    char temp;
-
-    write_string("Mod:               ", 2, EDIT_SCREEN_EXTENDED, EC_MODE_STR,
-     false);
-
-    if(len > 14)
-    {
-      off = (BOARD_MOD_TIMER_MAX - editor->board_mod_timer)/10;
-      if(off > len - 14)
-        off = len - 14;
-    }
-
-    temp = mod_name[off+14];
-    mod_name[off+14] = 0;
-    write_string(mod_name+off, 2+5, EDIT_SCREEN_EXTENDED, 31, 1);
-    mod_name[off+14] = temp;
-  }
-
-  // Display the Alt+H message.
-  else
-  {
-    write_string(minimal_help_mode_mesg[editor->mode], 2,
-     EDIT_SCREEN_EXTENDED, EC_OPTION, false);
-  }
-
-  write_string("X/Y:      /     ", 3+21, EDIT_SCREEN_EXTENDED,
-   EC_MODE_STR, false);
-
-  write_number(editor->cursor_x, 31, 3+21+5, EDIT_SCREEN_EXTENDED, 5, 0, 10);
-  write_number(editor->cursor_y, 31, 3+21+11, EDIT_SCREEN_EXTENDED, 5, 0, 10);
-
-  draw_menu_status(editor, EDIT_SCREEN_EXTENDED);
-}
-
 static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
 {
   struct editor_context *editor = ccalloc(1, sizeof(struct editor_context));
@@ -999,28 +833,20 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
   struct buffer_info temp_buffer;
   struct board *cur_board;
   int saved_overlay_mode;
-  int change_to_board = -1;
   int cursor_screen_x = 0;
   int cursor_screen_y = 0;
-  int cursor_move_x = 0;
-  int cursor_move_y = 0;
-  boolean place_text = false;
   boolean exit_status = false;
   int key;
   int i;
 
-  // FIXME Destroy me
-  boolean ignore;
-
   editor->ctx.world = mzx_world; // FIXME
+
+  editor->edit_menu = create_edit_menu((context *)editor);
 
   editor->use_default_color = true;
   editor->show_board_under_overlay = true;
   editor->backup_timestamp = get_ticks();
   editor->debug_x = 60;
-  editor->clear_board_history = true;
-  editor->clear_overlay_history = true;
-  editor->clear_vlayer_history = true;
 
   getcwd(editor->current_listening_dir, MAX_PATH);
 
@@ -1054,7 +880,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
     if(
      reload_curr_file &&
      curr_file[0] &&
-     editor_reload_world(mzx_world, curr_file, &ignore))
+     editor_reload_world(editor, curr_file))
     {
       strncpy(editor->current_world, curr_file, MAX_PATH);
 
@@ -1126,26 +952,20 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
       }
     }
 
-    if(editor->clear_board_history)
+    if(!editor->board_history)
     {
-      editor->clear_board_history = false;
-      destruct_undo_history(editor->board_history);
       editor->board_history =
        construct_board_undo_history(editor_conf->undo_history_size);
     }
 
-    if(editor->clear_overlay_history)
+    if(!editor->overlay_history)
     {
-      editor->clear_overlay_history = false;
-      destruct_undo_history(editor->overlay_history);
       editor->overlay_history =
        construct_layer_undo_history(editor_conf->undo_history_size);
     }
 
-    if(editor->clear_vlayer_history)
+    if(!editor->vlayer_history)
     {
-      editor->clear_vlayer_history = false;
-      destruct_undo_history(editor->vlayer_history);
       editor->vlayer_history =
        construct_layer_undo_history(editor_conf->undo_history_size);
     }
@@ -1159,14 +979,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
       buffer->color = 7;
     }
 
-    if(editor->robot_memory_timer > 0)
-      editor->robot_memory_timer--;
-
-    if(editor->board_mod_timer > 0)
-      editor->board_mod_timer--;
-
     cur_board = mzx_world->current_board;
-    place_text = false; // FIXME redundant assignment after function split
 
     // FIXME start draw
     cursor_screen_x = editor->cursor_x - editor->scroll_x;
@@ -1180,8 +993,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
     if(editor->mode == EDIT_BOARD)
     {
       cur_board->overlay_mode = 0;
-      draw_edit_window(cur_board, editor->scroll_x, editor->scroll_y,
-       editor->screen_height);
+      draw_edit_window(editor);
     }
     else
 
@@ -1191,37 +1003,23 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
       if(!editor->show_board_under_overlay)
       {
         cur_board->overlay_mode |= 0x40;
-        draw_edit_window(cur_board, editor->scroll_x, editor->scroll_y,
-         editor->screen_height);
+        draw_edit_window(editor);
         cur_board->overlay_mode ^= 0x40;
       }
       else
       {
-        draw_edit_window(cur_board, editor->scroll_x, editor->scroll_y,
-         editor->screen_height);
+        draw_edit_window(editor);
       }
     }
 
     else // EDIT_VLAYER
     {
-      draw_vlayer_window(mzx_world, editor->scroll_x, editor->scroll_y,
-       editor->screen_height);
+      draw_vlayer_window(editor);
     }
 
     draw_out_of_bounds(0, 0, editor->board_width, editor->board_height);
 
     cur_board->overlay_mode = saved_overlay_mode;
-
-    if(editor->screen_height == EDIT_SCREEN_NORMAL)
-    {
-      editor->robot_memory_timer = 0;
-      editor->board_mod_timer = 0;
-      draw_menu_normal(editor);
-    }
-    else
-    {
-      draw_menu_minimal(editor);
-    }
 
     // Highlight block for block selection
     if(editor->cursor_mode == CURSOR_BLOCK_SELECT)
@@ -1283,9 +1081,15 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
       editor->modified_prev = editor->modified;
     }
 
+    // FIXME should be idle but currently draws as a hack
+    update_edit_menu(editor->edit_menu, editor->mode, editor->cursor_mode,
+     editor->cursor_x, editor->cursor_y, editor->screen_height,
+     &(editor->buffer), editor->use_default_color);
+
     update_screen();
     // FIXME end draw
 
+    // FIXME idle function
     if(editor->first_board_prompt)
     {
       // If the user creates a second board, name the title board
@@ -1296,7 +1100,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
         strcpy(mzx_world->name, NEW_WORLD_TITLE);
         strcpy(mzx_world->board_list[0]->board_name, NEW_WORLD_TITLE);
         mzx_world->first_board = 1;
-        change_to_board = 1;
+        set_current_board(editor, 1);
       }
 
       editor->first_board_prompt = false;
@@ -1310,6 +1114,14 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
     exit_status = get_exit_status();
     if(exit_status)
       key = 0;
+
+    if(editor->flashing && (get_mouse_status() || key || exit_status))
+    {
+      // Cancel flashing
+      editor->flashing = false;
+      exit_status = false;
+      continue;
+    }
 
     // FIXME this is broken for layers
     // Mouse history frame interrupted (by key or non-left press)?
@@ -1329,25 +1141,6 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
       int mouse_y;
 
       get_mouse_position(&mouse_x, &mouse_y);
-
-      if((mouse_y == 20) && (editor->screen_height < 20))
-      {
-        if((mouse_x >= 1) && (mouse_x <= 41))
-        {
-          // Select current help menu
-          editor->current_menu = menu_positions[mouse_x - 1] - '1';
-        }
-        else
-
-        if((mouse_x >= 56) && (mouse_x <= 58))
-        {
-          // Change current color
-          int new_color = color_selection(buffer->color, 0);
-          if(new_color >= 0)
-            buffer->color = new_color;
-        }
-      }
-      else
 
       if(mouse_y < editor->screen_height)
       {
@@ -1443,7 +1236,8 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
 
             if(mzx_world->current_board_id != s_board)
             {
-              change_to_board = s_board;
+              set_current_board(editor, s_board);
+              continue;
             }
 
             else
@@ -1461,86 +1255,90 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
     {
       case IKEY_UP:
       {
+        int move_y = -1;
+
         if(get_shift_status(keycode_internal))
         {
           // Move to adjacent board
           if(cur_board->board_dir[0] != NO_BOARD && editor->mode != EDIT_VLAYER)
-            change_to_board = cur_board->board_dir[0];
+            set_current_board(editor, cur_board->board_dir[0]);
           break;
         }
         else
 
-        cursor_move_y = -1;
-
         if(get_alt_status(keycode_internal))
-          cursor_move_y = -10;
+          move_y = -10;
 
         if(get_ctrl_status(keycode_internal) && block->selected)
-          cursor_move_y = -block->height;
+          move_y = -block->height;
 
+        move_edit_cursor(editor, 0, move_y);
         break;
       }
 
       case IKEY_DOWN:
       {
+        int move_y = 1;
+
         if(get_shift_status(keycode_internal))
         {
           // Move to adjacent board
           if(cur_board->board_dir[1] != NO_BOARD && editor->mode != EDIT_VLAYER)
-            change_to_board = cur_board->board_dir[1];
+            set_current_board(editor, cur_board->board_dir[1]);
           break;
         }
 
-        cursor_move_y = 1;
-
         if(get_alt_status(keycode_internal))
-          cursor_move_y = 10;
+          move_y = 10;
 
         if(get_ctrl_status(keycode_internal) && block->selected)
-          cursor_move_y = block->height;
+          move_y = block->height;
 
+        move_edit_cursor(editor, 0, move_y);
         break;
       }
 
       case IKEY_LEFT:
       {
+        int move_x = -1;
+
         if(get_shift_status(keycode_internal))
         {
           // Move to adjacent board
           if(cur_board->board_dir[3] != NO_BOARD && editor->mode != EDIT_VLAYER)
-            change_to_board = cur_board->board_dir[3];
+            set_current_board(editor, cur_board->board_dir[3]);
           break;
         }
 
-        cursor_move_x = -1;
-
         if(get_alt_status(keycode_internal))
-          cursor_move_x = -10;
+          move_x = -10;
 
         if(get_ctrl_status(keycode_internal) && block->selected)
-          cursor_move_x = -block->width;
+          move_x = -block->width;
 
+        move_edit_cursor(editor, move_x, 0);
         break;
       }
 
       case IKEY_RIGHT:
       {
+        int move_x = 1;
+
         if(get_shift_status(keycode_internal))
         {
           // Move to adjacent board
           if(cur_board->board_dir[2] != NO_BOARD && editor->mode != EDIT_VLAYER)
-            change_to_board = cur_board->board_dir[2];
+            set_current_board(editor, cur_board->board_dir[2]);
           break;
         }
 
-        cursor_move_x = 1;
-
         if(get_alt_status(keycode_internal))
-          cursor_move_x = 10;
+          move_x = 10;
 
         if(get_ctrl_status(keycode_internal) && block->selected)
-          cursor_move_x = block->width;
+          move_x = block->width;
 
+        move_edit_cursor(editor, move_x, 0);
         break;
       }
 
@@ -1598,7 +1396,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
         }
         else
         {
-          place_text = true;
+          place_text(editor);
         }
         editor->modified = true;
         break;
@@ -1739,26 +1537,6 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
         break;
       }
 
-      case IKEY_PAGEDOWN:
-      {
-        editor->current_menu++;
-
-        if(editor->current_menu == 6)
-          editor->current_menu = 0;
-
-        break;
-      }
-
-      case IKEY_PAGEUP:
-      {
-        editor->current_menu--;
-
-        if(editor->current_menu == -1)
-          editor->current_menu = 5;
-
-        break;
-      }
-
       case IKEY_ESCAPE:
       {
         if(editor->cursor_mode)
@@ -1789,15 +1567,14 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
         break;
       }
 
-      // Show invisible walls
       case IKEY_F1:
       {
         if(get_shift_status(keycode_internal))
         {
+          // Show invisible walls
           if(editor->mode == EDIT_BOARD)
           {
-            flash_thing(mzx_world, (int)INVIS_WALL, (int)INVIS_WALL,
-             178, 176, editor->scroll_x, editor->scroll_y, editor->screen_height);
+            flash_thing(editor, INVIS_WALL, INVIS_WALL, 178, 176);
           }
         }
 #ifdef CONFIG_HELPSYS
@@ -1811,19 +1588,19 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
         break;
       }
 
-      // Show robots
       case IKEY_F2:
       {
         if(get_shift_status(keycode_internal))
         {
+          // Show robots
           if(editor->mode == EDIT_BOARD)
           {
-            flash_thing(mzx_world, (int)ROBOT_PUSHABLE, (int)ROBOT,
-             '!', 0, editor->scroll_x, editor->scroll_y, editor->screen_height);
+            flash_thing(editor, ROBOT_PUSHABLE, ROBOT, '!', 0);
           }
         }
         else
         {
+          // Toggle text mode
           if(editor->cursor_mode != CURSOR_TEXT)
           {
             editor->cursor_mode = CURSOR_TEXT;
@@ -1845,8 +1622,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
           if(get_shift_status(keycode_internal))
           {
             // Show fakes
-            flash_thing(mzx_world, (int)FAKE, (int)THICK_WEB, '#', 177,
-             editor->scroll_x, editor->scroll_y, editor->screen_height);
+            flash_thing(editor, FAKE, THICK_WEB, '#', 177);
           }
           else
           {
@@ -1871,8 +1647,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
           if(get_shift_status(keycode_internal))
           {
             // Show spaces
-            flash_thing(mzx_world, (int)SPACE, (int)SPACE, 'O', '*',
-             editor->scroll_x, editor->scroll_y, editor->screen_height);
+            flash_thing(editor, SPACE, SPACE, 'O', '*');
           }
           else
           {
@@ -1961,7 +1736,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
 
           if(is_robot(buffer->id))
           {
-            editor->robot_memory_timer = ROBOT_MEMORY_TIMER_MAX;
+            edit_menu_show_robot_memory(editor->edit_menu);
             fix_caption(editor);
           }
           editor->modified = true;
@@ -1996,7 +1771,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
       {
         if(editor->cursor_mode == CURSOR_TEXT)
         {
-          place_text = true;
+          place_text(editor);
         }
         else
 
@@ -2006,7 +1781,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
           cur_board->mod_playing[0] = '*';
           cur_board->mod_playing[1] = 0;
           fix_mod(editor);
-          editor->board_mod_timer = BOARD_MOD_TIMER_MAX;
+          edit_menu_show_board_mod(editor->edit_menu);
 
           editor->modified = true;
         }
@@ -2022,10 +1797,10 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
           // Previous board
           // Doesn't make sense on the vlayer.
           if(mzx_world->current_board_id > 0 && editor->mode != EDIT_VLAYER)
-            change_to_board = mzx_world->current_board_id - 1;
+            set_current_board(editor, mzx_world->current_board_id - 1);
         }
         else
-          place_text = true;
+          place_text(editor);
 
         break;
       }
@@ -2039,10 +1814,10 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
           // Doesn't make sense on the vlayer.
           if(mzx_world->current_board_id < mzx_world->num_boards - 1
            && editor->mode != EDIT_VLAYER)
-            change_to_board = mzx_world->current_board_id + 1;
+            set_current_board(editor, mzx_world->current_board_id + 1);
         }
         else
-          place_text = true;
+          place_text(editor);
 
         break;
       }
@@ -2211,7 +1986,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
             {
               if(is_robot(buffer->id))
               {
-                editor->robot_memory_timer = ROBOT_MEMORY_TIMER_MAX;
+                edit_menu_show_robot_memory(editor->edit_menu);
                 fix_caption(editor);
               }
               edited_storage = 1;
@@ -2287,12 +2062,12 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
           if(i < MAX_BOARDS)
           {
             if(add_board(mzx_world, i) >= 0)
-              change_to_board = i;
+              set_current_board(editor, i);
           }
         }
         else
         {
-          place_text = true;
+          place_text(editor);
         }
         break;
       }
@@ -2308,14 +2083,19 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
             editor->cursor_mode = CURSOR_BLOCK_SELECT;
           }
           else
-            change_to_board =
+          {
+            int change_to_board =
              choose_board(mzx_world, mzx_world->current_board_id,
              "Select current board:", 0);
+
+            set_current_board(editor, change_to_board);
+            break;
+          }
 
         }
         else
         {
-          place_text = true;
+          place_text(editor);
         }
         break;
       }
@@ -2339,7 +2119,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
         }
         else
         {
-          place_text = true;
+          place_text(editor);
         }
         break;
       }
@@ -2371,7 +2151,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
 
               if(del_board == current_board_id)
               {
-                change_to_board = 0;
+                set_current_board(editor, 0);
               }
               else
               {
@@ -2384,7 +2164,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
         }
         else
         {
-          place_text = true;
+          place_text(editor);
         }
         break;
       }
@@ -2401,7 +2181,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
         }
         else
         {
-          place_text = true;
+          place_text(editor);
         }
 
         break;
@@ -2426,7 +2206,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
         }
         else
         {
-          place_text = true;
+          place_text(editor);
         }
 
         break;
@@ -2466,7 +2246,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
         }
         else
         {
-          place_text = true;
+          place_text(editor);
         }
         break;
       }
@@ -2489,7 +2269,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
 
         if(editor->cursor_mode == CURSOR_TEXT)
         {
-          place_text = true;
+          place_text(editor);
         }
 
         break;
@@ -2533,8 +2313,8 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
                     editor->cursor_mode = CURSOR_PLACE;
                   }
 
-                  editor->clear_board_history = true;
-                  editor->clear_overlay_history = true;
+                  clear_board_history(editor);
+                  clear_overlay_history(editor);
 
                   editor->modified = true;
                 }
@@ -2660,7 +2440,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
 
             if(!cur_board->overlay_mode && editor->mode == EDIT_OVERLAY)
             {
-              editor->clear_overlay_history = true;
+              clear_overlay_history(editor);
               editor->mode = EDIT_BOARD;
             }
 
@@ -2669,7 +2449,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
         }
         else
         {
-          place_text = true;
+          place_text(editor);
         }
         break;
       }
@@ -2703,7 +2483,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
             {
               // Load world curr_file
               strcpy(editor->current_world, load_world);
-              if(!editor_reload_world(mzx_world, load_world, &ignore))
+              if(!editor_reload_world(editor, load_world))
               {
                 strcpy(editor->current_world, prev_world);
 
@@ -2734,9 +2514,9 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
                 editor->cursor_mode = CURSOR_PLACE;
               }
 
-              editor->clear_board_history = true;
-              editor->clear_overlay_history = true;
-              editor->clear_vlayer_history = true;
+              clear_board_history(editor);
+              clear_overlay_history(editor);
+              clear_vlayer_history(editor);
 
               editor->modified = false;
             }
@@ -2744,7 +2524,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
         }
         else
         {
-          place_text = true;
+          place_text(editor);
         }
         break;
       }
@@ -2798,7 +2578,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
                 if(is_robot(d_id))
                 {
                   edit_robot(mzx_world, cur_board->robot_list[d_param]);
-                  editor->robot_memory_timer = ROBOT_MEMORY_TIMER_MAX;
+                  edit_menu_show_robot_memory(editor->edit_menu);
                   fix_caption(editor);
                 }
                 else
@@ -2867,13 +2647,13 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
              (new_position != mzx_world->current_board_id))
             {
               move_current_board(mzx_world, new_position);
-              change_to_board = new_position;
+              set_current_board(editor, new_position);
               editor->modified = true;
             }
           }
         }
         else
-          place_text = true;
+          place_text(editor);
 
         break;
       }
@@ -2896,7 +2676,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
                 strcpy(cur_board->mod_playing, new_mod);
                 strcpy(mzx_world->real_mod_playing, new_mod);
                 fix_mod(editor);
-                editor->board_mod_timer = BOARD_MOD_TIMER_MAX;
+                edit_menu_show_board_mod(editor->edit_menu);
               }
             }
             else
@@ -2904,7 +2684,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
               cur_board->mod_playing[0] = 0;
               mzx_world->real_mod_playing[0] = 0;
               fix_mod(editor);
-              editor->board_mod_timer = BOARD_MOD_TIMER_MAX;
+              edit_menu_show_board_mod(editor->edit_menu);
             }
             editor->modified = true;
           }
@@ -2942,7 +2722,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
         }
         else
         {
-          place_text = true;
+          place_text(editor);
         }
         break;
       }
@@ -2985,7 +2765,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
         }
         else
         {
-          place_text = true;
+          place_text(editor);
         }
         break;
       }
@@ -3000,16 +2780,15 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
             if(editor->mode == EDIT_VLAYER)
             {
               if(size_pos_vlayer(mzx_world))
-                editor->clear_vlayer_history = true;
+                clear_vlayer_history(editor);
             }
             else
             {
               if(size_pos(mzx_world))
               {
                 set_update_done_current(mzx_world);
-
-                editor->clear_board_history = true;
-                editor->clear_overlay_history = true;
+                clear_board_history(editor);
+                clear_overlay_history(editor);
               }
             }
 
@@ -3054,7 +2833,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
         }
         else
         {
-          place_text = true;
+          place_text(editor);
         }
         break;
       }
@@ -3080,9 +2859,9 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
             fix_scroll(editor);
             fix_caption(editor);
 
-            editor->clear_board_history = true;
-            editor->clear_overlay_history = true;
-            editor->clear_vlayer_history = true;
+            clear_board_history(editor);
+            clear_overlay_history(editor);
+            clear_vlayer_history(editor);
 
             audio_end_module();
 
@@ -3093,7 +2872,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
 
         if(editor->cursor_mode == CURSOR_TEXT)
         {
-          place_text = true;
+          place_text(editor);
         }
         break;
       }
@@ -3142,7 +2921,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
         }
         else
         {
-          place_text = true;
+          place_text(editor);
         }
 
         break;
@@ -3158,22 +2937,18 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
           // FIXME
           break;
 
-          // Clear undo histories and prepare to reset them
+          // Clear undo histories
           // We don't want the undo buffer wasting memory while testing
-          destruct_undo_history(editor->board_history);
-          destruct_undo_history(editor->overlay_history);
-          destruct_undo_history(editor->vlayer_history);
-          editor->board_history = NULL;
-          editor->overlay_history = NULL;
-          editor->vlayer_history = NULL;
-          editor->clear_board_history = true;
-          editor->clear_overlay_history = true;
-          editor->clear_vlayer_history = true;
+          clear_board_history(editor);
+          clear_overlay_history(editor);
+          clear_vlayer_history(editor);
 
           if(!save_world(mzx_world, "__test.mzx", false, MZX_VERSION))
           {
             int world_version = mzx_world->version;
             char *return_dir = cmalloc(MAX_PATH);
+            boolean ignore;
+
             getcwd(return_dir, MAX_PATH);
 
             vquick_fadeout();
@@ -3199,7 +2974,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
 
             if(!reload_world(mzx_world, "__test.mzx", &ignore))
             {
-              if(!editor_reload_world(mzx_world, editor->current_world, &ignore))
+              if(!editor_reload_world(editor, editor->current_world))
                 create_blank_world(mzx_world);
 
               set_editor_mode(editor, EDIT_BOARD);
@@ -3248,7 +3023,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
 
         if(editor->cursor_mode == CURSOR_TEXT)
         {
-          place_text = true;
+          place_text(editor);
         }
 
         break;
@@ -3290,7 +3065,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
         }
         else
         {
-          place_text = true;
+          place_text(editor);
         }
         break;
       }
@@ -3415,7 +3190,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
         }
         else
         {
-          place_text = true;
+          place_text(editor);
         }
         break;
       }
@@ -3438,7 +3213,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
 
         if(editor->cursor_mode == CURSOR_TEXT)
         {
-          place_text = true;
+          place_text(editor);
         }
 
         break;
@@ -3470,7 +3245,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
                 block->selected = false;
               }
 
-              editor->clear_vlayer_history = true;
+              clear_vlayer_history(editor);
             }
           }
           else
@@ -3496,8 +3271,8 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
 
             fix_caption(editor);
 
-            editor->clear_board_history = true;
-            editor->clear_overlay_history = true;
+            clear_board_history(editor);
+            clear_overlay_history(editor);
 
             if(block->selected)
             {
@@ -3512,7 +3287,7 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
 
         if(editor->cursor_mode == CURSOR_TEXT)
         {
-          place_text = true;
+          place_text(editor);
         }
         break;
       }
@@ -3525,155 +3300,9 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
       default:
       {
         if(editor->cursor_mode == CURSOR_TEXT)
-          place_text = true;
-      }
-    }
+          place_text(editor);
 
-    // FIXME function?
-    if(change_to_board >= 0)
-    {
-      // Hopefully we won't be getting anything out of range but just in case
-      if(change_to_board >= mzx_world->num_boards)
-        change_to_board = mzx_world->num_boards - 1;
-
-      set_current_board(mzx_world, change_to_board);
-      cur_board = mzx_world->current_board;
-
-      if(!cur_board->overlay_mode || editor->mode == EDIT_VLAYER)
-        set_editor_mode(editor, EDIT_BOARD);
-
-      synchronize_board_values(editor);
-      fix_scroll(editor);
-      fix_caption(editor);
-
-      if(strcmp(cur_board->mod_playing, "*") &&
-       strcasecmp(cur_board->mod_playing,
-       mzx_world->real_mod_playing))
-        fix_mod(editor);
-
-      // Load the board charset and palette
-      if(editor_conf->editor_load_board_assets)
-        change_board_load_assets(mzx_world);
-
-      // Clear the local undo histories
-      editor->clear_board_history = true;
-      editor->clear_overlay_history = true;
-
-      editor->board_mod_timer = BOARD_MOD_TIMER_MAX;
-
-      change_to_board = -1; // FIXME irrelevant variable assignment after split
-      editor->modified = true;
-    }
-
-    // FIXME function?
-    if(cursor_move_x || cursor_move_y)
-    {
-      // Move the cursor
-      if(editor->cursor_x + cursor_move_x < 0)
-        cursor_move_x = -editor->cursor_x;
-
-      if(cursor_move_x + editor->cursor_x > editor->board_width - 1)
-        cursor_move_x = editor->board_width - editor->cursor_x - 1;
-
-      if(editor->cursor_y + cursor_move_y < 0)
-        cursor_move_y = -editor->cursor_y;
-
-      if(cursor_move_y + editor->cursor_y > editor->board_height - 1)
-        cursor_move_y = editor->board_height - editor->cursor_y - 1;
-
-      if(cursor_move_x)
-        cursor_move_y = 0;
-
-      if(cursor_move_x || cursor_move_y)
-      {
-        struct undo_history *h = NULL;
-        int offset = editor->cursor_x + (editor->cursor_y * editor->board_width);
-        int move_x = SGN(cursor_move_x);
-        int move_y = SGN(cursor_move_y);
-        int width = abs(cursor_move_x) + 1;
-        int height = abs(cursor_move_y) + 1;
-
-        if(move_x < 0)
-          offset -= width;
-
-        if(move_y < 0)
-          offset -= editor->board_width * height;
-
-        if(editor->cursor_mode == CURSOR_DRAW)
-        {
-          switch(editor->mode)
-          {
-            case EDIT_BOARD:
-              h = editor->board_history;
-              add_block_undo_frame(
-               mzx_world, h, cur_board, offset, width, height);
-              break;
-
-            case EDIT_OVERLAY:
-              h = editor->overlay_history;
-              add_layer_undo_frame(h, cur_board->overlay,
-               cur_board->overlay_color, editor->board_width, offset, width, height);
-              break;
-
-            case EDIT_VLAYER:
-              h = editor->vlayer_history;
-              add_layer_undo_frame(h, mzx_world->vlayer_chars,
-               mzx_world->vlayer_colors, editor->board_width, offset, width, height);
-              break;
-          }
-        }
-
-        do
-        {
-          editor->cursor_x += move_x;
-          editor->cursor_y += move_y;
-          cursor_move_x -= move_x;
-          cursor_move_y -= move_y;
-
-          if(editor->cursor_mode == CURSOR_DRAW)
-          {
-            // We're creating a history frame manually, so don't pass it.
-            buffer->param = place_current_at_xy(mzx_world, buffer,
-             editor->cursor_x, editor->cursor_y, editor->mode, NULL);
-            editor->modified = true;
-          }
-        }
-        while(cursor_move_x || cursor_move_y);
-
-        if(editor->cursor_mode == CURSOR_DRAW)
-          update_undo_frame(h);
-
-        fix_scroll(editor);
-      }
-    }
-
-    // FIXME part of the above function?
-    if(editor->cursor_mode == CURSOR_DRAW &&
-     editor_conf->editor_tab_focuses_view)
-    {
-      editor->scroll_x = editor->cursor_x - 40;
-      editor->scroll_y = editor->cursor_y - (editor->screen_height / 2);
-      fix_scroll(editor);
-    }
-
-    // FIXME function?
-    if(place_text)
-    {
-      key = get_key(keycode_unicode);
-      if(key != 0)
-      {
-        temp_buffer.id = __TEXT;
-        temp_buffer.param = key;
-        temp_buffer.color = buffer->color;
-        place_current_at_xy(mzx_world, &temp_buffer,
-         editor->cursor_x, editor->cursor_y, editor->mode, editor->cur_history);
-
-        if(editor->cursor_x < (editor->board_width - 1))
-          editor->cursor_x++;
-
-        fix_scroll(editor);
-
-        editor->modified = true;
+        break;
       }
     }
 
@@ -3704,9 +3333,9 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
   strcpy(curr_file, editor->current_world);
 
   // Free the undo data
-  destruct_undo_history(editor->board_history);
-  destruct_undo_history(editor->overlay_history);
-  destruct_undo_history(editor->vlayer_history);
+  clear_board_history(editor);
+  clear_overlay_history(editor);
+  clear_vlayer_history(editor);
 
   // Free the robot debugger data
   free_breakpoints();
@@ -3724,6 +3353,8 @@ static void __edit_world(struct world *mzx_world, boolean reload_curr_file)
   if(buffer->scroll->used)
     clear_scroll_contents(buffer->scroll);
 
+  // FIXME memory leak
+  free(editor->edit_menu);
   free(editor);
 }
 

@@ -44,15 +44,14 @@ enum context_type
 {
   // Core contexts.
   CTX_DEFAULT               = 0,
-  CTX_SUBCONTEXT            = -1,
-  CTX_TITLE_SCREEN          = -2,
+  CTX_TITLE_SCREEN          = -1,
   CTX_MAIN                  = 72,
   CTX_PLAY_GAME             = 91,
   CTX_CONFIGURE             = 92,
   CTX_DIALOG_BOX            = 98,
-  CTX_HELP_SYSTEM           = -3,
-  CTX_MAIN_MENU             = -4,
-  CTX_GAME_MENU             = -5,
+  CTX_HELP_SYSTEM           = -2,
+  CTX_MAIN_MENU             = -3,
+  CTX_GAME_MENU             = -4,
 
   // Network contexts.
   CTX_UPDATER               = 99,
@@ -101,17 +100,29 @@ struct global_data
 #endif
 };
 
+/** Core types. */
 typedef struct context context;
+typedef struct subcontext subcontext;
 typedef struct context_data context_data;
 typedef struct core_context core_context;
 
 /** Contains information related to the current MegaZeux state/interface/etc. */
 struct context
 {
-  core_context *root;
-  context_data *internal_data;
   struct global_data *data;
   struct world *world;
+  core_context *root;
+  context_data *internal_data;
+};
+
+/**
+ * Contains information for a subset of the current MegaZeux interface.
+ * Do not use with create_context or destroy_context.
+ */
+struct subcontext
+{
+  context ctx;
+  context *parent;
 };
 
 /**
@@ -127,8 +138,7 @@ CORE_LIBSPEC void set_caption(struct world *mzx_world, struct board *board,
  struct robot *robot, boolean modified);
 
 /**
- * Sets up a new context and adds it to the context stack. The new context
- * will be drawn last and update first, taking input precedence. At least one
+ * Sets up a new context and adds it to the context stack. At least one
  * update function must be provided.
  *
  * @param ctx               Optional newly allocated context to be initialized.
@@ -161,6 +171,38 @@ CORE_LIBSPEC void create_context(context *ctx, context *parent,
  */
 
 CORE_LIBSPEC void destroy_context(context *ctx);
+
+/**
+ * Sets up a new subcontext and adds it to a context. The new subcontext
+ * will be drawn last and update first, taking input precedence.
+ *
+ * @param sub               Optional newly allocated subcontext.
+ * @param parent            The context which created this context.
+ * @param draw_function     Optional function to draw this subcontext.
+ * @param key_function      Update function called to handle a keypress.
+ * @param click_function    Update function called to handle a mouse click.
+ * @param drag_function     Update function called to handle a mouse drag.
+ * @param idle_function     Update function called every frame.
+ * @param destroy_function  Optional function to be called on destruction.
+ */
+
+CORE_LIBSPEC void create_subcontext(subcontext *sub, context *parent,
+ void (*resume_function)(subcontext *),
+ void (*draw_function)(subcontext *),
+ boolean (*idle_function)(subcontext *),
+ boolean (*key_function)(subcontext *, int *key),
+ boolean (*click_function)(subcontext *, int *key, int button, int x, int y),
+ boolean (*drag_function)(subcontext *, int *key, int button, int x, int y),
+ void (*destroy_function)(subcontext *));
+
+/**
+ * Destroys a subcontext on its parent's subcontext stack.
+ * This will call the subcontext destroy function.
+ *
+ * @param sub           The subcontext to destroy.
+ */
+
+CORE_LIBSPEC void destroy_subcontext(subcontext *sub);
 
 /**
  * Get config information from a particular context.

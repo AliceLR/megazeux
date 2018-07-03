@@ -51,18 +51,35 @@ struct core_context
   boolean context_changed;
 };
 
-// Contains internal context data used to run contexts.
+/**
+ * Contains internal context data used to run contexts.
+ * Subcontexts also use this, though they take functions that use subcontext *.
+ * To avoid warnings, internally cast to functions that take context *.
+ */
+
+typedef void (*resume_fn)(context *);
+typedef void (*draw_fn)(context *);
+typedef boolean (*idle_fn)(context *);
+typedef boolean (*key_fn)(context *, int *key);
+typedef boolean (*click_fn)(context *, int *key, int button, int x, int y);
+typedef boolean (*drag_fn)(context *, int *key, int button, int x, int y);
+typedef void (*destroy_fn)(context *);
+
 struct context_data
 {
   enum context_type context_type;
   enum framerate_type framerate;
-  void (*resume_function)(context *);
-  void (*draw_function)(context *);
-  boolean (*idle_function)(context *);
-  boolean (*key_function)(context *, int *key);
-  boolean (*click_function)(context *, int *key, int button, int x, int y);
-  boolean (*drag_function)(context *, int *key, int button, int x, int y);
-  void (*destroy_function)(context *);
+  subcontext **children;
+  int num_children;
+  int num_children_alloc;
+
+  resume_fn   resume_function;
+  draw_fn     draw_function;
+  idle_fn     idle_function;
+  key_fn      key_function;
+  click_fn    click_function;
+  drag_fn     drag_function;
+  destroy_fn  destroy_function;
 };
 
 /**
@@ -184,10 +201,12 @@ static void print_ctx_stack(context *_ctx)
 #ifdef DEBUG
   core_context *root = _ctx->root;
   context_data *ctx_data;
+  context_data *sub_data;
   context *ctx;
   char number[12];
   const char *framerate_str;
   int i;
+  int i2;
 
   fprintf(stderr, "CTX STACK        | Res Drw Idl Key Clk Drg Dst | Fr. \n");
   fprintf(stderr, "-----------------|-----------------------------|-----\n");
@@ -197,6 +216,21 @@ static void print_ctx_stack(context *_ctx)
     ctx = root->ctx_stack[i];
     ctx_data = ctx->internal_data;
     sprintf(number, "%d", ctx_data->context_type);
+
+    for(i2 = ctx_data->num_children - 1; i2 >= 0; i2--)
+    {
+      sub_data = ctx_data->children[i2]->ctx.internal_data;
+
+      fprintf(stderr, "-> subcontext    | %3s %3s %3s %3s %3s %3s %3s |  -  \n",
+        sub_data->resume_function   ? "Yes" : "",
+        sub_data->draw_function     ? "Yes" : "",
+        sub_data->idle_function     ? "Yes" : "",
+        sub_data->key_function      ? "Yes" : "",
+        sub_data->click_function    ? "Yes" : "",
+        sub_data->drag_function     ? "Yes" : "",
+        sub_data->destroy_function  ? "Yes" : ""
+      );
+    }
 
     switch(ctx_data->framerate)
     {
@@ -221,6 +255,55 @@ static void print_ctx_stack(context *_ctx)
   fprintf(stderr, "\n");
   fflush(stderr);
 #endif
+}
+
+/**
+ * Add an element to a stack
+ */
+static void add_stack(void ***_stack, int *_num, int *_alloc, void *add)
+{
+  void **stack = *_stack;
+  int num = *_num;
+  int alloc = *_alloc;
+
+  if(num >= alloc)
+  {
+    if(alloc == 0)
+      alloc = 8;
+
+    while(num >= alloc)
+      alloc *= 2;
+
+    stack = crealloc(stack, alloc * sizeof(void *));
+    *_stack = stack;
+    *_alloc = alloc;
+  }
+
+  stack[num] = add;
+  *_num = (num + 1);
+}
+
+/**
+ * Remove an element from a stack.
+ */
+static void remove_stack(void **stack, int *_num, void *del)
+{
+  int num = *_num;
+  int i;
+
+  for(i = num - 1; i >= 0; i--)
+  {
+    if(stack[i] == del)
+    {
+      if(i < num - 1)
+        memmove(stack + i, stack + i + 1, num - i - 1);
+
+      *_num = (num - 1);
+      return;
+    }
+  }
+
+  error("Context code bug", 2, 4, 0x2B06);
 }
 
 /**
@@ -265,52 +348,109 @@ void create_context(context *ctx, context *parent,
   ctx_data->drag_function = drag_function;
   ctx_data->idle_function = idle_function;
   ctx_data->destroy_function = destroy_function;
+  ctx_data->children = NULL;
+  ctx_data->num_children = 0;
+  ctx_data->num_children_alloc = 0;
 
-  if(root->ctx_stack_size >= root->ctx_stack_alloc)
-  {
-    if(root->ctx_stack_alloc == 0)
-      root->ctx_stack_alloc = 8;
-
-    while(root->ctx_stack_size >= root->ctx_stack_alloc)
-      root->ctx_stack_alloc *= 2;
-
-    root->ctx_stack =
-     crealloc(root->ctx_stack, root->ctx_stack_alloc * sizeof(context *));
-  }
-
-  root->ctx_stack[root->ctx_stack_size] = ctx;
-  root->ctx_stack_size++;
+  add_stack((void ***) &(root->ctx_stack),
+   &(root->ctx_stack_size), &(root->ctx_stack_alloc), ctx);
 
   root->context_changed = true;
 }
 
 /**
- * Destroy the target context and all contexts above it.
+ * Destroy the target context from the context stack.
  * Flag the core_context to abort further execution of the cycle.
  */
 
-void destroy_context(context *target)
+void destroy_context(context *ctx)
 {
-  core_context *root = target->root;
-  context_data *ctx_data;
-  context *ctx;
+  core_context *root = ctx->root;
+  context_data *ctx_data = ctx->internal_data;
 
-  if(!root->ctx_stack_size)
-    return;
+  // If the context isn't on the stack, this will error.
+  remove_stack((void **)(root->ctx_stack), &(root->ctx_stack_size), ctx);
 
-  do
+  // Also, destroy all children.
+  if(ctx_data->num_children)
   {
-    root->ctx_stack_size--;
-    ctx = root->ctx_stack[root->ctx_stack_size];
-    ctx_data = ctx->internal_data;
-    if(ctx_data->destroy_function)
-      ctx_data->destroy_function(ctx);
-    free(ctx_data);
-    free(ctx);
+    int i;
+    for(i = ctx_data->num_children - 1; i >= 0; i++)
+      destroy_subcontext(ctx_data->children[i]);
   }
-  while(root->ctx_stack_size && ctx != target);
+
+  if(ctx_data->destroy_function)
+    ctx_data->destroy_function(ctx);
+
+  free(ctx_data->children);
+  free(ctx_data);
+  free(ctx);
 
   root->context_changed = true;
+}
+
+/**
+ * Creates a subcontext and adds it to the parent context.
+ */
+
+CORE_LIBSPEC void create_subcontext(subcontext *sub, context *parent,
+ void (*resume_function)(subcontext *),
+ void (*draw_function)(subcontext *),
+ boolean (*idle_function)(subcontext *),
+ boolean (*key_function)(subcontext *, int *key),
+ boolean (*click_function)(subcontext *, int *key, int button, int x, int y),
+ boolean (*drag_function)(subcontext *, int *key, int button, int x, int y),
+ void (*destroy_function)(subcontext *))
+{
+  core_context *root = parent->root;
+  context_data *parent_data = parent->internal_data;
+  context_data *sub_data;
+  context *ctx;
+
+  if(!sub) sub = cmalloc(sizeof(struct subcontext));
+  sub_data = cmalloc(sizeof(struct context_data));
+
+  ctx = &(sub->ctx);
+  ctx->root = root;
+  ctx->internal_data = sub_data;
+  ctx->world = parent->world;
+  ctx->data = parent->data;
+  sub->parent = parent;
+  sub_data->resume_function = (resume_fn)resume_function;
+  sub_data->draw_function = (draw_fn)draw_function;
+  sub_data->key_function = (key_fn)key_function;
+  sub_data->click_function = (click_fn)click_function;
+  sub_data->drag_function = (drag_fn)drag_function;
+  sub_data->idle_function = (idle_fn)idle_function;
+  sub_data->destroy_function = (destroy_fn)destroy_function;
+
+  // FIXME should be an error condition
+  if(!parent_data) return;
+
+  add_stack((void ***) &(parent_data->children),
+   &(parent_data->num_children), &(parent_data->num_children_alloc), ctx);
+}
+
+/**
+ * Destroys a subcontext.
+ */
+
+CORE_LIBSPEC void destroy_subcontext(subcontext *sub)
+{
+  context *parent = sub->parent;
+  context_data *parent_data = parent->internal_data;
+  context_data *sub_data = sub->ctx.internal_data;
+
+  // If the subcontext isn't on the stack, this will error.
+  remove_stack((void **)(parent_data->children), &(parent_data->num_children),
+   sub);
+
+  // This function actually takes subcontext *, but was previously cast.
+  if(sub_data->destroy_function)
+    sub_data->destroy_function((void *)sub);
+
+  free(sub_data);
+  free(sub);
 }
 
 /**
@@ -351,53 +491,52 @@ core_context *core_init(struct world *mzx_world, struct global_data *data)
 }
 
 /**
- * Execute the resume function for each current context after a context change.
+ * Execute the resume function for the current context after a context change.
  */
 
 static void core_resume(core_context *root)
 {
-  int i = root->ctx_stack_size - 1;
-  context *ctx;
+  context *ctx = root->ctx_stack[root->ctx_stack_size - 1];
+  context_data *ctx_data = ctx->internal_data;
+  context_data *sub_data;
+  subcontext *sub;
+  int i;
 
-  // Find the first context to resume.
-  for(; i > 0; i--)
-  {
-    ctx = root->ctx_stack[i];
-    if(ctx->internal_data->context_type != CTX_SUBCONTEXT)
-      break;
-  }
+  if(ctx_data->resume_function)
+    ctx_data->resume_function(ctx);
 
-  for(; i < root->ctx_stack_size; i++)
+  for(i = 0; i < ctx_data->num_children; i++)
   {
-    ctx = root->ctx_stack[i];
-    if(ctx->internal_data->resume_function)
-      ctx->internal_data->resume_function(ctx);
+    // This function actually takes subcontext *, but was previously cast.
+    sub = ctx_data->children[i];
+    sub_data = ((context *)sub)->internal_data;
+    if(sub_data->resume_function)
+      sub_data->resume_function((void *)sub);
   }
 }
 
 /**
- * Draw all current contexts. Drawing starts at the lowest context allowed to
- * draw and progresses upward to the current context.
+ * Draw the current context.
  */
 
 static void core_draw(core_context *root)
 {
-  int i = root->ctx_stack_size - 1;
-  context *ctx;
+  context *ctx = root->ctx_stack[root->ctx_stack_size - 1];
+  context_data *ctx_data = ctx->internal_data;
+  context_data *sub_data;
+  subcontext *sub;
+  int i;
 
-  // Find the first context to draw.
-  for(; i > 0; i--)
-  {
-    ctx = root->ctx_stack[i];
-    if(ctx->internal_data->context_type != CTX_SUBCONTEXT)
-      break;
-  }
+  if(ctx_data->draw_function)
+    ctx_data->draw_function(ctx);
 
-  for(; i < root->ctx_stack_size; i++)
+  for(i = 0; i < ctx_data->num_children; i++)
   {
-    ctx = root->ctx_stack[i];
-    if(ctx->internal_data->draw_function)
-      ctx->internal_data->draw_function(ctx);
+    // This function actually takes subcontext *, but was previously cast.
+    sub = ctx_data->children[i];
+    sub_data = ((context *)sub)->internal_data;
+    if(sub_data->draw_function)
+      sub_data->draw_function((void *)sub);
   }
 }
 
@@ -482,12 +621,15 @@ static boolean allow_configure(core_context *root)
 
 static void core_update(core_context *root)
 {
-  context *ctx;
-  context_data *ctx_data;
+  context *ctx = root->ctx_stack[root->ctx_stack_size - 1];
+  context_data *ctx_data = ctx->internal_data;
+  context_data *cur_data;
+  void *cur;
+
   boolean mouse_handled = false;
   boolean key_handled = false;
 
-  int i = root->ctx_stack_size - 1;
+  int i = ctx_data->num_children - 1;
 
   int key = get_key(keycode_internal_wrt_numlock);
   int mouse_press = get_mouse_press_ext();
@@ -499,13 +641,23 @@ static void core_update(core_context *root)
 
   do
   {
-    ctx = root->ctx_stack[i];
-    ctx_data = ctx->internal_data;
-    i--;
-
-    if(ctx_data->idle_function)
+    // Count down to -1 and break when cur equals ctx.
+    // Slightly convoluted, but better than duplicating this loop's logic.
+    if(i < 0)
     {
-      if(ctx_data->idle_function(ctx))
+      cur = ctx;
+      cur_data = ctx_data;
+    }
+    else
+    {
+      cur = ctx_data->children[i];
+      cur_data = ((context *)cur)->internal_data;
+      i--;
+    }
+
+    if(cur_data->idle_function)
+    {
+      if(cur_data->idle_function(cur))
       {
         mouse_handled = true;
         key_handled = true;
@@ -519,17 +671,17 @@ static void core_update(core_context *root)
     {
       if(mouse_drag_state)
       {
-        if(ctx_data->drag_function && (mouse_press <= MOUSE_BUTTON_RIGHT))
+        if(cur_data->drag_function && (mouse_press <= MOUSE_BUTTON_RIGHT))
           mouse_handled |=
-            ctx_data->drag_function(ctx, &key, mouse_press, mouse_x, mouse_y);
+            cur_data->drag_function(cur, &key, mouse_press, mouse_x, mouse_y);
       }
       else
 
       if(mouse_press)
       {
-        if(ctx_data->click_function)
+        if(cur_data->click_function)
           mouse_handled |=
-            ctx_data->click_function(ctx, &key, mouse_press, mouse_x, mouse_y);
+            cur_data->click_function(cur, &key, mouse_press, mouse_x, mouse_y);
       }
 
       if(root->context_changed || root->full_exit)
@@ -538,20 +690,18 @@ static void core_update(core_context *root)
 
     if(!key_handled)
     {
-      if(key && ctx_data->key_function)
-        key_handled |= ctx_data->key_function(ctx, &key);
+      if(key && cur_data->key_function)
+        key_handled |= cur_data->key_function(cur, &key);
 
       if(root->context_changed || root->full_exit)
         return;
     }
   }
-  while(i >= 0 && ctx_data->context_type == CTX_SUBCONTEXT);
+  while(cur != ctx);
 
   // Global key handler.
   if(!key_handled)
   {
-    ctx = root->ctx_stack[root->ctx_stack_size - 1];
-
     switch(key)
     {
 #ifdef CONFIG_HELPSYS
@@ -768,9 +918,11 @@ void core_exit(context *ctx)
 
 void core_free(core_context *root)
 {
+  int i;
+
   // Destroy all contexts on the stack.
-  if(root->ctx_stack_size)
-    destroy_context(root->ctx_stack[0]);
+  for(i = root->ctx_stack_size - 1; i >= 0; i--)
+    destroy_context(root->ctx_stack[i]);
 
   free(root->ctx_stack);
   free(root);
