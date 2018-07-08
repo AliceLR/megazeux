@@ -192,19 +192,53 @@ void set_caption(struct world *mzx_world, struct board *board,
   set_window_caption(caption);
 }
 
+#ifdef DEBUG
+/**
+ * Debug: print a line of the context stack.
+ */
+static void print_ctx_line(context_data *ctx_data, boolean is_sub)
+{
+  char name[17] = "  -> subcontext";
+  const char *framerate_str = "-";
+  boolean click_drag_same = false;
+
+  if(!is_sub)
+  {
+    sprintf(name, "%d", ctx_data->context_type);
+    switch(ctx_data->framerate)
+    {
+      case FRAMERATE_UI:            framerate_str = "UI "; break;
+      case FRAMERATE_UI_INTERRUPT:  framerate_str = "Int"; break;
+      case FRAMERATE_MZX_SPEED:     framerate_str = "MZX"; break;
+      default:                      framerate_str = "???"; break;
+    }
+  }
+
+  if(ctx_data->click_function == ctx_data->drag_function)
+    click_drag_same = true;
+
+  fprintf(stderr, "%-*.*s | %3s %3s %3s %3s %3s %3s %3s | %-3s \n",
+    16, 16, name,
+    ctx_data->resume_function   ? "Yes" : "",
+    ctx_data->draw_function     ? "Yes" : "",
+    ctx_data->idle_function     ? "Yes" : "",
+    ctx_data->key_function      ? "Yes" : "",
+    ctx_data->click_function    ? "Yes" : "",
+    ctx_data->drag_function     ? click_drag_same ? "<- " : "Yes" : "",
+    ctx_data->destroy_function  ? "Yes" : "",
+    framerate_str
+  );
+}
+
 /**
  * Debug: print the entire context stack to the terminal.
  */
 
-static void print_ctx_stack(context *_ctx)
+static void print_core_stack(context *_ctx)
 {
-#ifdef DEBUG
   core_context *root = _ctx->root;
   context_data *ctx_data;
   context_data *sub_data;
-  context *ctx;
-  char number[12];
-  const char *framerate_str;
   int i;
   int i2;
 
@@ -213,49 +247,22 @@ static void print_ctx_stack(context *_ctx)
 
   for(i = root->ctx_stack_size - 1; i >= 0; i--)
   {
-    ctx = root->ctx_stack[i];
-    ctx_data = ctx->internal_data;
-    sprintf(number, "%d", ctx_data->context_type);
+    ctx_data = root->ctx_stack[i]->internal_data;
 
     for(i2 = ctx_data->num_children - 1; i2 >= 0; i2--)
     {
       sub_data = ctx_data->children[i2]->ctx.internal_data;
-
-      fprintf(stderr, "-> subcontext    | %3s %3s %3s %3s %3s %3s %3s |  -  \n",
-        sub_data->resume_function   ? "Yes" : "",
-        sub_data->draw_function     ? "Yes" : "",
-        sub_data->idle_function     ? "Yes" : "",
-        sub_data->key_function      ? "Yes" : "",
-        sub_data->click_function    ? "Yes" : "",
-        sub_data->drag_function     ? "Yes" : "",
-        sub_data->destroy_function  ? "Yes" : ""
-      );
+      print_ctx_line(sub_data, true);
     }
 
-    switch(ctx_data->framerate)
-    {
-      case FRAMERATE_UI:            framerate_str = "UI "; break;
-      case FRAMERATE_UI_INTERRUPT:  framerate_str = "Int"; break;
-      case FRAMERATE_MZX_SPEED:     framerate_str = "MZX"; break;
-      default:                      framerate_str = "???"; break;
-    }
-
-    fprintf(stderr, "%-*.*s | %3s %3s %3s %3s %3s %3s %3s | %3s \n",
-      16, 16, number,
-      ctx_data->resume_function   ? "Yes" : "",
-      ctx_data->draw_function     ? "Yes" : "",
-      ctx_data->idle_function     ? "Yes" : "",
-      ctx_data->key_function      ? "Yes" : "",
-      ctx_data->click_function    ? "Yes" : "",
-      ctx_data->drag_function     ? "Yes" : "",
-      ctx_data->destroy_function  ? "Yes" : "",
-      framerate_str
-    );
+    print_ctx_line(ctx_data, false);
   }
   fprintf(stderr, "\n");
   fflush(stderr);
-#endif
 }
+#else // !DEBUG
+static inline void print_core_stack(context *_ctx) {}
+#endif // !DEBUG
 
 /**
  * Add an element to a stack
@@ -352,6 +359,9 @@ void create_context(context *ctx, context *parent,
   ctx_data->num_children = 0;
   ctx_data->num_children_alloc = 0;
 
+  if(!root)
+    error("Context code bug", 2, 4, 0x2B07);
+
   add_stack((void ***) &(root->ctx_stack),
    &(root->ctx_stack_size), &(root->ctx_stack_alloc), ctx);
 
@@ -375,7 +385,7 @@ void destroy_context(context *ctx)
   if(ctx_data->num_children)
   {
     int i;
-    for(i = ctx_data->num_children - 1; i >= 0; i++)
+    for(i = ctx_data->num_children - 1; i >= 0; i--)
       destroy_subcontext(ctx_data->children[i]);
   }
 
@@ -424,8 +434,8 @@ CORE_LIBSPEC void create_subcontext(subcontext *sub, context *parent,
   sub_data->idle_function = (idle_fn)idle_function;
   sub_data->destroy_function = (destroy_fn)destroy_function;
 
-  // FIXME should be an error condition
-  if(!parent_data) return;
+  if(!parent_data)
+    error("Context code bug", 2, 4, 0x2B08);
 
   add_stack((void ***) &(parent_data->children),
    &(parent_data->num_children), &(parent_data->num_children_alloc), ctx);
@@ -462,7 +472,7 @@ void set_context_framerate_mode(context *ctx, enum framerate_type framerate)
   if(ctx->internal_data->framerate != framerate)
   {
     ctx->internal_data->framerate = framerate;
-    print_ctx_stack(ctx);
+    print_core_stack(ctx);
   }
 }
 
@@ -564,7 +574,7 @@ static boolean is_on_stack(core_context *root, enum context_type type)
 static boolean allow_help_system(core_context *root)
 {
   struct world *mzx_world = ((context *)root)->world;
-  struct config_info *conf = &(mzx_world->conf); //FIXME
+  struct config_info *conf = get_config((context *)root);
 
   if(is_on_stack(root, CTX_HELP_SYSTEM))
     return false;
@@ -588,7 +598,7 @@ static boolean allow_help_system(core_context *root)
 static boolean allow_configure(core_context *root)
 {
   struct world *mzx_world = ((context *)root)->world;
-  struct config_info *conf = &(mzx_world->conf); //FIXME
+  struct config_info *conf = get_config((context *)root);
 
   if(is_on_stack(root, CTX_CONFIGURE))
     return false;
@@ -614,9 +624,17 @@ static boolean allow_configure(core_context *root)
 }
 
 /**
- * Update all current contexts, handling input and idle activity.
- * This update starts at the top of the stack and continues downward as allowed
- * by the settings of the contexts.
+ * Update the current context, handling input and idle activity.
+ * If any subcontexts are attached to the context, they will be handled from
+ * most recent to oldest, and the context will be handled last. Notes:
+ *
+ * 1) Execution order: Idle -> Click OR Drag -> Key
+ * 2) A true return value of idle cancels both key and mouse handling.
+ * 3) A true return value of key cancels key handling.
+ * 4) A true return value of click or drag cancels mouse handling.
+ * 5) Click function retriggers on autorepeats.
+ * 6) Drag triggers after first click frame.
+ * 7) Drag always takes precedence over click, including autorepeats.
  */
 
 static void core_update(core_context *root)
@@ -631,6 +649,7 @@ static void core_update(core_context *root)
 
   int i = ctx_data->num_children - 1;
 
+  boolean exit_status = get_exit_status();
   int key = get_key(keycode_internal_wrt_numlock);
   int mouse_press = get_mouse_press_ext();
   int mouse_drag_state = get_mouse_drag();
@@ -669,19 +688,17 @@ static void core_update(core_context *root)
 
     if(!mouse_handled)
     {
-      if(mouse_drag_state)
+      if(mouse_drag_state && cur_data->drag_function)
       {
-        if(cur_data->drag_function && (mouse_press <= MOUSE_BUTTON_RIGHT))
-          mouse_handled |=
-            cur_data->drag_function(cur, &key, mouse_press, mouse_x, mouse_y);
+        mouse_handled |=
+         cur_data->drag_function(cur, &key, mouse_press, mouse_x, mouse_y);
       }
       else
 
-      if(mouse_press)
+      if(mouse_press && cur_data->click_function)
       {
-        if(cur_data->click_function)
-          mouse_handled |=
-            cur_data->click_function(cur, &key, mouse_press, mouse_x, mouse_y);
+        mouse_handled |=
+         cur_data->click_function(cur, &key, mouse_press, mouse_x, mouse_y);
       }
 
       if(root->context_changed || root->full_exit)
@@ -690,7 +707,7 @@ static void core_update(core_context *root)
 
     if(!key_handled)
     {
-      if(key && cur_data->key_function)
+      if((key || exit_status) && cur_data->key_function)
         key_handled |= cur_data->key_function(cur, &key);
 
       if(root->context_changed || root->full_exit)
@@ -772,7 +789,7 @@ void core_run(core_context *root)
   {
     if(root->context_changed)
     {
-      print_ctx_stack((context *)root);
+      print_core_stack((context *)root);
       force_release_all_keys();
       core_resume(root);
       root->context_changed = false;
@@ -874,7 +891,9 @@ void core_run(core_context *root)
       {
         average_fps =
           1.0 * total_fps / (fps_history_count - 2) * (1000.0 / FPS_INTERVAL);
-        set_caption(ctx->world, NULL, NULL, 0);
+
+        if(!ctx->world->editing)
+          set_caption(ctx->world, NULL, NULL, 0);
       }
       fps_previous_ticks += FPS_INTERVAL;
 
@@ -976,7 +995,7 @@ void pop_context(void)
 
 // Editor external function pointers (NULL by default).
 
-void (*edit_world)(struct world *mzx_world, boolean reload_curr_file);
+void (*edit_world)(context *parent, boolean reload_curr_file);
 void (*debug_counters)(struct world *mzx_world);
 void (*draw_debug_box)(struct world *mzx_world, int x, int y, int d_x, int d_y,
  int show_keys);

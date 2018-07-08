@@ -130,10 +130,8 @@ void fill_area(struct world *mzx_world, struct buffer_info *buffer,
   }
   else
   {
-    // Layers don't have variable size undo frames because they're
-    // much lighter than the board; just save the whole thing
-    add_layer_undo_frame(history, level_id, level_color, board_width, 0,
-     board_width, board_height);
+    add_layer_undo_pos_frame(history, level_id, level_color, board_width,
+     buffer, x, y);
   }
 
   queue = cmalloc(QUEUE_SIZE * sizeof(struct queue_elem));
@@ -174,8 +172,7 @@ void fill_area(struct world *mzx_world, struct buffer_info *buffer,
     do
     {
       // Update the undo frame for the new position, then fill
-      if(mode == EDIT_BOARD)
-        add_board_undo_position(history, x, y);
+      add_undo_position(history, x, y);
 
       // If we're filling storage objects, this will return -1 when we're out
       // of IDs to assign to them. In this case, abort.

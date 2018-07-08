@@ -57,6 +57,8 @@ enum context_type
   CTX_UPDATER               = 99,
 
   // Editor contexts.
+  CTX_EDITOR                = -100,
+  CTX_EDITOR_VIEW_BOARD     = -101,
   CTX_BLOCK_CMD             = 73,
   CTX_BLOCK_TYPE            = 74,
   CTX_CHOOSE_CHARSET        = 75,
@@ -279,7 +281,7 @@ CORE_LIBSPEC void pop_context(void);
 
 // Editor external function pointers.
 
-CORE_LIBSPEC extern void (*edit_world)(struct world *mzx_world,
+CORE_LIBSPEC extern void (*edit_world)(context *parent,
  boolean reload_curr_file);
 CORE_LIBSPEC extern void (*debug_counters)(struct world *mzx_world);
 CORE_LIBSPEC extern void (*draw_debug_box)(struct world *mzx_world,

@@ -20,7 +20,7 @@
  */
 
 #include "../core.h"
-#include "../event.h" // FIXME remove
+#include "../event.h"
 #include "../idput.h"
 #include "../graphics.h"
 #include "../window.h"
@@ -413,7 +413,7 @@ static boolean edit_menu_idle(subcontext *ctx)
   return false;
 }
 
-static boolean edit_menu_click(subcontext *ctx, int *key, int button,
+static boolean edit_menu_mouse(subcontext *ctx, int *key, int button,
  int x, int y)
 {
   struct edit_menu_subcontext *edit_menu = (struct edit_menu_subcontext *)ctx;
@@ -481,8 +481,8 @@ subcontext *create_edit_menu(context *parent)
     edit_menu_draw,
     edit_menu_idle,
     edit_menu_key,
-    edit_menu_click,
-    NULL,
+    edit_menu_mouse,
+    edit_menu_mouse,
     NULL
   );
 
@@ -508,22 +508,6 @@ void update_edit_menu(subcontext *ctx, enum editor_mode mode,
   edit_menu->screen_height = screen_height;
   edit_menu->buffer = buffer;
   edit_menu->use_default_color = use_default_color;
-
-  // FIXME remove this block
-  {
-    int key = get_key(keycode_internal_wrt_numlock);
-    int button = get_mouse_status();
-    int mouse_x, mouse_y;
-
-    get_mouse_position(&mouse_x, &mouse_y);
-
-    edit_menu_idle(ctx);
-    if(button)
-      edit_menu_click(ctx, &key, button, mouse_x, mouse_y);
-    if(key)
-      edit_menu_key(ctx, &key);
-    edit_menu_draw(ctx);
-  }
 }
 
 void edit_menu_show_board_mod(subcontext *ctx)

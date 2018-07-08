@@ -811,9 +811,10 @@ static boolean title_key(context *ctx, int *key)
         // Editor
         sfx_clear_queue();
         vquick_fadeout();
-        edit_world(mzx_world, reload_curr_file_in_editor);
         title->need_reload = true;
         title->fade_in = true;
+
+        edit_world(ctx, reload_curr_file_in_editor);
       }
       return true;
     }
@@ -935,7 +936,7 @@ void title_screen(context *parent)
   if(edit_world && conf->startup_editor)
   {
     title->load_dialog_on_failed_load = false;
-    edit_world(((context *)title)->world, true);
+    edit_world((context *)title, true);
   }
 
   default_palette();

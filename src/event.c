@@ -729,6 +729,17 @@ Uint32 get_mouse_press_ext(void)
   return status->mouse_button;
 }
 
+boolean get_mouse_held(int button)
+{
+  const struct buffered_status *status = load_status();
+
+  if(button >= 1 && button <= 32)
+    if(status->mouse_button_state & MOUSE_BUTTON(button))
+      return true;
+
+  return false;
+}
+
 Uint32 get_mouse_status(void)
 {
   const struct buffered_status *status = load_status();

@@ -259,6 +259,7 @@ CORE_LIBSPEC Uint32 get_red_component(Uint32 color);
 CORE_LIBSPEC Uint32 get_green_component(Uint32 color);
 CORE_LIBSPEC Uint32 get_blue_component(Uint32 color);
 CORE_LIBSPEC Uint32 get_color_luma(Uint32 color);
+CORE_LIBSPEC Uint32 get_fade_status(void);
 CORE_LIBSPEC void vquick_fadeout(void);
 CORE_LIBSPEC void insta_fadein(void);
 CORE_LIBSPEC void insta_fadeout(void);
@@ -305,7 +306,6 @@ void ec_clear_set(void);
 
 void set_color_intensity(Uint32 color, Uint32 percent);
 Uint32 get_color_intensity(Uint32 color);
-Uint32 get_fade_status(void);
 void save_indices(void *buffer);
 void load_indices(void *buffer, size_t size);
 void load_indices_direct(void *buffer, size_t size);

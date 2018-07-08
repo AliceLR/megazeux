@@ -145,6 +145,7 @@ CORE_LIBSPEC void get_mouse_position(int *x, int *y);
 CORE_LIBSPEC void get_real_mouse_position(int *x, int *y);
 CORE_LIBSPEC Uint32 get_mouse_press(void);
 CORE_LIBSPEC Uint32 get_mouse_press_ext(void);
+CORE_LIBSPEC boolean get_mouse_held(int button);
 CORE_LIBSPEC Uint32 get_mouse_status(void);
 CORE_LIBSPEC void warp_mouse(Uint32 x, Uint32 y);
 CORE_LIBSPEC void warp_real_mouse_x(Uint32 x);
