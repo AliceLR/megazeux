@@ -259,9 +259,17 @@ endif
 
 ifeq (${BUILD_AUDIO},1)
 audio_cobjs := \
- ${audio_obj}/audio.o ${audio_obj}/audio_pcs.o                       \
- ${audio_obj}/audio_vorbis.o ${audio_obj}/audio_wav.o                \
- ${audio_obj}/ext.o ${audio_obj}/sampled_stream.o ${audio_obj}/sfx.o
+ ${audio_obj}/audio.o          \
+ ${audio_obj}/audio_pcs.o      \
+ ${audio_obj}/audio_wav.o      \
+ ${audio_obj}/ext.o            \
+ ${audio_obj}/sampled_stream.o \
+ ${audio_obj}/sfx.o
+
+ifneq (${VORBIS},)
+audio_cobjs += \
+ ${audio_obj}/audio_vorbis.o
+endif
 
 core_cobjs += ${audio_cobjs}
 core_flags += ${VORBIS_CFLAGS}

@@ -45,8 +45,11 @@
 #error Can only have one module system enabled concurrently!
 #endif
 
-#include "audio_vorbis.h"
 #include "audio_wav.h"
+
+#if defined(CONFIG_VORBIS)
+#include "audio_vorbis.h"
+#endif
 
 #ifdef CONFIG_MODPLUG
 #include "audio_modplug.h"
@@ -251,8 +254,11 @@ void init_audio(struct config_info *conf)
   audio.max_simultaneous_samples = -1;
   audio.max_simultaneous_samples_config = conf->max_simultaneous_samples;
 
-  init_vorbis(conf);
   init_wav(conf);
+
+#ifdef CONFIG_VORBIS
+  init_vorbis(conf);
+#endif
 
 #ifdef CONFIG_MODPLUG
   init_modplug(conf);

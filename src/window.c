@@ -39,10 +39,6 @@
 #include <windows.h>
 #endif
 
-#ifdef CONFIG_WII
-#include <sys/iosupport.h>
-#endif
-
 #include "board.h"
 #include "const.h"
 #include "core.h"
@@ -59,6 +55,10 @@
 #include "util.h"
 
 #include "audio/sfx.h"
+
+#ifdef CONFIG_WII
+#include <sys/iosupport.h>
+#endif
 
 #define NUM_SAVSCR 6
 

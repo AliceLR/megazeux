@@ -149,4 +149,5 @@ GitHub, or the DigitalMZX forums.
 
 [Official MegaZeux game archive](http://vault.digitalmzx.net/) <br/>
 [MegaZeux help file](http://vault.digitalmzx.net/help.php) <br/>
-[Development roadmap](http://www.digitalmzx.net/forums/index.php?showtopic=15226)
+[Development roadmap](http://www.digitalmzx.net/forums/index.php?showtopic=15226) <br/>
+[Compiling MegaZeux on the official Wiki](https://www.digitalmzx.net/wiki/index.php?title=Compiling)

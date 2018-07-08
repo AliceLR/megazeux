@@ -1,14 +1,11 @@
 #!/bin/bash
-# $1 = $DEVKITPRO
-# $2 = $DEVKITPSP
 
-[ -z "$1" ] && { echo "argument 1 required."; exit 1; }
-[ -z "$2" ] && { echo "argument 2 required."; exit 1; }
+[ -z "$DEVKITPRO" ] && { echo "DEVKITPRO environment variable must be set!"; exit 1; }
+[ -z "$DEVKITPSP" ] && { echo "DEVKITPSP environment variable must be set!"; exit 1; }
 
 export PORTS_REPO=https://github.com/pspdev/psp-ports.git
 
-export DEVKITPRO=$1
-export DEVKITPSP=$2
+export DEVKITPSP=`cygpath -u "$DEVKITPSP"`
 export PATH="$PATH:$DEVKITPSP/bin"
 
 
@@ -21,9 +18,9 @@ cd /mzx-build-workingdir
 rm -rf psp-ports
 git clone $PORTS_REPO "psp-ports"
 
-# The copy of the SDK distributed with the Windows version of
-# devkitPro is missing an include. If the include is missing,
-# patch it back in.
+# The copy of the SDK formerly distributed with the Windows version of
+# devkitPro was missing an include. If the include is missing, patch
+# it back in.
 
 if ! grep -q "psptypes" $DEVKITPSP/psp/sdk/include/pspge.h ; then
   patch $DEVKITPSP/psp/sdk/include/pspge.h /dk-patches/pspge.patch
