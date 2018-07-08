@@ -1,17 +1,13 @@
 #!/bin/bash
-# $1 = $DEVKITPRO
-# $2 = $DEVKITARM
 
-[ -z "$1" ] && { echo "argument 1 required."; exit 1; }
-[ -z "$2" ] && { echo "argument 2 required."; exit 1; }
+[ -z "$DEVKITPRO" ] && { echo "DEVKITPRO environment variable must be set!"; exit 1; }
 
 export BANNERTOOL_REPO=https://github.com/Steveice10/bannertool
 export BUILDTOOLS_REPO=https://github.com/Steveice10/buildtools
 export    MAKEROM_REPO=https://github.com/profi200/Project_CTR
 
-export DEVKITPRO=$1
-export DEVKITARM=$2
-export PATH="$DEVKITARM/bin:$PATH"
+export DEVKITPRO=`cygpath -u "$DEVKITPRO"`
+export PATH="$DEVKITPRO/devkitARM/bin:$PATH"
 
 
 echo ""

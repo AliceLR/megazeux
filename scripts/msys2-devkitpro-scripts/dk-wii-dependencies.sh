@@ -1,15 +1,11 @@
 #!/bin/bash
-# $1 = $DEVKITPRO
-# $2 = $DEVKITPPC
 
-[ -z "$1" ] && { echo "argument 1 required."; exit 1; }
-[ -z "$2" ] && { echo "argument 2 required."; exit 1; }
+[ -z "$DEVKITPRO" ] && { echo "DEVKITPRO environment variable must be set!"; exit 1; }
 
 export SDL_WII_REPO=https://github.com/dborth/sdl-wii.git
 
-export DEVKITPRO=$1
-export DEVKITPPC=$2
-export PATH="$PATH:$DEVKITPPC/bin"
+export DEVKITPRO=`cygpath -u "$DEVKITPRO"`
+export PATH="$PATH:$DEVKITPRO/devkitPPC/bin"
 
 
 echo ""

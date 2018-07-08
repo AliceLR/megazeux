@@ -1,22 +1,19 @@
 #!/bin/bash
-# $1 = $DEVKITPRO
-# $2 = $DEVKITARM
-# $3 = branch
+# $1 = branch
 
+[ -z "$DEVKITPRO" ] && { echo "DEVKITPRO environment variable must be set!"; exit 1; }
 [ -z "$1" ] && { echo "argument 1 required."; exit 1; }
-[ -z "$2" ] && { echo "argument 2 required."; exit 1; }
-[ -z "$3" ] && { echo "argument 3 required."; exit 1; }
 
-export DEVKITPRO=$1
-export DEVKITARM=$2
-export PATH="$PATH:$DEVKITARM/bin"
+export DEVKITPRO=`cygpath -u "$DEVKITPRO"`
+
+export PATH="$PATH:$DEVKITPRO/devkitARM/bin"
 export PATH="$PATH:$DEVKITPRO/tools/bin"
 
 cd /mzx-build-workingdir
 mkdir -p zips
 cd megazeux
 
-git checkout $3
+git checkout $1
 
 arch/3ds/CONFIG.3DS
 make shaders

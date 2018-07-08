@@ -1,14 +1,11 @@
 #!/bin/bash
-# $1 = $DEVKITPRO
-# $2 = $DEVKITPSP
 
-[ -z "$1" ] && { echo "argument 1 required."; exit 1; }
-[ -z "$2" ] && { echo "argument 2 required."; exit 1; }
+[ -z "$DEVKITPRO" ] && { echo "DEVKITPRO environment variable must be set!"; exit 1; }
+[ -z "$DEVKITPSP" ] && { echo "DEVKITPSP environment variable must be set!"; exit 1; }
 
 export PORTS_REPO=https://github.com/pspdev/psp-ports.git
 
-export DEVKITPRO=$1
-export DEVKITPSP=$2
+export DEVKITPSP=`cygpath -u "$DEVKITPSP"`
 export PATH="$PATH:$DEVKITPSP/bin"
 
 
