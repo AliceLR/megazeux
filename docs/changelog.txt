@@ -1,10 +1,21 @@
++ Added "allow_screenshots" config file option. Setting this
+  option to 0 will disable the built-in screenshot feature.
++ The F12 key can now be detected by Robotic.
++ Loading saves from the title screen no longer resets TIME.
++ Loading saves from the title screen no longer erroneously
+  changes the player restart position.
++ Swapping worlds now sets the correct TIME and player restart
+  position values.
++ Fixed a bug where the fade out effect from COLOR FADE OUT
+  would be reset after any Robotic dialog.
++ Fixed an issue where UIs would execute redundant frames.
++ Undo for overlay and vlayer mouse drawing now works properly.
+
+
 GIT
 
 USERS
 
-+ Added "allow_screenshots" config file option. Setting this
-  option to 0 will disable the built-in screenshot feature.
-+ The F12 key can now be detected by Robotic.
 + Added timeouts to updater network operations.
 + Fixed bug where the updater would retry downloads without
   regard to the status code.
@@ -16,15 +27,6 @@ USERS
 + Added DOS compatibility fix for sprN_off.
 + Window caption is now properly updated when loading a world
   from an unedited world in the editor.
-+ Loading saves from the title screen no longer resets TIME.
-+ Loading saves from the title screen no longer erroneously
-  changes the player restart position.
-+ Swapping worlds now sets the correct TIME and player restart
-  position values.
-+ Fixed a bug where the fade out effect from COLOR FADE OUT
-  would be reset after any Robotic dialog.
-+ Fixed an issue where UIs would execute redundant frames.
-+ Undo for overlay and vlayer mouse drawing now works properly.
 - Removed undocumented support for "title.cnf", "game.cnf", and
   "editor.cnf" config files, which would have been loaded from
   the same directory as the main config (not to be confused with
