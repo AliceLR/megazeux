@@ -576,7 +576,11 @@ int change_dir_name(char *path_name, const char *dest)
   }
   else
   {
-    snprintf(path, MAX_PATH, "%s" DIR_SEPARATOR, path_name);
+    if(path_name[strlen(path_name) - 1] != DIR_SEPARATOR_CHAR)
+      snprintf(path, MAX_PATH, "%s" DIR_SEPARATOR, path_name);
+
+    else
+      strcpy(path, path_name);
   }
 
 #else /* !defined(__WIN32__) && !defined(CONFIG_WII) */
@@ -588,7 +592,11 @@ int change_dir_name(char *path_name, const char *dest)
   }
   else
   {
-    snprintf(path, MAX_PATH, "%s" DIR_SEPARATOR, path_name);
+    if(path_name[strlen(path_name) - 1] != DIR_SEPARATOR_CHAR)
+      snprintf(path, MAX_PATH, "%s" DIR_SEPARATOR, path_name);
+
+    else
+      strcpy(path, path_name);
   }
 
 #endif /* !defined(__WIN32__) && !defined(CONFIG_WII) */
