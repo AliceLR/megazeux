@@ -61,7 +61,8 @@ var LHA = _yes("LHA");
 
 var xmp = std("xmp");
 var libvorbis = std("libvorbis");
-var tremor = "tremor";
+var tremor = std("tremor");
+var tremor_lowmem = std("tremor (lowmem)");
 
 var render_ctr = std("render_ctr");
 var render_nds = std("render_nds");
@@ -250,7 +251,7 @@ var archs =
     stack_protector:  _FAULTY(),
     layer_rendering:  yes_but_8bpp,
     module_engine:    xmp,
-    ogg_vorbis:       tremor,
+    ogg_vorbis:       tremor_lowmem,
     optimization:     size,
     sdl:              yes,
     editor:           no_low_memory,
@@ -389,7 +390,7 @@ var archs =
     stack_protector:  _FAULTY("NO", 8),
     layer_rendering:  _FAULTY("NO", 8),
     module_engine:    xmp,
-    ogg_vorbis:       tremor,
+    ogg_vorbis:       tremor_lowmem,
     optimization:     size,
     sdl:              no,
     editor:           yes,
@@ -417,7 +418,7 @@ var archs =
     stack_protector:  _FAULTY(),
     layer_rendering:  _FAULTY(),
     module_engine:    xmp,
-    ogg_vorbis:       tremor,
+    ogg_vorbis:       tremor_lowmem,
     optimization:     size,
     sdl:              yes,
     editor:           no_low_memory,
@@ -442,7 +443,7 @@ var archs =
     stack_protector:  yes,
     layer_rendering:  yes,
     module_engine:    xmp,
-    ogg_vorbis:       tremor,
+    ogg_vorbis:       tremor_lowmem,
     optimization:     speed,
     sdl:              yes,
     editor:           yes,

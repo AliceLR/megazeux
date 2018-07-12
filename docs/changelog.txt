@@ -1,4 +1,8 @@
-GIT
+July 12th, 2018 - MZX 2.91d
+
+This is a minor bugfix release to get a handful of fixes out
+primarily concerning the updater. The NDS and Wii ports will now
+also include Caverns of Zeux.
 
 USERS
 
@@ -17,6 +21,14 @@ USERS
   "editor.cnf" config files, which would have been loaded from
   the same directory as the main config (not to be confused with
   world-specific config files, which are still supported).
+
+DEVELOPERS
+
++ The MSYS2 buildscripts have been overhauled to work with the
+  new devkitPro pacman repositories.
++ Added config options to select vorbis, tremor, tremor-lowmem,
+  or to disable ogg vorbis file support. The 3DS and Wii ports
+  now use tremor instead of tremor-lowmem.
 
 
 March 4th, 2018 - MZX 2.91c
