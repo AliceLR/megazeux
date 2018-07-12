@@ -81,10 +81,9 @@ function check_file
 		echo "Found mzxrun.exe in $1; adding caverns to Windows at /"
 		add_caverns $1 $CAVERNS_PATH
 
-	# FIXME: 3DS doesn't yet support loading caverns on startup.
-	#elif $(locate_mzx $1 "mzxrun.cia"); then
-		#echo "Found mzxrun.cia in $1; adding caverns to 3DS at $_3DS_DIR"
-		#add_caverns $1 $_3DS_PATH
+	elif $(locate_mzx $1 "mzxrun.cia"); then
+		echo "Found mzxrun.cia in $1; adding caverns to 3DS at $_3DS_DIR"
+		add_caverns $1 $_3DS_PATH
 
 	elif $(locate_mzx $1 "mzxrun.nds"); then
 		echo "Found mzxrun.nds in $1; adding caverns to NDS at $NDS_DIR"
@@ -99,10 +98,9 @@ function check_file
 		#echo "Found megazeux.nro in $1; adding caverns to Switch at $SWITCH_DIR"
 		#add_caverns $1 $SWITCH_PATH
 
-	# FIXME: PSP not yet tested.
-	#elif $(locate_mzx $1 "EBOOT.PBP"); then
-		#echo "Found EBOOT.PBP in $1; adding caverns to PSP at /"
-		#add_caverns $1 $CAVERNS_PATH
+	elif $(locate_mzx $1 "EBOOT.PBP"); then
+		echo "Found EBOOT.PBP in $1; adding caverns to PSP at /"
+		add_caverns $1 $CAVERNS_PATH
 
 	fi
 }

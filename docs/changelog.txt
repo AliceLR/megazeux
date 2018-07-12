@@ -1,8 +1,8 @@
 July 12th, 2018 - MZX 2.91d
 
 This is a minor bugfix release to get a handful of fixes out
-primarily concerning the updater. The NDS and Wii ports will now
-also include Caverns of Zeux.
+primarily concerning the updater. The NDS/3DS/PSP/Wii ports now
+include a copy of Caverns of Zeux.
 
 USERS
 
