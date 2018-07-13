@@ -71,7 +71,10 @@ ifdef CUSTOM_SDL_DLL_DIR
 else
 	${CP} ${SDL_PREFIX}/bin/${SDL_DLL} ${build}
 endif
-	${PEFIX} ${build}/${SDL_DLL}
+#	At one point this actually did something useful.
+#	The SDL DLL will generally stay the same between releases,
+#	so this is kind of pointless.
+#	${PEFIX} ${build}/${SDL_DLL}
 ifeq (${LIBSDL2},0)
 	${CP} arch/mingw/directx.bat ${build}
 endif
