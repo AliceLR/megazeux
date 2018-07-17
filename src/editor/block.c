@@ -564,23 +564,12 @@ void do_block_command(struct world *mzx_world, struct block_info *block,
 
       case BLOCK_CMD_MOVE:
       {
+        // Has to take x and y so it can manipulate the player position.
         move_board_block(mzx_world,
-         src_board, src_offset,
-         dest_board, dest_offset,
+         src_board, src_x, src_y,
+         dest_board, dest_x, dest_y,
          dest_block_width, dest_block_height,
          block_width, block_height); // Dimensions to clear old block
-
-        // Work around to move the player
-        if((mzx_world->player_x >= src_x) &&
-         (mzx_world->player_y >= src_y) &&
-         (mzx_world->player_x < (src_x + block_width)) &&
-         (mzx_world->player_y < (src_y + block_height)) &&
-         (src_board == dest_board))
-        {
-          place_player_xy(mzx_world,
-           mzx_world->player_x - src_x + dest_x,
-           mzx_world->player_y - src_y + dest_y);
-        }
         break;
       }
 

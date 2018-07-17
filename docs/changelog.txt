@@ -10,6 +10,8 @@
   would be reset after any Robotic dialog.
 + Fixed an issue where UIs would execute redundant frames.
 + Undo for overlay and vlayer mouse drawing now works properly.
++ Fixed move block bug where when the source and destination
+  both overlapped the player.
 
 
 GIT
