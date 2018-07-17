@@ -32,10 +32,8 @@ core_ldflags += -lopengl32
 LIBPNG_LDFLAGS = $(shell libpng-config --static --ldflags)
 
 ifeq (${BUILD_LIBSDL2},)
-SDL_PREFIX := ${shell sdl-config --prefix}
 SDL_DLL := SDL.dll
 else
-SDL_PREFIX := ${shell sdl2-config --prefix}
 SDL_DLL := SDL2.dll
 endif
 
@@ -66,11 +64,7 @@ clean:
 #
 
 build: ${build}
-ifdef CUSTOM_SDL_DLL_DIR
-	${CP} ${CUSTOM_SDL_DLL_DIR}/${SDL_DLL} ${build}
-else
 	${CP} ${SDL_PREFIX}/bin/${SDL_DLL} ${build}
-endif
 #	At one point this actually did something useful.
 #	The SDL DLL will generally stay the same between releases,
 #	so this is kind of pointless.

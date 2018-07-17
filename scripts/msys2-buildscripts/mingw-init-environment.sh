@@ -7,3 +7,4 @@ rm -rf /mingw{32,64}/lib/lib{ogg,png16,vorbis,vorbisfile,z}.dll.a /mingw64/x86_6
 mkdir -p /mzx-build-workingdir
 cd /mzx-build-workingdir
 git clone $1
+/mingw-sdl-init.sh

@@ -40,11 +40,13 @@ MV      ?= mv
 RM      ?= rm
 
 ifeq (${BUILD_LIBSDL2},)
-SDL_CFLAGS  ?= $(shell sdl-config --cflags)
-SDL_LDFLAGS ?= $(shell sdl-config --libs)
+SDL_PREFIX  ?= $(shell sdl-config --prefix)
+SDL_CFLAGS  ?= $(shell sdl-config --prefix=${SDL_PREFIX} --cflags)
+SDL_LDFLAGS ?= $(shell sdl-config --prefix=${SDL_PREFIX} --libs)
 else
-SDL_CFLAGS  ?= $(shell sdl2-config --cflags | sed 's,-I,-isystem ,g')
-SDL_LDFLAGS ?= $(shell sdl2-config --libs)
+SDL_PREFIX  ?= $(shell sdl2-config --prefix)
+SDL_CFLAGS  ?= $(shell sdl2-config --prefix=${SDL_PREFIX} --cflags | sed 's,-I,-isystem ,g')
+SDL_LDFLAGS ?= $(shell sdl2-config --prefix=${SDL_PREFIX} --libs)
 endif
 
 VORBIS_CFLAGS  ?= -I${PREFIX}/include -DOV_EXCLUDE_STATIC_CALLBACKS
