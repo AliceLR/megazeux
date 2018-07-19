@@ -18,9 +18,11 @@ DSOPOST    = .dll
 DSORPATH   =
 DSOSONAME  = -Wl,-soname,
 
-# Use MSVCRT directly for stdio; it's faster
-ARCH_CFLAGS   += -D__USE_MINGW_ANSI_STDIO=0
-ARCH_CXXFLAGS += -D__USE_MINGW_ANSI_STDIO=0
+# Don't use MSVCRT for stdio; it's slower and is not safe.
+# At one point (circa 2009) the MinGW implementations actually
+# caused performance issues, but this is no longer the case.
+ARCH_CFLAGS   += -D__USE_MINGW_ANSI_STDIO
+ARCH_CXXFLAGS += -D__USE_MINGW_ANSI_STDIO
 
 # Fix MINGW's shared library fanaticism
 ARCH_LDFLAGS += -static-libstdc++ -static-libgcc
