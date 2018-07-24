@@ -419,16 +419,27 @@ bool update_autorepeat(void)
   return rval;
 }
 
-bool update_event_status(void)
+static void start_frame_event_status(void)
 {
   struct buffered_status *status = store_status();
-  bool rval;
 
   status->key = IKEY_UNKNOWN;
   status->unicode = 0;
   status->mouse_moved = 0;
   status->mouse_button = 0;
   status->exit = 0;
+
+  status->mouse_last_x = status->mouse_x;
+  status->mouse_last_y = status->mouse_y;
+  status->real_mouse_last_x = status->real_mouse_x;
+  status->real_mouse_last_y = status->real_mouse_y;
+}
+
+bool update_event_status(void)
+{
+  bool rval;
+
+  start_frame_event_status();
 
   rval  = __update_event_status();
   rval |= update_autorepeat();
@@ -447,13 +458,7 @@ bool peek_exit_input(void)
 
 void wait_event(int timeout)
 {
-  struct buffered_status *status = store_status();
-
-  status->key = IKEY_UNKNOWN;
-  status->unicode = 0;
-  status->mouse_moved = 0;
-  status->mouse_button = 0;
-  status->exit = 0;
+  start_frame_event_status();
 
   __wait_event(timeout);
   update_autorepeat();
@@ -705,6 +710,20 @@ Uint32 get_real_mouse_y(void)
 {
   const struct buffered_status *status = load_status();
   return status->real_mouse_y;
+}
+
+void get_mouse_movement(int *delta_x, int *delta_y)
+{
+  const struct buffered_status *status = load_status();
+  *delta_x = status->mouse_x - status->mouse_last_x;
+  *delta_y = status->mouse_y - status->mouse_last_y;
+}
+
+void get_real_mouse_movement(int *delta_x, int *delta_y)
+{
+  const struct buffered_status *status = load_status();
+  *delta_x = status->real_mouse_x - status->real_mouse_last_x;
+  *delta_y = status->real_mouse_y - status->real_mouse_last_y;
 }
 
 Uint32 get_mouse_drag(void)
