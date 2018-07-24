@@ -1291,7 +1291,7 @@ static void draw_number_box(struct world *mzx_world, struct dialog *di,
   {
     // Draw a number
     char num_buffer[32];
-    if (!src->is_null)
+    if(!src->is_null)
       sprintf(num_buffer, "%d", *(src->result) * increment);
     else
       sprintf(num_buffer, " ");
@@ -1547,7 +1547,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
     case IKEY_UP:
     {
       if(get_alt_status(keycode_internal) ||
-        get_ctrl_status(keycode_internal))
+       get_ctrl_status(keycode_internal))
       {
         increment_value = 10;
       }
@@ -1593,7 +1593,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
       if(result == 0 || result < src->lower_limit)
       {
         result = src->lower_limit;
-        if (src->upper_limit > 9)
+        if(src->upper_limit > 9)
           src->is_null = 1;
       }
 
@@ -1633,7 +1633,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
         break;
       }
 
-      if (key != IKEY_BACKSPACE &&
+      if(key != IKEY_BACKSPACE &&
        !get_shift_status(keycode_internal) &&
        !get_ctrl_status(keycode_internal) &&
        !get_alt_status(keycode_internal))
@@ -1643,7 +1643,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
     }
   }
 
-  if (increment_value > 0 && src->is_null)
+  if(increment_value > 0 && src->is_null)
     increment_value -= src->lower_limit;
   src->is_null = 0;
 
