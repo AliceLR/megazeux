@@ -1,3 +1,5 @@
+GIT
+
 + Added "allow_screenshots" config file option. Setting this
   option to 0 will disable the built-in screenshot feature.
 + The F12 key can now be detected by Robotic.
@@ -16,7 +18,6 @@
   inputs as dialog number boxes.
 
 
-GIT
 July 12th, 2018 - MZX 2.91d
 
 This is a minor bugfix release to get a handful of fixes out

@@ -747,6 +747,10 @@ static boolean color_editor_key(subcontext *ctx, int *key)
   {
     case IKEY_F2:
     {
+      // Ctrl+F2 - do nothing
+      if(get_ctrl_status(keycode_internal))
+        return false;
+
       memcpy(&saved_color, current_color, sizeof(struct color_status));
       saved_color_active = true;
       return true;
