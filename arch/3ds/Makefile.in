@@ -14,11 +14,6 @@ ifeq ($(strip $(DEVKITARM)),)
 $(error "DEVKITARM must be set in your environment.")
 endif
 
-CC      := arm-none-eabi-gcc
-CXX     := arm-none-eabi-g++
-AR      := arm-none-eabi-ar
-OBJCOPY := arm-none-eabi-objcopy
-
 APP_TITLE = MegaZeux
 APP_DESCRIPTION = \"Game creation system\"
 APP_AUTHOR = \"MegaZeux Developers\"
@@ -33,8 +28,8 @@ STRIP  = /bin/true
 # Override library paths.
 #
 
-EXTRA_INCLUDES = -isystem $(CTRULIB)/include -isystem $(DEVKITPRO)/portlibs/armv6k/include -isystem $(DEVKITPRO)/portlibs/3ds/include
-EXTRA_LIBS = -L$(CTRULIB)/lib -L$(DEVKITPRO)/portlibs/armv6k/lib -L$(DEVKITARM)/arm-none-eabi/lib/armv6k/fpu -L$(DEVKITPRO)/portlibs/3ds/lib
+EXTRA_INCLUDES = -isystem $(CTRULIB)/include -isystem $(DEVKITPRO)/portlibs/3ds/include
+EXTRA_LIBS = -L$(CTRULIB)/lib -L$(DEVKITPRO)/portlibs/3ds/lib
 ifeq (${DEBUG},1)
   ARCH_CFLAGS += -Og
   EXTRA_LIBS += -lcitro3dd -lctrud -lpng16 -lz
@@ -49,6 +44,9 @@ MACHDEP = -march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft -mword-relocati
 ARCH_CFLAGS   += ${EXTRA_INCLUDES} ${MACHDEP} -DARM11 -D__3DS__ -Iarch/3ds
 ARCH_CXXFLAGS += ${ARCH_CFLAGS}
 ARCH_LDFLAGS  += ${EXTRA_LIBS} ${MACHDEP} -specs=3dsx.specs
+
+LIBPNG_CFLAGS =
+LIBPNG_LDFLAGS = -lpng16
 
 #
 # Vile hack, remove me ASAP

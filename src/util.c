@@ -535,6 +535,7 @@ int create_path_if_not_exists(const char *filename)
 int change_dir_name(char *path_name, const char *dest)
 {
   struct stat stat_info;
+  char path_temp[MAX_PATH];
   char path[MAX_PATH];
   const char *current;
   const char *next;
@@ -575,7 +576,11 @@ int change_dir_name(char *path_name, const char *dest)
   }
   else
   {
-    snprintf(path, MAX_PATH, "%s" DIR_SEPARATOR, path_name);
+    if(path_name[strlen(path_name) - 1] != DIR_SEPARATOR_CHAR)
+      snprintf(path, MAX_PATH, "%s" DIR_SEPARATOR, path_name);
+
+    else
+      strcpy(path, path_name);
   }
 
 #else /* !defined(__WIN32__) && !defined(CONFIG_WII) */
@@ -587,7 +592,11 @@ int change_dir_name(char *path_name, const char *dest)
   }
   else
   {
-    snprintf(path, MAX_PATH, "%s" DIR_SEPARATOR, path_name);
+    if(path_name[strlen(path_name) - 1] != DIR_SEPARATOR_CHAR)
+      snprintf(path, MAX_PATH, "%s" DIR_SEPARATOR, path_name);
+
+    else
+      strcpy(path, path_name);
   }
 
 #endif /* !defined(__WIN32__) && !defined(CONFIG_WII) */
@@ -635,9 +644,11 @@ int change_dir_name(char *path_name, const char *dest)
     current_char = current[0];
   }
 
-  if(stat(path, &stat_info) >= 0)
+  // This needs to be done before the stat for some platforms (e.g. 3DS)
+  clean_path_slashes(path, path_temp, MAX_PATH);
+  if(stat(path_temp, &stat_info) >= 0)
   {
-    clean_path_slashes(path, path_name, MAX_PATH);
+    strcpy(path_name, path_temp);
     return 0;
   }
 

@@ -10191,6 +10191,42 @@ updated.
 :1st: 
 $~9NEW in MegaZeux!
 
+July 12th, 2018 - MZX 2.91d
+
+This is a minor bugfix release to get a handful of fixes out
+primarily concerning the updater. The NDS/3DS/PSP/Wii ports now
+include a copy of Caverns of Zeux.
+
+USERS
+
++ Added timeouts to updater network operations.
++ Fixed bug where the updater would retry downloads without
+  regard to the status code.
++ The updater is now force-disabled for all non-Windows
+  platforms in config.sh.
++ Fixed bug where breakpoints could trigger on the wrong line.
++ Amended VOLUME/MOD FADE # # bounding to clamp values in port
+  versions. DOS versions will still wrap between 0 and 255.
++ Added DOS compatibility fix for sprN_off.
++ Window caption is now properly updated when loading a world
+  from an unedited world in the editor.
++ Fixed bug where ".." would change to the current directory if
+  the current path ended in a path separator.
+- Removed undocumented support for "title.cnf", "game.cnf", and
+  "editor.cnf" config files, which would have been loaded from
+  the same directory as the main config (not to be confused with
+  world-specific config files, which are still supported).
+
+DEVELOPERS
+
++ The MSYS2 buildscripts have been overhauled to work with the
+  new devkitPro pacman repositories.
++ Added config options to select vorbis, tremor, tremor-lowmem,
+  or to disable ogg vorbis file support. The 3DS and Wii ports
+  now use tremor instead of tremor-lowmem.
+
+>#MAIN.HLP:072:Table of Contents
+
 March 4th, 2018 - MZX 2.91c
 
 This release contains an assortment of bugfixes ranging from

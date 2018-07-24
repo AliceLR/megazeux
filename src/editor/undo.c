@@ -247,6 +247,7 @@ void destruct_undo_history(struct undo_history *h)
         h->clear_function(f);
     }
 
+    free(h->frames);
     free(h);
   }
 }
