@@ -1766,7 +1766,7 @@ static int counter_debugger_idle_function(struct world *mzx_world,
     {
       if(get_alt_status(keycode_internal))
       {
-        palette_editor(mzx_world);
+        // FIXME palette_editor(mzx_world);
         return 0;
       }
       break;

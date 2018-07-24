@@ -2216,7 +2216,7 @@ static boolean editor_key(context *ctx, int *key)
       {
         if(get_alt_status(keycode_internal))
         {
-          palette_editor(mzx_world);
+          palette_editor(ctx);
           editor->modified = true;
         }
       }

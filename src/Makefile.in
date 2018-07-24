@@ -86,6 +86,7 @@ core_cobjs := \
   ${core_obj}/idarray.o           \
   ${core_obj}/idput.o             \
   ${core_obj}/intake.o            \
+  ${core_obj}/intake_num.o        \
   ${core_obj}/legacy_rasm.o       \
   ${core_obj}/legacy_board.o      \
   ${core_obj}/legacy_robot.o      \

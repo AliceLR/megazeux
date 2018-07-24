@@ -472,7 +472,6 @@ void set_context_framerate_mode(context *ctx, enum framerate_type framerate)
   if(ctx->internal_data->framerate != framerate)
   {
     ctx->internal_data->framerate = framerate;
-    print_core_stack(ctx);
   }
 }
 
@@ -520,6 +519,7 @@ static void core_resume(core_context *root)
     // This function actually takes subcontext *, but was previously cast.
     sub = ctx_data->children[i];
     sub_data = ((context *)sub)->internal_data;
+
     if(sub_data->resume_function)
       sub_data->resume_function((void *)sub);
   }
@@ -545,8 +545,12 @@ static void core_draw(core_context *root)
     // This function actually takes subcontext *, but was previously cast.
     sub = ctx_data->children[i];
     sub_data = ((context *)sub)->internal_data;
+
     if(sub_data->draw_function)
+    {
+      select_layer(UI_LAYER);
       sub_data->draw_function((void *)sub);
+    }
   }
 }
 
