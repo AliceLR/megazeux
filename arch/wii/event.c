@@ -908,12 +908,6 @@ static bool process_event(union event *ev)
         break;
       }
 
-      if(ckey == IKEY_F12)
-      {
-        dump_screen();
-        break;
-      }
-
       if(status->key_repeat &&
        (status->key_repeat != IKEY_LSHIFT) &&
        (status->key_repeat != IKEY_RSHIFT) &&
