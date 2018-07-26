@@ -572,6 +572,7 @@ static boolean is_on_stack(core_context *root, enum context_type type)
   return false;
 }
 
+#ifdef CONFIG_HELPSYS
 /**
  * Determine if the help system is currently allowed.
  */
@@ -595,6 +596,7 @@ static boolean allow_help_system(core_context *root)
 
   return true;
 }
+#endif
 
 /**
  * Determine if the configure menu is currently allowed.

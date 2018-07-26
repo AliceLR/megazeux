@@ -2268,7 +2268,8 @@ static void dump_screen_real_32bpp(Uint32 *pix, const char *name)
 
   // BMP header
   fputw(0x4D42, file); // BM
-  fputd(14 + 40 + SCREEN_W * CHAR_W * SCREEN_H * CHAR_H * 3, file); // BMP + DIB + image
+  // BMP + DIB + image
+  fputd(14 + 40 + SCREEN_W * CHAR_W * SCREEN_H * CHAR_H * 3, file);
   fputd(0, file); // Reserved
   fputd(14, file); // DIB header offset
 
@@ -2290,7 +2291,8 @@ static void dump_screen_real_32bpp(Uint32 *pix, const char *name)
   {
     pix_ptr = pix + i * SCREEN_W * CHAR_W;
     rowbuffer_ptr = rowbuffer;
-    for (x = 0; x < SCREEN_W * CHAR_W; x++) {
+    for(x = 0; x < SCREEN_W * CHAR_W; x++)
+    {
       rowbuffer_ptr[0] = (*pix_ptr & 0x000000FF) >> 0;
       rowbuffer_ptr[1] = (*pix_ptr & 0x0000FF00) >> 8;
       rowbuffer_ptr[2] = (*pix_ptr & 0x00FF0000) >> 16;
@@ -2312,6 +2314,7 @@ void dump_screen(void)
 {
   struct rgb_color palette[FULL_PAL_SIZE];
   Uint32 backup_palette[FULL_PAL_SIZE];
+  size_t palette_size_bytes = sizeof(Uint32) * FULL_PAL_SIZE;
   int palette_size;
   char name[MAX_NAME_SIZE];
   struct stat file_info;
@@ -2328,37 +2331,41 @@ void dump_screen(void)
   }
 
   ss = cmalloc(sizeof(Uint32) * 640 * 350);
-  if(ss)
+
+  // Unfortunately, render_layer wants flat_intensity_palette set, so we need
+  // to back this up, fill it, render the layer to memory, then copy the old
+  // palette back.
+  memcpy(backup_palette, graphics.flat_intensity_palette, palette_size_bytes);
+
+  palette_size = make_palette(palette);
+  for(i = 0; i < palette_size; i++)
   {
-    // Unfortunately, render_layer wants flat_intensity_palette set, so we need to back
-    // this up, fill it, render the layer to memory, then copy the old palette back.
-    memcpy(backup_palette, graphics.flat_intensity_palette, sizeof(Uint32) * FULL_PAL_SIZE);
-    palette_size = make_palette(palette);
-    for (i = 0; i < palette_size; i++)
-    {
-      #if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
-      graphics.flat_intensity_palette[i] = (palette[i].r << 8) | (palette[i].g << 16) | (palette[i].b << 24);
-      #else
-      graphics.flat_intensity_palette[i] = (palette[i].r << 16) | (palette[i].g << 8) | (palette[i].b << 0);
-      #endif /* PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN */
-    }
-
-    for (layer = 0; layer < graphics.layer_count; layer++)
-    {
-      graphics.sorted_video_layers[layer] = &graphics.video_layers[layer];
-    }
-    qsort(graphics.sorted_video_layers, graphics.layer_count, sizeof(struct video_layer *), compare_layers);
-    for (layer = 0; layer < graphics.layer_count; layer++)
-    {
-      render_layer(ss, 32, 640 * sizeof(Uint32), &graphics, graphics.sorted_video_layers[layer]);
-    }
-
-    memcpy(graphics.flat_intensity_palette, backup_palette, sizeof(Uint32) * FULL_PAL_SIZE);
-
-    //dump_screen_real(ss, palette, make_palette(palette), name);
-    dump_screen_real_32bpp(ss, name);
-    free(ss);
+#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
+    graphics.flat_intensity_palette[i] =
+     (palette[i].r << 8) | (palette[i].g << 16) | (palette[i].b << 24);
+#else
+    graphics.flat_intensity_palette[i] =
+     (palette[i].r << 16) | (palette[i].g << 8) | (palette[i].b << 0);
+#endif /* PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN */
   }
+
+  for(layer = 0; layer < graphics.layer_count; layer++)
+    graphics.sorted_video_layers[layer] = &graphics.video_layers[layer];
+
+  qsort(graphics.sorted_video_layers, graphics.layer_count,
+   sizeof(struct video_layer *), compare_layers);
+
+  for(layer = 0; layer < graphics.layer_count; layer++)
+  {
+    render_layer(ss, 32, 640 * sizeof(Uint32), &graphics,
+     graphics.sorted_video_layers[layer]);
+  }
+
+  memcpy(graphics.flat_intensity_palette, backup_palette, palette_size_bytes);
+
+  //dump_screen_real(ss, palette, make_palette(palette), name);
+  dump_screen_real_32bpp(ss, name);
+  free(ss);
 }
 #endif /* CONFIG_ENABLE_SCREENSHOTS */
 
@@ -2367,27 +2374,38 @@ void dump_char(Uint16 char_idx, Uint8 color, int mode, Uint8 *buffer)
   // Dumps the specified char into a buffer. Expects CHAR_W * CHAR_H bytes.
   int x, y;
   Uint8 cols[4];
-  if (mode == -1) mode = graphics.screen_mode;
   char_idx = char_idx % PROTECTED_CHARSET_POSITION;
   color = color % SMZX_PAL_SIZE;
 
-  if (mode == 0) {
+  if(mode == -1)
+    mode = graphics.screen_mode;
+
+  if(mode == 0)
+  {
     cols[0] = (color & 0xF0) >> 4;
     cols[1] = color & 0x0F;
-    for (y = 0; y < CHAR_H; y++) {
+
+    for(y = 0; y < CHAR_H; y++)
+    {
       char row = graphics.charset[char_idx * CHAR_SIZE + y];
-      for (x = 0; x < CHAR_W; x++) {
+      for(x = 0; x < CHAR_W; x++)
+      {
         buffer[y * CHAR_W + x] = cols[(row >> (7-x)) & 0x01];
       }
     }
-  } else {
+  }
+  else
+  {
     cols[0] = graphics.smzx_indices[color * 4 + 0];
     cols[1] = graphics.smzx_indices[color * 4 + 1];
     cols[2] = graphics.smzx_indices[color * 4 + 2];
     cols[3] = graphics.smzx_indices[color * 4 + 3];
-    for (y = 0; y < CHAR_H; y++) {
+
+    for(y = 0; y < CHAR_H; y++)
+    {
       char row = graphics.charset[char_idx * CHAR_SIZE + y];
-      for (x = 0; x < CHAR_W; x += 2) {
+      for(x = 0; x < CHAR_W; x += 2)
+      {
         buffer[y * CHAR_W + x] = cols[(row >> (7-x)) & 0x03];
         buffer[y * CHAR_W + x + 1] = cols[(row >> (7-x)) & 0x03];
       }

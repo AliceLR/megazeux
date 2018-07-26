@@ -93,7 +93,6 @@ core_cobjs := \
   ${core_obj}/legacy_world.o      \
   ${core_obj}/mzm.o               \
   ${core_obj}/render.o            \
-  ${core_obj}/render_layer.o      \
   ${core_obj}/robot.o             \
   ${core_obj}/run_robot.o         \
   ${core_obj}/scrdisp.o           \
@@ -175,8 +174,11 @@ ifeq (${BUILD_HELPSYS},1)
 core_cobjs += ${core_obj}/helpsys.o
 endif
 
+render_layer_software = 0
+
 ifeq (${BUILD_RENDER_SOFT},1)
 core_cobjs += ${core_obj}/render_soft.o
+render_layer_software = 1
 endif
 
 # GL shared
@@ -187,6 +189,7 @@ endif
 # Fixed function renderers (OGL=1, OGLES=1)
 ifeq (${BUILD_RENDER_GL_FIXED},1)
 core_cobjs += ${core_obj}/render_gl1.o ${core_obj}/render_gl2.o
+render_layer_software = 1
 endif
 
 # Shader renderers (OGL>=2, OGLES=2)
@@ -207,17 +210,31 @@ core_ldflags := -L${X11DIR}/../${RAWLIBDIR} -lX11 ${core_ldflags}
 endif
 endif
 
+# Overlay renderers
 ifeq (${BUILD_RENDER_YUV},1)
 core_cobjs += ${core_obj}/render_yuv.o
 core_cobjs += ${core_obj}/render_yuv1.o ${core_obj}/render_yuv2.o
+render_layer_software = 1
 endif
 
+# GP2X Half-resolution renderer
 ifeq (${BUILD_RENDER_GP2X},1)
 core_cobjs += ${core_obj}/render_gp2x.o
 endif
 
+# Wii GX renderer
 ifeq (${BUILD_RENDER_GX},1)
 core_cobjs += ${core_obj}/render_gx.o
+endif
+
+# Screenshots require the software layer renderer.
+ifeq (${BUILD_ENABLE_SCREENSHOTS},1)
+render_layer_software = 1
+endif
+
+# Software layer renderer
+ifeq (${render_layer_software},1)
+core_cobjs += ${core_obj}/render_layer.o
 endif
 
 ifeq (${BUILD_MODPLUG},1)
