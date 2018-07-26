@@ -46,7 +46,9 @@ ARCH_LDFLAGS  += ${EXTRA_LIBS} $(MACHDEP)
 
 package: mzx
 	${ELF2DOL} ${mzxrun} boot.dol
+ifneq ($(BUILD_EDITOR),)
 	${ELF2DOL} ${mzx} megazeux.dol
+endif
 
 clean:
 	@rm -f boot.dol megazeux.dol arch/wii/*.d arch/wii/*.o

@@ -55,7 +55,7 @@ static void *wii_reset_thread(void *dud)
   return 0;
 }
 
-static void reset_callback(void)
+static void reset_callback(u32 irq, void *ctx)
 {
   static volatile int callcount = 0;
   callcount++;
@@ -68,8 +68,11 @@ static u64 timebase_offset;
 
 void delay(Uint32 ms)
 {
-  u64 end = gettime() - timebase_offset + millisecs_to_ticks(ms);
-  while (gettime() - timebase_offset < end);
+  // FIXME use nanosleep instead?
+  // This requires r31/libogc 1.8.20, which means juggling dependencies between
+  // this version of the Wii port and the SDL Wii version
+
+  usleep(ms * 1000);
 }
 
 Uint32 get_ticks(void)

@@ -1,3 +1,9 @@
+GIT
+
+* Fixed a memory corruption bug in the non-SDL Wii port caused
+  by faulty threading code.
+
+
 July 12th, 2018 - MZX 2.91d
 
 This is a minor bugfix release to get a handful of fixes out
