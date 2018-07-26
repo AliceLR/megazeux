@@ -153,7 +153,7 @@ static int write_eq(union event *ev)
   if(!new_ev)
     return false;
   *new_ev = *ev;
-  return MQ_Send(eq, (mqmsg_t)(&new_ev), MQ_MSG_NOBLOCK);
+  return MQ_Send(eq, (mqmsg_t)(new_ev), MQ_MSG_NOBLOCK);
 }
 
 static int read_eq(union event *ev)
@@ -1067,7 +1067,8 @@ void __wait_event(int timeout)
   if(!eq_inited)
     return;
 
-  if (timeout) delay(timeout);
+  if(timeout)
+    delay(timeout);
 
   if(MQ_Receive(eq, &ev, MQ_MSG_BLOCK))
   {

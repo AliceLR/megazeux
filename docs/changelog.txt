@@ -16,6 +16,8 @@ GIT
   overlapped the player.
 + Palette editor component entry now accepts most of the same
   inputs as dialog number boxes.
+* Fixed a memory corruption bug in the non-SDL Wii port caused
+  by faulty threading code.
 
 
 July 12th, 2018 - MZX 2.91d
