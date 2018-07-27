@@ -36,6 +36,7 @@
 #include "fsafeopen.h"
 #include "graphics.h"
 #include "idput.h"
+#include "robot.h"
 #include "sprite.h"
 #include "str.h"
 #include "window.h"

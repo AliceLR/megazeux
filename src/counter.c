@@ -45,6 +45,7 @@
 #include "time.h"
 #include "util.h"
 #include "world.h"
+#include "world_struct.h"
 
 #include "audio/audio.h"
 

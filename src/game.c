@@ -41,6 +41,7 @@
 #include "graphics.h"
 #include "helpsys.h"
 #include "platform.h"
+#include "robot.h"
 #include "util.h"
 #include "window.h"
 #include "world.h"
@@ -436,8 +437,8 @@ static boolean game_key(context *ctx, int *key)
         // <2.60 it only supported 1-9 and A-Z
         // This is difficult to version check, so apply it to <2.62
         if(mzx_world->version >= V262 ||
-          (keych >= 'A' && keych <= 'Z') ||
-          (keych >= '1' && keych <= '9'))
+         (keych >= 'A' && keych <= 'Z') ||
+         (keych >= '1' && keych <= '9'))
         {
           cur_board->last_key = keych;
         }
@@ -758,7 +759,7 @@ static boolean title_key(context *ctx, int *key)
         if(mzx_world->only_from_swap)
         {
           error("You can only play this game via a swap"
-            " from another game", 0, 24, 0x3101);
+           " from another game", 0, 24, 0x3101);
           return true;
         }
 

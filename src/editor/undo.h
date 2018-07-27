@@ -24,7 +24,6 @@
 
 __M_BEGIN_DECLS
 
-#include "../data.h"
 #include "../world_struct.h"
 #include "buffer_struct.h"
 

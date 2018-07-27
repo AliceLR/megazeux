@@ -24,17 +24,9 @@
 
 __M_BEGIN_DECLS
 
-#include "world_struct.h"
-
 #include <stdio.h>
 
-#include "board.h"
-#include "const.h"
-#include "robot.h"
-#include "counter.h"
-#include "sprite.h"
-#include "util.h"
-#include "configure.h"
+#include "world_struct.h"
 #include "zip.h"
 
 /* When making new versions, change the number below, and

@@ -34,6 +34,7 @@
 #include "str.h"
 #include "world.h"
 #include "world_prop.h"
+#include "world_struct.h"
 #include "zip.h"
 
 
@@ -65,7 +66,7 @@ static void save_mzm_common(struct world *mzx_world, int start_x, int start_y,
     // Before saving the MZM, we first calculate its file size
     // Then we allocate the memory needed to store the MZM
     mzm_size = 20;
-    
+
     // Add on the storage space required to store all tiles
     mzm_size += (width * height) * (storage_mode ? 2 : 6);
 
@@ -338,7 +339,7 @@ static void *str_allocate(size_t length, void **dest)
   struct str_allocate_data *data = *dataPtr;
 
   data->str = new_string(data->mzx_world, data->name, length, data->id);
-  
+
   return data->str->value;
 }
 
@@ -346,7 +347,7 @@ void save_mzm_string(struct world *mzx_world, const char *name, int start_x,
  int start_y, int width, int height, int mode, int savegame, int id)
 {
   struct str_allocate_data *data = malloc(sizeof(struct str_allocate_data));
-  
+
   data->str = NULL;
   data->name = name;
   data->mzx_world = mzx_world;

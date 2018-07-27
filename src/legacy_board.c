@@ -28,8 +28,10 @@
 #include "board.h"
 #include "const.h"
 #include "error.h"
-#include "world.h"
+#include "robot.h"
 #include "util.h"
+#include "world.h"
+#include "world_struct.h"
 
 /* 13 (not NULL terminated in format) */
 #define LEGACY_MOD_FILENAME_MAX 13

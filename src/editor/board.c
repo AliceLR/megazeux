@@ -23,6 +23,7 @@
 #include "../error.h"
 #include "../extmem.h"
 #include "../legacy_board.h"
+#include "../robot.h"
 #include "../world.h"
 #include "../world_prop.h"
 #include "../util.h"

@@ -20,6 +20,7 @@
  */
 
 #include "core.h"
+#include "counter.h"
 #include "event.h"
 #include "game.h"
 #include "game_ops.h"
@@ -27,6 +28,8 @@
 #include "idarray.h"
 #include "idput.h"
 #include "scrdisp.h" // strlencolor
+#include "sprite.h"
+#include "robot.h"
 #include "world.h"
 #include "world_struct.h"
 

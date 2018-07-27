@@ -33,6 +33,7 @@
 #include "../helpsys.h"
 #include "../idput.h"
 #include "../intake.h"
+#include "../robot.h"
 #include "../window.h"
 #include "../world.h"
 #include "../world_struct.h"

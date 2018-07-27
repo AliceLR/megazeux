@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "../board.h"
 #include "../const.h"
 #include "../core.h"
 #include "../counter.h"
@@ -34,6 +35,7 @@
 #include "../intake.h"
 #include "../mzm.h"
 #include "../platform.h"
+#include "../robot.h"
 #include "../scrdisp.h"
 #include "../util.h"
 #include "../window.h"

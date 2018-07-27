@@ -23,14 +23,12 @@
 
 #include "compat.h"
 
-
 __M_BEGIN_DECLS
 
 #include <stdio.h>
 
 #include "world.h"
 #include "world_struct.h"
-
 
 /****************************
  * LEGACY WORLD FORMAT INFO *

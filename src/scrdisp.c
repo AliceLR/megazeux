@@ -31,6 +31,7 @@
 #include "error.h"
 #include "intake.h"
 #include "world.h"
+#include "world_struct.h"
 #include "robot.h"
 
 static const char scr_nm_strs[5][12] =

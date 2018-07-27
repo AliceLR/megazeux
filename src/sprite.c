@@ -30,6 +30,7 @@
 #include "idput.h"
 #include "sprite.h"
 #include "world.h"
+#include "world_struct.h"
 
 // For the qsort.
 static int compare_spr(const void *dest, const void *src)

@@ -22,6 +22,7 @@
 #include "../counter.h"
 #include "../configure.h"
 #include "../const.h"
+#include "../util.h"
 
 #include <stdlib.h>
 #include <string.h>

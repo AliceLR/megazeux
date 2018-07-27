@@ -25,7 +25,7 @@
 __M_BEGIN_DECLS
 
 #include "../data.h"
-#include "../world_struct.h"
+#include "../robot_struct.h"
 
 struct buffer_info
 {

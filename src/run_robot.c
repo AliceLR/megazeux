@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include "block.h"
+#include "board.h"
 #include "const.h"
 #include "core.h"
 #include "counter.h"

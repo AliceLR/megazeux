@@ -38,6 +38,7 @@
 #include "../helpsys.h"
 #include "../intake.h"
 #include "../rasm.h"
+#include "../robot.h"
 #include "../util.h"
 #include "../window.h"
 #include "../world.h"

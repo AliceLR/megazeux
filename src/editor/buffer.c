@@ -27,6 +27,7 @@
 #include "undo.h"
 #include "window.h"
 
+#include "../core.h"
 #include "../data.h"
 #include "../error.h"
 #include "../event.h"

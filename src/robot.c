@@ -27,6 +27,7 @@
 
 #include "board.h"
 #include "const.h"
+#include "counter.h"
 #include "error.h"
 #include "event.h"
 #include "expr.h"
@@ -43,6 +44,7 @@
 #include "window.h"
 #include "world.h"
 #include "world_prop.h"
+#include "world_struct.h"
 #include "zip.h"
 
 
