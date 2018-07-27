@@ -48,6 +48,10 @@ SDL_PREFIX  ?= $(shell sdl2-config --prefix)
 SDL_CFLAGS  ?= $(shell sdl2-config --prefix=${SDL_PREFIX} --cflags | sed 's,-I,-isystem ,g')
 SDL_LDFLAGS ?= $(shell sdl2-config --prefix=${SDL_PREFIX} --libs)
 endif
+# Make these immediate so the scripts run only once.
+SDL_PREFIX  := $(SDL_PREFIX)
+SDL_CFLAGS  := $(SDL_CFLAGS)
+SDL_LDFLAGS := $(SDL_LDFLAGS)
 
 VORBIS_CFLAGS  ?= -I${PREFIX}/include -DOV_EXCLUDE_STATIC_CALLBACKS
 ifeq (${VORBIS},vorbis)
@@ -76,6 +80,9 @@ ifeq (${LIBPNG},1)
 LIBPNG_CFLAGS  ?= $(shell libpng-config --cflags)
 LIBPNG_LDFLAGS ?= $(shell libpng-config --ldflags)
 endif
+# Make these immediate so the scripts run only once.
+LIBPNG_CFLAGS  := $(LIBPNG_CFLAGS)
+LIBPNG_LDFLAGS := $(LIBPNG_LDFLAGS)
 
 PTHREAD_LDFLAGS ?= -lpthread
 

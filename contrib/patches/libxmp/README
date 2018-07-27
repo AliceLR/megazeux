@@ -3,10 +3,12 @@ MegaZeux's needs. Apply them in order (01, 02, ...) for best results. Then, copy
 Makefile.megazeux to the contrib/libxmp directory.
 
 After the depacker and format patches are applied, the depackers folder, the
-prowizard folder, and all removed format loaders should be deleted:
+prowizard folder, the win32 folder, and all removed format loaders should be
+deleted:
 
 	src/depackers/
 	src/loaders/prowizard/
+	src/win32/
 	src/depacker.h
 	src/fmopl.c
 	src/fmopl.h
@@ -68,6 +70,7 @@ Patch summary
 03: Removes less common formats that weren't supported by libmodplug.
 04: (by NoSuck) adds https://github.com/cmatsuoka/libxmp/pull/105 (xmp_set_row),
     putting libxmp's support for setting MOD_POSITION in line with libmodplug.
+05: Removes a leftover depacker function that depended on the win32 folder.
 
 10: Fixes https://github.com/cmatsuoka/libxmp/issues/97. This has been merged
     upstream in PR https://github.com/cmatsuoka/libxmp/pull/98.
@@ -85,7 +88,7 @@ Unix note
 ---------
 The only things preventing unix builds from just dynamically linking libxmp are
 A) the .it format patches and B) xmp_set_row. Presumably, the latter will exist
-in later releases of libxmp, and .it handling might be replaced with libit216 in
-MegaZeux 2.92.
+in later releases of libxmp, and .it handling might be replaced with libit216
+eventually.
 
 --Lachesis

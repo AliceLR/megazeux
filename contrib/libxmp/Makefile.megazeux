@@ -8,22 +8,14 @@
 
 libxmp_base = contrib/libxmp
 
-libxmp_include = -I${libxmp_base}/include -I${libxmp_base}/src \
- -I${libxmp_base}/src/loaders
+libxmp_include = -I${libxmp_base}/include
 
-libxmp_cflags = -I${libxmp_base}/src/win32 ${libxmp_include} -w -O3 \
+
+libxmp_cflags = \
+ -I${libxmp_base}/src \
+ -I${libxmp_base}/src/loaders \
+ ${libxmp_include} -w -O3 \
  -include src/platform_endian.h
-
-
-WIN32_OBJS	= ptpopen.o
-
-WIN32_PATH = $(libxmp_base)/src/win32
-WIN32_OBJ = $(WIN32_PATH)/.build
-
-
-ifeq ($(OS),Windows_NT)
-libxmp_objs += $(addprefix $(WIN32_OBJ)/,$(WIN32_OBJS))
-endif
 
 
 SRC_OBJS	= virtual.o format.o period.o player.o read_event.o dataio.o \
@@ -61,10 +53,6 @@ ${LOADERS_OBJ}/%.o: ${LOADERS_PATH}/%.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${CFLAGS} ${libxmp_cflags} -c $< -o $@
 
-${WIN32_OBJ}/%.o: ${WIN32_PATH}/%.c
-	$(if ${V},,@echo "  CC      " $<)
-	${CC} -MD ${CFLAGS} ${libxmp_cflags} -c $< -o $@
-
 
 -include $(libxmp_objs:.o=.d)
 
@@ -72,14 +60,8 @@ ${WIN32_OBJ}/%.o: ${WIN32_PATH}/%.c
 $(libxmp_objs): $(filter-out $(wildcard ${SRC_OBJ}), ${SRC_OBJ})
 $(libxmp_objs): $(filter-out $(wildcard ${LOADERS_OBJ}), ${LOADERS_OBJ})
 
-ifeq ($(OS),Windows_NT)
-$(libxmp_objs): $(filter-out $(wildcard ${WIN32_OBJ}), ${WIN32_OBJ})
-endif
-
 libxmp_clean:
 	$(if ${V},,@echo "  RM      " ${SRC_OBJ})
 	${RM} -r ${SRC_OBJ}
 	$(if ${V},,@echo "  RM      " ${LOADERS_OBJ})
 	${RM} -r ${LOADERS_OBJ}
-	$(if ${V},,@echo "  RM      " ${WIN32_OBJ})
-	${RM} -r ${WIN32_OBJ}
