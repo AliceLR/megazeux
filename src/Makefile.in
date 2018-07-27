@@ -223,8 +223,8 @@ core_cobjs += ${audio_obj}/audio_openmpt.o
 endif
 
 ifeq (${LIBPNG},1)
-core_flags += ${LIBPNG_CFLAGS} -DNEED_PNG_WRITE_SCREEN
-core_ldflags := ${LIBPNG_LDFLAGS} ${core_ldflags}
+core_flags += $(LIBPNG_CFLAGS) -DNEED_PNG_WRITE_SCREEN
+core_ldflags := $(LIBPNG_LDFLAGS) ${core_ldflags}
 core_cobjs += ${core_obj}/pngops.o
 endif
 
@@ -265,12 +265,12 @@ ifeq (${BUILD_AUDIO},1)
 core_cobjs += ${audio_obj}/audio_sdl.o
 endif
 
-core_flags   += ${SDL_CFLAGS}
-core_ldflags += ${SDL_LDFLAGS}
+core_flags   += $(SDL_CFLAGS)
+core_ldflags += $(SDL_LDFLAGS)
 
 ifeq (${BUILD_MODULAR},1)
-mzx_ldflags    += ${SDL_LDFLAGS}
-mzxrun_ldflags += ${SDL_LDFLAGS}
+mzx_ldflags    += $(SDL_LDFLAGS)
+mzxrun_ldflags += $(SDL_LDFLAGS)
 endif
 
 else
