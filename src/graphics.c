@@ -152,21 +152,12 @@ void ec_clear_set(void)
 Sint32 ec_load_set(char *name)
 {
   FILE *fp = fopen_unsafe(name, "rb");
-  size_t chars_read;
 
   if(fp == NULL)
    return -1;
 
-  chars_read = fread(graphics.charset, CHAR_SIZE,
-   PROTECTED_CHARSET_POSITION, fp);
-
+  fread(graphics.charset, CHAR_SIZE, PROTECTED_CHARSET_POSITION, fp);
   fclose(fp);
-  // Clear any extended chars that weren't read
-  if (layer_renderer_check(false))
-  {
-    memset(&graphics.charset[CHAR_SIZE * chars_read], 0,
-     CHAR_SIZE * (PROTECTED_CHARSET_POSITION - chars_read));
-  }
 
   // some renderers may want to map charsets to textures
   if(graphics.renderer.remap_charsets)
@@ -220,9 +211,12 @@ Sint32 ec_load_set_var(char *name, Uint16 pos, int version)
 
 void ec_mem_load_set(Uint8 *chars)
 {
+  // This is used only for legacy world loading and the default charset.
+
   memcpy(graphics.charset, chars, CHAR_SIZE * CHARSET_SIZE);
-  // Clear extended charsets
-  if (layer_renderer_check(false))
+
+  // Clear extended charsets (we're loading a legacy world/default charset)0
+  if(layer_renderer_check(false))
   {
     memset(&graphics.charset[CHAR_SIZE * CHARSET_SIZE], 0,
      CHAR_SIZE * (PROTECTED_CHARSET_POSITION - CHARSET_SIZE));

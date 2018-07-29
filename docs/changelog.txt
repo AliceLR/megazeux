@@ -1,5 +1,7 @@
 GIT
 
+* Fixed bug where loading a board charset would also clear all
+  of the extended charsets.
 * Fixed a memory corruption bug in the non-SDL Wii port caused
   by faulty threading code.
 
