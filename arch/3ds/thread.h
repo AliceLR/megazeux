@@ -28,6 +28,9 @@ __M_BEGIN_DECLS
 
 #include <3ds.h>
 
+#define THREAD_RES void
+#define THREAD_RETURN do { return; } while(0)
+
 typedef LightLock platform_mutex;
 typedef Thread platform_thread;
 typedef ThreadFunc platform_thread_fn;
