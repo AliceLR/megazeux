@@ -2809,8 +2809,16 @@ void change_board_load_assets(struct world *mzx_world)
 
   // Does this board need a char set loaded? (2.90+)
   if(mzx_world->version >= V290 && cur_board->charset_path[0])
+  {
     if(fsafetranslate(cur_board->charset_path, translated_name) == FSAFE_SUCCESS)
+    {
+      // 2.90/2.91 bug: ec_load_set cleared the extended chars
+      if(mzx_world->version <= V291)
+        ec_clear_set();
+
       ec_load_set(translated_name);
+    }
+  }
 
   // Does this board need a palette loaded? (2.90+)
   if(mzx_world->version >= V290 && cur_board->palette_path[0])
