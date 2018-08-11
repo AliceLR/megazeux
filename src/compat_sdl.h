@@ -37,9 +37,6 @@ __M_BEGIN_DECLS
 // This block remaps anything that is EXACTLY equivalent to its new SDL 2.0
 // counterpart. More complex changes are handled with #ifdefs "in situ".
 
-// This is included EVERYWHERE, so only include SDL headers that are absolutely
-// necessary.
-
 // Data types
 
 typedef SDLKey SDL_Keycode;
