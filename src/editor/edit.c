@@ -4559,6 +4559,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
       // Hopefully we won't be getting anything out of range but just in case
       new_board = CLAMP(new_board, 0, mzx_world->num_boards - 1);
       fix_board(mzx_world, new_board);
+      src_board = mzx_world->current_board;
 
       if(!src_board->overlay_mode && overlay_edit == EDIT_OVERLAY)
         overlay_edit = EDIT_BOARD;
