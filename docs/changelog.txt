@@ -1,4 +1,4 @@
-GIT
+GIT - MZX 2.91e
 
 + Added "allow_screenshots" config file option. Setting this
   option to 0 will disable the built-in screenshot feature.
@@ -16,8 +16,13 @@ GIT
   overlapped the player.
 + Palette editor component entry now accepts most of the same
   inputs as dialog number boxes.
+* Fixed bug where loading a board charset would also clear all
+  of the extended charsets.
 * Fixed a memory corruption bug in the non-SDL Wii port caused
   by faulty threading code.
+* Fixed crash that could occur when updating a board undo frame.
+* Fixed crash when changing to a board with overlay disabled in
+  overlay editing mode.
 
 
 July 12th, 2018 - MZX 2.91d

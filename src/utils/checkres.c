@@ -228,47 +228,35 @@ static void output(const char *required_by, const char *resource_path,
 {
   if(!quiet_mode)
   {
-    char *req_by = malloc(parent_max_len + 1);
-    char *res_path = malloc(resource_max_len + 1);
-
-    req_by[parent_max_len] = 0;
-    res_path[resource_max_len] = 0;
-
     found_in = found_in ? found_in : "";
 
     if(!started_table)
     {
       fprintf(stdout, "\n");
 
-      memset(req_by, 32, parent_max_len);
-      memset(res_path, 32, resource_max_len);
+      fprintf(stdout, "%-*.*s  %-*.*s  %-10s %s\n",
+       parent_max_len, parent_max_len, "Required by",
+       resource_max_len, resource_max_len, "Resource path",
+       "Status",
+       "Found in"
+      );
 
-      strncpy(req_by, "Required by", strlen("Required by"));
-      strncpy(res_path, "Resource path", strlen("Resource path"));
-
-      fprintf(stdout, "%s  %s  %-10s %s\n",
-       req_by, res_path, "Status", "Found in");
-
-      memset(req_by, 32, parent_max_len);
-      memset(res_path, 32, resource_max_len);
-
-      strncpy(req_by, "-----------", strlen("-----------"));
-      strncpy(res_path, "-------------", strlen("-------------"));
-
-      fprintf(stdout, "%s  %s  %-10s %s\n",
-       req_by, res_path, "------", "--------");
+      fprintf(stdout, "%-*.*s  %-*.*s  %-10s %s\n",
+       parent_max_len, parent_max_len, "-----------",
+       resource_max_len, resource_max_len, "-------------",
+       "------",
+       "--------"
+      );
 
       started_table = 1;
     }
 
-    memset(req_by, 32, parent_max_len);
-    memset(res_path, 32, resource_max_len);
-
-    strncpy(req_by, required_by, strlen(required_by));
-    strncpy(res_path, resource_path, strlen(resource_path));
-
-    fprintf(stdout, "%s  %s  %-10s %s\n",
-     req_by, res_path, status, found_in);
+    fprintf(stdout, "%-*.*s  %-*.*s  %-10s %s\n",
+     parent_max_len, parent_max_len, required_by,
+     resource_max_len, resource_max_len, resource_path,
+     status,
+     found_in
+    );
   }
   else
   {

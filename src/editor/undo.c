@@ -673,6 +673,7 @@ static void add_board_undo_position(struct undo_frame *f, int x, int y)
   int prev_size = current->prev_size;
 
   struct buffer_info temp_buffer;
+  memset(&temp_buffer, 0, sizeof(struct buffer_info));
 
   // Can't place over player
   if(src_board->level_id[offset] == PLAYER)
