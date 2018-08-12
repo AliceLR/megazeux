@@ -4,6 +4,7 @@ GIT
   of the extended charsets.
 * Fixed a memory corruption bug in the non-SDL Wii port caused
   by faulty threading code.
+* Fixed crash that could occur when updating a board undo frame.
 
 
 July 12th, 2018 - MZX 2.91d
