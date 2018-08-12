@@ -615,7 +615,7 @@ static inline void load_world_info(struct world *mzx_world,
       case WPROP_ID_BULLET_COLOR:
         mfread(bullet_color, 3, 1, prop);
         break;
-        
+
       case WPROP_ID_DMG:
         mfread(id_dmg, 128, 1, prop);
         break;
@@ -1731,7 +1731,7 @@ int load_counters_file(struct world *mzx_world, const char *file)
 
   if(strcmp(magic, "COUNTERS"))
     goto err;
-  
+
   if(ZIP_SUCCESS != zip_read_directory(zp))
     goto err;
 
@@ -2469,7 +2469,7 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
   struct stat file_info;
 
   get_path(file, file_path, MAX_PATH);
-  
+
   // chdir to game directory
   if(file_path[0])
   {
@@ -2812,8 +2812,8 @@ void change_board_load_assets(struct world *mzx_world)
   {
     if(fsafetranslate(cur_board->charset_path, translated_name) == FSAFE_SUCCESS)
     {
-      // 2.90/2.91 bug: ec_load_set cleared the extended chars
-      if(mzx_world->version <= V291)
+      // Bug: ec_load_set cleared the extended chars prior to 2.91e
+      if(mzx_world->version < V291)
         ec_clear_set();
 
       ec_load_set(translated_name);
@@ -2892,7 +2892,7 @@ __editor_maybe_static void default_global_data(struct world *mzx_world)
   set_counter(mzx_world, "LOBOMBS", 0, 0);
   set_counter(mzx_world, "SCORE", 0, 0);
   set_counter(mzx_world, "TIME", 0, 0);
-  
+
   // Setup their gateways
   initialize_gateway_functions(mzx_world);
 
