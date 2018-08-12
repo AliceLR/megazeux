@@ -1,11 +1,11 @@
 GIT - MZX 2.91e
 
-* Fixed bug where loading a board charset would also clear all
++ Fixed bug where loading a board charset would also clear all
   of the extended charsets.
-* Fixed a memory corruption bug in the non-SDL Wii port caused
++ Fixed a memory corruption bug in the non-SDL Wii port caused
   by faulty threading code.
-* Fixed crash that could occur when updating a board undo frame.
-* Fixed crash when changing to a board with overlay disabled in
++ Fixed crash that could occur when updating a board undo frame.
++ Fixed crash when changing to a board with overlay disabled in
   overlay editing mode.
 
 
