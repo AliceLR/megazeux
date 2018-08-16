@@ -32,8 +32,11 @@
 
 #include <stddef.h>
 
-#define clinearAlloc(size, alignment) check_linearAlloc(size, alignment, __FILE__, __LINE__)
-void *check_linearAlloc(size_t size, size_t alignment, const char *file, int line);
+#define clinearAlloc(size, alignment) \
+ check_linearAlloc(size, alignment, __FILE__, __LINE__)
+
+void *check_linearAlloc(size_t size, size_t alignment, const char *file,
+ int line);
 
 #else
 

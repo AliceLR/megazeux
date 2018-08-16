@@ -28,17 +28,19 @@
 
 #ifdef CONFIG_AUDIO
 
-static u8* audio_buffer;
+static u8 *audio_buffer;
 static ndspWaveBuf ndsp_buffer[2];
 static int buffer_size;
 static bool soundFillBlock = false;
 
-static void ndsp_callback(void* dud)
+static void ndsp_callback(void *dud)
 {
-  if (ndsp_buffer[soundFillBlock].status == NDSP_WBUF_DONE) {
+  if(ndsp_buffer[soundFillBlock].status == NDSP_WBUF_DONE)
+  {
     audio_callback(ndsp_buffer[soundFillBlock].data_pcm16, buffer_size);
 
-    DSP_FlushDataCache(ndsp_buffer[soundFillBlock].data_pcm8, audio.buffer_samples * 4);
+    DSP_FlushDataCache(ndsp_buffer[soundFillBlock].data_pcm8,
+     audio.buffer_samples * 4);
     ndspChnWaveBufAdd(0, &ndsp_buffer[soundFillBlock]);
     soundFillBlock = !soundFillBlock;
   }

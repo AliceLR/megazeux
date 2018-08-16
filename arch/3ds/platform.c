@@ -40,12 +40,14 @@
 
 static u8 isNot2DS;
 
-FILE *popen(const char *command, const char *type) {
-	return NULL;
+FILE *popen(const char *command, const char *type)
+{
+  return NULL;
 }
 
-int pclose(FILE *stream) {
-	return 0;
+int pclose(FILE *stream)
+{
+  return 0;
 }
 
 void delay(Uint32 ms)
@@ -63,7 +65,7 @@ bool ctr_is_2d(void)
 
 Uint32 get_ticks(void)
 {
-  return (Uint32) osGetTime();
+  return (Uint32)osGetTime();
 }
 
 bool platform_init(void)
@@ -108,13 +110,15 @@ static void out_of_linear_memory_check(void *p, const char *file, int line)
   char msgbuf[128];
   if(!p)
   {
-    snprintf(msgbuf, sizeof(msgbuf), "Out of linear memory in %s:%d", file, line);
+    snprintf(msgbuf, sizeof(msgbuf), "Out of linear memory in %s:%d",
+     file, line);
     msgbuf[sizeof(msgbuf)-1] = '\0';
     error(msgbuf, 2, 4, 0);
   }
 }
 
-void *check_linearAlloc(size_t size, size_t alignment, const char *file, int line)
+void *check_linearAlloc(size_t size, size_t alignment, const char *file,
+ int line)
 {
   void *result = linearMemAlign(size, alignment);
   out_of_linear_memory_check(result, file, line);
