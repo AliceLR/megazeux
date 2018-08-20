@@ -7,6 +7,8 @@ GIT - MZX 2.91e
 + Fixed crash that could occur when updating a board undo frame.
 + Fixed crash when changing to a board with overlay disabled in
   overlay editing mode.
++ Fixed a bug where the protected charset could get cleared for
+  renderers without layer rendering support.
 
 
 July 12th, 2018 - MZX 2.91d

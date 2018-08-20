@@ -146,7 +146,13 @@ void ec_read_char(Uint16 chr, char *matrix)
 
 void ec_clear_set(void)
 {
-  memset(graphics.charset, 0, PROTECTED_CHARSET_POSITION * CHAR_SIZE);
+  if(layer_renderer_check(false))
+    memset(graphics.charset, 0, PROTECTED_CHARSET_POSITION * CHAR_SIZE);
+
+  // For compatibility with old renderers, clear only the first charset;
+  // the second could be a duplicate of the protected set.
+  else
+    memset(graphics.charset, 0, CHARSET_SIZE * CHAR_SIZE);
 }
 
 Sint32 ec_load_set(char *name)
@@ -1462,6 +1468,7 @@ bool init_video(struct config_info *conf, const char *caption)
     // may also not support the number of charsets we want
     // Copy the protected charset to the end of the normal charset
     // position
+    // TODO: This check ought to happen whenever the renderer changes, too
     memcpy(graphics.charset + (CHARSET_SIZE * CHAR_SIZE),
      graphics.charset + (PROTECTED_CHARSET_POSITION * CHAR_SIZE),
      CHARSET_SIZE * CHAR_SIZE);
