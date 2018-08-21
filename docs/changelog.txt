@@ -9,6 +9,8 @@ GIT - MZX 2.91e
   overlay editing mode.
 + Fixed a bug where the protected charset could get cleared for
   renderers without layer rendering support.
++ Enabled C99-compliant stdio functions for mingw, fixing at
+  least one crash bug and possibly improving performance.
 
 
 July 12th, 2018 - MZX 2.91d
