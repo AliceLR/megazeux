@@ -21,6 +21,7 @@
 
 #include "configure.h"
 #include "macro.h"
+#include "macro_struct.h"
 #include "../rasm.h"
 #include "../util.h"
 
