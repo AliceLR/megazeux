@@ -487,7 +487,7 @@ static Uint32 get_smzx_index_offset(Uint32 color, Uint32 index)
 
 Uint32 get_smzx_index(Uint32 col, Uint32 offset)
 {
-  offset = get_smzx_index_offset(color, offset);
+  offset = get_smzx_index_offset(col, offset);
 
   return graphics.smzx_indices[offset];
 }
@@ -498,7 +498,7 @@ void set_smzx_index(Uint32 col, Uint32 offset, Uint32 value)
   if(graphics.screen_mode != 3)
     return;
 
-  offset = get_smzx_index_offset(color, offset);
+  offset = get_smzx_index_offset(col, offset);
 
   graphics.smzx_indices[offset] = value % SMZX_PAL_SIZE;
 }
