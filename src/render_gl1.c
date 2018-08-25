@@ -175,10 +175,10 @@ static bool gl1_set_video_mode(struct graphics_data *graphics,
   struct gl1_render_data *render_data = graphics->render_data;
 
   gl_set_attributes(graphics);
-  
+
   if(!gl_set_video_mode(graphics, width, height, depth, fullscreen, resize))
     return false;
-  
+
   gl_set_attributes(graphics);
 
   if(!gl_load_syms(gl1_syms_map))
@@ -276,7 +276,8 @@ static void gl1_render_graph(struct graphics_data *graphics)
   }
 }
 
-static void gl1_render_layer(struct graphics_data *graphics, struct video_layer *layer)
+static void gl1_render_layer(struct graphics_data *graphics,
+ struct video_layer *layer)
 {
   struct gl1_render_data *render_data = graphics->render_data;
 

@@ -50,7 +50,8 @@ static void yuv1_render_graph(struct graphics_data *graphics)
   yuv_unlock_overlay(render_data);
 }
 
-static void yuv1_render_layer(struct graphics_data *graphics, struct video_layer *layer)
+static void yuv1_render_layer(struct graphics_data *graphics,
+ struct video_layer *layer)
 {
   struct yuv_render_data *render_data = graphics->render_data;
   Uint32 *pixels;
