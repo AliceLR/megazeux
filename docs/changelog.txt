@@ -11,6 +11,7 @@ GIT - MZX 2.91e
   renderers without layer rendering support.
 + Enabled C99-compliant stdio functions for mingw, fixing at
   least one crash bug and possibly improving performance.
++ The NDS port now attempts to detect argv[0].
 
 
 July 12th, 2018 - MZX 2.91d

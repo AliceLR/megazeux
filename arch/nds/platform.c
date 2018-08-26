@@ -57,9 +57,9 @@ Uint32 get_ticks(void)
 static void timer_init(void)
 {
   // TIMER0, TIMER1: Tick timer
-  TIMER0_DATA = 0; 
-  TIMER1_DATA = 0; 
-  TIMER0_CR = TIMER_ENABLE | TIMER_DIV_1024; 
+  TIMER0_DATA = 0;
+  TIMER1_DATA = 0;
+  TIMER0_CR = TIMER_ENABLE | TIMER_DIV_1024;
   TIMER1_CR = TIMER_ENABLE | TIMER_CASCADE;
 
   // TIMER2: Input handler IRQ
@@ -160,14 +160,28 @@ void platform_quit(void)
   nds_ext_unlock();
 }
 
-// argc/argv is unreliable on NDS.  On my R4, argv[0] is an invalid pointer.
+// argc/argv is unreliable on NDS and varies between cards/launchers.
 
 int main(int argc, char *argv[])
 {
   static char _argv0[] = SHAREDIR "/mzxrun.nds";
   static char *_argv[] = {_argv0};
   consoleDemoInit();
-  real_main(1, _argv);
-  while(true)
-    ;
+
+  if(argc < 1 || argv == NULL || argv[0] == NULL)
+  {
+    iprintf("argv[0]: not found.\n"
+            "using '%s'\n"
+            "WARNING: Use of a loader that supports argv[0] is recommended.\n",
+            _argv0);
+
+    real_main(1, _argv);
+  }
+  else
+  {
+    iprintf("argv[0]: '%s'\n", argv[0]);
+    real_main(argc, argv);
+  }
+
+  while(true);
 }
