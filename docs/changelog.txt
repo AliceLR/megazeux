@@ -12,6 +12,7 @@ GIT - MZX 2.91e
 + Enabled C99-compliant stdio functions for mingw, fixing at
   least one crash bug and possibly improving performance.
 + The NDS port now attempts to detect argv[0].
++ The 3DS port now starts in /3ds/megazeux instead of /.
 
 
 July 12th, 2018 - MZX 2.91d

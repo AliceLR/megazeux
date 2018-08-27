@@ -430,7 +430,7 @@ elif [ "$PLATFORM" = "3ds" ]; then
 	SHAREDIR=/3ds/megazeux
 	GAMESDIR=$SHAREDIR
 	BINDIR=$SHAREDIR
-	echo "#define CONFFILE \"$SHAREDIR/config.txt\"" >> src/config.h
+	echo "#define CONFFILE \"config.txt\"" >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 elif [ "$PLATFORM" = "wii" ]; then
 	SHAREDIR=/apps/megazeux

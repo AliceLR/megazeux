@@ -127,10 +127,14 @@ void *check_linearAlloc(size_t size, size_t alignment, const char *file,
 
 #endif
 
+// argv[0] will either not exist or be /3ds/mzxrun.3dsx.
+// Neither helps much, so either way, we want to start in SHAREDIR.
+
 int main(int argc, char *argv[])
 {
-  static char *_argv[] = { (char *)"/" };
-  chdir("/");
+  static char _argv0[] = SHAREDIR "/null";
+  static char *_argv[] = { _argv0 };
+  chdir(SHAREDIR);
   real_main(1, _argv);
   return 0;
 }
