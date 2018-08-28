@@ -34,7 +34,31 @@ __M_BEGIN_DECLS
 #define ZIP_M_NONE 0
 #define ZIP_M_DEFLATE 8
 
-#define ZIP_F_DATA_DESCRIPTOR (1<<3)
+enum zip_general_purpose_flag
+{
+  ZIP_F_ENCRYPTED           = (1<<0), // Indicates that a file is encrypted.
+  ZIP_F_COMPRESSION_1       = (1<<1), // Varies.
+  ZIP_F_COMPRESSION_2       = (1<<2), // Varies.
+  ZIP_F_DATA_DESCRIPTOR     = (1<<3), // Sizes and CRC32 stored after file data.
+  ZIP_F_ENHANCED_DEFLATE    = (1<<4), // Reserved for Deflate64.
+  ZIP_F_COMPRESSED_PATCHED  = (1<<5), // ?????
+  ZIP_F_STRONG_ENCRYPTION   = (1<<6), // Indicates strong encryption is used.
+  // bit 07 unused
+  // bit 08 unused
+  // bit 09 unused
+  // bit 10 unused
+  ZIP_F_LANGUAGE_ENCODING   = (1<<11), // Indicates UTF-8 filename/comments.
+  // bit 12 reserved
+  ZIP_F_MASKED_HEADER_DATA  = (1<<13), // See: strong encryption.
+  // bit 14 reserved
+  // bit 15 reserved
+};
+
+// These flags are allowed for all DEFLATE and stored files we care about.
+#define ZIP_F_ALLOWED   (\
+  ZIP_F_DATA_DESCRIPTOR |\
+  ZIP_F_COMPRESSION_1   |\
+  ZIP_F_COMPRESSION_2   )
 
 enum zip_error {
   ZIP_SUCCESS = 0,

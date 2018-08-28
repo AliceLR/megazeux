@@ -1567,6 +1567,9 @@ static enum status parse_file(const char *file_name,
     zip_base = add_base_path(file_name, &path_list,
      &path_list_size, &path_list_alloc);
 
+    if(!zip_base)
+      return ZIP_FAILED;
+
     zp = zip_base->zp;
 
     // Iterate the ZIP

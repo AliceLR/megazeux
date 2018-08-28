@@ -15,6 +15,9 @@ GIT - MZX 2.91e
 + The 3DS port now starts in /3ds/megazeux instead of /.
 + The MOVE PLAYER [dir] and MOVE PLAYER [dir] [label] commands
   now update the commands cycle and commands total values.
++ Fixed a bug where MZX and checkres wouldn't accept some
+  DEFLATE-related ZIP flags.
++ checkres no longer crashes on failing to open a resource zip.
 
 
 July 12th, 2018 - MZX 2.91d

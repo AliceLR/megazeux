@@ -210,13 +210,13 @@ static const char *zip_error_string(enum zip_error code)
     case ZIP_NO_EOCD:
       return "could not find EOCD record";
     case ZIP_NO_CENTRAL_DIRECTORY:
-      return "could not find central directory";
+      return "could not find or read central directory";
     case ZIP_INCOMPLETE_CENTRAL_DIRECTORY:
       return "central directory is missing records";
     case ZIP_UNSUPPORTED_MULTIPLE_DISKS:
       return "unsupported multiple volume archive";
     case ZIP_UNSUPPORTED_FLAGS:
-      return "unsupported flags; use 0";
+      return "unsupported flags";
     case ZIP_UNSUPPORTED_COMPRESSION:
       return "unsupported method; use DEFLATE or none";
     case ZIP_UNSUPPORTED_ZIP64:
@@ -526,9 +526,15 @@ static enum zip_error zip_read_file_header(struct zip_archive *zp,
 
     flags = mfgetw(&mf);
 
-    if((flags & ~ZIP_F_DATA_DESCRIPTOR) != 0)
+    if((flags & ~ZIP_F_ALLOWED) != 0)
     {
-      warn("Zip using unsupported options (%d) -- use 0 or 8.\n", flags);
+      warn(
+        "Zip using unsupported options "
+        "(allowing %d, found %d -- unsupported: %d).\n",
+        ZIP_F_ALLOWED,
+        flags,
+        flags & ~ZIP_F_ALLOWED
+      );
       return ZIP_UNSUPPORTED_FLAGS;
     }
     fh->flags = flags;
