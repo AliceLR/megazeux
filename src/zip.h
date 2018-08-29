@@ -31,8 +31,26 @@ __M_BEGIN_DECLS
 
 #include "memfile.h"
 
-#define ZIP_M_NONE 0
-#define ZIP_M_DEFLATE 8
+// Currently supported methods are 0 (Store) and 8 (DEFLATE)
+enum zip_compression_method
+{
+  ZIP_M_NONE                    = 0, // Store
+  ZIP_M_SHRUNK                  = 1,
+  ZIP_M_REDUCED_1               = 2, // Reduced with compression factor 1
+  ZIP_M_REDUCED_2               = 3, // Reduced with compression factor 2
+  ZIP_M_REDUCED_3               = 4, // Reduced with compression factor 3
+  ZIP_M_REDUCED_4               = 5, // Reduced with compression factor 4
+  ZIP_M_IMPLODED                = 6,
+  ZIP_M_DEFLATE                 = 8,
+  ZIP_M_DEFLATE64               = 9,
+  ZIP_M_DCL_IMPLODING           = 10, // Old IBM TERSE
+  ZIP_M_BZIP2                   = 12,
+  ZIP_M_LZMA                    = 14,
+  ZIP_M_IBM_TERSE               = 18,
+  ZIP_M_LZ77                    = 19,
+  ZIP_M_WAVPACK                 = 97,
+  ZIP_M_PPMD                    = 98,
+};
 
 enum zip_general_purpose_flag
 {
@@ -60,7 +78,8 @@ enum zip_general_purpose_flag
   ZIP_F_COMPRESSION_1   |\
   ZIP_F_COMPRESSION_2   )
 
-enum zip_error {
+enum zip_error
+{
   ZIP_SUCCESS = 0,
   ZIP_EOF,
   ZIP_NULL,
