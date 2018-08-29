@@ -13,6 +13,8 @@ GIT - MZX 2.91e
   least one crash bug and possibly improving performance.
 + The NDS port now attempts to detect argv[0].
 + The 3DS port now starts in /3ds/megazeux instead of /.
++ The window caption now updates correctly when using either of
+  the overlay renderers.
 
 
 July 12th, 2018 - MZX 2.91d

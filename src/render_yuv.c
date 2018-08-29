@@ -140,6 +140,8 @@ bool yuv_set_video_mode_size(struct graphics_data *graphics,
 
   render_data->is_yuy2 = render_data->overlay->format == SDL_YUY2_OVERLAY;
 #endif // !SDL_VERSION_ATLEAST(2,0,0)
+
+  sdl_window_id = SDL_GetWindowID(render_data->window);
   return true;
 
 #if SDL_VERSION_ATLEAST(2,0,0)
