@@ -50,6 +50,9 @@ typedef GLint GLiftype;
 #define BG_WIDTH 128
 #define BG_HEIGHT 32
 
+#define SCREEN_PIX_W_F (1.0f * SCREEN_PIX_W)
+#define SCREEN_PIX_H_F (1.0f * SCREEN_PIX_H)
+
 // Must be powers of 2
 #define TEX_DATA_WIDTH 512
 #define TEX_DATA_HEIGHT 1024
@@ -814,28 +817,28 @@ static void glsl_render_graph(struct graphics_data *graphics)
   Uint32 *colorptr, *dest, i, j;
   int width, height;
 
-  // FIXME de-magickify (requires shader cleanup)
   static const float tex_coord_array_single[2 * 4] =
   {
-    0.0f,          0.0f,
-    0.0f,          25.0f,
-    256.0 * 25.0f / 80.0f, 0.0f,
-    256.0 * 25.0f / 80.0f, 25.0f,
+    0.0f,     0.0f,
+    0.0f,     SCREEN_H,
+    SCREEN_W, 0.0f,
+    SCREEN_W, SCREEN_H,
   };
 
-  // FIXME demagickify
+  // Clamp draw area to size of screen texture.
   get_context_width_height(graphics, &width, &height);
-  if(width < 640 || height < 350)
+  if(width < SCREEN_PIX_W || height < SCREEN_PIX_H)
   {
-    if(width >= 1024)
-      width = 1024;
-    if(height >= 512)
-      height = 512;
+    if(width >= GL_POWER_2_WIDTH)
+      width = GL_POWER_2_WIDTH;
+
+    if(height >= GL_POWER_2_HEIGHT)
+      height = GL_POWER_2_HEIGHT;
   }
   else
   {
-    width = 640;
-    height = 350;
+    width = SCREEN_PIX_W;
+    height = SCREEN_PIX_H;
   }
 
   glsl.glViewport(0, 0, width, height);
@@ -923,8 +926,7 @@ static void glsl_render_graph(struct graphics_data *graphics)
   glsl.glDisableVertexAttribArray(ATTRIB_TEXCOORD);
 }
 
-// FIXME de-magickify (requires shader cleanup) and finish wrapping
-// FIXME also potentially merge common parts of this and render_graph
+// FIXME potentially merge common parts of this and render_graph
 static void glsl_render_layer(struct graphics_data *graphics,
  struct video_layer *layer)
 {
@@ -934,10 +936,15 @@ static void glsl_render_layer(struct graphics_data *graphics,
   int width, height;
   Uint32 char_value, fg_color, bg_color;
 
-  float v_left = 1.0f * (layer->x) / 640.0f * 2.0f - 1.0f;
-  float v_right = 1.0f * (layer->x + (int)layer->w * CHAR_W) / 640.0f * 2.0f - 1.0f;
-  float v_top = 1.0f * (layer->y) / 350.0f * 2.0f - 1.0f;
-  float v_bottom = 1.0f * (layer->y + (int)layer->h * CHAR_H) / 350.0f * 2.0f - 1.0f;
+  int x1 = layer->x;
+  int x2 = layer->x + layer->w * CHAR_W;
+  int y1 = layer->y;
+  int y2 = layer->y + layer->h * CHAR_H;
+
+  float v_left =   1.0f * x1 / SCREEN_PIX_W_F * 2.0f - 1.0f;
+  float v_right =  1.0f * x2 / SCREEN_PIX_W_F * 2.0f - 1.0f;
+  float v_top =    1.0f * y1 / SCREEN_PIX_H_F * 2.0f - 1.0f;
+  float v_bottom = 1.0f * y2 / SCREEN_PIX_H_F * 2.0f - 1.0f;
 
   float vertex_array_single[2 * 4] =
   {
@@ -947,32 +954,28 @@ static void glsl_render_layer(struct graphics_data *graphics,
     v_right, -v_bottom,
   };
 
-  float t_left = 1.0f * (layer->x) / 640.0f * 256.0 * 25.0f / 80.0f;
-  float t_right = 1.0f * (layer->x + (int)layer->w * CHAR_W) / 640.0f * 256.0 * 25.0f / 80.0f;
-  float t_top = 1.0f * (layer->y) / 350.0f * 25.0f;
-  float t_bottom = 1.0f * (layer->y + (int)layer->h * CHAR_H)  / 350.0f * 25.0f;
-
   float tex_coord_array_single[2 * 4] =
   {
-    t_left - t_left, t_top - t_top,
-    t_left - t_left, t_bottom - t_top,
-    t_right - t_left, t_top - t_top,
-    t_right - t_left, t_bottom - t_top,
+    0.0f,     0.0f,
+    0.0f,     layer->h,
+    layer->w, 0.0f,
+    layer->w, layer->h,
   };
 
-  // FIXME demagickify
+  // Clamp draw area to size of screen texture.
   get_context_width_height(graphics, &width, &height);
-  if(width < 640 || height < 350)
+  if(width < SCREEN_PIX_W || height < SCREEN_PIX_H)
   {
-    if(width >= 1024)
-      width = 1024;
-    if(height >= 512)
-      height = 512;
+    if(width >= GL_POWER_2_WIDTH)
+      width = GL_POWER_2_WIDTH;
+
+    if(height >= GL_POWER_2_HEIGHT)
+      height = GL_POWER_2_HEIGHT;
   }
   else
   {
-    width = 640;
-    height = 350;
+    width = SCREEN_PIX_W;
+    height = SCREEN_PIX_H;
   }
 
   glsl.glViewport(0, 0, width, height);
@@ -1181,16 +1184,19 @@ static void glsl_sync_screen(struct graphics_data *graphics)
   glsl.glViewport((width - v_width) >> 1, (height - v_height) >> 1,
    v_width, v_height);
 
-  // FIXME demagickify
-  if(width < 640 || height < 350)
+  // Clamp draw area to size of screen texture.
+  if(width < SCREEN_PIX_W || height < SCREEN_PIX_H)
   {
-    width = (width < 1024) ? width : 1024;
-    height = (height < 512) ? height : 512;
+    if(width >= GL_POWER_2_WIDTH)
+      width = GL_POWER_2_WIDTH;
+
+    if(height >= GL_POWER_2_HEIGHT)
+      height = GL_POWER_2_HEIGHT;
   }
   else
   {
-    width = 640;
-    height = 350;
+    width = SCREEN_PIX_W;
+    height = SCREEN_PIX_H;
   }
 
   glsl.glUseProgram(render_data->scaler_program);
@@ -1214,13 +1220,12 @@ static void glsl_sync_screen(struct graphics_data *graphics)
   gl_check_error();
 
   {
-    // FIXME demagickify
     const float tex_coord_array_single[2 * 4] =
     {
-       0.0f,            height / 512.0f,
-       0.0f,            0.0f,
-       width / 1024.0f, height / 512.0f,
-       width / 1024.0f, 0.0f,
+       0.0f,                              height / (1.0f * GL_POWER_2_HEIGHT),
+       0.0f,                              0.0f,
+       width / (1.0f * GL_POWER_2_WIDTH), height / (1.0f * GL_POWER_2_HEIGHT),
+       width / (1.0f * GL_POWER_2_WIDTH), 0.0f,
     };
 
     glsl.glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 0,

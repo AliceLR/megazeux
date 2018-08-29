@@ -2289,7 +2289,7 @@ static void dump_screen_real_32bpp(Uint32 *pix, const char *name)
 {
   FILE *file;
   int i, x;
-  Uint8 rowbuffer[SCREEN_W * CHAR_W * 3]; // 24bpp
+  Uint8 rowbuffer[SCREEN_PIX_W * 3]; // 24bpp
   Uint8 *rowbuffer_ptr;
   Uint32 *pix_ptr;
 
@@ -2300,29 +2300,29 @@ static void dump_screen_real_32bpp(Uint32 *pix, const char *name)
   // BMP header
   fputw(0x4D42, file); // BM
   // BMP + DIB + image
-  fputd(14 + 40 + SCREEN_W * CHAR_W * SCREEN_H * CHAR_H * 3, file);
+  fputd(14 + 40 + SCREEN_PIX_W * SCREEN_PIX_H * 3, file);
   fputd(0, file); // Reserved
   fputd(14, file); // DIB header offset
 
   // DIB header
   fputd(40, file); // DIB header size (Windows 3/BITMAPINFOHEADER)
-  fputd(SCREEN_W * CHAR_W, file); // Width in pixels
-  fputd(SCREEN_H * CHAR_H, file); // Height in pixels
+  fputd(SCREEN_PIX_W, file); // Width in pixels
+  fputd(SCREEN_PIX_H, file); // Height in pixels
   fputw(1, file); // Number of color planes
   fputw(24, file); // Bits per pixel
   fputd(0, file); // Compression method (none)
-  fputd(SCREEN_W * CHAR_W * SCREEN_H * CHAR_H * 3, file); // Image data size
+  fputd(SCREEN_PIX_W * SCREEN_PIX_H * 3, file); // Image data size
   fputd(3780, file); // Horizontal dots per meter
   fputd(3780, file); // Vertical dots per meter
   fputd(0, file); // Number of colors in palette
   fputd(0, file); // Number of important colors
 
   // Image data
-  for(i = SCREEN_H * CHAR_H - 1; i >= 0; i--)
+  for(i = SCREEN_PIX_H - 1; i >= 0; i--)
   {
-    pix_ptr = pix + i * SCREEN_W * CHAR_W;
+    pix_ptr = pix + i * SCREEN_PIX_W;
     rowbuffer_ptr = rowbuffer;
-    for(x = 0; x < SCREEN_W * CHAR_W; x++)
+    for(x = 0; x < SCREEN_PIX_W; x++)
     {
       rowbuffer_ptr[0] = (*pix_ptr & 0x000000FF) >> 0;
       rowbuffer_ptr[1] = (*pix_ptr & 0x0000FF00) >> 8;
@@ -2330,7 +2330,7 @@ static void dump_screen_real_32bpp(Uint32 *pix, const char *name)
       rowbuffer_ptr += 3;
       pix_ptr++;
     }
-    fwrite(rowbuffer, SCREEN_W * CHAR_W * 3, 1, file);
+    fwrite(rowbuffer, SCREEN_PIX_W * 3, 1, file);
     //fwrite(pix + i * 640, sizeof(Uint8), 640, file);
   }
 

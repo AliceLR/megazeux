@@ -57,6 +57,9 @@ struct char_element
 #define CHAR_W 8
 #define CHAR_H 14
 
+#define SCREEN_PIX_W (SCREEN_W * CHAR_W)
+#define SCREEN_PIX_H (SCREEN_H * CHAR_H)
+
 #define CHAR_SIZE 14
 #define CHARSET_SIZE 256
 #if defined(CONFIG_NDS)
@@ -141,7 +144,7 @@ struct graphics_data
   Uint32 current_intensity[SMZX_PAL_SIZE];
   Uint32 saved_intensity[SMZX_PAL_SIZE];
   Uint32 backup_intensity[SMZX_PAL_SIZE];
-  
+
   Uint32 layer_count;
   struct video_layer video_layers[TEXTVIDEO_LAYERS];
   Uint32 current_layer;

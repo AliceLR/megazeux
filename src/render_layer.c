@@ -111,8 +111,7 @@ static inline void reference_renderer(Uint32 *pixels, Uint32 pitch,
               y = layer->y + ch_y * 14 + row;
               x = layer->x + ch_x * 8 + col;
 
-              if(x >= 0 && x < SCREEN_W * CHAR_W &&
-               y >= 0 && y < SCREEN_H * CHAR_H)
+              if(x >= 0 && x < SCREEN_PIX_W && y >= 0 && y < SCREEN_PIX_H)
               {
                 drawPtr = pixels + (pitch / sizeof(Uint32)) * y + x;
 
@@ -130,8 +129,7 @@ static inline void reference_renderer(Uint32 *pixels, Uint32 pitch,
               y = layer->y + ch_y * 14 + row;
               x = layer->x + ch_x * 8 + col;
 
-              if(x >= 0 && x < SCREEN_W * CHAR_W &&
-               y >= 0 && y < SCREEN_H * CHAR_H)
+              if(x >= 0 && x < SCREEN_PIX_W && y >= 0 && y < SCREEN_PIX_H)
               {
                 drawPtr = pixels + (pitch / sizeof(Uint32)) * y + x;
 
@@ -141,7 +139,7 @@ static inline void reference_renderer(Uint32 *pixels, Uint32 pitch,
                 {
                   pix = char_colors[pix_pos];
                   *drawPtr = pix;
-                  if(x < SCREEN_W * CHAR_W - 1)
+                  if(x < SCREEN_PIX_W - 1)
                     *(++drawPtr) = pix;
                 }
               }
@@ -186,8 +184,8 @@ void render_layer(void *pixels, int force_bpp, Uint32 pitch,
   int ppal = graphics->protected_pal_position;
 
   if(layer->x < 0 || layer->y < 0 ||
-   (layer->x + layer->w * CHAR_W) > (SCREEN_W * CHAR_W) ||
-   (layer->y + layer->h * CHAR_H) > (SCREEN_H * CHAR_H))
+   (layer->x + layer->w * CHAR_W) > SCREEN_PIX_W ||
+   (layer->y + layer->h * CHAR_H) > SCREEN_PIX_H)
     clip = 1;
 
   if(force_bpp == -1)
