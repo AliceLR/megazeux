@@ -16,7 +16,7 @@ int int_(float v)
 
 void main( void )
 {
-    int x = int_(vTexcoord.x * 256.0 * 8.0);
+    int x = int_(vTexcoord.x * 8.0);
     int y = int_(vTexcoord.y * 14.0);
 
     int cx = x / 8;
@@ -38,7 +38,7 @@ void main( void )
       gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
     } else {
       //char_num = mod_(char_num, 256);
-      
+
       int px = int_(mod_(float(x), 8.0));
       int py = int_(mod_(float(y), 14.0));
       /*
@@ -49,7 +49,7 @@ void main( void )
       */
       int char_x = int_(mod_(float(char_num), 64.0)) * 8 + (px / 2 * 2);
       int char_y = char_num / 64 * 14 + py;
-      
+
       int smzx_col;
       if (texture2D(baseMap, vec2(1.0 / 512.0 * float(char_x), 1.0 / 1024.0 * float(char_y))).x < 0.5) {
         if (texture2D(baseMap, vec2(1.0 / 512.0 * float(char_x + 1), 1.0 / 1024.0 * float(char_y))).x < 0.5) {

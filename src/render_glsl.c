@@ -50,6 +50,33 @@ typedef GLint GLiftype;
 #define BG_WIDTH 128
 #define BG_HEIGHT 32
 
+// Must be powers of 2
+#define TEX_DATA_WIDTH 512
+#define TEX_DATA_HEIGHT 1024
+
+// Charsets: CHARSET_COLS * CHAR_W (512) x CHARSET_ROWS * CHAR_H (896)
+#define TEX_DATA_CHR_X 0
+#define TEX_DATA_CHR_Y 0
+
+// Palette: FULL_PAL_SIZE + 1 (273) x 1
+#define TEX_DATA_PAL_X 0
+#define TEX_DATA_PAL_Y 896
+
+// Indicies: SMZX_PAL_SIZE (256) x 4
+#define TEX_DATA_IDX_X 0
+#define TEX_DATA_IDX_Y 897
+
+// Layer: 81 x 26 (max)
+#define TEX_DATA_LAYER_X 0
+#define TEX_DATA_LAYER_Y 901
+
+enum
+{
+  TEX_SCREEN_ID,
+  TEX_DATA_ID,
+  NUM_TEXTURES
+};
+
 static inline int next_power_of_two(int v)
 {
   int i;
@@ -88,6 +115,7 @@ static struct
   void (GL_APIENTRY *glEnable)(GLenum cap);
   void (GL_APIENTRY *glEnableVertexAttribArray)(GLuint index);
   void (GL_APIENTRY *glGenTextures)(GLsizei n, GLuint *textures);
+  void (GL_APIENTRY *glDeleteTextures)(GLsizei n, GLuint *textures);
   GLenum (GL_APIENTRY *glGetError)(void);
   void (GL_APIENTRY *glGetProgramInfoLog)(GLuint program, GLsizei bufsize,
    GLsizei *len, char *infolog);
@@ -132,6 +160,7 @@ static const struct dso_syms_map glsl_syms_map[] =
   { "glCreateShader",             (fn_ptr *)&glsl.glCreateShader },
   { "glDeleteProgram",            (fn_ptr *)&glsl.glDeleteProgram },
   { "glDeleteShader",             (fn_ptr *)&glsl.glDeleteShader },
+  { "glDeleteTextures",           (fn_ptr *)&glsl.glDeleteTextures },
   { "glDetachShader",             (fn_ptr *)&glsl.glDetachShader },
   { "glDisable",                  (fn_ptr *)&glsl.glDisable },
   { "glDisableVertexAttribArray", (fn_ptr *)&glsl.glDisableVertexAttribArray },
@@ -169,7 +198,7 @@ struct glsl_render_data
   Uint32 *pixels;
   Uint32 charset_texture[CHAR_H * FULL_CHARSET_SIZE * CHAR_W];
   Uint32 background_texture[BG_WIDTH * BG_HEIGHT];
-  GLuint texture_number[3];
+  GLuint textures[NUM_TEXTURES];
   GLubyte palette[3 * FULL_PAL_SIZE];
   Uint8 remap_texture;
   Uint8 remap_char[FULL_CHARSET_SIZE];
@@ -518,6 +547,7 @@ static bool glsl_init_video(struct graphics_data *graphics,
   if(conf->force_bpp == 16 || conf->force_bpp == 32)
     graphics->bits_per_pixel = conf->force_bpp;
 
+  // Buffer for screen texture
   render_data->pixels = cmalloc(sizeof(Uint32) * GL_POWER_2_WIDTH *
    GL_POWER_2_HEIGHT);
   render_data->conf = conf;
@@ -546,16 +576,25 @@ err_free:
   return false;
 }
 
+// FIXME free more
 static void glsl_free_video(struct graphics_data *graphics)
 {
+  struct glsl_render_data *render_data = graphics->render_data;
   int i;
 
   for(i = 0; i < SHADERS_CURSOR_FRAG - SHADERS_SCALER_VERT + 1; i++)
     if(source_cache[i])
       free((void *)source_cache[i]);
 
-  free(graphics->render_data);
-  graphics->render_data = NULL;
+  if(render_data)
+  {
+    glsl.glDeleteTextures(NUM_TEXTURES, render_data->textures);
+    gl_check_error();
+
+    free(render_data->pixels);
+    free(render_data);
+    graphics->render_data = NULL;
+  }
 }
 
 static void glsl_remap_charsets(struct graphics_data *graphics)
@@ -564,7 +603,6 @@ static void glsl_remap_charsets(struct graphics_data *graphics)
   render_data->remap_texture = true;
 }
 
-// FIXME: Many magic numbers
 static void glsl_resize_screen(struct graphics_data *graphics,
  int width, int height)
 {
@@ -573,10 +611,15 @@ static void glsl_resize_screen(struct graphics_data *graphics,
   glsl.glViewport(0, 0, width, height);
   gl_check_error();
 
-  glsl.glGenTextures(3, render_data->texture_number);
+  // Free any preexisting textures if they exist
+  glsl.glDeleteTextures(NUM_TEXTURES, render_data->textures);
   gl_check_error();
 
-  glsl.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[0]);
+  glsl.glGenTextures(NUM_TEXTURES, render_data->textures);
+  gl_check_error();
+
+  // Screen texture
+  glsl.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_SCREEN_ID]);
   gl_check_error();
 
   gl_set_filter_method(CONFIG_GL_FILTER_LINEAR, glsl.glTexParameterf);
@@ -586,24 +629,20 @@ static void glsl_resize_screen(struct graphics_data *graphics,
   memset(render_data->pixels, 255,
    sizeof(Uint32) * GL_POWER_2_WIDTH * GL_POWER_2_HEIGHT);
 
-  //Uint32 *big_array = cmalloc(sizeof(Uint32) * 512 * 1024);
-  //memset(big_array, 255, sizeof(Uint32) * 512 * 1024);
-
   glsl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GL_POWER_2_WIDTH,
    GL_POWER_2_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE,
    render_data->pixels);
   gl_check_error();
 
-  glsl.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
+  // Data texture
+  glsl.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
   gl_check_error();
 
-  // FIXME demagickify
   gl_set_filter_method(CONFIG_GL_FILTER_NEAREST, glsl.glTexParameterf);
-  glsl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 512, 1024, 0, GL_RGBA,
-   GL_UNSIGNED_BYTE, NULL);
-  gl_check_error();
 
-  //free(big_array);
+  glsl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TEX_DATA_WIDTH, TEX_DATA_HEIGHT,
+   0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+  gl_check_error();
 
   glsl_remap_charsets(graphics);
 
@@ -722,9 +761,12 @@ static inline void glsl_do_remap_charsets(struct graphics_data *graphics)
       for(k = 0; k < CHARSET_COLS; k++, c += CHAR_H)
         p = glsl_char_bitmask_to_texture(c, p);
 
-  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
-   CHARSET_COLS * CHAR_W, CHARSET_ROWS * CHAR_H, GL_RGBA,
-   GL_UNSIGNED_BYTE, render_data->charset_texture);
+  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0,
+   TEX_DATA_CHR_X,
+   TEX_DATA_CHR_Y,
+   CHARSET_COLS * CHAR_W,
+   CHARSET_ROWS * CHAR_H,
+   GL_RGBA, GL_UNSIGNED_BYTE, render_data->charset_texture);
   gl_check_error();
 }
 
@@ -742,7 +784,10 @@ static inline void glsl_do_remap_char(struct graphics_data *graphics,
     p = glsl_char_bitmask_to_texture(c, p);
 
   glsl.glTexSubImage2D(GL_TEXTURE_2D, 0,
-   chr % CHARSET_COLS * CHAR_W, chr / CHARSET_COLS * CHAR_H, CHAR_W, CHAR_H,
+   TEX_DATA_CHR_X + (chr % CHARSET_COLS) * CHAR_W,
+   TEX_DATA_CHR_Y + (chr / CHARSET_COLS) * CHAR_H,
+   CHAR_W,
+   CHAR_H,
    GL_RGBA, GL_UNSIGNED_BYTE, render_data->charset_texture);
   gl_check_error();
 }
@@ -774,8 +819,8 @@ static void glsl_render_graph(struct graphics_data *graphics)
   {
     0.0f,          0.0f,
     0.0f,          25.0f,
-    25.0f / 80.0f, 0.0f,
-    25.0f / 80.0f, 25.0f,
+    256.0 * 25.0f / 80.0f, 0.0f,
+    256.0 * 25.0f / 80.0f, 25.0f,
   };
 
   // FIXME demagickify
@@ -802,7 +847,7 @@ static void glsl_render_graph(struct graphics_data *graphics)
     glsl.glUseProgram(render_data->tilemap_smzx_program);
   gl_check_error();
 
-  glsl.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
+  glsl.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
   gl_check_error();
 
   if(render_data->remap_texture)
@@ -823,38 +868,41 @@ static void glsl_render_graph(struct graphics_data *graphics)
     }
   }
 
+  // Layer data
   dest = render_data->background_texture;
 
   for(i = 0; i < SCREEN_W * SCREEN_H; i++, dest++, src++)
     *dest = (src->char_value<<18) + (src->bg_color<<9) + src->fg_color;
 
-  glsl.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
+  glsl.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
   gl_check_error();
 
-  // FIXME demagickify
-  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 901, SCREEN_W, SCREEN_H, GL_RGBA,
-   GL_UNSIGNED_BYTE, render_data->background_texture);
+  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0,
+   TEX_DATA_LAYER_X, TEX_DATA_LAYER_Y, SCREEN_W, SCREEN_H,
+   GL_RGBA, GL_UNSIGNED_BYTE, render_data->background_texture);
   gl_check_error();
 
+  // Palette
   colorptr = graphics->flat_intensity_palette;
   dest = render_data->background_texture;
 
   for(i = 0; i < graphics->protected_pal_position + 16; i++, dest++, colorptr++)
     *dest = *colorptr;
 
-  // FIXME demagickify
-  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 896, FULL_PAL_SIZE, 1, GL_RGBA,
-   GL_UNSIGNED_BYTE, render_data->background_texture);
+  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0,
+   TEX_DATA_PAL_X, TEX_DATA_PAL_Y, FULL_PAL_SIZE, 1,
+   GL_RGBA, GL_UNSIGNED_BYTE, render_data->background_texture);
   gl_check_error();
 
+  // Indices
   dest = render_data->background_texture;
   for(i = 0; i < 4; i++)
     for(j = 0; j < SMZX_PAL_SIZE; j++, dest++)
       *dest = graphics->smzx_indices[j * 4 + i];
 
-  // FIXME demagickify
-  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 897, SMZX_PAL_SIZE, 4, GL_RGBA,
-   GL_UNSIGNED_BYTE, render_data->background_texture);
+  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0,
+   TEX_DATA_IDX_X, TEX_DATA_IDX_Y, SMZX_PAL_SIZE, 4,
+   GL_RGBA, GL_UNSIGNED_BYTE, render_data->background_texture);
   gl_check_error();
 
   glsl.glEnableVertexAttribArray(ATTRIB_POSITION);
@@ -899,8 +947,8 @@ static void glsl_render_layer(struct graphics_data *graphics,
     v_right, -v_bottom,
   };
 
-  float t_left = 1.0f * (layer->x) / 640.0f * 25.0f / 80.0f;
-  float t_right = 1.0f * (layer->x + (int)layer->w * CHAR_W) / 640.0f * 25.0f / 80.0f;
+  float t_left = 1.0f * (layer->x) / 640.0f * 256.0 * 25.0f / 80.0f;
+  float t_right = 1.0f * (layer->x + (int)layer->w * CHAR_W) / 640.0f * 256.0 * 25.0f / 80.0f;
   float t_top = 1.0f * (layer->y) / 350.0f * 25.0f;
   float t_bottom = 1.0f * (layer->y + (int)layer->h * CHAR_H)  / 350.0f * 25.0f;
 
@@ -936,7 +984,7 @@ static void glsl_render_layer(struct graphics_data *graphics,
     glsl.glUseProgram(render_data->tilemap_smzx_program);
   gl_check_error();
 
-  glsl.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
+  glsl.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
   gl_check_error();
 
   if(render_data->remap_texture)
@@ -957,6 +1005,7 @@ static void glsl_render_layer(struct graphics_data *graphics,
     }
   }
 
+  // Layer data
   dest = render_data->background_texture;
 
   for(i = 0; i < layer->w * layer->h; i++, dest++, src++)
@@ -985,12 +1034,12 @@ static void glsl_render_layer(struct graphics_data *graphics,
     *dest = (char_value << 18) | (bg_color << 9) | fg_color;
   }
 
-  glsl.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
+  glsl.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
   gl_check_error();
 
-  // FIXME demagickify
-  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 901, layer->w, layer->h, GL_RGBA,
-   GL_UNSIGNED_BYTE, render_data->background_texture);
+  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0,
+   TEX_DATA_LAYER_X, TEX_DATA_LAYER_Y, layer->w, layer->h,
+   GL_RGBA, GL_UNSIGNED_BYTE, render_data->background_texture);
   gl_check_error();
 
   colorptr = graphics->flat_intensity_palette;
@@ -999,23 +1048,25 @@ static void glsl_render_layer(struct graphics_data *graphics,
   for(i = 0; i < graphics->protected_pal_position + 16; i++, dest++, colorptr++)
     *dest = *colorptr;
 
+  // Palette
   if(layer->transparent_col != -1)
     render_data->background_texture[layer->transparent_col] = 0x00000000;
   render_data->background_texture[FULL_PAL_SIZE] = 0x00000000;
 
-  // FIXME demagickify
-  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 896, FULL_PAL_SIZE + 1, 1, GL_RGBA,
-   GL_UNSIGNED_BYTE, render_data->background_texture);
+  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0,
+   TEX_DATA_PAL_X, TEX_DATA_PAL_Y, FULL_PAL_SIZE + 1, 1,
+   GL_RGBA, GL_UNSIGNED_BYTE, render_data->background_texture);
   gl_check_error();
 
+  // Indices
   dest = render_data->background_texture;
   for(i = 0; i < 4; i++)
     for(j = 0; j < SMZX_PAL_SIZE; j++, dest++)
       *dest = graphics->smzx_indices[j * 4 + i];
 
-  // FIXME demagickify
-  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 897, SMZX_PAL_SIZE, 4, GL_RGBA,
-   GL_UNSIGNED_BYTE, render_data->background_texture);
+  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0,
+   TEX_DATA_IDX_X, TEX_DATA_IDX_Y, SMZX_PAL_SIZE, 4,
+   GL_RGBA, GL_UNSIGNED_BYTE, render_data->background_texture);
   gl_check_error();
 
   glsl.glEnableVertexAttribArray(ATTRIB_POSITION);
@@ -1145,11 +1196,11 @@ static void glsl_sync_screen(struct graphics_data *graphics)
   glsl.glUseProgram(render_data->scaler_program);
   gl_check_error();
 
-  glsl.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[0]);
+  glsl.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_SCREEN_ID]);
   gl_check_error();
 
-  // FIXME demagickify
-  glsl.glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 1024, 512, 0);
+  glsl.glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0,
+   GL_POWER_2_WIDTH, GL_POWER_2_HEIGHT, 0);
   gl_check_error();
 
   glsl.glClear(GL_COLOR_BUFFER_BIT);
@@ -1183,7 +1234,7 @@ static void glsl_sync_screen(struct graphics_data *graphics)
   glsl.glDisableVertexAttribArray(ATTRIB_POSITION);
   glsl.glDisableVertexAttribArray(ATTRIB_TEXCOORD);
 
-  glsl.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
+  glsl.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
   gl_check_error();
 
   gl_swap_buffers(graphics);
