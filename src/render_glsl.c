@@ -1100,13 +1100,17 @@ static void glsl_render_cursor(struct graphics_data *graphics,
   struct glsl_render_data *render_data = graphics->render_data;
   GLubyte *pal_base = &render_data->palette[color * 3];
 
-  // FIXME de-magickify (may require shader cleanup)
+  int x1 = x * 8;
+  int x2 = x * 8 + 8;
+  int y1 = y * 14 + offset;
+  int y2 = y * 14 + offset + lines;
+
   const float vertex_array[2 * 4] =
   {
-    (x * 8)*2.0f/640.0f-1.0f,     (y * 14 + offset)*-2.0f/350.0f+1.0f,
-    (x * 8)*2.0f/640.0f-1.0f,     (y * 14 + lines + offset)*-2.0f/350.0f+1.0f,
-    (x * 8 + 8)*2.0f/640.0f-1.0f, (y * 14 + offset)*-2.0f/350.0f+1.0f,
-    (x * 8 + 8)*2.0f/640.0f-1.0f, (y * 14 + lines + offset)*-2.0f/350.0f+1.0f
+    x1 * 2.0f / SCREEN_PIX_W - 1.0f, (y1 * 2.0f / SCREEN_PIX_H - 1.0f) * -1.0f,
+    x1 * 2.0f / SCREEN_PIX_W - 1.0f, (y2 * 2.0f / SCREEN_PIX_H - 1.0f) * -1.0f,
+    x2 * 2.0f / SCREEN_PIX_W - 1.0f, (y1 * 2.0f / SCREEN_PIX_H - 1.0f) * -1.0f,
+    x2 * 2.0f / SCREEN_PIX_W - 1.0f, (y2 * 2.0f / SCREEN_PIX_H - 1.0f) * -1.0f,
   };
 
   const float color_array[4 * 4] =
@@ -1145,13 +1149,15 @@ static void glsl_render_mouse(struct graphics_data *graphics,
 {
   struct glsl_render_data *render_data = graphics->render_data;
 
-  // FIXME de-magickify (may require shader cleanup)
+  int x2 = x + w;
+  int y2 = y + h;
+
   const float vertex_array[2 * 4] =
-  {
-     x*2.0f/640.0f-1.0f,       y*-2.0f/350.0f+1.0f,
-     x*2.0f/640.0f-1.0f,      (y + h)*-2.0f/350.0f+1.0f,
-    (x + w)*2.0f/640.0f-1.0f,  y*-2.0f/350.0f+1.0f,
-    (x + w)*2.0f/640.0f-1.0f, (y + h)*-2.0f/350.0f+1.0f
+   {
+    x  * 2.0f / SCREEN_PIX_W - 1.0f, (y  * 2.0f / SCREEN_PIX_H - 1.0f) * -1.0f,
+    x  * 2.0f / SCREEN_PIX_W - 1.0f, (y2 * 2.0f / SCREEN_PIX_H - 1.0f) * -1.0f,
+    x2 * 2.0f / SCREEN_PIX_W - 1.0f, (y  * 2.0f / SCREEN_PIX_H - 1.0f) * -1.0f,
+    x2 * 2.0f / SCREEN_PIX_W - 1.0f, (y2 * 2.0f / SCREEN_PIX_H - 1.0f) * -1.0f,
   };
 
   glsl.glEnable(GL_BLEND);
