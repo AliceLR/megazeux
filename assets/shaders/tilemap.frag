@@ -48,22 +48,45 @@ float floor_(float v)
   return floor(v + 0.001);
 }
 
-// FIXME magic
+int int_(float v)
+{
+  return int(v + 0.01);
+}
+
+// NOTE: Layer data packing scheme
+// (highest two bits currently unused but included as part of the char)
+// w        z        y        x
+// 00000000 00000000 00000000 00000000
+// CCCCCCCC CCCCCCBB BBBBBBBF FFFFFFFF
+
+// Some older cards/drivers tend o be slightly off; slight variations
+// in values here are intentional.
+
+/**
+ * Get the char number from packed layer data as (approx.) an int.
+ */
+
 float layer_get_char(vec4 layer_data)
 {
-  return floor_(layer_data.z * 63.75) + layer_data.w * 255.0 * 64.0;
+  return floor_(layer_data.z * 63.75) + (layer_data.w * 255.0) * 64.0;
 }
 
-// FIXME magic
+/**
+ * Get the foreground color from packed layer data as (approx.) an int.
+ */
+
 float layer_get_fg_color(vec4 layer_data)
 {
-  return layer_data.x * 0.5 + fract_(layer_data.y * 127.501);
+  return (layer_data.x * 255.0) + fract_(layer_data.y * 127.501) * 512.0;
 }
 
-// FIXME magic
+/**
+ * Get the background color from packed layer data as (approx.) an int.
+ */
+
 float layer_get_bg_color(vec4 layer_data)
 {
-  return floor_(layer_data.y * 127.5) / 512.0 + fract_(layer_data.z * 63.751);
+  return floor_(layer_data.y * 127.5) + fract_(layer_data.z * 63.751) * 512.0;
 }
 
 void main(void)
@@ -109,6 +132,6 @@ void main(void)
     color = layer_get_bg_color(layer_data);
   }
 
-  gl_FragColor =
-   texture2D(baseMap, vec2(color, TEX_DATA_PAL_Y/TEX_DATA_HEIGHT));
+  gl_FragColor = texture2D(baseMap,
+   vec2(color / TEX_DATA_WIDTH, TEX_DATA_PAL_Y / TEX_DATA_HEIGHT));
 }

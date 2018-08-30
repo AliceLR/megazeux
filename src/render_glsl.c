@@ -73,6 +73,15 @@ typedef GLint GLiftype;
 #define TEX_DATA_LAYER_X 0
 #define TEX_DATA_LAYER_Y 901
 
+// NOTE: Layer data packing scheme
+// (highest two bits currently unused but included as part of the char)
+// w        z        y        x
+// 00000000 00000000 00000000 00000000
+// CCCCCCCC CCCCCCBB BBBBBBBF FFFFFFFF
+#define LAYER_FG_POS 0
+#define LAYER_BG_POS 9
+#define LAYER_CHAR_POS 18
+
 enum
 {
   TEX_SCREEN_ID,
@@ -875,7 +884,12 @@ static void glsl_render_graph(struct graphics_data *graphics)
   dest = render_data->background_texture;
 
   for(i = 0; i < SCREEN_W * SCREEN_H; i++, dest++, src++)
-    *dest = (src->char_value<<18) + (src->bg_color<<9) + src->fg_color;
+  {
+    *dest =
+     (src->char_value << LAYER_CHAR_POS) |
+     (src->bg_color << LAYER_BG_POS) |
+     (src->fg_color << LAYER_FG_POS);
+  }
 
   glsl.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
   gl_check_error();
@@ -1034,7 +1048,10 @@ static void glsl_render_layer(struct graphics_data *graphics,
       fg_color = FULL_PAL_SIZE;
     }
 
-    *dest = (char_value << 18) | (bg_color << 9) | fg_color;
+    *dest =
+     (char_value << LAYER_CHAR_POS) |
+     (bg_color << LAYER_BG_POS) |
+     (fg_color << LAYER_FG_POS);
   }
 
   glsl.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
