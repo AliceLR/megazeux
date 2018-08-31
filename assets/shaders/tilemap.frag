@@ -72,21 +72,25 @@ float layer_get_char(vec4 layer_data)
 }
 
 /**
- * Get the foreground color from packed layer data as (approx.) an int.
+ * Get the foreground color from layer data relative to the texture width.
  */
 
 float layer_get_fg_color(vec4 layer_data)
 {
-  return (layer_data.x * 255.0) + fract_(layer_data.y * 127.501) * 512.0;
+  return
+   (layer_data.x * 255.001)               / TEX_DATA_WIDTH +
+   fract_(layer_data.y * 127.501) * 512.0 / TEX_DATA_WIDTH;
 }
 
 /**
- * Get the background color from packed layer data as (approx.) an int.
+ * Get the background color from layer data relative to the texture width.
  */
 
 float layer_get_bg_color(vec4 layer_data)
 {
-  return floor_(layer_data.y * 127.5) + fract_(layer_data.z * 63.751) * 512.0;
+  return
+   floor_(layer_data.y * 127.5)           / TEX_DATA_WIDTH +
+   fract_(layer_data.z * 63.751) * 512.0  / TEX_DATA_WIDTH;
 }
 
 void main(void)
@@ -105,16 +109,16 @@ void main(void)
    * but for the y position it's easier to get the pixel position and
    * normalize afterward.
    */
-  float chr_idx = layer_get_char(layer_data);
-  float chr_x = fract_(chr_idx / CHARSET_COLS);
-  float chr_y = floor_(chr_idx / CHARSET_COLS);
+  float char_num = layer_get_char(layer_data);
+  float char_x = fract_(char_num / CHARSET_COLS);
+  float char_y = floor_(char_num / CHARSET_COLS);
 
   /**
    * Get the current pixel value of the current char from the texture.
    */
-  float char_pix_x = chr_x + fract_(vTexcoord.x) / CHARSET_COLS;
-  float char_pix_y = (chr_y + fract_(vTexcoord.y)) * CHAR_H / TEX_DATA_HEIGHT;
-  vec4 char_pix = texture2D(baseMap, vec2(char_pix_x, char_pix_y));
+  float char_tex_x = char_x + fract_(vTexcoord.x) / CHARSET_COLS;
+  float char_tex_y = (char_y + fract_(vTexcoord.y)) * CHAR_H / TEX_DATA_HEIGHT;
+  vec4 char_pix = texture2D(baseMap, vec2(char_tex_x, char_tex_y));
 
   /**
    * Determine whether this is the foreground or background color of the char,
@@ -133,5 +137,5 @@ void main(void)
   }
 
   gl_FragColor = texture2D(baseMap,
-   vec2(color / TEX_DATA_WIDTH, TEX_DATA_PAL_Y / TEX_DATA_HEIGHT));
+   vec2(color, TEX_DATA_PAL_Y / TEX_DATA_HEIGHT));
 }
