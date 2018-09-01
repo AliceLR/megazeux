@@ -244,9 +244,9 @@ static unsigned char copy_buffer[COPY_BUFFER_SIZE];
 
 char *mzx_res_get_by_id(enum resource_id id)
 {
-  #ifdef USERCONFFILE
+#ifdef USERCONFFILE
   static char userconfpath[MAX_PATH];
-  if (id == CONFIG_TXT)
+  if(id == CONFIG_TXT)
   {
     FILE *fp;
 
@@ -257,23 +257,23 @@ char *mzx_res_get_by_id(enum resource_id id)
     // Check if the file can be opened for reading
     fp = fopen_unsafe(userconfpath, "rb");
 
-    if (fp)
+    if(fp)
     {
       fclose(fp);
       return (char *)userconfpath;
     }
     // Otherwise, try to open the file for writing
     fp = fopen_unsafe(userconfpath, "wb");
-    if (fp)
+    if(fp)
     {
       FILE *original = fopen_unsafe(mzx_res[id].path, "rb");
-      if (original)
+      if(original)
       {
         size_t bytes_read;
-        for (;;)
+        for(;;)
         {
           bytes_read = fread(copy_buffer, 1, COPY_BUFFER_SIZE, original);
-          if (bytes_read)
+          if(bytes_read)
             fwrite(copy_buffer, 1, bytes_read, fp);
           else
             break;
@@ -287,7 +287,7 @@ char *mzx_res_get_by_id(enum resource_id id)
 
     // If that's no good, just read the normal config file
   }
-  #endif /* USERCONFFILE */
+#endif /* USERCONFFILE */
   return mzx_res[id].path;
 }
 
@@ -369,13 +369,13 @@ void rng_set_seed(unsigned long long seed)
 // Implementation from https://en.wikipedia.org/wiki/Xorshift
 unsigned int Random(unsigned long long range)
 {
-	unsigned long long x = rng_state;
-  if (x == 0) x = 1;
-	x ^= x >> 12; // a
-	x ^= x << 25; // b
-	x ^= x >> 27; // c
-	rng_state = x;
-	return ((x * 0x2545F4914F6CDD1D) >> 32) * range / 0xFFFFFFFF;
+  unsigned long long x = rng_state;
+  if(x == 0) x = 1;
+  x ^= x >> 12; // a
+  x ^= x << 25; // b
+  x ^= x >> 27; // c
+  rng_state = x;
+  return ((x * 0x2545F4914F6CDD1D) >> 32) * range / 0xFFFFFFFF;
 }
 
 // FIXME: This function should probably die. It's unsafe.
@@ -713,23 +713,33 @@ void *boyer_moore_search(void *A, size_t a_len, void *B, size_t b_len,
   unsigned char *b = (unsigned char *)B;
   size_t i = b_len - 1;
   int j;
-  if(!ignore_case) {
-    while(i < a_len) {
+  if(!ignore_case)
+  {
+    while(i < a_len)
+    {
       j = b_len - 1;
+
       while(j >= 0 && a[i] == b[j])
         j--, i--;
+
       if(j == -1)
         return (void *)(a + i);
+
       i += MAX(1, index[(int)a[i]]) + (b_len - j - 1);
     }
   }
-  else {
-    while(i < a_len) {
+  else
+  {
+    while(i < a_len)
+    {
       j = b_len - 1;
+
       while(j >= 0 && tolower((int)a[i]) == tolower((int)b[j]))
         j--, i--;
+
       if(j == -1)
         return (void *)(a + i);
+
       i += MAX(1, index[tolower((int)a[i])]) + (b_len - j - 1);
     }
   }
@@ -1003,11 +1013,13 @@ void __stack_chk_fail(void)
 #endif // __amigaos__
 
 #if defined(CONFIG_PSP) || defined(CONFIG_NDS)
-FILE *popen(const char *command, const char *type) {
+FILE *popen(const char *command, const char *type)
+{
 	return NULL;
 }
 
-int pclose(FILE *stream) {
+int pclose(FILE *stream)
+{
 	return 0;
 }
 #endif // CONFIG_PSP || CONFIG_NDS
