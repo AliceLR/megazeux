@@ -71,7 +71,7 @@ int int_(float v)
 // 00000000 00000000 00000000 00000000
 // CCCCCCCC CCCCCCBB BBBBBBBF FFFFFFFF
 
-// Some older cards/drivers tend o be slightly off; slight variations
+// Some older cards/drivers tend to be slightly off; slight variations
 // in values here are intentional.
 
 /**
@@ -187,9 +187,9 @@ void main( void )
       }
     }
 
-    int subpal = int_(mod_(bg_color, 16.0)) * 16 + int_(mod_(fg_color, 16.0));
+    float subpal = mod_(floor_(bg_color), 16.0) * 16.0 + mod_(fg_color, 16.0);
 
-    float smzx_tex_x = float(subpal) / TEX_DATA_WIDTH;
+    float smzx_tex_x = subpal / TEX_DATA_WIDTH;
     float smzx_tex_y = (float(smzx_col) + TEX_DATA_IDX_Y) / TEX_DATA_HEIGHT;
 
     // NOTE: This must use the x component.
