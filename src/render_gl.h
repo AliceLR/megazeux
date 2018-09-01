@@ -41,9 +41,9 @@ __M_BEGIN_DECLS
 #define GL_APIENTRY GLAPIENTRY
 #endif
 
-#define GL_NON_POWER_2_WIDTH      640
-#define GL_NON_POWER_2_HEIGHT     350
+// Next power of 2 over SCREEN_PIX_W
 #define GL_POWER_2_WIDTH          1024
+// Next power of 2 over SCREEN_PIX_H
 #define GL_POWER_2_HEIGHT         512
 
 #define CONFIG_GL_FILTER_LINEAR   "linear"

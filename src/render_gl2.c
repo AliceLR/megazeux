@@ -739,17 +739,17 @@ static void gl2_render_layer(struct graphics_data *graphics,
 
     float vertex_array_single[2 * 4] =
     {
-      x1 / (SCREEN_W * CHAR_W) * 2.0f - 1.0f,
-      (y1 / (SCREEN_H * CHAR_H) * 2.0f - 1.0f) * -1.0f,
+      x1 / SCREEN_PIX_W * 2.0f - 1.0f,
+      (y1 / SCREEN_PIX_H * 2.0f - 1.0f) * -1.0f,
 
-      x1 / (SCREEN_W * CHAR_W) * 2.0f - 1.0f,
-      (y2 / (SCREEN_H * CHAR_H) * 2.0f - 1.0f) * -1.0f,
+      x1 / SCREEN_PIX_W * 2.0f - 1.0f,
+      (y2 / SCREEN_PIX_H * 2.0f - 1.0f) * -1.0f,
 
-      x2 / (SCREEN_W * CHAR_W) * 2.0f - 1.0f,
-      (y1 / (SCREEN_H * CHAR_H) * 2.0f - 1.0f) * -1.0f,
+      x2 / SCREEN_PIX_W * 2.0f - 1.0f,
+      (y1 / SCREEN_PIX_H * 2.0f - 1.0f) * -1.0f,
 
-      x2 / (SCREEN_W * CHAR_W) * 2.0f - 1.0f,
-      (y2 / (SCREEN_H * CHAR_H) * 2.0f - 1.0f) * -1.0f,
+      x2 / SCREEN_PIX_W * 2.0f - 1.0f,
+      (y2 / SCREEN_PIX_H * 2.0f - 1.0f) * -1.0f,
     };
 
     gl2.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
@@ -852,17 +852,17 @@ static void gl2_render_layer(struct graphics_data *graphics,
         y1 = (i  + 0.0f) * CHAR_H + layer->y;
         y2 = (i  + 1.0f) * CHAR_H + layer->y;
 
-        vertex_array[0] =  x1 * 2.0f / (SCREEN_W * CHAR_W) - 1.0f;
-        vertex_array[1] = (y2 * 2.0f / (SCREEN_H * CHAR_H) - 1.0f) * -1.0f;
+        vertex_array[0] =  x1 * 2.0f / SCREEN_PIX_W - 1.0f;
+        vertex_array[1] = (y2 * 2.0f / SCREEN_PIX_H - 1.0f) * -1.0f;
 
-        vertex_array[2] =  x1 * 2.0f / (SCREEN_W * CHAR_W) - 1.0f;
-        vertex_array[3] = (y1 * 2.0f / (SCREEN_H * CHAR_H) - 1.0f) * -1.0f;
+        vertex_array[2] =  x1 * 2.0f / SCREEN_PIX_W - 1.0f;
+        vertex_array[3] = (y1 * 2.0f / SCREEN_PIX_H - 1.0f) * -1.0f;
 
-        vertex_array[4] =  x2 * 2.0f / (SCREEN_W * CHAR_W) - 1.0f;
-        vertex_array[5] = (y2 * 2.0f / (SCREEN_H * CHAR_H) - 1.0f) * -1.0f;
+        vertex_array[4] =  x2 * 2.0f / SCREEN_PIX_W - 1.0f;
+        vertex_array[5] = (y2 * 2.0f / SCREEN_PIX_H - 1.0f) * -1.0f;
 
-        vertex_array[6] =  x2 * 2.0f / (SCREEN_W * CHAR_W) - 1.0f;
-        vertex_array[7] = (y1 * 2.0f / (SCREEN_H * CHAR_H) - 1.0f) * -1.0f;
+        vertex_array[6] =  x2 * 2.0f / SCREEN_PIX_W - 1.0f;
+        vertex_array[7] = (y1 * 2.0f / SCREEN_PIX_H - 1.0f) * -1.0f;
 
         if(fg_color != layer->transparent_col)
         {
@@ -921,17 +921,17 @@ static void gl2_render_layer(struct graphics_data *graphics,
         y1 = (i  + 0.0f) * CHAR_H + layer->y;
         y2 = (i  + 1.0f) * CHAR_H + layer->y;
 
-        vertex_array[0] =  x2 * 2.0f / (SCREEN_W * CHAR_W) - 1.0f;
-        vertex_array[1] = (y2 * 2.0f / (SCREEN_H * CHAR_H) - 1.0f) * -1.0f;
+        vertex_array[0] =  x2 * 2.0f / SCREEN_PIX_W - 1.0f;
+        vertex_array[1] = (y2 * 2.0f / SCREEN_PIX_H - 1.0f) * -1.0f;
 
-        vertex_array[2] =  x2 * 2.0f / (SCREEN_W * CHAR_W) - 1.0f;
-        vertex_array[3] = (y1 * 2.0f / (SCREEN_H * CHAR_H) - 1.0f) * -1.0f;
+        vertex_array[2] =  x2 * 2.0f / SCREEN_PIX_W - 1.0f;
+        vertex_array[3] = (y1 * 2.0f / SCREEN_PIX_H - 1.0f) * -1.0f;
 
-        vertex_array[4] =  x1 * 2.0f / (SCREEN_W * CHAR_W) - 1.0f;
-        vertex_array[5] = (y2 * 2.0f / (SCREEN_H * CHAR_H) - 1.0f) * -1.0f;
+        vertex_array[4] =  x1 * 2.0f / SCREEN_PIX_W - 1.0f;
+        vertex_array[5] = (y2 * 2.0f / SCREEN_PIX_H - 1.0f) * -1.0f;
 
-        vertex_array[6] =  x1 * 2.0f / (SCREEN_W * CHAR_W) - 1.0f;
-        vertex_array[7] = (y1 * 2.0f / (SCREEN_H * CHAR_H) - 1.0f) * -1.0f;
+        vertex_array[6] =  x1 * 2.0f / SCREEN_PIX_W - 1.0f;
+        vertex_array[7] = (y1 * 2.0f / SCREEN_PIX_H - 1.0f) * -1.0f;
 
         if(fg_color != layer->transparent_col)
         {

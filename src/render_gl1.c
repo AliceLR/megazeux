@@ -215,8 +215,8 @@ static bool gl1_set_video_mode(struct graphics_data *graphics,
 
       if(strstr(extensions, "GL_ARB_texture_non_power_of_two"))
       {
-        internal_width = GL_NON_POWER_2_WIDTH;
-        internal_height = GL_NON_POWER_2_HEIGHT;
+        internal_width = SCREEN_PIX_W;
+        internal_height = SCREEN_PIX_H;
       }
 
       initialized = true;

@@ -18,6 +18,8 @@ GIT - MZX 2.91e
 + Fixed a bug where MZX and checkres wouldn't accept some
   DEFLATE-related ZIP flags.
 + checkres no longer crashes on failing to open a resource zip.
++ The window caption now updates correctly when using either of
+  the overlay renderers.
 
 
 July 12th, 2018 - MZX 2.91d
