@@ -728,7 +728,7 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
 
   prefix_last_xy_var(mzx_world, &dest_x, &dest_y, x, y,
    dest_width, dest_height);
-  
+
   // Clip to destination dimensions as well
   if((dest_x + width) > dest_width)
     width = dest_width - dest_x;
@@ -894,6 +894,37 @@ void replace_player(struct world *mzx_world)
   place_at_xy(mzx_world, PLAYER, 0, 0, 0, 0);
 }
 
+static void advance_line(struct robot *cur_robot, char *program)
+{
+  cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
+  cur_robot->pos_within_line = 0;
+}
+
+static void end_cycle(struct robot *cur_robot, int lines_run, int x, int y)
+{
+#ifdef CONFIG_EDITOR
+  cur_robot->commands_total += lines_run;
+  cur_robot->commands_cycle = lines_run;
+#endif
+
+  cur_robot->cycle_count = 0; // In case a label changed it
+  // Reset x/y (from movements)
+  cur_robot->xpos = x;
+  cur_robot->ypos = y;
+}
+
+static void end_program(struct robot *cur_robot)
+{
+  cur_robot->cur_prog_line = 0;
+  cur_robot->pos_within_line = 0;
+}
+
+#define ADVANCE_LINE do{ advance_line(cur_robot, program); }while(0);
+
+// NOTE: Should always return after using one of these.
+#define END_CYCLE do{ end_cycle(cur_robot, lines_run, x, y); }while(0);
+#define END_PROGRAM do{ END_CYCLE; end_program(cur_robot); }while(0);
+
 // Run a single robot through a single cycle.
 // If id is negative, only run it if status is 2
 void run_robot(struct world *mzx_world, int id, int x, int y)
@@ -1005,7 +1036,10 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
          */
         l_id = (enum thing)level_id[x + (y * board_width)];
         if(l_id == TRANSPORT)
-          goto breaker;
+        {
+          END_CYCLE;
+          return;
+        }
       }
       else
         send_robot_id_def(mzx_world, id, "thud", 1);
@@ -1013,8 +1047,10 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
     if(cur_robot->cur_prog_line == 0)
     {
+      // Robot is inactive
       cur_robot->status = 1;
-      goto breaker; // Inactive
+      END_CYCLE;
+      return;
     }
   }
 
@@ -1025,7 +1061,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
   if(cur_robot->cur_prog_line == 0)
   {
     cur_robot->status = 1;
-    goto end_prog;
+    END_PROGRAM;
+    return;
   }
 
   // Figure blocked vars (accurate until robot program ends OR a put
@@ -1064,7 +1101,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           continue;
 
         case DEBUG_HALT:
-          goto breaker;
+          END_CYCLE;
+          return;
       }
     }
 #endif
@@ -1076,7 +1114,9 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
       {
         if(first_cmd)
           cur_robot->status = 1;
-        goto end_prog;
+
+        END_PROGRAM;
+        return;
       }
 
       case ROBOTIC_CMD_DIE: // Die
@@ -1086,6 +1126,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           clear_robot_id(src_board, id);
           id_remove_top(mzx_world, x, y);
         }
+        // Robot no longer exists; exit.
         return;
       }
 
@@ -1097,6 +1138,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           id_remove_top(mzx_world, x, y);
           place_player_xy(mzx_world, x, y);
         }
+        // Robot no longer exists; exit.
         return;
       }
 
@@ -1110,7 +1152,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         if(first_cmd)
           cur_robot->status = 1;
 
-        goto breaker;
+        END_CYCLE;
+        return;
       }
 
       case ROBOTIC_CMD_CYCLE: // Cycle
@@ -1149,8 +1192,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
                 move_dir(src_board, &x, &y, direction);
               }
             }
-
-            goto breaker;
+            END_CYCLE;
+            return;
           }
         }
         break;
@@ -1241,6 +1284,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
               src_board->level_under_color[offset] = 7;
             }
 
+            // Robot no longer exists; exit
             return;
           }
         }
@@ -1375,7 +1419,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
                 if(!program[cur_robot->cur_prog_line])
                   cur_robot->cur_prog_line = 0;
 
-                goto breaker;
+                END_CYCLE;
+                return;
               }
             }
           }
@@ -2189,6 +2234,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           level_id[offset] = (char)EXPLOSION;
           clear_robot_id(src_board, id);
         }
+
+        // Robot no longer exists; exit
         return;
       }
 
@@ -2347,7 +2394,10 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         int index_dif = sfx_length_left();
 
         if(index_dif > 10)
-          goto breaker;
+        {
+          END_CYCLE;
+          return;
+        }
 
         play_string(cmd_ptr + 2, 0);
 
@@ -2359,7 +2409,10 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         int index_dif = sfx_length_left();
 
         if(index_dif > 10)
-          goto breaker;
+        {
+          END_CYCLE;
+          return;
+        }
 
         break;
       }
@@ -2560,10 +2613,6 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           if(!program[cur_robot->cur_prog_line])
             cur_robot->cur_prog_line = 0;
 
-          cur_robot->cycle_count = 0;
-          cur_robot->xpos = x;
-          cur_robot->ypos = y;
-
           // Move player
           move_player(mzx_world, dir_to_int(direction));
 
@@ -2575,8 +2624,9 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           {
             char *p2 = next_param_pos(cmd_ptr + 1);
             gotoed = send_self_label_tr(mzx_world,  p2 + 1, id);
-            goto breaker;
           }
+
+          END_CYCLE;
           return;
         }
         break;
@@ -2595,6 +2645,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           done = 1;
           if((mzx_world->player_x == x) && (mzx_world->player_y == y))
           {
+            // Robot no longer exists; exit
             return;
           }
         }
@@ -2632,8 +2683,10 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             {
               if((mzx_world->player_x == x) && (mzx_world->player_y == y))
               {
+                // Robot no longer exists; exit
                 return;
               }
+
               done = 1;
             }
           }
@@ -2732,8 +2785,9 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         if(mzx_world->version == V283)
         {
           // Continue to the next line.
-          cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
-          goto breaker;
+          ADVANCE_LINE;
+          END_CYCLE;
+          return;
         }
 
         break;
@@ -2779,8 +2833,9 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         if(mzx_world->version == V283)
         {
           // Continue to the next line.
-          cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
-          goto breaker;
+          ADVANCE_LINE;
+          END_CYCLE;
+          return;
         }
         break;
       }
@@ -2801,8 +2856,9 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         if(mzx_world->version == V283)
         {
           // Continue to the next line.
-          cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
-          goto breaker;
+          ADVANCE_LINE;
+          END_CYCLE;
+          return;
         }
         break;
       }
@@ -2823,8 +2879,9 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         if(mzx_world->version == V283)
         {
           // Continue to the next line.
-          cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
-          goto breaker;
+          ADVANCE_LINE;
+          END_CYCLE;
+          return;
         }
         break;
       }
@@ -2894,7 +2951,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           if(mzx_world->version >= V290 && is_string(mzm_name_buffer))
           {
             struct string src;
-            
+
             if(get_string(mzx_world, mzm_name_buffer, &src, id))
               load_mzm_memory(mzx_world, mzm_name_buffer, put_x, put_y,
                put_param, 1, src.value, src.length);
@@ -2914,7 +2971,10 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             enum thing d_id = (enum thing)level_id[offset];
 
             if(!is_robot(d_id))
+            {
+              // Robot no longer exists; exit
               return;
+            }
 
             id = level_param[offset];
             cur_robot = src_board->robot_list[id];
@@ -2957,7 +3017,10 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
              put_x, put_y);
             // Still alive?
             if((put_x == x) && (put_y == y))
+            {
+              // Robot no longer exists; exit
               return;
+            }
 
             update_blocked = 1;
           }
@@ -3009,7 +3072,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           }
         }
         cur_robot = src_board->robot_list[id];
-        goto breaker;
+        END_CYCLE;
+        return;
       }
 
       case ROBOTIC_CMD_COPYROBOT_XY: // copyrobot x y
@@ -3031,7 +3095,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         }
 
         cur_robot = src_board->robot_list[id];
-        goto breaker;
+        END_CYCLE;
+        return;
       }
 
       case ROBOTIC_CMD_COPYROBOT_DIR: // copyrobot dir
@@ -3060,7 +3125,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           }
         }
         cur_robot = src_board->robot_list[id];
-        goto breaker;
+        END_CYCLE;
+        return;
       }
 
       case ROBOTIC_CMD_DUPLICATE_SELF_DIR: // dupe self dir
@@ -3329,7 +3395,10 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
            * exist on the board.
            */
           if(id && !is_robot(level_id[x + (y * board_width)]))
-            goto end_prog;
+          {
+            // Robot no longer exists; exit
+            return;
+          }
         }
 
         update_blocked = 1;
@@ -3392,7 +3461,10 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           }
 
           if(direction != -1)
-            goto breaker;
+          {
+            END_CYCLE;
+            return;
+          }
         }
         break;
       }
@@ -3427,7 +3499,10 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
           // At next line- check type
           if(!program[next_prog_line])
-            goto end_prog;
+          {
+            END_PROGRAM;
+            return;
+          }
 
           next_cmd = program[next_prog_line + 1];
           if(!((next_cmd == 47) || ((next_cmd >= 103) && (next_cmd <= 106))
@@ -3448,9 +3523,10 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
          * we don't need to detect these.
          */
         if(!gotoed)
-          cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
+          ADVANCE_LINE;
 
-        goto breaker;
+        END_CYCLE;
+        return;
       }
 
       case ROBOTIC_CMD_COMMENT: // comment-do nothing! Maybe.
@@ -3770,7 +3846,10 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         }
 
         if((dest_x == x) && (dest_y == y) && (dest_type == 0))
+        {
+          // Robot no longer exists; exit
           return;
+        }
 
         update_blocked = 1;
         break;
@@ -3930,7 +4009,10 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
               copy_xy_to_xy(mzx_world, src_x, src_y, dest_x, dest_y);
 
               if((dest_x == x) && (dest_y == y))
+              {
+                // Robot no longer exists; exit
                 return;
+              }
             }
           }
         }
@@ -4864,7 +4946,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         {
           // Prior to 2.90 char params are clipped
           if(mzx_world->version < V290) char_num &= 0xFF;
-          
+
           ec_read_char(char_num, char_buffer);
 
           switch(flip_dir)
@@ -4920,7 +5002,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           src_char &= 0xFF;
           dest_char &= 0xFF;
         }
-        
+
         ec_read_char(src_char, char_buffer);
         ec_change_char(dest_char, char_buffer);
         break;
@@ -5314,7 +5396,10 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
       case ROBOTIC_CMD_WAIT_MOD_FADE: // Wait mod fade
       {
         if(src_board->volume != src_board->volume_target)
-          goto breaker;
+        {
+          END_CYCLE;
+          return;
+        }
         break;
       }
 
@@ -5582,7 +5667,10 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         if(mzx_world->version < VERSION_PORT)
         {
           if(last_label == cur_robot->cur_prog_line)
-            goto breaker;
+          {
+            END_CYCLE;
+            return;
+          }
           last_label = cur_robot->cur_prog_line;
         }
 
@@ -5629,7 +5717,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           break;
 
         case DEBUG_HALT:
-          goto breaker;
+          END_CYCLE;
+          return;
       }
     }
 #endif
@@ -5637,18 +5726,13 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
     // If we're returning from a subroutine, we don't want to set the
     // pos_within_line. Other sends will set it to zero anyway.
     if(!gotoed)
-    {
-      cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
-      cur_robot->pos_within_line = 0;
-    }
+      ADVANCE_LINE;
 
     if(!program[cur_robot->cur_prog_line])
     {
       //End of program
-      end_prog:
-      cur_robot->cur_prog_line = 0;
-      cur_robot->pos_within_line = 0;
-      break;
+      END_PROGRAM;
+      return;
     }
 
     if(update_blocked)
@@ -5689,15 +5773,5 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
   } while(((++lines_run) < mzx_world->commands) && (!done));
 
-  breaker:
-
-#ifdef CONFIG_EDITOR
-  cur_robot->commands_total += lines_run;
-  cur_robot->commands_cycle = lines_run;
-#endif
-
-  cur_robot->cycle_count = 0; // In case a label changed it
-  // Reset x/y (from movements)
-  cur_robot->xpos = x;
-  cur_robot->ypos = y;
+  END_CYCLE;
 }
