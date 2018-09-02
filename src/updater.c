@@ -66,6 +66,7 @@ static bool cancel_update;
 
 static char **process_argv;
 static int process_argc;
+static bool updater_was_initialized;
 
 static char **rewrite_argv_for_execv(int argc, char **argv)
 {
@@ -263,6 +264,12 @@ static bool swivel_current_dir(bool have_video)
   char *base_path;
   int g_ret;
 
+  if(process_argc < 1)
+  {
+    warn("--UPDATER-- Aborting: argc < 1\n");
+    return ret;
+  }
+
   // Store the user's current directory, so we can get back to it
   getcwd(previous_dir, MAX_PATH);
 
@@ -271,14 +278,22 @@ static bool swivel_current_dir(bool have_video)
   // Find and change into the base path for this MZX binary
   g_ret = get_path(process_argv[0], base_path, MAX_PATH);
   if(g_ret <= 0)
+  {
+    if(process_argv[0] && process_argv[0][0])
+      warn("--UPDATER-- Failed to get path from argv[0]: %s\n", process_argv[0]);
+    else
+      warn("--UPDATER-- No argv[0]!\n");
     goto err_free_base_path;
+  }
 
   if(chdir(base_path))
   {
+    info("--UPDATER-- getcwd(): %s\n", previous_dir);
+    info("--UPDATER-- attempted chdir() to: %s\n", base_path);
     if(have_video)
-      error("Failed to change into install directory.", 1, 8, 0);
+      error("Updater: failed to change into install directory.", 1, 8, 0);
     else
-      warn("Failed to change into install directory.\n");
+      warn("--UPDATER-- Failed to change into install directory.\n");
     goto err_free_base_path;
   }
 
@@ -293,9 +308,9 @@ static bool swivel_current_dir_back(bool have_video)
   if(chdir(previous_dir))
   {
     if(have_video)
-      error("Failed to change back to user directory.", 1, 8, 0);
+      error("Updater: failed to change back to user directory.", 1, 8, 0);
     else
-      warn("Failed to change back to user directory.\n");
+      warn("--UPDATER-- Failed to change back to user directory.\n");
     return false;
   }
 
@@ -534,6 +549,12 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
   bool ret = false;
 
   set_context(CTX_UPDATER);
+
+  if(!updater_was_initialized)
+  {
+    error("Updater couldn't be initialized; check folder permissions", 1, 8, 0);
+    goto err_out;
+  }
 
   if(conf->update_host_count < 1)
   {
@@ -978,10 +999,11 @@ bool updater_init(int argc, char *argv[])
   process_argc = argc;
   process_argv = argv;
 
+  check_for_updates = __check_for_updates;
+  updater_was_initialized = false;
+
   if(!swivel_current_dir(false))
     return false;
-
-  check_for_updates = __check_for_updates;
 
   f = fopen_unsafe(DELETE_TXT, "rb");
   if(!f)
@@ -1003,6 +1025,7 @@ bool updater_init(int argc, char *argv[])
 
 err_swivel_back:
   swivel_current_dir_back(false);
+  updater_was_initialized = true;
   return true;
 }
 

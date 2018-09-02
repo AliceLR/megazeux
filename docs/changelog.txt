@@ -20,6 +20,8 @@ GIT - MZX 2.91e
 + checkres no longer crashes on failing to open a resource zip.
 + The window caption now updates correctly when using either of
   the overlay renderers.
++ Update checking will now display an error instead of silently
+  hiding the updater when the updater fails to initialize.
 
 
 July 12th, 2018 - MZX 2.91d
