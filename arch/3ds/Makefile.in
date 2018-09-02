@@ -50,19 +50,30 @@ LIBPNG_LDFLAGS = -lpng16
 
 #
 # Vile hack, remove me ASAP
+# (also, vile hack in a vile hack to get the shaders to build parallel)
 #
-arch/3ds/%.o: arch/3ds/%.c
+arch/3ds/%.o: arch/3ds/%.c arch/3ds/shader_2d.shbin.o arch/3ds/shader_playfield.shbin.o
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${core_cflags} ${core_flags} -Wno-unused-macros -c $< -o $@
 
-arch/3ds/%.shbin.o : arch/3ds/%.v.pica arch/3ds/%.g.pica
-	$(eval CURLOC := $(patsubst %.shbin.o,%.shbin,$@))
-	$(eval CURBIN := $(patsubst %.shbin.o,%.shbin,$(notdir $@)))
-	picasso -o $(CURLOC) $^
-	bin2s $(CURLOC) | $(AS) -o $@
-	echo "extern const u8" `(echo $(CURBIN) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"_end[];" > `(echo $(CURLOC) | tr . _)`.h
-	echo "extern const u8" `(echo $(CURBIN) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"[];" >> `(echo $(CURLOC) | tr . _)`.h
-	echo "extern const u32" `(echo $(CURBIN) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`_size";" >> `(echo $(CURLOC) | tr . _)`.h
+# Do not delete these, since doing so will retrigger .o rebuilds above
+.SECONDARY: arch/3ds/shader_2d_shbin.h arch/3ds/shader_playfield_shbin.h
+
+arch/3ds/%.shbin: arch/3ds/%.v.pica arch/3ds/%.g.pica
+	$(if ${V},,@echo "  PICASSO " $^)
+	@picasso -o $@ $^
+
+arch/3ds/%.shbin.o: arch/3ds/%.shbin arch/3ds/%_shbin.h
+	$(if ${V},,@echo "  AS      " $<)
+	@bin2s $< | $(AS) -o $@
+
+arch/3ds/%_shbin.h: arch/3ds/%.shbin
+	$(eval CURLOC := $(patsubst %_shbin.h,%.shbin,$@))
+	$(eval CURBIN := $(patsubst %_shbin.h,%.shbin,$(notdir $@)))
+	$(if ${V},,@echo "  ECHO    " $@)
+	@echo "extern const u8" `(echo $(CURBIN) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"_end[];" > `(echo $(CURLOC) | tr . _)`.h
+	@echo "extern const u8" `(echo $(CURBIN) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`"[];" >> `(echo $(CURLOC) | tr . _)`.h
+	@echo "extern const u32" `(echo $(CURBIN) | sed -e 's/^\([0-9]\)/_\1/' | tr . _)`_size";" >> `(echo $(CURLOC) | tr . _)`.h
 
 package: mzx mzxrun.smdh
 	3dsxtool ${mzxrun} ${mzxrun}.3dsx --smdh=${mzxrun}.smdh	--romfs=arch/3ds/romfs
@@ -79,7 +90,7 @@ clean:
 build := build/${SUBPLATFORM}/3ds/megazeux
 build: package ${build}
 	${CP} arch/3ds/pad.config ${build}
-	${CP} ${mzxrun}.3dsx ${build}/../
+	${CP} ${mzxrun}.3dsx ${build}
 	${CP} ${mzxrun}.cia ${build}/../../
 	${RM} ${build}/${mzxrun} ${build}/${mzxrun}.debug
 

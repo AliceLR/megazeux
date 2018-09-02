@@ -20,7 +20,7 @@
 #ifndef __THREAD_3DS_H
 #define __THREAD_3DS_H
 
-#include "compat.h"
+#include "../../src/compat.h"
 
 #define STACK_SIZE_CTR 8096
 

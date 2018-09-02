@@ -16,9 +16,7 @@ cd megazeux
 git checkout $1
 
 arch/3ds/CONFIG.3DS
-make shaders
 make debuglink -j8
-make package
 make archive
 
 mv build/dist/3ds/* /mzx-build-workingdir/zips/

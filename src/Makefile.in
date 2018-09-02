@@ -112,10 +112,6 @@ endif
 endif
 
 ifeq (${BUILD_3DS},1)
-# Hack so the 3DS port can be built parallel
-.PHONY: shaders
-shaders: arch/3ds/shader_2d.shbin.o arch/3ds/shader_playfield.shbin.o
-
 core_cobjs += arch/3ds/shader_2d.shbin.o arch/3ds/shader_playfield.shbin.o
 core_cobjs += arch/3ds/platform.o arch/3ds/render.o
 core_cobjs += arch/3ds/event.o arch/3ds/audio.o
