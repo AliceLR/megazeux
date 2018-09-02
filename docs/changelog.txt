@@ -26,6 +26,7 @@ GIT - MZX 2.91e
   the overlay renderers.
 + Update checking will now display an error instead of silently
   hiding the updater when the updater fails to initialize.
++ Fixed an issue where UIs would execute redundant frames.
 
 
 July 12th, 2018 - MZX 2.91d

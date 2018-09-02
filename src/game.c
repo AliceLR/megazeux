@@ -2816,17 +2816,16 @@ void title_screen(struct world *mzx_world)
           update_event_status();
           continue;
         }
+        update_event_status();
       }
       else
       {
         // Give some delay time if nothing's loaded
-        update_event_status_delay();
         update_screen();
+        update_event_status_delay();
       }
 
       src_board = mzx_world->current_board;
-
-      update_event_status();
 
       // Keycheck
       key = get_key(keycode_internal_wrt_numlock);

@@ -460,7 +460,6 @@ void wait_event(int timeout)
 
 Uint32 update_event_status_delay(void)
 {
-  int rval = update_event_status();
   int delay_ticks;
 
   if(!last_update_time)
@@ -468,13 +467,13 @@ Uint32 update_event_status_delay(void)
 
   delay_ticks = UPDATE_DELAY - (get_ticks() - last_update_time);
 
-  last_update_time = get_ticks();
-
   if(delay_ticks < 0)
     delay_ticks = 0;
 
   delay(delay_ticks);
-  return rval;
+  last_update_time = get_ticks();
+
+  return update_event_status();
 }
 
 void update_event_status_intake(void)
@@ -485,11 +484,13 @@ void update_event_status_intake(void)
     last_update_time = get_ticks();
 
   delay_ticks = UPDATE_DELAY - (get_ticks() - last_update_time);
-  if (delay_ticks < 1) delay_ticks = 1;
 
-  last_update_time = get_ticks();
+  // wait_event will wait indefinitely unless the timeout is greater than 0.
+  if(delay_ticks < 1)
+    delay_ticks = 1;
 
   wait_event(delay_ticks);
+  last_update_time = get_ticks();
 }
 
 static enum keycode emit_keysym_wrt_numlock(enum keycode key)
