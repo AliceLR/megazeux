@@ -24,12 +24,13 @@
 #include <string.h>
 #include <assert.h>
 
+#include "data.h"
+#include "graphics.h"
 #include "platform.h"
 #include "render.h"
 #include "render_layer.h"
 #include "renderers.h"
 #include "util.h"
-#include "data.h"
 
 #ifdef CONFIG_SDL
 #include "render_sdl.h"
