@@ -127,14 +127,32 @@ void *check_linearAlloc(size_t size, size_t alignment, const char *file,
 
 #endif
 
-// argv[0] will either not exist or be /3ds/mzxrun.3dsx.
-// Neither helps much, so either way, we want to start in SHAREDIR.
+/**
+ * argv[0] will either not exist (cia) or be the location of the 3dsx.
+ * For the cia case we can't really do anything, so assume a SHAREDIR
+ * startup location.
+ */
 
 int main(int argc, char *argv[])
 {
-  static char _argv0[] = SHAREDIR "/null";
+  static char _argv0[] = SHAREDIR "/mzxrun.3dsx";
   static char *_argv[] = { _argv0 };
-  chdir(SHAREDIR);
-  real_main(1, _argv);
+
+  if(argc < 1 || argv == NULL || argv[0] == NULL)
+  {
+    iprintf("argv[0]: not found.\n"
+            "using '%s'\n"
+            "WARNING: Use of a loader that supports argv[0] is recommended.\n",
+            _argv0);
+
+    chdir(SHAREDIR);
+    real_main(1, _argv);
+  }
+  else
+  {
+    iprintf("argv[0]: '%s'\n", argv[0]);
+    real_main(argc, argv);
+  }
+
   return 0;
 }
