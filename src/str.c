@@ -1386,30 +1386,43 @@ static int compare_wildcard(const char *str, size_t str_len,
 int compare_strings(struct string *dest, struct string *src,
  int exact_case, int allow_wildcards)
 {
-  size_t cmp_length = dest->length;
+  size_t cmp_length = (dest->length < src->length
+    ? dest->length
+    : src->length);
+  int res = 0;
 
   if(!allow_wildcards)
   {
-    if(src->length < cmp_length)
-      return 1;
-
-    if(src->length > cmp_length)
-      return -1;
-
     if(exact_case)
     {
-      return memcmp(dest->value, src->value, cmp_length);
+      res = memcmp(dest->value, src->value, cmp_length);
     }
     else
     {
-      return memcasecmp(dest->value, src->value, cmp_length);
+      res = memcasecmp(dest->value, src->value, cmp_length);
     }
+
+    // NOTE: Versions 2.91d and below have a string ordering bug.
+    // If it's necessary to emulate this bug,
+    // then passing mzx_world into this function
+    // and using this instead will suffice:
+    //if(res != 0 && mzx_world->version >= V292)
+    if(res != 0)
+      return res;
+
+    if(src->length < dest->length)
+      return 1;
+
+    if(src->length > dest->length)
+      return -1;
+
+    return res;
   }
 
   else
   {
-    return compare_wildcard(dest->value, cmp_length, src->value,
-     src->length, exact_case);
+    return compare_wildcard(dest->value, dest->length,
+     src->value, src->length, exact_case);
   }
 }
 
