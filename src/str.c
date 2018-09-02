@@ -1402,11 +1402,11 @@ int compare_strings(struct string *dest, struct string *src,
       res = memcasecmp(dest->value, src->value, cmp_length);
     }
 
-    // NOTE: Versions 2.91d and below have a string ordering bug.
+    // NOTE: Versions prior to 2.91e have a string ordering bug.
     // If it's necessary to emulate this bug,
     // then passing mzx_world into this function
-    // and using this instead will suffice:
-    //if(res != 0 && mzx_world->version >= V292)
+    // and using this instead will suffice for most affected versions:
+    //if(res != 0 && mzx_world->version < V291)
     if(res != 0)
       return res;
 

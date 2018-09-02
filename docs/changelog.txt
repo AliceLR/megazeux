@@ -29,6 +29,8 @@ GIT - MZX 2.91e
 + Update checking will now display an error instead of silently
   hiding the updater when the updater fails to initialize.
 + Fixed an issue where UIs would execute redundant frames.
++ Fixed a bug where string comparison would not order strings of
+  different lengths correctly. (GreaseMonkey)
 
 
 July 12th, 2018 - MZX 2.91d
