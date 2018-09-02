@@ -2,6 +2,10 @@ GIT - MZX 2.91e
 
 + Fixed bug where loading a board charset would also clear all
   of the extended charsets.
++ Fixed bug where loading a default charset in the editor would
+  also clear all of the extended charsets.
++ Loading a 2.91 world when a renderer with no layer support is
+  active no longer triggers an error message.
 + Fixed a memory corruption bug in the non-SDL Wii port caused
   by faulty threading code.
 + Fixed crash that could occur when updating a board undo frame.

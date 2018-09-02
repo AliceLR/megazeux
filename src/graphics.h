@@ -235,7 +235,7 @@ CORE_LIBSPEC void set_window_caption(const char *caption);
 CORE_LIBSPEC void ec_read_char(Uint16 chr, char *matrix);
 CORE_LIBSPEC void ec_change_char(Uint16 chr, char *matrix);
 CORE_LIBSPEC Sint32 ec_load_set_var(char *name, Uint16 pos, int version);
-CORE_LIBSPEC void ec_mem_load_set(Uint8 *chars);
+CORE_LIBSPEC void ec_mem_load_set(Uint8 *chars, size_t len);
 CORE_LIBSPEC void ec_mem_save_set(Uint8 *chars);
 CORE_LIBSPEC void ec_mem_load_set_var(char *chars, size_t len, Uint16 pos, int v);
 CORE_LIBSPEC void ec_mem_save_set_var(Uint8 *chars, size_t len, Uint16 pos);

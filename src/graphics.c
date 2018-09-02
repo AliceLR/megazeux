@@ -216,18 +216,18 @@ Sint32 ec_load_set_var(char *name, Uint16 pos, int version)
   return size;
 }
 
-void ec_mem_load_set(Uint8 *chars)
+void ec_mem_load_set(Uint8 *chars, size_t len)
 {
-  // This is used only for legacy world loading and the default charset.
+  // This is used only for legacy and ZIP world loading and the default charsets
+  // Use ec_clear_set() in conjunction with this for world loads.
 
-  memcpy(graphics.charset, chars, CHAR_SIZE * CHARSET_SIZE);
+  if(!layer_renderer_check(false) && len > CHAR_SIZE * CHARSET_SIZE)
+    len = CHAR_SIZE * CHARSET_SIZE;
 
-  // Clear extended charsets (we're loading a legacy world/default charset)
-  if(layer_renderer_check(false))
-  {
-    memset(&graphics.charset[CHAR_SIZE * CHARSET_SIZE], 0,
-     CHAR_SIZE * (PROTECTED_CHARSET_POSITION - CHARSET_SIZE));
-  }
+  if(len > CHAR_SIZE * PROTECTED_CHARSET_POSITION)
+    len = CHAR_SIZE * PROTECTED_CHARSET_POSITION;
+
+  memcpy(graphics.charset, chars, len);
 
   // some renderers may want to map charsets to textures
   if(graphics.renderer.remap_charsets)
@@ -270,7 +270,7 @@ void ec_mem_save_set_var(Uint8 *chars, size_t len, Uint16 pos)
 
 __editor_maybe_static void ec_load_mzx(void)
 {
-  ec_mem_load_set(graphics.default_charset);
+  ec_mem_load_set(graphics.default_charset, CHAR_SIZE * CHARSET_SIZE);
 }
 
 static void update_colors(struct rgb_color *palette, Uint32 count)
@@ -1475,6 +1475,7 @@ bool init_video(struct config_info *conf, const char *caption)
   }
 #endif
 
+  ec_clear_set();
   ec_load_mzx();
   init_palette();
   graphics_was_initialized = true;

@@ -171,7 +171,7 @@ static void decrypt(const char *file_name)
   file_length = ftell_and_rewind(source);
 
   meter_target = file_length + (file_length - 15) + 4;
- 
+
   meter_initial_draw(meter_curr, meter_target, "Decrypting...");
 
   file_buffer = cmalloc(file_length);
@@ -501,7 +501,7 @@ enum val_result validate_legacy_world_file(const char *file,
       {
         fclose(f);
         decrypt(file);
-  
+
         // Call this function again, but with decrypt_attempted = 1
         return validate_legacy_world_file(file, savegame, 1);
       }
@@ -629,9 +629,10 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
 
   meter_initial_draw(meter_curr, meter_target, "Loading...");
 
-  charset_mem = cmalloc(3584);
-  fread(charset_mem, 3584, 1, fp);
-  ec_mem_load_set(charset_mem);
+  charset_mem = cmalloc(CHAR_SIZE * CHARSET_SIZE);
+  fread(charset_mem, CHAR_SIZE * CHARSET_SIZE, 1, fp);
+  ec_clear_set();
+  ec_mem_load_set(charset_mem, CHAR_SIZE * CHARSET_SIZE);
   free(charset_mem);
 
   // Idchars array...
