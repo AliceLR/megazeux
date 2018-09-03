@@ -168,8 +168,7 @@ struct manifest_entry *manifest_list_create(FILE *f)
 
     line_len = strlen(line);
     e->name = cmalloc(line_len + 1);
-    strncpy(e->name, line, line_len);
-    e->name[line_len] = 0;
+    memcpy(e->name, line, line_len + 1);
   }
 
   if(e)
