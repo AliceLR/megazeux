@@ -3,7 +3,7 @@
 
 MegaZeux is a game creation system (GCS) created by game developer Alexis Janson in 1994.
 Originally a DOS program, in 2005 a multi-platform port was released by Exophase. The most
-recent version of MegaZeux is 2.91d, which was released on July 12th, 2018.
+recent version of MegaZeux is 2.91e, which was released on September 3rd, 2018.
 
 MegaZeux is officially supported on Windows, Linux/BSD, MacOS, as well as the NDS, 3DS, Wii,
 and PSP consoles. Historical support has also existed for GP2X, Pandora, and AmigaOS 4.
@@ -93,28 +93,28 @@ Help file by Terryn.
 
 Default SMZX palette by Joel Lamontagne (LogiCow).
 
-ccv utility by Lancer-X.  
-png2smzx utility by Alan Williams (Mr_Alert).  
+ccv utility by Lancer-X.
+png2smzx utility by Alan Williams (Mr_Alert).
 checkres utility by Josh Matthews (Revvy), ajs and Lachesis.
 
 Port contributors: Adrian Siekierka (asiekierka) [3DS],
 Mr_Alert [Wii], Kevin Vance [NDS], Simon Parzer [GP2X].
 
-Renderer code contributors: LogiCow, Mr_Alert.  
+Renderer code contributors: LogiCow, Mr_Alert.
 Shader code contributors: David Cravens (astral), GreaseMonkey.
 
-Icon by Quantum P.; Extra icons by LogiCow.  
-GDM conversion by ajs and MadBrain.  
+Icon by Quantum P.; Extra icons by LogiCow.
+GDM conversion by ajs and MadBrain.
 Other past contributors: Spider124, Koji, JZig, Akwende, MenTaLguY.
 
 #### Special Thanks
 
-Insidious (.deb Builds)  
-mzxgiant (MSVC Testing, Bug Fixes)  
-mzxrules (Testing)  
-Quantum P. (OS X Testing / Builds)  
-Spectere (OS X Builds)  
-Terryn (Testing)  
+Insidious (.deb Builds)
+mzxgiant (MSVC Testing, Bug Fixes)
+mzxrules (Testing)
+Quantum P. (OS X Testing / Builds)
+Spectere (OS X Builds)
+Terryn (Testing)
 Wervyn (Testing)
 
 ## License
