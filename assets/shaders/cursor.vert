@@ -19,8 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#version 110
-
 attribute vec2 Position;
 attribute vec3 Color;
 
