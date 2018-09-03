@@ -673,10 +673,11 @@ static void gl2_render_graph(struct graphics_data *graphics)
   }
 }
 
-static inline Uint32 translate_layer_color(Uint32 color)
+static inline Uint32 translate_layer_color(struct graphics_data *graphics,
+ Uint32 color)
 {
   if(color >= 16)
-    return (color & 0xF) + graphics.protected_pal_position;
+    return (color & 0xF) + graphics->protected_pal_position;
 
   return color;
 }
@@ -778,7 +779,7 @@ static void gl2_render_layer(struct graphics_data *graphics,
 
     for(i = 0; i < layer_w * layer_h; i++, dest++, src++)
     {
-      bg_color = translate_layer_color(src->bg_color);
+      bg_color = translate_layer_color(graphics, src->bg_color);
 
       if(src->char_value != 0xFFFF && bg_color != layer->transparent_col)
         *dest = graphics->flat_intensity_palette[bg_color];
@@ -828,7 +829,7 @@ static void gl2_render_layer(struct graphics_data *graphics,
 
       for(i2 = 0; i2 < layer_w; i2++)
       {
-        fg_color = translate_layer_color(src->fg_color);
+        fg_color = translate_layer_color(graphics, src->fg_color);
         char_value = translate_layer_char(src->char_value, layer->offset);
 
         pal_base = &render_data->palette[fg_color * 3];
@@ -897,7 +898,7 @@ static void gl2_render_layer(struct graphics_data *graphics,
       for(i2 = layer_w - 1; i2 >= 0; i2--)
       {
         src--;
-        fg_color = translate_layer_color(src->fg_color);
+        fg_color = translate_layer_color(graphics, src->fg_color);
         char_value = translate_layer_char(src->char_value, layer->offset);
 
         pal_base = &render_data->palette[fg_color * 3];
