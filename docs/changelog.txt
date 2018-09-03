@@ -1,4 +1,9 @@
-GIT - MZX 2.91e
+September 3rd, 2018 - MZX 2.91e
+
+Bugfix release fixing some crashes, port bugs, and some other
+significant issues affecting a variety of things.
+
+USERS
 
 + Fixed bug where loading a board charset would also clear all
   of the extended charsets.
@@ -31,6 +36,12 @@ GIT - MZX 2.91e
 + Fixed an issue where UIs would execute redundant frames.
 + Fixed a bug where string comparison would not order strings of
   different lengths correctly. (GreaseMonkey)
+
+DEVELOPERS
+
++ Code style has been cleaned up in numerous files.
++ Added missing GPL headers to most GLSL shaders and added
+  slightly better documentation for them.
 
 
 July 12th, 2018 - MZX 2.91d
