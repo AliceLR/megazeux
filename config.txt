@@ -78,7 +78,7 @@
 # Written by Logicow, it uses shaders to do the tiling and scaling. There
 # are several shader programs that can be selected at runtime using the F2
 # menu. This renderer is called "glsl". It is the highest quality and best
-# performing renderer.
+# performing renderer for most PCs.
 #
 # Uncomment ONE of the lines below:
 
@@ -104,9 +104,9 @@
 
 # The GLSL renderer uses scaling shaders to determine the scaling method
 # instead of gl_filter_method. The default shader to be loaded when MZX
-# starts is assets/shaders/scaler.frag (which is "semisoft" by default).
+# starts is assets/glsl/scalers/semisoft.frag.
 # Change this config option to specify a different shader to load on startup.
-# For a list of valid options, see the F2 menu or the extra shaders folder.
+# For a list of valid options, see the F2 menu or the GLSL scalers folder.
 # Do not include an extension.
 
 # gl_scaling_shader = semisoft

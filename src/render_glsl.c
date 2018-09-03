@@ -223,7 +223,7 @@ struct glsl_render_data
   struct config_info *conf;
 };
 
-static char *source_cache[SHADERS_CURSOR_FRAG - SHADERS_SCALER_VERT + 1];
+static char *source_cache[GLSL_SHADER_RES_COUNT];
 
 #define INFO_MAX 1000
 
@@ -293,16 +293,17 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
  enum resource_id res, GLenum type)
 {
   struct glsl_render_data *render_data = graphics->render_data;
-  int index = res - SHADERS_SCALER_VERT;
+  int index = res - GLSL_SHADER_RES_FIRST;
   int loaded_config = 0;
-  bool is_user_scaler;
+  bool is_user_scaler = false;
   GLint compile_status;
   GLenum shader;
 
-  assert(res >= SHADERS_SCALER_VERT && res <= SHADERS_CURSOR_FRAG);
+  assert(res >= GLSL_SHADER_RES_FIRST && res <= GLSL_SHADER_RES_LAST);
 
-  is_user_scaler = (res == SHADERS_SCALER_VERT || res == SHADERS_SCALER_FRAG) &&
-   graphics->gl_scaling_shader[0];
+  if(res == GLSL_SHADER_SCALER_VERT || res == GLSL_SHADER_SCALER_FRAG)
+    if(graphics->gl_scaling_shader[0])
+      is_user_scaler = true;
 
   // If we've already seen this shader, it's loaded, and we don't
   // need to do any more file I/O.
@@ -315,16 +316,16 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
 
       char *path = cmalloc(MAX_PATH);
 
-      strcpy(path, mzx_res_get_by_id(SHADERS_SCALER_DIRECTORY));
+      strcpy(path, mzx_res_get_by_id(GLSL_SHADER_SCALER_DIRECTORY));
 
       switch(res)
       {
-        case SHADERS_SCALER_VERT:
+        case GLSL_SHADER_SCALER_VERT:
           sprintf(path + strlen(path), "%s%s.vert",
            DIR_SEPARATOR, graphics->gl_scaling_shader);
           break;
 
-        case SHADERS_SCALER_FRAG:
+        case GLSL_SHADER_SCALER_FRAG:
           sprintf(path + strlen(path), "%s%s.frag",
            DIR_SEPARATOR, graphics->gl_scaling_shader);
           break;
@@ -352,7 +353,7 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
     {
       is_user_scaler = false;
 
-      if(res == SHADERS_SCALER_FRAG)
+      if(res == GLSL_SHADER_SCALER_FRAG)
         graphics->gl_scaling_shader[0] = 0;
 
       source_cache[index] = glsl_load_string(mzx_res_get_by_id(res));
@@ -459,7 +460,7 @@ static void glsl_load_shaders(struct graphics_data *graphics)
   struct glsl_render_data *render_data = graphics->render_data;
 
   render_data->scaler_program = glsl_load_program(graphics,
-   SHADERS_SCALER_VERT, SHADERS_SCALER_FRAG);
+   GLSL_SHADER_SCALER_VERT, GLSL_SHADER_SCALER_FRAG);
   if(render_data->scaler_program)
   {
     glsl.glBindAttribLocation(render_data->scaler_program,
@@ -472,7 +473,7 @@ static void glsl_load_shaders(struct graphics_data *graphics)
   }
 
   render_data->tilemap_program = glsl_load_program(graphics,
-   SHADERS_TILEMAP_VERT, SHADERS_TILEMAP_FRAG);
+   GLSL_SHADER_TILEMAP_VERT, GLSL_SHADER_TILEMAP_FRAG);
   if(render_data->tilemap_program)
   {
     glsl.glBindAttribLocation(render_data->tilemap_program,
@@ -485,7 +486,7 @@ static void glsl_load_shaders(struct graphics_data *graphics)
   }
 
   render_data->tilemap_smzx_program = glsl_load_program(graphics,
-   SHADERS_TILEMAP_VERT, SHADERS_TILEMAP_SMZX_FRAG);
+   GLSL_SHADER_TILEMAP_VERT, GLSL_SHADER_TILEMAP_SMZX_FRAG);
   if(render_data->tilemap_smzx_program)
   {
     glsl.glBindAttribLocation(render_data->tilemap_smzx_program,
@@ -496,21 +497,9 @@ static void glsl_load_shaders(struct graphics_data *graphics)
     glsl_verify_link(render_data, render_data->tilemap_smzx_program);
     glsl_delete_shaders(render_data->tilemap_smzx_program);
   }
-  /*
-  render_data->tilemap_smzx3_program = glsl_load_program(graphics,
-   SHADERS_TILEMAP_VERT, SHADERS_TILEMAP_SMZX3_FRAG);
-  if(render_data->tilemap_smzx3_program)
-  {
-    glsl.glBindAttribLocation(render_data->tilemap_smzx3_program,
-     ATTRIB_POSITION, "Position");
-    glsl.glBindAttribLocation(render_data->tilemap_smzx3_program,
-     ATTRIB_TEXCOORD, "Texcoord");
-    glsl.glLinkProgram(render_data->tilemap_smzx3_program);
-    glsl_verify_link(render_data, render_data->tilemap_smzx3_program);
-  }
-  */
+
   render_data->mouse_program = glsl_load_program(graphics,
-   SHADERS_MOUSE_VERT, SHADERS_MOUSE_FRAG);
+   GLSL_SHADER_MOUSE_VERT, GLSL_SHADER_MOUSE_FRAG);
   if(render_data->mouse_program)
   {
     glsl.glBindAttribLocation(render_data->mouse_program,
@@ -521,7 +510,7 @@ static void glsl_load_shaders(struct graphics_data *graphics)
   }
 
   render_data->cursor_program  = glsl_load_program(graphics,
-   SHADERS_CURSOR_VERT, SHADERS_CURSOR_FRAG);
+   GLSL_SHADER_CURSOR_VERT, GLSL_SHADER_CURSOR_FRAG);
   if(render_data->cursor_program)
   {
     glsl.glBindAttribLocation(render_data->cursor_program,
@@ -595,7 +584,7 @@ static void glsl_free_video(struct graphics_data *graphics)
   struct glsl_render_data *render_data = graphics->render_data;
   int i;
 
-  for(i = 0; i < SHADERS_CURSOR_FRAG - SHADERS_SCALER_VERT + 1; i++)
+  for(i = 0; i < GLSL_SHADER_RES_COUNT; i++)
     if(source_cache[i])
       free((void *)source_cache[i]);
 
@@ -1276,21 +1265,23 @@ static void glsl_switch_shader(struct graphics_data *graphics,
  const char *name)
 {
   struct glsl_render_data *render_data = graphics->render_data;
-  int res = SHADERS_SCALER_VERT - SHADERS_SCALER_VERT;
-  if(source_cache[res]) free(source_cache[res]);
-  source_cache[res] = NULL;
+  int index = GLSL_SHADER_SCALER_VERT - GLSL_SHADER_RES_FIRST;
 
-  res = SHADERS_SCALER_FRAG - SHADERS_SCALER_VERT;
-  if(source_cache[res]) free(source_cache[res]);
-  source_cache[res] = NULL;
+  if(source_cache[index]) free(source_cache[index]);
+  source_cache[index] = NULL;
+
+  index = GLSL_SHADER_SCALER_FRAG - GLSL_SHADER_RES_FIRST;
+  if(source_cache[index]) free(source_cache[index]);
+  source_cache[index] = NULL;
 
   strncpy(graphics->gl_scaling_shader, name, 32);
   graphics->gl_scaling_shader[31] = 0;
 
   glsl.glDeleteProgram(render_data->scaler_program);
   gl_check_error();
+
   render_data->scaler_program = glsl_load_program(graphics,
-   SHADERS_SCALER_VERT, SHADERS_SCALER_FRAG);
+   GLSL_SHADER_SCALER_VERT, GLSL_SHADER_SCALER_FRAG);
   if(render_data->scaler_program)
   {
     glsl.glBindAttribLocation(render_data->scaler_program,

@@ -63,32 +63,32 @@ ifeq (${BUILD_UTILS},1)
 endif
 ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 	@${install} -m 0755 -d \
-		${DESTDIR}${SHAREDIR}/megazeux/assets/shaders && \
-	 ${install} -m 0644 assets/shaders/cursor.frag \
-		assets/shaders/cursor.vert \
-		assets/shaders/mouse.frag \
-		assets/shaders/mouse.vert \
-		assets/shaders/scaler.vert \
-		assets/shaders/tilemap.frag \
-		assets/shaders/tilemap.vert \
-		assets/shaders/tilemap.smzx.frag \
-		${DESTDIR}${SHAREDIR}/megazeux/assets/shaders/
+		${DESTDIR}${SHAREDIR}/megazeux/assets/glsl && \
+	 ${install} -m 0644 assets/glsl/cursor.frag \
+		assets/glsl/cursor.vert \
+		assets/glsl/mouse.frag \
+		assets/glsl/mouse.vert \
+		assets/glsl/README.md \
+		assets/glsl/scaler.vert \
+		assets/glsl/tilemap.frag \
+		assets/glsl/tilemap.vert \
+		assets/glsl/tilemap.smzx.frag \
+		${DESTDIR}${SHAREDIR}/megazeux/assets/glsl/
 endif
 ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 	@${install} -m 0755 -d \
-		${DESTDIR}${SHAREDIR}/megazeux/assets/shaders/scalers && \
-	 ${install} -m 0644 assets/shaders/scalers/crt.frag \
-		assets/shaders/scalers/emboss.frag \
-		assets/shaders/scalers/epx.frag \
-		assets/shaders/scalers/greyscale.frag \
-		assets/shaders/scalers/hqscale.frag \
-		assets/shaders/scalers/hqscale.vert \
-		assets/shaders/scalers/nearest.frag \
-		assets/shaders/scalers/README.txt \
-		assets/shaders/scalers/semisoft.frag \
-		assets/shaders/scalers/sepia.frag \
-		assets/shaders/scalers/simple.frag \
-		${DESTDIR}${SHAREDIR}/megazeux/assets/shaders/scalers/
+		${DESTDIR}${SHAREDIR}/megazeux/assets/glsl/scalers && \
+	 ${install} -m 0644 assets/glsl/scalers/crt.frag \
+		assets/glsl/scalers/emboss.frag \
+		assets/glsl/scalers/epx.frag \
+		assets/glsl/scalers/greyscale.frag \
+		assets/glsl/scalers/hqscale.frag \
+		assets/glsl/scalers/hqscale.vert \
+		assets/glsl/scalers/nearest.frag \
+		assets/glsl/scalers/semisoft.frag \
+		assets/glsl/scalers/sepia.frag \
+		assets/glsl/scalers/simple.frag \
+		${DESTDIR}${SHAREDIR}/megazeux/assets/glsl/scalers/
 endif
 
 # Linux os specific uninstall target

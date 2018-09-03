@@ -40,8 +40,9 @@ USERS
 DEVELOPERS
 
 + Code style has been cleaned up in numerous files.
-+ Added missing GPL headers to most GLSL shaders and added
-  slightly better documentation for them.
++ Moved GLSL shaders from assets/shaders/ to assets/glsl/.
++ Added missing GPL headers to GLSL shaders and added slightly
+  better documentation to them.
 
 
 July 12th, 2018 - MZX 2.91d

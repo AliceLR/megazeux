@@ -53,31 +53,31 @@ struct mzx_resource
  */
 static struct mzx_resource mzx_res[] = {
 #define ASSETS "assets/"
-  { CONFFILE,                      NULL, false },
-  { ASSETS "default.chr",          NULL, false },
-  { ASSETS "edit.chr",             NULL, false },
-  { ASSETS "smzx.pal",             NULL, false },
+  { CONFFILE,                           NULL, false },
+  { ASSETS "default.chr",               NULL, false },
+  { ASSETS "edit.chr",                  NULL, false },
+  { ASSETS "smzx.pal",                  NULL, false },
 #ifdef CONFIG_EDITOR
-  { ASSETS "ascii.chr",            NULL, true },
-  { ASSETS "blank.chr",            NULL, true },
-  { ASSETS "smzx.chr",             NULL, true },
+  { ASSETS "ascii.chr",                 NULL, true },
+  { ASSETS "blank.chr",                 NULL, true },
+  { ASSETS "smzx.chr",                  NULL, true },
 #endif
 #ifdef CONFIG_HELPSYS
-  { ASSETS "help.fil",             NULL, true },
+  { ASSETS "help.fil",                  NULL, true },
 #endif
 #ifdef CONFIG_RENDER_GL_PROGRAM
-#define SHADERS ASSETS "shaders/"
-#define SCALERS SHADERS "scalers/"
-  { SCALERS,                       NULL, false },
-  { SHADERS "scaler.vert",         NULL, false },
-  { SCALERS "semisoft.frag",       NULL, false },
-  { SHADERS "tilemap.vert",        NULL, false },
-  { SHADERS "tilemap.frag",        NULL, false },
-  { SHADERS "tilemap.smzx.frag",   NULL, false },
-  { SHADERS "mouse.vert",          NULL, false },
-  { SHADERS "mouse.frag",          NULL, false },
-  { SHADERS "cursor.vert",         NULL, false },
-  { SHADERS "cursor.frag",         NULL, false },
+#define GLSL_SHADERS ASSETS "glsl/"
+#define GLSL_SCALERS GLSL_SHADERS "scalers/"
+  { GLSL_SCALERS,                       NULL, false },
+  { GLSL_SHADERS "scaler.vert",         NULL, false },
+  { GLSL_SCALERS "semisoft.frag",       NULL, false },
+  { GLSL_SHADERS "tilemap.vert",        NULL, false },
+  { GLSL_SHADERS "tilemap.frag",        NULL, false },
+  { GLSL_SHADERS "tilemap.smzx.frag",   NULL, false },
+  { GLSL_SHADERS "mouse.vert",          NULL, false },
+  { GLSL_SHADERS "mouse.frag",          NULL, false },
+  { GLSL_SHADERS "cursor.vert",         NULL, false },
+  { GLSL_SHADERS "cursor.frag",         NULL, false },
 #endif
 };
 
