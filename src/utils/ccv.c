@@ -175,24 +175,24 @@ typedef struct {
 
 typedef struct {
   InputFile *files;
-  
+
   int w;
   int h;
-  
+
   int mzm;
   int reuse;
   int noreuse;
   int quiet;
-  
+
   int c;
   int threshold;
-  
+
   int offset;
   int exclude_on;
   char exclude[256];
-  
+
   int blank;
-  
+
   char output[MAX_PATH - 4 + 1];
   char dither[256];
 } Config;
@@ -201,28 +201,28 @@ Config *DefaultConfig()
 {
   Config *cfg = malloc(sizeof(Config));
   cfg->files = NULL;
-  
+
   cfg->w = 0;
   cfg->h = 0;
-  
+
   cfg->mzm = 0;
   cfg->reuse = 0;
   cfg->noreuse = 0;
   cfg->quiet = 0;
-  
+
   cfg->offset = 0;
   cfg->exclude_on = 0;
   for (int i = 0; i < 256; i++) {
     cfg->exclude[i] = 0;
   }
   cfg->blank = -1;
-  
+
   cfg->c = 0;
   cfg->threshold = 127;
-  
+
   cfg->output[0] = '\0';
   cfg->dither[0] = '\0';
-  
+
   return cfg;
 }
 
@@ -238,17 +238,17 @@ int Option(const char *option_name, int arguments, char *argument, int args_left
 Config *LoadConfig(int argc, char **argv)
 {
   Config *cfg = DefaultConfig();
-  
+
   char arg_used[argc];
   int i;
-  
+
   memset(arg_used, 0, argc);
-  
+
   if (argc >= 1 && strcmp(argv[0], "-help") == 0) {
     Help();
     exit(0);
   }
-  
+
   for (i = 0; i < argc; i++) {
     if (arg_used[i]) continue;
     if (argv[i][0] == '-') { // Argument
@@ -319,24 +319,24 @@ Config *LoadConfig(int argc, char **argv)
         int curr = 0;
         int range_st = -1;
         int range_ed = -1;
-        
+
         cfg->exclude_on = 1;
 
         while (*s) {
           if (sscanf(s, "%[0-9]", tok) == 0) break;
           s += strlen(tok);
-          
+
           cfg->exclude[atoi(tok)] = 1;
-          
+
           if (curr == 1) {
             curr = 0;
             range_ed = atoi(tok);
-            
+
             for (int ch = range_st; range_st <= range_ed ? ch <= range_ed : ch >= range_ed; range_st <= range_ed ? ch++ : ch--) {
               cfg->exclude[ch] = 1;
             }
           }
-          
+
           op = s[0];
           if (op) s++;
           if (op == '-') {
@@ -344,22 +344,23 @@ Config *LoadConfig(int argc, char **argv)
             curr = 1;
           }
         }
-        
+
         arg_used[i+1] = 1;
         continue;
       }
     } else { // Filename
       InputFile *file = malloc(sizeof(InputFile));
-      strncpy(file->path, argv[i], MAX_PATH+1);
+      strncpy(file->path, argv[i], MAX_PATH);
+      file->path[MAX_PATH] = 0;
       HASH_ADD_STR(cfg->files, path, file);
     }
   }
-  
+
   if (cfg->files == NULL) {
     Usage();
     exit(1);
   }
-  
+
   return cfg;
 }
 
@@ -385,21 +386,21 @@ Image *LoadImage_RAW(Config *cfg, const char *path)
   FILE *fp;
   int i;
   if ((cfg->w == 0) || (cfg->h == 0)) Error("Nonzero -w # and -h # values must be specified when loading raw images.");
-  
+
   img = CreateImage(cfg->w, cfg->h, 1);
-  
+
   fp = fopen(path, "rb");
   if (!fp) Error("Failed to open %s", path);
   for (i = 0; i < cfg->w * cfg->h; i++) {
     img->pixels[i] = fgetc(fp) != 0 ? 255 : 0;
   }
   fclose(fp);
-  
+
   return img;
 }
 
 Image *LoadImage_BMP(Config *cfg, const char *path)
-{  
+{
   FILE *fp = fopen(path, "rb");
   Image *img;
   char sig_a, sig_b;
@@ -411,17 +412,17 @@ Image *LoadImage_BMP(Config *cfg, const char *path)
   struct {
     unsigned char r, g, b;
   } palette[256];
-  
+
   if (!fp) Error("Failed to open %s", path);
-  
+
   sig_a = fgetc(fp);
   sig_b = fgetc(fp);
-  
+
   if ((sig_a != 'B') || (sig_b != 'M')) Error("BMP header corrupt (%s)", path);
   file_read32(fp);
   file_read32(fp);
   pixelarray = file_read32(fp);
-  
+
   dibheadersize = file_read32(fp);
   w = file_read32(fp);
   h = file_read32(fp);
@@ -433,21 +434,21 @@ Image *LoadImage_BMP(Config *cfg, const char *path)
   file_read32(fp); // h res
   file_read32(fp); // v res
   palette_size = file_read32(fp); // colours
-  
+
   img = NULL;
-  
+
   if (bpp <= 8) { // Paletted image
     if (palette_size == 0) palette_size = 1<<bpp;
-    
+
     fseek(fp, dibheadersize + 14, SEEK_SET);
-    
+
     for (i = 0; i < palette_size; i++) {
       palette[i].b = fgetc(fp);
       palette[i].g = fgetc(fp);
       palette[i].r = fgetc(fp);
       fgetc(fp);
     }
-    
+
     fseek(fp, pixelarray, SEEK_SET);
     img = CreateImage(w, h, 3);
 
@@ -467,7 +468,7 @@ Image *LoadImage_BMP(Config *cfg, const char *path)
           v |= byte_val & (128 >> bit_offset) ? 1 << b : 0;
           bit_offset++;
         }
-        
+
         img->pixels[(y*w+x)*3+0] = palette[v].r;
         img->pixels[(y*w+x)*3+1] = palette[v].g;
         img->pixels[(y*w+x)*3+2] = palette[v].b;
@@ -478,13 +479,13 @@ Image *LoadImage_BMP(Config *cfg, const char *path)
         byte_offset++;
       }
     }
-    
+
   } else { // Truecolour image
     channels = bpp / 8;
     output_channels = channels <= 3 ? channels : 3;
-      
+
     fseek(fp, pixelarray, SEEK_SET);
-    
+
     img = CreateImage(w, h, output_channels);
     padding = (w * channels + 3) / 4 * 4 - (w * channels);
     for (y = 0; y < h; y++) {
@@ -500,13 +501,13 @@ Image *LoadImage_BMP(Config *cfg, const char *path)
           }
         }
       }
-      
+
       if (padding) fseek(fp, padding, SEEK_CUR);
     }
   }
-  
+
   fclose(fp);
-    
+
   return img;
 }
 
@@ -530,7 +531,7 @@ int Brightness(unsigned char *pixels, int channels)
   int sum = 0, i;
   if (channels == 1) return pixels[0];
   if (channels == 3) return ((pixels[0] * 30 + pixels[1] * 59 + pixels[2] * 11) + 50) / 100;
-  
+
   for (i = 0; i < channels; i++) {
     sum += pixels[i];
   }
@@ -546,18 +547,18 @@ typedef struct {
 Diffuse diffmethods[] = {
 {"Floyd-Steinberg", {0, -1, 7,
                     3, 5, 1}, 3, 2, 16},
-                    
+
 {"Jarvis-Judice-Ninke", {0, 0, -1, 7, 5,
                          3, 5,  7, 5, 3,
                          1, 3,  5, 3, 1}, 5, 3, 48},
-                         
+
 {"Stucki", {0, 0, -1, 7, 5,
             2, 4,  8, 4, 2,
             1, 2,  4, 2, 1}, 5, 3, 42},
-            
+
 {"Burkes", {0, 0, -1, 8, 4,
             2, 4, 8, 4, 2}, 5, 2, 32},
-            
+
 {"Sierra", {0, 0, -1, 5, 3,
             2, 4,  5, 4, 2,
             0, 2,  3, 2, 0}, 5, 3, 32},
@@ -577,14 +578,14 @@ void QuantiseDiffuse(Image *img, Image *qimg, int threshold, const char *method)
   Diffuse D;
   int v_noerr, v, wr;
   memset(err, 0, img->w * img->h * sizeof(int));
-  
+
   for (i = 0; i < sizeof(diffmethods) / sizeof(diffmethods[0]); i++) {
     if (lc_strncmp(method, diffmethods[i].method, strlen(method)) == 0) method_i = i;
   }
   if (method_i == -1) {
     Error("-dither method '%s' not found. Try another setting", method);
   }
-  
+
   D = diffmethods[method_i];
   mx = 0;
   my = 0;
@@ -605,9 +606,9 @@ void QuantiseDiffuse(Image *img, Image *qimg, int threshold, const char *method)
       if (v < 0) v = 0;
       wr = v >= threshold ? 255 : 0;
       qimg->pixels[y * img->w + x] = v >= threshold ? 1 : 0;
-      
+
       if ((v_noerr - wr) != 0) {
-              
+
         for (i = 0; i < D.w * D.h; i++) {
           int ox = (i % D.w) - mx + x;
           int oy = (i / D.w) - my + y;
@@ -633,7 +634,7 @@ void QuantiseTheshold(Image *img, Image *qimg, int threshold)
 Image *Quantise(Config *cfg, Image *img)
 {
   Image *qimg = CreateImage(img->w, img->h, 1);
-  
+
   if (cfg->dither[0] == '\0') {
     QuantiseTheshold(img, qimg, cfg->threshold);
   } else {
@@ -654,9 +655,9 @@ Charset *CreateCharset(Image *img)
   int chr, cy, cx, py, px;
   cset->data = malloc(cset_size * 14);
   memset(cset->data, 0, cset_size * 14);
-  
+
   cset->chars = cset_size;
-  
+
   chr = 0;
   for (cy = 0; cy < img->h / 14; cy++) {
     for (cx = 0; cx < img->w / 8; cx++) {
@@ -668,7 +669,7 @@ Charset *CreateCharset(Image *img)
       chr++;
     }
   }
-  
+
   return cset;
 }
 
@@ -705,7 +706,7 @@ void Reuse(Charset *cset, Mzm *mzm)
   unsigned char *cdata;
   for (i = 0; i < cset->chars; i++) {
     cdata = cset->data + i * 14;
-    
+
     HASH_FIND(hh, clist, cdata, sizeof(clist->data), c);
     if (!c) {
       c = malloc(sizeof(Char));
@@ -735,7 +736,7 @@ char *OutputPath(const char *input, Config *cfg, const char *ext)
     strcpy(buf, input);
     buf_e = strrchr(buf, '.');
     if (buf_e) *buf_e = '\0';
-    
+
     output_path = malloc(strlen(buf) + strlen(ext) + 1);
     strcpy(output_path, buf);
     strcat(output_path, ext);
@@ -759,7 +760,7 @@ void WriteMzm(const char *path, Mzm *mzm)
   FILE *fp = fopen(path, "wb");
   int i;
   fwrite("MZM2", 1, 4, fp);
-  
+
   file_write16(mzm->w, fp);
   file_write16(mzm->h, fp);
   file_write32(0, fp);
@@ -767,7 +768,7 @@ void WriteMzm(const char *path, Mzm *mzm)
   fputc(1, fp); // storage mode
   fputc(0, fp); // robot storage mode
   fputc(0, fp); // reserved
-  
+
   for (i = 0; i < mzm->w * mzm->h; i++) {
     fputc(mzm->data[i] & 0xFF, fp);
     fputc(15, fp);
@@ -797,7 +798,7 @@ static inline int CountBits(const unsigned char *A)
     v = v - ((v >> 1) & 0x55555555);
     v = (v & 0x33333333) + ((v >> 2) & 0x33333333);
     c += (((v + (v >> 4)) & 0xF0F0F0F) * 0x1010101) >> 24;
-    
+
     return c;
   } else {
     count = 0;
@@ -830,18 +831,18 @@ void Reduce_Simple(Charset *cset, int chars)
   int i, j;
   unsigned char *data_i, *data_j;
   int bits;
-  
+
   while (cset->chars > chars)
   {
     pair_i = -1;
     pair_j = -1;
     pair_dist = INT_MAX;
-    
+
     for (i = 0; i < cset->chars; i++) {
       data_i = cset->data + i * 14;
       for (j = i + 1; j < cset->chars; j++) {
         data_j = cset->data + j * 14;
-        
+
         data_dist = CharDist(data_i, data_j);
         if (data_dist < pair_dist) {
           pair_dist = data_dist;
@@ -850,7 +851,7 @@ void Reduce_Simple(Charset *cset, int chars)
         }
       }
     }
-    
+
     data_i = cset->data + pair_i * 14;
     data_j = cset->data + pair_j * 14;
     bits = CountBits(data_i) + CountBits(data_j);
@@ -864,11 +865,11 @@ void Reduce_Simple(Charset *cset, int chars)
         data_i[i] = ~(~data_i[i] | ~data_j[i]);
       }
     }
-    
+
     memmove(data_j, data_j + 14, (cset->chars - pair_j - 1) * 14);
     cset->chars--;
   }
-  
+
   cset->data = realloc(cset->data, cset->chars * 14);
 }
 
@@ -896,7 +897,7 @@ void RemapMzm(Charset *cset, Mzm *mzm, Image *qimage)
     for (x = 0; x < mzm->w; x++) {
       int closest_chr = -1;
       int closest_dist = INT_MAX;
-      
+
       for (c = 0; c < cset->chars; c++) {
         int chr_dist = ChrImageDist(cset->data + c * 14, qimage, x * 8, y * 14);
         if (chr_dist < closest_dist) {
@@ -912,7 +913,7 @@ void RemapMzm(Charset *cset, Mzm *mzm, Image *qimage)
 void Reduce(Charset *cset, Mzm *mzm, Image *original, int chars, Config *cfg)
 {
   if (cset->chars <= chars) return;
-  
+
   Reduce_Simple(cset, chars);
   RemapMzm(cset, mzm, original);
 }
@@ -934,17 +935,17 @@ void ExcludeChars(Charset *cset, Mzm *mzm, char *exclude, int offset)
   int ci, i;
   for (i = 0; i < cset->chars && i < 256; i++) {
     remap[i] = i;
-    ci = i + remap_offset + offset;    
+    ci = i + remap_offset + offset;
     if ((ci >= 0) && (ci < 256) && (exclude[ci])) {
       cset->data = realloc(cset->data, (cset->chars + 1) * 14);
       remap[i] = cset->chars;
       memmove(cset->data + (remap[i])*14, cset->data + i * 14, 14);
       memset(cset->data + i * 14, 0, 14);
-      
+
       cset->chars++;
     }
   }
-  
+
   if (mzm) {
     for (i = 0; i < mzm->w * mzm->h; i++) {
       while ((mzm->data[i] != remap[mzm->data[i]])) {
@@ -967,7 +968,7 @@ void SwapBlank(Charset *cset, Mzm *mzm, int blank)
         break;
       }
     }
-    
+
     if (isblank) current_blank = i;
     break;
   }
@@ -975,7 +976,7 @@ void SwapBlank(Charset *cset, Mzm *mzm, int blank)
     memcpy(tmp, cset->data + current_blank*14, 14);
     memcpy(cset->data + current_blank*14, cset->data + blank*14, 14);
     memcpy(cset->data + blank*14, tmp, 14);
-    
+
     if (mzm) {
       for (i = 0; i < mzm->w * mzm->h; i++) {
         if (mzm->data[i] == current_blank) {
@@ -995,66 +996,66 @@ int main(int argc, char **argv)
   Image *image, *qimage;
   Charset *cset;
   Mzm *mzm;
-  
+
   for(file = cfg->files; file != NULL; file = file->hh.next) {
     image = LoadImage(cfg, file->path);
-    
+
     if (((image->w % 8) != 0) || ((image->h % 14) != 0)) Error("Image dimensions are not divisible by 8x14");
     qimage = Quantise(cfg, image);
-    
+
     cset = CreateCharset(qimage);
-    
+
     mzm = NULL;
     if (cfg->mzm) {
       mzm = CreateMzm(qimage->w / 8, qimage->h / 14);
     }
-        
+
     if (cfg->reuse && !cfg->noreuse) {
       Reuse(cset, mzm);
     }
-    
+
     if (cfg->c) {
       Reduce(cset, mzm, qimage, cfg->c, cfg);
     }
-    
+
     if (cfg->blank != -1) {
       SwapBlank(cset, mzm, cfg->blank);
     }
-    
+
     if (cfg->exclude_on) {
       ExcludeChars(cset, mzm, cfg->exclude, cfg->offset);
     }
-    
+
 
     if (cfg->offset) {
       OffsetMzm(mzm, cfg->offset);
     }
-    
-    
+
+
     { // Output charset
       char *filename_chr = OutputPath(file->path, cfg, ".chr");
-      
+
       WriteCharset(filename_chr, cset);
-      
+
       if (!cfg->quiet) {
         printf("%s -> %s (%d chars)", file->path, filename_chr, cset->chars);
       }
       free(filename_chr);
     }
-    
+
     if (cfg->mzm) { // Output MZM
       char *filename_mzm = OutputPath(file->path, cfg, ".mzm");
       WriteMzm(filename_mzm, mzm);
-      
+
       if (!cfg->quiet) {
         printf(", %s", filename_mzm);
       }
-      
+
       free(filename_mzm);
     }
 
     if (!cfg->quiet) printf("\n");
   }
-  
+
   return 0;
 }

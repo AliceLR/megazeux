@@ -41,9 +41,9 @@ __M_BEGIN_DECLS
 #define GL_APIENTRY GLAPIENTRY
 #endif
 
-#define GL_NON_POWER_2_WIDTH      640
-#define GL_NON_POWER_2_HEIGHT     350
+// Next power of 2 over SCREEN_PIX_W
 #define GL_POWER_2_WIDTH          1024
+// Next power of 2 over SCREEN_PIX_H
 #define GL_POWER_2_HEIGHT         512
 
 #define CONFIG_GL_FILTER_LINEAR   "linear"
@@ -61,7 +61,8 @@ static inline void gl_error(const char *file, int line,
 
 bool gl_load_syms(const struct dso_syms_map *map);
 void gl_set_filter_method(const char *method,
- void (GL_APIENTRY *glTexParameterf_p)(GLenum target, GLenum pname, GLfloat param));
+ void (GL_APIENTRY *glTexParameterf_p)(GLenum target, GLenum pname,
+  GLfloat param));
 void get_context_width_height(struct graphics_data *graphics,
  int *width, int *height);
 

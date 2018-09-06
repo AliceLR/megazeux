@@ -85,7 +85,7 @@ static void free_dns_thread_data(struct dns_data *data, bool free_result)
   data->res = NULL;
 }
 
-static void *run_dns_thread(void *_data)
+static THREAD_RES run_dns_thread(void *_data)
 {
   struct dns_data *data = (struct dns_data *)_data;
   int ret = -1;
@@ -110,7 +110,7 @@ static void *run_dns_thread(void *_data)
     if(data->state == STATE_EXIT)
     {
       debug("--DNS-- Thread exited.\n");
-      return NULL;
+      THREAD_RETURN;
     }
 
     LOCK(data);

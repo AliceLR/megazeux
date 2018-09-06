@@ -24,12 +24,13 @@
 #include <string.h>
 #include <assert.h>
 
+#include "data.h"
+#include "graphics.h"
 #include "platform.h"
 #include "render.h"
 #include "render_layer.h"
 #include "renderers.h"
 #include "util.h"
-#include "data.h"
 
 #ifdef CONFIG_SDL
 #include "render_sdl.h"
@@ -45,15 +46,57 @@ typedef GLint GLiftype;
 
 #include "render_gl.h"
 
-#define CHARSET_COLS 32
+#define CHARSET_COLS 64
 #define CHARSET_ROWS (FULL_CHARSET_SIZE / CHARSET_COLS)
 #define BG_WIDTH 128
 #define BG_HEIGHT 32
 
+#define SCREEN_PIX_W_F (1.0f * SCREEN_PIX_W)
+#define SCREEN_PIX_H_F (1.0f * SCREEN_PIX_H)
+
+// Must be powers of 2
+#define TEX_DATA_WIDTH 512
+#define TEX_DATA_HEIGHT 1024
+
+// Charsets: CHARSET_COLS * CHAR_W (512) x CHARSET_ROWS * CHAR_H (896)
+#define TEX_DATA_CHR_X 0
+#define TEX_DATA_CHR_Y 0
+
+// Palette: FULL_PAL_SIZE + 1 (273) x 1
+#define TEX_DATA_PAL_X 0
+#define TEX_DATA_PAL_Y 896
+
+// Indicies: SMZX_PAL_SIZE (256) x 4
+#define TEX_DATA_IDX_X 0
+#define TEX_DATA_IDX_Y 897
+
+// Layer: 81 x 26 (max)
+#define TEX_DATA_LAYER_X 0
+#define TEX_DATA_LAYER_Y 901
+
+// NOTE: Layer data packing scheme
+// (highest two bits currently unused but included as part of the char)
+// w        z        y        x
+// 00000000 00000000 00000000 00000000
+// CCCCCCCC CCCCCCBB BBBBBBBF FFFFFFFF
+#define LAYER_FG_POS 0
+#define LAYER_BG_POS 9
+#define LAYER_CHAR_POS 18
+
+enum
+{
+  TEX_SCREEN_ID,
+  TEX_DATA_ID,
+  NUM_TEXTURES
+};
+
 static inline int next_power_of_two(int v)
 {
-  for (int i = 1; i <= 65536; i *= 2)
-    if (i >= v) return i;
+  int i;
+  for(i = 1; i <= 65536; i *= 2)
+    if(i >= v)
+      return i;
+
   debug("Couldn't find power of two for %d\n", v);
   return v;
 }
@@ -85,6 +128,7 @@ static struct
   void (GL_APIENTRY *glEnable)(GLenum cap);
   void (GL_APIENTRY *glEnableVertexAttribArray)(GLuint index);
   void (GL_APIENTRY *glGenTextures)(GLsizei n, GLuint *textures);
+  void (GL_APIENTRY *glDeleteTextures)(GLsizei n, GLuint *textures);
   GLenum (GL_APIENTRY *glGetError)(void);
   void (GL_APIENTRY *glGetProgramInfoLog)(GLuint program, GLsizei bufsize,
    GLsizei *len, char *infolog);
@@ -129,6 +173,7 @@ static const struct dso_syms_map glsl_syms_map[] =
   { "glCreateShader",             (fn_ptr *)&glsl.glCreateShader },
   { "glDeleteProgram",            (fn_ptr *)&glsl.glDeleteProgram },
   { "glDeleteShader",             (fn_ptr *)&glsl.glDeleteShader },
+  { "glDeleteTextures",           (fn_ptr *)&glsl.glDeleteTextures },
   { "glDetachShader",             (fn_ptr *)&glsl.glDetachShader },
   { "glDisable",                  (fn_ptr *)&glsl.glDisable },
   { "glDisableVertexAttribArray", (fn_ptr *)&glsl.glDisableVertexAttribArray },
@@ -166,7 +211,7 @@ struct glsl_render_data
   Uint32 *pixels;
   Uint32 charset_texture[CHAR_H * FULL_CHARSET_SIZE * CHAR_W];
   Uint32 background_texture[BG_WIDTH * BG_HEIGHT];
-  GLuint texture_number[3];
+  GLuint textures[NUM_TEXTURES];
   GLubyte palette[3 * FULL_PAL_SIZE];
   Uint8 remap_texture;
   Uint8 remap_char[FULL_CHARSET_SIZE];
@@ -178,7 +223,7 @@ struct glsl_render_data
   struct config_info *conf;
 };
 
-static char *source_cache[SHADERS_CURSOR_FRAG - SHADERS_SCALER_VERT + 1];
+static char *source_cache[GLSL_SHADER_RES_COUNT];
 
 #define INFO_MAX 1000
 
@@ -248,16 +293,17 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
  enum resource_id res, GLenum type)
 {
   struct glsl_render_data *render_data = graphics->render_data;
-  int index = res - SHADERS_SCALER_VERT;
+  int index = res - GLSL_SHADER_RES_FIRST;
   int loaded_config = 0;
-  bool is_user_scaler;
+  bool is_user_scaler = false;
   GLint compile_status;
   GLenum shader;
 
-  assert(res >= SHADERS_SCALER_VERT && res <= SHADERS_CURSOR_FRAG);
+  assert(res >= GLSL_SHADER_RES_FIRST && res <= GLSL_SHADER_RES_LAST);
 
-  is_user_scaler = (res == SHADERS_SCALER_VERT || res == SHADERS_SCALER_FRAG) &&
-   graphics->gl_scaling_shader[0];
+  if(res == GLSL_SHADER_SCALER_VERT || res == GLSL_SHADER_SCALER_FRAG)
+    if(graphics->gl_scaling_shader[0])
+      is_user_scaler = true;
 
   // If we've already seen this shader, it's loaded, and we don't
   // need to do any more file I/O.
@@ -270,16 +316,16 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
 
       char *path = cmalloc(MAX_PATH);
 
-      strcpy(path, mzx_res_get_by_id(SHADERS_SCALER_DIRECTORY));
+      strcpy(path, mzx_res_get_by_id(GLSL_SHADER_SCALER_DIRECTORY));
 
       switch(res)
       {
-        case SHADERS_SCALER_VERT:
+        case GLSL_SHADER_SCALER_VERT:
           sprintf(path + strlen(path), "%s%s.vert",
            DIR_SEPARATOR, graphics->gl_scaling_shader);
           break;
 
-        case SHADERS_SCALER_FRAG:
+        case GLSL_SHADER_SCALER_FRAG:
           sprintf(path + strlen(path), "%s%s.frag",
            DIR_SEPARATOR, graphics->gl_scaling_shader);
           break;
@@ -307,7 +353,7 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
     {
       is_user_scaler = false;
 
-      if(res == SHADERS_SCALER_FRAG)
+      if(res == GLSL_SHADER_SCALER_FRAG)
         graphics->gl_scaling_shader[0] = 0;
 
       source_cache[index] = glsl_load_string(mzx_res_get_by_id(res));
@@ -337,7 +383,9 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
 #else
   {
     GLint length = (GLint)strlen(source_cache[index]);
-    glsl.glShaderSource(shader, 1, (const char **)&source_cache[index], &length);
+    const char **source_ptr = (const char **)&source_cache[index];
+
+    glsl.glShaderSource(shader, 1, source_ptr, &length);
   }
 #endif
 
@@ -398,7 +446,8 @@ static void glsl_delete_shaders(GLuint program)
   GLsizei shader_count, i;
   glsl.glGetAttachedShaders(program, 16, &shader_count, shaders);
   gl_check_error();
-  for (i = 0; i < shader_count; i++) {
+  for(i = 0; i < shader_count; i++)
+  {
     glsl.glDetachShader(program, shaders[i]);
     gl_check_error();
     glsl.glDeleteShader(shaders[i]);
@@ -411,7 +460,7 @@ static void glsl_load_shaders(struct graphics_data *graphics)
   struct glsl_render_data *render_data = graphics->render_data;
 
   render_data->scaler_program = glsl_load_program(graphics,
-   SHADERS_SCALER_VERT, SHADERS_SCALER_FRAG);
+   GLSL_SHADER_SCALER_VERT, GLSL_SHADER_SCALER_FRAG);
   if(render_data->scaler_program)
   {
     glsl.glBindAttribLocation(render_data->scaler_program,
@@ -424,7 +473,7 @@ static void glsl_load_shaders(struct graphics_data *graphics)
   }
 
   render_data->tilemap_program = glsl_load_program(graphics,
-   SHADERS_TILEMAP_VERT, SHADERS_TILEMAP_FRAG);
+   GLSL_SHADER_TILEMAP_VERT, GLSL_SHADER_TILEMAP_FRAG);
   if(render_data->tilemap_program)
   {
     glsl.glBindAttribLocation(render_data->tilemap_program,
@@ -437,7 +486,7 @@ static void glsl_load_shaders(struct graphics_data *graphics)
   }
 
   render_data->tilemap_smzx_program = glsl_load_program(graphics,
-   SHADERS_TILEMAP_VERT, SHADERS_TILEMAP_SMZX_FRAG);
+   GLSL_SHADER_TILEMAP_VERT, GLSL_SHADER_TILEMAP_SMZX_FRAG);
   if(render_data->tilemap_smzx_program)
   {
     glsl.glBindAttribLocation(render_data->tilemap_smzx_program,
@@ -448,21 +497,9 @@ static void glsl_load_shaders(struct graphics_data *graphics)
     glsl_verify_link(render_data, render_data->tilemap_smzx_program);
     glsl_delete_shaders(render_data->tilemap_smzx_program);
   }
-  /*
-  render_data->tilemap_smzx3_program = glsl_load_program(graphics,
-   SHADERS_TILEMAP_VERT, SHADERS_TILEMAP_SMZX3_FRAG);
-  if(render_data->tilemap_smzx3_program)
-  {
-    glsl.glBindAttribLocation(render_data->tilemap_smzx3_program,
-     ATTRIB_POSITION, "Position");
-    glsl.glBindAttribLocation(render_data->tilemap_smzx3_program,
-     ATTRIB_TEXCOORD, "Texcoord");
-    glsl.glLinkProgram(render_data->tilemap_smzx3_program);
-    glsl_verify_link(render_data, render_data->tilemap_smzx3_program);
-  }
-  */
+
   render_data->mouse_program = glsl_load_program(graphics,
-   SHADERS_MOUSE_VERT, SHADERS_MOUSE_FRAG);
+   GLSL_SHADER_MOUSE_VERT, GLSL_SHADER_MOUSE_FRAG);
   if(render_data->mouse_program)
   {
     glsl.glBindAttribLocation(render_data->mouse_program,
@@ -473,7 +510,7 @@ static void glsl_load_shaders(struct graphics_data *graphics)
   }
 
   render_data->cursor_program  = glsl_load_program(graphics,
-   SHADERS_CURSOR_VERT, SHADERS_CURSOR_FRAG);
+   GLSL_SHADER_CURSOR_VERT, GLSL_SHADER_CURSOR_FRAG);
   if(render_data->cursor_program)
   {
     glsl.glBindAttribLocation(render_data->cursor_program,
@@ -512,6 +549,7 @@ static bool glsl_init_video(struct graphics_data *graphics,
   if(conf->force_bpp == 16 || conf->force_bpp == 32)
     graphics->bits_per_pixel = conf->force_bpp;
 
+  // Buffer for screen texture
   render_data->pixels = cmalloc(sizeof(Uint32) * GL_POWER_2_WIDTH *
    GL_POWER_2_HEIGHT);
   render_data->conf = conf;
@@ -540,16 +578,25 @@ err_free:
   return false;
 }
 
+// FIXME free more
 static void glsl_free_video(struct graphics_data *graphics)
 {
+  struct glsl_render_data *render_data = graphics->render_data;
   int i;
 
-  for(i = 0; i < SHADERS_CURSOR_FRAG - SHADERS_SCALER_VERT + 1; i++)
+  for(i = 0; i < GLSL_SHADER_RES_COUNT; i++)
     if(source_cache[i])
       free((void *)source_cache[i]);
 
-  free(graphics->render_data);
-  graphics->render_data = NULL;
+  if(render_data)
+  {
+    glsl.glDeleteTextures(NUM_TEXTURES, render_data->textures);
+    gl_check_error();
+
+    free(render_data->pixels);
+    free(render_data);
+    graphics->render_data = NULL;
+  }
 }
 
 static void glsl_remap_charsets(struct graphics_data *graphics)
@@ -558,7 +605,6 @@ static void glsl_remap_charsets(struct graphics_data *graphics)
   render_data->remap_texture = true;
 }
 
-// FIXME: Many magic numbers
 static void glsl_resize_screen(struct graphics_data *graphics,
  int width, int height)
 {
@@ -567,10 +613,15 @@ static void glsl_resize_screen(struct graphics_data *graphics,
   glsl.glViewport(0, 0, width, height);
   gl_check_error();
 
-  glsl.glGenTextures(3, render_data->texture_number);
+  // Free any preexisting textures if they exist
+  glsl.glDeleteTextures(NUM_TEXTURES, render_data->textures);
   gl_check_error();
 
-  glsl.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[0]);
+  glsl.glGenTextures(NUM_TEXTURES, render_data->textures);
+  gl_check_error();
+
+  // Screen texture
+  glsl.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_SCREEN_ID]);
   gl_check_error();
 
   gl_set_filter_method(CONFIG_GL_FILTER_LINEAR, glsl.glTexParameterf);
@@ -580,23 +631,20 @@ static void glsl_resize_screen(struct graphics_data *graphics,
   memset(render_data->pixels, 255,
    sizeof(Uint32) * GL_POWER_2_WIDTH * GL_POWER_2_HEIGHT);
 
-  //Uint32 *big_array = cmalloc(sizeof(Uint32) * 512 * 1024);
-  //memset(big_array, 255, sizeof(Uint32) * 512 * 1024);
-
   glsl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GL_POWER_2_WIDTH,
    GL_POWER_2_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE,
    render_data->pixels);
   gl_check_error();
 
-  glsl.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
+  // Data texture
+  glsl.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
   gl_check_error();
 
   gl_set_filter_method(CONFIG_GL_FILTER_NEAREST, glsl.glTexParameterf);
-  glsl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 512, 1024, 0, GL_RGBA,
-   GL_UNSIGNED_BYTE, NULL);
-  gl_check_error();
 
-  //free(big_array);
+  glsl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TEX_DATA_WIDTH, TEX_DATA_HEIGHT,
+   0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+  gl_check_error();
 
   glsl_remap_charsets(graphics);
 
@@ -610,7 +658,7 @@ static bool glsl_set_video_mode(struct graphics_data *graphics,
 
   if(!gl_set_video_mode(graphics, width, height, depth, fullscreen, resize))
     return false;
-  
+
   gl_set_attributes(graphics);
 
   if(!gl_load_syms(glsl_syms_map))
@@ -638,7 +686,7 @@ static bool glsl_set_video_mode(struct graphics_data *graphics,
         warn("Need >= OpenGL 2.0, got OpenGL %.1f.\n", version_float);
         return false;
       }
-      
+
       initialized = true;
     }
   }
@@ -710,13 +758,17 @@ static inline void glsl_do_remap_charsets(struct graphics_data *graphics)
   int *p = (int *)render_data->charset_texture;
   unsigned int i, j, k;
 
-  for(i = 0; i < CHARSET_ROWS / 2; i++, c += -CHAR_H + (CHARSET_COLS * 2) * CHAR_H)
-    for(j = 0; j < CHAR_H; j++, c += -(CHARSET_COLS * 2) * CHAR_H + 1)
-      for(k = 0; k < CHARSET_COLS * 2; k++, c += CHAR_H)
+  for(i = 0; i < CHARSET_ROWS; i++, c += -CHAR_H + CHARSET_COLS * CHAR_H)
+    for(j = 0; j < CHAR_H; j++, c += -CHARSET_COLS * CHAR_H + 1)
+      for(k = 0; k < CHARSET_COLS; k++, c += CHAR_H)
         p = glsl_char_bitmask_to_texture(c, p);
 
-  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, CHARSET_COLS * CHAR_W * 2, CHARSET_ROWS / 2 * CHAR_H, GL_RGBA,
-    GL_UNSIGNED_BYTE, render_data->charset_texture);
+  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0,
+   TEX_DATA_CHR_X,
+   TEX_DATA_CHR_Y,
+   CHARSET_COLS * CHAR_W,
+   CHARSET_ROWS * CHAR_H,
+   GL_RGBA, GL_UNSIGNED_BYTE, render_data->charset_texture);
   gl_check_error();
 }
 
@@ -733,8 +785,11 @@ static inline void glsl_do_remap_char(struct graphics_data *graphics,
   for(i = 0; i < 14; i++, c++)
     p = glsl_char_bitmask_to_texture(c, p);
 
-  //glsl.glTexSubImage2D(GL_TEXTURE_2D, 0, chr % 32 * 8, chr / 32 * 14, 8, 14,GL_RGBA, GL_UNSIGNED_BYTE, render_data->charset_texture);
-  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0, chr % (CHARSET_COLS * 2) * CHAR_W, chr / (CHARSET_COLS * 2) * CHAR_H, CHAR_W, CHAR_H,
+  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0,
+   TEX_DATA_CHR_X + (chr % CHARSET_COLS) * CHAR_W,
+   TEX_DATA_CHR_Y + (chr / CHARSET_COLS) * CHAR_H,
+   CHAR_W,
+   CHAR_H,
    GL_RGBA, GL_UNSIGNED_BYTE, render_data->charset_texture);
   gl_check_error();
 }
@@ -761,25 +816,28 @@ static void glsl_render_graph(struct graphics_data *graphics)
   Uint32 *colorptr, *dest, i, j;
   int width, height;
 
-  static const float tex_coord_array_single[2 * 4] = {
-    0.0f,          0.0f,
-    0.0f,          25.0f,
-    25.0f / 80.0f, 0.0f,
-    25.0f / 80.0f, 25.0f,
+  static const float tex_coord_array_single[2 * 4] =
+  {
+    0.0f,     0.0f,
+    0.0f,     SCREEN_H,
+    SCREEN_W, 0.0f,
+    SCREEN_W, SCREEN_H,
   };
 
+  // Clamp draw area to size of screen texture.
   get_context_width_height(graphics, &width, &height);
-  if(width < 640 || height < 350)
+  if(width < SCREEN_PIX_W || height < SCREEN_PIX_H)
   {
-    if(width >= 1024)
-      width = 1024;
-    if(height >= 512)
-      height = 512;
+    if(width >= GL_POWER_2_WIDTH)
+      width = GL_POWER_2_WIDTH;
+
+    if(height >= GL_POWER_2_HEIGHT)
+      height = GL_POWER_2_HEIGHT;
   }
   else
   {
-    width = 640;
-    height = 350;
+    width = SCREEN_PIX_W;
+    height = SCREEN_PIX_H;
   }
 
   glsl.glViewport(0, 0, width, height);
@@ -791,7 +849,7 @@ static void glsl_render_graph(struct graphics_data *graphics)
     glsl.glUseProgram(render_data->tilemap_smzx_program);
   gl_check_error();
 
-  glsl.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
+  glsl.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
   gl_check_error();
 
   if(render_data->remap_texture)
@@ -812,36 +870,46 @@ static void glsl_render_graph(struct graphics_data *graphics)
     }
   }
 
+  // Layer data
   dest = render_data->background_texture;
 
-  for(i = 0; i < SCREEN_W * SCREEN_H; i++, dest++, src++) {
-    *dest = (src->char_value<<18) + (src->bg_color<<9) + src->fg_color;
+  for(i = 0; i < SCREEN_W * SCREEN_H; i++, dest++, src++)
+  {
+    *dest =
+     (src->char_value << LAYER_CHAR_POS) |
+     (src->bg_color << LAYER_BG_POS) |
+     (src->fg_color << LAYER_FG_POS);
   }
 
-  glsl.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
+  glsl.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
   gl_check_error();
 
-  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 901, SCREEN_W, SCREEN_H, GL_RGBA,
-   GL_UNSIGNED_BYTE, render_data->background_texture);
+  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0,
+   TEX_DATA_LAYER_X, TEX_DATA_LAYER_Y, SCREEN_W, SCREEN_H,
+   GL_RGBA, GL_UNSIGNED_BYTE, render_data->background_texture);
   gl_check_error();
 
+  // Palette
   colorptr = graphics->flat_intensity_palette;
   dest = render_data->background_texture;
 
   for(i = 0; i < graphics->protected_pal_position + 16; i++, dest++, colorptr++)
     *dest = *colorptr;
 
-  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 896, FULL_PAL_SIZE, 1, GL_RGBA,
-   GL_UNSIGNED_BYTE, render_data->background_texture);
+  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0,
+   TEX_DATA_PAL_X, TEX_DATA_PAL_Y, FULL_PAL_SIZE, 1,
+   GL_RGBA, GL_UNSIGNED_BYTE, render_data->background_texture);
   gl_check_error();
 
+  // Indices
   dest = render_data->background_texture;
-  for (i = 0; i < 4; i++)
+  for(i = 0; i < 4; i++)
     for(j = 0; j < SMZX_PAL_SIZE; j++, dest++)
       *dest = graphics->smzx_indices[j * 4 + i];
 
-  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 897, SMZX_PAL_SIZE, 4, GL_RGBA,
-   GL_UNSIGNED_BYTE, render_data->background_texture);
+  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0,
+   TEX_DATA_IDX_X, TEX_DATA_IDX_Y, SMZX_PAL_SIZE, 4,
+   GL_RGBA, GL_UNSIGNED_BYTE, render_data->background_texture);
   gl_check_error();
 
   glsl.glEnableVertexAttribArray(ATTRIB_POSITION);
@@ -862,8 +930,9 @@ static void glsl_render_graph(struct graphics_data *graphics)
   glsl.glDisableVertexAttribArray(ATTRIB_TEXCOORD);
 }
 
-
-static void glsl_render_layer(struct graphics_data *graphics, struct video_layer *layer)
+// FIXME potentially merge common parts of this and render_graph
+static void glsl_render_layer(struct graphics_data *graphics,
+ struct video_layer *layer)
 {
   struct glsl_render_data *render_data = graphics->render_data;
   struct char_element *src = layer->data;
@@ -871,42 +940,46 @@ static void glsl_render_layer(struct graphics_data *graphics, struct video_layer
   int width, height;
   Uint32 char_value, fg_color, bg_color;
 
-  float v_left = 1.0f * (layer->x) / 640.0f * 2.0f - 1.0f;
-  float v_right = 1.0f * (layer->x + (int)layer->w * CHAR_W) / 640.0f * 2.0f - 1.0f;
-  float v_top = 1.0f * (layer->y) / 350.0f * 2.0f - 1.0f;  
-  float v_bottom = 1.0f * (layer->y + (int)layer->h * CHAR_H) / 350.0f * 2.0f - 1.0f;
+  int x1 = layer->x;
+  int x2 = layer->x + layer->w * CHAR_W;
+  int y1 = layer->y;
+  int y2 = layer->y + layer->h * CHAR_H;
 
-  float vertex_array_single[2 * 4] = {
+  float v_left =   1.0f * x1 / SCREEN_PIX_W_F * 2.0f - 1.0f;
+  float v_right =  1.0f * x2 / SCREEN_PIX_W_F * 2.0f - 1.0f;
+  float v_top =    1.0f * y1 / SCREEN_PIX_H_F * 2.0f - 1.0f;
+  float v_bottom = 1.0f * y2 / SCREEN_PIX_H_F * 2.0f - 1.0f;
+
+  float vertex_array_single[2 * 4] =
+  {
     v_left, -v_top,
     v_left, -v_bottom,
     v_right, -v_top,
     v_right, -v_bottom,
   };
-  
-  float t_left = 1.0f * (layer->x) / 640.0f * 25.0f / 80.0f;
-  float t_right = 1.0f * (layer->x + (int)layer->w * CHAR_W) / 640.0f * 25.0f / 80.0f;
-  float t_top = 1.0f * (layer->y) / 350.0f * 25.0f;
-  float t_bottom = 1.0f * (layer->y + (int)layer->h * CHAR_H)  / 350.0f * 25.0f;
 
-  float tex_coord_array_single[2 * 4] = {
-    t_left - t_left, t_top - t_top,
-    t_left - t_left, t_bottom - t_top,
-    t_right - t_left, t_top - t_top,
-    t_right - t_left, t_bottom - t_top,
+  float tex_coord_array_single[2 * 4] =
+  {
+    0.0f,     0.0f,
+    0.0f,     layer->h,
+    layer->w, 0.0f,
+    layer->w, layer->h,
   };
 
+  // Clamp draw area to size of screen texture.
   get_context_width_height(graphics, &width, &height);
-  if(width < 640 || height < 350)
+  if(width < SCREEN_PIX_W || height < SCREEN_PIX_H)
   {
-    if(width >= 1024)
-      width = 1024;
-    if(height >= 512)
-      height = 512;
+    if(width >= GL_POWER_2_WIDTH)
+      width = GL_POWER_2_WIDTH;
+
+    if(height >= GL_POWER_2_HEIGHT)
+      height = GL_POWER_2_HEIGHT;
   }
   else
   {
-    width = 640;
-    height = 350;
+    width = SCREEN_PIX_W;
+    height = SCREEN_PIX_H;
   }
 
   glsl.glViewport(0, 0, width, height);
@@ -918,7 +991,7 @@ static void glsl_render_layer(struct graphics_data *graphics, struct video_layer
     glsl.glUseProgram(render_data->tilemap_smzx_program);
   gl_check_error();
 
-  glsl.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
+  glsl.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
   gl_check_error();
 
   if(render_data->remap_texture)
@@ -939,55 +1012,71 @@ static void glsl_render_layer(struct graphics_data *graphics, struct video_layer
     }
   }
 
+  // Layer data
   dest = render_data->background_texture;
 
-  for(i = 0; i < layer->w * layer->h; i++, dest++, src++) {
+  for(i = 0; i < layer->w * layer->h; i++, dest++, src++)
+  {
     char_value = src->char_value;
     bg_color = src->bg_color;
     fg_color = src->fg_color;
-    if (char_value != 0xFFFF) {
-      if (char_value < PROTECTED_CHARSET_POSITION) {
+
+    if(char_value != 0xFFFF)
+    {
+      if(char_value < PROTECTED_CHARSET_POSITION)
         char_value = (char_value + layer->offset) % PROTECTED_CHARSET_POSITION;
-      }
-      if (bg_color >= 16) bg_color = (bg_color & 0xF) + graphics->protected_pal_position;
-      if (fg_color >= 16) fg_color = (fg_color & 0xF) + graphics->protected_pal_position;
-    } else {
+
+      if(bg_color >= 16)
+        bg_color = (bg_color & 0xF) + graphics->protected_pal_position;
+
+      if(fg_color >= 16)
+        fg_color = (fg_color & 0xF) + graphics->protected_pal_position;
+    }
+    else
+    {
       bg_color = FULL_PAL_SIZE;
       fg_color = FULL_PAL_SIZE;
     }
-    *dest = (char_value<<18) | (bg_color<<9) | fg_color;
+
+    *dest =
+     (char_value << LAYER_CHAR_POS) |
+     (bg_color << LAYER_BG_POS) |
+     (fg_color << LAYER_FG_POS);
   }
 
-  glsl.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
+  glsl.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
   gl_check_error();
 
-  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 901, layer->w, layer->h, GL_RGBA,
-   GL_UNSIGNED_BYTE, render_data->background_texture);
+  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0,
+   TEX_DATA_LAYER_X, TEX_DATA_LAYER_Y, layer->w, layer->h,
+   GL_RGBA, GL_UNSIGNED_BYTE, render_data->background_texture);
   gl_check_error();
 
   colorptr = graphics->flat_intensity_palette;
   dest = render_data->background_texture;
 
   for(i = 0; i < graphics->protected_pal_position + 16; i++, dest++, colorptr++)
-  {
     *dest = *colorptr;
-  }
-  
-  if (layer->transparent_col != -1)
+
+  // Palette
+  if(layer->transparent_col != -1)
     render_data->background_texture[layer->transparent_col] = 0x00000000;
   render_data->background_texture[FULL_PAL_SIZE] = 0x00000000;
 
-  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 896, FULL_PAL_SIZE + 1, 1, GL_RGBA,
-   GL_UNSIGNED_BYTE, render_data->background_texture);
+  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0,
+   TEX_DATA_PAL_X, TEX_DATA_PAL_Y, FULL_PAL_SIZE + 1, 1,
+   GL_RGBA, GL_UNSIGNED_BYTE, render_data->background_texture);
   gl_check_error();
 
+  // Indices
   dest = render_data->background_texture;
-  for (i = 0; i < 4; i++)
+  for(i = 0; i < 4; i++)
     for(j = 0; j < SMZX_PAL_SIZE; j++, dest++)
       *dest = graphics->smzx_indices[j * 4 + i];
 
-  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 897, SMZX_PAL_SIZE, 4, GL_RGBA,
-   GL_UNSIGNED_BYTE, render_data->background_texture);
+  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0,
+   TEX_DATA_IDX_X, TEX_DATA_IDX_Y, SMZX_PAL_SIZE, 4,
+   GL_RGBA, GL_UNSIGNED_BYTE, render_data->background_texture);
   gl_check_error();
 
   glsl.glEnableVertexAttribArray(ATTRIB_POSITION);
@@ -1018,14 +1107,21 @@ static void glsl_render_cursor(struct graphics_data *graphics,
   struct glsl_render_data *render_data = graphics->render_data;
   GLubyte *pal_base = &render_data->palette[color * 3];
 
-  const float vertex_array[2 * 4] = {
-    (x * 8)*2.0f/640.0f-1.0f,     (y * 14 + offset)*-2.0f/350.0f+1.0f,
-    (x * 8)*2.0f/640.0f-1.0f,     (y * 14 + lines + offset)*-2.0f/350.0f+1.0f,
-    (x * 8 + 8)*2.0f/640.0f-1.0f, (y * 14 + offset)*-2.0f/350.0f+1.0f,
-    (x * 8 + 8)*2.0f/640.0f-1.0f, (y * 14 + lines + offset)*-2.0f/350.0f+1.0f
+  int x1 = x * 8;
+  int x2 = x * 8 + 8;
+  int y1 = y * 14 + offset;
+  int y2 = y * 14 + offset + lines;
+
+  const float vertex_array[2 * 4] =
+  {
+    x1 * 2.0f / SCREEN_PIX_W - 1.0f, (y1 * 2.0f / SCREEN_PIX_H - 1.0f) * -1.0f,
+    x1 * 2.0f / SCREEN_PIX_W - 1.0f, (y2 * 2.0f / SCREEN_PIX_H - 1.0f) * -1.0f,
+    x2 * 2.0f / SCREEN_PIX_W - 1.0f, (y1 * 2.0f / SCREEN_PIX_H - 1.0f) * -1.0f,
+    x2 * 2.0f / SCREEN_PIX_W - 1.0f, (y2 * 2.0f / SCREEN_PIX_H - 1.0f) * -1.0f,
   };
 
-  const float color_array[4 * 4] = {
+  const float color_array[4 * 4] =
+  {
     pal_base[0]/255.0f, pal_base[1]/255.0f, pal_base[2]/255.0f,
     pal_base[0]/255.0f, pal_base[1]/255.0f, pal_base[2]/255.0f,
     pal_base[0]/255.0f, pal_base[1]/255.0f, pal_base[2]/255.0f,
@@ -1060,11 +1156,15 @@ static void glsl_render_mouse(struct graphics_data *graphics,
 {
   struct glsl_render_data *render_data = graphics->render_data;
 
-  const float vertex_array[2 * 4] = {
-     x*2.0f/640.0f-1.0f,       y*-2.0f/350.0f+1.0f,
-     x*2.0f/640.0f-1.0f,      (y + h)*-2.0f/350.0f+1.0f,
-    (x + w)*2.0f/640.0f-1.0f,  y*-2.0f/350.0f+1.0f,
-    (x + w)*2.0f/640.0f-1.0f, (y + h)*-2.0f/350.0f+1.0f
+  int x2 = x + w;
+  int y2 = y + h;
+
+  const float vertex_array[2 * 4] =
+   {
+    x  * 2.0f / SCREEN_PIX_W - 1.0f, (y  * 2.0f / SCREEN_PIX_H - 1.0f) * -1.0f,
+    x  * 2.0f / SCREEN_PIX_W - 1.0f, (y2 * 2.0f / SCREEN_PIX_H - 1.0f) * -1.0f,
+    x2 * 2.0f / SCREEN_PIX_W - 1.0f, (y  * 2.0f / SCREEN_PIX_H - 1.0f) * -1.0f,
+    x2 * 2.0f / SCREEN_PIX_W - 1.0f, (y2 * 2.0f / SCREEN_PIX_H - 1.0f) * -1.0f,
   };
 
   glsl.glEnable(GL_BLEND);
@@ -1097,24 +1197,29 @@ static void glsl_sync_screen(struct graphics_data *graphics)
   glsl.glViewport((width - v_width) >> 1, (height - v_height) >> 1,
    v_width, v_height);
 
-  if(width < 640 || height < 350)
+  // Clamp draw area to size of screen texture.
+  if(width < SCREEN_PIX_W || height < SCREEN_PIX_H)
   {
-    width = (width < 1024) ? width : 1024;
-    height = (height < 512) ? height : 512;
+    if(width >= GL_POWER_2_WIDTH)
+      width = GL_POWER_2_WIDTH;
+
+    if(height >= GL_POWER_2_HEIGHT)
+      height = GL_POWER_2_HEIGHT;
   }
   else
   {
-    width = 640;
-    height = 350;
+    width = SCREEN_PIX_W;
+    height = SCREEN_PIX_H;
   }
 
   glsl.glUseProgram(render_data->scaler_program);
   gl_check_error();
 
-  glsl.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[0]);
+  glsl.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_SCREEN_ID]);
   gl_check_error();
 
-  glsl.glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 1024, 512, 0);
+  glsl.glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0,
+   GL_POWER_2_WIDTH, GL_POWER_2_HEIGHT, 0);
   gl_check_error();
 
   glsl.glClear(GL_COLOR_BUFFER_BIT);
@@ -1122,17 +1227,18 @@ static void glsl_sync_screen(struct graphics_data *graphics)
 
   glsl.glEnableVertexAttribArray(ATTRIB_POSITION);
   glsl.glEnableVertexAttribArray(ATTRIB_TEXCOORD);
- 
+
   glsl.glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 0,
    vertex_array_single);
   gl_check_error();
 
   {
-    const float tex_coord_array_single[2 * 4] = {
-       0.0f,            height / 512.0f,
-       0.0f,            0.0f,
-       width / 1024.0f, height / 512.0f,
-       width / 1024.0f, 0.0f,
+    const float tex_coord_array_single[2 * 4] =
+    {
+       0.0f,                              height / (1.0f * GL_POWER_2_HEIGHT),
+       0.0f,                              0.0f,
+       width / (1.0f * GL_POWER_2_WIDTH), height / (1.0f * GL_POWER_2_HEIGHT),
+       width / (1.0f * GL_POWER_2_WIDTH), 0.0f,
     };
 
     glsl.glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 0,
@@ -1146,7 +1252,7 @@ static void glsl_sync_screen(struct graphics_data *graphics)
   glsl.glDisableVertexAttribArray(ATTRIB_POSITION);
   glsl.glDisableVertexAttribArray(ATTRIB_TEXCOORD);
 
-  glsl.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
+  glsl.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
   gl_check_error();
 
   gl_swap_buffers(graphics);
@@ -1159,21 +1265,23 @@ static void glsl_switch_shader(struct graphics_data *graphics,
  const char *name)
 {
   struct glsl_render_data *render_data = graphics->render_data;
-  int res = SHADERS_SCALER_VERT - SHADERS_SCALER_VERT;
-  if(source_cache[res]) free(source_cache[res]);
-  source_cache[res] = NULL;
+  int index = GLSL_SHADER_SCALER_VERT - GLSL_SHADER_RES_FIRST;
 
-  res = SHADERS_SCALER_FRAG - SHADERS_SCALER_VERT;
-  if(source_cache[res]) free(source_cache[res]);
-  source_cache[res] = NULL;
+  if(source_cache[index]) free(source_cache[index]);
+  source_cache[index] = NULL;
+
+  index = GLSL_SHADER_SCALER_FRAG - GLSL_SHADER_RES_FIRST;
+  if(source_cache[index]) free(source_cache[index]);
+  source_cache[index] = NULL;
 
   strncpy(graphics->gl_scaling_shader, name, 32);
   graphics->gl_scaling_shader[31] = 0;
 
   glsl.glDeleteProgram(render_data->scaler_program);
   gl_check_error();
+
   render_data->scaler_program = glsl_load_program(graphics,
-   SHADERS_SCALER_VERT, SHADERS_SCALER_FRAG);
+   GLSL_SHADER_SCALER_VERT, GLSL_SHADER_SCALER_FRAG);
   if(render_data->scaler_program)
   {
     glsl.glBindAttribLocation(render_data->scaler_program,

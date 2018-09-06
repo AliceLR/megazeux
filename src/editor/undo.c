@@ -176,7 +176,11 @@ boolean apply_undo(struct undo_history *h)
 
     // Reverse to the previous frame
     if(h->current == h->first)
+    {
       h->current = -1;
+      h->current_frame = NULL;
+      return 1;
+    }
 
     else if(h->current == 0)
       h->current = h->size - 1;
@@ -229,7 +233,7 @@ void add_undo_position(struct undo_history *h, int x, int y)
 
 void update_undo_frame(struct undo_history *h)
 {
-  if(h)
+  if(h && h->current_frame)
     h->update_function(h->current_frame);
 }
 

@@ -629,9 +629,10 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
 
   meter_initial_draw(meter_curr, meter_target, "Loading...");
 
-  charset_mem = cmalloc(3584);
-  fread(charset_mem, 3584, 1, fp);
-  ec_mem_load_set(charset_mem);
+  charset_mem = cmalloc(CHAR_SIZE * CHARSET_SIZE);
+  fread(charset_mem, CHAR_SIZE * CHARSET_SIZE, 1, fp);
+  ec_clear_set();
+  ec_mem_load_set(charset_mem, CHAR_SIZE * CHARSET_SIZE);
   free(charset_mem);
 
   // Idchars array...

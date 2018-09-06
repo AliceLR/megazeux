@@ -108,6 +108,7 @@ certain test should be skipped:
 
 * `__skip_audio`: all audio in MZX is disabled. All audio tests should check this.
 * `__skip_mod`: no module player for the audio system has been enabled.
+* `__skip_vorbis`: ogg/vorbis support has been disabled.
 
 
 ### Compatibility Notes

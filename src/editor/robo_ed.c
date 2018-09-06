@@ -47,6 +47,8 @@
 #include "clipboard.h"
 #include "edit.h"
 #include "param.h"
+#include "macro.h"
+#include "macro_struct.h"
 #include "robo_ed.h"
 #include "window.h"
 

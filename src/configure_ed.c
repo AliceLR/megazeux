@@ -133,7 +133,7 @@ void game_settings(struct world *mzx_world)
 #ifdef CONFIG_RENDER_GL_PROGRAM
     if(!strcmp(mzx_world->conf.video_output, "glsl"))
     {
-      strcpy(shader_path, mzx_res_get_by_id(SHADERS_SCALER_DIRECTORY));
+      strcpy(shader_path, mzx_res_get_by_id(GLSL_SHADER_SCALER_DIRECTORY));
 
       elements[6] = construct_file_selector(3, 13 + speed_option,
        "Scaling shader-", "Choose a scaling shader...", shader_exts,

@@ -34,10 +34,13 @@ __M_BEGIN_DECLS
 #include <ogc/lwp_watchdog.h>
 #undef BOOL
 
+#define THREAD_RES void *
+#define THREAD_RETURN do { return NULL; } while(0)
+
 typedef cond_t platform_cond;
 typedef mutex_t platform_mutex;
 typedef lwp_t platform_thread;
-typedef void *(*platform_thread_fn)(void *);
+typedef THREAD_RES (*platform_thread_fn)(void *);
 
 static inline void platform_mutex_init(platform_mutex *mutex)
 {

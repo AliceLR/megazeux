@@ -117,6 +117,8 @@ bool yuv_set_video_mode_size(struct graphics_data *graphics,
       goto err_destroy_renderer;
     }
   }
+
+  sdl_window_id = SDL_GetWindowID(render_data->window);
 #else // !SDL_VERSION_ATLEAST(2,0,0)
   // the YUV renderer _requires_ 32bit colour
   render_data->screen = SDL_SetVideoMode(width, height, 32,

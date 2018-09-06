@@ -81,7 +81,7 @@ static void save_mzm_common(struct world *mzx_world, int start_x, int start_y,
       for(i = 0; i < num_robots_active; i++)
       {
         struct robot *cur_robot = robot_list[i];
-        if (cur_robot)
+        if(cur_robot)
         {
           if(cur_robot->xpos >= start_x &&
            cur_robot->ypos >= start_y &&
@@ -650,7 +650,7 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer,
             // dummy out the robots.
 
             if((savegame_mode > savegame) ||
-              (MZX_VERSION < mzm_world_version))
+             (MZX_VERSION < mzm_world_version))
             {
               dummy = 1;
             }

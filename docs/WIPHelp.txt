@@ -10191,6 +10191,54 @@ updated.
 :1st: 
 $~9NEW in MegaZeux!
 
+September 3rd, 2018 - MZX 2.91e
+
+Bugfix release fixing some crashes, port bugs, and some other
+significant issues affecting a variety of things.
+
+USERS
+
++ Fixed bug where loading a board charset would also clear all
+  of the extended charsets.
++ Fixed bug where loading a default charset in the editor would
+  also clear all of the extended charsets.
++ Loading a 2.91 world when a renderer with no layer support is
+  active no longer triggers an error message.
++ Fixed a memory corruption bug in the non-SDL Wii port caused
+  by faulty threading code.
++ Fixed crash that could occur when updating a board undo frame.
++ Fixed crash when changing to a board with overlay disabled in
+  overlay editing mode.
++ Fixed a bug where the protected charset could get cleared for
+  renderers without layer rendering support.
++ Enabled C99-compliant stdio functions for mingw, fixing at
+  least one crash bug and possibly improving performance.
++ The NDS port now attempts to detect argv[0].
++ The 3DS port now attempts to detect argv[0] and otherwise will
+  start in /3ds/megazeux instead of /.
++ The 3DS port .3dsx file is now located in /3ds/megazeux.
++ The MOVE PLAYER [dir] and MOVE PLAYER [dir] [label] commands
+  now update the commands cycle and commands total values.
++ Fixed a bug where MZX and checkres wouldn't accept some
+  DEFLATE-related ZIP flags.
++ checkres no longer crashes on failing to open a resource zip.
++ The window caption now updates correctly when using either of
+  the overlay renderers.
++ Update checking will now display an error instead of silently
+  hiding the updater when the updater fails to initialize.
++ Fixed an issue where UIs would execute redundant frames.
++ Fixed a bug where string comparison would not order strings of
+  different lengths correctly. (GreaseMonkey)
+
+DEVELOPERS
+
++ Code style has been cleaned up in numerous files.
++ Moved GLSL shaders from assets/shaders/ to assets/glsl/.
++ Added missing GPL headers to GLSL shaders and added slightly
+  better documentation to them.
+
+>#MAIN.HLP:072:Table of Contents
+
 July 12th, 2018 - MZX 2.91d
 
 This is a minor bugfix release to get a handful of fixes out

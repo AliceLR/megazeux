@@ -31,6 +31,9 @@ __M_BEGIN_DECLS
 typedef int(*SDL_ThreadFunction)(void *);
 #endif
 
+#define THREAD_RES int
+#define THREAD_RETURN do { return 0; } while(0)
+
 typedef SDL_cond* platform_cond;
 typedef SDL_mutex* platform_mutex;
 typedef SDL_Thread* platform_thread;

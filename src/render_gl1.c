@@ -175,10 +175,10 @@ static bool gl1_set_video_mode(struct graphics_data *graphics,
   struct gl1_render_data *render_data = graphics->render_data;
 
   gl_set_attributes(graphics);
-  
+
   if(!gl_set_video_mode(graphics, width, height, depth, fullscreen, resize))
     return false;
-  
+
   gl_set_attributes(graphics);
 
   if(!gl_load_syms(gl1_syms_map))
@@ -215,8 +215,8 @@ static bool gl1_set_video_mode(struct graphics_data *graphics,
 
       if(strstr(extensions, "GL_ARB_texture_non_power_of_two"))
       {
-        internal_width = GL_NON_POWER_2_WIDTH;
-        internal_height = GL_NON_POWER_2_HEIGHT;
+        internal_width = SCREEN_PIX_W;
+        internal_height = SCREEN_PIX_H;
       }
 
       initialized = true;
@@ -276,7 +276,8 @@ static void gl1_render_graph(struct graphics_data *graphics)
   }
 }
 
-static void gl1_render_layer(struct graphics_data *graphics, struct video_layer *layer)
+static void gl1_render_layer(struct graphics_data *graphics,
+ struct video_layer *layer)
 {
   struct gl1_render_data *render_data = graphics->render_data;
 

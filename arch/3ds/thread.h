@@ -17,16 +17,19 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __MUTEX_3DS_H
-#define __MUTEX_3DS_H
+#ifndef __THREAD_3DS_H
+#define __THREAD_3DS_H
 
-#include "compat.h"
+#include "../../src/compat.h"
 
 #define STACK_SIZE_CTR 8096
 
 __M_BEGIN_DECLS
 
 #include <3ds.h>
+
+#define THREAD_RES void
+#define THREAD_RETURN do { return; } while(0)
 
 typedef LightLock platform_mutex;
 typedef Thread platform_thread;
@@ -61,7 +64,8 @@ static inline int platform_thread_create(platform_thread *thread,
   s32 priority;
 
   svcGetThreadPriority(&priority, CUR_THREAD_HANDLE);
-  *thread = threadCreate(start_function, data, STACK_SIZE_CTR, priority-1, -1, true);
+  *thread = threadCreate(start_function, data, STACK_SIZE_CTR, priority-1, -1,
+   true);
 
   return (*thread == NULL) ? 1 : 0;
 }
@@ -73,4 +77,4 @@ static inline void platform_thread_join(platform_thread *thread)
 
 __M_END_DECLS
 
-#endif // __MUTEX_3DS_H
+#endif // __THREAD_3DS_H

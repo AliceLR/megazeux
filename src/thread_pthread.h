@@ -29,10 +29,13 @@ __M_BEGIN_DECLS
 #include <time.h>
 #include "pthread.h"
 
+#define THREAD_RES void *
+#define THREAD_RETURN do { return NULL; } while(0)
+
 typedef pthread_cond_t platform_cond;
 typedef pthread_mutex_t platform_mutex;
 typedef pthread_t platform_thread;
-typedef void *(*platform_thread_fn)(void *);
+typedef THREAD_RES (*platform_thread_fn)(void *);
 
 static inline void platform_mutex_init(platform_mutex *mutex)
 {

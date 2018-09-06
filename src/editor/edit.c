@@ -54,6 +54,7 @@
 #include "edit_menu.h"
 #include "fill.h"
 #include "graphics.h"
+#include "macro.h"
 #include "pal_ed.h"
 #include "param.h"
 #include "robo_debug.h"

@@ -179,17 +179,17 @@ void load_editor_charsets(void)
 
 void ec_load_smzx(void)
 {
-  ec_mem_load_set(smzx_charset);
+  ec_mem_load_set(smzx_charset, CHAR_SIZE * CHARSET_SIZE);
 }
 
 void ec_load_blank(void)
 {
-  ec_mem_load_set(blank_charset);
+  ec_mem_load_set(blank_charset, CHAR_SIZE * CHARSET_SIZE);
 }
 
 void ec_load_ascii(void)
 {
-  ec_mem_load_set(ascii_charset);
+  ec_mem_load_set(ascii_charset, CHAR_SIZE * CHARSET_SIZE);
 }
 
 void ec_load_char_ascii(Uint32 char_number)

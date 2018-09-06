@@ -40,12 +40,14 @@
 
 static u8 isNot2DS;
 
-FILE *popen(const char *command, const char *type) {
-	return NULL;
+FILE *popen(const char *command, const char *type)
+{
+  return NULL;
 }
 
-int pclose(FILE *stream) {
-	return 0;
+int pclose(FILE *stream)
+{
+  return 0;
 }
 
 void delay(Uint32 ms)
@@ -63,7 +65,7 @@ bool ctr_is_2d(void)
 
 Uint32 get_ticks(void)
 {
-  return (Uint32) osGetTime();
+  return (Uint32)osGetTime();
 }
 
 bool platform_init(void)
@@ -108,13 +110,15 @@ static void out_of_linear_memory_check(void *p, const char *file, int line)
   char msgbuf[128];
   if(!p)
   {
-    snprintf(msgbuf, sizeof(msgbuf), "Out of linear memory in %s:%d", file, line);
+    snprintf(msgbuf, sizeof(msgbuf), "Out of linear memory in %s:%d",
+     file, line);
     msgbuf[sizeof(msgbuf)-1] = '\0';
     error(msgbuf, 2, 4, 0);
   }
 }
 
-void *check_linearAlloc(size_t size, size_t alignment, const char *file, int line)
+void *check_linearAlloc(size_t size, size_t alignment, const char *file,
+ int line)
 {
   void *result = linearMemAlign(size, alignment);
   out_of_linear_memory_check(result, file, line);
@@ -123,10 +127,32 @@ void *check_linearAlloc(size_t size, size_t alignment, const char *file, int lin
 
 #endif
 
+/**
+ * argv[0] will either not exist (cia) or be the location of the 3dsx.
+ * For the cia case we can't really do anything, so assume a SHAREDIR
+ * startup location.
+ */
+
 int main(int argc, char *argv[])
 {
-  static char *_argv[] = { (char *)"/" };
-  chdir("/");
-  real_main(1, _argv);
+  static char _argv0[] = SHAREDIR "/mzxrun.3dsx";
+  static char *_argv[] = { _argv0 };
+
+  if(argc < 1 || argv == NULL || argv[0] == NULL)
+  {
+    iprintf("argv[0]: not found.\n"
+            "using '%s'\n"
+            "WARNING: Use of a loader that supports argv[0] is recommended.\n",
+            _argv0);
+
+    chdir(SHAREDIR);
+    real_main(1, _argv);
+  }
+  else
+  {
+    iprintf("argv[0]: '%s'\n", argv[0]);
+    real_main(argc, argv);
+  }
+
   return 0;
 }

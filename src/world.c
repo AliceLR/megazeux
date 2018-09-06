@@ -1016,7 +1016,7 @@ static inline int save_world_chars(struct world *mzx_world,
 static inline int load_world_chars(struct world *mzx_world,
  struct zip_archive *zp, boolean savegame)
 {
-  char *buffer;
+  unsigned char *buffer;
   size_t actual_size;
   int result;
 
@@ -1026,17 +1026,13 @@ static inline int load_world_chars(struct world *mzx_world,
   result = zip_read_file(zp, buffer, actual_size, &actual_size);
   if(result == ZIP_SUCCESS)
   {
-    // Load every charset (2.90 saves, 2.91+ worlds)
-    if((mzx_world->version >= V291) ||
-     (savegame && mzx_world->version == V290))
-      actual_size = MIN(actual_size, PROTECTED_CHARSET_POSITION * CHAR_SIZE);
-
-    // Load only the first charset
-    else
-      actual_size = MIN(actual_size, CHARSET_SIZE * CHAR_SIZE);
+    // Load only the first charset (2.90 worlds but not 2.90 saves)
+    if(mzx_world->version == V290 && !savegame)
+      if(actual_size > CHAR_SIZE * CHARSET_SIZE)
+        actual_size = CHAR_SIZE * CHARSET_SIZE;
 
     ec_clear_set();
-    ec_mem_load_set_var(buffer, actual_size, 0, MZX_VERSION);
+    ec_mem_load_set(buffer, actual_size);
   }
 
   free(buffer);
@@ -2824,8 +2820,16 @@ void change_board_load_assets(struct world *mzx_world)
 
   // Does this board need a char set loaded? (2.90+)
   if(mzx_world->version >= V290 && cur_board->charset_path[0])
+  {
     if(fsafetranslate(cur_board->charset_path, translated_name) == FSAFE_SUCCESS)
+    {
+      // Bug: ec_load_set cleared the extended chars prior to 2.91e
+      if(mzx_world->version < V291)
+        ec_clear_set();
+
       ec_load_set(translated_name);
+    }
+  }
 
   // Does this board need a palette loaded? (2.90+)
   if(mzx_world->version >= V290 && cur_board->palette_path[0])

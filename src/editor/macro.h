@@ -24,63 +24,8 @@
 
 __M_BEGIN_DECLS
 
-enum variable_type
-{
-  number,
-  string,
-  character,
-  color
-};
-
-enum reference_mode
-{
-  decimal,
-  hexidecimal
-};
-
-union variable_storage
-{
-  int int_storage;
-  char *str_storage;
-};
-
-struct macro_variable
-{
-  union variable_storage storage;
-  union variable_storage def;
-  char *name;
-};
-
-struct macro_type
-{
-  int type_attributes[16];
-  enum variable_type type;
-  int num_variables;
-  struct macro_variable *variables;
-  struct macro_variable **variables_sorted;
-};
-
-struct macro_variable_reference
-{
-  struct macro_type *type;
-  union variable_storage *storage;
-  enum reference_mode ref_mode;
-};
-
-struct ext_macro
-{
-  char *name;
-  char *label;
-  int num_lines;
-  char ***lines;
-  struct macro_variable_reference **variable_references;
-  int *line_element_count;
-  int num_types;
-  int total_variables;
-  struct macro_type types[32];
-  char *text;
-};
-
+struct ext_macro;
+struct macro_type;
 struct editor_config_info;
 
 void free_macro(struct ext_macro *macro_src);
