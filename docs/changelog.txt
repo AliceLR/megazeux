@@ -1,4 +1,4 @@
-GIT - MZX 2.91f
+GIT - MZX 2.92
 
 + Added "allow_screenshots" config file option. Setting this
   option to 0 will disable the built-in screenshot feature.
@@ -10,13 +10,15 @@ GIT - MZX 2.91f
   position values.
 + Fixed a bug where the fade out effect from COLOR FADE OUT
   would be reset after any Robotic dialog.
-+ Fixed an issue where UIs would execute redundant frames.
 + Undo for overlay and vlayer mouse drawing now works properly.
 + Fixed move block bug when the source and destination both
   overlapped the player.
 + Palette editor component entry now accepts most of the same
   inputs as dialog number boxes.
-* Fixed a memory corruption bug in the non-SDL Wii port caused
+
+
+GIT - MZX 2.91f
+
 USERS
 
 DEVELOPERS
