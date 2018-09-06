@@ -24,8 +24,7 @@
 
 __M_BEGIN_DECLS
 
-#include "robot_struct.h"
-#include "board_struct.h"
+#include "data.h"
 #include "world_struct.h"
 #include "zip.h"
 

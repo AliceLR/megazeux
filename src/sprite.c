@@ -21,11 +21,12 @@
 
 #include "data.h"
 #include "error.h"
-#include "game.h"
+#include "game_ops.h"
 #include "graphics.h"
 #include "idput.h"
 #include "sprite.h"
 #include "world.h"
+#include "world_struct.h"
 
 static inline int is_blank(Uint16 c)
 {

@@ -25,7 +25,6 @@
 __M_BEGIN_DECLS
 
 #include "world_struct.h"
-#include "robot_struct.h"
 
 // Type 0/1 to DISPLAY a scroll/sign
 CORE_LIBSPEC void scroll_edit(struct world *mzx_world, struct scroll *scroll,

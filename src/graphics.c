@@ -718,16 +718,17 @@ Uint32 get_fade_status(void)
 
 void dialog_fadein(void)
 {
-  if(get_fade_status())
+  graphics.dialog_fade_status = get_fade_status();
+  if(graphics.dialog_fade_status)
   {
-    clear_screen(32, 0);
+    clear_screen();
     insta_fadein();
   }
 }
 
 void dialog_fadeout(void)
 {
-  if(get_fade_status())
+  if(graphics.dialog_fade_status)
   {
     insta_fadeout();
   }
@@ -1436,8 +1437,7 @@ bool init_video(struct config_info *conf, const char *caption)
     }
   }
 
-  strncpy(graphics.default_caption, caption, 32);
-  graphics.default_caption[31] = '\0';
+  snprintf(graphics.default_caption, 32, "%s", caption);
 
   if(!graphics.renderer.init_video(&graphics, conf))
   {
@@ -2114,19 +2114,17 @@ Uint8 get_color_linear(Uint32 offset)
   return (dest->bg_color << 4) | (dest->fg_color & 0x0F);
 }
 
-void clear_screen(Uint8 chr, Uint8 color)
+void clear_screen(void)
 {
   Uint32 i;
-  Uint8 fg_color = color & 0x0F;
-  Uint8 bg_color = color >> 4;
   struct char_element *dest = graphics.current_video;
   struct char_element *dest_copy = graphics.text_video;
 
   for(i = 0; i < (SCREEN_W * SCREEN_H); i++)
   {
-    dest->char_value = chr;
-    dest->fg_color = fg_color;
-    dest->bg_color = bg_color;
+    dest->char_value = 0;
+    dest->fg_color = 16; // Protected black
+    dest->bg_color = 16; // Protected black
     *(dest_copy++) = *dest;
     dest++;
   }
@@ -2209,6 +2207,7 @@ void m_show(void)
     graphics.mouse_status = true;
 }
 
+#ifdef CONFIG_ENABLE_SCREENSHOTS
 #ifdef CONFIG_PNG
 
 #define DUMP_FMT_EXT "png"
@@ -2399,6 +2398,7 @@ void dump_screen(void)
   dump_screen_real_32bpp(ss, name);
   free(ss);
 }
+#endif /* CONFIG_ENABLE_SCREENSHOTS */
 
 void dump_char(Uint16 char_idx, Uint8 color, int mode, Uint8 *buffer)
 {

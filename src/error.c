@@ -23,12 +23,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "platform.h"
-#include "helpsys.h"
+#include "core.h"
 #include "error.h"
-#include "window.h"
-#include "graphics.h"
 #include "event.h"
+#include "graphics.h"
+#include "helpsys.h"
+#include "platform.h"
+#include "window.h"
 #include "world.h"
 
 // Error type names by type code:
@@ -382,7 +383,7 @@ int error_message(enum error_code id, int parameter, const char *string)
       sprintf(error_mesg, "Bytecode file failed validation check");
       code = 0xD0D0;
       break;
-    
+
     case E_NO_LAYER_RENDERER:
       sprintf(error_mesg, "Current renderer lacks advanced graphical features; features disabled");
       code = 0x2563;

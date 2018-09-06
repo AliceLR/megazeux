@@ -27,7 +27,6 @@
 __M_BEGIN_DECLS
 
 #include "world_struct.h"
-#include "board_struct.h"
 #include "data.h"
 
 CORE_LIBSPEC void id_put(struct board *src_board, unsigned char x_pos,

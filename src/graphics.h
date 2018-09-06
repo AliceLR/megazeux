@@ -150,23 +150,24 @@ struct graphics_data
   Uint32 current_layer;
   struct char_element *current_video;
   struct video_layer *sorted_video_layers[TEXTVIDEO_LAYERS];
-  bool requires_extended;
+  boolean requires_extended;
 
   enum cursor_mode_types cursor_mode;
-  Uint32 fade_status;
+  boolean fade_status;
+  boolean dialog_fade_status;
   Uint32 cursor_x;
   Uint32 cursor_y;
   Uint32 mouse_width_mul;
   Uint32 mouse_height_mul;
-  bool mouse_status;
-  bool system_mouse;
-  bool fullscreen;
+  boolean mouse_status;
+  boolean system_mouse;
+  boolean fullscreen;
   Uint32 resolution_width;
   Uint32 resolution_height;
   Uint32 window_width;
   Uint32 window_height;
   Uint32 bits_per_pixel;
-  bool allow_resize;
+  boolean allow_resize;
   Uint32 cursor_timestamp;
   Uint32 cursor_flipflop;
   Uint32 default_smzx_loaded;
@@ -212,7 +213,7 @@ CORE_LIBSPEC void draw_char_to_layer(Uint8 color, Uint8 chr,
 CORE_LIBSPEC void write_string_mask(const char *str, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed);
 
-CORE_LIBSPEC void clear_screen(Uint8 chr, Uint8 color);
+CORE_LIBSPEC void clear_screen(void);
 
 CORE_LIBSPEC void cursor_solid(void);
 CORE_LIBSPEC void cursor_off(void);
@@ -261,6 +262,7 @@ CORE_LIBSPEC Uint32 get_red_component(Uint32 color);
 CORE_LIBSPEC Uint32 get_green_component(Uint32 color);
 CORE_LIBSPEC Uint32 get_blue_component(Uint32 color);
 CORE_LIBSPEC Uint32 get_color_luma(Uint32 color);
+CORE_LIBSPEC Uint32 get_fade_status(void);
 CORE_LIBSPEC void vquick_fadeout(void);
 CORE_LIBSPEC void insta_fadein(void);
 CORE_LIBSPEC void insta_fadeout(void);
@@ -307,12 +309,10 @@ void ec_clear_set(void);
 
 void set_color_intensity(Uint32 color, Uint32 percent);
 Uint32 get_color_intensity(Uint32 color);
-Uint32 get_fade_status(void);
 void save_indices(void *buffer);
 void load_indices(void *buffer, size_t size);
 void load_indices_direct(void *buffer, size_t size);
 void vquick_fadein(void);
-void dump_screen(void);
 void dump_char(Uint16 char_idx, Uint8 color, int mode, Uint8 *buffer);
 
 void get_screen_coords(int screen_x, int screen_y, int *x, int *y,
@@ -339,6 +339,10 @@ CORE_LIBSPEC void ec_load_set_secondary(const char *name, Uint8 *dest);
 void set_cursor_mode(enum cursor_mode_types mode);
 enum cursor_mode_types get_cursor_mode(void);
 #endif // CONFIG_HELPSYS
+
+#ifdef CONFIG_ENABLE_SCREENSHOTS
+void dump_screen(void);
+#endif
 
 __M_END_DECLS
 

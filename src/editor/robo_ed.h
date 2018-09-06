@@ -25,7 +25,6 @@
 __M_BEGIN_DECLS
 
 #include "../rasm.h"
-#include "../world_struct.h"
 
 #define COMMAND_BUFFER_LEN 512
 

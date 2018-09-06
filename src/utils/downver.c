@@ -44,6 +44,7 @@
 #endif
 
 #define SKIP_SDL
+#include "../const.h"
 #include "../memfile.h"
 #include "../util.h"
 #include "../world.h"

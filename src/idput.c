@@ -19,12 +19,13 @@
 
 #include <stdlib.h>
 
+#include "board.h"
 #include "const.h"
-#include "graphics.h"
 #include "data.h"
+#include "graphics.h"
 #include "idput.h"
 #include "world.h"
-#include "board.h"
+#include "world_struct.h"
 
 #define thin_line            128
 #define thick_line           144

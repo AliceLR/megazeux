@@ -29,11 +29,6 @@ __M_BEGIN_DECLS
 
 #include "world_struct.h"
 
-#include "context_enum.h"
-
-CORE_LIBSPEC void set_context(int c);
-CORE_LIBSPEC void pop_context(void);
-
 // For name seeking in list_menu
 #define TIME_SUSPEND 500
 
@@ -41,7 +36,7 @@ CORE_LIBSPEC void pop_context(void);
 CORE_LIBSPEC int save_screen(void);
 CORE_LIBSPEC int restore_screen(void);
 CORE_LIBSPEC int draw_window_box(int x1, int y1, int x2, int y2, int color,
- int dark_color, int corner_color, int shadow, int fill_center);
+ int dark_color, int corner_color, boolean shadow, boolean fill_center);
 CORE_LIBSPEC int char_selection(int current);
 
 // Shell for run_dialog() (returns 0 for ok, 1 for cancel, -1 for ESC)
@@ -52,7 +47,7 @@ CORE_LIBSPEC int confirm_input(struct world *mzx_world, const char *title,
 CORE_LIBSPEC int ask_yes_no(struct world *mzx_world, char *str);
 
 int draw_window_box_ext(int x1, int y1, int x2, int y2, int color,
- int dark_color, int corner_color, int shadow, int fill_center,
+ int dark_color, int corner_color, boolean shadow, boolean fill_center,
  int offset, int c_offset);
 
 // Dialog box structure definition
@@ -297,8 +292,6 @@ CORE_LIBSPEC void meter_interior(unsigned int progress, unsigned int out_of);
 CORE_LIBSPEC int run_dialog(struct world *mzx_world, struct dialog *di);
 
 #ifdef CONFIG_EDITOR
-CORE_LIBSPEC extern int context;
-
 CORE_LIBSPEC void construct_element(struct element *e, int x, int y,
  int width, int height,
  void (* draw_function)(struct world *mzx_world, struct dialog *di,
@@ -333,10 +326,6 @@ CORE_LIBSPEC int file_manager(struct world *mzx_world,
  const char *title, int dirs_okay, int allow_new,
  struct element **dialog_ext, int num_ext, int ext_height);
 #endif // CONFIG_EDITOR
-
-#ifdef CONFIG_HELPSYS
-int get_context(void);
-#endif
 
 __M_END_DECLS
 

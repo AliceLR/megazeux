@@ -34,6 +34,7 @@
 #include "str.h"
 #include "world.h"
 #include "world_prop.h"
+#include "world_struct.h"
 #include "zip.h"
 
 

@@ -24,9 +24,9 @@
 
 __M_BEGIN_DECLS
 
-#include "world_struct.h"
-
 #ifdef CONFIG_HELPSYS
+
+#include "world_struct.h"
 
 CORE_LIBSPEC void help_open(struct world *mzx_world, const char *file_name);
 CORE_LIBSPEC void help_close(struct world *mzx_world);

@@ -27,11 +27,11 @@
 
 #include "board.h"
 #include "const.h"
+#include "counter.h"
 #include "error.h"
 #include "event.h"
 #include "expr.h"
-#include "game.h"
-#include "game2.h"
+#include "game_ops.h"
 #include "graphics.h"
 #include "idarray.h"
 #include "legacy_rasm.h"
@@ -44,6 +44,7 @@
 #include "window.h"
 #include "world.h"
 #include "world_prop.h"
+#include "world_struct.h"
 #include "zip.h"
 
 

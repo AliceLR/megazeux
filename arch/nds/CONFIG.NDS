@@ -2,4 +2,5 @@
 
 ./config.sh --platform nds --prefix $DEVKITARM --optimize-size \
             --disable-editor --disable-helpsys --disable-utils \
-            --disable-libpng --enable-release --enable-meter
+            --disable-libpng --enable-release --enable-meter \
+            --disable-screenshots

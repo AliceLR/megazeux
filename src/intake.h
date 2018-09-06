@@ -29,7 +29,6 @@ __M_BEGIN_DECLS
 #include <stdlib.h>
 
 #include "world_struct.h"
-#include "keysym.h"
 
 // See code for full docs, preserves mouse cursor, be prepared for a
 // MOUSE_EVENT! (must acknowledge_event() it)

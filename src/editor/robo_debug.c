@@ -21,20 +21,20 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "robo_debug.h"
-
 #include "debug.h"
 #include "robot.h"
+#include "robo_debug.h"
 #include "window.h"
 
+#include "../core.h"
 #include "../counter.h"
 #include "../event.h"
 #include "../graphics.h"
 #include "../robot.h"
 #include "../str.h"
+#include "../util.h"
 #include "../window.h"
 #include "../world_struct.h"
-#include "../util.h"
 
 struct breakpoint
 {
@@ -161,7 +161,7 @@ static int edit_breakpoint_dialog(struct world *mzx_world,
 
   elements[3] = construct_button(22, 5, "Confirm", 0);
   elements[4] = construct_button(45, 5, "Cancel", -1);
-  
+
   construct_dialog(&di, title, 2, 7, 76, 7, elements, ARRAY_SIZE(elements), 0);
 
   result = run_dialog(mzx_world, &di);
@@ -278,7 +278,7 @@ static int debug_config_idle_function(struct world *mzx_world,
 {
   switch(key)
   {
-    // Add 
+    // Add
     case IKEY_a:
     case IKEY_n:
     {

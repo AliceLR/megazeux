@@ -33,6 +33,7 @@
 #include "platform.h"
 
 #include "configure.h"
+#include "core.h"
 #include "event.h"
 #include "helpsys.h"
 #include "graphics.h"
@@ -75,8 +76,12 @@ __libspec int main(int argc, char *argv[])
   char *_backup_argv[] = { (char*) SHAREDIR "/megazeux" };
   int err = 1;
 
+  core_context *core_data;
+
   // Keep this 7.2k structure off the stack..
   static struct world mzx_world;
+  // FIXME all config needs to use this eventually.
+  static struct global_data global_data;
 
   if(!platform_init())
     goto err_out;
@@ -133,8 +138,8 @@ __libspec int main(int argc, char *argv[])
 
   if(mzx_world.conf.startup_path && strlen(mzx_world.conf.startup_path))
   {
-    debug("Config: Using '%s' as startup path\n", mzx_world.conf.startup_path);
-    strncpy(current_dir, mzx_world.conf.startup_path, MAX_PATH);
+    debug("Config: Using startup path '%s'\n", mzx_world.conf.startup_path);
+    snprintf(current_dir, MAX_PATH, "%s", mzx_world.conf.startup_path);
   }
 
   chdir(current_dir);
@@ -184,15 +189,15 @@ __libspec int main(int argc, char *argv[])
   help_open(&mzx_world, mzx_res_get_by_id(MZX_HELP_FIL));
 #endif
 
-  strncpy(curr_file, mzx_world.conf.startup_file, MAX_PATH - 1);
-  curr_file[MAX_PATH - 1] = '\0';
-  strncpy(curr_sav, mzx_world.conf.default_save_name, MAX_PATH - 1);
-  curr_sav[MAX_PATH - 1] = '\0';
-
+  snprintf(curr_file, MAX_PATH, "%s", mzx_world.conf.startup_file);
+  snprintf(curr_sav, MAX_PATH, "%s", mzx_world.conf.default_save_name);
   mzx_world.mzx_speed = mzx_world.conf.mzx_speed;
 
   // Run main game (mouse is hidden and palette is faded)
-  title_screen(&mzx_world);
+  core_data = core_init(&mzx_world, &global_data);
+  title_screen((context *)core_data);
+  core_run(core_data);
+  core_free(core_data);
 
   vquick_fadeout();
 

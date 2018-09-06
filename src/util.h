@@ -23,11 +23,11 @@
 #ifndef __UTIL_H
 #define __UTIL_H
 
-#include <stdio.h>
 #include "compat.h"
 
 __M_BEGIN_DECLS
 
+#include <stdio.h>
 #if !defined(_MSC_VER) && !defined(__amigaos__)
 #include <unistd.h>
 #endif

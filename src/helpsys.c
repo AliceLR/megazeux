@@ -23,12 +23,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "scrdisp.h"
-#include "helpsys.h"
+#include "core.h"
 #include "data.h"
 #include "graphics.h"
-#include "world.h"
+#include "helpsys.h"
+#include "scrdisp.h"
 #include "window.h"
+#include "world.h"
 
 static char *help;
 
@@ -65,7 +66,7 @@ void help_system(struct world *mzx_world)
 
   rewind(fp);
   t1 = fgetw(fp);
-  fseek(fp, t1 * 21 + 4 + get_context() * 12, SEEK_SET);
+  fseek(fp, t1 * 21 + 4 + get_context(NULL) * 12, SEEK_SET);
 
   // At proper context info
   where = fgetd(fp);    // Where file to load is

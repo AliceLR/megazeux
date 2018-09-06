@@ -16,14 +16,15 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#include "updater.h"
+
 #include "const.h"
-#include "event.h"
-#include "util.h"
-#include "game.h"
-#include "graphics.h"
-#include "window.h"
+#include "core.h"
 #include "error.h"
+#include "event.h"
+#include "graphics.h"
+#include "updater.h"
+#include "util.h"
+#include "window.h"
 
 #include "editor/window.h"
 
@@ -532,7 +533,7 @@ static bool reissue_connection(struct config_info *conf, struct host **h,
   else
     ret = true;
 
-  clear_screen(32, 7);
+  clear_screen();
   m_show();
   update_screen();
 
@@ -756,7 +757,7 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
 
       status = manifest_get_updates(h, url_base, &removed, &replaced, &added);
 
-      clear_screen(32, 7);
+      clear_screen();
       m_show();
       update_screen();
 
@@ -860,7 +861,7 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
       free(list_entries[i]);
     free(list_entries);
 
-    clear_screen(32, 7);
+    clear_screen();
     update_screen();
 
     if(result < 0)
@@ -913,7 +914,7 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
 
         m_ret = manifest_entry_download_replace(h, url_base, e, delete_hook);
 
-        clear_screen(32, 7);
+        clear_screen();
         m_show();
         update_screen();
 

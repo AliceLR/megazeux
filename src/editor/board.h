@@ -24,7 +24,6 @@
 
 __M_BEGIN_DECLS
 
-#include "../board_struct.h"
 #include "../world_struct.h"
 
 #include "configure.h"

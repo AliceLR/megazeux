@@ -41,7 +41,8 @@
 
 #include "board.h"
 #include "const.h"
-#include "context_enum.h"
+#include "core.h"
+#include "counter.h"
 #include "data.h"
 #include "error.h"
 #include "event.h"
@@ -59,37 +60,6 @@
 #ifdef CONFIG_WII
 #include <sys/iosupport.h>
 #endif
-
-// This context stuff was originally in helpsys, but it's actually
-// more of a property of the windowing system.
-
-static int contexts[128];
-static int curr_context;
-
-// 72 = "No" context link
-__editor_maybe_static int context = CTX_MAIN;
-
-void set_context(int c)
-{
-  contexts[curr_context++] = context;
-  context = c;
-}
-
-void pop_context(void)
-{
-  if(curr_context > 0)
-    curr_context--;
-  context = contexts[curr_context];
-}
-
-#ifdef CONFIG_HELPSYS
-
-int get_context(void)
-{
-  return context;
-}
-
-#endif // CONFIG_HELPSYS
 
 #define NUM_SAVSCR 6
 
@@ -143,14 +113,14 @@ int restore_screen(void)
 // is set to 0. (defaults to 1)
 
 int draw_window_box(int x1, int y1, int x2, int y2, int color,
- int dark_color, int corner_color, int shadow, int fill_center)
+ int dark_color, int corner_color, boolean shadow, boolean fill_center)
 {
   return draw_window_box_ext(x1, y1, x2, y2, color, dark_color,
    corner_color, shadow, fill_center, PRO_CH, 16);
 }
 
 int draw_window_box_ext(int x1, int y1, int x2, int y2, int color,
- int dark_color, int corner_color, int shadow, int fill_center,
+ int dark_color, int corner_color, boolean shadow, boolean fill_center,
  int offset, int c_offset)
 {
   int t1, t2;
@@ -921,10 +891,10 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
   int current_key, new_key;
   int i;
 
-  if(context == CTX_MAIN)
+  if(get_context(NULL) == CTX_MAIN)
     set_context(CTX_DIALOG_BOX);
   else
-    set_context(context);
+    set_context(get_context(NULL));
 
   cursor_off();
 
@@ -1322,7 +1292,7 @@ static void draw_number_box(struct world *mzx_world, struct dialog *di,
   {
     // Draw a number
     char num_buffer[32];
-    if (!src->is_null)
+    if(!src->is_null)
       sprintf(num_buffer, "%d", *(src->result) * increment);
     else
       sprintf(num_buffer, " ");
@@ -1578,7 +1548,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
     case IKEY_UP:
     {
       if(get_alt_status(keycode_internal) ||
-        get_ctrl_status(keycode_internal))
+       get_ctrl_status(keycode_internal))
       {
         increment_value = 10;
       }
@@ -1624,7 +1594,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
       if(result == 0 || result < src->lower_limit)
       {
         result = src->lower_limit;
-        if (src->upper_limit > 9)
+        if(src->upper_limit > 9)
           src->is_null = 1;
       }
 
@@ -1664,7 +1634,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
         break;
       }
 
-      if (key != IKEY_BACKSPACE &&
+      if(key != IKEY_BACKSPACE &&
        !get_shift_status(keycode_internal) &&
        !get_ctrl_status(keycode_internal) &&
        !get_alt_status(keycode_internal))
@@ -1674,7 +1644,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
     }
   }
 
-  if (increment_value > 0 && src->is_null)
+  if(increment_value > 0 && src->is_null)
     increment_value -= src->lower_limit;
   src->is_null = 0;
 

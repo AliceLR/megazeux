@@ -33,6 +33,7 @@
 #include "robot.h"
 #include "util.h"
 #include "world.h"
+#include "world_struct.h"
 
 #ifdef CONFIG_UTHASH
 #include <utcasehash.h>

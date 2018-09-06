@@ -24,6 +24,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #define KEY_REPEAT_START    250
 #define KEY_REPEAT_RATE     33
@@ -418,16 +419,27 @@ bool update_autorepeat(void)
   return rval;
 }
 
-bool update_event_status(void)
+static void start_frame_event_status(void)
 {
   struct buffered_status *status = store_status();
-  bool rval;
 
   status->key = IKEY_UNKNOWN;
   status->unicode = 0;
   status->mouse_moved = 0;
   status->mouse_button = 0;
   status->exit = 0;
+
+  status->mouse_last_x = status->mouse_x;
+  status->mouse_last_y = status->mouse_y;
+  status->real_mouse_last_x = status->real_mouse_x;
+  status->real_mouse_last_y = status->real_mouse_y;
+}
+
+bool update_event_status(void)
+{
+  bool rval;
+
+  start_frame_event_status();
 
   rval  = __update_event_status();
   rval |= update_autorepeat();
@@ -446,13 +458,7 @@ bool peek_exit_input(void)
 
 void wait_event(int timeout)
 {
-  struct buffered_status *status = store_status();
-
-  status->key = IKEY_UNKNOWN;
-  status->unicode = 0;
-  status->mouse_moved = 0;
-  status->mouse_button = 0;
-  status->exit = 0;
+  start_frame_event_status();
 
   __wait_event(timeout);
   update_autorepeat();
@@ -706,6 +712,20 @@ Uint32 get_real_mouse_y(void)
   return status->real_mouse_y;
 }
 
+void get_mouse_movement(int *delta_x, int *delta_y)
+{
+  const struct buffered_status *status = load_status();
+  *delta_x = status->mouse_x - status->mouse_last_x;
+  *delta_y = status->mouse_y - status->mouse_last_y;
+}
+
+void get_real_mouse_movement(int *delta_x, int *delta_y)
+{
+  const struct buffered_status *status = load_status();
+  *delta_x = status->real_mouse_x - status->real_mouse_last_x;
+  *delta_y = status->real_mouse_y - status->real_mouse_last_y;
+}
+
 Uint32 get_mouse_drag(void)
 {
   const struct buffered_status *status = load_status();
@@ -726,6 +746,17 @@ Uint32 get_mouse_press_ext(void)
 {
   const struct buffered_status *status = load_status();
   return status->mouse_button;
+}
+
+boolean get_mouse_held(int button)
+{
+  const struct buffered_status *status = load_status();
+
+  if(button >= 1 && button <= 32)
+    if(status->mouse_button_state & MOUSE_BUTTON(button))
+      return true;
+
+  return false;
 }
 
 Uint32 get_mouse_status(void)

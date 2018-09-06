@@ -24,10 +24,7 @@
 
 __M_BEGIN_DECLS
 
-#include "../robot.h"
-
-#include "../board_struct.h"
-#include "../robot_struct.h"
+#include "../world_struct.h"
 
 void create_blank_robot_direct(struct robot *cur_robot, int x, int y);
 void create_blank_scroll_direct(struct scroll *cur_croll);
@@ -48,6 +45,8 @@ void replace_robot_source(struct world *mzx_world,
  struct board *src_board, struct robot *src_robot, int dest_id);
 
 #else // !CONFIG_DEBYTECODE
+
+#include "../robot.h"
 
 static inline void duplicate_robot_direct_source(struct world *mzx_world,
  struct robot *cur_robot, struct robot *copy_robot, int x, int y)

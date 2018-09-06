@@ -22,6 +22,7 @@
 
 #include "world.h"
 
+#include "../board.h"
 #include "../const.h"
 #include "../error.h"
 #include "../graphics.h"

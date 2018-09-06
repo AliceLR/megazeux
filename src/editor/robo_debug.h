@@ -17,9 +17,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "../world_struct.h"
+#ifndef __EDITOR_ROBO_DEBUG_H
+#define __EDITOR_ROBO_DEBUG_H
+
+#include "compat.h"
 
 __M_BEGIN_DECLS
+
+#include "../world_struct.h"
 
 EDITOR_LIBSPEC void __debug_robot_config(struct world *mzx_world);
 
@@ -34,3 +39,5 @@ EDITOR_LIBSPEC void free_breakpoints(void);
 void update_watchpoint_last_values(struct world *mzx_world);
 
 __M_END_DECLS
+
+#endif // __EDITOR_ROBO_DEBUG_H

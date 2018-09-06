@@ -43,7 +43,7 @@
 #include "event.h"
 #include "extmem.h"
 #include "fsafeopen.h"
-#include "game.h"
+#include "game_ops.h"
 #include "graphics.h"
 #include "idput.h"
 #include "memfile.h"
@@ -233,7 +233,7 @@ int get_version_string(char buffer[16], enum mzx_version version)
 
 // World info
 static inline int save_world_info(struct world *mzx_world,
- struct zip_archive *zp, int savegame, int file_version,
+ struct zip_archive *zp, boolean savegame, int file_version,
  const char *name)
 {
   enum mzx_version world_version = mzx_world->version;
@@ -400,7 +400,7 @@ static inline int save_world_info(struct world *mzx_world,
 }
 
 static inline enum val_result validate_world_info(struct world *mzx_world,
- struct zip_archive *zp, int savegame, int *file_version)
+ struct zip_archive *zp, boolean savegame, int *file_version)
 {
   int world_version;
 
@@ -531,7 +531,7 @@ err_free:
 #define if_savegame_or_291  if(!savegame && *file_version < V291) { break; }
 
 static inline void load_world_info(struct world *mzx_world,
- struct zip_archive *zp, int savegame, int *file_version, int *faded)
+ struct zip_archive *zp, boolean savegame, int *file_version, boolean *faded)
 {
   char *buffer;
   struct memfile _mf;
@@ -947,7 +947,7 @@ static inline void load_world_info(struct world *mzx_world,
 
 // Global robot
 static inline int save_world_global_robot(struct world *mzx_world,
- struct zip_archive *zp, int savegame, int file_version, const char *name)
+ struct zip_archive *zp, boolean savegame, int file_version, const char *name)
 {
   save_robot(mzx_world, &mzx_world->global_robot, zp, savegame,
    file_version, name);
@@ -956,7 +956,7 @@ static inline int save_world_global_robot(struct world *mzx_world,
 }
 
 static inline int load_world_global_robot(struct world *mzx_world,
- struct zip_archive *zp, int savegame, int file_version)
+ struct zip_archive *zp, boolean savegame, int file_version)
 {
   load_robot(mzx_world, &mzx_world->global_robot, zp, savegame, file_version);
   return 0;
@@ -997,7 +997,7 @@ static inline int load_world_sfx(struct world *mzx_world,
 
 // Charset
 static inline int save_world_chars(struct world *mzx_world,
- struct zip_archive *zp, int savegame, const char *name)
+ struct zip_archive *zp, boolean savegame, const char *name)
 {
   // Save every charset
   unsigned char *buffer;
@@ -1014,7 +1014,7 @@ static inline int save_world_chars(struct world *mzx_world,
 }
 
 static inline int load_world_chars(struct world *mzx_world,
- struct zip_archive *zp, int savegame)
+ struct zip_archive *zp, boolean savegame)
 {
   unsigned char *buffer;
   size_t actual_size;
@@ -1762,7 +1762,7 @@ err:
 
 
 static enum val_result validate_world_zip(struct world *mzx_world,
- struct zip_archive *zp, int savegame, int *file_version)
+ struct zip_archive *zp, boolean savegame, int *file_version)
 {
   unsigned int file_id;
   int result;
@@ -1853,7 +1853,7 @@ err_out:
 
 
 static int save_world_zip(struct world *mzx_world, const char *file,
- int savegame, int file_version)
+ boolean savegame, int file_version)
 {
   struct zip_archive *zp = zip_open_file_write(file);
   struct board *cur_board;
@@ -1962,7 +1962,7 @@ err:
                              { zip_skip_file(zp); break; }
 
 static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
- int savegame, int file_version, int *faded)
+ boolean savegame, int file_version, boolean *faded)
 {
   unsigned int file_id;
   unsigned int board_id;
@@ -2135,7 +2135,7 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
 }
 
 
-int save_world(struct world *mzx_world, const char *file, int savegame,
+int save_world(struct world *mzx_world, const char *file, boolean savegame,
  int world_version)
 {
 #ifdef CONFIG_DEBYTECODE
@@ -2455,8 +2455,8 @@ static void convert_sfx_strs(char *sfx_buf)
 
 
 static void load_world(struct world *mzx_world, struct zip_archive *zp,
- FILE *fp, const char *file, bool savegame, int file_version, char *name,
- int *faded)
+ FILE *fp, const char *file, boolean savegame, int file_version, char *name,
+ boolean *faded)
 {
   size_t file_name_len = strlen(file) - 4;
   char config_file_name[MAX_PATH];
@@ -2583,7 +2583,8 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
 
 
 static struct zip_archive *try_load_zip_world(struct world *mzx_world,
- const char *file, bool savegame, int *file_version, int *protected, char *name)
+ const char *file, boolean savegame, int *file_version, int *protected,
+ char *name)
 {
   struct zip_archive *zp = zip_open_file_read(file);
   char magic[5];
@@ -2707,7 +2708,7 @@ err_protected:
 
 
 static FILE *try_load_legacy_world(const char *file,
- bool savegame, int *file_version, char *name)
+ boolean savegame, int *file_version, char *name)
 {
   char magic[5];
   FILE *fp;
@@ -2745,7 +2746,7 @@ static FILE *try_load_legacy_world(const char *file,
 
 __editor_maybe_static
 void try_load_world(struct world *mzx_world, struct zip_archive **zp,
- FILE **fp, const char *file, bool savegame, int *file_version, char *name)
+ FILE **fp, const char *file, boolean savegame, int *file_version, char *name)
 {
   // Regular worlds use a zip_archive. Legacy worlds use a FILE.
   struct zip_archive *_zp = NULL;
@@ -2797,9 +2798,23 @@ void change_board(struct world *mzx_world, int board_id)
   }
 }
 
+void change_board_set_values(struct world *mzx_world)
+{
+  // The sequel to change_board; set special values on board (re)entry.
+  struct board *cur_board = mzx_world->current_board;
+
+  // Set the timer.
+  set_counter(mzx_world, "TIME", cur_board->time_limit, 0);
+
+  // Set the player restart position.
+  find_player(mzx_world);
+  mzx_world->player_restart_x = mzx_world->player_x;
+  mzx_world->player_restart_y = mzx_world->player_y;
+}
+
 void change_board_load_assets(struct world *mzx_world)
 {
-  // The sequel to change_board; use after the vquick_fadeout.
+  // The sequel to change_board; if there's a fadeout, use this after.
   struct board *cur_board = mzx_world->current_board;
   char translated_name[MAX_PATH];
 
@@ -2943,7 +2958,7 @@ __editor_maybe_static void default_global_data(struct world *mzx_world)
   mzx_world->target_where = TARGET_NONE;
 }
 
-bool reload_world(struct world *mzx_world, const char *file, int *faded)
+boolean reload_world(struct world *mzx_world, const char *file, boolean *faded)
 {
   char name[BOARD_NAME_SIZE];
   int version;
@@ -2973,7 +2988,7 @@ bool reload_world(struct world *mzx_world, const char *file, int *faded)
 
   load_world(mzx_world, zp, fp, file, false, version, name, faded);
   default_global_data(mzx_world);
-  *faded = 0;
+  *faded = false;
 
   // Now that the world's loaded, fix the save path.
   {
@@ -2988,7 +3003,8 @@ bool reload_world(struct world *mzx_world, const char *file, int *faded)
   return true;
 }
 
-bool reload_savegame(struct world *mzx_world, const char *file, int *faded)
+boolean reload_savegame(struct world *mzx_world, const char *file,
+ boolean *faded)
 {
   char ignore[BOARD_NAME_SIZE];
   int version;
@@ -3016,7 +3032,7 @@ bool reload_savegame(struct world *mzx_world, const char *file, int *faded)
   return true;
 }
 
-bool reload_swap(struct world *mzx_world, const char *file, int *faded)
+boolean reload_swap(struct world *mzx_world, const char *file, boolean *faded)
 {
   char name[BOARD_NAME_SIZE];
   char full_path[MAX_PATH];
@@ -3038,6 +3054,7 @@ bool reload_swap(struct world *mzx_world, const char *file, int *faded)
 
   // Change to the first board of the new world.
   change_board(mzx_world, mzx_world->first_board);
+  change_board_set_values(mzx_world);
   change_board_load_assets(mzx_world);
 
   // Give curr_file a full path
