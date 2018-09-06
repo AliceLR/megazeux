@@ -97,11 +97,21 @@ static inline int hash_string(char *data, size_t length)
 static inline int get_watchpoint_value(struct world *mzx_world,
  struct watchpoint *wt)
 {
+  /**
+   * TODO maybe find a way to make watchpoints that rely on the robot ID to
+   * work consistently instead of defaulting to the global robot. As this is
+   * implemented now, there would be strange behavior when control passes from
+   * one robot to another. Updating every watchpoint at the start of every robot
+   * execution would fix this except if the counter debugger is used mid-cycle,
+   * which would cause similar unexpected (to the user) behavior. For now, just
+   * assume every local counter access is done by the global robot.
+   */
+
   if(is_string(wt->match_name))
   {
     struct string src_string;
 
-    if(get_string(mzx_world, wt->match_name, &src_string, -1))
+    if(get_string(mzx_world, wt->match_name, &src_string, 0))
     {
       return hash_string(src_string.value, src_string.length);
     }
@@ -109,7 +119,7 @@ static inline int get_watchpoint_value(struct world *mzx_world,
 
   else
   {
-    return get_counter_safe(mzx_world, wt->match_name, -1);
+    return get_counter_safe(mzx_world, wt->match_name, 0);
   }
 
   return 0;
@@ -161,7 +171,7 @@ static int edit_breakpoint_dialog(struct world *mzx_world,
 
   elements[3] = construct_button(22, 5, "Confirm", 0);
   elements[4] = construct_button(45, 5, "Cancel", -1);
-  
+
   construct_dialog(&di, title, 2, 7, 76, 7, elements, ARRAY_SIZE(elements), 0);
 
   result = run_dialog(mzx_world, &di);
@@ -278,7 +288,7 @@ static int debug_config_idle_function(struct world *mzx_world,
 {
   switch(key)
   {
-    // Add 
+    // Add
     case IKEY_a:
     case IKEY_n:
     {
