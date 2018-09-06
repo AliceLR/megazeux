@@ -528,8 +528,10 @@ static inline void ctr_char_bitmask_to_texture(
   p4[2] = bitmask_smzx[3][t];
 }
 
-static inline void ctr_do_remap_charsets(struct graphics_data *graphics)
+static void ctr_remap_char_range(struct graphics_data *graphics, Uint16 first,
+ Uint16 count)
 {
+  // FIXME need proper implementation
   struct ctr_render_data *render_data;
   signed char *c;
   unsigned int i, j;
@@ -546,8 +548,7 @@ static inline void ctr_do_remap_charsets(struct graphics_data *graphics)
   // render_data->smzx_charset_dirty = ((u64) 1 << (NUM_CHARSETS * 2)) - 1;
 }
 
-static inline void ctr_do_remap_char(struct graphics_data *graphics,
- Uint16 chr)
+static void ctr_remap_char(struct graphics_data *graphics, Uint16 chr)
 {
   struct ctr_render_data *render_data;
   signed char *c;
@@ -565,8 +566,8 @@ static inline void ctr_do_remap_char(struct graphics_data *graphics,
   // render_data->smzx_charset_dirty |= (1 << (chr >> 7));
 }
 
-static void ctr_do_remap_charbyte(struct graphics_data *graphics,
- Uint16 chr, Uint8 byte)
+static void ctr_remap_charbyte(struct graphics_data *graphics, Uint16 chr,
+ Uint8 byte)
 {
   struct ctr_render_data *render_data;
   signed char *c;
@@ -1001,9 +1002,9 @@ void render_ctr_register(struct renderer *renderer)
   renderer->set_video_mode = ctr_set_video_mode;
   renderer->update_colors = ctr_update_colors;
   renderer->resize_screen = resize_screen_standard;
-  renderer->remap_charsets = ctr_do_remap_charsets;
-  renderer->remap_char = ctr_do_remap_char;
-  renderer->remap_charbyte = ctr_do_remap_charbyte;
+  renderer->remap_char_range = ctr_remap_char_range;
+  renderer->remap_char = ctr_remap_char;
+  renderer->remap_charbyte = ctr_remap_charbyte;
   renderer->get_screen_coords = get_screen_coords_centered;
   renderer->set_screen_coords = set_screen_coords_centered;
   renderer->render_layer = ctr_render_layer;

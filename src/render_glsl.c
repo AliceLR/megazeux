@@ -599,8 +599,10 @@ static void glsl_free_video(struct graphics_data *graphics)
   }
 }
 
-static void glsl_remap_charsets(struct graphics_data *graphics)
+static void glsl_remap_char_range(struct graphics_data *graphics, Uint16 first,
+ Uint16 count)
 {
+  // FIXME needs proper implementation
   struct glsl_render_data *render_data = graphics->render_data;
   render_data->remap_texture = true;
 }
@@ -646,7 +648,7 @@ static void glsl_resize_screen(struct graphics_data *graphics,
    0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
   gl_check_error();
 
-  glsl_remap_charsets(graphics);
+  glsl_remap_char_range(graphics, 0, FULL_CHARSET_SIZE);
 
   glsl_load_shaders(graphics);
 }
@@ -1303,7 +1305,7 @@ void render_glsl_register(struct renderer *renderer)
   renderer->set_video_mode = glsl_set_video_mode;
   renderer->update_colors = glsl_update_colors;
   renderer->resize_screen = resize_screen_standard;
-  renderer->remap_charsets = glsl_remap_charsets;
+  renderer->remap_char_range = glsl_remap_char_range;
   renderer->remap_char = glsl_remap_char;
   renderer->remap_charbyte = glsl_remap_charbyte;
   renderer->get_screen_coords = get_screen_coords_scaled;

@@ -114,13 +114,32 @@ static const struct rgb_color default_pal[16] =
   { 255, 255, 255, 0 }
 };
 
+static void remap_charbyte(struct graphics_data *graphics, Uint16 chr,
+ Uint8 byte)
+{
+  if(graphics->renderer.remap_charbyte)
+    graphics->renderer.remap_charbyte(graphics, chr, byte);
+}
+
+static void remap_char(struct graphics_data *graphics, Uint16 chr)
+{
+  if(graphics->renderer.remap_char)
+    graphics->renderer.remap_char(graphics, chr);
+}
+
+static void remap_char_range(struct graphics_data *graphics, Uint16 first,
+ Uint16 len)
+{
+  if(graphics->renderer.remap_char_range)
+    graphics->renderer.remap_char_range(graphics, first, len);
+}
+
 void ec_change_byte(Uint16 chr, Uint8 byte, Uint8 new_value)
 {
   chr = chr % PROTECTED_CHARSET_POSITION;
   graphics.charset[(chr * CHAR_SIZE) + byte] = new_value;
 
-  if(graphics.renderer.remap_charbyte)
-    graphics.renderer.remap_charbyte(&graphics, chr, byte);
+  remap_charbyte(&graphics, chr, byte);
 }
 
 void ec_change_char(Uint16 chr, char *matrix)
@@ -128,8 +147,7 @@ void ec_change_char(Uint16 chr, char *matrix)
   chr = chr % PROTECTED_CHARSET_POSITION;
   memcpy(graphics.charset + (chr * CHAR_SIZE), matrix, CHAR_SIZE);
 
-  if(graphics.renderer.remap_char)
-    graphics.renderer.remap_char(&graphics, chr);
+  remap_char(&graphics, chr);
 }
 
 Uint8 ec_read_byte(Uint16 chr, Uint8 byte)
@@ -147,45 +165,56 @@ void ec_read_char(Uint16 chr, char *matrix)
 void ec_clear_set(void)
 {
   if(layer_renderer_check(false))
+  {
     memset(graphics.charset, 0, PROTECTED_CHARSET_POSITION * CHAR_SIZE);
+    remap_char_range(&graphics, 0, FULL_CHARSET_SIZE);
+  }
 
   // For compatibility with old renderers, clear only the first charset;
   // the second could be a duplicate of the protected set.
   else
+  {
     memset(graphics.charset, 0, CHARSET_SIZE * CHAR_SIZE);
+    remap_char_range(&graphics, 0, CHARSET_SIZE);
+  }
 }
 
 Sint32 ec_load_set(char *name)
 {
   FILE *fp = fopen_unsafe(name, "rb");
+  Uint16 count;
 
-  if(fp == NULL)
-   return -1;
+  if(fp)
+  {
+    count = fread(graphics.charset, CHAR_SIZE, PROTECTED_CHARSET_POSITION, fp);
+    fclose(fp);
 
-  fread(graphics.charset, CHAR_SIZE, PROTECTED_CHARSET_POSITION, fp);
-  fclose(fp);
-
-  // some renderers may want to map charsets to textures
-  if(graphics.renderer.remap_charsets)
-    graphics.renderer.remap_charsets(&graphics);
-
-  return 0;
+    if(count > 0)
+    {
+      // some renderers may want to map charsets to textures
+      remap_char_range(&graphics, 0, count);
+      return 0;
+    }
+  }
+  return -1;
 }
 
 __editor_maybe_static void ec_load_set_secondary(const char *name,
  Uint8 *dest)
 {
   FILE *fp = fopen_unsafe(name, "rb");
+  Uint16 count;
 
-  if(!fp)
-    return;
+  if(fp)
+  {
+    count = fread(dest, CHAR_SIZE, CHARSET_SIZE, fp);
+    fclose(fp);
 
-  fread(dest, CHAR_SIZE, CHARSET_SIZE, fp);
-  fclose(fp);
-
-  // some renderers may want to map charsets to textures
-  if(graphics.renderer.remap_charsets)
-    graphics.renderer.remap_charsets(&graphics);
+    // This might have been somewhere in the charset, so
+    // some renderers may want to map charsets to textures
+    if(count > 0)
+      remap_char_range(&graphics, 0, FULL_CHARSET_SIZE);
+  }
 }
 
 Sint32 ec_load_set_var(char *name, Uint16 pos, int version)
@@ -193,33 +222,37 @@ Sint32 ec_load_set_var(char *name, Uint16 pos, int version)
   Uint32 size = CHARSET_SIZE;
   FILE *fp = fopen_unsafe(name, "rb");
   Uint32 maxChars = PROTECTED_CHARSET_POSITION;
+  Uint16 count;
+
   if(version < V290)
     maxChars = 256;
 
-  if(!fp)
-    return -1;
+  if(fp)
+  {
+    size = ftell_and_rewind(fp) / CHAR_SIZE;
+    if(size + pos >= 256 && maxChars > 256 && !layer_renderer_check(true))
+      maxChars = 256;
 
-  size = ftell_and_rewind(fp) / CHAR_SIZE;
-  if(size + pos >= 256 && maxChars > 256 && !layer_renderer_check(true))
-    maxChars = 256;
+    if(size + pos > maxChars)
+      size = maxChars - pos;
 
-  if(size + pos > maxChars)
-    size = maxChars - pos;
+    count = fread(graphics.charset + (pos * CHAR_SIZE), CHAR_SIZE, size, fp);
+    fclose(fp);
 
-  fread(graphics.charset + (pos * CHAR_SIZE), CHAR_SIZE, size, fp);
-  fclose(fp);
+    // some renderers may want to map charsets to textures
+    if(count > 0)
+      remap_char_range(&graphics, pos, count);
 
-  // some renderers may want to map charsets to textures
-  if(graphics.renderer.remap_charsets)
-    graphics.renderer.remap_charsets(&graphics);
-
-  return size;
+    return count;
+  }
+  return -1;
 }
 
 void ec_mem_load_set(Uint8 *chars, size_t len)
 {
   // This is used only for legacy and ZIP world loading and the default charsets
   // Use ec_clear_set() in conjunction with this for world loads.
+  Uint16 count;
 
   if(!layer_renderer_check(false) && len > CHAR_SIZE * CHARSET_SIZE)
     len = CHAR_SIZE * CHARSET_SIZE;
@@ -230,8 +263,9 @@ void ec_mem_load_set(Uint8 *chars, size_t len)
   memcpy(graphics.charset, chars, len);
 
   // some renderers may want to map charsets to textures
-  if(graphics.renderer.remap_charsets)
-    graphics.renderer.remap_charsets(&graphics);
+  count = len / CHAR_SIZE;
+  if(count > 0)
+    remap_char_range(&graphics, 0, count);
 }
 
 void ec_mem_save_set(Uint8 *chars)
@@ -241,22 +275,30 @@ void ec_mem_save_set(Uint8 *chars)
 
 void ec_mem_load_set_var(char *chars, size_t len, Uint16 pos, int version)
 {
-  Uint32 offset = pos * CHAR_SIZE;
-  Uint32 size;
   Uint32 maxChars = PROTECTED_CHARSET_POSITION;
+  Uint32 offset = pos * CHAR_SIZE;
+  Uint16 count = (len + CHAR_SIZE - 1) / CHAR_SIZE;
+
   if(version < V290)
     maxChars = 256;
 
   if(len + offset > (256 * CHAR_SIZE) && !layer_renderer_check(true))
     maxChars = 256;
 
-  size = MIN(len, CHAR_SIZE * maxChars - offset);
+  if(pos > maxChars)
+    return;
 
-  memcpy(graphics.charset + offset, chars, size);
+  if(count > maxChars - pos)
+  {
+    count = maxChars - pos;
+    len = count * CHAR_SIZE;
+  }
+
+  memcpy(graphics.charset + offset, chars, len);
 
   // some renderers may want to map charsets to textures
-  if(graphics.renderer.remap_charsets)
-    graphics.renderer.remap_charsets(&graphics);
+  if(count > 0)
+    remap_char_range(&graphics, pos, count);
 }
 
 void ec_mem_save_set_var(Uint8 *chars, size_t len, Uint16 pos)

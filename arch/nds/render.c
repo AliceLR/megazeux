@@ -639,12 +639,17 @@ static void nds_remap_charbyte(struct graphics_data *graphics, Uint16 chr, Uint8
   }
 }
 
-static void nds_remap_charsets(struct graphics_data *graphics)
+static void nds_remap_char_range(struct graphics_data *graphics, Uint16 first,
+ Uint16 count)
 {
-  int i;
+  int stop = first + count;
+  int chr;
 
-  for(i = 0; i < 256; i++)
-    nds_remap_char(graphics, i);
+  if(stop > 256)
+    stop = 256;
+
+  for(chr = first; chr < stop; chr++)
+    nds_remap_char(graphics, chr);
 }
 
 // Focus on a given screen position (in pixels up to 640x350).
@@ -717,7 +722,7 @@ void render_nds_register(struct renderer *renderer)
   renderer->set_video_mode = nds_set_video_mode;
   renderer->update_colors = nds_update_colors;
   renderer->resize_screen = nds_resize_screen;
-  renderer->remap_charsets = nds_remap_charsets;
+  renderer->remap_char_range = nds_remap_char_range;
   renderer->remap_char = nds_remap_char;
   renderer->remap_charbyte = nds_remap_charbyte;
   renderer->get_screen_coords = get_screen_coords_centered;

@@ -466,14 +466,17 @@ static void gx_draw_charsets(struct graphics_data *graphics)
   }
 }
 
-static void gx_remap_charsets(struct graphics_data *graphics)
+static void gx_remap_char_range(struct graphics_data *graphics, Uint16 first,
+ Uint16 count)
 {
+  // FIXME need proper implementation
   struct gx_render_data *render_data = graphics->render_data;
   render_data->chrdirty = 1;
 }
 
 static void gx_remap_char(struct graphics_data *graphics, Uint16 chr)
 {
+  // FIXME need proper implementation
   struct gx_render_data *render_data = graphics->render_data;
   render_data->chrdirty = 1;
 }
@@ -481,6 +484,7 @@ static void gx_remap_char(struct graphics_data *graphics, Uint16 chr)
 static void gx_remap_charbyte(struct graphics_data *graphics,
  Uint16 chr, Uint8 byte)
 {
+  // FIXME need proper implementation
   struct gx_render_data *render_data = graphics->render_data;
   render_data->chrdirty = 1;
 }
@@ -796,7 +800,7 @@ void render_gx_register(struct renderer *renderer)
   renderer->set_video_mode = gx_set_video_mode;
   renderer->update_colors = gx_update_colors;
   renderer->resize_screen = resize_screen_standard;
-  renderer->remap_charsets = gx_remap_charsets;
+  renderer->remap_char_range = gx_remap_char_range;
   renderer->remap_char = gx_remap_char;
   renderer->remap_charbyte = gx_remap_charbyte;
   renderer->get_screen_coords = get_screen_coords_centered;

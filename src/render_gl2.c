@@ -206,8 +206,10 @@ static void gl2_free_video(struct graphics_data *graphics)
   graphics->render_data = NULL;
 }
 
-static void gl2_remap_charsets(struct graphics_data *graphics)
+static void gl2_remap_char_range(struct graphics_data *graphics, Uint16 first,
+ Uint16 count)
 {
+  // FIXME needs proper implementation
   struct gl2_render_data *render_data = graphics->render_data;
   render_data->remap_texture = true;
 }
@@ -291,7 +293,7 @@ static void gl2_resize_screen(struct graphics_data *graphics,
    0, GL_ALPHA, GL_UNSIGNED_BYTE, NULL);
   gl_check_error();
 
-  gl2_remap_charsets(graphics);
+  gl2_remap_char_range(graphics, 0, FULL_CHARSET_SIZE);
 
   gl2.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[2]);
   gl_check_error();
@@ -1134,7 +1136,7 @@ void render_gl2_register(struct renderer *renderer)
   renderer->set_video_mode = gl2_set_video_mode;
   renderer->update_colors = gl2_update_colors;
   renderer->resize_screen = resize_screen_standard;
-  renderer->remap_charsets = gl2_remap_charsets;
+  renderer->remap_char_range = gl2_remap_char_range;
   renderer->remap_char = gl2_remap_char;
   renderer->remap_charbyte = gl2_remap_charbyte;
   renderer->get_screen_coords = get_screen_coords_scaled;

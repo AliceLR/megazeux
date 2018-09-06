@@ -101,7 +101,7 @@ struct renderer
   void (*update_colors)    (struct graphics_data *, struct rgb_color *,
                              Uint32);
   void (*resize_screen)    (struct graphics_data *, int, int);
-  void (*remap_charsets)   (struct graphics_data *);
+  void (*remap_char_range) (struct graphics_data *, Uint16 first, Uint16 count);
   void (*remap_char)       (struct graphics_data *, Uint16 chr);
   void (*remap_charbyte)   (struct graphics_data *, Uint16 chr, Uint8 byte);
   void (*get_screen_coords)(struct graphics_data *, int, int, int *, int *,
