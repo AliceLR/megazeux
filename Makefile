@@ -84,6 +84,14 @@ endif
 LIBPNG_CFLAGS  := $(LIBPNG_CFLAGS)
 LIBPNG_LDFLAGS := $(LIBPNG_LDFLAGS)
 
+ifneq (${X11DIR},)
+X11_CFLAGS  ?= -I${X11DIR}/../include
+X11_LDFLAGS ?= -L${X11DIR}/../lib -lX11
+# Make these immediate
+X11_CFLAGS := $(X11_CFLAGS)
+X11_LDFLAGS := $(X11_LDFLAGS)
+endif
+
 PTHREAD_LDFLAGS ?= -lpthread
 
 OPTIMIZE_CFLAGS ?= -O3

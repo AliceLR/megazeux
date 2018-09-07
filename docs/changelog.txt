@@ -2,12 +2,22 @@ GIT - MZX 2.91f
 
 USERS
 
-* Fixed a crash that occurs when attempting to add a watchpoint
++ Fixed a crash that occurs when attempting to add a watchpoint
   for robot local counters, loopcount, etc. Using these counters
   as watchpoints will watch the global robot's instances of
   these variables (for other robots, use e.g. r#.local1).
 
 DEVELOPERS
+
++ GAMESDIR/BINDIR/SHAREDIR now properly apply PREFIX when they
+  are not explicitly set by config.sh.
++ LIBDIR is now user-definable like BINDIR et al. Variations
+  such as "lib64" currently must be explicitly provided for
+  platforms that still use them.
++ Remove src folder from CFLAGS to fix a bug where system
+  includes could be mistaken for MegaZeux headers. All includes
+  of MegaZeux headers must be done using relative paths now.
++ Fixed include bugs for X11 and Carbon clipboard handlers.
 
 
 September 3rd, 2018 - MZX 2.91e

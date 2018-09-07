@@ -21,12 +21,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "clipboard.h"
+
 #define decimal decimal_
 #define Random Random_
 #include <Carbon/Carbon.h>
-
-#include "clipboard.h"
-#include "../compat.h"
 
 static const CFStringRef PLAIN = CFSTR("com.apple.traditional-mac-plain-text");
 
