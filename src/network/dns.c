@@ -26,6 +26,9 @@
 #include "../platform.h"
 #include "../util.h"
 
+// Default thread cap for lookups (note: can get overriden by update host count)
+#define DNS_DEFAULT_MAX_THREADS 3
+
 #define LOCK(d)         platform_mutex_lock(&(d->mutex))
 #define UNLOCK(d)       platform_mutex_unlock(&(d->mutex))
 #define WAIT(d)         platform_cond_wait(&(d->cond), &(d->mutex))
@@ -231,8 +234,14 @@ int dns_getaddrinfo(const char *node, const char *service,
 
 bool dns_init(struct config_info *conf)
 {
-  threads = ccalloc(conf->update_host_count, sizeof(struct dns_data));
-  threads_max = conf->update_host_count;
+  int threads_max = DNS_DEFAULT_MAX_THREADS;
+
+#ifdef CONFIG_UPDATER
+  if(threads_max < conf->update_host_count)
+    threads_max = conf->update_host_count;
+#endif
+
+  threads = ccalloc(threads_max, sizeof(struct dns_data));
   threads_count = 0;
   return true;
 }
