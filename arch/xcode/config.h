@@ -13,6 +13,7 @@
 #define CONFIG_XMP
 #define CONFIG_AUDIO
 #define CONFIG_AUDIO_MOD_SYSTEM
+#define CONFIG_VORBIS
 #define CONFIG_PNG
 #define CONFIG_ICON
 #define CONFIG_MODULAR
