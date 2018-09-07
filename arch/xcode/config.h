@@ -2,6 +2,7 @@
 #define PLATFORM "xcode"
 #define CONFDIR "../Resources"
 #define CONFFILE "config.txt"
+#define USERCONFFILE ".megazeux-config"
 #define SHAREDIR "../Resources"
 #define CONFIG_SDL
 #define CONFIG_EDITOR
