@@ -39,19 +39,62 @@ MKDIR   ?= mkdir
 MV      ?= mv
 RM      ?= rm
 
-ifeq (${BUILD_LIBSDL2},)
-SDL_PREFIX  ?= $(shell sdl-config --prefix)
-SDL_CFLAGS  ?= $(shell sdl-config --prefix=${SDL_PREFIX} --cflags)
-SDL_LDFLAGS ?= $(shell sdl-config --prefix=${SDL_PREFIX} --libs)
+#
+# Set up CFLAGS/LDFLAGS for all MegaZeux external dependencies.
+#
+
+ifeq (${BUILD_SDL},1)
+
+#
+# SDL 2
+#
+
+ifneq (${BUILD_LIBSDL2},)
+
+# Check PREFIX for sdl2-config.
+ifneq ($(wildcard ${PREFIX}/bin/sdl2-config),)
+SDL_CONFIG  := ${PREFIX}/bin/sdl2-config
+else ifneq ($(wildcard ${SDL_PREFIX}/bin/sdl2-config),)
+SDL_CONFIG  := ${SDL_PREFIX}/bin/sdl2-config
 else
-SDL_PREFIX  ?= $(shell sdl2-config --prefix)
-SDL_CFLAGS  ?= $(shell sdl2-config --prefix=${SDL_PREFIX} --cflags | sed 's,-I,-isystem ,g')
-SDL_LDFLAGS ?= $(shell sdl2-config --prefix=${SDL_PREFIX} --libs)
+SDL_CONFIG  := sdl2-config
 endif
+
+SDL_PREFIX  ?= $(shell ${SDL_CONFIG} --prefix)
+SDL_CFLAGS  ?= $(shell ${SDL_CONFIG} --prefix=${SDL_PREFIX} --cflags | sed 's,-I,-isystem ,g')
+SDL_LDFLAGS ?= $(shell ${SDL_CONFIG} --prefix=${SDL_PREFIX} --libs)
+endif
+
+#
+# SDL 1.2
+#
+
+ifeq (${BUILD_LIBSDL2},)
+
+# Check PREFIX for sdl-config.
+ifneq ($(wildcard ${PREFIX}/bin/sdl-config),)
+SDL_CONFIG  := ${PREFIX}/bin/sdl-config
+else ifneq ($(wildcard ${SDL_PREFIX}/bin/sdl-config),)
+SDL_CONFIG  := ${SDL_PREFIX}/bin/sdl-config
+else
+SDL_CONFIG  := sdl-config
+endif
+
+SDL_PREFIX  ?= $(shell ${SDL_CONFIG} --prefix)
+SDL_CFLAGS  ?= $(shell ${SDL_CONFIG} --prefix=${SDL_PREFIX} --cflags)
+SDL_LDFLAGS ?= $(shell ${SDL_CONFIG} --prefix=${SDL_PREFIX} --libs)
+endif
+
 # Make these immediate so the scripts run only once.
 SDL_PREFIX  := $(SDL_PREFIX)
 SDL_CFLAGS  := $(SDL_CFLAGS)
 SDL_LDFLAGS := $(SDL_LDFLAGS)
+
+endif
+
+#
+# libvorbis/tremor
+#
 
 VORBIS_CFLAGS  ?= -I${PREFIX}/include -DOV_EXCLUDE_STATIC_CALLBACKS
 ifeq (${VORBIS},vorbis)
@@ -62,27 +105,52 @@ else ifeq (${VORBIS},tremor-lowmem)
 VORBIS_LDFLAGS ?= -L${PREFIX}/lib -lvorbisidec
 endif
 
+#
+# MikMod (optional mod engine)
+#
+
 MIKMOD_CFLAGS  ?= -I${PREFIX}/include
 MIKMOD_LDFLAGS ?= -L${PREFIX}/lib -lmikmod
 
-# Uncomment these when we don't need to contrib xmp.
-#XMP_CFLAGS  ?= -I${PREFIX}/include
-#XMP_LDFLAGS ?= -L${PREFIX}/lib -lxmp
+#
+# libopenmpt (optional mod engine)
+#
 
 OPENMPT_CFLAGS  ?= -I${PREFIX}/include
 OPENMPT_LDFLAGS ?= -L${PREFIX}/lib -lopenmpt
+
+#
+# zlib
+#
 
 ZLIB_CFLAGS  ?= -I${PREFIX}/include \
                 -D_FILE_OFFSET_BITS=32 -U_LARGEFILE64_SOURCE
 ZLIB_LDFLAGS ?= -L${PREFIX}/lib -lz
 
+#
+# libpng
+#
+
 ifeq (${LIBPNG},1)
-LIBPNG_CFLAGS  ?= $(shell libpng-config --cflags)
-LIBPNG_LDFLAGS ?= $(shell libpng-config --ldflags)
+
+# Check PREFIX for libpng-config.
+ifneq ($(wildcard ${PREFIX}/bin/libpng-config),)
+LIBPNG_CONFIG  := ${PREFIX}/bin/libpng-config
+else
+LIBPNG_CONFIG  := libpng-config
 endif
+
+LIBPNG_CFLAGS  ?= $(shell ${LIBPNG_CONFIG} --cflags)
+LIBPNG_LDFLAGS ?= $(shell ${LIBPNG_CONFIG} --ldflags)
+
 # Make these immediate so the scripts run only once.
 LIBPNG_CFLAGS  := $(LIBPNG_CFLAGS)
 LIBPNG_LDFLAGS := $(LIBPNG_LDFLAGS)
+endif
+
+#
+# X11
+#
 
 ifneq (${X11DIR},)
 X11_CFLAGS  ?= -I${X11DIR}/../include
@@ -92,7 +160,15 @@ X11_CFLAGS := $(X11_CFLAGS)
 X11_LDFLAGS := $(X11_LDFLAGS)
 endif
 
+#
+# pthread
+#
+
 PTHREAD_LDFLAGS ?= -lpthread
+
+#
+# Set up general CFLAGS/LDFLAGS
+#
 
 OPTIMIZE_CFLAGS ?= -O3
 
