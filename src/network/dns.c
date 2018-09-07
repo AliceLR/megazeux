@@ -234,7 +234,7 @@ int dns_getaddrinfo(const char *node, const char *service,
 
 bool dns_init(struct config_info *conf)
 {
-  int threads_max = DNS_DEFAULT_MAX_THREADS;
+  threads_max = DNS_DEFAULT_MAX_THREADS;
 
 #ifdef CONFIG_UPDATER
   if(threads_max < conf->update_host_count)
