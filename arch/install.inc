@@ -111,7 +111,9 @@ endif
 ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 	@${install} -m 0755 -d \
 		${DESTDIR}${SHAREDIR}/megazeux/assets/glsl/scalers && \
-	 ${install} -m 0644 assets/glsl/scalers/crt.frag \
+	 ${install} -m 0644 \
+		assets/glsl/scalers/crt-wave.frag \
+		assets/glsl/scalers/crt.frag \
 		assets/glsl/scalers/emboss.frag \
 		assets/glsl/scalers/epx.frag \
 		assets/glsl/scalers/greyscale.frag \

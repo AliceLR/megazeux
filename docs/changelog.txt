@@ -20,6 +20,10 @@ DEVELOPERS
 + Fixed include bugs for X11 and Carbon clipboard handlers.
 + Makefile now attempts to respect the prefix when running
   sdl-config, sdl2-config, and libpng-config.
++ Renamed the "darwin" config.sh platform to "darwin-dist".
++ Added "darwin" and "darwin-devel" config.sh platforms. These
+  act like Mac OS X versions of the "unix" and "unix-devel"
+  options.
 
 
 September 3rd, 2018 - MZX 2.91e
