@@ -1,5 +1,5 @@
 #
-# install/uninstall Makefile targets
+# install/uninstall Makefile
 #
 # These recipes are intended primarily for use with the unix and darwin
 # platforms, but may be useful for other platforms. Include this in any arch
