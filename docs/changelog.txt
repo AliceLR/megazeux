@@ -6,6 +6,8 @@ USERS
   for robot local counters, loopcount, etc. Using these counters
   as watchpoints will watch the global robot's instances of
   these variables (for other robots, use e.g. r#.local1).
++ Using SMZX_INDICES or LOAD_ROBOT on an unset string no longer
+  causes a crash.
 
 DEVELOPERS
 
