@@ -66,6 +66,7 @@ static bool cancel_update;
 
 static char **process_argv;
 static int process_argc;
+static bool updater_was_initialized;
 
 static char **rewrite_argv_for_execv(int argc, char **argv)
 {
@@ -263,6 +264,12 @@ static bool swivel_current_dir(bool have_video)
   char *base_path;
   int g_ret;
 
+  if(process_argc < 1)
+  {
+    warn("--UPDATER-- Aborting: argc < 1\n");
+    return ret;
+  }
+
   // Store the user's current directory, so we can get back to it
   getcwd(previous_dir, MAX_PATH);
 
@@ -271,14 +278,22 @@ static bool swivel_current_dir(bool have_video)
   // Find and change into the base path for this MZX binary
   g_ret = get_path(process_argv[0], base_path, MAX_PATH);
   if(g_ret <= 0)
+  {
+    if(process_argv[0] && process_argv[0][0])
+      warn("--UPDATER-- Failed to get path from argv[0]: %s\n", process_argv[0]);
+    else
+      warn("--UPDATER-- No argv[0]!\n");
     goto err_free_base_path;
+  }
 
   if(chdir(base_path))
   {
+    info("--UPDATER-- getcwd(): %s\n", previous_dir);
+    info("--UPDATER-- attempted chdir() to: %s\n", base_path);
     if(have_video)
-      error("Failed to change into install directory.", 1, 8, 0);
+      error("Updater: failed to change into install directory.", 1, 8, 0);
     else
-      warn("Failed to change into install directory.\n");
+      warn("--UPDATER-- Failed to change into install directory.\n");
     goto err_free_base_path;
   }
 
@@ -293,9 +308,9 @@ static bool swivel_current_dir_back(bool have_video)
   if(chdir(previous_dir))
   {
     if(have_video)
-      error("Failed to change back to user directory.", 1, 8, 0);
+      error("Updater: failed to change back to user directory.", 1, 8, 0);
     else
-      warn("Failed to change back to user directory.\n");
+      warn("--UPDATER-- Failed to change back to user directory.\n");
     return false;
   }
 
@@ -491,6 +506,9 @@ static bool reissue_connection(struct config_info *conf, struct host **h,
     goto err_out;
   }
 
+  if(is_automatic)
+    host_set_timeout_ms(*h, 1000);
+
   m_hide();
 
   buf_len = snprintf(widget_buf, WIDGET_BUF_LEN,
@@ -532,6 +550,12 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
 
   set_context(CTX_UPDATER);
 
+  if(!updater_was_initialized)
+  {
+    error("Updater couldn't be initialized; check folder permissions", 1, 8, 0);
+    goto err_out;
+  }
+
   if(conf->update_host_count < 1)
   {
     error("No updater hosts defined! Aborting.", 1, 8, 0);
@@ -551,6 +575,7 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
     int list_entry_width = 0;
     enum host_status status;
     struct host *h = NULL;
+    struct http_info req;
     unsigned int retries;
     FILE *f;
 
@@ -567,17 +592,24 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
     if(!reissue_connection(conf, &h, update_host, is_automatic))
       goto err_host_destroy;
 
-    if(is_automatic)
-      host_set_timeout_ms(h, 1000);
-
     for(retries = 0; retries < MAX_RETRIES; retries++)
     {
       // Grab the file containing the names of the current Stable and Unstable
-      status = host_recv_file(h, "/" UPDATES_TXT, f, "text/plain");
+      strcpy(req.url, "/" UPDATES_TXT);
+      strcpy(req.expected_type, "text/plain");
+
+      status = host_recv_file(h, &req, f);
       rewind(f);
 
       if(status == HOST_SUCCESS)
         break;
+
+      // Stop early on redirect and client error codes
+      if(-status == HOST_HTTP_REDIRECT || -status == HOST_HTTP_CLIENT_ERROR)
+      {
+        retries = MAX_RETRIES;
+        break;
+      }
 
       if(!reissue_connection(conf, &h, update_host, is_automatic))
         goto err_host_destroy;
@@ -588,7 +620,7 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
       if(!is_automatic)
       {
         snprintf(widget_buf, WIDGET_BUF_LEN, "Failed to download \""
-         UPDATES_TXT "\" (err=%d).\n", status);
+         UPDATES_TXT "\" (%d/%d).\n", req.status_code, status);
         widget_buf[WIDGET_BUF_LEN - 1] = 0;
         error(widget_buf, 1, 8, 0);
       }
@@ -693,13 +725,6 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
         version = value;
     }
 
-    // Switch back to the normal checking timeout for the rest of the process.
-    if(is_automatic)
-    {
-      host_set_timeout_ms(h, HOST_TIMEOUT_DEFAULT);
-      is_automatic = 0;
-    }
-
     /* We can now compute a unique URL base for the updater. This will
      * be composed of a user-selected version and a static platform-archicture
      * name.
@@ -722,8 +747,6 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
 
     for(retries = 0; retries < MAX_RETRIES; retries++)
     {
-      bool m_ret;
-
       m_hide();
 
       draw_window_box(3, 11, 76, 13, DI_MAIN, DI_DARK, DI_CORNER, 1, 1);
@@ -731,14 +754,21 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
        13, 12, DI_TEXT, 0);
       update_screen();
 
-      m_ret = manifest_get_updates(h, url_base, &removed, &replaced, &added);
+      status = manifest_get_updates(h, url_base, &removed, &replaced, &added);
 
       clear_screen(32, 7);
       m_show();
       update_screen();
 
-      if(m_ret)
+      if(status == HOST_SUCCESS)
         break;
+
+      // Unsupported platform.
+      if(-status == HOST_HTTP_REDIRECT || -status == HOST_HTTP_CLIENT_ERROR)
+      {
+        error("No updates available for this platform.", 1, 8, 0);
+        goto err_roll_back_manifest;
+      }
 
       if(!reissue_connection(conf, &h, update_host, 0))
         goto err_roll_back_manifest;
@@ -773,6 +803,16 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
         try_next_host = true;
 
       goto err_free_update_manifests;
+    }
+
+    // Switch back to the normal checking timeout for the rest of the process.
+    if(is_automatic)
+    {
+      if(conf->update_auto_check == UPDATE_AUTO_CHECK_SILENT)
+        goto err_free_update_manifests;
+
+      host_set_timeout_ms(h, HOST_TIMEOUT_DEFAULT);
+      is_automatic = 0;
     }
 
     for(e = removed; e; e = e->next, entries++)
@@ -959,10 +999,11 @@ bool updater_init(int argc, char *argv[])
   process_argc = argc;
   process_argv = argv;
 
+  check_for_updates = __check_for_updates;
+  updater_was_initialized = false;
+
   if(!swivel_current_dir(false))
     return false;
-
-  check_for_updates = __check_for_updates;
 
   f = fopen_unsafe(DELETE_TXT, "rb");
   if(!f)
@@ -984,6 +1025,7 @@ bool updater_init(int argc, char *argv[])
 
 err_swivel_back:
   swivel_current_dir_back(false);
+  updater_was_initialized = true;
   return true;
 }
 

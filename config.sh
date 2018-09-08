@@ -10,8 +10,9 @@ usage() {
 	echo "  --prefix       Where dependencies should be found."
 	echo "  --sysconfdir   Where the config should be read from."
 	echo "  --gamesdir     Where binaries should be installed."
+	echo "  --libdir       Where libraries should be installed."
 	echo "  --bindir       Where utilities should be installed."
-	echo "  --sharedir     Where resources should be installed." 
+	echo "  --sharedir     Where resources should be installed."
 	echo
 	echo "Supported [platform] values:"
 	echo
@@ -21,7 +22,9 @@ usage() {
 	echo "  mingw64        Use MinGW64 on Linux, to build for win64"
 	echo "  unix           Unix-like / Linux / Solaris / BSD / Embedded"
 	echo "  unix-devel     As above, but for running from current dir"
-	echo "  darwin         Macintosh OS X (not Classic)"
+	echo "  darwin         Mac OS X Unix-like install"
+	echo "  darwin-devel   Mac OS X running from current dir"
+	echo "  darwin-dist    Mac OS X (PPC .app builds -- use Xcode for Intel)"
 	echo "  psp            Experimental PSP port"
 	echo "  gp2x           Experimental GP2X port"
 	echo "  nds            Experimental NDS port"
@@ -33,42 +36,44 @@ usage() {
 	echo
 	echo "Supported <option> values (negatives can be used):"
 	echo
-	echo "  --as-needed-hack      Pass --as-needed through to GNU ld."
-	echo "  --enable-release      Optimize and remove debugging code."
-	echo "  --enable-verbose      Build system is always verbose (V=1)."
-	echo "  --optimize-size       Perform size optimizations (-Os)."
-	echo "  --disable-datestamp   Disable adding date to version."
-	echo "  --disable-editor      Disable the built-in editor."
-	echo "  --disable-mzxrun      Disable generation of separate MZXRun."
-	echo "  --disable-helpsys     Disable the built-in help system."
-	echo "  --disable-utils       Disable compilation of utils."
-	echo "  --disable-x11         Disable X11, removing binary dependency."
-	echo "  --disable-software    Disable software renderer."
-	echo "  --disable-gl          Disable all GL renderers."
-	echo "  --disable-gl-fixed    Disable GL renderers for fixed-function h/w."
-	echo "  --disable-gl-prog     Disable GL renderers for programmable h/w."
-	echo "  --disable-overlay     Disable all overlay renderers."
-	echo "  --enable-gp2x         Enables half-res software renderer."
-	echo "  --disable-xmp         Disable XMP music engine."
-	echo "  --enable-modplug      Enables ModPlug music engine."
-	echo "  --enable-mikmod       Enables MikMod music engine."
-	echo "  --enable-openmpt      Enables OpenMPT music engine."
-	echo "  --disable-libpng      Disable PNG screendump support."
-	echo "  --disable-audio       Disable all audio (sound + music)."
-	echo "  --enable-tremor       Switches out libvorbis for libtremor."
-	echo "  --disable-pthread     Use SDL's locking instead of pthread."
-	echo "  --disable-icon        Do not try to brand executable."
-	echo "  --disable-modular     Disable dynamically shared objects."
-	echo "  --disable-updater     Disable built-in updater."
-	echo "  --disable-network     Disable networking abilities."
-	echo "  --enable-meter        Enable load/save meter display."
-	echo "  --disable-sdl         Disables SDL dependencies and features."
-	echo "  --enable-egl          Enables EGL backend (if SDL disabled)."
-	echo "  --disable-check-alloc Disables memory allocator error handling."
-	echo "  --disable-uthash      Disables hash counter/string lookups."
-	echo "  --enable-debytecode   Enable experimental 'debytecode' transform."
-	echo "  --disable-libsdl2     Disable SDL 2.0 support (falls back on 1.2)."
-	echo "  --enable-fps          Enable frames-per-second counter."
+	echo "  --as-needed-hack        Pass --as-needed through to GNU ld."
+	echo "  --enable-release        Optimize and remove debugging code."
+	echo "  --enable-verbose        Build system is always verbose (V=1)."
+	echo "  --optimize-size         Perform size optimizations (-Os)."
+	echo "  --disable-datestamp     Disable adding date to version."
+	echo "  --disable-editor        Disable the built-in editor."
+	echo "  --disable-mzxrun        Disable generation of separate MZXRun."
+	echo "  --disable-helpsys       Disable the built-in help system."
+	echo "  --disable-utils         Disable compilation of utils."
+	echo "  --disable-x11           Disable X11, removing binary dependency."
+	echo "  --disable-software      Disable software renderer."
+	echo "  --disable-gl            Disable all GL renderers."
+	echo "  --disable-gl-fixed      Disable GL renderers for fixed-function h/w."
+	echo "  --disable-gl-prog       Disable GL renderers for programmable h/w."
+	echo "  --disable-overlay       Disable all overlay renderers."
+	echo "  --enable-gp2x           Enables half-res software renderer."
+	echo "  --disable-xmp           Disable XMP music engine."
+	echo "  --enable-modplug        Enables ModPlug music engine."
+	echo "  --enable-mikmod         Enables MikMod music engine."
+	echo "  --enable-openmpt        Enables OpenMPT music engine."
+	echo "  --disable-libpng        Disable PNG screendump support."
+	echo "  --disable-audio         Disable all audio (sound + music)."
+	echo "  --disable-vorbis        Disable ogg/vorbis support."
+	echo "  --enable-tremor         Switches out libvorbis for libvorbisidec."
+	echo "  --enable-tremor-lowmem  Switches out libvorbis for libvorbisidec (lowmem branch)."
+	echo "  --disable-pthread       Use SDL's threads/locking instead of pthread."
+	echo "  --disable-icon          Do not try to brand executable."
+	echo "  --disable-modular       Disable dynamically shared objects."
+	echo "  --disable-updater       Disable built-in updater."
+	echo "  --disable-network       Disable networking abilities."
+	echo "  --enable-meter          Enable load/save meter display."
+	echo "  --disable-sdl           Disables SDL dependencies and features."
+	echo "  --enable-egl            Enables EGL backend (if SDL disabled)."
+	echo "  --disable-check-alloc   Disables memory allocator error handling."
+	echo "  --disable-uthash        Disables hash counter/string lookups."
+	echo "  --enable-debytecode     Enable experimental 'debytecode' transform."
+	echo "  --disable-libsdl2       Disable SDL 2.0 support (falls back on 1.2)."
+	echo "  --enable-fps            Enable frames-per-second counter."
 	echo
 	echo "e.g.: ./config.sh --platform unix --prefix /usr"
 	echo "                  --sysconfdir /etc --disable-x11"
@@ -84,10 +89,19 @@ usage() {
 PLATFORM=""
 PREFIX="/usr"
 SYSCONFDIR="/etc"
-GAMESDIR="${PREFIX}/games"
-BINDIR="${PREFIX}/bin"
-SHAREDIR="${PREFIX}/share"
-SYSCONFDIR_SET="false"
+SYSCONFDIR_IS_SET="false"
+GAMESDIR_IS_SET="false"
+GAMESDIR_IN_PREFIX="/games"
+GAMESDIR="${PREFIX}${GAMESDIR_IN_PREFIX}"
+LIBDIR_IS_SET="false"
+LIBDIR_IN_PREFIX="/lib"
+LIBDIR="${PREFIX}${LIBDIR_IN_PREFIX}"
+BINDIR_IS_SET="false"
+BINDIR_IN_PREFIX="/bin"
+BINDIR="${PREFIX}${BINDIR_IN_PREFIX}"
+SHAREDIR_IS_SET="false"
+SHAREDIR_IN_PREFIX="/share"
+SHAREDIR="${PREFIX}${SHAREDIR_IN_PREFIX}"
 DATE_STAMP="true"
 AS_NEEDED="false"
 RELEASE="false"
@@ -108,7 +122,7 @@ MIKMOD="false"
 OPENMPT="false"
 LIBPNG="true"
 AUDIO="true"
-TREMOR="false"
+VORBIS="true"
 PTHREAD="true"
 ICON="true"
 MODULAR="true"
@@ -138,31 +152,57 @@ while [ "$1" != "" ]; do
 	if [ "$1" = "--prefix" ]; then
 		shift
 		PREFIX="$1"
+		# Update other install folders to match
+		if [ "$GAMESDIR_IS_SET" = "false" ]; then
+			GAMESDIR="${PREFIX}${GAMESDIR_IN_PREFIX}"
+		fi
+
+		if [ "$LIBDIR_IS_SET" = "false" ]; then
+			LIBDIR="${PREFIX}${LIBDIR_IN_PREFIX}"
+		fi
+
+		if [ "$BINDIR_IS_SET" = "false" ]; then
+			BINDIR="${PREFIX}${BINDIR_IN_PREFIX}"
+		fi
+
+		if [ "$SHAREDIR_IS_SET" = "false" ]; then
+			SHAREDIR="${PREFIX}${SHAREDIR_IN_PREFIX}"
+		fi
 	fi
 
 	# e.g. --sysconfdir /etc
 	if [ "$1" = "--sysconfdir" ]; then
 		shift
 		SYSCONFDIR="$1"
-		SYSCONFDIR_SET="true"
+		SYSCONFDIR_IS_SET="true"
 	fi
 
 	# e.g. --gamesdir /usr/games
 	if [ "$1" = "--gamesdir" ]; then
 		shift
 		GAMESDIR="$1"
+		GAMESDIR_IS_SET="true"
+	fi
+
+	# e.g. --libdir /usr/lib
+	if [ "$1" = "--libdir" ]; then
+		shift
+		LIBDIR="$1"
+		LIBDIR_IS_SET="true"
 	fi
 
 	# e.g. --bindir /usr/bin
 	if [ "$1" = "--bindir" ]; then
 		shift
 		BINDIR="$1"
+		BINDIR_IS_SET="true"
 	fi
 
 	# e.g. --sharedir /usr/share
 	if [ "$1" = "--sharedir" ]; then
 		shift
 		SHAREDIR="$1"
+		SHAREDIR_IS_SET="true"
 	fi
 
 	[ "$1" = "--as-needed-hack" ] && AS_NEEDED="true"
@@ -227,8 +267,14 @@ while [ "$1" != "" ]; do
 	[ "$1" = "--disable-audio" ] && AUDIO="false"
 	[ "$1" = "--enable-audio" ]  && AUDIO="true"
 
-	[ "$1" = "--disable-tremor" ] && TREMOR="false"
-	[ "$1" = "--enable-tremor" ]  && TREMOR="true"
+	[ "$1" = "--disable-vorbis" ] && VORBIS="false"
+	[ "$1" = "--enable-vorbis" ]  && VORBIS="true"
+
+	[ "$1" = "--disable-tremor" ] && VORBIS="true"
+	[ "$1" = "--enable-tremor" ]  && VORBIS="tremor"
+
+	[ "$1" = "--disable-tremor-lowmem" ] && VORBIS="true"
+	[ "$1" = "--enable-tremor-lowmem" ]  && VORBIS="tremor-lowmem"
 
 	[ "$1" = "--disable-pthread" ] && PTHREAD="false"
 	[ "$1" = "--enable-pthread" ]  && PTHREAD="true"
@@ -290,7 +336,7 @@ fi
 
 ### PLATFORM DEFINITION #######################################################
 
-echo "PREFIX?=$PREFIX" > platform.inc
+echo "PREFIX:=$PREFIX" > platform.inc
 
 if [ "$PLATFORM" = "win32"   -o "$PLATFORM" = "win64" \
   -o "$PLATFORM" = "mingw32" -o "$PLATFORM" = "mingw64" ]; then
@@ -322,27 +368,33 @@ elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 
 	if [ "$MACH" = "x86_64" -o "$MACH" = "amd64" ]; then
 		ARCHNAME=amd64
-		LIBDIR=lib64
-		# FIXME: FreeBSD amd64 hack
-		[ "$UNIX" = "freebsd" ] && LIBDIR=lib
+		#RAWLIBDIR=lib64
+		# FreeBSD amd64 hack
+		#[ "$UNIX" = "freebsd" ] && RAWLIBDIR=lib
 	elif [ "`echo $MACH | sed 's,i.86,x86,'`" = "x86" ]; then
 		ARCHNAME=x86
-		LIBDIR=lib
+		#RAWLIBDIR=lib
 	elif [ "`echo $MACH | sed 's,^arm.*,arm,'`" = "arm" ]; then
 		ARCHNAME=arm
-		LIBDIR=lib
+		#RAWLIBDIR=lib
 	elif [ "$MACH" == "ppc" ]; then
 		ARCHNAME=ppc
-		LIBDIR=lib
+		#RAWLIBDIR=lib
 	else
 		ARCHNAME=$MACH
-		LIBDIR=lib # The default for most systems
+		#RAWLIBDIR=lib
 		echo "WARNING: Compiling on an unsupported architecture. Add a friendly MACH to config.sh."
 	fi
 
 	echo "#define PLATFORM \"$UNIX-$ARCHNAME\"" > src/config.h
 	echo "SUBPLATFORM=$UNIX-$ARCHNAME"         >> platform.inc
 	echo "PLATFORM=unix"                       >> platform.inc
+elif [ "$PLATFORM" = "darwin" -o "$PLATFORM" = "darwin-devel" \
+ -o "$PLATFORM" = "darwin-dist" ]; then
+
+	echo "#define PLATFORM \"darwin\""    > src/config.h
+	echo "SUBPLATFORM=$PLATFORM"         >> platform.inc
+	echo "PLATFORM=darwin"               >> platform.inc
 else
 	if [ ! -d arch/$PLATFORM ]; then
 		echo "Invalid platform selection (see arch/)."
@@ -354,28 +406,24 @@ else
 	echo "PLATFORM=$PLATFORM"            >> platform.inc
 fi
 
-if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
-	echo "RAWLIBDIR=${LIBDIR}" >> platform.inc
-fi
-
-if [ "$PLATFORM" = "unix" ]; then
-	echo "LIBDIR=\${PREFIX}/${LIBDIR}/megazeux" >> platform.inc
+if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "darwin" ]; then
+	LIBDIR="${LIBDIR}/megazeux"
 elif [ "$PLATFORM" = "android" ]; then
-	echo "LIBDIR=/data/megazeux" >> platform.inc
+	LIBDIR="/data/megazeux"
 else
-	echo "LIBDIR=." >> platform.inc
+	LIBDIR="."
 fi
 
 ### SYSTEM CONFIG DIRECTORY ###################################################
 
-if [ "$PLATFORM" = "darwin" ]; then
+if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "darwin" ]; then
+	: # Use default or user-defined SYSCONFDIR
+elif [ "$PLATFORM" = "darwin-dist" ]; then
 	SYSCONFDIR="../Resources"
 elif [ "$PLATFORM" = "android" ]; then
 	SYSCONFDIR="/data/megazeux"
-elif [ "$PLATFORM" != "unix" ]; then
-	if [ "$SYSCONFDIR_SET" != "true" ]; then
-		SYSCONFDIR="."
-	fi
+elif [ "$SYSCONFDIR_IS_SET" != "true" ]; then
+	SYSCONFDIR="."
 fi
 
 ### SUMMARY OF OPTIONS ########################################################
@@ -408,9 +456,9 @@ echo "#define CONFDIR \"$SYSCONFDIR/\"" >> src/config.h
 # Some platforms may have filesystem hierarchies they need to fit into
 # FIXME: SHAREDIR should be hardcoded in fewer cases
 #
-if [ "$PLATFORM" = "unix" ]; then
-	echo "#define CONFFILE \"megazeux-config\""        >> src/config.h
-	echo "#define SHAREDIR \"$SHAREDIR/megazeux/\""    >> src/config.h
+if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "darwin" ]; then
+	echo "#define CONFFILE \"megazeux-config\""      >> src/config.h
+	echo "#define SHAREDIR \"$SHAREDIR/megazeux/\""  >> src/config.h
 	echo "#define USERCONFFILE \".megazeux-config\"" >> src/config.h
 elif [ "$PLATFORM" = "nds" ]; then
 	SHAREDIR=/games/megazeux
@@ -422,7 +470,7 @@ elif [ "$PLATFORM" = "3ds" ]; then
 	SHAREDIR=/3ds/megazeux
 	GAMESDIR=$SHAREDIR
 	BINDIR=$SHAREDIR
-	echo "#define CONFFILE \"$SHAREDIR/config.txt\"" >> src/config.h
+	echo "#define CONFFILE \"config.txt\"" >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 elif [ "$PLATFORM" = "wii" ]; then
 	SHAREDIR=/apps/megazeux
@@ -430,12 +478,12 @@ elif [ "$PLATFORM" = "wii" ]; then
 	BINDIR=$SHAREDIR
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
-elif [ "$PLATFORM" = "darwin" ]; then
+elif [ "$PLATFORM" = "darwin-dist" ]; then
 	SHAREDIR=../Resources
 	GAMESDIR=$SHAREDIR
 	BINDIR=$SHAREDIR
-	echo "#define CONFFILE \"config.txt\""             >> src/config.h
-	echo "#define SHAREDIR \"$SHAREDIR\""              >> src/config.h
+	echo "#define CONFFILE \"config.txt\""           >> src/config.h
+	echo "#define SHAREDIR \"$SHAREDIR\""            >> src/config.h
 	echo "#define USERCONFFILE \".megazeux-config\"" >> src/config.h
 elif [ "$PLATFORM" = "android" ]; then
 	SHAREDIR=/data/megazeux
@@ -452,10 +500,12 @@ else
 fi
 
 #
-# Some architectures define an "install" target, and need these.
+# LIBDIR is required by several platforms that support modular builds.
+# Some architectures define an "install" target, and need the rest.
 #
 echo "SYSCONFDIR=$SYSCONFDIR" >> platform.inc
 echo "GAMESDIR=$GAMESDIR"     >> platform.inc
+echo "LIBDIR=$LIBDIR"         >> platform.inc
 echo "BINDIR=$BINDIR"         >> platform.inc
 echo "SHAREDIR=$SHAREDIR"     >> platform.inc
 
@@ -618,12 +668,11 @@ if [ "$GL" = "false" ]; then
 fi
 
 #
-# Force-enable tremor on PSP/GP2X/3DS
+# Force-enable tremor-lowmem on GP2X
 #
-if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" \
-  -o "$PLATFORM" = "android" -o "$PLATFORM" = "3ds" ]; then
-	echo "Force-switching ogg/vorbis to tremor."
-	TREMOR="true"
+if [ "$PLATFORM" = "gp2x" -o "$PLATFORM" = "android" ]; then
+	echo "Force-switching ogg/vorbis to tremor-lowmem."
+	VORBIS="tremor-lowmem"
 fi
 
 #
@@ -656,21 +705,29 @@ if [ "$PLATFORM" = "gp2x" -o "$PLATFORM" = "nds" \
 fi
 
 #
-# Force disable networking.
+# Force disable networking (unsupported platform or no editor build)
+# Also disable all network applications
 #
-if [ "$EDITOR" = "false" -o "$PLATFORM" = "unix" -o "$PLATFORM" = "psp" \
-  -o "$PLATFORM" = "3ds" \
-  -o "$PLATFORM" = "nds" -o "$PLATFORM" = "wii" ]; then
-	echo "Force-disabling networking (nonsensical or unsupported)."
+if [ "$EDITOR" = "false" -o "$PLATFORM" = "nds" ]; then
+	echo "Force-disabling networking (unsupported platform or editor disabled)."
 	NETWORK="false"
+	UPDATER="false"
 fi
 
 #
-# Force disable updater.
+# Force disable updater (unsupported platform)
 #
-if [ "$UPDATER" = "true" -a "$NETWORK" = "false" ]; then
-	echo "Force-disabling updater (networking disabled)."
+if [ "$PLATFORM" != "mingw" ]; then
+	echo "Force-disabling updater (unsupported platform)."
 	UPDATER="false"
+fi
+
+#
+# Force disable networking (no applications enabled)
+#
+if [ "$NETWORK" = "true" -a "$UPDATER" = "false" ]; then
+	echo "Force-disabling networking (no network applications enabled)."
+	NETWORK="false"
 fi
 
 #
@@ -805,7 +862,8 @@ fi
 # Force disable icon branding.
 #
 if [ "$ICON" = "true" ]; then
-	if [ "$PLATFORM" = "darwin" -o "$PLATFORM" = "gp2x" \
+	if [ "$PLATFORM" = "darwin" -o "$PLATFORM" = "darwin-devel" \
+	  -o "$PLATFORM" = "darwin-dist" -o "$PLATFORM" = "gp2x" \
 	  -o "$PLATFORM" = "psp" -o "$PLATFORM" = "nds" \
 	  -o "$PLATFORM" = "wii" ]; then
 		echo "Force-disabling icon branding (redundant)."
@@ -929,25 +987,37 @@ else
 fi
 
 #
-# Handle libtremor support, if enabled
+# Handle vorbis support, if enabled
 #
-if [ "$TREMOR" = "true" ]; then
+if [ "$VORBIS" = "true" ]; then
+	echo "Using ogg/vorbis."
+	echo "#define CONFIG_VORBIS" >> src/config.h
+	echo "VORBIS=vorbis" >> platform.inc
+
+elif [ "$VORBIS" = "tremor" ]; then
 	echo "Using tremor in place of ogg/vorbis."
+	echo "#define CONFIG_VORBIS" >> src/config.h
 	echo "#define CONFIG_TREMOR" >> src/config.h
-	echo "TREMOR=1" >> platform.inc
+	echo "VORBIS=tremor" >> platform.inc
+
+elif [ "$VORBIS" = "tremor-lowmem" ]; then
+	echo "Using tremor (lowmem) in place of ogg/vorbis."
+	echo "#define CONFIG_VORBIS" >> src/config.h
+	echo "#define CONFIG_TREMOR" >> src/config.h
+	echo "VORBIS=tremor-lowmem" >> platform.inc
 else
-	echo "Not using tremor in place of ogg/vorbis."
+	echo "Ogg/vorbis disabled."
 fi
 
 #
 # Handle pthread mutexes, if enabled
 #
 if [ "$PTHREAD" = "true" ]; then
-	echo "Using pthread for locking primitives."
-	echo "#define CONFIG_PTHREAD_MUTEXES" >> src/config.h
+	echo "Using pthread for threads/locking primitives."
+	echo "#define CONFIG_PTHREAD" >> src/config.h
 	echo "PTHREAD=1" >> platform.inc
 else
-	echo "Not using pthread for locking primitives."
+	echo "Not using pthread for threads/locking primitives."
 fi
 
 #

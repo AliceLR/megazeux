@@ -67,19 +67,25 @@ enum resource_id
   MZX_HELP_FIL,
 #endif
 #ifdef CONFIG_RENDER_GL_PROGRAM
-  SHADERS_SCALER_DIRECTORY,
-  SHADERS_SCALER_VERT,
-  SHADERS_SCALER_FRAG,
-  SHADERS_TILEMAP_VERT,
-  SHADERS_TILEMAP_FRAG,
-  SHADERS_TILEMAP_SMZX_FRAG,
-  SHADERS_MOUSE_VERT,
-  SHADERS_MOUSE_FRAG,
-  SHADERS_CURSOR_VERT,
-  SHADERS_CURSOR_FRAG,
+  GLSL_SHADER_SCALER_DIRECTORY,
+  GLSL_SHADER_SCALER_VERT,
+  GLSL_SHADER_SCALER_FRAG,
+  GLSL_SHADER_TILEMAP_VERT,
+  GLSL_SHADER_TILEMAP_FRAG,
+  GLSL_SHADER_TILEMAP_SMZX_FRAG,
+  GLSL_SHADER_MOUSE_VERT,
+  GLSL_SHADER_MOUSE_FRAG,
+  GLSL_SHADER_CURSOR_VERT,
+  GLSL_SHADER_CURSOR_FRAG,
 #endif
   END_RESOURCE_ID_T // must be last
 };
+
+#ifdef CONFIG_RENDER_GL_PROGRAM
+#define GLSL_SHADER_RES_FIRST GLSL_SHADER_SCALER_VERT
+#define GLSL_SHADER_RES_LAST  GLSL_SHADER_CURSOR_FRAG
+#define GLSL_SHADER_RES_COUNT (GLSL_SHADER_RES_LAST - GLSL_SHADER_RES_FIRST + 1)
+#endif
 
 CORE_LIBSPEC int mzx_res_init(const char *argv0, bool editor);
 CORE_LIBSPEC void mzx_res_free(void);
@@ -99,6 +105,7 @@ void rng_set_seed(unsigned long long seed);
 unsigned int Random(unsigned long long range);
 
 CORE_LIBSPEC void add_ext(char *src, const char *ext);
+CORE_LIBSPEC int get_ext_pos(const char *filename);
 CORE_LIBSPEC ssize_t get_path(const char *file_name, char *dest, unsigned int buf_len);
 #ifdef CONFIG_UTILS
 ssize_t __get_path(const char *file_name, char *dest, unsigned int buf_len);
@@ -156,7 +163,7 @@ int mem_getw(const unsigned char **ptr);
 void mem_putc(int src, unsigned char **ptr);
 void mem_putd(int src, unsigned char **ptr);
 void mem_putw(int src, unsigned char **ptr);
- 
+
 CORE_LIBSPEC int memsafegets(char *dest, int size, char **src, char *end);
 
 #if defined(__WIN32__) && defined(__STRICT_ANSI__)
@@ -185,10 +192,6 @@ CORE_LIBSPEC char *strsep(char **stringp, const char *delim);
 
 #if defined(__WIN32__) && !defined(_MSC_VER)
 #define mkdir(file,mode) mkdir(file)
-#endif
-
-#if defined(CONFIG_AUDIO) || defined(CONFIG_EDITOR)
-CORE_LIBSPEC extern const char *const mod_gdm_ext[];
 #endif
 
 #if defined(__amigaos__)

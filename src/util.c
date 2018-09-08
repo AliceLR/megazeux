@@ -53,31 +53,31 @@ struct mzx_resource
  */
 static struct mzx_resource mzx_res[] = {
 #define ASSETS "assets/"
-  { CONFFILE,                      NULL, false },
-  { ASSETS "default.chr",          NULL, false },
-  { ASSETS "edit.chr",             NULL, false },
-  { ASSETS "smzx.pal",             NULL, false },
+  { CONFFILE,                           NULL, false },
+  { ASSETS "default.chr",               NULL, false },
+  { ASSETS "edit.chr",                  NULL, false },
+  { ASSETS "smzx.pal",                  NULL, false },
 #ifdef CONFIG_EDITOR
-  { ASSETS "ascii.chr",            NULL, true },
-  { ASSETS "blank.chr",            NULL, true },
-  { ASSETS "smzx.chr",             NULL, true },
+  { ASSETS "ascii.chr",                 NULL, true },
+  { ASSETS "blank.chr",                 NULL, true },
+  { ASSETS "smzx.chr",                  NULL, true },
 #endif
 #ifdef CONFIG_HELPSYS
-  { ASSETS "help.fil",             NULL, true },
+  { ASSETS "help.fil",                  NULL, true },
 #endif
 #ifdef CONFIG_RENDER_GL_PROGRAM
-#define SHADERS ASSETS "shaders/"
-#define SCALERS SHADERS "scalers/"
-  { SCALERS,                       NULL, false },
-  { SHADERS "scaler.vert",         NULL, false },
-  { SCALERS "semisoft.frag",       NULL, false },
-  { SHADERS "tilemap.vert",        NULL, false },
-  { SHADERS "tilemap.frag",        NULL, false },
-  { SHADERS "tilemap.smzx.frag",   NULL, false },
-  { SHADERS "mouse.vert",          NULL, false },
-  { SHADERS "mouse.frag",          NULL, false },
-  { SHADERS "cursor.vert",         NULL, false },
-  { SHADERS "cursor.frag",         NULL, false },
+#define GLSL_SHADERS ASSETS "glsl/"
+#define GLSL_SCALERS GLSL_SHADERS "scalers/"
+  { GLSL_SCALERS,                       NULL, false },
+  { GLSL_SHADERS "scaler.vert",         NULL, false },
+  { GLSL_SCALERS "semisoft.frag",       NULL, false },
+  { GLSL_SHADERS "tilemap.vert",        NULL, false },
+  { GLSL_SHADERS "tilemap.frag",        NULL, false },
+  { GLSL_SHADERS "tilemap.smzx.frag",   NULL, false },
+  { GLSL_SHADERS "mouse.vert",          NULL, false },
+  { GLSL_SHADERS "mouse.frag",          NULL, false },
+  { GLSL_SHADERS "cursor.vert",         NULL, false },
+  { GLSL_SHADERS "cursor.frag",         NULL, false },
 #endif
 };
 
@@ -244,36 +244,36 @@ static unsigned char copy_buffer[COPY_BUFFER_SIZE];
 
 char *mzx_res_get_by_id(enum resource_id id)
 {
-  #ifdef USERCONFFILE
+#ifdef USERCONFFILE
   static char userconfpath[MAX_PATH];
-  if (id == CONFIG_TXT)
+  if(id == CONFIG_TXT)
   {
     FILE *fp;
 
     // Special handling for CONFIG_TXT to allow for user
     // configuration files
     sprintf(userconfpath, "%s/%s", getenv("HOME"), USERCONFFILE);
-    
+
     // Check if the file can be opened for reading
     fp = fopen_unsafe(userconfpath, "rb");
-    
-    if (fp)
+
+    if(fp)
     {
       fclose(fp);
       return (char *)userconfpath;
     }
     // Otherwise, try to open the file for writing
     fp = fopen_unsafe(userconfpath, "wb");
-    if (fp)
+    if(fp)
     {
       FILE *original = fopen_unsafe(mzx_res[id].path, "rb");
-      if (original)
+      if(original)
       {
         size_t bytes_read;
-        for (;;)
+        for(;;)
         {
           bytes_read = fread(copy_buffer, 1, COPY_BUFFER_SIZE, original);
-          if (bytes_read)
+          if(bytes_read)
             fwrite(copy_buffer, 1, bytes_read, fp);
           else
             break;
@@ -287,7 +287,7 @@ char *mzx_res_get_by_id(enum resource_id id)
 
     // If that's no good, just read the normal config file
   }
-  #endif /* USERCONFFILE */
+#endif /* USERCONFFILE */
   return mzx_res[id].path;
 }
 
@@ -369,13 +369,13 @@ void rng_set_seed(unsigned long long seed)
 // Implementation from https://en.wikipedia.org/wiki/Xorshift
 unsigned int Random(unsigned long long range)
 {
-	unsigned long long x = rng_state;
-  if (x == 0) x = 1;
-	x ^= x >> 12; // a
-	x ^= x << 25; // b
-	x ^= x >> 27; // c
-	rng_state = x;
-	return ((x * 0x2545F4914F6CDD1D) >> 32) * range / 0xFFFFFFFF;
+  unsigned long long x = rng_state;
+  if(x == 0) x = 1;
+  x ^= x >> 12; // a
+  x ^= x << 25; // b
+  x ^= x >> 27; // c
+  rng_state = x;
+  return ((x * 0x2545F4914F6CDD1D) >> 32) * range / 0xFFFFFFFF;
 }
 
 // FIXME: This function should probably die. It's unsafe.
@@ -387,8 +387,20 @@ void add_ext(char *src, const char *ext)
   if((src_len < ext_len) || (src[src_len - ext_len] != '.') ||
    strcasecmp(src + src_len - ext_len, ext))
   {
-    strncat(src, ext, ext_len);
+    strcat(src, ext);
   }
+}
+
+int get_ext_pos(const char *filename)
+{
+  int filename_length = strlen(filename);
+  int ext_pos;
+
+  for(ext_pos = filename_length - 1; ext_pos >= 0; ext_pos--)
+    if(filename[ext_pos] == '.')
+      break;
+
+  return ext_pos;
 }
 
 __utils_maybe_static ssize_t __get_path(const char *file_name, char *dest,
@@ -523,101 +535,124 @@ int create_path_if_not_exists(const char *filename)
 int change_dir_name(char *path_name, const char *dest)
 {
   struct stat stat_info;
+  char path_temp[MAX_PATH];
   char path[MAX_PATH];
-  char *colon_loc;
-  int size;
+  const char *current;
+  const char *next;
+  const char *end;
+  char current_char;
+  size_t len;
 
   if(!dest || !dest[0])
-    return -2;
+    return -1;
 
   if(!path_name)
     return -1;
 
-  colon_loc = strchr(dest, ':');
+  current = dest;
+  end = dest + strlen(dest);
 
-  // Stop!  recursion time
-  if(strchr(dest, DIR_SEPARATOR_CHAR) || colon_loc)
+  // Destination starts with a root directory.
+#if defined(__WIN32__) || defined(CONFIG_WII)
+
+  if(dest[0] == DIR_SEPARATOR_CHAR)
+    return -1;
+
+  next = strchr(dest, ':');
+  if(next)
   {
-    char dir_element[MAX_PATH];
-    unsigned int i, dir_start = 0;
+    if(next[1] != DIR_SEPARATOR_CHAR && next[1] != 0)
+      return -1;
 
-    strncpy(path, dest, MAX_PATH - 1);
-    path[MAX_PATH - 1] = 0;
-
-    if(path[strlen(path) - 1] == ':')
-      strcat(path, DIR_SEPARATOR);
+    snprintf(path, MAX_PATH, "%.*s" DIR_SEPARATOR, (int)(next - dest + 1),
+     dest);
 
     if(stat(path, &stat_info) < 0)
-      return -20;
+      return -1;
 
-    for(i = 0; i <= strlen(path); i++)
+    current = next + 1;
+    if(current[0] == DIR_SEPARATOR_CHAR)
+      current++;
+  }
+  else
+  {
+    if(path_name[strlen(path_name) - 1] != DIR_SEPARATOR_CHAR)
+      snprintf(path, MAX_PATH, "%s" DIR_SEPARATOR, path_name);
+
+    else
+      strcpy(path, path_name);
+  }
+
+#else /* !defined(__WIN32__) && !defined(CONFIG_WII) */
+
+  if(dest[0] == DIR_SEPARATOR_CHAR)
+  {
+    strcpy(path, DIR_SEPARATOR);
+    current = dest + 1;
+  }
+  else
+  {
+    if(path_name[strlen(path_name) - 1] != DIR_SEPARATOR_CHAR)
+      snprintf(path, MAX_PATH, "%s" DIR_SEPARATOR, path_name);
+
+    else
+      strcpy(path, path_name);
+  }
+
+#endif /* !defined(__WIN32__) && !defined(CONFIG_WII) */
+
+  current_char = current[0];
+  len = strlen(path);
+
+  // Apply directory fragments to the path.
+  while(current_char != 0)
+  {
+    // Increment next to skip the separator so it will be copied over.
+    next = strchr(current, DIR_SEPARATOR_CHAR);
+    if(!next) next = end;
+    else      next++;
+
+    // . does nothing, .. goes back one level
+    if(current_char == '.')
     {
-      if((path[i] == DIR_SEPARATOR_CHAR) || (i == strlen(path)))
+      if(current[1] == '.')
       {
-        // Root directory.  Remember colon_loc is relative to dest, not path
-        if((i == 0) || (colon_loc && (size_t)(colon_loc - dest) < i))
+        // Skip the rightmost separator (current level) and look for the
+        // previous separator. If found, truncate the path to it.
+        char *pos = path + len - 1;
+        do
         {
-          strncpy(path_name, path, i+1);
-          path_name[i + 1] = '\0';
+          pos--;
         }
-        else if (i != dir_start)
-        {
-          int res;
-          strncpy(dir_element, path + dir_start, i-dir_start);
-          dir_element[i - dir_start] = '\0';
-          res = change_dir_name(path_name, dir_element);
-          if(res)
-            return res;
-        }
+        while(pos >= path && *pos != DIR_SEPARATOR_CHAR);
 
-        dir_start = i + 1;
+        if(pos >= path)
+        {
+          pos[1] = 0;
+          len = strlen(path);
+        }
       }
     }
+    else
+    {
+      snprintf(path + len, MAX_PATH - len, "%.*s", (int)(next - current),
+       current);
+      len = strlen(path);
+    }
 
+    current = next;
+    current_char = current[0];
+  }
+
+  // This needs to be done before the stat for some platforms (e.g. 3DS)
+  clean_path_slashes(path, path_temp, MAX_PATH);
+  if(stat(path_temp, &stat_info) >= 0)
+  {
+    strcpy(path_name, path_temp);
     return 0;
   }
 
-  // Check for the special . and ..
-  if(dest[0] == '.')
-  {
-    if((dest[1] == '.') && (dest[2] == '\0'))
-    {
-      size = get_path(path_name, path, MAX_PATH);
-
-      // Fix ..ing to root paths
-      if(path[strlen(path) - 1] == ':')
-        strcat(path, DIR_SEPARATOR);
-
-      if(size > 0)
-      {
-        strcpy(path_name, path);
-        return 0;
-      }
-      else
-
-      //One step above root on unix-based systems
-      if(path_name[0] == '/')
-      {
-        strcpy(path_name, "/");
-        return 0;
-      }
-
-    }
-    else if (dest[1] == '\0')
-      return 0;
-  }
-
-  join_path_names(path, MAX_PATH, path_name, dest);
-  path[MAX_PATH - 1] = 0;
-
-  if(stat(path, &stat_info) >= 0)
-  {
-    clean_path_slashes(path, path_name, MAX_PATH - 1);
-    path_name[MAX_PATH - 1] = 0;
-    return 0;
-  }
-
-  return -3;
+  return -1;
 }
 
 
@@ -678,23 +713,33 @@ void *boyer_moore_search(void *A, size_t a_len, void *B, size_t b_len,
   unsigned char *b = (unsigned char *)B;
   size_t i = b_len - 1;
   int j;
-  if(!ignore_case) {
-    while(i < a_len) {
+  if(!ignore_case)
+  {
+    while(i < a_len)
+    {
       j = b_len - 1;
+
       while(j >= 0 && a[i] == b[j])
         j--, i--;
+
       if(j == -1)
         return (void *)(a + i);
+
       i += MAX(1, index[(int)a[i]]) + (b_len - j - 1);
     }
   }
-  else {
-    while(i < a_len) {
+  else
+  {
+    while(i < a_len)
+    {
       j = b_len - 1;
+
       while(j >= 0 && tolower((int)a[i]) == tolower((int)b[j]))
         j--, i--;
+
       if(j == -1)
         return (void *)(a + i);
+
       i += MAX(1, index[tolower((int)a[i])]) + (b_len - j - 1);
     }
   }
@@ -951,25 +996,9 @@ bool dir_get_next_entry(struct mzx_dir *dir, char *entry)
     return false;
   }
 
-  strncpy(entry, inode->d_name, PATH_BUF_LEN - 1);
-  entry[PATH_BUF_LEN - 1] = 0;
+  snprintf(entry, PATH_BUF_LEN, "%s", inode->d_name);
   return true;
 }
-
-#if defined(CONFIG_AUDIO) || defined(CONFIG_EDITOR)
-
-/* It would be nice if this could be static, but we can't put it in either
- * edit.c or audio.c, because one (but NOT the other) might be disabled.
- *
- * In this case, the code wouldn't be compiled (noticed by the PSP port).
- */
-const char *const mod_gdm_ext[] =
-{
-  ".xm", ".s3m", ".mod", ".med", ".mtm", ".stm", ".it", ".669", ".ult",
-  ".wav", ".dsm", ".far", ".okt", ".amf", ".ogg", ".gdm", NULL
-};
-
-#endif // CONFIG_AUDIO || CONFIG_EDITOR
 
 #if defined(__amigaos__)
 
@@ -984,11 +1013,13 @@ void __stack_chk_fail(void)
 #endif // __amigaos__
 
 #if defined(CONFIG_PSP) || defined(CONFIG_NDS)
-FILE *popen(const char *command, const char *type) {
+FILE *popen(const char *command, const char *type)
+{
 	return NULL;
 }
 
-int pclose(FILE *stream) {
+int pclose(FILE *stream)
+{
 	return 0;
 }
 #endif // CONFIG_PSP || CONFIG_NDS

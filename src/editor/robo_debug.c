@@ -42,6 +42,8 @@ struct breakpoint
   char match_string[61];
   int index[256];
   int line_number;
+  int match_name_len;
+  int match_string_len;
 };
 
 struct watchpoint
@@ -95,11 +97,21 @@ static inline int hash_string(char *data, size_t length)
 static inline int get_watchpoint_value(struct world *mzx_world,
  struct watchpoint *wt)
 {
+  /**
+   * TODO maybe find a way to make watchpoints that rely on the robot ID to
+   * work consistently instead of defaulting to the global robot. As this is
+   * implemented now, there would be strange behavior when control passes from
+   * one robot to another. Updating every watchpoint at the start of every robot
+   * execution would fix this except if the counter debugger is used mid-cycle,
+   * which would cause similar unexpected (to the user) behavior. For now, just
+   * assume every local counter access is done by the global robot.
+   */
+
   if(is_string(wt->match_name))
   {
     struct string src_string;
 
-    if(get_string(mzx_world, wt->match_name, &src_string, -1))
+    if(get_string(mzx_world, wt->match_name, &src_string, 0))
     {
       return hash_string(src_string.value, src_string.length);
     }
@@ -107,7 +119,7 @@ static inline int get_watchpoint_value(struct world *mzx_world,
 
   else
   {
-    return get_counter_safe(mzx_world, wt->match_name, -1);
+    return get_counter_safe(mzx_world, wt->match_name, 0);
   }
 
   return 0;
@@ -159,7 +171,7 @@ static int edit_breakpoint_dialog(struct world *mzx_world,
 
   elements[3] = construct_button(22, 5, "Confirm", 0);
   elements[4] = construct_button(45, 5, "Cancel", -1);
-  
+
   construct_dialog(&di, title, 2, 7, 76, 7, elements, ARRAY_SIZE(elements), 0);
 
   result = run_dialog(mzx_world, &di);
@@ -170,6 +182,8 @@ static int edit_breakpoint_dialog(struct world *mzx_world,
     memcpy(br->match_string, match_string, 61);
     memcpy(br->match_name, match_name, 15);
     br->line_number = line_number;
+    br->match_string_len = strlen(match_string);
+    br->match_name_len = strlen(match_name);
   }
 
   // Prevent UI keys from carrying through.
@@ -227,7 +241,7 @@ static void new_breakpoint(struct world *mzx_world)
        num_breakpoints_allocated * sizeof(struct breakpoint *));
     }
 
-    boyer_moore_index(br->match_string, strlen(br->match_string),
+    boyer_moore_index(br->match_string, br->match_string_len,
      br->index, true);
 
     breakpoints[num_breakpoints] = br;
@@ -274,7 +288,7 @@ static int debug_config_idle_function(struct world *mzx_world,
 {
   switch(key)
   {
-    // Add 
+    // Add
     case IKEY_a:
     case IKEY_n:
     {
@@ -365,7 +379,7 @@ void __debug_robot_config(struct world *mzx_world)
 
       br = breakpoints[i];
 
-      memcpy(line, br->match_string, strlen(br->match_string));
+      memcpy(line, br->match_string, br->match_string_len);
 
       if(br->line_number)
       {
@@ -444,7 +458,7 @@ void __debug_robot_config(struct world *mzx_world)
 
             if(!edit_breakpoint_dialog(mzx_world, br, "Edit Breakpoint"))
             {
-              boyer_moore_index(br->match_string, strlen(br->match_string),
+              boyer_moore_index(br->match_string, br->match_string_len,
                br->index, true);
             }
           }
@@ -1164,8 +1178,6 @@ int __debug_robot_break(struct world *mzx_world, struct robot *cur_robot,
     if(!step)
     {
       struct breakpoint *b;
-      size_t match_string_len;
-      size_t match_name_len;
       int match_line;
 
       bool match = false;
@@ -1173,29 +1185,26 @@ int __debug_robot_break(struct world *mzx_world, struct robot *cur_robot,
       for(i = 0; i < num_breakpoints; i++)
       {
         b = breakpoints[i];
-        match_string_len = strlen(b->match_string);
-        match_name_len = strlen(b->match_name);
         match_line = b->line_number;
+
+        // Ignore empty breakpoints
+        if(!b->match_string_len && !b->match_name_len && !match_line)
+          continue;
 
         // Make sure the line number is correct
         if(match_line && match_line != line_number)
           continue;
 
         // Make sure the robot name is correct
-        if(match_name_len &&
+        if(b->match_name_len &&
          strcasecmp(cur_robot->robot_name, b->match_name))
           continue;
 
         // Try to find the match pattern in the line
-        if(match_string_len && src_length)
+        if(b->match_string_len)
           if(!boyer_moore_search((void *)src_ptr, src_length,
-           (void *)b->match_string, match_string_len, b->index, true))
+           (void *)b->match_string, b->match_string_len, b->index, true))
             continue;
-
-        // Verify a meaningful match has actually occured
-        if((!match_string_len || !src_length) &&
-         !match_name_len && !match_line)
-          continue;
 
         action = ACTION_MATCHED;
         match = true;

@@ -51,6 +51,8 @@ __M_BEGIN_DECLS
 
 #elif defined(CONFIG_SDL)
 
+#include <SDL_version.h>
+
 // SDL 2 maps X1 and X2, but has a separate wheel event that we map.
 #if SDL_VERSION_ATLEAST(2,0,0)
 #define MOUSE_BUTTON_X1         4
@@ -110,7 +112,7 @@ struct input_status
   enum keycode key_repeat_stack[KEY_REPEAT_STACK_SIZE];
   Uint16 unicode_repeat_stack[KEY_REPEAT_STACK_SIZE];
   Uint32 repeat_stack_pointer;
-  
+
   enum keycode joystick_button_map[16][256];
   enum keycode joystick_axis_map[16][16][2];
   enum keycode joystick_hat_map[16][4];
@@ -163,9 +165,13 @@ CORE_LIBSPEC bool peek_exit_input(void);
 void __wait_event(int timeout);
 bool __update_event_status(void);
 
-// This one is SDL-only
 #ifdef CONFIG_SDL
+// Currently only supported by SDL.
 bool __peek_exit_input(void);
+
+// Older SDL versions lack SDL_WaitEventTimeout, and our compatibility
+// implementation needs this function to work properly.
+bool update_autorepeat(void);
 #endif
 
 #ifdef CONFIG_NDS
@@ -195,12 +201,6 @@ void joystick_key_release(struct buffered_status *status,
  enum keycode key);
 
 void real_warp_mouse(int x, int y);
-
-#if defined(CONFIG_SDL)
-#if !SDL_VERSION_ATLEAST(2,0,0)
-bool update_autorepeat_sdl(void);
-#endif
-#endif
 
 __M_END_DECLS
 

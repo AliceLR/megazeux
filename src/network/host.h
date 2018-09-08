@@ -31,6 +31,16 @@ __M_BEGIN_DECLS
 
 struct host;
 
+struct http_info
+{
+  char url[1024];
+  char expected_type[64];
+  int status_type;
+  int status_code;
+  char status_message[32];
+  char content_type[64];
+};
+
 enum host_family
 {
   /** Prefer IPv4 address resolution for hostnames */
@@ -54,6 +64,10 @@ enum host_status
   HOST_FWRITE_FAILED,
   HOST_SEND_FAILED,
   HOST_RECV_FAILED,
+  HOST_HTTP_INFO,
+  HOST_HTTP_REDIRECT,
+  HOST_HTTP_CLIENT_ERROR,
+  HOST_HTTP_SERVER_ERROR,
   HOST_HTTP_INVALID_STATUS,
   HOST_HTTP_INVALID_HEADER,
   HOST_HTTP_INVALID_CONTENT_LENGTH,
@@ -131,14 +145,13 @@ UPDATER_LIBSPEC bool host_connect(struct host *h, const char *hostname,
  * Stream a file from a network socket to disk.
  *
  * @param h             Host to converse in HTTP with
- * @param url           HTTP URL to transfer
+ * @param req           HTTP request to send; returns response data
  * @param file          File to create and stream to disk
- * @param expected_type MIME type to expect in response
  *
  * @return See \ref host_status.
  */
 UPDATER_LIBSPEC enum host_status host_recv_file(struct host *h,
- const char *url, FILE *file, const char *expected_type);
+ struct http_info *req, FILE *file);
 
 /**
  * Sets the timeout for sending and receiving packets (default is 10s).

@@ -16,52 +16,27 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
 #include "host.h"
+#include "dns.h"
+#include "socksyms.h"
 
 #include "../platform.h"
 #include "../util.h"
 
 #ifndef _MSC_VER
 #include <sys/time.h>
-#include <unistd.h>
 #endif
 
+#include <assert.h>
+#include <ctype.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
-#include <stdio.h>
-#include <errno.h>
-#include <ctype.h>
-
-#ifdef __WIN32__
-#ifndef __WIN64__
-// Windows XP WinSock2 needed for getaddrinfo() API
-#undef _WIN32_WINNT
-#define _WIN32_WINNT 0x0501
-#endif // !__WIN64__
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#else // !__WIN32__
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <sys/select.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <arpa/inet.h>
-#include <net/if.h>
-#include <netdb.h>
-#include <fcntl.h>
-#endif // __WIN32__
 
 // Suppress unfixable sign comparison warning.
 #if defined(__WIN32__) && defined(__GNUC__)
 #pragma GCC diagnostic ignored "-Wsign-compare"
-#endif
-
-#ifdef NETWORK_DEADCODE
-#define __network_maybe_static
-#else
-#define __network_maybe_static static
 #endif
 
 #include "zlib.h"
@@ -83,510 +58,19 @@ struct host
   Uint32 timeout_ms;
 };
 
-static inline bool __host_last_error_fatal(void)
-{
-  switch(errno)
-  {
-    case 0:
-    case EAGAIN:
-    case EINTR:
-      return false;
-    default:
-      return true;
-  }
-}
-
 #ifndef __amigaos__
 #define CONFIG_IPV6
 #endif
-
-#if defined(__amigaos__)
-
-struct addrinfo
-{
-  int ai_flags;
-  int ai_family;
-  int ai_socktype;
-  int ai_protocol;
-  size_t ai_addrlen;
-  struct sockaddr *ai_addr;
-  char *ai_canonname;
-  struct addrinfo *ai_next;
-};
-
-#define EAI_NONAME -2
-#define EAI_FAMILY -6
-
-#define getaddrinfo             __getaddrinfo
-#define freeaddrinfo            __freeaddrinfo
-
-#endif
-
-#if (defined(__GNUC__) && defined(__WIN32__)) || defined(__amigaos__)
-
-static const char *__gai_strerror(int errcode)
-{
-  switch(errcode)
-  {
-    case EAI_NONAME:
-      return "Node or service is not known.";
-    case EAI_FAMILY:
-      return "Address family is not supported.";
-    default:
-      return "Unknown error.";
-  }
-}
-
-#else
-#define __gai_strerror gai_strerror
-#endif
-
-#if defined(__WIN32__) || defined(__amigaos__)
-
-// Forward declarations
-static inline struct hostent *platform_gethostbyname(const char *name);
-static inline uint16_t platform_htons(uint16_t hostshort);
-
-static int __getaddrinfo(const char *node, const char *service,
- const struct addrinfo *hints, struct addrinfo **res)
-{
-  struct addrinfo *r = NULL, *r_head = NULL;
-  struct hostent *hostent;
-  int i;
-
-  if(hints->ai_family != AF_INET)
-    return EAI_FAMILY;
-
-  hostent = platform_gethostbyname(node);
-  if(hostent->h_addrtype != AF_INET)
-    return EAI_NONAME;
-
-  /* Walk the h_addr_list and create faked addrinfo structures
-   * corresponding to the addresses. We don't support non-IPV4
-   * addresses or any other magic, but that's an acceptable
-   * fallback, and it won't affect users on XP or newer.
-   */
-  for(i = 0; hostent->h_addr_list[i]; i++)
-  {
-    struct sockaddr_in *addr;
-
-    if(r_head)
-    {
-      r->ai_next = cmalloc(sizeof(struct addrinfo));
-      r = r->ai_next;
-    }
-    else
-      r_head = r = cmalloc(sizeof(struct addrinfo));
-
-    // Zero the fake addrinfo and fill out the essential fields
-    memset(r, 0, sizeof(struct addrinfo));
-    r->ai_family = hints->ai_family;
-    r->ai_socktype = hints->ai_socktype;
-    r->ai_protocol = hints->ai_protocol;
-    r->ai_addrlen = sizeof(struct sockaddr_in);
-    r->ai_addr = cmalloc(r->ai_addrlen);
-
-    // Zero the fake ipv4 addr and fill our all of the fields
-    addr = (struct sockaddr_in *)r->ai_addr;
-    memcpy(&addr->sin_addr.s_addr, hostent->h_addr_list[i], sizeof(uint32_t));
-    addr->sin_family = r->ai_family;
-    addr->sin_port = platform_htons(atoi(service));
-  }
-
-  *res = r_head;
-  return 0;
-}
-
-static void __freeaddrinfo(struct addrinfo *res)
-{
-  struct addrinfo *r, *r_next;
-  for(r = res; r; r = r_next)
-  {
-    r_next = r->ai_next;
-    free(r->ai_addr);
-    free(r);
-  }
-}
-
-#endif // __WIN32__ || __amigaos__
-
-#ifndef __WIN32__
-
-__network_maybe_static bool host_last_error_fatal(void)
-{
-  return __host_last_error_fatal();
-}
-
-static inline int platform_accept(int sockfd,
- struct sockaddr *addr, socklen_t *addrlen)
-{
-  return accept(sockfd, addr, addrlen);
-}
-
-static inline int platform_bind(int sockfd,
- const struct sockaddr *addr, socklen_t addrlen)
-{
-  return bind(sockfd, addr, addrlen);
-}
-
-static inline void platform_close(int fd)
-{
-  close(fd);
-}
-
-static inline int platform_connect(int sockfd,
- const struct sockaddr *serv_addr, socklen_t addrlen)
-{
-  return connect(sockfd, serv_addr, addrlen);
-}
-
-static inline void platform_freeaddrinfo(struct addrinfo *res)
-{
-  freeaddrinfo(res);
-}
-
-static inline int platform_getaddrinfo(const char *node, const char *service,
- const struct addrinfo *hints, struct addrinfo **res)
-{
-  return getaddrinfo(node, service, hints, res);
-}
-
-static inline struct hostent *platform_gethostbyname(const char *name)
-{
-  return gethostbyname(name);
-}
-
-static inline uint16_t platform_htons(uint16_t hostshort)
-{
-  return htons(hostshort);
-}
-
-static inline int platform_listen(int sockfd, int backlog)
-{
-  return listen(sockfd, backlog);
-}
-
-static inline int platform_select(int nfds, fd_set *readfds,
- fd_set *writefds, fd_set *exceptfds, struct timeval *timeout)
-{
-  return select(nfds, readfds, writefds, exceptfds, timeout);
-}
-
-static inline ssize_t platform_send(int s, const void *buf, size_t len,
- int flags)
-{
-  return send(s, buf, len, flags);
-}
-
-static inline ssize_t platform_sendto(int s, const void *buf, size_t len,
- int flags, const struct sockaddr *to, socklen_t tolen)
-{
-  return sendto(s, buf, len, flags, to, tolen);
-}
-
-static inline int platform_setsockopt(int s, int level, int optname,
- const void *optval, socklen_t optlen)
-{
-  return setsockopt(s, level, optname, optval, optlen);
-}
-
-static inline int platform_socket(int af, int type, int protocol)
-{
-  return socket(af, type, protocol);
-}
-
-static inline void platform_socket_blocking(int s, bool blocking)
-{
-  int flags = fcntl(s, F_GETFL);
-
-  if(!blocking)
-    flags |= O_NONBLOCK;
-  else
-    flags &= ~O_NONBLOCK;
-
-  fcntl(s, F_SETFL, flags);
-}
-
-static inline ssize_t platform_recv(int s, void *buf, size_t len, int flags)
-{
-  return recv(s, buf, len, flags);
-}
-
-static inline ssize_t platform_recvfrom(int s, void *buf, size_t len,
- int flags, struct sockaddr *from, socklen_t *fromlen)
-{
-  return recvfrom(s, buf, len, flags, from, fromlen);
-}
-
-#else // __WIN32__
-
-/* MegaZeux needs ws2_32.dll for getaddrinfo() and friends, which are
- * relatively new POSIX APIs added to simplify the lookup of (and
- * association with) a host. They passively support IPv6 lookups,
- * for example, and can deal with DNS extensions like SRV for
- * protocol specific resolves. This is useful stuff for the future.
- *
- * Therefore, it was decided to rely on Winsock2, specifically the
- * version introduced in Windows XP. If the new XP-added functions cannot
- * be loaded, the old gethostbyname() method will be wrapped to produce
- * an interface identical to that of getaddrinfo(). This allows us to
- * support all Winsock 2.0 platforms, which was officially 98 onwards,
- * but 95 was also supported with an additional download.
- */
-
-// For LoadObject/LoadFunction
-#include "SDL.h"
-
-static struct
-{
-  /* These are Winsock 2.0 functions that should be present all the
-   * way back to 98 (and 95 with the additional Winsock 2.0 update).
-   */
-  int (PASCAL *accept)(SOCKET, const struct sockaddr *, int *);
-  int (PASCAL *bind)(SOCKET, const struct sockaddr *, int);
-  int (PASCAL *closesocket)(SOCKET);
-  int (PASCAL *connect)(SOCKET, const struct sockaddr *, int);
-  struct hostent *(PASCAL *gethostbyname)(const char*);
-  u_short (PASCAL *htons)(u_short);
-  int (PASCAL *ioctlsocket)(SOCKET, long, u_long *);
-  int (PASCAL *listen)(SOCKET, int);
-  int (PASCAL *select)(int, fd_set *, fd_set *, fd_set *,
-   const struct timeval *);
-  int (PASCAL *send)(SOCKET, const char *, int, int);
-  int (PASCAL *sendto)(SOCKET, const char*, int, int,
-   const struct sockaddr *, int);
-  int (PASCAL *setsockopt)(SOCKET, int, int, const char *, int);
-  SOCKET (PASCAL *socket)(int, int, int);
-  int (PASCAL *recv)(SOCKET, char *, int, int);
-  int (PASCAL *recvfrom)(SOCKET, char*, int, int,
-   struct sockaddr *, int *);
-
-  // Similar to above but these are extensions of Berkeley sockets
-  int (PASCAL *WSACancelBlockingCall)(void);
-  int (PASCAL *WSACleanup)(void);
-  int (PASCAL *WSAGetLastError)(void);
-  int (PASCAL *WSAStartup)(WORD, LPWSADATA);
-  int (PASCAL *__WSAFDIsSet)(SOCKET, fd_set *);
-
-  // These functions were only implemented as of Windows XP (5.1)
-  void (WSAAPI *freeaddrinfo)(struct addrinfo *);
-  int (WSAAPI *getaddrinfo)(const char *, const char *,
-   const struct addrinfo *, struct addrinfo **);
-
-  void *handle;
-}
-socksyms;
-
-static const struct dso_syms_map socksyms_map[] =
-{
-  { "accept",                (fn_ptr *)&socksyms.accept },
-  { "bind",                  (fn_ptr *)&socksyms.bind },
-  { "closesocket",           (fn_ptr *)&socksyms.closesocket },
-  { "connect",               (fn_ptr *)&socksyms.connect },
-  { "gethostbyname",         (fn_ptr *)&socksyms.gethostbyname },
-  { "htons",                 (fn_ptr *)&socksyms.htons },
-  { "ioctlsocket",           (fn_ptr *)&socksyms.ioctlsocket },
-  { "listen",                (fn_ptr *)&socksyms.listen },
-  { "select",                (fn_ptr *)&socksyms.select },
-  { "send",                  (fn_ptr *)&socksyms.send },
-  { "sendto",                (fn_ptr *)&socksyms.sendto },
-  { "setsockopt",            (fn_ptr *)&socksyms.setsockopt },
-  { "socket",                (fn_ptr *)&socksyms.socket },
-  { "recv",                  (fn_ptr *)&socksyms.recv },
-  { "recvfrom",              (fn_ptr *)&socksyms.recvfrom },
-
-  { "WSACancelBlockingCall", (fn_ptr *)&socksyms.WSACancelBlockingCall },
-  { "WSACleanup",            (fn_ptr *)&socksyms.WSACleanup },
-  { "WSAGetLastError",       (fn_ptr *)&socksyms.WSAGetLastError },
-  { "WSAStartup",            (fn_ptr *)&socksyms.WSAStartup },
-  { "__WSAFDIsSet",          (fn_ptr *)&socksyms.__WSAFDIsSet },
-
-  { "freeaddrinfo",          (fn_ptr *)&socksyms.freeaddrinfo },
-  { "getaddrinfo",           (fn_ptr *)&socksyms.getaddrinfo },
-
-  { NULL, NULL }
-};
-
-static int init_ref_count;
-
-#define WINSOCK2 "ws2_32.dll"
-#define WINSOCK  "wsock32.dll"
-
-static void socket_free_syms(void)
-{
-  if(socksyms.handle)
-  {
-    SDL_UnloadObject(socksyms.handle);
-    socksyms.handle = NULL;
-  }
-}
-
-static bool socket_load_syms(void)
-{
-  int i;
-
-  socksyms.handle = SDL_LoadObject(WINSOCK2);
-  if(!socksyms.handle)
-  {
-    warn("Failed to load Winsock 2.0, falling back to Winsock\n");
-    socksyms.handle = SDL_LoadObject(WINSOCK);
-    if(!socksyms.handle)
-    {
-      warn("Failed to load Winsock fallback\n");
-      return false;
-    }
-  }
-
-  for(i = 0; socksyms_map[i].name; i++)
-  {
-    void **sym_ptr = (void **)socksyms_map[i].sym_ptr;
-    *sym_ptr = SDL_LoadFunction(socksyms.handle, socksyms_map[i].name);
-
-    if(!*sym_ptr)
-    {
-      // Skip these NT 5.1 WS2 extensions; we can fall back
-      if((strcmp(socksyms_map[i].name, "freeaddrinfo") == 0) ||
-         (strcmp(socksyms_map[i].name, "getaddrinfo") == 0))
-        continue;
-
-      // However all other Winsock symbols must be loaded, or we fail hard
-      warn("Failed to load Winsock symbol '%s'\n", socksyms_map[i].name);
-      socket_free_syms();
-      return false;
-    }
-  }
-
-  return true;
-}
-
-__network_maybe_static bool host_last_error_fatal(void)
-{
-  if(socksyms.WSAGetLastError() == WSAEWOULDBLOCK)
-    return false;
-  return __host_last_error_fatal();
-}
-
-static inline int platform_accept(int sockfd,
- struct sockaddr *addr, socklen_t *addrlen)
-{
-  return socksyms.accept(sockfd, addr, addrlen);
-}
-
-static inline int platform_bind(int sockfd,
- const struct sockaddr *addr, socklen_t addrlen)
-{
-  return socksyms.bind(sockfd, addr, addrlen);
-}
-
-static inline void platform_close(int fd)
-{
-  socksyms.closesocket(fd);
-}
-
-static inline int platform_connect(int sockfd,
- const struct sockaddr *serv_addr, socklen_t addrlen)
-{
-  return socksyms.connect(sockfd, serv_addr, addrlen);
-}
-
-static inline struct hostent *platform_gethostbyname(const char *name)
-{
-  return socksyms.gethostbyname(name);
-}
-
-static inline uint16_t platform_htons(uint16_t hostshort)
-{
-  return socksyms.htons(hostshort);
-}
-
-static inline void platform_freeaddrinfo(struct addrinfo *res)
-{
-  if(socksyms.freeaddrinfo)
-    socksyms.freeaddrinfo(res);
-  else
-    __freeaddrinfo(res);
-}
-
-static inline int platform_getaddrinfo(const char *node, const char *service,
- const struct addrinfo *hints, struct addrinfo **res)
-{
-  if(socksyms.getaddrinfo)
-    return socksyms.getaddrinfo(node, service, hints, res);
-  return __getaddrinfo(node, service, hints, res);
-}
-
-static inline int platform_listen(int sockfd, int backlog)
-{
-  return socksyms.listen(sockfd, backlog);
-}
-
-static inline int platform_select(int nfds, fd_set *readfds,
- fd_set *writefds, fd_set *exceptfds, struct timeval *timeout)
-{
-  return socksyms.select(nfds, readfds, writefds, exceptfds, timeout);
-}
-
-static inline ssize_t platform_send(int s, const void *buf, size_t len,
- int flags)
-{
-  return socksyms.send(s, buf, (int)len, flags);
-}
-
-static inline ssize_t platform_sendto(int s, const void *buf, size_t len,
- int flags, const struct sockaddr *to, socklen_t tolen)
-{
-  return socksyms.sendto(s, buf, (int)len, flags, to, tolen);
-}
-
-static inline int platform_setsockopt(int s, int level, int optname,
- const void *optval, socklen_t optlen)
-{
-  return socksyms.setsockopt(s, level, optname, optval, optlen);
-}
-
-static inline int platform_socket(int af, int type, int protocol)
-{
-  return (int)socksyms.socket(af, type, protocol);
-}
-
-static inline void platform_socket_blocking(int s, bool blocking)
-{
-  unsigned long mode = !blocking;
-  socksyms.ioctlsocket(s, FIONBIO, &mode);
-}
-
-static inline ssize_t platform_recv(int s, void *buf, size_t len, int flags)
-{
-  return socksyms.recv(s, buf, (int)len, flags);
-}
-
-static inline ssize_t platform_recvfrom(int s, void *buf, size_t len,
- int flags, struct sockaddr *from, socklen_t *fromlen)
-{
-  return socksyms.recvfrom(s, buf, (int)len, flags, from, fromlen);
-}
-
-#endif // __WIN32__
 
 static struct config_info *conf;
 
 bool host_layer_init(struct config_info *in_conf)
 {
-#ifdef __WIN32__
-  WORD version = MAKEWORD(1, 0);
-  WSADATA ws_data;
+  if(!socksyms_init(in_conf))
+    return false;
 
-  if(init_ref_count == 0)
-  {
-    if(!socket_load_syms())
-      return false;
-
-    if(socksyms.WSAStartup(version, &ws_data) < 0)
-      return false;
-  }
-
-  init_ref_count++;
-#endif // __WIN32__
+  if(!dns_init(in_conf))
+    return false;
 
   conf = in_conf;
   return true;
@@ -594,24 +78,8 @@ bool host_layer_init(struct config_info *in_conf)
 
 void host_layer_exit(void)
 {
-#ifdef __WIN32__
-  assert(init_ref_count > 0);
-  init_ref_count--;
-
-  if(init_ref_count != 0)
-    return;
-
-  if(socksyms.WSACleanup() == SOCKET_ERROR)
-  {
-    if(socksyms.WSAGetLastError() == WSAEINPROGRESS)
-    {
-      socksyms.WSACancelBlockingCall();
-      socksyms.WSACleanup();
-    }
-  }
-
-  socket_free_syms();
-#endif // __WIN32__
+  dns_exit();
+  socksyms_exit();
 }
 
 
@@ -649,7 +117,7 @@ struct host *host_create(enum host_type type, enum host_family fam)
 
   if(fd < 0)
   {
-    perror("socket");
+    platform_perror("socket");
     return NULL;
   }
 
@@ -660,7 +128,7 @@ struct host *host_create(enum host_type type, enum host_family fam)
     err = platform_setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&off, 4);
     if(err < 0)
     {
-      perror("setsockopt(IPV6_V6ONLY)");
+      platform_perror("setsockopt(IPV6_V6ONLY)");
       return NULL;
     }
   }
@@ -673,7 +141,7 @@ struct host *host_create(enum host_type type, enum host_family fam)
   err = platform_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (void *)&on, 4);
   if(err < 0)
   {
-    perror("setsockopt(SO_REUSEADDR)");
+    platform_perror("setsockopt(SO_REUSEADDR)");
     return NULL;
   }
 
@@ -689,7 +157,7 @@ struct host *host_create(enum host_type type, enum host_family fam)
      (void *)&linger, sizeof(struct linger));
     if(err < 0)
     {
-      perror("setsockopt(SO_LINGER)");
+      platform_perror("setsockopt(SO_LINGER)");
       return NULL;
     }
   }
@@ -743,7 +211,7 @@ static bool __send(struct host *h, const void *buffer, size_t len)
     if(count < 0)
     {
       // non-blocking socket, so can fail and still be ok
-      if(!host_last_error_fatal())
+      if(!platform_last_error_fatal())
       {
         count = 0;
         continue;
@@ -779,7 +247,7 @@ static bool __recv(struct host *h, void *buffer, unsigned int len)
 
     // normally it won't all get through at once
     count = platform_recv(h->fd, &buf[pos], len - pos, 0);
-    if(count < 0 && host_last_error_fatal())
+    if(count < 0 && platform_last_error_fatal())
     {
       return false;
     } else if (count <= 0) {
@@ -797,9 +265,27 @@ static bool __recv(struct host *h, void *buffer, unsigned int len)
   return true;
 }
 
-static struct addrinfo *connect_op(int fd, struct addrinfo *ais, void *priv)
+static void reset_timeout(struct timeval *tv, Uint32 timeout)
+{
+  /* Because of the way select() works on Unix platforms, this needs to
+   * be reset every time select() is used on it. */
+  tv->tv_sec = (timeout / 1000);
+  tv->tv_usec = (timeout % 1000) * 1000;
+}
+
+static struct addrinfo *connect_op(int fd, struct addrinfo *ais, void *priv,
+ Uint32 timeout)
 {
   struct addrinfo *ai;
+  struct timeval tv;
+  fd_set mask;
+  int res;
+
+  FD_ZERO(&mask);
+  FD_SET(fd, &mask);
+
+  // Disable blocking on the socket so a timeout can be enforced.
+  platform_socket_blocking(fd, false);
 
 #ifdef CONFIG_IPV6
   /* First try to connect to an IPv6 address (if any)
@@ -809,14 +295,28 @@ static struct addrinfo *connect_op(int fd, struct addrinfo *ais, void *priv)
     if(ai->ai_family != AF_INET6)
       continue;
 
-    if(platform_connect(fd, ai->ai_addr, (socklen_t)ai->ai_addrlen) >= 0)
+    platform_connect(fd, ai->ai_addr, (socklen_t)ai->ai_addrlen);
+
+    reset_timeout(&tv, timeout);
+    res = platform_select(fd + 1, NULL, &mask, NULL, &tv);
+
+    if(res == 1)
       break;
 
-    perror("connect");
+    if(res == 0)
+      info("Connection timed out.\n");
+
+    else
+      platform_perror("connect");
+
+    platform_close(fd);
   }
 
   if(ai)
+  {
+    platform_socket_blocking(fd, true);
     return ai;
+  }
 #endif
 
   /* No IPv6 addresses could be connected; try IPv4 (if any)
@@ -826,18 +326,35 @@ static struct addrinfo *connect_op(int fd, struct addrinfo *ais, void *priv)
     if(ai->ai_family != AF_INET)
       continue;
 
-    if(platform_connect(fd, ai->ai_addr, (socklen_t)ai->ai_addrlen) >= 0)
+    platform_connect(fd, ai->ai_addr, (socklen_t)ai->ai_addrlen);
+
+    reset_timeout(&tv, timeout);
+    res = platform_select(fd + 1, NULL, &mask, NULL, &tv);
+
+    if(res == 1)
       break;
 
-    perror("connect");
+    if(res == 0)
+      info("Connection timed out.\n");
+
+    else
+      platform_perror("connect");
+
+    platform_close(fd);
   }
 
-  return ai;
+  if(ai)
+  {
+    platform_socket_blocking(fd, true);
+    return ai;
+  }
+
+  return NULL;
 }
 
 static bool host_address_op(struct host *h, const char *hostname,
- int port, void *priv,
- struct addrinfo *(*op)(int fd, struct addrinfo *ais, void *priv))
+ int port, void *priv, struct addrinfo *(*op)(int fd, struct addrinfo *ais,
+  void *priv, Uint32 timeout))
 {
   struct addrinfo hints, *ais, *ai;
   char port_str[6];
@@ -854,14 +371,14 @@ static bool host_address_op(struct host *h, const char *hostname,
   hints.ai_family = h->af;
 
   // Look up host(s) matching hints
-  ret = platform_getaddrinfo(hostname, port_str, &hints, &ais);
+  ret = dns_getaddrinfo(hostname, port_str, &hints, &ais, h->timeout_ms);
   if(ret != 0)
   {
-    warn("Failed to look up '%s' (%s)\n", hostname, __gai_strerror(ret));
+    warn("Failed to look up '%s' (%s)\n", hostname, platform_gai_strerror(ret));
     return false;
   }
 
-  ai = op(h->fd, ais, priv);
+  ai = op(h->fd, ais, priv, h->timeout_ms);
   platform_freeaddrinfo(ais);
 
   // None of the listed hosts (if any) were connectable
@@ -994,7 +511,8 @@ static enum proxy_status socks5_connect(struct host *h,
 }
 
 // SOCKS Proxy support
-static enum proxy_status proxy_connect(struct host *h, const char *target_host, int target_port)
+static enum proxy_status proxy_connect(struct host *h, const char *target_host,
+ int target_port)
 {
   struct addrinfo target_hints, *target_ais, *target_ai;
   char port_str[6];
@@ -1007,7 +525,8 @@ static enum proxy_status proxy_connect(struct host *h, const char *target_host, 
   target_hints.ai_socktype = (h->proto == IPPROTO_TCP) ? SOCK_STREAM : SOCK_DGRAM;
   target_hints.ai_protocol = h->proto;
   target_hints.ai_family = h->af;
-  ret = platform_getaddrinfo(target_host, port_str, &target_hints, &target_ais);
+  ret = dns_getaddrinfo(target_host, port_str, &target_hints, &target_ais,
+   h->timeout_ms);
 
   /* Some perimeter gateways block access to DNS [wifi hotspots are
    * particularly notorious for this] so we have to fall back to SOCKS4a
@@ -1110,6 +629,44 @@ static ssize_t http_send_line(struct host *h, const char *message)
   return len;
 }
 
+static bool http_read_status(struct http_info *result, const char *status,
+ size_t status_len)
+{
+  /* These conditionals check the status line is formatted:
+   *   "HTTP/1.? XXX ..." (where ? is 0 or 1, XXX is the status code,
+   *                      and ... is the status message)
+   *
+   * This is because partially HTTP/1.1 capable servers supporting
+   * pipelining may not advertise full HTTP/1.1 compliance (e.g.
+   * `perlbal' httpd).
+   *
+   * MegaZeux only cares about pipelining.
+   */
+  char ver[2];
+  char code[4];
+  int res;
+  int c;
+
+  result->status_message[0] = 0;
+
+  res = sscanf(status, "HTTP/1.%1s %3s %31[^\r\n]", ver, code,
+   result->status_message);
+
+  debug("Status: %s (%s, %s, %s)\n", status, ver, code, result->status_message);
+  if(res != 3 || (ver[0] != '0' && ver[0] != '1'))
+    return false;
+
+  // Make sure the code is a 3-digit number
+  c = strtol(code, NULL, 10);
+  if(c < 100)
+    return false;
+
+  result->status_code = c;
+  result->status_type = c / 100;
+
+  return true;
+}
+
 static bool http_skip_headers(struct host *h)
 {
   char buffer[LINE_BUF_LEN];
@@ -1174,8 +731,8 @@ static ssize_t zlib_skip_gzip_header(char *initial, unsigned long len)
   return gzip - (Bytef *)initial;
 }
 
-enum host_status host_recv_file(struct host *h, const char *url,
- FILE *file, const char *expected_type)
+enum host_status host_recv_file(struct host *h, struct http_info *req,
+ FILE *file)
 {
   bool mid_inflate = false, mid_chunk = false, deflated = false;
   unsigned int content_length = 0;
@@ -1192,7 +749,7 @@ enum host_status host_recv_file(struct host *h, const char *url,
   } transfer_type = NONE;
 
   // Tell the server that we support pipelining
-  snprintf(line, LINE_BUF_LEN, "GET %s HTTP/1.1", url);
+  snprintf(line, LINE_BUF_LEN, "GET %s HTTP/1.1", req->url);
   line[LINE_BUF_LEN - 1] = 0;
   if(http_send_line(h, line) < 0)
     return -HOST_SEND_FAILED;
@@ -1218,21 +775,26 @@ enum host_status host_recv_file(struct host *h, const char *url,
   // Read in the HTTP status line
   line_len = http_recv_line(h, line, LINE_BUF_LEN);
 
-  /* These two conditionals check the status line is formatted:
-   *   "HTTP/1.? 200 OK" (where ? is anything)
-   *
-   * This is because partially HTTP/1.1 capable servers supporting
-   * pipelining may not advertise full HTTP/1.1 compliance (e.g.
-   * `perlbal' httpd).
-   *
-   * MegaZeux only cares about pipelining.
-   */
-  if(line_len != 15 ||
-   strncmp(line, "HTTP/1.", 7) != 0 ||
-   strcmp(&line[7 + 1], " 200 OK") != 0)
+  if(!http_read_status(req, line, line_len))
   {
-    warn("Invalid status: %s\nFailed for url '%s'\n", line, url);
+    warn("Invalid status: %s\nFailed for url '%s'\n", line, req->url);
     return -HOST_HTTP_INVALID_STATUS;
+  }
+
+  // Unhandled status categories
+  switch(req->status_type)
+  {
+    case 1:
+      return -HOST_HTTP_INFO;
+
+    case 3:
+      return -HOST_HTTP_REDIRECT;
+
+    case 4:
+      return -HOST_HTTP_CLIENT_ERROR;
+
+    case 5:
+      return -HOST_HTTP_SERVER_ERROR;
   }
 
   // Now parse the HTTP headers, extracting only the pertinent fields
@@ -1286,7 +848,9 @@ enum host_status host_recv_file(struct host *h, const char *url,
 
     else if(strcmp(key, "Content-Type") == 0)
     {
-      if(strcmp(value, expected_type) != 0)
+      strncpy(req->content_type, value, 63);
+
+      if(strcmp(value, req->expected_type) != 0)
         return -HOST_HTTP_INVALID_CONTENT_TYPE;
     }
 
@@ -1500,8 +1064,14 @@ void host_set_callbacks(struct host *h, void (*send_cb)(long offset),
 
 #ifdef NETWORK_DEADCODE
 
+// FIXME splitting out socksyms broke this. Make it a platform function.
 #undef  FD_ISSET
 #define FD_ISSET(fd,set) socksyms.__WSAFDIsSet((SOCKET)(fd),(fd_set *)(set))
+
+bool host_last_error_fatal(void)
+{
+  return platform_last_error_fatal();
+}
 
 void host_blocking(struct host *h, bool blocking)
 {
@@ -1543,16 +1113,18 @@ struct host *host_accept(struct host *s)
   }
   else
   {
-    if(host_last_error_fatal())
-      perror("accept");
+    if(platform_last_error_fatal())
+      platform_perror("accept");
   }
 
   free(addr);
   return c;
 }
 
-static struct addrinfo *bind_op(int fd, struct addrinfo *ais, void *priv)
+static struct addrinfo *bind_op(int fd, struct addrinfo *ais, void *priv,
+ Uint32 timeout)
 {
+  // timeout currently unimplemented
   struct addrinfo *ai;
 
 #ifdef CONFIG_IPV6
@@ -1566,7 +1138,7 @@ static struct addrinfo *bind_op(int fd, struct addrinfo *ais, void *priv)
     if(platform_bind(fd, ai->ai_addr, ai->ai_addrlen) >= 0)
       break;
 
-    perror("bind");
+    platform_perror("bind");
   }
 
   if(ai)
@@ -1583,7 +1155,7 @@ static struct addrinfo *bind_op(int fd, struct addrinfo *ais, void *priv)
     if(platform_bind(fd, ai->ai_addr, ai->ai_addrlen) >= 0)
       break;
 
-    perror("bind");
+    platform_perror("bind");
   }
 
   return ai;
@@ -1598,7 +1170,7 @@ bool host_listen(struct host *h)
 {
   if(platform_listen(h->fd, 0) < 0)
   {
-    perror("listen");
+    platform_perror("listen");
     return false;
   }
   return true;
@@ -1622,8 +1194,9 @@ struct buf_priv_data {
 };
 
 static struct addrinfo *recvfrom_raw_op(int fd, struct addrinfo *ais,
- void *priv)
+ void *priv, Uint32 timeout)
 {
+  // timeout currently unimplemented
   struct buf_priv_data *buf_priv = priv;
   unsigned int len = buf_priv->len;
   char *buffer = buf_priv->buffer;
@@ -1660,8 +1233,10 @@ static struct addrinfo *recvfrom_raw_op(int fd, struct addrinfo *ais,
   return ai;
 }
 
-static struct addrinfo *sendto_raw_op(int fd, struct addrinfo *ais, void *priv)
+static struct addrinfo *sendto_raw_op(int fd, struct addrinfo *ais, void *priv,
+ Uint32 timeout)
 {
+  // timeout currently unimplemented
   struct buf_priv_data *buf_priv = priv;
   unsigned int len = buf_priv->len;
   char *buffer = buf_priv->buffer;

@@ -19,6 +19,9 @@ fi
 # Unix release builds will try to find this if it isn't installed.
 ln -s config.txt megazeux-config
 
+# Give tests.mzx the MZX configuration so it can decide which tests to skip.
+cp src/config.h testworlds
+
 cd "$(dirname "$0")"
 mkdir -p log
 
@@ -43,16 +46,18 @@ export SDL_VIDEODRIVER=dummy
 # Standalone mode will allow tests.mzx to terminate MZX and no_titlescreen mode
 # simplifies things. Disable auto update checking to save time.
 
-mzxrun="../mzxrun \
+../mzxrun \
   tests.mzx \
   video_output=software \
   update_auto_check=off \
   standalone_mode=1 \
-  no_titlescreen=1"
+  no_titlescreen=1 \
+  audio_on=0 \
+  pc_speaker_on=0 \
+  &
 
-# Run mzxrun and attempt to detect a hang (e.g. an error occurred).
+# Attempt to detect a hang (e.g. an error occurred).
 
-${mzxrun} &
 mzxrun_pid=$!
 disown
 
@@ -79,6 +84,7 @@ rm -f saved.sav
 rm -f LOCKED.MZX
 rm -f LOCKED.MZX.locked
 rm -f ../megazeux-config
+rm -f config.h
 
 # Color code PASS/FAIL tags and important numbers.
 

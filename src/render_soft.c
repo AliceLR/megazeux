@@ -30,8 +30,7 @@
 
 static SDL_Color sdlpal[SMZX_PAL_SIZE];
 
-static SDL_Surface *
-soft_get_screen_surface(struct sdl_render_data *render_data)
+static SDL_Surface *soft_get_screen_surface(struct sdl_render_data *render_data)
 {
   return render_data->shadow ? render_data->shadow : render_data->screen;
 }
@@ -123,9 +122,9 @@ static void soft_render_graph(struct graphics_data *graphics)
       render_graph32(pixels, pitch, graphics, set_colors32[mode]);
     else
       render_graph32s(pixels, pitch, graphics, set_colors32[mode]);
-    
+
     /* This just adds a 3x3 red box to the top left of the screen
-       It's useful for debugging because it indicates when the 
+       It's useful for debugging because it indicates when the
        fallback renderer is used
 
     *(pixels + 0) = 0xFFFF0000;
@@ -233,7 +232,7 @@ static void soft_render_layer(struct graphics_data *graphics,
   pixels += (screen->w - 640) * bpp / 64;
 
   SDL_LockSurface(screen);
-  render_layer(pixels, bpp, pitch, graphics, layer); 
+  render_layer(pixels, bpp, pitch, graphics, layer);
   SDL_UnlockSurface(screen);
 }
 

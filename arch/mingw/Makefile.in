@@ -18,9 +18,11 @@ DSOPOST    = .dll
 DSORPATH   =
 DSOSONAME  = -Wl,-soname,
 
-# Use MSVCRT directly for stdio; it's faster
-ARCH_CFLAGS   += -D__USE_MINGW_ANSI_STDIO=0
-ARCH_CXXFLAGS += -D__USE_MINGW_ANSI_STDIO=0
+# Don't use MSVCRT for stdio; it's slower and is not safe.
+# At one point (circa 2009) the MinGW implementations actually
+# caused performance issues, but this is no longer the case.
+ARCH_CFLAGS   += -D__USE_MINGW_ANSI_STDIO
+ARCH_CXXFLAGS += -D__USE_MINGW_ANSI_STDIO
 
 # Fix MINGW's shared library fanaticism
 ARCH_LDFLAGS += -static-libstdc++ -static-libgcc
@@ -32,10 +34,8 @@ core_ldflags += -lopengl32
 LIBPNG_LDFLAGS = $(shell libpng-config --static --ldflags)
 
 ifeq (${BUILD_LIBSDL2},)
-SDL_PREFIX := ${shell sdl-config --prefix}
 SDL_DLL := SDL.dll
 else
-SDL_PREFIX := ${shell sdl2-config --prefix}
 SDL_DLL := SDL2.dll
 endif
 
@@ -66,12 +66,11 @@ clean:
 #
 
 build: ${build}
-ifdef CUSTOM_SDL_DLL_DIR
-	${CP} ${CUSTOM_SDL_DLL_DIR}/${SDL_DLL} ${build}
-else
 	${CP} ${SDL_PREFIX}/bin/${SDL_DLL} ${build}
-endif
-	${PEFIX} ${build}/${SDL_DLL}
+#	At one point this actually did something useful.
+#	The SDL DLL will generally stay the same between releases,
+#	so this is kind of pointless.
+#	${PEFIX} ${build}/${SDL_DLL}
 ifeq (${LIBSDL2},0)
 	${CP} arch/mingw/directx.bat ${build}
 endif
@@ -81,4 +80,4 @@ endif
 	@arch/manifest.sh ${build}
 
 SUBARCH := ${shell echo ${SUBPLATFORM} | sed 's,windows-,,'}
-include arch/zip.inc 
+include arch/zip.inc

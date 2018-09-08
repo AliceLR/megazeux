@@ -2,122 +2,31 @@
 # linux makefile generics
 #
 
-.PHONY: install
-
 DSOLDFLAGS = -shared
 DSOPRE     = lib
 DSOPOST    = .so
 DSORPATH   = -Wl,-rpath,${LIBDIR}
 DSOSONAME  = -Wl,-soname,
 
-ifeq (${USER},root)
-install = install -o root
-else
-install = install
-endif
+include arch/install.inc
 
-# linux os specific install target
-install:
-	@${install} -m 0755 -d \
-		${DESTDIR}${SYSCONFDIR} \
-		${DESTDIR}${SHAREDIR} \
-		${DESTDIR}${SHAREDIR}/icons \
-		${DESTDIR}${SHAREDIR}/applications \
-		${DESTDIR}${SHAREDIR}/megazeux \
-		${DESTDIR}${SHAREDIR}/megazeux/assets && \
-	 ${install} -m 0644 assets/default.chr assets/edit.chr \
-		assets/smzx.pal ${DESTDIR}${SHAREDIR}/megazeux/assets && \
-	 ${install} -m 0644 config.txt ${DESTDIR}${SYSCONFDIR}/megazeux-config && \
-	 ${install} -m 0644 contrib/icons/quantump.png \
+# linux os specific install files
+install-arch: install-check
+	@${install} -m 0644 contrib/icons/quantump.png \
 		${DESTDIR}${SHAREDIR}/icons/megazeux.png && \
 	 ${install} -m 0644 arch/unix/megazeux.desktop \
 		${DESTDIR}${SHAREDIR}/applications/megazeux.desktop
-ifeq (${BUILD_HELPSYS},1)
-	@${install} -m 0644 assets/help.fil \
-		${DESTDIR}${SHAREDIR}/megazeux/assets
-endif
-ifeq (${BUILD_MODULAR},1)
-	@${install} -m 0755 -d ${DESTDIR}${LIBDIR} && \
-	 ${install} -m 0755 ${core_target} ${DESTDIR}${LIBDIR} && \
-	 ${install} -m 0755 ${editor_target} ${DESTDIR}${LIBDIR}
-endif
 ifeq (${BUILD_MZXRUN},1)
-	@${install} -m 0755 -d ${DESTDIR}${GAMESDIR} && \
-	 ${install} -m 0755 ${mzxrun} ${DESTDIR}${GAMESDIR}/ && \
-	 ${install} -m 0644 arch/unix/mzxrun.desktop \
+	@${install} -m 0644 arch/unix/mzxrun.desktop \
 		${DESTDIR}${SHAREDIR}/applications/mzxrun.desktop
-endif
-ifeq (${BUILD_EDITOR},1)
-	@${install} -m 0755 -d ${DESTDIR}${GAMESDIR} && \
-	 ${install} -m 0755 ${mzx} ${DESTDIR}${GAMESDIR}/ && \
-	 ${install} -m 0644 assets/ascii.chr assets/blank.chr \
-		assets/smzx.chr ${DESTDIR}${SHAREDIR}/megazeux/assets
-endif
-ifeq (${BUILD_UTILS},1)
-	@${install} -m 0755 -d ${DESTDIR}${BINDIR} && \
-	 ${install} -m 0755 ${checkres} ${DESTDIR}${BINDIR}/ && \
-	 ${install} -m 0755 ${downver} ${DESTDIR}${BINDIR}/ && \
-	 ${install} -m 0755 ${hlp2txt} ${DESTDIR}${BINDIR}/ && \
-	 ${install} -m 0755 ${txt2hlp} ${DESTDIR}${BINDIR}/ && \
-         ${install} -m 0755 ${ccv} ${DESTDIR}${BINDIR}/
-endif
-ifeq (${BUILD_RENDER_GL_PROGRAM},1)
-	@${install} -m 0755 -d \
-		${DESTDIR}${SHAREDIR}/megazeux/assets/shaders && \
-	 ${install} -m 0644 assets/shaders/cursor.frag \
-		assets/shaders/cursor.vert \
-		assets/shaders/mouse.frag \
-		assets/shaders/mouse.vert \
-		assets/shaders/scaler.vert \
-		assets/shaders/tilemap.frag \
-		assets/shaders/tilemap.vert \
-		assets/shaders/tilemap.smzx.frag \
-		${DESTDIR}${SHAREDIR}/megazeux/assets/shaders/
-endif
-ifeq (${BUILD_RENDER_GL_PROGRAM},1)
-	@${install} -m 0755 -d \
-		${DESTDIR}${SHAREDIR}/megazeux/assets/shaders/scalers && \
-	 ${install} -m 0644 assets/shaders/scalers/crt.frag \
-		assets/shaders/scalers/emboss.frag \
-		assets/shaders/scalers/epx.frag \
-		assets/shaders/scalers/greyscale.frag \
-		assets/shaders/scalers/hqscale.frag \
-		assets/shaders/scalers/hqscale.vert \
-		assets/shaders/scalers/nearest.frag \
-		assets/shaders/scalers/README.txt \
-		assets/shaders/scalers/semisoft.frag \
-		assets/shaders/scalers/sepia.frag \
-		assets/shaders/scalers/simple.frag \
-		${DESTDIR}${SHAREDIR}/megazeux/assets/shaders/scalers/
 endif
 
-# Linux os specific uninstall target
-uninstall:
-	 ${RM} -rf \
-		${DESTDIR}${SHAREDIR}/megazeux \
-		${DESTDIR}${SHAREDIR}/megazeux/assets \
-		${DESTDIR}${SHAREDIR}/icons/megazeux.png \
-		${DESTDIR}${SHAREDIR}/applications/megazeux.desktop \
-		${DESTDIR}${SYSCONFDIR}/megazeux-config
-ifeq (${BUILD_MODULAR},1)
+# linux os specific install files
+uninstall-arch: install-check
 	@${RM} -f \
-		${DESTDIR}${LIBDIR}/${core_target} \
-		${DESTDIR}${LIBDIR}/${editor_target}
-endif
+		${DESTDIR}${SHAREDIR}/icons/megazeux.png \
+		${DESTDIR}${SHAREDIR}/applications/megazeux.desktop
 ifeq (${BUILD_MZXRUN},1)
 	@${RM} -f \
-		${DESTDIR}${GAMESDIR}/${mzxrun} \
 		${DESTDIR}${SHAREDIR}/applications/mzxrun.desktop
-endif
-ifeq (${BUILD_EDITOR},1)
-	@${RM} -f \
-		${DESTDIR}${GAMESDIR}/${mzx}
-endif
-ifeq (${BUILD_UTILS},1)
-	@${RM} -f \
-		${DESTDIR}${BINDIR}/checkres \
-		${DESTDIR}${BINDIR}/downver \
-		${DESTDIR}${BINDIR}/hlp2txt \
-		${DESTDIR}${BINDIR}/txt2hlp \
-		${DESTDIR}${BINDIR}/ccv
 endif

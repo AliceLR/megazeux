@@ -1,21 +1,19 @@
 #!/bin/bash
-# $1 = $DEVKITPRO
-# $2 = $DEVKITARM
 
-[ -z "$1" ] && { echo "argument 1 required."; exit 1; }
-[ -z "$2" ] && { echo "argument 2 required."; exit 1; }
+[ -z "$DEVKITPRO" ] && { echo "DEVKITPRO environment variable must be set!"; exit 1; }
 
 export PORTLIBS_REPO=https://github.com/sypherce/nds_portlibs.git
 
-export DEVKITPRO=$1
-export DEVKITARM=$2
-export PATH="$PATH:$DEVKITARM/bin"
+export DEVKITPRO=`cygpath -u "$DEVKITPRO"`
+export PATH="$PATH:$DEVKITPRO/devkitARM/bin"
 
 
 echo ""
 echo "/********************/"
 echo "  NDS - dependencies  "
 echo "/********************/"
+
+pacman --needed --noconfirm -S devkitARM libnds libfat-nds maxmod-nds ndstool dstools
 
 cd /mzx-build-workingdir
 rm -rf nds-portlibs

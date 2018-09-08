@@ -179,39 +179,33 @@ void load_editor_charsets(void)
 
 void ec_load_smzx(void)
 {
-  ec_mem_load_set(smzx_charset);
+  ec_mem_load_set(smzx_charset, CHAR_SIZE * CHARSET_SIZE);
 }
 
 void ec_load_blank(void)
 {
-  ec_mem_load_set(blank_charset);
+  ec_mem_load_set(blank_charset, CHAR_SIZE * CHARSET_SIZE);
 }
 
 void ec_load_ascii(void)
 {
-  ec_mem_load_set(ascii_charset);
+  ec_mem_load_set(ascii_charset, CHAR_SIZE * CHARSET_SIZE);
 }
 
 void ec_load_char_ascii(Uint32 char_number)
 {
   Uint32 ascii_number = char_number & 0xFF;
+  char *ascii_char = (char *)(ascii_charset + ascii_number * CHAR_SIZE);
 
-  memcpy(graphics.charset + (char_number * CHAR_SIZE),
-   ascii_charset + (ascii_number * CHAR_SIZE), CHAR_SIZE);
-
-  // some renderers may want to map charsets to textures
-  if(graphics.renderer.remap_charsets)
-    graphics.renderer.remap_charsets(&graphics);
+  ec_change_char(char_number, ascii_char);
 }
 
 void ec_load_char_mzx(Uint32 char_number)
 {
+  Uint8 *default_charset = graphics.default_charset;
   Uint32 default_number = char_number & 0xFF;
 
-  memcpy(graphics.charset + (char_number * CHAR_SIZE),
-   graphics.default_charset + (default_number * CHAR_SIZE), CHAR_SIZE);
+  char *default_char = (char *)(default_charset + default_number * CHAR_SIZE);
 
-  // some renderers may want to map charsets to textures
-  if(graphics.renderer.remap_charsets)
-    graphics.renderer.remap_charsets(&graphics);
+  ec_change_char(char_number, default_char);
 }

@@ -61,7 +61,8 @@ var LHA = _yes("LHA");
 
 var xmp = std("xmp");
 var libvorbis = std("libvorbis");
-var tremor = "tremor";
+var tremor = std("tremor");
+var tremor_lowmem = std("tremor (lowmem)");
 
 var render_ctr = std("render_ctr");
 var render_nds = std("render_nds");
@@ -110,7 +111,7 @@ var archs =
     description:      "Nintendo 3DS",
     architecture:     "ARM11 (ELF)",
     endian:           "Little",
-    toolchain:        "gcc 7.1.0 <br /> binutils 2.28 <br /> (dk r47)",
+    toolchain:        "gcc 8.1.0 <br /> binutils 2.30 <br /> (dk r49)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
@@ -221,7 +222,7 @@ var archs =
     description:      "Nintendo DS",
     architecture:     "ARM9 (ELF)",
     endian:           "Little",
-    toolchain:        "gcc 7.1.0 <br /> binutils 2.28 <br /> (dk r47)",
+    toolchain:        "gcc 8.1.0 <br /> binutils 2.30 <br /> (dk r49)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  _FAULTY(),
@@ -250,7 +251,7 @@ var archs =
     stack_protector:  _FAULTY(),
     layer_rendering:  yes_but_8bpp,
     module_engine:    xmp,
-    ogg_vorbis:       tremor,
+    ogg_vorbis:       tremor_lowmem,
     optimization:     size,
     sdl:              yes,
     editor:           no_low_memory,
@@ -299,7 +300,7 @@ var archs =
     description:      "Nintendo Wii",
     architecture:     "PPC (ELF)",
     endian:           "Big",
-    toolchain:        "gcc 6.3.0 <br /> binutils 2.27 <br /> (dk r29)",
+    toolchain:        "gcc 8.1.0 <br /> binutils 2.28 <br /> (dk r30)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  yes_with_sdl,
@@ -389,7 +390,7 @@ var archs =
     stack_protector:  _FAULTY("NO", 8),
     layer_rendering:  _FAULTY("NO", 8),
     module_engine:    xmp,
-    ogg_vorbis:       tremor,
+    ogg_vorbis:       tremor_lowmem,
     optimization:     size,
     sdl:              no,
     editor:           yes,
@@ -417,7 +418,7 @@ var archs =
     stack_protector:  _FAULTY(),
     layer_rendering:  _FAULTY(),
     module_engine:    xmp,
-    ogg_vorbis:       tremor,
+    ogg_vorbis:       tremor_lowmem,
     optimization:     size,
     sdl:              yes,
     editor:           no_low_memory,
@@ -442,7 +443,7 @@ var archs =
     stack_protector:  yes,
     layer_rendering:  yes,
     module_engine:    xmp,
-    ogg_vorbis:       tremor,
+    ogg_vorbis:       tremor_lowmem,
     optimization:     speed,
     sdl:              yes,
     editor:           yes,
@@ -753,8 +754,8 @@ SDL significantly increases the size of the MZX executable.
 <li><a name="note10"/>Building MZX with SDL Wii is viable, but produces larger
 binaries than desired, relies on the slow SDL software renderer, and SDL Wii is
 considered unstable. However, the SDL software renderer supports all layer
-rendering features (unlike the gx renderer) and the regular Wii port is
-currently non-functional, so SDL is currently the better option.
+rendering features (unlike the gx renderer), so SDL is currently the better
+option.
 </li>
 
 <li><a name="note11"/>Layer rendering is supported on this platform by as it

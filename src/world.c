@@ -34,7 +34,6 @@
 #include "world_prop.h"
 #include "legacy_world.h"
 
-#include "audio.h"
 #include "board.h"
 #include "configure.h"
 #include "const.h"
@@ -49,12 +48,14 @@
 #include "idput.h"
 #include "memfile.h"
 #include "robot.h"
-#include "sfx.h"
 #include "sprite.h"
 #include "str.h"
 #include "util.h"
 #include "window.h"
 #include "zip.h"
+
+#include "audio/audio.h"
+#include "audio/sfx.h"
 
 #ifdef CONFIG_LOADSAVE_METER
 
@@ -614,7 +615,7 @@ static inline void load_world_info(struct world *mzx_world,
       case WPROP_ID_BULLET_COLOR:
         mfread(bullet_color, 3, 1, prop);
         break;
-        
+
       case WPROP_ID_DMG:
         mfread(id_dmg, 128, 1, prop);
         break;
@@ -1015,7 +1016,7 @@ static inline int save_world_chars(struct world *mzx_world,
 static inline int load_world_chars(struct world *mzx_world,
  struct zip_archive *zp, int savegame)
 {
-  char *buffer;
+  unsigned char *buffer;
   size_t actual_size;
   int result;
 
@@ -1025,17 +1026,13 @@ static inline int load_world_chars(struct world *mzx_world,
   result = zip_read_file(zp, buffer, actual_size, &actual_size);
   if(result == ZIP_SUCCESS)
   {
-    // Load every charset (2.90 saves, 2.91+ worlds)
-    if((mzx_world->version >= V291) ||
-     (savegame && mzx_world->version == V290))
-      actual_size = MIN(actual_size, PROTECTED_CHARSET_POSITION * CHAR_SIZE);
-
-    // Load only the first charset
-    else
-      actual_size = MIN(actual_size, CHARSET_SIZE * CHAR_SIZE);
+    // Load only the first charset (2.90 worlds but not 2.90 saves)
+    if(mzx_world->version == V290 && !savegame)
+      if(actual_size > CHAR_SIZE * CHARSET_SIZE)
+        actual_size = CHAR_SIZE * CHARSET_SIZE;
 
     ec_clear_set();
-    ec_mem_load_set_var(buffer, actual_size, 0, MZX_VERSION);
+    ec_mem_load_set(buffer, actual_size);
   }
 
   free(buffer);
@@ -1730,7 +1727,7 @@ int load_counters_file(struct world *mzx_world, const char *file)
 
   if(strcmp(magic, "COUNTERS"))
     goto err;
-  
+
   if(ZIP_SUCCESS != zip_read_directory(zp))
     goto err;
 
@@ -2468,7 +2465,7 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
   struct stat file_info;
 
   get_path(file, file_path, MAX_PATH);
-  
+
   // chdir to game directory
   if(file_path[0])
   {
@@ -2569,7 +2566,7 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
     mzx_world->max_samples = 4;
 
   // This will be -1 (no limit) or whatever was loaded from a save
-  set_max_samples(mzx_world->max_samples);
+  audio_set_max_samples(mzx_world->max_samples);
 
   mzx_world->active = 1;
 
@@ -2808,8 +2805,16 @@ void change_board_load_assets(struct world *mzx_world)
 
   // Does this board need a char set loaded? (2.90+)
   if(mzx_world->version >= V290 && cur_board->charset_path[0])
+  {
     if(fsafetranslate(cur_board->charset_path, translated_name) == FSAFE_SUCCESS)
+    {
+      // Bug: ec_load_set cleared the extended chars prior to 2.91e
+      if(mzx_world->version < V291)
+        ec_clear_set();
+
       ec_load_set(translated_name);
+    }
+  }
 
   // Does this board need a palette loaded? (2.90+)
   if(mzx_world->version >= V290 && cur_board->palette_path[0])
@@ -2883,7 +2888,7 @@ __editor_maybe_static void default_global_data(struct world *mzx_world)
   set_counter(mzx_world, "LOBOMBS", 0, 0);
   set_counter(mzx_world, "SCORE", 0, 0);
   set_counter(mzx_world, "TIME", 0, 0);
-  
+
   // Setup their gateways
   initialize_gateway_functions(mzx_world);
 
@@ -3094,7 +3099,7 @@ void clear_world(struct world *mzx_world)
 
   mzx_world->active = 0;
 
-  end_sample();
+  audio_end_sample();
 }
 
 // This clears the rest of the stuff.

@@ -31,12 +31,55 @@ __M_BEGIN_DECLS
 
 #include "memfile.h"
 
-#define ZIP_M_NONE 0
-#define ZIP_M_DEFLATE 8
+// Currently supported methods are 0 (Store) and 8 (DEFLATE)
+enum zip_compression_method
+{
+  ZIP_M_NONE                    = 0, // Store
+  ZIP_M_SHRUNK                  = 1,
+  ZIP_M_REDUCED_1               = 2, // Reduced with compression factor 1
+  ZIP_M_REDUCED_2               = 3, // Reduced with compression factor 2
+  ZIP_M_REDUCED_3               = 4, // Reduced with compression factor 3
+  ZIP_M_REDUCED_4               = 5, // Reduced with compression factor 4
+  ZIP_M_IMPLODED                = 6,
+  ZIP_M_DEFLATE                 = 8,
+  ZIP_M_DEFLATE64               = 9,
+  ZIP_M_DCL_IMPLODING           = 10, // Old IBM TERSE
+  ZIP_M_BZIP2                   = 12,
+  ZIP_M_LZMA                    = 14,
+  ZIP_M_IBM_TERSE               = 18,
+  ZIP_M_LZ77                    = 19,
+  ZIP_M_WAVPACK                 = 97,
+  ZIP_M_PPMD                    = 98,
+};
 
-#define ZIP_F_DATA_DESCRIPTOR (1<<3)
+enum zip_general_purpose_flag
+{
+  ZIP_F_ENCRYPTED           = (1<<0), // Indicates that a file is encrypted.
+  ZIP_F_COMPRESSION_1       = (1<<1), // Varies.
+  ZIP_F_COMPRESSION_2       = (1<<2), // Varies.
+  ZIP_F_DATA_DESCRIPTOR     = (1<<3), // Sizes and CRC32 stored after file data.
+  ZIP_F_ENHANCED_DEFLATE    = (1<<4), // Reserved for Deflate64.
+  ZIP_F_COMPRESSED_PATCHED  = (1<<5), // ?????
+  ZIP_F_STRONG_ENCRYPTION   = (1<<6), // Indicates strong encryption is used.
+  // bit 07 unused
+  // bit 08 unused
+  // bit 09 unused
+  // bit 10 unused
+  ZIP_F_LANGUAGE_ENCODING   = (1<<11), // Indicates UTF-8 filename/comments.
+  // bit 12 reserved
+  ZIP_F_MASKED_HEADER_DATA  = (1<<13), // See: strong encryption.
+  // bit 14 reserved
+  // bit 15 reserved
+};
 
-enum zip_error {
+// These flags are allowed for all DEFLATE and stored files we care about.
+#define ZIP_F_ALLOWED   (\
+  ZIP_F_DATA_DESCRIPTOR |\
+  ZIP_F_COMPRESSION_1   |\
+  ZIP_F_COMPRESSION_2   )
+
+enum zip_error
+{
   ZIP_SUCCESS = 0,
   ZIP_EOF,
   ZIP_NULL,

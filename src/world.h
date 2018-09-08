@@ -33,7 +33,6 @@ __M_BEGIN_DECLS
 #include "robot.h"
 #include "counter.h"
 #include "sprite.h"
-#include "sfx.h"
 #include "util.h"
 #include "configure.h"
 #include "zip.h"

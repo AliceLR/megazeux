@@ -2,7 +2,43 @@
 # OS X makefile generics
 #
 
+DSOLDFLAGS = -dynamiclib
+DSOPRE     = lib
+DSOPOST    = .dylib
+DSORPATH   =
+DSOSONAME  = -install_name ${LIBDIR}/
+
 STRIP   ?= strip
+
+#
+# darwin specific recipes.
+# Enable 'make install' and 'make uninstall' for darwin builds.
+#
+
+ifeq (${SUBPLATFORM},darwin)
+
+include arch/install.inc
+
+# No platform-specific files to install
+install-arch:
+uninstall-arch:
+
+endif
+
+#
+# darwin-dist specific recipes.
+# These recipes are intended to produce portable Mac OS X .apps.
+# This setup is extremely old and for Intel Macs has been superceded
+# by the Xcode project folder (see: arch/xcode). However, this is still
+# required to build PowerPC Mac .apps.
+#
+
+ifeq (${SUBPLATFORM},darwin-dist)
+
+.PHONY: dist lipo package_clean
+
+# Make dylib path the same as the executable path instead
+DSOSONAME  = -install_name @executable_path/
 
 CROSS_COMPILE_X86_CC  ?= i686-apple-darwin10-gcc-4.2.1
 CROSS_COMPILE_X86_CXX ?= i686-apple-darwin10-g++-4.2.1
@@ -42,23 +78,6 @@ endif
 endif
 endif
 endif
-
-DSOLDFLAGS = -dynamiclib
-DSOPRE     = lib
-DSOPOST    = .dylib
-DSORPATH   =
-DSOSONAME  = -install_name @executable_path/
-
-ifeq (${BUILD_LIBSDL2},)
-SDL_CFLAGS  ?= $(shell ${PREFIX}/bin/sdl-config --cflags)
-SDL_LDFLAGS ?= $(shell ${PREFIX}/bin/sdl-config --libs)
-else
-SDL_CFLAGS  ?= $(shell ${PREFIX}/bin/sdl2-config --cflags)
-SDL_LDFLAGS ?= $(shell ${PREFIX}/bin/sdl2-config --libs)
-endif
-
-LIBPNG_CFLAGS  ?= $(shell ${PREFIX}/bin/libpng-config --cflags)
-LIBPNG_LDFLAGS ?= $(shell ${PREFIX}/bin/libpng-config --ldflags)
 
 arch/darwin/SDLMain.o: arch/darwin/SDLMain.m
 	$(if ${V},,@echo "  CC      " $<)
@@ -117,3 +136,5 @@ build:
 
 archive: build
 	@arch/darwin/dmg.sh ${TARGET}
+
+endif # darwin-dist

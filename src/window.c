@@ -33,27 +33,32 @@
 #include <unistd.h>
 #endif
 
-#include "platform.h"
-#include "event.h"
-#include "helpsys.h"
-#include "sfx.h"
-#include "error.h"
-#include "intake.h"
-#include "window.h"
-#include "graphics.h"
-#include "const.h"
-#include "data.h"
-#include "helpsys.h"
-#include "robot.h"
+#ifdef __WIN32__
+// Required for GetLogicalDrives()
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
 #include "board.h"
+#include "const.h"
+#include "context_enum.h"
+#include "data.h"
+#include "error.h"
+#include "event.h"
+#include "graphics.h"
+#include "helpsys.h"
+#include "intake.h"
+#include "platform.h"
+#include "robot.h"
+#include "window.h"
 #include "world.h"
 #include "util.h"
+
+#include "audio/sfx.h"
 
 #ifdef CONFIG_WII
 #include <sys/iosupport.h>
 #endif
-
-#include "context_enum.h"
 
 // This context stuff was originally in helpsys, but it's actually
 // more of a property of the windowing system.
@@ -1464,8 +1469,8 @@ static int key_input_box(struct world *mzx_world, struct dialog *di,
    di->sfx_test_for_input)
   {
     // Play a sfx
-    clear_sfx_queue();
-    play_str(src->result, 0);
+    sfx_clear_queue();
+    play_string(src->result, 0);
   }
 
   return key;
@@ -2752,7 +2757,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
     if(!dir_open(&current_dir, current_dir_name))
       goto skip_dir;
 
-    #ifdef CONFIG_3DS
+#ifdef CONFIG_3DS
     if(dirs_okay == 1 && strlen(current_dir_name) > 1)
     {
       dir_list[num_dirs] = cmalloc(3);
@@ -2761,7 +2766,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
       dir_list[num_dirs][2] = '\0';
       num_dirs++;
     }
-    #endif
+#endif
 
     while(1)
     {
@@ -2782,7 +2787,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
              !strcmp(current_dir_name, base_dir_name) ))
           {
             dir_list[num_dirs] = cmalloc(file_name_length + 1);
-            strncpy(dir_list[num_dirs], file_name, file_name_length);
+            memcpy(dir_list[num_dirs], file_name, file_name_length + 1);
             dir_list[num_dirs][file_name_length] = '\0';
             num_dirs++;
           }
@@ -2793,9 +2798,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
           if(file_name_length >= 4)
           {
             // Find the extension.
-            for(ext_pos = file_name_length - 1; ext_pos >= 0; ext_pos--)
-              if(file_name[ext_pos] == '.')
-                break;
+            ext_pos = get_ext_pos(file_name);
 
             for(i = 0; wildcards[i] != NULL; i++)
             {
@@ -2808,28 +2811,25 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
                   FILE *mzx_file = fopen_unsafe(file_name, "rb");
 
                   memset(file_list[num_files], ' ', 55);
-                  strncpy(file_list[num_files], file_name, file_name_length);
-                  file_list[num_files][file_name_length] = ' ';
+                  memcpy(file_list[num_files], file_name, file_name_length);
+
                   // Display names that are too long with ...
                   if(file_name_length > 29)
-                    strncpy(file_list[num_files] + 26, "... ", 4);
+                    strcpy(file_list[num_files] + 26, "... ");
 
                   fread(file_list[num_files] + 30, 1, 24, mzx_file);
                   fclose(mzx_file);
                 }
                 else
                 {
-                  strncpy(file_list[num_files], file_name, file_name_length);
+                  memcpy(file_list[num_files], file_name, file_name_length + 1);
                   // Display names that are too long with ...
                   if(file_name_length > 55)
-                    strncpy(file_list[num_files] + 52, "...", 3);
-
-                  file_list[num_files][file_name_length] = '\0';
+                    strcpy(file_list[num_files] + 52, "...");
                 }
                 file_list[num_files][55] = 0;
-                strncpy(file_list[num_files] + 56, file_name,
-                 file_name_length);
-                (file_list[num_files] + 56)[file_name_length] = '\0';
+                memcpy(file_list[num_files] + 56, file_name,
+                 file_name_length + 1);
 
                 num_files++;
                 break;
@@ -3044,7 +3044,8 @@ skip_dir:
           if((stat_result >= 0) && (allow_new == 1))
           {
             char confirm_string[512];
-            sprintf(confirm_string, "%s already exists, overwrite?", ret_file);
+            snprintf(confirm_string, 512, "%s already exists, overwrite?",
+             ret_file);
             if(!ask_yes_no(mzx_world, confirm_string))
               return_value = 0;
           }

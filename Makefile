@@ -39,41 +39,136 @@ MKDIR   ?= mkdir
 MV      ?= mv
 RM      ?= rm
 
-ifeq (${BUILD_LIBSDL2},)
-SDL_CFLAGS  ?= $(shell sdl-config --cflags)
-SDL_LDFLAGS ?= $(shell sdl-config --libs)
+#
+# Set up CFLAGS/LDFLAGS for all MegaZeux external dependencies.
+#
+
+ifeq (${BUILD_SDL},1)
+
+#
+# SDL 2
+#
+
+ifneq (${BUILD_LIBSDL2},)
+
+# Check PREFIX for sdl2-config.
+ifneq ($(wildcard ${PREFIX}/bin/sdl2-config),)
+SDL_CONFIG  := ${PREFIX}/bin/sdl2-config
+else ifneq ($(wildcard ${SDL_PREFIX}/bin/sdl2-config),)
+SDL_CONFIG  := ${SDL_PREFIX}/bin/sdl2-config
 else
-SDL_CFLAGS  ?= $(shell sdl2-config --cflags | sed 's,-I,-isystem ,g')
-SDL_LDFLAGS ?= $(shell sdl2-config --libs)
+SDL_CONFIG  := sdl2-config
 endif
 
-VORBIS_CFLAGS  ?= -I${PREFIX}/include -DOV_EXCLUDE_STATIC_CALLBACKS
-ifneq (${TREMOR},1)
-VORBIS_LDFLAGS ?= -L${PREFIX}/lib -lvorbisfile -lvorbis -logg
+SDL_PREFIX  ?= $(shell ${SDL_CONFIG} --prefix)
+SDL_CFLAGS  ?= $(shell ${SDL_CONFIG} --prefix=${SDL_PREFIX} --cflags | sed 's,-I,-isystem ,g')
+SDL_LDFLAGS ?= $(shell ${SDL_CONFIG} --prefix=${SDL_PREFIX} --libs)
+endif
+
+#
+# SDL 1.2
+#
+
+ifeq (${BUILD_LIBSDL2},)
+
+# Check PREFIX for sdl-config.
+ifneq ($(wildcard ${PREFIX}/bin/sdl-config),)
+SDL_CONFIG  := ${PREFIX}/bin/sdl-config
+else ifneq ($(wildcard ${SDL_PREFIX}/bin/sdl-config),)
+SDL_CONFIG  := ${SDL_PREFIX}/bin/sdl-config
 else
+SDL_CONFIG  := sdl-config
+endif
+
+SDL_PREFIX  ?= $(shell ${SDL_CONFIG} --prefix)
+SDL_CFLAGS  ?= $(shell ${SDL_CONFIG} --prefix=${SDL_PREFIX} --cflags)
+SDL_LDFLAGS ?= $(shell ${SDL_CONFIG} --prefix=${SDL_PREFIX} --libs)
+endif
+
+# Make these immediate so the scripts run only once.
+SDL_PREFIX  := $(SDL_PREFIX)
+SDL_CFLAGS  := $(SDL_CFLAGS)
+SDL_LDFLAGS := $(SDL_LDFLAGS)
+
+endif
+
+#
+# libvorbis/tremor
+#
+
+VORBIS_CFLAGS  ?= -I${PREFIX}/include -DOV_EXCLUDE_STATIC_CALLBACKS
+ifeq (${VORBIS},vorbis)
+VORBIS_LDFLAGS ?= -L${PREFIX}/lib -lvorbisfile -lvorbis -logg
+else ifeq (${VORBIS},tremor)
+VORBIS_LDFLAGS ?= -L${PREFIX}/lib -lvorbisidec -logg
+else ifeq (${VORBIS},tremor-lowmem)
 VORBIS_LDFLAGS ?= -L${PREFIX}/lib -lvorbisidec
 endif
+
+#
+# MikMod (optional mod engine)
+#
 
 MIKMOD_CFLAGS  ?= -I${PREFIX}/include
 MIKMOD_LDFLAGS ?= -L${PREFIX}/lib -lmikmod
 
-# Uncomment these when we don't need to contrib xmp.
-#XMP_CFLAGS  ?= -I${PREFIX}/include
-#XMP_LDFLAGS ?= -L${PREFIX}/lib -lxmp
+#
+# libopenmpt (optional mod engine)
+#
 
 OPENMPT_CFLAGS  ?= -I${PREFIX}/include
 OPENMPT_LDFLAGS ?= -L${PREFIX}/lib -lopenmpt
+
+#
+# zlib
+#
 
 ZLIB_CFLAGS  ?= -I${PREFIX}/include \
                 -D_FILE_OFFSET_BITS=32 -U_LARGEFILE64_SOURCE
 ZLIB_LDFLAGS ?= -L${PREFIX}/lib -lz
 
+#
+# libpng
+#
+
 ifeq (${LIBPNG},1)
-LIBPNG_CFLAGS  ?= $(shell libpng-config --cflags)
-LIBPNG_LDFLAGS ?= $(shell libpng-config --ldflags)
+
+# Check PREFIX for libpng-config.
+ifneq ($(wildcard ${PREFIX}/bin/libpng-config),)
+LIBPNG_CONFIG  := ${PREFIX}/bin/libpng-config
+else
+LIBPNG_CONFIG  := libpng-config
 endif
 
+LIBPNG_CFLAGS  ?= $(shell ${LIBPNG_CONFIG} --cflags)
+LIBPNG_LDFLAGS ?= $(shell ${LIBPNG_CONFIG} --ldflags)
+
+# Make these immediate so the scripts run only once.
+LIBPNG_CFLAGS  := $(LIBPNG_CFLAGS)
+LIBPNG_LDFLAGS := $(LIBPNG_LDFLAGS)
+endif
+
+#
+# X11
+#
+
+ifneq (${X11DIR},)
+X11_CFLAGS  ?= -I${X11DIR}/../include
+X11_LDFLAGS ?= -L${X11DIR}/../lib -lX11
+# Make these immediate
+X11_CFLAGS := $(X11_CFLAGS)
+X11_LDFLAGS := $(X11_LDFLAGS)
+endif
+
+#
+# pthread
+#
+
 PTHREAD_LDFLAGS ?= -lpthread
+
+#
+# Set up general CFLAGS/LDFLAGS
+#
 
 OPTIMIZE_CFLAGS ?= -O3
 
@@ -110,10 +205,23 @@ CXXFLAGS += -fno-exceptions -fno-rtti ${ARCH_CXXFLAGS}
 LDFLAGS  += ${ARCH_LDFLAGS}
 
 #
-# GCC version >= 4.x
+# GCC version >= 7.x
 #
 
 GCC_VER_MAJOR := ${shell ${CC} -dumpversion | cut -d. -f1}
+GCC_VER_MAJOR_GE_7 := ${shell test $(GCC_VER_MAJOR) -ge 7; echo $$?}
+
+ifeq ($(GCC_VER_MAJOR_GE_7),0)
+# This gives spurious warnings on Linux. The snprintf implementation on Linux
+# will terminate even in the case of truncation, making this largely useless.
+# It does not trigger using mingw, where it would actually matter.
+CFLAGS   += -Wno-format-truncation
+endif
+
+#
+# GCC version >= 4.x
+#
+
 GCC_VER_MAJOR_GE_4 := ${shell test $(GCC_VER_MAJOR) -ge 4; echo $$?}
 
 ifeq ($(GCC_VER_MAJOR_GE_4),0)
@@ -196,10 +304,17 @@ build_clean:
 
 source: build/${TARGET}src
 
+#
+# Build source target
+# Targetting unix primarily, so turn off autocrlf if necessary
+#
 build/${TARGET}src:
 	${RM} -r build/${TARGET}
 	${MKDIR} -p build/dist/source
+	@TEMP=$(git config core.autocrlf)
+	@git config core.autocrlf false
 	@git checkout-index -a --prefix build/${TARGET}/
+	@git config core.autocrlf ${TEMP}
 	${RM} -r build/${TARGET}/scripts
 	${RM} build/${TARGET}/.gitignore build/${TARGET}/.gitattributes
 	@cd build/${TARGET} && make distclean
@@ -300,11 +415,12 @@ ifeq (${BUILD_UTILS},1)
 	fi
 endif
 ifeq (${BUILD_RENDER_GL_PROGRAM},1)
-	${MKDIR} -p ${build}/assets/shaders/scalers
-	${CP} assets/shaders/*.vert ${build}/assets/shaders
-	${CP} assets/shaders/*.frag ${build}/assets/shaders
-	${CP} assets/shaders/scalers/*.frag assets/shaders/scalers/*.vert \
-		assets/shaders/scalers/README.txt ${build}/assets/shaders/scalers
+	${MKDIR} -p ${build}/assets/glsl/scalers
+	${CP} assets/glsl/*.vert ${build}/assets/glsl
+	${CP} assets/glsl/*.frag ${build}/assets/glsl
+	${CP} assets/glsl/README.md ${build}/assets/glsl
+	${CP} assets/glsl/scalers/*.frag assets/glsl/scalers/*.vert \
+		${build}/assets/glsl/scalers
 endif
 
 distclean: clean

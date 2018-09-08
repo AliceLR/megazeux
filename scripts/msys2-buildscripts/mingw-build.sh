@@ -5,6 +5,8 @@
 # $5 - branch name (e.g. build-testing)
 # $6 - MINGW32 or MINGW64
 
+export SDL_PREFIX=`./mingw-sdl-prefix.sh $6`
+
 MSYSTEM=$6
 . /etc/profile
 cd /mzx-build-workingdir/megazeux
@@ -14,10 +16,11 @@ git pull
 
 ./config.sh --platform $2 $3 --enable-release
 make -j8 debuglink
+make test
 
 rm -rf build
 
-CUSTOM_SDL_DLL_DIR=contrib/precompiled-sdl/$1 make archive
+make archive
 
 /mingw-build-debug.sh $1
 

@@ -146,7 +146,11 @@ int apply_undo(struct undo_history *h)
 
     // Reverse to the previous frame
     if(h->current == h->first)
+    {
       h->current = -1;
+      h->current_frame = NULL;
+      return 1;
+    }
 
     else if(h->current == 0)
       h->current = h->size - 1;
@@ -186,7 +190,7 @@ int apply_redo(struct undo_history *h)
 
 void update_undo_frame(struct undo_history *h)
 {
-  if(h)
+  if(h && h->current_frame)
     h->update_function(h->current_frame);
 }
 
@@ -204,6 +208,7 @@ void destruct_undo_history(struct undo_history *h)
         h->clear_function(f);
     }
 
+    free(h->frames);
     free(h);
   }
 }
@@ -642,9 +647,9 @@ void add_board_undo_position(struct undo_history *h, int x, int y)
     int prev_alloc = current->prev_alloc;
     int prev_size = current->prev_size;
 
-    enum thing grab_id;
-    int grab_color;
-    int grab_param;
+    enum thing grab_id = 0;
+    int grab_color = 0;
+    int grab_param = 0;
 
     // Can't place over player
     if(src_board->level_id[offset] == PLAYER)

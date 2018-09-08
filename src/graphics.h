@@ -57,6 +57,9 @@ struct char_element
 #define CHAR_W 8
 #define CHAR_H 14
 
+#define SCREEN_PIX_W (SCREEN_W * CHAR_W)
+#define SCREEN_PIX_H (SCREEN_H * CHAR_H)
+
 #define CHAR_SIZE 14
 #define CHARSET_SIZE 256
 #if defined(CONFIG_NDS)
@@ -98,7 +101,7 @@ struct renderer
   void (*update_colors)    (struct graphics_data *, struct rgb_color *,
                              Uint32);
   void (*resize_screen)    (struct graphics_data *, int, int);
-  void (*remap_charsets)   (struct graphics_data *);
+  void (*remap_char_range) (struct graphics_data *, Uint16 first, Uint16 count);
   void (*remap_char)       (struct graphics_data *, Uint16 chr);
   void (*remap_charbyte)   (struct graphics_data *, Uint16 chr, Uint8 byte);
   void (*get_screen_coords)(struct graphics_data *, int, int, int *, int *,
@@ -141,7 +144,7 @@ struct graphics_data
   Uint32 current_intensity[SMZX_PAL_SIZE];
   Uint32 saved_intensity[SMZX_PAL_SIZE];
   Uint32 backup_intensity[SMZX_PAL_SIZE];
-  
+
   Uint32 layer_count;
   struct video_layer video_layers[TEXTVIDEO_LAYERS];
   Uint32 current_layer;
@@ -232,7 +235,7 @@ CORE_LIBSPEC void set_window_caption(const char *caption);
 CORE_LIBSPEC void ec_read_char(Uint16 chr, char *matrix);
 CORE_LIBSPEC void ec_change_char(Uint16 chr, char *matrix);
 CORE_LIBSPEC Sint32 ec_load_set_var(char *name, Uint16 pos, int version);
-CORE_LIBSPEC void ec_mem_load_set(Uint8 *chars);
+CORE_LIBSPEC void ec_mem_load_set(Uint8 *chars, size_t len);
 CORE_LIBSPEC void ec_mem_save_set(Uint8 *chars);
 CORE_LIBSPEC void ec_mem_load_set_var(char *chars, size_t len, Uint16 pos, int v);
 CORE_LIBSPEC void ec_mem_save_set_var(Uint8 *chars, size_t len, Uint16 pos);

@@ -34,7 +34,8 @@ enum bottom_screen_mode
 enum bottom_screen_mode get_bottom_screen_mode(void);
 bool get_allow_focus_changes(void);
 
-void do_unicode_key_event(struct buffered_status *status, bool down, enum keycode code, int unicode);
+void do_unicode_key_event(struct buffered_status *status, bool down,
+ enum keycode code, int unicode);
 void do_key_event(struct buffered_status *status, bool down, enum keycode code);
 void do_joybutton_event(struct buffered_status *status, bool down, int button);
 

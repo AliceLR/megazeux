@@ -34,8 +34,8 @@ __M_BEGIN_DECLS
 #include "editor/configure.h"
 #endif
 
-#include "sfx.h"
 #include "util.h"
+#include "audio/sfx.h"
 
 #define CHANGE_STATE_SWAP_WORLD 1
 #define CHANGE_STATE_LOAD_GAME_ROBOTIC 2

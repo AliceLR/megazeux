@@ -31,7 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // This version of uthash.h has been modified for MegaZeux to be case-insensitive.
 
-#include <memcasecmp.h>
+#include "../../src/memcasecmp.h"
 
 /* These macros use decltype or the earlier __typeof GNU extension.
    As decltype is only available in newer compilers (VS2010 or gcc 4.3+

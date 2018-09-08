@@ -70,6 +70,7 @@ following counters: `PASS`, `FAIL`, `BADF`, or `SKIP`.
 MUST be executed:
 
 ```
+: "exit"
 if "__continue" = 1 then "__swap"
 end
 : "__swap"
@@ -98,6 +99,16 @@ Worlds from MZX versions 2.62 to 2.70 should use the following compatible string
 * `$string2`: the author of the test.
 * `$string3`: a description of the test.
 * `$string4`: indicates more details about the result of a test.
+
+
+### Skipping Tests
+
+To skip a test, set `result` to `SKIP`. The following counters indicate when a
+certain test should be skipped:
+
+* `__skip_audio`: all audio in MZX is disabled. All audio tests should check this.
+* `__skip_mod`: no module player for the audio system has been enabled.
+* `__skip_vorbis`: ogg/vorbis support has been disabled.
 
 
 ### Compatibility Notes

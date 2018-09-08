@@ -1,4 +1,114 @@
-TBA - MZX 2.91c
+GIT - MZX 2.91f
+
+USERS
+
++ Fixed a crash that occurs when attempting to add a watchpoint
+  for robot local counters, loopcount, etc. Using these counters
+  as watchpoints will watch the global robot's instances of
+  these variables (for other robots, use e.g. r#.local1).
+
+DEVELOPERS
+
++ GAMESDIR/BINDIR/SHAREDIR now properly apply PREFIX when they
+  are not explicitly set by config.sh.
++ LIBDIR is now user-definable like BINDIR et al. Variations
+  such as "lib64" currently must be explicitly provided for
+  platforms that still use them.
++ Remove src folder from CFLAGS to fix a bug where system
+  includes could be mistaken for MegaZeux headers. All includes
+  of MegaZeux headers must be done using relative paths now.
++ Fixed include bugs for X11 and Carbon clipboard handlers.
++ Makefile now attempts to respect the prefix when running
+  sdl-config, sdl2-config, and libpng-config.
++ Renamed the "darwin" config.sh platform to "darwin-dist".
++ Added "darwin" and "darwin-devel" config.sh platforms. These
+  act like Mac OS X versions of the "unix" and "unix-devel"
+  options.
+
+
+September 3rd, 2018 - MZX 2.91e
+
+Bugfix release fixing some crashes, port bugs, and some other
+significant issues affecting a variety of things.
+
+USERS
+
++ Fixed bug where loading a board charset would also clear all
+  of the extended charsets.
++ Fixed bug where loading a default charset in the editor would
+  also clear all of the extended charsets.
++ Loading a 2.91 world when a renderer with no layer support is
+  active no longer triggers an error message.
++ Fixed a memory corruption bug in the non-SDL Wii port caused
+  by faulty threading code.
++ Fixed crash that could occur when updating a board undo frame.
++ Fixed crash when changing to a board with overlay disabled in
+  overlay editing mode.
++ Fixed a bug where the protected charset could get cleared for
+  renderers without layer rendering support.
++ Enabled C99-compliant stdio functions for mingw, fixing at
+  least one crash bug and possibly improving performance.
++ The NDS port now attempts to detect argv[0].
++ The 3DS port now attempts to detect argv[0] and otherwise will
+  start in /3ds/megazeux instead of /.
++ The 3DS port .3dsx file is now located in /3ds/megazeux.
++ The MOVE PLAYER [dir] and MOVE PLAYER [dir] [label] commands
+  now update the commands cycle and commands total values.
++ Fixed a bug where MZX and checkres wouldn't accept some
+  DEFLATE-related ZIP flags.
++ checkres no longer crashes on failing to open a resource zip.
++ The window caption now updates correctly when using either of
+  the overlay renderers.
++ Update checking will now display an error instead of silently
+  hiding the updater when the updater fails to initialize.
++ Fixed an issue where UIs would execute redundant frames.
++ Fixed a bug where string comparison would not order strings of
+  different lengths correctly. (GreaseMonkey)
+
+DEVELOPERS
+
++ Code style has been cleaned up in numerous files.
++ Moved GLSL shaders from assets/shaders/ to assets/glsl/.
++ Added missing GPL headers to GLSL shaders and added slightly
+  better documentation to them.
+
+
+July 12th, 2018 - MZX 2.91d
+
+This is a minor bugfix release to get a handful of fixes out
+primarily concerning the updater. The NDS/3DS/PSP/Wii ports now
+include a copy of Caverns of Zeux.
+
+USERS
+
++ Added timeouts to updater network operations.
++ Fixed bug where the updater would retry downloads without
+  regard to the status code.
++ The updater is now force-disabled for all non-Windows
+  platforms in config.sh.
++ Fixed bug where breakpoints could trigger on the wrong line.
++ Amended VOLUME/MOD FADE # # bounding to clamp values in port
+  versions. DOS versions will still wrap between 0 and 255.
++ Added DOS compatibility fix for sprN_off.
++ Window caption is now properly updated when loading a world
+  from an unedited world in the editor.
++ Fixed bug where ".." would change to the current directory if
+  the current path ended in a path separator.
+- Removed undocumented support for "title.cnf", "game.cnf", and
+  "editor.cnf" config files, which would have been loaded from
+  the same directory as the main config (not to be confused with
+  world-specific config files, which are still supported).
+
+DEVELOPERS
+
++ The MSYS2 buildscripts have been overhauled to work with the
+  new devkitPro pacman repositories.
++ Added config options to select vorbis, tremor, tremor-lowmem,
+  or to disable ogg vorbis file support. The 3DS and Wii ports
+  now use tremor instead of tremor-lowmem.
+
+
+March 4th, 2018 - MZX 2.91c
 
 This release contains an assortment of bugfixes ranging from
 player clone fixes to obscure compatibility patches. A handful
@@ -44,11 +154,19 @@ USERS
 + Sharks and SpittingTigers with firing rates greater than 4 now
   retain their firing rate when edited.
 + Fixed a bug where world decryption could crash. (Revvy)
++ If the glsl renderer is selected by default, the detection of
+  a software opengl driver will result in falling back to
+  software. (Lancer-X)
++ Fixed a bug in the GLSL renderer where an additional window is
+  created if the OpenGL version is low enough to cause a
+  fallback to software. (Lancer-X)
 
 DEVELOPERS
 
 + Added .MZX-based unit testing system. Run with "make test".
   See testworlds/README.md for more information.
++ The default renderer is now auto_glsl, which turns into glsl
+  if not using a blacklisted opengl driver. (Lancer-X)
 
 
 January 6, 2018 - MZX 2.91b
@@ -1821,7 +1939,7 @@ USERS
 + Setting vlayer_size, vlayer_width or vlayer_height to values less than or
   equal to zero would crash MegaZeux. Limit the smallest vlayer size to 1x1.
 + Setting vlayer_width or vlayer_height to a value larger than vlayer_size
-  would crash MegaZeux. Limit the largest size of either dimension to a 
+  would crash MegaZeux. Limit the largest size of either dimension to a
   maximum of vlayer_size.
 + If selecting a module with a non 8.3 filename, MZX will now ask you if you
   want to rename it to 8.3, and do so in an intelligent way. This means that

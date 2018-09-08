@@ -33,15 +33,17 @@
 
 #define MAX_KEYS_DOWN 8
 
-C3D_Tex* keyboard_tex;
-static enum keycode keys_down[] = {
+C3D_Tex *keyboard_tex;
+static enum keycode keys_down[] =
+{
   IKEY_UNKNOWN, IKEY_UNKNOWN, IKEY_UNKNOWN, IKEY_UNKNOWN,
   IKEY_UNKNOWN, IKEY_UNKNOWN, IKEY_UNKNOWN, IKEY_UNKNOWN
 };
 static u8 keys_down_count = 0;
 static bool force_zoom_out = false;
 
-static touch_area_t touch_areas[] = {
+static touch_area_t touch_areas[] =
+{
   { 2, 118, 22, 16, IKEY_ESCAPE, 0 },
   { 23, 118, 22, 16, IKEY_F1, 0 },
   { 44, 118, 22, 16, IKEY_F2, 0 },
@@ -126,11 +128,10 @@ static inline bool ctr_is_modifier(enum keycode keycode)
   return keycode >= IKEY_RSHIFT && keycode <= IKEY_RSUPER;
 }
 
-static inline bool ctr_key_touched(touchPosition* pos, touch_area_t* area)
+static inline bool ctr_key_touched(touchPosition *pos, touch_area_t *area)
 {
-  return pos->px >= area->x && pos->py >= area->y
-    && pos->px < (area->x + area->w)
-    && pos->py < (area->y + area->h);
+  return (pos->px >= area->x) && (pos->py >= area->y) &&
+   (pos->px < (area->x + area->w)) && (pos->py < (area->y + area->h));
 }
 
 bool ctr_keyboard_force_zoom_out(void)
@@ -147,24 +148,28 @@ void ctr_keyboard_draw(struct ctr_render_data *render_data)
 {
   Uint32 i, j;
 
-  ctr_draw_2d_texture(render_data, keyboard_tex, 0, 0, 320, 240, 0, 0, 320, 240, 4.0f, 0xffffffff, false);
+  ctr_draw_2d_texture(render_data, keyboard_tex, 0, 0, 320, 240, 0, 0, 320, 240,
+   4.0f, 0xffffffff, false);
 
-  if (ctr_is_2d())
+  if(ctr_is_2d())
   {
-    ctr_draw_2d_texture(render_data, keyboard_tex, force_zoom_out ? 16 : 0, 240, 16, 16, 302, 2, 16, 16, 3.0f, 0xffffffff, false);
+    ctr_draw_2d_texture(render_data, keyboard_tex, force_zoom_out ? 16 : 0, 240,
+     16, 16, 302, 2, 16, 16, 3.0f, 0xffffffff, false);
   }
 
-  if (keys_down_count > 0)
+  if(keys_down_count > 0)
   {
     for(i = 0; i < touch_areas_len; i++)
     {
-      touch_area_t* area = &touch_areas[i];
+      touch_area_t *area = &touch_areas[i];
       for(j = 0; j < keys_down_count; j++)
       {
-        if (keys_down[j] == area->keycode)
+        if(keys_down[j] == area->keycode)
         {
-          ctr_draw_2d_texture(render_data, keyboard_tex, area->x, 240 - area->y - area->h, area->w, area->h,
-            area->x, area->y + 1, area->w, area->h - 1, 3.0f, 0x808080ff, false);
+          ctr_draw_2d_texture(render_data, keyboard_tex, area->x,
+           240 - area->y - area->h, area->w, area->h,
+           area->x, area->y + 1, area->w, area->h - 1,
+           3.0f, 0x808080ff, false);
           break;
         }
       }
@@ -187,14 +192,15 @@ bool ctr_keyboard_update(struct buffered_status *status)
 
   if(down & KEY_TOUCH)
   {
-    if (ctr_is_2d() && pos.px >= 302 && pos.py >= 2 && pos.px < 318 && pos.py < 18)
+    if(ctr_is_2d() && pos.px >= 302 && pos.py >= 2 && pos.px < 318 &&
+     pos.py < 18)
     {
       force_zoom_out = !force_zoom_out;
     }
 
     for(i = 0; i < touch_areas_len; i++)
     {
-      touch_area_t* area = &touch_areas[i];
+      touch_area_t *area = &touch_areas[i];
       if(ctr_key_touched(&pos, area))
       {
         do_key_event(status, (down & KEY_TOUCH), area->keycode);
@@ -205,9 +211,10 @@ bool ctr_keyboard_update(struct buffered_status *status)
     }
   }
 
-  if(up & KEY_TOUCH && keys_down_count > 0 && !ctr_is_modifier(keys_down[keys_down_count - 1]))
+  if(up & KEY_TOUCH && keys_down_count > 0 &&
+   !ctr_is_modifier(keys_down[keys_down_count - 1]))
   {
-    for (; keys_down_count > 0; keys_down_count--)
+    for(; keys_down_count > 0; keys_down_count--)
     {
       do_key_event(status, false, keys_down[keys_down_count - 1]);
       keys_down[keys_down_count - 1] = IKEY_UNKNOWN;

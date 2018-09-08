@@ -10062,7 +10062,13 @@ cycle. Setting the COMMANDS counter can set the number of
 commands processed per Robot per cycle to be lower or
 (significantly) higher. Some commands, however, have the ability
 to end processing prematurely; these are called cycle-ending
-commands.
+commands. When the COMMANDS value is very high, MegaZeux can end
+up consuming large amounts of processing power in a single
+cycle. Cycle-ending commands can limit the number of commands
+processed in a cycle to only what is necessary. Otherwise, very
+high COMMANDS values can potentially slow down MegaZeux or even
+cause MegaZeux to trigger safeguards that prevent it from
+freezing.
 
 As a simple rule of thumb, commands that move anything on the
 board generally end a cycle, especially moving the player,
@@ -10145,7 +10151,8 @@ $~9The MegaZeux Updater
 Modern MegaZeux versions on supported platforms, such as
 Windows, have the ability to update MegaZeux from MegaZeux
 itself. The updater can be set to run by pressing either F7 or U
-on any title screen.
+on any title screen, and can also be configured to check for
+updates every launch in config.txt settings.
 
 MegaZeux checks the sites listed under the config.txt settings,
 in order. By default, the updater checks the Stable branch of
@@ -10184,6 +10191,152 @@ updated.
 :1st: 
 $~9NEW in MegaZeux!
 
+September 3rd, 2018 - MZX 2.91e
+
+Bugfix release fixing some crashes, port bugs, and some other
+significant issues affecting a variety of things.
+
+USERS
+
++ Fixed bug where loading a board charset would also clear all
+  of the extended charsets.
++ Fixed bug where loading a default charset in the editor would
+  also clear all of the extended charsets.
++ Loading a 2.91 world when a renderer with no layer support is
+  active no longer triggers an error message.
++ Fixed a memory corruption bug in the non-SDL Wii port caused
+  by faulty threading code.
++ Fixed crash that could occur when updating a board undo frame.
++ Fixed crash when changing to a board with overlay disabled in
+  overlay editing mode.
++ Fixed a bug where the protected charset could get cleared for
+  renderers without layer rendering support.
++ Enabled C99-compliant stdio functions for mingw, fixing at
+  least one crash bug and possibly improving performance.
++ The NDS port now attempts to detect argv[0].
++ The 3DS port now attempts to detect argv[0] and otherwise will
+  start in /3ds/megazeux instead of /.
++ The 3DS port .3dsx file is now located in /3ds/megazeux.
++ The MOVE PLAYER [dir] and MOVE PLAYER [dir] [label] commands
+  now update the commands cycle and commands total values.
++ Fixed a bug where MZX and checkres wouldn't accept some
+  DEFLATE-related ZIP flags.
++ checkres no longer crashes on failing to open a resource zip.
++ The window caption now updates correctly when using either of
+  the overlay renderers.
++ Update checking will now display an error instead of silently
+  hiding the updater when the updater fails to initialize.
++ Fixed an issue where UIs would execute redundant frames.
++ Fixed a bug where string comparison would not order strings of
+  different lengths correctly. (GreaseMonkey)
+
+DEVELOPERS
+
++ Code style has been cleaned up in numerous files.
++ Moved GLSL shaders from assets/shaders/ to assets/glsl/.
++ Added missing GPL headers to GLSL shaders and added slightly
+  better documentation to them.
+
+>#MAIN.HLP:072:Table of Contents
+
+July 12th, 2018 - MZX 2.91d
+
+This is a minor bugfix release to get a handful of fixes out
+primarily concerning the updater. The NDS/3DS/PSP/Wii ports now
+include a copy of Caverns of Zeux.
+
+USERS
+
++ Added timeouts to updater network operations.
++ Fixed bug where the updater would retry downloads without
+  regard to the status code.
++ The updater is now force-disabled for all non-Windows
+  platforms in config.sh.
++ Fixed bug where breakpoints could trigger on the wrong line.
++ Amended VOLUME/MOD FADE # # bounding to clamp values in port
+  versions. DOS versions will still wrap between 0 and 255.
++ Added DOS compatibility fix for sprN_off.
++ Window caption is now properly updated when loading a world
+  from an unedited world in the editor.
++ Fixed bug where ".." would change to the current directory if
+  the current path ended in a path separator.
+- Removed undocumented support for "title.cnf", "game.cnf", and
+  "editor.cnf" config files, which would have been loaded from
+  the same directory as the main config (not to be confused with
+  world-specific config files, which are still supported).
+
+DEVELOPERS
+
++ The MSYS2 buildscripts have been overhauled to work with the
+  new devkitPro pacman repositories.
++ Added config options to select vorbis, tremor, tremor-lowmem,
+  or to disable ogg vorbis file support. The 3DS and Wii ports
+  now use tremor instead of tremor-lowmem.
+
+>#MAIN.HLP:072:Table of Contents
+
+March 4th, 2018 - MZX 2.91c
+
+This release contains an assortment of bugfixes ranging from
+player clone fixes to obscure compatibility patches. A handful
+of updater issues have been fixed (or at least addressed).
+
+MegaZeux can now automatically check for updates on startup on
+Windows platforms. This behavior can be configured, and by
+default will simply leave a message in the window caption.
+
+USERS
+
++ MegaZeux can now automatically run the updater on startup
+  on applicable platforms. This can be configured with the
+  'update_auto_check' config file option.
++ Fixed a bug where several .MOD variants stopped working with
+  libxmp enabled.
++ Sound effects in subdirectories can now be used in the SFX
+  editor.
++ Fixed a bug where checkres would fail on legacy worlds with
+  very long custom SFX.
++ Checkres no longer ignores the SFX tables of 2.90+ worlds.
++ Fixed a bug where interpolated expressions containing ternary
+  operators could terminate counter names early.
++ Fixed faulty IF ANY compatibility behavior.
++ Fixed a bug where FWRITE functions could change the case of
+  user-defined filenames when creating new files on non-Windows
+  platforms.
++ SMZX mode 1 palettes are now exported correctly as 16 colors
+  instead of as 256 colors.
++ Fixed subtly inconsistent timing in certain built-ins.
++ Fixed bug where wind and transporters could clone the player.
++ MegaZeux now restarts correctly in paths containing spaces
+  when the updater is run.
++ Subroutines in pre-port MZX worlds now always return to the
+  command after the subroutine was sent.
++ Typed color components now wrap from the maximum value to zero
+  like dialog number inputs, and pressing minus will now negate
+  the input number.
++ Copying chars in the char editor between regular and SMZX
+  screen modes now works properly.
++ Fixed a crash that could occur when placing things on a vlayer
+  larger than the current board.
++ Sharks and SpittingTigers with firing rates greater than 4 now
+  retain their firing rate when edited.
++ Fixed a bug where world decryption could crash. (Revvy)
++ If the glsl renderer is selected by default, the detection of
+  a software opengl driver will result in falling back to
+  software. (Lancer-X)
++ Fixed a bug in the GLSL renderer where an additional window is
+  created if the OpenGL version is low enough to cause a
+  fallback to software. (Lancer-X)
+
+DEVELOPERS
+
++ Added .MZX-based unit testing system. Run with "make test".
+  See testworlds/README.md for more information.
++ The default renderer is now auto_glsl, which turns into glsl
+  if not using a blacklisted opengl driver. (Lancer-X)
+
+>#MAIN.HLP:072:Table of Contents
+
 January 6, 2018 - MZX 2.91b
 
 Here's a fairly significant update for MegaZeux 2.91, fixing
@@ -10220,7 +10373,6 @@ DEVELOPERS
 
 + Updated MSVC for Visual Studio 2017. (Spectere)
 + Added xcode support. (Spectere)
-+ "make all" now makes the help file. (pgimeno)
 + "make clean" now deletes ccv. (pgimeno)
 + Fixed creeping CRLF usage. (Lachesis, pgimeno, Spectere)
 + Fixed a bug where the MSYS2 build scripts could inadvertently

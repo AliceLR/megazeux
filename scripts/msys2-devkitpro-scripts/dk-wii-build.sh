@@ -1,21 +1,19 @@
 #!/bin/bash
-# $1 = $DEVKITPRO
-# $2 = $DEVKITPPC
-# $3 = branch
+# $1 = branch
 
+[ -z "$DEVKITPRO" ] && { echo "DEVKITPRO environment variable must be set!"; exit 1; }
 [ -z "$1" ] && { echo "argument 1 required."; exit 1; }
-[ -z "$2" ] && { echo "argument 2 required."; exit 1; }
-[ -z "$3" ] && { echo "argument 3 required."; exit 1; }
 
-export DEVKITPRO=$1
-export DEVKITPPC=$2
-export PATH="$PATH:$DEVKITPPC/bin"
+export DEVKITPRO=`cygpath -u "$DEVKITPRO"`
+
+export PATH="$PATH:$DEVKITPRO/devkitPPC/bin"
+export PATH="$PATH:$DEVKITPRO/tools/bin"
 
 cd /mzx-build-workingdir
 mkdir -p zips
 cd megazeux
 
-git checkout $3
+git checkout $1
 
 # FIXME using SDL Wii for now. Want to switch back to hardware eventually.
 arch/wii/CONFIG.SDLWII

@@ -65,7 +65,7 @@ static void save_mzm_common(struct world *mzx_world, int start_x, int start_y,
     // Before saving the MZM, we first calculate its file size
     // Then we allocate the memory needed to store the MZM
     mzm_size = 20;
-    
+
     // Add on the storage space required to store all tiles
     mzm_size += (width * height) * (storage_mode ? 2 : 6);
 
@@ -80,7 +80,7 @@ static void save_mzm_common(struct world *mzx_world, int start_x, int start_y,
       for(i = 0; i < num_robots_active; i++)
       {
         struct robot *cur_robot = robot_list[i];
-        if (cur_robot)
+        if(cur_robot)
         {
           if(cur_robot->xpos >= start_x &&
            cur_robot->ypos >= start_y &&
@@ -338,7 +338,7 @@ static void *str_allocate(size_t length, void **dest)
   struct str_allocate_data *data = *dataPtr;
 
   data->str = new_string(data->mzx_world, data->name, length, data->id);
-  
+
   return data->str->value;
 }
 
@@ -346,7 +346,7 @@ void save_mzm_string(struct world *mzx_world, const char *name, int start_x,
  int start_y, int width, int height, int mode, int savegame, int id)
 {
   struct str_allocate_data *data = malloc(sizeof(struct str_allocate_data));
-  
+
   data->str = NULL;
   data->name = name;
   data->mzx_world = mzx_world;
@@ -649,7 +649,7 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer,
             // dummy out the robots.
 
             if((savegame_mode > savegame) ||
-              (MZX_VERSION < mzm_world_version))
+             (MZX_VERSION < mzm_world_version))
             {
               dummy = 1;
             }

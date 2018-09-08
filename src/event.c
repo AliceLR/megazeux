@@ -19,8 +19,8 @@
 
 #include "event.h"
 #include "graphics.h"
-#include "util.h"
 #include "platform.h"
+#include "util.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -314,7 +314,13 @@ static enum keycode convert_xt_internal(Uint32 key, enum keycode *second)
   }
 }
 
-static bool update_autorepeat(void)
+// event_sdl.c needs to call this for SDL 1.2 to catch autorepeat non-events
+// while performing wait_event with a timeout.
+
+#if !defined(CONFIG_SDL)
+static
+#endif
+bool update_autorepeat(void)
 {
   // The repeat key may not be a "valid" keycode due to the unbounded nature
   // of joypad support.  All invalid keys use the last position because that's
@@ -328,13 +334,13 @@ static bool update_autorepeat(void)
   Uint8 last_key_state = status->keymap[status_key];
   Uint8 last_mouse_state = status->mouse_repeat_state;
 
-#ifdef CONFIG_SDL
-#if SDL_VERSION_ATLEAST(2,0,0)
   // If you enable SDL 2.0 key repeat, uncomment these lines:
+//#ifdef CONFIG_SDL
+//#if SDL_VERSION_ATLEAST(2,0,0)
   //last_key_state = 0;
   //input.repeat_stack_pointer = 0;
-#endif
-#endif
+//#endif
+//#endif
 
   if(last_key_state)
   {
@@ -412,18 +418,6 @@ static bool update_autorepeat(void)
   return rval;
 }
 
-// event_sdl.c needs this in SDL 1.2 for catching autorepeat non-events while
-// performing wait_event with a timeout.
-
-#if defined(CONFIG_SDL)
-#if !SDL_VERSION_ATLEAST(2,0,0)
-bool update_autorepeat_sdl(void)
-{
-  return update_autorepeat();
-}
-#endif /*SDL_VERSION_ATLEAST*/
-#endif /*CONFIG_SDL*/
-
 bool update_event_status(void)
 {
   struct buffered_status *status = store_status();
@@ -437,18 +431,6 @@ bool update_event_status(void)
 
   rval  = __update_event_status();
   rval |= update_autorepeat();
-
-#ifdef CONFIG_SDL
-#if !SDL_VERSION_ATLEAST(2,0,0)
-  // ALT+F4 - will not trigger an exit event, so set the variable manually.
-  if(status->key == IKEY_F4 && get_alt_status(keycode_internal))
-  {
-    status->key = IKEY_UNKNOWN;
-    status->unicode = 0;
-    status->exit = 1;
-  }
-#endif /*SDL_VERSION_ATLEAST*/
-#endif /*CONFIG_SDL*/
 
   return rval;
 }
@@ -478,7 +460,6 @@ void wait_event(int timeout)
 
 Uint32 update_event_status_delay(void)
 {
-  int rval = update_event_status();
   int delay_ticks;
 
   if(!last_update_time)
@@ -486,13 +467,13 @@ Uint32 update_event_status_delay(void)
 
   delay_ticks = UPDATE_DELAY - (get_ticks() - last_update_time);
 
-  last_update_time = get_ticks();
-
   if(delay_ticks < 0)
     delay_ticks = 0;
 
   delay(delay_ticks);
-  return rval;
+  last_update_time = get_ticks();
+
+  return update_event_status();
 }
 
 void update_event_status_intake(void)
@@ -503,11 +484,13 @@ void update_event_status_intake(void)
     last_update_time = get_ticks();
 
   delay_ticks = UPDATE_DELAY - (get_ticks() - last_update_time);
-  if (delay_ticks < 1) delay_ticks = 1;
 
-  last_update_time = get_ticks();
+  // wait_event will wait indefinitely unless the timeout is greater than 0.
+  if(delay_ticks < 1)
+    delay_ticks = 1;
 
   wait_event(delay_ticks);
+  last_update_time = get_ticks();
 }
 
 static enum keycode emit_keysym_wrt_numlock(enum keycode key)

@@ -11,6 +11,7 @@ arch/msvc/MegaZeux.opensdf
 arch/msvc/MegaZeux.sdf
 arch/msvc/MegaZeux.v12.suo
 arch/msvc/obj
+arch/msvc/version.h
 arch/nds/mzxrun.arm7.elf
 arch/nds/ndsScreens/
 arch/nds/*.d
@@ -19,6 +20,7 @@ arch/psp/*.d
 arch/psp/*.o
 arch/wii/*.d
 arch/wii/*.o
+arch/xcode/version.h
 build
 contrib/gdm2s3m/src/.build/
 contrib/icons/.build/
@@ -78,6 +80,7 @@ SDL.dll
 SDL2.dll
 src/.build/
 src/config.h
+src/audio/.build/
 src/editor/.build/
 src/network/.build/
 src/utils/.build/
@@ -96,11 +99,13 @@ src/utils/png2smzx
 src/utils/*.debug
 stdout.txt
 stderr.txt
+Thumbs.db
 *.debug
 *.mzx
 *.sav
 *.mzm
 *~
+.vscode
 .DS_Store
 xcuserdata/
 

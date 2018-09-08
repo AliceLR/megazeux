@@ -12,19 +12,14 @@ ifeq ($(strip $(DEVKITPPC)),)
 $(error "DEVKITPPC must be set in your environment.")
 endif
 
-AS      := powerpc-eabi-as
-CC      := powerpc-eabi-gcc
-CXX     := powerpc-eabi-g++
-AR      := powerpc-eabi-ar
-OBJCOPY := powerpc-eabi-objcopy
-ELF2DOL := elf2dol
-
-PORTLIBS ?= $(DEVKITPRO)/portlibs/wii
-
 #
 # Wii target rules
 #
-STRIP  = /bin/true
+
+include $(DEVKITPPC)/wii_rules
+
+ELF2DOL := elf2dol
+STRIP   := /bin/true
 
 #
 # Override library paths
@@ -38,17 +33,12 @@ STRIP  = /bin/true
 SDL_CFLAGS     = -isystem $(DEVKITPRO)/libogc/include/SDL
 SDL_LDFLAGS    = $(SDL_CFLAGS)
 
-EXTRA_INCLUDES = -isystem $(DEVKITPRO)/libogc/include \
-                 -isystem $(DEVKITPRO)/libfat-ogc/include \
+EXTRA_INCLUDES = -isystem $(LIBOGC_INC) \
                  -isystem $(PORTLIBS)/include
-EXTRA_LIBS     = -L$(DEVKITPRO)/libogc/lib/wii \
-                 -L$(DEVKITPRO)/libfat-ogc/lib/wii \
+EXTRA_LIBS     = -L$(LIBOGC_LIB) \
                  -L$(PORTLIBS)/lib \
                  $(if $(BUILD_SDL), -lSDL,) \
                  -lfat -lasnd -lwiikeyboard -lwiiuse -lbte -logc -lstdc++ -lm
-
-
-MACHDEP = -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
 
 ARCH_CFLAGS   += ${EXTRA_INCLUDES} $(MACHDEP)
 ARCH_CXXFLAGS += ${ARCH_CFLAGS}
@@ -56,7 +46,9 @@ ARCH_LDFLAGS  += ${EXTRA_LIBS} $(MACHDEP)
 
 package: mzx
 	${ELF2DOL} ${mzxrun} boot.dol
+ifneq ($(BUILD_EDITOR),)
 	${ELF2DOL} ${mzx} megazeux.dol
+endif
 
 clean:
 	@rm -f boot.dol megazeux.dol arch/wii/*.d arch/wii/*.o

@@ -53,8 +53,10 @@ bool __update_event_status(void)
 
 void __wait_event(int timeout)
 {
-  if (timeout) delay(timeout);
-  while (!__update_event_status())
+  if(timeout)
+    delay(timeout);
+
+  while(!__update_event_status())
     gspWaitForVBlank();
 }
 
@@ -82,7 +84,8 @@ void do_unicode_key_event(struct buffered_status *status, bool down,
 void do_key_event(struct buffered_status *status, bool down,
  enum keycode code)
 {
-  do_unicode_key_event(status, down, code, code >= 32 && code <= 126 ? code : 0);
+  do_unicode_key_event(status, down, code,
+   (code >= 32 && code <= 126) ? code : 0);
 }
 
 // Send a joystick button up/down event to MZX.
@@ -95,20 +98,25 @@ void do_joybutton_event(struct buffered_status *status, bool down,
 }
 
 static inline bool check_key(struct buffered_status *status,
-  Uint32 down, Uint32 up, Uint32 key, enum keycode code)
+ Uint32 down, Uint32 up, Uint32 key, enum keycode code)
 {
   if(down & key)
   {
     do_key_event(status, true, code);
     return true;
   }
-  else if(up & key)
+  else
+
+  if(up & key)
   {
     do_key_event(status, false, code);
     return true;
   }
+
   else
+  {
     return false;
+  }
 }
 
 static inline bool check_joy(struct buffered_status *status,
@@ -119,13 +127,18 @@ static inline bool check_joy(struct buffered_status *status,
     do_joybutton_event(status, true, code);
     return true;
   }
-  else if(up & key)
+  else
+
+  if(up & key)
   {
     do_joybutton_event(status, false, code);
     return true;
   }
+
   else
+  {
     return false;
+  }
 }
 
 static inline bool ctr_is_mouse_area(touchPosition *touch)
@@ -136,8 +149,12 @@ static inline bool ctr_is_mouse_area(touchPosition *touch)
   {
     mx = touch->px * 4 - 320;
     my = touch->py * 4 - (13 * 4);
-    if (mx < 0 || mx >= 640 || my < 0 || my >= 350) return false;
-    else return true;
+
+    if(mx < 0 || mx >= 640 || my < 0 || my >= 350)
+      return false;
+
+    else
+      return true;
   }
   else
   {
@@ -145,7 +162,8 @@ static inline bool ctr_is_mouse_area(touchPosition *touch)
   }
 }
 
-static inline bool ctr_update_touch(struct buffered_status *status, touchPosition *touch)
+static inline bool ctr_update_touch(struct buffered_status *status,
+ touchPosition *touch)
 {
   int mx, my;
 
@@ -153,7 +171,9 @@ static inline bool ctr_update_touch(struct buffered_status *status, touchPositio
   {
     mx = touch->px * 4 - 320;
     my = touch->py * 4 - (13 * 4);
-    if (mx < 0 || mx >= 640 || my < 0 || my >= 350) return false;
+
+    if(mx < 0 || mx >= 640 || my < 0 || my >= 350)
+      return false;
   }
   else
   {
@@ -180,7 +200,9 @@ static inline bool ctr_update_touch(struct buffered_status *status, touchPositio
     return true;
   }
   else
+  {
     return false;
+  }
 }
 
 static inline bool ctr_update_cstick(struct buffered_status *status)
@@ -201,7 +223,8 @@ static inline bool ctr_update_cstick(struct buffered_status *status)
     if(nmy < 0) nmy = 0;
     if(nmy >= 350) nmy = 349;
 
-    if((Uint32) nmx != status->real_mouse_x || (Uint32) nmy != status->real_mouse_y)
+    if((Uint32) nmx != status->real_mouse_x ||
+     (Uint32) nmy != status->real_mouse_y)
     {
       status->real_mouse_x = nmx;
       status->real_mouse_y = nmy;
@@ -250,7 +273,7 @@ bool update_hid(void)
     retval = true;
   }
 
-  if ((down | held | up) & KEY_TOUCH)
+  if((down | held | up) & KEY_TOUCH)
   {
     hidTouchRead(&touch);
 
@@ -280,7 +303,9 @@ bool update_hid(void)
         retval = true;
       }
       else
+      {
         retval |= ctr_update_touch(status, &touch);
+      }
     }
 
     retval |= ctr_keyboard_update(status);

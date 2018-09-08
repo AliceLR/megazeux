@@ -31,29 +31,30 @@
 #include <unistd.h>
 #endif
 
-#include "platform.h"
-#include "event.h"
-#include "helpsys.h"
-#include "scrdisp.h"
-#include "error.h"
-#include "idarray.h"
-#include "audio.h"
-#include "sfx.h"
-#include "idput.h"
-#include "data.h"
-#include "const.h"
-#include "game.h"
-#include "window.h"
-#include "graphics.h"
-#include "counter.h"
-#include "game2.h"
-#include "sprite.h"
-#include "world.h"
 #include "board.h"
-#include "robot.h"
-#include "fsafeopen.h"
+#include "const.h"
+#include "counter.h"
+#include "data.h"
+#include "error.h"
+#include "event.h"
 #include "extmem.h"
+#include "fsafeopen.h"
+#include "game.h"
+#include "game2.h"
+#include "graphics.h"
+#include "helpsys.h"
+#include "idarray.h"
+#include "idput.h"
+#include "platform.h"
+#include "robot.h"
+#include "scrdisp.h"
+#include "sprite.h"
 #include "util.h"
+#include "window.h"
+#include "world.h"
+
+#include "audio/audio.h"
+#include "audio/sfx.h"
 
 #define MESG_TIMEOUT 160
 
@@ -345,7 +346,7 @@ void load_board_module(struct world *mzx_world, struct board *src_board)
   if(!filename[0])
   {
     mzx_world->real_mod_playing[0] = 0;
-    end_module();
+    audio_end_module();
     return;
   }
 
@@ -372,7 +373,7 @@ void load_board_module(struct world *mzx_world, struct board *src_board)
     return;
 
   // The safety check has already been done. So don't do it again (false).
-  result = load_module(translated_name, false, src_board->volume);
+  result = audio_play_module(translated_name, false, src_board->volume);
 
   // If the mod actually changed, update real mod playing.
   if(result)
@@ -390,7 +391,7 @@ static void load_savegame_module(struct world *mzx_world)
   struct board *cur_board = mzx_world->current_board;
 
   // For savegames, we need to load real_mod_playing instead of the board mod.
-  load_module(mzx_world->real_mod_playing, true, cur_board->volume);
+  audio_play_module(mzx_world->real_mod_playing, true, cur_board->volume);
 }
 
 static void load_world_file(struct world *mzx_world, char *name)
@@ -399,8 +400,8 @@ static void load_world_file(struct world *mzx_world, char *name)
   int fade = 0;
 
   // Load world
-  end_module();
-  clear_sfx_queue();
+  audio_end_module();
+  sfx_clear_queue();
   //Clear screen
   clear_screen(32, 7);
   // Palette
@@ -647,8 +648,8 @@ static char shader_name[MAX_PATH];
 static void game_settings(struct world *mzx_world)
 {
   struct board *src_board = mzx_world->current_board;
-  int mzx_speed, music, sfx;
-  int music_volume, sound_volume, sfx_volume;
+  int mzx_speed, music, pcs;
+  int music_volume, sound_volume, pcs_volume;
   struct dialog di;
   int dialog_result;
   int speed_option = 0;
@@ -701,11 +702,11 @@ static void game_settings(struct world *mzx_world)
   }
 
   mzx_speed = mzx_world->mzx_speed;
-  music = get_music_on_state() ^ 1;
-  sfx = get_sfx_on_state() ^ 1;
-  music_volume = get_music_volume();
-  sound_volume = get_sound_volume();
-  sfx_volume = get_sfx_volume();
+  music = !audio_get_music_on();
+  pcs = !audio_get_pcs_on();
+  music_volume = audio_get_music_volume();
+  sound_volume = audio_get_sound_volume();
+  pcs_volume = audio_get_pcs_volume();
 
   do
   {
@@ -716,7 +717,7 @@ static void game_settings(struct world *mzx_world)
 #ifdef CONFIG_RENDER_GL_PROGRAM
     if(!strcmp(mzx_world->conf.video_output, "glsl"))
     {
-      strcpy(shader_path, mzx_res_get_by_id(SHADERS_SCALER_DIRECTORY));
+      strcpy(shader_path, mzx_res_get_by_id(GLSL_SHADER_SCALER_DIRECTORY));
 
       elements[6] = construct_file_selector(3, 13 + speed_option,
        "Scaling shader-", "Choose a scaling shader...", shader_exts,
@@ -737,7 +738,7 @@ static void game_settings(struct world *mzx_world)
     elements[0] = construct_radio_button(4, 2 + speed_option,
      radio_strings_1, 2, 19, &music);
     elements[1] = construct_radio_button(4, 5 + speed_option,
-     radio_strings_2, 2, 18, &sfx);
+     radio_strings_2, 2, 18, &pcs);
     elements[2] = construct_label(3, 8 + speed_option,
      "Audio volumes-");
     elements[3] = construct_number_box(3, 9 + speed_option,
@@ -745,7 +746,7 @@ static void game_settings(struct world *mzx_world)
     elements[4] = construct_number_box(3, 10 + speed_option,
      "SoundFX volume- ", 1, 8, 0, &sound_volume);
     elements[5] = construct_number_box(3, 11 + speed_option,
-     "PC Speaker SFX- ", 1, 8, 0, &sfx_volume);
+     "PC Speaker SFX- ", 1, 8, 0, &pcs_volume);
 
     elements[ok_pos] = construct_button(6, 13 + speed_option + shader_option,
      "OK", 0);
@@ -765,39 +766,39 @@ static void game_settings(struct world *mzx_world)
 
     if(!dialog_result)
     {
-      set_sfx_volume(sfx_volume);
+      audio_set_pcs_volume(pcs_volume);
 
-      if(music_volume != get_music_volume())
+      if(music_volume != audio_get_music_volume())
       {
-        set_music_volume(music_volume);
+        audio_set_music_volume(music_volume);
 
         if(mzx_world->active)
-          volume_module(src_board->volume);
+          audio_set_module_volume(src_board->volume);
       }
 
-      if(sound_volume != get_sound_volume())
-        set_sound_volume(sound_volume);
+      if(sound_volume != audio_get_sound_volume())
+        audio_set_sound_volume(sound_volume);
 
-      sfx ^= 1;
       music ^= 1;
+      pcs ^= 1;
 
-      set_sfx_on(sfx);
+      audio_set_pcs_on(pcs);
 
       if(!music)
       {
         // Turn off music.
-        if(get_music_on_state() && (mzx_world->active))
-          end_module();
+        if(audio_get_music_on() && (mzx_world->active))
+          audio_end_module();
       }
       else
 
-      if(!get_music_on_state() && (mzx_world->active))
+      if(!audio_get_music_on() && (mzx_world->active))
       {
         // Turn on music.
         load_board_module(mzx_world, src_board);
       }
 
-      set_music_on(music);
+      audio_set_music_on(music);
       mzx_world->mzx_speed = mzx_speed;
     }
 
@@ -1389,7 +1390,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
       }
     }
     src_board->volume = result_volume;
-    volume_module(volume);
+    audio_set_module_volume(volume);
   }
 
   // Slow_time- flip slowed
@@ -1630,7 +1631,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
      && (!mzx_world->was_zapped))
     {
       int d_board = src_board->level_under_param[d_offset];
-      clear_sfx_queue(); // Since there is often a push sound
+      sfx_clear_queue(); // Since there is often a push sound
       play_sfx(mzx_world, 37);
 
       // Same board or nonexistant?
@@ -1714,7 +1715,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
     set_counter(mzx_world, "HEALTH", mzx_world->starting_health, 0);
     dec_counter(mzx_world, "Lives", 1, 0);
     set_mesg(mzx_world, "You have died...");
-    clear_sfx_queue();
+    sfx_clear_queue();
     play_sfx(mzx_world, 23);
 
     // Go somewhere else?
@@ -1774,7 +1775,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
     Uint32 viewport_layer;
     int top_x;
     int top_y;
-    
+
     blank_layers();
 
     // Draw border
@@ -1828,7 +1829,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
 
     // Add sprites
     draw_sprites(mzx_world);
-    
+
     // Add time limit
     time_remaining = get_counter(mzx_world, "TIME", 0);
     if(time_remaining)
@@ -2714,7 +2715,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
       {
         mzx_world->full_exit = true;
       }
-      
+
       if(confirm_exit || !conf->standalone_mode)
       {
         confirm_exit = 0;
@@ -2729,7 +2730,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
   } while(!exit);
   pop_context();
   vquick_fadeout();
-  clear_sfx_queue();
+  sfx_clear_queue();
 }
 
 void title_screen(struct world *mzx_world)
@@ -2742,7 +2743,6 @@ void title_screen(struct world *mzx_world)
   int fade;
   struct stat file_info;
   struct board *src_board;
-  char *current_dir;
   struct config_info *conf = &mzx_world->conf;
 
   set_caption(mzx_world, NULL, NULL, 0, 0);
@@ -2751,13 +2751,6 @@ void title_screen(struct world *mzx_world)
   // Clear screen
   clear_screen(32, 7);
   default_palette();
-
-  current_dir = cmalloc(MAX_PATH);
-  getcwd(current_dir, MAX_PATH);
-
-  chdir(config_dir);
-  set_config_from_file(&(mzx_world->conf), "title.cnf");
-  chdir(current_dir);
 
   // First, disable standalone mode if this is a build of MZX
   // with the editor enabled
@@ -2823,17 +2816,16 @@ void title_screen(struct world *mzx_world)
           update_event_status();
           continue;
         }
+        update_event_status();
       }
       else
       {
         // Give some delay time if nothing's loaded
-        update_event_status_delay();
         update_screen();
+        update_event_status_delay();
       }
 
       src_board = mzx_world->current_board;
-
-      update_event_status();
 
       // Keycheck
       key = get_key(keycode_internal_wrt_numlock);
@@ -2933,15 +2925,9 @@ void title_screen(struct world *mzx_world)
            "Choose game to restore", 1))
           {
             // Swap out current board...
-            clear_sfx_queue();
+            sfx_clear_queue();
             // Load game
             fadein = 0;
-
-            getcwd(current_dir, MAX_PATH);
-
-            chdir(config_dir);
-            set_config_from_file(&(mzx_world->conf), "game.cnf");
-            chdir(current_dir);
 
             if(reload_savegame(mzx_world, save_file_name, &fadein))
             {
@@ -2973,7 +2959,7 @@ void title_screen(struct world *mzx_world)
 
               // Done playing- load world again
               // Already faded out from play_game()
-              end_module();
+              audio_end_module();
               // Clear screen
               clear_screen(32, 7);
               // Palette
@@ -3033,12 +3019,6 @@ void title_screen(struct world *mzx_world)
             // Palette
             default_palette();
 
-            getcwd(current_dir, MAX_PATH);
-
-            chdir(config_dir);
-            set_config_from_file(&(mzx_world->conf), "game.cnf");
-            chdir(current_dir);
-
             if(reload_world(mzx_world, curr_file, &fade))
             {
               if(mzx_world->current_board_id != mzx_world->first_board)
@@ -3062,7 +3042,7 @@ void title_screen(struct world *mzx_world)
 
               set_counter(mzx_world, "TIME", src_board->time_limit, 0);
 
-              clear_sfx_queue();
+              sfx_clear_queue();
               find_player(mzx_world);
               mzx_world->player_restart_x = mzx_world->player_x;
               mzx_world->player_restart_y = mzx_world->player_y;
@@ -3078,7 +3058,7 @@ void title_screen(struct world *mzx_world)
 
               // Done playing- load world again
               // Already faded out from play_game()
-              end_module();
+              audio_end_module();
               // Clear screen
               clear_screen(32, 7);
               // Palette
@@ -3102,7 +3082,7 @@ void title_screen(struct world *mzx_world)
             }
             else
             {
-              end_module();
+              audio_end_module();
               clear_screen(32, 7);
             }
           }
@@ -3114,18 +3094,20 @@ void title_screen(struct world *mzx_world)
         {
           if(check_for_updates)
           {
-            int current_sfx_vol = get_sfx_volume();
-            int current_music_vol = get_music_volume();
-            set_sfx_volume(0);
-            set_music_volume(0);
+            int current_music_vol = audio_get_music_volume();
+            int current_pcs_vol = audio_get_pcs_volume();
+            audio_set_music_volume(0);
+            audio_set_pcs_volume(0);
             if(mzx_world->active)
-              volume_module(0);
+              audio_set_module_volume(0);
+
             check_for_updates(mzx_world, &mzx_world->conf, 0);
             set_caption(mzx_world, NULL, NULL, 0, 0);
-            set_sfx_volume(current_sfx_vol);
-            set_music_volume(current_music_vol);
+
+            audio_set_pcs_volume(current_pcs_vol);
+            audio_set_music_volume(current_music_vol);
             if(mzx_world->active)
-              volume_module(src_board->volume);
+              audio_set_module_volume(src_board->volume);
           }
           break;
         }
@@ -3142,7 +3124,7 @@ void title_screen(struct world *mzx_world)
           if(edit_world)
           {
             // Editor
-            clear_sfx_queue();
+            sfx_clear_queue();
             vquick_fadeout();
             set_intro_mesg_timer(0);
             edit_world(mzx_world, reload_curr_world_in_editor);
@@ -3162,20 +3144,14 @@ void title_screen(struct world *mzx_world)
            get_counter(mzx_world, "LOAD_MENU", 0);
           if(conf->standalone_mode && !load_menu_status)
             break;
-          
+
           // Restore
           m_show();
 
           // Swap out current board...
-          clear_sfx_queue();
+          sfx_clear_queue();
           // Load game
           fadein = 0;
-
-          getcwd(current_dir, MAX_PATH);
-
-          chdir(config_dir);
-          set_config_from_file(&(mzx_world->conf), "game.cnf");
-          chdir(current_dir);
 
           if(!reload_savegame(mzx_world, curr_sav, &fadein))
           {
@@ -3208,7 +3184,7 @@ void title_screen(struct world *mzx_world)
 
             // Done playing- load world again
             // Already faded out from play_game()
-            end_module();
+            audio_end_module();
             // Clear screen
             clear_screen(32, 7);
             // Palette
@@ -3296,7 +3272,7 @@ void title_screen(struct world *mzx_world)
           // ESCAPE_MENU (2.90+)
           int escape_menu_status =
            get_counter(mzx_world, "ESCAPE_MENU", 0);
-          
+
           // Escape menu only works on the title screen if the
           // standalone_mode config option is set
           if(mzx_world->version < V290 || escape_menu_status ||
@@ -3338,9 +3314,7 @@ void title_screen(struct world *mzx_world)
   } while(!exit && !mzx_world->full_exit);
 
   vquick_fadeout();
-  clear_sfx_queue();
-
-  free(current_dir);
+  sfx_clear_queue();
 }
 
 void set_mesg(struct world *mzx_world, const char *str)
