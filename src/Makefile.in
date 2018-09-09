@@ -345,11 +345,6 @@ include src/editor/Makefile.in
 
 mzx_objs := ${mzx_objs} ${core_obj}/main.o
 
-#ifeq (${PLATFORM},darwin)
-#mzx_objs += arch/darwin/SDLMain.o
-#mzx_ldflags += -framework Cocoa
-#endif
-
 -include ${mzx_objs:.o=.d}
 
 ifeq (${EMBED_ICONS},1)
@@ -385,11 +380,6 @@ endif
 ifeq (${BUILD_MZXRUN},1)
 
 mzxrun_objs := ${core_obj}/main.o ${core_obj}/run_stubs.o
-
-#ifeq (${PLATFORM},darwin)
-#mzxrun_objs += arch/darwin/SDLMain.o
-#mzxrun_ldflags += -framework Cocoa
-#endif
 
 -include ${mzxrun_objs:.o=.d}
 

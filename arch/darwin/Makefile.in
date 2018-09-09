@@ -79,18 +79,11 @@ endif
 endif
 endif
 
-arch/darwin/SDLMain.o: arch/darwin/SDLMain.m
-	$(if ${V},,@echo "  CC      " $<)
-	${CC} -MD ${CFLAGS} ${SDL_CFLAGS} -c $< -o $@
-
 package: all
 	${MV} ${core_target} ${core_target}.${REAL_ARCH}
 	${MV} ${editor_target} ${editor_target}.${REAL_ARCH}
 	${MV} ${mzx} ${mzx}.${REAL_ARCH}
 	${MV} ${mzxrun} ${mzxrun}.${REAL_ARCH}
-
-clean:
-	${RM} arch/darwin/SDLMain.o arch/darwin/SDLMain.d
 
 package_clean: clean
 	${RM} ${core_target}.${REAL_ARCH}
