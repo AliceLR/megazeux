@@ -60,8 +60,6 @@ install: install-check install-arch
 	@${install} -m 0755 -d \
 		${DESTDIR}${SYSCONFDIR} \
 		${DESTDIR}${SHAREDIR} \
-		${DESTDIR}${SHAREDIR}/icons \
-		${DESTDIR}${SHAREDIR}/applications \
 		${DESTDIR}${SHAREDIR}/megazeux \
 		${DESTDIR}${SHAREDIR}/megazeux/assets && \
 	 ${install} -m 0644 assets/default.chr assets/edit.chr \

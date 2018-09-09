@@ -12,7 +12,11 @@ include arch/install.inc
 
 # linux os specific install files
 install-arch: install-check
-	@${install} -m 0644 contrib/icons/quantump.png \
+	@${install} -m 0755 -d \
+		${DESTDIR}${SHAREDIR} \
+		${DESTDIR}${SHAREDIR}/icons \
+		${DESTDIR}${SHAREDIR}/applications && \
+	 ${install} -m 0644 contrib/icons/quantump.png \
 		${DESTDIR}${SHAREDIR}/icons/megazeux.png && \
 	 ${install} -m 0644 arch/unix/megazeux.desktop \
 		${DESTDIR}${SHAREDIR}/applications/megazeux.desktop
