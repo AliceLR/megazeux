@@ -60,11 +60,21 @@ install: install-check install-arch
 	@${install} -m 0755 -d \
 		${DESTDIR}${SYSCONFDIR} \
 		${DESTDIR}${SHAREDIR} \
+		${DESTDIR}${SHAREDIR}/doc \
+		${DESTDIR}${SHAREDIR}/doc/megazeux \
 		${DESTDIR}${SHAREDIR}/megazeux \
 		${DESTDIR}${SHAREDIR}/megazeux/assets && \
 	 ${install} -m 0644 assets/default.chr assets/edit.chr \
 		assets/smzx.pal ${DESTDIR}${SHAREDIR}/megazeux/assets && \
 	 ${install} -m 0644 config.txt ${DESTDIR}${SYSCONFDIR}/megazeux-config
+	@gzip -k docs/changelog.txt
+	@${install} -m 0644 \
+		README.md \
+		docs/changelog.txt.gz \
+		docs/macro.txt \
+		docs/keycodes.html \
+		${DESTDIR}${SHAREDIR}/doc/megazeux/
+	@${RM} -f docs/changelog.txt.gz
 ifeq (${BUILD_HELPSYS},1)
 	@${install} -m 0644 assets/help.fil \
 		${DESTDIR}${SHAREDIR}/megazeux/assets
@@ -135,6 +145,7 @@ uninstall: install-check uninstall-arch
 	 ${RM} -rf \
 		${DESTDIR}${SHAREDIR}/megazeux \
 		${DESTDIR}${SHAREDIR}/megazeux/assets \
+		${DESTDIR}${SHAREDIR}/doc/megazeux \
 		${DESTDIR}${SYSCONFDIR}/megazeux-config
 ifeq (${BUILD_MODULAR},1)
 	@${RM} -f \
