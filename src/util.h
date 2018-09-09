@@ -220,6 +220,33 @@ CORE_LIBSPEC void __stack_chk_fail(void);
 #define debug(...) do { } while(0)
 #endif
 
+#elif defined(CONFIG_DREAMCAST)
+
+#include <kos.h>
+
+#define info(...) \
+ do { \
+   dbgio_printf("INFO: " __VA_ARGS__); \
+   dbgio_flush(); \
+ } while(0)
+
+#define warn(...) \
+ do { \
+   dbgio_printf("WARNING: " __VA_ARGS__); \
+   dbgio_flush(); \
+ } while(0)
+
+#ifdef DEBUG
+#define debug(...) \
+ do { \
+   dbgio_printf("DEBUG: " __VA_ARGS__); \
+   dbgio_flush(); \
+ } while(0)
+#else
+#define debug(...) do { } while(0)
+#endif
+
+
 #elif defined(CONFIG_NDS) && !defined(CONFIG_STDIO_REDIRECT) /* ANDROID */
 
 // When the graphics have initialized, print to a debug buffer rather than the screen.

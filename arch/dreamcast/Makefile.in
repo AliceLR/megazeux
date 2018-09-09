@@ -1,0 +1,38 @@
+#
+# Dreamcast Makefile
+#
+
+.PHONY: package clean
+
+CC      := kos-cc
+CXX     := kos-c++
+AR      := kos-ar
+OBJCOPY := kos-objcopy
+STRIP   := kos-strip
+
+SDL_CFLAGS := -I/opt/toolchains/dc/kos-ports/SDL/inst/include
+SDL_LDFLAGS := -L/opt/toolchains/dc/kos-ports/SDL/inst/lib -lSDL
+
+ZLIB_CFLAGS := -I/opt/toolchains/dc/kos-ports/zlib/inst/include
+ZLIB_LDFLAGS := -L/opt/toolchains/dc/kos-ports/zlib/inst/lib -lz
+
+VORBIS_CFLAGS := -I/opt/toolchains/dc/kos-ports/libtremor/inst/include \
+  -I/opt/toolchains/dc/kos-ports/libogg/inst/include -DOV_EXCLUDE_STATIC_CALLBACKS
+VORBIS_LDFLAGS := -L/opt/toolchains/dc/kos-ports/libtremor/inst/lib -ltremor
+
+ARCH_CFLAGS += -fno-stack-protector
+ARCH_CXXFLAGS += -fno-stack-protector
+ARCH_LDFLAGS += -lkosext2fs
+
+#
+# Vile hack, remove me ASAP
+#
+arch/dreamcast/%.o: arch/dreamcast/%.c
+	$(if ${V},,@echo "  CC      " $<)
+	${CC} -MD ${core_cflags} ${core_flags} -Wno-unused-macros -c $< -o $@
+
+arch/dreamcast/romdisk.img:
+	$(KOS_GENROMFS) -f arch/dreamcast/romdisk.img -d arch/dreamcast/romdisk -v
+
+arch/dreamcast/romdisk.o: arch/dreamcast/romdisk.img
+	$(KOS_BASE)/utils/bin2o/bin2o arch/dreamcast/romdisk.img romdisk arch/dreamcast/romdisk.o

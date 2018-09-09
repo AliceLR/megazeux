@@ -121,7 +121,7 @@ core_cxxobjs :=
 #
 # Hack to avoid silly warnings from devkitPro headers
 #
-ifeq ($(or ${BUILD_WII},${BUILD_NDS},${BUILD_PSP}),)
+ifeq ($(or ${BUILD_WII},${BUILD_NDS},${BUILD_PSP},${BUILD_DREAMCAST}),)
 core_cflags += -Wstrict-prototypes
 endif
 
@@ -129,6 +129,10 @@ endif
 # Hack to avoid silly warnings from Android headers
 #
 ifeq (${PLATFORM},android)
+core_cflags += -Wno-strict-prototypes
+endif
+
+ifeq (${PLATFORM},dreamcast)
 core_cflags += -Wno-strict-prototypes
 endif
 
@@ -143,6 +147,12 @@ ifneq (${BUILD_DEBYTECODE},1)
 core_cobjs += arch/nds/dlmalloc.o
 core_cobjs += arch/nds/ram.o arch/nds/extmem.o
 endif
+endif
+
+ifeq (${BUILD_DREAMCAST},1)
+core_cobjs += arch/dreamcast/platform.o arch/dreamcast/render_fb.o
+core_cobjs += arch/dreamcast/audio.o arch/dreamcast/event.o
+# core_cobjs += arch/dreamcast/render.o
 endif
 
 ifeq (${BUILD_3DS},1)
@@ -335,7 +345,7 @@ endif
 
 else
 
-ifeq ($(or ${BUILD_WII},${BUILD_NDS},${BUILD_3DS}),)
+ifeq ($(or ${BUILD_WII},${BUILD_NDS},${BUILD_3DS},${BUILD_DREAMCAST}),)
 
 core_cobjs += ${core_obj}/platform_dummy.o
 

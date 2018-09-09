@@ -261,8 +261,10 @@ endif
 # support have them.
 #
 ifneq (${PLATFORM},android)
+ifneq (${PLATFORM},dreamcast)
 CFLAGS   += -pedantic -Wno-variadic-macros
 CXXFLAGS += -pedantic -fpermissive -Wno-variadic-macros
+endif
 endif
 
 ifneq (${PLATFORM},mingw)
@@ -280,7 +282,7 @@ CXXFLAGS += -fvisibility=hidden
 # __stack_chk_fail function. MinGW may or may not have a __stack_chk_fail
 # function. Skip android, too.
 #
-ifeq ($(or ${BUILD_GP2X},${BUILD_NDS},${BUILD_3DS},${BUILD_PSP},${BUILD_WII}),)
+ifeq ($(or ${BUILD_GP2X},${BUILD_NDS},${BUILD_3DS},${BUILD_PSP},${BUILD_WII},${BUILD_DREAMCAST}),)
 CFLAGS   += -fstack-protector-all
 CXXFLAGS += -fstack-protector-all
 endif

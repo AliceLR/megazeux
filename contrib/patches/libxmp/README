@@ -92,6 +92,8 @@ Patch summary
 30: (by Spectere) Compatibility patch for newever versions of MSVC, which
     have snprintf and vnprintf. This is obsoleted upstream by
     https://github.com/cmatsuoka/libxmp/pull/83.
+40: (by asie) Compatibility patch for KallistiOS, which pre-defines certain types.
+    Only required for the Dreamcast target.
 
 Unix note
 ---------

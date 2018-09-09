@@ -1,0 +1,12 @@
+diff -Nrup libxmp-orig/src/common.h libxmp/src/common.h
+--- libxmp-orig/src/common.h	2018-09-09 15:07:44.809715405 +0200
++++ libxmp/src/common.h	2018-09-09 15:06:22.608639192 +0200
+@@ -22,6 +22,8 @@
+ #  include <SupportDefs.h>
+ #elif defined __amigaos4__
+ #  include <exec/types.h>
++#elif defined __ARCH_TYPES_H
++/* KallistiOS */
+ #else
+ typedef signed char int8;
+ typedef signed short int int16;

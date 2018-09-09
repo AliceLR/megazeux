@@ -43,12 +43,12 @@ typedef int32_t Sint32;
 typedef uint64_t Uint64;
 typedef int64_t Sint64;
 
-#if defined(CONFIG_WII) || defined(CONFIG_NDS) || defined(CONFIG_3DS)
+#endif // CONFIG_SDL
+
+#if defined(CONFIG_WII) || defined(CONFIG_NDS) || defined(CONFIG_3DS) || defined(CONFIG_DREAMCAST)
 int real_main(int argc, char *argv[]);
 #define main real_main
 #endif // CONFIG_WII || CONFIG_NDS || CONFIG_3DS
-
-#endif // CONFIG_SDL
 
 // Need threads and mutexes for DNS lookups.
 // Otherwise only need mutexes for audio, but the Wii port
@@ -62,6 +62,8 @@ int real_main(int argc, char *argv[]);
 #include "../arch/wii/thread.h"
 #elif defined(CONFIG_3DS)
 #include "../arch/3ds/thread.h"
+#elif defined(CONFIG_DREAMCAST)
+#include "../arch/dreamcast/thread.h"
 #elif defined(CONFIG_SDL)
 #include "thread_sdl.h"
 #else
