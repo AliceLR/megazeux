@@ -90,7 +90,8 @@ ifeq (${BUILD_UTILS},1)
 	 ${install} -m 0755 ${downver} ${DESTDIR}${BINDIR}/ && \
 	 ${install} -m 0755 ${hlp2txt} ${DESTDIR}${BINDIR}/ && \
 	 ${install} -m 0755 ${txt2hlp} ${DESTDIR}${BINDIR}/ && \
-         ${install} -m 0755 ${ccv} ${DESTDIR}${BINDIR}/
+	 ${install} -m 0755 ${png2smzx} ${DESTDIR}${BINDIR}/ && \
+	 ${install} -m 0755 ${ccv} ${DESTDIR}${BINDIR}/
 endif
 ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 	@${install} -m 0755 -d \

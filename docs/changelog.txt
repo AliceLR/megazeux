@@ -8,6 +8,7 @@ USERS
   these variables (for other robots, use e.g. r#.local1).
 + Using SMZX_INDICES or LOAD_ROBOT on an unset string no longer
   causes a crash.
++ png2smzx is now properly bundled with Linux builds.
 
 DEVELOPERS
 
