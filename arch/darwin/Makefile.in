@@ -40,6 +40,24 @@ ifeq (${SUBPLATFORM},darwin-dist)
 # Make dylib path the same as the executable path instead
 DSOSONAME  = -install_name @executable_path/
 
+# Override these to determine which builds are included in the .app.
+PREFIX_I686   ?=
+PREFIX_AMD64  ?=
+PREFIX_PPC    ?=
+PREFIX_PPC64  ?=
+
+HAS_PREFIX=1
+ifeq (${PREFIX_I686},)
+ifeq (${PREFIX_AMD64},)
+ifeq (${PREFIX_PPC},)
+ifeq (${PREFIX_PPC64},)
+HAS_PREFIX=0
+endif
+endif
+endif
+endif
+
+# Override these to match the compiler(s) being used.
 CROSS_COMPILE_X86_CC  ?= i686-apple-darwin10-gcc-4.2.1
 CROSS_COMPILE_X86_CXX ?= i686-apple-darwin10-g++-4.2.1
 CROSS_COMPILE_PPC_CC  ?= powerpc-apple-darwin10-gcc-4.2.1
@@ -80,52 +98,74 @@ endif
 endif
 
 package: all
+	${MV} ${mzx} ${mzx}.${REAL_ARCH}
+ifneq (${BUILD_MZXRUN},)
+	${MV} ${mzxrun} ${mzxrun}.${REAL_ARCH}
+endif
+ifneq (${BUILD_MODULAR},)
 	${MV} ${core_target} ${core_target}.${REAL_ARCH}
 	${MV} ${editor_target} ${editor_target}.${REAL_ARCH}
-	${MV} ${mzx} ${mzx}.${REAL_ARCH}
-	${MV} ${mzxrun} ${mzxrun}.${REAL_ARCH}
+endif
 
 package_clean: clean
-	${RM} ${core_target}.${REAL_ARCH}
-	${RM} ${editor_target}.${REAL_ARCH}
-	${RM} ${network_target}.${REAL_ARCH}
-	${RM} ${mzx}.${REAL_ARCH}
-	${RM} ${mzxrun}.${REAL_ARCH}
+	${RM} -f ${mzx}.${REAL_ARCH}
+	${RM} -f ${mzxrun}.${REAL_ARCH}
+	${RM} -f ${core_target}.${REAL_ARCH}
+	${RM} -f ${editor_target}.${REAL_ARCH}
 
 lipo:
 	@arch/darwin/lipo.sh
 
 dist:
-	@${CP} platform.inc platform.inc.orig
-	@sed 's,blah,${HOME}/workspace/build-i686,g' \
-	     platform.inc.orig >platform.inc
-	@${MAKE} ARCH=i686 package
-	@${MAKE} ARCH=i686 clean
-	@sed 's,blah,${HOME}/workspace/build-powerpc,g' \
-	     platform.inc.orig >platform.inc
-	@${MAKE} ARCH=ppc package
-	@${MAKE} ARCH=ppc clean
+ifeq (${HAS_PREFIX},0)
+	$(error No dist target prefixes defined)
+endif
+ifneq (${PREFIX_I686},)
+	@${MAKE} PREFIX=${PREFIX_I686} ARCH=i686 package
+	@${MAKE} PREFIX=${PREFIX_I686} ARCH=i686 clean
+endif
+ifneq (${PREFIX_AMD64},)
+	@${MAKE} PREFIX=${PREFIX_AMD64} ARCH=amd64 package
+	@${MAKE} PREFIX=${PREFIX_AMD64} ARCH=amd64 clean
+endif
+ifneq (${PREFIX_PPC},)
+	@${MAKE} PREFIX=${PREFIX_PPC} ARCH=ppc package
+	@${MAKE} PREFIX=${PREFIX_PPC} ARCH=ppc clean
+endif
+ifneq (${PREFIX_PPC64},)
+	@${MAKE} PREFIX=${PREFIX_PPC64} ARCH=ppc64 package
+	@${MAKE} PREFIX=${PREFIX_PPC64} ARCH=ppc64 clean
+endif
 	@${MAKE} lipo
 
-build := build/${SUBPLATFORM}/MegaZeux.app/Contents/Resources
+mzx_app := build/${SUBPLATFORM}/MegaZeux.app/
+mzxrun_app := build/${SUBPLATFORM}/MZXRun.app/
+
+build := ${mzx_app}/Contents/Resources
 build:
-	${MKDIR} ${build}/../MacOS
-	${CP} arch/darwin/MegaZeux.plist ${build}/../Info.plist
-	${CP} contrib/icons/quantump.icns ${build}/MegaZeux.icns
 	${RM} ${build}/*.debug ${build}/utils/*.debug
-	${MV} ${build}/docs ${build}/../../..
-	${MV} ${build}/LICENSE ${build}/../../../docs/
-	${MV} ${build}/${mzx} ${build}/../MacOS/MegaZeux
-	${MV} ${build}/${mzxrun} ${build}/../MacOS/MZXRun
-	${MV} ${build}/*.dylib ${build}/../MacOS
-	${LN} -s MegaZeux.app/Contents/Resources/config.txt ${build}/../../..
-	${MKDIR} -p ${build}/../../../MZXRun.app/Contents
-	${CP} arch/darwin/MZXRun.plist \
-		${build}/../../../MZXRun.app/Contents/Info.plist
-	${LN} -s ../../MegaZeux.app/Contents/Resources \
-		${build}/../../../MZXRun.app/Contents/Resources
-	${LN} -s ../../MegaZeux.app/Contents/MacOS \
-		${build}/../../../MZXRun.app/Contents/MacOS
+	${MKDIR}                          ${mzx_app}/Contents/MacOS
+	${CP} contrib/icons/quantump.icns ${mzx_app}/Contents/Resources/MegaZeux.icns
+	${MV} ${build}/LICENSE            ${build}/docs/
+	${MV} ${build}/docs               ${mzx_app}/../
+	${MV} ${build}/${mzx}             ${mzx_app}/Contents/MacOS/MegaZeux
+ifneq (${BUILD_MZXRUN},)
+	${MV} ${build}/${mzxrun}          ${mzx_app}/Contents/MacOS/MZXRun
+endif
+ifneq (${BUILD_MODULAR},)
+	${MV} ${build}/${core_target}     ${mzx_app}/Contents/MacOS/
+	${MV} ${build}/${editor_target}   ${mzx_app}/Contents/MacOS/
+endif
+ifneq (${BUILD_MZXRUN},)
+	${CP} -r ${mzx_app} ${mzxrun_app}
+	${RM} ${mzx_app}/Contents/MacOS/MZXRun
+	${RM} ${mzxrun_app}/Contents/MacOS/MegaZeux
+ifneq (${BUILD_MODULAR},)
+	${RM} ${mzxrun_app}/Contents/MacOS/${editor_target}
+endif
+	${CP} arch/darwin/MZXRun.plist    ${mzxrun_app}/Contents/Info.plist
+endif
+	${CP} arch/darwin/MegaZeux.plist  ${mzx_app}/Contents/Info.plist
 
 archive: build
 	@arch/darwin/dmg.sh ${TARGET}

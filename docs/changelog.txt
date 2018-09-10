@@ -27,6 +27,10 @@ DEVELOPERS
 + Added "darwin" and "darwin-devel" config.sh platforms. These
   act like Mac OS X versions of the "unix" and "unix-devel"
   options.
++ The darwin-dist build system and instructions are now somewhat
+  more clear and robust.
++ Fixed a bug where zlib wouldn't necessarily be linked to
+  png2smzx.
 
 
 September 3rd, 2018 - MZX 2.91e
