@@ -25,7 +25,7 @@ cd deps
 mv ../SDL2-"$SDL_VERSION" SDL2
 mv ../libogg-"$LIBOGG_VERSION" libogg
 mv ../libvorbis-"$LIBVORBIS_VERSION" libvorbis
-cp ../../../android/app/jni/Android.mk .
+cp ../../../arch/android/project/app/jni/Android.mk .
 cp ../../../scripts/android/libogg-Android.mk libogg/Android.mk
 cp ../../../scripts/android/config_types.h libogg/include/ogg/config_types.h
 cp ../../../scripts/android/libvorbis-Android.mk libvorbis/Android.mk
@@ -49,10 +49,10 @@ for i in arm arm64 x86 x86_64; do
 done
 
 for i in SDL2 libogg libvorbis; do
-	if [ -d ../../../android/app/jni/"$i" ]; then
-		rm -r ../../../android/app/jni/"$i"
+	if [ -d ../../../arch/android/project/app/jni/"$i" ]; then
+		rm -r ../../../arch/android/project/app/jni/"$i"
 	fi
-	mv "$i" ../../../android/app/jni/"$i"
+	mv "$i" ../../../arch/android/project/app/jni/"$i"
 done
 
 cd ..

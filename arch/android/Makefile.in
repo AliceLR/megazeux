@@ -41,7 +41,7 @@ $(error Specify a valid supported architecture)
 endif
 
 ARCH_CFLAGS += -DANDROID -fPIE -fPIC
-ARCH_LDFLAGS += -pie -shared
+ARCH_LDFLAGS += -shared
 
 SDL_CFLAGS = -I${PREFIX}/include/SDL2
 
