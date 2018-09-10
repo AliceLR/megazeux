@@ -86,6 +86,7 @@ __libspec int main(int argc, char *argv[])
   getcwd(current_dir, MAX_PATH);
 
 #ifdef __APPLE__
+  if(!strcmp(current_dir, "/") || !strncmp(current_dir, "/App", 4))
   {
     // Mac .APPs start at / and we don't like that.
     char *user = getlogin();
@@ -122,6 +123,9 @@ __libspec int main(int argc, char *argv[])
   load_editor_config(&mzx_world, &argc, argv);
 
   init_macros(&mzx_world);
+
+  // Startup path might be relative, so change back before checking it.
+  chdir(current_dir);
 
   // At this point argv should have all the config options
   // of the form var=value removed, leaving only unparsed
