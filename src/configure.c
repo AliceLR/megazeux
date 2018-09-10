@@ -75,8 +75,7 @@
 #endif
 
 #ifdef ANDROID
-#define FORCE_BPP_DEFAULT 16
-#define FULLSCREEN_DEFAULT 1
+#define FULLSCREEN_DEFAULT 0
 #endif
 
 // End arch-specific config.

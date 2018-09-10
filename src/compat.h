@@ -52,6 +52,10 @@ enum
 
 typedef unsigned char boolean;
 
+#if defined(CONFIG_EGL) || defined(ANDROID)
+#define USE_GLES
+#endif
+
 #ifdef CONFIG_3DS
 #include <3ds.h>
 #endif
@@ -103,6 +107,7 @@ typedef unsigned char boolean;
 #endif
 #endif
 
+<<<<<<< HEAD
 #ifdef __WIN32__
 // Usually defined in Windows headers but somehow those always seem to add 30%
 // or more build time and we don't include them globally for any other purpose.
@@ -116,6 +121,8 @@ typedef unsigned char boolean;
 #undef CONDITION
 #endif
 
+=======
+>>>>>>> initial Android port
 #ifndef MAX_PATH
 #define MAX_PATH 512
 #endif

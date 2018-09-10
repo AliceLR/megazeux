@@ -26,8 +26,11 @@
 #include "render_sdl.h"
 #endif
 
-#ifdef CONFIG_EGL
+#ifdef USE_GLES
 #include <GLES/gl.h>
+#endif
+
+#ifdef CONFIG_EGL
 #include "render_egl.h"
 #endif
 

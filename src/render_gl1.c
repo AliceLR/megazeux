@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "compat.h"
 #include "platform.h"
 #include "render.h"
 #include "render_layer.h"
@@ -32,8 +33,11 @@
 #include "render_sdl.h"
 #endif
 
-#ifdef CONFIG_EGL
+#ifdef USE_GLES
 #include <GLES/gl.h>
+#endif
+
+#ifdef CONFIG_EGL
 #include "render_egl.h"
 #endif
 
@@ -120,6 +124,12 @@ static boolean gl1_init_video(struct graphics_data *graphics,
 
   if(!render_data)
     goto err_out;
+
+#if defined(USE_GLES) && SDL_VERSION_ATLEAST(2,0,0)
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 1);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+#endif
 
   if(!GL_LoadLibrary(GL_LIB_FIXED))
     goto err_free_render_data;

@@ -1,3 +1,15 @@
+android/.eclipse
+android/.gradle
+android/.idea
+android/*.iml
+android/*.ipr
+android/app/.externalNativeBuild
+android/app/jni/.gradle
+android/app/jni/SDL2
+android/app/jni/lib
+android/app/jni/libogg
+android/app/jni/libvorbis
+android/build
 arch/3ds/*.d
 arch/3ds/*.o
 arch/3ds/*shbin*

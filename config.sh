@@ -571,12 +571,6 @@ if [ "$PLATFORM" = "3ds" -o "$PLATFORM" = "nds" ]; then
 	SDL="false"
 fi
 
-if [ "$PLATFORM" = "android" ]; then
-	echo "Disabling SDL (Android), force-enabling EGL."
-	SDL="false"
-	EGL="true"
-fi
-
 if [ "$PLATFORM" = "pandora" ]; then
 	echo "#define CONFIG_PANDORA" >> src/config.h
 	echo "BUILD_PANDORA=1" >> platform.inc
@@ -768,10 +762,10 @@ fi
 #
 # Force-enable tremor-lowmem on GP2X
 #
-if [ "$PLATFORM" = "gp2x" -o "$PLATFORM" = "android" ]; then
-	echo "Force-switching ogg/vorbis to tremor-lowmem."
-	VORBIS="tremor-lowmem"
-fi
+#if [ "$PLATFORM" = "gp2x" -o "$PLATFORM" = "android" ]; then
+#	echo "Force-switching ogg/vorbis to tremor-lowmem."
+#	VORBIS="tremor-lowmem"
+#fi
 
 #
 # Force-disable modplug/mikmod/openmpt if audio is disabled
@@ -797,6 +791,7 @@ fi
 #
 if [ "$PLATFORM" = "gp2x" -o "$PLATFORM" = "nds" \
   -o "$PLATFORM" = "3ds"  -o "$PLATFORM" = "switch" \
+  -o "$PLATFORM" = "android" \
   -o "$PLATFORM" = "psp"  -o "$PLATFORM" = "wii" ]; then
 	echo "Force-disabling modular build (nonsensical or unsupported)."
 	MODULAR="false"
