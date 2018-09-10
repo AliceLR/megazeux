@@ -67,7 +67,7 @@ install: install-check install-arch
 	 ${install} -m 0644 assets/default.chr assets/edit.chr \
 		assets/smzx.pal ${DESTDIR}${SHAREDIR}/megazeux/assets && \
 	 ${install} -m 0644 config.txt ${DESTDIR}${SYSCONFDIR}/megazeux-config
-	@gzip -k docs/changelog.txt
+	@gzip -c docs/changelog.txt > docs/changelog.txt.gz
 	@${install} -m 0644 \
 		README.md \
 		docs/changelog.txt.gz \
