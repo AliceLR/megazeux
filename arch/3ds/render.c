@@ -76,7 +76,8 @@ struct linear_ptr_list_entry
 struct ctr_render_data
 {
   C3D_Tex charset[5], charset_vram[5];
-  u64 charset_dirty/*, smzx_charset_dirty*/;
+  u8 charset_dirty_set;
+  u8 charset_dirty[NUM_CHARSETS * 2];
   bool rendering_frame, checked_frame;
   struct ctr_shader_data shader_2d, shader_playfield;
   C3D_Mtx projection;
@@ -493,6 +494,7 @@ static void ctr_update_colors(struct graphics_data *graphics,
   }
 }
 
+// FIXME requires documentation and/or deobfuscation.
 static inline void ctr_char_bitmask_to_texture(
  struct ctr_render_data *render_data, u8 c, u32 offset, int y)
 {
@@ -528,89 +530,136 @@ static inline void ctr_char_bitmask_to_texture(
   p4[2] = bitmask_smzx[3][t];
 }
 
+// FIXME magic numbers.
+static inline u16 ctr_get_char_texture_row(u16 chr)
+{
+  return (chr >> 7);
+}
+
+// FIXME magic numbers.
+static inline u32 ctr_get_char_texture_pos(u16 chr)
+{
+  u16 tex_row = ctr_get_char_texture_row(chr);
+  return ((chr & 127) * 64) + (tex_row * 16384);
+}
+
 static void ctr_remap_char_range(struct graphics_data *graphics, Uint16 first,
  Uint16 count)
 {
-  // FIXME need proper implementation
-  struct ctr_render_data *render_data;
-  signed char *c;
-  unsigned int i, j;
+  struct ctr_render_data *render_data = graphics->render_data;
+  u16 end = first + count;
+  u8 *charset_pos;
+  u32 offset;
+  u32 i;
+  u32 j;
 
-  render_data = graphics->render_data;
-  c = (signed char *)graphics->charset;
+  if(end > FULL_CHARSET_SIZE)
+    end = FULL_CHARSET_SIZE;
 
-  for(i = 0; i < FULL_CHARSET_SIZE; i++)
-    for(j = 0; j < 14; j++, c++)
-      ctr_char_bitmask_to_texture(render_data, *c,
-       ((i & 127)*64) + ((i >> 7)*16384), j);
+  charset_pos = graphics->charset;
+  charset_pos += first * CHAR_SIZE;
 
-  render_data->charset_dirty = ((u64) 1 << (NUM_CHARSETS * 2)) - 1;
-  // render_data->smzx_charset_dirty = ((u64) 1 << (NUM_CHARSETS * 2)) - 1;
+  for(i = first; i < end; i++)
+  {
+    offset = ctr_get_char_texture_pos(i);
+
+    for(j = 0; j < 14; j++, charset_pos++)
+      ctr_char_bitmask_to_texture(render_data, *charset_pos, offset, j);
+  }
+
+  first = ctr_get_char_texture_row(first);
+  end = ctr_get_char_texture_row(end - 1);
+
+  for(i = first; i <= end; i++)
+    render_data->charset_dirty[i] = 1;
+  render_data->charset_dirty_set = 1;
 }
 
 static void ctr_remap_char(struct graphics_data *graphics, Uint16 chr)
 {
-  struct ctr_render_data *render_data;
-  signed char *c;
-  unsigned int i, offset;
+  struct ctr_render_data *render_data = graphics->render_data;
+  u16 tex_row = ctr_get_char_texture_row(chr);
+  u8 *charset_pos;
+  u32 offset;
+  u32 i;
 
-  render_data = graphics->render_data;
-  c = (signed char *)graphics->charset;
-  c += chr * 14;
-  offset = ((chr & 127)*64) + ((chr >> 7)*16384);
+  charset_pos = graphics->charset;
+  charset_pos += chr * CHAR_SIZE;
 
-  for(i = 0; i < 14; i++, c++)
-    ctr_char_bitmask_to_texture(render_data, *c, offset, i);
+  offset = ctr_get_char_texture_pos(chr);
 
-  render_data->charset_dirty |= (1 << (chr >> 7));
-  // render_data->smzx_charset_dirty |= (1 << (chr >> 7));
+  for(i = 0; i < 14; i++, charset_pos++)
+    ctr_char_bitmask_to_texture(render_data, *charset_pos, offset, i);
+
+  render_data->charset_dirty[tex_row] = 1;
+  render_data->charset_dirty_set = 1;
 }
 
 static void ctr_remap_charbyte(struct graphics_data *graphics, Uint16 chr,
  Uint8 byte)
 {
-  struct ctr_render_data *render_data;
-  signed char *c;
+  struct ctr_render_data *render_data = graphics->render_data;
+  u16 tex_row = ctr_get_char_texture_row(chr);
+  u8 *charset_pos;
+  u32 offset;
 
-  render_data = graphics->render_data;
-  c = (signed char *)graphics->charset;
-  c += chr * 14 + byte;
+  charset_pos = graphics->charset;
+  charset_pos += chr * CHAR_SIZE + byte;
 
-  ctr_char_bitmask_to_texture(render_data, *c,
-   ((chr & 127)*64) + ((chr >> 7)*16384), byte);
+  offset = ctr_get_char_texture_pos(chr);
 
-  render_data->charset_dirty |= (1 << (chr >> 7));
-  // render_data->smzx_charset_dirty |= (1 << (chr >> 7));
+  ctr_char_bitmask_to_texture(render_data, *charset_pos, offset, byte);
+
+  render_data->charset_dirty[tex_row] = 1;
+  render_data->charset_dirty_set = 1;
 }
 
-static inline u64 ctr_refresh_charsets(struct ctr_render_data *render_data,
- u64 dirty, int from, int to)
+static inline void ctr_refresh_charsets(struct ctr_render_data *render_data,
+ int from, int to)
 {
+  u8 *charset_dirty;
   int coffs = 0;
   int csize = 0;
+  // FIXME magic numbers.
   int cincr = 1024*16/2;
+  int last_dirty = 0;
   int i;
 
-  if(dirty == 0)
-    return 0;
+  if(!render_data->charset_dirty_set)
+    return;
 
-  while((dirty & 1) == 0)
+  render_data->charset_dirty_set = 0;
+  charset_dirty = render_data->charset_dirty;
+
+  for(i = 0; i < NUM_CHARSETS * 2; i++)
   {
-    coffs += cincr;
-    dirty >>= 1;
+    if(charset_dirty[i])
+    {
+      coffs = cincr * i;
+      break;
+    }
   }
-  while(dirty != 0)
+
+  for(; i < NUM_CHARSETS * 2; i++)
   {
-    csize += cincr;
-    dirty >>= 1;
+    if(charset_dirty[i])
+    {
+      charset_dirty[i] = 0;
+      last_dirty = i;
+    }
   }
+
+  csize = (last_dirty + 1) * cincr - coffs;
+  if(csize <= 0)
+    return;
+
   for(i = from; i < to; i++)
   {
     GSPGPU_FlushDataCache((u8*)(render_data->charset[i].data) + coffs, csize);
     C3D_SyncTextureCopy((u32*)((u8*)(render_data->charset[i].data) + coffs), 0,
       (u32*)((u8*)(render_data->charset_vram[i].data) + coffs), 0, csize, 8);
   }
-  return 0;
+  return;
 }
 
 static bool ctr_should_render(struct ctr_render_data *render_data)
@@ -622,8 +671,7 @@ static bool ctr_should_render(struct ctr_render_data *render_data)
       render_data->checked_frame = true;
       return false;
     }
-    render_data->charset_dirty =
-     ctr_refresh_charsets(render_data, render_data->charset_dirty, 0, 5);
+    ctr_refresh_charsets(render_data, 0, 5);
     render_data->rendering_frame = true;
     render_data->layer_num = 0;
     vertex_heap_pos = 0;
