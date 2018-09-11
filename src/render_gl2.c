@@ -209,9 +209,17 @@ static void gl2_free_video(struct graphics_data *graphics)
 static void gl2_remap_char_range(struct graphics_data *graphics, Uint16 first,
  Uint16 count)
 {
-  // FIXME needs proper implementation
   struct gl2_render_data *render_data = graphics->render_data;
-  render_data->remap_texture = true;
+
+  if(first + count > FULL_CHARSET_SIZE)
+    count = FULL_CHARSET_SIZE - first;
+
+  // FIXME arbitrary
+  if(count <= 256)
+    memset(render_data->remap_char + first, 1, count);
+
+  else
+    render_data->remap_texture = true;
 }
 
 static void gl2_remap_char(struct graphics_data *graphics, Uint16 chr)

@@ -9,6 +9,9 @@ USERS
 + Using SMZX_INDICES or LOAD_ROBOT on an unset string no longer
   causes a crash.
 + png2smzx is now properly bundled with Linux builds.
++ Improved the performance of loading partial charsets for the
+  glsl, opengl2, and 3DS renderers. Other renderers were not
+  affected by this issue.
 
 DEVELOPERS
 
