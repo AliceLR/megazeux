@@ -28,12 +28,12 @@
 
 extern struct input_status input;
 static enum bottom_screen_mode b_mode;
-static bool allow_focus_changes = true;
+static enum focus_mode allow_focus_changes = FOCUS_FORBID;
 static bool is_dragging = false;
 
 bool update_hid(void);
 
-bool get_allow_focus_changes(void)
+enum focus_mode get_allow_focus_changes(void)
 {
   return allow_focus_changes;
 }
@@ -193,9 +193,9 @@ static inline bool ctr_update_touch(struct buffered_status *status,
     status->mouse_y = my / 14;
     status->mouse_moved = true;
 
-    allow_focus_changes = true;
+    allow_focus_changes = FOCUS_PASS;
     focus_pixel(mx, my);
-    allow_focus_changes = false;
+    allow_focus_changes = FOCUS_FORBID;
 
     return true;
   }
@@ -286,7 +286,7 @@ bool update_hid(void)
       status->mouse_drag_state = -1;
       status->mouse_time = get_ticks();
       is_dragging = true;
-      allow_focus_changes = false;
+      allow_focus_changes = FOCUS_FORBID;
       retval = true;
     }
 
@@ -298,7 +298,7 @@ bool update_hid(void)
         status->mouse_repeat = 0;
         status->mouse_repeat_state = 0;
         status->mouse_drag_state = -0;
-        allow_focus_changes = true;
+        allow_focus_changes = FOCUS_ALLOW;
         is_dragging = false;
         retval = true;
       }

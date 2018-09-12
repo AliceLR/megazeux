@@ -896,17 +896,11 @@ void update_screen(void)
 
   if(graphics.renderer.render_layer)
   {
-    struct video_layer text_video_layer;
-    memset(&text_video_layer, 0, sizeof(struct video_layer));
-
     // Fallback using the layer renderer
-    text_video_layer.w = SCREEN_W;
-    text_video_layer.h = SCREEN_H;
-    text_video_layer.mode = graphics.screen_mode;
-    text_video_layer.data = graphics.text_video;
-    text_video_layer.transparent_col = -1;
+    graphics.text_video_layer.mode = graphics.screen_mode;
+    graphics.text_video_layer.data = graphics.text_video;
 
-    graphics.renderer.render_layer(&graphics, &text_video_layer);
+    graphics.renderer.render_layer(&graphics, &(graphics.text_video_layer));
   }
 
   if(graphics.cursor_flipflop &&
@@ -1469,6 +1463,11 @@ bool init_video(struct config_info *conf, const char *caption)
   graphics.cursor_timestamp = get_ticks();
   graphics.cursor_flipflop = 1;
   graphics.system_mouse = conf->system_mouse;
+
+  memset(&(graphics.text_video_layer), 0, sizeof(struct video_layer));
+  graphics.text_video_layer.w = SCREEN_W;
+  graphics.text_video_layer.h = SCREEN_H;
+  graphics.text_video_layer.transparent_col = -1;
 
   init_layers();
 

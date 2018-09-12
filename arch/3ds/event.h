@@ -31,8 +31,15 @@ enum bottom_screen_mode
   BOTTOM_SCREEN_MODE_MAX
 };
 
+enum focus_mode
+{
+  FOCUS_FORBID,
+  FOCUS_ALLOW, // checks if position changed
+  FOCUS_PASS // ignores all checks and check updates - for touchscreen
+};
+
 enum bottom_screen_mode get_bottom_screen_mode(void);
-bool get_allow_focus_changes(void);
+enum focus_mode get_allow_focus_changes(void);
 
 void do_unicode_key_event(struct buffered_status *status, bool down,
  enum keycode code, int unicode);

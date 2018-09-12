@@ -147,6 +147,7 @@ struct graphics_data
   Uint32 backup_intensity[SMZX_PAL_SIZE];
 
   Uint32 layer_count;
+  struct video_layer text_video_layer;
   struct video_layer video_layers[TEXTVIDEO_LAYERS];
   Uint32 current_layer;
   struct char_element *current_video;
