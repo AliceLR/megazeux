@@ -47,10 +47,23 @@
 //       OpenGL ES 1.x. The latter API lacks many functions present in
 //       desktop OpenGL. GL ES is typically used on cellphones.
 
-#define CHARSET_COLS 32
+// We need to keep two versions of each char: the regular char, and an
+// inverted version for foreground transparency with layer rendering.
+#define CHAR_2W (CHAR_W * 2)
+
+// The char texture in this renderer will be 1024x1024
+#define CHARSET_COLS 64
 #define CHARSET_ROWS (FULL_CHARSET_SIZE / CHARSET_COLS)
 #define BG_WIDTH 128
 #define BG_HEIGHT 32
+
+enum
+{
+  TEX_SCREEN_ID,
+  TEX_DATA_ID,
+  TEX_BG_ID,
+  NUM_TEXTURES
+};
 
 static inline int next_power_of_two(int v)
 {
@@ -135,9 +148,9 @@ struct gl2_render_data
   struct sdl_render_data sdl;
 #endif
   Uint32 *pixels;
-  Uint8 charset_texture[CHAR_H * FULL_CHARSET_SIZE * CHAR_W];
+  Uint8 charset_texture[CHAR_2W * CHAR_H * FULL_CHARSET_SIZE];
   Uint32 background_texture[BG_WIDTH * BG_HEIGHT];
-  GLuint texture_number[3];
+  GLuint textures[NUM_TEXTURES];
   GLubyte palette[3 * FULL_PAL_SIZE];
   Uint8 remap_texture;
   Uint8 remap_char[FULL_CHARSET_SIZE];
@@ -262,10 +275,10 @@ static void gl2_resize_screen(struct graphics_data *graphics,
   gl_check_error();
   render_data->viewport_shrunk = false;
 
-  gl2.glGenTextures(3, render_data->texture_number);
+  gl2.glGenTextures(NUM_TEXTURES, render_data->textures);
   gl_check_error();
 
-  gl2.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[0]);
+  gl2.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_SCREEN_ID]);
   gl_check_error();
 
   gl_set_filter_method(graphics->gl_filter_method, gl2.glTexParameterf);
@@ -289,11 +302,11 @@ static void gl2_resize_screen(struct graphics_data *graphics,
    render_data->pixels);
   gl_check_error();
 
-  gl2.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
+  gl2.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
   gl_check_error();
 
   gl_set_filter_method(CONFIG_GL_FILTER_NEAREST, gl2.glTexParameterf);
-  charset_width = next_power_of_two(CHARSET_COLS * CHAR_W);
+  charset_width = next_power_of_two(CHARSET_COLS * CHAR_2W);
   charset_height = next_power_of_two((CHARSET_ROWS + 1) * CHAR_H);
   render_data->charset_texture_width = charset_width;
   render_data->charset_texture_height = charset_height;
@@ -303,7 +316,7 @@ static void gl2_resize_screen(struct graphics_data *graphics,
 
   gl2_remap_char_range(graphics, 0, FULL_CHARSET_SIZE);
 
-  gl2.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[2]);
+  gl2.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_BG_ID]);
   gl_check_error();
 
   gl_set_filter_method(CONFIG_GL_FILTER_NEAREST, gl2.glTexParameterf);
@@ -395,15 +408,25 @@ static inline void gl2_do_remap_charsets(struct graphics_data *graphics)
   signed char *c = (signed char *)graphics->charset;
   char *p = (char *)render_data->charset_texture;
   unsigned int i, j, k;
+  signed char inv;
 
   for(i = 0; i < CHARSET_ROWS; i++, c += -CHAR_H + CHARSET_COLS * CHAR_H)
+  {
     for(j = 0; j < CHAR_H; j++, c += -CHARSET_COLS * CHAR_H + 1)
+    {
       for(k = 0; k < CHARSET_COLS; k++, c += CHAR_H)
+      {
+        inv = ~(*c);
         p = gl2_char_bitmask_to_texture(c, p);
+        p = gl2_char_bitmask_to_texture(&inv, p);
+      }
+    }
+  }
 
   gl2.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
-   CHARSET_COLS * CHAR_W, CHARSET_ROWS * CHAR_H, GL_ALPHA,
-   GL_UNSIGNED_BYTE, render_data->charset_texture);
+   CHARSET_COLS * CHAR_2W,
+   CHARSET_ROWS * CHAR_H,
+   GL_ALPHA, GL_UNSIGNED_BYTE, render_data->charset_texture);
   gl_check_error();
 }
 
@@ -414,16 +437,51 @@ static inline void gl2_do_remap_char(struct graphics_data *graphics,
   signed char *c = (signed char *)graphics->charset;
   char *p = (char *)render_data->charset_texture;
   unsigned int i;
+  signed char inv;
 
   c += chr * 14;
 
   for(i = 0; i < 14; i++, c++)
+  {
+    inv = ~(*c);
     p = gl2_char_bitmask_to_texture(c, p);
+    p = gl2_char_bitmask_to_texture(&inv, p);
+  }
 
   gl2.glTexSubImage2D(GL_TEXTURE_2D, 0,
-   chr % CHARSET_COLS * CHAR_W, chr / CHARSET_COLS * CHAR_H, CHAR_W, CHAR_H,
+   chr % CHARSET_COLS * CHAR_2W,
+   chr / CHARSET_COLS * CHAR_H,
+   CHAR_2W,
+   CHAR_H,
    GL_ALPHA, GL_UNSIGNED_BYTE, render_data->charset_texture);
   gl_check_error();
+}
+
+static void gl2_check_remap_chars(struct graphics_data *graphics)
+{
+  struct gl2_render_data *render_data = graphics->render_data;
+  int i;
+
+  gl2.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
+  gl_check_error();
+
+  if(render_data->remap_texture)
+  {
+    gl2_do_remap_charsets(graphics);
+    render_data->remap_texture = false;
+    memset(render_data->remap_char, false, sizeof(Uint8) * FULL_CHARSET_SIZE);
+  }
+  else
+  {
+    for(i = 0; i < FULL_CHARSET_SIZE; i++)
+    {
+      if(render_data->remap_char[i])
+      {
+        gl2_do_remap_char(graphics, i);
+        render_data->remap_char[i] = false;
+      }
+    }
+  }
 }
 
 static int gl2_linear_filter_method(struct graphics_data *graphics)
@@ -461,27 +519,6 @@ static void gl2_render_graph(struct graphics_data *graphics)
       80.0f / 128.0f, 25.0f / 32.0f
     };
 
-    gl2.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
-    gl_check_error();
-
-    if(render_data->remap_texture)
-    {
-      gl2_do_remap_charsets(graphics);
-      render_data->remap_texture = false;
-      memset(render_data->remap_char, false, sizeof(Uint8) * FULL_CHARSET_SIZE);
-    }
-    else
-    {
-      for(i = 0; i < FULL_CHARSET_SIZE; i++)
-      {
-        if(render_data->remap_char[i])
-        {
-          gl2_do_remap_char(graphics, i);
-          render_data->remap_char[i] = false;
-        }
-      }
-    }
-
     if(gl2_linear_filter_method(graphics))
     {
       int width, height;
@@ -496,18 +533,23 @@ static void gl2_render_graph(struct graphics_data *graphics)
       render_data->viewport_shrunk = true;
     }
 
+    // Charset
+    gl2_check_remap_chars(graphics);
+
+    // Background
     dest = render_data->background_texture;
 
     for(i = 0; i < SCREEN_W * SCREEN_H; i++, dest++, src++)
      *dest = graphics->flat_intensity_palette[src->bg_color];
 
-    gl2.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[2]);
+    gl2.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_BG_ID]);
     gl_check_error();
 
     gl2.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, SCREEN_W, SCREEN_H, GL_RGBA,
      GL_UNSIGNED_BYTE, render_data->background_texture);
      gl_check_error();
 
+    // Draw background
     gl2.glTexCoordPointer(2, GL_FLOAT, 0, tex_coord_array_single);
     gl_check_error();
 
@@ -520,7 +562,8 @@ static void gl2_render_graph(struct graphics_data *graphics)
     gl2.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     gl_check_error();
 
-    gl2.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
+    // Draw screen
+    gl2.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
     gl_check_error();
 
     gl2.glEnable(GL_ALPHA_TEST);
@@ -545,8 +588,9 @@ static void gl2_render_graph(struct graphics_data *graphics)
       {
         GLubyte *pal_base = &render_data->palette[src->fg_color * 3];
 
+        // Multiply X by 2 as there are normal and inverted copies of each char
         char_value = src->char_value;
-        charset_x = char_value % CHARSET_COLS;
+        charset_x = char_value % CHARSET_COLS * 2;
         charset_y = char_value / CHARSET_COLS;
 
         tex_coord_array[0] = (charset_x + 0.0f) * CHAR_W / charset_tex_w;
@@ -597,8 +641,9 @@ static void gl2_render_graph(struct graphics_data *graphics)
 
         pal_base = &render_data->palette[src->fg_color * 3];
 
+        // Multiply X by 2 as there are normal and inverted copies of each char
         char_value = src->char_value;
-        charset_x = char_value % CHARSET_COLS;
+        charset_x = char_value % CHARSET_COLS * 2;
         charset_y = char_value / CHARSET_COLS;
 
         tex_coord_array[0] = (charset_x + 1.0f) * CHAR_W / charset_tex_w;
@@ -648,6 +693,7 @@ static void gl2_render_graph(struct graphics_data *graphics)
   }
   else
   {
+    // SMZX mode- use software renderer
     static const float tex_coord_array_single[2 * 4] =
     {
       0.0f,             0.0f,
@@ -659,7 +705,7 @@ static void gl2_render_graph(struct graphics_data *graphics)
     render_graph32s(render_data->pixels, 640 * 4, graphics,
      set_colors32[graphics->screen_mode]);
 
-    gl2.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[0]);
+    gl2.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_SCREEN_ID]);
     gl_check_error();
 
     gl2.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 640, 350, GL_RGBA,
@@ -678,7 +724,7 @@ static void gl2_render_graph(struct graphics_data *graphics)
     gl2.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     gl_check_error();
 
-    gl2.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
+    gl2.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_SCREEN_ID]);
     gl_check_error();
   }
 }
@@ -736,10 +782,10 @@ static void gl2_render_layer(struct graphics_data *graphics,
     int charset_tex_h      = render_data->charset_texture_height;
     int charset_x;
     int charset_y;
-    int x1 = layer->x;
-    int y1 = layer->y;
-    int x2 = layer->x + layer->w * CHAR_W;
-    int y2 = layer->y + layer->h * CHAR_H;
+    float x1 = layer->x;
+    float y1 = layer->y;
+    float x2 = layer->x + layer->w * CHAR_W;
+    float y2 = layer->y + layer->h * CHAR_H;
 
     float tex_coord_array_single[2 * 4] =
     {
@@ -764,34 +810,19 @@ static void gl2_render_layer(struct graphics_data *graphics,
       (y2 / SCREEN_PIX_H * 2.0f - 1.0f) * -1.0f,
     };
 
-    gl2.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
-    gl_check_error();
+    // Charsets
+    gl2_check_remap_chars(graphics);
 
-    if(render_data->remap_texture)
-    {
-      gl2_do_remap_charsets(graphics);
-      render_data->remap_texture = false;
-      memset(render_data->remap_char, false, sizeof(Uint8) * FULL_CHARSET_SIZE);
-    }
-    else
-    {
-      for(i = 0; i < FULL_CHARSET_SIZE; i++)
-      {
-        if(render_data->remap_char[i])
-        {
-          gl2_do_remap_char(graphics, i);
-          render_data->remap_char[i] = false;
-        }
-      }
-    }
-
+    // Background
     dest = render_data->background_texture;
 
     for(i = 0; i < layer_w * layer_h; i++, dest++, src++)
     {
+      fg_color = translate_layer_color(graphics, src->fg_color);
       bg_color = translate_layer_color(graphics, src->bg_color);
 
-      if(src->char_value != 0xFFFF && bg_color != layer->transparent_col)
+      if(src->char_value != 0xFFFF && bg_color != layer->transparent_col &&
+       fg_color != layer->transparent_col)
         *dest = graphics->flat_intensity_palette[bg_color];
       else
         *dest = 0x00000000;
@@ -799,13 +830,14 @@ static void gl2_render_layer(struct graphics_data *graphics,
 
     gl2.glEnable(GL_ALPHA_TEST);
 
-    gl2.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[2]);
+    gl2.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_BG_ID]);
     gl_check_error();
 
     gl2.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, layer_w, layer_h, GL_RGBA,
      GL_UNSIGNED_BYTE, render_data->background_texture);
     gl_check_error();
 
+    // Draw background
     gl2.glTexCoordPointer(2, GL_FLOAT, 0, tex_coord_array_single);
     gl_check_error();
 
@@ -818,7 +850,8 @@ static void gl2_render_layer(struct graphics_data *graphics,
     gl2.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     gl_check_error();
 
-    gl2.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
+    // Draw screen
+    gl2.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
     gl_check_error();
 
     src = layer->data;
@@ -835,16 +868,16 @@ static void gl2_render_layer(struct graphics_data *graphics,
     i = 0;
     while(true)
     {
-      GLubyte *pal_base;
+      GLubyte *pal_base = NULL;
 
       for(i2 = 0; i2 < layer_w; i2++)
       {
+        bg_color = translate_layer_color(graphics, src->bg_color);
         fg_color = translate_layer_color(graphics, src->fg_color);
         char_value = translate_layer_char(src->char_value, layer->offset);
 
-        pal_base = &render_data->palette[fg_color * 3];
-
-        charset_x = char_value % CHARSET_COLS;
+        // Multiply X by 2 as there are normal and inverted copies of each char
+        charset_x = char_value % CHARSET_COLS * 2;
         charset_y = char_value / CHARSET_COLS;
 
         tex_coord_array[0] = (charset_x + 0.0f) * CHAR_W / charset_tex_w;
@@ -878,6 +911,27 @@ static void gl2_render_layer(struct graphics_data *graphics,
 
         if(fg_color != layer->transparent_col)
         {
+          pal_base = &render_data->palette[fg_color * 3];
+        }
+        else
+
+        if(bg_color != layer->transparent_col)
+        {
+          pal_base = &render_data->palette[bg_color * 3];
+
+          // Offset to the inverted copy of the current char
+          tex_coord_array[0] += (CHAR_W * 1.0f) / charset_tex_w;
+          tex_coord_array[2] += (CHAR_W * 1.0f) / charset_tex_w;
+          tex_coord_array[4] += (CHAR_W * 1.0f) / charset_tex_w;
+          tex_coord_array[6] += (CHAR_W * 1.0f) / charset_tex_w;
+        }
+        else
+        {
+          pal_base = NULL;
+        }
+
+        if(pal_base)
+        {
           for(i3 = 0; i3 < 4; i3++)
           {
             memcpy(&color_array[i3 * 4], pal_base, 3);
@@ -908,12 +962,12 @@ static void gl2_render_layer(struct graphics_data *graphics,
       for(i2 = layer_w - 1; i2 >= 0; i2--)
       {
         src--;
+        bg_color = translate_layer_color(graphics, src->bg_color);
         fg_color = translate_layer_color(graphics, src->fg_color);
         char_value = translate_layer_char(src->char_value, layer->offset);
 
-        pal_base = &render_data->palette[fg_color * 3];
-
-        charset_x = char_value % CHARSET_COLS;
+        // Multiply X by 2 as there are normal and inverted copies of each char
+        charset_x = char_value % CHARSET_COLS * 2;
         charset_y = char_value / CHARSET_COLS;
 
         tex_coord_array[0] = (charset_x + 1.0f) * CHAR_W / charset_tex_w;
@@ -947,6 +1001,27 @@ static void gl2_render_layer(struct graphics_data *graphics,
 
         if(fg_color != layer->transparent_col)
         {
+          pal_base = &render_data->palette[fg_color * 3];
+        }
+        else
+
+        if(bg_color != layer->transparent_col)
+        {
+          pal_base = &render_data->palette[bg_color * 3];
+
+          // Offset to the inverted copy of the current char
+          tex_coord_array[0] += (CHAR_W * 1.0f) / charset_tex_w;
+          tex_coord_array[2] += (CHAR_W * 1.0f) / charset_tex_w;
+          tex_coord_array[4] += (CHAR_W * 1.0f) / charset_tex_w;
+          tex_coord_array[6] += (CHAR_W * 1.0f) / charset_tex_w;
+        }
+        else
+        {
+          pal_base = NULL;
+        }
+
+        if(pal_base)
+        {
           for(i3 = 0; i3 < 4; i3++)
           {
             memcpy(&color_array[i3 * 4], pal_base, 3);
@@ -978,6 +1053,7 @@ static void gl2_render_layer(struct graphics_data *graphics,
   }
   else
   {
+    // SMZX mode- use software layer renderer
     static const float tex_coord_array_single[2 * 4] =
     {
       0.0f,             0.0f,
@@ -988,7 +1064,7 @@ static void gl2_render_layer(struct graphics_data *graphics,
 
     render_layer(render_data->pixels, 32, 640 * 4, graphics, layer);
 
-    gl2.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[0]);
+    gl2.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_SCREEN_ID]);
     gl_check_error();
 
     gl2.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 640, 350, GL_RGBA,
@@ -1007,7 +1083,7 @@ static void gl2_render_layer(struct graphics_data *graphics,
     gl2.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     gl_check_error();
 
-    gl2.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
+    gl2.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_SCREEN_ID]);
     gl_check_error();
   }
 }
@@ -1096,7 +1172,7 @@ static void gl2_sync_screen(struct graphics_data *graphics)
        640.0f / 1024.0f, 0.0f,
     };
 
-    gl2.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[0]);
+    gl2.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_SCREEN_ID]);
     gl_check_error();
 
     get_context_width_height(graphics, &width, &height);
@@ -1125,7 +1201,7 @@ static void gl2_sync_screen(struct graphics_data *graphics)
     gl2.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     gl_check_error();
 
-    gl2.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
+    gl2.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_SCREEN_ID]);
     gl_check_error();
   }
 

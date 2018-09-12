@@ -12,6 +12,9 @@ USERS
 + Improved the performance of loading partial charsets for the
   glsl, opengl2, and 3DS renderers. Other renderers were not
   affected by this issue.
++ Fix opengl2 unbound sprite regression introduced in 2.91e.
++ The opengl2 renderer now correctly draws unbound sprites
+  containing chars with a transparent foreground color.
 
 DEVELOPERS
 
