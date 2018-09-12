@@ -1031,7 +1031,7 @@ static void glsl_render_layer(struct graphics_data *graphics,
     bg_color = src->bg_color;
     fg_color = src->fg_color;
 
-    if(char_value != 0xFFFF)
+    if(char_value != INVISIBLE_CHAR)
     {
       if(char_value < PROTECTED_CHARSET_POSITION)
         char_value = (char_value + layer->offset) % PROTECTED_CHARSET_POSITION;

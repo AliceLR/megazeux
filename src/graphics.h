@@ -118,7 +118,8 @@ struct renderer
   void (*focus_pixel)      (struct graphics_data *, Uint32, Uint32);
 };
 
-struct video_layer {
+struct video_layer
+{
   Uint32 w, h, mode;
   int x, y;
   struct char_element *data;

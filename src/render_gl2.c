@@ -740,7 +740,7 @@ static inline Uint32 translate_layer_color(struct graphics_data *graphics,
 
 static inline Uint16 translate_layer_char(Uint16 chr, Uint16 offset)
 {
-  if(chr == 0xFFFF)
+  if(chr == INVISIBLE_CHAR)
     return FULL_CHARSET_SIZE;
 
   if(chr > 0xFF)
@@ -821,8 +821,8 @@ static void gl2_render_layer(struct graphics_data *graphics,
       fg_color = translate_layer_color(graphics, src->fg_color);
       bg_color = translate_layer_color(graphics, src->bg_color);
 
-      if(src->char_value != 0xFFFF && bg_color != layer->transparent_col &&
-       fg_color != layer->transparent_col)
+      if(src->char_value != INVISIBLE_CHAR &&
+       bg_color != layer->transparent_col && fg_color != layer->transparent_col)
         *dest = graphics->flat_intensity_palette[bg_color];
       else
         *dest = 0x00000000;

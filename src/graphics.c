@@ -868,8 +868,7 @@ void update_screen(void)
     graphics.cursor_timestamp = ticks;
   }
 
-  if((graphics.requires_extended || !graphics.renderer.render_graph)
-   && graphics.renderer.render_layer)
+  if(graphics.requires_extended && graphics.renderer.render_layer)
   {
     for(layer = 0; layer < graphics.layer_count; layer++)
     {
@@ -887,9 +886,27 @@ void update_screen(void)
     }
   }
   else
+
+  if(graphics.renderer.render_graph)
   {
     // Fallback if the layer renderer is unavailable or unnecessary
     graphics.renderer.render_graph(&graphics);
+  }
+  else
+
+  if(graphics.renderer.render_layer)
+  {
+    struct video_layer text_video_layer;
+    memset(&text_video_layer, 0, sizeof(struct video_layer));
+
+    // Fallback using the layer renderer
+    text_video_layer.w = SCREEN_W;
+    text_video_layer.h = SCREEN_H;
+    text_video_layer.mode = graphics.screen_mode;
+    text_video_layer.data = graphics.text_video;
+    text_video_layer.transparent_col = -1;
+
+    graphics.renderer.render_layer(&graphics, &text_video_layer);
   }
 
   if(graphics.cursor_flipflop &&

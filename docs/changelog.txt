@@ -37,6 +37,8 @@ DEVELOPERS
   more clear and robust.
 + Fixed a bug where zlib wouldn't necessarily be linked to
   png2smzx.
++ Renderers will now use render_layer to draw the text_video
+  fallback if no render_graph function is present.
 
 
 September 3rd, 2018 - MZX 2.91e
