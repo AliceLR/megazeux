@@ -724,7 +724,7 @@ static void gl2_render_graph(struct graphics_data *graphics)
     gl2.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     gl_check_error();
 
-    gl2.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_SCREEN_ID]);
+    gl2.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
     gl_check_error();
   }
 }
@@ -1083,7 +1083,7 @@ static void gl2_render_layer(struct graphics_data *graphics,
     gl2.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     gl_check_error();
 
-    gl2.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_SCREEN_ID]);
+    gl2.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
     gl_check_error();
   }
 }
@@ -1201,7 +1201,7 @@ static void gl2_sync_screen(struct graphics_data *graphics)
     gl2.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     gl_check_error();
 
-    gl2.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_SCREEN_ID]);
+    gl2.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
     gl_check_error();
   }
 
