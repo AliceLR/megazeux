@@ -15,6 +15,10 @@ USERS
 + Fix opengl2 unbound sprite regression introduced in 2.91e.
 + The opengl2 renderer now correctly draws unbound sprites
   containing chars with a transparent foreground color.
++ 3DS renderer optimizations. (asie)
++ 3DS screen focusing now mimics the NDS port's behavior. (asie)
++ Fixed bug where games could fail to open files on some
+  platforms if the paths contained duplicate slashes. (asie)
 
 DEVELOPERS
 
