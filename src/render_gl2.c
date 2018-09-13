@@ -54,8 +54,8 @@
 // The char texture in this renderer will be 1024x1024
 #define CHARSET_COLS 64
 #define CHARSET_ROWS (FULL_CHARSET_SIZE / CHARSET_COLS)
-#define BG_WIDTH 128
-#define BG_HEIGHT 32
+#define TEX_BG_WIDTH 128
+#define TEX_BG_HEIGHT 32
 
 enum
 {
@@ -149,15 +149,15 @@ struct gl2_render_data
 #endif
   Uint32 *pixels;
   Uint8 charset_texture[CHAR_2W * CHAR_H * FULL_CHARSET_SIZE];
-  Uint32 background_texture[BG_WIDTH * BG_HEIGHT];
+  Uint32 background_texture[TEX_BG_WIDTH * TEX_BG_HEIGHT];
   GLuint textures[NUM_TEXTURES];
   GLubyte palette[3 * FULL_PAL_SIZE];
   Uint8 remap_texture;
   Uint8 remap_char[FULL_CHARSET_SIZE];
   Uint8 ignore_linear;
-  GLubyte color_array[BG_WIDTH * BG_HEIGHT * 4 * 4];
-  float tex_coord_array[BG_WIDTH * BG_HEIGHT * 8];
-  float vertex_array[BG_WIDTH * BG_HEIGHT * 8];
+  GLubyte color_array[TEX_BG_WIDTH * TEX_BG_HEIGHT * 4 * 4];
+  float tex_coord_array[TEX_BG_WIDTH * TEX_BG_HEIGHT * 8];
+  float vertex_array[TEX_BG_WIDTH * TEX_BG_HEIGHT * 8];
   float charset_texture_width;
   float charset_texture_height;
   bool viewport_shrunk;
@@ -321,8 +321,8 @@ static void gl2_resize_screen(struct graphics_data *graphics,
 
   gl_set_filter_method(CONFIG_GL_FILTER_NEAREST, gl2.glTexParameterf);
 
-  gl2.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, BG_WIDTH, BG_HEIGHT, 0, GL_RGBA,
-   GL_UNSIGNED_BYTE, NULL);
+  gl2.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TEX_BG_WIDTH, TEX_BG_HEIGHT,
+   0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
   gl_check_error();
 }
 
@@ -504,242 +504,6 @@ static int gl2_linear_filter_method(struct graphics_data *graphics)
   return strcasecmp(graphics->gl_filter_method, CONFIG_GL_FILTER_LINEAR) == 0;
 }
 
-static void gl2_render_graph(struct graphics_data *graphics)
-{
-  struct gl2_render_data *render_data = graphics->render_data;
-  struct char_element *src = graphics->text_video;
-  Sint32 i, i2, i3;
-  Uint16 char_value;
-  Uint32 *dest;
-
-  if(!graphics->screen_mode)
-  {
-    float *tex_coord_array = render_data->tex_coord_array;
-    float *vertex_array    = render_data->vertex_array;
-    GLubyte *color_array   = render_data->color_array;
-    int charset_tex_w      = render_data->charset_texture_width;
-    int charset_tex_h      = render_data->charset_texture_height;
-    int charset_x;
-    int charset_y;
-
-    static const float tex_coord_array_single[2 * 4] =
-    {
-      0.0f,           0.0f,
-      0.0f,           25.0f / 32.0f,
-      80.0f / 128.0f, 0.0f,
-      80.0f / 128.0f, 25.0f / 32.0f
-    };
-
-    if(gl2_linear_filter_method(graphics))
-    {
-      int width, height;
-
-      /* Put the initial rendering's viewport in the center of the screen
-       * so that when it is linearly stretched in sync_screen() it is
-       * masked by the stretched image.
-       */
-      get_context_width_height(graphics, &width, &height);
-      gl2.glViewport((width - 640) >> 1, (height - 350) >> 1, 640, 350);
-      gl_check_error();
-      render_data->viewport_shrunk = true;
-    }
-
-    // Charset
-    gl2_check_remap_chars(graphics);
-
-    // Background
-    dest = render_data->background_texture;
-
-    for(i = 0; i < SCREEN_W * SCREEN_H; i++, dest++, src++)
-     *dest = graphics->flat_intensity_palette[src->bg_color];
-
-    gl2.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_BG_ID]);
-    gl_check_error();
-
-    gl2.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, SCREEN_W, SCREEN_H, GL_RGBA,
-     GL_UNSIGNED_BYTE, render_data->background_texture);
-     gl_check_error();
-
-    // Draw background
-    gl2.glTexCoordPointer(2, GL_FLOAT, 0, tex_coord_array_single);
-    gl_check_error();
-
-    gl2.glVertexPointer(2, GL_FLOAT, 0, vertex_array_single);
-    gl_check_error();
-
-    gl2.glColorPointer(4, GL_UNSIGNED_BYTE, 0, color_array_white);
-    gl_check_error();
-
-    gl2.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    gl_check_error();
-
-    // Draw screen
-    gl2.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
-    gl_check_error();
-
-    gl2.glEnable(GL_ALPHA_TEST);
-
-    src = graphics->text_video;
-
-    gl2.glTexCoordPointer(2, GL_FLOAT, 0, render_data->tex_coord_array);
-    gl_check_error();
-
-    gl2.glVertexPointer(2, GL_FLOAT, 0, render_data->vertex_array);
-    gl_check_error();
-
-    gl2.glColorPointer(4, GL_UNSIGNED_BYTE, 0, render_data->color_array);
-    gl_check_error();
-
-    i = 0;
-    while(true)
-    {
-      GLubyte *pal_base;
-
-      for(i2 = 0; i2 < SCREEN_W; i2++)
-      {
-        GLubyte *pal_base = &render_data->palette[src->fg_color * 3];
-
-        // Multiply X by 2 as there are normal and inverted copies of each char
-        char_value = src->char_value;
-        charset_x = char_value % CHARSET_COLS * 2;
-        charset_y = char_value / CHARSET_COLS;
-
-        tex_coord_array[0] = (charset_x + 0.0f) * CHAR_W / charset_tex_w;
-        tex_coord_array[1] = (charset_y + 1.0f) * CHAR_H / charset_tex_h;
-
-        tex_coord_array[2] = (charset_x + 0.0f) * CHAR_W / charset_tex_w;
-        tex_coord_array[3] = (charset_y + 0.0f) * CHAR_H / charset_tex_h;
-
-        tex_coord_array[4] = (charset_x + 1.0f) * CHAR_W / charset_tex_w;
-        tex_coord_array[5] = (charset_y + 1.0f) * CHAR_H / charset_tex_h;
-
-        tex_coord_array[6] = (charset_x + 1.0f) * CHAR_W / charset_tex_w;
-        tex_coord_array[7] = (charset_y + 0.0f) * CHAR_H / charset_tex_h;
-
-        vertex_array[0] = ((i2 + 0.0f) * 2.0f / SCREEN_W) - 1.0f;
-        vertex_array[1] = (((i + 1.0f) * 2.0f / SCREEN_H) - 1.0f) * -1.0f;
-
-        vertex_array[2] = ((i2 + 0.0f) * 2.0f / SCREEN_W) - 1.0f;
-        vertex_array[3] = (((i + 0.0f) * 2.0f / SCREEN_H) - 1.0f) * -1.0f;
-
-        vertex_array[4] = ((i2 + 1.0f) * 2.0f / SCREEN_W) - 1.0f;
-        vertex_array[5] = (((i + 1.0f) * 2.0f / SCREEN_H) - 1.0f) * -1.0f;
-
-        vertex_array[6] = ((i2 + 1.0f) * 2.0f / SCREEN_W) - 1.0f;
-        vertex_array[7] = (((i + 0.0f) * 2.0f / SCREEN_H) - 1.0f) * -1.0f;
-
-        for(i3 = 0; i3 < 4; i3++)
-        {
-          memcpy(&color_array[i3 * 4], pal_base, 3);
-          color_array[i3 * 4 + 3] = 255;
-        }
-
-        tex_coord_array += 8;
-        vertex_array += 8;
-        color_array += 4 * 4;
-        src++;
-      }
-
-      if(++i == SCREEN_H)
-        break;
-      src += SCREEN_W;
-
-      // Draw this row backwards, so we can keep the strip contiguous
-
-      for(i2 = SCREEN_W - 1; i2 >= 0; i2--)
-      {
-        src--;
-
-        pal_base = &render_data->palette[src->fg_color * 3];
-
-        // Multiply X by 2 as there are normal and inverted copies of each char
-        char_value = src->char_value;
-        charset_x = char_value % CHARSET_COLS * 2;
-        charset_y = char_value / CHARSET_COLS;
-
-        tex_coord_array[0] = (charset_x + 1.0f) * CHAR_W / charset_tex_w;
-        tex_coord_array[1] = (charset_y + 1.0f) * CHAR_H / charset_tex_h;
-
-        tex_coord_array[2] = (charset_x + 1.0f) * CHAR_W / charset_tex_w;
-        tex_coord_array[3] = (charset_y + 0.0f) * CHAR_H / charset_tex_h;
-
-        tex_coord_array[4] = (charset_x + 0.0f) * CHAR_W / charset_tex_w;
-        tex_coord_array[5] = (charset_y + 1.0f) * CHAR_H / charset_tex_h;
-
-        tex_coord_array[6] = (charset_x + 0.0f) * CHAR_W / charset_tex_w;
-        tex_coord_array[7] = (charset_y + 0.0f) * CHAR_H / charset_tex_h;
-
-        vertex_array[0] = ((i2 + 1.0f) * 2.0f / SCREEN_W) - 1.0f;
-        vertex_array[1] = (((i + 1.0f) * 2.0f / SCREEN_H) - 1.0f) * -1.0f;
-
-        vertex_array[2] = ((i2 + 1.0f) * 2.0f / SCREEN_W) - 1.0f;
-        vertex_array[3] = (((i + 0.0f) * 2.0f / SCREEN_H) - 1.0f) * -1.0f;
-
-        vertex_array[4] = ((i2 + 0.0f) * 2.0f / SCREEN_W) - 1.0f;
-        vertex_array[5] = (((i + 1.0f) * 2.0f / SCREEN_H) - 1.0f) * -1.0f;
-
-        vertex_array[6] = ((i2 + 0.0f) * 2.0f / SCREEN_W) - 1.0f;
-        vertex_array[7] = (((i + 0.0f) * 2.0f / SCREEN_H) - 1.0f) * -1.0f;
-
-        for(i3 = 0; i3 < 4; i3++)
-        {
-          memcpy(&color_array[i3 * 4], pal_base, 3);
-          color_array[i3 * 4 + 3] = 255;
-        }
-
-        tex_coord_array += 8;
-        vertex_array += 8;
-        color_array += 4 * 4;
-      }
-
-      if(++i == SCREEN_H)
-        break;
-      src += SCREEN_W;
-    }
-
-    gl2.glDrawArrays(GL_TRIANGLE_STRIP, 0, SCREEN_W * SCREEN_H * 4);
-    gl_check_error();
-
-    gl2.glDisable(GL_ALPHA_TEST);
-  }
-  else
-  {
-    // SMZX mode- use software renderer
-    static const float tex_coord_array_single[2 * 4] =
-    {
-      0.0f,             0.0f,
-      0.0f,             350.0f / 512.0f,
-      640.0f / 1024.0f, 0.0f,
-      640.0f / 1024.0f, 350.0f / 512.0f,
-    };
-
-    render_graph32s(render_data->pixels, 640 * 4, graphics,
-     set_colors32[graphics->screen_mode]);
-
-    gl2.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_SCREEN_ID]);
-    gl_check_error();
-
-    gl2.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 640, 350, GL_RGBA,
-      GL_UNSIGNED_BYTE, render_data->pixels);
-    gl_check_error();
-
-    gl2.glTexCoordPointer(2, GL_FLOAT, 0, tex_coord_array_single);
-    gl_check_error();
-
-    gl2.glVertexPointer(2, GL_FLOAT, 0, vertex_array_single);
-    gl_check_error();
-
-    gl2.glColorPointer(4, GL_UNSIGNED_BYTE, 0, color_array_white);
-    gl_check_error();
-
-    gl2.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    gl_check_error();
-
-    gl2.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
-    gl_check_error();
-  }
-}
-
 static inline Uint32 translate_layer_color(struct graphics_data *graphics,
  Uint32 color)
 {
@@ -800,10 +564,10 @@ static void gl2_render_layer(struct graphics_data *graphics,
 
     float tex_coord_array_single[2 * 4] =
     {
-      0.0f,                       0.0f,
-      0.0f,                       1.0f * layer_h / BG_HEIGHT,
-      1.0f * layer_w / BG_WIDTH,  0.0f,
-      1.0f * layer_w / BG_WIDTH,  1.0f * layer_h / BG_HEIGHT
+      0.0f,                           0.0f,
+      0.0f,                           1.0f * layer_h / TEX_BG_HEIGHT,
+      1.0f * layer_w / TEX_BG_WIDTH,  0.0f,
+      1.0f * layer_w / TEX_BG_WIDTH,  1.0f * layer_h / TEX_BG_HEIGHT
     };
 
     float vertex_array_single[2 * 4] =
@@ -1236,7 +1000,6 @@ void render_gl2_register(struct renderer *renderer)
   renderer->remap_charbyte = gl2_remap_charbyte;
   renderer->get_screen_coords = get_screen_coords_scaled;
   renderer->set_screen_coords = set_screen_coords_scaled;
-  renderer->render_graph = gl2_render_graph;
   renderer->render_layer = gl2_render_layer;
   renderer->render_cursor = gl2_render_cursor;
   renderer->render_mouse = gl2_render_mouse;
