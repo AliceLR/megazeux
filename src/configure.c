@@ -61,6 +61,10 @@
 #endif
 #endif
 
+#ifdef CONFIG_3DS
+#define FORCE_BPP_DEFAULT 16
+#endif
+
 #ifdef ANDROID
 #define FORCE_BPP_DEFAULT 16
 #define FULLSCREEN_DEFAULT 1

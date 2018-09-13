@@ -267,7 +267,7 @@ static int fsafetest(const char *path, char *newpath)
     return -FSAFE_INVALID_ARGUMENT;
 
   pathlen = strlen (path);
-  strcpy(newpath, path);
+  clean_path_slashes(path, newpath, pathlen + 1);
 
   // convert the slashes
   for(i = 0; i < pathlen; i++)
