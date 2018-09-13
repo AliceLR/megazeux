@@ -439,13 +439,20 @@ static inline void gl2_do_remap_char(struct graphics_data *graphics,
   unsigned int i;
   signed char inv;
 
-  c += chr * 14;
-
-  for(i = 0; i < 14; i++, c++)
+  if(chr < FULL_CHARSET_SIZE)
   {
-    inv = ~(*c);
-    p = gl2_char_bitmask_to_texture(c, p);
-    p = gl2_char_bitmask_to_texture(&inv, p);
+    c += chr * 14;
+
+    for(i = 0; i < 14; i++, c++)
+    {
+      inv = ~(*c);
+      p = gl2_char_bitmask_to_texture(c, p);
+      p = gl2_char_bitmask_to_texture(&inv, p);
+    }
+  }
+  else
+  {
+    memset(render_data->charset_texture, 0, CHAR_2W * CHAR_H);
   }
 
   gl2.glTexSubImage2D(GL_TEXTURE_2D, 0,
@@ -468,6 +475,10 @@ static void gl2_check_remap_chars(struct graphics_data *graphics)
   if(render_data->remap_texture)
   {
     gl2_do_remap_charsets(graphics);
+
+    // Also remap the invisible char while we're at it.
+    gl2_do_remap_char(graphics, FULL_CHARSET_SIZE);
+
     render_data->remap_texture = false;
     memset(render_data->remap_char, false, sizeof(Uint8) * FULL_CHARSET_SIZE);
   }
