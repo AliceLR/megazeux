@@ -19,6 +19,9 @@ USERS
 + 3DS screen focusing now mimics the NDS port's behavior. (asie)
 + Fixed bug where games could fail to open files on some
   platforms if the paths contained duplicate slashes. (asie)
++ Wii GX renderer optimizations.
++ The Wii GX renderer now uses the gl_vsync config option to
+  toggle vsync.
 
 DEVELOPERS
 
