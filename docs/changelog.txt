@@ -22,8 +22,11 @@ USERS
 + Added a Wii software layer renderer. This renderer can be
   selected with "video_output = xfb" in the config file.
 + Wii GX renderer optimizations.
++ Added layer rendering support to the GX renderer.
 + The Wii GX renderer now uses the gl_vsync config option to
-  toggle vsync.
+  toggle vsync. For the Wii, this feature is on by default.
+  Disabling it may increase the framerate of some games but may
+  also cause other problems.
 
 DEVELOPERS
 

@@ -72,11 +72,19 @@
 #define TEX_DATA_SIZE \
  (sizeof(u32) * CHAR_VAR_H * CHAR_VARIANTS * FULL_CHARSET_SIZE)
 
-// tlut palette breakdown:
-// 256 are used for standard color mappings.
-// 256 are used for UI color mappings.
-#define NUM_TLUT (256 * 2)
-#define TLUT_UI_OFFSET 256
+// (probably wasteful) tlut palette breakdown:
+// Standard color mappings (256)
+// All possible SMZX palette + tcol mappings (256 * 4)
+// UI color mappings (256)
+#define NUM_TLUT (256 * 6)
+#define TLUT_T0_OFFSET 256
+#define TLUT_T1_OFFSET 512
+#define TLUT_T2_OFFSET 768
+#define TLUT_T3_OFFSET 1024
+#define TLUT_UI_OFFSET 1280
+
+// RGB5A3 transparent color for layer rendering.
+#define NO_COLOR 0x0000
 
 // Must be multiple of 32 bytes
 struct ci4tlut
@@ -95,7 +103,7 @@ struct gx_render_data
   GXTlutObj mzxtlutobj[NUM_TLUT];
   GXTexObj chartex;
   GXTexObj scaletex;
-  GXColor palette[SMZX_PAL_SIZE];
+  GXColor palette[FULL_PAL_SIZE];
   u16 tlutpal[FULL_PAL_SIZE];
   u8 chrdirty[FULL_CHARSET_SIZE];
   int chrdirty_all;
@@ -295,8 +303,6 @@ static bool gx_init_video(struct graphics_data *graphics,
   GX_InitTexObj(&render_data->scaletex,
    render_data->scaleimg, TEX_SCALE_W, TEX_SCALE_H,
    GX_TF_RGBA8, GX_REPEAT, GX_REPEAT, GX_FALSE);
-  // FIXME
-  //GX_InitTexObjFilterMode(&render_data->scaletex, GX_NEAR, GX_NEAR);
 
   VIDEO_Configure(rmode);
   VIDEO_SetNextFramebuffer(render_data->xfb[0]);
@@ -598,41 +604,68 @@ static void gx_check_remap_chars(struct graphics_data *graphics)
   render_data->chrdirty_set = 0;
 }
 
-static int gx_get_palette_id_mzx(struct graphics_data *graphics,
- struct char_element *src)
+static void gx_check_remap_palettes(struct graphics_data *graphics)
 {
-  int char_value = src->char_value;
-  int bg_color = src->bg_color;
-  int fg_color = src->fg_color;
+  struct gx_render_data *render_data = graphics->render_data;
+  int i;
 
-  // FIXME transparent_col return value somehow -- need layer
-  if(char_value == INVISIBLE_CHAR)
-    return -1;
+  if(render_data->paldirty)
+  {
+    for(i = 0; i < NUM_TLUT; i++)
+      render_data->mzxtlut[i].pal[1] = 0;
+
+    render_data->paldirty = 0;
+    render_data->invalidate = true;
+  }
+}
+
+static int gx_get_tlut_id_mzx(struct graphics_data *graphics,
+ struct video_layer *layer, Uint8 bg_color, Uint8 fg_color)
+{
+  int tcol = layer->transparent_col;
+
+  if(tcol == (int)bg_color)
+    return fg_color + TLUT_T0_OFFSET;
+
+  if(tcol == (int)fg_color)
+    return bg_color + TLUT_T1_OFFSET;
 
   if(bg_color >= 16 && fg_color >= 16)
     return (((bg_color & 0xF) << 4) | (fg_color & 0xF)) + TLUT_UI_OFFSET;
 
-  return (bg_color << 4) | fg_color;
+  return ((bg_color & 0xF) << 4) | (fg_color & 0xF);
 }
 
-static int gx_get_palette_id_smzx(struct graphics_data *graphics,
- struct char_element *src)
+static int gx_get_tlut_id_smzx(struct graphics_data *graphics,
+ struct video_layer *layer, Uint8 bg_color, Uint8 fg_color)
 {
-  int char_value = src->char_value;
-  int bg_color = src->bg_color & 0xF;
-  int fg_color = src->fg_color & 0xF;
+  int palette_id = ((bg_color & 0xF) << 4) | (fg_color & 0xF);
+  int idx0 = graphics->smzx_indices[palette_id * 4 + 0];
+  int idx1 = graphics->smzx_indices[palette_id * 4 + 1];
+  int idx2 = graphics->smzx_indices[palette_id * 4 + 2];
+  int idx3 = graphics->smzx_indices[palette_id * 4 + 3];
+  int tcol = layer->transparent_col;
 
-  // FIXME transparent_col return value somehow -- need layer and indices
-  if(char_value == INVISIBLE_CHAR)
-    return -1;
+  if(tcol == idx0)
+    return palette_id + TLUT_T0_OFFSET;
 
-  return (bg_color << 4) | fg_color;
+  if(tcol == idx1)
+    return palette_id + TLUT_T1_OFFSET;
+
+  if(tcol == idx2)
+    return palette_id + TLUT_T2_OFFSET;
+
+  if(tcol == idx3)
+    return palette_id + TLUT_T3_OFFSET;
+
+  return palette_id;
 }
 
-static void gx_set_palette_mzx(struct graphics_data *graphics,
- struct ci4tlut *tlut, int bg_color, int fg_color)
+static void gx_set_tlut_mzx(struct graphics_data *graphics,
+ struct video_layer *layer, struct ci4tlut *tlut, int bg_color, int fg_color)
 {
   struct gx_render_data *render_data = graphics->render_data;
+  int tcol = layer->transparent_col;
 
   if(bg_color >= 16 && fg_color >= 16)
   {
@@ -645,53 +678,54 @@ static void gx_set_palette_mzx(struct graphics_data *graphics,
     fg_color &= 0xF;
   }
 
-  // FIXME transparent color -- need layer (unset pal[1])
-  tlut->pal[0] = render_data->tlutpal[bg_color];
-  tlut->pal[15] = render_data->tlutpal[fg_color];
+  tlut->pal[0] =  bg_color != tcol ? render_data->tlutpal[bg_color] : NO_COLOR;
+  tlut->pal[15] = fg_color != tcol ? render_data->tlutpal[fg_color] : NO_COLOR;
   tlut->pal[1] = 0xFFFF;
 }
 
-static void gx_set_palette_smzx(struct graphics_data *graphics,
- struct ci4tlut *tlut, int palette_id)
+static void gx_set_tlut_smzx(struct graphics_data *graphics,
+ struct video_layer *layer, struct ci4tlut *tlut, int bg_color, int fg_color)
 {
   struct gx_render_data *render_data = graphics->render_data;
+  int palette_id = ((bg_color & 0xF) << 4) | (fg_color & 0xF);
   int idx0 = graphics->smzx_indices[palette_id * 4 + 0];
   int idx1 = graphics->smzx_indices[palette_id * 4 + 1];
   int idx2 = graphics->smzx_indices[palette_id * 4 + 2];
   int idx3 = graphics->smzx_indices[palette_id * 4 + 3];
+  int tcol = layer->transparent_col;
 
-  // FIXME transparent color -- need layer (unset pal[1])
-  tlut->pal[0] = render_data->tlutpal[idx0];
-  tlut->pal[5] = render_data->tlutpal[idx1];
-  tlut->pal[10] = render_data->tlutpal[idx2];
-  tlut->pal[15] = render_data->tlutpal[idx3];
+  tlut->pal[0] =  idx0 != tcol ? render_data->tlutpal[idx0] : NO_COLOR;
+  tlut->pal[5] =  idx1 != tcol ? render_data->tlutpal[idx1] : NO_COLOR;
+  tlut->pal[10] = idx2 != tcol ? render_data->tlutpal[idx2] : NO_COLOR;
+  tlut->pal[15] = idx3 != tcol ? render_data->tlutpal[idx3] : NO_COLOR;
   tlut->pal[1] = 0xFFFF;
 }
 
-static void gx_check_remap_palettes(struct graphics_data *graphics)
+
+static Uint16 gx_get_char_value(struct video_layer *layer, Uint16 char_value)
 {
-  struct gx_render_data *render_data = graphics->render_data;
-  int i;
+  if(char_value == INVISIBLE_CHAR)
+    return INVISIBLE_CHAR;
 
-  if(render_data->paldirty)
-  {
-    for(i = 0; i < 512; i++)
-      render_data->mzxtlut[i].pal[1] = 0;
+  if(char_value > 0xFF)
+    return (char_value & 0xFF) + PROTECTED_CHARSET_POSITION;
 
-    render_data->paldirty = 0;
-    render_data->invalidate = true;
-  }
+  return (layer->offset + char_value) % PROTECTED_CHARSET_POSITION;
 }
 
-static void gx_render_graph(struct graphics_data *graphics)
+static void gx_render_layer(struct graphics_data *graphics,
+ struct video_layer *layer)
 {
   struct gx_render_data *render_data = graphics->render_data;
-  struct char_element *src = graphics->text_video;
+  struct char_element *src = layer->data;
   struct ci4tlut *tlut;
-  int last_palette;
-  int cur_palette;
+  int last_tlut_id;
+  int cur_tlut_id;
+  Uint16 char_value;
+  Uint8 bg_color;
+  Uint8 fg_color;
 
-  int x, y;
+  Uint32 x, y;
   int x1, x2, y1, y2;
   float u, v;
   float u2, v2;
@@ -716,43 +750,45 @@ static void gx_render_graph(struct graphics_data *graphics)
 
   GX_SetTevOp(GX_TEVSTAGE0, GX_REPLACE);
 
-  last_palette = -1;
+  last_tlut_id = -1;
 
-  if(!graphics->screen_mode)
+  if(!layer->mode)
   {
-    for(y = 0; y < 25; y++)
+    for(y = 0; y < layer->h; y++)
     {
-      for(x = 0; x < 80; x++)
+      for(x = 0; x < layer->w; x++, src++)
       {
-        cur_palette = gx_get_palette_id_mzx(graphics, src);
-
-        if(cur_palette == -1)
+        char_value = gx_get_char_value(layer, src->char_value);
+        if(char_value == INVISIBLE_CHAR)
           continue;
 
-        // FIXME also transparent colors exist
-        if(cur_palette != last_palette)
-        {
-          tlut = &(render_data->mzxtlut[cur_palette]);
+        bg_color = src->bg_color;
+        fg_color = src->fg_color;
+        cur_tlut_id = gx_get_tlut_id_mzx(graphics, layer, bg_color, fg_color);
 
-          // FIXME also transparent colors exist
+        if(cur_tlut_id != last_tlut_id)
+        {
+          tlut = &(render_data->mzxtlut[cur_tlut_id]);
+
           if(!tlut->pal[1])
           {
-            gx_set_palette_mzx(graphics, tlut, src->bg_color, src->fg_color);
+            gx_set_tlut_mzx(graphics, layer, tlut, bg_color, fg_color);
             DCFlushRange(tlut, sizeof(struct ci4tlut));
           }
-          GX_LoadTlut(&render_data->mzxtlutobj[cur_palette], GX_TLUT0);
+          GX_LoadTlut(&render_data->mzxtlutobj[cur_tlut_id], GX_TLUT0);
           GX_LoadTexObj(&render_data->chartex, GX_TEXMAP0);
-          last_palette = cur_palette;
+          last_tlut_id = cur_tlut_id;
         }
 
-        u = (src->char_value % CHARSET_COLS) * CHAR_VAR_W / TEX_DATA_W_F;
-        v = (src->char_value / CHARSET_COLS) * CHAR_VAR_H / TEX_DATA_H_F;
+        u = (char_value % CHARSET_COLS) * CHAR_VAR_W / TEX_DATA_W_F;
+        v = (char_value / CHARSET_COLS) * CHAR_VAR_H / TEX_DATA_H_F;
         u2 = u + CHAR_W / TEX_DATA_W_F;
         v2 = v + CHAR_H / TEX_DATA_H_F;
-        x1 = x * CHAR_W;
-        y1 = y * CHAR_H;
-        x2 = (x + 1) * CHAR_W;
-        y2 = (y + 1) * CHAR_H;
+
+        x1 = (int)x * CHAR_W + layer->x;
+        y1 = (int)y * CHAR_H + layer->y;
+        x2 = ((int)x + 1) * CHAR_W + layer->x;
+        y2 = ((int)y + 1) * CHAR_H + layer->y;
 
         GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
           GX_Position2s16(x1, y1);
@@ -764,46 +800,48 @@ static void gx_render_graph(struct graphics_data *graphics)
           GX_Position2s16(x1, y2);
           GX_TexCoord2f32(u,  v2);
         GX_End();
-        src++;
       }
     }
   }
   else
   {
-    for(y = 0; y < 25; y++)
+    for(y = 0; y < layer->h; y++)
     {
-      for(x = 0; x < 80; x++)
+      for(x = 0; x < layer->w; x++, src++)
       {
-        cur_palette = gx_get_palette_id_smzx(graphics, src);
-
-        if(cur_palette == -1)
+        char_value = gx_get_char_value(layer, src->char_value);
+        if(char_value == INVISIBLE_CHAR)
           continue;
 
-        // FIXME also transparent colors exist
-        if(cur_palette != last_palette)
-        {
-          tlut = &(render_data->mzxtlut[cur_palette]);
+        bg_color = src->bg_color;
+        fg_color = src->fg_color;
+        cur_tlut_id = gx_get_tlut_id_smzx(graphics, layer, bg_color, fg_color);
 
-          // FIXME also transparent colors exist
+        if(cur_tlut_id != last_tlut_id)
+        {
+          tlut = &(render_data->mzxtlut[cur_tlut_id]);
+
           if(!tlut->pal[1])
           {
-            gx_set_palette_smzx(graphics, tlut, cur_palette);
+            gx_set_tlut_smzx(graphics, layer, tlut, bg_color, fg_color);
             DCFlushRange(tlut, sizeof(struct ci4tlut));
           }
-          GX_LoadTlut(&render_data->mzxtlutobj[cur_palette], GX_TLUT0);
+          GX_LoadTlut(&render_data->mzxtlutobj[cur_tlut_id], GX_TLUT0);
           GX_LoadTexObj(&render_data->chartex, GX_TEXMAP0);
-          last_palette = cur_palette;
+          last_tlut_id = cur_tlut_id;
         }
 
-        u = (src->char_value % CHARSET_COLS) * CHAR_VAR_W / TEX_DATA_W_F;
-        v = (src->char_value / CHARSET_COLS) * CHAR_VAR_H / TEX_DATA_H_F;
+        u = (char_value % CHARSET_COLS) * CHAR_VAR_W / TEX_DATA_W_F;
+        v = (char_value / CHARSET_COLS) * CHAR_VAR_H / TEX_DATA_H_F;
         u += SMZX_OFFSET / TEX_DATA_W_F;
         u2 = u + CHAR_W / TEX_DATA_W_F;
         v2 = v + CHAR_H / TEX_DATA_H_F;
-        x1 = x * CHAR_W;
-        y1 = y * CHAR_H;
-        x2 = (x + 1) * CHAR_W;
-        y2 = (y + 1) * CHAR_H;
+
+        x1 = (int)x * CHAR_W + layer->x;
+        y1 = (int)y * CHAR_H + layer->y;
+        x2 = ((int)x + 1) * CHAR_W + layer->x;
+        y2 = ((int)y + 1) * CHAR_H + layer->y;
+
         GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
           GX_Position2s16(x1, y1);
           GX_TexCoord2f32(u,  v );
@@ -814,7 +852,6 @@ static void gx_render_graph(struct graphics_data *graphics)
           GX_Position2s16(x1, y2);
           GX_TexCoord2f32(u,  v2);
         GX_End();
-        src++;
       }
     }
   }
@@ -917,7 +954,7 @@ void render_gx_register(struct renderer *renderer)
   renderer->remap_charbyte = gx_remap_charbyte;
   renderer->get_screen_coords = get_screen_coords_centered;
   renderer->set_screen_coords = set_screen_coords_centered;
-  renderer->render_graph = gx_render_graph;
+  renderer->render_layer = gx_render_layer;
   renderer->render_cursor = gx_render_cursor;
   renderer->render_mouse = gx_render_mouse;
   renderer->sync_screen = gx_sync_screen;
