@@ -127,6 +127,10 @@ ifeq (${BUILD_WII},1)
 # SDL and platform_sdl.c takes care of all of this when enabled.
 ifeq (${BUILD_SDL},)
 core_cobjs += arch/wii/event.o arch/wii/platform.o
+core_cobjs += arch/wii/render_xfb.o
+ifeq (${BUILD_RENDER_GX},1)
+core_cobjs += ${core_obj}/render_gx.o
+endif
 ifeq (${BUILD_AUDIO},1)
 core_cobjs += arch/wii/audio.o
 endif
@@ -184,10 +188,6 @@ endif
 
 ifeq (${BUILD_RENDER_GP2X},1)
 core_cobjs += ${core_obj}/render_gp2x.o
-endif
-
-ifeq (${BUILD_RENDER_GX},1)
-core_cobjs += ${core_obj}/render_gx.o
 endif
 
 ifeq (${BUILD_MODPLUG},1)

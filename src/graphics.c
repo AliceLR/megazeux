@@ -87,8 +87,11 @@ static const struct renderer_data renderers[] =
 #if defined(CONFIG_3DS)
   { "3ds", render_ctr_register },
 #endif
+#if defined(CONFIG_WII)
 #if defined(CONFIG_RENDER_GX)
   { "gx", render_gx_register },
+#endif
+  { "xfb", render_xfb_register },
 #endif
   { NULL, NULL }
 };
