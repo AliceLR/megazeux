@@ -18,10 +18,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "platform.h"
-#include "graphics.h"
-#include "render.h"
-#include "renderers.h"
+#include "../../src/graphics.h"
+#include "../../src/platform.h"
+#include "../../src/render.h"
+#include "../../src/renderers.h"
 
 #include <stdlib.h>
 #include <string.h>

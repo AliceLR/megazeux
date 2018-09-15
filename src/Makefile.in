@@ -129,7 +129,7 @@ ifeq (${BUILD_SDL},)
 core_cobjs += arch/wii/event.o arch/wii/platform.o
 core_cobjs += arch/wii/render_xfb.o
 ifeq (${BUILD_RENDER_GX},1)
-core_cobjs += ${core_obj}/render_gx.o
+core_cobjs += arch/wii/render_gx.o
 endif
 ifeq (${BUILD_AUDIO},1)
 core_cobjs += arch/wii/audio.o
