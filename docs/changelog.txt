@@ -27,6 +27,8 @@ USERS
   toggle vsync. For the Wii, this feature is on by default.
   Disabling it may increase the framerate of some games but may
   also cause other problems.
++ The loading bar on console platforms now redraws the screen
+  less often.
 
 DEVELOPERS
 
