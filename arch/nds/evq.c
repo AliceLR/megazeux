@@ -20,7 +20,7 @@
 
 /* Simple event queue for NDS input events */
 
-#include "compat.h"
+#include "../../src/compat.h"
 #include "evq.h"
 
 static NDSEvent *evlist_front = NULL;

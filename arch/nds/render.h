@@ -20,10 +20,11 @@
 #ifndef __RENDER_NDS_H
 #define __RENDER_NDS_H
 
-#include "compat.h"
-#include "graphics.h"
+#include "../../src/compat.h"
 
 __M_BEGIN_DECLS
+
+#include "../../src/graphics.h"
 
 // The subscreen can display different information.
 enum Subscreen_Mode
