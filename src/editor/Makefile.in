@@ -61,7 +61,7 @@ ${editor_objs}: $(filter-out $(wildcard ${editor_obj}), ${editor_obj})
 
 ifeq (${BUILD_MODULAR},1)
 
-editor_objs += ${core_obj}/zip.o
+editor_objs += ${core_obj}/zip.o ${core_obj}/path.o
 
 editor_target := ${DSOPRE}editor${DSOPOST}
 

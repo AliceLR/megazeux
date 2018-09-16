@@ -78,6 +78,8 @@ core_cobjs := \
   ${core_obj}/sprite.o ${core_obj}/str.o ${core_obj}/util.o          \
   ${core_obj}/window.o ${core_obj}/world.o ${core_obj}/zip.o
 
+core_cobjs += ${core_obj}/path.o
+
 #
 # Lists mandatory C++ language sources (mangled to object names) required
 # to build the main binary. Currently there are only optional sources.
@@ -297,7 +299,7 @@ core_cobjs += ${network_obj}/manifest.o ${network_obj}/network.o
 core_cobjs += ${network_obj}/sha256.o ${network_obj}/socksyms.o
 
 ifeq (${BUILD_UPDATER},1)
-mzx_objs += ${core_obj}/updater.o
+mzx_objs += ${core_obj}/path.o ${core_obj}/updater.o
 endif
 
 ifeq (${PLATFORM},amiga)
@@ -379,7 +381,7 @@ endif
 
 ifeq (${BUILD_MZXRUN},1)
 
-mzxrun_objs := ${core_obj}/main.o ${core_obj}/run_stubs.o
+mzxrun_objs := ${core_obj}/main.o ${core_obj}/run_stubs.o ${core_obj}/path.o
 
 -include ${mzxrun_objs:.o=.d}
 
