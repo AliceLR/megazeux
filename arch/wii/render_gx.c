@@ -72,16 +72,15 @@
 #define TEX_DATA_SIZE \
  (sizeof(u32) * CHAR_VAR_H * CHAR_VARIANTS * FULL_CHARSET_SIZE)
 
-// (probably wasteful) tlut palette breakdown:
-// Standard color mappings (256)
-// All possible SMZX palette + tcol mappings (256 * 4)
-// UI color mappings (256)
-#define NUM_TLUT (256 * 6)
-#define TLUT_T0_OFFSET 256
-#define TLUT_T1_OFFSET 512
-#define TLUT_T2_OFFSET 768
-#define TLUT_T3_OFFSET 1024
-#define TLUT_UI_OFFSET 1280
+// (likely wasteful) tlut breakdown:
+#define TLUT_MZX_OFFSET   (256 * 0) // Standard MZX
+#define TLUT_SMZX_OFFSET  (256 * 1) // SMZX (separate because of SMZX_MESSAGE)
+#define TLUT_T0_OFFSET    (256 * 2) // MZX/UI/SMZX tcol is idx 0
+#define TLUT_T1_OFFSET    (256 * 3) // MZX/UI/SMZX tcol is idx 1
+#define TLUT_T2_OFFSET    (256 * 4) // SMZX tcol is idx 2 / MZX fg + UI bg
+#define TLUT_T3_OFFSET    (256 * 5) // SMZX tcol is idx 3 / MZX bg + UI fg
+#define TLUT_UI_OFFSET    (256 * 6) // UI
+#define NUM_TLUT          (256 * 7)
 
 // RGB5A3 transparent color for layer rendering.
 #define NO_COLOR 0x0000
@@ -623,6 +622,7 @@ static int gx_get_tlut_id_mzx(struct graphics_data *graphics,
  struct video_layer *layer, Uint8 bg_color, Uint8 fg_color)
 {
   int tcol = layer->transparent_col;
+  int tlut_id;
 
   if(tcol == (int)bg_color)
     return fg_color + TLUT_T0_OFFSET;
@@ -630,10 +630,22 @@ static int gx_get_tlut_id_mzx(struct graphics_data *graphics,
   if(tcol == (int)fg_color)
     return bg_color + TLUT_T1_OFFSET;
 
-  if(bg_color >= 16 && fg_color >= 16)
-    return (((bg_color & 0xF) << 4) | (fg_color & 0xF)) + TLUT_UI_OFFSET;
+  tlut_id = ((bg_color & 0xF) << 4) | (fg_color & 0xF);
 
-  return ((bg_color & 0xF) << 4) | (fg_color & 0xF);
+  if(bg_color >= 16 && fg_color >= 16)
+    return tlut_id + TLUT_UI_OFFSET;
+
+  // Mixed UI/game colors only occur during normal MZX mode, so it should
+  // be safe to reuse the SMZX TCOL mappings for these.
+  else
+  if(bg_color >= 16)
+    return tlut_id + TLUT_T2_OFFSET;
+
+  else
+  if(fg_color >= 16)
+    return tlut_id + TLUT_T3_OFFSET;
+
+  return tlut_id + TLUT_MZX_OFFSET;
 }
 
 static int gx_get_tlut_id_smzx(struct graphics_data *graphics,
@@ -658,7 +670,7 @@ static int gx_get_tlut_id_smzx(struct graphics_data *graphics,
   if(tcol == idx3)
     return palette_id + TLUT_T3_OFFSET;
 
-  return palette_id;
+  return palette_id + TLUT_SMZX_OFFSET;
 }
 
 static void gx_set_tlut_mzx(struct graphics_data *graphics,
@@ -667,16 +679,15 @@ static void gx_set_tlut_mzx(struct graphics_data *graphics,
   struct gx_render_data *render_data = graphics->render_data;
   int tcol = layer->transparent_col;
 
-  if(bg_color >= 16 && fg_color >= 16)
-  {
+  if(bg_color >= 16)
     bg_color = graphics->protected_pal_position + (bg_color & 0xF);
-    fg_color = graphics->protected_pal_position + (fg_color & 0xF);
-  }
   else
-  {
     bg_color &= 0xF;
+
+  if(fg_color >= 16)
+    fg_color = graphics->protected_pal_position + (fg_color & 0xF);
+  else
     fg_color &= 0xF;
-  }
 
   tlut->pal[0] =  bg_color != tcol ? render_data->tlutpal[bg_color] : NO_COLOR;
   tlut->pal[15] = fg_color != tcol ? render_data->tlutpal[fg_color] : NO_COLOR;
