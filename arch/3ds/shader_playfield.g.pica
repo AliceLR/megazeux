@@ -21,7 +21,6 @@
 .gsh point c0
 
 .fvec projection[4]
-.fvec uvoffset
 .fvec offset
 
 .out outpos position
@@ -41,12 +40,12 @@
 	mov r4, POSSCALE
 	mov r2, intc0
 	mov r3.xy, inpos
-	mov r3.z, uvoffset.z
+	mov r3.z, UVOFF.z
 	mad r0, r3, r4, offset
 
 	mov r11, SCALES
 	mov r0.w, POSSCALE.w
-	mul r5.xy, uvoffset.xy, r11.xy
+	mul r5.xy, UVOFF.xy, r11.xy
 	mul r6, r2, r11
 
 	setemit 0
