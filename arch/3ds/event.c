@@ -28,7 +28,7 @@
 
 extern struct input_status input;
 static enum bottom_screen_mode b_mode;
-static enum focus_mode allow_focus_changes = FOCUS_FORBID;
+static enum focus_mode allow_focus_changes = FOCUS_ALLOW;
 static bool is_dragging = false;
 
 bool update_hid(void);

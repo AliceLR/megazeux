@@ -39,7 +39,7 @@ struct ctr_shader_data
 {
   DVLB_s *dvlb;
   shaderProgram_s program;
-  int proj_loc, offs_loc, uvoffs_loc, geo_count;
+  int proj_loc, offs_loc, geo_count;
   C3D_AttrInfo attr;
 };
 
@@ -216,8 +216,6 @@ static inline void ctr_prepare_playfield(struct ctr_render_data *render_data,
    &render_data->projection);
   C3D_FVUnifSet(GPU_GEOMETRY_SHADER, render_data->shader_playfield.offs_loc,
    (float) xo, (float) yo, z, 0.0f);
-  C3D_FVUnifSet(GPU_GEOMETRY_SHADER, render_data->shader_playfield.uvoffs_loc,
-   (float) 8, (float) -14, 0.0f, 0.0f);
 }
 
 C3D_Tex *ctr_load_png(const char *name)
@@ -343,8 +341,6 @@ static void ctr_init_shader(struct ctr_shader_data *shader, const void *data,
    shaderInstanceGetUniformLocation(shader->program.geometryShader, "projection");
   shader->offs_loc =
    shaderInstanceGetUniformLocation(shader->program.geometryShader, "offset");
-  shader->uvoffs_loc =
-   shaderInstanceGetUniformLocation(shader->program.geometryShader, "uvoffset");
   AttrInfo_Init(&shader->attr);
 }
 
