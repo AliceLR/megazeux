@@ -549,6 +549,7 @@ static void config_max_simultaneous_samples(struct config_info *conf,
  */
 static const struct config_entry config_options[] =
 {
+  { "audio_buffer", config_set_audio_buffer, false },
   { "audio_buffer_samples", config_set_audio_buffer, false },
   { "audio_sample_rate", config_set_audio_freq, false },
   { "disassemble_base", config_disassemble_base, false },
