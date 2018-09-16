@@ -1295,7 +1295,10 @@ static void set_window_icon(void)
 static void new_empty_layer(struct video_layer *layer, int x, int y, Uint32 w,
  Uint32 h, int draw_order)
 {
-  layer->data = cmalloc(sizeof(struct char_element) * w * h);
+  // Layers are persistent and static
+  if(!layer->data || layer->w != w || layer->h != h)
+    layer->data = crealloc(layer->data, sizeof(struct char_element) * w * h);
+
   layer->w = w;
   layer->h = h;
   layer->x = x;
@@ -1360,6 +1363,7 @@ static void init_layers(void)
   graphics.video_layers[UI_LAYER].mode = 0;
 
   graphics.layer_count = 3;
+  graphics.layer_count_prev = graphics.layer_count;
   blank_layers();
 }
 
@@ -1404,17 +1408,22 @@ void blank_layers(void)
 
 void destruct_extra_layers(Uint32 first)
 {
-  // Deletes every extra layer starting from 'first' onward
+  // Delete layers that have not persisted since the previous frame and
+  // make all extra layers available for use.
   Uint32 i;
 
   if(first <= UI_LAYER)
     first = UI_LAYER + 1;
 
-  for(i = first; i < graphics.layer_count; i++)
+  if(graphics.layer_count_prev > graphics.layer_count)
   {
-    free(graphics.video_layers[i].data);
-    graphics.video_layers[i].data = NULL;
+    for(i = graphics.layer_count; i < graphics.layer_count_prev; i++)
+    {
+      free(graphics.video_layers[i].data);
+      graphics.video_layers[i].data = NULL;
+    }
   }
+  graphics.layer_count_prev = graphics.layer_count;
 
   if(graphics.layer_count > first)
     graphics.layer_count = first;
@@ -1427,11 +1436,15 @@ void destruct_extra_layers(Uint32 first)
 void destruct_layers(void)
 {
   Uint32 i;
-  for(i = 0; i < graphics.layer_count; i++)
+  for(i = 0; i < TEXTVIDEO_LAYERS; i++)
   {
     if(graphics.video_layers[i].data)
+    {
       free(graphics.video_layers[i].data);
+      graphics.video_layers[i].data = NULL;
+    }
   }
+  graphics.layer_count_prev = 0;
   graphics.layer_count = 0;
 }
 
