@@ -173,14 +173,14 @@
 
 # audio_sample_rate = 44100
 
-# Audio buffer size. Setting this to lower can improve latency,
-# so audio will be heard sooner after it is set to be changed.
-# It is also possible to change PC speaker effects more rapidly
-# with lower values. Lower buffer sizes need more CPU power to
-# process. 2048 is adequete for PC speaker playback every
+# Audio buffer size in samples. Setting this to lower can improve
+# latency, so audio will be heard sooner after it is set to be
+# changed. It is also possible to change PC speaker effects more
+# rapidly with lower values. Lower buffer sizes need more CPU power
+# to process. 2048 is adequete for PC speaker playback every
 # command at speed 4.
 
-# audio_buffer = 4096
+# audio_buffer_samples = 4096
 
 # Allow music to be sampled at higher precision. Increases CPU
 # usage but increases audio quality as well.

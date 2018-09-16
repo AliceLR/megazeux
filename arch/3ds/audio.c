@@ -50,7 +50,7 @@ void init_audio_platform(struct config_info *conf)
 {
   float mix[12];
 
-  audio.buffer_samples = conf->buffer_size & ~7;
+  audio.buffer_samples = conf->audio_buffer_samples & ~7;
   if(!audio.buffer_samples)
     audio.buffer_samples = 2048;
 

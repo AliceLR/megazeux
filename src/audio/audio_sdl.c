@@ -42,7 +42,7 @@ void init_audio_platform(struct config_info *conf)
     AUDIO_S16SYS,
     2,
     0,
-    conf->buffer_size,
+    conf->audio_buffer_samples,
     0,
     0,
     sdl_audio_callback,

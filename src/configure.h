@@ -58,7 +58,7 @@ struct config_info
 
   // Audio options
   int output_frequency;
-  int buffer_size;
+  int audio_buffer_samples;
   int oversampling_on;
   int resample_mode;
   int modplug_resample_mode;
@@ -83,14 +83,14 @@ struct config_info
   // Misc options
   int mask_midchars;
   bool system_mouse;
-    
+
   // Network layer options
-#ifdef CONFIG_NETWORK    
+#ifdef CONFIG_NETWORK
   bool network_enabled;
   char socks_host[256];
   int socks_port;
 #endif
-    
+
 #ifdef CONFIG_UPDATER
   int update_host_count;
   char **update_hosts;
