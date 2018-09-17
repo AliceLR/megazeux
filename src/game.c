@@ -630,6 +630,7 @@ __editor_maybe_static
 void play_game(context *parent, boolean *_fade_in)
 {
   struct game_context *game;
+  struct context_spec spec;
 
   game = cmalloc(sizeof(struct game_context));
   game->fade_in = _fade_in ? * _fade_in : true;
@@ -639,15 +640,15 @@ void play_game(context *parent, boolean *_fade_in)
   game->need_reload = false;
   game->load_dialog_on_failed_load = false;
 
-  create_context((context *)game, parent, CTX_PLAY_GAME,
-    NULL,
-    game_draw,
-    game_idle,
-    game_key,
-    NULL,
-    NULL,
-    game_destroy
-  );
+  memset(&spec, 0, sizeof(struct context_spec));
+  spec.draw     = game_draw;
+  spec.idle     = game_idle;
+  spec.key      = game_key;
+  spec.destroy  = game_destroy;
+
+  spec.framerate_mode = FRAMERATE_MZX_SPEED;
+
+  create_context((context *)game, parent, &spec, CTX_PLAY_GAME);
 
   if(!edit_world)
     parent->world->editing = false;
@@ -897,6 +898,7 @@ void title_screen(context *parent)
 {
   struct config_info *conf = get_config(parent);
   struct game_context *title;
+  struct context_spec spec;
 
   if(edit_world)
   {
@@ -924,15 +926,14 @@ void title_screen(context *parent)
   title->load_dialog_on_failed_load = true;
   title->is_title = true;
 
-  create_context((context *)title, parent, CTX_TITLE_SCREEN,
-    title_resume,
-    game_draw,
-    game_idle,
-    title_key,
-    NULL,
-    NULL,
-    game_destroy
-  );
+  memset(&spec, 0, sizeof(struct context_spec));
+  spec.resume   = title_resume;
+  spec.draw     = game_draw;
+  spec.idle     = game_idle;
+  spec.key      = title_key;
+  spec.destroy  = game_destroy;
+
+  create_context((context *)title, parent, &spec, CTX_TITLE_SCREEN);
 
   if(edit_world && conf->startup_editor)
   {

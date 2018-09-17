@@ -318,6 +318,7 @@ context *intake_num(context *parent, int value, int min_val, int max_val,
  int x, int y, int min_width, int color, void (*callback)(context *, int))
 {
   struct intake_num_context *intk = cmalloc(sizeof(struct intake_num_context));
+  struct context_spec spec;
 
   intk->x = x;
   intk->y = y;
@@ -336,16 +337,14 @@ context *intake_num(context *parent, int value, int min_val, int max_val,
 
   fix_draw_area(intk);
 
-  create_context((context *)intk, parent, CTX_INTAKE_NUM,
-    NULL,
-    intake_num_draw,
-    NULL,
-    intake_num_key,
-    intake_num_click,
-    NULL,
-    intake_num_destroy
-  );
+  memset(&spec, 0, sizeof(struct context_spec));
+  spec.draw     = intake_num_draw;
+  spec.key      = intake_num_key;
+  spec.click    = intake_num_click;
+  spec.destroy  = intake_num_destroy;
 
-  set_context_framerate_mode((context *)intk, FRAMERATE_UI_INTERRUPT);
+  spec.framerate_mode = FRAMERATE_UI_INTERRUPT;
+
+  create_context((context *)intk, parent, &spec, CTX_INTAKE_NUM);
   return (context *)intk;
 }

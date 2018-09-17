@@ -354,21 +354,19 @@ static void menu_destroy(context *ctx)
 
 void game_menu(context *parent)
 {
+  struct context_spec spec;
+
   save_screen();
   draw_game_menu(parent->world);
   draw_game_status(parent->world);
 
   m_show();
 
-  create_context(NULL, parent, CTX_GAME_MENU,
-    NULL,
-    NULL,
-    NULL,
-    menu_key,
-    NULL,
-    NULL,
-    menu_destroy
-  );
+  memset(&spec, 0, sizeof(struct context_spec));
+  spec.key      = menu_key;
+  spec.destroy  = menu_destroy;
+
+  create_context(NULL, parent, &spec, CTX_GAME_MENU);
 }
 
 /**
@@ -377,18 +375,16 @@ void game_menu(context *parent)
 
 void main_menu(context *parent)
 {
+  struct context_spec spec;
+
   save_screen();
   draw_main_menu(parent->world);
 
   m_show();
 
-  create_context(NULL, parent, CTX_MAIN_MENU,
-    NULL,
-    NULL,
-    NULL,
-    menu_key,
-    NULL,
-    NULL,
-    menu_destroy
-  );
+  memset(&spec, 0, sizeof(struct context_spec));
+  spec.key      = menu_key;
+  spec.destroy  = menu_destroy;
+
+  create_context(NULL, parent, &spec, CTX_MAIN_MENU);
 }

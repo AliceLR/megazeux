@@ -919,6 +919,7 @@ static boolean color_editor_drag(subcontext *ctx, int *key, int button,
 static subcontext *create_color_editor(struct pal_ed_context *pal_ed)
 {
   struct pal_ed_subcontext *sub = cmalloc(sizeof(struct pal_ed_subcontext));
+  struct context_spec spec;
 
   sub->pal_ed = pal_ed;
   sub->border_x = 36;
@@ -929,16 +930,13 @@ static subcontext *create_color_editor(struct pal_ed_context *pal_ed)
   sub->x = sub->border_x + 2;
   sub->y = sub->border_y + 1;
 
-  create_subcontext((subcontext *)sub, (context *)pal_ed,
-    NULL,
-    color_editor_draw,
-    NULL,
-    color_editor_key,
-    color_editor_click,
-    color_editor_drag,
-    NULL
-  );
+  memset(&spec, 0, sizeof(struct context_spec));
+  spec.draw   = color_editor_draw;
+  spec.key    = color_editor_key;
+  spec.click  = color_editor_click;
+  spec.drag   = color_editor_drag;
 
+  create_subcontext((subcontext *)sub, (context *)pal_ed, &spec);
   return (subcontext *)sub;
 }
 
@@ -1023,6 +1021,7 @@ static void menu_16_draw(subcontext *ctx)
 static subcontext *create_menu_16(struct pal_ed_context *pal_ed)
 {
   struct pal_ed_subcontext *sub = cmalloc(sizeof(struct pal_ed_subcontext));
+  struct context_spec spec;
 
   sub->pal_ed = pal_ed;
   sub->border_x = 7;
@@ -1033,16 +1032,10 @@ static subcontext *create_menu_16(struct pal_ed_context *pal_ed)
   sub->x = sub->border_x + 3;
   sub->y = sub->border_y + 2;
 
-  create_subcontext((subcontext *)sub, (context *)pal_ed,
-    NULL,
-    menu_16_draw,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL
-  );
+  memset(&spec, 0, sizeof(struct context_spec));
+  spec.draw = menu_16_draw;
 
+  create_subcontext((subcontext *)sub, (context *)pal_ed, &spec);
   return (subcontext *)sub;
 }
 
@@ -1220,6 +1213,7 @@ static boolean palette_16_mouse(subcontext *ctx, int *key, int button,
 static subcontext *create_palette_16(struct pal_ed_context *pal_ed)
 {
   struct pal_ed_subcontext *sub = cmalloc(sizeof(struct pal_ed_subcontext));
+  struct context_spec spec;
 
   sub->pal_ed = pal_ed;
   sub->border_x = 0;
@@ -1230,16 +1224,13 @@ static subcontext *create_palette_16(struct pal_ed_context *pal_ed)
   sub->x = sub->border_x + 2;
   sub->y = sub->border_y + 1;
 
-  create_subcontext((subcontext *)sub, (context *)pal_ed,
-    NULL,
-    palette_16_draw,
-    NULL,
-    palette_16_key,
-    palette_16_mouse,
-    palette_16_mouse,
-    NULL
-  );
+  memset(&spec, 0, sizeof(struct context_spec));
+  spec.draw   = palette_16_draw;
+  spec.key    = palette_16_key;
+  spec.click  = palette_16_mouse;
+  spec.drag   = palette_16_mouse;
 
+  create_subcontext((subcontext *)sub, (context *)pal_ed, &spec);
   return (subcontext *)sub;
 }
 
@@ -1367,6 +1358,7 @@ static void menu_256_draw(subcontext *ctx)
 static subcontext *create_menu_256(struct pal_ed_context *pal_ed)
 {
   struct pal_ed_subcontext *sub = cmalloc(sizeof(struct pal_ed_subcontext));
+  struct context_spec spec;
 
   sub->pal_ed = pal_ed;
   sub->border_x = 36;
@@ -1377,16 +1369,10 @@ static subcontext *create_menu_256(struct pal_ed_context *pal_ed)
   sub->x = sub->border_x + 2;
   sub->y = sub->border_y + 1;
 
-  create_subcontext((subcontext *)sub, (context *)pal_ed,
-    NULL,
-    menu_256_draw,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL
-  );
+  memset(&spec, 0, sizeof(struct context_spec));
+  spec.draw = menu_256_draw;
 
+  create_subcontext((subcontext *)sub, (context *)pal_ed, &spec);
   return (subcontext *)sub;
 }
 
@@ -1626,6 +1612,7 @@ static void palette_256_destroy(subcontext *ctx)
 static subcontext *create_palette_256(struct pal_ed_context *pal_ed)
 {
   struct pal_ed_subcontext *sub = cmalloc(sizeof(struct pal_ed_subcontext));
+  struct context_spec spec;
 
   sub->pal_ed = pal_ed;
   sub->border_x = 0;
@@ -1636,16 +1623,14 @@ static subcontext *create_palette_256(struct pal_ed_context *pal_ed)
   sub->x = sub->border_x + 2;
   sub->y = sub->border_y + 1;
 
-  create_subcontext((subcontext *)sub, (context *)pal_ed,
-    NULL,
-    palette_256_draw,
-    NULL,
-    palette_256_key,
-    palette_256_mouse,
-    palette_256_mouse,
-    palette_256_destroy
-  );
+  memset(&spec, 0, sizeof(struct context_spec));
+  spec.draw     = palette_256_draw;
+  spec.key      = palette_256_key;
+  spec.click    = palette_256_mouse;
+  spec.drag     = palette_256_mouse;
+  spec.destroy  = palette_256_destroy;
 
+  create_subcontext((subcontext *)sub, (context *)pal_ed, &spec);
   return (subcontext *)sub;
 }
 
@@ -1931,6 +1916,7 @@ static boolean subpalette_256_click(subcontext *ctx, int *key, int button,
 static subcontext *create_subpalette_256(struct pal_ed_context *pal_ed)
 {
   struct pal_ed_subcontext *sub = cmalloc(sizeof(struct pal_ed_subcontext));
+  struct context_spec spec;
 
   sub->pal_ed = pal_ed;
   sub->border_x = 0;
@@ -1941,16 +1927,12 @@ static subcontext *create_subpalette_256(struct pal_ed_context *pal_ed)
   sub->x = sub->border_x + 2;
   sub->y = sub->border_y + 1;
 
-  create_subcontext((subcontext *)sub, (context *)pal_ed,
-    NULL,
-    subpalette_256_draw,
-    NULL,
-    subpalette_256_key,
-    subpalette_256_click,
-    NULL,
-    NULL
-  );
+  memset(&spec, 0, sizeof(struct context_spec));
+  spec.draw   = subpalette_256_draw;
+  spec.key    = subpalette_256_key;
+  spec.click  = subpalette_256_click;
 
+  create_subcontext((subcontext *)sub, (context *)pal_ed, &spec);
   return (subcontext *)sub;
 }
 
@@ -2064,18 +2046,15 @@ void palette_editor(context *parent)
   struct pal_ed_context *pal_ed = ccalloc(1, sizeof(struct pal_ed_context));
   struct editor_config_info *editor_conf = get_editor_config(parent);
   int smzx_mode = get_screen_mode();
+  struct context_spec spec;
 
   rebuild_palette(pal_ed->palette);
 
-  create_context((context *)pal_ed, parent, CTX_PALETTE_EDITOR,
-    NULL,
-    NULL,
-    NULL,
-    pal_ed_key,
-    NULL,
-    NULL,
-    pal_ed_destroy
-  );
+  memset(&spec, 0, sizeof(struct context_spec));
+  spec.key      = pal_ed_key;
+  spec.destroy  = pal_ed_destroy;
+
+  create_context((context *)pal_ed, parent, &spec, CTX_PALETTE_EDITOR);
 
   if(smzx_mode >= 2)
   {

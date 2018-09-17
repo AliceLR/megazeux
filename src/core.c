@@ -57,29 +57,15 @@ struct core_context
  * To avoid warnings, internally cast to functions that take context *.
  */
 
-typedef void (*resume_fn)(context *);
-typedef void (*draw_fn)(context *);
-typedef boolean (*idle_fn)(context *);
-typedef boolean (*key_fn)(context *, int *key);
-typedef boolean (*click_fn)(context *, int *key, int button, int x, int y);
-typedef boolean (*drag_fn)(context *, int *key, int button, int x, int y);
-typedef void (*destroy_fn)(context *);
-
 struct context_data
 {
+  boolean is_subcontext;
   enum context_type context_type;
   enum framerate_type framerate;
   subcontext **children;
   int num_children;
   int num_children_alloc;
-
-  resume_fn   resume_function;
-  draw_fn     draw_function;
-  idle_fn     idle_function;
-  key_fn      key_function;
-  click_fn    click_function;
-  drag_fn     drag_function;
-  destroy_fn  destroy_function;
+  struct context_spec functions;
 };
 
 /**
@@ -193,18 +179,74 @@ void set_caption(struct world *mzx_world, struct board *board,
 }
 
 #ifdef DEBUG
+#define CTX_NAME_MAX_SIZE 16
+
+/**
+ * Get the name of a context from its ID (see core.h)
+ */
+static const char *get_ctx_name(enum context_type id)
+{
+  switch(id)
+  {
+    // Core contexts.
+    case CTX_DEFAULT:           return "(default)";
+    case CTX_TITLE_SCREEN:      return "Title screen";
+    case CTX_MAIN:              return "(help main page)";
+    case CTX_PLAY_GAME:         return "Gameplay";
+    case CTX_CONFIGURE:         return "Settings ed.";
+    case CTX_DIALOG_BOX:        return "Dialog";
+    case CTX_HELP_SYSTEM:       return "Help system";
+    case CTX_MAIN_MENU:         return "Main menu";
+    case CTX_GAME_MENU:         return "Game menu";
+    case CTX_INTAKE:            return "(intake string)";
+    case CTX_INTAKE_NUM:        return "(intake number)";
+
+    // Network contexts.
+    case CTX_UPDATER:           return "Updater";
+
+    // Editor contexts.
+    case CTX_EDITOR:            return "Editor";
+    case CTX_EDITOR_VIEW_BOARD: return "(view board)";
+    case CTX_BLOCK_CMD:         return "Block command";
+    case CTX_BLOCK_TYPE:        return "Block type";
+    case CTX_CHOOSE_CHARSET:    return "Select charset";
+    case CTX_IMPORTEXPORT_TYPE: return "Import/export";
+    case CTX_CHAR_EDIT:         return "Char editor";
+    case CTX_STATUS_COUNTERS:   return "Status counters";
+    case CTX_BOARD_EXITS:       return "Board exits";
+    case CTX_BOARD_SIZES:       return "Board sizes";
+    case CTX_BOARD_INFO:        return "Board info";
+    case CTX_CHANGE_CHAR_IDS:   return "Char ID table";
+    case CTX_CHANGE_DAMAGE:     return "Damage table";
+    case CTX_GLOBAL_SETTINGS:   return "Global settings1";
+    case CTX_GLOBAL_SETTINGS_2: return "Global settings2";
+    case CTX_ROBO_ED:           return "Robot editor";
+    case CTX_PALETTE_EDITOR:    return "Palette editor";
+    case CTX_SENSOR_EDITOR:     return "Sensor param";
+    case CTX_SUPER_MEGAZEUX:    return "Select SMZX mode";
+    case CTX_SFX_EDITOR:        return "SFX editor";
+    case CTX_COUNTER_DEBUG:     return "Counter debugger";
+    case CTX_ROBOT_DEBUG:       return "Robot debugger";
+    case CTX_BREAKPOINT_EDITOR: return "Robot dbg. conf.";
+    case CTX_VLAYER_SIZES:      return "Vlayer sizes";
+  }
+  return "?????";
+}
+
 /**
  * Debug: print a line of the context stack.
  */
-static void print_ctx_line(context_data *ctx_data, boolean is_sub)
+static void print_ctx_line(context_data *ctx_data)
 {
-  char name[17] = "  -> subcontext";
+  char name[CTX_NAME_MAX_SIZE + 1] = "  -> subcontext";
   const char *framerate_str = "-";
   boolean click_drag_same = false;
 
-  if(!is_sub)
+  if(!ctx_data->is_subcontext)
   {
-    sprintf(name, "%d", ctx_data->context_type);
+    snprintf(name, CTX_NAME_MAX_SIZE, "%s",
+     get_ctx_name(ctx_data->context_type));
+
     switch(ctx_data->framerate)
     {
       case FRAMERATE_UI:            framerate_str = "UI "; break;
@@ -214,18 +256,18 @@ static void print_ctx_line(context_data *ctx_data, boolean is_sub)
     }
   }
 
-  if(ctx_data->click_function == ctx_data->drag_function)
+  if(ctx_data->functions.click == ctx_data->functions.drag)
     click_drag_same = true;
 
   fprintf(stderr, "%-*.*s | %3s %3s %3s %3s %3s %3s %3s | %-3s \n",
     16, 16, name,
-    ctx_data->resume_function   ? "Yes" : "",
-    ctx_data->draw_function     ? "Yes" : "",
-    ctx_data->idle_function     ? "Yes" : "",
-    ctx_data->key_function      ? "Yes" : "",
-    ctx_data->click_function    ? "Yes" : "",
-    ctx_data->drag_function     ? click_drag_same ? "<- " : "Yes" : "",
-    ctx_data->destroy_function  ? "Yes" : "",
+    ctx_data->functions.resume  ? "Yes" : "",
+    ctx_data->functions.draw    ? "Yes" : "",
+    ctx_data->functions.idle    ? "Yes" : "",
+    ctx_data->functions.key     ? "Yes" : "",
+    ctx_data->functions.click   ? "Yes" : "",
+    ctx_data->functions.drag    ? click_drag_same ? "<- " : "Yes" : "",
+    ctx_data->functions.destroy ? "Yes" : "",
     framerate_str
   );
 }
@@ -251,11 +293,11 @@ static void print_core_stack(context *_ctx)
 
     for(i2 = ctx_data->num_children - 1; i2 >= 0; i2--)
     {
-      sub_data = ctx_data->children[i2]->ctx.internal_data;
-      print_ctx_line(sub_data, true);
+      sub_data = ctx_data->children[i2]->internal_data;
+      print_ctx_line(sub_data);
     }
 
-    print_ctx_line(ctx_data, false);
+    print_ctx_line(ctx_data);
   }
   fprintf(stderr, "\n");
   fflush(stderr);
@@ -323,78 +365,45 @@ static void remove_stack(void **stack, int *_num, void *del)
  */
 
 void create_context(context *ctx, context *parent,
- enum context_type context_type,
- void (*resume_function)(context *),
- void (*draw_function)(context *),
- boolean (*idle_function)(context *),
- boolean (*key_function)(context *, int *key),
- boolean (*click_function)(context *, int *key, int button, int x, int y),
- boolean (*drag_function)(context *, int *key, int button, int x, int y),
- void (*destroy_function)(context *))
+ struct context_spec *ctx_spec, enum context_type context_type)
 {
-  core_context *root = parent->root;
+  core_context *root;
   context_data *ctx_data;
 
-  if(key_function == NULL && click_function == NULL &&
-   drag_function == NULL && idle_function == NULL)
+  if(parent == NULL || !ctx_spec ||
+   (ctx_spec->key == NULL && ctx_spec->click == NULL &&
+    ctx_spec->drag == NULL && ctx_spec->idle == NULL))
     error("Context code bug", 2, 4, 0x2B01);
+
+  // If the parent is a subcontext, try to find the real parent context.
+  while(parent->parent && parent->internal_data &&
+   parent->internal_data->is_subcontext)
+    parent = parent->parent;
+
+  // Root needs to exist so this context can be added to the stack.
+  if(!parent->root)
+    error("Context code bug", 2, 4, 0x2B07);
 
   if(!ctx) ctx = cmalloc(sizeof(struct context));
   ctx_data = cmalloc(sizeof(struct context_data));
 
-  ctx->root = root;
+  ctx->root = parent->root;
   ctx->internal_data = ctx_data;
   ctx->world = parent->world;
   ctx->data = parent->data;
+  ctx->parent = NULL;
   ctx_data->context_type = context_type;
-  ctx_data->framerate = FRAMERATE_UI;
-  ctx_data->resume_function = resume_function;
-  ctx_data->draw_function = draw_function;
-  ctx_data->key_function = key_function;
-  ctx_data->click_function = click_function;
-  ctx_data->drag_function = drag_function;
-  ctx_data->idle_function = idle_function;
-  ctx_data->destroy_function = destroy_function;
+  ctx_data->framerate = ctx_spec->framerate_mode;
+  ctx_data->is_subcontext = false;
   ctx_data->children = NULL;
   ctx_data->num_children = 0;
   ctx_data->num_children_alloc = 0;
+  memcpy(&(ctx_data->functions), ctx_spec, sizeof(struct context_spec));
 
-  if(!root)
-    error("Context code bug", 2, 4, 0x2B07);
-
+  // Add the new context to the stack.
+  root = parent->root;
   add_stack((void ***) &(root->ctx_stack),
    &(root->ctx_stack_size), &(root->ctx_stack_alloc), ctx);
-
-  root->context_changed = true;
-}
-
-/**
- * Destroy the target context from the context stack.
- * Flag the core_context to abort further execution of the cycle.
- */
-
-void destroy_context(context *ctx)
-{
-  core_context *root = ctx->root;
-  context_data *ctx_data = ctx->internal_data;
-
-  // If the context isn't on the stack, this will error.
-  remove_stack((void **)(root->ctx_stack), &(root->ctx_stack_size), ctx);
-
-  // Also, destroy all children.
-  if(ctx_data->num_children)
-  {
-    int i;
-    for(i = ctx_data->num_children - 1; i >= 0; i--)
-      destroy_subcontext(ctx_data->children[i]);
-  }
-
-  if(ctx_data->destroy_function)
-    ctx_data->destroy_function(ctx);
-
-  free(ctx_data->children);
-  free(ctx_data);
-  free(ctx);
 
   root->context_changed = true;
 }
@@ -404,63 +413,85 @@ void destroy_context(context *ctx)
  */
 
 CORE_LIBSPEC void create_subcontext(subcontext *sub, context *parent,
- void (*resume_function)(subcontext *),
- void (*draw_function)(subcontext *),
- boolean (*idle_function)(subcontext *),
- boolean (*key_function)(subcontext *, int *key),
- boolean (*click_function)(subcontext *, int *key, int button, int x, int y),
- boolean (*drag_function)(subcontext *, int *key, int button, int x, int y),
- void (*destroy_function)(subcontext *))
+ struct context_spec *sub_spec)
 {
-  core_context *root = parent->root;
-  context_data *parent_data = parent->internal_data;
+  core_context *root;
+  context_data *parent_data;
   context_data *sub_data;
-  context *ctx;
 
-  if(!sub) sub = cmalloc(sizeof(struct subcontext));
-  sub_data = cmalloc(sizeof(struct context_data));
+  // If the parent is a subcontext, try to find the real parent context.
+  while(parent && parent->internal_data && parent->internal_data->is_subcontext)
+    parent = parent->parent;
 
-  ctx = &(sub->ctx);
-  ctx->root = root;
-  ctx->internal_data = sub_data;
-  ctx->world = parent->world;
-  ctx->data = parent->data;
-  sub->parent = parent;
-  sub_data->resume_function = (resume_fn)resume_function;
-  sub_data->draw_function = (draw_fn)draw_function;
-  sub_data->key_function = (key_fn)key_function;
-  sub_data->click_function = (click_fn)click_function;
-  sub_data->drag_function = (drag_fn)drag_function;
-  sub_data->idle_function = (idle_fn)idle_function;
-  sub_data->destroy_function = (destroy_fn)destroy_function;
-
-  if(!parent_data)
+  // Root context must exit, parent must not be the root context, and make sure
+  // this isn't some weird glitched context.
+  if(!parent || !parent->root || parent == (context *)(parent->root) ||
+   parent->parent || !parent->internal_data || !sub_spec)
     error("Context code bug", 2, 4, 0x2B08);
 
+  root = parent->root;
+  parent_data = parent->internal_data;
+
+  if(!sub) sub = cmalloc(sizeof(struct context));
+  sub_data = cmalloc(sizeof(struct context_data));
+
+  sub->root = root;
+  sub->internal_data = sub_data;
+  sub->world = parent->world;
+  sub->data = parent->data;
+  sub->parent = parent;
+  sub_data->is_subcontext = true;
+  memcpy(&(sub_data->functions), sub_spec, sizeof(struct context_spec));
+
+  // Add the subcontext to the parent's stack.
   add_stack((void ***) &(parent_data->children),
-   &(parent_data->num_children), &(parent_data->num_children_alloc), ctx);
+   &(parent_data->num_children), &(parent_data->num_children_alloc), sub);
 }
 
 /**
- * Destroys a subcontext.
+ * Destroy the target context or subcontext from its parent stack.
+ * Flag the core_context to abort further execution of the cycle if the root
+ * context stack is changed.
  */
 
-CORE_LIBSPEC void destroy_subcontext(subcontext *sub)
+void destroy_context(context *ctx)
 {
-  context *parent = sub->parent;
-  context_data *parent_data = parent->internal_data;
-  context_data *sub_data = sub->ctx.internal_data;
+  core_context *root = ctx->root;
+  context_data *ctx_data = ctx->internal_data;
 
-  // If the subcontext isn't on the stack, this will error.
-  remove_stack((void **)(parent_data->children), &(parent_data->num_children),
-   sub);
+  if(!ctx->parent && ctx_data && !ctx_data->is_subcontext)
+  {
+    // This is a root-level context, so remove it from the context stack.
 
-  // This function actually takes subcontext *, but was previously cast.
-  if(sub_data->destroy_function)
-    sub_data->destroy_function((void *)sub);
+    // If the context isn't on the stack, this will error.
+    remove_stack((void **)(root->ctx_stack), &(root->ctx_stack_size), ctx);
+    root->context_changed = true;
 
-  free(sub_data);
-  free(sub);
+    // Also, destroy all children.
+    if(ctx_data->num_children)
+    {
+      int i;
+      for(i = ctx_data->num_children - 1; i >= 0; i--)
+        destroy_context(ctx_data->children[i]);
+    }
+
+    free(ctx_data->children);
+  }
+  else
+  {
+    // This is a subcontext, so remove it from its parent context.
+    context_data *parent_data = ctx->parent->internal_data;
+
+    // If the subcontext isn't on the stack, this will error.
+    remove_stack((void **)(parent_data->children), &(parent_data->num_children),
+     ctx);
+  }
+
+  if(ctx_data->functions.destroy)
+    ctx_data->functions.destroy(ctx);
+
+  free(ctx_data);
+  free(ctx);
 }
 
 /**
@@ -511,17 +542,16 @@ static void core_resume(core_context *root)
   subcontext *sub;
   int i;
 
-  if(ctx_data->resume_function)
-    ctx_data->resume_function(ctx);
+  if(ctx_data->functions.resume)
+    ctx_data->functions.resume(ctx);
 
   for(i = 0; i < ctx_data->num_children; i++)
   {
-    // This function actually takes subcontext *, but was previously cast.
     sub = ctx_data->children[i];
     sub_data = ((context *)sub)->internal_data;
 
-    if(sub_data->resume_function)
-      sub_data->resume_function((void *)sub);
+    if(sub_data->functions.resume)
+      sub_data->functions.resume((context *)sub);
   }
 }
 
@@ -537,19 +567,18 @@ static void core_draw(core_context *root)
   subcontext *sub;
   int i;
 
-  if(ctx_data->draw_function)
-    ctx_data->draw_function(ctx);
+  if(ctx_data->functions.draw)
+    ctx_data->functions.draw(ctx);
 
   for(i = 0; i < ctx_data->num_children; i++)
   {
-    // This function actually takes subcontext *, but was previously cast.
     sub = ctx_data->children[i];
     sub_data = ((context *)sub)->internal_data;
 
-    if(sub_data->draw_function)
+    if(sub_data->functions.draw)
     {
       select_layer(UI_LAYER);
-      sub_data->draw_function((void *)sub);
+      sub_data->functions.draw((context *)sub);
     }
   }
 }
@@ -648,7 +677,7 @@ static void core_update(core_context *root)
   context *ctx = root->ctx_stack[root->ctx_stack_size - 1];
   context_data *ctx_data = ctx->internal_data;
   context_data *cur_data;
-  void *cur;
+  context *cur;
 
   boolean mouse_handled = false;
   boolean key_handled = false;
@@ -675,14 +704,14 @@ static void core_update(core_context *root)
     }
     else
     {
-      cur = ctx_data->children[i];
-      cur_data = ((context *)cur)->internal_data;
+      cur = (context *)ctx_data->children[i];
+      cur_data = cur->internal_data;
       i--;
     }
 
-    if(cur_data->idle_function)
+    if(cur_data->functions.idle)
     {
-      if(cur_data->idle_function(cur))
+      if(cur_data->functions.idle(cur))
       {
         mouse_handled = true;
         key_handled = true;
@@ -694,17 +723,17 @@ static void core_update(core_context *root)
 
     if(!mouse_handled)
     {
-      if(mouse_drag_state && cur_data->drag_function)
+      if(mouse_drag_state && cur_data->functions.drag)
       {
         mouse_handled |=
-         cur_data->drag_function(cur, &key, mouse_press, mouse_x, mouse_y);
+         cur_data->functions.drag(cur, &key, mouse_press, mouse_x, mouse_y);
       }
       else
 
-      if(mouse_press && cur_data->click_function)
+      if(mouse_press && cur_data->functions.click)
       {
         mouse_handled |=
-         cur_data->click_function(cur, &key, mouse_press, mouse_x, mouse_y);
+         cur_data->functions.click(cur, &key, mouse_press, mouse_x, mouse_y);
       }
 
       if(root->context_changed || root->full_exit)
@@ -713,8 +742,8 @@ static void core_update(core_context *root)
 
     if(!key_handled)
     {
-      if((key || exit_status) && cur_data->key_function)
-        key_handled |= cur_data->key_function(cur, &key);
+      if((key || exit_status) && cur_data->functions.key)
+        key_handled |= cur_data->functions.key(cur, &key);
 
       if(root->context_changed || root->full_exit)
         return;

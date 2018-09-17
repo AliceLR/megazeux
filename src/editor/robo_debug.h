@@ -20,7 +20,7 @@
 #ifndef __EDITOR_ROBO_DEBUG_H
 #define __EDITOR_ROBO_DEBUG_H
 
-#include "compat.h"
+#include "../compat.h"
 
 __M_BEGIN_DECLS
 

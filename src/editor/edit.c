@@ -700,21 +700,19 @@ static void view_board(struct editor_context *editor)
   struct view_board_context *vb = cmalloc(sizeof(struct view_board_context));
   struct world *mzx_world = ((context *)editor)->world;
   struct board *cur_board = mzx_world->current_board;
+  struct context_spec spec;
 
   vb->max_x = cur_board->board_width - cur_board->viewport_width;
   vb->max_y = cur_board->board_height - cur_board->viewport_height;
   vb->x = CLAMP(editor->scroll_x, 0, vb->max_x);
   vb->y = CLAMP(editor->scroll_y, 0, vb->max_y);
 
-  create_context((context *)vb, (context *)editor, CTX_EDITOR_VIEW_BOARD,
-    NULL,
-    view_board_draw,
-    NULL,
-    view_board_key,
-    NULL,
-    NULL,
-    NULL
-  );
+  memset(&spec, 0, sizeof(struct context_spec));
+  spec.draw = view_board_draw;
+  spec.key  = view_board_key;
+
+  create_context((context *)vb, (context *)editor, &spec,
+   CTX_EDITOR_VIEW_BOARD);
 
   cursor_off();
   m_hide();
@@ -3412,6 +3410,7 @@ static void __edit_world(context *parent, boolean reload_curr_file)
   struct editor_context *editor = ccalloc(1, sizeof(struct editor_context));
   struct buffer_info *buffer = &(editor->buffer);
   struct block_info *block = &(editor->block);
+  struct context_spec spec;
 
   struct editor_config_info *editor_conf = get_editor_config((context *)parent);
   struct world *mzx_world = ((context *)parent)->world;
@@ -3440,16 +3439,16 @@ static void __edit_world(context *parent, boolean reload_curr_file)
   block->command = BLOCK_CMD_NONE;
   block->selected = false;
 
-  create_context((context *)editor, parent,
-    CTX_EDITOR,
-    editor_resume,
-    editor_draw,
-    editor_idle,
-    editor_key,
-    editor_mouse,
-    editor_mouse,
-    editor_destroy
-  );
+  memset(&spec, 0, sizeof(struct context_spec));
+  spec.resume   = editor_resume;
+  spec.draw     = editor_draw;
+  spec.idle     = editor_idle;
+  spec.key      = editor_key;
+  spec.click    = editor_mouse;
+  spec.drag     = editor_mouse;
+  spec.destroy  = editor_destroy;
+
+  create_context((context *)editor, parent, &spec, CTX_EDITOR);
 
   editor->edit_menu = create_edit_menu((context *)editor);
 

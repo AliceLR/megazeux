@@ -104,29 +104,52 @@ struct global_data
 #endif
 };
 
-/** Core types. */
+/**
+ * Core types.
+ * "subcontext" is an alternate type for context that should be used for
+ * functions that deal with subcontexts instead of contexts.
+ */
 typedef struct context context;
-typedef struct subcontext subcontext;
+typedef struct context subcontext;
 typedef struct context_data context_data;
 typedef struct core_context core_context;
 
-/** Contains information related to the current MegaZeux state/interface/etc. */
+/**
+ * Contains information related to the current MegaZeux state/interface/etc.
+ * NOTE: "parent" will only be set for subcontexts and will be NULL otherwise.
+ */
 struct context
 {
   struct global_data *data;
   struct world *world;
+  context *parent;
   core_context *root;
   context_data *internal_data;
 };
 
 /**
- * Contains information for a subset of the current MegaZeux interface.
- * Do not use with create_context or destroy_context.
+ * Contains extra function/variable information for a new context or subcontext.
+ * At least one update function should be provided; all other variables may be
+ * NULL or zero by default.
+ *
+ * draw             Optional function to draw this context every frame.
+ * key              Update function called to handle a keypress.
+ * click            Update function called to handle a mouse click.
+ * drag             Update function called to handle a mouse drag.
+ * idle             Update function called every frame.
+ * destroy          Optional function to be called on destruction.
+ * framerate_mode   Framerate mode this context should use (context only).
  */
-struct subcontext
+struct context_spec
 {
-  context ctx;
-  context *parent;
+  void (*resume)(context *);
+  void (*draw)(context *);
+  boolean (*idle)(context *);
+  boolean (*key)(context *, int *key);
+  boolean (*click)(context *, int *key, int button, int x, int y);
+  boolean (*drag)(context *, int *key, int button, int x, int y);
+  void (*destroy)(context *);
+  enum framerate_type framerate_mode;
 };
 
 /**
@@ -143,70 +166,42 @@ CORE_LIBSPEC void set_caption(struct world *mzx_world, struct board *board,
 
 /**
  * Sets up a new context and adds it to the context stack. At least one
- * update function must be provided.
+ * update function must be provided. If "parent" is a subcontext, this function
+ * will use its parent context as the parent instead.
  *
  * @param ctx               Optional newly allocated context to be initialized.
  * @param parent            The context which created this context.
- * @param context_type      Used to identify contexts and by the help system.
- * @param draw_function     Optional function to draw this context every frame.
- * @param key_function      Update function called to handle a keypress.
- * @param click_function    Update function called to handle a mouse click.
- * @param drag_function     Update function called to handle a mouse drag.
- * @param idle_function     Update function called every frame.
- * @param destroy_function  Optional function to be called on destruction.
+ * @param ctx_spec          Specification for context functions/variables.
+ * @param context_type      Used to identify contexts (also, by the help system)
  */
 
 CORE_LIBSPEC void create_context(context *ctx, context *parent,
- enum context_type context_type,
- void (*resume_function)(context *),
- void (*draw_function)(context *),
- boolean (*idle_function)(context *),
- boolean (*key_function)(context *, int *key),
- boolean (*click_function)(context *, int *key, int button, int x, int y),
- boolean (*drag_function)(context *, int *key, int button, int x, int y),
- void (*destroy_function)(context *));
+ struct context_spec *ctx_spec, enum context_type context_type);
 
 /**
- * Destroys a context and every context above it on the context stack.
- * This will call the destroy function for every context destroyed. Contexts
- * will be destroyed from the top of the stack down.
- *
- * @param ctx           The context to destroy.
- */
-
-CORE_LIBSPEC void destroy_context(context *ctx);
-
-/**
- * Sets up a new subcontext and adds it to a context. The new subcontext
- * will be drawn last and update first, taking input precedence.
+ * Sets up a new subcontext and adds it to a parent context. The new subcontext
+ * will be drawn last and update first, taking input precedence. If "parent" is
+ * a subcontext, this function will use the parent of that subcontext as the
+ * parent of the new subcontext instead.
  *
  * @param sub               Optional newly allocated subcontext.
  * @param parent            The context which created this context.
- * @param draw_function     Optional function to draw this subcontext.
- * @param key_function      Update function called to handle a keypress.
- * @param click_function    Update function called to handle a mouse click.
- * @param drag_function     Update function called to handle a mouse drag.
- * @param idle_function     Update function called every frame.
- * @param destroy_function  Optional function to be called on destruction.
+ * @param sub_spec          Specification for subcontext functions/variables.
  */
 
 CORE_LIBSPEC void create_subcontext(subcontext *sub, context *parent,
- void (*resume_function)(subcontext *),
- void (*draw_function)(subcontext *),
- boolean (*idle_function)(subcontext *),
- boolean (*key_function)(subcontext *, int *key),
- boolean (*click_function)(subcontext *, int *key, int button, int x, int y),
- boolean (*drag_function)(subcontext *, int *key, int button, int x, int y),
- void (*destroy_function)(subcontext *));
+ struct context_spec *sub_spec);
 
 /**
- * Destroys a subcontext on its parent's subcontext stack.
- * This will call the subcontext destroy function.
+ * Destroys a context and its subcontexts. This will call the destroy function
+ * for every subcontext destroyed, and finally for this context itself.
+ * Subcontexts will be destroyed from the top of the stack down. If given a
+ * subcontext, this will destroy the given subcontext only.
  *
- * @param sub           The subcontext to destroy.
+ * @param ctx           The context or subcontext to destroy.
  */
 
-CORE_LIBSPEC void destroy_subcontext(subcontext *sub);
+CORE_LIBSPEC void destroy_context(context *ctx);
 
 /**
  * Get config information from a particular context.
@@ -232,7 +227,7 @@ static inline struct editor_config_info *get_editor_config(context *ctx)
 
 /**
  * Sets the framerate mode of the current context. See enum framerate_type for
- * a list of valid values.
+ * a list of valid values. This function is meaningless for subcontexts.
  *
  * @param ctx           The current context.
  * @param framerate     The new framerate mode.

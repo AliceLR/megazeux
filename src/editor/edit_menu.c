@@ -24,12 +24,12 @@
 #include "../idput.h"
 #include "../graphics.h"
 #include "../window.h"
+#include "../world_struct.h"
 
 #include "buffer_struct.h"
 #include "edit.h"
 #include "edit_menu.h"
 #include "window.h"
-#include "world_struct.h"
 
 #define NUM_MENUS 6
 
@@ -475,17 +475,16 @@ subcontext *create_edit_menu(context *parent)
 {
   struct edit_menu_subcontext *edit_menu =
    ccalloc(1, sizeof(struct edit_menu_subcontext));
+  struct context_spec spec;
 
-  create_subcontext((subcontext *)edit_menu, parent,
-    NULL,
-    edit_menu_draw,
-    edit_menu_idle,
-    edit_menu_key,
-    edit_menu_mouse,
-    edit_menu_mouse,
-    NULL
-  );
+  memset(&spec, 0, sizeof(struct context_spec));
+  spec.draw   = edit_menu_draw;
+  spec.idle   = edit_menu_idle;
+  spec.key    = edit_menu_key;
+  spec.click  = edit_menu_mouse;
+  spec.drag   = edit_menu_mouse;
 
+  create_subcontext((subcontext *)edit_menu, parent, &spec);
   return (subcontext *)edit_menu;
 }
 
