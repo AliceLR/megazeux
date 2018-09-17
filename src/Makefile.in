@@ -49,6 +49,10 @@ ${audio_obj}/%.o: ${audio_src}/%.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${core_cflags} ${core_flags} ${core_spec} -c $< -o $@
 
+${audio_obj}/%.o: ${audio_src}/%.cpp
+	$(if ${V},,@echo "  CXX     " $<)
+	${CC} -MD ${core_cxxflags} ${core_flags} ${core_spec} -c $< -o $@
+
 ${network_obj}/%.o: ${network_src}/%.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${core_cflags} ${core_flags} ${core_spec} -c $< -o $@

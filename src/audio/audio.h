@@ -42,8 +42,20 @@ struct audio_stream
   struct audio_stream *previous;
   Uint32 volume;
   Uint32 repeat;
-  Uint32 (* mix_data)(struct audio_stream *a_src, Sint32 *buffer,
-   Uint32 len);
+  Uint32 (* mix_data)(struct audio_stream *a_src, Sint32 *buffer, Uint32 len);
+  void (* set_volume)(struct audio_stream *a_src, Uint32 volume);
+  void (* set_repeat)(struct audio_stream *a_src, Uint32 repeat);
+  void (* set_order)(struct audio_stream *a_src, Uint32 order);
+  void (* set_position)(struct audio_stream *a_src, Uint32 pos);
+  Uint32 (* get_order)(struct audio_stream *a_src);
+  Uint32 (* get_position)(struct audio_stream *a_src);
+  Uint32 (* get_length)(struct audio_stream *a_src);
+  void (* destruct)(struct audio_stream *a_src);
+};
+
+struct audio_stream_spec
+{
+  Uint32 (* mix_data)(struct audio_stream *a_src, Sint32 *buffer, Uint32 len);
   void (* set_volume)(struct audio_stream *a_src, Uint32 volume);
   void (* set_repeat)(struct audio_stream *a_src, Uint32 repeat);
   void (* set_order)(struct audio_stream *a_src, Uint32 order);
@@ -119,17 +131,8 @@ void audio_set_pcs_volume(int volume);
 // Internal functions
 int audio_get_real_frequency(int period);
 void destruct_audio_stream(struct audio_stream *a_src);
-void construct_audio_stream(struct audio_stream *a_src,
- Uint32 (* mix_data)(struct audio_stream *a_src, Sint32 *buffer, Uint32 len),
- void (* set_volume)(struct audio_stream *a_src, Uint32 volume),
- void (* set_repeat)(struct audio_stream *a_src, Uint32 repeat),
- void (* set_order)(struct audio_stream *a_src, Uint32 order),
- void (* set_position)(struct audio_stream *a_src, Uint32 pos),
- Uint32 (* get_order)(struct audio_stream *a_src),
- Uint32 (* get_position)(struct audio_stream *a_src),
- Uint32 (* get_length)(struct audio_stream *a_src),
- void (* destruct)(struct audio_stream *a_src),
- Uint32 volume, Uint32 repeat);
+void initialize_audio_stream(struct audio_stream *a_src,
+ struct audio_stream_spec *a_spec, Uint32 volume, Uint32 repeat);
 
 // Platform-related functions.
 void audio_callback(Sint16 *stream, int len);

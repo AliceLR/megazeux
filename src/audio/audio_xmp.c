@@ -207,6 +207,8 @@ static struct audio_stream *construct_xmp_stream(char *filename,
     if(xmp_load_module(ctx, filename) == 0)
     {
       struct xmp_stream *xmp_stream = cmalloc(sizeof(struct xmp_stream));
+      struct sampled_stream_spec s_spec;
+      struct audio_stream_spec a_spec;
       int num_orders;
 
       xmp_stream->ctx = ctx;
@@ -232,16 +234,28 @@ static struct audio_stream *construct_xmp_stream(char *filename,
         info.seq_data[i].entry_point = 0;
       }
 
-      initialize_sampled_stream((struct sampled_stream *)xmp_stream,
-       audio_xmp_set_frequency, audio_xmp_get_frequency, frequency, 2, 0);
+      memset(&a_spec, 0, sizeof(struct audio_stream_spec));
+      a_spec.mix_data     = audio_xmp_mix_data;
+      a_spec.set_volume   = audio_xmp_set_volume;
+      a_spec.set_repeat   = audio_xmp_set_repeat;
+      a_spec.set_order    = audio_xmp_set_order;
+      a_spec.set_position = audio_xmp_set_position;
+      a_spec.get_order    = audio_xmp_get_order;
+      a_spec.get_position = audio_xmp_get_position;
+      a_spec.get_length   = audio_xmp_get_length;
+      a_spec.destruct     = audio_xmp_destruct;
+
+      memset(&s_spec, 0, sizeof(struct sampled_stream_spec));
+      s_spec.set_frequency = audio_xmp_set_frequency;
+      s_spec.get_frequency = audio_xmp_get_frequency;
+
+      initialize_sampled_stream((struct sampled_stream *)xmp_stream, &s_spec,
+       frequency, 2, 0);
+
+      initialize_audio_stream((struct audio_stream *)xmp_stream, &a_spec,
+       volume, repeat);
 
       ret_val = (struct audio_stream *)xmp_stream;
-
-      construct_audio_stream((struct audio_stream *)xmp_stream,
-       audio_xmp_mix_data, audio_xmp_set_volume, audio_xmp_set_repeat,
-       audio_xmp_set_order, audio_xmp_set_position, audio_xmp_get_order,
-       audio_xmp_get_position, audio_xmp_get_length, audio_xmp_destruct,
-       volume, repeat);
     }
   }
 

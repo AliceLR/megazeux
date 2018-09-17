@@ -204,6 +204,8 @@ static struct audio_stream *construct_openmpt_stream(char *filename,
     if(open_file)
     {
       struct openmpt_stream *omp_stream = cmalloc(sizeof(struct openmpt_stream));
+      struct sampled_stream_spec s_spec;
+      struct audio_stream_spec a_spec;
       omp_stream->module_data = open_file;
 
       omp_stream->row_tbl_size = openmpt_module_get_num_orders(open_file) + 1;
@@ -223,15 +225,28 @@ static struct audio_stream *construct_openmpt_stream(char *filename,
 
       openmpt_module_set_repeat_count(omp_stream->module_data, -1);
 
-      initialize_sampled_stream((struct sampled_stream *)omp_stream,
-       omp_set_frequency, omp_get_frequency, frequency, 2, 0);
+      memset(&a_spec, 0, sizeof(struct audio_stream_spec));
+      a_spec.mix_data     = omp_mix_data;
+      a_spec.set_volume   = omp_set_volume;
+      a_spec.set_repeat   = omp_set_repeat;
+      a_spec.set_order    = omp_set_order;
+      a_spec.set_position = omp_set_position;
+      a_spec.get_order    = omp_get_order;
+      a_spec.get_position = omp_get_position;
+      a_spec.get_length   = omp_get_length;
+      a_spec.destruct     = omp_destruct;
+
+      memset(&s_spec, 0, sizeof(struct sampled_stream_spec));
+      s_spec.set_frequency = omp_set_frequency;
+      s_spec.get_frequency = omp_get_frequency;
+
+      initialize_sampled_stream((struct sampled_stream *)omp_stream, &s_spec,
+       frequency, 2, 0);
+
+      initialize_audio_stream((struct audio_stream *)omp_stream, &a_spec,
+       volume, repeat);
 
       ret_val = (struct audio_stream *)omp_stream;
-
-      construct_audio_stream((struct audio_stream *)omp_stream,
-       omp_mix_data, omp_set_volume, omp_set_repeat, omp_set_order,
-       omp_set_position, omp_get_order, omp_get_position, omp_get_length,
-       omp_destruct, volume, repeat);
     }
 
     fclose(input_file);
