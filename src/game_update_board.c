@@ -96,8 +96,7 @@ void update_board(struct world *mzx_world)
   enum thing current_under_id;
   char *update_done = mzx_world->update_done;
 
-  // Toggle slow_down
-  mzx_world->slow_down ^= 1;
+  // NOTE: slow_down already toggled.
   slow_down = mzx_world->slow_down;
 
   // Clear the status code of all robots

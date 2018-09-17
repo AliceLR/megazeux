@@ -134,11 +134,14 @@ static void update_variables(struct world *mzx_world, int slowed)
   int b_mesg_timer = src_board->b_mesg_timer;
   int invinco;
   int lazwall_start = src_board->lazwall_start;
-  static int slowdown = 0;
-  slowdown ^= 1;
+  int slow_down;
+
+  // Toggle slow_down
+  mzx_world->slow_down ^= 1;
+  slow_down = mzx_world->slow_down;
 
   // If odd, we...
-  if(!slowdown)
+  if(!slow_down)
   {
     // Change scroll color
     scroll_color++;
