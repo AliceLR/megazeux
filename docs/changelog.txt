@@ -1,4 +1,10 @@
-GIT - MZX 2.91f
+September 17th, 2018 - MZX 2.91f
+
+A bugfix release focusing primarily on renderers, the 3DS and
+Wii ports, and the Makefile build system. Highlights: the 3DS
+port should perform better now, the Wii port's GX renderer has
+been restored, the 'darwin' platform has more Unix-like options
+now, and several crashes have been fixed.
 
 USERS
 
