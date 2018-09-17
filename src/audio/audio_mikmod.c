@@ -213,18 +213,33 @@ static struct audio_stream *construct_mikmod_stream(char *filename,
     if(open_file)
     {
       struct mikmod_stream *mm_stream = cmalloc(sizeof(struct mikmod_stream));
+      struct sampled_stream_spec s_spec;
+      struct audio_stream_spec a_spec;
       mm_stream->module_data = open_file;
       Player_Start(mm_stream->module_data);
 
-      initialize_sampled_stream((struct sampled_stream *)mm_stream,
-       mm_set_frequency, mm_get_frequency, frequency, 2, 0);
+      memset(&a_spec, 0, sizeof(struct audio_stream_spec));
+      a_spec.mix_data     = mm_mix_data;
+      a_spec.set_volume   = mm_set_volume;
+      a_spec.set_repeat   = mm_set_repeat;
+      a_spec.set_order    = mm_set_order;
+      a_spec.set_position = mm_set_position;
+      a_spec.get_order    = mm_get_order;
+      a_spec.get_position = mm_get_position;
+      a_spec.get_length   = mm_get_length;
+      a_spec.destruct     = mm_destruct;
+
+      memset(&s_spec, 0, sizeof(struct sampled_stream_spec));
+      s_spec.set_frequency = mm_set_frequency;
+      s_spec.get_frequency = mm_get_frequency;
+
+      initialize_sampled_stream((struct sampled_stream *)mm_stream, &s_spec,
+       frequency, 2, 0);
+
+      initialize_audio_stream((struct audio_stream *)mm_stream, &a_spec,
+       volume, repeat);
 
       ret_val = (struct audio_stream *)mm_stream;
-
-      construct_audio_stream((struct audio_stream *)mm_stream,
-       mm_mix_data, mm_set_volume, mm_set_repeat, mm_set_order,
-       mm_set_position, mm_get_order, mm_get_position, mm_get_length,
-       mm_destruct, volume, repeat);
     }
 
     fclose(input_file);

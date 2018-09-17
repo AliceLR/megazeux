@@ -207,8 +207,9 @@ static struct audio_stream *construct_vorbis_stream(char *filename,
       // Surround OGGs not supported yet..
       if(vorbis_file_info->channels <= 2)
       {
-        struct vorbis_stream *v_stream =
-         cmalloc(sizeof(struct vorbis_stream));
+        struct vorbis_stream *v_stream = cmalloc(sizeof(struct vorbis_stream));
+        struct sampled_stream_spec s_spec;
+        struct audio_stream_spec a_spec;
 
         v_stream->vorbis_file_handle = open_file;
         v_stream->vorbis_file_info = vorbis_file_info;
@@ -236,16 +237,26 @@ static struct audio_stream *construct_vorbis_stream(char *filename,
           }
         }
 
-        initialize_sampled_stream((struct sampled_stream *)v_stream,
-         vorbis_set_frequency, vorbis_get_frequency, frequency,
-         v_stream->vorbis_file_info->channels, 1);
+        memset(&a_spec, 0, sizeof(struct audio_stream_spec));
+        a_spec.mix_data     = vorbis_mix_data;
+        a_spec.set_volume   = vorbis_set_volume;
+        a_spec.set_repeat   = vorbis_set_repeat;
+        a_spec.set_position = vorbis_set_position;
+        a_spec.get_position = vorbis_get_position;
+        a_spec.get_length   = vorbis_get_length;
+        a_spec.destruct     = vorbis_destruct;
+
+        memset(&s_spec, 0, sizeof(struct sampled_stream_spec));
+        s_spec.set_frequency = vorbis_set_frequency;
+        s_spec.get_frequency = vorbis_get_frequency;
+
+        initialize_sampled_stream((struct sampled_stream *)v_stream, &s_spec,
+         frequency, v_stream->vorbis_file_info->channels, 1);
+
+        initialize_audio_stream((struct audio_stream *)v_stream, &a_spec,
+         volume, repeat);
 
         ret_val = (struct audio_stream *)v_stream;
-
-        construct_audio_stream((struct audio_stream *)v_stream,
-         vorbis_mix_data, vorbis_set_volume, vorbis_set_repeat,
-         NULL, vorbis_set_position, NULL, vorbis_get_position,
-         vorbis_get_length, vorbis_destruct, volume, repeat);
       }
       else
       {

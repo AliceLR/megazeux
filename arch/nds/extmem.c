@@ -22,9 +22,10 @@
  * into slower external memory to reduce memory pressure.
  */
 
-#include "extmem.h"
+#include "../../src/extmem.h"
+#include "../../src/robot.h"
+
 #include "dlmalloc.h"
-#include "robot.h"
 
 // Move the robot's memory from normal RAM to extra RAM.
 static void store_robot_to_extram(struct robot *robot)

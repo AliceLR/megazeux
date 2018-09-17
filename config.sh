@@ -10,6 +10,7 @@ usage() {
 	echo "  --prefix       Where dependencies should be found."
 	echo "  --sysconfdir   Where the config should be read from."
 	echo "  --gamesdir     Where binaries should be installed."
+	echo "  --libdir       Where libraries should be installed."
 	echo "  --bindir       Where utilities should be installed."
 	echo "  --sharedir     Where resources should be installed."
 	echo
@@ -21,7 +22,9 @@ usage() {
 	echo "  mingw64        Use MinGW64 on Linux, to build for win64"
 	echo "  unix           Unix-like / Linux / Solaris / BSD / Embedded"
 	echo "  unix-devel     As above, but for running from current dir"
-	echo "  darwin         Macintosh OS X (not Classic)"
+	echo "  darwin         Mac OS X Unix-like install"
+	echo "  darwin-devel   Mac OS X running from current dir"
+	echo "  darwin-dist    Mac OS X (PPC .app builds -- use Xcode for Intel)"
 	echo "  psp            Experimental PSP port"
 	echo "  gp2x           Experimental GP2X port"
 	echo "  nds            Experimental NDS port"
@@ -87,10 +90,19 @@ usage() {
 PLATFORM=""
 PREFIX="/usr"
 SYSCONFDIR="/etc"
-GAMESDIR="${PREFIX}/games"
-BINDIR="${PREFIX}/bin"
-SHAREDIR="${PREFIX}/share"
-SYSCONFDIR_SET="false"
+SYSCONFDIR_IS_SET="false"
+GAMESDIR_IS_SET="false"
+GAMESDIR_IN_PREFIX="/games"
+GAMESDIR="${PREFIX}${GAMESDIR_IN_PREFIX}"
+LIBDIR_IS_SET="false"
+LIBDIR_IN_PREFIX="/lib"
+LIBDIR="${PREFIX}${LIBDIR_IN_PREFIX}"
+BINDIR_IS_SET="false"
+BINDIR_IN_PREFIX="/bin"
+BINDIR="${PREFIX}${BINDIR_IN_PREFIX}"
+SHAREDIR_IS_SET="false"
+SHAREDIR_IN_PREFIX="/share"
+SHAREDIR="${PREFIX}${SHAREDIR_IN_PREFIX}"
 DATE_STAMP="true"
 AS_NEEDED="false"
 RELEASE="false"
@@ -142,31 +154,57 @@ while [ "$1" != "" ]; do
 	if [ "$1" = "--prefix" ]; then
 		shift
 		PREFIX="$1"
+		# Update other install folders to match
+		if [ "$GAMESDIR_IS_SET" = "false" ]; then
+			GAMESDIR="${PREFIX}${GAMESDIR_IN_PREFIX}"
+		fi
+
+		if [ "$LIBDIR_IS_SET" = "false" ]; then
+			LIBDIR="${PREFIX}${LIBDIR_IN_PREFIX}"
+		fi
+
+		if [ "$BINDIR_IS_SET" = "false" ]; then
+			BINDIR="${PREFIX}${BINDIR_IN_PREFIX}"
+		fi
+
+		if [ "$SHAREDIR_IS_SET" = "false" ]; then
+			SHAREDIR="${PREFIX}${SHAREDIR_IN_PREFIX}"
+		fi
 	fi
 
 	# e.g. --sysconfdir /etc
 	if [ "$1" = "--sysconfdir" ]; then
 		shift
 		SYSCONFDIR="$1"
-		SYSCONFDIR_SET="true"
+		SYSCONFDIR_IS_SET="true"
 	fi
 
 	# e.g. --gamesdir /usr/games
 	if [ "$1" = "--gamesdir" ]; then
 		shift
 		GAMESDIR="$1"
+		GAMESDIR_IS_SET="true"
+	fi
+
+	# e.g. --libdir /usr/lib
+	if [ "$1" = "--libdir" ]; then
+		shift
+		LIBDIR="$1"
+		LIBDIR_IS_SET="true"
 	fi
 
 	# e.g. --bindir /usr/bin
 	if [ "$1" = "--bindir" ]; then
 		shift
 		BINDIR="$1"
+		BINDIR_IS_SET="true"
 	fi
 
 	# e.g. --sharedir /usr/share
 	if [ "$1" = "--sharedir" ]; then
 		shift
 		SHAREDIR="$1"
+		SHAREDIR_IS_SET="true"
 	fi
 
 	[ "$1" = "--as-needed-hack" ] && AS_NEEDED="true"
@@ -303,7 +341,7 @@ fi
 
 ### PLATFORM DEFINITION #######################################################
 
-echo "PREFIX?=$PREFIX" > platform.inc
+echo "PREFIX:=$PREFIX" > platform.inc
 
 if [ "$PLATFORM" = "win32"   -o "$PLATFORM" = "win64" \
   -o "$PLATFORM" = "mingw32" -o "$PLATFORM" = "mingw64" ]; then
@@ -335,27 +373,33 @@ elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 
 	if [ "$MACH" = "x86_64" -o "$MACH" = "amd64" ]; then
 		ARCHNAME=amd64
-		LIBDIR=lib64
-		# FIXME: FreeBSD amd64 hack
-		[ "$UNIX" = "freebsd" ] && LIBDIR=lib
+		#RAWLIBDIR=lib64
+		# FreeBSD amd64 hack
+		#[ "$UNIX" = "freebsd" ] && RAWLIBDIR=lib
 	elif [ "`echo $MACH | sed 's,i.86,x86,'`" = "x86" ]; then
 		ARCHNAME=x86
-		LIBDIR=lib
+		#RAWLIBDIR=lib
 	elif [ "`echo $MACH | sed 's,^arm.*,arm,'`" = "arm" ]; then
 		ARCHNAME=arm
-		LIBDIR=lib
+		#RAWLIBDIR=lib
 	elif [ "$MACH" == "ppc" ]; then
 		ARCHNAME=ppc
-		LIBDIR=lib
+		#RAWLIBDIR=lib
 	else
 		ARCHNAME=$MACH
-		LIBDIR=lib # The default for most systems
+		#RAWLIBDIR=lib
 		echo "WARNING: Compiling on an unsupported architecture. Add a friendly MACH to config.sh."
 	fi
 
 	echo "#define PLATFORM \"$UNIX-$ARCHNAME\"" > src/config.h
 	echo "SUBPLATFORM=$UNIX-$ARCHNAME"         >> platform.inc
 	echo "PLATFORM=unix"                       >> platform.inc
+elif [ "$PLATFORM" = "darwin" -o "$PLATFORM" = "darwin-devel" \
+ -o "$PLATFORM" = "darwin-dist" ]; then
+
+	echo "#define PLATFORM \"darwin\""    > src/config.h
+	echo "SUBPLATFORM=$PLATFORM"         >> platform.inc
+	echo "PLATFORM=darwin"               >> platform.inc
 else
 	if [ ! -d arch/$PLATFORM ]; then
 		echo "Invalid platform selection (see arch/)."
@@ -367,28 +411,24 @@ else
 	echo "PLATFORM=$PLATFORM"            >> platform.inc
 fi
 
-if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
-	echo "RAWLIBDIR=${LIBDIR}" >> platform.inc
-fi
-
-if [ "$PLATFORM" = "unix" ]; then
-	echo "LIBDIR=\${PREFIX}/${LIBDIR}/megazeux" >> platform.inc
+if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "darwin" ]; then
+	LIBDIR="${LIBDIR}/megazeux"
 elif [ "$PLATFORM" = "android" ]; then
-	echo "LIBDIR=/data/megazeux" >> platform.inc
+	LIBDIR="/data/megazeux"
 else
-	echo "LIBDIR=." >> platform.inc
+	LIBDIR="."
 fi
 
 ### SYSTEM CONFIG DIRECTORY ###################################################
 
-if [ "$PLATFORM" = "darwin" ]; then
+if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "darwin" ]; then
+	: # Use default or user-defined SYSCONFDIR
+elif [ "$PLATFORM" = "darwin-dist" ]; then
 	SYSCONFDIR="../Resources"
 elif [ "$PLATFORM" = "android" ]; then
 	SYSCONFDIR="/data/megazeux"
-elif [ "$PLATFORM" != "unix" ]; then
-	if [ "$SYSCONFDIR_SET" != "true" ]; then
-		SYSCONFDIR="."
-	fi
+elif [ "$SYSCONFDIR_IS_SET" != "true" ]; then
+	SYSCONFDIR="."
 fi
 
 ### SUMMARY OF OPTIONS ########################################################
@@ -421,9 +461,9 @@ echo "#define CONFDIR \"$SYSCONFDIR/\"" >> src/config.h
 # Some platforms may have filesystem hierarchies they need to fit into
 # FIXME: SHAREDIR should be hardcoded in fewer cases
 #
-if [ "$PLATFORM" = "unix" ]; then
-	echo "#define CONFFILE \"megazeux-config\""        >> src/config.h
-	echo "#define SHAREDIR \"$SHAREDIR/megazeux/\""    >> src/config.h
+if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "darwin" ]; then
+	echo "#define CONFFILE \"megazeux-config\""      >> src/config.h
+	echo "#define SHAREDIR \"$SHAREDIR/megazeux/\""  >> src/config.h
 	echo "#define USERCONFFILE \".megazeux-config\"" >> src/config.h
 elif [ "$PLATFORM" = "nds" ]; then
 	SHAREDIR=/games/megazeux
@@ -443,12 +483,12 @@ elif [ "$PLATFORM" = "wii" ]; then
 	BINDIR=$SHAREDIR
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
-elif [ "$PLATFORM" = "darwin" ]; then
+elif [ "$PLATFORM" = "darwin-dist" ]; then
 	SHAREDIR=../Resources
 	GAMESDIR=$SHAREDIR
 	BINDIR=$SHAREDIR
-	echo "#define CONFFILE \"config.txt\""             >> src/config.h
-	echo "#define SHAREDIR \"$SHAREDIR\""              >> src/config.h
+	echo "#define CONFFILE \"config.txt\""           >> src/config.h
+	echo "#define SHAREDIR \"$SHAREDIR\""            >> src/config.h
 	echo "#define USERCONFFILE \".megazeux-config\"" >> src/config.h
 elif [ "$PLATFORM" = "android" ]; then
 	SHAREDIR=/data/megazeux
@@ -465,10 +505,12 @@ else
 fi
 
 #
-# Some architectures define an "install" target, and need these.
+# LIBDIR is required by several platforms that support modular builds.
+# Some architectures define an "install" target, and need the rest.
 #
 echo "SYSCONFDIR=$SYSCONFDIR" >> platform.inc
 echo "GAMESDIR=$GAMESDIR"     >> platform.inc
+echo "LIBDIR=$LIBDIR"         >> platform.inc
 echo "BINDIR=$BINDIR"         >> platform.inc
 echo "SHAREDIR=$SHAREDIR"     >> platform.inc
 
@@ -835,7 +877,8 @@ fi
 # Force disable icon branding.
 #
 if [ "$ICON" = "true" ]; then
-	if [ "$PLATFORM" = "darwin" -o "$PLATFORM" = "gp2x" \
+	if [ "$PLATFORM" = "darwin" -o "$PLATFORM" = "darwin-devel" \
+	  -o "$PLATFORM" = "darwin-dist" -o "$PLATFORM" = "gp2x" \
 	  -o "$PLATFORM" = "psp" -o "$PLATFORM" = "nds" \
 	  -o "$PLATFORM" = "wii" ]; then
 		echo "Force-disabling icon branding (redundant)."

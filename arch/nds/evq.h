@@ -23,7 +23,7 @@
 #ifndef __ARCH_NDS_EVQ_H
 #define __ARCH_NDS_EVQ_H
 
-#include "compat.h"
+#include "../../src/compat.h"
 
 enum NDSEventType
 {

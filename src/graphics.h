@@ -101,7 +101,7 @@ struct renderer
   void (*update_colors)    (struct graphics_data *, struct rgb_color *,
                              Uint32);
   void (*resize_screen)    (struct graphics_data *, int, int);
-  void (*remap_charsets)   (struct graphics_data *);
+  void (*remap_char_range) (struct graphics_data *, Uint16 first, Uint16 count);
   void (*remap_char)       (struct graphics_data *, Uint16 chr);
   void (*remap_charbyte)   (struct graphics_data *, Uint16 chr, Uint8 byte);
   void (*get_screen_coords)(struct graphics_data *, int, int, int *, int *,
@@ -118,7 +118,8 @@ struct renderer
   void (*focus_pixel)      (struct graphics_data *, Uint32, Uint32);
 };
 
-struct video_layer {
+struct video_layer
+{
   Uint32 w, h, mode;
   int x, y;
   struct char_element *data;
@@ -146,6 +147,8 @@ struct graphics_data
   Uint32 backup_intensity[SMZX_PAL_SIZE];
 
   Uint32 layer_count;
+  Uint32 layer_count_prev;
+  struct video_layer text_video_layer;
   struct video_layer video_layers[TEXTVIDEO_LAYERS];
   Uint32 current_layer;
   struct char_element *current_video;

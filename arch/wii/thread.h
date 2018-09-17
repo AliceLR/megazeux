@@ -20,7 +20,7 @@
 #ifndef __MUTEX_WII_H
 #define __MUTEX_WII_H
 
-#include "compat.h"
+#include "../../src/compat.h"
 
 __M_BEGIN_DECLS
 

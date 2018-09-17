@@ -40,7 +40,7 @@
 
 #ifdef CONFIG_GP2X
 #define VIDEO_OUTPUT_DEFAULT "gp2x"
-#define AUDIO_BUFFER_SIZE 128
+#define AUDIO_BUFFER_SAMPLES 128
 #endif
 
 #ifdef CONFIG_PSP
@@ -52,13 +52,18 @@
 
 #ifdef CONFIG_WII
 #define AUDIO_SAMPLE_RATE 48000
+#define FULLSCREEN_DEFAULT 1
+#define GL_VSYNC_DEFAULT 1
 #ifdef CONFIG_SDL
 #define VIDEO_OUTPUT_DEFAULT "software"
 #define FULLSCREEN_WIDTH_DEFAULT 640
 #define FULLSCREEN_HEIGHT_DEFAULT 480
 #define FORCE_BPP_DEFAULT 16
-#define FULLSCREEN_DEFAULT 1
 #endif
+#endif
+
+#ifdef CONFIG_3DS
+#define FORCE_BPP_DEFAULT 16
 #endif
 
 #ifdef ANDROID
@@ -72,12 +77,16 @@
 #define FORCE_BPP_DEFAULT 32
 #endif
 
+#ifndef GL_VSYNC_DEFAULT
+#define GL_VSYNC_DEFAULT 0
+#endif
+
 #ifndef VIDEO_OUTPUT_DEFAULT
 #define VIDEO_OUTPUT_DEFAULT "auto_glsl"
 #endif
 
-#ifndef AUDIO_BUFFER_SIZE
-#define AUDIO_BUFFER_SIZE 4096
+#ifndef AUDIO_BUFFER_SAMPLES
+#define AUDIO_BUFFER_SAMPLES 1024
 #endif
 
 #ifndef AUDIO_SAMPLE_RATE
@@ -225,7 +234,7 @@ static void config_disassemble_base(struct config_info *conf, char *name,
 static void config_set_audio_buffer(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  conf->buffer_size = strtoul(value, NULL, 10);
+  conf->audio_buffer_samples = strtoul(value, NULL, 10);
 }
 
 static void config_set_resolution(struct config_info *conf, char *name,
@@ -541,13 +550,14 @@ static void config_max_simultaneous_samples(struct config_info *conf,
   conf->max_simultaneous_samples = v;
 }
 
-/* FAT NOTE: This is searched as a binary tree, the nodes must be
- *           sorted alphabetically, or they risk being ignored.
+/* NOTE: This is searched as a binary tree, the nodes must be
+ *       sorted alphabetically, or they risk being ignored.
  */
 static const struct config_entry config_options[] =
 {
   { "allow_screenshots", config_set_allow_screenshots, false },
   { "audio_buffer", config_set_audio_buffer, false },
+  { "audio_buffer_samples", config_set_audio_buffer, false },
   { "audio_sample_rate", config_set_audio_freq, false },
   { "disassemble_base", config_disassemble_base, false },
   { "disassemble_extras", config_disassemble_extras, false },
@@ -641,12 +651,12 @@ static const struct config_info default_options =
   RATIO_MODERN_64_35,           // video_ratio
   "linear",                     // opengl filter method
   "",                           // opengl default scaling shader
-  0,                            // opengl vsync mode
+  GL_VSYNC_DEFAULT,             // opengl vsync mode
   true,                         // allow screenshots
 
   // Audio options
   AUDIO_SAMPLE_RATE,            // output_frequency
-  AUDIO_BUFFER_SIZE,            // buffer_size
+  AUDIO_BUFFER_SAMPLES,         // audio_buffer_samples
   0,                            // oversampling_on
   1,                            // resample_mode
   2,                            // modplug_resample_mode

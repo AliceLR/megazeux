@@ -59,11 +59,21 @@
 
 #ifdef CONFIG_LOADSAVE_METER
 
+static Uint32 last_ticks;
+
 void meter_update_screen(int *curr, int target)
 {
+  Uint32 ticks = get_ticks();
+
   (*curr)++;
   meter_interior(*curr, target);
-  update_screen();
+
+  // Draw updates to the screen at roughly the UI framerate
+  if(ticks - last_ticks > UPDATE_DELAY)
+  {
+    update_screen();
+    last_ticks = get_ticks();
+  }
 }
 
 void meter_restore_screen(void)
@@ -77,6 +87,7 @@ void meter_initial_draw(int curr, int target, const char *title)
   save_screen();
   meter(title, curr, target);
   update_screen();
+  last_ticks = get_ticks();
 }
 
 #else //!CONFIG_LOADSAVE_METER
@@ -2920,6 +2931,9 @@ __editor_maybe_static void default_global_data(struct world *mzx_world)
   mzx_world->mesg_edges = 1;
   mzx_world->real_mod_playing[0] = 0;
   mzx_world->smzx_message = 1;
+  // In 2.90X, due to a bug the message could only display in mode 0.
+  if(mzx_world->version == V290)
+    mzx_world->smzx_message = 0;
 
   mzx_world->blind_dur = 0;
   mzx_world->firewalker_dur = 0;

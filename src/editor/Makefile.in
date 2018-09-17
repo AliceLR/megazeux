@@ -15,15 +15,6 @@ ifeq (${PLATFORM},mingw)
 editor_spec := -DEDITOR_LIBSPEC="__declspec(dllexport)"
 endif
 
-ifeq (${PLATFORM},darwin)
-editor_ldflags += -framework Cocoa ${SDL_LDFLAGS}
-endif
-
-ifneq (${X11DIR},)
-editor_flags   += -I${X11DIR}/../include
-editor_ldflags += -L${X11DIR}/../${RAWLIBDIR} -lX11 ${SDL_LDFLAGS}
-endif
-
 ${editor_obj}/%.o: ${editor_src}/%.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${core_cflags} ${editor_flags} ${editor_spec} -c $< -o $@
@@ -52,26 +43,29 @@ editor_objs := \
   ${editor_obj}/window.o        \
   ${editor_obj}/world.o
 
-ifeq (${BUILD_LIBSDL2},1)
-# Use the SDL2 clipboard handler unless we're building for win32.
+# Win32 clipboard handler (takes precedence over SDL 2)
 ifeq (${PLATFORM},mingw)
 editor_objs += ${editor_obj}/clipboard_win32.o
-else
-editor_objs += ${editor_obj}/clipboard_sdl2.o
-endif
-endif
 
-ifeq (${BUILD_LIBSDL2},)
-# Non-SDL2 clipboard handlers, by platform.
-ifeq (${PLATFORM},darwin)
+# Use the SDL2 clipboard handler
+else ifeq (${BUILD_LIBSDL2},1)
+editor_ldflags += ${SDL_LDFLAGS}
+editor_objs += ${editor_obj}/clipboard_sdl2.o
+
+# Mac OS X clipboard handler via Carbon
+else ifeq (${PLATFORM},darwin)
+editor_ldflags += -framework Cocoa
 editor_objs += ${editor_obj}/clipboard_carbon.o
-else ifeq (${PLATFORM},mingw)
-editor_objs += ${editor_obj}/clipboard_win32.o
+
+# X11 clipboard handler (requires SDL 1.2)
 else ifneq (${X11DIR},)
+editor_flags += ${X11_CFLAGS}
+editor_ldflags += ${X11_LDFLAGS} ${SDL_LDFLAGS}
 editor_objs += ${editor_obj}/clipboard_x11.o
+
+# No clipboard handler
 else
 editor_objs += ${editor_obj}/clipboard_null.o
-endif
 endif
 
 -include ${editor_objs:.o=.d}

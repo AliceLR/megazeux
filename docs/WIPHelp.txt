@@ -674,13 +674,12 @@ Some basic play tips:
 First, let me warn you that many worlds you get from archives
 or (especially) from personal webpages may not be of acceptable
 quality. They may be unfair, boring, have numerous bugs, and/or
-not give proper instructions. My advice is to email the
-author(s) and politely tell him/her/them what you think of poor
-quality MegaZeux games. There is no problem in MAKING poor
-games, but PLEASE think before uploading them, even in these
-days where games are fewer and farther between. Really old
-games of bad quality, on the other hand, are tolerated somewhat
-better. Don't let a few dull games ruin the fun.
+not give proper instructions. On a related note, there is no
+problem in MAKING poor games, but PLEASE think before uploading
+them, even in these days where games are fewer and farther
+between. Really old games of bad quality, on the other hand, are
+tolerated somewhat better. Don't let a few dull games ruin the
+fun.
 
 ~A*~F RTFM (Read the Flipping Manual). Whatever information
  the game has to give is probably important. Some authors
@@ -691,17 +690,17 @@ better. Don't let a few dull games ruin the fun.
 
 ~A*~F Make sure you visit every screen possible.
 
-~A*~F Touch everything! Even things of seemingly little value
- may prove worthy of your attention. If it kills you, then...
- well... hope you saved. Yell at the programmer who thought an
- instant kill was worth using regardless!
-
 ~A*~F Save your game! It is rather simple - in most games,
  Press F3 to save your game to disk at the EXACT point you are
  [if allowed]. Press F4 to reload a saved game. You can use F9
  and F10 to quick-save and quick-load, which work on the last
  game you saved. Remember to save often - If something ends
  your game, you'll want to lose as little progress as possible.
+ 
+~A*~F Touch everything! Even things of seemingly little value
+ may prove worthy of your attention. If it kills you, then...
+ well... hope you saved (see above). Yell at the programmer who
+ thought an instant kill was worth using regardless!
 
 ~A*~F Collect supplies! Make sure you grab every coin, gem,
  ammo dump, bomb, chest, pouch, and foobar you see! You will
@@ -3764,7 +3763,10 @@ stepping as well, but are based off of the values of counters
 and strings, and only activate stepping after a relevant value
 is changed, not right when one is seen. Unlike with breakpoints,
 the watchpoint string has to exactly match (although case
-insensitive).
+insensitive). Local counters can be watched as well as global
+counters; to watch local counters, check for rN.<counter>, where
+N is the robot_id, and <counter> is the relevant local counter
+name (without the angle brackets).
 
 Editing breakpoints/watchpoints is done by pressing Space.
 Deleting breakpoints/watchpoints is done by pressing Alt+D.
@@ -4774,8 +4776,8 @@ A Robotic string is any counter prefixed by a $ sign (e.g.
 Certain characters must be inputted in specific ways to avoid
 problems with Robotic:
 
-  \0 for character 0 (this probably won't work in strings, but
-  should work in chars)
+  \0 for character 0 (this won't be parsed correctly in
+  strings, but works for setting chars)
   \t for tab (character 9)
   \n for newline (character 10)
   \r for carriage return (character 13)
@@ -5665,8 +5667,8 @@ impossible, the command is ignored.
 :_pI:~APUT "@@FILENAME.XXX" Image_File [param] # #
 
 Places an MZM of the given filename. These files also can be
-loaded from a subdirectory with the syntax of ""dir"\"@@file""
-or ""dir"/"@@file"" (without the inner quotes). The @@ is
+loaded from a subdirectory with the syntax of ""@@dir"\"file""
+or ""@@dir"/"file"" (without the inner quotes). The @@ is
 REQUIRED. The numbers mark the destination {x,y} coordinates of
 the MZM's upper-left corner; the parameter determines the
 placement of the MZM (00 = board, 01 = overlay, 02 = vlayer).
@@ -6369,8 +6371,8 @@ p?? to c?? Explosion p?? command.
 :_b4:~ABECOME LAVAWALKER
 :_b2:~ABECOME NONLAVAWALKER
 
-The current Robot can or cannot move on lava now. Robots can
-always move over fire.
+Sets whether the current Robot can or cannot move on lava.
+Robots can always move over fire.
 
 :_b6:~ABLIND #
 :_f1:~AFIREWALKER #
@@ -6378,10 +6380,10 @@ always move over fire.
 :_sS:~ASLOWTIME #
 :_w6:~AWIND #
 
-The stated potion/ring effect is now active for the given
-number of cycles. Potion/ring effects are global; that is, they
-affect the entire world. The only exception is the global
-Robot; FREEZETIME and SLOWTIME commands do not affect it.
+The stated potion/ring effect activates for the given number of
+cycles. Potion/ring effects are global; that is, they affect the
+entire world. The only exception is the global Robot; FREEZETIME
+and SLOWTIME commands do not affect it.
 
 >#THEGLOBL.HLP:gbl:The Global
 >#BUILTINS.HLP:prx:Potion and Ring Effects
@@ -7258,9 +7260,9 @@ compatibility reasons.
 
 ~BRn.<counter>
 
-Contains the value of the given counter in the Robot with the
-robot_id number n. If no Robot exists with this robot_id, the
-counter will return -1.
+Contains the value of the given counter (without the angle
+brackets) in the Robot with the robot_id number n. If no Robot
+exists with this robot_id, the counter will return -1.
 
 ~BTHIS_COLOR (read-only, local)
 ~BTHIS_CHAR (read-only, local)
@@ -7497,6 +7499,10 @@ syntax is as such:
 
 set "file.ext" to "FREAD_OPEN"
 
+FREAD_OPEN will also read subdirectories with the given syntax:
+
+set "dir" to "FREAD_OPEN"
+
 ~BFWRITE_MODIFY (function)
 
 This opens an existing file for reading without overwriting it,
@@ -7524,7 +7530,9 @@ compatibility reasons.
 ~BFWRITE_POS
 
 The current reading or writing position of the accessed file.
-If set to -1, sets the position to the end of the file.
+0 is the beginning position; when no file is loaded, the
+relevant counter is -1. If set to -1, sets the position to the
+end of the file.
 
 ~BFREAD_DELIMITER
 ~BFWRITE_DELIMITER
@@ -9225,6 +9233,9 @@ This means you can't select the same file to be the current
 same time.
 -Writing and reading operations change the current fwrite and
 fread positions.
+-The writing and reading position is set to 0 (the beginning
+position of a file) when a file is loaded, unless the 
+FWRITE_APPEND command is chosen.
 -There is a special character called the terminator (char #42,
 '*', by default) placed at the end of a write when a string is
 written to a file with FWRITE. This character ends an FREAD to
@@ -9242,10 +9253,7 @@ Here are the file writing commands at your disposal.
 
 ~ASET "file.xxx" to "FREAD_OPEN"
 
-This command loads a file for reading. It can also open
-directories for reading (by using the name of the directory by
-itself, e.g. ~ASET "directory" to "FREAD_OPEN"~F); FREAD will then
-list the names of files in the directory.
+This command loads a file for reading. 
 
 ~ASET "file.xxx" to "FWRITE_OPEN"
 
@@ -9268,7 +9276,18 @@ mode.
 
 These commands change the current reading or writing position
 of the accessed files. The position is in DECIMAL, not
-hexadecimal. To seek the end of a file, set to -1.
+hexadecimal, and the first position is 0; when no file is
+loaded, the relevant counter is -1. To seek the end of a file,
+set to -1.
+
+~ASET "dir" to "FREAD_OPEN"
+
+This command opens subdirectories for reading (by using the name
+of the subdirectory by itself, e.g. ~ASET "directory" to
+"FREAD_OPEN"~F); FREAD will then list the names of files in the
+directory, with each read position being a different filename.
+Note that the files are not guaranteed to be read in any
+specific order.
 
 ~ASET "FREAD_DELIMITER" to #
 ~ASET "FWRITE_DELIMITER" to #
@@ -9536,10 +9555,10 @@ the SPRn_TCOL counter. All pixels of that color in that unbound
 sprite will not display, and show the next underlying layer.
 
 When assigned a ccheck value with SPRn_CCHECK, an unbound sprite
-will only apply its personal value in collision tests instead of
-the value of the sprite that initiated the check. In addition,
-unbound sprites can use a special ccheck value (3) to ignore
-transparent colors in collision checks.
+will only apply its personal ccheck value in collision tests
+instead of the value of the sprite that initiated the check. In
+addition, unbound sprites can use a special ccheck value (3) to
+ignore transparent colors in collision checks.
 
 Finally, SMZX modes do not affect unbound sprite movement and
 manipulation. This fact can be exploited to overlap SMZX sprites
@@ -10191,6 +10210,74 @@ updated.
 :1st: 
 $~9NEW in MegaZeux!
 
+September 17th, 2018 - MZX 2.91f
+
+A bugfix release focusing primarily on renderers, the 3DS and
+Wii ports, and the Makefile build system. Highlights: the 3DS
+port should perform better now, the Wii port's GX renderer has
+been restored, the 'darwin' platform has more Unix-like options
+now, and several crashes have been fixed.
+
+USERS
+
++ The config setting 'audio_buffer' can also be specified with
+  'audio_buffer_samples' now. The default value for this setting
+  is now 1024 (instead of 4096).
++ Fixed a crash that could occur in the counter debugger.
++ Fixed a crash that occurs when attempting to add a watchpoint
+  for robot local counters, loopcount, etc. Using these counters
+  as watchpoints will watch the global robot's instances of
+  these variables (for other robots, use e.g. r#.local1).
++ Using SMZX_INDICES or LOAD_ROBOT on an unset string no longer
+  causes a crash.
++ png2smzx is now properly bundled with Linux builds.
++ Improved the performance of loading partial charsets for the
+  glsl, opengl2, and 3DS renderers. Other renderers were not
+  affected by this issue.
++ Fix opengl2 unbound sprite regression introduced in 2.91e.
++ The opengl2 renderer now correctly draws unbound sprites
+  containing chars with a transparent foreground color.
++ 3DS renderer optimizations. (asie)
++ 3DS screen focusing now mimics the NDS port's behavior. (asie)
++ Fixed bug where games could fail to open files on some
+  platforms if the paths contained duplicate slashes. (asie)
++ Added a Wii software layer renderer. This renderer can be
+  selected with "video_output = xfb" in the config file.
++ Wii GX renderer optimizations.
++ Added layer rendering support to the GX renderer.
++ The Wii GX renderer now uses the gl_vsync config option to
+  toggle vsync. For the Wii, this feature is on by default.
+  Disabling it may increase the framerate of some games but may
+  also cause other problems.
++ The loading bar on console platforms now redraws the screen
+  less often.
+
+DEVELOPERS
+
++ GAMESDIR/BINDIR/SHAREDIR now properly apply PREFIX when they
+  are not explicitly set by config.sh.
++ LIBDIR is now user-definable like BINDIR et al. Variations
+  such as "lib64" currently must be explicitly provided for
+  platforms that still use them.
++ Remove src folder from CFLAGS to fix a bug where system
+  includes could be mistaken for MegaZeux headers. All includes
+  of MegaZeux headers must be done using relative paths now.
++ Fixed include bugs for X11 and Carbon clipboard handlers.
++ Makefile now attempts to respect the prefix when running
+  sdl-config, sdl2-config, and libpng-config.
++ Renamed the "darwin" config.sh platform to "darwin-dist".
++ Added "darwin" and "darwin-devel" config.sh platforms. These
+  act like Mac OS X versions of the "unix" and "unix-devel"
+  options.
++ The darwin-dist build system and instructions are now somewhat
+  more clear and robust.
++ Fixed a bug where zlib wouldn't necessarily be linked to
+  png2smzx.
++ Renderers will now use render_layer to draw the text_video
+  fallback if no render_graph function is present.
+
+>#MAIN.HLP:072:Table of Contents
+
 September 3rd, 2018 - MZX 2.91e
 
 Bugfix release fixing some crashes, port bugs, and some other
@@ -10237,7 +10324,7 @@ DEVELOPERS
 + Added missing GPL headers to GLSL shaders and added slightly
   better documentation to them.
 
->#MAIN.HLP:072:Table of Contents
+>#MAIN.HLP:072:Table of Contents  
 
 July 12th, 2018 - MZX 2.91d
 

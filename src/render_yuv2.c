@@ -57,17 +57,40 @@ static bool yuv2_set_video_mode(struct graphics_data *graphics,
   return true;
 }
 
+static void yuv2_set_colors_mzx(struct graphics_data *graphics,
+ Uint32 *char_colors, Uint8 bg, Uint8 fg)
+{
+  struct yuv_render_data *render_data = graphics->render_data;
+  Uint32 y0mask = render_data->y0mask;
+  Uint32 y1mask = render_data->y1mask;
+  Uint32 uvmask = render_data->uvmask;
+  Uint32 cb_bg, cb_fg, cb_mix;
+
+  cb_bg = graphics->flat_intensity_palette[bg];
+  cb_fg = graphics->flat_intensity_palette[fg];
+  cb_mix = (((cb_bg & uvmask) >> 1) + ((cb_fg & uvmask) >> 1)) & uvmask;
+
+  char_colors[0] = cb_bg;
+  char_colors[1] = cb_mix | (cb_bg & y0mask) | (cb_fg & y1mask);
+  char_colors[2] = cb_mix | (cb_fg & y0mask) | (cb_bg & y1mask);
+  char_colors[3] = cb_fg;
+}
+
 static void yuv2_render_graph(struct graphics_data *graphics)
 {
   struct yuv_render_data *render_data = graphics->render_data;
+  int mode = graphics->screen_mode;
   Uint32 *pixels;
   int pitch;
 
   yuv_lock_overlay(render_data);
 
   pixels = yuv_get_pixels_pitch(render_data, &pitch);
-  render_graph16((Uint16 *)pixels, pitch, graphics,
-   yuv2_set_colors[graphics->screen_mode]);
+
+  if(!mode)
+    render_graph16((Uint16 *)pixels, pitch, graphics, yuv2_set_colors_mzx);
+  else
+    render_graph16((Uint16 *)pixels, pitch, graphics, set_colors32[mode]);
 
   yuv_unlock_overlay(render_data);
 }

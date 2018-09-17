@@ -59,7 +59,7 @@ struct config_info
 
   // Audio options
   int output_frequency;
-  int buffer_size;
+  int audio_buffer_samples;
   int oversampling_on;
   int resample_mode;
   int modplug_resample_mode;

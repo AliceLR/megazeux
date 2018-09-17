@@ -925,8 +925,11 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
 
   if(special_name("smzx_indices"))
   {
-    load_indices(dest->value, dest->length);
-    pal_update = true;
+    if(dest && dest->length > 0)
+    {
+      load_indices(dest->value, dest->length);
+      pal_update = true;
+    }
   }
   else
 
@@ -946,7 +949,7 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
 
     cur_robot = get_robot_by_id(mzx_world, load_id);
 
-    if(cur_robot)
+    if(cur_robot && dest && dest->length)
     {
       int new_length = 0;
       char *new_source = legacy_convert_file_mem(dest->value,
@@ -997,7 +1000,7 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
 
     cur_robot = get_robot_by_id(mzx_world, load_id);
 
-    if(cur_robot)
+    if(cur_robot && dest)
     {
       int new_length = dest->length;
       char *new_source;
@@ -1040,10 +1043,11 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
   {
     // Load robot from string (2.90+)
 
-    char *new_program;
+    char *new_program = NULL;
     int new_size;
 
-    new_program = assemble_file_mem(dest->value, dest->length, &new_size);
+    if(dest && dest->length)
+      new_program = assemble_file_mem(dest->value, dest->length, &new_size);
 
     if(new_program)
     {

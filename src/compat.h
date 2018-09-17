@@ -88,6 +88,21 @@ typedef unsigned char boolean;
 #include "msvc.h"
 #endif
 
+#ifdef __APPLE__
+// Patch in some potentially missing defines for older platforms that
+// may be required by headers from our dependencies.
+#include <TargetConditionals.h>
+#include <Availability.h>
+
+#ifndef TARGET_OS_TV
+#define TARGET_OS_TV 0
+#endif
+
+#ifndef __has_feature
+#define __has_feature(f) 0
+#endif
+#endif
+
 #ifdef ANDROID
 #define HAVE_SYS_UIO_H
 #define LOG_TAG "MegaZeux"

@@ -17,11 +17,71 @@ GIT - MZX 2.92
   inputs as dialog number boxes.
 
 
-GIT - MZX 2.91f
+September 17th, 2018 - MZX 2.91f
+
+A bugfix release focusing primarily on renderers, the 3DS and
+Wii ports, and the Makefile build system. Highlights: the 3DS
+port should perform better now, the Wii port's GX renderer has
+been restored, the 'darwin' platform has more Unix-like options
+now, and several crashes have been fixed.
 
 USERS
 
++ The config setting 'audio_buffer' can also be specified with
+  'audio_buffer_samples' now. The default value for this setting
+  is now 1024 (instead of 4096).
++ Fixed a crash that could occur in the counter debugger.
++ Fixed a crash that occurs when attempting to add a watchpoint
+  for robot local counters, loopcount, etc. Using these counters
+  as watchpoints will watch the global robot's instances of
+  these variables (for other robots, use e.g. r#.local1).
++ Using SMZX_INDICES or LOAD_ROBOT on an unset string no longer
+  causes a crash.
++ png2smzx is now properly bundled with Linux builds.
++ Improved the performance of loading partial charsets for the
+  glsl, opengl2, and 3DS renderers. Other renderers were not
+  affected by this issue.
++ Fix opengl2 unbound sprite regression introduced in 2.91e.
++ The opengl2 renderer now correctly draws unbound sprites
+  containing chars with a transparent foreground color.
++ 3DS renderer optimizations. (asie)
++ 3DS screen focusing now mimics the NDS port's behavior. (asie)
++ Fixed bug where games could fail to open files on some
+  platforms if the paths contained duplicate slashes. (asie)
++ Added a Wii software layer renderer. This renderer can be
+  selected with "video_output = xfb" in the config file.
++ Wii GX renderer optimizations.
++ Added layer rendering support to the GX renderer.
++ The Wii GX renderer now uses the gl_vsync config option to
+  toggle vsync. For the Wii, this feature is on by default.
+  Disabling it may increase the framerate of some games but may
+  also cause other problems.
++ The loading bar on console platforms now redraws the screen
+  less often.
+
 DEVELOPERS
+
++ GAMESDIR/BINDIR/SHAREDIR now properly apply PREFIX when they
+  are not explicitly set by config.sh.
++ LIBDIR is now user-definable like BINDIR et al. Variations
+  such as "lib64" currently must be explicitly provided for
+  platforms that still use them.
++ Remove src folder from CFLAGS to fix a bug where system
+  includes could be mistaken for MegaZeux headers. All includes
+  of MegaZeux headers must be done using relative paths now.
++ Fixed include bugs for X11 and Carbon clipboard handlers.
++ Makefile now attempts to respect the prefix when running
+  sdl-config, sdl2-config, and libpng-config.
++ Renamed the "darwin" config.sh platform to "darwin-dist".
++ Added "darwin" and "darwin-devel" config.sh platforms. These
+  act like Mac OS X versions of the "unix" and "unix-devel"
+  options.
++ The darwin-dist build system and instructions are now somewhat
+  more clear and robust.
++ Fixed a bug where zlib wouldn't necessarily be linked to
+  png2smzx.
++ Renderers will now use render_layer to draw the text_video
+  fallback if no render_graph function is present.
 
 
 September 3rd, 2018 - MZX 2.91e

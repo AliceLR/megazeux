@@ -1859,6 +1859,7 @@ void __debug_counters(struct world *mzx_world)
   int node_selected = 0;
   int node_scroll_offset = 0;
   int dialog_result;
+  struct element *elements[8];
   struct dialog di;
 
   char label[80] = "Counters";
@@ -1908,22 +1909,19 @@ void __debug_counters(struct world *mzx_world)
 
     if(!reopened)
     {
-      struct element *elements[] =
-      {
-        construct_list_box(
+      elements[0] = construct_list_box(
          VAR_LIST_X, VAR_LIST_Y, (const char **)var_list, num_vars,
-         VAR_LIST_HEIGHT, VAR_LIST_WIDTH, 0, &var_selected, NULL, false),
-        construct_list_box(
+         VAR_LIST_HEIGHT, VAR_LIST_WIDTH, 0, &var_selected, NULL, false);
+      elements[1] = construct_list_box(
          TREE_LIST_X, TREE_LIST_Y, (const char **)tree_list, tree_size,
          TREE_LIST_HEIGHT, TREE_LIST_WIDTH, 1, &node_selected,
-         &node_scroll_offset, false),
-        construct_button(BUTTONS_X + 0, BUTTONS_Y + 0, "Search", 2),
-        construct_button(BUTTONS_X +11, BUTTONS_Y + 0, "New", 3),
-        construct_button(BUTTONS_X + 0, BUTTONS_Y + 2, "Toggle Empties", 4),
-        construct_button(BUTTONS_X + 0, BUTTONS_Y + 4, "Export", 5),
-        construct_button(BUTTONS_X +10, BUTTONS_Y + 4, "Done", -1),
-        construct_label(VAR_LIST_X, VAR_LIST_Y - 1, label),
-      };
+         &node_scroll_offset, false);
+      elements[2] = construct_button(BUTTONS_X + 0, BUTTONS_Y + 0, "Search", 2);
+      elements[3] = construct_button(BUTTONS_X +11, BUTTONS_Y + 0, "New", 3);
+      elements[4] = construct_button(BUTTONS_X + 0, BUTTONS_Y + 2, "Toggle Empties", 4);
+      elements[5] = construct_button(BUTTONS_X + 0, BUTTONS_Y + 4, "Export", 5);
+      elements[6] = construct_button(BUTTONS_X +10, BUTTONS_Y + 4, "Done", -1);
+      elements[7] = construct_label(VAR_LIST_X, VAR_LIST_Y - 1, label);
 
       construct_dialog_ext(&di, "Debug Variables", 0, 0,
        80, 25, elements, ARRAY_SIZE(elements), 0, 0, window_focus,
