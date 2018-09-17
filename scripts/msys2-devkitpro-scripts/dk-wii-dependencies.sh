@@ -15,16 +15,3 @@ echo "/********************/"
 
 pacman --needed --noconfirm -S devkitPPC libogc libfat-ogc gamecube-tools
 pacman --needed --noconfirm -S ppc-zlib ppc-libpng ppc-libogg ppc-libvorbisidec
-
-
-echo ""
-echo "/***************/"
-echo "  Wii - SDL Wii  "
-echo "/***************/"
-
-rm -rf /mzx-build-workingdir/sdl-wii
-git clone $SDL_WII_REPO /mzx-build-workingdir/sdl-wii
-cd /mzx-build-workingdir/sdl-wii/SDL
-
-make -j8
-make install
