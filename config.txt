@@ -180,7 +180,7 @@
 # to process. 2048 is adequete for PC speaker playback every
 # command at speed 4.
 
-# audio_buffer_samples = 4096
+# audio_buffer_samples = 1024
 
 # Allow music to be sampled at higher precision. Increases CPU
 # usage but increases audio quality as well.

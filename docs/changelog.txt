@@ -2,6 +2,9 @@ GIT - MZX 2.91f
 
 USERS
 
++ The config setting 'audio_buffer' can also be specified with
+  'audio_buffer_samples' now. The default value for this setting
+  is now 1024 (instead of 4096).
 + Fixed a crash that could occur in the counter debugger.
 + Fixed a crash that occurs when attempting to add a watchpoint
   for robot local counters, loopcount, etc. Using these counters
