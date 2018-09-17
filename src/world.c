@@ -2916,6 +2916,9 @@ __editor_maybe_static void default_global_data(struct world *mzx_world)
   mzx_world->mesg_edges = 1;
   mzx_world->real_mod_playing[0] = 0;
   mzx_world->smzx_message = 1;
+  // In 2.90X, due to a bug the message could only display in mode 0.
+  if(mzx_world->version == V290)
+    mzx_world->smzx_message = 0;
 
   mzx_world->blind_dur = 0;
   mzx_world->firewalker_dur = 0;
