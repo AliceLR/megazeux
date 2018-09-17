@@ -179,7 +179,7 @@ boolean apply_undo(struct undo_history *h)
     {
       h->current = -1;
       h->current_frame = NULL;
-      return 1;
+      return true;
     }
 
     else if(h->current == 0)
