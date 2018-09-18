@@ -245,7 +245,6 @@ CORE_LIBSPEC void ec_mem_load_set_var(char *chars, size_t len, Uint16 pos, int v
 CORE_LIBSPEC void ec_mem_save_set_var(Uint8 *chars, size_t len, Uint16 pos);
 
 CORE_LIBSPEC void update_palette(void);
-CORE_LIBSPEC void set_gui_palette(void);
 CORE_LIBSPEC void load_palette(const char *fname);
 CORE_LIBSPEC void load_palette_mem(char *pal, size_t len);
 CORE_LIBSPEC void load_index_file(const char *fname);

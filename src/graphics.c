@@ -381,22 +381,6 @@ void update_palette(void)
   update_colors(new_palette, make_palette(new_palette));
 }
 
-void set_gui_palette(void)
-{
-  /* TODO: Just get rid of this method and every call to it
-
-  int i;
-
-  memcpy(graphics.palette + PAL_SIZE, default_pal,
-   sizeof(struct rgb_color) * PAL_SIZE);
-  memcpy(graphics.intensity_palette + PAL_SIZE, default_pal,
-   sizeof(struct rgb_color) * PAL_SIZE);
-
-  for(i = 16; i < PAL_SIZE * NUM_PALS; i++)
-    graphics.current_intensity[i] = 100;
-  */
-}
-
 static void init_palette(void)
 {
   Uint32 i;
@@ -415,7 +399,6 @@ static void init_palette(void)
 
   graphics.fade_status = 1;
 
-  set_gui_palette();
   update_palette();
 }
 
@@ -811,8 +794,6 @@ void set_screen_mode(Uint32 mode)
     swap_palettes();
 
     graphics.screen_mode = mode;
-
-    set_gui_palette();
   }
   else
   {
