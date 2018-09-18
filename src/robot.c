@@ -32,6 +32,7 @@
 #include "event.h"
 #include "expr.h"
 #include "game_ops.h"
+#include "game_player.h"
 #include "graphics.h"
 #include "idarray.h"
 #include "legacy_rasm.h"

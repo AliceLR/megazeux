@@ -26,6 +26,7 @@
 #include "data.h"
 #include "game.h"
 #include "game_ops.h"
+#include "game_player.h"
 #include "idarray.h"
 #include "idput.h"
 #include "robot.h"
@@ -290,7 +291,7 @@ void update_board(struct world *mzx_world)
                 // Make sure player can't.. walk on fire.
                 if(mzx_world->firewalker_dur == 0)
                 {
-                  hurt_player_id(mzx_world, FIRE);
+                  hurt_player(mzx_world, FIRE);
                 }
               }
 
@@ -386,7 +387,7 @@ void update_board(struct world *mzx_world)
                   // Player takes damage
                   if(new_id == PLAYER)
                   {
-                    hurt_player_id(mzx_world, EXPLOSION);
+                    hurt_player(mzx_world, EXPLOSION);
                     continue;
                   }
 
@@ -514,7 +515,7 @@ void update_board(struct world *mzx_world)
           if(status == HIT_PLAYER)
           {
             // Hit player; hurt the player and die
-            hurt_player_id(mzx_world, SHOOTING_FIRE);
+            hurt_player(mzx_world, SHOOTING_FIRE);
             id_remove_top(mzx_world, x, y);
           }
           else
@@ -602,7 +603,7 @@ void update_board(struct world *mzx_world)
              CAN_WATERWALK | REACT_PLAYER | CAN_GOOPWALK) ==
              HIT_PLAYER)
             {
-              hurt_player_id(mzx_world, SEEKER);
+              hurt_player(mzx_world, SEEKER);
               id_remove_top(mzx_world, x, y);
             }
           }
@@ -662,7 +663,7 @@ void update_board(struct world *mzx_world)
             if(status == HIT_PLAYER)
             {
               // If so, take damage and die
-              hurt_player_id(mzx_world, SNAKE);
+              hurt_player(mzx_world, SNAKE);
               id_remove_top(mzx_world, x, y);
               break;
             }
@@ -820,7 +821,7 @@ void update_board(struct world *mzx_world)
                     if((new_id == PLAYER) && (current_param & 0x40))
                     {
                       // Take damage
-                      hurt_player_id(mzx_world, SLIMEBLOB);
+                      hurt_player(mzx_world, SLIMEBLOB);
                     }
                   }
                   // Put a breakaway
@@ -859,7 +860,7 @@ void update_board(struct world *mzx_world)
               if(status == HIT_PLAYER)
               {
                 // Hurt the player and die
-                hurt_player_id(mzx_world, RUNNER);
+                hurt_player(mzx_world, RUNNER);
                 id_remove_top(mzx_world, x, y);
                 break;
               }
@@ -909,7 +910,7 @@ void update_board(struct world *mzx_world)
              REACT_PLAYER | CAN_GOOPWALK) == HIT_PLAYER)
             {
               // Take damage
-              hurt_player_id(mzx_world, GHOST);
+              hurt_player(mzx_world, GHOST);
               // Only die if not invincible
               if(!(current_param & 0x08))
               {
@@ -965,7 +966,7 @@ void update_board(struct world *mzx_world)
                 if(status == HIT_PLAYER)
                 {
                   // Dragons don't die when hit by the player
-                  hurt_player_id(mzx_world, DRAGON);
+                  hurt_player(mzx_world, DRAGON);
                 }
 
                 // Can't shoot, so get out of here
@@ -1027,7 +1028,7 @@ void update_board(struct world *mzx_world)
              REACT_PLAYER | MUST_WATER) == HIT_PLAYER) &&
              (current_param & 0x40))
             {
-              hurt_player_id(mzx_world, FISH);
+              hurt_player(mzx_world, FISH);
               id_remove_top(mzx_world, x, y);
             }
           }
@@ -1070,7 +1071,7 @@ void update_board(struct world *mzx_world)
 
           if(status == HIT_PLAYER)
           {
-            hurt_player_id(mzx_world, SHARK);
+            hurt_player(mzx_world, SHARK);
             id_remove_top(mzx_world, x, y);
             break;
           }
@@ -1148,7 +1149,7 @@ void update_board(struct world *mzx_world)
 
             if(move(mzx_world, x, y, m_dir, flags) == HIT_PLAYER)
             {
-              hurt_player_id(mzx_world, SPIDER);
+              hurt_player(mzx_world, SPIDER);
               id_remove_top(mzx_world, x, y);
             }
           }
@@ -1210,7 +1211,7 @@ void update_board(struct world *mzx_world)
             if(move(mzx_world, x, y, m_dir, CAN_WATERWALK |
              REACT_PLAYER) == HIT_PLAYER)
             {
-              hurt_player_id(mzx_world, GOBLIN);
+              hurt_player(mzx_world, GOBLIN);
               id_remove_top(mzx_world, x, y);
             }
           }
@@ -1248,7 +1249,7 @@ void update_board(struct world *mzx_world)
 
           if(status == HIT_PLAYER)
           {
-            hurt_player_id(mzx_world, SPITTING_TIGER);
+            hurt_player(mzx_world, SPITTING_TIGER);
             id_remove_top(mzx_world, x, y);
             break;
           }
@@ -1397,7 +1398,7 @@ void update_board(struct world *mzx_world)
               if(move(mzx_world, x, y, find_seek(mzx_world, x, y),
                CAN_WATERWALK | REACT_PLAYER) == HIT_PLAYER)
               {
-                hurt_player_id(mzx_world, BEAR);
+                hurt_player(mzx_world, BEAR);
                 id_remove_top(mzx_world, x, y);
               }
             }
@@ -1460,7 +1461,7 @@ void update_board(struct world *mzx_world)
           if(move(mzx_world, x, y, m_dir, CAN_WATERWALK |
            REACT_PLAYER) == HIT_PLAYER)
           {
-            hurt_player_id(mzx_world, BEAR_CUB);
+            hurt_player(mzx_world, BEAR_CUB);
             id_remove_top(mzx_world, x, y);
           }
 

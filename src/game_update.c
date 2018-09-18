@@ -24,6 +24,7 @@
 #include "event.h"
 #include "game.h"
 #include "game_ops.h"
+#include "game_player.h"
 #include "graphics.h"
 #include "idarray.h"
 #include "idput.h"
@@ -354,7 +355,9 @@ __editor_maybe_static void draw_viewport(struct world *mzx_world)
  * title/gameplay start, duplicate frames after focus returns from a different
  * context).
  */
-
+// "update_world"?
+// FIXME try to break this function down into comprehensible parts
+// FIXME move player helper functions out of game_ops
 void update1(struct world *mzx_world, boolean is_title, boolean *fadein)
 {
   int time_remaining;
@@ -952,6 +955,7 @@ void update1(struct world *mzx_world, boolean is_title, boolean *fadein)
  * would have to move to the end of this function if parts of the main
  * update function were to join this mess.
  */
+// "update_start_cycle"?
 boolean update2(struct world *mzx_world, boolean is_title, boolean *fadein)
 {
   struct board *src_board = mzx_world->current_board;

@@ -27,7 +27,7 @@
 #include "../error.h"
 #include "../event.h"
 #include "../game.h"
-#include "../game_ops.h"
+#include "../game_player.h"
 #include "../graphics.h"
 #include "../helpsys.h"
 #include "../idarray.h"

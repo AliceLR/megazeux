@@ -36,6 +36,7 @@
 #include "fsafeopen.h"
 #include "game.h"
 #include "game_ops.h"
+#include "game_player.h"
 #include "graphics.h"
 #include "idarray.h"
 #include "idput.h"

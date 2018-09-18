@@ -29,40 +29,24 @@ __M_BEGIN_DECLS
 #include "data.h"
 #include "world_struct.h"
 
-CORE_LIBSPEC void find_player(struct world *mzx_world);
-
-void enable_intro_mesg(void);
-void clear_intro_mesg(void);
-void draw_intro_mesg(struct world *mzx_world);
-void set_mesg(struct world *mzx_world, const char *str);
-void set_mesg_direct(struct board *src_board, const char *str);
-
-boolean player_can_save(struct world *mzx_world);
-void player_switch_bomb_type(struct world *mzx_world);
-void player_cheat_give_all(struct world *mzx_world);
-void player_cheat_zap(struct world *mzx_world);
+void rotate(struct world *mzx_world, int x, int y, int dir);
 
 void calculate_xytop(struct world *mzx_world, int *x, int *y);
-int move_player(struct world *mzx_world, int dir);
-int grab_item(struct world *mzx_world, int offset, int dir);
-void rotate(struct world *mzx_world, int x, int y, int dir);
-void check_find_player(struct world *mzx_world);
-int take_key(struct world *mzx_world, int color);
-int give_key(struct world *mzx_world, int color);
 
-void hurt_player_id(struct world *mzx_world, enum thing id);
 int flip_dir(int dir);
 int find_seek(struct world *mzx_world, int x, int y);
 
-void shoot_lazer(struct world *mzx_world, int x, int y, int dir, int length,
- int color);
 int transport(struct world *mzx_world, int x, int y, int dir, enum thing id,
  int param, int color, int can_push);
 int push(struct world *mzx_world, int x, int y, int dir, int checking);
+
 void shoot(struct world *mzx_world, int x, int y, int dir, int type);
 void shoot_fire(struct world *mzx_world, int x, int y, int dir);
 void shoot_seeker(struct world *mzx_world, int x, int y, int dir);
 void shoot_missile(struct world *mzx_world, int x, int y, int dir);
+void shoot_lazer(struct world *mzx_world, int x, int y, int dir, int length,
+ int color);
+
 enum move_status move(struct world *mzx_world, int x, int y, int dir,
  int flags);
 enum dir parsedir(struct world *mzx_world, enum dir old_dir, int x, int y,

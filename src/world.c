@@ -43,7 +43,7 @@
 #include "event.h"
 #include "extmem.h"
 #include "fsafeopen.h"
-#include "game_ops.h"
+#include "game_player.h"
 #include "graphics.h"
 #include "idput.h"
 #include "memfile.h"

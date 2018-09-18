@@ -84,6 +84,7 @@ core_cobjs := \
   ${core_obj}/game.o              \
   ${core_obj}/game_menu.o         \
   ${core_obj}/game_ops.o          \
+  ${core_obj}/game_player.o       \
   ${core_obj}/game_update.o       \
   ${core_obj}/game_update_board.o \
   ${core_obj}/graphics.o          \

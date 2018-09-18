@@ -280,6 +280,7 @@ enum condition
 
 enum chest_contents
 {
+  ITEM_NONE             = 0,
   ITEM_KEY              = 1,
   ITEM_COINS            = 2,
   ITEM_LIFE             = 3,
