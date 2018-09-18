@@ -127,7 +127,7 @@ void player_switch_bomb_type(struct world *mzx_world)
   mzx_world->bomb_type ^= 1;
   if(!cur_board->player_attack_locked && cur_board->can_bomb)
   {
-    play_sfx(mzx_world, 35);
+    play_sfx(mzx_world, SFX_SWITCH_BOMB_TYPE);
     if(mzx_world->bomb_type)
     {
       set_mesg(mzx_world, "You switch to high strength bombs.");
@@ -231,7 +231,7 @@ static void give_potion(struct world *mzx_world, enum potion type)
   char *level_param = src_board->level_param;
   char *level_color = src_board->level_color;
 
-  play_sfx(mzx_world, 39);
+  play_sfx(mzx_world, SFX_RING_POTION);
   inc_counter(mzx_world, "SCORE", 5, 0);
 
   switch(type)
@@ -446,7 +446,7 @@ void hurt_player(struct world *mzx_world, enum thing damage_src)
 {
   int amount = id_dmg[damage_src];
   dec_counter(mzx_world, "health", amount, 0);
-  play_sfx(mzx_world, 21);
+  play_sfx(mzx_world, SFX_HURT);
   set_mesg(mzx_world, "Ouch!");
 }
 
@@ -511,12 +511,12 @@ int grab_item(struct world *mzx_world, int offset, int dir)
 
       if(item_type == ITEM_NONE)
       {
-        play_sfx(mzx_world, 40);
+        play_sfx(mzx_world, SFX_EMPTY_CHEST);
         break;
       }
 
       // Act upon contents
-      play_sfx(mzx_world, 41);
+      play_sfx(mzx_world, SFX_CHEST);
 
       switch(item_type)
       {
@@ -647,7 +647,11 @@ int grab_item(struct world *mzx_world, int offset, int dir)
     case GEM:
     case MAGIC_GEM:
     {
-      play_sfx(mzx_world, id - 28);
+      if(id == GEM)
+        play_sfx(mzx_world, SFX_GEM);
+      else
+        play_sfx(mzx_world, SFX_MAGIC_GEM);
+
       inc_counter(mzx_world, "GEMS", 1, 0);
 
       if(id == MAGIC_GEM)
@@ -660,7 +664,7 @@ int grab_item(struct world *mzx_world, int offset, int dir)
 
     case HEALTH:
     {
-      play_sfx(mzx_world, 2);
+      play_sfx(mzx_world, SFX_HEALTH);
       inc_counter(mzx_world, "HEALTH", param, 0);
       remove = 1;
       break;
@@ -676,7 +680,7 @@ int grab_item(struct world *mzx_world, int offset, int dir)
 
     case GOOP:
     {
-      play_sfx(mzx_world, 48);
+      play_sfx(mzx_world, SFX_GOOP);
       set_mesg(mzx_world, "There is goop in your way!");
       send_robot_def(mzx_world, 0, LABEL_GOOPTOUCHED);
       break;
@@ -684,7 +688,7 @@ int grab_item(struct world *mzx_world, int offset, int dir)
 
     case ENERGIZER:
     {
-      play_sfx(mzx_world, 16);
+      play_sfx(mzx_world, SFX_INVINCO_START);
       set_mesg(mzx_world, "Energize!");
       send_robot_def(mzx_world, 0, LABEL_INVINCO);
       set_counter(mzx_world, "INVINCO", 113, 0);
@@ -694,7 +698,7 @@ int grab_item(struct world *mzx_world, int offset, int dir)
 
     case AMMO:
     {
-      play_sfx(mzx_world, 3);
+      play_sfx(mzx_world, SFX_AMMO);
       inc_counter(mzx_world, "AMMO", param, 0);
       remove = 1;
       break;
@@ -706,12 +710,12 @@ int grab_item(struct world *mzx_world, int offset, int dir)
       {
         if(param)
         {
-          play_sfx(mzx_world, 7);
+          play_sfx(mzx_world, SFX_HI_BOMB);
           inc_counter(mzx_world, "HIBOMBS", 1, 0);
         }
         else
         {
-          play_sfx(mzx_world, 6);
+          play_sfx(mzx_world, SFX_LO_BOMB);
           inc_counter(mzx_world, "LOBOMBS", 1, 0);
         }
         remove = 1;
@@ -719,7 +723,7 @@ int grab_item(struct world *mzx_world, int offset, int dir)
       else
       {
         // Light bomb
-        play_sfx(mzx_world, 33);
+        play_sfx(mzx_world, SFX_PLACE_LO_BOMB);
         src_board->level_id[offset] = 37;
         src_board->level_param[offset] = param << 7;
       }
@@ -730,12 +734,12 @@ int grab_item(struct world *mzx_world, int offset, int dir)
     {
       if(give_key(mzx_world, color))
       {
-        play_sfx(mzx_world, 9);
+        play_sfx(mzx_world, SFX_FULL_KEYS);
         set_mesg(mzx_world, "You can't carry any more keys!");
       }
       else
       {
-        play_sfx(mzx_world, 8);
+        play_sfx(mzx_world, SFX_KEY);
         set_mesg(mzx_world, "You grab the key.");
         remove = 1;
       }
@@ -746,12 +750,12 @@ int grab_item(struct world *mzx_world, int offset, int dir)
     {
       if(take_key(mzx_world, color))
       {
-        play_sfx(mzx_world, 11);
+        play_sfx(mzx_world, SFX_CANT_UNLOCK);
         set_mesg(mzx_world, "You need an appropriate key!");
       }
       else
       {
-        play_sfx(mzx_world, 10);
+        play_sfx(mzx_world, SFX_UNLOCK);
         set_mesg(mzx_world, "You open the lock.");
         remove = 1;
       }
@@ -773,7 +777,7 @@ int grab_item(struct world *mzx_world, int offset, int dir)
         if(take_key(mzx_world, color))
         {
           // Need key
-          play_sfx(mzx_world, 19);
+          play_sfx(mzx_world, SFX_DOOR_LOCKED);
           set_mesg(mzx_world, "The door is locked!");
           break;
         }
@@ -793,13 +797,13 @@ int grab_item(struct world *mzx_world, int offset, int dir)
        CAN_PUSH | CAN_LAVAWALK | CAN_FIREWALK | CAN_WATERWALK))
       {
         set_mesg(mzx_world, "The door is blocked from opening!");
-        play_sfx(mzx_world, 19);
+        play_sfx(mzx_world, SFX_DOOR_LOCKED);
         level_id[offset] = 41;
         level_param[offset] = param & 7;
       }
       else
       {
-        play_sfx(mzx_world, 20);
+        play_sfx(mzx_world, SFX_OPEN_DOOR);
       }
       break;
     }
@@ -812,7 +816,7 @@ int grab_item(struct world *mzx_world, int offset, int dir)
         if(take_key(mzx_world, color))
         {
           // Need key
-          play_sfx(mzx_world, 14);
+          play_sfx(mzx_world, SFX_GATE_LOCKED);
           set_mesg(mzx_world, "The gate is locked!");
           break;
         }
@@ -826,7 +830,7 @@ int grab_item(struct world *mzx_world, int offset, int dir)
 
       src_board->level_id[offset] = (char)OPEN_GATE;
       src_board->level_param[offset] = 22;
-      play_sfx(mzx_world, 15);
+      play_sfx(mzx_world, SFX_OPEN_GATE);
       break;
     }
 
@@ -843,7 +847,7 @@ int grab_item(struct world *mzx_world, int offset, int dir)
 
     case COIN:
     {
-      play_sfx(mzx_world, 4);
+      play_sfx(mzx_world, SFX_COIN);
       inc_counter(mzx_world, "COINS", 1, 0);
       inc_counter(mzx_world, "SCORE", 1, 0);
       remove = 1;
@@ -852,7 +856,7 @@ int grab_item(struct world *mzx_world, int offset, int dir)
 
     case POUCH:
     {
-      play_sfx(mzx_world, 38);
+      play_sfx(mzx_world, SFX_POUCH);
       inc_counter(mzx_world, "GEMS", (param & 15) * 5, 0);
       inc_counter(mzx_world, "COINS", (param >> 4) * 5, 0);
       inc_counter(mzx_world, "SCORE", ((param & 15) + (param >> 4)) * 5, 1);
@@ -865,7 +869,7 @@ int grab_item(struct world *mzx_world, int offset, int dir)
 
     case FOREST:
     {
-      play_sfx(mzx_world, 13);
+      play_sfx(mzx_world, SFX_FOREST);
       if(src_board->forest_becomes == FOREST_TO_EMPTY)
       {
         remove = 1;
@@ -880,7 +884,7 @@ int grab_item(struct world *mzx_world, int offset, int dir)
 
     case LIFE:
     {
-      play_sfx(mzx_world, 5);
+      play_sfx(mzx_world, SFX_LIFE);
       inc_counter(mzx_world, "LIVES", 1, 0);
       set_mesg(mzx_world, "You find a free life!");
       remove = 1;
@@ -891,7 +895,7 @@ int grab_item(struct world *mzx_world, int offset, int dir)
     {
       src_board->level_id[offset] = (char)NORMAL;
       set_mesg(mzx_world, "Oof! You ran into an invisible wall.");
-      play_sfx(mzx_world, 12);
+      play_sfx(mzx_world, SFX_INVIS_WALL);
       break;
     }
 
@@ -899,7 +903,7 @@ int grab_item(struct world *mzx_world, int offset, int dir)
     {
       src_board->level_id[offset] = (char)EXPLOSION;
       src_board->level_param[offset] = param & 240;
-      play_sfx(mzx_world, 36);
+      play_sfx(mzx_world, SFX_EXPLOSION);
       break;
     }
 
@@ -913,7 +917,7 @@ int grab_item(struct world *mzx_world, int offset, int dir)
     case THIEF:
     {
       dec_counter(mzx_world, "GEMS", (param & 128) >> 7, 0);
-      play_sfx(mzx_world, 44);
+      play_sfx(mzx_world, SFX_STOLEN_GEM);
       break;
     }
 
@@ -972,7 +976,7 @@ int grab_item(struct world *mzx_world, int offset, int dir)
     case SCROLL:
     {
       int idx = param;
-      play_sfx(mzx_world, 47);
+      play_sfx(mzx_world, SFX_SCROLL_SIGN);
 
       m_show();
       scroll_edit(mzx_world, src_board->scroll_list[idx], id & 1);
@@ -1110,7 +1114,7 @@ int move_player(struct world *mzx_world, int dir)
     {
       // Entrance
       int d_board = src_board->level_param[d_offset];
-      play_sfx(mzx_world, 37);
+      play_sfx(mzx_world, SFX_ENTRANCE);
       // Can move?
       if((d_board != mzx_world->current_board_id) &&
        (d_board < mzx_world->num_boards) &&
@@ -1182,14 +1186,14 @@ int move_player(struct world *mzx_world, int dir)
         {
           // Enemy or hurtsy
           dec_counter(mzx_world, "HEALTH", id_dmg[61], 0);
-          play_sfx(mzx_world, 21);
+          play_sfx(mzx_world, SFX_HURT);
           set_mesg(mzx_world, "Ouch!");
         }
       }
       else
       {
         dec_counter(mzx_world, "HEALTH", id_dmg[(int)d_id], 0);
-        play_sfx(mzx_world, 21);
+        play_sfx(mzx_world, SFX_HURT);
         set_mesg(mzx_world, "Ouch!");
 
         if(d_flag & A_ENEMY)

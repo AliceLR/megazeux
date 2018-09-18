@@ -3238,7 +3238,7 @@ static int invinco_gateway(struct world *mzx_world, struct counter *counter,
     if(!value)
     {
       sfx_clear_queue();
-      play_sfx(mzx_world, 18);
+      play_sfx(mzx_world, SFX_INVINCO_END);
       id_chars[player_color] = mzx_world->saved_pl_color;
     }
   }

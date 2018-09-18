@@ -579,7 +579,7 @@ void update_board(struct world *mzx_world)
             // If so, leave explosion
             level_id[level_offset] = (char)EXPLOSION;
             level_param[level_offset] = 48;
-            play_sfx(mzx_world, 36);
+            play_sfx(mzx_world, SFX_EXPLOSION);
           }
 
           break;
@@ -729,7 +729,7 @@ void update_board(struct world *mzx_world)
               // Explode (place explosion)
               level_id[level_offset] = EXPLOSION;
               level_param[level_offset] = radius;
-              play_sfx(mzx_world, 36);
+              play_sfx(mzx_world, SFX_EXPLOSION);
             }
           }
           break;
@@ -769,7 +769,7 @@ void update_board(struct world *mzx_world)
               int gems_take = ((current_param & 0x80) >> 7) + 1;
               // Take them
               dec_counter(mzx_world, "GEMS", gems_take, 0);
-              play_sfx(mzx_world, 44);
+              play_sfx(mzx_world, SFX_STOLEN_GEM);
             }
           }
           else
@@ -989,7 +989,7 @@ void update_board(struct world *mzx_world)
             // Shoot in the direction of the player
             int fire_dir = find_seek(mzx_world, x, y);
             shoot_fire(mzx_world, x, y, fire_dir);
-            play_sfx(mzx_world, 46);
+            play_sfx(mzx_world, SFX_DRAGON_FIRE);
           }
 
           break;
@@ -1110,7 +1110,7 @@ void update_board(struct world *mzx_world)
             if(shoot_type == 16)
             {
               shoot_fire(mzx_world, new_x, new_y, m_dir);
-              play_sfx(mzx_world, 46);
+              play_sfx(mzx_world, SFX_DRAGON_FIRE);
             }
             else
             {
@@ -1491,7 +1491,7 @@ void update_board(struct world *mzx_world)
               }
 
               level_id[level_offset] = 38;
-              play_sfx(mzx_world, 36);
+              play_sfx(mzx_world, SFX_EXPLOSION);
             }
             else
             {
@@ -1550,7 +1550,7 @@ void update_board(struct world *mzx_world)
           {
             // Make it closed gate
             level_id[level_offset] = (char)GATE;
-            play_sfx(mzx_world, 25);
+            play_sfx(mzx_world, SFX_GATE_CLOSE);
           }
           else
           {

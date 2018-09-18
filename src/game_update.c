@@ -93,7 +93,7 @@ static void update_player(struct world *mzx_world)
       if(mzx_world->firewalker_dur > 0)
         break;
 
-      play_sfx(mzx_world, 22);
+      play_sfx(mzx_world, SFX_LAVA);
       set_mesg(mzx_world, "Augh!");
       dec_counter(mzx_world, "HEALTH", id_dmg[26], 0);
       return;
@@ -104,7 +104,7 @@ static void update_player(struct world *mzx_world)
       if(mzx_world->firewalker_dur > 0)
         break;
 
-      play_sfx(mzx_world, 43);
+      play_sfx(mzx_world, SFX_FIRE_HURT);
       set_mesg(mzx_world, "Ouch!");
       dec_counter(mzx_world, "HEALTH", id_dmg[63], 0);
       return;
@@ -161,7 +161,7 @@ static void update_variables(struct world *mzx_world, int slowed)
           // Out of time
           dec_counter(mzx_world, "HEALTH", 10, 0);
           set_mesg(mzx_world, "Out of time!");
-          play_sfx(mzx_world, 42);
+          play_sfx(mzx_world, SFX_OUT_OF_TIME);
           // Reset time
           set_counter(mzx_world, "TIME", src_board->time_limit, 0);
         }
@@ -205,7 +205,7 @@ static void update_variables(struct world *mzx_world, int slowed)
     {
       // Decrease
       dec_counter(mzx_world, "INVINCO", 1, 0);
-      play_sfx(mzx_world, 17);
+      play_sfx(mzx_world, SFX_INVINCO_BEAT);
       id_chars[player_color] = Random(256);
     }
   }
@@ -477,12 +477,12 @@ void update1(struct world *mzx_world, boolean is_title, boolean *fadein)
           if(!get_counter(mzx_world, "AMMO", 0))
           {
             set_mesg(mzx_world, "You are out of ammo!");
-            play_sfx(mzx_world, 30);
+            play_sfx(mzx_world, SFX_OUT_OF_AMMO);
           }
           else
           {
             dec_counter(mzx_world, "AMMO", 1, 0);
-            play_sfx(mzx_world, 28);
+            play_sfx(mzx_world, SFX_SHOOT);
             shoot(mzx_world, mzx_world->player_x, mzx_world->player_y,
              move_dir, PLAYER_BULLET);
             reload = 2;
@@ -579,7 +579,7 @@ void update1(struct world *mzx_world, boolean is_title, boolean *fadein)
          (!get_counter(mzx_world, "LOBOMBS", 0)))
         {
           set_mesg(mzx_world, "You are out of low strength bombs!");
-          play_sfx(mzx_world, 32);
+          play_sfx(mzx_world, SFX_OUT_OF_BOMBS);
         }
         else
 
@@ -587,7 +587,7 @@ void update1(struct world *mzx_world, boolean is_title, boolean *fadein)
          (!get_counter(mzx_world, "HIBOMBS", 0)))
         {
           set_mesg(mzx_world, "You are out of high strength bombs!");
-          play_sfx(mzx_world, 32);
+          play_sfx(mzx_world, SFX_OUT_OF_BOMBS);
         }
         else
 
@@ -600,12 +600,17 @@ void update1(struct world *mzx_world, boolean is_title, boolean *fadein)
           level_under_id[d_offset] = 37;
           level_under_color[d_offset] = 8;
           level_under_param[d_offset] = mzx_world->bomb_type << 7;
-          play_sfx(mzx_world, 33 + mzx_world->bomb_type);
 
           if(mzx_world->bomb_type)
+          {
+            play_sfx(mzx_world, SFX_PLACE_HI_BOMB);
             dec_counter(mzx_world, "HIBOMBS", 1, 0);
+          }
           else
+          {
+            play_sfx(mzx_world, SFX_PLACE_LO_BOMB);
             dec_counter(mzx_world, "LOBOMBS", 1, 0);
+          }
         }
       }
     }
@@ -647,7 +652,7 @@ void update1(struct world *mzx_world, boolean is_title, boolean *fadein)
     {
       int d_board = src_board->level_under_param[d_offset];
       sfx_clear_queue(); // Since there is often a push sound
-      play_sfx(mzx_world, 37);
+      play_sfx(mzx_world, SFX_ENTRANCE);
 
       // Same board or nonexistant?
       if((d_board != mzx_world->current_board_id)
@@ -716,7 +721,7 @@ void update1(struct world *mzx_world, boolean is_title, boolean *fadein)
         src_board->b_mesg_col = -1;
       }
       if(mzx_world->game_over_sfx)
-        play_sfx(mzx_world, 24);
+        play_sfx(mzx_world, SFX_GAME_OVER);
       mzx_world->dead = 1;
     }
   }
@@ -731,7 +736,7 @@ void update1(struct world *mzx_world, boolean is_title, boolean *fadein)
     dec_counter(mzx_world, "Lives", 1, 0);
     set_mesg(mzx_world, "You have died...");
     sfx_clear_queue();
-    play_sfx(mzx_world, 23);
+    play_sfx(mzx_world, SFX_DEATH);
 
     // Go somewhere else?
     if(death_board != DEATH_SAME_POS)

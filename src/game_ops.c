@@ -398,7 +398,7 @@ int transport(struct world *mzx_world, int x, int y, int dir, enum thing id,
   if(id != SPACE)
   {
     // Place it
-    play_sfx(mzx_world, 27);
+    play_sfx(mzx_world, SFX_TRANSPORT);
     id_place(mzx_world, dx, dy, id, color, param);
   }
 
@@ -636,7 +636,7 @@ int push(struct world *mzx_world, int x, int y, int dir, int checking)
     }
   }
 
-  play_sfx(mzx_world, 26);
+  play_sfx(mzx_world, SFX_PUSH);
 
   return 0;
 }
@@ -695,7 +695,7 @@ void shoot(struct world *mzx_world, int x, int y, int dir, int type)
     {
       // Can be removed
       id_remove_top(mzx_world, dx, dy);
-      play_sfx(mzx_world, 29);
+      play_sfx(mzx_world, SFX_BREAK);
     }
     return;
   }
@@ -708,7 +708,7 @@ void shoot(struct world *mzx_world, int x, int y, int dir, int type)
     {
       case RICOCHET_PANEL:
       {
-        play_sfx(mzx_world, 31);
+        play_sfx(mzx_world, SFX_RICOCHET);
         // Fanangle the panel orientation into a shoot direction
         if(d_param == 1)
         {
@@ -725,7 +725,7 @@ void shoot(struct world *mzx_world, int x, int y, int dir, int type)
       case RICOCHET:
       {
         int pdir = flip_dir(dir);
-        play_sfx(mzx_world, 31);
+        play_sfx(mzx_world, SFX_RICOCHET);
         // Shoot backwards
         shoot(mzx_world, dx, dy, pdir, NEUTRAL_BULLET);
         break;
@@ -737,7 +737,7 @@ void shoot(struct world *mzx_world, int x, int y, int dir, int type)
         level_id[d_offset] = 38;
         // Get rid of count and anim fields in param
         level_param[d_offset] = d_param & 0xF0;
-        play_sfx(mzx_world, 36);
+        play_sfx(mzx_world, SFX_EXPLOSION);
         break;
       }
 
@@ -770,7 +770,7 @@ void shoot(struct world *mzx_world, int x, int y, int dir, int type)
         // Turn into explosion
         level_id[d_offset] = (char)EXPLOSION;
         level_param[d_offset] = (d_param & 0x38) << 1;
-        play_sfx(mzx_world, 36);
+        play_sfx(mzx_world, SFX_EXPLOSION);
         break;
       }
 
@@ -784,7 +784,7 @@ void shoot(struct world *mzx_world, int x, int y, int dir, int type)
           {
             // Kill it
             id_remove_top(mzx_world, dx, dy);
-            play_sfx(mzx_world, 29);
+            play_sfx(mzx_world, SFX_BREAK);
           }
         }
         break;
@@ -800,13 +800,13 @@ void shoot(struct world *mzx_world, int x, int y, int dir, int type)
           {
             // Otherwise, take an HP
             level_param[d_offset] = d_param - 0x40;
-            play_sfx(mzx_world, 45);
+            play_sfx(mzx_world, SFX_ENEMY_HP_DOWN);
           }
           else
           {
             // Kill it
             id_remove_top(mzx_world, dx, dy);
-            play_sfx(mzx_world, 29);
+            play_sfx(mzx_world, SFX_BREAK);
           }
         }
 
@@ -823,7 +823,7 @@ void shoot(struct world *mzx_world, int x, int y, int dir, int type)
           {
             // Kill it
             id_remove_top(mzx_world, dx, dy);
-            play_sfx(mzx_world, 29);
+            play_sfx(mzx_world, SFX_BREAK);
           }
         }
 
@@ -840,13 +840,13 @@ void shoot(struct world *mzx_world, int x, int y, int dir, int type)
           {
             // Kill it
             id_remove_top(mzx_world, dx, dy);
-            play_sfx(mzx_world, 29);
+            play_sfx(mzx_world, SFX_BREAK);
           }
           else
           {
             // Take away a hit point
             level_param[d_offset] = d_param - 0x20;
-            play_sfx(mzx_world, 45);
+            play_sfx(mzx_world, SFX_ENEMY_HP_DOWN);
           }
         }
 
@@ -862,13 +862,13 @@ void shoot(struct world *mzx_world, int x, int y, int dir, int type)
         {
           // Kill it
           id_remove_top(mzx_world, dx, dy);
-          play_sfx(mzx_world, 29);
+          play_sfx(mzx_world, SFX_BREAK);
         }
         else
         {
           // Remove HP
           level_param[d_offset] = d_param ^ 0x80;
-          play_sfx(mzx_world, 45);
+          play_sfx(mzx_world, SFX_ENEMY_HP_DOWN);
         }
         break;
       }
