@@ -147,7 +147,6 @@ static void char_editor_default_colors(void)
   // Selection
   set_protected_rgb(6, 14, 42, 56);
   set_protected_rgb(13, 7, 21, 49);
-  update_palette();
 }
 
 static void copy_color_to_protected(int from, int to)
@@ -197,7 +196,6 @@ static void char_editor_update_colors(void)
   // Selection
   set_protected_rgb(6, 14, 42, 56);
   set_protected_rgb(13, 7, 21, 49);
-  update_palette();
 }
 
 static void fill_region(char *buffer, int x, int y,

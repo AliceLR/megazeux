@@ -33,7 +33,6 @@
 #include "event.h"
 #include "fsafeopen.h"
 #include "game_ops.h"
-#include "game_update.h" // FIXME: Included solely for pal_update.
 #include "graphics.h"
 #include "idarray.h"
 #include "idput.h"
@@ -521,7 +520,6 @@ static void red_value_write(struct world *mzx_world,
 {
   int cur_color = get_counter(mzx_world, "current_color", id) & (SMZX_PAL_SIZE - 1);
   set_red_component(cur_color, value);
-  pal_update = true;
 }
 
 static void green_value_write(struct world *mzx_world,
@@ -529,7 +527,6 @@ static void green_value_write(struct world *mzx_world,
 {
   int cur_color = get_counter(mzx_world, "current_color", id) & (SMZX_PAL_SIZE - 1);
   set_green_component(cur_color, value);
-  pal_update = true;
 }
 
 static void blue_value_write(struct world *mzx_world,
@@ -537,7 +534,6 @@ static void blue_value_write(struct world *mzx_world,
 {
   int cur_color = get_counter(mzx_world, "current_color", id) & (SMZX_PAL_SIZE - 1);
   set_blue_component(cur_color, value);
-  pal_update = true;
 }
 
 static int overlay_mode_read(struct world *mzx_world,
@@ -632,7 +628,6 @@ static void smzx_r_write(struct world *mzx_world,
 {
   int cur_color = strtol(name + 6, NULL, 10) & (SMZX_PAL_SIZE - 1);
   set_red_component(cur_color, value);
-  pal_update = true;
 }
 
 static void smzx_g_write(struct world *mzx_world,
@@ -640,7 +635,6 @@ static void smzx_g_write(struct world *mzx_world,
 {
   int cur_color = strtol(name + 6, NULL, 10) & (SMZX_PAL_SIZE - 1);
   set_green_component(cur_color, value);
-  pal_update = true;
 }
 
 static void smzx_b_write(struct world *mzx_world,
@@ -648,7 +642,6 @@ static void smzx_b_write(struct world *mzx_world,
 {
   int cur_color = strtol(name + 6, NULL, 10) & (SMZX_PAL_SIZE - 1);
   set_blue_component(cur_color, value);
-  pal_update = true;
 }
 
 static int smzx_idx_read(struct world *mzx_world,
@@ -665,7 +658,6 @@ static void smzx_idx_write(struct world *mzx_world,
   int col = 0, offset = 0;
   get_counter_params(name + 8, &col, &offset);
   set_smzx_index(col, offset, value);
-  pal_update = true;
 }
 
 static int smzx_message_read(struct world *mzx_world,
@@ -2692,11 +2684,9 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       int err;
 
       err = fsafetranslate(char_value, translated_path);
+
       if(err == -FSAFE_SUCCESS)
-      {
         load_palette(translated_path);
-        pal_update = true;
-      }
 
       free(translated_path);
       break;
@@ -2708,11 +2698,9 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       int err;
 
       err = fsafetranslate(char_value, translated_path);
+
       if(err == -FSAFE_SUCCESS)
-      {
         load_index_file(translated_path);
-        pal_update = true;
-      }
 
       free(translated_path);
       break;

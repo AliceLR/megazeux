@@ -718,6 +718,6 @@ void fix_viewport_ratio(int width, int height, int *v_width, int *v_height,
 
 void resize_screen_standard(struct graphics_data *graphics, int w, int h)
 {
+  graphics->palette_dirty = true;
   update_screen();
-  update_palette();
 }

@@ -37,7 +37,6 @@
 #include "game.h"
 #include "game_ops.h"
 #include "game_player.h"
-#include "game_update.h" // FIXME: Included solely for pal_update.
 #include "graphics.h"
 #include "idarray.h"
 #include "idput.h"
@@ -4976,7 +4975,6 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           intensity = 0;
 
         set_palette_intensity(intensity);
-        pal_update = true;
         break;
       }
 
@@ -4989,7 +4987,6 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           intensity = 0;
 
         set_color_intensity(color, intensity);
-        pal_update = true;
         break;
       }
 
@@ -5023,7 +5020,6 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         b = CLAMP(b, 0, 63);
 
         set_rgb(pal_number, r, g, b);
-        pal_update = true;
         break;
       }
 
@@ -5167,7 +5163,6 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         }
 
         free(translated_name);
-        pal_update = true;
         break;
       }
 

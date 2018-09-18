@@ -26,7 +26,6 @@
 
 #include "counter.h"
 #include "error.h"
-#include "game_update.h" // FIXME: Included solely for pal_update.
 #include "graphics.h"
 #include "memcasecmp.h"
 #include "rasm.h"
@@ -926,10 +925,7 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
   if(special_name("smzx_indices"))
   {
     if(dest && dest->length > 0)
-    {
       load_indices(dest->value, dest->length);
-      pal_update = true;
-    }
   }
   else
 

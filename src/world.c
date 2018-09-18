@@ -2846,10 +2846,7 @@ void change_board_load_assets(struct world *mzx_world)
   if(mzx_world->version >= V290 && cur_board->palette_path[0])
   {
     if(fsafetranslate(cur_board->palette_path, translated_name) == FSAFE_SUCCESS)
-    {
       load_palette(translated_name);
-      update_palette();
-    }
   }
 }
 

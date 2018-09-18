@@ -42,10 +42,6 @@
 // directional move
 #define REPEAT_WAIT 2
 
-// Whether to update a palette from robot activity
-// FIXME context
-bool pal_update;
-
 static void focus_on_player(struct world *mzx_world)
 {
   int player_x   = mzx_world->player_x;
@@ -374,8 +370,6 @@ void update1(struct world *mzx_world, boolean is_title, boolean *fadein)
   char *level_under_id = src_board->level_under_id;
   char *level_under_color = src_board->level_under_color;
   char *level_under_param = src_board->level_under_param;
-
-  pal_update = false;
 
   if(!is_title && mzx_world->version >= V251s1 &&
    get_counter(mzx_world, "CURSORSTATE", 0))
@@ -786,11 +780,6 @@ void update1(struct world *mzx_world, boolean is_title, boolean *fadein)
     }
   }
 
-  // We need to do this before the rest of the graphics code to fix some
-  // teleport glitch(es)
-  if(pal_update)
-    update_palette();
-
   if(mzx_world->target_where != TARGET_TELEPORT)
   {
     Uint32 viewport_layer;
@@ -949,8 +938,6 @@ void update1(struct world *mzx_world, boolean is_title, boolean *fadein)
       draw_debug_box(mzx_world, 60, 19, mzx_world->player_x,
        mzx_world->player_y, 1);
     }
-
-    // note-- pal_update was previously here
 
     update_screen();
   }

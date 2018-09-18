@@ -2412,7 +2412,6 @@ static boolean editor_key(context *ctx, int *key)
                "Choose palette to import", 1))
               {
                 load_palette(import_name);
-                update_palette();
                 editor->modified = true;
               }
 
@@ -2422,7 +2421,6 @@ static boolean editor_key(context *ctx, int *key)
                 "Choose indices to import (.PALIDX)", 1))
               {
                 load_index_file(import_name);
-                update_palette();
                 editor->modified = true;
               }
 

@@ -316,7 +316,6 @@ static void store_color_rgb(struct color_status *current)
   rgb_to_hsl(current);
   rgb_to_lab(current);
   set_rgb(current_id, current->r, current->g, current->b);
-  update_palette();
 }
 
 static void store_color_hsl(struct color_status *current)
@@ -324,7 +323,6 @@ static void store_color_hsl(struct color_status *current)
   hsl_to_rgb(current);
   rgb_to_lab(current);
   set_rgb(current_id, current->r, current->g, current->b);
-  update_palette();
 }
 
 static void store_color_lab(struct color_status *current)
@@ -332,7 +330,6 @@ static void store_color_lab(struct color_status *current)
   lab_to_rgb(current);
   rgb_to_hsl(current);
   set_rgb(current_id, current->r, current->g, current->b);
-  update_palette();
 }
 
 static int get_color_rgb(struct color_status *current, int component)
@@ -2010,7 +2007,6 @@ static boolean pal_ed_key(context *ctx, int *key)
         else
         {
           load_palette(mzx_res_get_by_id(SMZX_PAL));
-          update_palette();
         }
 
         rebuild_palette(pal_ed->palette);

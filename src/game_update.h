@@ -26,9 +26,6 @@ __M_BEGIN_DECLS
 
 #include "world_struct.h"
 
-// FIXME get rid of this
-extern bool pal_update;
-
 void update1(struct world *mzx_world, boolean is_title, boolean *fadein);
 boolean update2(struct world *mzx_world, boolean is_title, boolean *fadein);
 void update_board(struct world *mzx_world);

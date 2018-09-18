@@ -145,6 +145,7 @@ struct graphics_data
   Uint32 current_intensity[SMZX_PAL_SIZE];
   Uint32 saved_intensity[SMZX_PAL_SIZE];
   Uint32 backup_intensity[SMZX_PAL_SIZE];
+  boolean palette_dirty;
 
   Uint32 layer_count;
   Uint32 layer_count_prev;
