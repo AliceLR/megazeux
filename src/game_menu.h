@@ -1,8 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 1996 Greg Janson
- * Copyright (C) 1999 Charles Goetzman
- * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
+ * Copyright (C) 2018 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -19,28 +17,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/* Declarations for GAME.CPP */
-
-#ifndef __GAME_H
-#define __GAME_H
+#ifndef __GAME_MENU_H
+#define __GAME_MENU_H
 
 #include "compat.h"
 
 __M_BEGIN_DECLS
 
 #include "core.h"
-#include "world_struct.h"
 
-CORE_LIBSPEC void title_screen(context *parent);
-CORE_LIBSPEC void load_board_module(struct world *mzx_world);
-
-boolean load_game_module(struct world *mzx_world, char *filename,
- boolean fail_if_same);
-
-#ifdef CONFIG_EDITOR
-CORE_LIBSPEC void play_game(context *parent, boolean *_fade_in);
-#endif
+void game_menu(context *parent);
+void main_menu(context *parent);
 
 __M_END_DECLS
 
-#endif // __GAME_H
+#endif // __GAME_MENU_H

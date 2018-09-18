@@ -26,7 +26,7 @@
 
 #include "counter.h"
 #include "error.h"
-#include "game.h"
+#include "game_update.h" // FIXME: Included solely for pal_update.
 #include "graphics.h"
 #include "memcasecmp.h"
 #include "rasm.h"

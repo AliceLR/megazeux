@@ -28,6 +28,7 @@
 #include "../event.h"
 #include "../game.h"
 #include "../game_player.h"
+#include "../game_update.h"
 #include "../graphics.h"
 #include "../helpsys.h"
 #include "../idarray.h"

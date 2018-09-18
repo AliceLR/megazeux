@@ -24,7 +24,7 @@
 #include "core.h"
 #include "counter.h"
 #include "event.h"
-#include "game.h"
+#include "game_menu.h"
 #include "graphics.h"
 #include "window.h"
 #include "world_struct.h"

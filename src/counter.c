@@ -32,8 +32,8 @@
 #include "error.h"
 #include "event.h"
 #include "fsafeopen.h"
-#include "game.h"
 #include "game_ops.h"
+#include "game_update.h" // FIXME: Included solely for pal_update.
 #include "graphics.h"
 #include "idarray.h"
 #include "idput.h"
