@@ -17,6 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "caption.h"
 #include "const.h"
 #include "core.h"
 #include "error.h"
@@ -682,7 +683,8 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
       struct element *elements[6];
       struct dialog di;
 
-      conf->update_available = 1;
+      // Notify the user that updates are available.
+      caption_set_updates_available(true);
 
       // If this is an auto check and silent mode is enabled, we can stop here.
       if(is_automatic && conf->update_auto_check == UPDATE_AUTO_CHECK_SILENT)

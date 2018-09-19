@@ -97,7 +97,6 @@ struct config_info
   char **update_hosts;
   char update_branch_pin[256];
   int update_auto_check;
-  int update_available;
 #endif
 };
 

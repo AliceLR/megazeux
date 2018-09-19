@@ -28,6 +28,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#include "caption.h"
 #include "configure.h"
 #include "const.h"
 #include "core.h"
@@ -175,7 +176,7 @@ static boolean load_world_gameplay(struct game_context *game, char *name)
     load_game_module(mzx_world, cur_board->mod_playing, true);
     sfx_clear_queue();
 
-    set_caption(mzx_world, NULL, NULL, false);
+    caption_set_world(mzx_world);
     return true;
   }
 
@@ -215,7 +216,7 @@ static boolean load_world_title(struct game_context *game, char *name)
     load_board_module(mzx_world);
     sfx_clear_queue();
 
-    set_caption(mzx_world, NULL, NULL, false);
+    caption_set_world(mzx_world);
     return true;
   }
   else
@@ -259,7 +260,7 @@ static boolean load_savegame(struct game_context *game, char *name)
     if(save_is_faded)
       game->fade_in = false;
 
-    set_caption(mzx_world, NULL, NULL, false);
+    caption_set_world(mzx_world);
     return true;
   }
 
@@ -788,8 +789,7 @@ static boolean title_key(context *ctx, int *key)
         if(mzx_world->active)
           audio_set_module_volume(0);
 
-        check_for_updates(mzx_world, &mzx_world->conf, 0);
-        set_caption(mzx_world, NULL, NULL, false);
+        check_for_updates(mzx_world, conf, 0);
 
         audio_set_pcs_volume(current_pcs_vol);
         audio_set_music_volume(current_music_vol);

@@ -72,6 +72,7 @@ ${core_obj}/%.o: ${core_src}/%.cpp
 core_cobjs := \
   ${core_obj}/block.o             \
   ${core_obj}/board.o             \
+  ${core_obj}/caption.o           \
   ${core_obj}/configure.o         \
   ${core_obj}/configure_ed.o      \
   ${core_obj}/core.o              \

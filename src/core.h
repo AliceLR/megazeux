@@ -153,18 +153,6 @@ struct context_spec
 };
 
 /**
- * Sets MegaZeux's caption according to various parameters.
- *
- * @param mzx_world         The active world.
- * @param board             Optional: the active editor board.
- * @param robot             Optional: the active editor robot.
- * @param modified          Indicates whether the world has been modified.
- */
-
-CORE_LIBSPEC void set_caption(struct world *mzx_world, struct board *board,
- struct robot *robot, boolean modified);
-
-/**
  * Sets up a new context and adds it to the context stack. At least one
  * update function must be provided. If "parent" is a subcontext, this function
  * will use its parent context as the parent instead.

@@ -20,6 +20,7 @@
  */
 
 #include "../board.h"
+#include "../caption.h"
 #include "../const.h"
 #include "../core.h"
 #include "../counter.h"
@@ -371,7 +372,7 @@ static void fix_caption(struct editor_context *editor)
   struct world *mzx_world = ((context *)editor)->world;
   struct board *cur_board = mzx_world->current_board;
 
-  set_caption(mzx_world, cur_board, NULL, editor->modified);
+  caption_set_board(mzx_world, cur_board);
 }
 
 /**
@@ -1007,7 +1008,7 @@ static void editor_draw(context *ctx)
 
   if(editor->modified != editor->modified_prev)
   {
-    fix_caption(editor);
+    caption_set_modified(editor->modified);
     editor->modified_prev = editor->modified;
   }
 
@@ -3391,7 +3392,8 @@ static void editor_destroy(context *ctx)
   cursor_off();
   m_hide();
 
-  set_caption(mzx_world, NULL, NULL, false);
+  // Reset the caption
+  caption_set_world(mzx_world);
 
   // Clear any stored buffer data.
   if(buffer->robot->used)

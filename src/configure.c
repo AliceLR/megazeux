@@ -695,7 +695,6 @@ static const struct config_info default_options =
   "Stable",                     // update_branch_pin
 #endif /* !CONFIG_DEBYTECODE */
   UPDATE_AUTO_CHECK_SILENT,     // update_auto_check
-  0,                            // update_available
 #endif /* CONFIG_UPDATER */
 };
 
