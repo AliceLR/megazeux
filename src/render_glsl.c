@@ -90,23 +90,36 @@ enum
   NUM_TEXTURES
 };
 
-static inline int next_power_of_two(int v)
-{
-  int i;
-  for(i = 1; i <= 65536; i *= 2)
-    if(i >= v)
-      return i;
-
-  debug("Couldn't find power of two for %d\n", v);
-  return v;
-}
-
 enum
 {
   ATTRIB_POSITION,
   ATTRIB_TEXCOORD,
   ATTRIB_COLOR,
 };
+
+/**
+ * Some GL drivers attempt to run GLSL in software, resulting in extremely poor
+ * performance for MegaZeux. When one of the drivers in this blacklist is
+ * detected, video output will fall back to a different renderer instead.
+ */
+struct blacklist_entry
+{
+  const char *match_string; // Compare with GL_RENDERER output to detect driver.
+  const char *reason;       // Reason for blacklisting. Displays to the user.
+};
+
+static struct blacklist_entry auto_glsl_blacklist[] =
+{
+  { "llvmpipe",
+    "  MESA software renderer.\n"
+    "  Blacklisted due to poor performance on some machines.\n" },
+  { "Chromium",
+    "  Chromium redirects GL commands to other GL drivers. The destination\n"
+    "  often seems to be a software renderer, causing poor performance on\n"
+    "  some machines.\n" },
+};
+
+static int auto_glsl_blacklist_len = ARRAY_SIZE(auto_glsl_blacklist);
 
 static struct
 {
@@ -709,20 +722,33 @@ static bool glsl_set_video_mode(struct graphics_data *graphics,
 static bool glsl_auto_set_video_mode(struct graphics_data *graphics,
  int width, int height, int depth, bool fullscreen, bool resize)
 {
-  const char *renderer;
   struct glsl_render_data *render_data = graphics->render_data;
+  const char *renderer;
+  int i;
 
   if(glsl_set_video_mode(graphics, width, height, depth, fullscreen, resize))
   {
-
     // Driver blacklist. If the renderer is on the blacklist we want to fall
     // back on software as these renderers have disastrous GLSL performance.
 
     renderer = (const char *)glsl.glGetString(GL_RENDERER);
-    if(strstr(renderer, "llvmpipe"))
+
+    // Print the full renderer string for reference.
+    info("GL driver: %s\n\n", renderer);
+
+    for(i = 0; i < auto_glsl_blacklist_len; i++)
     {
-      warn("Detected MESA software renderer. Disabling glsl.\n");
-      return false;
+      if(strstr(renderer, auto_glsl_blacklist[i].match_string))
+      {
+        warn(
+          "Detected blacklisted driver: \"%s\". Disabling glsl. Reason:\n\n"
+          "%s\n\n"
+          "Run again with \"video_output=glsl\" to force-enable glsl.\n\n",
+          auto_glsl_blacklist[i].match_string,
+          auto_glsl_blacklist[i].reason
+        );
+        return false;
+      }
     }
 
     // Overwrite the original video_output now that we know glsl works
