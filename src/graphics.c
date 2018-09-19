@@ -1650,6 +1650,11 @@ static bool change_video_output(struct config_info *conf, const char *output)
 
 #endif
 
+boolean is_fullscreen(void)
+{
+  return graphics.fullscreen;
+}
+
 void toggle_fullscreen(void)
 {
   graphics.fullscreen = !graphics.fullscreen;

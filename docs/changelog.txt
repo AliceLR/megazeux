@@ -17,6 +17,8 @@ GIT - MZX 2.92
   inputs as dialog number boxes.
 + The board name in the caption now updates to reflect the
   current board while testing.
++ When enabled, the FPS display will now appear on the screen
+  in fullscreen mode.
 
 
 September 17th, 2018 - MZX 2.91f

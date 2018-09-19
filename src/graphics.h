@@ -300,6 +300,7 @@ Uint8 get_color_linear(Uint32 offset);
 void cursor_underline(void);
 
 bool set_video_mode(void);
+boolean is_fullscreen(void);
 void toggle_fullscreen(void);
 void resize_screen(Uint32 w, Uint32 h);
 void set_screen(struct char_element *src);

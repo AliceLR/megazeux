@@ -62,6 +62,87 @@ struct context_data
   struct context_spec functions;
 };
 
+#ifdef CONFIG_FPS
+#define FPS_HISTORY_SIZE 5
+#define FPS_INTERVAL 1000
+
+static double average_fps;
+
+/**
+ * Track the current speed MegaZeux is running in frames.
+ */
+
+static void update_fps(int current_ticks)
+{
+  static int fps_previous_ticks = -1;
+  static int fps_history[FPS_HISTORY_SIZE];
+  static int fps_history_count;
+  static int frames_counted;
+  int total_fps;
+  int min_fps;
+  int max_fps;
+  int i;
+
+  int delta_ticks = current_ticks - fps_previous_ticks;
+
+  if(fps_previous_ticks == -1)
+  {
+    fps_previous_ticks = current_ticks;
+    frames_counted = 0;
+    for(i = 0; i < FPS_HISTORY_SIZE; i++)
+      fps_history[i] = -1;
+  }
+  else
+
+  if(delta_ticks >= FPS_INTERVAL)
+  {
+    for(i = FPS_HISTORY_SIZE - 1; i >= 1; i--)
+    {
+      fps_history[i] = fps_history[i - 1];
+    }
+
+    fps_history[0] = frames_counted;
+    min_fps = fps_history[0];
+    max_fps = fps_history[0];
+    total_fps = 0;
+    fps_history_count = 0;
+
+    for(i = 0; i < FPS_HISTORY_SIZE; i++)
+    {
+      if(fps_history[i] > -1)
+      {
+        if(fps_history[i] > max_fps)
+          max_fps = fps_history[i];
+
+        if(fps_history[i] < min_fps)
+          min_fps = fps_history[i];
+
+        total_fps += fps_history[i];
+        fps_history_count++;
+      }
+    }
+    // Subtract off highest and lowest scores (outliers)
+    total_fps -= max_fps;
+    total_fps -= min_fps;
+    if(fps_history_count > 2)
+    {
+      average_fps =
+        1.0 * total_fps / (fps_history_count - 2) * (1000.0 / FPS_INTERVAL);
+
+      caption_set_fps(average_fps);
+    }
+    fps_previous_ticks += FPS_INTERVAL;
+
+    frames_counted = 0;
+  }
+
+  else
+  {
+    frames_counted++;
+  }
+}
+#endif
+
 #ifdef DEBUG
 #define CTX_NAME_MAX_SIZE 16
 
@@ -465,6 +546,18 @@ static void core_draw(core_context *root)
       sub_data->functions.draw((context *)sub);
     }
   }
+
+#ifdef CONFIG_FPS
+  if(is_fullscreen() && ctx_data->context_type != CTX_EDITOR)
+  {
+    // If we're in fullscreen mode, draw an onscreen FPS display.
+    char fpsbuf[32];
+    snprintf(fpsbuf, 32, "  %.2f  ", average_fps);
+
+    select_layer(UI_LAYER);
+    write_string(fpsbuf, 0, 0, 0x0f, false);
+  }
+#endif
 }
 
 /**
@@ -688,20 +781,6 @@ void core_run(core_context *root)
   int delta_ticks;
   int total_ticks;
 
-#ifdef CONFIG_FPS
-#define FPS_HISTORY_SIZE 5
-#define FPS_INTERVAL 1000
-  static double average_fps;
-  int fps_history[FPS_HISTORY_SIZE];
-  int fps_previous_ticks = -1;
-  int fps_history_count;
-  int frames_counted;
-  int total_fps;
-  int min_fps;
-  int max_fps;
-  int i;
-#endif
-
   if(root->ctx_stack_size <= 0)
     return;
 
@@ -766,63 +845,7 @@ void core_run(core_context *root)
     start_ticks = get_ticks();
 
 #ifdef CONFIG_FPS
-    delta_ticks = start_ticks - fps_previous_ticks;
-
-    if(fps_previous_ticks == -1)
-    {
-      fps_previous_ticks = start_ticks;
-      frames_counted = 0;
-      for(i = 0; i < FPS_HISTORY_SIZE; i++)
-        fps_history[i] = -1;
-    }
-    else
-
-    if(delta_ticks >= FPS_INTERVAL)
-    {
-      for(i = FPS_HISTORY_SIZE - 1; i >= 1; i--)
-      {
-        fps_history[i] = fps_history[i - 1];
-      }
-
-      fps_history[0] = frames_counted;
-      min_fps = fps_history[0];
-      max_fps = fps_history[0];
-      total_fps = 0;
-      fps_history_count = 0;
-
-      for(i = 0; i < FPS_HISTORY_SIZE; i++)
-      {
-        if(fps_history[i] > -1)
-        {
-          if(fps_history[i] > max_fps)
-            max_fps = fps_history[i];
-
-          if(fps_history[i] < min_fps)
-            min_fps = fps_history[i];
-
-          total_fps += fps_history[i];
-          fps_history_count++;
-        }
-      }
-      // Subtract off highest and lowest scores (outliers)
-      total_fps -= max_fps;
-      total_fps -= min_fps;
-      if(fps_history_count > 2)
-      {
-        average_fps =
-          1.0 * total_fps / (fps_history_count - 2) * (1000.0 / FPS_INTERVAL);
-
-        caption_set_fps(average_fps);
-      }
-      fps_previous_ticks += FPS_INTERVAL;
-
-      frames_counted = 0;
-    }
-
-    else
-    {
-      frames_counted++;
-    }
+    update_fps(start_ticks);
 #endif
 
     // This should not change at any point before the update function.
