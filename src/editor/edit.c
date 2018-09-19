@@ -3344,6 +3344,7 @@ static void editor_resume(context *ctx)
 
     synchronize_board_values(editor);
     fix_scroll(editor);
+    fix_caption(editor);
 
     if(editor->listening_mod_active)
     {

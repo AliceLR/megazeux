@@ -27,9 +27,12 @@
 #define MAX_CAPTION_SIZE 120
 #define CAPTION_SPACER " :: "
 
-static struct world *caption_world;
-static struct board *caption_board;
-static struct robot *caption_robot;
+static char caption_world[MAX_CAPTION_SIZE];
+static char caption_board[MAX_CAPTION_SIZE];
+static char caption_robot[MAX_CAPTION_SIZE];
+static int caption_robot_x;
+static int caption_robot_y;
+static boolean caption_editing;
 static boolean caption_updates;
 static boolean caption_modified;
 #ifdef CONFIG_FPS
@@ -40,7 +43,7 @@ static double caption_fps;
  * Strip a string for display in the caption.
  */
 
-static boolean strip_caption_string(char *output, char *input)
+static boolean strip_caption_string(char *output, const char *input)
 {
   int len = strlen(input);
   int i, j;
@@ -104,40 +107,24 @@ static inline void caption_append(char caption[MAX_CAPTION_SIZE],
 static void update_caption(void)
 {
   char caption[MAX_CAPTION_SIZE];
-  char stripped_name[MAX_CAPTION_SIZE];
   caption[0] = '\0';
 
   if(caption_modified)
     strcpy(caption, "*");
 
-  if(caption_robot)
-  {
-    if(!strip_caption_string(stripped_name, caption_robot->robot_name))
-      strcpy(stripped_name, "Untitled robot");
-
+  if(caption_robot[0])
     caption_append(caption, "%s (%i,%i)" CAPTION_SPACER,
-     stripped_name, caption_robot->xpos, caption_robot->ypos);
-  }
+     caption_robot, caption_robot_x, caption_robot_y);
 
-  if(caption_board)
-  {
-    if(!strip_caption_string(stripped_name, caption_board->board_name))
-      strcpy(stripped_name, "Untitled board");
+  if(caption_board[0])
+    caption_append(caption, "%s" CAPTION_SPACER, caption_board);
 
-    caption_append(caption, "%s" CAPTION_SPACER, stripped_name);
-  }
-
-  if(caption_world && caption_world->active)
-  {
-    if(!strip_caption_string(stripped_name, caption_world->name))
-      strcpy(stripped_name, "Untitled world");
-
-    caption_append(caption, "%s" CAPTION_SPACER, stripped_name);
-  }
+  if(caption_world[0])
+    caption_append(caption, "%s" CAPTION_SPACER, caption_world);
 
   caption_append(caption, "%s", get_default_caption());
 
-  if(caption_world && caption_world->editing)
+  if(caption_editing)
     caption_append(caption, " (editor)");
 
 #ifdef CONFIG_UPDATER
@@ -154,11 +141,56 @@ static void update_caption(void)
   set_window_caption(caption);
 }
 
+static void set_caption_world_string(struct world *mzx_world)
+{
+  if(mzx_world && mzx_world->active)
+  {
+    if(!strip_caption_string(caption_world, mzx_world->name))
+      strcpy(caption_world, "Untitled world");
+
+    caption_editing = mzx_world->editing;
+  }
+  else
+  {
+    caption_world[0] = '\0';
+    caption_editing = false;
+  }
+}
+
+static void set_caption_board_string(struct board *board)
+{
+  if(board)
+  {
+    if(!strip_caption_string(caption_board, board->board_name))
+      strcpy(caption_board, "Untitled board");
+  }
+  else
+  {
+    caption_board[0] = '\0';
+  }
+}
+
+static void set_caption_robot_string(struct robot *robot)
+{
+  if(robot)
+  {
+    if(!strip_caption_string(caption_robot, robot->robot_name))
+      strcpy(caption_robot, "Untitled robot");
+
+    caption_robot_x = robot->xpos;
+    caption_robot_y = robot->ypos;
+  }
+  else
+  {
+    caption_robot[0] = '\0';
+  }
+}
+
 void caption_set_world(struct world *mzx_world)
 {
-  caption_world = mzx_world;
-  caption_board = NULL;
-  caption_robot = NULL;
+  set_caption_world_string(mzx_world);
+  set_caption_board_string(NULL);
+  set_caption_robot_string(NULL);
   caption_modified = false;
   update_caption();
 }
@@ -166,17 +198,17 @@ void caption_set_world(struct world *mzx_world)
 #ifdef CONFIG_EDITOR
 void caption_set_board(struct world *mzx_world, struct board *board)
 {
-  caption_world = mzx_world;
-  caption_board = board;
-  caption_robot = NULL;
+  set_caption_world_string(mzx_world);
+  set_caption_board_string(board);
+  set_caption_robot_string(NULL);
   update_caption();
 }
 
 void caption_set_robot(struct world *mzx_world, struct robot *robot)
 {
-  caption_world = mzx_world;
-  caption_board = mzx_world->current_board;
-  caption_robot = robot;
+  set_caption_world_string(mzx_world);
+  set_caption_board_string(mzx_world->current_board);
+  set_caption_robot_string(robot);
   update_caption();
 }
 
