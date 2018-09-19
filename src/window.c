@@ -1113,7 +1113,8 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
         if(!mzx_world->conf.standalone_mode ||
          get_counter(mzx_world, "HELP_MENU", 0))
         {
-          help_system(mzx_world);
+          // FIXME context
+          help_system(NULL, mzx_world);
         }
         break;
       }

@@ -28,7 +28,6 @@
 #include "../data.h"
 #include "../event.h"
 #include "../graphics.h"
-#include "../helpsys.h"
 #include "../intake_num.h"
 #include "../util.h"
 #include "../window.h"

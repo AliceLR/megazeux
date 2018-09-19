@@ -740,7 +740,7 @@ static void core_update(core_context *root)
         if(allow_help_system(root))
         {
           m_show(); // FIXME
-          help_system(ctx->world);
+          help_system(ctx, ctx->world);
         }
         break;
       }

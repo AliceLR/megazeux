@@ -27,7 +27,6 @@
 #include "../core.h"
 #include "../event.h"
 #include "../graphics.h"
-#include "../helpsys.h"
 #include "../intake.h"
 #include "../window.h"
 

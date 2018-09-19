@@ -26,7 +26,6 @@
 #include "../core.h"
 #include "../data.h"
 #include "../event.h"
-#include "../helpsys.h"
 #include "../window.h"
 
 #include "sfx_edit.h"

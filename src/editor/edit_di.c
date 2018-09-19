@@ -30,7 +30,6 @@
 #include "../error.h"
 #include "../event.h"
 #include "../graphics.h"
-#include "../helpsys.h"
 #include "../idput.h"
 #include "../intake.h"
 #include "../robot.h"

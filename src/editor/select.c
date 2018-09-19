@@ -30,7 +30,6 @@
 #include "../graphics.h"
 #include "../idarray.h"
 #include "../idput.h"
-#include "../helpsys.h"
 #include "../window.h"
 #include "../world_struct.h"
 

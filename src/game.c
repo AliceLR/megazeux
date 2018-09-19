@@ -42,7 +42,6 @@
 #include "game_player.h"
 #include "game_update.h"
 #include "graphics.h"
-#include "helpsys.h"
 #include "platform.h"
 #include "robot.h"
 #include "util.h"
