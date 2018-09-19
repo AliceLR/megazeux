@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "caption.h"
 #include "core.h"
 #include "counter.h"
 #include "event.h"
@@ -938,8 +939,6 @@ void update1(struct world *mzx_world, boolean is_title, boolean *fadein)
       draw_debug_box(mzx_world, 60, 19, mzx_world->player_x,
        mzx_world->player_y, 1);
     }
-
-    update_screen();
   }
 }
 
@@ -1007,7 +1006,7 @@ boolean update2(struct world *mzx_world, boolean is_title, boolean *fadein)
   {
     int saved_player_last_dir = src_board->player_last_dir;
     int target_board = mzx_world->target_board;
-    int load_assets = 0;
+    boolean load_assets = false;
 
     // Aha.. TELEPORT or ENTRANCE.
     // Destroy message, bullets, spitfire?
@@ -1035,7 +1034,7 @@ boolean update2(struct world *mzx_world, boolean is_title, boolean *fadein)
     if(mzx_world->current_board_id != target_board)
     {
       change_board(mzx_world, target_board);
-      load_assets = 1;
+      load_assets = true;
     }
 
     src_board = mzx_world->current_board;
@@ -1218,6 +1217,12 @@ boolean update2(struct world *mzx_world, boolean is_title, boolean *fadein)
       // Load board's mod unless it's the same mod playing.
       load_game_module(mzx_world, src_board->mod_playing, true);
       change_board_load_assets(mzx_world);
+
+#ifdef CONFIG_EDITOR
+      // Also, update the caption to indicate the current board.
+      if(mzx_world->editing)
+        caption_set_board(mzx_world, mzx_world->current_board);
+#endif
     }
 
     mzx_world->target_where = TARGET_NONE;
