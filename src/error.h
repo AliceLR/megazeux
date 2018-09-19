@@ -28,7 +28,7 @@
 #define ERROR_OPT_RETRY     2
 #define ERROR_OPT_EXIT      4
 #define ERROR_OPT_OK        8
-#define ERROR_OPT_HELP     16
+#define ERROR_OPT_NO_HELP  16
 #define ERROR_OPT_SUPPRESS 32
 
 __M_BEGIN_DECLS

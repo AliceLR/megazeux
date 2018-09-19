@@ -1,7 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
- * Copyright (C) 2017 Alice Rowan (petrifiedrowan@gmail.com)
+ * Copyright (C) 2017 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -35,20 +35,13 @@
 // Error type names by type code:
 static const char *const error_type_names[] =
 {
-  " WARNING: ",		// 0
-  " ERROR: ",		// 1
-  " FATAL ERROR: ",	// 2
-  " CRITICAL ERROR: ",	// 3
+  " WARNING: ",         // 0
+  " ERROR: ",           // 1
+  " FATAL ERROR: ",     // 2
+  " CRITICAL ERROR: ",  // 3
 };
 
-
-//Call for an error OR a warning. Type=0 for a warning, 1 for a recoverable
-//error, 2 for a fatal error. Options are (bits set in options and returned
-//as action) FAIL=1, RETRY=2, EXIT TO DOS=4, OK=8, HELP=16 (OK is for usually
-//only for warnings) Code is a specialized error code for debugging purposes.
-//Type of 3 for a critical error.
-
-// SUPPRESS=32 should only be used in conjunction with error_message().
+// Note: ERROR_OPT_SUPPRESS should only be used by error_message().
 
 int error(const char *string, unsigned int type, unsigned int options,
  unsigned int code)
@@ -79,8 +72,9 @@ int error(const char *string, unsigned int type, unsigned int options,
     exit(scode);
   }
 
-  // Window
-  set_context(code >> 8);
+  // Use the high byte of the error code to link to a context in the help file.
+  set_context(((code >> 8) & 0xFF) + 700);
+
   m_hide();
   save_screen();
 
@@ -120,6 +114,12 @@ int error(const char *string, unsigned int type, unsigned int options,
   {
     write_string(", S for Suppress", t1, 13, 78, 0);
     t1 += 16;
+  }
+  // FIXME no context or mzx_world here
+  if(!(options & ERROR_OPT_NO_HELP) && false)
+  {
+    write_string(", F1 for Help", t1, 13, 78, 0);
+    t1 += 13;
   }
 
   draw_char('.', 78, t1, 13);
@@ -173,9 +173,11 @@ int error(const char *string, unsigned int type, unsigned int options,
         if(!(options & ERROR_OPT_SUPPRESS)) break;
         ret = ERROR_OPT_SUPPRESS;
         break;
-      case IKEY_h:
-        if(!(options & ERROR_OPT_HELP)) break;
+      case IKEY_F1:
+        if(options & ERROR_OPT_NO_HELP) break;
         // Call help
+        // FIXME context, no mzx_world here
+        //help_system(NULL, mzx_world);
         break;
       case IKEY_ESCAPE:
         // Escape. Order of options this applies to-
@@ -279,7 +281,8 @@ int error_message(enum error_code id, int parameter, const char *string)
       break;
 
     case E_WORLD_DECRYPT_WRITE_PROTECTED:
-      sprintf(error_mesg, "Cannot decrypt write-protected world; check permissions");
+      sprintf(error_mesg, "Cannot decrypt write-protected world; "
+       "check permissions");
       code = 0x0DD5;
       break;
 
@@ -294,7 +297,8 @@ int error_message(enum error_code id, int parameter, const char *string)
       break;
 
     case E_WORLD_IO_SAVING:
-      sprintf(error_mesg, "Error saving; file/directory may be write protected");
+      sprintf(error_mesg,
+       "Error saving; file/directory may be write protected");
       code = 0x0D01;
       break;
 
@@ -385,7 +389,8 @@ int error_message(enum error_code id, int parameter, const char *string)
       break;
 
     case E_NO_LAYER_RENDERER:
-      sprintf(error_mesg, "Current renderer lacks advanced graphical features; features disabled");
+      sprintf(error_mesg, "Current renderer lacks advanced graphical features; "
+       "features disabled");
       code = 0x2563;
       break;
 
@@ -482,8 +487,6 @@ int error_message(enum error_code id, int parameter, const char *string)
 
   return result;
 }
-
-
 
 int get_and_reset_error_count(void)
 {

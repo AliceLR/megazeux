@@ -90,7 +90,7 @@ static void out_of_memory_check(void *p, const char *file, int line)
   {
     snprintf(msgbuf, sizeof(msgbuf), "Out of memory in %s:%d", file, line);
     msgbuf[sizeof(msgbuf)-1] = '\0';
-    error(msgbuf, 2, 4, 0);
+    error(msgbuf, 2, ERROR_OPT_EXIT|ERROR_OPT_NO_HELP, 0);
   }
 }
 
