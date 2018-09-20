@@ -2586,7 +2586,6 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
 
   // Resize this array if necessary
   set_update_done(mzx_world);
-  mzx_world->slow_down = 0;
 
   // Find the player
   find_player(mzx_world);
@@ -3125,6 +3124,9 @@ void clear_world(struct world *mzx_world)
     mzx_world->output_file = NULL;
   }
 
+  mzx_world->current_cycle_odd = false;
+  mzx_world->current_cycle_frozen = false;
+  mzx_world->player_shoot_cooldown = 0;
   mzx_world->active = 0;
 
   audio_end_sample();

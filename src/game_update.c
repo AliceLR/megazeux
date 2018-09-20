@@ -43,6 +43,9 @@
 // directional move
 #define REPEAT_WAIT 2
 
+// Length of cooldown between player shots, including current frame.
+#define MAX_PLAYER_SHOT_COOLDOWN 2
+
 static void focus_on_player(struct world *mzx_world)
 {
   int player_x   = mzx_world->player_x;
@@ -122,7 +125,7 @@ static void update_player(struct world *mzx_world)
 // Slowed = 1 to not update lazwall or time
 // due to slowtime or freezetime
 
-static void update_variables(struct world *mzx_world, int slowed)
+static void update_variables(struct world *mzx_world)
 {
   struct board *src_board = mzx_world->current_board;
   int blind_dur = mzx_world->blind_dur;
@@ -133,43 +136,46 @@ static void update_variables(struct world *mzx_world, int slowed)
   int b_mesg_timer = src_board->b_mesg_timer;
   int invinco;
   int lazwall_start = src_board->lazwall_start;
-  int slow_down;
+  static boolean scroll_color_flip_flop;
 
-  // Toggle slow_down
-  mzx_world->slow_down ^= 1;
-  slow_down = mzx_world->slow_down;
+  // Toggle board cycle flip flop
+  if(!mzx_world->current_cycle_frozen)
+    mzx_world->current_cycle_odd = !mzx_world->current_cycle_odd;
 
-  // If odd, we...
-  if(!slow_down)
+  // Also toggle the scroll color flip flop
+  scroll_color_flip_flop = !scroll_color_flip_flop;
+
+  // Change scroll color
+  if(!scroll_color_flip_flop)
   {
-    // Change scroll color
     scroll_color++;
 
     if(scroll_color > 15)
       scroll_color = 7;
+  }
 
-    // Decrease time limit
-    if(!slowed)
+  // Decrease time limit (unless this is a frozen cycle)
+  if(!mzx_world->current_cycle_odd && !mzx_world->current_cycle_frozen)
+  {
+    int time_left = get_counter(mzx_world, "TIME", 0);
+    if(time_left > 0)
     {
-      int time_left = get_counter(mzx_world, "TIME", 0);
-      if(time_left > 0)
+      if(time_left == 1)
       {
-        if(time_left == 1)
-        {
-          // Out of time
-          dec_counter(mzx_world, "HEALTH", 10, 0);
-          set_mesg(mzx_world, "Out of time!");
-          play_sfx(mzx_world, SFX_OUT_OF_TIME);
-          // Reset time
-          set_counter(mzx_world, "TIME", src_board->time_limit, 0);
-        }
-        else
-        {
-          dec_counter(mzx_world, "TIME", 1, 0);
-        }
+        // Out of time
+        dec_counter(mzx_world, "HEALTH", 10, 0);
+        set_mesg(mzx_world, "Out of time!");
+        play_sfx(mzx_world, SFX_OUT_OF_TIME);
+        // Reset time
+        set_counter(mzx_world, "TIME", src_board->time_limit, 0);
+      }
+      else
+      {
+        dec_counter(mzx_world, "TIME", 1, 0);
       }
     }
   }
+
   // Decrease effect durations
   if(blind_dur > 0)
     mzx_world->blind_dur = blind_dur - 1;
@@ -207,15 +213,15 @@ static void update_variables(struct world *mzx_world, int slowed)
       id_chars[player_color] = Random(256);
     }
   }
+
   // Lazerwall start- cycle 0 to 7 then -7 to -1
-  if(!slowed)
+  if(!mzx_world->current_cycle_frozen)
   {
     if(((signed char)lazwall_start) < 7)
       src_board->lazwall_start = lazwall_start + 1;
     else
       src_board->lazwall_start = -7;
   }
-  // Done
 }
 
 static Uint32 get_viewport_layer(struct world *mzx_world)
@@ -359,8 +365,6 @@ __editor_maybe_static void draw_viewport(struct world *mzx_world)
 void update1(struct world *mzx_world, boolean is_title, boolean *fadein)
 {
   int time_remaining;
-  static int reload = 0;
-  static int slowed = 0; // Flips between 0 and 1 during slow_time
   char tmp_str[10];
   struct board *src_board = mzx_world->current_board;
   int volume = src_board->volume;
@@ -411,17 +415,17 @@ void update1(struct world *mzx_world, boolean is_title, boolean *fadein)
 
   // Slow_time- flip slowed
   if(mzx_world->freeze_time_dur)
-    slowed = 1;
+    mzx_world->current_cycle_frozen = true;
   else
 
   if(mzx_world->slow_time_dur)
-    slowed ^= 1;
+    mzx_world->current_cycle_frozen = !mzx_world->current_cycle_frozen;
   else
-    slowed = 0;
+    mzx_world->current_cycle_frozen = false;
 
   // Update
   focus_on_player(mzx_world);
-  update_variables(mzx_world, slowed);
+  update_variables(mzx_world);
   update_player(mzx_world); // Ice, fire, water, lava
 
   if(mzx_world->wind_dur > 0)
@@ -445,7 +449,7 @@ void update1(struct world *mzx_world, boolean is_title, boolean *fadein)
     if(get_key_status(keycode_internal_wrt_numlock, IKEY_SPACE)
      && mzx_world->bi_shoot_status)
     {
-      if((!reload) && (!src_board->player_attack_locked))
+      if(!mzx_world->player_shoot_cooldown && !src_board->player_attack_locked)
       {
         int move_dir = -1;
 
@@ -481,7 +485,7 @@ void update1(struct world *mzx_world, boolean is_title, boolean *fadein)
             play_sfx(mzx_world, SFX_SHOOT);
             shoot(mzx_world, mzx_world->player_x, mzx_world->player_y,
              move_dir, PLAYER_BULLET);
-            reload = 2;
+            mzx_world->player_shoot_cooldown = MAX_PLAYER_SHOT_COOLDOWN;
             src_board->player_last_dir =
              (src_board->player_last_dir & 0x0F) | (move_dir << 4);
           }
@@ -610,7 +614,9 @@ void update1(struct world *mzx_world, boolean is_title, boolean *fadein)
         }
       }
     }
-    if(reload) reload--;
+
+    if(mzx_world->player_shoot_cooldown)
+      mzx_world->player_shoot_cooldown--;
   }
 
   mzx_world->change_game_state = 0;
@@ -624,7 +630,7 @@ void update1(struct world *mzx_world, boolean is_title, boolean *fadein)
     board_width = src_board->board_width;
   }
 
-  if(!slowed)
+  if(!mzx_world->current_cycle_frozen)
   {
     int entrance = 1;
     int d_offset =
@@ -1008,7 +1014,7 @@ boolean update2(struct world *mzx_world, boolean is_title, boolean *fadein)
     int target_board = mzx_world->target_board;
     boolean load_assets = false;
 
-    // Aha.. TELEPORT or ENTRANCE.
+    // TELEPORT or ENTRANCE.
     // Destroy message, bullets, spitfire?
 
     if(mzx_world->clear_on_exit)
@@ -1029,7 +1035,7 @@ boolean update2(struct world *mzx_world, boolean is_title, boolean *fadein)
     mzx_world->under_player_id = (char)SPACE;
     mzx_world->under_player_param = 0;
     mzx_world->under_player_color = 7;
-    mzx_world->slow_down = 0;
+    mzx_world->current_cycle_odd = false;
 
     if(mzx_world->current_board_id != target_board)
     {

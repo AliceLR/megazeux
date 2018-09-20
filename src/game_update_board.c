@@ -90,15 +90,15 @@ void update_board(struct world *mzx_world)
   char *level_under_color = src_board->level_under_color;
   int board_width = src_board->board_width;
   int board_height = src_board->board_height;
-  int slow_down;
+  boolean slow_down;
   enum thing current_id;
   char current_param;
   char current_color;
   enum thing current_under_id;
   char *update_done = mzx_world->update_done;
 
-  // NOTE: slow_down already toggled.
-  slow_down = mzx_world->slow_down;
+  // NOTE: already toggled.
+  slow_down = mzx_world->current_cycle_odd;
 
   // Clear the status code of all robots
   for(i = 0; i < src_board->num_robots_active; i++)

@@ -151,6 +151,7 @@ struct world
   // Not part of world/save files, but runtime globals
   int player_x;
   int player_y;
+  int player_shoot_cooldown;
 
   // For moving the player between boards
   enum board_target target_where;
@@ -168,8 +169,12 @@ struct world
   // Current bomb type
   int bomb_type;
 
-  // Toggle for if the screen is in slow motion
-  int slow_down;
+  // Toggle used to skip the board update when slow time or
+  // freeze time are active.
+  boolean current_cycle_frozen;
+
+  // Toggle used by certain built-in mechanics that update every other cycle.
+  boolean current_cycle_odd;
 
   // For use in repeat delays for player movement
   int key_up_delay;
