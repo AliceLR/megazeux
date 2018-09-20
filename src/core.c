@@ -786,12 +786,17 @@ void core_run(core_context *root)
 
   do
   {
-    if(root->context_changed)
+    // Resume might trigger additional context changes.
+    while(root->context_changed)
     {
+      root->context_changed = false;
       print_core_stack((context *)root);
       force_release_all_keys();
       core_resume(root);
-      root->context_changed = false;
+
+      // Resume might also trigger an exit.
+      if(root->full_exit)
+        return;
     }
 
     core_draw(root);
@@ -848,15 +853,9 @@ void core_run(core_context *root)
     update_fps(start_ticks);
 #endif
 
-    // This should not change at any point before the update function.
-    if(root->full_exit)
-      error("Context code bug", 2, 4, 0x2B02);
-
-    // This should not change at any point before the update function.
-    if(root->context_changed)
-      error("Context code bug", 2, 4, 0x2B03);
-
-    core_update(root);
+    // These might have been triggered during the draw.
+    if(!root->full_exit && !root->context_changed)
+      core_update(root);
   }
   while(!root->full_exit && root->ctx_stack_size > 0);
 }
