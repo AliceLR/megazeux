@@ -17,6 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdarg.h>
+
 #include "caption.h"
 #include "graphics.h"
 #include "world_struct.h"
@@ -33,8 +35,10 @@ static char caption_robot[MAX_CAPTION_SIZE];
 static int caption_robot_x;
 static int caption_robot_y;
 static boolean caption_editing;
-static boolean caption_updates;
 static boolean caption_modified;
+#ifdef CONFIG_UPDATER
+static boolean caption_updates;
+#endif
 #ifdef CONFIG_FPS
 static double caption_fps;
 #endif
