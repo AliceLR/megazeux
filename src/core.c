@@ -460,15 +460,27 @@ void destroy_context(context *ctx)
 }
 
 /**
+ * Find out if the given context is a particular context.
+ */
+
+boolean is_context(context *ctx, enum context_type context_type)
+{
+  if(!ctx || !ctx->internal_data)
+    error("Context code bug", 2, ERROR_OPT_EXIT, 0x2B02);
+
+  return (ctx->internal_data->context_type == context_type);
+}
+
+/**
  * Set the framerate mode for the current context.
  */
 
 void set_context_framerate_mode(context *ctx, enum framerate_type framerate)
 {
-  if(ctx->internal_data->framerate != framerate)
-  {
-    ctx->internal_data->framerate = framerate;
-  }
+  if(!ctx || !ctx->internal_data)
+    error("Context code bug", 2, ERROR_OPT_EXIT, 0x2B03);
+
+  ctx->internal_data->framerate = framerate;
 }
 
 /**

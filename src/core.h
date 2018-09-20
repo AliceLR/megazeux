@@ -192,6 +192,16 @@ CORE_LIBSPEC void create_subcontext(subcontext *sub, context *parent,
 CORE_LIBSPEC void destroy_context(context *ctx);
 
 /**
+ * Determine if the given context matches an expected type.
+ *
+ * @param ctx           A context
+ * @param context_type  A context type
+ * @return true if the context has the given context type, otherwise false.
+ */
+
+boolean is_context(context *ctx, enum context_type context_type);
+
+/**
  * Get config information from a particular context.
  */
 
