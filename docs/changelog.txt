@@ -1,3 +1,8 @@
+
++ Fixed a bug where creating a string MZM would not correctly
+  set the string's length for preexisting strings.
+
+
 September 17th, 2018 - MZX 2.91f
 
 A bugfix release focusing primarily on renderers, the 3DS and

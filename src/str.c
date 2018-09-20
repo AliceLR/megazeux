@@ -1104,6 +1104,7 @@ struct string *new_string(struct world *mzx_world, const char *name,
 
   str = find_string(mzx_world, name, &next);
   force_string_length(mzx_world, name, next, &str, &length);
+  str->length = length;
   return str;
 }
 
