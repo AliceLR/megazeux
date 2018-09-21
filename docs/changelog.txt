@@ -1,6 +1,8 @@
 
 + Fixed a bug where creating a string MZM would not correctly
   set the string's length for preexisting strings.
++ Fixed a bug where loading robot source code from a string
+  wouldn't work correctly with the robot debugger.
 
 
 September 17th, 2018 - MZX 2.91f
