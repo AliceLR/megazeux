@@ -47,6 +47,7 @@ int take_key(struct world *mzx_world, int color);
 int give_key(struct world *mzx_world, int color);
 void grab_item(struct world *mzx_world, int item_x, int item_y, int src_dir);
 void move_player(struct world *mzx_world, int dir);
+void entrance(struct world *mzx_world, int x, int y);
 
 __M_END_DECLS
 

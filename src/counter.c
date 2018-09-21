@@ -3148,7 +3148,7 @@ static int hurt_player(struct world *mzx_world, int value)
         player_x = player_restart_x;
         player_y = player_restart_y;
         id_place(mzx_world, player_x, player_y, PLAYER, 0, 0);
-        mzx_world->was_zapped = 1;
+        mzx_world->was_zapped = true;
         mzx_world->player_x = player_x;
         mzx_world->player_y = player_y;
       }

@@ -3189,7 +3189,7 @@ void clear_global_data(struct world *mzx_world)
   memset(mzx_world->custom_sfx, 0, NUM_SFX * SFX_SIZE);
 
   mzx_world->bomb_type = 1;
-  mzx_world->dead = 0;
+  mzx_world->dead = false;
 }
 
 void default_scroll_values(struct world *mzx_world)

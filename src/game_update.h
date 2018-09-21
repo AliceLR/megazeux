@@ -26,13 +26,9 @@ __M_BEGIN_DECLS
 
 #include "world_struct.h"
 
-void update1(struct world *mzx_world, boolean is_title, boolean *fadein);
+void update_world(struct world *mzx_world, boolean is_title);
 boolean update2(struct world *mzx_world, boolean is_title, boolean *fadein);
 void update_board(struct world *mzx_world);
-
-#ifdef CONFIG_EDITOR
-CORE_LIBSPEC void draw_viewport(struct world *src_board);
-#endif
 
 __M_END_DECLS
 

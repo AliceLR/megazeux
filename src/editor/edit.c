@@ -29,7 +29,6 @@
 #include "../event.h"
 #include "../game.h"
 #include "../game_player.h"
-#include "../game_update.h"
 #include "../graphics.h"
 #include "../idarray.h"
 #include "../idput.h"
@@ -638,7 +637,7 @@ static void view_board_draw(context *ctx)
   struct world *mzx_world = ctx->world;
 
   blank_layers();
-  draw_viewport(mzx_world);
+  draw_viewport(mzx_world->current_board, mzx_world->edge_color);
   draw_game_window(mzx_world->current_board, vb->x, vb->y);
 }
 

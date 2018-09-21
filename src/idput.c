@@ -552,3 +552,108 @@ void draw_game_window(struct board *src_board, int array_x, int array_y)
     }
   }
 }
+
+void draw_viewport(struct board *src_board, int edge_color)
+{
+  int i, i2;
+  int viewport_x = src_board->viewport_x;
+  int viewport_y = src_board->viewport_y;
+  int viewport_width = src_board->viewport_width;
+  int viewport_height = src_board->viewport_height;
+
+  // Draw the current viewport
+  if(viewport_y > 1)
+  {
+    // Top
+    for(i = 0; i < viewport_y; i++)
+      fill_line_ext(80, 0, i, 177, edge_color, 0, 0);
+  }
+
+  if((viewport_y + viewport_height) < 24)
+  {
+    // Bottom
+    for(i = viewport_y + viewport_height + 1; i < 25; i++)
+      fill_line_ext(80, 0, i, 177, edge_color, 0, 0);
+  }
+
+  if(viewport_x > 1)
+  {
+    // Left
+    for(i = 0; i < 25; i++)
+      fill_line_ext(viewport_x, 0, i, 177, edge_color, 0, 0);
+  }
+
+  if((viewport_x + viewport_width) < 79)
+  {
+    // Right
+    i2 = viewport_x + viewport_width + 1;
+    for(i = 0; i < 25; i++)
+    {
+      fill_line_ext(80 - i2, i2, i, 177, edge_color, 0, 0);
+    }
+  }
+
+  // Draw the box
+  if(viewport_x > 0)
+  {
+    // left
+    for(i = 0; i < viewport_height; i++)
+    {
+      draw_char_ext('\xba', edge_color, viewport_x - 1,
+       i + viewport_y, 0, 0);
+    }
+
+    if(viewport_y > 0)
+    {
+      draw_char_ext('\xc9', edge_color, viewport_x - 1,
+       viewport_y - 1, 0, 0);
+    }
+  }
+  if((viewport_x + viewport_width) < 80)
+  {
+    // right
+    for(i = 0; i < viewport_height; i++)
+    {
+      draw_char_ext('\xba', edge_color,
+       viewport_x + viewport_width, i + viewport_y, 0, 0);
+    }
+
+    if(viewport_y > 0)
+    {
+      draw_char_ext('\xbb', edge_color,
+       viewport_x + viewport_width, viewport_y - 1, 0, 0);
+    }
+  }
+
+  if(viewport_y > 0)
+  {
+    // top
+    for(i = 0; i < viewport_width; i++)
+    {
+      draw_char_ext('\xcd', edge_color, viewport_x + i,
+       viewport_y - 1, 0, 0);
+    }
+  }
+
+  if((viewport_y + viewport_height) < 25)
+  {
+    // bottom
+    for(i = 0; i < viewport_width; i++)
+    {
+      draw_char_ext('\xcd', edge_color, viewport_x + i,
+       viewport_y + viewport_height, 0, 0);
+    }
+
+    if(viewport_x > 0)
+    {
+      draw_char_ext('\xc8', edge_color, viewport_x - 1,
+       viewport_y + viewport_height, 0, 0);
+    }
+
+    if((viewport_x + viewport_width) < 80)
+    {
+      draw_char_ext('\xbc', edge_color, viewport_x + viewport_width,
+       viewport_y + viewport_height, 0, 0);
+    }
+  }
+}

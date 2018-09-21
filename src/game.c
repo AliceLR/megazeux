@@ -334,7 +334,7 @@ static void game_draw(context *ctx)
   }
 
   set_context_framerate_mode(ctx, FRAMERATE_MZX_SPEED);
-  update1(ctx->world, game->is_title, &(game->fade_in));
+  update_world(ctx->world, game->is_title);
 }
 
 // Forward declaration since this is used for both game and title screen.

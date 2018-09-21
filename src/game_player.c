@@ -155,7 +155,7 @@ void player_cheat_give_all(struct world *mzx_world)
   set_counter(mzx_world, "SCORE", 0, 1);
   set_counter(mzx_world, "TIME", cur_board->time_limit, 1);
 
-  mzx_world->dead = 0;
+  mzx_world->dead = false;
 
   for(i = 0; i < 16; i++)
   {
@@ -1153,20 +1153,7 @@ void move_player(struct world *mzx_world, int dir)
     if(d_flag & A_ENTRANCE)
     {
       // Entrance
-      int d_board = src_board->level_param[d_offset];
-      play_sfx(mzx_world, SFX_ENTRANCE);
-      // Can move?
-      if((d_board != mzx_world->current_board_id) &&
-       (d_board < mzx_world->num_boards) &&
-       (mzx_world->board_list[d_board]))
-      {
-        // Go to board t1 AFTER showing update
-        mzx_world->target_board = d_board;
-        mzx_world->target_where = TARGET_ENTRANCE;
-        mzx_world->target_color = src_board->level_color[d_offset];
-        mzx_world->target_id = d_id;
-      }
-
+      entrance(mzx_world, new_x, new_y);
       place_player(mzx_world, new_x, new_y, dir);
       return;
     }
@@ -1252,6 +1239,43 @@ void move_player(struct world *mzx_world, int dir)
         }
       }
     }
+  }
+}
+
+// Attempt to use an entrance located at the given position.
+void entrance(struct world *mzx_world, int x, int y)
+{
+  struct board *cur_board = mzx_world->current_board;
+  int offset = xy_to_offset(cur_board, x, y);
+  enum thing id;
+  int color;
+  int board;
+
+  if(cur_board->level_id[offset] == PLAYER)
+  {
+    id = cur_board->level_under_id[offset];
+    color = cur_board->level_under_color[offset];
+    board = cur_board->level_under_param[offset];
+  }
+  else
+  {
+    id = cur_board->level_id[offset];
+    color = cur_board->level_color[offset];
+    board = cur_board->level_param[offset];
+  }
+
+  if(!(flags[id] & A_ENTRANCE))
+    return;
+
+  play_sfx(mzx_world, SFX_ENTRANCE);
+
+  if((board != mzx_world->current_board_id) &&
+   (board < mzx_world->num_boards) && mzx_world->board_list[board])
+  {
+    mzx_world->target_board = board;
+    mzx_world->target_where = TARGET_ENTRANCE;
+    mzx_world->target_color = color;
+    mzx_world->target_id = id;
   }
 }
 

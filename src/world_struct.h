@@ -65,7 +65,6 @@ struct world
   int pl_saved_y[8];
   int pl_saved_board[8];
   int saved_pl_color;
-  int was_zapped;
   int under_player_id;
   int under_player_color;
   int under_player_param;
@@ -163,11 +162,11 @@ struct world
   enum thing target_d_id;
   int target_d_color;
 
-  // Indiciates if the player is dead
-  int dead;
-
   // Current bomb type
   int bomb_type;
+
+  // Indiciates if the player is dead
+  boolean dead;
 
   // Toggle used to skip the board update when slow time or
   // freeze time are active.
@@ -178,6 +177,12 @@ struct world
 
   // Did the player just move?
   boolean player_moved;
+
+  // Was the player on an entrance before the board scan?
+  boolean player_was_on_entrance;
+
+  // Was the player damaged while 'restart if hurt' is active?
+  boolean was_zapped;
 
   // For use in repeat delays for player movement
   int key_up_delay;
