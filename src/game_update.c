@@ -569,12 +569,12 @@ static void end_game(struct world *mzx_world)
       mzx_world->target_y = endgame_y;
     }
 
-    // Clear "endgame" part
-    // FIXME this used to be a global in DOS versions, and the behavior was
-    // that the endgame board would be permanently disabled after this teleport.
-    // We probably don't want that behavior for port worlds (this regression was
-    // added in 2.80X) but it might be worth restoring for old games.
-    endgame_board = NO_ENDGAME_BOARD;
+    // In pre-port versions, the endgame board would be disabled after this
+    // teleport. This was changed in 2.80: due to a bug, the endgame board
+    // would never be disabled, in effect preventing the game over state from
+    // ever occurring. We like the new behavior better, but DOS worlds may not.
+    if(mzx_world->version < VERSION_PORT)
+      mzx_world->endgame_board = NO_ENDGAME_BOARD;
 
     // Give one more life with minimal health
     set_counter(mzx_world, "LIVES", 1, 0);
