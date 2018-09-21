@@ -3,6 +3,7 @@
  * Copyright (C) 1996 Greg Janson
  * Copyright (C) 1999 Charles Goetzman
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
+ * Copyright (C) 2018 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -44,8 +45,8 @@ void player_cheat_zap(struct world *mzx_world);
 void hurt_player(struct world *mzx_world, enum thing damage_src);
 int take_key(struct world *mzx_world, int color);
 int give_key(struct world *mzx_world, int color);
-int grab_item(struct world *mzx_world, int offset, int dir);
-int move_player(struct world *mzx_world, int dir);
+void grab_item(struct world *mzx_world, int item_x, int item_y, int src_dir);
+void move_player(struct world *mzx_world, int dir);
 
 __M_END_DECLS
 

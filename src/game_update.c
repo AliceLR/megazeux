@@ -78,15 +78,42 @@ static void update_player(struct world *mzx_world)
 
   switch(under_id)
   {
+    case N_WATER:
+    {
+      move_player(mzx_world, 0);
+      return;
+    }
+
+    case S_WATER:
+    {
+      move_player(mzx_world, 1);
+      return;
+    }
+
+    case E_WATER:
+    {
+      move_player(mzx_world, 2);
+      return;
+    }
+
+    case W_WATER:
+    {
+      move_player(mzx_world, 3);
+      return;
+    }
+
     case ICE:
     {
       int player_last_dir = src_board->player_last_dir;
       if(player_last_dir & 0x0F)
       {
-        if(move_player(mzx_world, (player_last_dir & 0x0F) - 1))
+        move_player(mzx_world, (player_last_dir & 0x0F) - 1);
+
+        // FIXME has_context_changed
+        if(!mzx_world->player_moved)
           src_board->player_last_dir = player_last_dir & 0xF0;
       }
-      break;
+      return;
     }
 
     case LAVA:
@@ -113,12 +140,9 @@ static void update_player(struct world *mzx_world)
 
     default:
     {
-      move_player(mzx_world, under_id - 21);
-      break;
+      return;
     }
   }
-
-  find_player(mzx_world);
 }
 
 // Updates game variables
@@ -438,7 +462,6 @@ void update1(struct world *mzx_world, boolean is_title, boolean *fadein)
       src_board->player_last_dir =
        (src_board->player_last_dir & 0xF0) + wind_dir;
       move_player(mzx_world, wind_dir);
-      find_player(mzx_world);
     }
   }
 
@@ -674,8 +697,7 @@ void update1(struct world *mzx_world, boolean is_title, boolean *fadein)
   }
   else
   {
-    // Place the player and clean up clones
-    // just in case the player was moved while the game was slowed
+    // Find the player in case the player was moved while the game was slowed
     find_player(mzx_world);
   }
 

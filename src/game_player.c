@@ -3,6 +3,7 @@
  * Copyright (C) 1996 Greg Janson
  * Copyright (C) 1999 Charles Goetzman
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
+ * Copyright (C) 2018 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -220,6 +221,55 @@ void player_cheat_zap(struct world *mzx_world)
     place_at_xy(mzx_world, SPACE, 7, 0,
       player_x, player_y + 1);
   }
+}
+
+void hurt_player(struct world *mzx_world, enum thing damage_src)
+{
+  int amount = id_dmg[damage_src];
+  dec_counter(mzx_world, "health", amount, 0);
+  play_sfx(mzx_world, SFX_HURT);
+  set_mesg(mzx_world, "Ouch!");
+}
+
+int take_key(struct world *mzx_world, int color)
+{
+  int i;
+  char *keys = mzx_world->keys;
+
+  color &= 15;
+
+  for(i = 0; i < NUM_KEYS; i++)
+  {
+    if(keys[i] == color) break;
+  }
+
+  if(i < NUM_KEYS)
+  {
+    keys[i] = NO_KEY;
+    return 0;
+  }
+
+  return 1;
+}
+
+// Give a key. Returns non-0 if no room.
+int give_key(struct world *mzx_world, int color)
+{
+  int i;
+  char *keys = mzx_world->keys;
+
+  color &= 15;
+
+  for(i = 0; i < NUM_KEYS; i++)
+    if(keys[i] == NO_KEY) break;
+
+  if(i < NUM_KEYS)
+  {
+    keys[i] = color;
+    return 0;
+  }
+
+  return 1;
 }
 
 static void give_potion(struct world *mzx_world, enum potion type)
@@ -442,205 +492,181 @@ static void give_potion(struct world *mzx_world, enum potion type)
   }
 }
 
-void hurt_player(struct world *mzx_world, enum thing damage_src)
+static void open_chest(struct world *mzx_world, int chest_x, int chest_y)
 {
-  int amount = id_dmg[damage_src];
-  dec_counter(mzx_world, "health", amount, 0);
-  play_sfx(mzx_world, SFX_HURT);
-  set_mesg(mzx_world, "Ouch!");
-}
+  struct board *cur_board = mzx_world->current_board;
+  int offset = xy_to_offset(cur_board, chest_x, chest_y);
+  char param = cur_board->level_param[offset];
 
-int take_key(struct world *mzx_world, int color)
-{
-  int i;
-  char *keys = mzx_world->keys;
+  enum chest_contents item_type = (param & 15);
+  int item_value = (param & 240) >> 4;
 
-  color &= 15;
-
-  for(i = 0; i < NUM_KEYS; i++)
+  if(item_type == ITEM_NONE)
   {
-    if(keys[i] == color) break;
+    play_sfx(mzx_world, SFX_EMPTY_CHEST);
+    return;
   }
 
-  if(i < NUM_KEYS)
-  {
-    keys[i] = NO_KEY;
-    return 0;
-  }
+  // Act upon contents
+  play_sfx(mzx_world, SFX_CHEST);
 
-  return 1;
+  switch(item_type)
+  {
+    case ITEM_NONE: // Nothing
+      break;
+
+    case ITEM_KEY: // Key
+    {
+      if(give_key(mzx_world, item_value))
+      {
+        set_mesg(mzx_world,
+         "Inside the chest is a key, but you can't carry any more keys!");
+        return;
+      }
+      set_mesg(mzx_world, "Inside the chest you find a key.");
+      break;
+    }
+
+    case ITEM_COINS: // Coins
+    {
+      item_value *= 5;
+      set_3_mesg(mzx_world, "Inside the chest you find ",
+       item_value, " coins.");
+      inc_counter(mzx_world, "COINS", item_value, 0);
+      inc_counter(mzx_world, "SCORE", item_value, 0);
+      break;
+    }
+
+    case ITEM_LIFE: // Life
+    {
+      if(item_value > 1)
+      {
+        set_3_mesg(mzx_world, "Inside the chest you find ",
+         item_value, " free lives.");
+      }
+      else
+      {
+        set_mesg(mzx_world, "Inside the chest you find 1 free life.");
+      }
+      inc_counter(mzx_world, "LIVES", item_value, 0);
+      break;
+    }
+
+    case ITEM_AMMO: // Ammo
+    {
+      item_value *= 5;
+      set_3_mesg(mzx_world, "Inside the chest you find ",
+       item_value, " rounds of ammo.");
+      inc_counter(mzx_world, "AMMO", item_value, 0);
+      break;
+    }
+
+    case ITEM_GEMS: // Gems
+    {
+      item_value *= 5;
+      set_3_mesg(mzx_world, "Inside the chest you find ", item_value, " gems.");
+      inc_counter(mzx_world, "GEMS", item_value, 0);
+      inc_counter(mzx_world, "SCORE", item_value, 0);
+      break;
+    }
+
+    case ITEM_HEALTH: // Health
+    {
+      item_value *= 5;
+      set_3_mesg(mzx_world, "Inside the chest you find ",
+       item_value, " health.");
+      inc_counter(mzx_world, "HEALTH", item_value, 0);
+      break;
+    }
+
+    case ITEM_POTION: // Potion
+    {
+      int answer;
+      m_show();
+      answer = confirm(mzx_world,
+       "Inside the chest you find a potion. Drink it?");
+
+      if(answer)
+        return;
+
+      give_potion(mzx_world, (enum potion)item_value);
+      break;
+    }
+
+    case ITEM_RING: // Ring
+    {
+      int answer;
+      m_show();
+      answer = confirm(mzx_world,
+       "Inside the chest you find a ring. Wear it?");
+
+      if(answer)
+        return;
+
+      give_potion(mzx_world, (enum potion)item_value);
+      break;
+    }
+
+    case ITEM_LOBOMBS: // Lobombs
+    {
+      item_value *= 5;
+      set_3_mesg(mzx_world, "Inside the chest you find ",
+       item_value, " low strength bombs.");
+      inc_counter(mzx_world, "LOBOMBS", item_value, 0);
+      break;
+    }
+
+    case ITEM_HIBOMBS: // Hibombs
+    {
+      item_value *= 5;
+      set_3_mesg(mzx_world, "Inside the chest you find ", item_value,
+       " high strength bombs.");
+      inc_counter(mzx_world, "HIBOMBS", item_value, 0);
+      break;
+    }
+  }
+  // Empty chest
+  cur_board->level_param[offset] = 0;
 }
 
-// Give a key. Returns non-0 if no room.
-int give_key(struct world *mzx_world, int color)
+static void place_player(struct world *mzx_world, int x, int y, int dir)
 {
-  int i;
-  char *keys = mzx_world->keys;
-
-  color &= 15;
-
-  for(i = 0; i < NUM_KEYS; i++)
-    if(keys[i] == NO_KEY) break;
-
-  if(i < NUM_KEYS)
-  {
-    keys[i] = color;
-    return 0;
-  }
-
-  return 1;
-}
-
-int grab_item(struct world *mzx_world, int offset, int dir)
-{
-  // Dir is for transporter
   struct board *src_board = mzx_world->current_board;
-  enum thing id = (enum thing)src_board->level_id[offset];
-  char param = src_board->level_param[offset];
-  char color = src_board->level_color[offset];
-  int remove = 0;
+  if((mzx_world->player_x != x) || (mzx_world->player_y != y))
+  {
+    id_remove_top(mzx_world, mzx_world->player_x, mzx_world->player_y);
+  }
+  id_place(mzx_world, x, y, PLAYER, 0, 0);
+  mzx_world->player_x = x;
+  mzx_world->player_y = y;
+  src_board->player_last_dir =
+   (src_board->player_last_dir & 240) | (dir + 1);
+  mzx_world->player_moved = true;
+}
+
+// mzx_world->player_moved will be true if the player moved, otherwise false.
+// This function is guaranteed to keep the player position correctly updated;
+// using find_player after using this function is not necessary.
+void grab_item(struct world *mzx_world, int item_x, int item_y, int src_dir)
+{
+  // "src_dir" is the direction from the player to this object.
+  struct board *cur_board = mzx_world->current_board;
+  int offset = xy_to_offset(cur_board, item_x, item_y);
+  enum thing id = (enum thing)cur_board->level_id[offset];
+  char param = cur_board->level_param[offset];
+  char color = cur_board->level_color[offset];
+  boolean remove_item = false;
 
   char tmp[81];
 
+  mzx_world->player_moved = false;
+
   switch(id)
   {
-    case CHEST: // Chest
+    case CHEST:
     {
-      enum chest_contents item_type = (param & 15);
-      int item_value = (param & 240) >> 4;
-
-      if(item_type == ITEM_NONE)
-      {
-        play_sfx(mzx_world, SFX_EMPTY_CHEST);
-        break;
-      }
-
-      // Act upon contents
-      play_sfx(mzx_world, SFX_CHEST);
-
-      switch(item_type)
-      {
-        case ITEM_NONE: // Nothing
-          break;
-
-        case ITEM_KEY: // Key
-        {
-          if(give_key(mzx_world, item_value))
-          {
-            set_mesg(mzx_world, "Inside the chest is a key, "
-             "but you can't carry any more keys!");
-            return 0;
-          }
-          set_mesg(mzx_world, "Inside the chest you find a key.");
-          break;
-        }
-
-        case ITEM_COINS: // Coins
-        {
-          item_value *= 5;
-          set_3_mesg(mzx_world, "Inside the chest you find ",
-           item_value, " coins.");
-          inc_counter(mzx_world, "COINS", item_value, 0);
-          inc_counter(mzx_world, "SCORE", item_value, 0);
-          break;
-        }
-
-        case ITEM_LIFE: // Life
-        {
-          if(item_value > 1)
-          {
-            set_3_mesg(mzx_world, "Inside the chest you find ",
-             item_value, " free lives.");
-          }
-          else
-          {
-            set_mesg(mzx_world,
-             "Inside the chest you find 1 free life.");
-          }
-          inc_counter(mzx_world, "LIVES", item_value, 0);
-          break;
-        }
-
-        case ITEM_AMMO: // Ammo
-        {
-          item_value *= 5;
-          set_3_mesg(mzx_world,
-           "Inside the chest you find ", item_value, " rounds of ammo.");
-          inc_counter(mzx_world, "AMMO", item_value, 0);
-          break;
-        }
-
-        case ITEM_GEMS: // Gems
-        {
-          item_value *= 5;
-          set_3_mesg(mzx_world, "Inside the chest you find ",
-           item_value, " gems.");
-          inc_counter(mzx_world, "GEMS", item_value, 0);
-          inc_counter(mzx_world, "SCORE", item_value, 0);
-          break;
-        }
-
-        case ITEM_HEALTH: // Health
-        {
-          item_value *= 5;
-          set_3_mesg(mzx_world, "Inside the chest you find ",
-           item_value, " health.");
-          inc_counter(mzx_world, "HEALTH", item_value, 0);
-          break;
-        }
-
-        case ITEM_POTION: // Potion
-        {
-          int answer;
-          m_show();
-          answer = confirm(mzx_world,
-           "Inside the chest you find a potion. Drink it?");
-
-          if(answer)
-            return 0;
-
-          src_board->level_param[offset] = 0;
-          give_potion(mzx_world, (enum potion)item_value);
-          break;
-        }
-
-        case ITEM_RING: // Ring
-        {
-          int answer;
-
-          m_show();
-
-          answer = confirm(mzx_world,
-           "Inside the chest you find a ring. Wear it?");
-
-          if(answer)
-            return 0;
-
-          src_board->level_param[offset] = 0;
-          give_potion(mzx_world, (enum potion)item_value);
-          break;
-        }
-
-        case ITEM_LOBOMBS: // Lobombs
-        {
-          item_value *= 5;
-          set_3_mesg(mzx_world, "Inside the chest you find ", item_value,
-           " low strength bombs.");
-          inc_counter(mzx_world, "LOBOMBS", item_value, 0);
-          break;
-        }
-
-        case ITEM_HIBOMBS: // Hibombs
-        {
-          item_value *= 5;
-          set_3_mesg(mzx_world, "Inside the chest you find ", item_value,
-           " high strength bombs.");
-          inc_counter(mzx_world, "HIBOMBS", item_value, 0);
-          break;
-        }
-      }
-      // Empty chest
-      src_board->level_param[offset] = 0;
+      // Chest
+      open_chest(mzx_world, item_x, item_y);
       break;
     }
 
@@ -658,7 +684,7 @@ int grab_item(struct world *mzx_world, int offset, int dir)
         inc_counter(mzx_world, "HEALTH", 1, 0);
 
       inc_counter(mzx_world, "SCORE", 1, 0);
-      remove = 1;
+      remove_item = true;
       break;
     }
 
@@ -666,7 +692,7 @@ int grab_item(struct world *mzx_world, int offset, int dir)
     {
       play_sfx(mzx_world, SFX_HEALTH);
       inc_counter(mzx_world, "HEALTH", param, 0);
-      remove = 1;
+      remove_item = true;
       break;
     }
 
@@ -674,7 +700,7 @@ int grab_item(struct world *mzx_world, int offset, int dir)
     case POTION:
     {
       give_potion(mzx_world, (enum potion)param);
-      remove = 1;
+      remove_item = true;
       break;
     }
 
@@ -692,7 +718,7 @@ int grab_item(struct world *mzx_world, int offset, int dir)
       set_mesg(mzx_world, "Energize!");
       send_robot_def(mzx_world, 0, LABEL_INVINCO);
       set_counter(mzx_world, "INVINCO", 113, 0);
-      remove = 1;
+      remove_item = true;
       break;
     }
 
@@ -700,13 +726,13 @@ int grab_item(struct world *mzx_world, int offset, int dir)
     {
       play_sfx(mzx_world, SFX_AMMO);
       inc_counter(mzx_world, "AMMO", param, 0);
-      remove = 1;
+      remove_item = true;
       break;
     }
 
     case BOMB:
     {
-      if(src_board->collect_bombs)
+      if(cur_board->collect_bombs)
       {
         if(param)
         {
@@ -718,14 +744,14 @@ int grab_item(struct world *mzx_world, int offset, int dir)
           play_sfx(mzx_world, SFX_LO_BOMB);
           inc_counter(mzx_world, "LOBOMBS", 1, 0);
         }
-        remove = 1;
+        remove_item = true;
       }
       else
       {
         // Light bomb
         play_sfx(mzx_world, SFX_PLACE_LO_BOMB);
-        src_board->level_id[offset] = 37;
-        src_board->level_param[offset] = param << 7;
+        cur_board->level_id[offset] = 37;
+        cur_board->level_param[offset] = param << 7;
       }
       break;
     }
@@ -741,7 +767,7 @@ int grab_item(struct world *mzx_world, int offset, int dir)
       {
         play_sfx(mzx_world, SFX_KEY);
         set_mesg(mzx_world, "You grab the key.");
-        remove = 1;
+        remove_item = true;
       }
       break;
     }
@@ -757,16 +783,16 @@ int grab_item(struct world *mzx_world, int offset, int dir)
       {
         play_sfx(mzx_world, SFX_UNLOCK);
         set_mesg(mzx_world, "You open the lock.");
-        remove = 1;
+        remove_item = true;
       }
       break;
     }
 
     case DOOR:
     {
-      int board_width = src_board->board_width;
-      char *level_id = src_board->level_id;
-      char *level_param = src_board->level_param;
+      int board_width = cur_board->board_width;
+      char *level_id = cur_board->level_id;
+      char *level_param = cur_board->level_param;
       int x = offset % board_width;
       int y = offset / board_width;
       char door_first_movement[8] = { 0, 3, 0, 2, 1, 3, 1, 2 };
@@ -790,8 +816,8 @@ int grab_item(struct world *mzx_world, int offset, int dir)
         set_mesg(mzx_world, "You open the door.");
       }
 
-      src_board->level_id[offset] = 42;
-      src_board->level_param[offset] = (param & 7);
+      cur_board->level_id[offset] = 42;
+      cur_board->level_param[offset] = (param & 7);
 
       if(move(mzx_world, x, y, door_first_movement[param & 7],
        CAN_PUSH | CAN_LAVAWALK | CAN_FIREWALK | CAN_WATERWALK))
@@ -828,21 +854,35 @@ int grab_item(struct world *mzx_world, int offset, int dir)
         set_mesg(mzx_world, "You open the gate.");
       }
 
-      src_board->level_id[offset] = (char)OPEN_GATE;
-      src_board->level_param[offset] = 22;
+      cur_board->level_id[offset] = (char)OPEN_GATE;
+      cur_board->level_param[offset] = 22;
       play_sfx(mzx_world, SFX_OPEN_GATE);
       break;
     }
 
     case TRANSPORT:
     {
-      int x = offset % src_board->board_width;
-      int y = offset / src_board->board_width;
+      if(!transport(mzx_world, item_x, item_y, src_dir, PLAYER, 0, 0, 1))
+      {
+        // The player moved, so we need to erase the old player and find the new
+        // one. The under player vars were updated as part of the transport, so
+        // we need to preserve them after the id_remove_top.
+        int under_player_id = mzx_world->under_player_id;
+        int under_player_color = mzx_world->under_player_color;
+        int under_player_param = mzx_world->under_player_param;
+        int player_last_dir = cur_board->player_last_dir;
 
-      if(transport(mzx_world, x, y, dir, PLAYER, 0, 0, 1))
-        break;
+        id_remove_top(mzx_world, mzx_world->player_x, mzx_world->player_y);
+        mzx_world->under_player_id = under_player_id;
+        mzx_world->under_player_color = under_player_color;
+        mzx_world->under_player_param = under_player_param;
+        cur_board->player_last_dir = (player_last_dir & 240) + src_dir + 1;
+        mzx_world->player_moved = true;
 
-      return 1;
+        // Figure out the player's new position so we don't get player clones.
+        find_player(mzx_world);
+      }
+      break;
     }
 
     case COIN:
@@ -850,7 +890,7 @@ int grab_item(struct world *mzx_world, int offset, int dir)
       play_sfx(mzx_world, SFX_COIN);
       inc_counter(mzx_world, "COINS", 1, 0);
       inc_counter(mzx_world, "SCORE", 1, 0);
-      remove = 1;
+      remove_item = true;
       break;
     }
 
@@ -863,21 +903,21 @@ int grab_item(struct world *mzx_world, int offset, int dir)
       sprintf(tmp, "The pouch contains %d gems and %d coins.",
        (param & 15) * 5, (param >> 4) * 5);
       set_mesg(mzx_world, tmp);
-      remove = 1;
+      remove_item = true;
       break;
     }
 
     case FOREST:
     {
       play_sfx(mzx_world, SFX_FOREST);
-      if(src_board->forest_becomes == FOREST_TO_EMPTY)
+      if(cur_board->forest_becomes == FOREST_TO_EMPTY)
       {
-        remove = 1;
+        remove_item = true;
       }
       else
       {
-        src_board->level_id[offset] = (char)FLOOR;
-        return 1;
+        cur_board->level_id[offset] = (char)FLOOR;
+        place_player(mzx_world, item_x, item_y, src_dir);
       }
       break;
     }
@@ -887,13 +927,13 @@ int grab_item(struct world *mzx_world, int offset, int dir)
       play_sfx(mzx_world, SFX_LIFE);
       inc_counter(mzx_world, "LIVES", 1, 0);
       set_mesg(mzx_world, "You find a free life!");
-      remove = 1;
+      remove_item = true;
       break;
     }
 
     case INVIS_WALL:
     {
-      src_board->level_id[offset] = (char)NORMAL;
+      cur_board->level_id[offset] = (char)NORMAL;
       set_mesg(mzx_world, "Oof! You ran into an invisible wall.");
       play_sfx(mzx_world, SFX_INVIS_WALL);
       break;
@@ -901,16 +941,16 @@ int grab_item(struct world *mzx_world, int offset, int dir)
 
     case MINE:
     {
-      src_board->level_id[offset] = (char)EXPLOSION;
-      src_board->level_param[offset] = param & 240;
+      cur_board->level_id[offset] = (char)EXPLOSION;
+      cur_board->level_param[offset] = param & 240;
       play_sfx(mzx_world, SFX_EXPLOSION);
       break;
     }
 
     case EYE:
     {
-      src_board->level_id[offset] = (char)EXPLOSION;
-      src_board->level_param[offset] = (param << 1) & 112;
+      cur_board->level_id[offset] = (char)EXPLOSION;
+      cur_board->level_param[offset] = (param << 1) & 112;
       break;
     }
 
@@ -929,7 +969,7 @@ int grab_item(struct world *mzx_world, int offset, int dir)
       if(param & 128)
         break;
 
-      src_board->level_id[offset] = (char)BREAKAWAY;
+      cur_board->level_id[offset] = (char)BREAKAWAY;
       break;
     }
 
@@ -939,7 +979,7 @@ int grab_item(struct world *mzx_world, int offset, int dir)
 
       // Die !?
       if(!(param & 8))
-        remove = 1;
+        remove_item = true;
 
       break;
     }
@@ -955,7 +995,7 @@ int grab_item(struct world *mzx_world, int offset, int dir)
       if(param & 64)
       {
         hurt_player(mzx_world, FISH);
-        remove = 1;
+        remove_item = true;
       }
       break;
     }
@@ -965,8 +1005,8 @@ int grab_item(struct world *mzx_world, int offset, int dir)
       int idx = param;
 
       // update last touched direction
-      src_board->robot_list[idx]->last_touch_dir =
-       int_to_dir(flip_dir(dir));
+      cur_board->robot_list[idx]->last_touch_dir =
+       int_to_dir(flip_dir(src_dir));
 
       send_robot_def(mzx_world, param, LABEL_TOUCH);
       break;
@@ -979,10 +1019,11 @@ int grab_item(struct world *mzx_world, int offset, int dir)
       play_sfx(mzx_world, SFX_SCROLL_SIGN);
 
       m_show();
-      scroll_edit(mzx_world, src_board->scroll_list[idx], id & 1);
+      scroll_edit(mzx_world, cur_board->scroll_list[idx], id & 1);
 
       if(id == SCROLL)
-        remove = 1;
+        remove_item = true;
+
       break;
     }
 
@@ -990,28 +1031,21 @@ int grab_item(struct world *mzx_world, int offset, int dir)
       break;
   }
 
-  if(remove == 1)
-    offs_remove_id(mzx_world, offset);
-
-  return remove; // Not grabbed
-}
-
-static void place_player(struct world *mzx_world, int x, int y, int dir)
-{
-  struct board *src_board = mzx_world->current_board;
-  if((mzx_world->player_x != x) || (mzx_world->player_y != y))
+  if(remove_item)
   {
-    id_remove_top(mzx_world, mzx_world->player_x, mzx_world->player_y);
+    // If this is a consumable item, remove it and put the player where it was.
+    // FIXME has_context_changed
+    offs_remove_id(mzx_world, offset);
+    place_player(mzx_world, item_x, item_y, src_dir);
   }
-  id_place(mzx_world, x, y, PLAYER, 0, 0);
-  mzx_world->player_x = x;
-  mzx_world->player_y = y;
-  src_board->player_last_dir =
-   (src_board->player_last_dir & 240) | (dir + 1);
+
+  return;
 }
 
-// Returns 1 if didn't move
-int move_player(struct world *mzx_world, int dir)
+// mzx_world->player_moved will be true if the player moved, otherwise false.
+// This function is guaranteed to keep the player position correctly updated;
+// using find_player after using this function is not necessary.
+void move_player(struct world *mzx_world, int dir)
 {
   struct board *src_board = mzx_world->current_board;
   // Dir is from 0 to 3
@@ -1020,6 +1054,8 @@ int move_player(struct world *mzx_world, int dir)
   int new_x = player_x;
   int new_y = player_y;
   int edge = 0;
+
+  mzx_world->player_moved = false;
 
   switch(dir)
   {
@@ -1050,7 +1086,7 @@ int move_player(struct world *mzx_world, int dir)
      (board_dir >= mzx_world->num_boards) ||
      (!mzx_world->board_list[board_dir]))
     {
-      return 1;
+      return;
     }
 
     mzx_world->target_board = board_dir;
@@ -1088,7 +1124,9 @@ int move_player(struct world *mzx_world, int dir)
     }
     src_board->player_last_dir =
      (src_board->player_last_dir & 240) + dir + 1;
-    return 0;
+
+    mzx_world->player_moved = true;
+    return;
   }
   else
   {
@@ -1106,7 +1144,9 @@ int move_player(struct world *mzx_world, int dir)
       send_robot(mzx_world,
        (src_board->sensor_list[d_param])->robot_to_mesg,
        "SENSORON", 0);
+
       place_player(mzx_world, new_x, new_y, dir);
+      return;
     }
     else
 
@@ -1128,37 +1168,15 @@ int move_player(struct world *mzx_world, int dir)
       }
 
       place_player(mzx_world, new_x, new_y, dir);
+      return;
     }
     else
 
     if((d_flag & A_ITEM) && (d_id != ROBOT_PUSHABLE))
     {
-      // Item
-      enum thing d_under_id = (enum thing)mzx_world->under_player_id;
-      char d_under_color = mzx_world->under_player_color;
-      char d_under_param = mzx_world->under_player_param;
-      int grab_result = grab_item(mzx_world, d_offset, dir);
-      if(grab_result)
-      {
-        if(d_id == TRANSPORT)
-        {
-          int player_last_dir = src_board->player_last_dir;
-          // Teleporter
-          id_remove_top(mzx_world, player_x, player_y);
-          mzx_world->under_player_id = (char)d_under_id;
-          mzx_world->under_player_color = d_under_color;
-          mzx_world->under_player_param = d_under_param;
-          src_board->player_last_dir =
-           (player_last_dir & 240) + dir + 1;
-          // New player x/y will be found after update !!! maybe fix.
-        }
-        else
-        {
-          place_player(mzx_world, new_x, new_y, dir);
-        }
-        return 0;
-      }
-      return 1;
+      // Item (handles player movement separately)
+      grab_item(mzx_world, new_x, new_y, dir);
+      return;
     }
     else
 
@@ -1166,7 +1184,7 @@ int move_player(struct world *mzx_world, int dir)
     {
       // Under
       place_player(mzx_world, new_x, new_y, dir);
-      return 0;
+      return;
     }
     else
 
@@ -1180,7 +1198,7 @@ int move_player(struct world *mzx_world, int dir)
           // Player bullet no hurty
           id_remove_top(mzx_world, new_x, new_y);
           place_player(mzx_world, new_x, new_y, dir);
-          return 0;
+          return;
         }
         else
         {
@@ -1205,7 +1223,7 @@ int move_player(struct world *mzx_world, int dir)
           if(u_id != GOOP && !src_board->restart_if_zapped)
           {
             place_player(mzx_world, new_x, new_y, dir);
-            return 0;
+            return;
           }
         }
       }
@@ -1230,13 +1248,11 @@ int move_player(struct world *mzx_world, int dir)
         if(!push(mzx_world, player_x, player_y, dir, 0))
         {
           place_player(mzx_world, new_x, new_y, dir);
-          return 0;
+          return;
         }
       }
     }
-    // Nothing.
   }
-  return 1;
 }
 
 void find_player(struct world *mzx_world)

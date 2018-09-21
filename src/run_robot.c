@@ -2403,7 +2403,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
                 int offset = x + (y * board_width);
                 enum thing old_id = (enum thing)level_id[offset];
                 level_id[offset] = (char)ROBOT_PUSHABLE;
-                grab_item(mzx_world, new_offset, 0);
+                grab_item(mzx_world, new_x, new_y, 0);
                 // Find the robot
                 if(level_id[offset] != ROBOT_PUSHABLE)
                 {

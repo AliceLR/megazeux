@@ -460,6 +460,18 @@ void destroy_context(context *ctx)
 }
 
 /**
+ * Find out if a context change has occurred.
+ */
+
+boolean has_context_changed(context *ctx)
+{
+  if(!ctx || !ctx->root)
+    error("Context code bug", 2, ERROR_OPT_EXIT, 0x2B09);
+
+  return (ctx->root->context_changed);
+}
+
+/**
  * Find out if the given context is a particular context.
  */
 

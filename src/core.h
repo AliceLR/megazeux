@@ -192,11 +192,21 @@ CORE_LIBSPEC void create_subcontext(subcontext *sub, context *parent,
 CORE_LIBSPEC void destroy_context(context *ctx);
 
 /**
+ * Determine if a context change has occurred.
+ *
+ *
+ * @param ctx           Current context
+ * @return              true if a context change has occurred.
+ */
+
+CORE_LIBSPEC boolean has_context_changed(context *ctx);
+
+/**
  * Determine if the given context matches an expected type.
  *
  * @param ctx           A context
  * @param context_type  A context type
- * @return true if the context has the given context type, otherwise false.
+ * @return              true if the context has the given context type.
  */
 
 boolean is_context(context *ctx, enum context_type context_type);

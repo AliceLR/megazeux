@@ -176,6 +176,9 @@ struct world
   // Toggle used by certain built-in mechanics that update every other cycle.
   boolean current_cycle_odd;
 
+  // Did the player just move?
+  boolean player_moved;
+
   // For use in repeat delays for player movement
   int key_up_delay;
   int key_down_delay;
