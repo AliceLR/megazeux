@@ -288,12 +288,12 @@ CORE_LIBSPEC void pop_context(void);
 
 CORE_LIBSPEC extern void (*edit_world)(context *parent,
  boolean reload_curr_file);
-CORE_LIBSPEC extern void (*debug_counters)(struct world *mzx_world);
+CORE_LIBSPEC extern void (*debug_counters)(context *ctx);
 CORE_LIBSPEC extern void (*draw_debug_box)(struct world *mzx_world,
  int x, int y, int d_x, int d_y, int show_keys);
-CORE_LIBSPEC extern int (*debug_robot_break)(struct world *mzx_world,
+CORE_LIBSPEC extern int (*debug_robot_break)(context *ctx,
  struct robot *cur_robot, int id, int lines_run);
-CORE_LIBSPEC extern int (*debug_robot_watch)(struct world *mzx_world,
+CORE_LIBSPEC extern int (*debug_robot_watch)(context *ctx,
  struct robot *cur_robot, int id, int lines_run);
 CORE_LIBSPEC extern void (*debug_robot_config)(struct world *mzx_world);
 

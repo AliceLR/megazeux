@@ -836,9 +836,11 @@ static void debug_robot_title(char buffer[77], struct robot *cur_robot, int id,
 }
 
 // If the return value != 0, the robot ignores the current command and ends
-static int debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
+static int debug_robot(context *ctx, struct robot *cur_robot, int id,
  char title[77], char info[77], char *src_ptr, int src_length, int lines_run)
 {
+  struct world *mzx_world = ctx->world;
+
   // TODO: when limitations on command length are lifted,
   // this needs to be extended.
   char buffer[ROBOT_MAX_TR] = { 0 };
@@ -1056,7 +1058,7 @@ static int debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
 
       case OP_COUNTERS:
       {
-        __debug_counters(mzx_world);
+        __debug_counters(ctx);
         break;
       }
 
@@ -1126,9 +1128,10 @@ static inline void get_src_line(struct robot *cur_robot, char **_src_ptr,
   }
 }
 
-int __debug_robot_break(struct world *mzx_world, struct robot *cur_robot,
+int __debug_robot_break(context *ctx, struct robot *cur_robot,
  int id, int lines_run)
 {
+  struct world *mzx_world = ctx->world;
   char title[77];
   char info[77];
 
@@ -1225,13 +1228,14 @@ int __debug_robot_break(struct world *mzx_world, struct robot *cur_robot,
 
   // Run the robot debugger
   debug_robot_title(title, cur_robot, id, action, line_number);
-  return debug_robot(mzx_world, cur_robot, id, title, info, src_ptr, src_length,
+  return debug_robot(ctx, cur_robot, id, title, info, src_ptr, src_length,
    lines_run);
 }
 
-int __debug_robot_watch(struct world *mzx_world, struct robot *cur_robot,
+int __debug_robot_watch(context *ctx, struct robot *cur_robot,
  int id, int lines_run)
 {
+  struct world *mzx_world = ctx->world;
   char title[77];
   char info[77];
 
@@ -1287,6 +1291,6 @@ int __debug_robot_watch(struct world *mzx_world, struct robot *cur_robot,
 
   // Run the robot debugger
   debug_robot_title(title, cur_robot, id, ACTION_WATCH, line_number);
-  return debug_robot(mzx_world, cur_robot, id, title, info, src_ptr, src_length,
+  return debug_robot(ctx, cur_robot, id, title, info, src_ptr, src_length,
    lines_run);
 }

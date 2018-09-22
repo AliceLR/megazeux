@@ -801,11 +801,17 @@ static void core_update(core_context *root)
 void core_run(core_context *root)
 {
   context *ctx;
+  // FIXME: Because not everything can be converted to use the main loop at
+  // once, this function needs to be used from places other than main(). So
+  // this doesn't break MZX, this function stops once the number of contexts
+  // on the stack has dropped below the initial value.
+  int initial_stack_size = root->ctx_stack_size;
   int start_ticks = get_ticks();
   int delta_ticks;
   int total_ticks;
 
-  if(root->ctx_stack_size <= 0)
+  // If there aren't any contexts on the stack, there's no reason to be here.
+  if(initial_stack_size <= 0)
     return;
 
   do
@@ -881,7 +887,7 @@ void core_run(core_context *root)
     if(!root->full_exit && !root->context_changed)
       core_update(root);
   }
-  while(!root->full_exit && root->ctx_stack_size > 0);
+  while(!root->full_exit && root->ctx_stack_size >= initial_stack_size);
 }
 
 /**
@@ -961,12 +967,12 @@ void pop_context(void)
 // Editor external function pointers (NULL by default).
 
 void (*edit_world)(context *parent, boolean reload_curr_file);
-void (*debug_counters)(struct world *mzx_world);
+void (*debug_counters)(context *ctx);
 void (*draw_debug_box)(struct world *mzx_world, int x, int y, int d_x, int d_y,
  int show_keys);
-int (*debug_robot_break)(struct world *mzx_world, struct robot *cur_robot,
+int (*debug_robot_break)(context *ctx, struct robot *cur_robot,
  int id, int lines_run);
-int (*debug_robot_watch)(struct world *mzx_world, struct robot *cur_robot,
+int (*debug_robot_watch)(context *ctx, struct robot *cur_robot,
  int id, int lines_run);
 void (*debug_robot_config)(struct world *mzx_world);
 

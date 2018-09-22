@@ -22,6 +22,7 @@
 #include <string.h>
 
 #include "const.h"
+#include "core.h"
 #include "counter.h"
 #include "data.h"
 #include "game_ops.h"
@@ -76,8 +77,9 @@ static int inc_param(int param, int max)
 
 // This is the big one. Update all of the stuff on the screen..
 
-void update_board(struct world *mzx_world)
+void update_board(context *ctx)
 {
+  struct world *mzx_world = ctx->world;
   int i;
   int x, y;
   int level_offset;
@@ -133,7 +135,7 @@ void update_board(struct world *mzx_world)
         case ROBOT:
         case ROBOT_PUSHABLE:
         {
-          run_robot(mzx_world, current_param, x, y);
+          run_robot(ctx, current_param, x, y);
 
           // On a game state change, we need to return to the main game loop.
           if(mzx_world->change_game_state)
@@ -1695,7 +1697,7 @@ void update_board(struct world *mzx_world)
         current_param = level_param[level_offset];
 
         // May change the source board (with swap world or load game)
-        run_robot(mzx_world, -current_param, x, y);
+        run_robot(ctx, -current_param, x, y);
 
         // On a game state change, we need to return to the main game loop.
         if(mzx_world->change_game_state)

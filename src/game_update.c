@@ -3,6 +3,7 @@
  * Copyright (C) 1996 Greg Janson
  * Copyright (C) 1999 Charles Goetzman
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
+ * Copyright (C) 2018 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -684,8 +685,9 @@ static Uint32 get_viewport_layer(struct world *mzx_world)
  * Draw the world/sprites/etc too.
  */
 // FIXME try to break this function down further
-void update_world(struct world *mzx_world, boolean is_title)
+void update_world(context *ctx, boolean is_title)
 {
+  struct world *mzx_world = ctx->world;
   int time_remaining;
   char tmp_str[10];
 
@@ -714,14 +716,14 @@ void update_world(struct world *mzx_world, boolean is_title)
   // Global robot
   if(mzx_world->current_board->robot_list[0])
     if(mzx_world->current_board->robot_list[0]->used)
-      run_robot(mzx_world, 0, -1, -1);
+      run_robot(ctx, 0, -1, -1);
 
   if(!mzx_world->current_cycle_frozen)
   {
     mzx_world->player_was_on_entrance = player_on_entrance(mzx_world);
     mzx_world->was_zapped = false;
 
-    update_board(mzx_world);
+    update_board(ctx);
 
     if(player_on_entrance(mzx_world) && !mzx_world->player_was_on_entrance &&
      !mzx_world->was_zapped)

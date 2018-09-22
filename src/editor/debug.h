@@ -25,11 +25,11 @@
 
 __M_BEGIN_DECLS
 
-#include "../world_struct.h"
+#include "../core.h"
 
 int get_counter_safe(struct world *mzx_world, const char *name, int id);
 
-void __debug_counters(struct world *mzx_world);
+void __debug_counters(context *ctx);
 void __draw_debug_box(struct world *mzx_world, int x, int y, int d_x, int d_y,
  int show_keys);
 

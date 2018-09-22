@@ -877,8 +877,9 @@ static void end_program(struct robot *cur_robot)
 
 // Run a single robot through a single cycle.
 // If id is negative, only run it if status is 2
-void run_robot(struct world *mzx_world, int id, int x, int y)
+void run_robot(context *ctx, int id, int x, int y)
 {
+  struct world *mzx_world = ctx->world;
   struct board *src_board = mzx_world->current_board;
   struct robot *cur_robot;
   int cmd; // Command to run
@@ -1039,7 +1040,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
     // Check to see if the current command triggers a breakpoint.
     if(mzx_world->editing && debug_robot_break)
     {
-      switch(debug_robot_break(mzx_world, cur_robot, id, lines_run))
+      switch(debug_robot_break(ctx, cur_robot, id, lines_run))
       {
         case DEBUG_EXIT:
           break;
@@ -5648,7 +5649,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
     if(mzx_world->editing && debug_robot_watch)
     {
       // Returns 1 if the user chose to stop the program.
-      switch(debug_robot_watch(mzx_world, cur_robot, id, lines_run))
+      switch(debug_robot_watch(ctx, cur_robot, id, lines_run))
       {
         case DEBUG_EXIT:
           break;

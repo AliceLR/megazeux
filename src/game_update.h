@@ -24,11 +24,11 @@
 
 __M_BEGIN_DECLS
 
-#include "world_struct.h"
+#include "core.h"
 
-void update_world(struct world *mzx_world, boolean is_title);
+void update_world(context *ctx, boolean is_title);
 boolean update2(struct world *mzx_world, boolean is_title, boolean *fadein);
-void update_board(struct world *mzx_world);
+void update_board(context *ctx);
 
 __M_END_DECLS
 

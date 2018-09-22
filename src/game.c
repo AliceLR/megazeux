@@ -334,7 +334,7 @@ static void game_draw(context *ctx)
   }
 
   set_context_framerate_mode(ctx, FRAMERATE_MZX_SPEED);
-  update_world(ctx->world, game->is_title);
+  update_world(ctx, game->is_title);
 }
 
 // Forward declaration since this is used for both game and title screen.
@@ -555,7 +555,7 @@ static boolean game_key(context *ctx, int *key)
           else
           {
             if(debug_counters)
-              debug_counters(mzx_world);
+              debug_counters(ctx);
           }
         }
         return true;
