@@ -332,12 +332,12 @@ static void game_draw(context *ctx)
     // There is no MZX_SPEED to derive a framerate from, so use the UI rate.
     set_context_framerate_mode(ctx, FRAMERATE_UI);
     draw_intro_mesg(mzx_world);
-    update_screen();
     return;
   }
 
   set_context_framerate_mode(ctx, FRAMERATE_MZX_SPEED);
   update_world(ctx, game->is_title);
+  draw_world(mzx_world, game->is_title);
 }
 
 // Forward declaration since this is used for both game and title screen.

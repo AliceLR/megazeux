@@ -37,7 +37,6 @@
  * Player functions for gameplay.
  */
 
-// FIXME context
 static unsigned int intro_mesg_timer = MESG_TIMEOUT;
 
 void enable_intro_mesg(void)

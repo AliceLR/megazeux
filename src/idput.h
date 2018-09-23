@@ -33,6 +33,8 @@ CORE_LIBSPEC void id_put(struct board *src_board, unsigned char x_pos,
  unsigned char y_pos, int array_x, int array_y, int ovr_x, int ovr_y);
 CORE_LIBSPEC void draw_game_window(struct board *src_board,
  int array_x, int array_y);
+CORE_LIBSPEC void draw_game_window_blind(struct board *src_board,
+ int array_x, int array_y, int player_x, int player_y);
 CORE_LIBSPEC void draw_viewport(struct board *src_board, int edge_color);
 
 CORE_LIBSPEC unsigned char get_id_char(struct board *src_board, int id_offset);

@@ -553,6 +553,29 @@ void draw_game_window(struct board *src_board, int array_x, int array_y)
   }
 }
 
+void draw_game_window_blind(struct board *src_board, int array_x, int array_y,
+ int player_x, int player_y)
+{
+  int viewport_x = src_board->viewport_x;
+  int viewport_y = src_board->viewport_y;
+  int viewport_width = src_board->viewport_width;
+  int viewport_height = src_board->viewport_height;
+  int i;
+
+  select_layer(BOARD_LAYER);
+
+  for(i = viewport_y; i < viewport_y + viewport_height; i++)
+    fill_line(viewport_width, viewport_x, i, 176, 8);
+
+  // Find where player would be and draw.
+  if(player_x >= 0 && player_y >= 0)
+  {
+    id_put(src_board, player_x - array_x + viewport_x,
+     player_y - array_y + viewport_y, player_x,
+     player_y, player_x, player_y);
+  }
+}
+
 void draw_viewport(struct board *src_board, int edge_color)
 {
   int i, i2;

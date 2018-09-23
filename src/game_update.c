@@ -518,6 +518,19 @@ static boolean player_on_entrance(struct world *mzx_world)
 }
 
 /**
+ * Alter char IDs to hide the player from view. Used only on the title screen.
+ */
+
+static void hide_player(struct world *mzx_world)
+{
+  id_chars[player_color] = 0;
+  id_chars[player_char + 0] = 32;
+  id_chars[player_char + 1] = 32;
+  id_chars[player_char + 2] = 32;
+  id_chars[player_char + 3] = 32;
+}
+
+/**
  * Focus the screen on the player.
  * Mainly for platforms with screens too small to display the whole world.
  */
@@ -657,36 +670,13 @@ static void end_life(struct world *mzx_world)
   }
 }
 
-static Uint32 get_viewport_layer(struct world *mzx_world)
-{
-  // Creates a new layer if needed to prevent graphical discrepancies between
-  // the fallback and layer rendering. This can happen in SMZX mode if:
-  // 1) there is a visible viewport border or
-  // 2) the message is active.
-
-  struct board *src_board = mzx_world->current_board;
-
-  if(get_screen_mode())
-  {
-    if((src_board->viewport_width < 80) ||
-     (src_board->viewport_height < 25) ||
-     (src_board->b_mesg_timer > 0))
-      return create_layer(0, 0, 80, 25, LAYER_DRAWORDER_UI - 1, -1, 0, 1);
-  }
-
-  return UI_LAYER;
-}
-
 /**
  * Update the world, including the player, board, and robots.
  * Draw the world/sprites/etc too.
  */
-// FIXME try to break this function down further
 void update_world(context *ctx, boolean is_title)
 {
   struct world *mzx_world = ctx->world;
-  int time_remaining;
-  char tmp_str[10];
 
   if(!is_title && mzx_world->version >= V251s1 &&
    get_counter(mzx_world, "CURSORSTATE", 0))
@@ -737,6 +727,11 @@ void update_world(context *ctx, boolean is_title)
     find_player(mzx_world);
   }
 
+  // On the title screen, the player needs to be hidden (and a robot might have
+  // tried to change this), so hide it.
+  if(is_title)
+    hide_player(mzx_world);
+
   // Death and game over
   if(get_counter(mzx_world, "LIVES", 0) == 0)
   {
@@ -748,166 +743,189 @@ void update_world(context *ctx, boolean is_title)
   {
     end_life(mzx_world);
   }
+}
 
-  if(mzx_world->target_where != TARGET_TELEPORT)
+/**
+ * Creates a new SMZX-enabled layer if needed to prevent graphical discrepancies
+ * between old MZX versions and layer rendering. This is necessary when SMZX is
+ * active and either of these features (which would otherwise use the UI layer)
+ * are also active:
+ *
+ * 1) The viewport border.
+ * 2) The built-in message.
+ */
+
+static Uint32 get_viewport_layer(struct world *mzx_world)
+{
+  struct board *cur_board = mzx_world->current_board;
+
+  if(get_screen_mode())
   {
-    struct board *src_board = mzx_world->current_board;
-    Uint32 viewport_layer;
-    int top_x;
-    int top_y;
+    if((cur_board->viewport_width < 80) ||
+     (cur_board->viewport_height < 25) ||
+     (cur_board->b_mesg_timer > 0))
+      return create_layer(0, 0, 80, 25, LAYER_DRAWORDER_UI - 1, -1, 0, 1);
+  }
 
-    blank_layers();
+  return UI_LAYER;
+}
 
-    // Draw border
-    viewport_layer = get_viewport_layer(mzx_world);
-    select_layer(viewport_layer);
-    draw_viewport(src_board, mzx_world->edge_color);
+/**
+ * Draw the built-in message to the screen.
+ */
 
-    // Draw screen
+static void draw_message(struct world *mzx_world)
+{
+  struct board *cur_board = mzx_world->current_board;
+  int mesg_y = cur_board->b_mesg_row;
+  Uint8 tmp_color = scroll_color;
+  char *lines[25];
+  int i = 1;
+  int j;
+
+  /* Always at least one line.. */
+  lines[0] = cur_board->bottom_mesg;
+
+  /* Find pointers to each "line" terminated by \n */
+  while(1)
+  {
+    char *pos = strchr(lines[i - 1], '\n');
+    if(!pos)
+      break;
+    *pos = 0;
+    if(i >= 25 - mesg_y)
+      break;
+    lines[i] = pos + 1;
+    i++;
+  }
+
+  for(j = 0; j < i; j++)
+  {
+    int mesg_length = strlencolor(lines[j]);
+    int mesg_edges = mzx_world->mesg_edges;
+    int mesg_x = cur_board->b_mesg_col;
+    char backup = 0;
+
+    if(mesg_length > 80)
+    {
+      backup = lines[j][80];
+      lines[j][80] = 0;
+      mesg_length = 80;
+    }
+
+    if(mesg_x == -1)
+      mesg_x = 40 - (mesg_length / 2);
+
+    color_string_ext_special(lines[j], mesg_x, mesg_y, &tmp_color,
+      0, 0, false);
+
+    if((mesg_x > 0) && (mesg_edges))
+      draw_char_ext(' ', scroll_color, mesg_x - 1, mesg_y, 0, 0);
+
+    mesg_x += mesg_length;
+    if((mesg_x < 80) && (mesg_edges))
+      draw_char_ext(' ', scroll_color, mesg_x, mesg_y, 0, 0);
+
+    if(backup)
+      lines[j][80] = backup;
+
+    mesg_y++;
+  }
+
+  /* Restore original bottom mesg for next iteration */
+  for(j = 1; j < i; j++)
+    *(lines[j] - 1) = '\n';
+}
+
+/**
+ * Draw the active world.
+ */
+
+void draw_world(struct world *mzx_world, boolean is_title)
+{
+  struct board *cur_board = mzx_world->current_board;
+  Uint32 viewport_layer;
+  int time_remaining;
+  int top_x;
+  int top_y;
+
+  char tmp_str[10];
+
+  // NOTE: used to skip everything in this function if the target was
+  // from the teleport command. This behavior went back to 2.51 and
+  // served no apparent purpose.
+  //if(mzx_world->target_where == TARGET_TELEPORT) return;
+
+  blank_layers();
+
+  // Draw border
+  viewport_layer = get_viewport_layer(mzx_world);
+  select_layer(viewport_layer);
+  draw_viewport(cur_board, mzx_world->edge_color);
+
+  // Figure out x/y of top
+  calculate_xytop(mzx_world, &top_x, &top_y);
+
+  // Draw screen
+  if(mzx_world->blind_dur > 0)
+  {
+    int player_x = mzx_world->player_x;
+    int player_y = mzx_world->player_y;
+
+    // Only draw the player during gameplay
     if(is_title)
-    {
-      id_chars[player_color] = 0;
-      id_chars[player_char + 0] = 32;
-      id_chars[player_char + 1] = 32;
-      id_chars[player_char + 2] = 32;
-      id_chars[player_char + 3] = 32;
-    }
+      player_x = -1;
 
-    // Figure out x/y of top
-    calculate_xytop(mzx_world, &top_x, &top_y);
+    draw_game_window_blind(cur_board, top_x, top_y, player_x, player_y);
+  }
+  else
+  {
+    draw_game_window(cur_board, top_x, top_y);
+  }
 
-    if(mzx_world->blind_dur > 0)
-    {
-      int i;
-      int viewport_x = src_board->viewport_x;
-      int viewport_y = src_board->viewport_y;
-      int viewport_width = src_board->viewport_width;
-      int viewport_height = src_board->viewport_height;
-      int player_x = mzx_world->player_x;
-      int player_y = mzx_world->player_y;
+  // Add sprites
+  select_layer(OVERLAY_LAYER);
+  draw_sprites(mzx_world);
 
-      select_layer(BOARD_LAYER);
-
-      for(i = viewport_y; i < viewport_y + viewport_height; i++)
-      {
-        fill_line(viewport_width, viewport_x, i, 176, 8);
-      }
-
-      // Find where player would be and draw.
-      if(!is_title)
-      {
-        id_put(src_board, player_x - top_x + viewport_x,
-         player_y - top_y + viewport_y, player_x,
-         player_y, player_x, player_y);
-      }
-    }
+  // Add time limit
+  time_remaining = get_counter(mzx_world, "TIME", 0);
+  if(time_remaining)
+  {
+    int edge_color = mzx_world->edge_color;
+    int timer_color;
+    if(edge_color == 15)
+      timer_color = 0xF0; // Prevent white on white for timer
     else
-    {
-      draw_game_window(src_board, top_x, top_y);
-    }
-    select_layer(OVERLAY_LAYER);
-
-    // Add sprites
-    draw_sprites(mzx_world);
-
-    // Add time limit
-    time_remaining = get_counter(mzx_world, "TIME", 0);
-    if(time_remaining)
-    {
-      int edge_color = mzx_world->edge_color;
-      int timer_color;
-      if(edge_color == 15)
-        timer_color = 0xF0; // Prevent white on white for timer
-      else
-        timer_color = (edge_color << 4) + 15;
-
-      select_layer(UI_LAYER);
-
-      sprintf(tmp_str, "%d:%02d",
-       (unsigned short)(time_remaining / 60), (time_remaining % 60) );
-      write_string(tmp_str, 1, 24, timer_color, 0);
-
-      // Border with spaces
-      draw_char(' ', edge_color, (Uint32)strlen(tmp_str) + 1, 24);
-      draw_char(' ', edge_color, 0, 24);
-    }
-
-    // Add message
-    if(src_board->b_mesg_timer > 0)
-    {
-      int mesg_y = src_board->b_mesg_row;
-      Uint8 tmp_color = scroll_color;
-      char *lines[25];
-      int i = 1, j;
-
-      if(mzx_world->smzx_message)
-        select_layer(viewport_layer);
-      else
-        select_layer(UI_LAYER);
-
-      /* Always at least one line.. */
-      lines[0] = src_board->bottom_mesg;
-
-      /* Find pointers to each "line" terminated by \n */
-      while(1)
-      {
-        char *pos = strchr(lines[i - 1], '\n');
-        if(!pos)
-          break;
-        *pos = 0;
-        if(i >= 25 - mesg_y)
-          break;
-        lines[i] = pos + 1;
-        i++;
-      }
-
-      for(j = 0; j < i; j++)
-      {
-        int mesg_length = strlencolor(lines[j]);
-        int mesg_edges = mzx_world->mesg_edges;
-        int mesg_x = src_board->b_mesg_col;
-        char backup = 0;
-
-        if(mesg_length > 80)
-        {
-          backup = lines[j][80];
-          lines[j][80] = 0;
-          mesg_length = 80;
-        }
-
-        if(mesg_x == -1)
-          mesg_x = 40 - (mesg_length / 2);
-
-        color_string_ext_special(lines[j], mesg_x, mesg_y, &tmp_color,
-         0, 0, false);
-
-        if((mesg_x > 0) && (mesg_edges))
-          draw_char_ext(' ', scroll_color, mesg_x - 1, mesg_y, 0, 0);
-
-        mesg_x += mesg_length;
-        if((mesg_x < 80) && (mesg_edges))
-          draw_char_ext(' ', scroll_color, mesg_x, mesg_y, 0, 0);
-
-        if(backup)
-          lines[j][80] = backup;
-
-        mesg_y++;
-      }
-
-      /* Restore original bottom mesg for next iteration */
-      for(j = 1; j < i; j++)
-        *(lines[j] - 1) = '\n';
-    }
+      timer_color = (edge_color << 4) + 15;
 
     select_layer(UI_LAYER);
-    draw_intro_mesg(mzx_world);
 
-    // Add debug box
-    if(draw_debug_box && mzx_world->debug_mode)
-    {
-      draw_debug_box(mzx_world, 60, 19, mzx_world->player_x,
-       mzx_world->player_y, 1);
-    }
+    sprintf(tmp_str, "%d:%02d",
+     (unsigned short)(time_remaining / 60), (time_remaining % 60));
+    write_string(tmp_str, 1, 24, timer_color, 0);
+
+    // Border with spaces
+    draw_char(' ', edge_color, (Uint32)strlen(tmp_str) + 1, 24);
+    draw_char(' ', edge_color, 0, 24);
+  }
+
+  if(mzx_world->smzx_message)
+    select_layer(viewport_layer);
+  else
+    select_layer(UI_LAYER);
+
+  // Add message
+  if(cur_board->b_mesg_timer > 0)
+    draw_message(mzx_world);
+
+  select_layer(UI_LAYER);
+  draw_intro_mesg(mzx_world);
+
+  // Add debug box
+  if(draw_debug_box && mzx_world->debug_mode)
+  {
+    draw_debug_box(mzx_world, 60, 19, mzx_world->player_x,
+     mzx_world->player_y, 1);
   }
 }
 
