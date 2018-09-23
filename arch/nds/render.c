@@ -36,6 +36,11 @@
 static int cell_pan_x = 0;
 static int cell_pan_y = 0;
 
+// When set to >= 0, the upper screen will attempt to focus to this position
+// the next  time it is drawn and then reset them to -1.
+static int focus_x = -1;
+static int focus_y = -1;
+
 // This table stores scroll register values for each scanline.
 static u16 scroll_table[192];
 
@@ -55,12 +60,9 @@ static struct {
 enum Subscreen_Mode last_subscreen_mode;
 enum Subscreen_Mode subscreen_mode;
 
-
 // Forward declarations
-void nds_mainscreen_focus(struct graphics_data *graphics, Uint32 x, Uint32 y);
 static void nds_keyboard_scroll_in(void);
 static void nds_keyboard_scroll_out(void);
-
 
 // Do this every vblank irq:
 static void nds_on_vblank(void)
@@ -73,8 +75,6 @@ static void nds_on_vblank(void)
   nds_video_jitter();
   nds_video_do_transition();
 }
-
-
 
 bool is_scaled_mode(enum Subscreen_Mode mode)
 {
@@ -140,7 +140,6 @@ static void nds_subscreen_scaled_init(void)
   update_screen();
 }
 
-
 static void nds_subscreen_keyboard_init(void)
 {
   Keyboard *kb = keyboardGetDefault();
@@ -160,7 +159,6 @@ static void nds_subscreen_keyboard_exit(void)
   transition.time = 0;
   transition.state = TRANSITION_OUT;
 }
-
 
 static void nds_mainscreen_init(struct graphics_data *graphics)
 {
@@ -188,7 +186,8 @@ static void nds_mainscreen_init(struct graphics_data *graphics)
   REG_BG1VOFS_SUB = 0;
 
   // By default, pan to the center of the screen.
-  nds_mainscreen_focus(graphics, 640/2, 350/2);
+  focus_x = 640/2;
+  focus_y = 350/2;
 
   // Add a solid tile for background colors.
   vram = (u16*)BG_TILE_RAM_SUB(1) + 32*256;
@@ -308,7 +307,6 @@ static void nds_keyboard_scroll_out(void)
   transition.time += kb->scrollSpeed;
 }
 
-
 void nds_sleep_check(void)
 {
   static bool asleep = false;
@@ -374,6 +372,65 @@ static bool nds_set_video_mode(struct graphics_data *graphics,
  int width, int height, int depth, bool fullscreen, bool resize)
 {
   return true;	// stub
+}
+
+// Focus on a given screen position (in pixels up to 640x350).
+static void nds_mainscreen_focus(int x, int y)
+{
+  static int old_x = -1;
+  static int old_y = -1;
+  int scroll_x, scroll_y, i, ypos, ycounter;
+  u16 *sptr;
+
+  if(mouselook)
+  {
+    // We're mouselooking, don't move the focus.
+    return;
+  }
+
+  if(x == old_x && y == old_y)
+  {
+    // Already focused there, quick abort.
+    return;
+  }
+  old_x = x;
+  old_y = y;
+
+  // Clamp the coordinates so we stay within the screen.
+  if(x < 132) x = 132;
+  if(x > 508) x = 508;
+  if(y <  96) y =  96;
+  if(y > 253) y = 253;
+
+  // Move to the top-left corner.
+  x -= 264/2;
+  y -= 192/2;
+
+  // Find the relevant cell coordinates and scroll offsets into those cells.
+  cell_pan_x = x / 8;
+  scroll_x   = x % 8;
+  cell_pan_y = y / 14;
+  scroll_y   = y % 14;
+
+  // Adjust the X scroll registers now.
+  REG_BG0HOFS_SUB = scroll_x;
+  REG_BG1HOFS_SUB = scroll_x;
+
+  // Recalculate the scroll table.
+  sptr     = scroll_table;
+  ypos     = scroll_y;
+  ycounter = scroll_y;
+  for(i = 0; i < 192; i++)
+  {
+    (*sptr++) = ypos;
+
+    ycounter++;
+    if(ycounter == 14)
+    {
+      ycounter = 0;
+      ypos += 2;
+    }
+  }
 }
 
 // Render the scaled screen.
@@ -442,11 +499,21 @@ static void nds_render_graph_scaled(struct graphics_data *graphics)
 
 static void nds_render_graph_1to1(struct graphics_data *graphics)
 {
-  struct char_element *text_start =
-   graphics->text_video + cell_pan_x + 80*cell_pan_y;
-  struct char_element *text_cell  = text_start;
+  struct char_element *text_start = graphics->text_video;
+  struct char_element *text_cell;
   u16 *vram;
   int x, y;
+
+  // Before drawing the screen, check if the focus needs to be updated!
+  if(focus_x > -1 && focus_y > -1)
+  {
+    nds_mainscreen_focus(focus_x, focus_y);
+    focus_x = -1;
+    focus_y = -1;
+  }
+
+  text_start += cell_pan_x + 80*cell_pan_y;
+  text_cell = text_start;
 
   /* Plot the first 32x30 foreground tiles. */
   vram = (u16*)BG_MAP_RAM_SUB(0);
@@ -618,7 +685,8 @@ static void nds_remap_char(struct graphics_data *graphics, Uint16 chr)
   }
 }
 
-static void nds_remap_charbyte(struct graphics_data *graphics, Uint16 chr, Uint8 byte)
+static void nds_remap_charbyte(struct graphics_data *graphics, Uint16 chr,
+ Uint8 byte)
 {
   if(chr < 256)
   {
@@ -652,66 +720,11 @@ static void nds_remap_char_range(struct graphics_data *graphics, Uint16 first,
     nds_remap_char(graphics, chr);
 }
 
-// Focus on a given screen position (in pixels up to 640x350).
-void nds_mainscreen_focus(struct graphics_data *graphics, Uint32 x, Uint32 y)
+static void nds_focus_pixel(struct graphics_data *graphics, Uint32 x, Uint32 y)
 {
-  static Uint32 old_x = -1;
-  static Uint32 old_y = -1;
-  int scroll_x, scroll_y, i, ypos, ycounter;
-  u16 *sptr;
-
-  if(mouselook)
-  {
-    // We're mouselooking, don't move the focus.
-    return;
-  }
-
-  if(x == old_x && y == old_y)
-  {
-    // Already focused there, quick abort.
-    return;
-  }
-  old_x = x;
-  old_y = y;
-
-  // Clamp the coordinates so we stay within the screen.
-  if(x < 132) x = 132;
-  if(x > 508) x = 508;
-  if(y <  96) y =  96;
-  if(y > 253) y = 253;
-
-  // Move to the top-left corner.
-  x -= 264/2;
-  y -= 192/2;
-
-  // Find the relevant cell coordinates and scroll offsets into those cells.
-  cell_pan_x = x / 8;
-  scroll_x   = x % 8;
-  cell_pan_y = y / 14;
-  scroll_y   = y % 14;
-
-  // Adjust the X scroll registers now.
-  REG_BG0HOFS_SUB = scroll_x;
-  REG_BG1HOFS_SUB = scroll_x;
-
-  // Recalculate the scroll table.
-  sptr     = scroll_table;
-  ypos     = scroll_y;
-  ycounter = scroll_y;
-  for(i = 0; i < 192; i++)
-  {
-    (*sptr++) = ypos;
-
-    ycounter++;
-    if(ycounter == 14)
-    {
-      ycounter = 0;
-      ypos += 2;
-    }
-  }
-
-  // Redraw the map with our new coords.
-  nds_render_graph_1to1(graphics);
+  // We want these values to be handled later while render_graph is run.
+  focus_x = (int)x;
+  focus_y = (int)y;
 }
 
 void render_nds_register(struct renderer *renderer)
@@ -731,7 +744,7 @@ void render_nds_register(struct renderer *renderer)
   renderer->render_cursor = nds_render_cursor;
   renderer->render_mouse = nds_render_mouse;
   renderer->sync_screen = nds_sync_screen;
-  renderer->focus_pixel = nds_mainscreen_focus;
+  renderer->focus_pixel = nds_focus_pixel;
 }
 
 void nds_subscreen_switch(void)

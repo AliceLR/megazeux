@@ -691,7 +691,6 @@ void update_world(context *ctx, boolean is_title)
   }
 
   // Update
-  focus_on_player(mzx_world); // FIXME do after board scan instead
   update_variables(mzx_world);
   update_mod_volume(mzx_world);
   update_player_under(mzx_world); // Ice, fire, water, lava
@@ -726,6 +725,10 @@ void update_world(context *ctx, boolean is_title)
     // Find the player in case the player was moved by the global robot
     find_player(mzx_world);
   }
+
+  // The player is done moving now, so focus the screen on it if needed.
+  if(!is_title)
+    focus_on_player(mzx_world);
 
   // On the title screen, the player needs to be hidden (and a robot might have
   // tried to change this), so hide it.

@@ -25,6 +25,7 @@ GIT - MZX 2.92
   In DOS versions of MZX, the endgame teleport would disable
   itself after being triggered for the first time and any
   following endgame would instead trigger a game over.
++ Reduced stutter in NDS and 3DS main screen scrolling.
 
 
 September 17th, 2018 - MZX 2.91f
