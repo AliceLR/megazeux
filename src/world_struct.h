@@ -37,11 +37,15 @@ __M_BEGIN_DECLS
 #include "util.h"
 #include "audio/sfx.h"
 
-#define CHANGE_STATE_SWAP_WORLD 1
-#define CHANGE_STATE_LOAD_GAME_ROBOTIC 2
-#define CHANGE_STATE_EXIT_GAME_ROBOTIC 3
-#define CHANGE_STATE_PLAY_GAME_ROBOTIC 4
-#define CHANGE_STATE_REQUEST_EXIT 5
+enum change_game_state_value
+{
+  CHANGE_STATE_NONE,
+  CHANGE_STATE_SWAP_WORLD,
+  CHANGE_STATE_LOAD_GAME_ROBOTIC,
+  CHANGE_STATE_EXIT_GAME_ROBOTIC,
+  CHANGE_STATE_PLAY_GAME_ROBOTIC,
+  CHANGE_STATE_REQUEST_EXIT
+};
 
 struct world
 {
@@ -208,7 +212,8 @@ struct world
   char robotic_save_path[MAX_PATH];
 
   // Indicates a robotic world swap, savegame load, or game exit
-  int change_game_state;
+  // FIXME this might be better suited to the game context.
+  enum change_game_state_value change_game_state;
 
   // Current speed of MZX world
   int mzx_speed;

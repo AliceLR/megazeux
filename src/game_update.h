@@ -27,8 +27,10 @@ __M_BEGIN_DECLS
 #include "core.h"
 
 void update_world(context *ctx, boolean is_title);
-boolean update2(struct world *mzx_world, boolean is_title, boolean *fadein);
 void update_board(context *ctx);
+
+boolean update_resolve_target(struct world *mzx_world,
+ boolean *fade_in_next_cycle);
 
 __M_END_DECLS
 

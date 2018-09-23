@@ -64,9 +64,6 @@ static void update_variables(struct world *mzx_world)
   int lazwall_start = src_board->lazwall_start;
   static boolean scroll_color_flip_flop;
 
-  // No game state change has happened (yet)
-  mzx_world->change_game_state = 0;
-
   // Determine whether the current cycle is frozen
   if(mzx_world->freeze_time_dur)
   {
@@ -729,6 +726,7 @@ void update_world(context *ctx, boolean is_title)
      !mzx_world->was_zapped)
     {
       // Pushed onto an entrance
+      // There's often a pushed sound in this case, so clear the current SFX
       sfx_clear_queue();
       entrance(mzx_world, mzx_world->player_x, mzx_world->player_y);
     }
@@ -914,11 +912,13 @@ void update_world(context *ctx, boolean is_title)
 }
 
 /**
- * Handle major game state changes that need to addressed at the start
- * of the cycle: the board fade in, board changes, etc.
+ * If an entrance or the TELEPORT command was used, this state
+ * needs to be resolved at the start of cycle execution. After a
+ * target is resolved, keypresses for certain control features
+ * such as the exit dialog are suppressed until the next cycle.
  */
-// FIXME could probably break down a little, combine parts with game.c, rename
-boolean update2(struct world *mzx_world, boolean is_title, boolean *fadein)
+boolean update_resolve_target(struct world *mzx_world,
+ boolean *fade_in_next_cycle)
 {
   struct board *src_board = mzx_world->current_board;
   int board_width = src_board->board_width;
@@ -926,51 +926,6 @@ boolean update2(struct world *mzx_world, boolean is_title, boolean *fadein)
   char *level_id = src_board->level_id;
   char *level_color = src_board->level_color;
   char *level_under_id = src_board->level_under_id;
-
-  if(*fadein)
-  {
-    vquick_fadein();
-    *fadein = false;
-  }
-
-  switch(mzx_world->change_game_state)
-  {
-    case CHANGE_STATE_SWAP_WORLD:
-    {
-      // Load the new board's mod
-      load_board_module(mzx_world);
-
-      // Send both JUSTLOADED and JUSTENTERED; the JUSTENTERED label will take
-      // priority if a robot defines it (instead of JUSTLOADED like on the title
-      // screen).
-      send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
-      send_robot_def(mzx_world, 0, LABEL_JUSTENTERED);
-
-      return true;
-    }
-
-    case CHANGE_STATE_LOAD_GAME_ROBOTIC:
-    {
-      load_game_module(mzx_world, mzx_world->real_mod_playing, false);
-
-      // Only send JUSTLOADED for savegames.
-      send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
-
-      return true;
-    }
-
-    case CHANGE_STATE_EXIT_GAME_ROBOTIC:
-    case CHANGE_STATE_REQUEST_EXIT:
-      // Exit game--skip input processing. The game state will exit.
-      return true;
-
-    case CHANGE_STATE_PLAY_GAME_ROBOTIC:
-      // We need to continue input processing.
-      return false;
-
-    default:
-      break;
-  }
 
   if(mzx_world->target_where != TARGET_NONE)
   {
@@ -1177,7 +1132,7 @@ boolean update2(struct world *mzx_world, boolean is_title, boolean *fadein)
     {
       // Prepare for fadein
       if(!get_fade_status())
-        *fadein = true;
+        *fade_in_next_cycle = true;
       vquick_fadeout();
     }
 
@@ -1198,7 +1153,6 @@ boolean update2(struct world *mzx_world, boolean is_title, boolean *fadein)
     mzx_world->target_where = TARGET_NONE;
 
     // Disallow any keypresses this cycle
-
     return true;
   }
 

@@ -316,6 +316,9 @@ static void game_draw(context *ctx)
   struct game_context *game = (struct game_context *)ctx;
   struct world *mzx_world = ctx->world;
 
+  // No game state change has happened (yet)
+  mzx_world->change_game_state = CHANGE_STATE_NONE;
+
   if(game->is_title && game->fade_in)
   {
     // Focus on center
@@ -351,15 +354,55 @@ static boolean game_idle(context *ctx)
   struct game_context *game = (struct game_context *)ctx;
   struct config_info *conf = get_config(ctx);
   struct world *mzx_world = ctx->world;
-  boolean skip_input;
 
-  if(!ctx->world->active)
+  if(!mzx_world->active)
     return false;
 
-  skip_input = update2(mzx_world, game->is_title, &(game->fade_in));
+  if(game->fade_in)
+  {
+    vquick_fadein();
+    game->fade_in = false;
+  }
 
   switch(mzx_world->change_game_state)
   {
+    case CHANGE_STATE_NONE:
+      break;
+
+    case CHANGE_STATE_SWAP_WORLD:
+    {
+      // The SWAP WORLD command was used by a robot.
+      // TODO: the game has already been loaded at this point, but maybe
+      // should be loaded here instead of in run_robot.c?
+
+      // Load the new board's mod
+      load_board_module(mzx_world);
+
+      // Send both JUSTLOADED and JUSTENTERED; the JUSTENTERED label will take
+      // priority if a robot defines it (instead of JUSTLOADED like on the title
+      // screen).
+      send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
+      send_robot_def(mzx_world, 0, LABEL_JUSTENTERED);
+
+      return true;
+    }
+
+    case CHANGE_STATE_LOAD_GAME_ROBOTIC:
+    {
+      // The LOAD_GAME counter was used by a robot.
+      // TODO: the game has already been loaded at this point, but maybe
+      // should be loaded here instead of in counter.c?
+
+      // real_mod_playing was set during the savegame load but the mod hasn't
+      // started playing yet.
+      load_game_module(mzx_world, mzx_world->real_mod_playing, false);
+
+      // Only send JUSTLOADED for savegames.
+      send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
+
+      return true;
+    }
+
     case CHANGE_STATE_PLAY_GAME_ROBOTIC:
     {
       if(!game->is_title)
@@ -376,7 +419,9 @@ static boolean game_idle(context *ctx)
 
     case CHANGE_STATE_EXIT_GAME_ROBOTIC:
     {
-      if(conf->standalone_mode)
+      // The EXIT_GAME counter was used by a robot. This works during gameplay,
+      // but also on the titlescreen if standalone mode is active.
+      if(!game->is_title || conf->standalone_mode)
       {
         destroy_context(ctx);
         return true;
@@ -386,18 +431,25 @@ static boolean game_idle(context *ctx)
 
     case CHANGE_STATE_REQUEST_EXIT:
     {
+      // The user halted the program while a robot was executing.
       destroy_context(ctx);
       return true;
     }
   }
 
+  // A board change or other form of teleport may need to occur.
+  // This may require a fade in the next time this function is run (next cycle).
+  if(update_resolve_target(mzx_world, &(game->fade_in)))
+    return true;
+
+  // The SAVE_GAME counter might have been used this cycle.
   if(!game->is_title && mzx_world->robotic_save_type == SAVE_GAME)
   {
     save_world(mzx_world, mzx_world->robotic_save_path, true, MZX_VERSION);
     mzx_world->robotic_save_type = SAVE_NONE;
   }
 
-  return skip_input;
+  return false;
 }
 
 /**
