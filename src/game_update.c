@@ -841,9 +841,11 @@ static void draw_message(struct world *mzx_world)
  * Draw the active world.
  */
 
-void draw_world(struct world *mzx_world, boolean is_title)
+void draw_world(context *ctx, boolean is_title)
 {
+  struct world *mzx_world = ctx->world;
   struct board *cur_board = mzx_world->current_board;
+  struct config_info *conf = get_config(ctx);
   Uint32 viewport_layer;
   int time_remaining;
   int top_x;
@@ -851,10 +853,14 @@ void draw_world(struct world *mzx_world, boolean is_title)
 
   char tmp_str[10];
 
-  // NOTE: used to skip everything in this function if the target was
-  // from the teleport command. This behavior went back to 2.51 and
-  // served no apparent purpose.
-  //if(mzx_world->target_where == TARGET_TELEPORT) return;
+  // If a teleport command is used, don't draw the world (i.e leave the
+  // previous frame visible). This is a hacky way of preventing a board
+  // from appearing if a game teleports away from it on the first cycle
+  // the board is run. This is relied on by title screens (like Bernard
+  // the Bard) and probably in other places so we have to keep it around
+  // for compatibility.
+  if(mzx_world->target_where == TARGET_TELEPORT)
+    return;
 
   blank_layers();
 
@@ -919,7 +925,8 @@ void draw_world(struct world *mzx_world, boolean is_title)
     draw_message(mzx_world);
 
   select_layer(UI_LAYER);
-  draw_intro_mesg(mzx_world);
+  if(!conf->standalone_mode)
+    draw_intro_mesg(mzx_world);
 
   // Add debug box
   if(draw_debug_box && mzx_world->debug_mode)

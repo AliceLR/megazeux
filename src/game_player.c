@@ -53,10 +53,6 @@ void draw_intro_mesg(struct world *mzx_world)
 {
   static const char mesg1[] = "F1: Help   ";
   static const char mesg2[] = "Enter: Menu   Ctrl-Alt-Enter: Fullscreen";
-  struct config_info *conf = &mzx_world->conf;
-
-  if(conf->standalone_mode)
-    return;
 
   if(intro_mesg_timer == 0)
     return;

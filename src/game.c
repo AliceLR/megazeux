@@ -314,6 +314,7 @@ static boolean load_savegame_selection(struct game_context *game)
 static void game_draw(context *ctx)
 {
   struct game_context *game = (struct game_context *)ctx;
+  struct config_info *conf = get_config(ctx);
   struct world *mzx_world = ctx->world;
 
   // No game state change has happened (yet)
@@ -331,13 +332,14 @@ static void game_draw(context *ctx)
   {
     // There is no MZX_SPEED to derive a framerate from, so use the UI rate.
     set_context_framerate_mode(ctx, FRAMERATE_UI);
-    draw_intro_mesg(mzx_world);
+    if(!conf->standalone_mode)
+      draw_intro_mesg(mzx_world);
     return;
   }
 
   set_context_framerate_mode(ctx, FRAMERATE_MZX_SPEED);
   update_world(ctx, game->is_title);
-  draw_world(mzx_world, game->is_title);
+  draw_world(ctx, game->is_title);
 }
 
 // Forward declaration since this is used for both game and title screen.
