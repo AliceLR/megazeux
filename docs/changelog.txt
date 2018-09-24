@@ -3,6 +3,8 @@
   set the string's length for preexisting strings.
 + Fixed a bug where loading robot source code from a string
   wouldn't work correctly with the robot debugger.
++ Fix a crash that would occur decrypting a world with a
+  password exactly 15 chars long.
 
 
 September 17th, 2018 - MZX 2.91f
