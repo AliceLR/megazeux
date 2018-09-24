@@ -38,6 +38,8 @@ struct input_status input;
 
 static Uint8 num_buffered_events = 1;
 
+boolean enable_f12_hack;
+
 struct buffered_status *store_status(void)
 {
   return &input.buffer[input.store_offset];

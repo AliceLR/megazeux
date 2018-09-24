@@ -814,6 +814,9 @@ void core_run(core_context *root)
   if(initial_stack_size <= 0)
     return;
 
+  // FIXME hack
+  enable_f12_hack = get_config((context *)root)->allow_screenshots;
+
   do
   {
     // Resume might trigger additional context changes.
@@ -834,6 +837,9 @@ void core_run(core_context *root)
 
     // Delay and then handle events.
     ctx = root->ctx_stack[root->ctx_stack_size - 1];
+
+    // FIXME hack
+    enable_f12_hack = false;
 
     switch(ctx->internal_data->framerate)
     {
@@ -876,6 +882,9 @@ void core_run(core_context *root)
         error("Context code bug", 2, 4, 0x2B05);
       }
     }
+
+    // FIXME hack
+    enable_f12_hack = get_config(ctx)->allow_screenshots;
 
     start_ticks = get_ticks();
 

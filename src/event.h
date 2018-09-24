@@ -76,6 +76,9 @@ __M_BEGIN_DECLS
 #define MOUSE_BUTTON_WHEELRIGHT 9
 #endif //defaults
 
+// Capture F12 presses to save screenshots if true.
+extern boolean enable_f12_hack;
+
 struct buffered_status
 {
   enum keycode key_pressed;
