@@ -1,4 +1,6 @@
-GIT - MZX 2.92
+GIT - MZX 2.91g
+
+USERS
 
 + Added "allow_screenshots" config file option. Setting this
   option to 0 will disable the built-in screenshot feature.
@@ -17,8 +19,6 @@ GIT - MZX 2.92
   inputs as dialog number boxes.
 + The board name in the caption now updates to reflect the
   current board while testing.
-+ When enabled, the FPS display will now appear on the screen
-  in fullscreen mode.
 + Fixed bug where TIME would either decrement normally or not
   decrement at all while the slow time effect was active.
 + Added compatibility for pre-port endgame teleport behavior.
@@ -26,11 +26,34 @@ GIT - MZX 2.92
   itself after being triggered for the first time and any
   following endgame would instead trigger a game over.
 + Reduced stutter in NDS and 3DS main screen scrolling.
-
 + Fixed a bug where creating a string MZM would not correctly
   set the string's length for preexisting strings.
 + Fixed a bug where loading robot source code from a string
   wouldn't work correctly with the robot debugger.
++ The help system is now accessible from the main menu and game
+  menu.
++ The settings screen is now accessible from the main menu, game
+  menu, editor, and palette editor.
++ The shortcut Ctrl+F2 can be used to open the settings screen
+  from anywhere the settings screen is accessible. This shortcut
+  works even if F2 is used for a different feature and will also
+  ignore the value of the F2_MENU counter.
+
+DEVELOPERS
+
++ Implemented a main event loop to replace the various separate
+  event loops scattered around MegaZeux. See core.h and core.c
+  for more info.
++ Refactored the following contexts to use the main loop:
+  titlescreen, gameplay, main menu, game menu, editor, palette
+  editor.
++ When enabled, the debug FPS display will now update from any
+  interface using the main loop. If fullscreen mode is active,
+  the FPS display will now appear in the top-left corner of the
+  screen for any main loop interface aside from the editor.
++ The --disable-screenshots config.sh option can be used to
+  disable screenshot support. This allows platforms that don't
+  use render_layer.c to stop building and linking it.
 
 
 September 17th, 2018 - MZX 2.91f
