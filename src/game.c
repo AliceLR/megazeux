@@ -131,6 +131,23 @@ void load_board_module(struct world *mzx_world)
 }
 
 /**
+ * Fade out before the world load. Hack that should be removed if the NDS ever
+ * gets protected palette support.
+ */
+static inline void load_vquick_fadeout(void)
+{
+#if defined(CONFIG_LOADSAVE_METER) && defined(NO_PROTECTED_PALETTE)
+  // HACK: If using the meter with no protected palette, don't fade out;
+  // the user would like to be able to see the meter. In fact, fade in
+  // in case something else tried to fade out.
+  insta_fadein();
+  return;
+#endif
+
+  vquick_fadeout();
+}
+
+/**
  * Load a world and prepare it for gameplay.
  * On failure, make sure the title's fade setting is restored (if applicable).
  */
@@ -148,7 +165,7 @@ static boolean load_world_gameplay(struct game_context *game, char *name)
   char old_mod_playing[MAX_PATH];
   strcpy(old_mod_playing, mzx_world->real_mod_playing);
 
-  vquick_fadeout();
+  load_vquick_fadeout();
   clear_screen();
 
   game->fade_in = true;
@@ -195,7 +212,7 @@ static boolean load_world_title(struct game_context *game, char *name)
   struct world *mzx_world = ((context *)game)->world;
   boolean ignore;
 
-  vquick_fadeout();
+  load_vquick_fadeout();
   clear_screen();
   enable_intro_mesg();
   game->fade_in = true;
@@ -240,7 +257,7 @@ static boolean load_savegame(struct game_context *game, char *name)
   boolean was_faded = get_fade_status();
   boolean save_is_faded;
 
-  vquick_fadeout();
+  load_vquick_fadeout();
   clear_screen();
   game->fade_in = true;
 

@@ -60,19 +60,25 @@ struct char_element
 #define SCREEN_PIX_W (SCREEN_W * CHAR_W)
 #define SCREEN_PIX_H (SCREEN_H * CHAR_H)
 
-#define CHAR_SIZE 14
-#define CHARSET_SIZE 256
+/**
+ * The Nintendo DS is a bit of a special case in that we support it despite it
+ * not currently handling either the protected charset or the protected palette.
+ */
 #if defined(CONFIG_NDS)
 #define NUM_CHARSETS 2
-#else
+#define NO_PROTECTED_PALETTE
+#endif
+
+#define CHAR_SIZE 14
+#define CHARSET_SIZE 256
+#ifndef NUM_CHARSETS
 #define NUM_CHARSETS 16
-#endif /* CONFIG_NDS */
+#endif
 #define PROTECTED_CHARSET_POSITION ((NUM_CHARSETS - 1) * CHARSET_SIZE)
 #define PRO_CH  PROTECTED_CHARSET_POSITION
 #define FULL_CHARSET_SIZE (CHARSET_SIZE * NUM_CHARSETS)
 
 #define PAL_SIZE 16
-#define NUM_PALS 2
 #define SMZX_PAL_SIZE 256
 #define PROTECTED_PAL_SIZE 16
 #define FULL_PAL_SIZE (SMZX_PAL_SIZE + PROTECTED_PAL_SIZE)
