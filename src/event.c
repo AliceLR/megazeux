@@ -859,6 +859,7 @@ void force_release_all_keys(void)
   force_last_key(keycode_internal, 0);
   memset(status->keymap, 0, sizeof(status->keymap));
 
+  status->key = 0;
   status->mouse_button = 0;
   status->mouse_repeat = 0;
   status->mouse_button_state = 0;
