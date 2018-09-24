@@ -1067,6 +1067,16 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
         cur_robot->label_list =
          cache_robot_labels(cur_robot, &cur_robot->num_labels);
 
+        // Free the robot's source and command map
+        free(cur_robot->program_source);
+        cur_robot->program_source = NULL;
+        cur_robot->program_source_length = 0;
+#ifdef CONFIG_EDITOR
+        free(cur_robot->command_map);
+        cur_robot->command_map_length = 0;
+        cur_robot->command_map = NULL;
+#endif
+
         // Restart this robot if either it was just a LOAD_ROBOT
         // OR LOAD_ROBOTn was used where n is &robot_id&.
         if(load_id == id)
@@ -1101,6 +1111,7 @@ struct string *new_string(struct world *mzx_world, const char *name,
 
   str = find_string(mzx_world, name, &next);
   force_string_length(mzx_world, name, next, &str, &length);
+  str->length = length;
   return str;
 }
 
