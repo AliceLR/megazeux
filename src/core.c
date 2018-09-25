@@ -57,6 +57,7 @@ struct context_data
   enum context_type context_type;
   enum framerate_type framerate;
   subcontext **children;
+  int current_child;
   int num_children;
   int num_children_alloc;
   struct context_spec functions;
@@ -318,7 +319,7 @@ static void add_stack(void ***_stack, int *_num, int *_alloc, void *add)
 /**
  * Remove an element from a stack.
  */
-static void remove_stack(void **stack, int *_num, void *del)
+static int remove_stack(void **stack, int *_num, void *del)
 {
   int num = *_num;
   int i;
@@ -331,11 +332,12 @@ static void remove_stack(void **stack, int *_num, void *del)
         memmove(stack + i, stack + i + 1, num - i - 1);
 
       *_num = (num - 1);
-      return;
+      return i;
     }
   }
 
   error("Context code bug", 2, 4, 0x2B06);
+  return -1;
 }
 
 /**
@@ -471,12 +473,17 @@ void destroy_context(context *ctx)
   }
   else
   {
+    int removed;
     // This is a subcontext, so remove it from its parent context.
     context_data *parent_data = ctx->parent->internal_data;
 
     // If the subcontext isn't on the stack, this will error.
-    remove_stack((void **)(parent_data->children), &(parent_data->num_children),
-     ctx);
+    removed = remove_stack((void **)(parent_data->children),
+     &(parent_data->num_children), ctx);
+
+    // Adjust the current position in case this is mid-iteration.
+    if(removed <= parent_data->current_child)
+      parent_data->current_child--;
   }
 
   if(ctx_data->functions.destroy)
@@ -565,18 +572,21 @@ static void core_resume(core_context *root)
   context_data *ctx_data = ctx->internal_data;
   context_data *sub_data;
   subcontext *sub;
-  int i;
 
   if(ctx_data->functions.resume)
     ctx_data->functions.resume(ctx);
 
-  for(i = 0; i < ctx_data->num_children; i++)
+  ctx_data->current_child = 0;
+
+  while(ctx_data->current_child < ctx_data->num_children)
   {
-    sub = ctx_data->children[i];
+    sub = ctx_data->children[ctx_data->current_child];
     sub_data = ((context *)sub)->internal_data;
 
     if(sub_data->functions.resume)
       sub_data->functions.resume((context *)sub);
+
+    ctx_data->current_child++;
   }
 }
 
@@ -590,14 +600,15 @@ static void core_draw(core_context *root)
   context_data *ctx_data = ctx->internal_data;
   context_data *sub_data;
   subcontext *sub;
-  int i;
 
   if(ctx_data->functions.draw)
     ctx_data->functions.draw(ctx);
 
-  for(i = 0; i < ctx_data->num_children; i++)
+  ctx_data->current_child = 0;
+
+  while(ctx_data->current_child < ctx_data->num_children)
   {
-    sub = ctx_data->children[i];
+    sub = ctx_data->children[ctx_data->current_child];
     sub_data = ((context *)sub)->internal_data;
 
     if(sub_data->functions.draw)
@@ -605,6 +616,8 @@ static void core_draw(core_context *root)
       select_layer(UI_LAYER);
       sub_data->functions.draw((context *)sub);
     }
+
+    ctx_data->current_child++;
   }
 
 #ifdef CONFIG_FPS
@@ -719,8 +732,6 @@ static void core_update(core_context *root)
   boolean mouse_handled = false;
   boolean key_handled = false;
 
-  int i = ctx_data->num_children - 1;
-
   boolean exit_status = get_exit_status();
   int key = get_key(keycode_internal_wrt_numlock);
   int mouse_press = get_mouse_press_ext();
@@ -730,20 +741,21 @@ static void core_update(core_context *root)
 
   get_mouse_position(&mouse_x, &mouse_y);
 
+  ctx_data->current_child = ctx_data->num_children - 1;
+
   do
   {
     // Count down to -1 and break when cur equals ctx.
     // Slightly convoluted, but better than duplicating this loop's logic.
-    if(i < 0)
+    if(ctx_data->current_child < 0)
     {
       cur = ctx;
       cur_data = ctx_data;
     }
     else
     {
-      cur = (context *)ctx_data->children[i];
+      cur = (context *)ctx_data->children[ctx_data->current_child];
       cur_data = cur->internal_data;
-      i--;
     }
 
     if(cur_data->functions.idle)
@@ -785,6 +797,11 @@ static void core_update(core_context *root)
       if(root->context_changed || root->full_exit)
         return;
     }
+
+    // Move to the next subcontext if it hasn't been advanced by a deletion.
+    if(ctx_data->current_child >= 0)
+      if(cur == ctx_data->children[ctx_data->current_child])
+        ctx_data->current_child--;
   }
   while(cur != ctx);
 
