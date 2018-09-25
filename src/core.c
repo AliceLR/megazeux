@@ -762,10 +762,8 @@ static void core_update(core_context *root)
       {
         // Display help.
         if(allow_help_system(root))
-        {
-          m_show(); // FIXME
           help_system(ctx, ctx->world);
-        }
+
         break;
       }
 #endif
@@ -774,10 +772,8 @@ static void core_update(core_context *root)
       {
         // Display settings menu.
         if(allow_configure(root))
-        {
-          m_show(); // FIXME
           game_settings(ctx->world);
-        }
+
         break;
       }
 
@@ -787,6 +783,7 @@ static void core_update(core_context *root)
         // Take screenshot.
         if(get_config(ctx)->allow_screenshots)
           dump_screen();
+
         break;
       }
 #endif

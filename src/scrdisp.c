@@ -117,7 +117,7 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
   int scroll_base_color = mzx_world->scroll_base_color;
   bool editing = (type == 2);
 
-  // Draw screen
+  m_show();
   save_screen();
   disable_gui_mode0();
   dialog_fadein();
@@ -558,9 +558,9 @@ void help_display(struct world *mzx_world, char *help, int offs, char *file,
   int t1;
   char mclick;
   // allow_help = 0;
-  // Draw screen
-  save_screen();
 
+  m_show();
+  save_screen();
   dialog_fadein();
 
   scroll_edging_ext(mzx_world, 3, PRO_CH, 16);

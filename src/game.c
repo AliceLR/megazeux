@@ -295,7 +295,6 @@ static boolean load_world_title_selection(struct game_context *game)
   struct world *mzx_world = ((context *)game)->world;
   char world_name[MAX_PATH] = { 0 };
 
-  m_show();
   if(!choose_file_ch(mzx_world, world_ext, world_name, "Load World", true))
   {
     return load_world_title(game, world_name);
@@ -313,7 +312,6 @@ static boolean load_savegame_selection(struct game_context *game)
   struct world *mzx_world = ((context *)game)->world;
   char save_file_name[MAX_PATH] = { 0 };
 
-  m_show();
   if(!choose_file_ch(mzx_world, save_ext, save_file_name,
     "Choose game to restore", true))
   {
@@ -351,6 +349,7 @@ static void game_draw(context *ctx)
     set_context_framerate_mode(ctx, FRAMERATE_UI);
     if(!conf->standalone_mode)
       draw_intro_mesg(mzx_world);
+    m_show();
     return;
   }
 
@@ -528,7 +527,6 @@ static boolean game_key(context *ctx, int *key)
           char save_game[MAX_PATH];
           strcpy(save_game, curr_sav);
 
-          m_show();
           if(!new_file(mzx_world, save_ext, ".sav", save_game, "Save game", 1))
           {
             strcpy(curr_sav, save_game);
@@ -672,8 +670,6 @@ static boolean game_key(context *ctx, int *key)
     }
     else
     {
-      m_show();
-
       if(!confirm(mzx_world, "Quit playing- Are you sure?"))
         destroy_context(ctx);
     }
@@ -948,8 +944,6 @@ static boolean title_key(context *ctx, int *key)
     }
     else
     {
-      m_show();
-
       if(!confirm(mzx_world, "Exit MegaZeux - Are you sure?"))
         destroy_context(ctx);
     }

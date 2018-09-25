@@ -3569,7 +3569,7 @@ void run_robot(context *ctx, int id, int x, int y)
         char input_buffer_msg[71 + 1];
         char *break_pos;
 
-        m_hide();
+        m_show();
         save_screen();
         dialog_fadein();
 
@@ -3587,7 +3587,6 @@ void run_robot(context *ctx, int id, int x, int y)
         tr_msg(mzx_world, input_buffer_msg, id, input_buffer);
         write_string(input_buffer, 5, 12, DI_INPUT_BOX_LABEL, 0);
 
-        m_show();
         src_board->input_string[0] = 0;
 
         intake(mzx_world, src_board->input_string,
@@ -5695,7 +5694,6 @@ void run_robot(context *ctx, int id, int x, int y)
         if(get_exit_status() || get_key_status(keycode_internal, IKEY_ESCAPE))
         {
           boolean exit_game;
-          m_show();
           dialog_fadein();
           exit_game = !confirm(mzx_world,
            "MegaZeux appears to have frozen. Do you want to exit?");

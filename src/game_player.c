@@ -577,7 +577,6 @@ static void open_chest(struct world *mzx_world, int chest_x, int chest_y)
     case ITEM_POTION: // Potion
     {
       int answer;
-      m_show();
       answer = confirm(mzx_world,
        "Inside the chest you find a potion. Drink it?");
 
@@ -591,7 +590,6 @@ static void open_chest(struct world *mzx_world, int chest_x, int chest_y)
     case ITEM_RING: // Ring
     {
       int answer;
-      m_show();
       answer = confirm(mzx_world,
        "Inside the chest you find a ring. Wear it?");
 
@@ -1013,7 +1011,6 @@ void grab_item(struct world *mzx_world, int item_x, int item_y, int src_dir)
       int idx = param;
       play_sfx(mzx_world, SFX_SCROLL_SIGN);
 
-      m_show();
       scroll_edit(mzx_world, cur_board->scroll_list[idx], id & 1);
 
       if(id == SCROLL)

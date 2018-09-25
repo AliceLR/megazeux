@@ -363,8 +363,6 @@ void __debug_robot_config(struct world *mzx_world)
 
   set_context(CTX_BREAKPOINT_EDITOR);
 
-  m_show();
-
   do
   {
     char **br_list = ccalloc(num_breakpoints + 1, sizeof(char *));
@@ -986,7 +984,6 @@ static int debug_robot(context *ctx, struct robot *cur_robot, int id,
     construct_dialog_ext(&di, title, 0, dialog_y, 80, height,
      elements, num_elements, 0, 0, selected, debug_robot_idle_function);
 
-    m_show();
     dialog_result = run_dialog(mzx_world, &di);
 
     if(dialog_result > OP_DO_NOTHING)

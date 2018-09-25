@@ -54,6 +54,7 @@ DEVELOPERS
 + The --disable-screenshots config.sh option can be used to
   disable screenshot support. This allows platforms that don't
   use render_layer.c to stop building and linking it.
++ Cleaned up m_show()/m_hide() overuse.
 
 
 September 17th, 2018 - MZX 2.91f

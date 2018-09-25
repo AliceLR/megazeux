@@ -1070,12 +1070,11 @@ int edit_robot(struct world *mzx_world, struct robot *cur_robot)
 {
   int new_char;
   // First get name...
-  m_hide();
+  m_show();
   save_screen();
   draw_window_box(16, 12, 50, 14, DI_DEBUG_BOX, DI_DEBUG_BOX_DARK,
    DI_DEBUG_BOX_CORNER, 1, 1);
   write_string("Name for robot:", 18, 13, DI_DEBUG_LABEL, 0);
-  m_show();
 
   if(intake(mzx_world, cur_robot->robot_name, 14, 34, 13,
    15, 1, 0, NULL, 0, NULL) != IKEY_ESCAPE && !get_exit_status())

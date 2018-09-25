@@ -3482,7 +3482,6 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
       case IKEY_F1:
       {
         // FIXME context
-        m_show();
         help_system(NULL, mzx_world);
         break;
       }

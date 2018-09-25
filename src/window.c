@@ -897,6 +897,7 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
     set_context(get_context(NULL));
 
   cursor_off();
+  m_show();
 
   save_screen();
 

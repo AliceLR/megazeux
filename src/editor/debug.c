@@ -1887,8 +1887,6 @@ void __debug_counters(context *ctx)
 
   set_context(CTX_COUNTER_DEBUG);
 
-  m_show();
-
   // also known as crash_stack
   build_debug_tree(mzx_world, &root);
 
@@ -2231,8 +2229,6 @@ void __debug_counters(context *ctx)
     destruct_dialog(&di);
 
   } while(dialog_result != -1);
-
-  m_hide();
 
   pop_context();
 
