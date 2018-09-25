@@ -389,11 +389,13 @@ static bool process_event(SDL_Event *event)
         break;
       }
 
+#ifdef CONFIG_ENABLE_SCREENSHOTS
       if(ckey == IKEY_F12 && enable_f12_hack)
       {
         dump_screen();
         break;
       }
+#endif
 
       // Ignore alt + tab
       if((ckey == IKEY_TAB) && get_alt_status(keycode_internal))

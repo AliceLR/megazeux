@@ -673,12 +673,12 @@ if [ "$GL" = "false" ]; then
 fi
 
 #
-# Force-disable PNG support on platforms without screenshots enabled.
+# Force-disable PNG support on platforms without screenshots or utils enabled.
 # The 3DS port requires PNG for other purposes.
 #
-if [ "$SCREENSHOTS" = "false" -a "$LIBPNG" = "true" \
-  -a "$PLATFORM" != "3ds" ]; then
-	echo "Force-disabling PNG support (screenshots disabled)"
+if [ "$SCREENSHOTS" = "false" -a "$UTILS" = "false" \
+  -a "$LIBPNG" = "true" -a "$PLATFORM" != "3ds" ]; then
+	echo "Force-disabling PNG support (screenshots and utils disabled)"
 	LIBPNG="false"
 fi
 
