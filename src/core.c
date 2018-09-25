@@ -143,7 +143,6 @@ static void update_fps(int current_ticks)
 }
 #endif
 
-#ifdef DEBUG
 #define CTX_NAME_MAX_SIZE 16
 
 /**
@@ -241,15 +240,37 @@ static void print_ctx_line(context_data *ctx_data)
  * Debug: print the entire context stack to the terminal.
  */
 
-static void print_core_stack(context *_ctx)
+#define print_core_stack(ctx) __print_core_stack(ctx, __FILE__, __LINE__)
+
+static void __print_core_stack(context *_ctx, const char *file, int line)
 {
-  core_context *root = _ctx->root;
+  core_context *root;
   context_data *ctx_data;
   context_data *sub_data;
   int i;
   int i2;
 
-  fprintf(stderr, "CTX STACK        | Res Drw Idl Key Clk Drg Dst | Fr. \n");
+  if(file)
+    fprintf(stderr, "%s line %d:\n", file, line);
+
+  if(!_ctx)
+  {
+    fprintf(stderr, "Context is NULL!\n");
+    fflush(stderr);
+    return;
+  }
+  else
+
+  if(!_ctx->root)
+  {
+    fprintf(stderr, "Context root is NULL!\n");
+    fflush(stderr);
+    return;
+  }
+
+  root = _ctx->root;
+
+  fprintf(stderr, "CONTEXT STACK    | Res Drw Idl Key Clk Drg Dst | Fr. \n");
   fprintf(stderr, "-----------------|-----------------------------|-----\n");
 
   for(i = root->ctx_stack_size - 1; i >= 0; i--)
@@ -267,9 +288,6 @@ static void print_core_stack(context *_ctx)
   fprintf(stderr, "\n");
   fflush(stderr);
 }
-#else // !DEBUG
-static inline void print_core_stack(context *_ctx) {}
-#endif // !DEBUG
 
 /**
  * Add an element to a stack
@@ -338,7 +356,10 @@ void create_context(context *ctx, context *parent,
   if(parent == NULL || !ctx_spec ||
    (ctx_spec->key == NULL && ctx_spec->click == NULL &&
     ctx_spec->drag == NULL && ctx_spec->idle == NULL))
+  {
+    print_core_stack(parent);
     error("Context code bug", 2, 4, 0x2B01);
+  }
 
   // If the parent is a subcontext, try to find the real parent context.
   while(parent->parent && parent->internal_data &&
@@ -347,7 +368,10 @@ void create_context(context *ctx, context *parent,
 
   // Root needs to exist so this context can be added to the stack.
   if(!parent->root)
+  {
+    print_core_stack(parent);
     error("Context code bug", 2, 4, 0x2B07);
+  }
 
   if(!ctx) ctx = cmalloc(sizeof(struct context));
   ctx_data = cmalloc(sizeof(struct context_data));
@@ -392,7 +416,10 @@ CORE_LIBSPEC void create_subcontext(subcontext *sub, context *parent,
   // this isn't some weird glitched context.
   if(!parent || !parent->root || parent == (context *)(parent->root) ||
    parent->parent || !parent->internal_data || !sub_spec)
+  {
+    print_core_stack(parent);
     error("Context code bug", 2, 4, 0x2B08);
+  }
 
   root = parent->root;
   parent_data = parent->internal_data;
@@ -466,7 +493,10 @@ void destroy_context(context *ctx)
 boolean has_context_changed(context *ctx)
 {
   if(!ctx || !ctx->root)
+  {
+    print_core_stack(ctx);
     error("Context code bug", 2, ERROR_OPT_EXIT, 0x2B09);
+  }
 
   return (ctx->root->context_changed);
 }
@@ -478,7 +508,10 @@ boolean has_context_changed(context *ctx)
 boolean is_context(context *ctx, enum context_type context_type)
 {
   if(!ctx || !ctx->internal_data)
+  {
+    print_core_stack(ctx);
     error("Context code bug", 2, ERROR_OPT_EXIT, 0x2B02);
+  }
 
   return (ctx->internal_data->context_type == context_type);
 }
@@ -490,7 +523,10 @@ boolean is_context(context *ctx, enum context_type context_type)
 void set_context_framerate_mode(context *ctx, enum framerate_type framerate)
 {
   if(!ctx || !ctx->internal_data)
+  {
+    print_core_stack(ctx);
     error("Context code bug", 2, ERROR_OPT_EXIT, 0x2B03);
+  }
 
   ctx->internal_data->framerate = framerate;
 }
@@ -777,16 +813,23 @@ static void core_update(core_context *root)
         break;
       }
 
-#ifdef CONFIG_ENABLE_SCREENSHOTS
       case IKEY_F12:
       {
+#ifdef DEBUG
+        if(get_alt_status(keycode_internal_wrt_numlock))
+        {
+          print_core_stack(ctx);
+          break;
+        }
+#endif
+
+#ifdef CONFIG_ENABLE_SCREENSHOTS
         // Take screenshot.
         if(get_config(ctx)->allow_screenshots)
           dump_screen();
-
+#endif
         break;
       }
-#endif
     }
   }
 }
@@ -820,7 +863,6 @@ void core_run(core_context *root)
     while(root->context_changed)
     {
       root->context_changed = false;
-      print_core_stack((context *)root);
       force_release_all_keys();
       core_resume(root);
 
@@ -876,6 +918,7 @@ void core_run(core_context *root)
 
       default:
       {
+        print_core_stack(ctx);
         error("Context code bug", 2, 4, 0x2B05);
       }
     }
@@ -903,7 +946,10 @@ void core_run(core_context *root)
 void core_exit(context *ctx)
 {
   if(!ctx)
+  {
+    print_core_stack(ctx);
     error("Context code bug", 2, 4, 0x2B04);
+  }
 
   ctx->root->full_exit = true;
 }
