@@ -3486,6 +3486,7 @@ static void __edit_world(context *parent, boolean reload_curr_file)
     if(!get_alt_status(keycode_internal))
       editor->first_board_prompt = true;
 
+    audio_end_module();
     default_palette();
   }
 
