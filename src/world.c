@@ -2157,7 +2157,8 @@ int save_world(struct world *mzx_world, const char *file, boolean savegame,
 
   if(world_version == MZX_VERSION_PREV)
   {
-    error("Downver. not currently supported by debytecode.", 1, 8, 0);
+    error("Downver. not currently supported by debytecode.",
+     ERROR_T_ERROR, ERROR_OPT_OK, 0x0000);
     return -1;
   }
 

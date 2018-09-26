@@ -38,7 +38,7 @@ static const char *const error_type_names[] =
   " WARNING: ",         // 0
   " ERROR: ",           // 1
   " FATAL ERROR: ",     // 2
-  " CRITICAL ERROR: ",  // 3
+  " CRITICAL ERROR: ",  // 3, unused
 };
 
 // Note: ERROR_OPT_SUPPRESS should only be used by error_message().
@@ -213,7 +213,7 @@ int error(const char *string, unsigned int type, unsigned int options,
 }
 
 
-static char suppress_errors[NUM_ERROR_CODES];
+static boolean suppress_errors[NUM_ERROR_CODES];
 static int error_count = 0;
 
 // Wrapper for error().
@@ -224,7 +224,7 @@ int error_message(enum error_code id, int parameter, const char *string)
   int hi = (parameter & 0xFF00) >> 8;
   int lo = (parameter & 0xFF);
   int opts = ERROR_OPT_OK | ERROR_OPT_SUPPRESS;
-  int severity = 1; // ERROR
+  int severity = ERROR_T_ERROR;
   int code = id;
   int result;
 
@@ -233,6 +233,13 @@ int error_message(enum error_code id, int parameter, const char *string)
 
   switch (id)
   {
+    case E_CORE_FATAL_BUG:
+      sprintf(error_mesg, "Context code bug");
+      severity = ERROR_T_FATAL;
+      opts = ERROR_OPT_EXIT;
+      code = 0x2B00 | (parameter & 0xFF);
+      break;
+
     case E_FILE_DOES_NOT_EXIST:
       sprintf(error_mesg, "File doesn't exist");
       break;
@@ -436,6 +443,14 @@ int error_message(enum error_code id, int parameter, const char *string)
       code = 0x9007;
       break;
 
+#ifdef CONFIG_UPDATER
+    case E_UPDATE:
+      snprintf(error_mesg, 79, "%s", string);
+      code = 0xA200 | (parameter & 0xFF);
+      string = NULL;
+      break;
+#endif
+
 #ifdef CONFIG_DEBYTECODE
     case E_DBC_WORLD_OVERWRITE_OLD:
       sprintf(error_mesg,
@@ -481,7 +496,7 @@ int error_message(enum error_code id, int parameter, const char *string)
 
   if(result == ERROR_OPT_SUPPRESS)
   {
-    suppress_errors[id] = 1;
+    suppress_errors[id] = true;
     return ERROR_OPT_OK;
   }
 
@@ -495,14 +510,15 @@ int get_and_reset_error_count(void)
   return count;
 }
 
-void set_error_suppression(enum error_code id, int value)
+void set_error_suppression(enum error_code id, boolean enable)
 {
-  suppress_errors[id] = (char)value;
+  if(id >= 0)
+    suppress_errors[id] = enable;
 }
 
 void reset_error_suppression(void)
 {
   int i;
-  for (i = 0; i < NUM_ERROR_CODES; i++)
-    suppress_errors[i] = 0;
+  for(i = 0; i < NUM_ERROR_CODES; i++)
+    suppress_errors[i] = false;
 }

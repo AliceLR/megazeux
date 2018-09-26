@@ -82,7 +82,7 @@ int save_screen(void)
   if(cur_screen >= NUM_SAVSCR)
   {
     cur_screen = 0;
-    error("Windowing code bug", 2, 4, 0x1F01);
+    error("Windowing code bug", ERROR_T_FATAL, ERROR_OPT_EXIT, 0x1F01);
   }
 
   get_screen(screen_storage[cur_screen]);
@@ -96,7 +96,7 @@ int save_screen(void)
 int restore_screen(void)
 {
   if(cur_screen == 0)
-    error("Windowing code bug", 2, 4, 0x1F02);
+    error("Windowing code bug", ERROR_T_FATAL, ERROR_OPT_EXIT, 0x1F02);
 
   cur_screen--;
   set_screen(screen_storage[cur_screen]);
@@ -2994,7 +2994,8 @@ skip_dir:
         // the complete name
         if(di.current_element == FILESEL_FILE_LIST &&
          strcmp(ret_file, file_list[chosen_file] + 56))
-          join_path_names(ret, MAX_PATH, current_dir_name, file_list[chosen_file] + 56);
+          join_path_names(ret, MAX_PATH, current_dir_name,
+           file_list[chosen_file] + 56);
 
         if(default_ext)
           add_ext(ret, default_ext);
@@ -3069,7 +3070,7 @@ skip_dir:
           {
             char error_str[512];
             sprintf(error_str, "%s already exists.", new_name);
-            error(error_str, 1, 8, 0x0000);
+            error(error_str, ERROR_T_ERROR, ERROR_OPT_OK, 0x0000);
           }
         }
 
@@ -3108,12 +3109,14 @@ skip_dir:
 
         if(!confirm_input(mzx_world, "Rename File", "New file name:", new_name))
         {
-          join_path_names(old_path, MAX_PATH, current_dir_name, file_list[chosen_file] + 56);
+          join_path_names(old_path, MAX_PATH, current_dir_name,
+           file_list[chosen_file] + 56);
           join_path_names(new_path, MAX_PATH, current_dir_name, new_name);
 
           if(strcmp(old_path, new_path))
             if(rename(old_path, new_path))
-              error("File rename failed.", 0, 8, 0x0000);
+              error("File rename failed.",
+               ERROR_T_WARNING, ERROR_OPT_OK, 0x0000);
 
         }
 
@@ -3137,7 +3140,8 @@ skip_dir:
           if(!confirm(mzx_world, confirm_string))
           {
             char file_name_ch[MAX_PATH];
-            join_path_names(file_name_ch, MAX_PATH, current_dir_name, dir_list[chosen_dir]);
+            join_path_names(file_name_ch, MAX_PATH, current_dir_name,
+             dir_list[chosen_dir]);
 
             if(!ask_yes_no(mzx_world,
              (char *)"Delete subdirectories recursively?"))
@@ -3155,7 +3159,6 @@ skip_dir:
       }
 
       // Rename directory
-      // I didn't just copy the rename file code and change a couple of things, no siree
       case 7:
       {
         if(strcmp(dir_list[chosen_dir], "..") &&
@@ -3167,14 +3170,17 @@ skip_dir:
 
           strncpy(new_name, dir_list[chosen_dir], MAX_PATH);
 
-          if(!confirm_input(mzx_world, "Rename Directory", "New directory name:", new_name))
+          if(!confirm_input(mzx_world, "Rename Directory",
+           "New directory name:", new_name))
           {
-            join_path_names(old_path, MAX_PATH, current_dir_name, dir_list[chosen_dir]);
+            join_path_names(old_path, MAX_PATH, current_dir_name,
+             dir_list[chosen_dir]);
             join_path_names(new_path, MAX_PATH, current_dir_name, new_name);
 
             if(strcmp(old_path, new_path))
               if(rename(old_path, new_path))
-                error("Directory rename failed.", 0, 8, 0x0000);
+                error("Directory rename failed.",
+                 ERROR_T_WARNING, ERROR_OPT_OK, 0x0000);
 
           }
 

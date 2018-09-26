@@ -495,7 +495,8 @@ void thing_menu(context *ctx, enum thing_menu_id menu_number,
   old_id = (enum thing)cur_board->level_id[x + (y * cur_board->board_width)];
   if(old_id == PLAYER && editor_conf->editor_thing_menu_places)
   {
-    error("Cannot overwrite the player- move it first", 0, 8, 0x0000);
+    error("Cannot overwrite the player- move it first",
+     ERROR_T_WARNING, ERROR_OPT_OK, 0x0000);
     return;
   }
 

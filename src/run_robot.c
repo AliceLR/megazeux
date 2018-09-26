@@ -5241,11 +5241,14 @@ void run_robot(context *ctx, int id, int x, int y)
           boolean ignore; // FIXME: Hack!
           redo_load = 0;
           if(!reload_swap(mzx_world, translated_name, &ignore))
-            redo_load = error("Error swapping to next world", 1, 3, 0x2C01);
-        } while(redo_load == 2);
+          {
+            redo_load = error("Error swapping to next world",
+             ERROR_T_ERROR, ERROR_OPT_FAIL|ERROR_OPT_RETRY, 0x2C01);
+          }
+        } while(redo_load == ERROR_OPT_RETRY);
 
         // User asked to "Fail" on error message above
-        if(redo_load == 1)
+        if(redo_load == ERROR_OPT_FAIL)
           break;
 
         mzx_world->change_game_state = CHANGE_STATE_SWAP_WORLD;

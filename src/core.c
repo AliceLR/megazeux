@@ -336,7 +336,7 @@ static int remove_stack(void **stack, int *_num, void *del)
     }
   }
 
-  error("Context code bug", 2, 4, 0x2B06);
+  error_message(E_CORE_FATAL_BUG, 6, NULL);
   return -1;
 }
 
@@ -360,7 +360,8 @@ void create_context(context *ctx, context *parent,
     ctx_spec->drag == NULL && ctx_spec->idle == NULL))
   {
     print_core_stack(parent);
-    error("Context code bug", 2, 4, 0x2B01);
+    error_message(E_CORE_FATAL_BUG, 1, NULL);
+    return;
   }
 
   // If the parent is a subcontext, try to find the real parent context.
@@ -372,7 +373,8 @@ void create_context(context *ctx, context *parent,
   if(!parent->root)
   {
     print_core_stack(parent);
-    error("Context code bug", 2, 4, 0x2B07);
+    error_message(E_CORE_FATAL_BUG, 7, NULL);
+    return;
   }
 
   if(!ctx) ctx = cmalloc(sizeof(struct context));
@@ -420,7 +422,8 @@ CORE_LIBSPEC void create_subcontext(subcontext *sub, context *parent,
    parent->parent || !parent->internal_data || !sub_spec)
   {
     print_core_stack(parent);
-    error("Context code bug", 2, 4, 0x2B08);
+    error_message(E_CORE_FATAL_BUG, 8, NULL);
+    return;
   }
 
   root = parent->root;
@@ -502,7 +505,8 @@ boolean has_context_changed(context *ctx)
   if(!ctx || !ctx->root)
   {
     print_core_stack(ctx);
-    error("Context code bug", 2, ERROR_OPT_EXIT, 0x2B09);
+    error_message(E_CORE_FATAL_BUG, 9, NULL);
+    return true;
   }
 
   return (ctx->root->context_changed);
@@ -517,7 +521,8 @@ boolean is_context(context *ctx, enum context_type context_type)
   if(!ctx || !ctx->internal_data)
   {
     print_core_stack(ctx);
-    error("Context code bug", 2, ERROR_OPT_EXIT, 0x2B02);
+    error_message(E_CORE_FATAL_BUG, 2, NULL);
+    return false;
   }
 
   return (ctx->internal_data->context_type == context_type);
@@ -532,7 +537,8 @@ void set_context_framerate_mode(context *ctx, enum framerate_type framerate)
   if(!ctx || !ctx->internal_data)
   {
     print_core_stack(ctx);
-    error("Context code bug", 2, ERROR_OPT_EXIT, 0x2B03);
+    error_message(E_CORE_FATAL_BUG, 3, NULL);
+    return;
   }
 
   ctx->internal_data->framerate = framerate;
@@ -936,7 +942,8 @@ void core_run(core_context *root)
       default:
       {
         print_core_stack(ctx);
-        error("Context code bug", 2, 4, 0x2B05);
+        error_message(E_CORE_FATAL_BUG, 5, NULL);
+        break;
       }
     }
 
@@ -962,10 +969,11 @@ void core_run(core_context *root)
 
 void core_exit(context *ctx)
 {
-  if(!ctx)
+  if(!ctx || !ctx->root)
   {
     print_core_stack(ctx);
-    error("Context code bug", 2, 4, 0x2B04);
+    error_message(E_CORE_FATAL_BUG, 4, NULL);
+    return;
   }
 
   ctx->root->full_exit = true;

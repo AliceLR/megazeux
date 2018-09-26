@@ -828,8 +828,8 @@ static boolean title_key(context *ctx, int *key)
       {
         if(mzx_world->only_from_swap)
         {
-          error("You can only play this game via a swap"
-           " from another game", 0, 24, 0x3101);
+          error("You can only play this game via a swap from another game",
+           ERROR_T_WARNING, ERROR_OPT_OK, 0x3101);
           return true;
         }
 

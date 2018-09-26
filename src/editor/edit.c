@@ -1904,7 +1904,8 @@ static boolean editor_key(context *ctx, int *key)
 
         if(block->dest_mode == EDIT_OVERLAY && !cur_board->overlay_mode)
         {
-          error("Overlay mode is not on (see Board Info)", 0, 8, 0x1103);
+          error("Overlay mode is not on (see Board Info)",
+           ERROR_T_WARNING, ERROR_OPT_OK, 0x1103);
           editor->cursor_mode = CURSOR_PLACE;
           return true;
         }
@@ -2778,7 +2779,7 @@ static boolean editor_key(context *ctx, int *key)
             if(!cur_board->overlay_mode)
             {
               error("Overlay mode is not on (see Board Info)",
-               0, 8, 0x1103);
+               ERROR_T_WARNING, ERROR_OPT_OK, 0x1103);
             }
             else
             {
