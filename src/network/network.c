@@ -23,21 +23,22 @@
 
 bool network_layer_init(struct config_info *conf)
 {
-    if(!conf->network_enabled)
-        return false;
+  if(!conf->network_enabled)
+    return false;
 
-    if(!host_layer_init(conf))
-    {
-        error("Failed to initialize network layer.", 1, 8, 0);
-        return false;
-    }
+  if(!host_layer_init(conf))
+  {
+    error("Failed to initialize network layer.",
+     ERROR_T_ERROR, ERROR_OPT_OK, 0);
+    return false;
+  }
 
-    return true;
+  return true;
 }
 
 void network_layer_exit(struct config_info *conf)
 {
-    if(!conf->network_enabled)
-        return;
-    host_layer_exit();
+  if(!conf->network_enabled)
+    return;
+  host_layer_exit();
 }

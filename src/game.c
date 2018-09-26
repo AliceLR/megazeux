@@ -3,6 +3,7 @@
  * Copyright (C) 1996 Greg Janson
  * Copyright (C) 1999 Charles Goetzman
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
+ * Copyright (C) 2018 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -27,338 +28,72 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#ifndef _MSC_VER
-#include <unistd.h>
-#endif
-
-#include "board.h"
+#include "caption.h"
+#include "configure.h"
 #include "const.h"
+#include "core.h"
 #include "counter.h"
 #include "data.h"
 #include "error.h"
 #include "event.h"
-#include "extmem.h"
 #include "fsafeopen.h"
 #include "game.h"
-#include "game2.h"
+#include "game_menu.h"
+#include "game_player.h"
+#include "game_update.h"
 #include "graphics.h"
-#include "helpsys.h"
-#include "idarray.h"
-#include "idput.h"
 #include "platform.h"
 #include "robot.h"
-#include "scrdisp.h"
-#include "sprite.h"
 #include "util.h"
 #include "window.h"
 #include "world.h"
+#include "world_struct.h"
 
 #include "audio/audio.h"
 #include "audio/sfx.h"
 
-#define MESG_TIMEOUT 160
-
-// Number of cycles to make player idle before repeating a
-// directional move
-#define REPEAT_WAIT 2
-
-#define MAX_CAPTION_SIZE 120
-#define CAPTION_SPACER "::"
-
-static const char main_menu_1[] =
- "Enter- Menu\n"
- "Esc  - Exit MegaZeux\n";
-
-static const char main_menu_2[] =
- "F1/H - Help\n";
-
-static const char main_menu_3[] =
- "F2/S - Settings\n"
- "F3/L - Load world\n"
- "F4/R - Restore game\n"
- "F5/P - Play world";
-
-static const char main_menu_4[] =
- "F7/U - Updater";
-
-static const char main_menu_5[] =
- "F8/N - New World\n"
- "F9/E - Edit World";
-
-static const char main_menu_6[] =
- "F10  - Quickload\n";
-// "";  // unused
-
-static const char game_menu_1[] =
- "F1    - Help\n";
-
-static const char game_menu_2[] =
- "Enter - Menu/status\n"
- "Esc   - Exit to title\n"
- "F2    - Settings\n"
- "F3    - Save game\n"
- "F4    - Restore game\n"
- "F5/Ins- Toggle bomb type";
-
-static const char game_menu_3[] =
- "F6    - Debug Menu";
-
-static const char game_menu_4[] =
- "F9    - Quicksave\n"
- "F10   - Quickload\n"
- "Arrows- Move\n"
- "Space - Shoot (w/dir)\n"
- "Delete- Bomb";
-
-__updater_maybe_static void (*check_for_updates)(struct world *mzx_world,
- struct config_info *conf, int is_automatic);
-
-__editor_maybe_static void (*edit_world)(struct world *mzx_world,
- int reload_curr_file);
-__editor_maybe_static void (*debug_counters)(struct world *mzx_world);
-__editor_maybe_static void (*draw_debug_box)(struct world *mzx_world,
- int x, int y, int d_x, int d_y, int show_keys);
-
-__editor_maybe_static void (*debug_robot_config)(struct world *mzx_world);
-
+static const char *const world_ext[] = { ".MZX", NULL };
 static const char *const save_ext[] = { ".SAV", NULL };
-static int update_music;
 
-static bool editing = true;
-
-//Bit 1- +1
-//Bit 2- -1
-//Bit 4- +width
-//Bit 8- -width
-static const char cw_offs[8] = { 10, 2, 6, 4, 5, 1, 9, 8 };
-static const char ccw_offs[8] = { 10, 8, 9, 1, 5, 4, 6, 2 };
-
-// Whether to update a palette from robot activity
-bool pal_update;
-
-#ifdef CONFIG_FPS
-double average_fps;
-#endif /* CONFIG_FPS */
-
-__editor_maybe_static const char *const world_ext[] = { ".MZX", NULL };
-
-__editor_maybe_static bool debug_mode;
-
-static unsigned int intro_mesg_timer = MESG_TIMEOUT;
-
-void set_intro_mesg_timer(unsigned int time)
+struct game_context
 {
-  intro_mesg_timer = time;
-}
+  context ctx;
+  boolean fade_in;
+  boolean need_reload;
+  boolean load_dialog_on_failed_load;
+  boolean is_title;
+};
 
-static void draw_intro_mesg(struct world *mzx_world)
+/**
+ * Load a module for gameplay.
+ */
+
+boolean load_game_module(struct world *mzx_world, char *filename,
+ boolean fail_if_same)
 {
-  static const char mesg1[] = "F1: Help   ";
-  static const char mesg2[] = "Enter: Menu   Ctrl-Alt-Enter: Fullscreen";
-  struct config_info *conf = &mzx_world->conf;
-
-  if(intro_mesg_timer == 0)
-    return;
-
-  if(conf->standalone_mode)
-    return;
-
-  if(mzx_world->help_file)
-  {
-    write_string(mesg1, 14, 24, scroll_color, 0);
-    write_string(mesg2, 25, 24, scroll_color, 0);
-  }
-  else
-  {
-    write_string(mesg2, 20, 24, scroll_color, 0);
-  }
-}
-
-static void strip_caption_string(char *output, char *input)
-{
-  unsigned int i, j;
-  output[0] = '\0';
-
-  for(i = 0, j = 0; i < strlen(input); i++)
-  {
-    if(input[i] < 32 || input[i] > 126)
-      continue;
-
-    if(input[i] == '~' || input[i] == '@')
-    {
-      i++;
-      if(input[i - 1] != input[i])
-        continue;
-    }
-
-    output[j] = input[i];
-
-    if(output[j] != ' ' || (j > 0 && output[j - 1] != ' '))
-      j++;
-  }
-
-  if(j > 0 && output[j - 1] == ' ')
-    j--;
-
-  output[j] = '\0';
-  return;
-}
-
-__editor_maybe_static
-void set_caption(struct world *mzx_world, struct board *board,
- struct robot *robot, int editor, int modified)
-{
-  char *default_caption = get_default_caption();
-  char *caption = cmalloc(MAX_CAPTION_SIZE);
-  char *buffer = cmalloc(MAX_CAPTION_SIZE);
-  char *stripped_name = cmalloc(MAX_CAPTION_SIZE);
-  caption[0] = '\0';
-
-  if(modified)
-    strcpy(caption, "*");
-
-  if(robot)
-  {
-    strip_caption_string(stripped_name, robot->robot_name);
-    if(!strlen(stripped_name))
-      strcpy(stripped_name, "Untitled robot");
-
-    snprintf(buffer, MAX_CAPTION_SIZE, "%s %s (%i,%i) %s", caption,
-     stripped_name, robot->xpos, robot->ypos, CAPTION_SPACER);
-    strcpy(caption, buffer);
-  }
-
-  if(board)
-  {
-    strip_caption_string(stripped_name, board->board_name);
-    if(!strlen(stripped_name))
-      strcpy(stripped_name, "Untitled board");
-
-    snprintf(buffer, MAX_CAPTION_SIZE, "%s %s %s", caption,
-     stripped_name, CAPTION_SPACER);
-    strcpy(caption, buffer);
-  }
-
-  if(mzx_world->active)
-  {
-    strip_caption_string(stripped_name, mzx_world->name);
-    if(!strlen(stripped_name))
-      strcpy(stripped_name, "Untitled world");
-
-    snprintf(buffer, MAX_CAPTION_SIZE, "%s %s %s", caption,
-     stripped_name, CAPTION_SPACER);
-    strcpy(caption, buffer);
-  }
-
-  snprintf(buffer, MAX_CAPTION_SIZE, "%s %s", caption, default_caption);
-  strcpy(caption, buffer);
-
-  if(editor)
-  {
-    snprintf(buffer, MAX_CAPTION_SIZE, "%s %s", caption, "(editor)");
-    strcpy(caption, buffer);
-  }
-
-#ifdef CONFIG_UPDATER
-  if(mzx_world->conf.update_available)
-  {
-    snprintf(buffer, MAX_CAPTION_SIZE, "%s %s", caption,
-     "*** UPDATES AVAILABLE ***");
-    strcpy(caption, buffer);
-  }
-#endif
-
-#ifdef CONFIG_FPS
-  if(mzx_world->active && !editor && !robot && !board)
-  {
-    snprintf(buffer, MAX_CAPTION_SIZE, "%s %s FPS: %f", caption,
-     CAPTION_SPACER, average_fps);
-    strcpy(caption, buffer);
-  }
-#endif /* CONFIG_FPS */
-
-  caption[MAX_CAPTION_SIZE - 1] = 0;
-  set_window_caption(caption);
-
-  free(stripped_name);
-  free(caption);
-  free(buffer);
-}
-
-static int load_board_module_change_test(struct world *mzx_world, char *filename)
-{
-  // Determine if a board module should stay the same on a board transition.
-  // Unlike magic_load_mod, does not actually change the playing mod, and will
-  // fail if the names are exactly the same.
-
+  struct board *cur_board = mzx_world->current_board;
   char translated_name[MAX_PATH];
-  int mod_star = 0;
-  int n_result;
-
-  size_t mod_name_size;
-
-  // Special case: mod "" ends the module.
-  if(!filename[0])
-    return 1;
-
-  // Temporarily remove *
-  mod_name_size = strlen(filename);
-  if(mod_name_size && filename[mod_name_size - 1] == '*')
-  {
-    filename[mod_name_size - 1] = 0;
-    mod_star = 1;
-  }
-
-  // Get the translated name (the one we want to compare against now)
-  n_result = fsafetranslate(filename, translated_name);
-
-  // Add * back
-  if(mod_star)
-    filename[mod_name_size - 1] = '*';
-
-  // Fail if the new name doesn't pass safety checks
-  if(n_result != FSAFE_SUCCESS)
-    return 0;
-
-  // Fail if the new name is star
-  if(!strcmp(filename, "*"))
-    return 0;
-
-  // Fail if the filenames are the same
-  if(!strcasecmp(translated_name, mzx_world->real_mod_playing))
-    return 0;
-
-  return 1;
-}
-
-void load_board_module(struct world *mzx_world, struct board *src_board)
-{
-  // Load the given board's module and update the real_mod_playing field.
-
-  char translated_name[MAX_PATH];
-  char *filename = src_board->mod_playing;
   size_t mod_name_size = strlen(filename);
-  int mod_star = 0;
+  boolean mod_star = false;
   int n_result;
-  int result;
 
   // Special case: mod "" ends the module.
   if(!filename[0])
   {
     mzx_world->real_mod_playing[0] = 0;
     audio_end_module();
-    return;
+    return false;
   }
 
   // Do nothing.
   if(!strcmp(filename, "*"))
-    return;
+    return false;
 
   // Temporarily get rid of the star.
   if(mod_name_size && filename[mod_name_size - 1] == '*')
   {
     filename[mod_name_size - 1] = 0;
-    mod_star = 1;
+    mod_star = true;
   }
 
   // Get the translated name (the one we want to compare against later)
@@ -368,3958 +103,910 @@ void load_board_module(struct world *mzx_world, struct board *src_board)
   if(mod_star)
     filename[mod_name_size - 1] = '*';
 
-  // If it failed to translate, stop
-  if(n_result != FSAFE_SUCCESS)
-    return;
-
-  // The safety check has already been done. So don't do it again (false).
-  result = audio_play_module(translated_name, false, src_board->volume);
-
-  // If the mod actually changed, update real mod playing.
-  if(result)
-    strcpy(mzx_world->real_mod_playing, translated_name);
-
-  // Readd the star.
-  if(mod_star)
+  if(n_result == FSAFE_SUCCESS)
   {
-    filename[mod_name_size - 1] = '*';
+    // In certain situations, play the mod only if the names are different.
+    if((mod_star || fail_if_same) &&
+     !strcasecmp(translated_name, mzx_world->real_mod_playing))
+      return false;
+
+    // If the mod actually changes, update real mod playing.
+    // The safety check has already been done, so don't do it again ('false').
+    if(audio_play_module(translated_name, false, cur_board->volume))
+    {
+      strcpy(mzx_world->real_mod_playing, translated_name);
+      return true;
+    }
   }
+  return false;
 }
 
-static void load_savegame_module(struct world *mzx_world)
-{
-  struct board *cur_board = mzx_world->current_board;
+/**
+ * Load the current board's module, even if it's already playing.
+ */
 
-  // For savegames, we need to load real_mod_playing instead of the board mod.
-  audio_play_module(mzx_world->real_mod_playing, true, cur_board->volume);
+void load_board_module(struct world *mzx_world)
+{
+  load_game_module(mzx_world, mzx_world->current_board->mod_playing, false);
 }
 
-static void load_world_file(struct world *mzx_world, char *name)
+/**
+ * Fade out before the world load. Hack that should be removed if the NDS ever
+ * gets protected palette support.
+ */
+static inline void load_vquick_fadeout(void)
 {
-  struct board *src_board;
-  int fade = 0;
+#if defined(CONFIG_LOADSAVE_METER) && defined(NO_PROTECTED_PALETTE)
+  // HACK: If using the meter with no protected palette, don't fade out;
+  // the user would like to be able to see the meter. In fact, fade in
+  // in case something else tried to fade out.
+  insta_fadein();
+  return;
+#endif
 
-  // Load world
-  audio_end_module();
-  sfx_clear_queue();
-  //Clear screen
-  clear_screen(32, 7);
-  // Palette
-  default_palette();
-  if(reload_world(mzx_world, name, &fade))
+  vquick_fadeout();
+}
+
+/**
+ * Load a world and prepare it for gameplay.
+ * On failure, make sure the title's fade setting is restored (if applicable).
+ */
+
+static boolean load_world_gameplay(struct game_context *game, char *name)
+{
+  struct world *mzx_world = ((context *)game)->world;
+  boolean was_faded = get_fade_status();
+  boolean ignore;
+
+  struct board *cur_board;
+
+  // Save the name of the current playing mod; we'll want it to continue playing
+  // into gameplay if the first board has the same mod or mod *.
+  char old_mod_playing[MAX_PATH];
+  strcpy(old_mod_playing, mzx_world->real_mod_playing);
+
+  load_vquick_fadeout();
+  clear_screen();
+
+  game->fade_in = true;
+
+  if(reload_world(mzx_world, name, &ignore))
+  {
+    if(mzx_world->current_board_id != mzx_world->first_board)
+    {
+      change_board(mzx_world, mzx_world->first_board);
+    }
+
+    cur_board = mzx_world->current_board;
+
+    // Send both JUSTENTERED and JUSTLOADED; the JUSTLOADED label will
+    // take priority if a robot defines it.
+    send_robot_def(mzx_world, 0, LABEL_JUSTENTERED);
+    send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
+
+    change_board_set_values(mzx_world);
+    change_board_load_assets(mzx_world);
+
+    // Load the mod unless it's the mod from the title screen or *.
+    strcpy(mzx_world->real_mod_playing, old_mod_playing);
+    load_game_module(mzx_world, cur_board->mod_playing, true);
+    sfx_clear_queue();
+
+    caption_set_world(mzx_world);
+    return true;
+  }
+
+  if(was_faded)
+    game->fade_in = false;
+
+  return false;
+}
+
+/**
+ * Load a world and prepare it for the title screen.
+ * On failure, display a blank screen.
+ */
+
+static boolean load_world_title(struct game_context *game, char *name)
+{
+  struct world *mzx_world = ((context *)game)->world;
+  boolean ignore;
+
+  load_vquick_fadeout();
+  clear_screen();
+  enable_intro_mesg();
+  game->fade_in = true;
+
+  if(reload_world(mzx_world, name, &ignore))
   {
     // Load was successful, so set curr_file
     if(curr_file != name)
       strcpy(curr_file, name);
 
-    set_caption(mzx_world, NULL, NULL, 0, 0);
-
+    // Only send JUSTLOADED on the title screen.
     send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
 
-    src_board = mzx_world->current_board;
-    load_board_module(mzx_world, src_board);
-    set_counter(mzx_world, "TIME", src_board->time_limit, 0);
-    set_intro_mesg_timer(MESG_TIMEOUT);
+    change_board_set_values(mzx_world);
+    change_board_load_assets(mzx_world);
+
+    load_board_module(mzx_world);
+    sfx_clear_queue();
+
+    caption_set_world(mzx_world);
+    return true;
   }
   else
+
+  if(mzx_world->active)
   {
-    // Restart the music if we still have a world in memory.
-    if(mzx_world->current_board)
-      load_board_module(mzx_world, mzx_world->current_board);
+    clear_world(mzx_world);
+    clear_global_data(mzx_world);
   }
+
+  return false;
 }
 
-static void load_world_selection(struct world *mzx_world)
+/**
+ * Load a saved game and prepare it for gameplay.
+ * On failure, make sure the title world's fade setting is restored.
+ */
+
+static boolean load_savegame(struct game_context *game, char *name)
 {
+  struct world *mzx_world = ((context *)game)->world;
+  boolean was_faded = get_fade_status();
+  boolean save_is_faded;
+
+  load_vquick_fadeout();
+  clear_screen();
+  game->fade_in = true;
+
+  if(reload_savegame(mzx_world, name, &save_is_faded))
+  {
+    if(curr_sav != name)
+      strcpy(curr_sav, name);
+
+    // Only send JUSTLOADED for savegames.
+    send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
+    find_player(mzx_world);
+
+    load_game_module(mzx_world, mzx_world->real_mod_playing, false);
+    sfx_clear_queue();
+
+    if(save_is_faded)
+      game->fade_in = false;
+
+    caption_set_world(mzx_world);
+    return true;
+  }
+
+  if(was_faded)
+    game->fade_in = false;
+
+  return false;
+}
+
+/**
+ * Open a user interface to select a world to load on the title.
+ */
+
+static boolean load_world_title_selection(struct game_context *game)
+{
+  struct world *mzx_world = ((context *)game)->world;
   char world_name[MAX_PATH] = { 0 };
 
-  m_show();
-  if(!choose_file_ch(mzx_world, world_ext,
-   world_name, "Load World", 1))
+  if(!choose_file_ch(mzx_world, world_ext, world_name, "Load World", true))
   {
-    load_world_file(mzx_world, world_name);
+    return load_world_title(game, world_name);
   }
+
+  return false;
 }
 
-static void update_player(struct world *mzx_world)
+/**
+ * Open a user interface to select a save to load.
+ */
+
+static boolean load_savegame_selection(struct game_context *game)
 {
-  struct board *src_board = mzx_world->current_board;
-  int player_x = mzx_world->player_x;
-  int player_y = mzx_world->player_y;
-  int board_width = src_board->board_width;
-  enum thing under_id =
-   (enum thing)src_board->level_under_id[player_x +
-   (player_y * board_width)];
+  struct world *mzx_world = ((context *)game)->world;
+  char save_file_name[MAX_PATH] = { 0 };
 
-  // t1 = ID stood on
-  if(!(flags[under_id] & A_AFFECT_IF_STOOD))
+  if(!choose_file_ch(mzx_world, save_ext, save_file_name,
+    "Choose game to restore", true))
   {
-    return; // Nothing special
+    return load_savegame(game, save_file_name);
   }
 
-  switch(under_id)
-  {
-    case ICE:
-    {
-      int player_last_dir = src_board->player_last_dir;
-      if(player_last_dir & 0x0F)
-      {
-        if(move_player(mzx_world, (player_last_dir & 0x0F) - 1))
-          src_board->player_last_dir = player_last_dir & 0xF0;
-      }
-      break;
-    }
-
-    case LAVA:
-    {
-      if(mzx_world->firewalker_dur > 0)
-        break;
-
-      play_sfx(mzx_world, 22);
-      set_mesg(mzx_world, "Augh!");
-      dec_counter(mzx_world, "HEALTH", id_dmg[26], 0);
-      return;
-    }
-
-    case FIRE:
-    {
-      if(mzx_world->firewalker_dur > 0)
-        break;
-
-      play_sfx(mzx_world, 43);
-      set_mesg(mzx_world, "Ouch!");
-      dec_counter(mzx_world, "HEALTH", id_dmg[63], 0);
-      return;
-    }
-
-    default:
-    {
-      move_player(mzx_world, under_id - 21);
-      break;
-    }
-  }
-
-  find_player(mzx_world);
+  return false;
 }
 
-// Updates game variables
-// Slowed = 1 to not update lazwall or time
-// due to slowtime or freezetime
+/**
+ * Draw function for the title and gameplay. This actually includes most of the
+ * game update cycle, including player input and updating the board.
+ */
 
-static void update_variables(struct world *mzx_world, int slowed)
+static void game_draw(context *ctx)
 {
-  struct board *src_board = mzx_world->current_board;
-  int blind_dur = mzx_world->blind_dur;
-  int firewalker_dur = mzx_world->firewalker_dur;
-  int freeze_time_dur = mzx_world->freeze_time_dur;
-  int slow_time_dur = mzx_world->slow_time_dur;
-  int wind_dur = mzx_world->wind_dur;
-  int b_mesg_timer = src_board->b_mesg_timer;
-  int invinco;
-  int lazwall_start = src_board->lazwall_start;
-  static int slowdown = 0;
-  slowdown ^= 1;
+  struct game_context *game = (struct game_context *)ctx;
+  struct config_info *conf = get_config(ctx);
+  struct world *mzx_world = ctx->world;
 
-  // If odd, we...
-  if(!slowdown)
+  // No game state change has happened (yet)
+  mzx_world->change_game_state = CHANGE_STATE_NONE;
+
+  if(game->is_title && game->fade_in)
   {
-    // Change scroll color
-    scroll_color++;
-
-    if(scroll_color > 15)
-      scroll_color = 7;
-
-    // Decrease time limit
-    if(!slowed)
-    {
-      int time_left = get_counter(mzx_world, "TIME", 0);
-      if(time_left > 0)
-      {
-        if(time_left == 1)
-        {
-          // Out of time
-          dec_counter(mzx_world, "HEALTH", 10, 0);
-          set_mesg(mzx_world, "Out of time!");
-          play_sfx(mzx_world, 42);
-          // Reset time
-          set_counter(mzx_world, "TIME", src_board->time_limit, 0);
-        }
-        else
-        {
-          dec_counter(mzx_world, "TIME", 1, 0);
-        }
-      }
-    }
-  }
-  // Decrease effect durations
-  if(blind_dur > 0)
-    mzx_world->blind_dur = blind_dur - 1;
-
-  if(firewalker_dur > 0)
-    mzx_world->firewalker_dur = firewalker_dur - 1;
-
-  if(freeze_time_dur > 0)
-    mzx_world->freeze_time_dur = freeze_time_dur - 1;
-
-  if(slow_time_dur > 0)
-    mzx_world->slow_time_dur = slow_time_dur - 1;
-
-  if(wind_dur > 0)
-    mzx_world->wind_dur = wind_dur - 1;
-
-  // Decrease message timer
-  if(b_mesg_timer > 0)
-    src_board->b_mesg_timer = b_mesg_timer - 1;
-
-  // Decrease intro message timer
-  if(intro_mesg_timer > 0)
-    intro_mesg_timer--;
-
-  // Invinco
-  invinco = get_counter(mzx_world, "INVINCO", 0);
-  if(invinco > 0)
-  {
-    if(invinco == 1)
-    {
-      // Just finished-
-      set_counter(mzx_world, "INVINCO", 0, 0);
-    }
-    else
-    {
-      // Decrease
-      dec_counter(mzx_world, "INVINCO", 1, 0);
-      play_sfx(mzx_world, 17);
-      id_chars[player_color] = Random(256);
-    }
-  }
-  // Lazerwall start- cycle 0 to 7 then -7 to -1
-  if(!slowed)
-  {
-    if(((signed char)lazwall_start) < 7)
-      src_board->lazwall_start = lazwall_start + 1;
-    else
-      src_board->lazwall_start = -7;
-  }
-  // Done
-}
-
-static void set_3_mesg(struct world *mzx_world, const char *str1, int num,
- const char *str2)
-{
-  if(mzx_world->bi_mesg_status)
-  {
-    struct board *src_board = mzx_world->current_board;
-    sprintf(src_board->bottom_mesg, "%s%d%s", str1, num, str2);
-    src_board->b_mesg_timer = MESG_TIMEOUT;
-  }
-}
-
-// Settings dialog-
-
-//----------------------------
-//
-//    Speed- [   NN][^][v]
-//
-//   ( ) Digitized music on
-//   ( ) Digitized music off
-//
-//   ( ) PC speaker SFX on
-//   ( ) PC speaker SFX off
-//
-//  Sound card volumes-       //
-//  Overall volume- 12345678  //
-//  SoundFX volume- 12345678  //
-//  PC Speaker SFX- 12345678  //
-//
-//      [OK]     [Cancel]
-//
-//----------------------------//
-
-//  [OK]  [Cancel]  [Shader]  //
-
-#ifdef CONFIG_RENDER_GL_PROGRAM
-// Note- we search for .frags, then load the matching .vert too if present.
-static const char *shader_exts[] = { ".frag", NULL };
-static char shader_default_text[20];
-static char shader_path[MAX_PATH];
-static char shader_name[MAX_PATH];
-#endif
-
-static void game_settings(struct world *mzx_world)
-{
-  struct board *src_board = mzx_world->current_board;
-  int mzx_speed, music, pcs;
-  int music_volume, sound_volume, pcs_volume;
-  struct dialog di;
-  int dialog_result;
-  int speed_option = 0;
-  int shader_option = 0;
-  int num_elements = 8;
-  int start_option = 0;
-
-  int ok_pos;
-  int cancel_pos;
-  int speed_pos;
-
-  const char *radio_strings_1[2] =
-  {
-    "Digitized music on", "Digitized music off"
-  };
-  const char *radio_strings_2[2] =
-  {
-    "PC speaker SFX on", "PC speaker SFX off"
-  };
-  struct element *elements[10];
-
-  // Prevent previous keys from carrying through.
-  force_release_all_keys();
-
-  set_context(CTX_F2_MENU);
-
-#ifdef CONFIG_RENDER_GL_PROGRAM
-  if(!strcmp(mzx_world->conf.video_output, "glsl"))
-  {
-    if(!shader_default_text[0])
-    {
-      if(mzx_world->conf.gl_scaling_shader[0])
-        snprintf(shader_default_text, 20, "<conf: %.11s>",
-         mzx_world->conf.gl_scaling_shader);
-
-      else
-        strcpy(shader_default_text, "<default: semisoft>");
-    }
-
-    shader_option = 3;
-    num_elements++;
-  }
-#endif
-
-  if(!mzx_world->lock_speed)
-  {
-    speed_option = 2;
-    start_option = num_elements;
-    num_elements++;
+    // Focus on center
+    int x, y;
+    set_screen_coords(640/2, 350/2, &x, &y);
+    focus_pixel(x, y);
   }
 
-  mzx_speed = mzx_world->mzx_speed;
-  music = !audio_get_music_on();
-  pcs = !audio_get_pcs_on();
-  music_volume = audio_get_music_volume();
-  sound_volume = audio_get_sound_volume();
-  pcs_volume = audio_get_pcs_volume();
-
-  do
+  if(!mzx_world->active)
   {
-    ok_pos = 6;
-    cancel_pos = 7;
-    speed_pos = 8;
-
-#ifdef CONFIG_RENDER_GL_PROGRAM
-    if(!strcmp(mzx_world->conf.video_output, "glsl"))
-    {
-      strcpy(shader_path, mzx_res_get_by_id(GLSL_SHADER_SCALER_DIRECTORY));
-
-      elements[6] = construct_file_selector(3, 13 + speed_option,
-       "Scaling shader-", "Choose a scaling shader...", shader_exts,
-       shader_default_text, 21, 0, shader_path, shader_name, 2);
-
-      ok_pos++;
-      cancel_pos++;
-      speed_pos++;
-    }
-#endif
-
-    if(!mzx_world->lock_speed)
-    {
-      elements[speed_pos] = construct_number_box(5, 2, "Speed- ", 1, 16,
-       0, &mzx_speed);
-    }
-
-    elements[0] = construct_radio_button(4, 2 + speed_option,
-     radio_strings_1, 2, 19, &music);
-    elements[1] = construct_radio_button(4, 5 + speed_option,
-     radio_strings_2, 2, 18, &pcs);
-    elements[2] = construct_label(3, 8 + speed_option,
-     "Audio volumes-");
-    elements[3] = construct_number_box(3, 9 + speed_option,
-     "Overall volume- ", 1, 8, 0, &music_volume);
-    elements[4] = construct_number_box(3, 10 + speed_option,
-     "SoundFX volume- ", 1, 8, 0, &sound_volume);
-    elements[5] = construct_number_box(3, 11 + speed_option,
-     "PC Speaker SFX- ", 1, 8, 0, &pcs_volume);
-
-    elements[ok_pos] = construct_button(6, 13 + speed_option + shader_option,
-     "OK", 0);
-
-    elements[cancel_pos] = construct_button(15, 13 + speed_option + shader_option,
-     "Cancel", 1);
-
-    construct_dialog(&di, "Game Settings", 25, 4 - ((speed_option+shader_option) / 2),
-     30, 16 + speed_option + shader_option, elements, num_elements, start_option);
-
-    dialog_result = run_dialog(mzx_world, &di);
-    start_option = di.current_element;
-    destruct_dialog(&di);
-
-    // Prevent UI keys from carrying through.
-    force_release_all_keys();
-
-    if(!dialog_result)
-    {
-      audio_set_pcs_volume(pcs_volume);
-
-      if(music_volume != audio_get_music_volume())
-      {
-        audio_set_music_volume(music_volume);
-
-        if(mzx_world->active)
-          audio_set_module_volume(src_board->volume);
-      }
-
-      if(sound_volume != audio_get_sound_volume())
-        audio_set_sound_volume(sound_volume);
-
-      music ^= 1;
-      pcs ^= 1;
-
-      audio_set_pcs_on(pcs);
-
-      if(!music)
-      {
-        // Turn off music.
-        if(audio_get_music_on() && (mzx_world->active))
-          audio_end_module();
-      }
-      else
-
-      if(!audio_get_music_on() && (mzx_world->active))
-      {
-        // Turn on music.
-        load_board_module(mzx_world, src_board);
-      }
-
-      audio_set_music_on(music);
-      mzx_world->mzx_speed = mzx_speed;
-    }
-
-#ifdef CONFIG_RENDER_GL_PROGRAM
-    else
-
-    // Shader selection
-    if(dialog_result == 2 && shader_name[0])
-    {
-      size_t offset = strlen(shader_path) + 1;
-      bool shader_res;
-      char *pos;
-
-      if(strlen(shader_name) > offset)
-      {
-        pos = strrchr(shader_name + offset, '.');
-
-        if(pos) *pos = 0;
-        shader_res = switch_shader(shader_name + offset);
-        if(pos) *pos = '.';
-
-        if(!shader_res)
-        {
-          // If the shader failed to load, the default should have been loaded.
-          strcpy(shader_default_text, "<default: semisoft>");
-          shader_name[0] = 0;
-        }
-      }
-    }
-#endif
-  }
-  while(dialog_result > 1);
-
-  pop_context();
-}
-
-static void place_player(struct world *mzx_world, int x, int y, int dir)
-{
-  struct board *src_board = mzx_world->current_board;
-  if((mzx_world->player_x != x) || (mzx_world->player_y != y))
-  {
-    id_remove_top(mzx_world, mzx_world->player_x, mzx_world->player_y);
-  }
-  id_place(mzx_world, x, y, PLAYER, 0, 0);
-  mzx_world->player_x = x;
-  mzx_world->player_y = y;
-  src_board->player_last_dir =
-   (src_board->player_last_dir & 240) | (dir + 1);
-}
-
-static void give_potion(struct world *mzx_world, enum potion type)
-{
-  struct board *src_board = mzx_world->current_board;
-  int board_width = src_board->board_width;
-  int board_height = src_board->board_height;
-  char *level_id = src_board->level_id;
-  char *level_param = src_board->level_param;
-  char *level_color = src_board->level_color;
-
-  play_sfx(mzx_world, 39);
-  inc_counter(mzx_world, "SCORE", 5, 0);
-
-  switch(type)
-  {
-    case POTION_DUD:
-    {
-      set_mesg(mzx_world, "* No effect *");
-      break;
-    }
-
-    case POTION_INVINCO:
-    {
-      set_mesg(mzx_world, "* Invinco *");
-      send_robot_def(mzx_world, 0, LABEL_INVINCO);
-      set_counter(mzx_world, "INVINCO", 113, 0);
-      break;
-    }
-
-    case POTION_BLAST:
-    {
-      int placement_period = 18;
-      int x, y, offset, d_flag;
-      enum thing d_id;
-
-      for(y = 0, offset = 0; y < board_height; y++)
-      {
-        for(x = 0; x < board_width; x++, offset++)
-        {
-          d_id = (enum thing)level_id[offset];
-          d_flag = flags[d_id];
-
-          if((d_flag & A_UNDER) && !(d_flag & A_ENTRANCE))
-          {
-            // Adjust the ratio for board size
-
-            if(Random(placement_period) == 0)
-            {
-              id_place(mzx_world, x, y, EXPLOSION, 0,
-               16 * ((Random(5)) + 2));
-            }
-          }
-        }
-      }
-
-      set_mesg(mzx_world, "* Blast *");
-      break;
-    }
-
-    case POTION_SMALL_HEALTH:
-    {
-      inc_counter(mzx_world, "HEALTH", 10, 0);
-      set_mesg(mzx_world, "* Healing *");
-      break;
-    }
-
-    case POTION_BIG_HEALTH:
-    {
-      inc_counter(mzx_world, "HEALTH", 50, 0);
-      set_mesg(mzx_world, "* Healing *");
-      break;
-    }
-
-    case POTION_POISON:
-    {
-      dec_counter(mzx_world, "HEALTH", 10, 0);
-      set_mesg(mzx_world, "* Poison *");
-      break;
-    }
-
-    case POTION_BLIND:
-    {
-      mzx_world->blind_dur = 200;
-      set_mesg(mzx_world, "* Blind *");
-      break;
-    }
-
-    case POTION_KILL:
-    {
-      int x, y, offset;
-      enum thing d_id;
-
-      for(y = 0, offset = 0; y < board_height; y++)
-      {
-        for(x = 0; x < board_width; x++, offset++)
-        {
-          d_id = (enum thing)level_id[offset];
-
-          if(is_enemy(d_id))
-            id_remove_top(mzx_world, x, y);
-        }
-      }
-      set_mesg(mzx_world, "* Kill enemies *");
-      break;
-    }
-
-    case POTION_FIREWALK:
-    {
-      mzx_world->firewalker_dur = 200;
-      set_mesg(mzx_world, "* Firewalking *");
-      break;
-    }
-
-    case POTION_DETONATE:
-    {
-      int x, y, offset;
-      for(y = 0, offset = 0; y < board_height; y++)
-      {
-        for(x = 0; x < board_width; x++, offset++)
-        {
-          if(level_id[offset] == BOMB)
-          {
-            level_id[offset] = EXPLOSION;
-            if(level_param[offset] == 0)
-              level_param[offset] = 32;
-            else
-              level_param[offset] = 64;
-          }
-        }
-      }
-      set_mesg(mzx_world, "* Detonate *");
-      break;
-    }
-
-    case POTION_BANISH:
-    {
-      int x, y, offset;
-      for(y = 0, offset = 0; y < board_height; y++)
-      {
-        for(x = 0; x < board_width; x++, offset++)
-        {
-          if(level_id[offset] == (char)DRAGON)
-          {
-            level_id[offset] = GHOST;
-            level_param[offset] = 51;
-          }
-        }
-      }
-      set_mesg(mzx_world, "* Banish dragons *");
-      break;
-    }
-
-    case POTION_SUMMON:
-    {
-      enum thing d_id;
-      int x, y, offset;
-
-      for(y = 0, offset = 0; y < board_height; y++)
-      {
-        for(x = 0; x < board_width; x++, offset++)
-        {
-          d_id = (enum thing)level_id[offset];
-          if(is_enemy(d_id))
-          {
-            level_id[offset] = (char)DRAGON;
-            level_color[offset] = 4;
-            level_param[offset] = 102;
-          }
-        }
-      }
-      set_mesg(mzx_world, "* Summon dragons *");
-      break;
-    }
-
-    case POTION_AVALANCHE:
-    {
-      int placement_period = 18;
-      int x, y, offset;
-
-      for(y = 0, offset = 0; y < board_height; y++)
-      {
-        for(x = 0; x < board_width; x++, offset++)
-        {
-          int d_flag = flags[(int)level_id[offset]];
-
-          if((d_flag & A_UNDER) && !(d_flag & A_ENTRANCE))
-          {
-            if((Random(placement_period)) == 0)
-            {
-              id_place(mzx_world, x, y, BOULDER, 7, 0);
-            }
-          }
-        }
-      }
-      set_mesg(mzx_world, "* Avalanche *");
-      break;
-    }
-
-    case POTION_FREEZE:
-    {
-      mzx_world->freeze_time_dur = 200;
-      set_mesg(mzx_world, "* Freeze time *");
-      break;
-    }
-
-    case POTION_WIND:
-    {
-      mzx_world->wind_dur = 200;
-      set_mesg(mzx_world, "* Wind *");
-      break;
-    }
-
-    case POTION_SLOW:
-    {
-      mzx_world->slow_time_dur = 200;
-      set_mesg(mzx_world, "* Slow time *");
-      break;
-    }
-  }
-}
-
-static void show_counter(struct world *mzx_world, const char *str,
- int x, int y, int skip_if_zero)
-{
-  int counter_value = get_counter(mzx_world, str, 0);
-  if((skip_if_zero) && (!counter_value))
-    return;
-  write_string(str, x, y, 27, 0); // Name
-
-  write_number(counter_value, 31, x + 16, y, 1, 0, 10); // Value
-}
-
-// Show status screen
-static void show_status(struct world *mzx_world)
-{
-  char *keys = mzx_world->keys;
-  int i;
-
-  draw_window_box(37, 4, 67, 21, 25, 16, 24, 1, 1);
-  show_counter(mzx_world, "Gems", 39, 5, 0);
-  show_counter(mzx_world, "Ammo", 39, 6, 0);
-  show_counter(mzx_world, "Health", 39, 7, 0);
-  show_counter(mzx_world, "Lives", 39, 8, 0);
-  show_counter(mzx_world, "Lobombs", 39, 9, 0);
-  show_counter(mzx_world, "Hibombs", 39, 10, 0);
-  show_counter(mzx_world, "Coins", 39, 11, 0);
-  show_counter(mzx_world, "Score", 39, 12, 0);
-  write_string("Keys", 39, 13, 27, 0);
-
-  for(i = 0; i < 8; i++) // Show keys
-  {
-    if(keys[i] != NO_KEY)
-      draw_char('\x0c', 16 + keys[i], 55 + i, 13);
-  }
-
-  for(; i < 16; i++) // Show keys, 2nd row
-  {
-    if(keys[i] != NO_KEY)
-      draw_char('\x0c', 16 + keys[i], 47 + i, 14);
-  }
-
-  // Show custom status counters
-  for(i = 0; i < NUM_STATUS_COUNTERS; i++)
-  {
-    char *name = mzx_world->status_counters_shown[i];
-    if(name[0])
-      show_counter(mzx_world, name, 39, i + 15, 1);
-  }
-
-  // Show hi/lo bomb selection
-
-  write_string("(cur.)", 48, 9 + mzx_world->bomb_type, 25, 0);
-  // Show effects
-  if(mzx_world->firewalker_dur > 0)
-    write_string("-W-", 43, 21, 28, 0);
-
-  if(mzx_world->freeze_time_dur > 0)
-    write_string("-F-", 47, 21, 27, 0);
-
-  if(mzx_world->slow_time_dur > 0)
-    write_string("-S-", 51, 21, 30, 0);
-
-  if(mzx_world->wind_dur > 0)
-    write_string("-W-", 55, 21, 31, 0);
-
-  if(mzx_world->blind_dur > 0)
-    write_string("-B-", 59, 21, 25, 0);
-}
-
-static Uint32 get_viewport_layer(struct world *mzx_world)
-{
-  // Creates a new layer if needed to prevent graphical discrepancies between
-  // the fallback and layer rendering. This can happen in SMZX mode if:
-  // 1) there is a visible viewport border or
-  // 2) the message is active.
-
-  struct board *src_board = mzx_world->current_board;
-
-  if(get_screen_mode())
-  {
-    if((src_board->viewport_width < 80) ||
-     (src_board->viewport_height < 25) ||
-     (src_board->b_mesg_timer > 0))
-      return create_layer(0, 0, 80, 25, LAYER_DRAWORDER_UI - 1, -1, 0, 1);
-  }
-
-  return UI_LAYER;
-}
-
-__editor_maybe_static void draw_viewport(struct world *mzx_world)
-{
-  int i, i2;
-  struct board *src_board = mzx_world->current_board;
-  int viewport_x = src_board->viewport_x;
-  int viewport_y = src_board->viewport_y;
-  int viewport_width = src_board->viewport_width;
-  int viewport_height = src_board->viewport_height;
-  char edge_color = mzx_world->edge_color;
-
-  // Draw the current viewport
-  if(viewport_y > 1)
-  {
-    // Top
-    for(i = 0; i < viewport_y; i++)
-      fill_line_ext(80, 0, i, 177, edge_color, 0, 0);
-  }
-
-  if((viewport_y + viewport_height) < 24)
-  {
-    // Bottom
-    for(i = viewport_y + viewport_height + 1; i < 25; i++)
-      fill_line_ext(80, 0, i, 177, edge_color, 0, 0);
-  }
-
-  if(viewport_x > 1)
-  {
-    // Left
-    for(i = 0; i < 25; i++)
-      fill_line_ext(viewport_x, 0, i, 177, edge_color, 0, 0);
-  }
-
-  if((viewport_x + viewport_width) < 79)
-  {
-    // Right
-    i2 = viewport_x + viewport_width + 1;
-    for(i = 0; i < 25; i++)
-    {
-      fill_line_ext(80 - i2, i2, i, 177, edge_color, 0, 0);
-    }
-  }
-
-  // Draw the box
-  if(viewport_x > 0)
-  {
-    // left
-    for(i = 0; i < viewport_height; i++)
-    {
-      draw_char_ext('\xba', edge_color, viewport_x - 1,
-       i + viewport_y, 0, 0);
-    }
-
-    if(viewport_y > 0)
-    {
-      draw_char_ext('\xc9', edge_color, viewport_x - 1,
-       viewport_y - 1, 0, 0);
-    }
-  }
-  if((viewport_x + viewport_width) < 80)
-  {
-    // right
-    for(i = 0; i < viewport_height; i++)
-    {
-      draw_char_ext('\xba', edge_color,
-       viewport_x + viewport_width, i + viewport_y, 0, 0);
-    }
-
-    if(viewport_y > 0)
-    {
-      draw_char_ext('\xbb', edge_color,
-       viewport_x + viewport_width, viewport_y - 1, 0, 0);
-    }
-  }
-
-  if(viewport_y > 0)
-  {
-    // top
-    for(i = 0; i < viewport_width; i++)
-    {
-      draw_char_ext('\xcd', edge_color, viewport_x + i,
-       viewport_y - 1, 0, 0);
-    }
-  }
-
-  if((viewport_y + viewport_height) < 25)
-  {
-    // bottom
-    for(i = 0; i < viewport_width; i++)
-    {
-      draw_char_ext('\xcd', edge_color, viewport_x + i,
-       viewport_y + viewport_height, 0, 0);
-    }
-
-    if(viewport_x > 0)
-    {
-      draw_char_ext('\xc8', edge_color, viewport_x - 1,
-       viewport_y + viewport_height, 0, 0);
-    }
-
-    if((viewport_x + viewport_width) < 80)
-    {
-      draw_char_ext('\xbc', edge_color, viewport_x + viewport_width,
-       viewport_y + viewport_height, 0, 0);
-    }
-  }
-}
-
-// Returns non-0 to skip all keys this cycle
-static int update(struct world *mzx_world, int game, int *fadein)
-{
-  int start_ticks = get_ticks();
-  int time_remaining;
-  static int reload = 0;
-  static int slowed = 0; // Flips between 0 and 1 during slow_time
-  char tmp_str[10];
-  struct board *src_board = mzx_world->current_board;
-  int volume = src_board->volume;
-  int volume_inc = src_board->volume_inc;
-  int volume_target = src_board->volume_target;
-  int board_width = src_board->board_width;
-  int board_height = src_board->board_height;
-  char *level_id = src_board->level_id;
-  char *level_color = src_board->level_color;
-  char *level_under_id = src_board->level_under_id;
-  char *level_under_color = src_board->level_under_color;
-  char *level_under_param = src_board->level_under_param;
-  int total_ticks;
-
-#ifdef CONFIG_FPS
-#define FPS_HISTORY_SIZE 5
-#define FPS_INTERVAL 1000
-  static int fps_history[FPS_HISTORY_SIZE];
-  static int fps_previous_ticks = -1;
-  static int frames_counted;
-  {
-    int ticks_delta = start_ticks - fps_previous_ticks;
-    int min_fps, max_fps, total_fps;
-    int fps_history_count;
-    int i;
-
-    if(fps_previous_ticks == -1)
-    {
-      fps_previous_ticks = start_ticks;
-      frames_counted = 0;
-      for(i = 0; i < FPS_HISTORY_SIZE; i++)
-        fps_history[i] = -1;
-    }
-    else
-
-    if(ticks_delta >= FPS_INTERVAL)
-    {
-      for(i = FPS_HISTORY_SIZE - 1; i >= 1; i--)
-      {
-        fps_history[i] = fps_history[i - 1];
-      }
-
-      fps_history[0] = frames_counted;
-      min_fps = fps_history[0];
-      max_fps = fps_history[0];
-      total_fps = 0;
-      fps_history_count = 0;
-
-      for(i = 0; i < FPS_HISTORY_SIZE; i++)
-      {
-        if(fps_history[i] > -1)
-        {
-          if(fps_history[i] > max_fps)
-            max_fps = fps_history[i];
-
-          if(fps_history[i] < min_fps)
-            min_fps = fps_history[i];
-
-          total_fps += fps_history[i];
-          fps_history_count++;
-        }
-      }
-      // Subtract off highest and lowest scores (outliers)
-      total_fps -= max_fps;
-      total_fps -= min_fps;
-      if(fps_history_count > 2)
-      {
-        average_fps =
-         1.0 * total_fps / (fps_history_count - 2) * (1000.0 / FPS_INTERVAL);
-        set_caption(mzx_world, NULL, NULL, mzx_world->editing, 0);
-      }
-      fps_previous_ticks += FPS_INTERVAL;
-
-      frames_counted = 0;
-    }
-
-    else
-    {
-      frames_counted++;
-    }
-  }
-#endif /* CONFIG_FPS */
-
-  pal_update = false;
-
-  if(game && mzx_world->version >= V251s1 &&
-   get_counter(mzx_world, "CURSORSTATE", 0))
-  {
-    // Turn on mouse
+    // There is no MZX_SPEED to derive a framerate from, so use the UI rate.
+    set_context_framerate_mode(ctx, FRAMERATE_UI);
+    if(!conf->standalone_mode)
+      draw_intro_mesg(mzx_world);
     m_show();
-  }
-  else
-  {
-    // Turn off mouse
-    m_hide();
+    return;
   }
 
-  // Fade mod
-  if(volume_inc)
-  {
-    int result_volume = volume;
-    result_volume += volume_inc;
-    if(volume_inc < 0)
-    {
-      if(result_volume <= volume_target)
-      {
-        result_volume = volume_target;
-        volume_inc = 0;
-      }
-    }
-    else
-    {
-      if(result_volume >= volume_target)
-      {
-        result_volume = volume_target;
-        volume_inc = 0;
-      }
-    }
-    src_board->volume = result_volume;
-    audio_set_module_volume(volume);
-  }
-
-  // Slow_time- flip slowed
-  if(mzx_world->freeze_time_dur)
-    slowed = 1;
-  else
-
-  if(mzx_world->slow_time_dur)
-    slowed ^= 1;
-  else
-    slowed = 0;
-
-  // Update
-  update_variables(mzx_world, slowed);
-  update_player(mzx_world); // Ice, fire, water, lava
-
-  if(mzx_world->wind_dur > 0)
-  {
-    // Wind
-    int wind_dir = Random(9);
-    if(wind_dir < 4)
-    {
-      // No wind this turn if above 3
-      src_board->player_last_dir =
-       (src_board->player_last_dir & 0xF0) + wind_dir;
-      move_player(mzx_world, wind_dir);
-      find_player(mzx_world);
-    }
-  }
-
-  // The following is during gameplay ONLY
-  if(game && (!mzx_world->dead))
-  {
-    // Shoot
-    if(get_key_status(keycode_internal_wrt_numlock, IKEY_SPACE)
-     && mzx_world->bi_shoot_status)
-    {
-      if((!reload) && (!src_board->player_attack_locked))
-      {
-        int move_dir = -1;
-
-        if(get_key_status(keycode_internal_wrt_numlock, IKEY_UP))
-          move_dir = 0;
-        else
-
-        if(get_key_status(keycode_internal_wrt_numlock, IKEY_DOWN))
-          move_dir = 1;
-        else
-
-        if(get_key_status(keycode_internal_wrt_numlock, IKEY_RIGHT))
-          move_dir = 2;
-        else
-
-        if(get_key_status(keycode_internal_wrt_numlock, IKEY_LEFT))
-          move_dir = 3;
-
-        if(move_dir != -1)
-        {
-          if(!src_board->can_shoot)
-            set_mesg(mzx_world, "Can't shoot here!");
-          else
-
-          if(!get_counter(mzx_world, "AMMO", 0))
-          {
-            set_mesg(mzx_world, "You are out of ammo!");
-            play_sfx(mzx_world, 30);
-          }
-          else
-          {
-            dec_counter(mzx_world, "AMMO", 1, 0);
-            play_sfx(mzx_world, 28);
-            shoot(mzx_world, mzx_world->player_x, mzx_world->player_y,
-             move_dir, PLAYER_BULLET);
-            reload = 2;
-            src_board->player_last_dir =
-             (src_board->player_last_dir & 0x0F) | (move_dir << 4);
-          }
-        }
-      }
-    }
-    else
-
-    if((get_key_status(keycode_internal_wrt_numlock, IKEY_UP)) &&
-     (!src_board->player_ns_locked))
-    {
-      int key_up_delay = mzx_world->key_up_delay;
-      if((key_up_delay == 0) || (key_up_delay > REPEAT_WAIT))
-      {
-        move_player(mzx_world, 0);
-        src_board->player_last_dir = (src_board->player_last_dir & 0x0F);
-      }
-      if(key_up_delay <= REPEAT_WAIT)
-        mzx_world->key_up_delay = key_up_delay + 1;
-    }
-    else
-
-    if((get_key_status(keycode_internal_wrt_numlock, IKEY_DOWN)) &&
-     (!src_board->player_ns_locked))
-    {
-      int key_down_delay = mzx_world->key_down_delay;
-      if((key_down_delay == 0) || (key_down_delay > REPEAT_WAIT))
-      {
-        move_player(mzx_world, 1);
-        src_board->player_last_dir =
-         (src_board->player_last_dir & 0x0F) + 0x10;
-      }
-      if(key_down_delay <= REPEAT_WAIT)
-        mzx_world->key_down_delay = key_down_delay + 1;
-    }
-    else
-
-    if((get_key_status(keycode_internal_wrt_numlock, IKEY_RIGHT)) &&
-     (!src_board->player_ew_locked))
-    {
-      int key_right_delay = mzx_world->key_right_delay;
-      if((key_right_delay == 0) || (key_right_delay > REPEAT_WAIT))
-      {
-        move_player(mzx_world, 2);
-        src_board->player_last_dir =
-         (src_board->player_last_dir & 0x0F) + 0x20;
-      }
-      if(key_right_delay <= REPEAT_WAIT)
-        mzx_world->key_right_delay = key_right_delay + 1;
-    }
-    else
-
-    if((get_key_status(keycode_internal_wrt_numlock, IKEY_LEFT)) &&
-     (!src_board->player_ew_locked))
-    {
-      int key_left_delay = mzx_world->key_left_delay;
-      if((key_left_delay == 0) || (key_left_delay > REPEAT_WAIT))
-      {
-        move_player(mzx_world, 3);
-        src_board->player_last_dir =
-         (src_board->player_last_dir & 0x0F) + 0x30;
-      }
-      if(key_left_delay <= REPEAT_WAIT)
-        mzx_world->key_left_delay = key_left_delay + 1;
-    }
-    else
-    {
-      mzx_world->key_up_delay = 0;
-      mzx_world->key_down_delay = 0;
-      mzx_world->key_right_delay = 0;
-      mzx_world->key_left_delay = 0;
-    }
-
-    // Bomb
-    if(get_key_status(keycode_internal_wrt_numlock, IKEY_DELETE) &&
-     (!src_board->player_attack_locked))
-    {
-      int d_offset =
-       mzx_world->player_x + (mzx_world->player_y * board_width);
-
-      if(level_under_id[d_offset] != (char)LIT_BOMB)
-      {
-        // Okay.
-        if(!src_board->can_bomb)
-        {
-          set_mesg(mzx_world, "Can't bomb here!");
-        }
-        else
-
-        if((mzx_world->bomb_type == 0) &&
-         (!get_counter(mzx_world, "LOBOMBS", 0)))
-        {
-          set_mesg(mzx_world, "You are out of low strength bombs!");
-          play_sfx(mzx_world, 32);
-        }
-        else
-
-        if((mzx_world->bomb_type == 1) &&
-         (!get_counter(mzx_world, "HIBOMBS", 0)))
-        {
-          set_mesg(mzx_world, "You are out of high strength bombs!");
-          play_sfx(mzx_world, 32);
-        }
-        else
-
-        if(!(flags[(int)level_under_id[d_offset]] & A_ENTRANCE))
-        {
-          // Bomb!
-          mzx_world->under_player_id = level_under_id[d_offset];
-          mzx_world->under_player_color = level_under_color[d_offset];
-          mzx_world->under_player_param = level_under_param[d_offset];
-          level_under_id[d_offset] = 37;
-          level_under_color[d_offset] = 8;
-          level_under_param[d_offset] = mzx_world->bomb_type << 7;
-          play_sfx(mzx_world, 33 + mzx_world->bomb_type);
-
-          if(mzx_world->bomb_type)
-            dec_counter(mzx_world, "HIBOMBS", 1, 0);
-          else
-            dec_counter(mzx_world, "LOBOMBS", 1, 0);
-        }
-      }
-    }
-    if(reload) reload--;
-  }
-
-  mzx_world->change_game_state = 0;
-
-  if((src_board->robot_list[0] != NULL) &&
-   (src_board->robot_list[0])->used)
-  {
-    run_robot(mzx_world, 0, -1, -1);
-    src_board = mzx_world->current_board;
-    level_under_id = src_board->level_under_id;
-    board_width = src_board->board_width;
-  }
-
-  if(update_music)
-  {
-    load_board_module(mzx_world, src_board);
-  }
-  update_music = 0;
-
-  if(!slowed)
-  {
-    int entrance = 1;
-    int d_offset =
-     mzx_world->player_x + (mzx_world->player_y * board_width);
-
-    mzx_world->was_zapped = 0;
-    if(flags[(int)level_under_id[d_offset]] & A_ENTRANCE)
-      entrance = 0;
-
-    update_board(mzx_world);
-
-    src_board = mzx_world->current_board;
-    level_under_id = src_board->level_under_id;
-    board_width = src_board->board_width;
-    d_offset = mzx_world->player_x + (mzx_world->player_y * board_width);
-
-    // Pushed onto an entrance?
-
-    if((entrance) && (flags[(int)level_under_id[d_offset]] & A_ENTRANCE)
-     && (!mzx_world->was_zapped))
-    {
-      int d_board = src_board->level_under_param[d_offset];
-      sfx_clear_queue(); // Since there is often a push sound
-      play_sfx(mzx_world, 37);
-
-      // Same board or nonexistant?
-      if((d_board != mzx_world->current_board_id)
-       && (d_board < mzx_world->num_boards) &&
-       (mzx_world->board_list[d_board] != NULL))
-      {
-        // Nope.
-        // Go to board d_board
-        mzx_world->target_board = d_board;
-        mzx_world->target_where = TARGET_ENTRANCE;
-        mzx_world->target_color = level_under_color[d_offset];
-        mzx_world->target_id = (enum thing)level_under_id[d_offset];
-      }
-    }
-
-    mzx_world->was_zapped = 0;
-  }
-  else
-  {
-    // Place the player and clean up clones
-    // just in case the player was moved while the game was slowed
-    find_player(mzx_world);
-  }
-
-  // Death and game over
-  if(get_counter(mzx_world, "LIVES", 0) == 0)
-  {
-    int endgame_board = mzx_world->endgame_board;
-    int endgame_x = mzx_world->endgame_x;
-    int endgame_y = mzx_world->endgame_y;
-
-    // Game over
-    if(endgame_board != NO_ENDGAME_BOARD)
-    {
-      // Jump to given board
-      if(mzx_world->current_board_id == endgame_board)
-      {
-        id_remove_top(mzx_world, mzx_world->player_x,
-         mzx_world->player_y);
-        id_place(mzx_world, endgame_x, endgame_y, PLAYER, 0, 0);
-        mzx_world->player_x = endgame_x;
-        mzx_world->player_y = endgame_y;
-      }
-      else
-      {
-        mzx_world->target_board = endgame_board;
-        mzx_world->target_where = TARGET_POSITION;
-        mzx_world->target_x = endgame_x;
-        mzx_world->target_y = endgame_y;
-      }
-      // Clear "endgame" part
-      endgame_board = NO_ENDGAME_BOARD;
-      // Give one more life with minimal health
-      set_counter(mzx_world, "LIVES", 1, 0);
-      set_counter(mzx_world, "HEALTH", 1, 0);
-    }
-    else
-    {
-      set_mesg(mzx_world, "Game over");
-      /* I can't imagine anything actually relied on this obtuse misbehavior
-       * but it's good to version lock anyhow.
-       */
-      if((mzx_world->version <= V283) || mzx_world->bi_mesg_status)
-      {
-        src_board->b_mesg_row = 24;
-        src_board->b_mesg_col = -1;
-      }
-      if(mzx_world->game_over_sfx)
-        play_sfx(mzx_world, 24);
-      mzx_world->dead = 1;
-    }
-  }
-  else
-
-  if(get_counter(mzx_world, "HEALTH", 0) == 0)
-  {
-    int death_board = mzx_world->death_board;
-
-    // Death
-    set_counter(mzx_world, "HEALTH", mzx_world->starting_health, 0);
-    dec_counter(mzx_world, "Lives", 1, 0);
-    set_mesg(mzx_world, "You have died...");
-    sfx_clear_queue();
-    play_sfx(mzx_world, 23);
-
-    // Go somewhere else?
-    if(death_board != DEATH_SAME_POS)
-    {
-      if(death_board == NO_DEATH_BOARD)
-      {
-        int player_restart_x = mzx_world->player_restart_x;
-        int player_restart_y = mzx_world->player_restart_y;
-
-        if(player_restart_x >= board_width)
-          player_restart_x = board_width - 1;
-
-        if(player_restart_y >= board_height)
-          player_restart_y = board_height - 1;
-
-        // Return to entry x/y
-        id_remove_top(mzx_world, mzx_world->player_x,
-         mzx_world->player_y);
-        id_place(mzx_world, player_restart_x, player_restart_y,
-         PLAYER, 0, 0);
-        mzx_world->player_x = player_restart_x;
-        mzx_world->player_y = player_restart_y;
-      }
-      else
-      {
-        // Jump to given board
-        if(mzx_world->current_board_id == death_board)
-        {
-          int death_x = mzx_world->death_x;
-          int death_y = mzx_world->death_y;
-
-          id_remove_top(mzx_world, mzx_world->player_x,
-           mzx_world->player_y);
-          id_place(mzx_world, death_x, death_y, PLAYER, 0, 0);
-          mzx_world->player_x = death_x;
-          mzx_world->player_y = death_y;
-        }
-        else
-        {
-          mzx_world->target_board = death_board;
-          mzx_world->target_where = TARGET_POSITION;
-          mzx_world->target_x = mzx_world->death_x;
-          mzx_world->target_y = mzx_world->death_y;
-        }
-      }
-    }
-  }
-
-  // We need to do this before the rest of the graphics code to fix some
-  // teleport glitch(es)
-  if(pal_update)
-    update_palette();
-
-  if(mzx_world->target_where != TARGET_TELEPORT)
-  {
-    Uint32 viewport_layer;
-    int top_x;
-    int top_y;
-
-    blank_layers();
-
-    // Draw border
-    viewport_layer = get_viewport_layer(mzx_world);
-    select_layer(viewport_layer);
-    draw_viewport(mzx_world);
-
-    // Draw screen
-    if(!game)
-    {
-      id_chars[player_color] = 0;
-      id_chars[player_char + 0] = 32;
-      id_chars[player_char + 1] = 32;
-      id_chars[player_char + 2] = 32;
-      id_chars[player_char + 3] = 32;
-    }
-
-    // Figure out x/y of top
-    calculate_xytop(mzx_world, &top_x, &top_y);
-
-    if(mzx_world->blind_dur > 0)
-    {
-      int i;
-      int viewport_x = src_board->viewport_x;
-      int viewport_y = src_board->viewport_y;
-      int viewport_width = src_board->viewport_width;
-      int viewport_height = src_board->viewport_height;
-      int player_x = mzx_world->player_x;
-      int player_y = mzx_world->player_y;
-
-      select_layer(BOARD_LAYER);
-
-      for(i = viewport_y; i < viewport_y + viewport_height; i++)
-      {
-        fill_line(viewport_width, viewport_x, i, 176, 8);
-      }
-
-      // Find where player would be and draw.
-      if(game)
-      {
-        id_put(src_board, player_x - top_x + viewport_x,
-         player_y - top_y + viewport_y, player_x,
-         player_y, player_x, player_y);
-      }
-    }
-    else
-    {
-      draw_game_window(src_board, top_x, top_y);
-    }
-    select_layer(OVERLAY_LAYER);
-
-    // Add sprites
-    draw_sprites(mzx_world);
-
-    // Add time limit
-    time_remaining = get_counter(mzx_world, "TIME", 0);
-    if(time_remaining)
-    {
-      int edge_color = mzx_world->edge_color;
-      int timer_color;
-      if(edge_color == 15)
-        timer_color = 0xF0; // Prevent white on white for timer
-      else
-        timer_color = (edge_color << 4) + 15;
-
-      select_layer(UI_LAYER);
-
-      sprintf(tmp_str, "%d:%02d",
-       (unsigned short)(time_remaining / 60), (time_remaining % 60) );
-      write_string(tmp_str, 1, 24, timer_color, 0);
-
-      // Border with spaces
-      draw_char(' ', edge_color, (Uint32)strlen(tmp_str) + 1, 24);
-      draw_char(' ', edge_color, 0, 24);
-    }
-
-    // Add message
-    if(src_board->b_mesg_timer > 0)
-    {
-      int mesg_y = src_board->b_mesg_row;
-      Uint8 tmp_color = scroll_color;
-      char *lines[25];
-      int i = 1, j;
-
-      if(mzx_world->smzx_message)
-        select_layer(viewport_layer);
-      else
-        select_layer(UI_LAYER);
-
-      /* Always at least one line.. */
-      lines[0] = src_board->bottom_mesg;
-
-      /* Find pointers to each "line" terminated by \n */
-      while(1)
-      {
-        char *pos = strchr(lines[i - 1], '\n');
-        if(!pos)
-          break;
-        *pos = 0;
-        if(i >= 25 - mesg_y)
-          break;
-        lines[i] = pos + 1;
-        i++;
-      }
-
-      for(j = 0; j < i; j++)
-      {
-        int mesg_length = strlencolor(lines[j]);
-        int mesg_edges = mzx_world->mesg_edges;
-        int mesg_x = src_board->b_mesg_col;
-        char backup = 0;
-
-        if(mesg_length > 80)
-        {
-          backup = lines[j][80];
-          lines[j][80] = 0;
-          mesg_length = 80;
-        }
-
-        if(mesg_x == -1)
-          mesg_x = 40 - (mesg_length / 2);
-
-        color_string_ext_special(lines[j], mesg_x, mesg_y, &tmp_color,
-         0, 0, false);
-
-        if((mesg_x > 0) && (mesg_edges))
-          draw_char_ext(' ', scroll_color, mesg_x - 1, mesg_y, 0, 0);
-
-        mesg_x += mesg_length;
-        if((mesg_x < 80) && (mesg_edges))
-          draw_char_ext(' ', scroll_color, mesg_x, mesg_y, 0, 0);
-
-        if(backup)
-          lines[j][80] = backup;
-
-        mesg_y++;
-      }
-
-      /* Restore original bottom mesg for next iteration */
-      for(j = 1; j < i; j++)
-        *(lines[j] - 1) = '\n';
-    }
-
-    select_layer(UI_LAYER);
-    draw_intro_mesg(mzx_world);
-
-    // Add debug box
-    if(draw_debug_box && debug_mode)
-    {
-      draw_debug_box(mzx_world, 60, 19, mzx_world->player_x,
-       mzx_world->player_y, 1);
-    }
-
-    // note-- pal_update was previously here
-
-    update_screen();
-  }
-
-  if(mzx_world->mzx_speed > 1)
-  {
-    // Number of ms the update cycle took
-    total_ticks = (16 * (mzx_world->mzx_speed - 1))
-     - (get_ticks() - start_ticks);
-    if(total_ticks < 0)
-      total_ticks = 0;
-    // Delay for 16 * (speed - 1) since the beginning of the update
-    delay(total_ticks);
-  }
-
-  if(*fadein)
+  set_context_framerate_mode(ctx, FRAMERATE_MZX_SPEED);
+  update_world(ctx, game->is_title);
+  draw_world(ctx, game->is_title);
+}
+
+// Forward declaration since this is used for both game and title screen.
+__editor_maybe_static
+void play_game(context *ctx, boolean *_fade_in);
+
+/**
+ * Idle function for the title and gameplay. Executes parts of the update
+ * cycle that need to occur immediately after the delay.
+ */
+
+static boolean game_idle(context *ctx)
+{
+  struct game_context *game = (struct game_context *)ctx;
+  struct config_info *conf = get_config(ctx);
+  struct world *mzx_world = ctx->world;
+
+  if(!mzx_world->active)
+    return false;
+
+  if(game->fade_in)
   {
     vquick_fadein();
-    *fadein = 0;
+    game->fade_in = false;
   }
 
   switch(mzx_world->change_game_state)
   {
+    case CHANGE_STATE_NONE:
+      break;
+
     case CHANGE_STATE_SWAP_WORLD:
     {
-      // Load the new board's mod
-      src_board = mzx_world->current_board;
-      load_board_module(mzx_world, src_board);
+      // The SWAP WORLD command was used by a robot.
+      // TODO: the game has already been loaded at this point, but maybe
+      // should be loaded here instead of in run_robot.c?
 
-      // send both JUSTLOADED and JUSTENTERED respectively; the
-      // JUSTENTERED label will take priority if a robot defines it.
-      // This differs from pressing P on the title screen, where the
-      // order of precedence is swapped.
+      // Load the new board's mod
+      load_board_module(mzx_world);
+
+      // Send both JUSTLOADED and JUSTENTERED; the JUSTENTERED label will take
+      // priority if a robot defines it (instead of JUSTLOADED like on the title
+      // screen).
       send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
       send_robot_def(mzx_world, 0, LABEL_JUSTENTERED);
 
-      return 1;
+      return true;
     }
 
     case CHANGE_STATE_LOAD_GAME_ROBOTIC:
     {
-      load_savegame_module(mzx_world);
+      // The LOAD_GAME counter was used by a robot.
+      // TODO: the game has already been loaded at this point, but maybe
+      // should be loaded here instead of in counter.c?
+
+      // real_mod_playing was set during the savegame load but the mod hasn't
+      // started playing yet.
+      load_game_module(mzx_world, mzx_world->real_mod_playing, false);
 
       // Only send JUSTLOADED for savegames.
       send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
 
-      return 1;
+      return true;
+    }
+
+    case CHANGE_STATE_PLAY_GAME_ROBOTIC:
+    {
+      if(!game->is_title)
+        break;
+
+      if(load_world_gameplay(game, curr_file))
+      {
+        play_game(ctx, NULL);
+        game->need_reload = true;
+        return true;
+      }
+      break;
     }
 
     case CHANGE_STATE_EXIT_GAME_ROBOTIC:
-    case CHANGE_STATE_REQUEST_EXIT:
-      // Exit game--skip input processing. The game state will exit.
-      return 1;
-
-    case CHANGE_STATE_PLAY_GAME_ROBOTIC:
-      // we need to continue input processing
-      return 0;
-
-    default:
+    {
+      // The EXIT_GAME counter was used by a robot. This works during gameplay,
+      // but also on the titlescreen if standalone mode is active.
+      if(!game->is_title || conf->standalone_mode)
+      {
+        destroy_context(ctx);
+        return true;
+      }
       break;
+    }
+
+    case CHANGE_STATE_REQUEST_EXIT:
+    {
+      // The user halted the program while a robot was executing.
+      destroy_context(ctx);
+      return true;
+    }
   }
 
-  if(mzx_world->target_where != TARGET_NONE)
+  // A board change or other form of teleport may need to occur.
+  // This may require a fade in the next time this function is run (next cycle).
+  if(update_resolve_target(mzx_world, &(game->fade_in)))
+    return true;
+
+  // The SAVE_GAME counter might have been used this cycle.
+  if(!game->is_title && mzx_world->robotic_save_type == SAVE_GAME)
   {
-    int saved_player_last_dir = src_board->player_last_dir;
-    int target_board = mzx_world->target_board;
-    int load_assets = 0;
-
-    // Aha.. TELEPORT or ENTRANCE.
-    // Destroy message, bullets, spitfire?
-
-    if(mzx_world->clear_on_exit)
-    {
-      int offset;
-      enum thing d_id;
-
-      src_board->b_mesg_timer = 0;
-      for(offset = 0; offset < (board_width * board_height); offset++)
-      {
-        d_id = (enum thing)level_id[offset];
-        if((d_id == SHOOTING_FIRE) || (d_id == BULLET))
-          offs_remove_id(mzx_world, offset);
-      }
-    }
-
-    // Load board
-    mzx_world->under_player_id = (char)SPACE;
-    mzx_world->under_player_param = 0;
-    mzx_world->under_player_color = 7;
-    mzx_world->slow_down = 0;
-
-    if(mzx_world->current_board_id != target_board)
-    {
-      change_board(mzx_world, target_board);
-      load_assets = 1;
-    }
-
-    src_board = mzx_world->current_board;
-
-    // Determine if the board module should be reloaded on transition to
-    // another board
-    if(load_board_module_change_test(mzx_world, src_board->mod_playing))
-    {
-      update_music = 1;
-    }
-
-    level_id = src_board->level_id;
-    level_color = src_board->level_color;
-    level_under_id = src_board->level_under_id;
-    level_under_param = src_board->level_under_param;
-    level_under_color = src_board->level_under_color;
-    board_width = src_board->board_width;
-    board_height = src_board->board_height;
-
-    set_counter(mzx_world, "TIME", src_board->time_limit, 0);
-
-    // Find target x/y
-    if(mzx_world->target_where == TARGET_ENTRANCE)
-    {
-      int i;
-      int tmp_x[5];
-      int tmp_y[5];
-      int x, y, offset;
-      enum thing d_id;
-      enum thing target_id = mzx_world->target_id;
-      int target_color = mzx_world->target_color;
-
-      // Entrance
-      // First, set searched for id to the first in the whirlpool
-      // series if it is part of the whirlpool series
-      if(is_whirlpool(target_id))
-        target_id = WHIRLPOOL_1;
-
-      // Now scan. Order-
-      // 1) Same type & color
-      // 2) Same color
-      // 3) Same type & foreground
-      // 4) Same foreground
-      // 5) Same type
-      // Search for first of all 5 at once
-
-      for(i = 0; i < 5; i++)
-      {
-        // None found
-        tmp_x[i] = -1;
-        tmp_y[i] = -1;
-      }
-
-      for(y = 0, offset = 0; y < board_height; y++)
-      {
-        for(x = 0; x < board_width; x++, offset++)
-        {
-          d_id = (enum thing)level_id[offset];
-
-          if(d_id == PLAYER)
-          {
-            // Remove the player, maybe readd
-            mzx_world->player_x = x;
-            mzx_world->player_y = y;
-            id_remove_top(mzx_world, x, y);
-            // Grab again - might have revealed an entrance
-            d_id = (enum thing)level_id[offset];
-          }
-
-          if(is_whirlpool(d_id))
-            d_id = WHIRLPOOL_1;
-
-          if(d_id == target_id)
-          {
-            // Same type
-            // Color match?
-            if(level_color[offset] == target_color)
-            {
-              // Yep
-              tmp_x[0] = x;
-              tmp_y[0] = y;
-            }
-            else
-
-            // Fg?
-            if((level_color[offset] & 0x0F) ==
-             (target_color & 0x0F))
-            {
-              // Yep
-              tmp_x[2] = x;
-              tmp_y[2] = y;
-            }
-            else
-            {
-              // Just same type
-              tmp_x[4] = x;
-              tmp_y[4] = y;
-            }
-          }
-          else
-
-          if(flags[(int)d_id] & A_ENTRANCE)
-          {
-            // Not same type, but an entrance
-            // Color match?
-            if(level_color[offset] == target_color)
-            {
-              // Yep
-              tmp_x[1] = x;
-              tmp_y[1] = y;
-            }
-            // Fg?
-            else
-
-            if((level_color[offset] & 0x0F) == (target_color & 0x0F))
-            {
-              // Yep
-              tmp_x[3] = x;
-              tmp_y[3] = y;
-            }
-          }
-          // Done with this x/y
-        }
-      }
-
-      // We've got it... maybe.
-      for(i = 0; i < 5; i++)
-      {
-        if(tmp_x[i] >= 0)
-          break;
-      }
-
-      if(i < 5)
-      {
-        mzx_world->player_x = tmp_x[i];
-        mzx_world->player_y = tmp_y[i];
-      }
-
-      id_place(mzx_world, mzx_world->player_x,
-       mzx_world->player_y, PLAYER, 0, 0);
-    }
-    else
-    {
-      int target_x = mzx_world->target_x;
-      int target_y = mzx_world->target_y;
-
-      // Specified x/y
-      if(target_x < 0)
-        target_x = 0;
-
-      if(target_y < 0)
-        target_y = 0;
-
-      if(target_x >= board_width)
-        target_x = board_width - 1;
-
-      if(target_y >= board_height)
-        target_y = board_height - 1;
-
-      find_player(mzx_world);
-      place_player_xy(mzx_world, target_x, target_y);
-    }
-
-    send_robot_def(mzx_world, 0, LABEL_JUSTENTERED);
-    mzx_world->player_restart_x = mzx_world->player_x;
-    mzx_world->player_restart_y = mzx_world->player_y;
-    // Now... Set player_last_dir for direction FACED
-    src_board->player_last_dir = (src_board->player_last_dir & 0x0F) |
-     (saved_player_last_dir & 0xF0);
-
-    // ...and if player ended up on ICE, set last dir pressed as well
-    if((enum thing)level_under_id[mzx_world->player_x +
-     (mzx_world->player_y * board_width)] == ICE)
-    {
-      src_board->player_last_dir = saved_player_last_dir;
-    }
-
-    // Fix palette
-    if(mzx_world->target_where != TARGET_TELEPORT)
-    {
-      // Prepare for fadein
-      if(!get_fade_status())
-        *fadein = 1;
-      vquick_fadeout();
-    }
-
-    // Load current board's charset and palette, if necessary
-    if(load_assets)
-    {
-      change_board_load_assets(mzx_world);
-    }
-
-    mzx_world->target_where = TARGET_NONE;
-
-    // Disallow any keypresses this cycle
-
-    return 1;
+    save_world(mzx_world, mzx_world->robotic_save_path, true, MZX_VERSION);
+    mzx_world->robotic_save_type = SAVE_NONE;
   }
 
-  return 0;
+  return false;
 }
 
-static void focus_on_player(struct world *mzx_world)
+/**
+ * Key function for the gameplay context. This handles interface keys and some
+ * key labels; some other keys are handled in the update function.
+ */
+
+static boolean game_key(context *ctx, int *key)
 {
-  int player_x   = mzx_world->player_x;
-  int player_y   = mzx_world->player_y;
-  int viewport_x = mzx_world->current_board->viewport_x;
-  int viewport_y = mzx_world->current_board->viewport_y;
-  int top_x, top_y;
+  struct game_context *game = (struct game_context *)ctx;
+  struct config_info *conf = get_config(ctx);
+  struct world *mzx_world = ctx->world;
+  struct board *cur_board = mzx_world->current_board;
+  char keylbl[] = "KEY?";
 
-  calculate_xytop(mzx_world, &top_x, &top_y);
+  int key_status = get_key_status(keycode_internal_wrt_numlock, *key);
+  boolean exit_status = get_exit_status();
+  boolean confirm_exit = false;
 
-  // Focus on the player
-  focus_screen(player_x - top_x + viewport_x, player_y - top_y + viewport_y);
-}
-
-__editor_maybe_static void play_game(struct world *mzx_world)
-{
-  // We have the world loaded, on the proper scene.
-  // We are faded out. Commence playing!
-  int exit = 0;
-  int confirm_exit = 0;
-  int key = -1;
-  int key_status = 0;
-  char keylbl[5] = "KEY?";
-  struct board *src_board;
-  int fadein = 1;
-  struct config_info *conf = &mzx_world->conf;
-
-  // Main game loop
-  // Mouse remains hidden unless menu/etc. is invoked
-
-  set_context(CTX_PLAY_GAME);
-
-  do
+  if(*key && !exit_status)
   {
-    focus_on_player(mzx_world);
-
-    // Update
-    if(update(mzx_world, 1, &fadein))
-    {
-      // Exit game state change
-      if(mzx_world->change_game_state == CHANGE_STATE_EXIT_GAME_ROBOTIC ||
-       mzx_world->change_game_state == CHANGE_STATE_REQUEST_EXIT)
-      {
-        if(conf->no_titlescreen)
-        {
-          mzx_world->full_exit = true;
-        }
-        break;
-      }
-
-      update_event_status();
-      continue;
-    }
-    update_event_status();
-
-    src_board = mzx_world->current_board;
-
-    // Has the game/world been saved from robotic?
-    if(mzx_world->robotic_save_type == SAVE_GAME)
-    {
-      save_world(mzx_world, mzx_world->robotic_save_path, 1, MZX_VERSION);
-      mzx_world->robotic_save_type = SAVE_NONE;
-    }
-
-    // Keycheck
-
-    key = get_key(keycode_internal_wrt_numlock);
-    key_status = get_key_status(keycode_internal_wrt_numlock, key);
-
-    exit = get_exit_status();
-
-    if(key && !exit)
-    {
 #ifdef CONFIG_PANDORA
-      // The Pandora (at least, at one point) did not have proper support for
-      // keycode_unicode. This is a workaround to get the "keyN" labels to work
-      // at all. This will break certain keyN labels, such as "key$", however.
-      int key_char = key;
+    // The Pandora (at least, at one point) did not have proper support for
+    // keycode_unicode. This is a workaround to get the "keyN" labels to work
+    // at all. This will break certain keyN labels, such as "key$", however.
+    int key_char = *key;
 #else
-      int key_char = get_key(keycode_unicode);
+    int key_char = get_key(keycode_unicode);
 #endif
 
-#ifdef CONFIG_EDITOR
-      if(edit_world)
-        editing = mzx_world->editing;
-#endif
-
-      if(key_char)
+    if(key_char)
+    {
+      keylbl[3] = key_char;
+      send_robot_all_def(mzx_world, keylbl);
+      // In pre-port MZX versions key was a board counter
+      if(mzx_world->version < VERSION_PORT)
       {
-        keylbl[3] = key_char;
-        send_robot_all_def(mzx_world, keylbl);
-        // In pre-port MZX versions key was a board counter
-        if(mzx_world->version < VERSION_PORT)
+        char keych = toupper(key_char);
+        // <2.60 it only supported 1-9 and A-Z
+        // This is difficult to version check, so apply it to <2.62
+        if(mzx_world->version >= V262 ||
+         (keych >= 'A' && keych <= 'Z') ||
+         (keych >= '1' && keych <= '9'))
         {
-          char keych = toupper(key_char);
-          // <2.60 it only supported 1-9 and A-Z
-          // This is difficult to version check, so apply it to <2.62
-          if(mzx_world->version >= V262 ||
-           (keych >= 'A' && keych <= 'Z') ||
-           (keych >= '1' && keych <= '9'))
-          {
-            src_board->last_key = keych;
-          }
+          cur_board->last_key = keych;
         }
       }
+    }
 
-      switch(key)
+    switch(*key)
+    {
+      case IKEY_F3:
       {
-#ifdef CONFIG_HELPSYS
-        case IKEY_F1:
+        // Save game
+        if(!mzx_world->dead && player_can_save(mzx_world))
         {
-          if(mzx_world->version < V260 ||
-           get_counter(mzx_world, "HELP_MENU", 0))
+          char save_game[MAX_PATH];
+          strcpy(save_game, curr_sav);
+
+          if(!new_file(mzx_world, save_ext, ".sav", save_game, "Save game", 1))
           {
-            m_show();
-            help_system(mzx_world);
-
-            update_event_status();
+            strcpy(curr_sav, save_game);
+            save_world(mzx_world, curr_sav, true, MZX_VERSION);
           }
-          break;
         }
-#endif
-        case IKEY_F2:
+        return true;
+      }
+
+      case IKEY_F4:
+      {
+        // ALT+F4 - do nothing.
+        if(get_alt_status(keycode_internal))
+          break;
+
+        // Restore saved game
+        if(mzx_world->version < V282 || get_counter(mzx_world, "LOAD_MENU", 0))
         {
-          // Settings
-          if(mzx_world->version < V260 ||
-           get_counter(mzx_world, "F2_MENU", 0) ||
-           !mzx_world->active)
-          {
-            m_show();
-
-            game_settings(mzx_world);
-
-            update_event_status();
-          }
-          break;
+          load_savegame_selection(game);
         }
+        return true;
+      }
 
-        case IKEY_F3:
+      case IKEY_F5:
+      case IKEY_INSERT:
+      {
+        // Change bomb type
+        if(!mzx_world->dead)
+          player_switch_bomb_type(mzx_world);
+
+        return true;
+      }
+
+      // Toggle debug mode
+      case IKEY_F6:
+      {
+        if(edit_world && mzx_world->editing)
+          mzx_world->debug_mode = !(mzx_world->debug_mode);
+        return true;
+      }
+
+      // Cheat
+      case IKEY_F7:
+      {
+        if(mzx_world->editing)
+          player_cheat_give_all(mzx_world);
+
+        return true;
+      }
+
+      // Cheat More
+      case IKEY_F8:
+      {
+        if(mzx_world->editing)
+          player_cheat_zap(mzx_world);
+
+        return true;
+      }
+
+      // Quick save
+      case IKEY_F9:
+      {
+        if(!mzx_world->dead)
         {
-          // Save game
-          if(!mzx_world->dead)
-          {
-            // Can we?
-            if((src_board->save_mode != CANT_SAVE) &&
-             ((src_board->save_mode != CAN_SAVE_ON_SENSOR) ||
-             (src_board->level_under_id[mzx_world->player_x +
-             (src_board->board_width * mzx_world->player_y)] ==
-             SENSOR)))
-            {
-              char save_game[MAX_PATH];
-
-              strcpy(save_game, curr_sav);
-
-              m_show();
-              if(!new_file(mzx_world, save_ext, ".sav", save_game,
-               "Save game", 1))
-              {
-                strcpy(curr_sav, save_game);
-                // Save entire game
-                save_world(mzx_world, curr_sav, 1, MZX_VERSION);
-              }
-
-              update_event_status();
-            }
-          }
-          break;
+          if(player_can_save(mzx_world))
+            save_world(mzx_world, curr_sav, true, MZX_VERSION);
         }
+        return true;
+      }
 
-        case IKEY_F4:
+      // Quick load saved game
+      case IKEY_F10:
+      {
+        if(mzx_world->version < V282 || get_counter(mzx_world, "LOAD_MENU", 0))
         {
-          // ALT+F4 - do nothing.
-          if(get_alt_status(keycode_internal))
-            break;
+          struct stat file_info;
 
-          if(mzx_world->version < V282 ||
-           get_counter(mzx_world, "LOAD_MENU", 0))
-          {
-            // Restore
-            char save_file_name[MAX_PATH] = { 0 };
-            m_show();
-
-            if(!choose_file_ch(mzx_world, save_ext, save_file_name,
-             "Choose game to restore", 1))
-            {
-              // Load game
-              fadein = 0;
-              if(!reload_savegame(mzx_world, save_file_name, &fadein))
-                break;
-
-              // Reset this
-              src_board = mzx_world->current_board;
-              load_savegame_module(mzx_world);
-
-              find_player(mzx_world);
-
-              strcpy(curr_sav, save_file_name);
-              send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
-              fadein ^= 1;
-            }
-
-            update_event_status();
-          }
-          break;
+          if(!stat(curr_sav, &file_info))
+            load_savegame(game, curr_sav);
         }
+        return true;
+      }
 
-        case IKEY_F5:
-        case IKEY_INSERT:
-        {
-          // Change bomb type
-          if(!mzx_world->dead)
-          {
-            mzx_world->bomb_type ^= 1;
-            if((!src_board->player_attack_locked) &&
-             (src_board->can_bomb))
-            {
-              play_sfx(mzx_world, 35);
-              if(mzx_world->bomb_type)
-              {
-                set_mesg(mzx_world,
-                 "You switch to high strength bombs.");
-              }
-              else
-              {
-                set_mesg(mzx_world,
-                 "You switch to low strength bombs.");
-              }
-            }
-          }
-          break;
-        }
-
-        // Toggle debug mode
-        case IKEY_F6:
-        {
-          if(edit_world && editing)
-            debug_mode = !debug_mode;
-          break;
-        }
-
-        // Cheat
-        case IKEY_F7:
-        {
-          if(editing)
-          {
-            int i;
-
-            // Cheat #1- Give all
-            set_counter(mzx_world, "AMMO", 32767, 1);
-            set_counter(mzx_world, "COINS", 32767, 1);
-            set_counter(mzx_world, "GEMS", 32767, 1);
-            set_counter(mzx_world, "HEALTH", 32767, 1);
-            set_counter(mzx_world, "HIBOMBS", 32767, 1);
-            set_counter(mzx_world, "LIVES", 32767, 1);
-            set_counter(mzx_world, "LOBOMBS", 32767, 1);
-            set_counter(mzx_world, "SCORE", 0, 1);
-            set_counter(mzx_world, "TIME", src_board->time_limit, 1);
-
-            mzx_world->dead = 0;
-
-            for(i = 0; i < 16; i++)
-            {
-              mzx_world->keys[i] = i;
-            }
-
-            src_board->player_ns_locked = 0;
-            src_board->player_ew_locked = 0;
-            src_board->player_attack_locked = 0;
-          }
-
-          break;
-        }
-
-        // Cheat More
-        case IKEY_F8:
-        {
-          if(editing)
-          {
-            int player_x = mzx_world->player_x;
-            int player_y = mzx_world->player_y;
-            int board_width = src_board->board_width;
-            int board_height = src_board->board_height;
-
-            if(player_x > 0)
-            {
-              place_at_xy(mzx_world, SPACE, 7, 0, player_x - 1,
-               player_y);
-
-              if(player_y > 0)
-              {
-                place_at_xy(mzx_world, SPACE, 7, 0, player_x - 1,
-                 player_y - 1);
-              }
-
-              if(player_y < (board_height - 1))
-              {
-                place_at_xy(mzx_world, SPACE, 7, 0, player_x - 1,
-                 player_y + 1);
-              }
-            }
-
-            if(player_x < (board_width - 1))
-            {
-              place_at_xy(mzx_world, SPACE, 7, 0, player_x + 1,
-               player_y);
-
-              if(player_y > 0)
-              {
-                place_at_xy(mzx_world, SPACE, 7, 0,
-                 player_x + 1, player_y - 1);
-              }
-
-              if(player_y < (board_height - 1))
-              {
-                place_at_xy(mzx_world, SPACE, 7, 0,
-                 player_x + 1, player_y + 1);
-              }
-            }
-
-            if(player_y > 0)
-            {
-              place_at_xy(mzx_world, SPACE, 7, 0,
-               player_x, player_y - 1);
-            }
-
-            if(player_y < (board_height - 1))
-            {
-              place_at_xy(mzx_world, SPACE, 7, 0,
-               player_x, player_y + 1);
-            }
-          }
-
-          break;
-        }
-
-        // Quick save
-        case IKEY_F9:
-        {
-          if(!mzx_world->dead)
-          {
-            // Can we?
-            if((src_board->save_mode != CANT_SAVE) &&
-             ((src_board->save_mode != CAN_SAVE_ON_SENSOR) ||
-             (src_board->level_under_id[mzx_world->player_x +
-             (src_board->board_width * mzx_world->player_y)] ==
-             SENSOR)))
-            {
-              // Save entire game
-              save_world(mzx_world, curr_sav, 1, MZX_VERSION);
-            }
-          }
-          break;
-        }
-
-        // Quick load
-        case IKEY_F10:
-        {
-          if(mzx_world->version < V282 ||
-           get_counter(mzx_world, "LOAD_MENU", 0))
-          {
-            struct stat file_info;
-
-            if(!stat(curr_sav, &file_info))
-            {
-              // Load game
-              fadein = 0;
-              if(!reload_savegame(mzx_world, curr_sav, &fadein))
-                break;
-
-              // Reset this
-              src_board = mzx_world->current_board;
-
-              find_player(mzx_world);
-
-              load_savegame_module(mzx_world);
-
-              send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
-              fadein ^= 1;
-            }
-          }
-          break;
-        }
-
-        case IKEY_F11:
+      case IKEY_F11:
+      {
+        if(mzx_world->editing)
         {
           // Breakpoint editor
           if(get_alt_status(keycode_internal))
           {
-            if(editing && debug_robot_config)
-            {
+            if(debug_robot_config)
               debug_robot_config(mzx_world);
-
-              update_event_status();
-            }
           }
-          // Debug counter editor
+          // Counter debugger
           else
           {
-            if(debug_counters && editing)
-            {
-              debug_counters(mzx_world);
-
-              update_event_status();
-            }
+            if(debug_counters)
+              debug_counters(ctx);
           }
-          break;
         }
+        return true;
+      }
 
-        case IKEY_RETURN:
-        {
-          int enter_menu_status =
-           get_counter(mzx_world, "ENTER_MENU", 0);
-          send_robot_all_def(mzx_world, "KeyEnter");
+      case IKEY_RETURN:
+      {
+        send_robot_all_def(mzx_world, "KeyEnter");
 
-          // Ignore if this isn't a fresh press
-          if(key_status != 1)
-            break;
+        // Ignore if this isn't a fresh press
+        if(key_status != 1)
+          return true;
 
-          if(mzx_world->version < V260 || enter_menu_status)
-          {
-            int key, status;
-            save_screen();
+        if(mzx_world->version < V260 || get_counter(mzx_world, "ENTER_MENU", 0))
+          game_menu(ctx);
 
-            draw_window_box(8, 4, 35, 18, 25, 16, 24, 1, 1);
-            write_string(" Game Menu ", 17, 4, 30, 0);
-            if(mzx_world->help_file)
-              write_string(game_menu_1, 10, 5, 31, 1);
-            write_string(game_menu_2, 10, 6, 31, 1);
-            if(debug_counters && editing)
-              write_string(game_menu_3, 10, 12, 31, 1);
-            write_string(game_menu_4, 10, 13, 31, 1);
+        return true;
+      }
 
-            show_status(mzx_world); // Status screen too
+      case IKEY_ESCAPE:
+      {
+        // Ignore if this isn't a fresh press
+        if(key_status != 1)
+          return true;
 
-            force_release_all_keys();
-            update_screen();
-            m_show();
+        // ESCAPE_MENU (2.90+)
+        if(mzx_world->version < V290 || get_counter(mzx_world, "ESCAPE_MENU", 0))
+          confirm_exit = true;
 
-            do
-            {
-              update_event_status_delay();
-              update_screen();
-
-              key = get_key(keycode_internal_wrt_numlock);
-              status = get_key_status(keycode_internal_wrt_numlock, key);
-
-              if(get_exit_status())
-                break;
-
-            } while(
-             (key != IKEY_RETURN && key != IKEY_ESCAPE) || (status != 1)
-            );
-
-            force_release_all_keys();
-            restore_screen();
-          }
-          break;
-        }
-
-        case IKEY_ESCAPE:
-        {
-          // ESCAPE_MENU (2.90+)
-          int escape_menu_status =
-           get_counter(mzx_world, "ESCAPE_MENU", 0);
-
-          if(mzx_world->version < V290 || escape_menu_status)
-          {
-            if(key_status == 1)
-            {
-              confirm_exit = 1;
-              exit = 1;
-            }
-          }
-
-          break;
-        }
+        break;
       }
     }
+  }
 
-    // Quit
-    if(exit)
+  // Quit
+  if(exit_status || confirm_exit)
+  {
+    // Special behaviour in standalone- only escape exits
+    // ask for confirmation. Exit events instead terminate MegaZeux.
+    if(conf->standalone_mode && !confirm_exit)
     {
-      // Special behaviour in standalone- only escape exits
-      // ask for confirmation
-      if(conf->no_titlescreen || (conf->standalone_mode && !confirm_exit))
-      {
-        mzx_world->full_exit = true;
-      }
-
-      if(confirm_exit || !conf->standalone_mode)
-      {
-        confirm_exit = 0;
-        m_show();
-
-        exit = !confirm(mzx_world, "Quit playing- Are you sure?");
-
-        update_event_status();
-      }
+      core_exit(ctx);
     }
+    else
+    {
+      if(!confirm(mzx_world, "Quit playing- Are you sure?"))
+        destroy_context(ctx);
+    }
+    return true;
+  }
 
-  } while(!exit);
-  pop_context();
+  return false;
+}
+
+/**
+ * Destroy a game context.
+ */
+
+static void game_destroy(context *ctx)
+{
   vquick_fadeout();
+  clear_screen();
+  audio_end_module();
   sfx_clear_queue();
 }
 
-void title_screen(struct world *mzx_world)
+/**
+ * Create and run the gameplay context.
+ */
+
+__editor_maybe_static
+void play_game(context *parent, boolean *_fade_in)
 {
-  int exit = 0;
-  int confirm_exit = 0;
-  int fadein = 1;
-  int key = 0;
-  int key_status = 0;
-  int fade;
-  struct stat file_info;
-  struct board *src_board;
-  struct config_info *conf = &mzx_world->conf;
+  struct game_context *game;
+  struct context_spec spec;
 
-  set_caption(mzx_world, NULL, NULL, 0, 0);
-  debug_mode = false;
+  game = cmalloc(sizeof(struct game_context));
+  game->fade_in = _fade_in ? * _fade_in : true;
+  game->is_title = false;
 
-  // Clear screen
-  clear_screen(32, 7);
-  default_palette();
+  // Not used for gameplay...
+  game->need_reload = false;
+  game->load_dialog_on_failed_load = false;
 
-  // First, disable standalone mode if this is a build of MZX
-  // with the editor enabled
-  if(edit_world)
+  memset(&spec, 0, sizeof(struct context_spec));
+  spec.draw     = game_draw;
+  spec.idle     = game_idle;
+  spec.key      = game_key;
+  spec.destroy  = game_destroy;
+
+  spec.framerate_mode = FRAMERATE_MZX_SPEED;
+
+  create_context((context *)game, parent, &spec, CTX_PLAY_GAME);
+
+  if(!edit_world)
+    parent->world->editing = false;
+
+  clear_intro_mesg();
+}
+
+/**
+ * When control returns to the title screen from gameplay or the editor, the
+ * current world needs to be reloaded. When starting MegaZeux, if the startup
+ * world can't be loaded, the load menu needs to be displayed instead.
+ */
+
+static void title_resume(context *ctx)
+{
+  struct game_context *title = (struct game_context *)ctx;
+  struct config_info *conf = get_config(ctx);
+
+  if(title->need_reload)
   {
-    conf->standalone_mode = 0;
-  }
-
-  if(edit_world && mzx_world->conf.startup_editor)
-  {
-    // Disable standalone mode
-    conf->standalone_mode = 0;
-
-    set_intro_mesg_timer(0);
-    edit_world(mzx_world, 0);
-  }
-  else
-  {
-    if(!stat(curr_file, &file_info))
-      load_world_file(mzx_world, curr_file);
-    else
+    if(!load_world_title(title, curr_file))
     {
-      // Disable standalone mode
-      conf->standalone_mode = 0;
+      conf->standalone_mode = false;
 
-      load_world_selection(mzx_world);
+      if(title->load_dialog_on_failed_load)
+      {
+        load_world_title_selection(title);
+      }
     }
   }
 
-  // if standalone mode is disabled, also disable no_titlescreen
-  if(!conf->standalone_mode)
-    conf->no_titlescreen = 0;
+  title->load_dialog_on_failed_load = false;
+  title->need_reload = false;
+}
 
-  src_board = mzx_world->current_board;
-  draw_intro_mesg(mzx_world);
+/**
+ * Key handler for the title screen.
+ */
 
-  // Main game loop
+static boolean title_key(context *ctx, int *key)
+{
+  struct game_context *title = (struct game_context *)ctx;
+  struct config_info *conf = get_config(ctx);
+  struct world *mzx_world = ctx->world;
 
-  do
+  int key_status = get_key_status(keycode_internal_wrt_numlock, *key);
+  boolean exit_status = get_exit_status();
+
+  boolean reload_curr_file_in_editor = true;
+  boolean confirm_exit = false;
+
+  switch(*key)
   {
-    if(!conf->no_titlescreen)
+#ifdef CONFIG_HELPSYS
+    case IKEY_h:
     {
-      // Focus on center
-      if(fadein)
-      {
-        int x, y;
-        set_screen_coords(640/2, 350/2, &x, &y);
-        focus_pixel(x, y);
-      }
+      // Help system alternate binding.
+      *key = IKEY_F1;
+      break;
+    }
+#endif
 
-      // Update
+    case IKEY_s:
+    {
+      // Configure alternate binding.
+      *key = IKEY_F2;
+      break;
+    }
+
+    case IKEY_F3:
+    case IKEY_l:
+    {
+      if(conf->standalone_mode)
+        return true;
+
+      load_world_title_selection(title);
+      return true;
+    }
+
+    case IKEY_F4:
+    {
+      // ALT+F4 - do nothing.
+      if(get_alt_status(keycode_internal))
+        break;
+    }
+
+    /* fallthrough */
+
+    case IKEY_r:
+    {
+      // Restore saved game
+      if(conf->standalone_mode && !get_counter(mzx_world, "LOAD_MENU", 0))
+        return true;
+
+      if(load_savegame_selection(title))
+      {
+        play_game(ctx, &(title->fade_in));
+        title->need_reload = true;
+      }
+      return true;
+    }
+
+    case IKEY_F5:
+    case IKEY_p:
+    {
+      // Play game
       if(mzx_world->active)
       {
-        if(update(mzx_world, 0, &fadein))
+        if(mzx_world->only_from_swap)
         {
-          if(conf->standalone_mode &&
-           mzx_world->change_game_state == CHANGE_STATE_EXIT_GAME_ROBOTIC)
-            break;
-
-          if(mzx_world->change_game_state == CHANGE_STATE_REQUEST_EXIT)
-            break;
-
-          update_event_status();
-          continue;
+          error("You can only play this game via a swap from another game",
+           ERROR_T_WARNING, ERROR_OPT_OK, 0x3101);
+          return true;
         }
-        update_event_status();
-      }
-      else
-      {
-        // Give some delay time if nothing's loaded
-        update_screen();
-        update_event_status_delay();
-      }
 
-      src_board = mzx_world->current_board;
-
-      // Keycheck
-      key = get_key(keycode_internal_wrt_numlock);
-      key_status = get_key_status(keycode_internal_wrt_numlock, key);
-
-      exit = get_exit_status();
-      if(conf->standalone_mode)
-      {
-        switch(mzx_world->change_game_state)
+        if(load_world_gameplay(title, curr_file))
         {
-          case CHANGE_STATE_PLAY_GAME_ROBOTIC:
-            key = IKEY_p;
-            break;
-
-          default:
-            break;
+          play_game(ctx, NULL);
+          title->need_reload = true;
         }
       }
+      return true;
+    }
+
+    case IKEY_F7:
+    case IKEY_u:
+    {
+      if(check_for_updates)
+      {
+        // FIXME this is garbage
+        int current_music_vol = audio_get_music_volume();
+        int current_pcs_vol = audio_get_pcs_volume();
+        audio_set_music_volume(0);
+        audio_set_pcs_volume(0);
+        if(mzx_world->active)
+          audio_set_module_volume(0);
+
+        check_for_updates(mzx_world, conf, 0);
+
+        audio_set_pcs_volume(current_pcs_vol);
+        audio_set_music_volume(current_music_vol);
+        if(mzx_world->active)
+          audio_set_module_volume(mzx_world->current_board->volume);
+      }
+      return true;
+    }
+
+    case IKEY_F8:
+    case IKEY_n:
+    {
+      reload_curr_file_in_editor = false;
+    }
+
+    /* fallthrough */
+
+    case IKEY_F9:
+    case IKEY_e:
+    {
+      if(edit_world)
+      {
+        // Editor
+        sfx_clear_queue();
+        vquick_fadeout();
+        title->need_reload = true;
+        title->fade_in = true;
+
+        edit_world(ctx, reload_curr_file_in_editor);
+      }
+      return true;
+    }
+
+    // Quickload saved game
+    case IKEY_F10:
+    {
+      struct stat file_info;
+
+      if(conf->standalone_mode && !get_counter(mzx_world, "LOAD_MENU", 0))
+        return true;
+
+      if(!stat(curr_sav, &file_info) && load_savegame(title, curr_sav))
+      {
+        play_game(ctx, &(title->fade_in));
+        title->need_reload = true;
+      }
+      return true;
+    }
+
+    case IKEY_RETURN: // Enter
+    {
+      // Ignore if this isn't a fresh press
+      if(key_status != 1)
+        return true;
+
+      if(!conf->standalone_mode || get_counter(mzx_world, "ENTER_MENU", 0))
+        main_menu(ctx);
+
+      return true;
+    }
+
+    case IKEY_ESCAPE:
+    {
+      // Ignore if this isn't a fresh press
+      if(key_status != 1)
+        return true;
+
+      // ESCAPE_MENU (2.90+) only works on the title screen if the
+      // standalone_mode config option is set
+      if(mzx_world->version < V290 || !conf->standalone_mode ||
+       get_counter(mzx_world, "ESCAPE_MENU", 0))
+        confirm_exit = true;
+
+      break;
+    }
+  }
+
+  // Quit
+  if(exit_status || confirm_exit)
+  {
+    // Special behaviour in standalone- only escape exits
+    // ask for confirmation. Exit events instead terminate MegaZeux.
+    if(conf->standalone_mode && !confirm_exit)
+    {
+      core_exit(ctx);
     }
     else
     {
-      // No titlescreen mode, so jump straight to the game
-      key = IKEY_p;
+      if(!confirm(mzx_world, "Exit MegaZeux - Are you sure?"))
+        destroy_context(ctx);
     }
+    return true;
+  }
 
-    if(key && !exit)
-    {
-      int reload_curr_world_in_editor = 1;
-      switch(key)
-      {
-#ifdef CONFIG_HELPSYS
-        case IKEY_F1:
-        case IKEY_h:
-        {
-          int help_menu_status =
-           get_counter(mzx_world, "HELP_MENU", 0);
-          if(conf->standalone_mode && !help_menu_status)
-            break;
-          m_show();
-          help_system(mzx_world);
-          update_screen();
-          break;
-        }
-#endif
-        case IKEY_F2:
-        case IKEY_s:
-        {
-          int f2_menu_status =
-           get_counter(mzx_world, "F2_MENU", 0);
-          if(conf->standalone_mode && !f2_menu_status)
-            break;
-          // Settings
-          m_show();
-
-          game_settings(mzx_world);
-
-          update_screen();
-          update_event_status();
-          break;
-        }
-
-        case IKEY_F3:
-        case IKEY_l:
-        {
-          if(conf->standalone_mode)
-            break;
-
-          load_world_selection(mzx_world);
-          fadein = 1;
-          src_board = mzx_world->current_board;
-          update_screen();
-          update_event_status();
-          break;
-        }
-
-        case IKEY_F4:
-        {
-          // ALT+F4 - do nothing.
-          if(get_alt_status(keycode_internal))
-            break;
-        }
-
-        /* fallthrough */
-
-        case IKEY_r:
-        {
-          char save_file_name[MAX_PATH] = { 0 };
-          int load_menu_status =
-           get_counter(mzx_world, "LOAD_MENU", 0);
-          if(conf->standalone_mode && !load_menu_status)
-            break;
-
-          // Restore
-          m_show();
-
-          if(!choose_file_ch(mzx_world, save_ext, save_file_name,
-           "Choose game to restore", 1))
-          {
-            // Swap out current board...
-            sfx_clear_queue();
-            // Load game
-            fadein = 0;
-
-            if(reload_savegame(mzx_world, save_file_name, &fadein))
-            {
-              src_board = mzx_world->current_board;
-              load_savegame_module(mzx_world);
-              set_intro_mesg_timer(0);
-
-              // Copy filename
-              strcpy(curr_sav, save_file_name);
-              fadein ^= 1;
-
-              // do not send JUSTENTERED when loading a SAV game from the
-              // title screen or when no game is loaded; here we ONLY send
-              // JUSTLOADED.
-              send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
-
-              set_counter(mzx_world, "TIME", src_board->time_limit, 0);
-
-              find_player(mzx_world);
-              mzx_world->player_restart_x = mzx_world->player_x;
-              mzx_world->player_restart_y = mzx_world->player_y;
-              vquick_fadeout();
-
-              update_event_status();
-              play_game(mzx_world);
-
-              if(mzx_world->full_exit)
-                break;
-
-              // Done playing- load world again
-              // Already faded out from play_game()
-              audio_end_module();
-              // Clear screen
-              clear_screen(32, 7);
-              // Palette
-              default_palette();
-              insta_fadein();
-              // Reload original file
-              if(!stat(curr_file, &file_info))
-              {
-                if(reload_world(mzx_world, curr_file, &fade))
-                {
-                  src_board = mzx_world->current_board;
-                  load_board_module(mzx_world, src_board);
-                  set_counter(mzx_world, "TIME",
-                   src_board->time_limit, 0);
-                }
-              }
-              else
-              {
-                clear_world(mzx_world);
-                clear_global_data(mzx_world);
-              }
-              vquick_fadeout();
-              fadein = 1;
-            }
-            break;
-          }
-
-          update_screen();
-          update_event_status();
-          break;
-        }
-
-        case IKEY_F5:
-        case IKEY_p:
-        {
-          if(mzx_world->active)
-          {
-            char old_mod_playing[MAX_PATH];
-            strcpy(old_mod_playing, mzx_world->real_mod_playing);
-
-            // Play
-            // Only from swap?
-
-            if(mzx_world->only_from_swap)
-            {
-              m_show();
-              error("You can only play this game via a swap"
-               " from another game", 0, 24, 0x3101);
-              break;
-            }
-
-            // Load world curr_file
-            // Don't end mod- We want a smooth transition for that.
-            // Clear screen
-
-            clear_screen(32, 7);
-            // Palette
-            default_palette();
-
-            if(reload_world(mzx_world, curr_file, &fade))
-            {
-              if(mzx_world->current_board_id != mzx_world->first_board)
-              {
-                change_board(mzx_world, mzx_world->first_board);
-              }
-
-              src_board = mzx_world->current_board;
-
-              // send both JUSTENTERED and JUSTLOADED respectively; the
-              // JUSTLOADED label will take priority if a robot defines it
-              send_robot_def(mzx_world, 0, LABEL_JUSTENTERED);
-              send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
-
-              // Load the mod, but with special handling of *
-              strcpy(mzx_world->real_mod_playing, old_mod_playing);
-              if(load_board_module_change_test(mzx_world, src_board->mod_playing))
-                load_board_module(mzx_world, src_board);
-
-              set_intro_mesg_timer(0);
-
-              set_counter(mzx_world, "TIME", src_board->time_limit, 0);
-
-              sfx_clear_queue();
-              find_player(mzx_world);
-              mzx_world->player_restart_x = mzx_world->player_x;
-              mzx_world->player_restart_y = mzx_world->player_y;
-              vquick_fadeout();
-
-              // Load board palette and charset
-              change_board_load_assets(mzx_world);
-
-              play_game(mzx_world);
-
-              if(mzx_world->full_exit)
-                break;
-
-              // Done playing- load world again
-              // Already faded out from play_game()
-              audio_end_module();
-              // Clear screen
-              clear_screen(32, 7);
-              // Palette
-              default_palette();
-              insta_fadein();
-              // Reload original file
-              if(reload_world(mzx_world, curr_file, &fade))
-              {
-                src_board = mzx_world->current_board;
-                load_board_module(mzx_world, src_board);
-                set_counter(mzx_world, "TIME", src_board->time_limit, 0);
-              }
-              // Whoops, something happened! Make a blank world instead
-              else
-              {
-                clear_world(mzx_world);
-                clear_global_data(mzx_world);
-              }
-              vquick_fadeout();
-              fadein = 1;
-            }
-            else
-            {
-              audio_end_module();
-              clear_screen(32, 7);
-            }
-          }
-          break;
-        }
-
-        case IKEY_F7:
-        case IKEY_u:
-        {
-          if(check_for_updates)
-          {
-            int current_music_vol = audio_get_music_volume();
-            int current_pcs_vol = audio_get_pcs_volume();
-            audio_set_music_volume(0);
-            audio_set_pcs_volume(0);
-            if(mzx_world->active)
-              audio_set_module_volume(0);
-
-            check_for_updates(mzx_world, &mzx_world->conf, 0);
-            set_caption(mzx_world, NULL, NULL, 0, 0);
-
-            audio_set_pcs_volume(current_pcs_vol);
-            audio_set_music_volume(current_music_vol);
-            if(mzx_world->active)
-              audio_set_module_volume(src_board->volume);
-          }
-          break;
-        }
-
-        case IKEY_F8:
-        case IKEY_n:
-          reload_curr_world_in_editor = 0;
-
-          /* fallthrough */
-
-        case IKEY_F9:
-        case IKEY_e:
-        {
-          if(edit_world)
-          {
-            // Editor
-            sfx_clear_queue();
-            vquick_fadeout();
-            set_intro_mesg_timer(0);
-            edit_world(mzx_world, reload_curr_world_in_editor);
-
-            if(curr_file[0])
-              load_world_file(mzx_world, curr_file);
-
-            fadein = 1;
-          }
-          break;
-        }
-
-        // Quickload
-        case IKEY_F10:
-        {
-          int load_menu_status =
-           get_counter(mzx_world, "LOAD_MENU", 0);
-          if(conf->standalone_mode && !load_menu_status)
-            break;
-
-          // Restore
-          m_show();
-
-          // Swap out current board...
-          sfx_clear_queue();
-          // Load game
-          fadein = 0;
-
-          if(!reload_savegame(mzx_world, curr_sav, &fadein))
-          {
-            vquick_fadeout();
-          }
-          else
-          {
-            src_board = mzx_world->current_board;
-            load_savegame_module(mzx_world);
-            set_intro_mesg_timer(0);
-
-            fadein ^= 1;
-
-            // do not send JUSTENTERED when loading a SAV game from the
-            // title screen or when no game is loaded; here we ONLY send
-            // JUSTLOADED.
-            send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
-
-            set_counter(mzx_world, "TIME", src_board->time_limit, 0);
-
-            find_player(mzx_world);
-            mzx_world->player_restart_x = mzx_world->player_x;
-            mzx_world->player_restart_y = mzx_world->player_y;
-            vquick_fadeout();
-
-            play_game(mzx_world);
-
-            if(mzx_world->full_exit)
-              break;
-
-            // Done playing- load world again
-            // Already faded out from play_game()
-            audio_end_module();
-            // Clear screen
-            clear_screen(32, 7);
-            // Palette
-            default_palette();
-            insta_fadein();
-            // Reload original file
-            if(!stat(curr_file, &file_info))
-            {
-              if(reload_world(mzx_world, curr_file, &fade))
-              {
-                src_board = mzx_world->current_board;
-                load_board_module(mzx_world, src_board);
-                set_counter(mzx_world, "TIME",
-                 src_board->time_limit, 0);
-              }
-            }
-            else
-            {
-              clear_world(mzx_world);
-              clear_global_data(mzx_world);
-            }
-            vquick_fadeout();
-            fadein = 1;
-          }
-
-          update_screen();
-          update_event_status();
-
-          break;
-        }
-
-        case IKEY_RETURN: // Enter
-        {
-          const char *title = " MegaZeux " VERSION " ";
-          int title_x = 40 - strlen(title) / 2;
-
-          int key, status;
-          int enter_menu_status =
-           get_counter(mzx_world, "ENTER_MENU", 0);
-
-          // Ignore if this isn't a fresh press
-          if(key_status != 1)
-            break;
-
-          if(conf->standalone_mode && !enter_menu_status)
-            break;
-
-          save_screen();
-          draw_window_box(28, 4, 51, 16, 25, 16, 24, 1, 1);
-          write_string(title, title_x, 4, 30, 0);
-          write_string(main_menu_1, 30, 5, 31, 1);
-          if(mzx_world->help_file)
-            write_string(main_menu_2, 30, 7, 31, 1);
-          write_string(main_menu_3, 30, 8, 31, 1);
-          if(check_for_updates)
-            write_string(main_menu_4, 30, 12, 31, 1);
-          if(edit_world)
-            write_string(main_menu_5, 30, 13, 31, 1);
-          write_string(main_menu_6, 30, 15, 31, 1);
-
-          force_release_all_keys();
-          update_screen();
-          m_show();
-
-          do
-          {
-            update_event_status_delay();
-            update_screen();
-            key = get_key(keycode_internal_wrt_numlock);
-            status = get_key_status(keycode_internal_wrt_numlock, key);
-
-            if(get_exit_status())
-              break;
-
-          } while((key != IKEY_RETURN && key != IKEY_ESCAPE) || status!=1);
-
-          force_release_all_keys();
-          restore_screen();
-          update_screen();
-          break;
-        }
-
-        case IKEY_ESCAPE:
-        {
-          // ESCAPE_MENU (2.90+)
-          int escape_menu_status =
-           get_counter(mzx_world, "ESCAPE_MENU", 0);
-
-          // Escape menu only works on the title screen if the
-          // standalone_mode config option is set
-          if(mzx_world->version < V290 || escape_menu_status ||
-           !conf->standalone_mode)
-          {
-            if(key_status == 1)
-            {
-              confirm_exit = 1;
-              exit = 1;
-            }
-          }
-
-          break;
-        }
-      }
-      draw_intro_mesg(mzx_world);
-    }
-
-    // Quit
-    if(exit)
-    {
-      // Special behaviour in standalone- only escape exits
-      // ask for confirmation
-      if(confirm_exit || !conf->standalone_mode)
-      {
-        confirm_exit = 0;
-        m_show();
-
-        exit = !confirm(mzx_world, "Exit MegaZeux - Are you sure?");
-
-        update_screen();
-        update_event_status();
-      }
-    }
-
-    if(mzx_world->full_exit)
-      break;
-
-  } while(!exit && !mzx_world->full_exit);
-
-  vquick_fadeout();
-  sfx_clear_queue();
+  return false;
 }
 
-void set_mesg(struct world *mzx_world, const char *str)
+/**
+ * Create and run the title screen context. This context should only be started
+ * when MegaZeux is opened, and MegaZeux should terminate if it is destroyed.
+ * If startup_editor is enabled, also start the editor. If standalone_mode and
+ * no_titlescreen mode are enabled, only attempt to start gameplay instead.
+ */
+
+void title_screen(context *parent)
 {
-  if(mzx_world->bi_mesg_status)
+  struct config_info *conf = get_config(parent);
+  struct game_context *title;
+  struct context_spec spec;
+
+  if(edit_world)
   {
-    set_mesg_direct(mzx_world->current_board, str);
-  }
-}
-
-void set_mesg_direct(struct board *src_board, const char *str)
-{
-  strncpy(src_board->bottom_mesg, str, ROBOT_MAX_TR - 1);
-  src_board->bottom_mesg[ROBOT_MAX_TR - 1] = 0;
-  src_board->b_mesg_timer = MESG_TIMEOUT;
-  set_intro_mesg_timer(0);
-}
-
-// Rotate an area
-void rotate(struct world *mzx_world, int x, int y, int dir)
-{
-  struct board *src_board = mzx_world->current_board;
-  const char *offsp = cw_offs;
-  int offs[8];
-  int offset, i;
-  int board_width = src_board->board_width;
-  int board_height = src_board->board_height;
-  int cw, ccw;
-  char *level_id = src_board->level_id;
-  char *level_param = src_board->level_param;
-  char *level_color = src_board->level_color;
-  enum thing id;
-  char param, color;
-  enum thing cur_id;
-  int d_flag;
-  int cur_offset, next_offset;
-
-  offset = x + (y * board_width);
-  if((x == 0) || (y == 0) || (x == (board_width - 1)) ||
-   (y == (board_height - 1))) return;
-
-  if(dir)
-    offsp = ccw_offs;
-
-  // Fix offsets
-  for(i = 0; i < 8; i++)
-  {
-    int offsval = offsp[i];
-    if(offsval & 1)
-      offs[i] = 1;
-    else
-      offs[i] = 0;
-
-    if(offsval & 2)
-      offs[i]--;
-
-    if(offsval & 4)
-      offs[i] += board_width;
-
-    if(offsval & 8)
-      offs[i] -= board_width;
+    conf->standalone_mode = false;
   }
 
-  for(i = 0; i < 8; i++)
+  if(conf->standalone_mode && conf->no_titlescreen)
   {
-    cur_id = (enum thing)level_id[offset + offs[i]];
-    if((flags[(int)cur_id] & A_UNDER) && (cur_id != GOOP))
-      break;
+    struct game_context dummy;
+    dummy.ctx.world = parent->world;
+    dummy.ctx.data = parent->data;
+
+    if(load_world_gameplay(&dummy, curr_file))
+    {
+      play_game(parent, NULL);
+      return;
+    }
+
+    conf->standalone_mode = false;
   }
 
-  if(i == 8)
+  title = cmalloc(sizeof(struct game_context));
+  title->fade_in = true;
+  title->need_reload = true;
+  title->load_dialog_on_failed_load = true;
+  title->is_title = true;
+
+  memset(&spec, 0, sizeof(struct context_spec));
+  spec.resume   = title_resume;
+  spec.draw     = game_draw;
+  spec.idle     = game_idle;
+  spec.key      = title_key;
+  spec.destroy  = game_destroy;
+
+  create_context((context *)title, parent, &spec, CTX_TITLE_SCREEN);
+
+  if(edit_world && conf->startup_editor)
   {
-    for(i = 0; i < 8; i++)
-    {
-      cur_id = (enum thing)level_id[offset + offs[i]];
-      d_flag = flags[(int)cur_id];
-
-      if((!(d_flag & A_PUSHABLE) || (d_flag & A_SPEC_PUSH)) &&
-       (cur_id != GATE))
-      {
-        break; // Transport NOT pushable
-      }
-    }
-
-    if(i == 8)
-    {
-      cur_offset = offset + offs[0];
-      id = (enum thing)level_id[cur_offset];
-      color = level_color[cur_offset];
-      param = level_param[cur_offset];
-
-      for(i = 0; i < 7; i++)
-      {
-        cur_offset = offset + offs[i];
-        next_offset = offset + offs[i + 1];
-        level_id[cur_offset] = level_id[next_offset];
-        level_color[cur_offset] = level_color[next_offset];
-        level_param[cur_offset] = level_param[next_offset];
-      }
-
-      cur_offset = offset + offs[7];
-      level_id[cur_offset] = (char)id;
-      level_color[cur_offset] = color;
-      level_param[cur_offset] = param;
-    }
-  }
-  else
-  {
-    cw = i - 1;
-
-    if(cw == -1)
-      cw = 7;
-
-    do
-    {
-      ccw = i + 1;
-      if(ccw == 8)
-        ccw = 0;
-
-      cur_offset = offset + offs[ccw];
-      next_offset = offset + offs[i];
-      cur_id = (enum thing)level_id[cur_offset];
-      d_flag = flags[(int)cur_id];
-
-      if(((d_flag & A_PUSHABLE) || (d_flag & A_SPEC_PUSH)) &&
-       (cur_id != GATE) && (!(mzx_world->update_done[cur_offset] & 2)))
-      {
-        offs_place_id(mzx_world, next_offset, cur_id,
-         level_color[cur_offset], level_param[cur_offset]);
-        offs_remove_id(mzx_world, cur_offset);
-        mzx_world->update_done[offset + offs[i]] |= 2;
-        i = ccw;
-      }
-      else
-      {
-        i = ccw;
-        while(i != cw)
-        {
-          cur_id = (enum thing)level_id[offset + offs[i]];
-          if((flags[(int)cur_id] & A_UNDER) && (cur_id != GOOP))
-            break;
-
-          i++;
-          if(i == 8)
-            i = 0;
-        }
-      }
-    } while(i != cw);
-  }
-}
-
-void calculate_xytop(struct world *mzx_world, int *x, int *y)
-{
-  struct board *src_board = mzx_world->current_board;
-  int nx, ny;
-  int board_width = src_board->board_width;
-  int board_height = src_board->board_height;
-  int viewport_width = src_board->viewport_width;
-  int viewport_height = src_board->viewport_height;
-  int locked_y = src_board->locked_y;
-
-  // Calculate xy top from player position and scroll view pos, or
-  // as static position if set.
-  if(locked_y != -1)
-  {
-    nx = src_board->locked_x + src_board->scroll_x;
-    ny = locked_y + src_board->scroll_y;
-  }
-  else
-  {
-    // Calculate from player position
-    // Center screen around player, add scroll factor
-    nx = mzx_world->player_x - (viewport_width / 2);
-    ny = mzx_world->player_y - (viewport_height / 2);
-
-    if(nx < 0)
-      nx = 0;
-
-    if(ny < 0)
-      ny = 0;
-
-    if(nx > (board_width - viewport_width))
-     nx = board_width - viewport_width;
-
-    if(ny > (board_height - viewport_height))
-     ny = board_height - viewport_height;
-
-    nx += src_board->scroll_x;
-    ny += src_board->scroll_y;
-  }
-  // Prevent from going offscreen
-  if(nx < 0)
-    nx = 0;
-
-  if(ny < 0)
-    ny = 0;
-
-  if(nx > (board_width - viewport_width))
-    nx = board_width - viewport_width;
-
-  if(ny > (board_height - viewport_height))
-    ny = board_height - viewport_height;
-
-  *x = nx;
-  *y = ny;
-}
-
-// Returns 1 if didn't move
-int move_player(struct world *mzx_world, int dir)
-{
-  struct board *src_board = mzx_world->current_board;
-  // Dir is from 0 to 3
-  int player_x = mzx_world->player_x;
-  int player_y = mzx_world->player_y;
-  int new_x = player_x;
-  int new_y = player_y;
-  int edge = 0;
-
-  switch(dir)
-  {
-    case 0:
-      if(--new_y < 0)
-        edge = 1;
-      break;
-    case 1:
-      if(++new_y >= src_board->board_height)
-        edge = 1;
-      break;
-    case 2:
-      if(++new_x >= src_board->board_width)
-        edge = 1;
-      break;
-    case 3:
-      if(--new_x < 0)
-        edge = 1;
-      break;
+    title->load_dialog_on_failed_load = false;
+    edit_world((context *)title, true);
   }
 
-  if(edge)
-  {
-    // Hit an edge, teleport to another board?
-    int board_dir = src_board->board_dir[dir];
-    // Board must be valid
-    if((board_dir == NO_BOARD) ||
-     (board_dir >= mzx_world->num_boards) ||
-     (!mzx_world->board_list[board_dir]))
-    {
-      return 1;
-    }
-
-    mzx_world->target_board = board_dir;
-    mzx_world->target_where = TARGET_POSITION;
-    mzx_world->target_x = player_x;
-    mzx_world->target_y = player_y;
-
-    switch(dir)
-    {
-      case 0: // North- Enter south side
-      {
-        mzx_world->target_y =
-         (mzx_world->board_list[board_dir])->board_height - 1;
-        break;
-      }
-
-      case 1: // South- Enter north side
-      {
-        mzx_world->target_y = 0;
-        break;
-      }
-
-      case 2: // East- Enter west side
-      {
-        mzx_world->target_x = 0;
-        break;
-      }
-
-      case 3: // West- Enter east side
-      {
-        mzx_world->target_x =
-         (mzx_world->board_list[board_dir])->board_width - 1;
-        break;
-      }
-    }
-    src_board->player_last_dir =
-     (src_board->player_last_dir & 240) + dir + 1;
-    return 0;
-  }
-  else
-  {
-    // Not edge
-    int d_offset = new_x + (new_y * src_board->board_width);
-    enum thing d_id = (enum thing)src_board->level_id[d_offset];
-    enum thing u_id = (enum thing)src_board->level_under_id[d_offset];
-    int d_flag = flags[(int)d_id];
-
-    if(d_flag & A_SPEC_STOOD)
-    {
-      // Sensor
-      // Activate label and then move player
-      int d_param = src_board->level_param[d_offset];
-      send_robot(mzx_world,
-       (src_board->sensor_list[d_param])->robot_to_mesg,
-       "SENSORON", 0);
-      place_player(mzx_world, new_x, new_y, dir);
-    }
-    else
-
-    if(d_flag & A_ENTRANCE)
-    {
-      // Entrance
-      int d_board = src_board->level_param[d_offset];
-      play_sfx(mzx_world, 37);
-      // Can move?
-      if((d_board != mzx_world->current_board_id) &&
-       (d_board < mzx_world->num_boards) &&
-       (mzx_world->board_list[d_board]))
-      {
-        // Go to board t1 AFTER showing update
-        mzx_world->target_board = d_board;
-        mzx_world->target_where = TARGET_ENTRANCE;
-        mzx_world->target_color = src_board->level_color[d_offset];
-        mzx_world->target_id = d_id;
-      }
-
-      place_player(mzx_world, new_x, new_y, dir);
-    }
-    else
-
-    if((d_flag & A_ITEM) && (d_id != ROBOT_PUSHABLE))
-    {
-      // Item
-      enum thing d_under_id = (enum thing)mzx_world->under_player_id;
-      char d_under_color = mzx_world->under_player_color;
-      char d_under_param = mzx_world->under_player_param;
-      int grab_result = grab_item(mzx_world, d_offset, dir);
-      if(grab_result)
-      {
-        if(d_id == TRANSPORT)
-        {
-          int player_last_dir = src_board->player_last_dir;
-          // Teleporter
-          id_remove_top(mzx_world, player_x, player_y);
-          mzx_world->under_player_id = (char)d_under_id;
-          mzx_world->under_player_color = d_under_color;
-          mzx_world->under_player_param = d_under_param;
-          src_board->player_last_dir =
-           (player_last_dir & 240) + dir + 1;
-          // New player x/y will be found after update !!! maybe fix.
-        }
-        else
-        {
-          place_player(mzx_world, new_x, new_y, dir);
-        }
-        return 0;
-      }
-      return 1;
-    }
-    else
-
-    if(d_flag & A_UNDER)
-    {
-      // Under
-      place_player(mzx_world, new_x, new_y, dir);
-      return 0;
-    }
-    else
-
-    if((d_flag & A_ENEMY) || (d_flag & A_HURTS))
-    {
-      if(d_id == BULLET)
-      {
-        // Bullet
-        if((src_board->level_param[d_offset] >> 2) == PLAYER_BULLET)
-        {
-          // Player bullet no hurty
-          id_remove_top(mzx_world, new_x, new_y);
-          place_player(mzx_world, new_x, new_y, dir);
-          return 0;
-        }
-        else
-        {
-          // Enemy or hurtsy
-          dec_counter(mzx_world, "HEALTH", id_dmg[61], 0);
-          play_sfx(mzx_world, 21);
-          set_mesg(mzx_world, "Ouch!");
-        }
-      }
-      else
-      {
-        dec_counter(mzx_world, "HEALTH", id_dmg[(int)d_id], 0);
-        play_sfx(mzx_world, 21);
-        set_mesg(mzx_world, "Ouch!");
-
-        if(d_flag & A_ENEMY)
-        {
-          // Kill/move
-          id_remove_top(mzx_world, new_x, new_y);
-
-          // Not onto goop.. (under is now top)
-          if(u_id != GOOP && !src_board->restart_if_zapped)
-          {
-            place_player(mzx_world, new_x, new_y, dir);
-            return 0;
-          }
-        }
-      }
-    }
-    else
-    {
-      int dir_mask;
-      // Check for push
-      if(dir > 1)
-        dir_mask = d_flag & A_PUSHEW;
-      else
-        dir_mask = d_flag & A_PUSHNS;
-
-      if(dir_mask || (d_flag & A_SPEC_PUSH))
-      {
-        // Push
-        // Pushable robot needs to be sent the touch label
-        if(d_id == ROBOT_PUSHABLE)
-          send_robot_def(mzx_world,
-           src_board->level_param[d_offset], LABEL_TOUCH);
-
-        if(!push(mzx_world, player_x, player_y, dir, 0))
-        {
-          place_player(mzx_world, new_x, new_y, dir);
-          return 0;
-        }
-      }
-    }
-    // Nothing.
-  }
-  return 1;
-}
-
-int grab_item(struct world *mzx_world, int offset, int dir)
-{
-  // Dir is for transporter
-  struct board *src_board = mzx_world->current_board;
-  enum thing id = (enum thing)src_board->level_id[offset];
-  char param = src_board->level_param[offset];
-  char color = src_board->level_color[offset];
-  int remove = 0;
-
-  char tmp[81];
-
-  switch(id)
-  {
-    case CHEST: // Chest
-    {
-      int item;
-
-      if(!(param & 15))
-      {
-        play_sfx(mzx_world, 40);
-        break;
-      }
-
-      // Act upon contents
-      play_sfx(mzx_world, 41);
-      item = ((param & 240) >> 4); // Amount for most things
-
-      switch((enum chest_contents)(param & 15))
-      {
-        case ITEM_KEY: // Key
-        {
-          if(give_key(mzx_world, item))
-          {
-            set_mesg(mzx_world, "Inside the chest is a key, "
-             "but you can't carry any more keys!");
-            return 0;
-          }
-          set_mesg(mzx_world, "Inside the chest you find a key.");
-          break;
-        }
-
-        case ITEM_COINS: // Coins
-        {
-          item *= 5;
-          set_3_mesg(mzx_world, "Inside the chest you find ",
-           item, " coins.");
-          inc_counter(mzx_world, "COINS", item, 0);
-          inc_counter(mzx_world, "SCORE", item, 0);
-          break;
-        }
-
-        case ITEM_LIFE: // Life
-        {
-          if(item > 1)
-          {
-            set_3_mesg(mzx_world, "Inside the chest you find ",
-             item, " free lives.");
-          }
-          else
-          {
-            set_mesg(mzx_world,
-             "Inside the chest you find 1 free life.");
-          }
-          inc_counter(mzx_world, "LIVES", item, 0);
-          break;
-        }
-
-        case ITEM_AMMO: // Ammo
-        {
-          item *= 5;
-          set_3_mesg(mzx_world,
-           "Inside the chest you find ", item, " rounds of ammo.");
-          inc_counter(mzx_world, "AMMO", item, 0);
-          break;
-        }
-
-        case ITEM_GEMS: // Gems
-        {
-          item *= 5;
-          set_3_mesg(mzx_world, "Inside the chest you find ",
-           item, " gems.");
-          inc_counter(mzx_world, "GEMS", item, 0);
-          inc_counter(mzx_world, "SCORE", item, 0);
-          break;
-        }
-
-        case ITEM_HEALTH: // Health
-        {
-          item *= 5;
-          set_3_mesg(mzx_world, "Inside the chest you find ",
-           item, " health.");
-          inc_counter(mzx_world, "HEALTH", item, 0);
-          break;
-        }
-
-        case ITEM_POTION: // Potion
-        {
-          int answer;
-          m_show();
-          answer = confirm(mzx_world,
-           "Inside the chest you find a potion. Drink it?");
-
-          if(answer)
-            return 0;
-
-          src_board->level_param[offset] = 0;
-          give_potion(mzx_world, (enum potion)item);
-          break;
-        }
-
-        case ITEM_RING: // Ring
-        {
-          int answer;
-
-          m_show();
-
-          answer = confirm(mzx_world,
-           "Inside the chest you find a ring. Wear it?");
-
-          if(answer)
-            return 0;
-
-          src_board->level_param[offset] = 0;
-          give_potion(mzx_world, (enum potion)item);
-          break;
-        }
-
-        case ITEM_LOBOMBS: // Lobombs
-        {
-          item *= 5;
-          set_3_mesg(mzx_world, "Inside the chest you find ", item,
-           " low strength bombs.");
-          inc_counter(mzx_world, "LOBOMBS", item, 0);
-          break;
-        }
-
-        case ITEM_HIBOMBS: // Hibombs
-        {
-          item *= 5;
-          set_3_mesg(mzx_world, "Inside the chest you find ", item,
-           " high strength bombs.");
-          inc_counter(mzx_world, "HIBOMBS", item, 0);
-          break;
-        }
-      }
-      // Empty chest
-      src_board->level_param[offset] = 0;
-      break;
-    }
-
-    case GEM:
-    case MAGIC_GEM:
-    {
-      play_sfx(mzx_world, id - 28);
-      inc_counter(mzx_world, "GEMS", 1, 0);
-
-      if(id == MAGIC_GEM)
-        inc_counter(mzx_world, "HEALTH", 1, 0);
-
-      inc_counter(mzx_world, "SCORE", 1, 0);
-      remove = 1;
-      break;
-    }
-
-    case HEALTH:
-    {
-      play_sfx(mzx_world, 2);
-      inc_counter(mzx_world, "HEALTH", param, 0);
-      remove = 1;
-      break;
-    }
-
-    case RING:
-    case POTION:
-    {
-      give_potion(mzx_world, (enum potion)param);
-      remove = 1;
-      break;
-    }
-
-    case GOOP:
-    {
-      play_sfx(mzx_world, 48);
-      set_mesg(mzx_world, "There is goop in your way!");
-      send_robot_def(mzx_world, 0, LABEL_GOOPTOUCHED);
-      break;
-    }
-
-    case ENERGIZER:
-    {
-      play_sfx(mzx_world, 16);
-      set_mesg(mzx_world, "Energize!");
-      send_robot_def(mzx_world, 0, LABEL_INVINCO);
-      set_counter(mzx_world, "INVINCO", 113, 0);
-      remove = 1;
-      break;
-    }
-
-    case AMMO:
-    {
-      play_sfx(mzx_world, 3);
-      inc_counter(mzx_world, "AMMO", param, 0);
-      remove = 1;
-      break;
-    }
-
-    case BOMB:
-    {
-      if(src_board->collect_bombs)
-      {
-        if(param)
-        {
-          play_sfx(mzx_world, 7);
-          inc_counter(mzx_world, "HIBOMBS", 1, 0);
-        }
-        else
-        {
-          play_sfx(mzx_world, 6);
-          inc_counter(mzx_world, "LOBOMBS", 1, 0);
-        }
-        remove = 1;
-      }
-      else
-      {
-        // Light bomb
-        play_sfx(mzx_world, 33);
-        src_board->level_id[offset] = 37;
-        src_board->level_param[offset] = param << 7;
-      }
-      break;
-    }
-
-    case KEY:
-    {
-      if(give_key(mzx_world, color))
-      {
-        play_sfx(mzx_world, 9);
-        set_mesg(mzx_world, "You can't carry any more keys!");
-      }
-      else
-      {
-        play_sfx(mzx_world, 8);
-        set_mesg(mzx_world, "You grab the key.");
-        remove = 1;
-      }
-      break;
-    }
-
-    case LOCK:
-    {
-      if(take_key(mzx_world, color))
-      {
-        play_sfx(mzx_world, 11);
-        set_mesg(mzx_world, "You need an appropriate key!");
-      }
-      else
-      {
-        play_sfx(mzx_world, 10);
-        set_mesg(mzx_world, "You open the lock.");
-        remove = 1;
-      }
-      break;
-    }
-
-    case DOOR:
-    {
-      int board_width = src_board->board_width;
-      char *level_id = src_board->level_id;
-      char *level_param = src_board->level_param;
-      int x = offset % board_width;
-      int y = offset / board_width;
-      char door_first_movement[8] = { 0, 3, 0, 2, 1, 3, 1, 2 };
-
-      if(param & 8)
-      {
-        // Locked
-        if(take_key(mzx_world, color))
-        {
-          // Need key
-          play_sfx(mzx_world, 19);
-          set_mesg(mzx_world, "The door is locked!");
-          break;
-        }
-
-        // Unlocked
-        set_mesg(mzx_world, "You unlock and open the door.");
-      }
-      else
-      {
-        set_mesg(mzx_world, "You open the door.");
-      }
-
-      src_board->level_id[offset] = 42;
-      src_board->level_param[offset] = (param & 7);
-
-      if(move(mzx_world, x, y, door_first_movement[param & 7],
-       CAN_PUSH | CAN_LAVAWALK | CAN_FIREWALK | CAN_WATERWALK))
-      {
-        set_mesg(mzx_world, "The door is blocked from opening!");
-        play_sfx(mzx_world, 19);
-        level_id[offset] = 41;
-        level_param[offset] = param & 7;
-      }
-      else
-      {
-        play_sfx(mzx_world, 20);
-      }
-      break;
-    }
-
-    case GATE:
-    {
-      if(param)
-      {
-        // Locked
-        if(take_key(mzx_world, color))
-        {
-          // Need key
-          play_sfx(mzx_world, 14);
-          set_mesg(mzx_world, "The gate is locked!");
-          break;
-        }
-        // Unlocked
-        set_mesg(mzx_world, "You unlock and open the gate.");
-      }
-      else
-      {
-        set_mesg(mzx_world, "You open the gate.");
-      }
-
-      src_board->level_id[offset] = (char)OPEN_GATE;
-      src_board->level_param[offset] = 22;
-      play_sfx(mzx_world, 15);
-      break;
-    }
-
-    case TRANSPORT:
-    {
-      int x = offset % src_board->board_width;
-      int y = offset / src_board->board_width;
-
-      if(transport(mzx_world, x, y, dir, PLAYER, 0, 0, 1))
-        break;
-
-      return 1;
-    }
-
-    case COIN:
-    {
-      play_sfx(mzx_world, 4);
-      inc_counter(mzx_world, "COINS", 1, 0);
-      inc_counter(mzx_world, "SCORE", 1, 0);
-      remove = 1;
-      break;
-    }
-
-    case POUCH:
-    {
-      play_sfx(mzx_world, 38);
-      inc_counter(mzx_world, "GEMS", (param & 15) * 5, 0);
-      inc_counter(mzx_world, "COINS", (param >> 4) * 5, 0);
-      inc_counter(mzx_world, "SCORE", ((param & 15) + (param >> 4)) * 5, 1);
-      sprintf(tmp, "The pouch contains %d gems and %d coins.",
-       (param & 15) * 5, (param >> 4) * 5);
-      set_mesg(mzx_world, tmp);
-      remove = 1;
-      break;
-    }
-
-    case FOREST:
-    {
-      play_sfx(mzx_world, 13);
-      if(src_board->forest_becomes == FOREST_TO_EMPTY)
-      {
-        remove = 1;
-      }
-      else
-      {
-        src_board->level_id[offset] = (char)FLOOR;
-        return 1;
-      }
-      break;
-    }
-
-    case LIFE:
-    {
-      play_sfx(mzx_world, 5);
-      inc_counter(mzx_world, "LIVES", 1, 0);
-      set_mesg(mzx_world, "You find a free life!");
-      remove = 1;
-      break;
-    }
-
-    case INVIS_WALL:
-    {
-      src_board->level_id[offset] = (char)NORMAL;
-      set_mesg(mzx_world, "Oof! You ran into an invisible wall.");
-      play_sfx(mzx_world, 12);
-      break;
-    }
-
-    case MINE:
-    {
-      src_board->level_id[offset] = (char)EXPLOSION;
-      src_board->level_param[offset] = param & 240;
-      play_sfx(mzx_world, 36);
-      break;
-    }
-
-    case EYE:
-    {
-      src_board->level_id[offset] = (char)EXPLOSION;
-      src_board->level_param[offset] = (param << 1) & 112;
-      break;
-    }
-
-    case THIEF:
-    {
-      dec_counter(mzx_world, "GEMS", (param & 128) >> 7, 0);
-      play_sfx(mzx_world, 44);
-      break;
-    }
-
-    case SLIMEBLOB:
-    {
-      if(param & 64)
-        hurt_player_id(mzx_world, SLIMEBLOB);
-
-      if(param & 128)
-        break;
-
-      src_board->level_id[offset] = (char)BREAKAWAY;
-      break;
-    }
-
-    case GHOST:
-    {
-      hurt_player_id(mzx_world, GHOST);
-
-      // Die !?
-      if(!(param & 8))
-        remove = 1;
-
-      break;
-    }
-
-    case DRAGON:
-    {
-      hurt_player_id(mzx_world, DRAGON);
-      break;
-    }
-
-    case FISH:
-    {
-      if(param & 64)
-      {
-        hurt_player_id(mzx_world, FISH);
-        remove = 1;
-      }
-      break;
-    }
-
-    case ROBOT:
-    {
-      int idx = param;
-
-      // update last touched direction
-      src_board->robot_list[idx]->last_touch_dir =
-       int_to_dir(flip_dir(dir));
-
-      send_robot_def(mzx_world, param, LABEL_TOUCH);
-      break;
-    }
-
-    case SIGN:
-    case SCROLL:
-    {
-      int idx = param;
-      play_sfx(mzx_world, 47);
-
-      m_show();
-      scroll_edit(mzx_world, src_board->scroll_list[idx], id & 1);
-
-      if(id == SCROLL)
-        remove = 1;
-      break;
-    }
-
-    default:
-      break;
-  }
-
-  if(remove == 1)
-    offs_remove_id(mzx_world, offset);
-
-  return remove; // Not grabbed
-}
-
-void find_player(struct world *mzx_world)
-{
-  struct board *src_board = mzx_world->current_board;
-  int board_width = src_board->board_width;
-  int board_height = src_board->board_height;
-  char *level_id = src_board->level_id;
-  int dx, dy, offset;
-
-  if(mzx_world->player_x >= board_width)
-    mzx_world->player_x = 0;
-
-  if(mzx_world->player_y >= board_height)
-    mzx_world->player_y = 0;
-
-  if((enum thing)level_id[mzx_world->player_x +
-   (mzx_world->player_y * board_width)] != PLAYER)
-  {
-    for(dy = 0, offset = 0; dy < board_height; dy++)
-    {
-      for(dx = 0; dx < board_width; dx++, offset++)
-      {
-        if((enum thing)level_id[offset] == PLAYER)
-        {
-          mzx_world->player_x = dx;
-          mzx_world->player_y = dy;
-          return;
-        }
-      }
-    }
-
-    replace_player(mzx_world);
-  }
-}
-
-int take_key(struct world *mzx_world, int color)
-{
-  int i;
-  char *keys = mzx_world->keys;
-
-  color &= 15;
-
-  for(i = 0; i < NUM_KEYS; i++)
-  {
-    if(keys[i] == color) break;
-  }
-
-  if(i < NUM_KEYS)
-  {
-    keys[i] = NO_KEY;
-    return 0;
-  }
-
-  return 1;
-}
-
-// Give a key. Returns non-0 if no room.
-int give_key(struct world *mzx_world, int color)
-{
-  int i;
-  char *keys = mzx_world->keys;
-
-  color &= 15;
-
-  for(i = 0; i < NUM_KEYS; i++)
-    if(keys[i] == NO_KEY) break;
-
-  if(i < NUM_KEYS)
-  {
-    keys[i] = color;
-    return 0;
-  }
-
-  return 1;
+  default_palette();
+  clear_screen();
 }

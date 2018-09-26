@@ -26,39 +26,51 @@
 
 __M_BEGIN_DECLS
 
-#include "../board_struct.h"
+#include "../world_struct.h"
+#include "edit.h"
+#include "undo.h"
 
-void clear_layer_block(
- char *dest_char, char *dest_color, int dest_width, int dest_offset,
- int block_width, int block_height);
-void clear_board_block(struct board *dest_board, int dest_offset,
- int block_width, int block_height);
+enum block_command
+{
+  BLOCK_CMD_NONE,
+  BLOCK_CMD_COPY,
+  BLOCK_CMD_COPY_REPEATED,
+  BLOCK_CMD_MOVE,
+  BLOCK_CMD_CLEAR,
+  BLOCK_CMD_FLIP,
+  BLOCK_CMD_MIRROR,
+  BLOCK_CMD_PAINT,
+  BLOCK_CMD_SAVE_MZM,
+  BLOCK_CMD_LOAD_MZM,
+};
 
-void flip_layer_block(
- char *dest_char, char *dest_color, int dest_width, int dest_offset,
- int block_width, int block_height);
-void flip_board_block(struct board *dest_board, int dest_offset,
- int block_width, int block_height);
-
-void mirror_layer_block(
- char *dest_char, char *dest_color, int dest_width, int dest_offset,
- int block_width, int block_height);
-void mirror_board_block(struct board *dest_board, int dest_offset,
- int block_width, int block_height);
-
-void paint_layer_block(char *dest_color, int dest_width, int dest_offset,
- int block_width, int block_height, int paint_color);
+struct block_info
+{
+  enum block_command command;
+  enum editor_mode src_mode;
+  enum editor_mode dest_mode;
+  int src_x;
+  int src_y;
+  int dest_x;
+  int dest_y;
+  int width;
+  int height;
+  struct board *src_board;
+  struct board *dest_board;
+  boolean selected;
+};
 
 void copy_layer_buffer_to_buffer(
  char *src_char, char *src_color, int src_width, int src_offset,
  char *dest_char, char *dest_color, int dest_width, int dest_offset,
  int block_width, int block_height);
 
-void move_layer_block(
- char *src_char, char *src_color, int src_width, int src_offset,
- char *dest_char, char *dest_color, int dest_width, int dest_offset,
- int block_width, int block_height,
- int clear_width, int clear_height);
+void do_block_command(struct world *mzx_world, struct block_info *block,
+ struct undo_history *dest_history, char *mzm_name_buffer, int current_color);
+
+boolean select_block_command(struct world *mzx_world, struct block_info *block,
+ enum editor_mode mode);
+enum thing layer_to_board_object_type(struct world *mzx_world);
 
 __M_END_DECLS
 

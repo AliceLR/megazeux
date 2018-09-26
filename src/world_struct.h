@@ -37,11 +37,15 @@ __M_BEGIN_DECLS
 #include "util.h"
 #include "audio/sfx.h"
 
-#define CHANGE_STATE_SWAP_WORLD 1
-#define CHANGE_STATE_LOAD_GAME_ROBOTIC 2
-#define CHANGE_STATE_EXIT_GAME_ROBOTIC 3
-#define CHANGE_STATE_PLAY_GAME_ROBOTIC 4
-#define CHANGE_STATE_REQUEST_EXIT 5
+enum change_game_state_value
+{
+  CHANGE_STATE_NONE,
+  CHANGE_STATE_SWAP_WORLD,
+  CHANGE_STATE_LOAD_GAME_ROBOTIC,
+  CHANGE_STATE_EXIT_GAME_ROBOTIC,
+  CHANGE_STATE_PLAY_GAME_ROBOTIC,
+  CHANGE_STATE_REQUEST_EXIT
+};
 
 struct world
 {
@@ -65,7 +69,6 @@ struct world
   int pl_saved_y[8];
   int pl_saved_board[8];
   int saved_pl_color;
-  int was_zapped;
   int under_player_id;
   int under_player_color;
   int under_player_param;
@@ -151,6 +154,7 @@ struct world
   // Not part of world/save files, but runtime globals
   int player_x;
   int player_y;
+  int player_shoot_cooldown;
 
   // For moving the player between boards
   enum board_target target_where;
@@ -162,14 +166,27 @@ struct world
   enum thing target_d_id;
   int target_d_color;
 
-  // Indiciates if the player is dead
-  int dead;
-
   // Current bomb type
   int bomb_type;
 
-  // Toggle for if the screen is in slow motion
-  int slow_down;
+  // Indiciates if the player is dead
+  boolean dead;
+
+  // Toggle used to skip the board update when slow time or
+  // freeze time are active.
+  boolean current_cycle_frozen;
+
+  // Toggle used by certain built-in mechanics that update every other cycle.
+  boolean current_cycle_odd;
+
+  // Did the player just move?
+  boolean player_moved;
+
+  // Was the player on an entrance before the board scan?
+  boolean player_was_on_entrance;
+
+  // Was the player damaged while 'restart if hurt' is active?
+  boolean was_zapped;
 
   // For use in repeat delays for player movement
   int key_up_delay;
@@ -195,20 +212,24 @@ struct world
   char robotic_save_path[MAX_PATH];
 
   // Indicates a robotic world swap, savegame load, or game exit
-  int change_game_state;
+  // FIXME this might be better suited to the game context.
+  enum change_game_state_value change_game_state;
 
   // Current speed of MZX world
   int mzx_speed;
   // If we can change the speed from the F2 menu.
   int lock_speed;
 
+  // FIXME these need to be removed.
   struct config_info conf;
-
 #ifdef CONFIG_EDITOR
   struct editor_config_info editor_conf;
   struct editor_config_info editor_conf_backup;
-  bool editing;
 #endif
+
+  // Editor specific state flags.
+  boolean editing;
+  boolean debug_mode;
 
   // World validation: we don't want to alloc this file twice.
   char *raw_world_info;

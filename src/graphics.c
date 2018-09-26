@@ -374,27 +374,10 @@ static Uint32 make_palette(struct rgb_color *palette)
   return paletteSize;
 }
 
-
 void update_palette(void)
 {
   struct rgb_color new_palette[FULL_PAL_SIZE];
   update_colors(new_palette, make_palette(new_palette));
-}
-
-void set_gui_palette(void)
-{
-  /* TODO: Just get rid of this method and every call to it
-
-  int i;
-
-  memcpy(graphics.palette + PAL_SIZE, default_pal,
-   sizeof(struct rgb_color) * PAL_SIZE);
-  memcpy(graphics.intensity_palette + PAL_SIZE, default_pal,
-   sizeof(struct rgb_color) * PAL_SIZE);
-
-  for(i = 16; i < PAL_SIZE * NUM_PALS; i++)
-    graphics.current_intensity[i] = 100;
-  */
 }
 
 static void init_palette(void)
@@ -414,9 +397,7 @@ static void init_palette(void)
     graphics.saved_intensity[i] = 100;
 
   graphics.fade_status = 1;
-
-  set_gui_palette();
-  update_palette();
+  graphics.palette_dirty = true;
 }
 
 static int intensity(int component, int percent)
@@ -446,6 +427,7 @@ void set_color_intensity(Uint32 color, Uint32 percent)
     graphics.intensity_palette[color].b = b;
 
     graphics.current_intensity[color] = percent;
+    graphics.palette_dirty = true;
   }
 }
 
@@ -462,6 +444,7 @@ void set_palette_intensity(Uint32 percent)
   {
     set_color_intensity(i, percent);
   }
+  graphics.palette_dirty = true;
 }
 
 void set_rgb(Uint32 color, Uint32 r, Uint32 g, Uint32 b)
@@ -479,6 +462,7 @@ void set_rgb(Uint32 color, Uint32 r, Uint32 g, Uint32 b)
 
   graphics.palette[color].b = b;
   graphics.intensity_palette[color].b = intensity(b, percent);
+  graphics.palette_dirty = true;
 }
 
 void set_protected_rgb(Uint32 color, Uint32 r, Uint32 g, Uint32 b)
@@ -489,6 +473,7 @@ void set_protected_rgb(Uint32 color, Uint32 r, Uint32 g, Uint32 b)
   graphics.protected_palette[color].r = r;
   graphics.protected_palette[color].g = g;
   graphics.protected_palette[color].b = b;
+  graphics.palette_dirty = true;
 }
 
 void set_red_component(Uint32 color, Uint32 r)
@@ -498,6 +483,7 @@ void set_red_component(Uint32 color, Uint32 r)
 
   graphics.palette[color].r = r;
   graphics.intensity_palette[color].r = intensity(r, percent);
+  graphics.palette_dirty = true;
 }
 
 void set_green_component(Uint32 color, Uint32 g)
@@ -507,6 +493,7 @@ void set_green_component(Uint32 color, Uint32 g)
 
   graphics.palette[color].g = g;
   graphics.intensity_palette[color].g = intensity(g, percent);
+  graphics.palette_dirty = true;
 }
 
 void set_blue_component(Uint32 color, Uint32 b)
@@ -516,6 +503,7 @@ void set_blue_component(Uint32 color, Uint32 b)
 
   graphics.palette[color].b = b;
   graphics.intensity_palette[color].b = intensity(b, percent);
+  graphics.palette_dirty = true;
 }
 
 static Uint32 get_smzx_index_offset(Uint32 color, Uint32 index)
@@ -546,6 +534,7 @@ void set_smzx_index(Uint32 col, Uint32 offset, Uint32 value)
   offset = get_smzx_index_offset(col, offset);
 
   graphics.smzx_indices[offset] = value % SMZX_PAL_SIZE;
+  graphics.palette_dirty = true;
 }
 
 Uint32 get_color_intensity(Uint32 color)
@@ -711,6 +700,7 @@ void load_indices(void *buffer, size_t size)
 void load_indices_direct(void *buffer, size_t size)
 {
   memcpy(graphics.smzx_indices, buffer, size);
+  graphics.palette_dirty = true;
 }
 
 void smzx_palette_loaded(int val)
@@ -763,16 +753,17 @@ Uint32 get_fade_status(void)
 
 void dialog_fadein(void)
 {
-  if(get_fade_status())
+  graphics.dialog_fade_status = get_fade_status();
+  if(graphics.dialog_fade_status)
   {
-    clear_screen(32, 0);
+    clear_screen();
     insta_fadein();
   }
 }
 
 void dialog_fadeout(void)
 {
-  if(get_fade_status())
+  if(graphics.dialog_fade_status)
   {
     insta_fadeout();
   }
@@ -810,8 +801,6 @@ void set_screen_mode(Uint32 mode)
     swap_palettes();
 
     graphics.screen_mode = mode;
-
-    set_gui_palette();
   }
   else
   {
@@ -846,7 +835,7 @@ void set_screen_mode(Uint32 mode)
     }
   }
 
-  update_palette();
+  graphics.palette_dirty = true;
 }
 
 Uint32 get_screen_mode(void)
@@ -869,6 +858,12 @@ void update_screen(void)
   {
     graphics.cursor_flipflop ^= 1;
     graphics.cursor_timestamp = ticks;
+  }
+
+  if(graphics.palette_dirty)
+  {
+    update_palette();
+    graphics.palette_dirty = false;
   }
 
   if(graphics.requires_extended && graphics.renderer.render_layer)
@@ -1063,8 +1058,9 @@ void vquick_fadeout(void)
       for(i2 = 0; i2 < num_colors; i2++)
         set_color_intensity(i2, (graphics.saved_intensity[i2] * i / 10));
 
-      update_palette();
+      graphics.palette_dirty = true;
       update_screen();
+
       ticks = get_ticks() - ticks;
       if(ticks <= 16)
         delay(16 - ticks);
@@ -1096,8 +1092,9 @@ void vquick_fadein(void)
       for(i2 = 0; i2 < num_colors; i2++)
         set_color_intensity(i2, (graphics.saved_intensity[i2] * i / 10));
 
-      update_palette();
+      graphics.palette_dirty = true;
       update_screen();
+
       ticks = get_ticks() - ticks;
       if(ticks <= 16)
         delay(16 - ticks);
@@ -1122,7 +1119,7 @@ void insta_fadeout(void)
     set_color_intensity(i, 0);
 
   delay(1);
-  update_palette();
+  graphics.palette_dirty = true;
   update_screen(); // NOTE: this was called conditionally in 2.81e
 
   graphics.fade_status = true;
@@ -1146,7 +1143,7 @@ void insta_fadein(void)
   for(i = 0; i < num_colors; i++)
     set_color_intensity(i, graphics.saved_intensity[i]);
 
-  update_palette();
+  graphics.palette_dirty = true;
   update_screen(); // NOTE: this was called conditionally in 2.81e
 }
 
@@ -1156,14 +1153,14 @@ void default_palette(void)
    sizeof(struct rgb_color) * PAL_SIZE);
   memcpy(graphics.intensity_palette, default_pal,
    sizeof(struct rgb_color) * PAL_SIZE);
-  update_palette();
+  graphics.palette_dirty = true;
 }
 
 void default_protected_palette(void)
 {
   memcpy(graphics.protected_palette, default_pal,
    sizeof(struct rgb_color) * PAL_SIZE);
-  update_palette();
+  graphics.palette_dirty = true;
 }
 
 static bool set_graphics_output(struct config_info *conf)
@@ -1510,8 +1507,7 @@ bool init_video(struct config_info *conf, const char *caption)
     }
   }
 
-  strncpy(graphics.default_caption, caption, 32);
-  graphics.default_caption[31] = '\0';
+  snprintf(graphics.default_caption, 32, "%s", caption);
 
   if(!graphics.renderer.init_video(&graphics, conf))
   {
@@ -1654,12 +1650,17 @@ static bool change_video_output(struct config_info *conf, const char *output)
 
 #endif
 
+boolean is_fullscreen(void)
+{
+  return graphics.fullscreen;
+}
+
 void toggle_fullscreen(void)
 {
   graphics.fullscreen = !graphics.fullscreen;
+  graphics.palette_dirty = true;
   set_video_mode();
   update_screen();
-  update_palette();
 }
 
 void resize_screen(Uint32 w, Uint32 h)
@@ -2188,19 +2189,17 @@ Uint8 get_color_linear(Uint32 offset)
   return (dest->bg_color << 4) | (dest->fg_color & 0x0F);
 }
 
-void clear_screen(Uint8 chr, Uint8 color)
+void clear_screen(void)
 {
   Uint32 i;
-  Uint8 fg_color = color & 0x0F;
-  Uint8 bg_color = color >> 4;
   struct char_element *dest = graphics.current_video;
   struct char_element *dest_copy = graphics.text_video;
 
   for(i = 0; i < (SCREEN_W * SCREEN_H); i++)
   {
-    dest->char_value = chr;
-    dest->fg_color = fg_color;
-    dest->bg_color = bg_color;
+    dest->char_value = 0;
+    dest->fg_color = 16; // Protected black
+    dest->bg_color = 16; // Protected black
     *(dest_copy++) = *dest;
     dest++;
   }
@@ -2283,6 +2282,7 @@ void m_show(void)
     graphics.mouse_status = true;
 }
 
+#ifdef CONFIG_ENABLE_SCREENSHOTS
 #ifdef CONFIG_PNG
 
 #define DUMP_FMT_EXT "png"
@@ -2473,6 +2473,7 @@ void dump_screen(void)
   dump_screen_real_32bpp(ss, name);
   free(ss);
 }
+#endif /* CONFIG_ENABLE_SCREENSHOTS */
 
 void dump_char(Uint16 char_idx, Uint8 color, int mode, Uint8 *buffer)
 {

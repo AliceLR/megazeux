@@ -76,6 +76,9 @@ __M_BEGIN_DECLS
 #define MOUSE_BUTTON_WHEELRIGHT 9
 #endif //defaults
 
+// Capture F12 presses to save screenshots if true.
+extern boolean enable_f12_hack;
+
 struct buffered_status
 {
   enum keycode key_pressed;
@@ -87,8 +90,12 @@ struct buffered_status
   Uint32 keypress_time;
   Uint32 mouse_x;
   Uint32 mouse_y;
+  Uint32 mouse_last_x;
+  Uint32 mouse_last_y;
   Uint32 real_mouse_x;
   Uint32 real_mouse_y;
+  Uint32 real_mouse_last_x;
+  Uint32 real_mouse_last_y;
   Uint32 mouse_button;
   Uint32 mouse_repeat;
   Uint32 mouse_repeat_state;
@@ -143,8 +150,11 @@ CORE_LIBSPEC Uint32 get_last_key(enum keycode_type type);
 CORE_LIBSPEC Uint32 get_key_status(enum keycode_type type, Uint32 index);
 CORE_LIBSPEC void get_mouse_position(int *x, int *y);
 CORE_LIBSPEC void get_real_mouse_position(int *x, int *y);
+CORE_LIBSPEC void get_mouse_movement(int *delta_x, int *delta_y);
+CORE_LIBSPEC void get_real_mouse_movement(int *delta_x, int *delta_y);
 CORE_LIBSPEC Uint32 get_mouse_press(void);
 CORE_LIBSPEC Uint32 get_mouse_press_ext(void);
+CORE_LIBSPEC boolean get_mouse_held(int button);
 CORE_LIBSPEC Uint32 get_mouse_status(void);
 CORE_LIBSPEC void warp_mouse(Uint32 x, Uint32 y);
 CORE_LIBSPEC void warp_real_mouse_x(Uint32 x);

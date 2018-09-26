@@ -32,7 +32,7 @@
 #include "error.h"
 #include "event.h"
 #include "fsafeopen.h"
-#include "game.h"
+#include "game_ops.h"
 #include "graphics.h"
 #include "idarray.h"
 #include "idput.h"
@@ -44,6 +44,7 @@
 #include "time.h"
 #include "util.h"
 #include "world.h"
+#include "world_struct.h"
 
 #include "audio/audio.h"
 
@@ -519,7 +520,6 @@ static void red_value_write(struct world *mzx_world,
 {
   int cur_color = get_counter(mzx_world, "current_color", id) & (SMZX_PAL_SIZE - 1);
   set_red_component(cur_color, value);
-  pal_update = true;
 }
 
 static void green_value_write(struct world *mzx_world,
@@ -527,7 +527,6 @@ static void green_value_write(struct world *mzx_world,
 {
   int cur_color = get_counter(mzx_world, "current_color", id) & (SMZX_PAL_SIZE - 1);
   set_green_component(cur_color, value);
-  pal_update = true;
 }
 
 static void blue_value_write(struct world *mzx_world,
@@ -535,7 +534,6 @@ static void blue_value_write(struct world *mzx_world,
 {
   int cur_color = get_counter(mzx_world, "current_color", id) & (SMZX_PAL_SIZE - 1);
   set_blue_component(cur_color, value);
-  pal_update = true;
 }
 
 static int overlay_mode_read(struct world *mzx_world,
@@ -630,7 +628,6 @@ static void smzx_r_write(struct world *mzx_world,
 {
   int cur_color = strtol(name + 6, NULL, 10) & (SMZX_PAL_SIZE - 1);
   set_red_component(cur_color, value);
-  pal_update = true;
 }
 
 static void smzx_g_write(struct world *mzx_world,
@@ -638,7 +635,6 @@ static void smzx_g_write(struct world *mzx_world,
 {
   int cur_color = strtol(name + 6, NULL, 10) & (SMZX_PAL_SIZE - 1);
   set_green_component(cur_color, value);
-  pal_update = true;
 }
 
 static void smzx_b_write(struct world *mzx_world,
@@ -646,7 +642,6 @@ static void smzx_b_write(struct world *mzx_world,
 {
   int cur_color = strtol(name + 6, NULL, 10) & (SMZX_PAL_SIZE - 1);
   set_blue_component(cur_color, value);
-  pal_update = true;
 }
 
 static int smzx_idx_read(struct world *mzx_world,
@@ -663,7 +658,6 @@ static void smzx_idx_write(struct world *mzx_world,
   int col = 0, offset = 0;
   get_counter_params(name + 8, &col, &offset);
   set_smzx_index(col, offset, value);
-  pal_update = true;
 }
 
 static int smzx_message_read(struct world *mzx_world,
@@ -1562,7 +1556,7 @@ static int char_byte_read(struct world *mzx_world,
 
   // Prior to 2.90 char params are clipped
   if(mzx_world->version < V290) char_num &= 0xFF;
-  
+
   return ec_read_byte(char_num,
    get_counter(mzx_world, "BYTE", id));
 }
@@ -2552,7 +2546,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
   if(strlen(char_value) >= MAX_PATH)
     return 0; // haha nope
-  
+
   switch(mzx_world->special_counter_return)
   {
     case FOPEN_FREAD:
@@ -2587,7 +2581,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
           mzx_world->input_file = fopen_unsafe(translated_path, "rb");
 
         if(mzx_world->input_file || mzx_world->input_is_dir)
-          strcpy(mzx_world->input_file_name, translated_path);    
+          strcpy(mzx_world->input_file_name, translated_path);
 
         free(translated_path);
       }
@@ -2690,11 +2684,9 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       int err;
 
       err = fsafetranslate(char_value, translated_path);
+
       if(err == -FSAFE_SUCCESS)
-      {
         load_palette(translated_path);
-        pal_update = true;
-      }
 
       free(translated_path);
       break;
@@ -2706,11 +2698,9 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       int err;
 
       err = fsafetranslate(char_value, translated_path);
+
       if(err == -FSAFE_SUCCESS)
-      {
         load_index_file(translated_path);
-        pal_update = true;
-      }
 
       free(translated_path);
       break;
@@ -2760,7 +2750,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
         err = fsafetranslate(char_value, translated_path);
         if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
-          save_world(mzx_world, translated_path, 1, MZX_VERSION);
+          save_world(mzx_world, translated_path, true, MZX_VERSION);
 
         free(translated_path);
       }
@@ -2779,7 +2769,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
     case FOPEN_LOAD_GAME:
     {
       char *translated_path = cmalloc(MAX_PATH);
-      int faded;
+      boolean faded;
 
       if(!fsafetranslate(char_value, translated_path))
       {
@@ -3158,7 +3148,7 @@ static int hurt_player(struct world *mzx_world, int value)
         player_x = player_restart_x;
         player_y = player_restart_y;
         id_place(mzx_world, player_x, player_y, PLAYER, 0, 0);
-        mzx_world->was_zapped = 1;
+        mzx_world->was_zapped = true;
         mzx_world->player_x = player_x;
         mzx_world->player_y = player_y;
       }
@@ -3236,7 +3226,7 @@ static int invinco_gateway(struct world *mzx_world, struct counter *counter,
     if(!value)
     {
       sfx_clear_queue();
-      play_sfx(mzx_world, 18);
+      play_sfx(mzx_world, SFX_INVINCO_END);
       id_chars[player_color] = mzx_world->saved_pl_color;
     }
   }

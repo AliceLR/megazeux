@@ -55,6 +55,7 @@ struct config_info
   char gl_filter_method[16];
   char gl_scaling_shader[32];
   int gl_vsync;
+  boolean allow_screenshots;
 
   // Audio options
   int output_frequency;
@@ -96,7 +97,6 @@ struct config_info
   char **update_hosts;
   char update_branch_pin[256];
   int update_auto_check;
-  int update_available;
 #endif
 };
 
@@ -123,6 +123,10 @@ CORE_LIBSPEC void __set_config_from_command_line(
  find_change_option find_change_handler, void *conf, int *argc, char *argv[]);
 
 #endif // CONFIG_EDITOR
+
+// FIXME configure_ed.c
+#include "world_struct.h"
+void game_settings(struct world *mzx_world);
 
 __M_END_DECLS
 

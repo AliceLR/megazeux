@@ -26,13 +26,13 @@
 
 #include "counter.h"
 #include "error.h"
-#include "game.h"
 #include "graphics.h"
 #include "memcasecmp.h"
 #include "rasm.h"
 #include "robot.h"
 #include "util.h"
 #include "world.h"
+#include "world_struct.h"
 
 #ifdef CONFIG_UTHASH
 #include <utcasehash.h>
@@ -925,10 +925,7 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
   if(special_name("smzx_indices"))
   {
     if(dest && dest->length > 0)
-    {
       load_indices(dest->value, dest->length);
-      pal_update = true;
-    }
   }
   else
 

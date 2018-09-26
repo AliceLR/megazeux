@@ -908,11 +908,13 @@ static bool process_event(union event *ev)
         break;
       }
 
-      if(ckey == IKEY_F12)
+#ifdef CONFIG_ENABLE_SCREENSHOTS
+      if(ckey == IKEY_F12 && enable_f12_hack)
       {
         dump_screen();
         break;
       }
+#endif
 
       if(status->key_repeat &&
        (status->key_repeat != IKEY_LSHIFT) &&

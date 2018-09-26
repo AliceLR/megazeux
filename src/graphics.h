@@ -60,19 +60,25 @@ struct char_element
 #define SCREEN_PIX_W (SCREEN_W * CHAR_W)
 #define SCREEN_PIX_H (SCREEN_H * CHAR_H)
 
-#define CHAR_SIZE 14
-#define CHARSET_SIZE 256
+/**
+ * The Nintendo DS is a bit of a special case in that we support it despite it
+ * not currently handling either the protected charset or the protected palette.
+ */
 #if defined(CONFIG_NDS)
 #define NUM_CHARSETS 2
-#else
+#define NO_PROTECTED_PALETTE
+#endif
+
+#define CHAR_SIZE 14
+#define CHARSET_SIZE 256
+#ifndef NUM_CHARSETS
 #define NUM_CHARSETS 16
-#endif /* CONFIG_NDS */
+#endif
 #define PROTECTED_CHARSET_POSITION ((NUM_CHARSETS - 1) * CHARSET_SIZE)
 #define PRO_CH  PROTECTED_CHARSET_POSITION
 #define FULL_CHARSET_SIZE (CHARSET_SIZE * NUM_CHARSETS)
 
 #define PAL_SIZE 16
-#define NUM_PALS 2
 #define SMZX_PAL_SIZE 256
 #define PROTECTED_PAL_SIZE 16
 #define FULL_PAL_SIZE (SMZX_PAL_SIZE + PROTECTED_PAL_SIZE)
@@ -145,6 +151,7 @@ struct graphics_data
   Uint32 current_intensity[SMZX_PAL_SIZE];
   Uint32 saved_intensity[SMZX_PAL_SIZE];
   Uint32 backup_intensity[SMZX_PAL_SIZE];
+  boolean palette_dirty;
 
   Uint32 layer_count;
   Uint32 layer_count_prev;
@@ -153,23 +160,24 @@ struct graphics_data
   Uint32 current_layer;
   struct char_element *current_video;
   struct video_layer *sorted_video_layers[TEXTVIDEO_LAYERS];
-  bool requires_extended;
+  boolean requires_extended;
 
   enum cursor_mode_types cursor_mode;
-  Uint32 fade_status;
+  boolean fade_status;
+  boolean dialog_fade_status;
   Uint32 cursor_x;
   Uint32 cursor_y;
   Uint32 mouse_width_mul;
   Uint32 mouse_height_mul;
-  bool mouse_status;
-  bool system_mouse;
-  bool fullscreen;
+  boolean mouse_status;
+  boolean system_mouse;
+  boolean fullscreen;
   Uint32 resolution_width;
   Uint32 resolution_height;
   Uint32 window_width;
   Uint32 window_height;
   Uint32 bits_per_pixel;
-  bool allow_resize;
+  boolean allow_resize;
   Uint32 cursor_timestamp;
   Uint32 cursor_flipflop;
   Uint32 default_smzx_loaded;
@@ -215,7 +223,7 @@ CORE_LIBSPEC void draw_char_to_layer(Uint8 color, Uint8 chr,
 CORE_LIBSPEC void write_string_mask(const char *str, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed);
 
-CORE_LIBSPEC void clear_screen(Uint8 chr, Uint8 color);
+CORE_LIBSPEC void clear_screen(void);
 
 CORE_LIBSPEC void cursor_solid(void);
 CORE_LIBSPEC void cursor_off(void);
@@ -244,7 +252,6 @@ CORE_LIBSPEC void ec_mem_load_set_var(char *chars, size_t len, Uint16 pos, int v
 CORE_LIBSPEC void ec_mem_save_set_var(Uint8 *chars, size_t len, Uint16 pos);
 
 CORE_LIBSPEC void update_palette(void);
-CORE_LIBSPEC void set_gui_palette(void);
 CORE_LIBSPEC void load_palette(const char *fname);
 CORE_LIBSPEC void load_palette_mem(char *pal, size_t len);
 CORE_LIBSPEC void load_index_file(const char *fname);
@@ -264,6 +271,7 @@ CORE_LIBSPEC Uint32 get_red_component(Uint32 color);
 CORE_LIBSPEC Uint32 get_green_component(Uint32 color);
 CORE_LIBSPEC Uint32 get_blue_component(Uint32 color);
 CORE_LIBSPEC Uint32 get_color_luma(Uint32 color);
+CORE_LIBSPEC Uint32 get_fade_status(void);
 CORE_LIBSPEC void vquick_fadeout(void);
 CORE_LIBSPEC void insta_fadein(void);
 CORE_LIBSPEC void insta_fadeout(void);
@@ -298,6 +306,7 @@ Uint8 get_color_linear(Uint32 offset);
 void cursor_underline(void);
 
 bool set_video_mode(void);
+boolean is_fullscreen(void);
 void toggle_fullscreen(void);
 void resize_screen(Uint32 w, Uint32 h);
 void set_screen(struct char_element *src);
@@ -310,12 +319,10 @@ void ec_clear_set(void);
 
 void set_color_intensity(Uint32 color, Uint32 percent);
 Uint32 get_color_intensity(Uint32 color);
-Uint32 get_fade_status(void);
 void save_indices(void *buffer);
 void load_indices(void *buffer, size_t size);
 void load_indices_direct(void *buffer, size_t size);
 void vquick_fadein(void);
-void dump_screen(void);
 void dump_char(Uint16 char_idx, Uint8 color, int mode, Uint8 *buffer);
 
 void get_screen_coords(int screen_x, int screen_y, int *x, int *y,
@@ -342,6 +349,10 @@ CORE_LIBSPEC void ec_load_set_secondary(const char *name, Uint8 *dest);
 void set_cursor_mode(enum cursor_mode_types mode);
 enum cursor_mode_types get_cursor_mode(void);
 #endif // CONFIG_HELPSYS
+
+#ifdef CONFIG_ENABLE_SCREENSHOTS
+void dump_screen(void);
+#endif
 
 __M_END_DECLS
 

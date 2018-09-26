@@ -34,9 +34,9 @@
 #include "error.h"
 #include "extmem.h"
 #include "fsafeopen.h"
-#include "game.h"
 #include "graphics.h"
 #include "idput.h"
+#include "robot.h"
 #include "sprite.h"
 #include "str.h"
 #include "window.h"
@@ -329,7 +329,7 @@ static void decrypt(const char *file_name)
  */
 
 enum val_result validate_legacy_world_file(const char *file,
- int savegame, int decrypt_attempted)
+ boolean savegame, boolean decrypt_attempted)
 {
   enum val_result result = VAL_SUCCESS;
 
@@ -503,8 +503,8 @@ enum val_result validate_legacy_world_file(const char *file,
         fclose(f);
         decrypt(file);
 
-        // Call this function again, but with decrypt_attempted = 1
-        return validate_legacy_world_file(file, savegame, 1);
+        // Call this function again, but with decrypt_attempted = true
+        return validate_legacy_world_file(file, savegame, true);
       }
 
       else
@@ -603,7 +603,7 @@ err_out:
 
 
 void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
- bool savegame, int file_version, char *name, int *faded)
+ boolean savegame, int file_version, char *name, boolean *faded)
 {
   int i;
   int num_boards;

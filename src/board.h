@@ -24,8 +24,6 @@
 
 __M_BEGIN_DECLS
 
-#include "const.h"
-#include "board_struct.h"
 #include "world_struct.h"
 #include "zip.h"
 

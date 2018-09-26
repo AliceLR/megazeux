@@ -23,25 +23,26 @@
 // Reconstructed robot editor. This is only a shell - the actual
 // robot assembly/disassembly code is in rasm.cpp.
 
-#include <string.h>
+#include <ctype.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
+#include <string.h>
 
-#include <math.h>
-
-#include "../rasm.h"
-#include "../game.h"
-#include "../world.h"
-#include "../event.h"
-#include "../window.h"
-#include "../graphics.h"
-#include "../intake.h"
-#include "../helpsys.h"
-#include "../fsafeopen.h"
+#include "../caption.h"
 #include "../configure.h"
-#include "../util.h"
+#include "../core.h"
 #include "../error.h"
+#include "../event.h"
+#include "../fsafeopen.h"
+#include "../graphics.h"
+#include "../helpsys.h"
+#include "../intake.h"
+#include "../rasm.h"
+#include "../robot.h"
+#include "../util.h"
+#include "../window.h"
+#include "../world.h"
 
 #include "char_ed.h"
 #include "clipboard.h"
@@ -3004,7 +3005,7 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
   // Prevent previous keys from carrying through.
   force_release_all_keys();
 
-  set_caption(mzx_world, mzx_world->current_board, cur_robot, 1, 1);
+  caption_set_robot(mzx_world, cur_robot);
 
   rstate.current_line = 0;
   rstate.current_rline = &base;
@@ -3480,8 +3481,8 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
 #ifdef CONFIG_HELPSYS
       case IKEY_F1:
       {
-        m_show();
-        help_system(mzx_world);
+        // FIXME context
+        help_system(NULL, mzx_world);
         break;
       }
 #endif

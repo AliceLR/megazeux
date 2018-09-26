@@ -23,136 +23,17 @@
 #include "edit.h"
 #include "select.h"
 
+#include "../core.h"
 #include "../data.h"
 #include "../error.h"
 #include "../event.h"
 #include "../graphics.h"
 #include "../idarray.h"
 #include "../idput.h"
-#include "../helpsys.h"
 #include "../window.h"
 #include "../world_struct.h"
 
 #include <stdio.h>
-
-//--------------------------
-//
-// ( ) Copy block
-// ( ) Copy block (repeated)
-// ( ) Move block
-// ( ) Clear block
-// ( ) Flip block
-// ( ) Mirror block
-// ( ) Paint block
-// ( ) Copy to/from overlay
-// ( ) Save as MZM
-//
-//    _OK_      _Cancel_
-//
-//--------------------------
-int select_block_command(struct world *mzx_world, int overlay_edit)
-{
-  int dialog_result;
-  struct element *elements[3];
-  struct dialog di;
-  int block_operation = 0;
-  const char *radio_button_strings[] =
-  {
-    "Copy block",
-    "Copy block (repeated)",
-    "Move block",
-    "Clear block",
-    "Flip block",
-    "Mirror block",
-    "Paint block",
-    NULL,
-    NULL,
-    "Save as MZM"
-  };
-
-  switch(overlay_edit)
-  {
-    default:
-    case EDIT_BOARD:
-      radio_button_strings[7] = "Copy to overlay";
-      radio_button_strings[8] = "Copy to vlayer";
-      break;
-
-    case EDIT_OVERLAY:
-      radio_button_strings[7] = "Copy to board";
-      radio_button_strings[8] = "Copy to vlayer";
-      break;
-
-    case EDIT_VLAYER:
-      radio_button_strings[7] = "Copy to board";
-      radio_button_strings[8] = "Copy to overlay";
-      break;
-  }
-
-  // Prevent previous keys from carrying through.
-  force_release_all_keys();
-
-  set_context(CTX_BLOCK_CMD);
-  elements[0] = construct_radio_button(2, 2, radio_button_strings,
-   10, 21, &block_operation);
-  elements[1] = construct_button(5, 13, "OK", 0);
-  elements[2] = construct_button(15, 13, "Cancel", -1);
-
-  construct_dialog(&di, "Choose block command", 26, 3, 29, 16,
-   elements, 3, 0);
-
-  dialog_result = run_dialog(mzx_world, &di);
-  pop_context();
-
-  destruct_dialog(&di);
-
-  // Prevent UI keys from carrying through.
-  force_release_all_keys();
-
-  if(dialog_result)
-    return -1;
-
-  return block_operation;
-}
-
-int layer_to_board_object_type(struct world *mzx_world)
-{
-  int dialog_result;
-  struct element *elements[3];
-  struct dialog di;
-  int object_type = 0;
-  const char *radio_button_strings[] =
-  {
-    "Custom Block",
-    "Custom Floor",
-    "Text"
-  };
-
-  // Prevent previous keys from carrying through.
-  force_release_all_keys();
-
-  set_context(CTX_BLOCK_TYPE);
-  elements[0] = construct_radio_button(6, 4, radio_button_strings,
-   3, 12, &object_type);
-  elements[1] = construct_button(5, 11, "OK", 0);
-  elements[2] = construct_button(15, 11, "Cancel", -1);
-
-  construct_dialog(&di, "Object type", 26, 4, 28, 14,
-   elements, 3, 0);
-
-  dialog_result = run_dialog(mzx_world, &di);
-
-  destruct_dialog(&di);
-  pop_context();
-
-  // Prevent UI keys from carrying through.
-  force_release_all_keys();
-
-  if(dialog_result)
-    return -1;
-
-  return object_type;
-}
 
 int select_screen_mode(struct world *mzx_world)
 {

@@ -501,6 +501,12 @@ static void config_gl_vsync(struct config_info *conf, char *name,
   conf->gl_vsync = strtol(value, NULL, 10);
 }
 
+static void config_set_allow_screenshots(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  conf->allow_screenshots = strtol(value, NULL, 10);
+}
+
 static void config_startup_editor(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
@@ -549,6 +555,7 @@ static void config_max_simultaneous_samples(struct config_info *conf,
  */
 static const struct config_entry config_options[] =
 {
+  { "allow_screenshots", config_set_allow_screenshots, false },
   { "audio_buffer", config_set_audio_buffer, false },
   { "audio_buffer_samples", config_set_audio_buffer, false },
   { "audio_sample_rate", config_set_audio_freq, false },
@@ -645,6 +652,7 @@ static const struct config_info default_options =
   "linear",                     // opengl filter method
   "",                           // opengl default scaling shader
   GL_VSYNC_DEFAULT,             // opengl vsync mode
+  true,                         // allow screenshots
 
   // Audio options
   AUDIO_SAMPLE_RATE,            // output_frequency
@@ -687,7 +695,6 @@ static const struct config_info default_options =
   "Stable",                     // update_branch_pin
 #endif /* !CONFIG_DEBYTECODE */
   UPDATE_AUTO_CHECK_SILENT,     // update_auto_check
-  0,                            // update_available
 #endif /* CONFIG_UPDATER */
 };
 

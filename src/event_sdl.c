@@ -389,11 +389,13 @@ static bool process_event(SDL_Event *event)
         break;
       }
 
-      if(ckey == IKEY_F12)
+#ifdef CONFIG_ENABLE_SCREENSHOTS
+      if(ckey == IKEY_F12 && enable_f12_hack)
       {
         dump_screen();
         break;
       }
+#endif
 
       // Ignore alt + tab
       if((ckey == IKEY_TAB) && get_alt_status(keycode_internal))
@@ -647,13 +649,13 @@ static int SDL_WaitEventTimeout(SDL_Event *event, int timeout)
   // SDL version anyway.
 
   int i = timeout;
-  int anyEvent = 0;
+  boolean any_event = false;
 
-  while(timeout>0 && !anyEvent)
+  while(timeout>0 && !any_event)
   {
     i--;
     delay(1);
-    anyEvent = SDL_PollEvent(event);
+    any_event = SDL_PollEvent(event);
 
     // If an autorepeat triggers, it needs to be processed.
     if(update_autorepeat())
@@ -664,27 +666,32 @@ static int SDL_WaitEventTimeout(SDL_Event *event, int timeout)
       update_screen();
   }
 
-  return anyEvent;
+  return any_event;
 }
 #endif
 
 void __wait_event(int timeout)
 {
   SDL_Event event;
-  int anyEvent;
+  boolean any_event;
 
   // FIXME: WaitEvent with MSVC hangs the render cycle, so this is, hopefully,
   //        a short-term fix.
-  #ifdef MSVC_H
-    anyEvent = SDL_PollEvent(&event);
-  #else
-    if (!timeout) {
-      anyEvent = SDL_WaitEvent(&event);
-    } else {
-      anyEvent = SDL_WaitEventTimeout(&event, timeout);
-    }
-  #endif
-  if (anyEvent) process_event(&event);
+#ifdef MSVC_H
+  any_event = SDL_PollEvent(&event);
+#else
+  if(!timeout)
+  {
+    any_event = SDL_WaitEvent(&event);
+  }
+  else
+  {
+    any_event = SDL_WaitEventTimeout(&event, timeout);
+  }
+#endif
+
+  if(any_event)
+    process_event(&event);
 }
 
 void real_warp_mouse(int x, int y)

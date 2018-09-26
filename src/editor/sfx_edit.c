@@ -23,10 +23,10 @@
 
 #include "../audio/sfx.h"
 
-#include "../helpsys.h"
-#include "../window.h"
-#include "../event.h"
+#include "../core.h"
 #include "../data.h"
+#include "../event.h"
+#include "../window.h"
 
 #include "sfx_edit.h"
 

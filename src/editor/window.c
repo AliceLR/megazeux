@@ -18,18 +18,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <string.h>
+
+#include "board.h"
 #include "window.h"
 
 #include "../board.h"
+#include "../core.h"
 #include "../event.h"
 #include "../graphics.h"
-#include "../helpsys.h"
 #include "../intake.h"
 #include "../window.h"
-
-#include "board.h"
-
-#include <string.h>
 
 #define list_button " \x1F "
 
@@ -374,10 +373,10 @@ int color_selection(int current, int allow_wild)
   // Save screen
   save_screen();
 
-  if(context == CTX_MAIN)
+  if(get_context(NULL) == CTX_MAIN)
     set_context(CTX_DIALOG_BOX);
   else
-    set_context(context);
+    set_context(get_context(NULL));
 
   // Ensure allow_wild is 0 or 1
   if(allow_wild)

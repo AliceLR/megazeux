@@ -26,6 +26,7 @@
 #include "intake.h"
 #include "graphics.h"
 #include "window.h"
+#include "world_struct.h"
 
 // Global status of insert
 static char insert_on = 1;

@@ -28,24 +28,31 @@ __M_BEGIN_DECLS
 
 #include "../world_struct.h"
 
+#define EDIT_SCREEN_EXTENDED    24
+#define EDIT_SCREEN_NORMAL      19
+
+enum editor_mode
+{
+  EDIT_BOARD = 0,
+  EDIT_OVERLAY = 1,
+  EDIT_VLAYER = 2,
+};
+
+enum cursor_mode
+{
+  CURSOR_PLACE,
+  CURSOR_DRAW,
+  CURSOR_TEXT,
+  CURSOR_BLOCK_SELECT,
+  CURSOR_BLOCK_PLACE,
+  CURSOR_MZM_PLACE
+};
+
 EDITOR_LIBSPEC void free_editor_config(struct world *mzx_world);
 EDITOR_LIBSPEC void load_editor_config(struct world *mzx_world, int *argc,
  char *argv[]);
 EDITOR_LIBSPEC void editor_init(void);
 EDITOR_LIBSPEC bool is_editor(void);
-
-int place_current_at_xy(struct world *mzx_world, enum thing id, int color,
- int param, int x, int y, struct robot *copy_robot, struct scroll *copy_scroll,
- struct sensor *copy_sensor, int overlay_edit, int save_history);
-
-void grab_at_xy(struct world *mzx_world, enum thing *new_id,
- int *new_color, int *new_param, struct robot *copy_robot,
- struct scroll *copy_scroll, struct sensor *copy_sensor,
- int x, int y, int overlay_edit);
-
-#define EDIT_BOARD            0
-#define EDIT_OVERLAY          1
-#define EDIT_VLAYER           2
 
 #define EC_MAIN_BOX           25
 #define EC_MAIN_BOX_DARK      16

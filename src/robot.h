@@ -24,9 +24,8 @@
 
 __M_BEGIN_DECLS
 
-#include "robot_struct.h"
-#include "board_struct.h"
-#include "world_struct.h"
+#include "core.h"
+#include "data.h"
 #include "zip.h"
 
 // Let's not let a robot's stack get larger than 64k right now.
@@ -181,7 +180,7 @@ static inline char *tr_msg(struct world *mzx_world, char *mesg, int id,
   return tr_msg_ext(mzx_world, mesg, id, buffer, 0);
 }
 
-void run_robot(struct world *mzx_world, int id, int x, int y);
+void run_robot(context *ctx, int id, int x, int y);
 
 CORE_LIBSPEC void duplicate_robot_direct(struct world *mzx_world,
  struct robot *cur_robot, struct robot *copy_robot, int x, int y,

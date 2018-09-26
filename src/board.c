@@ -23,7 +23,6 @@
 #include <string.h>
 
 #include "board.h"
-
 #include "const.h"
 #include "error.h"
 #include "memfile.h"
@@ -32,6 +31,7 @@
 #include "world.h"
 #include "world_prop.h"
 #include "util.h"
+#include "world_struct.h"
 #include "zip.h"
 
 

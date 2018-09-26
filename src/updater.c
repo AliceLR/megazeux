@@ -16,14 +16,16 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#include "updater.h"
+
+#include "caption.h"
 #include "const.h"
-#include "event.h"
-#include "util.h"
-#include "game.h"
-#include "graphics.h"
-#include "window.h"
+#include "core.h"
 #include "error.h"
+#include "event.h"
+#include "graphics.h"
+#include "updater.h"
+#include "util.h"
+#include "window.h"
 
 #include "editor/window.h"
 
@@ -119,7 +121,7 @@ static bool check_prune_basedir(const char *file)
   ret = get_path(file, path, MAX_PATH);
   if(ret < 0)
   {
-    error("Failed to prune directories (path too long)", 1, 8, 0);
+    error_message(E_UPDATE, 0, "Failed to prune directories (path too long)");
     return false;
   }
 
@@ -146,7 +148,7 @@ static bool check_create_basedir(const char *file)
   ret = get_path(file, path, MAX_PATH);
   if(ret < 0)
   {
-    error("Failed to create directories (path too long)", 1, 8, 0);
+    error_message(E_UPDATE, 1, "Failed to create directories (path too long)");
     return false;
   }
 
@@ -159,7 +161,7 @@ static bool check_create_basedir(const char *file)
     // Every other kind of error is fatal
     if(errno != ENOENT)
     {
-      error("Unknown stat() error occurred", 1, 8, 0);
+      error_message(E_UPDATE, 2, "Unknown stat() error occurred");
       return false;
     }
 
@@ -177,7 +179,7 @@ static bool check_create_basedir(const char *file)
     snprintf(widget_buf, WIDGET_BUF_LEN,
      "File \"%s\" prevents creation of directory by same name", path);
     widget_buf[WIDGET_BUF_LEN - 1] = 0;
-    error(widget_buf, 1, 8, 0);
+    error_message(E_UPDATE, 3, widget_buf);
     return false;
   }
 
@@ -198,7 +200,8 @@ static void recv_cb(long offset)
 
   if(final_size > 0 && offset > final_size)
   {
-    error("Transferred more than expected uncompressed size.", 1, 8, 0);
+    error_message(E_UPDATE, 4,
+     "Transferred more than expected uncompressed size.");
     cancel_update = true;
     return;
   }
@@ -291,7 +294,8 @@ static bool swivel_current_dir(bool have_video)
     info("--UPDATER-- getcwd(): %s\n", previous_dir);
     info("--UPDATER-- attempted chdir() to: %s\n", base_path);
     if(have_video)
-      error("Updater: failed to change into install directory.", 1, 8, 0);
+      error_message(E_UPDATE, 5,
+       "Updater: failed to change into install directory.");
     else
       warn("--UPDATER-- Failed to change into install directory.\n");
     goto err_free_base_path;
@@ -308,7 +312,8 @@ static bool swivel_current_dir_back(bool have_video)
   if(chdir(previous_dir))
   {
     if(have_video)
-      error("Updater: failed to change back to user directory.", 1, 8, 0);
+      error_message(E_UPDATE, 6,
+       "Updater: failed to change back to user directory.");
     else
       warn("--UPDATER-- Failed to change back to user directory.\n");
     return false;
@@ -380,7 +385,8 @@ static bool restore_original_manifest(bool ret)
   // Try to remove original manifest before restoration
   if(unlink(MANIFEST_TXT))
   {
-    error("Failed to remove " MANIFEST_TXT ". Check permissions.", 1, 8, 0);
+    error_message(E_UPDATE, 7,
+     "Failed to remove " MANIFEST_TXT ". Check permissions.");
     return false;
   }
 
@@ -391,7 +397,8 @@ static bool restore_original_manifest(bool ret)
   // Try to restore backup manifest
   if(rename(MANIFEST_TXT "~", MANIFEST_TXT))
   {
-    error("Failed to roll back manifest. Check permissions.", 1, 8, 0);
+    error_message(E_UPDATE, 8,
+     "Failed to roll back manifest. Check permissions.");
     return false;
   }
 
@@ -408,7 +415,8 @@ static bool write_delete_list(void)
     f = fopen_unsafe(DELETE_TXT, "ab");
     if(!f)
     {
-      error("Failed to create \"" DELETE_TXT "\". Check permissions.", 1, 8, 0);
+      error_message(E_UPDATE, 9,
+       "Failed to create \"" DELETE_TXT "\". Check permissions.");
       return false;
     }
 
@@ -474,7 +482,7 @@ err_delete_failed:
        e->name);
       buf[71] = 0;
 
-      error(buf, 1, 8, 0);
+      error_message(E_UPDATE, 10, buf);
 
       if(e_next)
         e->next = e_next->next;
@@ -502,7 +510,7 @@ static bool reissue_connection(struct config_info *conf, struct host **h,
   if(!*h)
   {
     if(!is_automatic)
-      error("Failed to create TCP client socket.", 1, 8, 0);
+      error_message(E_UPDATE, 11, "Failed to create TCP client socket.");
     goto err_out;
   }
 
@@ -526,13 +534,13 @@ static bool reissue_connection(struct config_info *conf, struct host **h,
       buf_len = snprintf(widget_buf, WIDGET_BUF_LEN,
        "Connection to \"%s\" failed.", host_name);
       widget_buf[WIDGET_BUF_LEN - 1] = 0;
-      error(widget_buf, 1, 8, 0);
+      error_message(E_UPDATE, 12, widget_buf);
     }
   }
   else
     ret = true;
 
-  clear_screen(32, 7);
+  clear_screen();
   m_show();
   update_screen();
 
@@ -549,16 +557,19 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
   bool ret = false;
 
   set_context(CTX_UPDATER);
+  set_error_suppression(E_UPDATE, false);
 
   if(!updater_was_initialized)
   {
-    error("Updater couldn't be initialized; check folder permissions", 1, 8, 0);
+    error_message(E_UPDATE, 13,
+     "Updater couldn't be initialized; check folder permissions");
     goto err_out;
   }
 
   if(conf->update_host_count < 1)
   {
-    error("No updater hosts defined! Aborting.", 1, 8, 0);
+    error_message(E_UPDATE, 14,
+     "No updater hosts defined! Aborting.");
     goto err_out;
   }
 
@@ -583,7 +594,8 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
     f = fopen_unsafe(UPDATES_TXT, "w+b");
     if(!f)
     {
-      error("Failed to create \"" UPDATES_TXT "\". Check permissions.", 1, 8, 0);
+      error_message(E_UPDATE, 15,
+       "Failed to create \"" UPDATES_TXT "\". Check permissions.");
       goto err_chdir;
     }
 
@@ -622,7 +634,7 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
         snprintf(widget_buf, WIDGET_BUF_LEN, "Failed to download \""
          UPDATES_TXT "\" (%d/%d).\n", req.status_code, status);
         widget_buf[WIDGET_BUF_LEN - 1] = 0;
-        error(widget_buf, 1, 8, 0);
+        error_message(E_UPDATE, 16, widget_buf);
       }
       goto err_host_destroy;
     }
@@ -661,7 +673,8 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
     if(!value)
     {
       if(!is_automatic)
-        error("Failed to identify applicable update version.", 1, 8, 0);
+        error_message(E_UPDATE, 17,
+         "Failed to identify applicable update version.");
       goto err_host_destroy;
     }
 
@@ -681,7 +694,8 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
       struct element *elements[6];
       struct dialog di;
 
-      conf->update_available = 1;
+      // Notify the user that updates are available.
+      caption_set_updates_available(true);
 
       // If this is an auto check and silent mode is enabled, we can stop here.
       if(is_automatic && conf->update_auto_check == UPDATE_AUTO_CHECK_SILENT)
@@ -740,7 +754,8 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
      */
     if(!backup_original_manifest())
     {
-      error("Failed to back up manifest. Check permissions.", 1, 8, 0);
+      error_message(E_UPDATE, 18,
+       "Failed to back up manifest. Check permissions.");
       try_next_host = false;
       goto err_free_url_base;
     }
@@ -756,7 +771,7 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
 
       status = manifest_get_updates(h, url_base, &removed, &replaced, &added);
 
-      clear_screen(32, 7);
+      clear_screen();
       m_show();
       update_screen();
 
@@ -766,7 +781,7 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
       // Unsupported platform.
       if(-status == HOST_HTTP_REDIRECT || -status == HOST_HTTP_CLIENT_ERROR)
       {
-        error("No updates available for this platform.", 1, 8, 0);
+        error_message(E_UPDATE, 19, "No updates available for this platform.");
         goto err_roll_back_manifest;
       }
 
@@ -776,7 +791,7 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
 
     if(retries == MAX_RETRIES)
     {
-      error("Failed to compute update manifests", 1, 8, 0);
+      error_message(E_UPDATE, 20, "Failed to compute update manifests");
       goto err_roll_back_manifest;
     }
 
@@ -860,7 +875,7 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
       free(list_entries[i]);
     free(list_entries);
 
-    clear_screen(32, 7);
+    clear_screen();
     update_screen();
 
     if(result < 0)
@@ -913,7 +928,7 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
 
         m_ret = manifest_entry_download_replace(h, url_base, e, delete_hook);
 
-        clear_screen(32, 7);
+        clear_screen();
         m_show();
         update_screen();
 
@@ -922,7 +937,7 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
 
         if(cancel_update)
         {
-          error("Download was cancelled; update aborted.", 1, 8, 0);
+          error_message(E_UPDATE, 21, "Download was cancelled; update aborted.");
           goto err_free_delete_list;
         }
 
@@ -936,7 +951,7 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
         snprintf(widget_buf, WIDGET_BUF_LEN,
          "Failed to download \"%s\" (after %d attempts).", e->name, retries);
         widget_buf[WIDGET_BUF_LEN - 1] = 0;
-        error(widget_buf, 1, 8, 0);
+        error_message(E_UPDATE, 22, widget_buf);
         goto err_free_delete_list;
       }
     }
@@ -987,7 +1002,7 @@ err_out:
     execv(process_argv[0], (const void *)new_argv);
     perror("execv");
 
-    error("Attempt to invoke self failed!", 1, 8, 0);
+    error_message(E_UPDATE, 23, "Attempt to invoke self failed!");
     return;
   }
 }
@@ -1019,8 +1034,8 @@ bool updater_init(int argc, char *argv[])
   {
     write_delete_list();
     manifest_list_free(&delete_list);
-    error("Failed to delete files; check permissions and restart MegaZeux",
-     1, 8, 0);
+    error_message(E_UPDATE, 24,
+     "Failed to delete files; check permissions and restart MegaZeux");
   }
 
 err_swivel_back:

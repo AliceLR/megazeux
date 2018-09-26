@@ -76,6 +76,9 @@ enum
 
 #define NO_KEY                127
 
+// Length of time to display the message and the intro message.
+#define MESG_TIMEOUT          160
+
 // "BOARD_NAME_SIZE" includes terminating \0
 // This is legacy, for world format only
 #define MAX_BOARDS            250

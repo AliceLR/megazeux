@@ -26,6 +26,7 @@
 #include "robo_debug.h"
 #include "window.h"
 
+#include "../core.h"
 #include "../counter.h"
 #include "../event.h"
 #include "../graphics.h"
@@ -1758,7 +1759,8 @@ static int new_counter_dialog(struct world *mzx_world, char *name)
  * 4 - Hide empties
  * 5 - Export
  */
-int last_node_selected = 0;
+static int last_node_selected = 0;
+static context *ctx_for_pal_char_editors = NULL; // FIXME hack
 
 static int counter_debugger_idle_function(struct world *mzx_world,
  struct dialog *di, int key)
@@ -1788,7 +1790,12 @@ static int counter_debugger_idle_function(struct world *mzx_world,
     {
       if(get_alt_status(keycode_internal))
       {
-        palette_editor(mzx_world);
+        // FIXME hack
+        if(ctx_for_pal_char_editors)
+        {
+          palette_editor(ctx_for_pal_char_editors);
+          core_run(ctx_for_pal_char_editors->root);
+        }
         return 0;
       }
       break;
@@ -1846,8 +1853,9 @@ static struct debug_node root;
 static char previous_var[VAR_SEARCH_MAX + 1];
 static char previous_node_name[15];
 
-void __debug_counters(struct world *mzx_world)
+void __debug_counters(context *ctx)
 {
+  struct world *mzx_world = ctx->world;
   int i;
 
   int num_vars = 0, tree_size = 0;
@@ -1871,12 +1879,13 @@ void __debug_counters(struct world *mzx_world)
 
   int reopened = 0;
 
+  // FIXME hack
+  ctx_for_pal_char_editors = ctx;
+
   // Prevent previous keys from carrying through.
   force_release_all_keys();
 
   set_context(CTX_COUNTER_DEBUG);
-
-  m_show();
 
   // also known as crash_stack
   build_debug_tree(mzx_world, &root);
@@ -2220,8 +2229,6 @@ void __debug_counters(struct world *mzx_world)
     destruct_dialog(&di);
 
   } while(dialog_result != -1);
-
-  m_hide();
 
   pop_context();
 

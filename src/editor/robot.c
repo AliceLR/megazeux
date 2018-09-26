@@ -20,7 +20,9 @@
 
 #include "robot.h"
 
+#include "../board_struct.h"
 #include "../legacy_rasm.h"
+#include "../robot.h"
 #include "../util.h"
 
 #include <string.h>

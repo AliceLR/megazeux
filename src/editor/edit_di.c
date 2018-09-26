@@ -22,19 +22,20 @@
 
 #include <string.h>
 
-#include "../helpsys.h"
-#include "../event.h"
-#include "../intake.h"
-#include "../graphics.h"
-#include "../window.h"
-#include "../data.h"
-#include "../idput.h"
-#include "../const.h"
-#include "../world_struct.h"
-#include "../error.h"
-#include "../counter.h"
 #include "../board.h"
+#include "../const.h"
+#include "../core.h"
+#include "../counter.h"
+#include "../data.h"
+#include "../error.h"
+#include "../event.h"
+#include "../graphics.h"
+#include "../idput.h"
+#include "../intake.h"
+#include "../robot.h"
+#include "../window.h"
 #include "../world.h"
+#include "../world_struct.h"
 
 #include "board.h"
 #include "configure.h"
@@ -1493,12 +1494,11 @@ void global_robot(struct world *mzx_world)
 {
   struct robot *cur_robot = &(mzx_world->global_robot);
   // First get name...
-  m_hide();
+  m_show();
   save_screen();
   draw_window_box(16, 12, 50, 14, DI_DEBUG_BOX, DI_DEBUG_BOX_DARK,
   DI_DEBUG_BOX_CORNER, 1, 1);
   write_string("Name for robot:", 18, 13, DI_DEBUG_LABEL, 0);
-  m_show();
 
   if(intake(mzx_world, cur_robot->robot_name,
    14, 34, 13, 15, 1, 0, NULL, 0, NULL) != IKEY_ESCAPE

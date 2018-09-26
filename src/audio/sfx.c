@@ -146,7 +146,7 @@ static void play_note(int note, int octave, int delay)
   submit_sound(note_freq[note - 1] >> (6 - octave), delay);
 }
 
-void play_sfx(struct world *mzx_world, int sfxn)
+void play_sfx(struct world *mzx_world, enum sfx_id sfxn)
 {
   if(sfxn < NUM_SFX)
   {

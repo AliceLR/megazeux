@@ -50,6 +50,8 @@ typedef enum
 
 #endif /* __cplusplus */
 
+typedef unsigned char boolean;
+
 #ifdef CONFIG_3DS
 #include <3ds.h>
 #endif

@@ -25,9 +25,6 @@
 
 __M_BEGIN_DECLS
 
-#include <stdio.h>
-
-#include "world_struct.h"
 #include "counter_struct.h"
 
 CORE_LIBSPEC int match_function_counter(const char *dest, const char *src);
