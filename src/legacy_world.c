@@ -160,7 +160,7 @@ static void decrypt(const char *file_name)
   char num_boards;
   char offset_low_byte;
   char xor_val;
-  char password[MAX_PASSWORD_LENGTH];
+  char password[MAX_PASSWORD_LENGTH + 1];
   char *file_buffer;
   char *src_ptr;
   char backup_name[MAX_PATH];
@@ -201,6 +201,7 @@ static void decrypt(const char *file_name)
 
   // Get password
   memcpy(password, src_ptr, MAX_PASSWORD_LENGTH);
+  password[MAX_PASSWORD_LENGTH] = '\0';
   src_ptr += 18;
   // First, normalize password...
   for(i = 0; i < MAX_PASSWORD_LENGTH; i++)

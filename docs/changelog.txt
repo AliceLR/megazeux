@@ -38,6 +38,8 @@ USERS
   from anywhere the settings screen is accessible. This shortcut
   works even if F2 is used for a different feature and will also
   ignore the value of the F2_MENU counter.
++ Fix a crash that would occur decrypting a world with a
+  password exactly 15 chars long.
 
 DEVELOPERS
 
