@@ -3486,7 +3486,7 @@ void run_robot(context *ctx, int id, int x, int y)
         {
           char name_buffer[ROBOT_MAX_TR];
           tr_msg(mzx_world, cmd_ptr + 3, id, name_buffer);
-          name_buffer[14] = 0;
+          name_buffer[ROBOT_NAME_SIZE - 1] = 0;
 
           if(id)
           {
@@ -3569,13 +3569,6 @@ void run_robot(context *ctx, int id, int x, int y)
         char input_buffer_msg[71 + 1];
         char *break_pos;
 
-        m_show();
-        save_screen();
-        dialog_fadein();
-
-        draw_window_box(3, 11, 77, 14, DI_INPUT_BOX, DI_INPUT_BOX_DARK,
-         DI_INPUT_BOX_CORNER, 1, 1);
-
         // Copy and clip
         strncpy(input_buffer_msg, cmd_ptr + 2, 71);
         input_buffer_msg[71] = 0;
@@ -3585,16 +3578,14 @@ void run_robot(context *ctx, int id, int x, int y)
           *break_pos = '\0';
 
         tr_msg(mzx_world, input_buffer_msg, id, input_buffer);
-        write_string(input_buffer, 5, 12, DI_INPUT_BOX_LABEL, 0);
+        input_buffer[71] = 0;
 
         src_board->input_string[0] = 0;
 
-        intake(mzx_world, src_board->input_string,
-         70, 5, 13, 15, 1, 0, NULL, 0, NULL);
-
+        dialog_fadein();
+        input_window(mzx_world, input_buffer, src_board->input_string, 70);
         dialog_fadeout();
 
-        restore_screen();
         src_board->input_size = strlen(src_board->input_string);
         src_board->num_input = atoi(src_board->input_string);
         break;

@@ -1611,11 +1611,11 @@ static void edit_settings(struct world *mzx_world)
   struct element *elements[8] =
   {
     construct_label(5, 2, "Macros:"),
-    construct_input_box(5, 4, "F6-  ", 43, 0, macros[0]),
-    construct_input_box(5, 5, "F7-  ", 43, 0, macros[1]),
-    construct_input_box(5, 6, "F8-  ", 43, 0, macros[2]),
-    construct_input_box(5, 7, "F9-  ", 43, 0, macros[3]),
-    construct_input_box(5, 8, "F10- ", 43, 0, macros[4]),
+    construct_input_box(5, 4, "F6-  ", 43, macros[0]),
+    construct_input_box(5, 5, "F7-  ", 43, macros[1]),
+    construct_input_box(5, 6, "F8-  ", 43, macros[2]),
+    construct_input_box(5, 7, "F9-  ", 43, macros[3]),
+    construct_input_box(5, 8, "F10- ", 43, macros[4]),
     construct_button(15, 10, "OK", 0),
     construct_button(37, 10, "Cancel", -1)
   };
@@ -1900,9 +1900,9 @@ static void find_replace_action(struct robot_state *rstate)
   struct element *elements[8] =
   {
     construct_input_box(2, 2, "Find:    ",
-     46, 0, search_string),
+     46, search_string),
     construct_input_box(2, 3, "Replace: ",
-     46, 0, replace_string),
+     46, replace_string),
     construct_check_box(3, 5, check_strings_1,
      1, 15, check_result_1),
     construct_check_box(30, 5, check_strings_2,
@@ -2263,7 +2263,7 @@ static void execute_macro(struct robot_state *rstate,
           {
             elements[dialog_index] =
              construct_input_box(x, y, current_variable->name,
-             current_type->type_attributes[0], 0,
+             current_type->type_attributes[0],
              current_variable->storage.str_storage);
             break;
           }
@@ -3006,6 +3006,7 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
   force_release_all_keys();
 
   caption_set_robot(mzx_world, cur_robot);
+  set_context(CTX_ROBO_ED);
 
   rstate.current_line = 0;
   rstate.current_rline = &base;
@@ -3319,14 +3320,14 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
     {
       draw_char(bg_char, mark_color, 1, rstate.scr_line_middle);
       key = intake(mzx_world, rstate.command_buffer, 240, 2,
-       rstate.scr_line_middle, mark_color, 2, 0, &rstate.current_x,
-       1, rstate.active_macro);
+       rstate.scr_line_middle, mark_color, INTK_EXIT_ANY,
+       &rstate.current_x, 1, rstate.active_macro);
     }
     else
     {
       draw_char(bg_char, bg_color_solid, 1, rstate.scr_line_middle);
       key = intake(mzx_world, rstate.command_buffer, 240, 2,
-       rstate.scr_line_middle, current_line_color, 2, 0,
+       rstate.scr_line_middle, current_line_color, INTK_EXIT_ANY,
        &rstate.current_x, 1, rstate.active_macro);
     }
 
@@ -4008,26 +4009,15 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
 
           macro_line[0] = 0;
 
-          save_screen();
-          draw_window_box(15, 11, 65, 13, DI_DEBUG_BOX, DI_DEBUG_BOX_DARK,
-           DI_DEBUG_BOX_CORNER, 1, 1);
-          write_string("Configure macro:", 17, 12, DI_DEBUG_LABEL, 0);
-
-          if(intake(mzx_world, macro_line, 29, 34, 12, 15, 1, 0, NULL,
-           0, NULL) != IKEY_ESCAPE && !get_exit_status())
+          if(!input_window(mzx_world, "Configure macro:", macro_line, 29))
           {
             struct ext_macro *macro_src;
             int next;
 
-            restore_screen();
             macro_src = find_macro(&mzx_world->editor_conf, macro_line, &next);
 
             if(macro_src)
               execute_macro(&rstate, macro_src);
-          }
-          else
-          {
-            restore_screen();
           }
         }
         break;
@@ -4070,6 +4060,7 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
   delete_robot_lines(cur_robot, &rstate);
 
   restore_screen();
+  pop_context();
 }
 
 void init_macros(struct world *mzx_world)

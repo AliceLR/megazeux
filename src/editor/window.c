@@ -1089,18 +1089,12 @@ struct element *construct_board_list(int x, int y,
 int add_board(struct world *mzx_world, int current)
 {
   struct board *new_board;
-  char temp_board_str[BOARD_NAME_SIZE];
-  // ..get a name...
-  save_screen();
-  draw_window_box(16, 12, 64, 14, 79, 64, 70, 1, 1);
-  write_string("Name for new board:", 18, 13, 78, 0);
-  temp_board_str[0] = 0;
-  if(intake(mzx_world, temp_board_str, BOARD_NAME_SIZE - 1,
-   38, 13, 15, 1, 0, NULL, 0, NULL) == IKEY_ESCAPE || get_exit_status())
-  {
-    restore_screen();
+  char name[BOARD_NAME_SIZE];
+  name[0] = 0;
+
+  if(input_window(mzx_world, "Name for new board:", name, BOARD_NAME_SIZE - 1))
     return -1;
-  }
+
   if(mzx_world->num_boards == mzx_world->num_boards_allocated)
   {
     mzx_world->num_boards_allocated *= 2;
@@ -1111,12 +1105,10 @@ int add_board(struct world *mzx_world, int current)
   mzx_world->num_boards++;
   new_board = create_blank_board(&(mzx_world->editor_conf));
   mzx_world->board_list[current] = new_board;
-  strncpy(new_board->board_name, temp_board_str, BOARD_NAME_SIZE - 1);
-  new_board->board_name[BOARD_NAME_SIZE - 1] = '\0';
+  memcpy(new_board->board_name, name, BOARD_NAME_SIZE);
 
   // Link global robot!
   new_board->robot_list[0] = &mzx_world->global_robot;
-  restore_screen();
 
   return current;
 }

@@ -1018,8 +1018,8 @@ static int pe_missile_gun(struct world *mzx_world, int param)
 
 int edit_sensor(struct world *mzx_world, struct sensor *cur_sensor)
 {
-  char sensor_name[15];
-  char sensor_robot[15];
+  char sensor_name[ROBOT_NAME_SIZE];
+  char sensor_robot[ROBOT_NAME_SIZE];
   int sensor_char = cur_sensor->sensor_char;
   struct dialog di;
   struct element *elements[5];
@@ -1034,9 +1034,9 @@ int edit_sensor(struct world *mzx_world, struct sensor *cur_sensor)
 
   set_confirm_buttons(elements);
   elements[2] = construct_input_box(15, 6, "Sensor's name:    ",
-   14, 0, sensor_name);
+   ROBOT_NAME_SIZE - 1, sensor_name);
   elements[3] = construct_input_box(15, 8, "Robot to message: ",
-   14, 0, sensor_robot);
+   ROBOT_NAME_SIZE - 1, sensor_robot);
   elements[4] = construct_char_box(15, 10, "Sensor character: ",
    1, &sensor_char);
 
@@ -1068,20 +1068,13 @@ int edit_scroll(struct world *mzx_world, struct scroll *cur_scroll)
 
 int edit_robot(struct world *mzx_world, struct robot *cur_robot)
 {
+  char *name = cur_robot->robot_name;
   int new_char;
-  // First get name...
-  m_show();
-  save_screen();
-  draw_window_box(16, 12, 50, 14, DI_DEBUG_BOX, DI_DEBUG_BOX_DARK,
-   DI_DEBUG_BOX_CORNER, 1, 1);
-  write_string("Name for robot:", 18, 13, DI_DEBUG_LABEL, 0);
 
-  if(intake(mzx_world, cur_robot->robot_name, 14, 34, 13,
-   15, 1, 0, NULL, 0, NULL) != IKEY_ESCAPE && !get_exit_status())
+  // Edit name.
+  if(!input_window(mzx_world, "Name for robot:", name, ROBOT_NAME_SIZE - 1))
   {
-    restore_screen();
-    save_screen();
-    // ...and character.
+    // Edit character.
     new_char = char_selection(cur_robot->robot_char);
     if(new_char < 0)
     {
@@ -1094,19 +1087,13 @@ int edit_robot(struct world *mzx_world, struct robot *cur_robot)
     {
       cur_robot->robot_char = new_char;
       // Now edit the program.
-      set_context(CTX_ROBO_ED);
       robot_editor(mzx_world, cur_robot);
-      pop_context();
     }
-  }
-  else
-  {
-    restore_screen();
-    return -1;
+
+    return 0;
   }
 
-  restore_screen();
-  return 0;
+  return -1;
 }
 
 // Returns parameter or -1 for ESC. Must pass a legit parameter, or -1 to

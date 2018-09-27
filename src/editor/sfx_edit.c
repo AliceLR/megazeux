@@ -184,7 +184,7 @@ void sfx_edit(struct world *mzx_world)
         for(i = 0; i < num_elements; i++)
         {
           b_elements[i] = construct_input_box(1, i + 2,
-           sfx_names[(page * 17) + i], 68, 0,
+           sfx_names[(page * 17) + i], 68,
            mzx_world->custom_sfx + ((i + (page * 17)) * SFX_SIZE));
         }
 

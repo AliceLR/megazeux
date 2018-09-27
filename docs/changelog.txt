@@ -40,6 +40,8 @@ USERS
   ignore the value of the F2_MENU counter.
 + Fix a crash that would occur decrypting a world with a
   password exactly 15 chars long.
++ The label for the INPUT STRING command should no longer be
+  able to overflow outside of the window.
 
 DEVELOPERS
 

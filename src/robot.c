@@ -137,7 +137,7 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
         break;
 
       case RPROP_ROBOT_NAME:
-        mfread(cur_robot->robot_name, 15, 1, &prop);
+        mfread(cur_robot->robot_name, ROBOT_NAME_SIZE, 1, &prop);
         break;
 
       case RPROP_ROBOT_CHAR:
@@ -560,7 +560,7 @@ struct sensor *load_sensor_allocate(struct zip_archive *zp)
         break;
 
       case SENPROP_SENSOR_NAME:
-        size = MIN(size, 15);
+        size = MIN(size, ROBOT_NAME_SIZE);
         mfread(cur_sensor->sensor_name, size, 1, &prop);
         break;
 
@@ -569,7 +569,7 @@ struct sensor *load_sensor_allocate(struct zip_archive *zp)
         break;
 
       case SENPROP_ROBOT_TO_MESG:
-        size = MIN(size, 15);
+        size = MIN(size, ROBOT_NAME_SIZE);
         mfread(cur_sensor->robot_to_mesg, size, 1, &prop);
         break;
 
@@ -634,7 +634,7 @@ static void save_robot_to_memory(struct robot *cur_robot,
 {
   struct memfile prop;
 
-  save_prop_s(RPROP_ROBOT_NAME, cur_robot->robot_name, 15, 1, mf);
+  save_prop_s(RPROP_ROBOT_NAME, cur_robot->robot_name, ROBOT_NAME_SIZE, 1, mf);
   save_prop_c(RPROP_ROBOT_CHAR, cur_robot->robot_char, mf);
   save_prop_w(RPROP_XPOS, cur_robot->xpos, mf);
   save_prop_w(RPROP_YPOS, cur_robot->ypos, mf);
@@ -798,9 +798,11 @@ void save_sensor(struct sensor *cur_sensor, struct zip_archive *zp,
   {
     mfopen_static(buffer, SENSOR_PROPS_SIZE, &mf);
 
-    save_prop_s(SENPROP_SENSOR_NAME, cur_sensor->sensor_name, 15, 1, &mf);
+    save_prop_s(SENPROP_SENSOR_NAME, cur_sensor->sensor_name,
+     ROBOT_NAME_SIZE, 1, &mf);
     save_prop_c(SENPROP_SENSOR_CHAR, cur_sensor->sensor_char, &mf);
-    save_prop_s(SENPROP_ROBOT_TO_MESG, cur_sensor->robot_to_mesg, 15, 1, &mf);
+    save_prop_s(SENPROP_ROBOT_TO_MESG, cur_sensor->robot_to_mesg,
+     ROBOT_NAME_SIZE, 1, &mf);
 
     zip_write_file(zp, name, buffer, SENSOR_PROPS_SIZE, ZIP_M_NONE);
   }

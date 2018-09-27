@@ -112,7 +112,6 @@ struct input_box
 {
   struct element e;
   const char *question;
-  int input_flags;
   int max_length;
   char *result;
 };
@@ -208,6 +207,9 @@ struct file_selector
   int return_value;
   char *result;
 };
+
+CORE_LIBSPEC int input_window(struct world *mzx_world, const char *title,
+ char *buffer, int max_len);
 
 CORE_LIBSPEC void construct_dialog(struct dialog *src, const char *title,
  int x, int y, int width, int height, struct element **elements,
@@ -306,7 +308,7 @@ CORE_LIBSPEC void construct_element(struct element *e, int x, int y,
  int (* idle_function)(struct world *mzx_world, struct dialog *di,
   struct element *e));
 CORE_LIBSPEC struct element *construct_input_box(int x, int y,
- const char *question, int max_length, int input_flags, char *result);
+ const char *question, int max_length, char *result);
 CORE_LIBSPEC struct element *construct_list_box(int x, int y,
  const char **choices, int num_choices, int num_choices_visible,
  int choice_length, int return_value, int *result, int *result_offset,

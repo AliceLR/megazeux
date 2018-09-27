@@ -17,8 +17,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/* INTAKE.H- Declarations for INTAKE.CPP */
-
 #ifndef __INTAKE_H
 #define __INTAKE_H
 
@@ -26,15 +24,18 @@
 
 __M_BEGIN_DECLS
 
-#include <stdlib.h>
-
 #include "world_struct.h"
 
-// See code for full docs, preserves mouse cursor, be prepared for a
-// MOUSE_EVENT! (must acknowledge_event() it)
+enum intake_exit_type
+{
+  INTK_EXIT_ENTER,
+  INTK_EXIT_ENTER_ESC,
+  INTK_EXIT_ANY
+};
+
 CORE_LIBSPEC int intake(struct world *mzx_world, char *string, int max_len,
- int x, int y, char color, int exit_type, int filter_type,
- int *return_x_pos, bool robo_intk, char *macro);
+ int x, int y, char color, enum intake_exit_type exit_type, int *return_x_pos,
+ boolean robo_intk, char *macro);
 
 __M_END_DECLS
 

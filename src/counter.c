@@ -36,7 +36,6 @@
 #include "graphics.h"
 #include "idarray.h"
 #include "idput.h"
-#include "intake.h"
 #include "rasm.h"
 #include "robot.h"
 #include "sprite.h"

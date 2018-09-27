@@ -1546,8 +1546,8 @@ static void build_debug_tree(struct world *mzx_world, struct debug_node *root)
 static void input_counter_value(struct world *mzx_world, char *var_buffer)
 {
   char *var = var_buffer + VAR_LIST_VAR;
-  char new_value[70];
-  char name[70] = { 0 };
+  char new_value[71];
+  char name[71] = { 0 };
   int id = 0;
 
   if(var[0] == '$')
@@ -1555,15 +1555,15 @@ static void input_counter_value(struct world *mzx_world, char *var_buffer)
     struct string temp;
     get_string(mzx_world, var, &temp, 0);
 
-    snprintf(name, 69, "Edit: string %s", var);
+    snprintf(name, 70, "Edit: string %s", var);
 
-    copy_substring_escaped(&temp, new_value, 68);
+    copy_substring_escaped(&temp, new_value, 70);
   }
   else
   {
     if(var[-2])
     {
-      snprintf(name, 69, "Edit: counter %s", var);
+      snprintf(name, 70, "Edit: counter %s", var);
       sprintf(new_value, "%d", get_counter_safe(mzx_world, var, id));
     }
     else
@@ -1573,7 +1573,7 @@ static void input_counter_value(struct world *mzx_world, char *var_buffer)
       if(var[strlen(var)-1] == '*')
         return;
 
-      snprintf(name, 69, "Edit: variable %s", var);
+      snprintf(name, 70, "Edit: variable %s", var);
 
       // Just strcpy it off of the var_buffer so we don't need
       // a special if/else chain for the write-only variables
@@ -1581,13 +1581,8 @@ static void input_counter_value(struct world *mzx_world, char *var_buffer)
     }
   }
 
-  save_screen();
-  draw_window_box(4, 12, 76, 14, DI_DEBUG_BOX, DI_DEBUG_BOX_DARK,
-   DI_DEBUG_BOX_CORNER, 1, 1);
-  write_string(name, 6, 12, DI_DEBUG_LABEL, 0);
-
-  if(intake(mzx_world, new_value, 68, 6, 13, 15, 1, 0,
-   NULL, 0, NULL) != IKEY_ESCAPE && !get_exit_status())
+  // Prompt user to edit value
+  if(!input_window(mzx_world, name, new_value, 70))
   {
     if(var[0] == '$')
     {
@@ -1601,8 +1596,6 @@ static void input_counter_value(struct world *mzx_world, char *var_buffer)
       write_var(mzx_world, var_buffer, counter_value, NULL);
     }
   }
-
-  restore_screen();
 }
 
 /*****************/
@@ -1646,7 +1639,7 @@ static int search_dialog(struct world *mzx_world,
 
   struct element *elements[] =
   {
-    construct_input_box( 2, 1, "Search: ", VAR_SEARCH_MAX, 0, string),
+    construct_input_box( 2, 1, "Search: ", VAR_SEARCH_MAX, string),
     construct_check_box( 2, 2, name_opt,    1, strlen(*name_opt),    &names),
     construct_check_box(20, 2, value_opt,   1, strlen(*value_opt),   &values),
     construct_check_box(39, 2, case_opt,    1, strlen(*case_opt),    &casesens),
@@ -1692,7 +1685,7 @@ static int new_counter_dialog(struct world *mzx_world, char *name)
   // Prevent previous keys from carrying through.
   force_release_all_keys();
 
-  elements[0] = construct_input_box(2, 2, "Name:", VAR_ADD_MAX, 0, name);
+  elements[0] = construct_input_box(2, 2, "Name:", VAR_ADD_MAX, name);
   elements[1] = construct_button(9, 4, "Confirm", 0);
   elements[2] = construct_button(23, 4, "Cancel", -1);
 

@@ -751,6 +751,65 @@ int char_selection(int current)
   return char_selection_ext(current, 1, NULL, NULL, NULL, -1);
 }
 
+// Display a simple string input window. Return 0 on enter, -1 if cancelled.
+int input_window(struct world *mzx_world, const char *title,
+ char *buffer, int max_len)
+{
+  boolean two_lines = false;
+  int title_len = strlen(title);
+  int x = 16;
+  int y = 11;
+  int w;
+  int h = 3;
+  int ret;
+
+  m_show();
+  save_screen();
+
+  if(title_len > 71)
+    title_len = 71;
+
+  if(max_len > 70)
+    max_len = 70;
+
+  // Title + spacing + input length + extra char for intake cursor + 4 (border)
+  w = title_len + 1 + max_len + 1 + 4;
+
+  // Split label and input box onto separate lines if the box would be too wide.
+  if(w > 74)
+  {
+    w = MAX(title_len, max_len + 1) + 4;
+    two_lines = true;
+    h++;
+  }
+
+  // Center wide boxes.
+  if(x > (81 - w) / 2)
+    x = (81 - w) / 2;
+
+  draw_window_box(x, y, (x + w - 1), (y + h - 1),
+   DI_INPUT_BOX, DI_INPUT_BOX_DARK, DI_INPUT_BOX_CORNER, true, true);
+
+  x += 2;
+  y += 1;
+  write_string(title, x, y, DI_INPUT_BOX_LABEL, false);
+
+  if(two_lines)
+    y++;
+  else
+    x += title_len + 1;
+
+  ret = intake(mzx_world, buffer, max_len, x, y, 15,
+   INTK_EXIT_ENTER_ESC, NULL, 0, NULL);
+
+  restore_screen();
+
+  if(ret == IKEY_ESCAPE || get_exit_status())
+    return -1;
+
+  return 0;
+}
+
 __editor_maybe_static void construct_element(struct element *e, int x, int y,
  int width, int height,
  void (* draw_function)(struct world *mzx_world, struct dialog *di,
@@ -1894,8 +1953,8 @@ static int click_input_box(struct world *mzx_world, struct dialog *di,
   if(start_x >= 0)
   {
     return intake(mzx_world, src->result, src->max_length, x +
-     (int)question_len + di->pad_space, y, DI_INPUT, 2,
-     src->input_flags, &start_x, 0, NULL);
+     (int)question_len + di->pad_space, y, DI_INPUT, INTK_EXIT_ANY,
+     &start_x, 0, NULL);
   }
   else
   {
@@ -2107,8 +2166,8 @@ static int idle_input_box(struct world *mzx_world, struct dialog *di,
   int y = di->y + e->y;
 
   return intake(mzx_world, src->result, src->max_length, x +
-   (int)strlen(src->question) + di->pad_space, y, DI_INPUT, 2,
-   src->input_flags, NULL, 0, NULL);
+   (int)strlen(src->question) + di->pad_space, y, DI_INPUT, INTK_EXIT_ANY,
+   NULL, 0, NULL);
 }
 
 void construct_dialog(struct dialog *src, const char *title, int x, int y,
@@ -2175,11 +2234,10 @@ struct element *construct_label(int x, int y, const char *text)
 }
 
 __editor_maybe_static struct element *construct_input_box(int x, int y,
- const char *question, int max_length, int input_flags, char *result)
+ const char *question, int max_length, char *result)
 {
   struct input_box *src = cmalloc(sizeof(struct input_box));
   src->question = question;
-  src->input_flags = input_flags;
   src->max_length = max_length;
   src->result = result;
   construct_element(&(src->e), x, y,
@@ -2355,7 +2413,7 @@ int confirm_input(struct world *mzx_world, const char *name,
   // Don't pass anything through that isn't this big plz
   str[input_length] = '\0';
 
-  elements[0] = construct_input_box(2, 2, label, input_length, 0, str);
+  elements[0] = construct_input_box(2, 2, label, input_length, str);
   elements[1] = construct_button(15, 4, "OK", 0);
   elements[2] = construct_button(37, 4, "Cancel", 1);
   construct_dialog(&di, name, 11, 8, 57, 7, elements, 3, 0);
@@ -2917,8 +2975,7 @@ skip_dir:
      construct_list_box(59, 2, (const char **)dir_list, num_dirs,
      list_length, 15, 2, &chosen_dir, NULL, true);
     elements[FILESEL_FILENAME] =
-     construct_input_box(2, list_length + 3, "", 55,
-     0, ret);
+     construct_input_box(2, list_length + 3, "", 55, ret);
     elements[FILESEL_OKAY_BUTTON] =
      construct_button(60, list_length + 3, "OK", 0);
     elements[FILESEL_CANCEL_BUTTON] =

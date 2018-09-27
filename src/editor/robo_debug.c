@@ -38,7 +38,7 @@
 
 struct breakpoint
 {
-  char match_name[15];
+  char match_name[ROBOT_NAME_SIZE];
   char match_string[61];
   int index[256];
   int line_number;
@@ -146,7 +146,7 @@ static int edit_breakpoint_dialog(struct world *mzx_world,
  struct breakpoint *br, const char *title)
 {
   char match_string[61];
-  char match_name[15];
+  char match_name[ROBOT_NAME_SIZE];
   int line_number;
 
   struct element *elements[5];
@@ -157,14 +157,14 @@ static int edit_breakpoint_dialog(struct world *mzx_world,
   force_release_all_keys();
 
   memcpy(match_string, br->match_string, 61);
-  memcpy(match_name, br->match_name, 15);
+  memcpy(match_name, br->match_name, ROBOT_NAME_SIZE);
   line_number = br->line_number;
 
   elements[0] = construct_input_box(2, 1,
-   "Match text:", 60, 0, match_string);
+   "Match text:", 60, match_string);
 
   elements[1] = construct_input_box(2, 3,
-   "Match robot name:", 14, 0, match_name);
+   "Match robot name:", ROBOT_NAME_SIZE - 1, match_name);
 
   elements[2] = construct_number_box(38, 3,
    "Match line number:", 0, 99999, 0, &line_number);
@@ -180,7 +180,7 @@ static int edit_breakpoint_dialog(struct world *mzx_world,
   if(!result)
   {
     memcpy(br->match_string, match_string, 61);
-    memcpy(br->match_name, match_name, 15);
+    memcpy(br->match_name, match_name, ROBOT_NAME_SIZE);
     br->line_number = line_number;
     br->match_string_len = strlen(match_string);
     br->match_name_len = strlen(match_name);
@@ -207,7 +207,7 @@ static int edit_watchpoint_dialog(struct world *mzx_world,
   memcpy(match_name, wt->match_name, 61);
 
   elements[0] = construct_input_box(3, 1,
-   "Variable:", 60, 0, match_name);
+   "Variable:", 60, match_name);
 
   elements[1] = construct_button(22, 3, "Confirm", 0);
   elements[2] = construct_button(45, 3, "Cancel", -1);
@@ -647,10 +647,10 @@ static int goto_send_dialog(struct world *mzx_world, int robot_id)
    target_strs, ARRAY_SIZE(target_strs), 8, &target);
 
   elements[1] = construct_input_box(17, 1,
-   "Name:", 51, 0, name_in);
+   "Name:", 51, name_in);
 
   elements[2] = construct_input_box(16, 2,
-   "Label:", 51, 0, label_in);
+   "Label:", 51, label_in);
 
   elements[3] = construct_check_box(21, 3,
    ignore_strs, ARRAY_SIZE(ignore_strs), 50, ignore);
