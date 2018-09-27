@@ -25,7 +25,7 @@
 #include "../legacy_board.h"
 #include "../robot.h"
 #include "../world.h"
-#include "../world_prop.h"
+#include "../world_format.h"
 #include "../util.h"
 #include "../zip.h"
 

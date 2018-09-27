@@ -48,7 +48,7 @@
 #include "../memfile.h"
 #include "../util.h"
 #include "../world.h"
-#include "../world_prop.h"
+#include "../world_format.h"
 #include "../zip.h"
 
 #define DOWNVER_VERSION "2.91"

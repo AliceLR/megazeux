@@ -47,7 +47,7 @@
 // Safe- self sufficient or completely macros/static inlines
 #include "../const.h"
 #include "../memfile.h"
-#include "../world_prop.h"
+#include "../world_format.h"
 #include "../zip.h"
 
 // Avoid CORE_LIBSPEC functions

@@ -31,7 +31,7 @@
 #endif
 
 #include "world.h"
-#include "world_prop.h"
+#include "world_format.h"
 #include "legacy_world.h"
 
 #include "board.h"

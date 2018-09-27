@@ -33,7 +33,7 @@
 #include "../memfile.h"
 #include "../zip.h"
 
-#include "../world_prop.h"
+#include "../world_format.h"
 
 #include "board.h"
 #include "robot.h"
