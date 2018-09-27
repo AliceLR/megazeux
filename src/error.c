@@ -282,11 +282,6 @@ int error_message(enum error_code id, int parameter, const char *string)
       code = 0x0D02;
       break;
 
-    case E_WORLD_PASSWORD_PROTECTED:
-      sprintf(error_mesg, "This world may be password protected");
-      code = 0x0D02;
-      break;
-
     case E_WORLD_DECRYPT_WRITE_PROTECTED:
       sprintf(error_mesg, "Cannot decrypt write-protected world; "
        "check permissions");

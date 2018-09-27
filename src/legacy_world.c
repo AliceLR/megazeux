@@ -495,10 +495,8 @@ enum val_result validate_legacy_world_file(const char *file,
       if(decrypt_attempted) // In the unlikely event that this will happen again
         goto err_invalid;
 
-      error_message(E_WORLD_PASSWORD_PROTECTED, 0, NULL);
-
       if(!has_video_initialized() ||
-       !confirm(NULL, "Would you like to decrypt it?"))
+       !confirm(NULL, "This world may be password protected. Decrypt it?"))
       {
         fclose(f);
         decrypt(file);
