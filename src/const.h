@@ -80,12 +80,11 @@ enum
 #define MESG_TIMEOUT          160
 
 // "BOARD_NAME_SIZE"/"ROBOT_NAME_SIZE"/"COUNTER_NAME_SIZE" include terminator
-// This is legacy, for world format only
 #define MAX_BOARDS            250
 #define MAX_BOARD_SIZE        16 * 1024 * 1024
 #define BOARD_NAME_SIZE       25
 #define ROBOT_NAME_SIZE       15
-#define COUNTER_NAME_SIZE     15
+#define COUNTER_NAME_SIZE     15 // This is legacy, for status counters only
 #define NUM_KEYS              16
 
 // Attribute flags
