@@ -32,7 +32,6 @@
 #include "../graphics.h"
 #include "../idarray.h"
 #include "../idput.h"
-#include "../intake.h"
 #include "../mzm.h"
 #include "../platform.h"
 #include "../robot.h"
@@ -2048,9 +2047,9 @@ static boolean editor_key(context *ctx, int *key)
         if((new_param >= 0 && new_param != buffer->param) || edited_storage)
         {
           // Place the buffer back on the board/layer
-          buffer->param = new_param;
-          place_current_at_xy(mzx_world, buffer, editor->cursor_x,
-           editor->cursor_y, editor->mode, editor->cur_history);
+          buffer->param =
+           place_current_at_xy(mzx_world, buffer, editor->cursor_x,
+            editor->cursor_y, editor->mode, editor->cur_history);
 
           editor->modified = true;
         }
