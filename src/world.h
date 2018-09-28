@@ -154,6 +154,7 @@ enum val_result
   VAL_INVALID,    // Failed validation
   VAL_TRUNCATED,  // Passed validation until it hit EOF
   VAL_MISSING,    // file or ptr location in file does not exist
+  VAL_PROTECTED,  // Legacy file is protected, needs decryption
   VAL_ABORTED,    // Load aborted by user
 };
 

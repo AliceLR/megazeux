@@ -328,8 +328,8 @@ static void decrypt(const char *file_name)
  * There are a few redundant checks here with try_load_world, but that's ok.
  */
 
-enum val_result validate_legacy_world_file(const char *file,
- boolean savegame, boolean decrypt_attempted)
+static enum val_result __validate_legacy_world_file(const char *file,
+ boolean savegame)
 {
   enum val_result result = VAL_SUCCESS;
 
@@ -492,25 +492,8 @@ enum val_result validate_legacy_world_file(const char *file,
       if(protection_method > 3)
         goto err_invalid;
 
-      if(decrypt_attempted) // In the unlikely event that this will happen again
-        goto err_invalid;
-
-      if(!has_video_initialized() ||
-       !confirm(NULL, "This world may be password protected. Decrypt it?"))
-      {
-        fclose(f);
-        decrypt(file);
-
-        // Call this function again, but with decrypt_attempted = true
-        return validate_legacy_world_file(file, savegame, true);
-      }
-
-      else
-      {
-        error_message(E_WORLD_LOCKED, 0, NULL);
-        result = VAL_ABORTED;
-        goto err_close;
-      }
+      result = VAL_PROTECTED;
+      goto err_close;
     }
 
     /* TEST 5:  Make sure the magic is awwrightttt~ */
@@ -599,6 +582,31 @@ err_out:
   return result;
 }
 
+enum val_result validate_legacy_world_file(struct world *mzx_world,
+ const char *file, boolean savegame)
+{
+  enum val_result res = __validate_legacy_world_file(file, savegame);
+
+  if(res == VAL_PROTECTED)
+  {
+    if(!has_video_initialized() ||
+     !confirm(mzx_world, "This world may be password protected. Decrypt it?"))
+    {
+      // Decrypt and try again
+      decrypt(file);
+      res = __validate_legacy_world_file(file, savegame);
+
+      // If the world is still protected, abort.
+      if(res != VAL_PROTECTED)
+        return res;
+    }
+
+    error_message(E_WORLD_LOCKED, 0, NULL);
+    return VAL_ABORTED;
+  }
+
+  return res;
+}
 
 void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
  boolean savegame, int file_version, char *name, boolean *faded)

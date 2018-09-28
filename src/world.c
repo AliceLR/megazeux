@@ -2718,7 +2718,7 @@ err_protected:
 }
 
 
-static FILE *try_load_legacy_world(const char *file,
+static FILE *try_load_legacy_world(struct world *mzx_world, const char *file,
  boolean savegame, int *file_version, char *name)
 {
   char magic[5];
@@ -2727,7 +2727,7 @@ static FILE *try_load_legacy_world(const char *file,
   enum val_result result;
 
   // Validate the legacy world file and attempt decryption as needed.
-  result = validate_legacy_world_file(file, savegame, 0);
+  result = validate_legacy_world_file(mzx_world, file, savegame);
 
   if(result != VAL_SUCCESS)
     return NULL;
@@ -2769,7 +2769,7 @@ void try_load_world(struct world *mzx_world, struct zip_archive **zp,
 
   if(!_zp)
     if(protected || (v >= V251 && v <= MZX_LEGACY_FORMAT_VERSION))
-      _fp = try_load_legacy_world(file, savegame, &v, name);
+      _fp = try_load_legacy_world(mzx_world, file, savegame, &v, name);
 
   *zp = _zp;
   *fp = _fp;

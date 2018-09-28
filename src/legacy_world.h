@@ -98,8 +98,8 @@ __M_BEGIN_DECLS
 void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
  boolean savegame, int file_version, char *name, boolean *faded);
 
-enum val_result validate_legacy_world_file(const char *file, boolean savegame,
- boolean decrypt_attempted);
+enum val_result validate_legacy_world_file(struct world *mzx_world,
+ const char *file, boolean savegame);
 
 __M_END_DECLS
 
