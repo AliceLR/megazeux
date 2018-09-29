@@ -189,11 +189,7 @@ int get_version_string(char buffer[16], enum mzx_version version)
       break;
 
     case V262:
-      sprintf(buffer, "2.62");
-      break;
-
-    case V262b:
-      sprintf(buffer, "2.62b");
+      sprintf(buffer, "2.62/2.62b");
       break;
 
     case V265:
