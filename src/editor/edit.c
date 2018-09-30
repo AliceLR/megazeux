@@ -138,6 +138,8 @@ struct editor_context
   int text_start_x;
   struct block_info block;
   enum cursor_mode cursor_mode;
+  int mouse_last_x;
+  int mouse_last_y;
 
   // Temporary stored cursor positions
   int stored_board_x;
@@ -1036,6 +1038,86 @@ static void cancel_mouse_draw(struct editor_context *editor)
 }
 
 /**
+ * Draw at a position with the mouse.
+ */
+
+static void mouse_draw_at_position(struct editor_context *editor, int x, int y)
+{
+  struct buffer_info *buffer = &(editor->buffer);
+  struct world *mzx_world = ((context *)editor)->world;
+  struct board *cur_board = mzx_world->current_board;
+  enum editor_mode mode = editor->mode;
+
+  if(!editor->continue_mouse_history)
+  {
+    // Add new frame
+    switch(mode)
+    {
+      case EDIT_BOARD:
+        add_board_undo_frame(mzx_world, editor->cur_history, buffer, x, y);
+        break;
+
+      case EDIT_OVERLAY:
+        add_layer_undo_pos_frame(editor->cur_history, cur_board->overlay,
+         cur_board->overlay_color, cur_board->board_width, buffer, x, y);
+        break;
+
+      case EDIT_VLAYER:
+        add_layer_undo_pos_frame(editor->cur_history,
+         mzx_world->vlayer_chars, mzx_world->vlayer_colors,
+         mzx_world->vlayer_width, buffer, x, y);
+        break;
+    }
+    editor->continue_mouse_history = true;
+  }
+  else
+  {
+    // Continue frame
+    add_undo_position(editor->cur_history, x, y);
+  }
+
+  // Tracking history separately, so don't pass it here.
+  buffer->param = place_current_at_xy(mzx_world, buffer, x, y, mode, NULL);
+  editor->mouse_last_x = x;
+  editor->mouse_last_y = y;
+  editor->modified = true;
+}
+
+/**
+ * Draw to a position with the mouse, starting from the previous position
+ * of the mouse if it is being dragged.
+ */
+
+static void mouse_draw(struct editor_context *editor, int x, int y)
+{
+  if(editor->continue_mouse_history)
+  {
+    // Linear draw from previous position to current
+    int mouse_last_x = editor->mouse_last_x;
+    int mouse_last_y = editor->mouse_last_y;
+    int x_diff = x - mouse_last_x;
+    int y_diff = y - mouse_last_y;
+    int iter = MAX(abs(x_diff), abs(y_diff));
+    int i;
+
+    if(x == mouse_last_x && y == mouse_last_y)
+      return;
+
+    // Draw every position up to the current
+    for(i = 1; i < iter; i++)
+    {
+      mouse_draw_at_position(editor,
+        mouse_last_x + i * x_diff / iter,
+        mouse_last_y + i * y_diff / iter
+      );
+    }
+  }
+
+  // Draw at the current mouse position
+  mouse_draw_at_position(editor, x, y);
+}
+
+/**
  * Update the editor at the start of each frame.
  */
 
@@ -1133,7 +1215,6 @@ static boolean editor_mouse(context *ctx, int *key, int button, int x, int y)
   struct editor_context *editor = (struct editor_context *)ctx;
   struct buffer_info *buffer = &(editor->buffer);
   struct world *mzx_world = ctx->world;
-  struct board *cur_board = mzx_world->current_board;
 
   // Allow keys to take precedence
   if(*key)
@@ -1162,41 +1243,17 @@ static boolean editor_mouse(context *ctx, int *key, int button, int x, int y)
 
       if(get_mouse_held(MOUSE_BUTTON_LEFT))
       {
-        if(!editor->continue_mouse_history)
-        {
-          // Add new frame
-          switch(editor->mode)
-          {
-            case EDIT_BOARD:
-              add_board_undo_frame(mzx_world, editor->cur_history, buffer,
-               x, y);
-              break;
-
-            case EDIT_OVERLAY:
-              add_layer_undo_pos_frame(editor->cur_history, cur_board->overlay,
-               cur_board->overlay_color, cur_board->board_width, buffer, x, y);
-              break;
-
-            case EDIT_VLAYER:
-              add_layer_undo_pos_frame(editor->cur_history,
-               mzx_world->vlayer_chars, mzx_world->vlayer_colors,
-               mzx_world->vlayer_width, buffer, x, y);
-              break;
-          }
-          editor->continue_mouse_history = true;
-        }
-        else
-        {
-          // Continue frame (FIXME: should draw a line)
-          add_undo_position(editor->cur_history, x, y);
-        }
-
-        // Tracking history separately, so don't pass it here.
-        buffer->param = place_current_at_xy(mzx_world, buffer, x, y,
-         editor->mode, NULL);
-        editor->modified = true;
+        mouse_draw(editor, x, y);
         return true;
       }
+    }
+    else
+
+    if(editor->continue_mouse_history && get_mouse_held(MOUSE_BUTTON_LEFT))
+    {
+      // We want mouse draw to continue even if the cursor goes out of bounds.
+      mouse_draw(editor, editor->cursor_x, editor->cursor_y);
+      return true;
     }
   }
   return false;
@@ -2046,10 +2103,15 @@ static boolean editor_key(context *ctx, int *key)
         // Ignore non-storage objects with no change.
         if((new_param >= 0 && new_param != buffer->param) || edited_storage)
         {
-          // Place the buffer back on the board/layer
-          buffer->param =
-           place_current_at_xy(mzx_world, buffer, editor->cursor_x,
-            editor->cursor_y, editor->mode, editor->cur_history);
+          // Update the buffer for the new param.
+          buffer->param = new_param;
+
+          // Place the buffer back on the board/layer.
+          new_param = place_current_at_xy(mzx_world, buffer, editor->cursor_x,
+           editor->cursor_y, editor->mode, editor->cur_history);
+
+          // Placement might have required that we change the buffer param again.
+          buffer->param = new_param;
 
           editor->modified = true;
         }

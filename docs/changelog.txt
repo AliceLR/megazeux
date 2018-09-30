@@ -13,6 +13,8 @@ USERS
 + Fixed a bug where the fade out effect from COLOR FADE OUT
   would be reset after any Robotic dialog.
 + Undo for overlay and vlayer mouse drawing now works properly.
++ Mouse drawing in the editor now draws smooth lines instead of
+  lines with gaps.
 + Fixed move block bug when the source and destination both
   overlapped the player.
 + Palette editor component entry now accepts most of the same
