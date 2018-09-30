@@ -27,6 +27,10 @@ __M_BEGIN_DECLS
 
 #include "counter_struct.h"
 
+// Settings SAVE_ROBOT should use for disassembling Robotic.
+#define SAVE_ROBOT_DISASM_EXTRAS  true
+#define SAVE_ROBOT_DISASM_BASE    10
+
 CORE_LIBSPEC int match_function_counter(const char *dest, const char *src);
 CORE_LIBSPEC int get_counter(struct world *mzx_world, const char *name, int id);
 CORE_LIBSPEC void set_counter(struct world *mzx_world, const char *name,

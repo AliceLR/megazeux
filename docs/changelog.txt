@@ -48,6 +48,10 @@ USERS
   from the world decryption confirm dialog.
 - The "password protected" error message has been removed as it
   was redundant with the confirmation dialog following it.
+- The "disassemble_extras" and "disassemble_base" options no
+  longer affect Robotic output during gameplay. SAVE_ROBOT will
+  always output extra words and base 10 numbers regardless of
+  user configuration.
 
 DEVELOPERS
 

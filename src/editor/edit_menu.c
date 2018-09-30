@@ -330,7 +330,7 @@ static void draw_menu_minimal(struct edit_menu_subcontext *edit_menu)
     {
       robot_mem +=
 #ifdef CONFIG_DEBYTECODE
-       (src_board->robot_list_name_sorted[i])->program_source_length;
+       (cur_board->robot_list_name_sorted[i])->program_source_length;
 #else
        (cur_board->robot_list_name_sorted[i])->program_bytecode_length;
 #endif

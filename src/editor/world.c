@@ -26,6 +26,7 @@
 #include "../const.h"
 #include "../error.h"
 #include "../graphics.h"
+#include "../robot.h"
 #include "../window.h"
 #include "../world.h"
 #include "../legacy_board.h"

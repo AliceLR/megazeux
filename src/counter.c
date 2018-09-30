@@ -2801,9 +2801,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       {
         int new_length = 0;
         char *new_source = legacy_convert_file(char_value,
-         &new_length,
-         mzx_world->conf.disassemble_extras,
-         mzx_world->conf.disassemble_base);
+         &new_length, SAVE_ROBOT_DISASM_EXTRAS, SAVE_ROBOT_DISASM_BASE);
 
         if(new_source)
         {
@@ -2867,8 +2865,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
           cur_robot->program_source =
            legacy_disassemble_program(program_legacy_bytecode,
            program_bytecode_length, &(cur_robot->program_source_length),
-           mzx_world->conf.disassemble_extras,
-           mzx_world->conf.disassemble_base);
+           SAVE_ROBOT_DISASM_EXTRAS, SAVE_ROBOT_DISASM_BASE);
           free(program_legacy_bytecode);
 
           // TODO: Move this outside of here.
@@ -3078,16 +3075,14 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
     case FOPEN_SAVE_ROBOT:
     {
-      int allow_extras = mzx_world->conf.disassemble_extras;
-      int base = mzx_world->conf.disassemble_base;
-
       if(value >= 0)
         cur_robot = get_robot_by_id(mzx_world, value);
 
       if(cur_robot)
       {
         disassemble_file(char_value, cur_robot->program_bytecode,
-         cur_robot->program_bytecode_length, allow_extras, base);
+         cur_robot->program_bytecode_length, SAVE_ROBOT_DISASM_EXTRAS,
+         SAVE_ROBOT_DISASM_BASE);
       }
       break;
     }

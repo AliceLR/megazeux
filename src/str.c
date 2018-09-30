@@ -949,10 +949,8 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
     {
       int new_length = 0;
       char *new_source = legacy_convert_file_mem(dest->value,
-       dest->length,
-       &new_length,
-       mzx_world->conf.disassemble_extras,
-       mzx_world->conf.disassemble_base);
+       dest->length, &new_length, SAVE_ROBOT_DISASM_EXTRAS,
+       SAVE_ROBOT_DISASM_BASE);
 
       if(new_source)
       {
