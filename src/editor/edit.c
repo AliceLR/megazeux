@@ -2361,7 +2361,7 @@ static boolean editor_key(context *ctx, int *key)
       {
         if(editor->screen_height == EDIT_SCREEN_NORMAL)
         {
-          editor->screen_height = EDIT_SCREEN_EXTENDED;
+          editor->screen_height = EDIT_SCREEN_MINIMAL;
         }
         else
         {
@@ -3482,7 +3482,7 @@ static void __edit_world(context *parent, boolean reload_curr_file)
   getcwd(editor->current_listening_dir, MAX_PATH);
 
   if(editor_conf->bedit_hhelp)
-    editor->screen_height = EDIT_SCREEN_EXTENDED;
+    editor->screen_height = EDIT_SCREEN_MINIMAL;
   else
     editor->screen_height = EDIT_SCREEN_NORMAL;
 

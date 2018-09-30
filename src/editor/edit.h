@@ -28,7 +28,7 @@ __M_BEGIN_DECLS
 
 #include "../world_struct.h"
 
-#define EDIT_SCREEN_EXTENDED    24
+#define EDIT_SCREEN_MINIMAL     24
 #define EDIT_SCREEN_NORMAL      19
 
 enum editor_mode

@@ -319,7 +319,7 @@ static void draw_menu_minimal(struct edit_menu_subcontext *edit_menu)
   struct board *cur_board = mzx_world->current_board;
   int i;
 
-  fill_line(80, 0, EDIT_SCREEN_EXTENDED, ' ', EC_MAIN_BOX);
+  fill_line(80, 0, EDIT_SCREEN_MINIMAL, ' ', EC_MAIN_BOX);
 
   // Display robot memory where the Alt+H message would usually go.
   if(edit_menu->robot_memory_timer > 0)
@@ -338,9 +338,9 @@ static void draw_menu_minimal(struct edit_menu_subcontext *edit_menu)
 
     robot_mem = (robot_mem + 512) / 1024;
 
-    write_string("Robot mem:       kb", 2, EDIT_SCREEN_EXTENDED, EC_MODE_STR,
+    write_string("Robot mem:       kb", 2, EDIT_SCREEN_MINIMAL, EC_MODE_STR,
      false);
-    write_number(robot_mem, 31, 2+11, EDIT_SCREEN_EXTENDED, 6, 0, 10);
+    write_number(robot_mem, 31, 2+11, EDIT_SCREEN_MINIMAL, 6, 0, 10);
   }
   else
 
@@ -352,7 +352,7 @@ static void draw_menu_minimal(struct edit_menu_subcontext *edit_menu)
     int off = 0;
     char temp;
 
-    write_string("Mod:               ", 2, EDIT_SCREEN_EXTENDED, EC_MODE_STR,
+    write_string("Mod:               ", 2, EDIT_SCREEN_MINIMAL, EC_MODE_STR,
      false);
 
     if(len > 14)
@@ -364,7 +364,7 @@ static void draw_menu_minimal(struct edit_menu_subcontext *edit_menu)
 
     temp = mod_name[off+14];
     mod_name[off+14] = 0;
-    write_string(mod_name+off, 2+5, EDIT_SCREEN_EXTENDED, 31, 1);
+    write_string(mod_name+off, 2+5, EDIT_SCREEN_MINIMAL, 31, 1);
     mod_name[off+14] = temp;
   }
 
@@ -372,18 +372,18 @@ static void draw_menu_minimal(struct edit_menu_subcontext *edit_menu)
   else
   {
     write_string(minimal_help_mode_mesg[edit_menu->mode], 2,
-     EDIT_SCREEN_EXTENDED, EC_OPTION, false);
+     EDIT_SCREEN_MINIMAL, EC_OPTION, false);
   }
 
-  write_string("X/Y:      /     ", 3+21, EDIT_SCREEN_EXTENDED,
+  write_string("X/Y:      /     ", 3+21, EDIT_SCREEN_MINIMAL,
    EC_MODE_STR, false);
 
-  write_number(edit_menu->cursor_x, 31, 3+21+5, EDIT_SCREEN_EXTENDED,
+  write_number(edit_menu->cursor_x, 31, 3+21+5, EDIT_SCREEN_MINIMAL,
    5, false, 10);
-  write_number(edit_menu->cursor_y, 31, 3+21+11, EDIT_SCREEN_EXTENDED,
+  write_number(edit_menu->cursor_y, 31, 3+21+11, EDIT_SCREEN_MINIMAL,
    5, false, 10);
 
-  draw_menu_status(edit_menu, EDIT_SCREEN_EXTENDED);
+  draw_menu_status(edit_menu, EDIT_SCREEN_MINIMAL);
 }
 
 static void edit_menu_draw(subcontext *ctx)
@@ -418,10 +418,19 @@ static boolean edit_menu_mouse(subcontext *ctx, int *key, int button,
 {
   struct edit_menu_subcontext *edit_menu = (struct edit_menu_subcontext *)ctx;
   struct buffer_info *buffer = edit_menu->buffer;
+  int status_y = EDIT_SCREEN_MINIMAL;
+  boolean minimal = true;
 
-  if((y == 20) && (edit_menu->screen_height < 20))
+  if(edit_menu->screen_height == EDIT_SCREEN_NORMAL)
   {
-    if((x >= 1) && (x <= 41))
+    status_y = EDIT_SCREEN_NORMAL + 1;
+    minimal = false;
+  }
+
+  // Mouse actions on buffer row
+  if(y == status_y)
+  {
+    if(!minimal && (x >= 1) && (x <= 41))
     {
       // Select current help menu
       edit_menu->current_menu = menu_positions[x - 1] - '1';
