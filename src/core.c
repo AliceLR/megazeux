@@ -580,6 +580,9 @@ static void core_resume(core_context *root)
   if(ctx_data->functions.resume)
     ctx_data->functions.resume(ctx);
 
+  if(root->context_changed || root->full_exit)
+    return;
+
   ctx_data->current_child = 0;
 
   while(ctx_data->current_child < ctx_data->num_children)
@@ -589,6 +592,9 @@ static void core_resume(core_context *root)
 
     if(sub_data->functions.resume)
       sub_data->functions.resume((context *)sub);
+
+    if(root->context_changed || root->full_exit)
+      return;
 
     ctx_data->current_child++;
   }
@@ -608,6 +614,9 @@ static void core_draw(core_context *root)
   if(ctx_data->functions.draw)
     ctx_data->functions.draw(ctx);
 
+  if(root->context_changed || root->full_exit)
+    return;
+
   ctx_data->current_child = 0;
 
   while(ctx_data->current_child < ctx_data->num_children)
@@ -620,6 +629,9 @@ static void core_draw(core_context *root)
       select_layer(UI_LAYER);
       sub_data->functions.draw((context *)sub);
     }
+
+    if(root->context_changed || root->full_exit)
+      return;
 
     ctx_data->current_child++;
   }
@@ -894,6 +906,11 @@ void core_run(core_context *root)
     }
 
     core_draw(root);
+
+    // Context changed or an exit occurred? Skip the screen update and delay
+    if(root->context_changed || root->full_exit)
+      continue;
+
     update_screen();
 
     // Delay and then handle events.
