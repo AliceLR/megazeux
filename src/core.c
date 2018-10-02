@@ -972,9 +972,7 @@ void core_run(core_context *root)
     update_fps(start_ticks);
 #endif
 
-    // These might have been triggered during the draw.
-    if(!root->full_exit && !root->context_changed)
-      core_update(root);
+    core_update(root);
   }
   while(!root->full_exit && root->ctx_stack_size >= initial_stack_size);
 }
