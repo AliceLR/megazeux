@@ -37,6 +37,7 @@
 #include "../world_format.h"
 
 #include "board.h"
+#include "configure.h"
 #include "robot.h"
 
 #include <string.h>
@@ -388,7 +389,7 @@ void create_blank_world(struct world *mzx_world)
   mzx_world->num_boards = 1;
   mzx_world->num_boards_allocated = 1;
   mzx_world->board_list = cmalloc(sizeof(struct board *));
-  mzx_world->board_list[0] = create_blank_board(&(mzx_world->editor_conf));
+  mzx_world->board_list[0] = create_blank_board(get_editor_config());
   mzx_world->current_board_id = 0;
   mzx_world->current_board = mzx_world->board_list[0];
 

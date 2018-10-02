@@ -25,12 +25,7 @@
 
 __M_BEGIN_DECLS
 
-#include "configure.h"
 #include "world_struct.h"
-
-#ifdef CONFIG_EDITOR
-#include "editor/configure.h"
-#endif
 
 /**
  * The type of a given context. Used to identify particular contexts and to open
@@ -93,17 +88,6 @@ enum framerate_type
   FRAMERATE_MZX_SPEED,      // Delay according to mzx_speed.
 };
 
-/** Contains global MegaZeux information that needs to be readily accessible. */
-struct global_data
-{
-  struct config_info conf;
-  struct config_info conf_backup;
-#ifdef CONFIG_EDITOR
-  struct editor_config_info editor_conf;
-  struct editor_config_info editor_conf_backup;
-#endif
-};
-
 /**
  * Core types.
  * "subcontext" is an alternate type for context that should be used for
@@ -120,7 +104,6 @@ typedef struct core_context core_context;
  */
 struct context
 {
-  struct global_data *data;
   struct world *world;
   context *parent;
   core_context *root;
@@ -212,28 +195,6 @@ CORE_LIBSPEC boolean has_context_changed(context *ctx);
 boolean is_context(context *ctx, enum context_type context_type);
 
 /**
- * Get config information from a particular context.
- */
-
-static inline struct config_info *get_config(context *ctx)
-{
-  // FIXME return &(ctx->data->conf);
-  return &(ctx->world->conf);
-}
-
-#ifdef CONFIG_EDITOR
-/**
- * Get editor config information from a particular context.
- */
-
-static inline struct editor_config_info *get_editor_config(context *ctx)
-{
-  // FIXME return &(ctx->data->editor_conf);
-  return &(ctx->world->editor_conf);
-}
-#endif
-
-/**
  * Sets the framerate mode of the current context. See enum framerate_type for
  * a list of valid values. This function is meaningless for subcontexts.
  *
@@ -251,8 +212,7 @@ void set_context_framerate_mode(context *ctx, enum framerate_type framerate);
  * @return              A core context struct.
  */
 
-CORE_LIBSPEC core_context *core_init(struct world *mzx_world,
- struct global_data *data);
+CORE_LIBSPEC core_context *core_init(struct world *mzx_world);
 
 /**
  * Run MegaZeux using given context stack information.
@@ -300,7 +260,7 @@ CORE_LIBSPEC extern void (*debug_robot_config)(struct world *mzx_world);
 // Network external function pointers.
 
 CORE_LIBSPEC extern void (*check_for_updates)(struct world *mzx_world,
- struct config_info *conf, int is_automatic);
+ boolean is_automatic);
 
 __M_END_DECLS
 

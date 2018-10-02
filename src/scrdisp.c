@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <ctype.h>
 
+#include "configure.h"
 #include "event.h"
 #include "data.h"
 #include "scrdisp.h"
@@ -133,7 +134,7 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
   do
   {
     // If the user wants to mask, and we're in the editor..
-    bool mask = mzx_world->conf.mask_midchars && editing;
+    bool mask = get_config()->mask_midchars && editing;
 
     // Display scroll
     scroll_frame(mzx_world, scroll, pos, mask);

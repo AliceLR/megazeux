@@ -729,7 +729,7 @@ int size_pos(struct world *mzx_world)
       // Set defaults
       case 2:
       {
-        struct editor_config_info *conf = &(mzx_world->editor_conf);
+        struct editor_config_info *conf = get_editor_config();
         conf->viewport_x = results[0];
         conf->viewport_y = results[1];
         conf->viewport_w = results[2];
@@ -984,7 +984,7 @@ void board_info(struct world *mzx_world)
     // Save defaults
     if(dialog_result == 1)
     {
-      struct editor_config_info *conf = &(mzx_world->editor_conf);
+      struct editor_config_info *conf = get_editor_config();
       conf->can_shoot = check_box_results[0];
       conf->can_bomb = check_box_results[1];
       conf->fire_burns_spaces = check_box_results[2];

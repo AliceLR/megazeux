@@ -30,6 +30,7 @@
 #include "event.h"
 #include "graphics.h"
 #include "helpsys.h"
+#include "settings.h"
 #include "world.h"
 #include "world_struct.h"
 
@@ -383,7 +384,6 @@ void create_context(context *ctx, context *parent,
   ctx->root = parent->root;
   ctx->internal_data = ctx_data;
   ctx->world = parent->world;
-  ctx->data = parent->data;
   ctx->parent = NULL;
   ctx_data->context_type = context_type;
   ctx_data->framerate = ctx_spec->framerate_mode;
@@ -435,7 +435,6 @@ CORE_LIBSPEC void create_subcontext(subcontext *sub, context *parent,
   sub->root = root;
   sub->internal_data = sub_data;
   sub->world = parent->world;
-  sub->data = parent->data;
   sub->parent = parent;
   sub_data->is_subcontext = true;
   memcpy(&(sub_data->functions), sub_spec, sizeof(struct context_spec));
@@ -549,13 +548,12 @@ void set_context_framerate_mode(context *ctx, enum framerate_type framerate)
  * it can be used as a parent, but it should not be started like a context.
  */
 
-core_context *core_init(struct world *mzx_world, struct global_data *data)
+core_context *core_init(struct world *mzx_world)
 {
   core_context *root = cmalloc(sizeof(core_context));
   context *ctx = (context *)root;
 
   ctx->root = root;
-  ctx->data = data;
   ctx->world = mzx_world;
   ctx->internal_data = NULL;
 
@@ -664,7 +662,7 @@ static boolean is_on_stack(core_context *root, enum context_type type)
 static boolean allow_help_system(core_context *root)
 {
   struct world *mzx_world = ((context *)root)->world;
-  struct config_info *conf = get_config((context *)root);
+  struct config_info *conf = get_config();
 
   if(is_on_stack(root, CTX_HELP_SYSTEM))
     return false;
@@ -689,7 +687,7 @@ static boolean allow_help_system(core_context *root)
 static boolean allow_configure(core_context *root)
 {
   struct world *mzx_world = ((context *)root)->world;
-  struct config_info *conf = get_config((context *)root);
+  struct config_info *conf = get_config();
 
   if(is_on_stack(root, CTX_CONFIGURE))
     return false;
@@ -848,7 +846,7 @@ static void core_update(core_context *root)
 
 #ifdef CONFIG_ENABLE_SCREENSHOTS
         // Take screenshot.
-        if(get_config(ctx)->allow_screenshots)
+        if(get_config()->allow_screenshots)
           dump_screen();
 #endif
         break;
@@ -863,6 +861,7 @@ static void core_update(core_context *root)
 
 void core_run(core_context *root)
 {
+  struct config_info *conf = get_config();
   context *ctx;
   // FIXME: Because not everything can be converted to use the main loop at
   // once, this function needs to be used from places other than main(). So
@@ -878,7 +877,7 @@ void core_run(core_context *root)
     return;
 
   // FIXME hack
-  enable_f12_hack = get_config((context *)root)->allow_screenshots;
+  enable_f12_hack = conf->allow_screenshots;
 
   do
   {
@@ -948,7 +947,7 @@ void core_run(core_context *root)
     }
 
     // FIXME hack
-    enable_f12_hack = get_config(ctx)->allow_screenshots;
+    enable_f12_hack = conf->allow_screenshots;
 
     start_ticks = get_ticks();
 
@@ -1055,5 +1054,4 @@ void (*debug_robot_config)(struct world *mzx_world);
 
 // Network external function pointers (NULL by default).
 
-void (*check_for_updates)(struct world *mzx_world, struct config_info *conf,
- int is_automatic);
+void (*check_for_updates)(struct world *mzx_world, boolean is_automatic);

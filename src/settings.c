@@ -25,6 +25,7 @@
 #include "event.h"
 #include "game.h"
 #include "graphics.h"
+#include "settings.h"
 #include "window.h"
 #include "world_struct.h"
 
@@ -87,19 +88,17 @@ void game_settings(struct world *mzx_world)
   };
   struct element *elements[10];
 
-  // Prevent previous keys from carrying through.
-  force_release_all_keys();
-
-  set_context(CTX_CONFIGURE);
-
 #ifdef CONFIG_RENDER_GL_PROGRAM
-  if(!strcmp(mzx_world->conf.video_output, "glsl"))
+  struct config_info *conf = get_config();
+  boolean is_glsl = !strcmp(conf->video_output, "glsl");
+
+  if(is_glsl)
   {
     if(!shader_default_text[0])
     {
-      if(mzx_world->conf.gl_scaling_shader[0])
+      if(conf->gl_scaling_shader[0])
         snprintf(shader_default_text, 20, "<conf: %.11s>",
-         mzx_world->conf.gl_scaling_shader);
+         conf->gl_scaling_shader);
 
       else
         strcpy(shader_default_text, "<default: semisoft>");
@@ -124,6 +123,11 @@ void game_settings(struct world *mzx_world)
   sound_volume = audio_get_sound_volume();
   pcs_volume = audio_get_pcs_volume();
 
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
+  set_context(CTX_CONFIGURE);
+
   do
   {
     ok_pos = 6;
@@ -131,7 +135,7 @@ void game_settings(struct world *mzx_world)
     speed_pos = 8;
 
 #ifdef CONFIG_RENDER_GL_PROGRAM
-    if(!strcmp(mzx_world->conf.video_output, "glsl"))
+    if(is_glsl)
     {
       strcpy(shader_path, mzx_res_get_by_id(GLSL_SHADER_SCALER_DIRECTORY));
 

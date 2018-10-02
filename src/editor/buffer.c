@@ -20,6 +20,7 @@
  */
 
 #include "buffer.h"
+#include "configure.h"
 #include "edit.h"
 #include "param.h"
 #include "robo_ed.h"
@@ -478,7 +479,7 @@ void thing_menu(context *ctx, enum thing_menu_id menu_number,
  struct buffer_info *buffer, boolean use_default_color, int x, int y,
  struct undo_history *history)
 {
-  struct editor_config_info *editor_conf = get_editor_config(ctx);
+  struct editor_config_info *editor_conf = get_editor_config();
   struct world *mzx_world = ctx->world;
   struct board *cur_board = mzx_world->current_board;
   enum thing old_id;

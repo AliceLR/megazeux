@@ -33,11 +33,12 @@ __M_BEGIN_DECLS
 struct editor_config_info
 {
   // Board editor options
-  int editor_space_toggles;
-  int bedit_hhelp;
-  int editor_tab_focuses_view;
-  int editor_load_board_assets;
-  int editor_thing_menu_places;
+  boolean board_editor_hide_help;
+  boolean editor_space_toggles;
+  boolean editor_tab_focuses_view;
+  boolean editor_load_board_assets;
+  boolean editor_thing_menu_places;
+  int undo_history_size;
 
   // Defaults for new boards
   int viewport_x;
@@ -68,17 +69,16 @@ struct editor_config_info
   char palette_path[MAX_PATH];
 
   // Palette editor options
-  int pedit_hhelp;
-
-  // Char editor options
-  int undo_history_size;
+  boolean palette_editor_hide_help;
 
   // Robot editor options
-  bool editor_enter_splits;
+  boolean editor_enter_splits;
   char color_codes[32];
-  int color_coding_on;
+  boolean color_coding_on;
   int default_invalid_status;
-  int redit_hhelp;
+  boolean disassemble_extras;
+  int disassemble_base;
+  boolean robot_editor_hide_help;
 
   // Backup options
   int backup_count;
@@ -101,14 +101,16 @@ struct editor_config_info
   int saved_debug_x[NUM_SAVED_POSITIONS];
 };
 
-typedef void (* editor_config_function)(struct editor_config_info *conf,
- char *name, char *value, char *extended_data);
+EDITOR_LIBSPEC void default_editor_config(void);
+EDITOR_LIBSPEC void set_editor_config_from_file(const char *conf_file_name);
+EDITOR_LIBSPEC void set_editor_config_from_command_line(int *argc,
+ char *argv[]);
 
-void set_editor_config_from_file(struct editor_config_info *conf,
- const char *conf_file_name);
-void default_editor_config(struct editor_config_info *conf);
-void set_editor_config_from_command_line(struct editor_config_info *conf,
- int *argc, char *argv[]);
+EDITOR_LIBSPEC void store_editor_config_backup(void);
+EDITOR_LIBSPEC void free_editor_config(void);
+
+struct editor_config_info *get_editor_config(void);
+void load_editor_config_backup(void);
 
 void save_local_editor_config(struct editor_config_info *conf,
  const char *mzx_file_path);

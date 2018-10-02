@@ -329,7 +329,7 @@ static boolean load_savegame_selection(struct game_context *game)
 static void game_draw(context *ctx)
 {
   struct game_context *game = (struct game_context *)ctx;
-  struct config_info *conf = get_config(ctx);
+  struct config_info *conf = get_config();
   struct world *mzx_world = ctx->world;
 
   // No game state change has happened (yet)
@@ -370,7 +370,7 @@ void play_game(context *ctx, boolean *_fade_in);
 static boolean game_idle(context *ctx)
 {
   struct game_context *game = (struct game_context *)ctx;
-  struct config_info *conf = get_config(ctx);
+  struct config_info *conf = get_config();
   struct world *mzx_world = ctx->world;
 
   if(!mzx_world->active)
@@ -478,7 +478,7 @@ static boolean game_idle(context *ctx)
 static boolean game_key(context *ctx, int *key)
 {
   struct game_context *game = (struct game_context *)ctx;
-  struct config_info *conf = get_config(ctx);
+  struct config_info *conf = get_config();
   struct world *mzx_world = ctx->world;
   struct board *cur_board = mzx_world->current_board;
   char keylbl[] = "KEY?";
@@ -734,7 +734,7 @@ void play_game(context *parent, boolean *_fade_in)
 static void title_resume(context *ctx)
 {
   struct game_context *title = (struct game_context *)ctx;
-  struct config_info *conf = get_config(ctx);
+  struct config_info *conf = get_config();
 
   if(title->need_reload)
   {
@@ -759,8 +759,8 @@ static void title_resume(context *ctx)
 
 static boolean title_key(context *ctx, int *key)
 {
+  const struct config_info *conf = get_config();
   struct game_context *title = (struct game_context *)ctx;
-  struct config_info *conf = get_config(ctx);
   struct world *mzx_world = ctx->world;
 
   int key_status = get_key_status(keycode_internal_wrt_numlock, *key);
@@ -855,7 +855,7 @@ static boolean title_key(context *ctx, int *key)
         if(mzx_world->active)
           audio_set_module_volume(0);
 
-        check_for_updates(mzx_world, conf, 0);
+        check_for_updates(mzx_world, false);
 
         audio_set_pcs_volume(current_pcs_vol);
         audio_set_music_volume(current_music_vol);
@@ -962,7 +962,7 @@ static boolean title_key(context *ctx, int *key)
 
 void title_screen(context *parent)
 {
-  struct config_info *conf = get_config(parent);
+  struct config_info *conf = get_config();
   struct game_context *title;
   struct context_spec spec;
 
@@ -975,7 +975,6 @@ void title_screen(context *parent)
   {
     struct game_context dummy;
     dummy.ctx.world = parent->world;
-    dummy.ctx.data = parent->data;
 
     if(load_world_gameplay(&dummy, curr_file))
     {

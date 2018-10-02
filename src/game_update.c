@@ -848,7 +848,7 @@ void draw_world(context *ctx, boolean is_title)
 {
   struct world *mzx_world = ctx->world;
   struct board *cur_board = mzx_world->current_board;
-  struct config_info *conf = get_config(ctx);
+  struct config_info *conf = get_config();
   Uint32 viewport_layer;
   int time_remaining;
   int top_x;

@@ -548,9 +548,9 @@ err_out:
   return ret;
 }
 
-static void __check_for_updates(struct world *mzx_world, struct config_info *conf,
- int is_automatic)
+static void __check_for_updates(struct world *mzx_world, boolean is_automatic)
 {
+  struct config_info *conf = get_config();
   int cur_host;
   char *update_host;
   bool try_next_host = true;

@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2008 Alistair John Strachan <alistair@devzero.co.uk>
+ * Copyright (C) 2018 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,21 +17,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "run_stubs.h"
+#ifndef __GAME_SETTINGS_H
+#define __GAME_SETTINGS_H
 
-#ifdef CONFIG_EDITOR
-bool is_editor(void) { return false; }
-void editor_init(void) { }
-void init_macros(void) { }
+#include "compat.h"
 
-void default_editor_config(void) {}
-void set_editor_config_from_file(const char *conf_file_name) {}
-void set_editor_config_from_command_line(int *argc, char *argv[]) {}
-void store_editor_config_backup(void) {}
-void free_editor_config(void) {}
-#endif
+__M_BEGIN_DECLS
 
-#ifdef CONFIG_UPDATER
-bool updater_init(int argc, char *argv[]) { return true; }
-bool is_updater(void) { return false; }
-#endif
+#include "world_struct.h"
+
+void game_settings(struct world *mzx_world);
+
+__M_END_DECLS
+
+#endif // __GAME_SETTINGS_H

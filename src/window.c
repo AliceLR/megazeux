@@ -40,6 +40,7 @@
 #endif
 
 #include "board.h"
+#include "configure.h" // TODO for help file only
 #include "const.h"
 #include "core.h"
 #include "counter.h"
@@ -1170,7 +1171,7 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
 #ifdef CONFIG_HELPSYS
       case IKEY_F1: // F1
       {
-        if(!mzx_world->conf.standalone_mode ||
+        if(!get_config()->standalone_mode ||
          get_counter(mzx_world, "HELP_MENU", 0))
         {
           // FIXME context

@@ -74,7 +74,6 @@ core_cobjs := \
   ${core_obj}/board.o             \
   ${core_obj}/caption.o           \
   ${core_obj}/configure.o         \
-  ${core_obj}/configure_ed.o      \
   ${core_obj}/core.o              \
   ${core_obj}/counter.o           \
   ${core_obj}/data.o              \
@@ -102,6 +101,7 @@ core_cobjs := \
   ${core_obj}/robot.o             \
   ${core_obj}/run_robot.o         \
   ${core_obj}/scrdisp.o           \
+  ${core_obj}/settings.o          \
   ${core_obj}/sprite.o            \
   ${core_obj}/str.o               \
   ${core_obj}/util.o              \

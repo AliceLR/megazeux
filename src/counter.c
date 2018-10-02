@@ -26,8 +26,8 @@
 #include <math.h>
 #include <ctype.h>
 
+#include "configure.h"
 #include "counter.h"
-
 #include "data.h"
 #include "error.h"
 #include "event.h"
@@ -1750,8 +1750,7 @@ static void exit_game_write(struct world *mzx_world,
 static void play_game_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
-  struct config_info *conf = &mzx_world->conf;
-  if(value && conf->standalone_mode)
+  if(value && get_config()->standalone_mode)
   {
     // Signal the main loop that the game state should change.
     mzx_world->change_game_state = CHANGE_STATE_PLAY_GAME_ROBOTIC;

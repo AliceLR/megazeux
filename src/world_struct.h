@@ -28,11 +28,6 @@ __M_BEGIN_DECLS
 #include "robot_struct.h"
 #include "counter_struct.h"
 #include "sprite_struct.h"
-#include "configure.h"
-
-#ifdef CONFIG_EDITOR
-#include "editor/configure.h"
-#endif
 
 #include "util.h"
 #include "audio/sfx.h"
@@ -219,13 +214,6 @@ struct world
   int mzx_speed;
   // If we can change the speed from the F2 menu.
   int lock_speed;
-
-  // FIXME these need to be removed.
-  struct config_info conf;
-#ifdef CONFIG_EDITOR
-  struct editor_config_info editor_conf;
-  struct editor_config_info editor_conf_backup;
-#endif
 
   // Editor specific state flags.
   boolean editing;

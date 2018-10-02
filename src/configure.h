@@ -43,12 +43,12 @@ enum update_auto_check_mode
 struct config_info
 {
   // Video options
-  bool fullscreen;
+  boolean fullscreen;
   int resolution_width;
   int resolution_height;
   int window_width;
   int window_height;
-  bool allow_resize;
+  boolean allow_resize;
   char video_output[16];
   int force_bpp;
   enum ratio_type video_ratio;
@@ -67,27 +67,26 @@ struct config_info
   int music_volume;
   int sam_volume;
   int pc_speaker_volume;
-  int music_on;
-  int pc_speaker_on;
+  boolean music_on;
+  boolean pc_speaker_on;
 
   // Game options
   char startup_path[256];
   char startup_file[256];
   char default_save_name[256];
   int mzx_speed;
-  int disassemble_extras;
-  int disassemble_base;
-  int startup_editor;
-  int standalone_mode;
-  int no_titlescreen;
+  boolean startup_editor;
+  boolean standalone_mode;
+  boolean no_titlescreen;
+  boolean system_mouse;
 
-  // Misc options
-  int mask_midchars;
-  bool system_mouse;
+  // Editor options
+  // TODO: two places outside of the editor currently require access to this.
+  boolean mask_midchars;
 
   // Network layer options
 #ifdef CONFIG_NETWORK
-  bool network_enabled;
+  boolean network_enabled;
   char socks_host[256];
   int socks_port;
 #endif
@@ -100,19 +99,14 @@ struct config_info
 #endif
 };
 
-typedef void (* config_function)(struct config_info *conf,
- char *name, char *value, char *extended_data);
+CORE_LIBSPEC struct config_info *get_config(void);
+CORE_LIBSPEC void default_config(void);
+CORE_LIBSPEC void set_config_from_file(const char *conf_file_name);
+CORE_LIBSPEC void set_config_from_file_startup(const char *conf_file_name);
+CORE_LIBSPEC void set_config_from_command_line(int *argc, char *argv[]);
+CORE_LIBSPEC void free_config(void);
 
-CORE_LIBSPEC void set_config_from_file(struct config_info *conf,
- const char *conf_file_name);
-CORE_LIBSPEC void set_config_from_file_startup(struct config_info *conf,
- const char *conf_file_name);
-CORE_LIBSPEC void default_config(struct config_info *conf);
-CORE_LIBSPEC void set_config_from_command_line(struct config_info *conf,
- int *argc, char *argv[]);
-CORE_LIBSPEC void free_config(struct config_info *conf);
-
-typedef int (* find_change_option)(void *conf, char *name, char *value,
+typedef int (*find_change_option)(void *conf, char *name, char *value,
  char *extended_data);
 
 #ifdef CONFIG_EDITOR
@@ -123,10 +117,6 @@ CORE_LIBSPEC void __set_config_from_command_line(
  find_change_option find_change_handler, void *conf, int *argc, char *argv[]);
 
 #endif // CONFIG_EDITOR
-
-// FIXME configure_ed.c
-#include "world_struct.h"
-void game_settings(struct world *mzx_world);
 
 __M_END_DECLS
 

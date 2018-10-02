@@ -2489,7 +2489,7 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
 
   if(stat(config_file_name, &file_info) >= 0)
   {
-    set_config_from_file(&(mzx_world->conf), config_file_name);
+    set_config_from_file(config_file_name);
   }
 
   // Some initial setting(s)
@@ -2956,7 +2956,7 @@ __editor_maybe_static void default_global_data(struct world *mzx_world)
   scroll_color = 15;
 
   mzx_world->lock_speed = 0;
-  mzx_world->mzx_speed = mzx_world->conf.mzx_speed;
+  mzx_world->mzx_speed = get_config()->mzx_speed;
 
   assert(mzx_world->input_file == NULL);
   assert(mzx_world->output_file == NULL);

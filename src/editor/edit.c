@@ -47,13 +47,13 @@
 #include "board.h"
 #include "buffer.h"
 #include "char_ed.h"
+#include "configure.h"
 #include "debug.h"
 #include "edit.h"
 #include "edit_di.h"
 #include "edit_menu.h"
 #include "fill.h"
 #include "graphics.h"
-#include "macro.h"
 #include "pal_ed.h"
 #include "param.h"
 #include "robo_debug.h"
@@ -174,36 +174,6 @@ struct editor_context
   boolean reload_after_testing;
 };
 
-// TODO merge into configure.c
-void free_editor_config(struct world *mzx_world)
-{
-  struct editor_config_info *editor_conf = &(mzx_world->editor_conf);
-  int i;
-
-  // Extended Macros
-  if(editor_conf->extended_macros)
-  {
-    for(i = 0; i < editor_conf->num_extended_macros; i++)
-      free_macro(editor_conf->extended_macros[i]);
-
-    free(editor_conf->extended_macros);
-    editor_conf->extended_macros = NULL;
-  }
-}
-
-// TODO merge into configure.c
-void load_editor_config(struct world *mzx_world, int *argc, char *argv[])
-{
-  struct editor_config_info *editor_conf = &(mzx_world->editor_conf);
-  default_editor_config(editor_conf);
-  set_editor_config_from_file(editor_conf, mzx_res_get_by_id(CONFIG_TXT));
-  set_editor_config_from_command_line(editor_conf, argc, argv);
-
-  // Backup the config
-  memcpy(&(mzx_world->editor_conf_backup), editor_conf,
-   sizeof(struct editor_config_info));
-}
-
 /**
  * Wrapper for reload_world that also loads world-specific editor config files.
  */
@@ -212,8 +182,6 @@ static boolean editor_reload_world(struct editor_context *editor,
  const char *file)
 {
   struct world *mzx_world = ((context *)editor)->world;
-  struct editor_config_info *editor_conf = get_editor_config((context *)editor);
-  struct editor_config_info *backup = &(mzx_world->editor_conf_backup); // FIXME
 
   size_t file_name_len = strlen(file) - 4;
   char config_file_name[MAX_PATH];
@@ -223,14 +191,8 @@ static boolean editor_reload_world(struct editor_context *editor,
   if(!reload_world(mzx_world, file, &ignore))
     return false;
 
-  // Part 1: Reset as much of the config file as we can.
-  // TODO this part probably ought to be handled by configure.c
-
-  // We don't want to lose these.  If they're any different, the backup
-  // version has already been freed/reallocated, so just copy the pointer.
-  backup->extended_macros = editor_conf->extended_macros;
-
-  memcpy(editor_conf, backup, sizeof(struct editor_config_info));
+  // Part 1: Reset the config file.
+  load_editor_config_backup();
 
   // Part 2: Now load the new world.editor.cnf.
 
@@ -238,7 +200,7 @@ static boolean editor_reload_world(struct editor_context *editor,
   strncpy(config_file_name + file_name_len, ".editor.cnf", 12);
 
   if(stat(config_file_name, &file_info) >= 0)
-    set_editor_config_from_file(editor_conf, config_file_name);
+    set_editor_config_from_file(config_file_name);
 
   edit_menu_show_board_mod(editor->edit_menu);
   return true;
@@ -457,7 +419,7 @@ static void fix_mod(struct editor_context *editor)
 
 static void set_current_board(struct editor_context *editor, int new_board)
 {
-  struct editor_config_info *editor_conf = get_editor_config((context *)editor);
+  struct editor_config_info *editor_conf = get_editor_config();
   struct world *mzx_world = ((context *)editor)->world;
   struct board *cur_board;
 
@@ -502,7 +464,7 @@ static void set_current_board(struct editor_context *editor, int new_board)
 static void move_edit_cursor(struct editor_context *editor,
  int move_x, int move_y)
 {
-  struct editor_config_info *editor_conf = get_editor_config((context *)editor);
+  struct editor_config_info *editor_conf = get_editor_config();
   struct world *mzx_world = ((context *)editor)->world;
   struct board *cur_board = mzx_world->current_board;
   struct buffer_info *buffer = &(editor->buffer);
@@ -1123,8 +1085,8 @@ static void mouse_draw(struct editor_context *editor, int x, int y)
 
 static boolean editor_idle(context *ctx)
 {
+  struct editor_config_info *editor_conf = get_editor_config();
   struct editor_context *editor = (struct editor_context *)ctx;
-  struct editor_config_info *editor_conf = get_editor_config(ctx);
   struct world *mzx_world = ctx->world;
 
   find_player(mzx_world);
@@ -1265,8 +1227,8 @@ static boolean editor_mouse(context *ctx, int *key, int button, int x, int y)
 
 static boolean editor_key(context *ctx, int *key)
 {
+  struct editor_config_info *editor_conf = get_editor_config();
   struct editor_context *editor = (struct editor_context *)ctx;
-  struct editor_config_info *editor_conf = get_editor_config(ctx);
   struct buffer_info *buffer = &(editor->buffer);
   struct block_info *block = &(editor->block);
   struct world *mzx_world = ctx->world;
@@ -3474,14 +3436,14 @@ static void __edit_world(context *parent, boolean reload_curr_file)
   struct block_info *block = &(editor->block);
   struct context_spec spec;
 
-  struct editor_config_info *editor_conf = get_editor_config((context *)parent);
+  struct editor_config_info *editor_conf = get_editor_config();
   struct world *mzx_world = ((context *)parent)->world;
 
   struct stat stat_res;
 
   getcwd(editor->current_listening_dir, MAX_PATH);
 
-  if(editor_conf->bedit_hhelp)
+  if(editor_conf->board_editor_hide_help)
     editor->screen_height = EDIT_SCREEN_MINIMAL;
   else
     editor->screen_height = EDIT_SCREEN_NORMAL;

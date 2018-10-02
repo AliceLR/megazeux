@@ -32,6 +32,7 @@
 #include "../util.h"
 #include "../window.h"
 
+#include "configure.h"
 #include "graphics.h"
 #include "pal_ed.h"
 #include "window.h"
@@ -2039,7 +2040,7 @@ static void pal_ed_destroy(context *ctx)
 void palette_editor(context *parent)
 {
   struct pal_ed_context *pal_ed = ccalloc(1, sizeof(struct pal_ed_context));
-  struct editor_config_info *editor_conf = get_editor_config(parent);
+  struct editor_config_info *editor_conf = get_editor_config();
   int smzx_mode = get_screen_mode();
   struct context_spec spec;
 
@@ -2075,7 +2076,7 @@ void palette_editor(context *parent)
 
   if(startup == false)
   {
-    minimal_help = editor_conf->pedit_hhelp;
+    minimal_help = editor_conf->palette_editor_hide_help;
     startup = true;
   }
 

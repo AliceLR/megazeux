@@ -46,6 +46,7 @@
 
 #include "char_ed.h"
 #include "clipboard.h"
+#include "configure.h"
 #include "edit.h"
 #include "param.h"
 #include "macro.h"
@@ -686,6 +687,7 @@ static void trim_whitespace(char *buffer, int length)
 
 static int update_current_line(struct robot_state *rstate)
 {
+  struct editor_config_info *editor_conf = get_editor_config();
   char bytecode_buffer[COMMAND_BUFFER_LEN];
   char error_buffer[COMMAND_BUFFER_LEN];
   char new_command_buffer[COMMAND_BUFFER_LEN];
@@ -719,8 +721,8 @@ static int update_current_line(struct robot_state *rstate)
     int line_text_length;
 
     disassemble_line(bytecode_buffer, &next, new_command_buffer,
-     error_buffer, &line_text_length, rstate->include_ignores,
-     arg_types, &arg_count, rstate->disassemble_base);
+     error_buffer, &line_text_length, editor_conf->disassemble_extras,
+     arg_types, &arg_count, editor_conf->disassemble_base);
 
     if(line_text_length < 241)
     {
@@ -1029,6 +1031,7 @@ err_cancel_expansion:
 
 static int execute_named_macro(struct robot_state *rstate, char *macro_name)
 {
+  struct editor_config_info *editor_conf = get_editor_config();
   char *line_pos, *line_pos_old, *lone_name;
   struct macro_type *param_type = NULL;
   struct ext_macro *macro_src;
@@ -1043,7 +1046,7 @@ static int execute_named_macro(struct robot_state *rstate, char *macro_name)
   lone_name[line_pos - macro_name] = 0;
 
   // see if such a macro exists
-  macro_src = find_macro(&rstate->mzx_world->editor_conf, lone_name, &next);
+  macro_src = find_macro(editor_conf, lone_name, &next);
   free(lone_name);
 
   // it doesn't, carefully abort
@@ -1486,6 +1489,7 @@ static void export_block(struct robot_state *rstate, int region_default)
 
 static void import_block(struct world *mzx_world, struct robot_state *rstate)
 {
+  struct editor_config_info *editor_conf = get_editor_config();
   const char *txt_ext[] = { ".TXT", NULL, NULL };
   char import_name[MAX_PATH];
   char line_buffer[256];
@@ -1546,8 +1550,8 @@ static void import_block(struct world *mzx_world, struct robot_state *rstate)
          {
            int new_line = disassemble_line(current_robot_pos, &next,
             line_buffer, error_buffer, &line_text_length,
-            mzx_world->conf.disassemble_extras, NULL, NULL,
-            mzx_world->conf.disassemble_base);
+            editor_conf->disassemble_extras, NULL, NULL,
+            editor_conf->disassemble_base);
 
            if(new_line)
              add_line(rstate, -1);
@@ -1579,9 +1583,8 @@ static void import_block(struct world *mzx_world, struct robot_state *rstate)
        NULL, NULL);
 
       legacy_disassemble_command(bytecode_buffer, command_buffer,
-       &disasm_length, 256,
-       mzx_world->conf.disassemble_extras,
-       mzx_world->conf.disassemble_base
+       &disasm_length, 256, editor_conf->disassemble_extras,
+       editor_conf->disassemble_base
       );
 
       command_buffer[disasm_length] = 0;
@@ -2354,13 +2357,13 @@ exit_free:
 
 static void execute_numbered_macro(struct robot_state *rstate, int num)
 {
-  struct world *mzx_world = rstate->mzx_world;
+  struct editor_config_info *editor_conf = get_editor_config();
   struct ext_macro *macro_src;
   char macro_name[32];
   int next;
 
   sprintf(macro_name, "%d", num);
-  macro_src = find_macro(&mzx_world->editor_conf, macro_name, &next);
+  macro_src = find_macro(editor_conf, macro_name, &next);
 
   if(macro_src)
     execute_macro(rstate, macro_src);
@@ -2516,11 +2519,12 @@ static inline int validate_lines(struct robot_state *rstate, int show_none)
 static void display_robot_line(struct robot_state *rstate,
  struct robot_line *current_rline, int y)
 {
+  struct editor_config_info *editor_conf = get_editor_config();
   int i;
   int x = 2;
   int current_color, current_arg;
-  int color_code = rstate->color_code;
-  char *color_codes = rstate->ccodes;
+  boolean color_coding_on = editor_conf->color_coding_on;
+  char *color_codes = editor_conf->color_codes;
   char temp_char;
   char temp_buffer[COMMAND_BUFFER_LEN];
   char *line_pos = current_rline->line_text;
@@ -2555,13 +2559,13 @@ static void display_robot_line(struct robot_state *rstate,
       use_mask = 0;
       arg_length = 0;
 
-      if(!color_code)
+      if(!color_coding_on)
       {
         current_color =
          combine_colors(color_codes[S_STRING + 1], bg_color);
       }
 
-      if(color_code)
+      if(color_coding_on)
         current_color = combine_colors(color_codes[S_CMD + 1], bg_color);
 
       arg_length = strcspn(line_pos, " ") + 1;
@@ -2598,7 +2602,7 @@ static void display_robot_line(struct robot_state *rstate,
 
           chars_offset = 0;
 
-          use_mask = rstate->mzx_world->conf.mask_midchars;
+          use_mask = get_config()->mask_midchars;
         }
         else
 
@@ -2621,7 +2625,7 @@ static void display_robot_line(struct robot_state *rstate,
         }
         else
         {
-          if(color_code)
+          if(color_coding_on)
           {
             current_color =
              combine_colors(color_codes[current_arg + 1], bg_color);
@@ -2974,6 +2978,7 @@ static int validate_lines(struct robot_state *rstate, int show_none)
 
 void robot_editor(struct world *mzx_world, struct robot *cur_robot)
 {
+  struct editor_config_info *editor_conf = get_editor_config();
   int exit;
   int key;
   int i;
@@ -3012,16 +3017,12 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
   rstate.current_rline = &base;
   rstate.total_lines = 0;
   rstate.max_size = max_size;
-  rstate.include_ignores = mzx_world->conf.disassemble_extras;
-  rstate.disassemble_base = mzx_world->conf.disassemble_base;
-  rstate.ccodes = mzx_world->editor_conf.color_codes;
   rstate.mark_mode = 0;
   rstate.mark_start = -1;
   rstate.mark_end = -1;
   rstate.mark_start_rline = NULL;
   rstate.mark_end_rline = NULL;
   rstate.show_line_numbers = 0;
-  rstate.color_code = mzx_world->editor_conf.color_coding_on;
   rstate.current_x = 0;
   rstate.active_macro = NULL;
   rstate.base = &base;
@@ -3037,13 +3038,13 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
 #else
   rstate.size = 2;
   rstate.default_invalid =
-   (enum validity_types)(mzx_world->editor_conf.default_invalid_status);
+   (enum validity_types)(editor_conf->default_invalid_status);
   base.line_bytecode_length = -1;
 #endif
 
   base.previous = NULL;
 
-  current_line_color = combine_colors(rstate.ccodes[0], bg_color);
+  current_line_color = combine_colors(editor_conf->color_codes[0], bg_color);
 
 #ifdef CONFIG_DEBYTECODE
 
@@ -3083,8 +3084,9 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
   do
   {
     new_line = disassemble_line(current_robot_pos, &next,
-     text_buffer, error_buffer, &line_text_length, rstate.include_ignores,
-     arg_types, &arg_count, rstate.disassemble_base);
+     text_buffer, error_buffer, &line_text_length,
+     editor_conf->disassemble_extras, arg_types, &arg_count,
+     editor_conf->disassemble_base);
 
     if(new_line)
     {
@@ -3135,7 +3137,7 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
   save_screen();
   fill_line(80, 0, 0, top_char, top_color);
 
-  if(mzx_world->editor_conf.redit_hhelp)
+  if(editor_conf->robot_editor_hide_help)
   {
     rstate.scr_hide_mode = 1;
     write_string(key_help_hide, 0, 24, bottom_text_color, 0);
@@ -3446,7 +3448,7 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
           block_action(&rstate);
 
         // Split line into two
-        else if(rstate.current_x && mzx_world->editor_conf.editor_enter_splits)
+        else if(rstate.current_x && editor_conf->editor_enter_splits)
         {
           char *command_buffer = rstate.command_buffer;
           char line_remainder[241];
@@ -4014,7 +4016,7 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
             struct ext_macro *macro_src;
             int next;
 
-            macro_src = find_macro(&mzx_world->editor_conf, macro_line, &next);
+            macro_src = find_macro(editor_conf, macro_line, &next);
 
             if(macro_src)
               execute_macro(&rstate, macro_src);
@@ -4063,7 +4065,8 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
   pop_context();
 }
 
-void init_macros(struct world *mzx_world)
+void init_macros(void)
 {
-  memcpy(macros, mzx_world->editor_conf.default_macros, 5 * 64);
+  struct editor_config_info *editor_conf = get_editor_config();
+  memcpy(macros, editor_conf->default_macros, 5 * 64);
 }

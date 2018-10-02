@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include "board.h"
+#include "configure.h"
 #include "window.h"
 
 #include "../board.h"
@@ -1103,7 +1104,7 @@ int add_board(struct world *mzx_world, int current)
   }
 
   mzx_world->num_boards++;
-  new_board = create_blank_board(&(mzx_world->editor_conf));
+  new_board = create_blank_board(get_editor_config());
   mzx_world->board_list[current] = new_board;
   memcpy(new_board->board_name, name, BOARD_NAME_SIZE);
 

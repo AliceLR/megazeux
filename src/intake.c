@@ -20,6 +20,7 @@
 #include <string.h>
 #include <ctype.h>
 
+#include "configure.h"
 #include "event.h"
 #include "intake.h"
 #include "graphics.h"
@@ -60,11 +61,11 @@ int intake(struct world *mzx_world, char *string, int max_len,
  int x, int y, char color, enum intake_exit_type exit_type, int *return_x_pos,
  boolean robo_intk, char *macro)
 {
+  int use_mask = get_config()->mask_midchars;
   int currx, curr_len, macro_position = -1;
   int done = 0, place = 0;
   char cur_char = 0;
   char temp_char;
-  int use_mask = mzx_world->conf.mask_midchars;
   int mouse_press;
   int key;
 

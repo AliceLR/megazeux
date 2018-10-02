@@ -29,6 +29,7 @@
 #include "../window.h"
 #include "../world.h"
 
+#include "configure.h"
 #include "graphics.h"
 #include "undo.h"
 #include "window.h"
@@ -1112,7 +1113,7 @@ int char_editor(struct world *mzx_world)
   force_release_all_keys();
 
   // Prepare the history
-  h = construct_charset_undo_history(mzx_world->editor_conf.undo_history_size);
+  h = construct_charset_undo_history(get_editor_config()->undo_history_size);
 
   // Make sure the copy buffer is in a usable format
   change_copy_buffer_mode(screen_mode);

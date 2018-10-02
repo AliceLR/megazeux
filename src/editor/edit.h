@@ -48,9 +48,6 @@ enum cursor_mode
   CURSOR_MZM_PLACE
 };
 
-EDITOR_LIBSPEC void free_editor_config(struct world *mzx_world);
-EDITOR_LIBSPEC void load_editor_config(struct world *mzx_world, int *argc,
- char *argv[]);
 EDITOR_LIBSPEC void editor_init(void);
 EDITOR_LIBSPEC bool is_editor(void);
 
