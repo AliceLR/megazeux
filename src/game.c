@@ -64,6 +64,54 @@ struct game_context
   boolean is_title;
 };
 
+// As nice as this would be to put in the title context, it's annoying
+// to get the context to clear_intro_mesg right now.
+static unsigned int intro_mesg_timer = MESG_TIMEOUT;
+
+/**
+ * Activate the title screen intro message.
+ */
+
+static void enable_intro_mesg(void)
+{
+  intro_mesg_timer = MESG_TIMEOUT;
+}
+
+/**
+ * Disable the title screen intro message.
+ */
+
+void clear_intro_mesg(void)
+{
+  intro_mesg_timer = 0;
+}
+
+/**
+ * Draw the title screen intro message.
+ */
+
+void draw_intro_mesg(struct world *mzx_world)
+{
+  static const char mesg1[] = "F1: Help   ";
+  static const char mesg2[] = "Enter: Menu   Ctrl-Alt-Enter: Fullscreen";
+  struct game_context *title;
+
+  if(intro_mesg_timer == 0)
+    return;
+
+  intro_mesg_timer--;
+
+  if(mzx_world->help_file)
+  {
+    write_string(mesg1, 14, 24, scroll_color, 0);
+    write_string(mesg2, 25, 24, scroll_color, 0);
+  }
+  else
+  {
+    write_string(mesg2, 20, 24, scroll_color, 0);
+  }
+}
+
 /**
  * Load a module for gameplay.
  */

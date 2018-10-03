@@ -37,6 +37,9 @@ CORE_LIBSPEC void load_board_module(struct world *mzx_world);
 boolean load_game_module(struct world *mzx_world, char *filename,
  boolean fail_if_same);
 
+void clear_intro_mesg(void);
+void draw_intro_mesg(struct world *mzx_world);
+
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC void play_game(context *parent, boolean *_fade_in);
 #endif

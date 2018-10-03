@@ -31,9 +31,6 @@ __M_BEGIN_DECLS
 
 CORE_LIBSPEC void find_player(struct world *mzx_world);
 
-void enable_intro_mesg(void);
-void clear_intro_mesg(void);
-void draw_intro_mesg(struct world *mzx_world);
 void set_mesg(struct world *mzx_world, const char *str);
 void set_mesg_direct(struct board *src_board, const char *str);
 
