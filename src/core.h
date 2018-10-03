@@ -38,7 +38,6 @@ __M_BEGIN_DECLS
 enum context_type
 {
   // Core contexts.
-  CTX_DEFAULT               = 0,
   CTX_TITLE_SCREEN          = -1,
   CTX_MAIN                  = 72,
   CTX_PLAY_GAME             = 91,
@@ -114,6 +113,7 @@ struct context
  * NULL or zero by default. A return value of true to an update function will
  * treat the indicated input type(s) as having been fully handled.
  *
+ * resume           Optional function called when this context enters focus.
  * draw             Optional function to draw this context every frame.
  * idle             Update function called every frame (key and mouse).
  * key              Update function called to handle a keypress (key).

@@ -160,7 +160,6 @@ static const char *get_ctx_name(enum context_type id)
   switch(id)
   {
     // Core contexts.
-    case CTX_DEFAULT:           return "(default)";
     case CTX_TITLE_SCREEN:      return "Title screen";
     case CTX_MAIN:              return "(help main page)";
     case CTX_PLAY_GAME:         return "Gameplay";
