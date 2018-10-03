@@ -34,22 +34,29 @@
 #include "world.h"
 #include "world_struct.h"
 
-// Contains context stack information.
-// Used as a context to help create the first actual context.
+struct context_stack
+{
+  context **contents;
+  int alloc;
+  int size;
+  int pos;
+};
+
+/**
+ * Used as a context to help create the first actual context.
+ * Stores the context stack.
+ */
+
 struct core_context
 {
   context ctx;
-  context **ctx_stack;
-  int ctx_stack_alloc;
-  int ctx_stack_size;
   boolean full_exit;
   boolean context_changed;
+  struct context_stack stack;
 };
 
 /**
  * Contains internal context data used to run contexts.
- * Subcontexts also use this, though they take functions that use subcontext *.
- * To avoid warnings, internally cast to functions that take context *.
  */
 
 struct context_data
@@ -58,10 +65,7 @@ struct context_data
   boolean is_subcontext;
   enum context_type context_type;
   enum framerate_type framerate;
-  subcontext **children;
-  int current_child;
-  int num_children;
-  int num_children_alloc;
+  struct context_stack stack;
   struct context_spec functions;
 };
 
@@ -276,13 +280,13 @@ static void __print_core_stack(context *_ctx, const char *file, int line)
   fprintf(stderr, "CONTEXT STACK    | Res Drw Idl Key Clk Drg Dst | Fr. \n");
   fprintf(stderr, "-----------------|-----------------------------|-----\n");
 
-  for(i = root->ctx_stack_size - 1; i >= 0; i--)
+  for(i = root->stack.size - 1; i >= 0; i--)
   {
-    ctx_data = root->ctx_stack[i]->internal_data;
+    ctx_data = root->stack.contents[i]->internal_data;
 
-    for(i2 = ctx_data->num_children - 1; i2 >= 0; i2--)
+    for(i2 = ctx_data->stack.size - 1; i2 >= 0; i2--)
     {
-      sub_data = ctx_data->children[i2]->internal_data;
+      sub_data = ctx_data->stack.contents[i2]->internal_data;
       print_ctx_line(sub_data);
     }
 
@@ -295,45 +299,39 @@ static void __print_core_stack(context *_ctx, const char *file, int line)
 /**
  * Add an element to a stack
  */
-static void add_stack(void ***_stack, int *_num, int *_alloc, void *add)
+static void add_stack(struct context_stack *stack, context *add)
 {
-  void **stack = *_stack;
-  int num = *_num;
-  int alloc = *_alloc;
-
-  if(num >= alloc)
+  if(stack->size >= stack->alloc)
   {
-    if(alloc == 0)
-      alloc = 8;
+    if(stack->alloc == 0)
+      stack->alloc = 8;
 
-    while(num >= alloc)
-      alloc *= 2;
+    while(stack->size >= stack->alloc)
+      stack->alloc *= 2;
 
-    stack = crealloc(stack, alloc * sizeof(void *));
-    *_stack = stack;
-    *_alloc = alloc;
+    stack->contents = crealloc(stack->contents, stack->alloc * sizeof(void *));
   }
 
-  stack[num] = add;
-  *_num = (num + 1);
+  stack->contents[stack->size] = add;
+  stack->size++;
 }
 
 /**
  * Remove an element from a stack.
  */
-static int remove_stack(void **stack, int *_num, void *del)
+static int remove_stack(struct context_stack *stack, context *del)
 {
-  int num = *_num;
   int i;
 
-  for(i = num - 1; i >= 0; i--)
+  for(i = stack->size - 1; i >= 0; i--)
   {
-    if(stack[i] == del)
+    if(stack->contents[i] == del)
     {
-      if(i < num - 1)
-        memmove(stack + i, stack + i + 1, num - i - 1);
+      if(i < stack->size - 1)
+        memmove(stack->contents + i, stack->contents + i + 1,
+         stack->size - i - 1);
 
-      *_num = (num - 1);
+      stack->size--;
       return i;
     }
   }
@@ -389,15 +387,12 @@ void create_context(context *ctx, context *parent,
   ctx_data->context_type = context_type;
   ctx_data->framerate = ctx_spec->framerate_mode;
   ctx_data->is_subcontext = false;
-  ctx_data->children = NULL;
-  ctx_data->num_children = 0;
-  ctx_data->num_children_alloc = 0;
+  memset(&(ctx_data->stack), 0, sizeof(struct context_stack));
   memcpy(&(ctx_data->functions), ctx_spec, sizeof(struct context_spec));
 
   // Add the new context to the stack.
   root = parent->root;
-  add_stack((void ***) &(root->ctx_stack),
-   &(root->ctx_stack_size), &(root->ctx_stack_alloc), ctx);
+  add_stack(&(root->stack), ctx);
 
   root->context_changed = true;
 }
@@ -441,8 +436,7 @@ CORE_LIBSPEC void create_subcontext(subcontext *sub, context *parent,
   memcpy(&(sub_data->functions), sub_spec, sizeof(struct context_spec));
 
   // Add the subcontext to the parent's stack.
-  add_stack((void ***) &(parent_data->children),
-   &(parent_data->num_children), &(parent_data->num_children_alloc), sub);
+  add_stack(&(parent_data->stack), sub);
 }
 
 /**
@@ -464,18 +458,18 @@ void destroy_context(context *ctx)
     // This is a root-level context, so remove it from the context stack.
 
     // If the context isn't on the stack, this will error.
-    remove_stack((void **)(root->ctx_stack), &(root->ctx_stack_size), ctx);
+    remove_stack(&(root->stack), ctx);
     root->context_changed = true;
 
     // Also, destroy all children.
-    if(ctx_data->num_children)
+    if(ctx_data->stack.size)
     {
       int i;
-      for(i = ctx_data->num_children - 1; i >= 0; i--)
-        destroy_context(ctx_data->children[i]);
+      for(i = ctx_data->stack.size - 1; i >= 0; i--)
+        destroy_context(ctx_data->stack.contents[i]);
     }
 
-    free(ctx_data->children);
+    free(ctx_data->stack.contents);
   }
   else
   {
@@ -484,12 +478,11 @@ void destroy_context(context *ctx)
     context_data *parent_data = ctx_data->parent->internal_data;
 
     // If the subcontext isn't on the stack, this will error.
-    removed = remove_stack((void **)(parent_data->children),
-     &(parent_data->num_children), ctx);
+    removed = remove_stack(&(parent_data->stack), ctx);
 
     // Adjust the current position in case this is mid-iteration.
-    if(removed <= parent_data->current_child)
-      parent_data->current_child--;
+    if(removed <= parent_data->stack.pos)
+      parent_data->stack.pos--;
   }
 
   if(ctx_data->functions.destroy)
@@ -564,9 +557,7 @@ core_context *core_init(struct world *mzx_world)
   ctx->world = mzx_world;
   ctx->internal_data = NULL;
 
-  root->ctx_stack = NULL;
-  root->ctx_stack_size = 0;
-  root->ctx_stack_alloc = 0;
+  memset(&(root->stack), 0, sizeof(struct context_stack));
   root->full_exit = false;
   root->context_changed = false;
 
@@ -579,7 +570,7 @@ core_context *core_init(struct world *mzx_world)
 
 static void core_resume(core_context *root)
 {
-  context *ctx = root->ctx_stack[root->ctx_stack_size - 1];
+  context *ctx = root->stack.contents[root->stack.size - 1];
   context_data *ctx_data = ctx->internal_data;
   context_data *sub_data;
   subcontext *sub;
@@ -590,11 +581,11 @@ static void core_resume(core_context *root)
   if(root->context_changed || root->full_exit)
     return;
 
-  ctx_data->current_child = 0;
+  ctx_data->stack.pos = 0;
 
-  while(ctx_data->current_child < ctx_data->num_children)
+  while(ctx_data->stack.pos < ctx_data->stack.size)
   {
-    sub = ctx_data->children[ctx_data->current_child];
+    sub = ctx_data->stack.contents[ctx_data->stack.pos];
     sub_data = ((context *)sub)->internal_data;
 
     if(sub_data->functions.resume)
@@ -603,7 +594,7 @@ static void core_resume(core_context *root)
     if(root->context_changed || root->full_exit)
       return;
 
-    ctx_data->current_child++;
+    ctx_data->stack.pos++;
   }
 }
 
@@ -613,7 +604,7 @@ static void core_resume(core_context *root)
 
 static void core_draw(core_context *root)
 {
-  context *ctx = root->ctx_stack[root->ctx_stack_size - 1];
+  context *ctx = root->stack.contents[root->stack.size - 1];
   context_data *ctx_data = ctx->internal_data;
   context_data *sub_data;
   subcontext *sub;
@@ -624,11 +615,11 @@ static void core_draw(core_context *root)
   if(root->context_changed || root->full_exit)
     return;
 
-  ctx_data->current_child = 0;
+  ctx_data->stack.pos = 0;
 
-  while(ctx_data->current_child < ctx_data->num_children)
+  while(ctx_data->stack.pos < ctx_data->stack.size)
   {
-    sub = ctx_data->children[ctx_data->current_child];
+    sub = ctx_data->stack.contents[ctx_data->stack.pos];
     sub_data = ((context *)sub)->internal_data;
 
     if(sub_data->functions.draw)
@@ -640,7 +631,7 @@ static void core_draw(core_context *root)
     if(root->context_changed || root->full_exit)
       return;
 
-    ctx_data->current_child++;
+    ctx_data->stack.pos++;
   }
 
 #ifdef CONFIG_FPS
@@ -661,12 +652,12 @@ static void core_draw(core_context *root)
  */
 static boolean is_on_stack(core_context *root, enum context_type type)
 {
-  int i = root->ctx_stack_size - 1;
+  int i = root->stack.size - 1;
   context *ctx;
 
   for(; i >= 0; i--)
   {
-    ctx = root->ctx_stack[i];
+    ctx = root->stack.contents[i];
     if(ctx->internal_data->context_type == type)
       return true;
   }
@@ -744,7 +735,7 @@ static boolean allow_configure(core_context *root)
 
 static void core_update(core_context *root)
 {
-  context *ctx = root->ctx_stack[root->ctx_stack_size - 1];
+  context *ctx = root->stack.contents[root->stack.size - 1];
   context_data *ctx_data = ctx->internal_data;
   context_data *cur_data;
   context *cur;
@@ -761,20 +752,20 @@ static void core_update(core_context *root)
 
   get_mouse_position(&mouse_x, &mouse_y);
 
-  ctx_data->current_child = ctx_data->num_children - 1;
+  ctx_data->stack.pos = ctx_data->stack.size - 1;
 
   do
   {
     // Count down to -1 and break when cur equals ctx.
     // Slightly convoluted, but better than duplicating this loop's logic.
-    if(ctx_data->current_child < 0)
+    if(ctx_data->stack.pos < 0)
     {
       cur = ctx;
       cur_data = ctx_data;
     }
     else
     {
-      cur = (context *)ctx_data->children[ctx_data->current_child];
+      cur = (context *)ctx_data->stack.contents[ctx_data->stack.pos];
       cur_data = cur->internal_data;
     }
 
@@ -818,10 +809,10 @@ static void core_update(core_context *root)
         return;
     }
 
-    // Move to the next subcontext if it hasn't been advanced by a deletion.
-    if(ctx_data->current_child >= 0)
-      if(cur == ctx_data->children[ctx_data->current_child])
-        ctx_data->current_child--;
+    // Move to the next subcontext if we haven't already been advanced.
+    if(ctx_data->stack.pos >= 0)
+      if(cur == ctx_data->stack.contents[ctx_data->stack.pos])
+        ctx_data->stack.pos--;
   }
   while(cur != ctx);
 
@@ -883,7 +874,7 @@ void core_run(core_context *root)
   // once, this function needs to be used from places other than main(). So
   // this doesn't break MZX, this function stops once the number of contexts
   // on the stack has dropped below the initial value.
-  int initial_stack_size = root->ctx_stack_size;
+  int initial_stack_size = root->stack.size;
   int start_ticks = get_ticks();
   int delta_ticks;
   int total_ticks;
@@ -918,7 +909,7 @@ void core_run(core_context *root)
     update_screen();
 
     // Delay and then handle events.
-    ctx = root->ctx_stack[root->ctx_stack_size - 1];
+    ctx = root->stack.contents[root->stack.size - 1];
 
     // FIXME hack
     enable_f12_hack = false;
@@ -978,7 +969,7 @@ void core_run(core_context *root)
 
     core_update(root);
   }
-  while(!root->full_exit && root->ctx_stack_size >= initial_stack_size);
+  while(!root->full_exit && root->stack.size >= initial_stack_size);
 }
 
 /**
@@ -1006,10 +997,10 @@ void core_free(core_context *root)
   int i;
 
   // Destroy all contexts on the stack.
-  for(i = root->ctx_stack_size - 1; i >= 0; i--)
-    destroy_context(root->ctx_stack[i]);
+  for(i = root->stack.size - 1; i >= 0; i--)
+    destroy_context(root->stack.contents[i]);
 
-  free(root->ctx_stack);
+  free(root->stack.contents);
   free(root);
 }
 
@@ -1030,9 +1021,9 @@ enum context_type get_context(context *ctx)
     enum context_type ctx_type;
     int i;
 
-    for(i = root->ctx_stack_size - 1; i >= 0; i--)
+    for(i = root->stack.size - 1; i >= 0; i--)
     {
-      ctx_type = root->ctx_stack[i]->internal_data->context_type;
+      ctx_type = root->stack.contents[i]->internal_data->context_type;
 
       // Help system only cares about positive context values.
       if(ctx_type > 0)
