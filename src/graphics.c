@@ -878,7 +878,8 @@ void update_screen(void)
 
     for(layer = 0; layer < graphics.layer_count; layer++)
     {
-      if(graphics.sorted_video_layers[layer]->data)
+      if(graphics.sorted_video_layers[layer]->data &&
+       !graphics.sorted_video_layers[layer]->empty)
         graphics.renderer.render_layer(&graphics,
          graphics.sorted_video_layers[layer]);
     }
@@ -1314,6 +1315,7 @@ Uint32 create_layer(int x, int y, Uint32 w, Uint32 h, int draw_order, int t_col,
 
   new_empty_layer(layer, x, y, w, h, draw_order);
   memset(layer->data, 0xFF, sizeof(struct char_element) * w * h);
+  layer->empty = true;
   layer->transparent_col = t_col;
   layer->offset = offset;
   graphics.layer_count++;
@@ -1391,6 +1393,10 @@ void blank_layers(void)
   memset(graphics.video_layers[UI_LAYER].data, 0xFF,
    sizeof(struct char_element) * SCREEN_W * SCREEN_H);
 
+  graphics.video_layers[BOARD_LAYER].empty = false;
+  graphics.video_layers[OVERLAY_LAYER].empty = true;
+  graphics.video_layers[UI_LAYER].empty = true;
+
   // Fix the layer modes
   if(graphics.video_layers[BOARD_LAYER].mode != graphics.screen_mode)
   {
@@ -1451,6 +1457,11 @@ static void dirty_ui(void)
   if(graphics.current_layer != UI_LAYER) return;
   if(graphics.screen_mode == 0) return;
   graphics.requires_extended = true;
+}
+
+static void dirty_current(void)
+{
+  graphics.video_layers[graphics.current_layer].empty = false;
 }
 
 static int offset_adjust(int offset)
@@ -1690,6 +1701,7 @@ void color_string_ext_special(const char *str, Uint32 x, Uint32 y,
   next_str[1] = 0;
 
   if(c_offset) dirty_ui();
+  dirty_current();
 
   while(cur_char)
   {
@@ -1821,6 +1833,7 @@ void write_string_ext(const char *str, Uint32 x, Uint32 y,
   Uint8 fg_color = (color & 0x0F) + c_offset;
 
   if(c_offset) dirty_ui();
+  dirty_current();
 
   while(cur_char && (cur_char != 0))
   {
@@ -1876,6 +1889,7 @@ void write_string_mask(const char *str, Uint32 x, Uint32 y,
   Uint8 fg_color = (color & 0x0F) + 16;
 
   dirty_ui();
+  dirty_current();
 
   while(cur_char && (cur_char != 0))
   {
@@ -1938,6 +1952,7 @@ void write_line_ext(const char *str, Uint32 x, Uint32 y,
   Uint8 fg_color = (color & 0x0F) + c_offset;
 
   if(c_offset) dirty_ui();
+  dirty_current();
 
   while(cur_char && (cur_char != '\n'))
   {
@@ -1982,6 +1997,7 @@ void write_line_mask(const char *str, Uint32 x, Uint32 y,
   Uint8 fg_color = (color & 0x0F) + 16;
 
   dirty_ui();
+  dirty_current();
 
   while(cur_char && (cur_char != '\n'))
   {
@@ -2063,6 +2079,7 @@ static void color_line_ext(Uint32 length, Uint32 x, Uint32 y,
   Uint32 i;
 
   if(c_offset) dirty_ui();
+  dirty_current();
 
   for(i = 0; i < length; i++)
   {
@@ -2085,6 +2102,7 @@ void fill_line_ext(Uint32 length, Uint32 x, Uint32 y,
   Uint32 i;
 
   if(c_offset) dirty_ui();
+  dirty_current();
 
   for(i = 0; i < length; i++)
   {
@@ -2110,6 +2128,7 @@ void draw_char_mixed_pal_ext(Uint8 chr, Uint8 bg_color,
   *(dest_copy++) = *dest;
 
   if((fg_color|bg_color) >= 16) dirty_ui();
+  dirty_current();
 }
 
 void draw_char_ext(Uint8 chr, Uint8 color, Uint32 x,
@@ -2124,6 +2143,7 @@ void draw_char_ext(Uint8 chr, Uint8 color, Uint32 x,
   *(dest_copy++) = *dest;
 
   if(c_offset) dirty_ui();
+  dirty_current();
 }
 
 void draw_char_linear_ext(Uint8 color, Uint8 chr,
@@ -2137,6 +2157,7 @@ void draw_char_linear_ext(Uint8 color, Uint8 chr,
   *(dest_copy++) = *dest;
 
   if(c_offset) dirty_ui();
+  dirty_current();
 }
 
 void draw_char_to_layer(Uint8 color, Uint8 chr,
@@ -2147,6 +2168,7 @@ void draw_char_to_layer(Uint8 color, Uint8 chr,
   dest->char_value = chr + offset_b;
   dest->bg_color = (color >> 4) + c_offset;
   dest->fg_color = (color & 0x0F) + c_offset;
+  dirty_current();
 }
 
 void color_string(const char *string, Uint32 x, Uint32 y, Uint8 color)

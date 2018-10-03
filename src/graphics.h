@@ -135,6 +135,7 @@ struct video_layer
   int draw_order;
   int transparent_col;
   int offset;
+  boolean empty;
 };
 
 struct graphics_data
