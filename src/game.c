@@ -94,7 +94,6 @@ void draw_intro_mesg(struct world *mzx_world)
 {
   static const char mesg1[] = "F1: Help   ";
   static const char mesg2[] = "Enter: Menu   Ctrl-Alt-Enter: Fullscreen";
-  struct game_context *title;
 
   if(intro_mesg_timer == 0)
     return;
