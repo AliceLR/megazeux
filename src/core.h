@@ -100,12 +100,10 @@ typedef struct core_context core_context;
 
 /**
  * Contains information related to the current MegaZeux state/interface/etc.
- * NOTE: "parent" will only be set for subcontexts and will be NULL otherwise.
  */
 struct context
 {
   struct world *world;
-  context *parent;
   core_context *root;
   context_data *internal_data;
 };
@@ -113,13 +111,14 @@ struct context
 /**
  * Contains extra function/variable information for a new context or subcontext.
  * At least one update function should be provided; all other variables may be
- * NULL or zero by default.
+ * NULL or zero by default. A return value of true to an update function will
+ * treat the indicated input type(s) as having been fully handled.
  *
  * draw             Optional function to draw this context every frame.
- * key              Update function called to handle a keypress.
- * click            Update function called to handle a mouse click.
- * drag             Update function called to handle a mouse drag.
- * idle             Update function called every frame.
+ * idle             Update function called every frame (key and mouse).
+ * key              Update function called to handle a keypress (key).
+ * click            Update function called to handle a mouse click (mouse).
+ * drag             Update function called to handle a mouse drag (mouse).
  * destroy          Optional function to be called on destruction.
  * framerate_mode   Framerate mode this context should use (context only).
  */
@@ -150,10 +149,18 @@ CORE_LIBSPEC void create_context(context *ctx, context *parent,
  struct context_spec *ctx_spec, enum context_type context_type);
 
 /**
- * Sets up a new subcontext and adds it to a parent context. The new subcontext
- * will be drawn last and update first, taking input precedence. If "parent" is
- * a subcontext, this function will use the parent of that subcontext as the
- * parent of the new subcontext instead.
+ * Sets up a new subcontext and adds it to a parent context. A subcontext will
+ * be executed at the same time as its parent context and will be terminated if
+ * its parent context is terminated. Each context operation will execute as
+ * follows:
+ *
+ * Resume:  parent, oldest subcontext -> newest subcontext
+ * Draw:    parent, oldest subcontext -> newest subcontext
+ * Update:  newest subcontext -> oldest subcontext, parent
+ * Destroy: newest subcontext -> oldest subcontext, parent
+ *
+ * If "parent" is a subcontext, this function will use the parent of that
+ * subcontext as the parent of the new subcontext instead.
  *
  * @param sub               Optional newly allocated subcontext.
  * @param parent            The context which created this context.
@@ -196,7 +203,7 @@ boolean is_context(context *ctx, enum context_type context_type);
 
 /**
  * Sets the framerate mode of the current context. See enum framerate_type for
- * a list of valid values. This function is meaningless for subcontexts.
+ * a list of valid values. This function will error if given a subcontext.
  *
  * @param ctx           The current context.
  * @param framerate     The new framerate mode.

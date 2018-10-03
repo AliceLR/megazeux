@@ -796,12 +796,11 @@ static boolean color_editor_key(subcontext *ctx, int *key)
 
 /**
  * Callback for component editing.
- * NOTE: receives pal_ed, NOT a subcontext.
  */
 
-static void edit_component_callback(context *ctx, int new_value)
+static void edit_component_callback(subcontext *ctx, int new_value)
 {
-  struct pal_ed_context *pal_ed = (struct pal_ed_context *)ctx;
+  struct pal_ed_context *pal_ed = ((struct pal_ed_subcontext *)ctx)->pal_ed;
   struct color_status *current_color = get_current_color(pal_ed);
   struct color_mode *current_mode = get_current_mode(pal_ed);
   int component = pal_ed->editing_component;
@@ -834,7 +833,7 @@ static boolean color_editor_click(subcontext *ctx, int *key, int button,
       current->pal_ed->editing_component = component;
       value = current_mode->get_function(current_color, component);
 
-      intake_num(ctx->parent, value, c->min_val, c->max_val,
+      intake_num(ctx, value, c->min_val, c->max_val,
        current->x + 3, mouse_y, 3, DI_GREY_EDIT, edit_component_callback);
 
       return true;

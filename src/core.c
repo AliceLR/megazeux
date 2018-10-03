@@ -54,6 +54,7 @@ struct core_context
 
 struct context_data
 {
+  context *parent;
   boolean is_subcontext;
   enum context_type context_type;
   enum framerate_type framerate;
@@ -366,9 +367,9 @@ void create_context(context *ctx, context *parent,
   }
 
   // If the parent is a subcontext, try to find the real parent context.
-  while(parent->parent && parent->internal_data &&
+  while(parent->internal_data && parent->internal_data->parent &&
    parent->internal_data->is_subcontext)
-    parent = parent->parent;
+    parent = parent->internal_data->parent;
 
   // Root needs to exist so this context can be added to the stack.
   if(!parent->root)
@@ -384,7 +385,7 @@ void create_context(context *ctx, context *parent,
   ctx->root = parent->root;
   ctx->internal_data = ctx_data;
   ctx->world = parent->world;
-  ctx->parent = NULL;
+  ctx_data->parent = NULL;
   ctx_data->context_type = context_type;
   ctx_data->framerate = ctx_spec->framerate_mode;
   ctx_data->is_subcontext = false;
@@ -414,12 +415,12 @@ CORE_LIBSPEC void create_subcontext(subcontext *sub, context *parent,
 
   // If the parent is a subcontext, try to find the real parent context.
   while(parent && parent->internal_data && parent->internal_data->is_subcontext)
-    parent = parent->parent;
+    parent = parent->internal_data->parent;
 
   // Root context must exit, parent must not be the root context, and make sure
   // this isn't some weird glitched context.
   if(!parent || !parent->root || parent == (context *)(parent->root) ||
-   parent->parent || !parent->internal_data || !sub_spec)
+   !parent->internal_data || parent->internal_data->parent || !sub_spec)
   {
     print_core_stack(parent);
     error_message(E_CORE_FATAL_BUG, 8, NULL);
@@ -435,7 +436,7 @@ CORE_LIBSPEC void create_subcontext(subcontext *sub, context *parent,
   sub->root = root;
   sub->internal_data = sub_data;
   sub->world = parent->world;
-  sub->parent = parent;
+  sub_data->parent = parent;
   sub_data->is_subcontext = true;
   memcpy(&(sub_data->functions), sub_spec, sizeof(struct context_spec));
 
@@ -455,7 +456,10 @@ void destroy_context(context *ctx)
   core_context *root = ctx->root;
   context_data *ctx_data = ctx->internal_data;
 
-  if(!ctx->parent && ctx_data && !ctx_data->is_subcontext)
+  if(!ctx_data)
+    return;
+
+  if(!ctx_data->parent || !ctx_data->is_subcontext)
   {
     // This is a root-level context, so remove it from the context stack.
 
@@ -477,7 +481,7 @@ void destroy_context(context *ctx)
   {
     int removed;
     // This is a subcontext, so remove it from its parent context.
-    context_data *parent_data = ctx->parent->internal_data;
+    context_data *parent_data = ctx_data->parent->internal_data;
 
     // If the subcontext isn't on the stack, this will error.
     removed = remove_stack((void **)(parent_data->children),
@@ -524,6 +528,9 @@ boolean is_context(context *ctx, enum context_type context_type)
     return false;
   }
 
+  if(ctx->internal_data->is_subcontext)
+    return false;
+
   return (ctx->internal_data->context_type == context_type);
 }
 
@@ -533,7 +540,7 @@ boolean is_context(context *ctx, enum context_type context_type)
 
 void set_context_framerate_mode(context *ctx, enum framerate_type framerate)
 {
-  if(!ctx || !ctx->internal_data)
+  if(!ctx || !ctx->internal_data || ctx->internal_data->is_subcontext)
   {
     print_core_stack(ctx);
     error_message(E_CORE_FATAL_BUG, 3, NULL);
@@ -733,9 +740,6 @@ static boolean allow_configure(core_context *root)
  * 2) A true return value of idle cancels both key and mouse handling.
  * 3) A true return value of key cancels key handling.
  * 4) A true return value of click or drag cancels mouse handling.
- * 5) Click function retriggers on autorepeats.
- * 6) Drag triggers after first click frame.
- * 7) Drag always takes precedence over click, including autorepeats.
  */
 
 static void core_update(core_context *root)
