@@ -50,141 +50,148 @@ static void save_mzm_common(struct world *mzx_world, int start_x, int start_y,
  int width, int height, int mode, int savegame, void *(*alloc)(size_t, void **),
  void **storage)
 {
-    int storage_mode = 0;
-    void *buffer;
-    unsigned char *bufferPtr;
+  int storage_mode = 0;
+  void *buffer;
+  unsigned char *bufferPtr;
 
-    size_t mzm_size;
-    int num_robots_alloc = 0;
+  size_t mzm_size;
+  int num_robots_alloc = 0;
 
-    if(mode)
-      storage_mode = 1;
+  if(mode)
+    storage_mode = 1;
 
-    if(savegame)
-      savegame = 1;
+  if(savegame)
+    savegame = 1;
 
-    // Before saving the MZM, we first calculate its file size
-    // Then we allocate the memory needed to store the MZM
-    mzm_size = 20;
+  // Before saving the MZM, we first calculate its file size
+  // Then we allocate the memory needed to store the MZM
+  mzm_size = 20;
 
-    // Add on the storage space required to store all tiles
-    mzm_size += (width * height) * (storage_mode ? 2 : 6);
+  // Add on the storage space required to store all tiles
+  mzm_size += (width * height) * (storage_mode ? 2 : 6);
 
-    if(mode == 0)
+  if(mode == 0)
+  {
+    // Allocate memory for robots
+    struct board *src_board = mzx_world->current_board;
+    struct robot **robot_list = src_board->robot_list_name_sorted;
+    int num_robots_active = src_board->num_robots_active;
+    int i;
+
+    for(i = 0; i < num_robots_active; i++)
     {
-      // Allocate memory for robots
-      struct board *src_board = mzx_world->current_board;
-      struct robot **robot_list = src_board->robot_list_name_sorted;
-      int num_robots_active = src_board->num_robots_active;
-      int i;
-
-      for(i = 0; i < num_robots_active; i++)
+      struct robot *cur_robot = robot_list[i];
+      if(cur_robot)
       {
-        struct robot *cur_robot = robot_list[i];
-        if(cur_robot)
+        if(cur_robot->xpos >= start_x && cur_robot->xpos < start_x + width &&
+         cur_robot->ypos >= start_y && cur_robot->ypos < start_y + height)
         {
-          if(cur_robot->xpos >= start_x &&
-           cur_robot->ypos >= start_y &&
-           cur_robot->xpos < start_x + width &&
-           cur_robot->ypos < start_y + height)
-          {
-            mzm_size += save_robot_calculate_size(mzx_world, cur_robot,
-             savegame, MZX_VERSION);
-            num_robots_alloc++;
-          }
+          mzm_size += save_robot_calculate_size(mzx_world, cur_robot,
+           savegame, MZX_VERSION);
+          num_robots_alloc++;
         }
       }
     }
 
-    // Now, we need to add the total overhead of the zip file.
-    // File names are all "r##", so the max name length is 3.
-    mzm_size += zip_bound_total_header_usage(num_robots_alloc, 3);
-
-    buffer = alloc(mzm_size, storage);
-    bufferPtr = buffer;
-    memcpy(bufferPtr, "MZM3", 4);
-    bufferPtr += 4;
-
-    mem_putw(width, &bufferPtr);
-    mem_putw(height, &bufferPtr);
-    // Come back here later if there's robot information
-    mem_putd(0, &bufferPtr);
-    mem_putc(0, &bufferPtr);
-    mem_putc(storage_mode, &bufferPtr);
-    mem_putc(0, &bufferPtr);
-
-    mem_putw(MZX_VERSION, &bufferPtr);
-    bufferPtr += 3;
-
-    switch(mode)
+    // If there aren't any robots, we don't need to bother making this a ZIP.
+    if(num_robots_alloc)
     {
-      // Board, raw
-      case 0:
+      // Add the total overhead of the zip file.
+      // File names are all "r##", so the max name length is 3.
+      mzm_size += zip_bound_total_header_usage(num_robots_alloc, 3);
+    }
+  }
+
+  buffer = alloc(mzm_size, storage);
+  bufferPtr = buffer;
+  memcpy(bufferPtr, "MZM3", 4);
+  bufferPtr += 4;
+
+  mem_putw(width, &bufferPtr);
+  mem_putw(height, &bufferPtr);
+  // Come back here later if there's robot information
+  mem_putd(0, &bufferPtr);
+  mem_putc(0, &bufferPtr);
+  mem_putc(storage_mode, &bufferPtr);
+  mem_putc(0, &bufferPtr);
+
+  mem_putw(MZX_VERSION, &bufferPtr);
+  bufferPtr += 3;
+
+  switch(mode)
+  {
+    // Board, raw
+    case 0:
+    {
+      struct zip_archive *zp;
+
+      struct board *src_board = mzx_world->current_board;
+      int board_width = src_board->board_width;
+      char *level_id = src_board->level_id;
+      char *level_param = src_board->level_param;
+      char *level_color = src_board->level_color;
+      char *level_under_id = src_board->level_under_id;
+      char *level_under_param = src_board->level_under_param;
+      char *level_under_color = src_board->level_under_color;
+      int x, y;
+      int offset = start_x + (start_y * board_width);
+      int line_skip = board_width - width;
+      int num_robots = 0;
+      int robot_numbers[256];
+      int robot_table_position;
+      enum thing current_id;
+      int i;
+
+      for(y = 0; y < height; y++)
       {
-        struct zip_archive *zp;
-
-        struct board *src_board = mzx_world->current_board;
-        int board_width = src_board->board_width;
-        char *level_id = src_board->level_id;
-        char *level_param = src_board->level_param;
-        char *level_color = src_board->level_color;
-        char *level_under_id = src_board->level_under_id;
-        char *level_under_param = src_board->level_under_param;
-        char *level_under_color = src_board->level_under_color;
-        int x, y;
-        int offset = start_x + (start_y * board_width);
-        int line_skip = board_width - width;
-        int num_robots = 0;
-        int robot_numbers[256];
-        int robot_table_position;
-        enum thing current_id;
-        int i;
-
-        for(y = 0; y < height; y++)
+        for(x = 0; x < width; x++, offset++)
         {
-          for(x = 0; x < width; x++, offset++)
+          current_id = (enum thing)level_id[offset];
+
+          if(is_robot(current_id))
           {
-            current_id = (enum thing)level_id[offset];
+            // Robot
+            robot_numbers[num_robots] = level_param[offset];
+            num_robots++;
 
-            if(is_robot(current_id))
-            {
-              // Robot
-              robot_numbers[num_robots] = level_param[offset];
-              num_robots++;
-
-              mem_putc(current_id, &bufferPtr);
-              mem_putc(0, &bufferPtr);
-              mem_putc(level_color[offset], &bufferPtr);
-              mem_putc(level_under_id[offset], &bufferPtr);
-              mem_putc(level_under_param[offset], &bufferPtr);
-              mem_putc(level_under_color[offset], &bufferPtr);
-            }
-            else
-
-            if((current_id == SENSOR) || is_signscroll(current_id) ||
-             (current_id == PLAYER))
-            {
-              // Sensor, scroll, sign, or player
-              // Put customblock fake
-              mem_putc((int)CUSTOM_BLOCK, &bufferPtr);
-              mem_putc(get_id_char(src_board, offset), &bufferPtr);
-              mem_putc(get_id_color(src_board, offset), &bufferPtr);
-              mem_putc(level_under_id[offset], &bufferPtr);
-              mem_putc(level_under_param[offset], &bufferPtr);
-              mem_putc(level_under_color[offset], &bufferPtr);
-            }
-            else
-            {
-              mem_putc(current_id, &bufferPtr);
-              mem_putc(level_param[offset], &bufferPtr);
-              mem_putc(level_color[offset], &bufferPtr);
-              mem_putc(level_under_id[offset], &bufferPtr);
-              mem_putc(level_under_param[offset], &bufferPtr);
-              mem_putc(level_under_color[offset], &bufferPtr);
-            }
+            mem_putc(current_id, &bufferPtr);
+            mem_putc(0, &bufferPtr);
+            mem_putc(level_color[offset], &bufferPtr);
+            mem_putc(level_under_id[offset], &bufferPtr);
+            mem_putc(level_under_param[offset], &bufferPtr);
+            mem_putc(level_under_color[offset], &bufferPtr);
           }
-          offset += line_skip;
+          else
+
+          if((current_id == SENSOR) || is_signscroll(current_id) ||
+           (current_id == PLAYER))
+          {
+            // Sensor, scroll, sign, or player
+            // Put customblock fake
+            mem_putc((int)CUSTOM_BLOCK, &bufferPtr);
+            mem_putc(get_id_char(src_board, offset), &bufferPtr);
+            mem_putc(get_id_color(src_board, offset), &bufferPtr);
+            mem_putc(level_under_id[offset], &bufferPtr);
+            mem_putc(level_under_param[offset], &bufferPtr);
+            mem_putc(level_under_color[offset], &bufferPtr);
+          }
+          else
+          {
+            mem_putc(current_id, &bufferPtr);
+            mem_putc(level_param[offset], &bufferPtr);
+            mem_putc(level_color[offset], &bufferPtr);
+            mem_putc(level_under_id[offset], &bufferPtr);
+            mem_putc(level_under_param[offset], &bufferPtr);
+            mem_putc(level_under_color[offset], &bufferPtr);
+          }
         }
+        offset += line_skip;
+      }
+
+      if(num_robots)
+      {
+        struct robot **robot_list = src_board->robot_list;
+        char name[4];
 
         // Get the zip redy 2 go
         zp = zip_open_mem_write(buffer, mzm_size);
@@ -194,109 +201,102 @@ static void save_mzm_common(struct world *mzx_world, int start_x, int start_y,
         zseek(zp, robot_table_position, SEEK_SET);
 
         // Go back to header to put robot table information
-        if(num_robots)
+        bufferPtr = buffer;
+        bufferPtr += 8;
+        // Where the robots will be stored
+        // (not actually necessary anymore)
+        mem_putd(robot_table_position, &bufferPtr);
+        // Number of robots
+        mem_putc(num_robots, &bufferPtr);
+        // Skip board storage mode
+        bufferPtr += 1;
+        // Savegame mode for robots
+        mem_putc(savegame, &bufferPtr);
+
+        // Write robots into the zip
+        for(i = 0; i < num_robots; i++)
         {
-          struct robot **robot_list = src_board->robot_list;
-          char name[4];
+          sprintf(name, "r%2.2X", (unsigned char) i);
 
-          bufferPtr = buffer;
-          bufferPtr += 8;
-          // Where the robots will be stored
-          // (not actually necessary anymore)
-          mem_putd(robot_table_position, &bufferPtr);
-          // Number of robots
-          mem_putc(num_robots, &bufferPtr);
-          // Skip board storage mode
-          bufferPtr += 1;
-          // Savegame mode for robots
-          mem_putc(savegame, &bufferPtr);
-
-          // Write robots into the zip
-          for(i = 0; i < num_robots; i++)
-          {
-            sprintf(name, "r%2.2X", (unsigned char) i);
-
-            // Save each robot
-            save_robot(mzx_world, robot_list[robot_numbers[i]], zp,
-             savegame, MZX_VERSION, name);
-          }
+          // Save each robot
+          save_robot(mzx_world, robot_list[robot_numbers[i]], zp,
+           savegame, MZX_VERSION, name);
         }
 
         zip_close(zp, NULL);
-
-        break;
       }
 
-      // Overlay/Vlayer
-      case 1:
-      case 2:
-      {
-        struct board *src_board = mzx_world->current_board;
-        int board_width;
-        int x, y;
-        int offset;
-        int line_skip;
-        char *chars;
-        char *colors;
-
-        if(mode == 1)
-        {
-          // Overlay
-          if(!src_board->overlay_mode)
-            setup_overlay(src_board, 3);
-
-          chars = src_board->overlay;
-          colors = src_board->overlay_color;
-          board_width = src_board->board_width;
-        }
-        else
-        {
-          // Vlayer
-          chars = mzx_world->vlayer_chars;
-          colors = mzx_world->vlayer_colors;
-          board_width = mzx_world->vlayer_width;
-        }
-
-        offset = start_x + (start_y * board_width);
-        line_skip = board_width - width;
-
-        for(y = 0; y < height; y++)
-        {
-          for(x = 0; x < width; x++, offset++)
-          {
-            mem_putc(chars[offset], &bufferPtr);
-            mem_putc(colors[offset], &bufferPtr);
-          }
-          offset += line_skip;
-        }
-
-        break;
-      }
-
-      // Board, char based
-      case 3:
-      {
-        struct board *src_board = mzx_world->current_board;
-        int board_width = src_board->board_width;
-        int x, y;
-        int offset = start_x + (start_y * board_width);
-        int line_skip = board_width - width;
-
-        for(y = 0; y < height; y++)
-        {
-          for(x = 0; x < width; x++, offset++)
-          {
-            mem_putc(get_id_char(src_board, offset), &bufferPtr);
-            mem_putc(get_id_color(src_board, offset), &bufferPtr);
-          }
-          offset += line_skip;
-        }
-
-
-        break;
-      }
+      break;
     }
 
+    // Overlay/Vlayer
+    case 1:
+    case 2:
+    {
+      struct board *src_board = mzx_world->current_board;
+      int board_width;
+      int x, y;
+      int offset;
+      int line_skip;
+      char *chars;
+      char *colors;
+
+      if(mode == 1)
+      {
+        // Overlay
+        if(!src_board->overlay_mode)
+          setup_overlay(src_board, 3);
+
+        chars = src_board->overlay;
+        colors = src_board->overlay_color;
+        board_width = src_board->board_width;
+      }
+      else
+      {
+        // Vlayer
+        chars = mzx_world->vlayer_chars;
+        colors = mzx_world->vlayer_colors;
+        board_width = mzx_world->vlayer_width;
+      }
+
+      offset = start_x + (start_y * board_width);
+      line_skip = board_width - width;
+
+      for(y = 0; y < height; y++)
+      {
+        for(x = 0; x < width; x++, offset++)
+        {
+          mem_putc(chars[offset], &bufferPtr);
+          mem_putc(colors[offset], &bufferPtr);
+        }
+        offset += line_skip;
+      }
+
+      break;
+    }
+
+    // Board, char based
+    case 3:
+    {
+      struct board *src_board = mzx_world->current_board;
+      int board_width = src_board->board_width;
+      int x, y;
+      int offset = start_x + (start_y * board_width);
+      int line_skip = board_width - width;
+
+      for(y = 0; y < height; y++)
+      {
+        for(x = 0; x < width; x++, offset++)
+        {
+          mem_putc(get_id_char(src_board, offset), &bufferPtr);
+          mem_putc(get_id_color(src_board, offset), &bufferPtr);
+        }
+        offset += line_skip;
+      }
+
+      break;
+    }
+  }
 }
 
 static void *mem_allocate(size_t length, void **dest)
