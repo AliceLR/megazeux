@@ -215,7 +215,7 @@ static void draw_menu_status(struct edit_menu_subcontext *edit_menu, int line)
       draw_char(' ', 7, display_next_pos, line);
       erase_char(display_next_pos+1, line);
 
-      select_layer(OVERLAY_LAYER);
+      select_layer(GAME_UI_LAYER);
       draw_char_ext(display_char, display_color,
       display_next_pos + 1, line, 0, 0);
       select_layer(UI_LAYER);

@@ -1352,6 +1352,8 @@ static void init_layers(void)
    0, 0, SCREEN_W, SCREEN_H, LAYER_DRAWORDER_BOARD);
   new_empty_layer(&graphics.video_layers[OVERLAY_LAYER],
    0, 0, SCREEN_W, SCREEN_H, LAYER_DRAWORDER_OVERLAY);
+  new_empty_layer(&graphics.video_layers[GAME_UI_LAYER],
+   0, 0, SCREEN_W, SCREEN_H, LAYER_DRAWORDER_GAME_UI);
   new_empty_layer(&graphics.video_layers[UI_LAYER],
    0, 0, SCREEN_W, SCREEN_H, LAYER_DRAWORDER_UI);
 
@@ -1359,21 +1361,12 @@ static void init_layers(void)
 
   graphics.video_layers[BOARD_LAYER].mode = graphics.screen_mode;
   graphics.video_layers[OVERLAY_LAYER].mode = graphics.screen_mode;
+  graphics.video_layers[GAME_UI_LAYER].mode = graphics.screen_mode;
   graphics.video_layers[UI_LAYER].mode = 0;
 
-  graphics.layer_count = 3;
+  graphics.layer_count = 4;
   graphics.layer_count_prev = graphics.layer_count;
   blank_layers();
-}
-
-void enable_gui_mode0(void)
-{
-  graphics.video_layers[UI_LAYER].mode = 0;
-}
-
-void disable_gui_mode0(void)
-{
-  graphics.video_layers[UI_LAYER].mode = graphics.screen_mode;
 }
 
 void select_layer(Uint32 layer)
@@ -1390,11 +1383,14 @@ void blank_layers(void)
    sizeof(struct char_element) * SCREEN_W * SCREEN_H);
   memset(graphics.video_layers[OVERLAY_LAYER].data, 0xFF,
    sizeof(struct char_element) * SCREEN_W * SCREEN_H);
+  memset(graphics.video_layers[GAME_UI_LAYER].data, 0xFF,
+   sizeof(struct char_element) * SCREEN_W * SCREEN_H);
   memset(graphics.video_layers[UI_LAYER].data, 0xFF,
    sizeof(struct char_element) * SCREEN_W * SCREEN_H);
 
   graphics.video_layers[BOARD_LAYER].empty = false;
   graphics.video_layers[OVERLAY_LAYER].empty = true;
+  graphics.video_layers[GAME_UI_LAYER].empty = true;
   graphics.video_layers[UI_LAYER].empty = true;
 
   // Fix the layer modes
@@ -1402,6 +1398,7 @@ void blank_layers(void)
   {
     graphics.video_layers[BOARD_LAYER].mode = graphics.screen_mode;
     graphics.video_layers[OVERLAY_LAYER].mode = graphics.screen_mode;
+    graphics.video_layers[GAME_UI_LAYER].mode = graphics.screen_mode;
     graphics.video_layers[UI_LAYER].mode = 0;
   }
 
@@ -2205,6 +2202,15 @@ void erase_char(Uint32 x, Uint32 y)
   dest->char_value = INVISIBLE_CHAR;
 }
 
+void erase_area(Uint32 x, Uint32 y, Uint32 x2, Uint32 y2)
+{
+  Uint32 i, j;
+
+  for(i = y; i <= y2; i++)
+    for(j = x; j <= x2; j++)
+      erase_char(j, i);
+}
+
 Uint8 get_color_linear(Uint32 offset)
 {
   struct char_element *dest = graphics.text_video + offset;
@@ -2213,9 +2219,14 @@ Uint8 get_color_linear(Uint32 offset)
 
 void clear_screen(void)
 {
+  // Hide the game screen by drawing blank chars over the UI.
   Uint32 i;
   struct char_element *dest = graphics.current_video;
   struct char_element *dest_copy = graphics.text_video;
+  Uint32 current_layer = graphics.current_layer;
+
+  select_layer(UI_LAYER);
+  dirty_current();
 
   for(i = 0; i < (SCREEN_W * SCREEN_H); i++)
   {
@@ -2226,6 +2237,7 @@ void clear_screen(void)
     dest++;
   }
 
+  select_layer(current_layer);
   update_screen();
 }
 
@@ -2237,7 +2249,7 @@ void set_screen(struct char_element *src)
   memcpy(graphics.video_layers[UI_LAYER].data, src, size);
   src += offset;
 
-  memcpy(graphics.video_layers[OVERLAY_LAYER].data, src, size);
+  memcpy(graphics.video_layers[GAME_UI_LAYER].data, src, size);
   src += offset;
 
   memcpy(graphics.text_video, src, size);
@@ -2251,7 +2263,7 @@ void get_screen(struct char_element *dest)
   memcpy(dest, graphics.video_layers[UI_LAYER].data, size);
   dest += offset;
 
-  memcpy(dest, graphics.video_layers[OVERLAY_LAYER].data, size);
+  memcpy(dest, graphics.video_layers[GAME_UI_LAYER].data, size);
   dest += offset;
 
   memcpy(dest, graphics.text_video, size);

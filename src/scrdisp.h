@@ -31,8 +31,7 @@ CORE_LIBSPEC void scroll_edit(struct world *mzx_world, struct scroll *scroll,
  int type);
 
 // type == 0 scroll, 1 sign, 2 scroll edit
-void scroll_edging_ext(struct world *mzx_world, int type, int offset,
- int c_offset);
+void scroll_edging_ext(struct world *mzx_world, int type, boolean mask);
 void help_display(struct world *mzx_world, char *help, int offs,
  char *file, char *label);
 char print(char *str);

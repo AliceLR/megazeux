@@ -1088,7 +1088,7 @@ static void palette_16_draw(subcontext *ctx)
       select_layer(UI_LAYER);
       erase_char(x + (i/4), y + (i%4));
 
-      select_layer(OVERLAY_LAYER);
+      select_layer(GAME_UI_LAYER);
       draw_char_mixed_pal_ext(chr, bg_color, fg_color,
        x + (i/4), y + (i%4), PRO_CH);
     }
@@ -1451,7 +1451,7 @@ static void palette_256_draw(subcontext *ctx)
 
   if(get_screen_mode() == 2)
   {
-    select_layer(OVERLAY_LAYER);
+    select_layer(GAME_UI_LAYER);
 
     // Draw the palette
     for(y = 0; y < 16; y++)
@@ -1486,7 +1486,7 @@ static void palette_256_draw(subcontext *ctx)
   // Mode 3
   else
   {
-    select_layer(OVERLAY_LAYER);
+    select_layer(GAME_UI_LAYER);
 
     // Draw the palette
     for(y = 0; y < 16; y++)
@@ -1692,7 +1692,7 @@ static void subpalette_256_draw(subcontext *ctx)
     }
   }
 
-  select_layer(OVERLAY_LAYER);
+  select_layer(GAME_UI_LAYER);
 
   if(get_screen_mode() == 2)
   {
@@ -1974,6 +1974,15 @@ static boolean pal_ed_key(context *ctx, int *key)
     {
       destroy_context(ctx);
       return true;
+    }
+
+    case IKEY_F1:
+    case IKEY_F2:
+    {
+      // Defer to the global handler for the help/settings interfaces.
+      // There might be layers displaying over the UI, which we don't want.
+      destroy_unbound_cursors(pal_ed);
+      return false;
     }
 
     case IKEY_h:

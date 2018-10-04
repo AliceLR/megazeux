@@ -87,11 +87,13 @@ struct char_element
 
 #define BOARD_LAYER 0
 #define OVERLAY_LAYER 1
-#define UI_LAYER 2
+#define GAME_UI_LAYER 2
+#define UI_LAYER 3
 
 #define LAYER_DRAWORDER_BOARD 0
 #define LAYER_DRAWORDER_OVERLAY 1000
-#define LAYER_DRAWORDER_UI 2000
+#define LAYER_DRAWORDER_GAME_UI 2000
+#define LAYER_DRAWORDER_UI 3000
 
 #define SET_SCREEN_SIZE (SCREEN_W * SCREEN_H * 3)
 
@@ -210,6 +212,7 @@ CORE_LIBSPEC void fill_line(Uint32 length, Uint32 x, Uint32 y, Uint8 chr,
  Uint8 color);
 CORE_LIBSPEC void draw_char(Uint8 chr, Uint8 color, Uint32 x, Uint32 y);
 CORE_LIBSPEC void erase_char(Uint32 x, Uint32 y);
+CORE_LIBSPEC void erase_area(Uint32 x, Uint32 y, Uint32 x2, Uint32 y2);
 
 CORE_LIBSPEC void write_string_ext(const char *string, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed, Uint32 offset, Uint32 c_offset);
@@ -280,8 +283,6 @@ CORE_LIBSPEC void dialog_fadein(void);
 CORE_LIBSPEC void dialog_fadeout(void);
 CORE_LIBSPEC void default_palette(void);
 CORE_LIBSPEC void default_protected_palette(void);
-CORE_LIBSPEC void disable_gui_mode0(void);
-CORE_LIBSPEC void enable_gui_mode0(void);
 
 CORE_LIBSPEC void m_hide(void);
 CORE_LIBSPEC void m_show(void);

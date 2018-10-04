@@ -2612,6 +2612,9 @@ static void robot_frame(struct world *mzx_world, char *program, int id)
   int scroll_base_color = mzx_world->scroll_base_color;
   int i, pos = 0;
   int old_pos;
+
+  select_layer(GAME_UI_LAYER);
+
   // Display center line
   fill_line_ext(64, 8, 12, 32, scroll_base_color, 0, 0);
   display_robot_line(mzx_world, program, 12, id);
@@ -2638,6 +2641,8 @@ static void robot_frame(struct world *mzx_world, char *program, int id)
     if(old_pos != pos)
       display_robot_line(mzx_world, program + pos, i, id);
   }
+
+  select_layer(UI_LAYER);
 }
 
 void robot_box_display(struct world *mzx_world, char *program,
@@ -2651,12 +2656,11 @@ void robot_box_display(struct world *mzx_world, char *program,
 
   // Draw screen
   save_screen();
-  disable_gui_mode0();
   m_show();
 
   dialog_fadein();
 
-  scroll_edging_ext(mzx_world, 4, 0, 0);
+  scroll_edging_ext(mzx_world, 4, false);
   // Write robot name
   if(!cur_robot->robot_name[0])
   {
@@ -2853,7 +2857,6 @@ void robot_box_display(struct world *mzx_world, char *program,
   // Restore screen and exit
   m_hide();
   restore_screen();
-  enable_gui_mode0();
   update_event_status();
 }
 

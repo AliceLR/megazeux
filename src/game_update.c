@@ -749,31 +749,6 @@ void update_world(context *ctx, boolean is_title)
 }
 
 /**
- * Creates a new SMZX-enabled layer if needed to prevent graphical discrepancies
- * between old MZX versions and layer rendering. This is necessary when SMZX is
- * active and either of these features (which would otherwise use the UI layer)
- * are also active:
- *
- * 1) The viewport border.
- * 2) The built-in message.
- */
-
-static Uint32 get_viewport_layer(struct world *mzx_world)
-{
-  struct board *cur_board = mzx_world->current_board;
-
-  if(get_screen_mode())
-  {
-    if((cur_board->viewport_width < 80) ||
-     (cur_board->viewport_height < 25) ||
-     (cur_board->b_mesg_timer > 0))
-      return create_layer(0, 0, 80, 25, LAYER_DRAWORDER_UI - 1, -1, 0, 1);
-  }
-
-  return UI_LAYER;
-}
-
-/**
  * Draw the built-in message to the screen.
  */
 
@@ -849,7 +824,6 @@ void draw_world(context *ctx, boolean is_title)
   struct world *mzx_world = ctx->world;
   struct board *cur_board = mzx_world->current_board;
   struct config_info *conf = get_config();
-  Uint32 viewport_layer;
   int time_remaining;
   int top_x;
   int top_y;
@@ -868,8 +842,7 @@ void draw_world(context *ctx, boolean is_title)
   blank_layers();
 
   // Draw border
-  viewport_layer = get_viewport_layer(mzx_world);
-  select_layer(viewport_layer);
+  select_layer(GAME_UI_LAYER);
   draw_viewport(cur_board, mzx_world->edge_color);
 
   // Figure out x/y of top
@@ -918,10 +891,10 @@ void draw_world(context *ctx, boolean is_title)
     draw_char(' ', edge_color, 0, 24);
   }
 
-  if(mzx_world->smzx_message)
-    select_layer(viewport_layer);
-  else
+  if(get_screen_mode() && !mzx_world->smzx_message)
     select_layer(UI_LAYER);
+  else
+    select_layer(GAME_UI_LAYER);
 
   // Add message
   if(cur_board->b_mesg_timer > 0)

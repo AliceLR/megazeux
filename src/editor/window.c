@@ -432,7 +432,7 @@ int color_selection(int current, int allow_wild)
       for(x = 0; x < 16; x++)
         erase_char(x + 15, y + 4);
 
-    select_layer(OVERLAY_LAYER);
+    select_layer(GAME_UI_LAYER);
 
     // Draw main palette
     for(y = 0; y < 16; y++)
@@ -713,14 +713,14 @@ void draw_color_box(int color, int q_bit, int x, int y, int x_limit)
   }
   else
   {
-    // To respect SMZX, this needs to draw on the overlay.
+    // To respect SMZX, this needs to draw on the game UI layer.
     // If a color box is ever planned to be drawn NOT on the UI layer,
     // this needs to change.
 
     if(x < x_limit)
     {
       erase_char(x, y);
-      select_layer(OVERLAY_LAYER);
+      select_layer(GAME_UI_LAYER);
       draw_char_ext(0, color, x, y, PRO_CH, 0);
       select_layer(UI_LAYER);
     }
@@ -728,7 +728,7 @@ void draw_color_box(int color, int q_bit, int x, int y, int x_limit)
     if(x + 1 < x_limit)
     {
       erase_char(x+1, y);
-      select_layer(OVERLAY_LAYER);
+      select_layer(GAME_UI_LAYER);
       draw_char_ext(palette_char, color, x + 1, y, PRO_CH, 0);
       select_layer(UI_LAYER);
     }
@@ -736,7 +736,7 @@ void draw_color_box(int color, int q_bit, int x, int y, int x_limit)
     if(x + 2 < x_limit)
     {
       erase_char(x+2, y);
-      select_layer(OVERLAY_LAYER);
+      select_layer(GAME_UI_LAYER);
       draw_char_ext(0, color, x + 2, y, PRO_CH, 0);
       select_layer(UI_LAYER);
     }
