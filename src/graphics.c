@@ -1364,7 +1364,7 @@ static void init_layers(void)
   graphics.video_layers[GAME_UI_LAYER].mode = graphics.screen_mode;
   graphics.video_layers[UI_LAYER].mode = 0;
 
-  graphics.layer_count = 4;
+  graphics.layer_count = NUM_DEFAULT_LAYERS;
   graphics.layer_count_prev = graphics.layer_count;
   blank_layers();
 }
@@ -1377,7 +1377,7 @@ void select_layer(Uint32 layer)
 
 void blank_layers(void)
 {
-  // This clears the first 3 layers and deletes all other layers
+  // This clears the default layers and deletes all other layers
 
   memset(graphics.video_layers[BOARD_LAYER].data, 0x00,
    sizeof(struct char_element) * SCREEN_W * SCREEN_H);
@@ -1412,8 +1412,8 @@ void destruct_extra_layers(Uint32 first)
   // make all extra layers available for use.
   Uint32 i;
 
-  if(first <= UI_LAYER)
-    first = UI_LAYER + 1;
+  if(first < NUM_DEFAULT_LAYERS)
+    first = NUM_DEFAULT_LAYERS;
 
   if(graphics.layer_count_prev > graphics.layer_count)
   {
@@ -1429,7 +1429,7 @@ void destruct_extra_layers(Uint32 first)
     graphics.layer_count = first;
 
   // Extended graphics may be no longer needed after destroying layers
-  if(graphics.layer_count == 3)
+  if(graphics.layer_count == NUM_DEFAULT_LAYERS)
     graphics.requires_extended = false;
 }
 

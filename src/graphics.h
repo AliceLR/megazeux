@@ -83,19 +83,23 @@ struct char_element
 #define PROTECTED_PAL_SIZE 16
 #define FULL_PAL_SIZE (SMZX_PAL_SIZE + PROTECTED_PAL_SIZE)
 
-#define TEXTVIDEO_LAYERS 512
+#define SET_SCREEN_SIZE (SCREEN_W * SCREEN_H * 3)
 
-#define BOARD_LAYER 0
-#define OVERLAY_LAYER 1
-#define GAME_UI_LAYER 2
-#define UI_LAYER 3
+#define TEXTVIDEO_LAYERS 512
 
 #define LAYER_DRAWORDER_BOARD 0
 #define LAYER_DRAWORDER_OVERLAY 1000
 #define LAYER_DRAWORDER_GAME_UI 2000
 #define LAYER_DRAWORDER_UI 3000
 
-#define SET_SCREEN_SIZE (SCREEN_W * SCREEN_H * 3)
+enum default_video_layers
+{
+  BOARD_LAYER         = 0,
+  OVERLAY_LAYER       = 1,
+  GAME_UI_LAYER       = 2,
+  UI_LAYER            = 3,
+  NUM_DEFAULT_LAYERS  = 4
+};
 
 struct graphics_data;
 struct video_layer;
