@@ -122,7 +122,7 @@ struct world
   FILE *output_file;
   char input_file_name[MAX_PATH];
   FILE *input_file;
-  bool input_is_dir;
+  boolean input_is_dir;
   struct mzx_dir input_directory;
   int temp_input_pos;
   int temp_output_pos;

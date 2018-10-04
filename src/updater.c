@@ -64,11 +64,11 @@ static char widget_buf[WIDGET_BUF_LEN];
 static char previous_dir[MAX_PATH];
 
 static long final_size = -1;
-static bool cancel_update;
+static boolean cancel_update;
 
 static char **process_argv;
 static int process_argc;
-static bool updater_was_initialized;
+static boolean updater_was_initialized;
 
 static char **rewrite_argv_for_execv(int argc, char **argv)
 {
@@ -113,7 +113,7 @@ static char **rewrite_argv_for_execv(int argc, char **argv)
   return new_argv;
 }
 
-static bool check_prune_basedir(const char *file)
+static boolean check_prune_basedir(const char *file)
 {
   static char path[MAX_PATH];
   ssize_t ret;
@@ -139,7 +139,7 @@ static bool check_prune_basedir(const char *file)
 /* FIXME: The allocation of MAX_PATH on the stack in a recursive
  *        function WILL cause problems, eventually!
  */
-static bool check_create_basedir(const char *file)
+static boolean check_create_basedir(const char *file)
 {
   static struct stat s;
   char path[MAX_PATH];
@@ -210,7 +210,7 @@ static void recv_cb(long offset)
   update_screen();
 }
 
-static bool cancel_cb(void)
+static boolean cancel_cb(void)
 {
   return cancel_update;
 }
@@ -219,7 +219,7 @@ static void delete_hook(const char *file)
 {
   struct manifest_entry *new_entry;
   struct SHA256_ctx ctx;
-  bool ret;
+  boolean ret;
   FILE *f;
 
   new_entry = ccalloc(1, sizeof(struct manifest_entry));
@@ -261,9 +261,9 @@ err_out:
   return;
 }
 
-static bool swivel_current_dir(bool have_video)
+static boolean swivel_current_dir(boolean have_video)
 {
-  bool ret = false;
+  boolean ret = false;
   char *base_path;
   int g_ret;
 
@@ -307,7 +307,7 @@ err_free_base_path:
   return ret;
 }
 
-static bool swivel_current_dir_back(bool have_video)
+static boolean swivel_current_dir_back(boolean have_video)
 {
   if(chdir(previous_dir))
   {
@@ -322,12 +322,12 @@ static bool swivel_current_dir_back(bool have_video)
   return true;
 }
 
-static bool backup_original_manifest(void)
+static boolean backup_original_manifest(void)
 {
   unsigned int len, pos = 0;
   char block[BLOCK_SIZE];
   FILE *input, *output;
-  bool ret = false;
+  boolean ret = false;
   struct stat s;
 
   // No existing manifest; this is non-fatal
@@ -368,7 +368,7 @@ err_out:
   return ret;
 }
 
-static bool restore_original_manifest(bool ret)
+static boolean restore_original_manifest(boolean ret)
 {
   struct stat s;
 
@@ -405,7 +405,7 @@ static bool restore_original_manifest(bool ret)
   return true;
 }
 
-static bool write_delete_list(void)
+static boolean write_delete_list(void)
 {
   struct manifest_entry *e;
   FILE *f;
@@ -438,7 +438,7 @@ static void apply_delete_list(void)
   struct manifest_entry *e_next = delete_list;
   struct manifest_entry *e;
   struct stat s;
-  bool ret;
+  boolean ret;
   FILE *f;
 
   while(e_next)
@@ -492,10 +492,10 @@ err_delete_failed:
   }
 }
 
-static bool reissue_connection(struct config_info *conf, struct host **h,
+static boolean reissue_connection(struct config_info *conf, struct host **h,
  char *host_name, int is_automatic)
 {
-  bool ret = false;
+  boolean ret = false;
   int buf_len;
 
   assert(h != NULL);
@@ -553,8 +553,8 @@ static void __check_for_updates(struct world *mzx_world, boolean is_automatic)
   struct config_info *conf = get_config();
   int cur_host;
   char *update_host;
-  bool try_next_host = true;
-  bool ret = false;
+  boolean try_next_host = true;
+  boolean ret = false;
 
   set_context(CTX_UPDATER);
   set_error_suppression(E_UPDATE, false);
@@ -914,7 +914,7 @@ static void __check_for_updates(struct world *mzx_world, boolean is_automatic)
       for(retries = 0; retries < MAX_RETRIES; retries++)
       {
         char name[72];
-        bool m_ret;
+        boolean m_ret;
 
         if(!check_create_basedir(e->name))
           goto err_free_delete_list;
@@ -1007,7 +1007,7 @@ err_out:
   }
 }
 
-bool updater_init(int argc, char *argv[])
+boolean updater_init(int argc, char *argv[])
 {
   FILE *f;
 
@@ -1044,7 +1044,7 @@ err_swivel_back:
   return true;
 }
 
-bool is_updater(void)
+boolean is_updater(void)
 {
   return true;
 }

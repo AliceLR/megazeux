@@ -248,7 +248,7 @@ static void force_string_length(struct world *mzx_world, const char *name,
 
 static void force_string_splice(struct world *mzx_world, const char *name,
  int next, struct string **str, size_t s_length, size_t offset,
- bool offset_specified, size_t *size, bool size_specified)
+ boolean offset_specified, size_t *size, boolean size_specified)
 {
   force_string_length(mzx_world, name, next, str, &s_length);
 
@@ -270,7 +270,7 @@ static void force_string_splice(struct world *mzx_world, const char *name,
 
 static void force_string_copy(struct world *mzx_world, const char *name,
  int next, struct string **str, size_t s_length, size_t offset,
- bool offset_specified, size_t *size, bool size_specified, char *src)
+ boolean offset_specified, size_t *size, boolean size_specified, char *src)
 {
   force_string_splice(mzx_world, name, next, str, s_length,
    offset, offset_specified, size, size_specified);
@@ -280,9 +280,9 @@ static void force_string_copy(struct world *mzx_world, const char *name,
 
 static void force_string_move(struct world *mzx_world, const char *name,
  int next, struct string **str, size_t s_length, size_t offset,
- bool offset_specified, size_t *size, bool size_specified, char *src)
+ boolean offset_specified, size_t *size, boolean size_specified, char *src)
 {
-  bool src_dest_match = false;
+  boolean src_dest_match = false;
   ssize_t off = 0;
 
   if(*str)
@@ -303,7 +303,7 @@ static void force_string_move(struct world *mzx_world, const char *name,
 }
 
 static void get_string_dot_value(char *dot_ptr, int *index,
- size_t *size, bool *index_specified)
+ size_t *size, boolean *index_specified)
 {
   char *error;
 
@@ -327,7 +327,8 @@ static void get_string_dot_value(char *dot_ptr, int *index,
   }
 }
 
-static bool get_string_real_index(struct string *src, int index, size_t *real)
+static boolean get_string_real_index(struct string *src, int index,
+ size_t *real)
 {
   // Handle negative indexing
   if(index < 0)
@@ -384,7 +385,7 @@ int string_read_as_counter(struct world *mzx_world,
     else
     {
       // string.[index]
-      bool index_specified = false;
+      boolean index_specified = false;
       size_t real_index;
       size_t size = 1;
       int index;
@@ -454,7 +455,7 @@ void string_write_as_counter(struct world *mzx_world,
   if(dot_ptr)
   {
     struct string *src;
-    bool index_specified = false;
+    boolean index_specified = false;
     size_t old_length;
     size_t new_length;
     size_t alloc_length;
@@ -579,8 +580,8 @@ static void add_string(struct world *mzx_world, const char *name,
   memcpy(dest->value, src->value, src->length);
 }
 
-static bool get_string_size_offset(const char *name, size_t *ssize,
- bool *size_specified, int *soffset, bool *offset_specified)
+static boolean get_string_size_offset(const char *name, size_t *ssize,
+ boolean *size_specified, int *soffset, boolean *offset_specified)
 {
   char *offset_position = strchr(name, '+');
   char *size_position = strchr(name, '#');
@@ -654,8 +655,8 @@ void load_string_board(struct world *mzx_world, const char *name,
  char *src_chars, int src_width, int block_width, int block_height,
  char terminator)
 {
-  bool offset_specified = false;
-  bool size_specified = false;
+  boolean offset_specified = false;
+  boolean size_specified = false;
   size_t dest_size = (size_t)(block_width * block_height);
   size_t dest_offset = 0;
   int input_offset = 0;
@@ -664,7 +665,7 @@ void load_string_board(struct world *mzx_world, const char *name,
   size_t copy_size;
   int next;
 
-  bool error = get_string_size_offset(name, &dest_size, &size_specified,
+  boolean error = get_string_size_offset(name, &dest_size, &size_specified,
    &input_offset, &offset_specified);
 
   if(error)
@@ -694,8 +695,8 @@ void load_string_board(struct world *mzx_world, const char *name,
 int set_string(struct world *mzx_world, const char *name, struct string *src,
  int id)
 {
-  bool offset_specified = false;
-  bool size_specified = false;
+  boolean offset_specified = false;
+  boolean size_specified = false;
   size_t offset = 0;
   size_t size = 0;
   int input_offset = 0;
@@ -704,7 +705,7 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
   struct string *dest;
   int next = 0;
 
-  bool error = get_string_size_offset(name, &size, &size_specified,
+  boolean error = get_string_size_offset(name, &size, &size_specified,
    &input_offset, &offset_specified);
 
   if(error)
@@ -1116,9 +1117,9 @@ struct string *new_string(struct world *mzx_world, const char *name,
 int get_string(struct world *mzx_world, const char *name, struct string *dest,
  int id)
 {
-  bool error;
-  bool offset_specified = false;
-  bool size_specified = false;
+  boolean error;
+  boolean offset_specified = false;
+  boolean size_specified = false;
   size_t size = 0;
   size_t offset = 0;
   int input_offset = 0;
@@ -1212,12 +1213,12 @@ void inc_string(struct world *mzx_world, const char *name, struct string *src,
   else
   {
     // Make sure this isn't a splice, malformed or otherwise.
-    bool offset_specified = false;
-    bool size_specified = false;
+    boolean offset_specified = false;
+    boolean size_specified = false;
     size_t size;
     int offset;
 
-    bool error = get_string_size_offset(name, &size,
+    boolean error = get_string_size_offset(name, &size,
      &size_specified, &offset, &offset_specified);
 
     if(error || offset_specified || size_specified)
@@ -1245,7 +1246,7 @@ void dec_string_int(struct world *mzx_world, const char *name, int value,
   }
 }
 
-bool is_string(char *buffer)
+boolean is_string(char *buffer)
 {
   size_t namelen, i;
 

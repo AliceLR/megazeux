@@ -100,9 +100,9 @@ extern struct audio audio;
 
 CORE_LIBSPEC void init_audio(struct config_info *conf);
 CORE_LIBSPEC void quit_audio(void);
-CORE_LIBSPEC int audio_play_module(char *filename, bool safely, int volume);
+CORE_LIBSPEC int audio_play_module(char *filename, boolean safely, int volume);
 CORE_LIBSPEC void audio_end_module(void);
-CORE_LIBSPEC void audio_play_sample(char *filename, bool safely, int period);
+CORE_LIBSPEC void audio_play_sample(char *filename, boolean safely, int period);
 
 CORE_LIBSPEC void audio_set_module_volume(int volume);
 void audio_set_module_order(int order);
@@ -143,9 +143,11 @@ void quit_audio_platform(void);
 
 static inline void init_audio(struct config_info *conf) {}
 static inline void quit_audio(void) {}
-static inline int audio_play_module(char *filename, bool safely, int volume) { return 1; }
+static inline int audio_play_module(char *filename, boolean safely, int volume)
+ { return 1; }
 static inline void audio_end_module(void) {}
-static inline void audio_play_sample(char *filename, bool safely, int period) {}
+static inline void audio_play_sample(char *filename, boolean safely, int period)
+ {}
 
 static inline void audio_set_module_volume(int vol) {}
 static inline void audio_set_module_order(int order) {}

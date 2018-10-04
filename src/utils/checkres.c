@@ -175,7 +175,7 @@ static void join_path(char *dest, const char *dir, const char *file)
   dest[MAX_PATH - 1] = 0;
 }
 
-static bool is_simple_path(char *src)
+static boolean is_simple_path(char *src)
 {
   size_t len = strlen(src);
   unsigned int i;

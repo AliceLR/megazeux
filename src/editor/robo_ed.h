@@ -113,8 +113,8 @@ struct robot_state
   int macro_repeat_level;
 
 #ifdef CONFIG_DEBYTECODE
-  bool program_modified;
-  bool confirm_changes;
+  boolean program_modified;
+  boolean confirm_changes;
   struct robot *cur_robot;
 #else
   enum validity_types default_invalid;

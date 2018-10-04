@@ -3533,7 +3533,7 @@ void editor_init(void)
   load_editor_charsets();
 }
 
-bool is_editor(void)
+boolean is_editor(void)
 {
   return true;
 }

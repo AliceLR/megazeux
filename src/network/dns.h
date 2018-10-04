@@ -30,7 +30,7 @@ __M_BEGIN_DECLS
 int dns_getaddrinfo(const char *node, const char *service,
  const struct addrinfo *hints, struct addrinfo **res, Uint32 timeout);
 
-bool dns_init(struct config_info *conf);
+boolean dns_init(struct config_info *conf);
 void dns_exit(void);
 
 __M_END_DECLS

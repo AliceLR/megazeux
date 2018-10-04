@@ -27,7 +27,7 @@ CORE_LIBSPEC Uint32 sdl_window_id;
 #ifndef CONFIG_RENDER_YUV
 static
 #endif
-int sdl_flags(int depth, bool fullscreen, bool resize)
+int sdl_flags(int depth, boolean fullscreen, boolean resize)
 {
   int flags = 0;
 
@@ -46,13 +46,13 @@ int sdl_flags(int depth, bool fullscreen, bool resize)
   return flags;
 }
 
-bool sdl_set_video_mode(struct graphics_data *graphics, int width, int height,
- int depth, bool fullscreen, bool resize)
+boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
+ int height, int depth, boolean fullscreen, boolean resize)
 {
   struct sdl_render_data *render_data = graphics->render_data;
 
 #if SDL_VERSION_ATLEAST(2,0,0)
-  bool matched = false;
+  boolean matched = false;
   Uint32 fmt;
 
   if(render_data->palette)
@@ -207,8 +207,8 @@ err_out:
 #endif // SDL_VERSION_ATLEAST(2,0,0)
 }
 
-bool sdl_check_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, bool fullscreen, bool resize)
+boolean sdl_check_video_mode(struct graphics_data *graphics, int width,
+ int height, int depth, boolean fullscreen, boolean resize)
 {
 #if SDL_VERSION_ATLEAST(2,0,0)
   return true;
@@ -220,8 +220,8 @@ bool sdl_check_video_mode(struct graphics_data *graphics, int width,
 
 #if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM)
 
-bool gl_set_video_mode(struct graphics_data *graphics, int width, int height,
- int depth, bool fullscreen, bool resize)
+boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
+ int depth, boolean fullscreen, boolean resize)
 {
   struct sdl_render_data *render_data = graphics->render_data;
 
@@ -283,8 +283,8 @@ err_out:
 #endif // SDL_VERSION_ATLEAST(2,0,0)
 }
 
-bool gl_check_video_mode(struct graphics_data *graphics, int width, int height,
- int depth, bool fullscreen, bool resize)
+boolean gl_check_video_mode(struct graphics_data *graphics, int width,
+ int height, int depth, boolean fullscreen, boolean resize)
 {
 #if SDL_VERSION_ATLEAST(2,0,0)
   return true;
@@ -306,7 +306,7 @@ void gl_set_attributes(struct graphics_data *graphics)
     SDL_GL_SetSwapInterval(1);
 }
 
-bool gl_swap_buffers(struct graphics_data *graphics)
+boolean gl_swap_buffers(struct graphics_data *graphics)
 {
 #if SDL_VERSION_ATLEAST(2,0,0)
   struct sdl_render_data *render_data = graphics->render_data;

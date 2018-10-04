@@ -78,7 +78,7 @@ static inline Uint32 rgb_to_yuy2(Uint8 r, Uint8 g, Uint8 b)
   return (y << 24) | (u << 16) | (y << 8) | v;
 }
 
-static bool xfb_init_video(struct graphics_data *graphics,
+static boolean xfb_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
   struct xfb_render_data *render_data;
@@ -141,14 +141,14 @@ static void xfb_free_video(struct graphics_data *graphics)
   graphics->render_data = NULL;
 }
 
-static bool xfb_check_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, bool fullscreen, bool resize)
+static boolean xfb_check_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, boolean fullscreen, boolean resize)
 {
   return true;
 }
 
-static bool xfb_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, bool fullscreen, bool resize)
+static boolean xfb_set_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, boolean fullscreen, boolean resize)
 {
   return true;
 }

@@ -724,10 +724,10 @@ static enum keycode convert_USB_internal(Uint32 key)
   }
 }
 
-static bool process_event(union event *ev)
+static boolean process_event(union event *ev)
 {
   struct buffered_status *status = store_status();
-  bool rval = true;
+  boolean rval = true;
 
   switch(ev->type)
   {
@@ -1054,9 +1054,9 @@ static bool process_event(union event *ev)
   return rval;
 }
 
-bool __update_event_status(void)
+boolean __update_event_status(void)
 {
-  bool rval = false;
+  boolean rval = false;
   union event ev;
 
   if(!eq_inited)

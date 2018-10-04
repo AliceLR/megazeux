@@ -199,7 +199,7 @@ struct config_entry
 {
   char option_name[OPTION_NAME_LEN];
   config_function change_option;
-  bool allow_in_game_config;
+  boolean allow_in_game_config;
 };
 
 #ifdef CONFIG_NETWORK

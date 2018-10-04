@@ -47,11 +47,11 @@
 struct host
 {
   void (*recv_cb)(long offset);
-  bool (*cancel_cb)(void);
+  boolean (*cancel_cb)(void);
 
   const char *name;
   const char *endpoint;
-  bool proxied;
+  boolean proxied;
   int proto;
   int af;
   int fd;
@@ -64,7 +64,7 @@ struct host
 
 static struct config_info *conf;
 
-bool host_layer_init(struct config_info *in_conf)
+boolean host_layer_init(struct config_info *in_conf)
 {
   if(!socksyms_init(in_conf))
     return false;
@@ -188,7 +188,7 @@ void host_set_timeout_ms(struct host *h, int timeout_ms)
   h->timeout_ms = timeout_ms;
 }
 
-static bool __send(struct host *h, const void *buffer, size_t len)
+static boolean __send(struct host *h, const void *buffer, size_t len)
 {
   const char *buf = buffer;
   Uint32 start, now;
@@ -227,7 +227,7 @@ static bool __send(struct host *h, const void *buffer, size_t len)
   return true;
 }
 
-static bool __recv(struct host *h, void *buffer, unsigned int len)
+static boolean __recv(struct host *h, void *buffer, unsigned int len)
 {
   char *buf = buffer;
   Uint32 start, now;
@@ -352,7 +352,7 @@ static struct addrinfo *connect_op(int fd, struct addrinfo *ais, void *priv,
   return NULL;
 }
 
-static bool host_address_op(struct host *h, const char *hostname,
+static boolean host_address_op(struct host *h, const char *hostname,
  int port, void *priv, struct addrinfo *(*op)(int fd, struct addrinfo *ais,
   void *priv, Uint32 timeout))
 {
@@ -394,7 +394,7 @@ static bool host_address_op(struct host *h, const char *hostname,
   return true;
 }
 
-static bool _raw_host_connect(struct host *h, const char *hostname, int port)
+static boolean _raw_host_connect(struct host *h, const char *hostname, int port)
 {
   return host_address_op(h, hostname, port, NULL, connect_op);
 }
@@ -567,7 +567,7 @@ static enum proxy_status proxy_connect(struct host *h, const char *target_host,
   return PROXY_CONNECTION_FAILED;
 }
 
-bool host_connect(struct host *h, const char *hostname, int port)
+boolean host_connect(struct host *h, const char *hostname, int port)
 {
   if (strlen(conf->socks_host) > 0)
   {
@@ -629,7 +629,7 @@ static ssize_t http_send_line(struct host *h, const char *message)
   return len;
 }
 
-static bool http_read_status(struct http_info *result, const char *status,
+static boolean http_read_status(struct http_info *result, const char *status,
  size_t status_len)
 {
   /* These conditionals check the status line is formatted:
@@ -667,7 +667,7 @@ static bool http_read_status(struct http_info *result, const char *status,
   return true;
 }
 
-static bool http_skip_headers(struct host *h)
+static boolean http_skip_headers(struct host *h)
 {
   char buffer[LINE_BUF_LEN];
 
@@ -734,7 +734,7 @@ static ssize_t zlib_skip_gzip_header(char *initial, unsigned long len)
 enum host_status host_recv_file(struct host *h, struct http_info *req,
  FILE *file)
 {
-  bool mid_inflate = false, mid_chunk = false, deflated = false;
+  boolean mid_inflate = false, mid_chunk = false, deflated = false;
   unsigned int content_length = 0;
   const char *host_name = h->name;
   unsigned long len = 0, pos = 0;
@@ -1054,7 +1054,7 @@ enum host_status host_recv_file(struct host *h, struct http_info *req,
 }
 
 void host_set_callbacks(struct host *h, void (*send_cb)(long offset),
- void (*recv_cb)(long offset), bool (*cancel_cb)(void))
+ void (*recv_cb)(long offset), boolean (*cancel_cb)(void))
 {
   assert(h != NULL);
   assert(send_cb == NULL);
@@ -1068,12 +1068,12 @@ void host_set_callbacks(struct host *h, void (*send_cb)(long offset),
 #undef  FD_ISSET
 #define FD_ISSET(fd,set) socksyms.__WSAFDIsSet((SOCKET)(fd),(fd_set *)(set))
 
-bool host_last_error_fatal(void)
+boolean host_last_error_fatal(void)
 {
   return platform_last_error_fatal();
 }
 
-void host_blocking(struct host *h, bool blocking)
+void host_blocking(struct host *h, boolean blocking)
 {
   platform_socket_blocking(h->fd, blocking);
 }
@@ -1161,12 +1161,12 @@ static struct addrinfo *bind_op(int fd, struct addrinfo *ais, void *priv,
   return ai;
 }
 
-bool host_bind(struct host *h, const char *hostname, int port)
+boolean host_bind(struct host *h, const char *hostname, int port)
 {
   return host_address_op(h, hostname, port, NULL, bind_op);
 }
 
-bool host_listen(struct host *h)
+boolean host_listen(struct host *h)
 {
   if(platform_listen(h->fd, 0) < 0)
   {
@@ -1176,12 +1176,12 @@ bool host_listen(struct host *h)
   return true;
 }
 
-bool host_recv_raw(struct host *h, char *buffer, unsigned int len)
+boolean host_recv_raw(struct host *h, char *buffer, unsigned int len)
 {
   return __recv(h, buffer, len);
 }
 
-bool host_send_raw(struct host *h, const char *buffer, unsigned int len)
+boolean host_send_raw(struct host *h, const char *buffer, unsigned int len)
 {
   return __send(h, buffer, len);
 }
@@ -1190,7 +1190,7 @@ struct buf_priv_data {
   char *buffer;
   unsigned int len;
   struct host *h;
-  bool ret;
+  boolean ret;
 };
 
 static struct addrinfo *recvfrom_raw_op(int fd, struct addrinfo *ais,
@@ -1272,7 +1272,7 @@ static struct addrinfo *sendto_raw_op(int fd, struct addrinfo *ais, void *priv,
   return ai;
 }
 
-bool host_recvfrom_raw(struct host *h, char *buffer, unsigned int len,
+boolean host_recvfrom_raw(struct host *h, char *buffer, unsigned int len,
  const char *hostname, int port)
 {
   struct buf_priv_data buf_priv = { buffer, len, h, true };
@@ -1280,7 +1280,7 @@ bool host_recvfrom_raw(struct host *h, char *buffer, unsigned int len,
   return buf_priv.ret;
 }
 
-bool host_sendto_raw(struct host *h, const char *buffer, unsigned int len,
+boolean host_sendto_raw(struct host *h, const char *buffer, unsigned int len,
  const char *hostname, int port)
 {
   struct buf_priv_data buf_priv = { (char *)buffer, len, h, true };
@@ -1331,7 +1331,7 @@ static int zlib_forge_gzip_header(char *buffer)
 enum host_status host_send_file(struct host *h, FILE *file,
  const char *mime_type)
 {
-  bool mid_deflate = false;
+  boolean mid_deflate = false;
   char line[LINE_BUF_LEN];
   uint32_t crc, uSize;
   z_stream stream;
@@ -1522,7 +1522,7 @@ static const char resp_404[] =
   "<body><pre>404 ;-(</pre></body>"
  "</html>";
 
-bool host_handle_http_request(struct host *h)
+boolean host_handle_http_request(struct host *h)
 {
   const char *mime_type = "application/octet-stream";
   char buffer[LINE_BUF_LEN], *buf = buffer;

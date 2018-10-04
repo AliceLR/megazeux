@@ -308,7 +308,7 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
   struct glsl_render_data *render_data = graphics->render_data;
   int index = res - GLSL_SHADER_RES_FIRST;
   int loaded_config = 0;
-  bool is_user_scaler = false;
+  boolean is_user_scaler = false;
   GLint compile_status;
   GLenum shader;
 
@@ -536,7 +536,7 @@ static void glsl_load_shaders(struct graphics_data *graphics)
   }
 }
 
-static bool glsl_init_video(struct graphics_data *graphics,
+static boolean glsl_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
   struct glsl_render_data *render_data;
@@ -674,8 +674,8 @@ static void glsl_resize_screen(struct graphics_data *graphics,
   glsl_load_shaders(graphics);
 }
 
-static bool glsl_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, bool fullscreen, bool resize)
+static boolean glsl_set_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, boolean fullscreen, boolean resize)
 {
   gl_set_attributes(graphics);
 
@@ -692,7 +692,7 @@ static bool glsl_set_video_mode(struct graphics_data *graphics,
   // the check with EGL configurations (EGL implies OpenGL ES).
 #ifndef CONFIG_EGL
   {
-    static bool initialized = false;
+    static boolean initialized = false;
 
     if(!initialized)
     {
@@ -719,8 +719,8 @@ static bool glsl_set_video_mode(struct graphics_data *graphics,
   return true;
 }
 
-static bool glsl_auto_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, bool fullscreen, bool resize)
+static boolean glsl_auto_set_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, boolean fullscreen, boolean resize)
 {
   struct glsl_render_data *render_data = graphics->render_data;
   const char *renderer;

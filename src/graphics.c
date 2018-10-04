@@ -59,7 +59,7 @@
 #define CURSOR_BLINK_RATE 115
 
 __editor_maybe_static struct graphics_data graphics;
-static bool graphics_was_initialized;
+static boolean graphics_was_initialized;
 
 static const struct renderer_data renderers[] =
 {
@@ -919,7 +919,7 @@ void update_screen(void)
     Uint32 bg_color = cursor_element->bg_color;
     int fg_luma = get_color_luma(fg_color);
     int bg_luma = get_color_luma(bg_color);
-    bool use_protected = false;
+    boolean use_protected = false;
 
     // Choose FG
     cursor_color = fg_color;
@@ -1164,7 +1164,7 @@ void default_protected_palette(void)
   graphics.palette_dirty = true;
 }
 
-static bool set_graphics_output(struct config_info *conf)
+static boolean set_graphics_output(struct config_info *conf)
 {
   const char *video_output = conf->video_output;
   const struct renderer_data *renderer = renderers;
@@ -1196,7 +1196,7 @@ static bool set_graphics_output(struct config_info *conf)
 #if defined(CONFIG_PNG) && defined(CONFIG_SDL) && \
     defined(CONFIG_ICON) && !defined(__WIN32__)
 
-static bool icon_w_h_constraint(png_uint_32 w, png_uint_32 h)
+static boolean icon_w_h_constraint(png_uint_32 w, png_uint_32 h)
 {
   // Icons must be multiples of 16 and square
   return (w == h) && ((w % 16) == 0) && ((h % 16) == 0);
@@ -1308,7 +1308,7 @@ static void new_empty_layer(struct video_layer *layer, int x, int y, Uint32 w,
 }
 
 Uint32 create_layer(int x, int y, Uint32 w, Uint32 h, int draw_order, int t_col,
- int offset, bool unbound)
+ int offset, boolean unbound)
 {
   Uint32 layer_idx = graphics.layer_count;
   struct video_layer *layer = &graphics.video_layers[layer_idx];
@@ -1472,7 +1472,7 @@ static int offset_adjust(int offset)
   return y * layer->w + x;
 }
 
-bool init_video(struct config_info *conf, const char *caption)
+boolean init_video(struct config_info *conf, const char *caption)
 {
   graphics.screen_mode = 0;
   graphics.fullscreen = conf->fullscreen;
@@ -1560,7 +1560,7 @@ bool init_video(struct config_info *conf, const char *caption)
   return true;
 }
 
-bool has_video_initialized(void)
+boolean has_video_initialized(void)
 {
 #ifdef CONFIG_SDL
 #if SDL_VERSION_ATLEAST(2,0,0)
@@ -1573,13 +1573,13 @@ bool has_video_initialized(void)
   return graphics_was_initialized;
 }
 
-bool set_video_mode(void)
+boolean set_video_mode(void)
 {
   int target_width, target_height;
   int target_depth = graphics.bits_per_pixel;
-  bool fullscreen = graphics.fullscreen;
-  bool resize = graphics.allow_resize;
-  bool ret;
+  boolean fullscreen = graphics.fullscreen;
+  boolean resize = graphics.allow_resize;
+  boolean ret;
 
   if(fullscreen)
   {
@@ -1622,7 +1622,7 @@ bool set_video_mode(void)
 
 #if 0
 
-static bool change_video_output(struct config_info *conf, const char *output)
+static boolean change_video_output(struct config_info *conf, const char *output)
 {
   char old_video_output[16];
 
@@ -1683,7 +1683,7 @@ void resize_screen(Uint32 w, Uint32 h)
 }
 
 void color_string_ext_special(const char *str, Uint32 x, Uint32 y,
- Uint8 *color, Uint32 offset, Uint32 c_offset, bool respect_newline)
+ Uint8 *color, Uint32 offset, Uint32 c_offset, boolean respect_newline)
 {
   int scr_off = (y * SCREEN_W) + x;
   struct char_element *dest = graphics.current_video + offset_adjust(scr_off);
@@ -1809,7 +1809,7 @@ exit_out:
 }
 
 void color_string_ext(const char *str, Uint32 x, Uint32 y, Uint8 color,
- Uint32 offset, Uint32 c_offset, bool respect_newline)
+ Uint32 offset, Uint32 c_offset, boolean respect_newline)
 {
   color_string_ext_special(str, x, y, &color, offset,
    c_offset, respect_newline);
@@ -2586,7 +2586,7 @@ void focus_pixel(int x, int y)
     graphics.renderer.focus_pixel(&graphics, x, y);
 }
 
-bool switch_shader(const char *name)
+boolean switch_shader(const char *name)
 {
   if(graphics.renderer.switch_shader)
     graphics.renderer.switch_shader(&graphics, name);
@@ -2597,7 +2597,7 @@ bool switch_shader(const char *name)
   return false;
 }
 
-bool layer_renderer_check(bool show_error)
+boolean layer_renderer_check(boolean show_error)
 {
   if(!graphics.renderer.render_layer)
   {

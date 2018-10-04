@@ -43,14 +43,14 @@ struct sdl_render_data
 extern CORE_LIBSPEC Uint32 sdl_window_id;
 
 #ifdef CONFIG_RENDER_YUV
-int sdl_flags(int depth, bool fullscreen, bool resize);
+int sdl_flags(int depth, boolean fullscreen, boolean resize);
 #endif
 
-bool sdl_set_video_mode(struct graphics_data *graphics, int width, int height,
- int depth, bool fullscreen, bool resize);
+boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
+ int height, int depth, boolean fullscreen, boolean resize);
 
-bool sdl_check_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, bool fullscreen, bool resize);
+boolean sdl_check_video_mode(struct graphics_data *graphics, int width,
+ int height, int depth, boolean fullscreen, boolean resize);
 
 #if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM)
 
@@ -59,16 +59,16 @@ bool sdl_check_video_mode(struct graphics_data *graphics, int width,
 #define GL_STRIP_FLAGS(A) \
   ((A & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_RESIZABLE)) | SDL_WINDOW_OPENGL)
 
-bool gl_set_video_mode(struct graphics_data *graphics, int width, int height,
- int depth, bool fullscreen, bool resize);
-bool gl_check_video_mode(struct graphics_data *graphics, int width, int height,
- int depth, bool fullscreen, bool resize);
+boolean gl_set_video_mode(struct graphics_data *graphics, int width,
+ int height, int depth, boolean fullscreen, boolean resize);
+boolean gl_check_video_mode(struct graphics_data *graphics, int width,
+ int height, int depth, boolean fullscreen, boolean resize);
 void gl_set_attributes(struct graphics_data *graphics);
-bool gl_swap_buffers(struct graphics_data *graphics);
+boolean gl_swap_buffers(struct graphics_data *graphics);
 
 static inline void gl_cleanup(struct graphics_data *graphics) { }
 
-static inline bool GL_LoadLibrary(enum gl_lib_type type)
+static inline boolean GL_LoadLibrary(enum gl_lib_type type)
 {
   return SDL_GL_LoadLibrary(NULL) == 0;
 }

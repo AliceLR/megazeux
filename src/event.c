@@ -323,7 +323,7 @@ static enum keycode convert_xt_internal(Uint32 key, enum keycode *second)
 #if !defined(CONFIG_SDL)
 static
 #endif
-bool update_autorepeat(void)
+boolean update_autorepeat(void)
 {
   // The repeat key may not be a "valid" keycode due to the unbounded nature
   // of joypad support.  All invalid keys use the last position because that's
@@ -331,7 +331,7 @@ bool update_autorepeat(void)
   struct buffered_status *status = store_status();
   enum keycode status_key =
    MIN((unsigned int) status->key_repeat, STATUS_NUM_KEYCODES - 1);
-  bool rval = false;
+  boolean rval = false;
 
   // Repeat code
   Uint8 last_key_state = status->keymap[status_key];
@@ -429,7 +429,7 @@ static void start_frame_event_status(void)
   status->unicode = 0;
   status->mouse_moved = 0;
   status->mouse_button = 0;
-  status->exit = 0;
+  status->exit_status = false;
 
   status->mouse_last_x = status->mouse_x;
   status->mouse_last_y = status->mouse_y;
@@ -437,9 +437,9 @@ static void start_frame_event_status(void)
   status->real_mouse_last_y = status->real_mouse_y;
 }
 
-bool update_event_status(void)
+boolean update_event_status(void)
 {
-  bool rval;
+  boolean rval;
 
   start_frame_event_status();
 
@@ -449,7 +449,7 @@ bool update_event_status(void)
   return rval;
 }
 
-bool peek_exit_input(void)
+boolean peek_exit_input(void)
 {
   #ifdef CONFIG_SDL
   return __peek_exit_input();
@@ -869,19 +869,19 @@ void force_release_all_keys(void)
   status->mouse_drag_state = 0;
 }
 
-bool get_alt_status(enum keycode_type type)
+boolean get_alt_status(enum keycode_type type)
 {
   return get_key_status(type, IKEY_LALT) ||
          get_key_status(type, IKEY_RALT);
 }
 
-bool get_shift_status(enum keycode_type type)
+boolean get_shift_status(enum keycode_type type)
 {
   return get_key_status(type, IKEY_LSHIFT) ||
          get_key_status(type, IKEY_RSHIFT);
 }
 
-bool get_ctrl_status(enum keycode_type type)
+boolean get_ctrl_status(enum keycode_type type)
 {
   return get_key_status(type, IKEY_LCTRL) ||
          get_key_status(type, IKEY_RCTRL);
@@ -908,7 +908,7 @@ void map_joystick_hat(int joystick, enum keycode up_key, enum keycode down_key,
   input.joystick_hat_map[joystick][3] = right_key;
 }
 
-void set_unfocus_pause(bool value)
+void set_unfocus_pause(boolean value)
 {
   input.unfocus_pause = value;
 }
@@ -982,16 +982,16 @@ void joystick_key_release(struct buffered_status *status,
   }
 }
 
-bool get_exit_status(void)
+boolean get_exit_status(void)
 {
   const struct buffered_status *status = load_status();
-  return status->exit;
+  return status->exit_status;
 }
 
-bool set_exit_status(bool value)
+boolean set_exit_status(boolean value)
 {
   struct buffered_status *status = store_status();
-  bool exit = status->exit;
-  status->exit = value;
-  return exit;
+  boolean exit_status = status->exit_status;
+  status->exit_status = value;
+  return exit_status;
 }

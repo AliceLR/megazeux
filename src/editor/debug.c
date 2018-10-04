@@ -673,9 +673,9 @@ static void build_var_buffer(char **var_buffer, const char *name,
 struct debug_node
 {
    char name[15];
-   bool opened;
-   bool refresh_on_focus;
-   bool show_child_contents;
+   boolean opened;
+   boolean refresh_on_focus;
+   boolean show_child_contents;
    int num_nodes;
    int num_counters;
    struct debug_node *parent;
@@ -817,7 +817,7 @@ static void rebuild_var_list(struct debug_node *node,
 }
 
 // If we're not deleting the entire tree we only wipe the counter lists
-static void clear_debug_node(struct debug_node *node, bool delete_all)
+static void clear_debug_node(struct debug_node *node, boolean delete_all)
 {
   int i;
   if(node->num_counters)
@@ -921,7 +921,7 @@ static int find_variable(struct world *mzx_world, struct debug_node *node,
   char *var;
   void *v = NULL;
   int start = 0, stop = node->num_counters, inc = 1;
-  bool ignore_case = (search_flags & VAR_SEARCH_CASESENS) == 0;
+  boolean ignore_case = (search_flags & VAR_SEARCH_CASESENS) == 0;
 
   if(search_flags & VAR_SEARCH_REVERSE)
   {
@@ -1089,7 +1089,7 @@ static int start_var_search(struct world *mzx_world, struct debug_node *node,
 
   // Build the index that's gonna save our bacon when we search through 1m counters
   int index[256] = { 0 };
-  bool ignore_case = (search_flags & VAR_SEARCH_CASESENS) == 0;
+  boolean ignore_case = (search_flags & VAR_SEARCH_CASESENS) == 0;
 
   boyer_moore_index(match_text, match_length, index, ignore_case);
 

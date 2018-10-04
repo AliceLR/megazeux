@@ -205,7 +205,7 @@ static void socket_free_syms(void)
   }
 }
 
-static bool socket_load_syms(void)
+static boolean socket_load_syms(void)
 {
   int i;
 
@@ -243,7 +243,7 @@ static bool socket_load_syms(void)
   return true;
 }
 
-bool socksyms_init(struct config_info *conf)
+boolean socksyms_init(struct config_info *conf)
 {
   WORD version = MAKEWORD(1, 0);
   WSADATA ws_data;
@@ -281,7 +281,7 @@ void socksyms_exit(void)
   socket_free_syms();
 }
 
-bool platform_last_error_fatal(void)
+boolean platform_last_error_fatal(void)
 {
   if(socksyms.WSAGetLastError() == WSAEWOULDBLOCK)
     return false;
@@ -389,7 +389,7 @@ int platform_socket(int af, int type, int protocol)
   return (int)socksyms.socket(af, type, protocol);
 }
 
-void platform_socket_blocking(int s, bool blocking)
+void platform_socket_blocking(int s, boolean blocking)
 {
   unsigned long mode = !blocking;
   socksyms.ioctlsocket(s, FIONBIO, &mode);

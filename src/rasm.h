@@ -251,7 +251,7 @@ struct token
   enum token_type type;
   union token_value arg_value;
   enum arg_type_indexed arg_type_indexed;
-  bool value_is_cached;
+  boolean value_is_cached;
   char *value;
   int length;
 };
@@ -260,11 +260,11 @@ struct token
 __M_BEGIN_DECLS
 
 char *legacy_disassemble_program(char *program_bytecode, int bytecode_length,
- int *_disasm_length, bool print_ignores, int base);
+ int *_disasm_length, boolean print_ignores, int base);
 char *legacy_convert_file(char *file_name, int *_disasm_length,
- bool print_ignores, int base);
+ boolean print_ignores, int base);
 char *legacy_convert_file_mem(char *src, int len, int *_disasm_length,
- bool print_ignores, int base);
+ boolean print_ignores, int base);
 
 char *find_non_identifier_char(char *str);
 
@@ -275,7 +275,7 @@ CORE_LIBSPEC void assemble_program(char *program_source, char **_bytecode,
 #ifdef CONFIG_EDITOR
 
 CORE_LIBSPEC int legacy_disassemble_command(char *command_base, char *output_base,
- int *line_length, int bytecode_length, bool print_ignores, int base);
+ int *line_length, int bytecode_length, boolean print_ignores, int base);
 
 CORE_LIBSPEC struct token *parse_command(char *src, char **_next,
  int *num_parse_tokens);

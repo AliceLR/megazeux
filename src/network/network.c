@@ -21,7 +21,7 @@
 #include "host.h"
 #include "../error.h"
 
-bool network_layer_init(struct config_info *conf)
+boolean network_layer_init(struct config_info *conf)
 {
   if(!conf->network_enabled)
     return false;

@@ -28,7 +28,7 @@
 
 extern struct input_status input;
 
-static bool numlock_status_initialized;
+static boolean numlock_status_initialized;
 
 static enum keycode convert_SDL_internal(SDL_Keycode key)
 {
@@ -152,7 +152,7 @@ static enum keycode convert_SDL_internal(SDL_Keycode key)
   }
 }
 
-static bool process_event(SDL_Event *event)
+static boolean process_event(SDL_Event *event)
 {
   struct buffered_status *status = store_status();
   enum keycode ckey;
@@ -179,7 +179,7 @@ static bool process_event(SDL_Event *event)
     case SDL_QUIT:
     {
       // Set the exit status
-      status->exit = 1;
+      status->exit_status = true;
       break;
     }
 
@@ -573,7 +573,7 @@ static bool process_event(SDL_Event *event)
   return true;
 }
 
-bool __update_event_status(void)
+boolean __update_event_status(void)
 {
   Uint32 rval = false;
   SDL_Event event;
@@ -591,7 +591,7 @@ bool __update_event_status(void)
       status->key = IKEY_UNKNOWN;
       status->key_repeat = IKEY_UNKNOWN;
       status->unicode = 0;
-      status->exit = 1;
+      status->exit_status = true;
       return true;
     }
   }
@@ -602,7 +602,7 @@ bool __update_event_status(void)
 
 // This returns whether the input buffer _may_ contain a request to quit.
 // Proper polling should be performed if the answer is yes.
-bool __peek_exit_input(void)
+boolean __peek_exit_input(void)
 {
 #if SDL_VERSION_ATLEAST(2,0,0)
   SDL_Event events[256];

@@ -76,7 +76,7 @@ static void set_dns_thread_data(struct dns_data *data,
   data->res = NULL;
 }
 
-static void free_dns_thread_data(struct dns_data *data, bool free_result)
+static void free_dns_thread_data(struct dns_data *data, boolean free_result)
 {
   free(data->node);
   free(data->service);
@@ -232,7 +232,7 @@ int dns_getaddrinfo(const char *node, const char *service,
   return ret;
 }
 
-bool dns_init(struct config_info *conf)
+boolean dns_init(struct config_info *conf)
 {
   threads_max = DNS_DEFAULT_MAX_THREADS;
 

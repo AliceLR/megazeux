@@ -25,7 +25,7 @@
 __M_BEGIN_DECLS
 
 #ifdef CONFIG_EDITOR
-bool is_editor(void);
+boolean is_editor(void);
 void editor_init(void);
 void init_macros(void);
 
@@ -35,7 +35,7 @@ void set_editor_config_from_command_line(int *argc, char *argv[]);
 void store_editor_config_backup(void);
 void free_editor_config(void);
 #else
-static inline bool is_editor(void) { return false; }
+static inline boolean is_editor(void) { return false; }
 static inline void editor_init(void) {}
 static inline void init_macros(void) {}
 
@@ -48,12 +48,12 @@ static inline void free_editor_config(void) {}
 
 
 #ifdef CONFIG_UPDATER
-bool updater_init(int argc, char *argv[]);
-bool is_updater(void);
+boolean updater_init(int argc, char *argv[]);
+boolean is_updater(void);
 #else
-static inline bool updater_init(int argc, char *argv[])
+static inline boolean updater_init(int argc, char *argv[])
 { return true; }
-static inline bool is_updater(void)
+static inline boolean is_updater(void)
 { return false; }
 #endif
 

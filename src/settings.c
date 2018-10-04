@@ -229,7 +229,7 @@ void game_settings(struct world *mzx_world)
     if(dialog_result == 2 && shader_name[0])
     {
       size_t offset = strlen(shader_path) + 1;
-      bool shader_res;
+      boolean shader_res;
       char *pos;
 
       if(strlen(shader_name) > offset)

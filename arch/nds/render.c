@@ -48,7 +48,7 @@ static u16 scroll_table[192];
 static int palette_idx_table[16][16];
 
 // If we're looking around with the mouse, ignore the next call to focus.
-static bool mouselook;
+static boolean mouselook;
 
 // The current transition state.
 static struct {
@@ -76,7 +76,7 @@ static void nds_on_vblank(void)
   nds_video_do_transition();
 }
 
-bool is_scaled_mode(enum Subscreen_Mode mode)
+boolean is_scaled_mode(enum Subscreen_Mode mode)
 {
   return (mode == SUBSCREEN_SCALED);
 }
@@ -309,7 +309,7 @@ static void nds_keyboard_scroll_out(void)
 
 void nds_sleep_check(void)
 {
-  static bool asleep = false;
+  static boolean asleep = false;
 
   // Check if we were just woken up.
   if(asleep)
@@ -336,7 +336,7 @@ void nds_sleep_check(void)
   }
 }
 
-static bool nds_init_video(struct graphics_data *graphics,
+static boolean nds_init_video(struct graphics_data *graphics,
  struct config_info *config)
 {
   lcdMainOnBottom();
@@ -362,14 +362,14 @@ static bool nds_init_video(struct graphics_data *graphics,
   return true;
 }
 
-static bool nds_check_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, bool fullscreen, bool resize)
+static boolean nds_check_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, boolean fullscreen, boolean resize)
 {
   return true;  // stub
 }
 
-static bool nds_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, bool fullscreen, bool resize)
+static boolean nds_set_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, boolean fullscreen, boolean resize)
 {
   return true;	// stub
 }
@@ -767,7 +767,7 @@ void nds_subscreen_switch(void)
     nds_subscreen_keyboard_init();
 }
 
-void nds_mouselook(bool enabled)
+void nds_mouselook(boolean enabled)
 {
   mouselook = enabled;
 }

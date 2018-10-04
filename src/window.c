@@ -2330,7 +2330,7 @@ struct element *construct_file_selector(int x, int y,
 __editor_maybe_static struct element *construct_list_box(int x, int y,
  const char **choices, int num_choices, int num_choices_visible,
  int choice_length, int return_value, int *result, int *result_offset,
- bool respect_color_codes)
+ boolean respect_color_codes)
 {
   int scroll_offset;
 

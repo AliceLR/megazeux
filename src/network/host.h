@@ -101,7 +101,7 @@ enum proxy_status
  *
  * @return Whether initialization succeeded, or not
  */
-bool host_layer_init(struct config_info *conf);
+boolean host_layer_init(struct config_info *conf);
 
 /**
  * Shuts down the host layer.
@@ -138,7 +138,7 @@ UPDATER_LIBSPEC void host_destroy(struct host *h);
  *
  * @return Whether the connection was possible and successful, or not
  */
-UPDATER_LIBSPEC bool host_connect(struct host *h, const char *hostname,
+UPDATER_LIBSPEC boolean host_connect(struct host *h, const char *hostname,
  int port);
 
 /**
@@ -185,7 +185,7 @@ UPDATER_LIBSPEC void host_set_timeout_ms(struct host *h, int timeout_ms);
  */
 UPDATER_LIBSPEC void host_set_callbacks(struct host *h,
  void (*send_cb)(long offset), void (*recv_cb)(long offset),
- bool (*cancel_cb)(void));
+ boolean (*cancel_cb)(void));
 
 #ifdef NETWORK_DEADCODE
 
@@ -196,7 +196,7 @@ UPDATER_LIBSPEC void host_set_callbacks(struct host *h,
  *
  * @return Whether the last socket error was fatal, or not
  */
-bool host_last_error_fatal(void);
+boolean host_last_error_fatal(void);
 
 /**
  * Sets a socket blocking mode on the given host.
@@ -204,7 +204,7 @@ bool host_last_error_fatal(void);
  * @param h        Host to alter block mode on
  * @param blocking `true' if the socket should block, `false' otherwise
  */
-void host_blocking(struct host *h, bool blocking);
+void host_blocking(struct host *h, boolean blocking);
 
 /**
  * Accepts a connection from a host processed by \ref host_bind and
@@ -226,7 +226,7 @@ struct host *host_accept(struct host *s);
  *
  * @return Whether the bind was possible and successful, or not
  */
-bool host_bind(struct host *h, const char *hostname, int port);
+boolean host_bind(struct host *h, const char *hostname, int port);
 
 /**
  * Prepares a socket processed with @ref host_bind to listen for
@@ -236,7 +236,7 @@ bool host_bind(struct host *h, const char *hostname, int port);
  *
  * @return Whether it was possible to listen with this host, or not
  */
-bool host_listen(struct host *h);
+boolean host_listen(struct host *h);
 
 /**
  * Receive a buffer on a host via raw socket access.
@@ -248,7 +248,7 @@ bool host_listen(struct host *h);
  * @return `true' if the buffer was received, `false' if there was a
  *         communication error.
  */
-bool host_recv_raw(struct host *h, char *buffer,
+boolean host_recv_raw(struct host *h, char *buffer,
  unsigned int len);
 
 /**
@@ -261,7 +261,7 @@ bool host_recv_raw(struct host *h, char *buffer,
  * @return `true' if the buffer was sent, `false' if there was a
  *         communication error.
  */
-bool host_send_raw(struct host *h, const char *buffer,
+boolean host_send_raw(struct host *h, const char *buffer,
  unsigned int len);
 
 /**
@@ -276,11 +276,11 @@ bool host_send_raw(struct host *h, const char *buffer,
 int host_poll_raw(struct host *h, unsigned int timeout);
 
 // FIXME: Document
-bool host_recvfrom_raw(struct host *h, char *buffer,
+boolean host_recvfrom_raw(struct host *h, char *buffer,
  unsigned int len, const char *hostname, int port);
 
 // FIXME: Document
-bool host_sendto_raw(struct host *h, const char *buffer,
+boolean host_sendto_raw(struct host *h, const char *buffer,
  unsigned int len, const char *hostname, int port);
 
 /**
@@ -296,7 +296,7 @@ enum host_status host_send_file(struct host *h, FILE *file,
  const char *mime_type);
 
 // FIXME: Document?
-bool host_handle_http_request(struct host *h);
+boolean host_handle_http_request(struct host *h);
 
 #endif // NETWORK_DEADCODE
 

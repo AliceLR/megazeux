@@ -42,7 +42,7 @@ struct mzx_resource
   char *path;
 
   /* So mzxrun requires fewer files even in CONFIG_EDITOR=1 build */
-  bool optional;
+  boolean optional;
 };
 
 /* Using C99 initializers would be nicer here, but MSVC doesn't support
@@ -117,7 +117,7 @@ void *check_realloc(void *ptr, size_t size, const char *file, int line)
 
 #endif /* CONFIG_CHECK_ALLOC */
 
-int mzx_res_init(const char *argv0, bool editor)
+int mzx_res_init(const char *argv0, boolean editor)
 {
   size_t i, bin_path_len = 0;
   struct stat file_info;
@@ -669,7 +669,7 @@ static void *boyer_moore_memrchr(const void *mem, char ch, size_t len)
 
 // Index must be an array of 256 ints
 void boyer_moore_index(void *B, size_t b_len,
- int *index, bool ignore_case)
+ int *index, boolean ignore_case)
 {
   char *b = (char *)B;
   int i;
@@ -707,7 +707,7 @@ void boyer_moore_index(void *B, size_t b_len,
 // search speed, especially for large needles. This is actually a reduced
 // Boyer-Moore search, as the original version uses two separate indexes.
 void *boyer_moore_search(void *A, size_t a_len, void *B, size_t b_len,
- int *index, bool ignore_case)
+ int *index, boolean ignore_case)
 {
   unsigned char *a = (unsigned char *)A;
   unsigned char *b = (unsigned char *)B;
@@ -924,7 +924,7 @@ long dir_tell(struct mzx_dir *dir)
   return dir->pos;
 }
 
-bool dir_open(struct mzx_dir *dir, const char *path)
+boolean dir_open(struct mzx_dir *dir, const char *path)
 {
   dir->d = opendir(path);
   if(!dir->d)
@@ -980,7 +980,7 @@ void dir_seek(struct mzx_dir *dir, long offset)
     readdir(dir->d);
 }
 
-bool dir_get_next_entry(struct mzx_dir *dir, char *entry)
+boolean dir_get_next_entry(struct mzx_dir *dir, char *entry)
 {
   struct dirent *inode;
 

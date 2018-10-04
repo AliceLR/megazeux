@@ -56,7 +56,7 @@ static inline void meter_initial_draw(int curr, int target, const char *title) {
 
 static char name_buffer[ROBOT_MAX_TR];
 
-static inline bool legacy_load_counter(struct world *mzx_world,
+static inline boolean legacy_load_counter(struct world *mzx_world,
  FILE *fp, struct counter **counter_list, int index)
 {
   int value = fgetd(fp);
@@ -748,7 +748,7 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
 
     for(i = 0, j = 0; i < num_counters; i++)
     {
-      bool counter = legacy_load_counter(mzx_world, fp,
+      boolean counter = legacy_load_counter(mzx_world, fp,
        mzx_world->counter_list, j);
 
       /* We loaded a special counter, this doesn't need to be

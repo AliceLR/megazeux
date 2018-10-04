@@ -184,7 +184,7 @@ static void append_world_refactor_board(struct board *cur_board,
 }
 
 
-static bool append_world_legacy(struct world *mzx_world, FILE *fp,
+static boolean append_world_legacy(struct world *mzx_world, FILE *fp,
  int file_version)
 {
   int i;
@@ -276,7 +276,7 @@ static int append_world_zip_get_num_boards(const void *buffer, int buf_size)
 }
 
 
-static bool append_world_zip(struct world *mzx_world, struct zip_archive *zp,
+static boolean append_world_zip(struct world *mzx_world, struct zip_archive *zp,
  int file_version)
 {
   struct board *cur_board;
@@ -346,12 +346,12 @@ static bool append_world_zip(struct world *mzx_world, struct zip_archive *zp,
 }
 
 
-bool append_world(struct world *mzx_world, const char *file)
+boolean append_world(struct world *mzx_world, const char *file)
 {
   char ignore[BOARD_NAME_SIZE];
   int file_version;
 
-  bool ret = false;
+  boolean ret = false;
 
   struct zip_archive *zp;
   FILE *fp;

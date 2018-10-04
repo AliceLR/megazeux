@@ -289,7 +289,7 @@ void quit_audio(void)
 /* If the mod was successfully changed, return 1.  This value is used
 *  to determine whether to change real_mod_playing.
 */
-int audio_play_module(char *filename, bool safely, int volume)
+int audio_play_module(char *filename, boolean safely, int volume)
 {
   char translated_filename[MAX_PATH];
   struct audio_stream *a_src;
@@ -404,7 +404,7 @@ static void limit_samples(int max)
   UNLOCK();
 }
 
-void audio_play_sample(char *filename, bool safely, int period)
+void audio_play_sample(char *filename, boolean safely, int period)
 {
   Uint32 vol = 255 * audio.sound_volume / 8;
   char translated_filename[MAX_PATH];

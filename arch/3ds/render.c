@@ -82,7 +82,7 @@ struct ctr_render_data
   C3D_Tex charset[5], charset_vram[5];
   u8 charset_dirty_set;
   u8 charset_dirty[NUM_CHARSETS * 2];
-  bool rendering_frame, checked_frame;
+  boolean rendering_frame, checked_frame;
   struct ctr_shader_data shader_2d, shader_playfield;
   C3D_Mtx projection;
   C3D_Tex playfield_tex;
@@ -132,7 +132,7 @@ static u8 bitmask_smzx[4][16] =
 };
 
 // texture PNG dimensions must be powers of two
-static bool tex_w_h_constraint(png_uint_32 w, png_uint_32 h)
+static boolean tex_w_h_constraint(png_uint_32 w, png_uint_32 h)
 {
   return w > 0 && h > 0 && ((w & (w - 1)) == 0) && ((h & (h - 1)) == 0);
 }
@@ -165,7 +165,7 @@ static void *tex_alloc_png_surface(png_uint_32 w, png_uint_32 h,
 }
 
 static inline void ctr_set_2d_projection(struct ctr_render_data *render_data,
- int width, int height, bool tilt)
+ int width, int height, boolean tilt)
 {
   if(tilt)
     Mtx_OrthoTilt(&render_data->projection, 0, width, height, 0, -1.0, 12100.0,
@@ -177,7 +177,7 @@ static inline void ctr_set_2d_projection(struct ctr_render_data *render_data,
 }
 
 static inline void ctr_set_2d_projection_screen(
- struct ctr_render_data *render_data, bool top_screen)
+ struct ctr_render_data *render_data, boolean top_screen)
 {
   ctr_set_2d_projection(render_data, top_screen ? 400 : 320, 240, true);
 }
@@ -203,7 +203,7 @@ static inline void ctr_prepare_2d(struct ctr_render_data *render_data,
 }
 
 static inline void ctr_prepare_playfield(struct ctr_render_data *render_data,
- struct v_char *array, float xo, float yo, bool geo, int mode, float z)
+ struct v_char *array, float xo, float yo, boolean geo, int mode, float z)
 {
   C3D_BufInfo *bufInfo;
 
@@ -268,7 +268,7 @@ static struct vertex *vertex_heap;
 
 void ctr_draw_2d_texture(struct ctr_render_data *render_data, C3D_Tex *texture,
  int tx, int ty, int tw, int th,
- float x, float y, float w, float h, float z, u32 color, bool flipy)
+ float x, float y, float w, float h, float z, u32 color, boolean flipy)
 {
   struct vertex *vertices;
 
@@ -344,7 +344,7 @@ static void ctr_init_shader(struct ctr_shader_data *shader, const void *data,
   AttrInfo_Init(&shader->attr);
 }
 
-static bool ctr_init_video(struct graphics_data *graphics,
+static boolean ctr_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
   static struct ctr_render_data render_data;
@@ -485,14 +485,14 @@ static void ctr_free_video(struct graphics_data *graphics)
   C3D_RenderTargetDelete(render_data->target_bottom);
 }
 
-static bool ctr_check_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, bool fullscreen, bool resize)
+static boolean ctr_check_video_mode(struct graphics_data *graphics, int width,
+ int height, int depth, boolean fullscreen, boolean resize)
 {
   return true;
 }
 
-static bool ctr_set_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, bool fullscreen, bool resize)
+static boolean ctr_set_video_mode(struct graphics_data *graphics, int width,
+ int height, int depth, boolean fullscreen, boolean resize)
 {
   return true;
 }
@@ -680,7 +680,7 @@ static inline void ctr_refresh_charsets(struct ctr_render_data *render_data,
   return;
 }
 
-static bool ctr_should_render(struct ctr_render_data *render_data)
+static boolean ctr_should_render(struct ctr_render_data *render_data)
 {
   if(!render_data->rendering_frame)
   {
@@ -714,7 +714,7 @@ static void ctr_render_layer(struct graphics_data *graphics,
   u32 uv;
   u32 i, j, ch;
   u32 protected_pal_position = graphics->protected_pal_position;
-  bool has_content = false, has_inversions = false;
+  boolean has_content = false, has_inversions = false;
 
   if(!ctr_should_render(render_data))
     return;
@@ -950,7 +950,7 @@ static void ctr_render_mouse(struct graphics_data *graphics,
 }
 
 static inline void ctr_draw_playfield(struct ctr_render_data *render_data,
- bool top_screen)
+ boolean top_screen)
 {
   int x, y;
   int width, height;

@@ -20,7 +20,7 @@
 #include "run_stubs.h"
 
 #ifdef CONFIG_EDITOR
-bool is_editor(void) { return false; }
+boolean is_editor(void) { return false; }
 void editor_init(void) { }
 void init_macros(void) { }
 
@@ -32,6 +32,6 @@ void free_editor_config(void) {}
 #endif
 
 #ifdef CONFIG_UPDATER
-bool updater_init(int argc, char *argv[]) { return true; }
-bool is_updater(void) { return false; }
+boolean updater_init(int argc, char *argv[]) { return true; }
+boolean is_updater(void) { return false; }
 #endif

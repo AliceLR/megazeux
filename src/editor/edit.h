@@ -49,7 +49,7 @@ enum cursor_mode
 };
 
 EDITOR_LIBSPEC void editor_init(void);
-EDITOR_LIBSPEC bool is_editor(void);
+EDITOR_LIBSPEC boolean is_editor(void);
 
 #define EC_MAIN_BOX           25
 #define EC_MAIN_BOX_DARK      16

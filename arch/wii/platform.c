@@ -80,7 +80,7 @@ Uint32 get_ticks(void)
   return ticks_to_millisecs(gettime() - timebase_offset);
 }
 
-bool platform_init(void)
+boolean platform_init(void)
 {
   timebase_offset = gettime();
 

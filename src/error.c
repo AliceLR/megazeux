@@ -43,7 +43,7 @@ static const char *const error_type_names[] =
 
 // Note: ERROR_OPT_SUPPRESS should only be used by error_message().
 
-int error(const char *string, unsigned int type, unsigned int options,
+int error(const char *string, enum error_type type, unsigned int options,
  unsigned int code)
 {
   const char *type_name;
@@ -507,8 +507,7 @@ int get_and_reset_error_count(void)
 
 void set_error_suppression(enum error_code id, boolean enable)
 {
-  if(id >= 0)
-    suppress_errors[id] = enable;
+  suppress_errors[id] = enable;
 }
 
 void reset_error_suppression(void)

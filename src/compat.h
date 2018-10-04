@@ -40,11 +40,11 @@
 #undef true
 #undef bool
 
-typedef enum
+enum
 {
   false = 0,
   true  = 1,
-} bool;
+};
 
 #endif // !CONFIG_WII && !CONFIG_NDS
 

@@ -108,7 +108,7 @@ struct gx_render_data
   int chrdirty_all;
   int chrdirty_set;
   int paldirty;
-  bool invalidate;
+  boolean invalidate;
   int current_xfb;
   s16 sx0, sy0, sx1, sy1;
 };
@@ -251,7 +251,7 @@ static u32 smzxtexline[256] =
   0xFFFFFF00, 0xFFFFFF55, 0xFFFFFFAA, 0xFFFFFFFF
 };
 
-static bool gx_init_video(struct graphics_data *graphics,
+static boolean gx_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
   const GXColor black = {0, 0, 0, 255};
@@ -376,14 +376,14 @@ static void gx_free_video(struct graphics_data *graphics)
   graphics->render_data = NULL;
 }
 
-static bool gx_check_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, bool fullscreen, bool resize)
+static boolean gx_check_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, boolean fullscreen, boolean resize)
 {
   return true;
 }
 
-static bool gx_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, bool fullscreen, bool resize)
+static boolean gx_set_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, boolean fullscreen, boolean resize)
 {
   struct gx_render_data *render_data = graphics->render_data;
   float x, y, w, h, scale, xscale, yscale;

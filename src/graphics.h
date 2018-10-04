@@ -106,28 +106,32 @@ struct video_layer;
 
 struct renderer
 {
-  bool (*init_video)       (struct graphics_data *, struct config_info *);
-  void (*free_video)       (struct graphics_data *);
-  bool (*check_video_mode) (struct graphics_data *, int, int, int, bool, bool);
-  bool (*set_video_mode)   (struct graphics_data *, int, int, int, bool, bool);
-  void (*update_colors)    (struct graphics_data *, struct rgb_color *,
-                             Uint32);
-  void (*resize_screen)    (struct graphics_data *, int, int);
-  void (*remap_char_range) (struct graphics_data *, Uint16 first, Uint16 count);
-  void (*remap_char)       (struct graphics_data *, Uint16 chr);
-  void (*remap_charbyte)   (struct graphics_data *, Uint16 chr, Uint8 byte);
-  void (*get_screen_coords)(struct graphics_data *, int, int, int *, int *,
-                             int *, int *, int *, int *);
-  void (*set_screen_coords)(struct graphics_data *, int, int, int *, int *);
-  void (*switch_shader)    (struct graphics_data *, const char *name);
-  void (*render_graph)     (struct graphics_data *);
-  void (*render_layer)     (struct graphics_data *, struct video_layer *);
-  void (*render_cursor)    (struct graphics_data *, Uint32, Uint32, Uint16,
-                             Uint8, Uint8);
-  void (*render_mouse)     (struct graphics_data *, Uint32, Uint32, Uint8,
-                             Uint8);
-  void (*sync_screen)      (struct graphics_data *);
-  void (*focus_pixel)      (struct graphics_data *, Uint32, Uint32);
+  boolean (*init_video)       (struct graphics_data *, struct config_info *);
+  void    (*free_video)       (struct graphics_data *);
+  boolean (*check_video_mode) (struct graphics_data *, int width, int height,
+                                int depth, boolean fullscreen, boolean resize);
+  boolean (*set_video_mode)   (struct graphics_data *, int width, int height,
+                                int depth, boolean fullscreen, boolean resize);
+  void    (*update_colors)    (struct graphics_data *, struct rgb_color *palette,
+                                Uint32 count);
+  void    (*resize_screen)    (struct graphics_data *, int width, int height);
+  void    (*remap_char_range) (struct graphics_data *, Uint16 first, Uint16 count);
+  void    (*remap_char)       (struct graphics_data *, Uint16 chr);
+  void    (*remap_charbyte)   (struct graphics_data *, Uint16 chr, Uint8 byte);
+  void    (*get_screen_coords)(struct graphics_data *, int screen_x,
+                                int screen_y, int *x, int *y, int *min_x,
+                                int *min_y, int *max_x, int *max_y);
+  void    (*set_screen_coords)(struct graphics_data *, int x, int y,
+                                int *screen_x, int *screen_y);
+  void    (*switch_shader)    (struct graphics_data *, const char *name);
+  void    (*render_graph)     (struct graphics_data *);
+  void    (*render_layer)     (struct graphics_data *, struct video_layer *);
+  void    (*render_cursor)    (struct graphics_data *, Uint32 x, Uint32 y,
+                                Uint16 color, Uint8 lines, Uint8 offset);
+  void    (*render_mouse)     (struct graphics_data *, Uint32 x, Uint32 y,
+                                Uint8 w, Uint8 h);
+  void    (*sync_screen)      (struct graphics_data *);
+  void    (*focus_pixel)      (struct graphics_data *, Uint32 x, Uint32 y);
 };
 
 struct video_layer
@@ -237,17 +241,17 @@ CORE_LIBSPEC void cursor_solid(void);
 CORE_LIBSPEC void cursor_off(void);
 CORE_LIBSPEC void move_cursor(Uint32 x, Uint32 y);
 
-CORE_LIBSPEC bool init_video(struct config_info *conf, const char *caption);
+CORE_LIBSPEC boolean init_video(struct config_info *conf, const char *caption);
 CORE_LIBSPEC void destruct_layers(void);
 CORE_LIBSPEC void destruct_extra_layers(Uint32 first);
 CORE_LIBSPEC Uint32 create_layer(int x, int y, Uint32 w, Uint32 h,
- int draw_order, int t_col, int offset, bool unbound);
+ int draw_order, int t_col, int offset, boolean unbound);
 CORE_LIBSPEC void set_layer_offset(Uint32 layer, int offset);
 CORE_LIBSPEC void set_layer_mode(Uint32 layer, int mode);
 CORE_LIBSPEC void move_layer(Uint32 layer, int x, int y);
 CORE_LIBSPEC void select_layer(Uint32 layer);
 CORE_LIBSPEC void blank_layers(void);
-CORE_LIBSPEC bool has_video_initialized(void);
+CORE_LIBSPEC boolean has_video_initialized(void);
 CORE_LIBSPEC void update_screen(void);
 CORE_LIBSPEC void set_window_caption(const char *caption);
 
@@ -296,9 +300,9 @@ CORE_LIBSPEC void set_mouse_mul(int width_mul, int height_mul);
 char *get_default_caption(void);
 
 void color_string_ext(const char *string, Uint32 x, Uint32 y,
- Uint8 color, Uint32 offset, Uint32 c_offset, bool respect_newline);
+ Uint8 color, Uint32 offset, Uint32 c_offset, boolean respect_newline);
 void color_string_ext_special(const char *string, Uint32 x, Uint32 y,
- Uint8 *color, Uint32 offset, Uint32 c_offset, bool respect_newline);
+ Uint8 *color, Uint32 offset, Uint32 c_offset, boolean respect_newline);
 void write_line_ext(const char *string, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed, Uint32 offset,
  Uint32 c_offset);
@@ -311,7 +315,7 @@ Uint8 get_color_linear(Uint32 offset);
 
 void cursor_underline(void);
 
-bool set_video_mode(void);
+boolean set_video_mode(void);
 boolean is_fullscreen(void);
 void toggle_fullscreen(void);
 void resize_screen(Uint32 w, Uint32 h);
@@ -335,8 +339,8 @@ void get_screen_coords(int screen_x, int screen_y, int *x, int *y,
  int *min_x, int *min_y, int *max_x, int *max_y);
 void set_screen_coords(int x, int y, int *screen_x, int *screen_y);
 
-CORE_LIBSPEC bool switch_shader(const char *name);
-CORE_LIBSPEC bool layer_renderer_check(bool show_error);
+CORE_LIBSPEC boolean switch_shader(const char *name);
+CORE_LIBSPEC boolean layer_renderer_check(boolean show_error);
 
 /* Renderers might have the facility to center a screen on a given
  * region of the window. Currently only the NDS renderer implements

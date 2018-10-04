@@ -23,8 +23,8 @@
 #include "render_yuv.h"
 #include "renderers.h"
 
-static bool yuv2_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, bool fullscreen, bool resize)
+static boolean yuv2_set_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, boolean fullscreen, boolean resize)
 {
   struct yuv_render_data *render_data = graphics->render_data;
 

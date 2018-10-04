@@ -29,9 +29,9 @@
 extern struct input_status input;
 static enum bottom_screen_mode b_mode;
 static enum focus_mode allow_focus_changes = FOCUS_ALLOW;
-static bool is_dragging = false;
+static boolean is_dragging = false;
 
-bool update_hid(void);
+boolean update_hid(void);
 
 enum focus_mode get_allow_focus_changes(void)
 {
@@ -43,9 +43,9 @@ enum bottom_screen_mode get_bottom_screen_mode(void)
   return b_mode;
 }
 
-bool __update_event_status(void)
+boolean __update_event_status(void)
 {
-  bool retval = false;
+  boolean retval = false;
   retval |= aptMainLoop();
   retval |= update_hid();
   return retval;
@@ -62,7 +62,7 @@ void __wait_event(int timeout)
 
 // Taken from arch/nds/event.c
 // Send a key up/down event to MZX.
-void do_unicode_key_event(struct buffered_status *status, bool down,
+void do_unicode_key_event(struct buffered_status *status, boolean down,
  enum keycode code, int unicode)
 {
   if(down)
@@ -81,7 +81,7 @@ void do_unicode_key_event(struct buffered_status *status, bool down,
   }
 }
 
-void do_key_event(struct buffered_status *status, bool down,
+void do_key_event(struct buffered_status *status, boolean down,
  enum keycode code)
 {
   do_unicode_key_event(status, down, code,
@@ -89,7 +89,7 @@ void do_key_event(struct buffered_status *status, bool down,
 }
 
 // Send a joystick button up/down event to MZX.
-void do_joybutton_event(struct buffered_status *status, bool down,
+void do_joybutton_event(struct buffered_status *status, boolean down,
  int button)
 {
   // Look up the keycode for this joystick button.
@@ -97,7 +97,7 @@ void do_joybutton_event(struct buffered_status *status, bool down,
   do_key_event(status, down, stuffed_key);
 }
 
-static inline bool check_key(struct buffered_status *status,
+static inline boolean check_key(struct buffered_status *status,
  Uint32 down, Uint32 up, Uint32 key, enum keycode code)
 {
   if(down & key)
@@ -119,7 +119,7 @@ static inline bool check_key(struct buffered_status *status,
   }
 }
 
-static inline bool check_joy(struct buffered_status *status,
+static inline boolean check_joy(struct buffered_status *status,
   Uint32 down, Uint32 up, Uint32 key, Uint32 code)
 {
   if(down & key)
@@ -141,7 +141,7 @@ static inline bool check_joy(struct buffered_status *status,
   }
 }
 
-static inline bool ctr_is_mouse_area(touchPosition *touch)
+static inline boolean ctr_is_mouse_area(touchPosition *touch)
 {
   int mx, my;
 
@@ -162,7 +162,7 @@ static inline bool ctr_is_mouse_area(touchPosition *touch)
   }
 }
 
-static inline bool ctr_update_touch(struct buffered_status *status,
+static inline boolean ctr_update_touch(struct buffered_status *status,
  touchPosition *touch)
 {
   int mx, my;
@@ -205,7 +205,7 @@ static inline bool ctr_update_touch(struct buffered_status *status,
   }
 }
 
-static inline bool ctr_update_cstick(struct buffered_status *status)
+static inline boolean ctr_update_cstick(struct buffered_status *status)
 {
   circlePosition pos;
   int dmx, dmy, nmx, nmy;
@@ -241,11 +241,11 @@ static inline bool ctr_update_cstick(struct buffered_status *status)
   return false;
 }
 
-bool update_hid(void)
+boolean update_hid(void)
 {
   struct buffered_status *status = store_status();
   Uint32 down, held, up;
-  bool retval = false;
+  boolean retval = false;
   touchPosition touch;
 
   hidScanInput();

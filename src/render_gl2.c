@@ -160,7 +160,7 @@ struct gl2_render_data
   float vertex_array[TEX_BG_WIDTH * TEX_BG_HEIGHT * 8];
   float charset_texture_width;
   float charset_texture_height;
-  bool viewport_shrunk;
+  boolean viewport_shrunk;
 };
 
 static const GLubyte color_array_white[4 * 4] =
@@ -171,7 +171,7 @@ static const GLubyte color_array_white[4 * 4] =
   255, 255, 255, 255
 };
 
-static bool gl2_init_video(struct graphics_data *graphics,
+static boolean gl2_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
   struct gl2_render_data *render_data = cmalloc(sizeof(struct gl2_render_data));
@@ -326,8 +326,8 @@ static void gl2_resize_screen(struct graphics_data *graphics,
   gl_check_error();
 }
 
-static bool gl2_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, bool fullscreen, bool resize)
+static boolean gl2_set_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, boolean fullscreen, boolean resize)
 {
   gl_set_attributes(graphics);
 
@@ -344,7 +344,7 @@ static bool gl2_set_video_mode(struct graphics_data *graphics,
   // the check with EGL configurations (EGL implies OpenGL ES).
 #ifndef CONFIG_EGL
   {
-    static bool initialized = false;
+    static boolean initialized = false;
 
     if(!initialized)
     {

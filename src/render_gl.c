@@ -79,7 +79,7 @@ void gl_error(const char *file, int line,
 
 #endif // DEBUG
 
-bool gl_load_syms(const struct dso_syms_map *map)
+boolean gl_load_syms(const struct dso_syms_map *map)
 {
   int i = 0;
 

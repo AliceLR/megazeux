@@ -67,7 +67,7 @@ static int robo_debugger_enabled = 0;
 static int robo_debugger_override = 0;
 
 // Whether or not the debugger is stepping through code
-static bool step = false;
+static boolean step = false;
 
 // Last positions selected
 static int br_selected = 0;
@@ -1180,7 +1180,7 @@ int __debug_robot_break(context *ctx, struct robot *cur_robot,
       struct breakpoint *b;
       int match_line;
 
-      bool match = false;
+      boolean match = false;
 
       for(i = 0; i < num_breakpoints; i++)
       {
@@ -1241,7 +1241,7 @@ int __debug_robot_watch(context *ctx, struct robot *cur_robot,
   char *src_ptr = NULL;
 
   struct watchpoint *wt;
-  bool match = false;
+  boolean match = false;
   int value = 0;
   int i;
 
