@@ -229,8 +229,6 @@ struct world
   // An array for game2.cpp
   char *update_done;
   int update_done_size;
-  // Are we exiting all the way out of MZX?
-  bool full_exit;
 };
 
 __M_END_DECLS
