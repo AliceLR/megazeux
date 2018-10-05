@@ -209,7 +209,6 @@ static enum status convert_291_to_290(FILE *out, FILE *in)
   unsigned int board_id;
   unsigned int robot_id;
 
-  zip_read_directory(inZ);
   assign_fprops(inZ, 0);
 
   while(ZIP_SUCCESS == zip_get_next_prop(inZ, &file_id, &board_id, &robot_id))

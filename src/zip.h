@@ -96,7 +96,7 @@ enum zip_error
   ZIP_INVALID_RAW_READ_IN_FILE_MODE,
   ZIP_INVALID_RAW_WRITE_IN_FILE_MODE,
   ZIP_INVALID_DIRECTORY_READ_IN_FILE_MODE,
-  ZIP_INVALID_FILE_READ_IN_RAW_MODE,
+  ZIP_INVALID_FILE_READ_UNINITIALIZED,
   ZIP_INVALID_FILE_READ_IN_STREAM_MODE,
   ZIP_INVALID_FILE_WRITE_IN_STREAM_MODE,
   ZIP_INVALID_STREAM_READ,
@@ -189,10 +189,6 @@ struct zip_archive
 int zip_bound_data_usage(char *src, int srcLen);
 int zip_bound_total_header_usage(int num_files, int max_name_size);
 
-enum zip_error zseek(struct zip_archive *zp, int value, int code);
-
-int zgetc(struct zip_archive *zp, enum zip_error *err);
-int zgetw(struct zip_archive *zp, enum zip_error *err);
 int zgetd(struct zip_archive *zp, enum zip_error *err);
 enum zip_error zread(void *destBuf, size_t readLen, struct zip_archive *zp);
 
@@ -244,7 +240,6 @@ enum zip_error zip_write_close_mem_stream(struct zip_archive *zp,
 enum zip_error zip_write_file(struct zip_archive *zp, const char *name,
  const void *src, size_t srcLen, int method);
 
-enum zip_error zip_read_directory(struct zip_archive *zp);
 enum zip_error zip_close(struct zip_archive *zp,
  size_t *final_length);
 
@@ -253,7 +248,7 @@ struct zip_archive *zip_open_fp_write(FILE *fp);
 struct zip_archive *zip_open_file_read(const char *file_name);
 struct zip_archive *zip_open_file_write(const char *file_name);
 struct zip_archive *zip_open_mem_read(const void *src, size_t len);
-struct zip_archive *zip_open_mem_write(void *src, size_t len);
+struct zip_archive *zip_open_mem_write(void *src, size_t len, size_t start_pos);
 
 enum zip_error zip_expand(struct zip_archive *zp, void **src, size_t new_size);
 

@@ -396,9 +396,8 @@ static struct base_path *add_base_path(const char *path_name,
   if(!strcasecmp(path_name + strlen(path_name) - 4, ".ZIP"))
   {
     struct zip_archive *zp = zip_open_file_read(path_name);
-    int result = zip_read_directory(zp);
 
-    if(result != ZIP_SUCCESS)
+    if(!zp)
     {
       free(new_path);
       return NULL;
@@ -1349,7 +1348,7 @@ static enum status parse_world(struct memfile *mf, struct base_file *file,
 
   enum status ret = SUCCESS;
 
-  if(ZIP_SUCCESS != zip_read_directory(zp))
+  if(!zp)
   {
     ret = CORRUPT_WORLD;
     goto err_close;

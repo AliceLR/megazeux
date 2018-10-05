@@ -151,7 +151,7 @@ void replace_current_board(struct world *mzx_world, char *name)
       zp = zip_open_fp_read(fp);
 
       // Make sure it's an actual zip.
-      if(ZIP_SUCCESS == zip_read_directory(zp))
+      if(zp)
       {
         // Make sure the zip contains a board.
         board_id = find_first_board(zp);

@@ -1701,42 +1701,55 @@ static inline int load_world_strings(struct world *mzx_world,
 
 void save_counters_file(struct world *mzx_world, const char *file)
 {
-  struct zip_archive *zp = zip_open_file_write(file);
+  FILE *fp = fopen_unsafe(file, "wb");
+  struct zip_archive *zp;
 
-  if(!zp)
+  if(!fp)
     return;
 
-  zwrite("COUNTERS", 8, zp);
+  if(!fwrite("COUNTERS", 8, 1, fp))
+    goto err;
+
+  zp = zip_open_fp_write(fp);
+  if(!zp)
+    goto err;
 
   save_world_counters(mzx_world, zp,      "counter");
   save_world_strings(mzx_world, zp,       "string");
 
   zip_close(zp, NULL);
+  return;
+
+err:
+  fclose(fp);
+  return;
 }
 
 
 int load_counters_file(struct world *mzx_world, const char *file)
 {
-  struct zip_archive *zp = zip_open_file_read(file);
-  char magic[9];
+  FILE *fp = fopen_unsafe(file, "rb");
+  struct zip_archive *zp;
+  char magic[8];
 
   unsigned int prop_id;
 
-  if(!zp)
+  if(!fp)
   {
     error_message(E_FILE_DOES_NOT_EXIST, 0, NULL);
-    return 0;
+    return -1;
   }
 
-  magic[8] = 0;
-  if(ZIP_SUCCESS != zread(magic, 8, zp))
-    goto err;
+  if(!fread(magic, 8, 1, fp))
+    goto err_close_file;
 
-  if(strcmp(magic, "COUNTERS"))
-    goto err;
+  if(memcmp(magic, "COUNTERS", 8))
+    goto err_close_file;
 
-  if(ZIP_SUCCESS != zip_read_directory(zp))
-    goto err;
+  zp = zip_open_fp_read(fp);
+
+  if(!zp)
+    goto err_close_zip;
 
   assign_fprops(zp, 0);
 
@@ -1761,9 +1774,14 @@ int load_counters_file(struct world *mzx_world, const char *file)
   zip_close(zp, NULL);
   return 0;
 
-err:
-  error_message(E_SAVE_FILE_INVALID, 0, NULL);
+err_close_zip:
   zip_close(zp, NULL);
+  fp = NULL;
+
+err_close_file:
+  if(fp)
+    fclose(fp);
+  error_message(E_SAVE_FILE_INVALID, 0, NULL);
   return -1;
 }
 
@@ -2589,36 +2607,69 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
 }
 
 
+/**
+ * Open the world file and attempt to read the world header.
+ * Doesn't validate any read info; only return NULL if there was an IO error.
+ */
+
+static FILE *try_open_world(const char *file, boolean savegame,
+ int *file_version, int *protected, char *name)
+{
+  char magic[5];
+  int pr = 0;
+  int v;
+
+  FILE *fp = fopen_unsafe(file, "rb");
+  if(!fp)
+    return NULL;
+
+  if(savegame)
+  {
+    if(!fread(magic, 5, 1, fp))
+      goto err_close;
+
+    v = save_magic(magic);
+  }
+
+  else
+  {
+    if(!fread(name, BOARD_NAME_SIZE, 1, fp))
+      goto err_close;
+
+    // Protection byte
+    pr = fgetc(fp);
+    if(protected)
+      *protected = pr;
+
+    if(!fread(magic, 3, 1, fp))
+      goto err_close;
+
+    v = world_magic(magic);
+  }
+
+  if(protected) *protected = pr;
+  if(file_version) *file_version = v;
+  return fp;
+
+err_close:
+  fclose(fp);
+  return NULL;
+}
+
 static struct zip_archive *try_load_zip_world(struct world *mzx_world,
  const char *file, boolean savegame, int *file_version, int *protected,
  char *name)
 {
-  struct zip_archive *zp = zip_open_file_read(file);
-  char magic[5];
+  struct zip_archive *zp = NULL;
+  FILE *fp;
   int pr = 0;
   int v;
 
   int result;
 
-  if(!zp)
+  fp = try_open_world(file, savegame, &v, &pr, name);
+  if(!fp)
     return NULL;
-
-  if(savegame)
-  {
-    zread(magic, 5, zp);
-
-    v = save_magic(magic);
-  }
-  else
-  {
-    enum zip_error ignore;
-
-    zread(name, BOARD_NAME_SIZE, zp);
-    pr = zgetc(zp, &ignore);
-    zread(magic, 3, zp);
-
-    v = world_magic(magic);
-  }
 
   *file_version = v;
 
@@ -2640,9 +2691,9 @@ static struct zip_archive *try_load_zip_world(struct world *mzx_world,
   *file_version = 0;
   v = 0;
 
-  result = zip_read_directory(zp);
+  zp = zip_open_fp_read(fp);
 
-  if(result != ZIP_SUCCESS)
+  if(!zp)
     goto err_close;
 
   result = validate_world_zip(mzx_world, zp, savegame, file_version);
@@ -2709,17 +2760,17 @@ err_close:
 
 err_protected:
   *protected = pr;
-  zip_close(zp, NULL);
+  if(zp)
+    zip_close(zp, NULL);
+  else
+    fclose(fp);
   return NULL;
 }
-
 
 static FILE *try_load_legacy_world(struct world *mzx_world, const char *file,
  boolean savegame, int *file_version, char *name)
 {
-  char magic[5];
   FILE *fp;
-
   enum val_result result;
 
   // Validate the legacy world file and attempt decryption as needed.
@@ -2728,28 +2779,13 @@ static FILE *try_load_legacy_world(struct world *mzx_world, const char *file,
   if(result != VAL_SUCCESS)
     return NULL;
 
-  // Open the file
-  fp = fopen_unsafe(file, "rb");
-
-  if(savegame)
-  {
-    fread(magic, 5, 1, fp);
-    *file_version = save_magic(magic);
-  }
-
-  else
-  {
-    fread(name, BOARD_NAME_SIZE, 1, fp);
-    // Skip the protection byte
-    fseek(fp, 1, SEEK_CUR);
-    fread(magic, 3, 1, fp);
-    *file_version = world_magic(magic);
-  }
+  // We don't care about the value of the protected byte since the world
+  // should be decrypted if we've made it this far.
+  fp = try_open_world(file, savegame, file_version, NULL, name);
 
   reset_error_suppression();
   return fp;
 }
-
 
 __editor_maybe_static
 void try_load_world(struct world *mzx_world, struct zip_archive **zp,

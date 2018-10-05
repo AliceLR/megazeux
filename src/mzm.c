@@ -193,12 +193,8 @@ static void save_mzm_common(struct world *mzx_world, int start_x, int start_y,
         struct robot **robot_list = src_board->robot_list;
         char name[4];
 
-        // Get the zip redy 2 go
-        zp = zip_open_mem_write(buffer, mzm_size);
+        // Now we're at the position we want to start writing robots.
         robot_table_position = bufferPtr - (unsigned char *)buffer;
-
-        // Get the zip in position. Won't alter the bufferPtr
-        zseek(zp, robot_table_position, SEEK_SET);
 
         // Go back to header to put robot table information
         bufferPtr = buffer;
@@ -213,7 +209,9 @@ static void save_mzm_common(struct world *mzx_world, int start_x, int start_y,
         // Savegame mode for robots
         mem_putc(savegame, &bufferPtr);
 
-        // Write robots into the zip
+        // Open the zip and write our robots into it.
+        zp = zip_open_mem_write(buffer, mzm_size, robot_table_position);
+
         for(i = 0; i < num_robots; i++)
         {
           sprintf(name, "r%2.2X", (unsigned char) i);
@@ -639,7 +637,6 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer,
             else
             {
               zp = zip_open_mem_read(buffer, file_length);
-              zip_read_directory(zp);
               assign_fprops(zp, 1);
             }
 
