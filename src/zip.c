@@ -46,6 +46,7 @@
 
 #ifdef CONFIG_NDS
 #define ZIP_WRITE_DATA_DESCRIPTOR
+#define DATA_DESCRIPTOR_LEN 12
 #endif // CONFIG_NDS
 
 #define ZIP_DEFAULT_NUM_FILES 4
@@ -58,6 +59,10 @@
 #define ZIP_S_WRITE_FILES 9
 #define ZIP_S_WRITE_STREAM 10
 #define ZIP_S_WRITE_MEMSTREAM 11
+
+#define LOCAL_FILE_HEADER_LEN 30
+#define CENTRAL_FILE_HEADER_LEN 46
+#define EOCD_RECORD_LEN 22
 
 /* This zip reader/writer is designed:
  *
@@ -363,14 +368,14 @@ int zip_bound_total_header_usage(int num_files, int max_name_size)
   int extra = 0;
 
 #ifdef ZIP_WRITE_DATA_DESCRIPTOR
-  extra = num_files * 12;   // data descriptor size
+  extra = num_files * DATA_DESCRIPTOR_LEN;      // data descriptor size
 #endif
 
   return num_files *
    // base + file name
-   (30 + max_name_size +    // Local
-    46 + max_name_size) +   // Central directory
-    22 + extra;             // EOCD record
+   (LOCAL_FILE_HEADER_LEN + max_name_size +     // Local
+    CENTRAL_FILE_HEADER_LEN + max_name_size) +  // Central directory
+    EOCD_RECORD_LEN + extra;                    // EOCD record
 }
 
 
@@ -441,7 +446,7 @@ static inline void precalculate_write_errors(struct zip_archive *zp)
 }
 
 
-static char file_sig[] =
+static char file_sig_local[] =
 {
   0x50,
   0x4b,
@@ -457,28 +462,24 @@ static char file_sig_central[] =
   0x02
 };
 
-static enum zip_error zip_read_file_header(struct zip_archive *zp,
- struct zip_file_header *fh, uint32_t expected_c_size, int is_central)
+static uint32_t data_descriptor_sig = 0x08074b50;
+
+static enum zip_error zip_read_file_header_signature(struct zip_archive *zp,
+ boolean is_central)
 {
-  char buffer[42];
-  struct memfile mf;
-
-  int data_position;
-  int method;
-  int flags;
   int n, i;
-
   void *fp = zp->fp;
   int (*vgetc)(void *) = zp->vgetc;
-  int (*vgetd)(void *) = zp->vgetd;
-  size_t (*vread)(void *, size_t, size_t, void *) = zp->vread;
-  int (*vseek)(void *, long int, int) = zp->vseek;
   int (*hasspace)(size_t, void *) = zp->hasspace;
 
-  char *magic = is_central ? file_sig_central : file_sig;
-  int header_length = is_central ? 46 : 30;
+  int header_length = CENTRAL_FILE_HEADER_LEN;
+  char *magic = file_sig_central;
 
-  fh->file_name = NULL;
+  if(!is_central)
+  {
+    header_length = LOCAL_FILE_HEADER_LEN;
+    magic = file_sig_local;
+  }
 
   // Find the next file header
   i = 0;
@@ -510,156 +511,216 @@ static enum zip_error zip_read_file_header(struct zip_archive *zp,
       i = 0;
   }
 
+  return ZIP_SUCCESS;
+}
+
+static enum zip_error zip_read_central_file_header(struct zip_archive *zp,
+ struct zip_file_header *central_fh)
+{
+  enum zip_error result;
+  char buffer[CENTRAL_FILE_HEADER_LEN];
+  struct memfile mf;
+
+  int data_position;
+  int method;
+  int flags;
+  int n;
+
+  void *fp = zp->fp;
+  size_t (*vread)(void *, size_t, size_t, void *) = zp->vread;
+
+  central_fh->file_name = NULL;
+
+  result = zip_read_file_header_signature(zp, true);
+  if(result)
+    return result;
+
   // We already read four
-  if(!vread(buffer, header_length - 4, 1, fp))
+  if(!vread(buffer, CENTRAL_FILE_HEADER_LEN - 4, 1, fp))
     return ZIP_READ_ERROR;
 
-  mfopen_static(buffer, header_length - 4, &mf);
+  mfopen_static(buffer, CENTRAL_FILE_HEADER_LEN - 4, &mf);
 
-  if(is_central)
+  // Version made by              2
+  // Version needed to extract    2
+  mf.current += 4;
+
+  // General purpose bit flag     2
+
+  flags = mfgetw(&mf);
+
+  if((flags & ~ZIP_F_ALLOWED) != 0)
   {
-    // Version made by              2
-    // Version needed to extract    2
-    mf.current += 4;
+    warn(
+      "Zip using unsupported options "
+      "(allowing %d, found %d -- unsupported: %d).\n",
+      ZIP_F_ALLOWED,
+      flags,
+      flags & ~ZIP_F_ALLOWED
+    );
+    return ZIP_UNSUPPORTED_FLAGS;
+  }
+  central_fh->flags = flags;
 
-    // General purpose bit flag     2
+  // Compression method           2
 
-    flags = mfgetw(&mf);
+  method = mfgetw(&mf);
 
-    if((flags & ~ZIP_F_ALLOWED) != 0)
-    {
-      warn(
-        "Zip using unsupported options "
-        "(allowing %d, found %d -- unsupported: %d).\n",
-        ZIP_F_ALLOWED,
-        flags,
-        flags & ~ZIP_F_ALLOWED
-      );
-      return ZIP_UNSUPPORTED_FLAGS;
-    }
-    fh->flags = flags;
+  if(method < 0)
+    return ZIP_READ_ERROR;
 
-    // Compression method           2
+  if(method != ZIP_M_NONE && method != ZIP_M_DEFLATE)
+    return ZIP_UNSUPPORTED_COMPRESSION;
 
-    method = mfgetw(&mf);
+  central_fh->method = method;
 
-    if(method < 0)
-    {
-      return ZIP_READ_ERROR;
-    }
-    else
-    if(method != ZIP_M_NONE && method != ZIP_M_DEFLATE)
-    {
-      return ZIP_UNSUPPORTED_COMPRESSION;
-    }
-    fh->method = method;
+  // File last modification time  2
+  // File last modification date  2
+  mf.current += 4;
 
-    // File last modification time  2
-    // File last modification date  2
-    mf.current += 4;
+  // CRC-32, sizes                12
 
-    // CRC-32, sizes                12
+  central_fh->crc32 = mfgetd(&mf);
+  central_fh->compressed_size = mfgetd(&mf);
+  central_fh->uncompressed_size = mfgetd(&mf);
 
-    fh->crc32 = mfgetd(&mf);
-    fh->compressed_size = mfgetd(&mf);
-    fh->uncompressed_size = mfgetd(&mf);
+  if(central_fh->compressed_size == 0xFFFFFFFF)
+    return ZIP_UNSUPPORTED_ZIP64;
 
-    if(fh->compressed_size == 0xFFFFFFFF)
-      return ZIP_UNSUPPORTED_ZIP64;
+  if(central_fh->uncompressed_size == 0xFFFFFFFF)
+    return ZIP_UNSUPPORTED_ZIP64;
 
-    if(fh->uncompressed_size == 0xFFFFFFFF)
-      return ZIP_UNSUPPORTED_ZIP64;
+  // File name length             2
+  // Extra field length           2
+  // File comment length          2
 
-    // File name length             2
-    // Extra field length           2
-    // File comment length          2
+  n = mfgetw(&mf);
+  central_fh->file_name_length = n;
+  data_position = zp->vtell(fp) + n + mfgetw(&mf) + mfgetw(&mf);
 
-    n = mfgetw(&mf);
-    fh->file_name_length = n;
-    data_position = zp->vtell(fp) + n + mfgetw(&mf) + mfgetw(&mf);
+  // Disk number of file start    2
+  // Internal file attributes     2
+  // External file attributes     4
+  mf.current += 8;
 
-    // Disk number of file start    2
-    // Internal file attributes     2
-    // External file attributes     4
-    mf.current += 8;
+  // Offset to local header       4 (from start of archive)
+  central_fh->offset = mfgetd(&mf);
 
-    // Offset to local header       4 (from start of archive)
-    fh->offset = mfgetd(&mf);
+  // File name (n)
+  central_fh->file_name = cmalloc(n + 1);
+  vread(central_fh->file_name, n, 1, fp);
+  central_fh->file_name[n] = 0;
 
-    // File name (n)
-    fh->file_name = cmalloc(n + 1);
-    vread(fh->file_name, n, 1, fp);
-    fh->file_name[n] = 0;
+  // Done.
+  if(zp->vseek(fp, data_position, SEEK_SET))
+    return ZIP_SEEK_ERROR;
+
+  return ZIP_SUCCESS;
+}
+
+static enum zip_error zip_verify_local_file_header(struct zip_archive *zp,
+ struct zip_file_header *central_fh)
+{
+  enum zip_error result;
+  char buffer[LOCAL_FILE_HEADER_LEN];
+  struct memfile mf;
+
+  uint32_t crc32;
+  uint32_t compressed_size;
+  uint32_t uncompressed_size;
+  int data_position;
+  int flags;
+
+  void *fp = zp->fp;
+
+  result = zip_read_file_header_signature(zp, false);
+  if(result)
+    return result;
+
+  // We already read four
+  if(!zp->vread(buffer, LOCAL_FILE_HEADER_LEN - 4, 1, fp))
+    return ZIP_READ_ERROR;
+
+  mfopen_static(buffer, LOCAL_FILE_HEADER_LEN - 4, &mf);
+
+  // Version made by              2
+  mf.current += 2;
+
+  // General purpose bit flag     2
+  flags = mfgetw(&mf);
+
+  // Compression method           2
+  // File last modification time  2
+  // File last modification date  2
+  mf.current += 6;
+
+  if(!(flags & ZIP_F_DATA_DESCRIPTOR))
+  {
+    // Normal.
+
+    // CRC-32, sizes              12
+    crc32 = mfgetd(&mf);
+    compressed_size = mfgetd(&mf);
+    uncompressed_size = mfgetd(&mf);
+
+    // File name length           2
+    // Extra field length         2
+
+    data_position = zp->vtell(fp) + mfgetw(&mf) + mfgetw(&mf);
 
     // Done.
   }
 
   else
   {
-    // Local. These are generally redundant with the central directory.
-    // Aside from the fields used to validate, ignore.
+    // With data descriptor.
+    int (*vgetd)(void *) = zp->vgetd;
 
-    // Version made by              2
-    mf.current += 2;
+    // CRC-32, sizes              12
+    mf.current += 12;
 
-    // General purpose bit flag     2
+    // File name length           2
+    // Extra field length         2
 
-    flags = mfgetw(&mf);
-    fh->flags = flags;
+    data_position = zp->vtell(fp) + mfgetw(&mf) + mfgetw(&mf);
 
-    // Compression method           2
-    // File last modification time  2
-    // File last modification date  2
-    mf.current += 6;
+    // CRC-32, sizes              12
 
-    if(!(flags & ZIP_F_DATA_DESCRIPTOR))
+    zp->vseek(fp, data_position + central_fh->compressed_size, SEEK_SET);
+
+    // The data descriptor may or may not have an optional signature field,
+    // meaning it may be either 12 or 16 bytes long.
+    crc32 = vgetd(fp);
+    compressed_size = vgetd(fp);
+    uncompressed_size = vgetd(fp);
+
+    if(crc32 == data_descriptor_sig &&
+     compressed_size == central_fh->crc32 &&
+     uncompressed_size == central_fh->compressed_size)
     {
-      // Normal.
-
-      // CRC-32, sizes              12
-
-      fh->crc32 = mfgetd(&mf);
-      fh->compressed_size = mfgetd(&mf);
-      fh->uncompressed_size = mfgetd(&mf);
-
-      // File name length           2
-      // Extra field length         2
-
-      data_position = zp->vtell(fp) + mfgetw(&mf) + mfgetw(&mf);
-
-      // Done.
+      // If the first value is the data descriptor signature and we can verify
+      // that we've read the expected crc32 and compressed size where they
+      // should be, it's safe to assume this is a 16-byte data descriptor.
+      // In this case, shift the values.
+      crc32 = compressed_size;
+      compressed_size = uncompressed_size;
+      uncompressed_size = vgetd(fp);
     }
 
-    else
-    {
-      // With data descriptor.
-
-      // CRC-32, sizes              12
-      mf.current += 12;
-
-      // File name length           2
-      // Extra field length         2
-
-      data_position = zp->vtell(fp) + mfgetw(&mf) + mfgetw(&mf);
-
-      // CRC-32, sizes              12
-
-      vseek(fp, data_position + expected_c_size, SEEK_SET);
-
-      fh->crc32 = vgetd(fp);
-      fh->compressed_size = vgetd(fp);
-      fh->uncompressed_size = vgetd(fp);
-
-      // Done.
-    }
+    // Done.
   }
 
-  if(vseek(fp, data_position, SEEK_SET))
+  // Verify values are correct.
+  if(crc32 != central_fh->crc32 ||
+   compressed_size != central_fh->compressed_size ||
+   uncompressed_size != central_fh->uncompressed_size)
+    return ZIP_HEADER_MISMATCH;
+
+  if(zp->vseek(fp, data_position, SEEK_SET))
     return ZIP_SEEK_ERROR;
 
   return ZIP_SUCCESS;
 }
-
 
 static enum zip_error zip_write_file_header(struct zip_archive *zp,
  struct zip_file_header *fh, int is_central)
@@ -678,14 +739,14 @@ static enum zip_error zip_write_file_header(struct zip_archive *zp,
   {
     // Position to write CRC, sizes after file write
     zp->stream_crc_position = zp->vtell(fp) + 16;
-    header_size = fh->file_name_length + 46;
+    header_size = fh->file_name_length + CENTRAL_FILE_HEADER_LEN;
     magic = file_sig_central;
   }
   else
   {
     zp->stream_crc_position = zp->vtell(fp) + 14;
-    header_size = fh->file_name_length + 30;
-    magic = file_sig;
+    header_size = fh->file_name_length + LOCAL_FILE_HEADER_LEN;
+    magic = file_sig_local;
   }
 
   buffer = cmalloc(header_size);
@@ -1112,10 +1173,8 @@ enum zip_error zip_read_open_file_stream(struct zip_archive *zp,
  size_t *destLen)
 {
   struct zip_file_header *central_fh;
-  struct zip_file_header local_fh;
   void *fp;
 
-  uint32_t f_crc32;
   uint32_t c_size;
   uint32_t u_size;
   uint16_t method;
@@ -1135,7 +1194,6 @@ enum zip_error zip_read_open_file_stream(struct zip_archive *zp,
 
   central_fh = zp->files[zp->pos];
 
-  f_crc32 = central_fh->crc32;
   c_size = central_fh->compressed_size;
   u_size = central_fh->uncompressed_size;
   method = central_fh->method;
@@ -1159,21 +1217,11 @@ enum zip_error zip_read_open_file_stream(struct zip_archive *zp,
     }
   }
 
-  // Read the local header --  give it the expected
-  // compressed size just in the case there's a data descriptor.
+  // Verify the local header matches the central directory header.
 
-  result = zip_read_file_header(zp, &local_fh, c_size, 0);
+  result = zip_verify_local_file_header(zp, central_fh);
   if(result)
     goto err_out;
-
-  // Verify correctness between headers
-  if(f_crc32 != local_fh.crc32 ||
-   c_size != local_fh.compressed_size ||
-   u_size != local_fh.uncompressed_size)
-  {
-    result = ZIP_HEADER_MISMATCH;
-    goto err_out;
-  }
 
   // Everything looks good. Set up stream mode.
   zp->mode = ZIP_S_READ_STREAM;
@@ -1266,12 +1314,9 @@ enum zip_error zip_read_open_mem_stream(struct zip_archive *zp,
  struct memfile *mf)
 {
   struct zip_file_header *central_fh;
-  struct zip_file_header local_fh;
   void *fp;
 
-  uint32_t f_crc32;
   uint32_t c_size;
-  uint32_t u_size;
   uint16_t method;
 
   uint32_t read_pos;
@@ -1295,9 +1340,7 @@ enum zip_error zip_read_open_mem_stream(struct zip_archive *zp,
 
   central_fh = zp->files[zp->pos];
 
-  f_crc32 = central_fh->crc32;
   c_size = central_fh->compressed_size;
-  u_size = central_fh->uncompressed_size;
   method = central_fh->method;
 
   // Check for unsupported methods
@@ -1326,21 +1369,11 @@ enum zip_error zip_read_open_mem_stream(struct zip_archive *zp,
     }
   }
 
-  // Read the local header -- give it the expected
-  // compressed size just in the case there's a data descriptor.
+  // Verify the local header matches the central directory header.
 
-  result = zip_read_file_header(zp, &local_fh, c_size, 0);
+  result = zip_verify_local_file_header(zp, central_fh);
   if(result)
     goto err_out;
-
-  // Verify correctness between headers
-  if(f_crc32 != local_fh.crc32 ||
-   c_size != local_fh.compressed_size ||
-   u_size != local_fh.uncompressed_size)
-  {
-    result = ZIP_HEADER_MISMATCH;
-    goto err_out;
-  }
 
   // Everything looks good. Set up memory stream mode.
   zp->mode = ZIP_S_READ_MEMSTREAM;
@@ -2249,7 +2282,7 @@ enum zip_error zip_read_directory(struct zip_archive *zp)
       f[i] = cmalloc(sizeof(struct zip_file_header));
       zp->files_alloc++;
 
-      result = zip_read_file_header(zp, f[i], 0, 1);
+      result = zip_read_central_file_header(zp, f[i]);
       if(result)
       {
         free(f[i]);
