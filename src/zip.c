@@ -55,7 +55,7 @@
 #define ZIP_S_READ_FILES 1
 #define ZIP_S_READ_STREAM 2
 #define ZIP_S_READ_MEMSTREAM 3
-#define ZIP_S_WRITE_RAW 8
+#define ZIP_S_WRITE_UNINITIALIZED 8
 #define ZIP_S_WRITE_FILES 9
 #define ZIP_S_WRITE_STREAM 10
 #define ZIP_S_WRITE_MEMSTREAM 11
@@ -401,28 +401,20 @@ int zip_bound_total_header_usage(int num_files, int max_name_size)
 
 /* Basic checks to make sure the write functions can be used. */
 
-#define zip_write_raw_mode_check(zp)                                      \
-( !(zp)                            ? ZIP_NULL :                           \
-  (zp)->closing                    ? ZIP_INVALID_WHILE_CLOSING :          \
-  (zp)->mode == ZIP_S_WRITE_STREAM ? ZIP_SUCCESS :                        \
-  (zp)->mode == ZIP_S_WRITE_RAW    ? ZIP_SUCCESS :                        \
-  (zp)->mode == ZIP_S_WRITE_FILES  ? ZIP_INVALID_RAW_WRITE_IN_FILE_MODE : \
-  ZIP_INVALID_WRITE_IN_READ_MODE)
-
 #define zip_write_file_mode_check(zp)                                     \
 ( !(zp)                            ? ZIP_NULL :                           \
   (zp)->closing                    ? ZIP_INVALID_WHILE_CLOSING :          \
   (zp)->mode == ZIP_S_WRITE_FILES  ? ZIP_SUCCESS :                        \
-  (zp)->mode == ZIP_S_WRITE_RAW    ? ZIP_SUCCESS :                        \
   (zp)->mode == ZIP_S_WRITE_STREAM ? ZIP_INVALID_FILE_WRITE_IN_STREAM_MODE : \
+  (zp)->mode == ZIP_S_WRITE_UNINITIALIZED ? ZIP_SUCCESS :                 \
   ZIP_INVALID_WRITE_IN_READ_MODE)
 
 #define zip_write_stream_mode_check(zp)                                   \
-( !(zp)                            ? ZIP_NULL :                           \
-  (zp)->closing                    ? ZIP_INVALID_WHILE_CLOSING :          \
-  (zp)->mode == ZIP_S_WRITE_STREAM ? ZIP_SUCCESS :                        \
-  (zp)->mode == ZIP_S_WRITE_FILES  ? ZIP_INVALID_STREAM_WRITE :           \
-  (zp)->mode == ZIP_S_WRITE_RAW    ? ZIP_INVALID_STREAM_WRITE :           \
+( !(zp)                                   ? ZIP_NULL :                    \
+  (zp)->closing                           ? ZIP_INVALID_WHILE_CLOSING :   \
+  (zp)->mode == ZIP_S_WRITE_STREAM        ? ZIP_SUCCESS :                 \
+  (zp)->mode == ZIP_S_WRITE_FILES         ? ZIP_INVALID_STREAM_WRITE :    \
+  (zp)->mode == ZIP_S_WRITE_UNINITIALIZED ? ZIP_INVALID_STREAM_WRITE :    \
   ZIP_INVALID_WRITE_IN_READ_MODE)
 
 static inline void precalculate_read_errors(struct zip_archive *zp)
@@ -433,7 +425,6 @@ static inline void precalculate_read_errors(struct zip_archive *zp)
 
 static inline void precalculate_write_errors(struct zip_archive *zp)
 {
-  zp->write_raw_error = zip_write_raw_mode_check(zp);
   zp->write_file_error = zip_write_file_mode_check(zp);
   zp->write_stream_error = zip_write_stream_mode_check(zp);
 }
@@ -1481,56 +1472,15 @@ err_out:
 /* Writing */
 /***********/
 
-/* Write data to a zip archive. Only works in raw and stream modes.
+/* Write data to a zip archive. Only works in stream mode.
  */
-
-enum zip_error zputc(int value, struct zip_archive *zp)
-{
-  enum zip_error result;
-  char v;
-
-  if((result = zp->write_raw_error))
-    return result;
-
-  zp->vputc(value, zp->fp);
-
-  if(zp->streaming_file)
-  {
-    zp->streaming_file->uncompressed_size += 1;
-    zp->stream_crc32 = zip_crc32(zp->stream_crc32, &v, 1);
-    zp->stream_left += 1;
-  }
-
-  return ZIP_SUCCESS;
-}
-
-enum zip_error zputw(int value, struct zip_archive *zp)
-{
-  enum zip_error result;
-
-  if((result = zp->write_raw_error))
-    return result;
-
-  zp->vputw(value, zp->fp);
-
-  if(zp->streaming_file)
-  {
-    char v[2];
-    v[0] = value & 0xFF;
-    v[1] = (value>>8) & 0xFF;
-    zp->streaming_file->uncompressed_size += 2;
-    zp->stream_crc32 = zip_crc32(zp->stream_crc32, (char *)&v, 2);
-    zp->stream_left += 2;
-  }
-
-  return ZIP_SUCCESS;
-}
 
 enum zip_error zputd(int value, struct zip_archive *zp)
 {
   enum zip_error result;
 
-  if((result = zp->write_raw_error))
+  result = (zp ? zp->write_stream_error : ZIP_NULL);
+  if(result)
     return result;
 
   zp->vputd(value, zp->fp);
@@ -1561,7 +1511,7 @@ enum zip_error zwrite(const void *src, size_t srcLen, struct zip_archive *zp)
 
   enum zip_error result;
 
-  result = zp->write_raw_error;
+  result = (zp ? zp->write_stream_error : ZIP_NULL);
   if(result)
     goto err_out;
 
@@ -2393,7 +2343,7 @@ enum zip_error zip_close(struct zip_archive *zp, size_t *final_length)
   }
 
   // Write the end of central directory record
-  if(mode == ZIP_S_WRITE_FILES || mode == ZIP_S_WRITE_RAW)
+  if(mode == ZIP_S_WRITE_FILES || mode == ZIP_S_WRITE_UNINITIALIZED)
   {
     zp->size_central_directory = vtell(fp) - zp->offset_central_directory;
 
@@ -2435,7 +2385,7 @@ static void zip_init_for_write(struct zip_archive *zp, int num_files)
 
   zp->running_file_name_length = 0;
 
-  zp->mode = ZIP_S_WRITE_RAW;
+  zp->mode = ZIP_S_WRITE_UNINITIALIZED;
 }
 
 

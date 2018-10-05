@@ -49,6 +49,7 @@ USERS
 + Fix bug where saved layer MZMs and board MZMs without robots
   would have useless extra data at the end of the file.
 + Scroll contents properly display game colors during gameplay.
++ An error message is now displayed for failed board exports.
 - The "password protected" error message has been removed as it
   was redundant with the confirmation dialog following it.
 - The "disassemble_extras" and "disassemble_base" options no

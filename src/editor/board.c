@@ -58,20 +58,33 @@ static int board_magic(const char magic_string[4])
 void save_board_file(struct world *mzx_world, struct board *cur_board,
  char *name)
 {
-  struct zip_archive *zp = zip_open_file_write(name);
+  FILE *fp = fopen_unsafe(name, "wb");
+  struct zip_archive *zp;
+  boolean success = false;
 
-  if(zp)
+  if(fp)
   {
-    zputc(0xFF, zp);
+    fputc(0xFF, fp);
 
-    zputc('M', zp);
-    zputc((MZX_VERSION >> 8) & 0xFF, zp);
-    zputc(MZX_VERSION & 0xFF, zp);
+    fputc('M', fp);
+    fputc((MZX_VERSION >> 8) & 0xFF, fp);
+    fputc(MZX_VERSION & 0xFF, fp);
 
-    save_board(mzx_world, cur_board, zp, 0, MZX_VERSION, 0);
+    zp = zip_open_fp_write(fp);
 
-    zip_close(zp, NULL);
+    if(zp)
+    {
+      if(!save_board(mzx_world, cur_board, zp, 0, MZX_VERSION, 0))
+        success = true;
+
+      zip_close(zp, NULL);
+    }
+    else
+      fclose(fp);
   }
+
+  if(!success)
+    error_message(E_WORLD_IO_SAVING, 0, NULL);
 }
 
 static struct board *legacy_load_board_allocate_direct(struct world *mzx_world,

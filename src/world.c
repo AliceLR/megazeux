@@ -1880,7 +1880,8 @@ err_out:
 static int save_world_zip(struct world *mzx_world, const char *file,
  boolean savegame, int file_version)
 {
-  struct zip_archive *zp = zip_open_file_write(file);
+  FILE *fp;
+  struct zip_archive *zp = NULL;
   struct board *cur_board;
   int i;
 
@@ -1889,36 +1890,44 @@ static int save_world_zip(struct world *mzx_world, const char *file,
 
   meter_initial_draw(meter_curr, meter_target, "Saving...");
 
-  if(!zp)
+  fp = fopen_unsafe(file, "wb");
+  if(!fp)
     goto err;
 
   // Header
   if(!savegame)
   {
     // World name
-    zwrite(mzx_world->name, BOARD_NAME_SIZE, zp);
+    if(!fwrite(mzx_world->name, BOARD_NAME_SIZE, 1, fp))
+      goto err_close;
 
     // Protection method -- always zero
-    zputc(0, zp);
+    fputc(0, fp);
 
     // Version string
-    zputc('M', zp);
-    zputc((file_version >> 8) & 0xFF, zp);
-    zputc(file_version & 0xFF, zp);
+    fputc('M', fp);
+    fputc((file_version >> 8) & 0xFF, fp);
+    fputc(file_version & 0xFF, fp);
   }
   else
   {
     // Version string
-    zwrite("MZS", 3, zp);
-    zputc((file_version >> 8) & 0xFF, zp);
-    zputc(file_version & 0xFF, zp);
+    if(!fwrite("MZS", 3, 1, fp))
+      goto err_close;
+
+    fputc((file_version >> 8) & 0xFF, fp);
+    fputc(file_version & 0xFF, fp);
 
     // MZX world version
-    zputw(mzx_world->version, zp);
+    fputw(mzx_world->version, fp);
 
     // Current board ID
-    zputc(mzx_world->current_board_id, zp);
+    fputc(mzx_world->current_board_id, fp);
   }
+
+  zp = zip_open_fp_write(fp);
+  if(!zp)
+    goto err_close;
 
   if(save_world_info(mzx_world, zp, savegame, file_version, "world"))
     goto err_close;
@@ -1971,7 +1980,10 @@ static int save_world_zip(struct world *mzx_world, const char *file,
   return 0;
 
 err_close:
-  zip_close(zp, NULL);
+  if(zp)
+    zip_close(zp, NULL);
+  else
+    fclose(fp);
 
 err:
   error_message(E_WORLD_IO_SAVING, 0, NULL);

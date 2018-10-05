@@ -155,10 +155,8 @@ struct zip_archive
   uint32_t start_in_file;
   uint32_t end_in_file;
 
-  enum zip_error read_raw_error;
   enum zip_error read_file_error;
   enum zip_error read_stream_error;
-  enum zip_error write_raw_error;
   enum zip_error write_file_error;
   enum zip_error write_stream_error;
 
@@ -221,8 +219,6 @@ enum zip_error zip_skip_file(struct zip_archive *zp);
 enum zip_error zip_read_file(struct zip_archive *zp,
  void *destBuf, size_t destLen, size_t *readLen);
 
-enum zip_error zputc(int value, struct zip_archive *zp);
-enum zip_error zputw(int value, struct zip_archive *zp);
 enum zip_error zputd(int value, struct zip_archive *zp);
 enum zip_error zwrite(const void *src, size_t srcLen, struct zip_archive *zp);
 
