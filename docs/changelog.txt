@@ -74,6 +74,8 @@ DEVELOPERS
 + Cleaned up m_show()/m_hide() overuse.
 + Replaced all uses of "bool" with "boolean" to avoid potential
   C/C++ compatibility issues.
+- Removed most old/unused source code in contrib/unzip, src/old,
+  and src/vfs.
 
 
 September 17th, 2018 - MZX 2.91f
