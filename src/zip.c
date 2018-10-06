@@ -43,11 +43,13 @@
 
 // The NDS libfat library may have a bug with seeking backwards from the end of
 // the file. Enable data descriptors so the save can be handled in one pass.
+// The 3DS has incredibly slow file access that seems to be negatively impacted
+// by backwards seeks in particular, so enable data descriptors for it too.
 
-#ifdef CONFIG_NDS
+#if defined(CONFIG_NDS) || defined(CONFIG_3DS)
 #define ZIP_WRITE_DATA_DESCRIPTOR
 #define DATA_DESCRIPTOR_LEN 12
-#endif // CONFIG_NDS
+#endif
 
 #define ZIP_DEFAULT_NUM_FILES 4
 
