@@ -237,7 +237,8 @@ static boolean append_world_legacy(struct world *mzx_world, FILE *fp,
   for(i = old_num_boards; i < old_num_boards + num_boards; i++)
   {
     cur_board = mzx_world->board_list[i];
-    fread(cur_board->board_name, BOARD_NAME_SIZE, 1, fp);
+    if(!fread(cur_board->board_name, BOARD_NAME_SIZE, 1, fp))
+      cur_board->board_name[0] = 0;
 
     if(cur_board)
     {

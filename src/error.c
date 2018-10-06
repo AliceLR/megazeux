@@ -244,6 +244,14 @@ int error_message(enum error_code id, int parameter, const char *string)
       sprintf(error_mesg, "File doesn't exist");
       break;
 
+    case E_IO_READ:
+      sprintf(error_mesg, "Unknown error reading from file");
+      break;
+
+    case E_IO_WRITE:
+      sprintf(error_mesg, "Unknown error writing to file");
+      break;
+
     case E_SAVE_FILE_INVALID:
       sprintf(error_mesg, "File is not a valid .SAV file or is corrupt");
       code = 0x2101;

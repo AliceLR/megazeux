@@ -226,7 +226,9 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
 
   if(file_version < V283)
   {
-    fread(cur_board->mod_playing, LEGACY_MOD_FILENAME_MAX, 1, fp);
+    if(!fread(cur_board->mod_playing, LEGACY_MOD_FILENAME_MAX, 1, fp))
+      cur_board->mod_playing[0] = 0;
+
     cur_board->mod_playing[LEGACY_MOD_FILENAME_MAX] = 0;
   }
   else
@@ -235,7 +237,9 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
     if(len >= MAX_PATH)
       len = MAX_PATH - 1;
 
-    fread(cur_board->mod_playing, len, 1, fp);
+    if(!fread(cur_board->mod_playing, len, 1, fp))
+      len = 0;
+
     cur_board->mod_playing[len] = 0;
   }
 
@@ -281,12 +285,14 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
     cur_board->num_input = fgetw(fp);
     cur_board->input_size = fgetc(fp);
 
-    fread(cur_board->input_string, LEGACY_INPUT_STRING_MAX + 1, 1, fp);
+    if(!fread(cur_board->input_string, LEGACY_INPUT_STRING_MAX + 1, 1, fp))
+      cur_board->input_string[0] = 0;
     cur_board->input_string[LEGACY_INPUT_STRING_MAX] = 0;
 
     cur_board->player_last_dir = fgetc(fp);
 
-    fread(cur_board->bottom_mesg, LEGACY_BOTTOM_MESG_MAX + 1, 1, fp);
+    if(!fread(cur_board->bottom_mesg, LEGACY_BOTTOM_MESG_MAX + 1, 1, fp))
+      cur_board->bottom_mesg[0] = 0;
     cur_board->bottom_mesg[LEGACY_BOTTOM_MESG_MAX] = 0;
 
     cur_board->b_mesg_timer = fgetc(fp);
@@ -310,7 +316,8 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
     if(len >= ROBOT_MAX_TR)
       len = ROBOT_MAX_TR - 1;
 
-    fread(cur_board->input_string, len, 1, fp);
+    if(!fread(cur_board->input_string, len, 1, fp))
+      len = 0;
     cur_board->input_string[len] = 0;
 
     cur_board->player_last_dir = fgetc(fp);
@@ -319,7 +326,8 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
     if(len >= ROBOT_MAX_TR)
       len = ROBOT_MAX_TR - 1;
 
-    fread(cur_board->bottom_mesg, len, 1, fp);
+    if(!fread(cur_board->bottom_mesg, len, 1, fp))
+      len = 0;
     cur_board->bottom_mesg[len] = 0;
 
     cur_board->b_mesg_timer = fgetc(fp);

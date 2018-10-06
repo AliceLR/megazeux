@@ -2459,7 +2459,10 @@ static boolean editor_key(context *ctx, int *key)
                 FILE *sfx_file;
 
                 sfx_file = fopen_unsafe(import_name, "rb");
-                fread(mzx_world->custom_sfx, SFX_SIZE, NUM_SFX, sfx_file);
+                if(NUM_SFX !=
+                 fread(mzx_world->custom_sfx, SFX_SIZE, NUM_SFX, sfx_file))
+                  error_message(E_IO_READ, 0, NULL);
+
                 mzx_world->custom_sfx_on = 1;
                 fclose(sfx_file);
                 editor->modified = true;

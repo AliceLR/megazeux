@@ -101,7 +101,10 @@ static struct board *legacy_load_board_allocate_direct(struct world *mzx_world,
   cur_board->world_version = version;
   legacy_load_board_direct(mzx_world, cur_board, fp, (board_end - board_start), 0,
    version);
-  fread(cur_board->board_name, 25, 1, fp);
+
+  if(!fread(cur_board->board_name, 25, 1, fp))
+    cur_board->board_name[0] = 0;
+
   return cur_board;
 }
 
@@ -140,7 +143,13 @@ void replace_current_board(struct world *mzx_world, char *name)
 
   if(fp)
   {
-    fread(version_string, 4, 1, fp);
+    if(!fread(version_string, 4, 1, fp))
+    {
+      error_message(E_IO_READ, 0, NULL);
+      fclose(fp);
+      return;
+    }
+
     file_version = board_magic(version_string);
 
     if(file_version > 0 && file_version <= MZX_LEGACY_FORMAT_VERSION)

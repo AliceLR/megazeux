@@ -62,7 +62,9 @@ static inline boolean legacy_load_counter(struct world *mzx_world,
   int value = fgetd(fp);
   int name_length = fgetd(fp);
 
-  fread(name_buffer, name_length, 1, fp);
+  name_buffer[0] = 0;
+  if(name_length && !fread(name_buffer, name_length, 1, fp))
+    return false;
 
   // Stupid legacy hacks
   if(!strncasecmp(name_buffer, "mzx_speed", name_length))
@@ -89,12 +91,15 @@ static inline void legacy_load_string(FILE *fp,
 
   struct string *src_string;
 
-  fread(name_buffer, name_length, 1, fp);
+  name_buffer[0] = 0;
+  if(name_length && !fread(name_buffer, name_length, 1, fp))
+    return;
 
   src_string = load_new_string(string_list, index,
    name_buffer, name_length, str_length);
 
-  fread(src_string->value, str_length, 1, fp);
+  if(str_length && !fread(src_string->value, str_length, 1, fp))
+    return;
 }
 
 static const char magic_code[16] =
@@ -164,6 +169,7 @@ static void decrypt(const char *file_name)
   char *file_buffer;
   char *src_ptr;
   char backup_name[MAX_PATH];
+  int count;
 
   int meter_target, meter_curr = 0;
 
@@ -176,8 +182,10 @@ static void decrypt(const char *file_name)
 
   file_buffer = cmalloc(file_length);
   src_ptr = file_buffer;
-  fread(file_buffer, file_length, 1, source);
+  count = fread(file_buffer, file_length, 1, source);
   fclose(source);
+  if(!count)
+    goto err_free;
 
   meter_curr = file_length - 1;
   meter_update_screen(&meter_curr, meter_target);
@@ -187,8 +195,10 @@ static void decrypt(const char *file_name)
   strncpy(backup_name, file_name, MAX_PATH - 8);
   strcat(backup_name, ".locked");
   backup = fopen_unsafe(backup_name, "wb");
-  fwrite(file_buffer, file_length, 1, backup);
+  count = fwrite(file_buffer, file_length, 1, backup);
   fclose(backup);
+  if(!count)
+    goto err_free;
 
   dest = fopen_unsafe(file_name, "wb");
   if(!dest)
@@ -215,7 +225,8 @@ static void decrypt(const char *file_name)
   xor_val = get_pw_xor_code(password, pro_method);
 
   // Copy title
-  fwrite(file_buffer, 25, 1, dest);
+  if(!fwrite(file_buffer, 25, 1, dest))
+    goto err_close;
   fputc(0, dest);
   fputs("M\x02\x11", dest);
 
@@ -309,8 +320,11 @@ static void decrypt(const char *file_name)
     meter_update_screen(&meter_curr, meter_target);
   }
 
-  free(file_buffer);
+err_close:
   fclose(dest);
+
+err_free:
+  free(file_buffer);
 
   meter_restore_screen();
 }
@@ -496,8 +510,9 @@ static enum val_result __validate_legacy_world_file(const char *file,
       goto err_close;
     }
 
-    /* TEST 5:  Make sure the magic is awwrightttt~ */
-    fread(magic, 1, 3, f);
+    /* TEST 5:  Test the magic */
+    if(!fread(magic, 3, 1, f))
+      goto err_invalid;
 
     v = world_magic(magic);
     if(v == 0)
@@ -637,24 +652,30 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
   meter_initial_draw(meter_curr, meter_target, "Loading...");
 
   charset_mem = cmalloc(CHAR_SIZE * CHARSET_SIZE);
-  fread(charset_mem, CHAR_SIZE * CHARSET_SIZE, 1, fp);
+  if(!fread(charset_mem, CHAR_SIZE * CHARSET_SIZE, 1, fp))
+    goto err_close;
   ec_clear_set();
   ec_mem_load_set(charset_mem, CHAR_SIZE * CHARSET_SIZE);
   free(charset_mem);
 
   // Idchars array...
-  fread(id_chars, 323, 1, fp);
+  if(!fread(id_chars, 323, 1, fp))
+    goto err_close;
   missile_color = fgetc(fp);
-  fread(bullet_color, 3, 1, fp);
-  fread(id_dmg, 128, 1, fp);
+  if(!fread(bullet_color, 3, 1, fp))
+    goto err_close;
+  if(!fread(id_dmg, 128, 1, fp))
+    goto err_close;
 
   // Status counters...
-  fread((char *)mzx_world->status_counters_shown, COUNTER_NAME_SIZE,
-   NUM_STATUS_COUNTERS, fp);
+  if(fread((char *)mzx_world->status_counters_shown, COUNTER_NAME_SIZE,
+   NUM_STATUS_COUNTERS, fp) != NUM_STATUS_COUNTERS)
+    goto err_close;
 
   if(savegame)
   {
-    fread(mzx_world->keys, NUM_KEYS, 1, fp);
+    if(!fread(mzx_world->keys, NUM_KEYS, 1, fp))
+      goto err_close;
     mzx_world->blind_dur = fgetc(fp);
     mzx_world->firewalker_dur = fgetc(fp);
     mzx_world->freeze_time_dur = fgetc(fp);
@@ -671,7 +692,8 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
       mzx_world->pl_saved_y[i] = fgetw(fp);
     }
 
-    fread(mzx_world->pl_saved_board, 8, 1, fp);
+    if(!fread(mzx_world->pl_saved_board, 8, 1, fp))
+      goto err_close;
     mzx_world->saved_pl_color = fgetc(fp);
     mzx_world->under_player_id = fgetc(fp);
     mzx_world->under_player_color = fgetc(fp);
@@ -688,7 +710,8 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
       if(len >= MAX_PATH)
         len = MAX_PATH - 1;
 
-      fread(mzx_world->real_mod_playing, len, 1, fp);
+      if(len && !fread(mzx_world->real_mod_playing, len, 1, fp))
+        goto err_close;
       mzx_world->real_mod_playing[len] = 0;
     }
   }
@@ -828,7 +851,8 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
       if(len >= MAX_PATH)
         len = MAX_PATH - 1;
 
-      fread(mzx_world->input_file_name, len, 1, fp);
+      if(len && !fread(mzx_world->input_file_name, len, 1, fp))
+        goto err_close;
       mzx_world->input_file_name[len] = 0;
     }
     mzx_world->temp_input_pos = fgetd(fp);
@@ -839,7 +863,8 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
       if(len >= MAX_PATH)
         len = MAX_PATH - 1;
 
-      fread(mzx_world->output_file_name, len, 1, fp);
+      if(len && !fread(mzx_world->output_file_name, len, 1, fp))
+        goto err_close;
       mzx_world->output_file_name[len] = 0;
     }
     mzx_world->temp_output_pos = fgetd(fp);
@@ -877,8 +902,10 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
     mzx_world->vlayer_chars = cmalloc(vlayer_size);
     mzx_world->vlayer_colors = cmalloc(vlayer_size);
 
-    fread(mzx_world->vlayer_chars, 1, vlayer_size, fp);
-    fread(mzx_world->vlayer_colors, 1, vlayer_size, fp);
+    if(vlayer_size &&
+     (!fread(mzx_world->vlayer_chars, vlayer_size, 1, fp) ||
+      !fread(mzx_world->vlayer_colors, vlayer_size, 1, fp)))
+      goto err_close;
   }
 
   // Get position of global robot...
@@ -898,7 +925,8 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
     for(i = 0; i < NUM_SFX; i++, sfx_offset += LEGACY_SFX_SIZE)
     {
       sfx_size = fgetc(fp);
-      fread(sfx_offset, sfx_size, 1, fp);
+      if(sfx_size && !fread(sfx_offset, sfx_size, 1, fp))
+        goto err_close;
     }
     num_boards = fgetc(fp);
   }
@@ -943,7 +971,8 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
     // Look at the name, width, and height of the just loaded board
     if(cur_board)
     {
-      fread(cur_board->board_name, BOARD_NAME_SIZE, 1, fp);
+      if(!fread(cur_board->board_name, BOARD_NAME_SIZE, 1, fp))
+        cur_board->board_name[0] = 0;
 
       // Also patch a pointer to the global robot
       if(cur_board->robot_list)
@@ -961,8 +990,17 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
   }
 
   meter_update_screen(&meter_curr, meter_target);
-
   meter_restore_screen();
+  fclose(fp);
+  return;
 
+err_close:
+  // Note that this file had already been successfully validated for length
+  // and opened with no issue before this error occurred, and that the only
+  // way to reach this error is a failed fread before any board/robot data
+  // was loaded. Something seriously went wrong somewhere.
+
+  error_message(E_IO_READ, 0, NULL);
+  meter_restore_screen();
   fclose(fp);
 }
