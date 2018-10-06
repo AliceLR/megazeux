@@ -184,8 +184,6 @@ static const char *zip_error_string(enum zip_error code)
       return "could not read from position";
     case ZIP_WRITE_ERROR:
       return "could not write to position";
-    case ZIP_OPEN_ERROR:
-      return "could not open archive";
     case ZIP_ALLOC_MORE_SPACE:
       return "archive alloc too small";
     case ZIP_INVALID_WHILE_CLOSING:
@@ -194,12 +192,6 @@ static const char *zip_error_string(enum zip_error code)
       return "can't read in write mode";
     case ZIP_INVALID_WRITE_IN_READ_MODE:
       return "can't write in read mode";
-    case ZIP_INVALID_RAW_READ_IN_FILE_MODE:
-      return "can't read directly in file mode";
-    case ZIP_INVALID_RAW_WRITE_IN_FILE_MODE:
-      return "can't write directly in file mode";
-    case ZIP_INVALID_DIRECTORY_READ_IN_FILE_MODE:
-      return "directory has already been read";
     case ZIP_INVALID_FILE_READ_UNINITIALIZED:
       return "directory has not been read";
     case ZIP_INVALID_FILE_READ_IN_STREAM_MODE:
@@ -230,8 +222,6 @@ static const char *zip_error_string(enum zip_error code)
       return "DEFLATE: can only stream whole file";
     case ZIP_MISSING_LOCAL_HEADER:
       return "could not find file header";
-    case ZIP_MISSING_DATA_DESCRIPTOR:
-      return "could not find the data descriptor";
     case ZIP_HEADER_MISMATCH:
       return "local header mismatch";
     case ZIP_CRC32_MISMATCH:
@@ -382,19 +372,17 @@ int zip_bound_total_header_usage(int num_files, int max_name_size)
 /* Basic checks to make sure the read functions can actually be used. */
 
 #define zip_read_file_mode_check(zp)                                    \
-( !(zp)                           ? ZIP_NULL :                          \
-  (zp)->closing                   ? ZIP_INVALID_WHILE_CLOSING :         \
-  (zp)->mode == ZIP_S_READ_FILES  ? ZIP_SUCCESS :                       \
+( (zp)->mode == ZIP_S_READ_FILES  ? ZIP_SUCCESS :                       \
   (zp)->mode == ZIP_S_READ_STREAM ? ZIP_INVALID_FILE_READ_IN_STREAM_MODE : \
+  (zp)->closing                   ? ZIP_INVALID_WHILE_CLOSING :         \
   (zp)->mode == ZIP_S_READ_UNINITIALIZED ? \
   ZIP_INVALID_FILE_READ_UNINITIALIZED    : \
   ZIP_INVALID_READ_IN_WRITE_MODE)
 
 #define zip_read_stream_mode_check(zp)                                  \
-( !(zp)                           ? ZIP_NULL :                          \
-  (zp)->closing                   ? ZIP_INVALID_WHILE_CLOSING :         \
-  (zp)->mode == ZIP_S_READ_STREAM ? ZIP_SUCCESS :                       \
+( (zp)->mode == ZIP_S_READ_STREAM ? ZIP_SUCCESS :                       \
   (zp)->mode == ZIP_S_READ_FILES  ? ZIP_INVALID_STREAM_READ :           \
+  (zp)->closing                   ? ZIP_INVALID_WHILE_CLOSING :         \
   (zp)->mode == ZIP_S_READ_UNINITIALIZED ? \
   ZIP_INVALID_FILE_READ_UNINITIALIZED    : \
   ZIP_INVALID_READ_IN_WRITE_MODE)
@@ -402,19 +390,17 @@ int zip_bound_total_header_usage(int num_files, int max_name_size)
 /* Basic checks to make sure the write functions can be used. */
 
 #define zip_write_file_mode_check(zp)                                     \
-( !(zp)                            ? ZIP_NULL :                           \
-  (zp)->closing                    ? ZIP_INVALID_WHILE_CLOSING :          \
-  (zp)->mode == ZIP_S_WRITE_FILES  ? ZIP_SUCCESS :                        \
+( (zp)->mode == ZIP_S_WRITE_FILES  ? ZIP_SUCCESS :                        \
   (zp)->mode == ZIP_S_WRITE_STREAM ? ZIP_INVALID_FILE_WRITE_IN_STREAM_MODE : \
   (zp)->mode == ZIP_S_WRITE_UNINITIALIZED ? ZIP_SUCCESS :                 \
+  (zp)->closing                    ? ZIP_INVALID_WHILE_CLOSING :          \
   ZIP_INVALID_WRITE_IN_READ_MODE)
 
 #define zip_write_stream_mode_check(zp)                                   \
-( !(zp)                                   ? ZIP_NULL :                    \
-  (zp)->closing                           ? ZIP_INVALID_WHILE_CLOSING :   \
-  (zp)->mode == ZIP_S_WRITE_STREAM        ? ZIP_SUCCESS :                 \
+( (zp)->mode == ZIP_S_WRITE_STREAM        ? ZIP_SUCCESS :                 \
   (zp)->mode == ZIP_S_WRITE_FILES         ? ZIP_INVALID_STREAM_WRITE :    \
   (zp)->mode == ZIP_S_WRITE_UNINITIALIZED ? ZIP_INVALID_STREAM_WRITE :    \
+  (zp)->closing                           ? ZIP_INVALID_WHILE_CLOSING :   \
   ZIP_INVALID_WRITE_IN_READ_MODE)
 
 static inline void precalculate_read_errors(struct zip_archive *zp)
@@ -505,13 +491,12 @@ static enum zip_error zip_read_central_file_header(struct zip_archive *zp,
   char buffer[CENTRAL_FILE_HEADER_LEN];
   struct memfile mf;
 
-  int data_position;
+  int skip_length;
   int method;
   int flags;
   int n;
 
   void *fp = zp->fp;
-  size_t (*vread)(void *, size_t, size_t, void *) = zp->vread;
 
   central_fh->file_name = NULL;
 
@@ -520,7 +505,7 @@ static enum zip_error zip_read_central_file_header(struct zip_archive *zp,
     return result;
 
   // We already read four
-  if(!vread(buffer, CENTRAL_FILE_HEADER_LEN - 4, 1, fp))
+  if(!zp->vread(buffer, CENTRAL_FILE_HEADER_LEN - 4, 1, fp))
     return ZIP_READ_ERROR;
 
   mfopen_static(buffer, CENTRAL_FILE_HEADER_LEN - 4, &mf);
@@ -580,7 +565,7 @@ static enum zip_error zip_read_central_file_header(struct zip_archive *zp,
 
   n = mfgetw(&mf);
   central_fh->file_name_length = n;
-  data_position = zp->vtell(fp) + n + mfgetw(&mf) + mfgetw(&mf);
+  skip_length = mfgetw(&mf) + mfgetw(&mf);
 
   // Disk number of file start    2
   // Internal file attributes     2
@@ -592,11 +577,11 @@ static enum zip_error zip_read_central_file_header(struct zip_archive *zp,
 
   // File name (n)
   central_fh->file_name = cmalloc(n + 1);
-  vread(central_fh->file_name, n, 1, fp);
+  zp->vread(central_fh->file_name, n, 1, fp);
   central_fh->file_name[n] = 0;
 
-  // Done.
-  if(zp->vseek(fp, data_position, SEEK_SET))
+  // Done. Skip to the position where the next header should be.
+  if(zp->vseek(fp, skip_length, SEEK_CUR))
     return ZIP_SEEK_ERROR;
 
   return ZIP_SUCCESS;
@@ -1613,35 +1598,34 @@ err_out:
 static inline enum zip_error zip_write_data_descriptor(struct zip_archive *zp,
  struct zip_file_header *fh)
 {
-  void (*vputd)(int, void *) = zp->vputd;
+  char buffer[12];
+  struct memfile mf;
+
   void *fp = zp->fp;
+
+  mfopen_static(buffer, 12, &mf);
+  mfputd(fh->crc32, &mf);
+  mfputd(fh->compressed_size, &mf);
+  mfputd(fh->uncompressed_size, &mf);
 
 #ifdef ZIP_WRITE_DATA_DESCRIPTOR
   {
     // Write data descriptor
-    vputd(fh->crc32, fp);
-    vputd(fh->compressed_size, fp);
-    vputd(fh->uncompressed_size, fp);
+    zp->vwrite(buffer, 12, 1, fp);
   }
 #else
   {
     // Go back and write sizes and CRC32
-    int (*vseek)(void *, long int, int) = zp->vseek;
     int return_position = zp->vtell(fp);
 
-    if(vseek(fp, zp->stream_crc_position, SEEK_SET))
-    {
+    if(zp->vseek(fp, zp->stream_crc_position, SEEK_SET))
       return ZIP_SEEK_ERROR;
-    }
 
-    vputd(fh->crc32, fp);
-    vputd(fh->compressed_size, fp);
-    vputd(fh->uncompressed_size, fp);
+    if(!zp->vwrite(buffer, 12, 1, fp))
+      return ZIP_WRITE_ERROR;
 
-    if(vseek(fp, return_position, SEEK_SET))
-    {
+    if(zp->vseek(fp, return_position, SEEK_SET))
       return ZIP_SEEK_ERROR;
-    }
   }
 #endif // !ZIP_WRITE_DATA_DESCRIPTOR
 
@@ -1964,10 +1948,10 @@ err_out:
   return result;
 }
 
-
-/* Reads the central directory of a zip archive. This places the archive into
+/**
+ * Reads the central directory of a zip archive. This places the archive into
  * file read mode; read files using zip_read_file(). If this fails, the input
- * is probably not actually a zip archive, or uses features we don't support.
+ * is probably not actually a zip archive or uses features we don't support.
  */
 
 static char eocd_sig[] = {
@@ -2043,87 +2027,50 @@ static enum zip_error zip_find_eocd(struct zip_archive *zp)
 
 static enum zip_error zip_read_directory(struct zip_archive *zp)
 {
+  char buffer[EOCD_RECORD_LEN];
+  struct memfile mf;
   int i;
   int n;
   int result;
 
-  void *fp;
+  void *fp = zp->fp;
 
-  int (*vseek)(void *, long int, int);
-  int (*vgetw)(void *);
-  int (*vgetd)(void *);
-
-  if(!zp)
-  {
-    result = ZIP_NULL;
-    goto err_out;
-  }
-
-  if(zp->closing)
-  {
-    result = ZIP_INVALID_WHILE_CLOSING;
-    goto err_out;
-  }
-
-  // This only works in uninitialized reading mode
-  if(zp->mode != ZIP_S_READ_UNINITIALIZED)
-  {
-    if(zp->mode == ZIP_S_READ_FILES)
-    {
-      result = ZIP_INVALID_DIRECTORY_READ_IN_FILE_MODE;
-      goto err_out;
-    }
-    result = ZIP_INVALID_WRITE_IN_READ_MODE;
-    goto err_out;
-  }
-
-  fp = zp->fp;
-  vseek = zp->vseek;
-  vgetw = zp->vgetw;
-  vgetd = zp->vgetd;
-
-  // This will take us to the start of the EOCD
+  // Find the EOCD record signature                     4
   result = zip_find_eocd(zp);
   if(result)
     goto err_out;
 
-  // Number of this disk
-  n = vgetw(fp);
-  if(n < 0)
+  // Already read the first 4 signature bytes.
+  if(!zp->vread(buffer, EOCD_RECORD_LEN - 4, 1, fp))
   {
     result = ZIP_READ_ERROR;
     goto err_out;
   }
-  else
+  mfopen_static(buffer, EOCD_RECORD_LEN - 4, &mf);
 
+  // Number of this disk                                2
+  n = mfgetw(&mf);
   if(n > 0)
   {
     result = ZIP_UNSUPPORTED_MULTIPLE_DISKS;
     goto err_out;
   }
 
-  // Disk where central directory starts
-  // Number of central directory records on this disk
-  if(vseek(fp, 4, SEEK_CUR))
-  {
-    result = ZIP_SEEK_ERROR;
-    goto err_out;
-  }
+  // Disk where central directory starts                2
+  // Number of central directory records on this disk   2
+  mf.current += 4;
 
-  // Total number of central directory records
-  n = vgetw(fp);
-  if(n < 0)
-  {
-    result = ZIP_READ_ERROR;
-    goto err_out;
-  }
+  // Total number of central directory records          2
+  n = mfgetw(&mf);
   zp->num_files = n;
 
-  // Size of central directory (bytes)
-  zp->size_central_directory = vgetd(fp);
+  // Size of central directory (bytes)                  4
+  zp->size_central_directory = mfgetd(&mf);
 
-  // Offset of start of central directory, relative to start of file
-  zp->offset_central_directory = vgetd(fp);
+  // Offset to central directory from start of file     4
+  zp->offset_central_directory = mfgetd(&mf);
+
+  // Comment length (ignore)                            2
 
   // Load central directory records
   if(n)
@@ -2132,7 +2079,7 @@ static enum zip_error zip_read_directory(struct zip_archive *zp)
     zp->files = f;
 
     // Go to the start of the central directory.
-    if(vseek(fp, zp->offset_central_directory, SEEK_SET))
+    if(zp->vseek(fp, zp->offset_central_directory, SEEK_SET))
     {
       result = ZIP_SEEK_ERROR;
       goto err_realloc;
@@ -2198,62 +2145,57 @@ err_out:
   return result;
 }
 
-
-/* Writes the EOCD during the archive close. */
+/**
+ * Write the EOCD during the archive close.
+ */
 
 static enum zip_error zip_write_eocd_record(struct zip_archive *zp)
 {
+  char buffer[EOCD_RECORD_LEN];
+  struct memfile mf;
   int i;
 
-  void *fp = zp->fp;
-
-  int (*vputc)(int, void *) = zp->vputc;
-  void (*vputw)(int, void *) = zp->vputw;
-  void (*vputd)(int, void *) = zp->vputd;
-
   // Memfiles: make sure there's enough space
-  if(zp->hasspace && !zp->hasspace(22, fp))
+  if(zp->hasspace && !zp->hasspace(22, zp->fp))
     return ZIP_ALLOC_MORE_SPACE;
 
-  // Signature
+  mfopen_static(buffer, EOCD_RECORD_LEN, &mf);
+
+  // Signature                                          4
   for(i = 0; i<4; i++)
-  {
-    if(vputc(eocd_sig[i], fp) == EOF)
-      return ZIP_WRITE_ERROR;
-  }
+    mfputc(eocd_sig[i], &mf);
 
-  // Number of this disk
-  vputw(0, fp);
+  // Number of this disk                                2
+  mfputw(0, &mf);
 
-  // Disk where central directory starts
-  vputw(0, fp);
+  // Disk where central directory starts                2
+  mfputw(0, &mf);
 
-  // Number of central directory records on this disk
-  vputw(zp->num_files, fp);
+  // Number of central directory records on this disk   2
+  mfputw(zp->num_files, &mf);
 
-  // Total number of central directory records
-  vputw(zp->num_files, fp);
+  // Total number of central directory records          2
+  mfputw(zp->num_files, &mf);
 
-  // Size of central directory
-  vputd(zp->size_central_directory, fp);
+  // Size of central directory                          4
+  mfputd(zp->size_central_directory, &mf);
 
-  // Offset of central directory
-  vputd(zp->offset_central_directory, fp);
+  // Offset of central directory                        4
+  mfputd(zp->offset_central_directory, &mf);
 
-  // Comment length
-  vputw(0, fp);
+  // Comment length                                     2
+  mfputw(0, &mf);
 
   // Comment (length is zero)
 
-  // Check for errors.
-  if(zp->verror && zp->verror(fp))
+  if(!zp->vwrite(buffer, EOCD_RECORD_LEN, 1, zp->fp))
     return ZIP_WRITE_ERROR;
 
   return ZIP_SUCCESS;
 }
 
-
-/* Attempts to close the zip archive, and when writing, constructs the central
+/**
+ * Attempts to close the zip archive, and when writing, constructs the central
  * directory and EOCD record. Upon return, *final_length will be set to either
  * the final length of the file. If ZIP_ALLOC_MORE_SPACE is returned when using
  * with a memfile, *final_length will be the projected total length of the file;
