@@ -81,49 +81,6 @@
  * pointers from it.
  */
 
-
-// Extended file reading functions duplicated from util.h
-
-// Get 2 bytes, little endian
-
-static int _fgetw(FILE *fp)
-{
-  int a = fgetc(fp), b = fgetc(fp);
-  if((a == EOF) || (b == EOF))
-    return EOF;
-
-  return (b << 8) | a;
-}
-
-// Get 4 bytes, little endian
-
-static int _fgetd(FILE *fp)
-{
-  int a = fgetc(fp), b = fgetc(fp), c = fgetc(fp), d = fgetc(fp);
-  if((a == EOF) || (b == EOF) || (c == EOF) || (d == EOF))
-    return EOF;
-
-  return (d << 24) | (c << 16) | (b << 8) | a;
-}
-
-// Put 2 bytes, little endian
-
-static void _fputw(int src, FILE *fp)
-{
-  fputc(src & 0xFF, fp);
-  fputc(src >> 8, fp);
-}
-
-// Put 4 bytes, little endian
-
-static void _fputd(int src, FILE *fp)
-{
-  fputc(src & 0xFF, fp);
-  fputc((src >> 8) & 0xFF, fp);
-  fputc((src >> 16) & 0xFF, fp);
-  fputc((src >> 24) & 0xFF, fp);
-}
-
 // NDS libfat fseek will always fail if a function pointer to it
 // is used, so it needs to be wrapped in another function to work.
 
@@ -643,7 +600,8 @@ static enum zip_error zip_verify_local_file_header(struct zip_archive *zp,
   else
   {
     // With data descriptor.
-    int (*vgetd)(void *) = zp->vgetd;
+    char dd_buffer[16];
+    struct memfile dd_mf;
 
     // CRC-32, sizes              12
     mf.current += 12;
@@ -656,12 +614,14 @@ static enum zip_error zip_verify_local_file_header(struct zip_archive *zp,
     // CRC-32, sizes              12
 
     zp->vseek(fp, data_position + central_fh->compressed_size, SEEK_SET);
+    zp->vread(dd_buffer, 16, 1, fp);
+    mfopen_static(dd_buffer, 16, &dd_mf);
 
     // The data descriptor may or may not have an optional signature field,
     // meaning it may be either 12 or 16 bytes long.
-    crc32 = vgetd(fp);
-    compressed_size = vgetd(fp);
-    uncompressed_size = vgetd(fp);
+    crc32 = mfgetd(&dd_mf);
+    compressed_size = mfgetd(&dd_mf);
+    uncompressed_size = mfgetd(&dd_mf);
 
     if(crc32 == data_descriptor_sig &&
      compressed_size == central_fh->crc32 &&
@@ -673,7 +633,7 @@ static enum zip_error zip_verify_local_file_header(struct zip_archive *zp,
       // In this case, shift the values.
       crc32 = compressed_size;
       compressed_size = uncompressed_size;
-      uncompressed_size = vgetd(fp);
+      uncompressed_size = mfgetd(&dd_mf);
     }
 
     // Done.
@@ -793,10 +753,6 @@ static enum zip_error zip_write_file_header(struct zip_archive *zp,
   // Memfile zips - we know there's enough space, because it was already
   // checked in zip_write_file or zip_close
 
-  // Check for errors.
-  if(zp->verror && zp->verror(fp))
-    result = ZIP_WRITE_ERROR;
-
   free(buffer);
   return result;
 }
@@ -807,32 +763,9 @@ static enum zip_error zip_write_file_header(struct zip_archive *zp,
 /* Reading */
 /***********/
 
-/* Read data from a zip archive. Only works while streaming a file.
+/**
+ * Read data from a zip archive. Only works while streaming a file.
  */
-
-int zgetd(struct zip_archive *zp, enum zip_error *err)
-{
-  if((*err = zp->read_stream_error))
-    return -1;
-
-  if(zp->streaming_file)
-  {
-    char v[4];
-
-    if(!zp->vread(v, 4, 1, zp->fp))
-    {
-      *err = ZIP_EOF;
-      return -1;
-    }
-
-    zp->stream_crc32 = zip_crc32(zp->stream_crc32, (char *)&v, 4);
-    zp->stream_left -= 4;
-
-    return (v[3] << 24) | (v[2] << 16) | (v[1] << 8) | v[0];
-  }
-
-  return zp->vgetd(zp->fp);
-}
 
 enum zip_error zread(void *destBuf, size_t readLen, struct zip_archive *zp)
 {
@@ -1457,33 +1390,9 @@ err_out:
 /* Writing */
 /***********/
 
-/* Write data to a zip archive. Only works in stream mode.
+/**
+ * Write data to a zip archive. Only works in stream mode.
  */
-
-enum zip_error zputd(int value, struct zip_archive *zp)
-{
-  enum zip_error result;
-
-  result = (zp ? zp->write_stream_error : ZIP_NULL);
-  if(result)
-    return result;
-
-  zp->vputd(value, zp->fp);
-
-  if(zp->streaming_file)
-  {
-    char v[4];
-    v[0] = value & 0xFF;
-    v[1] = (value>>8) & 0xFF;
-    v[2] = (value>>16) & 0xFF;
-    v[3] = (value>>24) & 0xFF;
-    zp->streaming_file->uncompressed_size += 4;
-    zp->stream_crc32 = zip_crc32(zp->stream_crc32, (char *)&v, 4);
-    zp->stream_left += 4;
-  }
-
-  return ZIP_SUCCESS;
-}
 
 enum zip_error zwrite(const void *src, size_t srcLen, struct zip_archive *zp)
 {
@@ -2369,16 +2278,10 @@ static struct zip_archive *zip_get_archive_file(FILE *fp)
   zp->fp = fp;
   zp->hasspace = NULL;
   zp->vgetc = (int(*)(void *)) fgetc;
-  zp->vgetw = (int(*)(void *)) _fgetw;
-  zp->vgetd = (int(*)(void *)) _fgetd;
-  zp->vputc = (int(*)(int, void *)) fputc;
-  zp->vputw = (void(*)(int, void *)) _fputw;
-  zp->vputd = (void(*)(int, void *)) _fputd;
   zp->vread = (size_t(*)(void *, size_t, size_t, void *)) fread;
   zp->vwrite = (size_t(*)(const void *, size_t, size_t, void *)) fwrite;
   zp->vseek = (int(*)(void *, long int, int)) _fseekwrapper;
   zp->vtell = (long int(*)(void *)) ftell;
-  zp->verror = (int(*)(void *)) ferror;
   zp->vclose = (int(*)(void *)) fclose;
   return zp;
 }
@@ -2478,16 +2381,10 @@ static struct zip_archive *zip_get_archive_mem(struct memfile *mf)
   zp->fp = mf;
   zp->hasspace = (int(*)(size_t, void *)) mfhasspace;
   zp->vgetc = (int(*)(void *)) mfgetc;
-  zp->vgetw = (int(*)(void *)) mfgetw;
-  zp->vgetd = (int(*)(void *)) mfgetd;
-  zp->vputc = (int(*)(int, void *)) mfputc;
-  zp->vputw = (void(*)(int, void *)) mfputw;
-  zp->vputd = (void(*)(int, void *)) mfputd;
   zp->vread = (size_t(*)(void *, size_t, size_t, void *)) mfread;
   zp->vwrite = (size_t(*)(const void *, size_t, size_t, void *)) mfwrite;
   zp->vseek = (int(*)(void *, long int, int)) mfseek;
   zp->vtell = (long int(*)(void *)) mftell;
-  zp->verror = NULL;
   zp->vclose = (int(*)(void *)) mfclose;
   return zp;
 }

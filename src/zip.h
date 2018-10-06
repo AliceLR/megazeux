@@ -162,18 +162,11 @@ struct zip_archive
   int (*hasspace)(size_t, void *);
 
   int (*vgetc)(void *);
-  int (*vgetw)(void *);
-  int (*vgetd)(void *);
-  int (*vputc)(int, void *);
-  void (*vputw)(int, void *);
-  void (*vputd)(int, void *);
-
   size_t (*vread)(void *, size_t, size_t, void *);
   size_t (*vwrite)(const void *, size_t, size_t, void *);
 
   int (*vseek)(void *, long int, int);
   long int (*vtell)(void *);
-  int (*verror)(void *);
 
   int (*vclose)(void *);
 };
@@ -182,7 +175,6 @@ struct zip_archive
 int zip_bound_data_usage(char *src, int srcLen);
 int zip_bound_total_header_usage(int num_files, int max_name_size);
 
-int zgetd(struct zip_archive *zp, enum zip_error *err);
 enum zip_error zread(void *destBuf, size_t readLen, struct zip_archive *zp);
 
 enum zip_error zip_get_next_name(struct zip_archive *zp,
@@ -214,7 +206,6 @@ enum zip_error zip_skip_file(struct zip_archive *zp);
 enum zip_error zip_read_file(struct zip_archive *zp,
  void *destBuf, size_t destLen, size_t *readLen);
 
-enum zip_error zputd(int value, struct zip_archive *zp);
 enum zip_error zwrite(const void *src, size_t srcLen, struct zip_archive *zp);
 
 enum zip_error zip_write_open_file_stream(struct zip_archive *zp,

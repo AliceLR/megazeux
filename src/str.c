@@ -42,13 +42,13 @@ struct string *string_head = NULL;
 // Wrapper functions for uthash macros
 static void hash_add_string(struct string *src)
 {
-  HASH_ADD_KEYPTR(sh, string_head, src->name, strlen(src->name), src);
+  HASH_ADD_KEYPTR(sh, string_head, src->name, src->name_length, src);
 }
 
-static struct string *hash_find_string(const char *name)
+static struct string *hash_find_string(const char *name, int name_length)
 {
   struct string *string = NULL;
-  HASH_FIND(sh, string_head, name, strlen(name), string);
+  HASH_FIND(sh, string_head, name, (size_t)name_length, string);
   return string;
 }
 #endif
@@ -89,7 +89,7 @@ static struct string *find_string(struct world *mzx_world, const char *name,
   struct string *current;
 
 #ifdef CONFIG_UTHASH
-  current = hash_find_string(name);
+  current = hash_find_string(name, strlen(name));
 
   // When reallocing we need to replace the old pointer so we don't
   // leave invalid shit around
@@ -174,6 +174,7 @@ static struct string *add_string_preallocate(struct world *mzx_world,
 
   // Copy in the name, including NULL terminator.
   strcpy(dest->name, name);
+  dest->name_length = name_length;
 
   // Copy in the value. It is NOT null terminated!
   dest->allocated_length = length;
@@ -201,7 +202,7 @@ static struct string *reallocate_string(struct world *mzx_world,
   int base_length = (int)(src->value - (char *)src);
 
 #ifdef CONFIG_UTHASH
-  struct string *result = hash_find_string(src->name);
+  struct string *result = hash_find_string(src->name, src->name_length);
 
   if(result)
     HASH_DELETE(sh, string_head, result);
@@ -1449,6 +1450,7 @@ struct string *load_new_string(struct string **string_list, int index,
   src_string->value = src_string->name + name_length + 1;
 
   src_string->name[name_length] = 0;
+  src_string->name_length = name_length;
 
   src_string->length = str_length;
   src_string->allocated_length = str_length;

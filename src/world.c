@@ -1364,6 +1364,8 @@ err_free:
 static inline int save_world_counters(struct world *mzx_world,
  struct zip_archive *zp, const char *name)
 {
+  Uint8 buffer[8];
+  struct memfile mf;
   struct counter *src_counter;
   size_t name_length;
   int result;
@@ -1373,15 +1375,19 @@ static inline int save_world_counters(struct world *mzx_world,
   if(result != ZIP_SUCCESS)
     return result;
 
-  zputd(mzx_world->num_counters, zp);
+  mfopen_static(buffer, 8, &mf);
+  mfputd(mzx_world->num_counters, &mf);
+  zwrite(buffer, 4, zp);
 
   for(i = 0; i < mzx_world->num_counters; i++)
   {
     src_counter = mzx_world->counter_list[i];
-    name_length = strlen(src_counter->name);
+    name_length = src_counter->name_length;
 
-    zputd(src_counter->value, zp);
-    zputd(name_length, zp);
+    mf.current = buffer;
+    mfputd(src_counter->value, &mf);
+    mfputd(name_length, &mf);
+    zwrite(buffer, 8, zp);
     zwrite(src_counter->name, name_length, zp);
   }
 
@@ -1493,6 +1499,8 @@ static inline int load_world_counters(struct world *mzx_world,
 static inline int save_world_strings(struct world *mzx_world,
  struct zip_archive *zp, const char *name)
 {
+  Uint8 buffer[8];
+  struct memfile mf;
   struct string *src_string;
   size_t name_length;
   size_t str_length;
@@ -1503,16 +1511,20 @@ static inline int save_world_strings(struct world *mzx_world,
   if(result != ZIP_SUCCESS)
     return result;
 
-  zputd(mzx_world->num_strings, zp);
+  mfopen_static(buffer, 8, &mf);
+  mfputd(mzx_world->num_strings, &mf);
+  zwrite(buffer, 4, zp);
 
   for(i = 0; i < mzx_world->num_strings; i++)
   {
     src_string = mzx_world->string_list[i];
-    name_length = strlen(src_string->name);
+    name_length = src_string->name_length;
     str_length = src_string->length;
 
-    zputd(name_length, zp);
-    zputd(str_length, zp);
+    mf.current = buffer;
+    mfputd(name_length, &mf);
+    mfputd(str_length, &mf);
+    zwrite(buffer, 8, zp);
     zwrite(src_string->name, name_length, zp);
     zwrite(src_string->value, str_length, zp);
   }
@@ -1622,6 +1634,8 @@ static inline int load_world_strings_mem(struct world *mzx_world,
 static inline int load_world_strings(struct world *mzx_world,
  struct zip_archive *zp)
 {
+  Uint8 buffer[8];
+  struct memfile mf;
   struct string *src_string;
   char name_buffer[ROBOT_MAX_TR];
   size_t name_length;
@@ -1644,7 +1658,10 @@ static inline int load_world_strings(struct world *mzx_world,
   // Stream the strings out of the file.
   zip_read_open_file_stream(zp, NULL);
 
-  num_strings = zgetd(zp, &result);
+  mfopen_static(buffer, 8, &mf);
+  zread(buffer, 4, zp);
+
+  num_strings = mfgetd(&mf);
   num_prev_allocated = mzx_world->num_strings_allocated;
 
   // If there aren't already any strings, allocate manually.
@@ -1657,8 +1674,10 @@ static inline int load_world_strings(struct world *mzx_world,
 
   for(i = 0; i < num_strings; i++)
   {
-    name_length = zgetd(zp, &result);
-    str_length = zgetd(zp, &result);
+    zread(buffer, 8, zp);
+    mf.current = buffer;
+    name_length = mfgetd(&mf);
+    str_length = mfgetd(&mf);
 
     if(name_length >= ROBOT_MAX_TR || str_length > MAX_STRING_LEN)
       break;

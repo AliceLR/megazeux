@@ -3441,6 +3441,7 @@ static void add_counter(struct world *mzx_world, const char *name,
   int allocated = mzx_world->num_counters_allocated;
   struct counter **base = mzx_world->counter_list;
   struct counter *cdest;
+  int name_length = strlen(name);
 
   // Need a reallocation?
   if(count == allocated)
@@ -3465,10 +3466,11 @@ static void add_counter(struct world *mzx_world, const char *name,
      (count - position) * sizeof(struct counter *));
   }
 
-  cdest = cmalloc(sizeof(struct counter) + strlen(name));
+  cdest = cmalloc(sizeof(struct counter) + name_length);
   strcpy(cdest->name, name);
 
   cdest->value = value;
+  cdest->name_length = name_length;
   cdest->gateway_write = NULL;
   cdest->gateway_dec = NULL;
 
@@ -3801,6 +3803,7 @@ void load_new_counter(struct counter **counter_list, int index,
   memcpy(src_counter->name, name, name_length);
 
   src_counter->name[name_length] = 0;
+  src_counter->name_length = name_length;
   src_counter->value = value;
 
   src_counter->gateway_write = NULL;
