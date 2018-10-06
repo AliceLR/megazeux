@@ -261,7 +261,7 @@ static inline int save_world_info(struct world *mzx_world,
 
   buffer = cmalloc(buf_size);
 
-  mfopen_static(buffer, buf_size, mf);
+  mfopen(buffer, buf_size, mf);
 
   // Save everything sorted.
 
@@ -427,7 +427,7 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
 
   zip_read_file(zp, buffer, actual_size, NULL);
 
-  mfopen_static(buffer, actual_size, &mf);
+  mfopen(buffer, actual_size, &mf);
 
   mzx_world->raw_world_info = buffer;
   mzx_world->raw_world_info_size = actual_size;
@@ -570,7 +570,7 @@ static inline void load_world_info(struct world *mzx_world,
     mzx_world->raw_world_info_size = 0;
   }
 
-  mfopen_static(buffer, actual_size, mf);
+  mfopen(buffer, actual_size, mf);
 
   while(next_prop(prop, &ident, &size, mf))
   {
@@ -1212,7 +1212,7 @@ static inline int save_world_sprites(struct world *mzx_world,
   int i;
 
   buffer = cmalloc(SPRITE_PROPS_SIZE);
-  mfopen_static(buffer, SPRITE_PROPS_SIZE, &mf);
+  mfopen(buffer, SPRITE_PROPS_SIZE, &mf);
 
   // For each
   for(i = 0; i < MAX_SPRITES; i++)
@@ -1274,7 +1274,7 @@ static inline int load_world_sprites(struct world *mzx_world,
   if(result != ZIP_SUCCESS)
     goto err_free;
 
-  mfopen_static(buffer, actual_size, &mf);
+  mfopen(buffer, actual_size, &mf);
 
   while(next_prop(&prop, &ident, &length, &mf))
   {
@@ -1375,7 +1375,7 @@ static inline int save_world_counters(struct world *mzx_world,
   if(result != ZIP_SUCCESS)
     return result;
 
-  mfopen_static(buffer, 8, &mf);
+  mfopen(buffer, 8, &mf);
   mfputd(mzx_world->num_counters, &mf);
   zwrite(buffer, 4, zp);
 
@@ -1429,7 +1429,7 @@ static inline int load_world_counters(struct world *mzx_world,
     buffer = cmalloc(actual_size);
     zip_read_file(zp, buffer, actual_size, &actual_size);
 
-    mfopen_static(buffer, actual_size, &mf);
+    mfopen(buffer, actual_size, &mf);
   }
 
   num_counters = mfgetd(&mf);
@@ -1511,7 +1511,7 @@ static inline int save_world_strings(struct world *mzx_world,
   if(result != ZIP_SUCCESS)
     return result;
 
-  mfopen_static(buffer, 8, &mf);
+  mfopen(buffer, 8, &mf);
   mfputd(mzx_world->num_strings, &mf);
   zwrite(buffer, 4, zp);
 
@@ -1563,7 +1563,7 @@ static inline int load_world_strings_mem(struct world *mzx_world,
     buffer = cmalloc(actual_size);
     zip_read_file(zp, buffer, actual_size, &actual_size);
 
-    mfopen_static(buffer, actual_size, &mf);
+    mfopen(buffer, actual_size, &mf);
   }
 
   num_strings = mfgetd(&mf);
@@ -1658,7 +1658,7 @@ static inline int load_world_strings(struct world *mzx_world,
   // Stream the strings out of the file.
   zip_read_open_file_stream(zp, NULL);
 
-  mfopen_static(buffer, 8, &mf);
+  mfopen(buffer, 8, &mf);
   zread(buffer, 4, zp);
 
   num_strings = mfgetd(&mf);

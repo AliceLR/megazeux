@@ -442,7 +442,7 @@ void load_robot(struct world *mzx_world, struct robot *cur_robot,
     buffer = cmalloc(actual_size);
     zip_read_file(zp, buffer, actual_size, &actual_size);
 
-    mfopen_static(buffer, actual_size, &mf);
+    mfopen(buffer, actual_size, &mf);
   }
 
   if(load_robot_from_memory(mzx_world, cur_robot, &mf, savegame, file_version))
@@ -490,7 +490,7 @@ struct scroll *load_scroll_allocate(struct zip_archive *zp)
 
   zip_read_file(zp, buffer, actual_size, &actual_size);
 
-  mfopen_static(buffer, actual_size, &mf);
+  mfopen(buffer, actual_size, &mf);
 
   while(next_prop(&prop, &ident, &size, &mf))
   {
@@ -549,7 +549,7 @@ struct sensor *load_sensor_allocate(struct zip_archive *zp)
 
   zip_read_file(zp, buffer, actual_size, &actual_size);
 
-  mfopen_static(buffer, actual_size, &mf);
+  mfopen(buffer, actual_size, &mf);
 
   while(next_prop(&prop, &ident, &size, &mf))
   {
@@ -743,7 +743,7 @@ void save_robot(struct world *mzx_world, struct robot *cur_robot,
        file_version);
       buffer = cmalloc(actual_size);
 
-      mfopen_static(buffer, actual_size, &mf);
+      mfopen(buffer, actual_size, &mf);
     }
 
     save_robot_to_memory(cur_robot, &mf, savegame, file_version);
@@ -777,7 +777,7 @@ void save_scroll(struct scroll *cur_scroll, struct zip_archive *zp,
 
     buffer = cmalloc(actual_size);
 
-    mfopen_static(buffer, actual_size, &mf);
+    mfopen(buffer, actual_size, &mf);
 
     save_prop_w(SCRPROP_NUM_LINES, cur_scroll->num_lines, &mf);
     save_prop_s(SCRPROP_MESG, cur_scroll->mesg, scroll_size, 1, &mf);
@@ -796,7 +796,7 @@ void save_sensor(struct sensor *cur_sensor, struct zip_archive *zp,
 
   if(cur_sensor->used)
   {
-    mfopen_static(buffer, SENSOR_PROPS_SIZE, &mf);
+    mfopen(buffer, SENSOR_PROPS_SIZE, &mf);
 
     save_prop_s(SENPROP_SENSOR_NAME, cur_sensor->sensor_name,
      ROBOT_NAME_SIZE, 1, &mf);

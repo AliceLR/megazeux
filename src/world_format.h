@@ -757,7 +757,7 @@ static inline void save_prop_v(int ident, size_t len, struct memfile *prop,
 {
   mfputw(ident, mf);
   mfputd(len, mf);
-  mfopen_static(mf->current, len, prop);
+  mfopen(mf->current, len, prop);
   mf->current += len;
 }
 

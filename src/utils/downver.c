@@ -123,12 +123,12 @@ static enum zip_error zip_duplicate_file(struct zip_archive *dest,
     struct memfile mf_out;
     void *buffer2 = malloc(actual_size);
 
-    mfopen_static(buffer, actual_size, &mf_in);
-    mfopen_static(buffer2, actual_size, &mf_out);
+    mfopen(buffer, actual_size, &mf_in);
+    mfopen(buffer2, actual_size, &mf_out);
 
     handler(&mf_out, &mf_in);
 
-    // Free the old buffer, then refresh with the new buffer
+    // Free the old buffer, then replace it with the new buffer.
     free(buffer);
     mfsync(&buffer, &actual_size, &mf_out);
   }

@@ -465,7 +465,7 @@ static enum zip_error zip_read_central_file_header(struct zip_archive *zp,
   if(!zp->vread(buffer, CENTRAL_FILE_HEADER_LEN - 4, 1, fp))
     return ZIP_READ_ERROR;
 
-  mfopen_static(buffer, CENTRAL_FILE_HEADER_LEN - 4, &mf);
+  mfopen(buffer, CENTRAL_FILE_HEADER_LEN - 4, &mf);
 
   // Version made by              2
   // Version needed to extract    2
@@ -567,7 +567,7 @@ static enum zip_error zip_verify_local_file_header(struct zip_archive *zp,
   if(!zp->vread(buffer, LOCAL_FILE_HEADER_LEN - 4, 1, fp))
     return ZIP_READ_ERROR;
 
-  mfopen_static(buffer, LOCAL_FILE_HEADER_LEN - 4, &mf);
+  mfopen(buffer, LOCAL_FILE_HEADER_LEN - 4, &mf);
 
   // Version made by              2
   mf.current += 2;
@@ -615,7 +615,7 @@ static enum zip_error zip_verify_local_file_header(struct zip_archive *zp,
 
     zp->vseek(fp, data_position + central_fh->compressed_size, SEEK_SET);
     zp->vread(dd_buffer, 16, 1, fp);
-    mfopen_static(dd_buffer, 16, &dd_mf);
+    mfopen(dd_buffer, 16, &dd_mf);
 
     // The data descriptor may or may not have an optional signature field,
     // meaning it may be either 12 or 16 bytes long.
@@ -679,7 +679,7 @@ static enum zip_error zip_write_file_header(struct zip_archive *zp,
   }
 
   buffer = cmalloc(header_size);
-  mfopen_static(buffer, header_size, &mf);
+  mfopen(buffer, header_size, &mf);
 
   // Signature
   for(i = 0; i<4; i++)
@@ -1218,7 +1218,7 @@ enum zip_error zip_read_open_mem_stream(struct zip_archive *zp,
   zp->stream_crc32 = 0;
 
   // Open the direct access file
-  mfopen_static( ((struct memfile *)fp)->current, c_size, mf);
+  mfopen( ((struct memfile *)fp)->current, c_size, mf);
 
   precalculate_read_errors(zp);
   return ZIP_SUCCESS;
@@ -1227,7 +1227,7 @@ err_out:
   if(result != ZIP_EOF)
     zip_error("zip_read_open_mem_stream", result);
 
-  mfopen_static(NULL, 0, mf);
+  mfopen(NULL, 0, mf);
 
   return result;
 }
@@ -1512,7 +1512,7 @@ static inline enum zip_error zip_write_data_descriptor(struct zip_archive *zp,
 
   void *fp = zp->fp;
 
-  mfopen_static(buffer, 12, &mf);
+  mfopen(buffer, 12, &mf);
   mfputd(fh->crc32, &mf);
   mfputd(fh->compressed_size, &mf);
   mfputd(fh->uncompressed_size, &mf);
@@ -1748,7 +1748,7 @@ err_free:
 
 err_out:
   zip_error("zip_write_open_file_stream", result);
-  mfopen_static(NULL, 0, mf);
+  mfopen(NULL, 0, mf);
   return result;
 }
 
@@ -1955,7 +1955,7 @@ static enum zip_error zip_read_directory(struct zip_archive *zp)
     result = ZIP_READ_ERROR;
     goto err_out;
   }
-  mfopen_static(buffer, EOCD_RECORD_LEN - 4, &mf);
+  mfopen(buffer, EOCD_RECORD_LEN - 4, &mf);
 
   // Number of this disk                                2
   n = mfgetw(&mf);
@@ -2068,7 +2068,7 @@ static enum zip_error zip_write_eocd_record(struct zip_archive *zp)
   if(zp->hasspace && !zp->hasspace(22, zp->fp))
     return ZIP_ALLOC_MORE_SPACE;
 
-  mfopen_static(buffer, EOCD_RECORD_LEN, &mf);
+  mfopen(buffer, EOCD_RECORD_LEN, &mf);
 
   // Signature                                          4
   for(i = 0; i<4; i++)
@@ -2385,7 +2385,7 @@ static struct zip_archive *zip_get_archive_mem(struct memfile *mf)
   zp->vwrite = (size_t(*)(const void *, size_t, size_t, void *)) mfwrite;
   zp->vseek = (int(*)(void *, long int, int)) mfseek;
   zp->vtell = (long int(*)(void *)) mftell;
-  zp->vclose = (int(*)(void *)) mfclose;
+  zp->vclose = (int(*)(void *)) mf_alloc_free;
   return zp;
 }
 
@@ -2403,7 +2403,7 @@ struct zip_archive *zip_open_mem_read(const void *src, size_t len)
 
   if(src && len > 0)
   {
-    mf = mfopen(src, len);
+    mf = mfopen_alloc(src, len);
     zp = zip_get_archive_mem(mf);
 
     zp->end_in_file = len;
@@ -2437,7 +2437,7 @@ struct zip_archive *zip_open_mem_write(void *src, size_t len, size_t start_pos)
 
   if(src && len > 0 && start_pos < len)
   {
-    mf = mfopen(src, len);
+    mf = mfopen_alloc(src, len);
     zp = zip_get_archive_mem(mf);
 
     zip_init_for_write(zp, ZIP_DEFAULT_NUM_FILES);

@@ -1041,7 +1041,7 @@ static enum status parse_legacy_robot(struct memfile *mf,
 
   if(program_size)
   {
-    mfopen_static(mf->current, program_size, &prog);
+    mfopen(mf->current, program_size, &prog);
 
     ret = parse_legacy_bytecode(&prog, program_size, file);
   }
@@ -1367,7 +1367,7 @@ static enum status parse_world(struct memfile *mf, struct base_file *file,
         zip_get_next_uncompressed_size(zp, &actual_size);
         buffer = malloc(actual_size);
         zip_read_file(zp, buffer, actual_size, &actual_size);
-        mfopen_static(buffer, actual_size, &buf_file);
+        mfopen(buffer, actual_size, &buf_file);
 
         if(file_id == FPROP_BOARD_INFO)
           ret = parse_board_info(&buf_file, file);
@@ -1526,7 +1526,7 @@ static enum status parse_file(const char *file_name,
 
     current_file = add_base_file(file_name,
      &file_list, &file_list_size, &file_list_alloc);
-    mfopen_static(buffer, buf_size, &mf);
+    mfopen(buffer, buf_size, &mf);
 
     ret = parse_world_file(&mf, current_file);
     free(buffer);
@@ -1543,7 +1543,7 @@ static enum status parse_file(const char *file_name,
 
     current_file = add_base_file(file_name,
      &file_list, &file_list_size, &file_list_alloc);
-    mfopen_static(buffer, buf_size, &mf);
+    mfopen(buffer, buf_size, &mf);
 
     ret = parse_board_file(&mf, current_file);
     free(buffer);
@@ -1590,7 +1590,7 @@ static enum status parse_file(const char *file_name,
         // Files in zips need a relative path.
         _get_path(current_file->relative_path, name_buffer);
 
-        mfopen_static(buffer, actual_size, &mf);
+        mfopen(buffer, actual_size, &mf);
 
         // FIXME do something with ret
         ret = parse_world_file(&mf, current_file);
@@ -1609,7 +1609,7 @@ static enum status parse_file(const char *file_name,
         // Files in zips need a relative path.
         _get_path(current_file->relative_path, name_buffer);
 
-        mfopen_static(buffer, actual_size, &mf);
+        mfopen(buffer, actual_size, &mf);
 
         // FIXME do something with ret
         ret = parse_board_file(&mf, current_file);

@@ -32,30 +32,45 @@ struct memfile
   unsigned char *current;
   unsigned char *start;
   unsigned char *end;
+  boolean alloc;
 };
 
-static inline struct memfile *mfopen(const void *src, size_t len)
+/**
+ * Open a memory buffer for reading.
+ */
+
+static inline void mfopen(const void *src, size_t len, struct memfile *mf)
+{
+  mf->start = (unsigned char *)src;
+  mf->current = (unsigned char *)src;
+  mf->end = (unsigned char *)src + len;
+  mf->alloc = false;
+}
+
+/**
+ * This version exists to be a drop-in alternative for fopen().
+ * For general purposes, use mfopen() instead.
+ */
+
+static inline struct memfile *mfopen_alloc(const void *src, size_t len)
 {
   struct memfile *mf = cmalloc(sizeof(struct memfile));
 
   mf->start = (unsigned char *)src;
   mf->current = (unsigned char *)src;
   mf->end = (unsigned char *)src + len;
-
+  mf->alloc = true;
   return mf;
 }
 
-static inline void mfopen_static(const void *src, size_t len,
- struct memfile *mf)
-{
-  mf->start = (unsigned char *)src;
-  mf->current = (unsigned char *)src;
-  mf->end = (unsigned char *)src + len;
-}
+/**
+ * This function is intended to be a drop-in fclose() alternative for
+ * use with mfopen_alloc().
+ */
 
-static inline int mfclose(struct memfile *mf)
+static inline int mf_alloc_free(struct memfile *mf)
 {
-  if(mf)
+  if(mf && mf->alloc)
   {
     free(mf);
     return 0;
@@ -63,17 +78,29 @@ static inline int mfclose(struct memfile *mf)
   return -1;
 }
 
-static inline void mfsync(void **src, size_t *len,
- struct memfile *mf)
+/**
+ * Copy the buffer position and length to external variables.
+ */
+
+static inline void mfsync(void **buf, size_t *len, struct memfile *mf)
 {
-  *src = mf->start;
-  *len = (mf->end - mf->start);
+  if(buf) *buf = mf->start;
+  if(len) *len = mf->end - mf->start;
 }
+
+/**
+ * Determine if the memfile has at least len space remaining.
+ */
 
 static inline int mfhasspace(size_t len, struct memfile *mf)
 {
   return (len + mf->current) <= mf->end;
 }
+
+/**
+ * Resize the memfile buffer and preserve the current position.
+ * Do not use this function unless the memfile buffer is on the heap.
+ */
 
 static inline void mfresize(size_t len, struct memfile *mf)
 {
@@ -209,7 +236,6 @@ static inline long int mftell(struct memfile *mf)
 {
   return (long int)(mf->current - mf->start);
 }
-
 
 __M_END_DECLS
 

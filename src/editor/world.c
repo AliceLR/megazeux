@@ -267,7 +267,7 @@ static int append_world_zip_get_num_boards(const void *buffer, int buf_size)
   int ident;
   int size;
 
-  mfopen_static(buffer, buf_size, &mf);
+  mfopen(buffer, buf_size, &mf);
 
   while(next_prop(&prop, &ident, &size, &mf))
     if(ident == WPROP_NUM_BOARDS)
