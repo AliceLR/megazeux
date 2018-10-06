@@ -2912,7 +2912,11 @@ int set_counter_special(struct world *mzx_world, char *char_value,
           new_length = ftell_and_rewind(src_file);
 
           new_source = cmalloc(new_length+1);
-          fread(new_source, new_length, 1, src_file);
+          if(!fread(new_source, new_length, 1, src_file))
+          {
+            free(new_source);
+            break;
+          }
           new_source[new_length] = 0;
 
           if(new_source)
@@ -3030,7 +3034,11 @@ int set_counter_special(struct world *mzx_world, char *char_value,
           int new_size = ftell_and_rewind(bc_file);
           char *program_bytecode = malloc(new_size + 1);
 
-          fread(program_bytecode, new_size, 1, bc_file);
+          if(!fread(program_bytecode, new_size, 1, bc_file))
+          {
+            free(program_bytecode);
+            break;
+          }
 
           if(validate_legacy_bytecode(program_bytecode, new_size) <= 0)
           {

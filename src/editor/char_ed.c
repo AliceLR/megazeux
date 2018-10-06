@@ -870,7 +870,7 @@ static int char_import_tile(const char *name, int char_offset, int charset,
     if(data_size > buffer_size)
       data_size = buffer_size;
 
-    fread(buffer, 1, data_size, fp);
+    data_size = fread(buffer, 1, data_size, fp);
     fclose(fp);
 
     ec_change_block((Uint8)char_offset, (Uint8)charset,

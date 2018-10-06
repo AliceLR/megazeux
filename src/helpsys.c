@@ -84,7 +84,7 @@ void help_system(context *ctx, struct world *mzx_world)
   // Jump to file
   fseek(fp, where, SEEK_SET);
   // Read it in
-  fread(help, 1, size, fp);
+  size = fread(help, 1, size, fp);
   // Display it
   cursor_off();
 
@@ -98,7 +98,8 @@ labelled:
     fseek(fp, 2, SEEK_SET);
     for(t2 = 0; t2 < t1; t2++)
     {
-      fread(file2, 1, 13, fp);
+      if(!fread(file2, 13, 1, fp))
+        return;
       if(!strcmp(file, file2))
         break;
       fseek(fp, 8, SEEK_CUR);
@@ -110,7 +111,7 @@ labelled:
       where = fgetd(fp);
       size = fgetd(fp);
       fseek(fp, where, SEEK_SET);
-      fread(help, 1, size, fp);
+      size = fread(help, 1, size, fp);
 
       // Search for label
       for(t2 = 0; t2 < size; t2++)

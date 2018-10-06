@@ -792,9 +792,9 @@ void save_local_editor_config(struct editor_config_info *conf,
 
     config_file_size = ftell_and_rewind(fp);
     config_file = cmalloc(config_file_size + 1);
-    config_file[config_file_size] = 0;
 
-    fread(config_file, 1, config_file_size, fp);
+    config_file_size = fread(config_file, 1, config_file_size, fp);
+    config_file[config_file_size] = 0;
     fclose(fp);
 
     a = strstr(config_file, comment_a);

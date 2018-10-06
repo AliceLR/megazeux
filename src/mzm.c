@@ -984,6 +984,7 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
   size_t file_size;
   void *buffer;
   int success;
+  int count;
   input_file = fopen_unsafe(name, "rb");
   if(input_file)
   {
@@ -991,8 +992,14 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
     file_size = ftell(input_file);
     buffer = cmalloc(file_size);
     fseek(input_file, 0, SEEK_SET);
-    fread(buffer, file_size, 1, input_file);
+    count = fread(buffer, file_size, 1, input_file);
     fclose(input_file);
+
+    if(!count)
+    {
+      free(buffer);
+      return -1;
+    }
 
     success = load_mzm_common(mzx_world, buffer, (int)file_size, start_x,
      start_y, mode, savegame, name);
