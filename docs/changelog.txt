@@ -1,4 +1,11 @@
-GIT - MZX 2.91g
+October 7th, 2018 - MZX 2.91g
+
+This bugfix release fixes various minor-to-moderate bugs in
+various areas of MegaZeux. The title/game update code has gone
+through a fairly major overhaul and several parts of MegaZeux
+have been combined to use the same loop. The conversion of
+MegaZeux's interfaces to be compatible with this loop is an
+ongoing process expected to occur over several versions.
 
 USERS
 
