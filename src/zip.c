@@ -67,21 +67,21 @@
 #define CENTRAL_FILE_HEADER_LEN 46
 #define EOCD_RECORD_LEN 22
 
-/* This zip reader/writer is designed:
+/**
+ * This zip reader/writer was designed:
  *
- * 1) Around the needs of our world/board/robot/MZM files. These files
- * need binary headers, or at least it's nice to have them. They don't
- * need to know the zip archive metadata, except when we're extracting
- * them. However, if we need things like data subdirectories or the
- * VFS ajs wanted, it should be extendable.
+ * 1) Around the needs of our world/board/MZM files. These files need
+ * binary headers (or at least it's nice to have them). The way they're
+ * split up also requires fairly fast zip reading and rewriting that
+ * minimizes file IO function usage.
  *
- * 2) With the ability to use memory blocks instead of files. This is
- * mainly for MZMs, which need to be writable both to file and to strings.
+ * 2) With the ability to use a memory buffer instead of a file. This is
+ * mainly for MZMs, which need to be writable to memory.
  *
- * 3) With the ability to store extra data in the zip related to the MZX world.
- *
- * While not copied from or even based on ajs's zipio, I took a few
- * pointers from it.
+ * While not copied from or even based on ajs's zipio, a few pointers were
+ * taken from it. While zips can't currently be read and modified at the
+ * same time, this would be a potentially useful future addition with
+ * implications for downver or accessing files/worlds from inside of a zip.
  */
 
 // NDS libfat fseek will always fail if a function pointer to it
@@ -122,7 +122,6 @@ static int zip_get_dos_date_time(void)
 
   return (date << 16) | time;
 }
-
 
 static const char *zip_error_string(enum zip_error code)
 {
@@ -195,6 +194,9 @@ static void zip_error(const char *func, enum zip_error code)
   warn("%s: %s\n", func, zip_error_string(code));
 }
 
+/**
+ * Wrappers for zlib functions.
+ */
 
 static inline uint32_t zip_crc32(uint32_t crc, const void *src, uint32_t srcLen)
 {
@@ -277,8 +279,9 @@ static int zip_compress(char **dest, uint32_t *destLen, const char *src,
   return err;
 }
 
-
-/* Calculate an upper bound for the total compressed size of a memory block. */
+/**
+ * Calculate an upper bound for the total compressed size of a memory block.
+ */
 
 int zip_bound_data_usage(char *src, int srcLen)
 {
@@ -303,8 +306,9 @@ int zip_bound_data_usage(char *src, int srcLen)
   return bound;
 }
 
-
-/* Calculate an upper bound for the total size of headers for an archive. */
+/**
+ * Calculate an upper bound for the total size of headers for an archive.
+ */
 
 int zip_bound_total_header_usage(int num_files, int max_name_size)
 {
@@ -752,8 +756,6 @@ static enum zip_error zip_write_file_header(struct zip_archive *zp,
   return result;
 }
 
-
-
 /***********/
 /* Reading */
 /***********/
@@ -857,9 +859,8 @@ err_out:
   return result;
 }
 
-
-/* Get the name of the next file in the archive. Only works after
- * zip_read_directory() is called.
+/**
+ * Get the name of the next file in the archive.
  */
 
 enum zip_error zip_get_next_name(struct zip_archive *zp,
@@ -895,9 +896,8 @@ err_out:
   return result;
 }
 
-
-/* Get the MZX properties of the next file in the archive. Only works after
- * zip_read_directory() is called.
+/**
+ * Get the MZX properties of the next file in the archive.
  */
 
 enum zip_error zip_get_next_prop(struct zip_archive *zp,
@@ -934,9 +934,8 @@ err_out:
   return result;
 }
 
-
-/* Get the uncompressed length of the next file in the archive. Only works after
- * zip_read_directory() is called.
+/**
+ * Get the uncompressed length of the next file in the archive.
  */
 
 enum zip_error zip_get_next_uncompressed_size(struct zip_archive *zp,
@@ -964,9 +963,8 @@ err_out:
   return result;
 }
 
-
-/* Get the compression method of the next file in the archive. Only works after
- * zip_read_directory() is called.
+/**
+ * Get the compression method of the next file in the archive.
  */
 
 enum zip_error zip_get_next_method(struct zip_archive *zp, unsigned int *method)
@@ -993,11 +991,10 @@ err_out:
   return result;
 }
 
-
-/* Open a stream to read the next file from a zip archive. Only works after
- * zip_read_directory() is called. If provided, destLen will be the uncompressed
- * size of the file on return, or 0 if an error occurred. Intended for use with
- * file output; use zip_read_open_mem_stream() for memory output.
+/**
+ * Open a stream to read the next file from a zip archive. If provided, destLen
+ * will be the uncompressed size of the file on return, or 0 if an error
+ * occurred.
  */
 
 enum zip_error zip_read_open_file_stream(struct zip_archive *zp,
@@ -1074,8 +1071,8 @@ err_out:
   return result;
 }
 
-
-/* Close the reading stream.
+/**
+ * Close the reading stream.
  */
 
 enum zip_error zip_read_close_stream(struct zip_archive *zp)
@@ -1136,9 +1133,9 @@ err_out:
   return result;
 }
 
-
-/* Like zip_read_open_file_stream, but allows direct memory access.
- * This is abusable, but far quicker than the alternatives.
+/**
+ * Like zip_read_open_file_stream, but allows the direct reading of
+ * uncompressed files. This is abusable, but far quicker than the alternatives.
  */
 
 enum zip_error zip_read_open_mem_stream(struct zip_archive *zp,
@@ -1274,8 +1271,9 @@ err_out:
   return result;
 }
 
-
-/* Rewind to the start of the zip archive. */
+/**
+ * Rewind to the start of the zip archive.
+ */
 
 enum zip_error zip_rewind(struct zip_archive *zp)
 {
@@ -1299,9 +1297,8 @@ err_out:
   return result;
 }
 
-
-/* Skip the current file in the zip archive. Only works after
- * zip_read_directory() is called.
+/**
+ * Skip the current file in the zip archive.
  */
 
 enum zip_error zip_skip_file(struct zip_archive *zp)
@@ -1326,9 +1323,9 @@ err_out:
   return result;
 }
 
-
-/* Read a file from the a zip archive. Only works after zip_read_directory()
- * is called. If provided, readLen will return the actual number of bytes read.
+/**
+ * Read a file from the a zip archive. If provided, the value of readLen will
+ * be set to the number of bytes read into the buffer.
  */
 
 enum zip_error zip_read_file(struct zip_archive *zp,
@@ -1377,8 +1374,6 @@ err_out:
 
   return result;
 }
-
-
 
 /***********/
 /* Writing */
@@ -1521,9 +1516,9 @@ err_out:
   return result;
 }
 
-
-/* Writes the data descriptor for a file, unless data descriptors are turned
- * off, in which case, it goes back and adds the data into the local header.
+/**
+ * Writes the data descriptor for a file. If data descriptors are turned
+ * off, this function will seek back and add the data into the local header.
  */
 
 static inline enum zip_error zip_write_data_descriptor(struct zip_archive *zp,
@@ -1566,9 +1561,8 @@ static inline enum zip_error zip_write_data_descriptor(struct zip_archive *zp,
   return ZIP_SUCCESS;
 }
 
-
-/* Open a file writing stream. This works in raw writing mode; when the file
- * write is done, the archive will be in file writing mode.
+/**
+ * Open a file writing stream.
  */
 
 enum zip_error zip_write_open_file_stream(struct zip_archive *zp,
@@ -1645,8 +1639,9 @@ err_out:
   return result;
 }
 
-
-/* Close a file writing stream. */
+/**
+ * Close a file writing stream.
+ */
 
 enum zip_error zip_write_close_stream(struct zip_archive *zp)
 {
@@ -1693,8 +1688,8 @@ err_out:
   return result;
 }
 
-
-/* Open a direct write stream to the archive's memfile. The only supported
+/**
+ * Open a direct write stream to the archive's memfile. The only supported
  * method is no compression/store.
  */
 
@@ -1845,10 +1840,9 @@ err_out:
   return result;
 }
 
-
-/* Write a file to a zip archive. The first time this is used, the archive will
- * change to file writing mode, after which zip_write() will fail.
- * Valid methods: ZIP_M_NONE, ZIP_M_DEFLATE
+/**
+ * Write a file to a zip archive.
+ * Currently handled methods: ZIP_M_NONE, ZIP_M_DEFLATE
  */
 
 enum zip_error zip_write_file(struct zip_archive *zp, const char *name,
@@ -1957,6 +1951,11 @@ static enum zip_error zip_find_eocd(struct zip_archive *zp)
 
   return ZIP_SUCCESS;
 }
+
+/**
+ * Read the EOCD record and central directory of the zip to memory.
+ * This is required before the zip can be properly read.
+ */
 
 static enum zip_error zip_read_directory(struct zip_archive *zp)
 {
