@@ -74,9 +74,6 @@ ${editor_objs}: $(filter-out $(wildcard ${editor_obj}), ${editor_obj})
 
 ifeq (${BUILD_MODULAR},1)
 
-# Would be nice to zip.o out of here but it can't use CORE_LIBSPEC.
-editor_objs += ${core_obj}/zip.o
-
 editor_target := ${DSOPRE}editor${DSOPOST}
 
 ${editor_target}: ${editor_objs} ${core_target}

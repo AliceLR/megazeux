@@ -134,6 +134,10 @@ typedef unsigned char boolean;
 #define AUDIO_LIBSPEC LIBSPEC
 #endif
 
+#ifndef UTILS_LIBSPEC
+#define UTILS_LIBSPEC CORE_LIBSPEC
+#endif
+
 #ifdef CONFIG_UPDATER
 #define UPDATER_LIBSPEC CORE_LIBSPEC
 #else

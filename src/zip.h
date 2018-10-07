@@ -168,66 +168,69 @@ struct zip_archive
   int (*vclose)(void *);
 };
 
+UTILS_LIBSPEC int zip_bound_data_usage(char *src, int srcLen);
+UTILS_LIBSPEC int zip_bound_total_header_usage(int num_files, int max_name_size);
 
-int zip_bound_data_usage(char *src, int srcLen);
-int zip_bound_total_header_usage(int num_files, int max_name_size);
+UTILS_LIBSPEC enum zip_error zread(void *destBuf, size_t readLen,
+ struct zip_archive *zp);
 
-enum zip_error zread(void *destBuf, size_t readLen, struct zip_archive *zp);
-
-enum zip_error zip_get_next_name(struct zip_archive *zp,
+UTILS_LIBSPEC enum zip_error zip_get_next_name(struct zip_archive *zp,
  char *name, int name_buffer_size);
 
-enum zip_error zip_get_next_prop(struct zip_archive *zp,
+UTILS_LIBSPEC enum zip_error zip_get_next_prop(struct zip_archive *zp,
  unsigned int *prop_id, unsigned int *board_id, unsigned int *robot_id);
 
-enum zip_error zip_get_next_method(struct zip_archive *zp,
+UTILS_LIBSPEC enum zip_error zip_get_next_method(struct zip_archive *zp,
  unsigned int *method);
 
-enum zip_error zip_get_next_uncompressed_size(struct zip_archive *zp,
- size_t *u_size);
+UTILS_LIBSPEC enum zip_error zip_get_next_uncompressed_size(
+ struct zip_archive *zp, size_t *u_size);
 
-enum zip_error zip_read_open_file_stream(struct zip_archive *zp,
+UTILS_LIBSPEC enum zip_error zip_read_open_file_stream(struct zip_archive *zp,
  size_t *destLen);
 
-enum zip_error zip_read_close_stream(struct zip_archive *zp);
+UTILS_LIBSPEC enum zip_error zip_read_close_stream(struct zip_archive *zp);
 
-enum zip_error zip_read_open_mem_stream(struct zip_archive *zp,
+UTILS_LIBSPEC enum zip_error zip_read_open_mem_stream(struct zip_archive *zp,
  struct memfile *mf);
 
-enum zip_error zip_read_close_mem_stream(struct zip_archive *zp);
+UTILS_LIBSPEC enum zip_error zip_read_close_mem_stream(struct zip_archive *zp);
 
-enum zip_error zip_rewind(struct zip_archive *zp);
+UTILS_LIBSPEC enum zip_error zip_rewind(struct zip_archive *zp);
 
-enum zip_error zip_skip_file(struct zip_archive *zp);
+UTILS_LIBSPEC enum zip_error zip_skip_file(struct zip_archive *zp);
 
-enum zip_error zip_read_file(struct zip_archive *zp,
+UTILS_LIBSPEC enum zip_error zip_read_file(struct zip_archive *zp,
  void *destBuf, size_t destLen, size_t *readLen);
 
-enum zip_error zwrite(const void *src, size_t srcLen, struct zip_archive *zp);
+UTILS_LIBSPEC enum zip_error zwrite(const void *src, size_t srcLen,
+ struct zip_archive *zp);
 
-enum zip_error zip_write_open_file_stream(struct zip_archive *zp,
+UTILS_LIBSPEC enum zip_error zip_write_open_file_stream(struct zip_archive *zp,
  const char *name, int method);
 
-enum zip_error zip_write_close_stream(struct zip_archive *zp);
+UTILS_LIBSPEC enum zip_error zip_write_close_stream(struct zip_archive *zp);
 
-enum zip_error zip_write_open_mem_stream(struct zip_archive *zp,
+UTILS_LIBSPEC enum zip_error zip_write_open_mem_stream(struct zip_archive *zp,
  struct memfile *mf, const char *name);
 
-enum zip_error zip_write_close_mem_stream(struct zip_archive *zp,
+UTILS_LIBSPEC enum zip_error zip_write_close_mem_stream(struct zip_archive *zp,
  struct memfile *mf);
 
-enum zip_error zip_write_file(struct zip_archive *zp, const char *name,
- const void *src, size_t srcLen, int method);
+UTILS_LIBSPEC enum zip_error zip_write_file(struct zip_archive *zp,
+ const char *name, const void *src, size_t srcLen, int method);
 
-enum zip_error zip_close(struct zip_archive *zp, size_t *final_length);
+UTILS_LIBSPEC enum zip_error zip_close(struct zip_archive *zp,
+ size_t *final_length);
 
-struct zip_archive *zip_open_fp_read(FILE *fp);
-struct zip_archive *zip_open_fp_write(FILE *fp);
-struct zip_archive *zip_open_file_read(const char *file_name);
-struct zip_archive *zip_open_file_write(const char *file_name);
-struct zip_archive *zip_open_mem_read(const void *src, size_t len);
-struct zip_archive *zip_open_mem_write(void *src, size_t len, size_t start_pos);
-struct zip_archive *zip_open_mem_write_ext(void **external_buffer,
+UTILS_LIBSPEC struct zip_archive *zip_open_fp_read(FILE *fp);
+UTILS_LIBSPEC struct zip_archive *zip_open_fp_write(FILE *fp);
+UTILS_LIBSPEC struct zip_archive *zip_open_file_read(const char *file_name);
+UTILS_LIBSPEC struct zip_archive *zip_open_file_write(const char *file_name);
+UTILS_LIBSPEC struct zip_archive *zip_open_mem_read(const void *src, size_t len);
+UTILS_LIBSPEC struct zip_archive *zip_open_mem_write(void *src, size_t len,
+ size_t start_pos);
+UTILS_LIBSPEC struct zip_archive *zip_open_mem_write_ext(void **external_buffer,
  size_t *external_buffer_size, size_t start_pos);
 
 __M_END_DECLS
