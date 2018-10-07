@@ -61,6 +61,7 @@
 #define ZIP_S_WRITE_FILES 9
 #define ZIP_S_WRITE_STREAM 10
 #define ZIP_S_WRITE_MEMSTREAM 11
+#define ZIP_S_ERROR 99
 
 #define LOCAL_FILE_HEADER_LEN 30
 #define CENTRAL_FILE_HEADER_LEN 46
@@ -143,10 +144,6 @@ static const char *zip_error_string(enum zip_error code)
       return "could not read from position";
     case ZIP_WRITE_ERROR:
       return "could not write to position";
-    case ZIP_ALLOC_MORE_SPACE:
-      return "archive alloc too small";
-    case ZIP_INVALID_WHILE_CLOSING:
-      return "invalid operation; archive is being closed";
     case ZIP_INVALID_READ_IN_WRITE_MODE:
       return "can't read in write mode";
     case ZIP_INVALID_WRITE_IN_READ_MODE:
@@ -333,7 +330,6 @@ int zip_bound_total_header_usage(int num_files, int max_name_size)
 #define zip_read_file_mode_check(zp)                                    \
 ( (zp)->mode == ZIP_S_READ_FILES  ? ZIP_SUCCESS :                       \
   (zp)->mode == ZIP_S_READ_STREAM ? ZIP_INVALID_FILE_READ_IN_STREAM_MODE : \
-  (zp)->closing                   ? ZIP_INVALID_WHILE_CLOSING :         \
   (zp)->mode == ZIP_S_READ_UNINITIALIZED ? \
   ZIP_INVALID_FILE_READ_UNINITIALIZED    : \
   ZIP_INVALID_READ_IN_WRITE_MODE)
@@ -341,7 +337,6 @@ int zip_bound_total_header_usage(int num_files, int max_name_size)
 #define zip_read_stream_mode_check(zp)                                  \
 ( (zp)->mode == ZIP_S_READ_STREAM ? ZIP_SUCCESS :                       \
   (zp)->mode == ZIP_S_READ_FILES  ? ZIP_INVALID_STREAM_READ :           \
-  (zp)->closing                   ? ZIP_INVALID_WHILE_CLOSING :         \
   (zp)->mode == ZIP_S_READ_UNINITIALIZED ? \
   ZIP_INVALID_FILE_READ_UNINITIALIZED    : \
   ZIP_INVALID_READ_IN_WRITE_MODE)
@@ -352,14 +347,12 @@ int zip_bound_total_header_usage(int num_files, int max_name_size)
 ( (zp)->mode == ZIP_S_WRITE_FILES  ? ZIP_SUCCESS :                        \
   (zp)->mode == ZIP_S_WRITE_STREAM ? ZIP_INVALID_FILE_WRITE_IN_STREAM_MODE : \
   (zp)->mode == ZIP_S_WRITE_UNINITIALIZED ? ZIP_SUCCESS :                 \
-  (zp)->closing                    ? ZIP_INVALID_WHILE_CLOSING :          \
   ZIP_INVALID_WRITE_IN_READ_MODE)
 
 #define zip_write_stream_mode_check(zp)                                   \
 ( (zp)->mode == ZIP_S_WRITE_STREAM        ? ZIP_SUCCESS :                 \
   (zp)->mode == ZIP_S_WRITE_FILES         ? ZIP_INVALID_STREAM_WRITE :    \
   (zp)->mode == ZIP_S_WRITE_UNINITIALIZED ? ZIP_INVALID_STREAM_WRITE :    \
-  (zp)->closing                           ? ZIP_INVALID_WHILE_CLOSING :   \
   ZIP_INVALID_WRITE_IN_READ_MODE)
 
 static inline void precalculate_read_errors(struct zip_archive *zp)
@@ -399,7 +392,7 @@ static enum zip_error zip_read_file_header_signature(struct zip_archive *zp,
   int n, i;
   void *fp = zp->fp;
   int (*vgetc)(void *) = zp->vgetc;
-  int (*hasspace)(size_t, void *) = zp->hasspace;
+  boolean is_memory = zp->is_memory;
 
   int header_length = CENTRAL_FILE_HEADER_LEN;
   char *magic = file_sig_central;
@@ -415,7 +408,7 @@ static enum zip_error zip_read_file_header_signature(struct zip_archive *zp,
   while(1)
   {
     // Memfiles: make sure there's enough space
-    if(hasspace && !hasspace(header_length - i, fp))
+    if(is_memory && !mfhasspace(header_length - i, fp))
       return ZIP_MISSING_LOCAL_HEADER;
 
     n = vgetc(fp);
@@ -1164,7 +1157,7 @@ enum zip_error zip_read_open_mem_stream(struct zip_archive *zp,
   if(result)
     goto err_out;
 
-  if(!zp->hasspace)
+  if(!zp->is_memory)
   {
     result = ZIP_NOT_MEMORY_ARCHIVE;
     goto err_out;
@@ -1245,7 +1238,6 @@ enum zip_error zip_read_close_mem_stream(struct zip_archive *zp)
 
   result =
    !zp ? ZIP_NULL :
-   zp->closing ? ZIP_INVALID_WHILE_CLOSING :
    zp->mode != ZIP_S_READ_MEMSTREAM ? ZIP_INVALID_STREAM_READ :
    ZIP_SUCCESS;
 
@@ -1393,6 +1385,40 @@ err_out:
 /***********/
 
 /**
+ * Check if there's enough room in a memory archive to write a number of bytes.
+ * If there isn't and the buffer is expandable, expand it to fit the required
+ * size. Otherwise, return ZIP_EOF.
+ */
+
+static enum zip_error zip_ensure_capacity(size_t len, struct zip_archive *zp)
+{
+  struct memfile *mf = (struct memfile *)zp->fp;
+  void *external_buffer;
+  size_t external_buffer_size;
+  size_t size_required;
+
+  if(mfhasspace(len, mf))
+    return ZIP_SUCCESS;
+
+  if(!zp->external_buffer || !zp->external_buffer_size)
+    return ZIP_EOF;
+
+  size_required = mftell(mf) + len;
+  external_buffer = *(zp->external_buffer);
+  external_buffer_size = *(zp->external_buffer_size);
+
+  while(external_buffer_size < size_required)
+    external_buffer_size *= 2;
+
+  external_buffer = crealloc(external_buffer, external_buffer_size);
+  *(zp->external_buffer) = external_buffer;
+  *(zp->external_buffer_size) = external_buffer_size;
+
+  mfmove(external_buffer, external_buffer_size, mf);
+  return ZIP_SUCCESS;
+}
+
+/**
  * Write data to a zip archive. Only works in stream mode.
  */
 
@@ -1427,13 +1453,10 @@ enum zip_error zwrite(const void *src, size_t srcLen, struct zip_archive *zp)
     writeLen = srcLen;
 
     // Test if we have the space to write
-    if(zp->hasspace)
+    if(zp->is_memory && zip_ensure_capacity(srcLen, zp))
     {
-      if(!zp->hasspace(srcLen, fp))
-      {
-        result = ZIP_ALLOC_MORE_SPACE;
-        goto err_out;
-      }
+      result = ZIP_EOF;
+      goto err_out;
     }
 
     if(!zp->vwrite(src, srcLen, 1, fp))
@@ -1458,13 +1481,10 @@ enum zip_error zwrite(const void *src, size_t srcLen, struct zip_archive *zp)
     }
 
     // Test if we have the space to write
-    if(zp->hasspace)
+    if(zp->is_memory && zip_ensure_capacity(writeLen, zp))
     {
-      if(!zp->hasspace(writeLen, fp))
-      {
-        result = ZIP_ALLOC_MORE_SPACE;
-        goto err_free;
-      }
+      result = ZIP_EOF;
+      goto err_free;
     }
 
     // Write
@@ -1522,6 +1542,9 @@ static inline enum zip_error zip_write_data_descriptor(struct zip_archive *zp,
 #ifdef ZIP_WRITE_DATA_DESCRIPTOR
   {
     // Write data descriptor
+    if(zp->is_memory && zip_ensure_capacity(DATA_DESCRIPTOR_LEN, zp))
+      return ZIP_EOF;
+
     zp->vwrite(buffer, 12, 1, fp);
   }
 #else
@@ -1565,9 +1588,9 @@ enum zip_error zip_write_open_file_stream(struct zip_archive *zp,
   fp = zp->fp;
 
   // memfiles: make sure there's enough space for the header
-  if(zp->hasspace && !zp->hasspace(strlen(name) + 30, fp))
+  if(zp->is_memory && zip_ensure_capacity(strlen(name) + 30, zp))
   {
-    result = ZIP_ALLOC_MORE_SPACE;
+    result = ZIP_EOF;
     goto err_out;
   }
 
@@ -1689,7 +1712,7 @@ enum zip_error zip_write_open_mem_stream(struct zip_archive *zp,
   if(result)
     goto err_out;
 
-  if(!zp->hasspace)
+  if(!zp->is_memory)
   {
     result = ZIP_NOT_MEMORY_ARCHIVE;
     goto err_out;
@@ -1698,9 +1721,9 @@ enum zip_error zip_write_open_mem_stream(struct zip_archive *zp,
   fp = zp->fp;
 
   // Make sure there's enough space for the header
-  if(!zp->hasspace(strlen(name) + 30, fp))
+  if(zip_ensure_capacity(strlen(name) + 30, zp))
   {
-    result = ZIP_ALLOC_MORE_SPACE;
+    result = ZIP_EOF;
     goto err_out;
   }
 
@@ -1768,7 +1791,6 @@ enum zip_error zip_write_close_mem_stream(struct zip_archive *zp,
 
   result =
    !zp ? ZIP_NULL :
-   zp->closing ? ZIP_INVALID_WHILE_CLOSING :
    zp->mode != ZIP_S_WRITE_MEMSTREAM ? ZIP_INVALID_STREAM_WRITE :
    ZIP_SUCCESS;
 
@@ -1884,14 +1906,14 @@ static enum zip_error zip_find_eocd(struct zip_archive *zp)
   int n;
 
   // Go to the latest position the EOCD might be.
-  if(vseek(fp, (long int)(zp->end_in_file - 22), SEEK_SET))
+  if(vseek(fp, (long int)(zp->end_in_file - EOCD_RECORD_LEN), SEEK_SET))
   {
     return ZIP_NO_EOCD;
   }
 
   // Find the end of central directory signature.
   i = 0;
-  j = -22;
+  j = -EOCD_RECORD_LEN;
   do
   {
     n = vgetc(fp);
@@ -2067,8 +2089,8 @@ static enum zip_error zip_write_eocd_record(struct zip_archive *zp)
   int i;
 
   // Memfiles: make sure there's enough space
-  if(zp->hasspace && !zp->hasspace(22, zp->fp))
-    return ZIP_ALLOC_MORE_SPACE;
+  if(zp->is_memory && zip_ensure_capacity(EOCD_RECORD_LEN, zp))
+    return ZIP_EOF;
 
   mfopen(buffer, EOCD_RECORD_LEN, &mf);
 
@@ -2107,10 +2129,8 @@ static enum zip_error zip_write_eocd_record(struct zip_archive *zp)
 
 /**
  * Attempts to close the zip archive, and when writing, constructs the central
- * directory and EOCD record. Upon return, *final_length will be set to either
- * the final length of the file. If ZIP_ALLOC_MORE_SPACE is returned when using
- * with a memfile, *final_length will be the projected total length of the file;
- * reallocate using zip_expand and call zip_close again.
+ * directory and EOCD record. Upon returning ZIP_SUCCESS, *final_length will be
+ * set to the final length of the file.
  */
 
 enum zip_error zip_close(struct zip_archive *zp, size_t *final_length)
@@ -2137,41 +2157,28 @@ enum zip_error zip_close(struct zip_archive *zp, size_t *final_length)
   {
     warn("zip_close called while writing file stream!\n");
     zip_write_close_stream(zp);
-  }
-
-  if(!zp->closing)
-  {
-    zp->closing = 1;
-    zp->pos = 0;
-
-    precalculate_read_errors(zp);
-    precalculate_write_errors(zp);
-
-    if(mode == ZIP_S_WRITE_FILES)
-      zp->offset_central_directory = vtell(fp);
+    mode = ZIP_S_WRITE_FILES;
   }
 
   if(mode == ZIP_S_WRITE_FILES)
   {
     int expected_size = 22 + 46 * zp->num_files + zp->running_file_name_length;
 
+    zp->offset_central_directory = vtell(fp);
+
     // Calculate projected file size in case more space is needed
     if(final_length)
       *final_length = zp->offset_central_directory + expected_size;
 
     // Ensure there's enough space to close the file
-    if(zp->hasspace)
+    if(zp->is_memory && zip_ensure_capacity(expected_size, zp))
     {
-      if(!zp->hasspace(expected_size, fp))
-      {
-        result = ZIP_ALLOC_MORE_SPACE;
-
-        zip_error("zip_close", result);
-        return result;
-      }
+      result = ZIP_EOF;
+      mode = ZIP_S_ERROR;
     }
   }
 
+  zp->pos = 0;
   for(i = zp->pos; i < zp->num_files; i++)
   {
     struct zip_file_header *fh = zp->files[i];
@@ -2185,12 +2192,11 @@ enum zip_error zip_close(struct zip_archive *zp, size_t *final_length)
         if(result)
         {
           // Not much that can be done at this point.
-          mode = 0;
+          mode = ZIP_S_ERROR;
         }
       }
 
       free(fh->file_name);
-
       free(fh);
     }
   }
@@ -2198,12 +2204,22 @@ enum zip_error zip_close(struct zip_archive *zp, size_t *final_length)
   // Write the end of central directory record
   if(mode == ZIP_S_WRITE_FILES || mode == ZIP_S_WRITE_UNINITIALIZED)
   {
+    size_t end_pos;
     zp->size_central_directory = vtell(fp) - zp->offset_central_directory;
 
     result = zip_write_eocd_record(zp);
+    end_pos = vtell(fp);
 
     if(final_length)
-      *final_length = vtell(fp);
+      *final_length = end_pos;
+
+    // Reduce the size of the buffer if this is an expandable memory zip.
+    if(zp->is_memory && zp->external_buffer && zp->external_buffer_size &&
+     *(zp->external_buffer_size) > end_pos)
+    {
+      *(zp->external_buffer) = crealloc(*(zp->external_buffer), end_pos);
+      *(zp->external_buffer_size) = end_pos;
+    }
   }
 
   else
@@ -2215,7 +2231,6 @@ enum zip_error zip_close(struct zip_archive *zp, size_t *final_length)
   zp->vclose(zp->fp);
 
   free(zp->files);
-
   free(zp);
 
   if(result != ZIP_SUCCESS)
@@ -2224,8 +2239,9 @@ enum zip_error zip_close(struct zip_archive *zp, size_t *final_length)
   return result;
 }
 
-
-/* Perform additional setup for write mode. */
+/**
+ * Perform additional setup for write mode.
+ */
 
 static void zip_init_for_write(struct zip_archive *zp, int num_files)
 {
@@ -2241,8 +2257,9 @@ static void zip_init_for_write(struct zip_archive *zp, int num_files)
   zp->mode = ZIP_S_WRITE_UNINITIALIZED;
 }
 
-
-/* Set up a new zip archive struct. */
+/**
+ * Set up a new zip archive struct.
+ */
 
 static struct zip_archive *zip_new_archive(void)
 {
@@ -2252,7 +2269,6 @@ static struct zip_archive *zip_new_archive(void)
 
   zp->start_in_file = 0;
   zp->files_alloc = 0;
-  zp->closing = 0;
   zp->pos = 0;
 
   zp->num_files = 0;
@@ -2263,22 +2279,24 @@ static struct zip_archive *zip_new_archive(void)
   zp->stream_left = 0;
   zp->stream_crc32 = 0;
 
+  zp->external_buffer = NULL;
+  zp->external_buffer_size = NULL;
+
   zp->mode = ZIP_S_READ_UNINITIALIZED;
 
   return zp;
 }
 
-
-/* Configure the zip archive for file reading. TODO: abstract the file
+/**
+ * Configure the zip archive for file reading. TODO: abstract the file
  * functions further so the struct isn't as large?
  */
 
 static struct zip_archive *zip_get_archive_file(FILE *fp)
 {
   struct zip_archive *zp = zip_new_archive();
-  zp->is_memory = 0;
+  zp->is_memory = false;
   zp->fp = fp;
-  zp->hasspace = NULL;
   zp->vgetc = (int(*)(void *)) fgetc;
   zp->vread = (size_t(*)(void *, size_t, size_t, void *)) fread;
   zp->vwrite = (size_t(*)(const void *, size_t, size_t, void *)) fwrite;
@@ -2287,7 +2305,6 @@ static struct zip_archive *zip_get_archive_file(FILE *fp)
   zp->vclose = (int(*)(void *)) fclose;
   return zp;
 }
-
 
 /**
  * Open a zip archive located in a file for reading. Returns a zip_archive
@@ -2341,8 +2358,8 @@ struct zip_archive *zip_open_file_read(const char *file_name)
   return zip_open_fp_read(fp);
 }
 
-
-/* Open a zip archive located in a file for writing. The archive will be in
+/**
+ * Open a zip archive located in a file for writing. The archive will be in
  * raw write mode, for use with zip_write(), until zip_write_file() is called.
  * Afterward, the archive will be in file write mode.
  */
@@ -2370,18 +2387,16 @@ struct zip_archive *zip_open_file_write(const char *file_name)
   return zip_open_fp_write(fp);
 }
 
-
-
-/* Configure the zip archive for memory reading. TODO: abstract the file
+/**
+ * Configure the zip archive for memory reading. TODO: abstract the file
  * functions further so the struct isn't as large?
  */
 
 static struct zip_archive *zip_get_archive_mem(struct memfile *mf)
 {
   struct zip_archive *zp = zip_new_archive();
-  zp->is_memory = 1;
+  zp->is_memory = true;
   zp->fp = mf;
-  zp->hasspace = (int(*)(size_t, void *)) mfhasspace;
   zp->vgetc = (int(*)(void *)) mfgetc;
   zp->vread = (size_t(*)(void *, size_t, size_t, void *)) mfread;
   zp->vwrite = (size_t(*)(const void *, size_t, size_t, void *)) mfwrite;
@@ -2390,7 +2405,6 @@ static struct zip_archive *zip_get_archive_mem(struct memfile *mf)
   zp->vclose = (int(*)(void *)) mf_alloc_free;
   return zp;
 }
-
 
 /**
  * Open a zip archive located in memory for reading. Returns a zip_archive
@@ -2424,12 +2438,10 @@ struct zip_archive *zip_open_mem_read(const void *src, size_t len)
   return NULL;
 }
 
-
-/* Open a zip archive located in a block of memory for writing. The archive
- * will be in raw write mode, for use with zip_write(), until zip_write_file()
- * is called. Afterward, the archive will be in file write mode. An optional
- * offset can be specified that specifies the position in the file to begin
- * writing ZIP data.
+/**
+ * Open a zip archive for writing to a block of memory. Returns a zip_archive
+ * upon success; otherwise, returns NULL. An optional offset can be specified
+ * indicated the position in the file to begin writing ZIP data.
  */
 
 struct zip_archive *zip_open_mem_write(void *src, size_t len, size_t start_pos)
@@ -2453,49 +2465,25 @@ struct zip_archive *zip_open_mem_write(void *src, size_t len, size_t start_pos)
   return NULL;
 }
 
-
-/* Expand the allocated size of a zip archive's memfile. Use when a zip
- * write function fails with ZIP_ALLOC_MORE_SPACE.
+/**
+ * Open a zip archive for writing to a block of memory. See the above function.
+ *
+ * The locations described by external_buffer and external_buffer_size must be
+ * initialized before this function is called. If this archive exceeds the size
+ * of its buffer, it will automatically attempt to reallocate the buffer.
  */
 
-enum zip_error zip_expand(struct zip_archive *zp, void **src, size_t new_size)
+struct zip_archive *zip_open_mem_write_ext(void **external_buffer,
+ size_t *external_buffer_size, size_t start_pos)
 {
-  struct memfile *mf;
-  uint32_t current_offset;
-  unsigned char *start;
+  struct zip_archive *zp =
+   zip_open_mem_write(*external_buffer, *external_buffer_size, start_pos);
 
-  int result;
-
-  if(!zp)
+  if(zp)
   {
-    result = ZIP_NULL;
-    goto err_out;
+    zp->external_buffer = external_buffer;
+    zp->external_buffer_size = external_buffer_size;
   }
 
-  if(!zp->hasspace)
-  {
-    result = ZIP_NOT_MEMORY_ARCHIVE;
-    goto err_out;
-  }
-
-  mf = zp->fp;
-  start = mf->start;
-
-  if((uint32_t)(mf->end - start) < new_size)
-  {
-    current_offset = mf->current - start;
-
-    start = crealloc(start, new_size);
-    mf->start = start;
-    mf->current = start + current_offset;
-    mf->end = start + new_size;
-
-    *src = start;
-  }
-
-  return ZIP_SUCCESS;
-
-err_out:
-  zip_error("zip_expand", result);
-  return result;
+  return zp;
 }

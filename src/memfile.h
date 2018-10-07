@@ -98,20 +98,30 @@ static inline int mfhasspace(size_t len, struct memfile *mf)
 }
 
 /**
+ * Move the buffer of a memfile while preserving its current position.
+ */
+
+static inline void mfmove(void *new_buf, size_t new_len, struct memfile *mf)
+{
+  size_t pos = mf->current - mf->start;
+
+  mf->start = new_buf;
+  mf->current = mf->start + pos;
+  mf->end = mf->start + new_len;
+
+  if(mf->current > mf->end)
+    mf->current = mf->end;
+}
+
+/**
  * Resize the memfile buffer and preserve the current position.
  * Do not use this function unless the memfile buffer is on the heap.
  */
 
-static inline void mfresize(size_t len, struct memfile *mf)
+static inline void mfresize(size_t new_len, struct memfile *mf)
 {
-  size_t pos = mf->current - mf->start;
-
-  mf->start = realloc(mf->start, len);
-  mf->current = mf->start + pos;
-  mf->end = mf->start + len;
-
-  if(mf->current > mf->end)
-    mf->current = mf->end;
+  void *new_buf = realloc(mf->start, new_len);
+  mfmove(new_buf, new_len, mf);
 }
 
 static inline int mfgetc(struct memfile *mf)

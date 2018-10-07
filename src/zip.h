@@ -88,8 +88,6 @@ enum zip_error
   ZIP_SEEK_ERROR,
   ZIP_READ_ERROR,
   ZIP_WRITE_ERROR,
-  ZIP_ALLOC_MORE_SPACE,
-  ZIP_INVALID_WHILE_CLOSING,
   ZIP_INVALID_READ_IN_WRITE_MODE,
   ZIP_INVALID_WRITE_IN_READ_MODE,
   ZIP_INVALID_FILE_READ_UNINITIALIZED,
@@ -131,7 +129,6 @@ struct zip_file_header
 struct zip_archive
 {
   uint8_t mode;
-  uint8_t closing;
 
   uint16_t pos;
   uint16_t num_files;
@@ -157,9 +154,9 @@ struct zip_archive
 
   void *fp;
 
-  int is_memory;
-
-  int (*hasspace)(size_t, void *);
+  boolean is_memory;
+  void **external_buffer;
+  size_t *external_buffer_size;
 
   int (*vgetc)(void *);
   size_t (*vread)(void *, size_t, size_t, void *);
@@ -222,8 +219,7 @@ enum zip_error zip_write_close_mem_stream(struct zip_archive *zp,
 enum zip_error zip_write_file(struct zip_archive *zp, const char *name,
  const void *src, size_t srcLen, int method);
 
-enum zip_error zip_close(struct zip_archive *zp,
- size_t *final_length);
+enum zip_error zip_close(struct zip_archive *zp, size_t *final_length);
 
 struct zip_archive *zip_open_fp_read(FILE *fp);
 struct zip_archive *zip_open_fp_write(FILE *fp);
@@ -231,8 +227,8 @@ struct zip_archive *zip_open_file_read(const char *file_name);
 struct zip_archive *zip_open_file_write(const char *file_name);
 struct zip_archive *zip_open_mem_read(const void *src, size_t len);
 struct zip_archive *zip_open_mem_write(void *src, size_t len, size_t start_pos);
-
-enum zip_error zip_expand(struct zip_archive *zp, void **src, size_t new_size);
+struct zip_archive *zip_open_mem_write_ext(void **external_buffer,
+ size_t *external_buffer_size, size_t start_pos);
 
 __M_END_DECLS
 
