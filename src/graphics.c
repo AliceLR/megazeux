@@ -1039,6 +1039,13 @@ void update_screen(void)
 // to use in conjuction with the next function.
 void vquick_fadeout(void)
 {
+  if(!has_video_initialized())
+  {
+    // If we're running without video there's no point waiting 11 frames.
+    insta_fadeout();
+    return;
+  }
+
   if(!graphics.fade_status)
   {
     Sint32 i, i2, num_colors;
@@ -1074,6 +1081,13 @@ void vquick_fadeout(void)
 // use in conjuction with the previous function.
 void vquick_fadein(void)
 {
+  if(!has_video_initialized())
+  {
+    // If we're running without video there's no point waiting 11 frames.
+    insta_fadein();
+    return;
+  }
+
   if(graphics.fade_status)
   {
     Uint32 i, i2, num_colors;
