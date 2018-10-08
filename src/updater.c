@@ -820,6 +820,9 @@ static void __check_for_updates(struct world *mzx_world, boolean is_automatic)
       goto err_free_update_manifests;
     }
 
+    // Set the updates available notification if it hasn't been set already.
+    caption_set_updates_available(true);
+
     // Switch back to the normal checking timeout for the rest of the process.
     if(is_automatic)
     {
