@@ -706,6 +706,7 @@ static void add_board_undo_position(struct undo_frame *f, int x, int y)
   pos->under_param = src_board->level_under_param[offset];
 
   alloc_board_undo_pos(pos);
+  memset(&temp_buffer, 0, sizeof(struct buffer_info));
   temp_buffer.robot = pos->storage_obj;
   temp_buffer.scroll = pos->storage_obj;
   temp_buffer.sensor = pos->storage_obj;
