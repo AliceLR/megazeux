@@ -751,7 +751,8 @@ static boolean glsl_auto_set_video_mode(struct graphics_data *graphics,
       }
     }
 
-    // Overwrite the original video_output now that we know glsl works
+    // Switch from auto_glsl to glsl now that we know it works.
+    graphics->renderer.set_video_mode = glsl_set_video_mode;
     strcpy(render_data->conf->video_output, "glsl");
 
     return true;

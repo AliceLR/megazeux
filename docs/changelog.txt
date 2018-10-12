@@ -1,3 +1,8 @@
+GIT
+
++ auto_glsl correctly switches to glsl on startup now.
+
+
 October 7th, 2018 - MZX 2.91g
 
 This bugfix release fixes various minor-to-moderate bugs in
