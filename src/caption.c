@@ -151,13 +151,10 @@ static void set_caption_world_string(struct world *mzx_world)
   {
     if(!strip_caption_string(caption_world, mzx_world->name))
       strcpy(caption_world, "Untitled world");
-
-    caption_editing = mzx_world->editing;
   }
   else
   {
     caption_world[0] = '\0';
-    caption_editing = false;
   }
 }
 
@@ -196,6 +193,7 @@ void caption_set_world(struct world *mzx_world)
   set_caption_board_string(NULL);
   set_caption_robot_string(NULL);
   caption_modified = false;
+  caption_editing = false;
   update_caption();
 }
 
@@ -205,6 +203,7 @@ void caption_set_board(struct world *mzx_world, struct board *board)
   set_caption_world_string(mzx_world);
   set_caption_board_string(board);
   set_caption_robot_string(NULL);
+  caption_editing = true;
   update_caption();
 }
 
@@ -213,12 +212,14 @@ void caption_set_robot(struct world *mzx_world, struct robot *robot)
   set_caption_world_string(mzx_world);
   set_caption_board_string(mzx_world->current_board);
   set_caption_robot_string(robot);
+  caption_editing = true;
   update_caption();
 }
 
 void caption_set_modified(boolean modified)
 {
   caption_modified = modified;
+  caption_editing = true;
   update_caption();
 }
 #endif
