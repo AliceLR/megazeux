@@ -1606,21 +1606,20 @@ static void import_block(struct world *mzx_world, struct robot_state *rstate)
   fclose(import_file);
 }
 
-static void edit_settings(struct world *mzx_world)
+static void edit_single_line_macros(struct world *mzx_world)
 {
   // 38 x 12
   int dialog_result;
   struct dialog di;
-  struct element *elements[8] =
+  struct element *elements[] =
   {
-    construct_label(5, 2, "Macros:"),
-    construct_input_box(5, 4, "F6-  ", 43, macros[0]),
-    construct_input_box(5, 5, "F7-  ", 43, macros[1]),
-    construct_input_box(5, 6, "F8-  ", 43, macros[2]),
-    construct_input_box(5, 7, "F9-  ", 43, macros[3]),
-    construct_input_box(5, 8, "F10- ", 43, macros[4]),
-    construct_button(15, 10, "OK", 0),
-    construct_button(37, 10, "Cancel", -1)
+    construct_input_box(3, 2, "F6-  ", 63, macros[0]),
+    construct_input_box(3, 3, "F7-  ", 63, macros[1]),
+    construct_input_box(3, 4, "F8-  ", 63, macros[2]),
+    construct_input_box(3, 5, "F9-  ", 63, macros[3]),
+    construct_input_box(3, 6, "F10- ", 63, macros[4]),
+    construct_button(25, 8, "OK", 0),
+    construct_button(45, 8, "Cancel", -1)
   };
   char new_macros[5][64];
 
@@ -1629,8 +1628,8 @@ static void edit_settings(struct world *mzx_world)
 
   memcpy(new_macros, macros, 64 * 5);
 
-  construct_dialog(&di, "Edit Settings", 10, 6, 60, 12,
-   elements, 8, 1);
+  construct_dialog(&di, "Edit Single Line Macros", 3, 7, 74, 10,
+   elements, ARRAY_SIZE(elements), 0);
 
   dialog_result = run_dialog(mzx_world, &di);
   destruct_dialog(&di);
@@ -3909,11 +3908,11 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
         break;
       }
 
-      // Options
+      // Single line macros
       case IKEY_o:
       {
         if(get_alt_status(keycode_internal))
-          edit_settings(mzx_world);
+          edit_single_line_macros(mzx_world);
 
         break;
       }

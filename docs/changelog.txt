@@ -3,6 +3,10 @@ GIT
 + auto_glsl correctly switches to glsl on startup now.
 + Fix bug where "(editor)" wouldn't always display in the
   caption when editing.
++ The single line macro dialog now allows the full size of the
+  single line macros to be edited. This fixes a crash caused by
+  having a macro configured to be longer than the edit box could
+  display.
 
 
 October 7th, 2018 - MZX 2.91g
