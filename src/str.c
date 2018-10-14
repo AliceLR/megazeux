@@ -19,6 +19,7 @@
  */
 
 #include <ctype.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -351,6 +352,63 @@ static boolean get_string_real_index(struct string *src, int index,
   return false;
 }
 
+static int get_string_numeric_value(struct string *src)
+{
+  // strtol wants a null terminator and we don't want to duplicate the string,
+  // so reimplement a base 10 strtol to use the string length instead. This
+  // also seems to run a lot faster than strtol anyway.
+  boolean negative = false;
+  int overflow = INT_MAX;
+  int overflow_d = INT_MAX % 10;
+  int value = 0;
+  int digit;
+  char *end;
+  char *pos;
+
+  if(src && src->length)
+  {
+    pos = src->value;
+    end = src->value + src->length;
+
+    // Skip whitespace
+    while(pos < end && isspace(*pos))
+      pos++;
+
+    if(pos >= end)
+      return 0;
+
+    if(*pos == '-')
+    {
+      negative = true;
+      overflow = INT_MIN;
+      overflow_d = -(INT_MIN % 10);
+      pos++;
+    }
+    else
+
+    if(*pos == '+')
+      pos++;
+
+    while(pos < end && isdigit(*pos))
+    {
+      digit = *(pos++) - '0';
+
+      // Overflow
+      if(value >= (INT_MAX / 10))
+        if(value > (INT_MAX / 10) || digit >= overflow_d)
+          return overflow;
+
+      value = value * 10 + digit;
+    }
+
+    if(negative)
+      value = -value;
+
+    return (int)value;
+  }
+  return 0;
+}
+
 int string_read_as_counter(struct world *mzx_world,
  const char *name, int id)
 {
@@ -431,17 +489,7 @@ int string_read_as_counter(struct world *mzx_world,
 
   // Otherwise fall back to looking up a regular string
   if(get_string(mzx_world, name, &src, id))
-  {
-    char *n_buffer = cmalloc(src.length + 1);
-    long ret;
-
-    memcpy(n_buffer, src.value, src.length);
-    n_buffer[src.length] = 0;
-    ret = strtol(n_buffer, NULL, 10);
-
-    free(n_buffer);
-    return (int)ret;
-  }
+    return get_string_numeric_value(&src);
 
   // The string wasn't found or the request was out of bounds
   return 0;

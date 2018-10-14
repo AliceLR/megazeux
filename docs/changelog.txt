@@ -7,6 +7,8 @@ GIT
   single line macros to be edited. This fixes a crash caused by
   having a macro configured to be longer than the edit box could
   display.
++ Setting a counter to a string no longer duplicates the entire
+  string in memory.
 
 
 October 7th, 2018 - MZX 2.91g
