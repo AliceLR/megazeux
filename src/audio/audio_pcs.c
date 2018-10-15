@@ -175,14 +175,19 @@ static void pcs_destruct(struct audio_stream *a_src)
 static struct audio_stream *construct_pc_speaker_stream(void)
 {
   struct pc_speaker_stream *pcs_stream;
+  struct audio_stream_spec a_spec;
 
   if(!audio.pcs_on)
     return NULL;
 
   pcs_stream = ccalloc(1, sizeof(struct pc_speaker_stream));
 
-  construct_audio_stream((struct audio_stream *)pcs_stream, pcs_mix_data,
-   pcs_set_volume, NULL, NULL, NULL, NULL, NULL, NULL, pcs_destruct,
+  memset(&a_spec, 0, sizeof(struct audio_stream_spec));
+  a_spec.mix_data   = pcs_mix_data;
+  a_spec.set_volume = pcs_set_volume;
+  a_spec.destruct   = pcs_destruct;
+
+  initialize_audio_stream((struct audio_stream *)pcs_stream, &a_spec,
    audio.pcs_volume * 255 / 8, 0);
 
   return (struct audio_stream *)pcs_stream;

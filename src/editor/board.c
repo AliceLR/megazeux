@@ -23,8 +23,9 @@
 #include "../error.h"
 #include "../extmem.h"
 #include "../legacy_board.h"
+#include "../robot.h"
 #include "../world.h"
-#include "../world_prop.h"
+#include "../world_format.h"
 #include "../util.h"
 #include "../zip.h"
 
@@ -57,20 +58,33 @@ static int board_magic(const char magic_string[4])
 void save_board_file(struct world *mzx_world, struct board *cur_board,
  char *name)
 {
-  struct zip_archive *zp = zip_open_file_write(name);
+  FILE *fp = fopen_unsafe(name, "wb");
+  struct zip_archive *zp;
+  boolean success = false;
 
-  if(zp)
+  if(fp)
   {
-    zputc(0xFF, zp);
+    fputc(0xFF, fp);
 
-    zputc('M', zp);
-    zputc((MZX_VERSION >> 8) & 0xFF, zp);
-    zputc(MZX_VERSION & 0xFF, zp);
+    fputc('M', fp);
+    fputc((MZX_VERSION >> 8) & 0xFF, fp);
+    fputc(MZX_VERSION & 0xFF, fp);
 
-    save_board(mzx_world, cur_board, zp, 0, MZX_VERSION, 0);
+    zp = zip_open_fp_write(fp);
 
-    zip_close(zp, NULL);
+    if(zp)
+    {
+      if(!save_board(mzx_world, cur_board, zp, 0, MZX_VERSION, 0))
+        success = true;
+
+      zip_close(zp, NULL);
+    }
+    else
+      fclose(fp);
   }
+
+  if(!success)
+    error_message(E_WORLD_IO_SAVING, 0, NULL);
 }
 
 static struct board *legacy_load_board_allocate_direct(struct world *mzx_world,
@@ -87,7 +101,10 @@ static struct board *legacy_load_board_allocate_direct(struct world *mzx_world,
   cur_board->world_version = version;
   legacy_load_board_direct(mzx_world, cur_board, fp, (board_end - board_start), 0,
    version);
-  fread(cur_board->board_name, 25, 1, fp);
+
+  if(!fread(cur_board->board_name, 25, 1, fp))
+    cur_board->board_name[0] = 0;
+
   return cur_board;
 }
 
@@ -126,7 +143,13 @@ void replace_current_board(struct world *mzx_world, char *name)
 
   if(fp)
   {
-    fread(version_string, 4, 1, fp);
+    if(!fread(version_string, 4, 1, fp))
+    {
+      error_message(E_IO_READ, 0, NULL);
+      fclose(fp);
+      return;
+    }
+
     file_version = board_magic(version_string);
 
     if(file_version > 0 && file_version <= MZX_LEGACY_FORMAT_VERSION)
@@ -150,7 +173,7 @@ void replace_current_board(struct world *mzx_world, char *name)
       zp = zip_open_fp_read(fp);
 
       // Make sure it's an actual zip.
-      if(ZIP_SUCCESS == zip_read_directory(zp))
+      if(zp)
       {
         // Make sure the zip contains a board.
         board_id = find_first_board(zp);

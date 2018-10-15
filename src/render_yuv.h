@@ -50,16 +50,16 @@ struct yuv_render_data
   Uint32 y0mask;
   Uint32 y1mask;
   Uint32 uvmask;
-  bool is_yuy2;
+  boolean is_yuy2;
 };
 
-bool yuv_set_video_mode_size(struct graphics_data *graphics,
- int width, int height, int depth, bool fullscreen, bool resize,
+boolean yuv_set_video_mode_size(struct graphics_data *graphics,
+ int width, int height, int depth, boolean fullscreen, boolean resize,
  int yuv_width, int yuv_height);
-bool yuv_init_video(struct graphics_data *graphics, struct config_info *conf);
+boolean yuv_init_video(struct graphics_data *graphics, struct config_info *conf);
 void yuv_free_video(struct graphics_data *graphics);
-bool yuv_check_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, bool fullscreen, bool resize);
+boolean yuv_check_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, boolean fullscreen, boolean resize);
 void yuv_update_colors(struct graphics_data *graphics,
  struct rgb_color *palette, Uint32 count);
 void yuv_sync_screen(struct graphics_data *graphics);

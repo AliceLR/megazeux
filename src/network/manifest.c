@@ -27,7 +27,7 @@
 #define BLOCK_SIZE    4096UL
 #define LINE_BUF_LEN  256
 
-static bool manifest_parse_sha256(const char *p, Uint32 sha256[8])
+static boolean manifest_parse_sha256(const char *p, Uint32 sha256[8])
 {
   int i, j;
 
@@ -53,7 +53,7 @@ static bool manifest_parse_sha256(const char *p, Uint32 sha256[8])
   return true;
 }
 
-static bool manifest_parse_size(char *p, unsigned long *size)
+static boolean manifest_parse_size(char *p, unsigned long *size)
 {
   char *endptr;
   *size = strtoul(p, &endptr, 10);
@@ -277,7 +277,8 @@ static void manifest_lists_remove_duplicate_names(
   }
 }
 
-bool manifest_compute_sha256(struct SHA256_ctx *ctx, FILE *f, unsigned long len)
+boolean manifest_compute_sha256(struct SHA256_ctx *ctx, FILE *f,
+ unsigned long len)
 {
   unsigned long pos = 0;
 
@@ -299,7 +300,7 @@ bool manifest_compute_sha256(struct SHA256_ctx *ctx, FILE *f, unsigned long len)
   return true;
 }
 
-bool manifest_entry_check_validity(struct manifest_entry *e, FILE *f)
+boolean manifest_entry_check_validity(struct manifest_entry *e, FILE *f)
 {
   unsigned long len = e->size;
   struct SHA256_ctx ctx;
@@ -407,13 +408,13 @@ enum host_status manifest_get_updates(struct host *h, const char *basedir,
   return HOST_SUCCESS;
 }
 
-bool manifest_entry_download_replace(struct host *h, const char *basedir,
+boolean manifest_entry_download_replace(struct host *h, const char *basedir,
  struct manifest_entry *e, void (*delete_hook)(const char *file))
 {
   char buf[LINE_BUF_LEN];
   struct http_info req;
   enum host_status ret;
-  bool valid = false;
+  boolean valid = false;
   FILE *f;
 
   /* Try to open our target file. If we can't open it, it might be

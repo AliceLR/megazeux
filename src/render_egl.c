@@ -39,7 +39,7 @@ fn_ptr GL_GetProcAddress(const char *proc)
 
 #endif /* ANDROID */
 
-bool GL_LoadLibrary(enum gl_lib_type type)
+boolean GL_LoadLibrary(enum gl_lib_type type)
 {
   const char *filename;
 
@@ -122,8 +122,8 @@ static const EGLint gles_v2_attribs[] =
   EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE
 };
 
-bool gl_set_video_mode(struct graphics_data *graphics, int width, int height,
- int depth, bool fullscreen, bool resize)
+boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
+ int depth, boolean fullscreen, boolean resize)
 {
   struct egl_render_data *egl_render_data = graphics->render_data;
   const EGLint *attribs = gles_v1_attribs;
@@ -217,8 +217,8 @@ err_cleanup:
   return false;
 }
 
-bool gl_check_video_mode(struct graphics_data *graphics, int width, int height,
- int depth, bool fullscreen, bool resize)
+boolean gl_check_video_mode(struct graphics_data *graphics, int width,
+ int height, int depth, boolean fullscreen, boolean resize)
 {
   struct egl_render_data *egl_render_data = graphics->render_data;
   EGLint num_configs;
@@ -278,7 +278,7 @@ void gl_set_attributes(struct graphics_data *graphics)
     eglSwapInterval(egl_render_data->display, 1);
 }
 
-bool gl_swap_buffers(struct graphics_data *graphics)
+boolean gl_swap_buffers(struct graphics_data *graphics)
 {
   struct egl_render_data *egl_render_data = graphics->render_data;
 

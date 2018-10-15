@@ -22,10 +22,89 @@
 #include "../counter.h"
 #include "../configure.h"
 #include "../const.h"
+#include "../util.h"
 
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+
+static struct editor_config_info editor_conf;
+static struct editor_config_info editor_conf_backup;
+
+static const struct editor_config_info editor_conf_default =
+{
+  // Board editor options
+  true,                         // board_editor_hide_help
+  false,                        // editor_space_toggles
+  false,                        // editor_tab_focuses_view
+  false,                        // editor_load_board_assets
+  true,                         // editor_thing_menu_places
+  100,                          // Undo history size
+
+  // Defaults for new boards
+  0,                            // viewport_x
+  0,                            // viewport_y
+  80,                           // viewport_w
+  25,                           // viewport_h
+  100,                          // board_width
+  100,                          // board_height
+  1,                            // can_shoot
+  1,                            // can_bomb
+  0,                            // fire_burns_spaces
+  1,                            // fire_burns_fakes
+  1,                            // fire_burns_trees
+  0,                            // fire_burns_brown
+  0,                            // fire_burns_forever
+  0,                            // forest_to_floor
+  0,                            // collect_bombs
+  0,                            // restart_if_hurt
+  0,                            // reset_on_entry
+  0,                            // player_locked_ns
+  0,                            // player_locked_ew
+  0,                            // player_locked_att
+  0,                            // time_limit
+  1,                            // explosions_leave (default = ash)
+  0,                            // saving_enabled (default = enabled)
+  1,                            // overlay_enabled (default = enabled)
+  "",                           // charset_path
+  "",                           // palette_path
+
+  // Palette editor options
+  false,                        // palette_editor_hide_help
+
+  // Robot editor options
+  true,                         // editor_enter_splits
+  { 11, 10, 10, 14, 255, 3, 11, 2, 14, 0, 15, 11, 7, 15, 1, 2, 3 },
+  true,                         // color_coding_on
+  1,                            // default_invalid_status
+  true,                         // disassemble_extras
+  10,                           // disassemble_base
+  true,                         // robot_editor_hide_help
+
+  // Backup options
+  3,                            // backup_count
+  60,                           // backup_interval
+  "backup",                     // backup_name
+  ".mzx",                       // backup_ext
+
+  // Macro options
+  { "char ", "color ", "goto ", "send ", ": playershot^" },
+  0,                            // num_extended_macros
+  0,
+  NULL,
+
+  // Saved positions
+  { 0 },
+  { 0 },
+  { 0 },
+  { 0 },
+  { 0 },
+  { 60, 60, 60, 60, 60, 60, 60, 60, 60, 60 },
+
+};
+
+typedef void (* editor_config_function)(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data);
 
 struct editor_config_entry
 {
@@ -51,24 +130,28 @@ struct editor_config_entry
 static void config_ccode_colors(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
+  // FIXME sloppy validation
   conf->color_codes[4] = (char)strtol(value, NULL, 10);
 }
 
 static void config_ccode_commands(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
+  // FIXME sloppy validation
   conf->color_codes[13] = (char)strtol(value, NULL, 10);
 }
 
 static void config_ccode_conditions(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
+  // FIXME sloppy validation
   conf->color_codes[10] = (char)strtol(value, NULL, 10);
 }
 
 static void config_ccode_current_line(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
+  // FIXME sloppy validation
   conf->color_codes[0] = (char)strtol(value, NULL, 10);
 }
 
@@ -81,24 +164,28 @@ static void config_ccode_directions(struct editor_config_info *conf,
 static void config_ccode_equalities(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
+  // FIXME sloppy validation
   conf->color_codes[9] = (char)strtol(value, NULL, 10);
 }
 
 static void config_ccode_extras(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
+  // FIXME sloppy validation
   conf->color_codes[8] = (char)strtol(value, NULL, 10);
 }
 
 static void config_ccode_on(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
+  // FIXME sloppy validation
   conf->color_coding_on = strtol(value, NULL, 10);
 }
 
 static void config_ccode_immediates(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
+  // FIXME sloppy validation
   int new_color = strtol(value, NULL, 10);
   conf->color_codes[1] = new_color;
   conf->color_codes[2] = new_color;
@@ -107,24 +194,28 @@ static void config_ccode_immediates(struct editor_config_info *conf,
 static void config_ccode_items(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
+  // FIXME sloppy validation
   conf->color_codes[11] = (char)strtol(value, NULL, 10);
 }
 
 static void config_ccode_params(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
+  // FIXME sloppy validation
   conf->color_codes[7] = (char)strtol(value, NULL, 10);
 }
 
 static void config_ccode_strings(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
+  // FIXME sloppy validation
   conf->color_codes[8] = (char)strtol(value, NULL, 10);
 }
 
 static void config_ccode_things(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
+  // FIXME sloppy validation
   conf->color_codes[6] = (char)strtol(value, NULL, 10);
 }
 
@@ -149,6 +240,23 @@ static void config_default_invald(struct editor_config_info *conf,
   }
 }
 
+static void config_disassemble_extras(struct editor_config_info *conf,
+ char *name, char *value, char *ext_data)
+{
+  // FIXME sloppy validation
+  conf->disassemble_extras = strtoul(value, NULL, 10);
+}
+
+static void config_disassemble_base(struct editor_config_info *conf,
+ char *name, char *value, char *ext_data)
+{
+  // FIXME slightly sloppy validation
+  unsigned long new_base = strtoul(value, NULL, 10);
+
+  if((new_base == 10) || (new_base == 16))
+    conf->disassemble_base = new_base;
+}
+
 static void config_macro(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
@@ -167,33 +275,38 @@ static void config_macro(struct editor_config_info *conf,
   }
 }
 
-static void bedit_hhelp(struct editor_config_info *conf,
+static void board_editor_hide_help(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  conf->bedit_hhelp = strtol(value, NULL, 10);
+  // FIXME sloppy validation
+  conf->board_editor_hide_help = strtol(value, NULL, 10);
 }
 
-static void redit_hhelp(struct editor_config_info *conf,
+static void robot_editor_hide_help(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  conf->redit_hhelp = strtol(value, NULL, 10);
+  // FIXME sloppy validation
+  conf->robot_editor_hide_help = strtol(value, NULL, 10);
 }
 
-static void pedit_hhelp(struct editor_config_info *conf,
+static void palette_editor_hide_help(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
-  conf->pedit_hhelp = strtol(value, NULL, 10);
+  // FIXME sloppy validation
+  conf->palette_editor_hide_help = strtol(value, NULL, 10);
 }
 
 static void backup_count(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
+  // FIXME sloppy validation
   conf->backup_count = strtol(value, NULL, 10);
 }
 
 static void backup_interval(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
+  // FIXME sloppy validation
   conf->backup_interval = strtol(value, NULL, 10);
 }
 
@@ -212,36 +325,42 @@ static void backup_ext(struct editor_config_info *conf,
 static void config_editor_space_toggles(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
+  // FIXME sloppy validation
   conf->editor_space_toggles = strtol(value, NULL, 10);
 }
 
 static void config_editor_enter_splits(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
+  // FIXME sloppy validation
   conf->editor_enter_splits = strtol(value, NULL, 10);
 }
 
 static void config_editor_load_board_assets(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
+  // FIXME sloppy validation
   conf->editor_load_board_assets = strtol(value, NULL, 10);
 }
 
 static void config_editor_tab_focus(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
+  // FIXME sloppy validation
   conf->editor_tab_focuses_view = CLAMP(strtol(value, NULL, 10), 0, 1);
 }
 
 static void config_editor_thing_menu_places(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
+  // FIXME sloppy validation
   conf->editor_thing_menu_places = CLAMP(strtol(value, NULL, 10), 0, 1);
 }
 
 static void config_undo_history_size(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
+  // FIXME sloppy validation
   conf->undo_history_size = CLAMP(strtol(value, NULL, 10), 0, 1000);
 }
 
@@ -506,7 +625,7 @@ static const struct editor_config_entry editor_config_options[] =
   { "board_default_viewport_x", config_board_viewport_x },
   { "board_default_viewport_y", config_board_viewport_y },
   { "board_default_width", config_board_width },
-  { "board_editor_hide_help", bedit_hhelp },
+  { "board_editor_hide_help", board_editor_hide_help },
   { "ccode_colors", config_ccode_colors },
   { "ccode_commands", config_ccode_commands },
   { "ccode_conditions", config_ccode_conditions },
@@ -521,20 +640,19 @@ static const struct editor_config_entry editor_config_options[] =
   { "ccode_things", config_ccode_things },
   { "color_coding_on", config_ccode_on },
   { "default_invalid_status", config_default_invald },
+  { "disassemble_base", config_disassemble_base },
+  { "disassemble_extras", config_disassemble_extras },
   { "editor_enter_splits", config_editor_enter_splits },
   { "editor_load_board_assets", config_editor_load_board_assets },
   { "editor_space_toggles", config_editor_space_toggles },
   { "editor_tab_focuses_view", config_editor_tab_focus },
   { "editor_thing_menu_places", config_editor_thing_menu_places },
   { "macro_*", config_macro },
-  { "palette_editor_hide_help", pedit_hhelp },
-  { "robot_editor_hide_help", redit_hhelp },
+  { "palette_editor_hide_help", palette_editor_hide_help },
+  { "robot_editor_hide_help", robot_editor_hide_help },
   { "saved_position!", config_saved_positions },
   { "undo_history_size", config_undo_history_size },
 };
-
-static const int num_editor_config_options =
- sizeof(editor_config_options) / sizeof(struct editor_config_entry);
 
 static const struct editor_config_entry *find_editor_option(char *name,
  const struct editor_config_entry options[], int num_options)
@@ -560,83 +678,11 @@ static const struct editor_config_entry *find_editor_option(char *name,
   return NULL;
 }
 
-static const struct editor_config_info default_editor_options =
-{
-  // Board editor options
-  0,                            // editor_space_toggles
-  1,                            // board_editor_hide_help
-  0,                            // editor_tab_focuses_view
-  0,                            // editor_load_board_assets
-  1,                            // editor_thing_menu_places
-
-  // Defaults for new boards
-  0,                            // viewport_x
-  0,                            // viewport_y
-  80,                           // viewport_w
-  25,                           // viewport_h
-  100,                          // board_width
-  100,                          // board_height
-  1,                            // can_shoot
-  1,                            // can_bomb
-  0,                            // fire_burns_spaces
-  1,                            // fire_burns_fakes
-  1,                            // fire_burns_trees
-  0,                            // fire_burns_brown
-  0,                            // fire_burns_forever
-  0,                            // forest_to_floor
-  0,                            // collect_bombs
-  0,                            // restart_if_hurt
-  0,                            // reset_on_entry
-  0,                            // player_locked_ns
-  0,                            // player_locked_ew
-  0,                            // player_locked_att
-  0,                            // time_limit
-  1,                            // explosions_leave (default = ash)
-  0,                            // saving_enabled (default = enabled)
-  1,                            // overlay_enabled (default = enabled)
-  "",                           // charset_path
-  "",                           // palette_path
-
-  // Palette editor options
-  0,                            // palette_editor_hide_help
-
-  // Char editor options
-  100,                          // Undo history size
-
-  // Robot editor options
-  true,
-  { 11, 10, 10, 14, 255, 3, 11, 2, 14, 0, 15, 11, 7, 15, 1, 2, 3 },
-  1,                            // color_coding_on
-  1,                            // default_invalid_status
-  1,                            // robot_editor_hide_help
-
-  // Backup options
-  3,                            // backup_count
-  60,                           // backup_interval
-  "backup",                     // backup_name
-  ".mzx",                       // backup_ext
-
-  // Macro options
-  { "char ", "color ", "goto ", "send ", ": playershot^" },
-  0,                            // num_extended_macros
-  0,
-  NULL,
-
-  // Saved positions
-  { 0 },
-  { 0 },
-  { 0 },
-  { 0 },
-  { 0 },
-  { 60, 60, 60, 60, 60, 60, 60, 60, 60, 60 },
-
-};
-
 static int editor_config_change_option(void *conf, char *name, char *value,
  char *extended_data)
 {
   const struct editor_config_entry *current_option = find_editor_option(name,
-   editor_config_options, num_editor_config_options);
+   editor_config_options, ARRAY_SIZE(editor_config_options));
 
   if(current_option)
   {
@@ -646,21 +692,67 @@ static int editor_config_change_option(void *conf, char *name, char *value,
   return 0;
 }
 
-void set_editor_config_from_file(struct editor_config_info *conf,
- const char *conf_file_name)
+struct editor_config_info *get_editor_config(void)
 {
-  __set_config_from_file(editor_config_change_option, conf, conf_file_name);
+  return &editor_conf;
 }
 
-void default_editor_config(struct editor_config_info *conf)
+void default_editor_config(void)
 {
-  memcpy(conf, &default_editor_options, sizeof(struct editor_config_info));
+  memcpy(&editor_conf, &editor_conf_default, sizeof(struct editor_config_info));
 }
 
-void set_editor_config_from_command_line(struct editor_config_info *conf,
- int *argc, char *argv[])
+void set_editor_config_from_file(const char *conf_file_name)
 {
-  __set_config_from_command_line(editor_config_change_option, conf, argc, argv);
+  __set_config_from_file(editor_config_change_option, &editor_conf,
+   conf_file_name);
+}
+
+void set_editor_config_from_command_line(int *argc, char *argv[])
+{
+  __set_config_from_command_line(editor_config_change_option, &editor_conf,
+   argc, argv);
+}
+
+void store_editor_config_backup(void)
+{
+  // Back up the config.
+  memcpy(&editor_conf_backup, &editor_conf, sizeof(struct editor_config_info));
+  editor_conf_backup.extended_macros = NULL;
+}
+
+void load_editor_config_backup(void)
+{
+  // Restore the editor config (but keep the macros).
+  int num_macros = editor_conf.num_extended_macros;
+  int num_macros_alloc = editor_conf.num_macros_allocated;
+  struct ext_macro **macros = editor_conf.extended_macros;
+
+  memcpy(&editor_conf, &editor_conf_backup, sizeof(struct editor_config_info));
+
+  editor_conf.extended_macros = macros;
+  editor_conf.num_extended_macros = num_macros;
+  editor_conf.num_macros_allocated = num_macros_alloc;
+}
+
+static void __free_editor_config(struct editor_config_info *conf)
+{
+  // Extended Macros
+  if(conf->extended_macros)
+  {
+    int i;
+    for(i = 0; i < conf->num_extended_macros; i++)
+      free_macro(conf->extended_macros[i]);
+
+    free(conf->extended_macros);
+    conf->extended_macros = NULL;
+  }
+}
+
+void free_editor_config(void)
+{
+  __free_editor_config(&editor_conf);
+  __free_editor_config(&editor_conf_backup);
 }
 
 void save_local_editor_config(struct editor_config_info *conf,
@@ -700,9 +792,9 @@ void save_local_editor_config(struct editor_config_info *conf,
 
     config_file_size = ftell_and_rewind(fp);
     config_file = cmalloc(config_file_size + 1);
-    config_file[config_file_size] = 0;
 
-    fread(config_file, 1, config_file_size, fp);
+    config_file_size = fread(config_file, 1, config_file_size, fp);
+    config_file[config_file_size] = 0;
     fclose(fp);
 
     a = strstr(config_file, comment_a);

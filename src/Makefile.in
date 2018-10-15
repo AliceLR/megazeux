@@ -49,6 +49,10 @@ ${audio_obj}/%.o: ${audio_src}/%.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${core_cflags} ${core_flags} ${core_spec} -c $< -o $@
 
+${audio_obj}/%.o: ${audio_src}/%.cpp
+	$(if ${V},,@echo "  CXX     " $<)
+	${CC} -MD ${core_cxxflags} ${core_flags} ${core_spec} -c $< -o $@
+
 ${network_obj}/%.o: ${network_src}/%.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${core_cflags} ${core_flags} ${core_spec} -c $< -o $@
@@ -66,17 +70,44 @@ ${core_obj}/%.o: ${core_src}/%.cpp
 # to build the main binary. Please keep this sorted alphabetically.
 #
 core_cobjs := \
-  ${core_obj}/block.o ${core_obj}/board.o ${core_obj}/configure.o    \
-  ${core_obj}/counter.o ${core_obj}/data.o ${core_obj}/error.o       \
-  ${core_obj}/event.o ${core_obj}/expr.o ${core_obj}/fsafeopen.o     \
-  ${core_obj}/game2.o ${core_obj}/game.o ${core_obj}/graphics.o      \
-  ${core_obj}/idarray.o ${core_obj}/idput.o ${core_obj}/intake.o     \
-  ${core_obj}/legacy_rasm.o ${core_obj}/legacy_board.o               \
-  ${core_obj}/legacy_robot.o ${core_obj}/legacy_world.o              \
-  ${core_obj}/mzm.o ${core_obj}/render.o ${core_obj}/render_layer.o  \
-  ${core_obj}/robot.o ${core_obj}/run_robot.o ${core_obj}/scrdisp.o  \
-  ${core_obj}/sprite.o ${core_obj}/str.o ${core_obj}/util.o          \
-  ${core_obj}/window.o ${core_obj}/world.o ${core_obj}/zip.o
+  ${core_obj}/block.o             \
+  ${core_obj}/board.o             \
+  ${core_obj}/caption.o           \
+  ${core_obj}/configure.o         \
+  ${core_obj}/core.o              \
+  ${core_obj}/counter.o           \
+  ${core_obj}/data.o              \
+  ${core_obj}/error.o             \
+  ${core_obj}/event.o             \
+  ${core_obj}/expr.o              \
+  ${core_obj}/fsafeopen.o         \
+  ${core_obj}/game.o              \
+  ${core_obj}/game_menu.o         \
+  ${core_obj}/game_ops.o          \
+  ${core_obj}/game_player.o       \
+  ${core_obj}/game_update.o       \
+  ${core_obj}/game_update_board.o \
+  ${core_obj}/graphics.o          \
+  ${core_obj}/idarray.o           \
+  ${core_obj}/idput.o             \
+  ${core_obj}/intake.o            \
+  ${core_obj}/intake_num.o        \
+  ${core_obj}/legacy_rasm.o       \
+  ${core_obj}/legacy_board.o      \
+  ${core_obj}/legacy_robot.o      \
+  ${core_obj}/legacy_world.o      \
+  ${core_obj}/mzm.o               \
+  ${core_obj}/render.o            \
+  ${core_obj}/robot.o             \
+  ${core_obj}/run_robot.o         \
+  ${core_obj}/scrdisp.o           \
+  ${core_obj}/settings.o          \
+  ${core_obj}/sprite.o            \
+  ${core_obj}/str.o               \
+  ${core_obj}/util.o              \
+  ${core_obj}/window.o            \
+  ${core_obj}/world.o             \
+  ${core_obj}/zip.o
 
 #
 # Lists mandatory C++ language sources (mangled to object names) required
@@ -127,6 +158,10 @@ ifeq (${BUILD_WII},1)
 # SDL and platform_sdl.c takes care of all of this when enabled.
 ifeq (${BUILD_SDL},)
 core_cobjs += arch/wii/event.o arch/wii/platform.o
+core_cobjs += arch/wii/render_xfb.o
+ifeq (${BUILD_RENDER_GX},1)
+core_cobjs += arch/wii/render_gx.o
+endif
 ifeq (${BUILD_AUDIO},1)
 core_cobjs += arch/wii/audio.o
 endif
@@ -145,8 +180,11 @@ ifeq (${BUILD_HELPSYS},1)
 core_cobjs += ${core_obj}/helpsys.o
 endif
 
+render_layer_software = 0
+
 ifeq (${BUILD_RENDER_SOFT},1)
 core_cobjs += ${core_obj}/render_soft.o
+render_layer_software = 1
 endif
 
 # GL shared
@@ -157,6 +195,7 @@ endif
 # Fixed function renderers (OGL=1, OGLES=1)
 ifeq (${BUILD_RENDER_GL_FIXED},1)
 core_cobjs += ${core_obj}/render_gl1.o ${core_obj}/render_gl2.o
+render_layer_software = 1
 endif
 
 # Shader renderers (OGL>=2, OGLES=2)
@@ -177,17 +216,26 @@ core_ldflags := ${X11_LDFLAGS} ${core_ldflags}
 endif
 endif
 
+# Overlay renderers
 ifeq (${BUILD_RENDER_YUV},1)
 core_cobjs += ${core_obj}/render_yuv.o
 core_cobjs += ${core_obj}/render_yuv1.o ${core_obj}/render_yuv2.o
+render_layer_software = 1
 endif
 
+# GP2X Half-resolution renderer
 ifeq (${BUILD_RENDER_GP2X},1)
 core_cobjs += ${core_obj}/render_gp2x.o
 endif
 
-ifeq (${BUILD_RENDER_GX},1)
-core_cobjs += ${core_obj}/render_gx.o
+# Screenshots require the software layer renderer.
+ifeq (${BUILD_ENABLE_SCREENSHOTS},1)
+render_layer_software = 1
+endif
+
+# Software layer renderer
+ifeq (${render_layer_software},1)
+core_cobjs += ${core_obj}/render_layer.o
 endif
 
 ifeq (${BUILD_MODPLUG},1)
@@ -345,11 +393,6 @@ include src/editor/Makefile.in
 
 mzx_objs := ${mzx_objs} ${core_obj}/main.o
 
-#ifeq (${PLATFORM},darwin)
-#mzx_objs += arch/darwin/SDLMain.o
-#mzx_ldflags += -framework Cocoa
-#endif
-
 -include ${mzx_objs:.o=.d}
 
 ifeq (${EMBED_ICONS},1)
@@ -385,11 +428,6 @@ endif
 ifeq (${BUILD_MZXRUN},1)
 
 mzxrun_objs := ${core_obj}/main.o ${core_obj}/run_stubs.o
-
-#ifeq (${PLATFORM},darwin)
-#mzxrun_objs += arch/darwin/SDLMain.o
-#mzxrun_ldflags += -framework Cocoa
-#endif
 
 -include ${mzxrun_objs:.o=.d}
 

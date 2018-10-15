@@ -405,8 +405,8 @@ void copy_layer_to_board(
 // This goes here so the block buffer monstrosity can be inlined.
 
 void move_board_block(struct world *mzx_world,
- struct board *src_board, int src_offset,
- struct board *dest_board, int dest_offset,
+ struct board *src_board, int src_x, int src_y,
+ struct board *dest_board, int dest_x, int dest_y,
  int block_width, int block_height,
  int clear_width, int clear_height)
 {
@@ -438,10 +438,25 @@ void move_board_block(struct world *mzx_world,
   int src_param;
   int i, i2;
 
+  int src_offset = src_x + (src_y * src_width);
+  int dest_offset = dest_x + (dest_y * dest_board->board_width);
+
   copy_board_to_board_buffer(mzx_world,
    src_board, src_offset, dest_board, block_width, block_height,
    buffer_id, buffer_color, buffer_param, buffer_under_id,
    buffer_under_color, buffer_under_param);
+
+  // Work around to move the player
+  if((mzx_world->player_x >= src_x) &&
+   (mzx_world->player_y >= src_y) &&
+   (mzx_world->player_x < (src_x + clear_width)) &&
+   (mzx_world->player_y < (src_y + clear_height)) &&
+   (src_board == dest_board))
+  {
+    place_player_xy(mzx_world,
+     mzx_world->player_x - src_x + dest_x,
+     mzx_world->player_y - src_y + dest_y);
+  }
 
   for(i = 0; i < clear_height; i++)
   {

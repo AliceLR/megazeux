@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "event.h"
-#include "graphics.h"
+#include "../../src/event.h"
+#include "../../src/graphics.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -724,10 +724,10 @@ static enum keycode convert_USB_internal(Uint32 key)
   }
 }
 
-static bool process_event(union event *ev)
+static boolean process_event(union event *ev)
 {
   struct buffered_status *status = store_status();
-  bool rval = true;
+  boolean rval = true;
 
   switch(ev->type)
   {
@@ -908,11 +908,13 @@ static bool process_event(union event *ev)
         break;
       }
 
-      if(ckey == IKEY_F12)
+#ifdef CONFIG_ENABLE_SCREENSHOTS
+      if(ckey == IKEY_F12 && enable_f12_hack)
       {
         dump_screen();
         break;
       }
+#endif
 
       if(status->key_repeat &&
        (status->key_repeat != IKEY_LSHIFT) &&
@@ -1052,9 +1054,9 @@ static bool process_event(union event *ev)
   return rval;
 }
 
-bool __update_event_status(void)
+boolean __update_event_status(void)
 {
-  bool rval = false;
+  boolean rval = false;
   union event ev;
 
   if(!eq_inited)

@@ -47,7 +47,7 @@
 // Safe- self sufficient or completely macros/static inlines
 #include "../const.h"
 #include "../memfile.h"
-#include "../world_prop.h"
+#include "../world_format.h"
 #include "../zip.h"
 
 // Avoid CORE_LIBSPEC functions
@@ -175,7 +175,7 @@ static void join_path(char *dest, const char *dir, const char *file)
   dest[MAX_PATH - 1] = 0;
 }
 
-static bool is_simple_path(char *src)
+static boolean is_simple_path(char *src)
 {
   size_t len = strlen(src);
   unsigned int i;
@@ -396,9 +396,8 @@ static struct base_path *add_base_path(const char *path_name,
   if(!strcasecmp(path_name + strlen(path_name) - 4, ".ZIP"))
   {
     struct zip_archive *zp = zip_open_file_read(path_name);
-    int result = zip_read_directory(zp);
 
-    if(result != ZIP_SUCCESS)
+    if(!zp)
     {
       free(new_path);
       return NULL;
@@ -1042,7 +1041,7 @@ static enum status parse_legacy_robot(struct memfile *mf,
 
   if(program_size)
   {
-    mfopen_static(mf->current, program_size, &prog);
+    mfopen(mf->current, program_size, &prog);
 
     ret = parse_legacy_bytecode(&prog, program_size, file);
   }
@@ -1349,7 +1348,7 @@ static enum status parse_world(struct memfile *mf, struct base_file *file,
 
   enum status ret = SUCCESS;
 
-  if(ZIP_SUCCESS != zip_read_directory(zp))
+  if(!zp)
   {
     ret = CORRUPT_WORLD;
     goto err_close;
@@ -1368,7 +1367,7 @@ static enum status parse_world(struct memfile *mf, struct base_file *file,
         zip_get_next_uncompressed_size(zp, &actual_size);
         buffer = malloc(actual_size);
         zip_read_file(zp, buffer, actual_size, &actual_size);
-        mfopen_static(buffer, actual_size, &buf_file);
+        mfopen(buffer, actual_size, &buf_file);
 
         if(file_id == FPROP_BOARD_INFO)
           ret = parse_board_info(&buf_file, file);
@@ -1527,7 +1526,7 @@ static enum status parse_file(const char *file_name,
 
     current_file = add_base_file(file_name,
      &file_list, &file_list_size, &file_list_alloc);
-    mfopen_static(buffer, buf_size, &mf);
+    mfopen(buffer, buf_size, &mf);
 
     ret = parse_world_file(&mf, current_file);
     free(buffer);
@@ -1544,7 +1543,7 @@ static enum status parse_file(const char *file_name,
 
     current_file = add_base_file(file_name,
      &file_list, &file_list_size, &file_list_alloc);
-    mfopen_static(buffer, buf_size, &mf);
+    mfopen(buffer, buf_size, &mf);
 
     ret = parse_board_file(&mf, current_file);
     free(buffer);
@@ -1591,7 +1590,7 @@ static enum status parse_file(const char *file_name,
         // Files in zips need a relative path.
         _get_path(current_file->relative_path, name_buffer);
 
-        mfopen_static(buffer, actual_size, &mf);
+        mfopen(buffer, actual_size, &mf);
 
         // FIXME do something with ret
         ret = parse_world_file(&mf, current_file);
@@ -1610,7 +1609,7 @@ static enum status parse_file(const char *file_name,
         // Files in zips need a relative path.
         _get_path(current_file->relative_path, name_buffer);
 
-        mfopen_static(buffer, actual_size, &mf);
+        mfopen(buffer, actual_size, &mf);
 
         // FIXME do something with ret
         ret = parse_board_file(&mf, current_file);

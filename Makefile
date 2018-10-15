@@ -308,13 +308,15 @@ source: build/${TARGET}src
 # Build source target
 # Targetting unix primarily, so turn off autocrlf if necessary
 #
+ifneq ($(shell which git),)
+USER_AUTOCRLF=$(shell git config core.autocrlf)
+endif
 build/${TARGET}src:
 	${RM} -r build/${TARGET}
 	${MKDIR} -p build/dist/source
-	@TEMP=$(git config core.autocrlf)
 	@git config core.autocrlf false
 	@git checkout-index -a --prefix build/${TARGET}/
-	@git config core.autocrlf ${TEMP}
+	@git config core.autocrlf ${USER_AUTOCRLF}
 	${RM} -r build/${TARGET}/scripts
 	${RM} build/${TARGET}/.gitignore build/${TARGET}/.gitattributes
 	@cd build/${TARGET} && make distclean
@@ -437,7 +439,7 @@ help_check: ${hlp2txt} assets/help.fil
 	@diff --strip-trailing-cr -q docs/WIPHelp.txt help.txt
 	@rm -f help.txt
 
-test: mzx
+test:
 	@testworlds/run.sh @{PLATFORM} @{LIBDIR}
 
 test_clean:

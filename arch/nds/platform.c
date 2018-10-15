@@ -129,7 +129,7 @@ void debug(const char *format, ...)
 }
 #endif // DEBUG
 
-bool platform_init(void)
+boolean platform_init(void)
 {
   powerOn(POWER_ALL);
   setMzxExceptionHandler();

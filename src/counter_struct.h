@@ -47,6 +47,7 @@ struct counter
   int value;
   gateway_write_function gateway_write;
   gateway_dec_function gateway_dec;
+  int name_length;
   char name[1];
 };
 
@@ -93,6 +94,7 @@ struct string
   // add it for both though so there doesn't have to be a UTHASH ifdef
   // in world.c
   int list_ind;
+  int name_length;
 
   size_t length;
   size_t allocated_length;

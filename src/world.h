@@ -24,17 +24,9 @@
 
 __M_BEGIN_DECLS
 
-#include "world_struct.h"
-
 #include <stdio.h>
 
-#include "board.h"
-#include "const.h"
-#include "robot.h"
-#include "counter.h"
-#include "sprite.h"
-#include "util.h"
-#include "configure.h"
+#include "world_struct.h"
 #include "zip.h"
 
 /* When making new versions, change the number below, and
@@ -47,33 +39,32 @@ __M_BEGIN_DECLS
  *
  * World files:
  *
- *  MZX - Ver 1.x MegaZeux             (mzx_world->version == 0x0100)
- *  MZ2 - Ver 2.x MegaZeux             (mzx_world->version == 0x0205)
- *  MZA - Ver 2.51S1 Megazeux          (mzx_world->version == 0x0208)
+ *  MZX - Ver 1.x MegaZeux                  (mzx_world->version == 0x0100)
+ *  MZ2 - Ver 2.x MegaZeux                  (mzx_world->version == 0x0205)
+ *  MZA - Ver 2.51S1 Megazeux               (mzx_world->version == 0x0208)
  *  M\x02\x09 - 2.5.1spider2+
- *  M\x02\x11 - Used for decrypted worlds.
- *  M\x02\x32 - MZX 2.62
- *  M\x02\x3E - MZX 2.62b
- *  M\x02\x41 - MZX 2.65
- *  M\x02\x44 - MZX 2.68
- *  M\x02\x45 - MZX 2.69
+ *  M\x02\x11 - Used for decrypted worlds.  (spider octal "\011" misread as hex)
+ *  M\x02\x32 - MZX 2.62 and MZX 2.62b      (from octal "\062")
+ *  M\x02\x41 - MZX 2.65                    (from decimal "65")
+ *  M\x02\x44 - MZX 2.68                    (from decimal "68")
+ *  M\x02\x45 - MZX 2.69                    (from decimal "69")
  *  M\x02\x46 - MZX 2.69b
  *  M\x02\x48 - MZX 2.69c
  *  M\x02\x49 - MZX 2.70
- *  M\x02\x50 - MZX 2.80 (non-DOS)
- *  M\x02\x51 - MZX 2.81
+ *  M\x02\x50 - MZX 2.80 (non-DOS)          (from decimal "80")
+ *  M\x02\x51 - MZX 2.81                    (and so on...)
  *  M\x02\x52 - MZX 2.82
  *  M\x02\x53 - MZX 2.83
  *  M\x02\x54 - MZX 2.84
  *  M\x02\x5A - MZX 2.90
+ *  M\x02\x5B - MZX 2.91
  *
  * Save files:
  *
- *  MZSV2 - Ver 2.x MegaZeux           (mzx_world->version == 0x0205)
- *  MZXSA - Ver 2.51S1 MegaZeux        (mzx_world->version == 0x0208)
+ *  MZSV2 - Ver 2.x MegaZeux                (mzx_world->version == 0x0205)
+ *  MZXSA - Ver 2.51S1 MegaZeux             (mzx_world->version == 0x0208)
  *  MZS\x02\x09 - 2.5.1spider2+
- *  MZS\x02\x32 - MZX 2.62
- *  MZS\x02\x3E - MZX 2.62b
+ *  MZS\x02\x32 - MZX 2.62 and MZX 2.62b
  *  MZS\x02\x41 - MZX 2.65
  *  MZS\x02\x44 - MZX 2.68
  *  MZS\x02\x45 - MZX 2.69
@@ -86,6 +77,7 @@ __M_BEGIN_DECLS
  *  MZS\x02\x53 - MZX 2.83
  *  MZS\x02\x54 - MZX 2.84
  *  MZS\x02\x5A - MZX 2.90
+ *  MZS\x02\x5B - MZX 2.91
  *
  * Board files follow a similar pattern to world files. Versions prior to
  * 2.51S1 are "MB2". For versions greater than 2.51S1, they match the
@@ -108,7 +100,6 @@ enum mzx_version
   V261            = 0x0209,
   VERSION_DECRYPT = 0x0211, // Special version used for decrypted worlds only.
   V262            = 0x0232,
-  V262b           = 0x023E,
   V265            = 0x0241,
   V268            = 0x0244,
   V269            = 0x0245,
@@ -136,12 +127,10 @@ enum mzx_version
 #define MZX_VERSION      (V291)
 
 /* The world version that worlds will be saved as when Export Downver. World
- * is used from the editor. This function was previously fulfilled by downver,
- * but the increase in complexity of the world file made maintaining downver
- * infeasible.
+ * is used from the editor. This function is also fulfilled by the downver util.
  *
  * If you increase MZX_VERSION, always make sure this is updated with its
- * previous value. Therefore, users can always downgrade their work to an
+ * previous value; this way, users can always downgrade their work to an
  * older version (if it at all makes sense to do so).
  */
 #define MZX_VERSION_PREV (V290)
@@ -164,6 +153,7 @@ enum val_result
   VAL_INVALID,    // Failed validation
   VAL_TRUNCATED,  // Passed validation until it hit EOF
   VAL_MISSING,    // file or ptr location in file does not exist
+  VAL_PROTECTED,  // Legacy file is protected, needs decryption
   VAL_ABORTED,    // Load aborted by user
 };
 
@@ -172,21 +162,23 @@ CORE_LIBSPEC int save_magic(const char magic_string[5]);
 CORE_LIBSPEC int get_version_string(char buffer[16], enum mzx_version version);
 
 CORE_LIBSPEC int save_world(struct world *mzx_world, const char *file,
- int savegame, int world_version);
-CORE_LIBSPEC bool reload_world(struct world *mzx_world, const char *file,
- int *faded);
+ boolean savegame, int world_version);
+CORE_LIBSPEC boolean reload_world(struct world *mzx_world, const char *file,
+ boolean *faded);
 CORE_LIBSPEC void clear_world(struct world *mzx_world);
 CORE_LIBSPEC void clear_global_data(struct world *mzx_world);
 CORE_LIBSPEC void default_scroll_values(struct world *mzx_world);
 
 CORE_LIBSPEC void change_board(struct world *mzx_world, int board_id);
+CORE_LIBSPEC void change_board_set_values(struct world *mzx_world);
 CORE_LIBSPEC void change_board_load_assets(struct world *mzx_world);
 
 CORE_LIBSPEC void remap_vlayer(struct world *mzx_world,
  int new_width, int new_height);
 
-bool reload_savegame(struct world *mzx_world, const char *file, int *faded);
-bool reload_swap(struct world *mzx_world, const char *file, int *faded);
+boolean reload_savegame(struct world *mzx_world, const char *file,
+ boolean *faded);
+boolean reload_swap(struct world *mzx_world, const char *file, boolean *faded);
 
 void save_counters_file(struct world *mzx_world, const char *file);
 int load_counters_file(struct world *mzx_world, const char *file);
@@ -199,7 +191,7 @@ void meter_initial_draw(int curr, int target, const char *title);
 
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC void try_load_world(struct world *mzx_world,
- struct zip_archive **zp, FILE **fp, const char *file, bool savegame,
+ struct zip_archive **zp, FILE **fp, const char *file, boolean savegame,
  int *file_version, char *name);
 
 CORE_LIBSPEC void default_vlayer(struct world *mzx_world);

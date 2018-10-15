@@ -40,8 +40,10 @@
 #endif
 
 #include "board.h"
+#include "configure.h" // TODO for help file only
 #include "const.h"
-#include "context_enum.h"
+#include "core.h"
+#include "counter.h"
 #include "data.h"
 #include "error.h"
 #include "event.h"
@@ -59,37 +61,6 @@
 #ifdef CONFIG_WII
 #include <sys/iosupport.h>
 #endif
-
-// This context stuff was originally in helpsys, but it's actually
-// more of a property of the windowing system.
-
-static int contexts[128];
-static int curr_context;
-
-// 72 = "No" context link
-__editor_maybe_static int context = CTX_MAIN;
-
-void set_context(int c)
-{
-  contexts[curr_context++] = context;
-  context = c;
-}
-
-void pop_context(void)
-{
-  if(curr_context > 0)
-    curr_context--;
-  context = contexts[curr_context];
-}
-
-#ifdef CONFIG_HELPSYS
-
-int get_context(void)
-{
-  return context;
-}
-
-#endif // CONFIG_HELPSYS
 
 #define NUM_SAVSCR 6
 
@@ -112,7 +83,7 @@ int save_screen(void)
   if(cur_screen >= NUM_SAVSCR)
   {
     cur_screen = 0;
-    error("Windowing code bug", 2, 4, 0x1F01);
+    error("Windowing code bug", ERROR_T_FATAL, ERROR_OPT_EXIT, 0x1F01);
   }
 
   get_screen(screen_storage[cur_screen]);
@@ -126,7 +97,7 @@ int save_screen(void)
 int restore_screen(void)
 {
   if(cur_screen == 0)
-    error("Windowing code bug", 2, 4, 0x1F02);
+    error("Windowing code bug", ERROR_T_FATAL, ERROR_OPT_EXIT, 0x1F02);
 
   cur_screen--;
   set_screen(screen_storage[cur_screen]);
@@ -143,14 +114,14 @@ int restore_screen(void)
 // is set to 0. (defaults to 1)
 
 int draw_window_box(int x1, int y1, int x2, int y2, int color,
- int dark_color, int corner_color, int shadow, int fill_center)
+ int dark_color, int corner_color, boolean shadow, boolean fill_center)
 {
   return draw_window_box_ext(x1, y1, x2, y2, color, dark_color,
    corner_color, shadow, fill_center, PRO_CH, 16);
 }
 
 int draw_window_box_ext(int x1, int y1, int x2, int y2, int color,
- int dark_color, int corner_color, int shadow, int fill_center,
+ int dark_color, int corner_color, boolean shadow, boolean fill_center,
  int offset, int c_offset)
 {
   int t1, t2;
@@ -781,6 +752,65 @@ int char_selection(int current)
   return char_selection_ext(current, 1, NULL, NULL, NULL, -1);
 }
 
+// Display a simple string input window. Return 0 on enter, -1 if cancelled.
+int input_window(struct world *mzx_world, const char *title,
+ char *buffer, int max_len)
+{
+  boolean two_lines = false;
+  int title_len = strlen(title);
+  int x = 16;
+  int y = 11;
+  int w;
+  int h = 3;
+  int ret;
+
+  m_show();
+  save_screen();
+
+  if(title_len > 71)
+    title_len = 71;
+
+  if(max_len > 70)
+    max_len = 70;
+
+  // Title + spacing + input length + extra char for intake cursor + 4 (border)
+  w = title_len + 1 + max_len + 1 + 4;
+
+  // Split label and input box onto separate lines if the box would be too wide.
+  if(w > 74)
+  {
+    w = MAX(title_len, max_len + 1) + 4;
+    two_lines = true;
+    h++;
+  }
+
+  // Center wide boxes.
+  if(x > (81 - w) / 2)
+    x = (81 - w) / 2;
+
+  draw_window_box(x, y, (x + w - 1), (y + h - 1),
+   DI_INPUT_BOX, DI_INPUT_BOX_DARK, DI_INPUT_BOX_CORNER, true, true);
+
+  x += 2;
+  y += 1;
+  write_string(title, x, y, DI_INPUT_BOX_LABEL, false);
+
+  if(two_lines)
+    y++;
+  else
+    x += title_len + 1;
+
+  ret = intake(mzx_world, buffer, max_len, x, y, 15,
+   INTK_EXIT_ENTER_ESC, NULL, 0, NULL);
+
+  restore_screen();
+
+  if(ret == IKEY_ESCAPE || get_exit_status())
+    return -1;
+
+  return 0;
+}
+
 __editor_maybe_static void construct_element(struct element *e, int x, int y,
  int width, int height,
  void (* draw_function)(struct world *mzx_world, struct dialog *di,
@@ -921,12 +951,13 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
   int current_key, new_key;
   int i;
 
-  if(context == CTX_MAIN)
+  if(get_context(NULL) == CTX_MAIN)
     set_context(CTX_DIALOG_BOX);
   else
-    set_context(context);
+    set_context(get_context(NULL));
 
   cursor_off();
+  m_show();
 
   save_screen();
 
@@ -1140,10 +1171,11 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
 #ifdef CONFIG_HELPSYS
       case IKEY_F1: // F1
       {
-        if(!mzx_world->conf.standalone_mode ||
+        if(!get_config()->standalone_mode ||
          get_counter(mzx_world, "HELP_MENU", 0))
         {
-          help_system(mzx_world);
+          // FIXME context
+          help_system(NULL, mzx_world);
         }
         break;
       }
@@ -1322,7 +1354,7 @@ static void draw_number_box(struct world *mzx_world, struct dialog *di,
   {
     // Draw a number
     char num_buffer[32];
-    if (!src->is_null)
+    if(!src->is_null)
       sprintf(num_buffer, "%d", *(src->result) * increment);
     else
       sprintf(num_buffer, " ");
@@ -1578,7 +1610,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
     case IKEY_UP:
     {
       if(get_alt_status(keycode_internal) ||
-        get_ctrl_status(keycode_internal))
+       get_ctrl_status(keycode_internal))
       {
         increment_value = 10;
       }
@@ -1624,7 +1656,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
       if(result == 0 || result < src->lower_limit)
       {
         result = src->lower_limit;
-        if (src->upper_limit > 9)
+        if(src->upper_limit > 9)
           src->is_null = 1;
       }
 
@@ -1664,7 +1696,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
         break;
       }
 
-      if (key != IKEY_BACKSPACE &&
+      if(key != IKEY_BACKSPACE &&
        !get_shift_status(keycode_internal) &&
        !get_ctrl_status(keycode_internal) &&
        !get_alt_status(keycode_internal))
@@ -1674,7 +1706,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
     }
   }
 
-  if (increment_value > 0 && src->is_null)
+  if(increment_value > 0 && src->is_null)
     increment_value -= src->lower_limit;
   src->is_null = 0;
 
@@ -1922,8 +1954,8 @@ static int click_input_box(struct world *mzx_world, struct dialog *di,
   if(start_x >= 0)
   {
     return intake(mzx_world, src->result, src->max_length, x +
-     (int)question_len + di->pad_space, y, DI_INPUT, 2,
-     src->input_flags, &start_x, 0, NULL);
+     (int)question_len + di->pad_space, y, DI_INPUT, INTK_EXIT_ANY,
+     &start_x, 0, NULL);
   }
   else
   {
@@ -2135,8 +2167,8 @@ static int idle_input_box(struct world *mzx_world, struct dialog *di,
   int y = di->y + e->y;
 
   return intake(mzx_world, src->result, src->max_length, x +
-   (int)strlen(src->question) + di->pad_space, y, DI_INPUT, 2,
-   src->input_flags, NULL, 0, NULL);
+   (int)strlen(src->question) + di->pad_space, y, DI_INPUT, INTK_EXIT_ANY,
+   NULL, 0, NULL);
 }
 
 void construct_dialog(struct dialog *src, const char *title, int x, int y,
@@ -2203,11 +2235,10 @@ struct element *construct_label(int x, int y, const char *text)
 }
 
 __editor_maybe_static struct element *construct_input_box(int x, int y,
- const char *question, int max_length, int input_flags, char *result)
+ const char *question, int max_length, char *result)
 {
   struct input_box *src = cmalloc(sizeof(struct input_box));
   src->question = question;
-  src->input_flags = input_flags;
   src->max_length = max_length;
   src->result = result;
   construct_element(&(src->e), x, y,
@@ -2299,7 +2330,7 @@ struct element *construct_file_selector(int x, int y,
 __editor_maybe_static struct element *construct_list_box(int x, int y,
  const char **choices, int num_choices, int num_choices_visible,
  int choice_length, int return_value, int *result, int *result_offset,
- bool respect_color_codes)
+ boolean respect_color_codes)
 {
   int scroll_offset;
 
@@ -2383,7 +2414,7 @@ int confirm_input(struct world *mzx_world, const char *name,
   // Don't pass anything through that isn't this big plz
   str[input_length] = '\0';
 
-  elements[0] = construct_input_box(2, 2, label, input_length, 0, str);
+  elements[0] = construct_input_box(2, 2, label, input_length, str);
   elements[1] = construct_button(15, 4, "OK", 0);
   elements[2] = construct_button(37, 4, "Cancel", 1);
   construct_dialog(&di, name, 11, 8, 57, 7, elements, 3, 0);
@@ -2945,8 +2976,7 @@ skip_dir:
      construct_list_box(59, 2, (const char **)dir_list, num_dirs,
      list_length, 15, 2, &chosen_dir, NULL, true);
     elements[FILESEL_FILENAME] =
-     construct_input_box(2, list_length + 3, "", 55,
-     0, ret);
+     construct_input_box(2, list_length + 3, "", 55, ret);
     elements[FILESEL_OKAY_BUTTON] =
      construct_button(60, list_length + 3, "OK", 0);
     elements[FILESEL_CANCEL_BUTTON] =
@@ -3022,7 +3052,8 @@ skip_dir:
         // the complete name
         if(di.current_element == FILESEL_FILE_LIST &&
          strcmp(ret_file, file_list[chosen_file] + 56))
-          join_path_names(ret, MAX_PATH, current_dir_name, file_list[chosen_file] + 56);
+          join_path_names(ret, MAX_PATH, current_dir_name,
+           file_list[chosen_file] + 56);
 
         if(default_ext)
           add_ext(ret, default_ext);
@@ -3097,7 +3128,7 @@ skip_dir:
           {
             char error_str[512];
             sprintf(error_str, "%s already exists.", new_name);
-            error(error_str, 1, 8, 0x0000);
+            error(error_str, ERROR_T_ERROR, ERROR_OPT_OK, 0x0000);
           }
         }
 
@@ -3136,12 +3167,14 @@ skip_dir:
 
         if(!confirm_input(mzx_world, "Rename File", "New file name:", new_name))
         {
-          join_path_names(old_path, MAX_PATH, current_dir_name, file_list[chosen_file] + 56);
+          join_path_names(old_path, MAX_PATH, current_dir_name,
+           file_list[chosen_file] + 56);
           join_path_names(new_path, MAX_PATH, current_dir_name, new_name);
 
           if(strcmp(old_path, new_path))
             if(rename(old_path, new_path))
-              error("File rename failed.", 0, 8, 0x0000);
+              error("File rename failed.",
+               ERROR_T_WARNING, ERROR_OPT_OK, 0x0000);
 
         }
 
@@ -3165,7 +3198,8 @@ skip_dir:
           if(!confirm(mzx_world, confirm_string))
           {
             char file_name_ch[MAX_PATH];
-            join_path_names(file_name_ch, MAX_PATH, current_dir_name, dir_list[chosen_dir]);
+            join_path_names(file_name_ch, MAX_PATH, current_dir_name,
+             dir_list[chosen_dir]);
 
             if(!ask_yes_no(mzx_world,
              (char *)"Delete subdirectories recursively?"))
@@ -3183,7 +3217,6 @@ skip_dir:
       }
 
       // Rename directory
-      // I didn't just copy the rename file code and change a couple of things, no siree
       case 7:
       {
         if(strcmp(dir_list[chosen_dir], "..") &&
@@ -3195,14 +3228,17 @@ skip_dir:
 
           strncpy(new_name, dir_list[chosen_dir], MAX_PATH);
 
-          if(!confirm_input(mzx_world, "Rename Directory", "New directory name:", new_name))
+          if(!confirm_input(mzx_world, "Rename Directory",
+           "New directory name:", new_name))
           {
-            join_path_names(old_path, MAX_PATH, current_dir_name, dir_list[chosen_dir]);
+            join_path_names(old_path, MAX_PATH, current_dir_name,
+             dir_list[chosen_dir]);
             join_path_names(new_path, MAX_PATH, current_dir_name, new_name);
 
             if(strcmp(old_path, new_path))
               if(rename(old_path, new_path))
-                error("Directory rename failed.", 0, 8, 0x0000);
+                error("Directory rename failed.",
+                 ERROR_T_WARNING, ERROR_OPT_OK, 0x0000);
 
           }
 

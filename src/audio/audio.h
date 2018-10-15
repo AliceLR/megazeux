@@ -42,8 +42,20 @@ struct audio_stream
   struct audio_stream *previous;
   Uint32 volume;
   Uint32 repeat;
-  Uint32 (* mix_data)(struct audio_stream *a_src, Sint32 *buffer,
-   Uint32 len);
+  Uint32 (* mix_data)(struct audio_stream *a_src, Sint32 *buffer, Uint32 len);
+  void (* set_volume)(struct audio_stream *a_src, Uint32 volume);
+  void (* set_repeat)(struct audio_stream *a_src, Uint32 repeat);
+  void (* set_order)(struct audio_stream *a_src, Uint32 order);
+  void (* set_position)(struct audio_stream *a_src, Uint32 pos);
+  Uint32 (* get_order)(struct audio_stream *a_src);
+  Uint32 (* get_position)(struct audio_stream *a_src);
+  Uint32 (* get_length)(struct audio_stream *a_src);
+  void (* destruct)(struct audio_stream *a_src);
+};
+
+struct audio_stream_spec
+{
+  Uint32 (* mix_data)(struct audio_stream *a_src, Sint32 *buffer, Uint32 len);
   void (* set_volume)(struct audio_stream *a_src, Uint32 volume);
   void (* set_repeat)(struct audio_stream *a_src, Uint32 repeat);
   void (* set_order)(struct audio_stream *a_src, Uint32 order);
@@ -88,9 +100,9 @@ extern struct audio audio;
 
 CORE_LIBSPEC void init_audio(struct config_info *conf);
 CORE_LIBSPEC void quit_audio(void);
-CORE_LIBSPEC int audio_play_module(char *filename, bool safely, int volume);
+CORE_LIBSPEC int audio_play_module(char *filename, boolean safely, int volume);
 CORE_LIBSPEC void audio_end_module(void);
-CORE_LIBSPEC void audio_play_sample(char *filename, bool safely, int period);
+CORE_LIBSPEC void audio_play_sample(char *filename, boolean safely, int period);
 
 CORE_LIBSPEC void audio_set_module_volume(int volume);
 void audio_set_module_order(int order);
@@ -119,17 +131,8 @@ void audio_set_pcs_volume(int volume);
 // Internal functions
 int audio_get_real_frequency(int period);
 void destruct_audio_stream(struct audio_stream *a_src);
-void construct_audio_stream(struct audio_stream *a_src,
- Uint32 (* mix_data)(struct audio_stream *a_src, Sint32 *buffer, Uint32 len),
- void (* set_volume)(struct audio_stream *a_src, Uint32 volume),
- void (* set_repeat)(struct audio_stream *a_src, Uint32 repeat),
- void (* set_order)(struct audio_stream *a_src, Uint32 order),
- void (* set_position)(struct audio_stream *a_src, Uint32 pos),
- Uint32 (* get_order)(struct audio_stream *a_src),
- Uint32 (* get_position)(struct audio_stream *a_src),
- Uint32 (* get_length)(struct audio_stream *a_src),
- void (* destruct)(struct audio_stream *a_src),
- Uint32 volume, Uint32 repeat);
+void initialize_audio_stream(struct audio_stream *a_src,
+ struct audio_stream_spec *a_spec, Uint32 volume, Uint32 repeat);
 
 // Platform-related functions.
 void audio_callback(Sint16 *stream, int len);
@@ -140,9 +143,11 @@ void quit_audio_platform(void);
 
 static inline void init_audio(struct config_info *conf) {}
 static inline void quit_audio(void) {}
-static inline int audio_play_module(char *filename, bool safely, int volume) { return 1; }
+static inline int audio_play_module(char *filename, boolean safely, int volume)
+ { return 1; }
 static inline void audio_end_module(void) {}
-static inline void audio_play_sample(char *filename, bool safely, int period) {}
+static inline void audio_play_sample(char *filename, boolean safely, int period)
+ {}
 
 static inline void audio_set_module_volume(int vol) {}
 static inline void audio_set_module_order(int order) {}

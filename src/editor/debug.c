@@ -26,6 +26,7 @@
 #include "robo_debug.h"
 #include "window.h"
 
+#include "../core.h"
 #include "../counter.h"
 #include "../event.h"
 #include "../graphics.h"
@@ -672,9 +673,9 @@ static void build_var_buffer(char **var_buffer, const char *name,
 struct debug_node
 {
    char name[15];
-   bool opened;
-   bool refresh_on_focus;
-   bool show_child_contents;
+   boolean opened;
+   boolean refresh_on_focus;
+   boolean show_child_contents;
    int num_nodes;
    int num_counters;
    struct debug_node *parent;
@@ -816,7 +817,7 @@ static void rebuild_var_list(struct debug_node *node,
 }
 
 // If we're not deleting the entire tree we only wipe the counter lists
-static void clear_debug_node(struct debug_node *node, bool delete_all)
+static void clear_debug_node(struct debug_node *node, boolean delete_all)
 {
   int i;
   if(node->num_counters)
@@ -920,7 +921,7 @@ static int find_variable(struct world *mzx_world, struct debug_node *node,
   char *var;
   void *v = NULL;
   int start = 0, stop = node->num_counters, inc = 1;
-  bool ignore_case = (search_flags & VAR_SEARCH_CASESENS) == 0;
+  boolean ignore_case = (search_flags & VAR_SEARCH_CASESENS) == 0;
 
   if(search_flags & VAR_SEARCH_REVERSE)
   {
@@ -1088,7 +1089,7 @@ static int start_var_search(struct world *mzx_world, struct debug_node *node,
 
   // Build the index that's gonna save our bacon when we search through 1m counters
   int index[256] = { 0 };
-  bool ignore_case = (search_flags & VAR_SEARCH_CASESENS) == 0;
+  boolean ignore_case = (search_flags & VAR_SEARCH_CASESENS) == 0;
 
   boyer_moore_index(match_text, match_length, index, ignore_case);
 
@@ -1545,8 +1546,8 @@ static void build_debug_tree(struct world *mzx_world, struct debug_node *root)
 static void input_counter_value(struct world *mzx_world, char *var_buffer)
 {
   char *var = var_buffer + VAR_LIST_VAR;
-  char new_value[70];
-  char name[70] = { 0 };
+  char new_value[71];
+  char name[71] = { 0 };
   int id = 0;
 
   if(var[0] == '$')
@@ -1554,15 +1555,15 @@ static void input_counter_value(struct world *mzx_world, char *var_buffer)
     struct string temp;
     get_string(mzx_world, var, &temp, 0);
 
-    snprintf(name, 69, "Edit: string %s", var);
+    snprintf(name, 70, "Edit: string %s", var);
 
-    copy_substring_escaped(&temp, new_value, 68);
+    copy_substring_escaped(&temp, new_value, 70);
   }
   else
   {
     if(var[-2])
     {
-      snprintf(name, 69, "Edit: counter %s", var);
+      snprintf(name, 70, "Edit: counter %s", var);
       sprintf(new_value, "%d", get_counter_safe(mzx_world, var, id));
     }
     else
@@ -1572,7 +1573,7 @@ static void input_counter_value(struct world *mzx_world, char *var_buffer)
       if(var[strlen(var)-1] == '*')
         return;
 
-      snprintf(name, 69, "Edit: variable %s", var);
+      snprintf(name, 70, "Edit: variable %s", var);
 
       // Just strcpy it off of the var_buffer so we don't need
       // a special if/else chain for the write-only variables
@@ -1580,13 +1581,8 @@ static void input_counter_value(struct world *mzx_world, char *var_buffer)
     }
   }
 
-  save_screen();
-  draw_window_box(4, 12, 76, 14, DI_DEBUG_BOX, DI_DEBUG_BOX_DARK,
-   DI_DEBUG_BOX_CORNER, 1, 1);
-  write_string(name, 6, 12, DI_DEBUG_LABEL, 0);
-
-  if(intake(mzx_world, new_value, 68, 6, 13, 15, 1, 0,
-   NULL, 0, NULL) != IKEY_ESCAPE && !get_exit_status())
+  // Prompt user to edit value
+  if(!input_window(mzx_world, name, new_value, 70))
   {
     if(var[0] == '$')
     {
@@ -1600,8 +1596,6 @@ static void input_counter_value(struct world *mzx_world, char *var_buffer)
       write_var(mzx_world, var_buffer, counter_value, NULL);
     }
   }
-
-  restore_screen();
 }
 
 /*****************/
@@ -1645,7 +1639,7 @@ static int search_dialog(struct world *mzx_world,
 
   struct element *elements[] =
   {
-    construct_input_box( 2, 1, "Search: ", VAR_SEARCH_MAX, 0, string),
+    construct_input_box( 2, 1, "Search: ", VAR_SEARCH_MAX, string),
     construct_check_box( 2, 2, name_opt,    1, strlen(*name_opt),    &names),
     construct_check_box(20, 2, value_opt,   1, strlen(*value_opt),   &values),
     construct_check_box(39, 2, case_opt,    1, strlen(*case_opt),    &casesens),
@@ -1691,7 +1685,7 @@ static int new_counter_dialog(struct world *mzx_world, char *name)
   // Prevent previous keys from carrying through.
   force_release_all_keys();
 
-  elements[0] = construct_input_box(2, 2, "Name:", VAR_ADD_MAX, 0, name);
+  elements[0] = construct_input_box(2, 2, "Name:", VAR_ADD_MAX, name);
   elements[1] = construct_button(9, 4, "Confirm", 0);
   elements[2] = construct_button(23, 4, "Cancel", -1);
 
@@ -1758,7 +1752,8 @@ static int new_counter_dialog(struct world *mzx_world, char *name)
  * 4 - Hide empties
  * 5 - Export
  */
-int last_node_selected = 0;
+static int last_node_selected = 0;
+static context *ctx_for_pal_char_editors = NULL; // FIXME hack
 
 static int counter_debugger_idle_function(struct world *mzx_world,
  struct dialog *di, int key)
@@ -1788,7 +1783,12 @@ static int counter_debugger_idle_function(struct world *mzx_world,
     {
       if(get_alt_status(keycode_internal))
       {
-        palette_editor(mzx_world);
+        // FIXME hack
+        if(ctx_for_pal_char_editors)
+        {
+          palette_editor(ctx_for_pal_char_editors);
+          core_run(ctx_for_pal_char_editors->root);
+        }
         return 0;
       }
       break;
@@ -1846,8 +1846,9 @@ static struct debug_node root;
 static char previous_var[VAR_SEARCH_MAX + 1];
 static char previous_node_name[15];
 
-void __debug_counters(struct world *mzx_world)
+void __debug_counters(context *ctx)
 {
+  struct world *mzx_world = ctx->world;
   int i;
 
   int num_vars = 0, tree_size = 0;
@@ -1858,6 +1859,7 @@ void __debug_counters(struct world *mzx_world)
   int node_selected = 0;
   int node_scroll_offset = 0;
   int dialog_result;
+  struct element *elements[8];
   struct dialog di;
 
   char label[80] = "Counters";
@@ -1870,12 +1872,13 @@ void __debug_counters(struct world *mzx_world)
 
   int reopened = 0;
 
+  // FIXME hack
+  ctx_for_pal_char_editors = ctx;
+
   // Prevent previous keys from carrying through.
   force_release_all_keys();
 
   set_context(CTX_COUNTER_DEBUG);
-
-  m_show();
 
   // also known as crash_stack
   build_debug_tree(mzx_world, &root);
@@ -1907,22 +1910,19 @@ void __debug_counters(struct world *mzx_world)
 
     if(!reopened)
     {
-      struct element *elements[] =
-      {
-        construct_list_box(
+      elements[0] = construct_list_box(
          VAR_LIST_X, VAR_LIST_Y, (const char **)var_list, num_vars,
-         VAR_LIST_HEIGHT, VAR_LIST_WIDTH, 0, &var_selected, NULL, false),
-        construct_list_box(
+         VAR_LIST_HEIGHT, VAR_LIST_WIDTH, 0, &var_selected, NULL, false);
+      elements[1] = construct_list_box(
          TREE_LIST_X, TREE_LIST_Y, (const char **)tree_list, tree_size,
          TREE_LIST_HEIGHT, TREE_LIST_WIDTH, 1, &node_selected,
-         &node_scroll_offset, false),
-        construct_button(BUTTONS_X + 0, BUTTONS_Y + 0, "Search", 2),
-        construct_button(BUTTONS_X +11, BUTTONS_Y + 0, "New", 3),
-        construct_button(BUTTONS_X + 0, BUTTONS_Y + 2, "Toggle Empties", 4),
-        construct_button(BUTTONS_X + 0, BUTTONS_Y + 4, "Export", 5),
-        construct_button(BUTTONS_X +10, BUTTONS_Y + 4, "Done", -1),
-        construct_label(VAR_LIST_X, VAR_LIST_Y - 1, label),
-      };
+         &node_scroll_offset, false);
+      elements[2] = construct_button(BUTTONS_X + 0, BUTTONS_Y + 0, "Search", 2);
+      elements[3] = construct_button(BUTTONS_X +11, BUTTONS_Y + 0, "New", 3);
+      elements[4] = construct_button(BUTTONS_X + 0, BUTTONS_Y + 2, "Toggle Empties", 4);
+      elements[5] = construct_button(BUTTONS_X + 0, BUTTONS_Y + 4, "Export", 5);
+      elements[6] = construct_button(BUTTONS_X +10, BUTTONS_Y + 4, "Done", -1);
+      elements[7] = construct_label(VAR_LIST_X, VAR_LIST_Y - 1, label);
 
       construct_dialog_ext(&di, "Debug Variables", 0, 0,
        80, 25, elements, ARRAY_SIZE(elements), 0, 0, window_focus,
@@ -2222,8 +2222,6 @@ void __debug_counters(struct world *mzx_world)
     destruct_dialog(&di);
 
   } while(dialog_result != -1);
-
-  m_hide();
 
   pop_context();
 

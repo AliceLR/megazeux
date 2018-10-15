@@ -182,8 +182,10 @@ a flattened oval shape.
 -No equivalent of duplicators exists.
 -Seekers (aka "stars") do not destroy Breakaway territories in
 MegaZeux.
--MZX Sharks do not swim in water, and can be shot. They can
-also shoot any type of projectile.
+-MegaZeux water is not equivalent to ZZT water, as it can be
+traversed. ZZT water is most similar to MZX's "goop".
+-MZX Sharks can be shot. They do not swim in water, but can in
+ lava or goop. They can also shoot any type of projectile.
 -MZX Scrolls cannot execute code. Use a Robot ending with the
 "die" command for ZZT scrolls with code instead. 
 -Terrains that give out a distinctive message on first touch
@@ -471,7 +473,7 @@ ESC - Exit to Title
 This will quit the current game and return to its title
 screen. In yes/no dialog boxes, this selects the "no" option.
 
-F2 - Settings
+F2 or Ctrl+F2 - Settings
 :092:This will bring up a dialog box where you can change the
 current game settings: Game Speed (if allowed), Music toggle,
 Sound toggle, and Audio Volumes (Overall Volume, SoundFX
@@ -490,6 +492,8 @@ Settings for game speed will only apply for the current world;
 all other settings are global.
 
 Note that some games may block access to the F2 menu entirely.
+Ctrl+F2 will ignore this setting and allow access to the menu
+even if it is prohibited otherwise.
 
 F3 - Save Game
 This will prompt you for a filename, allowing the saving of the
@@ -621,7 +625,7 @@ it brings up a list of key bindings instead.
 ESC - Exit MegaZeux
 Pressing ESC will exit MegaZeux.
 
-F2 or S - Settings (see above)
+F2 / Ctrl+F2 / S - Settings (see above)
 
 F3 or L - Load World
 This will allow you to load up the title screen of any MegaZeux
@@ -674,13 +678,12 @@ Some basic play tips:
 First, let me warn you that many worlds you get from archives
 or (especially) from personal webpages may not be of acceptable
 quality. They may be unfair, boring, have numerous bugs, and/or
-not give proper instructions. My advice is to email the
-author(s) and politely tell him/her/them what you think of poor
-quality MegaZeux games. There is no problem in MAKING poor
-games, but PLEASE think before uploading them, even in these
-days where games are fewer and farther between. Really old
-games of bad quality, on the other hand, are tolerated somewhat
-better. Don't let a few dull games ruin the fun.
+not give proper instructions. On a related note, there is no
+problem in MAKING poor games, but PLEASE think before uploading
+them, even in these days where games are fewer and farther
+between. Really old games of bad quality, on the other hand, are
+tolerated somewhat better. Don't let a few dull games ruin the
+fun.
 
 ~A*~F RTFM (Read the Flipping Manual). Whatever information
  the game has to give is probably important. Some authors
@@ -691,17 +694,17 @@ better. Don't let a few dull games ruin the fun.
 
 ~A*~F Make sure you visit every screen possible.
 
-~A*~F Touch everything! Even things of seemingly little value
- may prove worthy of your attention. If it kills you, then...
- well... hope you saved. Yell at the programmer who thought an
- instant kill was worth using regardless!
-
 ~A*~F Save your game! It is rather simple - in most games,
  Press F3 to save your game to disk at the EXACT point you are
  [if allowed]. Press F4 to reload a saved game. You can use F9
  and F10 to quick-save and quick-load, which work on the last
  game you saved. Remember to save often - If something ends
  your game, you'll want to lose as little progress as possible.
+ 
+~A*~F Touch everything! Even things of seemingly little value
+ may prove worthy of your attention. If it kills you, then...
+ well... hope you saved (see above). Yell at the programmer who
+ thought an instant kill was worth using regardless!
 
 ~A*~F Collect supplies! Make sure you grab every coin, gem,
  ammo dump, bomb, chest, pouch, and foobar you see! You will
@@ -1409,31 +1412,41 @@ A: It's usually okay to do this, as long as you give definite
   artwork and code definitely should get attribution. If you're
   unsure whether the original creator(s) would like you using
   their work in your own game, ask! What we don't want to see,
-  though, is passing the work of others, especially graphics
-  and code, as your own. DON'T PLAGIARIZE. JUST BECAUSE THEY
-  DID NOT EXPLICITLY FORBID YOU FROM USING THEIR WORK DOES NOT
-  MEAN YOU CAN PASS IT OFF AS YOUR OWN.
+  though, is passing the work of others - especially graphics,
+  writing, and code - as your own. DON'T PLAGIARIZE. JUST
+  BECAUSE THEY DID NOT EXPLICITLY FORBID YOU FROM USING THEIR
+  WORK DOES NOT MEAN YOU CAN PASS IT OFF AS YOUR OWN.
 
 Q: Can I distribute a world I made with MegaZeux? Is it legal?
   Must I/can I include MegaZeux with it? Can they be shareware
   worlds?
 
 A: Of course you can distribute your worlds! That is what
-  MegaZeux is for! Please refrain from uploading worlds that
-  you made as a novice user if they contain only built-in
-  enemies, items, no plot, etc. and ESPECIALLY if only you
-  (and/or a best friend) have tested it. People will likely
-  yell at you, especially if the game is buggy. Get creative
-  and make your game worth playing! Please include any WAV,
-  module, OGG, CHR, MZM, PAL and all other files with the
-  games, as well as a cohesive and helpful TXT description
-  file. Make sure that you include MegaZeux on your website if
-  you're posting your game there, or make sure to post to a
-  large MegaZeux archive. Typically, MegaZeux worlds are
-  freeware, but if you've made an assuredly epic and
-  ground-breaking game, then you can attempt to ask for
-  registration money in a shareware demo version. Just don't
-  get your hopes up.
+  MegaZeux is for! However, while there are those who would help
+  point out your game's flaws in a forgiving manner, not
+  everyone is capable of constructive criticism. Playtest your
+  game before uploading it, with at least one other person
+  evaluating the game for bugs, play balance, and
+  text/plot/grammatical errors (when relevant). Get creative and
+  make your game worth playing!
+  
+  Please include any WAV, module, OGG, CHR, MZM, PAL and all
+  other files with the games, as well as a cohesive and helpful
+  description file or manual. (Using checkres to guarantee that
+  every relevant file is included can be helpful.)
+  
+  While you can simply distribute your game with a copy of
+  MegaZeux included, or even just post the game's files in an
+  archive by itself, consider releasing your game as both a
+  standalone archive and as pure game files in separate
+  downloads.
+  
+  Typically, MegaZeux worlds are freeware, but if you've made an
+  assuredly epic and ground-breaking game, then you can attempt
+  to ask for registration money in a shareware demo version.
+  Just don't get your hopes up. Alternatively, consider
+  uploading your game to a platform that allows optional
+  donations.
 
 Q: I WANT FUNCTION (FOOBAR) ADDED OR I LEAVE THE COMMUNITY
   FOREVER :<
@@ -1482,11 +1495,11 @@ Q: Will MegaZeux games ever be playable without MegaZeux
 A: In a sense, they can be now. It was a long-held consensus
   among most of MegaZeux's developers that the possible hassle
   saved for newbies and for those who would instantly refuse to
-  play a game because it can't be launched directly is not
+  play a game because it can't be launched directly was not
   worth implementing this feature. However, this has changed.
   MZXRun, the editor-less version of MegaZeux, can now be
-  set to run in "standalone mode", which can be configured to
-  only play one specific world, and changes several MZX
+  set to run in "standalone mode", a configuration designed for
+  only playing a specific world. This mode changes several MZX
   mannerisms to better accommodate a standalone version of a
   game. The title screen can also be completely skipped.
   Additions to Robotic (such as exiting the game through code or
@@ -1505,8 +1518,7 @@ A: Then you'll need to carefully utilize the Robot command
   partial character set loading will probably be the best
   solution. Otherwise, find out which characters will never be
   shown when other characters are and replace them with
-  characters you WILL use (such as the alphanumeric
-  characters).
+  characters you WILL use.
   
   Alternatively, make use of unbound sprites. Unbound sprites
   can access 15 full character sets instead of just one.
@@ -1555,20 +1567,20 @@ Q: Where can I get module files?
 
 A: If you can't make them, search webpages for good ones.
   http://www.modarchive.com has a very large tracked music
-  library, as do many older CD-ROM collections. Another popular
-  option is to employ a friend to do it for you. If your game
-  shows exceptional promise, then an established tracker in the
-  community might make music for you. You will actually have
-  to... show real evidence that your game is as good as its
-  hype in most cases, however. In any case, remember to give
-  credit where it is due (yes, even to yourself). Be careful
-  when inserting OGG files into your game. OGG files often
-  present considerable bloat to a game if used as music. Also,
-  not only may you be chided for putting in a popular song if
-  you do so, but you could be violating copyright law. Chances
-  are that if you can make a coherent argument on "fair use" of
-  copyrighted songs, you will be far less likely to be in this
-  position to begin with. <3
+  library, as do many old CD-ROM shareware collections. Another
+  popular option is to convince a friend to do it for you. If
+  your game shows exceptional promise, then an established
+  musician in the community might make music for you. You will
+  probably have to show real evidence that your game is as good
+  as its hype in most cases, however. In any case, remember to
+  give credit where it is due (yes, even to yourself).
+  Be careful when inserting OGG files into your game. OGG files
+  often present considerable bloat to a game if used as music.
+  Also, not only may you be chided for putting in a popular song
+  if you do so, but you could be violating copyright law.
+  Chances are that if you can make a coherent argument on "fair
+  use" of copyrighted songs, you will be far less likely to be
+  in this position to begin with. <3
 
 Q: What is some good software to create module files?
 
@@ -1576,19 +1588,18 @@ A: It's a matter of personal preference. Many people prefer
   OpenMPT because it works well with Windows. Others prefer to
   work with Schism Tracker. Finally, a few are still fond of
   Fast Tracker II, and therefore use the similar MilkyTracker.
-  Be advised that DOS-based trackers like IT and FT2 might not
-  work well with an NT-based Windows system, and will likely
-  not work at all with a 64-bit OS.
+  DOS-based trackers like IT and FT2 understandably need outside
+  tools such as DOSBox to run as expected.
 
   If you don't mind pumping up your game's filesize, you could
-  use any normal composition software (like FL Studio) and
+  use any typical composition software (like FL Studio) and
   convert your wave to ogg format.
 
 Q: How do I make WAV files?
 
 A: There are three easy ways to create WAV files. First, you
-  get recording software, a sound card, and a mike. Hook 'em
-  all up (read the instructions) and go for it. Second, you can
+  get recording software and a mic. Set it all up (read the
+  instructions if necessary) and go for it. Second, you can
   download them or get them from outside sources (such as The
   Freesound Project). Third, you can take existing files and
   change them with effects like echo. Converting .wav files
@@ -1601,15 +1612,16 @@ Q: Why do I get garbage when I try reading a file?
 A: You likely have it open for writing. To close a file, use
   the command SET "" to "FWRITE_OPEN".
 
-Q: Why does MegaZeux slow to a crawl or even lock up completely
-  when I set the "commands" counter to a high value?
+Q: Why does MegaZeux slow down significantly when I set the
+  "commands" counter to a high value?
 
 A: You're likely using an idle loop without a CYCLE 1 or WAIT 1
-  command inserted. Add one; if you're wary about possible
-  delay effects, rest assured that adding either of these will
-  not unnecessarily add delays. It will simply end a cycle. For
-  further information, look up the Cycles and Board Scans
-  section.
+  command inserted. Find the offending loop and add one; if
+  you're wary about possible delay effects, rest assured that
+  adding either of these will not unnecessarily add delays. It
+  will simply end a cycle. By default, MZX will warn you if you
+  exceed 2000000 commands in a cycle. For further information,
+  look up the Cycles and Board Scans section.
   
 >#PROCESS.HLP:prc:Cycles and Board Scans - How MZX Processes Robots
   
@@ -2024,6 +2036,9 @@ under the cursor is not affected. One can jump to a color by
 typing its hex code in the color menu; for example, typing "0D"
 would jump to color 013 (background color 0, foreground color
 D).
+
+A quirk to keep in mind: any entity with a background color of 0
+will display the background color of anything beneath it.
 
 :AltC:~EAlt+C - Char Edit
 
@@ -2836,16 +2851,18 @@ $Endgame Board/Endgame X/Endgame Y/Mode
 
 This tells MegaZeux what happens when the player runs out of
 lives. If mode is Game Over, then the game will simply end. If
-it is Teleport, the player will be given one last life and then
-will be teleported to the board and {x,y} coordinates stated in
-the above three settings. The next time the player dies, the
-game will end.
+it is Teleport, the player will be given one life and one
+health, and then will be teleported to the board and {x,y}
+coordinates stated in the above three settings. This will
+continue to happen every time the player runs out of lives or
+when a Robot calls the ENDGAME command.
 
 $Play Game Over SFX
 
 If this option is on, the game over sound effect will be looped
 when the game has ended and the Game Over message will flash
-along the bottom of the screen.
+along the bottom of the screen. The Game Over SFX will not play
+when the endgame teleport option is chosen.
 
 $Previous
 
@@ -3235,7 +3252,7 @@ effects are listed below.
 19 - Door Locked
 20 - Open Door
 21 - Hurt
-22 - AUGH!
+22 - Hurt (Lava)
 23 - Death
 24 - Game Over
 25 - Gate Closing
@@ -3764,7 +3781,10 @@ stepping as well, but are based off of the values of counters
 and strings, and only activate stepping after a relevant value
 is changed, not right when one is seen. Unlike with breakpoints,
 the watchpoint string has to exactly match (although case
-insensitive).
+insensitive). Local counters can be watched as well as global
+counters; to watch local counters, check for rN.<counter>, where
+N is the robot_id, and <counter> is the relevant local counter
+name (without the angle brackets).
 
 Editing breakpoints/watchpoints is done by pressing Space.
 Deleting breakpoints/watchpoints is done by pressing Alt+D.
@@ -4774,8 +4794,8 @@ A Robotic string is any counter prefixed by a $ sign (e.g.
 Certain characters must be inputted in specific ways to avoid
 problems with Robotic:
 
-  \0 for character 0 (this probably won't work in strings, but
-  should work in chars)
+  \0 for character 0 (this won't be parsed correctly in
+  strings, but works for setting chars)
   \t for tab (character 9)
   \n for newline (character 10)
   \r for carriage return (character 13)
@@ -5665,8 +5685,8 @@ impossible, the command is ignored.
 :_pI:~APUT "@@FILENAME.XXX" Image_File [param] # #
 
 Places an MZM of the given filename. These files also can be
-loaded from a subdirectory with the syntax of ""dir"\"@@file""
-or ""dir"/"@@file"" (without the inner quotes). The @@ is
+loaded from a subdirectory with the syntax of ""@@dir"\"file""
+or ""@@dir"/"file"" (without the inner quotes). The @@ is
 REQUIRED. The numbers mark the destination {x,y} coordinates of
 the MZM's upper-left corner; the parameter determines the
 placement of the MZM (00 = board, 01 = overlay, 02 = vlayer).
@@ -6369,8 +6389,8 @@ p?? to c?? Explosion p?? command.
 :_b4:~ABECOME LAVAWALKER
 :_b2:~ABECOME NONLAVAWALKER
 
-The current Robot can or cannot move on lava now. Robots can
-always move over fire.
+Sets whether the current Robot can or cannot move on lava.
+Robots can always move over fire.
 
 :_b6:~ABLIND #
 :_f1:~AFIREWALKER #
@@ -6378,10 +6398,10 @@ always move over fire.
 :_sS:~ASLOWTIME #
 :_w6:~AWIND #
 
-The stated potion/ring effect is now active for the given
-number of cycles. Potion/ring effects are global; that is, they
-affect the entire world. The only exception is the global
-Robot; FREEZETIME and SLOWTIME commands do not affect it.
+The stated potion/ring effect activates for the given number of
+cycles. Potion/ring effects are global; that is, they affect the
+entire world. The only exception is the global Robot; FREEZETIME
+and SLOWTIME commands do not affect it.
 
 >#THEGLOBL.HLP:gbl:The Global
 >#BUILTINS.HLP:prx:Potion and Ring Effects
@@ -7258,9 +7278,9 @@ compatibility reasons.
 
 ~BRn.<counter>
 
-Contains the value of the given counter in the Robot with the
-robot_id number n. If no Robot exists with this robot_id, the
-counter will return -1.
+Contains the value of the given counter (without the angle
+brackets) in the Robot with the robot_id number n. If no Robot
+exists with this robot_id, the counter will return -1.
 
 ~BTHIS_COLOR (read-only, local)
 ~BTHIS_CHAR (read-only, local)
@@ -7497,6 +7517,10 @@ syntax is as such:
 
 set "file.ext" to "FREAD_OPEN"
 
+FREAD_OPEN will also read subdirectories with the given syntax:
+
+set "dir" to "FREAD_OPEN"
+
 ~BFWRITE_MODIFY (function)
 
 This opens an existing file for reading without overwriting it,
@@ -7524,7 +7548,9 @@ compatibility reasons.
 ~BFWRITE_POS
 
 The current reading or writing position of the accessed file.
-If set to -1, sets the position to the end of the file.
+0 is the beginning position; when no file is loaded, the
+relevant counter is -1. If set to -1, sets the position to the
+end of the file.
 
 ~BFREAD_DELIMITER
 ~BFWRITE_DELIMITER
@@ -9225,6 +9251,9 @@ This means you can't select the same file to be the current
 same time.
 -Writing and reading operations change the current fwrite and
 fread positions.
+-The writing and reading position is set to 0 (the beginning
+position of a file) when a file is loaded, unless the 
+FWRITE_APPEND command is chosen.
 -There is a special character called the terminator (char #42,
 '*', by default) placed at the end of a write when a string is
 written to a file with FWRITE. This character ends an FREAD to
@@ -9242,10 +9271,7 @@ Here are the file writing commands at your disposal.
 
 ~ASET "file.xxx" to "FREAD_OPEN"
 
-This command loads a file for reading. It can also open
-directories for reading (by using the name of the directory by
-itself, e.g. ~ASET "directory" to "FREAD_OPEN"~F); FREAD will then
-list the names of files in the directory.
+This command loads a file for reading. 
 
 ~ASET "file.xxx" to "FWRITE_OPEN"
 
@@ -9268,7 +9294,18 @@ mode.
 
 These commands change the current reading or writing position
 of the accessed files. The position is in DECIMAL, not
-hexadecimal. To seek the end of a file, set to -1.
+hexadecimal, and the first position is 0; when no file is
+loaded, the relevant counter is -1. To seek the end of a file,
+set to -1.
+
+~ASET "dir" to "FREAD_OPEN"
+
+This command opens subdirectories for reading (by using the name
+of the subdirectory by itself, e.g. ~ASET "directory" to
+"FREAD_OPEN"~F); FREAD will then list the names of files in the
+directory, with each read position being a different filename.
+Note that the files are not guaranteed to be read in any
+specific order.
 
 ~ASET "FREAD_DELIMITER" to #
 ~ASET "FWRITE_DELIMITER" to #
@@ -9536,10 +9573,10 @@ the SPRn_TCOL counter. All pixels of that color in that unbound
 sprite will not display, and show the next underlying layer.
 
 When assigned a ccheck value with SPRn_CCHECK, an unbound sprite
-will only apply its personal value in collision tests instead of
-the value of the sprite that initiated the check. In addition,
-unbound sprites can use a special ccheck value (3) to ignore
-transparent colors in collision checks.
+will only apply its personal ccheck value in collision tests
+instead of the value of the sprite that initiated the check. In
+addition, unbound sprites can use a special ccheck value (3) to
+ignore transparent colors in collision checks.
 
 Finally, SMZX modes do not affect unbound sprite movement and
 manipulation. This fact can be exploited to overlap SMZX sprites
@@ -10190,6 +10227,165 @@ updated.
 #NEWINVER.HLP
 :1st: 
 $~9NEW in MegaZeux!
+
+October 7th, 2018 - MZX 2.91g
+
+This bugfix release fixes various minor-to-moderate bugs in
+various areas of MegaZeux. The title/game update code has gone
+through a fairly major overhaul and several parts of MegaZeux
+have been combined to use the same loop. The conversion of
+MegaZeux's interfaces to be compatible with this loop is an
+ongoing process expected to occur over several versions.
+
+USERS
+
++ Added "allow_screenshots" config file option. Setting this
+  option to 0 will disable the built-in screenshot feature.
++ The F12 key can now be detected by Robotic.
++ Loading saves from the title screen no longer resets TIME.
++ Loading saves from the title screen no longer erroneously
+  changes the player restart position.
++ Swapping worlds now sets the correct TIME and player restart
+  position values.
++ Fixed a bug where the fade out effect from COLOR FADE OUT
+  would be reset after any Robotic dialog.
++ Undo for overlay and vlayer mouse drawing now works properly.
++ Mouse drawing in the editor now draws smooth lines instead of
+  lines with gaps.
++ Fixed move block bug when the source and destination both
+  overlapped the player.
++ Palette editor component entry now accepts most of the same
+  inputs as dialog number boxes.
++ The board name in the caption now updates to reflect the
+  current board while testing.
++ Fixed bug where TIME would either decrement normally or not
+  decrement at all while the slow time effect was active.
++ Added compatibility for pre-port endgame teleport behavior.
+  In DOS versions of MZX, the endgame teleport would disable
+  itself after being triggered for the first time and any
+  following endgame would instead trigger a game over.
++ Reduced stutter in NDS and 3DS main screen scrolling.
++ Fixed a bug where creating a string MZM would not correctly
+  set the string's length for preexisting strings.
++ Fixed a bug where loading robot source code from a string
+  wouldn't work correctly with the robot debugger.
++ The help system is now accessible from the main menu and game
+  menu.
++ The settings screen is now accessible from the main menu, game
+  menu, editor, and palette editor.
++ The shortcut Ctrl+F2 can be used to open the settings screen
+  from anywhere the settings screen is accessible. This shortcut
+  works even if F2 is used for a different feature and will also
+  ignore the value of the F2_MENU counter.
++ Fix a crash that would occur decrypting a world with a
+  password exactly 15 chars long.
++ The label for the INPUT STRING command should no longer be
+  able to overflow outside of the window.
++ Fix a crash that would occur attempting to open the help file
+  from the world decryption confirm dialog.
++ Fix bug where saved layer MZMs and board MZMs without robots
+  would have useless extra data at the end of the file.
++ Scroll contents properly display game colors during gameplay.
++ An error message is now displayed for failed board exports.
++ Enabled writing zip data descriptors on the 3DS to decrease
+  saving time.
+- The "password protected" error message has been removed as it
+  was redundant with the confirmation dialog following it.
+- The "disassemble_extras" and "disassemble_base" options no
+  longer affect Robotic output during gameplay. SAVE_ROBOT will
+  always output extra words and base 10 numbers regardless of
+  user configuration.
+
+DEVELOPERS
+
++ Implemented a main event loop to replace the various separate
+  event loops scattered around MegaZeux. See core.h and core.c
+  for more info.
++ Refactored the following contexts to use the main loop:
+  titlescreen, gameplay, main menu, game menu, editor, palette
+  editor.
++ When enabled, the debug FPS display will now update from any
+  interface using the main loop. If fullscreen mode is active,
+  the FPS display will now appear in the top-left corner of the
+  screen for any main loop interface aside from the editor.
++ The --disable-screenshots config.sh option can be used to
+  disable screenshot support. This allows platforms that don't
+  use render_layer.c to stop building and linking it.
++ Cleaned up m_show()/m_hide() overuse.
++ Replaced all uses of "bool" with "boolean" to avoid potential
+  C/C++ compatibility issues.
+- Removed most old/unused source code in contrib/unzip, src/old,
+and src/vfs.
+
+>#MAIN.HLP:072:Table of Contents
+
+September 17th, 2018 - MZX 2.91f
+
+A bugfix release focusing primarily on renderers, the 3DS and
+Wii ports, and the Makefile build system. Highlights: the 3DS
+port should perform better now, the Wii port's GX renderer has
+been restored, the 'darwin' platform has more Unix-like options
+now, and several crashes have been fixed.
+
+USERS
+
++ The config setting 'audio_buffer' can also be specified with
+  'audio_buffer_samples' now. The default value for this setting
+  is now 1024 (instead of 4096).
++ Fixed a crash that could occur in the counter debugger.
++ Fixed a crash that occurs when attempting to add a watchpoint
+  for robot local counters, loopcount, etc. Using these counters
+  as watchpoints will watch the global robot's instances of
+  these variables (for other robots, use e.g. r#.local1).
++ Using SMZX_INDICES or LOAD_ROBOT on an unset string no longer
+  causes a crash.
++ png2smzx is now properly bundled with Linux builds.
++ Improved the performance of loading partial charsets for the
+  glsl, opengl2, and 3DS renderers. Other renderers were not
+  affected by this issue.
++ Fix opengl2 unbound sprite regression introduced in 2.91e.
++ The opengl2 renderer now correctly draws unbound sprites
+  containing chars with a transparent foreground color.
++ 3DS renderer optimizations. (asie)
++ 3DS screen focusing now mimics the NDS port's behavior. (asie)
++ Fixed bug where games could fail to open files on some
+  platforms if the paths contained duplicate slashes. (asie)
++ Added a Wii software layer renderer. This renderer can be
+  selected with "video_output = xfb" in the config file.
++ Wii GX renderer optimizations.
++ Added layer rendering support to the GX renderer.
++ The Wii GX renderer now uses the gl_vsync config option to
+  toggle vsync. For the Wii, this feature is on by default.
+  Disabling it may increase the framerate of some games but may
+  also cause other problems.
++ The loading bar on console platforms now redraws the screen
+  less often.
+
+DEVELOPERS
+
++ GAMESDIR/BINDIR/SHAREDIR now properly apply PREFIX when they
+  are not explicitly set by config.sh.
++ LIBDIR is now user-definable like BINDIR et al. Variations
+  such as "lib64" currently must be explicitly provided for
+  platforms that still use them.
++ Remove src folder from CFLAGS to fix a bug where system
+  includes could be mistaken for MegaZeux headers. All includes
+  of MegaZeux headers must be done using relative paths now.
++ Fixed include bugs for X11 and Carbon clipboard handlers.
++ Makefile now attempts to respect the prefix when running
+  sdl-config, sdl2-config, and libpng-config.
++ Renamed the "darwin" config.sh platform to "darwin-dist".
++ Added "darwin" and "darwin-devel" config.sh platforms. These
+  act like Mac OS X versions of the "unix" and "unix-devel"
+  options.
++ The darwin-dist build system and instructions are now somewhat
+  more clear and robust.
++ Fixed a bug where zlib wouldn't necessarily be linked to
+  png2smzx.
++ Renderers will now use render_layer to draw the text_video
+  fallback if no render_graph function is present.
+
+>#MAIN.HLP:072:Table of Contents
 
 September 3rd, 2018 - MZX 2.91e
 

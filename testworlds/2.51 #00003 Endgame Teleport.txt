@@ -1,0 +1,3 @@
+Title: Endgame disables endgame teleport
+Author: Alice Rowan
+Desc: In DOS versions of MZX, endgame teleport is disabled afer an endgame.

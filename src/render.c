@@ -330,40 +330,6 @@ void (*const set_indices[4])
   set_indices_smzx3
 };
 
-#ifdef CONFIG_RENDER_YUV
-
-#include "render_yuv.h"
-
-static void yuv2_set_colors_mzx(struct graphics_data *graphics,
- Uint32 *char_colors, Uint8 bg, Uint8 fg)
-{
-  struct yuv_render_data *render_data = graphics->render_data;
-  Uint32 y0mask = render_data->y0mask;
-  Uint32 y1mask = render_data->y1mask;
-  Uint32 uvmask = render_data->uvmask;
-  Uint32 cb_bg, cb_fg, cb_mix;
-
-  cb_bg = graphics->flat_intensity_palette[bg];
-  cb_fg = graphics->flat_intensity_palette[fg];
-  cb_mix = (((cb_bg & uvmask) >> 1) + ((cb_fg & uvmask) >> 1)) & uvmask;
-
-  char_colors[0] = cb_bg;
-  char_colors[1] = cb_mix | (cb_bg & y0mask) | (cb_fg & y1mask);
-  char_colors[2] = cb_mix | (cb_fg & y0mask) | (cb_bg & y1mask);
-  char_colors[3] = cb_fg;
-}
-
-void (*const yuv2_set_colors[4])
- (struct graphics_data *, Uint32 *, Uint8, Uint8) =
-{
-  yuv2_set_colors_mzx,
-  set_colors32_smzx,
-  set_colors32_smzx,
-  set_colors32_smzx3
-};
-
-#endif
-
 // Nominally 8-bit (Character graphics 8 bytes wide)
 void render_graph8(Uint8 *pixels, Uint32 pitch, struct graphics_data *graphics,
  void (*set_colors)(struct graphics_data *, Uint32 *, Uint8, Uint8))
@@ -752,6 +718,6 @@ void fix_viewport_ratio(int width, int height, int *v_width, int *v_height,
 
 void resize_screen_standard(struct graphics_data *graphics, int w, int h)
 {
+  graphics->palette_dirty = true;
   update_screen();
-  update_palette();
 }

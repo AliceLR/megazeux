@@ -24,6 +24,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #define KEY_REPEAT_START    250
 #define KEY_REPEAT_RATE     33
@@ -36,6 +37,8 @@ static Uint32 last_update_time;
 struct input_status input;
 
 static Uint8 num_buffered_events = 1;
+
+boolean enable_f12_hack;
 
 struct buffered_status *store_status(void)
 {
@@ -320,7 +323,7 @@ static enum keycode convert_xt_internal(Uint32 key, enum keycode *second)
 #if !defined(CONFIG_SDL)
 static
 #endif
-bool update_autorepeat(void)
+boolean update_autorepeat(void)
 {
   // The repeat key may not be a "valid" keycode due to the unbounded nature
   // of joypad support.  All invalid keys use the last position because that's
@@ -328,7 +331,7 @@ bool update_autorepeat(void)
   struct buffered_status *status = store_status();
   enum keycode status_key =
    MIN((unsigned int) status->key_repeat, STATUS_NUM_KEYCODES - 1);
-  bool rval = false;
+  boolean rval = false;
 
   // Repeat code
   Uint8 last_key_state = status->keymap[status_key];
@@ -418,16 +421,27 @@ bool update_autorepeat(void)
   return rval;
 }
 
-bool update_event_status(void)
+static void start_frame_event_status(void)
 {
   struct buffered_status *status = store_status();
-  bool rval;
 
   status->key = IKEY_UNKNOWN;
   status->unicode = 0;
   status->mouse_moved = 0;
   status->mouse_button = 0;
-  status->exit = 0;
+  status->exit_status = false;
+
+  status->mouse_last_x = status->mouse_x;
+  status->mouse_last_y = status->mouse_y;
+  status->real_mouse_last_x = status->real_mouse_x;
+  status->real_mouse_last_y = status->real_mouse_y;
+}
+
+boolean update_event_status(void)
+{
+  boolean rval;
+
+  start_frame_event_status();
 
   rval  = __update_event_status();
   rval |= update_autorepeat();
@@ -435,7 +449,7 @@ bool update_event_status(void)
   return rval;
 }
 
-bool peek_exit_input(void)
+boolean peek_exit_input(void)
 {
   #ifdef CONFIG_SDL
   return __peek_exit_input();
@@ -446,13 +460,7 @@ bool peek_exit_input(void)
 
 void wait_event(int timeout)
 {
-  struct buffered_status *status = store_status();
-
-  status->key = IKEY_UNKNOWN;
-  status->unicode = 0;
-  status->mouse_moved = 0;
-  status->mouse_button = 0;
-  status->exit = 0;
+  start_frame_event_status();
 
   __wait_event(timeout);
   update_autorepeat();
@@ -706,6 +714,20 @@ Uint32 get_real_mouse_y(void)
   return status->real_mouse_y;
 }
 
+void get_mouse_movement(int *delta_x, int *delta_y)
+{
+  const struct buffered_status *status = load_status();
+  *delta_x = status->mouse_x - status->mouse_last_x;
+  *delta_y = status->mouse_y - status->mouse_last_y;
+}
+
+void get_real_mouse_movement(int *delta_x, int *delta_y)
+{
+  const struct buffered_status *status = load_status();
+  *delta_x = status->real_mouse_x - status->real_mouse_last_x;
+  *delta_y = status->real_mouse_y - status->real_mouse_last_y;
+}
+
 Uint32 get_mouse_drag(void)
 {
   const struct buffered_status *status = load_status();
@@ -726,6 +748,17 @@ Uint32 get_mouse_press_ext(void)
 {
   const struct buffered_status *status = load_status();
   return status->mouse_button;
+}
+
+boolean get_mouse_held(int button)
+{
+  const struct buffered_status *status = load_status();
+
+  if(button >= 1 && button <= 32)
+    if(status->mouse_button_state & MOUSE_BUTTON(button))
+      return true;
+
+  return false;
 }
 
 Uint32 get_mouse_status(void)
@@ -828,6 +861,7 @@ void force_release_all_keys(void)
   force_last_key(keycode_internal, 0);
   memset(status->keymap, 0, sizeof(status->keymap));
 
+  status->key = 0;
   status->mouse_button = 0;
   status->mouse_repeat = 0;
   status->mouse_button_state = 0;
@@ -835,19 +869,19 @@ void force_release_all_keys(void)
   status->mouse_drag_state = 0;
 }
 
-bool get_alt_status(enum keycode_type type)
+boolean get_alt_status(enum keycode_type type)
 {
   return get_key_status(type, IKEY_LALT) ||
          get_key_status(type, IKEY_RALT);
 }
 
-bool get_shift_status(enum keycode_type type)
+boolean get_shift_status(enum keycode_type type)
 {
   return get_key_status(type, IKEY_LSHIFT) ||
          get_key_status(type, IKEY_RSHIFT);
 }
 
-bool get_ctrl_status(enum keycode_type type)
+boolean get_ctrl_status(enum keycode_type type)
 {
   return get_key_status(type, IKEY_LCTRL) ||
          get_key_status(type, IKEY_RCTRL);
@@ -874,7 +908,7 @@ void map_joystick_hat(int joystick, enum keycode up_key, enum keycode down_key,
   input.joystick_hat_map[joystick][3] = right_key;
 }
 
-void set_unfocus_pause(bool value)
+void set_unfocus_pause(boolean value)
 {
   input.unfocus_pause = value;
 }
@@ -948,16 +982,16 @@ void joystick_key_release(struct buffered_status *status,
   }
 }
 
-bool get_exit_status(void)
+boolean get_exit_status(void)
 {
   const struct buffered_status *status = load_status();
-  return status->exit;
+  return status->exit_status;
 }
 
-bool set_exit_status(bool value)
+boolean set_exit_status(boolean value)
 {
   struct buffered_status *status = store_status();
-  bool exit = status->exit;
-  status->exit = value;
-  return exit;
+  boolean exit_status = status->exit_status;
+  status->exit_status = value;
+  return exit_status;
 }

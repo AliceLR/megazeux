@@ -27,13 +27,13 @@
 #include "evq.h"
 
 void nds_update_input(void);
-static bool process_event(NDSEvent *event);
+static boolean process_event(NDSEvent *event);
 
 extern struct input_status input;
 
-bool __update_event_status(void)
+boolean __update_event_status(void)
 {
-  bool retval = false;
+  boolean retval = false;
   NDSEvent event;
 
   while(nds_event_poll(&event))
@@ -121,7 +121,7 @@ static void convert_nds_internal(int key, int *internal_code, int *unicode)
 
 
 // Send a key up/down event to MZX.
-static void do_unicode_key_event(struct buffered_status *status, bool down,
+static void do_unicode_key_event(struct buffered_status *status, boolean down,
  enum keycode code, int unicode)
 {
   if(down)
@@ -140,14 +140,14 @@ static void do_unicode_key_event(struct buffered_status *status, bool down,
   }
 }
 
-static void do_key_event(struct buffered_status *status, bool down,
+static void do_key_event(struct buffered_status *status, boolean down,
  enum keycode code)
 {
   do_unicode_key_event(status, down, code, code >= 32 && code <= 126 ? code : 0);
 }
 
 // Send a joystick button up/down event to MZX.
-static void do_joybutton_event(struct buffered_status *status, bool down,
+static void do_joybutton_event(struct buffered_status *status, boolean down,
  int button)
 {
   // Look up the keycode for this joystick button.
@@ -156,11 +156,11 @@ static void do_joybutton_event(struct buffered_status *status, bool down,
 }
 
 
-static bool process_event(NDSEvent *event)
+static boolean process_event(NDSEvent *event)
 {
   struct buffered_status *status = store_status();
-  bool key_down = false;
-  bool retval = true;
+  boolean key_down = false;
+  boolean retval = true;
 
   switch(event->type)
   {
@@ -224,7 +224,7 @@ static bool process_event(NDSEvent *event)
           retval = false;
           break;
       }
-      
+
       break;
     }
 
@@ -357,7 +357,7 @@ static void nds_update_sw_keyboard(void)
 
 static void nds_update_mouse(void)
 {
-  static bool last_touch_press = false;
+  static boolean last_touch_press = false;
   static int last_touch_x = -1;
   static int last_touch_y = -1;
   NDSEvent new_event;

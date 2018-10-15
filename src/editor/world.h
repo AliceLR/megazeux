@@ -26,7 +26,7 @@ __M_BEGIN_DECLS
 
 #include "../world_struct.h"
 
-bool append_world(struct world *mzx_world, const char *file);
+boolean append_world(struct world *mzx_world, const char *file);
 void create_blank_world(struct world *mzx_world);
 void set_update_done_current(struct world *mzx_world);
 

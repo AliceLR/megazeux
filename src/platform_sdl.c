@@ -48,7 +48,7 @@ Uint32 get_ticks(void)
   return SDL_GetTicks();
 }
 
-bool platform_init(void)
+boolean platform_init(void)
 {
   Uint32 flags = SDL_INIT_VIDEO | SDL_INIT_JOYSTICK;
 
@@ -72,7 +72,7 @@ bool platform_init(void)
   if(SDL_Init(flags) < 0)
   {
     debug("Failed to initialize SDL; attempting with joystick support disabled: %s\n", SDL_GetError());
-    
+
     // try again without joystick support
     flags &= ~SDL_INIT_JOYSTICK;
 

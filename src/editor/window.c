@@ -18,18 +18,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <string.h>
+
+#include "board.h"
+#include "configure.h"
 #include "window.h"
 
 #include "../board.h"
+#include "../core.h"
 #include "../event.h"
 #include "../graphics.h"
-#include "../helpsys.h"
 #include "../intake.h"
 #include "../window.h"
-
-#include "board.h"
-
-#include <string.h>
 
 #define list_button " \x1F "
 
@@ -374,10 +374,10 @@ int color_selection(int current, int allow_wild)
   // Save screen
   save_screen();
 
-  if(context == CTX_MAIN)
+  if(get_context(NULL) == CTX_MAIN)
     set_context(CTX_DIALOG_BOX);
   else
-    set_context(context);
+    set_context(get_context(NULL));
 
   // Ensure allow_wild is 0 or 1
   if(allow_wild)
@@ -432,7 +432,7 @@ int color_selection(int current, int allow_wild)
       for(x = 0; x < 16; x++)
         erase_char(x + 15, y + 4);
 
-    select_layer(OVERLAY_LAYER);
+    select_layer(GAME_UI_LAYER);
 
     // Draw main palette
     for(y = 0; y < 16; y++)
@@ -713,14 +713,14 @@ void draw_color_box(int color, int q_bit, int x, int y, int x_limit)
   }
   else
   {
-    // To respect SMZX, this needs to draw on the overlay.
+    // To respect SMZX, this needs to draw on the game UI layer.
     // If a color box is ever planned to be drawn NOT on the UI layer,
     // this needs to change.
 
     if(x < x_limit)
     {
       erase_char(x, y);
-      select_layer(OVERLAY_LAYER);
+      select_layer(GAME_UI_LAYER);
       draw_char_ext(0, color, x, y, PRO_CH, 0);
       select_layer(UI_LAYER);
     }
@@ -728,7 +728,7 @@ void draw_color_box(int color, int q_bit, int x, int y, int x_limit)
     if(x + 1 < x_limit)
     {
       erase_char(x+1, y);
-      select_layer(OVERLAY_LAYER);
+      select_layer(GAME_UI_LAYER);
       draw_char_ext(palette_char, color, x + 1, y, PRO_CH, 0);
       select_layer(UI_LAYER);
     }
@@ -736,7 +736,7 @@ void draw_color_box(int color, int q_bit, int x, int y, int x_limit)
     if(x + 2 < x_limit)
     {
       erase_char(x+2, y);
-      select_layer(OVERLAY_LAYER);
+      select_layer(GAME_UI_LAYER);
       draw_char_ext(0, color, x + 2, y, PRO_CH, 0);
       select_layer(UI_LAYER);
     }
@@ -1090,18 +1090,12 @@ struct element *construct_board_list(int x, int y,
 int add_board(struct world *mzx_world, int current)
 {
   struct board *new_board;
-  char temp_board_str[BOARD_NAME_SIZE];
-  // ..get a name...
-  save_screen();
-  draw_window_box(16, 12, 64, 14, 79, 64, 70, 1, 1);
-  write_string("Name for new board:", 18, 13, 78, 0);
-  temp_board_str[0] = 0;
-  if(intake(mzx_world, temp_board_str, BOARD_NAME_SIZE - 1,
-   38, 13, 15, 1, 0, NULL, 0, NULL) == IKEY_ESCAPE || get_exit_status())
-  {
-    restore_screen();
+  char name[BOARD_NAME_SIZE];
+  name[0] = 0;
+
+  if(input_window(mzx_world, "Name for new board:", name, BOARD_NAME_SIZE - 1))
     return -1;
-  }
+
   if(mzx_world->num_boards == mzx_world->num_boards_allocated)
   {
     mzx_world->num_boards_allocated *= 2;
@@ -1110,14 +1104,12 @@ int add_board(struct world *mzx_world, int current)
   }
 
   mzx_world->num_boards++;
-  new_board = create_blank_board(&(mzx_world->editor_conf));
+  new_board = create_blank_board(get_editor_config());
   mzx_world->board_list[current] = new_board;
-  strncpy(new_board->board_name, temp_board_str, BOARD_NAME_SIZE - 1);
-  new_board->board_name[BOARD_NAME_SIZE - 1] = '\0';
+  memcpy(new_board->board_name, name, BOARD_NAME_SIZE);
 
   // Link global robot!
   new_board->robot_list[0] = &mzx_world->global_robot;
-  restore_screen();
 
   return current;
 }

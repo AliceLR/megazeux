@@ -76,7 +76,7 @@ int getaddrinfo(const char *node, const char *service,
 void freeaddrinfo(struct addrinfo *res);
 #endif
 
-static inline bool __platform_last_error_fatal(void)
+static inline boolean __platform_last_error_fatal(void)
 {
   switch(errno)
   {
@@ -113,10 +113,10 @@ static inline const char *platform_gai_strerror(int errcode)
 
 #ifdef __WIN32__
 
-bool socksyms_init(struct config_info *conf);
+boolean socksyms_init(struct config_info *conf);
 void socksyms_exit(void);
 
-bool platform_last_error_fatal(void);
+boolean platform_last_error_fatal(void);
 
 void platform_perror(const char *message);
 
@@ -153,7 +153,7 @@ int platform_setsockopt(int s, int level, int optname, const void *optval,
 
 int platform_socket(int af, int type, int protocol);
 
-void platform_socket_blocking(int s, bool blocking);
+void platform_socket_blocking(int s, boolean blocking);
 
 ssize_t platform_recv(int s, void *buf, size_t len, int flags);
 
@@ -162,10 +162,10 @@ ssize_t platform_recvfrom(int s, void *buf, size_t len, int flags,
 
 #else /* !__WIN32__ */
 
-static inline bool socksyms_init(struct config_info *conf) { return true; }
+static inline boolean socksyms_init(struct config_info *conf) { return true; }
 static inline void socksyms_exit(void) {}
 
-static inline bool platform_last_error_fatal(void)
+static inline boolean platform_last_error_fatal(void)
 {
   return __platform_last_error_fatal();
 }
@@ -253,7 +253,7 @@ static inline int platform_socket(int af, int type, int protocol)
   return socket(af, type, protocol);
 }
 
-static inline void platform_socket_blocking(int s, bool blocking)
+static inline void platform_socket_blocking(int s, boolean blocking)
 {
   int flags = fcntl(s, F_GETFL);
 

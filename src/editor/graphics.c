@@ -98,7 +98,7 @@ void draw_char_mixed_pal(Uint8 chr, Uint8 bg_color, Uint8 fg_color,
 }
 
 void draw_char_linear(Uint8 color, Uint8 chr, Uint32 offset,
- bool use_protected_pal)
+ boolean use_protected_pal)
 {
   draw_char_linear_ext(color, chr, offset, PRO_CH, use_protected_pal ? 16 : 0);
 }

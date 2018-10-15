@@ -140,33 +140,24 @@ void destruct_audio_stream(struct audio_stream *a_src)
   free(a_src);
 }
 
-void construct_audio_stream(struct audio_stream *a_src,
- Uint32 (* mix_data)(struct audio_stream *a_src, Sint32 *buffer, Uint32 len),
- void (* set_volume)(struct audio_stream *a_src, Uint32 volume),
- void (* set_repeat)(struct audio_stream *a_src, Uint32 repeat),
- void (* set_order)(struct audio_stream *a_src, Uint32 order),
- void (* set_position)(struct audio_stream *a_src, Uint32 pos),
- Uint32 (* get_order)(struct audio_stream *a_src),
- Uint32 (* get_position)(struct audio_stream *a_src),
- Uint32 (* get_length)(struct audio_stream *a_src),
- void (* destruct)(struct audio_stream *a_src),
- Uint32 volume, Uint32 repeat)
+void initialize_audio_stream(struct audio_stream *a_src,
+ struct audio_stream_spec *a_spec, Uint32 volume, Uint32 repeat)
 {
-  a_src->mix_data = mix_data;
-  a_src->set_volume = set_volume;
-  a_src->set_repeat = set_repeat;
-  a_src->set_order = set_order;
-  a_src->set_position = set_position;
-  a_src->get_order = get_order;
-  a_src->get_position = get_position;
-  a_src->get_length = get_length;
-  a_src->destruct = destruct;
+  a_src->mix_data = a_spec->mix_data;
+  a_src->set_volume = a_spec->set_volume;
+  a_src->set_repeat = a_spec->set_repeat;
+  a_src->set_order = a_spec->set_order;
+  a_src->set_position = a_spec->set_position;
+  a_src->get_order = a_spec->get_order;
+  a_src->get_position = a_spec->get_position;
+  a_src->get_length = a_spec->get_length;
+  a_src->destruct = a_spec->destruct;
 
-  if(set_volume)
-    set_volume(a_src, volume);
+  if(a_src->set_volume)
+    a_src->set_volume(a_src, volume);
 
-  if(set_repeat)
-    set_repeat(a_src, repeat);
+  if(a_src->set_repeat)
+    a_src->set_repeat(a_src, repeat);
 
   a_src->next = NULL;
 
@@ -298,7 +289,7 @@ void quit_audio(void)
 /* If the mod was successfully changed, return 1.  This value is used
 *  to determine whether to change real_mod_playing.
 */
-int audio_play_module(char *filename, bool safely, int volume)
+int audio_play_module(char *filename, boolean safely, int volume)
 {
   char translated_filename[MAX_PATH];
   struct audio_stream *a_src;
@@ -413,7 +404,7 @@ static void limit_samples(int max)
   UNLOCK();
 }
 
-void audio_play_sample(char *filename, bool safely, int period)
+void audio_play_sample(char *filename, boolean safely, int period)
 {
   Uint32 vol = 255 * audio.sound_volume / 8;
   char translated_filename[MAX_PATH];

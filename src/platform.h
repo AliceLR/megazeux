@@ -72,7 +72,7 @@ int real_main(int argc, char *argv[]);
 
 CORE_LIBSPEC void delay(Uint32 ms);
 CORE_LIBSPEC Uint32 get_ticks(void);
-CORE_LIBSPEC bool platform_init(void);
+CORE_LIBSPEC boolean platform_init(void);
 CORE_LIBSPEC void platform_quit(void);
 
 __M_END_DECLS

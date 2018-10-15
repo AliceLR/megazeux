@@ -40,7 +40,7 @@ static enum keycode keys_down[] =
   IKEY_UNKNOWN, IKEY_UNKNOWN, IKEY_UNKNOWN, IKEY_UNKNOWN
 };
 static u8 keys_down_count = 0;
-static bool force_zoom_out = false;
+static boolean force_zoom_out = false;
 
 static touch_area_t touch_areas[] =
 {
@@ -123,18 +123,18 @@ static touch_area_t touch_areas[] =
 };
 #define touch_areas_len (sizeof(touch_areas) / sizeof(touch_area_t))
 
-static inline bool ctr_is_modifier(enum keycode keycode)
+static inline boolean ctr_is_modifier(enum keycode keycode)
 {
   return keycode >= IKEY_RSHIFT && keycode <= IKEY_RSUPER;
 }
 
-static inline bool ctr_key_touched(touchPosition *pos, touch_area_t *area)
+static inline boolean ctr_key_touched(touchPosition *pos, touch_area_t *area)
 {
   return (pos->px >= area->x) && (pos->py >= area->y) &&
    (pos->px < (area->x + area->w)) && (pos->py < (area->y + area->h));
 }
 
-bool ctr_keyboard_force_zoom_out(void)
+boolean ctr_keyboard_force_zoom_out(void)
 {
   return force_zoom_out;
 }
@@ -177,11 +177,11 @@ void ctr_keyboard_draw(struct ctr_render_data *render_data)
   }
 }
 
-bool ctr_keyboard_update(struct buffered_status *status)
+boolean ctr_keyboard_update(struct buffered_status *status)
 {
   touchPosition pos;
   Uint32 down, up, i;
-  bool retval = false;
+  boolean retval = false;
 
   if(get_bottom_screen_mode() != BOTTOM_SCREEN_MODE_KEYBOARD)
     return retval;

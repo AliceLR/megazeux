@@ -592,6 +592,8 @@ static struct audio_stream *construct_wav_stream(char *filename,
     if(w_info.channels <= 2)
     {
       struct wav_stream *w_stream = cmalloc(sizeof(struct wav_stream));
+      struct sampled_stream_spec s_spec;
+      struct audio_stream_spec a_spec;
 
       w_stream->wav_data = wav_data;
       w_stream->data_length = data_length;
@@ -606,16 +608,26 @@ static struct audio_stream *construct_wav_stream(char *filename,
       if((w_info.format != SAMPLE_U8) && (w_info.format != SAMPLE_S8))
         w_stream->bytes_per_sample *= 2;
 
-      initialize_sampled_stream((struct sampled_stream *)w_stream,
-       wav_set_frequency, wav_get_frequency, frequency,
-       w_info.channels, 1);
+      memset(&a_spec, 0, sizeof(struct audio_stream_spec));
+      a_spec.mix_data     = wav_mix_data;
+      a_spec.set_volume   = wav_set_volume;
+      a_spec.set_repeat   = wav_set_repeat;
+      a_spec.set_position = wav_set_position;
+      a_spec.get_position = wav_get_position;
+      a_spec.get_length   = wav_get_length;
+      a_spec.destruct     = wav_destruct;
+
+      memset(&s_spec, 0, sizeof(struct sampled_stream_spec));
+      s_spec.set_frequency = wav_set_frequency;
+      s_spec.get_frequency = wav_get_frequency;
+
+      initialize_sampled_stream((struct sampled_stream *)w_stream, &s_spec,
+       frequency, w_info.channels, 1);
+
+      initialize_audio_stream((struct audio_stream *)w_stream, &a_spec,
+       volume, repeat);
 
       ret_val = (struct audio_stream *)w_stream;
-
-      construct_audio_stream((struct audio_stream *)w_stream,
-       wav_mix_data, wav_set_volume, wav_set_repeat,
-       NULL, wav_set_position, NULL, wav_get_position, wav_get_length,
-       wav_destruct, volume, repeat);
     }
   }
 

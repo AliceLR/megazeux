@@ -12,7 +12,9 @@
 utils_src = src/utils
 utils_obj = src/utils/.build
 
-utils_cflags := ${LIBPNG_CFLAGS} -Icontrib/uthash/
+# Some core objects are required for file format purposes.
+# Define UTILS_LIBSPEC so these properly link.
+utils_cflags := ${LIBPNG_CFLAGS} -Icontrib/uthash/ -DUTILS_LIBSPEC=
 
 checkres := ${utils_src}/checkres${BINEXT}
 checkres_objs := ${utils_obj}/checkres.o ${core_obj}/fsafeopen.o \
@@ -32,7 +34,7 @@ txt2hlp_objs := ${utils_obj}/txt2hlp.o
 png2smzx := ${utils_src}/png2smzx${BINEXT}
 png2smzx_objs := ${utils_obj}/png2smzx.o ${utils_obj}/smzxconv.o
 png2smzx_objs += ${core_obj}/util.o ${core_obj}/pngops.o
-png2smzx_ldflags := ${LIBPNG_LDFLAGS}
+png2smzx_ldflags := ${LIBPNG_LDFLAGS} ${ZLIB_LDFLAGS}
 
 ccv := ${utils_src}/ccv${BINEXT}
 ccv_objs := ${utils_obj}/ccv.o

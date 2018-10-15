@@ -25,8 +25,8 @@
 #include "render_sdl.h"
 #include "render_yuv.h"
 
-bool yuv_set_video_mode_size(struct graphics_data *graphics,
- int width, int height, int depth, bool fullscreen, bool resize,
+boolean yuv_set_video_mode_size(struct graphics_data *graphics,
+ int width, int height, int depth, boolean fullscreen, boolean resize,
  int yuv_width, int yuv_height)
 {
   struct yuv_render_data *render_data = graphics->render_data;
@@ -157,7 +157,7 @@ err_free:
   return false;
 }
 
-bool yuv_init_video(struct graphics_data *graphics, struct config_info *conf)
+boolean yuv_init_video(struct graphics_data *graphics, struct config_info *conf)
 {
   struct yuv_render_data *render_data = cmalloc(sizeof(struct yuv_render_data));
   if(!render_data)
@@ -187,8 +187,8 @@ void yuv_free_video(struct graphics_data *graphics)
   graphics->render_data = NULL;
 }
 
-bool yuv_check_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, bool fullscreen, bool resize)
+boolean yuv_check_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, boolean fullscreen, boolean resize)
 {
 #if SDL_VERSION_ATLEAST(2,0,0)
   return true;

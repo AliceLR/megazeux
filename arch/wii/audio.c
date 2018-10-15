@@ -17,7 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "audio/audio.h"
+#include "../../src/audio/audio.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -65,7 +65,7 @@ void init_audio_platform(struct config_info *conf)
   int i;
 
   // buffer size must be multiple of 32 bytes, so samples must be multiple of 8
-  audio.buffer_samples = conf->buffer_size & ~7;
+  audio.buffer_samples = conf->audio_buffer_samples & ~7;
   if(!audio.buffer_samples)
     audio.buffer_samples = 2048;
 

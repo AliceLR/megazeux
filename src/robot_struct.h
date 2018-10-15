@@ -51,9 +51,9 @@ struct scroll
 
 struct sensor
 {
-  char sensor_name[15];
+  char sensor_name[ROBOT_NAME_SIZE];
   char sensor_char;
-  char robot_to_mesg[15];
+  char robot_to_mesg[ROBOT_NAME_SIZE];
 
   char used;
 };
@@ -65,7 +65,7 @@ struct robot
   char *program_source;
   int program_bytecode_length;
   char *program_bytecode;         // Pointer to robot's program
-  char robot_name[15];
+  char robot_name[ROBOT_NAME_SIZE];
   unsigned char robot_char;
   // Location of start of line (pt to FF for none)
   int cur_prog_line;

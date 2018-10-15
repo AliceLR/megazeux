@@ -60,13 +60,21 @@ install: install-check install-arch
 	@${install} -m 0755 -d \
 		${DESTDIR}${SYSCONFDIR} \
 		${DESTDIR}${SHAREDIR} \
-		${DESTDIR}${SHAREDIR}/icons \
-		${DESTDIR}${SHAREDIR}/applications \
+		${DESTDIR}${SHAREDIR}/doc \
+		${DESTDIR}${SHAREDIR}/doc/megazeux \
 		${DESTDIR}${SHAREDIR}/megazeux \
 		${DESTDIR}${SHAREDIR}/megazeux/assets && \
 	 ${install} -m 0644 assets/default.chr assets/edit.chr \
 		assets/smzx.pal ${DESTDIR}${SHAREDIR}/megazeux/assets && \
 	 ${install} -m 0644 config.txt ${DESTDIR}${SYSCONFDIR}/megazeux-config
+	@gzip -c docs/changelog.txt > docs/changelog.txt.gz
+	@${install} -m 0644 \
+		README.md \
+		docs/changelog.txt.gz \
+		docs/macro.txt \
+		docs/keycodes.html \
+		${DESTDIR}${SHAREDIR}/doc/megazeux/
+	@${RM} -f docs/changelog.txt.gz
 ifeq (${BUILD_HELPSYS},1)
 	@${install} -m 0644 assets/help.fil \
 		${DESTDIR}${SHAREDIR}/megazeux/assets
@@ -92,7 +100,8 @@ ifeq (${BUILD_UTILS},1)
 	 ${install} -m 0755 ${downver} ${DESTDIR}${BINDIR}/ && \
 	 ${install} -m 0755 ${hlp2txt} ${DESTDIR}${BINDIR}/ && \
 	 ${install} -m 0755 ${txt2hlp} ${DESTDIR}${BINDIR}/ && \
-         ${install} -m 0755 ${ccv} ${DESTDIR}${BINDIR}/
+	 ${install} -m 0755 ${png2smzx} ${DESTDIR}${BINDIR}/ && \
+	 ${install} -m 0755 ${ccv} ${DESTDIR}${BINDIR}/
 endif
 ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 	@${install} -m 0755 -d \
@@ -136,6 +145,7 @@ uninstall: install-check uninstall-arch
 	 ${RM} -rf \
 		${DESTDIR}${SHAREDIR}/megazeux \
 		${DESTDIR}${SHAREDIR}/megazeux/assets \
+		${DESTDIR}${SHAREDIR}/doc/megazeux \
 		${DESTDIR}${SYSCONFDIR}/megazeux-config
 ifeq (${BUILD_MODULAR},1)
 	@${RM} -f \

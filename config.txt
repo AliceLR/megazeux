@@ -1,5 +1,5 @@
-# Configuration file for MegaZeux 2.91e
-# September 3rd, 2018
+# Configuration file for MegaZeux 2.91g
+# October 7th, 2018
 
 # Comments begin with #. Whitespace is ignored. Empty lines are
 # ignored as well.
@@ -163,6 +163,11 @@
 
 # fullscreen = 1
 
+# Whether MZX should allow a screenshot to be taken when F12 is pressed.
+# Defaults to enabled.
+
+# allow_screenshots = 1
+
 ### Audio options ###
 
 # Sampling rate to output audio at. Higher values will sound
@@ -173,14 +178,14 @@
 
 # audio_sample_rate = 44100
 
-# Audio buffer size. Setting this to lower can improve latency,
-# so audio will be heard sooner after it is set to be changed.
-# It is also possible to change PC speaker effects more rapidly
-# with lower values. Lower buffer sizes need more CPU power to
-# process. 2048 is adequete for PC speaker playback every
+# Audio buffer size in samples. Setting this to lower can improve
+# latency, so audio will be heard sooner after it is set to be
+# changed. It is also possible to change PC speaker effects more
+# rapidly with lower values. Lower buffer sizes need more CPU power
+# to process. 2048 is adequete for PC speaker playback every
 # command at speed 4.
 
-# audio_buffer = 4096
+# audio_buffer_samples = 1024
 
 # Allow music to be sampled at higher precision. Increases CPU
 # usage but increases audio quality as well.

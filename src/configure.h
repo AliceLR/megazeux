@@ -43,22 +43,23 @@ enum update_auto_check_mode
 struct config_info
 {
   // Video options
-  bool fullscreen;
+  boolean fullscreen;
   int resolution_width;
   int resolution_height;
   int window_width;
   int window_height;
-  bool allow_resize;
+  boolean allow_resize;
   char video_output[16];
   int force_bpp;
   enum ratio_type video_ratio;
   char gl_filter_method[16];
   char gl_scaling_shader[32];
   int gl_vsync;
+  boolean allow_screenshots;
 
   // Audio options
   int output_frequency;
-  int buffer_size;
+  int audio_buffer_samples;
   int oversampling_on;
   int resample_mode;
   int modplug_resample_mode;
@@ -66,53 +67,46 @@ struct config_info
   int music_volume;
   int sam_volume;
   int pc_speaker_volume;
-  int music_on;
-  int pc_speaker_on;
+  boolean music_on;
+  boolean pc_speaker_on;
 
   // Game options
   char startup_path[256];
   char startup_file[256];
   char default_save_name[256];
   int mzx_speed;
-  int disassemble_extras;
-  int disassemble_base;
-  int startup_editor;
-  int standalone_mode;
-  int no_titlescreen;
+  boolean startup_editor;
+  boolean standalone_mode;
+  boolean no_titlescreen;
+  boolean system_mouse;
 
-  // Misc options
-  int mask_midchars;
-  bool system_mouse;
-    
+  // Editor options
+  // TODO: two places outside of the editor currently require access to this.
+  boolean mask_midchars;
+
   // Network layer options
-#ifdef CONFIG_NETWORK    
-  bool network_enabled;
+#ifdef CONFIG_NETWORK
+  boolean network_enabled;
   char socks_host[256];
   int socks_port;
 #endif
-    
+
 #ifdef CONFIG_UPDATER
   int update_host_count;
   char **update_hosts;
   char update_branch_pin[256];
   int update_auto_check;
-  int update_available;
 #endif
 };
 
-typedef void (* config_function)(struct config_info *conf,
- char *name, char *value, char *extended_data);
+CORE_LIBSPEC struct config_info *get_config(void);
+CORE_LIBSPEC void default_config(void);
+CORE_LIBSPEC void set_config_from_file(const char *conf_file_name);
+CORE_LIBSPEC void set_config_from_file_startup(const char *conf_file_name);
+CORE_LIBSPEC void set_config_from_command_line(int *argc, char *argv[]);
+CORE_LIBSPEC void free_config(void);
 
-CORE_LIBSPEC void set_config_from_file(struct config_info *conf,
- const char *conf_file_name);
-CORE_LIBSPEC void set_config_from_file_startup(struct config_info *conf,
- const char *conf_file_name);
-CORE_LIBSPEC void default_config(struct config_info *conf);
-CORE_LIBSPEC void set_config_from_command_line(struct config_info *conf,
- int *argc, char *argv[]);
-CORE_LIBSPEC void free_config(struct config_info *conf);
-
-typedef int (* find_change_option)(void *conf, char *name, char *value,
+typedef int (*find_change_option)(void *conf, char *name, char *value,
  char *extended_data);
 
 #ifdef CONFIG_EDITOR

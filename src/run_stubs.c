@@ -20,14 +20,18 @@
 #include "run_stubs.h"
 
 #ifdef CONFIG_EDITOR
-bool is_editor(void) { return false; }
+boolean is_editor(void) { return false; }
 void editor_init(void) { }
-void init_macros(struct world *mzx_world) { }
-void free_editor_config(struct world *mzx_world) { }
-void load_editor_config(struct world *mzx_world, int *argc, char *argv[]) { }
+void init_macros(void) { }
+
+void default_editor_config(void) {}
+void set_editor_config_from_file(const char *conf_file_name) {}
+void set_editor_config_from_command_line(int *argc, char *argv[]) {}
+void store_editor_config_backup(void) {}
+void free_editor_config(void) {}
 #endif
 
 #ifdef CONFIG_UPDATER
-bool updater_init(int argc, char *argv[]) { return true; }
-bool is_updater(void) { return false; }
+boolean updater_init(int argc, char *argv[]) { return true; }
+boolean is_updater(void) { return false; }
 #endif

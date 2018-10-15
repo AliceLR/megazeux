@@ -31,12 +31,19 @@ enum bottom_screen_mode
   BOTTOM_SCREEN_MODE_MAX
 };
 
-enum bottom_screen_mode get_bottom_screen_mode(void);
-bool get_allow_focus_changes(void);
+enum focus_mode
+{
+  FOCUS_FORBID,
+  FOCUS_ALLOW, // checks if position changed
+  FOCUS_PASS // ignores all checks and check updates - for touchscreen
+};
 
-void do_unicode_key_event(struct buffered_status *status, bool down,
+enum bottom_screen_mode get_bottom_screen_mode(void);
+enum focus_mode get_allow_focus_changes(void);
+
+void do_unicode_key_event(struct buffered_status *status, boolean down,
  enum keycode code, int unicode);
-void do_key_event(struct buffered_status *status, bool down, enum keycode code);
-void do_joybutton_event(struct buffered_status *status, bool down, int button);
+void do_key_event(struct buffered_status *status, boolean down, enum keycode code);
+void do_joybutton_event(struct buffered_status *status, boolean down, int button);
 
 #endif /* __3DS_EVENT_H__ */

@@ -29,6 +29,7 @@
 #include "sampled_stream.h"
 
 #include "../const.h"
+#include "../fsafeopen.h"
 #include "../util.h"
 
 struct _ModPlugFile
@@ -196,6 +197,8 @@ static struct audio_stream *construct_modplug_stream(char *filename,
     {
       struct modplug_stream *mp_stream =
        (struct modplug_stream *)cmalloc(sizeof(struct modplug_stream));
+      struct sampled_stream_spec s_spec;
+      struct audio_stream_spec a_spec;
 
       mp_stream->module_data = open_file;
 
@@ -207,15 +210,28 @@ static struct audio_stream *construct_modplug_stream(char *filename,
         frequency = 0;
       }
 
-      initialize_sampled_stream((struct sampled_stream *)mp_stream,
-       mp_set_frequency, mp_get_frequency, frequency, 2, 0);
+      memset(&a_spec, 0, sizeof(struct audio_stream_spec));
+      a_spec.mix_data     = mp_mix_data;
+      a_spec.set_volume   = mp_set_volume;
+      a_spec.set_repeat   = mp_set_repeat;
+      a_spec.set_order    = mp_set_order;
+      a_spec.set_position = mp_set_position;
+      a_spec.get_order    = mp_get_order;
+      a_spec.get_position = mp_get_position;
+      a_spec.get_length   = mp_get_length;
+      a_spec.destruct     = mp_destruct;
+
+      memset(&s_spec, 0, sizeof(struct sampled_stream_spec));
+      s_spec.set_frequency = mp_set_frequency;
+      s_spec.get_frequency = mp_get_frequency;
+
+      initialize_sampled_stream((struct sampled_stream *)mp_stream, &s_spec,
+       frequency, 2, 0);
+
+      initialize_audio_stream((struct audio_stream *)mp_stream, &a_spec,
+       volume, repeat);
 
       ret_val = (struct audio_stream *)mp_stream;
-
-      construct_audio_stream((struct audio_stream *)mp_stream, mp_mix_data,
-       mp_set_volume, mp_set_repeat, mp_set_order, mp_set_position,
-       mp_get_order, mp_get_position, mp_get_length, mp_destruct,
-       volume, repeat);
     }
 
     free(input_buffer);
@@ -237,7 +253,7 @@ static struct audio_stream *modplug_convert_gdm(char *filename,
   ssize_t ext_pos = (ssize_t)strlen(filename) - 4;
 
   /* Get the name of its .s3m counterpart */
-  memcpy(new_file, filename);
+  memcpy(new_file, filename, ext_pos);
   memcpy(new_file + ext_pos, ".s3m", 4);
 
   /* If the destination S3M already exists, check its size. If it's

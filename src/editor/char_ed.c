@@ -21,6 +21,7 @@
 
 #include "char_ed.h"
 
+#include "../core.h"
 #include "../data.h"
 #include "../event.h"
 #include "../graphics.h"
@@ -28,6 +29,7 @@
 #include "../window.h"
 #include "../world.h"
 
+#include "configure.h"
 #include "graphics.h"
 #include "undo.h"
 #include "window.h"
@@ -146,7 +148,6 @@ static void char_editor_default_colors(void)
   // Selection
   set_protected_rgb(6, 14, 42, 56);
   set_protected_rgb(13, 7, 21, 49);
-  update_palette();
 }
 
 static void copy_color_to_protected(int from, int to)
@@ -196,7 +197,6 @@ static void char_editor_update_colors(void)
   // Selection
   set_protected_rgb(6, 14, 42, 56);
   set_protected_rgb(13, 7, 21, 49);
-  update_palette();
 }
 
 static void fill_region(char *buffer, int x, int y,
@@ -870,7 +870,7 @@ static int char_import_tile(const char *name, int char_offset, int charset,
     if(data_size > buffer_size)
       data_size = buffer_size;
 
-    fread(buffer, 1, data_size, fp);
+    data_size = fread(buffer, 1, data_size, fp);
     fclose(fp);
 
     ec_change_block((Uint8)char_offset, (Uint8)charset,
@@ -1113,7 +1113,7 @@ int char_editor(struct world *mzx_world)
   force_release_all_keys();
 
   // Prepare the history
-  h = construct_charset_undo_history(mzx_world->editor_conf.undo_history_size);
+  h = construct_charset_undo_history(get_editor_config()->undo_history_size);
 
   // Make sure the copy buffer is in a usable format
   change_copy_buffer_mode(screen_mode);
@@ -1827,8 +1827,8 @@ int char_editor(struct world *mzx_world)
 #ifdef CONFIG_HELPSYS
       case IKEY_F1:
       {
-        m_show();
-        help_system(mzx_world);
+        // FIXME context
+        help_system(NULL, mzx_world);
         break;
       }
 #endif

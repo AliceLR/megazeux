@@ -22,19 +22,20 @@
 
 #include <string.h>
 
-#include "../helpsys.h"
-#include "../event.h"
-#include "../intake.h"
-#include "../graphics.h"
-#include "../window.h"
-#include "../data.h"
-#include "../idput.h"
-#include "../const.h"
-#include "../world_struct.h"
-#include "../error.h"
-#include "../counter.h"
 #include "../board.h"
+#include "../const.h"
+#include "../core.h"
+#include "../counter.h"
+#include "../data.h"
+#include "../error.h"
+#include "../event.h"
+#include "../graphics.h"
+#include "../idput.h"
+#include "../intake.h"
+#include "../robot.h"
+#include "../window.h"
 #include "../world.h"
+#include "../world_struct.h"
 
 #include "board.h"
 #include "configure.h"
@@ -546,13 +547,13 @@ void status_counter_info(struct world *mzx_world)
   set_context(CTX_STATUS_COUNTERS);
 
   elements[2] = construct_input_box(12, 5,
-   status_counters_strings[0], COUNTER_NAME_SIZE - 1, 0,
+   status_counters_strings[0], COUNTER_NAME_SIZE - 1,
    mzx_world->status_counters_shown[0]);
 
   for(i = 1; i < NUM_STATUS_COUNTERS; i++)
   {
     elements[i + 2] = construct_input_box(27, 5 + i,
-     status_counters_strings[i], COUNTER_NAME_SIZE - 1, 0,
+     status_counters_strings[i], COUNTER_NAME_SIZE - 1,
      mzx_world->status_counters_shown[i]);
   }
 
@@ -728,7 +729,7 @@ int size_pos(struct world *mzx_world)
       // Set defaults
       case 2:
       {
-        struct editor_config_info *conf = &(mzx_world->editor_conf);
+        struct editor_config_info *conf = get_editor_config();
         conf->viewport_x = results[0];
         conf->viewport_y = results[1];
         conf->viewport_w = results[2];
@@ -947,7 +948,7 @@ void board_info(struct world *mzx_world)
     elements[2] = construct_button(29, 21, "Set as defaults", 1);
 
     elements[3] = construct_input_box(7, 1, "Board name- ",
-     BOARD_NAME_SIZE - 1, 0, title_string);
+     BOARD_NAME_SIZE - 1, title_string);
 
     elements[4] = construct_check_box(3, 3, check_box_strings,
      14, 20, check_box_results);
@@ -983,7 +984,7 @@ void board_info(struct world *mzx_world)
     // Save defaults
     if(dialog_result == 1)
     {
-      struct editor_config_info *conf = &(mzx_world->editor_conf);
+      struct editor_config_info *conf = get_editor_config();
       conf->can_shoot = check_box_results[0];
       conf->can_bomb = check_box_results[1];
       conf->fire_burns_spaces = check_box_results[2];
@@ -1492,30 +1493,11 @@ void global_info(struct world *mzx_world)
 void global_robot(struct world *mzx_world)
 {
   struct robot *cur_robot = &(mzx_world->global_robot);
-  // First get name...
-  m_hide();
-  save_screen();
-  draw_window_box(16, 12, 50, 14, DI_DEBUG_BOX, DI_DEBUG_BOX_DARK,
-  DI_DEBUG_BOX_CORNER, 1, 1);
-  write_string("Name for robot:", 18, 13, DI_DEBUG_LABEL, 0);
-  m_show();
+  char *name = cur_robot->robot_name;
 
-  if(intake(mzx_world, cur_robot->robot_name,
-   14, 34, 13, 15, 1, 0, NULL, 0, NULL) != IKEY_ESCAPE
-   && !get_exit_status())
-  {
-    restore_screen();
-    set_context(CTX_ROBO_ED);
+  // Edit name. If the user presses enter, edit the program.
+  if(!input_window(mzx_world, "Name for robot:", name, ROBOT_NAME_SIZE - 1))
     robot_editor(mzx_world, cur_robot);
-    pop_context();
-  }
-  else
-  {
-    // Prevent UI keys from carrying through.
-    force_release_all_keys();
-
-    restore_screen();
-  }
 }
 
 /*

@@ -28,50 +28,20 @@
 
 __M_BEGIN_DECLS
 
+#include "core.h"
 #include "world_struct.h"
 
-CORE_LIBSPEC void title_screen(struct world *mzx_world);
-CORE_LIBSPEC void find_player(struct world *mzx_world);
-CORE_LIBSPEC void load_board_module(struct world *mzx_world,
- struct board *src_board);
+CORE_LIBSPEC void title_screen(context *parent);
+CORE_LIBSPEC void load_board_module(struct world *mzx_world);
 
-void set_intro_mesg_timer(unsigned int time);
-void calculate_xytop(struct world *mzx_world, int *x, int *y);
-int move_player(struct world *mzx_world, int dir);
-int grab_item(struct world *mzx_world, int offset, int dir);
-void set_mesg(struct world *mzx_world, const char *str);
-void set_mesg_direct(struct board *src_board, const char *str);
-void rotate(struct world *mzx_world, int x, int y, int dir);
-void check_find_player(struct world *mzx_world);
-int take_key(struct world *mzx_world, int color);
-int give_key(struct world *mzx_world, int color);
+boolean load_game_module(struct world *mzx_world, char *filename,
+ boolean fail_if_same);
 
-extern bool pal_update;
+void clear_intro_mesg(void);
+void draw_intro_mesg(struct world *mzx_world);
 
 #ifdef CONFIG_EDITOR
-CORE_LIBSPEC void play_game(struct world *mzx_world);
-CORE_LIBSPEC void draw_viewport(struct world *src_board);
-CORE_LIBSPEC void set_caption(struct world *mzx_world, struct board *board,
- struct robot *robot, int editor, int modified);
- 
-CORE_LIBSPEC extern bool debug_mode;
-CORE_LIBSPEC extern const char *const world_ext[2];
-CORE_LIBSPEC extern void (*edit_world)(struct world *mzx_world,
- int reload_curr_file);
-CORE_LIBSPEC extern void (*debug_counters)(struct world *mzx_world);
-CORE_LIBSPEC extern void (*draw_debug_box)(struct world *mzx_world,
- int x, int y, int d_x, int d_y, int show_keys);
-
-CORE_LIBSPEC extern int (*debug_robot_break)(struct world *mzx_world,
- struct robot *cur_robot, int id, int lines_run);
-CORE_LIBSPEC extern int (*debug_robot_watch)(struct world *mzx_world,
- struct robot *cur_robot, int id, int lines_run);
-CORE_LIBSPEC extern void (*debug_robot_config)(struct world *mzx_world);
-#endif // CONFIG_EDITOR
-
-#ifdef CONFIG_UPDATER
-CORE_LIBSPEC extern void (*check_for_updates)(struct world *mzx_world,
- struct config_info *conf, int is_automatic);
+CORE_LIBSPEC void play_game(context *parent, boolean *_fade_in);
 #endif
 
 __M_END_DECLS

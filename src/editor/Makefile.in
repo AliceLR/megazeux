@@ -19,16 +19,29 @@ ${editor_obj}/%.o: ${editor_src}/%.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${core_cflags} ${editor_flags} ${editor_spec} -c $< -o $@
 
-# FIXME get zip.o out of here, that's filthy.
-
 editor_objs := \
-  ${editor_obj}/board.o ${editor_obj}/block.o ${editor_obj}/configure.o    \
-  ${editor_obj}/char_ed.o ${editor_obj}/debug.o ${editor_obj}/edit.o       \
-  ${editor_obj}/edit_di.o ${editor_obj}/fill.o ${editor_obj}/graphics.o    \
-  ${editor_obj}/macro.o ${editor_obj}/pal_ed.o ${editor_obj}/param.o       \
-  ${editor_obj}/robo_debug.o ${editor_obj}/robo_ed.o ${editor_obj}/robot.o \
-  ${editor_obj}/select.o ${editor_obj}/sfx_edit.o ${editor_obj}/undo.o     \
-  ${editor_obj}/window.o ${editor_obj}/world.o
+  ${editor_obj}/block.o         \
+  ${editor_obj}/board.o         \
+  ${editor_obj}/buffer.o        \
+  ${editor_obj}/char_ed.o       \
+  ${editor_obj}/configure.o     \
+  ${editor_obj}/debug.o         \
+  ${editor_obj}/edit.o          \
+  ${editor_obj}/edit_di.o       \
+  ${editor_obj}/edit_menu.o     \
+  ${editor_obj}/fill.o          \
+  ${editor_obj}/graphics.o      \
+  ${editor_obj}/macro.o         \
+  ${editor_obj}/pal_ed.o        \
+  ${editor_obj}/param.o         \
+  ${editor_obj}/robo_debug.o    \
+  ${editor_obj}/robo_ed.o       \
+  ${editor_obj}/robot.o         \
+  ${editor_obj}/select.o        \
+  ${editor_obj}/sfx_edit.o      \
+  ${editor_obj}/undo.o          \
+  ${editor_obj}/window.o        \
+  ${editor_obj}/world.o
 
 # Win32 clipboard handler (takes precedence over SDL 2)
 ifeq (${PLATFORM},mingw)
@@ -60,8 +73,6 @@ endif
 ${editor_objs}: $(filter-out $(wildcard ${editor_obj}), ${editor_obj})
 
 ifeq (${BUILD_MODULAR},1)
-
-editor_objs += ${core_obj}/zip.o
 
 editor_target := ${DSOPRE}editor${DSOPOST}
 

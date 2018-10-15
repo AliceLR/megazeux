@@ -25,7 +25,9 @@
 #include <string.h>
 
 #include "block.h"
+#include "board.h"
 #include "const.h"
+#include "core.h"
 #include "counter.h"
 #include "data.h"
 #include "error.h"
@@ -33,7 +35,8 @@
 #include "extmem.h"
 #include "fsafeopen.h"
 #include "game.h"
-#include "game2.h"
+#include "game_ops.h"
+#include "game_player.h"
 #include "graphics.h"
 #include "idarray.h"
 #include "idput.h"
@@ -52,13 +55,6 @@
 
 #define parsedir(a, b, c, d) \
  parsedir(mzx_world, a, b, c, d, _bl[0], _bl[1], _bl[2], _bl[3])
-
-#ifdef CONFIG_EDITOR
-int (*debug_robot_break)(struct world *mzx_world, struct robot *cur_robot,
- int id, int lines_run);
-int (*debug_robot_watch)(struct world *mzx_world, struct robot *cur_robot,
- int id, int lines_run);
-#endif
 
 static const char *const item_to_counter[9] =
 {
@@ -89,63 +85,17 @@ __editor_maybe_static const int def_params[128] =
 static void magic_load_mod(struct world *mzx_world, char *filename)
 {
   struct board *src_board = mzx_world->current_board;
-  char translated_name[MAX_PATH];
-  int mod_star = 0;
-  int n_result;
-
   size_t mod_name_size;
 
-  // Special case: mod "" ends the module.
-  if(!filename[0])
-  {
-    mzx_world->real_mod_playing[0] = 0;
-    audio_end_module();
-    return;
-  }
+  if(load_game_module(mzx_world, filename, false))
+    strcpy(src_board->mod_playing, filename);
 
-  // Temporarily remove *
+  // If a * was provided, set the current board mod to *.
   mod_name_size = strlen(filename);
   if(mod_name_size && filename[mod_name_size - 1] == '*')
   {
-    filename[mod_name_size - 1] = 0;
-    mod_star = 1;
-  }
-
-  // Get the translated name (the one we want to compare against now)
-  n_result = fsafetranslate(filename, translated_name);
-
-  // Add * back
-  if(mod_star)
-    filename[mod_name_size - 1] = '*';
-
-  if(n_result == FSAFE_SUCCESS)
-  {
-    // filename*
-    if(mod_star)
-    {
-      // Different names? Play the mod
-      if(strcasecmp(translated_name, mzx_world->real_mod_playing))
-      {
-        // This will update real_mod_playing
-        strcpy(src_board->mod_playing, translated_name);
-        load_board_module(mzx_world, src_board);
-      }
-
-      strcpy(src_board->mod_playing, "*");
-    }
-
-    // filename
-    else
-    {
-      // This will update real_mod_playing
-      strcpy(src_board->mod_playing, translated_name);
-      load_board_module(mzx_world, src_board);
-    }
-  }
-
-  // *
-  if (filename[0] == '*')
     strcpy(src_board->mod_playing, "*");
+  }
 }
 
 static void save_player_position(struct world *mzx_world, int pos)
@@ -927,8 +877,9 @@ static void end_program(struct robot *cur_robot)
 
 // Run a single robot through a single cycle.
 // If id is negative, only run it if status is 2
-void run_robot(struct world *mzx_world, int id, int x, int y)
+void run_robot(context *ctx, int id, int x, int y)
 {
+  struct world *mzx_world = ctx->world;
   struct board *src_board = mzx_world->current_board;
   struct robot *cur_robot;
   int cmd; // Command to run
@@ -1086,10 +1037,10 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
     // Get command number
     cmd = cmd_ptr[0];
 
-#ifdef CONFIG_EDITOR
+    // Check to see if the current command triggers a breakpoint.
     if(mzx_world->editing && debug_robot_break)
     {
-      switch(debug_robot_break(mzx_world, cur_robot, id, lines_run))
+      switch(debug_robot_break(ctx, cur_robot, id, lines_run))
       {
         case DEBUG_EXIT:
           break;
@@ -1105,7 +1056,6 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           return;
       }
     }
-#endif
 
     // Act according to command
     switch(cmd)
@@ -2454,7 +2404,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
                 int offset = x + (y * board_width);
                 enum thing old_id = (enum thing)level_id[offset];
                 level_id[offset] = (char)ROBOT_PUSHABLE;
-                grab_item(mzx_world, new_offset, 0);
+                grab_item(mzx_world, new_x, new_y, 0);
                 // Find the robot
                 if(level_id[offset] != ROBOT_PUSHABLE)
                 {
@@ -3536,7 +3486,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         {
           char name_buffer[ROBOT_MAX_TR];
           tr_msg(mzx_world, cmd_ptr + 3, id, name_buffer);
-          name_buffer[14] = 0;
+          name_buffer[ROBOT_NAME_SIZE - 1] = 0;
 
           if(id)
           {
@@ -3619,13 +3569,6 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         char input_buffer_msg[71 + 1];
         char *break_pos;
 
-        m_hide();
-        save_screen();
-        dialog_fadein();
-
-        draw_window_box(3, 11, 77, 14, DI_INPUT_BOX, DI_INPUT_BOX_DARK,
-         DI_INPUT_BOX_CORNER, 1, 1);
-
         // Copy and clip
         strncpy(input_buffer_msg, cmd_ptr + 2, 71);
         input_buffer_msg[71] = 0;
@@ -3635,17 +3578,14 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           *break_pos = '\0';
 
         tr_msg(mzx_world, input_buffer_msg, id, input_buffer);
-        write_string(input_buffer, 5, 12, DI_INPUT_BOX_LABEL, 0);
+        input_buffer[71] = 0;
 
-        m_show();
         src_board->input_string[0] = 0;
 
-        intake(mzx_world, src_board->input_string,
-         70, 5, 13, 15, 1, 0, NULL, 0, NULL);
-
+        dialog_fadein();
+        input_window(mzx_world, input_buffer, src_board->input_string, 70);
         dialog_fadeout();
 
-        restore_screen();
         src_board->input_size = strlen(src_board->input_string);
         src_board->num_input = atoi(src_board->input_string);
         break;
@@ -4390,7 +4330,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
       case ROBOTIC_CMD_CLEAR_MESSAGE: // clear mesg
       {
         src_board->b_mesg_timer = 0;
-        set_intro_mesg_timer(0);
+        clear_intro_mesg();
         break;
       }
 
@@ -5026,7 +4966,6 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           intensity = 0;
 
         set_palette_intensity(intensity);
-        pal_update = true;
         break;
       }
 
@@ -5039,7 +4978,6 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           intensity = 0;
 
         set_color_intensity(color, intensity);
-        pal_update = true;
         break;
       }
 
@@ -5073,7 +5011,6 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         b = CLAMP(b, 0, 63);
 
         set_rgb(pal_number, r, g, b);
-        pal_update = true;
         break;
       }
 
@@ -5217,7 +5154,6 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         }
 
         free(translated_name);
-        pal_update = true;
         break;
       }
 
@@ -5293,17 +5229,19 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
          * World validation prevents the bad swap from clearing data. */
         do
         {
-          int fade; // FIXME: Hack!
+          boolean ignore; // FIXME: Hack!
           redo_load = 0;
-          if(!reload_swap(mzx_world, translated_name, &fade))
-            redo_load = error("Error swapping to next world", 1, 3, 0x2C01);
-        } while(redo_load == 2);
+          if(!reload_swap(mzx_world, translated_name, &ignore))
+          {
+            redo_load = error("Error swapping to next world",
+             ERROR_T_ERROR, ERROR_OPT_FAIL|ERROR_OPT_RETRY, 0x2C01);
+          }
+        } while(redo_load == ERROR_OPT_RETRY);
 
         // User asked to "Fail" on error message above
-        if(redo_load == 1)
+        if(redo_load == ERROR_OPT_FAIL)
           break;
 
-        // Exit to the main loop and let it know we're swapping worlds.
         mzx_world->change_game_state = CHANGE_STATE_SWAP_WORLD;
         free(translated_name);
         return;
@@ -5405,19 +5343,19 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
       case ROBOTIC_CMD_ENABLE_SAVING: // Enable saving
       {
-        src_board->save_mode = 0;
+        src_board->save_mode = CAN_SAVE;
         break;
       }
 
       case ROBOTIC_CMD_DISABLE_SAVING: // Disable saving
       {
-        src_board->save_mode = 1;
+        src_board->save_mode = CANT_SAVE;
         break;
       }
 
       case ROBOTIC_CMD_ENABLE_SENSORONLY_SAVING: // Enable sensoronly saving
       {
-        src_board->save_mode = 2;
+        src_board->save_mode = CAN_SAVE_ON_SENSOR;
         break;
       }
 
@@ -5700,12 +5638,11 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
       break;
     }
 
-#ifdef CONFIG_EDITOR
-    // Check the watchpoints before incrementing the program.
+    // Check to see if a watchpoint triggered before incrementing the program.
     if(mzx_world->editing && debug_robot_watch)
     {
       // Returns 1 if the user chose to stop the program.
-      switch(debug_robot_watch(mzx_world, cur_robot, id, lines_run))
+      switch(debug_robot_watch(ctx, cur_robot, id, lines_run))
       {
         case DEBUG_EXIT:
           break;
@@ -5721,7 +5658,6 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           return;
       }
     }
-#endif
 
     // If we're returning from a subroutine, we don't want to set the
     // pos_within_line. Other sends will set it to zero anyway.
@@ -5743,28 +5679,24 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
     // Some commands can decrement lines_run, putting it at -1 here,
     // so add 2 to lines_run for the check.
-    if ((lines_run + 2) % 1000000 == 0) {
-      if (peek_exit_input()) {
-        bool exit = false;
+    if((lines_run + 2) % 1000000 == 0)
+    {
+      if(peek_exit_input())
+      {
         update_event_status();
-        if (get_exit_status()) {
-          exit = true;
-        } else {
-          if (get_key_status(keycode_internal, IKEY_ESCAPE)) {
-            exit = true;
-          }
-        }
-        if (exit) {
-          m_show();
+
+        if(get_exit_status() || get_key_status(keycode_internal, IKEY_ESCAPE))
+        {
+          boolean exit_game;
           dialog_fadein();
-          exit = !confirm(mzx_world,
+          exit_game = !confirm(mzx_world,
            "MegaZeux appears to have frozen. Do you want to exit?");
           dialog_fadeout();
           update_screen();
-          if (exit)
+
+          if(exit_game)
           {
-            mzx_world->change_game_state =
-             CHANGE_STATE_REQUEST_EXIT;
+            mzx_world->change_game_state = CHANGE_STATE_REQUEST_EXIT;
             break;
           }
         }

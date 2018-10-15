@@ -21,11 +21,12 @@
 
 #include "data.h"
 #include "error.h"
-#include "game.h"
+#include "game_ops.h"
 #include "graphics.h"
 #include "idput.h"
 #include "sprite.h"
 #include "world.h"
+#include "world_struct.h"
 
 static inline int is_blank(Uint16 c)
 {
@@ -129,7 +130,7 @@ void draw_sprites(struct world *mzx_world)
   int draw_width, draw_height, ref_x, ref_y, screen_x, screen_y;
   int src_width;
   int src_height;
-  bool use_vlayer;
+  boolean use_vlayer;
   struct sprite **sprite_list = mzx_world->sprite_list;
   struct sprite *sorted_list[MAX_SPRITES];
   struct sprite **draw_order = sprite_list;
@@ -147,7 +148,7 @@ void draw_sprites(struct world *mzx_world)
   char *src_colors;
   Uint32 layer;
   int draw_layer_order;
-  bool unbound;
+  boolean unbound;
   int transparent_color;
 
   calculate_xytop(mzx_world, &screen_x, &screen_y);
@@ -443,7 +444,7 @@ static int sprite_colliding_xy_old(struct world *mzx_world,
   int bwidth, bheight;
   int x1, x2, y1, y2;
   int mw, mh;
-  bool use_vlayer, use_vlayer2;
+  boolean use_vlayer, use_vlayer2;
   unsigned int x_lmask, x_gmask, y_lmask, y_gmask;
   unsigned int xl, xg, yl, yg, wl, hl, wg, hg;
   char *vlayer_chars = mzx_world->vlayer_chars;
@@ -747,7 +748,7 @@ static inline struct rect rectangle(int x, int y, int w, int h)
   return r;
 }
 
-static inline bool rectangle_overlap(struct rect a,
+static inline boolean rectangle_overlap(struct rect a,
  struct rect b)
 {
   //debug("rectangle_overlap(%d, %d, %d, %d, %d, %d, %d, %d)\n",
@@ -760,7 +761,7 @@ static inline bool rectangle_overlap(struct rect a,
   return false;
 }
 
-static inline bool constrain_rectangle(struct rect a,
+static inline boolean constrain_rectangle(struct rect a,
  struct rect *b)
 {
   // Constrain rectangle b to only cover the portion that exists within
@@ -894,7 +895,7 @@ static inline void get_sprite_tile(struct world *mzx_world,
     *col = spr->color;
 }
 
-static inline bool collision_char(struct world *mzx_world,
+static inline boolean collision_char(struct world *mzx_world,
  const struct sprite *spr, char flags, int x, int y)
 {
   int ch;
@@ -909,7 +910,7 @@ static inline bool collision_char(struct world *mzx_world,
   return false;
 }
 
-static inline bool collision_in(struct world *mzx_world,
+static inline boolean collision_in(struct world *mzx_world,
  const struct sprite *spr, char flags, struct rect c)
 {
   char pixcheck = SPRITE_UNBOUND | SPRITE_CHAR_CHECK | SPRITE_CHAR_CHECK2;
@@ -962,7 +963,7 @@ static inline void destroy_mask(struct mask m)
   free(m.data);
 }
 
-bool sprite_at_xy(struct sprite *spr, int x, int y)
+boolean sprite_at_xy(struct sprite *spr, int x, int y)
 {
   struct rect sprite_rect;
   struct rect pos_rect;
@@ -1013,7 +1014,7 @@ static inline void mask_alloc_chr(struct world *mzx_world,
   }
 }
 
-static inline bool mask_get_pixel(struct mask m, int ch, int px, int py)
+static inline boolean mask_get_pixel(struct mask m, int ch, int px, int py)
 {
   int data = m.data[ch * CHAR_SIZE + (py % CHAR_H)];
 
@@ -1023,7 +1024,7 @@ static inline bool mask_get_pixel(struct mask m, int ch, int px, int py)
   return false;
 }
 
-static inline bool collision_pix_in(struct world *mzx_world,
+static inline boolean collision_pix_in(struct world *mzx_world,
  const struct sprite *spr, struct mask m, struct rect c)
 {
   char pixcheck = SPRITE_UNBOUND | SPRITE_CHAR_CHECK | SPRITE_CHAR_CHECK2;
@@ -1049,7 +1050,7 @@ static inline bool collision_pix_in(struct world *mzx_world,
   return false;
 }
 
-static inline bool collision_pix_between(struct world *mzx_world,
+static inline boolean collision_pix_between(struct world *mzx_world,
  const struct sprite *spr, struct mask spr_m,
  const struct sprite *targ, struct mask targ_m, struct rect c)
 {
@@ -1126,12 +1127,12 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *spr,
   int bx, by;
   int sprite_idx;
   int cx, cy;
-  bool sprite_collided;
+  boolean sprite_collided;
   char target_flags;
   struct mask spr_mask = null_mask();
   struct mask target_mask = null_mask();
-  bool spr_mask_allocated = false;
-  bool target_mask_allocated;
+  boolean spr_mask_allocated = false;
+  boolean target_mask_allocated;
 
   if(mzx_world->version < V290)
     return sprite_colliding_xy_old(mzx_world, spr, x, y);

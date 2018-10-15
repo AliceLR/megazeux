@@ -76,6 +76,9 @@ __M_BEGIN_DECLS
 #define MOUSE_BUTTON_WHEELRIGHT 9
 #endif //defaults
 
+// Capture F12 presses to save screenshots if true.
+extern boolean enable_f12_hack;
+
 struct buffered_status
 {
   enum keycode key_pressed;
@@ -87,18 +90,22 @@ struct buffered_status
   Uint32 keypress_time;
   Uint32 mouse_x;
   Uint32 mouse_y;
+  Uint32 mouse_last_x;
+  Uint32 mouse_last_y;
   Uint32 real_mouse_x;
   Uint32 real_mouse_y;
+  Uint32 real_mouse_last_x;
+  Uint32 real_mouse_last_y;
   Uint32 mouse_button;
   Uint32 mouse_repeat;
   Uint32 mouse_repeat_state;
   Uint32 mouse_time;
   Sint32 mouse_drag_state;
   Uint32 mouse_button_state;
-  bool caps_status;
-  bool numlock_status;
-  bool mouse_moved;
-  bool exit;
+  boolean caps_status;
+  boolean numlock_status;
+  boolean mouse_moved;
+  boolean exit_status;
   Sint8 axis[16][16];
   Uint8 keymap[512];
 };
@@ -117,7 +124,7 @@ struct input_status
   enum keycode joystick_axis_map[16][16][2];
   enum keycode joystick_hat_map[16][4];
 
-  bool unfocus_pause;
+  boolean unfocus_pause;
 };
 
 // regular keycode_internal treats numpad keys as unique keys
@@ -134,7 +141,7 @@ CORE_LIBSPEC void init_event(void);
 
 struct buffered_status *store_status(void);
 
-CORE_LIBSPEC bool update_event_status(void);
+CORE_LIBSPEC boolean update_event_status(void);
 CORE_LIBSPEC Uint32 update_event_status_delay(void);
 CORE_LIBSPEC void update_event_status_intake(void);
 CORE_LIBSPEC void force_release_all_keys(void);
@@ -143,35 +150,38 @@ CORE_LIBSPEC Uint32 get_last_key(enum keycode_type type);
 CORE_LIBSPEC Uint32 get_key_status(enum keycode_type type, Uint32 index);
 CORE_LIBSPEC void get_mouse_position(int *x, int *y);
 CORE_LIBSPEC void get_real_mouse_position(int *x, int *y);
+CORE_LIBSPEC void get_mouse_movement(int *delta_x, int *delta_y);
+CORE_LIBSPEC void get_real_mouse_movement(int *delta_x, int *delta_y);
 CORE_LIBSPEC Uint32 get_mouse_press(void);
 CORE_LIBSPEC Uint32 get_mouse_press_ext(void);
+CORE_LIBSPEC boolean get_mouse_held(int button);
 CORE_LIBSPEC Uint32 get_mouse_status(void);
 CORE_LIBSPEC void warp_mouse(Uint32 x, Uint32 y);
 CORE_LIBSPEC void warp_real_mouse_x(Uint32 x);
 CORE_LIBSPEC void warp_real_mouse_y(Uint32 y);
 CORE_LIBSPEC Uint32 get_mouse_drag(void);
-CORE_LIBSPEC bool get_alt_status(enum keycode_type type);
-CORE_LIBSPEC bool get_shift_status(enum keycode_type type);
-CORE_LIBSPEC bool get_ctrl_status(enum keycode_type type);
+CORE_LIBSPEC boolean get_alt_status(enum keycode_type type);
+CORE_LIBSPEC boolean get_shift_status(enum keycode_type type);
+CORE_LIBSPEC boolean get_ctrl_status(enum keycode_type type);
 CORE_LIBSPEC void initialize_joysticks(void);
 CORE_LIBSPEC void key_press(struct buffered_status *status, enum keycode key,
  Uint16 unicode_key);
 CORE_LIBSPEC void key_release(struct buffered_status *status, enum keycode key);
-CORE_LIBSPEC bool get_exit_status(void);
-CORE_LIBSPEC bool set_exit_status(bool value);
-CORE_LIBSPEC bool peek_exit_input(void);
+CORE_LIBSPEC boolean get_exit_status(void);
+CORE_LIBSPEC boolean set_exit_status(boolean value);
+CORE_LIBSPEC boolean peek_exit_input(void);
 
 // Implemented by "drivers" (SDL, Wii, and NDS currently)
 void __wait_event(int timeout);
-bool __update_event_status(void);
+boolean __update_event_status(void);
 
 #ifdef CONFIG_SDL
 // Currently only supported by SDL.
-bool __peek_exit_input(void);
+boolean __peek_exit_input(void);
 
 // Older SDL versions lack SDL_WaitEventTimeout, and our compatibility
 // implementation needs this function to work properly.
-bool update_autorepeat(void);
+boolean update_autorepeat(void);
 #endif
 
 #ifdef CONFIG_NDS
@@ -192,7 +202,7 @@ void map_joystick_axis(int joystick, int axis, enum keycode min_key,
 void map_joystick_button(int joystick, int button, enum keycode key);
 void map_joystick_hat(int joystick, enum keycode up_key, enum keycode down_key,
  enum keycode left_key, enum keycode right_key);
-void set_unfocus_pause(bool value);
+void set_unfocus_pause(boolean value);
 void set_num_buffered_events(Uint8 value);
 
 void joystick_key_press(struct buffered_status *status,

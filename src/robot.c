@@ -27,11 +27,12 @@
 
 #include "board.h"
 #include "const.h"
+#include "counter.h"
 #include "error.h"
 #include "event.h"
 #include "expr.h"
-#include "game.h"
-#include "game2.h"
+#include "game_ops.h"
+#include "game_player.h"
 #include "graphics.h"
 #include "idarray.h"
 #include "legacy_rasm.h"
@@ -43,7 +44,8 @@
 #include "util.h"
 #include "window.h"
 #include "world.h"
-#include "world_prop.h"
+#include "world_format.h"
+#include "world_struct.h"
 #include "zip.h"
 
 
@@ -135,7 +137,7 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
         break;
 
       case RPROP_ROBOT_NAME:
-        mfread(cur_robot->robot_name, 15, 1, &prop);
+        mfread(cur_robot->robot_name, ROBOT_NAME_SIZE, 1, &prop);
         break;
 
       case RPROP_ROBOT_CHAR:
@@ -440,7 +442,7 @@ void load_robot(struct world *mzx_world, struct robot *cur_robot,
     buffer = cmalloc(actual_size);
     zip_read_file(zp, buffer, actual_size, &actual_size);
 
-    mfopen_static(buffer, actual_size, &mf);
+    mfopen(buffer, actual_size, &mf);
   }
 
   if(load_robot_from_memory(mzx_world, cur_robot, &mf, savegame, file_version))
@@ -488,7 +490,7 @@ struct scroll *load_scroll_allocate(struct zip_archive *zp)
 
   zip_read_file(zp, buffer, actual_size, &actual_size);
 
-  mfopen_static(buffer, actual_size, &mf);
+  mfopen(buffer, actual_size, &mf);
 
   while(next_prop(&prop, &ident, &size, &mf))
   {
@@ -547,7 +549,7 @@ struct sensor *load_sensor_allocate(struct zip_archive *zp)
 
   zip_read_file(zp, buffer, actual_size, &actual_size);
 
-  mfopen_static(buffer, actual_size, &mf);
+  mfopen(buffer, actual_size, &mf);
 
   while(next_prop(&prop, &ident, &size, &mf))
   {
@@ -558,7 +560,7 @@ struct sensor *load_sensor_allocate(struct zip_archive *zp)
         break;
 
       case SENPROP_SENSOR_NAME:
-        size = MIN(size, 15);
+        size = MIN(size, ROBOT_NAME_SIZE);
         mfread(cur_sensor->sensor_name, size, 1, &prop);
         break;
 
@@ -567,7 +569,7 @@ struct sensor *load_sensor_allocate(struct zip_archive *zp)
         break;
 
       case SENPROP_ROBOT_TO_MESG:
-        size = MIN(size, 15);
+        size = MIN(size, ROBOT_NAME_SIZE);
         mfread(cur_sensor->robot_to_mesg, size, 1, &prop);
         break;
 
@@ -632,7 +634,7 @@ static void save_robot_to_memory(struct robot *cur_robot,
 {
   struct memfile prop;
 
-  save_prop_s(RPROP_ROBOT_NAME, cur_robot->robot_name, 15, 1, mf);
+  save_prop_s(RPROP_ROBOT_NAME, cur_robot->robot_name, ROBOT_NAME_SIZE, 1, mf);
   save_prop_c(RPROP_ROBOT_CHAR, cur_robot->robot_char, mf);
   save_prop_w(RPROP_XPOS, cur_robot->xpos, mf);
   save_prop_w(RPROP_YPOS, cur_robot->ypos, mf);
@@ -741,7 +743,7 @@ void save_robot(struct world *mzx_world, struct robot *cur_robot,
        file_version);
       buffer = cmalloc(actual_size);
 
-      mfopen_static(buffer, actual_size, &mf);
+      mfopen(buffer, actual_size, &mf);
     }
 
     save_robot_to_memory(cur_robot, &mf, savegame, file_version);
@@ -775,7 +777,7 @@ void save_scroll(struct scroll *cur_scroll, struct zip_archive *zp,
 
     buffer = cmalloc(actual_size);
 
-    mfopen_static(buffer, actual_size, &mf);
+    mfopen(buffer, actual_size, &mf);
 
     save_prop_w(SCRPROP_NUM_LINES, cur_scroll->num_lines, &mf);
     save_prop_s(SCRPROP_MESG, cur_scroll->mesg, scroll_size, 1, &mf);
@@ -794,11 +796,13 @@ void save_sensor(struct sensor *cur_sensor, struct zip_archive *zp,
 
   if(cur_sensor->used)
   {
-    mfopen_static(buffer, SENSOR_PROPS_SIZE, &mf);
+    mfopen(buffer, SENSOR_PROPS_SIZE, &mf);
 
-    save_prop_s(SENPROP_SENSOR_NAME, cur_sensor->sensor_name, 15, 1, &mf);
+    save_prop_s(SENPROP_SENSOR_NAME, cur_sensor->sensor_name,
+     ROBOT_NAME_SIZE, 1, &mf);
     save_prop_c(SENPROP_SENSOR_CHAR, cur_sensor->sensor_char, &mf);
-    save_prop_s(SENPROP_ROBOT_TO_MESG, cur_sensor->robot_to_mesg, 15, 1, &mf);
+    save_prop_s(SENPROP_ROBOT_TO_MESG, cur_sensor->robot_to_mesg,
+     ROBOT_NAME_SIZE, 1, &mf);
 
     zip_write_file(zp, name, buffer, SENSOR_PROPS_SIZE, ZIP_M_NONE);
   }
@@ -2608,6 +2612,9 @@ static void robot_frame(struct world *mzx_world, char *program, int id)
   int scroll_base_color = mzx_world->scroll_base_color;
   int i, pos = 0;
   int old_pos;
+
+  select_layer(GAME_UI_LAYER);
+
   // Display center line
   fill_line_ext(64, 8, 12, 32, scroll_base_color, 0, 0);
   display_robot_line(mzx_world, program, 12, id);
@@ -2634,6 +2641,8 @@ static void robot_frame(struct world *mzx_world, char *program, int id)
     if(old_pos != pos)
       display_robot_line(mzx_world, program + pos, i, id);
   }
+
+  select_layer(UI_LAYER);
 }
 
 void robot_box_display(struct world *mzx_world, char *program,
@@ -2647,12 +2656,11 @@ void robot_box_display(struct world *mzx_world, char *program,
 
   // Draw screen
   save_screen();
-  disable_gui_mode0();
   m_show();
 
   dialog_fadein();
 
-  scroll_edging_ext(mzx_world, 4, 0, 0);
+  scroll_edging_ext(mzx_world, 4, false);
   // Write robot name
   if(!cur_robot->robot_name[0])
   {
@@ -2849,7 +2857,6 @@ void robot_box_display(struct world *mzx_world, char *program,
   // Restore screen and exit
   m_hide();
   restore_screen();
-  enable_gui_mode0();
   update_event_status();
 }
 

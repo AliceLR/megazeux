@@ -19,6 +19,8 @@
 
 #include "block.h"
 #include "board.h"
+#include "buffer.h"
+#include "buffer_struct.h"
 #include "edit.h"
 #include "graphics.h"
 #include "robot.h"
@@ -35,6 +37,7 @@
 /* Operations for handling undo histories:
  *   Construct a history buffer of some size
  *   Add a new frame to the history, clearing old frames as-needed
+ *   Add a position to the current frame (optional, primarily for mouse input)
  *   Update the current frame of the history (primarily for mouse input)
  *   Perform an undo operation: apply previous version, then step back
  *   Perform a redo operation: step forward, then apply current version
@@ -52,6 +55,32 @@
  * outside of the undo frame; moving the player on the board.
  */
 
+enum undo_frame_type
+{
+  POS_FRAME,
+  BLOCK_FRAME,
+};
+
+struct undo_frame
+{
+  enum undo_frame_type type;
+};
+
+struct undo_history
+{
+  struct undo_frame **frames;
+  struct undo_frame *current_frame;
+  int current;
+  int first;
+  int last;
+  int size;
+  void (*add_pos_function)(struct undo_frame *, int, int);
+  void (*undo_function)(struct undo_frame *);
+  void (*redo_function)(struct undo_frame *);
+  void (*update_function)(struct undo_frame *);
+  void (*clear_function)(struct undo_frame *);
+};
+
 static struct undo_history *construct_undo_history(int max_size)
 {
   struct undo_history *h = cmalloc(sizeof(struct undo_history));
@@ -61,6 +90,7 @@ static struct undo_history *construct_undo_history(int max_size)
   h->first = -1;
   h->last = -1;
   h->size = max_size;
+  h->add_pos_function = NULL;
   h->undo_function = NULL;
   h->redo_function = NULL;
   h->update_function = NULL;
@@ -136,7 +166,7 @@ static void add_undo_frame(struct undo_history *h, void *f)
   h->current = h->last;
 }
 
-int apply_undo(struct undo_history *h)
+boolean apply_undo(struct undo_history *h)
 {
   // If current is -1, we're at the start of the history and can't undo
   if(h && h->current > -1)
@@ -149,7 +179,7 @@ int apply_undo(struct undo_history *h)
     {
       h->current = -1;
       h->current_frame = NULL;
-      return 1;
+      return true;
     }
 
     else if(h->current == 0)
@@ -159,12 +189,12 @@ int apply_undo(struct undo_history *h)
       h->current--;
 
     h->current_frame = h->frames[h->current];
-    return 1;
+    return true;
   }
-  return 0;
+  return false;
 }
 
-int apply_redo(struct undo_history *h)
+boolean apply_redo(struct undo_history *h)
 {
   // Only works if frames exist and we're not on the last one
   if(h && h->current != h->last)
@@ -183,9 +213,22 @@ int apply_redo(struct undo_history *h)
 
     // Apply the redo
     h->redo_function(h->current_frame);
-    return 1;
+    return true;
   }
-  return 0;
+  return false;
+}
+
+void add_undo_position(struct undo_history *h, int x, int y)
+{
+  struct undo_frame *f;
+
+  if(h && h->add_pos_function)
+  {
+    f = h->current_frame;
+
+    if(f && f->type == POS_FRAME)
+      h->add_pos_function(f, x, y);
+  }
 }
 
 void update_undo_frame(struct undo_history *h)
@@ -220,7 +263,7 @@ void destruct_undo_history(struct undo_history *h)
 
 struct charset_undo_frame
 {
-  int type;
+  struct undo_frame f;
   Uint8 offset;
   Uint8 charset;
   Uint8 width;
@@ -315,9 +358,6 @@ void add_charset_undo_frame(struct undo_history *h, int charset, int first_char,
 // area of the board, and use fake boards and block copies. This version does
 // not require anything to be placed from the buffer
 
-#define BOARD_FRAME 0
-#define BLOCK_FRAME 1
-
 // storage_obj is a pointer to a robot, scroll, or sensor
 struct board_undo_pos
 {
@@ -334,7 +374,7 @@ struct board_undo_pos
 
 struct board_undo_frame
 {
-  int type;
+  struct undo_frame f;
   struct world *mzx_world;
   int move_player;
   int prev_player_x;
@@ -349,7 +389,7 @@ struct board_undo_frame
 
 struct block_undo_frame
 {
-  int type;
+  struct undo_frame f;
   struct world *mzx_world;
   int move_player;
   int prev_player_x;
@@ -397,29 +437,29 @@ static void alloc_board_undo_pos(struct board_undo_pos *pos)
 }
 
 static void get_board_undo_pos_storage(struct board_undo_pos *pos,
- struct robot **_robot, struct scroll **_scroll, struct sensor **_sensor)
+ struct buffer_info *temp_buffer)
 {
   enum thing id = (enum thing)pos->id;
 
-  *_robot = NULL;
-  *_scroll = NULL;
-  *_sensor = NULL;
+  temp_buffer->robot = NULL;
+  temp_buffer->scroll = NULL;
+  temp_buffer->sensor = NULL;
 
   if(is_robot(id))
   {
-    *_robot = pos->storage_obj;
+    temp_buffer->robot = pos->storage_obj;
   }
   else
 
   if(is_signscroll(id))
   {
-    *_scroll = pos->storage_obj;
+    temp_buffer->scroll = pos->storage_obj;
   }
   else
 
   if(id == SENSOR)
   {
-    *_sensor = pos->storage_obj;
+    temp_buffer->sensor = pos->storage_obj;
   }
 }
 
@@ -453,24 +493,33 @@ static void apply_board_undo(struct undo_frame *f)
 
   switch(f->type)
   {
-    case BOARD_FRAME:
+    case POS_FRAME:
     {
       struct board_undo_pos *prev;
-      struct robot *src_robot;
-      struct scroll *src_scroll;
-      struct sensor *src_sensor;
+      struct buffer_info temp_buffer;
       int i;
 
       for(i = current->prev_size - 1; i >= 0; i--)
       {
         // Place the under, then the regular
         prev = &(current->prev[i]);
-        get_board_undo_pos_storage(prev, &src_robot, &src_scroll, &src_sensor);
+        temp_buffer.id = prev->under_id;
+        temp_buffer.param = prev->under_param;
+        temp_buffer.color = prev->under_color;
+        temp_buffer.robot = NULL;
+        temp_buffer.scroll = NULL;
+        temp_buffer.sensor = NULL;
 
-        place_current_at_xy(mzx_world, prev->under_id, prev->under_color,
-         prev->under_param, prev->x, prev->y, NULL, NULL, NULL, EDIT_BOARD, 0);
-        place_current_at_xy(mzx_world, prev->id, prev->color, prev->param,
-         prev->x, prev->y, src_robot, src_scroll, src_sensor, EDIT_BOARD, 0);
+        place_current_at_xy(mzx_world, &temp_buffer, prev->x, prev->y,
+         EDIT_BOARD, NULL);
+
+        temp_buffer.id = prev->id;
+        temp_buffer.param = prev->param;
+        temp_buffer.color = prev->color;
+        get_board_undo_pos_storage(prev, &temp_buffer);
+
+        place_current_at_xy(mzx_world, &temp_buffer, prev->x, prev->y,
+         EDIT_BOARD, NULL);
       }
       break;
     }
@@ -500,25 +549,23 @@ static void apply_board_redo(struct undo_frame *f)
 
   switch(f->type)
   {
-    case BOARD_FRAME:
+    case POS_FRAME:
     {
       struct board_undo_pos *next = &(current->replace);
       struct board_undo_pos *prev;
-      struct robot *src_robot;
-      struct scroll *src_scroll;
-      struct sensor *src_sensor;
-      enum thing p_id = next->id;
-      int p_color = next->color;
-      int p_param = next->param;
+      struct buffer_info temp_buffer;
       int i;
 
-      get_board_undo_pos_storage(next, &src_robot, &src_scroll, &src_sensor);
+      temp_buffer.id = next->id;
+      temp_buffer.param = next->param;
+      temp_buffer.color = next->color;
+      get_board_undo_pos_storage(next, &temp_buffer);
 
       for(i = 0; i < current->prev_size; i++)
       {
         prev = &(current->prev[i]);
-        place_current_at_xy(mzx_world, p_id, p_color, p_param, prev->x, prev->y,
-         src_robot, src_scroll, src_sensor, EDIT_BOARD, 0);
+        place_current_at_xy(mzx_world, &temp_buffer, prev->x, prev->y,
+         EDIT_BOARD, NULL);
       }
       break;
     }
@@ -542,7 +589,7 @@ static void apply_board_update(struct undo_frame *f)
 
   switch(f->type)
   {
-    case BOARD_FRAME:
+    case POS_FRAME:
     {
       // Trim extra size off of the allocation
       int size = current->prev_size;
@@ -588,7 +635,7 @@ static void apply_board_clear(struct undo_frame *f)
 {
   switch(f->type)
   {
-    case BOARD_FRAME:
+    case POS_FRAME:
     {
       struct board_undo_frame *current = (struct board_undo_frame *)f;
       struct board_undo_pos *prev = current->prev;
@@ -616,12 +663,72 @@ static void apply_board_clear(struct undo_frame *f)
   free(f);
 }
 
+static void add_board_undo_position(struct undo_frame *f, int x, int y)
+{
+  struct board_undo_frame *current = (struct board_undo_frame *)f;
+
+  struct world *mzx_world = current->mzx_world;
+  struct board *src_board = mzx_world->current_board;
+  int offset = x + (src_board->board_width * y);
+
+  struct board_undo_pos *pos;
+  struct board_undo_pos *prev = current->prev;
+  int prev_alloc = current->prev_alloc;
+  int prev_size = current->prev_size;
+
+  struct buffer_info temp_buffer;
+
+  // Can't place over player
+  if(src_board->level_id[offset] == PLAYER)
+    return;
+
+  if(prev_size == prev_alloc)
+  {
+    if(!prev_alloc)
+      prev_alloc = 1;
+
+    else
+      prev_alloc *= 2;
+
+    prev = crealloc(prev, prev_alloc * sizeof(struct board_undo_pos));
+  }
+
+  pos = &(prev[prev_size]);
+  prev_size++;
+
+  pos->x = x;
+  pos->y = y;
+  pos->id = src_board->level_id[offset];
+  pos->color = -1;
+  pos->param = -1;
+  pos->under_id = src_board->level_under_id[offset];
+  pos->under_color = src_board->level_under_color[offset];
+  pos->under_param = src_board->level_under_param[offset];
+
+  alloc_board_undo_pos(pos);
+  memset(&temp_buffer, 0, sizeof(struct buffer_info));
+  temp_buffer.robot = pos->storage_obj;
+  temp_buffer.scroll = pos->storage_obj;
+  temp_buffer.sensor = pos->storage_obj;
+
+  grab_at_xy(mzx_world, &temp_buffer, x, y, EDIT_BOARD);
+
+  pos->id = temp_buffer.id;
+  pos->color = temp_buffer.color;
+  pos->param = temp_buffer.param;
+
+  current->prev_alloc = prev_alloc;
+  current->prev_size = prev_size;
+  current->prev = prev;
+}
+
 struct undo_history *construct_board_undo_history(int max_size)
 {
   if(max_size)
   {
     struct undo_history *h = construct_undo_history(max_size);
 
+    h->add_pos_function = add_board_undo_position;
     h->undo_function = apply_board_undo;
     h->redo_function = apply_board_redo;
     h->update_function = apply_board_update;
@@ -631,70 +738,8 @@ struct undo_history *construct_board_undo_history(int max_size)
   return NULL;
 }
 
-void add_board_undo_position(struct undo_history *h, int x, int y)
-{
-  if(h)
-  {
-    struct board_undo_frame *current =
-     (struct board_undo_frame *)h->current_frame;
-
-    struct world *mzx_world = current->mzx_world;
-    struct board *src_board = mzx_world->current_board;
-    int offset = x + (src_board->board_width * y);
-
-    struct board_undo_pos *pos;
-    struct board_undo_pos *prev = current->prev;
-    int prev_alloc = current->prev_alloc;
-    int prev_size = current->prev_size;
-
-    enum thing grab_id = 0;
-    int grab_color = 0;
-    int grab_param = 0;
-
-    // Can't place over player
-    if(src_board->level_id[offset] == PLAYER)
-      return;
-
-    if(prev_size == prev_alloc)
-    {
-      if(!prev_alloc)
-        prev_alloc = 1;
-
-      else
-        prev_alloc *= 2;
-
-      prev = crealloc(prev, prev_alloc * sizeof(struct board_undo_pos));
-    }
-
-    pos = &(prev[prev_size]);
-    prev_size++;
-
-    pos->x = x;
-    pos->y = y;
-    pos->id = src_board->level_id[offset];
-    pos->color = -1;
-    pos->param = -1;
-    pos->under_id = src_board->level_under_id[offset];
-    pos->under_color = src_board->level_under_color[offset];
-    pos->under_param = src_board->level_under_param[offset];
-
-    alloc_board_undo_pos(pos);
-    grab_at_xy(mzx_world, &grab_id, &grab_color, &grab_param,
-     pos->storage_obj, pos->storage_obj, pos->storage_obj, x, y, EDIT_BOARD);
-
-    pos->id = grab_id;
-    pos->color = grab_color;
-    pos->param = grab_param;
-
-    current->prev_alloc = prev_alloc;
-    current->prev_size = prev_size;
-    current->prev = prev;
-  }
-}
-
 void add_board_undo_frame(struct world *mzx_world, struct undo_history *h,
- enum thing id, int color, int param, int x, int y, struct robot *copy_robot,
- struct scroll *copy_scroll, struct sensor *copy_sensor)
+ struct buffer_info *buffer, int x, int y)
 {
   if(h)
   {
@@ -704,37 +749,39 @@ void add_board_undo_frame(struct world *mzx_world, struct undo_history *h,
     struct board_undo_pos *replace = &(current->replace);
 
     add_undo_frame(h, current);
+    current->f.type = POS_FRAME;
 
     // The player might be moved by the frame, so back up the position
-    current->type = BOARD_FRAME;
     current->mzx_world = mzx_world;
     current->prev_player_x = mzx_world->player_x;
     current->prev_player_y = mzx_world->player_y;
     current->move_player = 0;
 
     // We only care about a handful of things here
-    replace->id = id;
-    replace->color = color;
-    replace->param = param;
+    replace->id = buffer->id;
+    replace->color = buffer->color;
+    replace->param = buffer->param;
     alloc_board_undo_pos(replace);
 
-    if(is_robot(id))
-      duplicate_robot_direct_source(mzx_world, copy_robot,
+    if(is_robot(buffer->id))
+      duplicate_robot_direct_source(mzx_world, buffer->robot,
        replace->storage_obj, 0, 0);
 
     else
-    if(is_signscroll(id))
-      duplicate_scroll_direct(copy_scroll, replace->storage_obj);
+    if(is_signscroll(buffer->id))
+      duplicate_scroll_direct(buffer->scroll, replace->storage_obj);
 
     else
-    if(id == SENSOR)
-      duplicate_sensor_direct(copy_sensor, replace->storage_obj);
+    if(buffer->id == SENSOR)
+      duplicate_sensor_direct(buffer->sensor, replace->storage_obj);
 
     current->prev = NULL;
     current->prev_size = 0;
     current->prev_alloc = 0;
 
-    add_board_undo_position(h, x, y);
+    // Most places this is used don't want to bother doing this manually,
+    // so do it here for the first position.
+    add_undo_position(h, x, y);
   }
 }
 
@@ -747,9 +794,9 @@ void add_block_undo_frame(struct world *mzx_world, struct undo_history *h,
      cmalloc(sizeof(struct block_undo_frame));
 
     add_undo_frame(h, current);
+    current->f.type = BLOCK_FRAME;
 
     // The player might be moved by the frame, so back up the position
-    current->type = BLOCK_FRAME;
     current->mzx_world = mzx_world;
     current->prev_player_x = mzx_world->player_x;
     current->prev_player_y = mzx_world->player_y;
@@ -775,9 +822,29 @@ void add_block_undo_frame(struct world *mzx_world, struct undo_history *h,
 /* Layer specific functions */
 /****************************/
 
+struct layer_undo_pos
+{
+  Sint16 x;
+  Sint16 y;
+  char chr;
+  char color;
+};
+
+struct layer_undo_pos_frame
+{
+  struct undo_frame f;
+  int layer_width;
+  char *layer_chars;
+  char *layer_colors;
+  struct layer_undo_pos replace;
+  struct layer_undo_pos *prev;
+  int prev_alloc;
+  int prev_size;
+};
+
 struct layer_undo_frame
 {
-  int type;
+  struct undo_frame f;
   int width;
   int height;
   int layer_width;
@@ -792,46 +859,161 @@ struct layer_undo_frame
 
 static void apply_layer_undo(struct undo_frame *f)
 {
-  struct layer_undo_frame *lf = (struct layer_undo_frame *)f;
+  switch(f->type)
+  {
+    case POS_FRAME:
+    {
+      struct layer_undo_pos_frame *current = (struct layer_undo_pos_frame *)f;
+      struct layer_undo_pos *prev;
+      int offset;
+      int i;
 
-  copy_layer_buffer_to_buffer(
-   lf->prev_chars, lf->prev_colors, lf->width, 0,
-   lf->layer_chars, lf->layer_colors, lf->layer_width, lf->layer_offset,
-   lf->width, lf->height
-  );
+      for(i = current->prev_size - 1; i >= 0; i--)
+      {
+        prev = &(current->prev[i]);
+        offset = prev->x + (prev->y * current->layer_width);
+        current->layer_chars[offset] = prev->chr;
+        current->layer_colors[offset] = prev->color;
+      }
+      break;
+    }
+
+    case BLOCK_FRAME:
+    {
+      struct layer_undo_frame *lf = (struct layer_undo_frame *)f;
+
+      copy_layer_buffer_to_buffer(
+       lf->prev_chars, lf->prev_colors, lf->width, 0,
+       lf->layer_chars, lf->layer_colors, lf->layer_width, lf->layer_offset,
+       lf->width, lf->height
+      );
+      break;
+    }
+  }
 }
 
 static void apply_layer_redo(struct undo_frame *f)
 {
-  struct layer_undo_frame *lf = (struct layer_undo_frame *)f;
+  switch(f->type)
+  {
+    case POS_FRAME:
+    {
+      struct layer_undo_pos_frame *current = (struct layer_undo_pos_frame *)f;
+      struct layer_undo_pos *replace = &(current->replace);
+      struct layer_undo_pos *prev;
+      int size = current->prev_size;
+      int offset;
+      int i;
 
-  copy_layer_buffer_to_buffer(
-   lf->current_chars, lf->current_colors, lf->width, 0,
-   lf->layer_chars, lf->layer_colors, lf->layer_width, lf->layer_offset,
-   lf->width, lf->height
-  );
+      for(i = 0; i < size; i++)
+      {
+        prev = &(current->prev[i]);
+        offset = prev->x + (prev->y * current->layer_width);
+        current->layer_chars[offset] = replace->chr;
+        current->layer_colors[offset] = replace->color;
+      }
+      break;
+    }
+
+    case BLOCK_FRAME:
+    {
+      struct layer_undo_frame *lf = (struct layer_undo_frame *)f;
+
+      copy_layer_buffer_to_buffer(
+       lf->current_chars, lf->current_colors, lf->width, 0,
+       lf->layer_chars, lf->layer_colors, lf->layer_width, lf->layer_offset,
+       lf->width, lf->height
+      );
+      break;
+    }
+  }
 }
 
 static void apply_layer_update(struct undo_frame *f)
 {
-  struct layer_undo_frame *lf = (struct layer_undo_frame *)f;
+  switch(f->type)
+  {
+    case POS_FRAME:
+    {
+      // Shrink alloc to trim unused space.
+      struct layer_undo_pos_frame *current = (struct layer_undo_pos_frame *)f;
+      int size = current->prev_size;
 
-  copy_layer_buffer_to_buffer(
-   lf->layer_chars, lf->layer_colors, lf->layer_width, lf->layer_offset,
-   lf->current_chars, lf->current_colors, lf->width, 0,
-   lf->width, lf->height
-  );
+      current->prev_alloc = size;
+      current->prev =
+       crealloc(current->prev, size * sizeof(struct layer_undo_pos));
+      break;
+    }
+
+    case BLOCK_FRAME:
+    {
+      struct layer_undo_frame *lf = (struct layer_undo_frame *)f;
+
+      copy_layer_buffer_to_buffer(
+       lf->layer_chars, lf->layer_colors, lf->layer_width, lf->layer_offset,
+       lf->current_chars, lf->current_colors, lf->width, 0,
+       lf->width, lf->height
+      );
+      break;
+    }
+  }
 }
 
 static void apply_layer_clear(struct undo_frame *f)
 {
-  struct layer_undo_frame *current = (struct layer_undo_frame *)f;
+  switch(f->type)
+  {
+    case POS_FRAME:
+    {
+      struct layer_undo_pos_frame *current = (struct layer_undo_pos_frame *)f;
+      free(current->prev);
+      break;
+    }
 
-  free(current->prev_chars);
-  free(current->prev_colors);
-  free(current->current_chars);
-  free(current->current_colors);
-  free(current);
+    case BLOCK_FRAME:
+    {
+      struct layer_undo_frame *current = (struct layer_undo_frame *)f;
+      free(current->prev_chars);
+      free(current->prev_colors);
+      free(current->current_chars);
+      free(current->current_colors);
+      break;
+    }
+  }
+  free(f);
+}
+
+static void add_layer_undo_position(struct undo_frame *f, int x, int y)
+{
+  struct layer_undo_pos_frame *current = (struct layer_undo_pos_frame *)f;
+
+  struct layer_undo_pos *prev = current->prev;
+  int prev_size = current->prev_size;
+  int prev_alloc = current->prev_alloc;
+
+  int offset = x + (y * current->layer_width);
+
+  if(prev_size == prev_alloc)
+  {
+    if(!prev_alloc)
+      prev_alloc = 1;
+
+    else
+      prev_alloc *= 2;
+
+    prev = crealloc(prev, prev_alloc * sizeof(struct board_undo_pos));
+  }
+
+  prev[prev_size].x = x;
+  prev[prev_size].y = y;
+  prev[prev_size].chr = current->layer_chars[offset];
+  prev[prev_size].color = current->layer_colors[offset];
+
+  prev_size++;
+
+  current->prev = prev;
+  current->prev_size = prev_size;
+  current->prev_alloc = prev_alloc;
 }
 
 struct undo_history *construct_layer_undo_history(int max_size)
@@ -840,6 +1022,7 @@ struct undo_history *construct_layer_undo_history(int max_size)
   {
     struct undo_history *h = construct_undo_history(max_size);
 
+    h->add_pos_function = add_layer_undo_position;
     h->undo_function = apply_layer_undo;
     h->redo_function = apply_layer_redo;
     h->update_function = apply_layer_update;
@@ -847,6 +1030,34 @@ struct undo_history *construct_layer_undo_history(int max_size)
     return h;
   }
   return NULL;
+}
+
+void add_layer_undo_pos_frame(struct undo_history *h, char *layer_chars,
+ char *layer_colors, int layer_width, struct buffer_info *buffer, int x, int y)
+{
+  if(h)
+  {
+    struct layer_undo_pos_frame *current =
+     cmalloc(sizeof(struct layer_undo_pos_frame));
+
+    add_undo_frame(h, current);
+    current->f.type = POS_FRAME;
+
+    current->layer_width = layer_width;
+    current->layer_chars = layer_chars;
+    current->layer_colors = layer_colors;
+
+    current->replace.chr = buffer->param;
+    current->replace.color = buffer->color;
+
+    current->prev = NULL;
+    current->prev_alloc = 0;
+    current->prev_size = 0;
+
+    // Most places this is used don't want to bother doing this manually,
+    // so do it here for the first position.
+    add_undo_position(h, x, y);
+  }
 }
 
 void add_layer_undo_frame(struct undo_history *h, char *layer_chars,
@@ -858,6 +1069,7 @@ void add_layer_undo_frame(struct undo_history *h, char *layer_chars,
      cmalloc(sizeof(struct layer_undo_frame));
 
     add_undo_frame(h, current);
+    current->f.type = BLOCK_FRAME;
 
     current->width = width;
     current->height = height;

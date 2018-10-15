@@ -23,11 +23,11 @@
 #ifndef __UTIL_H
 #define __UTIL_H
 
-#include <stdio.h>
 #include "compat.h"
 
 __M_BEGIN_DECLS
 
+#include <stdio.h>
 #if !defined(_MSC_VER) && !defined(__amigaos__)
 #include <unistd.h>
 #endif
@@ -87,7 +87,7 @@ enum resource_id
 #define GLSL_SHADER_RES_COUNT (GLSL_SHADER_RES_LAST - GLSL_SHADER_RES_FIRST + 1)
 #endif
 
-CORE_LIBSPEC int mzx_res_init(const char *argv0, bool editor);
+CORE_LIBSPEC int mzx_res_init(const char *argv0, boolean editor);
 CORE_LIBSPEC void mzx_res_free(void);
 CORE_LIBSPEC char *mzx_res_get_by_id(enum resource_id id);
 
@@ -145,16 +145,16 @@ struct mzx_dir {
   long pos;
 };
 
-bool dir_open(struct mzx_dir *dir, const char *path);
+boolean dir_open(struct mzx_dir *dir, const char *path);
 void dir_close(struct mzx_dir *dir);
 void dir_seek(struct mzx_dir *dir, long offset);
 long dir_tell(struct mzx_dir *dir);
-bool dir_get_next_entry(struct mzx_dir *dir, char *entry);
+boolean dir_get_next_entry(struct mzx_dir *dir, char *entry);
 
 CORE_LIBSPEC void boyer_moore_index(void *B, size_t b_len,
- int *index, bool ignore_case);
+ int *index, boolean ignore_case);
 CORE_LIBSPEC void *boyer_moore_search(void *A, size_t a_len, void *B, size_t b_len,
- int *index, bool ignore_case);
+ int *index, boolean ignore_case);
 
 // Code to load/save multi-byte ints to/from little endian memory
 int mem_getc(const unsigned char **ptr);

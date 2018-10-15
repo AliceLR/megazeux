@@ -90,23 +90,36 @@ enum
   NUM_TEXTURES
 };
 
-static inline int next_power_of_two(int v)
-{
-  int i;
-  for(i = 1; i <= 65536; i *= 2)
-    if(i >= v)
-      return i;
-
-  debug("Couldn't find power of two for %d\n", v);
-  return v;
-}
-
 enum
 {
   ATTRIB_POSITION,
   ATTRIB_TEXCOORD,
   ATTRIB_COLOR,
 };
+
+/**
+ * Some GL drivers attempt to run GLSL in software, resulting in extremely poor
+ * performance for MegaZeux. When one of the drivers in this blacklist is
+ * detected, video output will fall back to a different renderer instead.
+ */
+struct blacklist_entry
+{
+  const char *match_string; // Compare with GL_RENDERER output to detect driver.
+  const char *reason;       // Reason for blacklisting. Displays to the user.
+};
+
+static struct blacklist_entry auto_glsl_blacklist[] =
+{
+  { "llvmpipe",
+    "  MESA software renderer.\n"
+    "  Blacklisted due to poor performance on some machines.\n" },
+  { "Chromium",
+    "  Chromium redirects GL commands to other GL drivers. The destination\n"
+    "  often seems to be a software renderer, causing poor performance on\n"
+    "  some machines.\n" },
+};
+
+static int auto_glsl_blacklist_len = ARRAY_SIZE(auto_glsl_blacklist);
 
 static struct
 {
@@ -295,7 +308,7 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
   struct glsl_render_data *render_data = graphics->render_data;
   int index = res - GLSL_SHADER_RES_FIRST;
   int loaded_config = 0;
-  bool is_user_scaler = false;
+  boolean is_user_scaler = false;
   GLint compile_status;
   GLenum shader;
 
@@ -523,7 +536,7 @@ static void glsl_load_shaders(struct graphics_data *graphics)
   }
 }
 
-static bool glsl_init_video(struct graphics_data *graphics,
+static boolean glsl_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
   struct glsl_render_data *render_data;
@@ -602,9 +615,17 @@ static void glsl_free_video(struct graphics_data *graphics)
 static void glsl_remap_char_range(struct graphics_data *graphics, Uint16 first,
  Uint16 count)
 {
-  // FIXME needs proper implementation
   struct glsl_render_data *render_data = graphics->render_data;
-  render_data->remap_texture = true;
+
+  if(first + count > FULL_CHARSET_SIZE)
+    count = FULL_CHARSET_SIZE - first;
+
+  // FIXME arbitrary
+  if(count <= 256)
+    memset(render_data->remap_char + first, 1, count);
+
+  else
+    render_data->remap_texture = true;
 }
 
 static void glsl_resize_screen(struct graphics_data *graphics,
@@ -653,8 +674,8 @@ static void glsl_resize_screen(struct graphics_data *graphics,
   glsl_load_shaders(graphics);
 }
 
-static bool glsl_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, bool fullscreen, bool resize)
+static boolean glsl_set_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, boolean fullscreen, boolean resize)
 {
   gl_set_attributes(graphics);
 
@@ -671,7 +692,7 @@ static bool glsl_set_video_mode(struct graphics_data *graphics,
   // the check with EGL configurations (EGL implies OpenGL ES).
 #ifndef CONFIG_EGL
   {
-    static bool initialized = false;
+    static boolean initialized = false;
 
     if(!initialized)
     {
@@ -698,26 +719,40 @@ static bool glsl_set_video_mode(struct graphics_data *graphics,
   return true;
 }
 
-static bool glsl_auto_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, bool fullscreen, bool resize)
+static boolean glsl_auto_set_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, boolean fullscreen, boolean resize)
 {
-  const char *renderer;
   struct glsl_render_data *render_data = graphics->render_data;
+  const char *renderer;
+  int i;
 
   if(glsl_set_video_mode(graphics, width, height, depth, fullscreen, resize))
   {
-
     // Driver blacklist. If the renderer is on the blacklist we want to fall
     // back on software as these renderers have disastrous GLSL performance.
 
     renderer = (const char *)glsl.glGetString(GL_RENDERER);
-    if(strstr(renderer, "llvmpipe"))
+
+    // Print the full renderer string for reference.
+    info("GL driver: %s\n\n", renderer);
+
+    for(i = 0; i < auto_glsl_blacklist_len; i++)
     {
-      warn("Detected MESA software renderer. Disabling glsl.\n");
-      return false;
+      if(strstr(renderer, auto_glsl_blacklist[i].match_string))
+      {
+        warn(
+          "Detected blacklisted driver: \"%s\". Disabling glsl. Reason:\n\n"
+          "%s\n\n"
+          "Run again with \"video_output=glsl\" to force-enable glsl.\n\n",
+          auto_glsl_blacklist[i].match_string,
+          auto_glsl_blacklist[i].reason
+        );
+        return false;
+      }
     }
 
-    // Overwrite the original video_output now that we know glsl works
+    // Switch from auto_glsl to glsl now that we know it works.
+    graphics->renderer.set_video_mode = glsl_set_video_mode;
     strcpy(render_data->conf->video_output, "glsl");
 
     return true;
@@ -811,128 +846,6 @@ static void glsl_update_colors(struct graphics_data *graphics,
   }
 }
 
-static void glsl_render_graph(struct graphics_data *graphics)
-{
-  struct glsl_render_data *render_data = graphics->render_data;
-  struct char_element *src = graphics->text_video;
-  Uint32 *colorptr, *dest, i, j;
-  int width, height;
-
-  static const float tex_coord_array_single[2 * 4] =
-  {
-    0.0f,     0.0f,
-    0.0f,     SCREEN_H,
-    SCREEN_W, 0.0f,
-    SCREEN_W, SCREEN_H,
-  };
-
-  // Clamp draw area to size of screen texture.
-  get_context_width_height(graphics, &width, &height);
-  if(width < SCREEN_PIX_W || height < SCREEN_PIX_H)
-  {
-    if(width >= GL_POWER_2_WIDTH)
-      width = GL_POWER_2_WIDTH;
-
-    if(height >= GL_POWER_2_HEIGHT)
-      height = GL_POWER_2_HEIGHT;
-  }
-  else
-  {
-    width = SCREEN_PIX_W;
-    height = SCREEN_PIX_H;
-  }
-
-  glsl.glViewport(0, 0, width, height);
-  gl_check_error();
-
-  if(graphics->screen_mode == 0)
-    glsl.glUseProgram(render_data->tilemap_program);
-  else
-    glsl.glUseProgram(render_data->tilemap_smzx_program);
-  gl_check_error();
-
-  glsl.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
-  gl_check_error();
-
-  if(render_data->remap_texture)
-  {
-    glsl_do_remap_charsets(graphics);
-    render_data->remap_texture = false;
-    memset(render_data->remap_char, false, sizeof(Uint8) * FULL_CHARSET_SIZE);
-  }
-  else
-  {
-    for(i = 0; i < FULL_CHARSET_SIZE; i++)
-    {
-      if(render_data->remap_char[i])
-      {
-        glsl_do_remap_char(graphics, i);
-        render_data->remap_char[i] = false;
-      }
-    }
-  }
-
-  // Layer data
-  dest = render_data->background_texture;
-
-  for(i = 0; i < SCREEN_W * SCREEN_H; i++, dest++, src++)
-  {
-    *dest =
-     (src->char_value << LAYER_CHAR_POS) |
-     (src->bg_color << LAYER_BG_POS) |
-     (src->fg_color << LAYER_FG_POS);
-  }
-
-  glsl.glBindTexture(GL_TEXTURE_2D, render_data->textures[TEX_DATA_ID]);
-  gl_check_error();
-
-  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0,
-   TEX_DATA_LAYER_X, TEX_DATA_LAYER_Y, SCREEN_W, SCREEN_H,
-   GL_RGBA, GL_UNSIGNED_BYTE, render_data->background_texture);
-  gl_check_error();
-
-  // Palette
-  colorptr = graphics->flat_intensity_palette;
-  dest = render_data->background_texture;
-
-  for(i = 0; i < graphics->protected_pal_position + 16; i++, dest++, colorptr++)
-    *dest = *colorptr;
-
-  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0,
-   TEX_DATA_PAL_X, TEX_DATA_PAL_Y, FULL_PAL_SIZE, 1,
-   GL_RGBA, GL_UNSIGNED_BYTE, render_data->background_texture);
-  gl_check_error();
-
-  // Indices
-  dest = render_data->background_texture;
-  for(i = 0; i < 4; i++)
-    for(j = 0; j < SMZX_PAL_SIZE; j++, dest++)
-      *dest = graphics->smzx_indices[j * 4 + i];
-
-  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0,
-   TEX_DATA_IDX_X, TEX_DATA_IDX_Y, SMZX_PAL_SIZE, 4,
-   GL_RGBA, GL_UNSIGNED_BYTE, render_data->background_texture);
-  gl_check_error();
-
-  glsl.glEnableVertexAttribArray(ATTRIB_POSITION);
-  glsl.glEnableVertexAttribArray(ATTRIB_TEXCOORD);
-
-  glsl.glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 0,
-   vertex_array_single);
-  gl_check_error();
-
-  glsl.glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 0,
-   tex_coord_array_single);
-  gl_check_error();
-
-  glsl.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-  gl_check_error();
-
-  glsl.glDisableVertexAttribArray(ATTRIB_POSITION);
-  glsl.glDisableVertexAttribArray(ATTRIB_TEXCOORD);
-}
-
-// FIXME potentially merge common parts of this and render_graph
 static void glsl_render_layer(struct graphics_data *graphics,
  struct video_layer *layer)
 {
@@ -1023,7 +936,7 @@ static void glsl_render_layer(struct graphics_data *graphics,
     bg_color = src->bg_color;
     fg_color = src->fg_color;
 
-    if(char_value != 0xFFFF)
+    if(char_value != INVISIBLE_CHAR)
     {
       if(char_value < PROTECTED_CHARSET_POSITION)
         char_value = (char_value + layer->offset) % PROTECTED_CHARSET_POSITION;
@@ -1310,7 +1223,6 @@ void render_glsl_register(struct renderer *renderer)
   renderer->remap_charbyte = glsl_remap_charbyte;
   renderer->get_screen_coords = get_screen_coords_scaled;
   renderer->set_screen_coords = set_screen_coords_scaled;
-  renderer->render_graph = glsl_render_graph;
   renderer->render_layer = glsl_render_layer;
   renderer->render_cursor = glsl_render_cursor;
   renderer->render_mouse = glsl_render_mouse;

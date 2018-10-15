@@ -43,7 +43,7 @@ CORE_LIBSPEC int set_string(struct world *mzx_world, const char *name,
  struct string *src, int id);
 CORE_LIBSPEC struct string *new_string(struct world *mzx_world,
  const char *name, size_t length, int id);
-CORE_LIBSPEC bool is_string(char *buffer);
+CORE_LIBSPEC boolean is_string(char *buffer);
 CORE_LIBSPEC void sort_string_list(struct string **string_list,
  int num_strings);
 

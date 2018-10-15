@@ -33,6 +33,7 @@
 #include "platform.h"
 
 #include "configure.h"
+#include "core.h"
 #include "event.h"
 #include "helpsys.h"
 #include "graphics.h"
@@ -75,6 +76,9 @@ __libspec int main(int argc, char *argv[])
   char *_backup_argv[] = { (char*) SHAREDIR "/megazeux" };
   int err = 1;
 
+  core_context *core_data;
+  struct config_info *conf;
+
   // Keep this 7.2k structure off the stack..
   static struct world mzx_world;
 
@@ -86,6 +90,7 @@ __libspec int main(int argc, char *argv[])
   getcwd(current_dir, MAX_PATH);
 
 #ifdef __APPLE__
+  if(!strcmp(current_dir, "/") || !strncmp(current_dir, "/App", 4))
   {
     // Mac .APPs start at / and we don't like that.
     char *user = getlogin();
@@ -115,26 +120,33 @@ __libspec int main(int argc, char *argv[])
   // into the "current" directory after loading.
   chdir(config_dir);
 
-  default_config(&mzx_world.conf);
-  set_config_from_file_startup(&mzx_world.conf, mzx_res_get_by_id(CONFIG_TXT));
-  set_config_from_command_line(&mzx_world.conf, &argc, argv);
+  default_config();
+  set_config_from_file_startup(mzx_res_get_by_id(CONFIG_TXT));
+  set_config_from_command_line(&argc, argv);
+  conf = get_config();
 
-  load_editor_config(&mzx_world, &argc, argv);
+  default_editor_config();
+  set_editor_config_from_file(mzx_res_get_by_id(CONFIG_TXT));
+  set_editor_config_from_command_line(&argc, argv);
+  store_editor_config_backup();
 
-  init_macros(&mzx_world);
+  init_macros();
+
+  // Startup path might be relative, so change back before checking it.
+  chdir(current_dir);
 
   // At this point argv should have all the config options
   // of the form var=value removed, leaving only unparsed
   // parameters. Interpret the first unparsed parameter
   // as a file to load (overriding startup_file etc.)
   if(argc > 1)
-    split_path_filename(argv[1], mzx_world.conf.startup_path, 256,
-     mzx_world.conf.startup_file, 256);
+    split_path_filename(argv[1], conf->startup_path, 256,
+     conf->startup_file, 256);
 
-  if(mzx_world.conf.startup_path && strlen(mzx_world.conf.startup_path))
+  if(conf->startup_path && strlen(conf->startup_path))
   {
-    debug("Config: Using '%s' as startup path\n", mzx_world.conf.startup_path);
-    strncpy(current_dir, mzx_world.conf.startup_path, MAX_PATH);
+    debug("Config: Using startup path '%s'\n", conf->startup_path);
+    snprintf(current_dir, MAX_PATH, "%s", conf->startup_path);
   }
 
   chdir(current_dir);
@@ -149,11 +161,11 @@ __libspec int main(int argc, char *argv[])
 
   init_event();
 
-  if(!init_video(&mzx_world.conf, CAPTION))
+  if(!init_video(conf, CAPTION))
     goto err_free_config;
-  init_audio(&(mzx_world.conf));
+  init_audio(conf);
 
-  if(network_layer_init(&mzx_world.conf))
+  if(network_layer_init(conf))
   {
 #ifdef CONFIG_UPDATER
     if(is_updater())
@@ -162,11 +174,11 @@ __libspec int main(int argc, char *argv[])
       {
         // No auto update checks on repo builds.
         if(!strcmp(VERSION, "GIT") &&
-         !strcmp(mzx_world.conf.update_branch_pin, "Stable"))
-          mzx_world.conf.update_auto_check = UPDATE_AUTO_CHECK_OFF;
+         !strcmp(conf->update_branch_pin, "Stable"))
+          conf->update_auto_check = UPDATE_AUTO_CHECK_OFF;
 
-        if(mzx_world.conf.update_auto_check)
-          check_for_updates(&mzx_world, &(mzx_world.conf), 1);
+        if(conf->update_auto_check)
+          check_for_updates(&mzx_world, true);
       }
       else
         info("Updater disabled.\n");
@@ -184,15 +196,15 @@ __libspec int main(int argc, char *argv[])
   help_open(&mzx_world, mzx_res_get_by_id(MZX_HELP_FIL));
 #endif
 
-  strncpy(curr_file, mzx_world.conf.startup_file, MAX_PATH - 1);
-  curr_file[MAX_PATH - 1] = '\0';
-  strncpy(curr_sav, mzx_world.conf.default_save_name, MAX_PATH - 1);
-  curr_sav[MAX_PATH - 1] = '\0';
-
-  mzx_world.mzx_speed = mzx_world.conf.mzx_speed;
+  snprintf(curr_file, MAX_PATH, "%s", conf->startup_file);
+  snprintf(curr_sav, MAX_PATH, "%s", conf->default_save_name);
+  mzx_world.mzx_speed = conf->mzx_speed;
 
   // Run main game (mouse is hidden and palette is faded)
-  title_screen(&mzx_world);
+  core_data = core_init(&mzx_world);
+  title_screen((context *)core_data);
+  core_run(core_data);
+  core_free(core_data);
 
   vquick_fadeout();
 
@@ -208,15 +220,16 @@ __libspec int main(int argc, char *argv[])
   help_close(&mzx_world);
 #endif
 
-  network_layer_exit(&mzx_world.conf);
+  network_layer_exit(conf);
   quit_audio();
 
   err = 0;
 err_free_config:
+  // FIXME maybe shouldn't be here...?
   if(mzx_world.update_done)
     free(mzx_world.update_done);
-  free_config(&mzx_world.conf);
-  free_editor_config(&mzx_world);
+  free_config();
+  free_editor_config();
 err_free_res:
   mzx_res_free();
   platform_quit();

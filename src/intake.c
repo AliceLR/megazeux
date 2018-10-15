@@ -17,15 +17,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-// Code to the intake function, which inputs text with friendliness.
-
 #include <string.h>
 #include <ctype.h>
 
+#include "configure.h"
 #include "event.h"
 #include "intake.h"
 #include "graphics.h"
 #include "window.h"
+#include "world_struct.h"
 
 // Global status of insert
 static char insert_on = 1;
@@ -35,15 +35,9 @@ static char last_char = 0;
 // (returns the key used to exit) String points to your memory for storing
 // the new string. The current "value" is used- clear the string before
 // calling intake if you need a blank string. Max_len is the maximum length
-// of the string. X, y, segment, and color are self-explanitory. Exit_type
-// determines when intake exits- 0 means exit only on Enter, 1 on Enter or
-// ESC, 2 on any non-display char except the editing keys. Filter_type is
-// bits to turn on filters- 1 changes all alpha to upper, 2 changes all
-// alpha to lower, 4 blocks all numbers, 8 blocks all alpha, 16 blocks
-// spaces, 32 blocks graphics, (ascii>126) 64 blocks punctuation that isn't
-// allowed in a filename/path/drive combo, 128 blocks punctuation that isn't
-// allowed in a filename only combo (use w/64), 256 blocks all punctuation.
-// (IE non-alphanumerics and spaces) The editing keys supported are as
+// of the string. X, y, segment, and color are self-explanitory.
+
+// The editing keys supported are as
 // follows- Keys to enter characters, Enter/ESC to exit, Home/End to move to
 // the front/back of the line, Insert to toggle insert/overwrite, Left/Right
 // to move within the line, Bkspace/Delete to delete as usual, and Alt-Bksp
@@ -55,8 +49,8 @@ static char last_char = 0;
 // outside string returns a MOUSE_EVENT to caller without acknowledging
 // the event.
 
-// Returns a backspace if attempted at start of line. (and exit_type==2)
-// Returns a delete if attempted at end of line. (and exit_type==2)
+// Returns a backspace if attempted at start of line. (exit_type==INTK_EXIT_ANY)
+// Returns a delete if attempted at end of line. (exit_type==INTK_EXIT_ANY)
 
 // If robo_intk is set, only 76 chars are shown and symbols are altered
 // on the left/right if there is more to the left/right. Scrolling
@@ -64,14 +58,14 @@ static char last_char = 0;
 // x = 32, y = 0, in color 79, min. 3 chars.
 
 int intake(struct world *mzx_world, char *string, int max_len,
- int x, int y, char color, int exit_type, int filter_type,
- int *return_x_pos, bool robo_intk, char *macro)
+ int x, int y, char color, enum intake_exit_type exit_type, int *return_x_pos,
+ boolean robo_intk, char *macro)
 {
+  int use_mask = get_config()->mask_midchars;
   int currx, curr_len, macro_position = -1;
   int done = 0, place = 0;
   char cur_char = 0;
   char temp_char;
-  int use_mask = mzx_world->conf.mask_midchars;
   int mouse_press;
   int key;
 
@@ -206,8 +200,8 @@ int intake(struct world *mzx_world, char *string, int max_len,
 
       cur_char = get_key(keycode_unicode);
 
-      // Exit event mimics escape, so exit_type > 0 only.
-      if(get_exit_status() && exit_type > 0)
+      // Exit event mimics escape
+      if(get_exit_status() && exit_type != INTK_EXIT_ENTER)
       {
         key = 0;
         done = 1;
@@ -241,7 +235,7 @@ int intake(struct world *mzx_world, char *string, int max_len,
       case IKEY_ESCAPE:
       {
         // ESC
-        if(exit_type > 0)
+        if(exit_type != INTK_EXIT_ENTER)
         {
           done = 1;
         }
@@ -443,7 +437,7 @@ int intake(struct world *mzx_world, char *string, int max_len,
 
         if(currx == 0)
         {
-          if(exit_type == 2)
+          if(exit_type == INTK_EXIT_ANY)
           {
             done = 1;
           }
@@ -464,7 +458,7 @@ int intake(struct world *mzx_world, char *string, int max_len,
         // Delete, at the end might exit
         if(currx == curr_len)
         {
-          if(exit_type == 2)
+          if(exit_type == INTK_EXIT_ANY)
             done = 1;
         }
         else
@@ -487,7 +481,7 @@ int intake(struct world *mzx_world, char *string, int max_len,
         }
         else
 
-        if(get_alt_status(keycode_internal) && !filter_type)
+        if(get_alt_status(keycode_internal))
         {
           // If alt - C is pressed, choose character
           int new_char = char_selection(last_char);
@@ -599,82 +593,13 @@ int intake(struct world *mzx_world, char *string, int max_len,
 
     if(place)
     {
-      if((cur_char != 0) && (cur_char < 32) && (exit_type == 2))
+      if((cur_char != 0) && (cur_char < 32) && (exit_type == INTK_EXIT_ANY))
       {
         done = 1;
         key = cur_char;
       }
       else
 
-      // Keycode.. Filter.
-      if(filter_type & 1)
-      {
-        if((cur_char >= 'a') && (cur_char <= 'z'))
-          cur_char -= 32;
-      }
-
-      if(filter_type & 2)
-      {
-        if((cur_char >= 'A') && (cur_char <= 'Z'))
-          cur_char += 32;
-      }
-
-      // Block numbers
-      if((filter_type & 4) && ((cur_char >= '0') && (cur_char <= '9')))
-      {
-        place = 0;
-      }
-
-      // Block alpha
-      if((filter_type & 8) &&
-       (((cur_char >= 'a') && (cur_char <= 'z')) ||
-       ((cur_char >= 'A') && (cur_char <= 'Z'))))
-      {
-        place = 0;
-      }
-
-      // Block spaces
-      if((filter_type & 16) && (cur_char == ' '))
-      {
-        place = 0;
-      }
-
-      // Block high-ASCII
-      if((filter_type & 32) && (cur_char > 126))
-      {
-        place = 0;
-      }
-
-      // Block these chars
-      if((filter_type & 64) &&
-       ((cur_char == '*') || (cur_char == '[') ||
-       (cur_char == ']') || (cur_char == '>') ||
-       (cur_char == '<') || (cur_char == ',') ||
-       (cur_char == '|') || (cur_char == '?') ||
-       (cur_char == '=') || (cur_char == ';') ||
-       (cur_char == '\"') || (cur_char =='/')))
-      {
-        place = 0;
-      }
-
-      // Block these chars
-      if((filter_type & 128) &&
-       ((cur_char == ':') || (cur_char == '\\')))
-      {
-        place = 0;
-      }
-
-      // Block these chars
-      if((filter_type & 256) &&
-       (((cur_char > ' ') && (cur_char < '0')) ||
-       ((cur_char > '9') && (cur_char < 'A')) ||
-       ((cur_char > 'Z') && (cur_char < 'a')) ||
-       ((cur_char > 'z') && (cur_char < 127))))
-      {
-        place = 0;
-      }
-
-      // Now, can it still be placed?
       if(place && (curr_len != max_len) && (!done) && cur_char)
       {
         // Overwrite or insert?

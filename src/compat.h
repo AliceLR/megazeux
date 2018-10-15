@@ -40,15 +40,17 @@
 #undef true
 #undef bool
 
-typedef enum
+enum
 {
   false = 0,
   true  = 1,
-} bool;
+};
 
 #endif // !CONFIG_WII && !CONFIG_NDS
 
 #endif /* __cplusplus */
+
+typedef unsigned char boolean;
 
 #ifdef CONFIG_3DS
 #include <3ds.h>
@@ -130,6 +132,10 @@ typedef enum
 
 #ifndef AUDIO_LIBSPEC
 #define AUDIO_LIBSPEC LIBSPEC
+#endif
+
+#ifndef UTILS_LIBSPEC
+#define UTILS_LIBSPEC CORE_LIBSPEC
 #endif
 
 #ifdef CONFIG_UPDATER

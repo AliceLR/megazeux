@@ -34,7 +34,7 @@ int error(const char *string, unsigned int type, unsigned int options,
   return 0;
 }
 
-static bool dummy_constraint(png_uint_32 w, png_uint_32 h)\
+static boolean dummy_constraint(png_uint_32 w, png_uint_32 h)\
 {
   return true;
 }

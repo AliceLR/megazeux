@@ -24,8 +24,8 @@
 #include "render_yuv.h"
 #include "renderers.h"
 
-static bool yuv1_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, bool fullscreen, bool resize)
+static boolean yuv1_set_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, boolean fullscreen, boolean resize)
 {
   return yuv_set_video_mode_size(graphics, width, height, depth, fullscreen,
    resize, YUV1_OVERLAY_WIDTH, YUV1_OVERLAY_HEIGHT);

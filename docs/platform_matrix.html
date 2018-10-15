@@ -52,7 +52,6 @@ var no_updater = subopt("NO", 6);
 var no_updater_unix = subopt("NO", 7);
 var no_sdl_3ds = std("NO", 9);
 var optional_sdl_wii = std("OPTIONAL", 10);
-var yes_with_sdl = subopt("YES (SDL)", 10);
 var yes_but_8bpp = subopt("YES (8bpp)", 11);
 
 var ZIP = _yes("ZIP");
@@ -67,7 +66,7 @@ var tremor_lowmem = std("tremor (lowmem)");
 var render_ctr = std("render_ctr");
 var render_nds = std("render_nds");
 var render_gp2x = std("render_gp2x");
-var render_gx = std("render_gx");
+var render_gx = std("render_gx\nrender_xfb");
 
 var speed = "Speed";
 var size = "Size";
@@ -105,6 +104,40 @@ var fields =
 
 var archs =
 {
+/*
+  // NOTE: If a field isn't applicable to your arch, it can be omitted entirely.
+  // An omitted field will appear greyed out and read "N/A" in the table.
+
+  your_arch_here:
+  {
+    platform:         // config platform name
+    description:      // short description
+    architecture:     // target processor architecture
+    endian:           // "Little" or "Big"
+    toolchain:        // gcc/clang/binutils/etc versions
+    packaged:         // ZIP or other
+    visibility:       // Optimized visibility (See note 3)
+    stack_protector:  // Is the stack protector enabled? (usually _FAULTY())
+    module_engine:    // xmp or other
+    ogg_vorbis:       // vorbis, tremor, tremor_lowmem or _FAULTY()
+    optimization:     // speed or size
+    sdl:              // Does this platform rely on SDL?
+    editor:           // Does this platform ship with the editor enabled?
+    helpsys:          // Does this platform ship with the help file enabled?
+    audio:            // Does this platform ship with audio enabled?
+    software:         // Does this platform have a software/proprietary renderer?
+    gl:               // Does this platform use the OpenGL fixed function renderers?
+    overlay:          // Does this platform use the overlay renderers?
+    glsl:             // Does this platform use the GLSL renderer?
+    updater:          // Is this platform compatible with the updater?
+    modular:          // Does this platform use modular builds?
+    png:              // Does this platform build with libpng?
+    x11:              // Can this platform link to X11?
+    uthash:           // Does this platform use uthash for counter lookups?
+    loadsave_meter:   // Does this platform ship with the loadsave meter enabled?
+  },
+*/
+
   _3ds:
   {
     platform:         "3ds",
@@ -164,7 +197,7 @@ var archs =
     description:      "Windows <br /> (GNU toolchain)",
     architecture:     "x64 (PE+ COFF) <br /> x86 (PE COFF)",
     endian:           "Little",
-    toolchain:        "gcc 7.3.0 <br /> binutils 2.30",
+    toolchain:        "gcc 8.2.0 (x64) <br /> gcc 7.3.0 (x86) <br /> binutils 2.30",
     packaged:         ZIP,
     visibility:       yes,
     stack_protector:  no_mingw_stack_protector,
@@ -300,10 +333,10 @@ var archs =
     description:      "Nintendo Wii",
     architecture:     "PPC (ELF)",
     endian:           "Big",
-    toolchain:        "gcc 8.1.0 <br /> binutils 2.28 <br /> (dk r30)",
+    toolchain:        "gcc 8.1.0 <br /> binutils 2.30 <br /> (dk r32)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
-    layer_rendering:  yes_with_sdl,
+    layer_rendering:  yes,
     module_engine:    xmp,
     ogg_vorbis:       tremor,
     optimization:     speed,
@@ -459,37 +492,6 @@ var archs =
     uthash:           yes,
     loadsave_meter:   no,
   },
-
-/*
-  your_arch_here:
-  {
-    platform:         
-    description:      
-    architecture:     
-    endian:           
-    toolchain:        
-    packaged:         
-    visibility:       
-    stack_protector:  
-    module_engine:    
-    ogg_vorbis:       
-    optimization:     
-    sdl:              
-    editor:           
-    helpsys:          
-    audio:            
-    software:         
-    gl:               
-    overlay:          
-    glsl:             
-    updater:          
-    modular:          
-    png:              
-    x11:              
-    uthash:           
-    loadsave_meter:   
-  },
-*/
 };
 
 function build_table()
@@ -752,10 +754,8 @@ SDL significantly increases the size of the MZX executable.
 </li>
 
 <li><a name="note10"/>Building MZX with SDL Wii is viable, but produces larger
-binaries than desired, relies on the slow SDL software renderer, and SDL Wii is
-considered unstable. However, the SDL software renderer supports all layer
-rendering features (unlike the gx renderer), so SDL is currently the better
-option.
+binaries than desired, relies on the software renderer, and SDL Wii is
+considered unstable.
 </li>
 
 <li><a name="note11"/>Layer rendering is supported on this platform by as it

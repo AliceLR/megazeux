@@ -104,7 +104,7 @@ struct gl1_render_data
   Uint32 h;
 };
 
-static bool gl1_init_video(struct graphics_data *graphics,
+static boolean gl1_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
   struct gl1_render_data *render_data = cmalloc(sizeof(struct gl1_render_data));
@@ -168,8 +168,8 @@ static void gl1_resize_screen(struct graphics_data *graphics,
   gl_set_filter_method(graphics->gl_filter_method, gl1.glTexParameterf);
 }
 
-static bool gl1_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, bool fullscreen, bool resize)
+static boolean gl1_set_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, boolean fullscreen, boolean resize)
 {
   int internal_width = GL_POWER_2_WIDTH, internal_height = GL_POWER_2_HEIGHT;
   struct gl1_render_data *render_data = graphics->render_data;
@@ -191,7 +191,7 @@ static bool gl1_set_video_mode(struct graphics_data *graphics,
   // the extension check.
 #ifndef CONFIG_EGL
   {
-    static bool initialized = false;
+    static boolean initialized = false;
 
     if(!initialized)
     {

@@ -22,9 +22,11 @@
 
 #include "world.h"
 
+#include "../board.h"
 #include "../const.h"
 #include "../error.h"
 #include "../graphics.h"
+#include "../robot.h"
 #include "../window.h"
 #include "../world.h"
 #include "../legacy_board.h"
@@ -32,9 +34,10 @@
 #include "../memfile.h"
 #include "../zip.h"
 
-#include "../world_prop.h"
+#include "../world_format.h"
 
 #include "board.h"
+#include "configure.h"
 #include "robot.h"
 
 #include <string.h>
@@ -181,7 +184,7 @@ static void append_world_refactor_board(struct board *cur_board,
 }
 
 
-static bool append_world_legacy(struct world *mzx_world, FILE *fp,
+static boolean append_world_legacy(struct world *mzx_world, FILE *fp,
  int file_version)
 {
   int i;
@@ -234,7 +237,8 @@ static bool append_world_legacy(struct world *mzx_world, FILE *fp,
   for(i = old_num_boards; i < old_num_boards + num_boards; i++)
   {
     cur_board = mzx_world->board_list[i];
-    fread(cur_board->board_name, BOARD_NAME_SIZE, 1, fp);
+    if(!fread(cur_board->board_name, BOARD_NAME_SIZE, 1, fp))
+      cur_board->board_name[0] = 0;
 
     if(cur_board)
     {
@@ -263,7 +267,7 @@ static int append_world_zip_get_num_boards(const void *buffer, int buf_size)
   int ident;
   int size;
 
-  mfopen_static(buffer, buf_size, &mf);
+  mfopen(buffer, buf_size, &mf);
 
   while(next_prop(&prop, &ident, &size, &mf))
     if(ident == WPROP_NUM_BOARDS)
@@ -273,7 +277,7 @@ static int append_world_zip_get_num_boards(const void *buffer, int buf_size)
 }
 
 
-static bool append_world_zip(struct world *mzx_world, struct zip_archive *zp,
+static boolean append_world_zip(struct world *mzx_world, struct zip_archive *zp,
  int file_version)
 {
   struct board *cur_board;
@@ -343,12 +347,12 @@ static bool append_world_zip(struct world *mzx_world, struct zip_archive *zp,
 }
 
 
-bool append_world(struct world *mzx_world, const char *file)
+boolean append_world(struct world *mzx_world, const char *file)
 {
   char ignore[BOARD_NAME_SIZE];
   int file_version;
 
-  bool ret = false;
+  boolean ret = false;
 
   struct zip_archive *zp;
   FILE *fp;
@@ -386,7 +390,7 @@ void create_blank_world(struct world *mzx_world)
   mzx_world->num_boards = 1;
   mzx_world->num_boards_allocated = 1;
   mzx_world->board_list = cmalloc(sizeof(struct board *));
-  mzx_world->board_list[0] = create_blank_board(&(mzx_world->editor_conf));
+  mzx_world->board_list[0] = create_blank_board(get_editor_config());
   mzx_world->current_board_id = 0;
   mzx_world->current_board = mzx_world->board_list[0];
 

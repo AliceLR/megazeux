@@ -1,11 +1,147 @@
-GIT - MZX 2.91f
+GIT
+
++ auto_glsl correctly switches to glsl on startup now.
++ Fix bug where "(editor)" wouldn't always display in the
+  caption when editing.
++ The single line macro dialog now allows the full size of the
+  single line macros to be edited. This fixes a crash caused by
+  having a macro configured to be longer than the edit box could
+  display.
++ Setting a counter to a string no longer duplicates the entire
+  string in memory.
+
+
+October 7th, 2018 - MZX 2.91g
+
+This bugfix release fixes various minor-to-moderate bugs in
+various areas of MegaZeux. The title/game update code has gone
+through a fairly major overhaul and several parts of MegaZeux
+have been combined to use the same loop. The conversion of
+MegaZeux's interfaces to be compatible with this loop is an
+ongoing process expected to occur over several versions.
 
 USERS
 
++ Added "allow_screenshots" config file option. Setting this
+  option to 0 will disable the built-in screenshot feature.
++ The F12 key can now be detected by Robotic.
++ Loading saves from the title screen no longer resets TIME.
++ Loading saves from the title screen no longer erroneously
+  changes the player restart position.
++ Swapping worlds now sets the correct TIME and player restart
+  position values.
++ Fixed a bug where the fade out effect from COLOR FADE OUT
+  would be reset after any Robotic dialog.
++ Undo for overlay and vlayer mouse drawing now works properly.
++ Mouse drawing in the editor now draws smooth lines instead of
+  lines with gaps.
++ Fixed move block bug when the source and destination both
+  overlapped the player.
++ Palette editor component entry now accepts most of the same
+  inputs as dialog number boxes.
++ The board name in the caption now updates to reflect the
+  current board while testing.
++ Fixed bug where TIME would either decrement normally or not
+  decrement at all while the slow time effect was active.
++ Added compatibility for pre-port endgame teleport behavior.
+  In DOS versions of MZX, the endgame teleport would disable
+  itself after being triggered for the first time and any
+  following endgame would instead trigger a game over.
++ Reduced stutter in NDS and 3DS main screen scrolling.
++ Fixed a bug where creating a string MZM would not correctly
+  set the string's length for preexisting strings.
++ Fixed a bug where loading robot source code from a string
+  wouldn't work correctly with the robot debugger.
++ The help system is now accessible from the main menu and game
+  menu.
++ The settings screen is now accessible from the main menu, game
+  menu, editor, and palette editor.
++ The shortcut Ctrl+F2 can be used to open the settings screen
+  from anywhere the settings screen is accessible. This shortcut
+  works even if F2 is used for a different feature and will also
+  ignore the value of the F2_MENU counter.
++ Fix a crash that would occur decrypting a world with a
+  password exactly 15 chars long.
++ The label for the INPUT STRING command should no longer be
+  able to overflow outside of the window.
++ Fix a crash that would occur attempting to open the help file
+  from the world decryption confirm dialog.
++ Fix bug where saved layer MZMs and board MZMs without robots
+  would have useless extra data at the end of the file.
++ Scroll contents properly display game colors during gameplay.
++ An error message is now displayed for failed board exports.
++ Enabled writing zip data descriptors on the 3DS to decrease
+  saving time.
+- The "password protected" error message has been removed as it
+  was redundant with the confirmation dialog following it.
+- The "disassemble_extras" and "disassemble_base" options no
+  longer affect Robotic output during gameplay. SAVE_ROBOT will
+  always output extra words and base 10 numbers regardless of
+  user configuration.
+
+DEVELOPERS
+
++ Implemented a main event loop to replace the various separate
+  event loops scattered around MegaZeux. See core.h and core.c
+  for more info.
++ Refactored the following contexts to use the main loop:
+  titlescreen, gameplay, main menu, game menu, editor, palette
+  editor.
++ When enabled, the debug FPS display will now update from any
+  interface using the main loop. If fullscreen mode is active,
+  the FPS display will now appear in the top-left corner of the
+  screen for any main loop interface aside from the editor.
++ The --disable-screenshots config.sh option can be used to
+  disable screenshot support. This allows platforms that don't
+  use render_layer.c to stop building and linking it.
++ Cleaned up m_show()/m_hide() overuse.
++ Replaced all uses of "bool" with "boolean" to avoid potential
+  C/C++ compatibility issues.
+- Removed most old/unused source code in contrib/unzip, src/old,
+  and src/vfs.
+
+
+September 17th, 2018 - MZX 2.91f
+
+A bugfix release focusing primarily on renderers, the 3DS and
+Wii ports, and the Makefile build system. Highlights: the 3DS
+port should perform better now, the Wii port's GX renderer has
+been restored, the 'darwin' platform has more Unix-like options
+now, and several crashes have been fixed.
+
+USERS
+
++ The config setting 'audio_buffer' can also be specified with
+  'audio_buffer_samples' now. The default value for this setting
+  is now 1024 (instead of 4096).
++ Fixed a crash that could occur in the counter debugger.
 + Fixed a crash that occurs when attempting to add a watchpoint
   for robot local counters, loopcount, etc. Using these counters
   as watchpoints will watch the global robot's instances of
   these variables (for other robots, use e.g. r#.local1).
++ Using SMZX_INDICES or LOAD_ROBOT on an unset string no longer
+  causes a crash.
++ png2smzx is now properly bundled with Linux builds.
++ Improved the performance of loading partial charsets for the
+  glsl, opengl2, and 3DS renderers. Other renderers were not
+  affected by this issue.
++ Fix opengl2 unbound sprite regression introduced in 2.91e.
++ The opengl2 renderer now correctly draws unbound sprites
+  containing chars with a transparent foreground color.
++ 3DS renderer optimizations. (asie)
++ 3DS screen focusing now mimics the NDS port's behavior. (asie)
++ Fixed bug where games could fail to open files on some
+  platforms if the paths contained duplicate slashes. (asie)
++ Added a Wii software layer renderer. This renderer can be
+  selected with "video_output = xfb" in the config file.
++ Wii GX renderer optimizations.
++ Added layer rendering support to the GX renderer.
++ The Wii GX renderer now uses the gl_vsync config option to
+  toggle vsync. For the Wii, this feature is on by default.
+  Disabling it may increase the framerate of some games but may
+  also cause other problems.
++ The loading bar on console platforms now redraws the screen
+  less often.
 
 DEVELOPERS
 
@@ -24,6 +160,12 @@ DEVELOPERS
 + Added "darwin" and "darwin-devel" config.sh platforms. These
   act like Mac OS X versions of the "unix" and "unix-devel"
   options.
++ The darwin-dist build system and instructions are now somewhat
+  more clear and robust.
++ Fixed a bug where zlib wouldn't necessarily be linked to
+  png2smzx.
++ Renderers will now use render_layer to draw the text_video
+  fallback if no render_graph function is present.
 
 
 September 3rd, 2018 - MZX 2.91e

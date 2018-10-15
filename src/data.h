@@ -147,38 +147,38 @@ enum thing
   NO_ID           = 255
 };
 
-static inline bool is_fake(enum thing id)
+static inline boolean is_fake(enum thing id)
 {
   return (id == SPACE) || ((id >= FAKE) && (id <= THICK_WEB));
 }
 
-static inline bool is_robot(enum thing id)
+static inline boolean is_robot(enum thing id)
 {
   return (id == ROBOT) || (id == ROBOT_PUSHABLE);
 }
 
-static inline bool is_signscroll(enum thing id)
+static inline boolean is_signscroll(enum thing id)
 {
   return (id == SIGN) || (id == SCROLL);
 }
 
-static inline bool is_water(enum thing id)
+static inline boolean is_water(enum thing id)
 {
   return (id >= STILL_WATER) && (id <= W_WATER);
 }
 
-static inline bool is_whirlpool(enum thing id)
+static inline boolean is_whirlpool(enum thing id)
 {
   return (id >= WHIRLPOOL_1) && (id <= WHIRLPOOL_4);
 }
 
-static inline bool is_enemy(enum thing id)
+static inline boolean is_enemy(enum thing id)
 {
   return (id >= SNAKE) && (id <= BEAR_CUB) &&
    (id != BULLET_GUN) && (id != SPINNING_GUN);
 }
 
-static inline bool is_storageless(enum thing id)
+static inline boolean is_storageless(enum thing id)
 {
   return id < SENSOR;
 }
@@ -207,7 +207,7 @@ enum dir
   RANDNOT = 128
 };
 
-static inline bool is_cardinal_dir(enum dir d)
+static inline boolean is_cardinal_dir(enum dir d)
 {
   return (d >= NORTH) && (d <= WEST);
 }
@@ -280,6 +280,7 @@ enum condition
 
 enum chest_contents
 {
+  ITEM_NONE             = 0,
   ITEM_KEY              = 1,
   ITEM_COINS            = 2,
   ITEM_LIFE             = 3,

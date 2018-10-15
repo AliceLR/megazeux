@@ -33,13 +33,13 @@
 #include "shader_2d_shbin.h"
 #include "shader_playfield_shbin.h"
 
-// #define RDR_DEBUG
+//#define RDR_DEBUG
 
 struct ctr_shader_data
 {
   DVLB_s *dvlb;
   shaderProgram_s program;
-  int proj_loc, offs_loc, uvoffs_loc, geo_count;
+  int proj_loc, offs_loc, geo_count;
   C3D_AttrInfo attr;
 };
 
@@ -73,17 +73,23 @@ struct linear_ptr_list_entry
   struct linear_ptr_list_entry *next;
 };
 
+#define CTR_TEXTURE_WIDTH 1024
+#define CTR_TEXTURE_CHARS_ROW (CTR_TEXTURE_WIDTH / 8)
+#define CTR_TEXTURE_HEIGHT ((NUM_CHARSETS * 256 / CTR_TEXTURE_CHARS_ROW) * 16)
+
 struct ctr_render_data
 {
   C3D_Tex charset[5], charset_vram[5];
-  u64 charset_dirty/*, smzx_charset_dirty*/;
-  bool rendering_frame, checked_frame;
+  u8 charset_dirty_set;
+  u8 charset_dirty[NUM_CHARSETS * 2];
+  boolean rendering_frame, checked_frame;
   struct ctr_shader_data shader_2d, shader_playfield;
   C3D_Mtx projection;
   C3D_Tex playfield_tex;
   C3D_TexEnv env_normal, env_no_texture, env_playfield, env_playfield_inv;
   C3D_RenderTarget *playfield, *target_top, *target_bottom;
   u8 cursor_on, mouse_on;
+  u32 last_focus_x, last_focus_y;
   u32 focus_x, focus_y;
   u32 layer_num;
 };
@@ -108,7 +114,11 @@ static u8 morton_lut4[32] =
   0x14, 0x16, 0x1c, 0x1e, 0x15, 0x17, 0x1d, 0x1f
 };
 
+// 2 char bits -> 8 texture bits
 static u8 bitmask_mzx[4] = { 0x00, 0xf0, 0x0f, 0xff };
+
+// 4 char bits -> 8 texture bits
+// bitmask_smzx[layer, 0-3][bits]
 static u8 bitmask_smzx[4][16] =
 {
   { 0xff, 0x0f, 0x0f, 0x0f, 0xf0, 0x00, 0x00, 0x00,
@@ -122,7 +132,7 @@ static u8 bitmask_smzx[4][16] =
 };
 
 // texture PNG dimensions must be powers of two
-static bool tex_w_h_constraint(png_uint_32 w, png_uint_32 h)
+static boolean tex_w_h_constraint(png_uint_32 w, png_uint_32 h)
 {
   return w > 0 && h > 0 && ((w & (w - 1)) == 0) && ((h & (h - 1)) == 0);
 }
@@ -155,7 +165,7 @@ static void *tex_alloc_png_surface(png_uint_32 w, png_uint_32 h,
 }
 
 static inline void ctr_set_2d_projection(struct ctr_render_data *render_data,
- int width, int height, bool tilt)
+ int width, int height, boolean tilt)
 {
   if(tilt)
     Mtx_OrthoTilt(&render_data->projection, 0, width, height, 0, -1.0, 12100.0,
@@ -167,7 +177,7 @@ static inline void ctr_set_2d_projection(struct ctr_render_data *render_data,
 }
 
 static inline void ctr_set_2d_projection_screen(
- struct ctr_render_data *render_data, bool top_screen)
+ struct ctr_render_data *render_data, boolean top_screen)
 {
   ctr_set_2d_projection(render_data, top_screen ? 400 : 320, 240, true);
 }
@@ -193,7 +203,7 @@ static inline void ctr_prepare_2d(struct ctr_render_data *render_data,
 }
 
 static inline void ctr_prepare_playfield(struct ctr_render_data *render_data,
- struct v_char *array, float xo, float yo, bool geo, int mode, float z)
+ struct v_char *array, float xo, float yo, boolean geo, int mode, float z)
 {
   C3D_BufInfo *bufInfo;
 
@@ -206,8 +216,6 @@ static inline void ctr_prepare_playfield(struct ctr_render_data *render_data,
    &render_data->projection);
   C3D_FVUnifSet(GPU_GEOMETRY_SHADER, render_data->shader_playfield.offs_loc,
    (float) xo, (float) yo, z, 0.0f);
-  C3D_FVUnifSet(GPU_GEOMETRY_SHADER, render_data->shader_playfield.uvoffs_loc,
-   (float) (mode > 0 ? 4 : 8), (float) -14, 0.0f, 0.0f);
 }
 
 C3D_Tex *ctr_load_png(const char *name)
@@ -232,7 +240,7 @@ C3D_Tex *ctr_load_png(const char *name)
     width = output->width;
     height = output->height;
     C3D_TexDelete(output);
-    C3D_TexInitVRAM(output, width, height, GPU_RGB8);
+    C3D_TexInitVRAM(output, width, height, GPU_RGBA8);
     data = (u32*) output->data;
 
     GSPGPU_FlushDataCache(dataBuf, output->size);
@@ -245,7 +253,7 @@ C3D_Tex *ctr_load_png(const char *name)
        GX_TRANSFER_OUT_TILED(1) |
        GX_TRANSFER_RAW_COPY(0) |
        GX_TRANSFER_IN_FORMAT(GPU_RGBA8) |
-       GX_TRANSFER_OUT_FORMAT(GPU_RGB8) |
+       GX_TRANSFER_OUT_FORMAT(GPU_RGBA8) |
        GX_TRANSFER_SCALING(GX_TRANSFER_SCALE_NO))
     );
 
@@ -260,7 +268,7 @@ static struct vertex *vertex_heap;
 
 void ctr_draw_2d_texture(struct ctr_render_data *render_data, C3D_Tex *texture,
  int tx, int ty, int tw, int th,
- float x, float y, float w, float h, float z, u32 color, bool flipy)
+ float x, float y, float w, float h, float z, u32 color, boolean flipy)
 {
   struct vertex *vertices;
 
@@ -284,6 +292,7 @@ void ctr_draw_2d_texture(struct ctr_render_data *render_data, C3D_Tex *texture,
     memcpy(vertex_heap_new, vertex_heap,
      sizeof(struct vertex) * vertex_heap_len);
     vertex_heap_len *= 2;
+    linearFree(vertex_heap);
     vertex_heap = vertex_heap_new;
   }
 
@@ -332,12 +341,10 @@ static void ctr_init_shader(struct ctr_shader_data *shader, const void *data,
    shaderInstanceGetUniformLocation(shader->program.geometryShader, "projection");
   shader->offs_loc =
    shaderInstanceGetUniformLocation(shader->program.geometryShader, "offset");
-  shader->uvoffs_loc =
-   shaderInstanceGetUniformLocation(shader->program.geometryShader, "uvoffset");
   AttrInfo_Init(&shader->attr);
 }
 
-static bool ctr_init_video(struct graphics_data *graphics,
+static boolean ctr_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
   static struct ctr_render_data render_data;
@@ -356,7 +363,11 @@ static bool ctr_init_video(struct graphics_data *graphics,
   render_data.rendering_frame = false;
   render_data.checked_frame = false;
 
-  C3D_TexInitVRAM(&render_data.playfield_tex, 1024, 512, GPU_RGB8);
+  // 1024x512 is the smallest power of two texture which can fit a 640x350 playfield
+  if (conf->force_bpp == 32)
+    C3D_TexInitVRAM(&render_data.playfield_tex, 1024, 512, GPU_RGBA8);
+  else
+    C3D_TexInitVRAM(&render_data.playfield_tex, 1024, 512, GPU_RGB565);
   C3D_TexSetFilter(&render_data.playfield_tex, GPU_LINEAR, GPU_LINEAR);
 
   render_data.playfield =
@@ -400,11 +411,17 @@ static bool ctr_init_video(struct graphics_data *graphics,
 
   for(int i = 0; i < 5; i++)
   {
-    C3D_TexInit(&render_data.charset[i], 1024, NUM_CHARSETS * 32, GPU_A4);
+    int tex_width = CTR_TEXTURE_WIDTH;
+    if(i > 0)
+      tex_width /= 2;
+
+    C3D_TexInit(&render_data.charset[i], tex_width,
+      CTR_TEXTURE_HEIGHT, GPU_A4);
     C3D_TexSetFilter(&render_data.charset[i], GPU_NEAREST, GPU_NEAREST);
     C3D_TexSetWrap(&render_data.charset[i], GPU_REPEAT, GPU_REPEAT);
 
-    C3D_TexInitVRAM(&render_data.charset_vram[i], 1024, NUM_CHARSETS * 32, GPU_A4);
+    C3D_TexInitVRAM(&render_data.charset_vram[i], tex_width,
+      CTR_TEXTURE_HEIGHT, GPU_A4);
     C3D_TexSetFilter(&render_data.charset_vram[i], GPU_NEAREST, GPU_NEAREST);
     C3D_TexSetWrap(&render_data.charset_vram[i], GPU_REPEAT, GPU_REPEAT);
   }
@@ -468,14 +485,14 @@ static void ctr_free_video(struct graphics_data *graphics)
   C3D_RenderTargetDelete(render_data->target_bottom);
 }
 
-static bool ctr_check_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, bool fullscreen, bool resize)
+static boolean ctr_check_video_mode(struct graphics_data *graphics, int width,
+ int height, int depth, boolean fullscreen, boolean resize)
 {
   return true;
 }
 
-static bool ctr_set_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, bool fullscreen, bool resize)
+static boolean ctr_set_video_mode(struct graphics_data *graphics, int width,
+ int height, int depth, boolean fullscreen, boolean resize)
 {
   return true;
 }
@@ -493,16 +510,34 @@ static void ctr_update_colors(struct graphics_data *graphics,
   }
 }
 
-static inline void ctr_char_bitmask_to_texture(
- struct ctr_render_data *render_data, u8 c, u32 offset, int y)
+static inline u32 ctr_get_char_texture_row(u32 chr)
 {
-  int y_lut = (y & 7) << 2;
-  u8 *p, *p2, *p3, *p4;
-  u8 t;
+  return chr / CTR_TEXTURE_CHARS_ROW;
+}
 
-  offset += ((y & 8) << 10);
-  offset >>= 1;
-  offset += morton_lut4[y_lut];
+/**
+ * This method takes a single character line "c" for character "chr" and
+ * Y position "y" and writes it to all textures (both MZX and SMZX).
+ */
+static inline void ctr_char_line_to_texture(
+ struct ctr_render_data *render_data, u8 c, u32 chr, int y)
+{
+  u8 *p, *p2, *p3, *p4;
+  u8 t, t2;
+  u32 offset = ((chr%CTR_TEXTURE_CHARS_ROW) * (8 * 8 / 2));
+  u32 offset_smzx = (((chr & (~1)) % CTR_TEXTURE_CHARS_ROW) * (4 * 8 / 2));
+
+  offset += (chr/CTR_TEXTURE_CHARS_ROW) * (CTR_TEXTURE_WIDTH * 16 / 2);
+  offset_smzx += (chr/CTR_TEXTURE_CHARS_ROW) * (CTR_TEXTURE_WIDTH/2 * 16 / 2);
+
+  // add the Y position to the offsets, taking into account the 8x8 tex. tiles
+  offset += ((y / 8) * (CTR_TEXTURE_WIDTH * 8 / 2));
+  offset += morton_lut4[(y & 7) * 4];
+
+  offset_smzx += ((y / 8) * (CTR_TEXTURE_WIDTH / 2 * 8 / 2));
+  offset_smzx += morton_lut4[(y & 7) * 4];
+  if(chr & 1)
+    offset_smzx += 8;
 
   p = ((u8*) render_data->charset[0].data) + offset;
   p[0] = bitmask_mzx[(c >> 6) & 0x03];
@@ -510,110 +545,142 @@ static inline void ctr_char_bitmask_to_texture(
   p[8] = bitmask_mzx[(c >> 2) & 0x03];
   p[10] = bitmask_mzx[(c >> 0) & 0x03];
 
-  p = ((u8*) render_data->charset[1].data) + offset;
-  p2 = ((u8*) render_data->charset[2].data) + offset;
-  p3 = ((u8*) render_data->charset[3].data) + offset;
-  p4 = ((u8*) render_data->charset[4].data) + offset;
+  p = ((u8*) render_data->charset[1].data) + offset_smzx;
+  p2 = ((u8*) render_data->charset[2].data) + offset_smzx;
+  p3 = ((u8*) render_data->charset[3].data) + offset_smzx;
+  p4 = ((u8*) render_data->charset[4].data) + offset_smzx;
 
   t = (c >> 4);
-  p[0] = bitmask_smzx[0][t];
-  p2[0] = bitmask_smzx[1][t];
-  p3[0] = bitmask_smzx[2][t];
-  p4[0] = bitmask_smzx[3][t];
+  t2 = (c & 15);
 
-  t = (c & 15);
-  p[2] = bitmask_smzx[0][t];
-  p2[2] = bitmask_smzx[1][t];
-  p3[2] = bitmask_smzx[2][t];
-  p4[2] = bitmask_smzx[3][t];
+  p[0] = bitmask_smzx[0][t];
+  p[2] = bitmask_smzx[0][t2];
+  p2[0] = bitmask_smzx[1][t];
+  p2[2] = bitmask_smzx[1][t2];
+  p3[0] = bitmask_smzx[2][t];
+  p3[2] = bitmask_smzx[2][t2];
+  p4[0] = bitmask_smzx[3][t];
+  p4[2] = bitmask_smzx[3][t2];
 }
 
 static void ctr_remap_char_range(struct graphics_data *graphics, Uint16 first,
  Uint16 count)
 {
-  // FIXME need proper implementation
-  struct ctr_render_data *render_data;
-  signed char *c;
-  unsigned int i, j;
+  struct ctr_render_data *render_data = graphics->render_data;
+  u16 end = first + count;
+  u8 *charset_pos;
+  u32 i, j;
 
-  render_data = graphics->render_data;
-  c = (signed char *)graphics->charset;
+  if(end > FULL_CHARSET_SIZE)
+    end = FULL_CHARSET_SIZE;
 
-  for(i = 0; i < FULL_CHARSET_SIZE; i++)
-    for(j = 0; j < 14; j++, c++)
-      ctr_char_bitmask_to_texture(render_data, *c,
-       ((i & 127)*64) + ((i >> 7)*16384), j);
+  charset_pos = graphics->charset;
+  charset_pos += first * CHAR_SIZE;
 
-  render_data->charset_dirty = ((u64) 1 << (NUM_CHARSETS * 2)) - 1;
-  // render_data->smzx_charset_dirty = ((u64) 1 << (NUM_CHARSETS * 2)) - 1;
+  for(i = first; i < end; i++)
+  {
+    for(j = 0; j < 14; j++, charset_pos++)
+      ctr_char_line_to_texture(render_data, *charset_pos, i, j);
+  }
+
+  first = ctr_get_char_texture_row(first);
+  end = ctr_get_char_texture_row(end - 1);
+
+  for(i = first; i <= end; i++)
+    render_data->charset_dirty[i] = 1;
+  render_data->charset_dirty_set = 1;
 }
 
 static void ctr_remap_char(struct graphics_data *graphics, Uint16 chr)
 {
-  struct ctr_render_data *render_data;
-  signed char *c;
-  unsigned int i, offset;
+  struct ctr_render_data *render_data = graphics->render_data;
+  u16 tex_row = ctr_get_char_texture_row(chr);
+  u8 *charset_pos;
+  u32 i;
 
-  render_data = graphics->render_data;
-  c = (signed char *)graphics->charset;
-  c += chr * 14;
-  offset = ((chr & 127)*64) + ((chr >> 7)*16384);
+  charset_pos = graphics->charset;
+  charset_pos += chr * CHAR_SIZE;
 
-  for(i = 0; i < 14; i++, c++)
-    ctr_char_bitmask_to_texture(render_data, *c, offset, i);
+  for(i = 0; i < 14; i++, charset_pos++)
+    ctr_char_line_to_texture(render_data, *charset_pos, chr, i);
 
-  render_data->charset_dirty |= (1 << (chr >> 7));
-  // render_data->smzx_charset_dirty |= (1 << (chr >> 7));
+  render_data->charset_dirty[tex_row] = 1;
+  render_data->charset_dirty_set = 1;
 }
 
 static void ctr_remap_charbyte(struct graphics_data *graphics, Uint16 chr,
  Uint8 byte)
 {
-  struct ctr_render_data *render_data;
-  signed char *c;
+  struct ctr_render_data *render_data = graphics->render_data;
+  u16 tex_row = ctr_get_char_texture_row(chr);
+  u8 *charset_pos;
 
-  render_data = graphics->render_data;
-  c = (signed char *)graphics->charset;
-  c += chr * 14 + byte;
+  charset_pos = graphics->charset;
+  charset_pos += chr * CHAR_SIZE + byte;
 
-  ctr_char_bitmask_to_texture(render_data, *c,
-   ((chr & 127)*64) + ((chr >> 7)*16384), byte);
+  ctr_char_line_to_texture(render_data, *charset_pos, chr, byte);
 
-  render_data->charset_dirty |= (1 << (chr >> 7));
-  // render_data->smzx_charset_dirty |= (1 << (chr >> 7));
+  render_data->charset_dirty[tex_row] = 1;
+  render_data->charset_dirty_set = 1;
 }
 
-static inline u64 ctr_refresh_charsets(struct ctr_render_data *render_data,
- u64 dirty, int from, int to)
+static inline void ctr_refresh_charsets(struct ctr_render_data *render_data,
+ int from, int to)
 {
+  u8 *charset_dirty;
   int coffs = 0;
   int csize = 0;
-  int cincr = 1024*16/2;
+  int cincr = (CTR_TEXTURE_WIDTH * 16) / 2;
+  int last_dirty = 0;
   int i;
 
-  if(dirty == 0)
-    return 0;
+  if(!render_data->charset_dirty_set)
+    return;
 
-  while((dirty & 1) == 0)
+  render_data->charset_dirty_set = 0;
+  charset_dirty = render_data->charset_dirty;
+
+  for(i = 0; i < NUM_CHARSETS * 2; i++)
   {
-    coffs += cincr;
-    dirty >>= 1;
+    if(charset_dirty[i])
+    {
+      coffs = cincr * i;
+      break;
+    }
   }
-  while(dirty != 0)
+
+  for(; i < NUM_CHARSETS * 2; i++)
   {
-    csize += cincr;
-    dirty >>= 1;
+    if(charset_dirty[i])
+    {
+      charset_dirty[i] = 0;
+      last_dirty = i;
+    }
   }
+
+  csize = (last_dirty + 1) * cincr - coffs;
+  if(csize <= 0)
+    return;
+
   for(i = from; i < to; i++)
   {
-    GSPGPU_FlushDataCache((u8*)(render_data->charset[i].data) + coffs, csize);
-    C3D_SyncTextureCopy((u32*)((u8*)(render_data->charset[i].data) + coffs), 0,
-      (u32*)((u8*)(render_data->charset_vram[i].data) + coffs), 0, csize, 8);
+    if(i != 0)
+    {
+      GSPGPU_FlushDataCache((u8*)(render_data->charset[i].data) + coffs/2, csize/2);
+      C3D_SyncTextureCopy((u32*)((u8*)(render_data->charset[i].data) + coffs/2), 0,
+        (u32*)((u8*)(render_data->charset_vram[i].data) + coffs/2), 0, csize/2, 8);
+    }
+    else
+    {
+      GSPGPU_FlushDataCache((u8*)(render_data->charset[0].data) + coffs, csize);
+      C3D_SyncTextureCopy((u32*)((u8*)(render_data->charset[0].data) + coffs), 0,
+        (u32*)((u8*)(render_data->charset_vram[0].data) + coffs), 0, csize, 8);
+    }
   }
-  return 0;
+  return;
 }
 
-static bool ctr_should_render(struct ctr_render_data *render_data)
+static boolean ctr_should_render(struct ctr_render_data *render_data)
 {
   if(!render_data->rendering_frame)
   {
@@ -622,8 +689,7 @@ static bool ctr_should_render(struct ctr_render_data *render_data)
       render_data->checked_frame = true;
       return false;
     }
-    render_data->charset_dirty =
-     ctr_refresh_charsets(render_data, render_data->charset_dirty, 0, 5);
+    ctr_refresh_charsets(render_data, 0, 5);
     render_data->rendering_frame = true;
     render_data->layer_num = 0;
     vertex_heap_pos = 0;
@@ -648,7 +714,7 @@ static void ctr_render_layer(struct graphics_data *graphics,
   u32 uv;
   u32 i, j, ch;
   u32 protected_pal_position = graphics->protected_pal_position;
-  bool has_content = false, has_inversions = false;
+  boolean has_content = false, has_inversions = false;
 
   if(!ctr_should_render(render_data))
     return;
@@ -712,7 +778,8 @@ static void ctr_render_layer(struct graphics_data *graphics,
           ch = (ch & 0xFF) + PROTECTED_CHARSET_POSITION;
         else
           ch = (ch + offset) % PROTECTED_CHARSET_POSITION;
-        uv = ((ch & 127) << 3) | (((NUM_CHARSETS * 32)-((ch >> 7) << 4)) << 16);
+        uv = ((ch & 127) << 3);
+        uv |= (((NUM_CHARSETS * 32)-((ch >> 7) << 4)) << 16);
         col = src->bg_color;
         if(col == tcol)
         {
@@ -776,17 +843,18 @@ static void ctr_render_layer(struct graphics_data *graphics,
           ch = (ch & 0xFF) + PROTECTED_CHARSET_POSITION;
         else
           ch = (ch + offset) % PROTECTED_CHARSET_POSITION;
-        uv = ((ch & 127) << 3) | (((NUM_CHARSETS * 32)-((ch >> 7) << 4)) << 16);
+        uv = ((ch & 127) << 3);
+        uv |= (((NUM_CHARSETS * 32)-((ch >> 7) << 4)) << 16);
 
         idx1 = graphics->smzx_indices[idx + 0];
         idx2 = graphics->smzx_indices[idx + 1];
         idx3 = graphics->smzx_indices[idx + 2];
         idx4 = graphics->smzx_indices[idx + 3];
 
-        col =  idx1 == tcol ? 0 : graphics->flat_intensity_palette[(u8)idx1];
-        col2 = idx2 == tcol ? 0 : graphics->flat_intensity_palette[(u8)idx2];
-        col3 = idx3 == tcol ? 0 : graphics->flat_intensity_palette[(u8)idx3];
-        col4 = idx4 == tcol ? 0 : graphics->flat_intensity_palette[(u8)idx4];
+        col =  idx1 == tcol ? 0 : graphics->flat_intensity_palette[(u8) idx1];
+        col2 = idx2 == tcol ? 0 : graphics->flat_intensity_palette[(u8) idx2];
+        col3 = idx3 == tcol ? 0 : graphics->flat_intensity_palette[(u8) idx3];
+        col4 = idx4 == tcol ? 0 : graphics->flat_intensity_palette[(u8) idx4];
 
         if((col2 & col3 & col4) == 0)
           has_inversions = true;
@@ -882,7 +950,7 @@ static void ctr_render_mouse(struct graphics_data *graphics,
 }
 
 static inline void ctr_draw_playfield(struct ctr_render_data *render_data,
- bool top_screen)
+ boolean top_screen)
 {
   int x, y;
   int width, height;
@@ -939,7 +1007,6 @@ static inline void ctr_draw_playfield(struct ctr_render_data *render_data,
     if(get_bottom_screen_mode() == BOTTOM_SCREEN_MODE_KEYBOARD)
       ctr_draw_2d_texture(render_data, &render_data->playfield_tex,
        0, 512 - 350, 640, 350, 80, 12.75, 160, 87.5, 2.0f, 0xffffffff, true);
-
     else
       ctr_draw_2d_texture(render_data, &render_data->playfield_tex,
        0, 512 - 350, 640, 350, 0, 32, 320, 175, 2.0f, 0xffffffff, true);
@@ -984,12 +1051,25 @@ static void ctr_sync_screen(struct graphics_data *graphics)
 static void ctr_focus_pixel(struct graphics_data *graphics, Uint32 x, Uint32 y)
 {
   struct ctr_render_data *render_data;
+  render_data = graphics->render_data;
 
-  if(get_allow_focus_changes())
+  switch(get_allow_focus_changes())
   {
-    render_data = graphics->render_data;
-    render_data->focus_x = x;
-    render_data->focus_y = y;
+    case FOCUS_FORBID:
+      return;
+    case FOCUS_ALLOW:
+      if (render_data->last_focus_x != x || render_data->last_focus_y != y)
+      {
+        render_data->last_focus_x = x;
+        render_data->last_focus_y = y;
+        render_data->focus_x = x;
+        render_data->focus_y = y;
+      }
+      break;
+    case FOCUS_PASS:
+      render_data->focus_x = x;
+      render_data->focus_y = y;
+      break;
   }
 }
 

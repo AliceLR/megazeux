@@ -25,7 +25,6 @@
 __M_BEGIN_DECLS
 
 #include "../rasm.h"
-#include "../world_struct.h"
 
 #define COMMAND_BUFFER_LEN 512
 
@@ -95,10 +94,7 @@ struct robot_state
   int total_lines;
   int size;
   int max_size;
-  int include_ignores;
-  int disassemble_base;
   int current_x;
-  int color_code;
   int mark_mode;
   int mark_start;
   int mark_end;
@@ -110,7 +106,6 @@ struct robot_state
   struct robot_line *base;
   struct robot_line *mark_start_rline;
   struct robot_line *mark_end_rline;
-  char *ccodes;
   char *active_macro;
   char *command_buffer;
   char command_buffer_space[COMMAND_BUFFER_LEN];
@@ -118,8 +113,8 @@ struct robot_state
   int macro_repeat_level;
 
 #ifdef CONFIG_DEBYTECODE
-  bool program_modified;
-  bool confirm_changes;
+  boolean program_modified;
+  boolean confirm_changes;
   struct robot *cur_robot;
 #else
   enum validity_types default_invalid;
@@ -130,7 +125,7 @@ struct robot_state
 
 void robot_editor(struct world *mzx_world, struct robot *cur_robot);
 
-EDITOR_LIBSPEC void init_macros(struct world *mzx_world);
+EDITOR_LIBSPEC void init_macros(void);
 
 __M_END_DECLS
 

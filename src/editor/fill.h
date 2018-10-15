@@ -26,13 +26,14 @@
 
 __M_BEGIN_DECLS
 
+#include "buffer.h"
+#include "edit.h"
 #include "undo.h"
 
 #include "../world_struct.h"
 
-void fill_area(struct world *mzx_world, struct undo_history *h,
- enum thing id, int color, int param, int x, int y, struct robot *copy_robot,
- struct scroll *copy_scroll, struct sensor *copy_sensor, int overlay_edit);
+void fill_area(struct world *mzx_world, struct buffer_info *buffer,
+ int x, int y, enum editor_mode mode, struct undo_history *history);
 
 __M_END_DECLS
 

@@ -19,6 +19,7 @@
  */
 
 #include <ctype.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -26,13 +27,13 @@
 
 #include "counter.h"
 #include "error.h"
-#include "game.h"
 #include "graphics.h"
 #include "memcasecmp.h"
 #include "rasm.h"
 #include "robot.h"
 #include "util.h"
 #include "world.h"
+#include "world_struct.h"
 
 #ifdef CONFIG_UTHASH
 #include <utcasehash.h>
@@ -42,13 +43,13 @@ struct string *string_head = NULL;
 // Wrapper functions for uthash macros
 static void hash_add_string(struct string *src)
 {
-  HASH_ADD_KEYPTR(sh, string_head, src->name, strlen(src->name), src);
+  HASH_ADD_KEYPTR(sh, string_head, src->name, src->name_length, src);
 }
 
-static struct string *hash_find_string(const char *name)
+static struct string *hash_find_string(const char *name, int name_length)
 {
   struct string *string = NULL;
-  HASH_FIND(sh, string_head, name, strlen(name), string);
+  HASH_FIND(sh, string_head, name, (size_t)name_length, string);
   return string;
 }
 #endif
@@ -89,7 +90,7 @@ static struct string *find_string(struct world *mzx_world, const char *name,
   struct string *current;
 
 #ifdef CONFIG_UTHASH
-  current = hash_find_string(name);
+  current = hash_find_string(name, strlen(name));
 
   // When reallocing we need to replace the old pointer so we don't
   // leave invalid shit around
@@ -174,6 +175,7 @@ static struct string *add_string_preallocate(struct world *mzx_world,
 
   // Copy in the name, including NULL terminator.
   strcpy(dest->name, name);
+  dest->name_length = name_length;
 
   // Copy in the value. It is NOT null terminated!
   dest->allocated_length = length;
@@ -201,7 +203,7 @@ static struct string *reallocate_string(struct world *mzx_world,
   int base_length = (int)(src->value - (char *)src);
 
 #ifdef CONFIG_UTHASH
-  struct string *result = hash_find_string(src->name);
+  struct string *result = hash_find_string(src->name, src->name_length);
 
   if(result)
     HASH_DELETE(sh, string_head, result);
@@ -248,7 +250,7 @@ static void force_string_length(struct world *mzx_world, const char *name,
 
 static void force_string_splice(struct world *mzx_world, const char *name,
  int next, struct string **str, size_t s_length, size_t offset,
- bool offset_specified, size_t *size, bool size_specified)
+ boolean offset_specified, size_t *size, boolean size_specified)
 {
   force_string_length(mzx_world, name, next, str, &s_length);
 
@@ -270,7 +272,7 @@ static void force_string_splice(struct world *mzx_world, const char *name,
 
 static void force_string_copy(struct world *mzx_world, const char *name,
  int next, struct string **str, size_t s_length, size_t offset,
- bool offset_specified, size_t *size, bool size_specified, char *src)
+ boolean offset_specified, size_t *size, boolean size_specified, char *src)
 {
   force_string_splice(mzx_world, name, next, str, s_length,
    offset, offset_specified, size, size_specified);
@@ -280,9 +282,9 @@ static void force_string_copy(struct world *mzx_world, const char *name,
 
 static void force_string_move(struct world *mzx_world, const char *name,
  int next, struct string **str, size_t s_length, size_t offset,
- bool offset_specified, size_t *size, bool size_specified, char *src)
+ boolean offset_specified, size_t *size, boolean size_specified, char *src)
 {
-  bool src_dest_match = false;
+  boolean src_dest_match = false;
   ssize_t off = 0;
 
   if(*str)
@@ -303,7 +305,7 @@ static void force_string_move(struct world *mzx_world, const char *name,
 }
 
 static void get_string_dot_value(char *dot_ptr, int *index,
- size_t *size, bool *index_specified)
+ size_t *size, boolean *index_specified)
 {
   char *error;
 
@@ -327,7 +329,8 @@ static void get_string_dot_value(char *dot_ptr, int *index,
   }
 }
 
-static bool get_string_real_index(struct string *src, int index, size_t *real)
+static boolean get_string_real_index(struct string *src, int index,
+ size_t *real)
 {
   // Handle negative indexing
   if(index < 0)
@@ -347,6 +350,63 @@ static bool get_string_real_index(struct string *src, int index, size_t *real)
 
   *real = index;
   return false;
+}
+
+static int get_string_numeric_value(struct string *src)
+{
+  // strtol wants a null terminator and we don't want to duplicate the string,
+  // so reimplement a base 10 strtol to use the string length instead. This
+  // also seems to run a lot faster than strtol anyway.
+  boolean negative = false;
+  int overflow = INT_MAX;
+  int overflow_d = INT_MAX % 10;
+  int value = 0;
+  int digit;
+  char *end;
+  char *pos;
+
+  if(src && src->length)
+  {
+    pos = src->value;
+    end = src->value + src->length;
+
+    // Skip whitespace
+    while(pos < end && isspace(*pos))
+      pos++;
+
+    if(pos >= end)
+      return 0;
+
+    if(*pos == '-')
+    {
+      negative = true;
+      overflow = INT_MIN;
+      overflow_d = -(INT_MIN % 10);
+      pos++;
+    }
+    else
+
+    if(*pos == '+')
+      pos++;
+
+    while(pos < end && isdigit(*pos))
+    {
+      digit = *(pos++) - '0';
+
+      // Overflow
+      if(value >= (INT_MAX / 10))
+        if(value > (INT_MAX / 10) || digit >= overflow_d)
+          return overflow;
+
+      value = value * 10 + digit;
+    }
+
+    if(negative)
+      value = -value;
+
+    return (int)value;
+  }
+  return 0;
 }
 
 int string_read_as_counter(struct world *mzx_world,
@@ -384,7 +444,7 @@ int string_read_as_counter(struct world *mzx_world,
     else
     {
       // string.[index]
-      bool index_specified = false;
+      boolean index_specified = false;
       size_t real_index;
       size_t size = 1;
       int index;
@@ -429,17 +489,7 @@ int string_read_as_counter(struct world *mzx_world,
 
   // Otherwise fall back to looking up a regular string
   if(get_string(mzx_world, name, &src, id))
-  {
-    char *n_buffer = cmalloc(src.length + 1);
-    long ret;
-
-    memcpy(n_buffer, src.value, src.length);
-    n_buffer[src.length] = 0;
-    ret = strtol(n_buffer, NULL, 10);
-
-    free(n_buffer);
-    return (int)ret;
-  }
+    return get_string_numeric_value(&src);
 
   // The string wasn't found or the request was out of bounds
   return 0;
@@ -454,7 +504,7 @@ void string_write_as_counter(struct world *mzx_world,
   if(dot_ptr)
   {
     struct string *src;
-    bool index_specified = false;
+    boolean index_specified = false;
     size_t old_length;
     size_t new_length;
     size_t alloc_length;
@@ -579,8 +629,8 @@ static void add_string(struct world *mzx_world, const char *name,
   memcpy(dest->value, src->value, src->length);
 }
 
-static bool get_string_size_offset(const char *name, size_t *ssize,
- bool *size_specified, int *soffset, bool *offset_specified)
+static boolean get_string_size_offset(const char *name, size_t *ssize,
+ boolean *size_specified, int *soffset, boolean *offset_specified)
 {
   char *offset_position = strchr(name, '+');
   char *size_position = strchr(name, '#');
@@ -654,8 +704,8 @@ void load_string_board(struct world *mzx_world, const char *name,
  char *src_chars, int src_width, int block_width, int block_height,
  char terminator)
 {
-  bool offset_specified = false;
-  bool size_specified = false;
+  boolean offset_specified = false;
+  boolean size_specified = false;
   size_t dest_size = (size_t)(block_width * block_height);
   size_t dest_offset = 0;
   int input_offset = 0;
@@ -664,7 +714,7 @@ void load_string_board(struct world *mzx_world, const char *name,
   size_t copy_size;
   int next;
 
-  bool error = get_string_size_offset(name, &dest_size, &size_specified,
+  boolean error = get_string_size_offset(name, &dest_size, &size_specified,
    &input_offset, &offset_specified);
 
   if(error)
@@ -694,8 +744,8 @@ void load_string_board(struct world *mzx_world, const char *name,
 int set_string(struct world *mzx_world, const char *name, struct string *src,
  int id)
 {
-  bool offset_specified = false;
-  bool size_specified = false;
+  boolean offset_specified = false;
+  boolean size_specified = false;
   size_t offset = 0;
   size_t size = 0;
   int input_offset = 0;
@@ -704,7 +754,7 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
   struct string *dest;
   int next = 0;
 
-  bool error = get_string_size_offset(name, &size, &size_specified,
+  boolean error = get_string_size_offset(name, &size, &size_specified,
    &input_offset, &offset_specified);
 
   if(error)
@@ -924,8 +974,8 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
 
   if(special_name("smzx_indices"))
   {
-    load_indices(dest->value, dest->length);
-    pal_update = true;
+    if(dest && dest->length > 0)
+      load_indices(dest->value, dest->length);
   }
   else
 
@@ -945,14 +995,12 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
 
     cur_robot = get_robot_by_id(mzx_world, load_id);
 
-    if(cur_robot)
+    if(cur_robot && dest && dest->length)
     {
       int new_length = 0;
       char *new_source = legacy_convert_file_mem(dest->value,
-       dest->length,
-       &new_length,
-       mzx_world->conf.disassemble_extras,
-       mzx_world->conf.disassemble_base);
+       dest->length, &new_length, SAVE_ROBOT_DISASM_EXTRAS,
+       SAVE_ROBOT_DISASM_BASE);
 
       if(new_source)
       {
@@ -996,7 +1044,7 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
 
     cur_robot = get_robot_by_id(mzx_world, load_id);
 
-    if(cur_robot)
+    if(cur_robot && dest)
     {
       int new_length = dest->length;
       char *new_source;
@@ -1039,10 +1087,11 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
   {
     // Load robot from string (2.90+)
 
-    char *new_program;
+    char *new_program = NULL;
     int new_size;
 
-    new_program = assemble_file_mem(dest->value, dest->length, &new_size);
+    if(dest && dest->length)
+      new_program = assemble_file_mem(dest->value, dest->length, &new_size);
 
     if(new_program)
     {
@@ -1065,6 +1114,16 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
         cur_robot->cur_prog_line = 1;
         cur_robot->label_list =
          cache_robot_labels(cur_robot, &cur_robot->num_labels);
+
+        // Free the robot's source and command map
+        free(cur_robot->program_source);
+        cur_robot->program_source = NULL;
+        cur_robot->program_source_length = 0;
+#ifdef CONFIG_EDITOR
+        free(cur_robot->command_map);
+        cur_robot->command_map_length = 0;
+        cur_robot->command_map = NULL;
+#endif
 
         // Restart this robot if either it was just a LOAD_ROBOT
         // OR LOAD_ROBOTn was used where n is &robot_id&.
@@ -1100,15 +1159,16 @@ struct string *new_string(struct world *mzx_world, const char *name,
 
   str = find_string(mzx_world, name, &next);
   force_string_length(mzx_world, name, next, &str, &length);
+  str->length = length;
   return str;
 }
 
 int get_string(struct world *mzx_world, const char *name, struct string *dest,
  int id)
 {
-  bool error;
-  bool offset_specified = false;
-  bool size_specified = false;
+  boolean error;
+  boolean offset_specified = false;
+  boolean size_specified = false;
   size_t size = 0;
   size_t offset = 0;
   int input_offset = 0;
@@ -1202,12 +1262,12 @@ void inc_string(struct world *mzx_world, const char *name, struct string *src,
   else
   {
     // Make sure this isn't a splice, malformed or otherwise.
-    bool offset_specified = false;
-    bool size_specified = false;
+    boolean offset_specified = false;
+    boolean size_specified = false;
     size_t size;
     int offset;
 
-    bool error = get_string_size_offset(name, &size,
+    boolean error = get_string_size_offset(name, &size,
      &size_specified, &offset, &offset_specified);
 
     if(error || offset_specified || size_specified)
@@ -1235,7 +1295,7 @@ void dec_string_int(struct world *mzx_world, const char *name, int value,
   }
 }
 
-bool is_string(char *buffer)
+boolean is_string(char *buffer)
 {
   size_t namelen, i;
 
@@ -1438,6 +1498,7 @@ struct string *load_new_string(struct string **string_list, int index,
   src_string->value = src_string->name + name_length + 1;
 
   src_string->name[name_length] = 0;
+  src_string->name_length = name_length;
 
   src_string->length = str_length;
   src_string->allocated_length = str_length;

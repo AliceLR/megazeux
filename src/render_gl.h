@@ -59,7 +59,7 @@ static inline void gl_error(const char *file, int line,
                             GLenum (GL_APIENTRY *glGetError)(void)) { }
 #endif
 
-bool gl_load_syms(const struct dso_syms_map *map);
+boolean gl_load_syms(const struct dso_syms_map *map);
 void gl_set_filter_method(const char *method,
  void (GL_APIENTRY *glTexParameterf_p)(GLenum target, GLenum pname,
   GLfloat param));

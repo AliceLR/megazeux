@@ -52,7 +52,7 @@ Uint32 get_ticks(void)
   return (Uint32)(tv.tv_sec * 1000 + tv.tv_usec / 1000);
 }
 
-bool platform_init(void)
+boolean platform_init(void)
 {
   // stub
   return true;
@@ -68,7 +68,7 @@ void initialize_joysticks(void)
   // stub
 }
 
-bool __update_event_status(void)
+boolean __update_event_status(void)
 {
   // stub
   return 0;

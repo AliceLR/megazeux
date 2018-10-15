@@ -15,8 +15,7 @@ cd megazeux
 
 git checkout $1
 
-# FIXME using SDL Wii for now. Want to switch back to hardware eventually.
-arch/wii/CONFIG.SDLWII
+arch/wii/CONFIG.WII
 make debuglink -j8
 make package
 make archive

@@ -1,0 +1,3 @@
+Title: SEND Self infinite loop test
+Author: Alice Rowan
+Desc: The label caching in the port would cache the command after the current until 2.84, allowing some constructs that should have resulted in infinite loops (like the non-caching DOS) to not get trapped. Ensure that such a construct (see the robot at 2,0) does trap in DOS. This test uses 2.60 (instead of 2.51) to get access to the COMMANDS counter so MZX doesn't freeze.

@@ -2608,7 +2608,7 @@ static const struct special_word *find_special_word(const char *name,
                                                                                \
   return str;                                                                  \
 
-static inline bool is_identifier_char(char c)
+static inline boolean is_identifier_char(char c)
 {
   return isalnum((int)c) || (c == '$') || (c == '_') ||
                             (c == '#') || (c == '.');
@@ -2685,7 +2685,7 @@ static char *find_comment(char *src)
   return src;
 }
 
-static bool is_color(char *value)
+static boolean is_color(char *value)
 {
   if((value[0] == 'c') && (value[1] != 0) &&
    ((isxdigit((int)value[1]) || (value[1] == '?')) &&
@@ -2700,7 +2700,7 @@ static bool is_color(char *value)
   }
 }
 
-static bool is_basic_color(char *value)
+static boolean is_basic_color(char *value)
 {
   if((value[0] == 'c') && (value[1] != 0) &&
    isxdigit((int)value[1]) &&
@@ -2715,7 +2715,7 @@ static bool is_basic_color(char *value)
   }
 }
 
-static bool is_param(char *value)
+static boolean is_param(char *value)
 {
   if((value[0] == 'p') && (value[1] != 0) &&
    ((isxdigit((int)value[1]) && isxdigit((int)value[2])) ||
@@ -2730,7 +2730,7 @@ static bool is_param(char *value)
   }
 }
 
-static bool is_basic_param(char *value)
+static boolean is_basic_param(char *value)
 {
   if((value[0] == 'p') && (value[1] != 0) &&
    isxdigit((int)value[1]) &&
@@ -2803,7 +2803,7 @@ __editor_maybe_static int unescape_char(char *dest, char c)
 }
 
 static int escape_chars(char *dest, char *src, int escape_char,
- bool escape_interpolation)
+ boolean escape_interpolation)
 {
   if(src[0] == 0)
     return 0;
@@ -3742,7 +3742,7 @@ static struct token *token_collection_get_token(struct token_collection
   return &(tokens[token_position]);
 }
 
-static bool match_special_word_condition(struct token *current_token,
+static boolean match_special_word_condition(struct token *current_token,
  enum token_type token_type)
 {
   if(token_type != TOKEN_TYPE_BASIC_IDENTIFIER)
@@ -3758,14 +3758,14 @@ static bool match_special_word_condition(struct token *current_token,
   return current_token->arg_value.special_word != NULL;
 }
 
-static bool match_special_word_type(struct token *current_token,
+static boolean match_special_word_type(struct token *current_token,
  enum token_type token_type, enum arg_type arg_type_instance)
 {
   return match_special_word_condition(current_token, token_type) &&
    current_token->arg_value.special_word->arg_type == arg_type_instance;
 }
 
-static bool match_arg_and_special_word_type(struct token *current_token,
+static boolean match_arg_and_special_word_type(struct token *current_token,
  enum token_type token_type, enum arg_type arg_type,
  enum arg_type arg_type_instance)
 {
@@ -3837,7 +3837,7 @@ static struct token *match_direction(struct token *current_token,
   return current_token;
 }
 
-static bool whitespace_until_newline(char *src, char **_next)
+static boolean whitespace_until_newline(char *src, char **_next)
 {
   char *next = src;
 
@@ -4287,9 +4287,9 @@ static int assemble_direction(struct token **_token)
 }
 
 static int assemble_arg(struct token **_token, char *output,
- bool escape_interpolation)
+ boolean escape_interpolation)
 {
-  bool string_type = false;
+  boolean string_type = false;
   int arg_value = 0;
   char *value;
   int length;
@@ -4874,8 +4874,8 @@ static const enum legacy_command_number legacy_command_to_current[256] =
   ROBOTIC_CMD_ENABLE_MESG_EDGE
 };
 
-static bool is_simple_identifier_name(char *src, int length,
- bool allow_special_words)
+static boolean is_simple_identifier_name(char *src, int length,
+ boolean allow_special_words)
 {
   // Length can't be zero (for ``)
   if(length == 0)
@@ -5228,7 +5228,7 @@ static char *legacy_disassemble_print_expression(char *src, char **_output,
 // is_string() is designed for post-tr_msg strings and will not work
 // with disassembled code.  It also expects there to be a terminator,
 // which our disassembled code won't have.
-static bool legacy_disassembled_field_is_string(char *src, char *end)
+static boolean legacy_disassembled_field_is_string(char *src, char *end)
 {
   int level = 0;
 
@@ -5318,7 +5318,7 @@ static char *legacy_disassemble_print_string_expressions(char *src,
         char *next;
         char *base_output;
         char *name_offset;
-        bool is_real_string;
+        boolean is_real_string;
 
         src++;
 
@@ -5467,7 +5467,7 @@ static char *print_dir(int dir, char *output)
 }
 
 static char *legacy_disassemble_arg(enum arg_type arg_type, char *src,
- char **_output, bool print_ignores, int base)
+ char **_output, boolean print_ignores, int base)
 {
   char *output = *_output;
   int compiled_arg_type;
@@ -5683,8 +5683,9 @@ static char *legacy_disassemble_arg(enum arg_type arg_type, char *src,
   return src;
 }
 
-__editor_maybe_static int legacy_disassemble_command(char *command_base, char *output_base,
- int *line_length, int bytecode_length, bool print_ignores, int base)
+__editor_maybe_static
+int legacy_disassemble_command(char *command_base, char *output_base,
+ int *line_length, int bytecode_length, boolean print_ignores, int base)
 {
   int command_length = *command_base;
   char *command_src = command_base;
@@ -5795,7 +5796,7 @@ __editor_maybe_static int legacy_disassemble_command(char *command_base, char *o
 }
 
 char *legacy_disassemble_program(char *program_bytecode, int bytecode_length,
- int *_disasm_length, bool print_ignores, int base)
+ int *_disasm_length, boolean print_ignores, int base)
 {
   int disasm_length = 0;
   int disasm_offset = 0;
@@ -5856,7 +5857,7 @@ char *legacy_disassemble_program(char *program_bytecode, int bytecode_length,
 }
 
 char *legacy_convert_file(char *file_name, int *_disasm_length,
- bool print_ignores, int base)
+ boolean print_ignores, int base)
 {
   FILE *legacy_source_file = fsafeopen(file_name, "rt");
 
@@ -5919,7 +5920,7 @@ char *legacy_convert_file(char *file_name, int *_disasm_length,
 }
 
 char *legacy_convert_file_mem(char *src, int len, int *_disasm_length,
- bool print_ignores, int base)
+ boolean print_ignores, int base)
 {
   if(len)
   {

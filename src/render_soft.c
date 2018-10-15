@@ -35,7 +35,7 @@ static SDL_Surface *soft_get_screen_surface(struct sdl_render_data *render_data)
   return render_data->shadow ? render_data->shadow : render_data->screen;
 }
 
-static bool soft_init_video(struct graphics_data *graphics,
+static boolean soft_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
   static struct sdl_render_data render_data;

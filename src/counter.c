@@ -26,17 +26,16 @@
 #include <math.h>
 #include <ctype.h>
 
+#include "configure.h"
 #include "counter.h"
-
 #include "data.h"
 #include "error.h"
 #include "event.h"
 #include "fsafeopen.h"
-#include "game.h"
+#include "game_ops.h"
 #include "graphics.h"
 #include "idarray.h"
 #include "idput.h"
-#include "intake.h"
 #include "rasm.h"
 #include "robot.h"
 #include "sprite.h"
@@ -44,6 +43,7 @@
 #include "time.h"
 #include "util.h"
 #include "world.h"
+#include "world_struct.h"
 
 #include "audio/audio.h"
 
@@ -519,7 +519,6 @@ static void red_value_write(struct world *mzx_world,
 {
   int cur_color = get_counter(mzx_world, "current_color", id) & (SMZX_PAL_SIZE - 1);
   set_red_component(cur_color, value);
-  pal_update = true;
 }
 
 static void green_value_write(struct world *mzx_world,
@@ -527,7 +526,6 @@ static void green_value_write(struct world *mzx_world,
 {
   int cur_color = get_counter(mzx_world, "current_color", id) & (SMZX_PAL_SIZE - 1);
   set_green_component(cur_color, value);
-  pal_update = true;
 }
 
 static void blue_value_write(struct world *mzx_world,
@@ -535,7 +533,6 @@ static void blue_value_write(struct world *mzx_world,
 {
   int cur_color = get_counter(mzx_world, "current_color", id) & (SMZX_PAL_SIZE - 1);
   set_blue_component(cur_color, value);
-  pal_update = true;
 }
 
 static int overlay_mode_read(struct world *mzx_world,
@@ -630,7 +627,6 @@ static void smzx_r_write(struct world *mzx_world,
 {
   int cur_color = strtol(name + 6, NULL, 10) & (SMZX_PAL_SIZE - 1);
   set_red_component(cur_color, value);
-  pal_update = true;
 }
 
 static void smzx_g_write(struct world *mzx_world,
@@ -638,7 +634,6 @@ static void smzx_g_write(struct world *mzx_world,
 {
   int cur_color = strtol(name + 6, NULL, 10) & (SMZX_PAL_SIZE - 1);
   set_green_component(cur_color, value);
-  pal_update = true;
 }
 
 static void smzx_b_write(struct world *mzx_world,
@@ -646,7 +641,6 @@ static void smzx_b_write(struct world *mzx_world,
 {
   int cur_color = strtol(name + 6, NULL, 10) & (SMZX_PAL_SIZE - 1);
   set_blue_component(cur_color, value);
-  pal_update = true;
 }
 
 static int smzx_idx_read(struct world *mzx_world,
@@ -663,7 +657,6 @@ static void smzx_idx_write(struct world *mzx_world,
   int col = 0, offset = 0;
   get_counter_params(name + 8, &col, &offset);
   set_smzx_index(col, offset, value);
-  pal_update = true;
 }
 
 static int smzx_message_read(struct world *mzx_world,
@@ -1562,7 +1555,7 @@ static int char_byte_read(struct world *mzx_world,
 
   // Prior to 2.90 char params are clipped
   if(mzx_world->version < V290) char_num &= 0xFF;
-  
+
   return ec_read_byte(char_num,
    get_counter(mzx_world, "BYTE", id));
 }
@@ -1757,8 +1750,7 @@ static void exit_game_write(struct world *mzx_world,
 static void play_game_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
-  struct config_info *conf = &mzx_world->conf;
-  if(value && conf->standalone_mode)
+  if(value && get_config()->standalone_mode)
   {
     // Signal the main loop that the game state should change.
     mzx_world->change_game_state = CHANGE_STATE_PLAY_GAME_ROBOTIC;
@@ -2552,7 +2544,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
   if(strlen(char_value) >= MAX_PATH)
     return 0; // haha nope
-  
+
   switch(mzx_world->special_counter_return)
   {
     case FOPEN_FREAD:
@@ -2587,7 +2579,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
           mzx_world->input_file = fopen_unsafe(translated_path, "rb");
 
         if(mzx_world->input_file || mzx_world->input_is_dir)
-          strcpy(mzx_world->input_file_name, translated_path);    
+          strcpy(mzx_world->input_file_name, translated_path);
 
         free(translated_path);
       }
@@ -2690,11 +2682,9 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       int err;
 
       err = fsafetranslate(char_value, translated_path);
+
       if(err == -FSAFE_SUCCESS)
-      {
         load_palette(translated_path);
-        pal_update = true;
-      }
 
       free(translated_path);
       break;
@@ -2706,11 +2696,9 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       int err;
 
       err = fsafetranslate(char_value, translated_path);
+
       if(err == -FSAFE_SUCCESS)
-      {
         load_index_file(translated_path);
-        pal_update = true;
-      }
 
       free(translated_path);
       break;
@@ -2760,7 +2748,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
         err = fsafetranslate(char_value, translated_path);
         if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
-          save_world(mzx_world, translated_path, 1, MZX_VERSION);
+          save_world(mzx_world, translated_path, true, MZX_VERSION);
 
         free(translated_path);
       }
@@ -2779,7 +2767,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
     case FOPEN_LOAD_GAME:
     {
       char *translated_path = cmalloc(MAX_PATH);
-      int faded;
+      boolean faded;
 
       if(!fsafetranslate(char_value, translated_path))
       {
@@ -2812,9 +2800,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       {
         int new_length = 0;
         char *new_source = legacy_convert_file(char_value,
-         &new_length,
-         mzx_world->conf.disassemble_extras,
-         mzx_world->conf.disassemble_base);
+         &new_length, SAVE_ROBOT_DISASM_EXTRAS, SAVE_ROBOT_DISASM_BASE);
 
         if(new_source)
         {
@@ -2878,8 +2864,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
           cur_robot->program_source =
            legacy_disassemble_program(program_legacy_bytecode,
            program_bytecode_length, &(cur_robot->program_source_length),
-           mzx_world->conf.disassemble_extras,
-           mzx_world->conf.disassemble_base);
+           SAVE_ROBOT_DISASM_EXTRAS, SAVE_ROBOT_DISASM_BASE);
           free(program_legacy_bytecode);
 
           // TODO: Move this outside of here.
@@ -2927,7 +2912,11 @@ int set_counter_special(struct world *mzx_world, char *char_value,
           new_length = ftell_and_rewind(src_file);
 
           new_source = cmalloc(new_length+1);
-          fread(new_source, new_length, 1, src_file);
+          if(!fread(new_source, new_length, 1, src_file))
+          {
+            free(new_source);
+            break;
+          }
           new_source[new_length] = 0;
 
           if(new_source)
@@ -3045,7 +3034,11 @@ int set_counter_special(struct world *mzx_world, char *char_value,
           int new_size = ftell_and_rewind(bc_file);
           char *program_bytecode = malloc(new_size + 1);
 
-          fread(program_bytecode, new_size, 1, bc_file);
+          if(!fread(program_bytecode, new_size, 1, bc_file))
+          {
+            free(program_bytecode);
+            break;
+          }
 
           if(validate_legacy_bytecode(program_bytecode, new_size) <= 0)
           {
@@ -3089,16 +3082,14 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
     case FOPEN_SAVE_ROBOT:
     {
-      int allow_extras = mzx_world->conf.disassemble_extras;
-      int base = mzx_world->conf.disassemble_base;
-
       if(value >= 0)
         cur_robot = get_robot_by_id(mzx_world, value);
 
       if(cur_robot)
       {
         disassemble_file(char_value, cur_robot->program_bytecode,
-         cur_robot->program_bytecode_length, allow_extras, base);
+         cur_robot->program_bytecode_length, SAVE_ROBOT_DISASM_EXTRAS,
+         SAVE_ROBOT_DISASM_BASE);
       }
       break;
     }
@@ -3158,7 +3149,7 @@ static int hurt_player(struct world *mzx_world, int value)
         player_x = player_restart_x;
         player_y = player_restart_y;
         id_place(mzx_world, player_x, player_y, PLAYER, 0, 0);
-        mzx_world->was_zapped = 1;
+        mzx_world->was_zapped = true;
         mzx_world->player_x = player_x;
         mzx_world->player_y = player_y;
       }
@@ -3236,7 +3227,7 @@ static int invinco_gateway(struct world *mzx_world, struct counter *counter,
     if(!value)
     {
       sfx_clear_queue();
-      play_sfx(mzx_world, 18);
+      play_sfx(mzx_world, SFX_INVINCO_END);
       id_chars[player_color] = mzx_world->saved_pl_color;
     }
   }
@@ -3450,6 +3441,7 @@ static void add_counter(struct world *mzx_world, const char *name,
   int allocated = mzx_world->num_counters_allocated;
   struct counter **base = mzx_world->counter_list;
   struct counter *cdest;
+  int name_length = strlen(name);
 
   // Need a reallocation?
   if(count == allocated)
@@ -3474,10 +3466,11 @@ static void add_counter(struct world *mzx_world, const char *name,
      (count - position) * sizeof(struct counter *));
   }
 
-  cdest = cmalloc(sizeof(struct counter) + strlen(name));
+  cdest = cmalloc(sizeof(struct counter) + name_length);
   strcpy(cdest->name, name);
 
   cdest->value = value;
+  cdest->name_length = name_length;
   cdest->gateway_write = NULL;
   cdest->gateway_dec = NULL;
 
@@ -3810,6 +3803,7 @@ void load_new_counter(struct counter **counter_list, int index,
   memcpy(src_counter->name, name, name_length);
 
   src_counter->name[name_length] = 0;
+  src_counter->name_length = name_length;
   src_counter->value = value;
 
   src_counter->gateway_write = NULL;
