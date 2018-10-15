@@ -57,7 +57,7 @@ static inline void meter_initial_draw(int curr, int target, const char *title) {
 static char name_buffer[ROBOT_MAX_TR];
 
 static inline boolean legacy_load_counter(struct world *mzx_world,
- FILE *fp, struct counter **counter_list, int index)
+ FILE *fp, struct counter_list *counter_list, int index)
 {
   int value = fgetd(fp);
   int name_length = fgetd(fp);
@@ -84,7 +84,7 @@ static inline boolean legacy_load_counter(struct world *mzx_world,
 }
 
 static inline void legacy_load_string(FILE *fp,
- struct string **string_list, int index)
+ struct string_list *string_list, int index)
 {
   int name_length = fgetd(fp);
   int str_length = fgetd(fp);
@@ -631,6 +631,8 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
   int gl_rob, last_pos;
   unsigned char *charset_mem;
   unsigned char r, g, b;
+  struct counter_list *counter_list;
+  struct string_list *string_list;
   struct board *cur_board;
 
   int meter_target = 2, meter_curr = 0;
@@ -765,21 +767,21 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
 
     // Read counters
     num_counters = fgetd(fp);
-    mzx_world->num_counters = num_counters;
-    mzx_world->num_counters_allocated = num_counters;
-    mzx_world->counter_list = ccalloc(num_counters, sizeof(struct counter *));
+    counter_list = &(mzx_world->counter_list);
+    counter_list->num_counters = num_counters;
+    counter_list->num_counters_allocated = num_counters;
+    counter_list->counters = ccalloc(num_counters, sizeof(struct counter *));
 
     for(i = 0, j = 0; i < num_counters; i++)
     {
-      boolean counter = legacy_load_counter(mzx_world, fp,
-       mzx_world->counter_list, j);
+      boolean counter = legacy_load_counter(mzx_world, fp, counter_list, j);
 
       /* We loaded a special counter, this doesn't need to be
        * loaded into the regular list.
        */
       if(!counter)
       {
-        mzx_world->num_counters--;
+        counter_list->num_counters--;
         continue;
       }
 
@@ -788,19 +790,20 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
 
     // Read strings
     num_strings = fgetd(fp);
-    mzx_world->num_strings = num_strings;
-    mzx_world->num_strings_allocated = num_strings;
-    mzx_world->string_list = ccalloc(num_strings, sizeof(struct string *));
+    string_list = &(mzx_world->string_list);
+    string_list->num_strings = num_strings;
+    string_list->num_strings_allocated = num_strings;
+    string_list->strings = ccalloc(num_strings, sizeof(struct string *));
 
     for(i = 0; i < num_strings; i++)
     {
-      legacy_load_string(fp, mzx_world->string_list, i);
+      legacy_load_string(fp, string_list, i);
     }
 
 #ifndef CONFIG_UTHASH
     // Versions without the hash table require these to be sorted at all times
-    sort_counter_list(mzx_world->counter_list, mzx_world->num_counters);
-    sort_string_list(mzx_world->string_list, mzx_world->num_strings);
+    sort_counter_list(counter_list);
+    sort_string_list(string_list);
 #endif
 
     // Sprite data

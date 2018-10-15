@@ -51,6 +51,14 @@ struct counter
   char name[1];
 };
 
+struct counter_list
+{
+  int num_counters;
+  int num_counters_allocated;
+  struct counter **counters;
+  struct counter *head;
+};
+
 // TODO - Give strings a dynamic length. It would expand
 // set ends up being larger than the current size.
 
@@ -101,6 +109,14 @@ struct string
   char *value;
 
   char name[1];
+};
+
+struct string_list
+{
+  int num_strings;
+  int num_strings_allocated;
+  struct string **strings;
+  struct string *head;
 };
 
 // Special counter returns for opening files

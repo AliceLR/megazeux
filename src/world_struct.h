@@ -95,14 +95,10 @@ struct world
   int only_from_swap;
 
   // Save game material, part 2
+  struct counter_list counter_list;
+  struct string_list string_list;
   int player_restart_x;
   int player_restart_y;
-  int num_counters;
-  int num_counters_allocated;
-  struct counter **counter_list;
-  int num_strings;
-  int num_strings_allocated;
-  struct string **string_list;
   int num_sprites;
   int num_sprites_allocated;
   int sprite_num;

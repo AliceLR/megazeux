@@ -49,20 +49,6 @@
 
 #ifdef CONFIG_UTHASH
 #include <utcasehash.h>
-struct counter *counter_head = NULL;
-
-// Wrapper functions for uthash macros
-static void hash_add_counter(struct counter *src)
-{
-  HASH_ADD_KEYPTR(ch, counter_head, src->name, strlen(src->name), src);
-}
-
-static struct counter *hash_find_counter(const char *name)
-{
-  struct counter *counter = NULL;
-  HASH_FIND(ch, counter_head, name, strlen(name), counter);
-  return counter;
-}
 #endif
 
 #ifndef M_PI
@@ -3259,19 +3245,20 @@ static int builtin_gateway(struct world *mzx_world, struct counter *counter,
   return MAX(value, 0);
 }
 
-static struct counter *find_counter(struct world *mzx_world, const char *name,
- int *next)
+static struct counter *find_counter(struct counter_list *counter_list,
+ const char *name, int *next)
 {
-  struct counter *current;
+  struct counter *current = NULL;
 
 #ifdef CONFIG_UTHASH
-  current = hash_find_counter(name);
-  *next = mzx_world->num_counters;
+  size_t name_length = strlen(name);
+  HASH_FIND(ch, counter_list->head, name, name_length, current);
+  *next = counter_list->num_counters;
   return current;
 
 #else
-  struct counter **base = mzx_world->counter_list;
-  int bottom = 0, top = (mzx_world->num_counters) - 1, middle = 0;
+  struct counter **base = counter_list->counters;
+  int bottom = 0, top = (counter_list->num_counters) - 1, middle = 0;
   int cmpval = 0;
 
   while(bottom <= top)
@@ -3300,37 +3287,38 @@ static struct counter *find_counter(struct world *mzx_world, const char *name,
 }
 
 // Setup builtin gateway functions
-static void set_gateway(struct world *mzx_world, const char *name,
- gateway_write_function function)
+static void set_gateway(struct counter_list *counter_list,
+ const char *name, gateway_write_function function)
 {
   int next;
-  struct counter *cdest = find_counter(mzx_world, name, &next);
+  struct counter *cdest = find_counter(counter_list, name, &next);
   if(cdest)
     cdest->gateway_write = function;
 }
 
-static void set_dec_gateway(struct world *mzx_world, const char *name,
- gateway_dec_function function)
+static void set_dec_gateway(struct counter_list *counter_list,
+ const char *name, gateway_dec_function function)
 {
   int next;
-  struct counter *cdest = find_counter(mzx_world, name, &next);
+  struct counter *cdest = find_counter(counter_list, name, &next);
   if(cdest)
     cdest->gateway_dec = function;
 }
 
 void initialize_gateway_functions(struct world *mzx_world)
 {
-  set_gateway(mzx_world, "AMMO", builtin_gateway);
-  set_gateway(mzx_world, "COINS", builtin_gateway);
-  set_gateway(mzx_world, "GEMS", builtin_gateway);
-  set_gateway(mzx_world, "HEALTH", health_gateway);
-  set_dec_gateway(mzx_world, "HEALTH", health_dec_gateway);
-  set_gateway(mzx_world, "HIBOMBS", builtin_gateway);
-  set_gateway(mzx_world, "INVINCO", invinco_gateway);
-  set_gateway(mzx_world, "LIVES", lives_gateway);
-  set_gateway(mzx_world, "LOBOMBS", builtin_gateway);
-  set_gateway(mzx_world, "SCORE", score_gateway);
-  set_gateway(mzx_world, "TIME", time_gateway);
+  struct counter_list *counter_list = &(mzx_world->counter_list);
+  set_gateway(counter_list, "AMMO", builtin_gateway);
+  set_gateway(counter_list, "COINS", builtin_gateway);
+  set_gateway(counter_list, "GEMS", builtin_gateway);
+  set_gateway(counter_list, "HEALTH", health_gateway);
+  set_dec_gateway(counter_list, "HEALTH", health_dec_gateway);
+  set_gateway(counter_list, "HIBOMBS", builtin_gateway);
+  set_gateway(counter_list, "INVINCO", invinco_gateway);
+  set_gateway(counter_list, "LIVES", lives_gateway);
+  set_gateway(counter_list, "LOBOMBS", builtin_gateway);
+  set_gateway(counter_list, "SCORE", score_gateway);
+  set_gateway(counter_list, "TIME", time_gateway);
 }
 
 int match_function_counter(const char *dest, const char *src)
@@ -3434,13 +3422,28 @@ static const struct function_counter *find_function_counter(const char *name)
   return NULL;
 }
 
-static void add_counter(struct world *mzx_world, const char *name,
+static struct counter *allocate_new_counter(const char *name, int name_length,
+ int value)
+{
+  struct counter *dest = cmalloc(sizeof(struct counter) + name_length);
+
+  memcpy(dest->name, name, name_length);
+  dest->name[name_length] = 0;
+
+  dest->name_length = name_length;
+  dest->value = value;
+  dest->gateway_write = NULL;
+  dest->gateway_dec = NULL;
+  return dest;
+}
+
+static void add_counter(struct counter_list *counter_list, const char *name,
  int value, int position)
 {
-  int count = mzx_world->num_counters;
-  int allocated = mzx_world->num_counters_allocated;
-  struct counter **base = mzx_world->counter_list;
-  struct counter *cdest;
+  int count = counter_list->num_counters;
+  int allocated = counter_list->num_counters_allocated;
+  struct counter **base = counter_list->counters;
+  struct counter *dest;
   int name_length = strlen(name);
 
   // Need a reallocation?
@@ -3451,10 +3454,9 @@ static void add_counter(struct world *mzx_world, const char *name,
     else
       allocated = MIN_COUNTER_ALLOCATE;
 
-    mzx_world->counter_list =
-     crealloc(base, sizeof(struct counter *) * allocated);
-    base = mzx_world->counter_list;
-    mzx_world->num_counters_allocated = allocated;
+    base = crealloc(base, sizeof(struct counter *) * allocated);
+    counter_list->counters = base;
+    counter_list->num_counters_allocated = allocated;
   }
 
   // Doesn't exist, so create it
@@ -3466,24 +3468,19 @@ static void add_counter(struct world *mzx_world, const char *name,
      (count - position) * sizeof(struct counter *));
   }
 
-  cdest = cmalloc(sizeof(struct counter) + name_length);
-  strcpy(cdest->name, name);
+  dest = allocate_new_counter(name, name_length, value);
 
-  cdest->value = value;
-  cdest->name_length = name_length;
-  cdest->gateway_write = NULL;
-  cdest->gateway_dec = NULL;
-
-  mzx_world->counter_list[position] = cdest;
-  mzx_world->num_counters = count + 1;
+  counter_list->counters[position] = dest;
+  counter_list->num_counters = count + 1;
 
 #ifdef CONFIG_UTHASH
-  hash_add_counter(cdest);
+  HASH_ADD_KEYPTR(ch, counter_list->head, dest->name, dest->name_length, dest);
 #endif
 }
 
 void set_counter(struct world *mzx_world, const char *name, int value, int id)
 {
+  struct counter_list *counter_list = &(mzx_world->counter_list);
   const struct function_counter *fdest;
   struct counter *cdest;
   int next = 0;
@@ -3503,7 +3500,7 @@ void set_counter(struct world *mzx_world, const char *name, int value, int id)
   }
   else
   {
-    cdest = find_counter(mzx_world, name, &next);
+    cdest = find_counter(counter_list, name, &next);
 
     if(cdest)
     {
@@ -3517,20 +3514,20 @@ void set_counter(struct world *mzx_world, const char *name, int value, int id)
     }
     else
     {
-      add_counter(mzx_world, name, value, next);
+      add_counter(counter_list, name, value, next);
     }
   }
 }
 
-
 // Creates a new counter if it doesn't already exist; otherwise, sets the
-// old counter's value. Basically, set_string without the function check.
+// old counter's value. Basically, set_counter without the function check.
 void new_counter(struct world *mzx_world, const char *name, int value, int id)
 {
+  struct counter_list *counter_list = &(mzx_world->counter_list);
   struct counter *cdest;
   int next;
 
-  cdest = find_counter(mzx_world, name, &next);
+  cdest = find_counter(counter_list, name, &next);
 
   if(cdest)
   {
@@ -3545,12 +3542,13 @@ void new_counter(struct world *mzx_world, const char *name, int value, int id)
 
   else
   {
-    add_counter(mzx_world, name, value, next);
+    add_counter(counter_list, name, value, next);
   }
 }
 
 int get_counter(struct world *mzx_world, const char *name, int id)
 {
+  struct counter_list *counter_list = &(mzx_world->counter_list);
   const struct function_counter *fdest;
   struct counter *cdest;
   int next;
@@ -3567,7 +3565,7 @@ int get_counter(struct world *mzx_world, const char *name, int id)
       return 0;
   }
 
-  cdest = find_counter(mzx_world, name, &next);
+  cdest = find_counter(counter_list, name, &next);
 
   if(cdest)
     return cdest->value;
@@ -3577,6 +3575,7 @@ int get_counter(struct world *mzx_world, const char *name, int id)
 
 void inc_counter(struct world *mzx_world, const char *name, int value, int id)
 {
+  struct counter_list *counter_list = &(mzx_world->counter_list);
   const struct function_counter *fdest;
   struct counter *cdest;
   int current_value;
@@ -3594,7 +3593,7 @@ void inc_counter(struct world *mzx_world, const char *name, int value, int id)
   }
   else
   {
-    cdest = find_counter(mzx_world, name, &next);
+    cdest = find_counter(counter_list, name, &next);
 
     if(cdest)
     {
@@ -3609,13 +3608,14 @@ void inc_counter(struct world *mzx_world, const char *name, int value, int id)
     }
     else
     {
-      add_counter(mzx_world, name, value, next);
+      add_counter(counter_list, name, value, next);
     }
   }
 }
 
 void dec_counter(struct world *mzx_world, const char *name, int value, int id)
 {
+  struct counter_list *counter_list = &(mzx_world->counter_list);
   const struct function_counter *fdest;
   struct counter *cdest;
   int current_value;
@@ -3633,7 +3633,7 @@ void dec_counter(struct world *mzx_world, const char *name, int value, int id)
   }
   else
   {
-    cdest = find_counter(mzx_world, name, &next);
+    cdest = find_counter(counter_list, name, &next);
 
     if(cdest)
     {
@@ -3655,13 +3655,14 @@ void dec_counter(struct world *mzx_world, const char *name, int value, int id)
     }
     else
     {
-      add_counter(mzx_world, name, -value, next);
+      add_counter(counter_list, name, -value, next);
     }
   }
 }
 
 void mul_counter(struct world *mzx_world, const char *name, int value, int id)
 {
+  struct counter_list *counter_list = &(mzx_world->counter_list);
   const struct function_counter *fdest;
   struct counter *cdest;
   int current_value;
@@ -3679,7 +3680,7 @@ void mul_counter(struct world *mzx_world, const char *name, int value, int id)
   }
   else
   {
-    cdest = find_counter(mzx_world, name, &next);
+    cdest = find_counter(counter_list, name, &next);
 
     if(cdest)
     {
@@ -3696,6 +3697,7 @@ void mul_counter(struct world *mzx_world, const char *name, int value, int id)
 
 void div_counter(struct world *mzx_world, const char *name, int value, int id)
 {
+  struct counter_list *counter_list = &(mzx_world->counter_list);
   const struct function_counter *fdest;
   struct counter *cdest;
   int current_value;
@@ -3716,7 +3718,7 @@ void div_counter(struct world *mzx_world, const char *name, int value, int id)
   }
   else
   {
-    cdest = find_counter(mzx_world, name, &next);
+    cdest = find_counter(counter_list, name, &next);
 
     if(cdest)
     {
@@ -3734,6 +3736,7 @@ void div_counter(struct world *mzx_world, const char *name, int value, int id)
 
 void mod_counter(struct world *mzx_world, const char *name, int value, int id)
 {
+  struct counter_list *counter_list = &(mzx_world->counter_list);
   const struct function_counter *fdest;
   struct counter *cdest;
   int current_value;
@@ -3755,7 +3758,7 @@ void mod_counter(struct world *mzx_world, const char *name, int value, int id)
   }
   else
   {
-    cdest = find_counter(mzx_world, name, &next);
+    cdest = find_counter(counter_list, name, &next);
 
     if(cdest)
       cdest->value %= value;
@@ -3794,26 +3797,16 @@ void counter_fsg(void)
 }
 
 // Create a new counter from loading a save file. This skips find_counter.
-void load_new_counter(struct counter **counter_list, int index,
+void load_new_counter(struct counter_list *counter_list, int index,
  const char *name, int name_length, int value)
 {
-  struct counter *src_counter =
-   cmalloc(sizeof(struct counter) + name_length);
+  struct counter *dest = allocate_new_counter(name, name_length, value);
 
-  memcpy(src_counter->name, name, name_length);
-
-  src_counter->name[name_length] = 0;
-  src_counter->name_length = name_length;
-  src_counter->value = value;
-
-  src_counter->gateway_write = NULL;
-  src_counter->gateway_dec = NULL;
+  counter_list->counters[index] = dest;
 
 #ifdef CONFIG_UTHASH
-  hash_add_counter(src_counter);
+  HASH_ADD_KEYPTR(ch, counter_list->head, dest->name, dest->name_length, dest);
 #endif
-
-  counter_list[index] = src_counter;
 }
 
 static int counter_sort_fcn(const void *a, const void *b)
@@ -3823,22 +3816,27 @@ static int counter_sort_fcn(const void *a, const void *b)
    (*(const struct counter **)b)->name);
 }
 
-void sort_counter_list(struct counter **counter_list, int num_counters)
+void sort_counter_list(struct counter_list *counter_list)
 {
-  qsort(counter_list, (size_t)num_counters,
+  qsort(counter_list->counters, (size_t)counter_list->num_counters,
    sizeof(struct counter *), counter_sort_fcn);
 }
 
-void free_counter_list(struct counter **counter_list, int num_counters)
+void clear_counter_list(struct counter_list *counter_list)
 {
   int i;
 
 #ifdef CONFIG_UTHASH
-  HASH_CLEAR(ch, counter_head);
+  HASH_CLEAR(ch, counter_list->head);
 #endif
 
-  for(i = 0; i < num_counters; i++)
-    free(counter_list[i]);
+  for(i = 0; i < counter_list->num_counters; i++)
+    free(counter_list->counters[i]);
 
-  free(counter_list);
+  free(counter_list->counters);
+
+  counter_list->num_counters = 0;
+  counter_list->num_counters_allocated = 0;
+  counter_list->counters = NULL;
+  counter_list->head = NULL;
 }
