@@ -28,6 +28,7 @@
 #include "sfx.h"
 
 #include "../data.h"
+#include "../world_struct.h"
 
 #if defined(CONFIG_AUDIO) || defined(CONFIG_EDITOR)
 

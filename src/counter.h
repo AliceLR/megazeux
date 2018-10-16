@@ -26,6 +26,7 @@
 __M_BEGIN_DECLS
 
 #include "counter_struct.h"
+#include "world_struct.h"
 
 // Settings SAVE_ROBOT should use for disassembling Robotic.
 #define SAVE_ROBOT_DISASM_EXTRAS  true

@@ -3127,9 +3127,8 @@ static int hurt_player(struct world *mzx_world, int value)
       int player_restart_y = mzx_world->player_restart_y;
       int player_x = mzx_world->player_x;
       int player_y = mzx_world->player_y;
-     //Restart since we were hurt
-      if((player_restart_x != player_x) ||
-       (player_restart_y != player_y))
+      //Restart since we were hurt
+      if((player_restart_x != player_x) || (player_restart_y != player_y))
       {
         id_remove_top(mzx_world, player_x, player_y);
         player_x = player_restart_x;
@@ -3148,22 +3147,20 @@ static int hurt_player(struct world *mzx_world, int value)
   return value;
 }
 
-static int health_dec_gateway(struct world *mzx_world, struct counter *counter,
- const char *name, int value, int id)
-{
-  // Trying to decrease health? (legacy support)
-  // Only handle here in pre-port MZX world versions
-  // Otherwise, it will be handled in health_gateway()
-  if((value > 0) && (mzx_world->version < VERSION_PORT))
-  {
-    value = hurt_player(mzx_world, value);
-  }
-  return value;
-}
+typedef int (*gateway_write_function)(struct world *mzx_world,
+ struct counter *counter, const char *name, int value, int id, boolean is_dec);
 
 static int health_gateway(struct world *mzx_world, struct counter *counter,
- const char *name, int value, int id)
+ const char *name, int value, int id, boolean is_dec)
 {
+  // Trying to decrease health? (legacy support)
+  // In pre-port MZX worlds, only the dec command triggers PLAYERHURT/zap.
+  // Additionally, any decrement of >0 triggers this, so do it before the clamp.
+  if((value < counter->value) && (mzx_world->version < VERSION_PORT) && is_dec)
+  {
+    value = counter->value - hurt_player(mzx_world, counter->value - value);
+  }
+
   // Make sure health is within 0 and max health
   if(value > mzx_world->health_limit)
   {
@@ -3175,8 +3172,8 @@ static int health_gateway(struct world *mzx_world, struct counter *counter,
   }
 
   // Trying to decrease health?
-  // Only handle here in port MZX world versions
-  // Otherwise, it will be handled in health_dec_gateway()
+  // In port MZX worlds, any method of reducing health triggers PLAYERHURT/zap.
+  // This only happens if the clamped value is less than the old value.
   if((value < counter->value) && (mzx_world->version >= VERSION_PORT))
   {
     value = counter->value - hurt_player(mzx_world, counter->value - value);
@@ -3186,7 +3183,7 @@ static int health_gateway(struct world *mzx_world, struct counter *counter,
 }
 
 static int lives_gateway(struct world *mzx_world, struct counter *counter,
- const char *name, int value, int id)
+ const char *name, int value, int id, boolean is_dec)
 {
   // Make sure lives is within 0 and max lives
   if(value > mzx_world->lives_limit)
@@ -3202,7 +3199,7 @@ static int lives_gateway(struct world *mzx_world, struct counter *counter,
 }
 
 static int invinco_gateway(struct world *mzx_world, struct counter *counter,
- const char *name, int value, int id)
+ const char *name, int value, int id, boolean is_dec)
 {
   if(!counter->value)
   {
@@ -3222,7 +3219,7 @@ static int invinco_gateway(struct world *mzx_world, struct counter *counter,
 }
 
 static int score_gateway(struct world *mzx_world, struct counter *counter,
- const char *name, int value, int id)
+ const char *name, int value, int id, boolean is_dec)
 {
   // Protection for score < 0, as per the behavior in DOS MZX.
   if((value < 0) && (mzx_world->version < VERSION_PORT))
@@ -3232,18 +3229,40 @@ static int score_gateway(struct world *mzx_world, struct counter *counter,
 }
 
 static int time_gateway(struct world *mzx_world, struct counter *counter,
- const char *name, int value, int id)
+ const char *name, int value, int id, boolean is_dec)
 {
   return CLAMP(value, 0, 32767);
 }
 
-// The other builtins simply can't go below 0
-
 static int builtin_gateway(struct world *mzx_world, struct counter *counter,
- const char *name, int value, int id)
+ const char *name, int value, int id, boolean is_dec)
 {
+  // The other builtins simply can't go below 0
   return MAX(value, 0);
 }
+
+enum gateway_function_id
+{
+  NO_GATEWAY,
+  GATEWAY_BUILTIN,
+  GATEWAY_HEALTH,
+  GATEWAY_INVINCO,
+  GATEWAY_LIVES,
+  GATEWAY_SCORE,
+  GATEWAY_TIME,
+  NUM_GATEWAYS
+};
+
+static gateway_write_function gateways[NUM_GATEWAYS] =
+{
+  [NO_GATEWAY]      = NULL,
+  [GATEWAY_BUILTIN] = builtin_gateway,
+  [GATEWAY_HEALTH]  = health_gateway,
+  [GATEWAY_INVINCO] = invinco_gateway,
+  [GATEWAY_LIVES]   = lives_gateway,
+  [GATEWAY_SCORE]   = score_gateway,
+  [GATEWAY_TIME]    = time_gateway
+};
 
 static struct counter *find_counter(struct counter_list *counter_list,
  const char *name, int *next)
@@ -3288,37 +3307,27 @@ static struct counter *find_counter(struct counter_list *counter_list,
 
 // Setup builtin gateway functions
 static void set_gateway(struct counter_list *counter_list,
- const char *name, gateway_write_function function)
+ const char *name, enum gateway_function_id gateway_id)
 {
   int next;
   struct counter *cdest = find_counter(counter_list, name, &next);
   if(cdest)
-    cdest->gateway_write = function;
-}
-
-static void set_dec_gateway(struct counter_list *counter_list,
- const char *name, gateway_dec_function function)
-{
-  int next;
-  struct counter *cdest = find_counter(counter_list, name, &next);
-  if(cdest)
-    cdest->gateway_dec = function;
+    cdest->gateway_write = gateway_id;
 }
 
 void initialize_gateway_functions(struct world *mzx_world)
 {
   struct counter_list *counter_list = &(mzx_world->counter_list);
-  set_gateway(counter_list, "AMMO", builtin_gateway);
-  set_gateway(counter_list, "COINS", builtin_gateway);
-  set_gateway(counter_list, "GEMS", builtin_gateway);
-  set_gateway(counter_list, "HEALTH", health_gateway);
-  set_dec_gateway(counter_list, "HEALTH", health_dec_gateway);
-  set_gateway(counter_list, "HIBOMBS", builtin_gateway);
-  set_gateway(counter_list, "INVINCO", invinco_gateway);
-  set_gateway(counter_list, "LIVES", lives_gateway);
-  set_gateway(counter_list, "LOBOMBS", builtin_gateway);
-  set_gateway(counter_list, "SCORE", score_gateway);
-  set_gateway(counter_list, "TIME", time_gateway);
+  set_gateway(counter_list, "AMMO", GATEWAY_BUILTIN);
+  set_gateway(counter_list, "COINS", GATEWAY_BUILTIN);
+  set_gateway(counter_list, "GEMS", GATEWAY_BUILTIN);
+  set_gateway(counter_list, "HEALTH", GATEWAY_HEALTH);
+  set_gateway(counter_list, "HIBOMBS", GATEWAY_BUILTIN);
+  set_gateway(counter_list, "INVINCO", GATEWAY_INVINCO);
+  set_gateway(counter_list, "LIVES", GATEWAY_LIVES);
+  set_gateway(counter_list, "LOBOMBS", GATEWAY_BUILTIN);
+  set_gateway(counter_list, "SCORE", GATEWAY_SCORE);
+  set_gateway(counter_list, "TIME", GATEWAY_TIME);
 }
 
 int match_function_counter(const char *dest, const char *src)
@@ -3430,10 +3439,9 @@ static struct counter *allocate_new_counter(const char *name, int name_length,
   memcpy(dest->name, name, name_length);
   dest->name[name_length] = 0;
 
+  dest->gateway_write = NO_GATEWAY;
   dest->name_length = name_length;
   dest->value = value;
-  dest->gateway_write = NULL;
-  dest->gateway_dec = NULL;
   return dest;
 }
 
@@ -3505,9 +3513,10 @@ void set_counter(struct world *mzx_world, const char *name, int value, int id)
     if(cdest)
     {
       // See if there's a gateway
-      if(cdest->gateway_write)
+      if(cdest->gateway_write && cdest->gateway_write < NUM_GATEWAYS)
       {
-        value = cdest->gateway_write(mzx_world, cdest, name, value, id);
+        gateway_write_function gateway_write = gateways[cdest->gateway_write];
+        value = gateway_write(mzx_world, cdest, name, value, id, false);
       }
 
       cdest->value = value;
@@ -3532,9 +3541,10 @@ void new_counter(struct world *mzx_world, const char *name, int value, int id)
   if(cdest)
   {
     // See if there's a gateway
-    if(cdest->gateway_write)
+    if(cdest->gateway_write && cdest->gateway_write < NUM_GATEWAYS)
     {
-      value = cdest->gateway_write(mzx_world, cdest, name, value, id);
+      gateway_write_function gateway_write = gateways[cdest->gateway_write];
+      value = gateway_write(mzx_world, cdest, name, value, id, false);
     }
 
     cdest->value = value;
@@ -3599,9 +3609,10 @@ void inc_counter(struct world *mzx_world, const char *name, int value, int id)
     {
       value += cdest->value;
 
-      if(cdest->gateway_write)
+      if(cdest->gateway_write && cdest->gateway_write < NUM_GATEWAYS)
       {
-        value = cdest->gateway_write(mzx_world, cdest, name, value, id);
+        gateway_write_function gateway_write = gateways[cdest->gateway_write];
+        value = gateway_write(mzx_world, cdest, name, value, id, false);
       }
 
       cdest->value = value;
@@ -3637,18 +3648,12 @@ void dec_counter(struct world *mzx_world, const char *name, int value, int id)
 
     if(cdest)
     {
-      if(cdest->gateway_dec)
-      {
-        gateway_dec_function gateway_dec =
-         (gateway_dec_function)cdest->gateway_dec;
-        value = gateway_dec(mzx_world, cdest, name, value, id);
-      }
-
       value = cdest->value - value;
 
-      if(cdest->gateway_write)
+      if(cdest->gateway_write && cdest->gateway_write < NUM_GATEWAYS)
       {
-        value = cdest->gateway_write(mzx_world, cdest, name, value, id);
+        gateway_write_function gateway_write = gateways[cdest->gateway_write];
+        value = gateway_write(mzx_world, cdest, name, value, id, true);
       }
 
       cdest->value = value;
@@ -3685,9 +3690,10 @@ void mul_counter(struct world *mzx_world, const char *name, int value, int id)
     if(cdest)
     {
       value *= cdest->value;
-      if(cdest->gateway_write)
+      if(cdest->gateway_write && cdest->gateway_write < NUM_GATEWAYS)
       {
-        value = cdest->gateway_write(mzx_world, cdest, name, value, id);
+        gateway_write_function gateway_write = gateways[cdest->gateway_write];
+        value = gateway_write(mzx_world, cdest, name, value, id, false);
       }
 
       cdest->value = value;
@@ -3724,9 +3730,10 @@ void div_counter(struct world *mzx_world, const char *name, int value, int id)
     {
       value = cdest->value / value;
 
-      if(cdest->gateway_write)
+      if(cdest->gateway_write && cdest->gateway_write < NUM_GATEWAYS)
       {
-        value = cdest->gateway_write(mzx_world, cdest, name, value, id);
+        gateway_write_function gateway_write = gateways[cdest->gateway_write];
+        value = gateway_write(mzx_world, cdest, name, value, id, false);
       }
 
       cdest->value = value;

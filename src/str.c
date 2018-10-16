@@ -368,7 +368,7 @@ static int get_string_numeric_value(struct string *src)
     end = src->value + src->length;
 
     // Skip whitespace
-    while(pos < end && isspace(*pos))
+    while(pos < end && isspace((int)*pos))
       pos++;
 
     if(pos >= end)
@@ -386,7 +386,7 @@ static int get_string_numeric_value(struct string *src)
     if(*pos == '+')
       pos++;
 
-    while(pos < end && isdigit(*pos))
+    while(pos < end && isdigit((int)*pos))
     {
       digit = *(pos++) - '0';
 
