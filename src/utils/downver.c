@@ -43,6 +43,7 @@
 #include <strings.h>
 #endif
 
+#include "../compat.h"
 #ifdef CONFIG_UTHASH
 // Required to avoid issues from counter_struct.h including utcasehash.h
 // including memcasecmp.h including platform_endian.h including SDL_endian.h
