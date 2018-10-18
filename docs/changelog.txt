@@ -9,6 +9,9 @@ GIT
   display.
 + Setting a counter to a string no longer duplicates the entire
   string in memory.
++ Fixed faulty BOARD_X and BOARD_Y bounding for values greater
+  than the board width or height. Fixes potential crashes with
+  BOARD_CHAR, BOARD_COLOR, BOARD_ID, and BOARD_PARAM.
 
 
 October 7th, 2018 - MZX 2.91g

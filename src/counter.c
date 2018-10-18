@@ -76,8 +76,8 @@ static unsigned int get_board_x_board_y_offset(struct world *mzx_world, int id)
   int board_x = get_counter(mzx_world, "board_x", id);
   int board_y = get_counter(mzx_world, "board_y", id);
 
-  board_x = CLAMP(board_x, 0, mzx_world->current_board->board_width);
-  board_y = CLAMP(board_y, 0, mzx_world->current_board->board_height);
+  board_x = CLAMP(board_x, 0, mzx_world->current_board->board_width - 1);
+  board_y = CLAMP(board_y, 0, mzx_world->current_board->board_height - 1);
 
   return board_y * mzx_world->current_board->board_width + board_x;
 }
