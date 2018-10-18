@@ -32,11 +32,11 @@ __M_BEGIN_DECLS
 #define SAVE_ROBOT_DISASM_EXTRAS  true
 #define SAVE_ROBOT_DISASM_BASE    10
 
+CORE_LIBSPEC void counter_fsg(void);
 CORE_LIBSPEC int match_function_counter(const char *dest, const char *src);
 CORE_LIBSPEC int get_counter(struct world *mzx_world, const char *name, int id);
 CORE_LIBSPEC void set_counter(struct world *mzx_world, const char *name,
  int value, int id);
-CORE_LIBSPEC void counter_fsg(void);
 CORE_LIBSPEC void new_counter(struct world *mzx_world, const char *name,
  int value, int id);
 CORE_LIBSPEC void sort_counter_list(struct counter_list *counter_list);

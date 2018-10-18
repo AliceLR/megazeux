@@ -2518,7 +2518,140 @@ static const struct function_counter builtin_counters[] =
   { "vlayer_width",     V269c,  vlayer_width_read,    vlayer_width_write },
 };
 
+static const int num_builtin_counters = ARRAY_SIZE(builtin_counters);
 static int counter_first_letter[512];
+
+void counter_fsg(void)
+{
+  char cur_char = (builtin_counters[0]).name[0];
+  char old_char;
+  int i, i2;
+
+  for(i = 0, i2 = 0; i < 256; i++)
+  {
+    if(i != cur_char)
+    {
+      counter_first_letter[i * 2] = -1;
+      counter_first_letter[(i * 2) + 1] = -1;
+    }
+    else
+    {
+      counter_first_letter[i * 2] = i2;
+      old_char = cur_char;
+
+      while(cur_char == old_char)
+      {
+        i2++;
+        if(i2 == num_builtin_counters)
+          break;
+        cur_char = builtin_counters[i2].name[0];
+      }
+
+      counter_first_letter[(i * 2) + 1] = i2 - 1;
+    }
+  }
+}
+
+int match_function_counter(const char *dest, const char *src)
+{
+  int difference;
+  char cur_src, cur_dest;
+
+  while(1)
+  {
+    cur_src = *src;
+    cur_dest = *dest;
+
+    // Skip 1 or more letters
+    switch(cur_src)
+    {
+      // Make sure the first character is a number
+      case '!':
+      {
+        if(((cur_dest < '0') || (cur_dest > '9')) &&
+         (cur_dest != '-'))
+        {
+          return 1;
+        }
+
+        dest++;
+        cur_dest = *dest;
+
+        // Fall through, skip remaining numbers
+      }
+
+      /* fallthrough */
+
+      // Skip 0 or more number characters
+      case '?':
+      {
+        src++;
+        cur_src = *src;
+
+        while(((cur_dest >= '0') && (cur_dest <= '9')) ||
+         (cur_dest == '-'))
+        {
+          dest++;
+          cur_dest = *dest;
+        }
+        break;
+      }
+
+      // Match anything, instant winner
+      case '*':
+      {
+        return 0;
+      }
+    }
+
+    if((cur_src | cur_dest) == 0)
+    {
+      // Both hit the null terminator
+      return 0;
+    }
+
+    difference = (int)((cur_dest & 0xDF) - (cur_src & 0xDF));
+
+    if(difference)
+      return difference;
+
+    src++;
+    dest++;
+  }
+
+  return 0;
+}
+
+static const struct function_counter *find_function_counter(const char *name)
+{
+  const struct function_counter *base = builtin_counters;
+  int first_letter = tolower((int)name[0]) * 2;
+  int bottom, top, middle;
+  int cmpval;
+
+  bottom = counter_first_letter[first_letter];
+  top = counter_first_letter[first_letter + 1];
+
+  if(bottom != -1)
+  {
+    while(bottom <= top)
+    {
+      middle = (top + bottom) / 2;
+      cmpval = match_function_counter(name + 1, (base[middle]).name + 1);
+
+      if(cmpval > 0)
+        bottom = middle + 1;
+      else
+
+      if(cmpval < 0)
+        top = middle - 1;
+      else
+        return base + middle;
+    }
+  }
+
+  return NULL;
+}
 
 static struct robot *get_robot_by_id(struct world *mzx_world, int id)
 {
@@ -3115,9 +3248,52 @@ int set_counter_special(struct world *mzx_world, char *char_value,
   return 0;
 }
 
-// I don't know yet if this works in pure C
-static const int num_builtin_counters =
- sizeof(builtin_counters) / sizeof(struct function_counter);
+static struct counter *find_counter(struct counter_list *counter_list,
+ const char *name, int *next)
+{
+  struct counter *current = NULL;
+
+#if defined(CONFIG_KHASH)
+  size_t name_length = strlen(name);
+  KHASH_FIND(COUNTER, counter_list->hash_table, name, name_length, current);
+  *next = counter_list->num_counters;
+  return current;
+
+#elif defined(CONFIG_UTHASH)
+  size_t name_length = strlen(name);
+  HASH_FIND(ch, counter_list->head, name, name_length, current);
+  *next = counter_list->num_counters;
+  return current;
+
+#else
+  struct counter **base = counter_list->counters;
+  int bottom = 0, top = (counter_list->num_counters) - 1, middle = 0;
+  int cmpval = 0;
+
+  while(bottom <= top)
+  {
+    middle = (top + bottom) / 2;
+    current = base[middle];
+    cmpval = strcasecmp(name, current->name);
+
+    if(cmpval > 0)
+      bottom = middle + 1;
+    else
+
+    if(cmpval < 0)
+      top = middle - 1;
+    else
+      return current;
+  }
+
+  if(cmpval > 0)
+    *next = middle + 1;
+  else
+    *next = middle;
+
+  return NULL;
+#endif
+}
 
 static int hurt_player(struct world *mzx_world, int value)
 {
@@ -3269,53 +3445,6 @@ static gateway_write_function gateways[NUM_GATEWAYS] =
   [GATEWAY_TIME]    = time_gateway
 };
 
-static struct counter *find_counter(struct counter_list *counter_list,
- const char *name, int *next)
-{
-  struct counter *current = NULL;
-
-#if defined(CONFIG_KHASH)
-  size_t name_length = strlen(name);
-  KHASH_FIND(COUNTER, counter_list->hash_table, name, name_length, current);
-  *next = counter_list->num_counters;
-  return current;
-
-#elif defined(CONFIG_UTHASH)
-  size_t name_length = strlen(name);
-  HASH_FIND(ch, counter_list->head, name, name_length, current);
-  *next = counter_list->num_counters;
-  return current;
-
-#else
-  struct counter **base = counter_list->counters;
-  int bottom = 0, top = (counter_list->num_counters) - 1, middle = 0;
-  int cmpval = 0;
-
-  while(bottom <= top)
-  {
-    middle = (top + bottom) / 2;
-    current = base[middle];
-    cmpval = strcasecmp(name, current->name);
-
-    if(cmpval > 0)
-      bottom = middle + 1;
-    else
-
-    if(cmpval < 0)
-      top = middle - 1;
-    else
-      return current;
-  }
-
-  if(cmpval > 0)
-    *next = middle + 1;
-  else
-    *next = middle;
-
-  return NULL;
-#endif
-}
-
 // Setup builtin gateway functions
 static void set_gateway(struct counter_list *counter_list,
  const char *name, enum gateway_function_id gateway_id)
@@ -3339,107 +3468,6 @@ void initialize_gateway_functions(struct world *mzx_world)
   set_gateway(counter_list, "LOBOMBS", GATEWAY_BUILTIN);
   set_gateway(counter_list, "SCORE", GATEWAY_SCORE);
   set_gateway(counter_list, "TIME", GATEWAY_TIME);
-}
-
-int match_function_counter(const char *dest, const char *src)
-{
-  int difference;
-  char cur_src, cur_dest;
-
-  while(1)
-  {
-    cur_src = *src;
-    cur_dest = *dest;
-
-    // Skip 1 or more letters
-    switch(cur_src)
-    {
-      // Make sure the first character is a number
-      case '!':
-      {
-        if(((cur_dest < '0') || (cur_dest > '9')) &&
-         (cur_dest != '-'))
-        {
-          return 1;
-        }
-
-        dest++;
-        cur_dest = *dest;
-
-        // Fall through, skip remaining numbers
-      }
-
-      /* fallthrough */
-
-      // Skip 0 or more number characters
-      case '?':
-      {
-        src++;
-        cur_src = *src;
-
-        while(((cur_dest >= '0') && (cur_dest <= '9')) ||
-         (cur_dest == '-'))
-        {
-          dest++;
-          cur_dest = *dest;
-        }
-        break;
-      }
-
-      // Match anything, instant winner
-      case '*':
-      {
-        return 0;
-      }
-    }
-
-    if((cur_src | cur_dest) == 0)
-    {
-      // Both hit the null terminator
-      return 0;
-    }
-
-    difference = (int)((cur_dest & 0xDF) - (cur_src & 0xDF));
-
-    if(difference)
-      return difference;
-
-    src++;
-    dest++;
-  }
-
-  return 0;
-}
-
-static const struct function_counter *find_function_counter(const char *name)
-{
-  const struct function_counter *base = builtin_counters;
-  int first_letter = tolower((int)name[0]) * 2;
-  int bottom, top, middle;
-  int cmpval;
-
-  bottom = counter_first_letter[first_letter];
-  top = counter_first_letter[first_letter + 1];
-
-  if(bottom != -1)
-  {
-    while(bottom <= top)
-    {
-      middle = (top + bottom) / 2;
-      cmpval = match_function_counter(name + 1, (base[middle]).name + 1);
-
-      if(cmpval > 0)
-        bottom = middle + 1;
-      else
-
-      if(cmpval < 0)
-        top = middle - 1;
-      else
-        return base + middle;
-    }
-  }
-
-  return NULL;
 }
 
 static struct counter *allocate_new_counter(const char *name, int name_length,
@@ -3784,37 +3812,6 @@ void mod_counter(struct world *mzx_world, const char *name, int value, int id)
 
     if(cdest)
       cdest->value %= value;
-  }
-}
-
-void counter_fsg(void)
-{
-  char cur_char = (builtin_counters[0]).name[0];
-  char old_char;
-  int i, i2;
-
-  for(i = 0, i2 = 0; i < 256; i++)
-  {
-    if(i != cur_char)
-    {
-      counter_first_letter[i * 2] = -1;
-      counter_first_letter[(i * 2) + 1] = -1;
-    }
-    else
-    {
-      counter_first_letter[i * 2] = i2;
-      old_char = cur_char;
-
-      while(cur_char == old_char)
-      {
-        i2++;
-        if(i2 == num_builtin_counters)
-          break;
-        cur_char = builtin_counters[i2].name[0];
-      }
-
-      counter_first_letter[(i * 2) + 1] = i2 - 1;
-    }
   }
 }
 
