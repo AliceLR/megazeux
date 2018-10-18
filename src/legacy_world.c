@@ -800,7 +800,7 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
       legacy_load_string(fp, string_list, i);
     }
 
-#ifndef CONFIG_UTHASH
+#if !defined(CONFIG_KHASH) && !defined(CONFIG_UTHASH)
     // Versions without the hash table require these to be sorted at all times
     sort_counter_list(counter_list);
     sort_string_list(string_list);

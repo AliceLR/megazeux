@@ -71,7 +71,8 @@ usage() {
 	echo "  --disable-sdl           Disables SDL dependencies and features."
 	echo "  --enable-egl            Enables EGL backend (if SDL disabled)."
 	echo "  --disable-check-alloc   Disables memory allocator error handling."
-	echo "  --disable-uthash        Disables hash counter/string lookups."
+	echo "  --disable-khash         Disables using khash for counter/string lookups."
+	echo "  --enable-uthash         Enables using uthash for counter/string lookups."
 	echo "  --enable-debytecode     Enable experimental 'debytecode' transform."
 	echo "  --disable-libsdl2       Disable SDL 2.0 support (falls back on 1.2)."
 	echo "  --enable-fps            Enable frames-per-second counter."
@@ -135,7 +136,8 @@ METER="false"
 SDL="true"
 EGL="false"
 CHECK_ALLOC="true"
-UTHASH="true"
+KHASH="true"
+UTHASH="false"
 DEBYTECODE="false"
 LIBSDL2="true"
 FPSCOUNTER="false"
@@ -310,6 +312,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--disable-check-alloc" ] && CHECK_ALLOC="false"
 	[ "$1" = "--enable-check-alloc" ]  && CHECK_ALLOC="true"
+
+	[ "$1" = "--enable-khash" ]  && KHASH="true"
+	[ "$1" = "--disable-khash" ] && KHASH="false"
 
 	[ "$1" = "--enable-uthash" ]  && UTHASH="true"
 	[ "$1" = "--disable-uthash" ] && UTHASH="false"
@@ -595,6 +600,7 @@ if [ "$PLATFORM" = "nds" ]; then
 	SOFTWARE="false"
 
 	echo "Force-disabling hash tables on NDS."
+	KHASH="false"
 	UTHASH="false"
 fi
 
@@ -1126,12 +1132,17 @@ else
 fi
 
 #
-# Allow use of uthash.h in counter/string lookups, if enabled
+# Allow use of hash table counter/string lookups, if enabled
+# Keep the default at the bottom so it doesn't override other options.
 #
 if [ "$UTHASH" = "true" ]; then
 	echo "uthash counter/string lookup enabled."
 	echo "#define CONFIG_UTHASH" >> src/config.h
 	echo "BUILD_UTHASH=1" >> platform.inc
+elif [ "$KHASH" = "true" ]; then
+	echo "khash counter/string lookup enabled."
+	echo "#define CONFIG_KHASH" >> src/config.h
+	echo "BUILD_KHASH=1" >> platform.inc
 else
 	echo "uthash counter/string lookup disabled (using binary search)."
 fi

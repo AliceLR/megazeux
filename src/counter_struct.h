@@ -46,7 +46,12 @@ struct counter_list
   int num_counters;
   int num_counters_allocated;
   struct counter **counters;
+#ifdef CONFIG_UTHASH
   struct counter *head;
+#endif
+#ifdef CONFIG_KHASH
+  void *hash_table;
+#endif
 };
 
 // TODO - Give strings a dynamic length. It would expand
@@ -106,7 +111,12 @@ struct string_list
   int num_strings;
   int num_strings_allocated;
   struct string **strings;
+#ifdef CONFIG_UTHASH
   struct string *head;
+#endif
+#ifdef CONFIG_KHASH
+  void *hash_table;
+#endif
 };
 
 // Special counter returns for opening files

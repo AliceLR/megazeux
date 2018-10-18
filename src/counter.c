@@ -47,6 +47,11 @@
 
 #include "audio/audio.h"
 
+#ifdef CONFIG_KHASH
+#include <khashmzx.h>
+KHASH_SET_INIT(COUNTER, struct counter *, name, name_length)
+#endif
+
 #ifdef CONFIG_UTHASH
 #include <utcasehash.h>
 #endif
@@ -3269,7 +3274,13 @@ static struct counter *find_counter(struct counter_list *counter_list,
 {
   struct counter *current = NULL;
 
-#ifdef CONFIG_UTHASH
+#if defined(CONFIG_KHASH)
+  size_t name_length = strlen(name);
+  KHASH_FIND(COUNTER, counter_list->hash_table, name, name_length, current);
+  *next = counter_list->num_counters;
+  return current;
+
+#elif defined(CONFIG_UTHASH)
   size_t name_length = strlen(name);
   HASH_FIND(ch, counter_list->head, name, name_length, current);
   *next = counter_list->num_counters;
@@ -3480,6 +3491,10 @@ static void add_counter(struct counter_list *counter_list, const char *name,
 
   counter_list->counters[position] = dest;
   counter_list->num_counters = count + 1;
+
+#ifdef CONFIG_KHASH
+  KHASH_ADD(COUNTER, counter_list->hash_table, dest);
+#endif
 
 #ifdef CONFIG_UTHASH
   HASH_ADD_KEYPTR(ch, counter_list->head, dest->name, dest->name_length, dest);
@@ -3811,6 +3826,10 @@ void load_new_counter(struct counter_list *counter_list, int index,
 
   counter_list->counters[index] = dest;
 
+#ifdef CONFIG_KHASH
+  KHASH_ADD(COUNTER, counter_list->hash_table, dest);
+#endif
+
 #ifdef CONFIG_UTHASH
   HASH_ADD_KEYPTR(ch, counter_list->head, dest->name, dest->name_length, dest);
 #endif
@@ -3833,8 +3852,14 @@ void clear_counter_list(struct counter_list *counter_list)
 {
   int i;
 
+#ifdef CONFIG_KHASH
+  KHASH_CLEAR(COUNTER, counter_list->hash_table);
+  counter_list->hash_table = NULL;
+#endif
+
 #ifdef CONFIG_UTHASH
   HASH_CLEAR(ch, counter_list->head);
+  counter_list->head = NULL;
 #endif
 
   for(i = 0; i < counter_list->num_counters; i++)
@@ -3845,5 +3870,4 @@ void clear_counter_list(struct counter_list *counter_list)
   counter_list->num_counters = 0;
   counter_list->num_counters_allocated = 0;
   counter_list->counters = NULL;
-  counter_list->head = NULL;
 }
