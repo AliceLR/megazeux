@@ -453,19 +453,26 @@ static const double __ac_HASH_UPPER = 0.77;
 // FIXME make this not needed.
 #include "../../src/memcasecmp.h"
 
+/**
+ * This hash function results in far better distribution than the default X31
+ * function and isn't significantly more expensive.
+ *
+ * http://isthe.com/chongo/tech/comp/fnv/#FNV-1a
+ */
+
 // FIXME remove tolower((int)...)
-static kh_inline khint_t __ac_X31_hash_string_w_len(const void *_str, khint_t len)
+static kh_inline khint_t fnv_1a_hash_string_len(const void *_str, khint_t len)
 {
   const char *str = _str;
   khint_t h = 0;
-  for(; len > 0; len--)
-    h = (h << 5) - h + (khint_t)tolower((int)*(str++));
-    //h = (h << 5) - h + (khint_t)*(str++);
+  for(; len; len--)
+    h = (h ^ (khint_t)tolower((int)*(str++))) * 16777619;
+    //h = (h ^ (khint_t)*(str++)) * 16777619;
   return h;
 }
 
 #define kh_mem_hash_func(keyptr, keylen) \
-  __ac_X31_hash_string_w_len(keyptr, keylen)
+  fnv_1a_hash_string_len(keyptr, keylen)
 
 // FIXME replace memcasecmp with memcmp
 #define kh_mem_hash_equal(aptr, bptr, alen, blen) \
