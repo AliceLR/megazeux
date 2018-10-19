@@ -503,11 +503,11 @@ static void get_var_value(struct world *mzx_world, struct debug_var *v,
         const char *yn[] = { "N", "Y" };
 
         memset(buffer, ' ', SVALUE_SIZE);
-        snprintf(buffer, len, "%s", cur_robot->robot_name);
+        memcpy(buffer, cur_robot->robot_name, len);
         sprintf(buffer + SVALUE_SIZE - CVALUE_SIZE, "(debug: %s)",
          yn[cur_robot->command_map != NULL]);
 
-        buf[SVALUE_SIZE] = 0;
+        buffer[SVALUE_SIZE] = 0;
         *char_value = buffer;
 #else
         *char_value = cur_board->robot_list[index]->robot_name;
