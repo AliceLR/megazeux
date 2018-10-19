@@ -1,5 +1,7 @@
 GIT
 
+USERS
+
 + auto_glsl correctly switches to glsl on startup now.
 + Fix bug where "(editor)" wouldn't always display in the
   caption when editing.
@@ -12,6 +14,12 @@ GIT
 + Fixed faulty BOARD_X and BOARD_Y bounding for values greater
   than the board width or height. Fixes potential crashes with
   BOARD_CHAR, BOARD_COLOR, BOARD_ID, and BOARD_PARAM.
++ The value of SPR_YORDER is now correctly displayed in the
+  counter debug menu.
+
+DEVELOPERS
+
++ Cleaned up the counter debug menu code.
 
 
 October 7th, 2018 - MZX 2.91g

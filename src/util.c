@@ -668,8 +668,8 @@ static void *boyer_moore_memrchr(const void *mem, char ch, size_t len)
 }
 
 // Index must be an array of 256 ints
-void boyer_moore_index(void *B, size_t b_len,
- int *index, boolean ignore_case)
+void boyer_moore_index(const void *B, const size_t b_len,
+ int index[256], boolean ignore_case)
 {
   char *b = (char *)B;
   int i;
@@ -706,11 +706,11 @@ void boyer_moore_index(void *B, size_t b_len,
 // Search for substring B in haystack A. The index greatly increases the
 // search speed, especially for large needles. This is actually a reduced
 // Boyer-Moore search, as the original version uses two separate indexes.
-void *boyer_moore_search(void *A, size_t a_len, void *B, size_t b_len,
- int *index, boolean ignore_case)
+void *boyer_moore_search(const void *A, const size_t a_len,
+ const void *B, const size_t b_len, const int index[256], boolean ignore_case)
 {
-  unsigned char *a = (unsigned char *)A;
-  unsigned char *b = (unsigned char *)B;
+  const unsigned char *a = (const unsigned char *)A;
+  const unsigned char *b = (const unsigned char *)B;
   size_t i = b_len - 1;
   int j;
   if(!ignore_case)

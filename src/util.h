@@ -151,10 +151,10 @@ void dir_seek(struct mzx_dir *dir, long offset);
 long dir_tell(struct mzx_dir *dir);
 boolean dir_get_next_entry(struct mzx_dir *dir, char *entry);
 
-CORE_LIBSPEC void boyer_moore_index(void *B, size_t b_len,
- int *index, boolean ignore_case);
-CORE_LIBSPEC void *boyer_moore_search(void *A, size_t a_len, void *B, size_t b_len,
- int *index, boolean ignore_case);
+CORE_LIBSPEC void boyer_moore_index(const void *B, const size_t b_len,
+ int index[256], boolean ignore_case);
+CORE_LIBSPEC void *boyer_moore_search(const void *A, const size_t a_len,
+ const void *B, const size_t b_len, const int index[256], boolean ignore_case);
 
 // Code to load/save multi-byte ints to/from little endian memory
 int mem_getc(const unsigned char **ptr);
