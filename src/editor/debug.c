@@ -2238,6 +2238,7 @@ void __debug_counters(context *ctx)
   int search_flags = VAR_SEARCH_NAMES + VAR_SEARCH_VALUES + VAR_SEARCH_WRAP;
 
   boolean reopened = false;
+  boolean refocus_tree_list = false;
 
   // FIXME hack
   ctx_for_pal_char_editors = ctx;
@@ -2264,6 +2265,7 @@ void __debug_counters(context *ctx)
        VAR_SEARCH_NAMES | VAR_SEARCH_LOCAL | VAR_SEARCH_WRAP | VAR_SEARCH_EXACT;
 
       reopened = true;
+      refocus_tree_list = true;
     }
   }
 
@@ -2400,8 +2402,6 @@ void __debug_counters(context *ctx)
 
         if(matched)
         {
-          struct debug_node *node;
-
           // First, is it in the current list? If so, we don't want to switch
           // focus nodes (and possibly spend time rebuilding the list).
           // We want to start from the current selected var and check in the
@@ -2436,37 +2436,13 @@ void __debug_counters(context *ctx)
           // The var we matched might be hidden, so disable var hiding.
           hide_empty_vars = false;
 
-          // Open all parents
-          node = search_node;
-          while(node && node->parent)
-          {
-            node = node->parent;
-            node->opened = true;
-          }
-
-          // Clear and rebuild tree list
-          rebuild_tree_list(&root, &tree_list, &tree_size);
-
-          for(i = 0; i < tree_size; i++)
-          {
-            if(!strcmp(tree_list[i] + TREE_LIST_WIDTH, search_node->name))
-            {
-              node_selected = i;
-              node_scroll_offset = node_selected - (TREE_LIST_HEIGHT/2);
-              break;
-            }
-          }
-
           // Open search_node in var list
           rebuild_var_list(search_node, &var_list, &num_vars, hide_empty_vars);
           var_selected = search_pos;
 
-          // Fix label name
-          label[0] = '\0';
-          get_node_name(search_node, label, 80);
-
           window_focus = 0; // Var list
           focus = search_node;
+          refocus_tree_list = true;
         }
         break;
       }
@@ -2479,7 +2455,6 @@ void __debug_counters(context *ctx)
 
         if(new_counter_dialog(mzx_world, add_name))
         {
-          struct debug_node *node;
           size_t add_len = strlen(add_name);
 
           // Hope it was worth it!
@@ -2491,32 +2466,10 @@ void __debug_counters(context *ctx)
           // Find the counter/string we just made
           select_debug_var(&root, add_name, add_len, &focus, &var_selected);
 
-          // Open all parents
-          node = focus;
-          while(node->parent)
-          {
-            node = node->parent;
-            node->opened = true;
-          }
-
-          rebuild_tree_list(&root, &tree_list, &tree_size);
           rebuild_var_list(focus, &var_list, &num_vars, hide_empty_vars);
 
-          // Fix the tree list focus
-          for(i = 0; i < tree_size; i++)
-          {
-            if(!strcmp(tree_list[i] + TREE_LIST_WIDTH, focus->name))
-            {
-              node_selected = i;
-              node_scroll_offset = node_selected - (TREE_LIST_HEIGHT/2);
-              break;
-            }
-          }
-          // Fix label name
-          label[0] = '\0';
-          get_node_name(focus, label, 80);
-
           window_focus = 0;
+          refocus_tree_list = true;
         }
         break;
       }
@@ -2593,6 +2546,39 @@ void __debug_counters(context *ctx)
     if(focus->refresh_on_focus)
       for(i = 0; i < focus->num_vars; i++)
         read_var(mzx_world, &(focus->vars[i]));
+
+    // If the current position in the tree was changed by a search, bring it
+    // to focus in the tree list. This should only be used after a search.
+    if(refocus_tree_list)
+    {
+      // Open all parents to ensure that this node will exist in the tree list.
+      struct debug_node *node = focus;
+      while(node && node->parent)
+      {
+        node = node->parent;
+        node->opened = true;
+      }
+
+      // Clear and rebuild tree list.
+      rebuild_tree_list(&root, &tree_list, &tree_size);
+
+      // Find our node in the new tree list.
+      for(i = 0; i < tree_size; i++)
+      {
+        if(!strcmp(tree_list[i] + TREE_LIST_WIDTH, focus->name))
+        {
+          node_selected = i;
+          node_scroll_offset = node_selected - (TREE_LIST_HEIGHT/2);
+          break;
+        }
+      }
+
+      // Fix the current node name label.
+      label[0] = '\0';
+      get_node_name(focus, label, 80);
+
+      refocus_tree_list = false;
+    }
 
     // If the debug menu was just reopened, reset searching
     if(reopened)
