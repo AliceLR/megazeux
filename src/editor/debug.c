@@ -883,8 +883,8 @@ static void build_tree_list(struct debug_node *node,
   int level_offset = 1;
   char *name;
 
-  // Skip empty nodes entirely
-  if(node->num_nodes == 0 && node->num_vars == 0)
+  // Skip empty nodes entirely unless they're root-level.
+  if(level > 1 && node->num_nodes == 0 && node->num_vars == 0)
     return;
 
   if(level > 0)
@@ -1517,6 +1517,10 @@ static void init_strings_node(struct world *mzx_world, struct debug_node *dest)
   int first;
   int n = 0;
   int i;
+
+  // Don't create any child nodes if there are no strings.
+  if(!num_strings)
+    return;
 
   // The string list may not be in the order we want to display it in.
   sort_string_list(string_list);

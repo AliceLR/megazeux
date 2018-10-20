@@ -17,6 +17,8 @@ USERS
 + The value of SPR_YORDER is now correctly displayed in the
   counter debug menu.
 + Improved the performance of the counter debug search.
++ Fix cosmetic counter debug menu issue where the the "String"
+  tree appeared to be expandable/collapsable when empty.
 
 DEVELOPERS
 
