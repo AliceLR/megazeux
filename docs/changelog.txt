@@ -16,6 +16,7 @@ USERS
   BOARD_CHAR, BOARD_COLOR, BOARD_ID, and BOARD_PARAM.
 + The value of SPR_YORDER is now correctly displayed in the
   counter debug menu.
++ Improved the performance of the counter debug search.
 
 DEVELOPERS
 

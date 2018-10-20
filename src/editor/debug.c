@@ -1197,6 +1197,21 @@ static boolean search_vars(struct world *mzx_world, struct debug_node *node,
     inc = -1;
   }
 
+  // If there's an initial var, see if it's in this node.
+  if(*res_var)
+  {
+    if((*res_var >= node->vars) && (*res_var < node->vars + node->num_vars))
+    {
+      // It is, so skip directly to it.
+      start = *res_var - node->vars;
+    }
+    else
+    {
+      // It isn't, so we can just skip this node altogether.
+      return false;
+    }
+  }
+
   current = node->vars + start;
 
   for(i = start; i != stop; i += inc, current += inc)
@@ -1204,7 +1219,8 @@ static boolean search_vars(struct world *mzx_world, struct debug_node *node,
     // Skip entries until we find the initial var that was provided.
     if(*res_var)
     {
-      if(current == *res_var)
+      // This should be the very first var we try.
+      if(*res_var == current)
         *res_var = NULL;
 
       continue;
@@ -1286,7 +1302,7 @@ static boolean search_node(struct world *mzx_world, struct debug_node *node,
     }
   }
 
-  if(!*res_node)
+  if(node->num_vars && !*res_node)
   {
     r = search_vars(mzx_world, node, res_var, res_node, res_pos,
      match_text, match_text_index, match_length, search_flags, stop_var);
@@ -1613,7 +1629,7 @@ static void init_sprites_node(struct world *mzx_world, struct debug_node *dest)
   }
 }
 
-static void init_var_list_node(struct world *mzx_world,
+static void init_builtin_node(struct world *mzx_world,
  struct debug_node *dest, const char **var_list, int num_vars, int robot_id)
 {
   struct debug_var *vars = cmalloc(num_vars * sizeof(struct debug_var));
@@ -1633,18 +1649,18 @@ static void init_var_list_node(struct world *mzx_world,
 
 static void init_universal_node(struct world *mzx_world, struct debug_node *dest)
 {
-  init_var_list_node(mzx_world, dest, universal_var_list,
+  init_builtin_node(mzx_world, dest, universal_var_list,
    num_universal_vars, 0);
 }
 
 static void init_world_node(struct world *mzx_world, struct debug_node *dest)
 {
-  init_var_list_node(mzx_world, dest, world_var_list, num_world_vars, 0);
+  init_builtin_node(mzx_world, dest, world_var_list, num_world_vars, 0);
 }
 
 static void init_board_node(struct world *mzx_world, struct debug_node *dest)
 {
-  init_var_list_node(mzx_world, dest, board_var_list, num_board_vars, 0);
+  init_builtin_node(mzx_world, dest, board_var_list, num_board_vars, 0);
 }
 
 static void init_robot_vars_node(struct world *mzx_world,
@@ -2216,7 +2232,6 @@ void __debug_counters(context *ctx)
 
   char search_text[VAR_SEARCH_MAX + 1] = { 0 };
   int search_flags = VAR_SEARCH_NAMES + VAR_SEARCH_VALUES + VAR_SEARCH_WRAP;
-  int search_pos = 0;
 
   boolean reopened = false;
 
@@ -2356,11 +2371,12 @@ void __debug_counters(context *ctx)
         struct debug_node *search_targ = &root;
         char search_text_unescaped[VAR_SEARCH_MAX + 1] = { 0 };
         size_t search_text_length = 0;
+        int search_pos = 0;
 
-        // This will be almost always
+        // There is a var currently selected.
         if(var_selected < num_vars)
           search_var = var_list[var_selected];
-        // Only if the current view is empty
+        // The current view is empty.
         else
           search_node = focus;
 
@@ -2382,23 +2398,39 @@ void __debug_counters(context *ctx)
         {
           struct debug_node *node;
 
-          // This could result in some not-so-good things happening
-          hide_empty_vars = 0;
-
-          // First, is it in the current list? Override!
-          for(i = 0; i < num_vars; i++)
+          // First, is it in the current list? If so, we don't want to switch
+          // focus nodes (and possibly spend time rebuilding the list).
+          // We want to start from the current selected var and check in the
+          // direction of the search for best results.
+          if(num_vars)
           {
-            if(var_list[i] == search_var)
+            int inc = !(search_flags & VAR_SEARCH_REVERSE) ? 1 : -1;
+            boolean found = false;
+
+            i = var_selected;
+            do
             {
-              search_pos = i;
-              search_node = focus;
-              break;
+              i = (num_vars + i + inc) % num_vars;
+              if(var_list[i] == search_var)
+              {
+                window_focus = 0; // Var list
+                var_selected = i;
+                found = true;
+                break;
+              }
             }
+            while(i != var_selected);
+
+            if(found)
+              break;
           }
 
           // Nothing in the local context in a local search?  Abandon ship!
           if((search_flags & VAR_SEARCH_LOCAL) && (search_node != focus))
             break;
+
+          // The var we matched might be hidden, so disable var hiding.
+          hide_empty_vars = false;
 
           // Open all parents
           node = search_node;
@@ -2450,7 +2482,7 @@ void __debug_counters(context *ctx)
           repopulate_tree(mzx_world, &root);
 
           // The new counter is empty, so
-          hide_empty_vars = 0;
+          hide_empty_vars = false;
 
           // Find the counter/string we just made
           select_debug_var(&root, add_name, add_len, &focus, &var_selected);
