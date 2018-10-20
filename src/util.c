@@ -655,18 +655,6 @@ int change_dir_name(char *path_name, const char *dest)
   return -1;
 }
 
-
-// Okay I seriously can't be bothered here to figure out
-// which platforms actually have this function and which don't
-static void *boyer_moore_memrchr(const void *mem, char ch, size_t len)
-{
-  char *e = (char *)mem + len;
-  while(e-- != (char *)mem)
-    if(*e == ch)
-      return (void *)e;
-  return NULL;
-}
-
 // Index must be an array of 256 ints
 void boyer_moore_index(const void *B, const size_t b_len,
  int index[256], boolean ignore_case)
@@ -676,31 +664,23 @@ void boyer_moore_index(const void *B, const size_t b_len,
 
   char *s = b;
   char *last = b + b_len - 1;
-  char *c1, *c2;
 
-  while(s < last)
-  {
-    if(!ignore_case)
-    {
-      c1 = boyer_moore_memrchr(b, *s, b_len);
-      if(c1)
-        index[(int)*s] = (last - c1);
-    }
-    else
-    {
-      c1 = boyer_moore_memrchr(b, tolower((int)*s), b_len);
-      c2 = boyer_moore_memrchr(b, toupper((int)*s), b_len);
-      if(c1 && c1 > c2)
-        index[tolower((int)*s)] = (last - c1);
-      else
-      if(c2)
-        index[tolower((int)*s)] = (last - c2);
-    }
-    s++;
-  }
   for(i = 0; i < 256; i++)
-    if(index[i] <= 0 || index[i] > (int)b_len)
-      index[i] = b_len;
+    index[i] = b_len;
+
+  if(!ignore_case)
+  {
+    for(s = b; s < last; s++)
+      index[(int)*s] = last - s;
+  }
+  else
+  {
+    for(s = b; s < last; s++)
+    {
+      index[toupper((int)*s)] = last - s;
+      index[tolower((int)*s)] = last - s;
+    }
+  }
 }
 
 // Search for substring B in haystack A. The index greatly increases the
@@ -712,6 +692,7 @@ void *boyer_moore_search(const void *A, const size_t a_len,
   const unsigned char *a = (const unsigned char *)A;
   const unsigned char *b = (const unsigned char *)B;
   size_t i = b_len - 1;
+  size_t idx;
   int j;
   if(!ignore_case)
   {
@@ -725,7 +706,8 @@ void *boyer_moore_search(const void *A, const size_t a_len,
       if(j == -1)
         return (void *)(a + i);
 
-      i += MAX(1, index[(int)a[i]]) + (b_len - j - 1);
+      idx = index[(int)a[i]];
+      i += MAX(b_len - j, idx);
     }
   }
   else
@@ -740,7 +722,8 @@ void *boyer_moore_search(const void *A, const size_t a_len,
       if(j == -1)
         return (void *)(a + i);
 
-      i += MAX(1, index[tolower((int)a[i])]) + (b_len - j - 1);
+      idx = index[tolower((int)a[i])];
+      i += MAX(b_len - j, idx);
     }
   }
   return NULL;
