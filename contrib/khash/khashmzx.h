@@ -450,7 +450,6 @@ static const double __ac_HASH_UPPER = 0.77;
 
 /* --- BEGIN OF HASH FUNCTIONS --- */
 
-// FIXME make this not needed.
 #include "../../src/memcasecmp.h"
 
 /**
@@ -460,24 +459,22 @@ static const double __ac_HASH_UPPER = 0.77;
  * http://isthe.com/chongo/tech/comp/fnv/#FNV-1a
  */
 
-// FIXME remove tolower((int)...)
+// TODO make case sensitive version?
 static kh_inline khint_t fnv_1a_hash_string_len(const void *_str, khint_t len)
 {
   const char *str = _str;
   khint_t h = 0;
   for(; len; len--)
-    h = (h ^ (khint_t)tolower((int)*(str++))) * 16777619;
-    //h = (h ^ (khint_t)*(str++)) * 16777619;
+    h = (h ^ (khint_t)memtolower((int)*(str++))) * 16777619;
   return h;
 }
 
 #define kh_mem_hash_func(keyptr, keylen) \
   fnv_1a_hash_string_len(keyptr, keylen)
 
-// FIXME replace memcasecmp with memcmp
+// TODO make case sensitive version?
 #define kh_mem_hash_equal(aptr, bptr, alen, blen) \
   (((khint_t)alen == (khint_t)blen) && !memcasecmp(aptr, bptr, blen))
-  //(((khint_t)alen == (khint_t)blen) && !memcmp(aptr, bptr, blen))
 
 /* --- END OF HASH FUNCTIONS --- */
 
@@ -527,6 +524,18 @@ static kh_inline khint_t fnv_1a_hash_string_len(const void *_str, khint_t len)
     khash_t(n) *h = _h;                                           \
     kh_destroy(n, h);                                             \
     _h = NULL;                                                    \
+  }                                                               \
+} while(0)
+
+#define KHASH_ITER(n, _h, element, code) do                       \
+{                                                                 \
+  khash_t(n) *__h = _h;                                           \
+  khint_t __i;                                                    \
+  for(__i = kh_begin(__h); __i != kh_end(__h); __i++)             \
+  {                                                               \
+    if(!kh_exist(__h, __i)) continue;                             \
+    (element) = kh_key(__h, __i);                                 \
+    code;                                                         \
   }                                                               \
 } while(0)
 
