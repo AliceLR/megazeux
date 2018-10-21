@@ -35,6 +35,12 @@
 #include "world.h"
 #include "world_struct.h"
 
+/**
+ * TODO: String lookups are currently case-insensitive, which is somewhat of
+ * a performance concern. A good future (3.xx) feature might be to lowercase
+ * all string names.
+ */
+
 #ifdef CONFIG_KHASH
 #include <khashmzx.h>
 KHASH_SET_INIT(STRING, struct string *, name, name_length)
@@ -1471,23 +1477,21 @@ static int compare_wildcard(const char *str, size_t str_len,
   return res;
 }
 
-int compare_strings(struct string *dest, struct string *src,
- int exact_case, int allow_wildcards)
+int compare_strings(struct string *A, struct string *B, boolean exact_case,
+ boolean allow_wildcards)
 {
-  size_t cmp_length = (dest->length < src->length
-    ? dest->length
-    : src->length);
+  size_t cmp_length = (A->length < B->length) ? A->length : B->length;
   int res = 0;
 
   if(!allow_wildcards)
   {
     if(exact_case)
     {
-      res = memcmp(dest->value, src->value, cmp_length);
+      res = memcmp(A->value, B->value, cmp_length);
     }
     else
     {
-      res = memcasecmp(dest->value, src->value, cmp_length);
+      res = memcasecmp(A->value, B->value, cmp_length);
     }
 
     // NOTE: Versions prior to 2.91e have a string ordering bug.
@@ -1498,20 +1502,16 @@ int compare_strings(struct string *dest, struct string *src,
     if(res != 0)
       return res;
 
-    if(src->length < dest->length)
+    if(A->length > B->length)
       return 1;
 
-    if(src->length > dest->length)
+    if(A->length < B->length)
       return -1;
 
     return res;
   }
 
-  else
-  {
-    return compare_wildcard(dest->value, dest->length,
-     src->value, src->length, exact_case);
-  }
+  return compare_wildcard(A->value, A->length, B->value, B->length, exact_case);
 }
 
 // Create a new string from loading a save file. This skips find_string.

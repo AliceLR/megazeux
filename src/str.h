@@ -59,8 +59,8 @@ void inc_string(struct world *mzx_world, const char *name, struct string *src,
  int id);
 void dec_string_int(struct world *mzx_world, const char *name, int value,
  int id);
-int compare_strings(struct string *dest, struct string *src,
- int exact_case, int allow_wildcards);
+int compare_strings(struct string *A, struct string *B, boolean exact_case,
+ boolean allow_wildcards);
 
 struct string *load_new_string(struct string_list *string_list, int index,
  const char *name, int name_length, int str_length);
