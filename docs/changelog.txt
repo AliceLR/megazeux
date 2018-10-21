@@ -21,6 +21,9 @@ USERS
   tree appeared to be expandable/collapsable when empty.
 + Fixed faulty string search algorithm used in counter searching
   and breakpoints.
++ When testing from the editor, if "__test.mzx" exists MegaZeux
+  will now choose a numbered name for this world backup (e.g.
+  "__test2.mzx") instead of potentially overwriting work.
 
 DEVELOPERS
 

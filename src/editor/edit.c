@@ -74,7 +74,8 @@
 #endif
 
 #define NEW_WORLD_TITLE       "Untitled world"
-#define TEST_WORLD_FILE       "__test.mzx"
+#define TEST_WORLD_FILENAME   "__test.mzx"
+#define TEST_WORLD_PATTERN    "__test%d.mzx"
 
 #define FLASH_THING_B         4
 #define FLASH_THING_MAX       8
@@ -171,6 +172,7 @@ struct editor_context
   int test_reload_board;
   int test_reload_version;
   char test_reload_dir[MAX_PATH];
+  char test_reload_file[MAX_PATH];
   boolean reload_after_testing;
 };
 
@@ -204,6 +206,24 @@ static boolean editor_reload_world(struct editor_context *editor,
 
   edit_menu_show_board_mod(editor->edit_menu);
   return true;
+}
+
+/**
+ * Get the filename for the test world file that will be reloaded after testing.
+ * Attempts to ensure that previous test files left behind due to crashes or
+ * other instances of MegaZeux that are also testing aren't overwritten.
+ */
+
+static void get_test_world_filename(struct editor_context *editor)
+{
+  struct stat file_info;
+  int i;
+
+  strcpy(editor->test_reload_file, TEST_WORLD_FILENAME);
+
+  // If the regular file exists, attempt numbered names.
+  for(i = 2; !stat(editor->test_reload_file, &file_info); i++)
+    snprintf(editor->test_reload_file, MAX_PATH, TEST_WORLD_PATTERN, i);
 }
 
 /**
@@ -3009,7 +3029,9 @@ static boolean editor_key(context *ctx, int *key)
         clear_overlay_history(editor);
         clear_vlayer_history(editor);
 
-        if(!save_world(mzx_world, TEST_WORLD_FILE, false, MZX_VERSION))
+        get_test_world_filename(editor);
+
+        if(!save_world(mzx_world, editor->test_reload_file, false, MZX_VERSION))
         {
           getcwd(editor->test_reload_dir, MAX_PATH);
           editor->test_reload_version = mzx_world->version;
@@ -3347,7 +3369,7 @@ static void editor_resume(context *ctx)
     editor->reload_after_testing = false;
     chdir(editor->test_reload_dir);
 
-    if(!reload_world(mzx_world, TEST_WORLD_FILE, &ignore))
+    if(!reload_world(mzx_world, editor->test_reload_file, &ignore))
     {
       if(!editor_reload_world(editor, editor->current_world))
         create_blank_world(mzx_world);
@@ -3380,7 +3402,7 @@ static void editor_resume(context *ctx)
       fix_mod(editor);
     }
 
-    unlink(TEST_WORLD_FILE);
+    unlink(editor->test_reload_file);
   }
 }
 
