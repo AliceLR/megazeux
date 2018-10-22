@@ -19,8 +19,8 @@ USERS
 + Improved the performance of the counter debug search.
 + Fixed cosmetic counter debug menu issue where the the "String"
   tree appeared to be expandable/collapsable when empty.
-+ Fixed faulty string search algorithm used in counter searching
-  and breakpoints.
++ Fixed faulty substring searching algorithm used in the counter
+  debug menu search and for breakpoints.
 + When testing from the editor, if "__test.mzx" exists MegaZeux
   will now choose a numbered name for this world backup (e.g.
   "__test2.mzx") instead of potentially overwriting work.
@@ -28,6 +28,12 @@ USERS
 DEVELOPERS
 
 + Cleaned up the counter debug menu code.
++ Switched from uthash to a modified version of khash for
+  counter and string lookups. Counters/strings now consume less
+  memory and counter/string lookups should perform slightly
+  better on most platforms.
++ Replaced toupper/tolower in memcasecmp and substring searching
+  with a lookup table-based implementation of tolower.
 
 
 October 7th, 2018 - MZX 2.91g

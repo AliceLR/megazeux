@@ -35,6 +35,7 @@
 
 #include "const.h" // for MAX_PATH
 #include "error.h"
+#include "memcasecmp.h" // memtolower
 
 struct mzx_resource
 {
@@ -676,10 +677,11 @@ void boyer_moore_index(const void *B, const size_t b_len,
   else
   {
     for(s = b; s < last; s++)
-    {
-      index[toupper((int)*s)] = last - s;
-      index[tolower((int)*s)] = last - s;
-    }
+      index[memtolower((int)*s)] = last - s;
+
+    // Duplicating the lowercase values over the uppercase values helps avoid
+    // an extra tolower in the search function.
+    memcpy(index + 'A', index + 'a', sizeof(int) * 26);
   }
 }
 
@@ -716,13 +718,13 @@ void *boyer_moore_search(const void *A, const size_t a_len,
     {
       j = b_len - 1;
 
-      while(j >= 0 && tolower((int)a[i]) == tolower((int)b[j]))
+      while(j >= 0 && memtolower((int)a[i]) == memtolower((int)b[j]))
         j--, i--;
 
       if(j == -1)
         return (void *)(a + i);
 
-      idx = index[tolower((int)a[i])];
+      idx = index[(int)a[i]];
       i += MAX(b_len - j, idx);
     }
   }
