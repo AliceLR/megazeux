@@ -42,10 +42,14 @@ Older versions are available at [DigitalMZX](http://vault.digitalmzx.net/).
 [arch-d32]: contrib/archicons/debian32.png  "Debian i386"
 [arch-rpi]: contrib/archicons/raspbian.png  "Raspbian"
 [arch-aur]: contrib/archicons/archlinux.png "Arch Linux (via AUR)"
+[arch-void]:contrib/archicons/voidlinux.png "Void Linux"
 [arch-nds]: contrib/archicons/nds.png       "Nintendo DS"
 [arch-3ds]: contrib/archicons/3ds.png       "Nintendo 3DS"
 [arch-wii]: contrib/archicons/wii.png       "Nintendo Wii"
 [arch-psp]: contrib/archicons/psp.png       "PlayStation Portable"
+[arch-ami]: contrib/archicons/amiga.png     "Amiga OS 4"
+[arch-gp2x]:contrib/archicons/gp2x.png      "GP2X"
+[arch-pand]:contrib/archicons/pandora.png   "Pandora"
 [arch-src]: contrib/archicons/src.png       "Source code"
 
 <!-- Displays the download links as images. -->
@@ -62,11 +66,18 @@ Older versions are available at [DigitalMZX](http://vault.digitalmzx.net/).
 &nbsp; [![PlayStation Portable][arch-psp]][megazeux-psp]
 &nbsp; [![Source code         ][arch-src]][megazeux-src]
 
+The following platforms have MegaZeux releases available via repository:
+
+&nbsp; [![Arch Linux (via AUR)][arch-aur]](https://aur.archlinux.org/packages/megazeux/)
+&nbsp; [![Void Linux][arch-void]](https://github.com/void-linux/void-packages/tree/master/srcpkgs/megazeux)
+&nbsp; [![Amiga OS 4 (outdated)][arch-ami]](http://aminet.net/package/game/misc/pfp-mgzx)
+&nbsp; [![GP2X (outdated)][arch-gp2x]](https://dl.openhandhelds.org/cgi-bin/gp2x.cgi?0,0,0,0,26,2920)
+&nbsp; [![Pandora (outdated)][arch-pand]](https://repo.openpandora.org/?page=detail&app=megazeux_ptitseb)
+
 Downloads are also available for the following platforms, but are not regularly updated:
 
 &nbsp; [![Mac OS X (PowerPC)  ][arch-ppc]][megazeux-ppc]
 &nbsp; [![Raspbian            ][arch-rpi]][megazeux-rpi]
-&nbsp; [![Arch Linux (via AUR)][arch-aur]](https://aur.archlinux.org/packages/megazeux/)
 &nbsp; [![MS DOS (MZX 2.70)   ][arch-dos]][megazeux-dos]
 
 ## Credits
