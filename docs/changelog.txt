@@ -21,6 +21,8 @@ USERS
   tree appeared to be expandable/collapsable when empty.
 + Fixed faulty substring searching algorithm used in the counter
   debug menu search and for breakpoints.
++ Added "Search" and "Cancel" buttons to the counter debug menu
+  search so it can be used with the mouse.
 + When testing from the editor, if "__test.mzx" exists MegaZeux
   will now choose a numbered name for this world backup (e.g.
   "__test2.mzx") instead of potentially overwriting work.

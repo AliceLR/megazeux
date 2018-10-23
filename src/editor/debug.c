@@ -57,11 +57,11 @@
 #define CVALUE_COL_OFFSET (VAR_LIST_WIDTH - CVALUE_SIZE - 1)
 #define SVALUE_COL_OFFSET (VAR_LIST_WIDTH - SVALUE_SIZE - 1)
 
-#define VAR_SEARCH_DIALOG_X 10
+#define VAR_SEARCH_DIALOG_X 4
 #define VAR_SEARCH_DIALOG_Y 9
-#define VAR_SEARCH_DIALOG_W 60
+#define VAR_SEARCH_DIALOG_W 71
 #define VAR_SEARCH_DIALOG_H 5
-#define VAR_SEARCH_MAX 47
+#define VAR_SEARCH_MAX 48
 #define VAR_SEARCH_NAMES    1
 #define VAR_SEARCH_VALUES   2
 #define VAR_SEARCH_CASESENS 4
@@ -1968,7 +1968,7 @@ static void input_counter_value(struct world *mzx_world, struct debug_var *v)
 /* Search Dialog */
 /*****************/
 
-static int search_dialog_idle_function(struct world *mzx_world,
+static int counter_search_dialog_idle_function(struct world *mzx_world,
  struct dialog *di, int key)
 {
   if((key == IKEY_RETURN) && (di->current_element == 0))
@@ -1981,19 +1981,20 @@ static int search_dialog_idle_function(struct world *mzx_world,
   return key;
 }
 
-static int search_dialog(struct world *mzx_world,
- const char *title, char *string, int *search_flags)
+static int counter_search_dialog(struct world *mzx_world, char *string,
+ int *search_flags)
 {
   int result = 0;
   struct dialog di;
 
-  const char *name_opt[] = { "Search names" };
-  const char *value_opt[] = { "Search values" };
-  const char *case_opt[] = { "Case sensitive" };
-  const char *exact_opt[] = { "Exact" };
-  const char *reverse_opt[] = { "Reverse" };
-  const char *wrap_opt[] = { "Wrap" };
-  const char *local_opt[] = { "Current list" };
+  static const char *title = "Search variables (repeat: Ctrl+R)";
+  static const char *name_opt[] = { "Search names" };
+  static const char *value_opt[] = { "Search values" };
+  static const char *case_opt[] = { "Case sensitive" };
+  static const char *exact_opt[] = { "Exact" };
+  static const char *reverse_opt[] = { "Reverse" };
+  static const char *wrap_opt[] = { "Wrap" };
+  static const char *local_opt[] = { "Current list" };
 
   int names =    (*search_flags & VAR_SEARCH_NAMES) > 0;
   int values =   (*search_flags & VAR_SEARCH_VALUES) > 0;
@@ -2006,13 +2007,15 @@ static int search_dialog(struct world *mzx_world,
   struct element *elements[] =
   {
     construct_input_box( 2, 1, "Search: ", VAR_SEARCH_MAX, string),
-    construct_check_box( 2, 2, name_opt,    1, strlen(*name_opt),    &names),
-    construct_check_box(20, 2, value_opt,   1, strlen(*value_opt),   &values),
-    construct_check_box(39, 2, case_opt,    1, strlen(*case_opt),    &casesens),
-    construct_check_box( 4, 3, exact_opt,   1, strlen(*exact_opt),   &exact),
-    construct_check_box(15, 3, reverse_opt, 1, strlen(*reverse_opt), &reverse),
-    construct_check_box(28, 3, wrap_opt,    1, strlen(*wrap_opt),    &wrap),
-    construct_check_box(38, 3, local_opt,   1, strlen(*local_opt),   &local),
+    construct_button(61, 1, "Search", 0),
+    construct_check_box( 3, 2, name_opt,    1, strlen(*name_opt),    &names),
+    construct_check_box(21, 2, value_opt,   1, strlen(*value_opt),   &values),
+    construct_check_box(40, 2, case_opt,    1, strlen(*case_opt),    &casesens),
+    construct_check_box( 5, 3, exact_opt,   1, strlen(*exact_opt),   &exact),
+    construct_check_box(16, 3, reverse_opt, 1, strlen(*reverse_opt), &reverse),
+    construct_check_box(29, 3, wrap_opt,    1, strlen(*wrap_opt),    &wrap),
+    construct_check_box(39, 3, local_opt,   1, strlen(*local_opt),   &local),
+    construct_button(61, 3, "Cancel", -1),
   };
 
   // Prevent previous keys from carrying through.
@@ -2020,7 +2023,7 @@ static int search_dialog(struct world *mzx_world,
 
   construct_dialog_ext(&di, title, VAR_SEARCH_DIALOG_X, VAR_SEARCH_DIALOG_Y,
    VAR_SEARCH_DIALOG_W, VAR_SEARCH_DIALOG_H, elements, ARRAY_SIZE(elements),
-   0, 0, 0, search_dialog_idle_function);
+   0, 0, 0, counter_search_dialog_idle_function);
 
   result = run_dialog(mzx_world, &di);
 
@@ -2359,11 +2362,8 @@ void __debug_counters(context *ctx)
       // Search (Ctrl+F)
       case 2:
       {
-        if(search_dialog(mzx_world, "Search variables (Ctrl+F, repeat Ctrl+R)",
-         search_text, &search_flags))
-        {
+        if(counter_search_dialog(mzx_world, search_text, &search_flags))
           break;
-        }
       }
 
       /* fallthrough */
