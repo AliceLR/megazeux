@@ -60,11 +60,6 @@
 #define MAX_MACRO_RECURSION 16
 #define MAX_MACRO_REPEAT 128
 
-#ifndef CONFIG_DEBYTECODE
-// fix cyclic dependency (could be done in several ways)
-static int execute_named_macro(struct robot_state *rstate, char *macro_name);
-#endif
-
 static int copy_buffer_lines;
 static int copy_buffer_total_length;
 static char **copy_buffer;
@@ -72,7 +67,8 @@ static char **copy_buffer;
 static enum find_option last_find_option = FIND_OPTION_NONE;
 static char search_string[256];
 static char replace_string[256];
-static int wrap_option = 1;
+static boolean wrap_option = true;
+static boolean case_option = false;
 
 static const char key_help[(81 * 3) + 1] =
 {
@@ -114,10 +110,6 @@ static const char bottom_text_color = combine_colors(15, 1);
 static const char top_highlight_color = combine_colors(14, 4);
 static const char mark_color = combine_colors(0, 7);
 
-static const int max_size = 2097152;
-
-static int case_option = 0;
-
 static char macros[5][64];
 
 static void str_lower_case(char *str, char *dest)
@@ -146,7 +138,7 @@ static void insert_string(char *dest, char *string, int *position)
   *position = n_pos + (int)insert_length;
 }
 
-static void add_blank_line(struct robot_state *rstate, int relation)
+static void add_blank_line(struct robot_editor_context *rstate, int relation)
 {
 #ifndef CONFIG_DEBYTECODE
   if(rstate->size + 3 < rstate->max_size)
@@ -229,7 +221,7 @@ static void delete_line_contents(struct robot_line *delete_rline)
   free(delete_rline);
 }
 
-static void delete_current_line(struct robot_state *rstate, int move)
+static void delete_current_line(struct robot_editor_context *rstate, int move)
 {
   if(rstate->total_lines != 1)
   {
@@ -297,7 +289,7 @@ static void delete_current_line(struct robot_state *rstate, int move)
 }
 
 static void delete_robot_lines(struct robot *cur_robot,
- struct robot_state *rstate)
+ struct robot_editor_context *rstate)
 {
   struct robot_line *current_rline = rstate->base->next;
   struct robot_line *next_rline;
@@ -361,7 +353,7 @@ static void delete_robot_lines(struct robot *cur_robot,
 #endif
 }
 
-static void macro_default_values(struct robot_state *rstate,
+static void macro_default_values(struct robot_editor_context *rstate,
  struct ext_macro *macro_src)
 {
   struct macro_type *current_type;
@@ -437,7 +429,7 @@ static char *package_program(struct robot_line *start_rline,
   return packaged_program;
 }
 
-static void update_program_status(struct robot_state *rstate,
+static void update_program_status(struct robot_editor_context *rstate,
  struct robot_line *start_rline, struct robot_line *end_rline)
 {
   struct robot_line *current_rline = start_rline;
@@ -638,7 +630,7 @@ static void update_program_status(struct robot_state *rstate,
   free(source_block);
 }
 
-static int update_current_line(struct robot_state *rstate)
+static int update_current_line(struct robot_editor_context *rstate)
 {
   char *command_buffer = rstate->command_buffer;
   int line_text_length = strlen(command_buffer);
@@ -685,7 +677,13 @@ static void trim_whitespace(char *buffer, int length)
   buffer[i + 1] = '\0';
 }
 
-static int update_current_line(struct robot_state *rstate)
+#ifndef CONFIG_DEBYTECODE
+// fix cyclic dependency (could be done in several ways)
+static int execute_named_macro(struct robot_editor_context *rstate,
+ char *macro_name);
+#endif
+
+static int update_current_line(struct robot_editor_context *rstate)
 {
   struct editor_config_info *editor_conf = get_editor_config();
   char bytecode_buffer[COMMAND_BUFFER_LEN];
@@ -809,7 +807,7 @@ static int update_current_line(struct robot_state *rstate)
 // unfortunately that just isn't working that well right now. Needs to
 // be very carefully modularized down.
 
-static void add_line(struct robot_state *rstate, int relation)
+static void add_line(struct robot_editor_context *rstate, int relation)
 {
 #ifndef CONFIG_DEBYTECODE
   if(rstate->size + 3 + (int)strlen(rstate->command_buffer) < rstate->max_size)
@@ -894,7 +892,7 @@ static void add_line(struct robot_state *rstate, int relation)
   }
 }
 
-static void output_macro(struct robot_state *rstate,
+static void output_macro(struct robot_editor_context *rstate,
  struct ext_macro *macro_src)
 {
   int num_lines = macro_src->num_lines;
@@ -1029,7 +1027,8 @@ err_cancel_expansion:
 
 #ifndef CONFIG_DEBYTECODE
 
-static int execute_named_macro(struct robot_state *rstate, char *macro_name)
+static int execute_named_macro(struct robot_editor_context *rstate,
+ char *macro_name)
 {
   struct editor_config_info *editor_conf = get_editor_config();
   char *line_pos, *line_pos_old, *lone_name;
@@ -1193,8 +1192,9 @@ static int execute_named_macro(struct robot_state *rstate, char *macro_name)
 
 #endif /* !CONFIG_DEBYTECODE */
 
-static int block_menu(struct world *mzx_world)
+static int block_menu(struct robot_editor_context *rstate)
 {
+  struct world *mzx_world = ((context *)rstate)->world;
   int dialog_result, block_op = 0;
   struct dialog di;
   const char *radio_strings[] =
@@ -1228,7 +1228,7 @@ static int block_menu(struct world *mzx_world)
     return block_op;
 }
 
-static void copy_block_to_buffer(struct robot_state *rstate)
+static void copy_block_to_buffer(struct robot_editor_context *rstate)
 {
   struct robot_line *current_rline = rstate->mark_start_rline;
   int num_lines = (rstate->mark_end - rstate->mark_start) + 1;
@@ -1267,7 +1267,7 @@ static void copy_block_to_buffer(struct robot_state *rstate)
    copy_buffer_total_length);
 }
 
-static void paste_buffer(struct robot_state *rstate)
+static void paste_buffer(struct robot_editor_context *rstate)
 {
   char *ext_buffer = get_clipboard_buffer();
   int i;
@@ -1324,7 +1324,7 @@ static void paste_buffer(struct robot_state *rstate)
   rstate->command_buffer = rstate->command_buffer_space;
 }
 
-static void clear_block(struct robot_state *rstate)
+static void clear_block(struct robot_editor_context *rstate)
 {
   struct robot_line *current_rline = rstate->mark_start_rline;
   struct robot_line *line_after = rstate->mark_end_rline->next;
@@ -1386,9 +1386,10 @@ static void clear_block(struct robot_state *rstate)
   strcpy(rstate->command_buffer, rstate->current_rline->line_text);
 }
 
-static void export_block(struct robot_state *rstate, int region_default)
+static void export_block(struct robot_editor_context *rstate,
+ int region_default)
 {
-  struct world *mzx_world = rstate->mzx_world;
+  struct world *mzx_world = ((context *)rstate)->world;
   struct robot_line *current_rline;
   struct robot_line *end_rline;
   int export_region = region_default;
@@ -1487,9 +1488,10 @@ static void export_block(struct robot_state *rstate, int region_default)
   }
 }
 
-static void import_block(struct world *mzx_world, struct robot_state *rstate)
+static void import_block(struct robot_editor_context *rstate)
 {
   struct editor_config_info *editor_conf = get_editor_config();
+  struct world *mzx_world = ((context *)rstate)->world;
   const char *txt_ext[] = { ".TXT", NULL, NULL };
   char import_name[MAX_PATH];
   char line_buffer[256];
@@ -1606,9 +1608,9 @@ static void import_block(struct world *mzx_world, struct robot_state *rstate)
   fclose(import_file);
 }
 
-static void edit_single_line_macros(struct world *mzx_world)
+static void edit_single_line_macros(struct robot_editor_context *rstate)
 {
-  // 38 x 12
+  struct world *mzx_world = ((context *)rstate)->world;
   int dialog_result;
   struct dialog di;
   struct element *elements[] =
@@ -1641,10 +1643,9 @@ static void edit_single_line_macros(struct world *mzx_world)
     memcpy(macros, new_macros, 64 * 5);
 }
 
-static void block_action(struct robot_state *rstate)
+static void block_action(struct robot_editor_context *rstate)
 {
-  struct world *mzx_world = rstate->mzx_world;
-  int block_command = block_menu(mzx_world);
+  int block_command = block_menu(rstate);
 
   if(!rstate->mark_mode)
   {
@@ -1689,7 +1690,7 @@ static void block_action(struct robot_state *rstate)
   }
 }
 
-static void move_line_up(struct robot_state *rstate, int count)
+static void move_line_up(struct robot_editor_context *rstate, int count)
 {
   int i;
 
@@ -1704,7 +1705,7 @@ static void move_line_up(struct robot_state *rstate, int count)
   rstate->current_line -= i;
 }
 
-static void move_line_down(struct robot_state *rstate, int count)
+static void move_line_down(struct robot_editor_context *rstate, int count)
 {
   int i;
 
@@ -1725,7 +1726,7 @@ static void move_line_down(struct robot_state *rstate, int count)
   rstate->current_line += i;
 }
 
-static void move_and_update(struct robot_state *rstate, int count)
+static void move_and_update(struct robot_editor_context *rstate, int count)
 {
   update_current_line(rstate);
   if(count < 0)
@@ -1740,7 +1741,7 @@ static void move_and_update(struct robot_state *rstate, int count)
   strcpy(rstate->command_buffer, rstate->current_rline->line_text);
 }
 
-static void goto_line(struct robot_state *rstate, int line)
+static void goto_line(struct robot_editor_context *rstate, int line)
 {
   if(line > rstate->total_lines)
     line = rstate->total_lines;
@@ -1751,8 +1752,9 @@ static void goto_line(struct robot_state *rstate, int line)
   move_and_update(rstate, line - rstate->current_line);
 }
 
-static void goto_position(struct world *mzx_world, struct robot_state *rstate)
+static void goto_position(struct robot_editor_context *rstate)
 {
+  struct world *mzx_world = ((context *)rstate)->world;
   int dialog_result;
   int line_number = rstate->current_line;
   int column_number = rstate->current_x;
@@ -1786,7 +1788,7 @@ static void goto_position(struct world *mzx_world, struct robot_state *rstate)
   force_release_all_keys();
 }
 
-static void replace_current_line(struct robot_state *rstate,
+static void replace_current_line(struct robot_editor_context *rstate,
  int r_pos, char *str, char *replace)
 {
   struct robot_line *current_rline = rstate->current_rline;
@@ -1810,8 +1812,8 @@ static void replace_current_line(struct robot_state *rstate,
   rstate->command_buffer = rstate->command_buffer_space;
 }
 
-static int robo_ed_find_string(struct robot_state *rstate, char *str, int wrap,
- int *position, int case_sensitive)
+static int robo_ed_find_string(struct robot_editor_context *rstate, char *str,
+ int wrap, int *position, int case_sensitive)
 {
   struct robot_line *current_rline = rstate->current_rline;
   int current_line = rstate->current_line;
@@ -1892,8 +1894,9 @@ static int robo_ed_find_string(struct robot_state *rstate, char *str, int wrap,
   return -1;
 }
 
-static void find_replace_action(struct robot_state *rstate)
+static void find_replace_action(struct robot_editor_context *rstate)
 {
+  struct world *mzx_world = ((context *)rstate)->world;
   struct dialog di;
   const char *check_strings_1[] = { "Wrap around end" };
   const char *check_strings_2[] = { "Match case" };
@@ -1921,7 +1924,7 @@ static void find_replace_action(struct robot_state *rstate)
   construct_dialog(&di, "Search and Replace", 10, 7, 70, 10,
    elements, 8, 0);
 
-  last_find_option = run_dialog(rstate->mzx_world, &di);
+  last_find_option = run_dialog(mzx_world, &di);
   destruct_dialog(&di);
 
   // Prevent UI keys from carrying through.
@@ -2035,10 +2038,10 @@ static void find_replace_action(struct robot_state *rstate)
   }
 }
 
-static void execute_macro(struct robot_state *rstate,
+static void execute_macro(struct robot_editor_context *rstate,
  struct ext_macro *macro_src)
 {
-  struct world *mzx_world = rstate->mzx_world;
+  struct world *mzx_world = ((context *)rstate)->world;
   struct macro_type *current_type;
   int i, i2, i3;
 
@@ -2354,7 +2357,7 @@ exit_free:
   free(elements);
 }
 
-static void execute_numbered_macro(struct robot_state *rstate, int num)
+static void execute_numbered_macro(struct robot_editor_context *rstate, int num)
 {
   struct editor_config_info *editor_conf = get_editor_config();
   struct ext_macro *macro_src;
@@ -2416,7 +2419,7 @@ static const char _new_color_code_table[] =
 // TODO: write_string_mask seriously needs to have a length field,
 // so we don't have to keep stuffing null terminators in the thing.
 
-static void display_robot_line(struct robot_state *rstate,
+static void display_robot_line(struct robot_editor_context *rstate,
  struct robot_line *current_rline, int y)
 {
   int x = 2;
@@ -2508,14 +2511,15 @@ static void display_robot_line(struct robot_state *rstate,
   }
 }
 
-static inline int validate_lines(struct robot_state *rstate, int show_none)
+static inline int validate_lines(struct robot_editor_context *rstate,
+ int show_none)
 {
   return 0;
 }
 
 #else /* !CONFIG_DEBYTECODE */
 
-static void display_robot_line(struct robot_state *rstate,
+static void display_robot_line(struct robot_editor_context *rstate,
  struct robot_line *current_rline, int y)
 {
   struct editor_config_info *editor_conf = get_editor_config();
@@ -2675,7 +2679,7 @@ static void display_robot_line(struct robot_state *rstate,
 // This will only check for errors after current_rline, so the
 // base should be passed.
 
-static int validate_lines(struct robot_state *rstate, int show_none)
+static int validate_lines(struct robot_editor_context *rstate, int show_none)
 {
   // 70x5-21 square that displays up to 13 error messages,
   // and up to 48 buttons for delete/comment out/ignore. In total,
@@ -2691,7 +2695,7 @@ static int validate_lines(struct robot_state *rstate, int show_none)
   // Doesn't take any more errors after the number of erroneous
   // lines exceeds MAX_ERRORS.
 
-  struct world *mzx_world = rstate->mzx_world;
+  struct world *mzx_world = ((context *)rstate)->world;
   struct element *elements[VALIDATE_ELEMENTS];
   struct dialog di;
   char information[64] = { 0 };
@@ -2975,8 +2979,9 @@ static int validate_lines(struct robot_state *rstate, int show_none)
 
 #endif /* !CONFIG_DEBYTECODE */
 
-void robot_editor(struct world *mzx_world, struct robot *cur_robot)
+void robot_editor(context *parent, struct robot *cur_robot)
 {
+  struct world *mzx_world = parent->world; // FIXME
   struct editor_config_info *editor_conf = get_editor_config();
   int exit;
   int key;
@@ -2991,7 +2996,7 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
   struct robot_line *draw_rline;
   int mark_current_line;
   int current_line_color;
-  struct robot_state rstate;
+  struct robot_editor_context rstate;
 
 #ifdef CONFIG_DEBYTECODE
   char *source_pos;
@@ -3012,21 +3017,21 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
   caption_set_robot(mzx_world, cur_robot);
   set_context(CTX_ROBO_ED);
 
+  rstate.ctx.world = mzx_world; // FIXME
   rstate.current_line = 0;
   rstate.current_rline = &base;
   rstate.total_lines = 0;
-  rstate.max_size = max_size;
+  rstate.max_size = MAX_OBJ_SIZE;
   rstate.mark_mode = 0;
   rstate.mark_start = -1;
   rstate.mark_end = -1;
   rstate.mark_start_rline = NULL;
   rstate.mark_end_rline = NULL;
-  rstate.show_line_numbers = 0;
+  rstate.show_line_numbers = false;
   rstate.current_x = 0;
   rstate.active_macro = NULL;
   rstate.base = &base;
   rstate.command_buffer = rstate.command_buffer_space;
-  rstate.mzx_world = mzx_world;
 
 #ifdef CONFIG_DEBYTECODE
   rstate.size = 0;
@@ -3138,7 +3143,7 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
 
   if(editor_conf->robot_editor_hide_help)
   {
-    rstate.scr_hide_mode = 1;
+    rstate.scr_hide_mode = true;
     write_string(key_help_hide, 0, 24, bottom_text_color, 0);
     rstate.scr_line_start = 1;
     rstate.scr_line_middle = 12;
@@ -3146,7 +3151,7 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
   }
   else
   {
-    rstate.scr_hide_mode = 0;
+    rstate.scr_hide_mode = false;
     write_string(key_help, 0, 22, bottom_text_color, 0);
     rstate.scr_line_start = 2;
     rstate.scr_line_middle = 11;
@@ -3848,7 +3853,7 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
       case IKEY_g:
       {
         if(get_ctrl_status(keycode_internal))
-          goto_position(mzx_world, &rstate);
+          goto_position(&rstate);
 
         break;
       }
@@ -3856,7 +3861,7 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
       case IKEY_l:
       {
         if(get_ctrl_status(keycode_internal))
-          rstate.show_line_numbers ^= 1;
+          rstate.show_line_numbers = !rstate.show_line_numbers;
 
         break;
       }
@@ -3876,7 +3881,7 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
       {
         if(get_alt_status(keycode_internal))
         {
-          import_block(mzx_world, &rstate);
+          import_block(&rstate);
         }
 #ifndef CONFIG_DEBYTECODE
         else
@@ -3912,7 +3917,7 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
       case IKEY_o:
       {
         if(get_alt_status(keycode_internal))
-          edit_single_line_macros(mzx_world);
+          edit_single_line_macros(&rstate);
 
         break;
       }
@@ -3933,7 +3938,7 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
         {
           if(rstate.scr_hide_mode)
           {
-            rstate.scr_hide_mode = 0;
+            rstate.scr_hide_mode = false;
             rstate.scr_line_start = 2;
             rstate.scr_line_middle = 11;
             rstate.scr_line_end = 20;
@@ -3941,7 +3946,7 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
           }
           else
           {
-            rstate.scr_hide_mode = 1;
+            rstate.scr_hide_mode = true;
             rstate.scr_line_start = 1;
             rstate.scr_line_middle = 12;
             rstate.scr_line_end = 23;

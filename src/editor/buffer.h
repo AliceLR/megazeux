@@ -44,15 +44,18 @@ enum thing_menu_id
   NUM_THING_MENUS
 };
 
-int change_param(struct world *mzx_world, struct buffer_info *buffer);
+void change_param(context *ctx, struct buffer_info *buffer, int *new_param);
+void free_buffer(struct buffer_info *buffer);
 
 int place_current_at_xy(struct world *mzx_world, struct buffer_info *buffer,
+ int x, int y, enum editor_mode mode, struct undo_history *history);
+void replace_current_at_xy(struct world *mzx_world, struct buffer_info *buffer,
  int x, int y, enum editor_mode mode, struct undo_history *history);
 
 void grab_at_xy(struct world *mzx_world, struct buffer_info *buffer,
  int x, int y, enum editor_mode mode);
 
-void thing_menu(context *ctx, enum thing_menu_id menu_number,
+void thing_menu(context *parent, enum thing_menu_id menu_number,
  struct buffer_info *buffer, boolean use_default_color, int x, int y,
  struct undo_history *history);
 

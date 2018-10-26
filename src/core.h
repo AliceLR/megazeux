@@ -55,6 +55,7 @@ enum context_type
   // Editor contexts.
   CTX_EDITOR                = -100,
   CTX_EDITOR_VIEW_BOARD     = -101,
+  CTX_THING_MENU            = -102,
   CTX_BLOCK_CMD             = 73,
   CTX_BLOCK_TYPE            = 74,
   CTX_CHOOSE_CHARSET        = 75,
@@ -97,6 +98,9 @@ typedef struct context subcontext;
 typedef struct context_data context_data;
 typedef struct core_context core_context;
 
+typedef void context_callback_param;
+typedef void (*context_callback_function)(context *, context_callback_param *);
+
 /**
  * Contains information related to the current MegaZeux state/interface/etc.
  */
@@ -109,9 +113,10 @@ struct context
 
 /**
  * Contains extra function/variable information for a new context or subcontext.
- * At least one update function should be provided; all other variables may be
- * NULL or zero by default. A return value of true to an update function will
- * treat the indicated input type(s) as having been fully handled.
+ * All variables should be set to NULL or zero unless explicitly provided.
+ * A return value of true to an update function will treat the indicated input
+ * type(s) as having been fully handled. If no functions aside from destroy are
+ * provided, an error will display.
  *
  * resume           Optional function called when this context enters focus.
  * draw             Optional function to draw this context every frame.
@@ -199,7 +204,26 @@ CORE_LIBSPEC boolean has_context_changed(context *ctx);
  * @return              true if the context has the given context type.
  */
 
-boolean is_context(context *ctx, enum context_type context_type);
+CORE_LIBSPEC boolean is_context(context *ctx, enum context_type context_type);
+
+/**
+ * Add a callback to a context if a context change has occurred. This callback
+ * will be executed when focus returns to the given context, but before the
+ * resume function of the context is executed. Multiple callbacks may be
+ * provided to a context; they will be executed in the order they were added.
+ * If this function receives a subcontext pointer, this callback will be added
+ * to the parent context but the subcontext will be used as the parameter.
+ *
+ * If no change of context has occurred, this function is executed immediately
+ * instead of during the context resume process.
+ *
+ * @param ctx           The context to assign this callback to.
+ * @param param         A parameter to be provided to the callback.
+ * @param func          The callback to be executed.
+ */
+
+CORE_LIBSPEC void context_callback(context *ctx, context_callback_param *param,
+ context_callback_function func);
 
 /**
  * Sets the framerate mode of the current context. See enum framerate_type for
