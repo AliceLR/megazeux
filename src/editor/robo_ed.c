@@ -131,17 +131,6 @@ static void str_lower_case(char *str, char *dest)
   dest[i] = 0;
 }
 
-static void insert_string(char *dest, char *string, int *position)
-{
-  int n_pos = *position;
-  size_t remainder = strlen(dest + n_pos) + 1;
-  size_t insert_length = strlen(string);
-
-  memmove(dest + n_pos + insert_length, dest + n_pos, remainder);
-  memcpy(dest + n_pos, string, insert_length);
-  *position = n_pos + (int)insert_length;
-}
-
 static void add_blank_line(struct robot_editor_context *rstate, int relation)
 {
 #ifndef CONFIG_DEBYTECODE
@@ -921,6 +910,17 @@ static void split_current_line(struct robot_editor_context *rstate)
   command_buffer[remainder_len] = 0;
   rstate->current_x = 0;
   update_current_line(rstate);
+}
+
+static void insert_string(struct robot_editor_context *rstate, const char *src,
+ char linebreak_char)
+{
+  while(src)
+  {
+    src = intake_input_string(rstate->intk, src, linebreak_char);
+    if(src)
+      split_current_line(rstate);
+  }
 }
 
 static void output_macro(struct robot_editor_context *rstate,
@@ -2401,7 +2401,7 @@ static void execute_numbered_macro(struct robot_editor_context *rstate, int num)
   if(macro_src)
     execute_macro(rstate, macro_src);
   else
-    rstate->active_macro = macros[num - 1];
+    insert_string(rstate, macros[num - 1], '^');
 }
 
 #ifdef CONFIG_DEBYTECODE
@@ -3310,7 +3310,6 @@ static void robot_editor_draw(context *ctx)
 static boolean robot_editor_idle(context *ctx)
 {
   struct robot_editor_context *rstate = (struct robot_editor_context *)ctx;
-  const char *active_macro = rstate->active_macro;
 
 #ifdef CONFIG_DEBYTECODE
   // Update program status if it has been modified.
@@ -3322,17 +3321,8 @@ static boolean robot_editor_idle(context *ctx)
   }
 #endif
 
-  // FIXME why not just do this when the macro is selected?
-  while(active_macro)
-  {
-    active_macro = intake_input_string(rstate->intk, active_macro, '^');
-    if(active_macro)
-      split_current_line(rstate);
-  }
-
   rstate->macro_repeat_level = 0;
   rstate->macro_recurse_level = 0;
-  rstate->active_macro = NULL;
   return false;
 }
 
@@ -3487,8 +3477,7 @@ static boolean robot_editor_key(context *ctx, int *key)
         char color_buffer[16];
         last_color_selected = new_color;
         print_color(new_color, color_buffer);
-        insert_string(rstate->command_buffer, color_buffer,
-         &(rstate->current_x));
+        insert_string(rstate, color_buffer, 0);
       }
 
       return true;
@@ -3504,8 +3493,7 @@ static boolean robot_editor_key(context *ctx, int *key)
         int chars_length = unescape_char(char_buffer, new_char);
         char_buffer[chars_length] = 0;
 
-        insert_string(rstate->command_buffer, char_buffer,
-         &(rstate->current_x));
+        insert_string(rstate, char_buffer, 0);
 
         last_char_selected = new_char;
       }
@@ -3566,8 +3554,7 @@ static boolean robot_editor_key(context *ctx, int *key)
         {
           char param_buffer[16];
           sprintf(param_buffer, " p%02x", new_param);
-          insert_string(rstate->command_buffer, param_buffer,
-           &(rstate->current_x));
+          insert_string(rstate, param_buffer, 0);
         }
       }
       return true;
@@ -3591,8 +3578,7 @@ static boolean robot_editor_key(context *ctx, int *key)
       }
       sprintf(char_string_buffer_position, "$%02x", char_buffer[i]);
 
-      insert_string(rstate->command_buffer, char_string_buffer,
-       &(rstate->current_x));
+      insert_string(rstate, char_string_buffer, 0);
       return true;
     }
 
@@ -4076,7 +4062,6 @@ void robot_editor(context *parent, struct robot *cur_robot)
   rstate->mark_start_rline = NULL;
   rstate->mark_end_rline = NULL;
   rstate->current_x = 0;
-  rstate->active_macro = NULL;
   rstate->command_buffer = rstate->command_buffer_space;
   rstate->scr_hide_mode = editor_conf->robot_editor_hide_help;
 

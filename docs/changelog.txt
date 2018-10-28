@@ -28,6 +28,9 @@ USERS
   "__test2.mzx") instead of potentially overwriting work.
 + Fixed bug where six-digit line numbers would display in the
   robot editor incorrectly.
++ Inserting text in the robot editor using the F2/F3/F4/F5
+  shortcuts can no longer exceed the line length limit, fixing
+  related crashes.
 
 DEVELOPERS
 

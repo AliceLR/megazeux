@@ -111,7 +111,6 @@ struct robot_editor_context
   struct robot_line base;
   struct robot_line *mark_start_rline;
   struct robot_line *mark_end_rline;
-  char *active_macro;
   char *command_buffer;
   char command_buffer_space[COMMAND_BUFFER_LEN];
   int macro_recurse_level;

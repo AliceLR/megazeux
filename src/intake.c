@@ -586,7 +586,7 @@ static void intake_skip_forward(struct intake_subcontext *intk)
 
 static boolean intake_place_char(struct intake_subcontext *intk, char chr)
 {
-  if(chr && chr >= 32 && (intk->current_length != intk->max_length))
+  if(chr && (intk->current_length != intk->max_length))
   {
     // Overwrite or insert?
     if(insert_on || (intk->pos == intk->current_length))
