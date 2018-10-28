@@ -91,21 +91,24 @@ struct robot_line
 struct robot_editor_context
 {
   context ctx;
+  subcontext *intk;
+  struct robot *cur_robot;
+
   int current_line;
   struct robot_line *current_rline;
   int total_lines;
   int size;
   int max_size;
   int current_x;
+  int current_line_len;
   int mark_mode;
   int mark_start;
   int mark_end;
-  boolean show_line_numbers;
   boolean scr_hide_mode;
   int scr_line_start;
   int scr_line_middle;
   int scr_line_end;
-  struct robot_line *base;
+  struct robot_line base;
   struct robot_line *mark_start_rline;
   struct robot_line *mark_end_rline;
   char *active_macro;
@@ -117,7 +120,6 @@ struct robot_editor_context
 #ifdef CONFIG_DEBYTECODE
   boolean program_modified;
   boolean confirm_changes;
-  struct robot *cur_robot;
 #else
   enum validity_types default_invalid;
 #endif

@@ -57,12 +57,16 @@
 #define combine_colors(a, b)  \
   (a) | (b << 4)              \
 
+#define MAX_COMMAND_LEN 240
 #define MAX_MACRO_RECURSION 16
 #define MAX_MACRO_REPEAT 128
 
 static int copy_buffer_lines;
 static int copy_buffer_total_length;
 static char **copy_buffer;
+
+static int last_color_selected = 0;
+static int last_char_selected = 0;
 
 static enum find_option last_find_option = FIND_OPTION_NONE;
 static char search_string[256];
@@ -102,9 +106,9 @@ static const char horizontal_line = 196;
 static const char top_char = 219;
 static const char bg_char = 32;
 static const char bg_color = 8;
-static const char bg_color_solid = combine_colors(0, 8);
+static const char bg_color_solid = combine_colors(0, bg_color);
 static const char top_color = 4;
-static const char line_color = combine_colors(15, 8);
+static const char line_color = combine_colors(15, bg_color);
 static const char top_text_color = combine_colors(15, 4);
 static const char bottom_text_color = combine_colors(15, 1);
 static const char top_highlight_color = combine_colors(14, 4);
@@ -291,7 +295,7 @@ static void delete_current_line(struct robot_editor_context *rstate, int move)
 static void delete_robot_lines(struct robot *cur_robot,
  struct robot_editor_context *rstate)
 {
-  struct robot_line *current_rline = rstate->base->next;
+  struct robot_line *current_rline = rstate->base.next;
   struct robot_line *next_rline;
 #ifndef CONFIG_DEBYTECODE
   char *object_code_position;
@@ -699,7 +703,7 @@ static int update_current_line(struct robot_editor_context *rstate)
   enum validity_types use_type = rstate->default_invalid;
   int line_text_length;
 
-  command_buffer[240] = 0;
+  command_buffer[MAX_COMMAND_LEN] = 0;
   line_text_length = (int)strlen(command_buffer);
   trim_whitespace(command_buffer, line_text_length);
 
@@ -722,7 +726,7 @@ static int update_current_line(struct robot_editor_context *rstate)
      error_buffer, &line_text_length, editor_conf->disassemble_extras,
      arg_types, &arg_count, editor_conf->disassemble_base);
 
-    if(line_text_length < 241)
+    if(line_text_length <= MAX_COMMAND_LEN)
     {
       current_rline->line_text_length = line_text_length;
       current_rline->line_text =
@@ -742,11 +746,11 @@ static int update_current_line(struct robot_editor_context *rstate)
     }
     else
     {
-      current_rline->line_text_length = 240;
+      current_rline->line_text_length = MAX_COMMAND_LEN;
       current_rline->line_text =
-       crealloc(current_rline->line_text, 240 + 1);
-      memcpy(current_rline->line_text, new_command_buffer, 240);
-      current_rline->line_text[240] = 0;
+       crealloc(current_rline->line_text, MAX_COMMAND_LEN + 1);
+      memcpy(current_rline->line_text, new_command_buffer, MAX_COMMAND_LEN);
+      current_rline->line_text[MAX_COMMAND_LEN] = 0;
 
       if((current_rline->validity_status != valid) &&
        (current_rline->validity_status != invalid_comment))
@@ -890,6 +894,33 @@ static void add_line(struct robot_editor_context *rstate, int relation)
       free(new_rline);
     }
   }
+}
+
+static void split_current_line(struct robot_editor_context *rstate)
+{
+  char *command_buffer = rstate->command_buffer;
+  char line_remainder[MAX_COMMAND_LEN + 1];
+  size_t remainder_len;
+
+  remainder_len = strlen(command_buffer + rstate->current_x);
+  if(remainder_len > MAX_COMMAND_LEN)
+    remainder_len = MAX_COMMAND_LEN;
+
+  memcpy(line_remainder, command_buffer + rstate->current_x, remainder_len);
+  line_remainder[remainder_len] = 0;
+  command_buffer[rstate->current_x] = 0;
+
+#ifdef CONFIG_DEBYTECODE
+  add_line(rstate, -1);
+#else
+  update_current_line(rstate);
+  add_blank_line(rstate, 1);
+#endif
+
+  memcpy(command_buffer, line_remainder, remainder_len);
+  command_buffer[remainder_len] = 0;
+  rstate->current_x = 0;
+  update_current_line(rstate);
 }
 
 static void output_macro(struct robot_editor_context *rstate,
@@ -1355,7 +1386,7 @@ static void clear_block(struct robot_editor_context *rstate)
   if(!rstate->total_lines)
   {
     rstate->current_line = 0;
-    rstate->current_rline = rstate->base;
+    rstate->current_rline = &(rstate->base);
     add_blank_line(rstate, 1);
   }
   else
@@ -1444,7 +1475,7 @@ static void export_block(struct robot_editor_context *rstate,
 
     if(!export_region)
     {
-      current_rline = rstate->base->next;
+      current_rline = rstate->base.next;
       end_rline = NULL;
     }
     else
@@ -1696,7 +1727,7 @@ static void move_line_up(struct robot_editor_context *rstate, int count)
 
   for(i = 0; (i < count); i++)
   {
-    if(rstate->current_rline->previous == rstate->base)
+    if(rstate->current_rline->previous == &(rstate->base))
       break;
 
     rstate->current_rline = rstate->current_rline->previous;
@@ -1764,7 +1795,7 @@ static void goto_position(struct robot_editor_context *rstate)
   {
     construct_number_box(2, 2, "Line:   ", 0, rstate->total_lines,
      0, &line_number),
-    construct_number_box(2, 3, "Column: ", 0, 240, 0, &column_number),
+    construct_number_box(2, 3, "Column: ", 0, MAX_COMMAND_LEN, 0, &column_number),
     construct_button(3, 5, "OK", 0),
     construct_button(14, 5, "Cancel", -1)
   };
@@ -1802,7 +1833,7 @@ static void replace_current_line(struct robot_editor_context *rstate,
   memmove(new_buffer + r_pos + replace_size,
    new_buffer + r_pos + str_size, strlen(new_buffer) - r_pos);
   memcpy(new_buffer + r_pos, replace, replace_size);
-  new_buffer[240] = '\0';
+  new_buffer[MAX_COMMAND_LEN] = '\0';
 
   rstate->command_buffer = new_buffer;
   update_current_line(rstate);
@@ -1866,7 +1897,7 @@ static int robo_ed_find_string(struct robot_editor_context *rstate, char *str,
   // Wrap around?
   if(wrap && (pos == NULL))
   {
-    current_rline = rstate->base->next;
+    current_rline = rstate->base.next;
     current_line = 1;
     while(current_rline != rstate->current_rline->next)
     {
@@ -2015,7 +2046,7 @@ static void find_replace_action(struct robot_editor_context *rstate)
           break;
         }
 
-        if(l_num != -1 && l_pos <= 240)
+        if(l_num != -1 && l_pos <= MAX_COMMAND_LEN)
         {
           goto_line(rstate, l_num);
           rstate->current_x = l_pos;
@@ -2704,7 +2735,7 @@ static int validate_lines(struct robot_editor_context *rstate, int show_none)
   char error_messages[MAX_ERRORS][64];
   char null_buffer[256];
   struct robot_line *line_pointers[MAX_ERRORS];
-  struct robot_line *current_rline = rstate->base->next;
+  struct robot_line *current_rline = rstate->base.next;
   enum validity_types validity_options[MAX_ERRORS];
   int redo = 1;
   int element_pos;
@@ -2979,79 +3010,27 @@ static int validate_lines(struct robot_editor_context *rstate, int show_none)
 
 #endif /* !CONFIG_DEBYTECODE */
 
-void robot_editor(context *parent, struct robot *cur_robot)
+static void init_robot_lines(struct robot_editor_context *rstate,
+ struct robot *cur_robot)
 {
-  struct world *mzx_world = parent->world; // FIXME
-  struct editor_config_info *editor_conf = get_editor_config();
-  int exit;
-  int key;
-  int i;
-  int mouse_press;
-  char str_buffer[32], max_size_buffer[32];
-  int first_line_draw_position;
-  int first_line_count_back;
-  int last_color = 0;
-  int last_char = 0;
-  struct robot_line base;
-  struct robot_line *draw_rline;
-  int mark_current_line;
-  int current_line_color;
-  struct robot_editor_context rstate;
-
 #ifdef CONFIG_DEBYTECODE
   char *source_pos;
   char *newline_pos;
   int line_length;
 #else
+  struct editor_config_info *editor_conf = get_editor_config();
   char text_buffer[COMMAND_BUFFER_LEN], error_buffer[COMMAND_BUFFER_LEN];
   int line_text_length, line_bytecode_length, new_line, arg_count;
   char *current_robot_pos = cur_robot->program_bytecode + 1;
-  struct robot_line *previous_rline = &base;
+  struct robot_line *previous_rline = &(rstate->base);
   struct robot_line *current_rline = NULL;
   char arg_types[32], *next;
 #endif
 
-  // Prevent previous keys from carrying through.
-  force_release_all_keys();
-
-  caption_set_robot(mzx_world, cur_robot);
-  set_context(CTX_ROBO_ED);
-
-  rstate.ctx.world = mzx_world; // FIXME
-  rstate.current_line = 0;
-  rstate.current_rline = &base;
-  rstate.total_lines = 0;
-  rstate.max_size = MAX_OBJ_SIZE;
-  rstate.mark_mode = 0;
-  rstate.mark_start = -1;
-  rstate.mark_end = -1;
-  rstate.mark_start_rline = NULL;
-  rstate.mark_end_rline = NULL;
-  rstate.show_line_numbers = false;
-  rstate.current_x = 0;
-  rstate.active_macro = NULL;
-  rstate.base = &base;
-  rstate.command_buffer = rstate.command_buffer_space;
+  rstate->base.previous = NULL;
+  rstate->base.next = NULL;
 
 #ifdef CONFIG_DEBYTECODE
-  rstate.size = 0;
-  rstate.cur_robot = cur_robot;
-  rstate.program_modified = false;
-  rstate.confirm_changes = false;
-  base.next = NULL;
-#else
-  rstate.size = 2;
-  rstate.default_invalid =
-   (enum validity_types)(editor_conf->default_invalid_status);
-  base.line_bytecode_length = -1;
-#endif
-
-  base.previous = NULL;
-
-  current_line_color = combine_colors(editor_conf->color_codes[0], bg_color);
-
-#ifdef CONFIG_DEBYTECODE
-
   // This should take care of everything for loading the program from
   // source.
   source_pos = cur_robot->program_source;
@@ -3062,27 +3041,29 @@ void robot_editor(context *parent, struct robot *cur_robot)
 
     if(newline_pos == NULL)
     {
-      strcpy(rstate.command_buffer, source_pos);
+      strcpy(rstate->command_buffer, source_pos);
     }
     else
     {
       line_length = newline_pos - source_pos;
       if(line_length)
-        memcpy(rstate.command_buffer, source_pos, line_length);
+        memcpy(rstate->command_buffer, source_pos, line_length);
 
-      rstate.command_buffer[line_length] = 0;
+      rstate->command_buffer[line_length] = 0;
     }
 
-    add_line(&rstate, 1);
+    add_line(rstate, 1);
     source_pos = newline_pos + 1;
   }
   while(newline_pos);
 
   // Move it back to the start
-  rstate.current_rline = base.next;
-  rstate.current_line = 1;
+  rstate->current_rline = rstate->base.next;
+  rstate->current_line = 1;
 
 #else /* !CONFIG_DEBYTECODE */
+
+  rstate->base.line_bytecode_length = -1;
 
   // Disassemble robots into lines
   do
@@ -3112,12 +3093,12 @@ void robot_editor(context *parent, struct robot *cur_robot)
       previous_rline->next = current_rline;
       current_rline->previous = previous_rline;
 
-      rstate.total_lines++;
+      rstate->total_lines++;
 
       current_robot_pos = next;
       previous_rline = current_rline;
 
-      rstate.size += line_bytecode_length;
+      rstate->size += line_bytecode_length;
     }
     else
     {
@@ -3127,946 +3108,1006 @@ void robot_editor(context *parent, struct robot *cur_robot)
   while(new_line);
 
   // Add a blank line to the end too if there aren't any lines
-  if(!rstate.total_lines)
+  if(!rstate->total_lines)
   {
-    add_blank_line(&rstate, 1);
+    add_blank_line(rstate, 1);
   }
   else
   {
-    move_line_down(&rstate, 1);
+    move_line_down(rstate, 1);
   }
-
 #endif /* !CONFIG_DEBYTECODE */
+}
 
-  save_screen();
+static void robot_editor_draw(context *ctx)
+{
+  struct robot_editor_context *rstate = (struct robot_editor_context *)ctx;
+
+  struct editor_config_info *editor_conf = get_editor_config();
+  int intk_color = combine_colors(editor_conf->color_codes[0], bg_color);
+
+  struct robot_line *draw_rline;
+  int first_line_draw_position;
+  int first_line_count_back;
+  int i;
+
   fill_line(80, 0, 0, top_char, top_color);
 
-  if(editor_conf->robot_editor_hide_help)
+  if(rstate->scr_hide_mode)
   {
-    rstate.scr_hide_mode = true;
     write_string(key_help_hide, 0, 24, bottom_text_color, 0);
-    rstate.scr_line_start = 1;
-    rstate.scr_line_middle = 12;
-    rstate.scr_line_end = 23;
+    rstate->scr_line_start = 1;
+    rstate->scr_line_middle = 12;
+    rstate->scr_line_end = 23;
   }
   else
   {
-    rstate.scr_hide_mode = false;
     write_string(key_help, 0, 22, bottom_text_color, 0);
-    rstate.scr_line_start = 2;
-    rstate.scr_line_middle = 11;
-    rstate.scr_line_end = 20;
+    rstate->scr_line_start = 2;
+    rstate->scr_line_middle = 11;
+    rstate->scr_line_end = 20;
   }
 
-  sprintf(max_size_buffer, "%07d", rstate.max_size);
-  strcpy(rstate.command_buffer, rstate.current_rline->line_text);
+  draw_char(top_line_connect, line_color, 0, 1);
+  draw_char(top_line_connect, line_color, 79, 1);
+  draw_char(bottom_line_connect, line_color, 0, 21);
+  draw_char(bottom_line_connect, line_color, 79, 21);
 
-  do
+  fill_line(78, 1, 1, horizontal_line, line_color);
+  fill_line(78, 1, 21, horizontal_line, line_color);
+
+  for(i = rstate->scr_line_start; i < rstate->scr_line_middle; i++)
   {
-#ifdef CONFIG_DEBYTECODE
-    // Update program status if it has been modified.
-    if(rstate.program_modified)
+    draw_char(vertical_line, line_color, 0, i);
+    draw_char(vertical_line, line_color, 79, i);
+    fill_line(78, 1, i, bg_char, bg_color_solid);
+  }
+
+  for(i++; i <= rstate->scr_line_end; i++)
+  {
+    draw_char(vertical_line, line_color, 0, i);
+    draw_char(vertical_line, line_color, 79, i);
+    fill_line(78, 1, i, bg_char, bg_color_solid);
+  }
+
+  // Make sure the line length and current char are up-to-date.
+  intake_sync(rstate->intk);
+
+  write_string("Line:", 2, 0, top_highlight_color, 0);
+  write_string("/", 14, 0, top_highlight_color, 0);
+  write_number(rstate->current_line, top_text_color, 8, 0, 6, false, 10);
+  write_number(rstate->total_lines, top_text_color, 15, 0, 6, false, 10);
+
+  write_string("Col:", 23, 0, top_highlight_color, 0);
+  write_string("/", 31, 0, top_highlight_color, 0);
+  write_number(rstate->current_x, top_text_color, 28, 0, 3, false, 10);
+  write_number(rstate->current_line_len, top_text_color, 32, 0, 3, false, 10);
+
+  write_string("Size:", 37, 0, top_highlight_color, 0);
+  write_string("/", 50, 0, top_highlight_color, 0);
+  write_number(rstate->size, top_text_color, 43, 0, 7, false, 10);
+  write_number(rstate->max_size, top_text_color, 51, 0, 7, false, 10);
+
+  write_string("X:", 60, 0, top_highlight_color, 0);
+  write_number(rstate->cur_robot->xpos, top_text_color, 63, 0, 5, false, 10);
+
+  write_string("Y:", 70, 0, top_highlight_color, 0);
+  write_number(rstate->cur_robot->ypos, top_text_color, 73, 0, 5, false, 10);
+
+  // Current line arrows (may be overwritten by block)
+  if(rstate->current_x < 76)
+    draw_char('\x10', intk_color, 0, rstate->scr_line_middle);
+  else
+    draw_char('\xae', intk_color, 0, rstate->scr_line_middle);
+
+  if(rstate->current_line_len < 76 ||
+   rstate->current_x == rstate->current_line_len)
+    draw_char('\x11', intk_color, 79, rstate->scr_line_middle);
+  else
+    draw_char('\xaf', intk_color, 79, rstate->scr_line_middle);
+
+  // Now, draw the lines. Start with 9 back from the current.
+
+  if(rstate->current_line >
+   (rstate->scr_line_middle - rstate->scr_line_start))
+  {
+    first_line_draw_position = rstate->scr_line_start;
+    first_line_count_back =
+     rstate->scr_line_middle - rstate->scr_line_start;
+  }
+  else
+  {
+    // Or go back as many as we can
+    first_line_draw_position = 1 +
+     (rstate->scr_line_middle - rstate->current_line);
+    first_line_count_back = rstate->current_line - 1;
+  }
+
+  draw_rline = rstate->current_rline;
+  for(i = 0; i < first_line_count_back; i++)
+  {
+    draw_rline = draw_rline->previous;
+  }
+
+  // Now draw start - scr_end + 1 lines, or until bails
+  for(i = first_line_draw_position;
+   (i <= rstate->scr_line_end) && draw_rline; i++)
+  {
+    if(i != rstate->scr_line_middle)
+      display_robot_line(rstate, draw_rline, i);
+
+    draw_rline = draw_rline->next;
+  }
+
+  // Mark block selection area
+  if(rstate->mark_mode)
+  {
+    int draw_start = rstate->current_line -
+     (rstate->scr_line_middle - rstate->scr_line_start);
+    int draw_end = rstate->current_line +
+     (rstate->scr_line_end - rstate->scr_line_middle) + 1;
+
+    if(rstate->mark_start <= draw_end)
     {
-      update_program_status(&rstate, rstate.base->next, NULL);
-      rstate.program_modified = false;
-      rstate.confirm_changes = true;
+      if(rstate->mark_start >= draw_start)
+      {
+        draw_start = rstate->mark_start +
+         rstate->scr_line_middle - rstate->current_line;
+        draw_char('S', mark_color, 0, draw_start);
+      }
+      else
+      {
+        draw_start += rstate->scr_line_middle - rstate->current_line;
+      }
+
+      if(rstate->mark_end <= draw_end)
+      {
+        draw_end = rstate->mark_end + rstate->scr_line_middle -
+        rstate->current_line;
+      }
+      else
+      {
+        draw_end += rstate->scr_line_middle - rstate->current_line;
+      }
+
+      if(draw_start < rstate->scr_line_start)
+      {
+        draw_start = rstate->scr_line_start;
+      }
+
+      if(draw_end > rstate->scr_line_end)
+      {
+        draw_end = rstate->scr_line_end;
+      }
+      else
+      {
+        if((rstate->mark_start != rstate->mark_end) &&
+         (draw_end >= rstate->scr_line_start))
+          draw_char('E', mark_color, 0, draw_end);
+      }
+
+      if(draw_end >= rstate->scr_line_start)
+      {
+        for(i = draw_start; i <= draw_end; i++)
+        {
+          color_line(80, 0, i, mark_color);
+        }
+
+        if((draw_start <= rstate->scr_line_middle) &&
+         (draw_end >= rstate->scr_line_middle))
+          intk_color = mark_color;
+      }
     }
+  }
+
+  // Update the intake position and color so it draws correctly.
+  intake_set_screen_pos(rstate->intk, 2, rstate->scr_line_middle);
+  intake_set_color(rstate->intk, intk_color);
+
+  draw_char(bg_char, intk_color, 1, rstate->scr_line_middle);
+}
+
+static boolean robot_editor_idle(context *ctx)
+{
+  struct robot_editor_context *rstate = (struct robot_editor_context *)ctx;
+  const char *active_macro = rstate->active_macro;
+
+#ifdef CONFIG_DEBYTECODE
+  // Update program status if it has been modified.
+  if(rstate->program_modified)
+  {
+    update_program_status(rstate, rstate->base.next, NULL);
+    rstate->program_modified = false;
+    rstate->confirm_changes = true;
+  }
 #endif
 
-    draw_char(top_line_connect, line_color, 0, 1);
-    draw_char(top_line_connect, line_color, 79, 1);
-    draw_char(bottom_line_connect, line_color, 0, 21);
-    draw_char(bottom_line_connect, line_color, 79, 21);
+  // FIXME why not just do this when the macro is selected?
+  while(active_macro)
+  {
+    active_macro = intake_input_string(rstate->intk, active_macro, '^');
+    if(active_macro)
+      split_current_line(rstate);
+  }
 
-    for(i = 1; i < 79; i++)
+  rstate->macro_repeat_level = 0;
+  rstate->macro_recurse_level = 0;
+  rstate->active_macro = NULL;
+  return false;
+}
+
+static boolean robot_editor_mouse(context *ctx, int *key, int button,
+ int x, int y)
+{
+  struct robot_editor_context *rstate = (struct robot_editor_context *)ctx;
+
+  if(button && (button <= MOUSE_BUTTON_RIGHT))
+  {
+    if((y >= rstate->scr_line_start) && (y <= rstate->scr_line_end) &&
+     (x >= 2) && (x <= 78))
     {
-      draw_char(horizontal_line, line_color, i, 1);
-      draw_char(horizontal_line, line_color, i, 21);
+      move_and_update(rstate, y - rstate->scr_line_middle);
+      rstate->current_x = x - 2;
+      warp_mouse(x, rstate->scr_line_middle);
+      return true;
+    }
+  }
+  else
+
+  if(button == MOUSE_BUTTON_WHEELUP)
+  {
+    move_and_update(rstate, -3);
+    return true;
+  }
+  else
+
+  if(button == MOUSE_BUTTON_WHEELDOWN)
+  {
+    move_and_update(rstate, 3);
+    return true;
+  }
+
+  return false;
+}
+
+static boolean robot_editor_key(context *ctx, int *key)
+{
+  struct robot_editor_context *rstate = (struct robot_editor_context *)ctx;
+  struct editor_config_info *editor_conf = get_editor_config();
+  struct world *mzx_world = ((context *)rstate)->world;
+
+  // Exit event - ignore other input
+  boolean exit_status = get_exit_status();
+  if(exit_status)
+    *key = 0;
+
+  switch(*key)
+  {
+    case IKEY_UP:
+    {
+      move_and_update(rstate, -1);
+      return true;
     }
 
-    for(i = rstate.scr_line_start; i < rstate.scr_line_middle; i++)
+    case IKEY_DOWN:
     {
-      draw_char(vertical_line, line_color, 0, i);
-      draw_char(vertical_line, line_color, 79, i);
-      fill_line(78, 1, i, bg_char, bg_color_solid);
+      move_and_update(rstate, 1);
+      return true;
     }
 
-    for(i++; i <= rstate.scr_line_end; i++)
+    case IKEY_PAGEUP:
     {
-      draw_char(vertical_line, line_color, 0, i);
-      draw_char(vertical_line, line_color, 79, i);
-      fill_line(78, 1, i, bg_char, bg_color_solid);
+      move_and_update(rstate, -9);
+      return true;
     }
 
-    write_string("Line:", 2, 0, top_highlight_color, 0);
-    snprintf(str_buffer, 32, "%05d", rstate.current_line);
-    str_buffer[31] = 0;
-    write_string(str_buffer, 8, 0, top_text_color, 0);
-    write_string("/", 13, 0, top_highlight_color, 0);
-    snprintf(str_buffer, 32, "%05d", rstate.total_lines);
-    str_buffer[31] = 0;
-    write_string(str_buffer, 14, 0, top_text_color, 0);
-    write_string("Char.:", 21, 0, top_highlight_color, 0);
-    write_string("/", 31, 0, top_highlight_color, 0);
-    write_string("Size:", 37, 0, top_highlight_color, 0);
-    snprintf(str_buffer, 32, "%07d", rstate.size);
-    str_buffer[31] = 0;
-    write_string(str_buffer, 43, 0, top_text_color, 0);
-    write_string("/", 50, 0, top_highlight_color, 0);
-    write_string(max_size_buffer, 51, 0, top_text_color, 0);
-    write_string("X:", 60, 0, top_highlight_color, 0);
-    snprintf(str_buffer, 32, "%05d", cur_robot->xpos);
-    str_buffer[31] = 0;
-    write_string(str_buffer, 63, 0, top_text_color, 0);
-    write_string("Y:", 70, 0, top_highlight_color, 0);
-    snprintf(str_buffer, 32, "%05d", cur_robot->ypos);
-    str_buffer[31] = 0;
-    write_string(str_buffer, 73, 0, top_text_color, 0);
-
-    // Now, draw the lines. Start with 9 back from the current.
-
-    if(rstate.current_line >
-      (rstate.scr_line_middle - rstate.scr_line_start))
+    case IKEY_PAGEDOWN:
     {
-      first_line_draw_position = rstate.scr_line_start;
-      first_line_count_back =
-       rstate.scr_line_middle - rstate.scr_line_start;
-    }
-    else
-    {
-      // Or go back as many as we can
-      first_line_draw_position = 1 +
-       (rstate.scr_line_middle - rstate.current_line);
-      first_line_count_back = rstate.current_line - 1;
+      move_and_update(rstate, 9);
+      return true;
     }
 
-    draw_rline = rstate.current_rline;
-    for(i = 0; i < first_line_count_back; i++)
+    case IKEY_BACKSPACE:
     {
-      draw_rline = draw_rline->previous;
-    }
-
-    // Now draw start - scr_end + 1 lines, or until bails
-    for(i = first_line_draw_position;
-     (i <= rstate.scr_line_end) && draw_rline; i++)
-    {
-      if(i != rstate.scr_line_middle)
-        display_robot_line(&rstate, draw_rline, i);
-
-      draw_rline = draw_rline->next;
-    }
-
-    // Mark block selection area
-    mark_current_line = 0;
-    if(rstate.mark_mode)
-    {
-      int draw_start = rstate.current_line -
-       (rstate.scr_line_middle - rstate.scr_line_start);
-      int draw_end = rstate.current_line +
-       (rstate.scr_line_end - rstate.scr_line_middle) + 1;
-
-      if(rstate.mark_start <= draw_end)
+      if(rstate->current_x == 0)
       {
-        if(rstate.mark_start >= draw_start)
+        if(rstate->current_line > 1)
         {
-          draw_start = rstate.mark_start +
-           rstate.scr_line_middle - rstate.current_line;
-          draw_char('S', mark_color, 0, draw_start);
-        }
-        else
-        {
-          draw_start += rstate.scr_line_middle - rstate.current_line;
-        }
+          char *command_buffer = rstate->command_buffer;
+          char line_buffer[MAX_COMMAND_LEN + 1];
 
-        if(rstate.mark_end <= draw_end)
-        {
-          draw_end = rstate.mark_end + rstate.scr_line_middle -
-          rstate.current_line;
-        }
-        else
-        {
-          draw_end += rstate.scr_line_middle - rstate.current_line;
-        }
+          update_current_line(rstate);
+          strncpy(line_buffer, rstate->command_buffer, MAX_COMMAND_LEN + 1);
+          line_buffer[MAX_COMMAND_LEN] = 0;
 
-        if(draw_start < rstate.scr_line_start)
-        {
-          draw_start = rstate.scr_line_start;
-        }
+          delete_current_line(rstate, -1);
 
-        if(draw_end > rstate.scr_line_end)
-        {
-          draw_end = rstate.scr_line_end;
-        }
-        else
-        {
-          if((rstate.mark_start != rstate.mark_end) &&
-           (draw_end >= rstate.scr_line_start))
-            draw_char('E', mark_color, 0, draw_end);
-        }
-
-        if(draw_end >= rstate.scr_line_start)
-        {
-          for(i = draw_start; i <= draw_end; i++)
+          if(strlen(line_buffer) + strlen(command_buffer) > MAX_COMMAND_LEN)
           {
-            color_line(80, 0, i, mark_color);
-          }
-
-          if((draw_start <= rstate.scr_line_middle) &&
-           (draw_end >= rstate.scr_line_middle))
-            mark_current_line = 1;
-        }
-      }
-    }
-
-    rstate.macro_repeat_level = 0;
-
-    update_screen();
-
-    if(mark_current_line)
-    {
-      draw_char(bg_char, mark_color, 1, rstate.scr_line_middle);
-      key = intake(mzx_world, rstate.command_buffer, 240, 2,
-       rstate.scr_line_middle, mark_color, INTK_EXIT_ANY,
-       &rstate.current_x, 1, rstate.active_macro);
-    }
-    else
-    {
-      draw_char(bg_char, bg_color_solid, 1, rstate.scr_line_middle);
-      key = intake(mzx_world, rstate.command_buffer, 240, 2,
-       rstate.scr_line_middle, current_line_color, INTK_EXIT_ANY,
-       &rstate.current_x, 1, rstate.active_macro);
-    }
-
-    mouse_press = get_mouse_press_ext();
-
-    if(mouse_press && (mouse_press <= MOUSE_BUTTON_RIGHT))
-    {
-      int mouse_x, mouse_y;
-      get_mouse_position(&mouse_x, &mouse_y);
-
-      if((mouse_y >= rstate.scr_line_start) &&
-       (mouse_y <= rstate.scr_line_end) && (mouse_x >= 2) &&
-       (mouse_x <= 78))
-      {
-        move_and_update(&rstate, mouse_y - rstate.scr_line_middle);
-        rstate.current_x = mouse_x - 2;
-        warp_mouse(mouse_x, rstate.scr_line_middle);
-      }
-    }
-    else
-
-    if(mouse_press == MOUSE_BUTTON_WHEELUP)
-    {
-      move_and_update(&rstate, -3);
-    }
-    else
-
-    if(mouse_press == MOUSE_BUTTON_WHEELDOWN)
-    {
-      move_and_update(&rstate, 3);
-    }
-
-    rstate.active_macro = NULL;
-    rstate.macro_recurse_level = 0;
-
-    // Exit event - ignore other input
-    exit = get_exit_status();
-    if(exit)
-      key = 0;
-
-    switch(key)
-    {
-      case IKEY_UP:
-      {
-        move_and_update(&rstate, -1);
-        break;
-      }
-
-      case IKEY_DOWN:
-      {
-        move_and_update(&rstate, 1);
-        break;
-      }
-
-      case IKEY_PAGEUP:
-      {
-        move_and_update(&rstate, -9);
-        break;
-      }
-
-      case IKEY_PAGEDOWN:
-      {
-        move_and_update(&rstate, 9);
-        break;
-      }
-
-      case IKEY_BACKSPACE:
-      {
-        if(rstate.current_x == 0)
-        {
-          if(rstate.current_line > 1)
-          {
-            char *command_buffer = rstate.command_buffer;
-            char line_buffer[241];
-
-            update_current_line(&rstate);
-            strncpy(line_buffer, rstate.command_buffer, 241);
-            line_buffer[240] = 0;
-
-            delete_current_line(&rstate, -1);
-
-            if(strlen(line_buffer) + strlen(command_buffer) > 240)
-            {
-              // Lines could not be merged; backtrack
-              add_blank_line(&rstate, 1);
-              strncpy(command_buffer, line_buffer, 241);
-            }
-            else
-            {
-              rstate.current_x = (int)strlen(command_buffer);
-              strncat(command_buffer, line_buffer,
-               241 - strlen(command_buffer));
-            }
-
-            command_buffer[240] = 0;
-            update_current_line(&rstate);
-          }
-        }
-        break;
-      }
-
-      case IKEY_DELETE:
-      {
-
-        if(rstate.command_buffer[0] == 0)
-        {
-          update_current_line(&rstate);
-          delete_current_line(&rstate, 1);
-        }
-        break;
-      }
-
-      case IKEY_RETURN:
-      {
-        if(get_alt_status(keycode_internal))
-          block_action(&rstate);
-
-        // Split line into two
-        else if(rstate.current_x && editor_conf->editor_enter_splits)
-        {
-          char *command_buffer = rstate.command_buffer;
-          char line_remainder[241];
-
-          strncpy(line_remainder, command_buffer + rstate.current_x, 241);
-          line_remainder[240] = 0;
-          command_buffer[rstate.current_x] = 0;
-
-#ifdef CONFIG_DEBYTECODE
-          add_line(&rstate, -1);
-#else
-          update_current_line(&rstate);
-          add_blank_line(&rstate, 1);
-#endif
-
-          strncpy(command_buffer, line_remainder, 241);
-          command_buffer[240] = 0;
-          rstate.current_x = 0;
-          update_current_line(&rstate);
-        }
-
-        // Old way, just navigate down a line
-        else if(rstate.current_x)
-          move_and_update(&rstate, 1);
-
-        // If we're right at the start of a line, always make a new one
-        else
-          add_blank_line(&rstate, -1);
-
-        break;
-      }
-
-#ifdef CONFIG_HELPSYS
-      case IKEY_F1:
-      {
-        // FIXME context
-        help_system(NULL, mzx_world);
-        break;
-      }
-#endif
-
-      case IKEY_F2:
-      {
-        int new_color;
-
-        new_color = color_selection(last_color, 1);
-        if(new_color >= 0)
-        {
-          char color_buffer[16];
-          last_color = new_color;
-          print_color(new_color, color_buffer);
-          insert_string(rstate.command_buffer, color_buffer, &rstate.current_x);
-        }
-
-        break;
-      }
-
-      case IKEY_F3:
-      {
-        int new_char = char_selection(last_char);
-
-        if(new_char >= 0)
-        {
-          char char_buffer[16];
-          int chars_length = unescape_char(char_buffer, new_char);
-          char_buffer[chars_length] = 0;
-
-          insert_string(rstate.command_buffer, char_buffer, &rstate.current_x);
-
-          last_char = new_char;
-        }
-        break;
-      }
-
-      case IKEY_F4:
-      {
-        int thing_index, end_x, start_x = rstate.current_x;
-
-        // ALT+F4 - do nothing.
-        if(get_alt_status(keycode_internal))
-          break;
-
-        if(!rstate.command_buffer[start_x])
-          start_x--;
-
-        while(start_x && (rstate.command_buffer[start_x] == ' '))
-          start_x--;
-
-        end_x = start_x + 1;
-
-        while(start_x && (rstate.command_buffer[start_x] != ' '))
-          start_x--;
-
-        if(start_x)
-          start_x++;
-
-#ifdef CONFIG_DEBYTECODE
-        {
-          thing_index =
-           get_thing(rstate.command_buffer + start_x, end_x - start_x);
-
-          if((thing_index == -1) || (thing_index >= SENSOR))
-            break;
-        }
-#else /* !CONFIG_DEBYTECODE */
-        {
-          const struct search_entry_short *matched_arg;
-          char temp_char;
-
-          temp_char = rstate.command_buffer[end_x];
-          rstate.command_buffer[end_x] = 0;
-          matched_arg = find_argument(rstate.command_buffer + start_x);
-          rstate.command_buffer[end_x] = temp_char;
-
-          if(!matched_arg || (matched_arg->type != S_THING) ||
-           (matched_arg->offset >= 122))
-            break;
-
-          thing_index = matched_arg->offset;
-        }
-#endif /* !CONFIG_DEBYTECODE */
-
-        {
-          int new_param = edit_param(mzx_world, thing_index, -1);
-          if(new_param >= 0)
-          {
-            char param_buffer[16];
-            sprintf(param_buffer, " p%02x", new_param);
-            insert_string(rstate.command_buffer, param_buffer,
-             &rstate.current_x);
-          }
-        }
-        break;
-      }
-
-      case IKEY_F5:
-      {
-        int char_edited;
-        char char_buffer[14];
-        char char_string_buffer[64];
-        char *char_string_buffer_position = char_string_buffer;
-
-        char_edited = char_editor(mzx_world);
-
-        ec_read_char(char_edited, char_buffer);
-
-        for(i = 0; i < 13; i++, char_string_buffer_position += 4)
-        {
-          sprintf(char_string_buffer_position, "$%02x ", char_buffer[i]);
-        }
-        sprintf(char_string_buffer_position, "$%02x", char_buffer[i]);
-
-        insert_string(rstate.command_buffer, char_string_buffer,
-         &rstate.current_x);
-        break;
-      }
-
-      case IKEY_F6:
-      {
-        execute_numbered_macro(&rstate, 1);
-        break;
-      }
-
-      case IKEY_F7:
-      {
-        execute_numbered_macro(&rstate, 2);
-        break;
-      }
-
-      case IKEY_F8:
-      {
-        execute_numbered_macro(&rstate, 3);
-        break;
-      }
-
-      case IKEY_F9:
-      {
-        execute_numbered_macro(&rstate, 4);
-        break;
-      }
-
-      case IKEY_F10:
-      {
-        execute_numbered_macro(&rstate, 5);
-        break;
-      }
-
-      case IKEY_v:
-      {
-        if(get_alt_status(keycode_internal))
-        {
-          update_current_line(&rstate);
-          validate_lines(&rstate, 1);
-        }
-        break;
-      }
-
-#ifdef CONFIG_DEBYTECODE
-      case IKEY_c:
-      {
-        if(get_ctrl_status(keycode_internal))
-        {
-          int line_length;
-
-          if((rstate.command_buffer[0] == '/') && (rstate.command_buffer[1] == '/'))
-          {
-            line_length = strlen(rstate.command_buffer + 2);
-            memmove(rstate.command_buffer, rstate.command_buffer + 2, line_length + 1);
+            // Lines could not be merged; backtrack
+            add_blank_line(rstate, 1);
+            strncpy(command_buffer, line_buffer, MAX_COMMAND_LEN + 1);
           }
           else
           {
-            line_length = strlen(rstate.command_buffer);
-            memmove(rstate.command_buffer + 2, rstate.command_buffer, line_length + 1);
-            rstate.command_buffer[0] = '/';
-            rstate.command_buffer[1] = '/';
+            rstate->current_x = (int)strlen(command_buffer);
+            strncat(command_buffer, line_buffer,
+             MAX_COMMAND_LEN + 1 - strlen(command_buffer));
           }
-          update_current_line(&rstate);
+
+          command_buffer[MAX_COMMAND_LEN] = 0;
+          update_current_line(rstate);
         }
+      }
+      return true;
+    }
+
+    case IKEY_DELETE:
+    {
+
+      if(rstate->command_buffer[0] == 0)
+      {
+        update_current_line(rstate);
+        delete_current_line(rstate, 1);
+      }
+      return true;
+    }
+
+    case IKEY_RETURN:
+    {
+      if(get_alt_status(keycode_internal))
+        block_action(rstate);
+
+      // Split line into two
+      else if(rstate->current_x && editor_conf->editor_enter_splits)
+        split_current_line(rstate);
+
+      // Old way, just navigate down a line
+      else if(rstate->current_x)
+        move_and_update(rstate, 1);
+
+      // If we're right at the start of a line, always make a new one
+      else
+        add_blank_line(rstate, -1);
+
+      return true;
+    }
+
+    case IKEY_F2:
+    {
+      int new_color;
+
+      // Ignore Ctrl+F2
+      if(get_ctrl_status(keycode_internal))
         break;
+
+      new_color = color_selection(last_color_selected, 1);
+      if(new_color >= 0)
+      {
+        char color_buffer[16];
+        last_color_selected = new_color;
+        print_color(new_color, color_buffer);
+        insert_string(rstate->command_buffer, color_buffer,
+         &(rstate->current_x));
+      }
+
+      return true;
+    }
+
+    case IKEY_F3:
+    {
+      int new_char = char_selection(last_char_selected);
+
+      if(new_char >= 0)
+      {
+        char char_buffer[16];
+        int chars_length = unescape_char(char_buffer, new_char);
+        char_buffer[chars_length] = 0;
+
+        insert_string(rstate->command_buffer, char_buffer,
+         &(rstate->current_x));
+
+        last_char_selected = new_char;
+      }
+      return true;
+    }
+
+    case IKEY_F4:
+    {
+      int thing_index, end_x, start_x = rstate->current_x;
+
+      // ALT+F4 - do nothing.
+      if(get_alt_status(keycode_internal))
+        return false;
+
+      if(!rstate->command_buffer[start_x])
+        start_x--;
+
+      while(start_x && (rstate->command_buffer[start_x] == ' '))
+        start_x--;
+
+      end_x = start_x + 1;
+
+      while(start_x && (rstate->command_buffer[start_x] != ' '))
+        start_x--;
+
+      if(start_x)
+        start_x++;
+
+#ifdef CONFIG_DEBYTECODE
+      {
+        thing_index =
+         get_thing(rstate->command_buffer + start_x, end_x - start_x);
+
+        if((thing_index == -1) || (thing_index >= SENSOR))
+          return true;
       }
 #else /* !CONFIG_DEBYTECODE */
-      case IKEY_c:
       {
-        if(rstate.current_rline->validity_status != valid)
-        {
-          rstate.current_rline->validity_status = invalid_comment;
-          update_current_line(&rstate);
-        }
-        else
+        const struct search_entry_short *matched_arg;
+        char temp_char;
 
-        if(rstate.command_buffer[0] != '.')
-        {
-          char comment_buffer[COMMAND_BUFFER_LEN];
-          char current_char;
-          char *in_position = rstate.command_buffer;
-          char *out_position = comment_buffer + 3;
+        temp_char = rstate->command_buffer[end_x];
+        rstate->command_buffer[end_x] = 0;
+        matched_arg = find_argument(rstate->command_buffer + start_x);
+        rstate->command_buffer[end_x] = temp_char;
 
-          comment_buffer[0] = '.';
-          comment_buffer[1] = ' ';
-          comment_buffer[2] = '"';
+        if(!matched_arg || (matched_arg->type != S_THING) ||
+         (matched_arg->offset >= 122))
+          return true;
 
-          do
-          {
-            current_char = *in_position;
-            if((current_char == '\"') || (current_char == '\\'))
-            {
-              *out_position = '\\';
-              out_position++;
-            }
-
-            *out_position = current_char;
-            out_position++;
-            in_position++;
-          } while(out_position - comment_buffer < 240 && current_char);
-
-          *(out_position - 1) = '"';
-          *out_position = 0;
-
-          strcpy(rstate.command_buffer, comment_buffer);
-        }
-        else
-
-        if(get_ctrl_status(keycode_internal) &&
-         (rstate.command_buffer[0] == '.') &&
-         (rstate.command_buffer[1] == ' ') &&
-         (rstate.command_buffer[2] == '"') &&
-         (rstate.command_buffer[strlen(rstate.command_buffer) - 1] == '"'))
-        {
-          char uncomment_buffer[COMMAND_BUFFER_LEN];
-          char current_char;
-          char *in_position = rstate.command_buffer + 3;
-          char *out_position = uncomment_buffer;
-
-          do
-          {
-            current_char = *in_position;
-            if((current_char == '\\') && (in_position[1] == '"'))
-            {
-              current_char = '"';
-              in_position++;
-            }
-
-            if((current_char == '\\') && (in_position[1] == '\\'))
-            {
-              current_char = '\\';
-              in_position++;
-            }
-
-
-            *out_position = current_char;
-            out_position++;
-            in_position++;
-          } while(current_char);
-
-          *(out_position - 2) = 0;
-
-          strcpy(rstate.command_buffer, uncomment_buffer);
-        }
-
-        break;
-      }
-
-      case IKEY_d:
-      {
-        if(rstate.current_rline->validity_status != valid)
-        {
-          rstate.current_rline->validity_status = invalid_discard;
-          update_current_line(&rstate);
-        }
-
-        break;
+        thing_index = matched_arg->offset;
       }
 #endif /* !CONFIG_DEBYTECODE */
 
-      case IKEY_ESCAPE:
       {
-        exit = 1;
-        break;
+        int new_param = edit_param(mzx_world, thing_index, -1);
+        if(new_param >= 0)
+        {
+          char param_buffer[16];
+          sprintf(param_buffer, " p%02x", new_param);
+          insert_string(rstate->command_buffer, param_buffer,
+           &(rstate->current_x));
+        }
+      }
+      return true;
+    }
+
+    case IKEY_F5:
+    {
+      int i;
+      int char_edited;
+      char char_buffer[14];
+      char char_string_buffer[64];
+      char *char_string_buffer_position = char_string_buffer;
+
+      char_edited = char_editor(mzx_world);
+
+      ec_read_char(char_edited, char_buffer);
+
+      for(i = 0; i < 13; i++, char_string_buffer_position += 4)
+      {
+        sprintf(char_string_buffer_position, "$%02x ", char_buffer[i]);
+      }
+      sprintf(char_string_buffer_position, "$%02x", char_buffer[i]);
+
+      insert_string(rstate->command_buffer, char_string_buffer,
+       &(rstate->current_x));
+      return true;
+    }
+
+    case IKEY_F6:
+    {
+      execute_numbered_macro(rstate, 1);
+      return true;
+    }
+
+    case IKEY_F7:
+    {
+      execute_numbered_macro(rstate, 2);
+      return true;
+    }
+
+    case IKEY_F8:
+    {
+      execute_numbered_macro(rstate, 3);
+      return true;
+    }
+
+    case IKEY_F9:
+    {
+      execute_numbered_macro(rstate, 4);
+      return true;
+    }
+
+    case IKEY_F10:
+    {
+      execute_numbered_macro(rstate, 5);
+      return true;
+    }
+
+    case IKEY_v:
+    {
+      if(get_alt_status(keycode_internal))
+      {
+        update_current_line(rstate);
+        validate_lines(rstate, 1);
+      }
+      return true;
+    }
+
+#ifdef CONFIG_DEBYTECODE
+    case IKEY_c:
+    {
+      if(get_ctrl_status(keycode_internal))
+      {
+        int line_length;
+
+        if((rstate->command_buffer[0] == '/') &&
+         (rstate->command_buffer[1] == '/'))
+        {
+          line_length = strlen(rstate->command_buffer + 2);
+          memmove(rstate->command_buffer, rstate->command_buffer + 2,
+           line_length + 1);
+        }
+        else
+        {
+          line_length = strlen(rstate->command_buffer);
+          memmove(rstate->command_buffer + 2, rstate->command_buffer,
+           line_length + 1);
+          rstate->command_buffer[0] = '/';
+          rstate->command_buffer[1] = '/';
+        }
+        update_current_line(rstate);
+      }
+      return true;
+    }
+#else /* !CONFIG_DEBYTECODE */
+    case IKEY_c:
+    {
+      if(rstate->current_rline->validity_status != valid)
+      {
+        rstate->current_rline->validity_status = invalid_comment;
+        update_current_line(rstate);
+      }
+      else
+
+      if(rstate->command_buffer[0] != '.')
+      {
+        char comment_buffer[COMMAND_BUFFER_LEN];
+        char current_char;
+        char *in_position = rstate->command_buffer;
+        char *out_position = comment_buffer + 3;
+
+        comment_buffer[0] = '.';
+        comment_buffer[1] = ' ';
+        comment_buffer[2] = '"';
+
+        do
+        {
+          current_char = *in_position;
+          if((current_char == '\"') || (current_char == '\\'))
+          {
+            *out_position = '\\';
+            out_position++;
+          }
+
+          *out_position = current_char;
+          out_position++;
+          in_position++;
+        } while(out_position - comment_buffer < MAX_COMMAND_LEN && current_char);
+
+        *(out_position - 1) = '"';
+        *out_position = 0;
+
+        strcpy(rstate->command_buffer, comment_buffer);
+      }
+      else
+
+      if(get_ctrl_status(keycode_internal) &&
+       (rstate->command_buffer[0] == '.') &&
+       (rstate->command_buffer[1] == ' ') &&
+       (rstate->command_buffer[2] == '"') &&
+       (rstate->command_buffer[strlen(rstate->command_buffer) - 1] == '"'))
+      {
+        char uncomment_buffer[COMMAND_BUFFER_LEN];
+        char current_char;
+        char *in_position = rstate->command_buffer + 3;
+        char *out_position = uncomment_buffer;
+
+        do
+        {
+          current_char = *in_position;
+          if((current_char == '\\') && (in_position[1] == '"'))
+          {
+            current_char = '"';
+            in_position++;
+          }
+
+          if((current_char == '\\') && (in_position[1] == '\\'))
+          {
+            current_char = '\\';
+            in_position++;
+          }
+
+
+          *out_position = current_char;
+          out_position++;
+          in_position++;
+        } while(current_char);
+
+        *(out_position - 2) = 0;
+
+        strcpy(rstate->command_buffer, uncomment_buffer);
       }
 
-      // Mark start/end
-      case IKEY_s:
-      case IKEY_e:
-      case IKEY_HOME:
-      case IKEY_END:
+      return true;
+    }
+
+    case IKEY_d:
+    {
+      if(rstate->current_rline->validity_status != valid)
       {
-        if(get_alt_status(keycode_internal))
+        rstate->current_rline->validity_status = invalid_discard;
+        update_current_line(rstate);
+      }
+
+      return true;
+    }
+#endif /* !CONFIG_DEBYTECODE */
+
+    case IKEY_ESCAPE:
+    {
+      exit_status = 1;
+      break;
+    }
+
+    // Mark start/end
+    case IKEY_s:
+    case IKEY_e:
+    case IKEY_HOME:
+    case IKEY_END:
+    {
+      if(get_alt_status(keycode_internal))
+      {
+        int mark_switch;
+
+        update_current_line(rstate);
+
+        if(rstate->mark_mode == 2)
         {
-          int mark_switch;
-
-          update_current_line(&rstate);
-
-          if(rstate.mark_mode == 2)
-          {
-            if((key == IKEY_HOME) || (key == IKEY_s))
-              mark_switch = 0;
-            else
-              mark_switch = 1;
-          }
+          if((*key == IKEY_HOME) || (*key == IKEY_s))
+            mark_switch = 0;
           else
-          {
-            mark_switch = rstate.mark_mode;
-            rstate.mark_mode++;
-          }
+            mark_switch = 1;
+        }
+        else
+        {
+          mark_switch = rstate->mark_mode;
+          rstate->mark_mode++;
+        }
 
-          switch(mark_switch)
+        switch(mark_switch)
+        {
+          case 0:
           {
-            case 0:
+            // Always mark the start
+            rstate->mark_start = rstate->current_line;
+            rstate->mark_start_rline = rstate->current_rline;
+            if(rstate->mark_mode == 1)
             {
-              // Always mark the start
-              rstate.mark_start = rstate.current_line;
-              rstate.mark_start_rline = rstate.current_rline;
-              if(rstate.mark_mode == 1)
-              {
-                // If this is the real start, mark the end too
-                rstate.mark_end = rstate.current_line;
-                rstate.mark_end_rline = rstate.current_rline;
-              }
-              break;
+              // If this is the real start, mark the end too
+              rstate->mark_end = rstate->current_line;
+              rstate->mark_end_rline = rstate->current_rline;
             }
-
-            case 1:
-            {
-              // Always mark the end
-              rstate.mark_end = rstate.current_line;
-              rstate.mark_end_rline = rstate.current_rline;
-              break;
-            }
+            break;
           }
 
-          // We have more than a start, so possibly swap
-          if(rstate.mark_mode && (rstate.mark_start > rstate.mark_end))
+          case 1:
           {
-            int mark_swap;
-            struct robot_line *mark_swap_rline;
-
-            mark_swap = rstate.mark_start;
-            rstate.mark_start = rstate.mark_end;
-            rstate.mark_end = mark_swap;
-            mark_swap_rline = rstate.mark_start_rline;
-            rstate.mark_start_rline = rstate.mark_end_rline;
-            rstate.mark_end_rline = mark_swap_rline;
+            // Always mark the end
+            rstate->mark_end = rstate->current_line;
+            rstate->mark_end_rline = rstate->current_rline;
+            break;
           }
         }
-        break;
-      }
 
-      // Block action menu
-      case IKEY_b:
-      {
-        if(get_alt_status(keycode_internal))
+        // We have more than a start, so possibly swap
+        if(rstate->mark_mode && (rstate->mark_start > rstate->mark_end))
         {
-          block_action(&rstate);
+          int mark_swap;
+          struct robot_line *mark_swap_rline;
+
+          mark_swap = rstate->mark_start;
+          rstate->mark_start = rstate->mark_end;
+          rstate->mark_end = mark_swap;
+          mark_swap_rline = rstate->mark_start_rline;
+          rstate->mark_start_rline = rstate->mark_end_rline;
+          rstate->mark_end_rline = mark_swap_rline;
         }
-        break;
       }
+      return true;
+    }
 
-      case IKEY_g:
+    // Block action menu
+    case IKEY_b:
+    {
+      if(get_alt_status(keycode_internal))
       {
-        if(get_ctrl_status(keycode_internal))
-          goto_position(&rstate);
-
-        break;
+        block_action(rstate);
+        return true;
       }
+      break;
+    }
 
-      case IKEY_l:
+    case IKEY_g:
+    {
+      if(get_ctrl_status(keycode_internal))
       {
-        if(get_ctrl_status(keycode_internal))
-          rstate.show_line_numbers = !rstate.show_line_numbers;
-
-        break;
+        goto_position(rstate);
+        return true;
       }
+      break;
+    }
 
-      case IKEY_p:
-      case IKEY_INSERT:
+    case IKEY_p:
+    case IKEY_INSERT:
+    {
+      if(get_alt_status(keycode_internal))
       {
-        if(get_alt_status(keycode_internal))
-        {
-          paste_buffer(&rstate);
-        }
-        break;
+        paste_buffer(rstate);
+        return true;
       }
+      break;
+    }
 
-      // Import file
-      case IKEY_i:
+    // Import file
+    case IKEY_i:
+    {
+      if(get_alt_status(keycode_internal))
       {
-        if(get_alt_status(keycode_internal))
-        {
-          import_block(&rstate);
-        }
+        import_block(rstate);
+        return true;
+      }
 #ifndef CONFIG_DEBYTECODE
-        else
-        if(get_ctrl_status(keycode_internal))
+      else
+      if(get_ctrl_status(keycode_internal))
+      {
+        if(rstate->current_rline->validity_status != valid)
         {
-          if(rstate.current_rline->validity_status != valid)
-          {
-            rstate.current_rline->validity_status = invalid_uncertain;
-          }
+          rstate->current_rline->validity_status = invalid_uncertain;
         }
+        return true;
+      }
 #endif
-        break;
-      }
-
-      // Export file
-      case IKEY_x:
-      {
-        if(get_alt_status(keycode_internal))
-        {
-          if(rstate.mark_mode)
-          {
-            export_block(&rstate, 1);
-          }
-          else
-          {
-            export_block(&rstate, 0);
-          }
-        }
-        break;
-      }
-
-      // Single line macros
-      case IKEY_o:
-      {
-        if(get_alt_status(keycode_internal))
-          edit_single_line_macros(&rstate);
-
-        break;
-      }
-
-      // Unmark
-      case IKEY_u:
-      {
-        if(get_alt_status(keycode_internal))
-          rstate.mark_mode = 0;
-
-        break;
-      }
-
-      // Hide
-      case IKEY_h:
-      {
-        if(get_alt_status(keycode_internal))
-        {
-          if(rstate.scr_hide_mode)
-          {
-            rstate.scr_hide_mode = false;
-            rstate.scr_line_start = 2;
-            rstate.scr_line_middle = 11;
-            rstate.scr_line_end = 20;
-            write_string(key_help, 0, 22, bottom_text_color, 0);
-          }
-          else
-          {
-            rstate.scr_hide_mode = true;
-            rstate.scr_line_start = 1;
-            rstate.scr_line_middle = 12;
-            rstate.scr_line_end = 23;
-            write_string(key_help_hide, 0, 24, bottom_text_color, 0);
-          }
-        }
-        break;
-      }
-
-      case IKEY_f:
-      {
-        if(get_ctrl_status(keycode_internal))
-          find_replace_action(&rstate);
-
-        break;
-      }
-
-      case IKEY_r:
-      {
-        if(get_ctrl_status(keycode_internal))
-        {
-          switch(last_find_option)
-          {
-            case 0:
-            {
-              // Find next
-              int l_pos;
-              int l_num = robo_ed_find_string(&rstate, search_string,
-               wrap_option, &l_pos, case_option);
-
-              if(l_num != -1)
-              {
-                goto_line(&rstate, l_num);
-                rstate.current_x = l_pos;
-              }
-              break;
-            }
-
-            case 1:
-            case 2:
-            {
-              // Find and replace next
-              int l_pos;
-              int l_num = robo_ed_find_string(&rstate, search_string,
-               wrap_option, &l_pos, case_option);
-
-              if(l_num != -1)
-              {
-                goto_line(&rstate, l_num);
-                rstate.current_x = l_pos;
-                replace_current_line(&rstate, l_pos, search_string,
-                 replace_string);
-              }
-              break;
-            }
-          }
-        }
-        break;
-      }
-
-      case IKEY_m:
-      {
-        if(get_alt_status(keycode_internal))
-        {
-          char macro_line[256];
-
-          macro_line[0] = 0;
-
-          if(!input_window(mzx_world, "Configure macro:", macro_line, 29))
-          {
-            struct ext_macro *macro_src;
-            int next;
-
-            macro_src = find_macro(editor_conf, macro_line, &next);
-
-            if(macro_src)
-              execute_macro(&rstate, macro_src);
-          }
-        }
-        break;
-      }
+      break;
     }
 
-    if(exit)
+    // Export file
+    case IKEY_x:
     {
-      update_current_line(&rstate);
+      if(get_alt_status(keycode_internal))
+      {
+        if(rstate->mark_mode)
+        {
+          export_block(rstate, 1);
+        }
+        else
+        {
+          export_block(rstate, 0);
+        }
+        return true;
+      }
+      break;
+    }
+
+    // Single line macros
+    case IKEY_o:
+    {
+      if(get_alt_status(keycode_internal))
+      {
+        edit_single_line_macros(rstate);
+        return true;
+      }
+      break;
+    }
+
+    // Unmark
+    case IKEY_u:
+    {
+      if(get_alt_status(keycode_internal))
+      {
+        rstate->mark_mode = 0;
+        return true;
+      }
+      break;
+    }
+
+    // Hide
+    case IKEY_h:
+    {
+      if(get_alt_status(keycode_internal))
+      {
+        rstate->scr_hide_mode = !rstate->scr_hide_mode;
+        return true;
+      }
+      break;
+    }
+
+    case IKEY_f:
+    {
+      if(get_ctrl_status(keycode_internal))
+      {
+        find_replace_action(rstate);
+        return true;
+      }
+      break;
+    }
+
+    case IKEY_r:
+    {
+      // FIXME reduce duplicate code w/ find_replace_action
+      if(get_ctrl_status(keycode_internal))
+      {
+        switch(last_find_option)
+        {
+          case 0:
+          {
+            // Find next
+            int l_pos;
+            int l_num = robo_ed_find_string(rstate, search_string,
+             wrap_option, &l_pos, case_option);
+
+            if(l_num != -1)
+            {
+              goto_line(rstate, l_num);
+              rstate->current_x = l_pos;
+            }
+            break;
+          }
+
+          case 1:
+          case 2:
+          {
+            // Find and replace next
+            int l_pos;
+            int l_num = robo_ed_find_string(rstate, search_string,
+             wrap_option, &l_pos, case_option);
+
+            if(l_num != -1)
+            {
+              goto_line(rstate, l_num);
+              rstate->current_x = l_pos;
+              replace_current_line(rstate, l_pos, search_string,
+               replace_string);
+            }
+            break;
+          }
+        }
+        return true;
+      }
+      break;
+    }
+
+    case IKEY_m:
+    {
+      if(get_alt_status(keycode_internal))
+      {
+        char macro_line[256];
+        macro_line[0] = 0;
+
+        if(!input_window(mzx_world, "Configure macro:", macro_line, 29))
+        {
+          struct ext_macro *macro_src;
+          int next;
+
+          macro_src = find_macro(editor_conf, macro_line, &next);
+
+          if(macro_src)
+            execute_macro(rstate, macro_src);
+        }
+        return true;
+      }
+      break;
+    }
+  }
+
+  if(exit_status)
+  {
+    update_current_line(rstate);
 
 #ifdef CONFIG_DEBYTECODE
-      if(rstate.confirm_changes)
-      {
-        char confirm_prompt[80] = "Program modified. Save changes?";
-        int confirm_changes_res = ask_yes_no(mzx_world, confirm_prompt);
+    if(rstate->confirm_changes)
+    {
+      char confirm_prompt[80] = "Program modified. Save changes?";
+      int confirm_changes_res = ask_yes_no(mzx_world, confirm_prompt);
 
-        if(confirm_changes_res < 0)
-          exit = 0;
+      if(confirm_changes_res < 0)
+        exit_status = false;
 
-        if(!confirm_changes_res)
-          cur_robot->program_source = package_program(rstate.base->next,
-           NULL, &(cur_robot->program_source_length), cur_robot->program_source);
-
-      }
-#endif
-      if(validate_lines(&rstate, 0))
-        exit = 0;
+      if(!confirm_changes_res)
+        cur_robot->program_source = package_program(rstate->base.next,
+         NULL, &(cur_robot->program_source_length), cur_robot->program_source);
     }
+#endif
+    if(validate_lines(rstate, 0))
+      exit_status = false;
 
-  } while(!exit);
+    if(exit_status)
+      destroy_context(ctx);
 
-  // Prevent UI keys from carrying through.
-  force_release_all_keys();
+    return true;
+  }
+
+  return false;
+}
+
+static void robot_editor_destroy(context *ctx)
+{
+  struct robot_editor_context *rstate = (struct robot_editor_context *)ctx;
 
 #ifndef CONFIG_DEBYTECODE
   // Package time
-  reallocate_robot(cur_robot, rstate.size);
+  reallocate_robot(rstate->cur_robot, rstate->size);
 #endif
 
-  delete_robot_lines(cur_robot, &rstate);
+  delete_robot_lines(rstate->cur_robot, rstate);
 
   restore_screen();
   pop_context();
+}
+
+void robot_editor(context *parent, struct robot *cur_robot)
+{
+  struct robot_editor_context *rstate =
+   ccalloc(1, sizeof(struct robot_editor_context));
+  struct context_spec spec;
+
+  struct editor_config_info *editor_conf = get_editor_config();
+
+  rstate->cur_robot = cur_robot;
+  rstate->current_line = 0;
+  rstate->current_rline = &(rstate->base);
+  rstate->total_lines = 0;
+  rstate->max_size = MAX_OBJ_SIZE;
+  rstate->mark_mode = 0;
+  rstate->mark_start = -1;
+  rstate->mark_end = -1;
+  rstate->mark_start_rline = NULL;
+  rstate->mark_end_rline = NULL;
+  rstate->current_x = 0;
+  rstate->active_macro = NULL;
+  rstate->command_buffer = rstate->command_buffer_space;
+  rstate->scr_hide_mode = editor_conf->robot_editor_hide_help;
+
+#ifdef CONFIG_DEBYTECODE
+  rstate->size = 0;
+  rstate->program_modified = false;
+  rstate->confirm_changes = false;
+#else
+  rstate->size = 2;
+  rstate->default_invalid =
+   (enum validity_types)(editor_conf->default_invalid_status);
+#endif
+
+  init_robot_lines(rstate, cur_robot);
+  strcpy(rstate->command_buffer, rstate->current_rline->line_text);
+
+  memset(&spec, 0, sizeof(struct context_spec));
+  spec.draw           = robot_editor_draw;
+  spec.idle           = robot_editor_idle;
+  spec.click          = robot_editor_mouse;
+  spec.key            = robot_editor_key;
+  spec.destroy        = robot_editor_destroy;
+  spec.framerate_mode = FRAMERATE_UI_INTERRUPT;
+  create_context((context *)rstate, parent, &spec, CTX_ROBO_ED);
+
+  rstate->intk =
+   intake2((context *)rstate, rstate->command_buffer, MAX_COMMAND_LEN,
+   2, 12, 76, line_color, &(rstate->current_x), &(rstate->current_line_len));
+
+  caption_set_robot(parent->world, cur_robot);
+  save_screen();
 }
 
 void init_macros(void)

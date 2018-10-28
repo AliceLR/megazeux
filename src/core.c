@@ -185,7 +185,6 @@ static const char *get_ctx_name(enum context_type id)
     case CTX_HELP_SYSTEM:       return "Help system";
     case CTX_MAIN_MENU:         return "Main menu";
     case CTX_GAME_MENU:         return "Game menu";
-    case CTX_INTAKE:            return "(intake string)";
     case CTX_INTAKE_NUM:        return "(intake number)";
 
     // Network contexts.
@@ -227,6 +226,7 @@ static const char *get_ctx_name(enum context_type id)
 static void print_ctx_line(context_data *ctx_data)
 {
   char name[CTX_NAME_MAX_SIZE + 1] = "  -> subcontext";
+  char cbs_str[12] = "";
   const char *framerate_str = "-";
   boolean click_drag_same = false;
 
@@ -234,6 +234,9 @@ static void print_ctx_line(context_data *ctx_data)
   {
     snprintf(name, CTX_NAME_MAX_SIZE, "%s",
      get_ctx_name(ctx_data->context_type));
+
+    if(ctx_data->num_callbacks)
+      snprintf(cbs_str, 12, "%d", ctx_data->num_callbacks);
 
     switch(ctx_data->framerate)
     {
@@ -247,7 +250,7 @@ static void print_ctx_line(context_data *ctx_data)
   if(ctx_data->functions.click == ctx_data->functions.drag)
     click_drag_same = true;
 
-  fprintf(stderr, "%-*.*s | %3s %3s %3s %3s %3s %3s %3s | %-3s \n",
+  fprintf(stderr, "%-*.*s | %3s %3s %3s %3s %3s %3s %3s | %-3s %3s\n",
     16, 16, name,
     ctx_data->functions.resume  ? "Yes" : "",
     ctx_data->functions.draw    ? "Yes" : "",
@@ -256,7 +259,8 @@ static void print_ctx_line(context_data *ctx_data)
     ctx_data->functions.click   ? "Yes" : "",
     ctx_data->functions.drag    ? click_drag_same ? "<- " : "Yes" : "",
     ctx_data->functions.destroy ? "Yes" : "",
-    framerate_str
+    framerate_str,
+    cbs_str
   );
 }
 
@@ -294,8 +298,8 @@ static void __print_core_stack(context *_ctx, const char *file, int line)
 
   root = _ctx->root;
 
-  fprintf(stderr, "CONTEXT STACK    | Res Drw Idl Key Clk Drg Dst | Fr. \n");
-  fprintf(stderr, "-----------------|-----------------------------|-----\n");
+  fprintf(stderr, "CONTEXT STACK    | Res Drw Idl Key Clk Drg Dst | Fr. CbQ \n");
+  fprintf(stderr, "-----------------|-----------------------------|---------\n");
 
   for(i = root->stack.size - 1; i >= 0; i--)
   {

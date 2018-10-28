@@ -214,7 +214,7 @@ CORE_LIBSPEC void color_string(const char *string, Uint32 x, Uint32 y,
 CORE_LIBSPEC void write_string(const char *string, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed);
 CORE_LIBSPEC void write_number(int number, char color, int x, int y,
- int minlen, int rightalign, int base);
+ int minlen, boolean rightalign, int base);
 CORE_LIBSPEC void color_line(Uint32 length, Uint32 x, Uint32 y, Uint8 color);
 CORE_LIBSPEC void fill_line(Uint32 length, Uint32 x, Uint32 y, Uint8 chr,
  Uint8 color);
