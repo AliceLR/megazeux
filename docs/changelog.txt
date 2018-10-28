@@ -40,7 +40,8 @@ DEVELOPERS
   with a lookup table-based implementation of tolower.
 + Refactored the following contexts to use the main loop: robot
   editor, intake, thing menu. For compatibility purposes the old
-  intake still exists.
+  intake still exists, but all robot editor hacks have been
+  removed from it.
 
 
 October 7th, 2018 - MZX 2.91g

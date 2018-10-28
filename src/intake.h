@@ -35,8 +35,7 @@ enum intake_exit_type
 };
 
 CORE_LIBSPEC int intake(struct world *mzx_world, char *string, int max_len,
- int x, int y, char color, enum intake_exit_type exit_type, int *return_x_pos,
- boolean robo_intk, char *macro);
+ int x, int y, char color, enum intake_exit_type exit_type, int *return_x_pos);
 
 CORE_LIBSPEC subcontext *intake2(context *parent, char *dest, int max_length,
  int x, int y, int width, int color, int *pos_external, int *length_external);

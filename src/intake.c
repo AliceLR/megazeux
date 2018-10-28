@@ -37,15 +37,14 @@ static char last_char = 0;
 // (returns the key used to exit) String points to your memory for storing
 // the new string. The current "value" is used- clear the string before
 // calling intake if you need a blank string. Max_len is the maximum length
-// of the string. X, y, segment, and color are self-explanitory.
+// of the string. X, y, and color are self-explanitory.
 
 // The editing keys supported are as
 // follows- Keys to enter characters, Enter/ESC to exit, Home/End to move to
 // the front/back of the line, Insert to toggle insert/overwrite, Left/Right
 // to move within the line, Bkspace/Delete to delete as usual, and Alt-Bksp
 // to clear the entire line. No screen saving is performed. After this
-// function, the cursor is automatically off. If password is set, all
-// characters appear as x.
+// function, the cursor is automatically off.
 
 // Mouse support- Clicking inside string sends cursor there. Clicking
 // outside string returns a MOUSE_EVENT to caller without acknowledging
@@ -54,25 +53,15 @@ static char last_char = 0;
 // Returns a backspace if attempted at start of line. (exit_type==INTK_EXIT_ANY)
 // Returns a delete if attempted at end of line. (exit_type==INTK_EXIT_ANY)
 
-// If robo_intk is set, only 76 chars are shown and symbols are altered
-// on the left/right if there is more to the left/right. Scrolling
-// of the line is supported. The current character (1 on) is shown at
-// x = 32, y = 0, in color 79, min. 3 chars.
-
 int intake(struct world *mzx_world, char *string, int max_len,
- int x, int y, char color, enum intake_exit_type exit_type, int *return_x_pos,
- boolean robo_intk, char *macro)
+ int x, int y, char color, enum intake_exit_type exit_type, int *return_x_pos)
 {
   int use_mask = get_config()->mask_midchars;
-  int currx, curr_len, macro_position = -1;
+  int currx, curr_len;
   int done = 0, place = 0;
   char cur_char = 0;
-  char temp_char;
   int mouse_press;
   int key;
-
-  if(macro != NULL)
-    macro_position = 0;
 
   // Activate cursor
   if(insert_on)
@@ -86,10 +75,7 @@ int intake(struct world *mzx_world, char *string, int max_len,
   if((return_x_pos) && (*return_x_pos < currx))
     currx = *return_x_pos;
 
-  if(robo_intk && (currx > 75))
-    move_cursor(77, y);
-  else
-    move_cursor(x + currx, y);
+  move_cursor(x + currx, y);
 
   if(insert_on)
     cursor_underline();
@@ -98,116 +84,25 @@ int intake(struct world *mzx_world, char *string, int max_len,
 
   do
   {
-    if(!robo_intk)
-    {
-      if(use_mask)
-        write_string_mask(string, x, y, color, 0);
-      else
-        write_string_ext(string, x, y, color, 0, 0, 16);
-    }
+    if(use_mask)
+      write_string_mask(string, x, y, color, 0);
     else
+      write_string_ext(string, x, y, color, 0, 0, 16);
+
+    fill_line(max_len + 1 - curr_len, x + curr_len, y, 32, color);
+
+    update_screen();
+    update_event_status_intake();
+    key = get_key(keycode_internal_wrt_numlock);
+    place = 0;
+
+    cur_char = get_key(keycode_unicode);
+
+    // Exit event mimics escape
+    if(get_exit_status() && exit_type != INTK_EXIT_ENTER)
     {
-      draw_char('\x11', color, 79, y);
-      if((curr_len < 76) || (currx < 76))
-      {
-        draw_char('\x10', color, 0, y);
-
-        if(curr_len < 76)
-        {
-          if(use_mask)
-            write_line_mask(string, x, y, color, 0);
-          else
-            write_line_ext(string, x, y, color, 0, 0, 16);
-          fill_line(76 - curr_len, x + curr_len, y, 32, color);
-        }
-        else
-        {
-          temp_char = string[76];
-          string[76] = 0;
-          if(use_mask)
-            write_line_mask(string, x, y, color, 0);
-          else
-            write_line_ext(string, x, y, color, 0, 0, 16);
-          string[76] = temp_char;
-
-          draw_char('\xaf', color, 79, y);
-        }
-      }
-      else
-      {
-        draw_char('\x20', color, 77, y);
-        if(strlen(string + currx - 75) > 78)
-        {
-          temp_char = string[currx + 1];
-          string[currx + 1] = 0;
-          if(use_mask)
-          {
-            write_line_mask(string + currx - 75, x, y, color, 0);
-          }
-          else
-          {
-            write_line_ext(string + currx - 75, x, y,
-             color, 0, 0, 16);
-          }
-          string[currx + 1] = temp_char;
-        }
-        else
-        {
-          if(use_mask)
-          {
-            write_line_mask(string + currx - 75, x, y, color, 0);
-          }
-          else
-          {
-            write_line_ext(string + currx - 75, x, y,
-             color, 0, 0, 16);
-          }
-        }
-        draw_char('\xae', color, 0, y);
-        if(currx < curr_len)
-          draw_char('\xaf', color, 79, y);
-      }
-      draw_char('\x20', color, 78, y);
-    }
-
-    if(!robo_intk)
-    {
-      fill_line(max_len + 1 - curr_len, x + curr_len, y, 32, color);
-    }
-    else
-    {
-      write_number(currx + 1, 79, 28, 0, 3, 0, 10);
-      write_number(curr_len + 1, 79, 32, 0, 3, 0, 10);
-    }
-
-    // Get key
-    if(macro_position != -1)
-    {
-      key = macro[macro_position];
-      cur_char = key;
-
-      macro_position++;
-      if(macro[macro_position] == 0)
-        macro_position = -1;
-
-      if(key == '^')
-        key = IKEY_RETURN;
-    }
-    else
-    {
-      update_screen();
-      update_event_status_intake();
-      key = get_key(keycode_internal_wrt_numlock);
-      place = 0;
-
-      cur_char = get_key(keycode_unicode);
-
-      // Exit event mimics escape
-      if(get_exit_status() && exit_type != INTK_EXIT_ENTER)
-      {
-        key = 0;
-        done = 1;
-      }
+      key = 0;
+      done = 1;
     }
 
     mouse_press = get_mouse_press_ext();
@@ -253,29 +148,15 @@ int intake(struct world *mzx_world, char *string, int max_len,
 
       case IKEY_HOME:
       {
-        if(get_alt_status(keycode_internal) && robo_intk)
-        {
-          done = 1;
-        }
-        else
-        {
-          // Home
-          currx = 0;
-        }
+        // Home
+        currx = 0;
         break;
       }
 
       case IKEY_END:
       {
-        if(get_alt_status(keycode_internal) && robo_intk)
-        {
-          done = 1;
-        }
-        else
-        {
-          // End
-          currx = curr_len;
-        }
+        // End
+        currx = curr_len;
         break;
       }
 
@@ -381,20 +262,13 @@ int intake(struct world *mzx_world, char *string, int max_len,
 
       case IKEY_INSERT:
       {
-        if(get_alt_status(keycode_internal) && robo_intk)
-        {
-          done = 1;
-        }
+        // Insert
+        if(insert_on)
+          cursor_solid();
         else
-        {
-          // Insert
-          if(insert_on)
-            cursor_solid();
-          else
-            cursor_underline();
+          cursor_underline();
 
-          insert_on ^= 1;
-        }
+        insert_on ^= 1;
         break;
       }
 
@@ -477,12 +351,6 @@ int intake(struct world *mzx_world, char *string, int max_len,
 
       case IKEY_c:
       {
-        if(get_ctrl_status(keycode_internal) && robo_intk)
-        {
-          done = 1;
-        }
-        else
-
         if(get_alt_status(keycode_internal))
         {
           // If alt - C is pressed, choose character
@@ -508,60 +376,8 @@ int intake(struct world *mzx_world, char *string, int max_len,
 
       case IKEY_t:
       {
+        // Hack for SFX editor dialog
         if(get_alt_status(keycode_internal))
-        {
-          done = 1;
-        }
-        else
-        {
-          place = 1;
-        }
-        break;
-      }
-
-      case IKEY_l:
-      case IKEY_g:
-      case IKEY_d:
-      case IKEY_f:
-      case IKEY_r:
-      {
-        if(get_ctrl_status(keycode_internal) && robo_intk)
-        {
-          done = 1;
-        }
-        else
-        {
-          place = 1;
-        }
-        break;
-      }
-
-      case IKEY_i:
-      {
-        if((get_ctrl_status(keycode_internal) ||
-         get_alt_status(keycode_internal)) && robo_intk)
-        {
-          done = 1;
-        }
-        else
-        {
-          place = 1;
-        }
-        break;
-      }
-
-      case IKEY_u:
-      case IKEY_o:
-      case IKEY_x:
-      case IKEY_b:
-      case IKEY_s:
-      case IKEY_e:
-      case IKEY_v:
-      case IKEY_p:
-      case IKEY_h:
-      case IKEY_m:
-      {
-        if(get_alt_status(keycode_internal) && robo_intk)
         {
           done = 1;
         }
@@ -616,11 +432,7 @@ int intake(struct world *mzx_world, char *string, int max_len,
       }
     }
 
-    // Move cursor
-    if(robo_intk && (currx > 75))
-      move_cursor(77, y);
-    else
-      move_cursor(x + currx, y);
+    move_cursor(x + currx, y);
 
     if(insert_on)
       cursor_underline();
@@ -1072,18 +884,9 @@ static boolean intake_key(subcontext *sub, int *key)
       break;
     }
 
-    case IKEY_LSHIFT:
-    case IKEY_RSHIFT:
-    case 0:
-    case -1:
-    {
-      place = false;
-      break;
-    }
-
     default:
     {
-      if(!alt_status && !ctrl_status)
+      if(!alt_status && !ctrl_status && (*key >= 32) && (*key < 256))
         place = true;
 
       break;
