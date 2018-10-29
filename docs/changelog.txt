@@ -31,6 +31,8 @@ USERS
 + Inserting text in the robot editor using the F2/F3/F4/F5
   shortcuts can no longer exceed the line length limit, fixing
   related crashes.
++ Using F5 in the robot editor generates decimal numbers instead
+  of hex numbers now.
 
 DEVELOPERS
 

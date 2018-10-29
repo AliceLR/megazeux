@@ -3566,17 +3566,17 @@ static boolean robot_editor_key(context *ctx, int *key)
       int char_edited;
       char char_buffer[14];
       char char_string_buffer[64];
-      char *char_string_buffer_position = char_string_buffer;
+      char *buffer_pos = char_string_buffer;
 
       char_edited = char_editor(mzx_world);
 
       ec_read_char(char_edited, char_buffer);
 
-      for(i = 0; i < 13; i++, char_string_buffer_position += 4)
+      for(i = 0; i < 14; i++)
       {
-        sprintf(char_string_buffer_position, "$%02x ", char_buffer[i]);
+        sprintf(buffer_pos, " %d", char_buffer[i]);
+        buffer_pos += strlen(buffer_pos);
       }
-      sprintf(char_string_buffer_position, "$%02x", char_buffer[i]);
 
       insert_string(rstate, char_string_buffer, 0);
       return true;
