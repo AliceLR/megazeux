@@ -3228,8 +3228,9 @@ static void robot_editor_draw(context *ctx)
 
   write_string("Col:", 23, 0, top_highlight_color, 0);
   write_string("/", 31, 0, top_highlight_color, 0);
-  write_number(rstate->current_x, top_text_color, 28, 0, 3, false, 10);
-  write_number(rstate->current_line_len, top_text_color, 32, 0, 3, false, 10);
+  write_number(rstate->current_x + 1, top_text_color, 28, 0, 3, false, 10);
+  write_number(rstate->current_line_len + 1, top_text_color, 32, 0, 3, false,
+   10);
 
   write_string("Size:", 37, 0, top_highlight_color, 0);
   write_string("/", 50, 0, top_highlight_color, 0);
