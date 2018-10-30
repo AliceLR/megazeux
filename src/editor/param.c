@@ -1016,86 +1016,6 @@ static int pe_missile_gun(struct world *mzx_world, int param)
    ((intel - 1) << 5) | (type << 7);
 }
 
-int edit_sensor(struct world *mzx_world, struct sensor *cur_sensor)
-{
-  char sensor_name[ROBOT_NAME_SIZE];
-  char sensor_robot[ROBOT_NAME_SIZE];
-  int sensor_char = cur_sensor->sensor_char;
-  struct dialog di;
-  struct element *elements[5];
-  int dialog_result;
-
-  // Prevent previous keys from carrying through.
-  force_release_all_keys();
-
-  set_context(CTX_SENSOR_EDITOR);
-  strcpy(sensor_name, cur_sensor->sensor_name);
-  strcpy(sensor_robot, cur_sensor->robot_to_mesg);
-
-  set_confirm_buttons(elements);
-  elements[2] = construct_input_box(15, 6, "Sensor's name:    ",
-   ROBOT_NAME_SIZE - 1, sensor_name);
-  elements[3] = construct_input_box(15, 8, "Robot to message: ",
-   ROBOT_NAME_SIZE - 1, sensor_robot);
-  elements[4] = construct_char_box(15, 10, "Sensor character: ",
-   1, &sensor_char);
-
-  construct_dialog(&di, "Set Sensor", 10, 5, 60, 18,
-   elements, 5, 2);
-
-  dialog_result = run_dialog(mzx_world, &di);
-  destruct_dialog(&di);
-
-  // Prevent UI keys from carrying through.
-  force_release_all_keys();
-
-  pop_context();
-
-  if(dialog_result)
-    return -1;
-
-  strcpy(cur_sensor->sensor_name, sensor_name);
-  strcpy(cur_sensor->robot_to_mesg, sensor_robot);
-  cur_sensor->sensor_char = sensor_char;
-  return 0;
-}
-
-int edit_scroll(struct world *mzx_world, struct scroll *cur_scroll)
-{
-  scroll_edit(mzx_world, cur_scroll, 2);
-  return 0;
-}
-
-int edit_robot(struct world *mzx_world, struct robot *cur_robot)
-{
-  char *name = cur_robot->robot_name;
-  int new_char;
-
-  // Edit name.
-  if(!input_window(mzx_world, "Name for robot:", name, ROBOT_NAME_SIZE - 1))
-  {
-    // Edit character.
-    new_char = char_selection(cur_robot->robot_char);
-    if(new_char < 0)
-    {
-      // ESC means keep char but don't edit robot
-      if(new_char == -256)
-        new_char = 0;
-      cur_robot->robot_char = -new_char;
-    }
-    else
-    {
-      cur_robot->robot_char = new_char;
-      // Now edit the program.
-      robot_editor(mzx_world, cur_robot);
-    }
-
-    return 0;
-  }
-
-  return -1;
-}
-
 // Returns parameter or -1 for ESC. Must pass a legit parameter, or -1 to
 // use default or load up a new robot/scroll/sign.
 int edit_param(struct world *mzx_world, int id, int param)
@@ -1367,4 +1287,99 @@ int edit_param(struct world *mzx_world, int id, int param)
 
   // Return param
   return param;
+}
+
+int edit_sensor(struct world *mzx_world, struct sensor *cur_sensor)
+{
+  char sensor_name[ROBOT_NAME_SIZE];
+  char sensor_robot[ROBOT_NAME_SIZE];
+  int sensor_char = cur_sensor->sensor_char;
+  struct dialog di;
+  struct element *elements[5];
+  int dialog_result;
+
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
+  set_context(CTX_SENSOR_EDITOR);
+  strcpy(sensor_name, cur_sensor->sensor_name);
+  strcpy(sensor_robot, cur_sensor->robot_to_mesg);
+
+  set_confirm_buttons(elements);
+  elements[2] = construct_input_box(15, 6, "Sensor's name:    ",
+   ROBOT_NAME_SIZE - 1, sensor_name);
+  elements[3] = construct_input_box(15, 8, "Robot to message: ",
+   ROBOT_NAME_SIZE - 1, sensor_robot);
+  elements[4] = construct_char_box(15, 10, "Sensor character: ",
+   1, &sensor_char);
+
+  construct_dialog(&di, "Set Sensor", 10, 5, 60, 18,
+   elements, 5, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
+
+  pop_context();
+
+  if(dialog_result)
+    return -1;
+
+  strcpy(cur_sensor->sensor_name, sensor_name);
+  strcpy(cur_sensor->robot_to_mesg, sensor_robot);
+  cur_sensor->sensor_char = sensor_char;
+  return 0;
+}
+
+int edit_scroll(struct world *mzx_world, struct scroll *cur_scroll)
+{
+  scroll_edit(mzx_world, cur_scroll, 2);
+  return 0;
+}
+
+void edit_robot(context *ctx, struct robot *cur_robot, int *ret_value)
+{
+  struct world *mzx_world = ctx->world;
+  char *name = cur_robot->robot_name;
+  int new_char;
+
+  // Edit name.
+  if(!input_window(mzx_world, "Name for robot:", name, ROBOT_NAME_SIZE - 1))
+  {
+    // Edit character.
+    new_char = char_selection(cur_robot->robot_char);
+    if(new_char < 0)
+    {
+      // ESC means keep char but don't edit robot
+      if(new_char == -256)
+        new_char = 0;
+      cur_robot->robot_char = -new_char;
+    }
+    else
+    {
+      cur_robot->robot_char = new_char;
+      // Now edit the program.
+      robot_editor(ctx, cur_robot);
+    }
+
+    if(ret_value)
+      *ret_value = 0;
+
+    return;
+  }
+
+  if(ret_value)
+    *ret_value = -1;
+}
+
+void edit_global_robot(context *ctx)
+{
+  struct world *mzx_world = ctx->world;
+  struct robot *cur_robot = &(mzx_world->global_robot);
+  char *name = cur_robot->robot_name;
+
+  if(!input_window(mzx_world, "Name for robot:", name, ROBOT_NAME_SIZE - 1))
+    robot_editor(ctx, cur_robot);
 }

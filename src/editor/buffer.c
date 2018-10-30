@@ -23,7 +23,6 @@
 #include "configure.h"
 #include "edit.h"
 #include "param.h"
-#include "robo_ed.h"
 #include "robot.h"
 #include "undo.h"
 #include "window.h"
@@ -227,29 +226,43 @@ static const char def_colors[128] =
 // It's important that after changing the param the thing is placed (using
 // place_current_at_xy) so that scrolls/sensors/robots get copied.
 
-int change_param(struct world *mzx_world, struct buffer_info *buffer)
+void change_param(context *ctx, struct buffer_info *buffer, int *new_param)
 {
+  struct world *mzx_world = ctx->world;
+
   if(buffer->id == SENSOR)
   {
-    return edit_sensor(mzx_world, buffer->sensor);
+    *new_param = edit_sensor(mzx_world, buffer->sensor);
   }
   else
 
   if(is_robot(buffer->id))
   {
-    return edit_robot(mzx_world, buffer->robot);
+    edit_robot(ctx, buffer->robot, new_param);
   }
   else
 
   if(is_signscroll(buffer->id))
   {
-    return edit_scroll(mzx_world, buffer->scroll);
+    *new_param = edit_scroll(mzx_world, buffer->scroll);
   }
 
   else
   {
-    return edit_param(mzx_world, buffer->id, buffer->param);
+    *new_param = edit_param(mzx_world, buffer->id, buffer->param);
   }
+}
+
+void free_buffer(struct buffer_info *buffer)
+{
+  if(buffer->robot->used)
+    clear_robot_contents(buffer->robot);
+  if(buffer->scroll->used)
+    clear_scroll_contents(buffer->scroll);
+
+  memset(buffer->robot, 0, sizeof(struct robot));
+  memset(buffer->scroll, 0, sizeof(struct scroll));
+  memset(buffer->sensor, 0, sizeof(struct sensor));
 }
 
 /**
@@ -392,6 +405,48 @@ int place_current_at_xy(struct world *mzx_world, struct buffer_info *buffer,
 }
 
 /**
+ * Replace the contents of the board or layer at a position with the contents
+ * of the provided buffer. Preserves anything under the replaced thing on the
+ * the board.
+ */
+
+void replace_current_at_xy(struct world *mzx_world, struct buffer_info *buffer,
+ int x, int y, enum editor_mode mode, struct undo_history *history)
+{
+  struct board *cur_board = mzx_world->current_board;
+  int offset = x + (y * cur_board->board_width);
+
+  if(mode == EDIT_BOARD)
+  {
+    enum thing old_id = cur_board->level_id[offset];
+
+    /**
+     * Need special handling for storageless objects or storage objects of
+     * different types--if placed normally, they could destroy whatever is
+     * under them, and we don't want this. We also want the under included in
+     * the history, which requires the use a block frame instead of a regular
+     * frame (which would just place_current_at_xy when redo is used).
+     */
+    if(is_storageless(old_id) || old_id != buffer->id)
+    {
+      if(history)
+        add_block_undo_frame(mzx_world, history, cur_board, offset, 1, 1);
+
+      id_remove_top(mzx_world, x, y);
+      place_current_at_xy(mzx_world, buffer, x, y, mode, NULL);
+
+      if(history)
+        update_undo_frame(history);
+      return;
+    }
+  }
+
+  // Our requirements here are actually equivalent to the behavior of
+  // place_current_xy in most cases, so use it directly.
+  place_current_at_xy(mzx_world, buffer, x, y, mode, history);
+}
+
+/**
  * Copy the contents of the board/layer at a location into the buffer.
  */
 
@@ -470,105 +525,190 @@ void grab_at_xy(struct world *mzx_world, struct buffer_info *buffer,
   }
 }
 
-/**
- * Select and configure type from one of the thing menus into the buffer.
- * Place it onto the board afterward.
- */
-
-void thing_menu(context *ctx, enum thing_menu_id menu_number,
- struct buffer_info *buffer, boolean use_default_color, int x, int y,
- struct undo_history *history)
+struct thing_menu_context
 {
-  struct editor_config_info *editor_conf = get_editor_config();
-  struct world *mzx_world = ctx->world;
-  struct board *cur_board = mzx_world->current_board;
+  context ctx;
+  enum thing_menu_id menu_number;
+  struct buffer_info *buffer;
+  int chosen_pos;
+  int chosen_color;
+  int chosen_param;
+
+  // Placement info
+  struct undo_history *place_history;
+  boolean use_default_color;
+  int place_x;
+  int place_y;
+
+  // Backup buffer info (if the user cancels)
   enum thing old_id;
   int old_color;
   int old_param;
-  enum thing chosen_id;
-  int chosen_color;
-  int chosen_param;
-  int pos;
+};
 
+/**
+ * Update the buffer with the new color and parameter (and place the buffer on
+ * the board if that feature is enabled).
+ */
+
+static void thing_menu_place_callback(context *ctx, context_callback_param *p)
+{
+  struct thing_menu_context *thing_menu = (struct thing_menu_context *)ctx;
+  struct editor_config_info *editor_conf = get_editor_config();
+  struct world *mzx_world = ctx->world;
+  struct buffer_info *buffer = thing_menu->buffer;
+
+  if(thing_menu->chosen_param >= 0)
+  {
+    // id was already set for change_param.
+    buffer->param = thing_menu->chosen_param;
+    buffer->color = thing_menu->chosen_color;
+
+    if(editor_conf->editor_thing_menu_places)
+    {
+      buffer->param = place_current_at_xy(mzx_world, buffer,
+       thing_menu->place_x, thing_menu->place_y, EDIT_BOARD,
+       thing_menu->place_history);
+    }
+  }
+  else
+  {
+    // Restore the old buffer if param editing failed.
+    // Note this should never happen for the storage types.
+    buffer->id = thing_menu->old_id;
+    buffer->param = thing_menu->old_param;
+    buffer->color = thing_menu->old_color;
+  }
+}
+
+/**
+ * Now that a thing has been chosen, set up the buffer for it and request a
+ * new parameter.
+ */
+
+static void thing_menu_edit_callback(context *ctx, context_callback_param *p)
+{
+  struct thing_menu_context *thing_menu = (struct thing_menu_context *)ctx;
+  struct buffer_info *buffer = thing_menu->buffer;
+  enum thing chosen_id;
+
+  // If <0 was chosen, the user canceled without selecting anything.
+  if(thing_menu->chosen_pos < 0)
+    return;
+
+  chosen_id = thing_menus[thing_menu->menu_number][thing_menu->chosen_pos].id;
+
+  if(def_colors[chosen_id] && thing_menu->use_default_color)
+  {
+    thing_menu->chosen_color = def_colors[chosen_id];
+  }
+  else
+  {
+    thing_menu->chosen_color = buffer->color;
+  }
+
+  // Perhaps put a new blank scroll, robot, or sensor in one of the copies
+  if(chosen_id == SENSOR)
+  {
+    create_blank_sensor_direct(buffer->sensor);
+  }
+  else
+
+  if(is_robot(chosen_id))
+  {
+    if(is_robot(buffer->id))
+      clear_robot_contents(buffer->robot);
+
+    create_blank_robot_direct(buffer->robot,
+     thing_menu->place_x, thing_menu->place_y);
+  }
+  else
+
+  if(is_signscroll(chosen_id))
+  {
+    if(is_signscroll(buffer->id))
+      clear_scroll_contents(buffer->scroll);
+
+    create_blank_scroll_direct(buffer->scroll);
+  }
+
+  buffer->id = chosen_id;
+  buffer->param = -1;
+  change_param(ctx, buffer, &(thing_menu->chosen_param));
+
+  context_callback(ctx, NULL, thing_menu_place_callback);
+}
+
+/**
+ * Select a thing from the specified thing menu.
+ */
+
+static void thing_menu_choose_thing(struct thing_menu_context *thing_menu,
+ enum thing_menu_id menu_number)
+{
   const char *options[MAX_CHOICES];
   int count;
-
-  old_id = (enum thing)cur_board->level_id[x + (y * cur_board->board_width)];
-  if(old_id == PLAYER && editor_conf->editor_thing_menu_places)
-  {
-    error("Cannot overwrite the player- move it first",
-     ERROR_T_WARNING, ERROR_OPT_OK, 0x0000);
-    return;
-  }
+  int pos;
 
   // Find the size of the current menu and make a list readable by the list menu
   for(count = 0; thing_menus[menu_number][count].option; count++)
     options[count] = thing_menus[menu_number][count].option;
 
   pos = list_menu(options, 20, thing_menu_titles[menu_number], 0, count, 27, 0);
+  thing_menu->chosen_pos = pos;
 
-  if(pos >= 0)
+  context_callback((context *)thing_menu, NULL, thing_menu_edit_callback);
+}
+
+/**
+ * Exit this context once the callback chain finishes.
+ */
+
+static void thing_menu_resume(context *ctx)
+{
+  destroy_context(ctx);
+}
+
+/**
+ * Wrapper for list_menu. Select and configure type from one of the thing menus
+ * into the buffer. Place it onto the board afterward.
+ */
+
+void thing_menu(context *parent, enum thing_menu_id menu_number,
+ struct buffer_info *buffer, boolean use_default_color, int x, int y,
+ struct undo_history *history)
+{
+  struct thing_menu_context *thing_menu;
+  struct context_spec spec;
+
+  struct editor_config_info *editor_conf = get_editor_config();
+  struct world *mzx_world = parent->world;
+  struct board *cur_board = mzx_world->current_board;
+
+  enum thing thing_at_pos =
+   (enum thing)cur_board->level_id[x + (y * cur_board->board_width)];
+
+  if(thing_at_pos == PLAYER && editor_conf->editor_thing_menu_places)
   {
-    chosen_id = thing_menus[menu_number][pos].id;
-
-    if(def_colors[chosen_id] && use_default_color)
-    {
-      chosen_color = def_colors[chosen_id];
-    }
-    else
-    {
-      chosen_color = buffer->color;
-    }
-
-    // Perhaps put a new blank scroll, robot, or sensor in one of the copies
-    if(chosen_id == SENSOR)
-    {
-      create_blank_sensor_direct(buffer->sensor);
-    }
-    else
-
-    if(is_robot(chosen_id))
-    {
-      if(is_robot(buffer->id))
-        clear_robot_contents(buffer->robot);
-
-      create_blank_robot_direct(buffer->robot, x, y);
-    }
-
-    if(is_signscroll(chosen_id))
-    {
-      if(is_signscroll(buffer->id))
-        clear_scroll_contents(buffer->scroll);
-
-      create_blank_scroll_direct(buffer->scroll);
-    }
-
-    old_id = buffer->id;
-    old_param = buffer->param;
-    old_color = buffer->color;
-
-    buffer->id = chosen_id;
-    buffer->param = -1;
-    chosen_param = change_param(mzx_world, buffer);
-
-    if(chosen_param >= 0)
-    {
-      buffer->param = chosen_param;
-      buffer->color = chosen_color;
-
-      if(editor_conf->editor_thing_menu_places)
-      {
-        buffer->param = place_current_at_xy(mzx_world, buffer,
-         x, y, EDIT_BOARD, history);
-      }
-    }
-    else
-    {
-      // Restore the old buffer if param editing failed.
-      // Note this never happens for the storage types.
-      buffer->id = old_id;
-      buffer->param = old_param;
-      buffer->color = old_color;
-    }
+    error_message(E_CANT_OVERWRITE_PLAYER, 0, NULL);
+    return;
   }
+
+  thing_menu = cmalloc(sizeof(struct thing_menu_context));
+  thing_menu->menu_number = menu_number;
+  thing_menu->buffer = buffer;
+  thing_menu->place_x = x;
+  thing_menu->place_y = y;
+  thing_menu->place_history = history;
+  thing_menu->use_default_color = use_default_color;
+  thing_menu->old_id = buffer->id;
+  thing_menu->old_param = buffer->param;
+  thing_menu->old_color = buffer->color;
+
+  memset(&spec, 0, sizeof(struct context_spec));
+  spec.resume = thing_menu_resume;
+
+  create_context((context *)thing_menu, parent, &spec, CTX_THING_MENU);
+
+  thing_menu_choose_thing(thing_menu, menu_number);
 }

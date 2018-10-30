@@ -34,6 +34,8 @@
 #include "world.h"
 #include "world_struct.h"
 
+#define MAX_NUM_CALLBACKS 8
+
 struct context_stack
 {
   context **contents;
@@ -56,6 +58,18 @@ struct core_context
 };
 
 /**
+ * Contains data for callbacks added to a context.
+ */
+
+struct context_callback_data
+{
+  context *ctx_for_callback;
+  context_callback_param *param_for_callback;
+  context_callback_function callback;
+};
+
+
+/**
  * Contains internal context data used to run contexts.
  */
 
@@ -67,6 +81,9 @@ struct context_data
   enum framerate_type framerate;
   struct context_stack stack;
   struct context_spec functions;
+  struct context_callback_data callbacks[MAX_NUM_CALLBACKS];
+  int cur_callback;
+  int num_callbacks;
 };
 
 #ifdef CONFIG_FPS
@@ -168,7 +185,6 @@ static const char *get_ctx_name(enum context_type id)
     case CTX_HELP_SYSTEM:       return "Help system";
     case CTX_MAIN_MENU:         return "Main menu";
     case CTX_GAME_MENU:         return "Game menu";
-    case CTX_INTAKE:            return "(intake string)";
     case CTX_INTAKE_NUM:        return "(intake number)";
 
     // Network contexts.
@@ -177,6 +193,7 @@ static const char *get_ctx_name(enum context_type id)
     // Editor contexts.
     case CTX_EDITOR:            return "Editor";
     case CTX_EDITOR_VIEW_BOARD: return "(view board)";
+    case CTX_THING_MENU:        return "Thing menu";
     case CTX_BLOCK_CMD:         return "Block command";
     case CTX_BLOCK_TYPE:        return "Block type";
     case CTX_CHOOSE_CHARSET:    return "Select charset";
@@ -209,6 +226,7 @@ static const char *get_ctx_name(enum context_type id)
 static void print_ctx_line(context_data *ctx_data)
 {
   char name[CTX_NAME_MAX_SIZE + 1] = "  -> subcontext";
+  char cbs_str[12] = "";
   const char *framerate_str = "-";
   boolean click_drag_same = false;
 
@@ -216,6 +234,9 @@ static void print_ctx_line(context_data *ctx_data)
   {
     snprintf(name, CTX_NAME_MAX_SIZE, "%s",
      get_ctx_name(ctx_data->context_type));
+
+    if(ctx_data->num_callbacks)
+      snprintf(cbs_str, 12, "%d", ctx_data->num_callbacks);
 
     switch(ctx_data->framerate)
     {
@@ -229,7 +250,7 @@ static void print_ctx_line(context_data *ctx_data)
   if(ctx_data->functions.click == ctx_data->functions.drag)
     click_drag_same = true;
 
-  fprintf(stderr, "%-*.*s | %3s %3s %3s %3s %3s %3s %3s | %-3s \n",
+  fprintf(stderr, "%-*.*s | %3s %3s %3s %3s %3s %3s %3s | %-3s %3s\n",
     16, 16, name,
     ctx_data->functions.resume  ? "Yes" : "",
     ctx_data->functions.draw    ? "Yes" : "",
@@ -238,7 +259,8 @@ static void print_ctx_line(context_data *ctx_data)
     ctx_data->functions.click   ? "Yes" : "",
     ctx_data->functions.drag    ? click_drag_same ? "<- " : "Yes" : "",
     ctx_data->functions.destroy ? "Yes" : "",
-    framerate_str
+    framerate_str,
+    cbs_str
   );
 }
 
@@ -276,8 +298,8 @@ static void __print_core_stack(context *_ctx, const char *file, int line)
 
   root = _ctx->root;
 
-  fprintf(stderr, "CONTEXT STACK    | Res Drw Idl Key Clk Drg Dst | Fr. \n");
-  fprintf(stderr, "-----------------|-----------------------------|-----\n");
+  fprintf(stderr, "CONTEXT STACK    | Res Drw Idl Key Clk Drg Dst | Fr. CbQ \n");
+  fprintf(stderr, "-----------------|-----------------------------|---------\n");
 
   for(i = root->stack.size - 1; i >= 0; i--)
   {
@@ -355,7 +377,8 @@ void create_context(context *ctx, context *parent,
   context_data *ctx_data;
 
   if(parent == NULL || !ctx_spec ||
-   (ctx_spec->key == NULL && ctx_spec->click == NULL &&
+   (ctx_spec->resume == NULL && ctx_spec->draw == NULL &&
+    ctx_spec->key == NULL && ctx_spec->click == NULL &&
     ctx_spec->drag == NULL && ctx_spec->idle == NULL))
   {
     print_core_stack(parent);
@@ -386,6 +409,8 @@ void create_context(context *ctx, context *parent,
   ctx_data->context_type = context_type;
   ctx_data->framerate = ctx_spec->framerate_mode;
   ctx_data->is_subcontext = false;
+  ctx_data->cur_callback = 0;
+  ctx_data->num_callbacks = 0;
   memset(&(ctx_data->stack), 0, sizeof(struct context_stack));
   memcpy(&(ctx_data->functions), ctx_spec, sizeof(struct context_spec));
 
@@ -527,6 +552,48 @@ boolean is_context(context *ctx, enum context_type context_type)
 }
 
 /**
+ * Add a resume callback to the context (or its parent). Alternatively, call
+ * it immediately if no context change has occurred.
+ */
+
+void context_callback(context *ctx, context_callback_param *param,
+ context_callback_function func)
+{
+  context *target = ctx;
+
+  // If the context is a subcontext, try to find its parent context.
+  while(target && target->internal_data && target->internal_data->is_subcontext)
+    target = target->internal_data->parent;
+
+  if(!target || !target->root || !target->internal_data || !func ||
+   target->internal_data->num_callbacks >= MAX_NUM_CALLBACKS)
+  {
+    print_core_stack(ctx);
+    error_message(E_CORE_FATAL_BUG, 10, NULL);
+    return;
+  }
+
+  // If there has been no context change, execute this callback immediately.
+  if(!target->root->context_changed)
+    func(ctx, param);
+
+  else
+  {
+    struct context_data *ctx_data = target->internal_data;
+    struct context_callback_data *cb_data;
+    int id = (ctx_data->cur_callback + ctx_data->num_callbacks) %
+     MAX_NUM_CALLBACKS;
+
+    cb_data = &(ctx_data->callbacks[id]);
+
+    cb_data->callback = func;
+    cb_data->ctx_for_callback = ctx;
+    cb_data->param_for_callback = param;
+    ctx_data->num_callbacks++;
+  }
+}
+
+/**
  * Set the framerate mode for the current context.
  */
 
@@ -564,6 +631,22 @@ core_context *core_init(struct world *mzx_world)
 }
 
 /**
+ * Execute the next callback for a context and remove it from the list.
+ */
+
+static void execute_next_context_callback(context_data *ctx_data)
+{
+  struct context_callback_data *cb_data;
+  int i = ctx_data->cur_callback;
+
+  cb_data = &(ctx_data->callbacks[i]);
+  ctx_data->cur_callback = (ctx_data->cur_callback + 1) % MAX_NUM_CALLBACKS;
+  ctx_data->num_callbacks--;
+
+  cb_data->callback(cb_data->ctx_for_callback, cb_data->param_for_callback);
+}
+
+/**
  * Execute the resume function for the current context after a context change.
  */
 
@@ -573,6 +656,15 @@ static void core_resume(core_context *root)
   context_data *ctx_data = ctx->internal_data;
   context_data *sub_data;
   subcontext *sub;
+
+  // Execute callbacks before doing anything else.
+  while(ctx_data->num_callbacks)
+  {
+    execute_next_context_callback(ctx_data);
+
+    if(root->context_changed || root->full_exit)
+      return;
+  }
 
   if(ctx_data->functions.resume)
     ctx_data->functions.resume(ctx);

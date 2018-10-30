@@ -167,7 +167,7 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
       strcpy(line, where + pos);
       where[pos + t1] = '\n';
       key = intake(mzx_world, line, 64, 8, 12, scroll_base_color,
-       INTK_EXIT_ANY, &currx, 0, NULL);
+       INTK_EXIT_ANY, &currx);
       // Modify scroll to hold new line (give errors here)
       t2 = (int)strlen(line); // Get length of NEW line
       // Resize and move

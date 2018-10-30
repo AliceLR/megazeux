@@ -446,6 +446,14 @@ int error_message(enum error_code id, int parameter, const char *string)
       code = 0x9007;
       break;
 
+#ifdef CONFIG_EDITOR
+    case E_CANT_OVERWRITE_PLAYER:
+      sprintf(error_mesg, "Cannot overwrite the player- move it first");
+      severity = ERROR_T_WARNING;
+      code = 0x0000;
+      break;
+#endif
+
 #ifdef CONFIG_UPDATER
     case E_UPDATE:
       snprintf(error_mesg, 79, "%s", string);

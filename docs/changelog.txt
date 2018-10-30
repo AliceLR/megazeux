@@ -26,6 +26,15 @@ USERS
 + When testing from the editor, if "__test.mzx" exists MegaZeux
   will now choose a numbered name for this world backup (e.g.
   "__test2.mzx") instead of potentially overwriting work.
++ Fixed bug where six-digit line numbers would display in the
+  robot editor incorrectly.
++ Inserting text in the robot editor using the F2/F3/F4/F5
+  shortcuts can no longer exceed the line length limit, fixing
+  related crashes.
++ Using F5 in the robot editor generates decimal numbers instead
+  of hex numbers now.
++ Fixed robot editor bug where pressing delete at the end of a
+  line wouldn't join lines unless the current line was empty.
 
 DEVELOPERS
 
@@ -36,6 +45,10 @@ DEVELOPERS
   better on most platforms.
 + Replaced toupper/tolower in memcasecmp and substring searching
   with a lookup table-based implementation of tolower.
++ Refactored the following contexts to use the main loop: robot
+  editor, intake, thing menu. For compatibility purposes the old
+  intake still exists, but all robot editor hacks have been
+  removed from it.
 
 
 October 7th, 2018 - MZX 2.91g

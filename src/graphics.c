@@ -2049,34 +2049,26 @@ void write_line_mask(const char *str, Uint32 x, Uint32 y,
 // minlen is the minimum length to print. Pad with 0.
 
 void write_number(int number, char color, int x, int y,
- int minlen, int rightalign, int base)
+ int minlen, boolean rightalign, int base)
 {
   char temp[12];
-  int t1, t2;
+  minlen = CLAMP(minlen, 0, 11);
 
   if(base == 10)
-    snprintf(temp, 12, "%d", number);
+    snprintf(temp, 12, "%0*d", minlen, number);
   else
-    snprintf(temp, 12, "%x", number);
+    snprintf(temp, 12, "%0*x", minlen, number);
 
   temp[11] = 0;
 
   if(rightalign)
   {
-    t1 = (int)strlen(temp);
-    if(minlen > t1)
-      t1 = minlen;
-    x -= t1 - 1;
+    x -= strlen(temp) - 1;
+    if(x < 0)
+      x = 0;
   }
 
-  if((t2 = (int)strlen(temp)) < minlen)
-  {
-    t2 = minlen - t2;
-    for(t1 = 0; t1 < t2; t1++)
-      draw_char('0', color, x++, y);
-  }
-
-  write_string(temp, x, y, color, 0);
+  write_string(temp, x, y, color, false);
 }
 
 static void color_line_ext(Uint32 length, Uint32 x, Uint32 y,
