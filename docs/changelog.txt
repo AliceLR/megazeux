@@ -35,6 +35,13 @@ USERS
   of hex numbers now.
 + Fixed robot editor bug where pressing delete at the end of a
   line wouldn't join lines unless the current line was empty.
++ Restored the ability to use the F7/F8 cheats outside of the
+  editor. This feature was broken in 2.91g. To enable cheats
+  outside of the editor, the config option "allow_cheats" must
+  now be set to "mzxrun" or 1. The former will enable them for
+  MZXRun only (same as from 2.82b to 2.91f) and the latter will
+  enable them for both executables (same as the -þ flag in DOS
+  versions).
 
 DEVELOPERS
 

@@ -171,6 +171,7 @@ static const struct config_info user_conf_default =
   "caverns.mzx",                // startup_file
   "saved.sav",                  // default_save_name
   4,                            // mzx_speed
+  ALLOW_CHEATS_NEVER,           // allow_cheats
   false,                        // startup_editor
   false,                        // standalone_mode
   false,                        // no_titlescreen
@@ -594,6 +595,27 @@ static void config_no_titlescreen(struct config_info *conf, char *name,
   conf->no_titlescreen = strtoul(value, NULL, 10);
 }
 
+static void config_set_allow_cheats(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  if(!strcmp(value, "0"))
+  {
+    conf->allow_cheats = ALLOW_CHEATS_NEVER;
+  }
+  else
+
+  if(!strcasecmp(value, "mzxrun"))
+  {
+    conf->allow_cheats = ALLOW_CHEATS_MZXRUN;
+  }
+  else
+
+  if(!strcmp(value, "1"))
+  {
+    conf->allow_cheats = ALLOW_CHEATS_ALWAYS;
+  }
+}
+
 static void config_set_video_ratio(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
@@ -635,6 +657,7 @@ static void config_max_simultaneous_samples(struct config_info *conf,
  */
 static const struct config_entry config_options[] =
 {
+  { "allow_cheats", config_set_allow_cheats, false },
   { "allow_screenshots", config_set_allow_screenshots, false },
   { "audio_buffer", config_set_audio_buffer, false },
   { "audio_buffer_samples", config_set_audio_buffer, false },

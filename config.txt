@@ -258,6 +258,12 @@
 
 # startup_editor = 1
 
+# Allow the use of editing cheats in regular gameplay. Set to 1
+# to enable the cheats for either executable, "mzxrun" to enable
+# them for MZXRun only, or to 0 to disable them for both.
+
+# allow_cheats = 0
+
 # Enable standalone mode. This is a game mode meant to be used
 # for packaged standalone MegaZeux games. In standalone mode:
 # - ENTER_MENU, ESCAPE_MENU, HELP_MENU, F2_MENU and LOAD_MENU

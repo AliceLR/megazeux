@@ -62,6 +62,7 @@ struct game_context
   boolean need_reload;
   boolean load_dialog_on_failed_load;
   boolean is_title;
+  boolean allow_cheats;
 };
 
 // As nice as this would be to put in the title context, it's annoying
@@ -618,7 +619,7 @@ static boolean game_key(context *ctx, int *key)
       // Cheat
       case IKEY_F7:
       {
-        if(mzx_world->editing)
+        if(game->allow_cheats || mzx_world->editing)
           player_cheat_give_all(mzx_world);
 
         return true;
@@ -627,7 +628,7 @@ static boolean game_key(context *ctx, int *key)
       // Cheat More
       case IKEY_F8:
       {
-        if(mzx_world->editing)
+        if(game->allow_cheats || mzx_world->editing)
           player_cheat_zap(mzx_world);
 
         return true;
@@ -745,12 +746,14 @@ static void game_destroy(context *ctx)
 __editor_maybe_static
 void play_game(context *parent, boolean *_fade_in)
 {
+  struct config_info *conf = get_config();
   struct game_context *game;
   struct context_spec spec;
 
   game = cmalloc(sizeof(struct game_context));
   game->fade_in = _fade_in ? * _fade_in : true;
   game->is_title = false;
+  game->allow_cheats = false;
 
   // Not used for gameplay...
   game->need_reload = false;
@@ -766,8 +769,12 @@ void play_game(context *parent, boolean *_fade_in)
 
   create_context((context *)game, parent, &spec, CTX_PLAY_GAME);
 
-  if(!edit_world)
-    parent->world->editing = false;
+  if(conf->allow_cheats == ALLOW_CHEATS_ALWAYS ||
+   (conf->allow_cheats == ALLOW_CHEATS_MZXRUN && !edit_world))
+  {
+    // Enable cheating outside of the editor.
+    game->allow_cheats = true;
+  }
 
   clear_intro_mesg();
 }
