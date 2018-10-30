@@ -4032,8 +4032,11 @@ static boolean robot_editor_key(context *ctx, int *key)
         exit_status = false;
 
       if(!confirm_changes_res)
+      {
+        struct robot *cur_robot = rstate->cur_robot;
         cur_robot->program_source = package_program(rstate->base.next,
          NULL, &(cur_robot->program_source_length), cur_robot->program_source);
+      }
     }
 #endif
     if(validate_lines(rstate, 0))
