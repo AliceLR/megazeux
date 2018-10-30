@@ -42,6 +42,8 @@ USERS
   MZXRun only (same as from 2.82b to 2.91f) and the latter will
   enable them for both executables (same as the -þ flag in DOS
   versions).
++ Fixed bounding bug on the "board_default_width" and
+  "board_default_height" config file options.
 
 DEVELOPERS
 
