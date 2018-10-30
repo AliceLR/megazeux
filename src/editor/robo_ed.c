@@ -912,6 +912,54 @@ static void split_current_line(struct robot_editor_context *rstate)
   update_current_line(rstate);
 }
 
+static void combine_current_line(struct robot_editor_context *rstate, int move)
+{
+  struct robot_line *rline = rstate->current_rline;
+  char *command_buffer = rstate->command_buffer;
+  char line_buffer[MAX_COMMAND_LEN + 1];
+  size_t line_len;
+  size_t command_buffer_len;
+
+  update_current_line(rstate);
+  line_len = strlen(command_buffer);
+
+  if(move > 0)
+    rline = rline->next;
+  else
+    rline = rline->previous;
+
+  if(!rline || !rline->line_text)
+    return;
+
+  command_buffer_len = strlen(rline->line_text);
+
+  // Only attempt to merge lines if there is space.
+  if(line_len + command_buffer_len <= MAX_COMMAND_LEN)
+  {
+    memcpy(line_buffer, command_buffer, line_len);
+    line_buffer[line_len] = 0;
+
+    delete_current_line(rstate, move);
+
+    if(move > 0)
+    {
+      // Insert in front of following line
+      rstate->current_x = line_len;
+      memmove(command_buffer + line_len, command_buffer, command_buffer_len);
+      memcpy(command_buffer, line_buffer, line_len);
+    }
+    else
+    {
+      // Append to previous line
+      rstate->current_x = command_buffer_len;
+      memcpy(command_buffer + command_buffer_len, line_buffer, line_len);
+    }
+
+    command_buffer[command_buffer_len + line_len] = 0;
+    update_current_line(rstate);
+  }
+}
+
 static void insert_string(struct robot_editor_context *rstate, const char *src,
  char linebreak_char)
 {
@@ -3399,47 +3447,18 @@ static boolean robot_editor_key(context *ctx, int *key)
 
     case IKEY_BACKSPACE:
     {
-      if(rstate->current_x == 0)
-      {
-        if(rstate->current_line > 1)
-        {
-          char *command_buffer = rstate->command_buffer;
-          char line_buffer[MAX_COMMAND_LEN + 1];
+      if(rstate->current_x == 0 && rstate->current_line > 1)
+        combine_current_line(rstate, -1);
 
-          update_current_line(rstate);
-          strncpy(line_buffer, rstate->command_buffer, MAX_COMMAND_LEN + 1);
-          line_buffer[MAX_COMMAND_LEN] = 0;
-
-          delete_current_line(rstate, -1);
-
-          if(strlen(line_buffer) + strlen(command_buffer) > MAX_COMMAND_LEN)
-          {
-            // Lines could not be merged; backtrack
-            add_blank_line(rstate, 1);
-            strncpy(command_buffer, line_buffer, MAX_COMMAND_LEN + 1);
-          }
-          else
-          {
-            rstate->current_x = (int)strlen(command_buffer);
-            strncat(command_buffer, line_buffer,
-             MAX_COMMAND_LEN + 1 - strlen(command_buffer));
-          }
-
-          command_buffer[MAX_COMMAND_LEN] = 0;
-          update_current_line(rstate);
-        }
-      }
       return true;
     }
 
     case IKEY_DELETE:
     {
+      if(rstate->command_buffer[rstate->current_x] == 0 &&
+       rstate->current_rline->next)
+        combine_current_line(rstate, 1);
 
-      if(rstate->command_buffer[0] == 0)
-      {
-        update_current_line(rstate);
-        delete_current_line(rstate, 1);
-      }
       return true;
     }
 

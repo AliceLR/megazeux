@@ -33,6 +33,8 @@ USERS
   related crashes.
 + Using F5 in the robot editor generates decimal numbers instead
   of hex numbers now.
++ Fixed robot editor bug where pressing delete at the end of a
+  line wouldn't join lines unless the current line was empty.
 
 DEVELOPERS
 
