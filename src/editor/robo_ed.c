@@ -3301,18 +3301,6 @@ static void robot_editor_draw(context *ctx)
   write_string("Y:", 70, 0, top_highlight_color, 0);
   write_number(rstate->cur_robot->ypos, top_text_color, 73, 0, 5, false, 10);
 
-  // Current line arrows (may be overwritten by block)
-  if(rstate->current_x < 76)
-    draw_char('\x10', intk_color, 0, rstate->scr_line_middle);
-  else
-    draw_char('\xae', intk_color, 0, rstate->scr_line_middle);
-
-  if(rstate->current_line_len < 76 ||
-   rstate->current_x == rstate->current_line_len)
-    draw_char('\x11', intk_color, 79, rstate->scr_line_middle);
-  else
-    draw_char('\xaf', intk_color, 79, rstate->scr_line_middle);
-
   // Now, draw the lines. Start with 9 back from the current.
 
   if(rstate->current_line >
@@ -3406,6 +3394,18 @@ static void robot_editor_draw(context *ctx)
       }
     }
   }
+
+  // Current line arrows
+  if(rstate->current_x < 76)
+    draw_char('\x10', intk_color, 0, rstate->scr_line_middle);
+  else
+    draw_char('\xae', intk_color, 0, rstate->scr_line_middle);
+
+  if(rstate->current_line_len < 76 ||
+   rstate->current_x == rstate->current_line_len)
+    draw_char('\x11', intk_color, 79, rstate->scr_line_middle);
+  else
+    draw_char('\xaf', intk_color, 79, rstate->scr_line_middle);
 
   // Update the intake position and color so it draws correctly.
   intake_set_screen_pos(rstate->intk, 2, rstate->scr_line_middle);
