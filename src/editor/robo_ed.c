@@ -1830,12 +1830,12 @@ static void goto_position(struct robot_editor_context *rstate)
   struct world *mzx_world = ((context *)rstate)->world;
   int dialog_result;
   int line_number = rstate->current_line;
-  int column_number = rstate->current_x;
+  int column_number = rstate->current_x + 1;
   struct dialog di;
 
   struct element *elements[4] =
   {
-    construct_number_box(2, 2, "Line:   ", 1, rstate->total_lines, false,
+    construct_number_box(2, 2, "Line:   ", 0, rstate->total_lines, false,
      &line_number),
     construct_number_box(2, 3, "Column: ", 1, MAX_COMMAND_LEN + 1, false,
      &column_number),
