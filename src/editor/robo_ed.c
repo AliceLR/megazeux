@@ -61,6 +61,14 @@
 #define MAX_MACRO_RECURSION 16
 #define MAX_MACRO_REPEAT 128
 
+enum search_option
+{
+  SEARCH_OPTION_NONE,
+  SEARCH_OPTION_SEARCH,
+  SEARCH_OPTION_REPLACE,
+  SEARCH_OPTION_REPLACE_ALL
+};
+
 static int copy_buffer_lines;
 static int copy_buffer_total_length;
 static char **copy_buffer;
@@ -68,11 +76,11 @@ static char **copy_buffer;
 static int last_color_selected = 0;
 static int last_char_selected = 0;
 
-static enum find_option last_find_option = FIND_OPTION_NONE;
+static enum search_option last_search_action = SEARCH_OPTION_NONE;
 static char search_string[256];
 static char replace_string[256];
-static boolean wrap_option = true;
-static boolean case_option = false;
+static boolean search_wrap_enabled = true;
+static boolean search_case_sensitive_enabled = false;
 
 static const char key_help[(81 * 3) + 1] =
 {
@@ -1841,9 +1849,10 @@ static void goto_position(struct robot_editor_context *rstate)
 
   struct element *elements[4] =
   {
-    construct_number_box(2, 2, "Line:   ", 0, rstate->total_lines,
-     0, &line_number),
-    construct_number_box(2, 3, "Column: ", 0, MAX_COMMAND_LEN, 0, &column_number),
+    construct_number_box(2, 2, "Line:   ", 1, rstate->total_lines, false,
+     &line_number),
+    construct_number_box(2, 3, "Column: ", 1, MAX_COMMAND_LEN + 1, false,
+     &column_number),
     construct_button(3, 5, "OK", 0),
     construct_button(14, 5, "Cancel", -1)
   };
@@ -1859,7 +1868,7 @@ static void goto_position(struct robot_editor_context *rstate)
 
   if(dialog_result != -1)
   {
-    rstate->current_x = column_number;
+    rstate->current_x = column_number - 1;
     goto_line(rstate, line_number);
   }
 
@@ -1892,7 +1901,7 @@ static void replace_current_line(struct robot_editor_context *rstate,
 }
 
 static int robo_ed_find_string(struct robot_editor_context *rstate, char *str,
- int wrap, int *position, int case_sensitive)
+ int *position, boolean wrap, boolean case_sensitive)
 {
   struct robot_line *current_rline = rstate->current_rline;
   int current_line = rstate->current_line;
@@ -1973,53 +1982,22 @@ static int robo_ed_find_string(struct robot_editor_context *rstate, char *str,
   return -1;
 }
 
-static void find_replace_action(struct robot_editor_context *rstate)
+static void robo_ed_search_action(struct robot_editor_context *rstate,
+ enum search_option action)
 {
-  struct world *mzx_world = ((context *)rstate)->world;
-  struct dialog di;
-  const char *check_strings_1[] = { "Wrap around end" };
-  const char *check_strings_2[] = { "Match case" };
-  int check_result_1[] = { wrap_option };
-  int check_result_2[] = { case_option };
-  struct element *elements[8] =
+  switch(action)
   {
-    construct_input_box(2, 2, "Find:    ",
-     46, search_string),
-    construct_input_box(2, 3, "Replace: ",
-     46, replace_string),
-    construct_check_box(3, 5, check_strings_1,
-     1, 15, check_result_1),
-    construct_check_box(30, 5, check_strings_2,
-     1, 10, check_result_2),
-    construct_button(5, 7, "Search", 0),
-    construct_button(15, 7, "Replace", 1),
-    construct_button(27, 7, "Replace All", 2),
-    construct_button(44, 7, "Cancel", -1)
-  };
+    case SEARCH_OPTION_NONE:
+    {
+      return;
+    }
 
-  // Prevent previous keys from carrying through.
-  force_release_all_keys();
-
-  construct_dialog(&di, "Search and Replace", 10, 7, 70, 10,
-   elements, 8, 0);
-
-  last_find_option = run_dialog(mzx_world, &di);
-  destruct_dialog(&di);
-
-  // Prevent UI keys from carrying through.
-  force_release_all_keys();
-
-  wrap_option = check_result_1[0];
-  case_option = check_result_2[0];
-
-  switch(last_find_option)
-  {
-    case FIND_OPTION_FIND:
+    case SEARCH_OPTION_SEARCH:
     {
       // Find
       int l_pos;
-      int l_num = robo_ed_find_string(rstate, search_string, wrap_option,
-       &l_pos, case_option);
+      int l_num = robo_ed_find_string(rstate, search_string, &l_pos,
+       search_wrap_enabled, search_case_sensitive_enabled);
 
       if(l_num != -1)
       {
@@ -2030,12 +2008,12 @@ static void find_replace_action(struct robot_editor_context *rstate)
       break;
     }
 
-    case FIND_OPTION_REPLACE:
+    case SEARCH_OPTION_REPLACE:
     {
       // Find & Replace
       int l_pos;
-      int l_num = robo_ed_find_string(rstate, search_string, wrap_option,
-       &l_pos, case_option);
+      int l_num = robo_ed_find_string(rstate, search_string, &l_pos,
+       search_wrap_enabled, search_case_sensitive_enabled);
 
       if(l_num != -1)
       {
@@ -2047,7 +2025,7 @@ static void find_replace_action(struct robot_editor_context *rstate)
       break;
     }
 
-    case FIND_OPTION_REPLACE_ALL:
+    case SEARCH_OPTION_REPLACE_ALL:
     {
       int l_pos;
       int l_num;
@@ -2062,8 +2040,8 @@ static void find_replace_action(struct robot_editor_context *rstate)
 
       do
       {
-        l_num = robo_ed_find_string(rstate, search_string, wrap_option,
-         &l_pos, case_option);
+        l_num = robo_ed_find_string(rstate, search_string, &l_pos,
+         search_wrap_enabled, search_case_sensitive_enabled);
 
         // Is it on the starting line and below the starting cursor?
         // If so modify the starting cursor because the line was
@@ -2115,6 +2093,86 @@ static void find_replace_action(struct robot_editor_context *rstate)
       break;
     }
   }
+
+  last_search_action = action;
+}
+
+static void robo_ed_search_dialog(struct robot_editor_context *rstate)
+{
+  struct world *mzx_world = ((context *)rstate)->world;
+  struct dialog di;
+  const char *wrap_opt[] = { "Wrap" };
+  const char *case_opt[] = { "Case sensitive" };
+  int wrap = search_wrap_enabled;
+  int casesens = search_case_sensitive_enabled;
+  struct element *elements[] =
+  {
+    construct_check_box(14, 3, wrap_opt, 1, strlen(wrap_opt[0]), &wrap),
+    construct_check_box(30, 3, case_opt, 1, strlen(case_opt[0]), &casesens),
+    construct_button(60, 3, "Cancel", -1),
+    construct_input_box(2, 1, "Search: ", 47, search_string),
+    construct_button(60, 1, "Search", SEARCH_OPTION_SEARCH),
+  };
+  int num_elements = ARRAY_SIZE(elements);
+  int result;
+
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
+  construct_dialog(&di, "Search (repeat: Ctrl+R)", 5, 15, 70, 5,
+   elements, num_elements, 3);
+
+  result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
+
+  search_wrap_enabled = wrap;
+  search_case_sensitive_enabled = casesens;
+
+  if(result != -1)
+    robo_ed_search_action(rstate, result);
+}
+
+static void robo_ed_replace_dialog(struct robot_editor_context *rstate)
+{
+  struct world *mzx_world = ((context *)rstate)->world;
+  struct dialog di;
+  const char *wrap_opt[] = { "Wrap" };
+  const char *case_opt[] = { "Case sensitive" };
+  int wrap = search_wrap_enabled;
+  int casesens = search_case_sensitive_enabled;
+  struct element *elements[] =
+  {
+    construct_check_box(14, 4, wrap_opt, 1, strlen(wrap_opt[0]), &wrap),
+    construct_check_box(30, 4, case_opt, 1, strlen(case_opt[0]), &casesens),
+    construct_button(61, 4, "Cancel", -1),
+    construct_input_box(2, 1, "Search:  ", 47, search_string),
+    construct_input_box(2, 2, "Replace: ", 47, replace_string),
+    construct_button(61, 1, "Replace", SEARCH_OPTION_REPLACE),
+    construct_button(61, 2, "Replace All", SEARCH_OPTION_REPLACE_ALL),
+  };
+  int num_elements = ARRAY_SIZE(elements);
+  int result;
+
+  // Prevent previous keys from carrying through.
+  force_release_all_keys();
+
+  construct_dialog(&di, "Replace (repeat: Ctrl+R)", 2, 14, 76, 6,
+   elements, num_elements, 3);
+
+  result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  // Prevent UI keys from carrying through.
+  force_release_all_keys();
+
+  search_wrap_enabled = wrap;
+  search_case_sensitive_enabled = casesens;
+
+  if(result != -1)
+    robo_ed_search_action(rstate, result);
 }
 
 static void execute_macro(struct robot_editor_context *rstate,
@@ -3932,6 +3990,13 @@ static boolean robot_editor_key(context *ctx, int *key)
     // Hide
     case IKEY_h:
     {
+      if(get_ctrl_status(keycode_internal))
+      {
+        robo_ed_replace_dialog(rstate);
+        return true;
+      }
+      else
+
       if(get_alt_status(keycode_internal))
       {
         rstate->scr_hide_mode = !rstate->scr_hide_mode;
@@ -3944,7 +4009,7 @@ static boolean robot_editor_key(context *ctx, int *key)
     {
       if(get_ctrl_status(keycode_internal))
       {
-        find_replace_action(rstate);
+        robo_ed_search_dialog(rstate);
         return true;
       }
       break;
@@ -3952,44 +4017,9 @@ static boolean robot_editor_key(context *ctx, int *key)
 
     case IKEY_r:
     {
-      // FIXME reduce duplicate code w/ find_replace_action
       if(get_ctrl_status(keycode_internal))
       {
-        switch(last_find_option)
-        {
-          case 0:
-          {
-            // Find next
-            int l_pos;
-            int l_num = robo_ed_find_string(rstate, search_string,
-             wrap_option, &l_pos, case_option);
-
-            if(l_num != -1)
-            {
-              goto_line(rstate, l_num);
-              rstate->current_x = l_pos;
-            }
-            break;
-          }
-
-          case 1:
-          case 2:
-          {
-            // Find and replace next
-            int l_pos;
-            int l_num = robo_ed_find_string(rstate, search_string,
-             wrap_option, &l_pos, case_option);
-
-            if(l_num != -1)
-            {
-              goto_line(rstate, l_num);
-              rstate->current_x = l_pos;
-              replace_current_line(rstate, l_pos, search_string,
-               replace_string);
-            }
-            break;
-          }
-        }
+        robo_ed_search_action(rstate, last_search_action);
         return true;
       }
       break;

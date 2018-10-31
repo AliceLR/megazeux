@@ -29,14 +29,6 @@ __M_BEGIN_DECLS
 
 #define COMMAND_BUFFER_LEN 512
 
-enum find_option
-{
-  FIND_OPTION_NONE,
-  FIND_OPTION_FIND = 0,
-  FIND_OPTION_REPLACE = 1,
-  FIND_OPTION_REPLACE_ALL = 2
-};
-
 #ifdef CONFIG_DEBYTECODE
 
 enum command_type

@@ -44,6 +44,15 @@ USERS
   versions).
 + Fixed bounding bug on the "board_default_width" and
   "board_default_height" config file options.
++ Separated robot editor "Search and Replace" dialog into a
+  "Search" dialog and a "Replace" dialog. Both dialogs are
+  smaller in size than the original. The order of the elements
+  in these dialogs has also been altered to be more user-
+  friendly.
++ Fixed Ctrl+R repeating for the "Replace All" robot editor
+  search operation. Previously, it would act like "Replace".
++ Canceling the robot editor search/replace menus no longer
+  disables the repeat feature.
 
 DEVELOPERS
 
