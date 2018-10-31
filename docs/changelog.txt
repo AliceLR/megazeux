@@ -53,6 +53,8 @@ USERS
   search operation. Previously, it would act like "Replace".
 + Canceling the robot editor search/replace menus no longer
   disables the repeat feature.
++ Searching in the robot editor now properly preserves the case
+  of the search string if case sensitive search is disabled.
 
 DEVELOPERS
 

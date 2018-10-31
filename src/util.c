@@ -706,7 +706,7 @@ void *boyer_moore_search(const void *A, const size_t a_len,
         j--, i--;
 
       if(j == -1)
-        return (void *)(a + i);
+        return (void *)(a + i + 1);
 
       idx = index[(int)a[i]];
       i += MAX(b_len - j, idx);
@@ -722,7 +722,7 @@ void *boyer_moore_search(const void *A, const size_t a_len,
         j--, i--;
 
       if(j == -1)
-        return (void *)(a + i);
+        return (void *)(a + i + 1);
 
       idx = index[(int)a[i]];
       i += MAX(b_len - j, idx);
