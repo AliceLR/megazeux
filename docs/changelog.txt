@@ -48,7 +48,7 @@ USERS
   "Search" dialog and a "Replace" dialog. Both dialogs are
   smaller in size than the original. The order of the elements
   in these dialogs has also been altered to be more user-
-  friendly.
+  friendly. The hotkey for the new replace dialog is Ctrl+H.
 + Fixed Ctrl+R repeating for the "Replace All" robot editor
   search operation. Previously, it would act like "Replace".
 + Canceling the robot editor search/replace menus no longer
