@@ -1696,6 +1696,7 @@ static boolean editor_key(context *ctx, int *key)
         if(editor->cursor_mode)
         {
           editor->cursor_mode = CURSOR_PLACE;
+          block->selected = false;
         }
         else
         {
@@ -1769,6 +1770,7 @@ static boolean editor_key(context *ctx, int *key)
       if(editor->cursor_mode)
       {
         editor->cursor_mode = CURSOR_PLACE;
+        block->selected = false;
         key = 0;
         return true;
       }
@@ -1826,6 +1828,7 @@ static boolean editor_key(context *ctx, int *key)
         // Toggle text mode
         if(editor->cursor_mode != CURSOR_TEXT)
         {
+          block->selected = false;
           editor->cursor_mode = CURSOR_TEXT;
           editor->text_start_x = editor->cursor_x;
         }
@@ -2079,6 +2082,7 @@ static boolean editor_key(context *ctx, int *key)
           error("Overlay mode is not on (see Board Info)",
            ERROR_T_WARNING, ERROR_OPT_OK, 0x1103);
           editor->cursor_mode = CURSOR_PLACE;
+          block->selected = false;
           return true;
         }
 
@@ -2088,6 +2092,7 @@ static boolean editor_key(context *ctx, int *key)
           case BLOCK_CMD_NONE:
           {
             editor->cursor_mode = CURSOR_PLACE;
+            block->selected = false;
             break;
           }
 
