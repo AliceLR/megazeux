@@ -253,7 +253,7 @@ void change_param(context *ctx, struct buffer_info *buffer, int *new_param)
   }
 }
 
-void free_buffer(struct buffer_info *buffer)
+void free_edit_buffer(struct buffer_info *buffer)
 {
   if(buffer->robot->used)
     clear_robot_contents(buffer->robot);

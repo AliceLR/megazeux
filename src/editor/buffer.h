@@ -45,7 +45,7 @@ enum thing_menu_id
 };
 
 void change_param(context *ctx, struct buffer_info *buffer, int *new_param);
-void free_buffer(struct buffer_info *buffer);
+void free_edit_buffer(struct buffer_info *buffer);
 
 int place_current_at_xy(struct world *mzx_world, struct buffer_info *buffer,
  int x, int y, enum editor_mode mode, struct undo_history *history);

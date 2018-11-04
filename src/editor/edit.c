@@ -1347,7 +1347,7 @@ static void modify_thing_callback(context *ctx, context_callback_param *p)
     replace_current_at_xy(ctx->world, temp_buffer, editor->cursor_x,
      editor->cursor_y, editor->mode, editor->cur_history);
 
-    free_buffer(temp_buffer);
+    free_edit_buffer(temp_buffer);
     editor->modified = true;
   }
 }
@@ -3430,7 +3430,7 @@ static void editor_destroy(context *ctx)
   audio_end_module();
 
   // Clear any stored buffer data.
-  free_buffer(buffer);
+  free_edit_buffer(buffer);
 
   // Free the undo data
   clear_board_history(editor);
