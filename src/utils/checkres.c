@@ -40,7 +40,10 @@
 #include <strings.h>
 #endif
 
-#include <utcasehash.h>
+// Defines so checkres builds when this is included.
+#define SKIP_SDL
+#define CORE_LIBSPEC
+#include "../../contrib/khash/khashmzx.h"
 
 // From MZX itself:
 
@@ -220,8 +223,8 @@ static void strcpy_fsafe(char *dest, const char *src)
 }
 
 static int started_table = 0;
-static unsigned int parent_max_len = 12;
-static unsigned int resource_max_len = 16;
+static int parent_max_len = 12;
+static int resource_max_len = 16;
 
 static void output(const char *required_by, const char *resource_path,
  const char *status, const char *found_in)
@@ -270,33 +273,41 @@ static void output(const char *required_by, const char *resource_path,
 /* Data processing */
 /*******************/
 
-struct zip_file_path {
+struct zip_file_path
+{
   char file_path[MAX_PATH];
-  UT_hash_handle hh;
+  int file_path_len;
 };
 
-struct base_path {
+KHASH_SET_INIT(ZIP_FILE_PATH, struct zip_file_path *, file_path, file_path_len)
+
+struct base_path
+{
   char actual_path[MAX_PATH];
   char relative_path[MAX_PATH];
   struct zip_archive *zp;
-  struct zip_file_path *file_list_head;
+  khash_t(ZIP_FILE_PATH) *file_list_table;
 };
 
-struct base_file {
+struct base_file
+{
   char file_name[MAX_PATH];
   char relative_path[MAX_PATH];
   int world_version;
 };
 
-struct resource {
+struct resource
+{
   char path[MAX_PATH];
+  int path_len;
   struct base_file *parent;
-  UT_hash_handle hh;
 };
 
+KHASH_SET_INIT(RESOURCE, struct resource *, path, path_len)
+
 // NULL is important
-static struct resource *requirement_head = NULL;
-static struct resource *resource_head = NULL;
+static khash_t(RESOURCE) *requirement_table = NULL;
+static khash_t(RESOURCE) *resource_table = NULL;
 
 static struct resource *add_requirement(char *src, struct base_file *file)
 {
@@ -308,20 +319,21 @@ static struct resource *add_requirement(char *src, struct base_file *file)
   // Offset the required file's path with the relative path of its parent
   join_path(file_buffer, file->relative_path, src);
 
-  HASH_FIND_STR(requirement_head, file_buffer, req);
+  KHASH_FIND(RESOURCE, requirement_table, file_buffer, strlen(file_buffer), req);
 
   if(!req && is_simple_path(src))
   {
     req = malloc(sizeof(struct resource));
 
     strcpy_fsafe(req->path, file_buffer);
+    req->path_len = strlen(req->path);
     req->parent = file;
 
     // Calculate these values for the output table as we go along
-    resource_max_len = MAX(resource_max_len, strlen(file_buffer));
-    parent_max_len = MAX(parent_max_len, strlen(file->file_name));
+    resource_max_len = MAX(resource_max_len, req->path_len);
+    parent_max_len = MAX(parent_max_len, (int)strlen(file->file_name));
 
-    HASH_ADD_STR(requirement_head, path, req);
+    KHASH_ADD(RESOURCE, requirement_table, req);
   }
 
   return req;
@@ -337,19 +349,20 @@ static struct resource *add_resource(char *src, struct base_file *file)
   // Offset the required file's path with the relative path of its parent
   join_path(file_buffer, file->relative_path, src);
 
-  HASH_FIND_STR(resource_head, file_buffer, res);
+  KHASH_FIND(RESOURCE, resource_table, file_buffer, strlen(file_buffer), res);
 
   if(!res && is_simple_path(src))
   {
     res = malloc(sizeof(struct resource));
 
     strcpy_fsafe(res->path, file_buffer);
+    res->path_len = strlen(res->path);
 
     // Calculate these values for the output table as we go along
-    resource_max_len = MAX(resource_max_len, strlen(file_buffer));
-    parent_max_len = MAX(parent_max_len, strlen(file->file_name));
+    resource_max_len = MAX(resource_max_len, res->path_len);
+    parent_max_len = MAX(parent_max_len, (int)strlen(file->file_name));
 
-    HASH_ADD_STR(resource_head, path, res);
+    KHASH_ADD(RESOURCE, resource_table, res);
   }
 
   return res;
@@ -370,13 +383,20 @@ static void build_base_path_table(struct base_path *path,
   {
     fh = files[i];
     entry = malloc(sizeof(struct zip_file_path));
-    strncpy(entry->file_path, fh->file_name, MAX_PATH);
-    entry->file_path[MAX_PATH - 1] = 0;
+    entry->file_path_len = fh->file_name_length;
+    if(entry->file_path_len >= MAX_PATH)
+      entry->file_path_len = MAX_PATH - 1;
 
-    HASH_FIND_STR(path->file_list_head, entry->file_path, has_entry);
+    memcpy(entry->file_path, fh->file_name, entry->file_path_len);
+    entry->file_path[entry->file_path_len] = 0;
+
+    KHASH_FIND(ZIP_FILE_PATH, path->file_list_table, entry->file_path,
+     entry->file_path_len, has_entry);
 
     if(!has_entry)
-      HASH_ADD_STR(path->file_list_head, file_path, entry);
+      KHASH_ADD(ZIP_FILE_PATH, path->file_list_table, entry);
+    else
+      free(entry);
   }
 }
 
@@ -462,7 +482,6 @@ static void process_requirements(struct base_path **path_list,
   struct zip_file_path *zfp;
   struct resource *req;
   struct resource *res;
-  struct resource *tmp;
   char path_buffer[MAX_PATH];
   char *translated_path;
   size_t len;
@@ -470,7 +489,7 @@ static void process_requirements(struct base_path **path_list,
   int i;
 
   // Now actually process the requirements
-  HASH_ITER(hh, requirement_head, req, tmp)
+  KHASH_ITER(RESOURCE, requirement_table, req,
   {
     found = 0;
 
@@ -488,7 +507,8 @@ static void process_requirements(struct base_path **path_list,
       if(current_path->zp)
       {
         // Try to find the file in the zip's hash table
-        HASH_FIND_STR(current_path->file_list_head, translated_path, zfp);
+        KHASH_FIND(ZIP_FILE_PATH, current_path->file_list_table,
+         translated_path, strlen(translated_path), zfp);
 
         if(zfp)
         {
@@ -519,7 +539,7 @@ static void process_requirements(struct base_path **path_list,
     else
     {
       // Try to find in the created resources table
-      HASH_FIND_STR(resource_head, req->path, res);
+      KHASH_FIND(RESOURCE, resource_table, req->path, req->path_len, res);
 
       if(res)
       {
@@ -531,7 +551,7 @@ static void process_requirements(struct base_path **path_list,
         output(req->parent->file_name, req->path, not_found_append, NULL);
       }
     }
-  }
+  });
 
   // Reset these for next time
   started_table = 0;
@@ -544,34 +564,33 @@ static void clear_data(struct base_path **path_list,
 {
   struct base_path *bp;
   struct resource *res;
-  struct resource *tmp;
   struct zip_file_path *fp;
-  struct zip_file_path *tmpfp;
   int i;
 
-  HASH_ITER(hh, requirement_head, res, tmp)
+  KHASH_ITER(RESOURCE, requirement_table, res,
   {
-    HASH_DELETE(hh, requirement_head, res);
+    KHASH_DELETE(RESOURCE, requirement_table, res);
     free(res);
-  }
-  requirement_head = NULL;
+  });
+  KHASH_CLEAR(RESOURCE, requirement_table);
 
-  HASH_ITER(hh, resource_head, res, tmp)
+  KHASH_ITER(RESOURCE, resource_table, res,
   {
-    HASH_DELETE(hh, resource_head, res);
+    KHASH_DELETE(RESOURCE, resource_table, res);
     free(res);
-  }
-  resource_head = NULL;
+  });
+  KHASH_CLEAR(RESOURCE, resource_table);
 
   for(i = 0; i < path_list_size; i++)
   {
     bp = path_list[i];
 
-    HASH_ITER(hh, bp->file_list_head, fp, tmpfp)
+    KHASH_ITER(ZIP_FILE_PATH, bp->file_list_table, fp,
     {
-      HASH_DELETE(hh, bp->file_list_head, fp);
+      KHASH_DELETE(ZIP_FILE_PATH, bp->file_list_table, fp);
       free(fp);
-    }
+    });
+    KHASH_CLEAR(ZIP_FILE_PATH, bp->file_list_table);
 
     if(bp->zp)
       zip_close(bp->zp, NULL);
