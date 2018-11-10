@@ -52,6 +52,7 @@ struct context_stack
 struct core_context
 {
   context ctx;
+  boolean first_run;
   boolean full_exit;
   boolean context_changed;
   struct context_stack stack;
@@ -624,6 +625,7 @@ core_context *core_init(struct world *mzx_world)
   ctx->internal_data = NULL;
 
   memset(&(root->stack), 0, sizeof(struct context_stack));
+  root->first_run = true;
   root->full_exit = false;
   root->context_changed = false;
 
@@ -974,6 +976,13 @@ void core_run(core_context *root)
   if(initial_stack_size <= 0)
     return;
 
+  // First run-- only terminate if all contexts are terminated.
+  if(root->first_run)
+  {
+    initial_stack_size = 1;
+    root->first_run = false;
+  }
+
   // FIXME hack
   enable_f12_hack = conf->allow_screenshots;
 
@@ -1061,6 +1070,10 @@ void core_run(core_context *root)
     core_update(root);
   }
   while(!root->full_exit && root->stack.size >= initial_stack_size);
+
+  // Reset first run variable if the stack empties.
+  if(!root->stack.size)
+    root->first_run = true;
 }
 
 /**

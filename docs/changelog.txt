@@ -57,6 +57,8 @@ USERS
   of the search string if case sensitive search is disabled.
 + Fix bug where toggling the robot debugger position wouldn't
   take effect immediately.
++ Exiting the editor with the "startup_editor" config setting
+  enabled should no longer inappropriately close MZX.
 
 DEVELOPERS
 
