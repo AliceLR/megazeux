@@ -489,9 +489,9 @@ static kh_inline khint_t fnv_1a_hash_string_len(const void *_str, khint_t len)
 // uthash-like macros.
 #define KHASH_ADD(n, h, keyobj) do                                \
 {                                                                 \
-  int res;                                                        \
+  int _res;                                                       \
   if(!h) h = kh_init(n);                                          \
-  kh_put(n, (khash_t(n) *)h, keyobj, &res);                       \
+  kh_put(n, (khash_t(n) *)h, keyobj, &_res);                      \
 } while(0)
 
 #define KHASH_FIND(n, _h, keyptr, keylen, destobj) do             \
@@ -531,7 +531,7 @@ static kh_inline khint_t fnv_1a_hash_string_len(const void *_str, khint_t len)
 {                                                                 \
   khash_t(n) *__h = _h;                                           \
   khint_t __i;                                                    \
-  for(__i = kh_begin(__h); __i != kh_end(__h); __i++)             \
+  if(_h) for(__i = kh_begin(__h); __i != kh_end(__h); __i++)      \
   {                                                               \
     if(!kh_exist(__h, __i)) continue;                             \
     (element) = kh_key(__h, __i);                                 \
