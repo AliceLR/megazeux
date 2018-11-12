@@ -20,15 +20,23 @@ cp -r releases releases-update
 pushd releases-update
 for T in $types
 do
-  pushd $T
-  for A in $archs
-  do
-    pushd $A
-    /mzx-build-scripts/builddir-to-updatedir.sh &
-    #/mingw-release-single.sh $T $A &
+  # Only handle types/architectures if their given directories actually exist.
+  if [ -d "$T" ]; then
+    pushd $T
+    for A in $archs
+    do
+      if [ -d "$A" ]; then
+        pushd $A
+        /mzx-build-scripts/builddir-to-updatedir.sh &
+        #/mingw-release-single.sh $T $A &
+        popd
+      fi
+    done
     popd
-  done
-  popd
+  fi
+  # Add each type to the updates file regardless of whether or not it was
+  # processed. This way, individual release tags can be updated without
+  # breaking other existing release tags.
   echo "Current-$1: $T" >> updates-uncompressed.txt
   shift
 done
