@@ -60,6 +60,9 @@ USERS
 + Exiting the editor with the "startup_editor" config setting
   enabled should no longer inappropriately close MZX.
 + Selecting "tile" for the char editor import mode works again.
++ The bounds for the main editor charset import/export offsets
+  and size have been increased to allow for extended charset
+  values.
 
 DEVELOPERS
 

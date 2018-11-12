@@ -2508,14 +2508,14 @@ static boolean editor_key(context *ctx, int *key)
               struct element *elements[] =
               {
                 construct_number_box(21, 20, "Offset:  ",
-                 0, 255, 0, &char_offset),
+                 0, (PRO_CH - 1), 0, &char_offset),
               };
 
               if(!file_manager(mzx_world, chr_ext, NULL, import_name,
                "Choose character set to import", 1, 0,
-               elements, 1, 2))
+               elements, ARRAY_SIZE(elements), 2))
               {
-                ec_load_set_var(import_name, char_offset, 0);
+                ec_load_set_var(import_name, char_offset, MZX_VERSION);
               }
               editor->modified = true;
               break;
@@ -3138,13 +3138,13 @@ static boolean editor_key(context *ctx, int *key)
               struct element *elements[] =
               {
                 construct_number_box(9, 20, "Offset:  ",
-                 0, 255, 0, &char_offset),
+                 0, (PRO_CH - 1), 0, &char_offset),
                 construct_number_box(35, 20, "Size: ",
-                 1, 256, 0, &char_size)
+                 1, (PRO_CH), 0, &char_size)
               };
 
               if(!file_manager(mzx_world, chr_ext, NULL, export_name,
-               "Export character set", 1, 1, elements, 2, 2))
+               "Export character set", 1, 1, elements, ARRAY_SIZE(elements), 2))
               {
                 add_ext(export_name, ".chr");
                 ec_save_set_var(export_name, char_offset,
