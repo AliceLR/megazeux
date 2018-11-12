@@ -1,5 +1,5 @@
-# Configuration file for MegaZeux 2.91g
-# October 7th, 2018
+# Configuration file for MegaZeux 2.91h
+# November 13th, 2018
 
 # Comments begin with #. Whitespace is ignored. Empty lines are
 # ignored as well.
@@ -260,7 +260,8 @@
 
 # Allow the use of editing cheats in regular gameplay. Set to 1
 # to enable the cheats for either executable, "mzxrun" to enable
-# them for MZXRun only, or to 0 to disable them for both.
+# them for MZXRun only, or to 0 to disable them for both. This
+# feature is disabled by default.
 
 # allow_cheats = 0
 
