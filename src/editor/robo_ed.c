@@ -108,13 +108,13 @@ static const char key_help_hide[82] =
 // extras - 7
 // commands and command fragments - 15
 
+#define bg_color 8
 static const char top_line_connect = 194;
 static const char bottom_line_connect = 193;
 static const char vertical_line = 179;
 static const char horizontal_line = 196;
 static const char top_char = 219;
 static const char bg_char = 32;
-static const char bg_color = 8;
 static const char bg_color_solid = combine_colors(0, bg_color);
 static const char top_color = 4;
 static const char line_color = combine_colors(15, bg_color);

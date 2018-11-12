@@ -40,6 +40,7 @@
 
 #include "../audio/audio.h"
 
+#include <ctype.h>
 #include <string.h>
 
 #define TREE_LIST_X 62
