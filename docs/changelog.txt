@@ -55,10 +55,11 @@ USERS
   disables the repeat feature.
 + Searching in the robot editor now properly preserves the case
   of the search string if case sensitive search is disabled.
-+ Fix bug where toggling the robot debugger position wouldn't
++ Fixed bug where toggling the robot debugger position wouldn't
   take effect immediately.
 + Exiting the editor with the "startup_editor" config setting
   enabled should no longer inappropriately close MZX.
++ Selecting "tile" for the char editor import mode works again.
 
 DEVELOPERS
 
