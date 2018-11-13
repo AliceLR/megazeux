@@ -69,6 +69,9 @@ USERS
   values.
 + Fixed the "KEY?" labels for keys that no longer have a unicode
   representation in SDL2.
++ Fixed SET "$string" "FWRITE#" bug where, if # exceeded the
+  length of $string, the output would be clipped to the wrong
+  length.
 
 DEVELOPERS
 

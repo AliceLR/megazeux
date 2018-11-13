@@ -990,7 +990,7 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
         offset = dest_length - 1;
 
       if(offset + size > dest_length)
-        size = src_length - offset;
+        size = dest_length - offset;
 
       fwrite(dest_value + offset, size, 1, output_file);
 
