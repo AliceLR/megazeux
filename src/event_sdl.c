@@ -361,9 +361,9 @@ static boolean process_event(SDL_Event *event)
       // the MZX event queue processor, emulate the 1.2 behaviour by waiting
       // for a TEXTINPUT event after a KEYDOWN.
       SDL_PumpEvents();
-      if (SDL_PeepEvents(event, 1, SDL_GETEVENT, SDL_TEXTINPUT, SDL_TEXTINPUT)) {
+
+      if(SDL_PeepEvents(event, 1, SDL_GETEVENT, SDL_TEXTINPUT, SDL_TEXTINPUT))
         unicode = event->text.text[0] | event->text.text[1] << 8;
-      }
 #else
       unicode = event->key.keysym.unicode;
 #endif
@@ -609,7 +609,8 @@ boolean __peek_exit_input(void)
   int num_events, i;
 
   SDL_PumpEvents();
-  num_events = SDL_PeepEvents(events, 256, SDL_PEEKEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT);
+  num_events =
+   SDL_PeepEvents(events, 256, SDL_PEEKEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT);
 
   for(i = 0; i < num_events; i++)
   {
