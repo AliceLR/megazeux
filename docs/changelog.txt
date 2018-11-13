@@ -67,6 +67,8 @@ USERS
 + The bounds for the main editor charset import/export offsets
   and size have been increased to allow for extended charset
   values.
++ Fixed the "KEY?" labels for keys that no longer have a unicode
+  representation in SDL2.
 
 DEVELOPERS
 

@@ -537,14 +537,13 @@ static boolean game_key(context *ctx, int *key)
 
   if(*key && !exit_status)
   {
-#ifdef CONFIG_PANDORA
-    // The Pandora (at least, at one point) did not have proper support for
-    // keycode_unicode. This is a workaround to get the "keyN" labels to work
-    // at all. This will break certain keyN labels, such as "key$", however.
+    // Get the char for the KEY? labels. If there is no relevant unicode
+    // keypress, we want to use the regular code instead.
+    int key_unicode = get_key(keycode_unicode);
     int key_char = *key;
-#else
-    int key_char = get_key(keycode_unicode);
-#endif
+
+    if(key_unicode > 0 && key_unicode < 256)
+      key_char = key_unicode;
 
     if(key_char)
     {
