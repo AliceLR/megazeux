@@ -43,14 +43,31 @@ CORE_LIBSPEC unsigned char get_id_board_color(struct board *src_board, int id_of
 CORE_LIBSPEC unsigned char get_id_under_char(struct board *src_board, int id_offset);
 CORE_LIBSPEC unsigned char get_id_under_color(struct board *src_board, int id_offset);
 
+#define ID_CHARS_SIZE               323
+#define ID_DMG_SIZE                 128
+#define ID_BULLET_COLOR_SIZE        3
+
+// Pre-2.90 world format sizes for these arrays.
+#define LEGACY_ID_CHARS_SIZE        ID_CHARS_SIZE
+#define LEGACY_ID_DMG_SIZE          ID_DMG_SIZE
+#define LEGACY_ID_BULLET_COLOR_SIZE ID_BULLET_COLOR_SIZE
+
+// Constants for the CHANGE CHAR ID command. If any of the ID chars arrays are
+// extended, their indexable space for the CHANGE CHAR ID command needs to be
+// placed after the existing tables.
+#define ID_CHARS_POS          0
+#define ID_MISSILE_COLOR_POS  LEGACY_ID_CHARS_SIZE
+#define ID_BULLET_COLOR_POS   (ID_MISSILE_COLOR_POS + 1)
+#define ID_DMG_POS            (ID_BULLET_COLOR_POS + LEGACY_ID_BULLET_COLOR_SIZE)
+#define ID_CHARS_TOTAL_SIZE   (ID_DMG_POS + LEGACY_ID_DMG_SIZE)
 
 #define bullet_char  306
 #define player_char  318
 #define player_color 322
 
-CORE_LIBSPEC extern unsigned char id_chars[455];
-CORE_LIBSPEC extern unsigned char id_dmg[128];
-CORE_LIBSPEC extern unsigned char bullet_color[3];
+CORE_LIBSPEC extern unsigned char id_chars[ID_CHARS_SIZE];
+CORE_LIBSPEC extern unsigned char id_dmg[ID_DMG_SIZE];
+CORE_LIBSPEC extern unsigned char bullet_color[ID_BULLET_COLOR_SIZE];
 CORE_LIBSPEC extern unsigned char missile_color;
 
 __M_END_DECLS

@@ -283,10 +283,10 @@ static inline int save_world_info(struct world *mzx_world,
   save_prop_c(WPROP_NUM_BOARDS,         mzx_world->num_boards, mf);
 
   // ID Chars
-  save_prop_s(WPROP_ID_CHARS,           id_chars, 323, 1, mf);
+  save_prop_s(WPROP_ID_CHARS,           id_chars, ID_CHARS_SIZE, 1, mf);
   save_prop_c(WPROP_ID_MISSILE_COLOR,   missile_color, mf);
-  save_prop_s(WPROP_ID_BULLET_COLOR,    bullet_color, 3, 1, mf);
-  save_prop_s(WPROP_ID_DMG,             id_dmg, 128, 1, mf);
+  save_prop_s(WPROP_ID_BULLET_COLOR,    bullet_color, ID_BULLET_COLOR_SIZE, 1, mf);
+  save_prop_s(WPROP_ID_DMG,             id_dmg, ID_DMG_SIZE, 1, mf);
 
   // Status counters
   save_prop_v(WPROP_STATUS_COUNTERS, COUNTER_NAME_SIZE * NUM_STATUS_COUNTERS,
@@ -612,20 +612,40 @@ static inline void load_world_info(struct world *mzx_world,
 
       // ID Chars
       case WPROP_ID_CHARS:
-        mfread(id_chars, 323, 1, prop);
+      {
+        if(size > ID_CHARS_SIZE)
+          size = ID_CHARS_SIZE;
+
+        mfread(id_chars, size, 1, prop);
+        memset(id_chars + size, 0, ID_CHARS_SIZE - size);
         break;
+      }
 
       case WPROP_ID_MISSILE_COLOR:
+      {
         missile_color = load_prop_int(size, prop);
         break;
+      }
 
       case WPROP_ID_BULLET_COLOR:
-        mfread(bullet_color, 3, 1, prop);
+      {
+        if(size > ID_BULLET_COLOR_SIZE)
+          size = ID_BULLET_COLOR_SIZE;
+
+        mfread(bullet_color, size, 1, prop);
+        memset(bullet_color + size, 0, ID_BULLET_COLOR_SIZE - size);
         break;
+      }
 
       case WPROP_ID_DMG:
-        mfread(id_dmg, 128, 1, prop);
+      {
+        if(size > ID_DMG_SIZE)
+          size = ID_DMG_SIZE;
+
+        mfread(id_dmg, size, 1, prop);
+        memset(id_dmg + size, 0, ID_DMG_SIZE - size);
         break;
+      }
 
       // Status counters
       case WPROP_STATUS_COUNTERS:

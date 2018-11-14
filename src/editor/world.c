@@ -42,7 +42,7 @@
 
 #include <string.h>
 
-static const unsigned char def_id_chars[455] =
+static const unsigned char def_id_chars[ID_CHARS_SIZE] =
 {
   /* id_chars */
   32,178,219,6,0,255,177,255,233,254,255,254,255,178,177,176, /* 0-15 */
@@ -133,13 +133,21 @@ static const unsigned char def_id_chars[455] =
   145,146,147,148, /* Enemy */
   /* player_char */
   2, 2, 2, 2, /*N S E W */
-  /* player_color, missile_color, bullet_color */
+  /* player_color */
   27,
-  8,
+};
+
+static const unsigned char def_missile_color = 8;
+
+static const unsigned char def_bullet_color[ID_BULLET_COLOR_SIZE] =
+{
   15, /* Player */
   15, /* Neutral */
   15, /* Enemy */
-  /* id_dmg */
+};
+
+static const unsigned char def_id_dmg[ID_DMG_SIZE] =
+{
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* 0-15 */
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100,  0, 0, 0, 0, 0, /* 16-31 */
   0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* 32-47 */
@@ -410,9 +418,10 @@ void create_blank_world(struct world *mzx_world)
   mzx_world->enemy_hurt_enemy = 0;
   mzx_world->clear_on_exit = 0;
   mzx_world->only_from_swap = 0;
-  memcpy(id_chars, def_id_chars, 324);
-  memcpy(bullet_color, def_id_chars + 324, 3);
-  memcpy(id_dmg, def_id_chars + 327, 128);
+  memcpy(id_chars, def_id_chars, ID_CHARS_SIZE);
+  missile_color = def_missile_color;
+  memcpy(bullet_color, def_bullet_color, ID_BULLET_COLOR_SIZE);
+  memcpy(id_dmg, def_id_dmg, ID_DMG_SIZE);
 
   create_blank_robot_direct(&mzx_world->global_robot, -1, -1);
   mzx_world->current_board->robot_list[0] = &mzx_world->global_robot;

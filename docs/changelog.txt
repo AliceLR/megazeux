@@ -72,6 +72,8 @@ USERS
 + Fixed SET "$string" "FWRITE#" bug where, if # exceeded the
   length of $string, the output would be clipped to the wrong
   length.
++ The missile color ID char is now correctly set back to its
+  default value when a new world is created from the editor.
 
 DEVELOPERS
 

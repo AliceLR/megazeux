@@ -661,12 +661,16 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
   free(charset_mem);
 
   // Idchars array...
-  if(!fread(id_chars, 323, 1, fp))
+  memset(id_chars, 0, ID_CHARS_SIZE);
+  memset(id_dmg, 0, ID_DMG_SIZE);
+  memset(bullet_color, 0, ID_BULLET_COLOR_SIZE);
+
+  if(!fread(id_chars, LEGACY_ID_CHARS_SIZE, 1, fp))
     goto err_close;
   missile_color = fgetc(fp);
-  if(!fread(bullet_color, 3, 1, fp))
+  if(!fread(bullet_color, LEGACY_ID_BULLET_COLOR_SIZE, 1, fp))
     goto err_close;
-  if(!fread(id_dmg, 128, 1, fp))
+  if(!fread(id_dmg, LEGACY_ID_DMG_SIZE, 1, fp))
     goto err_close;
 
   // Status counters...

@@ -50,7 +50,10 @@ struct world
 
   int version;
   // Move here eventually
-  //char id_chars[455];
+  //char id_chars[ID_CHARS_SIZE];
+  //char id_dmg[ID_DMG_SIZE];
+  //char bullet_color[ID_BULLET_COLOR_SIZE];
+  //char missile_color;
   char status_counters_shown[NUM_STATUS_COUNTERS][COUNTER_NAME_SIZE];
 
   // Save game material, part 1
