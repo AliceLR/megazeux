@@ -81,11 +81,11 @@ $Everyone who submitted a bug report
 :000: 
 $~9Help on Help
 
-Using MegaZeux's help system is very simple. Press F1 at
-almost any time to bring up help relating to the current
-situation. Within help, use the arrow keys to Scroll the
-current section. Press PageUp and PageDown to Scroll faster.
-Many sections of help contain selections, like this:
+Using MegaZeux's help system is very simple. Press F1 at almost
+any time to bring up context-relevant help. Within help, use the
+arrow keys to scroll the current section. Press PageUp and
+PageDown to scroll faster. Many sections of help contain
+selections, like this:
 
 >sl:Selection
 :sl:
@@ -97,8 +97,8 @@ with the arrows on the left and right, and press Enter. You
 should now be reading help on Controls.
 
 Press F1 within help to jump to this section. Press Alt+F1
-within help to jump to the Table of Contents. (Table of Major
-Help Topics) Press ESC to exit the help system.
+within help to jump to the Table of Contents (Table of Major
+Help Topics). Press ESC to exit the help system.
 
 >#MAIN.HLP:072:Table of Contents
 #1ST_TIME.HLP
@@ -112,12 +112,12 @@ $Press END to learn about the NEW FEATURES in
 $MegaZeux!
 
 As you may already know, MegaZeux is a game system which
-allows you to play almost limitless worlds in dated yet
-charming graphics and with excellent digitized music and sound.
-Not only are there several MZX worlds out there already, but
-new worlds are being uploaded to large websites like
-DigitalMZX. However, the best feature of MegaZeux is the World
-Editor.
+allows you to play almost limitless worlds with
+dated-yet-charming graphics and with excellent digitized music
+and sound. Not only are there several MZX worlds out there
+already, but new worlds are being uploaded to large websites
+like DigitalMZX. However, the best feature of MegaZeux is the
+World Editor.
 
 Using the World Editor, ANYONE can create the world of their
 dreams. Make it as simple or complex (well, almost), as easy
@@ -174,6 +174,9 @@ shots that can be on a given board.
 need simulated in Robotic.
 -The Shift-? hotkey (often used for inventory engines) does not
 exist in MegaZeux but can be emulated with Robotic.
+-ZZT prevents moving between boards if the other board has an
+object where the player would end up, but MZX simply overwrites
+the object on the other board with the player.
 -Bomb explosions are not instantaneous but instead radiate out
 from the center. They are also diamond-shaped as opposed to
 a flattened oval shape.
@@ -187,7 +190,7 @@ traversed. ZZT water is most similar to MZX's "goop".
 -MZX Sharks can be shot. They do not swim in water, but can in
  lava or goop. They can also shoot any type of projectile.
 -MZX Scrolls cannot execute code. Use a Robot ending with the
-"die" command for ZZT scrolls with code instead. 
+"die" command to emulate ZZT scrolls with code instead.
 -Terrains that give out a distinctive message on first touch
 (fakes, forests) give out no such message in MZX.
 -There are two types of Gems; the one that best emulates ZZT
@@ -357,7 +360,8 @@ with a label) to exit the dialog or produce an effect.
 
 MZX also utilizes mouse control. You can click on a dialog box
 element to select it, or click on a selected element to change
-it. Click on a selected button to activate it.
+it. The mouse wheel will cycle up/down the choices in the
+current section. Click on a selected button to activate it.
 
 You can usually use HOME to jump to the first section of the
 dialog box, and END to jump to the OK or NEXT button. TAB jumps
@@ -374,13 +378,13 @@ deletes the entire line, while Ctrl + Backspace deletes the
 last typed word.
 
 NUMBER - This is where you have a number and you change it
-with the arrow keys or mouse clicks on buttons. Up and Down
-will change it by 1, Alt+Up and Alt+Down will change it by
-10, and PageUp and PageDown will change it by 100. You can
-also hold the mouse button down on one of the arrows to
-change the number or press 0-9 to set the last digit.
-Pressing 0-9 on the keypad changes the current digit to that
-value. Finally, Backspace deletes the last digit.
+with the arrow keys or mouse clicks on buttons. Up, Down, and
+the mouse wheel will change it by 1, Alt+Up, Alt+Down and
+Alt+Wheel will change it by 10, and PageUp and PageDown will
+change it by 100. You can also hold the mouse button down on one
+of the arrows to change the number or press 0-9 to set the last
+digit. Pressing 0-9 on the keypad changes the current digit to
+that value. Finally, Backspace deletes the last digit.
 
 NUMBER LINE - This is a line of numbers, with one highlighted.
 It functions in a manner similar to the above, but in a limited
@@ -394,10 +398,11 @@ COLOR - This is where you can select a single color. Press
 Enter or click on it to get a large menu of colors to choose
 from.
 
-CHECK BOXES - These are On/Off switches. Use Up/Down to move
-within the list of choices, and use Space, Enter, or mouse
-clicks to toggle choices on and off. Press Tab to jump out of
-a check box section. An [X] means the option is currently on.
+CHECK BOXES - These are On/Off switches. Use Up/Down or the
+mouse wheel to move within the list of choices, and use Space,
+Enter, or mouse clicks to toggle choices on and off. Press Tab
+to jump out of a check box section. An [X] means the option is
+currently on.
 
 RADIO BUTTONS - These are similar to Check Boxes, but are
 mutually exclusive. The mouse or arrow keys will select the
@@ -458,10 +463,9 @@ asked for confirmation.
 In-game controls are as follows:
 
 F1 - Help
-Use this at any time to bring up help relating to the current
-situation. Within the game, you will go to the Controls
-section. Some games may have this menu disabled or replaced
-with their own help menus.
+Use this at any time to bring up context-relevant help. Within
+the game, you will go to the Controls section. Some games may
+have this menu disabled or replaced with their own help menus.
 
 Enter - Menu/Status
 Use this to bring up a menu of options and a list of your
@@ -470,8 +474,10 @@ counters, etc. Some games may have this key do nothing, or even
 something different entirely.
 
 ESC - Exit to Title
-This will quit the current game and return to its title
-screen. In yes/no dialog boxes, this selects the "no" option.
+This will load a prompt to quit the current game and return to
+its title screen. In yes/no dialog boxes, this selects the "no"
+option. Some games may disable using ESC to trigger the exit
+prompt, but other methods (such as Alt+F4) will always work.
 
 F2 or Ctrl+F2 - Settings
 :092:This will bring up a dialog box where you can change the
@@ -498,9 +504,9 @@ even if it is prohibited otherwise.
 F3 - Save Game
 This will prompt you for a filename, allowing the saving of the
 exact state of the current game. Some games may not allow
-saving on some or all of its screens, or will only allow saving
-in certain spots of a board. Saving lets you quit your game in
-the middle or take precautions against unknown dangers.
+saving on some (or any) of its screens, or will only allow
+saving in certain spots of a board. Saving lets you quit your
+game in the middle or take precautions against unknown dangers.
 
 F4 - Restore Game
 This will let you select a saved game from a list of filenames.
@@ -526,7 +532,7 @@ F6 - Debug Window
 This will bring up a small box in the lower left corner of the
 screen, detailing several statistics. The top-right of the box
 displays the world version of the current world; X/Y lists the
-current {x,y} position of the player; Board lists the current
+current x,y position of the player; Board lists the current
 board number; Robot mem lists the amount of Robot memory
 currently consumed by the current board's Robots; the space
 below lists the currently playing music, with "(no module)" for
@@ -537,28 +543,31 @@ off. This will only work during playtesting in the editor.
 
 F7 - Items Cheat
 
-This will give the player one key of each color, full ammo,
-full coins, full gems, full bombs, full health (set to
-maxhealth) and full lives (set to maxlives). This is a cheating
-function, so do not use unless fully necessary; a few games
-punish the player for using this function. This will only work
-during playtesting in the editor, or in MZXRun builds.
+This will set ammo, coins, gems, hibombs and lobombs to 32767,
+fill health (set to maxhealth), fill lives (set to maxlives),
+and set keys to one of each color. This is a cheating function,
+so do not use unless fully necessary; a few games punish the
+player for using this function. This may be limited to
+playtesting sessions in the editor, or limited to MZXRun builds,
+depending on config.txt settings.
 
 F8 - Zap Cheat
 
-This will destroy everything all in eight directions directly
+This will destroy everything in all eight directions directly
 around the player, replacing all eight squares with spaces.
 This is a cheating function, so do not use unless fully
 necessary; a few games punish the player for using this
-function. This will only work during playtesting in
-the editor, or in MZXRun builds.
+function. This may be limited to playtesting sessions in the
+editor, or limited to MZXRun builds, depending on config.txt
+settings.
 
 F9 - Quicksave
 This will save the game, like F3, but to the last filename you
 used without prompting you for a filename. The old file will
 be overwritten. If no game has been saved since MegaZeux was
 started, the save will have the default filename listed in the
-config.txt file.
+config.txt file. If saving is blocked, quicksaving will be
+blocked as well.
 
 >#CONFGINI.HLP:1st:The Config File
 
@@ -566,7 +575,8 @@ F10 - Quickload
 This will reload the last game saved using F3 or F9. If no
 game has been saved since MegaZeux was started, the default
 save filename will be used. The same caveats about save versions
-still apply here.
+still apply here. If loading is blocked, quickloading will be
+blocked as well.
 
 F11 - Counter Debug Mode
 This will load a screen listing which counters and strings
@@ -594,8 +604,8 @@ default) in the working directory, using the software renderer.
 The file naming starts from "screen0".
 
 Arrows - Move
-The arrow keys will move your character and allow him/her/it to
-interact with most objects in most games.
+The arrow keys will move the player and allow it to interact
+with most objects in most games.
 
 Space - Shoot
 By default, one uses this key in conjunction with an arrow
@@ -611,8 +621,8 @@ Tab / Left Arrow / Right Arrow - Select Option
 In yes/no dialog boxes, these keys toggle between yes and no.
 
 Other games may have other controls, such as 'S' to cast a
-spell or 'A' to jump, but they should be detailed within the
-game.
+spell or 'I' to bring up an inventory screen, but they should be
+detailed within the game.
 
 The following keys are active at the title screen:
 
@@ -623,7 +633,8 @@ This is similar to default Enter within the game. However,
 it brings up a list of key bindings instead.
 
 ESC - Exit MegaZeux
-Pressing ESC will exit MegaZeux.
+Pressing ESC will load a prompt where the user can exit
+MegaZeux.
 
 F2 / Ctrl+F2 / S - Settings (see above)
 
@@ -661,8 +672,8 @@ integrated World Editor, set to edit the currently-loaded
 world. When no world is loaded, this acts the same as New World,
 and Alt+E with no world loaded will also skip the prompt to name
 and create a starting board. Note that "MZXRun" builds of
-MegaZeux will disallow using the editor. For detailed info on
-using the World Editor, view the appropriate help sections.
+MegaZeux do not contain the editor. For detailed info on using
+the World Editor, view the appropriate help sections.
 
 >#THEWORLD.HLP:1st:The World Editor
 
@@ -673,17 +684,17 @@ F10 - Quickload (see above)
 :091: 
 $~9Nondescript Play Tips
 
-Some basic play tips:
-
 First, let me warn you that many worlds you get from archives
 or (especially) from personal webpages may not be of acceptable
 quality. They may be unfair, boring, have numerous bugs, and/or
 not give proper instructions. On a related note, there is no
 problem in MAKING poor games, but PLEASE think before uploading
-them, even in these days where games are fewer and farther
-between. Really old games of bad quality, on the other hand, are
-tolerated somewhat better. Don't let a few dull games ruin the
-fun.
+them without attempting fixes or improvements, even in these
+days where games are fewer and farther between. Really old games
+of bad quality, on the other hand, are tolerated somewhat
+better. Don't let a few dull games ruin the fun.
+
+With that out of the way, some basic play tips:
 
 ~A*~F RTFM (Read the Flipping Manual). Whatever information
  the game has to give is probably important. Some authors
@@ -698,13 +709,13 @@ fun.
  Press F3 to save your game to disk at the EXACT point you are
  [if allowed]. Press F4 to reload a saved game. You can use F9
  and F10 to quick-save and quick-load, which work on the last
- game you saved. Remember to save often - If something ends
- your game, you'll want to lose as little progress as possible.
+ game you saved. Remember to save often and keep multiple saves-
+ If something ends your game, you'll want to lose as little
+ progress as possible.
  
 ~A*~F Touch everything! Even things of seemingly little value
  may prove worthy of your attention. If it kills you, then...
- well... hope you saved (see above). Yell at the programmer who
- thought an instant kill was worth using regardless!
+ well... hope you saved (see above).
 
 ~A*~F Collect supplies! Make sure you grab every coin, gem,
  ammo dump, bomb, chest, pouch, and foobar you see! You will
@@ -729,6 +740,11 @@ fun.
 ~A*~F If doing the same thing over and over keeps failing, try
  something else. It helps to look at new methods and to put
  distance between yourself and the problem.
+ 
+~A*~F Bullets can stop spitting fire, but only sometimes. If trying
+ to gun down an enemy that spits fire, stagger your shots
+ somewhat; holding down the spacebar often results in ALL of
+ your shots being cancelled.
 
 ~A*~F If all else fails, look in the game with the editor. This
  depends on the clarity of the author(s)'s code, but looking in
@@ -744,9 +760,9 @@ Use of the mouse is very simple. Move the mouse to move the
 mouse cursor. Press the Left mouse button to select something,
 activate something, etc. Press the Right mouse button to grab
 whatever's under the cursor in the World Editor. Certain games
-may make use of the mouse during gameplay; the scroll wheel,
-while unused in games, emulates up/down presses in dialog boxes
-and the list menu.
+may make use of the mouse during gameplay; the scroll wheel will
+always emulate up/down presses in dialog boxes and the list menu
+on top of whatever functions it may have in the current game.
 
 >#MAIN.HLP:072:Table of Contents
 #BUILTINS.HLP
@@ -755,10 +771,12 @@ $~9The Mirth of Built-ins
 
 The following help section contains a list of the different
 objects, enemies, items, and terrains you will find within
-the different MegaZeux worlds. Outside of a select few
-built-ins, such as certain terrains, Robots and items, heavy
-usage of these built-ins is suited for beginners and savants
-only.
+the different MegaZeux worlds. 
+Want to make a (very) quick and (very) dirty game? Built-ins are
+the way to do it! However, outside of a select few built-ins
+(such as certain terrains, Robots and items) heavy usage of
+these built-ins for long-term projects is best-suited for
+beginners and savants.
 
 $@0~8± ~FTerrains~8 ±@8
 
@@ -822,18 +840,18 @@ health point apiece when taken.
 
 ~BHealth         ~C
 
-This will improve your outlook dramatically. Your health is
-increased by a certain amount. The amount varies for different
-hearts. Keep in mind that if you're currently at your maximum
-health, running into a heart will still collect it.
+This will improve your outlook dramatically. Collecting one of
+these increases health by a certain amount. The amount varies
+for different hearts. Keep in mind that if you're currently at
+your maximum health, running into a heart will still collect it.
 
 ~BEnergizer      ~1›
 
-After grabbing an energizer, you will flash colors for a
+After grabbing an energizer, the player will flash colors for a
 limited time. During this period, you are invincible against
-enemies, bullets, fire, and most other built-in forms of pain.
-Be careful not to get into a dangerous situation as your energy
-runs out!
+enemies, bullets, fire, lava, poison damage, and most other
+forms of pain. Be careful not to get into a dangerous situation
+as its energy runs out!
 
 ~BAmmo           ~3£ ¤
 
@@ -877,8 +895,9 @@ amount of lives, running into a life orb will still collect it.
 
 ~BPouch          ~7Ÿ
 
-A pouch is usually filled with coins and gems. The amount
-varies, but often you will find yourself pleasantly rich....
+A pouch is usually filled with coins, gems, or even both. The
+amount varies, but often you will find yourself pleasantly
+rich....
 
 ~BChest          ~6 
 
@@ -915,7 +934,8 @@ Scatters plentiful, random explosions around the screen.
 ~BHealth x10
 ~BHealth x50
 
-Gives the player 10 or 50 additional health points.
+Gives the player 10 or 50 additional health points,
+respectively.
 
 ~BPoison
 
@@ -953,8 +973,8 @@ Scatters boulders randomly around the screen.
 
 ~BFreeze Time
 
-Freezes ALL on-screen objects (including Robots) except for
-the player, for a short time.
+Freezes ALL non-player on-screen objects (including all Robots
+except the Global) for a short time.
 
 ~BWind
 
@@ -964,10 +984,9 @@ all directions.
 
 ~BSlow Time
 
-Slows ALL on-screen objects (including Robots) except for the
-player, for a short time. The resulting speed is approximately
-half normal speed.
-
+Slows ALL non-player on-screen objects (including all Robots
+except the Global) for a short time. The resulting speed is
+approximately half normal speed.
 
 $@0~8± ~FCreatures~8 ±@8
 
@@ -986,7 +1005,7 @@ direction when obstructed.
 
 An eye chases you down like any ordinary enemy, but when it
 catches you or dies, it explodes! The size of the explosion
-varies with each eye.
+can vary with each eye.
 
 ~BGhost          ~7ê
 ~BThief          ~C
@@ -1019,12 +1038,12 @@ dragon.
 ~BShark          ~7
 ~BSpitting Tiger ~Bã  ~Fù  ù ù
 
-Fish have to stay in the water and often won't hurt you. Those
+Fish have to stay in the water and often can't hurt you. Those
 that can, however, will hurt you if you're adjacent to them,
-even if you're not in water. Some fish take two hits to kill.
-Sharks, however, swim in lava or goop, are always hostile, and
-can attempt to shoot you with fire, bullets or seekers.
-Spitting Tigers are landborne versions of sharks.
+even if you're on land. Some fish take two hits to kill. Sharks,
+however, swim in lava or goop, are always hostile, and can
+attempt to shoot you with fire, bullets or seekers. Spitting
+Tigers act like sharks, but are restricted to land.
 
                 ~0ÚÅ¿
 ~BSpider         ~0ÄÅ~7•~0ÅÄ
@@ -1054,7 +1073,7 @@ hard to kill.
 ~BSpinning Gun   ~C~E* ~F
 
 Bullet and spinning guns, both indestructible, fire any type of
-normal projectile (bullets, fire or seekers); the bullet gun,
+normal projectile (bullets, fire or seekers). The bullet gun,
 however, is fixed while the spinning gun can fire from all
 cardinal directions.
 
@@ -1101,9 +1120,9 @@ crates, and even you!
 ~BSlider NS      ~E
 ~BSlider EW      ~E
 
-Sliders can be pushed also, but ONLY in the pointed direction,
-Slider NS can only be pushed north/south, while slider EW can
-only be pushed east/west.
+Sliders can be pushed, but ONLY in certain directions. A Slider
+NS can only be pushed north/south, while a Slider EW can only be
+pushed east/west.
 
 $@0~8± ~FTransport~8 ±@8
 
@@ -1119,7 +1138,7 @@ two-way connections.
 ~BCCW            ~A\
 
 These rotate in the given direction (ClockWise or
-CounterClockWise) rotating everything around them at the same
+CounterClockWise), rotating everything around them at the same
 time. Walls and other solid objects will not be affected.
 
                 ~Fv
@@ -1128,10 +1147,10 @@ time. Walls and other solid objects will not be affected.
 
 Most transporters face a single direction. Entering these on
 the "open" side, or pushing other things into them, will
-transport to another location. Some transporters rotate 360
+cause a jump to another location. Some transporters rotate 360
 degrees and can be entered from any side.
 
-The destination of your transport is somewhat complex, but the
+The destination of a transport is somewhat complex, but the
 search pattern is as follows:
 
 1. If the other side of the entered transport is empty, move
@@ -1150,34 +1169,40 @@ $@0~8± ~FElements~8 ±@8
 ~BE Water        ~9@1
 ~BW Water        ~9@1
 
-Water is a type of floor that can be moved onto by you, some
-enemies, and certain other objects. Often water has a current,
-moving you constantly in a certain direction.
+Water is a type of floor that can be moved onto by the player,
+some enemies, and certain other objects. Sometimes, water has a
+current, moving you constantly in a certain direction.
 
 ~BIce            @3\
 
-Ice is another type of floor. However, you slip on it,
-constantly moving in the last direction you moved.
+Ice is another type of floor. However, the player will slide on
+it, constantly moving in the last direction the player moved
+until running into a non-pushable obstacle. Attempting to move
+in another direction while still on ice will cause the player to
+slide in that direction instead.
 
 ~BLava           @4~C±²°±²
 
 Lava is another floor. However, it is (almost always) very
-deadly. Only a few things can survive over it.
+deadly. Only a few things can traverse it, and any player
+unfortunate enough to walk on it will typically suffer rapid and
+massive amounts of damage.
 
 ~BFire           @0~C±°~E²±~C²
 
 Fire is yet another type of floor. It often will spread across
-the floor, enveloping trees, chests, and sometimes even empty
-space. It is painful to stand near (or worse, on), but usually
-it does not mean instantaneous death. Most fires will
-eventually burn out.
+the floor, enveloping trees, chests, brown objects, and
+sometimes even empty space. It can damage the player at random
+intervals when merely standing near it, and cause constant
+damage while standing ON it, but by default fire does far less
+damage than lava. Most fires will eventually burn out.
 
 ~BLit Bomb       ~0«
 ~BMine           ~4
 
 A lit bomb is an explosion on a fuse. You DON'T want to be
 nearby when the fuse runs out... mines, on the other hand, only
-blow up when touched or exploded.
+blow up when touched, shot, or hit with an explosion.
 
                  ~F@E±
                 ~F@E±~C±~F±
@@ -1194,9 +1219,10 @@ reactions.
 ~BGoop           ~8@1°°°
 
 Goop is pretty much non-traversable terrain to anything,
-although sharks may occasionally inhabit it. Bullets, lazers,
-and other projectiles will traverse it freely. Goop may also be
-treated as water or other terrains in certain worlds.
+although sharks may occasionally inhabit it and select Robots
+may be able to walk in it. Bullets, lazers, and other
+projectiles will traverse it freely. Goop may also be treated
+as water or other terrains in certain worlds.
 
 $@0~8± ~FMiscellaneous~8 ±@8
 
@@ -1205,11 +1231,11 @@ $@0~8± ~FMiscellaneous~8 ±@8
 
 A door is what you would expect - When you touch it, it will
 open itself, pushing obstacles in its path out of the way, and
-then closing after a brief pause. Doors require two free spaces
+then close after a brief pause. Doors require two free spaces
 in the direction it moves to open fully. Certain doors are
 locked and require you to use a key to open them. They then
 remain unlocked. Gates act similarly, but do not move; they can
-be crossed directly when open.
+be moved over directly when open.
 
 ~BRicochet Panel ~0/
 ~BRicochet       ~A*
@@ -1247,21 +1273,23 @@ $@0~8± ~FObjects~8 ±@8
 
 This is you. Really. Well, sometimes. The player is often
 locked, with a Robot or sprite representing the player
-character, but the player object is always present.
+character, but exactly one player object is always present.
 
 ~BScroll         ~Fä
 ~BSign           ~6â
 
-Touch this to read a message. A Scroll will disappear after
-you finish reading it; signs will not.
+Touch this to display a given message. The message will be in a
+message box. A Scroll will disappear after you finish reading
+it; signs will not.
 
 Unlike in ZZT, scrolls and signs are text-only: they cannot
-execute any commands.
+execute any commands. Also unlike ZZT, messages only one line
+long will still be shown in a message box.
 
 ~BMissile        ~0
 
 Missiles fly around the room, turning at obstructions. They
-will explode if they hit you or when they cannot turn.
+will explode if they hit the player or when they cannot turn.
 
 ~BBullet         ~F“
 
@@ -1278,26 +1306,30 @@ bullets can harm both the player and default enemies.
 ~BSeeker         ~A|
 
 A seeker, thrown by a Tiger, Shark, or other enemy, will chase
-you all over the screen until they collide and do 10 damage.
-They have a limited life, however, and will expire after a
-certain amount of time. They are still, however, one of the
-deadliest weapons you will face, enough so that more than only
-a few at once can easily ruin a game.
+the player all over the screen until they collide and do damage.
+Collision with most projectiles will not destroy it, only pause
+it. They have a limited life, however, and will expire after a
+certain amount of time or when caught in an explosion.
+They are still one of the deadliest weapons you will face;
+more than only a few at once can easily ruin a game.
 
 ~BShooting Fire  ~C ~E*~C
 
 Shooting fire will continue in a straight line until it hits
-you, resulting in pain, or a wall, resulting in a small fire.
-The fire may quickly spread out of control in some areas, or
-just burn out in others. Bullets can sometimes destroy shooting
-fire, but other times the shooting fire simply absorbs the
-bullet.
+the player (resulting in direct damage) or another object
+(resulting in a small fire). The fire may quickly spread out of
+control in some areas, or just burn out in others. Bullets can
+sometimes destroy shooting fire, but other times the shooting
+fire simply absorbs the bullet.
 
 ~BSensor         ~7?
 
-Sensors are a form of floor that only you can move onto. They
-will usually then produce some form of effect, by interacting
-with a Robot; other times they act as "save points".
+Sensors are a form of floor that only the player can move onto.
+They will usually then produce some form of effect, by
+interacting with a Robot; other times they act as "save points".
+Other objects will push them around instead.
+
+>#SENSORSW.HLP:094:Sensors - What They Are and How to Use Them
 
 ~BRobot          ~7?
 ~BPushable Robot ~7?
@@ -1328,6 +1360,10 @@ Editing the options can result in better sound, better / more
 customizable graphics, more fitting defaults, a more
 personalized Robotic editor, joystick support, extended macros, 
 automated backup and much more.
+
+New versions - even minor version changes - have added new
+options to the config file, so it is helpful to keep this file
+current.
 
 >#MAIN.HLP:072:Table of Contents
 #IFYOUFIN.HLP
@@ -1367,6 +1403,9 @@ To make things sane for all parties, do this before submitting:
      port, upload a world made in 2.70 that works in 2.70 but
      does not in the current version to best isolate the
      problem.
+	 
+Additionally, contacting the developers in real-time can help
+illuminate the problem.
 
 >#MAIN.HLP:072:Table of Contents
 #FAQ.HLP
@@ -1380,7 +1419,8 @@ Q: I hate that MegaZeux is always windowed! Could you change
   this?
 
 A: There's already a way to switch between fullscreen and
-  windowed modes - press Ctrl+Alt+ENTER.
+  windowed modes - press Ctrl+Alt+ENTER. Also, the config file
+  has an option that starts MZX in fullscreen mode at launch.
 
 Q: How can I get option (foobar) in the config file to work?
 
@@ -1477,7 +1517,7 @@ A: Before you go bugging the maintainer(s) of MegaZeux to add
      
 Q: Is adding network capabilities to MegaZeux planned?
 
-A: Short answer: Not really. This has been discussed at-length;
+A: Short answer: Possibly. This has been discussed at-length;
   the biggest problems with adding these to GAMES are thorny
   implementation issues (how the MZX programmer would insert
   network capabilities into a MegaZeux world, as well as the
@@ -1521,7 +1561,8 @@ A: Then you'll need to carefully utilize the Robot command
   characters you WILL use.
   
   Alternatively, make use of unbound sprites. Unbound sprites
-  can access 15 full character sets instead of just one.
+  can access 15 full character sets instead of just one, on top
+  of their other benefits.
   
 >#PARTIAL.HLP:par:Partial Character Sets
   
@@ -1580,7 +1621,7 @@ A: If you can't make them, search webpages for good ones.
   if you do so, but you could be violating copyright law.
   Chances are that if you can make a coherent argument on "fair
   use" of copyrighted songs, you will be far less likely to be
-  in this position to begin with. <3
+  in this position to begin with. ~C
 
 Q: What is some good software to create module files?
 
@@ -1620,8 +1661,9 @@ A: You're likely using an idle loop without a CYCLE 1 or WAIT 1
   you're wary about possible delay effects, rest assured that
   adding either of these will not unnecessarily add delays. It
   will simply end a cycle. By default, MZX will warn you if you
-  exceed 2000000 commands in a cycle. For further information,
-  look up the Cycles and Board Scans section.
+  exceed 2000000 commands in a cycle (but only in test
+  sessions). For further information, look up the Cycles and
+  Board Scans section.
   
 >#PROCESS.HLP:prc:Cycles and Board Scans - How MZX Processes Robots
   
@@ -1642,9 +1684,8 @@ A: Not anymore. Any computer that can display normal games in
 
 Q: How can I get "mod *" as the default board mod?
 
-A: Alt+8 and Alt+*, the old "mod *" keys, have a new function
-  now. To "mod *" in the port, use either Shift+8 or the
-  asterisk (*) on the numpad.
+A: To set "mod *", use either Shift+8 or the asterisk (*) on the
+  numpad.
 
 Q: What's with these "~~roboclp.tmp" files packed with so many
   games?
@@ -1679,6 +1720,7 @@ Item:           Largest number allowed:
 Robots              255 per board plus Global Robot
 Scrolls/Signs       255 per board
 Sensors             255 per board
+Sprites             256 per world
 Boards              250 per world
 Local Counters      32 per Robot plus specialized local counters
                     (e.g. loopcount, lava_walk, bullettype)
@@ -1686,10 +1728,12 @@ Local Counters      32 per Robot plus specialized local counters
 $Length Limitations
                 
 Robot Name Length   14 characters
+Board Name Length   24 characters
 String Length       4,194,304 characters (4 megabytes)
 Editor Line Length  241 characters (INCLUDING "extra" words)
 * Message Length    512 characters
 Input String Length 512 characters
+Macro Length        64 characters (for single-line macros)
 Mod Filename Length 512 characters (including subdirectories,
                     if applicable)
 
@@ -1702,12 +1746,12 @@ Vlayer size maximum is roughly 16.7 million characters
 Board width or height maximum is 32767.
 The maximum number of counters and strings depends on
 the platform (e.g. between 32 or 64-bit) but is sufficiently
-large. You should be fine putting this into the hundreds of
-thousands if not millions.
+large. You should be fine utilizing hundreds of thousands, or
+even millions.
 
 These limitations are mostly theoretical because of the utter
 improbability of meeting these limits and the amount of RAM (up
-to gigabytes if fully utilized) they consume.
+to (hundreds of) gigabytes if fully utilized) they consume.
 
 $Other Limitations
 
@@ -1739,28 +1783,33 @@ When this prompt is dealt with, you will be presented with a
 blank board with a small status bar at the bottom. You can use
 Alt+H to pop up a listing of key shortcuts at the bottom. PageUp
 and PageDown change its currently shown key shortcuts. The mouse
-also works here. Feel free to play around with these various
-options. Press Alt+R to restart and clear everything (you will
-be asked for confirmation, to make sure you really want to go
-through with it).
+also works to change pages (but not to select actions). Feel
+free to play around with these various options. Press Alt+R to
+restart and clear everything (you will be asked for
+confirmation, to make sure you really want to go through with
+it).
 
 For your first world, you should start simple. The very first
 board in the board listings is the title screen, so name that
 board after your game. (If you opted to create a starting board,
 you have to switch to the first board with the B key.) Press I
-for board info. This screen will display a bunch of options; the
-important option is the "Board name" option. Type in the name of
+for board info. This screen will display a bunch of options;
+there are loads of important options, but the most relevant
+option for now is the "Board name" option. Type in the name of
 your game and then click on "OK" or press Tab until OK is
 highlighted and press Enter. Now that the title screen is
 named, its design begins... or is put aside for later (or even
 the end).
 
-If you skipped making a starting board, you may need to create
-the first playable board, or location, of your game. Press A to
-add a board, then type in a short description of the board, such
-as "Starting Board". Press Enter to go to this new board.
-Otherwise, simply press the B key and select the starting board
-made earlier.
+If you made a starting board upon creating your world, simply
+press B to move to it. If you skipped making a starting board,
+you may need to create the first playable board, or location, of
+your game. Press A to add a board, then type in a short
+description of the board, such as "Starting Board". Press Enter
+to go to this new board. This board also needs to be set as the
+starting board. Press G to load the Global Settings screen. Once
+there, select the First Board option and set it to your starting
+board.
 
 Now you are free to doodle around. Use C to change the active
 color. Use F3 through F9 to bring up menus of items, terrains,
@@ -1799,9 +1848,8 @@ General Editing Tips for more advanced editing info.
 New in the 2.8+ line of MegaZeux is the protection of colors
 and characters the editor uses. The editor uses sets outside of
 the currently used sets. The character set for the editor is
-mzx_edit.chr; edit if you want to change the editor's
-appearance. Colors revert to the current colors in SMZX modes,
-however.
+mzx_edit.chr; only edit if you want to change the editor's
+appearance.
 
 >#GENERALE.HLP:1st:General Editing Tips
 >#MAIN.HLP:072:Table of Contents
@@ -1816,47 +1864,57 @@ you can navigate the editor's menus.
 $Linking Boards
 
 Simple, one-board games can get boring REALLY fast. There are
-four ways to connect multiple boards.
+five ways to move between boards.
 
-A simple method of connecting boards is with X, the Board Exits
-dialog. Here, you can select boards that you will reach if you
-walk off of the screen in a given direction. The destination
-board shouldn't have anything in the way, and will not
-automatically lead back- you must set the exit on that board
-too.
+A simple method of connecting boards is with the Board Exits
+dialog, accessed by pressing X. Here, you can select boards that
+you will reach if you walk off of the screen in a given
+direction. The destination board shouldn't have anything in the
+way, and will not automatically lead back - you must set the
+exit on that board too.
 
 Another way is to use a Robot to teleport a player with the
 ~Ateleport player "boardname" X Y~F command.  This assumes that you
 are familiar with using Robots, but is the only way to go to
-another board without having the player walk off-screen, into a
-teleport or by reloading the current world. Robots can also
-dynamically set board exits using the ~ABOARD [dir] "boardname"~F
-command, where and even disable board exits.
+another board without having the player walk off-screen, moving
+the player into a teleport, requiring the player to have been on
+the destination board earlier, or reloading the current world.
+Robots can also dynamically set board exits using the
+~ABOARD [dir] "boardname"~F command, including disabling exits
+by inputting NONE instead of the board name.
 
 >#COMMAND2.HLP:_t5:TELEPORT PLAYER "string" # #
 >#COMMAND2.HLP:_b7:BOARD [dir] "string"
 >#COMMAND2.HLP:_b8:BOARD [dir] NONE
 
 The third way is to add stairs, caves and whirlpools using the
-Transport (F7) menu. Then you select a destination board. The
-destination board should contain a similar transport, leading
-back. The two entrances will now lead to each other.
+Transport (F7) menu. After one is picked, you select a
+destination board. The destination board should contain a
+similar transport leading back. The two entrances will now lead
+to each other.
 
-The last way, the most kludge-like, is to load the current
-world in a 'swap world' command. This will send the player to
+The fourth way is by saving and restoring player positions using
+Robotic. The ~Asave player position #~F command will remember the
+current board and player position and save this info in the
+given slot #, and the ~Arestore player position #~F command returns
+the player to the saved position.
+
+The last way - the most kludge-like - is to load the current
+world with a 'swap world' command. This will send the player to
 the starting board of the current world, but will restore the
 world to its original state. Set counters and strings will be
 preserved. This method is used for its powerful restorative
 properties.
 
-To switch to other boards, use B. To add boards, press A, or
-press B and select (new board) from the board list.
+To switch to other boards in the editor, use B. To add boards,
+press A, or press B and select (add board) from the board list.
 
 $Board Sizes
 :sizepos:
-You can change the maximum size, and the view position, of a
-board with Alt+P. Here you can move and re-size the view, or
-center it on-screen.
+You can change the size and placement of a board's viewport with
+Alt+P. You can also choose to center the viewport; this will
+automatically set the viewport placement to display the center
+of the screen.
 
 You can also change the actual size of the board. The highest
 possible size is 16.7 million tiles, though a board that size
@@ -1972,16 +2030,15 @@ what each one does.
 
 Press A to add another board to the current world. You will be
 asked for the name of the new board, and then a new board will
-be created. The settings for the new board will be copied from
-the current board: music, size, view, and the board info menu.
-If you used A, you will now be spirited to the new board. There
+be created. The settings for the new board will be the defaults.
+After adding a board, you will be moved to the new board. There
 is a limit of 250 unique boards per world.
 
 :075:~EAlt+A - Select Char Set
 
 Press Alt+A and select one of the four different character
-sets. This will change the character set to one of the four
-defaults. ASCII is the default EGA ASCII character set.
+sets. This will change the current character set to one of the
+four defaults. ASCII is the default EGA ASCII character set.
 MegaZeux default is the default MegaZeux character set. Blank
 is the MegaZeux default, but with most graphical characters
 blank instead. Text, lines, arrows, blocks, and certain other
@@ -1991,9 +2048,9 @@ for SMZX modes.
 :_B:~EB - Select Board
 
 Press B to change the current board by selecting from a list.
-Selecting (new board) will create a new board and then select
-it. Unlike A, the current board will stay the same once a new
-board is created.
+Selecting (add board) will prompt the user to name the new
+board; once named, the board is created and becomes the current
+board.
 
 :073:~EAlt+B - Block
 
@@ -2053,8 +2110,8 @@ another section.
 Press D to select a board from a list to be deleted. You cannot
 delete the first board (the title screen). A deleted board will
 be pruned out, with the next actual board taking its place. A
-deleted board cannot be recovered, so make sure this is the
-desired action.
+deleted board cannot be recovered or undone, so make sure this
+is the desired action.
 
 :AltD:~EAlt+D - Default Colors
 
@@ -2079,8 +2136,8 @@ Press F to fill in an enclosed area with the current thing and
 color. The area must be completely surrounded by things other
 than the thing beneath the cursor. For example, you can fill
 over a solid square of Fakes with something else. The current
-fill command may not work right for very large and complex
-areas- in this case, you must move to the unfilled areas and
+fill command may not work accurately for very large and complex
+areas - in this case, you must move to the unfilled areas and
 press F to continue filling. This happens very rarely,
 however.  Also, beware of trying to fill an area with an item
 with limited placements, such as a Robot.
@@ -2108,11 +2165,10 @@ field.
 
 :CtrG:~ECtrl+G - Goto Position
 
-Ctrl+G will pop up a window, displaying target {x,y}
-coordinates. Set the coordinates by either typing in or
-selecting the desired X and Y values, and select OK to go to
-those coordinates on the current board. Choosing Cancel or
-pressing Escape cancels. 
+Ctrl+G will pop up a window, displaying target x,y coordinates.
+Set the coordinates by either typing in or selecting the desired
+X and Y values, and select OK to go to those coordinates on the
+current board. Choosing Cancel or pressing Escape cancels.
 
 :_G:~EG - Global Info
 
@@ -2187,11 +2243,9 @@ off.
 Ctrl+N does the same as Alt+N, except it only plays the
 selected module. It does not set the board module to the
 selected module. It also remembers the last-used directory to
-maintain a current listening directory. If a GDM is tested, 
-it will be auto-converted to an S3M (unless MZX is built with
-MikMod). A tested module will continue to play even if the
-current board is set to play music, and even if the current
-world file is changed.
+maintain a current listening directory. A tested module will
+continue to play even if the current board is set to play music,
+and even if the current world file is changed.
 
 :AltO:~EAlt+O - Edit Overlay
 
@@ -2211,7 +2265,7 @@ the buffer. The object under the cursor is not affected.
 :084:~EAlt+P - Size/Pos
 
 Alt+P allows you to change the size of the current board, the
-viewport size, and location. See another section for details.
+viewport size, and location. See the linked section for details.
 This action will clear the board and overlay undo histories.
 
 >#GENERALE.HLP:sizepos:Board Sizes
@@ -2247,9 +2301,13 @@ to YES).
 
 Alt+T will allow you to test the current world, starting on the
 current board. Games CAN be loaded and saved in this mode,
-making it especially helpful for debugging. Quitting will
-return to the editor. Note that entering a test session will
-clear all editor undo histories.
+making it especially helpful for debugging. Test mode also
+enables several debugging tools and cheats that can be used
+during a test session. Quitting will return to the editor. Note
+that entering a test session will clear all editor undo
+histories.
+
+>#DBGMODE.HLP:dbg:Debug Modes
 
 :_V:~EV - View
 
@@ -2275,18 +2333,18 @@ You can export a board file (MZB) unique to MegaZeux, good for
 giving single boards to others. (The character set, palette,
 vlayer and global info aren't included!) You can export the
 character set (CHR) for later game use or to edit in Fontutil or
-another third party app. You can export palettes (PAL) [full,
+another external app. You can export palettes (PAL) [full,
 partial, SMZX] and sound effect settings (SFX) for
 transportation. Both are file formats unique to MegaZeux.
 Finally, you can export the current world, but using the last
 version's world format, with the "Downver. world (MZX)" option.
 
-Files like MZMs and SAVs can be exported with Robotic code. See
-their respective areas for details. Other file types such as
-character sets can be exported generically through file writing
-facilities and charset counters. SMZX indices (PALIDX) can be
-exported using the Export Palette (PAL) option in SMZX mode 3;
-its export dialogue will appear after the palette export
+Files like MZMs and SAVs can be exported in-game by Robotic
+code. See their respective areas for details. Other file types
+such as character sets can be exported generically through file
+writing facilities and charset counters. SMZX indices (PALIDX)
+can be exported using the Export Palette (PAL) option in SMZX
+mode 3; its export dialogue will appear after the palette export
 dialogue.
 
 :AltY:~EAlt+Y - Debug Window
@@ -2295,7 +2353,8 @@ Alt+Y will toggle a red box in the lower corner of the screen.
 This box shows (on labeled lines) the current position of the
 cursor, the current Robot memory situation, and the presently
 playing module, and lists the MZX version of the current world
-at the top. This is the same as F6 in-game.
+at the top. This is the same as pressing F6 in-game, but removes
+the key_code and key_pressed info.
 
 :AltZ:~EAlt+Z - Clear (board)
 
@@ -2322,10 +2381,10 @@ saved for that world in its .editor.cnf file.
 :Sft8:~EShift+8 OR Numpad * - Mod Wildcard
 
 This sets the board's current mod to play whatever played in
-the last-visited board (i.e. the mod playing on that board
+the last-visited board. (i.e. The mod playing on that board
 differs if entering that board from a board using different
 music; it does not stick with the first such mod and play that
-from then on).
+from then on.)
 
 :SftAr:~EShift+Arrow - Goto Linked Board
 
@@ -2346,14 +2405,15 @@ it exists.
 
 :F1:~EF1 - Help
 
-F1 will bring up help on the current action. You can press F1
-at almost any time.
+F1 will bring up context-relevant help. You can press F1 at
+almost any time.
 
 :F2:~EF2 - Text
 
 F2 will toggle text mode on and off. When text mode is on,
-Enter will go to the next line, and Backspace will delete going
-backwards. All printable characters will type in as text,
+Enter will go to the next line, and Backspace will delete the
+character under the cursor and move the cursor one position to
+the left. All printable characters will type in as text,
 including pressing the Spacebar.
 
 :F3:~EF3  - Terrain
@@ -2372,9 +2432,9 @@ of that thing will be placed at the cursor's location, and will
 also become the current object in the buffer. Scrolls, Signs,
 Sensors, Robots, and Pushable Robots (all in the Objects menu)
 will be discussed in another section. The current thing, color,
-and settings parameter (p##) is shown in the upper left corner
-of the menu. Knowing the settings parameter isn't important
-except for certain Robotic programming situations.
+and settings parameter (p##) is shown in the upper-right corner
+of the editor menu. Knowing the settings parameter isn't
+important except for certain Robotic programming situations.
 
 >#SCROLLSS.HLP:1st:Signs and Scrolls in the Editor
 >#SENSORSW.HLP:094:Sensors - What They Are and How to Use Them
@@ -2391,8 +2451,8 @@ if editor tests are left while in a different SMZX mode, it will
 be reverted to the setting given here upon returning to the
 editor.
 
-Setting the screen mode is a prerequisite for editing palettes
-and character sets in Super MZX modes.
+Setting the screen mode is a prerequisite for editing Super MZX
+palettes and character sets.
 
 >#SMZXMODE.HLP:095:Super MZX Modes
 
@@ -2400,7 +2460,8 @@ and character sets in Super MZX modes.
 
 Pressing F12 will make a 640x350 screenshot (in PNG format by
 default) in the working directory, using the software renderer.
-The file naming starts from "screen0".
+The file naming starts from "screen0". This may be disabled by
+changing the allow_screenshots setting in the config file.
 
 :AF11:~EAlt+F11 - Robotic Debugger
 
@@ -2471,7 +2532,7 @@ entire board.
 :Ins:~EIns - Grab
 
 Ins will select the thing under the cursor as the current
-thing. The actual thing is not affected.
+thing. The thing under the cursor is not affected.
 
 :Sp:~ESpacebar - Place
 
@@ -2496,11 +2557,11 @@ time you move the cursor.
 :PgDn:~EPageDown - Next Menu
 :PgUp:~EPageUp - Previous Menu
 
-These two keys will cycle through the different menus. The
-menu bar can wrap around. You do not have to be viewing the
-menu with an option before you can use that option - the menus
-are purely for reference. These also jump numbers by 100 in
-dialog boxes.
+These two keys will cycle through the pages of the editor menu.
+The menu bar can wrap around. You do not have to be viewing the
+page listing a specific option before you can use that option -
+the menus are purely for reference.
+These keys also jump numbers by 100 in dialog boxes.
 
 >#THEWORLD.HLP:1st:The World Editor
 >#GENERALE.HLP:1st:General Editing Tips
@@ -2516,14 +2577,12 @@ using multiple characters, one can make much grander things.
 The default pixel resolution is fair - 8x14 per character for a
 total of 640x350 for the entire screen. Other modes (known as
 Super MZX modes) increase colors at a cost of effectively
-halving horizontal resolution, but the difficulties of character
-editing in those modes are best covered elsewhere.
+halving horizontal resolution, but the intricacies of character
+editing in those modes are best covered in that mode's section.
 
 To use the character editor, press Alt+C in the editor. You
-will be shown a zoomed version of the current character, a menu
-of options, a list of numbers, and a row of characters. The
-numbers are only important for certain Robotic programming
-situations.
+will be shown a zoomed version of the current character, a list
+of keyboard shortcuts, and a row of characters.
 
 The current character(s) being edited are displayed on the left
 edge of the character bar, and also highlighted and shown in
@@ -2542,7 +2601,7 @@ Use Del to clear the character. Use N to make a "negative", or
 inverse, of the character, turning all on pixels off and all
 off pixels on. Use Alt with the arrow keys to shift the entire
 character to one direction. Pixels shifted off of one edge
-wraparound to the other edge.
+wrap around to the other edge.
 
 Use M to mirror the character, flipping it left to right. Use
 F to flip the character top to bottom.
@@ -2588,7 +2647,8 @@ characters, release Shift, and press Enter. If more than one
 viable character space can be made from the selected characters,
 the user can choose the desired space size (e.g. six characters
 can be a 3x2, a 2x3 or a 6x1 space). The largest character space
-one can use for editing is 18 characters large (6x3).
+one can use for editing is 18 characters large (6x3, the max
+allowed sizes for the respective dimensions).
 
 The extra character sets accessible by unbound sprites can also
 be edited in the character editor. Press PgUp and PgDown to
@@ -2604,8 +2664,11 @@ Then choose the First number of the series (e.g. char#.chr with
 a First value of 5 would start from char5.chr). Then choose the
 Count value to indicate how many sets will be saved. Loading is
 simpler; simply choose the starting character set, the Offset
-value and the Count value. Importing and exporting partials
-will, however, only work with a block one character in height.
+value and the Count value. If multiple characters are being
+worked on at once, importing and exporting partials can be set
+to tile (which will base export and import positions on the
+current character grouping) or linear (which will be based on
+sequential places in the char set).
 
 The character editor is a key element in creating decent games
 with MegaZeux. If you can't seem to draw well with it, that's
@@ -2768,26 +2831,25 @@ SMZX mode 3 editor.
 $~9Global Info Options
 
 To edit the Global Info options, press G within the editor.
-This will bring up various dialogs where you can edit options
-that affect the entire world. The first dialog you see has the
-following options:
+Here you can edit options that affect the entire world. The
+first dialog you see has the following options:
 
 $First Board
 
 Here is where you select which board will be the starting board
 for the game. The player will start on this board. This
-defaults to the title screen.
+defaults to the second board in the list, or to the title screen
+if a second board was not made when creating a new world.
 
 $Edging Color
 
-This is the color of the border around the entire screen, where
-the viewport does not extend. It defaults to dark gray.
+This is the color of the area outside of the viewport. It
+defaults to dark gray on black (c08).
 
 $Starting/Maximum Lives
 
 This is where you set the number of lives the player starts
-with, and how many lives the player can accumulate at any one
-time.
+with, and how many lives the player can have at any one time.
 
 $Starting/Maximum Health
 
@@ -2797,7 +2859,8 @@ $Enemies' Bullets Hurt Other Enemies
 
 If this is on, then bullets shot by enemies, such as tigers,
 will destroy other enemies that they hit. It basically turns
-all Enemy bullets into Neutral bullets.
+all Enemy bullets fired into Neutral bullets (including ones
+shot by Robots).
 
 $Clear Messages and Projectiles on Exit
 
@@ -2823,7 +2886,8 @@ characters and colors used to represent various internal things.
 $Edit Dmg
 
 :090:This button leads to a dialog where you can edit the amount of
-damage done by various internal things.
+damage done by various internal things. Valid numbers range from
+0 to 255.
 
 $Edit Global Robot
 
@@ -2835,8 +2899,8 @@ MegaZeux. See the section on The Global for more information.
 >#THEGLOBL.HLP:gbl:The Global
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 
-:088:The second dialog of settings for global info has the
-following options:
+:088:The More page of settings for global info has the following
+options:
 
 $Death Board/Death X/Death Y/Mode
 
@@ -2845,14 +2909,14 @@ mode is Same Position, then the player will simply lose a life.
 If it is Restart Board, then the player will also teleport to
 the location on the board where the player entered. If it is
 Teleport, the player will instead teleport to the board and
-{x,y} coordinates stated in the above three settings.
+x,y coordinates stated in the above three settings.
 
 $Endgame Board/Endgame X/Endgame Y/Mode
 
 This tells MegaZeux what happens when the player runs out of
-lives. If mode is Game Over, then the game will simply end. If
-it is Teleport, the player will be given one life and one
-health, and then will be teleported to the board and {x,y}
+lives. If the mode is Game Over, then the game will simply end.
+If it is Teleport, the player will be given one life and one
+health, and then will be teleported to the board and x,y
 coordinates stated in the above three settings. This will
 continue to happen every time the player runs out of lives or
 when a Robot calls the ENDGAME command.
@@ -2868,9 +2932,9 @@ $Previous
 
 This will go to the previous global settings dialog.
 
-The character editing dialogs (eight in total) are screens of
-characters and colors used to represent internal things. Select
-one to change the color or character used. Use Next and
+The character editing dialogs (eight pages in total) are screens
+of characters and colors used to represent internal things.
+Select one to change the color or character used. Use Next and
 Previous to move between the screens, and Done when you are
 finished. Lit Bomb Anim 1 is special; setting it will set the
 other 6 frames of Lit Bomb Animation to the succeeding
@@ -2904,46 +2968,47 @@ This is the name of the board. It is mainly for internal
 reference; however, the name of the first board (the title
 screen) is also used to represent the entire world on a file
 listing, and its value can be accessed through the BOARD_NAME
-string counter in Robotic.
+string counter in Robotic. The special color codes ~~ and @@
+can apply here, allowing colored text in board names.
 
 $Can Shoot/Bomb
 
 These options determine whether or not the player can shoot or
 bomb normally. If off, then the player cannot perform the
-noted action. (Other ways of doing this in Robotic may replace
-the default ways of shooting/bombing and are unimpeded by this
-setting.)
+noted action. (Other ways of doing these actions in Robotic may
+replace the default ways of shooting/bombing and are unimpeded
+by this setting.)
 
 $Fire Burns Space/Fakes/Trees/Brown
 
 These options determine what fire will and will not burn
 through. Space is empty space, NOT floors; Fakes include fakes,
-floors, carpets, and tiles. Trees are self-explanatory. Brown
-is anything other than the player or a Robot/sign/Scroll that
-is colored brown (that is, anything with a color of cX6).
+floors, carpets, and tiles. Trees is self-explanatory. Brown is
+anything other than the player or a Robot/sign/Scroll that is
+colored brown (that is, anything with a color of cX6).
 
 $Forest to Floor
 
 If on, when the player moves through forest, it will become
-floor. If off, the forest will simply be replaced by a space.
+Floor. If off, the forest will simply be replaced by a space.
 
 $Collect Bombs
 
 If on, the player will collect bombs normally. If off, bombs
-will be instantly lit when touched.
+will be instantly lit when touched instead.
 
 $Fire Burns Forever
 
 If on, fire will never burn out. If off, fire will eventually
-turn into ash, which is actually a dark gray (c08) floor. Of
+turn into ash, which is actually a dark gray (c08) Floor. Of
 course, if fire is set to burn fakes, the ash will probably
 re-light immediately.
 
 $Restart if Hurt
 
 When on, the player will be teleported to the place on the
-current board that it originally entered every time it loses
-health.
+current board that it originally entered every time health is
+lost.
 
 $Reset Board on Entry
 When on, every time the board is entered, it will reset the
@@ -2952,21 +3017,23 @@ first time.
 
 $Player Locked N/S
 
-When on, the player cannot move north or south until unlocked
-with the UNLOCKPLAYER command. (Other ways of doing this, in
-Robotic, are unimpeded by this setting.)
+When on, the player cannot directly move north or south until
+unlocked with the UNLOCKPLAYER command. (Other ways of moving
+the player in those directions, such as Robotic or the player
+being pushed, are unimpeded by this setting.)
 
 $Player Locked E/W
 
-When on, the player cannot move east or west until unlocked
-with the UNLOCKPLAYER command. (Other ways of doing this, in
-Robotic, are unimpeded by this setting.)
+When on, the player cannot directly move east or west until
+unlocked with the UNLOCKPLAYER command. (Other ways of moving
+the player in those directions, such as Robotic or the player
+being pushed, are unimpeded by this setting.)
 
 $Player Attack Locked
 
-When on, the player cannot shoot bullets or bomb until unlocked
-with the UNLOCKPLAYER command. (Other ways of doing this, in
-Robotic, are unimpeded by this setting.)
+When on, the player cannot shoot bullets or lay bombs until
+unlocked with the UNLOCKPLAYER command. (Other ways of doing
+these actions, in Robotic, are unimpeded by this setting.)
 
 $Time Limit
 
@@ -2990,7 +3057,9 @@ $Can Save/Can't Save/Can Save on Sensors
 This determines when the player can save his game. The first
 two options are self-explanatory. Can save on Sensors allows
 the player to only save if it is standing directly over a
-Sensor. Sensors are explained in another section.
+Sensor. Sensors are explained in another section. This only
+prevents or limits saving using the built-in save functions;
+saving done with Robotic is unaffected.
 
 >#SENSORSW.HLP:094:Sensors - What They Are and How to Use Them
 
@@ -2998,12 +3067,12 @@ $No/Normal/Static/Transparent Overlay
 
 This sets the type of overlay for the current board. No Overlay
 means just that - overlay mode is completely off. Normal
-Overlay is a normal overlay that scrolls with the board. Static
-Overlay is a normal overlay that remains in a fixed position
-even when the board scrolls. A Transparent Overlay is similar
-to no overlay in that none is shown, but it allows you to edit
-it so that one may appear later. Overlays are discussed in full
-in another section.
+Overlay is an overlay that scrolls with the board. Static
+Overlay is an overlay that remains in a fixed position even when
+the board scrolls. A Transparent Overlay is similar to no
+overlay in that none is shown, but it allows you to edit it so
+that it may appear later. Overlays are discussed in full in
+another section.
 
 >#TOVERLAY.HLP:081:Editing and Using the Overlay
 
@@ -3019,8 +3088,8 @@ One can set the current board's settings as the default
 settings for all new boards made for this world file. Select
 the "Set as defaults" button at the bottom and click or press
 Space/Enter. This will save a .cnf file for the current world.
-There will be no confirmation. The current world must have been
-saved in order to do this.
+There will be no confirmation. Since the .cnf is named after the
+current world, the current world must have been saved first.
 
 >#EDITINGK.HLP:080:Editing Keys and Options Reference
 >#MAIN.HLP:072:Table of Contents
@@ -3165,7 +3234,7 @@ format effectively. The commands are:
   affect any note other than the note directly before the sharp
   or flat. Constructs such as B# are allowed.
 ~A 0 1 2 3 4 5 6
-  Sets the current octave. Octave 3 starts at middle C. The
+  Sets the current octave. Octave 4 starts at middle C. The
   lower the number, the lower the notes.
 ~A + -
   Raises or lowers the current octave by 1, but only if
@@ -3177,7 +3246,7 @@ format effectively. The commands are:
   These letters change the current duration of notes and rests,
   I.E. the length of time each subsequent note is played. Each
   one is twice as long as the previous one, with Z being the
-  fastest and W the slowest. Duration defaults to Z. The
+  fastest and W the slowest. Duration defaults to T. The
   counterparts to the durations follow:
    Z = sixty-fourth note
    T = ~AT~Fhirty-second note
@@ -3205,7 +3274,7 @@ format effectively. The commands are:
   digitized sounds within the sound effects editor. The general
   format for & is as follows:
 
-$"&FILENAME.WAV&3C"
+$"&FILENAME.WAV&4C"
 
   This will play middle C using FILENAME.WAV. Duration is
   irrelevant. If nothing follows the last &, the effect will
@@ -3370,7 +3439,8 @@ The overlay is a simple but useful part of a board. If one
 looks at Floors and Fakes as a floor layer, and Walls as a
 central layer, the overlay is a ceiling layer. Basically, the
 overlay, when on, appears OVER anything on the board. The
-player, enemies, Robots, etc. all move underneath it. The
+player, enemies, Robots, etc. all move underneath it; the only
+exceptions are sprites specifically set to go over it. The
 overlay is purely for show and graphical effects. For example,
 you could create archways that the player moves under, or have
 a score and lives display that is overlaid over the view at all
@@ -3461,13 +3531,13 @@ board.
 Alt+S will toggle whether the level beneath the overlay is
 shown. Without the level, only the overlay is shown, and no
 board bits are seen through the holes in the overlay. However,
-it is a good idea to show the level to see how it looks beneath
-the overlay.
+it can be a good idea to show the level to see how it looks
+beneath the overlay.
 
 :F1:~EF1 - Help
 
-F1 will bring up help on the current action. You can press F1
-at almost any time.
+F1 will bring up context-relevant help. You can press F1 at
+almost any time.
 
 :F2:~EF2 - Text
 
@@ -3477,18 +3547,18 @@ backwards. All printable characters will type in as text.
 
 :Ar:~EArrow - Move
 
-The arrow keys will move the cursor. The edit window will Scroll
+The arrow keys will move the cursor. The edit window will scroll
 when necessary.
 
 :AltAr:~EAlt+Arrow - Move 10
 
-Alt with the arrow keys will move the cursor up to ten spaces at
-a time.
+Alt with the arrow keys will move the cursor ten spaces at a
+time (or to the edge if under 10 spaces away in that direction).
 
 :BkSp:~EBackspace - Delete
 :Del:~EDel - Delete
 
-These two keys will delete everything under the cursor. The
+These two keys will delete any overlay under the cursor. The
 current character is not affected.
 
 :End:~EEnd - L/R Corner
@@ -3520,8 +3590,8 @@ as the current. The actual character is not affected.
 :Sp:~ESpacebar - Place
 
 Spacebar will copy the current character and color to the
-location under the cursor. Other things will be deleted if they
-are in the way.
+location under the cursor. Other overlay will be deleted if it
+is under the cursor.
 
 :Tab:~ETab - Draw
 
@@ -3582,10 +3652,11 @@ overlays.
 :1st: 
 $~9Signs and Scrolls in the Editor
 
-Signs and Scrolls are a simple way to get messages across in
-the game. To place them in the editor, press F10 and select
-Sign or Scroll from the list. You must then edit the text of
-the Sign or Scroll.
+Signs and scrolls are a simple way to get messages across in
+the game. Signs can be read multiple times; scrolls can be read
+once, then disappear. To place them in the editor, press F10 and
+select Sign or Scroll from the list. You must then edit the text
+of the sign or scroll.
 
 The Scroll editor is very simple. You can move the cursor among
 the different lines and characters. Type to insert text
@@ -3595,11 +3666,11 @@ characters already there. Backspace and delete work as normal,
 as do PageDown, PageUp, End, and Home. Finally, use Enter to
 start or insert new lines.
 
-Press ESC when you are done editing your Scroll. It will be
-placed at the current cursor position and will become the
+Press ESC when you are done editing your sign or scroll. It will
+be placed at the current cursor position and will become the
 current object in the buffer. Note that although you can now
-copy the Scroll freely, there is a limit of 255 Scrolls and
-Signs per board. This limit shouldn't ever be a problem.
+copy the scroll freely, there is a limit of 255 scrolls and
+signs per board, but this limit shouldn't ever be a problem.
 
 >#MAIN.HLP:072:Table of Contents
 #DBGMODE.HLP
@@ -3703,6 +3774,9 @@ last search can be done with Ctrl+R. Options:
 -Search names: Searches counter and string names.
 -Search values: Searches counter and string values.
 -Case sensitive: Returns results only if case matches.
+-Exact: Returns results only if the entire string or counter
+value matches (as opposed to if part of the string or counter
+value matches).
 -Reverse: Searches from bottom to top (as opposed to the
 default top to bottom).
 -Wrap search: If no results are found, starts from the opposite
@@ -3715,7 +3789,7 @@ of the current list will not be searched.
 value will be 0 for a new counter, and blank for a new string.
 If any counter or string already exists with the given name,
 this will be ignored and the original counter/string will keep
-its original value; you will not be notified of any such
+its original value. You will not be notified of any such
 conflicts. This menu can be directly accessed with Alt+N.
 
 ~AToggle Empties~F: Sets whether counters with values of 0 and
@@ -3730,7 +3804,7 @@ counters in the Counters parent list, to their current values.
 If overwriting a current file is chosen, MZX will ask for
 confirmation.
 
-In addition to its considerable power, accessing the counter
+In addition to its own considerable power, accessing the counter
 debug mode can allow access to the character editor (via Alt+C)
 or the palette editor (via Alt+E) for further manipulation and
 testing.
@@ -3857,7 +3931,7 @@ MegaZeux General Errors:
 >erc:Current renderer lacks advanced graphical features; features
   ~Fdisabled
 >erd:Directory rename failed.
->ere:Error saving world; file may be write protected
+>ere:Error saving; file/directory may be write protected
 >erf:Error swapping to next world
 >erg:(Filename) already exists.
 >erh:File rename failed.
@@ -3879,7 +3953,7 @@ MegaZeux Validation Errors:
 >evh:Board file is from a future version (version)
 >evi:Bytecode file (filename) failed validation check
 >evj:Cannot load password protected world
->evk:File doesn't exist!
+>evk:File doesn't exist
 >evl:File is not a board file or is corrupt
 >evm:File is not an MZM or is corrupt
 >evn:File is not a valid .SAV file or is corrupt
@@ -3897,9 +3971,11 @@ MegaZeux Validation Errors:
   ~Fsupported
 >evy:Scroll @@ (hex location) is truncated or corrupt
 >evz:Sensor @@ (hex location) is truncated or corrupt
->ev1:This world may be password protected.
->ev2:World is from a more recent version (version)
->ev3:World is from old version (version); use converter
+>ev1:This world may be password protected. Decrypt it?
+>ev2:Unknown error reading from file
+>ev3:Unknown error writing to file
+>ev4:World is from a more recent version (version)
+>ev5:World is from old version (version); use converter
 
 MegaZeux Validation Errors (ZIP World Format):
 
@@ -3959,11 +4035,12 @@ but failed. This could be due to trying to change a read-only
 file, trying to change a locked file, or due to some other
 error.
 
-:ere:~AError saving world; file may be write protected
+:ere:~AError saving; file/directory may be write protected
 
 This can be caused by file errors or a hard disk space
 shortage. It can also result from an attempt to overwrite a
-read-only file.
+read-only file or write to a directory without write
+permissions.
 
 :erf:~AError swapping to next world
 
@@ -4046,7 +4123,7 @@ Since MegaZeux 2.80, worlds that are password protected have to
 be stripped of the password to run. This error is seen when the
 user refuses to decrypt the password-protected file.
 
-:evk:~AFile doesn't exist!
+:evk:~AFile doesn't exist
 
 An import of a file was attempted, but the file does not exist.
 
@@ -4115,19 +4192,33 @@ replaced with an empty Scroll at that location.
 The Sensor at the given location is unrecoverable, and will be
 replaced with a Sensor with default attributes at that location.
 
-:ev1:~AThis world may be password protected.
+:ev1:~AThis world may be password protected. Decrypt it?
 
 Worlds saved with password protection (some worlds made before
-MZX2.51s3.2) cannot natively run in MegaZeux. MegaZeux will
-then prompt the user to decrypt the file.
+MZX2.51s3.2) cannot natively run in MegaZeux. This prompt asks
+the user if they want to convert the world to a readable format.
+If Yes is chosen, the world is permanently decrypted and
+converted to a world file (with a world version unique to
+decrypted worlds). If No is chosen, the world is left alone and
+MZX keeps any currently-running world as its active world.
 
-:ev2:~AWorld is from a more recent version (version)
+:ev2:~AUnknown error reading from file
+
+A file read was attempted, but MZX failed for some undetermined
+reason.
+
+:ev3:~AUnknown error writing to file
+
+MZX attempted to write to a file, but failed for some
+undertermined reason.
+
+:ev4:~AWorld is from a more recent version (version)
 
 The .MZX file you tried to load or import is from a more
 current version of MegaZeux. You must upgrade MegaZeux to the
 given version or higher to play this worldfile.
 
-:ev3:~AWorld is from old version (version); use converter
+:ev5:~AWorld is from old version (version); use converter
 
 The user tried to load a .MZX file from version 1.00g, 1.01,
 1.02, or 1.03 of MegaZeux. In order to use these worlds, they
@@ -4243,51 +4334,51 @@ contact the developer(s) if you see this error.
 $~9Sensors - What They Are and How to Use Them
 
 Sensors have two real purposes. The first is to act as save
-points. The second is to interact with Robots as a type of
-floor. The first use is simple - just set the board to "Save
-only on Sensors", and then the player can only save when
-standing on a Sensor.
+points. The second is to interact with Robots as a hybrid of
+floor and object. The first use is simple - just set the board
+to "Save only on Sensors", and then the player can only save
+when standing on a sensor.
 
 The second use is more complex, and requires knowledge of
 Robotic. Sensors are like controllable CustomFloors (albeit
-CustomFloors that can be pushed by many objects). When creating
-one, give it a name and a character, then enter the name of a
-Robot with which it will interact. This use of sensors is easily
-replicable through Robotic now, so this use of sensors is
-deprecated. However, if one wants to use sensors, this
+CustomFloors that can be pushed by non-player objects). When
+creating one, give it a name and a character, then enter the
+name of a Robot with which it will interact. This use of sensors
+is easily replicable through Robotic now, so this use of sensors
+is deprecated. However, if one wants to use sensors, this
 information will easily help.
 
 Sensors interact with Robots using labels (messages) and SEND
 commands, just like Robots interact with each other. Any Robot
-can SEND a message to a Sensor, but the Sensor will only SEND
+can SEND a message to a sensor, but the sensor will only SEND
 messages to the Robot stated in its settings. If you entered a
 Robot of ALL, then it will SEND messages to all Robots. Unlike
-Robots, Sensors cannot send to a dynamic name; for instance, it
+Robots, sensors cannot send to a dynamic name; for instance, it
 cannot be set to send to "&fest&ive" (whereas a Robot would 
 properly send to "1ive" when "fest" is 1 and to "5ive" when
 "fest" is 5).
 
 $Messages TO Sensors
 
-The following messages can be sent to a Sensor. A Sensor can
+The following messages can be sent to a sensor. A sensor can
 receive messages even when it is beneath the player.
 
 ~EDIE
 
-This will cause the Sensor to disappear forever.
+This will cause the sensor to disappear forever.
 
 ~ECHAR'X'
 
-This will cause the Sensor to change its character to X.
+This will cause the sensor to change its character to X.
 
 ~ECHAR###
 
-This will cause the Sensor to change its character to that
+This will cause the sensor to change its character to that
 represented by the number ###, from 0 to 255.
 
 ~ECOLORxx
 
-This will cause the Sensor to change its color to the color
+This will cause the sensor to change its color to the color
 represented by the code xx, a hexadecimal number from 00 to
 FF. The color coding is the same as used for Robotic commands,
 except without the "c" character. ?s are not allowed.
@@ -4297,10 +4388,12 @@ except without the "c" character. ?s are not allowed.
 ~EE
 ~EW
 
-This will cause the Sensor to move north, south, east, or west,
-respectively. If the player is on top of the Sensor, the player
-will move along with it. If the Sensor tries to move towards
-the player, it will instead move beneath.
+This will cause the sensor to move north, south, east, or west,
+respectively. If the player is on top of the sensor, the player
+will move along with it. If the sensor tries to move towards
+the player, it will instead move beneath. If something pushable
+is in the direction of movement, the sensor will push it while
+moving if there is room.
 
 $Messages FROM Sensors
 
@@ -4308,25 +4401,25 @@ Sensors will send Robots the following messages.
 
 ~ESENSORON
 
-This is sent when the player steps onto the Sensor, or when the
-Sensor is told to move and it ends up beneath the player, or
-when something pushes the player onto the Sensor.
+This is sent when the player steps onto the sensor, when the
+sensor is told to move and it ends up beneath the player, or
+when something pushes the player onto the sensor.
 
 ~ESENSORTHUD
 
-This is sent when the Sensor is told to move, but it is blocked.
+This is sent when the sensor is told to move, but it is blocked.
 
 ~ESENSORPUSHED
 
-This is sent when something (not the player, of course) pushes
-the Sensor.
+This is sent when something pushes the sensor.
 
 $Notes on Sensors
 
-Only the player can step onto a Sensor; other things will push
-it. The Sensor, when moving, will move UNDER the player if in
+Only the player can step onto a sensor; other things will push
+it. The sensor, when moving, will move UNDER the player if in
 the way, or will take the player with it if the player is on
-the Sensor.
+the sensor. Laying a bomb while on a sensor will destroy the
+sensor.
 
 >#MAIN.HLP:072:Table of Contents
 #ROBOTICR.HLP
@@ -4386,14 +4479,15 @@ Robot. Robots are strings representing the name of a Robot.
 Files are strings representing a file or folder on disk, always
 including the extension in the case of files. (Some string
 examples: "Hi", "Gems", "Label5", "*1230 +725", "robott.txt",
-etc.) The quotes can be left off if the string contains no
-spaces and if the string is not the same as any word found in
-any command or parameter, i.e. a word that the editor could not
-mistake for a part of a command. MegaZeux will add the quotes
-for you if the string meets these criteria. For example,
-"fifty" and "HONK" will be auto-completed by MZX, but "Ammo",
-"N", "Goto", and "You died" have to have the quotes typed in
-manually.
+etc.)
+
+The quotes can be left off if the string contains no spaces and
+if the string is not the same as any word found in any command
+or parameter, i.e. is a word that the editor could not mistake
+for a part of a command. MegaZeux will add the quotes for you if
+the string meets these criteria. For example, "fifty" and "HONK"
+will be auto-completed by MZX, but "Ammo", "N", "Goto", and "You
+died" have to have the quotes typed in manually.
 
 ~E#
 
@@ -4410,12 +4504,14 @@ easily circumvented by using constant expressions. Constant
 expressions also allow larger hexadecimal numbers and octal
 numbers; please view the expressions section for more detail.
 
+Certain commands will limit numbers to the range of 0 to 255.
+
 >#EXPRESS.HLP:exp:Expressions
 
 :col:~E[color]
 
 The format for colors is cXX, where X is 0-9, A-F, or ?. The
-first X represents the background color, the second X represents
+first X represents the background color; the second X represents
 the foreground color. The numbers and symbols represent the
 following colors, by default:
 
@@ -4427,7 +4523,7 @@ following colors, by default:
 5 Purple      ~5(color #5)
 6 Brown       ~6(color #6)
 7 Lt. Gray    ~7(color #7)
-8 Dk. Gray    ~8(color #8)
+8 Dk. Gray    ~8@F(color #8)
 9 Lt. Blue    ~9(color #9)
 10 Lt. Green  ~A(color #10)
 11 Lt. Cyan   ~B(color #11)
@@ -4462,7 +4558,7 @@ c02, c?5, c??, "Color".
 
 While detecting colors of ?? is generally an accepted practice,
 it's extremely discouraged to put colors of ?? or change to
-them.
+them, with the exception of Sprites.
 
 >#BADPRACT.HLP:bad:Robotic Usages That Should be Avoided
 
@@ -4479,6 +4575,18 @@ like INC "health" '5' will most likely yield _much_ different
 results than what was likely intended. However, for some usages
 this use of chars is vastly superior to any other method (such
 as when reading from the overlay onto strings).
+
+Certain characters must be inputted in specific ways to avoid
+problems with Robotic:
+
+  \0 for character 0
+  \t for tab (character 9)
+  \n for newline (character 10)
+  \r for carriage return (character 13)
+  \" for quotation mark
+  \\ for slash
+  
+MZX handles these conversions for you when using F3.
 
 :dir:~E[dir]
 
@@ -4609,31 +4717,34 @@ represents settings that you don't care about or shouldn't
 change. To enter parameter codes easily, use F4 in the Robot
 editor after you have typed in an object name. p?? will be
 inserted automatically any time you have a thing without a
-parameter. Counters can also be used as parameters, as well as
+parameter. Counters can also be used as parameters, as can
 decimal numbers; to insert decimal numbers, place the number
 in the proper location, but without the "p" before it.
+
+p?? in an IF command will allow that command to accept all
+params.
 
 ~E[item]
 
 One of the following: TIME, SCORE, GEMS, AMMOS, LIVES, LOBOMBS,
-HIBOMBS, COINS, HEALTHS. Note the plural format. This
+HIBOMBS, COINS, HEALTHS. Note the plural format; this
 distinguishes items from things.
 
 ~E!<>=
 
 A conditional for comparing two numbers, counters or strings:
 
-= or ==        Equal to
-.<              Less than
-.>              Greater than
-.<= or =<       Less than or equal to
-.>= or =>       Greater than or equal to
-!= or <> or >< Not equal to
+= or ==         Equal to
+.<               Less than
+.>               Greater than
+.<= or =<        Less than or equal to
+.>= or =>        Greater than or equal to
+!= or <> or ><  Not equal to
 
 :con:~E[condition]
 
 A word, sometimes followed by a direction, signifying a certain
-condition; use in IF [condition] and IF NOT [condition] commands
+condition. Use in IF [condition] and IF NOT [condition] commands
 to test whether a condition is currently present.
 
 ~BWALKING [dir]
@@ -4748,10 +4859,10 @@ details.
 
 $Simple Strings
 
-Generally, a string is a series of symbols within quotes: "BUG",
-"Hi there!", or even "ÅEA9 _±Ç". There are two special aspects
-or features of strings that may be useful: color coding, and
-counter interpolation.
+Generally, a string is a series of symbols within quotes, such
+as: "BUG", "Hi there!", and even "ÅEA9 _±Ç" or "". There are
+two special aspects or features of strings that may be useful:
+color coding, and counter interpolation.
 
 $Color
 
@@ -4770,7 +4881,7 @@ followed by one of these characters:
     7 Lt. Gray (color 7)     F White (color 15)
     
 
-To show a ~~, use a ~~~~. To show a @@, use @@@@.
+To show a ~~, use ~~~~. To show a @@, use @@@@.
 
 $Counters
 
@@ -4794,8 +4905,7 @@ A Robotic string is any counter prefixed by a $ sign (e.g.
 Certain characters must be inputted in specific ways to avoid
 problems with Robotic:
 
-  \0 for character 0 (this won't be parsed correctly in
-  strings, but works for setting chars)
+  \0 for character 0 (this won't be parsed correctly in strings)
   \t for tab (character 9)
   \n for newline (character 10)
   \r for carriage return (character 13)
@@ -4829,7 +4939,7 @@ Simply encase the string name in ampersands. E.G.:
 Would output "My favorite song!" in the message row.
 
 There are several special things you can set strings to for
-certain functions.
+certain functions. These are listed in the Counters section.
 
 >#COUNTERS.HLP:stc:String Counters
 
@@ -4948,8 +5058,9 @@ character itself). If "t" is 0 there will be no terminator.
 The letters are added from left to right and up to down until
 the terminator character is reached, or until the end of the
 given block is reached. If x and y begin with a pound sign (#),
-the string will instead be read from the vlayer. Please use
-this method of scanning strings instead of BOARD_SCAN.
+the string will instead be read from the vlayer.
+Please use this method of scanning strings instead of
+BOARD_SCAN.
 
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
@@ -5227,7 +5338,9 @@ $Command Descriptions
 :__3:~A* "string"
 
 This command displays the given string as a message on the
-message line, at the bottom of the screen by default.
+message line, at the bottom of the screen by default. Using the
+newline char (\n) in this string will cause the message line to
+span another line underneath, allowing multi-line messages.
 
 >#STRINGS.HLP:1st:Strings, Special Formatting, and Their Place in Robotic
 
@@ -5264,9 +5377,15 @@ a label of its own, or otherwise receives an external message.
 Label names can be any length and consist of any characters.
 They are not case-sensitive, and they can not take interpreted
 counters (e.g. : "&label&").
+A Robot can have multiple labels with the same name. In these
+cases, the topmost of these labels in the Robot's code is the
+one that is triggered.
+There are several label names that are automatically jumped to
+under certain conditions. These are detailed in the Built-in
+Labels section.
 
 Labels starting with a pound sign/hash (#) are subroutines.
-See the corresponding section for more information.
+See the Subroutine section for more information.
 
 >#SUBROUTE.HLP:sub:Subroutines
 >#BUILTINL.HLP:1st:Built-in Labels
@@ -5296,14 +5415,14 @@ called "messaging" a Robot, and the label given is the
 "message". The target Robot can be given one of four ways,
 as listed above respectively:
 
-1. State the target Robot's name. Use "ALL" to message all
-Robots (including the Robot doing the send). Set ~ALOCKSELF~F
-beforehand to prevent sending to yourself when sending to
-"ALL".
+1. State the target Robot's name. Use "ALL" in place of the
+Robot name to message all Robots (including the Robot doing the
+send). Set ~ALOCKSELF~F beforehand to prevent sending to yourself
+when sending to "ALL".
 2. State the direction of the target Robot.
 3. State the direction of the target Robot, relative to the
 player.
-4. State the {x,y} coordinates of the target Robot.
+4. State the x,y coordinates of the target Robot.
 
 >#COMMANDS.HLP:dir:Directions
 >#COMMANDR.HLP:_lA:LOCKSELF
@@ -5322,26 +5441,24 @@ as follows:
 
   [ will simply display the given message.
   & will display the given message, centered within the box.
-  % will display the given message, which can have color
-   codes.
-  ? will display an option, which, when selected, will send
-   the current Robot to the given label. If a counter is
-   included, the option will only be shown if the counter is
-   NOT zero.
+  % will display the given message, but will parse color codes.
+  ? will display an option that will send the current Robot to
+   the given label when selected. If a counter is included, the
+   option will only be shown if the counter is NOT zero.
 
 All box-message commands can use ~~ and @@ color codes, EXCEPT
 for [. The advantage of [ is that it will be clipped to 64
 characters if it is too long, thereby preventing the display
 from being screwed up. The other commands are not clipped and,
 if too long, can mess up the current display. (No permanent
-damage is done, it just looks stupid.)
+damage is done, it just looks bad.)
 
 NOTE: Take care when using any of these commands in a loop (and
 be especially vigilant of possible unintended loops). Looping
 these commands without any WAITs or similar cycle-breaking
 commands (or repeatedly jumping to a label with said command)
 can cause the dialogue box to re-appear as soon as it is
-closed, making it very hard to close the MZX world.
+closed, making it very hard to resume normal action.
 
 >#COUNTERS.HLP:1st:Counters, Built-in Counters and Local Counters
 >#STRINGS.HLP:1st:Strings, Special Formatting, and Their Place in Robotic
@@ -5452,9 +5569,9 @@ game, just as if the player died or lost all of its lives.
 
 :_w5:~AWALK [dir]
 
-This will cause the Robot to move one space in the given
-direction every cycle. Use a direction of IDLE to turn walking
-off.
+This will cause the Robot to attempt to move one space in the
+given direction every cycle. Use a direction of IDLE to turn
+walking off.
 
 This can be used concurrently with ~AGO [dir] #~F and its
 relatives to make Robots move in double-speed steps.
@@ -5505,10 +5622,13 @@ objects of the second given type.
 :_pD:~APUT [color] [thing] [param] [dir]
 :_pF:~APUT [color] [thing] [param] [dir] PLAYER
 
-This will put a given object somewhere onscreen. The target
-location can be given in one of three ways:
+This will put a given object somewhere onscreen. If anything
+else is in that spot and layer, it will be replaced with this
+object. (The exception is if the player is in the target
+location. In this case, nothing happens.) The target location
+can be given in one of three ways:
 
-1. State the target {x,y} coordinates.
+1. State the target x,y coordinates.
 2. State the direction, relative to the Robot.
 3. State the direction, relative to the player.
 
@@ -5527,9 +5647,10 @@ subdirectory with the syntax of ""dir"\"file"" or
 ""dir"/"file"" (without the inner quotes). The biggest
 difference between MOD and SAM commands is that for a file
 loaded with MOD one can use related commands like VOLUME and
-MOD ORDER; the music loops as well. NOTE: placing * at the end
-of the filename will set the current mod to the given filename,
-but institute MOD "*" (see below) for subsequent board visits.
+MOD ORDER; the music loops as well.
+NOTE: placing * at the end of the filename will set the current
+mod to the given filename, but institute MOD "*" (see below) for
+subsequent board visits.
 
 :_m8:~AMOD "*"
 
@@ -5549,7 +5670,7 @@ there, 2.mod will continue playing, and 1.mod will not start.
 Plays the given SAM/WAV/OGG/module file at a given frequency.
 These files also can be loaded from a subdirectory with the
 syntax of ""dir"\"file"" or ""dir"/"file"" (without the inner
-quotes).0 plays the file at natural frequency. Music loaded
+quotes). 0 plays the file at natural frequency. Music loaded
 with the SAM command will not loop.
 
 >#SOUNDEFX.HLP:1st:Sound and Music
@@ -5577,9 +5698,11 @@ counter, respectively.
 :_m9:~AMODULO "counter" #
 
 Multiplies, divides, or performs a modulo on the value of the
-given counter by the given number (rounding down). To modulo is
-to set to the remainder when dividing. Example: 7 modulo 3 is
-equal to 1, since 7 divided by 3 gives a remainder of 1.
+given counter by the given number (rounding down), and then sets
+the counter to the result. 
+To modulo is to set to the remainder when dividing. Example: 7
+modulo 3 is equal to 1, since 7 divided by 3 gives a remainder
+of 1.
 
 NOTE: The modulo command may output different numbers compared
 to the modulo expression function; they may act differently
@@ -5623,7 +5746,7 @@ neither the current palette nor current intensities.
 
 :_g8:~AGOTOXY # #
 
-The Robot will go to the given {x,y} coordinates on the current
+The Robot will go to the given x,y coordinates on the current
 board, destroying anything there that cannot go on the under
 layer. If the player is at those coordinates, the Robot ignores
 the command.
@@ -5651,7 +5774,7 @@ unintended effects.
 :_mA:~AMOVE PLAYER [dir]
 :_mB:~AMOVE PLAYER [dir] "label"
 
-The player attempts to move in the given direction. If the
+This attempts to move the player in the given direction. If the
 player is blocked, and the command contains a label, the Robot
 will jump to that label.
 
@@ -5676,8 +5799,8 @@ Changes the color of the player.
 :_pG:~APUT PLAYER # #
 :_pH:~APUT PLAYER [dir]
 
-The player will go to the given {x,y} coordinates or in the
-given direction immediately relative to the Robot. If this is
+The player will go to the given x,y coordinates or in the given
+direction immediately relative to the Robot. If this is
 impossible, the command is ignored.
 
 >#COMMANDS.HLP:dir:Directions
@@ -5687,7 +5810,7 @@ impossible, the command is ignored.
 Places an MZM of the given filename. These files also can be
 loaded from a subdirectory with the syntax of ""@@dir"\"file""
 or ""@@dir"/"file"" (without the inner quotes). The @@ is
-REQUIRED. The numbers mark the destination {x,y} coordinates of
+REQUIRED. The numbers mark the destination x,y coordinates of
 the MZM's upper-left corner; the parameter determines the
 placement of the MZM (00 = board, 01 = overlay, 02 = vlayer).
 See the MZM section for further details.
@@ -5700,7 +5823,7 @@ Puts a sprite on the board. The param number is the number of
 the sprite in hex (auto-converted from decimal). If the color
 is c?? then the sprite is drawn with its normal colors as seen
 on the board; otherwise, it's painted with the given colors.
-.# # marks the {x,y} coordinates of the sprite's upper-left
+.# # marks the x,y coordinates of the sprite's upper-left
 corner. See the Spites section for further details.
 
 >#SPRITES.HLP:spr:Sprites
@@ -5716,7 +5839,8 @@ to "thud" and "edge" are exceptions.)
 :_v3:~AVOLUME #
 
 Changes the volume of the MOD playing, from 0 (silent) to 255.
-This change is specific to the current board.
+This change is specific to the current board. The default when
+music is loaded is 255.
 
 :_cM:~ACOPYROBOT "Robot"
 :_cN:~ACOPYROBOT # #
@@ -5730,12 +5854,14 @@ Robot will be in an ended state as well. The Robot to copy can
 be stated in one of three ways:
 
 1. State the target Robot's name.
-2. State the {x,y} coordinates of target Robot.
+2. State the x,y coordinates of target Robot.
 3. State the direction of target Robot.
 
-NOTE: Exact means just that - EXACT. If one requires an group
-of objects differing only in name, COPYROBOT is unsuitable
-for this purpose because even the Robot name is copied.
+NOTE: Exact means just that, EXACT, down to the values of
+local counters. The only thing that will differ will be the
+robot_id. If one requires an group of objects differing only in
+name, COPYROBOT is unsuitable for this purpose because even the
+Robot name is copied.
 
 >#COMMANDS.HLP:dir:Directions
 
@@ -5744,7 +5870,7 @@ for this purpose because even the Robot name is copied.
 
 The current Robot creates an exact duplicate of itself 
 (including local counter values!) and places it at the noted
-{x,y} coordinates or relative direction. That Robot then begins
+x,y coordinates or relative direction. That Robot then begins
 its program at the first command.
 
 >#COMMANDS.HLP:dir:Directions
@@ -5821,7 +5947,7 @@ another section.
 
 :_i3:~AIF # # "label"
 
-Jumps to the given label if the current Robot is at the {x,y}
+Jumps to the given label if the current Robot is at the x,y
 coordinates given.
 
 :_i4:~AIF [dir] PLAYER [color] [thing] [param] "label"
@@ -5836,7 +5962,7 @@ direction relative to the player.
 :_i6:~AIF [color] [thing] [param] [dir] "label"
 :_iA:~AIF NOT [color] [thing] [param] [dir] "label"
 
-Jumps to a label if a given thing is at the given {x,y}
+Jumps to a label if a given thing is at the given x,y
 coordinates or to the immediate given direction of the current
 Robot. The third form jumps if the thing is NOT in the 
 immediate given direction.
@@ -5852,16 +5978,16 @@ vertically or horizontally with the named Robot.
 :_i8:~AIF ANY [color] [thing] [param] "label"
 :_i0:~AIF NO [color] [thing] [param] "label"
 
-If there are ANY of a given thing on the current board, jumps
-to the given label. The second form triggers on the absence of
-the given thing.
+If there are ANY of a given thing with the given color and
+parameter on the current board, jumps to the given label. The
+second form triggers on the absence of the given thing.
 
 >#COMMANDS.HLP:col:Colors
 
 :_iC:~AIF PLAYER # # "label"
 
-If the player is at the given {x,y} coordinates, jump to the
-given label.
+If the player is at the given x,y coordinates, jump to the given
+label.
 
 :_g2:~AGIVEKEY [color]
 :_g3:~AGIVEKEY [color] "label"
@@ -5946,10 +6072,12 @@ SHOT label lead to an explosion.
 
 RESTORE will scan the Robotic program from the bottom up,
 changing a given number of the stated ZAPPED labels back to a
-normal label. Both ZAP and RESTORE can have a number larger
-than the number of instances of the stated label. The final
-command, |, is a pre-ZAPPED label, allowing you to have labels
-in your Robotic programs that are already ZAPPED and inactive.
+normal label. Essentially, this means that the most recently
+ZAPPED labels are restored first. Both ZAP and RESTORE can have
+a number larger than the number of instances of the stated
+label. The final command, |, is a pre-ZAPPED label, allowing you
+to have labels in your Robotic programs that are already ZAPPED
+and inactive.
 
 :pre:~AREL COUNTERS
 :_r2:~AREL PLAYER
@@ -5957,46 +6085,52 @@ in your Robotic programs that are already ZAPPED and inactive.
 
 These are special types of commands, called PREFIXES. Prefixes
 don't do a thing by themselves, but when placed before another
-command that uses {x,y} coordinates, they change the origin of
-the {x,y} coordinate system for that ONE following command. REL
-COUNTERS moves the origin to the {x,y} location stated in the
+command that uses x,y coordinates, they change the origin of the
+x,y coordinate system for that ONE following command. REL
+COUNTERS moves the origin to the x,y location stated in the
 counters XPOS and YPOS. REL PLAYER moves the origin to the
-{x,y} of the player. REL SELF moves the origin to the {x,y} of
-the current Robot.
+x,y of the player. REL SELF moves the origin to the x,y of the
+current Robot.
 
-The movement of the origin changes the {0,0} coordinates from
+The movement of the origin changes the (0,0) coordinates from
 the upper left of the board to somewhere else, effectively
-adding that {x,y} position to any coordinates entered. For 
-example, if the Robot is at the {5,5} position and uses REL
-SELF on the coordinates {2,2}, it will effectively act on
-coordinates {7,7}. If the player is at the {7,2} position and a
-Robot uses REL PLAYER on coordinates {-3, 6}, the Robot will
-effectively act on coordinates {4,8}.
+adding that x,y position to any coordinates entered. For 
+example, if the Robot is at the (5,5) position and uses REL
+SELF on the coordinates (2,2), it will effectively act on
+coordinates (7,7). If the player is at the (7,2) position and a
+Robot uses REL PLAYER on coordinates (-3,6), the Robot will
+effectively act on coordinates (4,8).
 
 Let's look at some examples.
 
 ~EPUT c0E GEM p?? 5 5
 
-This places a gem at the {x,y} coordinates {5,5}.
+This places a gem at the x,y coordinates (5,5).
 
 ~EREL PLAYER
 ~EPUT c0E GEM p?? 5 5
 
 This places a gem 5 spaces to the right and 5 spaces below
-where the player currently is.
+where the player currently is, or at the board edge if it is
+under 5 spaces to the right/below the player.
 
 ~EREL SELF
 ~EPUT c0E GEM p?? -2 -3
 
 This places a gem 2 spaces to the left and 3 spaces above
-where this Robot currently is.
+where this Robot currently is, or at the board edge if it is
+under 2 spaces to the left or 3 spaces above the Robot.
 
 ~EREL COUNTERS
 ~EPUT c0E GEM p?? 1 -4
 
-This places a gem at the coordinates {XPOS+1,YPOS-4}.
+This places a gem at the coordinates (XPOS+1,YPOS-4), or on a
+board edge if either of these coordinates would extend past the
+board. XPOS and YPOS are counters with amounts defined by the
+user before using this command.
 
-Prefixes only have an effect on the very next command.
+Prefixes only have an effect on the very next command. This
+includes comments.
 
 Prefixes also affect two other things. The built in counters
 THISX and THISY will be offset by a prefix, and the command
@@ -6012,23 +6146,19 @@ these for details.
 :_r9:~AREL SELF LAST
 
 These prefixes are similar to the above prefixes, but they only
-affect the first or last {x,y} coordinates in the next command.
-For example, COPY accepts two pairs of coordinates. If you
-precede it with the following:
+affect the first or last x,y pair of coordinates in the next
+command. For example, COPY accepts two pairs of coordinates. If
+you precede it with the following:
 
 REL PLAYER FIRST
 REL SELF LAST
 
-Then the x-coordinate will be relative to the player, and the
-y-coordinate will be relative to the Robot. There is one other
-difference with these commands - REL COUNTERS FIRST works off
-of the counters FIRSTXPOS and FIRSTYPOS, and  REL COUNTERS LAST
-works off of the counters LASTXPOS and LASTYPOS.
-
-NOTE: Using REL COUNTERS on COPY commands, instead of its 
-first/last versions, will still force FIRSTXPOS/FIRSTYPOS and
-LASTXPOS/LASTYPOS to be used, instead of basing both coordinate
-pairs off of XPOS and YPOS.
+Then the coordinates of the object being copied will be relative
+to the player, and the destination coordinates will be relative
+to the Robot. There is one other difference with these commands
+- REL COUNTERS FIRST works off of the counters FIRSTXPOS and
+FIRSTYPOS, and REL COUNTERS LAST works off of the counters
+LASTXPOS and LASTYPOS.
 
 :_j1:~AJUMP MOD ORDER #
 
@@ -6054,7 +6184,8 @@ BENEATH to place the bomb underneath the Robot.
 :_l3:~ALAZERWALL [dir] #
 
 The Robot shoots a lazer in the given direction, and the lazer
-has the color of the Robot and the duration given.
+has the color of the Robot and the duration given. The number of
+cycles the lazer is active is duration x 2.
 
 >#COMMANDS.HLP:dir:Directions
 
@@ -6063,7 +6194,7 @@ has the color of the Robot and the duration given.
 :_sW:~ASWITCH [dir] [dir]
 
 Copies the thing at one location to another, with the location
-stated through {x,y} coordinates or directions relative to the
+stated through x,y coordinates or directions relative to the
 current Robot. The third command will swap the things in the
 two directions.
 
@@ -6078,7 +6209,8 @@ id, however; use COPY rN.thisx and rN.thisy as the first pair
 of coordinates.
 
 Using COPY # # # # on a Robot will no longer cause the Robot
-copy to start where the parent left off.
+copy to start where the parent left off, and will have new
+Robots start at the first line.
 
 >#COUNTERS.HLP:rnc:Rn.<counter>
 >#BADPRACT.HLP:bad:Robotic Usages That Should be Avoided
@@ -6106,12 +6238,12 @@ COPY OVERLAY BLOCK # # # # "+#" "+#"
 :_cX:COPY OVERLAY BLOCK # # # # "#x" "#y"
 
 These commands copy from the board or overlay (respectively) to
-the vlayer. The first two numbers are the {x,y} coordinates of
-the upper-left corner of the block to be copied; the next two
+the vlayer. The first two numbers are the x,y coordinates of the
+upper-left corner of the block to be copied; the next two
 numbers are the respective width and height of the block; the
-"#x" and "#y" are the {x,y} coordinates of the destination
-block's upper-left corner. The pound sign in "#x" and "#y" MUST
-be included.
+"#x" and "#y" are the x,y coordinates of the destination block's
+upper-left corner. The pound sign in "#x" and "#y" MUST be
+included.
 
 :_cY:COPY BLOCK "#x" "#y" # # # #
 :_cZ:COPY OVERLAY BLOCK "#x" "#y" # # # #
@@ -6125,10 +6257,10 @@ overlay (respectively).
 :_cAA:COPY (OVERLAY) BLOCK "#x1" "#y1" # # "#x2" "#y2"
 
 This command copies a block from the vlayer and copies it onto
-a different spot on the vlayer. "#x1" and "#y1" are the {x,y}
+a different spot on the vlayer. "#x1" and "#y1" are the x,y
 coordinates of the upper-left corner of the copied block; the
 next two numbers are the respective width and height of the
-copied area; "#x2" and "#y2" are the {x,y} coordinates of the
+copied area; "#x2" and "#y2" are the x,y coordinates of the
 destination block's upper-left corner. The pound sign in #x1",
 "#y1", "#x2" and "#y2" MUST be included.
 
@@ -6138,8 +6270,8 @@ destination block's upper-left corner. The pound sign in #x1",
 :_cR:~ACOPY OVERLAY BLOCK # # # # "@@filename" #
 
 These commands copy from the board or overlay (respectively)
-to an MZM. The first two numbers are the {x,y} coordinates of
-the block's upper-left corner; # # is the respective width and
+to an MZM. The first two numbers are the x,y coordinates of the
+block's upper-left corner; # # is the respective width and
 height of the block; filename is the name of the file - the @@
 is required. Finally, the last number determines the MZM type.
 1 saves as layer; 0 saves as board. 0 is integral for copying
@@ -6164,13 +6296,13 @@ copy from the vlayer to an MZM instead.
 
 These commands copy information from the board, overlay, or
 vlayer (respectively) to a given string. The first two numbers
-are the {x,y} coordinates of the upper-left corner of the
-block; the third and fourth are its respective width and
-height; the last is the terminating character's char value
-(i.e. a number from 0-255). The operation will end before all
-characters in the given range are read if either the parameter
-matching the terminating character, or a parameter of p00, is
-found. For the vlayer command, the pound sign is REQUIRED.
+are the x,y coordinates of the upper-left corner of the block;
+the third and fourth are its respective width and height; the
+last is the terminating character's char value (i.e. a number
+from 0-255). The operation will end before all characters in the
+given range are read if either the parameter matching the
+terminating character, or a parameter of p00, is found. For the
+vlayer command, the pound sign is REQUIRED.
 
 >#STRINGS.HLP:1st:Strings, Special Formatting, and Their Place in Robotic
 >#TOVERLAY.HLP:081:Editing and Using the Overlay
@@ -6179,7 +6311,7 @@ found. For the vlayer command, the pound sign is REQUIRED.
 :_s3:~ASAVE PLAYER POSITION #
 
 Saves the player's coordinates and board in one of eight
-internal slots. If no number is given, slot one is used.
+internal slots (1-8). If no number is given, slot one is used.
 
 :_rB:~ARESTORE PLAYER POSITION
 :_rC:~ARESTORE PLAYER POSITION #
@@ -6214,7 +6346,9 @@ The message row is moved to the stated row, from 0 to 24.
 
 :_sN:~ASET MESG COLUMN #
 
-The message is displayed at the given column, from 0 to 79.
+The message is displayed starting from the given column, from 0
+to 79. (The actual message will start at this location, not the
+message edge.)
 
 :_c1:~ACENTER MESG
 
@@ -6228,7 +6362,7 @@ Loads in the specified character set or palette, exported using
 Alt+X from the world editor. The new character set or palette
 is permanent and affects the entire world until a new one is
 loaded. These files also can be loaded from a subdirectory with
-the syntax of ""dir"\"file"" or  ""dir"/"file"" (without the
+the syntax of ""dir"\"file"" or ""dir"/"file"" (without the
 inner quotes).
 
 Character sets can be loaded to the middle of the current
@@ -6236,7 +6370,7 @@ charset by prefixing the "file" name with +offset, where offset
 is a hexadecimal number, or @@offset where offset is a decimal
 number. Up to 14 additional charsets can be loaded for use with
 unbound sprites. To set and access these, set the decimal
-offset number to (256*extra palette number); hexadecimal
+offset number to (256*extra charset number); hexadecimal
 offsetting cannot access additional charsets. Naturally,
 offsets within these charsets can be set as well by adding the
 desired offset value to these numbers.
@@ -6249,7 +6383,7 @@ hard-coded filenames.
 
 :_t5:~ATELEPORT PLAYER "string" # #
 
-Teleports the player to the given board at the stated {x,y}
+Teleports the player to the given board at the stated x,y
 coordinates.
 
 >#STRINGS.HLP:1st:Strings, Special Formatting, and Their Place in Robotic
@@ -6266,7 +6400,8 @@ care about the character, only the color.
 
 :_m0:~AMOVE ALL [color] [thing] [param] [dir]
 
-All of the stated thing are moved in the given direction.
+All instances of the stated thing with the color and parameter
+given are moved in the given direction.
 
 >#COMMANDS.HLP:col:Colors
 >#COMMANDS.HLP:dir:Directions
@@ -6275,9 +6410,13 @@ All of the stated thing are moved in the given direction.
 
 If there is a gate or door in the given direction, it will
 be opened. If the door is going to open towards the Robot, the
-Robot will be pushed out of the way if necessary. It is
-suggested to wait a couple cycles before then continuing on
-through the door. (Gates aren't a problem.)
+Robot will be pushed out of the way if necessary and possible.
+It is suggested to wait a couple cycles before then continuing
+on through the door. (Gates aren't a problem.)
+If the gate or door is locked, it will be treated as if the
+player attempted to open it. This means that whether the door is
+opened or not depends on the player's held keys, and if the
+Robot unlocks the door, the player will lose the relevant key.
 
 >#COMMANDS.HLP:dir:Directions
 
@@ -6316,7 +6455,8 @@ the inner quotes).
 :_m6:~AMOD FADE OUT
 
 Fades out the current module/OGG/WAV music file, from the
-current volume to 0 volume.
+current volume to 0 volume. Although the mod will be inaudible,
+it will still be the current music file after the fade out.
 
 >#SOUNDEFX.HLP:1st:Sound and Music
 
@@ -6433,11 +6573,11 @@ direction.
 
 :_iP:~AINPUT STRING "string"
 
-Asks the player to input a string, using the given string as
-a prompt, or question. The inputted string is stored in memory.
-This string can be displayed within box messages or on the
-message row by using &INPUT& within a message. Inputted strings
-are local to the current board.
+Asks the player to input a string, presenting the given string
+as a prompt. The inputted string is stored in memory. This
+string can be displayed within box messages or on the message
+row by using &INPUT& within a message. Inputted strings are
+local to the current board.
 
 >#STRINGS.HLP:1st:Strings, Special Formatting, and Their Place in Robotic
 
@@ -6461,7 +6601,8 @@ _ matches any letter from A-Z or a-z
 
 :_i9:~AIF FIRST STRING "string" "label"
 
-If the first word in the inputted string matches the given
+If the first word in the inputted string (i.e. everything up
+to the first space (char 32) or end of input) matches the given
 string, jump to the given label.
 
 :_cB:~ACLIP INPUT
@@ -6480,7 +6621,7 @@ given string.
 :_dA:~ADEC "$string" #
 
 This command clips the given string by the amount of characters
-given. Decreasing negative numbers will not add characters to
+given. Decreasing by negative numbers will not add characters to
 the string.
 
 :_iO:~AIF "$string" (equality) # "label"
@@ -6496,14 +6637,15 @@ another string respectively.
 :_iG:~AIF c?? Sprite_Colliding pNN x y "label"
 
 This command determines whether the sprite numbered NN is
-colliding at the location [x, y]; if it is, the program goes to
+colliding at the location (x,y); if it is, the program goes to
 the given label.
 
 :_iH:~AIF c?? Sprite pNN x y "label"
 
 This command checks if the sprite numbered NN is currently at
-the location [x, y]; if it is, the program goes to the given
-label.
+the location (x,y); if it is, the program goes to the given
+label. For multi-character sprites, the label is jumped to if
+any part of the sprite is at the given coordinates.
 
 :_cF:~ACOLOR INTENSITY # PERCENT
 :_cG:~ACOLOR INTENSITY # # PERCENT
@@ -6528,8 +6670,8 @@ end for display clarity. This is enabled by default.
 :_e8:~AENABLE SAVING
 :_e9:~AENABLE SENSORONLY SAVING
 
-Disables or enables saving on this board, or enables saving on
-Sensors only.
+Disables or enables manual saving on this board, or enables
+manual saving on sensors only.
 
 >#SENSORSW.HLP:094:Sensors
 
@@ -6579,7 +6721,7 @@ BASE    = The overall box and text color
 CORNER  = The color of the corners of the box, and of the
           options in the option box at the bottom
 POINTER = The color of the pointers on the left and right
-TITLE   = The color of the Scroll/box title
+TITLE   = The color of the scroll/box title
 
 >#COMMANDS.HLP:col:Colors
 
@@ -6603,17 +6745,23 @@ editor.
 
 :_sU:~ASTATUS COUNTER # "counter"
 
-The status screen counter stated is changed to the given
-counter. The numbers of the counters range from 1 to 6.
+The status screen counter with the stated position # is changed
+to the given counter. Valid positions for status counters range
+from 1 (top slot) to 6 (bottom slot).
+Status counters have a name limit of 14 characters; if the given
+counter has a name over 14 characters long, this command will be
+ignored.
 
 >#COUNTERS.HLP:1st:Counters, Built-in Counters and Local Counters
 
 :_sV:~ASWAP WORLD "file"
 
 Transfers play to the first board in the stated world file.
-All counters, items, keys, etc. are retained from the current
-world. The target file can be the same world that is currently
-running.
+All counters, items, keys, strings, etc. are retained from the
+current world, and the target world starts fresh. The target
+file can be the same world that is currently running; this is a
+simple way to "reset" the world while keeping progress in the
+form of items and counters.
 
 >#STRINGS.HLP:1st:Strings, Special Formatting, and Their Place in Robotic
 
@@ -6649,10 +6797,12 @@ There are three different types of bullets in MegaZeux: Player,
 Enemy, and Neutral. The player shoots Player bullets, enemies
 shoot Enemy bullets, and ricocheted bullets become Neutral
 bullets. A Robot can shoot any type of bullet, according to its
-BULLETTYPE counter, but it defaults to Neutral bullets. All
-Enemy bullets, even those shot from Robots, become Neutral
-bullets when the option "Enemies' bullets can hurt enemies" is
-set.
+BULLETTYPE counter, but it defaults to Neutral bullets.
+ 
+All fired Enemy bullets, even those shot from Robots, become
+Neutral bullets when the option "Enemies' bullets can hurt
+enemies" is set. Only pre-placed Enemy bullets will remain Enemy
+bullets in this case.
 
 Player bullets can only hurt enemies. Enemy bullets can only
 hurt the player. Neutral bullets can hurt either. Robots go to
@@ -6691,7 +6841,8 @@ type into the given character; same with text.
 and assume a character based on their parameter (e.g. p01
 objects will use character 1). This can allow built-ins of the
 same type that display different characters in-game at the same
-time.
+time. Some built-ins may show interesting effects if set to
+this, such as gaining animation frames.
 ~A*~FChanging the CHAR IDs of objects with animations or four
 directional characters will fix ALL animations/chars of that
 object type to the given character.
@@ -6965,14 +7116,16 @@ section.
 ~ETOUCH [#]
 
 This is sent when the player touches the Robot, that is, when
-the player stands next to it and presses an arrow key towards
-it.
+the player is next to it and tries moving into it. If the player
+is locked in that direction, this label is not sent.
 
 ~ETHUD [#]
 
-This is sent when the Robot is walking and it runs into a wall.
-This label is not sent when the wall is hit during the ~EGO [dir]~F
-~E#~F or the ~E/ "string"~F commands. THUD ignores LOCKSELF.
+This is sent when the Robot is walking and it runs into a
+non-pushable obstacle. This label is not sent when the obstacle
+is hit during a ~EGO [dir] #~F or the ~E/ "string"~F command. THUD
+ignores LOCKSELF. This label will be constantly triggered if the
+condition persists.
 
 >#COMMANDR.HLP:_w5:WALK [dir]
 
@@ -6982,7 +7135,8 @@ This is sent when the Robot is walking and it runs into the
 edge of the board. If EDGE is not found, the Robot is sent to
 THUD. This label is not sent when the edge of the board is hit
 during the ~EGO [dir] #~F or the ~E/ "string"~F commands. EDGE
-ignores LOCKSELF.
+ignores LOCKSELF. This label will be constantly triggered if the
+condition persists.
 
 >#COMMANDR.HLP:_w5:WALK [dir]
 
@@ -6993,17 +7147,17 @@ This is sent when the Robot is hit with an explosion.
 ~EKEY? [#]
 
 This is sent when the player presses the given key. ? should be
-replaced with the key to be scanned for. Characters a to z, 0
-to 9, and space (for the spacebar) work as expected. Shifted
-characters will NOT work, and will actually scan as their
-non-shifted counterparts. Any other character that can be
-outputted directly, such as ";" or "*" or "=", will work. Other
-characters can be entered by pressing F3 and selecting them
-from the grid, but they are usually not guaranteed to work.
-Some special-case characters that can work with KEY? are
-character 8 (BackSpace), character 9 (Tab), and character 13
-(Enter, though there's a better counter just for this mentioned
-in the very next entry).
+replaced with the key to be scanned for. Characters a to z and 0
+to 9 work as expected. Shifted alphanumeric characters will NOT
+work, and will actually scan as their non-shifted counterparts.
+Any other character that can be outputted directly, such as ";"
+or "*" or "=", will work, and "key " will detect the space bar.
+Other characters can be entered by pressing F3 and selecting
+them from the grid, but they are usually not guaranteed to work.
+Special-case characters that can work with KEY? are character 8
+(BackSpace), character 9 (Tab), character 27 (Esc), character
+127 (Delete) and character 13 (Enter, though there's a better
+label just for this mentioned in the very next entry).
 
 There is another way to scan for key presses - using counters.
 They are called KEY_PRESSED, KEY, and KEYCODE, and are detailed
@@ -7116,8 +7270,7 @@ even "100". A counter can hold a value from -2147483648 to
 2147483647, in most cases. A counter is "active" when it has a
 value other than 0. There can be a practically unlimited amount
 of active counters at any one time, in addition to the built-in
-counters (in reality it tops off around four billion). Counters
-retain values between different boards.
+counters. Counters retain values between different boards.
 
 Local counters, on the other hand, only hold their values for
 one Robot. These are useful because multiple Robots can set
@@ -7220,8 +7373,8 @@ The current X or Y coordinate of the Robot. Affected by
 prefixes - If a command that uses THISX and THISY is prefaced
 with a REL PLAYER command, THISX and THISY will be generated
 based on the player's current position. For example, if the
-player is at [2,2] and the Robot is at [5,5], THISX and THISY
-will be 3. If the player is at [8,8], THISX and THISY will be
+player is at (2,2) and the Robot is at (5,5), THISX and THISY
+will be 3. If the player is at (8,8), THISX and THISY will be
 -3. If a command that uses THISX and THISY is prefaced with
 a REL COUNTERS command, THISX and THISY will be generated
 based on XPOS and YPOS. Basically, THISX and THISY will be
@@ -7311,7 +7464,10 @@ have the same effect as changing "local32"). LOCAL is the same
 as LOCAL1.
 
 ~BGOOP_WALK (local)
-Controls whether the Robot can walk on goop or not.
+
+Controls whether the Robot can walk on goop or not. A value of 0
+prevents walking on goop; a non-zero value allows it. This
+counter has an effective range of 0 to 255.
 
 $Board Counters
 :brd:
@@ -7336,11 +7492,16 @@ The current board's width and height, respectively.
 ~BTIME (board)
 
 The current timer value, between 0 and the time limit for the
-current board.
+current board. If there is no time limit set, setting this
+counter will cause the timer to tick down but turn off after it
+runs out.
 
 ~BTIMERESET (board)
 
 The time limit for the current board. 0 for no time limit.
+NOTE: This timer was erroneously called "TIMERSET" in some
+versions. MZX will NOT use TIMERSET as a synonym for this
+counter in current versions.
 
 ~BSCROLLEDX (board, read-only)
 ~BSCROLLEDY (board, read-only)
@@ -7353,16 +7514,16 @@ respectively.
 ~BBOARD_COLOR (read-only, board)
 ~BBOARD_CHAR (read-only, board)
 
-Set BOARD_X and BOARD_Y to the {x,y} coordinates of a cell on
-the current board, and BOARD_COLOR and BOARD_CHAR will
-automatically hold the color and character values for that
-cell, respectively.
+Set BOARD_X and BOARD_Y to the x,y coordinates of a cell on the
+current board, and BOARD_COLOR and BOARD_CHAR will automatically
+hold the color and character values for that cell, respectively.
 
-One thing to note is that BOARD_COLOR will not take
-transparency into account. For example, if a white-on-black
-Robot walks onto a yellow-on-blue floor tile, the Robot appears
-as white-on-blue on the screen, but this counter will still
-report it as white-on-black instead of the displayed colors.
+One thing to note is that BOARD_COLOR will not take background
+color 0's transparency into account. For example, assuming
+default colors, if a white-on-black Robot walks onto a
+yellow-on-blue floor tile, the Robot appears as white-on-blue on
+the screen, but this counter will still report it as
+white-on-black instead of the displayed colors.
 
 ~BBCHx,y (read-only, board)
 
@@ -7464,7 +7625,8 @@ Gives the absolute value of the number n.
 
 ~BSQRTn
 
-Gives the integer approximation of the square root of n.
+Gives the integer approximation of the square root of n. Results
+are truncated, not rounded.
 
 ~BMINx,y
 
@@ -7485,7 +7647,6 @@ Multiplies values output by the normal trigonometric functions
 
 Divides the number given to the inverse trigonometric functions
 (asin, acos, atan) by the given number.
-
 
 ~BC_DIVISIONS
 
@@ -7549,7 +7710,7 @@ compatibility reasons.
 
 The current reading or writing position of the accessed file.
 0 is the beginning position; when no file is loaded, the
-relevant counter is -1. If set to -1, sets the position to the
+relevant counter is -1. If set to -1, the position is set to the
 end of the file.
 
 ~BFREAD_DELIMITER
@@ -7668,9 +7829,10 @@ If either is set to 1, these draw the given sprite n over the
 overlay as opposed to underneath. Note that this has different
 behavior depending on whether unbound sprites are present. If
 there are any unbound sprites active, all overlaid sprites will
-be drawn above all non-overlaid sprites. If unbound sprites are
-not in use, overlaid sprites will be drawn above the overlay,
-but will otherwise respect the standard sprite draw order.
+be drawn above all non-overlaid sprites (as well as over the
+overlay). If unbound sprites are not in use, overlaid sprites
+will be drawn above the overlay, but will otherwise respect the
+standard sprite draw order.
 
 ~BSPRn_REFX
 ~BSPRn_REFY
@@ -7692,7 +7854,7 @@ If set to 1, makes given sprite n act static (like a static
 overlay, a static sprite always stays in a given position on
 the screen); if this is 0, the sprite scrolls with the board.
 SPRn_STATIC takes in SCROLLEDX and SCROLLEDY as collision
-reference points, as opposed to the normal {x,y} coordinates.
+reference points, as opposed to the normal x,y coordinates.
 
 ~BSPRn_SWAP (write-only)
 
@@ -7731,13 +7893,13 @@ Sprites section in the Sprites help for more information.
 ~BSPRn_TCOL
 
 Sets which color provides transparency for a given unbound
-sprite n.
+sprite n. Setting to -1 disables transparency for that sprite.
 
 ~BSPRn_OFFSET
 
 Internally alters any number that refers to a character for a
 given sprite n. In the case of unbound sprites, this number will
-often be a multiple of 256 in order to access a hidden charset,
+often be a multiple of 256 in order to access an extra charset,
 but offset values within char sets may also be used.
 
 >#SPRITES.HLP:spr:Sprites
@@ -7764,7 +7926,7 @@ string" command.
 
 ~BSET "$string" to "MOD_NAME"
 
-Sets the given string to the name of the currently playing
+Sets the given string to the filename of the currently playing
 module.
 
 ~BSET "$string" to "ROBOT_NAME"
@@ -7785,9 +7947,10 @@ the terminator.
 ~BSET "$string" to "FWRITE"
 ~BSET "$string" to "FWRITEn"
 
-Places the contents of the given string in the currently open
-file. FWRITE places the entire string, while FWRITEn only
-places the first n characters. If n goes over the string's
+Places the contents of the given string into the currently open
+file. FWRITE places the entire string, ending it with the
+terminator character (*, or char 42, by default), while FWRITEn
+only places the first n characters. If n goes over the string's
 length, the entire string (and nothing else like whitespace or
 garbage characters) will be placed.
 
@@ -7867,12 +8030,12 @@ worthless in SMZX modes.
 ~BCHAR
 ~BBYTE
 
-Set CHAR to a character (0-225) and BYTE to one of the fourteen
+Set CHAR to a character (0-255) and BYTE to one of the fourteen
 bytes within the char (0-13). You can then read or write that
-byte using the CHAR_BYTE counter. Byte values range from 0-255,
-and meaning of each byte setting changes between normal mode
-and SMZX modes. Normal MZX graphics mode sets bytes in binary
-(base 2); SMZX modes use quaternary (base 4).
+byte using the CHAR_BYTE counter. Char_byte values range from
+0-255, and the meaning of each char_byte setting changes between
+normal mode and SMZX modes. Normal MZX graphics mode sets bytes
+in binary (base 2); SMZX modes use quaternary (base 4).
 
 It helps to write the number in binary/quaternary first, then
 convert to decimal. Writing the numbers this way helps
@@ -7966,30 +8129,37 @@ $Defaults Counters
 
 Determines whether the built-in status window is loaded when
 the enter key is pressed. 1 (or any non-zero value) is yes, 0
-is no. The default is 1 (yes).
+is no. The default is 1 (yes). If on the title screen, this
+counter is ignored unless in standalone mode.
 
 ~BESCAPE_MENU
 Determines whether the built-in game exit dialog is loaded when
 the escape key is pressed. 1 (or any non-zero value) is yes, 0
-is no. The default is 1 (yes).
+is no. The default is 1 (yes). If on the title screen, this
+counter is ignored unless in standalone mode.
 
 ~BHELP_MENU
 
 Determines whether the built-in help window is loaded when the
 F1 key is pressed. 1 (or any non-zero value) is yes, 0 is no.
-The default is 1 (yes).
+The default is 1 (yes). The help menu is still accessible from
+other default dialogs (such as the file menus) unless in
+standalone mode. If on the title screen, this counter is ignored
+unless in standalone mode.
 
 ~BF2_MENU
 
 Determines whether the built-in MegaZeux options window is
 loaded when the F2 key is pressed. 1 (or any non-zero value) is
-yes, 0 is no. The default is 1 (yes).
+yes, 0 is no. The default is 1 (yes). If on the title screen,
+this counter is ignored unless in standalone mode.
 
 ~BLOAD_MENU
 
 Determines whether the built-in MegaZeux loadgame window is
 loaded when the F4 key is pressed. 1 (or any non-zero value) is
-yes, 0 is no. The default is 1 (yes).
+yes, 0 is no. The default is 1 (yes). If on the title screen,
+this counter is ignored unless in standalone mode.
 
 ~BBIMESG (write-only)
 
@@ -8044,7 +8214,7 @@ processor-bound and executes as many cycles per second as
 possible. Other speeds execute cycles according to this
 formula:
 
-~E62.5 / (MZX_SPEED - 1)
+~E62.5 / (MZX_SPEED - 1) = cycles per second
 
 Once the speed is set with this counter, the player cannot
 change the speed in the F2 menu until MZX_SPEED is set to 0.
@@ -8067,7 +8237,9 @@ COMMAND_STOP's value. By default, COMMAND_STOP holds a value of
 
 If this counter is set to a non-zero value, the current
 MegaZeux world will exit to the title screen. This counter does
-nothing on the title screen.
+nothing on the title screen unless in standalone mode, and if
+standalone mode is ran without a title screen, this counter will
+cause MegaZeux to exit entirely.
 
 ~BPLAY_GAME
 
@@ -8141,15 +8313,15 @@ instead of the current 32). Follow the link below to read more.
 ~BKEY
 ~BKEY_CODE (read-only)
 
-Tests whether any key (each referenced by a number) is
-currently being held down; for example, on a typical keyboard,
-if the spacebar is being pressed the value of key_pressed will
-be 32. This set of keycodes is the same as the ones required
-for joystick support. Results are unsigned, so checking for
-negative numbers will not work. "Autorepeat" affects
-KEY_PRESSED, so if you hold down a key you will get the value,
-then get zeros for a period, then get the values again. This is
-useful for many applications.
+KEY_PRESSED lists whether any key (each referenced by a number)
+is currently being held down; for example, on a typical
+keyboard, if the spacebar is being pressed the value of
+key_pressed will be 32. This set of keycodes is the same as the
+ones required for joystick support. Results are unsigned, so
+checking for negative numbers will not work. "Autorepeat"
+affects KEY_PRESSED, so if you hold down a key you will get the
+value, then get zeros for a period, then get the values again.
+This is useful for many applications.
 KEY acts like KEY_PRESSED, but lacks autorepeat, returns
 uppercase letter values, and retains its value until another key
 is pressed.
@@ -8220,8 +8392,8 @@ Robot's program with the current line highlighted in the
 center; and the bottom box, showing the available editing
 commands.
 
-To edit the Robot, you enter lines just as in editing Scrolls.
-Use up and down or PageUp and PageDown to Scroll between lines,
+To edit the Robot, you enter lines just as in editing scrolls.
+Use up and down or PageUp and PageDown to scroll between lines,
 and use Enter at the end of a line to insert new blank lines.
 Pressing Enter in the middle of a line will remove everything
 to the right of the cursor and place it onto a new, following
@@ -8256,21 +8428,23 @@ The following keys are active within the Robotic editor:
 >_ir:Alt+E OR Alt+End - Mark Block End
 >_jr:Alt+H - Hide Help / Borders
 >_kr:Alt+I - Import
->_lr:Alt+O - Macro Options
->_mr:Alt+S OR Alt+Home - Mark Block Top
->_nr:Alt+U - Unmark Block
->_or:Alt+V - Verify
->_pr:Alt+X - Export
->_qr:Alt+BackSpace - Delete Entire Line
->_rr:Alt+Ins OR Alt+P - Paste
->_sr:Ctrl+F - Find/Replace
->_tr:Ctrl+G - Goto Position
->_ur:Ctrl+R - Repeat Find/Replace
->_vr:Ctrl+I/D/C - Mark Line
->_wr:Ctrl+BackSpace - Delete Previous Word
->_xr:Ctrl+LeftArrow - Jump to Previous Word
->_yr:Ctrl+RightArrow - Jump to Next Word
->_zr:Esc - Exit Robotic Editor
+>_lr:Alt+M - Configure Macro
+>_mr:Alt+O - Edit Single Line Macros
+>_nr:Alt+S OR Alt+Home - Mark Block Top
+>_or:Alt+U - Unmark Block
+>_pr:Alt+V - Verify
+>_qr:Alt+X - Export
+>_rr:Alt+BackSpace - Delete Entire Line
+>_sr:Alt+Ins OR Alt+P - Paste
+>_tr:Ctrl+F - Search
+>_ur:Ctrl+H - Replace
+>_vr:Ctrl+R - Repeat Search/Replace
+>_wr:Ctrl+G - Goto Position
+>_xr:Ctrl+I/D/C - Mark Line
+>_yr:Ctrl+BackSpace - Delete Previous Word
+>_zr:Ctrl+LeftArrow - Jump to Previous Word
+>_1r:Ctrl+RightArrow - Jump to Next Word
+>_2r:Esc - Exit Robotic Editor
 
 :_ar:~EF1 - Help
 
@@ -8303,7 +8477,8 @@ pictures, for use with the Robotic CHAR EDIT command.
 
 F6 through F10 will insert short macros, customizable using
 Alt+O. If you have an extended macro set for these an input
-window for it will come up.
+window for it will come up (see Configure Macro for more
+details).
 
 :_gr:~EF12 - Take Screenshot
 
@@ -8321,7 +8496,7 @@ highlighted, the actions will take effect on the current line.
 Alt+Enter is the old and deprecated hotkey, left in to ease use
 for long-time users.
 
-:_mr:~EAlt+S OR Alt+Home - Mark Block Top
+:_nr:~EAlt+S OR Alt+Home - Mark Block Top
 :_ir:~EAlt+E OR Alt+End - Mark Block End
 
 Alt+S/E will mark the top or bottom of a block of lines. You
@@ -8340,62 +8515,91 @@ Use Alt+I to import a text file or bytecode file into the
 current Robot. The new lines will be inserted into the current
 program, starting from the current line.
 
-:_lr:~EAlt+O - Macro Options
+:lr_:~EAlt+M - Configure Macro
 
-You can change the values of the five macros here. Use ^ for
-Enter in the macros. (43 characters max in MegaZeux itself, 64
-max using the config file.)
+Alt+M will load a box where you list the name of an extended
+macro to be configured (for example, type "1" to edit macro_1).
+After choosing a macro to edit, you will be able to set the
+various variables for the macro. Select OK to place the macro,
+Cancel to go back to the editor without placing the macro, and
+Default to change all values to their defaults.
+
+:_mr:~EAlt+O - Edit Single Line Macros
+
+You can change the values of the five single-line macros here.
+Use ^ for Enter in the macros. If there is an extended macro in
+place of macros 1-5, it will override any single-line macro also
+set for that macro.
 
 >#CONFGINI.HLP:1st:The Config File
 
-:_nr:~EAlt+U - Unmark Block
+:_or:~EAlt+U - Unmark Block
 
 The current block is unmarked.
 
-:_or:~EAlt+V - Verify
+:_pr:~EAlt+V - Verify
 
 Use Alt+V to determine if there are any invalid lines in the
-robot, and if there are what their errors are.
+robot, and if there are what their errors are. Each invalid line
+can be set to I (ignore), D (delete) or C (comment), which will
+be applied if the user selects OK. Only the first 256 errors
+will be listed.
 
-:_pr:~EAlt+X - Export
+:_qr:~EAlt+X - Export
 
 Use Alt+X to export either the current block or the entire
 Robot program to a text file or bytecode file on disk. If saved
 as text, one can then edit the program outside of MegaZeux or
 use the text file in other ways.
 
-:_qr:~EAlt+BackSpace - Delete Entire Line
+:_rr:~EAlt+BackSpace - Delete Entire Line
 
 The currently selected line is blanked. The empty line itself
 will remain.
 
-:_rr:~EAlt+Ins OR Alt+P - Paste
+:_sr:~EAlt+Ins OR Alt+P - Paste
 
 Alt+Ins or Alt+P will paste in the block last copied to the
 internal clipboard. The clipboard used is the OS clipboard, and
 as such is preserved between Robots and even between worlds.
 
-:_sr:~ECtrl+F - Find/Replace
+:_tr:~ECtrl+F - Search
 
-Use Ctrl+F to activate the Find/Replace menu. In this menu, one
-can find an inputted string, replace it, or replace all
-instances of it at once. Wrap Around End will ensure every line
-of the code is checked (otherwise all code above the current
-line will be ignored) and Match Case will require the search
-string and the results match case exactly before giving results
-or replacing text.
+Use Ctrl+F to activate the Search menu. After inputting a string
+to find in the Search box and choosing options, the Robotic
+editor will search for the term starting from the current line
+and jump to the first string that matches.
+Wrap will ensure every line of the code is checked (otherwise
+all code above the current line will be ignored) and Case
+Sensitive will require the search string and the results match
+case exactly before giving results.
 
-:_tr:~ECtrl+G - Goto Position
+:+ur:~ECtrl+H - Replace
+
+Use Ctrl+H to activate the Replace menu. The Search box takes
+the text to be changed, and the Replace box takes the text that
+replaces it. Replace only changes the first seen instance of the
+searched text, with the search starting from the current line.
+Replace All changes all of them at once. Once completed, the
+Robotic editor will jump to the last line changed by a replace
+action (if any).
+Wrap will ensure every line of the code is checked (otherwise
+all code above the current line will be ignored) and Case
+Sensitive will require any string matching the search string to
+also match case before being replaced.
+
+:_vr:~ECtrl+R - Repeat Search/Replace
+
+Use Ctrl+R after a Search or Replace action to repeat the
+action.
+
+:_wr:~ECtrl+G - Goto Position
 
 Use Ctrl+G to jump to the given Robotic line/column (if too
 high of a number is given, the editor will jump to the last
 possible line/column).
 
-:_ur:~ECtrl+R - Repeat Find/Replace
-
-Use Ctrl+R after a Find or Replace action to repeat the action.
-
-:_vr:~ECtrl+I/D/C - Mark Line
+:_xr:~ECtrl+I/D/C - Mark Line
 
 These commands mark the current invalid line as to be ignored,
 deleted, or commented out upon editor exit, respectively. If
@@ -8404,30 +8608,30 @@ the line is valid Ctrl + C will turn it into a comment
 line exceed 241 characters). Note that comment-marking a
 comment will immediately strip the line.
 
-:_wr:~ECtrl+BackSpace - Delete Previous Word
+:_yr:~ECtrl+BackSpace - Delete Previous Word
 
-Use Ctrl+BackSpace to delete the last word typed in the editor.
+Use Ctrl+BackSpace to delete the word to the left of the cursor.
 
-:_xr:~ECtrl+LeftArrow - Jump to Previous Word
+:_zr:~ECtrl+LeftArrow - Jump to Previous Word
 
 Use Ctrl+LeftArrow to jump to the beginning of the previous
 word in the current line.
 
-:_yr:~ECtrl+RightArrow - Jump to Next Word
+:_1r:~ECtrl+RightArrow - Jump to Next Word
 
 Use Ctrl+RightArrow to jump to the beginning of the next word
 in the current line. If on the last word of the line, this
 command jumps to the end of the line.
 
-:_zr:~EEsc - Exit Robotic Editor
+:_2r:~EEsc - Exit Robotic Editor
 
 This key will exit the Robotic Editor, unless any lines are
 marked as invalid.
 
 The statistics line across the top of the Robot editor shows
-the current line number, the current character within the line,
-the size of the Robot program versus the maximum size this
-Robot can reach, and the Robot's X/Y position.
+the current line number, the current column within the line, the
+size of the Robot program versus the maximum size this Robot can
+reach, and the Robot's X/Y position.
 
 Use ESC to exit the Robot editor when you are done editing your
 Robot program.
@@ -8438,25 +8642,31 @@ Robot program.
 :1st: 
 $~9Robots - What They Are and How to Use Them
 
-Robots are the heart and soul of MegaZeux. Anything you could
-want to do in MegaZeux, anything you see done in a MegaZeux
-game, many things you didn't know were possible, can be done
-with MegaZeux's Robots.
+Robots are the heart and soul of MegaZeux. Nearly anything you
+could want to do in MegaZeux - anything you see done in a
+MegaZeux game, many things you didn't know were possible - can
+be done with MegaZeux's Robots.
 
 Robots are programmed in their own programming language, called
 Robotic. Robotic is a fairly simple language to learn, but
 somewhat moderate to completely master. It is somewhere along
 the lines of BASIC, although more complex. If you've ever used
 Epic Megagame's ZZT, Robotic is vastly more complex than
-ZZT-OOP, although there are vague familiarities. There's a
+ZZT-OOP, although there are vague similiarities. There's a
 kludge or two dozen to get really powerful things working, but
 you'll get used to them.
 
-To place a Robot in the editor, press F10 and select Robot, or
-Pushable Robot if you want things to be able to push the Robot.
-Then name the Robot, and select a character to represent it.
-Now you are brought to the Robot editor, where you can program
-the Robot in Robotic.
+To place a Robot in the editor, press F10 and select Robot. (You
+can also select Pushable Robot if you want things to be able to
+push the Robot.) Then name the Robot and select a character to
+represent it. You are then brought to the Robot editor, where
+you can program the Robot in Robotic.
+
+Robots are limited to the board, and there can be 255 of them on
+each board. They can be pretty large - 2MB in size, enough code
+space to create extraordinarily complex (or convoluted)
+programs. There is an exception: the Global Robot, which is
+outside of the board and runs at all times.
 
 >#ROBOTICT.HLP:1st:Robotic Tutorial
 >#MAIN.HLP:072:Table of Contents
@@ -8475,46 +8685,48 @@ $Commands
 
 You can have one command per line. A command is an instruction
 to MegaZeux or the Robot telling it to do something. A program
-is a series of commands, that are run right after another.
+is a series of commands that are ran right after another.
 
 $Parameters
 
 A parameter is the part of the command that can change, such
 as numbers or colors. They specify how the command should be
-run or what it should affect. For example, in the command
+run or what it should affect. For example, in the command:
 
 WAIT 6
 
 WAIT is the command, and 6 is the parameter. Many commands have
 multiple parameters. Parameters are often specified using #,
-"string", or [color] [char] etc.
+"string", or [color] [char], etc.
 
 $Labels
 
 A label is a point in a Robotic program that has been given a
 name. It is used as a reference point so the Robot can return
-to that point at any time, to allow repeating sections of
-commands, etc. Labels are written as follows - : "label"
+to that point at any time, to allow actions like repeating
+sections of commands (looping) or reactions to certain events.
+Labels are written as follows - : "label"
 
 $Messages
 
 A message is something one Robot sends to another, or an
 external event sends to a Robot, to tell it to do something.
-That something entails jumping to the label corresponding to
-that message. For example, a Robot can tell another Robot to
+This involves jumping to the label corresponding to that
+message. For example, a Robot can tell another Robot to
 "Bounce"; That Robot will now be executing commands starting
-at the label :"Bounce".
+at the label : "Bounce" .
 
 $Coordinates
 
-{x,y} coordinates are a pair of numbers representing a point on
-the current board. {0,0} is the upper left corner of the board,
+x,y coordinates are a pair of numbers representing a point on
+the current board. (0,0) is the upper-left corner of the board,
 and the first coordinate increases while going right, while the
 second increases while going down. You can find coordinates
-easily using Alt+Y in the editor, or F6 in the game (only in
-editor playthroughs). {x,y} coordinates can be negative, but
-this is uncommon and used for special purposes only (e.g. using
-REL commands).
+easily at the bottom of the screen when help is hidden, by
+pressing Alt+Y, or by pressing F6 in the game (only in editor
+playthroughs). x,y coordinates can be negative, but this is
+uncommon and used for special purposes only (e.g. using REL
+commands).
 
 $Strings
 
@@ -8529,8 +8741,8 @@ characters. When using single characters in Robotic, they must
 be enclosed in apostrophes- e.g. 'X'. Certain characters must
 be inputted in specific ways to avoid problems with Robotic:
 
-  \0 for character 0 (this probably won't work in strings, but
-  should work in chars)
+  \0 for character 0 (this won't work in strings, but will work
+  for single chars)
   \t for tab (character 9)
   \n for newline (character 10)
   \r for carriage return (character 13)
@@ -8540,9 +8752,13 @@ be inputted in specific ways to avoid problems with Robotic:
 $Colors
 
 A color is a code representing a background/foreground color
-pair. They follow the format cXX, where X is 0-9 or A-F. To
-enter color codes easily, use F2 in the Robot editor. The exact
-format of color codes is covered in another section.
+pair. They follow the format cXX, where X is 0-9, A-F or ?
+(which stands for any color). To enter color codes easily, use
+F2 in the Robot editor. The exact format of color codes is
+covered in another section.
+
+A quirk to keep in mind: any entity with a background color of 0
+will display the background color of anything beneath it.
 
 $Directions
 
@@ -8716,9 +8932,10 @@ different for each Robot.
 $Some New Commands
 
 The following Robot will demonstrate some new commands and
-features. Make sure you put some ammo and bombs on the screen
-with this Robot:
+features.
 
+ ~EGIVE 6 AMMOS
+ ~EGIVE 5 HIBOMBS
  ~EEND
  ~E: "shot"
  ~ECOLOR c2C
@@ -8727,6 +8944,7 @@ with this Robot:
  ~Ezap "shot" 1
  ~EEND
  ~E: "shot"
+ ~EIF "AMMO" = 0 "lecture"
  ~E[ "...cut it out. =("
  ~EEND
  ~E: "bombed"
@@ -8736,13 +8954,24 @@ with this Robot:
  ~EDIE
  ~EEND
  ~E: "touch"
- ~E* "Watch out!"
+ ~E* "Please leave me alone :/"
  ~EWAIT 10
  ~ESHOOT SEEK
+ ~EEND
+ ~E: "lecture"
+ ~E[ "Did you REALLY have to use all of your shots."
  ~EEND
 
 Test this Robot out, bombing, shooting, and touching it. The
 new commands and labels are explained below.
+
+~EGIVE 6 AMMOS
+
+Sensibly enough, this gives the player 6 units of ammo.
+
+~EGIVE 5 HIBOMBS
+
+This gives the player 5 high-strength bombs.
 
 ~E: "shot"
 
@@ -8759,9 +8988,9 @@ for you.
 ~E[ "...and now a liver transplant :<"
 
 The [ command is slick for a default. When encountered, all
-the [ commands in the same area are put together to form one
-long message, which is then displayed in a Scroll-like window.
-It can be Scrolled and viewed by the player.
+consecutive [ commands are put together to form one long
+message, which is then displayed in a Scroll-like window.
+It can be scrolled and viewed by the player.
 
 ~EZAP "shot" 1
 
@@ -8771,6 +9000,14 @@ label. The ZAP command always starts from the top. Using the
 ZAP command lets programmers give out different reactions for
 going to the same label. In this case, we get to go to the
 second "shot" label after we went to the first.
+
+~EIF "AMMO" = 0 "lecture"
+
+The IF command will jump to a label (in this case, one called
+"lecture") if the given condition is met, and will continue to
+the next line if not met. In this case, it will check to see if
+the AMMO counter is 0. The AMMO counter is a built-in counter
+MZX uses to represent how many units of ammo the player holds.
 
 ~E: "bombed"
 
@@ -8792,13 +9029,12 @@ This command destroys the Robot forever.
 
 ~EWAIT 10
 
-WAIT causes the Robot to stop and sit for an amount of time,
-the amount of time specified as a number. The time is in
-cycles, which is the amount of time it takes to update the
-board once, moving all the enemies and bullets, etc. Robots can
-cycle at different speeds; the default is cycle 1 (fastest,
-runs every real cycle) unless a cycle command is placed inside
-the Robot.
+WAIT causes the Robot to stop and sit for an amount of time.
+The time is in number of cycles (in this case, 10 cycles). A
+cycle is the amount of time it takes to update the board once,
+moving all the enemies and bullets, etc. Robots can run at
+different speeds; the default is cycle 1 (fastest, runs every
+real cycle) unless a cycle command is placed inside the Robot.
 
 ~ESHOOT SEEK
 
@@ -8812,16 +9048,16 @@ more importantly, you should be able to scan the Robotic
 reference manual, including the command reference, and be able
 to learn many new commands. There are loads of important
 commands and concepts in the command reference that we have not
-yet mentioned, such as TELEPORT PLAYER, IF statements, file
-access, expressions, and COPY BLOCK statements. It is
-recommended that you at least browse over each of the Robotic
-reference manual sections.
+yet mentioned, such as TELEPORT PLAYER, strings, file access,
+expressions, sprites, and the COPY class of statements. It is
+recommended that you at least skim each of the Robotic reference
+manual sections.
 
 Make sure you (eventually) read over every part of the
 reference manual, as there are many sections not covered in the
 tutorials. Especially of interest will be advanced topics like
-"The Vlayer and Its Uses", "Using MZMs", "Subroutines" and most
-newer help file additions.
+"The Vlayer and Its Uses", "Using MZMs", "Subroutines",
+"Debug Modes", and most newer help file additions.
 
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
@@ -8831,7 +9067,7 @@ $~9The Global
 
 The global Robot is a special-case Robot; it is always present
 on every board of the game. It is immobile (technically off the
-board, but listed as at {-1,-1}), has a ROBOT_ID of 0, and
+board, but listed as at (-1,-1)), has a ROBOT_ID of 0, and
 cannot be destroyed or changed into another object, even
 through deliberate attempts to do so such as the EXPLODE
 command. All other traits of Robots, such as 2MB of Robot
@@ -8882,14 +9118,21 @@ are several practices to avoid, as well as proper replacements.
   be to define the object's color and parameter values. c?? and
   p?? exist for the sake of Robotic comparisons and conditional
   branching, not for being applied to actual objects.
-~9GOOD: Putting in set values for colors and parameters.
+  Sprites are an exception regarding color, since they refer to
+  a set of placed characters with their own colors.
+~9GOOD: Putting in set values for colors and parameters when
+  placing objects.
 
 ~cBAD: Using global counters for temporary or localized work.
   There are several counters that are Robot-specific and don't
   eat up global counter space. local through local32 per Robot
   should be enough for almost everyone, and the local counters
   can be written to and read by other robots as well (using the
-  rN.local# counter form).
+  rN.local# counter form). If global temp counters are used in
+  a Robot with several copies on the board, you will most likely
+  run into problems. Unfortunately, using local counters can
+  come at the cost of minor readability, since local counters
+  cannot be given descriptive names.
 ~9GOOD: Using local counters for temporary or localized work.
 
 ~CBAD: Breaking a subroutine without returning or entering the
@@ -8900,14 +9143,15 @@ are several practices to avoid, as well as proper replacements.
 
 ~cBAD: Using a high amount of if statements regarding one
   ~Cvariable.
-~9GOOD: Using goto "label&number&" regarding one variable.
+~9GOOD: Using "label&number&" as the destination label in IF
+  ~9statements regarding one variable.
 
 ~CBAD: Looping without using cycle-ending commands of any kind.
   Looping without CYCLE 1 or WAIT 1 in idle loops is more
   severe than one might think. Coupled with the "commands"
   counter set to a high number, loops without CYCLE 1 or WAIT 1
   can absolutely choke a game's speed, especially idle loops,
-  and potentially FREEZE MZX.
+  and potentially FREEZE YOUR GAME.
 ~9GOOD: Including CYCLE 1 or WAIT 1 in every loop except loops
   ~9that are designed to get a finite length task done as
   ~9quickly as possible.
@@ -8917,13 +9161,14 @@ are several practices to avoid, as well as proper replacements.
   
 ~CBAD: Setting the COMMANDS value to maximum.
   It's generally unneeded, and a loop without a cycle-ending
-  command coupled with this change is a guaranteed way to freeze
-  MZX.
+  command coupled with this change is a guaranteed way to cause
+  freezes in MZX. MZX has safeguards for when this happens, but
+  it is still very undesirable.
 ~9GOOD: Setting the COMMANDS counter to a reasonably high value.
   Your code can utilize the extra processing speed higher
   commands-per-cycle allows, and if a loop without a
   cycle-ending command is accidentally created, it becomes
-  apparent without requiring closing MZX once hit.
+  apparent without requiring severe intervention.
 
 ~cBAD: Ending Robots with a label.
 ~9GOOD: Ending Robots with the END command.
@@ -8996,7 +9241,7 @@ NOTE: Unlike older versions of MegaZeux, it is no longer needed
 to initialize the stack, so don't get confused looking at older
 examples of code and seeing odd statements like ~e. "#*-1-2-3"~f.
 These statements are now treated as comments, and you should
-mentally treat them the same.
+mentally treat them the same way.
 
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
@@ -9005,7 +9250,7 @@ mentally treat them the same.
 $~9Expressions
 
 Expressions in MegaZeux allow users to set counters or a
-displayed number to a mathematical expression. This possible
+displayed number to a mathematical expression. The possible
 inputs are: counters, constants, or a combination. Any
 expression in MegaZeux is bound in quotation marks and
 parentheses. For example, an expression adding 5 and 3 would
@@ -9435,29 +9680,31 @@ The biggest benefit of sprites is that they are cohesive;
 unlike use of several Robots, there is absolutely no chance of
 the sprite falling apart.
 
-There are up to 256 available sprites, and sprites are
-controlled in the following ways:
+There are up to 256 available sprites (in total, not per board),
+and sprites are controlled in the following ways:
 
 -Through sprite specific counters named SPRn_value
 -Through control counters for all of the sprites
 -Through commands for placing sprites and testing for collision
 
-To setup a sprite you should set the SPRn_REFX / REFY / WIDTH /
-HEIGHT counters to define where the sprite is and what its size
-is. Then if you use:
+To setup a sprite you must set the SPRn_REFX / REFY / WIDTH /
+HEIGHT counters to define where the sprite's characters are and
+what its size is. (SPRn_REFX and SPRn_REFY are the coordinates
+for the upper-left corner of the reference characters.) Then you
+use:
 
 ~APUT cXX sprite pNN x y
 
 where NN is the number of the sprite in hexadecimal (if you
 write NN without the p in decimal it will be automatically
-converted). If cXX is c?? then the sprite is drawn with its
-normal colors as seen on the board, otherwise it's painted with
+converted). If cXX is c?? then the sprite is drawn with the
+colors of the reference characters, otherwise it's painted with
 the given colors.
 
-So, for example, to make a 2x2 sprite, you could draw it on the
-board at the position [10, 10], assign it to sprite number 15,
-then have it drawn at position [40, 5]. The Robotic for this is
-as follows:
+So, for example, to make a 2x2 sprite, you could base its
+reference characters on the board from the position (10, 10),
+assign it to sprite number 15, then have it drawn at position
+(40, 5). The Robotic for this is as follows:
 
 ~ASET "spr15_refx" 10
 ~ASET "spr15_refy" 10
@@ -9475,6 +9722,8 @@ will move the sprite to the northeast by 1.
 
 As with the overlay, any instance of char 32 in the sprite will
 not be shown, instead displaying the next underlying layer.
+Also, if the reference characters change, the sprite's
+characters will change to match.
 
 Now that you have sprites set up and displayed, you can do
 collision tests. These check if moving sprites will cause
@@ -9490,7 +9739,7 @@ This is done by using the following command:
 
 This will go to the label "collision" if moving the sprite x by
 y from its current position will cause it to collide with
-something. If anything besides c?? is used then [x, y] are
+something. If anything besides c?? is used then (x, y) are
 absolute board coordinates instead.
 
 If collision is gone to, then the spr_clistN counters will be
@@ -9513,17 +9762,21 @@ of absolute board coordinates for determining collisions.
 
 Sprites can also have modified collision boxes, instead of them
 being limited to covering the sprite. Use the SPRn_CX/SPRn_CY
-counters to set the respective [x,y] coordinates of the
-upper-left corner of the collision box, and use
-SPRn_CWIDTH/SPRn_CHEIGHT to set its respective width and height
-(in tiles).
+counters to set the respective x,y coordinates of the upper-left
+corner of the collision box, and use SPRn_CWIDTH/SPRn_CHEIGHT to
+set its respective width and height (in tiles).
+
+Since sprites are global, they will persist upon changing
+boards. Since the vlayer is global as well, using the vlayer to
+reference characters (by setting the SPRn_VLAYER counter to 1)
+will keep sprite characters consistent between boards.
 
 $~9Unbound Sprites
 
-Unbound sprites are a special implementation of sprites, with
-significantly greater precision and character pools afforded to
-them. They have their own setup, their own quirks, and their
-own unique restrictions.
+Unbound sprites are sprites with special implementations,
+allowing significantly greater precision and access to extra
+character sets. They have their own setup, their own quirks, and
+their own unique restrictions.
 
 A sprite can be set as unbound by setting the SPRn_UNBOUND
 counter to 1 for a given sprite number n. Once this is done, the
@@ -9565,12 +9818,20 @@ counter. For example, setting SPR0_OFFSET to 256 will change all
 character references done by sprite 0 to the first extra
 character set.
 
+As this process implies, each unbound sprite is still limited to
+one character set's worth of characters - 256 - simultaneously.
+However, different unbound sprites can accept different offsets
+and display their sets of characters at the same time, resulting
+in up to 3840 different characters loaded at once (not counting
+the system set).
+
 In addition to access to larger numbers of characters, unbound
 sprites can provide transparency effects on a per-sprite basis,
 instead of treating certain characters as transparent. Each
 unbound sprite has its own transparent color, which is set with
 the SPRn_TCOL counter. All pixels of that color in that unbound
-sprite will not display, and show the next underlying layer.
+sprite will not display, and instead show the next underlying
+layer.
 
 When assigned a ccheck value with SPRn_CCHECK, an unbound sprite
 will only apply its personal ccheck value in collision tests
@@ -9694,11 +9955,11 @@ but it is no longer necessary.
 $~9The Vlayer and Its Uses
 
 The vlayer is an extra, global graphical layer, but it is never
-directly seen. It can only hold character and color info. The
-vlayer acts like a workspace allowing copying from/to overlay,
-copying from/to MZMs, copying between places in the vlayer,
-reading/writing individual graphical data to/from the vlayer,
-and reading strings from the vlayer.
+directly seen in a game. It can only hold character and color
+info. The vlayer acts like a workspace allowing copying from/to
+overlay, copying from/to MZMs, copying between places in the
+vlayer, reading/writing individual graphical data to/from the
+vlayer, and reading strings from the vlayer.
 
 Another important aspect of the vlayer is the ability to
 reference a sprite to the vlayer. This allows indirect display
@@ -9764,7 +10025,7 @@ complex areas - in this case, you must move to the unfilled
 areas and press F to continue filling. However, this happens
 very rarely.
 
-:AltV:~EAlt+V - Edit Vlayer Editor
+:AltV:~EAlt+V - Exit Vlayer Editor
 
 Alt+V will exit vlayer mode and return to editing the main
 board.
@@ -9784,8 +10045,8 @@ history of the vlayer.
 
 :F1:~EF1 - Help
 
-F1 will bring up help on the current action. You can press F1
-at almost any time.
+F1 will bring up context-relevant help. You can press F1 at
+almost any time.
 
 :F2:~EF2 - Text
 
@@ -9800,8 +10061,9 @@ when necessary.
 
 :AltAr:~EAlt+Arrow - Move 10
 
-Alt with the arrow keys will move the cursor up to ten spaces at
-a time.
+Alt with the arrow keys will move the cursor ten spaces at a
+time (or to a vlayer edge if it is under 10 spaces away in that
+direction).
 
 :BkSp:~EBackspace - Delete
 :Del:~EDel - Delete
@@ -9838,8 +10100,8 @@ as the current. The actual character is not affected.
 :Sp:~ESpacebar - Place
 
 Spacebar will copy the current character and color to the
-location under the cursor. Other things will be deleted if they
-are in the way.
+location under the cursor. Other characters will be deleted if
+they are under the cursor.
 
 :Tab:~ETab - Draw
 
@@ -9849,16 +10111,15 @@ the cursor.
 
 :CtrG:~ECtrl+G - Goto Position
 
-Ctrl+G will pop up a window, displaying target {x,y}
-coordinates. Set the coordinates by either typing in or
-selecting the desired X and Y values, and select OK to go to
-those coordinates on the vlayer. Choosing Cancel or pressing
-Escape cancels.
+Ctrl+G will pop up a window, displaying target x,y coordinates.
+Set the coordinates by either typing in or selecting the
+desired X and Y values, and select OK to go to those coordinates
+on the vlayer. Choosing Cancel or pressing Escape cancels.
 
 ~EP - Change Buffer Character
 
 P will act much like Enter, but only change the character in the
-buffer; no character on the overlay is changed with this action.
+buffer. No character on the vlayer is changed with this action.
 
 ~EAlt+Z - Clear (Vlayer)
 
@@ -9878,8 +10139,8 @@ settings, with 100 as default.
 On top of being modifiable in the editor, the vlayer can be
 changed in a running MZX world with Robotic. To manipulate the
 vlayer in Robotic, "#n" is used instead of pure numbers in copy
-commands. For example, if copying a 2x2 block from {6,6} of the
-board to {0,0} of the vlayer is wanted, the command would be:
+commands. For example, if copying a 2x2 block from (6,6) of the
+board to (0,0) of the vlayer is wanted, the command would be:
 
 ~ECOPY BLOCK 6 6 2 2 "#0" "#0"
 
@@ -9918,12 +10179,12 @@ For reading and writing colors use ~E"vcoX,Y"~F.
 
 For example:
 
-~ESET "vch10,10" '+'~f sets the vlayer char at {10,10} to a plus
+~ESET "vch10,10" '+'~f sets the vlayer char at (10,10) to a plus
 sign.
-~ESET "vco10,10" 15~f sets the vlayer color at {10,10} to white on
+~ESET "vco10,10" 15~f sets the vlayer color at (10,10) to white on
 black.
 ~ESET "temp" "vch10,10"~f sets temp to whatever the character at
-{10,10} of the vlayer is.
+(10,10) of the vlayer is.
 
 Vlayer size can be changed by setting the counter "vlayer_size"
 to the desired length of the vlayer. Doing this only sets the
@@ -9943,8 +10204,8 @@ All bad values of vlayer_size, vlayer_height and vlayer_width
 (0 and below) will be changed to 1.
 
 Remember that the vlayer is global. If many vlayers are wanted,
-liberal usage of MZM saving and loading will help get around
-this problem.
+liberal usage of MZM saving and loading can help get around this
+problem.
 
 >#COUNTERS.HLP:vlc:Vlayer Counters
 >#STRINGS.HLP:1st:Strings, Special Formatting, and Their Place in Robotic
@@ -9955,11 +10216,11 @@ this problem.
 :mzm: 
 $~9Using MZMs
 
-MZM files are equivalents of the ANSI files used in older MZX
-versions. MZMs, however, are much more powerful and can store
-much more information. MZMs can be up to 65535 x 65535 tiles in
-size. MZMs are useful for easy access of reused graphics and
-reused, multi-Robot entities.
+MZM files are rough equivalents of the ANSI files used in older
+MZX versions. MZMs, however, are much more powerful and can
+store much more information. MZMs can be up to 65535 x 65535
+tiles in size. MZMs are useful for easy access of reused
+graphics and reused, multi-Robot entities.
 
 MZMs come in two modes: "board" and "layer".
   * Board mode saves color, param, ID, and under information.
@@ -9991,12 +10252,18 @@ X/Y are the coordinates of the block's upper-left corner; w/h
 are the width and height of the block; filename is the name of
 the file (the @@ is required); finally, p determines the MZM
 type. 1 saves as layer; 0 saves as board. 0 is integral for
-copying non-graphical data (primarily Robots); 1 is proper for
+copying non-graphical data (especially Robots); 1 is proper for
 copying graphical data, as the block's appearance will stay as
 exactly as it was when saved. The last case is for saving from
-the vlayer to MZM. The {x,y} coordinates MUST be in "#x" "#y"
+the vlayer to MZM. The x,y coordinates MUST be in "#x" "#y"
 format, and the m MUST exist. Any valid MZX string can take the
-place of a filename.
+place of a filename, but the @@ prefix is still required.
+
+Unlike with board MZMs containing Robots saved in the editor,
+loading board MZMs containing runtime Robots in the editor is
+unsupported. Any such Robot will be replaced with a customblock
+fascimilie. If you want any such MZMs to be fully loaded, they
+must also be loaded at runtime.
 
 The Robotic method of loading MZMs is:
 
@@ -10005,7 +10272,8 @@ The Robotic method of loading MZMs is:
 filename is the name of the MZM file (after the required @@),
 x and y are the upper-left corner's coordinates, and NN is 00
 for board, 01 for overlay, 02 for vlayer. Again, any valid
-string can take the place of a filename.
+string can take the place of a filename if preceded by the
+required @@ prefix.
 
 Finally, MZMs will neither be saved nor loaded if at the edge
 of a board.
@@ -10019,23 +10287,22 @@ $~9Trigonometric Functions
 
 Trigonometry can simplify some complex engines, and MegaZeux
 can access several trigonometric functions with fair precision.
-Accessing trigonometric functions in MegaZeux requires some
-setup, however.
+However, accessing trigonometric functions in MegaZeux requires
+some setup.
 
 Because MegaZeux works solely with integers, you need to set
 the counter "multiplier" to determine how the non-integer
 working value is converted. For example, if your function
 has a value of .86602 and "multiplier" is set to 10000, the
-resulting value would be 8660. Numbers are always rounded
-down from their values. The default value for the "multiplier"
-counter is 10000.
+resulting value would be 8660. Results are always truncated
+(that is, have everything to the right of the decimal removed).
+The default value for the "multiplier" counter is 10000.
 
-Also, the counter "c_divisions" determines the precision of the
-trig functions by determining how many times the circle is
-divided. Sensible values for this include 360 (degree
-precision), 21600 (arc-minute precision) and 1296000
-(arc-second precision). The default value for the "c_divisions"
-counter is 360.
+The counter "c_divisions" determines the precision of the trig
+functions by determining how many times the circle is divided.
+Sensible values for this include 360 (degree precision), 21600
+(arc-minute precision) and 1296000 (arc-second precision). The
+default value for the "c_divisions" counter is 360.
 
 The "divider" counter works solely on inverse trigonometric
 functions. Its effect is to divide the number passed to an
@@ -10112,15 +10379,15 @@ board generally end a cycle, especially moving the player,
 though this is not always the case.
 
 The amount of cycles MegaZeux processes per second is set by the
-MZX_SPEED value. Speed 1 is completely processor-bound, and will
+MZX_SPEED value. Speed 1 is completely processor-bound and will
 execute as many cycles per second as possible. Other speeds
 process cycles according to this formula:
 
-~E62.5 / (MZX_SPEED - 1)
+~E62.5 / (MZX_SPEED - 1) = cycles per second
 
 Simplified, this means that MegaZeux can be set to consistent
-rates ranging from 62 1/2 cycles per second (speed 2) all the
-way down to 4 1/6 cycles per second (speed 16).
+rates ranging from 62 & 1/2 cycles per second (speed 2) all the
+way down to 4 & 1/6 cycles per second (speed 16).
 
 The CYCLE command dictates how often a Robot is active. By
 default, Robots will execute commands on every cycle, but the
@@ -10157,10 +10424,10 @@ $~9Partial Character Sets
 
 Partial character sets are smaller than full sets, as the name
 definitely implies, but they only overwrite the characters they
-are told to. This leaves the rest of the characters intact.
-Heavy animations and changes that keep part of the character
-set intact (such as the alphanumeric characters) are two issues
-best tackled with partial character sets.
+are told to when loaded. This leaves the rest of the characters
+intact. Heavy animations and changes that keep part of the
+character set intact (such as the alphanumeric characters) are
+two issues best tackled with partial character sets.
 
 One can save a partial character set in the editor by selecting
 a starting character value (aka "offset") and a length value.
@@ -10180,7 +10447,6 @@ in the target character set.
 
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
-
 #UPDATER.HLP
 :099:
 $~9The MegaZeux Updater
@@ -10223,10 +10489,102 @@ of a restart. Click "OK" and MegaZeux will restart, fully
 updated.
 
 >#MAIN.HLP:072:Table of Contents
-
 #NEWINVER.HLP
 :1st: 
 $~9NEW in MegaZeux!
+
+November 14th, 2018 - MZX 2.91h
+
+A minor release primarily focused on improving counter/string
+lookups and fixing bugs in the robot editor and counter debug
+menu.
+
+USERS
+
++ auto_glsl correctly switches to glsl on startup now.
++ Fix bug where "(editor)" wouldn't always display in the
+  caption when editing.
++ The single line macro dialog now allows the full size of the
+  single line macros to be edited. This fixes a crash caused by
+  having a macro configured to be longer than the edit box could
+  display.
++ Setting a counter to a string no longer duplicates the entire
+  string in memory.
++ Fixed faulty BOARD_X and BOARD_Y bounding for values greater
+  than the board width or height. Fixes potential crashes with
+  BOARD_CHAR, BOARD_COLOR, BOARD_ID, and BOARD_PARAM.
++ The value of SPR_YORDER is now correctly displayed in the
+  counter debug menu.
++ Improved the performance of the counter debug search.
++ Fixed cosmetic counter debug menu issue where the the "String"
+  tree appeared to be expandable/collapsable when empty.
++ Fixed faulty substring searching algorithm used in the counter
+  debug menu search and for breakpoints.
++ Added "Search" and "Cancel" buttons to the counter debug menu
+  search so it can be used with the mouse.
++ When testing from the editor, if "__test.mzx" exists MegaZeux
+  will now choose a numbered name for this world backup (e.g.
+  "__test2.mzx") instead of potentially overwriting work.
++ Fixed bug where six-digit line numbers would display in the
+  robot editor incorrectly.
++ Inserting text in the robot editor using the F2/F3/F4/F5
+  shortcuts can no longer exceed the line length limit, fixing
+  related crashes.
++ Using F5 in the robot editor generates decimal numbers instead
+  of hex numbers now.
++ Fixed robot editor bug where pressing delete at the end of a
+  line wouldn't join lines unless the current line was empty.
++ Restored the ability to use the F7/F8 cheats outside of the
+  editor. This feature was broken in 2.91g. To enable cheats
+  outside of the editor, the config option "allow_cheats" must
+  now be set to "mzxrun" or 1. The former will enable them for
+  MZXRun only (same as from 2.82b to 2.91f) and the latter will
+  enable them for both executables (same as the -t flag in DOS
+  versions).
++ Fixed bounding bug on the "board_default_width" and
+  "board_default_height" config file options.
++ Separated robot editor "Search and Replace" dialog into a
+  "Search" dialog and a "Replace" dialog. Both dialogs are
+  smaller in size than the original. The order of the elements
+  in these dialogs has also been altered to be more user-
+  friendly. The hotkey for the new replace dialog is Ctrl+H.
++ Fixed Ctrl+R repeating for the "Replace All" robot editor
+  search operation. Previously, it would act like "Replace".
++ Canceling the robot editor search/replace menus no longer
+  disables the repeat feature.
++ Searching in the robot editor now properly preserves the case
+  of the search string if case sensitive search is disabled.
++ Fixed bug where toggling the robot debugger position wouldn't
+  take effect immediately.
++ Exiting the editor with the "startup_editor" config setting
+  enabled should no longer inappropriately close MZX.
++ Selecting "tile" for the char editor import mode works again.
++ The bounds for the main editor charset import/export offsets
+  and size have been increased to allow for extended charset
+  values.
++ Fixed the "KEY?" labels for keys that no longer have a unicode
+  representation in SDL2.
++ Fixed SET "$string" "FWRITE#" bug where, if # exceeded the
+  length of $string, the output would be clipped to the wrong
+  length.
++ The missile color ID char is now correctly set back to its
+  default value when a new world is created from the editor.
+
+DEVELOPERS
+
++ Cleaned up the counter debug menu code.
++ Switched from uthash to a modified version of khash for
+  counter and string lookups. Counters/strings now consume less
+  memory and counter/string lookups should perform slightly
+  better on most platforms.
++ Replaced toupper/tolower in memcasecmp and substring searching
+  with a lookup table-based implementation of tolower.
++ Refactored the following contexts to use the main loop: robot
+  editor, intake, thing menu. For compatibility purposes the old
+  intake still exists, but all robot editor hacks have been
+removed from it.
+  
+>#MAIN.HLP:072:Table of Contents
 
 October 7th, 2018 - MZX 2.91g
 
