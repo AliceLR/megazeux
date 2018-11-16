@@ -418,8 +418,8 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
 
   int missing_ident;
   int last_ident = -1;
-  int ident;
-  int size;
+  int ident = 0;
+  int size = 0;
 
   zip_get_next_uncompressed_size(zp, &actual_size);
 
