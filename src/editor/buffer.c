@@ -89,7 +89,7 @@ static struct thing_menu_item thing_menus[NUM_THING_MENUS][MAX_CHOICES] =
     { "Thick Web       ~7\xCE",   THICK_WEB       },
     { "Forest          ~2\xB2",   FOREST          },
     { "Invis. Wall     ~1 ",      INVIS_WALL      },
-    { NULL }
+    { NULL, 0 }
   },
 
   // Item (F4)
@@ -108,7 +108,7 @@ static struct thing_menu_item thing_menus[NUM_THING_MENUS][MAX_CHOICES] =
     { "Life            ~B\x9B",   LIFE            },
     { "Pouch           ~7\x9F",   POUCH           },
     { "Chest           ~6\xA0",   CHEST           },
-    { NULL }
+    { NULL, 0 }
   },
 
   // Creature (F5)
@@ -131,7 +131,7 @@ static struct thing_menu_item thing_menus[NUM_THING_MENUS][MAX_CHOICES] =
     { "Bullet Gun      ~F\x1B",   BULLET_GUN      },
     { "Spinning Gun    ~F\x1B",   SPINNING_GUN    },
     { "Missile Gun     ~8\x11",   MISSILE_GUN     },
-    { NULL }
+    { NULL, 0 }
   },
 
   // Puzzle (F6)
@@ -144,7 +144,7 @@ static struct thing_menu_item thing_menus[NUM_THING_MENUS][MAX_CHOICES] =
     { "Pusher          ~D\x1F",   PUSHER          },
     { "Slider NS       ~D\x12",   SLIDER_NS       },
     { "Slider EW       ~D\x1D",   SLIDER_EW       },
-    { NULL }
+    { NULL, 0 }
   },
 
   // Tranport (F7)
@@ -155,7 +155,7 @@ static struct thing_menu_item thing_menus[NUM_THING_MENUS][MAX_CHOICES] =
     { "Whirlpool       ~B\x97",   WHIRLPOOL_1     },
     { "CWRotate        ~9/",      CW_ROTATE       },
     { "CCWRotate       ~9\\",     CCW_ROTATE      },
-    { NULL }
+    { NULL, 0 }
   },
 
   // Element (F8)
@@ -171,7 +171,7 @@ static struct thing_menu_item thing_menus[NUM_THING_MENUS][MAX_CHOICES] =
     { "Goop            ~8\xB0",   GOOP            },
     { "Lit Bomb        ~8\xAB",   LIT_BOMB        },
     { "Explosion       ~E\xB1",   EXPLOSION       },
-    { NULL }
+    { NULL, 0 }
   },
 
   // Misc (F9)
@@ -188,7 +188,7 @@ static struct thing_menu_item thing_menus[NUM_THING_MENUS][MAX_CHOICES] =
     { "S Moving Wall   ~F?",      S_MOVING_WALL   },
     { "E Moving Wall   ~F?",      E_MOVING_WALL   },
     { "W Moving Wall   ~F?",      W_MOVING_WALL   },
-    { NULL }
+    { NULL, 0 }
   },
 
   // Objects (F10)
@@ -203,7 +203,7 @@ static struct thing_menu_item thing_menus[NUM_THING_MENUS][MAX_CHOICES] =
     { "Missile         ~8\x10",   MISSILE         },
     { "Seeker          ~A/",      SEEKER          },
     { "Shooting Fire   ~E\x0F",   SHOOTING_FIRE   },
-    { NULL }
+    { NULL, 0 }
   }
 };
 
