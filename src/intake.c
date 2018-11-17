@@ -942,7 +942,7 @@ subcontext *intake2(context *parent, char *dest, int max_length,
   spec.destroy  = intake_destroy;
 
   intake_set_length(intk, strlen(dest));
-  intake_set_pos(intk, intk->current_length);
+  intake_set_pos(intk, (pos_external ? *pos_external : intk->current_length));
 
   create_subcontext((subcontext *)intk, parent, &spec);
   return (subcontext *)intk;

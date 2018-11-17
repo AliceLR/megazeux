@@ -1,3 +1,11 @@
+GIT
+
+USERS
+
++ Fixed bug where the robot editor would open with the cursor at
+  the end of the line instead of the start of the line.
+
+
 November 14th, 2018 - MZX 2.91h
 
 A minor release primarily focused on improving counter/string
