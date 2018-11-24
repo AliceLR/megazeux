@@ -94,6 +94,12 @@ static inline void SDL_SetWindowIcon(SDL_Window *window, SDL_Surface *icon)
    SDL_WM_SetIcon(icon, NULL);
 }
 
+static inline char *SDL_GetCurrentVideoDriver()
+{
+  static char namebuf[16];
+  return SDL_VideoDriverName(namebuf, 16);
+}
+
 #if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM)
 static inline int SDL_GL_SetSwapInterval(int interval)
 {
