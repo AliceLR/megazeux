@@ -94,7 +94,7 @@ static inline void SDL_SetWindowIcon(SDL_Window *window, SDL_Surface *icon)
    SDL_WM_SetIcon(icon, NULL);
 }
 
-static inline char *SDL_GetCurrentVideoDriver()
+static inline char *SDL_GetCurrentVideoDriver(void)
 {
   static char namebuf[16];
   return SDL_VideoDriverName(namebuf, 16);
