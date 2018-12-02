@@ -6,6 +6,8 @@ USERS
   the end of the line instead of the start of the line.
 + Fixed a bug where the robot box could display using MZX mode
   but SMZX colors if opened on the first frame SMZX was enabled.
++ The built-in text box title should display correctly again in
+  SMZX modes.
 
 DEVELOPERS
 
