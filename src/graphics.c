@@ -769,6 +769,16 @@ void dialog_fadeout(void)
   }
 }
 
+static void fix_layer_screen_mode(void)
+{
+  // Fix the screen mode for all active layers except the UI_LAYER.
+  Uint32 i;
+  for(i = 0; i < graphics.layer_count; i++)
+    graphics.video_layers[i].mode = graphics.screen_mode;
+
+  graphics.video_layers[UI_LAYER].mode = 0;
+}
+
 void set_screen_mode(Uint32 mode)
 {
   int i;
@@ -835,6 +845,7 @@ void set_screen_mode(Uint32 mode)
     }
   }
 
+  fix_layer_screen_mode();
   graphics.palette_dirty = true;
 }
 
@@ -1373,11 +1384,6 @@ static void init_layers(void)
 
   select_layer(UI_LAYER);
 
-  graphics.video_layers[BOARD_LAYER].mode = graphics.screen_mode;
-  graphics.video_layers[OVERLAY_LAYER].mode = graphics.screen_mode;
-  graphics.video_layers[GAME_UI_LAYER].mode = graphics.screen_mode;
-  graphics.video_layers[UI_LAYER].mode = 0;
-
   graphics.layer_count = NUM_DEFAULT_LAYERS;
   graphics.layer_count_prev = graphics.layer_count;
   blank_layers();
@@ -1407,17 +1413,11 @@ void blank_layers(void)
   graphics.video_layers[GAME_UI_LAYER].empty = true;
   graphics.video_layers[UI_LAYER].empty = true;
 
-  // Fix the layer modes
-  if(graphics.video_layers[BOARD_LAYER].mode != graphics.screen_mode)
-  {
-    graphics.video_layers[BOARD_LAYER].mode = graphics.screen_mode;
-    graphics.video_layers[OVERLAY_LAYER].mode = graphics.screen_mode;
-    graphics.video_layers[GAME_UI_LAYER].mode = graphics.screen_mode;
-    graphics.video_layers[UI_LAYER].mode = 0;
-  }
-
   // Delete the rest of the layers
   destruct_extra_layers(0);
+
+  // Since the layers were cleared, their screen mode values need to be reset.
+  fix_layer_screen_mode();
 }
 
 void destruct_extra_layers(Uint32 first)
