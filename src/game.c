@@ -547,8 +547,14 @@ static boolean game_key(context *ctx, int *key)
 
     if(key_char)
     {
-      keylbl[3] = key_char;
-      send_robot_all_def(mzx_world, keylbl);
+      if(key_char < 256)
+      {
+        // Send the KEY? label.
+        // Values over 256 have no meaning here.
+        keylbl[3] = key_char;
+        send_robot_all_def(mzx_world, keylbl);
+      }
+
       // In pre-port MZX versions key was a board counter
       if(mzx_world->version < VERSION_PORT)
       {
