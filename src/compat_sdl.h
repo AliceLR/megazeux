@@ -100,6 +100,11 @@ static inline char *SDL_GetCurrentVideoDriver(void)
   return SDL_VideoDriverName(namebuf, 16);
 }
 
+static inline int SDL_JoystickInstanceID(SDL_Joystick *joystick)
+{
+  return SDL_JoystickIndex(joystick);
+}
+
 #if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM)
 static inline int SDL_GL_SetSwapInterval(int interval)
 {

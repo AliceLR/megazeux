@@ -433,8 +433,8 @@ static void joy_axis_set(struct config_info *conf, char *name,
   sscanf(name, "joy%uaxis%u", &joy_num, &joy_axis);
   sscanf(value, "%u, %u", &joy_key_min, &joy_key_max);
 
-  joy_num = CLAMP(joy_num, 1, 16);
-  joy_axis = CLAMP(joy_axis, 1, 16);
+  joy_num = CLAMP(joy_num, 1, MAX_JOYSTICKS);
+  joy_axis = CLAMP(joy_axis, 1, MAX_JOYSTICK_AXES);
 
   map_joystick_axis(joy_num - 1, joy_axis - 1, (enum keycode)joy_key_min,
    (enum keycode)joy_key_max);
@@ -450,7 +450,8 @@ static void joy_button_set(struct config_info *conf, char *name,
   sscanf(name, "joy%ubutton%u", &joy_num, &joy_button);
 
   joy_key = (enum keycode)strtoul(value, NULL, 10);
-  joy_num = CLAMP(joy_num, 1, 16);
+  joy_num = CLAMP(joy_num, 1, MAX_JOYSTICKS);
+  joy_button = CLAMP(joy_button, 1, MAX_JOYSTICK_BUTTONS);
 
   map_joystick_button(joy_num - 1, joy_button - 1, (enum keycode)joy_key);
 }
@@ -466,7 +467,7 @@ static void joy_hat_set(struct config_info *conf, char *name,
   sscanf(value, "%u, %u, %u, %u", &joy_key_up, &joy_key_down,
    &joy_key_left, &joy_key_right);
 
-  joy_num = CLAMP(joy_num, 1, 16);
+  joy_num = CLAMP(joy_num, 1, MAX_JOYSTICKS);
 
   map_joystick_hat(joy_num - 1, (enum keycode)joy_key_up,
    (enum keycode)joy_key_down, (enum keycode)joy_key_left,
