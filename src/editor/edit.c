@@ -1811,8 +1811,8 @@ static boolean editor_key(context *ctx, int *key)
 
     case IKEY_F2:
     {
-      // Ignore Ctrl+F2
-      if(get_ctrl_status(keycode_internal))
+      // Ignore Alt+F2, Ctrl+F2
+      if(get_alt_status(keycode_internal) || get_ctrl_status(keycode_internal))
         break;
 
       if(get_shift_status(keycode_internal))

@@ -3528,8 +3528,8 @@ static boolean robot_editor_key(context *ctx, int *key)
     {
       int new_color;
 
-      // Ignore Ctrl+F2
-      if(get_ctrl_status(keycode_internal))
+      // Ignore Alt+F2, Ctrl+F2
+      if(get_alt_status(keycode_internal) || get_ctrl_status(keycode_internal))
         break;
 
       new_color = color_selection(last_color_selected, 1);

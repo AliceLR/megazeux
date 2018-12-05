@@ -11,6 +11,7 @@ USERS
 + The built-in text box title should display correctly again in
   SMZX modes.
 + Fixed regression where keys could trigger wrong "keyN" labels.
++ Alt+F2 can now be used to open the settings dialog.
 
 DEVELOPERS
 
