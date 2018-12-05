@@ -12,6 +12,7 @@ USERS
   SMZX modes.
 + Fixed regression where keys could trigger wrong "keyN" labels.
 + Alt+F2 can now be used to open the settings dialog.
++ Mac users can now optionally use command in place of alt.
 
 DEVELOPERS
 

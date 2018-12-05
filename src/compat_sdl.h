@@ -56,8 +56,6 @@ typedef void   SDL_Window;
 #define SDLK_KP_9         SDLK_KP9
 #define SDLK_NUMLOCKCLEAR SDLK_NUMLOCK
 #define SDLK_SCROLLLOCK   SDLK_SCROLLOCK
-#define SDLK_LGUI         SDLK_LSUPER
-#define SDLK_RGUI         SDLK_RSUPER
 #define SDLK_PAUSE        SDLK_BREAK
 
 #define SDL_WINDOW_FULLSCREEN  SDL_FULLSCREEN

@@ -130,8 +130,17 @@ static enum keycode convert_SDL_internal(SDL_Keycode key)
     case SDLK_LCTRL: return IKEY_LCTRL;
     case SDLK_RALT: return IKEY_RALT;
     case SDLK_LALT: return IKEY_LALT;
+#if !SDL_VERSION_ATLEAST(2,0,0)
+    // SDL 1.2 had two different versions of the same pair of keys.
+    // Because of this, we can't just #define these to the new values.
+    case SDLK_LMETA: return IKEY_LSUPER;
+    case SDLK_RMETA: return IKEY_RSUPER;
+    case SDLK_LSUPER: return IKEY_LSUPER;
+    case SDLK_RSUPER: return IKEY_RSUPER;
+#else
     case SDLK_LGUI: return IKEY_LSUPER;
     case SDLK_RGUI: return IKEY_RSUPER;
+#endif
     case SDLK_SYSREQ: return IKEY_SYSREQ;
     case SDLK_PAUSE: return IKEY_BREAK;
     case SDLK_MENU: return IKEY_MENU;
@@ -201,6 +210,8 @@ static void init_joystick(int sdl_index)
   }
 }
 
+#if SDL_VERSION_ATLEAST(2,0,0)
+// TODO: swappable joysticks in SDL <2
 static void close_joystick(int joystick_index)
 {
   if(joystick_index >= 0)
@@ -213,6 +224,7 @@ static void close_joystick(int joystick_index)
     joysticks[joystick_index] = NULL;
   }
 }
+#endif
 
 static boolean process_event(SDL_Event *event)
 {
@@ -468,12 +480,14 @@ static boolean process_event(SDL_Event *event)
       if(status->key_repeat &&
        (status->key_repeat != IKEY_LSHIFT) &&
        (status->key_repeat != IKEY_RSHIFT) &&
+       (status->key_repeat != IKEY_LSUPER) &&
+       (status->key_repeat != IKEY_RSUPER) &&
        (status->key_repeat != IKEY_LALT) &&
        (status->key_repeat != IKEY_RALT) &&
        (status->key_repeat != IKEY_LCTRL) &&
        (status->key_repeat != IKEY_RCTRL))
       {
-        // Stack current repeat key if it isn't shift, alt, or ctrl
+        // Stack current repeat key if it isn't shift, super, alt, or ctrl
         if(input.repeat_stack_pointer != KEY_REPEAT_STACK_SIZE)
         {
           input.key_repeat_stack[input.repeat_stack_pointer] =
