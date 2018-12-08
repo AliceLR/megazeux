@@ -32,13 +32,60 @@ static void fputw(int src, FILE *fp)
   fputc(src >> 8, fp);
 }
 
-// Custom fgetc function to dump \r's and replace \xFF's and /x1's.
+static int hex2int(char hex)
+{
+  if(hex >= '0' && hex <= '9')
+    return hex - '0';
+
+  if(hex >= 'A' && hex <= 'F')
+    return hex - 'A' + 10;
+
+  if(hex >= 'a' && hex <= 'f')
+    return hex - 'a' + 10;
+
+  return -1;
+}
+
+// Custom fgetc function to escape chars, dump \r, and replace \xFF and \x01.
 
 static int fgetc2(FILE *fp)
 {
   int current_char = fgetc(fp);
   switch(current_char)
   {
+    case '\\':
+    {
+      // Hack: escape characters
+      current_char = fgetc(fp);
+
+      if(current_char == 'x')
+      {
+        int upper = fgetc(fp);
+        int lower = fgetc(fp);
+        int current_char = (hex2int(upper) << 4) | hex2int(lower);
+
+        if(current_char == 255)
+          return 32;
+
+        if(current_char == 1)
+          return 2;
+
+        if(current_char >= 0)
+          return current_char;
+
+        else
+        {
+          fseek(fp, -3, SEEK_CUR);
+          return '\\';
+        }
+      }
+      else
+      {
+        fseek(fp, -1, SEEK_CUR);
+        return '\\';
+      }
+    }
+
     case '\r':
     {
       return fgetc2(fp);

@@ -19,6 +19,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 static int fgetw(FILE *fp)
 {
@@ -35,6 +36,43 @@ static int fgetd(FILE *fp)
   r |= fgetc(fp) << 24;
   return r;
 }
+
+static unsigned char int2hex[] = "0123456789ABCDEF";
+
+// Replace fwrite so this thing writes escapes instead of non-ASCII chars.
+static int fwrite2(const void *ptr, int size, int count, FILE *fp)
+{
+  const unsigned char *src = ptr;
+  unsigned char *buffer = malloc(size * count * 4);
+  unsigned char *pos = buffer;
+  unsigned char cur;
+
+  size_t new_size = size * count;
+  int count_written;
+  int i;
+
+  for(i = 0; i < size*count; i++)
+  {
+    cur = *(src++);
+    if((cur < 32 || cur > 126) && cur != 10)
+    {
+      *(pos++) = '\\';
+      *(pos++) = 'x';
+      *(pos++) = int2hex[ cur >> 4 ];
+      *(pos++) = int2hex[ cur & 0xF ];
+      new_size += 3;
+    }
+    else
+      *(pos++) = cur;
+  }
+
+  count_written = count * fwrite(buffer, new_size, 1, fp);
+  free(buffer);
+
+  return count_written;
+}
+
+#define fwrite(p,s,c,f) fwrite2(p,s,c,f)
 
 #define error(...) \
   { \
@@ -126,6 +164,7 @@ int main(int argc, char *argv[])
     {
       int byte, curr_pos;
       char buffer[256];
+      int len;
 
       curr_pos = ftell(in);
       if(curr_pos < 0)
@@ -253,7 +292,9 @@ int main(int argc, char *argv[])
         }
       }
 
-      if(fprintf(out, "%s", buffer) < 0)
+      len = strlen(buffer);
+      //if(fprintf(out, "%s", buffer) < 0)
+      if(len && !fwrite(buffer, len, 1, out))
         goto err_write_io;
     }
   }
