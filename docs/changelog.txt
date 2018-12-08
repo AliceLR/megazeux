@@ -13,6 +13,7 @@ USERS
 + Fixed regression where keys could trigger wrong "keyN" labels.
 + Alt+F2 can now be used to open the settings dialog.
 + Mac users can now optionally use command in place of alt.
++ Improved editor cursor color selection for SMZX modes 2 and 3.
 
 DEVELOPERS
 

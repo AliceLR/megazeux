@@ -854,6 +854,109 @@ Uint32 get_screen_mode(void)
   return graphics.screen_mode;
 }
 
+/**
+ * The cursor needs to be reasonably visible whenever possible. A good deal of
+ * the time this is possible with the classic cursor behavior of using the
+ * foreground color of whatever is beneath it. For completely solid chars, the
+ * background color is instead used.
+ *
+ * This behavior doesn't work very well when the foreground and background
+ * colors are very close (modes 0 and 1), so instead we switch the cursor to
+ * protected white or black. Foreground and background have no meaning in modes
+ * 2 and 3, so always use protected white or black in these modes.
+ */
+
+static Uint16 get_cursor_color(void)
+{
+  struct char_element *cursor_element =
+   graphics.text_video + graphics.cursor_x + (graphics.cursor_y * SCREEN_W);
+  Uint16 cursor_color;
+  Uint32 cursor_char = cursor_element->char_value;
+  Uint32 fg_color = cursor_element->fg_color;
+  Uint32 bg_color = cursor_element->bg_color;
+  int i;
+
+  if(bg_color >= 0x10)
+  {
+    // UI- use protected palette white or black.
+    if(bg_color <= 0x19)
+      cursor_color = graphics.protected_pal_position + 0x0F;
+
+    else
+      cursor_color = graphics.protected_pal_position;
+  }
+  else
+
+  if(graphics.screen_mode <= 1)
+  {
+    // Modes 0 and 1- use the (modified) classic cursor color logic.
+    Uint32 *offset = (Uint32 *)(graphics.charset + cursor_char * CHAR_SIZE);
+    Uint32 cursor_solid = 0xFFFFFFFF;
+
+    // Choose FG by default.
+    cursor_color = fg_color;
+
+    // If the char under the cursor is completely solid, use the BG instead.
+    for(i = 0; i < 3; i++)
+    {
+      cursor_solid &= *offset;
+      offset++;
+    }
+    cursor_solid &= (*((Uint16 *)offset)) | 0xFFFF0000;
+
+    if(cursor_solid == 0xFFFFFFFF)
+      cursor_color = bg_color;
+
+    if(fg_color < 0x10 && bg_color < 0x10)
+    {
+      // If the fg and bg colors are game colors and close in brightness/the
+      // same, neither color fits well, so choose a protected palette color.
+      int fg_luma = get_color_luma(fg_color);
+      int bg_luma = get_color_luma(bg_color);
+
+      if(abs(fg_luma - bg_luma) < 32)
+      {
+        cursor_color = graphics.protected_pal_position;
+
+        if(fg_luma + bg_luma < 256)
+          cursor_color |= 0x0F;
+      }
+    }
+
+    // Offset adjust protected colors if necessary.
+    if(cursor_color >= 0x10)
+      cursor_color = graphics.protected_pal_position + (cursor_color & 0x0F);
+
+    // Offset adjust mode 1 colors if necessary.
+    else if(graphics.screen_mode == 1)
+      cursor_color = (cursor_color << 4) | (cursor_color & 0x0F);
+  }
+
+  else
+  {
+    // Modes 2 and 3- read the entire char and pick protected white or black.
+    Uint8 char_buffer[CHAR_W * CHAR_H];
+    Uint32 sum = 0;
+    Uint8 pal;
+
+    bg_color &= 0x0F;
+    fg_color &= 0x0F;
+    pal = (bg_color << 4) | fg_color;
+
+    dump_char(cursor_char, pal, graphics.screen_mode, char_buffer);
+
+    for(i = 0; i < CHAR_W * CHAR_H; i += 2)
+      sum += get_color_luma(char_buffer[i]);
+
+    cursor_color = graphics.protected_pal_position;
+
+    if(sum < 128 * (CHAR_W * CHAR_H / 2))
+      cursor_color |= 0x0F;
+  }
+
+  return cursor_color;
+}
+
 static int compare_layers(const void *a, const void *b)
 {
   return (*(struct video_layer * const *)a)->draw_order -
@@ -916,102 +1019,9 @@ void update_screen(void)
   if(graphics.cursor_flipflop &&
    (graphics.cursor_mode != cursor_mode_invisible))
   {
-    struct char_element *cursor_element =
-     graphics.text_video + graphics.cursor_x + (graphics.cursor_y * SCREEN_W);
-    Uint16 cursor_color;
-    Uint32 cursor_char = cursor_element->char_value;
+    Uint16 cursor_color = get_cursor_color();
     Uint32 lines = 0;
     Uint32 offset = 0;
-    Uint32 i;
-    Uint32 cursor_solid = 0xFFFFFFFF;
-    Uint32 *char_offset = (Uint32 *)(graphics.charset +
-     (cursor_char * CHAR_SIZE));
-    Uint32 fg_color = cursor_element->fg_color;
-    Uint32 bg_color = cursor_element->bg_color;
-    int fg_luma = get_color_luma(fg_color);
-    int bg_luma = get_color_luma(bg_color);
-    boolean use_protected = false;
-
-    // Choose FG
-    cursor_color = fg_color;
-
-    if(fg_color < 0x10 && bg_color < 0x10)
-    {
-      // If the fg and bg colors are close in brightness or the same color,
-      // neither color fits well, so choose a protected palette color.
-      if(abs(fg_luma - bg_luma) < 32)
-        use_protected = true;
-    }
-
-    // If the char under the cursor is completely solid, use the background
-    for(i = 0; i < 3; i++)
-    {
-      cursor_solid &= *char_offset;
-      char_offset++;
-    }
-    cursor_solid &= (*((Uint16 *)char_offset)) | 0xFFFF0000;
-
-    if(cursor_solid == 0xFFFFFFFF)
-      cursor_color = bg_color;
-
-    // Protected colors- use white or black
-    if(cursor_color >= 0x10)
-    {
-      if(cursor_color >= 0x19)
-        cursor_color = 0x1F;
-
-      else
-        cursor_color = 0x10;
-    }
-
-    if(graphics.screen_mode)
-    {
-      if(cursor_color >= 0x10)
-      {
-        // Protected? Adjust offset
-        cursor_color =
-         graphics.protected_pal_position + (cursor_color & 0x0F);
-      }
-      else
-
-      if(graphics.screen_mode == 1)
-      {
-        // Mode 1 picks the equivalent color on the diagonal
-        cursor_color = (cursor_color << 4) | (cursor_color & 0x0F);
-      }
-
-      else
-      {
-        // Modes 2 and 3 have no reliable options otherwise
-        use_protected = true;
-      }
-    }
-
-    if(use_protected)
-    {
-      // If the lumas average under half intensity, use white, otherwise black
-      float sum = 0;
-      cursor_color = graphics.protected_pal_position;
-
-      if(graphics.screen_mode >= 2)
-      {
-        bg_color &= 0x0F;
-        fg_color &= 0x0F;
-
-        sum += get_color_luma((bg_color << 4) | bg_color);
-        sum += get_color_luma((fg_color << 4) | bg_color);
-        sum += get_color_luma((bg_color << 4) | fg_color);
-        sum += get_color_luma((fg_color << 4) | fg_color);
-
-        if(sum < 512)
-          cursor_color |= 0x0F;
-      }
-      else
-      {
-        if(fg_luma + bg_luma < 256)
-          cursor_color |= 0x0F;
-      }
-    }
 
     switch(graphics.cursor_mode)
     {
