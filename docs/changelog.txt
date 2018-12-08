@@ -1,4 +1,9 @@
-GIT
+December 9th, 2018 - MZX 2.91i
+
+A small release with a bunch of fixes for bugs introduced mostly
+within the past few versions. Other highlights: joysticks should
+be hot pluggable now and Alt shortcuts now also work with the
+command key in Mac builds.
 
 USERS
 
