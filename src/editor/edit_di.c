@@ -41,7 +41,7 @@
 #include "configure.h"
 #include "edit.h"
 #include "edit_di.h"
-#include "robo_ed.h"
+#include "param.h"
 #include "window.h"
 
 // The 8th bit set indicates that it's a color, not a char
@@ -1266,8 +1266,9 @@ static void global_dmg(struct world *mzx_world)
   pop_context();
 }
 
-void global_info(struct world *mzx_world)
+void global_info(context *ctx)
 {
+  struct world *mzx_world = ctx->world;
   int death_board = mzx_world->death_board;
   int endgame_board = mzx_world->endgame_board;
   int death_x = mzx_world->death_x;
@@ -1483,21 +1484,11 @@ void global_info(struct world *mzx_world)
 
       case 5:
       {
-        global_robot(mzx_world);
+        edit_global_robot(ctx);
         break;
       }
     }
   } while(redo);
-}
-
-void global_robot(struct world *mzx_world)
-{
-  struct robot *cur_robot = &(mzx_world->global_robot);
-  char *name = cur_robot->robot_name;
-
-  // Edit name. If the user presses enter, edit the program.
-  if(!input_window(mzx_world, "Name for robot:", name, ROBOT_NAME_SIZE - 1))
-    robot_editor(mzx_world, cur_robot);
 }
 
 /*

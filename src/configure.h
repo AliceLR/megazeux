@@ -33,6 +33,13 @@ enum ratio_type
   RATIO_STRETCH
 };
 
+enum allow_cheats_type
+{
+  ALLOW_CHEATS_NEVER,
+  ALLOW_CHEATS_MZXRUN,
+  ALLOW_CHEATS_ALWAYS
+};
+
 enum update_auto_check_mode
 {
   UPDATE_AUTO_CHECK_OFF = 0,
@@ -75,6 +82,7 @@ struct config_info
   char startup_file[256];
   char default_save_name[256];
   int mzx_speed;
+  enum allow_cheats_type allow_cheats;
   boolean startup_editor;
   boolean standalone_mode;
   boolean no_titlescreen;

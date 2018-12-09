@@ -23,12 +23,15 @@
 #include "graphics.h"
 #include "compat_sdl.h"
 #include "render_sdl.h"
+#include "util.h"
 
 #include "SDL.h"
 
 extern struct input_status input;
 
 static boolean numlock_status_initialized;
+static int joystick_instance_ids[MAX_JOYSTICKS];
+static SDL_Joystick *joysticks[MAX_JOYSTICKS];
 
 static enum keycode convert_SDL_internal(SDL_Keycode key)
 {
@@ -128,8 +131,17 @@ static enum keycode convert_SDL_internal(SDL_Keycode key)
     case SDLK_LCTRL: return IKEY_LCTRL;
     case SDLK_RALT: return IKEY_RALT;
     case SDLK_LALT: return IKEY_LALT;
+#if !SDL_VERSION_ATLEAST(2,0,0)
+    // SDL 1.2 had two different versions of the same pair of keys.
+    // Because of this, we can't just #define these to the new values.
+    case SDLK_LMETA: return IKEY_LSUPER;
+    case SDLK_RMETA: return IKEY_RSUPER;
+    case SDLK_LSUPER: return IKEY_LSUPER;
+    case SDLK_RSUPER: return IKEY_RSUPER;
+#else
     case SDLK_LGUI: return IKEY_LSUPER;
     case SDLK_RGUI: return IKEY_RSUPER;
+#endif
     case SDLK_SYSREQ: return IKEY_SYSREQ;
     case SDLK_PAUSE: return IKEY_BREAK;
     case SDLK_MENU: return IKEY_MENU;
@@ -151,6 +163,69 @@ static enum keycode convert_SDL_internal(SDL_Keycode key)
     default: return IKEY_UNKNOWN;
   }
 }
+
+/**
+ * SDL 2 uses joystick instance IDs instead of the joystick index for all
+ * purposes aside from SDL_JoystickOpen(). We prefer the joystick index (which
+ * SDL 1.2 used exclusively) as the instance IDs increment every time
+ * SDL_JoystickOpen() is used, so keep a map between the two. Additionally,
+ * store the joystick pointer to make things easier when closing joysticks.
+ */
+
+static int get_joystick_index(int sdl_instance_id)
+{
+  int i;
+  for(i = 0; i < MAX_JOYSTICKS; i++)
+    if((joystick_instance_ids[i] == sdl_instance_id) && joysticks[i])
+      return i;
+
+  return -1;
+}
+
+static int get_next_unused_joystick_index(void)
+{
+  int i;
+  for(i = 0; i < MAX_JOYSTICKS; i++)
+    if(!joysticks[i])
+      return i;
+
+  return -1;
+}
+
+static void init_joystick(int sdl_index)
+{
+  int joystick_index = get_next_unused_joystick_index();
+
+  if(joystick_index >= 0)
+  {
+    SDL_Joystick *joystick = SDL_JoystickOpen(sdl_index);
+
+    if(joystick)
+    {
+      joystick_instance_ids[joystick_index] = SDL_JoystickInstanceID(joystick);
+      joysticks[joystick_index] = joystick;
+
+      debug("[JOYSTICK] Opened %d (SDL instance ID: %d)\n",
+       joystick_index, joystick_instance_ids[joystick_index]);
+    }
+  }
+}
+
+#if SDL_VERSION_ATLEAST(2,0,0)
+// TODO: swappable joysticks in SDL <2
+static void close_joystick(int joystick_index)
+{
+  if(joystick_index >= 0)
+  {
+    debug("[JOYSTICK] Closing %d (SDL instance ID: %d)\n",
+     joystick_index, joystick_instance_ids[joystick_index]);
+
+    SDL_JoystickClose(joysticks[joystick_index]);
+    joystick_instance_ids[joystick_index] = -1;
+    joysticks[joystick_index] = NULL;
+  }
+}
+#endif
 
 static boolean process_event(SDL_Event *event)
 {
@@ -361,9 +436,9 @@ static boolean process_event(SDL_Event *event)
       // the MZX event queue processor, emulate the 1.2 behaviour by waiting
       // for a TEXTINPUT event after a KEYDOWN.
       SDL_PumpEvents();
-      if (SDL_PeepEvents(event, 1, SDL_GETEVENT, SDL_TEXTINPUT, SDL_TEXTINPUT)) {
+
+      if(SDL_PeepEvents(event, 1, SDL_GETEVENT, SDL_TEXTINPUT, SDL_TEXTINPUT))
         unicode = event->text.text[0] | event->text.text[1] << 8;
-      }
 #else
       unicode = event->key.keysym.unicode;
 #endif
@@ -406,12 +481,14 @@ static boolean process_event(SDL_Event *event)
       if(status->key_repeat &&
        (status->key_repeat != IKEY_LSHIFT) &&
        (status->key_repeat != IKEY_RSHIFT) &&
+       (status->key_repeat != IKEY_LSUPER) &&
+       (status->key_repeat != IKEY_RSUPER) &&
        (status->key_repeat != IKEY_LALT) &&
        (status->key_repeat != IKEY_RALT) &&
        (status->key_repeat != IKEY_LCTRL) &&
        (status->key_repeat != IKEY_RCTRL))
       {
-        // Stack current repeat key if it isn't shift, alt, or ctrl
+        // Stack current repeat key if it isn't shift, super, alt, or ctrl
         if(input.repeat_stack_pointer != KEY_REPEAT_STACK_SIZE)
         {
           input.key_repeat_stack[input.repeat_stack_pointer] =
@@ -456,14 +533,42 @@ static boolean process_event(SDL_Event *event)
       break;
     }
 
+#if SDL_VERSION_ATLEAST(2,0,0)
+    case SDL_JOYDEVICEADDED:
+    {
+      // Add a new joystick.
+      // "which" for this event (but not for any other joystick event) is not
+      // a joystick instance ID, but instead an index for SDL_JoystickOpen().
+      init_joystick(event->jdevice.which);
+      break;
+    }
+
+    case SDL_JOYDEVICEREMOVED:
+    {
+      // Close a disconnected joystick.
+      int which = event->jdevice.which;
+      int joystick_index = get_joystick_index(which);
+
+      close_joystick(joystick_index);
+      break;
+    }
+#endif
+
     case SDL_JOYAXISMOTION:
     {
       int axis_value = event->jaxis.value;
       int digital_value = -1;
       int which = event->jaxis.which;
       int axis = event->jaxis.axis;
-      Sint8 last_axis = status->axis[which][axis];
+      Sint8 last_axis;
       enum keycode stuffed_key;
+
+      // Get the real joystick index from the SDL instance ID
+      int joystick_index = get_joystick_index(which);
+      if(joystick_index < 0)
+        break;
+
+      last_axis = status->axis[joystick_index][axis];
 
       if(axis_value > 10000)
         digital_value = 1;
@@ -475,7 +580,7 @@ static boolean process_event(SDL_Event *event)
       if(digital_value != -1)
       {
         stuffed_key =
-          input.joystick_axis_map[which][axis][digital_value];
+         input.joystick_axis_map[joystick_index][axis][digital_value];
 
         if(stuffed_key)
         {
@@ -484,17 +589,17 @@ static boolean process_event(SDL_Event *event)
           if(last_axis == (digital_value ^ 1))
           {
             joystick_key_release(status,
-             input.joystick_axis_map[which][axis][last_axis]);
+             input.joystick_axis_map[joystick_index][axis][last_axis]);
           }
         }
       }
       else if(last_axis != -1)
       {
         joystick_key_release(status,
-          input.joystick_axis_map[which][axis][last_axis]);
+         input.joystick_axis_map[joystick_index][axis][last_axis]);
       }
 
-      status->axis[which][axis] = digital_value;
+      status->axis[joystick_index][axis] = digital_value;
       break;
     }
 
@@ -502,7 +607,14 @@ static boolean process_event(SDL_Event *event)
     {
       int which = event->jbutton.which;
       int button = event->jbutton.button;
-      enum keycode stuffed_key = input.joystick_button_map[which][button];
+      enum keycode stuffed_key;
+
+      // Get the real joystick index from the SDL instance ID
+      int joystick_index = get_joystick_index(which);
+      if(joystick_index < 0)
+        break;
+
+      stuffed_key = input.joystick_button_map[joystick_index][button];
 
       if(stuffed_key)
         joystick_key_press(status, stuffed_key, stuffed_key);
@@ -514,7 +626,14 @@ static boolean process_event(SDL_Event *event)
     {
       int which = event->jbutton.which;
       int button = event->jbutton.button;
-      enum keycode stuffed_key = input.joystick_button_map[which][button];
+      enum keycode stuffed_key;
+
+      // Get the real joystick index from the SDL instance ID
+      int joystick_index = get_joystick_index(which);
+      if(joystick_index < 0)
+        break;
+
+      stuffed_key = input.joystick_button_map[joystick_index][button];
 
       if(stuffed_key)
         joystick_key_release(status, stuffed_key);
@@ -526,43 +645,49 @@ static boolean process_event(SDL_Event *event)
     {
       int which = event->jhat.which;
       int dir = event->jhat.value;
-      enum keycode key_up = input.joystick_hat_map[which][0];
-      enum keycode key_down = input.joystick_hat_map[which][1];
-      enum keycode key_left = input.joystick_hat_map[which][2];
-      enum keycode key_right = input.joystick_hat_map[which][3];
+      enum keycode key_up;
+      enum keycode key_down;
+      enum keycode key_left;
+      enum keycode key_right;
 
-      //if(dir & SDL_HAT_CENTERED)
-      {
-        joystick_key_release(status, key_up);
-        joystick_key_release(status, key_down);
-        joystick_key_release(status, key_left);
-        joystick_key_release(status, key_right);
-      }
+      // Get the real joystick index from the SDL instance ID
+      int joystick_index = get_joystick_index(which);
+      if(joystick_index < 0)
+        break;
+
+      key_up = input.joystick_hat_map[joystick_index][0];
+      key_down = input.joystick_hat_map[joystick_index][1];
+      key_left = input.joystick_hat_map[joystick_index][2];
+      key_right = input.joystick_hat_map[joystick_index][3];
+
+      joystick_key_release(status, key_up);
+      joystick_key_release(status, key_down);
+      joystick_key_release(status, key_left);
+      joystick_key_release(status, key_right);
 
       if(dir & SDL_HAT_UP)
       {
-        if (key_up)
+        if(key_up)
           joystick_key_press(status, key_up, key_up);
       }
 
       if(dir & SDL_HAT_DOWN)
       {
-        if (key_down)
+        if(key_down)
           joystick_key_press(status, key_down, key_down);
       }
 
       if(dir & SDL_HAT_LEFT)
       {
-        if (key_left)
+        if(key_left)
           joystick_key_press(status, key_left, key_left);
       }
 
       if(dir & SDL_HAT_RIGHT)
       {
-        if (key_right)
+        if(key_right)
           joystick_key_press(status, key_right, key_right);
       }
-
       break;
     }
 
@@ -609,7 +734,8 @@ boolean __peek_exit_input(void)
   int num_events, i;
 
   SDL_PumpEvents();
-  num_events = SDL_PeepEvents(events, 256, SDL_PEEKEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT);
+  num_events =
+   SDL_PeepEvents(events, 256, SDL_PEEKEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT);
 
   for(i = 0; i < num_events; i++)
   {
@@ -712,17 +838,18 @@ void real_warp_mouse(int x, int y)
 
 void initialize_joysticks(void)
 {
+#if !SDL_VERSION_ATLEAST(2,0,0)
+  // SDL 1.2 doesn't have joystick added/removed events.
   int i, count;
 
   count = SDL_NumJoysticks();
 
-  if(count > 16)
-    count = 16;
+  if(count > MAX_JOYSTICKS)
+    count = MAX_JOYSTICKS;
 
   for(i = 0; i < count; i++)
-  {
-    SDL_JoystickOpen(i);
-  }
+    init_joystick(i);
+#endif
 
   SDL_JoystickEventState(SDL_ENABLE);
 }

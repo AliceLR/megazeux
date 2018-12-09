@@ -83,9 +83,14 @@ static boolean strip_caption_string(char *output, const char *input)
  */
 
 // Make GCC shut up
-#if __GNUC__ >= 4
+#ifdef __GNUC__
+#if __GNUC__ >= 5 || (__GNUC__ == 4 &&  __GNUC_MINOR__ >= 4)
 static inline void caption_append(char caption[MAX_CAPTION_SIZE],
  const char *f, ...) __attribute__((format(gnu_printf, 2, 3)));
+#else
+static inline void caption_append(char caption[MAX_CAPTION_SIZE],
+ const char *f, ...) __attribute__((format(printf, 2, 3)));
+#endif
 #endif
 
 static inline void caption_append(char caption[MAX_CAPTION_SIZE],

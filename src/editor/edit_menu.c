@@ -43,6 +43,7 @@ struct edit_menu_subcontext
   int current_menu;
   int robot_memory_timer;
   int board_mod_timer;
+  size_t robot_mem;
 
   // Provided by edit.c
   struct buffer_info *buffer;
@@ -317,30 +318,17 @@ static void draw_menu_minimal(struct edit_menu_subcontext *edit_menu)
 {
   struct world *mzx_world = ((context *)edit_menu)->world;
   struct board *cur_board = mzx_world->current_board;
-  int i;
 
   fill_line(80, 0, EDIT_SCREEN_MINIMAL, ' ', EC_MAIN_BOX);
 
   // Display robot memory where the Alt+H message would usually go.
   if(edit_menu->robot_memory_timer > 0)
   {
-    int robot_mem = 0;
-
-    for(i = 0; i < cur_board->num_robots_active; i++)
-    {
-      robot_mem +=
-#ifdef CONFIG_DEBYTECODE
-       (cur_board->robot_list_name_sorted[i])->program_source_length;
-#else
-       (cur_board->robot_list_name_sorted[i])->program_bytecode_length;
-#endif
-    }
-
-    robot_mem = (robot_mem + 512) / 1024;
+    int robot_mem_kb = (edit_menu->robot_mem + 512) / 1024;
 
     write_string("Robot mem:       kb", 2, EDIT_SCREEN_MINIMAL, EC_MODE_STR,
      false);
-    write_number(robot_mem, 31, 2+11, EDIT_SCREEN_MINIMAL, 6, 0, 10);
+    write_number(robot_mem_kb, 31, 2+11, EDIT_SCREEN_MINIMAL, 6, 0, 10);
   }
   else
 
@@ -524,8 +512,35 @@ void edit_menu_show_board_mod(subcontext *ctx)
   edit_menu->board_mod_timer = BOARD_MOD_TIMER_MAX;
 }
 
+static size_t compute_robot_memory(struct edit_menu_subcontext *edit_menu)
+{
+  struct world *mzx_world = ((context *)edit_menu)->world;
+  struct board *cur_board = mzx_world->current_board;
+  size_t robot_mem = 0;
+  int i;
+
+  for(i = 0; i < cur_board->num_robots_active; i++)
+  {
+    robot_mem +=
+#ifdef CONFIG_DEBYTECODE
+     (cur_board->robot_list_name_sorted[i])->program_source_length;
+#else
+     (cur_board->robot_list_name_sorted[i])->program_bytecode_length;
+#endif
+  }
+
+  return robot_mem;
+}
+
 void edit_menu_show_robot_memory(subcontext *ctx)
 {
   struct edit_menu_subcontext *edit_menu = (struct edit_menu_subcontext *)ctx;
-  edit_menu->robot_memory_timer = ROBOT_MEMORY_TIMER_MAX;
+  size_t new_robot_mem = compute_robot_memory(edit_menu);
+
+  // If the robot memory hasn't changed, there isn't much point it showing it.
+  if(edit_menu->robot_mem != new_robot_mem)
+  {
+    edit_menu->robot_memory_timer = ROBOT_MEMORY_TIMER_MAX;
+    edit_menu->robot_mem = new_robot_mem;
+  }
 }

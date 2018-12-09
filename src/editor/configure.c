@@ -400,6 +400,8 @@ static void config_board_width(struct editor_config_info *conf,
   conf->board_width = CLAMP(strtol(value, NULL, 10), 1, 32767);
   if(conf->viewport_w > conf->board_width)
     conf->viewport_w = conf->board_width;
+  if(conf->board_width * conf->board_height > MAX_BOARD_SIZE)
+    conf->board_height = MAX_BOARD_SIZE / conf->board_width;
 }
 
 static void config_board_height(struct editor_config_info *conf,
@@ -408,6 +410,8 @@ static void config_board_height(struct editor_config_info *conf,
   conf->board_height = CLAMP(strtol(value, NULL, 10), 1, 32767);
   if(conf->viewport_h > conf->board_height)
     conf->viewport_h = conf->board_height;
+  if(conf->board_width * conf->board_height > MAX_BOARD_SIZE)
+    conf->board_width = MAX_BOARD_SIZE / conf->board_height;
 }
 
 static void config_board_viewport_w(struct editor_config_info *conf,

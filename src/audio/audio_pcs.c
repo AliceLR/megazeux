@@ -26,6 +26,8 @@
 
 #include "../configure.h"
 
+#include <string.h>
+
 struct pc_speaker_stream
 {
   struct audio_stream a;

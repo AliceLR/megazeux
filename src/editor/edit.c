@@ -74,7 +74,8 @@
 #endif
 
 #define NEW_WORLD_TITLE       "Untitled world"
-#define TEST_WORLD_FILE       "__test.mzx"
+#define TEST_WORLD_FILENAME   "__test.mzx"
+#define TEST_WORLD_PATTERN    "__test%d.mzx"
 
 #define FLASH_THING_B         4
 #define FLASH_THING_MAX       8
@@ -125,6 +126,14 @@ struct editor_context
   struct sensor buffer_sensor;
   boolean use_default_color;        // = 1
 
+  // Modify in-place buffer
+  struct buffer_info temp_buffer;
+  struct robot temp_robot;
+  struct scroll temp_scroll;
+  struct sensor temp_sensor;
+  boolean modified_storage;
+  int modify_param;
+
   // Current board
   int board_width;
   int board_height;
@@ -171,6 +180,7 @@ struct editor_context
   int test_reload_board;
   int test_reload_version;
   char test_reload_dir[MAX_PATH];
+  char test_reload_file[MAX_PATH];
   boolean reload_after_testing;
 };
 
@@ -204,6 +214,24 @@ static boolean editor_reload_world(struct editor_context *editor,
 
   edit_menu_show_board_mod(editor->edit_menu);
   return true;
+}
+
+/**
+ * Get the filename for the test world file that will be reloaded after testing.
+ * Attempts to ensure that previous test files left behind due to crashes or
+ * other instances of MegaZeux that are also testing aren't overwritten.
+ */
+
+static void get_test_world_filename(struct editor_context *editor)
+{
+  struct stat file_info;
+  int i;
+
+  strcpy(editor->test_reload_file, TEST_WORLD_FILENAME);
+
+  // If the regular file exists, attempt numbered names.
+  for(i = 2; !stat(editor->test_reload_file, &file_info); i++)
+    snprintf(editor->test_reload_file, MAX_PATH, TEST_WORLD_PATTERN, i);
 }
 
 /**
@@ -1222,6 +1250,140 @@ static boolean editor_mouse(context *ctx, int *key, int button, int x, int y)
 }
 
 /**
+ * Edit the parameter of the buffer and update it if the user doesn't cancel.
+ */
+
+static void change_buffer_param_callback(context *ctx, context_callback_param *p)
+{
+  struct editor_context *editor = (struct editor_context *)ctx;
+  struct buffer_info *buffer = &(editor->buffer);
+
+  if(is_storageless(buffer->id) && editor->modify_param >= 0)
+  {
+    buffer->param = editor->modify_param;
+  }
+}
+
+static void change_buffer_param(struct editor_context *editor)
+{
+  change_param((context *)editor, &(editor->buffer), &(editor->modify_param));
+  context_callback((context *)editor, NULL, change_buffer_param_callback);
+}
+
+/**
+ * Get the thing at the cursor position on the board and edit it. If it was
+ * modified, place it back on the board.
+ */
+
+static void get_modify_place_callback(context *ctx, context_callback_param *p)
+{
+  struct editor_context *editor = (struct editor_context *)ctx;
+  struct buffer_info *buffer = &(editor->buffer);
+  int new_param = editor->modify_param;
+
+  // Ignore non-storage objects with no change.
+  if((new_param >= 0 && new_param != buffer->param) || editor->modified_storage)
+  {
+    // Update the buffer for the new param.
+    buffer->param = new_param;
+
+    // Place the buffer back on the board/layer.
+    new_param = place_current_at_xy(ctx->world, buffer, editor->cursor_x,
+     editor->cursor_y, editor->mode, editor->cur_history);
+
+    // Placement might have required that we change the buffer param again.
+    buffer->param = new_param;
+
+    editor->modified = true;
+  }
+}
+
+static void get_modify_place(struct editor_context *editor)
+{
+  struct world *mzx_world = ((context *)editor)->world;
+  struct buffer_info *buffer = &(editor->buffer);
+
+  grab_at_xy(mzx_world, buffer, editor->cursor_x, editor->cursor_y,
+   editor->mode);
+
+  if(editor->mode == EDIT_BOARD)
+  {
+    // Board- param
+    editor->modified_storage = !is_storageless(buffer->id);
+    buffer->robot->xpos = editor->cursor_x;
+    buffer->robot->ypos = editor->cursor_y;
+
+    change_param((context *)editor, buffer, &(editor->modify_param));
+  }
+  else
+  {
+    // Overlay and vlayer- char
+    editor->modified_storage = false;
+    editor->modify_param = char_selection(buffer->param);
+  }
+  context_callback((context *)editor, NULL, get_modify_place_callback);
+}
+
+/**
+ * Modifies the thing at a given position without altering the buffer.
+ * This is done with a temporary buffer to avoid replicating much of the
+ * code of place_current_at_xy.
+ */
+
+static void modify_thing_callback(context *ctx, context_callback_param *p)
+{
+  struct editor_context *editor = (struct editor_context *)ctx;
+  struct buffer_info *temp_buffer = &(editor->temp_buffer);
+  int new_param = editor->modify_param;
+
+  // Ignore non-storage objects with no change.
+  if((new_param >= 0 && new_param != temp_buffer->param) ||
+   editor->modified_storage)
+  {
+    // Update the buffer for the new param.
+    temp_buffer->param = new_param;
+
+    // place_current_at_xy wrapper that ensures the under is untouched.
+    replace_current_at_xy(ctx->world, temp_buffer, editor->cursor_x,
+     editor->cursor_y, editor->mode, editor->cur_history);
+
+    free_edit_buffer(temp_buffer);
+    editor->modified = true;
+  }
+}
+
+static void modify_thing_at_cursor(struct editor_context *editor)
+{
+  struct world *mzx_world = ((context *)editor)->world;
+  struct buffer_info *temp_buffer = &(editor->temp_buffer);
+
+  memset(temp_buffer, 0, sizeof(struct buffer_info));
+  temp_buffer->robot = &(editor->temp_robot);
+  temp_buffer->scroll = &(editor->temp_scroll);
+  temp_buffer->sensor = &(editor->temp_sensor);
+
+  grab_at_xy(mzx_world, temp_buffer, editor->cursor_x, editor->cursor_y,
+   editor->mode);
+
+  if(editor->mode == EDIT_BOARD)
+  {
+    // Board- param
+    editor->modified_storage = !is_storageless(temp_buffer->id);
+    temp_buffer->robot->xpos = editor->cursor_x;
+    temp_buffer->robot->ypos = editor->cursor_y;
+
+    change_param((context *)editor, temp_buffer, &(editor->modify_param));
+  }
+  else
+  {
+    // Overlay and vlayer- char
+    editor->modified_storage = false;
+    editor->modify_param = char_selection(temp_buffer->param);
+  }
+  context_callback((context *)editor, NULL, modify_thing_callback);
+}
+
+/**
  * Editor keyhandler.
  */
 
@@ -1239,9 +1401,7 @@ static boolean editor_key(context *ctx, int *key)
   boolean exit_status;
   int i;
 
-  temp_buffer.robot = NULL;
-  temp_buffer.scroll = NULL;
-  temp_buffer.sensor = NULL;
+  memset(&temp_buffer, 0, sizeof(struct buffer_info));
 
   // If the mouse is trying to draw something, stop it first.
   if(editor->continue_mouse_history)
@@ -1536,6 +1696,7 @@ static boolean editor_key(context *ctx, int *key)
         if(editor->cursor_mode)
         {
           editor->cursor_mode = CURSOR_PLACE;
+          block->selected = false;
         }
         else
         {
@@ -1609,6 +1770,7 @@ static boolean editor_key(context *ctx, int *key)
       if(editor->cursor_mode)
       {
         editor->cursor_mode = CURSOR_PLACE;
+        block->selected = false;
         key = 0;
         return true;
       }
@@ -1649,8 +1811,8 @@ static boolean editor_key(context *ctx, int *key)
 
     case IKEY_F2:
     {
-      // Ignore Ctrl+F2
-      if(get_ctrl_status(keycode_internal))
+      // Ignore Alt+F2, Ctrl+F2
+      if(get_alt_status(keycode_internal) || get_ctrl_status(keycode_internal))
         break;
 
       if(get_shift_status(keycode_internal))
@@ -1666,6 +1828,7 @@ static boolean editor_key(context *ctx, int *key)
         // Toggle text mode
         if(editor->cursor_mode != CURSOR_TEXT)
         {
+          block->selected = false;
           editor->cursor_mode = CURSOR_TEXT;
           editor->text_start_x = editor->cursor_x;
         }
@@ -1689,7 +1852,7 @@ static boolean editor_key(context *ctx, int *key)
         }
         else
         {
-          thing_menu((context *)editor, THING_MENU_TERRAIN, buffer,
+          thing_menu(ctx, THING_MENU_TERRAIN, buffer,
            editor->use_default_color, editor->cursor_x, editor->cursor_y,
            editor->board_history);
           editor->modified = true;
@@ -1714,7 +1877,7 @@ static boolean editor_key(context *ctx, int *key)
         }
         else
         {
-          thing_menu((context *)editor, THING_MENU_ITEMS, buffer,
+          thing_menu(ctx, THING_MENU_ITEMS, buffer,
            editor->use_default_color, editor->cursor_x, editor->cursor_y,
            editor->board_history);
           editor->modified = true;
@@ -1728,7 +1891,7 @@ static boolean editor_key(context *ctx, int *key)
     {
       if(editor->mode == EDIT_BOARD)
       {
-        thing_menu((context *)editor, THING_MENU_CREATURES, buffer,
+        thing_menu(ctx, THING_MENU_CREATURES, buffer,
          editor->use_default_color, editor->cursor_x, editor->cursor_y,
          editor->board_history);
         editor->modified = true;
@@ -1741,7 +1904,7 @@ static boolean editor_key(context *ctx, int *key)
     {
       if(editor->mode == EDIT_BOARD)
       {
-        thing_menu((context *)editor, THING_MENU_PUZZLE, buffer,
+        thing_menu(ctx, THING_MENU_PUZZLE, buffer,
          editor->use_default_color, editor->cursor_x, editor->cursor_y,
          editor->board_history);
         editor->modified = true;
@@ -1754,7 +1917,7 @@ static boolean editor_key(context *ctx, int *key)
     {
       if(editor->mode == EDIT_BOARD)
       {
-        thing_menu((context *)editor, THING_MENU_TRANSPORT, buffer,
+        thing_menu(ctx, THING_MENU_TRANSPORT, buffer,
          editor->use_default_color, editor->cursor_x, editor->cursor_y,
          editor->board_history);
         editor->modified = true;
@@ -1767,7 +1930,7 @@ static boolean editor_key(context *ctx, int *key)
     {
       if(editor->mode == EDIT_BOARD)
       {
-        thing_menu((context *)editor, THING_MENU_ELEMENTS, buffer,
+        thing_menu(ctx, THING_MENU_ELEMENTS, buffer,
          editor->use_default_color, editor->cursor_x, editor->cursor_y,
          editor->board_history);
         editor->modified = true;
@@ -1780,7 +1943,7 @@ static boolean editor_key(context *ctx, int *key)
     {
       if(editor->mode == EDIT_BOARD)
       {
-        thing_menu((context *)editor, THING_MENU_MISC, buffer,
+        thing_menu(ctx, THING_MENU_MISC, buffer,
          editor->use_default_color, editor->cursor_x, editor->cursor_y,
          editor->board_history);
         editor->modified = true;
@@ -1793,15 +1956,9 @@ static boolean editor_key(context *ctx, int *key)
     {
       if(editor->mode == EDIT_BOARD)
       {
-        thing_menu((context *)editor, THING_MENU_OBJECTS, buffer,
+        thing_menu(ctx, THING_MENU_OBJECTS, buffer,
          editor->use_default_color, editor->cursor_x, editor->cursor_y,
          editor->board_history);
-
-        if(is_robot(buffer->id))
-        {
-          edit_menu_show_robot_memory(editor->edit_menu);
-          fix_caption(editor);
-        }
         editor->modified = true;
       }
       return true;
@@ -1925,6 +2082,7 @@ static boolean editor_key(context *ctx, int *key)
           error("Overlay mode is not on (see Board Info)",
            ERROR_T_WARNING, ERROR_OPT_OK, 0x1103);
           editor->cursor_mode = CURSOR_PLACE;
+          block->selected = false;
           return true;
         }
 
@@ -1934,6 +2092,7 @@ static boolean editor_key(context *ctx, int *key)
           case BLOCK_CMD_NONE:
           {
             editor->cursor_mode = CURSOR_PLACE;
+            block->selected = false;
             break;
           }
 
@@ -2032,51 +2191,7 @@ static boolean editor_key(context *ctx, int *key)
       // Normal/draw - modify+get
       else
       {
-        int edited_storage = 0;
-        int new_param;
-
-        grab_at_xy(mzx_world, buffer, editor->cursor_x, editor->cursor_y,
-         editor->mode);
-
-        if(editor->mode == EDIT_BOARD)
-        {
-          // Board- param
-          buffer->robot->xpos = editor->cursor_x;
-          buffer->robot->ypos = editor->cursor_y;
-
-          new_param = change_param(mzx_world, buffer);
-
-          if(!is_storageless(buffer->id))
-          {
-            if(is_robot(buffer->id))
-            {
-              edit_menu_show_robot_memory(editor->edit_menu);
-              fix_caption(editor);
-            }
-            edited_storage = 1;
-          }
-        }
-        else
-        {
-          // Overlay and vlayer- char
-          new_param = char_selection(buffer->param);
-        }
-
-        // Ignore non-storage objects with no change.
-        if((new_param >= 0 && new_param != buffer->param) || edited_storage)
-        {
-          // Update the buffer for the new param.
-          buffer->param = new_param;
-
-          // Place the buffer back on the board/layer.
-          new_param = place_current_at_xy(mzx_world, buffer, editor->cursor_x,
-           editor->cursor_y, editor->mode, editor->cur_history);
-
-          // Placement might have required that we change the buffer param again.
-          buffer->param = new_param;
-
-          editor->modified = true;
-        }
+        get_modify_place(editor);
       }
       return true;
     }
@@ -2299,15 +2414,14 @@ static boolean editor_key(context *ctx, int *key)
 
         if(get_alt_status(keycode_internal))
         {
-          global_robot(mzx_world);
+          edit_global_robot(ctx);
         }
 
         else
         {
-          global_info(mzx_world);
+          global_info(ctx);
         }
 
-        fix_caption(editor);
         editor->modified = true;
       }
       else
@@ -2394,14 +2508,14 @@ static boolean editor_key(context *ctx, int *key)
               struct element *elements[] =
               {
                 construct_number_box(21, 20, "Offset:  ",
-                 0, 255, 0, &char_offset),
+                 0, (PRO_CH - 1), 0, &char_offset),
               };
 
               if(!file_manager(mzx_world, chr_ext, NULL, import_name,
                "Choose character set to import", 1, 0,
-               elements, 1, 2))
+               elements, ARRAY_SIZE(elements), 2))
               {
-                ec_load_set_var(import_name, char_offset, 0);
+                ec_load_set_var(import_name, char_offset, MZX_VERSION);
               }
               editor->modified = true;
               break;
@@ -2603,97 +2717,7 @@ static boolean editor_key(context *ctx, int *key)
         // Modify
         if(get_alt_status(keycode_internal))
         {
-          int offset =
-           editor->cursor_x + (editor->cursor_y * editor->board_width);
-
-          if(editor->mode == EDIT_BOARD)
-          {
-            enum thing d_id = cur_board->level_id[offset];
-            int d_param = cur_board->level_param[offset];
-            int new_param;
-
-            if(is_storageless(d_id))
-            {
-              temp_buffer.id = d_id;
-              temp_buffer.param = d_param;
-              new_param = change_param(mzx_world, &temp_buffer);
-
-              if(new_param >= 0 && new_param != d_param)
-              {
-                add_block_undo_frame(mzx_world, editor->board_history,
-                 cur_board, offset, 1, 1);
-
-                cur_board->level_param[offset] = new_param;
-
-                update_undo_frame(editor->board_history);
-                editor->modified = true;
-              }
-            }
-            else
-
-            if(d_id != PLAYER)
-            {
-              add_block_undo_frame(mzx_world, editor->board_history,
-               cur_board, offset, 1, 1);
-
-              if(d_id == SENSOR)
-              {
-                edit_sensor(mzx_world, cur_board->sensor_list[d_param]);
-              }
-              else
-
-              if(is_robot(d_id))
-              {
-                edit_robot(mzx_world, cur_board->robot_list[d_param]);
-                edit_menu_show_robot_memory(editor->edit_menu);
-                fix_caption(editor);
-              }
-              else
-
-              if(is_signscroll(d_id))
-              {
-                edit_scroll(mzx_world, cur_board->scroll_list[d_param]);
-              }
-
-              update_undo_frame(editor->board_history);
-              editor->modified = true;
-            }
-          }
-          else
-
-          if(editor->mode == EDIT_OVERLAY)
-          {
-            int new_ch = char_selection(cur_board->overlay[offset]);
-
-            if(new_ch >= 0)
-            {
-              add_layer_undo_frame(editor->overlay_history,
-               cur_board->overlay, cur_board->overlay_color,
-               editor->board_width, offset, 1, 1);
-
-              cur_board->overlay[offset] = new_ch;
-
-              update_undo_frame(editor->overlay_history);
-              editor->modified = true;
-            }
-          }
-
-          else // EDIT_VLAYER
-          {
-            int new_ch = char_selection(mzx_world->vlayer_chars[offset]);
-
-            if(new_ch >= 0)
-            {
-              add_layer_undo_frame(editor->vlayer_history,
-               mzx_world->vlayer_chars, mzx_world->vlayer_colors,
-               editor->board_width, offset, 1, 1);
-
-              mzx_world->vlayer_chars[offset] = new_ch;
-
-              update_undo_frame(editor->vlayer_history);
-              editor->modified = true;
-            }
-          }
+          modify_thing_at_cursor(editor);
         }
         else
 
@@ -2880,12 +2904,9 @@ static boolean editor_key(context *ctx, int *key)
         if(editor->mode == EDIT_BOARD)
         {
           // Board- buffer param
-          if(buffer->id < SENSOR)
+          if(is_storageless(buffer->id))
           {
-            int new_param = change_param(mzx_world, buffer);
-
-            if(new_param >= 0)
-              buffer->param = new_param;
+            change_buffer_param(editor);
           }
         }
 
@@ -3009,7 +3030,9 @@ static boolean editor_key(context *ctx, int *key)
         clear_overlay_history(editor);
         clear_vlayer_history(editor);
 
-        if(!save_world(mzx_world, TEST_WORLD_FILE, false, MZX_VERSION))
+        get_test_world_filename(editor);
+
+        if(!save_world(mzx_world, editor->test_reload_file, false, MZX_VERSION))
         {
           getcwd(editor->test_reload_dir, MAX_PATH);
           editor->test_reload_version = mzx_world->version;
@@ -3115,13 +3138,13 @@ static boolean editor_key(context *ctx, int *key)
               struct element *elements[] =
               {
                 construct_number_box(9, 20, "Offset:  ",
-                 0, 255, 0, &char_offset),
+                 0, (PRO_CH - 1), 0, &char_offset),
                 construct_number_box(35, 20, "Size: ",
-                 1, 256, 0, &char_size)
+                 1, (PRO_CH), 0, &char_size)
               };
 
               if(!file_manager(mzx_world, chr_ext, NULL, export_name,
-               "Export character set", 1, 1, elements, 2, 2))
+               "Export character set", 1, 1, elements, ARRAY_SIZE(elements), 2))
               {
                 add_ext(export_name, ".chr");
                 ec_save_set_var(export_name, char_offset,
@@ -3347,7 +3370,7 @@ static void editor_resume(context *ctx)
     editor->reload_after_testing = false;
     chdir(editor->test_reload_dir);
 
-    if(!reload_world(mzx_world, TEST_WORLD_FILE, &ignore))
+    if(!reload_world(mzx_world, editor->test_reload_file, &ignore))
     {
       if(!editor_reload_world(editor, editor->current_world))
         create_blank_world(mzx_world);
@@ -3369,7 +3392,6 @@ static void editor_resume(context *ctx)
 
     synchronize_board_values(editor);
     fix_scroll(editor);
-    fix_caption(editor);
 
     if(editor->listening_mod_active)
     {
@@ -3380,8 +3402,12 @@ static void editor_resume(context *ctx)
       fix_mod(editor);
     }
 
-    unlink(TEST_WORLD_FILE);
+    unlink(editor->test_reload_file);
   }
+
+  // These may have changed if a robot was edited.
+  edit_menu_show_robot_memory(editor->edit_menu);
+  fix_caption(editor);
 }
 
 /**
@@ -3403,6 +3429,9 @@ static void editor_destroy(context *ctx)
   clear_global_data(mzx_world);
   audio_end_module();
 
+  // Clear any stored buffer data.
+  free_edit_buffer(buffer);
+
   // Free the undo data
   clear_board_history(editor);
   clear_overlay_history(editor);
@@ -3420,12 +3449,6 @@ static void editor_destroy(context *ctx)
 
   // Reset the caption
   caption_set_world(mzx_world);
-
-  // Clear any stored buffer data.
-  if(buffer->robot->used)
-    clear_robot_contents(buffer->robot);
-  if(buffer->scroll->used)
-    clear_scroll_contents(buffer->scroll);
 }
 
 /**

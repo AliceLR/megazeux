@@ -171,6 +171,7 @@ static const struct config_info user_conf_default =
   "caverns.mzx",                // startup_file
   "saved.sav",                  // default_save_name
   4,                            // mzx_speed
+  ALLOW_CHEATS_NEVER,           // allow_cheats
   false,                        // startup_editor
   false,                        // standalone_mode
   false,                        // no_titlescreen
@@ -432,8 +433,8 @@ static void joy_axis_set(struct config_info *conf, char *name,
   sscanf(name, "joy%uaxis%u", &joy_num, &joy_axis);
   sscanf(value, "%u, %u", &joy_key_min, &joy_key_max);
 
-  joy_num = CLAMP(joy_num, 1, 16);
-  joy_axis = CLAMP(joy_axis, 1, 16);
+  joy_num = CLAMP(joy_num, 1, MAX_JOYSTICKS);
+  joy_axis = CLAMP(joy_axis, 1, MAX_JOYSTICK_AXES);
 
   map_joystick_axis(joy_num - 1, joy_axis - 1, (enum keycode)joy_key_min,
    (enum keycode)joy_key_max);
@@ -449,7 +450,8 @@ static void joy_button_set(struct config_info *conf, char *name,
   sscanf(name, "joy%ubutton%u", &joy_num, &joy_button);
 
   joy_key = (enum keycode)strtoul(value, NULL, 10);
-  joy_num = CLAMP(joy_num, 1, 16);
+  joy_num = CLAMP(joy_num, 1, MAX_JOYSTICKS);
+  joy_button = CLAMP(joy_button, 1, MAX_JOYSTICK_BUTTONS);
 
   map_joystick_button(joy_num - 1, joy_button - 1, (enum keycode)joy_key);
 }
@@ -465,7 +467,7 @@ static void joy_hat_set(struct config_info *conf, char *name,
   sscanf(value, "%u, %u, %u, %u", &joy_key_up, &joy_key_down,
    &joy_key_left, &joy_key_right);
 
-  joy_num = CLAMP(joy_num, 1, 16);
+  joy_num = CLAMP(joy_num, 1, MAX_JOYSTICKS);
 
   map_joystick_hat(joy_num - 1, (enum keycode)joy_key_up,
    (enum keycode)joy_key_down, (enum keycode)joy_key_left,
@@ -594,6 +596,27 @@ static void config_no_titlescreen(struct config_info *conf, char *name,
   conf->no_titlescreen = strtoul(value, NULL, 10);
 }
 
+static void config_set_allow_cheats(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  if(!strcmp(value, "0"))
+  {
+    conf->allow_cheats = ALLOW_CHEATS_NEVER;
+  }
+  else
+
+  if(!strcasecmp(value, "mzxrun"))
+  {
+    conf->allow_cheats = ALLOW_CHEATS_MZXRUN;
+  }
+  else
+
+  if(!strcmp(value, "1"))
+  {
+    conf->allow_cheats = ALLOW_CHEATS_ALWAYS;
+  }
+}
+
 static void config_set_video_ratio(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
@@ -635,6 +658,7 @@ static void config_max_simultaneous_samples(struct config_info *conf,
  */
 static const struct config_entry config_options[] =
 {
+  { "allow_cheats", config_set_allow_cheats, false },
   { "allow_screenshots", config_set_allow_screenshots, false },
   { "audio_buffer", config_set_audio_buffer, false },
   { "audio_buffer_samples", config_set_audio_buffer, false },

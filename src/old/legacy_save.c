@@ -535,10 +535,10 @@ int legacy_save_world(struct world *mzx_world, const char *file, int savegame)
   free(charset_mem);
 
   // Save idchars array.
-  fwrite(id_chars, 323, 1, fp);
+  fwrite(id_chars, LEGACY_ID_CHARS_SIZE, 1, fp);
   fputc(missile_color, fp);
-  fwrite(bullet_color, 3, 1, fp);
-  fwrite(id_dmg, 128, 1, fp);
+  fwrite(bullet_color, LEGACY_ID_BULLET_COLOR_SIZE, 1, fp);
+  fwrite(id_dmg, LEGACY_ID_DMG_SIZE, 1, fp);
 
   // Save status counters.
   fwrite((char *)mzx_world->status_counters_shown, COUNTER_NAME_SIZE,

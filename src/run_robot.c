@@ -4198,16 +4198,16 @@ void run_robot(context *ctx, int id, int x, int y)
         int id_char = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
         int id_value = parse_param(mzx_world, p2, id);
-        if((id_char >= 0) && (id_char <= 454))
+        if((id_char >= 0) && (id_char < ID_CHARS_TOTAL_SIZE))
         {
-          if(id_char == 323)
+          if(id_char == ID_MISSILE_COLOR_POS)
             missile_color = id_value;
           else
-            if((id_char >= 324) && (id_char <= 326))
-              bullet_color[id_char - 324] = id_value;
+            if((id_char >= ID_BULLET_COLOR_POS) && (id_char < ID_DMG_POS))
+              bullet_color[id_char - ID_BULLET_COLOR_POS] = id_value;
           else
-            if((id_char >= 327))
-              id_dmg[id_char - 327] = id_value;
+            if((id_char >= ID_DMG_POS))
+              id_dmg[id_char - ID_DMG_POS] = id_value;
           else
             id_chars[id_char] = id_value;
         }

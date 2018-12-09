@@ -801,7 +801,7 @@ int input_window(struct world *mzx_world, const char *title,
     x += title_len + 1;
 
   ret = intake(mzx_world, buffer, max_len, x, y, 15,
-   INTK_EXIT_ENTER_ESC, NULL, 0, NULL);
+   INTK_EXIT_ENTER_ESC, NULL);
 
   restore_screen();
 
@@ -1955,7 +1955,7 @@ static int click_input_box(struct world *mzx_world, struct dialog *di,
   {
     return intake(mzx_world, src->result, src->max_length, x +
      (int)question_len + di->pad_space, y, DI_INPUT, INTK_EXIT_ANY,
-     &start_x, 0, NULL);
+     &start_x);
   }
   else
   {
@@ -2168,7 +2168,7 @@ static int idle_input_box(struct world *mzx_world, struct dialog *di,
 
   return intake(mzx_world, src->result, src->max_length, x +
    (int)strlen(src->question) + di->pad_space, y, DI_INPUT, INTK_EXIT_ANY,
-   NULL, 0, NULL);
+   NULL);
 }
 
 void construct_dialog(struct dialog *src, const char *title, int x, int y,

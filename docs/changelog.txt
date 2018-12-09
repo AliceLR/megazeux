@@ -1,4 +1,37 @@
-GIT
+December 9th, 2018 - MZX 2.91i
+
+A small release with a bunch of fixes for bugs introduced mostly
+within the past few versions. Other highlights: joysticks should
+be hot pluggable now and Alt shortcuts now also work with the
+command key in Mac builds.
+
+USERS
+
++ MZX now properly detects when joysticks are connected and
+  disconnected at runtime for platforms using SDL 2.
++ Fixed bug where the robot editor would open with the cursor at
+  the end of the line instead of the start of the line.
++ Fixed a bug where the robot box could display using MZX mode
+  but SMZX colors if opened on the first frame SMZX was enabled.
++ The built-in text box title should display correctly again in
+  SMZX modes.
++ Fixed regression where keys could trigger wrong "keyN" labels.
++ Alt+F2 can now be used to open the settings dialog.
++ Mac users can now optionally use command in place of alt.
++ Improved editor cursor color selection for SMZX modes 2 and 3.
+
+DEVELOPERS
+
++ Fixed make test for SDL 1.2 builds.
+
+
+November 14th, 2018 - MZX 2.91h
+
+A minor release primarily focused on improving counter/string
+lookups and fixing bugs in the robot editor and counter debug
+menu.
+
+USERS
 
 + auto_glsl correctly switches to glsl on startup now.
 + Fix bug where "(editor)" wouldn't always display in the
@@ -12,6 +45,76 @@ GIT
 + Fixed faulty BOARD_X and BOARD_Y bounding for values greater
   than the board width or height. Fixes potential crashes with
   BOARD_CHAR, BOARD_COLOR, BOARD_ID, and BOARD_PARAM.
++ The value of SPR_YORDER is now correctly displayed in the
+  counter debug menu.
++ Improved the performance of the counter debug search.
++ Fixed cosmetic counter debug menu issue where the the "String"
+  tree appeared to be expandable/collapsable when empty.
++ Fixed faulty substring searching algorithm used in the counter
+  debug menu search and for breakpoints.
++ Added "Search" and "Cancel" buttons to the counter debug menu
+  search so it can be used with the mouse.
++ When testing from the editor, if "__test.mzx" exists MegaZeux
+  will now choose a numbered name for this world backup (e.g.
+  "__test2.mzx") instead of potentially overwriting work.
++ Fixed bug where six-digit line numbers would display in the
+  robot editor incorrectly.
++ Inserting text in the robot editor using the F2/F3/F4/F5
+  shortcuts can no longer exceed the line length limit, fixing
+  related crashes.
++ Using F5 in the robot editor generates decimal numbers instead
+  of hex numbers now.
++ Fixed robot editor bug where pressing delete at the end of a
+  line wouldn't join lines unless the current line was empty.
++ Restored the ability to use the F7/F8 cheats outside of the
+  editor. This feature was broken in 2.91g. To enable cheats
+  outside of the editor, the config option "allow_cheats" must
+  now be set to "mzxrun" or 1. The former will enable them for
+  MZXRun only (same as from 2.82b to 2.91f) and the latter will
+  enable them for both executables (same as the -þ flag in DOS
+  versions).
++ Fixed bounding bug on the "board_default_width" and
+  "board_default_height" config file options.
++ Separated robot editor "Search and Replace" dialog into a
+  "Search" dialog and a "Replace" dialog. Both dialogs are
+  smaller in size than the original. The order of the elements
+  in these dialogs has also been altered to be more user-
+  friendly. The hotkey for the new replace dialog is Ctrl+H.
++ Fixed Ctrl+R repeating for the "Replace All" robot editor
+  search operation. Previously, it would act like "Replace".
++ Canceling the robot editor search/replace menus no longer
+  disables the repeat feature.
++ Searching in the robot editor now properly preserves the case
+  of the search string if case sensitive search is disabled.
++ Fixed bug where toggling the robot debugger position wouldn't
+  take effect immediately.
++ Exiting the editor with the "startup_editor" config setting
+  enabled should no longer inappropriately close MZX.
++ Selecting "tile" for the char editor import mode works again.
++ The bounds for the main editor charset import/export offsets
+  and size have been increased to allow for extended charset
+  values.
++ Fixed the "KEY?" labels for keys that no longer have a unicode
+  representation in SDL2.
++ Fixed SET "$string" "FWRITE#" bug where, if # exceeded the
+  length of $string, the output would be clipped to the wrong
+  length.
++ The missile color ID char is now correctly set back to its
+  default value when a new world is created from the editor.
+
+DEVELOPERS
+
++ Cleaned up the counter debug menu code.
++ Switched from uthash to a modified version of khash for
+  counter and string lookups. Counters/strings now consume less
+  memory and counter/string lookups should perform slightly
+  better on most platforms.
++ Replaced toupper/tolower in memcasecmp and substring searching
+  with a lookup table-based implementation of tolower.
++ Refactored the following contexts to use the main loop: robot
+  editor, intake, thing menu. For compatibility purposes the old
+  intake still exists, but all robot editor hacks have been
+  removed from it.
 
 
 October 7th, 2018 - MZX 2.91g

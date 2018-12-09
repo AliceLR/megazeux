@@ -871,20 +871,28 @@ void force_release_all_keys(void)
 
 boolean get_alt_status(enum keycode_type type)
 {
-  return get_key_status(type, IKEY_LALT) ||
-         get_key_status(type, IKEY_RALT);
+  return
+#ifdef __APPLE__
+  // Some Mac users have indicated that they prefer to use the command key.
+   get_key_status(type, IKEY_LSUPER) ||
+   get_key_status(type, IKEY_RSUPER) ||
+#endif
+   get_key_status(type, IKEY_LALT) ||
+   get_key_status(type, IKEY_RALT);
 }
 
 boolean get_shift_status(enum keycode_type type)
 {
-  return get_key_status(type, IKEY_LSHIFT) ||
-         get_key_status(type, IKEY_RSHIFT);
+  return
+   get_key_status(type, IKEY_LSHIFT) ||
+   get_key_status(type, IKEY_RSHIFT);
 }
 
 boolean get_ctrl_status(enum keycode_type type)
 {
-  return get_key_status(type, IKEY_LCTRL) ||
-         get_key_status(type, IKEY_RCTRL);
+  return
+   get_key_status(type, IKEY_LCTRL) ||
+   get_key_status(type, IKEY_RCTRL);
 }
 
 void map_joystick_axis(int joystick, int axis, enum keycode min_key,

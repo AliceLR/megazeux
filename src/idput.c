@@ -62,11 +62,10 @@
 #define seeker_colors        298
 #define whirlpool_glow       302
 
-unsigned char id_chars[455];
-
-unsigned char bullet_color[3] = { 15, 15, 15 };
+unsigned char id_chars[ID_CHARS_SIZE];
+unsigned char id_dmg[ID_DMG_SIZE];
+unsigned char bullet_color[ID_BULLET_COLOR_SIZE] = { 15, 15, 15 };
 unsigned char missile_color = 8;
-unsigned char id_dmg[128];
 
 static unsigned char get_special_id_char(struct board *src_board,
  enum thing cell_id, char param, int offset)

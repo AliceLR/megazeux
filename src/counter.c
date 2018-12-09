@@ -47,6 +47,12 @@
 
 #include "audio/audio.h"
 
+/**
+ * TODO: Counter lookups are currently case-insensitive, which is somewhat of
+ * a performance concern. A good future (3.xx) feature might be to lowercase
+ * all counter names.
+ */
+
 #ifdef CONFIG_KHASH
 #include <khashmzx.h>
 KHASH_SET_INIT(COUNTER, struct counter *, name, name_length)

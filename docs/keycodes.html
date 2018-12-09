@@ -133,6 +133,9 @@
    .capslock:before {
     content: "C";
    }
+   .modifier:before {
+    content: "D";
+   }
    .annotation {
     font-size: .95em;
    }
@@ -170,9 +173,9 @@
  <body>
   <div>
    <h1>MegaZeux US Key-Mapping Guide</h1>
-   <h3>MegaZeux 2.91g &mdash; Lachesis 2010-2018</h2>
+   <h3>MegaZeux 2.91i &mdash; Lachesis 2010-2018</h2>
    <p>
-    This guide is current as of October 7th, 2018, and contains
+    This guide is current as of December 9th, 2018, and contains
     updated warnings, annotations, and information for SDL 2.0.
    </p>
    <p>
@@ -723,7 +726,7 @@
 
   <table class="keyboard main">
    <tr>
-    <td class="double">
+    <td class="double modifier">
       L. Shift
       <b>42</b>
       <p>304</p>
@@ -778,7 +781,7 @@
       <b>53</b>
       <p>47</p>
     </td>
-    <td class="double">
+    <td class="double modifier">
       R. Shift
       <b>54</b>
       <p>303</p>
@@ -790,17 +793,17 @@
 
   <table class="keyboard main">
    <tr>
-    <td class="wide">
+    <td class="wide modifier">
       L. Ctrl
       <b>29</b>
       <p>306</p>
     </td>
-    <td class="wide warn">
-      L. Meta
+    <td class="wide warn modifier">
+      L. Win
       <b>91</b>
       <p>311</p>
     </td>
-    <td class="wide">
+    <td class="wide modifier">
       L. Alt
       <b>56</b>
       <p>308</p>
@@ -810,13 +813,13 @@
       <b>57</b>
       <p>32</p>
     </td>
-    <td class="wide">
+    <td class="wide modifier">
       R. Alt
       <b>56</b>
       <p>307</p>
     </td>
-    <td class="wide warn">
-      R. Meta
+    <td class="wide warn modifier">
+      R. Win
       <b>92</b>
       <p>312</p>
     </td>
@@ -825,7 +828,7 @@
       <b class="badkey">n/a</b>
       <p class="badkey">1</p>
     </td>
-    <td class="wide">
+    <td class="wide modifier">
       R. Ctrl
       <b>29</b>
       <p>305</p>
@@ -887,7 +890,7 @@
     <td class="annotation">
      F12 is currently used as the screenshot key on platforms that support
      screenshots. Screenshot support can be disabled in the config file. Other
-     function keys (F13-F16) are not supported by MegaZeux.
+     function keys (e.g. F13) are not supported by MegaZeux.
     </td>
    </tr>
 
@@ -904,6 +907,17 @@
     <td class="annotation">
      In previous versions of MegaZeux, Caps Lock would be held while enabled.
      In 2.90, it acts like a regular key.
+    </td>
+   </tr>
+
+   <tr>
+    <td class="modifier">&nbsp;</td>
+    <td class="annotation">
+     Modifier keys have slightly different repeating behavior than regular keys
+     and may trigger special MZX or operating system functionality in
+     conjunction with other keys. The Windows key (aka "Meta", "Super") is
+     equivalent to the Command key on Mac keyboards, however, the positions of
+     these keys are swapped with the Alt keys (which may be called "Option").
     </td>
    </tr>
 
@@ -944,7 +958,7 @@
        <td>
         The settings menu can be disabled by setting the <var>F2_MENU</var>
         counter to 0. The user can still access this menu by pressing Ctrl+F2
-        unless standalone mode is enabled.
+        or Alt+F2 unless standalone mode is enabled.
        </td>
       </tr>
 

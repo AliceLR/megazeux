@@ -33,6 +33,10 @@ __M_BEGIN_DECLS
 
 #define STATUS_NUM_KEYCODES 512
 
+#define MAX_JOYSTICKS         16
+#define MAX_JOYSTICK_AXES     16
+#define MAX_JOYSTICK_BUTTONS  256
+
 #define MOUSE_BUTTON(x)         (1 << ((x) - 1))
 #define MOUSE_BUTTON_LEFT       1
 #define MOUSE_BUTTON_MIDDLE     2
@@ -106,7 +110,7 @@ struct buffered_status
   boolean numlock_status;
   boolean mouse_moved;
   boolean exit_status;
-  Sint8 axis[16][16];
+  Sint8 axis[MAX_JOYSTICKS][MAX_JOYSTICK_AXES];
   Uint8 keymap[512];
 };
 
@@ -120,9 +124,9 @@ struct input_status
   Uint16 unicode_repeat_stack[KEY_REPEAT_STACK_SIZE];
   Uint32 repeat_stack_pointer;
 
-  enum keycode joystick_button_map[16][256];
-  enum keycode joystick_axis_map[16][16][2];
-  enum keycode joystick_hat_map[16][4];
+  enum keycode joystick_button_map[MAX_JOYSTICKS][MAX_JOYSTICK_BUTTONS];
+  enum keycode joystick_axis_map[MAX_JOYSTICKS][MAX_JOYSTICK_AXES][2];
+  enum keycode joystick_hat_map[MAX_JOYSTICKS][4];
 
   boolean unfocus_pause;
 };

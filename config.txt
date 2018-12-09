@@ -1,5 +1,5 @@
-# Configuration file for MegaZeux 2.91g
-# October 7th, 2018
+# Configuration file for MegaZeux 2.91i
+# December 9th, 2018
 
 # Comments begin with #. Whitespace is ignored. Empty lines are
 # ignored as well.
@@ -257,6 +257,13 @@
 # Start in the editor by default
 
 # startup_editor = 1
+
+# Allow the use of editing cheats in regular gameplay. Set to 1
+# to enable the cheats for either executable, "mzxrun" to enable
+# them for MZXRun only, or to 0 to disable them for both. This
+# feature is disabled by default.
+
+# allow_cheats = 0
 
 # Enable standalone mode. This is a game mode meant to be used
 # for packaged standalone MegaZeux games. In standalone mode:

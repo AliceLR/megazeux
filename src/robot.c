@@ -2661,7 +2661,9 @@ void robot_box_display(struct world *mzx_world, char *program,
   dialog_fadein();
 
   scroll_edging_ext(mzx_world, 4, false);
+
   // Write robot name
+  select_layer(GAME_UI_LAYER);
   if(!cur_robot->robot_name[0])
   {
     write_string_ext("Interaction", 35, 4,
@@ -2673,6 +2675,7 @@ void robot_box_display(struct world *mzx_world, char *program,
      40 - (Uint32)strlen(cur_robot->robot_name) / 2, 4,
      mzx_world->scroll_title_color, 1, 0, 0);
   }
+  select_layer(UI_LAYER);
 
   // Scan section and mark all invalid counter-controlled options as codes
   // 249.

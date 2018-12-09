@@ -18,6 +18,7 @@
  */
 
 #include <assert.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -971,6 +972,8 @@ static int debug_robot(context *ctx, struct robot *cur_robot, int id,
   {
     if(position)
       dialog_y = 25 - height;
+    else
+      dialog_y = 0;
 
     elements[0]  = construct_button( 3, ypos, "Continue", OP_CONTINUE);
     elements[1]  = construct_button(15, ypos, "Step", OP_STEP);

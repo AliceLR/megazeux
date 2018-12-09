@@ -917,7 +917,7 @@ static void char_import(struct world *mzx_world, int char_offset, int charset,
 
   // Default to linear for 1x1 selections, otherwise prompt.
   if(highlight_width * highlight_height != 1)
-    select_export_mode(mzx_world, "Import mode");
+    import_mode = select_export_mode(mzx_world, "Import mode");
 
   switch(import_mode)
   {

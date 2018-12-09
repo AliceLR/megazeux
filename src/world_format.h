@@ -789,6 +789,7 @@ static inline int next_prop(struct memfile *prop, int *ident, int *length,
 
   if((end - mf->current)<PROP_HEADER_SIZE)
   {
+    prop->current = NULL;
     return 0;
   }
 
@@ -798,6 +799,7 @@ static inline int next_prop(struct memfile *prop, int *ident, int *length,
 
   if((end - cur)<len)
   {
+    prop->current = NULL;
     return 0;
   }
 
