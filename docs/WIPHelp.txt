@@ -183,8 +183,8 @@ a flattened oval shape.
 -MegaZeux uses cycle 1 as default (as opposed to ZZT's cycle
 3).
 -No equivalent of duplicators exists.
--Seekers (aka "stars") do not destroy Breakaway territories in
-MegaZeux.
+-Seekers (aka "stars") and bears do not destroy Breakaway
+territories in MegaZeux.
 -MegaZeux water is not equivalent to ZZT water, as it can be
 traversed. ZZT water is most similar to MZX's "goop".
 -MZX Sharks can be shot. They do not swim in water, but can in
@@ -235,7 +235,7 @@ for this in MZX.
 ~A/direction/direction = PERSISTENT GO (works only for cardinal
 ~Adirections and idle: n s e w i)
 
-~A?direction =  / "directions"
+~A?direction = / "directions"
 
 ~A'comment = . "comment"
 
@@ -304,7 +304,7 @@ for this in MZX.
 
 ~A#SEND Objectname:"label" = SEND "Robotname" "label"
 
-~A#SEND ALL:command  = SEND "All" "label" 
+~A#SEND ALL:command = SEND "All" "label" 
 ~F[*]
 
 ~A#SET flag = SET "counter" 1
@@ -446,6 +446,9 @@ next word.
 -0 thru 9 sets the last digit in a number box (such as setting
 amounts of items in a chest); backspace deletes the last digit.
 
+On Mac platforms, any command that uses the Alt key can take ½¾
+(the command key) instead.
+
 File access controls are as follows:
 
 -(0-9 and A-Z) will jump to the first file/directory starting
@@ -479,7 +482,7 @@ its title screen. In yes/no dialog boxes, this selects the "no"
 option. Some games may disable using ESC to trigger the exit
 prompt, but other methods (such as Alt+F4) will always work.
 
-F2 or Ctrl+F2 - Settings
+F2 or Ctrl+F2 or Alt+F2 - Settings
 :092:This will bring up a dialog box where you can change the
 current game settings: Game Speed (if allowed), Music toggle,
 Sound toggle, and Audio Volumes (Overall Volume, SoundFX
@@ -498,8 +501,8 @@ Settings for game speed will only apply for the current world;
 all other settings are global.
 
 Note that some games may block access to the F2 menu entirely.
-Ctrl+F2 will ignore this setting and allow access to the menu
-even if it is prohibited otherwise.
+Ctrl+F2 or Alt+F2 will ignore this setting and allow access to
+the menu even if it is prohibited otherwise.
 
 F3 - Save Game
 This will prompt you for a filename, allowing the saving of the
@@ -636,7 +639,7 @@ ESC - Exit MegaZeux
 Pressing ESC will load a prompt where the user can exit
 MegaZeux.
 
-F2 / Ctrl+F2 / S - Settings (see above)
+F2 / Ctrl+F2 / Alt+F2 / S - Settings (see above)
 
 F3 or L - Load World
 This will allow you to load up the title screen of any MegaZeux
@@ -734,7 +737,7 @@ With that out of the way, some basic play tips:
 ~A*~F Try things twice, even thrice. Sometimes objects respond
  differently at other times. If you get a new treasure, go
  talk to all the citizens - maybe one of them will say
- something new.  If some place seems inaccessible, come back
+ something new. If some place seems inaccessible, come back
  later!
 
 ~A*~F If doing the same thing over and over keeps failing, try
@@ -1352,7 +1355,7 @@ $~9The Config File
 One of the first things a new MegaZeux user should do is edit
 the options in the config file; even experienced MZXers may find
 some of the customization options novel and useful. Go open
-config.txt in any text editor.  There is ample commentary to let
+config.txt in any text editor. There is ample commentary to let
 the user know how to change the options. Make sure to remove
 the # sign from any option you want set!
 
@@ -1436,10 +1439,10 @@ A: Yes, plenty! MegaZeux comes with two helpful tools:
   world and which are present, and "ccv" can take an image file
   and output a conversion of it in .chr/.mzm form for MZX use.
   There are several graphical conversion programs such as
-  CharCon, and SMZX palette tools such as Palzor and PalMaster.
-  MZX has natural time-savers, of course. Automated backups,
-  macros, Robotic code import/export, expressions, repeated
-  block copying and other features can help speed up
+  CharCon, and MZX worlds that create control mappings such as
+  Joymap. MZX has natural time-savers, of course. Automated
+  backups, macros, Robotic code import/export, expressions,
+  repeated block copying and other features can help speed up
   development time.
   
 Q: This MZX game has some neat things in it! Can I use some of
@@ -1512,8 +1515,8 @@ A: Before you go bugging the maintainer(s) of MegaZeux to add
      currently the method of storing Robotic severely limits
      the amount of new commands. Until this system is retooled,
      there will be no new commands. Features that are most
-	 cleanly implemented through a new command may possibly be
-	 implemented in other ways, however.
+     cleanly implemented through a new command may possibly be
+     implemented in other ways, however.
      
 Q: Is adding network capabilities to MegaZeux planned?
 
@@ -1675,6 +1678,11 @@ Q: I don't like that anyone can open up my game and see how it
 A: Nope. MegaZeux used to be able to protect worlds from being
   edited or even played without a password, but this feature
   has long since been removed.
+  Releasing games in standalone form can possibly help. While
+  anyone who has even cursory knowledge of MegaZeux can still
+  fully look through a standalone game, people who have no
+  knowledge of MegaZeux beforehand will lack the immediate means
+  to heavily manipulate or look through your game.
   
 Q: I heard only certain graphics cards can properly show Super
   MZX mode games. Is this true?
@@ -1789,6 +1797,10 @@ restart and clear everything (you will be asked for
 confirmation, to make sure you really want to go through with
 it).
 
+(On Mac platforms, any key shortcut containing Alt can work with
+½¾ replacing Alt. So, for above, ½¾+H would pop up the help
+listing, and ½¾+R would restart the world.)
+
 For your first world, you should start simple. The very first
 board in the board listings is the title screen, so name that
 board after your game. (If you opted to create a starting board,
@@ -1874,7 +1886,7 @@ way, and will not automatically lead back - you must set the
 exit on that board too.
 
 Another way is to use a Robot to teleport a player with the
-~Ateleport player "boardname" X Y~F command.  This assumes that you
+~Ateleport player "boardname" X Y~F command. This assumes that you
 are familiar with using Robots, but is the only way to go to
 another board without having the player walk off-screen, moving
 the player into a teleport, requiring the player to have been on
@@ -1946,6 +1958,9 @@ $~9Editing Keys and Options Reference
 The following is an alphabetical listing of keys within the
 World editor. This is followed by a detailed description of
 what each one does.
+
+On Mac platforms, any command that uses the Alt key can take ½¾
+(the command key) instead.
 
 >_A:A                    - Add (board)
 >_B:B                    - Select Board
@@ -2038,12 +2053,12 @@ is a limit of 250 unique boards per world.
 
 Press Alt+A and select one of the four different character
 sets. This will change the current character set to one of the
-four defaults. ASCII is the default EGA ASCII character set.
-MegaZeux default is the default MegaZeux character set. Blank
-is the MegaZeux default, but with most graphical characters
-blank instead. Text, lines, arrows, blocks, and certain other
-symbols are not affected. SMZX set is the default character set
-for SMZX modes.
+four defaults. ASCII is the default EGA ASCII character set
+(code page 437). MegaZeux default is the default MegaZeux
+character set. Blank is the MegaZeux default, but with most
+graphical characters blank instead. Text, lines, arrows, blocks,
+and certain other symbols are not affected. SMZX set is the
+default character set for SMZX modes.
 
 :_B:~EB - Select Board
 
@@ -2139,7 +2154,7 @@ over a solid square of Fakes with something else. The current
 fill command may not work accurately for very large and complex
 areas - in this case, you must move to the unfilled areas and
 press F to continue filling. This happens very rarely,
-however.  Also, beware of trying to fill an area with an item
+however. Also, beware of trying to fill an area with an item
 with limited placements, such as a Robot.
 
 :097:~EAlt+F - Sound Effects
@@ -2249,7 +2264,7 @@ and even if the current world file is changed.
 
 :AltO:~EAlt+O - Edit Overlay
 
-Alt+O enters overlay editing mode. The overlay is on normal  
+Alt+O enters overlay editing mode. The overlay is on normal
 overlay mode by default. The overlay editing mode is similar to
 the normal editing mode, except that only certain keys are
 active, and the Enter and Alt+S keys have new purposes. The
@@ -2638,6 +2653,10 @@ pixels crossed to ON.
 
 Shift+Tab will turn toggle (clear) mode. (clear) mode will turn
 all pixels crossed OFF.
+
+F4 will revert the current character to its EGA ASCII (code page
+437) appearance; F5 will revert the current character to its
+default MZX appearance.
 
 Multiple characters can be edited at one time. To select a
 group of characters, press Enter in the character editor, hold
@@ -3499,7 +3518,7 @@ block, ensuring no overlap when pasting.
 
 Like normal Block functions, one can copy between boards by
 selecting the board when the editor prompts the user for the
-block's destination.  Use the B key to select the destination
+block's destination. Use the B key to select the destination
 board.
 
 :_C:~EC - Color
@@ -6321,6 +6340,8 @@ Relocates the player to the coordinates and board stored in
 the given slot, or slot number one if none is given. The third
 form also duplicates the current Robot where the player used to
 be; this Robot then starts its program at the first command.
+This command will do transition fades on activation, even if the
+destination is the same board.
 
 :_eE:~AEXCHANGE PLAYER POSITION
 :_eF:~AEXCHANGE PLAYER POSITION #
@@ -6330,7 +6351,9 @@ Exchanges the player's current coordinates and board with the
 coordinates and board stored in the given slot, or slot number
 one if none is given. The third form also duplicates the
 current Robot where the player used to be; this Robot then
-starts its program at the first command.
+starts its program at the first command. This command will do
+transition fades on activation, even if the destination is the
+same board.
 
 :_f2:~AFILLHEALTH
 
@@ -6384,7 +6407,8 @@ hard-coded filenames.
 :_t5:~ATELEPORT PLAYER "string" # #
 
 Teleports the player to the given board at the stated x,y
-coordinates.
+coordinates. This happens instantaneously, even if this causes a
+move between boards.
 
 >#STRINGS.HLP:1st:Strings, Special Formatting, and Their Place in Robotic
 
@@ -7148,7 +7172,7 @@ This is sent when the Robot is hit with an explosion.
 
 This is sent when the player presses the given key. ? should be
 replaced with the key to be scanned for. Characters a to z and 0
-to 9 work as expected. Shifted alphanumeric characters will NOT
+to 9 work as expected. Shifted alphabetic characters will NOT
 work, and will actually scan as their non-shifted counterparts.
 Any other character that can be outputted directly, such as ";"
 or "*" or "=", will work, and "key " will detect the space bar.
@@ -7160,7 +7184,7 @@ Special-case characters that can work with KEY? are character 8
 label just for this mentioned in the very next entry).
 
 There is another way to scan for key presses - using counters.
-They are called KEY_PRESSED, KEY, and KEYCODE, and are detailed
+They are called KEY_PRESSED, KEY, and KEY_CODE, and are detailed
 in the Miscellaneous Counters section of the help file.
 
 >#COUNTERS.HLP:msc:Miscellaneous Counters
@@ -8318,25 +8342,25 @@ is currently being held down; for example, on a typical
 keyboard, if the spacebar is being pressed the value of
 key_pressed will be 32. This set of keycodes is the same as the
 ones required for joystick support. Results are unsigned, so
-checking for negative numbers will not work. "Autorepeat"
+checking for negative numbers will not work. "Autorepeat stall"
 affects KEY_PRESSED, so if you hold down a key you will get the
 value, then get zeros for a period, then get the values again.
 This is useful for many applications.
-KEY acts like KEY_PRESSED, but lacks autorepeat, returns
+KEY acts like KEY_PRESSED, but lacks autorepeat stall, returns
 uppercase letter values, and retains its value until another key
 is pressed.
-KEY_CODE acts similar to KEY_PRESSED but lacks autorepeat and
-has different keycodes. Its keycode set is more limited, making
-KEY_CODE only preferable if autorepeat has to be off.
+KEY_CODE acts similar to KEY_PRESSED but has different keycodes.
+Its keycode set is more limited, making KEY_PRESSED generally
+preferable.
 
 ~BKEYn (read-only)
 ~BKEY_RELEASE (read-only)
 
 KEYn checks whether the key with the keycode n is pressed; 1
 means yes, 0 means no. KEY_RELEASE tests whether a key is
-released. These display/use the same keycodes as KEY_CODE.
-Results are unsigned, so checking for negative numbers will not
-work.
+released. These display/use the same keycodes as KEY_CODE, but
+do not cause an autorepeat stall. Results are unsigned, so
+checking for negative numbers will not work.
 
 ~BRANDOM_SEED0 (universal)
 ~BRANDOM_SEED1 (universal)
@@ -8445,6 +8469,9 @@ The following keys are active within the Robotic editor:
 >_zr:Ctrl+LeftArrow - Jump to Previous Word
 >_1r:Ctrl+RightArrow - Jump to Next Word
 >_2r:Esc - Exit Robotic Editor
+
+On Mac platforms, any command that uses the Alt key can take ½¾
+(the command key) instead.
 
 :_ar:~EF1 - Help
 
@@ -9455,7 +9482,7 @@ names.
 ~ASET "file.bc" to "LOAD_BCn"
 
 These commands can save Robotic code to files in bitcode format
-and import bitcode files into a Robot.  The first forms use the
+and import bitcode files into a Robot. The first forms use the
 current Robot, while the second forms use the Robot with the
 given Robot ID n. Bitcode is much more compact than plain text,
 but cannot be easily read by the human eye.
@@ -9690,8 +9717,8 @@ and sprites are controlled in the following ways:
 To setup a sprite you must set the SPRn_REFX / REFY / WIDTH /
 HEIGHT counters to define where the sprite's characters are and
 what its size is. (SPRn_REFX and SPRn_REFY are the coordinates
-for the upper-left corner of the reference characters.) Then you
-use:
+for the upper-left corner of the reference characters, which are
+the characters a sprite uses for its appearance.) Then you use:
 
 ~APUT cXX sprite pNN x y
 
@@ -9723,7 +9750,7 @@ will move the sprite to the northeast by 1.
 As with the overlay, any instance of char 32 in the sprite will
 not be shown, instead displaying the next underlying layer.
 Also, if the reference characters change, the sprite's
-characters will change to match.
+characters will change to match, as will colors of a c?? sprite.
 
 Now that you have sprites set up and displayed, you can do
 collision tests. These check if moving sprites will cause
@@ -9827,11 +9854,11 @@ the system set).
 
 In addition to access to larger numbers of characters, unbound
 sprites can provide transparency effects on a per-sprite basis,
-instead of treating certain characters as transparent. Each
-unbound sprite has its own transparent color, which is set with
-the SPRn_TCOL counter. All pixels of that color in that unbound
-sprite will not display, and instead show the next underlying
-layer.
+instead of merely treating certain characters as transparent.
+Each unbound sprite has its own transparent color, which is set
+with the SPRn_TCOL counter. All pixels of that color in that
+unbound sprite will not display, and instead show the next
+underlying layer.
 
 When assigned a ccheck value with SPRn_CCHECK, an unbound sprite
 will only apply its personal ccheck value in collision tests
@@ -9878,7 +9905,10 @@ effects.
 Super MZX mode 2 is the most difficult mode to use, although it
 has its benefits. It allows considerable control over the
 palette and allows for some overlay and sprite translucency
-effects. Its colors (values in hex) are determined as such:
+effects. All 256 colors can be individually manipulated, and
+each color also represents a subpalette of four colors that is
+used by a character when an object is assigned that color.
+The four colors (values in hex) are determined as such:
 
 -Color I is the background color number as the first and second
 digits. (For example, if background color is 5, the hex number
@@ -9896,18 +9926,19 @@ second digit. (For example, if foreground color is 10, the hex
 number of color IV is AA.)
 
 Super MZX mode 3 is the best for dynamic usage of the palette,
-and the easiest to edit in general. By default, its colors are
-determined around a base value in hex (background color number
-as first digit, foreground color number as second). Color I's
-number is the base, II's is base+1, III's is base+2, and IV's
-is base+3. The numbers wrap around (so if your base is, for
+and the easiest to edit in general. By default, its four colors
+are determined around a base value in hex (background color
+number as first digit, foreground color number as second). Color
+I's number is the base, II's is base+1, III's is base+2, and
+IV's is base+3. The numbers wrap around (so if your base is, for
 example, FF, color II would be 00).
 
 However, one can also directly change each value, disregarding
-these rules. This essentially allows 256 subpalettes of four
-colors each. These overrides, called SMZX indices, are loaded
-and saved out separately from the normal palette. These changes
-can only apply for renderers that can show unbound sprites.
+these rules. This essentially allows 256 user-defined
+subpalettes of four colors each. These overrides, called SMZX
+indices, are loaded and saved out separately from the normal
+palette. These changes can only apply for renderers that can
+show unbound sprites.
 
 Character editing in Super MZX modes is noticeably different.
 While the character set can be edited in MegaZeux's internal
@@ -10003,7 +10034,7 @@ block, ensuring no overlap when pasting.
 
 Like normal Block functions, one can copy between boards by
 selecting the board when the editor prompts the user for the
-block's destination.  Use the B key to select the destination
+block's destination. Use the B key to select the destination
 board.
 
 :_C:~EC - Color
@@ -10327,7 +10358,7 @@ These are the trig functions MegaZeux can directly utilize.
 NOTE: The inverse functions output degrees, not radians.
 
 To use the counters you put the unit number after the counter
-name. Here's an example.  To display the cosine of 30 degrees
+name. Here's an example. To display the cosine of 30 degrees
 with degree-based precision, the needed line would be:
 
 ~E* "&cos30&"
@@ -10373,6 +10404,12 @@ processed in a cycle to only what is necessary. Otherwise, very
 high COMMANDS values can potentially slow down MegaZeux or even
 cause MegaZeux to trigger safeguards that prevent it from
 freezing.
+
+The two commands that are best suited for ending the cycle are
+WAIT 1 and CYCLE 1, due to their very low amounts of side
+effects. While WAIT 1 is preferred in most cases, there is a
+subtle difference between processing the two due to a quirk with
+reverse scan detailed later in this section.
 
 As a simple rule of thumb, commands that move anything on the
 board generally end a cycle, especially moving the player,
@@ -10439,11 +10476,11 @@ two options. You can firstly load it as you would a normal
 character set; this replaces all characters from the start of
 the target character set until the end of the partial set.
 Secondly, you can load the partial set into a non-0 position of
-the target character set.  In the editor, this can be done by
+the target character set. In the editor, this can be done by
 setting the offset field in the import character dialog, under
-the filename input. The @@xxx prefix allows this in Robotic;
-xxx is the number (in decimal) of the first character to replace
-in the target character set.
+the filename input. The @@xxxx prefix allows this in Robotic;
+xxxx is the number (in decimal) of the first character to
+replace in the target character set.
 
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
@@ -10492,6 +10529,34 @@ updated.
 #NEWINVER.HLP
 :1st: 
 $~9NEW in MegaZeux!
+
+December 9th, 2018 - MZX 2.91i
+
+A small release with a bunch of fixes for bugs introduced mostly
+within the past few versions. Other highlights: joysticks should
+be hot pluggable now and Alt shortcuts now also work with the
+command key in Mac builds.
+
+USERS
+
++ MZX now properly detects when joysticks are connected and
+  disconnected at runtime for platforms using SDL 2.
++ Fixed bug where the robot editor would open with the cursor at
+  the end of the line instead of the start of the line.
++ Fixed a bug where the robot box could display using MZX mode
+  but SMZX colors if opened on the first frame SMZX was enabled.
++ The built-in text box title should display correctly again in
+  SMZX modes.
++ Fixed regression where keys could trigger wrong "keyN" labels.
++ Alt+F2 can now be used to open the settings dialog.
++ Mac users can now optionally use command in place of alt.
++ Improved editor cursor color selection for SMZX modes 2 and 3.
+
+DEVELOPERS
+
++ Fixed make test for SDL 1.2 builds.
+
+>#MAIN.HLP:072:Table of Contents
 
 November 14th, 2018 - MZX 2.91h
 
