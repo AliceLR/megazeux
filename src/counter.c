@@ -47,22 +47,13 @@
 
 #include "audio/audio.h"
 
+#ifdef CONFIG_KHASH
+#include <khashmzx.h>
+KHASH_SET_INIT(COUNTER, struct counter *, name, name_length)
+#endif
+
 #ifdef CONFIG_UTHASH
 #include <utcasehash.h>
-struct counter *counter_head = NULL;
-
-// Wrapper functions for uthash macros
-static void hash_add_counter(struct counter *src)
-{
-  HASH_ADD_KEYPTR(ch, counter_head, src->name, strlen(src->name), src);
-}
-
-static struct counter *hash_find_counter(const char *name)
-{
-  struct counter *counter = NULL;
-  HASH_FIND(ch, counter_head, name, strlen(name), counter);
-  return counter;
-}
 #endif
 
 #ifndef M_PI
@@ -85,8 +76,8 @@ static unsigned int get_board_x_board_y_offset(struct world *mzx_world, int id)
   int board_x = get_counter(mzx_world, "board_x", id);
   int board_y = get_counter(mzx_world, "board_y", id);
 
-  board_x = CLAMP(board_x, 0, mzx_world->current_board->board_width);
-  board_y = CLAMP(board_y, 0, mzx_world->current_board->board_height);
+  board_x = CLAMP(board_x, 0, mzx_world->current_board->board_width - 1);
+  board_y = CLAMP(board_y, 0, mzx_world->current_board->board_height - 1);
 
   return board_y * mzx_world->current_board->board_width + board_x;
 }
@@ -2527,7 +2518,140 @@ static const struct function_counter builtin_counters[] =
   { "vlayer_width",     V269c,  vlayer_width_read,    vlayer_width_write },
 };
 
+static const int num_builtin_counters = ARRAY_SIZE(builtin_counters);
 static int counter_first_letter[512];
+
+void counter_fsg(void)
+{
+  char cur_char = (builtin_counters[0]).name[0];
+  char old_char;
+  int i, i2;
+
+  for(i = 0, i2 = 0; i < 256; i++)
+  {
+    if(i != cur_char)
+    {
+      counter_first_letter[i * 2] = -1;
+      counter_first_letter[(i * 2) + 1] = -1;
+    }
+    else
+    {
+      counter_first_letter[i * 2] = i2;
+      old_char = cur_char;
+
+      while(cur_char == old_char)
+      {
+        i2++;
+        if(i2 == num_builtin_counters)
+          break;
+        cur_char = builtin_counters[i2].name[0];
+      }
+
+      counter_first_letter[(i * 2) + 1] = i2 - 1;
+    }
+  }
+}
+
+int match_function_counter(const char *dest, const char *src)
+{
+  int difference;
+  char cur_src, cur_dest;
+
+  while(1)
+  {
+    cur_src = *src;
+    cur_dest = *dest;
+
+    // Skip 1 or more letters
+    switch(cur_src)
+    {
+      // Make sure the first character is a number
+      case '!':
+      {
+        if(((cur_dest < '0') || (cur_dest > '9')) &&
+         (cur_dest != '-'))
+        {
+          return 1;
+        }
+
+        dest++;
+        cur_dest = *dest;
+
+        // Fall through, skip remaining numbers
+      }
+
+      /* fallthrough */
+
+      // Skip 0 or more number characters
+      case '?':
+      {
+        src++;
+        cur_src = *src;
+
+        while(((cur_dest >= '0') && (cur_dest <= '9')) ||
+         (cur_dest == '-'))
+        {
+          dest++;
+          cur_dest = *dest;
+        }
+        break;
+      }
+
+      // Match anything, instant winner
+      case '*':
+      {
+        return 0;
+      }
+    }
+
+    if((cur_src | cur_dest) == 0)
+    {
+      // Both hit the null terminator
+      return 0;
+    }
+
+    difference = (int)((cur_dest & 0xDF) - (cur_src & 0xDF));
+
+    if(difference)
+      return difference;
+
+    src++;
+    dest++;
+  }
+
+  return 0;
+}
+
+static const struct function_counter *find_function_counter(const char *name)
+{
+  const struct function_counter *base = builtin_counters;
+  int first_letter = tolower((int)name[0]) * 2;
+  int bottom, top, middle;
+  int cmpval;
+
+  bottom = counter_first_letter[first_letter];
+  top = counter_first_letter[first_letter + 1];
+
+  if(bottom != -1)
+  {
+    while(bottom <= top)
+    {
+      middle = (top + bottom) / 2;
+      cmpval = match_function_counter(name + 1, (base[middle]).name + 1);
+
+      if(cmpval > 0)
+        bottom = middle + 1;
+      else
+
+      if(cmpval < 0)
+        top = middle - 1;
+      else
+        return base + middle;
+    }
+  }
+
+  return NULL;
+}
 
 static struct robot *get_robot_by_id(struct world *mzx_world, int id)
 {
@@ -3124,154 +3248,26 @@ int set_counter_special(struct world *mzx_world, char *char_value,
   return 0;
 }
 
-// I don't know yet if this works in pure C
-static const int num_builtin_counters =
- sizeof(builtin_counters) / sizeof(struct function_counter);
-
-static int hurt_player(struct world *mzx_world, int value)
+static struct counter *find_counter(struct counter_list *counter_list,
+ const char *name, int *next)
 {
-  // Must not be invincible
-  if(get_counter(mzx_world, "INVINCO", 0) <= 0)
-  {
-    struct board *src_board = mzx_world->current_board;
-    send_robot_def(mzx_world, 0, LABEL_PLAYERHURT);
-    if(src_board->restart_if_zapped)
-    {
-      int player_restart_x = mzx_world->player_restart_x;
-      int player_restart_y = mzx_world->player_restart_y;
-      int player_x = mzx_world->player_x;
-      int player_y = mzx_world->player_y;
-     //Restart since we were hurt
-      if((player_restart_x != player_x) ||
-       (player_restart_y != player_y))
-      {
-        id_remove_top(mzx_world, player_x, player_y);
-        player_x = player_restart_x;
-        player_y = player_restart_y;
-        id_place(mzx_world, player_x, player_y, PLAYER, 0, 0);
-        mzx_world->was_zapped = true;
-        mzx_world->player_x = player_x;
-        mzx_world->player_y = player_y;
-      }
-    }
-  }
-  else
-  {
-    value = 0;
-  }
-  return value;
-}
+  struct counter *current = NULL;
 
-static int health_dec_gateway(struct world *mzx_world, struct counter *counter,
- const char *name, int value, int id)
-{
-  // Trying to decrease health? (legacy support)
-  // Only handle here in pre-port MZX world versions
-  // Otherwise, it will be handled in health_gateway()
-  if((value > 0) && (mzx_world->version < VERSION_PORT))
-  {
-    value = hurt_player(mzx_world, value);
-  }
-  return value;
-}
+#if defined(CONFIG_KHASH)
+  size_t name_length = strlen(name);
+  KHASH_FIND(COUNTER, counter_list->hash_table, name, name_length, current);
+  *next = counter_list->num_counters;
+  return current;
 
-static int health_gateway(struct world *mzx_world, struct counter *counter,
- const char *name, int value, int id)
-{
-  // Make sure health is within 0 and max health
-  if(value > mzx_world->health_limit)
-  {
-    value = mzx_world->health_limit;
-  }
-  if(value < 0)
-  {
-    value = 0;
-  }
-
-  // Trying to decrease health?
-  // Only handle here in port MZX world versions
-  // Otherwise, it will be handled in health_dec_gateway()
-  if((value < counter->value) && (mzx_world->version >= VERSION_PORT))
-  {
-    value = counter->value - hurt_player(mzx_world, counter->value - value);
-  }
-
-  return value;
-}
-
-static int lives_gateway(struct world *mzx_world, struct counter *counter,
- const char *name, int value, int id)
-{
-  // Make sure lives is within 0 and max lives
-  if(value > mzx_world->lives_limit)
-  {
-    value = mzx_world->lives_limit;
-  }
-  if(value < 0)
-  {
-    value = 0;
-  }
-
-  return value;
-}
-
-static int invinco_gateway(struct world *mzx_world, struct counter *counter,
- const char *name, int value, int id)
-{
-  if(!counter->value)
-  {
-    mzx_world->saved_pl_color = id_chars[player_color];
-  }
-  else
-  {
-    if(!value)
-    {
-      sfx_clear_queue();
-      play_sfx(mzx_world, SFX_INVINCO_END);
-      id_chars[player_color] = mzx_world->saved_pl_color;
-    }
-  }
-
-  return value;
-}
-
-static int score_gateway(struct world *mzx_world, struct counter *counter,
- const char *name, int value, int id)
-{
-  // Protection for score < 0, as per the behavior in DOS MZX.
-  if((value < 0) && (mzx_world->version < VERSION_PORT))
-    return 0;
-
-  return value;
-}
-
-static int time_gateway(struct world *mzx_world, struct counter *counter,
- const char *name, int value, int id)
-{
-  return CLAMP(value, 0, 32767);
-}
-
-// The other builtins simply can't go below 0
-
-static int builtin_gateway(struct world *mzx_world, struct counter *counter,
- const char *name, int value, int id)
-{
-  return MAX(value, 0);
-}
-
-static struct counter *find_counter(struct world *mzx_world, const char *name,
- int *next)
-{
-  struct counter *current;
-
-#ifdef CONFIG_UTHASH
-  current = hash_find_counter(name);
-  *next = mzx_world->num_counters;
+#elif defined(CONFIG_UTHASH)
+  size_t name_length = strlen(name);
+  HASH_FIND(ch, counter_list->head, name, name_length, current);
+  *next = counter_list->num_counters;
   return current;
 
 #else
-  struct counter **base = mzx_world->counter_list;
-  int bottom = 0, top = (mzx_world->num_counters) - 1, middle = 0;
+  struct counter **base = counter_list->counters;
+  int bottom = 0, top = (counter_list->num_counters) - 1, middle = 0;
   int cmpval = 0;
 
   while(bottom <= top)
@@ -3299,148 +3295,202 @@ static struct counter *find_counter(struct world *mzx_world, const char *name,
 #endif
 }
 
-// Setup builtin gateway functions
-static void set_gateway(struct world *mzx_world, const char *name,
- gateway_write_function function)
+static int hurt_player(struct world *mzx_world, int value)
 {
-  int next;
-  struct counter *cdest = find_counter(mzx_world, name, &next);
-  if(cdest)
-    cdest->gateway_write = function;
+  // Must not be invincible
+  if(get_counter(mzx_world, "INVINCO", 0) <= 0)
+  {
+    struct board *src_board = mzx_world->current_board;
+    send_robot_def(mzx_world, 0, LABEL_PLAYERHURT);
+    if(src_board->restart_if_zapped)
+    {
+      int player_restart_x = mzx_world->player_restart_x;
+      int player_restart_y = mzx_world->player_restart_y;
+      int player_x = mzx_world->player_x;
+      int player_y = mzx_world->player_y;
+      //Restart since we were hurt
+      if((player_restart_x != player_x) || (player_restart_y != player_y))
+      {
+        id_remove_top(mzx_world, player_x, player_y);
+        player_x = player_restart_x;
+        player_y = player_restart_y;
+        id_place(mzx_world, player_x, player_y, PLAYER, 0, 0);
+        mzx_world->was_zapped = true;
+        mzx_world->player_x = player_x;
+        mzx_world->player_y = player_y;
+      }
+    }
+  }
+  else
+  {
+    value = 0;
+  }
+  return value;
 }
 
-static void set_dec_gateway(struct world *mzx_world, const char *name,
- gateway_dec_function function)
+typedef int (*gateway_write_function)(struct world *mzx_world,
+ struct counter *counter, const char *name, int value, int id, boolean is_dec);
+
+static int health_gateway(struct world *mzx_world, struct counter *counter,
+ const char *name, int value, int id, boolean is_dec)
+{
+  // Trying to decrease health? (legacy support)
+  // In pre-port MZX worlds, only the dec command triggers PLAYERHURT/zap.
+  // Additionally, any decrement of >0 triggers this, so do it before the clamp.
+  if((value < counter->value) && (mzx_world->version < VERSION_PORT) && is_dec)
+  {
+    value = counter->value - hurt_player(mzx_world, counter->value - value);
+  }
+
+  // Make sure health is within 0 and max health
+  if(value > mzx_world->health_limit)
+  {
+    value = mzx_world->health_limit;
+  }
+  if(value < 0)
+  {
+    value = 0;
+  }
+
+  // Trying to decrease health?
+  // In port MZX worlds, any method of reducing health triggers PLAYERHURT/zap.
+  // This only happens if the clamped value is less than the old value.
+  if((value < counter->value) && (mzx_world->version >= VERSION_PORT))
+  {
+    value = counter->value - hurt_player(mzx_world, counter->value - value);
+  }
+
+  return value;
+}
+
+static int lives_gateway(struct world *mzx_world, struct counter *counter,
+ const char *name, int value, int id, boolean is_dec)
+{
+  // Make sure lives is within 0 and max lives
+  if(value > mzx_world->lives_limit)
+  {
+    value = mzx_world->lives_limit;
+  }
+  if(value < 0)
+  {
+    value = 0;
+  }
+
+  return value;
+}
+
+static int invinco_gateway(struct world *mzx_world, struct counter *counter,
+ const char *name, int value, int id, boolean is_dec)
+{
+  if(!counter->value)
+  {
+    mzx_world->saved_pl_color = id_chars[player_color];
+  }
+  else
+  {
+    if(!value)
+    {
+      sfx_clear_queue();
+      play_sfx(mzx_world, SFX_INVINCO_END);
+      id_chars[player_color] = mzx_world->saved_pl_color;
+    }
+  }
+
+  return value;
+}
+
+static int score_gateway(struct world *mzx_world, struct counter *counter,
+ const char *name, int value, int id, boolean is_dec)
+{
+  // Protection for score < 0, as per the behavior in DOS MZX.
+  if((value < 0) && (mzx_world->version < VERSION_PORT))
+    return 0;
+
+  return value;
+}
+
+static int time_gateway(struct world *mzx_world, struct counter *counter,
+ const char *name, int value, int id, boolean is_dec)
+{
+  return CLAMP(value, 0, 32767);
+}
+
+static int builtin_gateway(struct world *mzx_world, struct counter *counter,
+ const char *name, int value, int id, boolean is_dec)
+{
+  // The other builtins simply can't go below 0
+  return MAX(value, 0);
+}
+
+enum gateway_function_id
+{
+  NO_GATEWAY,
+  GATEWAY_BUILTIN,
+  GATEWAY_HEALTH,
+  GATEWAY_INVINCO,
+  GATEWAY_LIVES,
+  GATEWAY_SCORE,
+  GATEWAY_TIME,
+  NUM_GATEWAYS
+};
+
+static gateway_write_function gateways[NUM_GATEWAYS] =
+{
+  [NO_GATEWAY]      = NULL,
+  [GATEWAY_BUILTIN] = builtin_gateway,
+  [GATEWAY_HEALTH]  = health_gateway,
+  [GATEWAY_INVINCO] = invinco_gateway,
+  [GATEWAY_LIVES]   = lives_gateway,
+  [GATEWAY_SCORE]   = score_gateway,
+  [GATEWAY_TIME]    = time_gateway
+};
+
+// Setup builtin gateway functions
+static void set_gateway(struct counter_list *counter_list,
+ const char *name, enum gateway_function_id gateway_id)
 {
   int next;
-  struct counter *cdest = find_counter(mzx_world, name, &next);
+  struct counter *cdest = find_counter(counter_list, name, &next);
   if(cdest)
-    cdest->gateway_dec = function;
+    cdest->gateway_write = gateway_id;
 }
 
 void initialize_gateway_functions(struct world *mzx_world)
 {
-  set_gateway(mzx_world, "AMMO", builtin_gateway);
-  set_gateway(mzx_world, "COINS", builtin_gateway);
-  set_gateway(mzx_world, "GEMS", builtin_gateway);
-  set_gateway(mzx_world, "HEALTH", health_gateway);
-  set_dec_gateway(mzx_world, "HEALTH", health_dec_gateway);
-  set_gateway(mzx_world, "HIBOMBS", builtin_gateway);
-  set_gateway(mzx_world, "INVINCO", invinco_gateway);
-  set_gateway(mzx_world, "LIVES", lives_gateway);
-  set_gateway(mzx_world, "LOBOMBS", builtin_gateway);
-  set_gateway(mzx_world, "SCORE", score_gateway);
-  set_gateway(mzx_world, "TIME", time_gateway);
+  struct counter_list *counter_list = &(mzx_world->counter_list);
+  set_gateway(counter_list, "AMMO", GATEWAY_BUILTIN);
+  set_gateway(counter_list, "COINS", GATEWAY_BUILTIN);
+  set_gateway(counter_list, "GEMS", GATEWAY_BUILTIN);
+  set_gateway(counter_list, "HEALTH", GATEWAY_HEALTH);
+  set_gateway(counter_list, "HIBOMBS", GATEWAY_BUILTIN);
+  set_gateway(counter_list, "INVINCO", GATEWAY_INVINCO);
+  set_gateway(counter_list, "LIVES", GATEWAY_LIVES);
+  set_gateway(counter_list, "LOBOMBS", GATEWAY_BUILTIN);
+  set_gateway(counter_list, "SCORE", GATEWAY_SCORE);
+  set_gateway(counter_list, "TIME", GATEWAY_TIME);
 }
 
-int match_function_counter(const char *dest, const char *src)
+static struct counter *allocate_new_counter(const char *name, int name_length,
+ int value)
 {
-  int difference;
-  char cur_src, cur_dest;
+  struct counter *dest = cmalloc(sizeof(struct counter) + name_length);
 
-  while(1)
-  {
-    cur_src = *src;
-    cur_dest = *dest;
+  memcpy(dest->name, name, name_length);
+  dest->name[name_length] = 0;
 
-    // Skip 1 or more letters
-    switch(cur_src)
-    {
-      // Make sure the first character is a number
-      case '!':
-      {
-        if(((cur_dest < '0') || (cur_dest > '9')) &&
-         (cur_dest != '-'))
-        {
-          return 1;
-        }
-
-        dest++;
-        cur_dest = *dest;
-
-        // Fall through, skip remaining numbers
-      }
-
-      /* fallthrough */
-
-      // Skip 0 or more number characters
-      case '?':
-      {
-        src++;
-        cur_src = *src;
-
-        while(((cur_dest >= '0') && (cur_dest <= '9')) ||
-         (cur_dest == '-'))
-        {
-          dest++;
-          cur_dest = *dest;
-        }
-        break;
-      }
-
-      // Match anything, instant winner
-      case '*':
-      {
-        return 0;
-      }
-    }
-
-    if((cur_src | cur_dest) == 0)
-    {
-      // Both hit the null terminator
-      return 0;
-    }
-
-    difference = (int)((cur_dest & 0xDF) - (cur_src & 0xDF));
-
-    if(difference)
-      return difference;
-
-    src++;
-    dest++;
-  }
-
-  return 0;
+  dest->gateway_write = NO_GATEWAY;
+  dest->name_length = name_length;
+  dest->value = value;
+  return dest;
 }
 
-static const struct function_counter *find_function_counter(const char *name)
-{
-  const struct function_counter *base = builtin_counters;
-  int first_letter = tolower((int)name[0]) * 2;
-  int bottom, top, middle;
-  int cmpval;
-
-  bottom = counter_first_letter[first_letter];
-  top = counter_first_letter[first_letter + 1];
-
-  if(bottom != -1)
-  {
-    while(bottom <= top)
-    {
-      middle = (top + bottom) / 2;
-      cmpval = match_function_counter(name + 1, (base[middle]).name + 1);
-
-      if(cmpval > 0)
-        bottom = middle + 1;
-      else
-
-      if(cmpval < 0)
-        top = middle - 1;
-      else
-        return base + middle;
-    }
-  }
-
-  return NULL;
-}
-
-static void add_counter(struct world *mzx_world, const char *name,
+static void add_counter(struct counter_list *counter_list, const char *name,
  int value, int position)
 {
-  int count = mzx_world->num_counters;
-  int allocated = mzx_world->num_counters_allocated;
-  struct counter **base = mzx_world->counter_list;
-  struct counter *cdest;
+  int count = counter_list->num_counters;
+  int allocated = counter_list->num_counters_allocated;
+  struct counter **base = counter_list->counters;
+  struct counter *dest;
   int name_length = strlen(name);
 
   // Need a reallocation?
@@ -3451,10 +3501,9 @@ static void add_counter(struct world *mzx_world, const char *name,
     else
       allocated = MIN_COUNTER_ALLOCATE;
 
-    mzx_world->counter_list =
-     crealloc(base, sizeof(struct counter *) * allocated);
-    base = mzx_world->counter_list;
-    mzx_world->num_counters_allocated = allocated;
+    base = crealloc(base, sizeof(struct counter *) * allocated);
+    counter_list->counters = base;
+    counter_list->num_counters_allocated = allocated;
   }
 
   // Doesn't exist, so create it
@@ -3466,24 +3515,23 @@ static void add_counter(struct world *mzx_world, const char *name,
      (count - position) * sizeof(struct counter *));
   }
 
-  cdest = cmalloc(sizeof(struct counter) + name_length);
-  strcpy(cdest->name, name);
+  dest = allocate_new_counter(name, name_length, value);
 
-  cdest->value = value;
-  cdest->name_length = name_length;
-  cdest->gateway_write = NULL;
-  cdest->gateway_dec = NULL;
+  counter_list->counters[position] = dest;
+  counter_list->num_counters = count + 1;
 
-  mzx_world->counter_list[position] = cdest;
-  mzx_world->num_counters = count + 1;
+#ifdef CONFIG_KHASH
+  KHASH_ADD(COUNTER, counter_list->hash_table, dest);
+#endif
 
 #ifdef CONFIG_UTHASH
-  hash_add_counter(cdest);
+  HASH_ADD_KEYPTR(ch, counter_list->head, dest->name, dest->name_length, dest);
 #endif
 }
 
 void set_counter(struct world *mzx_world, const char *name, int value, int id)
 {
+  struct counter_list *counter_list = &(mzx_world->counter_list);
   const struct function_counter *fdest;
   struct counter *cdest;
   int next = 0;
@@ -3503,41 +3551,43 @@ void set_counter(struct world *mzx_world, const char *name, int value, int id)
   }
   else
   {
-    cdest = find_counter(mzx_world, name, &next);
+    cdest = find_counter(counter_list, name, &next);
 
     if(cdest)
     {
       // See if there's a gateway
-      if(cdest->gateway_write)
+      if(cdest->gateway_write && cdest->gateway_write < NUM_GATEWAYS)
       {
-        value = cdest->gateway_write(mzx_world, cdest, name, value, id);
+        gateway_write_function gateway_write = gateways[cdest->gateway_write];
+        value = gateway_write(mzx_world, cdest, name, value, id, false);
       }
 
       cdest->value = value;
     }
     else
     {
-      add_counter(mzx_world, name, value, next);
+      add_counter(counter_list, name, value, next);
     }
   }
 }
 
-
 // Creates a new counter if it doesn't already exist; otherwise, sets the
-// old counter's value. Basically, set_string without the function check.
+// old counter's value. Basically, set_counter without the function check.
 void new_counter(struct world *mzx_world, const char *name, int value, int id)
 {
+  struct counter_list *counter_list = &(mzx_world->counter_list);
   struct counter *cdest;
   int next;
 
-  cdest = find_counter(mzx_world, name, &next);
+  cdest = find_counter(counter_list, name, &next);
 
   if(cdest)
   {
     // See if there's a gateway
-    if(cdest->gateway_write)
+    if(cdest->gateway_write && cdest->gateway_write < NUM_GATEWAYS)
     {
-      value = cdest->gateway_write(mzx_world, cdest, name, value, id);
+      gateway_write_function gateway_write = gateways[cdest->gateway_write];
+      value = gateway_write(mzx_world, cdest, name, value, id, false);
     }
 
     cdest->value = value;
@@ -3545,12 +3595,13 @@ void new_counter(struct world *mzx_world, const char *name, int value, int id)
 
   else
   {
-    add_counter(mzx_world, name, value, next);
+    add_counter(counter_list, name, value, next);
   }
 }
 
 int get_counter(struct world *mzx_world, const char *name, int id)
 {
+  struct counter_list *counter_list = &(mzx_world->counter_list);
   const struct function_counter *fdest;
   struct counter *cdest;
   int next;
@@ -3567,7 +3618,7 @@ int get_counter(struct world *mzx_world, const char *name, int id)
       return 0;
   }
 
-  cdest = find_counter(mzx_world, name, &next);
+  cdest = find_counter(counter_list, name, &next);
 
   if(cdest)
     return cdest->value;
@@ -3577,6 +3628,7 @@ int get_counter(struct world *mzx_world, const char *name, int id)
 
 void inc_counter(struct world *mzx_world, const char *name, int value, int id)
 {
+  struct counter_list *counter_list = &(mzx_world->counter_list);
   const struct function_counter *fdest;
   struct counter *cdest;
   int current_value;
@@ -3594,28 +3646,30 @@ void inc_counter(struct world *mzx_world, const char *name, int value, int id)
   }
   else
   {
-    cdest = find_counter(mzx_world, name, &next);
+    cdest = find_counter(counter_list, name, &next);
 
     if(cdest)
     {
       value += cdest->value;
 
-      if(cdest->gateway_write)
+      if(cdest->gateway_write && cdest->gateway_write < NUM_GATEWAYS)
       {
-        value = cdest->gateway_write(mzx_world, cdest, name, value, id);
+        gateway_write_function gateway_write = gateways[cdest->gateway_write];
+        value = gateway_write(mzx_world, cdest, name, value, id, false);
       }
 
       cdest->value = value;
     }
     else
     {
-      add_counter(mzx_world, name, value, next);
+      add_counter(counter_list, name, value, next);
     }
   }
 }
 
 void dec_counter(struct world *mzx_world, const char *name, int value, int id)
 {
+  struct counter_list *counter_list = &(mzx_world->counter_list);
   const struct function_counter *fdest;
   struct counter *cdest;
   int current_value;
@@ -3633,35 +3687,30 @@ void dec_counter(struct world *mzx_world, const char *name, int value, int id)
   }
   else
   {
-    cdest = find_counter(mzx_world, name, &next);
+    cdest = find_counter(counter_list, name, &next);
 
     if(cdest)
     {
-      if(cdest->gateway_dec)
-      {
-        gateway_dec_function gateway_dec =
-         (gateway_dec_function)cdest->gateway_dec;
-        value = gateway_dec(mzx_world, cdest, name, value, id);
-      }
-
       value = cdest->value - value;
 
-      if(cdest->gateway_write)
+      if(cdest->gateway_write && cdest->gateway_write < NUM_GATEWAYS)
       {
-        value = cdest->gateway_write(mzx_world, cdest, name, value, id);
+        gateway_write_function gateway_write = gateways[cdest->gateway_write];
+        value = gateway_write(mzx_world, cdest, name, value, id, true);
       }
 
       cdest->value = value;
     }
     else
     {
-      add_counter(mzx_world, name, -value, next);
+      add_counter(counter_list, name, -value, next);
     }
   }
 }
 
 void mul_counter(struct world *mzx_world, const char *name, int value, int id)
 {
+  struct counter_list *counter_list = &(mzx_world->counter_list);
   const struct function_counter *fdest;
   struct counter *cdest;
   int current_value;
@@ -3679,14 +3728,15 @@ void mul_counter(struct world *mzx_world, const char *name, int value, int id)
   }
   else
   {
-    cdest = find_counter(mzx_world, name, &next);
+    cdest = find_counter(counter_list, name, &next);
 
     if(cdest)
     {
       value *= cdest->value;
-      if(cdest->gateway_write)
+      if(cdest->gateway_write && cdest->gateway_write < NUM_GATEWAYS)
       {
-        value = cdest->gateway_write(mzx_world, cdest, name, value, id);
+        gateway_write_function gateway_write = gateways[cdest->gateway_write];
+        value = gateway_write(mzx_world, cdest, name, value, id, false);
       }
 
       cdest->value = value;
@@ -3696,6 +3746,7 @@ void mul_counter(struct world *mzx_world, const char *name, int value, int id)
 
 void div_counter(struct world *mzx_world, const char *name, int value, int id)
 {
+  struct counter_list *counter_list = &(mzx_world->counter_list);
   const struct function_counter *fdest;
   struct counter *cdest;
   int current_value;
@@ -3716,15 +3767,16 @@ void div_counter(struct world *mzx_world, const char *name, int value, int id)
   }
   else
   {
-    cdest = find_counter(mzx_world, name, &next);
+    cdest = find_counter(counter_list, name, &next);
 
     if(cdest)
     {
       value = cdest->value / value;
 
-      if(cdest->gateway_write)
+      if(cdest->gateway_write && cdest->gateway_write < NUM_GATEWAYS)
       {
-        value = cdest->gateway_write(mzx_world, cdest, name, value, id);
+        gateway_write_function gateway_write = gateways[cdest->gateway_write];
+        value = gateway_write(mzx_world, cdest, name, value, id, false);
       }
 
       cdest->value = value;
@@ -3734,6 +3786,7 @@ void div_counter(struct world *mzx_world, const char *name, int value, int id)
 
 void mod_counter(struct world *mzx_world, const char *name, int value, int id)
 {
+  struct counter_list *counter_list = &(mzx_world->counter_list);
   const struct function_counter *fdest;
   struct counter *cdest;
   int current_value;
@@ -3755,65 +3808,28 @@ void mod_counter(struct world *mzx_world, const char *name, int value, int id)
   }
   else
   {
-    cdest = find_counter(mzx_world, name, &next);
+    cdest = find_counter(counter_list, name, &next);
 
     if(cdest)
       cdest->value %= value;
   }
 }
 
-void counter_fsg(void)
-{
-  char cur_char = (builtin_counters[0]).name[0];
-  char old_char;
-  int i, i2;
-
-  for(i = 0, i2 = 0; i < 256; i++)
-  {
-    if(i != cur_char)
-    {
-      counter_first_letter[i * 2] = -1;
-      counter_first_letter[(i * 2) + 1] = -1;
-    }
-    else
-    {
-      counter_first_letter[i * 2] = i2;
-      old_char = cur_char;
-
-      while(cur_char == old_char)
-      {
-        i2++;
-        if(i2 == num_builtin_counters)
-          break;
-        cur_char = builtin_counters[i2].name[0];
-      }
-
-      counter_first_letter[(i * 2) + 1] = i2 - 1;
-    }
-  }
-}
-
 // Create a new counter from loading a save file. This skips find_counter.
-void load_new_counter(struct counter **counter_list, int index,
+void load_new_counter(struct counter_list *counter_list, int index,
  const char *name, int name_length, int value)
 {
-  struct counter *src_counter =
-   cmalloc(sizeof(struct counter) + name_length);
+  struct counter *dest = allocate_new_counter(name, name_length, value);
 
-  memcpy(src_counter->name, name, name_length);
+  counter_list->counters[index] = dest;
 
-  src_counter->name[name_length] = 0;
-  src_counter->name_length = name_length;
-  src_counter->value = value;
-
-  src_counter->gateway_write = NULL;
-  src_counter->gateway_dec = NULL;
-
-#ifdef CONFIG_UTHASH
-  hash_add_counter(src_counter);
+#ifdef CONFIG_KHASH
+  KHASH_ADD(COUNTER, counter_list->hash_table, dest);
 #endif
 
-  counter_list[index] = src_counter;
+#ifdef CONFIG_UTHASH
+  HASH_ADD_KEYPTR(ch, counter_list->head, dest->name, dest->name_length, dest);
+#endif
 }
 
 static int counter_sort_fcn(const void *a, const void *b)
@@ -3823,22 +3839,32 @@ static int counter_sort_fcn(const void *a, const void *b)
    (*(const struct counter **)b)->name);
 }
 
-void sort_counter_list(struct counter **counter_list, int num_counters)
+void sort_counter_list(struct counter_list *counter_list)
 {
-  qsort(counter_list, (size_t)num_counters,
+  qsort(counter_list->counters, (size_t)counter_list->num_counters,
    sizeof(struct counter *), counter_sort_fcn);
 }
 
-void free_counter_list(struct counter **counter_list, int num_counters)
+void clear_counter_list(struct counter_list *counter_list)
 {
   int i;
 
-#ifdef CONFIG_UTHASH
-  HASH_CLEAR(ch, counter_head);
+#ifdef CONFIG_KHASH
+  KHASH_CLEAR(COUNTER, counter_list->hash_table);
+  counter_list->hash_table = NULL;
 #endif
 
-  for(i = 0; i < num_counters; i++)
-    free(counter_list[i]);
+#ifdef CONFIG_UTHASH
+  HASH_CLEAR(ch, counter_list->head);
+  counter_list->head = NULL;
+#endif
 
-  free(counter_list);
+  for(i = 0; i < counter_list->num_counters; i++)
+    free(counter_list->counters[i]);
+
+  free(counter_list->counters);
+
+  counter_list->num_counters = 0;
+  counter_list->num_counters_allocated = 0;
+  counter_list->counters = NULL;
 }

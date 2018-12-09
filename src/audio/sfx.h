@@ -85,8 +85,8 @@ enum sfx_id
   NUM_SFX               = 50
 };
 
-// Requires NUM_SFX/SFX_SIZE, so include after.
-#include "../world_struct.h"
+// Requires NUM_SFX/SFX_SIZE, so don't include.
+struct world;
 
 // Size of sound queue
 #define NOISEMAX        4096

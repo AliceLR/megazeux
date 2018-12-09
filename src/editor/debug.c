@@ -1136,9 +1136,6 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
 
   char name[28] = "#ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-  int num_counters = mzx_world->num_counters;
-  int num_strings = mzx_world->num_strings;
-
   struct debug_node *counters = &(root->nodes[0]);
   struct debug_node *strings = &(root->nodes[1]);
   struct debug_node *sprites = &(root->nodes[2]);
@@ -1161,10 +1158,12 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
   struct debug_node *robot_nodes =
    ccalloc(num_robot_nodes, sizeof(struct debug_node));
 
+  struct counter_list *counter_list = &(mzx_world->counter_list);
+  struct string_list *string_list = &(mzx_world->string_list);
   struct robot **robot_list = mzx_world->current_board->robot_list;
 
-  sort_counter_list(mzx_world->counter_list, mzx_world->num_counters);
-  sort_string_list(mzx_world->string_list, mzx_world->num_strings);
+  sort_counter_list(counter_list);
+  sort_string_list(string_list);
 
   // We want to start off on a clean slate here
   clear_debug_node(counters, true);
@@ -1179,9 +1178,9 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
   /* Counters */
   /************/
 
-  for(i = 0, n = 0; i < num_counters; i++)
+  for(i = 0, n = 0; i < counter_list->num_counters; i++)
   {
-    char first = tolower((int)mzx_world->counter_list[i]->name[0]);
+    char first = tolower((int)counter_list->counters[i]->name[0]);
     // We need to switch child nodes
     if((first > n+96 && n<27) || i == 0)
     {
@@ -1199,8 +1198,8 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
     if(*num == alloc)
       (*list) = crealloc(*list, (alloc = MAX(alloc * 2, 32)) * sizeof(char *));
 
-    build_var_buffer( &(*list)[*num], mzx_world->counter_list[i]->name,
-     mzx_world->counter_list[i]->value, NULL, -1);
+    build_var_buffer( &(*list)[*num], counter_list->counters[i]->name,
+     counter_list->counters[i]->value, NULL, -1);
 
     (*num)++;
   }
@@ -1226,9 +1225,9 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
   /* Strings */
   /***********/
 
-  for(i = 0, n = 0; i < num_strings; i++)
+  for(i = 0, n = 0; i < string_list->num_strings; i++)
   {
-    char first = tolower((int)mzx_world->string_list[i]->name[1]);
+    char first = tolower((int)string_list->strings[i]->name[1]);
 
     // We need to switch child nodes
     if((first > n+96 && n<27) || i == 0)
@@ -1247,9 +1246,9 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
     if(*num == alloc)
       *list = crealloc(*list, (alloc = MAX(alloc * 2, 32)) * sizeof(char *));
 
-    copy_substring_escaped(mzx_world->string_list[i], buf, 79);
+    copy_substring_escaped(string_list->strings[i], buf, 79);
 
-    build_var_buffer( &(*list)[*num], mzx_world->string_list[i]->name,
+    build_var_buffer( &(*list)[*num], string_list->strings[i]->name,
      strlen(buf), buf, -1);
 
     (*num)++;
@@ -2176,24 +2175,25 @@ void __debug_counters(context *ctx)
         if(!new_file(mzx_world, txt_ext, ".txt", export_name,
          "Export counters/strings text file...", 1))
         {
+          struct counter_list *counter_list = &(mzx_world->counter_list);
+          struct string_list *string_list = &(mzx_world->string_list);
           FILE *fp;
 
           fp = fopen_unsafe(export_name, "wb");
 
-          for(i = 0; i < mzx_world->num_counters; i++)
+          for(i = 0; i < counter_list->num_counters; i++)
           {
             fprintf(fp, "set \"%s\" to %d\n",
-             mzx_world->counter_list[i]->name,
-             mzx_world->counter_list[i]->value);
+             counter_list->counters[i]->name, counter_list->counters[i]->value);
           }
 
-          for(i = 0; i < mzx_world->num_strings; i++)
+          for(i = 0; i < string_list->num_strings; i++)
           {
             fprintf(fp, "set \"%s\" to \"",
-             mzx_world->string_list[i]->name);
+             string_list->strings[i]->name);
 
-            fwrite(mzx_world->string_list[i]->value,
-             mzx_world->string_list[i]->length, 1, fp);
+            fwrite(string_list->strings[i]->value,
+             string_list->strings[i]->length, 1, fp);
 
             fprintf(fp, "\"\n");
           }

@@ -1366,6 +1366,7 @@ static inline int save_world_counters(struct world *mzx_world,
 {
   Uint8 buffer[8];
   struct memfile mf;
+  struct counter_list *counter_list = &(mzx_world->counter_list);
   struct counter *src_counter;
   size_t name_length;
   int result;
@@ -1376,12 +1377,12 @@ static inline int save_world_counters(struct world *mzx_world,
     return result;
 
   mfopen(buffer, 8, &mf);
-  mfputd(mzx_world->num_counters, &mf);
+  mfputd(counter_list->num_counters, &mf);
   zwrite(buffer, 4, zp);
 
-  for(i = 0; i < mzx_world->num_counters; i++)
+  for(i = 0; i < counter_list->num_counters; i++)
   {
-    src_counter = mzx_world->counter_list[i];
+    src_counter = counter_list->counters[i];
     name_length = src_counter->name_length;
 
     mf.current = buffer;
@@ -1404,6 +1405,7 @@ static inline int load_world_counters(struct world *mzx_world,
   size_t name_length;
   int value;
 
+  struct counter_list *counter_list = &(mzx_world->counter_list);
   int num_prev_allocated;
   int num_counters;
   int i;
@@ -1434,14 +1436,14 @@ static inline int load_world_counters(struct world *mzx_world,
 
   num_counters = mfgetd(&mf);
 
-  num_prev_allocated = mzx_world->num_counters_allocated;
+  num_prev_allocated = counter_list->num_counters_allocated;
 
   // If there aren't already any counters, allocate manually.
   if(!num_prev_allocated)
   {
-    mzx_world->num_counters = num_counters;
-    mzx_world->num_counters_allocated = num_counters;
-    mzx_world->counter_list = ccalloc(num_counters, sizeof(struct counter *));
+    counter_list->num_counters = num_counters;
+    counter_list->num_counters_allocated = num_counters;
+    counter_list->counters = ccalloc(num_counters, sizeof(struct counter *));
   }
 
   for(i = 0; i < num_counters; i++)
@@ -1466,19 +1468,18 @@ static inline int load_world_counters(struct world *mzx_world,
     // Otherwise, put them in the list manually.
     else
     {
-      load_new_counter(mzx_world->counter_list, i,
-       name_buffer, name_length, value);
+      load_new_counter(counter_list, i, name_buffer, name_length, value);
     }
   }
 
   // If there weren't any previously allocated, the number successfully read is
   // the new number of counters.
   if(!num_prev_allocated)
-    mzx_world->num_counters = i;
+    counter_list->num_counters = i;
 
-#ifndef CONFIG_UTHASH
+#if !defined(CONFIG_KHASH) && !defined(CONFIG_UTHASH)
   // Versions without the hash table require this to be sorted at all times
-  sort_counter_list(mzx_world->counter_list, mzx_world->num_counters);
+  sort_counter_list(counter_list);
 #endif
 
   if(zp->is_memory && method == ZIP_M_NONE)
@@ -1501,6 +1502,7 @@ static inline int save_world_strings(struct world *mzx_world,
 {
   Uint8 buffer[8];
   struct memfile mf;
+  struct string_list *string_list = &(mzx_world->string_list);
   struct string *src_string;
   size_t name_length;
   size_t str_length;
@@ -1512,12 +1514,12 @@ static inline int save_world_strings(struct world *mzx_world,
     return result;
 
   mfopen(buffer, 8, &mf);
-  mfputd(mzx_world->num_strings, &mf);
+  mfputd(string_list->num_strings, &mf);
   zwrite(buffer, 4, zp);
 
-  for(i = 0; i < mzx_world->num_strings; i++)
+  for(i = 0; i < string_list->num_strings; i++)
   {
-    src_string = mzx_world->string_list[i];
+    src_string = string_list->strings[i];
     name_length = src_string->name_length;
     str_length = src_string->length;
 
@@ -1540,6 +1542,7 @@ static inline int load_world_strings_mem(struct world *mzx_world,
   struct memfile mf;
   char *buffer = NULL;
 
+  struct string_list *string_list = &(mzx_world->string_list);
   struct string *src_string;
   char name_buffer[ROBOT_MAX_TR];
   size_t name_length;
@@ -1568,14 +1571,14 @@ static inline int load_world_strings_mem(struct world *mzx_world,
 
   num_strings = mfgetd(&mf);
 
-  num_prev_allocated = mzx_world->num_strings_allocated;
+  num_prev_allocated = string_list->num_strings_allocated;
 
   // If there aren't already any strings, allocate manually.
   if(!num_prev_allocated)
   {
-    mzx_world->num_strings = num_strings;
-    mzx_world->num_strings_allocated = num_strings;
-    mzx_world->string_list = ccalloc(num_strings, sizeof(struct string *));
+    string_list->num_strings = num_strings;
+    string_list->num_strings_allocated = num_strings;
+    string_list->strings = ccalloc(num_strings, sizeof(struct string *));
   }
 
   for(i = 0; i < num_strings; i++)
@@ -1600,7 +1603,7 @@ static inline int load_world_strings_mem(struct world *mzx_world,
     // Otherwise, put them in the list manually.
     else
     {
-      src_string = load_new_string(mzx_world->string_list, i,
+      src_string = load_new_string(string_list, i,
        name_buffer, name_length, str_length);
     }
 
@@ -1611,11 +1614,11 @@ static inline int load_world_strings_mem(struct world *mzx_world,
   // If there weren't any previously allocated, the number successfully read is
   // the new number of strings.
   if(!num_prev_allocated)
-    mzx_world->num_strings = i;
+    string_list->num_strings = i;
 
 #ifndef CONFIG_UTHASH
   // Versions without the hash table require this to be sorted at all times
-  sort_string_list(mzx_world->string_list, mzx_world->num_strings);
+  sort_string_list(string_list);
 #endif
 
   if(zp->is_memory && method == ZIP_M_NONE)
@@ -1636,6 +1639,7 @@ static inline int load_world_strings(struct world *mzx_world,
 {
   Uint8 buffer[8];
   struct memfile mf;
+  struct string_list *string_list = &(mzx_world->string_list);
   struct string *src_string;
   char name_buffer[ROBOT_MAX_TR];
   size_t name_length;
@@ -1662,14 +1666,14 @@ static inline int load_world_strings(struct world *mzx_world,
   zread(buffer, 4, zp);
 
   num_strings = mfgetd(&mf);
-  num_prev_allocated = mzx_world->num_strings_allocated;
+  num_prev_allocated = string_list->num_strings_allocated;
 
   // If there aren't already any strings, allocate manually.
   if(!num_prev_allocated)
   {
-    mzx_world->num_strings = num_strings;
-    mzx_world->num_strings_allocated = num_strings;
-    mzx_world->string_list = ccalloc(num_strings, sizeof(struct string *));
+    string_list->num_strings = num_strings;
+    string_list->num_strings_allocated = num_strings;
+    string_list->strings = ccalloc(num_strings, sizeof(struct string *));
   }
 
   for(i = 0; i < num_strings; i++)
@@ -1696,7 +1700,7 @@ static inline int load_world_strings(struct world *mzx_world,
     // Otherwise, put them in the list manually.
     else
     {
-      src_string = load_new_string(mzx_world->string_list, i,
+      src_string = load_new_string(string_list, i,
        name_buffer, name_length, str_length);
     }
 
@@ -1707,11 +1711,11 @@ static inline int load_world_strings(struct world *mzx_world,
   // If there weren't any previously allocated, the number successfully read is
   // the new number of strings.
   if(!num_prev_allocated)
-    mzx_world->num_strings = i;
+    string_list->num_strings = i;
 
-#ifndef CONFIG_UTHASH
+#if !defined(CONFIG_KHASH) && !defined(CONFIG_UTHASH)
   // Versions without the hash table require this to be sorted at all times
-  sort_string_list(mzx_world->string_list, mzx_world->num_strings);
+  sort_string_list(string_list);
 #endif
 
   return zip_read_close_stream(zp);
@@ -3201,10 +3205,6 @@ void clear_world(struct world *mzx_world)
 void clear_global_data(struct world *mzx_world)
 {
   int i;
-  int num_counters = mzx_world->num_counters;
-  int num_strings = mzx_world->num_strings;
-  struct counter **counter_list = mzx_world->counter_list;
-  struct string **string_list = mzx_world->string_list;
   struct sprite **sprite_list = mzx_world->sprite_list;
 
   free(mzx_world->vlayer_chars);
@@ -3212,18 +3212,11 @@ void clear_global_data(struct world *mzx_world)
   mzx_world->vlayer_chars = NULL;
   mzx_world->vlayer_colors = NULL;
 
-  // Let counter.c handle this
-  free_counter_list(counter_list, num_counters);
-  mzx_world->counter_list = NULL;
+  // Clear all counters out of the counter list
+  clear_counter_list(&(mzx_world->counter_list));
 
-  // Let str.c handle this
-  free_string_list(string_list, num_strings);
-  mzx_world->string_list = NULL;
-
-  mzx_world->num_counters = 0;
-  mzx_world->num_counters_allocated = 0;
-  mzx_world->num_strings = 0;
-  mzx_world->num_strings_allocated = 0;
+  // Clear all strings out of the string list
+  clear_string_list(&(mzx_world->string_list));
 
   for(i = 0; i < MAX_SPRITES; i++)
   {

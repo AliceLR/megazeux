@@ -29,26 +29,29 @@ __M_BEGIN_DECLS
 #include <utcasehash.h>
 #endif
 
-struct world;
-struct counter;
-
-typedef int (*gateway_write_function)(struct world *mzx_world,
- struct counter *counter, const char *name, int value, int id);
-
-typedef int (*gateway_dec_function)(struct world *mzx_world,
- struct counter *counter, const char *name, int value, int id);
-
 struct counter
 {
 #ifdef CONFIG_UTHASH
   UT_hash_handle ch;
 #endif
 
+  unsigned char gateway_write;
   int value;
-  gateway_write_function gateway_write;
-  gateway_dec_function gateway_dec;
   int name_length;
   char name[1];
+};
+
+struct counter_list
+{
+  int num_counters;
+  int num_counters_allocated;
+  struct counter **counters;
+#ifdef CONFIG_UTHASH
+  struct counter *head;
+#endif
+#ifdef CONFIG_KHASH
+  void *hash_table;
+#endif
 };
 
 // TODO - Give strings a dynamic length. It would expand
@@ -101,6 +104,19 @@ struct string
   char *value;
 
   char name[1];
+};
+
+struct string_list
+{
+  int num_strings;
+  int num_strings_allocated;
+  struct string **strings;
+#ifdef CONFIG_UTHASH
+  struct string *head;
+#endif
+#ifdef CONFIG_KHASH
+  void *hash_table;
+#endif
 };
 
 // Special counter returns for opening files
