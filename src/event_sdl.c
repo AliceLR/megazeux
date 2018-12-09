@@ -23,6 +23,7 @@
 #include "graphics.h"
 #include "compat_sdl.h"
 #include "render_sdl.h"
+#include "util.h"
 
 #include "SDL.h"
 
