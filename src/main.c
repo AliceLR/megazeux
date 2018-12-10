@@ -65,6 +65,14 @@
 
 #define CAPTION "MegaZeux " VERSION VERSION_DATE
 
+#ifdef __WIN32__
+// Export symbols to indicate MegaZeux would be prefer to be run with
+// the better video card on switchable graphics platforms.
+
+__declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001; // Nvidia
+__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1; // AMD
+#endif
+
 #ifdef __amigaos__
 #define __libspec LIBSPEC
 #else

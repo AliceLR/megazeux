@@ -1,3 +1,10 @@
+GIT
+
+USERS
+
++ Nvidia and AMD switchable graphics drivers should now detect
+  MegaZeux and MZXRun properly.
+
 December 9th, 2018 - MZX 2.91i
 
 A small release with a bunch of fixes for bugs introduced mostly
