@@ -382,6 +382,27 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
 
 #ifdef CONFIG_EGL
   {
+    /**
+     * OpenGL ES really doesn't like '#version 110' being specified. This
+     * is unfortunate, because some drivers (e.g. Intel HD) will emit warnings
+     * if it isn't explicit. Comment these directives out if found.
+     */
+
+    char *pos = source_cache[index];
+
+    while((pos = strstr(pos, "#version 110")))
+    {
+      debug("Found '#version 110' at %d in %s; commenting out\n",
+       (int)(pos - source_cache[index]),
+       mzx_res_get_by_id(res));
+      pos[0] = '/';
+      pos[1] = '/';
+    }
+  }
+#endif // CONFIG_EGL
+
+#ifdef CONFIG_EGL
+  {
     const GLchar *sources[2];
     GLint lengths[2];
 

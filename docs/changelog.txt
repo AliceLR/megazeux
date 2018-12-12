@@ -5,6 +5,9 @@ USERS
 + Nvidia and AMD switchable graphics drivers should now detect
   MegaZeux and MZXRun properly.
 + Updated SDL2 for Windows release builds to SDL 2.0.9.
++ Readded "#version 110" directives to all GLSL shaders, fixing
+  warnings on some Intel HD drivers. OpenGL ES builds should now
+  comment out these directives.
 
 
 December 9th, 2018 - MZX 2.91i

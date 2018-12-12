@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#version 110
+
 uniform sampler2D baseMap;
 
 varying vec2 vTexcoord;

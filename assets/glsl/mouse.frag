@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#version 110
+
 void main(void)
 {
   gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);

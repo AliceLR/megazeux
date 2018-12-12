@@ -17,6 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#version 110
+
 // vim:syntax=c:sts=3:sw=3:et:
 
 // EPX scaler by GreaseMonkey
