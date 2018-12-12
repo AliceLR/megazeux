@@ -4,6 +4,8 @@ USERS
 
 + Nvidia and AMD switchable graphics drivers should now detect
   MegaZeux and MZXRun properly.
++ Updated SDL2 for Windows release builds to SDL 2.0.9.
+
 
 December 9th, 2018 - MZX 2.91i
 

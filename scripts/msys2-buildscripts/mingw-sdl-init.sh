@@ -2,9 +2,8 @@
 # for redistribution. Download and extract the MinGW development files for SDL.
 
 cd /mzx-build-workingdir
-rm -rf sdl
 
-VERSION=2.0.8
+VERSION=2.0.9
 FILENAME=SDL2-devel-$VERSION-mingw.tar.gz
 
 rm -f $FILENAME
