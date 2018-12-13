@@ -347,6 +347,9 @@ static void apply_color_codes(struct help_file *current)
   if(write_printable_html)
     return;
 
+  if(current_fg_color_char == 0 && current_bg_color_char == 0)
+    return;
+
   if(color_code_active)
     append_html(current, "</span>");
 
@@ -384,6 +387,8 @@ static void close_color_codes(struct help_file *current)
 
 static struct help_file *parse_line(struct help_file *current, char *line)
 {
+  boolean is_new_color = false;
+  boolean is_text = false;
   boolean is_centered = false;
   boolean is_anchor = false;
   unsigned char cur;
@@ -489,24 +494,13 @@ static struct help_file *parse_line(struct help_file *current, char *line)
   {
     while((cur = *(line++)))
     {
-      if(cur < 32 || cur > 126)
-      {
-        // Special case for scroll char.
-        if(cur == 228)
-          cur = 232;
-
-        snprintf(buffer, 32, "&#x%X;", MZXFONT_OFFSET + cur);
-        append_html(current, buffer);
-        continue;
-      }
-
       if(cur == '~')
       {
         cur = *(line++);
         if(cur != '~')
         {
           set_current_fg_color(cur);
-          apply_color_codes(current);
+          is_new_color = true;
           continue;
         }
       }
@@ -517,11 +511,27 @@ static struct help_file *parse_line(struct help_file *current, char *line)
         if(cur != '@')
         {
           set_current_bg_color(cur);
-          apply_color_codes(current);
+          is_new_color = true;
           continue;
         }
       }
 
+      is_text = true;
+      if(is_new_color)
+      {
+        apply_color_codes(current);
+        is_new_color = false;
+      }
+
+      if(cur < 32 || cur > 126)
+      {
+        // Special case for scroll char.
+        if(cur == 228)
+          cur = 232;
+
+        snprintf(buffer, 32, "&#x%X;", MZXFONT_OFFSET + cur);
+        append_html(current, buffer);
+      }
       else
       {
         buffer[0] = cur;
@@ -534,12 +544,18 @@ static struct help_file *parse_line(struct help_file *current, char *line)
   close_color_codes(current);
 
   if(is_anchor)
+  {
+    // Append an extra space if this anchor is supposed to be consuming a line.
+    if(line && !is_text)
+      append_html(current, " ");
     append_html(current, "</a>");
+  }
 
   if(is_centered)
     append_html(current, "</p>");
+  else
+    append_html(current, EOL);
 
-  append_html(current, EOL);
   return current;
 }
 
@@ -611,8 +627,11 @@ static void write_html(const char *output)
     append_nav_url(&root, "COUNTERS.HLP", "1st", "Counters");
     append_nav_url(&root, "NEWINVER.HLP", "1st", "Changelog");
 
-    append_html(&root,
-     " <li><a href=\"mzx_help_printable.html\">Printable Version</a></li>");
+    // Since this will likely be embedded in an iframe, the printable version
+    // should open to a new page instead of attempting to open in the frame.
+    append_html(&root, " <li>"
+     "<a href=\"mzx_help_printable.html\" target=\"_blank\">"
+     "Printable Version</a></li>");
 
     append_html(&root, "</ul></div>" EOL "</div>" EOL EOL);
   }
