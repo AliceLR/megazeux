@@ -9,6 +9,11 @@ USERS
   warnings on some Intel HD drivers. OpenGL ES builds should now
   comment out these directives.
 
+DEVELOPERS
+
++ Added the hlp2html utility, which can be used to convert
+  WIPHelp.txt into web and printable HTML files.
+
 
 December 9th, 2018 - MZX 2.91i
 

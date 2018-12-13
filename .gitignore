@@ -90,6 +90,8 @@ src/utils/checkres.exe
 src/utils/checkres
 src/utils/downver.exe
 src/utils/downver
+src/utils/hlp2html.exe
+src/utils/hlp2html
 src/utils/hlp2txt.exe
 src/utils/hlp2txt
 src/utils/txt2hlp.exe
