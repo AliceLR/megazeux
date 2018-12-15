@@ -36,8 +36,8 @@ static const char * const usage =
  "hlp2html - Convert help text file to HTML." EOL
  "usage: hlp2html input.txt output.html [options]..." EOL EOL
  "options:" EOL
- "    -c : color version (default)" EOL
- "    -p : printable version" EOL;
+ "    -c : color+printable version (default)" EOL
+ "    -p : printable-only version" EOL;
 
 #define RESOURCES "contrib/hlp2html/"
 static const char * const font_file =         RESOURCES "fonts.css";
@@ -627,11 +627,13 @@ static void write_html(const char *output)
     append_nav_url(&root, "COUNTERS.HLP", "1st", "Counters");
     append_nav_url(&root, "NEWINVER.HLP", "1st", "Changelog");
 
+/*
     // Since this will likely be embedded in an iframe, the printable version
     // should open to a new page instead of attempting to open in the frame.
     append_html(&root, " <li>"
      "<a href=\"mzx_help_printable.html\" target=\"_blank\">"
      "Printable Version</a></li>");
+*/
 
     append_html(&root, "</ul></div>" EOL "</div>" EOL EOL);
   }

@@ -31,24 +31,18 @@ body
   font-family: Arial, Helvetica, sans-serif;
   width: 100%;
   height: 5em;
-  position: fixed;
-  top: 0;
   padding: .5em;
   padding-left: 0px;
   padding-right: 0px;
   border-bottom: 5px solid;
   text-align: center;
+
+  /* Floating navigation bar. */
+  position: fixed;
+  top: 0;
 }
 
-#helpnavprint
-{
-  font-family: Arial, Helvetica, sans-serif;
-  height: 5em;
-  border-bottom: 3px solid;
-  text-align: center;
-}
-
-#helpnav h1, #helpnavprint h1
+#helpnav h1
 {
   display: block;
   margin: .5em;
@@ -81,8 +75,8 @@ body
 {
   background-color: #222;
   border-color: #222;
-  border-radius: 2px 2px;
-  -moz-border-radius: 2px 2px;
+  border-radius: 4px 4px;
+  -moz-border-radius: 4px 4px;
   padding: 3px 5px;
   color: #FFF;
   text-decoration: none;
@@ -136,6 +130,10 @@ body
    * under the navigation bar. */
   padding-top: 8em;
   margin-top: -8em;
+
+  /* This is a fix for the fix above so the now gigantic anchor doesn't
+   * cover links up. */
+  pointer-events: none;
 }
 
 .helplink
@@ -148,4 +146,86 @@ body
   padding-right: 8px;
   font-family: 'mzxfont';
   content: "\E010";
+}
+
+@media print
+{
+  #helpnav
+  {
+    /* Disable the floating navigation bar in print mode. */
+    position: absolute;
+    border-bottom: 3px solid;
+  }
+
+  .helpnavcentered
+  {
+    /* Hide navigation buttons when in print mode. */
+    display: none;
+  }
+}
+
+@media only screen and (max-width: 680px),
+       only screen and (max-device-width: 1080px)
+{
+  /* Disable big margins on small windows, small displays, or phones. */
+
+  #helpcontainer
+  {
+    padding: 3px 8px;
+    padding-top: 6em;
+  }
+}
+
+@media only screen and (max-device-width: 800px)
+{
+  /* Probably a phone. Scale up navigation and text. */
+
+  #helpnav
+  {
+    height: 7em;
+  }
+
+  #helpnav h1
+  {
+    font-size: 2em;
+  }
+
+  .helpnavcentered li
+  {
+    font-size: 1.5em;
+  }
+
+  #helpcontainer
+  {
+    width: 768px;
+    line-height: 21px;
+    font-size: 21px;
+  }
+}
+
+@media only screen and (max-device-width: 1080px)
+{
+  /* Probably a phone. Scale up navigation and text. */
+
+  #helpnav
+  {
+    height: 8em;
+  }
+
+  #helpnav h1
+  {
+    font-size: 2.5em;
+  }
+
+  .helpnavcentered li
+  {
+    font-size: 1.75em;
+  }
+
+  #helpcontainer
+  {
+    width: 960px;
+    line-height: 26px;
+    font-size: 26px;
+  }
 }
