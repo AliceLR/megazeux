@@ -25,6 +25,7 @@
 __M_BEGIN_DECLS
 
 #include <kos.h>
+#include <stdbool.h>
 
 #define THREAD_RES void*
 #define THREAD_RETURN do { return; } while(0)

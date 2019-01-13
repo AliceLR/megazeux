@@ -36,11 +36,11 @@ void real_warp_mouse(int x, int y)
 {
 }
 
-bool dc_update_input(void);
+boolean dc_update_input(void);
 
-bool __update_event_status(void)
+boolean __update_event_status(void)
 {
-  bool retval = false;
+  boolean retval = false;
   retval |= dc_update_input();
   return retval;
 }
@@ -56,7 +56,7 @@ void __wait_event(int timeout)
 
 // Taken from arch/nds/event.c
 // Send a key up/down event to MZX.
-void do_unicode_key_event(struct buffered_status *status, bool down,
+void do_unicode_key_event(struct buffered_status *status, boolean down,
  enum keycode code, int unicode)
 {
   if(down)
@@ -75,7 +75,7 @@ void do_unicode_key_event(struct buffered_status *status, bool down,
   }
 }
 
-void do_key_event(struct buffered_status *status, bool down,
+void do_key_event(struct buffered_status *status, boolean down,
  enum keycode code)
 {
   do_unicode_key_event(status, down, code,
@@ -83,7 +83,7 @@ void do_key_event(struct buffered_status *status, bool down,
 }
 
 // Send a joystick button up/down event to MZX.
-void do_joybutton_event(struct buffered_status *status, bool down,
+void do_joybutton_event(struct buffered_status *status, boolean down,
  int button)
 {
   // Look up the keycode for this joystick button.
@@ -91,7 +91,7 @@ void do_joybutton_event(struct buffered_status *status, bool down,
   do_key_event(status, down, stuffed_key);
 }
 
-static inline bool check_key(struct buffered_status *status,
+static inline boolean check_key(struct buffered_status *status,
  Uint32 down, Uint32 up, Uint32 key, enum keycode code)
 {
   if(down & key)
@@ -113,7 +113,7 @@ static inline bool check_key(struct buffered_status *status,
   }
 }
 
-static inline bool check_joy(struct buffered_status *status,
+static inline boolean check_joy(struct buffered_status *status,
   Uint32 down, Uint32 up, Uint32 key, Uint32 code)
 {
   if(down & key)
@@ -138,13 +138,13 @@ static inline bool check_joy(struct buffered_status *status,
 static Uint32 last_buttons;
 static Uint32 last_ltrig, last_rtrig;
 
-bool dc_update_input(void)
+boolean dc_update_input(void)
 {
   struct buffered_status *status = store_status();
   maple_device_t *maple_pad, *maple_kbd;
   cont_state_t *pad;
   Uint32 down, held, up;
-  bool retval = false;
+  boolean retval = false;
 
   maple_pad = maple_enum_type(0, MAPLE_FUNC_CONTROLLER);
   if (maple_pad && (pad = (cont_state_t*) maple_dev_status(maple_pad))) {

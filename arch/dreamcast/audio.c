@@ -25,7 +25,6 @@
 
 #include <kos.h>
 #include <string.h>
-#include "platform.h"
 
 #ifdef CONFIG_AUDIO
 
@@ -57,7 +56,7 @@ static void *dc_audio_thread(void *dud)
 
 void init_audio_platform(struct config_info *conf)
 {
-  audio.buffer_samples = conf->buffer_size / 2;
+  audio.buffer_samples = conf->audio_buffer_samples / 2;
   buffer_size = 4 * audio.buffer_samples;
   audio.mix_buffer = cmalloc(buffer_size * 2);
   sound_buffer = cmalloc(buffer_size);

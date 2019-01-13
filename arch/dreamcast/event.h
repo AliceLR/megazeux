@@ -24,9 +24,9 @@
 
 #include "../../src/event.h"
 
-void do_unicode_key_event(struct buffered_status *status, bool down,
+void do_unicode_key_event(struct buffered_status *status, boolean down,
  enum keycode code, int unicode);
-void do_key_event(struct buffered_status *status, bool down, enum keycode code);
-void do_joybutton_event(struct buffered_status *status, bool down, int button);
+void do_key_event(struct buffered_status *status, boolean down, enum keycode code);
+void do_joybutton_event(struct buffered_status *status, boolean down, int button);
 
 #endif /* __DREAMCAST_EVENT_H__ */

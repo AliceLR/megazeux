@@ -41,7 +41,7 @@ Uint32 get_ticks(void)
   return (Uint32) timer_ms_gettime64();
 }
 
-bool platform_init(void)
+boolean platform_init(void)
 {
   return true;
 }
