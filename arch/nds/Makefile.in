@@ -32,12 +32,12 @@ STRIP  = /bin/true
 
 EXTRA_INCLUDES = -isystem arch/nds/ndsScreens/build \
                  -isystem $(DEVKITPRO)/libfat-nds/include \
-                 -isystem $(DEVKITPRO)/portlibs/armv5te/include \
+                 -isystem $(DEVKITPRO)/portlibs/nds/include \
                  -isystem $(LIBNDS)/include
 
 EXTRA_LIBS = -Larch/nds/ndsScreens/lib \
              -L$(DEVKITPRO)/libfat-nds/lib \
-             -L$(DEVKITPRO)/portlibs/armv5te/lib \
+             -L$(DEVKITPRO)/portlibs/nds/lib \
              -L$(LIBNDS)/lib -lfat -lm -lnds9
 
 ARCH_CFLAGS   += ${EXTRA_INCLUDES} -DARM9 -D__NDS__ -Iarch/nds
