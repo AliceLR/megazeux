@@ -1288,7 +1288,8 @@ static void get_modify_place_callback(context *ctx, context_callback_param *p)
     buffer->param = new_param;
 
     // Place the buffer back on the board/layer.
-    new_param = place_current_at_xy(ctx->world, buffer, editor->cursor_x,
+    // Use place_current_at_xy wrapper that ensures the under is untouched.
+    new_param = replace_current_at_xy(ctx->world, buffer, editor->cursor_x,
      editor->cursor_y, editor->mode, editor->cur_history);
 
     // Placement might have required that we change the buffer param again.

@@ -49,7 +49,7 @@ void free_edit_buffer(struct buffer_info *buffer);
 
 int place_current_at_xy(struct world *mzx_world, struct buffer_info *buffer,
  int x, int y, enum editor_mode mode, struct undo_history *history);
-void replace_current_at_xy(struct world *mzx_world, struct buffer_info *buffer,
+int replace_current_at_xy(struct world *mzx_world, struct buffer_info *buffer,
  int x, int y, enum editor_mode mode, struct undo_history *history);
 
 void grab_at_xy(struct world *mzx_world, struct buffer_info *buffer,

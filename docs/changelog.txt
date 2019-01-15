@@ -8,6 +8,8 @@ USERS
 + Readded "#version 110" directives to all GLSL shaders, fixing
   warnings on some Intel HD drivers. OpenGL ES builds should now
   comment out these directives.
++ Fixed bug where using Modify+Get on built-ins could clear the
+  floor under the built-in.
 
 DEVELOPERS
 

@@ -410,7 +410,7 @@ int place_current_at_xy(struct world *mzx_world, struct buffer_info *buffer,
  * the board.
  */
 
-void replace_current_at_xy(struct world *mzx_world, struct buffer_info *buffer,
+int replace_current_at_xy(struct world *mzx_world, struct buffer_info *buffer,
  int x, int y, enum editor_mode mode, struct undo_history *history)
 {
   struct board *cur_board = mzx_world->current_board;
@@ -437,13 +437,14 @@ void replace_current_at_xy(struct world *mzx_world, struct buffer_info *buffer,
 
       if(history)
         update_undo_frame(history);
-      return;
+
+      return buffer->param;
     }
   }
 
   // Our requirements here are actually equivalent to the behavior of
   // place_current_xy in most cases, so use it directly.
-  place_current_at_xy(mzx_world, buffer, x, y, mode, history);
+  return place_current_at_xy(mzx_world, buffer, x, y, mode, history);
 }
 
 /**
