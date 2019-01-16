@@ -10,6 +10,9 @@ USERS
   comment out these directives.
 + Fixed bug where using Modify+Get on built-ins could clear the
   floor under the built-in.
++ Fixed bug where key repeat wouldn't work for any text field in
+  the NDS/3DS/Wii ports. This also affected the robot editor in
+  Wii builds.
 
 DEVELOPERS
 

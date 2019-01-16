@@ -175,8 +175,8 @@ CORE_LIBSPEC boolean get_exit_status(void);
 CORE_LIBSPEC boolean set_exit_status(boolean value);
 CORE_LIBSPEC boolean peek_exit_input(void);
 
-// Implemented by "drivers" (SDL, Wii, and NDS currently)
-void __wait_event(int timeout);
+// Implemented by "drivers" (SDL, Wii, NDS, 3DS, etc.)
+void __wait_event(void);
 boolean __update_event_status(void);
 
 #ifdef CONFIG_SDL

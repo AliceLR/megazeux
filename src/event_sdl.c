@@ -796,7 +796,7 @@ static int SDL_WaitEventTimeout(SDL_Event *event, int timeout)
 }
 #endif
 
-void __wait_event(int timeout)
+void __wait_event(void)
 {
   SDL_Event event;
   boolean any_event;
@@ -806,6 +806,14 @@ void __wait_event(int timeout)
 #ifdef MSVC_H
   any_event = SDL_PollEvent(&event);
 #else
+  any_event = SDL_WaitEvent(&event);
+  /**
+   * This function used to take a timeout param, but we really don't want to
+   * implement that on a per-platform basis. SDL_WaitEventTimeout also does a
+   * very cool SDL_Delay(10) which we can probably live without.
+   */
+
+  /*
   if(!timeout)
   {
     any_event = SDL_WaitEvent(&event);
@@ -814,6 +822,7 @@ void __wait_event(int timeout)
   {
     any_event = SDL_WaitEventTimeout(&event, timeout);
   }
+  */
 #endif
 
   if(any_event)

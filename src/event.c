@@ -462,7 +462,26 @@ void wait_event(int timeout)
 {
   start_frame_event_status();
 
-  __wait_event(timeout);
+  if(timeout > 0)
+  {
+    int ticks_start = get_ticks();
+    int ticks_end;
+
+    while(timeout > 0)
+    {
+      delay(1);
+
+      if(__update_event_status())
+        break;
+
+      ticks_end = get_ticks();
+      timeout -= ticks_end - ticks_start;
+      ticks_start = ticks_end;
+    }
+  }
+  else
+    __wait_event();
+
   update_autorepeat();
 }
 
