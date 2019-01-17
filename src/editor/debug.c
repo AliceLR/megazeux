@@ -619,7 +619,8 @@ static void get_var_value(struct world *mzx_world, struct debug_var *v,
     {
       // These are a special case mostly because their names are generated.
       // NOTE: Annoyingly, local1 is at index 0, local2 is at index 1, etc...
-      int local_num = (v->data.local_num - 1) % 32;
+      // NOTE: Awful C modulo-- add 31 instead of subtracting 1...
+      int local_num = (v->data.local_num + 31) % 32;
       int index = v->id;
 
       *int_value = cur_board->robot_list[index]->local[local_num];

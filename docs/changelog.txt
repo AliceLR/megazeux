@@ -14,6 +14,8 @@ USERS
   acts like escape and the keyboard properly works again.
 + Fixed a bug where the NDS keyboard would drop keypresses on
   games not running at speed 2.
++ The counter debugger now correctly displays the value of
+  local0.
 
 DEVELOPERS
 
