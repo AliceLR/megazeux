@@ -436,6 +436,7 @@ static boolean write_delete_list(void)
 static void apply_delete_list(void)
 {
   struct manifest_entry *e_next = delete_list;
+  struct manifest_entry *e_prev = NULL;
   struct manifest_entry *e;
   struct stat s;
   boolean ret;
@@ -465,12 +466,19 @@ static void apply_delete_list(void)
          * the directory will be pruned.
          */
         check_prune_basedir(e->name);
+        info("--UPDATER-- Deleted '%s'\n", e->name);
       }
+      else
+        info("--UPDATER-- Skipping invalid entry '%s'\n", e->name);
     }
 
     // File was removed, doesn't exist, or is non-applicable; remove from list
     if(delete_list == e)
       delete_list = e_next;
+
+    // Keep the link on the last failed file up-to-date.
+    if(e_prev)
+      e_prev->next = e_next;
 
     manifest_entry_free(e);
     continue;
@@ -482,11 +490,11 @@ err_delete_failed:
        e->name);
       buf[71] = 0;
 
+      warn("--UPDATER-- Failed to delete '%s'\n", e->name);
       error_message(E_UPDATE, 10, buf);
 
-      if(e_next)
-        e->next = e_next->next;
-
+      // Track this file so its link can be updated.
+      e_prev = e;
       continue;
     }
   }
