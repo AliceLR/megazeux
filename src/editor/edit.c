@@ -125,6 +125,13 @@ struct editor_context
   struct scroll buffer_scroll;
   struct sensor buffer_sensor;
   boolean use_default_color;        // = 1
+  enum thing stored_board_id;
+  char stored_board_color;
+  char stored_board_param;
+  char stored_overlay_char;
+  char stored_overlay_color;
+  char stored_vlayer_char;
+  char stored_vlayer_color;
 
   // Modify in-place buffer
   struct buffer_info temp_buffer;
@@ -294,6 +301,28 @@ static void clear_vlayer_history(struct editor_context *editor)
 }
 
 /**
+ * Set the buffer to the default id/color/param for the current mode.
+ */
+
+static void default_buffer(struct editor_context *editor)
+{
+  struct buffer_info *buffer = &(editor->buffer);
+
+  if(editor->mode == EDIT_BOARD)
+  {
+    buffer->id = SPACE;
+    buffer->color = 7;
+    buffer->param = 0;
+  }
+  else
+  {
+    buffer->id = SPACE;
+    buffer->color = 7;
+    buffer->param = 32;
+  }
+}
+
+/**
  * Switch the current editing mode. If switching to or from the vlayer,
  * the current cursor and scroll position needs to be stored.
  */
@@ -326,6 +355,54 @@ static void set_editor_mode(struct editor_context *editor,
     editor->cursor_y = editor->stored_board_y;
     editor->scroll_x = editor->stored_scroll_x;
     editor->scroll_y = editor->stored_scroll_y;
+  }
+
+  // When switching modes, store the buffer for the old mode and load
+  // the buffer for the new mode. Previously, switching modes would
+  // (inconsistently) set the default buffer instead.
+  if(editor->mode != new_mode)
+  {
+    struct buffer_info *buffer = &(editor->buffer);
+
+    switch(editor->mode)
+    {
+      case EDIT_BOARD:
+        editor->stored_board_id = buffer->id;
+        editor->stored_board_color = buffer->color;
+        editor->stored_board_param = buffer->param;
+        break;
+
+      case EDIT_OVERLAY:
+        editor->stored_overlay_char = buffer->param;
+        editor->stored_overlay_color = buffer->color;
+        break;
+
+      case EDIT_VLAYER:
+        editor->stored_vlayer_char = buffer->param;
+        editor->stored_vlayer_color = buffer->color;
+        break;
+    }
+
+    switch(new_mode)
+    {
+      case EDIT_BOARD:
+        buffer->id = editor->stored_board_id;
+        buffer->color = editor->stored_board_color;
+        buffer->param = editor->stored_board_param;
+        break;
+
+      case EDIT_OVERLAY:
+        buffer->id = SPACE;
+        buffer->param = editor->stored_overlay_char;
+        buffer->color = editor->stored_overlay_color;
+        break;
+
+      case EDIT_VLAYER:
+        buffer->id = SPACE;
+        buffer->param = editor->stored_vlayer_char;
+        buffer->color = editor->stored_vlayer_color;
+        break;
+    }
   }
 
   editor->mode = new_mode;
@@ -1003,11 +1080,7 @@ static void editor_draw(context *ctx)
 
   // Fix invalid buffer params before they get drawn.
   if(buffer->param == -1)
-  {
-    buffer->id = SPACE;
-    buffer->param = 0;
-    buffer->color = 7;
-  }
+    default_buffer(editor);
 
   // Give the edit menu up-to-date information before it is drawn.
   update_edit_menu(editor->edit_menu, editor->mode, editor->cursor_mode,
@@ -1783,10 +1856,6 @@ static boolean editor_key(context *ctx, int *key)
         set_editor_mode(editor, EDIT_BOARD);
         synchronize_board_values(editor);
         fix_scroll(editor);
-
-        buffer->id = SPACE;
-        buffer->param = 0;
-        buffer->color = 7;
         key = 0;
         return true;
       }
@@ -2840,8 +2909,6 @@ static boolean editor_key(context *ctx, int *key)
 
               editor->cursor_mode = CURSOR_PLACE;
               block->selected = false;
-              buffer->param = 32;
-              buffer->color = 7;
             }
           }
           else
@@ -2849,9 +2916,6 @@ static boolean editor_key(context *ctx, int *key)
             set_editor_mode(editor, EDIT_BOARD);
             editor->cursor_mode = CURSOR_PLACE;
             block->selected = false;
-            buffer->id = SPACE;
-            buffer->param = 0;
-            buffer->color = 7;
           }
         }
       }
@@ -3090,9 +3154,6 @@ static boolean editor_key(context *ctx, int *key)
 
           editor->cursor_mode = CURSOR_PLACE;
           block->selected = false;
-          buffer->id = SPACE;
-          buffer->param = 32;
-          buffer->color = 7;
         }
         else
 
@@ -3483,9 +3544,11 @@ static void __edit_world(context *parent, boolean reload_curr_file)
   buffer->robot = &(editor->buffer_robot);
   buffer->scroll = &(editor->buffer_scroll);
   buffer->sensor = &(editor->buffer_sensor);
-  buffer->id = SPACE;
-  buffer->param = 0;
-  buffer->color = 7;
+  editor->stored_overlay_char = 32;
+  editor->stored_overlay_color = 7;
+  editor->stored_vlayer_char = 32;
+  editor->stored_vlayer_color = 7;
+  default_buffer(editor);
 
   block->command = BLOCK_CMD_NONE;
   block->selected = false;
