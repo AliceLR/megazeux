@@ -1,14 +1,21 @@
 GIT
 
-USERS
+FEATURES
 
 + Nvidia and AMD switchable graphics drivers should now detect
   MegaZeux and MZXRun properly.
-+ Updated SDL2 for Windows release builds to SDL 2.0.9.
++ The editor now remember the contents of the buffer when
+  switching between board, overlay, and vlayer editing. For
+  example, if a robot is selected on the board before switching
+  to overlay mode, the robot will still be in the buffer when
+  the user switches back to board mode.
+
+FIXES
+
 + Readded "#version 110" directives to all GLSL shaders, fixing
   warnings on some Intel HD drivers. OpenGL ES builds should now
   comment out these directives.
-+ Fixed bug where using Modify+Get on built-ins could clear the
++ Fixed bug where using Modify+Grab on built-ins could clear the
   floor under the built-in.
 + Fixed NDS touch screen support. Touching the screen no longer
   acts like escape and the keyboard properly works again.
@@ -19,17 +26,13 @@ USERS
 + Fixed crash bug that could occur when processing delete.txt.
 + Improved manifest validity checks.
 + Fixed board editor crash caused by invalid thing IDs.
-+ The editor now remember the contents of the buffer when
-  switching between board, overlay, and vlayer editing. For
-  example, if a robot is selected on the board before switching
-  to overlay mode, the robot will still be in the buffer when
-  the user switches back to board mode.
 
 DEVELOPERS
 
 + Added the hlp2html utility, which can be used to convert
   WIPHelp.txt into web and printable HTML files.
 + Updated to latest NDS ARM7 template.
++ Updated SDL2 for Windows release builds to SDL 2.0.9.
 
 
 December 9th, 2018 - MZX 2.91i
