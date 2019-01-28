@@ -431,13 +431,17 @@ static void update_player_input(struct world *mzx_world)
       mzx_world->key_left_delay = key_left_delay + 1;
   }
 
-  else
-  {
+  // Reset timers only when the corresponding key is released. Some games rely
+  // on this persisting when locking the player, e.g. Brotherhood periodically
+  // locks the player when moving in water.
+  if(!up_pressed)
     mzx_world->key_up_delay = 0;
+  if(!down_pressed)
     mzx_world->key_down_delay = 0;
+  if(!right_pressed)
     mzx_world->key_right_delay = 0;
+  if(!left_pressed)
     mzx_world->key_left_delay = 0;
-  }
 
   // Bomb
   if(del_pressed && !cur_board->player_attack_locked)

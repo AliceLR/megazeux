@@ -26,6 +26,11 @@ FIXES
 + Fixed crash bug that could occur when processing delete.txt.
 + Improved manifest validity checks.
 + Fixed board editor crash caused by invalid thing IDs.
++ Player movement key repeat no longer resets when the player is
+  locked. It will reset for a direction only when the arrow key
+  corresponding to that direction is released. This fixes a bug
+  in Brotherhood where the player would move at a fraction of
+  the speed they were supposed to while swimming.
 
 DEVELOPERS
 
