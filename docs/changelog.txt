@@ -32,9 +32,9 @@ FIXES
   in Brotherhood where the player would move at a fraction of
   the speed they were supposed to while swimming.
 + Added version checking for legacy IF c?? Sprite behavior. In
-  versions 2.82b and prior, c?? would make this command use
-  ignore the provided param and use SPR_NUM instead. This fixes
-  Project MoveZig.
+  versions 2.82b and prior, c?? would make this command ignore
+  the provided param and use SPR_NUM instead. This fixes Project
+  MoveZig.
 
 DEVELOPERS
 
