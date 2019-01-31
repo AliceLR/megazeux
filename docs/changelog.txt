@@ -35,6 +35,7 @@ FIXES
   versions 2.82b and prior, c?? would make this command ignore
   the provided param and use SPR_NUM instead. This fixes Project
   MoveZig.
++ Fixed spelling error in missile param dialog.
 
 DEVELOPERS
 

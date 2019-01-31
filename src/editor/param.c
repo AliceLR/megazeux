@@ -45,22 +45,22 @@
 
 static const char *const potion_fx[16] =
 {
-  "No Effect   ",
-  "Invinco     ",
-  "Blast       ",
-  "Health x10  ",
-  "Health x50  ",
-  "Poison      ",
-  "Blind       ",
-  "Kill Enemies",
-  "Lava Walker ",
-  "Detonate    ",
-  "Banish      ",
-  "Summon      ",
-  "Avalanche   ",
-  "Freeze Time ",
-  "Wind        ",
-  "Slow Time   "
+  [POTION_DUD]          = "No Effect   ",
+  [POTION_INVINCO]      = "Invinco     ",
+  [POTION_BLAST]        = "Blast       ",
+  [POTION_SMALL_HEALTH] = "Health x10  ",
+  [POTION_BIG_HEALTH]   = "Health x50  ",
+  [POTION_POISON]       = "Poison      ",
+  [POTION_BLIND]        = "Blind       ",
+  [POTION_KILL]         = "Kill Enemies",
+  [POTION_FIREWALK]     = "Lava Walker ",
+  [POTION_DETONATE]     = "Detonate    ",
+  [POTION_BANISH]       = "Banish      ",
+  [POTION_SUMMON]       = "Summon      ",
+  [POTION_AVALANCHE]    = "Avalanche   ",
+  [POTION_FREEZE]       = "Freeze Time ",
+  [POTION_WIND]         = "Wind        ",
+  [POTION_SLOW]         = "Slow Time   "
 };
 
 static int pe_chest(struct world *mzx_world, int param)
@@ -68,36 +68,37 @@ static int pe_chest(struct world *mzx_world, int param)
   int type = param & 0x0F;
   int var = param >> 4;
 
-  const char *list[11] =
+  const char *list[] =
   {
-    "Empty               ",
-    "Key                 ",
-    "Coins               ",
-    "Lives               ",
-    "Ammo                ",
-    "Gems                ",
-    "Health              ",
-    "Potion              ",
-    "Ring                ",
-    "Lo Bombs            ",
-    "Hi Bombs            "
+    [CHEST_EMPTY]   = "Empty               ",
+    [CHEST_KEY]     = "Key                 ",
+    [CHEST_COINS]   = "Coins               ",
+    [CHEST_LIVES]   = "Lives               ",
+    [CHEST_AMMO]    = "Ammo                ",
+    [CHEST_GEMS]    = "Gems                ",
+    [CHEST_HEALTH]  = "Health              ",
+    [CHEST_POTION]  = "Potion              ",
+    [CHEST_RING]    = "Ring                ",
+    [CHEST_LOBOMBS] = "Lo Bombs            ",
+    [CHEST_HIBOMBS] = "Hi Bombs            "
   };
 
   // First, pick chest contents
-  type = list_menu(list, 21, "Choose chest contents", type, 11, 27, 0);
+  type =
+   list_menu(list, 21, "Choose chest contents", type, ARRAY_SIZE(list), 27, 0);
 
   if(type < 0)
     return -1;
 
   switch(type)
   {
-    case 0: // Empty
+    case CHEST_EMPTY:
     {
       var = 0;
       break;
     }
 
-    case 1: // Key
+    case CHEST_KEY:
     {
       var = color_selection(var, 0);
       if(var > 0)
@@ -105,14 +106,20 @@ static int pe_chest(struct world *mzx_world, int param)
       break;
     }
 
-    case 7:
-    case 8: // Ring/potion
+    case CHEST_POTION:
+    case CHEST_RING:
     {
       var = list_menu(potion_fx, 13, "Choose effect", var, 16, 31, 0);
       break;
     }
 
-    default: // Number
+    case CHEST_COINS:
+    case CHEST_LIVES:
+    case CHEST_AMMO:
+    case CHEST_GEMS:
+    case CHEST_HEALTH:
+    case CHEST_LOBOMBS:
+    case CHEST_HIBOMBS: // Choose amount
     {
       struct dialog di;
       struct element *elements[3];
@@ -393,7 +400,7 @@ static int pe_pusher(struct world *mzx_world, int param)
   elements[2] = construct_radio_button(15, 6, radio_strings,
    4, 5, &param);
 
-  construct_dialog(&di, "Set Pusher/Missle/Spike", 10, 5, 60, 18,
+  construct_dialog(&di, "Set Pusher/Missile/Spike", 10, 5, 60, 18,
    elements, 3, 2);
 
   dialog_result = run_dialog(mzx_world, &di);
@@ -1089,193 +1096,193 @@ int edit_param(struct world *mzx_world, int id, int param)
   // Switch according to thing
   switch(id)
   {
-    case 27: // Chest
+    case CHEST:
     {
       param = pe_chest(mzx_world, param);
       break;
     }
 
-    case 30: // Health
-    case 35: // Ammo
+    case HEALTH:
+    case AMMO:
     {
       param = pe_health(mzx_world, param);
       break;
     }
 
-    case 31: // Ring
-    case 32: // Potion
+    case RING:
+    case POTION:
     {
       param = pe_ring(mzx_world, param);
       break;
     }
 
-    case 36: // Bomb
+    case BOMB:
     {
       param = pe_bomb(mzx_world, param);
       break;
     }
 
-    case 37: // Lit bomb
+    case LIT_BOMB:
     {
       param = pe_lit_bomb(mzx_world, param);
       break;
     }
 
-    case 38: // Explosion
+    case EXPLOSION:
     {
       param = pe_explosion(mzx_world, param);
       break;
     }
 
-    case 41: // Door
+    case DOOR:
     {
       param = pe_door(mzx_world, param);
       break;
     }
 
-    case 47: // Gate
+    case GATE:
     {
       param = pe_gate(mzx_world, param);
       break;
     }
 
-    case 49: // Transport
+    case TRANSPORT:
     {
       param = pe_transport(mzx_world, param);
       break;
     }
 
-    case 55: // Pouch
+    case POUCH:
     {
       param = pe_pouch(mzx_world, param);
       break;
     }
 
-    case 56: // Pusher
-    case 62: // Missile
-    case 75: // Spike
+    case PUSHER:
+    case MISSILE:
+    case SPIKE:
     {
       param = pe_pusher(mzx_world, param);
       break;
     }
 
-    case 78: // Shooting fire
+    case SHOOTING_FIRE:
     {
       param = pe_pusher(mzx_world, param >> 1) << 1;
       break;
     }
 
-    case 60: // Lazer gun
+    case LAZER_GUN:
     {
       param = pe_lazer_gun(mzx_world, param);
       break;
     }
 
-    case 61: // Bullet
+    case BULLET:
     {
       param = pe_bullet(mzx_world, param);
       break;
     }
 
-    case 72: // Ricochet panel
+    case RICOCHET_PANEL:
     {
       param = pe_ricochet_panel(mzx_world, param);
       break;
     }
 
-    case 74: // Mine
+    case MINE:
     {
       param = pe_mine(mzx_world, param);
       break;
     }
 
-    case 80: // Snake
+    case SNAKE:
     {
       param = pe_snake(mzx_world, param);
       break;
     }
 
-    case 81: // Eye
+    case EYE:
     {
       param = pe_eye(mzx_world, param);
       break;
     }
 
-    case 82: // Thief
+    case THIEF:
     {
       param = pe_thief(mzx_world, param);
       break;
     }
 
-    case 83: // Slime blob
+    case SLIMEBLOB:
     {
       param = pe_slime_blob(mzx_world, param);
       break;
     }
 
-    case 84: // Runner
+    case RUNNER:
     {
       param = pe_runner(mzx_world, param);
       break;
     }
 
-    case 85: // Ghost
+    case GHOST:
     {
       param = pe_ghost(mzx_world, param);
       break;
     }
 
-    case 86: // Dragon
+    case DRAGON:
     {
       param = pe_dragon(mzx_world, param);
       break;
     }
 
-    case 87: // Fish
+    case FISH:
     {
       param = pe_fish(mzx_world, param);
       break;
     }
 
-    case 88: // Shark
-    case 91: // Spitting tiger
+    case SHARK:
+    case SPITTING_TIGER:
     {
       param = pe_shark(mzx_world, param);
       break;
     }
 
-    case 89: // Spider
+    case SPIDER:
     {
       param = pe_spider(mzx_world, param);
       break;
     }
 
-    case 90: // Goblin
+    case GOBLIN:
     {
       param = pe_goblin(mzx_world, param);
       break;
     }
 
-    case 92: // Bullet gun
-    case 93: // Spinning gun
+    case BULLET_GUN:
+    case SPINNING_GUN:
     {
       param = pe_bullet_gun(mzx_world, param);
       break;
     }
 
-    case 94: // Bear
+    case BEAR:
     {
       param = pe_bear(mzx_world, param);
       break;
     }
 
-    case 95: // Bear cub
+    case BEAR_CUB:
     {
       param = pe_bear_cub(mzx_world, param);
       break;
     }
 
-    case 97: // Missile gun
+    case MISSILE_GUN:
     {
       param = pe_missile_gun(mzx_world, param);
       break;

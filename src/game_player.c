@@ -463,7 +463,7 @@ static void open_chest(struct world *mzx_world, int chest_x, int chest_y)
   enum chest_contents item_type = (param & 15);
   int item_value = (param & 240) >> 4;
 
-  if(item_type == ITEM_NONE)
+  if(item_type == CHEST_EMPTY)
   {
     play_sfx(mzx_world, SFX_EMPTY_CHEST);
     return;
@@ -474,10 +474,10 @@ static void open_chest(struct world *mzx_world, int chest_x, int chest_y)
 
   switch(item_type)
   {
-    case ITEM_NONE: // Nothing
+    case CHEST_EMPTY:
       break;
 
-    case ITEM_KEY: // Key
+    case CHEST_KEY:
     {
       if(give_key(mzx_world, item_value))
       {
@@ -489,7 +489,7 @@ static void open_chest(struct world *mzx_world, int chest_x, int chest_y)
       break;
     }
 
-    case ITEM_COINS: // Coins
+    case CHEST_COINS:
     {
       item_value *= 5;
       set_3_mesg(mzx_world, "Inside the chest you find ",
@@ -499,7 +499,7 @@ static void open_chest(struct world *mzx_world, int chest_x, int chest_y)
       break;
     }
 
-    case ITEM_LIFE: // Life
+    case CHEST_LIVES:
     {
       if(item_value > 1)
       {
@@ -514,7 +514,7 @@ static void open_chest(struct world *mzx_world, int chest_x, int chest_y)
       break;
     }
 
-    case ITEM_AMMO: // Ammo
+    case CHEST_AMMO:
     {
       item_value *= 5;
       set_3_mesg(mzx_world, "Inside the chest you find ",
@@ -523,7 +523,7 @@ static void open_chest(struct world *mzx_world, int chest_x, int chest_y)
       break;
     }
 
-    case ITEM_GEMS: // Gems
+    case CHEST_GEMS:
     {
       item_value *= 5;
       set_3_mesg(mzx_world, "Inside the chest you find ", item_value, " gems.");
@@ -532,7 +532,7 @@ static void open_chest(struct world *mzx_world, int chest_x, int chest_y)
       break;
     }
 
-    case ITEM_HEALTH: // Health
+    case CHEST_HEALTH:
     {
       item_value *= 5;
       set_3_mesg(mzx_world, "Inside the chest you find ",
@@ -541,7 +541,7 @@ static void open_chest(struct world *mzx_world, int chest_x, int chest_y)
       break;
     }
 
-    case ITEM_POTION: // Potion
+    case CHEST_POTION:
     {
       int answer;
       answer = confirm(mzx_world,
@@ -554,7 +554,7 @@ static void open_chest(struct world *mzx_world, int chest_x, int chest_y)
       break;
     }
 
-    case ITEM_RING: // Ring
+    case CHEST_RING:
     {
       int answer;
       answer = confirm(mzx_world,
@@ -567,7 +567,7 @@ static void open_chest(struct world *mzx_world, int chest_x, int chest_y)
       break;
     }
 
-    case ITEM_LOBOMBS: // Lobombs
+    case CHEST_LOBOMBS:
     {
       item_value *= 5;
       set_3_mesg(mzx_world, "Inside the chest you find ",
@@ -576,7 +576,7 @@ static void open_chest(struct world *mzx_world, int chest_x, int chest_y)
       break;
     }
 
-    case ITEM_HIBOMBS: // Hibombs
+    case CHEST_HIBOMBS:
     {
       item_value *= 5;
       set_3_mesg(mzx_world, "Inside the chest you find ", item_value,
@@ -586,7 +586,7 @@ static void open_chest(struct world *mzx_world, int chest_x, int chest_y)
     }
   }
   // Empty chest
-  cur_board->level_param[offset] = 0;
+  cur_board->level_param[offset] = CHEST_EMPTY;
 }
 
 static void place_player(struct world *mzx_world, int x, int y, int dir)
