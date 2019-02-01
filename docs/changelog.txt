@@ -9,6 +9,8 @@ FEATURES
   example, if a robot is selected on the board before switching
   to overlay mode, the robot will still be in the buffer when
   the user switches back to board mode.
++ New counter: TIME_MILLIS. Returns the milliseconds of the
+  current system time.
 
 FIXES
 

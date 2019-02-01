@@ -194,6 +194,13 @@ static const char *universal_var_list[] =
 {
   "random_seed0",
   "random_seed1",
+  "date_year*",
+  "date_month*",
+  "date_day*",
+  "time_hours*",
+  "time_minutes*",
+  "time_seconds*",
+  "time_millis*",
 };
 
 static const char *world_var_list[] =
