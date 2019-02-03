@@ -215,6 +215,8 @@ static const char *world_var_list[] =
   "max_samples",
   "mod_frequency",
   "mod_length*",
+  "mod_loopend",
+  "mod_loopstart",
   "mod_name*",
   "mod_order",
   "mod_position",

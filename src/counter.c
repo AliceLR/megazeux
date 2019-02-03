@@ -2314,6 +2314,32 @@ static int mod_length_read(struct world *mzx_world,
   return audio_get_module_length();
 }
 
+static int mod_loopend_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  return audio_get_module_loop_end();
+}
+
+static void mod_loopend_write(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int value, int id)
+{
+  if(value >= 0)
+    audio_set_module_loop_end(value);
+}
+
+static int mod_loopstart_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  return audio_get_module_loop_start();
+}
+
+static void mod_loopstart_write(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int value, int id)
+{
+  if(value >= 0)
+    audio_set_module_loop_start(value);
+}
+
 static int mod_freq_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
@@ -2449,6 +2475,8 @@ static const struct function_counter builtin_counters[] =
   { "min!,!",           V284,   minval_read,          NULL },
   { "mod_frequency",    V281,   mod_freq_read,        mod_freq_write },
   { "mod_length",       V291,   mod_length_read,      NULL },
+  { "mod_loopend",      V292,   mod_loopend_read,     mod_loopend_write },
+  { "mod_loopstart",    V292,   mod_loopstart_read,   mod_loopstart_write },
   { "mod_order",        V262,   mod_order_read,       mod_order_write },
   { "mod_position",     V281,   mod_position_read,    mod_position_write },
   { "mousepx",          V282,   mousepx_read,         mousepx_write },
