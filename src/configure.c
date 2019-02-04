@@ -312,7 +312,7 @@ static void config_set_mod_volume(struct config_info *conf, char *name,
 {
   // FIXME sloppy validation
   unsigned long new_volume = strtoul(value, NULL, 10);
-  conf->music_volume = CLAMP(new_volume, 1, 8);
+  conf->music_volume = CLAMP(new_volume, 0, 10);
 }
 
 static void config_set_mzx_speed(struct config_info *conf, char *name,
@@ -335,7 +335,7 @@ static void config_set_sam_volume(struct config_info *conf, char *name,
 {
   // FIXME sloppy validation
   unsigned long new_volume = strtoul(value, NULL, 10);
-  conf->sam_volume = CLAMP(new_volume, 1, 8);
+  conf->sam_volume = CLAMP(new_volume, 0, 10);
 }
 
 static void config_save_file(struct config_info *conf, char *name,
@@ -495,12 +495,12 @@ static void include2_config(struct config_info *conf, char *name,
   set_config_from_file(value);
 }
 
-static void config_set_sfx_volume(struct config_info *conf, char *name,
+static void config_set_pcs_volume(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
   // FIXME sloppy validation
   unsigned long new_volume = strtoul(value, NULL, 10);
-  conf->pc_speaker_volume = CLAMP(new_volume, 1, 8);
+  conf->pc_speaker_volume = CLAMP(new_volume, 0, 10);
 }
 
 static void config_mask_midchars(struct config_info *conf, char *name,
@@ -689,7 +689,7 @@ static const struct config_entry config_options[] =
   { "num_buffered_events", config_set_num_buffered_events, false },
   { "pause_on_unfocus", pause_on_unfocus, false },
   { "pc_speaker_on", config_set_pc_speaker, false },
-  { "pc_speaker_volume", config_set_sfx_volume, false },
+  { "pc_speaker_volume", config_set_pcs_volume, false },
   { "resample_mode", config_resample_mode, false },
   { "sample_volume", config_set_sam_volume, false },
   { "save_file", config_save_file, false },

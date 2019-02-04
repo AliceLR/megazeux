@@ -42,6 +42,9 @@ FIXES
 + Fixed a bug where the current board mod wouldn't play after
   starting a listening mod, testing, returning to the editor,
   and then disabling the listening mod.
++ Replaced the linear volume setting curve with an exponential
+  curve to make lower volumes less loud. The volume settings can
+  now be set from 0 to 10 instead of from 1 to 8.
 
 DEVELOPERS
 

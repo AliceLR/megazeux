@@ -189,8 +189,8 @@ static struct audio_stream *construct_pc_speaker_stream(void)
   a_spec.set_volume = pcs_set_volume;
   a_spec.destruct   = pcs_destruct;
 
-  initialize_audio_stream((struct audio_stream *)pcs_stream, &a_spec,
-   audio.pcs_volume * 255 / 8, 0);
+  // The volume here will be corrected after initialization...
+  initialize_audio_stream((struct audio_stream *)pcs_stream, &a_spec, 255, 0);
 
   return (struct audio_stream *)pcs_stream;
 }
