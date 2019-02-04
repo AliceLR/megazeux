@@ -498,6 +498,7 @@ static void fix_scroll(struct editor_context *editor)
 
 /**
  * Play the current board's mod if the listening mod isn't playing.
+ * This will restart the board mod even if it's already playing.
  */
 
 static void fix_mod(struct editor_context *editor)
@@ -545,9 +546,9 @@ static void set_current_board(struct editor_context *editor, int new_board)
     fix_scroll(editor);
     fix_caption(editor);
 
-    if(strcmp(cur_board->mod_playing, "*") &&
-     strcasecmp(cur_board->mod_playing, mzx_world->real_mod_playing))
-      fix_mod(editor);
+    // We want mod switching from changing boards to act the same as gameplay.
+    if(!editor->listening_mod_active)
+      load_game_module(mzx_world, cur_board->mod_playing, true);
 
     // Load the board charset and palette
     if(editor_conf->editor_load_board_assets)
@@ -2876,8 +2877,13 @@ static boolean editor_key(context *ctx, int *key)
           {
             audio_end_module();
             editor->listening_mod_active = false;
+
+            // If there's a mod currently "playing", restart it. Otherwise,
+            // just start the current board's mod.
             if(mzx_world->real_mod_playing[0])
               audio_play_module(mzx_world->real_mod_playing, true, 255);
+            else
+              fix_mod(editor);
           }
         }
       }

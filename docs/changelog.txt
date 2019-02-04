@@ -36,6 +36,12 @@ FIXES
   the provided param and use SPR_NUM instead. This fixes Project
   MoveZig.
 + Fixed spelling error in missile param dialog.
++ Switching boards in the editor now properly translates the new
+  board's mod name, fixing cases where board mods would restart
+  sometimes.
++ Fixed a bug where the current board mod wouldn't play after
+  starting a listening mod, testing, returning to the editor,
+  and then disabling the listening mod.
 
 DEVELOPERS
 

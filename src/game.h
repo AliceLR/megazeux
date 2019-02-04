@@ -33,8 +33,7 @@ __M_BEGIN_DECLS
 
 CORE_LIBSPEC void title_screen(context *parent);
 CORE_LIBSPEC void load_board_module(struct world *mzx_world);
-
-boolean load_game_module(struct world *mzx_world, char *filename,
+CORE_LIBSPEC boolean load_game_module(struct world *mzx_world, char *filename,
  boolean fail_if_same);
 
 void clear_intro_mesg(void);
