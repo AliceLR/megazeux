@@ -312,7 +312,7 @@ static void config_set_mod_volume(struct config_info *conf, char *name,
 {
   // FIXME sloppy validation
   unsigned long new_volume = strtoul(value, NULL, 10);
-  conf->music_volume = CLAMP(new_volume, 0, 10);
+  conf->music_volume = MIN(new_volume, 10);
 }
 
 static void config_set_mzx_speed(struct config_info *conf, char *name,
@@ -335,7 +335,7 @@ static void config_set_sam_volume(struct config_info *conf, char *name,
 {
   // FIXME sloppy validation
   unsigned long new_volume = strtoul(value, NULL, 10);
-  conf->sam_volume = CLAMP(new_volume, 0, 10);
+  conf->sam_volume = MIN(new_volume, 10);
 }
 
 static void config_save_file(struct config_info *conf, char *name,
@@ -500,7 +500,7 @@ static void config_set_pcs_volume(struct config_info *conf, char *name,
 {
   // FIXME sloppy validation
   unsigned long new_volume = strtoul(value, NULL, 10);
-  conf->pc_speaker_volume = CLAMP(new_volume, 0, 10);
+  conf->pc_speaker_volume = MIN(new_volume, 10);
 }
 
 static void config_mask_midchars(struct config_info *conf, char *name,
