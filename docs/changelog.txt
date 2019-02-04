@@ -45,6 +45,8 @@ FIXES
 + Replaced the linear volume setting curve with an exponential
   curve to make lower volumes less loud. The volume settings can
   now be set from 0 to 10 instead of from 1 to 8.
++ The config file setting pc_speaker_on=0 no longer prevents
+  turning on PC speaker SFX at runtime.
 
 DEVELOPERS
 
