@@ -307,11 +307,10 @@ int audio_play_module(char *filename, boolean safely, int volume)
   struct audio_stream *a_src;
   int real_volume;
 
-  // FIXME: Weird hack, why not use audio_end_module() directly?
   if(!filename || !filename[0])
   {
-    audio_end_module();
-    return 1;
+    debug("audio_play_module received empty filename!\n");
+    return 0;
   }
 
   if(safely)
