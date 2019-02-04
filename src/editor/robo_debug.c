@@ -168,7 +168,7 @@ static int edit_breakpoint_dialog(struct world *mzx_world,
    "Match robot name:", ROBOT_NAME_SIZE - 1, match_name);
 
   elements[2] = construct_number_box(38, 3,
-   "Match line number:", 0, 99999, 0, &line_number);
+   "Match line number:", 0, 99999, NUMBER_BOX, &line_number);
 
   elements[3] = construct_button(22, 5, "Confirm", 0);
   elements[4] = construct_button(45, 5, "Cancel", -1);

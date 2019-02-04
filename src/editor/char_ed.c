@@ -934,17 +934,16 @@ static void char_import(struct world *mzx_world, int char_offset, int charset,
       break;
 
     case 1:
-      elements[0] =
-       construct_number_box(3, 20, "Offset:  ", 0, 255, 0, &char_offset);
-      elements[1] =
-       construct_label(3, 21, "~9Size:    auto");
+      elements[0] = construct_number_box(3, 20, "Offset:  ", 0, 255, NUMBER_BOX,
+       &char_offset);
+      elements[1] = construct_label(3, 21, "~9Size:    auto");
       break;
   }
 
   elements[2] =
-   construct_number_box(28, 20, "First: ", 0, 255, 0, &current_file);
+   construct_number_box(28, 20, "First: ", 0, 255, NUMBER_BOX, &current_file);
   elements[3] =
-   construct_number_box(52, 20, "Count: ", 1, 256, 0, &num_files);
+   construct_number_box(52, 20, "Count: ", 1, 256, NUMBER_BOX, &num_files);
   elements[4] =
    construct_label(28, 21, "~9Use \"file#.chr\" to import multiple charsets.");
 
@@ -1027,17 +1026,17 @@ static void char_export(struct world *mzx_world, int char_offset, int charset,
       break;
 
     case 1:
-      elements[0] =
-       construct_number_box(3, 20, "Offset:  ", 0, 255, 0, &char_offset);
-      elements[1] =
-       construct_number_box(3, 21, "Size:    ", 1, 256, 0, &char_size);
+      elements[0] = construct_number_box(3, 20, "Offset:  ", 0, 255, NUMBER_BOX,
+       &char_offset);
+      elements[1] = construct_number_box(3, 21, "Size:    ", 1, 256, NUMBER_BOX,
+       &char_size);
       break;
   }
 
   elements[2] =
-   construct_number_box(28, 20, "First: ", 0, 255, 0, &current_file);
+   construct_number_box(28, 20, "First: ", 0, 255, NUMBER_BOX, &current_file);
   elements[3] =
-   construct_number_box(52, 20, "Count: ", 1, 256, 0, &num_files);
+   construct_number_box(52, 20, "Count: ", 1, 256, NUMBER_BOX, &num_files);
   elements[4] =
    construct_label(28, 21, "~9Use \"file#.chr\" to export multiple charsets.");
 

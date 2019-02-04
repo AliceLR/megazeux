@@ -1835,9 +1835,9 @@ static void goto_position(struct robot_editor_context *rstate)
 
   struct element *elements[4] =
   {
-    construct_number_box(2, 2, "Line:   ", 0, rstate->total_lines, false,
+    construct_number_box(2, 2, "Line:   ", 1, rstate->total_lines, NUMBER_BOX,
      &line_number),
-    construct_number_box(2, 3, "Column: ", 1, MAX_COMMAND_LEN + 1, false,
+    construct_number_box(2, 3, "Column: ", 1, MAX_COMMAND_LEN + 1, NUMBER_BOX,
      &column_number),
     construct_button(3, 5, "OK", 0),
     construct_button(14, 5, "Cancel", -1)
@@ -2379,7 +2379,7 @@ static void execute_macro(struct robot_editor_context *rstate,
             elements[dialog_index] =
              construct_number_box(x, y, current_variable->name,
              current_type->type_attributes[0],
-             current_type->type_attributes[1], 0,
+             current_type->type_attributes[1], NUMBER_BOX,
              &(current_variable->storage.int_storage));
             break;
           }

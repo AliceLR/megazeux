@@ -2579,7 +2579,7 @@ static boolean editor_key(context *ctx, int *key)
               struct element *elements[] =
               {
                 construct_number_box(21, 20, "Offset:  ",
-                 0, (PRO_CH - 1), 0, &char_offset),
+                 0, (PRO_CH - 1), NUMBER_BOX, &char_offset),
               };
 
               if(!file_manager(mzx_world, chr_ext, NULL, import_name,
@@ -3206,9 +3206,9 @@ static boolean editor_key(context *ctx, int *key)
               struct element *elements[] =
               {
                 construct_number_box(9, 20, "Offset:  ",
-                 0, (PRO_CH - 1), 0, &char_offset),
+                 0, (PRO_CH - 1), NUMBER_BOX, &char_offset),
                 construct_number_box(35, 20, "Size: ",
-                 1, (PRO_CH), 0, &char_size)
+                 1, (PRO_CH), NUMBER_BOX, &char_size)
               };
 
               if(!file_manager(mzx_world, chr_ext, NULL, export_name,
