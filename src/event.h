@@ -229,7 +229,7 @@ void joystick_key_release(struct buffered_status *status,
 void joystick_reset_game_map(void);
 void joystick_set_game_mode(boolean enable);
 void joystick_set_game_bindings(boolean enable);
-void joystick_set_no_context_hacks(boolean enable);
+void joystick_set_legacy_loop_hacks(boolean enable);
 void joystick_button_press(struct buffered_status *status,
  int joystick, int button);
 void joystick_button_release(struct buffered_status *status,

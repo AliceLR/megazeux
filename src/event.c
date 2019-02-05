@@ -40,7 +40,7 @@ static Uint8 num_buffered_events = 1;
 
 boolean enable_f12_hack;
 
-static boolean joystick_no_context_hacks = false;
+static boolean joystick_legacy_loop_hacks = false;
 static boolean joystick_game_mode = true;
 static boolean joystick_game_bindings = true;
 
@@ -1053,9 +1053,9 @@ void joystick_set_game_bindings(boolean enable)
  * this fixes bindings for non-context event loops, but this should be disabled
  * when processing events for the main loop.
  */
-void joystick_set_no_context_hacks(boolean enable)
+void joystick_set_legacy_loop_hacks(boolean enable)
 {
-  joystick_no_context_hacks = enable;
+  joystick_legacy_loop_hacks = enable;
 }
 
 /**
@@ -1067,7 +1067,9 @@ static enum keycode joystick_resolve_bindings(struct buffered_status *status,
 {
   // Global actions bindings
   // HACK: use default keybinding outside of contexts.
-  if(joystick_no_context_hacks)
+  // FIXME: not necessary, probably. The important (gameplay-related) loops
+  // should have action handling added.
+  if(joystick_legacy_loop_hacks)
   {
     if(global_binding < 0 && (-global_binding < NUM_JOYSTICK_ACTIONS) &&
      input.joystick_global_action_map[joystick][-global_binding] > 0)
@@ -1080,7 +1082,7 @@ static enum keycode joystick_resolve_bindings(struct buffered_status *status,
   // HACK: places where the no context hacks are enabled are never gameplay,
   // but may be reached while the game mode flag is still enabled. We always
   // want to use key bindings outside of contexts.
-  if(!joystick_game_mode || joystick_no_context_hacks)
+  if(!joystick_game_mode || joystick_legacy_loop_hacks)
   {
     if(global_binding > 0)
       return global_binding;

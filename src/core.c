@@ -1012,8 +1012,13 @@ void core_run(core_context *root)
     // Delay and then handle events.
     ctx = root->stack.contents[root->stack.size - 1];
 
-    // FIXME hack
+    // Special- enable joystick gameplay bindings if this is the gameplay ctx.
+    joystick_set_game_mode(ctx->internal_data->context_type == CTX_PLAY_GAME);
+
+    // FIXME legacy loop hacks; remove when legacy loops are gone
+    joystick_set_legacy_loop_hacks(false);
     enable_f12_hack = false;
+    // FIXME end legacy loop hacks
 
     switch(ctx->internal_data->framerate)
     {
@@ -1059,8 +1064,11 @@ void core_run(core_context *root)
       }
     }
 
-    // FIXME hack
+    // FIXME legacy loop hacks; remove when legacy loops are gone
+    joystick_set_game_mode(false);
+    joystick_set_legacy_loop_hacks(true);
     enable_f12_hack = conf->allow_screenshots;
+    // FIXME end legacy loop hacks
 
     start_ticks = get_ticks();
 
