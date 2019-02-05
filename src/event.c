@@ -962,45 +962,6 @@ void key_release(struct buffered_status *status, enum keycode key)
   }
 }
 
-/* Additional checks for joystick button presses, especially for
-*  arbitrary out-of-bounds keycodes.
-*/
-void joystick_key_press(struct buffered_status *status,
- enum keycode key, Uint16 unicode_key)
-{
-  enum keycode status_key = MIN((unsigned int) key, STATUS_NUM_KEYCODES - 1);
-
-  if(status_key && (status->keymap[status_key] == 0))
-  {
-    status->keymap[status_key] = 1;
-    status->key_pressed = key;
-    status->key = key;
-    status->unicode = unicode_key;
-    status->key_repeat = key;
-    status->unicode_repeat = unicode_key;
-    status->keypress_time = get_ticks();
-    status->key_release = IKEY_UNKNOWN;
-  }
-}
-
-void joystick_key_release(struct buffered_status *status,
-  enum keycode key)
-{
-  enum keycode status_key = MIN((unsigned int) key, STATUS_NUM_KEYCODES - 1);
-
-  if(status_key)
-  {
-    status->keymap[status_key] = 0;
-    status->key_release = key;
-
-    if(status->key_repeat == status_key)
-    {
-      status->key_repeat = IKEY_UNKNOWN;
-      status->unicode_repeat = 0;
-    }
-  }
-}
-
 boolean get_exit_status(void)
 {
   const struct buffered_status *status = load_status();
