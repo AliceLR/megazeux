@@ -221,11 +221,6 @@ void map_joystick_hat(int joystick, enum keycode up_key, enum keycode down_key,
 void set_unfocus_pause(boolean value);
 void set_num_buffered_events(Uint8 value);
 
-void joystick_key_press(struct buffered_status *status,
- enum keycode key, Uint16 unicode_key);
-void joystick_key_release(struct buffered_status *status,
- enum keycode key);
-
 void joystick_reset_game_map(void);
 void joystick_set_game_mode(boolean enable);
 void joystick_set_game_bindings(boolean enable);
