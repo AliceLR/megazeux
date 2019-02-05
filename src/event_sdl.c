@@ -558,49 +558,15 @@ static boolean process_event(SDL_Event *event)
     case SDL_JOYAXISMOTION:
     {
       int axis_value = event->jaxis.value;
-      int digital_value = -1;
       int which = event->jaxis.which;
       int axis = event->jaxis.axis;
-      Sint8 last_axis;
-      enum keycode stuffed_key;
 
       // Get the real joystick index from the SDL instance ID
       int joystick_index = get_joystick_index(which);
       if(joystick_index < 0)
         break;
 
-      last_axis = status->axis[joystick_index][axis];
-
-      if(axis_value > 10000)
-        digital_value = 1;
-      else
-
-      if(axis_value < -10000)
-        digital_value = 0;
-
-      if(digital_value != -1)
-      {
-        stuffed_key =
-         input.joystick_axis_map[joystick_index][axis][digital_value];
-
-        if(stuffed_key)
-        {
-          joystick_key_press(status, stuffed_key, stuffed_key);
-
-          if(last_axis == (digital_value ^ 1))
-          {
-            joystick_key_release(status,
-             input.joystick_axis_map[joystick_index][axis][last_axis]);
-          }
-        }
-      }
-      else if(last_axis != -1)
-      {
-        joystick_key_release(status,
-         input.joystick_axis_map[joystick_index][axis][last_axis]);
-      }
-
-      status->axis[joystick_index][axis] = digital_value;
+      joystick_axis_update(status, joystick_index, axis, axis_value);
       break;
     }
 
@@ -608,18 +574,13 @@ static boolean process_event(SDL_Event *event)
     {
       int which = event->jbutton.which;
       int button = event->jbutton.button;
-      enum keycode stuffed_key;
 
       // Get the real joystick index from the SDL instance ID
       int joystick_index = get_joystick_index(which);
       if(joystick_index < 0)
         break;
 
-      stuffed_key = input.joystick_button_map[joystick_index][button];
-
-      if(stuffed_key)
-        joystick_key_press(status, stuffed_key, stuffed_key);
-
+      joystick_button_press(status, joystick_index, button);
       break;
     }
 
@@ -627,18 +588,13 @@ static boolean process_event(SDL_Event *event)
     {
       int which = event->jbutton.which;
       int button = event->jbutton.button;
-      enum keycode stuffed_key;
 
       // Get the real joystick index from the SDL instance ID
       int joystick_index = get_joystick_index(which);
       if(joystick_index < 0)
         break;
 
-      stuffed_key = input.joystick_button_map[joystick_index][button];
-
-      if(stuffed_key)
-        joystick_key_release(status, stuffed_key);
-
+      joystick_button_release(status, joystick_index, button);
       break;
     }
 
@@ -646,49 +602,17 @@ static boolean process_event(SDL_Event *event)
     {
       int which = event->jhat.which;
       int dir = event->jhat.value;
-      enum keycode key_up;
-      enum keycode key_down;
-      enum keycode key_left;
-      enum keycode key_right;
+      boolean hat_u = (dir & SDL_HAT_UP) ? true : false;
+      boolean hat_d = (dir & SDL_HAT_DOWN) ? true : false;
+      boolean hat_l = (dir & SDL_HAT_LEFT) ? true : false;
+      boolean hat_r = (dir & SDL_HAT_RIGHT) ? true : false;
 
       // Get the real joystick index from the SDL instance ID
       int joystick_index = get_joystick_index(which);
       if(joystick_index < 0)
         break;
 
-      key_up = input.joystick_hat_map[joystick_index][0];
-      key_down = input.joystick_hat_map[joystick_index][1];
-      key_left = input.joystick_hat_map[joystick_index][2];
-      key_right = input.joystick_hat_map[joystick_index][3];
-
-      joystick_key_release(status, key_up);
-      joystick_key_release(status, key_down);
-      joystick_key_release(status, key_left);
-      joystick_key_release(status, key_right);
-
-      if(dir & SDL_HAT_UP)
-      {
-        if(key_up)
-          joystick_key_press(status, key_up, key_up);
-      }
-
-      if(dir & SDL_HAT_DOWN)
-      {
-        if(key_down)
-          joystick_key_press(status, key_down, key_down);
-      }
-
-      if(dir & SDL_HAT_LEFT)
-      {
-        if(key_left)
-          joystick_key_press(status, key_left, key_left);
-      }
-
-      if(dir & SDL_HAT_RIGHT)
-      {
-        if(key_right)
-          joystick_key_press(status, key_right, key_right);
-      }
+      joystick_hat_update(status, joystick_index, hat_u, hat_d, hat_l, hat_r);
       break;
     }
 

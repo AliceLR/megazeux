@@ -40,6 +40,10 @@ static Uint8 num_buffered_events = 1;
 
 boolean enable_f12_hack;
 
+static boolean joystick_no_context_hacks = false;
+static boolean joystick_game_mode = true;
+static boolean joystick_game_bindings = true;
+
 struct buffered_status *store_status(void)
 {
   return &input.buffer[input.store_offset];
@@ -898,22 +902,25 @@ boolean get_ctrl_status(enum keycode_type type)
 void map_joystick_axis(int joystick, int axis, enum keycode min_key,
  enum keycode max_key)
 {
-  input.joystick_axis_map[joystick][axis][0] = min_key;
-  input.joystick_axis_map[joystick][axis][1] = max_key;
+  // FIXME global, actions
+  input.joystick_game_axis_map[joystick][axis][0] = min_key;
+  input.joystick_game_axis_map[joystick][axis][1] = max_key;
 }
 
 void map_joystick_button(int joystick, int button, enum keycode key)
 {
-  input.joystick_button_map[joystick][button] = key;
+  // FIXME global, actions
+  input.joystick_game_button_map[joystick][button] = key;
 }
 
 void map_joystick_hat(int joystick, enum keycode up_key, enum keycode down_key,
  enum keycode left_key, enum keycode right_key)
 {
-  input.joystick_hat_map[joystick][0] = up_key;
-  input.joystick_hat_map[joystick][1] = down_key;
-  input.joystick_hat_map[joystick][2] = left_key;
-  input.joystick_hat_map[joystick][3] = right_key;
+  // FIXME global, actions
+  input.joystick_game_hat_map[joystick][JOYHAT_UP] = up_key;
+  input.joystick_game_hat_map[joystick][JOYHAT_DOWN] = down_key;
+  input.joystick_game_hat_map[joystick][JOYHAT_LEFT] = left_key;
+  input.joystick_game_hat_map[joystick][JOYHAT_RIGHT] = right_key;
 }
 
 void set_unfocus_pause(boolean value)
@@ -929,7 +936,9 @@ void set_num_buffered_events(Uint8 value)
 void key_press(struct buffered_status *status, enum keycode key,
  Uint16 unicode_key)
 {
-  status->keymap[key] = 1;
+  // Prevent invalid keycodes from writing out-of-bounds.
+  enum keycode map_key = MIN((Uint32)key, STATUS_NUM_KEYCODES - 1);
+  status->keymap[map_key] = 1;
   status->key_pressed = key;
   status->key = key;
   status->unicode = unicode_key;
@@ -941,7 +950,9 @@ void key_press(struct buffered_status *status, enum keycode key,
 
 void key_release(struct buffered_status *status, enum keycode key)
 {
-  status->keymap[key] = 0;
+  // Prevent invalid keycodes from writing out-of-bounds.
+  enum keycode map_key = MIN((Uint32)key, STATUS_NUM_KEYCODES - 1);
+  status->keymap[map_key] = 0;
   status->key_release = key;
 
   if(status->key_repeat == key)
@@ -1002,4 +1013,274 @@ boolean set_exit_status(boolean value)
   boolean exit_status = status->exit_status;
   status->exit_status = value;
   return exit_status;
+}
+
+/**
+ * Reset the gameplay joystick maps to the global maps. Use this before
+ * loading game-specific joystick bindings.
+ */
+void joystick_reset_game_map(void)
+{
+  memcpy(&(input.joystick_game_button_map), &(input.joystick_global_button_map),
+   sizeof(input.joystick_global_button_map));
+  memcpy(&(input.joystick_game_hat_map), &(input.joystick_global_hat_map),
+   sizeof(input.joystick_global_hat_map));
+  memcpy(&(input.joystick_game_axis_map), &(input.joystick_global_axis_map),
+   sizeof(input.joystick_global_axis_map));
+  memcpy(&(input.joystick_game_action_map), &(input.joystick_global_action_map),
+   sizeof(input.joystick_global_action_map));
+}
+
+/**
+ * Switch between global and gameplay joystick binding modes. Use 'true' to
+ * enable gameplay mode joystick handling.
+ */
+void joystick_set_game_mode(boolean enable)
+{
+  joystick_game_mode = enable;
+}
+
+/**
+ * Enable or disable gameplay bindings in gameplay mode.
+ */
+void joystick_set_game_bindings(boolean enable)
+{
+  joystick_game_bindings = enable;
+}
+
+/**
+ * Enable or disable joystick binding hacks for legacy event loops. Enabling
+ * this fixes bindings for non-context event loops, but this should be disabled
+ * when processing events for the main loop.
+ */
+void joystick_set_no_context_hacks(boolean enable)
+{
+  joystick_no_context_hacks = enable;
+}
+
+/**
+ * Determine which key (if any) a joystick press or release should bind to
+ * within the current context.
+ */
+static enum keycode joystick_resolve_bindings(struct buffered_status *status,
+ int joystick, Sint16 global_binding, Sint16 game_binding)
+{
+  // Global actions bindings
+  // HACK: use default keybinding outside of contexts.
+  if(joystick_no_context_hacks)
+  {
+    if(global_binding < 0 && (-global_binding < NUM_JOYSTICK_ACTIONS) &&
+     input.joystick_global_action_map[joystick][-global_binding] > 0)
+    {
+      return input.joystick_global_action_map[joystick][-global_binding];
+    }
+  }
+
+  // Global key bindings
+  // HACK: places where the no context hacks are enabled are never gameplay,
+  // but may be reached while the game mode flag is still enabled. We always
+  // want to use key bindings outside of contexts.
+  if(!joystick_game_mode || joystick_no_context_hacks)
+  {
+    if(global_binding > 0)
+      return global_binding;
+  }
+
+  // Gameplay bindings
+  else
+  {
+    if(game_binding < 0 && (-game_binding < NUM_JOYSTICK_ACTIONS) &&
+     input.joystick_game_action_map[joystick][-game_binding] > 0)
+    {
+      return input.joystick_game_action_map[joystick][-game_binding];
+    }
+    else
+
+    if(game_binding > 0)
+      return game_binding;
+  }
+  return IKEY_UNKNOWN;
+}
+
+/**
+ * "Press" a joystick button/axis/hat/etc; fake a key press and/or activate
+ * the global action used by UI contexts where appropriate.
+ */
+static void joystick_press(struct buffered_status *status, int joystick,
+ Sint16 global_binding, Sint16 game_binding)
+{
+  int key =
+   joystick_resolve_bindings(status, joystick, global_binding, game_binding);
+  if(key)
+    key_press(status, key, key);
+
+  // Global action press.
+  if(global_binding < 0 && (-global_binding < NUM_JOYSTICK_ACTIONS))
+  {
+    if(joystick == input.primary_joystick)
+    {
+      status->joystick_pressed = -global_binding;
+      status->joystick_repeat = -global_binding;
+      status->joystick_repeat_state = 1;
+      status->joystick_time = get_ticks();
+    }
+  }
+}
+
+/**
+ * "Release" a joystick button/axis/hat/etc; fake a key release and/or disable
+ * the global action used by UI contexts where appropriate.
+ */
+static void joystick_release(struct buffered_status *status, int joystick,
+ Sint16 global_binding, Sint16 game_binding)
+{
+  int key =
+   joystick_resolve_bindings(status, joystick, global_binding, game_binding);
+  if(key)
+    key_release(status, key);
+
+  // Global action release.
+  if(global_binding < 0 && (-global_binding < NUM_JOYSTICK_ACTIONS))
+  {
+    if(joystick == input.primary_joystick)
+      if((int)status->joystick_repeat == -global_binding)
+        status->joystick_repeat = JOY_NO_ACTION;
+  }
+}
+
+/**
+ * Press a joystick button. Event handlers should use this function.
+ */
+void joystick_button_press(struct buffered_status *status,
+ int joystick, int button)
+{
+  if((joystick >= 0) && (joystick < MAX_JOYSTICKS) &&
+   (button >= 0) && (button < MAX_JOYSTICK_BUTTONS))
+  {
+    Sint16 global_binding = input.joystick_global_button_map[joystick][button];
+    Sint16 game_binding = input.joystick_game_button_map[joystick][button];
+
+    joystick_press(status, joystick, global_binding, game_binding);
+    status->joystick_button[joystick][button] = true;
+  }
+}
+
+/**
+ * Release a joystick button. Event handlers should use this function.
+ */
+void joystick_button_release(struct buffered_status *status,
+ int joystick, int button)
+{
+  if((joystick >= 0) && (joystick < MAX_JOYSTICKS) &&
+   (button >= 0) && (button < MAX_JOYSTICK_BUTTONS))
+  {
+    Sint16 global_binding = input.joystick_global_button_map[joystick][button];
+    Sint16 game_binding = input.joystick_game_button_map[joystick][button];
+
+    joystick_release(status, joystick, global_binding, game_binding);
+    status->joystick_button[joystick][button] = false;
+  }
+}
+
+static void joystick_hat_update_dir(struct buffered_status *status,
+ int joystick, int dir, boolean dir_active)
+{
+  Sint16 global_binding = input.joystick_global_hat_map[joystick][dir];
+  Sint16 game_binding = input.joystick_game_hat_map[joystick][dir];
+
+  if(dir_active)
+  {
+    if(!status->joystick_hat[joystick][dir])
+      joystick_press(status, joystick, global_binding, game_binding);
+  }
+  else
+  {
+    if(status->joystick_hat[joystick][dir])
+      joystick_release(status, joystick, global_binding, game_binding);
+  }
+
+  status->joystick_hat[joystick][dir] = dir_active;
+}
+
+/**
+ * Update a joystick hat. Event handlers should use this function.
+ */
+void joystick_hat_update(struct buffered_status *status,
+ int joystick, boolean up, boolean down, boolean left, boolean right)
+{
+  if((joystick >= 0) && (joystick < MAX_JOYSTICKS))
+  {
+    joystick_hat_update_dir(status, joystick, JOYHAT_UP, up);
+    joystick_hat_update_dir(status, joystick, JOYHAT_DOWN, down);
+    joystick_hat_update_dir(status, joystick, JOYHAT_LEFT, left);
+    joystick_hat_update_dir(status, joystick, JOYHAT_RIGHT, right);
+  }
+}
+
+// FIXME
+#define JOY_AXIS_DEADZONE 10000
+
+/**
+ * We store analog axis values, but the axis maps are digital. Return
+ * the axis map position for an analog axis value or -1 for the dead zone.
+ */
+static int joystick_axis_to_digital(Sint16 value)
+{
+  if(value > JOY_AXIS_DEADZONE)
+    return 1;
+  else
+
+  if(value < -JOY_AXIS_DEADZONE)
+    return 0;
+
+  return -1;
+}
+
+static void joystick_axis_press(struct buffered_status *status,
+ int joystick, int axis, int dir)
+{
+  Sint16 global_binding = input.joystick_global_axis_map[joystick][axis][dir];
+  Sint16 game_binding = input.joystick_game_axis_map[joystick][axis][dir];
+
+  joystick_press(status, joystick, global_binding, game_binding);
+}
+
+static void joystick_axis_release(struct buffered_status *status,
+ int joystick, int axis, int dir)
+{
+  Sint16 global_binding = input.joystick_global_axis_map[joystick][axis][dir];
+  Sint16 game_binding = input.joystick_game_axis_map[joystick][axis][dir];
+
+  joystick_release(status, joystick, global_binding, game_binding);
+}
+
+/**
+ * Update a joystick axis. Event handlers should use this function.
+ */
+void joystick_axis_update(struct buffered_status *status,
+ int joystick, int axis, Sint16 value)
+{
+  if((joystick >= 0) && (joystick < MAX_JOYSTICKS) &&
+   (axis >= 0) && (axis < MAX_JOYSTICK_AXES))
+  {
+    Sint16 last_value = status->joystick_axis[joystick][axis];
+    int last_digital_value = joystick_axis_to_digital(last_value);
+    int digital_value = joystick_axis_to_digital(value);
+
+    status->joystick_axis[joystick][axis] = value;
+
+    if(digital_value != -1)
+    {
+      joystick_axis_press(status, joystick, axis, digital_value);
+
+      if(last_digital_value == (digital_value ^ 1))
+        joystick_axis_release(status, joystick, axis, last_digital_value);
+    }
+    else
+
+    if(last_digital_value != -1)
+    {
+      joystick_axis_release(status, joystick, axis, last_digital_value);
+    }
+  }
 }

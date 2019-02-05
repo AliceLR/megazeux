@@ -110,7 +110,13 @@ struct buffered_status
   boolean numlock_status;
   boolean mouse_moved;
   boolean exit_status;
-  Sint8 axis[MAX_JOYSTICKS][MAX_JOYSTICK_AXES];
+  enum joystick_actions joystick_pressed;
+  enum joystick_actions joystick_repeat;
+  Uint32 joystick_repeat_state;
+  Uint32 joystick_time;
+  boolean joystick_hat[MAX_JOYSTICKS][4];
+  boolean joystick_button[MAX_JOYSTICKS][MAX_JOYSTICK_BUTTONS];
+  Sint16 joystick_axis[MAX_JOYSTICKS][MAX_JOYSTICK_AXES];
   Uint8 keymap[512];
 };
 
@@ -124,9 +130,15 @@ struct input_status
   Uint16 unicode_repeat_stack[KEY_REPEAT_STACK_SIZE];
   Uint32 repeat_stack_pointer;
 
-  enum keycode joystick_button_map[MAX_JOYSTICKS][MAX_JOYSTICK_BUTTONS];
-  enum keycode joystick_axis_map[MAX_JOYSTICKS][MAX_JOYSTICK_AXES][2];
-  enum keycode joystick_hat_map[MAX_JOYSTICKS][4];
+  int primary_joystick;
+  Sint16 joystick_global_button_map[MAX_JOYSTICKS][MAX_JOYSTICK_BUTTONS];
+  Sint16 joystick_global_axis_map[MAX_JOYSTICKS][MAX_JOYSTICK_AXES][2];
+  Sint16 joystick_global_hat_map[MAX_JOYSTICKS][4];
+  Sint16 joystick_global_action_map[MAX_JOYSTICKS][NUM_JOYSTICK_ACTIONS];
+  Sint16 joystick_game_button_map[MAX_JOYSTICKS][MAX_JOYSTICK_BUTTONS];
+  Sint16 joystick_game_axis_map[MAX_JOYSTICKS][MAX_JOYSTICK_AXES][2];
+  Sint16 joystick_game_hat_map[MAX_JOYSTICKS][4];
+  Sint16 joystick_game_action_map[MAX_JOYSTICKS][NUM_JOYSTICK_ACTIONS];
 
   boolean unfocus_pause;
 };
@@ -213,6 +225,19 @@ void joystick_key_press(struct buffered_status *status,
  enum keycode key, Uint16 unicode_key);
 void joystick_key_release(struct buffered_status *status,
  enum keycode key);
+
+void joystick_reset_game_map(void);
+void joystick_set_game_mode(boolean enable);
+void joystick_set_game_bindings(boolean enable);
+void joystick_set_no_context_hacks(boolean enable);
+void joystick_button_press(struct buffered_status *status,
+ int joystick, int button);
+void joystick_button_release(struct buffered_status *status,
+ int joystick, int button);
+void joystick_hat_update(struct buffered_status *status,
+ int joystick, boolean up, boolean down, boolean left, boolean right);
+void joystick_axis_update(struct buffered_status *status,
+ int joystick, int axis, Sint16 value);
 
 void real_warp_mouse(int x, int y);
 
