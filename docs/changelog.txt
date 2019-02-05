@@ -49,6 +49,9 @@ FIXES
   turning on PC speaker SFX at runtime.
 + Added temporary workaround for numpad 5 key detection when
   numlock is disabled.
++ "Forest to floor" and "Collect bombs" are properly enabled
+  again for new boards by default. This fix doesn't alter config
+  settings or saved .editor.cnf defaults.
 
 DEVELOPERS
 
