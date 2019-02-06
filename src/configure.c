@@ -423,55 +423,83 @@ static void config_mp_resample_mode(struct config_info *conf, char *name,
   }
 }
 
+#define JOY_ENUM "%10[0-9A-Za-z]"
+
 static void joy_axis_set(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation?
   unsigned int joy_num, joy_axis;
-  unsigned int joy_key_min, joy_key_max;
+  char key_min[11];
+  char key_max[11];
+  int read = 0;
 
-  sscanf(name, "joy%uaxis%u", &joy_num, &joy_axis);
-  sscanf(value, "%u, %u", &joy_key_min, &joy_key_max);
+  if(sscanf(name, "joy%uaxis%u%n", &joy_num, &joy_axis, &read) != 2)
+    return;
 
-  joy_num = CLAMP(joy_num, 1, MAX_JOYSTICKS);
-  joy_axis = CLAMP(joy_axis, 1, MAX_JOYSTICK_AXES);
+  if(sscanf(value, JOY_ENUM ", " JOY_ENUM "%n", key_min, key_max, &read) != 2
+   || (value[read] != 0))
+    return;
 
-  map_joystick_axis(joy_num - 1, joy_axis - 1, (enum keycode)joy_key_min,
-   (enum keycode)joy_key_max);
+  // Right now do a global binding at startup and a game binding otherwise.
+  joystick_map_axis(joy_num - 1, joy_axis - 1, key_min, key_max, is_startup);
 }
 
 static void joy_button_set(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation?
   unsigned int joy_num, joy_button;
-  unsigned long joy_key;
+  char key[11];
+  int read = 0;
 
-  sscanf(name, "joy%ubutton%u", &joy_num, &joy_button);
+  if(sscanf(name, "joy%ubutton%u", &joy_num, &joy_button) != 2)
+    return;
 
-  joy_key = (enum keycode)strtoul(value, NULL, 10);
-  joy_num = CLAMP(joy_num, 1, MAX_JOYSTICKS);
-  joy_button = CLAMP(joy_button, 1, MAX_JOYSTICK_BUTTONS);
+  if(sscanf(value, JOY_ENUM "%n", key, &read) != 1 || (value[read] != 0))
+    return;
 
-  map_joystick_button(joy_num - 1, joy_button - 1, (enum keycode)joy_key);
+  // Right now do a global binding at startup and a game binding otherwise.
+  joystick_map_button(joy_num - 1, joy_button - 1, key, is_startup);
 }
 
 static void joy_hat_set(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation?
   unsigned int joy_num;
-  unsigned int joy_key_up, joy_key_down, joy_key_left, joy_key_right;
+  char key_up[11];
+  char key_down[11];
+  char key_left[11];
+  char key_right[11];
+  int read = 0;
 
-  sscanf(name, "joy%uhat", &joy_num);
-  sscanf(value, "%u, %u, %u, %u", &joy_key_up, &joy_key_down,
-   &joy_key_left, &joy_key_right);
+  if(sscanf(name, "joy%uhat", &joy_num) != 1)
+    return;
 
-  joy_num = CLAMP(joy_num, 1, MAX_JOYSTICKS);
+  if(sscanf(value, JOY_ENUM ", " JOY_ENUM ", " JOY_ENUM ", " JOY_ENUM "%n",
+   key_up, key_down, key_left, key_right, &read) != 4 || (value[read] != 0))
+    return;
 
-  map_joystick_hat(joy_num - 1, (enum keycode)joy_key_up,
-   (enum keycode)joy_key_down, (enum keycode)joy_key_left,
-   (enum keycode)joy_key_right);
+  // Right now do a global binding at startup and a game binding otherwise.
+  joystick_map_hat(joy_num - 1, key_up, key_down, key_left, key_right,
+   is_startup);
+}
+
+static void joy_action_set(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  unsigned int joy_num;
+  unsigned int key;
+  char joy_action[11];
+  int read = 0;
+
+  if(sscanf(name, "joy%u." JOY_ENUM "%n", &joy_num, joy_action, &read) != 2
+   || (name[read] != 0))
+    return;
+
+  if(sscanf(value, "%u%n", &key, &read) != 1 || (value[read] != 0))
+    return;
+
+  // Right now do a global binding at startup and a game binding otherwise.
+  joystick_map_action(joy_num - 1, joy_action, key, is_startup);
 }
 
 static void pause_on_unfocus(struct config_info *conf, char *name,
@@ -673,6 +701,7 @@ static const struct config_entry config_options[] =
   { "gl_vsync", config_gl_vsync, false },
   { "include", include2_config, true },
   { "include*", include_config, true },
+  { "joy!.*", joy_action_set, true },
   { "joy!axis!", joy_axis_set, true },
   { "joy!button!", joy_button_set, true },
   { "joy!hat", joy_hat_set, true },

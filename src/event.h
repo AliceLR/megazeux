@@ -110,8 +110,8 @@ struct buffered_status
   boolean numlock_status;
   boolean mouse_moved;
   boolean exit_status;
-  enum joystick_actions joystick_pressed;
-  enum joystick_actions joystick_repeat;
+  enum joystick_action joystick_pressed;
+  enum joystick_action joystick_repeat;
   Uint32 joystick_repeat_state;
   Uint32 joystick_time;
   boolean joystick_hat[MAX_JOYSTICKS][4];
@@ -213,14 +213,17 @@ Uint32 get_mouse_y(void);
 Uint32 get_real_mouse_x(void);
 Uint32 get_real_mouse_y(void);
 Uint32 get_last_key_released(enum keycode_type type);
-void map_joystick_axis(int joystick, int axis, enum keycode min_key,
- enum keycode max_key);
-void map_joystick_button(int joystick, int button, enum keycode key);
-void map_joystick_hat(int joystick, enum keycode up_key, enum keycode down_key,
- enum keycode left_key, enum keycode right_key);
 void set_unfocus_pause(boolean value);
 void set_num_buffered_events(Uint8 value);
 
+void joystick_map_button(int joystick, int button, const char *value,
+ boolean is_global);
+void joystick_map_axis(int joystick, int axis, const char *neg,
+ const char *pos, boolean is_global);
+void joystick_map_hat(int joystick, const char *up, const char *down,
+ const char *left, const char *right, boolean is_global);
+void joystick_map_action(int joystick, const char *action, int value,
+ boolean is_global);
 void joystick_reset_game_map(void);
 void joystick_set_game_mode(boolean enable);
 void joystick_set_game_bindings(boolean enable);

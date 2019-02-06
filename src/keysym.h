@@ -137,24 +137,26 @@ enum keycode
   IKEY_LAST
 };
 
-enum joystick_actions
+enum joystick_action
 {
   JOY_NO_ACTION,
   JOY_UP,
   JOY_DOWN,
   JOY_LEFT,
   JOY_RIGHT,
-  JOY_ACTION_1,         // Cross
-  JOY_ACTION_2,         // Circle
-  JOY_ACTION_3,         // Square
-  JOY_ACTION_4,         // Triangle
+  JOY_A,                // Cross
+  JOY_B,                // Circle
+  JOY_X,                // Square
+  JOY_Y,                // Triangle
   JOY_MENU,             // Start
-  JOY_ESCAPE,           // Select or Home
-  JOY_SETTINGS,         // Select or R1
+  JOY_ESCAPE,           // Select and/or Home
+  JOY_SETTINGS,         // R1
 //JOY_KEYBOARD,         // R1 (currently hardcoded for most consoles)
   JOY_SWITCH,           // L1
   JOY_SAVE,             // L2
   JOY_LOAD,             // R2
+  JOY_UNUSED_L3,
+  JOY_UNUSED_R3,
   NUM_JOYSTICK_ACTIONS
 };
 

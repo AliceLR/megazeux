@@ -22,6 +22,7 @@
 #include "platform.h"
 #include "util.h"
 
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -43,6 +44,24 @@ boolean enable_f12_hack;
 static boolean joystick_legacy_loop_hacks = false;
 static boolean joystick_game_mode = true;
 static boolean joystick_game_bindings = true;
+
+static Sint16 joystick_action_map_default[NUM_JOYSTICK_ACTIONS] =
+{
+  [JOY_UP] = IKEY_UP,
+  [JOY_DOWN] = IKEY_DOWN,
+  [JOY_LEFT] = IKEY_LEFT,
+  [JOY_RIGHT] = IKEY_RIGHT,
+  [JOY_A] = IKEY_SPACE,
+  [JOY_B] = IKEY_DELETE,
+  [JOY_X] = IKEY_w,
+  [JOY_Y] = IKEY_s,
+  [JOY_MENU] = IKEY_RETURN,
+  [JOY_ESCAPE] = IKEY_ESCAPE,
+  [JOY_SETTINGS] = IKEY_F2,
+  [JOY_SWITCH] = IKEY_INSERT,
+  [JOY_SAVE] = IKEY_F3,
+  [JOY_LOAD] = IKEY_F4,
+};
 
 struct buffered_status *store_status(void)
 {
@@ -74,9 +93,21 @@ static void bump_status(void)
 
 void init_event(void)
 {
+  int i, i2;
   input.buffer = ccalloc(num_buffered_events, sizeof(struct buffered_status));
   input.load_offset = num_buffered_events - 1;
   input.store_offset = 0;
+
+  // Load default action keybindings for gameplay.
+  // Config has already loaded, so there might be user mappings here already.
+  for(i = 0; i < MAX_JOYSTICKS; i++)
+    for(i2 = 0; i2 < NUM_JOYSTICK_ACTIONS; i2++)
+      if(input.joystick_global_action_map[i][i2] == 0)
+        input.joystick_global_action_map[i][i2] =
+         joystick_action_map_default[i2];
+
+  // Write the new global bindings over the game bindings.
+  joystick_reset_game_map();
 }
 
 static Uint32 convert_internal_xt(enum keycode key)
@@ -899,30 +930,6 @@ boolean get_ctrl_status(enum keycode_type type)
    get_key_status(type, IKEY_RCTRL);
 }
 
-void map_joystick_axis(int joystick, int axis, enum keycode min_key,
- enum keycode max_key)
-{
-  // FIXME global, actions
-  input.joystick_game_axis_map[joystick][axis][0] = min_key;
-  input.joystick_game_axis_map[joystick][axis][1] = max_key;
-}
-
-void map_joystick_button(int joystick, int button, enum keycode key)
-{
-  // FIXME global, actions
-  input.joystick_game_button_map[joystick][button] = key;
-}
-
-void map_joystick_hat(int joystick, enum keycode up_key, enum keycode down_key,
- enum keycode left_key, enum keycode right_key)
-{
-  // FIXME global, actions
-  input.joystick_game_hat_map[joystick][JOYHAT_UP] = up_key;
-  input.joystick_game_hat_map[joystick][JOYHAT_DOWN] = down_key;
-  input.joystick_game_hat_map[joystick][JOYHAT_LEFT] = left_key;
-  input.joystick_game_hat_map[joystick][JOYHAT_RIGHT] = right_key;
-}
-
 void set_unfocus_pause(boolean value)
 {
   input.unfocus_pause = value;
@@ -974,6 +981,217 @@ boolean set_exit_status(boolean value)
   boolean exit_status = status->exit_status;
   status->exit_status = value;
   return exit_status;
+}
+
+struct joystick_action_name
+{
+  const char * const name;
+  const enum joystick_action value;
+};
+
+static const struct joystick_action_name joystick_action_names[] =
+{
+  { "a",        JOY_A },
+  { "action1",  JOY_A },
+  { "action2",  JOY_B },
+  { "action3",  JOY_X },
+  { "action4",  JOY_Y },
+  { "b",        JOY_B },
+  { "back",     JOY_ESCAPE },
+  { "down",     JOY_DOWN },
+  { "escape",   JOY_ESCAPE },
+//{ "keyboard", JOY_KEYBOARD },
+  { "l1",       JOY_SWITCH },
+  { "l2",       JOY_SAVE },
+  { "l3",       JOY_UNUSED_L3 },
+  { "left",     JOY_LEFT },
+  { "load",     JOY_LOAD },
+  { "menu",     JOY_MENU },
+  { "r1",       JOY_SETTINGS },
+  { "r2",       JOY_LOAD },
+  { "r3",       JOY_UNUSED_R3 },
+  { "right",    JOY_RIGHT },
+  { "save",     JOY_SAVE },
+  { "settings", JOY_SETTINGS },
+  { "start",    JOY_MENU },
+  { "switch",   JOY_SWITCH },
+  { "up",       JOY_UP },
+  { "x",        JOY_X },
+  { "y",        JOY_Y }
+};
+
+static enum joystick_action find_joystick_action(const char *name)
+{
+  int top = ARRAY_SIZE(joystick_action_names) - 1;
+  int bottom = 0;
+  int middle;
+  int cmpval;
+
+  while(bottom <= top)
+  {
+    middle = (bottom + top) / 2;
+    cmpval = strcasecmp(name, joystick_action_names[middle].name);
+
+    if(cmpval > 0)
+      bottom = middle + 1;
+    else
+
+    if(cmpval < 0)
+      top = middle - 1;
+
+    else
+      return joystick_action_names[middle].value;
+  }
+  return JOY_NO_ACTION;
+}
+
+/**
+ * A joystick can be mapped to either an int from 0 to 32767 (a key binding)
+ * or to a joystick enum string (action binding). Read either from an input
+ * value string.
+ */
+static boolean joystick_parse_map_value(const char *value, Sint16 *binding)
+{
+  char *next;
+  enum joystick_action action_value;
+  Uint32 key_value;
+
+  key_value = strtoul(value, &next, 10);
+  if((key_value <= SHRT_MAX) && (!next[0]))
+  {
+    *binding = key_value;
+    return true;
+  }
+
+  action_value = find_joystick_action(value);
+  if(action_value)
+  {
+    *binding = -((Sint16)action_value);
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Map a joystick button to a key or action value. The input value should be
+ * null-terminated.
+ */
+void joystick_map_button(int joystick, int button, const char *value,
+ boolean is_global)
+{
+  if((joystick >= 0) && (joystick < MAX_JOYSTICKS) &&
+   (button >= 0) && (button < MAX_JOYSTICK_BUTTONS))
+  {
+    Sint16 binding;
+
+    if(joystick_parse_map_value(value, &binding))
+    {
+      debug("[JOYSTICK] (%s) %d.b%d -> %s (%d)\n",
+       is_global ? "G" : "L", joystick, button,
+       value, binding);
+
+      if(is_global)
+        input.joystick_global_button_map[joystick][button] = binding;
+      else
+        input.joystick_game_button_map[joystick][button] = binding;
+    }
+  }
+}
+
+/**
+ * Map a joystick axis to keys or action values. The input values should be
+ * null-terminated.
+ */
+void joystick_map_axis(int joystick, int axis, const char *neg, const char *pos,
+ boolean is_global)
+{
+  if((joystick >= 0) && (joystick < MAX_JOYSTICKS) &&
+   (axis >= 0) && (axis < MAX_JOYSTICK_AXES))
+  {
+    Sint16 binding_neg, binding_pos;
+
+    if(joystick_parse_map_value(neg, &binding_neg) &&
+     joystick_parse_map_value(pos, &binding_pos))
+    {
+      debug("[JOYSTICK] (%s) %d.a%d -> %s (%d), %s (%d)\n",
+       is_global ? "G" : "L", joystick, axis,
+       neg, binding_neg, pos, binding_pos);
+
+      if(is_global)
+      {
+        input.joystick_global_axis_map[joystick][axis][0] = binding_neg;
+        input.joystick_global_axis_map[joystick][axis][1] = binding_pos;
+      }
+      else
+      {
+        input.joystick_game_axis_map[joystick][axis][0] = binding_neg;
+        input.joystick_game_axis_map[joystick][axis][1] = binding_pos;
+      }
+    }
+  }
+}
+
+/**
+ * Map a joystick hat to keys or action values. The input values should be
+ * null-terminated.
+ */
+void joystick_map_hat(int joystick, const char *up, const char *down,
+ const char *left, const char *right, boolean is_global)
+{
+  if((joystick >= 0) && (joystick < MAX_JOYSTICKS))
+  {
+    Sint16 binding_up, binding_down, binding_left, binding_right;
+
+    if(joystick_parse_map_value(up, &binding_up) &&
+     joystick_parse_map_value(down, &binding_down) &&
+     joystick_parse_map_value(left, &binding_left) &&
+     joystick_parse_map_value(right, &binding_right))
+    {
+      debug("[JOYSTICK] (%s) %d.h -> %s (%d), %s (%d), %s (%d), %s (%d)\n",
+       is_global ? "G" : "L", joystick,
+       up, binding_up, down, binding_down,
+       left, binding_left, right, binding_right);
+
+      if(is_global)
+      {
+        input.joystick_global_hat_map[joystick][JOYHAT_UP] = binding_up;
+        input.joystick_global_hat_map[joystick][JOYHAT_DOWN] = binding_down;
+        input.joystick_global_hat_map[joystick][JOYHAT_LEFT] = binding_left;
+        input.joystick_global_hat_map[joystick][JOYHAT_RIGHT] = binding_right;
+      }
+      else
+      {
+        input.joystick_game_hat_map[joystick][JOYHAT_UP] = binding_up;
+        input.joystick_game_hat_map[joystick][JOYHAT_DOWN] = binding_down;
+        input.joystick_game_hat_map[joystick][JOYHAT_LEFT] = binding_left;
+        input.joystick_game_hat_map[joystick][JOYHAT_RIGHT] = binding_right;
+      }
+    }
+  }
+}
+
+/**
+ * Map a generic action to a key. The input action should be null-terminated.
+ */
+void joystick_map_action(int joystick, const char *action, int value,
+ boolean is_global)
+{
+  if((joystick >= 0) && (joystick < MAX_JOYSTICKS) &&
+   (value >= 0) && (value <= SHRT_MAX))
+  {
+    enum joystick_action action_value = find_joystick_action(action);
+
+    if(action_value)
+    {
+      debug("[JOYSTICK] (%s) %d.%s -> %d\n", is_global ? "G" : "L",
+       joystick, action, value);
+
+      if(is_global)
+        input.joystick_global_action_map[joystick][action_value] = value;
+      else
+        input.joystick_game_action_map[joystick][action_value] = value;
+    }
+  }
 }
 
 /**
@@ -1077,6 +1295,8 @@ static void joystick_press(struct buffered_status *status, int joystick,
   if(key)
     key_press(status, key, key);
 
+  //debug("[JOYSTICK] (P) %d (%d %d) -> %d\n", joystick, global_binding, game_binding, key);
+
   // Global action press.
   if(global_binding < 0 && (-global_binding < NUM_JOYSTICK_ACTIONS))
   {
@@ -1101,6 +1321,8 @@ static void joystick_release(struct buffered_status *status, int joystick,
    joystick_resolve_bindings(status, joystick, global_binding, game_binding);
   if(key)
     key_release(status, key);
+
+  //debug("[JOYSTICK] (R) %d (%d %d) -> %d\n", joystick, global_binding, game_binding, key);
 
   // Global action release.
   if(global_binding < 0 && (-global_binding < NUM_JOYSTICK_ACTIONS))
@@ -1232,9 +1454,13 @@ void joystick_axis_update(struct buffered_status *status,
 
     status->joystick_axis[joystick][axis] = value;
 
+    //if(digital_value != last_digital_value)
+    //  debug("[JOYSTICK] (A) %d.a%d -> %d\n", joystick, axis, value);
+
     if(digital_value != -1)
     {
-      joystick_axis_press(status, joystick, axis, digital_value);
+      if(last_digital_value != digital_value)
+        joystick_axis_press(status, joystick, axis, digital_value);
 
       if(last_digital_value == (digital_value ^ 1))
         joystick_axis_release(status, joystick, axis, last_digital_value);
