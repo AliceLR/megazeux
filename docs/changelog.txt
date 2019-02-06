@@ -9,6 +9,17 @@ FEATURES
   example, if a robot is selected on the board before switching
   to overlay mode, the robot will still be in the buffer when
   the user switches back to board mode.
++ Joystick settings in game.cnf files are now loaded as game-
+  specific joystick bindings. These bindings will no longer
+  permanently override global/UI bindings defined by config.txt
+  or pad.config. The global bindings are restored when any world
+  is loaded; they are not restored when a save is loaded.
++ Joystick inputs can now be bound to generic actions that
+  change behavior for specific contexts. See a copy of the
+  latest config.txt for a list of generic actions and the
+  functions they perform. These generic actions can be further
+  bound to keycodes which allow these actions to simulate
+  keypresses during gameplay.
 
 FIXES
 
