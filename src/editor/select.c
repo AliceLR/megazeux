@@ -155,7 +155,7 @@ int export_type(struct world *mzx_world)
   set_context(CTX_IMPORTEXPORT_TYPE);
 
   elements[0] = construct_radio_button(2, 3, radio_strings,
-   5, 19, &export_choice);
+   5, 20, &export_choice);
   elements[1] = construct_button(5, 9, "OK", 0);
   elements[2] = construct_button(15, 9, "Cancel", -1);
 
