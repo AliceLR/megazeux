@@ -110,9 +110,10 @@ struct buffered_status
   boolean numlock_status;
   boolean mouse_moved;
   boolean exit_status;
-  enum joystick_action joystick_pressed;
+  enum joystick_action joystick_action;
   enum joystick_action joystick_repeat;
   Uint32 joystick_repeat_state;
+  Uint32 joystick_repeat_id;
   Uint32 joystick_time;
   boolean joystick_hat[MAX_JOYSTICKS][4];
   boolean joystick_button[MAX_JOYSTICKS][MAX_JOYSTICK_BUTTONS];
@@ -186,6 +187,7 @@ CORE_LIBSPEC void key_release(struct buffered_status *status, enum keycode key);
 CORE_LIBSPEC boolean get_exit_status(void);
 CORE_LIBSPEC boolean set_exit_status(boolean value);
 CORE_LIBSPEC boolean peek_exit_input(void);
+CORE_LIBSPEC Uint32 get_joystick_action(void);
 
 // Implemented by "drivers" (SDL, Wii, and NDS currently)
 void __wait_event(int timeout);
@@ -236,6 +238,7 @@ void joystick_hat_update(struct buffered_status *status,
  int joystick, boolean up, boolean down, boolean left, boolean right);
 void joystick_axis_update(struct buffered_status *status,
  int joystick, int axis, Sint16 value);
+void joystick_release_all(struct buffered_status *status, int joystick);
 
 void real_warp_mouse(int x, int y);
 

@@ -551,6 +551,11 @@ static boolean process_event(SDL_Event *event)
       int joystick_index = get_joystick_index(which);
 
       close_joystick(joystick_index);
+
+      // Joysticks can be trivially disconnected while holding a button and
+      // the corresponding release event will never be sent for it. Release
+      // all of this joystick's inputs.
+      joystick_release_all(status, joystick_index);
       break;
     }
 #endif

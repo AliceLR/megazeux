@@ -33,6 +33,9 @@
 #define MOUSE_REPEAT_START  200
 #define MOUSE_REPEAT_RATE   10
 
+#define JOYSTICK_REPEAT_START KEY_REPEAT_START
+#define JOYSTICK_REPEAT_RATE  KEY_REPEAT_RATE
+
 static Uint32 last_update_time;
 
 struct input_status input;
@@ -371,6 +374,7 @@ boolean update_autorepeat(void)
   // Repeat code
   Uint8 last_key_state = status->keymap[status_key];
   Uint8 last_mouse_state = status->mouse_repeat_state;
+  Uint8 last_joystick_state = status->joystick_repeat_state;
 
   // If you enable SDL 2.0 key repeat, uncomment these lines:
 //#ifdef CONFIG_SDL
@@ -452,6 +456,32 @@ boolean update_autorepeat(void)
     }
   }
 
+  if(last_joystick_state)
+  {
+    Uint32 new_time = get_ticks();
+    Uint32 ms_difference = new_time - status->joystick_time;
+
+    if(last_joystick_state == 1)
+    {
+      if(ms_difference > JOYSTICK_REPEAT_START)
+      {
+        status->joystick_time = new_time;
+        status->joystick_repeat_state = 2;
+        status->joystick_action = status->joystick_repeat;
+        rval = true;
+      }
+    }
+    else
+    {
+      if(ms_difference > JOYSTICK_REPEAT_RATE)
+      {
+        status->joystick_time = new_time;
+        status->joystick_action = status->joystick_repeat;
+        rval = true;
+      }
+    }
+  }
+
   bump_status();
   return rval;
 }
@@ -464,6 +494,7 @@ static void start_frame_event_status(void)
   status->unicode = 0;
   status->mouse_moved = 0;
   status->mouse_button = 0;
+  status->joystick_action = 0;
   status->exit_status = false;
 
   status->mouse_last_x = status->mouse_x;
@@ -902,6 +933,9 @@ void force_release_all_keys(void)
   status->mouse_button_state = 0;
   status->mouse_repeat_state = 0;
   status->mouse_drag_state = 0;
+  status->joystick_action = 0;
+  status->joystick_repeat = 0;
+  status->joystick_repeat_state = 0;
 }
 
 boolean get_alt_status(enum keycode_type type)
@@ -1302,8 +1336,9 @@ static void joystick_press(struct buffered_status *status, int joystick,
   {
     if(joystick == input.primary_joystick)
     {
-      status->joystick_pressed = -global_binding;
+      status->joystick_action = -global_binding;
       status->joystick_repeat = -global_binding;
+      status->joystick_repeat_id = joystick;
       status->joystick_repeat_state = 1;
       status->joystick_time = get_ticks();
     }
@@ -1327,9 +1362,12 @@ static void joystick_release(struct buffered_status *status, int joystick,
   // Global action release.
   if(global_binding < 0 && (-global_binding < NUM_JOYSTICK_ACTIONS))
   {
-    if(joystick == input.primary_joystick)
-      if((int)status->joystick_repeat == -global_binding)
-        status->joystick_repeat = JOY_NO_ACTION;
+    if((int)status->joystick_repeat_id == joystick &&
+     (int)status->joystick_repeat == -global_binding)
+    {
+      status->joystick_repeat = JOY_NO_ACTION;
+      status->joystick_repeat_state = 0;
+    }
   }
 }
 
@@ -1472,4 +1510,38 @@ void joystick_axis_update(struct buffered_status *status,
       joystick_axis_release(status, joystick, axis, last_digital_value);
     }
   }
+}
+
+/**
+ * Force release all inputs for a given joystick. Use this function if a
+ * joystick is removed.
+ */
+void joystick_release_all(struct buffered_status *status, int joystick)
+{
+  int i;
+
+  for(i = 0; i < MAX_JOYSTICK_BUTTONS; i++)
+    if(status->joystick_button[joystick][i])
+      joystick_button_release(status, joystick, i);
+
+  for(i = 0; i < MAX_JOYSTICK_AXES; i++)
+    joystick_axis_update(status, joystick, i, 0);
+
+  joystick_hat_update(status, joystick, false, false, false, false);
+
+  if((int)status->joystick_repeat_id == joystick)
+  {
+    status->joystick_action = JOY_NO_ACTION;
+    status->joystick_repeat = JOY_NO_ACTION;
+    status->joystick_repeat_state = 0;
+  }
+}
+
+/**
+ * Get the current global joystick action.
+ */
+Uint32 get_joystick_action(void)
+{
+  const struct buffered_status *status = load_status();
+  return status->joystick_action;
 }
