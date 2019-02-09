@@ -54,6 +54,8 @@ FIXES
   settings or saved .editor.cnf defaults.
 + The "Downver. world (MZX)" option in the "Export as" dialog
   is now completely highlighted when selected. (Lancer-X)
++ Starting MegaZeux with "startup_editor=1" no longer loads the
+  default palette over the startup world's palette.
 
 DEVELOPERS
 

@@ -3577,7 +3577,7 @@ static void __edit_world(context *parent, boolean reload_curr_file)
     curr_file[0] = '\0';
 
   if(reload_curr_file && curr_file[0] &&
-    editor_reload_world(editor, curr_file))
+   editor_reload_world(editor, curr_file))
   {
     strncpy(editor->current_world, curr_file, MAX_PATH);
 

@@ -1058,6 +1058,7 @@ void title_screen(context *parent)
   spec.destroy  = game_destroy;
 
   create_context((context *)title, parent, &spec, CTX_TITLE_SCREEN);
+  default_palette();
 
   if(edit_world && conf->startup_editor)
   {
@@ -1065,6 +1066,5 @@ void title_screen(context *parent)
     edit_world((context *)title, true);
   }
 
-  default_palette();
   clear_screen();
 }
