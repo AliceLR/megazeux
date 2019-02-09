@@ -45,7 +45,7 @@ static Uint8 num_buffered_events = 1;
 boolean enable_f12_hack;
 
 static boolean joystick_legacy_loop_hacks = false;
-static boolean joystick_game_mode = true;
+static boolean joystick_game_mode = false;
 static boolean joystick_game_bindings = true;
 
 static Sint16 joystick_action_map_default[NUM_JOYSTICK_ACTIONS] =
@@ -64,6 +64,26 @@ static Sint16 joystick_action_map_default[NUM_JOYSTICK_ACTIONS] =
   [JOY_SWITCH] = IKEY_INSERT,
   [JOY_SAVE] = IKEY_F3,
   [JOY_LOAD] = IKEY_F4,
+};
+
+static Sint16 joystick_action_map_ui[NUM_JOYSTICK_ACTIONS] =
+{
+  [JOY_UP] = IKEY_UP,
+  [JOY_DOWN] = IKEY_DOWN,
+  [JOY_LEFT] = IKEY_LEFT,
+  [JOY_RIGHT] = IKEY_RIGHT,
+  [JOY_A] = IKEY_RETURN,
+  [JOY_B] = IKEY_ESCAPE,
+  [JOY_X] = 0,
+  [JOY_Y] = 0,
+  [JOY_MENU] = IKEY_RETURN,
+  [JOY_ESCAPE] = IKEY_ESCAPE,
+  [JOY_SETTINGS] = IKEY_F2,
+  [JOY_SWITCH] = IKEY_TAB,
+  [JOY_SAVE] = IKEY_PAGEUP,
+  [JOY_LOAD] = IKEY_PAGEDOWN,
+  [JOY_L3] = IKEY_HOME,
+  [JOY_R3] = IKEY_END,
 };
 
 struct buffered_status *store_status(void)
@@ -1026,29 +1046,38 @@ struct joystick_action_name
 static const struct joystick_action_name joystick_action_names[] =
 {
   { "a",        JOY_A },
-  { "action1",  JOY_A },
-  { "action2",  JOY_B },
-  { "action3",  JOY_X },
-  { "action4",  JOY_Y },
   { "b",        JOY_B },
   { "back",     JOY_ESCAPE },
+  { "bomb",     JOY_B },
+  { "circle",   JOY_B },
+  { "cross",    JOY_A },
   { "down",     JOY_DOWN },
   { "escape",   JOY_ESCAPE },
 //{ "keyboard", JOY_KEYBOARD },
   { "l1",       JOY_SWITCH },
   { "l2",       JOY_SAVE },
-  { "l3",       JOY_UNUSED_L3 },
+  { "l3",       JOY_L3 },
+  { "lbumper",  JOY_SWITCH },
   { "left",     JOY_LEFT },
   { "load",     JOY_LOAD },
+  { "lstick",   JOY_L3 },
+  { "ltrigger", JOY_SAVE },
   { "menu",     JOY_MENU },
   { "r1",       JOY_SETTINGS },
   { "r2",       JOY_LOAD },
-  { "r3",       JOY_UNUSED_R3 },
+  { "r3",       JOY_R3 },
+  { "rbumper",  JOY_SETTINGS },
   { "right",    JOY_RIGHT },
+  { "rstick",   JOY_R3 },
+  { "rtrigger", JOY_LOAD },
   { "save",     JOY_SAVE },
+  { "select",   JOY_ESCAPE },
   { "settings", JOY_SETTINGS },
+  { "shoot",    JOY_A },
+  { "square",   JOY_X },
   { "start",    JOY_MENU },
   { "switch",   JOY_SWITCH },
+  { "triangle", JOY_Y },
   { "up",       JOY_UP },
   { "x",        JOY_X },
   { "y",        JOY_Y }
@@ -1272,29 +1301,16 @@ void joystick_set_legacy_loop_hacks(boolean enable)
 }
 
 /**
- * Determine which key (if any) a joystick press or release should bind to
+ * Determine which key (if any) a joystick press should bind to
  * within the current context.
  */
 static enum keycode joystick_resolve_bindings(struct buffered_status *status,
  int joystick, Sint16 global_binding, Sint16 game_binding)
 {
-  // Global actions bindings
-  // HACK: use default keybinding outside of contexts.
-  // FIXME: not necessary, probably. The important (gameplay-related) loops
-  // should have action handling added.
-  if(joystick_legacy_loop_hacks)
-  {
-    if(global_binding < 0 && (-global_binding < NUM_JOYSTICK_ACTIONS) &&
-     input.joystick_global_action_map[joystick][-global_binding] > 0)
-    {
-      return input.joystick_global_action_map[joystick][-global_binding];
-    }
-  }
-
   // Global key bindings
   // HACK: places where the no context hacks are enabled are never gameplay,
   // but may be reached while the game mode flag is still enabled. We always
-  // want to use key bindings outside of contexts.
+  // want to use global bindings outside of contexts.
   if(!joystick_game_mode || joystick_legacy_loop_hacks)
   {
     if(global_binding > 0)
@@ -1317,19 +1333,38 @@ static enum keycode joystick_resolve_bindings(struct buffered_status *status,
   return IKEY_UNKNOWN;
 }
 
+enum joy_press_type
+{
+  JOY_BUTTON,
+  JOY_AXIS,
+  JOY_HAT
+};
+
 /**
  * "Press" a joystick button/axis/hat/etc; fake a key press and/or activate
  * the global action used by UI contexts where appropriate.
  */
 static void joystick_press(struct buffered_status *status, int joystick,
- Sint16 global_binding, Sint16 game_binding)
+ enum joy_press_type type, int num, Sint16 global_binding, Sint16 game_binding)
 {
-  int key =
-   joystick_resolve_bindings(status, joystick, global_binding, game_binding);
-  if(key)
-    key_press(status, key, key);
+  int pos = status->joystick_press_count[joystick];
+  if(pos < MAX_JOYSTICK_PRESS)
+  {
+    int press_key =
+     joystick_resolve_bindings(status, joystick, global_binding, game_binding);
 
-  //debug("[JOYSTICK] (P) %d (%d %d) -> %d\n", joystick, global_binding, game_binding, key);
+    if(press_key)
+    {
+      status->joystick_press[joystick][pos].type = type;
+      status->joystick_press[joystick][pos].num = num;
+      status->joystick_press[joystick][pos].key = press_key;
+      status->joystick_press_count[joystick]++;
+      key_press(status, press_key, press_key);
+
+      //debug("[JOYSTICK] (P) %d (%d %d) -> { %d, %d, %d } @ %d\n",
+      // joystick, global_binding, game_binding, type, num, press_key, pos);
+    }
+  }
 
   // Global action press.
   if(global_binding < 0 && (-global_binding < NUM_JOYSTICK_ACTIONS))
@@ -1350,14 +1385,32 @@ static void joystick_press(struct buffered_status *status, int joystick,
  * the global action used by UI contexts where appropriate.
  */
 static void joystick_release(struct buffered_status *status, int joystick,
- Sint16 global_binding, Sint16 game_binding)
+ enum joy_press_type type, int num, Sint16 global_binding, Sint16 game_binding)
 {
-  int key =
-   joystick_resolve_bindings(status, joystick, global_binding, game_binding);
-  if(key)
-    key_release(status, key);
+  int count = status->joystick_press_count[joystick];
+  if(count > 0)
+  {
+    struct joystick_press *p;
+    int i;
 
-  //debug("[JOYSTICK] (R) %d (%d %d) -> %d\n", joystick, global_binding, game_binding, key);
+    for(i = 0; i < count; i++)
+    {
+      p = &(status->joystick_press[joystick][i]);
+
+      if(p->type == type && p->num == num)
+      {
+        key_release(status, p->key);
+        //debug("[JOYSTICK] (R) %d (%d %d) -> { %d, %d, %d } @ %d\n", joystick,
+        // global_binding, game_binding, type, num, p->key, i);
+
+        count--;
+        status->joystick_press_count[joystick] = count;
+        status->joystick_press[joystick][i] =
+         status->joystick_press[joystick][count];
+        i--;
+      }
+    }
+  }
 
   // Global action release.
   if(global_binding < 0 && (-global_binding < NUM_JOYSTICK_ACTIONS))
@@ -1378,13 +1431,15 @@ void joystick_button_press(struct buffered_status *status,
  int joystick, int button)
 {
   if((joystick >= 0) && (joystick < MAX_JOYSTICKS) &&
-   (button >= 0) && (button < MAX_JOYSTICK_BUTTONS))
+   (button >= 0) && (button < MAX_JOYSTICK_BUTTONS) &&
+   !status->joystick_button[joystick][button])
   {
     Sint16 global_binding = input.joystick_global_button_map[joystick][button];
     Sint16 game_binding = input.joystick_game_button_map[joystick][button];
 
-    joystick_press(status, joystick, global_binding, game_binding);
     status->joystick_button[joystick][button] = true;
+    joystick_press(status, joystick, JOY_BUTTON, button,
+     global_binding, game_binding);
   }
 }
 
@@ -1400,8 +1455,9 @@ void joystick_button_release(struct buffered_status *status,
     Sint16 global_binding = input.joystick_global_button_map[joystick][button];
     Sint16 game_binding = input.joystick_game_button_map[joystick][button];
 
-    joystick_release(status, joystick, global_binding, game_binding);
     status->joystick_button[joystick][button] = false;
+    joystick_release(status, joystick, JOY_BUTTON, button,
+     global_binding, game_binding);
   }
 }
 
@@ -1414,12 +1470,14 @@ static void joystick_hat_update_dir(struct buffered_status *status,
   if(dir_active)
   {
     if(!status->joystick_hat[joystick][dir])
-      joystick_press(status, joystick, global_binding, game_binding);
+      joystick_press(status, joystick, JOY_HAT, dir,
+       global_binding, game_binding);
   }
   else
   {
     if(status->joystick_hat[joystick][dir])
-      joystick_release(status, joystick, global_binding, game_binding);
+      joystick_release(status, joystick, JOY_HAT, dir,
+       global_binding, game_binding);
   }
 
   status->joystick_hat[joystick][dir] = dir_active;
@@ -1465,7 +1523,8 @@ static void joystick_axis_press(struct buffered_status *status,
   Sint16 global_binding = input.joystick_global_axis_map[joystick][axis][dir];
   Sint16 game_binding = input.joystick_game_axis_map[joystick][axis][dir];
 
-  joystick_press(status, joystick, global_binding, game_binding);
+  joystick_press(status, joystick, JOY_AXIS, (axis * 2) + dir,
+   global_binding, game_binding);
 }
 
 static void joystick_axis_release(struct buffered_status *status,
@@ -1474,7 +1533,8 @@ static void joystick_axis_release(struct buffered_status *status,
   Sint16 global_binding = input.joystick_global_axis_map[joystick][axis][dir];
   Sint16 game_binding = input.joystick_game_axis_map[joystick][axis][dir];
 
-  joystick_release(status, joystick, global_binding, game_binding);
+  joystick_release(status, joystick, JOY_AXIS, (axis * 2) + dir,
+   global_binding, game_binding);
 }
 
 /**
@@ -1513,21 +1573,27 @@ void joystick_axis_update(struct buffered_status *status,
 }
 
 /**
- * Force release all inputs for a given joystick. Use this function if a
+ * Release any active inputs for a given joystick. Use this function if a
  * joystick is removed.
  */
 void joystick_release_all(struct buffered_status *status, int joystick)
 {
+  int count = status->joystick_press_count[joystick];
   int i;
 
-  for(i = 0; i < MAX_JOYSTICK_BUTTONS; i++)
-    if(status->joystick_button[joystick][i])
-      joystick_button_release(status, joystick, i);
+  for(i = 0; i < count; i++)
+    key_release(status, status->joystick_press[joystick][i].key);
 
-  for(i = 0; i < MAX_JOYSTICK_AXES; i++)
-    joystick_axis_update(status, joystick, i, 0);
+  status->joystick_press_count[joystick] = 0;
 
-  joystick_hat_update(status, joystick, false, false, false, false);
+  memset(status->joystick_button[joystick], 0,
+   sizeof(status->joystick_button[joystick]));
+
+  memset(status->joystick_axis[joystick], 0,
+   sizeof(status->joystick_axis[joystick]));
+
+  memset(status->joystick_hat[joystick], 0,
+   sizeof(status->joystick_hat[joystick]));
 
   if((int)status->joystick_repeat_id == joystick)
   {
@@ -1538,10 +1604,21 @@ void joystick_release_all(struct buffered_status *status, int joystick)
 }
 
 /**
- * Get the current global joystick action.
+ * Get the current UI joystick action.
  */
-Uint32 get_joystick_action(void)
+Uint32 get_joystick_ui_action(void)
 {
   const struct buffered_status *status = load_status();
   return status->joystick_action;
+}
+
+/**
+ * Get the standard UI key for the current joystick action.
+ * Most places that use joystick actions want similar bindings or only have
+ * a few exceptions.
+ */
+Uint32 get_joystick_ui_key(void)
+{
+  const struct buffered_status *status = load_status();
+  return joystick_action_map_ui[status->joystick_action];
 }

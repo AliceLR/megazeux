@@ -144,10 +144,10 @@ enum joystick_action
   JOY_DOWN,
   JOY_LEFT,
   JOY_RIGHT,
-  JOY_A,                // Cross
-  JOY_B,                // Circle
-  JOY_X,                // Square
-  JOY_Y,                // Triangle
+  JOY_A,
+  JOY_B,
+  JOY_X,
+  JOY_Y,
   JOY_MENU,             // Start
   JOY_ESCAPE,           // Select and/or Home
   JOY_SETTINGS,         // R1
@@ -155,19 +155,19 @@ enum joystick_action
   JOY_SWITCH,           // L1
   JOY_SAVE,             // L2
   JOY_LOAD,             // R2
-  JOY_UNUSED_L3,
-  JOY_UNUSED_R3,
+  JOY_L3,
+  JOY_R3,
   NUM_JOYSTICK_ACTIONS
 };
 
-enum joystick_special_axes
+enum joystick_special_axis
 {
-  JOY_LSTICK_X,
-  JOY_LSTICK_Y,
-  JOY_RSTICK_X,
-  JOY_RSTICK_Y,
-  JOY_LTRIGGER,
-  JOY_RTRIGGER,
+  JOY_AXIS_LSTICK_X,
+  JOY_AXIS_LSTICK_Y,
+  JOY_AXIS_RSTICK_X,
+  JOY_AXIS_RSTICK_Y,
+  JOY_AXIS_LTRIGGER,
+  JOY_AXIS_RTRIGGER,
   NUM_JOYSTICK_SPECIAL_AXES
 };
 

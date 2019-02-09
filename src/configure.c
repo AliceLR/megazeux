@@ -423,7 +423,7 @@ static void config_mp_resample_mode(struct config_info *conf, char *name,
   }
 }
 
-#define JOY_ENUM "%10[0-9A-Za-z]"
+#define JOY_ENUM "%10[0-9A-Za-z_]"
 
 static void joy_axis_set(struct config_info *conf, char *name,
  char *value, char *extended_data)

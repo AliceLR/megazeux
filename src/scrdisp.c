@@ -194,8 +194,14 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
     }
     else
     {
+      int joystick_key;
+
       update_event_status_delay();
       key = get_key(keycode_internal_wrt_numlock);
+
+      joystick_key = get_joystick_ui_key();
+      if(joystick_key)
+        key = joystick_key;
     }
 
     // Exit event -- mimic Escape
@@ -592,6 +598,7 @@ void help_display(struct world *mzx_world, char *help, int offs, char *file,
 {
   // Display a help file
   int pos = offs, old_pos; // Where
+  int joystick_key;
   int key = 0;
   int t1;
   char mclick;
@@ -640,6 +647,10 @@ void help_display(struct world *mzx_world, char *help, int offs, char *file,
     }
 
     key = get_key(keycode_internal_wrt_numlock);
+
+    joystick_key = get_joystick_ui_key();
+    if(joystick_key)
+      key = joystick_key;
 
     // Exit event -- mimic Escape
     if(get_exit_status())

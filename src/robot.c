@@ -2651,6 +2651,7 @@ void robot_box_display(struct world *mzx_world, char *program,
   struct board *src_board = mzx_world->current_board;
   struct robot *cur_robot = src_board->robot_list[id];
   int pos = 0, key, mouse_press;
+  int joystick_key;
 
   label_storage[0] = 0;
 
@@ -2729,6 +2730,10 @@ void robot_box_display(struct world *mzx_world, char *program,
 
     update_event_status_delay();
     key = get_key(keycode_internal_wrt_numlock);
+
+    joystick_key = get_joystick_ui_key();
+    if(joystick_key)
+      key = joystick_key;
 
     // Exit event--mimic Escape
     if(get_exit_status())

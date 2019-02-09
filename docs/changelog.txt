@@ -11,15 +11,16 @@ FEATURES
   the user switches back to board mode.
 + Joystick settings in game.cnf files are now loaded as game-
   specific joystick bindings. These bindings will no longer
-  permanently override global/UI bindings defined by config.txt
-  or pad.config. The global bindings are restored when any world
-  is loaded; they are not restored when a save is loaded.
-+ Joystick inputs can now be bound to generic actions that
-  change behavior for specific contexts. See a copy of the
-  latest config.txt for a list of generic actions and the
-  functions they perform. These generic actions can be further
-  bound to keycodes which allow these actions to simulate
-  keypresses during gameplay.
+  permanently override global/UI bindings defined by the config
+  file or pad.config. The global bindings are restored when any
+  world is loaded (including SWAP WORLD); they are not restored
+  when a save is loaded.
++ Joystick inputs can now be bound to generic actions. These
+  actions are configured to control MegaZeux's various windows
+  in a context-specific manner, and can themselves be bound to
+  keycodes to allow for gameplay controls that are more
+  consistent with the UI controls. A list of generic actions and
+  the functions they perform can be found in the config file.
 
 FIXES
 

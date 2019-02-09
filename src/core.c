@@ -844,7 +844,7 @@ static void core_update(core_context *root)
 
   boolean exit_status = get_exit_status();
   int key = get_key(keycode_internal_wrt_numlock);
-  int joystick = get_joystick_action();
+  int joystick = get_joystick_ui_action();
   int mouse_press = get_mouse_press_ext();
   int mouse_drag_state = get_mouse_drag();
   int mouse_x;

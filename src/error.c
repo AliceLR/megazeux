@@ -48,6 +48,7 @@ int error(const char *string, enum error_type type, unsigned int options,
 {
   const char *type_name;
   int t1 = 9, ret = 0;
+  int joystick_key;
   char temp[5];
   int x;
 
@@ -141,6 +142,10 @@ int error(const char *string, enum error_type type, unsigned int options,
   {
     wait_event(0);
     t1 = get_key(keycode_internal_wrt_numlock);
+
+    joystick_key = get_joystick_ui_key();
+    if(joystick_key)
+      t1 = joystick_key;
 
     //Exit event--mimic Escape
     if(get_exit_status())

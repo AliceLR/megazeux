@@ -519,6 +519,25 @@ static boolean game_idle(context *ctx)
 }
 
 /**
+ * Joystick function for the gameplay context. Gameplay only detects UI
+ * escape presses and ignores everything else.
+ */
+
+static boolean game_joystick(context *ctx, int *key, int action)
+{
+  switch(action)
+  {
+    case JOY_ESCAPE:
+    {
+      // Force an escape press.
+      *key = IKEY_ESCAPE;
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Key function for the gameplay context. This handles interface keys and some
  * key labels; some other keys are handled in the update function.
  */
@@ -700,8 +719,9 @@ static boolean game_key(context *ctx, int *key)
       case IKEY_ESCAPE:
       {
         // Ignore if this isn't a fresh press
-        if(key_status != 1)
-          return true;
+        // NOTE: disabled because it breaks the joystick action.
+        //if(key_status != 1)
+          //return true;
 
         // ESCAPE_MENU (2.90+)
         if(mzx_world->version < V290 || get_counter(mzx_world, "ESCAPE_MENU", 0))
@@ -768,6 +788,7 @@ void play_game(context *parent, boolean *_fade_in)
   spec.draw     = game_draw;
   spec.idle     = game_idle;
   spec.key      = game_key;
+  spec.joystick = game_joystick;
   spec.destroy  = game_destroy;
 
   spec.framerate_mode = FRAMERATE_MZX_SPEED;
@@ -813,6 +834,28 @@ static void title_resume(context *ctx)
 }
 
 /**
+ * Joystick handler for the title screen.
+ */
+
+static boolean title_joystick(context *ctx, int *key, int action)
+{
+  switch(action)
+  {
+    case JOY_A:         *key = IKEY_F5; return true;
+    case JOY_B:         *key = IKEY_RETURN; return true;
+    case JOY_X:         *key = IKEY_F1; return true;
+    case JOY_Y:         *key = IKEY_F7; return true;
+    case JOY_MENU:      *key = IKEY_F5; return true;
+    case JOY_ESCAPE:    *key = IKEY_ESCAPE; return true;
+    case JOY_SETTINGS:  *key = IKEY_F2; return true;
+    case JOY_SWITCH:    *key = IKEY_F2; return true;
+    case JOY_SAVE:      *key = IKEY_F3; return true;
+    case JOY_LOAD:      *key = IKEY_F4; return true;
+  }
+  return false;
+}
+
+/**
  * Key handler for the title screen.
  */
 
@@ -822,7 +865,8 @@ static boolean title_key(context *ctx, int *key)
   struct game_context *title = (struct game_context *)ctx;
   struct world *mzx_world = ctx->world;
 
-  int key_status = get_key_status(keycode_internal_wrt_numlock, *key);
+  // NOTE: disabled due to joystick support. See IKEY_RETURN and IKEY_ESCAPE.
+  //int key_status = get_key_status(keycode_internal_wrt_numlock, *key);
   boolean exit_status = get_exit_status();
 
   boolean reload_curr_file_in_editor = true;
@@ -967,8 +1011,9 @@ static boolean title_key(context *ctx, int *key)
     case IKEY_RETURN: // Enter
     {
       // Ignore if this isn't a fresh press
-      if(key_status != 1)
-        return true;
+      // NOTE: disabled because it breaks the joystick actions.
+      //if(key_status != 1)
+        //return true;
 
       if(!conf->standalone_mode || get_counter(mzx_world, "ENTER_MENU", 0))
         main_menu(ctx);
@@ -979,8 +1024,9 @@ static boolean title_key(context *ctx, int *key)
     case IKEY_ESCAPE:
     {
       // Ignore if this isn't a fresh press
-      if(key_status != 1)
-        return true;
+      // NOTE: disabled because it breaks the joystick actions.
+      //if(key_status != 1)
+        //return true;
 
       // ESCAPE_MENU (2.90+) only works on the title screen if the
       // standalone_mode config option is set
@@ -1055,6 +1101,7 @@ void title_screen(context *parent)
   spec.draw     = game_draw;
   spec.idle     = game_idle;
   spec.key      = title_key;
+  spec.joystick = title_joystick;
   spec.destroy  = game_destroy;
 
   create_context((context *)title, parent, &spec, CTX_TITLE_SCREEN);

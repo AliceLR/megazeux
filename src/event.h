@@ -36,6 +36,7 @@ __M_BEGIN_DECLS
 #define MAX_JOYSTICKS         16
 #define MAX_JOYSTICK_AXES     16
 #define MAX_JOYSTICK_BUTTONS  256
+#define MAX_JOYSTICK_PRESS    16
 
 #define MOUSE_BUTTON(x)         (1 << ((x) - 1))
 #define MOUSE_BUTTON_LEFT       1
@@ -83,6 +84,14 @@ __M_BEGIN_DECLS
 // Capture F12 presses to save screenshots if true.
 extern boolean enable_f12_hack;
 
+// Store joystick presses in a list so their proper key will be released.
+struct joystick_press
+{
+  Uint8 type;
+  Uint8 num;
+  Sint16 key;
+};
+
 struct buffered_status
 {
   enum keycode key_pressed;
@@ -118,6 +127,8 @@ struct buffered_status
   boolean joystick_hat[MAX_JOYSTICKS][4];
   boolean joystick_button[MAX_JOYSTICKS][MAX_JOYSTICK_BUTTONS];
   Sint16 joystick_axis[MAX_JOYSTICKS][MAX_JOYSTICK_AXES];
+  struct joystick_press joystick_press[MAX_JOYSTICKS][MAX_JOYSTICK_PRESS];
+  Uint8 joystick_press_count[MAX_JOYSTICKS];
   Uint8 keymap[512];
 };
 
@@ -187,7 +198,8 @@ CORE_LIBSPEC void key_release(struct buffered_status *status, enum keycode key);
 CORE_LIBSPEC boolean get_exit_status(void);
 CORE_LIBSPEC boolean set_exit_status(boolean value);
 CORE_LIBSPEC boolean peek_exit_input(void);
-CORE_LIBSPEC Uint32 get_joystick_action(void);
+CORE_LIBSPEC Uint32 get_joystick_ui_action(void);
+CORE_LIBSPEC Uint32 get_joystick_ui_key(void);
 
 // Implemented by "drivers" (SDL, Wii, and NDS currently)
 void __wait_event(int timeout);

@@ -332,6 +332,7 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
   int bottom = 16;
   int x, y;
   int i, i2;
+  int joystick_key;
   int key;
 
   if(width_ptr && height_ptr)
@@ -543,6 +544,10 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
     update_screen();
     update_event_status_delay();
     key = get_key(keycode_internal_wrt_numlock);
+
+    joystick_key = get_joystick_ui_key();
+    if(joystick_key)
+      key = joystick_key;
 
     if(get_exit_status())
       key = IKEY_ESCAPE;
@@ -990,6 +995,10 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
     update_event_status_delay();
     current_key = get_key(keycode_internal_wrt_numlock);
 
+    new_key = get_joystick_ui_key();
+    if(new_key)
+      current_key = new_key;
+
     new_key = 0;
 
     if(current_element->idle_function)
@@ -1162,7 +1171,7 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
       case IKEY_ESCAPE: // ESC
       {
         // Only work on press.  Ignore autorepeat.
-        if(get_key_status(keycode_internal, IKEY_ESCAPE) == 1)
+        //if(get_key_status(keycode_internal, IKEY_ESCAPE) == 1)
           exit = 1;
 
         break;
