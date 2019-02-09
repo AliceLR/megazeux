@@ -52,6 +52,8 @@ FIXES
 + "Forest to floor" and "Collect bombs" are properly enabled
   again for new boards by default. This fix doesn't alter config
   settings or saved .editor.cnf defaults.
++ The "Downver. world (MZX)" option in the "Export as" dialog
+  is now completely highlighted when selected. (Lancer-X)
 
 DEVELOPERS
 
