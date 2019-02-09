@@ -503,22 +503,22 @@
 # It is possible to emulate key presses using a joystick. If this file
 # is config.txt these options will apply as a default to all games -
 # you can put them in game.cnf to apply specifically to game.mzx.
-# When placed in a game.cnf file, these settingss will only affect that
+# When placed in a game.cnf file, these settings will only affect that
 # world and any saves loaded from that world; games that swap between
 # multiple worlds will need a game.cnf file for each world.
 
 # A joystick is first specified as joyN where N is the number from
 # 1 onwards identifying the joystick in your system. You may have
-# to experiment to find which joystick is which number, if you have
-# multiple ones, otherwise just use 1. Up to 16 joysticks are
+# to experiment to find which joystick is which number if you have
+# multiple joysticks. Otherwise, just use 1. Up to 16 joysticks are
 # recognized.
 
 # You can currently map three joystick input methods: axes, buttons,
-# and one POV hat. Axes/buttons/hates are mapped to keys using a
+# and one POV hat. Axes/buttons/hats are mapped to keys using a
 # number corresponding to the a given key. This number is the same as
-# the KEY_PRESSED value for it, and can be determined by checking
+# the KEY_PRESSED value for that key and can be determined by checking
 # keycodes.html or by pressing the key while the debug window (F6) is
-# open while testing.
+# open during testing.
 
 # The option to map a joystick axis is
 
@@ -538,7 +538,7 @@
 # and A is the key whose press is emulated when this button is pressed.
 # You may have to experiment to find the number of a given button.
 
-# The option to map a joystick hat is:
+# The option to map a joystick hat is
 
 # joyXhat = U, D, L, R
 
@@ -578,12 +578,12 @@
 #  settings   rbumper, r1     Settings      Settings[3]   F2 (settings)
 #  save       ltrigger, l2    Load world    Page up       F3 (save game)
 #  load       rtrigger, r2    Reload save   Page down     F4 (load save)
-#  l3         lstick                        Home
-#  r3         rstick                        End
+#  lstick     l3                            Home
+#  rstick     r3                            End
 
 # [1] Aliases are provided for some actions for convenience. The actual
 # buttons used for these actions won't always correspond to an XInput
-# controller for a particular console.
+# controller for a particular platform.
 
 # [2] This behavior will always override other bindings unless the
 # exit dialog has been disabled.
@@ -592,7 +592,7 @@
 # currently.
 
 # To assign a joystick generic action to a different key for gameplay,
-# the setting
+# use the setting
 
 # joyX.Y = A
 
