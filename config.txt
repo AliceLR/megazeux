@@ -503,39 +503,101 @@
 # It is possible to emulate key presses using a joystick. If this file
 # is config.txt these options will apply as a default to all games -
 # you can put them in game.cnf to apply specifically to game.mzx.
+# When placed in a game.cnf file, these settingss will only affect that
+# world and any saves loaded from that world; games that swap between
+# multiple worlds will need a game.cnf file for each world.
 
 # A joystick is first specified as joyN where N is the number from
 # 1 onwards identifying the joystick in your system. You may have
 # to experiment to find which joystick is which number, if you have
 # multiple ones, otherwise just use 1. Up to 16 joysticks are
 # recognized.
-# You can currently map three things, axes, buttons, and POV hats.
-# Axes/buttons/hats are mapped to keys given by number. You can find out
-# a key's number by printing key_pressed in a loop (NOT key_code).
-# Axis mapping looks as follows:
+
+# You can currently map three joystick input methods: axes, buttons,
+# and one POV hat. Axes/buttons/hates are mapped to keys using a
+# number corresponding to the a given key. This number is the same as
+# the KEY_PRESSED value for it, and can be determined by checking
+# keycodes.html or by pressing the key while the debug window (F6) is
+# open while testing.
+
+# The option to map a joystick axis is
 
 # joyXaxisY = A, B
 
-# Where X is the number of the joystick, Y is the number of the axis
+# where X is the number of the joystick, Y is the number of the axis
 # (1 is typically left/right, 2 is typically up/down), A is the key
 # for one extreme (such as left) and B is the key for the other
-# (such as right).
+# (such as right). An example of an axis is an analog stick or a
+# pressure-sensitive trigger button.
 
-# Button mapping looks as follows:
+# The option to map a joystick button is
 
 # joyXbuttonY = A
 
-# Where X is the number of the joystick, Y is the number of the button
-# (you may have to experiment to find out which button is which number),
+# where X is the number of the joystick, Y is the number of the button,
 # and A is the key whose press is emulated when this button is pressed.
+# You may have to experiment to find the number of a given button.
 
-# Hat mapping looks as follows:
+# The option to map a joystick hat is:
 
 # joyXhat = U, D, L, R
 
-# Where X is the number of the joystick, U is the key for the up direction,
+# where X is the number of the joystick, U is the key for the up direction,
 # D is the key for the down direction, L is the key for the left direction,
-# and R is the key for the right direction.
+# and R is the key for the right direction. Currently, only one POV hat per
+# joystick is supported. An example of a POV hat is the directional pad on
+# some controllers.
+
+# As of MegaZeux 2.92, it is also possible to bind joystick controls to
+# "generic actions". These generic actions are loosely modeled after XInput.
+# The generic actions are more UI-friendly than using keycodes directly,
+# they have default gameplay keys pre-assigned, and these gameplay keys
+# can be changed to different values without altering the UI behavior.
+
+# To use a joystick generic action, replace the key number in one of the
+# above settings with an action name or alias from the table below. Example:
+
+# joyXaxisY = left, right
+# joyXbuttonY = shoot
+
+# The available generic actions and their typical behaviors are:
+
+#  Action     Alias(es)[1]   Title screen   Window        Game key (default)
+# ---------  --------------  ------------  ------------  --------------------
+#  up                                       Cursor up     Up (move)
+#  down                                     Cursor down   Down (move)
+#  left                                     Cursor left   Left (move)
+#  right                                    Cursor right  Right (move)
+#  shoot      a, cross        Play game     Select        Space (shoot)
+#  bomb       b, circle       Main menu     Cancel        Delete (lay bomb)
+#  x          square          Help          Select char   S (Caverns: spells)
+#  y          triangle        Updater       Backspace     P (Caverns: altar)
+#  menu       start           Play game     Select        Enter (game menu)
+#  escape     back, select    Exit          Cancel        Escape (exit[2])
+#  switch     lbumper, l1     Settings      Next element  Insert (switch bombs)
+#  settings   rbumper, r1     Settings      Settings[3]   F2 (settings)
+#  save       ltrigger, l2    Load world    Page up       F3 (save game)
+#  load       rtrigger, r2    Reload save   Page down     F4 (load save)
+#  l3         lstick                        Home
+#  r3         rstick                        End
+
+# [1] Aliases are provided for some actions for convenience. The actual
+# buttons used for these actions won't always correspond to an XInput
+# controller for a particular console.
+
+# [2] This behavior will always override other bindings unless the
+# exit dialog has been disabled.
+
+# [3] Works on the main menu and game menu. May not work on other windows
+# currently.
+
+# To assign a joystick generic action to a different key for gameplay,
+# the setting
+
+# joyX.Y = A
+
+# where X is the number of the joystick, Y is the name or an alias of the
+# generic action, and A is the number of the key to assign to this action.
 
 
 # Misc Options
