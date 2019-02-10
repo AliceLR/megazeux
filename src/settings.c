@@ -156,7 +156,7 @@ void game_settings(struct world *mzx_world)
     }
 
     elements[0] = construct_radio_button(4, 2 + speed_option,
-     radio_strings_1, 2, 19, &music);
+     radio_strings_1, 2, 20, &music);
     elements[1] = construct_radio_button(4, 5 + speed_option,
      radio_strings_2, 2, 18, &pcs);
     elements[2] = construct_label(2, 8 + speed_option,

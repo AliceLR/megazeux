@@ -190,6 +190,8 @@ CORE_LIBSPEC void duplicate_scroll_direct(struct scroll *cur_scroll,
 CORE_LIBSPEC void duplicate_sensor_direct(struct sensor *cur_sensor,
  struct sensor *copy_sensor);
 
+CORE_LIBSPEC int get_current_command_map_index(struct robot *cur_robot);
+
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC extern const int def_params[128];
 #endif // CONFIG_EDITOR

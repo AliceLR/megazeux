@@ -2551,18 +2551,19 @@ static boolean editor_key(context *ctx, int *key)
                 fix_scroll(editor);
                 fix_caption(editor);
 
-                // fixme load_mod_check
-                if(strcmp(cur_board->mod_playing, "*") &&
-                 strcasecmp(cur_board->mod_playing,
-                 mzx_world->real_mod_playing))
-                  fix_mod(editor);
-
-                if(block->selected &&
-                 (block->src_board == (mzx_world->current_board)))
+                // This check works because cur_board is still the old pointer.
+                if(block->selected && (block->src_board == cur_board))
                 {
                   block->selected = false;
                   editor->cursor_mode = CURSOR_PLACE;
                 }
+
+                // Need the new pointer here, though.
+                cur_board = mzx_world->current_board;
+                if(strcmp(cur_board->mod_playing, "*") &&
+                 strcasecmp(cur_board->mod_playing,
+                 mzx_world->real_mod_playing))
+                  fix_mod(editor);
 
                 clear_board_history(editor);
                 clear_overlay_history(editor);
@@ -3577,7 +3578,7 @@ static void __edit_world(context *parent, boolean reload_curr_file)
     curr_file[0] = '\0';
 
   if(reload_curr_file && curr_file[0] &&
-    editor_reload_world(editor, curr_file))
+   editor_reload_world(editor, curr_file))
   {
     strncpy(editor->current_world, curr_file, MAX_PATH);
 
