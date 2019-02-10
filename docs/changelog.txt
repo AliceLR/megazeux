@@ -64,6 +64,7 @@ FIXES
   properly check for the player before attempting to duplicate
   a robot. This fixes a bug where MZX could create saves with
   "Robot # does not exist on board" errors.
++ Fixed a crash that could occur when importing a new board.
 
 DEVELOPERS
 
