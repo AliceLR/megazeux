@@ -56,6 +56,10 @@ FIXES
   is now completely highlighted when selected. (Lancer-X)
 + Starting MegaZeux with "startup_editor=1" no longer loads the
   default palette over the startup world's palette.
++ Editor copy from a layer to the board and COPY/COPY BLOCK from
+  a layer to the board now properly clean up robots, scrolls,
+  and sensors. This fixes a problem where MZX could create
+  worlds/saves with "Robot # does not exist on board" errors.
 
 DEVELOPERS
 
