@@ -108,11 +108,13 @@ struct robot
   // Local counters - store in save file
   int local[32];
 
-#ifdef CONFIG_EDITOR
+#if defined(CONFIG_EDITOR) || defined(CONFIG_DEBYTECODE)
   // A mapping of bytecode lines to source lines.
   struct command_mapping *command_map;
   int command_map_length;
+#endif
 
+#ifdef CONFIG_EDITOR
   // Total commands run; commands run in cycle; commands seen by debugger
   int commands_total;
   int commands_cycle;

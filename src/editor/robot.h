@@ -72,8 +72,6 @@ static inline void replace_robot_source(struct world *mzx_world,
 void prepare_robot_source(struct robot *cur_robot);
 #endif
 
-int get_current_program_line(struct robot *cur_robot);
-
 __M_END_DECLS
 
 #endif // __EDITOR_ROBOT_H
