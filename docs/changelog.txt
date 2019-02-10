@@ -60,6 +60,10 @@ FIXES
   a layer to the board now properly clean up robots, scrolls,
   and sensors. This fixes a problem where MZX could create
   worlds/saves with "Robot # does not exist on board" errors.
++ The DUPLICATE SELF x y and DUPLICATE SELF dir commands now
+  properly check for the player before attempting to duplicate
+  a robot. This fixes a bug where MZX could create saves with
+  "Robot # does not exist on board" errors.
 
 DEVELOPERS
 

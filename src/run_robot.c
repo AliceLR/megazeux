@@ -3111,6 +3111,11 @@ void run_robot(context *ctx, int id, int x, int y)
 
             if(!move_dir(src_board, &duplicate_x, &duplicate_y, duplicate_dir))
             {
+              // Fail if the player is at the destination; this would create a
+              // buggy robot that doesn't exist on the board.
+              if(level_id[duplicate_x + (duplicate_y * board_width)] == PLAYER)
+                break;
+
               dest_id = duplicate_robot(mzx_world, src_board, cur_robot,
                duplicate_x, duplicate_y, 0);
 
@@ -3133,6 +3138,11 @@ void run_robot(context *ctx, int id, int x, int y)
         int duplicate_color, offset;
 
         prefix_mid_xy(mzx_world, &duplicate_x, &duplicate_y, x, y);
+
+        // Fail if the player is at the destination; this would create a
+        // buggy robot that doesn't exist on the board.
+        if(level_id[duplicate_x + (duplicate_y * board_width)] == PLAYER)
+          break;
 
         if((duplicate_x != x) || (duplicate_y != y))
         {
