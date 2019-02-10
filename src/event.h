@@ -142,7 +142,6 @@ struct input_status
   Uint16 unicode_repeat_stack[KEY_REPEAT_STACK_SIZE];
   Uint32 repeat_stack_pointer;
 
-  int primary_joystick;
   Sint16 joystick_global_button_map[MAX_JOYSTICKS][MAX_JOYSTICK_BUTTONS];
   Sint16 joystick_global_axis_map[MAX_JOYSTICKS][MAX_JOYSTICK_AXES][2];
   Sint16 joystick_global_hat_map[MAX_JOYSTICKS][4];

@@ -1369,14 +1369,11 @@ static void joystick_press(struct buffered_status *status, int joystick,
   // Global action press.
   if(global_binding < 0 && (-global_binding < NUM_JOYSTICK_ACTIONS))
   {
-    if(joystick == input.primary_joystick)
-    {
-      status->joystick_action = -global_binding;
-      status->joystick_repeat = -global_binding;
-      status->joystick_repeat_id = joystick;
-      status->joystick_repeat_state = 1;
-      status->joystick_time = get_ticks();
-    }
+    status->joystick_action = -global_binding;
+    status->joystick_repeat = -global_binding;
+    status->joystick_repeat_id = joystick;
+    status->joystick_repeat_state = 1;
+    status->joystick_time = get_ticks();
   }
 }
 
