@@ -112,6 +112,10 @@ static enum keycode convert_SDL_internal(SDL_Keycode key)
     case SDLK_RIGHT: return IKEY_RIGHT;
     case SDLK_LEFT: return IKEY_LEFT;
     case SDLK_INSERT: return IKEY_INSERT;
+    case SDLK_HOME: return IKEY_HOME;
+    case SDLK_END: return IKEY_END;
+    case SDLK_PAGEUP: return IKEY_PAGEUP;
+    case SDLK_PAGEDOWN: return IKEY_PAGEDOWN;
     case SDLK_F1: return IKEY_F1;
     case SDLK_F2: return IKEY_F2;
     case SDLK_F3: return IKEY_F3;
@@ -127,7 +131,9 @@ static enum keycode convert_SDL_internal(SDL_Keycode key)
     case SDLK_NUMLOCKCLEAR: return IKEY_NUMLOCK;
     case SDLK_CAPSLOCK: return IKEY_CAPSLOCK;
     case SDLK_SCROLLLOCK: return IKEY_SCROLLOCK;
+    case SDLK_RSHIFT: return IKEY_RSHIFT;
     case SDLK_LSHIFT: return IKEY_LSHIFT;
+    case SDLK_RCTRL: return IKEY_RCTRL;
     case SDLK_LCTRL: return IKEY_LCTRL;
     case SDLK_RALT: return IKEY_RALT;
     case SDLK_LALT: return IKEY_LALT;
@@ -146,24 +152,27 @@ static enum keycode convert_SDL_internal(SDL_Keycode key)
     case SDLK_PAUSE: return IKEY_BREAK;
     case SDLK_MENU: return IKEY_MENU;
     case SDLK_CLEAR: return IKEY_KP5; // FIXME remove (see tracker issue 744)
-#ifndef CONFIG_PANDORA
-    case SDLK_HOME: return IKEY_HOME;
-    case SDLK_END: return IKEY_END;
-    case SDLK_PAGEUP: return IKEY_PAGEUP;
-    case SDLK_PAGEDOWN: return IKEY_PAGEDOWN;
-    case SDLK_RSHIFT: return IKEY_RSHIFT;
-    case SDLK_RCTRL: return IKEY_RCTRL;
-#else /* CONFIG_PANDORA */
-    case SDLK_HOME: return input.joystick_button_map[0][0];
-    case SDLK_END: return input.joystick_button_map[0][1];
-    case SDLK_PAGEUP: return input.joystick_button_map[0][2];
-    case SDLK_PAGEDOWN: return input.joystick_button_map[0][3];
-    case SDLK_RSHIFT: return input.joystick_button_map[0][4];
-    case SDLK_RCTRL: return input.joystick_button_map[0][5];
-#endif /* CONFIG_PANDORA */
     default: return IKEY_UNKNOWN;
   }
 }
+
+#ifdef CONFIG_PANDORA
+static int get_pandora_joystick_button(SDL_Keycode key)
+{
+  // Pandora hack. The home, end, page up, page down, right shift,
+  // and right control keys are actually joystick buttons.
+  switch(key)
+  {
+    case SDLK_HOME:     return 0;
+    case SDLK_END:      return 1;
+    case SDLK_PAGEUP:   return 2;
+    case SDLK_PAGEDOWN: return 3;
+    case SDLK_RSHIFT:   return 4;
+    case SDLK_RCTRL:    return 5;
+  }
+  return -1;
+}
+#endif
 
 /**
  * SDL 2 uses joystick instance IDs instead of the joystick index for all
@@ -420,6 +429,18 @@ static boolean process_event(SDL_Event *event)
         break;
 #endif
 
+#ifdef CONFIG_PANDORA
+      {
+        // Pandora hack. Certain keys are actually joystick buttons.
+        int button = get_pandora_joystick_button(event->key.keysym.sym);
+        if(button >= 0)
+        {
+          joystick_button_press(status, 0, button);
+          break;
+        }
+      }
+#endif
+
       ckey = convert_SDL_internal(event->key.keysym.sym);
       if(!ckey)
       {
@@ -506,6 +527,18 @@ static boolean process_event(SDL_Event *event)
 
     case SDL_KEYUP:
     {
+#ifdef CONFIG_PANDORA
+      {
+        // Pandora hack. Certain keys are actually joystick buttons.
+        int button = get_pandora_joystick_button(event->key.keysym.sym);
+        if(button >= 0)
+        {
+          joystick_button_release(status, 0, button);
+          break;
+        }
+      }
+#endif
+
       ckey = convert_SDL_internal(event->key.keysym.sym);
       if(!ckey)
       {
