@@ -116,9 +116,11 @@ void create_blank_robot_program(struct robot *cur_robot)
 #endif
 }
 
+#ifdef CONFIG_DEBYTECODE
 // Forward declaration
 static int get_source_command_map_index(struct robot *cur_robot,
  int source_pos);
+#endif
 
 #define err_if_skipped(idn) if(last_ident < idn) { goto err_invalid; }
 

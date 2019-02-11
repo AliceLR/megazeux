@@ -239,7 +239,7 @@ static void draw_menu_status(struct edit_menu_subcontext *edit_menu, int line)
       }
       else
       {
-        char unknown[15];
+        char unknown[20];
 
         if(buffer->id < ARRAY_SIZE(thing_names))
         {
