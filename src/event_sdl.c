@@ -650,7 +650,10 @@ static boolean process_event(SDL_Event *event)
       if(joystick_index < 0)
         break;
 
-      joystick_hat_update(status, joystick_index, hat_u, hat_d, hat_l, hat_r);
+      joystick_hat_update(status, joystick_index, JOYHAT_UP, hat_u);
+      joystick_hat_update(status, joystick_index, JOYHAT_DOWN, hat_d);
+      joystick_hat_update(status, joystick_index, JOYHAT_LEFT, hat_l);
+      joystick_hat_update(status, joystick_index, JOYHAT_RIGHT, hat_r);
       break;
     }
 

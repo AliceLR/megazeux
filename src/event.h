@@ -246,7 +246,7 @@ void joystick_button_press(struct buffered_status *status,
 void joystick_button_release(struct buffered_status *status,
  int joystick, int button);
 void joystick_hat_update(struct buffered_status *status,
- int joystick, boolean up, boolean down, boolean left, boolean right);
+ int joystick, enum joystick_hat dir, boolean dir_active);
 void joystick_axis_update(struct buffered_status *status,
  int joystick, int axis, Sint16 value);
 void joystick_release_all(struct buffered_status *status, int joystick);

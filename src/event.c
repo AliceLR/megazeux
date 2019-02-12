@@ -1458,40 +1458,33 @@ void joystick_button_release(struct buffered_status *status,
   }
 }
 
-static void joystick_hat_update_dir(struct buffered_status *status,
- int joystick, int dir, boolean dir_active)
-{
-  Sint16 global_binding = input.joystick_global_hat_map[joystick][dir];
-  Sint16 game_binding = input.joystick_game_hat_map[joystick][dir];
-
-  if(dir_active)
-  {
-    if(!status->joystick_hat[joystick][dir])
-      joystick_press(status, joystick, JOY_HAT, dir,
-       global_binding, game_binding);
-  }
-  else
-  {
-    if(status->joystick_hat[joystick][dir])
-      joystick_release(status, joystick, JOY_HAT, dir,
-       global_binding, game_binding);
-  }
-
-  status->joystick_hat[joystick][dir] = dir_active;
-}
-
 /**
- * Update a joystick hat. Event handlers should use this function.
+ * Update a joystick hat for a given direction. Event handlers should use this
+ * function.
  */
 void joystick_hat_update(struct buffered_status *status,
- int joystick, boolean up, boolean down, boolean left, boolean right)
+ int joystick, enum joystick_hat dir, boolean dir_active)
 {
-  if((joystick >= 0) && (joystick < MAX_JOYSTICKS))
+  if((joystick >= 0) && (joystick < MAX_JOYSTICKS) &&
+   (dir < NUM_JOYSTICK_HAT_DIRS))
   {
-    joystick_hat_update_dir(status, joystick, JOYHAT_UP, up);
-    joystick_hat_update_dir(status, joystick, JOYHAT_DOWN, down);
-    joystick_hat_update_dir(status, joystick, JOYHAT_LEFT, left);
-    joystick_hat_update_dir(status, joystick, JOYHAT_RIGHT, right);
+    Sint16 global_binding = input.joystick_global_hat_map[joystick][dir];
+    Sint16 game_binding = input.joystick_game_hat_map[joystick][dir];
+
+    if(dir_active)
+    {
+      if(!status->joystick_hat[joystick][dir])
+        joystick_press(status, joystick, JOY_HAT, dir,
+         global_binding, game_binding);
+    }
+    else
+    {
+      if(status->joystick_hat[joystick][dir])
+        joystick_release(status, joystick, JOY_HAT, dir,
+         global_binding, game_binding);
+    }
+
+    status->joystick_hat[joystick][dir] = !!dir_active;
   }
 }
 
