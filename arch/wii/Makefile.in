@@ -33,10 +33,14 @@ STRIP   := /bin/true
 SDL_CFLAGS     = -isystem $(DEVKITPRO)/libogc/include/SDL
 SDL_LDFLAGS    = $(SDL_CFLAGS)
 
-EXTRA_INCLUDES = -isystem $(LIBOGC_INC) \
-                 -isystem $(PORTLIBS)/include
-EXTRA_LIBS     = -L$(LIBOGC_LIB) \
-                 -L$(PORTLIBS)/lib \
+#
+# As of devkitPPC r34 $(PORTLIBS) has multiple paths for some reason...
+#
+PORTLIBS_INCLUDES := $(foreach dir, $(PORTLIBS), -isystem $(dir)/include)
+PORTLIBS_LIBS     := $(foreach dir, $(PORTLIBS), -L$(dir)/lib)
+
+EXTRA_INCLUDES := -isystem $(LIBOGC_INC) ${PORTLIBS_INCLUDES}
+EXTRA_LIBS     := -L$(LIBOGC_LIB) ${PORTLIBS_LIBS} \
                  $(if $(BUILD_SDL), -lSDL,) \
                  -lfat -lasnd -lwiikeyboard -lwiiuse -lbte -logc -lstdc++ -lm
 

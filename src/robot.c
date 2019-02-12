@@ -116,9 +116,11 @@ void create_blank_robot_program(struct robot *cur_robot)
 #endif
 }
 
+#ifdef CONFIG_DEBYTECODE
 // Forward declaration
 static int get_source_command_map_index(struct robot *cur_robot,
  int source_pos);
+#endif
 
 #define err_if_skipped(idn) if(last_ident < idn) { goto err_invalid; }
 
@@ -3682,6 +3684,8 @@ static int get_source_command_map_index(struct robot *cur_robot,
 
 #endif /* CONFIG_DEBYTECODE */
 
+#if defined(CONFIG_EDITOR) || defined(CONFIG_DEBYTECODE)
+
 int get_current_command_map_index(struct robot *cur_robot)
 {
   struct command_mapping *cmd_map = cur_robot->command_map;
@@ -3727,3 +3731,5 @@ int get_current_command_map_index(struct robot *cur_robot)
 
   return a;
 }
+
+#endif /* defined(CONFIG_EDITOR) || defined(CONFIG_DEBYTECODE) */
