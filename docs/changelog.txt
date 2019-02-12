@@ -77,6 +77,10 @@ FIXES
   a robot. This fixes a bug where MZX could create saves with
   "Robot # does not exist on board" errors.
 + Fixed a crash that could occur when importing a new board.
++ Fixed a bug where the 3DS onscreen keyboard would send key
+  releases instead of key presses.
++ The 3DS onscreen keyboard now returns shifted chars when shift
+  is active.
 
 DEVELOPERS
 

@@ -177,11 +177,57 @@ void ctr_keyboard_draw(struct ctr_render_data *render_data)
   }
 }
 
+static enum keycode convert_internal_unicode(enum keycode key)
+{
+  if(key >= 32 && key <= 126)
+  {
+    if(get_shift_status(keycode_internal))
+    {
+      if((key >= IKEY_a) && (key <= IKEY_z))
+        return (key - 32);
+
+      // TODO based on a US keyboard right now since that's as good as any
+      // default and possibly what most users are going to expect. It would
+      // be nice to have more locales at some point if someone requests them.
+      switch(key)
+      {
+        case IKEY_BACKQUOTE:    return '~';
+        case IKEY_1:            return '!';
+        case IKEY_2:            return '@';
+        case IKEY_3:            return '#';
+        case IKEY_4:            return '$';
+        case IKEY_5:            return '%';
+        case IKEY_6:            return '^';
+        case IKEY_7:            return '&';
+        case IKEY_8:            return '*';
+        case IKEY_9:            return '(';
+        case IKEY_0:            return ')';
+        case IKEY_MINUS:        return '_';
+        case IKEY_EQUALS:       return '+';
+        case IKEY_LEFTBRACKET:  return '{';
+        case IKEY_RIGHTBRACKET: return '}';
+        case IKEY_BACKSLASH:    return '|';
+        case IKEY_SEMICOLON:    return ':';
+        case IKEY_QUOTE:        return '"';
+        case IKEY_COMMA:        return '<';
+        case IKEY_PERIOD:       return '>';
+        case IKEY_SLASH:        return '?';
+        default:                return IKEY_UNKNOWN;
+      }
+    }
+
+    return key;
+  }
+
+  return IKEY_UNKNOWN;
+}
+
 boolean ctr_keyboard_update(struct buffered_status *status)
 {
   touchPosition pos;
   Uint32 down, up, i;
   boolean retval = false;
+  enum keycode unicode;
 
   if(get_bottom_screen_mode() != BOTTOM_SCREEN_MODE_KEYBOARD)
     return retval;
@@ -203,7 +249,9 @@ boolean ctr_keyboard_update(struct buffered_status *status)
       touch_area_t *area = &touch_areas[i];
       if(ctr_key_touched(&pos, area))
       {
-        do_key_event(status, (down & KEY_TOUCH), area->keycode);
+        unicode = convert_internal_unicode(area->keycode);
+
+        key_press(status, area->keycode, unicode);
         keys_down[keys_down_count++] = area->keycode;
         retval = true;
         break;
@@ -216,7 +264,7 @@ boolean ctr_keyboard_update(struct buffered_status *status)
   {
     for(; keys_down_count > 0; keys_down_count--)
     {
-      do_key_event(status, false, keys_down[keys_down_count - 1]);
+      key_release(status, keys_down[keys_down_count - 1]);
       keys_down[keys_down_count - 1] = IKEY_UNKNOWN;
     }
     retval = true;
