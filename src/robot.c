@@ -3679,6 +3679,8 @@ static int get_source_command_map_index(struct robot *cur_robot,
 
 #endif /* CONFIG_DEBYTECODE */
 
+#if defined(CONFIG_EDITOR) || defined(CONFIG_DEBYTECODE)
+
 int get_current_command_map_index(struct robot *cur_robot)
 {
   struct command_mapping *cmd_map = cur_robot->command_map;
@@ -3724,3 +3726,5 @@ int get_current_command_map_index(struct robot *cur_robot)
 
   return a;
 }
+
+#endif /* defined(CONFIG_EDITOR) || defined(CONFIG_DEBYTECODE) */
