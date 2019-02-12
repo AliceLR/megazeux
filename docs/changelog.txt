@@ -68,7 +68,7 @@ FIXES
 + Fixed a bug where the 3DS onscreen keyboard would send key
   releases instead of key presses.
 + The 3DS onscreen keyboard now returns shifted chars when shift
-  shift is active.
+  is active.
 
 DEVELOPERS
 
