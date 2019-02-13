@@ -21,6 +21,9 @@ FEATURES
   keycodes to allow for gameplay controls that are more
   consistent with the UI controls. A list of generic actions and
   the functions they perform can be found in the config file.
++ Added the config setting "joy_axis_threshold". This setting
+  allows the threshold for joystick axis mapped presses to be
+  configured.
 
 FIXES
 

@@ -528,7 +528,14 @@
 # (1 is typically left/right, 2 is typically up/down), A is the key
 # for one extreme (such as left) and B is the key for the other
 # (such as right). An example of an axis is an analog stick or a
-# pressure-sensitive trigger button.
+# pressure-sensitive trigger button. The threshold to trigger a
+# joystick axis press can be globally defined with the setting
+
+# joy_axis_threshold = 10000
+
+# where lower values (0 minimum) will press the mapped key with less
+# movement and higher values (32767 maximum) will press the mapped key
+# with more movement.
 
 # The option to map a joystick button is
 

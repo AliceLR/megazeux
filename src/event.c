@@ -129,6 +129,9 @@ void init_event(void)
         input.joystick_global_action_map[i][i2] =
          joystick_action_map_default[i2];
 
+  if(!input.joystick_axis_threshold)
+    input.joystick_axis_threshold = AXIS_DEFAULT_THRESHOLD;
+
   // Write the new global bindings over the game bindings.
   joystick_reset_game_map();
 }
@@ -1301,6 +1304,15 @@ void joystick_set_legacy_loop_hacks(boolean enable)
 }
 
 /**
+ * Set the threshold for joystick mapped axis presses. Higher values require
+ * more movement to trigger a press.
+ */
+void joystick_set_axis_threshold(Uint16 threshold)
+{
+  input.joystick_axis_threshold = threshold;
+}
+
+/**
  * Determine which key (if any) a joystick press should bind to
  * within the current context.
  */
@@ -1488,20 +1500,17 @@ void joystick_hat_update(struct buffered_status *status,
   }
 }
 
-// FIXME
-#define JOY_AXIS_DEADZONE 10000
-
 /**
  * We store analog axis values, but the axis maps are digital. Return
  * the axis map position for an analog axis value or -1 for the dead zone.
  */
 static int joystick_axis_to_digital(Sint16 value)
 {
-  if(value > JOY_AXIS_DEADZONE)
+  if(value > input.joystick_axis_threshold)
     return 1;
   else
 
-  if(value < -JOY_AXIS_DEADZONE)
+  if(value < -input.joystick_axis_threshold)
     return 0;
 
   return -1;

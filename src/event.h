@@ -33,10 +33,11 @@ __M_BEGIN_DECLS
 
 #define STATUS_NUM_KEYCODES 512
 
-#define MAX_JOYSTICKS         16
-#define MAX_JOYSTICK_AXES     16
-#define MAX_JOYSTICK_BUTTONS  256
-#define MAX_JOYSTICK_PRESS    16
+#define MAX_JOYSTICKS           16
+#define MAX_JOYSTICK_AXES       16
+#define MAX_JOYSTICK_BUTTONS    256
+#define MAX_JOYSTICK_PRESS      16
+#define AXIS_DEFAULT_THRESHOLD  10000
 
 #define MOUSE_BUTTON(x)         (1 << ((x) - 1))
 #define MOUSE_BUTTON_LEFT       1
@@ -150,6 +151,7 @@ struct input_status
   Sint16 joystick_game_axis_map[MAX_JOYSTICKS][MAX_JOYSTICK_AXES][2];
   Sint16 joystick_game_hat_map[MAX_JOYSTICKS][4];
   Sint16 joystick_game_action_map[MAX_JOYSTICKS][NUM_JOYSTICK_ACTIONS];
+  Uint16 joystick_axis_threshold;
 
   boolean unfocus_pause;
 };
@@ -241,6 +243,7 @@ void joystick_reset_game_map(void);
 void joystick_set_game_mode(boolean enable);
 void joystick_set_game_bindings(boolean enable);
 void joystick_set_legacy_loop_hacks(boolean enable);
+void joystick_set_axis_threshold(Uint16 threshold);
 void joystick_button_press(struct buffered_status *status,
  int joystick, int button);
 void joystick_button_release(struct buffered_status *status,

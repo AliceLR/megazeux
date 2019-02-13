@@ -502,6 +502,19 @@ static void joy_action_set(struct config_info *conf, char *name,
   joystick_map_action(joy_num - 1, joy_action, key, is_startup);
 }
 
+static void config_set_joy_axis_threshold(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  unsigned int threshold;
+  int read = 0;
+
+  if(sscanf(value, "%u%n", &threshold, &read) != 1 || (value[read] != 0) ||
+   threshold > 32767)
+    return;
+
+  joystick_set_axis_threshold(threshold);
+}
+
 static void pause_on_unfocus(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
@@ -705,6 +718,7 @@ static const struct config_entry config_options[] =
   { "joy!axis!", joy_axis_set, true },
   { "joy!button!", joy_button_set, true },
   { "joy!hat", joy_hat_set, true },
+  { "joy_axis_threshold", config_set_joy_axis_threshold, false },
   { "mask_midchars", config_mask_midchars, false },
   { "max_simultaneous_samples", config_max_simultaneous_samples, false },
   { "modplug_resample_mode", config_mp_resample_mode, false },
