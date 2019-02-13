@@ -19,11 +19,16 @@ FEATURES
   actions are configured to control MegaZeux's various windows
   in a context-specific manner, and can themselves be bound to
   keycodes to allow for gameplay controls that are more
-  consistent with the UI controls. A list of generic actions and
-  the functions they perform can be found in the config file.
+  consistent with the UI controls. A list of joystick actions
+  and the functions they perform can be found in the config
+  file. The NDS, 3DS, and Wii pad.config files have been updated
+  to use joystick actions.
 + Added the config setting "joy_axis_threshold". This setting
   allows the threshold for joystick axis mapped presses to be
   configured.
++ The NDS directional pad is now mappable as a joystick hat.
++ The 3DS directional pad is now mappable as a joystick hat. The
+  circle pad is now mappable as axes 1 and 2.
 
 FIXES
 
@@ -91,6 +96,8 @@ DEVELOPERS
   WIPHelp.txt into web and printable HTML files.
 + Updated to latest NDS ARM7 template.
 + Updated SDL2 for Windows release builds to SDL 2.0.9.
++ Added platform-independent joystick event functions and
+  updated the SDL, NDS, 3DS, and Wii event handlers for them.
 
 
 December 9th, 2018 - MZX 2.91i
