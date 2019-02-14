@@ -182,10 +182,6 @@ boolean __update_event_status(void);
 #ifdef CONFIG_SDL
 // Currently only supported by SDL.
 boolean __peek_exit_input(void);
-
-// Older SDL versions lack SDL_WaitEventTimeout, and our compatibility
-// implementation needs this function to work properly.
-boolean update_autorepeat(void);
 #endif
 
 #ifdef CONFIG_NDS
