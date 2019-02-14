@@ -37,6 +37,9 @@ FIXES
   comment out these directives.
 + Fixed bug where using Modify+Grab on built-ins could clear the
   floor under the built-in.
++ Fixed bug where key repeat wouldn't work for any text field in
+  the NDS/3DS/Wii ports. This also affected the robot editor in
+  Wii builds.
 + Fixed NDS touch screen support. Touching the screen no longer
   acts like escape and the keyboard properly works again.
 + Fixed a bug where the NDS keyboard would drop keypresses on

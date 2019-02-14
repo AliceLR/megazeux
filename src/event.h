@@ -202,17 +202,13 @@ CORE_LIBSPEC boolean peek_exit_input(void);
 CORE_LIBSPEC Uint32 get_joystick_ui_action(void);
 CORE_LIBSPEC Uint32 get_joystick_ui_key(void);
 
-// Implemented by "drivers" (SDL, Wii, and NDS currently)
-void __wait_event(int timeout);
+// Implemented by "drivers" (SDL, Wii, NDS, 3DS, etc.)
+void __wait_event(void);
 boolean __update_event_status(void);
 
 #ifdef CONFIG_SDL
 // Currently only supported by SDL.
 boolean __peek_exit_input(void);
-
-// Older SDL versions lack SDL_WaitEventTimeout, and our compatibility
-// implementation needs this function to work properly.
-boolean update_autorepeat(void);
 #endif
 
 #ifdef CONFIG_NDS

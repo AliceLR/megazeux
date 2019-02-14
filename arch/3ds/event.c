@@ -52,11 +52,8 @@ boolean __update_event_status(void)
   return retval;
 }
 
-void __wait_event(int timeout)
+void __wait_event(void)
 {
-  if(timeout)
-    delay(timeout);
-
   while(!__update_event_status())
     gspWaitForVBlank();
 }
