@@ -317,13 +317,7 @@ static enum keycode convert_xt_internal(Uint32 key, enum keycode *second)
   }
 }
 
-// event_sdl.c needs to call this for SDL 1.2 to catch autorepeat non-events
-// while performing wait_event with a timeout.
-
-#if !defined(CONFIG_SDL)
-static
-#endif
-boolean update_autorepeat(void)
+static boolean update_autorepeat(void)
 {
   // The repeat key may not be a "valid" keycode due to the unbounded nature
   // of joypad support.  All invalid keys use the last position because that's
@@ -462,7 +456,26 @@ void wait_event(int timeout)
 {
   start_frame_event_status();
 
-  __wait_event(timeout);
+  if(timeout > 0)
+  {
+    int ticks_start = get_ticks();
+    int ticks_end;
+
+    while(timeout > 0)
+    {
+      delay(1);
+
+      if(__update_event_status())
+        break;
+
+      ticks_end = get_ticks();
+      timeout -= ticks_end - ticks_start;
+      ticks_start = ticks_end;
+    }
+  }
+  else
+    __wait_event();
+
   update_autorepeat();
 }
 
