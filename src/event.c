@@ -82,8 +82,8 @@ static Sint16 joystick_action_map_ui[NUM_JOYSTICK_ACTIONS] =
   [JOY_SWITCH] = IKEY_TAB,
   [JOY_SAVE] = IKEY_PAGEUP,
   [JOY_LOAD] = IKEY_PAGEDOWN,
-  [JOY_L3] = IKEY_HOME,
-  [JOY_R3] = IKEY_END,
+  [JOY_LSTICK] = IKEY_HOME,
+  [JOY_RSTICK] = IKEY_END,
 };
 
 struct buffered_status *store_status(void)
@@ -1050,37 +1050,21 @@ static const struct joystick_action_name joystick_action_names[] =
 {
   { "a",        JOY_A },
   { "b",        JOY_B },
-  { "back",     JOY_ESCAPE },
+  { "c",        JOY_SWITCH },
   { "bomb",     JOY_B },
-  { "circle",   JOY_B },
-  { "cross",    JOY_A },
   { "down",     JOY_DOWN },
   { "escape",   JOY_ESCAPE },
 //{ "keyboard", JOY_KEYBOARD },
-  { "l1",       JOY_SWITCH },
-  { "l2",       JOY_SAVE },
-  { "l3",       JOY_L3 },
-  { "lbumper",  JOY_SWITCH },
   { "left",     JOY_LEFT },
   { "load",     JOY_LOAD },
-  { "lstick",   JOY_L3 },
-  { "ltrigger", JOY_SAVE },
+  { "lstick",   JOY_LSTICK },
   { "menu",     JOY_MENU },
-  { "r1",       JOY_SETTINGS },
-  { "r2",       JOY_LOAD },
-  { "r3",       JOY_R3 },
-  { "rbumper",  JOY_SETTINGS },
   { "right",    JOY_RIGHT },
-  { "rstick",   JOY_R3 },
-  { "rtrigger", JOY_LOAD },
+  { "rstick",   JOY_RSTICK },
   { "save",     JOY_SAVE },
-  { "select",   JOY_ESCAPE },
   { "settings", JOY_SETTINGS },
   { "shoot",    JOY_A },
-  { "square",   JOY_X },
-  { "start",    JOY_MENU },
   { "switch",   JOY_SWITCH },
-  { "triangle", JOY_Y },
   { "up",       JOY_UP },
   { "x",        JOY_X },
   { "y",        JOY_Y }
@@ -1129,11 +1113,14 @@ static boolean joystick_parse_map_value(const char *value, Sint16 *binding)
     return true;
   }
 
-  action_value = find_joystick_action(value);
-  if(action_value)
+  if(!strncmp(value, "act_", 4))
   {
-    *binding = -((Sint16)action_value);
-    return true;
+    action_value = find_joystick_action(value + 4);
+    if(action_value)
+    {
+      *binding = -((Sint16)action_value);
+      return true;
+    }
   }
   return false;
 }

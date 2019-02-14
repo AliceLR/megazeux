@@ -148,15 +148,15 @@ enum joystick_action
   JOY_B,
   JOY_X,
   JOY_Y,
-  JOY_MENU,             // Start
-  JOY_ESCAPE,           // Select and/or Home
-  JOY_SETTINGS,         // R1
-//JOY_KEYBOARD,         // R1 (currently hardcoded for most consoles)
-  JOY_SWITCH,           // L1
-  JOY_SAVE,             // L2
-  JOY_LOAD,             // R2
-  JOY_L3,
-  JOY_R3,
+  JOY_SWITCH,
+  JOY_SETTINGS,
+//JOY_KEYBOARD, // Currently hardcoded for most consoles.
+  JOY_ESCAPE,
+  JOY_MENU,
+  JOY_SAVE,
+  JOY_LOAD,
+  JOY_LSTICK,
+  JOY_RSTICK,
   NUM_JOYSTICK_ACTIONS
 };
 
