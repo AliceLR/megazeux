@@ -610,7 +610,7 @@ enum board_prop {
 
 
 #define COUNT_ROBOT_PROPS (              1 + 3 + 1)
-#define BOUND_ROBOT_PROPS (ROBOT_NAME_SIZE + 5 + 0) // +prog
+#define BOUND_ROBOT_PROPS (ROBOT_NAME_SIZE + 5 + 0) // +prog OR source
 
 #define COUNT_ROBOT_SAVE_PROPS (11 + 2 +    1 + 1 + 1)
 #define BOUND_ROBOT_SAVE_PROPS (17 + 8 + 4*32 + 0 + 1) // +stack
@@ -631,34 +631,15 @@ enum board_prop {
   BOUND_ROBOT_SAVE_PROPS                          \
 )
 
-// For debytecode save files made from the editor, also add this:
-
-#ifdef CONFIG_DEBYTECODE
-#ifdef CONFIG_EDITOR
-
-#define COUNT_ROBOT_DBC_EDIT_PROPS (2)
-#define BOUND_ROBOT_DBC_EDIT_PROPS (0) // +prog +map
-
-#define ROBOT_DBC_EDIT_PROPS_SIZE                 \
-(                                                 \
-  BOUND_ROBOT_DBC_EDIT_PROPS +                    \
-  COUNT_ROBOT_DBC_EDIT_PROPS * PROP_HEADER_SIZE   \
-)
-
-#endif
-#endif
-
 enum robot_prop {
   RPROP_EOF                       = 0x0000,
   RPROP_ROBOT_NAME                = 0x0001, // ROBOT_NAME_SIZE
   RPROP_ROBOT_CHAR                = 0x0002, // 1
   RPROP_XPOS                      = 0x0003, // 2
   RPROP_YPOS                      = 0x0004, // 2
-//RPROP_PROGRAM                   = 0x0005, // 4
+//RPROP_PROGRAM_ID                = 0x0005, // 4
 
-  // Slated for separation
 #ifdef CONFIG_DEBYTECODE
-  RPROP_PROGRAM_MAP               = 0x00FD, // variable
   RPROP_PROGRAM_SOURCE            = 0x00FE, // variable
 #endif
   RPROP_PROGRAM_BYTECODE          = 0x00FF, // variable

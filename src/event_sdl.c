@@ -145,6 +145,7 @@ static enum keycode convert_SDL_internal(SDL_Keycode key)
     case SDLK_SYSREQ: return IKEY_SYSREQ;
     case SDLK_PAUSE: return IKEY_BREAK;
     case SDLK_MENU: return IKEY_MENU;
+    case SDLK_CLEAR: return IKEY_KP5; // FIXME remove (see tracker issue 744)
 #ifndef CONFIG_PANDORA
     case SDLK_HOME: return IKEY_HOME;
     case SDLK_END: return IKEY_END;

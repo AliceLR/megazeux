@@ -158,14 +158,22 @@ struct button
   int return_value;
 };
 
+enum number_box_type
+{
+  NUMBER_BOX,
+  NUMBER_BOX_MULT_FIVE,
+  NUMBER_LINE,
+  NUMBER_SLIDER
+};
+
 struct number_box
 {
   struct element e;
   const char *question;
   int lower_limit;
   int upper_limit;
-  int mult_five;
-  int is_null;
+  enum number_box_type type;
+  boolean is_null;
   int *result;
 };
 
@@ -223,7 +231,7 @@ CORE_LIBSPEC struct element *construct_button(int x, int y, const char *label,
  int return_value);
 CORE_LIBSPEC struct element *construct_number_box(int x, int y,
  const char *question, int lower_limit, int upper_limit,
- int mult_five, int *result);
+ enum number_box_type type, int *result);
 CORE_LIBSPEC struct element *construct_file_selector(int x, int y,
  const char *title, const char *file_manager_title,
  const char *const *file_manager_exts, const char *none_mesg,

@@ -55,8 +55,8 @@ static const struct editor_config_info editor_conf_default =
   1,                            // fire_burns_trees
   0,                            // fire_burns_brown
   0,                            // fire_burns_forever
-  0,                            // forest_to_floor
-  0,                            // collect_bombs
+  1,                            // forest_to_floor
+  1,                            // collect_bombs
   0,                            // restart_if_hurt
   0,                            // reset_on_entry
   0,                            // player_locked_ns

@@ -122,6 +122,10 @@ static Uint32 pcs_mix_data(struct audio_stream *a_src, Sint32 *buffer,
   {
     sfx_next_note();
 
+    // Minimum note duration is 1 to prevent locking up the audio thread.
+    if(pcs_stream->note_duration < 1)
+      pcs_stream->note_duration = 1;
+
     sample_duration = (Uint32)((float)audio.output_frequency / 500 *
      pcs_stream->note_duration);
 
@@ -179,9 +183,6 @@ static struct audio_stream *construct_pc_speaker_stream(void)
   struct pc_speaker_stream *pcs_stream;
   struct audio_stream_spec a_spec;
 
-  if(!audio.pcs_on)
-    return NULL;
-
   pcs_stream = ccalloc(1, sizeof(struct pc_speaker_stream));
 
   memset(&a_spec, 0, sizeof(struct audio_stream_spec));
@@ -189,8 +190,8 @@ static struct audio_stream *construct_pc_speaker_stream(void)
   a_spec.set_volume = pcs_set_volume;
   a_spec.destruct   = pcs_destruct;
 
-  initialize_audio_stream((struct audio_stream *)pcs_stream, &a_spec,
-   audio.pcs_volume * 255 / 8, 0);
+  // The volume here will be corrected after initialization...
+  initialize_audio_stream((struct audio_stream *)pcs_stream, &a_spec, 255, 0);
 
   return (struct audio_stream *)pcs_stream;
 }

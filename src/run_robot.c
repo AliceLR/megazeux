@@ -2000,17 +2000,27 @@ void run_robot(context *ctx, int id, int x, int y)
         {
           int ret = 0;
 
-          if (check_param < MAX_SPRITES &&
+          if(check_param < MAX_SPRITES &&
            mzx_world->sprite_list[check_param]->flags & SPRITE_UNBOUND)
             prefix_mid_xy_unbound(mzx_world, &check_x, &check_y, x, y);
           else
             prefix_mid_xy(mzx_world, &check_x, &check_y, x, y);
+
+          // Versions up to 2.82b would use sprite_num instead of the
+          // param if the provided color was c??. This was unintuitive and
+          // redundant with the SPR_NUM counter, so it was removed.
+          if(mzx_world->version <= V282 && check_color == 288)
+            check_param = mzx_world->sprite_num;
 
           /* 256 == p?? */
           if(check_param == 256)
           {
             int i;
 
+            // This check was added in 2.84 to fix the removal of the above
+            // check in 2.83. In 2.83, using "if c?? Sprite" always failed as
+            // check_color would always be higher than MAX_SPRITES initially.
+            // Add a version check if this breaks something.
             if(check_color == 288)
               check_color = 0;
 
@@ -3101,6 +3111,11 @@ void run_robot(context *ctx, int id, int x, int y)
 
             if(!move_dir(src_board, &duplicate_x, &duplicate_y, duplicate_dir))
             {
+              // Fail if the player is at the destination; this would create a
+              // buggy robot that doesn't exist on the board.
+              if(level_id[duplicate_x + (duplicate_y * board_width)] == PLAYER)
+                break;
+
               dest_id = duplicate_robot(mzx_world, src_board, cur_robot,
                duplicate_x, duplicate_y, 0);
 
@@ -3123,6 +3138,11 @@ void run_robot(context *ctx, int id, int x, int y)
         int duplicate_color, offset;
 
         prefix_mid_xy(mzx_world, &duplicate_x, &duplicate_y, x, y);
+
+        // Fail if the player is at the destination; this would create a
+        // buggy robot that doesn't exist on the board.
+        if(level_id[duplicate_x + (duplicate_y * board_width)] == PLAYER)
+          break;
 
         if((duplicate_x != x) || (duplicate_y != y))
         {

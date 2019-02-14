@@ -280,17 +280,17 @@ enum condition
 
 enum chest_contents
 {
-  ITEM_NONE             = 0,
-  ITEM_KEY              = 1,
-  ITEM_COINS            = 2,
-  ITEM_LIFE             = 3,
-  ITEM_AMMO             = 4,
-  ITEM_GEMS             = 5,
-  ITEM_HEALTH           = 6,
-  ITEM_POTION           = 7,
-  ITEM_RING             = 8,
-  ITEM_LOBOMBS          = 9,
-  ITEM_HIBOMBS          = 10
+  CHEST_EMPTY            = 0,
+  CHEST_KEY              = 1,
+  CHEST_COINS            = 2,
+  CHEST_LIVES            = 3,
+  CHEST_AMMO             = 4,
+  CHEST_GEMS             = 5,
+  CHEST_HEALTH           = 6,
+  CHEST_POTION           = 7,
+  CHEST_RING             = 8,
+  CHEST_LOBOMBS          = 9,
+  CHEST_HIBOMBS          = 10
 };
 
 enum give_item

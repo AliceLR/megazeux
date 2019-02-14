@@ -1331,15 +1331,14 @@ static void draw_number_box(struct world *mzx_world, struct dialog *di,
   int increment = 1;
   int i;
 
-  if(src->mult_five)
+  if(src->type == NUMBER_BOX_MULT_FIVE)
     increment = 5;
 
   write_string(src->question, x, y, color, 0);
 
   x += (int)strlen(src->question) + di->pad_space;
 
-  if((src->lower_limit == 1) && (src->upper_limit < 10) &&
-   (increment == 1))
+  if(src->type == NUMBER_LINE)
   {
     // Draw a number line
     for(i = 1; i <= src->upper_limit; i++)
@@ -1350,6 +1349,25 @@ static void draw_number_box(struct world *mzx_world, struct dialog *di,
         draw_char('0' + i, DI_NONACTIVE, x + i - 1, y);
     }
   }
+  else
+
+  if(src->type == NUMBER_SLIDER)
+  {
+    int upper_x = x + (src->upper_limit - src->lower_limit) + 2;
+    int slider_x = x + (*(src->result) - src->lower_limit);
+    int slider_col = active ? DI_ARROWBUTTON : DI_NUMERIC;
+
+    for(i = x + 1; i < upper_x; i++)
+      draw_char('\xC4', DI_DARK, i, y);
+
+    write_number(src->lower_limit, DI_NONACTIVE, x, y, 0, false, 10);
+    write_number(src->upper_limit, DI_NONACTIVE, upper_x, y, 0, false, 10);
+
+    draw_char(' ', slider_col, slider_x, y);
+    draw_char(' ', slider_col, slider_x + 2 + (*(src->result) >= 10), y);
+    write_number(*(src->result), slider_col, slider_x + 1, y, 0, false, 10);
+  }
+
   else
   {
     // Draw a number
@@ -1657,7 +1675,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
       {
         result = src->lower_limit;
         if(src->upper_limit > 9)
-          src->is_null = 1;
+          src->is_null = true;
       }
 
       *(src->result) = result;
@@ -1683,7 +1701,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
            (key_char - '0');
         }
 
-        if(src->mult_five)
+        if(src->type == NUMBER_BOX_MULT_FIVE)
           current_value -= current_value % 5;
 
         if(current_value < src->lower_limit)
@@ -1700,7 +1718,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
        !get_shift_status(keycode_internal) &&
        !get_ctrl_status(keycode_internal) &&
        !get_alt_status(keycode_internal))
-        src->is_null = 0;
+        src->is_null = false;
 
       return key;
     }
@@ -1708,7 +1726,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
 
   if(increment_value > 0 && src->is_null)
     increment_value -= src->lower_limit;
-  src->is_null = 0;
+  src->is_null = false;
 
   if(increment_value)
   {
@@ -1992,13 +2010,21 @@ static int click_number_box(struct world *mzx_world, struct dialog *di,
   struct number_box *src = (struct number_box *)e;
   mouse_x -= (int)strlen(src->question) + 7;
 
-  if((src->lower_limit == 1) &&
-    (src->upper_limit < 10) && (!src->mult_five))
+  if(src->type == NUMBER_LINE)
   {
     // Select number IF on the number line itself
     mouse_x += 7;
     if((mouse_x < src->upper_limit) && (mouse_x >= 0))
       *(src->result) = mouse_x + 1;
+  }
+  else
+
+  if(src->type == NUMBER_SLIDER)
+  {
+    mouse_x += 7;
+    if(mouse_x >= 0)
+      *(src->result) = CLAMP(mouse_x - 1 + src->lower_limit,
+       src->lower_limit, src->upper_limit);
   }
   else
 
@@ -2008,7 +2034,7 @@ static int click_number_box(struct world *mzx_world, struct dialog *di,
   }
   else
 
-  if((mouse_x >= 3) && (mouse_y <= 5))
+  if((mouse_x >= 3) && (mouse_x <= 5))
   {
     return IKEY_DOWN;
   }
@@ -2024,13 +2050,21 @@ static int drag_number_box(struct world *mzx_world, struct dialog *di,
 
   mouse_x -= (int)strlen(src->question) + 7;
 
-  if((src->lower_limit == 1) &&
-    (src->upper_limit < 10) && (!src->mult_five))
+  if(src->type == NUMBER_LINE)
   {
     // Select number IF on the number line itself
     mouse_x += 7;
     if((mouse_x < src->upper_limit) && (mouse_x >= 0))
       *(src->result) = mouse_x + 1;
+  }
+  else
+
+  if(src->type == NUMBER_SLIDER)
+  {
+    mouse_x += 7;
+    if(mouse_x >= 0)
+      *(src->result) = CLAMP(mouse_x - 1 + src->lower_limit,
+       src->lower_limit, src->upper_limit);
   }
   else
 
@@ -2041,7 +2075,7 @@ static int drag_number_box(struct world *mzx_world, struct dialog *di,
   }
   else
 
-  if((mouse_x >= 3) && (mouse_y <= 5) && mouse_press)
+  if((mouse_x >= 3) && (mouse_x <= 5) && mouse_press)
   {
     return IKEY_DOWN;
   }
@@ -2279,7 +2313,7 @@ struct element *construct_button(int x, int y, const char *label,
 
 struct element *construct_number_box(int x, int y,
  const char *question, int lower_limit, int upper_limit,
- int mult_five, int *result)
+ enum number_box_type type, int *result)
 {
   struct number_box *src = cmalloc(sizeof(struct number_box));
   int width;
@@ -2287,15 +2321,35 @@ struct element *construct_number_box(int x, int y,
   src->question = question;
   src->lower_limit = lower_limit;
   src->upper_limit = upper_limit;
-  src->mult_five = mult_five;
+  src->type = type;
   src->result = result;
-  src->is_null = 0;
+  src->is_null = false;
   width = (int)strlen(question) + 1;
 
-  if((lower_limit == 1) && (upper_limit < 10))
-    width += upper_limit - 1;
+  if(src->type == NUMBER_LINE)
+  {
+    if(lower_limit != 1 || upper_limit >= 10)
+      src->type = NUMBER_BOX;
+
+    else
+      width += upper_limit - 1;
+  }
   else
+
+  if(src->type == NUMBER_SLIDER)
+  {
+    // Currently only allow lower limits from 0 to 9.
+    if(lower_limit < 0 || lower_limit >= 10)
+      src->type = NUMBER_BOX;
+
+    else
+      width += (upper_limit - lower_limit) + (upper_limit >= 10) + 2;
+  }
+
+  if(src->type == NUMBER_BOX || src->type == NUMBER_BOX_MULT_FIVE)
+  {
     width += 13;
+  }
 
   construct_element(&(src->e), x, y, width, 1,
    draw_number_box, key_number_box, click_number_box, drag_number_box, NULL);

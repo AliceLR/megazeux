@@ -123,6 +123,18 @@ int audio_get_real_frequency(int period)
   return freq_conversion / period;
 }
 
+static int volume_function(int input, int volume_setting)
+{
+  /* Adjust volume (0-255) exponentially according to a given setting (0-10).
+   * 0 is no volume whatsoever and 10 is maximum volume. */
+
+  float setting_f = volume_setting / 10.0f;
+  float setting_exp = (expf(setting_f) - 1) / (M_E - 1);
+  int output = (int)((float)input * setting_exp + 0.5f);
+
+  return CLAMP(output, 0, 255);
+}
+
 void destruct_audio_stream(struct audio_stream *a_src)
 {
   if(a_src == audio.stream_list_base)
@@ -293,12 +305,12 @@ int audio_play_module(char *filename, boolean safely, int volume)
 {
   char translated_filename[MAX_PATH];
   struct audio_stream *a_src;
+  int real_volume;
 
-  // FIXME: Weird hack, why not use audio_end_module() directly?
   if(!filename || !filename[0])
   {
-    audio_end_module();
-    return 1;
+    debug("audio_play_module received empty filename!\n");
+    return 0;
   }
 
   if(safely)
@@ -314,8 +326,8 @@ int audio_play_module(char *filename, boolean safely, int volume)
 
   audio_end_module();
 
-  a_src = audio_ext_construct_stream(filename, 0,
-   volume * audio.music_volume / 8, 1);
+  real_volume = volume_function(volume, audio.music_volume);
+  a_src = audio_ext_construct_stream(filename, 0, real_volume, 1);
 
   LOCK();
 
@@ -406,7 +418,7 @@ static void limit_samples(int max)
 
 void audio_play_sample(char *filename, boolean safely, int period)
 {
-  Uint32 vol = 255 * audio.sound_volume / 8;
+  Uint32 vol = volume_function(255, audio.sound_volume);
   char translated_filename[MAX_PATH];
 
   if(safely)
@@ -496,9 +508,10 @@ void audio_set_module_volume(int volume)
 {
   if(audio.primary_stream)
   {
+    int real_volume = volume_function(volume, audio.music_volume);
+
     LOCK();
-    audio.primary_stream->set_volume(audio.primary_stream,
-     volume * audio.music_volume / 8);
+    audio.primary_stream->set_volume(audio.primary_stream, real_volume);
     UNLOCK();
   }
 }
@@ -640,18 +653,19 @@ void audio_set_music_volume(int volume)
 void audio_set_sound_volume(int volume)
 {
   struct audio_stream *current_astream = audio.stream_list_base;
+  int real_volume;
 
   LOCK();
 
   audio.sound_volume = volume;
+  real_volume = volume_function(255, audio.sound_volume);
 
   while(current_astream)
   {
     if((current_astream != audio.primary_stream) &&
      (current_astream != audio.pcs_stream))
     {
-      current_astream->set_volume(current_astream,
-       audio.sound_volume * 255 / 8);
+      current_astream->set_volume(current_astream, real_volume);
     }
 
     current_astream = current_astream->next;
@@ -662,13 +676,16 @@ void audio_set_sound_volume(int volume)
 
 void audio_set_pcs_volume(int volume)
 {
+  int real_volume;
   if(!audio.pcs_stream)
     return;
 
   LOCK();
 
   audio.pcs_volume = volume;
-  audio.pcs_stream->set_volume(audio.pcs_stream, volume * 255 / 8);
+  real_volume = volume_function(255, audio.pcs_volume);
+
+  audio.pcs_stream->set_volume(audio.pcs_stream, real_volume);
 
   UNLOCK();
 }

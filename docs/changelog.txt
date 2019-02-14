@@ -1,23 +1,84 @@
 GIT
 
-USERS
+FEATURES
 
 + Nvidia and AMD switchable graphics drivers should now detect
   MegaZeux and MZXRun properly.
-+ Updated SDL2 for Windows release builds to SDL 2.0.9.
++ The editor now remembers the contents of the buffer when
+  switching between board, overlay, and vlayer editing. For
+  example, if a robot is selected on the board before switching
+  to overlay mode, the robot will still be in the buffer when
+  the user switches back to board mode.
+
+FIXES
+
 + Readded "#version 110" directives to all GLSL shaders, fixing
   warnings on some Intel HD drivers. OpenGL ES builds should now
   comment out these directives.
-+ Fixed bug where using Modify+Get on built-ins could clear the
++ Fixed bug where using Modify+Grab on built-ins could clear the
   floor under the built-in.
 + Fixed bug where key repeat wouldn't work for any text field in
   the NDS/3DS/Wii ports. This also affected the robot editor in
   Wii builds.
++ Fixed NDS touch screen support. Touching the screen no longer
+  acts like escape and the keyboard properly works again.
++ Fixed a bug where the NDS keyboard would drop keypresses on
+  games not running at speed 2.
++ The counter debugger now correctly displays the value of
+  local0.
++ Fixed crash bug that could occur when processing delete.txt.
++ Improved manifest validity checks.
++ Fixed board editor crash caused by invalid thing IDs.
++ Player movement key repeat no longer resets when the player is
+  locked. It will reset for a direction only when the arrow key
+  corresponding to that direction is released. This fixes a bug
+  in Brotherhood where the player would move at a fraction of
+  the speed they were supposed to while swimming.
++ Added version checking for legacy IF c?? Sprite behavior. In
+  versions 2.82b and prior, c?? would make this command ignore
+  the provided param and use SPR_NUM instead. This fixes Project
+  MoveZig.
++ Fixed spelling error in missile param dialog.
++ Switching boards in the editor now properly translates the new
+  board's mod name, fixing cases where board mods would restart
+  sometimes.
++ Fixed a bug where the current board mod wouldn't play after
+  starting a listening mod, testing, returning to the editor,
+  and then disabling the listening mod.
++ Replaced the linear volume setting curve with an exponential
+  curve to make lower volumes less loud. The volume settings can
+  now be set from 0 to 10 instead of from 1 to 8.
++ The config file setting pc_speaker_on=0 no longer prevents
+  turning on PC speaker SFX at runtime.
++ Added temporary workaround for numpad 5 key detection when
+  numlock is disabled.
++ "Forest to floor" and "Collect bombs" are properly enabled
+  again for new boards by default. This fix doesn't alter config
+  settings or saved .editor.cnf defaults.
++ The "Downver. world (MZX)" option in the "Export as" dialog
+  is now completely highlighted when selected. (Lancer-X)
++ Starting MegaZeux with "startup_editor=1" no longer loads the
+  default palette over the startup world's palette.
++ Editor copy from a layer to the board and COPY/COPY BLOCK from
+  a layer to the board now properly clean up robots, scrolls,
+  and sensors. This fixes a problem where MZX could create
+  worlds/saves with "Robot # does not exist on board" errors.
++ The DUPLICATE SELF x y and DUPLICATE SELF dir commands now
+  properly check for the player before attempting to duplicate
+  a robot. This fixes a bug where MZX could create saves with
+  "Robot # does not exist on board" errors.
++ Fixed a crash that could occur when importing a new board.
++ Fixed a bug where the 3DS onscreen keyboard would send key
+  releases instead of key presses.
++ The 3DS onscreen keyboard now returns shifted chars when shift
+  is active.
 
 DEVELOPERS
 
 + Added the hlp2html utility, which can be used to convert
   WIPHelp.txt into web and printable HTML files.
++ Updated to latest NDS ARM7 template.
++ Updated SDL2 for Windows release builds to SDL 2.0.9.
 
 
 December 9th, 2018 - MZX 2.91i

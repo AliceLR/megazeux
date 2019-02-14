@@ -31,6 +31,8 @@ static boolean process_event(NDSEvent *event);
 
 extern struct input_status input;
 
+static boolean keyboard_allow_release = true;
+
 boolean __update_event_status(void)
 {
   boolean retval = false;
@@ -229,6 +231,7 @@ static boolean process_event(NDSEvent *event)
     // Software key down
     case NDS_EVENT_KEYBOARD_DOWN:
     {
+      keyboard_allow_release = true;
       key_down = true;
     }
 
@@ -333,23 +336,28 @@ static void nds_update_hw_keys(void)
 static void nds_update_sw_keyboard(void)
 {
   static int last_key = -1;
-  int c = keyboardUpdate();
   NDSEvent event;
 
   // Release last key
-  if(last_key != -1)
+  if(keyboard_allow_release && last_key != -1)
   {
     nds_event_fill_keyboard_up(&event, last_key);
     nds_event_push(&event);
     last_key = -1;
   }
 
-  // Press new key
-  if(c != -1)
+  // Press new key (only allow if the keyboard is active)
+  if(subscreen_mode == SUBSCREEN_KEYBOARD && last_key == -1)
   {
-    nds_event_fill_keyboard_down(&event, c);
-    nds_event_push(&event);
-    last_key = c;
+    int c = keyboardUpdate();
+
+    if(c != -1)
+    {
+      nds_event_fill_keyboard_down(&event, c);
+      nds_event_push(&event);
+      keyboard_allow_release = false;
+      last_key = c;
+    }
   }
 }
 

@@ -125,6 +125,13 @@ struct editor_context
   struct scroll buffer_scroll;
   struct sensor buffer_sensor;
   boolean use_default_color;        // = 1
+  enum thing stored_board_id;
+  char stored_board_color;
+  char stored_board_param;
+  char stored_overlay_char;
+  char stored_overlay_color;
+  char stored_vlayer_char;
+  char stored_vlayer_color;
 
   // Modify in-place buffer
   struct buffer_info temp_buffer;
@@ -294,6 +301,28 @@ static void clear_vlayer_history(struct editor_context *editor)
 }
 
 /**
+ * Set the buffer to the default id/color/param for the current mode.
+ */
+
+static void default_buffer(struct editor_context *editor)
+{
+  struct buffer_info *buffer = &(editor->buffer);
+
+  if(editor->mode == EDIT_BOARD)
+  {
+    buffer->id = SPACE;
+    buffer->color = 7;
+    buffer->param = 0;
+  }
+  else
+  {
+    buffer->id = SPACE;
+    buffer->color = 7;
+    buffer->param = 32;
+  }
+}
+
+/**
  * Switch the current editing mode. If switching to or from the vlayer,
  * the current cursor and scroll position needs to be stored.
  */
@@ -326,6 +355,54 @@ static void set_editor_mode(struct editor_context *editor,
     editor->cursor_y = editor->stored_board_y;
     editor->scroll_x = editor->stored_scroll_x;
     editor->scroll_y = editor->stored_scroll_y;
+  }
+
+  // When switching modes, store the buffer for the old mode and load
+  // the buffer for the new mode. Previously, switching modes would
+  // (inconsistently) set the default buffer instead.
+  if(editor->mode != new_mode)
+  {
+    struct buffer_info *buffer = &(editor->buffer);
+
+    switch(editor->mode)
+    {
+      case EDIT_BOARD:
+        editor->stored_board_id = buffer->id;
+        editor->stored_board_color = buffer->color;
+        editor->stored_board_param = buffer->param;
+        break;
+
+      case EDIT_OVERLAY:
+        editor->stored_overlay_char = buffer->param;
+        editor->stored_overlay_color = buffer->color;
+        break;
+
+      case EDIT_VLAYER:
+        editor->stored_vlayer_char = buffer->param;
+        editor->stored_vlayer_color = buffer->color;
+        break;
+    }
+
+    switch(new_mode)
+    {
+      case EDIT_BOARD:
+        buffer->id = editor->stored_board_id;
+        buffer->color = editor->stored_board_color;
+        buffer->param = editor->stored_board_param;
+        break;
+
+      case EDIT_OVERLAY:
+        buffer->id = SPACE;
+        buffer->param = editor->stored_overlay_char;
+        buffer->color = editor->stored_overlay_color;
+        break;
+
+      case EDIT_VLAYER:
+        buffer->id = SPACE;
+        buffer->param = editor->stored_vlayer_char;
+        buffer->color = editor->stored_vlayer_color;
+        break;
+    }
   }
 
   editor->mode = new_mode;
@@ -421,6 +498,7 @@ static void fix_scroll(struct editor_context *editor)
 
 /**
  * Play the current board's mod if the listening mod isn't playing.
+ * This will restart the board mod even if it's already playing.
  */
 
 static void fix_mod(struct editor_context *editor)
@@ -468,9 +546,9 @@ static void set_current_board(struct editor_context *editor, int new_board)
     fix_scroll(editor);
     fix_caption(editor);
 
-    if(strcmp(cur_board->mod_playing, "*") &&
-     strcasecmp(cur_board->mod_playing, mzx_world->real_mod_playing))
-      fix_mod(editor);
+    // We want mod switching from changing boards to act the same as gameplay.
+    if(!editor->listening_mod_active)
+      load_game_module(mzx_world, cur_board->mod_playing, true);
 
     // Load the board charset and palette
     if(editor_conf->editor_load_board_assets)
@@ -1003,11 +1081,7 @@ static void editor_draw(context *ctx)
 
   // Fix invalid buffer params before they get drawn.
   if(buffer->param == -1)
-  {
-    buffer->id = SPACE;
-    buffer->param = 0;
-    buffer->color = 7;
-  }
+    default_buffer(editor);
 
   // Give the edit menu up-to-date information before it is drawn.
   update_edit_menu(editor->edit_menu, editor->mode, editor->cursor_mode,
@@ -1783,10 +1857,6 @@ static boolean editor_key(context *ctx, int *key)
         set_editor_mode(editor, EDIT_BOARD);
         synchronize_board_values(editor);
         fix_scroll(editor);
-
-        buffer->id = SPACE;
-        buffer->param = 0;
-        buffer->color = 7;
         key = 0;
         return true;
       }
@@ -2481,18 +2551,19 @@ static boolean editor_key(context *ctx, int *key)
                 fix_scroll(editor);
                 fix_caption(editor);
 
-                // fixme load_mod_check
-                if(strcmp(cur_board->mod_playing, "*") &&
-                 strcasecmp(cur_board->mod_playing,
-                 mzx_world->real_mod_playing))
-                  fix_mod(editor);
-
-                if(block->selected &&
-                 (block->src_board == (mzx_world->current_board)))
+                // This check works because cur_board is still the old pointer.
+                if(block->selected && (block->src_board == cur_board))
                 {
                   block->selected = false;
                   editor->cursor_mode = CURSOR_PLACE;
                 }
+
+                // Need the new pointer here, though.
+                cur_board = mzx_world->current_board;
+                if(strcmp(cur_board->mod_playing, "*") &&
+                 strcasecmp(cur_board->mod_playing,
+                 mzx_world->real_mod_playing))
+                  fix_mod(editor);
 
                 clear_board_history(editor);
                 clear_overlay_history(editor);
@@ -2509,7 +2580,7 @@ static boolean editor_key(context *ctx, int *key)
               struct element *elements[] =
               {
                 construct_number_box(21, 20, "Offset:  ",
-                 0, (PRO_CH - 1), 0, &char_offset),
+                 0, (PRO_CH - 1), NUMBER_BOX, &char_offset),
               };
 
               if(!file_manager(mzx_world, chr_ext, NULL, import_name,
@@ -2807,8 +2878,13 @@ static boolean editor_key(context *ctx, int *key)
           {
             audio_end_module();
             editor->listening_mod_active = false;
+
+            // If there's a mod currently "playing", restart it. Otherwise,
+            // just start the current board's mod.
             if(mzx_world->real_mod_playing[0])
               audio_play_module(mzx_world->real_mod_playing, true, 255);
+            else
+              fix_mod(editor);
           }
         }
       }
@@ -2840,8 +2916,6 @@ static boolean editor_key(context *ctx, int *key)
 
               editor->cursor_mode = CURSOR_PLACE;
               block->selected = false;
-              buffer->param = 32;
-              buffer->color = 7;
             }
           }
           else
@@ -2849,9 +2923,6 @@ static boolean editor_key(context *ctx, int *key)
             set_editor_mode(editor, EDIT_BOARD);
             editor->cursor_mode = CURSOR_PLACE;
             block->selected = false;
-            buffer->id = SPACE;
-            buffer->param = 0;
-            buffer->color = 7;
           }
         }
       }
@@ -3090,9 +3161,6 @@ static boolean editor_key(context *ctx, int *key)
 
           editor->cursor_mode = CURSOR_PLACE;
           block->selected = false;
-          buffer->id = SPACE;
-          buffer->param = 32;
-          buffer->color = 7;
         }
         else
 
@@ -3139,9 +3207,9 @@ static boolean editor_key(context *ctx, int *key)
               struct element *elements[] =
               {
                 construct_number_box(9, 20, "Offset:  ",
-                 0, (PRO_CH - 1), 0, &char_offset),
+                 0, (PRO_CH - 1), NUMBER_BOX, &char_offset),
                 construct_number_box(35, 20, "Size: ",
-                 1, (PRO_CH), 0, &char_size)
+                 1, (PRO_CH), NUMBER_BOX, &char_size)
               };
 
               if(!file_manager(mzx_world, chr_ext, NULL, export_name,
@@ -3483,9 +3551,11 @@ static void __edit_world(context *parent, boolean reload_curr_file)
   buffer->robot = &(editor->buffer_robot);
   buffer->scroll = &(editor->buffer_scroll);
   buffer->sensor = &(editor->buffer_sensor);
-  buffer->id = SPACE;
-  buffer->param = 0;
-  buffer->color = 7;
+  editor->stored_overlay_char = 32;
+  editor->stored_overlay_color = 7;
+  editor->stored_vlayer_char = 32;
+  editor->stored_vlayer_color = 7;
+  default_buffer(editor);
 
   block->command = BLOCK_CMD_NONE;
   block->selected = false;
@@ -3508,7 +3578,7 @@ static void __edit_world(context *parent, boolean reload_curr_file)
     curr_file[0] = '\0';
 
   if(reload_curr_file && curr_file[0] &&
-    editor_reload_world(editor, curr_file))
+   editor_reload_world(editor, curr_file))
   {
     strncpy(editor->current_world, curr_file, MAX_PATH);
 
