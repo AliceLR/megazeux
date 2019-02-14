@@ -448,7 +448,7 @@ static void joy_button_set(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
   unsigned int joy_num, joy_button;
-  char key[15];
+  char key[16];
   int read = 0;
 
   if(sscanf(name, "joy%ubutton%u", &joy_num, &joy_button) != 2)
@@ -465,10 +465,10 @@ static void joy_hat_set(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
   unsigned int joy_num;
-  char key_up[15];
-  char key_down[15];
-  char key_left[15];
-  char key_right[15];
+  char key_up[16];
+  char key_down[16];
+  char key_left[16];
+  char key_right[16];
   int read = 0;
 
   if(sscanf(name, "joy%uhat", &joy_num) != 1)
@@ -488,7 +488,7 @@ static void joy_action_set(struct config_info *conf, char *name,
 {
   unsigned int joy_num;
   unsigned int key;
-  char joy_action[15];
+  char joy_action[16];
   int read = 0;
 
   if(sscanf(name, "joy%u." JOY_ENUM "%n", &joy_num, joy_action, &read) != 2
