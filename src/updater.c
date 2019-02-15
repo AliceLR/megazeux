@@ -438,6 +438,7 @@ static void apply_delete_list(void)
   struct manifest_entry *e_next = delete_list;
   struct manifest_entry *e_prev = NULL;
   struct manifest_entry *e;
+  int retry_times = 0;
   struct stat s;
   boolean ret;
   FILE *f;
@@ -485,16 +486,57 @@ static void apply_delete_list(void)
 
 err_delete_failed:
     {
-      char buf[72];
-      snprintf(buf, 72, "Failed to delete \"%.30s\". Check permissions.",
-       e->name);
-      buf[71] = 0;
+      int errval = 0;
 
       warn("--UPDATER-- Failed to delete '%s'\n", e->name);
-      error_message(E_UPDATE, 10, buf);
 
-      // Track this file so its link can be updated.
-      e_prev = e;
+      switch(retry_times)
+      {
+        case 0:
+        {
+          // Windows seems to hold some files open after the executable has
+          // closed. Delay a little bit to give it time to close the file,
+          // then retry automatically.
+          delay(200);
+          errval = ERROR_OPT_RETRY;
+          break;
+        }
+
+        case 1:
+        {
+          // Give user the option to either retry or fail.
+          char buf[72];
+          snprintf(buf, 72, "Failed to delete \"%.30s\". Retry?", e->name);
+          buf[71] = 0;
+
+          errval = error_message(E_UPDATE_RETRY, 10, buf);
+          break;
+        }
+
+        default:
+        {
+          // Auto fail so we're not here all day.
+          errval = ERROR_OPT_FAIL;
+          break;
+        }
+      }
+
+      if(errval == ERROR_OPT_RETRY)
+      {
+        info("--UPDATER-- Retrying '%s'...\n", e->name);
+        retry_times++;
+
+        // Set the next file to this file to try again...
+        e_next = e;
+      }
+      else
+      {
+        info("--UPDATER-- Skipping '%s'...\n", e->name);
+        retry_times = 0;
+
+        // Track this file so its link can be updated.
+        e_prev = e;
+      }
       continue;
     }
   }

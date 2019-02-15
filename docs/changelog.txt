@@ -26,7 +26,10 @@ FIXES
   games not running at speed 2.
 + The counter debugger now correctly displays the value of
   local0.
-+ Fixed crash bug that could occur when processing delete.txt.
++ MegaZeux now attempts to retry removing an old file after an
+  update if deletion fails initially.
++ Fixed crash bug that could occur when removing old files after
+  an update.
 + Improved manifest validity checks.
 + Fixed board editor crash caused by invalid thing IDs.
 + Player movement key repeat no longer resets when the player is
