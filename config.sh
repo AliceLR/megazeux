@@ -57,6 +57,7 @@ usage() {
 	echo "  --enable-modplug        Enables ModPlug music engine."
 	echo "  --enable-mikmod         Enables MikMod music engine."
 	echo "  --enable-openmpt        Enables OpenMPT music engine."
+	echo "  --disable-reality       Disables Reality Adlib Tracker (RAD) support."
 	echo "  --disable-libpng        Disable PNG screendump support."
 	echo "  --disable-audio         Disable all audio (sound + music)."
 	echo "  --disable-vorbis        Disable ogg/vorbis support."
@@ -123,6 +124,7 @@ XMP="true"
 MODPLUG="false"
 MIKMOD="false"
 OPENMPT="false"
+REALITY="true"
 LIBPNG="true"
 AUDIO="true"
 VORBIS="true"
@@ -267,6 +269,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--disable-openmpt" ] && OPENMPT="false"
 	[ "$1" = "--enable-openmpt" ]  && OPENMPT="true"
+
+	[ "$1" = "--disable-reality" ] && REALITY="false"
+	[ "$1" = "--enable-reality" ]  && REALITY="true"
 
 	[ "$1" = "--disable-libpng" ] && LIBPNG="false"
 	[ "$1" = "--enable-libpng" ]  && LIBPNG="true"
@@ -704,6 +709,7 @@ if [ "$AUDIO" = "false" ]; then
 	MIKMOD="false"
 	XMP="false"
 	OPENMPT="false"
+	REALITY="false"
 fi
 
 #
@@ -994,6 +1000,18 @@ elif [ "$XMP" = "true" ]; then
 	echo "BUILD_XMP=1" >> platform.inc
 else
 	echo "Music engine disabled."
+fi
+
+#
+# Handle RAD support, if enabled
+#
+
+if [ "$REALITY" = "true" ]; then
+	echo "Reality Adlib Tracker (RAD) support enabled."
+	echo "#define CONFIG_REALITY" >> src/config.h
+	echo "BUILD_REALITY=1" >> platform.inc
+else
+	echo "Reality Adlib Tracker (RAD) support disabled."
 fi
 
 #

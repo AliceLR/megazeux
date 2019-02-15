@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>RAD V2.0a Documentation</title>
+</head>
+<body>
+<div style='display: table; margin-left: auto; margin-right: auto;'>
+<pre style='display: block; font-family: consolas, "courier new", monospace; white-space: pre-wrap; margin: 0px; align: center;'>
+
+ ██████████████████████▄      ▄▄████████████████▄▄    █████████████████████▄▄
+  ████████████▀▀▀▀▀▀█████    █████████████▀▀▀▀█████   ▀█████████████▀▀▀▀▀█████
+  ██████████████████████▀   ████████████████████████   █████████████      █████
+  ████████████      █████   █████████████      █████   █████████████     ▄█████
+ ██████████████    ███████ ███████████████    ███████ █████████████████████████
+ ██████████████    ███████ ███████████████    ███████ ████████████████████████
+ ██████████████    ███████ ███████████████    ███████ █████████████████████▀▀
+
+ ┌────────── ── ─ -∙· Reality ADlib Tracker ♫ Version 2.0a ·∙- ─ ── ──────────┐
+ │                                                                            │
+ │                   (c)1995-2018 by Shayde, Rogue, & Void.                   │
+ |                            -REALITY PRODUCTIONS-                           │
+ :                                                                            │
+ ·                                                                            |
+                                                                              :
+                                                                              ∙
+                                  INTRODUCTION
+                               ▀ ▀▀▀▀▀▀▀▀▀▀▀▀▀▀ ▀
+
+Why?
+~~~~
+
+Why?  Well originally, back in 1995,  the reason for RAD's existence was  due to
+the lack of decent  Adlib trackers around.  When  we wanted to put  some nice FM
+tunes into  our productions  we just  couldn't find  a suitable  format that was
+small enough and came with  player source-code to enable easily  integration  of
+the tune into our intros.  And so we wrote our own...
+
+Fast forward to 2017, and we'd noticed  RAD had gained somewhat of a small  cult
+following.   However, one  of the  main criticisms  of RAD  was that  it  didn't
+support the later Yamaha FM chip, the OPL3, and so was stuck in 2-operator  mono
+hell.  So we set  out to give RAD  a long overdue update  to give it that   OPL3
+sparkle.
+
+Us being  a demo-group  player code  is, of  course, included,  and what's  more
+includes an accurate emulation of the OPL3 chip for those of you that no  longer
+have an OPL3-based  soundcard  in  your PC.   And  those  of you  on  Macs  that
+never got to experience the joys of Adlib music, well, we now have a Mac version
+of RAD too!
+
+BTW. if  you're not  familiar with  the term  "Adlib", this  was a  company that
+originally popularised the Yamaha OPL2 FM sound back in the early 90s and it was
+common for  gaming PCs  to come  with these  installed.  Though  sound cards  by
+other companies (e.g. Creative) later  added sample support and upgraded  to the
+Yamaha  OPL3 chip,  the  FM synthesis  parts were nonetheless  billed as  "Adlib
+-compatible".  The Adlib  company is now  long  gone but  their name is    still
+used to this  day  to refer  to old-school  FM  synthesis on the   PC.  RAD came
+out when the original Adlib cards were still popular, hence the name.
+
+
+
+
+What Does It Do?
+~~~~~~~~~~~~~~~~
+
+RAD,  as   with  all   old-school trackers,    is a    program that   allows you
+to author  musical arrangements.  It  was based more-or-less  on Protracker  (on
+the Amiga)  which is the model that most music trackers seem to be based on.
+
+Tracker tunes are made up of three main components:
+
+
+               * Instruments
+               * Order list
+               * Patterns (tracks)
+
+
+Essentially your patterns will hold the  notes of your tune, where each  note is
+played using an Instrument, has various Effects applied to them, and are  pieced
+together into an Order List that orders the play-back of your patterns.
+
+RAD 2 has the following features:
+
+
+               * OPL2 and OPL3 FM support
+               * Up to 127 separate instruments (up from 31 in RAD 1.1)
+               * Up to 100 separate patterns (up from 32 in RAD 1.1)
+               * Up to 128 patterns in the order
+               * 9 channels
+               * Compact tune file size (even smaller than RAD 1.1)
+               * Innovative "riff" system
+               * Easy to use
+
+
+
+
+                                  INSTRUCTIONS
+                               ▀ ▀▀▀▀▀▀▀▀▀▀▀▀▀▀ ▀
+
+Starting RAD
+~~~~~~~~~~~~
+
+There are separate executables for each OS supported by RAD 2.0.  For MSDOS 3.3+
+start RAD as follows:
+
+
+               RAD&lt;enter&gt;
+
+
+For Windows users, double-click on the RADW or RADW64 icon.
+
+And for our Mac users, just double-click on the RAD app.
+
+You will  then see  the main  RAD screen  with credits  information in the lower
+half.  Press a key to clear the credits window.
+
+
+
+
+Obtaining help while using RAD
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Being an old  DOS-style application RAD   relies a great  deal on the   keyboard
+and  you  won't get  far  without  learning  a   few important   keys.   To make
+learning  these keys easier  you can  press  "?"  or F12  to bring  up a   quick
+help list of the keys recognised by RAD.
+
+However, the non-DOS versions of RAD do have a degree of mouse support.  You can
+click and drag on  parameters to alter them,  and you can move  between parts of
+RAD by clicking.  You can also click within a pattern to move the cursor.
+
+
+
+
+Layout of RAD
+~~~~~~~~~~~~~
+
+As tracker  tunes have  three main   parts, RAD's  screen is also split  up into
+three areas corresponding to those parts.  In the  top half of the screen in the
+left-hand window is  the Instrument Editor.   To  the right of this  window   is
+another thinner window that is the Order List Editor.
+
+The entire lower half of the screen is (as in most trackers) the Pattern Editor.
+The first key to know is the " ` " (back tick) key.  This switches between   the
+three areas of the screen.  You can only be using one area at a time.
+
+When you first enter RAD, you start  off in the Pattern Editor.  You can  switch
+to a full-screen display  of the pattern editor  using F11.  Pressing F11  again
+will return to the original display.
+
+
+
+
+Pattern Editor
+~~~~~~~~~~~~~~
+
+The Pattern Editor is where you enter the actual notes that will be played.  RAD
+allows up  to 100  separate patterns  and each  pattern is  made up of 64 lines.
+Each line has 9 entries corresponding to  the 9 Adlib channels.  As RAD plays  a
+pattern  it  steps  through  each line  at  the  given  speed (described  later)
+outputting the note in each column (if there IS one) to the corresponding  Adlib
+channel.  Each entry in the pattern is made up of FOUR items, eg.
+
+
+   C#3 2C30
+   ├┘│ ││├┘
+   └─┼─┼┼┼────── 1) The NOTE that is played. "#" = sharp, "-" = normal.
+     │ │││
+     └─┼┼┼────── 2) The OCTAVE of the note. From 0 to 7.
+       │││
+       └┼┼────── 3) The INSTRUMENT the note is played in (in Hex).
+        ││
+        └┼────── 4) The SPECIAL EFFECT, (if any) to perform.
+         └───────── and the parameter for the special effect.
+
+
+The note item follows usual musical notation.  There are twelve available  notes
+per octave:
+
+   C, C#, D, D#, E, F, F#, G, G#, A, A#, B
+
+You can write a note in a given  position in the pattern by pressing one of  the
+NOTE KEYS, as set out below:
+
+Actual
+Note-►   C#  D#      F#  G#  A#      C#  D#      F#  G#  A#      C#  D#
+      ▐██  ▐█  ▐██▐██  ▐█  ▐█  ▐██▐██  ▐█  ▐██▐██  ▐█  ▐█  ▐██▐██  ▐█  ▐██
+Keys-►▐██ S▐█ D▐██▐██ G▐█ H▐█ J▐██▐██ 2▐█ 3▐██▐██ 5▐█ 6▐█ 7▐██▐██ 9▐█ 0▐██
+      ▐██  ▐█  ▐██▐██  ▐█  ▐█  ▐██▐██  ▐█  ▐██▐██  ▐█  ▐█  ▐██▐██  ▐█  ▐██
+      ▐██  ▐█  ▐██▐██  ▐█  ▐█  ▐██▐██  ▐█  ▐██▐██  ▐█  ▐█  ▐██▐██  ▐█  ▐██
+      ▐███▐███▐███▐███▐███▐███▐███▐███▐███▐███▐███▐███▐███▐███▐███▐███▐███
+Keys-►▐▌Z█▐▌X█▐▌C█▐▌V█▐▌B█▐▌N█▐▌M█▐▌Q█▐▌W█▐▌E█▐▌R█▐▌T█▐▌Y█▐▌U█▐▌I█▐▌O█▐▌P█
+      ▐███▐███▐███▐███▐███▐███▐███▐███▐███▐███▐███▐███▐███▐███▐███▐███▐███
+Actual
+Note-►  C   D   E   F   G   A   B   C   D   E   F   G   A   B   C   D   E
+
+
+When you write a note, the octave  is also written.  You can change the  current
+octave using the ","  and "." keys.  The  currently selected instrument is  also
+written and you will hear the instrument played at the given pitch.
+
+You can change instruments by pressing "[" and "]".
+
+You can navigate the Pattern Editor by using the CURSOR KEYS, and the following:
+
+
+   TAB       - move to the next channel
+   Shift TAB - move to the previous channel
+   PgUp      - move up 16 lines
+   PgDown    - move down 16 lines
+   Home      - move to the top of the pattern
+   End       - move to the end of the pattern
+
+
+To add/alter special effects, cursor over to the special effects column and  use
+one of the following numbers/letters:
+
+
+   1       - Slide  note down (pitch  bend).  Parameter gives  the speed of  the
+             slide.
+
+   2       - Slide  note up  (pitch bend).   Parameter gives  the speed  of the
+             slide.
+
+   3       - Slide to note.   This slides the  LAST note played  till it reaches
+             the note given with this effect.  The parameter gives the speed  of
+             the slide.  Use parameter "00" in subsequent lines to continue  the
+             slide.
+
+   5       - Combined slide to note &  volume slide.  This command has  the same
+             functionality as  effect 3  with parameter  "00" and  the parameter
+             performs a volume  slide. 1-49 fades  the volume of  the instrument
+             down. 51-99 fades the volume of the instrument up.
+
+   A       - Volume slide.  1-49 fades the volume of the instrument down at  the
+             given speed.  51-99  fades the volume  of the instrument  up at the
+             given speed.
+
+   C       - Set volume.   Sets the  absolute volume  of the  instrument. Values
+             range from 0 (silent) to 64 (loudest).
+
+   D       - Break.  When RAD encounters this  command it skips the rest  of the
+             pattern and  moves to  the next  pattern as  specified in the Order
+             List.   The  parameter, if  given,  specifies a  line  in the  next
+             pattern to start from. eg.  Effect "D12" would break to line 12  of
+             the  next pattern  in the  Order List.  This command  is handy  for
+             "cutting short" a pattern  if you don't want  to use all 64  lines.
+             Just place a  D00 on the  last line you  used and the  rest of  the
+             pattern will be ignored.
+
+   F       - Set speed.  By default RAD starts up with a speed of 6 but you  can
+             use this command  to slow down  and speed up  the playback rate  of
+             your tune.   To understand  the speed  value, know  that RAD uses a
+             50Hz timer which is delayed by the speed value between each line of
+             the pattern. What this means is that, say, if you set the speed  to
+             50, (using "F50"), then each line will play at the rate of one  per
+             second.  Special effects, however, are modified 50 times a second.
+
+   I       - Ignore.  Used only in Instrument  Riffs (see later) to ignore  note
+             transposing for that note.  Handy if you want to play an instrument
+             effect that requires a set note to sound correctly.
+
+   M       - Multiplier.  Used only  in Instrument Riffs  (see later) to  set an
+             instrument's  operator  multiplier  on the  fly.   The  channel the
+             effect is  in defines  which operator  is affected.   Channel 2 & 6
+             target operator one.  Channel 3 & 7 affect operator two.  Channel 4
+             & 8 affect operator three.  Finally, Channel 5 & 9 affect  operator
+             four.
+
+   R       - Riff.  Starts playing a riff (see later) on the channel.  The first
+             digit defines which riff track is used (0 to 9).  The second  digit
+             is the  channel in  the riff  track of  the riff  (1 to 9).  If the
+             second digit is 0 any playing  riff is stopped.  Only one riff  can
+             be playing at a time  (though instrument riffs can also  be playing
+             simultaneously).
+
+   T       - Transpose riff.  As  with the R  effect, this effect  plays a riff.
+             However it  also transposes  the notes  in the  riff using the note
+             supplied with the effect.
+
+   U       - Feedback.  Used  only in  Instrument Riffs  (see later)  to set the
+             instrument's feedback values on the fly.  The first digit is  which
+             value to set (0 to 1), and the second digit is the value (0 to 7).
+
+   V       - Volume.   Used  only in  Instrument  Riffs (see  later)  to set  an
+             instrument's  operator  volume  on   the  fly.   Refer  to   the  M
+             (Multiplier) effect for how the operator it affects is chosen.
+
+
+To play the current pattern (to see how it sounds) press F6.  Pressing F6  again
+will stop the playback.  To move to a new pattern press "-" and "+/=".
+
+You can use the following editing keys to help you in writing patterns:
+
+
+   INSERT  - insert a line in the current channel
+
+   DELETE  - delete the current line in the current channel
+
+   SPACEBAR- wipe the current item only (also stops playback).
+
+   F1      - Move to  the top  left corner  of the  region you  wish to copy and
+             press F1.  Then move to the lower right corner and press F1  again.
+             The highlighted region will then be moved into a copy buffer.
+
+   F2      - Will paste the  contents of the  copy buffer to  the current cursor
+             location.
+
+   F3      - Will copy the entire pattern into the copy buffer.
+
+   F4      - Will replace the  entire current pattern  with the contents  of the
+             copy buffer (be careful!).
+
+   F9      - decrement the current speed value
+
+   F10     - increment the current speed value
+
+   F11     - toggle full-screen display of the pattern editor
+
+   F12     - key help
+
+
+
+
+Instrument Editor
+~~~~~~~~~~~~~~~~~
+
+To edit your instruments  you need to switch  to the Instrument Editor.  Use the
+"`" (back tick)   key to   switch between   windows until   you see  a highlight
+bar appear over the top-left item in the instrument window.
+
+RAD supports up  to 127 instruments  and it is  these instruments that  actually
+produce the sound.  Each note in your patterns specifies an instrument to  play.
+Instruments can vary  significantly in sound  from each other  and, accordingly,
+your tune's mood  will change dramatically  depending on the  instrument mix you
+use.  Some instruments   sound good as   lead, other as   bass, and others   are
+only useful as percussion.
+
+To begin with  you will probably  find  it easier  just to load  in an  existing
+tune and use the instruments that came with it.  You can do this by loading  the
+tune  into  RAD  and  hitting  Control-C  to  clear  the  patterns  leaving  the
+instruments intact.
+
+To  design  your  own  instruments,  once  in  the  Instrument  Editor  you  can
+interactively alter the currently selected instrument's properties (remember "["
+and "]" select instruments).  Use Cursor  Up and Down to select the  property to
+alter,  and  Cursor  Left  and  Right to  decrease  or  increase  or  toggle the
+property's value.  Alternatively, you can press ENTER on the parameter you  wish
+to change, and input the value  manually. There isn't much to say  regarding how
+to  correctly set  properties, as  different things  produce different  effects.
+Simply alter things and press a Note Key to see how it sounds!
+
+The one property's effect you SHOULD be aware of is the CARRIER's volume,  which
+is usually operator 1.  This governs the output volume of the instrument and, in
+fact, this is the property that is  modified by the Set Volume and Volume  Slide
+commands.
+
+Other than that,  Good Luck! :-)
+
+If you create a cool sounding  instrument, you'll probably want to put  it aside
+somewhere for  future use.   Use Control-G  (Get instrument)  and Control-P (Put
+instrument) to load and save instruments.  Refer to Loading and Saving below  on
+how to use the interactive directory.
+
+Alternatively you can store your new instrument in the Instrument Library  which
+is new to RAD 2, described in a later section.
+
+
+
+
+Order List Editor
+~~~~~~~~~~~~~~~~~
+
+Once you have created  a few patterns you  will want to string  them together to
+create a complete tune.  By moving to the Order Editor (use " ` " remember)  you
+can define when each pattern will  be played.  Line 00 corresponds to  the first
+pattern to be  played, line 01  the second, etc.  By using Cursor  Up & Down  to
+select a line, with Insert or Delete  to remove or add a line as  necessary, you
+can use  Cursor Left  and Right  to set  which pattern  will be  played at  that
+position in the song. for example, suppose you had the following Order List:
+
+
+             00│03
+             01│01
+             02│04
+             03│01
+             04│02
+             05►02
+
+
+When you start your tune playing (with F5), it will start by playing pattern  03
+(specifed by line 00).  Once it has  played all 64 lines of pattern 03  (or less
+if you used a Break command) it will then play the pattern specified by the next
+line, in this case,  pattern 01. Each line  will be played one  after the other,
+playing the pattern listed for that line.
+
+As you can see in the above example you can re-use patterns (Pattern 01 is  used
+in line 01 and 03)  if there is a chorus  or refrain you want to  repeat in your
+tune.
+
+If you notice in the above example, there is a line that contains a right  arrow
+between the line  and the pattern.   This is a  JUMP MARKER and  it tells RAD to
+jump to a new  line.  So when RAD  gets to line 05  in the example, rather  than
+playing pattern 02 it will instead jump to LINE 02.  Hence the list of  patterns
+that will be played with the above Order List is:
+
+
+             03, 01, 04, 01, 02, 04, 01, 02, 04, 01, 02....
+                                  │
+                                  └────── Repeat caused by Jump Marker
+
+
+You can mark the current  line as a jump marker  by pressing '\' and then  using
+Cursor Left  & Cursor  Right to  set the  line the  marker will  jump to. A Jump
+Marker cannot be placed on line 00.
+
+RAD will repeat the song from line 00 when it gets to the end of the Order  List
+so you don't need to place a Jump Marker there.
+
+
+
+
+Loading & Saving Tunes
+~~~~~~~~~~~~~~~~~~~~~~
+
+Naturally enough, once you  have completed your Symphony  No. 5, you'll want  to
+keep a permanent record  of it.  To save  your tune press Control-S.   This will
+bring up your OS file requester to allow you to select a filename and directory.
+If you're using the  MS-DOS version, or you  press Control-Shift-S, you will  be
+presented  with  RAD's built-in  file  requester.  You  can  select an  existing
+filename by  positioning the  highlight bar  on it,  using Cursor  Up and Cursor
+Down, and then  pressing Enter.  By  selecting a directory  or a device  you can
+move around your  disk structure.  If  you are saving  a new file  then you will
+need to  type a  new filename.   Press TAB  to switch  to the filename field and
+enter the desired  filename, using the  editing keys to  fix typing mistakes  as
+necessary.  Press Enter to  save.  If you are  saving over an existing  file you
+will be asked to confirm.
+
+Loading  follows  a similar  procedure.   If you're  using  the Windows  or  Mac
+version, press Control-O to use your OS file requester to select a tune to load.
+Alternatively,  press  Control-L to  use  RAD's in-built  file  requester, using
+Cursor Up and Cursor Down and Enter to select the desired tune file.
+
+On non-DOS versions of RAD you may also write out a WAV recording of your  tune.
+Press Control-W and follow  the on-screen prompts.  The  output format is in  16
+-bit stereo at 48 KHz.
+
+
+
+
+Adding a Description
+~~~~~~~~~~~~~~~~~~~~
+
+Because  tracker  tunes  circulate  widely  and  are  often  not  accompanied by
+documentation, traditionally musicians have placed author information and greets
+in  the  instrument  name  fields  of  their  compositions.   Although  RAD  has
+instrument name  fields you  can add  a dedicated  description to  your tune  by
+entering the Description Editor.  Press Control-D to toggle between editing  the
+description and editing  the Pattern.  The  Description Editor is  a simple free
+-form one page  text editor.  Type  whatever you like,  where you like,  even if
+it's just the name of the tune!
+
+Because RAD was written as an intro tune development system, the tune files were
+designed to be fairly compact so as not to take up much room in any programs  it
+was used in.  Adding a description to a tune will add to the length of the tune.
+In the bottom right corner of the Description Editor is a counter that  displays
+the number of bytes that the  current description text will occupy in  the saved
+file so you'll always know just how much space your hot air is going to take up.
+
+You may not see much use for a description especially if the tune is  ultimately
+destined for use in  an intro but the  fact is module-ripping is  a popular past
+-time and chances are, if  your tune is awesome, it  WILL be ripped out of  your
+intro and spread around.   You can at least  make sure everyone knows  who wrote
+the ripped tune because the description will be ripped along with the tune!
+
+
+
+
+Instrument Library
+~~~~~~~~~~~~~~~~~~
+
+New to RAD 2 is the Instrument  Library.  In previous versions of RAD you  would
+need to use  Control-G (Get instrument)  and Control-P (Put  instrument) to load
+and save  the current  instrument to  file if  you wanted  to re-use it in other
+tunes.
+
+You can still do that, but you now have the alternative of using the  Instrument
+Library.  The Instrument Library allows you to store your favourite  instruments
+in a central repository, and to categorise them.
+
+To bring up the Instrument Library, press Control-I.  You start with the  cursor
+in the left window which lists the categories.  Press N (or Insert) to add a new
+category, or A to alter the name of an existing category, and Delete to delete a
+category.  Use Cursor Up and Cursor  Down to move within the category  list, and
+press Cursor  Right to  enter a  category.  This  will place  the cursor  in the
+right- hand window.
+
+Inside this window  are the instruments,  and the currently  selected instrument
+will be displayed in the instrument  window ready for you to audition  using the
+note-keys (see above).  Use Cursor Up and Cursor Down to move through the  list,
+and press Enter to bring  the currently highlighted instrument into  the current
+instrument  slot in  your tune.   Alternatively, you  can press  L to  Load the
+current instrument in your tune into the library.  Press A to alter the name  of
+the instrument, and Delete to remove it.
+
+Press Escape or Control-I to exit  the Instrument Library.  If you made  changes
+you will be asked whether you want to keep them.  The Instrument Library  stores
+your instruments in a file called "RAD.BNK".
+
+
+
+
+Riffs
+~~~~~
+
+Riffs are a new addition to RAD 2.  When it came time to update RAD we  realised
+that previous versions were quite lean in the number of effects you could  apply
+to your notes compared to standard  trackers.  But instead of giving you  dozens
+of new command letters/numbers to remember, and requiring code specific to  each
+effect to be  added to the  player, we instead  opted to use  a system  that
+would allow you to define your own effects.  This is the Riff system.
+
+Riffs  are sequences  of notes/effects  that can  be triggered  using a   single
+effect command within your pattern, or by playing a particular instrument.
+
+One of  the more  basic uses  of riffs  is to  avoid needing  to create  lots of
+repeated content in your tune.  For example, the ubiquitous  "four on the floor"
+drum-loop:
+
+
+        C-4 1---
+        --- ----
+        --- ----
+        --- ----
+        C-4 2---
+        --- ----
+        --- ----
+        --- ----
+        C-4 1---
+        --- ----
+        --- ----
+        --- ----
+        C-4 2---
+        --- ----
+        --- ----
+        --- ----
+        etc.
+
+
+A  simple sequence  like that  can end  up being  copied around  a lot  in  your
+patterns.  This is especially problematic if you need to modify the sequence for
+some reason later.
+
+Instead,  you  can  make  a  riff.   Press  Control-R  to  switch to   the  riff
+patterns. You'll  notice the   "Pattern:" window  will  display  "R0".  This  is
+riff pattern  0. There  are ten riff patterns,  selectable  with "+/=" and  "-",
+numbered R0  to R9. Each column in  each riff pattern  is a separate  riff.  You
+enter  notes in the riff pattern just like you would  a normal pattern.  So  put
+the  above drum-loop into the first column of R0, and press Control-R to  return
+to normal editing.
+
+In order to play the  riff you then need to  use one of two riff  effects.   For
+this drum-loop the appropriate effect is "R" for Riff:
+
+
+        --- -R01
+
+
+This plays the  riff in R0  channel/column 1 as  if the notes  were entered into
+your main pattern.   This will play  the four drum  notes once.  You  could then
+trigger it again on line  16 by using the effect  "R01" again.  Or you could  go
+back into the  Riff Editor (Control-R)  and add a  D00 (skip to  line) effect on
+line 8 of  the riff.  Now  when you trigger  the riff using  "R01" it will  keep
+playing the two  notes over and  over until you  either play a  new riff, or you
+cancel the riff playback by laying down the "R00" effect.
+
+But what of notes/effects  in the main pattern  struck during play-back while  a
+riff is playing?   No problem -  they override the  riff notes/effects, allowing
+you to customise the individual riff play-back.  The riff note/effect (if   any)
+will play, and any parts of the  main note specified will overwrite the ones  in
+the riff.  This  is handy in  the previous example  for adding a  drum-fill, for
+example, without stopping the drum-loop from playing.
+
+If you use a simple bass-line melody that repeats often you can place this  into
+a riff and trigger it using a single effect, for example:
+
+
+        C-4 ----
+        --- ----
+        E-4 ----
+        --- ----
+        G-4 ----
+        --- ----
+        E-4 ----
+        --- ----
+        --- -D00
+
+
+Note, the riff does  not have an instrument  associated with it.  When  you play
+the  riff,  the riff  notes  will take  the  instrument used  in  the note  that
+triggered the riff, i.e.:
+
+
+        --- 4R01
+
+
+Of course if you  want to play the  riff in a different  key then this will  not
+suffice. This is where  the T (Transpose) effect  comes into play. This  is just
+like the Riff effect but, as the name suggests, it transposes the riff  instead.
+The note given with  Transpose is  the transpose  amount relative  to C-4.  That
+is, for example, the following note:
+
+
+        E-4 -T01
+
+
+Will start  the riff  playing as  usual, but  the notes  within the riff will be
+transposed four semitones up (C-4 -&gt; C#4 -&gt; D-4 -&gt; D#4 -&gt; E-4).
+
+That's one use  of the riff  system.  Sick of  entering long strings  of 1xx/2xx
+effects to simulate vibrato?  Put them into a riff and trigger the vibrato  riff
+on the notes you want it to affect, another handy use for riffs.
+
+One notable omission from earlier versions of RAD was the arpeggio effect (0xx).
+Now you can use riffs to simulate  this effect.  Put the notes of your  arpeggio
+into a riff, set  it to repeat using  D00, and trigger it  using Transpose.  But
+traditional chip-style arpeggios run very fast, so put a Set Speed effect  (Fxx)
+into the first note  of your riff arpeggio  to set the desired  play-back speed;
+setting the  speed of  the riff  like this  does not  affect the  main pattern's
+speed.
+
+I'm sure once you've played with them a bit you'll find all sorts of new  tricks
+you can apply them to!
+
+There is a third variation to the  riff system which is handy if you're  getting
+sick  of  adding vibrato  to  every instance  of  a particular  instrument,  for
+example.  Every  instrument has  its own  riff accessible  by pressing Control-R
+while in the Instrument Editor.  Placing vibrato effects in here will cause  the
+vibrato to occur every time this instrument is played.  Note, entering notes  in
+the instrument's riff will, by default, not enter the instrument number as  it's
+assumed you're playing  the instrument itself.   However, you can  trigger other
+instruments here if required.
+
+You'll  notice  that  channels  2  through 9  look  a  little  different  in the
+instrument riff.  All the channels are played simultaneously when an  instrument
+riff is triggered,  but these channels  can only hold  additional effects.  This
+allows you to use multiple effects  on an instrument per line.  Especially  when
+coupled  with the  effects that  modify the  instrument's parameters,  this  can
+create quite dynamic instruments.
+
+
+
+
+MIDI INPUT
+~~~~~~~~~~
+
+Another new feature for V2 is the use of external MIDI hardware to help sequence
+your RAD tunes.  Press Control-M to  bring up the MIDI INPUT dialog  box (you'll
+see an error if you have no MIDI sources available).
+
+From here you can adjust various parameters to suit your needs.  Firstly  you'll
+want to enable some channels for MIDI input to write into by pressing the keypad
+keys and/or  A (All  channels).  When  MIDI notes  are received  from the source
+they'll be written into the selected channels in round-robin order.  If you want
+key releases to be recorded press K to enable Key-offs.  Finally, you can  press
+V to toggle velocity input which will be translated into Set Volume effects.
+
+When you're done press Enter to accept the changes, or Escape to cancel.
+
+
+
+
+MIDI OUTPUT
+~~~~~~~~~~~
+
+This isn't a fully supported and fleshed out mode, but RAD V2 has the ability to
+play external instruments as well, though  this isn't really what RAD was  built
+for.  To enable MIDI  out select Algorithm 7  on your instrument(s).  This  will
+bring up a set  of MIDI options which  will be emitted using  the MIDI  protocol
+when playing notes with that instrument. It  is expected  the port  number  will
+be  different  on  every  system  and  MIDI  hardware availability,   so  likely
+instruments will  need to  be modified before they can be used unless the  saved
+tune was generated from the same session.
+
+To see  some examples  of using  the MIDI  out functionality,  refer to the MIDI
+directory in the release package.  Contained therein are three files:
+
+
+        RAD version of Pachelbel's Canon in D
+        RAD version of the beginning of Mendelssohn's Fingal's Cave
+        An MP3 recording of the above Fingal's Cave performance
+
+
+Both  RAD tunes  use standard  General MIDI  mapping for  instruments, and   the
+quality of  the result  depends massively  on the  quality of  your General MIDI
+device.  The recording of Fingal's  Cave uses VirtualMIDISynth with the  Timbres
+of Heaven sound-font. If you wish to recreate it then if your MIDI synth is  not
+on port 0 you will need to  edit the instruments first to set the  correct port.
+These versions  of the  classic tunes  were transcribed  directly from the sheet
+music and contain no embellishments, so they're not shining examples of the art!
+
+Although these are General MIDI tunes, RAD's MIDI out support is not limited  to
+that. It's perfectly capable of  sequencing external hardware and has  been used
+successfully  to sequence  a Roland  JD-XA, a  Roland TR-8,  and a  Roland  JP-8
+synthesiser, as well  as to take  input from the  JD-XA keyboard using  the MIDI
+input functionality.
+
+
+
+
+                                 CODING NOTES
+                              ▀ ▀▀▀▀▀▀▀▀▀▀▀▀▀▀ ▀
+
+Player
+~~~~~~
+
+RAD's whole reason for being is as  a tool for writing tunes for use  in intros.
+To  this  end,  the  FULL  player source-code  for  playing  RAD  tunes  in your
+productions is included.  The format follows that traditionally set by  trackers
+on the Amiga.  Previous versions of RAD provided 16-bit assembly player code for
+integration into your productions.  This  being 2018 there isn't so  much demand
+for that now, so RAD V2's player code  is a C++ class.  You can find the  player
+code inside the PlayerSource/ directory in the release package.
+
+First include the player source code:
+
+
+        #include "player20.cpp"
+
+
+And instantiate the RADPlayer class:
+
+
+        auto rad = new RADPlayer;
+
+
+You now need to prepare the instance  to play your tune.  You'll need a  pointer
+to the  raw tune  file bytes  and a  function for  applying values  to your OPL3
+registers:
+
+
+        rad-&gt;Init( &lt;tune&gt;, &lt;OPL3-setter&gt;, &lt;OPL3-setter-argument&gt; );
+
+
+Where &lt;OPL3-setter&gt; has the following prototype:
+
+
+        void OPL3Write(void *argument, uint16_t register_number, uint8_t register_value);
+
+
+The &lt;OPL3-setter-argument&gt;  is not  used by  the RAD  player code;  it is  there
+purely for passing to your &lt;OPL3-setter&gt; function in case it needs tune-specific
+data, or maybe just a "this" pointer.
+
+The function rad-&gt;GetHertz() returns how many times a second you should call the
+RAD update method to keep  the tune playing  correctly.  If your  tune does  not
+have a BPM  set, then this  value will always  be 50, unless  it's also a  "slow
+-timer" tune,  in which  case you're  dealing with  legacy stuff  and the return
+value is unimportant.  If you're doing this then you're on your own!
+
+Please note that the player code itself  does no checking that the tune file  is
+valid and goes ahead and assumes it  is, as it expects you're giving it  a known
+tune file. The player code  WILL crash if your tune  file is bad.  But refer  to
+the Validator section below for a way to check your tune files.
+
+Once Init() has been called you can now update the player a number of times  per
+second as given in the GetHertz() return value:
+
+
+        rad-&gt;Update();
+
+
+When you're done, stop calling Update() and call Stop() to reset the OPL3 so  no
+more sound is produced:
+
+
+        rad-&gt;Stop();
+
+
+By default the  player includes code  to detect when  the tune starts  repeating
+itself.  You can disable this code if you're saving bytes in your production  by
+setting the RAD_DETECT_REPEATS define to 0 before including the player:
+
+
+        #define RAD_DETECT_REPEATS 0
+        #include "player20.cpp"
+
+When this code  is included Update()  will return true  when the tune  beings to
+repeat.   Another  benefit  to  this  code  is  you  also  have  access  to  the
+ComputeTotalTime() method which returns the time, in seconds, the tune will take
+before  it  starts  to  repeat.   You can  see  a  demonstration  of  using this
+functionality in the example  player code.  The example  uses it to display  the
+total tune  time if you elect not to repeat the tune.
+
+
+
+Opal
+~~~~
+
+Most of us don't have the luxury of running original Yamaha OPL3 hardware in our
+PC, especially if you're a Mac user.  For this reason, RAD V2 comes with its own
+OPL3 emulator,  called  Opal,  which provides   a very  close  emulation  of the
+OPL3 chip sufficient to play RAD tunes.
+
+To use  Opal in  your own  productions, first  you need  to include it into your
+source code:
+
+
+        #include "opal.cpp"
+
+
+Then instance the Opal object:
+
+
+        auto opal = new Opal( &lt;sample rate&gt; );
+
+
+You can  then instance  the player  code, providing  the Opal register interface
+and a pointer to the raw tune data:
+
+
+        #include "player20.cpp"
+        rad-&gt;Init( &lt;tune&gt;, [](void *arg, uint16_t reg, uint8_t val) {
+            auto opal = (Opal *)arg;
+            opal-&gt;Port(reg, val);
+        }, opal );
+
+
+Then in your  sample playback call-back,  you can get  the current samples  from
+Opal:
+
+
+        int16_t left_sample, right_sample;
+        opal-&gt;Sample( &left_sample, &right_sample );
+
+
+As you'll note from the types, samples are returned as signed 16-bit values.
+
+
+
+Validator
+~~~~~~~~~
+
+Usually this is all you need for  your productions, but it should be noted  that
+the music player code expects a valid tune to be supplied; if there is bad  data
+the player will most likely  crash your application.  Most productions  only use
+known tunes  so this  is not  a problem,  but if  your app  is designed  to load
+unknown  tunes,  such   as  the  supplied   example  code,  then   you  can  use
+"validate20.cpp"  to check  the file  for problems  before you  give it  to  the
+player. This code is not normally needed so is a separate source file to  reduce
+the code you need to include.
+
+Anyway, if you do need to validate your tune file, you can do it like so:
+
+
+        #include "validate20.cpp"
+        const char *errtxt = RADValidate( &lt;pointer-to-tune&gt;, &lt;tune-size&gt; );
+        if (errtxt) {
+            Fatal(errtxt);
+        }
+
+
+A NULL return value  is good.  Anything else  is a pointer to  a null-terminated
+string decribing the problem.
+
+
+
+Example (Windows only)
+~~~~~~~
+
+To see an  example of how  to play a  RAD V2 tune,  please refer to example.cpp.
+This is a source-code example  application for Windows that demonstrates  how to
+play back a  RAD  tune using  Opal and includes  tune validation.  The   example
+should be easy   enough to adjust  for your application  and/or OS.  An  already
+compiled version is also supplied.  Just  run the example from the command  line
+and supply a list of RAD filenames as arguments to start tune play-back, eg.
+
+
+        example.exe tune1.rad tune2.rad tune3.rad
+
+
+You can optionally provide the "-norepeat"  flag which will prevent the list  of
+tunes  from repeating,  or, if  a single  tune was  given, stops  the tune  from
+looping, eg.
+
+
+        example.exe -norepeat tune.rad
+
+
+
+
+                            TECHNICAL SPECIFICATIONS
+                         ▀ ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀ ▀
+
+The RAD 2.1 file format, as used by RAD V2, is as follows: (values in hex)
+
+Note: This format is significantly different (and more compact) than the old RAD
+V1 file layout.   Please refer to  RAD V1's documentation  for a description  of
+that format.
+
+  █▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀█
+  █ HEADER                                                                 █
+  █────────────────────────────────────────────────────────────────────────█
+  █ Offset  00..0F:"RAD by REALiTY!!" - Use this to recognize a RAD tune.  █
+  █                                     Just detecting the initial "RAD"   █
+  █                                     should be sufficient though! ;-)   █
+  █                                                                        █
+  █ Offset      10:BCD                - Version of RAD file (not RAD ver.) █
+  █                                     Currently 21h for RAD V2.0.        █
+  █                                                                        █
+  █ Offset      11:Bit 6              - Set if it's a "slow-timer" tune.   █
+  █                Bit 5              - Set if BPM is not 125.             █
+  █                Bits 4..0          - The initial speed of the tune.     █
+  █                                                                        █
+  █▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀█
+  █ BEATS PER MINUTE                                                       █
+  █────────────────────────────────────────────────────────────────────────█
+  █ If Bit 5 of Offset 11h is set then the next value in the file is the   █
+  █ tune's BPM setting:                                                    █
+  █                                                                        █
+  █ Offset      00:Low byte of BPM                                         █
+  █ Offset      01:High byte of BPM                                        █
+  █                                                                        █
+  █▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀█
+  █ DESCRIPTION                                                            █
+  █────────────────────────────────────────────────────────────────────────█
+  █ The description follows next.  The description is a null-terminated    █
+  █ string.  To save some space in the tune file, the characters mean:     █
+  █                                                                        █
+  █ Char 00      - End of description (null-terminator)                    █
+  █ Char 01      - Move to start of next line (Carriage return)            █
+  █ Char 02..1F  - Output this many spaces                                 █
+  █ Char 20..FF  - Output this character                                   █
+  █                                                                        █
+  █▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀█
+  █ INSTRUMENTS                                                            █
+  █────────────────────────────────────────────────────────────────────────█
+  █ Next come the instruments:                                             █
+  █                                                                        █
+  █ Offset      00:No. of instrument that follows (or 0 for no more)       █
+  █ Offset   01..?:The instrument definition:                              █
+  █                                                                        █
+  █   Offset      00:Length of name                                        █
+  █   Offset   01..?:Name                                                  █
+  █                                                                        █
+  █ There are currently two types of instruments in RAD; FM and MIDI.  The █
+  █ type affects the remaining bytes.                                      █
+  █────────────────────────────────────────────────────────────────────────█
+  █ OPL3 FM instrument:                                                    █
+  █                                                                        █
+  █   Offset      00:Bit 7            - Instrument has a riff              █
+  █                  Bit 6..5         - Operator 3 & 4 stereo panning      █
+  █                  Bit 4..3         - Operator 1 & 2 stereo panning      █
+  █                  Bit 2..0         - Algorithm (0..6)                   █
+  █   Offset      01:Bit 7..4         - Operator 3 & 4 feedback value      █
+  █                  Bit 3..0         - Operator 1 & 2 feedback value      █
+  █   Offset      02:Bit 7..4         - Detune value                       █
+  █                  Bit 3..0         - Riff's default speed               █
+  █   Offset      03:Bit 5..0         - Volume                             █
+  █                                                                        █
+  █ Followed by four operator definitions (even for the 2-op algorithms):  █
+  █                                                                        █
+  █   Offset      00:Bit 7            - Tremolo on                         █
+  █                  Bit 6            - Vibrato on                         █
+  █                  Bit 5            - Sustain on                         █
+  █                  Bit 4            - Scale rate                         █
+  █                  Bit 3..0         - Multiplier                         █
+  █   Offset      01:Bit 7..6         - Scaling level                      █
+  █                  Bit 5..0         - Volume (inverted; 0 = loudest)     █
+  █   Offset      02:Bit 7..4         - Envelope attack value              █
+  █                  Bit 3..0         - Envelope decay value               █
+  █   Offset      03:Bit 7..4         - Envelope sustain level (inverted)  █
+  █                  Bit 3..0         - Envelope release value             █
+  █   Offset      04:Bit 2..0         - Waveform number                    █
+  █────────────────────────────────────────────────────────────────────────█
+  █ MIDI instrument:                                                       █
+  █                                                                        █
+  █   Offset      00:Bit 7            - Instrument has a riff              █
+  █                  Bit 2..0         - Algorithm (7)                      █
+  █   Offset      01:Bit 7..4         - Port (equipment dependent)         █
+  █                  Bit 3..0         - Channel                            █
+  █   Offset      02:Bit 7..4         - Version (0)                        █
+  █                  Bit 3..0         - Octave (0..7)                      █
+  █   Offset      03:                 - Program (1..128, 0 = none)         █
+  █   Offset      04:                 - Bank LSB (1..128, 0 = none)        █
+  █   Offset      05:                 - Bank MSB (1..128, 0 = none)        █
+  █────────────────────────────────────────────────────────────────────────█
+  █ Following both types of instruments is the instrument riff, if the     █
+  █ riff flag is set:                                                      █
+  █                                                                        █
+  █ Offset        00:Low byte of number of bytes in riff                   █
+  █ Offset        01:High byte of number of bytes in riff                  █
+  █ Offset      02..:Refer to the PATTERNS section below for the line/     █
+  █                  channel/note encoding.  Note, instrument riffs will   █
+  █                  not have any notes/instruments in channel 2..9, just  █
+  █                  effects.                                              █
+  █                                                                        █
+  █▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀█
+  █ ORDER LIST                                                             █
+  █────────────────────────────────────────────────────────────────────────█
+  █ The Order List follows the instruments:                                █
+  █                                                                        █
+  █ Offset      00:Length of Order List (up to 128)                        █
+  █ Offset  01..nn:List of orders, one byte for each line:                 █
+  █                                                                        █
+  █                00..7F:The pattern to play.                             █
+  █                80..FF:The line to jump to minus 80h (Jump Marker)      █
+  █                                                                        █
+  █▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀█
+  █ PATTERNS                                                               █
+  █────────────────────────────────────────────────────────────────────────█
+  █ Offset      00:Pattern number, or FFh to indicate no more patterns     █
+  █ Offset      01:Low byte of number of bytes in pattern                  █
+  █ Offset      02:High byte of number of bytes in pattern                 █
+  █                                                                        █
+  █ For each line in pattern:                                              █
+  █                                                                        █
+  █   Byte:Bit 7              - Last line                                  █
+  █        Bit 6..0           - Line number of following notes             █
+  █                                                                        █
+  █ List of notes for that line follow:                                    █
+  █                                                                        █
+  █   Byte:                                                                █
+  █        Bit 7              - Last channel                               █
+  █        Bit 6              - Note/octave byte follows                   █
+  █        Bit 5              - Instrument byte follows                    █
+  █        Bit 4              - Effect/parameter bytes follow              █
+  █        Bit 3..0           - Channel no. of following note data         █
+  █                                                                        █
+  █   Byte:(if note/octave byte enabled)                                   █
+  █        Bit 7              - If set use instrument the last note this   █
+  █                             channel last used.                         █
+  █        Bit 6..4           - Octave value                               █
+  █        Bit 3..0           - Note value.  This can be one of thirteen   █
+  █                             values: 1..12 which indicate one of the    █
+  █                             12 notes from C#(1) to C(12), or 15 for a  █
+  █                             key-off.                                   █
+  █                                                                        █
+  █   Byte:(if instrument byte enabled)                                    █
+  █        Bit 6..0           - Instrument number (1..127)                 █
+  █                                                                        █
+  █   Byte:(if effect/parameter byte enabled)                              █
+  █        Bit 4..0           - Effect (0..9, A..V).  Not all of these     █
+  █                             effect values are used (refer the effect   █
+  █                             table given earlier).                      █
+  █   Byte:(if effect/parameter byte enabled)                              █
+  █        Bit 6..0           - Effect's parameter (0..99).                █
+  █                                                                        █
+  █▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀█
+  █ RIFFS                                                                  █
+  █────────────────────────────────────────────────────────────────────────█
+  █ Offset      00:Riff number, or FFh to indicate no more riffs           █
+  █        Bit 7..4           - riff track (0..9)                          █
+  █        Bit 3..0           - riff channel (1..9)                        █
+  █ Offset      01:Low byte of number of bytes in riff                     █
+  █ Offset      02:High byte of number of bytes in riff                    █
+  █                                                                        █
+  █ For each line in riff:                                                 █
+  █                                                                        █
+  █   Byte:Bit 7              - Last line                                  █
+  █        Bit 6..0           - Line number of following note              █
+  █                                                                        █
+  █   Byte:                                                                █
+  █        Bit 6              - Note/octave byte follows                   █
+  █        Bit 5              - Instrument byte follows                    █
+  █        Bit 4              - Effect/parameter bytes follow              █
+  █                                                                        █
+  █   Byte:(if note/octave byte enabled)                                   █
+  █        Bit 7              - If set use instrument the last note this   █
+  █                             channel last used.                         █
+  █        Bit 6..4           - Octave value                               █
+  █        Bit 3..0           - Note value.  This can be one of thirteen   █
+  █                             values: 1..12 which indicate one of the    █
+  █                             12 notes from C#(1) to C(12), or 15 for a  █
+  █                             key-off.                                   █
+  █                                                                        █
+  █   Byte:(if instrument byte enabled)                                    █
+  █        Bit 6..0           - Instrument number (1..127)                 █
+  █                                                                        █
+  █   Byte:(if effect/parameter byte enabled)                              █
+  █        Bit 4..0           - Effect (0..9, A..V).  Not all of these     █
+  █                             effect values are used (refer the effect   █
+  █                             table given earlier).                      █
+  █   Byte:(if effect/parameter byte enabled)                              █
+  █        Bit 6..0           - Effect's parameter (0..99).                █
+  █                                                                        █
+  █▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄█
+
+
+
+
+                                   LAST WORDS
+                                ▀ ▀▀▀▀▀▀▀▀▀▀▀▀ ▀
+
+Well we hope you get a lot of use out of RAD.  Although RAD started as a  simple
+project by me (Shayde) it soon turned into something a lot more complex and  RAD
+would not  be what  it is  without the  considerable input  from all  members of
+Reality, with RAD V2 having extensive testing by Louis Gorenfeld (Extent of  the
+Jam).  The graphics and a lot of design ideas were put forward by Rogue  (grafix
+artist) and  Void (musician).   Because WE  knew want  we wanted  out of a music
+development package, RAD has  evolved into something we  are very happy to   use
+for  developing  our   productions.   We hope  you  also   discover  how to   be
+RADical...!
+
+RAD V1 was coded   in 100% 16-bit assembly  language by  SHAYDE, which  was then
+converted to C++ 23  years later and extensively  added to to make  RAD V2.  The
+16-bit DOS version of RAD V2 was compiled by the Digital Mars C++ compiler.  The
+Windows  versions were  done by  good ol'  Microsoft Visual-C++  - a  very fast
+compiler.  Finally, the Mac version was provided by GCC/Clang.
+
+RAD's graphics were drawn in 100% ANSI  by ROGUE and VOID.  The custom font  and
+intro logo were made by ROGUE.
+
+Documentation by SHAYDE, doc ANSI by ROGUE.
+
+If you'd like to send us any of your quality tunes made with RAD, please do  so,
+and  we'll  include  them  in  the   next  release  pack and our web-site!   You
+can  reach  us at http://www.3eality.com/
+
+L8'er dudes!
+
+
+
+     · ∙ ─ ─- ── ─────┤ REALITY PRODUCTIONS - 1995-2018 ├─ ─ ── ───═─══─═══─
+</pre></div></body></html>

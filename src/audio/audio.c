@@ -68,6 +68,10 @@
 #include "audio_openmpt.h"
 #endif
 
+#ifdef CONFIG_REALITY
+#include "audio_reality.h"
+#endif
+
 // May be used by audio plugins
 struct audio audio;
 
@@ -277,6 +281,10 @@ void init_audio(struct config_info *conf)
 
 #ifdef CONFIG_OPENMPT
   init_openmpt(conf);
+#endif
+
+#ifdef CONFIG_REALITY
+  init_reality(conf);
 #endif
 
   audio_set_music_volume(conf->music_volume);
