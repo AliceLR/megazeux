@@ -26,8 +26,11 @@ FIXES
   games not running at speed 2.
 + The counter debugger now correctly displays the value of
   local0.
-+ MegaZeux now attempts to retry removing an old file after an
-  update if deletion fails initially.
++ MZX now attempts to retry removal of an old file when updating
+  if deletion fails initially. Error messages related to the
+  failed deletion of "mzx_help.fil" or "assets/help.fil" are now
+  suppressed as they are caused by a bug in older MZX versions.
++ The help file is now closed before the updater restarts MZX.
 + Fixed crash bug that could occur when removing old files after
   an update.
 + Improved manifest validity checks.
