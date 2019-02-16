@@ -27,6 +27,7 @@
 
 
 #include <stdint.h>
+#include <string.h>
 
 
 
@@ -62,17 +63,17 @@ class RADPlayer {
         cmRiff              = ('R' - 55),
         cmTranspose         = ('T' - 55),
         cmFeedback          = ('U' - 55),
-        cmVolume            = ('V' - 55),
+        cmVolume            = ('V' - 55)
     };
 
     enum e_Source {
-        SNone, SRiff, SIRiff,
+        SNone, SRiff, SIRiff
     };
 
     enum {
         fKeyOn              = 1 << 0,
         fKeyOff             = 1 << 1,
-        fKeyedOn            = 1 << 2,
+        fKeyedOn            = 1 << 2
     };
 
     struct CInstrument {
@@ -162,6 +163,16 @@ class RADPlayer {
                                 return OPL3Regs[reg];
                             }
 
+/* BEGIN MEGAZEUX ADDITIONS */
+
+        void                Init10(const void *tune);
+        bool                UnpackNote10(uint8_t *&s);
+        uint8_t *           SkipToLine10(uint8_t *trk, uint8_t linenum);
+
+        bool                Is10;
+
+/* END MEGAZEUX ADDITIONS */
+
         void                (*OPL3)(void *, uint16_t, uint8_t);
         void *              OPL3Arg;
         CInstrument         Instruments[kInstruments];
@@ -236,9 +247,11 @@ const bool RADPlayer::AlgCarriers[7][4] = {
 void RADPlayer::Init(const void *tune, void (*opl3)(void *, uint16_t, uint8_t), void *arg) {
 
     Initialised = false;
+    Is10 = false;
 
     // Version check; we only support version 2.1 tune files
-    if (*((uint8_t *)tune + 0x10) != 0x21) {
+    uint8_t version = *((uint8_t *)tune + 0x10);
+    if ((version != 0x10) && (version != 0x21)) {
         Hertz = -1;
         return;
     }
@@ -253,6 +266,13 @@ void RADPlayer::Init(const void *tune, void (*opl3)(void *, uint16_t, uint8_t), 
     for (int i = 0; i < kRiffTracks; i++)
         for (int j = 0; j < kChannels; j++)
             Riffs[i][j] = 0;
+
+    if(version == 0x10)
+    {
+        Is10 = true;
+        Init10(tune);
+        return;
+    }
 
     uint8_t *s = (uint8_t *)tune + 0x11;
 
@@ -476,6 +496,9 @@ bool RADPlayer::Update() {
 //==================================================================================================
 bool RADPlayer::UnpackNote(uint8_t *&s, uint8_t &last_instrument) {
 
+    if(Is10)
+        return UnpackNote10(s);
+
     uint8_t chanid = *s++;
 
     InstNum   = 0;
@@ -553,6 +576,9 @@ uint8_t *RADPlayer::GetTrack() {
 //==================================================================================================
 uint8_t *RADPlayer::SkipToLine(uint8_t *trk, uint8_t linenum, bool chan_riff) {
 
+    if (Is10)
+        return SkipToLine10(trk, linenum);
+
     while (1) {
 
         uint8_t lineid = *trk;
@@ -624,6 +650,11 @@ void RADPlayer::PlayLine() {
         // Move to next track in order list
         Order++;
         Track = GetTrack();
+
+        // NOTE: This fixes a bug where the vanilla copy of this player
+        // fails to handle Dxx correctly. See: mindflux.rad order 13. -Lachesis
+        if(Line > 0)
+            Track = SkipToLine(Track, Line, false);
     }
 }
 
@@ -1264,3 +1295,170 @@ uint32_t RADPlayer::ComputeTotalTime() {
     return total / Hertz;
 }
 #endif
+
+
+
+// BEGIN MEGAZEUX ADDITIONS
+
+
+
+//==================================================================================================
+// Initialise a RAD v1 tune for playback.  This assumes the tune data is valid and does minimal data
+// checking. -Lachesis
+//==================================================================================================
+void RADPlayer::Init10(const void *tune)
+{
+    uint8_t *pos = (uint8_t *)tune + 0x11;
+
+    uint8_t flags = *(pos++);
+    Speed = flags & 0x1F;
+    Hertz = 50;
+
+    // Slow timer tune?  Return an approximate hz
+    if(flags & 0x40)
+        Hertz = 18;
+
+    // Skip any description
+    while(*(pos++));
+
+    // Unpack the instruments
+    while(true)
+    {
+        // Instrument number, 0 indicates end of list
+        uint8_t inst_num = *(pos++);
+        if (inst_num == 0)
+            break;
+
+        CInstrument &inst = Instruments[inst_num - 1];
+
+        uint8_t c_flags = pos[0];
+        uint8_t m_flags = pos[1];
+        uint8_t c_ksl_volume = pos[2];
+        uint8_t m_ksl_volume = pos[3];
+        uint8_t c_attack_decay = pos[4];
+        uint8_t m_attack_decay = pos[5];
+        uint8_t c_sustain_release = pos[6];
+        uint8_t m_sustain_release = pos[7];
+        uint8_t feedback_algorithm = pos[8];
+        uint8_t c_waveform = pos[9];
+        uint8_t m_waveform = pos[10];
+        pos += 11;
+
+        inst.Algorithm = (feedback_algorithm & 1);
+        inst.Panning[0] = 0;
+        inst.Panning[1] = 0;
+
+        inst.Feedback[0] = (feedback_algorithm & 0x0E) >> 1;
+        inst.Feedback[1] = (feedback_algorithm & 0x0E) >> 1;
+
+        inst.Volume = (c_ksl_volume & 0x3F) ^ 0x3F;
+        inst.Detune = 0;
+        inst.RiffSpeed = 6;
+        inst.Riff = 0;
+
+        uint8_t *op0 = inst.Operators[0];
+        uint8_t *op1 = inst.Operators[1];
+        uint8_t *op2 = inst.Operators[2];
+        uint8_t *op3 = inst.Operators[3];
+
+        op0[0] = c_flags;
+        op0[1] = c_ksl_volume;
+        op0[2] = c_attack_decay;
+        op0[3] = c_sustain_release;
+        op0[4] = c_waveform;
+
+        op1[0] = m_flags;
+        op1[1] = m_ksl_volume;
+        op1[2] = m_attack_decay;
+        op1[3] = m_sustain_release;
+        op1[4] = m_waveform;
+
+        memset(op2, 0, 5);
+        memset(op3, 0, 5);
+    }
+
+    // Get order list
+    OrderListSize = *(pos++);
+    OrderList = pos;
+    pos += OrderListSize;
+
+    // Track offset table
+    for(int i = 0; i < 31; i++)
+    {
+        int offset = pos[0] | (int(pos[1]) << 8);
+        pos += 2;
+
+        if(offset)
+            Tracks[i] = (uint8_t *)tune + offset;
+    }
+
+    // Done parsing tune, now set up for play
+    for(int i = 0; i < 512; i++)
+        OPL3Regs[i] = 255;
+
+    Stop();
+
+    Initialised = true;
+}
+
+
+
+//==================================================================================================
+// Unpacks a single RAD note (v1). -Lachesis
+//==================================================================================================
+bool RADPlayer::UnpackNote10(uint8_t *&pos)
+{
+    uint8_t chanid = *(pos++);
+    uint8_t b1 = *(pos++);
+    uint8_t b2 = *(pos++);
+
+    // Unpack note data
+    NoteNum = b1 & 0x0F;
+    OctaveNum = (b1 & 0x70) >> 4;
+    InstNum = ((b1 & 0x80) >> 3) | ((b2 & 0xF0) >> 4);
+    EffectNum = (b2 & 0x0F);
+    Param = 0;
+
+    // Do we have an effect?
+    if(EffectNum)
+        Param = *(pos++);
+
+    return ((chanid & 0x80) != 0);
+}
+
+
+
+//==================================================================================================
+// Skip through track till we reach the given line or the next higher one (v1).  Returns null if none.
+// -Lachesis
+//==================================================================================================
+uint8_t *RADPlayer::SkipToLine10(uint8_t *trk, uint8_t linenum)
+{
+    while(true)
+    {
+        uint8_t lineid = *trk;
+
+        if((lineid & 0x7F) >= linenum)
+            return trk;
+
+        if(lineid & 0x80)
+            break;
+
+        trk++;
+
+        // Skip channel notes
+        while(true)
+        {
+            uint8_t chanid = *(trk++);
+            trk++;
+
+            // Do we have an effect?
+            if(*(trk++) & 0x0F)
+                trk++;
+
+            if(chanid & 0x80)
+                break;
+        }
+    }
+    return 0;
+}

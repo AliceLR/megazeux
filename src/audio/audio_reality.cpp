@@ -160,7 +160,10 @@ static struct audio_stream *construct_rad_stream(char *filename,
     data = (Uint8 *)cmalloc(length);
 
     if(!fread(data, length, 1, fp))
+    {
       free(data);
+      data = NULL;
+    }
 
     fclose(fp);
 
