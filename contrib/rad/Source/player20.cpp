@@ -133,6 +133,13 @@ class RADPlayer {
         int                 GetMasterVolume() const {  return MasterVol;  }
         int                 GetSpeed() const {  return Speed;  }
 
+/* BEGIN MEGAZEUX ADDITIONS */
+
+        void                SetTunePos(uint32_t order, uint32_t line);
+        int                 GetTuneEffectiveLength();
+
+/* END MEGAZEUX ADDITIONS */
+
 #if RAD_DETECT_REPEATS
         uint32_t            ComputeTotalTime();
 #endif
@@ -168,7 +175,7 @@ class RADPlayer {
         void                Init10(const void *tune);
         bool                UnpackNote10(uint8_t *&s);
         uint8_t *           SkipToLine10(uint8_t *trk, uint8_t linenum);
-
+        int                 LastPatternOrder;
         bool                Is10;
 
 /* END MEGAZEUX ADDITIONS */
@@ -248,6 +255,7 @@ void RADPlayer::Init(const void *tune, void (*opl3)(void *, uint16_t, uint8_t), 
 
     Initialised = false;
     Is10 = false;
+    LastPatternOrder = -1;
 
     // Version check; we only support version 2.1 tune files
     uint8_t version = *((uint8_t *)tune + 0x10);
@@ -1461,4 +1469,51 @@ uint8_t *RADPlayer::SkipToLine10(uint8_t *trk, uint8_t linenum)
         }
     }
     return 0;
+}
+
+
+
+//==================================================================================================
+// Set the current order and line. -Lachesis
+//==================================================================================================
+void RADPlayer::SetTunePos(uint32_t order, uint32_t line)
+{
+    if(line > kTrackLines)
+        line = 0;
+
+    if(order > kTracks || order > OrderListSize)
+        order = 0;
+
+    Order = order;
+    Line = line;
+
+    Track = GetTrack();
+
+    if(line > 0)
+        Track = SkipToLine(Track, Line, false);
+}
+
+
+
+//==================================================================================================
+// Get the effective length of the tune in orders, i.e., the length minus any jumps at the end.
+// -Lachesis
+//==================================================================================================
+int RADPlayer::GetTuneEffectiveLength()
+{
+    if(LastPatternOrder >= 0)
+        return LastPatternOrder + 1;
+
+    int i;
+    for(i = OrderListSize - 1; i >= 0; i--)
+    {
+        if(!(OrderList[i] & 0x80))
+            break;
+    }
+
+    if(i < 0)
+        return 0;
+
+    LastPatternOrder = i;
+    return i + 1;
 }

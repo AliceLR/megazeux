@@ -35,6 +35,10 @@
 #include "../../contrib/rad/Source/player20.cpp"
 #include "../../contrib/rad/Source/validate20.cpp"
 
+// Every order in a RAD is fixed length. This makes a few operations for this
+// player much easier.
+#define ORDER_LINES 64
+
 struct rad_stream_cls
 {
   Opal adlib;
@@ -101,6 +105,22 @@ static void rad_set_repeat(struct audio_stream *a_src, Uint32 repeat)
   a_src->repeat = repeat;
 }
 
+static void rad_set_order(struct audio_stream *a_src, Uint32 order)
+{
+  struct rad_stream *rad_stream = (struct rad_stream *)a_src;
+
+  rad_stream->cls->player.SetTunePos(order, 0);
+}
+
+static void rad_set_position(struct audio_stream *a_src, Uint32 position)
+{
+  struct rad_stream *rad_stream = (struct rad_stream *)a_src;
+  Uint32 order = position / ORDER_LINES;
+  Uint32 line = position % ORDER_LINES;
+
+  rad_stream->cls->player.SetTunePos(order, line);
+}
+
 static void rad_set_frequency(struct sampled_stream *s_src, Uint32 frequency)
 {
   struct rad_stream *rad_stream = (struct rad_stream *)s_src;
@@ -118,6 +138,30 @@ static void rad_set_frequency(struct sampled_stream *s_src, Uint32 frequency)
 
   s_src->frequency = frequency;
   sampled_set_buffer(s_src);
+}
+
+static Uint32 rad_get_order(struct audio_stream *a_src)
+{
+  struct rad_stream *rad_stream = (struct rad_stream *)a_src;
+
+  return rad_stream->cls->player.GetTunePos();
+}
+
+static Uint32 rad_get_position(struct audio_stream *a_src)
+{
+  struct rad_stream *rad_stream = (struct rad_stream *)a_src;
+  Uint32 order = rad_stream->cls->player.GetTunePos();
+  Uint32 line = rad_stream->cls->player.GetTuneLine();
+
+  return order * ORDER_LINES + line;
+}
+
+static Uint32 rad_get_length(struct audio_stream *a_src)
+{
+  struct rad_stream *rad_stream = (struct rad_stream *)a_src;
+  Uint32 length = rad_stream->cls->player.GetTuneEffectiveLength();
+
+  return length * ORDER_LINES;
 }
 
 static Uint32 rad_get_frequency(struct sampled_stream *s_src)
@@ -190,12 +234,11 @@ static struct audio_stream *construct_rad_stream(char *filename,
         a_spec.mix_data = rad_mix_data;
         a_spec.set_volume = rad_set_volume;
         a_spec.set_repeat = rad_set_repeat;
-        // FIXME
-        // set order
-        // set position
-        // get order
-        // get position
-        // get length
+        a_spec.set_order = rad_set_order;
+        a_spec.set_position = rad_set_position;
+        a_spec.get_order = rad_get_order;
+        a_spec.get_position = rad_get_position;
+        a_spec.get_length = rad_get_length;
         a_spec.destruct = rad_destruct;
 
         memset(&s_spec, 0, sizeof(struct sampled_stream_spec));
