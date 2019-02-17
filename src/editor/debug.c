@@ -379,7 +379,7 @@ static void get_var_name(struct debug_var *v, char **name, int *len,
       return;
 
     case V_LOCAL_VAR:
-      snprintf(buffer, 32, "local%d", v->id);
+      snprintf(buffer, 32, "local%d", v->data.local_num);
       if(name) *name = buffer;
       if(len)  *len = strlen(buffer);
       return;

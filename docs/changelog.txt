@@ -26,6 +26,8 @@ FIXES
   games not running at speed 2.
 + The counter debugger now correctly displays the value of
   local0.
++ Fixed a bug where the counter debugger would not reopen to
+  the correct robot local# value.
 + MZX now attempts to retry removal of an old file when updating
   if deletion fails initially. Error messages related to the
   failed deletion of "mzx_help.fil" or "assets/help.fil" are now
