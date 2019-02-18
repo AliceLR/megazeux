@@ -9,6 +9,8 @@ FEATURES
   example, if a robot is selected on the board before switching
   to overlay mode, the robot will still be in the buffer when
   the user switches back to board mode.
++ Scrolls and sensors can now be viewed in the counter debugger.
+  They can be found by expanding the Board list (when present).
 
 FIXES
 
