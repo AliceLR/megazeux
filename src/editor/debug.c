@@ -32,6 +32,7 @@
 #include "../graphics.h"
 #include "../intake.h"
 #include "../memcasecmp.h"
+#include "../scrdisp.h"
 #include "../sprite.h"
 #include "../str.h"
 #include "../util.h"
@@ -293,12 +294,21 @@ static const char *sprite_var_list[] =
   "vlayer", // no read
 };
 
+static const char *sensor_var_list[] =
+{
+  "Sensor name*", // no read/write
+  "Robot to mesg*", // no read/write
+};
+
+static const char *scroll_text_var = "Scroll text*";
+
 static int num_universal_vars = ARRAY_SIZE(universal_var_list);
 static int num_world_vars = ARRAY_SIZE(world_var_list);
 static int num_board_vars = ARRAY_SIZE(board_var_list);
 static int num_robot_vars = ARRAY_SIZE(robot_var_list);
 static int num_sprite_parent_vars = ARRAY_SIZE(sprite_parent_var_list);
 static int num_sprite_vars = ARRAY_SIZE(sprite_var_list);
+static int num_sensor_vars = ARRAY_SIZE(sensor_var_list);
 
 enum debug_var_type
 {
@@ -308,6 +318,7 @@ enum debug_var_type
   V_SPRITE_VAR,
   V_SPRITE_CLIST,
   V_LOCAL_VAR,
+  V_SCROLL_TEXT,
 };
 
 struct debug_var
@@ -362,6 +373,7 @@ static void get_var_name(struct debug_var *v, char **name, int *len,
       return;
 
     case V_VAR:
+    case V_SCROLL_TEXT:
       if(name) *name = (char *)v->data.var_name;
       if(len)  *len = strlen(*name);
       return;
@@ -379,7 +391,7 @@ static void get_var_name(struct debug_var *v, char **name, int *len,
       return;
 
     case V_LOCAL_VAR:
-      snprintf(buffer, 32, "local%d", v->id);
+      snprintf(buffer, 32, "local%d", v->data.local_num);
       if(name) *name = buffer;
       if(len)  *len = strlen(buffer);
       return;
@@ -534,6 +546,20 @@ static void get_var_value(struct world *mzx_world, struct debug_var *v,
       {
         *int_value = cur_board->robot_list[index]->is_locked;
       }
+      else
+
+      if(match_var("Sensor name*"))
+      {
+        *char_value = cur_board->sensor_list[index]->sensor_name;
+        *int_value = strlen(*char_value);
+      }
+      else
+
+      if(match_var("Robot to mesg*"))
+      {
+        *char_value = cur_board->sensor_list[index]->robot_to_mesg;
+        *int_value = strlen(*char_value);
+      }
 
       else
       {
@@ -624,6 +650,14 @@ static void get_var_value(struct world *mzx_world, struct debug_var *v,
       int index = v->id;
 
       *int_value = cur_board->robot_list[index]->local[local_num];
+      break;
+    }
+
+    case V_SCROLL_TEXT:
+    {
+      struct scroll *src_scroll = cur_board->scroll_list[v->id];
+      *char_value = src_scroll->mesg + 1;
+      *int_value = src_scroll->mesg_size;
       break;
     }
   }
@@ -763,6 +797,12 @@ static void write_var(struct world *mzx_world, struct debug_var *v, int int_val,
       set_counter(mzx_world, real_var, int_val, v->id);
       break;
     }
+
+    case V_SCROLL_TEXT:
+    {
+      // Scroll text (read-only)
+      return;
+    }
   }
 
   // Now update debug_var to reflect the new value.
@@ -842,6 +882,17 @@ static void init_local_var(struct debug_var *v, int robot, int num)
   v->text[VAR_LIST_WIDTH] = 0;
 }
 
+static void init_scroll_text(struct debug_var *v, int scroll)
+{
+  v->type = V_SCROLL_TEXT;
+  v->is_empty = false;
+  v->id = (char)scroll;
+  v->data.var_name = scroll_text_var;
+  memset(v->text, 32, VAR_LIST_WIDTH);
+  memcpy(v->text, scroll_text_var, strlen(scroll_text_var));
+  v->text[VAR_LIST_WIDTH] = 0;
+}
+
 /************************
  * Debug tree functions *
  ************************/
@@ -870,6 +921,7 @@ struct debug_node
    boolean opened;
    boolean refresh_on_focus;
    boolean show_child_contents;
+   boolean delete_child_nodes;
    int num_nodes;
    int num_vars;
    struct debug_node *parent;
@@ -1020,7 +1072,10 @@ static void rebuild_var_list(struct debug_node *node,
   init_var_list(node, *var_list, *num_vars, &index, hide_empty);
 }
 
-// If we're not deleting the entire tree we only wipe the counter lists
+/**
+ * Delete all vars in the tree. If delete_all is true, all child nodes will
+ * also be deleted; otherwise, only delete children of nodes explicitly marked.
+ */
 static void clear_debug_tree(struct debug_node *node, boolean delete_all)
 {
   int i;
@@ -1033,6 +1088,10 @@ static void clear_debug_tree(struct debug_node *node, boolean delete_all)
 
   if(node->num_nodes)
   {
+    // If this node deletes its children, its children also need to delete
+    // their children recursively.
+    delete_all |= node->delete_child_nodes;
+
     for(i = 0; i < node->num_nodes; i++)
       clear_debug_tree(&(node->nodes[i]), delete_all);
 
@@ -1726,6 +1785,88 @@ static void init_robot_node(struct world *mzx_world, struct debug_node *dest)
       init_robot_vars_node(mzx_world, dest, &(nodes[cur++]), robot_list[i], i);
 }
 
+static void init_scroll_var_node(struct world *mzx_world,
+ struct debug_node *parent, struct debug_node *dest, int scroll_id)
+{
+  struct debug_var *var_list = ccalloc(1, sizeof(struct debug_var));
+
+  init_scroll_text(&(var_list[0]), scroll_id);
+  read_var(mzx_world, &(var_list[0]));
+
+  snprintf(dest->name, 14, "Scroll %d", scroll_id);
+  dest->parent = parent;
+  dest->num_nodes = 0;
+  dest->nodes = NULL;
+  dest->num_vars = 1;
+  dest->vars = var_list;
+}
+
+static void init_scroll_node(struct world *mzx_world, struct debug_node *dest)
+{
+  struct debug_node *nodes;
+  struct scroll **scroll_list = mzx_world->current_board->scroll_list;
+  int max_scrolls = mzx_world->current_board->num_scrolls;
+  int num_scrolls = 0;
+  int cur;
+  int i;
+
+  for(i = 1; i <= max_scrolls; i++)
+    if(scroll_list[i] && scroll_list[i]->used)
+      num_scrolls++;
+
+  // Don't create any child nodes if there are no scrolls...
+  if(!num_scrolls)
+    return;
+
+  nodes = ccalloc(num_scrolls, sizeof(struct debug_node));
+  dest->num_nodes = num_scrolls;
+  dest->nodes = nodes;
+
+  // Populate scroll nodes.
+  for(cur = 0, i = 1; i <= max_scrolls; i++)
+    if(scroll_list[i] && scroll_list[i]->used)
+      init_scroll_var_node(mzx_world, dest, &(nodes[cur++]), i);
+}
+
+static void init_sensor_var_node(struct world *mzx_world,
+ struct debug_node *parent, struct debug_node *dest, int sensor_id)
+{
+  init_builtin_node(mzx_world, dest, sensor_var_list, num_sensor_vars,
+   sensor_id);
+
+  snprintf(dest->name, 14, "Sensor %d", sensor_id);
+  dest->parent = parent;
+  dest->num_nodes = 0;
+  dest->nodes = NULL;
+}
+
+static void init_sensor_node(struct world *mzx_world, struct debug_node *dest)
+{
+  struct debug_node *nodes;
+  struct sensor **sensor_list = mzx_world->current_board->sensor_list;
+  int max_sensors = mzx_world->current_board->num_sensors;
+  int num_sensors = 0;
+  int cur;
+  int i;
+
+  for(i = 1; i <= max_sensors; i++)
+    if(sensor_list[i] && sensor_list[i]->used)
+      num_sensors++;
+
+  // Don't create any child nodes if there are no sensors...
+  if(!num_sensors)
+    return;
+
+  nodes = ccalloc(num_sensors, sizeof(struct debug_node));
+  dest->num_nodes = num_sensors;
+  dest->nodes = nodes;
+
+  // Populate the sensor nodes.
+  for(cur = 0, i = 1; i <= max_sensors; i++)
+    if(sensor_list[i] && sensor_list[i]->used)
+      init_sensor_var_node(mzx_world, dest, &(nodes[cur++]), i);
+}
+
 enum root_node_ids
 {
   NODE_COUNTERS,
@@ -1738,15 +1879,21 @@ enum root_node_ids
   NUM_ROOT_NODES
 };
 
+enum board_node_ids
+{
+  NODE_SCROLLS,
+  NODE_SENSORS,
+  NUM_BOARD_NODES
+};
+
 // Create new counter lists.
 // (Re)make the child nodes
 static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
 {
-  int i;
+  struct debug_node *board = &(root->nodes[NODE_BOARD]);
 
-  // Clear all of the root-level lists recursively.
-  for(i = 0; i < NUM_ROOT_NODES; i++)
-    clear_debug_tree(root->nodes + i, true);
+  // Clear the debug tree recursively (but preserve the base structure).
+  clear_debug_tree(root, false);
 
   // Initialize the tree.
   init_counters_node(mzx_world,   &(root->nodes[NODE_COUNTERS]));
@@ -1756,6 +1903,12 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
   init_world_node(mzx_world,      &(root->nodes[NODE_WORLD]));
   init_board_node(mzx_world,      &(root->nodes[NODE_BOARD]));
   init_robot_node(mzx_world,      &(root->nodes[NODE_ROBOTS]));
+
+  if(board->nodes)
+  {
+    init_scroll_node(mzx_world,   &(board->nodes[NODE_SCROLLS]));
+    init_sensor_node(mzx_world,   &(board->nodes[NODE_SENSORS]));
+  }
 }
 
 // Create the base tree structure, except for sprites and robots
@@ -1769,6 +1922,7 @@ static void build_debug_tree(struct world *mzx_world, struct debug_node *root)
     true,  //opened
     false, //refresh_on_focus
     false, //show_child_contents
+    false, //delete_child_nodes
     NUM_ROOT_NODES,
     0,
     NULL,  //parent
@@ -1781,6 +1935,7 @@ static void build_debug_tree(struct world *mzx_world, struct debug_node *root)
     "Counters",
     false,
     false,
+    true,
     true,
     0,
     0,
@@ -1795,6 +1950,7 @@ static void build_debug_tree(struct world *mzx_world, struct debug_node *root)
     false,
     false,
     true,
+    true,
     0,
     0,
     root,
@@ -1808,6 +1964,7 @@ static void build_debug_tree(struct world *mzx_world, struct debug_node *root)
     false,
     false,
     false,
+    true,
     0,
     0,
     root,
@@ -1820,6 +1977,7 @@ static void build_debug_tree(struct world *mzx_world, struct debug_node *root)
     "Universal",
     false,
     true,
+    false,
     false,
     0,
     0,
@@ -1834,6 +1992,7 @@ static void build_debug_tree(struct world *mzx_world, struct debug_node *root)
     false,
     true,
     false,
+    false,
     0,
     0,
     root,
@@ -1846,6 +2005,7 @@ static void build_debug_tree(struct world *mzx_world, struct debug_node *root)
     "Board",
     false,
     true,
+    false,
     false,
     0,
     0,
@@ -1860,12 +2020,53 @@ static void build_debug_tree(struct world *mzx_world, struct debug_node *root)
     false,
     false,
     false,
+    true,
     0,
     0,
     root,
     NULL,
     NULL
   };
+
+  struct debug_node scrolls =
+  {
+    "Scrolls/Signs",
+    false,
+    false,
+    false,
+    true,
+    0,
+    0,
+    &(nodes[NODE_BOARD]),
+    NULL,
+    NULL
+  };
+
+  struct debug_node sensors =
+  {
+    "Sensors",
+    false,
+    false,
+    false,
+    true,
+    0,
+    0,
+    &(nodes[NODE_BOARD]),
+    NULL,
+    NULL
+  };
+
+  if(mzx_world->current_board->num_scrolls ||
+   mzx_world->current_board->num_sensors)
+  {
+    // Only create these if there are actually scrolls/sensors on the board.
+    struct debug_node *n = ccalloc(NUM_BOARD_NODES, sizeof(struct debug_node));
+    board.num_nodes = NUM_BOARD_NODES;
+    board.nodes = n;
+
+    n[NODE_SCROLLS] = scrolls;
+    n[NODE_SENSORS] = sensors;
+  }
 
   *root = root_node;
   nodes[NODE_COUNTERS] = counters;
@@ -1946,6 +2147,13 @@ static void input_counter_value(struct world *mzx_world, struct debug_var *v)
       // Just strcpy it off of the debug_var for simplicity
       strcpy(new_value, v->text + CVALUE_COL_OFFSET);
       break;
+    }
+
+    case V_SCROLL_TEXT:
+    {
+      // Too much of a pain to figure out if it's a sign or scroll so
+      scroll_edit(mzx_world, mzx_world->current_board->scroll_list[v->id], 0);
+      return;
     }
   }
 
