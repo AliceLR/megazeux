@@ -378,7 +378,7 @@ ${build}:
 	${CP} config.txt LICENSE ${build}
 	${CP} assets/default.chr assets/edit.chr ${build}/assets
 	${CP} assets/smzx.pal ${build}/assets
-	${CP} docs/macro.txt docs/keycodes.html ${build}/docs
+	${CP} docs/macro.txt docs/keycodes.html docs/mzxhelp.html ${build}/docs
 	${CP} docs/changelog.txt docs/platform_matrix.html ${build}/docs
 	${CP} ${mzxrun} ${build}
 	@if test -f ${mzxrun}.debug; then \
@@ -431,7 +431,12 @@ distclean: clean
 	@echo "PLATFORM=none" > platform.inc
 
 assets/help.fil: ${txt2hlp} docs/WIPHelp.txt
+	$(if ${V},,@echo "  txt2hlp " $@)
 	@src/utils/txt2hlp docs/WIPHelp.txt $@
+
+docs/mzxhelp.html: ${hlp2html} docs/WIPHelp.txt
+	$(if ${V},,@echo "  hlp2html" $@)
+	@src/utils/hlp2html docs/WIPHelp.txt docs/mzxhelp.html
 
 help_check: ${hlp2txt} assets/help.fil
 	@src/utils/hlp2txt assets/help.fil help.txt
