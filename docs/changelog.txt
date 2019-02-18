@@ -84,6 +84,10 @@ USERS
   releases instead of key presses.
 + The 3DS onscreen keyboard now returns shifted chars when shift
   is active.
++ Fixed a bug where the libxmp implementation of MOD_ORDER and
+  JUMP MOD ORDER could not restart the current order.
++ Fixed a crash with the libxmp implementation of MOD_POSITION
+  when providing an out-of-bounds value.
 
 DEVELOPERS
 
