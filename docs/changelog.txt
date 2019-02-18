@@ -1,6 +1,6 @@
 GIT
 
-FEATURES
+USERS
 
 + Nvidia and AMD switchable graphics drivers should now detect
   MegaZeux and MZXRun properly.
@@ -11,9 +11,6 @@ FEATURES
   the user switches back to board mode.
 + Scrolls and sensors can now be viewed in the counter debugger.
   They can be found by expanding the Board list (when present).
-
-FIXES
-
 + Readded "#version 110" directives to all GLSL shaders, fixing
   warnings on some Intel HD drivers. OpenGL ES builds should now
   comment out these directives.
