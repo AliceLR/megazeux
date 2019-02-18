@@ -9,6 +9,8 @@ USERS
   example, if a robot is selected on the board before switching
   to overlay mode, the robot will still be in the buffer when
   the user switches back to board mode.
++ The editor now remembers the last filename for importing and
+  exporting MZM, MZB, CHR, PAL, and PALIDX files.
 + Scrolls and sensors can now be viewed in the counter debugger.
   They can be found by expanding the Board list (when present).
 + Readded "#version 110" directives to all GLSL shaders, fixing
