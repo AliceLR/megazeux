@@ -90,6 +90,10 @@ USERS
   JUMP MOD ORDER could not restart the current order.
 + Fixed a crash with the libxmp implementation of MOD_POSITION
   when providing an out-of-bounds value.
++ Fixed a bug where Ctrl+[key] shortcuts would not work while a
+  dialog list element was active on the Wii.
++ Fixed a bug where setting the board mod/charset/palette could
+  truncate the first letter of the path on the Wii.
 
 DEVELOPERS
 

@@ -1896,7 +1896,8 @@ static int key_list_box(struct world *mzx_world, struct dialog *di,
     default:
     {
       int key_char = get_key(keycode_unicode);
-      if(!get_alt_status(keycode_internal) && (key_char >= 32))
+      if(!get_alt_status(keycode_internal) &&
+       !get_ctrl_status(keycode_internal) && (key_char >= 32))
       {
         char *key_buffer = src->key_buffer;
         int key_position = src->key_position;
@@ -3307,13 +3308,14 @@ skip_dir:
     // No unallowed paths kthx
     if(dirs_okay != 1)
     {
+      size_t base_dir_len = strlen(base_dir_name);
+
       // If the base path isn't part of the return path
-      if(strncmp(base_dir_name, current_dir_name, strlen(base_dir_name)) ||
+      if(strncmp(base_dir_name, current_dir_name,  base_dir_len) ||
        strstr(current_dir_name, "..") ||
 
       // or if there's an unallowed subdirectory
-       (!dirs_okay &&
-        strstr(current_dir_name + strlen(base_dir_name), DIR_SEPARATOR)))
+       (!dirs_okay && strstr(current_dir_name + base_dir_len, DIR_SEPARATOR)))
       {
         debug("some1 dropped da ball!!!!!!11\n");
         strcpy(current_dir_name, base_dir_name);
@@ -3324,7 +3326,12 @@ skip_dir:
 
       if(!strcmp(base_dir_name, return_dir_name))
       {
-        strcpy(ret_file, ret + strlen(base_dir_name) + 1);
+        // The base dir might not have a trailing slash, so skip any of those
+        // found in the selected file before copying the result.
+        while(ret[base_dir_len] == DIR_SEPARATOR_CHAR)
+          base_dir_len++;
+
+        strcpy(ret_file, ret + base_dir_len);
         strcpy(ret, ret_file);
       }
     }
