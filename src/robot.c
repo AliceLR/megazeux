@@ -2502,9 +2502,13 @@ static void display_robot_line(struct world *mzx_world, char *program,
   {
     case 103: // Normal message
     {
+      // On the off-chance something actually relies on this bug...
+      boolean allow_tabs =
+       ((mzx_world->version >= VERSION_PORT) && (mzx_world->version < V291));
+
       tr_msg(mzx_world, program + 3, id, ibuff);
       ibuff[64] = 0; // Clip
-      write_string_ext(ibuff, 8, y, scroll_base_color, 1, 0, 0);
+      write_string_ext(ibuff, 8, y, scroll_base_color, allow_tabs, 0, 0);
       break;
     }
 
@@ -2624,13 +2628,13 @@ void robot_box_display(struct world *mzx_world, char *program,
   if(!cur_robot->robot_name[0])
   {
     write_string_ext("Interaction", 35, 4,
-     mzx_world->scroll_title_color, 0, 0, 0);
+     mzx_world->scroll_title_color, false, 0, 0);
   }
   else
   {
     write_string_ext(cur_robot->robot_name,
      40 - (Uint32)strlen(cur_robot->robot_name) / 2, 4,
-     mzx_world->scroll_title_color, 1, 0, 0);
+     mzx_world->scroll_title_color, false, 0, 0);
   }
   select_layer(UI_LAYER);
 

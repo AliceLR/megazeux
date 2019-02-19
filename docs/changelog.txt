@@ -113,6 +113,8 @@ USERS
 + Fixed a bug where setting the board mod/charset/palette could
   truncate the first letter of the path on the Wii.
 + "mask_midchars" no longer masks the non-text char 127.
++ The message box title and the command [ now properly display
+  the graphic for char 9 instead of a tab.
 
 DEVELOPERS
 
