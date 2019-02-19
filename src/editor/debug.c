@@ -434,6 +434,7 @@ static void get_var_name(struct debug_var *v, char **name, int *len,
 
 #define match_var(_name) (strlen(_name) == len && !memcmp(var, _name, len))
 
+// The buffer param is used for any vars that need to generate char values.
 static void get_var_value(struct world *mzx_world, struct debug_var *v,
  char **char_value, int *int_value, char buffer[VAR_LIST_WIDTH + 1])
 {
@@ -540,26 +541,7 @@ static void get_var_value(struct world *mzx_world, struct debug_var *v,
 
       if(match_var("robot_name*"))
       {
-#ifdef CONFIG_DEBYTECODE
-        // FIXME belongs in read_var, not here
-        // In debytecode, it is possible to encounter situations where
-        // debug information is missing, so add a display for it.
-
-        struct robot *cur_robot = cur_board->robot_list[index];
-        size_t len = strlen(cur_robot->robot_name);
-        const char *yn[] = { "N", "Y" };
-
-        memset(buffer, ' ', SVALUE_SIZE);
-        memcpy(buffer, cur_robot->robot_name, len);
-        sprintf(buffer + SVALUE_SIZE - CVALUE_SIZE, "(debug: %s)",
-         yn[cur_robot->command_map != NULL]);
-
-        buffer[SVALUE_SIZE] = 0;
-        *char_value = buffer;
-#else
         *char_value = cur_board->robot_list[index]->robot_name;
-#endif
-
         *int_value = strlen(*char_value);
       }
       else
