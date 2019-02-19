@@ -548,7 +548,7 @@
 # pause_on_unfocus = 0
 
 # Set to 0 if you want input boxes and strings in the robot editor
-# to use the game set for characters 32-127, as opposed to the protected
+# to use the game set for characters 32-126, as opposed to the protected
 # GUI set.
 
 # mask_midchars = 1

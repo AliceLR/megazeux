@@ -112,6 +112,7 @@ USERS
   dialog list element was active on the Wii.
 + Fixed a bug where setting the board mod/charset/palette could
   truncate the first letter of the path on the Wii.
++ "mask_midchars" no longer masks the non-text char 127.
 
 DEVELOPERS
 
