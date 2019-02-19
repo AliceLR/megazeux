@@ -1,9 +1,27 @@
-GIT
+February 20th, 2019 - MZX 2.91j
+
+Here's a huge collection of bugfixes and a couple of features
+that needed to be split off from 2.92.
+
+Features: every release has an HTML copy of the help file now,
+the editor keeps separate board/overlay/vlayer buffers now, and
+anyone who still uses scrolls/sensors can view their info in the
+counter debugger. The global volume settings use an exponential
+curve now, range from 0 to 10, and have updated UI elements.
+
+Fixes in this release include: the updater won't complain about
+mzx_help.fil anymore, the NDS and 3DS ports have keyboards that
+work again, several bugs that would lead to worlds/saves with
+"Robot # does not exist on board #" errors have been fixed, and
+several crashes have been fixed.
 
 USERS
 
++ A complete HTML copy of the MegaZeux help file is now packaged
+  with releases for all platforms. It can be found in the docs/
+  folder.
 + Nvidia and AMD switchable graphics drivers should now detect
-  MegaZeux and MZXRun properly.
+  MegaZeux and MZXRun properly on Windows.
 + The editor now remembers the contents of the buffer when
   switching between board, overlay, and vlayer editing. For
   example, if a robot is selected on the board before switching
