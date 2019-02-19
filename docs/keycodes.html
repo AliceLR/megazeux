@@ -42,6 +42,8 @@
     font-size: 95%;
    }
 
+   span#capslocktext:before { content: "Caps\00a0Lock"; }
+
    table.keyboard
    {
     margin: 0px;
@@ -95,13 +97,6 @@
     height: 16px;
     margin: 0px;
     border: 0px solid white;
-   }
-
-   @media (max-width: 1024px)
-   {
-    /* Need the normal width for the Fn row to line up usually,
-     * but for smaller screens these are just wasting space... */
-    table.keyboard .space { width: 4px; }
    }
 
    table.keyboard div
@@ -165,7 +160,7 @@
     color: #A5A;
    }
 
-   :before
+   div:before
    {
     font-size: 60%;
     position: absolute;
@@ -216,6 +211,51 @@
     font-weight: bold;
     font-size: 85%;
    }
+
+   /* Scaling styles. */
+   @media (max-width: 1024px)
+   {
+    /* Need the normal width for the Fn row to line up usually,
+     * but for smaller screens these are just wasting space... */
+    table.keyboard .space { width: 4px; }
+
+    /* Also make the Caps Lock label waste less space. */
+    span#capslocktext:before { content: "CapsL."; }
+   }
+
+   /* IE10+ hacks. */
+   @media all and (-ms-high-contrast: none), (-ms-high-contrast: active)
+   {
+    /* Scaling is so broken it's easier to just force full width. */
+    body { width: 1280px; }
+   }
+
+   /* Edge 12+ hacks. */
+   @supports (-ms-ime-align:auto)
+   {
+    /* Edge won't scale the navigation/numpad tables properly, breaking
+     * scaling earlier than usual. */
+    body { min-width: 864px; }
+
+    /* It also displays the unicode chars as emoji for no reason. */
+    table.keyboard div { font-family: "Segoe UI Symbol"; font-size: 90%; }
+   }
+
+   /* Firefox hacks. */
+   @-moz-document url-prefix()
+   {
+    table.keyboard.key td
+    {
+     /* Firefox won't properly expand tds vertically to fit their contents. */
+     height: 72px;
+    }
+
+    table.keyboard .rowspan2hack
+    {
+     /* Firefox won't properly expand height:100% divs to fit rowspan=2. */
+     height: 138px;
+    }
+   }
   </style>
  </head>
  <body>
@@ -253,7 +293,7 @@
 
     <td>
      <div class="bad numlock">
-      NLock
+      NumL.
       <b class="badkey">n/a</b>
       <p class="badkey">n/a</p>
      </div>
@@ -310,7 +350,7 @@
      </div>
     </td>
 
-    <td rowspan="2">
+    <td rowspan="2" class="rowspan2hack">
      <div class="warn">
       +
       <b>78</b>
@@ -372,7 +412,7 @@
      </div>
     </td>
 
-    <td rowspan="2">
+    <td rowspan="2" class="rowspan2hack">
      <div class="warn">
       Enter
       <b>28</b>
@@ -421,7 +461,7 @@
 
     <td>
      <div class="warn">
-      SLock
+      Scr.L.
       <b>70</b>
       <p>302</p>
      </div>
@@ -803,7 +843,7 @@
 
     <td class="wide">
      <div class="backspace">
-      BackSp
+      BackSp.
       <b>14</b>
       <p>8</p>
      </div>
@@ -937,7 +977,7 @@
 
     <td class="extrawide">
      <div class="capslock">
-      Caps&nbsp;Lock
+      <span id="capslocktext"></span>
       <b>58</b>
       <p>301</p>
      </div>
