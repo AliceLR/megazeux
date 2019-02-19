@@ -115,6 +115,8 @@ USERS
 + "mask_midchars" no longer masks the non-text char 127.
 + The message box title and the command [ now properly display
   the graphic for char 9 instead of a tab.
++ Added newline escaping to robot, counter, and string names in
+  the counter debugger to work around formatting bugs.
 
 DEVELOPERS
 
