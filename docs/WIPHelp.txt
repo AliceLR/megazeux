@@ -188,7 +188,7 @@ territories in MegaZeux.
 -MegaZeux water is not equivalent to ZZT water, as it can be
 traversed. ZZT water is most similar to MZX's "goop".
 -MZX Sharks can be shot. They do not swim in water, but can in
- lava or goop. They can also shoot any type of projectile.
+lava or goop. They can also shoot any type of projectile.
 -MZX Scrolls cannot execute code. Use a Robot ending with the
 "die" command to emulate ZZT scrolls with code instead.
 -Terrains that give out a distinctive message on first touch
@@ -486,13 +486,18 @@ F2 or Ctrl+F2 or Alt+F2 - Settings
 :092:This will bring up a dialog box where you can change the
 current game settings: Game Speed (if allowed), Music toggle,
 Sound toggle, and Audio Volumes (Overall Volume, SoundFX
-volume, and PC Speaker SFX). Speed 1 is the fastest; speed 16
-is the slowest. A speed of 1 will run MZX as fast as possible
-and as such acts differently between computers; it will also
-cause flicker in fullscreen mode, so it is not recommended
-unless it is your only option. (Please note that some games
-may have the speed change by itself; the next load will change
-to the default speed unless otherwise prompted.) 
+volume, and PC Speaker SFX). 
+
+Speed 1 is the fastest; speed 16 is the slowest. A speed of 1
+will run MZX as fast as possible and as such acts differently
+between computers; it will also cause flicker in fullscreen
+mode, so it is not recommended unless it is your only option.
+(Please note that some games may have the speed change by
+itself; the next load will change to the default speed unless
+otherwise prompted.)
+
+No changes to sound options will go into effect until the
+Settings menu is left.
 
 In addition to these settings, one can change the current
 scaling shader if running MegaZeux with the GLSL renderer.
@@ -542,7 +547,8 @@ below lists the currently playing music, with "(no module)" for
 none and "*" for the module wildcard; finally, the bottom right
 numbers list the key_code (green) and key_pressed (magenta)
 values of the last pressed key. Press F6 again to turn the box
-off. This will only work during playtesting in the editor.
+off. This shortcut will only work during playtesting in the
+editor.
 
 F7 - Items Cheat
 
@@ -604,7 +610,8 @@ section.
 F12 - Take Screenshot
 Pressing F12 will make a 640x350 screenshot (in PNG format by
 default) in the working directory, using the software renderer.
-The file naming starts from "screen0".
+The file naming starts from "screen0". The config file may
+disallow taking screenshots, depending on setting.
 
 Arrows - Move
 The arrow keys will move the player and allow it to interact
@@ -948,7 +955,7 @@ Reduces the player's health by 10.
 
 Temporarily blinds the player. The viewport will appear in
 dark gray. You can still move and interact, but you won't be
-able to see anything but yourself.
+able to see anything but the player.
 
 ~BKill Enemies
 
@@ -964,11 +971,16 @@ Explodes all bombs and lit bombs in the room.
 
 ~BBanish (Dragons)
 
-Turns all dragons into ghosts.
+Turns all dragons on the board into ghosts. Each ghost made this
+way will have intelligence set to 4, movement speed set to 4,
+and the "Invincible" flag set to off.
 
 ~BSummon (Dragons)
 
-Turns all enemies into dragons.
+Turns all creatures on the board - excepting guns - into
+dragons. (This includes other dragons.) Each dragon made this
+way will have a firing rate of 3, 4 hit points, and the "Moves"
+flag set to on.
 
 ~BAvalanche
 
@@ -981,9 +993,9 @@ except the Global) for a short time.
 
 ~BWind
 
-The player retains normal control but will also move around
-a bit randomly for a while; the wind will blow the player in
-all directions.
+The player retains control but will also move additional random
+steps for a limited time. The wind will blow the player in all
+directions.
 
 ~BSlow Time
 
@@ -1000,15 +1012,16 @@ $@0~8± ~FCreatures~8 ±@8
 A snake moves in a straight line until it hits an obstruction,
 then aims itself in another direction and continues. Hitting a
 snake (like all enemies hereafter unless noted) will cause you
-to lose 10 health, then kill the snake. Runners act like snakes
-and will take up to four hits, but will only go the opposite
+to lose health, then kill the snake. Runners act like snakes and
+will take up to four hits, but will only go the opposite
 direction when obstructed.
 
 ~BEye            ~Fì
 
 An eye chases you down like any ordinary enemy, but when it
 catches you or dies, it explodes! The size of the explosion
-can vary with each eye.
+can vary with each eye. As eyes float, they can traverse both
+goop and lava.
 
 ~BGhost          ~7ê
 ~BThief          ~C
@@ -1016,7 +1029,8 @@ can vary with each eye.
 A ghost is the simplest enemy, simply chasing you. While some
 of them are invincible, most can be killed. Thieves chase but
 don't do damage. They steal your gems on touch instead, and can
-do so multiple times until killed.
+do so multiple times until killed. Ghosts can traverse lava and
+goop; thieves cannot.
 
                 ~A*
 ~BSlime Blob     ~A*±*
@@ -1027,15 +1041,15 @@ become incredibly annoying because of its habit of dividing
 into more slime blobs, then hardening into "solid slime"
 (i.e. breakables), quickly filling rooms.... You can often
 kill slime by touching or shooting it, but some slimes can be
-invincible.
+invincible, and others can be harmful to touch.
 
 ~BDragon         ~4 ~C ~E*~C
 
 Some dragons move around slowly, but their main advantage is
 their offense - they can shoot barrages of scorching flame.
 Dragons also have a strong defense, taking up to eight hits to
-kill. Touching them will take 10 health, but will NOT hurt the
-dragon.
+kill. Touching them will take away health, but will NOT hurt the
+dragon. Dragons can traverse lava but not goop.
 
 ~BFish           ~Eà
 ~BShark          ~7
@@ -1187,9 +1201,9 @@ slide in that direction instead.
 ~BLava           @4~C±²°±²
 
 Lava is another floor. However, it is (almost always) very
-deadly. Only a few things can traverse it, and any player
-unfortunate enough to walk on it will typically suffer rapid and
-massive amounts of damage.
+deadly. Only a few things can traverse it, puzzle pieces cannot
+be pushed onto it, and any player unfortunate enough to walk on
+it will typically suffer rapid and massive amounts of damage.
 
 ~BFire           @0~C±°~E²±~C²
 
@@ -1221,8 +1235,8 @@ reactions.
 
 ~BGoop           ~8@1°°°
 
-Goop is pretty much non-traversable terrain to anything,
-although sharks may occasionally inhabit it and select Robots
+Goop is pretty much non-traversable terrain to anything
+landborne. Sharks may occasionally inhabit it, and select Robots
 may be able to walk in it. Bullets, lazers, and other
 projectiles will traverse it freely. Goop may also be treated
 as water or other terrains in certain worlds.
@@ -2005,7 +2019,7 @@ On Mac platforms, any command that uses the Alt key can take ½¾
 >CtrZ:Ctrl+Z               - Undo
 >CtrNu:Ctrl+Number          - Save Editor Position
 >Sft8:Shift+8 OR Numpad *  - Mod Wildcard
->SftAr:Shift+Arrow         - Goto Linked Board
+>SftAr:Shift+Arrow          - Goto Linked Board
 
 >F1:F1  - Help
 >F2:F2  - Text
@@ -3760,8 +3774,16 @@ session of MegaZeux, as well as their values.
 ~AWorld~F: Lists built-in world counters/strings and their values.
 
 ~ABoard~F: Lists built-in board counters/strings and their values.
+Also can expand to show lists of scrolls/signs (both under
+"Scrolls") and sensors, if any of these items exist on that
+board. For scrolls/signs, each list shows a "Scroll text" entry;
+if clicked or Enter is pressed while highlighted, it views that
+scroll's/sign's text as it would be if encountered in-game (i.e.
+in the currently-loaded charset, not the protected charset). For
+sensors, each list shows the sensor name and the Robot it
+messages.
 
-~ARobots~F: Directly highlighted, this option lists nothing.
+~ARobots~F: If directly highlighted, this option lists nothing.
 However, expanding this tree will allow selection of lists
 sorted by the robot_id of the current board's Robots - starting
 with "0: <name>" for the Global, and continuing on for each
@@ -4553,9 +4575,7 @@ following colors, by default:
 ? Any color/No change in color
 
 The UI uses its own set of protected colors, to prevent general
-color edits from harming usability. However, one can still
-temporarily edit the UI colors through Robotic by editing
-colors 16-31.
+color edits from harming usability.
 
 The use of ? is not always a logical option for some commands.
 When used, it signifies to replace it with the current color or
@@ -5080,6 +5100,24 @@ given block is reached. If x and y begin with a pound sign (#),
 the string will instead be read from the vlayer.
 Please use this method of scanning strings instead of
 BOARD_SCAN.
+
+$Robotic Usage - File Access
+
+Finally, strings can be used for loading and saving several MZX
+file formats. The following formats can be loaded from a string:
+
+-Palettes with ~BLOAD PALETTE "$string"
+-Charsets with ~BLOAD CHAR SET "$string"
+-Robots with ~BSET "$string" "LOAD_ROBOT"
+-MZMs with ~BPUT "@@$string" image_file pNN x y
+
+MZMs can be saved into a string via these methods:
+
+~BCOPY BLOCK x y w h "@@$string" p
+~BCOPY OVERLAY BLOCK x y w h "@@$string" p
+~BCOPY (OVERLAY) BLOCK "#x" "#y" w h "@@$string" m
+
+String splicing is valid for string file operations.
 
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
@@ -7759,6 +7797,9 @@ respectively. The first forms save/load the current Robot,
 while the second forms save/load the Robot with the Robot ID of
 the number n.
 
+With the LOAD_ROBOT functions, one can also load a string as a
+Robot instead of a text file.
+
 ~BSAVE_BC (function)
 ~BLOAD_BC (function)
 ~BSAVE_BCn (function)
@@ -9143,12 +9184,13 @@ are several practices to avoid, as well as proper replacements.
   Anything that has an undefined value will use a default
   that may be undesirable. The correct action would therefore
   be to define the object's color and parameter values. c?? and
-  p?? exist for the sake of Robotic comparisons and conditional
-  branching, not for being applied to actual objects.
+  p?? generally exist for the sake of Robotic comparisons and
+  conditional branching, not for being applied to actual
+  objects.
   Sprites are an exception regarding color, since they refer to
   a set of placed characters with their own colors.
 ~9GOOD: Putting in set values for colors and parameters when
-  placing objects.
+  ~9placing objects.
 
 ~cBAD: Using global counters for temporary or localized work.
   There are several counters that are Robot-specific and don't
@@ -9164,9 +9206,9 @@ are several practices to avoid, as well as proper replacements.
 
 ~CBAD: Breaking a subroutine without returning or entering the
   ~Cmiddle of a subroutine.
-~9GOOD: Fully finishing and starting subroutines. This is
-  especially important for built-in labels which can trigger
-  very rapidly, such as #keyN.
+~9GOOD: Fully finishing and starting subroutines.
+  This is especially important for built-in labels which can
+  trigger very rapidly, such as #keyN.
 
 ~cBAD: Using a high amount of if statements regarding one
   ~Cvariable.
@@ -9473,8 +9515,8 @@ MegaZeux has some ways of saving standard formats in-game:
 These commands can save Robotic code to text files and import
 text files into a Robot. The first forms use the current Robot,
 while the second forms use the Robot with the given Robot ID n.
-String inputs are also accepted in place of hard-coded file
-names.
+For LOAD_ROBOT(n), string inputs are also accepted in place of
+hard-coded file names.
 
 ~ASET "file.bc" to "SAVE_BC"
 ~ASET "file.bc" to "LOAD_BC"
@@ -10529,6 +10571,135 @@ updated.
 #NEWINVER.HLP
 :1st: 
 $~9NEW in MegaZeux!
+
+February 20th, 2019 - MZX 2.91j
+
+Here's a huge collection of bugfixes and a couple of features
+that needed to be split off from 2.92.
+
+Features: every release has an HTML copy of the help file now,
+the editor keeps separate board/overlay/vlayer buffers now, and
+anyone who still uses scrolls/sensors can view their info in the
+counter debugger. The global volume settings use an exponential
+curve now, range from 0 to 10, and have updated UI elements.
+
+Fixes in this release include: the updater won't complain about
+mzx_help.fil anymore, the NDS and 3DS ports have keyboards that
+work again, several bugs that would lead to worlds/saves with
+"Robot # does not exist on board #" errors have been fixed, and
+several crashes have been fixed.
+
+USERS
+
++ A complete HTML copy of the MegaZeux help file is now packaged
+  with releases for all platforms. It can be found in the docs/
+  folder.
++ Nvidia and AMD switchable graphics drivers should now detect
+  MegaZeux and MZXRun properly on Windows.
++ The editor now remembers the contents of the buffer when
+  switching between board, overlay, and vlayer editing. For
+  example, if a robot is selected on the board before switching
+  to overlay mode, the robot will still be in the buffer when
+  the user switches back to board mode.
++ The editor now remembers the last filename for importing and
+  exporting MZM, MZB, CHR, PAL, and PALIDX files.
++ Scrolls and sensors can now be viewed in the counter debugger.
+  They can be found by expanding the Board list (when present).
++ Readded "#version 110" directives to all GLSL shaders, fixing
+  warnings on some Intel HD drivers. OpenGL ES builds should now
+  comment out these directives.
++ Fixed bug where using Modify+Grab on built-ins could clear the
+  floor under the built-in.
++ Fixed bug where key repeat wouldn't work for any text field in
+  the NDS/3DS/Wii ports. This also affected the robot editor in
+  Wii builds.
++ Fixed NDS touch screen support. Touching the screen no longer
+  acts like escape and the keyboard properly works again.
++ Fixed a bug where the NDS keyboard would drop keypresses on
+  games not running at speed 2.
++ The counter debugger now correctly displays the value of
+  local0.
++ Fixed a bug where the counter debugger would not reopen to
+  the correct robot local# value.
++ MZX now attempts to retry removal of an old file when updating
+  if deletion fails initially. Error messages related to the
+  failed deletion of "mzx_help.fil" or "assets/help.fil" are now
+  suppressed as they are caused by a bug in older MZX versions.
++ The help file is now closed before the updater restarts MZX.
++ Fixed crash bug that could occur when removing old files after
+  an update.
++ Improved manifest validity checks.
++ Fixed board editor crash caused by invalid thing IDs.
++ Player movement key repeat no longer resets when the player is
+  locked. It will reset for a direction only when the arrow key
+  corresponding to that direction is released. This fixes a bug
+  in Brotherhood where the player would move at a fraction of
+  the speed they were supposed to while swimming.
++ Added version checking for legacy IF c?? Sprite behavior. In
+  versions 2.82b and prior, c?? would make this command ignore
+  the provided param and use SPR_NUM instead. This fixes Project
+  MoveZig.
++ Fixed spelling error in missile param dialog.
++ Switching boards in the editor now properly translates the new
+  board's mod name, fixing cases where board mods would restart
+  sometimes.
++ Fixed a bug where the current board mod wouldn't play after
+  starting a listening mod, testing, returning to the editor,
+  and then disabling the listening mod.
++ Replaced the linear volume setting curve with an exponential
+  curve to make lower volumes less loud. The volume settings can
+  now be set from 0 to 10 instead of from 1 to 8.
++ The config file setting pc_speaker_on=0 no longer prevents
+  turning on PC speaker SFX at runtime.
++ Added temporary workaround for numpad 5 key detection when
+  numlock is disabled.
++ "Forest to floor" and "Collect bombs" are properly enabled
+  again for new boards by default. This fix doesn't alter config
+  settings or saved .editor.cnf defaults.
++ The "Downver. world (MZX)" option in the "Export as" dialog
+  is now completely highlighted when selected. (Lancer-X)
++ Starting MegaZeux with "startup_editor=1" no longer loads the
+  default palette over the startup world's palette.
++ The move block action and undo/redo operations should now
+  preserve the element beneath the player.
++ Fixed crashes caused by using block actions or COPY BLOCK on
+  the player while the player is standing on a sensor.
++ Fixed several bugs where editor block actions and the commands
+  COPY/COPY BLOCK would not check for the player or clean up
+  robots/scrolls/sensors. Worlds/saves saved after these bugs
+  occured could display "Robot # does not exist on board"
+  errors when loaded.
++ The DUPLICATE SELF x y and DUPLICATE SELF dir commands now
+  properly check for the player before attempting to duplicate
+  a robot. This fixes a bug where MZX could create saves with
+  "Robot # does not exist on board" errors.
++ Fixed a crash that could occur when importing a new board.
++ Fixed a bug where the 3DS onscreen keyboard would send key
+  releases instead of key presses.
++ The 3DS onscreen keyboard now returns shifted chars when shift
+  is active.
++ Fixed a bug where the libxmp implementation of MOD_ORDER and
+  JUMP MOD ORDER could not restart the current order.
++ Fixed a crash with the libxmp implementation of MOD_POSITION
+  when providing an out-of-bounds value.
++ Fixed a bug where Ctrl+[key] shortcuts would not work while a
+  dialog list element was active on the Wii.
++ Fixed a bug where setting the board mod/charset/palette could
+  truncate the first letter of the path on the Wii.
++ "mask_midchars" no longer masks the non-text char 127.
++ The message box title and the command [ now properly display
+  the graphic for char 9 instead of a tab.
++ Added newline escaping to robot, counter, and string names in
+  the counter debugger to work around formatting bugs.
+
+DEVELOPERS
+
++ Added the hlp2html utility, which can be used to convert
+  WIPHelp.txt into web and printable HTML files.
++ Updated to latest NDS ARM7 template.
++ Updated SDL2 for Windows release builds to SDL 2.0.9.
+
+>#MAIN.HLP:072:Table of Contents
 
 December 9th, 2018 - MZX 2.91i
 
