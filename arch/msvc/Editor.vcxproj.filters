@@ -84,10 +84,13 @@
     <ClCompile Include="..\..\src\editor\block.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\zip.c">
-      <Filter>Source Files\Core</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\editor\clipboard_win32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\editor\buffer.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\editor\edit_menu.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

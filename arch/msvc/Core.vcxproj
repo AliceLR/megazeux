@@ -22,7 +22,7 @@
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{48961A1D-DC1C-4714-93DA-C1E185E4DAAE}</ProjectGuid>
     <RootNamespace>Core</RootNamespace>
-    <WindowsTargetPlatformVersion>7.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -41,7 +41,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141_xp</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
@@ -92,6 +92,7 @@
     <LibraryPath>$(SolutionDir)\Deps\lib\$(PlatformTarget);$(LibraryPath)</LibraryPath>
     <IntDir>$(SolutionDir)\obj\$(ProjectName)\$(Configuration)\$(PlatformTarget)\</IntDir>
     <OutDir>$(SolutionDir)\..\..</OutDir>
+    <SourcePath>$(VC_SourcePath);</SourcePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -264,12 +265,20 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClCompile Include="..\..\contrib\libxmp\src\scan.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\smix.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\virtual.c" />
-    <ClCompile Include="..\..\src\audio.c" />
-    <ClCompile Include="..\..\src\audio_sdl.c" />
-    <ClCompile Include="..\..\src\audio_xmp.c" />
+    <ClCompile Include="..\..\src\audio\audio.c" />
+    <ClCompile Include="..\..\src\audio\audio_pcs.c" />
+    <ClCompile Include="..\..\src\audio\audio_sdl.c" />
+    <ClCompile Include="..\..\src\audio\audio_vorbis.c" />
+    <ClCompile Include="..\..\src\audio\audio_wav.c" />
+    <ClCompile Include="..\..\src\audio\audio_xmp.c" />
+    <ClCompile Include="..\..\src\audio\ext.c" />
+    <ClCompile Include="..\..\src\audio\sampled_stream.c" />
+    <ClCompile Include="..\..\src\audio\sfx.c" />
     <ClCompile Include="..\..\src\block.c" />
     <ClCompile Include="..\..\src\board.c" />
+    <ClCompile Include="..\..\src\caption.c" />
     <ClCompile Include="..\..\src\configure.c" />
+    <ClCompile Include="..\..\src\core.c" />
     <ClCompile Include="..\..\src\counter.c" />
     <ClCompile Include="..\..\src\data.c" />
     <ClCompile Include="..\..\src\error.c" />
@@ -278,21 +287,28 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClCompile Include="..\..\src\expr.c" />
     <ClCompile Include="..\..\src\fsafeopen.c" />
     <ClCompile Include="..\..\src\game.c" />
-    <ClCompile Include="..\..\src\game2.c" />
+    <ClCompile Include="..\..\src\game_menu.c" />
+    <ClCompile Include="..\..\src\game_ops.c" />
+    <ClCompile Include="..\..\src\game_player.c" />
+    <ClCompile Include="..\..\src\game_update.c" />
+    <ClCompile Include="..\..\src\game_update_board.c" />
     <ClCompile Include="..\..\src\graphics.c" />
     <ClCompile Include="..\..\src\helpsys.c" />
     <ClCompile Include="..\..\src\idarray.c" />
     <ClCompile Include="..\..\src\idput.c" />
     <ClCompile Include="..\..\src\intake.c" />
+    <ClCompile Include="..\..\src\intake_num.c" />
     <ClCompile Include="..\..\src\legacy_board.c" />
     <ClCompile Include="..\..\src\legacy_rasm.c" />
     <ClCompile Include="..\..\src\legacy_robot.c" />
     <ClCompile Include="..\..\src\legacy_world.c" />
     <ClCompile Include="..\..\src\mzm.c" />
+    <ClCompile Include="..\..\src\network\dns.c" />
     <ClCompile Include="..\..\src\network\host.c" />
     <ClCompile Include="..\..\src\network\manifest.c" />
     <ClCompile Include="..\..\src\network\network.c" />
     <ClCompile Include="..\..\src\network\sha256.c" />
+    <ClCompile Include="..\..\src\network\socksyms.c" />
     <ClCompile Include="..\..\src\platform_sdl.c" />
     <ClCompile Include="..\..\src\pngops.c" />
     <ClCompile Include="..\..\src\render.c" />
@@ -309,7 +325,7 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClCompile Include="..\..\src\robot.c" />
     <ClCompile Include="..\..\src\run_robot.c" />
     <ClCompile Include="..\..\src\scrdisp.c" />
-    <ClCompile Include="..\..\src\sfx.c" />
+    <ClCompile Include="..\..\src\settings.c" />
     <ClCompile Include="..\..\src\sprite.c" />
     <ClCompile Include="..\..\src\str.c" />
     <ClCompile Include="..\..\src\util.c" />
