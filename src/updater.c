@@ -23,6 +23,7 @@
 #include "error.h"
 #include "event.h"
 #include "graphics.h"
+#include "helpsys.h"
 #include "updater.h"
 #include "util.h"
 #include "window.h"
@@ -438,8 +439,10 @@ static void apply_delete_list(void)
   struct manifest_entry *e_next = delete_list;
   struct manifest_entry *e_prev = NULL;
   struct manifest_entry *e;
+  int retry_times = 0;
   struct stat s;
-  boolean ret;
+  boolean files_failed = false;
+  boolean is_valid;
   FILE *f;
 
   while(e_next)
@@ -453,10 +456,10 @@ static void apply_delete_list(void)
       if(!f)
         goto err_delete_failed;
 
-      ret = manifest_entry_check_validity(e, f);
+      is_valid = manifest_entry_check_validity(e, f);
       fclose(f);
 
-      if(ret)
+      if(is_valid)
       {
         if(unlink(e->name))
           goto err_delete_failed;
@@ -485,19 +488,74 @@ static void apply_delete_list(void)
 
 err_delete_failed:
     {
-      char buf[72];
-      snprintf(buf, 72, "Failed to delete \"%.30s\". Check permissions.",
-       e->name);
-      buf[71] = 0;
+      int errval;
 
       warn("--UPDATER-- Failed to delete '%s'\n", e->name);
-      error_message(E_UPDATE, 10, buf);
 
-      // Track this file so its link can be updated.
-      e_prev = e;
+      switch(retry_times)
+      {
+        case 0:
+        {
+          if(!strcmp(e->name, "mzx_help.fil") ||
+           !strcmp(e->name, "assets/help.fil"))
+          {
+            // HACK: Older MZX versions do not properly close these files
+            // because that would have been too easy. Silently skip them for
+            // now; they'll be deleted the next time MZX is started.
+            errval = ERROR_OPT_FAIL;
+            break;
+          }
+
+          // 1st failure: delay a little bit and then retry automatically.
+          delay(200);
+          errval = ERROR_OPT_RETRY;
+          break;
+        }
+
+        case 1:
+        {
+          // 2nd failure: give user the option to either retry or fail.
+          char buf[72];
+          snprintf(buf, 72, "Failed to delete \"%.30s\". Retry?", e->name);
+          buf[71] = 0;
+
+          errval = error_message(E_UPDATE_RETRY, 10, buf);
+          break;
+        }
+
+        default:
+        {
+          // 3rd failure: auto fail so we're not here all day. Also, display
+          // an error message when this loop is finished.
+          errval = ERROR_OPT_FAIL;
+          files_failed = true;
+          break;
+        }
+      }
+
+      if(errval == ERROR_OPT_RETRY)
+      {
+        info("--UPDATER-- Retrying '%s'...\n", e->name);
+        retry_times++;
+
+        // Set the next file to this file to try again...
+        e_next = e;
+      }
+      else
+      {
+        info("--UPDATER-- Skipping '%s'...\n", e->name);
+        retry_times = 0;
+
+        // Track this file so its link can be updated.
+        e_prev = e;
+      }
       continue;
     }
   }
+
+  if(files_failed)
+    error_message(E_UPDATE, 24,
+     "Failed to delete files; check permissions and restart MegaZeux");
 }
 
 static boolean reissue_connection(struct config_info *conf, struct host **h,
@@ -1009,6 +1067,12 @@ err_out:
     run_dialog(mzx_world, &di);
     destruct_dialog(&di);
 
+#ifdef CONFIG_HELPSYS
+    // Hack: close the help file so we don't create a problem for future vers.
+    help_close(mzx_world);
+#endif
+
+    // TODO: This needs to happen in main() instead of here.
     new_argv = rewrite_argv_for_execv(process_argc, process_argv);
     execv(process_argv[0], (const void *)new_argv);
     perror("execv");
@@ -1045,8 +1109,6 @@ boolean updater_init(int argc, char *argv[])
   {
     write_delete_list();
     manifest_list_free(&delete_list);
-    error_message(E_UPDATE, 24,
-     "Failed to delete files; check permissions and restart MegaZeux");
   }
 
 err_swivel_back:

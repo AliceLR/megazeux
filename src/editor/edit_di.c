@@ -646,17 +646,17 @@ int size_pos(struct world *mzx_world)
     elements[1] = construct_button(19, 15, "Center", 1);
     elements[2] = construct_button(29, 15, "Set as defaults", 2);
     elements[3] = construct_number_box(15, 4, "Viewport X pos: ",
-     0, 79, 0, results + 0);
+     0, 79, NUMBER_BOX, results + 0);
     elements[4] = construct_number_box(15, 5, "Viewport Y pos: ",
-     0, 24, 0, results + 1);
+     0, 24, NUMBER_BOX, results + 1);
     elements[5] = construct_number_box(15, 6, "Viewport Width: ",
-     1, 80, 0, results + 2);
+     1, 80, NUMBER_BOX, results + 2);
     elements[6] = construct_number_box(15, 7, "Viewport Height:",
-     1, 25, 0, results + 3);
+     1, 25, NUMBER_BOX, results + 3);
     elements[7] = construct_number_box(15, 11, "Board Width:    ",
-     1, 32767, 0, results + 4);
+     1, 32767, NUMBER_BOX, results + 4);
     elements[8] = construct_number_box(15, 12, "Board Height:   ",
-     1, 32767, 0, results + 5);
+     1, 32767, NUMBER_BOX, results + 5);
 
     construct_dialog(&di, "Board Sizes/Positions", 10, 4, 60, 18,
      elements, 9, 3);
@@ -774,9 +774,9 @@ int size_pos_vlayer(struct world *mzx_world)
     elements[1] = construct_button(29, 8, "Cancel", -1);
 
     elements[2] = construct_number_box(15, 4, "Vlayer Width:    ",
-     1, 32767, 0, results + 0);
+     1, 32767, NUMBER_BOX, results + 0);
     elements[3] = construct_number_box(15, 5, "Vlayer Height:   ",
-     1, 32767, 0, results + 1);
+     1, 32767, NUMBER_BOX, results + 1);
 
     construct_dialog(&di, "Vlayer Size", 10, 7, 60, 11,
      elements, 4, 2);
@@ -961,7 +961,7 @@ void board_info(struct world *mzx_world)
      4, 19, &radio_result_3);
 
     elements[8] = construct_number_box(31, 16, "Time limit- ",
-     0, 32767, 0, &time_limit);
+     0, 32767, NUMBER_BOX, &time_limit);
 
     elements[9] = construct_file_selector(3, 18, "Load charset on entry-",
      "Select a character set...", charset_exts, "(none)", 23, 1, "",
@@ -1235,7 +1235,7 @@ static void global_dmg(struct world *mzx_world)
     results[i] = id_dmg[(int)dmg_ids[i]];
     elements[i + 2] = construct_number_box(2 +
      (14 - (int)strlen(dmg_strs[i])), 2 + i,
-     dmg_strs[i], 0, 255, 0, results + i);
+     dmg_strs[i], 0, 255, NUMBER_BOX, results + i);
   }
 
   for(; i < 22; i++)
@@ -1243,7 +1243,7 @@ static void global_dmg(struct world *mzx_world)
     results[i] = id_dmg[(int)dmg_ids[i]];
     elements[i + 2] = construct_number_box(31 +
      (14 - (int)strlen(dmg_strs[i])), i - 9,
-     dmg_strs[i], 0, 255, 0, results + i);
+     dmg_strs[i], 0, 255, NUMBER_BOX, results + i);
   }
 
   construct_dialog(&di, "Edit Damage", 10, 4, 60, 18,
@@ -1325,13 +1325,13 @@ void global_info(context *ctx)
     a_elements[4] = construct_label(5+10+4, 5, "Lives"),
     a_elements[5] = construct_label(32+10+3, 5, "Health"),
     a_elements[6] = construct_number_box(5, 6, "Starting- ",
-     1, 32767, 0, &starting_lives);
+     1, 32767, NUMBER_BOX, &starting_lives);
     a_elements[7] = construct_number_box(5, 7, "Maximum-  ",
-     1, 32767, 0, &lives_limit);
+     1, 32767, NUMBER_BOX, &lives_limit);
     a_elements[8] = construct_number_box(32, 6, "Starting- ",
-     1, 32767, 0, &starting_health);
+     1, 32767, NUMBER_BOX, &starting_health);
     a_elements[9] = construct_number_box(32, 7, "Maximum-  ",
-     1, 32767, 0, &health_limit);
+     1, 32767, NUMBER_BOX, &health_limit);
     a_elements[10] = construct_check_box(7, 9, check_box_strings_2,
      3, 39, check_box_results_2);
     a_elements[11] = construct_button(5, 13, "More", 2);
@@ -1382,17 +1382,17 @@ void global_info(context *ctx)
         b_elements[2] = construct_board_list(1, 2, "Death board-",
          0, &death_board);
         b_elements[3] = construct_number_box(1, 5, "Death X- ",
-         0, 32767, 0, &death_x);
+         0, 32767, NUMBER_BOX, &death_x);
         b_elements[4] = construct_number_box(1, 6, "Death Y- ",
-         0, 32767, 0, &death_y);
+         0, 32767, NUMBER_BOX, &death_y);
         b_elements[5] = construct_radio_button(1, 8, radio_strings_1,
          3, 20, &radio_result_1);
         b_elements[6] = construct_board_list(30, 2, "Endgame board-",
          0, &endgame_board);
         b_elements[7] = construct_number_box(30, 5, "Endgame X- ",
-         0, 32767, 0, &endgame_x);
+         0, 32767, NUMBER_BOX, &endgame_x);
         b_elements[8] = construct_number_box(30, 6, "Endgame Y- ",
-         0, 32767, 0, &endgame_y);
+         0, 32767, NUMBER_BOX, &endgame_y);
         b_elements[9] = construct_radio_button(30, 8, radio_strings_2,
          2, 18, &radio_result_2);
         b_elements[10] = construct_check_box(30, 11, check_box_strings_1,
@@ -1534,9 +1534,9 @@ int board_goto(struct world *mzx_world, int overlay_edit,
   elements[0] = construct_button( 7, 4, "  Ok  ", 0);
   elements[1] = construct_button(24, 4, "Cancel", 1);
   elements[2] = construct_number_box( 3, 2, "X-",
-   0, board_width - 1, 0, &goto_x);
+   0, board_width - 1, NUMBER_BOX, &goto_x);
   elements[3] = construct_number_box(20, 2, "Y-",
-   0, board_height - 1, 0, &goto_y);
+   0, board_height - 1, NUMBER_BOX, &goto_y);
 
   construct_dialog(&di, titles[overlay_edit],
    21, 7, 38, 7, elements, ARRAY_SIZE(elements), 2);

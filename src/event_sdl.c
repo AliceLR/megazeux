@@ -145,6 +145,7 @@ static enum keycode convert_SDL_internal(SDL_Keycode key)
     case SDLK_SYSREQ: return IKEY_SYSREQ;
     case SDLK_PAUSE: return IKEY_BREAK;
     case SDLK_MENU: return IKEY_MENU;
+    case SDLK_CLEAR: return IKEY_KP5; // FIXME remove (see tracker issue 744)
 #ifndef CONFIG_PANDORA
     case SDLK_HOME: return IKEY_HOME;
     case SDLK_END: return IKEY_END;
@@ -767,37 +768,13 @@ boolean __peek_exit_input(void)
   return false;
 }
 
-#if !SDL_VERSION_ATLEAST(2,0,0)
-static int SDL_WaitEventTimeout(SDL_Event *event, int timeout)
+void __wait_event(void)
 {
-  // SDL 1.2 doesn't have SDL_WaitEventTimeout. The suggested alternative
-  // is to use timers, but this was simpler and most things won't use this
-  // SDL version anyway.
-
-  int i = timeout;
-  boolean any_event = false;
-
-  while(timeout>0 && !any_event)
-  {
-    i--;
-    delay(1);
-    any_event = SDL_PollEvent(event);
-
-    // If an autorepeat triggers, it needs to be processed.
-    if(update_autorepeat())
-      break;
-
-    // "Fix" awful intake cursor blinking
-    if(!(i&7))
-      update_screen();
-  }
-
-  return any_event;
-}
-#endif
-
-void __wait_event(int timeout)
-{
+  /**
+   * This function used to take a timeout param, but we really don't want to
+   * implement that on a per-platform basis. SDL_WaitEventTimeout also does a
+   * very cool SDL_Delay(10) which we can probably live without.
+   */
   SDL_Event event;
   boolean any_event;
 
@@ -806,14 +783,7 @@ void __wait_event(int timeout)
 #ifdef MSVC_H
   any_event = SDL_PollEvent(&event);
 #else
-  if(!timeout)
-  {
-    any_event = SDL_WaitEvent(&event);
-  }
-  else
-  {
-    any_event = SDL_WaitEventTimeout(&event, timeout);
-  }
+  any_event = SDL_WaitEvent(&event);
 #endif
 
   if(any_event)

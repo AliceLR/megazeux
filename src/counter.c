@@ -1240,9 +1240,9 @@ static void random_seed_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   int idx = strtol(name + 11, NULL, 10) % 2;
-  unsigned long long seed = rng_get_seed();
-  unsigned long long mask = ~(0xFFFFFFFFULL << (32 * idx));
-  unsigned long long insert = *((unsigned int *)&value);
+  uint64_t seed = rng_get_seed();
+  uint64_t mask = ~(0xFFFFFFFFULL << (32 * idx));
+  uint64_t insert = *((unsigned int *)&value);
   seed = (seed & mask) | (insert << (32 * idx));
   rng_set_seed(seed);
 }

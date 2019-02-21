@@ -123,19 +123,19 @@ static int pe_chest(struct world *mzx_world, int param)
     {
       struct dialog di;
       struct element *elements[3];
-      int mult_five = 1;
       int dialog_result;
+      enum number_box_type input_type = NUMBER_BOX_MULT_FIVE;
       const char *question = "Amount (multiple of five): ";
 
       set_confirm_buttons(elements);
-      if(type == 3)
+      if(type == CHEST_LIVES)
       {
         question = "Number of lives: ";
-        mult_five = 0;
+        input_type = NUMBER_BOX;
       }
 
       elements[2] = construct_number_box(5, 6, question,
-       0, 15, mult_five, &var);
+       0, 15, input_type, &var);
 
       construct_dialog(&di, "Set Quantity", 10, 5, 60, 18,
        elements, 3, 2);
@@ -164,7 +164,7 @@ static int pe_health(struct world *mzx_world, int param)
 
   set_confirm_buttons(elements);
   elements[2] = construct_number_box(15, 6, "Amount: ",
-   0, 255, 0, &param);
+   0, 255, NUMBER_BOX, &param);
 
   construct_dialog(&di, "Set Health/Ammo", 10, 5, 60, 18,
    elements, 3, 2);
@@ -232,7 +232,7 @@ static int pe_lit_bomb(struct world *mzx_world, int param)
   elements[2] = construct_radio_button(15, 6, radio_strings,
    2, 18, &type);
   elements[3] = construct_number_box(15, 9, "Fuse length: ",
-   1, 7, 0, &stage);
+   1, 7, NUMBER_LINE, &stage);
 
   construct_dialog(&di, "Set Lit Bomb", 10, 5, 60, 18,
    elements, 4, 2);
@@ -256,9 +256,9 @@ static int pe_explosion(struct world *mzx_world, int param)
 
   set_confirm_buttons(elements);
   elements[2] = construct_number_box(15, 6, "Explosion stage: ",
-   1, 4, 0, &stage);
+   1, 4, NUMBER_LINE, &stage);
   elements[3] = construct_number_box(15, 8, "Explosion size: ",
-   0, 15, 0, &size);
+   0, 15, NUMBER_BOX, &size);
 
   construct_dialog(&di, "Set Explosion", 10, 5, 60, 18,
    elements, 4, 2);
@@ -370,9 +370,9 @@ static int pe_pouch(struct world *mzx_world, int param)
 
   set_confirm_buttons(elements);
   elements[2] = construct_number_box(6, 6,
-   "Number of gems (mult. of 5):  ", 0, 15, 1, &gems);
+   "Number of gems (mult. of 5):  ", 0, 15, NUMBER_BOX_MULT_FIVE, &gems);
   elements[3] = construct_number_box(6, 8,
-   "Number of coins (mult. of 5): ", 0, 15, 1, &coins);
+   "Number of coins (mult. of 5): ", 0, 15, NUMBER_BOX_MULT_FIVE, &coins);
 
   construct_dialog(&di, "Set Pouch", 10, 5, 60, 18,
    elements, 4, 2);
@@ -429,9 +429,9 @@ static int pe_lazer_gun(struct world *mzx_world, int param)
   elements[2] = construct_radio_button(15, 4, radio_strings,
    4, 5, &dir);
   elements[3] = construct_number_box(15, 9, "Start time: ",
-   1, 8, 0, &start);
+   1, 8, NUMBER_LINE, &start);
   elements[4] = construct_number_box(15, 11, "Length on:  ",
-   1, 7, 0, &end);
+   1, 7, NUMBER_LINE, &end);
 
   construct_dialog(&di, "Set 'Lazer' Gun", 10, 5, 60, 18,
    elements, 5, 2);
@@ -515,7 +515,7 @@ static int pe_mine(struct world *mzx_world, int param)
 
   set_confirm_buttons(elements);
   elements[2] = construct_number_box(15, 7, "Blast radius:  ",
-   1, 8, 0, &param);
+   1, 8, NUMBER_LINE, &param);
 
   construct_dialog(&di, "Set Mine", 10, 5, 60, 18,
    elements, 3, 2);
@@ -547,7 +547,7 @@ static int pe_snake(struct world *mzx_world, int param)
   elements[2] = construct_radio_button(15, 4, radio_strings,
    4, 5, &dir);
   elements[3] = construct_number_box(15, 9, "Intelligence:  ",
-   1, 8, 0, &intel);
+   1, 8, NUMBER_LINE, &intel);
   elements[4] = construct_check_box(15, 11, check_strings,
    1, 13, check_results);
 
@@ -575,9 +575,9 @@ static int pe_eye(struct world *mzx_world, int param)
 
   set_confirm_buttons(elements);
   elements[2] = construct_number_box(15, 6, "Intelligence: ",
-   1, 8, 0, &intel);
+   1, 8, NUMBER_LINE, &intel);
   elements[3] = construct_number_box(15, 8, "Blast radius: ",
-   1, 8, 0, &radius);
+   1, 8, NUMBER_LINE, &radius);
   elements[4] = construct_check_box(15, 10, check_strings,
    1, 13, check_results);
 
@@ -604,11 +604,11 @@ static int pe_thief(struct world *mzx_world, int param)
 
   set_confirm_buttons(elements);
   elements[2] = construct_number_box(15, 6,  "Intelligence:   ",
-   1, 8, 0, &intel);
+   1, 8, NUMBER_LINE, &intel);
   elements[3] = construct_number_box(15, 8,  "Movement speed: ",
-   1, 4, 0, &speed);
+   1, 4, NUMBER_LINE, &speed);
   elements[4] = construct_number_box(15, 10, "Gems stolen:    ",
-   1, 2, 0, &gems);
+   1, 2, NUMBER_LINE, &gems);
 
   construct_dialog(&di, "Set Thief", 10, 5, 60, 18,
    elements, 5, 2);
@@ -636,7 +636,7 @@ static int pe_slime_blob(struct world *mzx_world, int param)
 
   set_confirm_buttons(elements);
   elements[2] = construct_number_box(15, 6, "Spread speed: ",
-   1, 8, 0, &speed);
+   1, 8, NUMBER_LINE, &speed);
   elements[3] = construct_check_box(15, 8, check_strings,
    2, 12, check_results);
 
@@ -670,9 +670,9 @@ static int pe_runner(struct world *mzx_world, int param)
   elements[2] = construct_radio_button(15, 4, radio_strings,
    4, 5, &dir);
   elements[3] = construct_number_box(15, 9, "Hit points: ",
-   1, 4, 0, &hp);
+   1, 4, NUMBER_LINE, &hp);
   elements[4] = construct_number_box(15, 11, "Movement speed: ",
-   1, 4, 0, &speed);
+   1, 4, NUMBER_LINE, &speed);
 
   construct_dialog(&di, "Set Runner", 10, 5, 60, 18,
    elements, 5, 2);
@@ -698,9 +698,9 @@ static int pe_ghost(struct world *mzx_world, int param)
 
   set_confirm_buttons(elements);
   elements[2] = construct_number_box(15, 6, "Intelligence:  ",
-   1, 8, 0, &intel);
+   1, 8, NUMBER_LINE, &intel);
   elements[3] = construct_number_box(15, 8, "Movement speed: ",
-   1, 4, 0, &speed);
+   1, 4, NUMBER_LINE, &speed);
   elements[4] = construct_check_box(15, 10, check_strings,
    1, 10, check_results);
 
@@ -728,9 +728,9 @@ static int pe_dragon(struct world *mzx_world, int param)
 
   set_confirm_buttons(elements);
   elements[2] = construct_number_box(15, 6, "Firing rate: ",
-   1, 4, 0, &fire_rate);
+   1, 4, NUMBER_LINE, &fire_rate);
   elements[3] = construct_number_box(15, 8, "Hit points:  ",
-   1, 8, 0, &hp);
+   1, 8, NUMBER_LINE, &hp);
   elements[4] = construct_check_box(15, 10, check_strings,
    1, 5, check_results);
 
@@ -766,7 +766,7 @@ static int pe_fish(struct world *mzx_world, int param)
 
   set_confirm_buttons(elements);
   elements[2] = construct_number_box(15, 5, "Intelligence: ",
-   1, 8, 0, &intel);
+   1, 8, NUMBER_LINE, &intel);
   elements[3] = construct_check_box(15, 7, check_strings,
    4, 19, check_results);
 
@@ -800,9 +800,9 @@ static int pe_shark(struct world *mzx_world, int param)
 
   set_confirm_buttons(elements);
   elements[2] = construct_number_box(15, 4, "Intelligence: ",
-   1, 8, 0, &intel);
+   1, 8, NUMBER_LINE, &intel);
   elements[3] = construct_number_box(15, 6, "Firing rate:  ",
-   1, 8, 0, &fire_rate);
+   1, 8, NUMBER_LINE, &fire_rate);
   elements[4] = construct_radio_button(15, 8, radio_strings,
    4, 13, &fires);
 
@@ -841,7 +841,7 @@ static int pe_spider(struct world *mzx_world, int param)
 
   set_confirm_buttons(elements);
   elements[2] = construct_number_box(15, 3, "Intelligence: ",
-   1, 8, 0, &intel);
+   1, 8, NUMBER_LINE, &intel);
   elements[3] = construct_radio_button(15, 5, radio_strings,
    4, 14, &web);
   elements[4] = construct_check_box(15, 10, check_strings,
@@ -870,9 +870,9 @@ static int pe_goblin(struct world *mzx_world, int param)
 
   set_confirm_buttons(elements);
   elements[2] = construct_number_box(15, 7, "Intelligence: ",
-   1, 4, 0, &intel);
+   1, 4, NUMBER_LINE, &intel);
   elements[3] = construct_number_box(15, 9, "Rest length:  ",
-   1, 4, 0, &rest_len);
+   1, 4, NUMBER_LINE, &rest_len);
 
   construct_dialog(&di, "Set Goblin", 10, 5, 60, 18,
    elements, 4, 2);
@@ -908,9 +908,9 @@ static int pe_bullet_gun(struct world *mzx_world, int param)
   elements[2] = construct_radio_button(15, 2, radio_strings_1,
    4, 5, &dir);
   elements[3] = construct_number_box(15, 7, "Intelligence: ",
-   1, 4, 0, &intel);
+   1, 4, NUMBER_LINE, &intel);
   elements[4] = construct_number_box(15, 9, "Firing rate:  ",
-   1, 8, 0, &fire_rate);
+   1, 8, NUMBER_LINE, &fire_rate);
   elements[5] = construct_radio_button(15, 11, radio_strings_2,
    2, 13, &type);
 
@@ -938,9 +938,9 @@ static int pe_bear(struct world *mzx_world, int param)
 
   set_confirm_buttons(elements);
   elements[2] = construct_number_box(15, 6, "Sensitivity:   ",
-   1, 8, 0, &sens);
+   1, 8, NUMBER_LINE, &sens);
   elements[3] = construct_number_box(15, 8, "Movement speed: ",
-   1, 4, 0, &speed);
+   1, 4, NUMBER_LINE, &speed);
   elements[4] = construct_check_box(15, 10, check_strings,
    1, 12, check_results);
 
@@ -966,9 +966,9 @@ static int pe_bear_cub(struct world *mzx_world, int param)
 
   set_confirm_buttons(elements);
   elements[2] = construct_number_box(15, 7, "Intelligence: ",
-   1, 4, 0, &intel);
+   1, 4, NUMBER_LINE, &intel);
   elements[3] = construct_number_box(15, 9, "Switch rate:  ",
-   1, 4, 0, &switch_rate);
+   1, 4, NUMBER_LINE, &switch_rate);
 
   construct_dialog(&di, "Set Bear Cub", 10, 5, 60, 18,
    elements, 4, 2);
@@ -1004,9 +1004,9 @@ static int pe_missile_gun(struct world *mzx_world, int param)
   elements[2] = construct_radio_button(15, 2, radio_strings_1,
    4, 5, &dir);
   elements[3] = construct_number_box(15, 7, "Intelligence:  ",
-   1, 4, 0, &intel);
+   1, 4, NUMBER_LINE, &intel);
   elements[4] = construct_number_box(15, 9, "Firing rate:   ",
-   1, 8, 0, &fire_rate);
+   1, 8, NUMBER_LINE, &fire_rate);
   elements[5] = construct_radio_button(15, 11, radio_strings_2,
    2, 14, &type);
 

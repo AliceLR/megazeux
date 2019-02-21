@@ -36,6 +36,7 @@
 #include "graphics.h"
 #include "idarray.h"
 #include "legacy_rasm.h"
+#include "memcasecmp.h"
 #include "memfile.h"
 #include "robot.h"
 #include "rasm.h"
@@ -90,10 +91,12 @@ void create_blank_robot(struct robot *cur_robot)
   for(i = 0; i<32; i++)
     cur_robot->local[i] = 0;
 
-#ifdef CONFIG_EDITOR
+#if defined(CONFIG_EDITOR) || defined(CONFIG_DEBYTECODE)
   cur_robot->command_map = NULL;
   cur_robot->command_map_length = 0;
+#endif
 
+#ifdef CONFIG_EDITOR
   cur_robot->commands_total = 0;
   cur_robot->commands_cycle = 0;
 #endif
@@ -114,6 +117,11 @@ void create_blank_robot_program(struct robot *cur_robot)
 #endif
 }
 
+#ifdef CONFIG_DEBYTECODE
+// Forward declaration
+static int get_source_command_map_index(struct robot *cur_robot,
+ int source_pos);
+#endif
 
 #define err_if_skipped(idn) if(last_ident < idn) { goto err_invalid; }
 
@@ -157,18 +165,10 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
 
       // Legacy world, now save
       case RPROP_CUR_PROG_LINE:
-#ifdef CONFIG_DEBYTECODE
-        // Legacy bytecode and DBC bytecode don't necessarily correspond.
-        if(file_version < VERSION_SOURCE) break;
-#endif
         cur_robot->cur_prog_line = load_prop_int(size, &prop);
         break;
 
       case RPROP_POS_WITHIN_LINE:
-#ifdef CONFIG_DEBYTECODE
-        // Legacy bytecode and DBC bytecode don't necessarily correspond.
-        if(file_version < VERSION_SOURCE) break;
-#endif
         cur_robot->pos_within_line = load_prop_int(size, &prop);
         break;
 
@@ -239,30 +239,6 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
       // Slated for separation
 #ifdef CONFIG_DEBYTECODE
 
-      case RPROP_PROGRAM_MAP:
-      {
-#ifdef CONFIG_EDITOR
-        err_if_skipped(RPROP_YPOS);
-
-        if(cur_robot->command_map)
-          break;
-
-        if(savegame && mzx_world->editing)
-        {
-          cur_robot->command_map = cmalloc(size);
-          cur_robot->command_map_length = size / sizeof(struct command_mapping);
-
-          for(i = 0; i < cur_robot->command_map_length; i++)
-          {
-            cur_robot->command_map[i].real_line = mfgetd(&prop);
-            cur_robot->command_map[i].bc_pos = mfgetd(&prop);
-            cur_robot->command_map[i].src_pos = mfgetd(&prop);
-          }
-        }
-#endif
-        break;
-      }
-
       case RPROP_PROGRAM_SOURCE:
       {
         err_if_skipped(RPROP_YPOS);
@@ -270,21 +246,12 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
         if(cur_robot->program_source)
           break;
 
-#ifdef CONFIG_EDITOR
-        if(!savegame || mzx_world->editing)
-#else
-        if(!savegame)
-#endif
-        {
-          // This program is source, just load it straight
-          cur_robot->program_source = cmalloc(size + 1);
-          cur_robot->program_source_length = size;
+        // This program is source.
+        cur_robot->program_source = cmalloc(size + 1);
+        cur_robot->program_source_length = size;
 
-          mfread(cur_robot->program_source, size, 1, &prop);
-
-          cur_robot->program_source[size] = 0;
-        }
-
+        mfread(cur_robot->program_source, size, 1, &prop);
+        cur_robot->program_source[size] = 0;
         break;
       }
 
@@ -292,10 +259,11 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
       {
         err_if_skipped(RPROP_YPOS);
 
-        if(cur_robot->program_bytecode)
+        if(cur_robot->program_source)
           break;
 
-        // Load legacy bytecode, and compile it, if necessary.
+        // Load and translate legacy bytecode to modern source.
+        // This field should never be found in files saved in >= VERSION_SOURCE.
         if(file_version < VERSION_SOURCE)
         {
           char *program_legacy_bytecode = (char *)prop.start;
@@ -309,41 +277,12 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
           cur_robot->program_bytecode = NULL;
           cur_robot->program_bytecode_length = 0;
 
+          // FIXME need legacy bytecode map in addition to modern bytecode
+          // map. How awful!
           cur_robot->program_source =
            legacy_disassemble_program(program_legacy_bytecode, v_size,
             &(cur_robot->program_source_length), true, 10);
-
-          // Compile the bytecode if this is a savegame
-          if(savegame)
-          {
-            prepare_robot_bytecode(mzx_world, cur_robot);
-
-            // These won't necessary correspond to anything meaningful now.
-            // Reset them to the start of the robot.
-            if(cur_robot->cur_prog_line)
-              cur_robot->cur_prog_line = 1;
-
-            cur_robot->pos_within_line = 0;
-          }
         }
-        else
-
-        // Load bytecode if this is a savegame
-        if(savegame)
-        {
-          // FIXME needs validation
-          cur_robot->program_bytecode = cmalloc(size);
-          cur_robot->program_bytecode_length = size;
-          mfread(cur_robot->program_bytecode, size, 1, &prop);
-        }
-
-        if(cur_robot->program_bytecode)
-        {
-          // Create the label cache for this robot
-          cur_robot->label_list =
-           cache_robot_labels(cur_robot, &cur_robot->num_labels);
-        }
-
         break;
       }
 
@@ -389,12 +328,49 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
     last_ident = ident;
   }
 
-  if(!cur_robot->program_bytecode)
 #ifdef CONFIG_DEBYTECODE
-    if(!cur_robot->program_source)
+
+  if(!cur_robot->program_source)
+  {
+    // Saved without a program? Give it a blank program.
+    create_blank_robot_program(cur_robot);
+    cur_robot->cur_prog_line = 0;
+  }
+  else
+
+  if(savegame)
+  {
+    // The cur_prog_line value loaded above was actually a source code position
+    // (or worse, a legacy bytecode position). Compile the source now and then
+    // determine the program offset using the generated command map.
+    prepare_robot_bytecode(mzx_world, cur_robot);
+
+    if(file_version >= VERSION_SOURCE)
+    {
+      int source_pos = cur_robot->cur_prog_line;
+      int map_pos = get_source_command_map_index(cur_robot, source_pos);
+
+      cur_robot->cur_prog_line = cur_robot->command_map[map_pos].bc_pos;
+    }
+    else
+    {
+      // FIXME there's actually a way to do this that would involve generating
+      // a temporary legacy-to-source map in addition to the source-to-bytecode
+      // map. That ought to be created during legacy disassembly and can wait
+      // until programs are split out from this mess.
+      if(cur_robot->cur_prog_line)
+        cur_robot->cur_prog_line = 1;
+
+      cur_robot->pos_within_line = 0;
+    }
+  }
+
+#else /* !CONFIG_DEBYTECODE */
+
+  if(!cur_robot->program_bytecode)
+    goto err_invalid;
+
 #endif
-      // This looks silly, but the checks above can also error.
-      goto err_invalid;
 
   return 0;
 
@@ -597,28 +573,7 @@ size_t save_robot_calculate_size(struct world *mzx_world,
 
 #ifdef CONFIG_DEBYTECODE
 
-  if(!savegame)
-  {
-    size += cur_robot->program_source_length;
-  }
-  else
-  {
-    // Make sure this has been done already.
-    prepare_robot_bytecode(mzx_world, cur_robot);
-    size += cur_robot->program_bytecode_length;
-
-#ifdef CONFIG_EDITOR
-    if(mzx_world->editing)
-    {
-      // When editing, save these too.
-      size += ROBOT_DBC_EDIT_PROPS_SIZE;
-
-      size += cur_robot->program_source_length;
-      size += cur_robot->command_map_length *
-       sizeof(struct command_mapping);
-    }
-#endif
-  }
+  size += cur_robot->program_source_length;
 
 #else // !CONFIG_DEBYTECODE
 
@@ -640,24 +595,9 @@ static void save_robot_to_memory(struct robot *cur_robot,
   save_prop_w(RPROP_YPOS, cur_robot->ypos, mf);
 
 #ifdef CONFIG_DEBYTECODE
-#ifdef CONFIG_EDITOR
-  if(cur_robot->command_map)
-  {
-    int map_len = cur_robot->command_map_length *
-     sizeof(struct command_mapping);
-    int i;
 
-    save_prop_v(RPROP_PROGRAM_MAP, map_len, &prop, mf);
-
-    for(i = 0; i < cur_robot->command_map_length; i++)
-    {
-      mfputd(cur_robot->command_map[i].real_line, &prop);
-      mfputd(cur_robot->command_map[i].bc_pos, &prop);
-      mfputd(cur_robot->command_map[i].src_pos, &prop);
-    }
-  }
-#endif
-
+  // FIXME because we always save source, this means zapped labels AREN'T
+  // being saved anymore. This needs to happen!
   if(cur_robot->program_source)
   {
     int src_len = cur_robot->program_source_length;
@@ -666,7 +606,8 @@ static void save_robot_to_memory(struct robot *cur_robot,
 
     mfwrite(cur_robot->program_source, src_len, 1, &prop);
   }
-#endif
+
+#else // !CONFIG_DEBYTECODE
 
   if(cur_robot->program_bytecode)
   {
@@ -677,12 +618,29 @@ static void save_robot_to_memory(struct robot *cur_robot,
     mfwrite(cur_robot->program_bytecode, bc_len, 1, &prop);
   }
 
+#endif // !CONFIG_DEBYTECODE
+
   if(savegame)
   {
     int stack_size = cur_robot->stack_size;
+    int program_line = cur_robot->cur_prog_line;
     int i;
 
-    save_prop_d(RPROP_CUR_PROG_LINE, cur_robot->cur_prog_line, mf);
+#ifdef CONFIG_DEBYTECODE
+
+    // The current bytecode offset isn't very useful when saved with
+    // source code. Save the current source offset instead.
+    if(cur_robot->command_map)
+    {
+      int map_pos = get_current_command_map_index(cur_robot);
+      program_line = cur_robot->command_map[map_pos].src_pos;
+    }
+    else
+      program_line = -1;
+
+#endif // CONFIG_DEBYTECODE
+
+    save_prop_d(RPROP_CUR_PROG_LINE, program_line, mf);
     save_prop_d(RPROP_POS_WITHIN_LINE, cur_robot->pos_within_line, mf);
     save_prop_c(RPROP_ROBOT_CYCLE, cur_robot->robot_cycle, mf);
     save_prop_c(RPROP_CYCLE_COUNT, cur_robot->cycle_count, mf);
@@ -2545,9 +2503,13 @@ static void display_robot_line(struct world *mzx_world, char *program,
   {
     case 103: // Normal message
     {
+      // On the off-chance something actually relies on this bug...
+      boolean allow_tabs =
+       ((mzx_world->version >= VERSION_PORT) && (mzx_world->version < V291));
+
       tr_msg(mzx_world, program + 3, id, ibuff);
       ibuff[64] = 0; // Clip
-      write_string_ext(ibuff, 8, y, scroll_base_color, 1, 0, 0);
+      write_string_ext(ibuff, 8, y, scroll_base_color, allow_tabs, 0, 0);
       break;
     }
 
@@ -2667,13 +2629,13 @@ void robot_box_display(struct world *mzx_world, char *program,
   if(!cur_robot->robot_name[0])
   {
     write_string_ext("Interaction", 35, 4,
-     mzx_world->scroll_title_color, 0, 0, 0);
+     mzx_world->scroll_title_color, false, 0, 0);
   }
   else
   {
     write_string_ext(cur_robot->robot_name,
      40 - (Uint32)strlen(cur_robot->robot_name) / 2, 4,
-     mzx_world->scroll_title_color, 1, 0, 0);
+     mzx_world->scroll_title_color, false, 0, 0);
   }
   select_layer(UI_LAYER);
 
@@ -3060,7 +3022,7 @@ char *tr_msg_ext(struct world *mzx_world, char *mesg, int id, char *buffer,
 
         *name_ptr = 0;
 
-        if(!strcasecmp(name_buffer, "INPUT"))
+        if(!memcasecmp(name_buffer, "INPUT", 6))
         {
           // Input
           name_length = strlen(src_board->input_string);
@@ -3678,27 +3640,10 @@ void prepare_robot_bytecode(struct world *mzx_world, struct robot *cur_robot)
 {
   if(cur_robot->program_bytecode == NULL)
   {
-#ifdef CONFIG_EDITOR
-    if(mzx_world->editing)
-    {
-      // Assemble and map the program. Do not free the source.
-      assemble_program(cur_robot->program_source,
-       &cur_robot->program_bytecode, &cur_robot->program_bytecode_length,
-       &cur_robot->command_map, &cur_robot->command_map_length);
-    }
-    else
-#endif
-    {
-      // Assemble, but do not map the program.
-      assemble_program(cur_robot->program_source,
-       &cur_robot->program_bytecode, &cur_robot->program_bytecode_length,
-       NULL, NULL);
-
-      // Can free source code if we're not in the editor.
-      free(cur_robot->program_source);
-      cur_robot->program_source = NULL;
-      cur_robot->program_source_length = 0;
-    }
+    // Assemble and map the program. Don't free the source; we need it to save.
+    assemble_program(cur_robot->program_source,
+     &cur_robot->program_bytecode, &cur_robot->program_bytecode_length,
+     &cur_robot->command_map, &cur_robot->command_map_length);
 
     // This was moved here from load robot - only build up the labels once the
     // robot's actually used. But eventually this should be combined with
@@ -3708,4 +3653,83 @@ void prepare_robot_bytecode(struct world *mzx_world, struct robot *cur_robot)
   }
 }
 
+static int get_source_command_map_index(struct robot *cur_robot,
+ int source_pos)
+{
+  struct command_mapping *cmd_map = cur_robot->command_map;
+
+  int b = cur_robot->command_map_length - 1;
+  int a = 0;
+  int i;
+
+  int d;
+
+  if(cmd_map)
+  {
+    while(b-a > 1)
+    {
+      i = (b - a)/2 + a;
+
+      d = cmd_map[i].src_pos - source_pos;
+
+      if(d >= 0) b = i;
+      if(d <= 0) a = i;
+    }
+
+    if(source_pos >= cmd_map[b].src_pos)
+      a = b;
+  }
+  return a;
+}
+
 #endif /* CONFIG_DEBYTECODE */
+
+#if defined(CONFIG_EDITOR) || defined(CONFIG_DEBYTECODE)
+
+int get_current_command_map_index(struct robot *cur_robot)
+{
+  struct command_mapping *cmd_map = cur_robot->command_map;
+
+  int program_pos = cur_robot->cur_prog_line;
+
+  int b = cur_robot->command_map_length - 1;
+  int a = 0;
+  int i;
+
+  int d;
+
+  // If mapping information is available, we can binary search.
+  if(cmd_map)
+  {
+    while(b-a > 1)
+    {
+      i = (b - a)/2 + a;
+
+      d = cmd_map[i].bc_pos - program_pos;
+
+      if(d >= 0) b = i;
+      if(d <= 0) a = i;
+    }
+
+    if(program_pos >= cmd_map[b].bc_pos)
+      a = b;
+  }
+
+  // Otherwise, step through the program line by line.
+  else
+  {
+    char *bc = cur_robot->program_bytecode;
+    char *end = bc + program_pos;
+    a = 1;
+
+    while(bc < end)
+    {
+      bc += *bc + 2;
+      a++;
+    }
+  }
+
+  return a;
+}
+
+#endif /* defined(CONFIG_EDITOR) || defined(CONFIG_DEBYTECODE) */

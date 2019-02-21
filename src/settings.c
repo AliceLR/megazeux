@@ -80,7 +80,7 @@ void game_settings(struct world *mzx_world)
 
   const char *radio_strings_1[2] =
   {
-    "Digitized music on", "Digitized music off"
+    "Music/sample SFX on", "Music/sample SFX off"
   };
   const char *radio_strings_2[2] =
   {
@@ -151,22 +151,22 @@ void game_settings(struct world *mzx_world)
 
     if(!mzx_world->lock_speed)
     {
-      elements[speed_pos] = construct_number_box(5, 2, "Speed- ", 1, 16,
-       0, &mzx_speed);
+      elements[speed_pos] = construct_number_box(2, 2, "Speed- ", 1, 16,
+       NUMBER_SLIDER, &mzx_speed);
     }
 
     elements[0] = construct_radio_button(4, 2 + speed_option,
-     radio_strings_1, 2, 19, &music);
+     radio_strings_1, 2, 20, &music);
     elements[1] = construct_radio_button(4, 5 + speed_option,
      radio_strings_2, 2, 18, &pcs);
-    elements[2] = construct_label(3, 8 + speed_option,
+    elements[2] = construct_label(2, 8 + speed_option,
      "Audio volumes-");
-    elements[3] = construct_number_box(3, 9 + speed_option,
-     "Overall volume- ", 1, 8, 0, &music_volume);
-    elements[4] = construct_number_box(3, 10 + speed_option,
-     "SoundFX volume- ", 1, 8, 0, &sound_volume);
-    elements[5] = construct_number_box(3, 11 + speed_option,
-     "PC Speaker SFX- ", 1, 8, 0, &pcs_volume);
+    elements[3] = construct_number_box(2, 9 + speed_option,
+     "     Music- ", 0, 10, NUMBER_SLIDER, &music_volume);
+    elements[4] = construct_number_box(2, 10 + speed_option,
+     "   Samples- ", 0, 10, NUMBER_SLIDER, &sound_volume);
+    elements[5] = construct_number_box(2, 11 + speed_option,
+     "PC Speaker- ", 0, 10, NUMBER_SLIDER, &pcs_volume);
 
     elements[ok_pos] = construct_button(6, 13 + speed_option + shader_option,
      "OK", 0);

@@ -110,7 +110,10 @@ static void audio_xmp_set_position(struct audio_stream *a_src, Uint32 position)
 static void audio_xmp_set_order(struct audio_stream *a_src, Uint32 order)
 {
   struct xmp_stream *stream = (struct xmp_stream *)a_src;
+  // XMP won't jump to the start of the specified order it's already playing
+  // most of the time, so set the row too.
   xmp_set_position(stream->ctx, order);
+  xmp_set_row(stream->ctx, 0);
 }
 
 static void audio_xmp_set_frequency(struct sampled_stream *s_src,
@@ -206,7 +209,7 @@ static struct audio_stream *construct_xmp_stream(char *filename,
 
     if(xmp_load_module(ctx, filename) == 0)
     {
-      struct xmp_stream *xmp_stream = cmalloc(sizeof(struct xmp_stream));
+      struct xmp_stream *xmp_stream = ccalloc(1, sizeof(struct xmp_stream));
       struct sampled_stream_spec s_spec;
       struct audio_stream_spec a_spec;
       int num_orders;

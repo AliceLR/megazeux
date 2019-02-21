@@ -88,6 +88,7 @@ enum error_code
 #endif
 #ifdef CONFIG_UPDATER
   E_UPDATE,
+  E_UPDATE_RETRY,
 #endif
 #ifdef CONFIG_DEBYTECODE
   E_DBC_WORLD_OVERWRITE_OLD,

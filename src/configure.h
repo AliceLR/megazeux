@@ -44,7 +44,7 @@ enum update_auto_check_mode
 {
   UPDATE_AUTO_CHECK_OFF = 0,
   UPDATE_AUTO_CHECK_ON,
-  UPDATE_AUTO_CHECK_SILENT,
+  UPDATE_AUTO_CHECK_SILENT
 };
 
 struct config_info
