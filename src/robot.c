@@ -36,6 +36,7 @@
 #include "graphics.h"
 #include "idarray.h"
 #include "legacy_rasm.h"
+#include "memcasecmp.h"
 #include "memfile.h"
 #include "robot.h"
 #include "rasm.h"
@@ -3021,7 +3022,7 @@ char *tr_msg_ext(struct world *mzx_world, char *mesg, int id, char *buffer,
 
         *name_ptr = 0;
 
-        if(!strcasecmp(name_buffer, "INPUT"))
+        if(!memcasecmp(name_buffer, "INPUT", 6))
         {
           // Input
           name_length = strlen(src_board->input_string);
