@@ -6,6 +6,8 @@ FIXES
 
 DEVELOPERS
 
++ Fixed -Wunused-result warnings for Linux builds.
+
 
 February 20th, 2019 - MZX 2.91j
 

@@ -2895,6 +2895,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
                 if(!strcasecmp(file_name + file_name_length - 4, ".mzx"))
                 {
                   FILE *mzx_file = fopen_unsafe(file_name, "rb");
+                  char *world_name = file_list[num_files] + 30;
 
                   memset(file_list[num_files], ' ', 55);
                   memcpy(file_list[num_files], file_name, file_name_length);
@@ -2903,7 +2904,12 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
                   if(file_name_length > 29)
                     strcpy(file_list[num_files] + 26, "... ");
 
-                  fread(file_list[num_files] + 30, 1, 24, mzx_file);
+                  if(!fread(world_name, 24, 1, mzx_file))
+                    strcpy(world_name, "@0~c\x10 name read failed \x11");
+                  else
+                  if(!memcmp(world_name, "PK\x03\x04", 4))
+                    strcpy(world_name, "@0~c\x10 rearchived world \x11");
+
                   fclose(mzx_file);
                 }
                 else
