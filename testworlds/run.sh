@@ -87,6 +87,7 @@ echo ""
 # Clean up some files that MegaZeux currently can't.
 
 rm -f next
+rm -f "test"
 rm -f saved.sav
 rm -f LOCKED.MZX
 rm -f LOCKED.MZX.locked

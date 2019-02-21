@@ -14,10 +14,10 @@ and may not work correctly for all platforms.
 
 Test worlds are named in the format
 
-```VVV #XXXXX [short description].mzx```
+```VVV/XXX [short description].mzx```
 
 where `VVV` is the MegaZeux version associated with the world (e.g. `2.51`)
-and #XXXXX is the test number (e.g. `#12345`).
+and XXX is the test number (e.g. `123`).
 
 Example version strings:
 * `2.02` for 2.02
@@ -33,6 +33,19 @@ Example version strings:
 * `2.62` for 2.62
 * `2.62b` for 2.62b
 * etc...
+
+Letter versions starting from 2.80 onward belong in the folder of their
+non-lettered counterpart. Change the first digit of the test number to the
+version letter to signify it is a test for a change in that particular
+lettered version. Example: a 2.80d test called "Big Test" could be located
+at the path `2.80/d01 Big Test.mzx`).
+
+### Dependencies
+
+External files used as dependencies by a test world should be located in the
+folder `data`. Test worlds are copied to the testworlds base folder before they
+are executed, so they should have access to this folder when running as part
+of a test.
 
 ### Robotic
 
@@ -87,14 +100,14 @@ The following counters have special meaning:
 * `SKIP`: Set `result` to this to indicate that the test was skipped.
 * `result`: indicates the result of the test. Defaults to `BADF`.
 * `$result`: indicates more details about the result of a test.
-* `$world`: the filename of the current world.
+* `$world`: the filename of the current world. NOTE: This is not necessarily the original filename of the world.
 * `$title`: the title of the test.
 * `$author`: the author of the test.
 * `$desc`: a description of the test.
 
 Worlds from MZX versions 2.62 to 2.70 should use the following compatible strings:
 
-* `$string0`: the filename of the current world.
+* `$string0`: the filename of the current world. NOTE: This is not necessarily the original filename of the world.
 * `$string1`: the title of the test.
 * `$string2`: the author of the test.
 * `$string3`: a description of the test.
