@@ -7,6 +7,8 @@ FIXES
 DEVELOPERS
 
 + Fixed -Wunused-result warnings for Linux builds.
++ Added "Intel EMGD" to auto_glsl blacklist (questionable
+  OpenGL 2.0 support).
 
 
 February 20th, 2019 - MZX 2.91j
