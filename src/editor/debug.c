@@ -78,70 +78,104 @@
 #define VAR_ADD_DIALOG_H 6
 #define VAR_ADD_MAX 30
 
-char asc[17] = "0123456789ABCDEF";
+static char asc[17] = "0123456789ABCDEF";
 
-static void copy_substring_escaped(struct string *str, char *buf,
- unsigned int size)
+// Escape \n. Use for most debug var name/text fields. This is intended for
+// display only and doesn't escape \. For anything that needs to be edited
+// or unescaped, use copy_substring_escaped instead. FIXME it'd be nice if
+// list box elements could print these chars instead of making this necessary.
+static void copy_name_escaped(char *dest, size_t dest_len, const char *src,
+ size_t src_len)
 {
   unsigned int i, j, left;
 
-  for(i = 0, j = 0; j < str->length; i++, j++)
+  for(i = 0, j = 0; j < src_len; i++, j++)
   {
-    left = size - i;
-    if(str->value[j] == '\\')
+    left = dest_len - i;
+    if(src[j] == '\n')
     {
       if(left < 3)
         break;
 
-      buf[i++] = '\\';
-      buf[i] = '\\';
-    }
-    else if(str->value[j] == '\n')
-    {
-      if(left < 3)
-        break;
-
-      buf[i++] = '\\';
-      buf[i] = 'n';
-    }
-    else if(str->value[j] == '\r')
-    {
-      if(left < 3)
-        break;
-
-      buf[i++] = '\\';
-      buf[i] = 'r';
-    }
-    else if(str->value[j] == '\t')
-    {
-      if(left < 3)
-        break;
-
-      buf[i++] = '\\';
-      buf[i] = 't';
-    }
-    else if(str->value[j] < 32 || str->value[j] > 126)
-    {
-      if(left < 5)
-        break;
-
-      buf[i++] = '\\';
-      buf[i++] = 'x';
-      buf[i++] = asc[str->value[j] >> 4];
-      buf[i] = asc[str->value[j] & 15];
+      dest[i++] = '\\';
+      dest[i] = 'n';
     }
     else
     {
       if(left < 2)
         break;
 
-      buf[i] = str->value[j];
+      dest[i] = src[j];
     }
   }
 
-  buf[i] = 0;
+  dest[i] = 0;
 }
 
+// Escape all non-ASCII chars. Use for string values.
+static void copy_substring_escaped(char *dest, size_t dest_len, const char *src,
+ size_t src_len)
+{
+  unsigned int i, j, left;
+
+  for(i = 0, j = 0; j < src_len; i++, j++)
+  {
+    left = dest_len - i;
+    if(src[j] == '\\')
+    {
+      if(left < 3)
+        break;
+
+      dest[i++] = '\\';
+      dest[i] = '\\';
+    }
+    else if(src[j] == '\n')
+    {
+      if(left < 3)
+        break;
+
+      dest[i++] = '\\';
+      dest[i] = 'n';
+    }
+    else if(src[j] == '\r')
+    {
+      if(left < 3)
+        break;
+
+      dest[i++] = '\\';
+      dest[i] = 'r';
+    }
+    else if(src[j] == '\t')
+    {
+      if(left < 3)
+        break;
+
+      dest[i++] = '\\';
+      dest[i] = 't';
+    }
+    else if(src[j] < 32 || src[j] > 126)
+    {
+      if(left < 5)
+        break;
+
+      dest[i++] = '\\';
+      dest[i++] = 'x';
+      dest[i++] = asc[src[j] >> 4];
+      dest[i] = asc[src[j] & 15];
+    }
+    else
+    {
+      if(left < 2)
+        break;
+
+      dest[i] = src[j];
+    }
+  }
+
+  dest[i] = 0;
+}
+
+// Unescape a string escaped by copy_substring_escaped.
 static void unescape_string(char *buf, int *len)
 {
   size_t i = 0, j, old_len = strlen(buf);
@@ -400,6 +434,7 @@ static void get_var_name(struct debug_var *v, char **name, int *len,
 
 #define match_var(_name) (strlen(_name) == len && !memcmp(var, _name, len))
 
+// The buffer param is used for any vars that need to generate char values.
 static void get_var_value(struct world *mzx_world, struct debug_var *v,
  char **char_value, int *int_value, char buffer[VAR_LIST_WIDTH + 1])
 {
@@ -506,26 +541,7 @@ static void get_var_value(struct world *mzx_world, struct debug_var *v,
 
       if(match_var("robot_name*"))
       {
-#ifdef CONFIG_DEBYTECODE
-        // FIXME belongs in read_var, not here
-        // In debytecode, it is possible to encounter situations where
-        // debug information is missing, so add a display for it.
-
-        struct robot *cur_robot = cur_board->robot_list[index];
-        size_t len = strlen(cur_robot->robot_name);
-        const char *yn[] = { "N", "Y" };
-
-        memset(buffer, ' ', SVALUE_SIZE);
-        memcpy(buffer, cur_robot->robot_name, len);
-        sprintf(buffer + SVALUE_SIZE - CVALUE_SIZE, "(debug: %s)",
-         yn[cur_robot->command_map != NULL]);
-
-        buffer[SVALUE_SIZE] = 0;
-        *char_value = buffer;
-#else
         *char_value = cur_board->robot_list[index]->robot_name;
-#endif
-
         *int_value = strlen(*char_value);
       }
       else
@@ -666,6 +682,7 @@ static void get_var_value(struct world *mzx_world, struct debug_var *v,
 static void read_var(struct world *mzx_world, struct debug_var *v)
 {
   char buffer[VAR_LIST_WIDTH + 1];
+  char *char_dest = v->text + SVALUE_COL_OFFSET;
   char *char_value = NULL;
   int int_value = 0;
 
@@ -673,19 +690,17 @@ static void read_var(struct world *mzx_world, struct debug_var *v)
 
   if(v->type == V_STRING)
   {
-    // get_var_value does not escape this, but we want it escaped for display.
-    copy_substring_escaped(v->data.string, buffer, SVALUE_SIZE + 1);
-    int_value = SVALUE_SIZE;
-    char_value = buffer;
+    // Add special escaping to string values to match how they're edited.
+    const char *src = v->data.string->value;
+    size_t src_len = v->data.string->length;
+    copy_substring_escaped(char_dest, SVALUE_SIZE + 1, src, src_len);
   }
+  else
 
   if(char_value)
   {
-    if(int_value > SVALUE_SIZE)
-      int_value = SVALUE_SIZE;
-
-    memcpy(v->text + SVALUE_COL_OFFSET, char_value, int_value);
-    v->text[SVALUE_COL_OFFSET + int_value] = '\0';
+    // Use minimal escaping to avoid display bugs.
+    copy_name_escaped(char_dest, SVALUE_SIZE + 1, char_value, int_value);
   }
 
   else
@@ -811,12 +826,14 @@ static void write_var(struct world *mzx_world, struct debug_var *v, int int_val,
 
 static void init_counter_var(struct debug_var *v, struct counter *src)
 {
+  char buf[CVALUE_COL_OFFSET];
   v->type = V_COUNTER;
   v->is_empty = (src->value ? false : true);
   v->data.counter = src;
 
+  copy_name_escaped(buf, CVALUE_COL_OFFSET, src->name, src->name_length);
   snprintf(v->text, VAR_LIST_WIDTH, "%-*.*s %i",
-   CVALUE_COL_OFFSET - 1, CVALUE_COL_OFFSET - 1, src->name, src->value);
+   CVALUE_COL_OFFSET - 1, CVALUE_COL_OFFSET - 1, buf, src->value);
 }
 
 static void init_string_var(struct debug_var *v, struct string *src)
@@ -826,10 +843,11 @@ static void init_string_var(struct debug_var *v, struct string *src)
   v->is_empty = (src->length ? false : true);
   v->data.string = src;
 
-  snprintf(buf, SVALUE_COL_OFFSET, "%s", src->name);
+  copy_name_escaped(buf, SVALUE_COL_OFFSET, src->name, src->name_length);
   memset(v->text, 32, VAR_LIST_WIDTH);
   memcpy(v->text, buf, strlen(buf));
-  copy_substring_escaped(src, v->text + SVALUE_COL_OFFSET, SVALUE_SIZE + 1);
+  copy_substring_escaped(v->text + SVALUE_COL_OFFSET, SVALUE_SIZE + 1,
+   src->value, src->length);
   v->text[VAR_LIST_WIDTH] = 0;
 }
 
@@ -1735,6 +1753,7 @@ static void init_robot_vars_node(struct world *mzx_world,
   int num_vars = num_robot_vars + 32;
   struct debug_var *vars = cmalloc(num_vars * sizeof(struct debug_var));
   struct debug_var *current_var;
+  char temp[15];
   int i;
 
   // Init the default vars first
@@ -1753,7 +1772,8 @@ static void init_robot_vars_node(struct world *mzx_world,
     read_var(mzx_world, current_var);
   }
 
-  snprintf(dest->name, 14, "%d:%s", robot_id, src_robot->robot_name);
+  snprintf(temp, 14, "%d:%s", robot_id, src_robot->robot_name);
+  copy_name_escaped(dest->name, 15, temp, strlen(temp));
   dest->parent = parent;
   dest->num_nodes = 0;
   dest->nodes = NULL;
@@ -2096,15 +2116,27 @@ static void input_counter_value(struct world *mzx_world, struct debug_var *v)
   {
     case V_COUNTER:
     {
-      snprintf(dialog_name, 70, "Edit: counter %s", v->data.counter->name);
-      sprintf(new_value, "%d", v->data.counter->value);
+      const struct counter *src = v->data.counter;
+      const char *mesg = "Edit: counter ";
+      char *dest = dialog_name + strlen(mesg);
+      size_t dest_len = sizeof(dialog_name) - strlen(mesg);
+
+      strcpy(dialog_name, mesg);
+      copy_name_escaped(dest, dest_len, src->name, src->name_length);
+      sprintf(new_value, "%d", src->value);
       break;
     }
 
     case V_STRING:
     {
-      snprintf(dialog_name, 70, "Edit: string %s", v->data.string->name);
-      copy_substring_escaped(v->data.string, new_value, 71);
+      const struct string *src = v->data.string;
+      const char *mesg = "Edit: string ";
+      char *dest = dialog_name + strlen(mesg);
+      size_t dest_len = sizeof(dialog_name) - strlen(mesg);
+
+      strcpy(dialog_name, mesg);
+      copy_name_escaped(dest, dest_len, src->name, src->name_length);
+      copy_substring_escaped(new_value, 71, src->value, src->length);
       break;
     }
 

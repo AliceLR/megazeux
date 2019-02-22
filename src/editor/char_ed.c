@@ -904,6 +904,7 @@ static void char_export_tile(const char *name, int char_offset, int charset,
 static void char_import(struct world *mzx_world, int char_offset, int charset,
  int highlight_width, int highlight_height, struct undo_history *h)
 {
+  static char saved_import_string[MAX_PATH];
   char import_string[256] = { 0, };
   char import_name[256];
   int current_file = 0;
@@ -947,11 +948,13 @@ static void char_import(struct world *mzx_world, int char_offset, int charset,
   elements[4] =
    construct_label(28, 21, "~9Use \"file#.chr\" to import multiple charsets.");
 
+  strcpy(import_string, saved_import_string);
   if(!file_manager(mzx_world, chr_ext, NULL, import_string,
    "Import character set(s)", 1, 2, elements, ARRAY_SIZE(elements), 2))
   {
     int num_files_present = num_files;
 
+    strcpy(saved_import_string, import_string);
     if(strchr(import_string, '#') == NULL)
       num_files_present = 1;
 
@@ -997,6 +1000,7 @@ static void char_import(struct world *mzx_world, int char_offset, int charset,
 static void char_export(struct world *mzx_world, int char_offset, int charset,
  int highlight_width, int highlight_height)
 {
+  static char saved_export_string[MAX_PATH];
   char export_string[256] = { 0, };
   char export_name[256];
   int current_file = 0;
@@ -1040,11 +1044,13 @@ static void char_export(struct world *mzx_world, int char_offset, int charset,
   elements[4] =
    construct_label(28, 21, "~9Use \"file#.chr\" to export multiple charsets.");
 
+  strcpy(export_string, saved_export_string);
   if(!file_manager(mzx_world, chr_ext, ".chr", export_string,
    "Export character set(s)", 1, 1, elements, ARRAY_SIZE(elements), 2))
   {
     int num_files_present = num_files;
 
+    strcpy(saved_export_string, export_string);
     if(strchr(export_string, '#') == NULL)
       num_files_present = 1;
 

@@ -105,7 +105,11 @@ struct editor_context
   subcontext *edit_menu;
 
   char current_world[MAX_PATH];
+  char mzb_name_buffer[MAX_PATH];
   char mzm_name_buffer[MAX_PATH];
+  char chr_name_buffer[MAX_PATH];
+  char pal_name_buffer[MAX_PATH];
+  char idx_name_buffer[MAX_PATH];
   char current_listening_dir[MAX_PATH];
   char current_listening_mod[MAX_PATH];
 
@@ -2204,11 +2208,13 @@ static boolean editor_key(context *ctx, int *key)
           case BLOCK_CMD_SAVE_MZM:
           {
             // Save as MZM
-            editor->mzm_name_buffer[0] = 0;
+            char export_name[MAX_PATH];
+            strcpy(export_name, editor->mzm_name_buffer);
 
-            if(!new_file(mzx_world, mzm_ext, ".mzm", editor->mzm_name_buffer,
+            if(!new_file(mzx_world, mzm_ext, ".mzm", export_name,
              "Export MZM", 1))
             {
+              strcpy(editor->mzm_name_buffer, export_name);
               save_mzm(mzx_world, editor->mzm_name_buffer, block->src_x,
                block->src_y, block->width, block->height, editor->mode,
                false);
@@ -2541,9 +2547,11 @@ static boolean editor_key(context *ctx, int *key)
           {
             case 0:
             {
+              strcpy(import_name, editor->mzb_name_buffer);
               if(!choose_file(mzx_world, mzb_ext, import_name,
                "Choose board to import", 1))
               {
+                strcpy(editor->mzb_name_buffer, import_name);
                 replace_current_board(mzx_world, import_name);
 
                 // Exit vlayer mode if necessary.
@@ -2584,10 +2592,12 @@ static boolean editor_key(context *ctx, int *key)
                  0, (PRO_CH - 1), NUMBER_BOX, &char_offset),
               };
 
+              strcpy(import_name, editor->chr_name_buffer);
               if(!file_manager(mzx_world, chr_ext, NULL, import_name,
                "Choose character set to import", 1, 0,
                elements, ARRAY_SIZE(elements), 2))
               {
+                strcpy(editor->chr_name_buffer, import_name);
                 ec_load_set_var(import_name, char_offset, MZX_VERSION);
               }
               editor->modified = true;
@@ -2617,19 +2627,22 @@ static boolean editor_key(context *ctx, int *key)
             case 3:
             {
               // Palette
-              // Character set
+              strcpy(import_name, editor->pal_name_buffer);
               if(!choose_file(mzx_world, pal_ext, import_name,
                "Choose palette to import", 1))
               {
+                strcpy(editor->pal_name_buffer, import_name);
                 load_palette(import_name);
                 editor->modified = true;
               }
 
-              import_name[0] = 0;
+              // Indices (mode 3 only)
+              strcpy(import_name, editor->idx_name_buffer);
               if((get_screen_mode() == 3) &&
                !choose_file(mzx_world, idx_ext, import_name,
                 "Choose indices to import (.PALIDX)", 1))
               {
+                strcpy(editor->idx_name_buffer, import_name);
                 load_index_file(import_name);
                 editor->modified = true;
               }
@@ -2660,17 +2673,18 @@ static boolean editor_key(context *ctx, int *key)
             case 5:
             {
               // MZM file
-              if(!choose_file(mzx_world, mzm_ext,
-               editor->mzm_name_buffer, "Choose image file to import", 1))
+              strcpy(import_name, editor->mzm_name_buffer);
+              if(!choose_file(mzx_world, mzm_ext, import_name,
+               "Choose image file to import", 1))
               {
+                strcpy(editor->mzm_name_buffer, import_name);
                 editor->cursor_mode = CURSOR_MZM_PLACE;
                 block->command = BLOCK_CMD_LOAD_MZM;
                 block->selected = true;
                 block->src_board = NULL;
                 block->src_mode = editor->mode;
                 block->dest_mode = editor->mode;
-                load_mzm_size(editor->mzm_name_buffer,
-                 &block->width, &block->height);
+                load_mzm_size(import_name, &block->width, &block->height);
               }
 
               break;
@@ -3192,9 +3206,11 @@ static boolean editor_key(context *ctx, int *key)
             case 0:
             {
               // Board file
+              strcpy(export_name, editor->mzb_name_buffer);
               if(!new_file(mzx_world, mzb_ext, ".mzb", export_name,
                "Export board file", 1))
               {
+                strcpy(editor->mzb_name_buffer, export_name);
                 save_board_file(mzx_world, cur_board, export_name);
               }
               break;
@@ -3213,12 +3229,13 @@ static boolean editor_key(context *ctx, int *key)
                  1, (PRO_CH), NUMBER_BOX, &char_size)
               };
 
+              strcpy(export_name, editor->chr_name_buffer);
               if(!file_manager(mzx_world, chr_ext, NULL, export_name,
                "Export character set", 1, 1, elements, ARRAY_SIZE(elements), 2))
               {
                 add_ext(export_name, ".chr");
-                ec_save_set_var(export_name, char_offset,
-                 char_size);
+                ec_save_set_var(export_name, char_offset, char_size);
+                strcpy(editor->chr_name_buffer, export_name);
               }
 
               break;
@@ -3227,17 +3244,20 @@ static boolean editor_key(context *ctx, int *key)
             case 2:
             {
               // Palette
+              strcpy(export_name, editor->pal_name_buffer);
               if(!new_file(mzx_world, pal_ext, ".pal", export_name,
                "Export palette", 1))
               {
+                strcpy(editor->pal_name_buffer, export_name);
                 save_palette(export_name);
               }
 
-              export_name[0] = 0;
+              strcpy(export_name, editor->idx_name_buffer);
               if((get_screen_mode() == 3) &&
                !new_file(mzx_world, idx_ext, ".palidx", export_name,
                 "Export indices (.PALIDX)", 1))
               {
+                strcpy(editor->idx_name_buffer, export_name);
                 save_index_file(export_name);
               }
 

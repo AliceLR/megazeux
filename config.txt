@@ -1,5 +1,5 @@
-# Configuration file for MegaZeux 2.91i
-# December 9th, 2018
+# Configuration file for MegaZeux 2.91j
+# February 20th, 2019
 
 # Comments begin with #. Whitespace is ignored. Empty lines are
 # ignored as well.
@@ -218,15 +218,15 @@
 
 # pc_speaker_on = 1
 
-# Volume music plays at
+# Volume music plays at (0 through 10)
 
 # music_volume = 8
 
-# Volume samples play at
+# Volume samples play at (0 through 10)
 
 # sample_volume = 8
 
-# Volume PC speaker SFX play at
+# Volume PC speaker SFX play at (0 through 10)
 
 # pc_speaker_volume = 8
 
@@ -250,7 +250,7 @@
 
 # save_file = saved.sav
 
-# Speed MZX should start at (1 through 9)
+# Speed MZX should start at (1 through 16)
 
 # mzx_speed = 4
 
@@ -548,7 +548,7 @@
 # pause_on_unfocus = 0
 
 # Set to 0 if you want input boxes and strings in the robot editor
-# to use the game set for characters 32-127, as opposed to the protected
+# to use the game set for characters 32-126, as opposed to the protected
 # GUI set.
 
 # mask_midchars = 1

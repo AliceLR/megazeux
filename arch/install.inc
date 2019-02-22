@@ -68,13 +68,16 @@ install: install-check install-arch
 		assets/smzx.pal ${DESTDIR}${SHAREDIR}/megazeux/assets && \
 	 ${install} -m 0644 config.txt ${DESTDIR}${SYSCONFDIR}/megazeux-config
 	@gzip -c docs/changelog.txt > docs/changelog.txt.gz
+	@gzip -c9 docs/mzxhelp.html > docs/mzxhelp.html.gz
 	@${install} -m 0644 \
 		README.md \
 		docs/changelog.txt.gz \
+		docs/mzxhelp.html.gz \
 		docs/macro.txt \
 		docs/keycodes.html \
 		${DESTDIR}${SHAREDIR}/doc/megazeux/
 	@${RM} -f docs/changelog.txt.gz
+	@${RM} -f docs/mzxhelp.html.gz
 ifeq (${BUILD_HELPSYS},1)
 	@${install} -m 0644 assets/help.fil \
 		${DESTDIR}${SHAREDIR}/megazeux/assets

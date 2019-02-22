@@ -25,6 +25,7 @@
 #include "expr.h"
 
 #include "counter.h"
+#include "memcasecmp.h"
 #include "rasm.h"
 #include "robot.h"
 #include "str.h"
@@ -361,7 +362,7 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
       buf_pos = buffer + buf_start;
 
       // Input
-      if(!strcasecmp(buf_pos, "INPUT"))
+      if(!memcasecmp(buf_pos, "INPUT", 6))
       {
         src = mzx_world->current_board->input_string;
         len = strlen(src);
