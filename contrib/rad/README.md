@@ -12,6 +12,6 @@ useful, go ahead and use it.
 
 Please visit the Reality website for the latest version of the RAD tracker, the
 original version of this playback code, and .RAD music releases by Reality:
-[https://www.3eality.com/productions/reality-adlib-tracker].
+<https://www.3eality.com/productions/reality-adlib-tracker>.
 
 -Lachesis
