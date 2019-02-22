@@ -17,6 +17,13 @@ FEATURES
 
 FIXES
 
++ SET "$string" TO "fwrite" will now always write the delimiter
+  regardless of the length of $string. Previously, this command
+  would only write a delimiter if $string was a length greater
+  than zero, requiring extra checks by the user to account for
+  this special case. Compatibility checks have been added for
+  for worlds made in older versions.
+
 DEVELOPERS
 
 + Fixed -Wunused-result warnings for Linux builds.

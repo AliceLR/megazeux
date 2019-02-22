@@ -116,6 +116,7 @@ xcuserdata/
 testworlds/backup*
 testworlds/log
 testworlds/next
+testworlds/test
 testworlds/temp/*
 !testworlds/temp/README.md
 !testworlds/data/*
