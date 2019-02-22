@@ -2,6 +2,8 @@ GIT
 
 FEATURES
 
++ MegaZeux now supports Reality Adlib Tracker (RAD) music files.
+  Both 1.x and 2.x variants are fully supported.
 + New counter: TIME_MILLIS. Returns the milliseconds of the
   current system time.
 + New counters: MOD_LOOPSTART and MOD_LOOPEND. These counters
