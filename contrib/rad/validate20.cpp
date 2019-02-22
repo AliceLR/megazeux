@@ -48,13 +48,11 @@ const char *g_RADExtraBytes = "Tune file contains extra bytes.";
 //=============================================================================
 static const char *RADValidate10(const void *data, const uint8_t *end)
 {
-    // Parse the 1.0 RAD and get the expected length of the new data.
-    // Omit the comment to save space.
-
     const uint8_t *start = (const uint8_t *)data;
     const uint8_t *pos = start;
     uint16_t pattern_offsets[32];
     uint32_t i;
+    bool pattern_used[32] = { false };
     bool last_line;
     bool last_note;
 
@@ -111,6 +109,11 @@ static const char *RADValidate10(const void *data, const uint8_t *end)
         {
             if(order >= 32)
                 return g_RADBadOrderEntry;
+
+            // Mark used patterns for validation.
+            // TODO: possibly walk through the order list instead so unreached
+            // orders don't have their patterns marked used.
+            pattern_used[order] = true;
         }
     }
 
@@ -120,10 +123,13 @@ static const char *RADValidate10(const void *data, const uint8_t *end)
 
     for(i = 0; i < 32; i++)
     {
-        pattern_offsets[i] = pos[0] | (pos[1] << 8);
+        // Ignore offsets to unused patterns- usually they will already be
+        // zero, but "blue_ad.rad" has unused garbage patterns that will fail
+        // validation despite the track otherwise working fine.
+        pattern_offsets[i] = pattern_used[i] ? (pos[0] | (pos[1] << 8)) : 0;
         pos += 2;
 
-        if(start + pattern_offsets[i] >= end)
+        if(pattern_used[i] && (start + pattern_offsets[i] >= end))
             return g_RADPattTruncated;
     }
 
@@ -151,7 +157,7 @@ static const char *RADValidate10(const void *data, const uint8_t *end)
 
                 // Channel
                 uint8_t channel = *(pos++);
-                if((channel & 0x7F) > 9)
+                if((channel & 0x7F) >= 9)
                     return g_RADPattBadChanNum;
 
                 last_note = (channel & 0x80) ? true : false;

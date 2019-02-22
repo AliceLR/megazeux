@@ -253,7 +253,7 @@ static struct audio_stream *construct_rad_stream(char *filename,
       }
       else
       {
-        debug("RAD: %s\n", validate);
+        debug("RAD: %s -- %s\n", filename, validate);
         free(data);
       }
     }

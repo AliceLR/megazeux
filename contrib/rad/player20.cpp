@@ -1326,8 +1326,9 @@ void RADPlayer::Init10(const void *tune)
     if(flags & 0x40)
         Hertz = 18;
 
-    // Skip any description
-    while(*(pos++));
+    // Skip any description (only present if flag is set)
+    if(flags & 0x80)
+        while(*(pos++));
 
     // Unpack the instruments
     while(true)
