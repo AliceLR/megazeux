@@ -2,7 +2,27 @@ GIT
 
 FEATURES
 
++ New counter: TIME_MILLIS. Returns the milliseconds of the
+  current system time.
++ New counters: MOD_LOOPSTART and MOD_LOOPEND. These counters
+  return the start and end of the loop for the current playing
+  music and can be set to change the loop while the music is
+  playing. Setting MOD_LOOPEND to 0 disables the loop. These
+  counters only work for Ogg Vorbis and WAV audio (not modules).
++ Added support for the LOOPEND tag for Ogg Vorbis files. This
+  tag can be used to define the end of the loop directly, which
+  may be more convenient for some users. This tag takes lower
+  precedence than LOOPLENGTH if both are present, and will be
+  ignored if its value is less than LOOPSTART.
+
 FIXES
+
++ SET "$string" TO "fwrite" will now always write the delimiter
+  regardless of the length of $string. Previously, this command
+  would only write a delimiter if $string was a length greater
+  than zero, requiring extra checks by the user to account for
+  this special case. Compatibility checks have been added for
+  for worlds made in older versions.
 
 DEVELOPERS
 

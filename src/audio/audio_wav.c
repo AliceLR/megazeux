@@ -96,8 +96,9 @@ static Uint32 wav_read_data(struct wav_stream *w_stream, Uint8 *buffer,
           new_offset = w_stream->data_length;
       }
 
-      if(repeat && (w_stream->data_offset < w_stream->loop_end)
-       && (w_stream->data_offset + read_len >= w_stream->loop_end))
+      if(repeat && (w_stream->data_offset < w_stream->loop_end) &&
+       (w_stream->data_offset + read_len >= w_stream->loop_end) &&
+       (w_stream->loop_start < w_stream->loop_end))
       {
         read_len = w_stream->loop_end - w_stream->data_offset;
         new_offset = w_stream->loop_start;
@@ -212,6 +213,16 @@ static void wav_set_position(struct audio_stream *a_src, Uint32 position)
     w_stream->data_offset = position * w_stream->bytes_per_sample;
 }
 
+static void wav_set_loop_start(struct audio_stream *a_src, Uint32 position)
+{
+  ((struct wav_stream *)a_src)->loop_start = position;
+}
+
+static void wav_set_loop_end(struct audio_stream *a_src, Uint32 position)
+{
+  ((struct wav_stream *)a_src)->loop_end = position;
+}
+
 static void wav_set_frequency(struct sampled_stream *s_src, Uint32 frequency)
 {
   if(frequency == 0)
@@ -234,6 +245,16 @@ static Uint32 wav_get_length(struct audio_stream *a_src)
   struct wav_stream *w_stream = (struct wav_stream *)a_src;
 
   return w_stream->data_length / w_stream->bytes_per_sample;
+}
+
+static Uint32 wav_get_loop_start(struct audio_stream *a_src)
+{
+  return ((struct wav_stream *)a_src)->loop_start;
+}
+
+static Uint32 wav_get_loop_end(struct audio_stream *a_src)
+{
+  return ((struct wav_stream *)a_src)->loop_end;
 }
 
 static Uint32 wav_get_frequency(struct sampled_stream *s_src)
@@ -609,13 +630,17 @@ static struct audio_stream *construct_wav_stream(char *filename,
         w_stream->bytes_per_sample *= 2;
 
       memset(&a_spec, 0, sizeof(struct audio_stream_spec));
-      a_spec.mix_data     = wav_mix_data;
-      a_spec.set_volume   = wav_set_volume;
-      a_spec.set_repeat   = wav_set_repeat;
-      a_spec.set_position = wav_set_position;
-      a_spec.get_position = wav_get_position;
-      a_spec.get_length   = wav_get_length;
-      a_spec.destruct     = wav_destruct;
+      a_spec.mix_data       = wav_mix_data;
+      a_spec.set_volume     = wav_set_volume;
+      a_spec.set_repeat     = wav_set_repeat;
+      a_spec.set_position   = wav_set_position;
+      a_spec.set_loop_start = wav_set_loop_start;
+      a_spec.set_loop_end   = wav_set_loop_end;
+      a_spec.get_position   = wav_get_position;
+      a_spec.get_length     = wav_get_length;
+      a_spec.get_loop_start = wav_get_loop_start;
+      a_spec.get_loop_end   = wav_get_loop_end;
+      a_spec.destruct       = wav_destruct;
 
       memset(&s_spec, 0, sizeof(struct sampled_stream_spec));
       s_spec.set_frequency = wav_set_frequency;

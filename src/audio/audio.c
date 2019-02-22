@@ -159,14 +159,19 @@ void destruct_audio_stream(struct audio_stream *a_src)
 void initialize_audio_stream(struct audio_stream *a_src,
  struct audio_stream_spec *a_spec, Uint32 volume, Uint32 repeat)
 {
+  // TODO should probably just memcpy into a spec in the audio_stream instead.
   a_src->mix_data = a_spec->mix_data;
   a_src->set_volume = a_spec->set_volume;
   a_src->set_repeat = a_spec->set_repeat;
   a_src->set_order = a_spec->set_order;
   a_src->set_position = a_spec->set_position;
+  a_src->set_loop_start = a_spec->set_loop_start;
+  a_src->set_loop_end = a_spec->set_loop_end;
   a_src->get_order = a_spec->get_order;
   a_src->get_position = a_spec->get_position;
   a_src->get_length = a_spec->get_length;
+  a_src->get_loop_start = a_spec->get_loop_start;
+  a_src->get_loop_end = a_spec->get_loop_end;
   a_src->destruct = a_spec->destruct;
 
   if(a_src->set_volume)
@@ -606,6 +611,56 @@ int audio_get_module_length(void)
     return length;
   }
 
+  return 0;
+}
+
+void audio_set_module_loop_start(int pos)
+{
+  if(audio.primary_stream && audio.primary_stream->set_loop_start)
+  {
+    LOCK();
+    audio.primary_stream->set_loop_start(audio.primary_stream, pos);
+    UNLOCK();
+  }
+}
+
+int audio_get_module_loop_start(void)
+{
+  if(audio.primary_stream && audio.primary_stream->get_loop_start)
+  {
+    int loop_start;
+
+    LOCK();
+    loop_start = audio.primary_stream->get_loop_start(audio.primary_stream);
+    UNLOCK();
+
+    return loop_start;
+  }
+  return 0;
+}
+
+void audio_set_module_loop_end(int pos)
+{
+  if(audio.primary_stream && audio.primary_stream->set_loop_end)
+  {
+    LOCK();
+    audio.primary_stream->set_loop_end(audio.primary_stream, pos);
+    UNLOCK();
+  }
+}
+
+int audio_get_module_loop_end(void)
+{
+  if(audio.primary_stream && audio.primary_stream->get_loop_end)
+  {
+    int loop_end;
+
+    LOCK();
+    loop_end = audio.primary_stream->get_loop_end(audio.primary_stream);
+    UNLOCK();
+
+    return loop_end;
+  }
   return 0;
 }
 

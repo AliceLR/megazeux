@@ -971,6 +971,9 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
 
   if(special_name_partial("fwrite") && mzx_world->output_file)
   {
+    // When no length argument is specified, always write a delimiter.
+    boolean write_delimiter = (src_length == 6);
+
     /* You can't write a string that doesn't exist, or a string
      * of zero length (the file will still be created, of course).
      */
@@ -993,10 +996,20 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
         size = dest_length - offset;
 
       fwrite(dest_value + offset, size, 1, output_file);
-
-      if(src_length == 6)
-        fputc(mzx_world->fwrite_delimiter, output_file);
     }
+    else
+    {
+      // 2.80X through 2.91X wouldn't write delimiters for unset strings.
+      if((mzx_world->version >= V280) && (mzx_world->version <= V291) && !dest)
+        write_delimiter = false;
+
+      // 2.82b through 2.91X wouldn't write them for 0-length strings either.
+      if((mzx_world->version >= V282) && (mzx_world->version <= V291))
+        write_delimiter = false;
+    }
+
+    if(write_delimiter)
+      fputc(mzx_world->fwrite_delimiter, mzx_world->output_file);
   }
   else
 

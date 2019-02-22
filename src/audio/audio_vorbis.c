@@ -87,8 +87,9 @@ static Uint32 vorbis_mix_data(struct audio_stream *a_src, Sint32 *buffer,
      read_wanted, ENDIAN_PACKING, 2, 1, &current_section);
 #endif
 
-    if(a_src->repeat && (pos < v_stream->loop_end)
-     && (pos + read_len / v_stream->s.channels / 2 >= v_stream->loop_end))
+    if(a_src->repeat && (pos < v_stream->loop_end) &&
+     (pos + read_len / v_stream->s.channels / 2 >= v_stream->loop_end) &&
+     (v_stream->loop_start < v_stream->loop_end))
     {
       read_len = (v_stream->loop_end - pos) * v_stream->s.channels * 2;
       ov_pcm_seek(&(v_stream->vorbis_file_handle), v_stream->loop_start);
@@ -148,6 +149,16 @@ static void vorbis_set_position(struct audio_stream *a_src, Uint32 position)
    (ogg_int64_t)position);
 }
 
+static void vorbis_set_loop_start(struct audio_stream *a_src, Uint32 position)
+{
+  ((struct vorbis_stream *)a_src)->loop_start = position;
+}
+
+static void vorbis_set_loop_end(struct audio_stream *a_src, Uint32 position)
+{
+  ((struct vorbis_stream *)a_src)->loop_end = position;
+}
+
 static void vorbis_set_frequency(struct sampled_stream *s_src, Uint32 frequency)
 {
   if(frequency == 0)
@@ -170,6 +181,16 @@ static Uint32 vorbis_get_length(struct audio_stream *a_src)
   return (Uint32)ov_pcm_total(&v->vorbis_file_handle, -1);
 }
 
+static Uint32 vorbis_get_loop_start(struct audio_stream *a_src)
+{
+  return ((struct vorbis_stream *)a_src)->loop_start;
+}
+
+static Uint32 vorbis_get_loop_end(struct audio_stream *a_src)
+{
+  return ((struct vorbis_stream *)a_src)->loop_end;
+}
+
 static Uint32 vorbis_get_frequency(struct sampled_stream *s_src)
 {
   return s_src->frequency;
@@ -190,6 +211,7 @@ static struct audio_stream *construct_vorbis_stream(char *filename,
   vorbis_comment *comment;
   int loopstart = -1;
   int looplength = -1;
+  int loopend = -1;
   int i;
 
   if(input_file)
@@ -226,25 +248,38 @@ static struct audio_stream *construct_vorbis_stream(char *filename,
               loopstart = atoi(comment->user_comments[i] + 10);
             else
 
+            if(!strncasecmp("loopend=", comment->user_comments[i], 8))
+              loopend = atoi(comment->user_comments[i] + 8);
+            else
+
             if(!strncasecmp("looplength=", comment->user_comments[i], 11))
               looplength = atoi(comment->user_comments[i] + 11);
           }
 
-          if((loopstart >= 0) && (looplength > 0))
+          if(loopstart >= 0 && (looplength > 0 || loopend > loopstart))
           {
             v_stream->loop_start = loopstart;
-            v_stream->loop_end = loopstart + looplength;
+
+            // looplength takes priority since it's older and more "standard"
+            if(looplength > 0)
+              v_stream->loop_end = loopstart + looplength;
+            else
+              v_stream->loop_end = loopend;
           }
         }
 
         memset(&a_spec, 0, sizeof(struct audio_stream_spec));
-        a_spec.mix_data     = vorbis_mix_data;
-        a_spec.set_volume   = vorbis_set_volume;
-        a_spec.set_repeat   = vorbis_set_repeat;
-        a_spec.set_position = vorbis_set_position;
-        a_spec.get_position = vorbis_get_position;
-        a_spec.get_length   = vorbis_get_length;
-        a_spec.destruct     = vorbis_destruct;
+        a_spec.mix_data       = vorbis_mix_data;
+        a_spec.set_volume     = vorbis_set_volume;
+        a_spec.set_repeat     = vorbis_set_repeat;
+        a_spec.set_position   = vorbis_set_position;
+        a_spec.set_loop_start = vorbis_set_loop_start;
+        a_spec.set_loop_end   = vorbis_set_loop_end;
+        a_spec.get_position   = vorbis_get_position;
+        a_spec.get_length     = vorbis_get_length;
+        a_spec.get_loop_start = vorbis_get_loop_start;
+        a_spec.get_loop_end   = vorbis_get_loop_end;
+        a_spec.destruct       = vorbis_destruct;
 
         memset(&s_spec, 0, sizeof(struct sampled_stream_spec));
         s_spec.set_frequency = vorbis_set_frequency;

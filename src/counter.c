@@ -25,6 +25,8 @@
 #include <assert.h>
 #include <math.h>
 #include <ctype.h>
+#include <time.h>
+#include <sys/time.h>
 
 #include "configure.h"
 #include "counter.h"
@@ -40,7 +42,6 @@
 #include "robot.h"
 #include "sprite.h"
 #include "str.h"
-#include "time.h"
 #include "util.h"
 #include "world.h"
 #include "world_struct.h"
@@ -1165,52 +1166,66 @@ static void timereset_write(struct world *mzx_world,
   mzx_world->current_board->time_limit = CLAMP(value, 0, 32767);
 }
 
+static struct tm *system_time(void)
+{
+  static struct tm err;
+  struct timeval tv;
+  time_t e_time;
+  struct tm *t;
+
+  if(!gettimeofday(&tv, NULL))
+    e_time = tv.tv_sec;
+  else
+    e_time = time(NULL);
+
+  // If localtime returns NULL, return a tm with all zeros instead of crashing.
+  t = localtime(&e_time);
+  return t ? t : &err;
+}
+
 static int date_day_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  time_t e_time = time(NULL);
-  struct tm *t = localtime(&e_time);
-  return t->tm_mday;
+  return system_time()->tm_mday;
 }
 
 static int date_year_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  time_t e_time = time(NULL);
-  struct tm *t = localtime(&e_time);
-  return t->tm_year + 1900;
+  return system_time()->tm_year + 1900;
 }
 
 static int date_month_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  time_t e_time = time(NULL);
-  struct tm *t = localtime(&e_time);
-  return t->tm_mon + 1;
+  return system_time()->tm_mon + 1;
 }
 
 static int time_hours_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  time_t e_time = time(NULL);
-  struct tm *t = localtime(&e_time);
-  return t->tm_hour;
+  return system_time()->tm_hour;
 }
 
 static int time_minutes_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  time_t e_time = time(NULL);
-  struct tm *t = localtime(&e_time);
-  return t->tm_min;
+  return system_time()->tm_min;
 }
 
 static int time_seconds_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  time_t e_time = time(NULL);
-  struct tm *t = localtime(&e_time);
-  return t->tm_sec;
+  return system_time()->tm_sec;
+}
+
+static int time_millis_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  struct timeval tv;
+  if(!gettimeofday(&tv, NULL))
+    return (tv.tv_usec / 1000) % 1000;
+  return 0;
 }
 
 static int random_seed_read(struct world *mzx_world,
@@ -2299,6 +2314,32 @@ static int mod_length_read(struct world *mzx_world,
   return audio_get_module_length();
 }
 
+static int mod_loopend_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  return audio_get_module_loop_end();
+}
+
+static void mod_loopend_write(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int value, int id)
+{
+  if(value >= 0)
+    audio_set_module_loop_end(value);
+}
+
+static int mod_loopstart_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  return audio_get_module_loop_start();
+}
+
+static void mod_loopstart_write(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int value, int id)
+{
+  if(value >= 0)
+    audio_set_module_loop_start(value);
+}
+
 static int mod_freq_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
@@ -2434,6 +2475,8 @@ static const struct function_counter builtin_counters[] =
   { "min!,!",           V284,   minval_read,          NULL },
   { "mod_frequency",    V281,   mod_freq_read,        mod_freq_write },
   { "mod_length",       V291,   mod_length_read,      NULL },
+  { "mod_loopend",      V292,   mod_loopend_read,     mod_loopend_write },
+  { "mod_loopstart",    V292,   mod_loopstart_read,   mod_loopstart_write },
   { "mod_order",        V262,   mod_order_read,       mod_order_write },
   { "mod_position",     V281,   mod_position_read,    mod_position_write },
   { "mousepx",          V282,   mousepx_read,         mousepx_write },
@@ -2510,6 +2553,7 @@ static const struct function_counter builtin_counters[] =
   { "this_color",       V260,   this_color_read,      NULL },
   { "timereset",        ALL,    timereset_read,       timereset_write },
   { "time_hours",       V260,   time_hours_read,      NULL },
+  { "time_millis",      V292,   time_millis_read,     NULL },
   { "time_minutes",     V260,   time_minutes_read,    NULL },
   { "time_seconds",     V260,   time_seconds_read,    NULL },
   { "uch!,!",           V284,   uch_read,             NULL },
