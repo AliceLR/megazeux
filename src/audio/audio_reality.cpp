@@ -31,9 +31,9 @@
 
 // Yes, this is how the Reality player is intended to be included.
 #define RAD_DETECT_REPEATS 1
-#include "../../contrib/rad/Source/opal.cpp"
-#include "../../contrib/rad/Source/player20.cpp"
-#include "../../contrib/rad/Source/validate20.cpp"
+#include "../../contrib/rad/opal.cpp"
+#include "../../contrib/rad/player20.cpp"
+#include "../../contrib/rad/validate20.cpp"
 
 // Every order in a RAD is fixed length. This makes a few operations for this
 // player much easier.
