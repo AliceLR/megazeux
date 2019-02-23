@@ -25,6 +25,9 @@ FIXES
   than zero, requiring extra checks by the user to account for
   this special case. Compatibility checks have been added for
   for worlds made in older versions.
++ Fixed bug where robots attempting to copy the player over
+  themselves with COPY x y x y or COPY dir dir would get stuck
+  in an infinite loop instead of executing the next command.
 
 DEVELOPERS
 

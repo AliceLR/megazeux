@@ -3807,13 +3807,22 @@ void run_robot(context *ctx, int id, int x, int y)
            dest_x, dest_y, NULL, 0);
         }
 
-        if((dest_x == x) && (dest_y == y) && (dest_type == 0))
+        // If this robot was deleted, exit. NOTE: all port versions prior
+        // to 2.92 had a faulty check here that would only check dest_x
+        // and dest_y and not whether or not the robot was actually
+        // overwritten. If something actually relied on this, add a
+        // version check.
+        if(id)
         {
-          // Robot no longer exists; exit
-          return;
-        }
+          int offset = x + (y * board_width);
+          int d_id = (enum thing)level_id[offset];
+          int d_param = level_param[offset];
 
-        update_blocked = 1;
+          if((d_id != ROBOT && d_id != ROBOT_PUSHABLE) || (d_param != id))
+            return;
+
+          update_blocked = 1;
+        }
         break;
       }
 
@@ -3970,15 +3979,24 @@ void run_robot(context *ctx, int id, int x, int y)
             {
               copy_xy_to_xy(mzx_world, src_x, src_y, dest_x, dest_y);
 
-              if((dest_x == x) && (dest_y == y))
+              // If this robot was deleted, exit. NOTE: all port versions prior
+              // to 2.92 had a faulty check here that would only check dest_x
+              // and dest_y and not whether or not the robot was actually
+              // overwritten. If something actually relied on this, add a
+              // version check. That said, this command overwriting the current
+              // robot does not seem to be possible anyway.
               {
-                // Robot no longer exists; exit
-                return;
+                int offset = x + (y * board_width);
+                int d_id = (enum thing)level_id[offset];
+                int d_param = level_param[offset];
+
+                if((d_id != ROBOT && d_id != ROBOT_PUSHABLE) || (d_param != id))
+                  return;
               }
+              update_blocked = 1;
             }
           }
         }
-        update_blocked = 1;
         break;
       }
 
@@ -4738,7 +4756,7 @@ void run_robot(context *ctx, int id, int x, int y)
           int d_id = (enum thing)level_id[offset];
           int d_param = level_param[offset];
 
-          if(((d_id != 123) && (d_id != 124)) || (d_param != id))
+          if(((d_id != ROBOT) && (d_id != ROBOT_PUSHABLE)) || (d_param != id))
             return;
 
           update_blocked = 1;
