@@ -30,6 +30,8 @@ DEVELOPERS
 + Fixed -Wunused-result warnings for Linux builds.
 + Added "Intel EMGD" to auto_glsl blacklist (questionable
   OpenGL 2.0 support).
++ Added platform-independent joystick event functions and
+  updated the SDL, NDS, 3DS, and Wii event handlers for them.
 
 
 February 20th, 2019 - MZX 2.91j
@@ -158,8 +160,6 @@ DEVELOPERS
   WIPHelp.txt into web and printable HTML files.
 + Updated to latest NDS ARM7 template.
 + Updated SDL2 for Windows release builds to SDL 2.0.9.
-+ Added platform-independent joystick event functions and
-  updated the SDL, NDS, 3DS, and Wii event handlers for them.
 
 
 December 9th, 2018 - MZX 2.91i
