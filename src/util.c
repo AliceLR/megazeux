@@ -30,6 +30,7 @@
 #include <unistd.h>
 #endif
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -347,30 +348,30 @@ long ftell_and_rewind(FILE *f)
 
 // Random function, returns an integer [0-range)
 
-static unsigned long long rng_state;
+static uint64_t rng_state;
 
 // Seed the RNG from system time on startup
 void rng_seed_init(void)
 {
-  unsigned long long seed = (((unsigned long long)time(NULL)) << 32) | clock();
+  uint64_t seed = (((uint64_t)time(NULL)) << 32) | clock();
   rng_set_seed(seed);
 }
 
-unsigned long long rng_get_seed(void)
+uint64_t rng_get_seed(void)
 {
   return rng_state;
 }
 
-void rng_set_seed(unsigned long long seed)
+void rng_set_seed(uint64_t seed)
 {
   rng_state = seed;
 }
 
 // xorshift*
 // Implementation from https://en.wikipedia.org/wiki/Xorshift
-unsigned int Random(unsigned long long range)
+unsigned int Random(uint64_t range)
 {
-  unsigned long long x = rng_state;
+  uint64_t x = rng_state;
   if(x == 0) x = 1;
   x ^= x >> 12; // a
   x ^= x << 25; // b

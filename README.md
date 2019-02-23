@@ -3,7 +3,7 @@
 
 MegaZeux is a game creation system (GCS) created by game developer Alexis Janson in 1994.
 Originally a DOS program, in 2005 a multi-platform port was released by Exophase. The most
-recent version of MegaZeux is 2.91i, which was released on December 9th, 2018.
+recent version of MegaZeux is 2.91j, which was released on February 20th, 2019.
 
 MegaZeux is officially supported on Windows, Linux/BSD, MacOS, as well as the NDS, 3DS, Wii,
 and PSP consoles. Historical support has also existed for GP2X, Pandora, and AmigaOS 4.
@@ -43,6 +43,7 @@ Older versions are available at [DigitalMZX](https://vault.digitalmzx.net/).
 [arch-rpi]: contrib/archicons/raspbian.png  "Raspbian"
 [arch-aur]: contrib/archicons/archlinux.png "Arch Linux (via AUR)"
 [arch-void]:contrib/archicons/voidlinux.png "Void Linux"
+[arch-gen]: contrib/archicons/gentoo.png    "Gentoo"
 [arch-nds]: contrib/archicons/nds.png       "Nintendo DS"
 [arch-3ds]: contrib/archicons/3ds.png       "Nintendo 3DS"
 [arch-wii]: contrib/archicons/wii.png       "Nintendo Wii"
@@ -70,6 +71,7 @@ The following platforms have MegaZeux releases available via repository:
 
 &nbsp; [![Arch Linux (via AUR)][arch-aur]](https://aur.archlinux.org/packages/megazeux/)
 &nbsp; [![Void Linux][arch-void]](https://github.com/void-linux/void-packages/tree/master/srcpkgs/megazeux)
+&nbsp; [![Gentoo][arch-gen]](https://github.com/Spectere/megazeux-overlay)
 &nbsp; [![Amiga OS 4 (outdated)][arch-ami]](http://aminet.net/package/game/misc/pfp-mgzx)
 &nbsp; [![GP2X (outdated)][arch-gp2x]](https://dl.openhandhelds.org/cgi-bin/gp2x.cgi?0,0,0,0,26,2920)
 &nbsp; [![Pandora (outdated)][arch-pand]](https://repo.openpandora.org/?page=detail&app=megazeux_ptitseb)

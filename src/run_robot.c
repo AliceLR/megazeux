@@ -489,10 +489,13 @@ static void copy_xy_to_xy(struct world *mzx_world, int src_x, int src_y,
   struct board *src_board = mzx_world->current_board;
   int board_width = src_board->board_width;
   int src_offset = src_x + (src_y * board_width);
+  int dest_offset = dest_x + (dest_y * board_width);
   enum thing src_id = (enum thing)src_board->level_id[src_offset];
+  enum thing dest_id = (enum thing)src_board->level_id[dest_offset];
 
-  // Cannot copy from player to player
-  if(src_id != PLAYER)
+  // Cannot copy from the player or onto the player. Check for the player at
+  // the destination now so this doesn't pointlessly waste storage object IDs.
+  if((src_id != PLAYER) && (dest_id != PLAYER))
   {
     int src_param = src_board->level_param[src_offset];
 
@@ -518,8 +521,7 @@ static void copy_xy_to_xy(struct world *mzx_world, int src_x, int src_y,
     }
 
     // Now perform the copy; this should perform any necessary
-    // deletions at the destination as well, and will also disallow
-    // overwriting the player.
+    // deletions at the destination as well.
     if(src_param != -1)
     {
       place_at_xy(mzx_world, src_id,

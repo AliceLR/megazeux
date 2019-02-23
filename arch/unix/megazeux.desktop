@@ -1,8 +1,7 @@
 [Desktop Entry]
-Encoding=UTF-8
 Name=MegaZeux
 Exec=megazeux
 Icon=megazeux
 Terminal=false
 Type=Application
-Categories=Application;Game;
+Categories=Game;

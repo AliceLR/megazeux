@@ -78,6 +78,7 @@ Patch summary
     upstream in PR https://github.com/cmatsuoka/libxmp/pull/99.
 12: Fixes https://github.com/cmatsuoka/libxmp/issues/102 (global sample volume)
     and https://github.com/cmatsuoka/libxmp/issues/103 (sample vibrato).
+13: (by NoSuck) fixes IT T00. https://github.com/cmatsuoka/libxmp/pull/129
 
 20: Disables USE_VERSIONED_SYMBOLS. Required to get our hacked libxmp to link
     on unix platforms. Ideally these platforms will eventually dynamically link.

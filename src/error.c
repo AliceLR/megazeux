@@ -460,6 +460,11 @@ int error_message(enum error_code id, int parameter, const char *string)
 #endif
 
 #ifdef CONFIG_UPDATER
+    case E_UPDATE_RETRY:
+      opts = ERROR_OPT_RETRY | ERROR_OPT_FAIL;
+
+      /* fallthrough */
+
     case E_UPDATE:
       snprintf(error_mesg, 79, "%s", string);
       code = 0xA200 | (parameter & 0xFF);

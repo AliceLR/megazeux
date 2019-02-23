@@ -2,13 +2,6 @@ GIT
 
 FEATURES
 
-+ Nvidia and AMD switchable graphics drivers should now detect
-  MegaZeux and MZXRun properly.
-+ The editor now remembers the contents of the buffer when
-  switching between board, overlay, and vlayer editing. For
-  example, if a robot is selected on the board before switching
-  to overlay mode, the robot will still be in the buffer when
-  the user switches back to board mode.
 + Joystick settings in game.cnf files are now loaded as game-
   specific joystick bindings. These bindings will no longer
   permanently override global/UI bindings defined by the config
@@ -32,6 +25,46 @@ FEATURES
 
 FIXES
 
+DEVELOPERS
+
++ Fixed -Wunused-result warnings for Linux builds.
++ Added "Intel EMGD" to auto_glsl blacklist (questionable
+  OpenGL 2.0 support).
+
+
+February 20th, 2019 - MZX 2.91j
+
+Here's a huge collection of bugfixes and a couple of features
+that needed to be split off from 2.92.
+
+Features: every release has an HTML copy of the help file now,
+the editor keeps separate board/overlay/vlayer buffers now, and
+anyone who still uses scrolls/sensors can view their info in the
+counter debugger. The global volume settings use an exponential
+curve now, range from 0 to 10, and have updated UI elements.
+
+Fixes in this release include: the updater won't complain about
+mzx_help.fil anymore, the NDS and 3DS ports have keyboards that
+work again, several bugs that would lead to worlds/saves with
+"Robot # does not exist on board #" errors have been fixed, and
+several crashes have been fixed.
+
+USERS
+
++ A complete HTML copy of the MegaZeux help file is now packaged
+  with releases for all platforms. It can be found in the docs/
+  folder.
++ Nvidia and AMD switchable graphics drivers should now detect
+  MegaZeux and MZXRun properly on Windows.
++ The editor now remembers the contents of the buffer when
+  switching between board, overlay, and vlayer editing. For
+  example, if a robot is selected on the board before switching
+  to overlay mode, the robot will still be in the buffer when
+  the user switches back to board mode.
++ The editor now remembers the last filename for importing and
+  exporting MZM, MZB, CHR, PAL, and PALIDX files.
++ Scrolls and sensors can now be viewed in the counter debugger.
+  They can be found by expanding the Board list (when present).
 + Readded "#version 110" directives to all GLSL shaders, fixing
   warnings on some Intel HD drivers. OpenGL ES builds should now
   comment out these directives.
@@ -46,7 +79,15 @@ FIXES
   games not running at speed 2.
 + The counter debugger now correctly displays the value of
   local0.
-+ Fixed crash bug that could occur when processing delete.txt.
++ Fixed a bug where the counter debugger would not reopen to
+  the correct robot local# value.
++ MZX now attempts to retry removal of an old file when updating
+  if deletion fails initially. Error messages related to the
+  failed deletion of "mzx_help.fil" or "assets/help.fil" are now
+  suppressed as they are caused by a bug in older MZX versions.
++ The help file is now closed before the updater restarts MZX.
++ Fixed crash bug that could occur when removing old files after
+  an update.
 + Improved manifest validity checks.
 + Fixed board editor crash caused by invalid thing IDs.
 + Player movement key repeat no longer resets when the player is
@@ -79,10 +120,15 @@ FIXES
   is now completely highlighted when selected. (Lancer-X)
 + Starting MegaZeux with "startup_editor=1" no longer loads the
   default palette over the startup world's palette.
-+ Editor copy from a layer to the board and COPY/COPY BLOCK from
-  a layer to the board now properly clean up robots, scrolls,
-  and sensors. This fixes a problem where MZX could create
-  worlds/saves with "Robot # does not exist on board" errors.
++ The move block action and undo/redo operations should now
+  preserve the element beneath the player.
++ Fixed crashes caused by using block actions or COPY BLOCK on
+  the player while the player is standing on a sensor.
++ Fixed several bugs where editor block actions and the commands
+  COPY/COPY BLOCK would not check for the player or clean up
+  robots/scrolls/sensors. Worlds/saves saved after these bugs
+  occured could display "Robot # does not exist on board"
+  errors when loaded.
 + The DUPLICATE SELF x y and DUPLICATE SELF dir commands now
   properly check for the player before attempting to duplicate
   a robot. This fixes a bug where MZX could create saves with
@@ -92,6 +138,19 @@ FIXES
   releases instead of key presses.
 + The 3DS onscreen keyboard now returns shifted chars when shift
   is active.
++ Fixed a bug where the libxmp implementation of MOD_ORDER and
+  JUMP MOD ORDER could not restart the current order.
++ Fixed a crash with the libxmp implementation of MOD_POSITION
+  when providing an out-of-bounds value.
++ Fixed a bug where Ctrl+[key] shortcuts would not work while a
+  dialog list element was active on the Wii.
++ Fixed a bug where setting the board mod/charset/palette could
+  truncate the first letter of the path on the Wii.
++ "mask_midchars" no longer masks the non-text char 127.
++ The message box title and the command [ now properly display
+  the graphic for char 9 instead of a tab.
++ Added newline escaping to robot, counter, and string names in
+  the counter debugger to work around formatting bugs.
 
 DEVELOPERS
 

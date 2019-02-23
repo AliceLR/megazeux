@@ -29,6 +29,7 @@
 #include "../block.h"
 #include "../board.h"
 #include "../graphics.h"
+#include "../idarray.h"
 #include "../platform.h"
 #include "../robot.h"
 #include "../world.h"
@@ -486,10 +487,11 @@ static void apply_board_undo(struct undo_frame *f)
   struct board_undo_frame *current = (struct board_undo_frame *)f;
   struct world *mzx_world = current->mzx_world;
 
-  // Can't overwrite the player, so move the player first
+  // Can't overwrite the player, so move the player first. This needs to be
+  // done for both types of operations, as either may require relocating the
+  // player to the player's previous position.
   if(current->move_player)
-    place_player_xy(mzx_world,
-     current->prev_player_x, current->prev_player_y);
+    id_remove_top(mzx_world, mzx_world->player_x, mzx_world->player_y);
 
   switch(f->type)
   {
@@ -535,6 +537,10 @@ static void apply_board_undo(struct undo_frame *f)
       break;
     }
   }
+
+  if(current->move_player)
+    copy_replace_player(mzx_world, current->prev_player_x,
+     current->prev_player_y);
 }
 
 static void apply_board_redo(struct undo_frame *f)
@@ -542,15 +548,13 @@ static void apply_board_redo(struct undo_frame *f)
   struct board_undo_frame *current = (struct board_undo_frame *)f;
   struct world *mzx_world = current->mzx_world;
 
-  // Copy won't overwrite the player, so move the player first
-  if(current->move_player)
-    place_player_xy(current->mzx_world,
-     current->current_player_x, current->current_player_y);
-
   switch(f->type)
   {
     case POS_FRAME:
     {
+      // Don't need any special handling for the player here. The only thing
+      // that can move the player during this redo operation is if the player
+      // is the thing being placed; place_current_at_xy can handle that.
       struct board_undo_pos *next = &(current->replace);
       struct board_undo_pos *prev;
       struct buffer_info temp_buffer;
@@ -574,10 +578,18 @@ static void apply_board_redo(struct undo_frame *f)
     {
       struct block_undo_frame *current = (struct block_undo_frame *)f;
 
+      // Copy won't overwrite the player, so remove the player first.
+      if(current->move_player)
+        id_remove_top(mzx_world, mzx_world->player_x, mzx_world->player_y);
+
       copy_board_to_board(current->mzx_world,
        current->current_board, 0, current->src_board, current->src_offset,
        current->width, current->height
       );
+
+      if(current->move_player)
+        copy_replace_player(mzx_world, current->current_player_x,
+         current->current_player_y);
       break;
     }
   }

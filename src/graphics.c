@@ -1937,7 +1937,7 @@ void write_string_mask(const char *str, Uint32 x, Uint32 y,
 
       default:
       {
-        if((cur_char >= 32) && (cur_char <= 127))
+        if((cur_char >= 32) && (cur_char <= 126))
           dest->char_value = cur_char + PRO_CH;
         else
           dest->char_value = cur_char;

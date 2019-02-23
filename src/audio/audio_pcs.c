@@ -77,7 +77,7 @@ static Uint32 pcs_mix_data(struct audio_stream *a_src, Sint32 *buffer,
   Uint32 sample_duration = pcs_stream->last_duration;
   Uint32 end_duration;
   Uint32 increment_value, increment_buffer;
-  Uint32 sfx_scale = (pcs_stream->volume + 1) * 32;
+  Uint32 sfx_scale = (pcs_stream->volume ? pcs_stream->volume + 1 : 0) * 32;
   Uint32 sfx_scale_half = sfx_scale / 2;
   Sint32 *mix_dest_ptr = buffer;
   Sint16 cur_sample;
