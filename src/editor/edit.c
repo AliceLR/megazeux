@@ -91,6 +91,7 @@ static const char *const mod_ext[] =
 { ".ogg", ".mod", ".s3m", ".xm", ".it", ".gdm",
   ".669", ".amf", ".dsm", ".far", ".med",
   ".mtm", ".okt", ".stm", ".ult", ".wav",
+  ".rad",
   NULL
 };
 static const char *const sam_ext[] =

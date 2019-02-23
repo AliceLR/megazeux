@@ -68,6 +68,10 @@
 #include "audio_openmpt.h"
 #endif
 
+#ifdef CONFIG_REALITY
+#include "audio_reality.h"
+#endif
+
 // May be used by audio plugins
 struct audio audio;
 
@@ -82,19 +86,38 @@ struct audio audio;
 static volatile int locked = 0;
 static volatile char last_lock[32];
 
+#ifdef CONFIG_SDL
+#include <SDL_thread.h>
+static volatile SDL_threadID last_thread = 0;
+#endif
+
 static void lock(const char *file, int line)
 {
-  // lock should _not_ be held here
-  if(locked)
-    debug("%s:%d: locked at %s already!\n", file, line, last_lock);
+#ifdef CONFIG_SDL
+  // lock may be held here, but it shouldn't be held by the current thread.
+  // If this is SDL, we can determine if the current thread is holding it.
+  // Otherwise, print nothing because this debug message is annoying and is
+  // almost always spurious.
+  SDL_threadID cur_thread = SDL_ThreadID();
+
+  if(locked && (last_thread == cur_thread))
+  {
+    debug("%s:%d (thread %ld): locked at %s (thread %ld) already!\n",
+     file, line, cur_thread, last_lock, last_thread);
+  }
+#endif
 
   // acquire the mutex
   __lock();
-  locked = 1;
 
   // store information on this lock
   snprintf((char *)last_lock, 32, "%s:%d", file, line);
   last_lock[31] = '\0';
+#ifdef CONFIG_SDL
+  last_thread = SDL_ThreadID();
+#endif
+
+  locked = 1;
 }
 
 static void unlock(const char *file, int line)
@@ -282,6 +305,10 @@ void init_audio(struct config_info *conf)
 
 #ifdef CONFIG_OPENMPT
   init_openmpt(conf);
+#endif
+
+#ifdef CONFIG_REALITY
+  init_reality(conf);
 #endif
 
   audio_set_music_volume(conf->music_volume);

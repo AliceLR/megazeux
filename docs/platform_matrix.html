@@ -59,6 +59,7 @@ var DMG = _yes("DMG");
 var LHA = _yes("LHA");
 
 var xmp = std("xmp");
+var rad = std("RAD");
 var libvorbis = std("libvorbis");
 var tremor = std("tremor");
 var tremor_lowmem = std("tremor (lowmem)");
@@ -84,6 +85,7 @@ var fields =
   stack_protector:  "Stack Protector",
   layer_rendering:  "Layer Rendering",
   module_engine:    "Module Engine",
+  adlib_engine:     "Adlib Engine",
   ogg_vorbis:       "Ogg Vorbis",
   optimization:     "Optimization",
   sdl:              "SDL",
@@ -119,6 +121,7 @@ var archs =
     visibility:       // Optimized visibility (See note 3)
     stack_protector:  // Is the stack protector enabled? (usually _FAULTY())
     module_engine:    // xmp or other
+    adlib_engine:     // rad
     ogg_vorbis:       // vorbis, tremor, tremor_lowmem or _FAULTY()
     optimization:     // speed or size
     sdl:              // Does this platform rely on SDL?
@@ -149,6 +152,7 @@ var archs =
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       tremor,
     optimization:     speed,
     sdl:              no_sdl_3ds,
@@ -174,6 +178,7 @@ var archs =
     stack_protector:  yes,
     layer_rendering:  yes,
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
     sdl:              yes,
@@ -203,6 +208,7 @@ var archs =
     stack_protector:  no_mingw_stack_protector,
     layer_rendering:  yes,
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
     sdl:              yes,
@@ -232,6 +238,7 @@ var archs =
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
     sdl:              yes,
@@ -260,6 +267,7 @@ var archs =
     stack_protector:  _FAULTY(),
     layer_rendering:  _FAULTY(),
     module_engine:    _FAULTY(),
+    adlib_engine:     _FAULTY(),
     ogg_vorbis:       _FAULTY(),
     optimization:     size,
     sdl:              no,
@@ -284,6 +292,7 @@ var archs =
     stack_protector:  _FAULTY(),
     layer_rendering:  yes_but_8bpp,
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       tremor_lowmem,
     optimization:     size,
     sdl:              yes,
@@ -309,6 +318,7 @@ var archs =
     stack_protector:  yes,
     layer_rendering:  yes,
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
     sdl:              yes,
@@ -338,6 +348,7 @@ var archs =
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       tremor,
     optimization:     speed,
     sdl:              optional_sdl_wii,
@@ -363,6 +374,7 @@ var archs =
     stack_protector:  yes,
     layer_rendering:  yes,
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
     sdl:              yes,
@@ -394,6 +406,7 @@ var archs =
     stack_protector:  yes,
     layer_rendering:  yes,
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
     sdl:              yes,
@@ -423,6 +436,7 @@ var archs =
     stack_protector:  _FAULTY("NO", 8),
     layer_rendering:  _FAULTY("NO", 8),
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       tremor_lowmem,
     optimization:     size,
     sdl:              no,
@@ -451,6 +465,7 @@ var archs =
     stack_protector:  _FAULTY(),
     layer_rendering:  _FAULTY(),
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       tremor_lowmem,
     optimization:     size,
     sdl:              yes,
@@ -476,6 +491,7 @@ var archs =
     stack_protector:  yes,
     layer_rendering:  yes,
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       tremor_lowmem,
     optimization:     speed,
     sdl:              yes,
