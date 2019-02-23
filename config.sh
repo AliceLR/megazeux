@@ -57,7 +57,7 @@ usage() {
 	echo "  --enable-modplug        Enables ModPlug music engine."
 	echo "  --enable-mikmod         Enables MikMod music engine."
 	echo "  --enable-openmpt        Enables OpenMPT music engine."
-	echo "  --disable-reality       Disables Reality Adlib Tracker (RAD) support."
+	echo "  --disable-rad           Disables Reality Adlib Tracker (RAD) support."
 	echo "  --disable-libpng        Disable PNG screendump support."
 	echo "  --disable-audio         Disable all audio (sound + music)."
 	echo "  --disable-vorbis        Disable ogg/vorbis support."
@@ -270,8 +270,8 @@ while [ "$1" != "" ]; do
 	[ "$1" = "--disable-openmpt" ] && OPENMPT="false"
 	[ "$1" = "--enable-openmpt" ]  && OPENMPT="true"
 
-	[ "$1" = "--disable-reality" ] && REALITY="false"
-	[ "$1" = "--enable-reality" ]  && REALITY="true"
+	[ "$1" = "--disable-rad" ] && REALITY="false"
+	[ "$1" = "--enable-rad" ]  && REALITY="true"
 
 	[ "$1" = "--disable-libpng" ] && LIBPNG="false"
 	[ "$1" = "--enable-libpng" ]  && LIBPNG="true"
