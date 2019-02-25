@@ -1,6 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
+ * Copyright (C) 2019 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -64,6 +65,16 @@ static Sint16 joystick_action_map_default[NUM_JOYSTICK_ACTIONS] =
   [JOY_SWITCH] = IKEY_INSERT,
   [JOY_SAVE] = IKEY_F3,
   [JOY_LOAD] = IKEY_F4,
+  [JOY_LSTICK] = 0,
+  [JOY_RSTICK] = 0,
+  [JOY_L_UP] = IKEY_UP,
+  [JOY_L_DOWN] = IKEY_DOWN,
+  [JOY_L_LEFT] = IKEY_LEFT,
+  [JOY_L_RIGHT] = IKEY_RIGHT,
+  [JOY_R_UP] = IKEY_UP,
+  [JOY_R_DOWN] = IKEY_DOWN,
+  [JOY_R_LEFT] = IKEY_LEFT,
+  [JOY_R_RIGHT] = IKEY_RIGHT,
 };
 
 static Sint16 joystick_action_map_ui[NUM_JOYSTICK_ACTIONS] =
@@ -84,6 +95,14 @@ static Sint16 joystick_action_map_ui[NUM_JOYSTICK_ACTIONS] =
   [JOY_LOAD] = IKEY_PAGEDOWN,
   [JOY_LSTICK] = IKEY_HOME,
   [JOY_RSTICK] = IKEY_END,
+  [JOY_L_UP] = IKEY_UP,
+  [JOY_L_DOWN] = IKEY_DOWN,
+  [JOY_L_LEFT] = IKEY_LEFT,
+  [JOY_L_RIGHT] = IKEY_RIGHT,
+  [JOY_R_UP] = IKEY_UP,
+  [JOY_R_DOWN] = IKEY_DOWN,
+  [JOY_R_LEFT] = IKEY_LEFT,
+  [JOY_R_RIGHT] = IKEY_RIGHT,
 };
 
 struct buffered_status *store_status(void)
@@ -1068,10 +1087,18 @@ static const struct joystick_action_name joystick_action_names[] =
   { "down",     JOY_DOWN },
   { "escape",   JOY_ESCAPE },
 //{ "keyboard", JOY_KEYBOARD },
+  { "l_down",   JOY_L_DOWN },
+  { "l_left",   JOY_L_LEFT },
+  { "l_right",  JOY_L_RIGHT },
+  { "l_up",     JOY_L_UP },
   { "left",     JOY_LEFT },
   { "load",     JOY_LOAD },
   { "lstick",   JOY_LSTICK },
   { "menu",     JOY_MENU },
+  { "r_down",   JOY_R_DOWN },
+  { "r_left",   JOY_R_LEFT },
+  { "r_right",  JOY_R_RIGHT },
+  { "r_up",     JOY_R_UP },
   { "right",    JOY_RIGHT },
   { "rstick",   JOY_RSTICK },
   { "save",     JOY_SAVE },

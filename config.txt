@@ -564,7 +564,8 @@
 # To use a generic joystick action, replace the key in one of the settings
 # above with "act_X", where X is an action name from the table below. Examples:
 
-# joyXaxisY = act_left, act_right
+# joyXhat = act_up, act_down, act_left, act_right
+# joyXaxisY = act_l_left, act_l_right
 # joyXbuttonY = act_shoot
 
 # The available joystick actions and their typical behaviors are:
@@ -587,6 +588,11 @@
 #  load           Reload save     Page down       F4 (load save)
 #  lstick                         Home
 #  rstick                         End
+
+# Actions "up"/"down"/"left"/"right" are intended for a digital pad. Actions
+# "l_up"/"l_down"/"l_left"/"l_right" and "r_up"/"r_down"/"r_left"/"r_right"
+# also exist, which are similar and intended for analog stick mapping on
+# controllers that possess both a digital pad and analog sticks.
 
 # [1] Works on the main menu and game menu. May not work on other windows
 # currently.
