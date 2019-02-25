@@ -2,6 +2,7 @@
  *
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  * Copyright (C) 2007 Kevin Vance <kvance@kvance.com>
+ * Copyright (C) 2019 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -174,6 +175,312 @@ static int get_pandora_joystick_button(SDL_Keycode key)
 }
 #endif
 
+#if SDL_VERSION_ATLEAST(2,0,0)
+/**
+ * The SDL GameController API puts this in an interesting place. The best way
+ * to populate MZX action mappings is to parse the SDL mapping string directly.
+ * The API offers no other way to get detailed mapping information on half axes
+ * and axis inversions (these were added after the API was designed; no new
+ * functions were added to read this extended info).
+ *
+ * However, the axis mappings can be so convoluted it's better to open the
+ * controller with the API anyway just to populate the analog axis values. This
+ * appears to not affect the joystick events received whatsoever.
+ *
+ * No equivalent of this API exists for SDL 1.x.
+ */
+
+static SDL_GameController *gamecontrollers[MAX_JOYSTICKS];
+
+/*
+static enum joystick_special_axis sdl_axis_map[SDL_CONTROLLER_AXIS_MAX] =
+{
+  [SDL_CONTROLLER_AXIS_LEFTX]         = JOY_AXIS_LEFT_X,
+  [SDL_CONTROLLER_AXIS_LEFTY]         = JOY_AXIS_LEFT_Y,
+  [SDL_CONTROLLER_AXIS_RIGHTX]        = JOY_AXIS_RIGHT_X,
+  [SDL_CONTROLLER_AXIS_RIGHTY]        = JOY_AXIS_RIGHT_Y,
+  [SDL_CONTROLLER_AXIS_TRIGGERLEFT]   = JOY_AXIS_LEFT_TRIGGER,
+  [SDL_CONTROLLER_AXIS_TRIGGERRIGHT]  = JOY_AXIS_RIGHT_TRIGGER
+};
+*/
+
+static Sint16 sdl_axis_action_map[SDL_CONTROLLER_AXIS_MAX][2] =
+{
+  [SDL_CONTROLLER_AXIS_LEFTX]         = { -JOY_L_LEFT,  -JOY_L_RIGHT },
+  [SDL_CONTROLLER_AXIS_LEFTY]         = { -JOY_L_UP,    -JOY_L_DOWN },
+  [SDL_CONTROLLER_AXIS_RIGHTX]        = { -JOY_R_LEFT,  -JOY_R_RIGHT },
+  [SDL_CONTROLLER_AXIS_RIGHTY]        = { -JOY_R_UP,    -JOY_R_DOWN },
+  [SDL_CONTROLLER_AXIS_TRIGGERLEFT]   = { 0,            -JOY_SAVE },
+  [SDL_CONTROLLER_AXIS_TRIGGERRIGHT]  = { 0,            -JOY_LOAD },
+};
+
+static Sint16 sdl_action_map[SDL_CONTROLLER_BUTTON_MAX] =
+{
+  [SDL_CONTROLLER_BUTTON_A]             = -JOY_A,
+  [SDL_CONTROLLER_BUTTON_B]             = -JOY_B,
+  [SDL_CONTROLLER_BUTTON_X]             = -JOY_X,
+  [SDL_CONTROLLER_BUTTON_Y]             = -JOY_Y,
+  [SDL_CONTROLLER_BUTTON_BACK]          = -JOY_ESCAPE,
+//[SDL_CONTROLLER_BUTTON_GUIDE]         = -JOY_ESCAPE,
+  [SDL_CONTROLLER_BUTTON_START]         = -JOY_MENU,
+  [SDL_CONTROLLER_BUTTON_LEFTSTICK]     = -JOY_LSTICK,
+  [SDL_CONTROLLER_BUTTON_RIGHTSTICK]    = -JOY_RSTICK,
+  [SDL_CONTROLLER_BUTTON_LEFTSHOULDER]  = -JOY_SWITCH,
+  [SDL_CONTROLLER_BUTTON_RIGHTSHOULDER] = -JOY_SETTINGS,
+  [SDL_CONTROLLER_BUTTON_DPAD_UP]       = -JOY_UP,
+  [SDL_CONTROLLER_BUTTON_DPAD_DOWN]     = -JOY_DOWN,
+  [SDL_CONTROLLER_BUTTON_DPAD_LEFT]     = -JOY_LEFT,
+  [SDL_CONTROLLER_BUTTON_DPAD_RIGHT]    = -JOY_RIGHT
+};
+
+static int sdl_hat_to_dir(int hat_mask)
+{
+  switch(hat_mask)
+  {
+    case SDL_HAT_UP:
+      return JOYHAT_UP;
+
+    case SDL_HAT_DOWN:
+      return JOYHAT_DOWN;
+
+    case SDL_HAT_LEFT:
+      return JOYHAT_LEFT;
+
+    case SDL_HAT_RIGHT:
+      return JOYHAT_RIGHT;
+
+    default:
+      return -1;
+  }
+}
+
+// TODO this function should not overwrite values specified in config
+static void parse_gamecontroller_map_value(int joy, char *key, char *value,
+ Sint16 single, Sint16 neg, Sint16 pos)
+{
+  // Joystick axes may have half-axis prefixes + or -.
+  // Joystick axes may also have an inversion suffix ~.
+  char half_axis = 0;
+
+  if(*value == '+' || *value == '-')
+    half_axis = *(value++);
+
+  switch(*value)
+  {
+    case 'a':
+    {
+      // Axis- a# or a#~
+      unsigned int axis;
+      int min = 0;
+      int max = 1;
+
+      if(!isdigit(value[1]))
+        return;
+
+      axis = strtoul(value + 1, &value, 10);
+      if(axis >= MAX_JOYSTICK_AXES)
+        return;
+
+      // Only one provided output and no half axis specified? Map + to it.
+      if(half_axis == 0 && single)
+      {
+        neg = 0;
+        pos = single;
+      }
+
+      if(half_axis == '+')
+      {
+        min = -1;
+        pos = single ? single : pos ? pos : neg;
+      }
+      else
+
+      if(half_axis == '-')
+      {
+        max = -1;
+        neg = single ? single : neg ? neg : pos;
+      }
+
+      if(value && *value == '~')
+      {
+        // Invert
+        min ^= 1;
+        max ^= 1;
+      }
+
+      if(min >= 0)
+      {
+        input.joystick_global_axis_map[joy][axis][min] = neg;
+        input.joystick_game_axis_map[joy][axis][min] = neg;
+      }
+      if(max >= 0)
+      {
+        input.joystick_global_axis_map[joy][axis][max] = pos;
+        input.joystick_game_axis_map[joy][axis][max] = pos;
+      }
+      debug("[JOYSTICK] (SDL) %d.a%d -> '%s' (%d:%d, %d:%d)\n",
+       joy, axis, key, min, neg, max, pos);
+      return;
+    }
+
+    case 'b':
+    {
+      // Button- b#
+      unsigned int button;
+
+      if(!isdigit(value[1]))
+        return;
+
+      button = strtoul(value + 1, NULL, 10);
+      if(button >= MAX_JOYSTICK_BUTTONS)
+        return;
+
+      input.joystick_global_button_map[joy][button] = single;
+      input.joystick_game_button_map[joy][button] = single;
+      debug("[JOYSTICK] (SDL) %d.b%u -> '%s' (%d)\n", joy, button, key, single);
+      return;
+    }
+
+    case 'h':
+    {
+      // Hat- h#.#
+      unsigned int hat;
+      unsigned int hat_mask;
+      int dir;
+
+      if(!isdigit(value[1]))
+        return;
+
+      hat = strtoul(value + 1, &value, 10);
+      if(hat != 0 || !value[0] || !isdigit(value[1]))
+        return;
+
+      hat_mask = strtoul(value + 1, NULL, 10);
+      dir = sdl_hat_to_dir(hat_mask);
+      if(dir < 0)
+        return;
+
+      input.joystick_global_hat_map[joy][dir] = single;
+      input.joystick_game_hat_map[joy][dir] = single;
+      debug("[JOYSTICK] (SDL) %d.hd%u -> '%s' (%d)\n", joy, dir, key, single);
+      return;
+    }
+
+    default:
+    {
+      debug("[JOYSTICK] %d.unknown '%s' -> '%s' (ignored)\n", joy, value, key);
+      return;
+    }
+  }
+}
+
+static void parse_gamecontroller_map_entry(int joystick_index, char *key,
+ char *value)
+{
+  SDL_GameControllerAxis a;
+  SDL_GameControllerButton b;
+  Sint16 single = 0;
+  Sint16 neg = 0;
+  Sint16 pos = 0;
+  char half_axis = 0;
+
+  // Gamecontroller axes may have half-axis prefixes + or -.
+  if(*key == '+' || *key == '-')
+    half_axis = *(key++);
+
+  a = SDL_GameControllerGetAxisFromString(key);
+  b = SDL_GameControllerGetButtonFromString(key);
+  if(a != SDL_CONTROLLER_AXIS_INVALID)
+  {
+    if(half_axis == '+')
+      single = sdl_axis_action_map[a][1];
+
+    if(half_axis == '-')
+      single = sdl_axis_action_map[a][0];
+
+    if(half_axis == 0)
+    {
+      neg = sdl_axis_action_map[a][0];
+      pos = sdl_axis_action_map[a][1];
+    }
+  }
+  else
+
+  if(b != SDL_CONTROLLER_BUTTON_INVALID)
+  {
+    // This button isn't really useful to MZX.
+    if(b == SDL_CONTROLLER_BUTTON_GUIDE)
+      return;
+
+    single = sdl_action_map[b];
+  }
+  else
+  {
+    warn("[JOYSTICK] Invalid control '%s'! Report this!\n", key);
+    return;
+  }
+
+  parse_gamecontroller_map_value(joystick_index, key, value, single, neg, pos);
+}
+
+static void parse_gamecontroller_map(int joystick_index, char *map)
+{
+  // Format: entry,entry,...
+  // Entry:  value or key:value
+  char *end = map + strlen(map);
+  char *key;
+  char *value;
+
+  while(map < end)
+  {
+    key = map;
+    value = NULL;
+
+    while(*map != ',')
+    {
+      if(!*map) break;
+
+      if(*map == ':' && !value)
+      {
+        *map = 0;
+        value = map + 1;
+      }
+
+      map++;
+    }
+    *(map++) = 0;
+
+    if(value)
+      parse_gamecontroller_map_entry(joystick_index, key, value);
+  }
+}
+
+static void init_gamecontroller(int sdl_index, int joystick_index)
+{
+  gamecontrollers[joystick_index] = NULL;
+
+  if(SDL_IsGameController(sdl_index))
+  {
+    SDL_GameController *gamecontroller = SDL_GameControllerOpen(sdl_index);
+
+    if(gamecontroller)
+    {
+      SDL_JoystickGUID guid;
+      char *mapping;
+
+      gamecontrollers[joystick_index] = gamecontroller;
+
+      guid = SDL_JoystickGetDeviceGUID(sdl_index);
+      mapping = (char *)SDL_GameControllerMappingForGUID(guid);
+      info("[JOYSTICK] %d has an SDL mapping: %s\n", joystick_index, mapping);
+
+      parse_gamecontroller_map(joystick_index, mapping);
+      SDL_free(mapping);
+    }
+  }
+}
+#endif /* SDL_VERSION_ATLEAST(2,0,0) */
+
 /**
  * SDL 2 uses joystick instance IDs instead of the joystick index for all
  * purposes aside from SDL_JoystickOpen(). We prefer the joystick index (which
@@ -217,6 +524,10 @@ static void init_joystick(int sdl_index)
 
       debug("[JOYSTICK] Opened %d (SDL instance ID: %d)\n",
        joystick_index, joystick_instance_ids[joystick_index]);
+
+#if SDL_VERSION_ATLEAST(2,0,0)
+      init_gamecontroller(sdl_index, joystick_index);
+#endif
     }
   }
 }
@@ -230,7 +541,15 @@ static void close_joystick(int joystick_index)
     debug("[JOYSTICK] Closing %d (SDL instance ID: %d)\n",
      joystick_index, joystick_instance_ids[joystick_index]);
 
-    SDL_JoystickClose(joysticks[joystick_index]);
+    // SDL_GameControllerClose also closes the joystick.
+    if(gamecontrollers[joystick_index])
+    {
+      SDL_GameControllerClose(gamecontrollers[joystick_index]);
+      gamecontrollers[joystick_index] = NULL;
+    }
+    else
+      SDL_JoystickClose(joysticks[joystick_index]);
+
     joystick_instance_ids[joystick_index] = -1;
     joysticks[joystick_index] = NULL;
   }
@@ -785,6 +1104,10 @@ void initialize_joysticks(void)
   for(i = 0; i < count; i++)
     init_joystick(i);
 #endif
+
+// FIXME:
+// SDL_GameControllerAddMappingsFromFile (to add new mappings eventually)
+// SDL_GameControllerEventState (for getting analog axis values eventually)
 
   SDL_JoystickEventState(SDL_ENABLE);
 }
