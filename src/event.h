@@ -133,6 +133,18 @@ struct buffered_status
   Uint8 keymap[512];
 };
 
+struct joystick_map
+{
+  Sint16 button[MAX_JOYSTICKS][MAX_JOYSTICK_BUTTONS];
+  Sint16 axis[MAX_JOYSTICKS][MAX_JOYSTICK_AXES][2];
+  Sint16 hat[MAX_JOYSTICKS][4];
+  Sint16 action[MAX_JOYSTICKS][NUM_JOYSTICK_ACTIONS];
+
+  boolean button_is_conf[MAX_JOYSTICKS][MAX_JOYSTICK_BUTTONS];
+  boolean axis_is_conf[MAX_JOYSTICKS][MAX_JOYSTICK_AXES];
+  boolean hat_is_conf[MAX_JOYSTICKS];
+};
+
 struct input_status
 {
   struct buffered_status *buffer;
@@ -143,14 +155,8 @@ struct input_status
   Uint16 unicode_repeat_stack[KEY_REPEAT_STACK_SIZE];
   Uint32 repeat_stack_pointer;
 
-  Sint16 joystick_global_button_map[MAX_JOYSTICKS][MAX_JOYSTICK_BUTTONS];
-  Sint16 joystick_global_axis_map[MAX_JOYSTICKS][MAX_JOYSTICK_AXES][2];
-  Sint16 joystick_global_hat_map[MAX_JOYSTICKS][4];
-  Sint16 joystick_global_action_map[MAX_JOYSTICKS][NUM_JOYSTICK_ACTIONS];
-  Sint16 joystick_game_button_map[MAX_JOYSTICKS][MAX_JOYSTICK_BUTTONS];
-  Sint16 joystick_game_axis_map[MAX_JOYSTICKS][MAX_JOYSTICK_AXES][2];
-  Sint16 joystick_game_hat_map[MAX_JOYSTICKS][4];
-  Sint16 joystick_game_action_map[MAX_JOYSTICKS][NUM_JOYSTICK_ACTIONS];
+  struct joystick_map joystick_global_map;
+  struct joystick_map joystick_game_map;
   Uint16 joystick_axis_threshold;
 
   boolean unfocus_pause;

@@ -144,8 +144,8 @@ void init_event(void)
   // Config has already loaded, so there might be user mappings here already.
   for(i = 0; i < MAX_JOYSTICKS; i++)
     for(i2 = 0; i2 < NUM_JOYSTICK_ACTIONS; i2++)
-      if(input.joystick_global_action_map[i][i2] == 0)
-        input.joystick_global_action_map[i][i2] =
+      if(input.joystick_global_map.action[i][i2] == 0)
+        input.joystick_global_map.action[i][i2] =
          joystick_action_map_default[i2];
 
   if(!input.joystick_axis_threshold)
@@ -1179,14 +1179,20 @@ void joystick_map_button(int joystick, int button, const char *value,
 
     if(joystick_parse_map_value(value, &binding))
     {
-      debug("[JOYSTICK] (%s) %d.b%d -> %s (%d)\n",
+      /*debug("[JOYSTICK] (%s) %d.b%d -> %s (%d)\n",
        is_global ? "G" : "L", joystick, button,
-       value, binding);
+       value, binding);*/
 
       if(is_global)
-        input.joystick_global_button_map[joystick][button] = binding;
+      {
+        input.joystick_global_map.button[joystick][button] = binding;
+        input.joystick_global_map.button_is_conf[joystick][button] = true;
+      }
       else
-        input.joystick_game_button_map[joystick][button] = binding;
+      {
+        input.joystick_game_map.button[joystick][button] = binding;
+        input.joystick_game_map.button_is_conf[joystick][button] = true;
+      }
     }
   }
 }
@@ -1206,19 +1212,21 @@ void joystick_map_axis(int joystick, int axis, const char *neg, const char *pos,
     if(joystick_parse_map_value(neg, &binding_neg) &&
      joystick_parse_map_value(pos, &binding_pos))
     {
-      debug("[JOYSTICK] (%s) %d.a%d -> %s (%d), %s (%d)\n",
+      /*debug("[JOYSTICK] (%s) %d.a%d -> %s (%d), %s (%d)\n",
        is_global ? "G" : "L", joystick, axis,
-       neg, binding_neg, pos, binding_pos);
+       neg, binding_neg, pos, binding_pos);*/
 
       if(is_global)
       {
-        input.joystick_global_axis_map[joystick][axis][0] = binding_neg;
-        input.joystick_global_axis_map[joystick][axis][1] = binding_pos;
+        input.joystick_global_map.axis[joystick][axis][0] = binding_neg;
+        input.joystick_global_map.axis[joystick][axis][1] = binding_pos;
+        input.joystick_global_map.axis_is_conf[joystick][axis] = true;
       }
       else
       {
-        input.joystick_game_axis_map[joystick][axis][0] = binding_neg;
-        input.joystick_game_axis_map[joystick][axis][1] = binding_pos;
+        input.joystick_game_map.axis[joystick][axis][0] = binding_neg;
+        input.joystick_game_map.axis[joystick][axis][1] = binding_pos;
+        input.joystick_game_map.axis_is_conf[joystick][axis] = true;
       }
     }
   }
@@ -1240,24 +1248,26 @@ void joystick_map_hat(int joystick, const char *up, const char *down,
      joystick_parse_map_value(left, &binding_left) &&
      joystick_parse_map_value(right, &binding_right))
     {
-      debug("[JOYSTICK] (%s) %d.h -> %s (%d), %s (%d), %s (%d), %s (%d)\n",
+      /*debug("[JOYSTICK] (%s) %d.h -> %s (%d), %s (%d), %s (%d), %s (%d)\n",
        is_global ? "G" : "L", joystick,
        up, binding_up, down, binding_down,
-       left, binding_left, right, binding_right);
+       left, binding_left, right, binding_right);*/
 
       if(is_global)
       {
-        input.joystick_global_hat_map[joystick][JOYHAT_UP] = binding_up;
-        input.joystick_global_hat_map[joystick][JOYHAT_DOWN] = binding_down;
-        input.joystick_global_hat_map[joystick][JOYHAT_LEFT] = binding_left;
-        input.joystick_global_hat_map[joystick][JOYHAT_RIGHT] = binding_right;
+        input.joystick_global_map.hat[joystick][JOYHAT_UP] = binding_up;
+        input.joystick_global_map.hat[joystick][JOYHAT_DOWN] = binding_down;
+        input.joystick_global_map.hat[joystick][JOYHAT_LEFT] = binding_left;
+        input.joystick_global_map.hat[joystick][JOYHAT_RIGHT] = binding_right;
+        input.joystick_global_map.hat_is_conf[joystick] = true;
       }
       else
       {
-        input.joystick_game_hat_map[joystick][JOYHAT_UP] = binding_up;
-        input.joystick_game_hat_map[joystick][JOYHAT_DOWN] = binding_down;
-        input.joystick_game_hat_map[joystick][JOYHAT_LEFT] = binding_left;
-        input.joystick_game_hat_map[joystick][JOYHAT_RIGHT] = binding_right;
+        input.joystick_game_map.hat[joystick][JOYHAT_UP] = binding_up;
+        input.joystick_game_map.hat[joystick][JOYHAT_DOWN] = binding_down;
+        input.joystick_game_map.hat[joystick][JOYHAT_LEFT] = binding_left;
+        input.joystick_game_map.hat[joystick][JOYHAT_RIGHT] = binding_right;
+        input.joystick_game_map.hat_is_conf[joystick] = true;
       }
     }
   }
@@ -1280,9 +1290,9 @@ void joystick_map_action(int joystick, const char *action, int value,
        joystick, action, value);
 
       if(is_global)
-        input.joystick_global_action_map[joystick][action_value] = value;
+        input.joystick_global_map.action[joystick][action_value] = value;
       else
-        input.joystick_game_action_map[joystick][action_value] = value;
+        input.joystick_game_map.action[joystick][action_value] = value;
     }
   }
 }
@@ -1293,14 +1303,8 @@ void joystick_map_action(int joystick, const char *action, int value,
  */
 void joystick_reset_game_map(void)
 {
-  memcpy(&(input.joystick_game_button_map), &(input.joystick_global_button_map),
-   sizeof(input.joystick_global_button_map));
-  memcpy(&(input.joystick_game_hat_map), &(input.joystick_global_hat_map),
-   sizeof(input.joystick_global_hat_map));
-  memcpy(&(input.joystick_game_axis_map), &(input.joystick_global_axis_map),
-   sizeof(input.joystick_global_axis_map));
-  memcpy(&(input.joystick_game_action_map), &(input.joystick_global_action_map),
-   sizeof(input.joystick_global_action_map));
+  memcpy(&(input.joystick_game_map), &(input.joystick_global_map),
+   sizeof(struct joystick_map));
 }
 
 /**
@@ -1360,9 +1364,9 @@ static enum keycode joystick_resolve_bindings(struct buffered_status *status,
   else
   {
     if(game_binding < 0 && (-game_binding < NUM_JOYSTICK_ACTIONS) &&
-     input.joystick_game_action_map[joystick][-game_binding] > 0)
+     input.joystick_game_map.action[joystick][-game_binding] > 0)
     {
-      return input.joystick_game_action_map[joystick][-game_binding];
+      return input.joystick_game_map.action[joystick][-game_binding];
     }
     else
 
@@ -1470,8 +1474,8 @@ void joystick_button_press(struct buffered_status *status,
    (button >= 0) && (button < MAX_JOYSTICK_BUTTONS) &&
    !status->joystick_button[joystick][button])
   {
-    Sint16 global_binding = input.joystick_global_button_map[joystick][button];
-    Sint16 game_binding = input.joystick_game_button_map[joystick][button];
+    Sint16 global_binding = input.joystick_global_map.button[joystick][button];
+    Sint16 game_binding = input.joystick_game_map.button[joystick][button];
 
     status->joystick_button[joystick][button] = true;
     joystick_press(status, joystick, JOY_BUTTON, button,
@@ -1488,8 +1492,8 @@ void joystick_button_release(struct buffered_status *status,
   if((joystick >= 0) && (joystick < MAX_JOYSTICKS) &&
    (button >= 0) && (button < MAX_JOYSTICK_BUTTONS))
   {
-    Sint16 global_binding = input.joystick_global_button_map[joystick][button];
-    Sint16 game_binding = input.joystick_game_button_map[joystick][button];
+    Sint16 global_binding = input.joystick_global_map.button[joystick][button];
+    Sint16 game_binding = input.joystick_game_map.button[joystick][button];
 
     status->joystick_button[joystick][button] = false;
     joystick_release(status, joystick, JOY_BUTTON, button,
@@ -1507,8 +1511,8 @@ void joystick_hat_update(struct buffered_status *status,
   if((joystick >= 0) && (joystick < MAX_JOYSTICKS) &&
    (dir < NUM_JOYSTICK_HAT_DIRS))
   {
-    Sint16 global_binding = input.joystick_global_hat_map[joystick][dir];
-    Sint16 game_binding = input.joystick_game_hat_map[joystick][dir];
+    Sint16 global_binding = input.joystick_global_map.hat[joystick][dir];
+    Sint16 game_binding = input.joystick_game_map.hat[joystick][dir];
 
     if(dir_active)
     {
@@ -1546,8 +1550,8 @@ static int joystick_axis_to_digital(Sint16 value)
 static void joystick_axis_press(struct buffered_status *status,
  int joystick, int axis, int dir)
 {
-  Sint16 global_binding = input.joystick_global_axis_map[joystick][axis][dir];
-  Sint16 game_binding = input.joystick_game_axis_map[joystick][axis][dir];
+  Sint16 global_binding = input.joystick_global_map.axis[joystick][axis][dir];
+  Sint16 game_binding = input.joystick_game_map.axis[joystick][axis][dir];
 
   joystick_press(status, joystick, JOY_AXIS, (axis * 2) + dir,
    global_binding, game_binding);
@@ -1556,8 +1560,8 @@ static void joystick_axis_press(struct buffered_status *status,
 static void joystick_axis_release(struct buffered_status *status,
  int joystick, int axis, int dir)
 {
-  Sint16 global_binding = input.joystick_global_axis_map[joystick][axis][dir];
-  Sint16 game_binding = input.joystick_game_axis_map[joystick][axis][dir];
+  Sint16 global_binding = input.joystick_global_map.axis[joystick][axis][dir];
+  Sint16 game_binding = input.joystick_game_map.axis[joystick][axis][dir];
 
   joystick_release(status, joystick, JOY_AXIS, (axis * 2) + dir,
    global_binding, game_binding);

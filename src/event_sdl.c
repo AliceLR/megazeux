@@ -311,13 +311,19 @@ static void parse_gamecontroller_map_value(int joy, char *key, char *value,
 
       if(min >= 0)
       {
-        input.joystick_global_axis_map[joy][axis][min] = neg;
-        input.joystick_game_axis_map[joy][axis][min] = neg;
+        if(!input.joystick_global_map.axis_is_conf[joy][axis])
+          input.joystick_global_map.axis[joy][axis][min] = neg;
+
+        if(!input.joystick_game_map.axis_is_conf[joy][axis])
+          input.joystick_game_map.axis[joy][axis][min] = neg;
       }
       if(max >= 0)
       {
-        input.joystick_global_axis_map[joy][axis][max] = pos;
-        input.joystick_game_axis_map[joy][axis][max] = pos;
+        if(!input.joystick_global_map.axis_is_conf[joy][axis])
+         input.joystick_global_map.axis[joy][axis][max] = pos;
+
+        if(!input.joystick_game_map.axis_is_conf[joy][axis])
+          input.joystick_game_map.axis[joy][axis][max] = pos;
       }
       debug("[JOYSTICK] (SDL) %d.a%d -> '%s' (%d:%d, %d:%d)\n",
        joy, axis, key, min, neg, max, pos);
@@ -339,8 +345,12 @@ static void parse_gamecontroller_map_value(int joy, char *key, char *value,
       if(!single)
         single = pos ? pos : neg;
 
-      input.joystick_global_button_map[joy][button] = single;
-      input.joystick_game_button_map[joy][button] = single;
+      if(!input.joystick_global_map.button_is_conf[joy][button])
+        input.joystick_global_map.button[joy][button] = single;
+
+      if(!input.joystick_game_map.button_is_conf[joy][button])
+        input.joystick_game_map.button[joy][button] = single;
+
       debug("[JOYSTICK] (SDL) %d.b%u -> '%s' (%d)\n", joy, button, key, single);
       return;
     }
@@ -367,8 +377,12 @@ static void parse_gamecontroller_map_value(int joy, char *key, char *value,
       if(!single)
         single = pos ? pos : neg;
 
-      input.joystick_global_hat_map[joy][dir] = single;
-      input.joystick_game_hat_map[joy][dir] = single;
+      if(!input.joystick_global_map.hat_is_conf[joy])
+        input.joystick_global_map.hat[joy][dir] = single;
+
+      if(!input.joystick_game_map.hat_is_conf[joy])
+        input.joystick_game_map.hat[joy][dir] = single;
+
       debug("[JOYSTICK] (SDL) %d.hd%u -> '%s' (%d)\n", joy, dir, key, single);
       return;
     }
@@ -490,6 +504,49 @@ static void init_gamecontroller(int sdl_index, int joystick_index)
     }
   }
 }
+
+// Clean up auto-generated bindings so they don't cause problems for other
+// controllers that might end up using this position.
+static void gamecontroller_clean_map(int joy)
+{
+  int i;
+
+  for(i = 0; i < MAX_JOYSTICK_AXES; i++)
+  {
+    if(!input.joystick_global_map.axis_is_conf[joy][i])
+    {
+      input.joystick_global_map.axis[joy][i][0] = 0;
+      input.joystick_global_map.axis[joy][i][1] = 0;
+    }
+
+    if(!input.joystick_game_map.axis_is_conf[joy][i])
+    {
+      input.joystick_game_map.axis[joy][i][0] = 0;
+      input.joystick_game_map.axis[joy][i][1] = 0;
+    }
+  }
+
+  for(i = 0; i < MAX_JOYSTICK_BUTTONS; i++)
+  {
+    if(!input.joystick_global_map.button_is_conf[joy][i])
+      input.joystick_global_map.button[joy][i] = 0;
+
+    if(!input.joystick_game_map.button_is_conf[joy][i])
+      input.joystick_game_map.button[joy][i] = 0;
+  }
+
+  if(!input.joystick_global_map.hat_is_conf[joy])
+  {
+    for(i = 0; i < NUM_JOYSTICK_HAT_DIRS; i++)
+      input.joystick_global_map.hat[joy][i] = 0;
+  }
+
+  if(!input.joystick_game_map.hat_is_conf[joy])
+  {
+    for(i = 0; i < NUM_JOYSTICK_HAT_DIRS; i++)
+      input.joystick_game_map.hat[joy][i] = 0;
+  }
+}
 #endif /* SDL_VERSION_ATLEAST(2,0,0) */
 
 /**
@@ -556,6 +613,7 @@ static void close_joystick(int joystick_index)
     if(gamecontrollers[joystick_index])
     {
       SDL_GameControllerClose(gamecontrollers[joystick_index]);
+      gamecontroller_clean_map(joystick_index);
       gamecontrollers[joystick_index] = NULL;
     }
     else
