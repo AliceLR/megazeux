@@ -275,11 +275,11 @@ static void parse_gamecontroller_map_value(int joy, char *key, char *value,
       int max = 1;
 
       if(!isdigit(value[1]))
-        return;
+        break;
 
       axis = strtoul(value + 1, &value, 10);
       if(axis >= MAX_JOYSTICK_AXES)
-        return;
+        break;
 
       // Only one provided output and no half axis specified? Map + to it.
       if(half_axis == 0 && single)
@@ -287,6 +287,7 @@ static void parse_gamecontroller_map_value(int joy, char *key, char *value,
         neg = 0;
         pos = single;
       }
+      else
 
       if(half_axis == '+')
       {
@@ -329,11 +330,11 @@ static void parse_gamecontroller_map_value(int joy, char *key, char *value,
       unsigned int button;
 
       if(!isdigit(value[1]))
-        return;
+        break;
 
       button = strtoul(value + 1, NULL, 10);
       if(button >= MAX_JOYSTICK_BUTTONS)
-        return;
+        break;
 
       input.joystick_global_button_map[joy][button] = single;
       input.joystick_game_button_map[joy][button] = single;
@@ -349,29 +350,25 @@ static void parse_gamecontroller_map_value(int joy, char *key, char *value,
       int dir;
 
       if(!isdigit(value[1]))
-        return;
+        break;
 
       hat = strtoul(value + 1, &value, 10);
       if(hat != 0 || !value[0] || !isdigit(value[1]))
-        return;
+        break;
 
       hat_mask = strtoul(value + 1, NULL, 10);
       dir = sdl_hat_to_dir(hat_mask);
       if(dir < 0)
-        return;
+        break;
 
       input.joystick_global_hat_map[joy][dir] = single;
       input.joystick_game_hat_map[joy][dir] = single;
       debug("[JOYSTICK] (SDL) %d.hd%u -> '%s' (%d)\n", joy, dir, key, single);
       return;
     }
-
-    default:
-    {
-      debug("[JOYSTICK] %d.unknown '%s' -> '%s' (ignored)\n", joy, value, key);
-      return;
-    }
   }
+  debug("[JOYSTICK] %d ignored '%s' -> '%s'\n", joy, value, key);
+  return;
 }
 
 static void parse_gamecontroller_map_entry(int joystick_index, char *key,
@@ -414,6 +411,14 @@ static void parse_gamecontroller_map_entry(int joystick_index, char *key,
 
     single = sdl_action_map[b];
   }
+  else
+
+  if(!strcasecmp(key, "platform"))
+  {
+    // ignore- field used by SDL.
+    return;
+  }
+
   else
   {
     warn("[JOYSTICK] Invalid control '%s'! Report this!\n", key);
