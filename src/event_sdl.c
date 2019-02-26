@@ -336,6 +336,9 @@ static void parse_gamecontroller_map_value(int joy, char *key, char *value,
       if(button >= MAX_JOYSTICK_BUTTONS)
         break;
 
+      if(!single)
+        single = pos ? pos : neg;
+
       input.joystick_global_button_map[joy][button] = single;
       input.joystick_game_button_map[joy][button] = single;
       debug("[JOYSTICK] (SDL) %d.b%u -> '%s' (%d)\n", joy, button, key, single);
@@ -360,6 +363,9 @@ static void parse_gamecontroller_map_value(int joy, char *key, char *value,
       dir = sdl_hat_to_dir(hat_mask);
       if(dir < 0)
         break;
+
+      if(!single)
+        single = pos ? pos : neg;
 
       input.joystick_global_hat_map[joy][dir] = single;
       input.joystick_game_hat_map[joy][dir] = single;
