@@ -4,6 +4,9 @@ FEATURES
 
 FIXES
 
++ Fixed crash that could sometimes occur when pressing Alt+Up
+  while drawing near the top of a board in the editor.
+
 DEVELOPERS
 
 + Fixed -Wunused-result warnings for Linux builds.

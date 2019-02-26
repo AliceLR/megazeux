@@ -604,10 +604,10 @@ static void move_edit_cursor(struct editor_context *editor,
     int height = abs(move_y) + 1;
 
     if(step_x < 0)
-      offset -= width;
+      offset -= (width - 1);
 
     if(step_y < 0)
-      offset -= editor->board_width * height;
+      offset -= editor->board_width * (height - 1);
 
     if(editor->cursor_mode == CURSOR_DRAW)
     {
