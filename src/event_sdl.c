@@ -254,7 +254,6 @@ static int sdl_hat_to_dir(int hat_mask)
   }
 }
 
-// TODO this function should not overwrite values specified in config
 static void parse_gamecontroller_map_value(int joy, char *key, char *value,
  Sint16 single, Sint16 neg, Sint16 pos)
 {
@@ -482,6 +481,8 @@ static void parse_gamecontroller_map(int joystick_index, char *map)
 
 static void init_gamecontroller(int sdl_index, int joystick_index)
 {
+  SDL_JoystickGUID guid = SDL_JoystickGetDeviceGUID(sdl_index);
+
   gamecontrollers[joystick_index] = NULL;
 
   if(SDL_IsGameController(sdl_index))
@@ -490,18 +491,23 @@ static void init_gamecontroller(int sdl_index, int joystick_index)
 
     if(gamecontroller)
     {
-      SDL_JoystickGUID guid;
       char *mapping;
-
       gamecontrollers[joystick_index] = gamecontroller;
 
-      guid = SDL_JoystickGetDeviceGUID(sdl_index);
       mapping = (char *)SDL_GameControllerMappingForGUID(guid);
       info("[JOYSTICK] %d has an SDL mapping: %s\n", joystick_index, mapping);
 
       parse_gamecontroller_map(joystick_index, mapping);
       SDL_free(mapping);
     }
+  }
+  else
+  {
+    char buf[33];
+    SDL_JoystickGetGUIDString(guid, buf, 33);
+
+    debug("[JOYSTICK] %d does not have an SDL mapping (GUID: %s).\n",
+     joystick_index, buf);
   }
 }
 
