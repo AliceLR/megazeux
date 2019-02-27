@@ -979,7 +979,7 @@ static void intake_destroy(subcontext *sub)
 subcontext *intake2(context *parent, char *dest, int max_length,
  int x, int y, int width, int color, int *pos_external, int *length_external)
 {
-  struct intake_subcontext *intk = cmalloc(sizeof(struct intake_subcontext));
+  struct intake_subcontext *intk = ccalloc(1, sizeof(struct intake_subcontext));
   struct context_spec spec;
 
   intk->dest = dest;
