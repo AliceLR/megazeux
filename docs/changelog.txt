@@ -6,6 +6,8 @@ FIXES
 
 + Fixed crash that could sometimes occur when pressing Alt+Up
   while drawing near the top of a board in the editor.
++ Fixed bug where canceling 'Alt+C' char selection in the
+  robot editor would comment the current line.
 
 DEVELOPERS
 
