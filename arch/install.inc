@@ -137,6 +137,12 @@ ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 		assets/glsl/scalers/simple.frag \
 		${DESTDIR}${SHAREDIR}/megazeux/assets/glsl/scalers/
 endif
+ifeq (${BUILD_GAMECONTROLLERDB},1)
+	@${install} -m 0644 \
+		assets/gamecontrollerdb.txt \
+		assets/gamecontrollerdb.LICENSE \
+		${DESTDIR}${SHAREDIR}/megazeux/assets/
+endif
 	@echo Done.
 
 #

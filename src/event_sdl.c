@@ -1180,8 +1180,20 @@ void initialize_joysticks(void)
     init_joystick(i);
 #endif
 
+#if defined(CONFIG_GAMECONTROLLERDB) && SDL_VERSION_ATLEAST(2,0,2)
+  // Add more gamecontroller mappings so MZX can support more controllers.
+  // The function required here wasn't added until 2.0.2.
+  const char *path = mzx_res_get_by_id(GAMECONTROLLERDB_TXT);
+
+  if(path)
+  {
+    int result = SDL_GameControllerAddMappingsFromFile(path);
+    if(result >= 0)
+      debug("[JOYSTICK] Added %d mappings from '%s'.\n", result, path);
+  }
+#endif
+
 // FIXME:
-// SDL_GameControllerAddMappingsFromFile (to add new mappings eventually)
 // SDL_GameControllerEventState (for getting analog axis values eventually)
 
   SDL_JoystickEventState(SDL_ENABLE);
