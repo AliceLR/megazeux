@@ -28,8 +28,14 @@ STRIP  = /bin/true
 # Override library paths.
 #
 
-EXTRA_INCLUDES = -isystem $(CTRULIB)/include -isystem $(DEVKITPRO)/portlibs/3ds/include
-EXTRA_LIBS = -L$(CTRULIB)/lib -L$(DEVKITPRO)/portlibs/3ds/lib
+#
+# As of devkitARM r51 $(PORTLIBS) has multiple paths...
+#
+PORTLIBS_INCLUDES := $(foreach dir, $(PORTLIBS), -isystem $(dir)/include)
+PORTLIBS_LIBS     := $(foreach dir, $(PORTLIBS), -L$(dir)/lib)
+
+EXTRA_INCLUDES := -isystem $(CTRULIB)/include ${PORTLIBS_INCLUDES}
+EXTRA_LIBS := -L$(CTRULIB)/lib ${PORTLIBS_LIBS}
 ifeq (${DEBUG},1)
   ARCH_CFLAGS += -Og
   EXTRA_LIBS += -lcitro3dd -lctrud -lpng16 -lz
@@ -85,7 +91,7 @@ package: mzx mzxrun.smdh
 		-desc app:4 -v -o ${mzxrun}.cia -target t -exefslogo -rsf arch/3ds/banner/megazeux.rsf
 
 clean:
-	@rm -f ${mzxrun}.smdh arch/3ds/*.{d,o} arch/3ds/*shbin*
+	@rm -f ${mzxrun}.{smdh,cia,3dsx} megazeux-cia.smdh megazeux-cia.bnr arch/3ds/*.{d,o} arch/3ds/*shbin*
 
 build := build/${SUBPLATFORM}/3ds/megazeux
 build: package ${build}
