@@ -16,9 +16,6 @@ endif
 
 include $(DEVKITPRO)/libnx/switch_rules
 
-# This line really ought to be in switch_rules...
-MACHDEP    := -D__SWITCH__ -march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE
-
 BINEXT     := .elf
 
 APP_TITLE  := MegaZeux
@@ -31,12 +28,13 @@ STRIP      := /bin/true
 # Override library paths.
 #
 
+MACHDEP    := -D__SWITCH__ -march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE
+
 ifeq (${DEBUG},1)
-  ARCH_CFLAGS += -Og
   DRM_NOUVEAU := drm_nouveaud
   NX := nxd
 else
-  ARCH_CFLAGS += -ffunction-sections
+  OPTIMIZE_CFLAGS := -O3 -ffunction-sections
   DRM_NOUVEAU := drm_nouveau
   NX := nx
 endif
