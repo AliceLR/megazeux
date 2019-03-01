@@ -2,6 +2,9 @@ GIT
 
 FEATURES
 
++ The default boot.dol for Wii builds with the editor enabled
+  is now MegaZeux instead of MZXRun.
+
 FIXES
 
 + Fixed crash that could sometimes occur when pressing Alt+Up
