@@ -297,6 +297,33 @@ var archs =
     loadsave_meter:   yes,
   },
 
+  switch:
+  {
+    platform:         "switch",
+    description:      "Nintendo Switch",
+    architecture:     "ARMv8/AArch64 (ELF)",
+    endian:           "Little",
+    toolchain:        "gcc 8.2.0 <br /> binutils 2.31.1 <br /> (dk r12)",
+    packaged:         ZIP,
+    stack_protector:  _FAULTY(),
+    layer_rendering:  yes,
+    module_engine:    xmp,
+    ogg_vorbis:       libvorbis,
+    optimization:     speed,
+    sdl:              yes,
+    editor:           yes,
+    helpsys:          yes,
+    audio:            yes,
+    software:         yes,
+    gl:               yes,
+    overlay:          yes,
+    glsl:             yes,
+    updater:          no_updater,
+    png:              yes,
+    uthash:           yes,
+    loadsave_meter:   yes,
+  },
+
   unix:
   {
     platform:         "unix",

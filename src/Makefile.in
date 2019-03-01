@@ -149,6 +149,11 @@ core_cobjs += arch/3ds/event.o arch/3ds/audio.o
 core_cobjs += arch/3ds/keyboard.o
 endif
 
+ifeq (${BUILD_SWITCH},1)
+# Switch libraries require C++
+LINK_CC := ${CXX}
+endif
+
 ifeq (${PLATFORM},android)
 core_cxxobjs += arch/android/sfwrapper.o
 LINK_CC := ${CXX}

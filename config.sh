@@ -29,6 +29,7 @@ usage() {
 	echo "  gp2x           Experimental GP2X port"
 	echo "  nds            Experimental NDS port"
 	echo "  3ds            Experimental 3DS port"
+	echo "  switch         Experimental Switch port"
 	echo "  wii            Experimental Wii port"
 	echo "  amiga          Experimental AmigaOS 4 port"
 	echo "  android        Experimental Android port"
@@ -488,6 +489,12 @@ elif [ "$PLATFORM" = "wii" ]; then
 	BINDIR=$SHAREDIR
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
+elif [ "$PLATFORM" = "switch" ]; then
+	SHAREDIR=/switch/megazeux
+	GAMESDIR=$SHAREDIR
+	BINDIR=$SHAREDIR
+	echo "#define CONFFILE \"config.txt\"" >> src/config.h
+	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 elif [ "$PLATFORM" = "darwin-dist" ]; then
 	SHAREDIR=../Resources
 	GAMESDIR=$SHAREDIR
@@ -528,13 +535,8 @@ if [ "$PLATFORM" = "wii" ]; then
 	LIBSDL2="false"
 fi
 
-if [ "$PLATFORM" = "3ds" ]; then
-	echo "Disabling SDL (3DS)."
-	SDL="false"
-fi
-
-if [ "$PLATFORM" = "nds" ]; then
-	echo "Disabling SDL (NDS)."
+if [ "$PLATFORM" = "3ds" -o "$PLATFORM" = "nds" ]; then
+	echo "Disabling SDL ($PLATFORM)."
 	SDL="false"
 fi
 
@@ -618,6 +620,19 @@ if [ "$PLATFORM" = "3ds" ]; then
 	SOFTWARE="false"
 
 	echo "Disabling utils on 3DS (silly)."
+	UTILS="false"
+fi
+
+#
+# If the 3DS arch is enabled, some code has to be compile time
+# enabled too.
+#
+if [ "$PLATFORM" = "switch" ]; then
+	echo "Enabling Switch-specific hacks."
+	echo "#define CONFIG_SWITCH" >> src/config.h
+	echo "BUILD_SWITCH=1" >> platform.inc
+
+	echo "Disabling utils on Switch (silly)."
 	UTILS="false"
 fi
 
@@ -719,7 +734,7 @@ fi
 # Force disable modular DSOs.
 #
 if [ "$PLATFORM" = "gp2x" -o "$PLATFORM" = "nds" \
-  -o "$PLATFORM" = "3ds" \
+  -o "$PLATFORM" = "3ds"  -o "$PLATFORM" = "switch" \
   -o "$PLATFORM" = "psp"  -o "$PLATFORM" = "wii" ]; then
 	echo "Force-disabling modular build (nonsensical or unsupported)."
 	MODULAR="false"

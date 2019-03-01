@@ -920,7 +920,7 @@ boolean dir_open(struct mzx_dir *dir, const char *path)
   while(readdir(dir->d) != NULL)
     dir->entries++;
 
-#if defined(CONFIG_PSP) || defined(CONFIG_3DS)
+#if defined(CONFIG_PSP) || defined(CONFIG_3DS) || defined(CONFIG_SWITCH)
   strncpy(dir->path, path, PATH_BUF_LEN);
   dir->path[PATH_BUF_LEN - 1] = 0;
   closedir(dir->d);
@@ -953,7 +953,7 @@ void dir_seek(struct mzx_dir *dir, long offset)
 
   dir->pos = CLAMP(offset, 0L, dir->entries);
 
-#if defined(CONFIG_PSP) || defined(CONFIG_3DS)
+#if defined(CONFIG_PSP) || defined(CONFIG_3DS) || defined(CONFIG_SWITCH)
   closedir(dir->d);
   dir->d = opendir(dir->path);
   if(!dir->d)
