@@ -22,6 +22,9 @@ DEVELOPERS
 + MinGW builds now use -Wl,-Bstatic and -Wl,-Bdynamic to enforce
   the preferred linking when both static and dynamic builds of
   libraries are present.
++ For MSYS2 shells, config.sh now chooses the prefix /mingw32
+  or /mingw64 by default if $MSYSTEM is "MINGW32" or "MINGW64"
+  and either the "win32" or "win64" arch is selected.
 
 
 February 20th, 2019 - MZX 2.91j
