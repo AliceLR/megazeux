@@ -22,8 +22,17 @@ FEATURES
 + The NDS directional pad is now mappable as a joystick hat.
 + The 3DS directional pad is now mappable as a joystick hat. The
   circle pad is now mappable as axes 1 and 2.
++ The default boot.dol for Wii builds with the editor enabled
+  is now MegaZeux instead of MZXRun.
 
 FIXES
+
++ Fixed crash that could sometimes occur when pressing Alt+Up
+  while drawing near the top of a board in the editor.
++ Fixed bug where canceling 'Alt+C' char selection in the
+  robot editor would comment the current line.
++ Fixed a bug where F5 in the robot editor would not print data
+  for extended chars.
 
 DEVELOPERS
 
@@ -32,6 +41,12 @@ DEVELOPERS
   OpenGL 2.0 support).
 + Added platform-independent joystick event functions and
   updated the SDL, NDS, 3DS, and Wii event handlers for them.
++ MinGW builds now use -Wl,-Bstatic and -Wl,-Bdynamic to enforce
+  the preferred linking when both static and dynamic builds of
+  libraries are present.
++ For MSYS2 shells, config.sh now chooses the prefix /mingw32
+  or /mingw64 by default if $MSYSTEM is "MINGW32" or "MINGW64"
+  and either the "win32" or "win64" arch is selected.
 
 
 February 20th, 2019 - MZX 2.91j

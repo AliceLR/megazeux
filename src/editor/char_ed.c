@@ -2339,5 +2339,5 @@ int char_editor(struct world *mzx_world)
 
   free(buffer);
 
-  return current_char;
+  return current_char + (current_charset * CHARSET_SIZE);
 }

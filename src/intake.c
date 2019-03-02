@@ -929,10 +929,10 @@ static boolean intake_key(subcontext *sub, int *key)
 
         if(new_char >= 32)
         {
-          cur_char = new_char;
           last_char = new_char;
-          place = true;
+          intake_place_char(intk, new_char);
         }
+        return true;
       }
       else
       {
