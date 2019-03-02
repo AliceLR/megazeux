@@ -27,6 +27,12 @@ ARCH_CXXFLAGS += -D__USE_MINGW_ANSI_STDIO
 # Fix MINGW's shared library fanaticism
 ARCH_LDFLAGS += -static-libstdc++ -static-libgcc
 
+# Thought that was enough? Nope, here's some vars for forcing mixed linking.
+# Prefix these to the linking flags for each library that will be linked to
+# MINGW builds. MINGW likes to link these however it wants otherwise.
+LINK_STATIC_IF_MIXED  ?= -Wl,-Bstatic
+LINK_DYNAMIC_IF_MIXED ?= -Wl,-Bdynamic
+
 # OpenGL must be linked to MZX
 core_ldflags += -lopengl32
 

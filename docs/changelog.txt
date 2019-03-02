@@ -19,6 +19,9 @@ DEVELOPERS
 + Fixed -Wunused-result warnings for Linux builds.
 + Added "Intel EMGD" to auto_glsl blacklist (questionable
   OpenGL 2.0 support).
++ MinGW builds now use -Wl,-Bstatic and -Wl,-Bdynamic to enforce
+  the preferred linking when both static and dynamic builds of
+  libraries are present.
 
 
 February 20th, 2019 - MZX 2.91j
