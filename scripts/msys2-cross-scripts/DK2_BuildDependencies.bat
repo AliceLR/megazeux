@@ -6,7 +6,6 @@
 usr\bin\bash -l /dk-nds-dependencies.sh
 usr\bin\bash -l /dk-3ds-dependencies.sh
 usr\bin\bash -l /dk-wii-dependencies.sh
-usr\bin\bash -l /dk-psp-dependencies.sh
 usr\bin\bash -l /dk-switch-dependencies.sh
 
 pause
