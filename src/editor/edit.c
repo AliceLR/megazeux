@@ -1311,7 +1311,10 @@ static boolean editor_mouse(context *ctx, int *key, int button, int x, int y)
 
       if(get_mouse_held(MOUSE_BUTTON_LEFT))
       {
-        mouse_draw(editor, x, y);
+        // Mouse draw. Only start if this is an initial click to prevent it
+        // from carrying through other interfaces.
+        if(editor->continue_mouse_history || !get_mouse_drag())
+          mouse_draw(editor, x, y);
         return true;
       }
     }

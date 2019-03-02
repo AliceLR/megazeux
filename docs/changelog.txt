@@ -13,6 +13,8 @@ FIXES
   robot editor would comment the current line.
 + Fixed a bug where F5 in the robot editor would not print data
   for extended chars.
++ Clicking through board name windows and other interfaces with
+  the mouse should no longer place the current buffer.
 
 DEVELOPERS
 
