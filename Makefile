@@ -52,10 +52,10 @@ ifeq (${BUILD_SDL},1)
 ifneq (${BUILD_LIBSDL2},)
 
 # Check PREFIX for sdl2-config.
-ifneq ($(wildcard ${PREFIX}/bin/sdl2-config),)
-SDL_CONFIG  := ${PREFIX}/bin/sdl2-config
-else ifneq ($(wildcard ${SDL_PREFIX}/bin/sdl2-config),)
+ifneq ($(wildcard ${SDL_PREFIX}/bin/sdl2-config),)
 SDL_CONFIG  := ${SDL_PREFIX}/bin/sdl2-config
+else ifneq ($(wildcard ${PREFIX}/bin/sdl2-config),)
+SDL_CONFIG  := ${PREFIX}/bin/sdl2-config
 else
 SDL_CONFIG  := sdl2-config
 endif
@@ -72,10 +72,10 @@ endif
 ifeq (${BUILD_LIBSDL2},)
 
 # Check PREFIX for sdl-config.
-ifneq ($(wildcard ${PREFIX}/bin/sdl-config),)
-SDL_CONFIG  := ${PREFIX}/bin/sdl-config
-else ifneq ($(wildcard ${SDL_PREFIX}/bin/sdl-config),)
+ifneq ($(wildcard ${SDL_PREFIX}/bin/sdl-config),)
 SDL_CONFIG  := ${SDL_PREFIX}/bin/sdl-config
+else ifneq ($(wildcard ${PREFIX}/bin/sdl-config),)
+SDL_CONFIG  := ${PREFIX}/bin/sdl-config
 else
 SDL_CONFIG  := sdl-config
 endif
