@@ -33,37 +33,52 @@
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
 
+#ifndef SKIP_8BPP
 #define RENDERER_BPP  8
 #include "render_layer_code.h"
 #undef RENDERER_BPP
+#endif
 
+#ifndef SKIP_16BPP
 #define RENDERER_BPP  16
 #include "render_layer_code.h"
 #undef RENDERER_BPP
+#endif
 
+#ifndef SKIP_32BPP
 #define RENDERER_BPP  32
 #include "render_layer_code.h"
 #undef RENDERER_BPP
+#endif
 
-static inline void RENDER_FUNCTION_NAME(X, X, X, X, X, X)
- (void *pixels, Uint32 pitch, struct graphics_data *graphics, struct video_layer *layer,
+static inline void RENDER_FUNCTION_NAME(X, X, X, X, X, X) (void *pixels,
+ Uint32 pitch, struct graphics_data *graphics, struct video_layer *layer,
  int ppal, int clip, int smzx, int align, int trans, int bpp)
 {
-  switch (bpp) {
+  switch(bpp)
+  {
+#ifndef SKIP_8BPP
     case 8:
       RENDER_FUNCTION_NAME(8, X, X, X, X, X)
        (pixels, pitch, graphics, layer, ppal, clip, smzx, align, trans);
       break;
+#endif
+#ifndef SKIP_16BPP
     case 16:
       RENDER_FUNCTION_NAME(16, X, X, X, X, X)
        (pixels, pitch, graphics, layer, ppal, clip, smzx, align, trans);
       break;
+#endif
+#ifndef SKIP_32BPP
     case 32:
       RENDER_FUNCTION_NAME(32, X, X, X, X, X)
        (pixels, pitch, graphics, layer, ppal, clip, smzx, align, trans);
       break;
+#endif
     default:
-      fprintf(stderr, "INVALID RENDERER ARG bpp=%d\n", bpp); exit(1);
+      fprintf(stderr, "INVALID RENDERER ARG bpp=%d\n"
+       "(is this bpp enabled for this platform?)\n", bpp);
+      exit(1);
       break;
   }
 }
@@ -453,7 +468,7 @@ static inline void RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, RENDERER_ALIG
                   bgdata = drawPtr[write_pos];
                   #endif /* RENDERER_TR */
                   pcol = (current_char_byte & (0xC0 >> (write_pos*PPW+(PPW-2)))) << (write_pos*PPW+(PPW-2)) >> 6;
-                  
+
                   #if RENDERER_TR
                   if (char_idx[pcol] == tcol) pix |= bgdata & ((mask << RENDERER_BPP*(PPW-1) | (mask << RENDERER_BPP*(PPW-2)))); else
                   #endif /* RENDERER_TR */
@@ -508,8 +523,8 @@ static inline void RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, RENDERER_ALIG
                   #endif /* !RENDERER_TR */
                   #else /* PPW == 1 */
                   pcol = (current_char_byte & (0xC0 >> write_pos)) << write_pos >> 6;
-                  
-                  
+
+
                   pix = char_colors[pcol];
                   #if RENDERER_CLIP
                   if (pixel_x + write_pos >= 0)
@@ -521,7 +536,7 @@ static inline void RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, RENDERER_ALIG
                   #endif /* RENDERER_TR */
                   drawPtr[write_pos] = pix;
                   }
-                  
+
                   write_pos++;
                   #if RENDERER_TR
                   if (tcol == char_idx[pcol])
@@ -531,7 +546,7 @@ static inline void RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, RENDERER_ALIG
                   #endif /* PPW > 1 */
 
                 #endif /* RENDERER_SMZX == 0 */
-                
+
                 #if RENDERER_CLIP
                 if (pixel_x + write_pos < CHAR_W * SCREEN_W)
                 #endif /* RENDERER_CLIP */
