@@ -1082,8 +1082,8 @@ static const struct joystick_action_name joystick_action_names[] =
 {
   { "a",        JOY_A },
   { "b",        JOY_B },
-  { "c",        JOY_SWITCH },
   { "bomb",     JOY_B },
+  { "c",        JOY_SWITCH },
   { "down",     JOY_DOWN },
   { "escape",   JOY_ESCAPE },
 //{ "keyboard", JOY_KEYBOARD },
@@ -1282,17 +1282,20 @@ void joystick_map_action(int joystick, const char *action, int value,
   if((joystick >= 0) && (joystick < MAX_JOYSTICKS) &&
    (value >= 0) && (value <= SHRT_MAX))
   {
-    enum joystick_action action_value = find_joystick_action(action);
-
-    if(action_value)
+    if(!strncmp(action, "act_", 4))
     {
-      debug("[JOYSTICK] (%s) %d.%s -> %d\n", is_global ? "G" : "L",
-       joystick, action, value);
+      enum joystick_action action_value = find_joystick_action(action + 4);
 
-      if(is_global)
-        input.joystick_global_map.action[joystick][action_value] = value;
-      else
-        input.joystick_game_map.action[joystick][action_value] = value;
+      if(action_value)
+      {
+        /*debug("[JOYSTICK] (%s) %d.%s -> %d\n", is_global ? "G" : "L",
+         joystick, action, value);*/
+
+        if(is_global)
+          input.joystick_global_map.action[joystick][action_value] = value;
+        else
+          input.joystick_game_map.action[joystick][action_value] = value;
+      }
     }
   }
 }
