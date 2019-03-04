@@ -43,6 +43,11 @@
 #include <unistd.h>
 #endif
 
+#ifdef __WIN32__
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
 #ifndef PLATFORM
 #error Must define a valid "friendly" platform name!
 #endif
@@ -264,20 +269,37 @@ err_out:
 
 static boolean swivel_current_dir(boolean have_video)
 {
-  boolean ret = false;
-  char *base_path;
+  char base_path[MAX_PATH];
   int g_ret;
-
-  if(process_argc < 1)
-  {
-    warn("--UPDATER-- Aborting: argc < 1\n");
-    return ret;
-  }
 
   // Store the user's current directory, so we can get back to it
   getcwd(previous_dir, MAX_PATH);
 
-  base_path = cmalloc(MAX_PATH);
+#ifdef __WIN32__
+  {
+    // Windows may not reliably give a full path in argv[0]. Fortunately,
+    // there's a Windows solution for this. TODO make UTF-friendly
+    char filename[MAX_PATH];
+    HMODULE module = GetModuleHandle(NULL);
+    DWORD ret = GetModuleFileNameA(module, filename, MAX_PATH);
+
+    if(ret > 0 && ret < MAX_PATH)
+    {
+      g_ret = get_path(filename, base_path, MAX_PATH);
+      if(g_ret > 0)
+        if(!chdir(base_path))
+          return true;
+    }
+    else
+      warn("--UPDATER-- Failed to get executable path from Win32\n");
+  }
+#endif
+
+  if(process_argc < 1)
+  {
+    warn("--UPDATER-- Aborting: argc < 1\n");
+    return false;
+  }
 
   // Find and change into the base path for this MZX binary
   g_ret = get_path(process_argv[0], base_path, MAX_PATH);
@@ -287,7 +309,7 @@ static boolean swivel_current_dir(boolean have_video)
       warn("--UPDATER-- Failed to get path from argv[0]: %s\n", process_argv[0]);
     else
       warn("--UPDATER-- No argv[0]!\n");
-    goto err_free_base_path;
+    return false;
   }
 
   if(chdir(base_path))
@@ -299,13 +321,10 @@ static boolean swivel_current_dir(boolean have_video)
        "Updater: failed to change into install directory.");
     else
       warn("--UPDATER-- Failed to change into install directory.\n");
-    goto err_free_base_path;
+    return false;
   }
 
-  ret = true;
-err_free_base_path:
-  free(base_path);
-  return ret;
+  return true;
 }
 
 static boolean swivel_current_dir_back(boolean have_video)

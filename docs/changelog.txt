@@ -15,6 +15,9 @@ FIXES
   for extended chars.
 + Clicking through board name windows and other interfaces with
   the mouse should no longer place the current buffer.
++ Fixed a bug where the updater could fail to initialize due to
+  a relative argv[0] in Windows. MegaZeux attempts to get the
+  executable path from Win32 first now.
 
 DEVELOPERS
 
