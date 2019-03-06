@@ -67,57 +67,13 @@ static struct manifest_entry *delete_list, *delete_p;
 
 static char widget_buf[WIDGET_BUF_LEN];
 
+static char executable_dir[MAX_PATH];
 static char previous_dir[MAX_PATH];
 
 static long final_size = -1;
 static boolean cancel_update;
 
-static char **process_argv;
-static int process_argc;
 static boolean updater_was_initialized;
-
-static char **rewrite_argv_for_execv(int argc, char **argv)
-{
-  char **new_argv = cmalloc((argc+1) * sizeof(char *));
-  char *arg;
-  int length;
-  int pos;
-  int i;
-  int i2;
-
-  // Due to a bug in execv, args with spaces present are treated as multiple
-  // args in the new process. Each arg in argv must be wrapped in double quotes
-  // to work properly. Because of this, " and \ must also be escaped.
-
-  for(i = 0; i < argc; i++)
-  {
-    length = strlen(argv[i]);
-    arg = cmalloc(length * 2 + 2);
-    arg[0] = '"';
-
-    for(i2 = 0, pos = 1; i2 < length; i2++, pos++)
-    {
-      switch(argv[i][i2])
-      {
-        case '"':
-        case '\\':
-          arg[pos] = '\\';
-          pos++;
-          break;
-      }
-      arg[pos] = argv[i][i2];
-    }
-
-    arg[pos] = '"';
-    arg[pos + 1] = '\0';
-
-    new_argv[i] = arg;
-  }
-
-  new_argv[argc] = NULL;
-
-  return new_argv;
-}
 
 static boolean check_prune_basedir(const char *file)
 {
@@ -267,14 +223,9 @@ err_out:
   return;
 }
 
-static boolean swivel_current_dir(boolean have_video)
+// Determine the executable dir. This is required for the updater.
+static boolean find_executable_dir(int argc, char **argv)
 {
-  char base_path[MAX_PATH];
-  int g_ret;
-
-  // Store the user's current directory, so we can get back to it
-  getcwd(previous_dir, MAX_PATH);
-
 #ifdef __WIN32__
   {
     // Windows may not reliably give a full path in argv[0]. Fortunately,
@@ -284,35 +235,52 @@ static boolean swivel_current_dir(boolean have_video)
     DWORD ret = GetModuleFileNameA(module, filename, MAX_PATH);
 
     if(ret > 0 && ret < MAX_PATH)
-    {
-      g_ret = get_path(filename, base_path, MAX_PATH);
-      if(g_ret > 0)
-        if(!chdir(base_path))
-          return true;
-    }
-    else
-      warn("--UPDATER-- Failed to get executable path from Win32\n");
+      if(get_path(filename, executable_dir, MAX_PATH) > 0)
+        return true;
+
+    warn("--MAIN-- Failed to get executable from Win32: %s\n", filename);
   }
 #endif
 
-  if(process_argc < 1)
+  if(argc >= 1 && argv)
   {
-    warn("--UPDATER-- Aborting: argc < 1\n");
-    return false;
-  }
+    if(get_path(argv[0], executable_dir, MAX_PATH) > 0)
+      return true;
 
-  // Find and change into the base path for this MZX binary
-  g_ret = get_path(process_argv[0], base_path, MAX_PATH);
-  if(g_ret <= 0)
-  {
-    if(process_argv[0] && process_argv[0][0])
-      warn("--UPDATER-- Failed to get path from argv[0]: %s\n", process_argv[0]);
     else
-      warn("--UPDATER-- No argv[0]!\n");
+    {
+      if(argv[0] && argv[0][0])
+        warn("--MAIN-- Failed to get executable from argv[0]: %s\n", argv[0]);
+      else
+        warn("--MAIN-- Failed to get executable from argv[0]: (null)\n");
+    }
+  }
+  else
+    warn("--MAIN-- Failed to get executable from argv: argc < 1\n");
+
+  // Nope. Oh well.
+  executable_dir[0] = 0;
+  return false;
+}
+
+static boolean swivel_current_dir(boolean have_video)
+{
+  char base_path[MAX_PATH];
+
+  if(!executable_dir[0])
+  {
+    if(have_video)
+      error_message(E_UPDATE, 25,
+       "Updater: couldn't determine install directory.");
+    else
+      warn("--UPDATER-- Couldn't determine install directory.\n");
     return false;
   }
 
-  if(chdir(base_path))
+  // Store the user's current directory, so we can get back to it
+  getcwd(previous_dir, MAX_PATH);
+
+  if(chdir(executable_dir))
   {
     info("--UPDATER-- getcwd(): %s\n", previous_dir);
     info("--UPDATER-- attempted chdir() to: %s\n", base_path);
@@ -323,7 +291,6 @@ static boolean swivel_current_dir(boolean have_video)
       warn("--UPDATER-- Failed to change into install directory.\n");
     return false;
   }
-
   return true;
 }
 
@@ -633,8 +600,15 @@ err_out:
   return ret;
 }
 
-static void __check_for_updates(struct world *mzx_world, boolean is_automatic)
+/**
+ * Run a synchronous update check.
+ * @param ctx           Current context
+ * @param is_automatic  Disable more annoying UI displays for automated checks.
+ * @return              true if the update completed, otherwise false.
+ */
+static boolean __check_for_updates(context *ctx, boolean is_automatic)
 {
+  struct world *mzx_world = ctx->world;
   struct config_info *conf = get_config();
   int cur_host;
   char *update_host;
@@ -1074,7 +1048,6 @@ err_out:
    */
   if(ret)
   {
-    char **new_argv;
     struct element *elements[2];
     struct dialog di;
 
@@ -1086,30 +1059,22 @@ err_out:
     run_dialog(mzx_world, &di);
     destruct_dialog(&di);
 
-#ifdef CONFIG_HELPSYS
-    // Hack: close the help file so we don't create a problem for future vers.
-    help_close(mzx_world);
-#endif
-
-    // TODO: This needs to happen in main() instead of here.
-    new_argv = rewrite_argv_for_execv(process_argc, process_argv);
-    execv(process_argv[0], (const void *)new_argv);
-    perror("execv");
-
-    error_message(E_UPDATE, 23, "Attempt to invoke self failed!");
-    return;
+    // Signal core to exit and restart MZX.
+    core_full_restart(ctx);
+    return true;
   }
+  return false;
 }
 
 boolean updater_init(int argc, char *argv[])
 {
   FILE *f;
 
-  process_argc = argc;
-  process_argv = argv;
-
   check_for_updates = __check_for_updates;
   updater_was_initialized = false;
+
+  if(!find_executable_dir(argc, argv))
+    return false;
 
   if(!swivel_current_dir(false))
     return false;

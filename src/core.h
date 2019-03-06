@@ -258,7 +258,24 @@ CORE_LIBSPEC void core_run(core_context *root);
  * @param ctx           The current context.
  */
 
-CORE_LIBSPEC void core_exit(context *ctx);
+CORE_LIBSPEC void core_full_exit(context *ctx);
+
+/**
+ * Signal the core to abort all contexts, exit the loop, and restart MegaZeux.
+ *
+ * @param ctx           The current context.
+ */
+
+CORE_LIBSPEC void core_full_restart(context *ctx);
+
+/**
+ * Determine if the a restart was requested.
+ *
+ * @param root          The core context.
+ * @return              True if a restart was requested.
+ */
+
+CORE_LIBSPEC boolean core_restart_requested(core_context *root);
 
 /**
  * Clean up MegaZeux all context data for a given core context.
@@ -289,7 +306,7 @@ CORE_LIBSPEC extern void (*debug_robot_config)(struct world *mzx_world);
 
 // Network external function pointers.
 
-CORE_LIBSPEC extern void (*check_for_updates)(struct world *mzx_world,
+CORE_LIBSPEC extern boolean (*check_for_updates)(context *ctx,
  boolean is_automatic);
 
 __M_END_DECLS
