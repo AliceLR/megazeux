@@ -24,6 +24,7 @@
 #include "render.h"
 #include "render_sdl.h"
 #include "render_yuv.h"
+#include "util.h"
 
 boolean yuv_set_video_mode_size(struct graphics_data *graphics,
  int width, int height, int depth, boolean fullscreen, boolean resize,
