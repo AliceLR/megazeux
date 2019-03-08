@@ -609,7 +609,7 @@ static int http_recv_line(struct host *h, char *buffer, int len)
 
   // We didn't find CRLF; this is bad
   if(pos == len)
-    pos = -2;
+    pos = -HOST_HTTP_EXCEEDED_BUFFER;
 
 err_out:
   return pos;
@@ -740,7 +740,7 @@ enum host_status host_recv_file(struct host *h, struct http_info *req,
   unsigned long len = 0, pos = 0;
   char line[LINE_BUF_LEN];
   z_stream stream;
-  size_t line_len;
+  ssize_t line_len;
 
   enum {
     NONE,
@@ -774,6 +774,11 @@ enum host_status host_recv_file(struct host *h, struct http_info *req,
 
   // Read in the HTTP status line
   line_len = http_recv_line(h, line, LINE_BUF_LEN);
+  if(line_len < 0)
+  {
+    warn("No response for url '%s': %d!\n", req->url, (int)line_len);
+    return line_len;
+  }
 
   if(!http_read_status(req, line, line_len))
   {
