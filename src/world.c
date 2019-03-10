@@ -1254,6 +1254,7 @@ static inline int save_world_sprites(struct world *mzx_world,
     save_prop_d(SPROP_COL_HEIGHT,         spr->col_height, &mf);
     save_prop_d(SPROP_TRANSPARENT_COLOR,  spr->transparent_color, &mf);
     save_prop_d(SPROP_CHARSET_OFFSET,     spr->offset, &mf);
+    save_prop_d(SPROP_Z,                  spr->z, &mf);
   }
 
   // Only once
@@ -1367,6 +1368,10 @@ static inline int load_world_sprites(struct world *mzx_world,
 
       case SPROP_CHARSET_OFFSET:
         if(spr) spr->offset = value;
+        break;
+
+      case SPROP_Z:
+        if(mzx_world->version >= V292 && spr) spr->z = value;
         break;
 
       default:

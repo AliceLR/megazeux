@@ -768,6 +768,13 @@ static int spr_y_read(struct world *mzx_world,
   return (mzx_world->sprite_list[spr_num])->y;
 }
 
+static int spr_z_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
+  return (mzx_world->sprite_list[spr_num])->z;
+}
+
 static int spr_cwidth_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
@@ -945,6 +952,13 @@ static void spr_y_write(struct world *mzx_world,
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   (mzx_world->sprite_list[spr_num])->y = value;
+}
+
+static void spr_z_write(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int value, int id)
+{
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
+  (mzx_world->sprite_list[spr_num])->z = value;
 }
 
 static void spr_vlayer_write(struct world *mzx_world,
@@ -2541,6 +2555,7 @@ static const struct function_counter builtin_counters[] =
   { "spr!_width",       V265,   spr_width_read,       spr_width_write },
   { "spr!_x",           V265,   spr_x_read,           spr_x_write },
   { "spr!_y",           V265,   spr_y_read,           spr_y_write },
+  { "spr!_z",           V292,   spr_z_read,           spr_z_write },
   { "spr_clist!",       V265,   spr_clist_read,       NULL },
   { "spr_collisions",   V265,   spr_collisions_read,  NULL },
   { "spr_num",          V265,   spr_num_read,         spr_num_write },

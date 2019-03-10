@@ -477,8 +477,8 @@ enum world_prop
 
 // All sprite fields are saved as dwords, so bound them as such
 
-#define COUNT_SPRITE_PROPS        15
-#define BOUND_SPRITE_PROPS        60
+#define COUNT_SPRITE_PROPS        16
+#define BOUND_SPRITE_PROPS        64
 #define COUNT_SPRITE_ONCE_PROPS   3
 #define BOUND_SPRITE_ONCE_PROPS   12
 
@@ -515,6 +515,7 @@ enum sprite_prop
   SPROP_COL_HEIGHT                = 0x0D, // 1
   SPROP_TRANSPARENT_COLOR         = 0x0E, // 4
   SPROP_CHARSET_OFFSET            = 0x0F, // 4
+  SPROP_Z                         = 0x10, // 4
 
   // Only once
   SPROP_ACTIVE_SPRITES            = 0x8000, // 1
