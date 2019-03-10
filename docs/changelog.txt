@@ -17,8 +17,8 @@ FEATURES
   precedence than LOOPLENGTH if both are present, and will be
   ignored if its value is less than LOOPSTART.
 + New sprite counter: SPR#_Z. Sprites are displayed in order
-  of their z value. Sprites with a lower z value will appear in
-  front of sprites with a higher z value. This ordering takes
+  of their z value. Sprites with a higher z value will appear in
+  front of sprites with a lower z value. This ordering takes
   precedence over both Y ordering (if SPR_YORDER is enabled) and
   sprite number. Removes the need to use SPR#_SWAP for managing
   sprite draw order. (Lancer-X)

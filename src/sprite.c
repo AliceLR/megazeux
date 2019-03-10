@@ -77,7 +77,7 @@ static int compare_spr_normal(const void *dest, const void *src)
   struct sprite *spr_dest = *((struct sprite **)dest);
   struct sprite *spr_src = *((struct sprite **)src);
 
-  int diff = spr_src->z - spr_dest->z;
+  int diff = spr_dest->z - spr_src->z;
 
   return diff ? diff : (spr_dest->qsort_order - spr_src->qsort_order);
 }
@@ -87,10 +87,10 @@ static int compare_spr_yorder(const void *dest, const void *src)
 {
   struct sprite *spr_dest = *((struct sprite **)dest);
   struct sprite *spr_src = *((struct sprite **)src);
-  
-  int diff = spr_src->z - spr_dest->z;
+
+  int diff = spr_dest->z - spr_src->z;
   int dest_y, src_y;
-  
+
   if (diff != 0) return diff;
 
   dest_y = spr_dest->y * (spr_dest->flags & SPRITE_UNBOUND ? 1 : CHAR_H);
@@ -130,7 +130,7 @@ static inline void sort_sprites(struct sprite **sorted_list,
       i_inactive--;
     }
   }
-  
+
   if(spr_yorder)
     spr_compare = compare_spr_yorder;
 
