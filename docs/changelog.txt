@@ -23,6 +23,8 @@ FEATURES
   precedence over both Y ordering (if SPR_YORDER is enabled) and
   sprite number. Removes the need to use SPR#_SWAP for managing
   sprite draw order. (Lancer-X)
++ The default boot.dol for Wii builds with the editor enabled
+  is now MegaZeux instead of MZXRun.
 
 FIXES
 
@@ -41,11 +43,6 @@ FIXES
   set and is properly loaded from saves again. This value can be
   viewed from the variable debug screen now, though it may be
   inaccurate for older saves.
-+ The default boot.dol for Wii builds with the editor enabled
-  is now MegaZeux instead of MZXRun.
-
-FIXES
-
 + Fixed crash that could sometimes occur when pressing Alt+Up
   while drawing near the top of a board in the editor.
 + Fixed bug where canceling 'Alt+C' char selection in the
