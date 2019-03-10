@@ -319,6 +319,7 @@ static const char *sprite_var_list[] =
 {
   "x",
   "y",
+  "z",
   "refx",
   "refy",
   "width",
