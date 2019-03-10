@@ -448,6 +448,7 @@ boolean manifest_entry_download_replace(struct host *h, const char *basedir,
     }
   }
 
+  memset(&req, 0, sizeof(struct http_info));
   strcpy(req.expected_type, "application/octet-stream");
   snprintf(req.url, LINE_BUF_LEN, "%s/%08x%08x%08x%08x%08x%08x%08x%08x", basedir,
     e->sha256[0], e->sha256[1], e->sha256[2], e->sha256[3],

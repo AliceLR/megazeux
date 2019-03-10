@@ -52,10 +52,10 @@ ifeq (${BUILD_SDL},1)
 ifneq (${BUILD_LIBSDL2},)
 
 # Check PREFIX for sdl2-config.
-ifneq ($(wildcard ${PREFIX}/bin/sdl2-config),)
-SDL_CONFIG  := ${PREFIX}/bin/sdl2-config
-else ifneq ($(wildcard ${SDL_PREFIX}/bin/sdl2-config),)
+ifneq ($(wildcard ${SDL_PREFIX}/bin/sdl2-config),)
 SDL_CONFIG  := ${SDL_PREFIX}/bin/sdl2-config
+else ifneq ($(wildcard ${PREFIX}/bin/sdl2-config),)
+SDL_CONFIG  := ${PREFIX}/bin/sdl2-config
 else
 SDL_CONFIG  := sdl2-config
 endif
@@ -72,10 +72,10 @@ endif
 ifeq (${BUILD_LIBSDL2},)
 
 # Check PREFIX for sdl-config.
-ifneq ($(wildcard ${PREFIX}/bin/sdl-config),)
-SDL_CONFIG  := ${PREFIX}/bin/sdl-config
-else ifneq ($(wildcard ${SDL_PREFIX}/bin/sdl-config),)
+ifneq ($(wildcard ${SDL_PREFIX}/bin/sdl-config),)
 SDL_CONFIG  := ${SDL_PREFIX}/bin/sdl-config
+else ifneq ($(wildcard ${PREFIX}/bin/sdl-config),)
+SDL_CONFIG  := ${PREFIX}/bin/sdl-config
 else
 SDL_CONFIG  := sdl-config
 endif
@@ -88,7 +88,7 @@ endif
 # Make these immediate so the scripts run only once.
 SDL_PREFIX  := $(SDL_PREFIX)
 SDL_CFLAGS  := $(SDL_CFLAGS)
-SDL_LDFLAGS := $(SDL_LDFLAGS)
+SDL_LDFLAGS := $(LINK_DYNAMIC_IF_MIXED) $(SDL_LDFLAGS)
 
 endif
 
@@ -98,11 +98,11 @@ endif
 
 VORBIS_CFLAGS  ?= -I${PREFIX}/include -DOV_EXCLUDE_STATIC_CALLBACKS
 ifeq (${VORBIS},vorbis)
-VORBIS_LDFLAGS ?= -L${PREFIX}/lib -lvorbisfile -lvorbis -logg
+VORBIS_LDFLAGS ?= $(LINK_STATIC_IF_MIXED) -L${PREFIX}/lib -lvorbisfile -lvorbis -logg
 else ifeq (${VORBIS},tremor)
-VORBIS_LDFLAGS ?= -L${PREFIX}/lib -lvorbisidec -logg
+VORBIS_LDFLAGS ?= $(LINK_STATIC_IF_MIXED) -L${PREFIX}/lib -lvorbisidec -logg
 else ifeq (${VORBIS},tremor-lowmem)
-VORBIS_LDFLAGS ?= -L${PREFIX}/lib -lvorbisidec
+VORBIS_LDFLAGS ?= $(LINK_STATIC_IF_MIXED) -L${PREFIX}/lib -lvorbisidec
 endif
 
 #
@@ -110,14 +110,14 @@ endif
 #
 
 MIKMOD_CFLAGS  ?= -I${PREFIX}/include
-MIKMOD_LDFLAGS ?= -L${PREFIX}/lib -lmikmod
+MIKMOD_LDFLAGS ?= $(LINK_STATIC_IF_MIXED) -L${PREFIX}/lib -lmikmod
 
 #
 # libopenmpt (optional mod engine)
 #
 
 OPENMPT_CFLAGS  ?= -I${PREFIX}/include
-OPENMPT_LDFLAGS ?= -L${PREFIX}/lib -lopenmpt
+OPENMPT_LDFLAGS ?= $(LINK_STATIC_IF_MIXED) -L${PREFIX}/lib -lopenmpt
 
 #
 # zlib
@@ -125,7 +125,7 @@ OPENMPT_LDFLAGS ?= -L${PREFIX}/lib -lopenmpt
 
 ZLIB_CFLAGS  ?= -I${PREFIX}/include \
                 -D_FILE_OFFSET_BITS=32 -U_LARGEFILE64_SOURCE
-ZLIB_LDFLAGS ?= -L${PREFIX}/lib -lz
+ZLIB_LDFLAGS ?= $(LINK_STATIC_IF_MIXED) -L${PREFIX}/lib -lz
 
 #
 # libpng
@@ -145,7 +145,7 @@ LIBPNG_LDFLAGS ?= $(shell ${LIBPNG_CONFIG} --ldflags)
 
 # Make these immediate so the scripts run only once.
 LIBPNG_CFLAGS  := $(LIBPNG_CFLAGS)
-LIBPNG_LDFLAGS := $(LIBPNG_LDFLAGS)
+LIBPNG_LDFLAGS := $(LINK_STATIC_IF_MIXED) $(LIBPNG_LDFLAGS)
 endif
 
 #

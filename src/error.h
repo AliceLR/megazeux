@@ -43,6 +43,7 @@ enum error_type
 enum error_code
 {
   E_DEFAULT,
+  E_INVOKE_SELF_FAILED,
   E_CORE_FATAL_BUG,
   E_FILE_DOES_NOT_EXIST,
   E_IO_READ,

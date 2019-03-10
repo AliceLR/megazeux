@@ -117,6 +117,11 @@ static struct blacklist_entry auto_glsl_blacklist[] =
     "  Chromium redirects GL commands to other GL drivers. The destination\n"
     "  often seems to be a software renderer, causing poor performance on\n"
     "  some machines.\n" },
+  { "Intel EMGD",
+    "  This driver may have extremely questionable \"OpenGL 2.0\" support.\n"
+    "  It may output a wall of spurious/nonsensical warnings when compiling\n"
+    "  the shaders, and it may claim that these shaders compiled\n"
+    "  successfully in cases where they actually did not.\n" },
 };
 
 static int auto_glsl_blacklist_len = ARRAY_SIZE(auto_glsl_blacklist);

@@ -1,18 +1,17 @@
 #!/bin/bash
 
-[ -z "$DEVKITPRO" ] && { echo "DEVKITPRO environment variable must be set!"; exit 1; }
-[ -z "$DEVKITPSP" ] && { echo "DEVKITPSP environment variable must be set!"; exit 1; }
+[[ -z $PSPDEV ]] && { echo "\$PSPDEV is unset. Aborting"; exit 1; }
+export PATH="$PSPDEV/bin:$PATH"
 
 export PORTS_REPO=https://github.com/pspdev/psp-ports.git
-
-export DEVKITPSP=`cygpath -u "$DEVKITPSP"`
-export PATH="$PATH:$DEVKITPSP/bin"
 
 
 echo ""
 echo "/********************/"
 echo "  PSP - dependencies  "
 echo "/********************/"
+
+pacman --needed --noconfirm -S autoconf automake libtool patch mingw-w64-x86_64-imagemagick
 
 cd /mzx-build-workingdir
 rm -rf psp-ports
@@ -22,8 +21,8 @@ git clone $PORTS_REPO "psp-ports"
 # devkitPro was missing an include. If the include is missing, patch
 # it back in.
 
-if ! grep -q "psptypes" $DEVKITPSP/psp/sdk/include/pspge.h ; then
-  patch $DEVKITPSP/psp/sdk/include/pspge.h /dk-patches/pspge.patch
+if ! grep -q "psptypes" $PSPDEV/psp/sdk/include/pspge.h ; then
+  patch $PSPDEV/psp/sdk/include/pspge.h /cross-patches/pspge.patch
 fi
 
 
@@ -78,7 +77,7 @@ LDFLAGS="-L$(psp-config --pspsdk-path)/lib" LIBS="-lc -lpspuser" \
 # know that this generated a worthless SDL_config.h. Replace it with
 # our own based on SDL2's PSP config.
 
-cp /dk-patches/SDL_config_psp.h include/SDL_config.h
+cp /cross-patches/SDL_config_psp.h include/SDL_config.h
 
 make -j8
 make install

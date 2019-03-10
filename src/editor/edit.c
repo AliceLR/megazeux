@@ -605,10 +605,10 @@ static void move_edit_cursor(struct editor_context *editor,
     int height = abs(move_y) + 1;
 
     if(step_x < 0)
-      offset -= width;
+      offset -= (width - 1);
 
     if(step_y < 0)
-      offset -= editor->board_width * height;
+      offset -= editor->board_width * (height - 1);
 
     if(editor->cursor_mode == CURSOR_DRAW)
     {
@@ -1312,7 +1312,10 @@ static boolean editor_mouse(context *ctx, int *key, int button, int x, int y)
 
       if(get_mouse_held(MOUSE_BUTTON_LEFT))
       {
-        mouse_draw(editor, x, y);
+        // Mouse draw. Only start if this is an initial click to prevent it
+        // from carrying through other interfaces.
+        if(editor->continue_mouse_history || !get_mouse_drag())
+          mouse_draw(editor, x, y);
         return true;
       }
     }
