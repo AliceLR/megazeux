@@ -775,6 +775,20 @@ static int spr_z_read(struct world *mzx_world,
   return (mzx_world->sprite_list[spr_num])->z;
 }
 
+static int spr_off_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
+  struct sprite *cur_sprite = mzx_world->sprite_list[spr_num];
+
+  // This counter has existed as long as sprites have but was never
+  // actually readable until 2.92.
+  if(mzx_world->version >= V292 && !(cur_sprite->flags & SPRITE_INITIALIZED))
+    return 1;
+
+  return 0;
+}
+
 static int spr_cwidth_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
@@ -995,10 +1009,18 @@ static void spr_off_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
+  struct sprite *cur_sprite = mzx_world->sprite_list[spr_num];
 
   // In DOS versions of MZX, this would be ignored if set to 0.
   if(value || mzx_world->version >= VERSION_PORT)
-    (mzx_world->sprite_list[spr_num])->flags &= ~SPRITE_INITIALIZED;
+  {
+    if(cur_sprite->flags & SPRITE_INITIALIZED)
+    {
+      // Note- versions prior to 2.92 wouldn't decrement active_sprites here.
+      cur_sprite->flags &= ~SPRITE_INITIALIZED;
+      mzx_world->active_sprites--;
+    }
+  }
 }
 
 static void spr_swap_write(struct world *mzx_world,
@@ -2540,7 +2562,7 @@ static const struct function_counter builtin_counters[] =
   { "spr!_cx",          V265,   spr_cx_read,          spr_cx_write },
   { "spr!_cy",          V265,   spr_cy_read,          spr_cy_write },
   { "spr!_height",      V265,   spr_height_read,      spr_height_write },
-  { "spr!_off",         V265,   NULL,                 spr_off_write },
+  { "spr!_off",         V265,   spr_off_read,         spr_off_write },
   { "spr!_offset",      V290,   spr_offset_read,      spr_offset_write },
   { "spr!_overlaid",    V265,   NULL,                 spr_overlaid_write },
   { "spr!_overlay",     V269c,  NULL,                 spr_overlaid_write },

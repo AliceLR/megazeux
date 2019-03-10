@@ -309,6 +309,7 @@ static const char *robot_var_list[] =
 // Sprite parent list (note: clist# added to end)
 static const char *sprite_parent_var_list[] =
 {
+  "Active sprites*", // no read/write
   "spr_num",
   "spr_yorder",
   "spr_collisions*",
@@ -329,7 +330,7 @@ static const char *sprite_var_list[] =
   "cwidth",
   "cheight",
   "ccheck", // no read
-  "off", // no read
+  "off",
   "offset",
   "overlay", // no read
   "static", // no read
@@ -508,6 +509,12 @@ static void get_var_value(struct world *mzx_world, struct debug_var *v,
       }
       else
 
+      if(match_var("Active sprites*"))
+      {
+        *int_value = mzx_world->active_sprites;
+      }
+      else
+
       if(match_var("spr_yorder"))
       {
         *int_value = mzx_world->sprite_y_order;
@@ -605,13 +612,6 @@ static void get_var_value(struct world *mzx_world, struct debug_var *v,
       const char *var = v->data.var_name;
       size_t len = strlen(var);
       int sprite_num = v->id;
-
-      if(match_var("off"))
-      {
-        if(!(mzx_world->sprite_list[sprite_num]->flags & SPRITE_INITIALIZED))
-          *int_value = 1;
-      }
-      else
 
       if(match_var("overlay"))
       {
@@ -1992,7 +1992,7 @@ static void build_debug_tree(struct world *mzx_world, struct debug_node *root)
   {
     "Sprites",
     false,
-    false,
+    true,
     false,
     true,
     0,

@@ -16,6 +16,7 @@ FEATURES
   may be more convenient for some users. This tag takes lower
   precedence than LOOPLENGTH if both are present, and will be
   ignored if its value is less than LOOPSTART.
++ The SPR#_OFF counter is now readable through Robotic.
 + New sprite counter: SPR#_Z. Sprites are displayed in order
   of their z value. Sprites with a higher z value will appear in
   front of sprites with a lower z value. This ordering takes
@@ -36,6 +37,10 @@ FIXES
   in an infinite loop instead of executing the next command.
 + SPR_YORDER and the sprite collision list are properly saved
   and loaded from saves again.
++ The active sprites count is properly updated when SPR#_OFF is
+  set and is properly loaded from saves again. This value can be
+  viewed from the variable debug screen now, though it may be
+  inaccurate for older saves.
 + The default boot.dol for Wii builds with the editor enabled
   is now MegaZeux instead of MZXRun.
 
