@@ -34,6 +34,8 @@ FIXES
 + Fixed bug where robots attempting to copy the player over
   themselves with COPY x y x y or COPY dir dir would get stuck
   in an infinite loop instead of executing the next command.
++ SPR_YORDER and the sprite collision list are properly saved
+  and loaded from saves again.
 
 DEVELOPERS
 

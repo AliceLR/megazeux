@@ -475,12 +475,12 @@ enum world_prop
 };
 
 
-// All sprite fields are saved as dwords, so bound them as such
+// All sprite fields are saved as dwords (except SET_ID), so bound them as such
 
 #define COUNT_SPRITE_PROPS        16
-#define BOUND_SPRITE_PROPS        64
-#define COUNT_SPRITE_ONCE_PROPS   3
-#define BOUND_SPRITE_ONCE_PROPS   12
+#define BOUND_SPRITE_PROPS        61
+#define COUNT_SPRITE_ONCE_PROPS   4
+#define BOUND_SPRITE_ONCE_PROPS   12 // + (collision_count * 4)
 
 #define SPRITE_PROPS_SIZE                       \
 (                                               \
@@ -500,7 +500,7 @@ enum sprite_prop
   SPROP_EOF                       = 0x00,
 
   // For each sprite
-  SPROP_SET_ID                    = 0x01, // 4, used to select a sprite #
+  SPROP_SET_ID                    = 0x01, // 1, used to select a sprite #
   SPROP_X                         = 0x02, // 2 (ignore size; we save as dwords)
   SPROP_Y                         = 0x03, // 2
   SPROP_REF_X                     = 0x04, // 2
@@ -521,6 +521,7 @@ enum sprite_prop
   SPROP_ACTIVE_SPRITES            = 0x8000, // 1
   SPROP_SPRITE_Y_ORDER            = 0x8001, // 1
   SPROP_COLLISION_COUNT           = 0x8002, // 2
+  SPROP_COLLISION_LIST            = 0x8003, // collision count * 4
 };
 
 
