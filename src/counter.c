@@ -178,8 +178,9 @@ static int playerdist_read(struct world *mzx_world,
 
   int player_x = mzx_world->player_x;
   int player_y = mzx_world->player_y;
-  int this_x = cur_robot->xpos;
-  int this_y = cur_robot->ypos;
+  int this_x = 0;
+  int this_y = 0;
+  get_robot_position(cur_robot, &this_x, &this_y);
 
   return abs(player_x - this_x) + abs(player_y - this_y);
 }
@@ -280,21 +281,27 @@ static void multiplier_write(struct world *mzx_world,
 static int thisx_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  if(mzx_world->mid_prefix == 2)
-    return (mzx_world->current_board->robot_list[id])->xpos -
-     mzx_world->player_x;
+  struct robot *cur_robot = mzx_world->current_board->robot_list[id];
+  int thisx, thisy;
+  get_robot_position(cur_robot, &thisx, &thisy);
 
-  return (mzx_world->current_board->robot_list[id])->xpos;
+  if(mzx_world->mid_prefix == 2)
+    return thisx - mzx_world->player_x;
+
+  return thisx;
 }
 
 static int thisy_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  if(mzx_world->mid_prefix == 2)
-    return (mzx_world->current_board->robot_list[id])->ypos -
-     mzx_world->player_y;
+  struct robot *cur_robot = mzx_world->current_board->robot_list[id];
+  int thisx, thisy;
+  get_robot_position(cur_robot, &thisx, &thisy);
 
-  return (mzx_world->current_board->robot_list[id])->ypos;
+  if(mzx_world->mid_prefix == 2)
+    return thisy - mzx_world->player_y;
+
+  return thisy;
 }
 
 static int playerx_read(struct world *mzx_world,
@@ -320,9 +327,13 @@ static int this_color_read(struct world *mzx_world,
 {
   struct board *src_board = mzx_world->current_board;
   struct robot *cur_robot = src_board->robot_list[id];
-  int x = cur_robot->xpos;
-  int y = cur_robot->ypos;
-  int offset = x + (y * src_board->board_width);
+  int offset;
+  int thisx;
+  int thisy;
+
+  get_robot_position(cur_robot, &thisx, &thisy);
+
+  offset = thisx + (thisy * src_board->board_width);
 
   // No global
   if(id == 0)
@@ -414,15 +425,21 @@ static void playerlastdir_write(struct world *mzx_world,
 static int horizpld_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  return abs(mzx_world->player_x -
-   (mzx_world->current_board->robot_list[id])->xpos);
+  struct robot *cur_robot = mzx_world->current_board->robot_list[id];
+  int thisx, thisy;
+  get_robot_position(cur_robot, &thisx, &thisy);
+
+  return abs(mzx_world->player_x - thisx);
 }
 
 static int vertpld_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  return abs(mzx_world->player_y -
-   (mzx_world->current_board->robot_list[id])->ypos);
+  struct robot *cur_robot = mzx_world->current_board->robot_list[id];
+  int thisx, thisy;
+  get_robot_position(cur_robot, &thisx, &thisy);
+
+  return abs(mzx_world->player_y - thisy);
 }
 
 static int board_char_read(struct world *mzx_world,

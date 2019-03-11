@@ -200,8 +200,12 @@ static inline void copy_board_buffer_to_board(
           struct robot *cur_robot =
            dest_board->robot_list[(int)buffer_param[buffer_offset]];
 
-          cur_robot->xpos = dest_offset % dest_width;
-          cur_robot->ypos = dest_offset / dest_width;
+          int thisx = dest_offset % dest_width;
+          int thisy = dest_offset / dest_width;
+          cur_robot->xpos = thisx;
+          cur_robot->ypos = thisy;
+          cur_robot->compat_xpos = thisx;
+          cur_robot->compat_ypos = thisy;
         }
 
         // Copy off of the buffer onto the board

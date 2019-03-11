@@ -174,6 +174,9 @@ void push_sensor(struct world *mzx_world, int id);
 void step_sensor(struct world *mzx_world, int id);
 int get_robot_id(struct board *src_board, const char *name);
 
+CORE_LIBSPEC void get_robot_position(struct robot *cur_robot, int *xpos,
+ int *ypos);
+
 static inline char *tr_msg(struct world *mzx_world, char *mesg, int id,
  char *buffer)
 {

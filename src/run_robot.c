@@ -466,8 +466,7 @@ static int check_dir_xy(struct world *mzx_world, enum thing id, int color,
 
     if((direction & 0x1F) == SEEK)
     {
-      x = cur_robot->xpos;
-      y = cur_robot->ypos;
+      get_robot_position(cur_robot, &x, &y);
     }
 
     direction = parsedir(direction, x, y, cur_robot->walk_dir);
@@ -860,9 +859,11 @@ static void end_cycle(struct robot *cur_robot, int lines_run, int x, int y)
 #endif
 
   cur_robot->cycle_count = 0; // In case a label changed it
-  // Reset x/y (from movements)
-  cur_robot->xpos = x;
-  cur_robot->ypos = y;
+
+  // Older versions have a really sloppy method of updating the robot pos
+  // that causes a lot of bugs, and sadly this needs to be emulated.
+  cur_robot->compat_xpos = x;
+  cur_robot->compat_ypos = y;
 }
 
 static void end_program(struct robot *cur_robot)
@@ -918,6 +919,8 @@ void run_robot(context *ctx, int id, int x, int y)
     cur_robot = src_board->robot_list[id];
     cur_robot->xpos = x;
     cur_robot->ypos = y;
+    cur_robot->compat_xpos = x;
+    cur_robot->compat_ypos = y;
     cur_robot->cycle_count = 0;
 
     src_board->robot_list[id]->status = 0;
@@ -932,6 +935,8 @@ void run_robot(context *ctx, int id, int x, int y)
     // Reset x/y
     cur_robot->xpos = x;
     cur_robot->ypos = y;
+    cur_robot->compat_xpos = x;
+    cur_robot->compat_ypos = y;
 
 #ifdef CONFIG_EDITOR
     cur_robot->commands_cycle = 0;
@@ -976,7 +981,17 @@ void run_robot(context *ctx, int id, int x, int y)
       {
         enum thing l_id;
 
-        move_dir(src_board, &x, &y, walk_dir);
+        if(mzx_world->version >= V292)
+        {
+          // Source the current position off of the robot's new real position.
+          x = cur_robot->xpos;
+          y = cur_robot->ypos;
+        }
+        else
+        {
+          // Source the current position off of a hack that doesn't really work.
+          move_dir(src_board, &x, &y, walk_dir);
+        }
 
         /* Normally, WALK doesn't end the cycle. But due to long-standing
          * bugs in the transport() and push() functions, the board is actually
@@ -1281,6 +1296,8 @@ void run_robot(context *ctx, int id, int x, int y)
             if(place_at_xy(mzx_world, new_id, color, id, new_x, new_y))
             {
               id_remove_top(mzx_world, x, y);
+              cur_robot->xpos = new_x;
+              cur_robot->ypos = new_y;
               x = new_x;
               y = new_y;
             }
@@ -2417,9 +2434,19 @@ void run_robot(context *ctx, int id, int x, int y)
                 enum thing old_id = (enum thing)level_id[offset];
                 level_id[offset] = (char)ROBOT_PUSHABLE;
                 grab_item(mzx_world, new_x, new_y, 0);
+
                 // Find the robot
+                if(mzx_world->version >= V292)
+                {
+                  // Source the current position off of the actual position.
+                  x = cur_robot->xpos;
+                  y = cur_robot->ypos;
+                }
+                else
+
                 if(level_id[offset] != ROBOT_PUSHABLE)
                 {
+                  // Source the current position from checking nearby spots.
                   int i;
                   for(i = 0; i < 4; i++)
                   {
@@ -2707,6 +2734,7 @@ void run_robot(context *ctx, int id, int x, int y)
               // nothing gets copied.
               if((src_x != dest_x) || (src_y != dest_y))
               {
+                struct robot *src_robot;
                 int src_offset = src_x + (src_y * board_width);
                 int dest_offset = dest_x + (dest_y * board_width);
                 enum thing cp_id = (enum thing)level_id[src_offset];
@@ -2720,6 +2748,22 @@ void run_robot(context *ctx, int id, int x, int y)
                 level_color[dest_offset] = cp_color;
                 // Figure blocked vars
                 update_blocked = 1;
+
+                // This might have moved robots. Fix their xpos/ypos values.
+                // Old versions didn't fix these, so don't touch the compat pos.
+                if(is_robot(cp_id))
+                {
+                  src_robot = src_board->robot_list[cp_param];
+                  src_robot->xpos = dest_x;
+                  src_robot->ypos = dest_y;
+                }
+                if(is_robot(level_id[src_offset]))
+                {
+                  cp_param = level_param[src_offset];
+                  src_robot = src_board->robot_list[cp_param];
+                  src_robot->xpos = src_x;
+                  src_robot->ypos = src_y;
+                }
               }
             }
           }
@@ -4547,6 +4591,8 @@ void run_robot(context *ctx, int id, int x, int y)
           level_color[offset] = duplicate_color;
           level_param[offset] = dest_id;
 
+          // This robot doesn't actually move. Who knows why this is here, but
+          // removing it might be a compatibility problem with xpos/ypos...
           x = duplicate_x;
           y = duplicate_y;
 
@@ -4596,6 +4642,8 @@ void run_robot(context *ctx, int id, int x, int y)
           level_color[offset] = duplicate_color;
           level_param[offset] = dest_id;
 
+          // This robot doesn't actually move. Who knows why this is here, but
+          // removing it might be a compatibility problem with xpos/ypos...
           x = duplicate_x;
           y = duplicate_y;
 
@@ -5292,6 +5340,7 @@ void run_robot(context *ctx, int id, int x, int y)
         if(id)
         {
           struct robot *dest_robot;
+          int dest_x, dest_y;
           int first, last;
           char robot_name_buffer[ROBOT_MAX_TR];
           tr_msg(mzx_world, cmd_ptr + 2, id, robot_name_buffer);
@@ -5300,8 +5349,9 @@ void run_robot(context *ctx, int id, int x, int y)
           while(first <= last)
           {
             dest_robot = src_board->robot_list_name_sorted[first];
-            if(dest_robot &&
-             ((dest_robot->xpos == x) || (dest_robot->ypos == y)))
+            get_robot_position(dest_robot, &dest_x, &dest_y);
+
+            if(dest_robot && ((dest_x == x) || (dest_y == y)))
             {
               char *p2 = next_param_pos(cmd_ptr + 1);
               gotoed = send_self_label_tr(mzx_world, p2 + 1, id);

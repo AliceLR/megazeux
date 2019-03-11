@@ -36,6 +36,17 @@
  * Utility functions for gameplay.
  */
 
+/**
+ * Update a robot's position after moving it. This was never done by older
+ * versions, so don't update the robot's compatibility position values.
+ */
+static void fix_robot_pos(struct board *cur_board, int id, int x, int y)
+{
+  struct robot *cur_robot = cur_board->robot_list[id];
+  cur_robot->xpos = x;
+  cur_robot->ypos = y;
+}
+
 //Bit 1- +1
 //Bit 2- -1
 //Bit 4- +width
@@ -46,6 +57,7 @@ static const char ccw_offs[8] = { 10, 8, 9, 1, 5, 4, 6, 2 };
 // Rotate an area
 void rotate(struct world *mzx_world, int x, int y, int dir)
 {
+  // FIXME if any of these are robots, fix their xpos/ypos values
   struct board *src_board = mzx_world->current_board;
   const char *offsp = cw_offs;
   int offs[8];
@@ -400,6 +412,9 @@ int transport(struct world *mzx_world, int x, int y, int dir, enum thing id,
     // Place it
     play_sfx(mzx_world, SFX_TRANSPORT);
     id_place(mzx_world, dx, dy, id, color, param);
+
+    if(is_robot(id))
+      fix_robot_pos(src_board, param, dx, dy);
   }
 
   // Successful return..
@@ -564,11 +579,17 @@ int push(struct world *mzx_world, int x, int y, int dir, int checking)
       {
         // Place the previous thing here
         id_place(mzx_world, dx, dy, p_id, p_color, p_param);
+
         if((p_id == PLAYER) && (p_under_id == SENSOR))
         {
           push_player_sensor(mzx_world, p_offset, d_offset, sensor_param,
            sensor_color);
         }
+        else
+
+        if(p_id == ROBOT_PUSHABLE)
+          fix_robot_pos(src_board, p_param, dx, dy);
+
         // If this is a sensor, the player was pushed onto it
         if(d_id == SENSOR)
         {
@@ -610,6 +631,9 @@ int push(struct world *mzx_world, int x, int y, int dir, int checking)
             push_player_sensor(mzx_world, p_offset, d_offset,
              sensor_param, sensor_color);
           }
+
+          if(p_id == ROBOT_PUSHABLE)
+            fix_robot_pos(src_board, p_param, dx, dy);
         }
 
         // How about a pushable robot?
@@ -625,7 +649,6 @@ int push(struct world *mzx_world, int x, int y, int dir, int checking)
         p_param = d_param;
         p_color = d_color;
         p_offset = d_offset;
-
 
         // Is it a sensor that was pushed? Flag it.
         if(d_id == SENSOR)
@@ -1174,6 +1197,9 @@ enum move_status move(struct world *mzx_world, int x, int y, int dir,
   id_remove_top(mzx_world, x, y);
   // Place a new one at the destination
   id_place(mzx_world, dx, dy, p_id, p_color, p_param);
+
+  if(is_robot(p_id))
+    fix_robot_pos(src_board, p_param, dx, dy);
 
   // Successfully return
   return NO_HIT;
