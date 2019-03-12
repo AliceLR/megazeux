@@ -45,15 +45,17 @@ FIXES
   inaccurate for older saves.
 + Fixed various bugs related to the robot position not being
   internally tracked correctly. This could be caused by WALK,
-  SWITCH dir dir, MOVE ALL, a robot moving through a transport,
-  pushing, and rotation. This fixes discrepancies in IF ALIGNED
-  "robot", THISX, THISY, THIS_COLOR, PLAYERDIST, HORIZPLD,
-  VERTPLD, RID#, ROBOT_ID_#, the robot's coordinates displayed
-  in the counter and robot debuggers, and MZM saving. Due to the
-  number of features affected by these bugs, the fix only
-  affects worlds saved in 2.92 or later.
+  SWITCH dir dir, OPEN, MOVE ALL, moving through a transport,
+  pushing, and rotation. This fixes issues with IF ALIGNEDROBOT,
+  THISX, THISY, THIS_COLOR, PLAYERDIST, HORIZPLD, VERTPLD, RID#,
+  ROBOT_ID_#, the robot's coordinates displayed in the counter
+  and robot debuggers, and MZM saving. Due to the number of
+  features affected by these bugs, the fix only affects worlds
+  saved in 2.92 or later.
 + Fixed a regression where rotating could sometimes fail to
   rotate the player, sensors, pushable robots, or transports.
++ When a robot uses the OPEN command and is pushed through a
+  transport, MZX no longer crashes or creates invalid robots.
 + Fixed crash that could sometimes occur when pressing Alt+Up
   while drawing near the top of a board in the editor.
 + Fixed bug where canceling 'Alt+C' char selection in the

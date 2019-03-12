@@ -2435,38 +2435,16 @@ void run_robot(context *ctx, int id, int x, int y)
                 level_id[offset] = (char)ROBOT_PUSHABLE;
                 grab_item(mzx_world, new_x, new_y, 0);
 
-                // Find the robot
-                if(mzx_world->version >= V292)
-                {
-                  // Source the current position off of the actual position.
-                  x = cur_robot->xpos;
-                  y = cur_robot->ypos;
-                }
-                else
-
+                // If a door opened in the direction of the robot, the robot
+                // was pushed and its position needs to be updated. This might
+                // have been through a transport so just use xpos/ypos.
                 if(level_id[offset] != ROBOT_PUSHABLE)
                 {
-                  // Source the current position from checking nearby spots.
-                  int i;
-                  for(i = 0; i < 4; i++)
-                  {
-                    new_x = x;
-                    new_y = y;
-                    if(!move_dir(src_board, &new_x, &new_y, int_to_dir(i)))
-                    {
-                      // Not edge... robot?
-                      new_offset = new_x + (new_y * board_width);
-                      if((level_id[new_offset] == ROBOT_PUSHABLE) &&
-                       (level_param[new_offset] == id))
-                      {
-                        offset = new_offset;
-                        x = new_x;
-                        y = new_y;
-                        break;
-                      }
-                    }
-                  }
+                  x = cur_robot->xpos;
+                  y = cur_robot->ypos;
+                  offset = x + (y * board_width);
                 }
+
                 level_id[offset] = old_id;
                 update_blocked = 1;
               }
