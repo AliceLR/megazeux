@@ -178,11 +178,10 @@ static int playerdist_read(struct world *mzx_world,
 
   int player_x = mzx_world->player_x;
   int player_y = mzx_world->player_y;
-  int this_x = 0;
-  int this_y = 0;
-  get_robot_position(cur_robot, &this_x, &this_y);
+  int thisx, thisy;
+  get_robot_position(cur_robot, &thisx, &thisy);
 
-  return abs(player_x - this_x) + abs(player_y - this_y);
+  return abs(player_x - thisx) + abs(player_y - thisy);
 }
 
 static int sin_read(struct world *mzx_world,
@@ -327,12 +326,9 @@ static int this_color_read(struct world *mzx_world,
 {
   struct board *src_board = mzx_world->current_board;
   struct robot *cur_robot = src_board->robot_list[id];
+  int thisx, thisy;
   int offset;
-  int thisx;
-  int thisy;
-
   get_robot_position(cur_robot, &thisx, &thisy);
-
   offset = thisx + (thisy * src_board->board_width);
 
   // No global
