@@ -83,6 +83,8 @@ void create_blank_robot(struct robot *cur_robot)
   cur_robot->last_shot_dir = 0;
   cur_robot->xpos = -1;
   cur_robot->ypos = -1;
+  cur_robot->compat_xpos = -1;
+  cur_robot->compat_ypos = -1;
   cur_robot->status = 0;
   cur_robot->used = 1;
 
@@ -155,12 +157,14 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
 
       case RPROP_XPOS:
         err_if_skipped(RPROP_ROBOT_CHAR);
-        cur_robot->xpos = (signed short) load_prop_int(size, &prop);
+        cur_robot->xpos = (signed short)load_prop_int(size, &prop);
+        cur_robot->compat_xpos = cur_robot->xpos;
         break;
 
       case RPROP_YPOS:
         err_if_skipped(RPROP_XPOS);
         cur_robot->ypos = (signed short) load_prop_int(size, &prop);
+        cur_robot->compat_ypos = cur_robot->ypos;
         break;
 
       // Legacy world, now save
@@ -1006,6 +1010,29 @@ void reallocate_scroll(struct scroll *scroll, size_t size)
   scroll->mesg_size = size;
 }
 
+/**
+ * Due to MZX bugs in older versions the xpos/ypos for in-game features
+ * may not be the robot's actual position on the board. This function
+ * will return compatibility positions for the affected versions or
+ * the robot's real board position otherwise.
+ */
+void get_robot_position(struct robot *cur_robot, int *xpos, int *ypos)
+{
+  if(cur_robot)
+  {
+    if(cur_robot->world_version >= V292)
+    {
+      *xpos = cur_robot->xpos;
+      *ypos = cur_robot->ypos;
+    }
+    else
+    {
+      *xpos = cur_robot->compat_xpos;
+      *ypos = cur_robot->compat_ypos;
+    }
+  }
+}
+
 int get_robot_id(struct board *src_board, const char *name)
 {
   int first, last;
@@ -1014,10 +1041,15 @@ int get_robot_id(struct board *src_board, const char *name)
   {
     struct robot *cur_robot = src_board->robot_list_name_sorted[first];
     // This is a cheap trick for now since robots don't have
-    // a back-reference for ID's
-    int offset = cur_robot->xpos +
-     (cur_robot->ypos * src_board->board_width);
-    enum thing d_id = (enum thing)src_board->level_id[offset];
+    // a back-reference for IDs
+    enum thing d_id;
+    int offset;
+    int thisx;
+    int thisy;
+    get_robot_position(cur_robot, &thisx, &thisy);
+
+    offset = thisx + (thisy * src_board->board_width);
+    d_id = (enum thing)src_board->level_id[offset];
 
     if(is_robot(d_id))
     {
@@ -3373,6 +3405,8 @@ void duplicate_robot_direct(struct world *mzx_world, struct robot *cur_robot,
   }
   copy_robot->xpos = x;
   copy_robot->ypos = y;
+  copy_robot->compat_xpos = x;
+  copy_robot->compat_ypos = y;
 }
 
 // Finds a robot ID then duplicates a robot there. Must not be called
@@ -3605,6 +3639,8 @@ void optimize_null_objects(struct board *src_board)
           cur_robot = robot_list[d_new_param];
           cur_robot->xpos = x;
           cur_robot->ypos = y;
+          cur_robot->compat_xpos = x;
+          cur_robot->compat_ypos = y;
         }
         else
 

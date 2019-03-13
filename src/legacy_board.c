@@ -523,6 +523,13 @@ board_scan:
           if(!found_robots[pr] && pr <= num_robots && robot_list[pr])
           {
             found_robots[pr] = 1;
+            // Also fix the xpos/ypos values, which may have been saved
+            // incorrectly in ver1to2 worlds (see: Caverns of Zeux).
+            cur_robot = robot_list[pr];
+            cur_robot->xpos = i % board_width;
+            cur_robot->ypos = i / board_width;
+            cur_robot->compat_xpos = cur_robot->xpos;
+            cur_robot->compat_ypos = cur_robot->ypos;
           }
 
           else

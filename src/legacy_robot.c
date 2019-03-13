@@ -56,6 +56,7 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
  int robot_location)
 {
   int program_length, validated_length;
+  int xpos, ypos;
   int i;
 
   const unsigned char *bufferPtr = buffer;
@@ -96,8 +97,8 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
   cur_robot->walk_dir = (enum dir)mem_getc(&bufferPtr);
   cur_robot->last_touch_dir = (enum dir)mem_getc(&bufferPtr);
   cur_robot->last_shot_dir = (enum dir)mem_getc(&bufferPtr);
-  cur_robot->xpos = mem_getw(&bufferPtr);
-  cur_robot->ypos = mem_getw(&bufferPtr);
+  xpos = mem_getw(&bufferPtr);
+  ypos = mem_getw(&bufferPtr);
   cur_robot->status = mem_getc(&bufferPtr);
   // Skip local - these are in the save files now
   bufferPtr += 2;
@@ -108,8 +109,12 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
     bufferPtr += 2;
 
   // Fix xpos and ypos for global robot
-  cur_robot->xpos = -(cur_robot->xpos >= 32768) | cur_robot->xpos;
-  cur_robot->ypos = -(cur_robot->ypos >= 32768) | cur_robot->ypos;
+  xpos = (xpos >= 32768) ? -1 : xpos;
+  ypos = (ypos >= 32768) ? -1 : ypos;
+  cur_robot->xpos = xpos;
+  cur_robot->ypos = ypos;
+  cur_robot->compat_xpos = xpos;
+  cur_robot->compat_ypos = ypos;
 
   // If savegame, there's some additional information to get
   if(savegame)
