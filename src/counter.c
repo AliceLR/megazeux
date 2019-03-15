@@ -26,6 +26,7 @@
 #include <math.h>
 #include <ctype.h>
 #include <time.h>
+#include <sys/stat.h>
 #include <sys/time.h>
 
 #include "configure.h"
@@ -1949,6 +1950,32 @@ static void fread_pos_write(struct world *mzx_world,
   }
 }
 
+static int fread_length_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  if(mzx_world->input_is_dir)
+    return mzx_world->input_directory.entries;
+
+  if(mzx_world->input_file)
+  {
+    struct stat stat_info;
+    long current_pos;
+    long length;
+
+    // Since this is read-only, this info is likely accurate and faster to get.
+    if(!fstat(fileno(mzx_world->input_file), &stat_info))
+      return stat_info.st_size;
+
+    // Fall back to SEEK_END/ftell
+    current_pos = ftell(mzx_world->input_file);
+    fseek(mzx_world->input_file, 0, SEEK_END);
+    length = ftell(mzx_world->input_file);
+    fseek(mzx_world->input_file, current_pos, SEEK_SET);
+    return length;
+  }
+  return -1;
+}
+
 static void fread_delim_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
@@ -1999,6 +2026,24 @@ static void fwrite_counter_write(struct world *mzx_world,
     else
       fputd(value, mzx_world->output_file);
   }
+}
+
+static int fwrite_length_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  if(mzx_world->output_file)
+  {
+    // Since this can change without updating the file on disk, the easiest
+    // way to get this value is SEEK_END/ftell.
+    long current_pos = ftell(mzx_world->output_file);
+    long length;
+
+    fseek(mzx_world->output_file, 0, SEEK_END);
+    length = ftell(mzx_world->output_file);
+    fseek(mzx_world->output_file, current_pos, SEEK_SET);
+    return length;
+  }
+  return -1;
 }
 
 static int lava_walk_read(struct world *mzx_world,
@@ -2430,7 +2475,10 @@ static void max_samples_write(struct world *mzx_world,
 
 /* FIXME: "MOD *" will still work, even in worlds < 2.51s1 */
 
-/* NOTE: ABS_VALUE, R_PLAYERDIST, SQRT_VALUE, WRAP, VALUE were removed in
+/* NOTE: FREAD_LENGTH and FWRITE_LENGTH were removed in 2.65 and no
+ *       compatibility layer was implemented. The reimplementation of these
+ *       counters is versioned to 2.92.
+ *       ABS_VALUE, R_PLAYERDIST, SQRT_VALUE, WRAP, VALUE were removed in
  *       2.68 and no compatibility layer was implemented.
  *       FREAD_PAGE, FWRITE_PAGE were removed in 2.80 and no compatibility
  *       layer was implemented.
@@ -2487,12 +2535,14 @@ static const struct function_counter builtin_counters[] =
   { "fread",            V260,   fread_read,           NULL },
   { "fread_counter",    V265,   fread_counter_read,   NULL },
   { "fread_delimiter",  V284,   NULL,                 fread_delim_write },
+  { "fread_length",     V292,   fread_length_read,    NULL },
   { "fread_open",       V260,   fread_open_read,      NULL },
   { "fread_pos",        V260,   fread_pos_read,       fread_pos_write },
   { "fwrite",           V260,   NULL,                 fwrite_write },
   { "fwrite_append",    V260,   fwrite_append_read,   NULL },
   { "fwrite_counter",   V265,   NULL,                 fwrite_counter_write },
   { "fwrite_delimiter", V284,   NULL,                 fwrite_delim_write },
+  { "fwrite_length",    V292,   fwrite_length_read,   NULL },
   { "fwrite_modify",    V269c,  fwrite_modify_read,   NULL },
   { "fwrite_open",      V260,   fwrite_open_read,     NULL },
   { "fwrite_pos",       V260,   fwrite_pos_read,      fwrite_pos_write },

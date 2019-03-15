@@ -23,6 +23,9 @@ FEATURES
   precedence over both Y ordering (if SPR_YORDER is enabled) and
   sprite number. Removes the need to use SPR#_SWAP for managing
   sprite draw order. (Lancer-X)
++ New counters: FREAD_LENGTH and FWRITE_LENGTH. These counters
+  return the length of the FREAD file/directory (if open) or the
+  current length of the FWRITE file (if open).
 + The default boot.dol for Wii builds with the editor enabled
   is now MegaZeux instead of MZXRun.
 
