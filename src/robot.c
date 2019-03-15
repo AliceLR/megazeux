@@ -1044,8 +1044,8 @@ int get_robot_id(struct board *src_board, const char *name)
     // a back-reference for IDs
     enum thing d_id;
     int offset;
-    int thisx;
-    int thisy;
+    int thisx = 0;
+    int thisy = 0;
     get_robot_position(cur_robot, &thisx, &thisy);
 
     offset = thisx + (thisy * src_board->board_width);

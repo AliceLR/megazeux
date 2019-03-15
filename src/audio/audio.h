@@ -169,6 +169,10 @@ static inline int audio_get_module_position(void) { return 0; }
 static inline void audio_set_module_frequency(int freq) {}
 static inline int audio_get_module_frequency(void) { return 0; }
 static inline int audio_get_module_length(void) { return 0; }
+static inline void audio_set_module_loop_start(int pos) {}
+static inline int audio_get_module_loop_start(void) { return 0; }
+static inline void audio_set_module_loop_end(int pos) {}
+static inline int audio_get_module_loop_end(void) { return 0; }
 
 static inline void audio_end_sample(void) {}
 static inline void audio_set_max_samples(int max_samples) {}

@@ -19,8 +19,8 @@ ARCH_CXXFLAGS += ${ARCH_CFLAGS}
 ARCH_LDFLAGS  += -L${PREFIX}/sdk/lib
 
 SDL_CFLAGS = -I${PREFIX}/include/SDL
-SDL_LDFLAGS = -lSDL -lGL -lpspirkeyb -lc -lpspvfpu -lpsprtc -lpsppower -lpspaudio -lpspgu -lpspge -lpspdisplay -lpsphprm -lpspctrl -lpspnet_inet -lpspuser
-LIBPNG_CFLAGS = 
+SDL_LDFLAGS = -lSDL -lGL -lpspirkeyb -lc -lg -lpspvfpu -lpsprtc -lpsppower -lpspaudio -lpspgu -lpspge -lpspdisplay -lpsphprm -lpspctrl -lpspnet_inet -lpspuser
+LIBPNG_CFLAGS =
 LIBPNG_LDFLAGS = -lpng
 
 package: mzx

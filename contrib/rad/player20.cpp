@@ -312,7 +312,8 @@ void RADPlayer::Init(const void *tune, void (*opl3)(void *, uint16_t, uint8_t), 
             break;
 
         // Skip instrument name
-        s += *s++;
+        uint8_t name_len = *(s++);
+        s += name_len;
 
         CInstrument &inst = Instruments[inst_num - 1];
 
