@@ -46,6 +46,9 @@ extern CORE_LIBSPEC Uint32 sdl_window_id;
 int sdl_flags(int depth, boolean fullscreen, boolean resize);
 #endif
 
+void sdl_destruct_window(struct graphics_data *graphics);
+void sdl_free_video(struct graphics_data *graphics);
+
 boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
  int height, int depth, boolean fullscreen, boolean resize);
 

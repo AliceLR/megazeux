@@ -228,6 +228,8 @@ static boolean gp2x_init_video(struct graphics_data *graphics,
 
 static void gp2x_free_video(struct graphics_data *graphics)
 {
+  sdl_destruct_window(graphics);
+
   free(graphics->render_data);
   graphics->render_data = NULL;
 }
@@ -353,7 +355,7 @@ static void gp2x_sync_screen(struct graphics_data *graphics)
   }
 
 #if SDL_VERSION_ATLEAST(2,0,0)
-  SDL_RenderPresent(render_data->sdl.renderer);
+  SDL_UpdateWindowSurface(render_data->sdl.window);
 #else
   SDL_Flip(render_data->sdl.screen);
 #endif

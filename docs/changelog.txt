@@ -19,6 +19,10 @@ FIXES
   a relative argv[0] in Windows. MegaZeux attempts to get the
   executable path from Win32 first now.
 + Improved warning message when no HTTP response is received.
++ The software renderer no longer tries to use an SDL_Renderer
+  to draw the surface returned by SDL_GetWindowSurface. This
+  fixes a crash when switching to fullscreen with the software
+  renderer on some platforms.
 
 DEVELOPERS
 

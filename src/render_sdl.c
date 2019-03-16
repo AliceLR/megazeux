@@ -46,6 +46,52 @@ int sdl_flags(int depth, boolean fullscreen, boolean resize)
   return flags;
 }
 
+void sdl_destruct_window(struct graphics_data *graphics)
+{
+  struct sdl_render_data *render_data = graphics->render_data;
+
+#if SDL_VERSION_ATLEAST(2,0,0)
+
+  // Used for 8bpp support for the software renderer.
+  if(render_data->palette)
+  {
+    SDL_FreePalette(render_data->palette);
+    render_data->palette = NULL;
+  }
+
+  // Used by the YUV renderers for HW acceleration. Never use with software.
+  if(render_data->renderer)
+  {
+    SDL_DestroyRenderer(render_data->renderer);
+    render_data->renderer = NULL;
+  }
+
+  // Used by all SDL renderers.
+  if(render_data->window)
+  {
+    SDL_DestroyWindow(render_data->window);
+    render_data->window = NULL;
+  }
+
+  // This is attached to the window for renderers that use it. Just clear it...
+  render_data->screen = NULL;
+
+#else /* !SDL_VERSION_ATLEAST(2,0,0) */
+
+  // Don't free render_data->screen. This pointer is managed by SDL.
+  render_data->screen = NULL;
+
+#endif
+}
+
+void sdl_free_video(struct graphics_data *graphics)
+{
+  sdl_destruct_window(graphics);
+
+  free(graphics->render_data);
+  graphics->render_data = NULL;
+}
+
 boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
  int height, int depth, boolean fullscreen, boolean resize)
 {
@@ -55,14 +101,7 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
   boolean matched = false;
   Uint32 fmt;
 
-  if(render_data->palette)
-    SDL_FreePalette(render_data->palette);
-
-  if(render_data->renderer)
-    SDL_DestroyRenderer(render_data->renderer);
-
-  if(render_data->window)
-    SDL_DestroyWindow(render_data->window);
+  sdl_destruct_window(graphics);
 
   render_data->window = SDL_CreateWindow("MegaZeux",
    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
@@ -71,23 +110,14 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
   if(!render_data->window)
   {
     warn("Failed to create window: %s\n", SDL_GetError());
-    goto err_out;
-  }
-
-  render_data->renderer =
-   SDL_CreateRenderer(render_data->window, -1, SDL_RENDERER_SOFTWARE);
-
-  if(!render_data->renderer)
-  {
-    warn("Failed to create renderer: %s\n", SDL_GetError());
-    goto err_destroy_window;
+    goto err_free;
   }
 
   render_data->screen = SDL_GetWindowSurface(render_data->window);
   if(!render_data->screen)
   {
     warn("Failed to get window surface: %s\n", SDL_GetError());
-    goto err_destroy_renderer;
+    goto err_free;
   }
 
   /* SDL 2.0 allows the window system to offer up buffers of a specific
@@ -162,13 +192,13 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
     if(!render_data->palette)
     {
       warn("Failed to allocate palette: %s\n", SDL_GetError());
-      goto err_destroy_renderer;
+      goto err_free;
     }
 
     if(SDL_SetPixelFormatPalette(format, render_data->palette))
     {
       warn("Failed to set pixel format palette: %s\n", SDL_GetError());
-      goto err_free_palette;
+      goto err_free;
     }
   }
   else
@@ -193,16 +223,8 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
   return true;
 
 #if SDL_VERSION_ATLEAST(2,0,0)
-err_free_palette:
-  SDL_FreePalette(render_data->palette);
-  render_data->palette = NULL;
-err_destroy_renderer:
-  SDL_DestroyRenderer(render_data->renderer);
-  render_data->renderer = NULL;
-err_destroy_window:
-  SDL_DestroyWindow(render_data->window);
-  render_data->window = NULL;
-err_out:
+err_free:
+  sdl_destruct_window(graphics);
   return false;
 #endif // SDL_VERSION_ATLEAST(2,0,0)
 }
