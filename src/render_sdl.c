@@ -52,6 +52,14 @@ void sdl_destruct_window(struct graphics_data *graphics)
 
 #if SDL_VERSION_ATLEAST(2,0,0)
 
+  // Used by the software renderer as a fallback if the window surface doesn't
+  // match the pixel format MZX wants.
+  if(render_data->shadow)
+  {
+    SDL_FreeSurface(render_data->shadow);
+    render_data->shadow = NULL;
+  }
+
   // Used for 8bpp support for the software renderer.
   if(render_data->palette)
   {
@@ -59,11 +67,26 @@ void sdl_destruct_window(struct graphics_data *graphics)
     render_data->palette = NULL;
   }
 
+  // Used by the YUV renderers for HW acceleration.
+  if(render_data->texture)
+  {
+    SDL_DestroyTexture(render_data->texture);
+    render_data->texture = NULL;
+  }
+
   // Used by the YUV renderers for HW acceleration. Never use with software.
+  // Destroying this when exiting fullscreen can be slow for some reason.
   if(render_data->renderer)
   {
     SDL_DestroyRenderer(render_data->renderer);
     render_data->renderer = NULL;
+  }
+
+  // Used by the OpenGL renderers.
+  if(render_data->context)
+  {
+    SDL_GL_DeleteContext(render_data->context);
+    render_data->context = NULL;
   }
 
   // Used by all SDL renderers.
@@ -78,18 +101,19 @@ void sdl_destruct_window(struct graphics_data *graphics)
 
 #else /* !SDL_VERSION_ATLEAST(2,0,0) */
 
+  // Used by the YUV renderers.
+  if(render_data->overlay)
+  {
+    SDL_FreeYUVOverlay(render_data->overlay);
+    render_data->overlay = NULL;
+  }
+
   // Don't free render_data->screen. This pointer is managed by SDL.
+  // The shadow surface isn't used by SDL 1.2 builds.
   render_data->screen = NULL;
+  render_data->shadow = NULL;
 
 #endif
-}
-
-void sdl_free_video(struct graphics_data *graphics)
-{
-  sdl_destruct_window(graphics);
-
-  free(graphics->render_data);
-  graphics->render_data = NULL;
 }
 
 boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
@@ -248,11 +272,8 @@ boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
   struct sdl_render_data *render_data = graphics->render_data;
 
 #if SDL_VERSION_ATLEAST(2,0,0)
-  if(render_data->context)
-    SDL_GL_DeleteContext(render_data->context);
 
-  if(render_data->window)
-    SDL_DestroyWindow(render_data->window);
+  sdl_destruct_window(graphics);
 
   render_data->window = SDL_CreateWindow("MegaZeux",
    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
@@ -261,7 +282,7 @@ boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
   if(!render_data->window)
   {
     warn("Failed to create window: %s\n", SDL_GetError());
-    goto err_out;
+    goto err_free;
   }
 
   render_data->context = SDL_GL_CreateContext(render_data->window);
@@ -269,13 +290,13 @@ boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
   if(!render_data->context)
   {
     warn("Failed to create context: %s\n", SDL_GetError());
-    goto err_destroy_window;
+    goto err_free;
   }
 
   if(SDL_GL_MakeCurrent(render_data->window, render_data->context))
   {
     warn("Failed to make context current: %s\n", SDL_GetError());
-    goto err_delete_context;
+    goto err_free;
   }
 
   sdl_window_id = SDL_GetWindowID(render_data->window);
@@ -294,13 +315,8 @@ boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
   return true;
 
 #if SDL_VERSION_ATLEAST(2,0,0)
-err_delete_context:
-  SDL_GL_DeleteContext(render_data->context);
-  render_data->context = NULL;
-err_destroy_window:
-  SDL_DestroyWindow(render_data->window);
-  render_data->window = NULL;
-err_out:
+err_free:
+  sdl_destruct_window(graphics);
   return false;
 #endif // SDL_VERSION_ATLEAST(2,0,0)
 }

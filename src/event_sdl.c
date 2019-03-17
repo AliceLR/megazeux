@@ -325,17 +325,29 @@ static boolean process_event(SDL_Event *event)
       get_screen_coords(mx_real, my_real, &mx, &my, &min_x,
        &min_y, &max_x, &max_y);
 
-      if(mx > 639)
+      if(mx >= SCREEN_PIX_W)
+      {
         SDL_WarpMouseInWindow(window, max_x, my_real);
+        mx = SCREEN_PIX_W - 1;
+      }
 
       if(mx < 0)
+      {
         SDL_WarpMouseInWindow(window, min_x, my_real);
+        mx = 0;
+      }
 
-      if(my > 349)
+      if(my >= SCREEN_PIX_H)
+      {
         SDL_WarpMouseInWindow(window, mx_real, max_y);
+        my = SCREEN_PIX_H - 1;
+      }
 
       if(my < 0)
+      {
         SDL_WarpMouseInWindow(window, mx_real, min_y);
+        my = 0;
+      }
 
       status->real_mouse_x = mx;
       status->real_mouse_y = my;

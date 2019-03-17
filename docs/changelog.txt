@@ -22,7 +22,10 @@ FIXES
 + The software renderer no longer tries to use an SDL_Renderer
   to draw the surface returned by SDL_GetWindowSurface. This
   fixes a crash when switching to fullscreen with the software
-  renderer on some platforms.
+  renderer on some platforms. A similar hack has been removed
+  from the overlay renderers.
++ Fixed a software renderer mouse crash bug caused by moving the
+  cursor off the screen with a window bigger than the screen.
 
 DEVELOPERS
 
@@ -35,6 +38,7 @@ DEVELOPERS
 + For MSYS2 shells, config.sh now chooses the prefix /mingw32
   or /mingw64 by default if $MSYSTEM is "MINGW32" or "MINGW64"
   and either the "win32" or "win64" arch is selected.
++ MegaZeux now uses the renderer free_video function on exit.
 
 
 February 20th, 2019 - MZX 2.91j

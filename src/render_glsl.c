@@ -614,6 +614,7 @@ err_free:
   }
 #endif // SDL_VERSION_ATLEAST(2,0,0)
   free(render_data);
+  graphics->render_data = NULL;
   return false;
 }
 

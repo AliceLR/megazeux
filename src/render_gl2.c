@@ -209,6 +209,7 @@ static boolean gl2_init_video(struct graphics_data *graphics,
 
 err_free_render_data:
   free(render_data);
+  graphics->render_data = NULL;
 err_out:
   return false;
 }

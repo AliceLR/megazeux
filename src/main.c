@@ -300,7 +300,7 @@ update_restart_mzx:
 #endif
   core_free(core_data);
 
-  destruct_layers();
+  quit_video();
 
   err = 0;
 err_free_config:

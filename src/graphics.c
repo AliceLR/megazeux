@@ -1584,6 +1584,14 @@ boolean init_video(struct config_info *conf, const char *caption)
   return true;
 }
 
+void quit_video(void)
+{
+  if(graphics.renderer.free_video)
+    graphics.renderer.free_video(&graphics);
+
+  destruct_layers();
+}
+
 boolean has_video_initialized(void)
 {
 #ifdef CONFIG_SDL
