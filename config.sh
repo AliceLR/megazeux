@@ -639,7 +639,7 @@ if [ "$PLATFORM" = "3ds" ]; then
 fi
 
 #
-# If the 3DS arch is enabled, some code has to be compile time
+# If the Switch arch is enabled, some code has to be compile time
 # enabled too.
 #
 if [ "$PLATFORM" = "switch" ]; then
