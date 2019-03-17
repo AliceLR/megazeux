@@ -107,22 +107,12 @@ typedef unsigned char boolean;
 #endif
 #endif
 
-<<<<<<< HEAD
 #ifdef __WIN32__
 // Usually defined in Windows headers but somehow those always seem to add 30%
 // or more build time and we don't include them globally for any other purpose.
 #define MAX_PATH 260
 #endif
 
-#ifdef ANDROID
-#define HAVE_SYS_UIO_H
-#define LOG_TAG "MegaZeux"
-#include <cutils/log.h>
-#undef CONDITION
-#endif
-
-=======
->>>>>>> initial Android port
 #ifndef MAX_PATH
 #define MAX_PATH 512
 #endif
