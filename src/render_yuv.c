@@ -113,8 +113,6 @@ boolean yuv_set_video_mode_size(struct graphics_data *graphics,
 
 err_free:
   sdl_destruct_window(graphics);
-  free(render_data);
-  graphics->render_data = NULL;
   return false;
 }
 
@@ -131,7 +129,11 @@ boolean yuv_init_video(struct graphics_data *graphics, struct config_info *conf)
   graphics->ratio = conf->video_ratio;
 
   if(!set_video_mode())
+  {
+    free(render_data);
+    graphics->render_data = NULL;
     return false;
+  }
 
   return true;
 }
