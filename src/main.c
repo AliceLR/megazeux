@@ -34,6 +34,7 @@
 
 #include "configure.h"
 #include "core.h"
+#include "error.h"
 #include "event.h"
 #include "helpsys.h"
 #include "graphics.h"
@@ -73,6 +74,51 @@ __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001; // Nvidia
 __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1; // AMD
 #endif
 
+static char startup_dir[MAX_PATH];
+
+static inline char **rewrite_argv_for_execv(int argc, char **argv)
+{
+  char **new_argv = cmalloc((argc+1) * sizeof(char *));
+  char *arg;
+  int length;
+  int pos;
+  int i;
+  int i2;
+
+  // Due to a bug in execv, args with spaces present are treated as multiple
+  // args in the new process. Each arg in argv must be wrapped in double quotes
+  // to work properly. Because of this, " and \ must also be escaped.
+
+  for(i = 0; i < argc; i++)
+  {
+    length = strlen(argv[i]);
+    arg = cmalloc(length * 2 + 2);
+    arg[0] = '"';
+
+    for(i2 = 0, pos = 1; i2 < length; i2++, pos++)
+    {
+      switch(argv[i][i2])
+      {
+        case '"':
+        case '\\':
+          arg[pos] = '\\';
+          pos++;
+          break;
+      }
+      arg[pos] = argv[i][i2];
+    }
+
+    arg[pos] = '"';
+    arg[pos + 1] = '\0';
+
+    new_argv[i] = arg;
+  }
+
+  new_argv[argc] = NULL;
+
+  return new_argv;
+}
+
 #ifdef __amigaos__
 #define __libspec LIBSPEC
 #else
@@ -95,7 +141,8 @@ __libspec int main(int argc, char *argv[])
 
   // We need to store the current working directory so it's
   // always possible to get back to it..
-  getcwd(current_dir, MAX_PATH);
+  getcwd(startup_dir, MAX_PATH);
+  strcpy(current_dir, startup_dir);
 
 #ifdef __APPLE__
   if(!strcmp(current_dir, "/") || !strncmp(current_dir, "/App", 4))
@@ -173,6 +220,8 @@ __libspec int main(int argc, char *argv[])
     goto err_free_config;
   init_audio(conf);
 
+  core_data = core_init(&mzx_world);
+
   if(network_layer_init(conf))
   {
 #ifdef CONFIG_UPDATER
@@ -186,7 +235,8 @@ __libspec int main(int argc, char *argv[])
           conf->update_auto_check = UPDATE_AUTO_CHECK_OFF;
 
         if(conf->update_auto_check)
-          check_for_updates(&mzx_world, true);
+          if(check_for_updates((context *)core_data, true))
+            goto update_restart_mzx;
       }
       else
         info("Updater disabled.\n");
@@ -209,14 +259,10 @@ __libspec int main(int argc, char *argv[])
   mzx_world.mzx_speed = conf->mzx_speed;
 
   // Run main game (mouse is hidden and palette is faded)
-  core_data = core_init(&mzx_world);
   title_screen((context *)core_data);
   core_run(core_data);
-  core_free(core_data);
 
   vquick_fadeout();
-
-  destruct_layers();
 
   if(mzx_world.active)
   {
@@ -228,8 +274,33 @@ __libspec int main(int argc, char *argv[])
   help_close(&mzx_world);
 #endif
 
+#ifdef CONFIG_UPDATER
+update_restart_mzx:
+#endif
   network_layer_exit(conf);
   quit_audio();
+
+#ifdef CONFIG_UPDATER
+  // TODO: eventually any platform with execv will need to be able to allow
+  // this for config/standalone-invoked restarts. Locking it to the updater
+  // for now because that's the only thing that currently uses it.
+  if(core_restart_requested(core_data))
+  {
+    char **new_argv = rewrite_argv_for_execv(argc, argv);
+
+    info("Attempting to restart MegaZeux...\n");
+    if(!chdir(startup_dir))
+    {
+      execv(argv[0], (const void *)new_argv);
+      perror("execv");
+    }
+
+    error_message(E_INVOKE_SELF_FAILED, 0, NULL);
+  }
+#endif
+  core_free(core_data);
+
+  quit_video();
 
   err = 0;
 err_free_config:

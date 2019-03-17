@@ -32,9 +32,12 @@ struct sdl_render_data
 {
 #if SDL_VERSION_ATLEAST(2,0,0)
   SDL_Renderer *renderer;
+  SDL_Texture *texture;
   SDL_Palette *palette;
   SDL_Window *window;
   SDL_GLContext context;
+#else
+  SDL_Overlay *overlay;
 #endif
   SDL_Surface *screen;
   SDL_Surface *shadow;
@@ -45,6 +48,8 @@ extern CORE_LIBSPEC Uint32 sdl_window_id;
 #ifdef CONFIG_RENDER_YUV
 int sdl_flags(int depth, boolean fullscreen, boolean resize);
 #endif
+
+void sdl_destruct_window(struct graphics_data *graphics);
 
 boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
  int height, int depth, boolean fullscreen, boolean resize);
@@ -66,7 +71,10 @@ boolean gl_check_video_mode(struct graphics_data *graphics, int width,
 void gl_set_attributes(struct graphics_data *graphics);
 boolean gl_swap_buffers(struct graphics_data *graphics);
 
-static inline void gl_cleanup(struct graphics_data *graphics) { }
+static inline void gl_cleanup(struct graphics_data *graphics)
+{
+  sdl_destruct_window(graphics);
+}
 
 static inline boolean GL_LoadLibrary(enum gl_lib_type type)
 {

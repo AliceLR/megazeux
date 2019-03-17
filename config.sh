@@ -91,6 +91,7 @@ usage() {
 #
 PLATFORM=""
 PREFIX="/usr"
+PREFIX_IS_SET="false"
 SYSCONFDIR="/etc"
 SYSCONFDIR_IS_SET="false"
 GAMESDIR_IS_SET="false"
@@ -157,6 +158,7 @@ while [ "$1" != "" ]; do
 	if [ "$1" = "--prefix" ]; then
 		shift
 		PREFIX="$1"
+		PREFIX_IS_SET="true"
 		# Update other install folders to match
 		if [ "$GAMESDIR_IS_SET" = "false" ]; then
 			GAMESDIR="${PREFIX}${GAMESDIR_IN_PREFIX}"
@@ -347,10 +349,21 @@ fi
 
 ### PLATFORM DEFINITION #######################################################
 
-echo "PREFIX:=$PREFIX" > platform.inc
+rm -f platform.inc
 
 if [ "$PLATFORM" = "win32"   -o "$PLATFORM" = "win64" \
   -o "$PLATFORM" = "mingw32" -o "$PLATFORM" = "mingw64" ]; then
+	# Auto-prefix for the MSYS2 MINGW32/MINGW64 environments if a prefix wasn't
+	# provided. This helps avoid errors that occur when gcc or libs exist in
+	# /usr, which is used by MSYS2 for the MSYS environment.
+	if [ "$PREFIX_IS_SET" = "false" -a -n "$MSYSTEM" \
+	 -a $(uname -o | grep "Msys") -a $(uname -r | grep "^2\.") ]; then
+		if [ "$MSYSTEM" = "MINGW32" -o "$MSYSTEM" = "MINGW64" ]; then
+			[ "$PLATFORM" = "win32" ] && PREFIX="/mingw32"
+			[ "$PLATFORM" = "win64" ] && PREFIX="/mingw64"
+		fi
+	fi
+
 	[ "$PLATFORM" = "win32" -o "$PLATFORM" = "mingw32" ] && ARCHNAME=x86
 	[ "$PLATFORM" = "win64" -o "$PLATFORM" = "mingw64" ] && ARCHNAME=x64
 	[ "$PLATFORM" = "mingw32" ] && MINGWBASE=i686-w64-mingw32-
@@ -416,6 +429,8 @@ else
 	echo "SUBPLATFORM=$PLATFORM"         >> platform.inc
 	echo "PLATFORM=$PLATFORM"            >> platform.inc
 fi
+
+echo "PREFIX:=$PREFIX" >> platform.inc
 
 if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "darwin" ]; then
 	LIBDIR="${LIBDIR}/megazeux"

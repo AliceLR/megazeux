@@ -54,6 +54,7 @@ struct core_context
   context ctx;
   boolean first_run;
   boolean full_exit;
+  boolean restart_on_exit;
   boolean context_changed;
   struct context_stack stack;
 };
@@ -627,6 +628,7 @@ core_context *core_init(struct world *mzx_world)
   memset(&(root->stack), 0, sizeof(struct context_stack));
   root->first_run = true;
   root->full_exit = false;
+  root->restart_on_exit = false;
   root->context_changed = false;
 
   return root;
@@ -1081,7 +1083,7 @@ void core_run(core_context *root)
  * Indicate that the core loop should exit.
  */
 
-void core_exit(context *ctx)
+void core_full_exit(context *ctx)
 {
   if(!ctx || !ctx->root)
   {
@@ -1091,6 +1093,38 @@ void core_exit(context *ctx)
   }
 
   ctx->root->full_exit = true;
+}
+
+/**
+ * Exit the core loop and restart MegaZeux.
+ */
+
+void core_full_restart(context *ctx)
+{
+  if(!ctx || !ctx->root)
+  {
+    print_core_stack(ctx);
+    error_message(E_CORE_FATAL_BUG, 11, NULL);
+    return;
+  }
+
+  ctx->root->full_exit = true;
+  ctx->root->restart_on_exit = true;
+}
+
+/**
+ * Find out if an exit has been requested.
+ */
+
+boolean core_restart_requested(core_context *root)
+{
+  if(!root)
+  {
+    error_message(E_CORE_FATAL_BUG, 12, NULL);
+    return false;
+  }
+
+  return root->restart_on_exit;
 }
 
 /**
@@ -1169,4 +1203,4 @@ void (*debug_robot_config)(struct world *mzx_world);
 
 // Network external function pointers (NULL by default).
 
-void (*check_for_updates)(struct world *mzx_world, boolean is_automatic);
+boolean (*check_for_updates)(context *ctx, boolean is_automatic);

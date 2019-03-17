@@ -1,19 +1,20 @@
 BUILDING MEGAZEUX FOR PSP
 
 As of 2.81d, MegaZeux can be built for PSP. The only supported toolchain for
-this is devkitPSP.
+this is pspdev.
+
+devkitPSP, a build of pspdev previously distributed by devkitPro, is no longer
+supported by devkitPro.
 
 PREPARING TO BUILD
 
-Before starting, we need to add another path to the PATH variable, so that
-the psp SDK and, ultimately, Tremor and SDL may be correctly detected. You
-should have the $DEVKITPRO and $DEVKITPSP variables defined correctly. The
-following instructions assume that these variables are present. Enter the
-following:
+Before starting, the $PSPDEV variable needs to be defined correctly and the
+path to the PSP toolchain needs to be added to $PATH variable. Both of these
+steps are required for the following instructions to work. Example (add this
+to your .profile or .bashrc file):
 
-export DEVKITPRO=$HOME/bin/devkitpro  # for example
-export DEVKITPSP=$DEVKITPRO/devkitPSP # for example
-export PATH=$DEVKITPSP/bin:$PATH
+export PSPDEV=/opt/pspdev # Note: This var is equivalent to $DEVKITPSP.
+export PATH=$PSPDEV/bin:$PATH
 
 BUILDING DEPENDENCIES
 
@@ -30,9 +31,7 @@ BUILDING MEGAZEUX FROM SOURCES
 Extract the latest version of MegaZeux, or obtain it from Git.
 
 cd megazeux
-./config.sh --platform psp --prefix $DEVKITPSP/psp --optimize-size \
-            --disable-editor --disable-helpsys --disable-utils \
-            --disable-libsdl2 --enable-release --enable-meter
+arch/psp/CONFIG.PSP
 make package
 
 This will create an EBOOT.PBP.

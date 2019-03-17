@@ -233,6 +233,11 @@ int error_message(enum error_code id, int parameter, const char *string)
 
   switch (id)
   {
+    case E_INVOKE_SELF_FAILED:
+      sprintf(error_mesg, "Attempt to invoke self failed!");
+      code = 0xADA1;
+      break;
+
     case E_CORE_FATAL_BUG:
       sprintf(error_mesg, "Context code bug");
       severity = ERROR_T_FATAL;

@@ -719,7 +719,7 @@ static boolean game_key(context *ctx, int *key)
     // ask for confirmation. Exit events instead terminate MegaZeux.
     if(conf->standalone_mode && !confirm_exit)
     {
-      core_exit(ctx);
+      core_full_exit(ctx);
     }
     else
     {
@@ -914,7 +914,7 @@ static boolean title_key(context *ctx, int *key)
         if(mzx_world->active)
           audio_set_module_volume(0);
 
-        check_for_updates(mzx_world, false);
+        check_for_updates(ctx, false);
 
         audio_set_pcs_volume(current_pcs_vol);
         audio_set_music_volume(current_music_vol);
@@ -999,7 +999,7 @@ static boolean title_key(context *ctx, int *key)
     // ask for confirmation. Exit events instead terminate MegaZeux.
     if(conf->standalone_mode && !confirm_exit)
     {
-      core_exit(ctx);
+      core_full_exit(ctx);
     }
     else
     {
