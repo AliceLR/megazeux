@@ -216,6 +216,8 @@ err_out:
 
 static void gl2_free_video(struct graphics_data *graphics)
 {
+  gl_cleanup(graphics);
+
   free(graphics->render_data);
   graphics->render_data = NULL;
 }
