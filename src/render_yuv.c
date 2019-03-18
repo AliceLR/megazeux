@@ -93,12 +93,12 @@ boolean yuv_set_video_mode_size(struct graphics_data *graphics,
 
   // try with a YUY2 pixel format first
   render_data->sdl.overlay = SDL_CreateYUVOverlay(yuv_width, yuv_height,
-    SDL_YUY2_OVERLAY, render_data->screen);
+    SDL_YUY2_OVERLAY, render_data->sdl.screen);
 
   // didn't work, try with a UYVY pixel format next
   if(!render_data->sdl.overlay)
     render_data->sdl.overlay = SDL_CreateYUVOverlay(yuv_width, yuv_height,
-      SDL_UYVY_OVERLAY, render_data->screen);
+      SDL_UYVY_OVERLAY, render_data->sdl.screen);
 
   // failed to create an overlay
   if(!render_data->sdl.overlay)
@@ -229,7 +229,7 @@ void yuv_sync_screen(struct graphics_data *graphics)
    &rect);
   SDL_RenderPresent(render_data->sdl.renderer);
 #else
-  SDL_DisplayYUVOverlay(render_data->overlay, &rect);
+  SDL_DisplayYUVOverlay(render_data->sdl.overlay, &rect);
 #endif
 }
 
