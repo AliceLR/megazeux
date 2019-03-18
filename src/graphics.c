@@ -1203,6 +1203,7 @@ static boolean set_graphics_output(struct config_info *conf)
 {
   const char *video_output = conf->video_output;
   const struct renderer_data *renderer = renderers;
+  int i = 0;
 
   // The first renderer was NULL, this shouldn't happen
   if(!renderer->name)
@@ -1216,13 +1217,18 @@ static boolean set_graphics_output(struct config_info *conf)
     if(!strcasecmp(video_output, renderer->name))
       break;
     renderer++;
+    i++;
   }
 
   // If no match found, use first renderer in the renderer list
   if(!renderer->name)
+  {
     renderer = renderers;
+    i = 0;
+  }
 
   renderer->reg(&graphics.renderer);
+  graphics.renderer_num = i;
 
   debug("Video: using '%s' renderer.\n", renderer->name);
   return true;
@@ -1650,9 +1656,7 @@ boolean set_video_mode(void)
   return ret;
 }
 
-#if 0
-
-static boolean change_video_output(struct config_info *conf, const char *output)
+boolean change_video_output(struct config_info *conf, const char *output)
 {
   char old_video_output[16];
 
@@ -1683,10 +1687,29 @@ static boolean change_video_output(struct config_info *conf, const char *output)
     }
   }
 
+  update_palette();
   return true;
 }
 
-#endif
+int get_available_video_output_list(const char **buffer, int buffer_len)
+{
+  const struct renderer_data *renderer = renderers;
+  int i;
+
+  for(i = 0; i < buffer_len; i++, renderer++)
+  {
+    if(!renderer->name)
+      break;
+
+    buffer[i] = renderer->name;
+  }
+  return i;
+}
+
+int get_current_video_output(void)
+{
+  return (int)(graphics.renderer_num);
+}
 
 boolean is_fullscreen(void)
 {

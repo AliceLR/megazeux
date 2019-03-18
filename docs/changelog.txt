@@ -4,6 +4,7 @@ FEATURES
 
 + The default boot.dol for Wii builds with the editor enabled
   is now MegaZeux instead of MZXRun.
++ The current renderer can now be set from the settings menu.
 
 FIXES
 

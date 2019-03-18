@@ -54,13 +54,45 @@
 
 //  [OK]  [Cancel]  [Shader]  //
 
+enum
+{
+  RESULT_CANCEL,
+  RESULT_CONFIRM,
+  RESULT_KEEP_OPEN,
+  RESULT_SET_VIDEO_OUTPUT,
+  RESULT_SET_SHADER
+};
+
 #ifdef CONFIG_RENDER_GL_PROGRAM
 // Note- we search for .frags, then load the matching .vert too if present.
 static const char *shader_exts[] = { ".frag", NULL };
 static char shader_default_text[20];
 static char shader_path[MAX_PATH];
 static char shader_name[MAX_PATH];
+static boolean is_glsl = false;
 #endif
+
+static int choose_video_output(struct world *mzx_world, const char **vo,
+ int num_vo, int current_vo)
+{
+  int retval;
+  struct dialog di;
+  struct element *elements[1] =
+  {
+    construct_list_box(2, 1, vo, num_vo, 12, 20, 0, &current_vo, NULL, false)
+  };
+
+  construct_dialog(&di, "Choose renderer...", 28, 5, 24, 14,
+   elements, ARRAY_SIZE(elements), 0);
+
+  retval = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(!retval)
+    return current_vo;
+  else
+    return -1;
+}
 
 void game_settings(struct world *mzx_world)
 {
@@ -69,14 +101,13 @@ void game_settings(struct world *mzx_world)
   int music_volume, sound_volume, pcs_volume;
   struct dialog di;
   int dialog_result;
-  int speed_option = 0;
-  int shader_option = 0;
-  int num_elements = 8;
+  int y_offset;
+  int y_offset_buttons;
+  int window_height;
+  int num_elements;
   int start_option = 0;
 
   int ok_pos;
-  int cancel_pos;
-  int speed_pos;
 
   const char *radio_strings_1[2] =
   {
@@ -86,35 +117,17 @@ void game_settings(struct world *mzx_world)
   {
     "PC speaker SFX on", "PC speaker SFX off"
   };
-  struct element *elements[10];
+  struct element *elements[11];
 
-#ifdef CONFIG_RENDER_GL_PROGRAM
   struct config_info *conf = get_config();
-  boolean is_glsl = !strcmp(conf->video_output, "glsl");
 
-  if(is_glsl)
-  {
-    if(!shader_default_text[0])
-    {
-      if(conf->gl_scaling_shader[0])
-        snprintf(shader_default_text, 20, "<conf: %.11s>",
-         conf->gl_scaling_shader);
+  const char *available_video_outputs[32];
+  int num_available_video_outputs = 0;
+  int cur_video_output = get_current_video_output();
 
-      else
-        strcpy(shader_default_text, "<default: semisoft>");
-    }
-
-    shader_option = 3;
-    num_elements++;
-  }
-#endif
-
-  if(!mzx_world->lock_speed)
-  {
-    speed_option = 2;
-    start_option = num_elements;
-    num_elements++;
-  }
+  num_available_video_outputs =
+   get_available_video_output_list(available_video_outputs,
+    ARRAY_SIZE(available_video_outputs));
 
   mzx_speed = mzx_world->mzx_speed;
   music = !audio_get_music_on();
@@ -131,51 +144,91 @@ void game_settings(struct world *mzx_world)
   do
   {
     ok_pos = 6;
-    cancel_pos = 7;
-    speed_pos = 8;
+    num_elements = 8;
+    y_offset = 0;
+    y_offset_buttons = 0;
 
-#ifdef CONFIG_RENDER_GL_PROGRAM
-    if(is_glsl)
+    if(!mzx_world->lock_speed)
     {
-      strcpy(shader_path, mzx_res_get_by_id(GLSL_SHADER_SCALER_DIRECTORY));
+      y_offset += 2;
+      y_offset_buttons += 2;
+      num_elements++;
+    }
 
-      elements[6] = construct_file_selector(3, 13 + speed_option,
-       "Scaling shader-", "Choose a scaling shader...", shader_exts,
-       shader_default_text, 21, 0, shader_path, shader_name, 2);
+    if(num_available_video_outputs > 1)
+    {
+      elements[ok_pos] = construct_button(4, 13 + y_offset_buttons,
+       " Select renderer... ", RESULT_SET_VIDEO_OUTPUT);
 
       ok_pos++;
-      cancel_pos++;
-      speed_pos++;
+      num_elements++;
+      y_offset_buttons += 2;
+    }
+
+#ifdef CONFIG_RENDER_GL_PROGRAM
+    {
+      const char *cur_output_name = conf->video_output;
+
+      if(num_available_video_outputs)
+        cur_output_name = available_video_outputs[cur_video_output];
+
+      is_glsl = strstr(cur_output_name, "glsl") ? true : false;
+    }
+
+    if(is_glsl)
+    {
+      if(!shader_default_text[0])
+      {
+        if(conf->gl_scaling_shader[0])
+          snprintf(shader_default_text, 20, "<conf: %.11s>",
+           conf->gl_scaling_shader);
+
+        else
+          strcpy(shader_default_text, "<default: semisoft>");
+      }
+      strcpy(shader_path, mzx_res_get_by_id(GLSL_SHADER_SCALER_DIRECTORY));
+
+      elements[ok_pos] = construct_file_selector(3, 13 + y_offset_buttons,
+       "Scaling shader-", "Choose a scaling shader...", shader_exts,
+       shader_default_text, 21, 0, shader_path, shader_name, RESULT_SET_SHADER);
+
+      ok_pos++;
+      num_elements++;
+      y_offset_buttons += 3;
     }
 #endif
 
     if(!mzx_world->lock_speed)
     {
-      elements[speed_pos] = construct_number_box(2, 2, "Speed- ", 1, 16,
+      elements[ok_pos + 2] = construct_number_box(2, 2, "Speed- ", 1, 16,
        NUMBER_SLIDER, &mzx_speed);
     }
 
-    elements[0] = construct_radio_button(4, 2 + speed_option,
+    if(!start_option)
+      start_option = ok_pos + 2;
+
+    elements[0] = construct_radio_button(4, 2 + y_offset,
      radio_strings_1, 2, 20, &music);
-    elements[1] = construct_radio_button(4, 5 + speed_option,
+    elements[1] = construct_radio_button(4, 5 + y_offset,
      radio_strings_2, 2, 18, &pcs);
-    elements[2] = construct_label(2, 8 + speed_option,
+    elements[2] = construct_label(2, 8 + y_offset,
      "Audio volumes-");
-    elements[3] = construct_number_box(2, 9 + speed_option,
+    elements[3] = construct_number_box(2, 9 + y_offset,
      "     Music- ", 0, 10, NUMBER_SLIDER, &music_volume);
-    elements[4] = construct_number_box(2, 10 + speed_option,
+    elements[4] = construct_number_box(2, 10 + y_offset,
      "   Samples- ", 0, 10, NUMBER_SLIDER, &sound_volume);
-    elements[5] = construct_number_box(2, 11 + speed_option,
+    elements[5] = construct_number_box(2, 11 + y_offset,
      "PC Speaker- ", 0, 10, NUMBER_SLIDER, &pcs_volume);
 
-    elements[ok_pos] = construct_button(6, 13 + speed_option + shader_option,
-     "OK", 0);
+    elements[ok_pos] = construct_button(7, 13 + y_offset_buttons,
+     "OK", RESULT_CONFIRM);
 
-    elements[cancel_pos] = construct_button(15, 13 + speed_option + shader_option,
-     "Cancel", 1);
+    elements[ok_pos + 1] = construct_button(15, 13 + y_offset_buttons,
+     "Cancel", RESULT_CANCEL);
 
-    construct_dialog(&di, "Game Settings", 25, 4 - ((speed_option+shader_option) / 2),
-     30, 16 + speed_option + shader_option, elements, num_elements, start_option);
+    window_height = (16 + y_offset_buttons);
+    construct_dialog(&di, "Game Settings", 25, (25 - window_height) / 2,
+     30, window_height, elements, num_elements, start_option);
 
     dialog_result = run_dialog(mzx_world, &di);
     start_option = di.current_element;
@@ -184,7 +237,7 @@ void game_settings(struct world *mzx_world)
     // Prevent UI keys from carrying through.
     force_release_all_keys();
 
-    if(!dialog_result)
+    if(dialog_result == RESULT_CONFIRM)
     {
       audio_set_pcs_volume(pcs_volume);
 
@@ -221,12 +274,25 @@ void game_settings(struct world *mzx_world)
       audio_set_music_on(music);
       mzx_world->mzx_speed = mzx_speed;
     }
+    else
+
+    if(dialog_result == RESULT_SET_VIDEO_OUTPUT)
+    {
+      int new_video_output = choose_video_output(mzx_world,
+       available_video_outputs, num_available_video_outputs, cur_video_output);
+
+      if(new_video_output >= 0)
+      {
+        change_video_output(conf, available_video_outputs[new_video_output]);
+        cur_video_output = new_video_output;
+      }
+    }
 
 #ifdef CONFIG_RENDER_GL_PROGRAM
     else
 
     // Shader selection
-    if(dialog_result == 2 && shader_name[0])
+    if(is_glsl && (dialog_result == RESULT_SET_SHADER) && shader_name[0])
     {
       size_t offset = strlen(shader_path) + 1;
       boolean shader_res;
@@ -250,7 +316,7 @@ void game_settings(struct world *mzx_world)
     }
 #endif
   }
-  while(dialog_result > 1);
+  while(dialog_result >= RESULT_KEEP_OPEN);
 
   pop_context();
 }
