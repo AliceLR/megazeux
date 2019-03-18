@@ -1659,6 +1659,8 @@ boolean set_video_mode(void)
 boolean change_video_output(struct config_info *conf, const char *output)
 {
   char old_video_output[16];
+  boolean fallback = false;
+  boolean retval = true;
 
   strncpy(old_video_output, conf->video_output, 16);
   old_video_output[15] = 0;
@@ -1673,22 +1675,48 @@ boolean change_video_output(struct config_info *conf, const char *output)
 
   if(!graphics.renderer.init_video(&graphics, conf))
   {
+    retval = false;
+
     strcpy(conf->video_output, old_video_output);
     if(!set_graphics_output(conf))
     {
-      warn("Failed to roll back renderer, aborting!\n");
-      exit(0);
+      warn("Failed to roll back renderer!\n");
+      fallback = true;
+    }
+    else
+
+    if(!graphics.renderer.init_video(&graphics, conf))
+    {
+      warn("Failed to roll back video mode!\n");
+      fallback = true;
+    }
+  }
+
+  if(fallback)
+  {
+    // Attempt the first renderer in the list (unless that just failed).
+    if(!strcmp(conf->video_output, renderers->name))
+    {
+      warn("Aborting!\n");
+      exit(1);
+    }
+
+    strcpy(conf->video_output, renderers->name);
+    if(!set_graphics_output(conf))
+    {
+      warn("Failed to load fallback renderer, aborting!\n");
+      exit(1);
     }
 
     if(!graphics.renderer.init_video(&graphics, conf))
     {
-      warn("Failed to roll back video mode, aborting!\n");
-      exit(0);
+      warn("Failed to set fallback video mode, aborting!\n");
+      exit(1);
     }
   }
 
   update_palette();
-  return true;
+  return retval;
 }
 
 int get_available_video_output_list(const char **buffer, int buffer_len)

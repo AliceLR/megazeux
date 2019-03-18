@@ -22,6 +22,7 @@
 
 #include "configure.h"
 #include "core.h"
+#include "error.h"
 #include "event.h"
 #include "game.h"
 #include "graphics.h"
@@ -77,7 +78,7 @@ static int choose_video_output(struct world *mzx_world, const char **vo,
 {
   int retval;
   struct dialog di;
-  struct element *elements[1] =
+  struct element *elements[] =
   {
     construct_list_box(2, 1, vo, num_vo, 12, 20, 0, &current_vo, NULL, false)
   };
@@ -283,8 +284,10 @@ void game_settings(struct world *mzx_world)
 
       if(new_video_output >= 0)
       {
-        change_video_output(conf, available_video_outputs[new_video_output]);
-        cur_video_output = new_video_output;
+        if(!change_video_output(conf, available_video_outputs[new_video_output]))
+          error("Failed to set renderer.", ERROR_T_ERROR, ERROR_OPT_OK, 0x6000);
+
+        cur_video_output = get_current_video_output();
       }
     }
 
