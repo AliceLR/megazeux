@@ -640,6 +640,17 @@ if [ "$SDL" = "false" -a "$EGL" = "false" ]; then
 fi
 
 #
+# Force-disable features unnecessary on Emscripten.
+#
+if [ "$PLATFORM" = "emscripten" ]; then
+	echo "Force-disabling features unnecessary in web context (Emscripten)."
+	EDITOR="false"
+	SCREENSHOTS="false"
+	UPDATER="false"
+	UTILS="false"
+fi
+
+#
 # If the NDS arch is enabled, some code has to be compile time
 # enabled too.
 #
@@ -799,17 +810,6 @@ if [ "$AUDIO" = "false" ]; then
 	MIKMOD="false"
 	XMP="false"
 	OPENMPT="false"
-fi
-
-#
-# Force disable editor (missing Emterpreter whitelists)
-# and utils (unnecessary) on Emscripten
-#
-if [ "$PLATFORM" = "emscripten" ]; then
-	echo "Force-disabling editor and utils (Emscripten)."
-	EDITOR="false"
-	UPDATER="false"
-	UTILS="false"
 fi
 
 #
