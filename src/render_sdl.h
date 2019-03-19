@@ -81,7 +81,7 @@ static inline boolean GL_LoadLibrary(enum gl_lib_type type)
   if(!SDL_GL_LoadLibrary(NULL)) return true;
 #if !SDL_VERSION_ATLEAST(2,0,0)
   // If the context already exists, don't reload the library
-  // This is a for for SDL 1.2 that doesn't let us unload OpenGL
+  // This is for SDL 1.2 which doesn't let us unload OpenGL
   if(strcmp(SDL_GetError(), "OpenGL context already created") == 0) return true;
 #endif
   return false;

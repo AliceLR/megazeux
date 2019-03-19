@@ -224,7 +224,7 @@ static void gl2_free_video(struct graphics_data *graphics)
 
   gl_cleanup(graphics);
 
-  if(render_data->pixels) free(render_data->pixels);
+  free(render_data->pixels);
   free(render_data);
   graphics->render_data = NULL;
 }
