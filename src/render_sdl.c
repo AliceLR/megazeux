@@ -366,6 +366,17 @@ boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, req_ver.minor);
 #endif
 
+// Emscripten's EGL requires explicitly declaring alpha
+// for RGBA textures to work.
+#ifdef __EMSCRIPTEN__
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+  SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
+  SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
+  SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
+#endif
+
   render_data->window = SDL_CreateWindow("MegaZeux",
    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
    GL_STRIP_FLAGS(sdl_flags(depth, fullscreen, fullscreen_windowed, resize)));

@@ -14,6 +14,9 @@
 		"_confirm",
 			"_run_dialog",
 
+	"_game_settings",
+		"_run_dialog",
+
 	"_core_resume",
 		"_title_resume",
 			"_load_world_title_selection",

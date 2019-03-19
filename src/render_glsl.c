@@ -43,6 +43,8 @@
 
 #ifdef CONFIG_GLES
 typedef GLenum GLiftype;
+#elif defined(__EMSCRIPTEN__)
+typedef GLenum GLiftype;
 #else
 typedef GLint GLiftype;
 #endif
