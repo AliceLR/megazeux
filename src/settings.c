@@ -106,7 +106,7 @@ void game_settings(struct world *mzx_world)
   int y_offset_buttons;
   int window_height;
   int num_elements;
-  int start_option = 0;
+  int start_option = -1;
 
   int ok_pos;
 
@@ -203,10 +203,15 @@ void game_settings(struct world *mzx_world)
     {
       elements[ok_pos + 2] = construct_number_box(2, 2, "Speed- ", 1, 16,
        NUMBER_SLIDER, &mzx_speed);
+
+      // Start at the Speed setting if enabled.
+      if(start_option < 0)
+        start_option = ok_pos + 2;
     }
 
-    if(!start_option)
-      start_option = ok_pos + 2;
+    // Start at the music/samples toggle by default.
+    if(start_option < 0)
+      start_option = 0;
 
     elements[0] = construct_radio_button(4, 2 + y_offset,
      radio_strings_1, 2, 20, &music);
