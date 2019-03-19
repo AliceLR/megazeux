@@ -1203,6 +1203,7 @@ static boolean set_graphics_output(struct config_info *conf)
 {
   const char *video_output = conf->video_output;
   const struct renderer_data *renderer = renderers;
+  int i = 0;
 
   // The first renderer was NULL, this shouldn't happen
   if(!renderer->name)
@@ -1216,13 +1217,18 @@ static boolean set_graphics_output(struct config_info *conf)
     if(!strcasecmp(video_output, renderer->name))
       break;
     renderer++;
+    i++;
   }
 
   // If no match found, use first renderer in the renderer list
   if(!renderer->name)
+  {
     renderer = renderers;
+    i = 0;
+  }
 
   renderer->reg(&graphics.renderer);
+  graphics.renderer_num = i;
 
   debug("Video: using '%s' renderer.\n", renderer->name);
   return true;
@@ -1584,6 +1590,14 @@ boolean init_video(struct config_info *conf, const char *caption)
   return true;
 }
 
+void quit_video(void)
+{
+  if(graphics.renderer.free_video)
+    graphics.renderer.free_video(&graphics);
+
+  destruct_layers();
+}
+
 boolean has_video_initialized(void)
 {
 #ifdef CONFIG_SDL
@@ -1642,11 +1656,11 @@ boolean set_video_mode(void)
   return ret;
 }
 
-#if 0
-
-static boolean change_video_output(struct config_info *conf, const char *output)
+boolean change_video_output(struct config_info *conf, const char *output)
 {
   char old_video_output[16];
+  boolean fallback = false;
+  boolean retval = true;
 
   strncpy(old_video_output, conf->video_output, 16);
   old_video_output[15] = 0;
@@ -1661,24 +1675,69 @@ static boolean change_video_output(struct config_info *conf, const char *output)
 
   if(!graphics.renderer.init_video(&graphics, conf))
   {
+    retval = false;
+
     strcpy(conf->video_output, old_video_output);
     if(!set_graphics_output(conf))
     {
-      warn("Failed to roll back renderer, aborting!\n");
-      exit(0);
+      warn("Failed to roll back renderer!\n");
+      fallback = true;
+    }
+    else
+
+    if(!graphics.renderer.init_video(&graphics, conf))
+    {
+      warn("Failed to roll back video mode!\n");
+      fallback = true;
+    }
+  }
+
+  if(fallback)
+  {
+    // Attempt the first renderer in the list (unless that just failed).
+    if(!strcmp(conf->video_output, renderers->name))
+    {
+      warn("Aborting!\n");
+      exit(1);
+    }
+
+    strcpy(conf->video_output, renderers->name);
+    if(!set_graphics_output(conf))
+    {
+      warn("Failed to load fallback renderer, aborting!\n");
+      exit(1);
     }
 
     if(!graphics.renderer.init_video(&graphics, conf))
     {
-      warn("Failed to roll back video mode, aborting!\n");
-      exit(0);
+      warn("Failed to set fallback video mode, aborting!\n");
+      exit(1);
     }
   }
 
-  return true;
+  update_palette();
+  return retval;
 }
 
-#endif
+int get_available_video_output_list(const char **buffer, int buffer_len)
+{
+  const struct renderer_data *renderer = renderers;
+  int i;
+
+  for(i = 0; i < buffer_len; i++, renderer++)
+  {
+    if(!renderer->name)
+      break;
+
+    buffer[i] = renderer->name;
+  }
+  return i;
+}
+
+int get_current_video_output(void)
+{
+  return (int)(graphics.renderer_num);
+}
 
 boolean is_fullscreen(void)
 {

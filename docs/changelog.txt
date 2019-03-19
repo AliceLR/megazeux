@@ -28,6 +28,7 @@ FEATURES
   current length of the FWRITE file (if open).
 + The default boot.dol for Wii builds with the editor enabled
   is now MegaZeux instead of MZXRun.
++ The current renderer can now be set from the settings menu.
 
 FIXES
 
@@ -71,6 +72,13 @@ FIXES
   a relative argv[0] in Windows. MegaZeux attempts to get the
   executable path from Win32 first now.
 + Improved warning message when no HTTP response is received.
++ The software renderer no longer tries to use an SDL_Renderer
+  to draw the surface returned by SDL_GetWindowSurface. This
+  fixes a crash when switching to fullscreen with the software
+  renderer on some platforms. A similar hack has been removed
+  from the overlay renderers.
++ Fixed a software renderer mouse crash bug caused by moving the
+  cursor off the screen with a window bigger than the screen.
 
 DEVELOPERS
 
@@ -83,6 +91,11 @@ DEVELOPERS
 + For MSYS2 shells, config.sh now chooses the prefix /mingw32
   or /mingw64 by default if $MSYSTEM is "MINGW32" or "MINGW64"
   and either the "win32" or "win64" arch is selected.
++ MegaZeux now uses the renderer free_video function on exit.
++ GL_LoadLibrary no longer fails if the library is already
+  loaded in SDL 1.2. (Lancer-X)
++ GL renderers free textures and revert to fixed function
+  pipeline where appropriate. (Lancer-X)
 
 
 February 20th, 2019 - MZX 2.91j

@@ -87,6 +87,7 @@ static struct
   void (GL_APIENTRY *glCopyTexImage2D)(GLenum target, GLint level,
    GLenum internalFormat, GLint x, GLint y, GLsizei width, GLsizei height,
    GLint border);
+  void (GL_APIENTRY *glDeleteTextures)(GLsizei n, GLuint *textures);
   void (GL_APIENTRY *glDisable)(GLenum cap);
   void (GL_APIENTRY *glDisableClientState)(GLenum cap);
   void (GL_APIENTRY *glDrawArrays)(GLenum mode, GLint first, GLsizei count);
@@ -120,6 +121,7 @@ static const struct dso_syms_map gl2_syms_map[] =
   { "glClear",              (fn_ptr *)&gl2.glClear },
   { "glColorPointer",       (fn_ptr *)&gl2.glColorPointer },
   { "glCopyTexImage2D",     (fn_ptr *)&gl2.glCopyTexImage2D },
+  { "glDeleteTextures",     (fn_ptr *)&gl2.glDeleteTextures },
   { "glDisable",            (fn_ptr *)&gl2.glDisable },
   { "glDisableClientState", (fn_ptr *)&gl2.glDisableClientState },
   { "glDrawArrays",         (fn_ptr *)&gl2.glDrawArrays },
@@ -209,13 +211,21 @@ static boolean gl2_init_video(struct graphics_data *graphics,
 
 err_free_render_data:
   free(render_data);
+  graphics->render_data = NULL;
 err_out:
   return false;
 }
 
 static void gl2_free_video(struct graphics_data *graphics)
 {
-  free(graphics->render_data);
+  struct gl2_render_data *render_data = graphics->render_data;
+  gl2.glDeleteTextures(NUM_TEXTURES, render_data->textures);
+  gl_check_error();
+
+  gl_cleanup(graphics);
+
+  free(render_data->pixels);
+  free(render_data);
   graphics->render_data = NULL;
 }
 
@@ -274,6 +284,10 @@ static void gl2_resize_screen(struct graphics_data *graphics,
    v_width, v_height);
   gl_check_error();
   render_data->viewport_shrunk = false;
+
+  // Free any preexisting textures if they exist
+  gl2.glDeleteTextures(NUM_TEXTURES, render_data->textures);
+  gl_check_error();
 
   gl2.glGenTextures(NUM_TEXTURES, render_data->textures);
   gl_check_error();

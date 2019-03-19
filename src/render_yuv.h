@@ -31,26 +31,24 @@
 
 #include "compat.h"
 
-#include "graphics.h"
-
-#include "SDL.h"
-
 __M_BEGIN_DECLS
+
+#include "graphics.h"
+#include "render_sdl.h"
 
 struct yuv_render_data
 {
-#if SDL_VERSION_ATLEAST(2,0,0)
-  SDL_Renderer *renderer;
-  SDL_Texture *texture;
-  SDL_Window *window;
-#else
-  SDL_Overlay *overlay;
-#endif
-  SDL_Surface *screen;
+  struct sdl_render_data sdl;
   Uint32 y0mask;
   Uint32 y1mask;
   Uint32 uvmask;
   boolean is_yuy2;
+  Uint32 w;
+  Uint32 h;
+#if SDL_VERSION_ATLEAST(2,0,0)
+  Uint32 pitch;
+  Uint32 pixels[YUV1_OVERLAY_WIDTH * YUV1_OVERLAY_HEIGHT];
+#endif
 };
 
 boolean yuv_set_video_mode_size(struct graphics_data *graphics,
