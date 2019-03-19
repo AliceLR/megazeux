@@ -156,6 +156,9 @@ void game_settings(struct world *mzx_world)
       num_elements++;
     }
 
+#if !defined(CONFIG_WII)
+    // Wii has multiple renderers but shouldn't display this option.
+    // FIXME this is a hack. Fix the Wii renderers so they're switchable.
     if(num_available_video_outputs > 1)
     {
       elements[ok_pos] = construct_button(4, 13 + y_offset_buttons,
@@ -165,6 +168,7 @@ void game_settings(struct world *mzx_world)
       num_elements++;
       y_offset_buttons += 2;
     }
+#endif
 
 #ifdef CONFIG_RENDER_GL_PROGRAM
     {
