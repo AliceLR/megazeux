@@ -237,6 +237,10 @@ CORE_LIBSPEC struct element *construct_file_selector(int x, int y,
  const char *const *file_manager_exts, const char *none_mesg,
  int show_width, int allow_unset, const char *base_path, char *result,
  int return_value);
+CORE_LIBSPEC struct element *construct_list_box(int x, int y,
+ const char **choices, int num_choices, int num_choices_visible,
+ int choice_length, int return_value, int *result, int *result_offset,
+ boolean respect_color_codes);
 
 CORE_LIBSPEC int choose_file_ch(struct world *mzx_world,
  const char *const *wildcards, char *ret, const char *title, int dirs_okay);
@@ -317,10 +321,6 @@ CORE_LIBSPEC void construct_element(struct element *e, int x, int y,
   struct element *e));
 CORE_LIBSPEC struct element *construct_input_box(int x, int y,
  const char *question, int max_length, char *result);
-CORE_LIBSPEC struct element *construct_list_box(int x, int y,
- const char **choices, int num_choices, int num_choices_visible,
- int choice_length, int return_value, int *result, int *result_offset,
- boolean respect_color_codes);
 CORE_LIBSPEC void construct_dialog_ext(struct dialog *src, const char *title,
  int x, int y, int width, int height, struct element **elements,
  int num_elements, int sfx_test_for_input, int pad_space, int start_element,

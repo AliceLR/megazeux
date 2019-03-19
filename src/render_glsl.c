@@ -638,6 +638,9 @@ static void glsl_free_video(struct graphics_data *graphics)
     glsl.glDeleteTextures(NUM_TEXTURES, render_data->textures);
     gl_check_error();
 
+    glsl.glUseProgram(0);
+    gl_check_error();
+
     gl_cleanup(graphics);
     free(render_data->pixels);
     free(render_data);
