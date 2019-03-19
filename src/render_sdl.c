@@ -49,6 +49,7 @@ int sdl_flags(int depth, boolean fullscreen, boolean resize)
 void sdl_destruct_window(struct graphics_data *graphics)
 {
   struct sdl_render_data *render_data = graphics->render_data;
+  debug("sdl_destruct_window\n");
 
 #if SDL_VERSION_ATLEAST(2,0,0)
 
