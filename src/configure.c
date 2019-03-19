@@ -79,6 +79,10 @@
 #define FULLSCREEN_DEFAULT 1
 #endif
 
+#ifdef __EMSCRIPTEN__
+#define AUDIO_SAMPLE_RATE 48000
+#endif
+
 // End arch-specific config.
 
 #ifndef FORCE_BPP_DEFAULT

@@ -34,6 +34,7 @@ usage() {
 	echo "  amiga          Experimental AmigaOS 4 port"
 	echo "  android        Experimental Android port"
 	echo "  pandora        Experimental Pandora port"
+	echo "  emscripten     Experimental HTML5 (Emscripten) port"
 	echo
 	echo "Supported <option> values (negatives can be used):"
 	echo
@@ -460,6 +461,8 @@ if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "darwin" ]; then
 	LIBDIR="${LIBDIR}/megazeux"
 elif [ "$PLATFORM" = "android" ]; then
 	LIBDIR="/data/megazeux"
+elif [ "$PLATFORM" = "emscripten" ]; then
+	LIBDIR="/data/megazeux"
 else
 	LIBDIR="."
 fi
@@ -471,6 +474,8 @@ if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "darwin" ]; then
 elif [ "$PLATFORM" = "darwin-dist" ]; then
 	SYSCONFDIR="../Resources"
 elif [ "$PLATFORM" = "android" ]; then
+	SYSCONFDIR="/data/megazeux"
+elif [ "$PLATFORM" = "emscripten" ]; then
 	SYSCONFDIR="/data/megazeux"
 elif [ "$SYSCONFDIR_IS_SET" != "true" ]; then
 	SYSCONFDIR="."
@@ -542,6 +547,12 @@ elif [ "$PLATFORM" = "darwin-dist" ]; then
 	echo "#define SHAREDIR \"$SHAREDIR\""            >> src/config.h
 	echo "#define USERCONFFILE \".megazeux-config\"" >> src/config.h
 elif [ "$PLATFORM" = "android" ]; then
+	SHAREDIR=/data/megazeux
+	GAMESDIR=/data/megazeux
+	BINDIR=/data/megazeux
+	echo "#define CONFFILE \"config.txt\"" >> src/config.h
+	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
+elif [ "$PLATFORM" = "emscripten" ]; then
 	SHAREDIR=/data/megazeux
 	GAMESDIR=/data/megazeux
 	BINDIR=/data/megazeux
@@ -723,7 +734,7 @@ fi
 # Force-disable OpenGL and overlay renderers on PSP, GP2X, 3DS, NDS and Wii
 #
 if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" \
-  -o "$PLATFORM" = "3ds" \
+  -o "$PLATFORM" = "3ds" -o "$PLATFORM" = "emscripten" \
   -o "$PLATFORM" = "nds" -o "$PLATFORM" = "wii" ]; then
   	echo "Force-disabling OpenGL and overlay renderers."
 	GL="false"
@@ -791,6 +802,17 @@ if [ "$AUDIO" = "false" ]; then
 fi
 
 #
+# Force disable editor (missing Emterpreter whitelists)
+# and utils (unnecessary) on Emscripten
+#
+if [ "$PLATFORM" = "emscripten" ]; then
+	echo "Force-disabling editor and utils (Emscripten)."
+	EDITOR="false"
+	UPDATER="false"
+	UTILS="false"
+fi
+
+#
 # Force-disable pthread on non-POSIX platforms
 #
 if [ "$PLATFORM" != "unix" -a "$PLATFORM" != "unix-devel" \
@@ -804,6 +826,7 @@ fi
 #
 if [ "$PLATFORM" = "gp2x" -o "$PLATFORM" = "nds" \
   -o "$PLATFORM" = "3ds"  -o "$PLATFORM" = "switch" \
+  -o "$PLATFORM" = "emscripten" \
   -o "$PLATFORM" = "psp"  -o "$PLATFORM" = "wii" ]; then
 	echo "Force-disabling modular build (nonsensical or unsupported)."
 	MODULAR="false"
