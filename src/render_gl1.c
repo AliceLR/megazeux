@@ -49,6 +49,7 @@ static struct
 {
   void (GL_APIENTRY *glBindTexture)(GLenum target, GLuint texture);
   void (GL_APIENTRY *glClear)(GLbitfield mask);
+  void (GL_APIENTRY *glDeleteTextures)(GLsizei n, GLuint *textures);
   void (GL_APIENTRY *glDisableClientState)(GLenum cap);
   void (GL_APIENTRY *glDrawArrays)(GLenum mode, GLint first, GLsizei count);
   void (GL_APIENTRY *glEnable)(GLenum cap);
@@ -74,6 +75,7 @@ static const struct dso_syms_map gl1_syms_map[] =
 {
   { "glBindTexture",        (fn_ptr *)&gl1.glBindTexture },
   { "glClear",              (fn_ptr *)&gl1.glClear },
+  { "glDeleteTextures",     (fn_ptr *)&gl1.glDeleteTextures },
   { "glDisableClientState", (fn_ptr *)&gl1.glDisableClientState },
   { "glDrawArrays",         (fn_ptr *)&gl1.glDrawArrays },
   { "glEnable",             (fn_ptr *)&gl1.glEnable },
@@ -102,6 +104,7 @@ struct gl1_render_data
   Uint32 *pixels;
   Uint32 w;
   Uint32 h;
+  GLuint texture_number;
 };
 
 static boolean gl1_init_video(struct graphics_data *graphics,
@@ -144,8 +147,7 @@ err_out:
 static void gl1_resize_screen(struct graphics_data *graphics,
  int width, int height)
 {
-  //struct gl1_render_data *render_data = graphics->render_data;
-  GLuint texture_number;
+  struct gl1_render_data *render_data = graphics->render_data;
   int v_width, v_height;
 
   get_context_width_height(graphics, &width, &height);
@@ -160,10 +162,14 @@ static void gl1_resize_screen(struct graphics_data *graphics,
 
   gl1.glEnable(GL_TEXTURE_2D);
 
-  gl1.glGenTextures(1, &texture_number);
+  // Free any preexisting textures if they exist
+  gl1.glDeleteTextures(1, &render_data->texture_number);
   gl_check_error();
 
-  gl1.glBindTexture(GL_TEXTURE_2D, texture_number);
+  gl1.glGenTextures(1, &render_data->texture_number);
+  gl_check_error();
+
+  gl1.glBindTexture(GL_TEXTURE_2D, render_data->texture_number);
   gl_check_error();
 
   gl_set_filter_method(graphics->gl_filter_method, gl1.glTexParameterf);
@@ -239,9 +245,17 @@ static boolean gl1_set_video_mode(struct graphics_data *graphics,
 
 static void gl1_free_video(struct graphics_data *graphics)
 {
-  gl_cleanup(graphics);
-  free(graphics->render_data);
-  graphics->render_data = NULL;
+  struct gl1_render_data *render_data = graphics->render_data;
+
+  if(render_data)
+  {
+    gl1.glDeleteTextures(1, &render_data->texture_number);
+    gl_check_error();
+
+    gl_cleanup(graphics);
+    free(render_data);
+    graphics->render_data = NULL;
+  }
 }
 
 static void gl1_update_colors(struct graphics_data *graphics,
