@@ -753,7 +753,7 @@ if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" \
 fi
 
 if [ "$PLATFORM" = "emscripten" ]; then
-  	echo "Force-disabling OpenGL and overlay renderers (Emscripten)."
+  	echo "Force-disabling OpenGL fixed pipeline and overlay renderers (Emscripten)."
 	GL_FIXED="false"
 	OVERLAY="false"
 fi
