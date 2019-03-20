@@ -34,6 +34,8 @@
 
 	"_run_dialog",
 		"_help_system",
+		"_key_file_selector",
+			"_run_dialog",
 
 	"_core_update",
 		"_game_idle",
