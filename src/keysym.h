@@ -137,6 +137,57 @@ enum keycode
   IKEY_LAST
 };
 
+enum joystick_action
+{
+  JOY_NO_ACTION,
+  JOY_UP,
+  JOY_DOWN,
+  JOY_LEFT,
+  JOY_RIGHT,
+  JOY_A,
+  JOY_B,
+  JOY_X,
+  JOY_Y,
+  JOY_SWITCH,
+  JOY_SETTINGS,
+//JOY_KEYBOARD, // Currently hardcoded for most consoles.
+  JOY_ESCAPE,
+  JOY_MENU,
+  JOY_SAVE,
+  JOY_LOAD,
+  JOY_LSTICK,
+  JOY_RSTICK,
+  JOY_L_UP,
+  JOY_L_DOWN,
+  JOY_L_LEFT,
+  JOY_L_RIGHT,
+  JOY_R_UP,
+  JOY_R_DOWN,
+  JOY_R_LEFT,
+  JOY_R_RIGHT,
+  NUM_JOYSTICK_ACTIONS
+};
+
+enum joystick_special_axis
+{
+  JOY_AXIS_LEFT_X,
+  JOY_AXIS_LEFT_Y,
+  JOY_AXIS_RIGHT_X,
+  JOY_AXIS_RIGHT_Y,
+  JOY_AXIS_LEFT_TRIGGER,
+  JOY_AXIS_RIGHT_TRIGGER,
+  NUM_JOYSTICK_SPECIAL_AXES
+};
+
+enum joystick_hat
+{
+  JOYHAT_UP,
+  JOYHAT_DOWN,
+  JOYHAT_LEFT,
+  JOYHAT_RIGHT,
+  NUM_JOYSTICK_HAT_DIRS
+};
+
 __M_END_DECLS
 
 #endif // __KEYSYM_H

@@ -423,56 +423,139 @@ static void config_mp_resample_mode(struct config_info *conf, char *name,
   }
 }
 
+#define JOY_ENUM "%15[0-9A-Za-z_]"
+
 static void joy_axis_set(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation?
   unsigned int joy_num, joy_axis;
-  unsigned int joy_key_min, joy_key_max;
+  char key_min[16];
+  char key_max[16];
+  int read = 0;
 
-  sscanf(name, "joy%uaxis%u", &joy_num, &joy_axis);
-  sscanf(value, "%u, %u", &joy_key_min, &joy_key_max);
+  if(sscanf(name, "joy%uaxis%u%n", &joy_num, &joy_axis, &read) != 2)
+    return;
 
-  joy_num = CLAMP(joy_num, 1, MAX_JOYSTICKS);
-  joy_axis = CLAMP(joy_axis, 1, MAX_JOYSTICK_AXES);
+  if(sscanf(value, JOY_ENUM ", " JOY_ENUM "%n", key_min, key_max, &read) != 2
+   || (value[read] != 0))
+    return;
 
-  map_joystick_axis(joy_num - 1, joy_axis - 1, (enum keycode)joy_key_min,
-   (enum keycode)joy_key_max);
+  // Right now do a global binding at startup and a game binding otherwise.
+  joystick_map_axis(joy_num - 1, joy_axis - 1, key_min, key_max, is_startup);
 }
 
 static void joy_button_set(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation?
   unsigned int joy_num, joy_button;
-  unsigned long joy_key;
+  char key[16];
+  int read = 0;
 
-  sscanf(name, "joy%ubutton%u", &joy_num, &joy_button);
+  if(sscanf(name, "joy%ubutton%u", &joy_num, &joy_button) != 2)
+    return;
 
-  joy_key = (enum keycode)strtoul(value, NULL, 10);
-  joy_num = CLAMP(joy_num, 1, MAX_JOYSTICKS);
-  joy_button = CLAMP(joy_button, 1, MAX_JOYSTICK_BUTTONS);
+  if(sscanf(value, JOY_ENUM "%n", key, &read) != 1 || (value[read] != 0))
+    return;
 
-  map_joystick_button(joy_num - 1, joy_button - 1, (enum keycode)joy_key);
+  // Right now do a global binding at startup and a game binding otherwise.
+  joystick_map_button(joy_num - 1, joy_button - 1, key, is_startup);
 }
 
 static void joy_hat_set(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  // FIXME sloppy validation?
   unsigned int joy_num;
-  unsigned int joy_key_up, joy_key_down, joy_key_left, joy_key_right;
+  char key_up[16];
+  char key_down[16];
+  char key_left[16];
+  char key_right[16];
+  int read = 0;
 
-  sscanf(name, "joy%uhat", &joy_num);
-  sscanf(value, "%u, %u, %u, %u", &joy_key_up, &joy_key_down,
-   &joy_key_left, &joy_key_right);
+  if(sscanf(name, "joy%uhat", &joy_num) != 1)
+    return;
 
-  joy_num = CLAMP(joy_num, 1, MAX_JOYSTICKS);
+  if(sscanf(value, JOY_ENUM ", " JOY_ENUM ", " JOY_ENUM ", " JOY_ENUM "%n",
+   key_up, key_down, key_left, key_right, &read) != 4 || (value[read] != 0))
+    return;
 
-  map_joystick_hat(joy_num - 1, (enum keycode)joy_key_up,
-   (enum keycode)joy_key_down, (enum keycode)joy_key_left,
-   (enum keycode)joy_key_right);
+  // Right now do a global binding at startup and a game binding otherwise.
+  joystick_map_hat(joy_num - 1, key_up, key_down, key_left, key_right,
+   is_startup);
 }
+
+static void joy_action_set(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  unsigned int joy_num;
+  unsigned int key;
+  char joy_action[16];
+  int read = 0;
+
+  if(sscanf(name, "joy%u." JOY_ENUM "%n", &joy_num, joy_action, &read) != 2
+   || (name[read] != 0))
+    return;
+
+  read = 0;
+  if(sscanf(value, "%u%n", &key, &read) != 1 || (value[read] != 0))
+    return;
+
+  // Right now do a global binding at startup and a game binding otherwise.
+  joystick_map_action(joy_num - 1, joy_action, key, is_startup);
+}
+
+static void config_set_joy_axis_threshold(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  unsigned int threshold;
+  int read = 0;
+
+  if(sscanf(value, "%u%n", &threshold, &read) != 1 || (value[read] != 0) ||
+   threshold > 32767)
+    return;
+
+  joystick_set_axis_threshold(threshold);
+}
+
+#ifdef CONFIG_SDL
+#if SDL_VERSION_ATLEAST(2,0,0)
+#define GC_ENUM "%15[-+0-9A-Za-z_]"
+
+static void config_sdl_gc_set(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  char gc_sym[16];
+  char key[16];
+  int read = 0;
+
+  if(sscanf(name, "gamecontroller." GC_ENUM "%n", gc_sym, &read) != 1
+   || (name[read] != 0))
+    return;
+
+  read = 0;
+  if(sscanf(value, JOY_ENUM "%n", key, &read) != 1 || (value[read] != 0))
+    return;
+
+  gamecontroller_map_sym(gc_sym, key);
+}
+
+static void config_sdl_gc_add(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  gamecontroller_add_mapping(value);
+}
+
+static void config_sdl_gc_enable(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  if(!strcmp(value, "0"))
+    gamecontroller_set_enabled(false);
+
+  else if(!strcmp(value, "1"))
+    gamecontroller_set_enabled(true);
+}
+
+#endif // SDL_VERSION_ATLEAST(2,0,0)
+#endif // CONFIG_SDL
 
 static void pause_on_unfocus(struct config_info *conf, char *name,
  char *value, char *extended_data)
@@ -668,14 +751,23 @@ static const struct config_entry config_options[] =
   { "force_bpp", config_force_bpp, false },
   { "fullscreen", config_set_fullscreen, false },
   { "fullscreen_resolution", config_set_resolution, false },
+#ifdef CONFIG_SDL
+#if SDL_VERSION_ATLEAST(2,0,0)
+  { "gamecontroller.*", config_sdl_gc_set, false },
+  { "gamecontroller_add", config_sdl_gc_add, false },
+  { "gamecontroller_enable", config_sdl_gc_enable, false },
+#endif
+#endif
   { "gl_filter_method", config_set_gl_filter_method, false },
   { "gl_scaling_shader", config_set_gl_scaling_shader, true },
   { "gl_vsync", config_gl_vsync, false },
   { "include", include2_config, true },
   { "include*", include_config, true },
+  { "joy!.*", joy_action_set, true },
   { "joy!axis!", joy_axis_set, true },
   { "joy!button!", joy_button_set, true },
   { "joy!hat", joy_hat_set, true },
+  { "joy_axis_threshold", config_set_joy_axis_threshold, false },
   { "mask_midchars", config_mask_midchars, false },
   { "max_simultaneous_samples", config_max_simultaneous_samples, false },
   { "modplug_resample_mode", config_mp_resample_mode, false },
@@ -753,15 +845,18 @@ static int config_change_option(void *conf, char *name,
   return 0;
 }
 
+#define LINE_BUFFER_SIZE 512
+
 __editor_maybe_static void __set_config_from_file(
  find_change_option find_change_handler, void *conf, const char *conf_file_name)
 {
   char current_char, *input_position, *output_position, *use_extended_buffer;
   int line_size, extended_size, extended_allocate_size = 512;
-  char line_buffer_alternate[256], line_buffer[256];
+  char line_buffer_alternate[LINE_BUFFER_SIZE], line_buffer[LINE_BUFFER_SIZE];
   int extended_buffer_offset, peek_char;
   char *extended_buffer;
   char *equals_position, *value;
+  char *output_end_position = line_buffer + LINE_BUFFER_SIZE;
   FILE *conf_file;
 
   conf_file = fopen_unsafe(conf_file_name, "rb");
@@ -791,14 +886,19 @@ __editor_maybe_static void __set_config_from_file(
             current_char = ' ';
           }
 
-          if((current_char == '=') && (equals_position == NULL))
-            equals_position = output_position;
+          if(output_position < output_end_position)
+          {
+            if((current_char == '=') && (equals_position == NULL))
+              equals_position = output_position;
 
-          *output_position = current_char;
-          output_position++;
+            *output_position = current_char;
+            output_position++;
+          }
         }
         input_position++;
       } while(current_char);
+
+      output_position[LINE_BUFFER_SIZE - 1] = 0;
 
       if(equals_position)
       {
@@ -858,7 +958,8 @@ __editor_maybe_static void __set_config_from_command_line(
  find_change_option find_change_handler, void *conf, int *argc, char *argv[])
 {
   char current_char, *input_position, *output_position;
-  char *equals_position, line_buffer[256], *value;
+  char *equals_position, line_buffer[LINE_BUFFER_SIZE], *value;
+  char *output_end_position = line_buffer + LINE_BUFFER_SIZE;
   int i = 1;
   int j;
 
@@ -879,13 +980,18 @@ __editor_maybe_static void __set_config_from_command_line(
         current_char = ' ';
       }
 
-      if((current_char == '=') && (equals_position == NULL))
-        equals_position = output_position;
+      if(output_position < output_end_position)
+      {
+        if((current_char == '=') && (equals_position == NULL))
+          equals_position = output_position;
 
-      *output_position = current_char;
-      output_position++;
+        *output_position = current_char;
+        output_position++;
+      }
       input_position++;
     } while(current_char);
+
+    output_position[LINE_BUFFER_SIZE - 1] = 0;
 
     if(equals_position && line_buffer[0])
     {

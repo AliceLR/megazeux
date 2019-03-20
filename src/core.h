@@ -119,8 +119,9 @@ struct context
  *
  * resume           Optional function called when this context enters focus.
  * draw             Optional function to draw this context every frame.
- * idle             Update function called every frame (key and mouse).
+ * idle             Update function called every frame (all).
  * key              Update function called to handle a keypress (key).
+ * joystick         Update function called to handle a joystick (joystick).
  * click            Update function called to handle a mouse click (mouse).
  * drag             Update function called to handle a mouse drag (mouse).
  * destroy          Optional function to be called on destruction.
@@ -132,6 +133,7 @@ struct context_spec
   void (*draw)(context *);
   boolean (*idle)(context *);
   boolean (*key)(context *, int *key);
+  boolean (*joystick)(context *, int *key, int action);
   boolean (*click)(context *, int *key, int button, int x, int y);
   boolean (*drag)(context *, int *key, int button, int x, int y);
   void (*destroy)(context *);

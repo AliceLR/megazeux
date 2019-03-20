@@ -252,15 +252,16 @@ static void print_ctx_line(context_data *ctx_data)
   if(ctx_data->functions.click == ctx_data->functions.drag)
     click_drag_same = true;
 
-  fprintf(stderr, "%-*.*s | %3s %3s %3s %3s %3s %3s %3s | %-3s %3s\n",
+  fprintf(stderr, "%-*.*s | %3s %3s %3s %3s %3s %3s %3s %3s | %-3s %3s\n",
     16, 16, name,
-    ctx_data->functions.resume  ? "Yes" : "",
-    ctx_data->functions.draw    ? "Yes" : "",
-    ctx_data->functions.idle    ? "Yes" : "",
-    ctx_data->functions.key     ? "Yes" : "",
-    ctx_data->functions.click   ? "Yes" : "",
-    ctx_data->functions.drag    ? click_drag_same ? "<- " : "Yes" : "",
-    ctx_data->functions.destroy ? "Yes" : "",
+    ctx_data->functions.resume    ? "Yes" : "",
+    ctx_data->functions.draw      ? "Yes" : "",
+    ctx_data->functions.idle      ? "Yes" : "",
+    ctx_data->functions.key       ? "Yes" : "",
+    ctx_data->functions.joystick  ? "Yes" : "",
+    ctx_data->functions.click     ? "Yes" : "",
+    ctx_data->functions.drag      ? click_drag_same ? "<- " : "Yes" : "",
+    ctx_data->functions.destroy   ? "Yes" : "",
     framerate_str,
     cbs_str
   );
@@ -300,8 +301,9 @@ static void __print_core_stack(context *_ctx, const char *file, int line)
 
   root = _ctx->root;
 
-  fprintf(stderr, "CONTEXT STACK    | Res Drw Idl Key Clk Drg Dst | Fr. CbQ \n");
-  fprintf(stderr, "-----------------|-----------------------------|---------\n");
+  fprintf(stderr,
+   "CONTEXT STACK    | Res Drw Idl Key Joy Clk Drg Dst | Fr. CbQ \n"
+   "-----------------|---------------------------------|---------\n");
 
   for(i = root->stack.size - 1; i >= 0; i--)
   {
@@ -380,8 +382,9 @@ void create_context(context *ctx, context *parent,
 
   if(parent == NULL || !ctx_spec ||
    (ctx_spec->resume == NULL && ctx_spec->draw == NULL &&
-    ctx_spec->key == NULL && ctx_spec->click == NULL &&
-    ctx_spec->drag == NULL && ctx_spec->idle == NULL))
+    ctx_spec->key == NULL && ctx_spec->joystick == NULL &&
+    ctx_spec->click == NULL && ctx_spec->drag == NULL &&
+    ctx_spec->idle == NULL))
   {
     print_core_stack(parent);
     error_message(E_CORE_FATAL_BUG, 1, NULL);
@@ -823,10 +826,11 @@ static boolean allow_configure(core_context *root)
  * If any subcontexts are attached to the context, they will be handled from
  * most recent to oldest, and the context will be handled last. Notes:
  *
- * 1) Execution order: Idle -> Click OR Drag -> Key
- * 2) A true return value of idle cancels both key and mouse handling.
+ * 1) Execution order: Idle -> Click OR Drag -> Joystick -> Key
+ * 2) A true return value of idle cancels key, mouse, and joystick handling.
  * 3) A true return value of key cancels key handling.
  * 4) A true return value of click or drag cancels mouse handling.
+ * 5) A true return value of joystick handling cancels joystick handling.
  */
 
 static void core_update(core_context *root)
@@ -836,11 +840,13 @@ static void core_update(core_context *root)
   context_data *cur_data;
   context *cur;
 
+  boolean joystick_handled = false;
   boolean mouse_handled = false;
   boolean key_handled = false;
 
   boolean exit_status = get_exit_status();
   int key = get_key(keycode_internal_wrt_numlock);
+  int joystick = get_joystick_ui_action();
   int mouse_press = get_mouse_press_ext();
   int mouse_drag_state = get_mouse_drag();
   int mouse_x;
@@ -869,6 +875,7 @@ static void core_update(core_context *root)
     {
       if(cur_data->functions.idle(cur))
       {
+        joystick_handled = true;
         mouse_handled = true;
         key_handled = true;
       }
@@ -891,6 +898,15 @@ static void core_update(core_context *root)
         mouse_handled |=
          cur_data->functions.click(cur, &key, mouse_press, mouse_x, mouse_y);
       }
+
+      if(root->context_changed || root->full_exit)
+        return;
+    }
+
+    if(!joystick_handled)
+    {
+      if(joystick && cur_data->functions.joystick)
+        joystick_handled |= cur_data->functions.joystick(cur, &key, joystick);
 
       if(root->context_changed || root->full_exit)
         return;
@@ -1014,8 +1030,13 @@ void core_run(core_context *root)
     // Delay and then handle events.
     ctx = root->stack.contents[root->stack.size - 1];
 
-    // FIXME hack
+    // Special- enable joystick gameplay bindings if this is the gameplay ctx.
+    joystick_set_game_mode(ctx->internal_data->context_type == CTX_PLAY_GAME);
+
+    // FIXME legacy loop hacks; remove when legacy loops are gone
+    joystick_set_legacy_loop_hacks(false);
     enable_f12_hack = false;
+    // FIXME end legacy loop hacks
 
     switch(ctx->internal_data->framerate)
     {
@@ -1061,8 +1082,11 @@ void core_run(core_context *root)
       }
     }
 
-    // FIXME hack
+    // FIXME legacy loop hacks; remove when legacy loops are gone
+    joystick_set_game_mode(false);
+    joystick_set_legacy_loop_hacks(true);
     enable_f12_hack = conf->allow_screenshots;
+    // FIXME end legacy loop hacks
 
     start_ticks = get_ticks();
 

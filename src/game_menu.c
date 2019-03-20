@@ -322,6 +322,40 @@ static void draw_main_menu(struct world *mzx_world)
 }
 
 /**
+ * Joystick input for the game menu. Use the default UI joystick mapping except
+ * with a couple of exceptions: JOY_SWITCH should open F2 since JOY_SWITCH will
+ * be available more often than JOY_SETTINGS on consoles; JOY_X should open
+ * help like the title screen.
+ */
+
+static boolean menu_joystick(context *ctx, int *key, int action)
+{
+  int default_key = get_joystick_ui_key();
+
+  switch(action)
+  {
+    case JOY_X:
+    {
+      *key = IKEY_F1;
+      return true;
+    }
+
+    case JOY_SWITCH:
+    {
+      *key = IKEY_F2;
+      return true;
+    }
+  }
+
+  if(default_key)
+  {
+    *key = default_key;
+    return true;
+  }
+  return false;
+}
+
+/**
  * Close the menu on an exit event or an return/escape press.
  * NOTE: In DOS versions of MZX, clicking the menus would close the
  * menu and trigger the clicked function. This feature was removed in
@@ -364,6 +398,7 @@ void game_menu(context *parent)
 
   memset(&spec, 0, sizeof(struct context_spec));
   spec.key      = menu_key;
+  spec.joystick = menu_joystick;
   spec.destroy  = menu_destroy;
 
   create_context(NULL, parent, &spec, CTX_GAME_MENU);
@@ -384,6 +419,7 @@ void main_menu(context *parent)
 
   memset(&spec, 0, sizeof(struct context_spec));
   spec.key      = menu_key;
+  spec.joystick = menu_joystick;
   spec.destroy  = menu_destroy;
 
   create_context(NULL, parent, &spec, CTX_MAIN_MENU);

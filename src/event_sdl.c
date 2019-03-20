@@ -2,6 +2,7 @@
  *
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  * Copyright (C) 2007 Kevin Vance <kvance@kvance.com>
+ * Copyright (C) 2019 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -112,6 +113,10 @@ static enum keycode convert_SDL_internal(SDL_Keycode key)
     case SDLK_RIGHT: return IKEY_RIGHT;
     case SDLK_LEFT: return IKEY_LEFT;
     case SDLK_INSERT: return IKEY_INSERT;
+    case SDLK_HOME: return IKEY_HOME;
+    case SDLK_END: return IKEY_END;
+    case SDLK_PAGEUP: return IKEY_PAGEUP;
+    case SDLK_PAGEDOWN: return IKEY_PAGEDOWN;
     case SDLK_F1: return IKEY_F1;
     case SDLK_F2: return IKEY_F2;
     case SDLK_F3: return IKEY_F3;
@@ -127,7 +132,9 @@ static enum keycode convert_SDL_internal(SDL_Keycode key)
     case SDLK_NUMLOCKCLEAR: return IKEY_NUMLOCK;
     case SDLK_CAPSLOCK: return IKEY_CAPSLOCK;
     case SDLK_SCROLLLOCK: return IKEY_SCROLLOCK;
+    case SDLK_RSHIFT: return IKEY_RSHIFT;
     case SDLK_LSHIFT: return IKEY_LSHIFT;
+    case SDLK_RCTRL: return IKEY_RCTRL;
     case SDLK_LCTRL: return IKEY_LCTRL;
     case SDLK_RALT: return IKEY_RALT;
     case SDLK_LALT: return IKEY_LALT;
@@ -146,24 +153,489 @@ static enum keycode convert_SDL_internal(SDL_Keycode key)
     case SDLK_PAUSE: return IKEY_BREAK;
     case SDLK_MENU: return IKEY_MENU;
     case SDLK_CLEAR: return IKEY_KP5; // FIXME remove (see tracker issue 744)
-#ifndef CONFIG_PANDORA
-    case SDLK_HOME: return IKEY_HOME;
-    case SDLK_END: return IKEY_END;
-    case SDLK_PAGEUP: return IKEY_PAGEUP;
-    case SDLK_PAGEDOWN: return IKEY_PAGEDOWN;
-    case SDLK_RSHIFT: return IKEY_RSHIFT;
-    case SDLK_RCTRL: return IKEY_RCTRL;
-#else /* CONFIG_PANDORA */
-    case SDLK_HOME: return input.joystick_button_map[0][0];
-    case SDLK_END: return input.joystick_button_map[0][1];
-    case SDLK_PAGEUP: return input.joystick_button_map[0][2];
-    case SDLK_PAGEDOWN: return input.joystick_button_map[0][3];
-    case SDLK_RSHIFT: return input.joystick_button_map[0][4];
-    case SDLK_RCTRL: return input.joystick_button_map[0][5];
-#endif /* CONFIG_PANDORA */
     default: return IKEY_UNKNOWN;
   }
 }
+
+#ifdef CONFIG_PANDORA
+static int get_pandora_joystick_button(SDL_Keycode key)
+{
+  // Pandora hack. The home, end, page up, page down, right shift,
+  // and right control keys are actually joystick buttons.
+  switch(key)
+  {
+    case SDLK_HOME:     return 0;
+    case SDLK_END:      return 1;
+    case SDLK_PAGEUP:   return 2;
+    case SDLK_PAGEDOWN: return 3;
+    case SDLK_RSHIFT:   return 4;
+    case SDLK_RCTRL:    return 5;
+  }
+  return -1;
+}
+#endif
+
+#if SDL_VERSION_ATLEAST(2,0,0)
+/**
+ * The SDL GameController API puts this in an interesting place. The best way
+ * to populate MZX action mappings is to parse the SDL mapping string directly.
+ * The API offers no other way to get detailed mapping information on half axes
+ * and axis inversions (these were added after the API was designed; no new
+ * functions were added to read this extended info).
+ *
+ * However, the axis mappings can be so convoluted it's better to open the
+ * controller with the API anyway just to populate the analog axis values. This
+ * appears to not affect the joystick events received whatsoever.
+ *
+ * No equivalent of this API exists for SDL 1.x.
+ */
+
+static SDL_GameController *gamecontrollers[MAX_JOYSTICKS];
+boolean allow_gamecontroller_mapping = true;
+
+/*
+static enum joystick_special_axis sdl_axis_map[SDL_CONTROLLER_AXIS_MAX] =
+{
+  [SDL_CONTROLLER_AXIS_LEFTX]         = JOY_AXIS_LEFT_X,
+  [SDL_CONTROLLER_AXIS_LEFTY]         = JOY_AXIS_LEFT_Y,
+  [SDL_CONTROLLER_AXIS_RIGHTX]        = JOY_AXIS_RIGHT_X,
+  [SDL_CONTROLLER_AXIS_RIGHTY]        = JOY_AXIS_RIGHT_Y,
+  [SDL_CONTROLLER_AXIS_TRIGGERLEFT]   = JOY_AXIS_LEFT_TRIGGER,
+  [SDL_CONTROLLER_AXIS_TRIGGERRIGHT]  = JOY_AXIS_RIGHT_TRIGGER
+};
+*/
+
+static Sint16 sdl_axis_action_map[SDL_CONTROLLER_AXIS_MAX][2] =
+{
+  [SDL_CONTROLLER_AXIS_LEFTX]         = { -JOY_L_LEFT,  -JOY_L_RIGHT },
+  [SDL_CONTROLLER_AXIS_LEFTY]         = { -JOY_L_UP,    -JOY_L_DOWN },
+  [SDL_CONTROLLER_AXIS_RIGHTX]        = { -JOY_R_LEFT,  -JOY_R_RIGHT },
+  [SDL_CONTROLLER_AXIS_RIGHTY]        = { -JOY_R_UP,    -JOY_R_DOWN },
+  [SDL_CONTROLLER_AXIS_TRIGGERLEFT]   = { 0,            -JOY_SAVE },
+  [SDL_CONTROLLER_AXIS_TRIGGERRIGHT]  = { 0,            -JOY_LOAD },
+};
+
+static Sint16 sdl_action_map[SDL_CONTROLLER_BUTTON_MAX] =
+{
+  [SDL_CONTROLLER_BUTTON_A]             = -JOY_A,
+  [SDL_CONTROLLER_BUTTON_B]             = -JOY_B,
+  [SDL_CONTROLLER_BUTTON_X]             = -JOY_X,
+  [SDL_CONTROLLER_BUTTON_Y]             = -JOY_Y,
+  [SDL_CONTROLLER_BUTTON_BACK]          = -JOY_ESCAPE,
+//[SDL_CONTROLLER_BUTTON_GUIDE]         = -JOY_ESCAPE,
+  [SDL_CONTROLLER_BUTTON_START]         = -JOY_MENU,
+  [SDL_CONTROLLER_BUTTON_LEFTSTICK]     = -JOY_LSTICK,
+  [SDL_CONTROLLER_BUTTON_RIGHTSTICK]    = -JOY_RSTICK,
+  [SDL_CONTROLLER_BUTTON_LEFTSHOULDER]  = -JOY_SWITCH,
+  [SDL_CONTROLLER_BUTTON_RIGHTSHOULDER] = -JOY_SETTINGS,
+  [SDL_CONTROLLER_BUTTON_DPAD_UP]       = -JOY_UP,
+  [SDL_CONTROLLER_BUTTON_DPAD_DOWN]     = -JOY_DOWN,
+  [SDL_CONTROLLER_BUTTON_DPAD_LEFT]     = -JOY_LEFT,
+  [SDL_CONTROLLER_BUTTON_DPAD_RIGHT]    = -JOY_RIGHT
+};
+
+static int sdl_hat_to_dir(int hat_mask)
+{
+  switch(hat_mask)
+  {
+    case SDL_HAT_UP:
+      return JOYHAT_UP;
+
+    case SDL_HAT_DOWN:
+      return JOYHAT_DOWN;
+
+    case SDL_HAT_LEFT:
+      return JOYHAT_LEFT;
+
+    case SDL_HAT_RIGHT:
+      return JOYHAT_RIGHT;
+
+    default:
+      return -1;
+  }
+}
+
+static void parse_gamecontroller_map_value(int joy, char *key, char *value,
+ Sint16 single, Sint16 neg, Sint16 pos)
+{
+  // Joystick axes may have half-axis prefixes + or -.
+  // Joystick axes may also have an inversion suffix ~.
+  char half_axis = 0;
+
+  if(*value == '+' || *value == '-')
+    half_axis = *(value++);
+
+  switch(*value)
+  {
+    case 'a':
+    {
+      // Axis- a# or a#~
+      unsigned int axis;
+      int min = 0;
+      int max = 1;
+
+      if(!isdigit(value[1]))
+        break;
+
+      axis = strtoul(value + 1, &value, 10);
+      if(axis >= MAX_JOYSTICK_AXES)
+        break;
+
+      // Only one provided output and no half axis specified? Map + to it.
+      if(half_axis == 0 && single)
+      {
+        neg = 0;
+        pos = single;
+      }
+      else
+
+      if(half_axis == '+')
+      {
+        min = -1;
+        pos = single ? single : pos ? pos : neg;
+      }
+      else
+
+      if(half_axis == '-')
+      {
+        max = -1;
+        neg = single ? single : neg ? neg : pos;
+      }
+
+      if(value && *value == '~')
+      {
+        // Invert
+        min ^= 1;
+        max ^= 1;
+      }
+
+      if(min >= 0)
+      {
+        if(!input.joystick_global_map.axis_is_conf[joy][axis])
+          input.joystick_global_map.axis[joy][axis][min] = neg;
+
+        if(!input.joystick_game_map.axis_is_conf[joy][axis])
+          input.joystick_game_map.axis[joy][axis][min] = neg;
+      }
+      if(max >= 0)
+      {
+        if(!input.joystick_global_map.axis_is_conf[joy][axis])
+         input.joystick_global_map.axis[joy][axis][max] = pos;
+
+        if(!input.joystick_game_map.axis_is_conf[joy][axis])
+          input.joystick_game_map.axis[joy][axis][max] = pos;
+      }
+      debug("[JOYSTICK] (SDL) %d.a%d -> '%s' (%d:%d, %d:%d)\n",
+       joy, axis, key, min, neg, max, pos);
+      return;
+    }
+
+    case 'b':
+    {
+      // Button- b#
+      unsigned int button;
+
+      if(!isdigit(value[1]))
+        break;
+
+      button = strtoul(value + 1, NULL, 10);
+      if(button >= MAX_JOYSTICK_BUTTONS)
+        break;
+
+      if(!single)
+        single = pos ? pos : neg;
+
+      if(!input.joystick_global_map.button_is_conf[joy][button])
+        input.joystick_global_map.button[joy][button] = single;
+
+      if(!input.joystick_game_map.button_is_conf[joy][button])
+        input.joystick_game_map.button[joy][button] = single;
+
+      debug("[JOYSTICK] (SDL) %d.b%u -> '%s' (%d)\n", joy, button, key, single);
+      return;
+    }
+
+    case 'h':
+    {
+      // Hat- h#.#
+      unsigned int hat;
+      unsigned int hat_mask;
+      int dir;
+
+      if(!isdigit(value[1]))
+        break;
+
+      hat = strtoul(value + 1, &value, 10);
+      if(hat != 0 || !value[0] || !isdigit(value[1]))
+        break;
+
+      hat_mask = strtoul(value + 1, NULL, 10);
+      dir = sdl_hat_to_dir(hat_mask);
+      if(dir < 0)
+        break;
+
+      if(!single)
+        single = pos ? pos : neg;
+
+      if(!input.joystick_global_map.hat_is_conf[joy])
+        input.joystick_global_map.hat[joy][dir] = single;
+
+      if(!input.joystick_game_map.hat_is_conf[joy])
+        input.joystick_game_map.hat[joy][dir] = single;
+
+      debug("[JOYSTICK] (SDL) %d.hd%u -> '%s' (%d)\n", joy, dir, key, single);
+      return;
+    }
+  }
+  debug("[JOYSTICK] %d ignored '%s' -> '%s'\n", joy, value, key);
+  return;
+}
+
+static void parse_gamecontroller_map_entry(int joystick_index, char *key,
+ char *value)
+{
+  SDL_GameControllerAxis a;
+  SDL_GameControllerButton b;
+  Sint16 single = 0;
+  Sint16 neg = 0;
+  Sint16 pos = 0;
+  char half_axis = 0;
+
+  // Gamecontroller axes may have half-axis prefixes + or -.
+  if(*key == '+' || *key == '-')
+    half_axis = *(key++);
+
+  a = SDL_GameControllerGetAxisFromString(key);
+  b = SDL_GameControllerGetButtonFromString(key);
+  if(a != SDL_CONTROLLER_AXIS_INVALID)
+  {
+    if(half_axis == '+')
+      single = sdl_axis_action_map[a][1];
+
+    if(half_axis == '-')
+      single = sdl_axis_action_map[a][0];
+
+    if(half_axis == 0)
+    {
+      neg = sdl_axis_action_map[a][0];
+      pos = sdl_axis_action_map[a][1];
+    }
+  }
+  else
+
+  if(b != SDL_CONTROLLER_BUTTON_INVALID)
+  {
+    // This button isn't really useful to MZX.
+    if(b == SDL_CONTROLLER_BUTTON_GUIDE)
+      return;
+
+    single = sdl_action_map[b];
+  }
+  else
+
+  if(!strcasecmp(key, "platform"))
+  {
+    // ignore- field used by SDL.
+    return;
+  }
+
+  else
+  {
+    warn("[JOYSTICK] Invalid control '%s'! Report this!\n", key);
+    return;
+  }
+
+  parse_gamecontroller_map_value(joystick_index, key, value, single, neg, pos);
+}
+
+static void parse_gamecontroller_map(int joystick_index, char *map)
+{
+  // Format: entry,entry,...
+  // Entry:  value or key:value
+  char *end = map + strlen(map);
+  char *key;
+  char *value;
+
+  while(map < end)
+  {
+    key = map;
+    value = NULL;
+
+    while(*map != ',')
+    {
+      if(!*map) break;
+
+      if(*map == ':' && !value)
+      {
+        *map = 0;
+        value = map + 1;
+      }
+
+      map++;
+    }
+    *(map++) = 0;
+
+    if(value)
+      parse_gamecontroller_map_entry(joystick_index, key, value);
+  }
+}
+
+static void init_gamecontroller(int sdl_index, int joystick_index)
+{
+  SDL_JoystickGUID guid = SDL_JoystickGetDeviceGUID(sdl_index);
+
+  gamecontrollers[joystick_index] = NULL;
+
+  if(SDL_IsGameController(sdl_index))
+  {
+    SDL_GameController *gamecontroller = SDL_GameControllerOpen(sdl_index);
+
+    if(gamecontroller)
+    {
+      char *mapping;
+      gamecontrollers[joystick_index] = gamecontroller;
+
+      mapping = (char *)SDL_GameControllerMappingForGUID(guid);
+      info("[JOYSTICK] %d has an SDL mapping: %s\n", joystick_index, mapping);
+
+      if(allow_gamecontroller_mapping)
+        parse_gamecontroller_map(joystick_index, mapping);
+
+      SDL_free(mapping);
+    }
+  }
+  else
+  {
+    char buf[33];
+    SDL_JoystickGetGUIDString(guid, buf, 33);
+
+    debug("[JOYSTICK] %d does not have an SDL mapping (GUID: %s).\n",
+     joystick_index, buf);
+  }
+}
+
+// Clean up auto-generated bindings so they don't cause problems for other
+// controllers that might end up using this position.
+static void gamecontroller_clean_map(int joy)
+{
+  int i;
+
+  for(i = 0; i < MAX_JOYSTICK_AXES; i++)
+  {
+    if(!input.joystick_global_map.axis_is_conf[joy][i])
+    {
+      input.joystick_global_map.axis[joy][i][0] = 0;
+      input.joystick_global_map.axis[joy][i][1] = 0;
+    }
+
+    if(!input.joystick_game_map.axis_is_conf[joy][i])
+    {
+      input.joystick_game_map.axis[joy][i][0] = 0;
+      input.joystick_game_map.axis[joy][i][1] = 0;
+    }
+  }
+
+  for(i = 0; i < MAX_JOYSTICK_BUTTONS; i++)
+  {
+    if(!input.joystick_global_map.button_is_conf[joy][i])
+      input.joystick_global_map.button[joy][i] = 0;
+
+    if(!input.joystick_game_map.button_is_conf[joy][i])
+      input.joystick_game_map.button[joy][i] = 0;
+  }
+
+  if(!input.joystick_global_map.hat_is_conf[joy])
+  {
+    for(i = 0; i < NUM_JOYSTICK_HAT_DIRS; i++)
+      input.joystick_global_map.hat[joy][i] = 0;
+  }
+
+  if(!input.joystick_game_map.hat_is_conf[joy])
+  {
+    for(i = 0; i < NUM_JOYSTICK_HAT_DIRS; i++)
+      input.joystick_game_map.hat[joy][i] = 0;
+  }
+}
+
+/**
+ * Load gamecontrollerdb.txt if configured and if it isn't already loaded.
+ * This adds more gamecontroller mappings so MZX can support more controllers.
+ * The function this uses wasn't added until 2.0.2.
+ */
+static void load_gamecontrollerdb(void)
+{
+#if defined(CONFIG_GAMECONTROLLERDB) && SDL_VERSION_ATLEAST(2,0,2)
+  static boolean gamecontrollerdb_loaded = false;
+
+  if(!gamecontrollerdb_loaded)
+  {
+    const char *path = mzx_res_get_by_id(GAMECONTROLLERDB_TXT);
+
+    if(path)
+    {
+      int result = SDL_GameControllerAddMappingsFromFile(path);
+      if(result >= 0)
+        debug("[JOYSTICK] Added %d mappings from '%s'.\n", result, path);
+    }
+
+    gamecontrollerdb_loaded = true;
+  }
+#endif
+}
+
+/**
+ * Change one of the default SDL to MZX mapping values.
+ */
+void gamecontroller_map_sym(const char *sym, const char *value)
+{
+  SDL_GameControllerAxis a;
+  SDL_GameControllerButton b;
+  Sint16 binding = 0;
+
+  if(joystick_parse_map_value(value, &binding))
+  {
+    char dir = 0;
+    if(*sym == '+' || *sym == '-')
+      dir = *(sym++);
+
+    // Digital axis (default to + if no dir specified).
+    a = SDL_GameControllerGetAxisFromString(sym);
+    if(a != SDL_CONTROLLER_AXIS_INVALID)
+    {
+      int pos = (dir != '-') ? 1 : 0;
+      sdl_axis_action_map[a][pos] = binding;
+    }
+
+    // Button
+    b = SDL_GameControllerGetButtonFromString(sym);
+    if(b != SDL_CONTROLLER_BUTTON_INVALID)
+      sdl_action_map[b] = binding;
+  }
+
+  // TODO analog axes
+}
+
+/**
+ * Enable or disable the SDL to MZX mapping system.
+ */
+void gamecontroller_set_enabled(boolean enable)
+{
+  allow_gamecontroller_mapping = enable;
+}
+
+/**
+ * Add a mapping string to SDL.
+ */
+void gamecontroller_add_mapping(const char *mapping)
+{
+  // Make sure this is loaded first so it doesn't override the user mapping.
+  load_gamecontrollerdb();
+
+  if(SDL_GameControllerAddMapping(mapping) < 0)
+    warn("Failed to add gamecontroller mapping: %s\n", SDL_GetError());
+}
+
+#endif /* SDL_VERSION_ATLEAST(2,0,0) */
 
 /**
  * SDL 2 uses joystick instance IDs instead of the joystick index for all
@@ -208,6 +680,10 @@ static void init_joystick(int sdl_index)
 
       debug("[JOYSTICK] Opened %d (SDL instance ID: %d)\n",
        joystick_index, joystick_instance_ids[joystick_index]);
+
+#if SDL_VERSION_ATLEAST(2,0,0)
+      init_gamecontroller(sdl_index, joystick_index);
+#endif
     }
   }
 }
@@ -221,7 +697,16 @@ static void close_joystick(int joystick_index)
     debug("[JOYSTICK] Closing %d (SDL instance ID: %d)\n",
      joystick_index, joystick_instance_ids[joystick_index]);
 
-    SDL_JoystickClose(joysticks[joystick_index]);
+    // SDL_GameControllerClose also closes the joystick.
+    if(gamecontrollers[joystick_index])
+    {
+      SDL_GameControllerClose(gamecontrollers[joystick_index]);
+      gamecontroller_clean_map(joystick_index);
+      gamecontrollers[joystick_index] = NULL;
+    }
+    else
+      SDL_JoystickClose(joysticks[joystick_index]);
+
     joystick_instance_ids[joystick_index] = -1;
     joysticks[joystick_index] = NULL;
   }
@@ -432,6 +917,18 @@ static boolean process_event(SDL_Event *event)
         break;
 #endif
 
+#ifdef CONFIG_PANDORA
+      {
+        // Pandora hack. Certain keys are actually joystick buttons.
+        int button = get_pandora_joystick_button(event->key.keysym.sym);
+        if(button >= 0)
+        {
+          joystick_button_press(status, 0, button);
+          break;
+        }
+      }
+#endif
+
       ckey = convert_SDL_internal(event->key.keysym.sym);
       if(!ckey)
       {
@@ -518,6 +1015,18 @@ static boolean process_event(SDL_Event *event)
 
     case SDL_KEYUP:
     {
+#ifdef CONFIG_PANDORA
+      {
+        // Pandora hack. Certain keys are actually joystick buttons.
+        int button = get_pandora_joystick_button(event->key.keysym.sym);
+        if(button >= 0)
+        {
+          joystick_button_release(status, 0, button);
+          break;
+        }
+      }
+#endif
+
       ckey = convert_SDL_internal(event->key.keysym.sym);
       if(!ckey)
       {
@@ -563,6 +1072,11 @@ static boolean process_event(SDL_Event *event)
       int joystick_index = get_joystick_index(which);
 
       close_joystick(joystick_index);
+
+      // Joysticks can be trivially disconnected while holding a button and
+      // the corresponding release event will never be sent for it. Release
+      // all of this joystick's inputs.
+      joystick_release_all(status, joystick_index);
       break;
     }
 #endif
@@ -570,49 +1084,15 @@ static boolean process_event(SDL_Event *event)
     case SDL_JOYAXISMOTION:
     {
       int axis_value = event->jaxis.value;
-      int digital_value = -1;
       int which = event->jaxis.which;
       int axis = event->jaxis.axis;
-      Sint8 last_axis;
-      enum keycode stuffed_key;
 
       // Get the real joystick index from the SDL instance ID
       int joystick_index = get_joystick_index(which);
       if(joystick_index < 0)
         break;
 
-      last_axis = status->axis[joystick_index][axis];
-
-      if(axis_value > 10000)
-        digital_value = 1;
-      else
-
-      if(axis_value < -10000)
-        digital_value = 0;
-
-      if(digital_value != -1)
-      {
-        stuffed_key =
-         input.joystick_axis_map[joystick_index][axis][digital_value];
-
-        if(stuffed_key)
-        {
-          joystick_key_press(status, stuffed_key, stuffed_key);
-
-          if(last_axis == (digital_value ^ 1))
-          {
-            joystick_key_release(status,
-             input.joystick_axis_map[joystick_index][axis][last_axis]);
-          }
-        }
-      }
-      else if(last_axis != -1)
-      {
-        joystick_key_release(status,
-         input.joystick_axis_map[joystick_index][axis][last_axis]);
-      }
-
-      status->axis[joystick_index][axis] = digital_value;
+      joystick_axis_update(status, joystick_index, axis, axis_value);
       break;
     }
 
@@ -620,18 +1100,13 @@ static boolean process_event(SDL_Event *event)
     {
       int which = event->jbutton.which;
       int button = event->jbutton.button;
-      enum keycode stuffed_key;
 
       // Get the real joystick index from the SDL instance ID
       int joystick_index = get_joystick_index(which);
       if(joystick_index < 0)
         break;
 
-      stuffed_key = input.joystick_button_map[joystick_index][button];
-
-      if(stuffed_key)
-        joystick_key_press(status, stuffed_key, stuffed_key);
-
+      joystick_button_press(status, joystick_index, button);
       break;
     }
 
@@ -639,18 +1114,13 @@ static boolean process_event(SDL_Event *event)
     {
       int which = event->jbutton.which;
       int button = event->jbutton.button;
-      enum keycode stuffed_key;
 
       // Get the real joystick index from the SDL instance ID
       int joystick_index = get_joystick_index(which);
       if(joystick_index < 0)
         break;
 
-      stuffed_key = input.joystick_button_map[joystick_index][button];
-
-      if(stuffed_key)
-        joystick_key_release(status, stuffed_key);
-
+      joystick_button_release(status, joystick_index, button);
       break;
     }
 
@@ -658,49 +1128,20 @@ static boolean process_event(SDL_Event *event)
     {
       int which = event->jhat.which;
       int dir = event->jhat.value;
-      enum keycode key_up;
-      enum keycode key_down;
-      enum keycode key_left;
-      enum keycode key_right;
+      boolean hat_u = (dir & SDL_HAT_UP) ? true : false;
+      boolean hat_d = (dir & SDL_HAT_DOWN) ? true : false;
+      boolean hat_l = (dir & SDL_HAT_LEFT) ? true : false;
+      boolean hat_r = (dir & SDL_HAT_RIGHT) ? true : false;
 
       // Get the real joystick index from the SDL instance ID
       int joystick_index = get_joystick_index(which);
       if(joystick_index < 0)
         break;
 
-      key_up = input.joystick_hat_map[joystick_index][0];
-      key_down = input.joystick_hat_map[joystick_index][1];
-      key_left = input.joystick_hat_map[joystick_index][2];
-      key_right = input.joystick_hat_map[joystick_index][3];
-
-      joystick_key_release(status, key_up);
-      joystick_key_release(status, key_down);
-      joystick_key_release(status, key_left);
-      joystick_key_release(status, key_right);
-
-      if(dir & SDL_HAT_UP)
-      {
-        if(key_up)
-          joystick_key_press(status, key_up, key_up);
-      }
-
-      if(dir & SDL_HAT_DOWN)
-      {
-        if(key_down)
-          joystick_key_press(status, key_down, key_down);
-      }
-
-      if(dir & SDL_HAT_LEFT)
-      {
-        if(key_left)
-          joystick_key_press(status, key_left, key_left);
-      }
-
-      if(dir & SDL_HAT_RIGHT)
-      {
-        if(key_right)
-          joystick_key_press(status, key_right, key_right);
-      }
+      joystick_hat_update(status, joystick_index, JOYHAT_UP, hat_u);
+      joystick_hat_update(status, joystick_index, JOYHAT_DOWN, hat_d);
+      joystick_hat_update(status, joystick_index, JOYHAT_LEFT, hat_l);
+      joystick_hat_update(status, joystick_index, JOYHAT_RIGHT, hat_r);
       break;
     }
 
@@ -831,7 +1272,14 @@ void initialize_joysticks(void)
 
   for(i = 0; i < count; i++)
     init_joystick(i);
+#else
+
+  load_gamecontrollerdb();
+
 #endif
+
+// FIXME:
+// SDL_GameControllerEventState (for getting analog axis values eventually)
 
   SDL_JoystickEventState(SDL_ENABLE);
 }

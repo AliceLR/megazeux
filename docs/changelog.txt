@@ -2,6 +2,30 @@ GIT
 
 FEATURES
 
++ Joystick settings in game.cnf files are now loaded as game-
+  specific joystick bindings. These bindings will no longer
+  permanently override global/UI bindings defined by the config
+  file or pad.config. The global bindings are restored when any
+  world is loaded (including SWAP WORLD); they are not restored
+  when a save is loaded.
++ Joystick inputs can now be bound to generic actions. These
+  actions are configured to control MegaZeux's various windows
+  in a context-specific manner, and can themselves be bound to
+  keycodes to allow for gameplay controls that are more
+  consistent with the UI controls. A list of joystick actions
+  and the functions they perform can be found in the config
+  file. The NDS, 3DS, Wii, PSP, and GP2X pad.config files have
+  been updated to use joystick actions.
++ Added automatic joystick mapping for Windows/Mac/Linux/etc.
+  Joysticks recognized as SDL game controllers are automatically
+  assigned joystick actions when detected. This behavior can be
+  altered or disabled via config options.
++ Added the config setting "joy_axis_threshold". This setting
+  allows the threshold for joystick axis mapped presses to be
+  configured.
++ The NDS directional pad is now mappable as a joystick hat.
++ The 3DS directional pad is now mappable as a joystick hat. The
+  circle pad is now mappable as axes 1 and 2.
 + The default boot.dol for Wii builds with the editor enabled
   is now MegaZeux instead of MZXRun.
 + The current renderer can now be set from the settings menu.
@@ -33,6 +57,8 @@ DEVELOPERS
 + Fixed -Wunused-result warnings for Linux builds.
 + Added "Intel EMGD" to auto_glsl blacklist (questionable
   OpenGL 2.0 support).
++ Added platform-independent joystick event functions and
+  updated the SDL, NDS, 3DS, and Wii event handlers for them.
 + MinGW builds now use -Wl,-Bstatic and -Wl,-Bdynamic to enforce
   the preferred linking when both static and dynamic builds of
   libraries are present.
