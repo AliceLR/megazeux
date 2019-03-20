@@ -605,11 +605,11 @@
 # where X is the number of the joystick, Y is the name of the joystick action
 # (e.g. "shoot"), and A is the number of the key to assign to that action.
 
-# For many platforms MegaZeux supports via SDL 2, it is possible to automate
-# joystick mapping for numerous controllers recognized by SDL 2. This means
-# that, if your device is supported, you can plug in your joystick/gamepad/etc.
-# and it will just work. This automatic mapping will not overwrite mapping
-# values specified in config by the above settings.
+# For platforms MegaZeux supports via SDL 2, joystick mapping can be automated
+# for the numerous controllers recognized by SDL 2. This means that, if your
+# device is supported, you can plug in your joystick/gamepad/etc. and it will
+# just work. This automatic mapping will not overwrite mapping values specified
+# in config by the above settings.
 
 # This setting can be used to globally disable the automatic mapping feature
 # entirely. If 1, it will be enabled (default). If 0, it will be disabled.
