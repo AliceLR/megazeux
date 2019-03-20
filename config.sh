@@ -755,7 +755,6 @@ fi
 if [ "$PLATFORM" = "emscripten" ]; then
   	echo "Force-disabling OpenGL and overlay renderers (Emscripten)."
 	GL_FIXED="false"
-	GL_PROGRAM="false" # TODO: partially complete
 	OVERLAY="false"
 fi
 

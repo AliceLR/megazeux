@@ -1221,8 +1221,10 @@ static void glsl_sync_screen(struct graphics_data *graphics)
 
   gl_swap_buffers(graphics);
 
+#ifndef __EMSCRIPTEN__
   glsl.glClear(GL_COLOR_BUFFER_BIT);
   gl_check_error();
+#endif
 }
 
 static void glsl_switch_shader(struct graphics_data *graphics,
