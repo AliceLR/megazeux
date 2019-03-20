@@ -16,6 +16,10 @@ FEATURES
   and the functions they perform can be found in the config
   file. The NDS, 3DS, Wii, PSP, and GP2X pad.config files have
   been updated to use joystick actions.
++ Added automatic joystick mapping for Windows/Mac/Linux/etc.
+  Joysticks recognized as SDL game controllers are automatically
+  assigned joystick actions when detected. This behavior can be
+  altered or disabled via config options.
 + Added the config setting "joy_axis_threshold". This setting
   allows the threshold for joystick axis mapped presses to be
   configured.
