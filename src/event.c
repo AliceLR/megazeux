@@ -1140,7 +1140,7 @@ static enum joystick_action find_joystick_action(const char *name)
  * or to a joystick enum string (action binding). Read either from an input
  * value string.
  */
-static boolean joystick_parse_map_value(const char *value, Sint16 *binding)
+boolean joystick_parse_map_value(const char *value, Sint16 *binding)
 {
   char *next;
   enum joystick_action action_value;

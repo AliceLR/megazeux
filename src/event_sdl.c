@@ -191,6 +191,7 @@ static int get_pandora_joystick_button(SDL_Keycode key)
  */
 
 static SDL_GameController *gamecontrollers[MAX_JOYSTICKS];
+boolean allow_gamecontroller_mapping = true;
 
 /*
 static enum joystick_special_axis sdl_axis_map[SDL_CONTROLLER_AXIS_MAX] =
@@ -497,7 +498,9 @@ static void init_gamecontroller(int sdl_index, int joystick_index)
       mapping = (char *)SDL_GameControllerMappingForGUID(guid);
       info("[JOYSTICK] %d has an SDL mapping: %s\n", joystick_index, mapping);
 
-      parse_gamecontroller_map(joystick_index, mapping);
+      if(allow_gamecontroller_mapping)
+        parse_gamecontroller_map(joystick_index, mapping);
+
       SDL_free(mapping);
     }
   }
@@ -553,6 +556,85 @@ static void gamecontroller_clean_map(int joy)
       input.joystick_game_map.hat[joy][i] = 0;
   }
 }
+
+/**
+ * Load gamecontrollerdb.txt if configured and if it isn't already loaded.
+ * This adds more gamecontroller mappings so MZX can support more controllers.
+ * The function this uses wasn't added until 2.0.2.
+ */
+static void load_gamecontrollerdb(void)
+{
+#if defined(CONFIG_GAMECONTROLLERDB) && SDL_VERSION_ATLEAST(2,0,2)
+  static boolean gamecontrollerdb_loaded = false;
+
+  if(!gamecontrollerdb_loaded)
+  {
+    const char *path = mzx_res_get_by_id(GAMECONTROLLERDB_TXT);
+
+    if(path)
+    {
+      int result = SDL_GameControllerAddMappingsFromFile(path);
+      if(result >= 0)
+        debug("[JOYSTICK] Added %d mappings from '%s'.\n", result, path);
+    }
+
+    gamecontrollerdb_loaded = true;
+  }
+#endif
+}
+
+/**
+ * Change one of the default SDL to MZX mapping values.
+ */
+void gamecontroller_map_sym(const char *sym, const char *value)
+{
+  SDL_GameControllerAxis a;
+  SDL_GameControllerButton b;
+  Sint16 binding = 0;
+
+  if(joystick_parse_map_value(value, &binding))
+  {
+    char dir = 0;
+    if(*sym == '+' || *sym == '-')
+      dir = *(sym++);
+
+    // Digital axis (default to + if no dir specified).
+    a = SDL_GameControllerGetAxisFromString(sym);
+    if(a != SDL_CONTROLLER_AXIS_INVALID)
+    {
+      int pos = (dir != '-') ? 1 : 0;
+      sdl_axis_action_map[a][pos] = binding;
+    }
+
+    // Button
+    b = SDL_GameControllerGetButtonFromString(sym);
+    if(b != SDL_CONTROLLER_BUTTON_INVALID)
+      sdl_action_map[b] = binding;
+  }
+
+  // TODO analog axes
+}
+
+/**
+ * Enable or disable the SDL to MZX mapping system.
+ */
+void gamecontroller_set_enabled(boolean enable)
+{
+  allow_gamecontroller_mapping = enable;
+}
+
+/**
+ * Add a mapping string to SDL.
+ */
+void gamecontroller_add_mapping(const char *mapping)
+{
+  // Make sure this is loaded first so it doesn't override the user mapping.
+  load_gamecontrollerdb();
+
+  if(SDL_GameControllerAddMapping(mapping) < 0)
+    warn("Failed to add gamecontroller mapping: %s\n", SDL_GetError());
+}
+
 #endif /* SDL_VERSION_ATLEAST(2,0,0) */
 
 /**
@@ -1178,19 +1260,10 @@ void initialize_joysticks(void)
 
   for(i = 0; i < count; i++)
     init_joystick(i);
-#endif
+#else
 
-#if defined(CONFIG_GAMECONTROLLERDB) && SDL_VERSION_ATLEAST(2,0,2)
-  // Add more gamecontroller mappings so MZX can support more controllers.
-  // The function required here wasn't added until 2.0.2.
-  const char *path = mzx_res_get_by_id(GAMECONTROLLERDB_TXT);
+  load_gamecontrollerdb();
 
-  if(path)
-  {
-    int result = SDL_GameControllerAddMappingsFromFile(path);
-    if(result >= 0)
-      debug("[JOYSTICK] Added %d mappings from '%s'.\n", result, path);
-  }
 #endif
 
 // FIXME:

@@ -495,6 +495,7 @@ static void joy_action_set(struct config_info *conf, char *name,
    || (name[read] != 0))
     return;
 
+  read = 0;
   if(sscanf(value, "%u%n", &key, &read) != 1 || (value[read] != 0))
     return;
 
@@ -514,6 +515,47 @@ static void config_set_joy_axis_threshold(struct config_info *conf, char *name,
 
   joystick_set_axis_threshold(threshold);
 }
+
+#ifdef CONFIG_SDL
+#if SDL_VERSION_ATLEAST(2,0,0)
+#define GC_ENUM "%15[-+0-9A-Za-z_]"
+
+static void config_sdl_gc_set(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  char gc_sym[16];
+  char key[16];
+  int read = 0;
+
+  if(sscanf(name, "gamecontroller." GC_ENUM "%n", gc_sym, &read) != 1
+   || (name[read] != 0))
+    return;
+
+  read = 0;
+  if(sscanf(value, JOY_ENUM "%n", key, &read) != 1 || (value[read] != 0))
+    return;
+
+  gamecontroller_map_sym(gc_sym, key);
+}
+
+static void config_sdl_gc_add(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  gamecontroller_add_mapping(value);
+}
+
+static void config_sdl_gc_enable(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  if(!strcmp(value, "0"))
+    gamecontroller_set_enabled(false);
+
+  else if(!strcmp(value, "1"))
+    gamecontroller_set_enabled(true);
+}
+
+#endif // SDL_VERSION_ATLEAST(2,0,0)
+#endif // CONFIG_SDL
 
 static void pause_on_unfocus(struct config_info *conf, char *name,
  char *value, char *extended_data)
@@ -709,6 +751,13 @@ static const struct config_entry config_options[] =
   { "force_bpp", config_force_bpp, false },
   { "fullscreen", config_set_fullscreen, false },
   { "fullscreen_resolution", config_set_resolution, false },
+#ifdef CONFIG_SDL
+#if SDL_VERSION_ATLEAST(2,0,0)
+  { "gamecontroller.*", config_sdl_gc_set, false },
+  { "gamecontroller_add", config_sdl_gc_add, false },
+  { "gamecontroller_enable", config_sdl_gc_enable, false },
+#endif
+#endif
   { "gl_filter_method", config_set_gl_filter_method, false },
   { "gl_scaling_shader", config_set_gl_scaling_shader, true },
   { "gl_vsync", config_gl_vsync, false },
@@ -796,15 +845,18 @@ static int config_change_option(void *conf, char *name,
   return 0;
 }
 
+#define LINE_BUFFER_SIZE 512
+
 __editor_maybe_static void __set_config_from_file(
  find_change_option find_change_handler, void *conf, const char *conf_file_name)
 {
   char current_char, *input_position, *output_position, *use_extended_buffer;
   int line_size, extended_size, extended_allocate_size = 512;
-  char line_buffer_alternate[256], line_buffer[256];
+  char line_buffer_alternate[LINE_BUFFER_SIZE], line_buffer[LINE_BUFFER_SIZE];
   int extended_buffer_offset, peek_char;
   char *extended_buffer;
   char *equals_position, *value;
+  char *output_end_position = line_buffer + LINE_BUFFER_SIZE;
   FILE *conf_file;
 
   conf_file = fopen_unsafe(conf_file_name, "rb");
@@ -834,14 +886,19 @@ __editor_maybe_static void __set_config_from_file(
             current_char = ' ';
           }
 
-          if((current_char == '=') && (equals_position == NULL))
-            equals_position = output_position;
+          if(output_position < output_end_position)
+          {
+            if((current_char == '=') && (equals_position == NULL))
+              equals_position = output_position;
 
-          *output_position = current_char;
-          output_position++;
+            *output_position = current_char;
+            output_position++;
+          }
         }
         input_position++;
       } while(current_char);
+
+      output_position[LINE_BUFFER_SIZE - 1] = 0;
 
       if(equals_position)
       {
@@ -901,7 +958,8 @@ __editor_maybe_static void __set_config_from_command_line(
  find_change_option find_change_handler, void *conf, int *argc, char *argv[])
 {
   char current_char, *input_position, *output_position;
-  char *equals_position, line_buffer[256], *value;
+  char *equals_position, line_buffer[LINE_BUFFER_SIZE], *value;
+  char *output_end_position = line_buffer + LINE_BUFFER_SIZE;
   int i = 1;
   int j;
 
@@ -922,13 +980,18 @@ __editor_maybe_static void __set_config_from_command_line(
         current_char = ' ';
       }
 
-      if((current_char == '=') && (equals_position == NULL))
-        equals_position = output_position;
+      if(output_position < output_end_position)
+      {
+        if((current_char == '=') && (equals_position == NULL))
+          equals_position = output_position;
 
-      *output_position = current_char;
-      output_position++;
+        *output_position = current_char;
+        output_position++;
+      }
       input_position++;
     } while(current_char);
+
+    output_position[LINE_BUFFER_SIZE - 1] = 0;
 
     if(equals_position && line_buffer[0])
     {

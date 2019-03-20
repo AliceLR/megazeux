@@ -500,25 +500,24 @@
 
 # Joystick options
 
-# It is possible to emulate key presses using a joystick. If this file
-# is config.txt these options will apply as a default to all games -
-# you can put them in game.cnf to apply specifically to game.mzx.
-# When placed in a game.cnf file, these settings will only affect that
-# world and any saves loaded from that world; games that swap between
-# multiple worlds will need a game.cnf file for each world.
+# It is possible to emulate key presses using a joystick. This can be
+# achieved with the following config options globally or (for options
+# starting with "joyX" only) on a per-game basis. To configure joysticks
+# for a particular game, place the applicable settings in a file called
+# [game].cnf (e.g. "caverns.cnf" is the settings file for "caverns.mzx").
+# This will configure joysticks for that world and all saves loaded from
+# that world only. Games utilizing swaps may require multiple .cnf files.
 
-# A joystick is first specified as joyN where N is the number from
-# 1 onwards identifying the joystick in your system. You may have
-# to experiment to find which joystick is which number if you have
-# multiple joysticks. Otherwise, just use 1. Up to 16 joysticks are
-# recognized.
+# Each joystick in MegaZeux is assigned a number between 1 and 16. When
+# a joystick is detected, it is given the lowest available number, so
+# typically the joystick you are using is joystick 1. When multiple
+# joysticks are plugged in, you may have to experiment to determine which
+# joystick is which.
 
 # You can currently map three joystick input methods: axes, buttons,
-# and one POV hat. Axes/buttons/hats are mapped to keys using a
-# number corresponding to the a given key. This number is the same as
-# the KEY_PRESSED value for that key and can be determined by checking
-# keycodes.html or by pressing the key while the debug window (F6) is
-# open during testing.
+# and one POV hat. Axes/buttons/hats are mapped to keys using a number
+# corresponding to the a given key. This number is the same as the
+# KEY_PRESSED value for that key (see keycodes.html or mzx_help.html).
 
 # The option to map a joystick axis is
 
@@ -556,13 +555,12 @@
 # some controllers.
 
 # As of MegaZeux 2.92, it is also possible to bind joystick controls to
-# "generic actions". These generic actions are loosely modeled after XInput.
-# The generic actions are more UI-friendly than using keycodes directly,
-# they have default gameplay keys pre-assigned, and these gameplay keys
-# can be changed to different values without altering the UI behavior.
+# generic "joystick actions". These actions are more UI-friendly than using
+# keycodes directly, they have default gameplay keys pre-assigned, and these
+# gameplay keys can be changed to different values without altering UI behavior.
 
-# To use a generic joystick action, replace the key in one of the settings
-# above with "act_X", where X is an action name from the table below. Examples:
+# To use a joystick action, replace the key in one of the settings above with
+# "act_X", where X is an action name from the table below. Examples:
 
 # joyXhat = act_up, act_down, act_left, act_right
 # joyXaxisY = act_l_left, act_l_right
@@ -606,6 +604,65 @@
 
 # where X is the number of the joystick, Y is the name of the joystick action
 # (e.g. "shoot"), and A is the number of the key to assign to that action.
+
+# For many platforms MegaZeux supports via SDL 2, it is possible to automate
+# joystick mapping for numerous controllers recognized by SDL 2. This means
+# that, if your device is supported, you can plug in your joystick/gamepad/etc.
+# and it will just work. This automatic mapping will not overwrite mapping
+# values specified in config by the above settings.
+
+# This setting can be used to globally disable the automatic mapping feature
+# entirely. If 1, it will be enabled (default). If 0, it will be disabled.
+
+# gamecontroller_enable = 1
+
+# This feature uses SDL 2 gamecontroller mappings to assign the above joystick
+# actions to axes/buttons/hats. The following settings can be used to customize
+# the default mapping from SDL to MZX actions/keys globally:
+
+# gamecontroller.a = act_shoot
+# gamecontroller.b = act_bomb
+# gamecontroller.x = act_x
+# gamecontroller.y = act_y
+# gamecontroller.back = act_escape
+# gamecontroller.start = act_menu
+# gamecontroller.leftstick = act_lstick
+# gamecontroller.rightstick = act_rstick
+# gamecontroller.leftshoulder = act_switch
+# gamecontroller.rightshoulder = act_settings
+# gamecontroller.dpup = act_up
+# gamecontroller.dpdown = act_down
+# gamecontroller.dpleft = act_left
+# gamecontroller.dpright = act_right
+# gamecontroller.-leftx = act_l_left
+# gamecontroller.+leftx = act_l_right
+# gamecontroller.-lefty = act_l_up
+# gamecontroller.+lefty = act_l_down
+# gamecontroller.-rightx = act_r_left
+# gamecontroller.+rightx = act_r_right
+# gamecontroller.-righty = act_r_up
+# gamecontroller.+righty = act_r_down
+# gamecontroller.lefttrigger = act_save
+# gamecontroller.righttrigger = act_load
+
+# If your controller isn't currently supported by SDL or gamecontrollerdb.txt,
+# it is possible to add or override an SDL mapping string directly. Use one of
+# the tools on the following website to generate a mapping string for your
+# controller.
+#
+# https://github.com/gabomdq/SDL_GameControllerDB
+#
+# You can use the following setting to add your mapping to MegaZeux. Copy the
+# string generated by the mapping tool and paste it on the right side of the
+# equals sign:
+
+# gamecontroller_add =
+
+# You should test your new mapping to make sure every button/axis works
+# correctly and then report it to a MegaZeux developer or SDL_GameControllerDB
+# so it can be added to the database. This option may be specified multiple
+# times; each time, it will add or replace a different mapping. Each instance
+# should be on a single line.
 
 
 # Misc Options

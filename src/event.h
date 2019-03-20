@@ -215,6 +215,12 @@ boolean __update_event_status(void);
 #ifdef CONFIG_SDL
 // Currently only supported by SDL.
 boolean __peek_exit_input(void);
+
+#if SDL_VERSION_ATLEAST(2,0,0)
+void gamecontroller_map_sym(const char *sym, const char *value);
+void gamecontroller_set_enabled(boolean enable);
+void gamecontroller_add_mapping(const char *mapping);
+#endif
 #endif
 
 #ifdef CONFIG_NDS
@@ -233,6 +239,7 @@ Uint32 get_last_key_released(enum keycode_type type);
 void set_unfocus_pause(boolean value);
 void set_num_buffered_events(Uint8 value);
 
+boolean joystick_parse_map_value(const char *value, Sint16 *binding);
 void joystick_map_button(int joystick, int button, const char *value,
  boolean is_global);
 void joystick_map_axis(int joystick, int axis, const char *neg,
