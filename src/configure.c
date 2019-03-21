@@ -167,6 +167,11 @@ static const struct config_info user_conf_default =
   true,                         // music_on
   true,                         // pc_speaker_on
 
+  // Event options
+  true,                         // allow_gamecontroller
+  false,                        // pause_on_unfocus
+  1,                            // num_buffered_events
+
   // Game options
   "",                           // startup_path
   "caverns.mzx",                // startup_file
@@ -449,25 +454,8 @@ static void config_sdl_gc_add(struct config_info *conf, char *name,
   gamecontroller_add_mapping(value);
 }
 
-static void config_sdl_gc_enable(struct config_info *conf, char *name,
- char *value, char *extended_data)
-{
-  if(!strcmp(value, "0"))
-    gamecontroller_set_enabled(false);
-
-  else if(!strcmp(value, "1"))
-    gamecontroller_set_enabled(true);
-}
-
 #endif // SDL_VERSION_ATLEAST(2,0,0)
 #endif // CONFIG_SDL
-
-static void pause_on_unfocus(struct config_info *conf, char *name,
- char *value, char *extended_data)
-{
-  // FIXME sloppy validation
-  set_unfocus_pause(strtoul(value, NULL, 10) > 0);
-}
 
 static void include_config(struct config_info *conf, char *name,
  char *value, char *extended_data)
@@ -490,14 +478,6 @@ static void config_window_resolution(struct config_info *conf, char *name,
   char *next;
   conf->window_width = strtoul(value, &next, 10);
   conf->window_height = strtoul(next + 1, NULL, 10);
-}
-
-static void config_set_num_buffered_events(struct config_info *conf,
- char *name, char *value, char *extended_data)
-{
-  // FIXME sloppy validation also wtf?
-  Uint8 v = (Uint8)strtoul(value, NULL, 10);
-  set_num_buffered_events(v);
 }
 
 #define INT(field, min, max) CONF_INT(struct config_info, field, min, max)
@@ -531,7 +511,7 @@ static const struct config_entry config_options[] =
 #if SDL_VERSION_ATLEAST(2,0,0)
   { "gamecontroller.*",         FN(config_sdl_gc_set), false },
   { "gamecontroller_add",       FN(config_sdl_gc_add), false },
-  { "gamecontroller_enable",    FN(config_sdl_gc_enable), false },
+  { "gamecontroller_enable",    BOOL(allow_gamecontroller), false },
 #endif
 #endif
   { "gl_filter_method",         ENUM(gl_filter_method), false },
@@ -554,8 +534,8 @@ static const struct config_entry config_options[] =
   { "network_enabled",          BOOL(network_enabled), false },
 #endif
   { "no_titlescreen",           BOOL(no_titlescreen), false },
-  { "num_buffered_events",      FN(config_set_num_buffered_events), false },
-  { "pause_on_unfocus",         FN(pause_on_unfocus), false },
+  { "num_buffered_events",      INT(num_buffered_events, 1, 256), false },
+  { "pause_on_unfocus",         BOOL(pause_on_unfocus), false },
   { "pc_speaker_on",            BOOL(pc_speaker_on), false },
   { "pc_speaker_volume",        INT(pc_speaker_volume, 0, 10), false },
   { "resample_mode",            ENUM(resample_mode), false },

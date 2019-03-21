@@ -77,6 +77,11 @@ struct config_info
   boolean music_on;
   boolean pc_speaker_on;
 
+  // Event options
+  boolean allow_gamecontroller;
+  boolean pause_on_unfocus;
+  int num_buffered_events;
+
   // Game options
   char startup_path[256];
   char startup_file[256];

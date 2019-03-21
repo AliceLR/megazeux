@@ -24,6 +24,7 @@
 
 __M_BEGIN_DECLS
 
+#include "configure.h"
 #include "platform.h"
 #include "keysym.h"
 
@@ -172,7 +173,7 @@ enum keycode_type
   keycode_unicode
 };
 
-CORE_LIBSPEC void init_event(void);
+CORE_LIBSPEC void init_event(struct config_info *conf);
 
 struct buffered_status *store_status(void);
 
@@ -218,7 +219,6 @@ boolean __peek_exit_input(void);
 
 #if SDL_VERSION_ATLEAST(2,0,0)
 void gamecontroller_map_sym(const char *sym, const char *value);
-void gamecontroller_set_enabled(boolean enable);
 void gamecontroller_add_mapping(const char *mapping);
 #endif
 #endif

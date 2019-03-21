@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "configure.h"
 #include "event.h"
 #include "platform.h"
 #include "graphics.h"
@@ -191,7 +192,6 @@ static int get_pandora_joystick_button(SDL_Keycode key)
  */
 
 static SDL_GameController *gamecontrollers[MAX_JOYSTICKS];
-boolean allow_gamecontroller_mapping = true;
 
 /*
 static enum joystick_special_axis sdl_axis_map[SDL_CONTROLLER_AXIS_MAX] =
@@ -492,13 +492,14 @@ static void init_gamecontroller(int sdl_index, int joystick_index)
 
     if(gamecontroller)
     {
+      struct config_info *conf = get_config();
       char *mapping;
       gamecontrollers[joystick_index] = gamecontroller;
 
       mapping = (char *)SDL_GameControllerMappingForGUID(guid);
       info("[JOYSTICK] %d has an SDL mapping: %s\n", joystick_index, mapping);
 
-      if(allow_gamecontroller_mapping)
+      if(conf->allow_gamecontroller)
         parse_gamecontroller_map(joystick_index, mapping);
 
       SDL_free(mapping);
@@ -613,14 +614,6 @@ void gamecontroller_map_sym(const char *sym, const char *value)
   }
 
   // TODO analog axes
-}
-
-/**
- * Enable or disable the SDL to MZX mapping system.
- */
-void gamecontroller_set_enabled(boolean enable)
-{
-  allow_gamecontroller_mapping = enable;
 }
 
 /**

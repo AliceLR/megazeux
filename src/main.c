@@ -214,7 +214,7 @@ __libspec int main(int argc, char *argv[])
 
   set_mouse_mul(8, 14);
 
-  init_event();
+  init_event(conf);
 
   if(!init_video(conf, CAPTION))
     goto err_free_config;
