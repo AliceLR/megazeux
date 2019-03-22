@@ -81,6 +81,9 @@ static struct mzx_resource mzx_res[] = {
   { GLSL_SHADERS "cursor.vert",         NULL, false },
   { GLSL_SHADERS "cursor.frag",         NULL, false },
 #endif
+#ifdef CONFIG_GAMECONTROLLERDB
+  { ASSETS "gamecontrollerdb.txt",      NULL, true },
+#endif
 };
 
 #ifdef CONFIG_CHECK_ALLOC
@@ -216,6 +219,12 @@ int mzx_res_init(const char *argv0, boolean editor)
     /* Skip non-essential resources */
     if(!editor && mzx_res[i].optional)
       continue;
+
+#ifdef CONFIG_GAMECONTROLLERDB
+    // FIXME stupid hack because "optional" doesn't really mean optional.
+    if(i == GAMECONTROLLERDB_TXT)
+      continue;
+#endif
 
     if(!mzx_res[i].path)
     {

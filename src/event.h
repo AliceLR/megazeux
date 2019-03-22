@@ -33,9 +33,11 @@ __M_BEGIN_DECLS
 
 #define STATUS_NUM_KEYCODES 512
 
-#define MAX_JOYSTICKS         16
-#define MAX_JOYSTICK_AXES     16
-#define MAX_JOYSTICK_BUTTONS  256
+#define MAX_JOYSTICKS           16
+#define MAX_JOYSTICK_AXES       16
+#define MAX_JOYSTICK_BUTTONS    256
+#define MAX_JOYSTICK_PRESS      16
+#define AXIS_DEFAULT_THRESHOLD  10000
 
 #define MOUSE_BUTTON(x)         (1 << ((x) - 1))
 #define MOUSE_BUTTON_LEFT       1
@@ -83,6 +85,14 @@ __M_BEGIN_DECLS
 // Capture F12 presses to save screenshots if true.
 extern boolean enable_f12_hack;
 
+// Store joystick presses in a list so their proper key will be released.
+struct joystick_press
+{
+  Uint8 type;
+  Uint8 num;
+  Sint16 key;
+};
+
 struct buffered_status
 {
   enum keycode key_pressed;
@@ -110,8 +120,29 @@ struct buffered_status
   boolean numlock_status;
   boolean mouse_moved;
   boolean exit_status;
-  Sint8 axis[MAX_JOYSTICKS][MAX_JOYSTICK_AXES];
+  enum joystick_action joystick_action;
+  enum joystick_action joystick_repeat;
+  Uint32 joystick_repeat_state;
+  Uint32 joystick_repeat_id;
+  Uint32 joystick_time;
+  boolean joystick_hat[MAX_JOYSTICKS][4];
+  boolean joystick_button[MAX_JOYSTICKS][MAX_JOYSTICK_BUTTONS];
+  Sint16 joystick_axis[MAX_JOYSTICKS][MAX_JOYSTICK_AXES];
+  struct joystick_press joystick_press[MAX_JOYSTICKS][MAX_JOYSTICK_PRESS];
+  Uint8 joystick_press_count[MAX_JOYSTICKS];
   Uint8 keymap[512];
+};
+
+struct joystick_map
+{
+  Sint16 button[MAX_JOYSTICKS][MAX_JOYSTICK_BUTTONS];
+  Sint16 axis[MAX_JOYSTICKS][MAX_JOYSTICK_AXES][2];
+  Sint16 hat[MAX_JOYSTICKS][4];
+  Sint16 action[MAX_JOYSTICKS][NUM_JOYSTICK_ACTIONS];
+
+  boolean button_is_conf[MAX_JOYSTICKS][MAX_JOYSTICK_BUTTONS];
+  boolean axis_is_conf[MAX_JOYSTICKS][MAX_JOYSTICK_AXES];
+  boolean hat_is_conf[MAX_JOYSTICKS];
 };
 
 struct input_status
@@ -124,9 +155,9 @@ struct input_status
   Uint16 unicode_repeat_stack[KEY_REPEAT_STACK_SIZE];
   Uint32 repeat_stack_pointer;
 
-  enum keycode joystick_button_map[MAX_JOYSTICKS][MAX_JOYSTICK_BUTTONS];
-  enum keycode joystick_axis_map[MAX_JOYSTICKS][MAX_JOYSTICK_AXES][2];
-  enum keycode joystick_hat_map[MAX_JOYSTICKS][4];
+  struct joystick_map joystick_global_map;
+  struct joystick_map joystick_game_map;
+  Uint16 joystick_axis_threshold;
 
   boolean unfocus_pause;
 };
@@ -174,6 +205,8 @@ CORE_LIBSPEC void key_release(struct buffered_status *status, enum keycode key);
 CORE_LIBSPEC boolean get_exit_status(void);
 CORE_LIBSPEC boolean set_exit_status(boolean value);
 CORE_LIBSPEC boolean peek_exit_input(void);
+CORE_LIBSPEC Uint32 get_joystick_ui_action(void);
+CORE_LIBSPEC Uint32 get_joystick_ui_key(void);
 
 // Implemented by "drivers" (SDL, Wii, NDS, 3DS, etc.)
 void __wait_event(void);
@@ -182,6 +215,12 @@ boolean __update_event_status(void);
 #ifdef CONFIG_SDL
 // Currently only supported by SDL.
 boolean __peek_exit_input(void);
+
+#if SDL_VERSION_ATLEAST(2,0,0)
+void gamecontroller_map_sym(const char *sym, const char *value);
+void gamecontroller_set_enabled(boolean enable);
+void gamecontroller_add_mapping(const char *mapping);
+#endif
 #endif
 
 #ifdef CONFIG_NDS
@@ -197,18 +236,32 @@ Uint32 get_mouse_y(void);
 Uint32 get_real_mouse_x(void);
 Uint32 get_real_mouse_y(void);
 Uint32 get_last_key_released(enum keycode_type type);
-void map_joystick_axis(int joystick, int axis, enum keycode min_key,
- enum keycode max_key);
-void map_joystick_button(int joystick, int button, enum keycode key);
-void map_joystick_hat(int joystick, enum keycode up_key, enum keycode down_key,
- enum keycode left_key, enum keycode right_key);
 void set_unfocus_pause(boolean value);
 void set_num_buffered_events(Uint8 value);
 
-void joystick_key_press(struct buffered_status *status,
- enum keycode key, Uint16 unicode_key);
-void joystick_key_release(struct buffered_status *status,
- enum keycode key);
+boolean joystick_parse_map_value(const char *value, Sint16 *binding);
+void joystick_map_button(int joystick, int button, const char *value,
+ boolean is_global);
+void joystick_map_axis(int joystick, int axis, const char *neg,
+ const char *pos, boolean is_global);
+void joystick_map_hat(int joystick, const char *up, const char *down,
+ const char *left, const char *right, boolean is_global);
+void joystick_map_action(int joystick, const char *action, int value,
+ boolean is_global);
+void joystick_reset_game_map(void);
+void joystick_set_game_mode(boolean enable);
+void joystick_set_game_bindings(boolean enable);
+void joystick_set_legacy_loop_hacks(boolean enable);
+void joystick_set_axis_threshold(Uint16 threshold);
+void joystick_button_press(struct buffered_status *status,
+ int joystick, int button);
+void joystick_button_release(struct buffered_status *status,
+ int joystick, int button);
+void joystick_hat_update(struct buffered_status *status,
+ int joystick, enum joystick_hat dir, boolean dir_active);
+void joystick_axis_update(struct buffered_status *status,
+ int joystick, int axis, Sint16 value);
+void joystick_release_all(struct buffered_status *status, int joystick);
 
 void real_warp_mouse(int x, int y);
 

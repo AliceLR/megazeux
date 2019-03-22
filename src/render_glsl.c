@@ -625,14 +625,23 @@ static void glsl_free_video(struct graphics_data *graphics)
   int i;
 
   for(i = 0; i < GLSL_SHADER_RES_COUNT; i++)
+  {
     if(source_cache[i])
+    {
       free((void *)source_cache[i]);
+      source_cache[i] = NULL;
+    }
+  }
 
   if(render_data)
   {
     glsl.glDeleteTextures(NUM_TEXTURES, render_data->textures);
     gl_check_error();
 
+    glsl.glUseProgram(0);
+    gl_check_error();
+
+    gl_cleanup(graphics);
     free(render_data->pixels);
     free(render_data);
     graphics->render_data = NULL;

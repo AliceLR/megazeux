@@ -142,6 +142,7 @@ KHASH="true"
 UTHASH="false"
 DEBYTECODE="false"
 LIBSDL2="true"
+GAMECONTROLLERDB="true"
 FPSCOUNTER="false"
 
 #
@@ -575,6 +576,7 @@ if [ "$SDL" = "false" ]; then
 	SOFTWARE="false"
 	OVERLAY="false"
 	MIKMOD="false"
+	LIBSDL2="false"
 else
 	echo "#define CONFIG_SDL" >> src/config.h
 	echo "BUILD_SDL=1" >> platform.inc
@@ -1196,6 +1198,17 @@ if [ "$LIBSDL2" = "true" ]; then
 	echo "BUILD_LIBSDL2=1" >> platform.inc
 else
 	echo "SDL 2.0 support disabled."
+fi
+
+#
+# SDL_GameControllerDB, if enabled. This depends on SDL 2.
+#
+if [ "$LIBSDL2" = "true" -a "$GAMECONTROLLERDB" = "true" ]; then
+	echo "SDL_GameControllerDB enabled."
+	echo "#define CONFIG_GAMECONTROLLERDB" >> src/config.h
+	echo "BUILD_GAMECONTROLLERDB=1" >> platform.inc
+else
+	echo "SDL_GameControllerDB disabled."
 fi
 
 #

@@ -79,6 +79,9 @@ enum resource_id
   GLSL_SHADER_CURSOR_VERT,
   GLSL_SHADER_CURSOR_FRAG,
 #endif
+#ifdef CONFIG_GAMECONTROLLERDB
+  GAMECONTROLLERDB_TXT,
+#endif
   END_RESOURCE_ID_T // must be last
 };
 

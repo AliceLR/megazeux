@@ -424,6 +424,10 @@ ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 	${CP} assets/glsl/scalers/*.frag assets/glsl/scalers/*.vert \
 		${build}/assets/glsl/scalers
 endif
+ifeq (${BUILD_GAMECONTROLLERDB},1)
+	${CP} assets/gamecontrollerdb.txt assets/gamecontrollerdb.LICENSE \
+	 ${build}/assets
+endif
 
 distclean: clean
 	@echo "  DISTCLEAN"

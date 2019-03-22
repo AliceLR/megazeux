@@ -203,6 +203,7 @@ struct graphics_data
   Uint32 protected_pal_position;
   struct renderer renderer;
   void *render_data;
+  Uint32 renderer_num;
 
 #ifdef CONFIG_EDITOR
   char editor_backup_indices[SMZX_PAL_SIZE * 4];
@@ -315,6 +316,10 @@ void write_line_mask(const char *str, Uint32 x, Uint32 y,
 Uint8 get_color_linear(Uint32 offset);
 
 void cursor_underline(void);
+
+boolean change_video_output(struct config_info *conf, const char *output);
+int get_available_video_output_list(const char **buffer, int buffer_len);
+int get_current_video_output(void);
 
 boolean set_video_mode(void);
 boolean is_fullscreen(void);
