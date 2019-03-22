@@ -651,6 +651,7 @@ if [ "$PLATFORM" = "switch" ]; then
 
 	echo "Disabling utils on Switch (silly)."
 	UTILS="false"
+	GAMECONTROLLERDB="false"
 fi
 
 #

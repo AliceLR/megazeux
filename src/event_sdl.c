@@ -1261,8 +1261,9 @@ void real_warp_mouse(int x, int y)
 
 void initialize_joysticks(void)
 {
-#if !SDL_VERSION_ATLEAST(2,0,0)
+#if !SDL_VERSION_ATLEAST(2,0,0) || defined(CONFIG_SWITCH)
   // SDL 1.2 doesn't have joystick added/removed events.
+  // Switch SDL doesn't seem to generate these events at all on startup.
   int i, count;
 
   count = SDL_NumJoysticks();
@@ -1272,10 +1273,10 @@ void initialize_joysticks(void)
 
   for(i = 0; i < count; i++)
     init_joystick(i);
-#else
+#endif
 
+#if SDL_VERSION_ATLEAST(2,0,0)
   load_gamecontrollerdb();
-
 #endif
 
 // FIXME:
