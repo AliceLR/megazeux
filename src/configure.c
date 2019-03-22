@@ -898,7 +898,7 @@ __editor_maybe_static void __set_config_from_file(
         input_position++;
       } while(current_char);
 
-      output_position[LINE_BUFFER_SIZE - 1] = 0;
+      line_buffer[LINE_BUFFER_SIZE - 1] = 0;
 
       if(equals_position)
       {
@@ -991,7 +991,7 @@ __editor_maybe_static void __set_config_from_command_line(
       input_position++;
     } while(current_char);
 
-    output_position[LINE_BUFFER_SIZE - 1] = 0;
+    line_buffer[LINE_BUFFER_SIZE - 1] = 0;
 
     if(equals_position && line_buffer[0])
     {
