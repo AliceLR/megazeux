@@ -1160,6 +1160,9 @@ void insta_fadeout(void)
   else
     num_colors = PAL_SIZE;
 
+  memcpy(graphics.saved_intensity, graphics.current_intensity,
+   sizeof(Uint32) * num_colors);
+
   for(i = 0; i < num_colors; i++)
     set_color_intensity(i, 0);
 
