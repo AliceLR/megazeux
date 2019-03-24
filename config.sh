@@ -462,7 +462,7 @@ if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "darwin" ]; then
 elif [ "$PLATFORM" = "android" ]; then
 	LIBDIR="/data/megazeux"
 elif [ "$PLATFORM" = "emscripten" ]; then
-	LIBDIR="/"
+	LIBDIR="/data"
 else
 	LIBDIR="."
 fi
@@ -476,7 +476,7 @@ elif [ "$PLATFORM" = "darwin-dist" ]; then
 elif [ "$PLATFORM" = "android" ]; then
 	SYSCONFDIR="/data/megazeux"
 elif [ "$PLATFORM" = "emscripten" ]; then
-	SYSCONFDIR="/"
+	SYSCONFDIR="/data/etc"
 elif [ "$SYSCONFDIR_IS_SET" != "true" ]; then
 	SYSCONFDIR="."
 fi
@@ -553,9 +553,9 @@ elif [ "$PLATFORM" = "android" ]; then
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 elif [ "$PLATFORM" = "emscripten" ]; then
-	SHAREDIR=/
-	GAMESDIR=/game
-	BINDIR=/
+	SHAREDIR=/data
+	GAMESDIR=/data/game
+	BINDIR=/data
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 else

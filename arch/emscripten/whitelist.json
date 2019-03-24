@@ -12,7 +12,9 @@
 
 	"_game_key",
 		"_confirm",
-			"_run_dialog",
+
+	"_confirm",
+		"_run_dialog",
 
 	"_game_settings",
 		"_run_dialog",
@@ -22,6 +24,12 @@
 			"_load_world_title_selection",
 
 	"_load_world_title_selection",
+		"_load_world_title",
+			"_reload_world",
+				"_try_load_world",
+					"_try_load_legacy_world",
+						"_validate_legacy_world_file",
+							"_confirm",
 		"_choose_file_ch",
 	"_load_savegame_selection",
 		"_choose_file_ch",
