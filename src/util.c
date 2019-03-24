@@ -302,6 +302,53 @@ char *mzx_res_get_by_id(enum resource_id id)
   return mzx_res[id].path;
 }
 
+/**
+ * Some platforms may not be able to display console output without extra work.
+ * On these platforms redirect STDIO to files so the console output is easier
+ * to read.
+ */
+boolean redirect_stdio(const char *base_path, boolean require_conf)
+{
+  char clean_path[MAX_PATH];
+  char dest_path[MAX_PATH];
+  FILE *fp_wr;
+  uint64_t t;
+
+  clean_path_slashes(base_path, clean_path, MAX_PATH);
+
+  if(require_conf)
+  {
+    // If the config file is required, attempt to stat it.
+    struct stat stat_info;
+
+    join_path_names(dest_path, MAX_PATH, clean_path, "config.txt");
+    if(!stat(dest_path, &stat_info))
+      return false;
+  }
+
+  // Test directory for write access.
+  join_path_names(dest_path, MAX_PATH, clean_path, "stdout.txt");
+  fp_wr = fopen_unsafe(dest_path, "w");
+  if(fp_wr)
+  {
+    t = (uint64_t)time(NULL);
+
+    // Redirect stdout to stdout.txt.
+    fclose(fp_wr);
+    fprintf(stdout, "Redirecting logs to '%s'...\n", dest_path);
+    freopen(dest_path, "w", stdout);
+    fprintf(stdout, "MegaZeux: Logging to '%s' (%llu)\n", dest_path, t);
+
+    // Redirect stderr to stderr.txt.
+    join_path_names(dest_path, MAX_PATH, clean_path, "stderr.txt");
+    fprintf(stderr, "Redirecting logs to '%s'...\n", dest_path);
+    freopen(dest_path, "w", stderr);
+    fprintf(stderr, "MegaZeux: Logging to '%s' (%llu)\n", dest_path, t);
+    return true;
+  }
+  return false;
+}
+
 // Get 2 bytes, little endian
 
 int fgetw(FILE *fp)

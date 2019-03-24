@@ -75,6 +75,7 @@ usage() {
 	echo "  --enable-uthash         Enables using uthash for counter/string lookups."
 	echo "  --enable-debytecode     Enable experimental 'debytecode' transform."
 	echo "  --disable-libsdl2       Disable SDL 2.0 support (falls back on 1.2)."
+	echo "  --enable-stdio-redirect Redirect console output to stdout.txt/stderr.txt."
 	echo "  --enable-fps            Enable frames-per-second counter."
 	echo
 	echo "e.g.: ./config.sh --platform unix --prefix /usr"
@@ -141,6 +142,7 @@ KHASH="true"
 UTHASH="false"
 DEBYTECODE="false"
 LIBSDL2="true"
+STDIO_REDIRECT="false"
 GAMECONTROLLERDB="true"
 FPSCOUNTER="false"
 
@@ -327,6 +329,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--enable-libsdl2" ]  && LIBSDL2="true"
 	[ "$1" = "--disable-libsdl2" ] && LIBSDL2="false"
+
+	[ "$1" = "--enable-stdio-redirect" ]  && STDIO_REDIRECT="true"
+	[ "$1" = "--disable-stdio-redirect" ] && STDIO_REDIRECT="false"
 
 	[ "$1" = "--enable-fps" ]  && FPSCOUNTER="true"
 	[ "$1" = "--disable-fps" ] && FPSCOUNTER="false"
@@ -1183,6 +1188,18 @@ if [ "$LIBSDL2" = "true" ]; then
 	echo "BUILD_LIBSDL2=1" >> platform.inc
 else
 	echo "SDL 2.0 support disabled."
+fi
+
+#
+# stdio redirect, if enabled
+#
+if [ "$SDL" = "true" -a "$LIBSDL2" = "false" ]; then
+	echo "Using SDL 1.x default stdio redirect behavior."
+elif [ "$STDIO_REDIRECT" = "true" ]; then
+	echo "Redirecting stdio to stdout.txt and stderr.txt."
+	echo "#define CONFIG_STDIO_REDIRECT" >> src/config.h
+else
+	echo "stdio redirect disabled."
 fi
 
 #
