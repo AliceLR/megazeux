@@ -11,6 +11,8 @@
 		"_load_savegame_selection",
 
 	"_game_key",
+		"_new_file",
+			"_file_manager",
 		"_confirm",
 
 	"_confirm",
@@ -75,6 +77,8 @@
 		"_scroll_edit",
 
 	"_run_robot",
+		"_ask_yes_no",
+			"_run_dialog",
 		"_input_window",
 		"_move_player",
 		"_grab_item",
@@ -90,7 +94,13 @@
 	"_idle_input_box",
 		"_intake",
 
+	"_char_selection",
+		"_char_selection_ext",
+
 	"_intake",
+		"_char_selection",
+		"_intake_key",
+			"_char_selection",
 	"_scroll_edit",
 		"_intake",
 	"_help_system",
