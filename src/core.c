@@ -990,6 +990,9 @@ void core_run(core_context *root)
   int start_ticks = get_ticks();
   int delta_ticks;
   int total_ticks;
+#ifdef __EMSCRIPTEN__
+  int emscripten_prev_ticks = get_ticks();
+#endif
 
   // If there aren't any contexts on the stack, there's no reason to be here.
   if(initial_stack_size <= 0)
@@ -1069,6 +1072,19 @@ void core_run(core_context *root)
           // Delay for 16 * (speed - 1) since the beginning of the update
           delay(total_ticks);
         }
+#ifdef __EMSCRIPTEN__
+        else
+        {
+          // Emscripten must yield occasionally, or else the asynchronous queue
+          // will never get processed, causing a freeze.
+          delta_ticks = get_ticks() - emscripten_prev_ticks;
+          if(delta_ticks >= 8) // 16 - 8 = 8
+          {
+            delay(8);
+            emscripten_prev_ticks = get_ticks();
+          }
+        }
+#endif
 
         update_event_status();
         break;
