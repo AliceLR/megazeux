@@ -712,7 +712,7 @@ static void view_board_draw(context *ctx)
 
   blank_layers();
   draw_viewport(mzx_world->current_board, mzx_world->edge_color);
-  draw_game_window(mzx_world->current_board, vb->x, vb->y);
+  draw_game_window(mzx_world->current_board, vb->x * CHAR_W, vb->y * CHAR_H);
 }
 
 static boolean view_board_key(context *ctx, int *key)

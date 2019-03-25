@@ -829,8 +829,8 @@ void draw_world(context *ctx, boolean is_title)
   struct board *cur_board = mzx_world->current_board;
   struct config_info *conf = get_config();
   int time_remaining;
-  int top_x;
-  int top_y;
+  int scroll_x;
+  int scroll_y;
 
   char tmp_str[10];
 
@@ -845,8 +845,8 @@ void draw_world(context *ctx, boolean is_title)
 
   blank_layers();
 
-  // Figure out x/y of top
-  calculate_xytop(mzx_world, &top_x, &top_y);
+  // Figure out scrolled x/y
+  scroll_pixel_get_xy(mzx_world, cur_board, &scroll_x, &scroll_y);
 
   // Draw screen
   if(mzx_world->blind_dur > 0)
@@ -858,11 +858,11 @@ void draw_world(context *ctx, boolean is_title)
     if(is_title)
       player_x = -1;
 
-    draw_game_window_blind(cur_board, top_x, top_y, player_x, player_y);
+    draw_game_window_blind(cur_board, scroll_x, scroll_y, player_x, player_y);
   }
   else
   {
-    draw_game_window(cur_board, top_x, top_y);
+    draw_game_window(cur_board, scroll_x, scroll_y);
   }
 
   // Add sprites

@@ -29,7 +29,7 @@ FEATURES
 + The default boot.dol for Wii builds with the editor enabled
   is now MegaZeux instead of MZXRun.
 + The current renderer can now be set from the settings menu.
-+ Pixel-precise viewport scrolling added through spr#_setview
++ Pixel-precise viewport scrolling added through SPR#_SETVIEW
   (when used on an unbound sprite) and new counters scrolledpx
   and scrolledpy, which have the same semantics as scrolledx and
   scrolledy, but use pixel offsets instead of char offsets and
@@ -84,6 +84,11 @@ FIXES
   from the overlay renderers.
 + Fixed a software renderer mouse crash bug caused by moving the
   cursor off the screen with a window bigger than the screen.
++ Fixed a bug where an offscreen player would be drawn on the
+  screen at an incorrect location while the 'blind' effect is in
+  use. (Lancer-X)
++ Fixed a bug where SPR#_SETVIEW would calculate an incorrect Y
+  value when used on unbound sprites. (Lancer-X)
 
 DEVELOPERS
 
