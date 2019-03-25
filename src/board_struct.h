@@ -78,6 +78,8 @@ struct board
   int b_mesg_col;
   int scroll_x;
   int scroll_y;
+  int scroll_pixel_x;
+  int scroll_pixel_y;
   int locked_x;
   int locked_y;
   int player_ns_locked;

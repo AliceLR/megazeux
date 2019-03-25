@@ -1074,29 +1074,25 @@ static void spr_setview_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   struct board *src_board = mzx_world->current_board;
-  int n_scroll_x, n_scroll_y;
+  int x, y;
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   struct sprite *cur_sprite = mzx_world->sprite_list[spr_num];
-  src_board->scroll_x = 0;
-  src_board->scroll_y = 0;
-  calculate_xytop(mzx_world, &n_scroll_x, &n_scroll_y);
+
   if(cur_sprite->flags & SPRITE_UNBOUND)
   {
-    src_board->scroll_x = ((cur_sprite->x + (signed)cur_sprite->width * 4
-     - src_board->viewport_width * 4) - n_scroll_x * 8) / 8;
-    src_board->scroll_y = ((cur_sprite->y + (signed)cur_sprite->height * 7
-     - src_board->viewport_height * 7) - n_scroll_x * 14) / 14;
+    x = cur_sprite->x + ((signed)cur_sprite->width -
+     src_board->viewport_width) * CHAR_W / 2;
+    y = cur_sprite->y + ((signed)cur_sprite->height -
+     src_board->viewport_height) * CHAR_H / 2;
   }
   else
   {
-    src_board->scroll_x =
-    (cur_sprite->x + (cur_sprite->width >> 1)) -
-    (src_board->viewport_width >> 1) - n_scroll_x;
-    src_board->scroll_y =
-    (cur_sprite->y + (cur_sprite->height >> 1)) -
-    (src_board->viewport_height >> 1) - n_scroll_y;
+    x = ((cur_sprite->x + (cur_sprite->width >> 1)) -
+     (src_board->viewport_width >> 1)) * CHAR_W;
+    y = ((cur_sprite->y + (cur_sprite->height >> 1)) -
+     (src_board->viewport_height >> 1)) * CHAR_H;
   }
-  return;
+  scroll_pixel_set_xy(mzx_world, src_board, x, y);
 }
 
 static int bullettype_read(struct world *mzx_world,
@@ -1186,6 +1182,44 @@ static int key_release_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
   return get_last_key_released(keycode_pc_xt);
+}
+
+static int scrolledpx_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  int x, y;
+  struct board *src_board = mzx_world->current_board;
+  scroll_pixel_get_xy(mzx_world, src_board, &x, &y);
+  return x;
+}
+
+static void scrolledpx_write(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int value, int id)
+{
+  int x, y;
+  struct board *src_board = mzx_world->current_board;
+  scroll_pixel_get_xy(mzx_world, src_board, &x, &y);
+  x = value;
+  scroll_pixel_set_xy(mzx_world, src_board, x, y);
+}
+
+static int scrolledpy_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  int x, y;
+  struct board *src_board = mzx_world->current_board;
+  scroll_pixel_get_xy(mzx_world, src_board, &x, &y);
+  return y;
+}
+
+static void scrolledpy_write(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int value, int id)
+{
+  int x, y;
+  struct board *src_board = mzx_world->current_board;
+  scroll_pixel_get_xy(mzx_world, src_board, &x, &y);
+  y = value;
+  scroll_pixel_set_xy(mzx_world, src_board, x, y);
 }
 
 static int scrolledx_read(struct world *mzx_world,
@@ -2606,6 +2640,8 @@ static const struct function_counter builtin_counters[] =
   { "save_counters",    V290,   save_counters_read,   NULL },
   { "save_game",        V268,   save_game_read,       NULL },
   { "save_robot?",      V270,   save_robot_read,      NULL },
+  { "scrolledpx",       V292,   scrolledpx_read,      scrolledpx_write },
+  { "scrolledpy",       V292,   scrolledpy_read,      scrolledpy_write },
   { "scrolledx",        V251s1, scrolledx_read,       NULL },
   { "scrolledy",        V251s1, scrolledy_read,       NULL },
   { "sin!",             V268,   sin_read,             NULL },

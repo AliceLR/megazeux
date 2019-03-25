@@ -845,10 +845,6 @@ void draw_world(context *ctx, boolean is_title)
 
   blank_layers();
 
-  // Draw border
-  select_layer(GAME_UI_LAYER);
-  draw_viewport(cur_board, mzx_world->edge_color);
-
   // Figure out x/y of top
   calculate_xytop(mzx_world, &top_x, &top_y);
 
@@ -872,6 +868,10 @@ void draw_world(context *ctx, boolean is_title)
   // Add sprites
   select_layer(OVERLAY_LAYER);
   draw_sprites(mzx_world);
+  
+  // Draw border
+  select_layer(GAME_UI_LAYER);
+  draw_viewport(cur_board, mzx_world->edge_color);
 
   // Add time limit
   time_remaining = get_counter(mzx_world, "TIME", 0);

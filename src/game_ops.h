@@ -32,6 +32,10 @@ __M_BEGIN_DECLS
 void rotate(struct world *mzx_world, int x, int y, int dir);
 
 void calculate_xytop(struct world *mzx_world, int *x, int *y);
+void scroll_pixel_get_xy(struct world *mzx_world, struct board *src_board,
+ int *x, int *y);
+void scroll_pixel_set_xy(struct world *mzx_world, struct board *src_board,
+ int x, int y);
 
 int flip_dir(int dir);
 int find_seek(struct world *mzx_world, int x, int y);

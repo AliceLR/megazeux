@@ -286,6 +286,68 @@ void calculate_xytop(struct world *mzx_world, int *x, int *y)
   *y = ny;
 }
 
+void scroll_pixel_get_xy(struct world *mzx_world, struct board *src_board,
+ int *x, int *y)
+{
+  int scroll_x, scroll_y;
+  int n_scroll_x, n_scroll_y;
+
+  // Save scroll_{x,y}
+  scroll_x = src_board->scroll_x;
+  scroll_y = src_board->scroll_y;
+
+  // Calculate the player/lock scroll origin char coordinates
+  src_board->scroll_x = 0;
+  src_board->scroll_y = 0;
+  calculate_xytop(mzx_world, &n_scroll_x, &n_scroll_y);
+
+  // Write absolute pixel scroll values
+  *x = src_board->scroll_pixel_x + n_scroll_x * CHAR_W;
+  *y = src_board->scroll_pixel_y + n_scroll_y * CHAR_H;
+  
+  // Clamp those absolute values
+  *x = CLAMP(*x, 0, (src_board->board_width - src_board->viewport_width) *
+   CHAR_W);
+  *y = CLAMP(*y, 0, (src_board->board_height - src_board->viewport_height) *
+   CHAR_H);
+
+  // Restore scroll_{x,y}
+  src_board->scroll_x = scroll_x;
+  src_board->scroll_y = scroll_y;
+}
+
+void scroll_pixel_set_xy(struct world *mzx_world, struct board *src_board,
+ int x, int y)
+{
+  int n_scroll_x, n_scroll_y;
+  int clamped_x, clamped_y;
+  int relative_x, relative_y;
+
+  // Calculate the player/lock scroll origin char coordinates
+  src_board->scroll_x = 0;
+  src_board->scroll_y = 0;
+  calculate_xytop(mzx_world, &n_scroll_x, &n_scroll_y);
+
+  // Calculate absolute scroll coordinates clamped to board bounds
+  clamped_x = CLAMP(x, 0, (src_board->board_width -
+   src_board->viewport_width) * CHAR_W);
+  clamped_y = CLAMP(y, 0, (src_board->board_height -
+   src_board->viewport_height) * CHAR_H);
+
+  // Calculate scroll coordinates relative to the player/lock scroll
+  relative_x = x - n_scroll_x * CHAR_W;
+  relative_y = y - n_scroll_y * CHAR_H;
+
+  // Calculate char scroll values based on unclamped relative coordinates
+  // for maximum compatibility
+  src_board->scroll_x = relative_x / CHAR_W;
+  src_board->scroll_y = relative_y / CHAR_H;
+
+  // Store relative clamped pixel scroll values
+  src_board->scroll_pixel_x = relative_x - x + clamped_x;
+  src_board->scroll_pixel_y = relative_y - y + clamped_y;
+}
+
 // Return the seek dir relative to the player.
 
 int find_seek(struct world *mzx_world, int x, int y)

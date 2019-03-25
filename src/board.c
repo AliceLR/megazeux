@@ -118,6 +118,8 @@ static int save_board_info(struct board *cur_board, struct zip_archive *zp,
     save_prop_c(BPROP_VOLUME, cur_board->volume, &mf);
     save_prop_c(BPROP_VOLUME_INC, cur_board->volume_inc, &mf);
     save_prop_c(BPROP_VOLUME_TARGET, cur_board->volume_target, &mf);
+    save_prop_d(BPROP_SCROLL_PIXEL_X, cur_board->scroll_pixel_x, &mf);
+    save_prop_d(BPROP_SCROLL_PIXEL_Y, cur_board->scroll_pixel_y, &mf);
   }
 
   save_prop_eof(&mf);
@@ -273,6 +275,8 @@ static void default_board(struct board *cur_board)
 
   cur_board->scroll_x = 0;
   cur_board->scroll_y = 0;
+  cur_board->scroll_pixel_x = 0;
+  cur_board->scroll_pixel_y = 0;
   cur_board->locked_x = -1;
   cur_board->locked_y = -1;
 
@@ -543,10 +547,12 @@ static int load_board_info(struct board *cur_board, struct zip_archive *zp,
       // Savegame only
       case BPROP_SCROLL_X:
         cur_board->scroll_x = (signed short) load_prop_int(size, &prop);
+        cur_board->scroll_pixel_x = cur_board->scroll_x * 8;
         break;
 
       case BPROP_SCROLL_Y:
         cur_board->scroll_y = (signed short) load_prop_int(size, &prop);
+        cur_board->scroll_pixel_y = cur_board->scroll_y * 14;
         break;
 
       case BPROP_LOCKED_X:
@@ -611,6 +617,14 @@ static int load_board_info(struct board *cur_board, struct zip_archive *zp,
 
       case BPROP_VOLUME_TARGET:
         cur_board->volume_target = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_SCROLL_PIXEL_X:
+        cur_board->scroll_pixel_x = load_prop_int(size, &prop);
+        break;
+
+      case BPROP_SCROLL_PIXEL_Y:
+        cur_board->scroll_pixel_y = load_prop_int(size, &prop);
         break;
 
       default:

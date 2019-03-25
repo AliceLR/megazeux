@@ -531,6 +531,15 @@ void id_put(struct board *src_board, unsigned char x_pos, unsigned char y_pos,
   draw_char_ext(c, color, x_pos, y_pos, 0, 0);
 }
 
+static void offset_layers(struct board *src_board)
+{
+  // Offset the board and overlay layers by the per-pixel viewport offsets
+  int offset_x = -(src_board->scroll_pixel_x % 8);
+  int offset_y = -(src_board->scroll_pixel_y % 14);
+  move_layer(BOARD_LAYER, offset_x, offset_y);
+  move_layer(OVERLAY_LAYER, offset_x, offset_y);
+}
+
 void draw_game_window(struct board *src_board, int array_x, int array_y)
 {
   int x_limit, y_limit;
@@ -540,6 +549,12 @@ void draw_game_window(struct board *src_board, int array_x, int array_y)
 
   x_limit = src_board->viewport_width;
   y_limit = src_board->viewport_height;
+
+  // If we are scrolling per-pixel, draw an extra row/column
+  if (src_board->scroll_pixel_x % 8) x_limit++;
+  if (src_board->scroll_pixel_y % 14) y_limit++;
+
+  offset_layers(src_board);
 
   for(y = src_board->viewport_y, a_y = array_y, o_y = 0; o_y < y_limit;
    y++, a_y++, o_y++)
@@ -560,6 +575,12 @@ void draw_game_window_blind(struct board *src_board, int array_x, int array_y,
   int viewport_width = src_board->viewport_width;
   int viewport_height = src_board->viewport_height;
   int i;
+
+  // If we are scrolling per-pixel, draw an extra row/column
+  if (src_board->scroll_pixel_x % 8) viewport_width++;
+  if (src_board->scroll_pixel_y % 14) viewport_height++;
+
+  offset_layers(src_board);
 
   select_layer(BOARD_LAYER);
 

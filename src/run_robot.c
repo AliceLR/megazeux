@@ -3603,6 +3603,8 @@ void run_robot(context *ctx, int id, int x, int y)
             default:
               break;
           }
+          src_board->scroll_pixel_x = src_board->scroll_x * CHAR_W;
+          src_board->scroll_pixel_y = src_board->scroll_y * CHAR_H;
         }
         break;
       }
@@ -5273,6 +5275,8 @@ void run_robot(context *ctx, int id, int x, int y)
         calculate_xytop(mzx_world, &n_scroll_x, &n_scroll_y);
         src_board->scroll_x = scroll_x - n_scroll_x;
         src_board->scroll_y = scroll_y - n_scroll_y;
+        src_board->scroll_pixel_x = src_board->scroll_x * CHAR_W;
+        src_board->scroll_pixel_y = src_board->scroll_y * CHAR_H;
         break;
       }
 
@@ -5354,6 +5358,8 @@ void run_robot(context *ctx, int id, int x, int y)
         src_board->locked_y = n_scroll_y;
         src_board->scroll_x = scroll_x;
         src_board->scroll_y = scroll_y;
+        src_board->scroll_pixel_x = src_board->scroll_x * CHAR_W;
+        src_board->scroll_pixel_y = src_board->scroll_y * CHAR_H;
         break;
       }
 

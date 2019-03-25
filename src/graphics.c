@@ -1390,9 +1390,9 @@ void move_layer(Uint32 layer, int x, int y)
 static void init_layers(void)
 {
   new_empty_layer(&graphics.video_layers[BOARD_LAYER],
-   0, 0, SCREEN_W, SCREEN_H, LAYER_DRAWORDER_BOARD);
+   0, 0, SCREEN_W + 1, SCREEN_H + 1, LAYER_DRAWORDER_BOARD);
   new_empty_layer(&graphics.video_layers[OVERLAY_LAYER],
-   0, 0, SCREEN_W, SCREEN_H, LAYER_DRAWORDER_OVERLAY);
+   0, 0, SCREEN_W + 1, SCREEN_H + 1, LAYER_DRAWORDER_OVERLAY);
   new_empty_layer(&graphics.video_layers[GAME_UI_LAYER],
    0, 0, SCREEN_W, SCREEN_H, LAYER_DRAWORDER_GAME_UI);
   new_empty_layer(&graphics.video_layers[UI_LAYER],
@@ -1413,12 +1413,12 @@ void select_layer(Uint32 layer)
 
 void blank_layers(void)
 {
-  // This clears the default layers and deletes all other layers
+  // This resets the default layers and deletes all other layers
 
   memset(graphics.video_layers[BOARD_LAYER].data, 0x00,
-   sizeof(struct char_element) * SCREEN_W * SCREEN_H);
+   sizeof(struct char_element) * (SCREEN_W + 1) * (SCREEN_H + 1));
   memset(graphics.video_layers[OVERLAY_LAYER].data, 0xFF,
-   sizeof(struct char_element) * SCREEN_W * SCREEN_H);
+   sizeof(struct char_element) * (SCREEN_W + 1) * (SCREEN_H + 1));
   memset(graphics.video_layers[GAME_UI_LAYER].data, 0xFF,
    sizeof(struct char_element) * SCREEN_W * SCREEN_H);
   memset(graphics.video_layers[UI_LAYER].data, 0xFF,
@@ -1428,6 +1428,11 @@ void blank_layers(void)
   graphics.video_layers[OVERLAY_LAYER].empty = true;
   graphics.video_layers[GAME_UI_LAYER].empty = true;
   graphics.video_layers[UI_LAYER].empty = true;
+
+  move_layer(BOARD_LAYER, 0, 0);
+  move_layer(OVERLAY_LAYER, 0, 0);
+  move_layer(GAME_UI_LAYER, 0, 0);
+  move_layer(UI_LAYER, 0, 0);
 
   // Delete the rest of the layers
   destruct_extra_layers(0);
@@ -2161,11 +2166,21 @@ static void color_line_ext(Uint32 length, Uint32 x, Uint32 y,
   }
 }
 
+static int offset_calc_xy(int x, int y)
+{
+  // Transform the given coords into layer space
+  struct video_layer *layer;
+  layer = &graphics.video_layers[graphics.current_layer];
+  x = x - (layer->x / CHAR_W);
+  y = y - (layer->y / CHAR_H);
+  return y * layer->w + x;
+}
+
 void fill_line_ext(Uint32 length, Uint32 x, Uint32 y,
  Uint8 chr, Uint8 color, Uint32 offset, Uint32 c_offset)
 {
   int scr_off = (y * SCREEN_W) + x;
-  struct char_element *dest = graphics.current_video + offset_adjust(scr_off);
+  struct char_element *dest = graphics.current_video + offset_calc_xy(x, y);
   struct char_element *dest_copy = graphics.text_video + scr_off;
   Uint8 bg_color = (color >> 4) + c_offset;
   Uint8 fg_color = (color & 0x0F) + c_offset;
@@ -2179,7 +2194,8 @@ void fill_line_ext(Uint32 length, Uint32 x, Uint32 y,
     dest->char_value = chr + offset;
     dest->bg_color = bg_color;
     dest->fg_color = fg_color;
-    *(dest_copy++) = *dest;
+    if (x + i < SCREEN_W && y < SCREEN_H) *dest_copy = *dest;
+    dest_copy++;
     dest++;
   }
 }
@@ -2205,12 +2221,12 @@ void draw_char_ext(Uint8 chr, Uint8 color, Uint32 x,
  Uint32 y, Uint32 offset, Uint32 c_offset)
 {
   int scr_off = (y * SCREEN_W) + x;
-  struct char_element *dest = graphics.current_video + offset_adjust(scr_off);
+  struct char_element *dest = graphics.current_video + offset_calc_xy(x, y);
   struct char_element *dest_copy = graphics.text_video + scr_off;
   dest->char_value = chr + offset;
   dest->bg_color = (color >> 4) + c_offset;
   dest->fg_color = (color & 0x0F) + c_offset;
-  *(dest_copy++) = *dest;
+  if (x < SCREEN_W && y < SCREEN_H) *dest_copy = *dest;
 
   if(c_offset) dirty_ui();
   dirty_current();

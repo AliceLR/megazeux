@@ -29,6 +29,11 @@ FEATURES
 + The default boot.dol for Wii builds with the editor enabled
   is now MegaZeux instead of MZXRun.
 + The current renderer can now be set from the settings menu.
++ Pixel-precise viewport scrolling added through spr#_setview
+  (when used on an unbound sprite) and new counters scrolledpx
+  and scrolledpy, which have the same semantics as scrolledx and
+  scrolledy, but use pixel offsets instead of char offsets and
+  can be written to. (Lancer-X)
 
 FIXES
 

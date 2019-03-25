@@ -528,8 +528,8 @@ enum sprite_prop
 #define COUNT_BOARD_PROPS (              1 +  7 +          3 + 25)
 #define BOUND_BOARD_PROPS (BOARD_NAME_SIZE + 10 + 3*MAX_PATH + 26)
 
-#define COUNT_BOARD_SAVE_PROPS (             2 + 15)
-#define BOUND_BOARD_SAVE_PROPS (2*ROBOT_MAX_TR + 25)
+#define COUNT_BOARD_SAVE_PROPS (             2 + 17)
+#define BOUND_BOARD_SAVE_PROPS (2*ROBOT_MAX_TR + 33)
 
 // For world files, use BOARD_PROPS_SIZE
 // For save files, use BOARD_PROPS_SIZE + BOARD_SAVE_PROPS_SIZE
@@ -590,7 +590,7 @@ enum board_prop {
   BPROP_CHARSET_PATH              = 0x002A, // MAX_PATH
   BPROP_PALETTE_PATH              = 0x002B, // MAX_PATH
 
-  // Save                               17     25 + 2 ROBOT_MAX_TR
+  // Save                               19     33 + 2 ROBOT_MAX_TR
   BPROP_SCROLL_X                  = 0x0100, // 2
   BPROP_SCROLL_Y                  = 0x0101, // 2
   BPROP_LOCKED_X                  = 0x0102, // 2
@@ -608,6 +608,8 @@ enum board_prop {
   BPROP_VOLUME                    = 0x0114, // 1
   BPROP_VOLUME_INC                = 0x0115, // 1
   BPROP_VOLUME_TARGET             = 0x0116, // 1
+  BPROP_SCROLL_PIXEL_X            = 0x0117, // 4
+  BPROP_SCROLL_PIXEL_Y            = 0x0118, // 4
 };
 
 

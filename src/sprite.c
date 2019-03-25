@@ -410,7 +410,7 @@ void draw_sprites(struct world *mzx_world)
              !is_blank((ch + cur_sprite->offset) % PROTECTED_CHARSET_POSITION))
             {
               if(!unbound)
-                draw_char_linear_ext(color, ch, screen_offset, 0, 0);
+                draw_char_ext(color, ch, x, y, 0, 0);
               else
                 draw_char_to_layer(color, ch, x, y, 0, 0);
             }
@@ -433,8 +433,8 @@ void draw_sprites(struct world *mzx_world)
 
       if(!(cur_sprite->flags & SPRITE_STATIC))
       {
-        start_x -= screen_x * CHAR_W;
-        start_y -= screen_y * CHAR_H;
+        start_x -= screen_x * CHAR_W + (src_board->scroll_pixel_x % CHAR_W);
+        start_y -= screen_y * CHAR_H + (src_board->scroll_pixel_y % CHAR_H);
       }
       move_layer(layer, start_x, start_y);
     }

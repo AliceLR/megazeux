@@ -130,6 +130,8 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   cur_board->b_mesg_col = -1;
   cur_board->scroll_x = 0;
   cur_board->scroll_y = 0;
+  cur_board->scroll_pixel_x = 0;
+  cur_board->scroll_pixel_y = 0;
   cur_board->locked_x = -1;
   cur_board->locked_y = -1;
   cur_board->volume = 255;
@@ -301,6 +303,8 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
     cur_board->b_mesg_col = (signed char)fgetc(fp);
     cur_board->scroll_x = (signed short)fgetw(fp);
     cur_board->scroll_y = (signed short)fgetw(fp);
+    cur_board->scroll_pixel_x = cur_board->scroll_x * 8;
+    cur_board->scroll_pixel_y = cur_board->scroll_y * 14;
     cur_board->locked_x = (signed short)fgetw(fp);
     cur_board->locked_y = (signed short)fgetw(fp);
   }
