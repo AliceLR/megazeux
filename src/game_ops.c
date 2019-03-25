@@ -323,6 +323,8 @@ void scroll_pixel_set_xy(struct world *mzx_world, struct board *src_board,
   int clamped_x, clamped_y;
   int relative_x, relative_y;
 
+  if (x % CHAR_W != 0 || y % CHAR_H != 0) layer_renderer_check(true);
+
   // Calculate the player/lock scroll origin char coordinates
   src_board->scroll_x = 0;
   src_board->scroll_y = 0;
