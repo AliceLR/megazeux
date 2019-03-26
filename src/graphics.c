@@ -2194,7 +2194,7 @@ void fill_line_ext(Uint32 length, Uint32 x, Uint32 y,
     dest->char_value = chr + offset;
     dest->bg_color = bg_color;
     dest->fg_color = fg_color;
-    if (x + i < SCREEN_W && y < SCREEN_H) *dest_copy = *dest;
+    if(x + i < SCREEN_W && y < SCREEN_H) *dest_copy = *dest;
     dest_copy++;
     dest++;
   }
@@ -2226,7 +2226,7 @@ void draw_char_ext(Uint8 chr, Uint8 color, Uint32 x,
   dest->char_value = chr + offset;
   dest->bg_color = (color >> 4) + c_offset;
   dest->fg_color = (color & 0x0F) + c_offset;
-  if (x < SCREEN_W && y < SCREEN_H) *dest_copy = *dest;
+  if(x < SCREEN_W && y < SCREEN_H) *dest_copy = *dest;
 
   if(c_offset) dirty_ui();
   dirty_current();

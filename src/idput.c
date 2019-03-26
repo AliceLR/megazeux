@@ -553,8 +553,8 @@ void draw_game_window(struct board *src_board, int scroll_x, int scroll_y)
   y_limit = src_board->viewport_height;
 
   // If we are scrolling per-pixel, draw an extra row/column
-  if (scroll_x % 8) x_limit++;
-  if (scroll_y % 14) y_limit++;
+  if(scroll_x % 8) x_limit++;
+  if(scroll_y % 14) y_limit++;
 
   offset_layers(src_board, scroll_x, scroll_y);
 
@@ -582,8 +582,8 @@ void draw_game_window_blind(struct board *src_board, int scroll_x, int scroll_y,
   int i;
 
   // If we are scrolling per-pixel, draw an extra row/column
-  if (scroll_x % 8) viewport_width++;
-  if (scroll_y % 14) viewport_height++;
+  if(scroll_x % 8) viewport_width++;
+  if(scroll_y % 14) viewport_height++;
 
   offset_layers(src_board, scroll_x, scroll_y);
 

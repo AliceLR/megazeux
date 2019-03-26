@@ -286,9 +286,9 @@ void calculate_xytop(struct world *mzx_world, int *x, int *y)
   *y = ny;
 }
 
-void scroll_pixel_get_xy(struct world *mzx_world, struct board *src_board,
- int *x, int *y)
+void scroll_pixel_get_xy(struct world *mzx_world, int *x, int *y)
 {
+  struct board *src_board = mzx_world->current_board;
   int scroll_x, scroll_y;
   int n_scroll_x, n_scroll_y;
 
@@ -316,9 +316,9 @@ void scroll_pixel_get_xy(struct world *mzx_world, struct board *src_board,
   src_board->scroll_y = scroll_y;
 }
 
-void scroll_pixel_set_xy(struct world *mzx_world, struct board *src_board,
- int x, int y)
+void scroll_pixel_set_xy(struct world *mzx_world, int x, int y)
 {
+  struct board *src_board = mzx_world->current_board;
   int n_scroll_x, n_scroll_y;
   int clamped_x, clamped_y;
   int relative_x, relative_y;

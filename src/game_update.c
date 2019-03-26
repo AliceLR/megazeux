@@ -846,7 +846,7 @@ void draw_world(context *ctx, boolean is_title)
   blank_layers();
 
   // Figure out scrolled x/y
-  scroll_pixel_get_xy(mzx_world, cur_board, &scroll_x, &scroll_y);
+  scroll_pixel_get_xy(mzx_world, &scroll_x, &scroll_y);
 
   // Draw screen
   if(mzx_world->blind_dur > 0)

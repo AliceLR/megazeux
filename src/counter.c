@@ -1092,7 +1092,7 @@ static void spr_setview_write(struct world *mzx_world,
     y = ((cur_sprite->y + (cur_sprite->height >> 1)) -
      (src_board->viewport_height >> 1)) * CHAR_H;
   }
-  scroll_pixel_set_xy(mzx_world, src_board, x, y);
+  scroll_pixel_set_xy(mzx_world, x, y);
 }
 
 static int bullettype_read(struct world *mzx_world,
@@ -1188,8 +1188,7 @@ static int scrolledpx_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
   int x, y;
-  struct board *src_board = mzx_world->current_board;
-  scroll_pixel_get_xy(mzx_world, src_board, &x, &y);
+  scroll_pixel_get_xy(mzx_world, &x, &y);
   return x;
 }
 
@@ -1197,18 +1196,16 @@ static void scrolledpx_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   int x, y;
-  struct board *src_board = mzx_world->current_board;
-  scroll_pixel_get_xy(mzx_world, src_board, &x, &y);
+  scroll_pixel_get_xy(mzx_world, &x, &y);
   x = value;
-  scroll_pixel_set_xy(mzx_world, src_board, x, y);
+  scroll_pixel_set_xy(mzx_world, x, y);
 }
 
 static int scrolledpy_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
   int x, y;
-  struct board *src_board = mzx_world->current_board;
-  scroll_pixel_get_xy(mzx_world, src_board, &x, &y);
+  scroll_pixel_get_xy(mzx_world, &x, &y);
   return y;
 }
 
@@ -1216,10 +1213,9 @@ static void scrolledpy_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   int x, y;
-  struct board *src_board = mzx_world->current_board;
-  scroll_pixel_get_xy(mzx_world, src_board, &x, &y);
+  scroll_pixel_get_xy(mzx_world, &x, &y);
   y = value;
-  scroll_pixel_set_xy(mzx_world, src_board, x, y);
+  scroll_pixel_set_xy(mzx_world, x, y);
 }
 
 static int scrolledx_read(struct world *mzx_world,

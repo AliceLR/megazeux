@@ -282,8 +282,8 @@ static const char *board_var_list[] =
   "playery*",
   "scrolledx*",
   "scrolledy*",
-  "scrolledpx",
-  "scrolledpy",
+  "scrolledpx*",
+  "scrolledpy*",
   "timereset",
   "volume", //no read or write
 };
