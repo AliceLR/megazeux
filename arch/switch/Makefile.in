@@ -31,16 +31,16 @@ STRIP      := /bin/true
 MACHDEP    := -D__SWITCH__ -march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE
 
 ifeq (${DEBUG},1)
-  DRM_NOUVEAU := drm_nouveaud
+  #DRM_NOUVEAU := drm_nouveaud
   NX := nxd
 else
   OPTIMIZE_CFLAGS := -O3 -ffunction-sections
-  DRM_NOUVEAU := drm_nouveau
+  #DRM_NOUVEAU := drm_nouveau
   NX := nx
 endif
 
 ifeq ($(filter 1,${BUILD_RENDER_GL_FIXED} ${BUILD_RENDER_GL_PROGRAM}),1)
-  MESA_LIBS := -lEGL -lGLESv2 -lglapi -l${DRM_NOUVEAU}
+  MESA_LIBS := -lEGL -lGLESv2 -lglapi -ldrm_nouveau
 else
   MESA_LIBS :=
 endif
