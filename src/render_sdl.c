@@ -19,7 +19,6 @@
 
 #include "compat_sdl.h"
 #include "render_sdl.h"
-#include "util.h"
 
 #include <limits.h>
 
@@ -369,9 +368,6 @@ boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
 // Emscripten's EGL requires explicitly declaring alpha
 // for RGBA textures to work.
 #ifdef __EMSCRIPTEN__
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
   SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
   SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
   SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
