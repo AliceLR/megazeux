@@ -70,6 +70,9 @@ DEVELOPERS
   loaded in SDL 1.2. (Lancer-X)
 + GL renderers free textures and revert to fixed function
   pipeline where appropriate. (Lancer-X)
++ OpenGL ES support can now be enabled for SDL builds with the
+  --enable-gles option. This option is force-enabled for
+  platforms that only support OpenGL ES.
 
 
 February 20th, 2019 - MZX 2.91j

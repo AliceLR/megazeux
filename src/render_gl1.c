@@ -45,6 +45,8 @@
 //       OpenGL ES 1.x. The latter API lacks many functions present in
 //       desktop OpenGL. GL ES is typically used on cellphones.
 
+static const struct gl_version gl_required_version = { 1, 1 };
+
 static struct
 {
   void (GL_APIENTRY *glBindTexture)(GLenum target, GLuint texture);
@@ -183,7 +185,8 @@ static boolean gl1_set_video_mode(struct graphics_data *graphics,
 
   gl_set_attributes(graphics);
 
-  if(!gl_set_video_mode(graphics, width, height, depth, fullscreen, resize))
+  if(!gl_set_video_mode(graphics, width, height, depth, fullscreen, resize,
+   gl_required_version))
     return false;
 
   gl_set_attributes(graphics);
@@ -193,10 +196,10 @@ static boolean gl1_set_video_mode(struct graphics_data *graphics,
 
   // We need a specific version of OpenGL; desktop GL must be 1.1.
   // All OpenGL ES 1.x implementations are supported, so don't do
-  // the check with EGL configurations (EGL implies OpenGL ES).
+  // the check with these configurations.
   // No OpenGL ES 1.x supports NPOT textures, so we can also skip
   // the extension check.
-#ifndef CONFIG_EGL
+#ifndef CONFIG_GLES
   {
     static boolean initialized = false;
 

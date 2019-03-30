@@ -267,13 +267,27 @@ boolean sdl_check_video_mode(struct graphics_data *graphics, int width,
 #if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM)
 
 boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
- int depth, boolean fullscreen, boolean resize)
+ int depth, boolean fullscreen, boolean resize, struct gl_version req_ver)
 {
   struct sdl_render_data *render_data = graphics->render_data;
 
 #if SDL_VERSION_ATLEAST(2,0,0)
 
   sdl_destruct_window(graphics);
+
+#ifdef CONFIG_GLES
+  // Hints to make SDL use OpenGL ES drivers (e.g. ANGLE) on Windows/Linux.
+  // These may be ignored by SDL unless using the Windows or X11 video drivers.
+  SDL_SetHint(SDL_HINT_OPENGL_ES_DRIVER, "1");
+  SDL_SetHint(SDL_HINT_VIDEO_WIN_D3DCOMPILER, "none");
+
+  // Declare the OpenGL version to source functions from. This is necessary
+  // since OpenGL ES 1.x and OpenGL ES 2.x are not compatible. This must be
+  // done after old windows are destroyed and before new windows are created.
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, req_ver.major);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, req_ver.minor);
+#endif
 
   render_data->window = SDL_CreateWindow("MegaZeux",
    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
