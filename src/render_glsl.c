@@ -385,7 +385,7 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
 
   shader = glsl.glCreateShader(type);
 
-#ifdef CONFIG_EGL
+#if defined(CONFIG_EGL) || defined(CONFIG_SWITCH)
   {
     /**
      * OpenGL ES really doesn't like '#version 110' being specified. This
@@ -406,7 +406,7 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
   }
 #endif // CONFIG_EGL
 
-#ifdef CONFIG_EGL
+#if defined(CONFIG_EGL) || defined(CONFIG_SWITCH)
   {
     const GLchar *sources[2];
     GLint lengths[2];
@@ -726,7 +726,7 @@ static boolean glsl_set_video_mode(struct graphics_data *graphics,
   // We need a specific version of OpenGL; desktop GL must be 2.0.
   // All OpenGL ES 2.0 implementations are supported, so don't do
   // the check with EGL configurations (EGL implies OpenGL ES).
-#ifndef CONFIG_EGL
+#if !defined(CONFIG_EGL) && !defined(CONFIG_SWITCH)
   {
     static boolean initialized = false;
 

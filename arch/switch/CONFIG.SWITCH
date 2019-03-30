@@ -1,4 +1,5 @@
 #!/bin/bash
 
 ./config.sh --platform switch --prefix $DEVKITPRO/devkitA64 --enable-release \
-            --disable-utils --enable-meter $@
+            --disable-gl-fixed --disable-utils --enable-meter \
+            --enable-stdio-redirect $@
