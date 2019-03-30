@@ -278,8 +278,12 @@ boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
 #ifdef CONFIG_GLES
   // Hints to make SDL use OpenGL ES drivers (e.g. ANGLE) on Windows/Linux.
   // These may be ignored by SDL unless using the Windows or X11 video drivers.
+#if SDL_VERSION_ATLEAST(2,0,6)
   SDL_SetHint(SDL_HINT_OPENGL_ES_DRIVER, "1");
+#endif
+#if SDL_VERSION_ATLEAST(2,0,2)
   SDL_SetHint(SDL_HINT_VIDEO_WIN_D3DCOMPILER, "none");
+#endif
 
   // Declare the OpenGL version to source functions from. This is necessary
   // since OpenGL ES 1.x and OpenGL ES 2.x are not compatible. This must be
