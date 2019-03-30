@@ -71,6 +71,7 @@ usage() {
 	echo "  --enable-meter          Enable load/save meter display."
 	echo "  --disable-sdl           Disables SDL dependencies and features."
 	echo "  --enable-egl            Enables EGL backend (if SDL disabled)."
+	echo "  --enable-gles           Enable hacks for OpenGL ES platforms."
 	echo "  --disable-check-alloc   Disables memory allocator error handling."
 	echo "  --disable-khash         Disables using khash for counter/string lookups."
 	echo "  --enable-uthash         Enables using uthash for counter/string lookups."
@@ -138,6 +139,7 @@ VERBOSE="false"
 METER="false"
 SDL="true"
 EGL="false"
+GLES="false"
 CHECK_ALLOC="true"
 KHASH="true"
 UTHASH="false"
@@ -315,6 +317,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--enable-egl" ]  && EGL="true"
 	[ "$1" = "--disable-egl" ] && EGL="false"
+
+	[ "$1" = "--enable-gles" ]  && GLES="true"
+	[ "$1" = "--disable-gles" ] && GLES="false"
 
 	[ "$1" = "--disable-check-alloc" ] && CHECK_ALLOC="false"
 	[ "$1" = "--enable-check-alloc" ]  && CHECK_ALLOC="true"
@@ -589,18 +594,23 @@ else
 fi
 
 #
-# We have EGL support
+# Use an EGL backend in place of SDL.
+# For now, also force-enable OpenGL ES hacks, since that's most
+# likely what is being used with EGL.
 #
 if [ "$EGL" = "true" ]; then
 	echo "#define CONFIG_EGL" >> src/config.h
 	echo "BUILD_EGL=1" >> platform.inc
+
+	echo "Force-enabling OpenGL ES support (EGL)."
+	GLES="true"
 fi
 
 #
 # We need either SDL or EGL for OpenGL
 #
 if [ "$SDL" = "false" -a "$EGL" = "false" ]; then
-	echo "Force-disabling OpenGL (no SDL or EGL support)."
+	echo "Force-disabling OpenGL (no SDL or EGL backend)."
 	GL="false"
 fi
 
@@ -714,6 +724,7 @@ if [ "$GL" = "false" ]; then
 	echo "Force-disabling OpenGL."
 	GL_FIXED="false"
 	GL_PROGRAM="false"
+	GLES="false"
 fi
 
 #
@@ -928,6 +939,16 @@ if [ "$ICON" = "true" ]; then
 		echo "Force-disabling icon branding (redundant)."
 		ICON="false"
 	fi
+fi
+
+#
+# Enable OpenGL ES hacks if required.
+#
+if [ "$GLES" = "true" ]; then
+	echo "OpenGL ES support enabled."
+	echo "#define CONFIG_GLES" >> src/config.h
+else
+	echo "OpenGL ES support disabled."
 fi
 
 #

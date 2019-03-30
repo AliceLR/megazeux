@@ -39,12 +39,17 @@
 #ifdef CONFIG_EGL
 #include <GLES2/gl2.h>
 #include "render_egl.h"
+#endif
+
+#ifdef CONFIG_GLES
 typedef GLenum GLiftype;
 #else
 typedef GLint GLiftype;
 #endif
 
 #include "render_gl.h"
+
+static const struct gl_version gl_required_version = { 2, 0 };
 
 #define CHARSET_COLS 64
 #define CHARSET_ROWS (FULL_CHARSET_SIZE / CHARSET_COLS)
@@ -385,7 +390,7 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
 
   shader = glsl.glCreateShader(type);
 
-#if defined(CONFIG_EGL) || defined(CONFIG_SWITCH)
+#ifdef CONFIG_GLES
   {
     /**
      * OpenGL ES really doesn't like '#version 110' being specified. This
@@ -404,9 +409,9 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
       pos[1] = '/';
     }
   }
-#endif // CONFIG_EGL
+#endif // CONFIG_GLES
 
-#if defined(CONFIG_EGL) || defined(CONFIG_SWITCH)
+#ifdef CONFIG_GLES
   {
     const GLchar *sources[2];
     GLint lengths[2];
@@ -715,7 +720,8 @@ static boolean glsl_set_video_mode(struct graphics_data *graphics,
 {
   gl_set_attributes(graphics);
 
-  if(!gl_set_video_mode(graphics, width, height, depth, fullscreen, resize))
+  if(!gl_set_video_mode(graphics, width, height, depth, fullscreen, resize,
+   gl_required_version))
     return false;
 
   gl_set_attributes(graphics);
@@ -725,8 +731,8 @@ static boolean glsl_set_video_mode(struct graphics_data *graphics,
 
   // We need a specific version of OpenGL; desktop GL must be 2.0.
   // All OpenGL ES 2.0 implementations are supported, so don't do
-  // the check with EGL configurations (EGL implies OpenGL ES).
-#if !defined(CONFIG_EGL) && !defined(CONFIG_SWITCH)
+  // the check with these configurations.
+#ifndef CONFIG_GLES
   {
     static boolean initialized = false;
 
