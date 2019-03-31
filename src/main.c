@@ -136,18 +136,6 @@ __libspec int main(int argc, char *argv[])
   // Keep this 7.2k structure off the stack..
   static struct world mzx_world;
 
-#ifdef CONFIG_STDIO_REDIRECT
-  /**
-   * Redirect STDIO for platforms where there isn't really a console.
-   * Try the CWD if the config file is present first (likely to be the MZX
-   * dir) first, then try the sharedir. Finally, attempt the home directory.
-   * Do this before anything else since even platform_init may print errors.
-   */
-  if(!redirect_stdio(".", true))
-    if(!redirect_stdio(SHAREDIR, false))
-      redirect_stdio(getenv("HOME"), false);
-#endif
-
   if(!platform_init())
     goto err_out;
 
@@ -155,6 +143,14 @@ __libspec int main(int argc, char *argv[])
   // always possible to get back to it..
   getcwd(startup_dir, MAX_PATH);
   strcpy(current_dir, startup_dir);
+
+#ifdef CONFIG_STDIO_REDIRECT
+  // Do this after platform_init() since, even though platform_init() might
+  // log stuff, it actually initializes the filesystem on some platforms.
+  if(!redirect_stdio(startup_dir, true))
+    if(!redirect_stdio(SHAREDIR, false))
+      redirect_stdio(getenv("HOME"), false);
+#endif
 
 #ifdef __APPLE__
   if(!strcmp(current_dir, "/") || !strncmp(current_dir, "/App", 4))

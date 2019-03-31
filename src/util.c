@@ -325,7 +325,7 @@ boolean redirect_stdio(const char *base_path, boolean require_conf)
     struct stat stat_info;
 
     join_path_names(dest_path, MAX_PATH, clean_path, "config.txt");
-    if(!stat(dest_path, &stat_info))
+    if(stat(dest_path, &stat_info))
       return false;
   }
 
@@ -613,15 +613,14 @@ int change_dir_name(char *path_name, const char *dest)
   current = dest;
   end = dest + strlen(dest);
 
-  // Destination starts with a root directory.
-#if defined(__WIN32__) || defined(CONFIG_WII)
-
-  if(dest[0] == DIR_SEPARATOR_CHAR)
-    return -1;
-
   next = strchr(dest, ':');
   if(next)
   {
+    /**
+     * Destination starts with a Windows-style root directory.
+     * Aside from Windows, these are often used by console SDKs (albeit with /
+     * instead of \) to distinguish SD cards and the like.
+     */
     if(next[1] != DIR_SEPARATOR_CHAR && next[1] != 0)
       return -1;
 
@@ -636,31 +635,30 @@ int change_dir_name(char *path_name, const char *dest)
       current++;
   }
   else
-  {
-    if(path_name[strlen(path_name) - 1] != DIR_SEPARATOR_CHAR)
-      snprintf(path, MAX_PATH, "%s" DIR_SEPARATOR, path_name);
-
-    else
-      strcpy(path, path_name);
-  }
-
-#else /* !defined(__WIN32__) && !defined(CONFIG_WII) */
 
   if(dest[0] == DIR_SEPARATOR_CHAR)
   {
+    /**
+     * Destination starts with a Unix-style root directory.
+     * Aside from Unix-likes, these are also supported by console platforms.
+     * Even Windows (back through XP at least) doesn't seem to mind them.
+     */
     strcpy(path, DIR_SEPARATOR);
     current = dest + 1;
   }
+
   else
   {
+    /**
+     * Destination is relative--start from the current path. Make sure there's
+     * a trailing separator.
+     */
     if(path_name[strlen(path_name) - 1] != DIR_SEPARATOR_CHAR)
       snprintf(path, MAX_PATH, "%s" DIR_SEPARATOR, path_name);
 
     else
       strcpy(path, path_name);
   }
-
-#endif /* !defined(__WIN32__) && !defined(CONFIG_WII) */
 
   current_char = current[0];
   len = strlen(path);
