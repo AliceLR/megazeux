@@ -666,6 +666,11 @@ if [ "$PLATFORM" = "switch" ]; then
 
 	echo "Disabling utils on Switch (silly)."
 	UTILS="false"
+
+	echo "Force-enabling OpenGL ES support (Switch)."
+	GLES="true"
+
+	# This may or may not be totally useless for the Switch, disable it for now.
 	GAMECONTROLLERDB="false"
 fi
 

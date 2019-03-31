@@ -40,7 +40,7 @@ else
 endif
 
 ifeq ($(filter 1,${BUILD_RENDER_GL_FIXED} ${BUILD_RENDER_GL_PROGRAM}),1)
-  MESA_LIBS := -lEGL -lGLESv2 -lglapi -ldrm_nouveau
+  MESA_LIBS := -lEGL -lGLESv2 -lGLESv1_CM -lglapi -ldrm_nouveau
 else
   MESA_LIBS :=
 endif
