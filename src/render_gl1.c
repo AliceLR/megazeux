@@ -203,8 +203,6 @@ static boolean gl1_set_video_mode(struct graphics_data *graphics,
   // We need a specific version of OpenGL; desktop GL must be 1.1.
   // All OpenGL ES 1.x implementations are supported, so don't do
   // the check with these configurations.
-  // No OpenGL ES 1.x supports NPOT textures, so we can also skip
-  // the extension check.
 #ifndef CONFIG_GLES
   {
     static boolean initialized = false;
