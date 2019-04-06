@@ -187,7 +187,6 @@ static void gl1_resize_screen(struct graphics_data *graphics,
 static boolean gl1_set_video_mode(struct graphics_data *graphics,
  int width, int height, int depth, boolean fullscreen, boolean resize)
 {
-  int internal_width = CHAR_W * SCREEN_W, internal_height = CHAR_H * SCREEN_H;
   struct gl1_render_data *render_data = graphics->render_data;
 
   gl_set_attributes(graphics);
@@ -235,13 +234,12 @@ static boolean gl1_set_video_mode(struct graphics_data *graphics,
   }
 #endif
 
-  render_data->pixels =
-   cmalloc(sizeof(Uint32) * internal_width * internal_height);
+  render_data->pixels = cmalloc(sizeof(Uint32) * SCREEN_PIX_W * SCREEN_PIX_H);
   if(!render_data->pixels)
     return false;
 
-  render_data->w = internal_width;
-  render_data->h = internal_height;
+  render_data->w = SCREEN_PIX_W;
+  render_data->h = SCREEN_PIX_H;
 
   gl1_resize_screen(graphics, width, height);
   return true;
@@ -325,8 +323,8 @@ static void gl1_sync_screen(struct graphics_data *graphics)
 {
   struct gl1_render_data *render_data = graphics->render_data;
 
-  const float texture_width = 640.0f / GL_POWER_2_WIDTH;
-  const float texture_height = 350.0f / GL_POWER_2_HEIGHT;
+  const float texture_width = 1.0f * SCREEN_PIX_W / GL_POWER_2_WIDTH;
+  const float texture_height = 1.0f * SCREEN_PIX_H / GL_POWER_2_HEIGHT;
 
   const float tex_coord_array[2 * 4] = {
     0.0f,          0.0f,
