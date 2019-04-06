@@ -24,6 +24,7 @@
 #include "render.h"
 #include "render_sdl.h"
 #include "render_yuv.h"
+#include "yuv.h"
 
 boolean yuv_set_video_mode_size(struct graphics_data *graphics,
  int width, int height, int depth, boolean fullscreen, boolean resize,
@@ -157,19 +158,10 @@ boolean yuv_check_video_mode(struct graphics_data *graphics,
 #endif
 }
 
-static inline void rgb_to_yuv(Uint8 r, Uint8 g, Uint8 b,
-                              Uint8 *y, Uint8 *u, Uint8 *v)
-{
-  *y = (9797 * r + 19237 * g + 3734 * b) >> 15;
-  *u = ((18492 * (b - *y)) >> 15) + 128;
-  *v = ((23372 * (r - *y)) >> 15) + 128;
-}
-
 void yuv_update_colors(struct graphics_data *graphics,
  struct rgb_color *palette, Uint32 count)
 {
   struct yuv_render_data *render_data = graphics->render_data;
-  Uint8 y, u, v;
   Uint32 i;
 
   // it's a YUY2 overlay
@@ -177,15 +169,8 @@ void yuv_update_colors(struct graphics_data *graphics,
   {
     for(i = 0; i < count; i++)
     {
-      rgb_to_yuv(palette[i].r, palette[i].g, palette[i].b, &y, &u, &v);
-
-#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
       graphics->flat_intensity_palette[i] =
-        (v << 0) | (y << 8) | (u << 16) | (y << 24);
-#else
-      graphics->flat_intensity_palette[i] =
-        (y << 0) | (u << 8) | (y << 16) | (v << 24);
-#endif
+       rgb_to_yuy2(palette[i].r, palette[i].g, palette[i].b);
     }
   }
 
@@ -194,15 +179,8 @@ void yuv_update_colors(struct graphics_data *graphics,
   {
     for(i = 0; i < count; i++)
     {
-      rgb_to_yuv(palette[i].r, palette[i].g, palette[i].b, &y, &u, &v);
-
-#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
       graphics->flat_intensity_palette[i] =
-        (y << 0) | (v << 8) | (y << 16) | (u << 24);
-#else
-      graphics->flat_intensity_palette[i] =
-        (u << 0) | (y << 8) | (v << 16) | (y << 24);
-#endif
+       rgb_to_uyvy(palette[i].r, palette[i].g, palette[i].b);
     }
   }
 }

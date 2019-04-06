@@ -33,47 +33,12 @@ static boolean yuv2_set_video_mode(struct graphics_data *graphics,
     return false;
 
   if(render_data->is_yuy2)
-  {
-#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
-    render_data->y0mask = 0xFF000000;
-    render_data->y1mask = 0x0000FF00;
-#else
-    render_data->y0mask = 0x000000FF;
-    render_data->y1mask = 0x00FF0000;
-#endif
-  }
+    render_data->set_colors_mzx = yuy2_subsample_set_colors_mzx;
+
   else
-  {
-#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
-    render_data->y0mask = 0x00FF0000;
-    render_data->y1mask = 0x000000FF;
-#else
-    render_data->y0mask = 0x0000FF00;
-    render_data->y1mask = 0xFF000000;
-#endif
-  }
+    render_data->set_colors_mzx = uyvy_subsample_set_colors_mzx;
 
-  render_data->uvmask = ~(render_data->y0mask | render_data->y1mask);
   return true;
-}
-
-static void yuv2_set_colors_mzx(struct graphics_data *graphics,
- Uint32 *char_colors, Uint8 bg, Uint8 fg)
-{
-  struct yuv_render_data *render_data = graphics->render_data;
-  Uint32 y0mask = render_data->y0mask;
-  Uint32 y1mask = render_data->y1mask;
-  Uint32 uvmask = render_data->uvmask;
-  Uint32 cb_bg, cb_fg, cb_mix;
-
-  cb_bg = graphics->flat_intensity_palette[bg];
-  cb_fg = graphics->flat_intensity_palette[fg];
-  cb_mix = (((cb_bg & uvmask) >> 1) + ((cb_fg & uvmask) >> 1)) & uvmask;
-
-  char_colors[0] = cb_bg;
-  char_colors[1] = cb_mix | (cb_bg & y0mask) | (cb_fg & y1mask);
-  char_colors[2] = cb_mix | (cb_fg & y0mask) | (cb_bg & y1mask);
-  char_colors[3] = cb_fg;
 }
 
 static void yuv2_render_graph(struct graphics_data *graphics)
@@ -88,7 +53,8 @@ static void yuv2_render_graph(struct graphics_data *graphics)
   pixels = yuv_get_pixels_pitch(render_data, &pitch);
 
   if(!mode)
-    render_graph16((Uint16 *)pixels, pitch, graphics, yuv2_set_colors_mzx);
+    render_graph16((Uint16 *)pixels, pitch, graphics,
+     render_data->set_colors_mzx);
   else
     render_graph16((Uint16 *)pixels, pitch, graphics, set_colors32[mode]);
 

@@ -39,9 +39,7 @@ __M_BEGIN_DECLS
 struct yuv_render_data
 {
   struct sdl_render_data sdl;
-  Uint32 y0mask;
-  Uint32 y1mask;
-  Uint32 uvmask;
+  void (*set_colors_mzx)(struct graphics_data *, Uint32 *, Uint8, Uint8);
   boolean is_yuy2;
   Uint32 w;
   Uint32 h;

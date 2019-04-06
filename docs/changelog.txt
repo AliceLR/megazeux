@@ -29,6 +29,11 @@ FEATURES
 + The default boot.dol for Wii builds with the editor enabled
   is now MegaZeux instead of MZXRun.
 + The current renderer can now be set from the settings menu.
++ Added the 'softscale' renderer. This renderer is a generalized
+  rewrite of the former SDL 2 overlay renderer implementation.
+  It should perform significantly better and be more portable.
+- SDL 2 support for the overlay renderers has been removed. When
+  specified for video_output, softscale will be enabled instead.
 
 FIXES
 

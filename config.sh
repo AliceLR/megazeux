@@ -47,10 +47,11 @@ usage() {
 	echo "  --disable-utils         Disable compilation of utils."
 	echo "  --disable-x11           Disable X11, removing binary dependency."
 	echo "  --disable-software      Disable software renderer."
+	echo "  --disable-softscale     Disable SDL 2 accelerated software renderer."
 	echo "  --disable-gl            Disable all GL renderers."
 	echo "  --disable-gl-fixed      Disable GL renderers for fixed-function h/w."
 	echo "  --disable-gl-prog       Disable GL renderers for programmable h/w."
-	echo "  --disable-overlay       Disable all overlay renderers."
+	echo "  --disable-overlay       Disable SDL 1.2 overlay renderers."
 	echo "  --enable-gp2x           Enables half-res software renderer."
 	echo "  --disable-screenshots   Disable the screenshot hotkey."
 	echo "  --disable-xmp           Disable XMP music engine."
@@ -117,6 +118,7 @@ HELPSYS="true"
 UTILS="true"
 X11="true"
 SOFTWARE="true"
+SOFTSCALE="true"
 GL_FIXED="true"
 GL_PROGRAM="true"
 OVERLAY="true"
@@ -244,6 +246,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--disable-software" ] && SOFTWARE="false"
 	[ "$1" = "--enable-software" ]  && SOFTWARE="true"
+
+	[ "$1" = "--disable-softscale" ] && SOFTSCALE="false"
+	[ "$1" = "--enable-softscale" ]  && SOFTSCALE="true"
 
 	[ "$1" = "--disable-gl" ] && GL="false"
 	[ "$1" = "--enable-gl" ]  && GL="true"
@@ -580,8 +585,9 @@ fi
 #
 if [ "$SDL" = "false" ]; then
 	echo "Force-disabling SDL dependent components:"
-	echo " -> SOFTWARE, OVERLAY, MIKMOD"
+	echo " -> SOFTWARE, SOFTSCALE, OVERLAY, MIKMOD"
 	SOFTWARE="false"
+	SOFTSCALE="false"
 	OVERLAY="false"
 	MIKMOD="false"
 	LIBSDL2="false"
@@ -694,6 +700,23 @@ if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" \
   	echo "Force-disabling OpenGL and overlay renderers."
 	GL="false"
 	OVERLAY="false"
+fi
+
+#
+# Force-disable the softscale renderer for SDL 1.2 (requires SDL_Renderer).
+#
+if [ "$SDL" = "true" -a "$LIBSDL2" = "false" -a "$SOFTSCALE" = "true" ]; then
+	echo "Force-disabling softscale renderer (requires SDL 2)."
+	SOFTSCALE="false"
+fi
+
+#
+# Force-disable overlay renderers for SDL 2. The SDL 2 answer to SDL_Overlay
+# involves planar YUV modes which don't mesh well with MZX's internal rendering.
+#
+if [ "$SDL" = "true" -a "$LIBSDL2" = "true" -a "$OVERLAY" = "true" ]; then
+	echo "Force-disabling overlay renderers (requires SDL 1.2)."
+	#OVERLAY="false"
 fi
 
 #
@@ -944,6 +967,17 @@ if [ "$SOFTWARE" = "true" ]; then
 	echo "BUILD_RENDER_SOFT=1" >> platform.inc
 else
 	echo "Software renderer disabled."
+fi
+
+#
+# Softscale renderer (SDL 2)
+#
+if [ "$SOFTSCALE" = "true" ]; then
+	echo "Softscale renderer enabled."
+	echo "#define CONFIG_RENDER_SOFTSCALE" >> src/config.h
+	echo "BUILD_RENDER_SOFTSCALE=1" >> platform.inc
+else
+	echo "Softscale renderer disabled."
 fi
 
 #
