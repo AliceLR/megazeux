@@ -26,6 +26,7 @@
 #include "render.h"
 #include "render_layer.h"
 #include "util.h"
+#include "yuv.h"
 
 static void set_colors8_mzx (struct graphics_data *graphics,
  Uint32 *char_colors, Uint8 bg, Uint8 fg)
@@ -330,10 +331,6 @@ void (*const set_indices[4])
   set_indices_smzx3
 };
 
-#if defined(CONFIG_RENDER_YUV) || defined(CONFIG_WII)
-
-#include "yuv.h"
-
 void yuy2_subsample_set_colors_mzx(struct graphics_data *graphics,
  Uint32 *indices, Uint8 bg, Uint8 fg)
 {
@@ -369,8 +366,6 @@ void yvyu_subsample_set_colors_mzx(struct graphics_data *graphics,
   indices[2] = yvyu_subsample(yuv_fg, yuv_bg);
   indices[3] = yuv_fg;
 }
-
-#endif
 
 // Nominally 8-bit (Character graphics 8 bytes wide)
 void render_graph8(Uint8 *pixels, Uint32 pitch, struct graphics_data *graphics,

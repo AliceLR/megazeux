@@ -35,14 +35,12 @@ extern void (*const set_colors32[4])(struct graphics_data *graphics,
 extern void (*const set_indices[4])(struct graphics_data *graphics,
  int *indices, Uint8 bg, Uint8 fg);
 
-#if defined(CONFIG_RENDER_YUV) || defined(CONFIG_WII)
 void yuy2_subsample_set_colors_mzx(struct graphics_data *graphics,
  Uint32 *indices, Uint8 bg, Uint8 fg);
 void uyvy_subsample_set_colors_mzx(struct graphics_data *graphics,
  Uint32 *indices, Uint8 bg, Uint8 fg);
 void yvyu_subsample_set_colors_mzx(struct graphics_data *graphics,
  Uint32 *indices, Uint8 bg, Uint8 fg);
- #endif
 
 void render_graph8(Uint8 *pixels, Uint32 pitch,
  struct graphics_data *graphics,
