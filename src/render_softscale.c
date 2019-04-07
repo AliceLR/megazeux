@@ -130,6 +130,9 @@ static void find_texture_format(struct graphics_data *graphics)
   struct softscale_render_data *render_data = graphics->render_data;
   Uint32 texture_format = SDL_PIXELFORMAT_UNKNOWN;
   Uint32 texture_width = SCREEN_PIX_W;
+  Uint32 texture_bpp = 0;
+  Uint32 texture_amask = 0;
+  boolean is_yuv = false;
   SDL_RendererInfo info;
 
   if(!SDL_GetRendererInfo(render_data->sdl.renderer, &info))
@@ -232,19 +235,7 @@ static void find_texture_format(struct graphics_data *graphics)
     }
 
     if(priority == yuv_priority)
-    {
-      // These modes treat the texture as 16bpp so double the width.
-      texture_width = SCREEN_PIX_W * 2;
-
-      if(texture_format == SDL_PIXELFORMAT_YUY2)
-        render_data->rgb_to_yuv = rgb_to_yuy2;
-
-      if(texture_format == SDL_PIXELFORMAT_UYVY)
-        render_data->rgb_to_yuv = rgb_to_uyvy;
-
-      if(texture_format == SDL_PIXELFORMAT_YVYU)
-        render_data->rgb_to_yuv = rgb_to_yvyu;
-    }
+      is_yuv = true;
   }
   else
     warn("Failed to get renderer info!\n");
@@ -261,11 +252,32 @@ static void find_texture_format(struct graphics_data *graphics)
      SDL_GetPixelFormatName(texture_format));
   }
 
+  if(is_yuv)
+  {
+    // These modes treat the texture as 16bpp so double the width.
+    texture_width = SCREEN_PIX_W * 2;
+    texture_bpp = 32;
+
+    if(texture_format == SDL_PIXELFORMAT_YUY2)
+      render_data->rgb_to_yuv = rgb_to_yuy2;
+
+    if(texture_format == SDL_PIXELFORMAT_UYVY)
+      render_data->rgb_to_yuv = rgb_to_uyvy;
+
+    if(texture_format == SDL_PIXELFORMAT_YVYU)
+      render_data->rgb_to_yuv = rgb_to_yvyu;
+  }
+  else
+  {
+    texture_bpp = SDL_BYTESPERPIXEL(texture_format) * 8;
+    texture_amask = get_format_amask(texture_format);
+  }
+
   // Initialize the texture data.
   render_data->texture_pixels = NULL;
   render_data->texture_format = texture_format;
-  render_data->texture_amask = get_format_amask(texture_format);
-  render_data->texture_bpp = SDL_BYTESPERPIXEL(texture_format) * 8;
+  render_data->texture_amask = texture_amask;
+  render_data->texture_bpp = texture_bpp;
   render_data->texture_width = texture_width;
 }
 
@@ -321,11 +333,15 @@ static boolean softscale_set_video_mode(struct graphics_data *graphics,
     goto err_free;
   }
 
-  render_data->sdl_format = SDL_AllocFormat(render_data->texture_format);
-  if(!render_data->sdl_format)
+  if(!render_data->rgb_to_yuv)
   {
-    warn("Failed to allocate pixel format: %s\n", SDL_GetError());
-    goto err_free;
+    // This is required for SDL_MapRGBA to work, but YUV formats can ignore it.
+    render_data->sdl_format = SDL_AllocFormat(render_data->texture_format);
+    if(!render_data->sdl_format)
+    {
+      warn("Failed to allocate pixel format: %s\n", SDL_GetError());
+      goto err_free;
+    }
   }
 
   SDL_SetRenderDrawColor(render_data->sdl.renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
@@ -376,7 +392,7 @@ static void softscale_lock_texture(struct softscale_render_data *render_data,
 {
   if(!render_data->texture_pixels)
   {
-    SDL_Rect rect = { 0, 0, SCREEN_PIX_W, SCREEN_PIX_H };
+    SDL_Rect rect = { 0, 0, render_data->texture_width, SCREEN_PIX_H };
     void *pixels;
     int pitch;
 
