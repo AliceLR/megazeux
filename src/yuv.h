@@ -42,10 +42,10 @@ __M_BEGIN_DECLS
 #define UYVY_U_SHIFT  24
 #define UYVY_V_SHIFT   8
 
-#define YVYU_Y1_SHIFT 16
-#define YVYU_Y2_SHIFT  0
-#define YVYU_U_SHIFT   8
-#define YVYU_V_SHIFT  24
+#define YVYU_Y1_SHIFT 24
+#define YVYU_Y2_SHIFT  8
+#define YVYU_U_SHIFT   0
+#define YVYU_V_SHIFT  16
 
 #else
 
@@ -59,10 +59,10 @@ __M_BEGIN_DECLS
 #define UYVY_U_SHIFT   0
 #define UYVY_V_SHIFT  16
 
-#define YVYU_Y1_SHIFT  8
-#define YVYU_Y2_SHIFT 24
-#define YVYU_U_SHIFT  16
-#define YVYU_V_SHIFT   0
+#define YVYU_Y1_SHIFT  0
+#define YVYU_Y2_SHIFT 16
+#define YVYU_U_SHIFT  24
+#define YVYU_V_SHIFT   8
 
 #endif
 

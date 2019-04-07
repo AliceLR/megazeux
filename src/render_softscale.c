@@ -247,6 +247,8 @@ static void find_texture_format(struct graphics_data *graphics)
 
   if(texture_format == SDL_PIXELFORMAT_UNKNOWN)
   {
+    // 16bpp RGB seems moderately faster than YUV with chroma subsampling
+    // when neither are natively supported.
     if(graphics->bits_per_pixel == 16)
       texture_format = SDL_PIXELFORMAT_RGB565;
     else
