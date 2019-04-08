@@ -716,7 +716,7 @@ fi
 #
 if [ "$SDL" = "true" -a "$LIBSDL2" = "true" -a "$OVERLAY" = "true" ]; then
 	echo "Force-disabling overlay renderers (requires SDL 1.2)."
-	#OVERLAY="false"
+	OVERLAY="false"
 fi
 
 #

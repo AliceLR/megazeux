@@ -225,7 +225,6 @@ endif
 # Overlay renderers
 ifeq (${BUILD_RENDER_YUV},1)
 core_cobjs += ${core_obj}/render_yuv.o
-core_cobjs += ${core_obj}/render_yuv1.o ${core_obj}/render_yuv2.o
 render_layer_software = 1
 endif
 

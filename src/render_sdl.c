@@ -24,9 +24,6 @@
 
 CORE_LIBSPEC Uint32 sdl_window_id;
 
-#ifndef CONFIG_RENDER_YUV
-static
-#endif
 int sdl_flags(int depth, boolean fullscreen, boolean resize)
 {
   int flags = 0;
