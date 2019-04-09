@@ -249,6 +249,15 @@ static void config_board_viewport_y(struct editor_config_info *conf,
   conf->viewport_y = CLAMP(strtol(value, NULL, 10), 0, (25 - conf->viewport_h));
 }
 
+static void include_config(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
+{
+  // TODO this only works from the config file.
+  // It will never be reached as a command line option because the option will
+  // be read and then removed from argv by the main config.
+  set_editor_config_from_file(name + 7);
+}
+
 #define Int(field, min, max) MAP_INT(struct editor_config_info, field, min, max)
 #define Enum(field) MAP_ENUM(struct editor_config_info, field, field ## _values)
 #define Bool(field) MAP_ENUM(struct editor_config_info, field, boolean_values)
@@ -321,6 +330,7 @@ static const struct editor_config_entry editor_config_options[] =
   { "editor_space_toggles",             Bool(editor_space_toggles) },
   { "editor_tab_focuses_view",          Bool(editor_tab_focuses_view) },
   { "editor_thing_menu_places",         Bool(editor_thing_menu_places) },
+  { "include*",                         Fn(include_config) },
   { "macro_*",                          Fn(config_macro) },
   { "palette_editor_hide_help",         Bool(palette_editor_hide_help) },
   { "robot_editor_hide_help",           Bool(robot_editor_hide_help) },
