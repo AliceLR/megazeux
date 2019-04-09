@@ -204,33 +204,33 @@ static const struct config_info user_conf_default =
  * arrays are generated automatically with the option name in the config struct.
  */
 
-static const struct config_enum boolean_values[] =
+static const struct mapped_enum_entry boolean_values[] =
 {
   { "0", false },
   { "1", true }
 };
 
-static const struct config_enum allow_cheats_values[] =
+static const struct mapped_enum_entry allow_cheats_values[] =
 {
   { "0", ALLOW_CHEATS_NEVER },
   { "1", ALLOW_CHEATS_ALWAYS },
   { "mzxrun", ALLOW_CHEATS_MZXRUN }
 };
 
-static const struct config_enum force_bpp_values[] =
+static const struct mapped_enum_entry force_bpp_values[] =
 {
   { "8", 8 },
   { "16", 16 },
   { "32", 32 }
 };
 
-static const struct config_enum gl_filter_method_values[] =
+static const struct mapped_enum_entry gl_filter_method_values[] =
 {
   { "nearest", 0 },
   { "linear", 1 }
 };
 
-static const struct config_enum gl_vsync_values[] =
+static const struct mapped_enum_entry gl_vsync_values[] =
 {
   { "-1", -1 },
   { "0", 0 },
@@ -238,7 +238,7 @@ static const struct config_enum gl_vsync_values[] =
   { "default", -1 }
 };
 
-static const struct config_enum modplug_resample_mode_values[] =
+static const struct mapped_enum_entry modplug_resample_mode_values[] =
 {
   { "none", 0 },
   { "linear", 1 },
@@ -246,21 +246,21 @@ static const struct config_enum modplug_resample_mode_values[] =
   { "fir", 3 }
 };
 
-static const struct config_enum resample_mode_values[] =
+static const struct mapped_enum_entry resample_mode_values[] =
 {
   { "none", 0 },
   { "linear", 1 },
   { "cubic", 2 }
 };
 
-static const struct config_enum system_mouse_values[] =
+static const struct mapped_enum_entry system_mouse_values[] =
 {
   { "0", 0 },
   { "1", 1 },
   { "both", 2 }
 };
 
-static const struct config_enum update_auto_check_values[] =
+static const struct mapped_enum_entry update_auto_check_values[] =
 {
   { "0", UPDATE_AUTO_CHECK_OFF },
   { "1", UPDATE_AUTO_CHECK_ON },
@@ -269,7 +269,7 @@ static const struct config_enum update_auto_check_values[] =
   { "silent", UPDATE_AUTO_CHECK_SILENT }
 };
 
-static const struct config_enum video_ratio_values[] =
+static const struct mapped_enum_entry video_ratio_values[] =
 {
   { "classic", RATIO_CLASSIC_4_3 },
   { "modern", RATIO_MODERN_64_35 },
@@ -279,7 +279,7 @@ static const struct config_enum video_ratio_values[] =
 struct config_entry
 {
   char option_name[OPTION_NAME_LEN];
-  struct config_option dest;
+  struct mapped_field dest;
   boolean allow_in_game_config;
 };
 
@@ -480,84 +480,84 @@ static void config_window_resolution(struct config_info *conf, char *name,
   conf->window_height = strtoul(next + 1, NULL, 10);
 }
 
-#define INT(field, min, max) CONF_INT(struct config_info, field, min, max)
-#define ENUM(field) CONF_ENUM(struct config_info, field, field ## _values)
-#define BOOL(field) CONF_ENUM(struct config_info, field, boolean_values)
-#define STR(field) CONF_STR(struct config_info, field)
-#define FN(field) CONF_FN(struct config_info, field)
+#define Int(field, min, max) MAP_INT(struct config_info, field, min, max)
+#define Enum(field) MAP_ENUM(struct config_info, field, field ## _values)
+#define Bool(field) MAP_ENUM(struct config_info, field, boolean_values)
+#define Str(field) MAP_STR(struct config_info, field)
+#define Fn(field) MAP_FN(struct config_info, field)
 
 /* NOTE: This is searched as a binary tree, the nodes must be
  *       sorted alphabetically, or they risk being ignored.
  *
  * For values that can easily be written directly to the struct,
- * use the INT/ENUM/BOOL/STR macro functions. These generate offset
+ * use the Int/Enum/Bool/Str macro functions. These generate offset
  * and bounding information that allows config_option_set to reuse
  * the same code for similar options. For more complex options, the
- * FN macro can be used to provide a config_function instead.
+ * Fn macro can be used to provide a config_function instead.
  */
 static const struct config_entry config_options[] =
 {
-  { "allow_cheats",             ENUM(allow_cheats), false },
-  { "allow_screenshots",        BOOL(allow_screenshots), false },
-  { "audio_buffer",             INT(audio_buffer_samples, 16, INT_MAX), false },
-  { "audio_buffer_samples",     INT(audio_buffer_samples, 16, INT_MAX), false },
-  { "audio_sample_rate",        INT(output_frequency, 1, INT_MAX), false },
-  { "enable_oversampling",      BOOL(oversampling_on), false },
-  { "enable_resizing",          BOOL(allow_resize), false },
-  { "force_bpp",                ENUM(force_bpp), false },
-  { "fullscreen",               BOOL(fullscreen), false },
-  { "fullscreen_resolution",    FN(config_set_resolution), false },
+  { "allow_cheats",             Enum(allow_cheats), false },
+  { "allow_screenshots",        Bool(allow_screenshots), false },
+  { "audio_buffer",             Int(audio_buffer_samples, 16, INT_MAX), false },
+  { "audio_buffer_samples",     Int(audio_buffer_samples, 16, INT_MAX), false },
+  { "audio_sample_rate",        Int(output_frequency, 1, INT_MAX), false },
+  { "enable_oversampling",      Bool(oversampling_on), false },
+  { "enable_resizing",          Bool(allow_resize), false },
+  { "force_bpp",                Enum(force_bpp), false },
+  { "fullscreen",               Bool(fullscreen), false },
+  { "fullscreen_resolution",    Fn(config_set_resolution), false },
 #ifdef CONFIG_SDL
 #if SDL_VERSION_ATLEAST(2,0,0)
-  { "gamecontroller.*",         FN(config_sdl_gc_set), false },
-  { "gamecontroller_add",       FN(config_sdl_gc_add), false },
-  { "gamecontroller_enable",    BOOL(allow_gamecontroller), false },
+  { "gamecontroller.*",         Fn(config_sdl_gc_set), false },
+  { "gamecontroller_add",       Fn(config_sdl_gc_add), false },
+  { "gamecontroller_enable",    Bool(allow_gamecontroller), false },
 #endif
 #endif
-  { "gl_filter_method",         ENUM(gl_filter_method), false },
-  { "gl_scaling_shader",        STR(gl_scaling_shader), true },
-  { "gl_vsync",                 ENUM(gl_vsync), false },
-  { "include",                  FN(include2_config), true },
-  { "include*",                 FN(include_config), true },
-  { "joy!.*",                   FN(joy_action_set), true },
-  { "joy!axis!",                FN(joy_axis_set), true },
-  { "joy!button!",              FN(joy_button_set), true },
-  { "joy!hat",                  FN(joy_hat_set), true },
-  { "joy_axis_threshold",       FN(config_set_joy_axis_threshold), false },
-  { "mask_midchars",            BOOL(mask_midchars), false },
-  { "max_simultaneous_samples", INT(max_simultaneous_samples, -1, INT_MAX), false },
-  { "modplug_resample_mode",    ENUM(modplug_resample_mode), false },
-  { "music_on",                 BOOL(music_on), false },
-  { "music_volume",             INT(music_volume, 0, 10), false },
-  { "mzx_speed",                INT(mzx_speed, 1, 16), true },
+  { "gl_filter_method",         Enum(gl_filter_method), false },
+  { "gl_scaling_shader",        Str(gl_scaling_shader), true },
+  { "gl_vsync",                 Enum(gl_vsync), false },
+  { "include",                  Fn(include2_config), true },
+  { "include*",                 Fn(include_config), true },
+  { "joy!.*",                   Fn(joy_action_set), true },
+  { "joy!axis!",                Fn(joy_axis_set), true },
+  { "joy!button!",              Fn(joy_button_set), true },
+  { "joy!hat",                  Fn(joy_hat_set), true },
+  { "joy_axis_threshold",       Fn(config_set_joy_axis_threshold), false },
+  { "mask_midchars",            Bool(mask_midchars), false },
+  { "max_simultaneous_samples", Int(max_simultaneous_samples, -1, INT_MAX), false },
+  { "modplug_resample_mode",    Enum(modplug_resample_mode), false },
+  { "music_on",                 Bool(music_on), false },
+  { "music_volume",             Int(music_volume, 0, 10), false },
+  { "mzx_speed",                Int(mzx_speed, 1, 16), true },
 #ifdef CONFIG_NETWORK
-  { "network_enabled",          BOOL(network_enabled), false },
+  { "network_enabled",          Bool(network_enabled), false },
 #endif
-  { "no_titlescreen",           BOOL(no_titlescreen), false },
-  { "num_buffered_events",      INT(num_buffered_events, 1, 256), false },
-  { "pause_on_unfocus",         BOOL(pause_on_unfocus), false },
-  { "pc_speaker_on",            BOOL(pc_speaker_on), false },
-  { "pc_speaker_volume",        INT(pc_speaker_volume, 0, 10), false },
-  { "resample_mode",            ENUM(resample_mode), false },
-  { "sample_volume",            INT(sam_volume, 0, 10), false },
-  { "save_file",                STR(default_save_name), false },
+  { "no_titlescreen",           Bool(no_titlescreen), false },
+  { "num_buffered_events",      Int(num_buffered_events, 1, 256), false },
+  { "pause_on_unfocus",         Bool(pause_on_unfocus), false },
+  { "pc_speaker_on",            Bool(pc_speaker_on), false },
+  { "pc_speaker_volume",        Int(pc_speaker_volume, 0, 10), false },
+  { "resample_mode",            Enum(resample_mode), false },
+  { "sample_volume",            Int(sam_volume, 0, 10), false },
+  { "save_file",                Str(default_save_name), false },
 #ifdef CONFIG_NETWORK
-  { "socks_host",               STR(socks_host), false },
-  { "socks_port",               INT(socks_port, 0, 65535), false },
+  { "socks_host",               Str(socks_host), false },
+  { "socks_port",               Int(socks_port, 0, 65535), false },
 #endif
-  { "standalone_mode",          BOOL(standalone_mode), false },
-  { "startup_editor",           BOOL(startup_editor), false },
-  { "startup_file",             FN(config_startup_file), false },
-  { "startup_path",             FN(config_startup_path), false },
-  { "system_mouse",             ENUM(system_mouse), false },
+  { "standalone_mode",          Bool(standalone_mode), false },
+  { "startup_editor",           Bool(startup_editor), false },
+  { "startup_file",             Fn(config_startup_file), false },
+  { "startup_path",             Fn(config_startup_path), false },
+  { "system_mouse",             Enum(system_mouse), false },
 #ifdef CONFIG_UPDATER
-  { "update_auto_check",        ENUM(update_auto_check), false },
-  { "update_branch_pin",        STR(update_branch_pin), false },
-  { "update_host",              FN(config_update_host), false },
+  { "update_auto_check",        Enum(update_auto_check), false },
+  { "update_branch_pin",        Str(update_branch_pin), false },
+  { "update_host",              Fn(config_update_host), false },
 #endif
-  { "video_output",             STR(video_output), false },
-  { "video_ratio",              ENUM(video_ratio), false },
-  { "window_resolution",        FN(config_window_resolution), false },
+  { "video_output",             Str(video_output), false },
+  { "video_ratio",              Enum(video_ratio), false },
+  { "window_resolution",        Fn(config_window_resolution), false },
 };
 
 static const struct config_entry *find_option(char *name,
@@ -594,7 +594,7 @@ static int config_change_option(void *conf, char *name,
   {
     if(current_option->allow_in_game_config || is_startup)
     {
-      fn_ptr fn = config_option_set(&(current_option->dest), conf, name, value);
+      fn_ptr fn = mapped_field_set(&(current_option->dest), conf, name, value);
 
       if(fn)
         ((config_function)fn)(conf, name, value, extended_data);

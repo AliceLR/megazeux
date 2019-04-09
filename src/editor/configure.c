@@ -107,20 +107,20 @@ static const struct editor_config_info editor_conf_default =
 
 };
 
-static const struct config_enum boolean_values[] =
+static const struct mapped_enum_entry boolean_values[] =
 {
   { "0", false },
   { "1", true }
 };
 
-static const struct config_enum explosions_leave_values[] =
+static const struct mapped_enum_entry explosions_leave_values[] =
 {
   { "space", EXPL_LEAVE_SPACE },
   { "ash", EXPL_LEAVE_ASH },
   { "fire", EXPL_LEAVE_FIRE }
 };
 
-static const struct config_enum overlay_enabled_values[] =
+static const struct mapped_enum_entry overlay_enabled_values[] =
 {
   { "disabled", OVERLAY_OFF },
   { "enabled", OVERLAY_ON },
@@ -128,21 +128,21 @@ static const struct config_enum overlay_enabled_values[] =
   { "transparent", OVERLAY_TRANSPARENT },
 };
 
-static const struct config_enum saving_enabled_values[] =
+static const struct mapped_enum_entry saving_enabled_values[] =
 {
   { "disabled", CANT_SAVE },
   { "enabled", CAN_SAVE },
   { "sensoronly", CAN_SAVE_ON_SENSOR }
 };
 
-static const struct config_enum default_invalid_status_values[] =
+static const struct mapped_enum_entry default_invalid_status_values[] =
 {
   { "ignore", invalid_uncertain },
   { "delete", invalid_discard },
   { "comment", invalid_comment }
 };
 
-static const struct config_enum disassemble_base_values[] =
+static const struct mapped_enum_entry disassemble_base_values[] =
 {
   { "10", 10 },
   { "16", 16 }
@@ -151,7 +151,7 @@ static const struct config_enum disassemble_base_values[] =
 struct editor_config_entry
 {
   char option_name[OPTION_NAME_LEN];
-  struct config_option dest;
+  struct mapped_field dest;
 };
 
 typedef void (* editor_config_function)(struct editor_config_info *conf,
@@ -249,11 +249,11 @@ static void config_board_viewport_y(struct editor_config_info *conf,
   conf->viewport_y = CLAMP(strtol(value, NULL, 10), 0, (25 - conf->viewport_h));
 }
 
-#define INT(field, min, max) CONF_INT(struct editor_config_info, field, min, max)
-#define ENUM(field) CONF_ENUM(struct editor_config_info, field, field ## _values)
-#define BOOL(field) CONF_ENUM(struct editor_config_info, field, boolean_values)
-#define STR(field) CONF_STR(struct editor_config_info, field)
-#define FN(field) CONF_FN(struct editor_config_info, field)
+#define Int(field, min, max) MAP_INT(struct editor_config_info, field, min, max)
+#define Enum(field) MAP_ENUM(struct editor_config_info, field, field ## _values)
+#define Bool(field) MAP_ENUM(struct editor_config_info, field, boolean_values)
+#define Str(field) MAP_STR(struct editor_config_info, field)
+#define Fn(field) MAP_FN(struct editor_config_info, field)
 
 /* NOTE: This is searched as a binary tree, the nodes must be
  *       sorted alphabetically, or they risk being ignored.
@@ -269,63 +269,63 @@ static void config_board_viewport_y(struct editor_config_info *conf,
  */
 static const struct editor_config_entry editor_config_options[] =
 {
-  { "backup_count",                     INT(backup_count, 0, INT_MAX) },
-  { "backup_ext",                       STR(backup_ext) },
-  { "backup_interval",                  INT(backup_interval, 0, INT_MAX) },
-  { "backup_name",                      STR(backup_name) },
-  { "board_default_can_bomb",           BOOL(can_bomb) },
-  { "board_default_can_shoot",          BOOL(can_shoot) },
-  { "board_default_charset_path",       STR(charset_path) },
-  { "board_default_collect_bombs",      BOOL(collect_bombs) },
-  { "board_default_explosions_leave",   ENUM(explosions_leave) },
-  { "board_default_fire_burns_brown",   BOOL(fire_burns_brown) },
-  { "board_default_fire_burns_fakes",   BOOL(fire_burns_fakes) },
-  { "board_default_fire_burns_forever", BOOL(fire_burns_forever) },
-  { "board_default_fire_burns_spaces",  BOOL(fire_burns_spaces) },
-  { "board_default_fire_burns_trees",   BOOL(fire_burns_trees) },
-  { "board_default_forest_to_floor",    BOOL(forest_to_floor) },
-  { "board_default_height",             FN(config_board_height) },
-  { "board_default_overlay",            ENUM(overlay_enabled) },
-  { "board_default_palette_path",       STR(palette_path) },
-  { "board_default_player_locked_att",  BOOL(player_locked_att) },
-  { "board_default_player_locked_ew",   BOOL(player_locked_ew) },
-  { "board_default_player_locked_ns",   BOOL(player_locked_ns) },
-  { "board_default_reset_on_entry",     BOOL(reset_on_entry) },
-  { "board_default_restart_if_hurt",    BOOL(restart_if_hurt) },
-  { "board_default_saving",             ENUM(saving_enabled) },
-  { "board_default_time_limit",         INT(time_limit, 0, 32767) },
-  { "board_default_viewport_h",         FN(config_board_viewport_h) },
-  { "board_default_viewport_w",         FN(config_board_viewport_w) },
-  { "board_default_viewport_x",         FN(config_board_viewport_x) },
-  { "board_default_viewport_y",         FN(config_board_viewport_y) },
-  { "board_default_width",              FN(config_board_width) },
-  { "board_editor_hide_help",           BOOL(board_editor_hide_help) },
-  { "ccode_colors",                     INT(color_codes[4], 0, 255) },
-  { "ccode_commands",                   INT(color_codes[13], 0, 15) },
-  { "ccode_conditions",                 INT(color_codes[10], 0, 15) },
-  { "ccode_current_line",               INT(color_codes[0], 0, 15) },
-  { "ccode_directions",                 INT(color_codes[5], 0, 15) },
-  { "ccode_equalities",                 INT(color_codes[9], 0, 15) },
-  { "ccode_extras",                     INT(color_codes[12], 0, 15) },
-  { "ccode_immediates",                 INT(color_codes[1], 0, 15) },//see note
-  { "ccode_items",                      INT(color_codes[11], 0, 15) },
-  { "ccode_params",                     INT(color_codes[7], 0, 15) },
-  { "ccode_strings",                    INT(color_codes[8], 0, 15) },
-  { "ccode_things",                     INT(color_codes[6], 0, 15) },
-  { "color_coding_on",                  BOOL(color_coding_on) },
-  { "default_invalid_status",           ENUM(default_invalid_status) },
-  { "disassemble_base",                 ENUM(disassemble_base) },
-  { "disassemble_extras",               BOOL(disassemble_extras) },
-  { "editor_enter_splits",              BOOL(editor_enter_splits) },
-  { "editor_load_board_assets",         BOOL(editor_load_board_assets) },
-  { "editor_space_toggles",             BOOL(editor_space_toggles) },
-  { "editor_tab_focuses_view",          BOOL(editor_tab_focuses_view) },
-  { "editor_thing_menu_places",         BOOL(editor_thing_menu_places) },
-  { "macro_*",                          FN(config_macro) },
-  { "palette_editor_hide_help",         BOOL(palette_editor_hide_help) },
-  { "robot_editor_hide_help",           BOOL(robot_editor_hide_help) },
-  { "saved_position!",                  FN(config_saved_positions) },
-  { "undo_history_size",                INT(undo_history_size, 0, 1000) },
+  { "backup_count",                     Int(backup_count, 0, INT_MAX) },
+  { "backup_ext",                       Str(backup_ext) },
+  { "backup_interval",                  Int(backup_interval, 0, INT_MAX) },
+  { "backup_name",                      Str(backup_name) },
+  { "board_default_can_bomb",           Bool(can_bomb) },
+  { "board_default_can_shoot",          Bool(can_shoot) },
+  { "board_default_charset_path",       Str(charset_path) },
+  { "board_default_collect_bombs",      Bool(collect_bombs) },
+  { "board_default_explosions_leave",   Enum(explosions_leave) },
+  { "board_default_fire_burns_brown",   Bool(fire_burns_brown) },
+  { "board_default_fire_burns_fakes",   Bool(fire_burns_fakes) },
+  { "board_default_fire_burns_forever", Bool(fire_burns_forever) },
+  { "board_default_fire_burns_spaces",  Bool(fire_burns_spaces) },
+  { "board_default_fire_burns_trees",   Bool(fire_burns_trees) },
+  { "board_default_forest_to_floor",    Bool(forest_to_floor) },
+  { "board_default_height",             Fn(config_board_height) },
+  { "board_default_overlay",            Enum(overlay_enabled) },
+  { "board_default_palette_path",       Str(palette_path) },
+  { "board_default_player_locked_att",  Bool(player_locked_att) },
+  { "board_default_player_locked_ew",   Bool(player_locked_ew) },
+  { "board_default_player_locked_ns",   Bool(player_locked_ns) },
+  { "board_default_reset_on_entry",     Bool(reset_on_entry) },
+  { "board_default_restart_if_hurt",    Bool(restart_if_hurt) },
+  { "board_default_saving",             Enum(saving_enabled) },
+  { "board_default_time_limit",         Int(time_limit, 0, 32767) },
+  { "board_default_viewport_h",         Fn(config_board_viewport_h) },
+  { "board_default_viewport_w",         Fn(config_board_viewport_w) },
+  { "board_default_viewport_x",         Fn(config_board_viewport_x) },
+  { "board_default_viewport_y",         Fn(config_board_viewport_y) },
+  { "board_default_width",              Fn(config_board_width) },
+  { "board_editor_hide_help",           Bool(board_editor_hide_help) },
+  { "ccode_colors",                     Int(color_codes[4], 0, 255) },
+  { "ccode_commands",                   Int(color_codes[13], 0, 15) },
+  { "ccode_conditions",                 Int(color_codes[10], 0, 15) },
+  { "ccode_current_line",               Int(color_codes[0], 0, 15) },
+  { "ccode_directions",                 Int(color_codes[5], 0, 15) },
+  { "ccode_equalities",                 Int(color_codes[9], 0, 15) },
+  { "ccode_extras",                     Int(color_codes[12], 0, 15) },
+  { "ccode_immediates",                 Int(color_codes[1], 0, 15) },//see note
+  { "ccode_items",                      Int(color_codes[11], 0, 15) },
+  { "ccode_params",                     Int(color_codes[7], 0, 15) },
+  { "ccode_strings",                    Int(color_codes[8], 0, 15) },
+  { "ccode_things",                     Int(color_codes[6], 0, 15) },
+  { "color_coding_on",                  Bool(color_coding_on) },
+  { "default_invalid_status",           Enum(default_invalid_status) },
+  { "disassemble_base",                 Enum(disassemble_base) },
+  { "disassemble_extras",               Bool(disassemble_extras) },
+  { "editor_enter_splits",              Bool(editor_enter_splits) },
+  { "editor_load_board_assets",         Bool(editor_load_board_assets) },
+  { "editor_space_toggles",             Bool(editor_space_toggles) },
+  { "editor_tab_focuses_view",          Bool(editor_tab_focuses_view) },
+  { "editor_thing_menu_places",         Bool(editor_thing_menu_places) },
+  { "macro_*",                          Fn(config_macro) },
+  { "palette_editor_hide_help",         Bool(palette_editor_hide_help) },
+  { "robot_editor_hide_help",           Bool(robot_editor_hide_help) },
+  { "saved_position!",                  Fn(config_saved_positions) },
+  { "undo_history_size",                Int(undo_history_size, 0, 1000) },
 };
 
 static const struct editor_config_entry *find_editor_option(char *name,
@@ -360,7 +360,7 @@ static int editor_config_change_option(void *conf, char *name, char *value,
 
   if(current_option)
   {
-    fn_ptr fn = config_option_set(&(current_option->dest), conf, name, value);
+    fn_ptr fn = mapped_field_set(&(current_option->dest), conf, name, value);
 
     if(fn)
       ((editor_config_function)fn)(conf, name, value, extended_data);
