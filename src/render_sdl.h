@@ -64,8 +64,8 @@ boolean sdl_check_video_mode(struct graphics_data *graphics, int width,
 #define GL_STRIP_FLAGS(A) \
   ((A & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_RESIZABLE)) | SDL_WINDOW_OPENGL)
 
-boolean gl_set_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, boolean fullscreen, boolean resize);
+boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
+ int depth, boolean fullscreen, boolean resize, struct gl_version req_ver);
 boolean gl_check_video_mode(struct graphics_data *graphics, int width,
  int height, int depth, boolean fullscreen, boolean resize);
 void gl_set_attributes(struct graphics_data *graphics);

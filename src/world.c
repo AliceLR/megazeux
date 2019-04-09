@@ -3313,8 +3313,8 @@ void remap_vlayer(struct world *mzx_world,
 
     for(i = 0; i < old_height; i++)
     {
-      memcpy(vlayer_chars + new_pos, vlayer_chars + old_pos, new_width);
-      memcpy(vlayer_colors + new_pos, vlayer_colors + old_pos, new_width);
+      memmove(vlayer_chars + new_pos, vlayer_chars + old_pos, new_width);
+      memmove(vlayer_colors + new_pos, vlayer_colors + old_pos, new_width);
 
       old_pos += old_width;
       new_pos += new_width;
@@ -3337,8 +3337,8 @@ void remap_vlayer(struct world *mzx_world,
 
     for(i = 0; i < new_height; i++)
     {
-      memcpy(vlayer_chars + new_pos, vlayer_chars + old_pos, new_width);
-      memcpy(vlayer_colors + new_pos, vlayer_colors + old_pos, new_width);
+      memmove(vlayer_chars + new_pos, vlayer_chars + old_pos, new_width);
+      memmove(vlayer_colors + new_pos, vlayer_colors + old_pos, new_width);
 
       // Clear blank area
       memset(vlayer_chars + new_pos + old_width, 32, clear_width);

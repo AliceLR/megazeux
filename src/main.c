@@ -144,6 +144,14 @@ __libspec int main(int argc, char *argv[])
   getcwd(startup_dir, MAX_PATH);
   strcpy(current_dir, startup_dir);
 
+#ifdef CONFIG_STDIO_REDIRECT
+  // Do this after platform_init() since, even though platform_init() might
+  // log stuff, it actually initializes the filesystem on some platforms.
+  if(!redirect_stdio(startup_dir, true))
+    if(!redirect_stdio(SHAREDIR, false))
+      redirect_stdio(getenv("HOME"), false);
+#endif
+
 #ifdef __APPLE__
   if(!strcmp(current_dir, "/") || !strncmp(current_dir, "/App", 4))
   {

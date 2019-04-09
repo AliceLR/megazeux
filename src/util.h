@@ -95,6 +95,8 @@ CORE_LIBSPEC int mzx_res_init(const char *argv0, boolean editor);
 CORE_LIBSPEC void mzx_res_free(void);
 CORE_LIBSPEC char *mzx_res_get_by_id(enum resource_id id);
 
+CORE_LIBSPEC boolean redirect_stdio(const char *base_path, boolean require_conf);
+
 // Code to load multi-byte ints from little endian file
 int fgetw(FILE *fp);
 int fgetd(FILE *fp);

@@ -741,6 +741,7 @@ Uint32 get_key(enum keycode_type type)
 Uint32 get_key_status(enum keycode_type type, Uint32 index)
 {
   const struct buffered_status *status = load_status();
+  index = MIN((Uint32)index, STATUS_NUM_KEYCODES - 1);
 
   switch(type)
   {

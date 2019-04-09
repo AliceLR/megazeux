@@ -29,8 +29,17 @@ __M_BEGIN_DECLS
 #include "graphics.h"
 #include "util.h"
 
-#ifndef CONFIG_EGL
+#ifdef CONFIG_SDL
+#ifdef CONFIG_GLES
+#ifdef CONFIG_RENDER_GL_FIXED
+#include <SDL_opengles.h>
+#endif
+#ifdef CONFIG_RENDER_GL_PROGRAM
+#include <SDL_opengles2.h>
+#endif
+#else
 #include "SDL_opengl.h"
+#endif
 #endif
 
 #ifndef GLAPIENTRY
@@ -65,6 +74,15 @@ void gl_set_filter_method(const char *method,
   GLfloat param));
 void get_context_width_height(struct graphics_data *graphics,
  int *width, int *height);
+
+// Used to request an OpenGL API version with gl_set_video_mode.
+// Currently this is only used to configure SDL on platforms that require
+// OpenGL ES, as OpenGL ES 1 and OpenGL ES 2 are not compatible.
+struct gl_version
+{
+  int major;
+  int minor;
+};
 
 enum gl_lib_type
 {
