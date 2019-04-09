@@ -33,6 +33,12 @@ enum ratio_type
   RATIO_STRETCH
 };
 
+enum gl_filter_type
+{
+  CONFIG_GL_FILTER_NEAREST,
+  CONFIG_GL_FILTER_LINEAR
+};
+
 enum allow_cheats_type
 {
   ALLOW_CHEATS_NEVER,
@@ -59,7 +65,7 @@ struct config_info
   char video_output[16];
   int force_bpp;
   enum ratio_type video_ratio;
-  char gl_filter_method[16];
+  enum gl_filter_type gl_filter_method;
   char gl_scaling_shader[32];
   int gl_vsync;
   boolean allow_screenshots;

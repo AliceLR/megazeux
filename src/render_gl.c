@@ -100,13 +100,13 @@ boolean gl_load_syms(const struct dso_syms_map *map)
   return true;
 }
 
-void gl_set_filter_method(const char *method,
+void gl_set_filter_method(enum gl_filter_type method,
  void (GL_APIENTRY *glTexParameterf_p)(GLenum target, GLenum pname,
   GLfloat param))
 {
   GLfloat gl_filter_method = GL_LINEAR;
 
-  if(!strcasecmp(method, CONFIG_GL_FILTER_NEAREST))
+  if(method == CONFIG_GL_FILTER_NEAREST)
     gl_filter_method = GL_NEAREST;
 
   glTexParameterf_p(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_method);

@@ -149,7 +149,7 @@ static const struct config_info user_conf_default =
   VIDEO_OUTPUT_DEFAULT,         // video_output
   FORCE_BPP_DEFAULT,            // force_bpp
   RATIO_MODERN_64_35,           // video_ratio
-  "linear",                     // opengl filter method
+  CONFIG_GL_FILTER_LINEAR,      // opengl filter method
   "",                           // opengl default scaling shader
   GL_VSYNC_DEFAULT,             // opengl vsync mode
   true,                         // allow screenshots
@@ -226,8 +226,8 @@ static const struct mapped_enum_entry force_bpp_values[] =
 
 static const struct mapped_enum_entry gl_filter_method_values[] =
 {
-  { "nearest", 0 },
-  { "linear", 1 }
+  { "nearest", CONFIG_GL_FILTER_NEAREST },
+  { "linear", CONFIG_GL_FILTER_LINEAR }
 };
 
 static const struct mapped_enum_entry gl_vsync_values[] =
@@ -256,8 +256,7 @@ static const struct mapped_enum_entry resample_mode_values[] =
 static const struct mapped_enum_entry system_mouse_values[] =
 {
   { "0", 0 },
-  { "1", 1 },
-  { "both", 2 }
+  { "1", 1 }
 };
 
 static const struct mapped_enum_entry update_auto_check_values[] =
