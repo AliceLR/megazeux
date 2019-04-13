@@ -28,6 +28,11 @@ FEATURES
   circle pad is now mappable as axes 1 and 2.
 + The default boot.dol for Wii builds with the editor enabled
   is now MegaZeux instead of MZXRun.
++ New GLSL scaling shader: "sai". This shader implements the
+  "Scale 2xSaI" algorithm by Kreed with a modified interpolation
+  function to produce sharper edges. This shader can scale up to
+  any size larger than 640x350 and is comparable to hqscale
+  (though it should look and perform a little better).
 + The current renderer can now be set from the settings menu.
 
 FIXES
