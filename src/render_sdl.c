@@ -64,14 +64,14 @@ void sdl_destruct_window(struct graphics_data *graphics)
     render_data->palette = NULL;
   }
 
-  // Used by the YUV renderers for HW acceleration.
+  // Used by the softscale renderer for HW acceleration.
   if(render_data->texture)
   {
     SDL_DestroyTexture(render_data->texture);
     render_data->texture = NULL;
   }
 
-  // Used by the YUV renderers for HW acceleration. Never use with software.
+  // Used by the softscale renderer for HW acceleration. Don't use for software.
   // Destroying this when exiting fullscreen can be slow for some reason.
   if(render_data->renderer)
   {
