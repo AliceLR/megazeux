@@ -57,8 +57,7 @@ FIXES
 + The software renderer no longer tries to use an SDL_Renderer
   to draw the surface returned by SDL_GetWindowSurface. This
   fixes a crash when switching to fullscreen with the software
-  renderer on some platforms. A similar hack has been removed
-  from the overlay renderers.
+  renderer on some platforms.
 + Fixed a software renderer mouse crash bug caused by moving the
   cursor off the screen with a window bigger than the screen.
 
