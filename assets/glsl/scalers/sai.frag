@@ -133,8 +133,8 @@ void main(void)
   if(B == C && A != D)
   {
     F = texture2D(baseMap, vec2(x + PIXEL_X,        y - PIXEL_Y));
-    H = texture2D(baseMap, vec2(x + PIXEL_X * 2.0,  y));
-    I = texture2D(baseMap, vec2(x - PIXEL_X,        y + PIXEL_Y));
+    H = texture2D(baseMap, vec2(x - PIXEL_X,        y + PIXEL_Y));
+    I = texture2D(baseMap, vec2(x + PIXEL_X * 2.0,  y));
     K = texture2D(baseMap, vec2(x,                  y + PIXEL_Y * 2.0));
 
     f1 = x_fr / 2.0 + 0.25;
