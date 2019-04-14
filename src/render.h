@@ -34,10 +34,13 @@ extern void (*const set_colors32[4])(struct graphics_data *graphics,
  Uint32 *char_colors, Uint8 bg, Uint8 fg);
 extern void (*const set_indices[4])(struct graphics_data *graphics,
  int *indices, Uint8 bg, Uint8 fg);
-#ifdef CONFIG_RENDER_YUV
-extern void (*const yuv2_set_colors[4])(struct graphics_data *graphics,
- Uint32 *char_colors, Uint8 bg, Uint8 fg);
-#endif
+
+void yuy2_subsample_set_colors_mzx(struct graphics_data *graphics,
+ Uint32 *indices, Uint8 bg, Uint8 fg);
+void uyvy_subsample_set_colors_mzx(struct graphics_data *graphics,
+ Uint32 *indices, Uint8 bg, Uint8 fg);
+void yvyu_subsample_set_colors_mzx(struct graphics_data *graphics,
+ Uint32 *indices, Uint8 bg, Uint8 fg);
 
 void render_graph8(Uint8 *pixels, Uint32 pitch,
  struct graphics_data *graphics,

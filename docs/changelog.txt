@@ -28,7 +28,17 @@ FEATURES
   circle pad is now mappable as axes 1 and 2.
 + The default boot.dol for Wii builds with the editor enabled
   is now MegaZeux instead of MZXRun.
++ New GLSL scaling shader: "sai". This shader implements the
+  "Scale 2xSaI" algorithm by Kreed with a modified interpolation
+  function to produce sharper edges. This shader can scale up to
+  any size larger than 640x350 and is comparable to hqscale
+  (though it should look and perform a little better).
 + The current renderer can now be set from the settings menu.
++ Added the 'softscale' renderer. This renderer is a generalized
+  rewrite of the former SDL 2 overlay renderer implementation.
+  It should perform significantly better and be more portable.
+- SDL 2 support for the overlay renderers has been removed. When
+  specified for video_output, softscale will be enabled instead.
 
 FIXES
 
@@ -47,8 +57,7 @@ FIXES
 + The software renderer no longer tries to use an SDL_Renderer
   to draw the surface returned by SDL_GetWindowSurface. This
   fixes a crash when switching to fullscreen with the software
-  renderer on some platforms. A similar hack has been removed
-  from the overlay renderers.
+  renderer on some platforms.
 + Fixed a software renderer mouse crash bug caused by moving the
   cursor off the screen with a window bigger than the screen.
 
@@ -73,6 +82,10 @@ DEVELOPERS
 + OpenGL ES support can now be enabled for SDL builds with the
   --enable-gles option. This option is force-enabled for
   platforms that only support OpenGL ES.
++ opengl1 renderer now always uses power of 2 textures, same as
+  opengl2 and glsl. This provides a tiny performance improvement
+  on most cards and a massive performance improvement on some
+  other cards. (Lancer-X)
 
 
 February 20th, 2019 - MZX 2.91j
