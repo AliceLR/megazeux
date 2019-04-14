@@ -152,16 +152,14 @@ static void find_texture_format(struct graphics_data *graphics)
     yuv_priority = 1000000;
 #endif
 
-    // FIXME debug
-    info("Using SDL renderer '%s'\n", info.name);
+    debug("Using SDL renderer '%s'\n", info.name);
 
     // Try to use a native texture format to improve performance.
     for(i = 0; i < info.num_texture_formats; i++)
     {
       Uint32 format = info.texture_formats[i];
 
-      // FIXME debug
-      info("%d: %s\n", i, SDL_GetPixelFormatName(format));
+      debug("%d: %s\n", i, SDL_GetPixelFormatName(format));
 
       switch(format)
       {
@@ -254,12 +252,11 @@ static void find_texture_format(struct graphics_data *graphics)
     else
       texture_format = SDL_PIXELFORMAT_ARGB8888;
 
-    // FIXME debug
-    info("No matching pixel format. Using %s. Rendering may be slower.\n",
+    debug("No matching pixel format. Using %s. Rendering may be slower.\n",
      SDL_GetPixelFormatName(texture_format));
   }
   else
-    info("Using pixel format %s.\n", SDL_GetPixelFormatName(texture_format));
+    debug("Using pixel format %s.\n", SDL_GetPixelFormatName(texture_format));
 
   if(is_yuv)
   {
@@ -289,8 +286,7 @@ static void find_texture_format(struct graphics_data *graphics)
     // support for render_graph.
     if(graphics->bits_per_pixel == 16)
     {
-      // FIXME debug
-      info("Allowing YUV subsampling for render_graph.\n");
+      debug("Allowing YUV subsampling for render_graph.\n");
       allow_subsampling = true;
     }
   }
