@@ -26,6 +26,7 @@
 #include "render.h"
 #include "render_layer.h"
 #include "util.h"
+#include "yuv.h"
 
 static void set_colors8_mzx (struct graphics_data *graphics,
  Uint32 *char_colors, Uint8 bg, Uint8 fg)
@@ -329,6 +330,42 @@ void (*const set_indices[4])
   set_indices_smzx2,
   set_indices_smzx3
 };
+
+void yuy2_subsample_set_colors_mzx(struct graphics_data *graphics,
+ Uint32 *indices, Uint8 bg, Uint8 fg)
+{
+  Uint32 yuv_bg = graphics->flat_intensity_palette[bg];
+  Uint32 yuv_fg = graphics->flat_intensity_palette[fg];
+
+  indices[0] = yuv_bg;
+  indices[1] = yuy2_subsample(yuv_bg, yuv_fg);
+  indices[2] = yuy2_subsample(yuv_fg, yuv_bg);
+  indices[3] = yuv_fg;
+}
+
+void uyvy_subsample_set_colors_mzx(struct graphics_data *graphics,
+ Uint32 *indices, Uint8 bg, Uint8 fg)
+{
+  Uint32 yuv_bg = graphics->flat_intensity_palette[bg];
+  Uint32 yuv_fg = graphics->flat_intensity_palette[fg];
+
+  indices[0] = yuv_bg;
+  indices[1] = uyvy_subsample(yuv_bg, yuv_fg);
+  indices[2] = uyvy_subsample(yuv_fg, yuv_bg);
+  indices[3] = yuv_fg;
+}
+
+void yvyu_subsample_set_colors_mzx(struct graphics_data *graphics,
+ Uint32 *indices, Uint8 bg, Uint8 fg)
+{
+  Uint32 yuv_bg = graphics->flat_intensity_palette[bg];
+  Uint32 yuv_fg = graphics->flat_intensity_palette[fg];
+
+  indices[0] = yuv_bg;
+  indices[1] = yvyu_subsample(yuv_bg, yuv_fg);
+  indices[2] = yvyu_subsample(yuv_fg, yuv_bg);
+  indices[3] = yuv_fg;
+}
 
 // Nominally 8-bit (Character graphics 8 bytes wide)
 void render_graph8(Uint8 *pixels, Uint32 pitch, struct graphics_data *graphics,

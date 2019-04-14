@@ -22,67 +22,36 @@
 #include "platform.h"
 #include "graphics.h"
 #include "render.h"
+#include "render_layer.h"
 #include "render_sdl.h"
-#include "render_yuv.h"
+#include "renderers.h"
+#include "yuv.h"
 
-boolean yuv_set_video_mode_size(struct graphics_data *graphics,
+#if SDL_VERSION_ATLEAST(2,0,0)
+#error Overlay renderer no longer supported for SDL 2+. Use softscale!
+#endif
+
+#define YUV1_OVERLAY_WIDTH   (SCREEN_PIX_W * 2)
+#define YUV1_OVERLAY_HEIGHT  SCREEN_PIX_H
+
+#define YUV2_OVERLAY_WIDTH   SCREEN_PIX_W
+#define YUV2_OVERLAY_HEIGHT  SCREEN_PIX_H
+
+struct yuv_render_data
+{
+  struct sdl_render_data sdl;
+  void (*set_colors_mzx)(struct graphics_data *, Uint32 *, Uint8, Uint8);
+  Uint32 (*rgb_to_yuv)(Uint8 r, Uint8 g, Uint8 b);
+  Uint32 bpp;
+  Uint32 w;
+  Uint32 h;
+};
+
+static boolean yuv_set_video_mode_size(struct graphics_data *graphics,
  int width, int height, int depth, boolean fullscreen, boolean resize,
  int yuv_width, int yuv_height)
 {
   struct yuv_render_data *render_data = graphics->render_data;
-
-#if SDL_VERSION_ATLEAST(2,0,0)
-
-  sdl_destruct_window(graphics);
-
-  render_data->sdl.window = SDL_CreateWindow("MegaZeux",
-   SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
-   sdl_flags(depth, fullscreen, resize));
-
-  if(!render_data->sdl.window)
-  {
-    warn("Failed to create window: %s\n", SDL_GetError());
-    goto err_free;
-  }
-
-  render_data->sdl.renderer =
-   SDL_CreateRenderer(render_data->sdl.window, -1, SDL_RENDERER_ACCELERATED);
-
-  if(!render_data->sdl.renderer)
-  {
-    render_data->sdl.renderer =
-     SDL_CreateRenderer(render_data->sdl.window, -1, SDL_RENDERER_SOFTWARE);
-
-    if(!render_data->sdl.renderer)
-    {
-      warn("Failed to create renderer: %s\n", SDL_GetError());
-      goto err_free;
-    }
-
-    warn("Accelerated renderer not available. Overlay will be SLOW!\n");
-  }
-
-  render_data->is_yuy2 = true;
-  render_data->sdl.texture = SDL_CreateTexture(render_data->sdl.renderer,
-   SDL_PIXELFORMAT_YUY2, SDL_TEXTUREACCESS_STREAMING, yuv_width, yuv_height);
-
-  if(!render_data->sdl.texture)
-  {
-    render_data->is_yuy2 = false;
-    render_data->sdl.texture = SDL_CreateTexture(render_data->sdl.renderer,
-     SDL_PIXELFORMAT_UYVY, SDL_TEXTUREACCESS_STREAMING, yuv_width, yuv_height);
-
-    if(!render_data->sdl.texture)
-    {
-      warn("Failed to create YUV texture: %s\n", SDL_GetError());
-      goto err_free;
-    }
-  }
-
-  sdl_window_id = SDL_GetWindowID(render_data->sdl.window);
-  render_data->pitch = yuv_width * sizeof(Uint32);
-
-#else // !SDL_VERSION_ATLEAST(2,0,0)
 
   // the YUV renderer _requires_ 32bit colour
   render_data->sdl.screen = SDL_SetVideoMode(width, height, 32,
@@ -92,21 +61,33 @@ boolean yuv_set_video_mode_size(struct graphics_data *graphics,
     goto err_free;
 
   // try with a YUY2 pixel format first
+  render_data->rgb_to_yuv = rgb_to_yuy2;
+  render_data->set_colors_mzx = yuy2_subsample_set_colors_mzx;
   render_data->sdl.overlay = SDL_CreateYUVOverlay(yuv_width, yuv_height,
-    SDL_YUY2_OVERLAY, render_data->sdl.screen);
+   SDL_YUY2_OVERLAY, render_data->sdl.screen);
 
   // didn't work, try with a UYVY pixel format next
   if(!render_data->sdl.overlay)
+  {
+    render_data->rgb_to_yuv = rgb_to_uyvy;
+    render_data->set_colors_mzx = uyvy_subsample_set_colors_mzx;
     render_data->sdl.overlay = SDL_CreateYUVOverlay(yuv_width, yuv_height,
-      SDL_UYVY_OVERLAY, render_data->sdl.screen);
+     SDL_UYVY_OVERLAY, render_data->sdl.screen);
+  }
+
+  // Since we support this format now too, might as well try.
+  if(!render_data->sdl.overlay)
+  {
+    render_data->rgb_to_yuv = rgb_to_yvyu;
+    render_data->set_colors_mzx = yvyu_subsample_set_colors_mzx;
+    render_data->sdl.overlay = SDL_CreateYUVOverlay(yuv_width, yuv_height,
+     SDL_YVYU_OVERLAY, render_data->sdl.screen);
+  }
 
   // failed to create an overlay
   if(!render_data->sdl.overlay)
     goto err_free;
 
-  render_data->is_yuy2 = render_data->sdl.overlay->format == SDL_YUY2_OVERLAY;
-
-#endif // !SDL_VERSION_ATLEAST(2,0,0)
   render_data->w = width;
   render_data->h = height;
   return true;
@@ -116,7 +97,28 @@ err_free:
   return false;
 }
 
-boolean yuv_init_video(struct graphics_data *graphics, struct config_info *conf)
+static boolean yuv1_set_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, boolean fullscreen, boolean resize)
+{
+  struct yuv_render_data *render_data = graphics->render_data;
+  render_data->bpp = 32;
+
+  return yuv_set_video_mode_size(graphics, width, height, depth, fullscreen,
+   resize, YUV1_OVERLAY_WIDTH, YUV1_OVERLAY_HEIGHT);
+}
+
+static boolean yuv2_set_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, boolean fullscreen, boolean resize)
+{
+  struct yuv_render_data *render_data = graphics->render_data;
+  render_data->bpp = 16;
+
+  return yuv_set_video_mode_size(graphics, width, height, depth, fullscreen,
+   resize, YUV2_OVERLAY_WIDTH, YUV2_OVERLAY_HEIGHT);
+}
+
+static boolean yuv_init_video(struct graphics_data *graphics,
+ struct config_info *conf)
 {
   struct yuv_render_data *render_data = cmalloc(sizeof(struct yuv_render_data));
   if(!render_data)
@@ -138,7 +140,7 @@ boolean yuv_init_video(struct graphics_data *graphics, struct config_info *conf)
   return true;
 }
 
-void yuv_free_video(struct graphics_data *graphics)
+static void yuv_free_video(struct graphics_data *graphics)
 {
   sdl_destruct_window(graphics);
 
@@ -146,68 +148,117 @@ void yuv_free_video(struct graphics_data *graphics)
   graphics->render_data = NULL;
 }
 
-boolean yuv_check_video_mode(struct graphics_data *graphics,
+static boolean yuv_check_video_mode(struct graphics_data *graphics,
  int width, int height, int depth, boolean fullscreen, boolean resize)
 {
-#if SDL_VERSION_ATLEAST(2,0,0)
-  return true;
-#else
   return SDL_VideoModeOK(width, height, 32,
    sdl_flags(depth, fullscreen, resize) | SDL_ANYFORMAT);
-#endif
 }
 
-static inline void rgb_to_yuv(Uint8 r, Uint8 g, Uint8 b,
-                              Uint8 *y, Uint8 *u, Uint8 *v)
-{
-  *y = (9797 * r + 19237 * g + 3734 * b) >> 15;
-  *u = ((18492 * (b - *y)) >> 15) + 128;
-  *v = ((23372 * (r - *y)) >> 15) + 128;
-}
-
-void yuv_update_colors(struct graphics_data *graphics,
+static void yuv_update_colors(struct graphics_data *graphics,
  struct rgb_color *palette, Uint32 count)
 {
   struct yuv_render_data *render_data = graphics->render_data;
-  Uint8 y, u, v;
   Uint32 i;
 
-  // it's a YUY2 overlay
-  if(render_data->is_yuy2)
+  for(i = 0; i < count; i++)
   {
-    for(i = 0; i < count; i++)
-    {
-      rgb_to_yuv(palette[i].r, palette[i].g, palette[i].b, &y, &u, &v);
-
-#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
-      graphics->flat_intensity_palette[i] =
-        (v << 0) | (y << 8) | (u << 16) | (y << 24);
-#else
-      graphics->flat_intensity_palette[i] =
-        (y << 0) | (u << 8) | (y << 16) | (v << 24);
-#endif
-    }
-  }
-
-  // it's a UYVY overlay
-  else
-  {
-    for(i = 0; i < count; i++)
-    {
-      rgb_to_yuv(palette[i].r, palette[i].g, palette[i].b, &y, &u, &v);
-
-#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
-      graphics->flat_intensity_palette[i] =
-        (y << 0) | (v << 8) | (y << 16) | (u << 24);
-#else
-      graphics->flat_intensity_palette[i] =
-        (u << 0) | (y << 8) | (v << 16) | (y << 24);
-#endif
-    }
+    graphics->flat_intensity_palette[i] =
+     render_data->rgb_to_yuv(palette[i].r, palette[i].g, palette[i].b);
   }
 }
 
-void yuv_sync_screen(struct graphics_data *graphics)
+static void yuv_lock_overlay(struct yuv_render_data *render_data,
+ Uint32 **pixels, Uint32 *pitch)
+{
+  SDL_LockYUVOverlay(render_data->sdl.overlay);
+
+  *pixels = (Uint32 *)render_data->sdl.overlay->pixels[0];
+  *pitch = render_data->sdl.overlay->pitches[0];
+}
+
+static void yuv_unlock_overlay(struct yuv_render_data *render_data)
+{
+  SDL_UnlockYUVOverlay(render_data->sdl.overlay);
+}
+
+static void yuv_render_graph(struct graphics_data *graphics)
+{
+  struct yuv_render_data *render_data = graphics->render_data;
+  Uint32 mode = graphics->screen_mode;
+  Uint32 bpp = render_data->bpp;
+  Uint32 *pixels;
+  Uint32 pitch;
+
+  yuv_lock_overlay(render_data, &pixels, &pitch);
+
+  if(bpp == 16)
+  {
+    // Subsampled mode
+    if(!mode)
+      render_graph16((Uint16 *)pixels, pitch, graphics,
+       render_data->set_colors_mzx);
+    else
+      render_graph16((Uint16 *)pixels, pitch, graphics, set_colors32[mode]);
+  }
+  else
+  {
+    if(!mode)
+      render_graph32(pixels, pitch, graphics, set_colors32[mode]);
+    else
+      render_graph32s(pixels, pitch, graphics, set_colors32[mode]);
+  }
+
+  yuv_unlock_overlay(render_data);
+}
+
+static void yuv1_render_layer(struct graphics_data *graphics,
+ struct video_layer *layer)
+{
+  struct yuv_render_data *render_data = graphics->render_data;
+  Uint32 bpp = render_data->bpp;
+  Uint32 *pixels;
+  Uint32 pitch;
+
+  yuv_lock_overlay(render_data, &pixels, &pitch);
+
+  render_layer(pixels, bpp, pitch, graphics, layer);
+
+  yuv_unlock_overlay(render_data);
+}
+
+static void yuv_render_cursor(struct graphics_data *graphics,
+ Uint32 x, Uint32 y, Uint16 color, Uint8 lines, Uint8 offset)
+{
+  struct yuv_render_data *render_data = graphics->render_data;
+  Uint32 bpp = render_data->bpp;
+  Uint32 *pixels;
+  Uint32 pitch;
+
+  yuv_lock_overlay(render_data, &pixels, &pitch);
+
+  render_cursor(pixels, pitch, bpp, x, y,
+   graphics->flat_intensity_palette[color], lines, offset);
+
+  yuv_unlock_overlay(render_data);
+}
+
+static void yuv_render_mouse(struct graphics_data *graphics,
+ Uint32 x, Uint32 y, Uint8 w, Uint8 h)
+{
+  struct yuv_render_data *render_data = graphics->render_data;
+  Uint32 bpp = render_data->bpp;
+  Uint32 *pixels;
+  Uint32 pitch;
+
+  yuv_lock_overlay(render_data, &pixels, &pitch);
+
+  render_mouse(pixels, pitch, bpp, x, y, 0xFFFFFFFF, 0x0, w, h);
+
+  yuv_unlock_overlay(render_data);
+}
+
+static void yuv_sync_screen(struct graphics_data *graphics)
 {
   struct yuv_render_data *render_data = graphics->render_data;
   int width = render_data->w, v_width;
@@ -222,55 +273,30 @@ void yuv_sync_screen(struct graphics_data *graphics)
   rect.w = v_width;
   rect.h = v_height;
 
-#if SDL_VERSION_ATLEAST(2,0,0)
-  SDL_UpdateTexture(render_data->sdl.texture, NULL, render_data->pixels,
-   render_data->pitch);
-  SDL_RenderCopy(render_data->sdl.renderer, render_data->sdl.texture, NULL,
-   &rect);
-  SDL_RenderPresent(render_data->sdl.renderer);
-#else
   SDL_DisplayYUVOverlay(render_data->sdl.overlay, &rect);
-#endif
 }
 
-void yuv_lock_overlay(struct yuv_render_data *render_data)
+void render_yuv1_register(struct renderer *renderer)
 {
-#if SDL_VERSION_ATLEAST(2,0,0)
-  /**
-   * This presents problems for layer rendering, so it's disabled.
-   * First, this is a write-only operation and old data is not guaranteed to
-   * exist in the returned buffer, so for transparent chars to work there'd
-   * need to be a backup of the drawing area anyway. Second, calculating the
-   * rect for this may or may not be intuitive with layer rendering.
-   *
-   * To enable, change the pixels array in yuv_render_data to a pointer.
-   * Also preferably get an SDL_Rect here.
-   */
-
-  //SDL_LockTexture(render_data->sdl.texture, NULL,
-  // &(render_data->pixels), &(render_data->pitch));
-#else
-  SDL_LockYUVOverlay(render_data->sdl.overlay);
-#endif
+  memset(renderer, 0, sizeof(struct renderer));
+  renderer->init_video = yuv_init_video;
+  renderer->free_video = yuv_free_video;
+  renderer->check_video_mode = yuv_check_video_mode;
+  renderer->set_video_mode = yuv1_set_video_mode;
+  renderer->update_colors = yuv_update_colors;
+  renderer->resize_screen = resize_screen_standard;
+  renderer->get_screen_coords = get_screen_coords_scaled;
+  renderer->set_screen_coords = set_screen_coords_scaled;
+  renderer->render_graph = yuv_render_graph;
+  renderer->render_layer = yuv1_render_layer;
+  renderer->render_cursor = yuv_render_cursor;
+  renderer->render_mouse = yuv_render_mouse;
+  renderer->sync_screen = yuv_sync_screen;
 }
 
-void yuv_unlock_overlay(struct yuv_render_data *render_data)
+void render_yuv2_register(struct renderer *renderer)
 {
-#if SDL_VERSION_ATLEAST(2,0,0)
-  // See note above.
-  //SDL_UnlockTexture(render_data->sdl.texture)
-#else
-  SDL_UnlockYUVOverlay(render_data->sdl.overlay);
-#endif
-}
-
-Uint32 *yuv_get_pixels_pitch(struct yuv_render_data *render_data, int *pitch)
-{
-#if SDL_VERSION_ATLEAST(2,0,0)
-  *pitch = render_data->pitch;
-  return render_data->pixels;
-#else
-  *pitch = render_data->sdl.overlay->pitches[0];
-  return (Uint32 *)render_data->sdl.overlay->pixels[0];
-#endif
+  render_yuv1_register(renderer);
+  renderer->set_video_mode = yuv2_set_video_mode;
+  renderer->render_layer = NULL;
 }

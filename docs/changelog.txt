@@ -34,6 +34,11 @@ FEATURES
   any size larger than 640x350 and is comparable to hqscale
   (though it should look and perform a little better).
 + The current renderer can now be set from the settings menu.
++ Added the 'softscale' renderer. This renderer is a generalized
+  rewrite of the former SDL 2 overlay renderer implementation.
+  It should perform significantly better and be more portable.
+- SDL 2 support for the overlay renderers has been removed. When
+  specified for video_output, softscale will be enabled instead.
 
 FIXES
 
@@ -52,8 +57,7 @@ FIXES
 + The software renderer no longer tries to use an SDL_Renderer
   to draw the surface returned by SDL_GetWindowSurface. This
   fixes a crash when switching to fullscreen with the software
-  renderer on some platforms. A similar hack has been removed
-  from the overlay renderers.
+  renderer on some platforms.
 + Fixed a software renderer mouse crash bug caused by moving the
   cursor off the screen with a window bigger than the screen.
 

@@ -45,9 +45,7 @@ struct sdl_render_data
 
 extern CORE_LIBSPEC Uint32 sdl_window_id;
 
-#ifdef CONFIG_RENDER_YUV
 int sdl_flags(int depth, boolean fullscreen, boolean resize);
-#endif
 
 void sdl_destruct_window(struct graphics_data *graphics);
 
