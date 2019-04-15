@@ -1511,6 +1511,7 @@ boolean init_video(struct config_info *conf, const char *caption)
 {
   graphics.screen_mode = 0;
   graphics.fullscreen = conf->fullscreen;
+  graphics.fullscreen_windowed = conf->fullscreen_windowed;
   graphics.resolution_width = conf->resolution_width;
   graphics.resolution_height = conf->resolution_height;
   graphics.window_width = conf->window_width;

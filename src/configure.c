@@ -140,6 +140,7 @@ static const struct config_info user_conf_default =
 {
   // Video options
   FULLSCREEN_DEFAULT,           // fullscreen
+  false,                        // fullscreen_windowed
   FULLSCREEN_WIDTH_DEFAULT,     // resolution_width
   FULLSCREEN_HEIGHT_DEFAULT,    // resolution_height
   640,                          // window_width
@@ -298,6 +299,13 @@ static void config_set_fullscreen(struct config_info *conf, char *name,
 {
   // FIXME sloppy validation
   conf->fullscreen = strtoul(value, NULL, 10);
+}
+
+static void config_set_fullscreen_windowed(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  // FIXME sloppy validation
+  conf->fullscreen_windowed = strtoul(value, NULL, 10);
 }
 
 static void config_set_music(struct config_info *conf, char *name,
@@ -751,6 +759,7 @@ static const struct config_entry config_options[] =
   { "force_bpp", config_force_bpp, false },
   { "fullscreen", config_set_fullscreen, false },
   { "fullscreen_resolution", config_set_resolution, false },
+  { "fullscreen_windowed", config_set_fullscreen_windowed, false },
 #ifdef CONFIG_SDL
 #if SDL_VERSION_ATLEAST(2,0,0)
   { "gamecontroller.*", config_sdl_gc_set, false },

@@ -136,6 +136,12 @@
 # fullscreen_resolution = 1280,720
 # fullscreen_resolution = 640,480
 
+# If this setting is enabled, instead of regular fullscreen MZX will create
+# a borderless window with the current desktop resolution when fullscreen
+# is enabled. This overrides fullscreen_resolution. Disabled by default.
+
+# fullscreen_windowed = 0
+
 # The resolution MZX uses in a window. If you renderer supports
 # it, MZX will be scaled to fit this specification. Otherwise
 # the setting is ignored.
