@@ -309,7 +309,7 @@ static boolean softscale_set_video_mode(struct graphics_data *graphics,
  int width, int height, int depth, boolean fullscreen, boolean resize)
 {
   struct softscale_render_data *render_data = graphics->render_data;
-  boolean fullscreen_window = graphics->fullscreen_windowed;
+  boolean fullscreen_windowed = graphics->fullscreen_windowed;
 
   sdl_destruct_window(graphics);
 
@@ -319,12 +319,12 @@ static boolean softscale_set_video_mode(struct graphics_data *graphics,
   else
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
 
-  if(fullscreen && fullscreen_window)
+  if(fullscreen && fullscreen_windowed)
     sdl_get_native_resolution(&width, &height);
 
   render_data->sdl.window = SDL_CreateWindow("MegaZeux",
    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
-   sdl_flags(depth, fullscreen, fullscreen_window, resize));
+   sdl_flags(depth, fullscreen, fullscreen_windowed, resize));
 
   if(!render_data->sdl.window)
   {
