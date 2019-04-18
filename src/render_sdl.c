@@ -323,7 +323,13 @@ boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
 #endif
 
   if(fullscreen && fullscreen_windowed)
+  {
     sdl_get_native_resolution(&width, &height);
+
+    // Need to store these because the GL renderers actually need them.
+    graphics->resolution_width = width;
+    graphics->resolution_height = height;
+  }
 
   render_data->window = SDL_CreateWindow("MegaZeux",
    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
