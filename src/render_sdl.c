@@ -20,7 +20,9 @@
 #include "compat_sdl.h"
 #include "render_sdl.h"
 
-#include "SDL.h"
+#include <limits.h>
+
+#include <SDL.h>
 
 CORE_LIBSPEC Uint32 sdl_window_id;
 
