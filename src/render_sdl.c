@@ -196,15 +196,6 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
 
   sdl_destruct_window(graphics);
 
-  if(fullscreen && fullscreen_windowed)
-  {
-    if(sdl_get_fullscreen_resolution(&width, &height, true))
-    {
-      graphics->resolution_width = width;
-      graphics->resolution_height = height;
-    }
-  }
-
   render_data->window = SDL_CreateWindow("MegaZeux",
    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
    sdl_flags(depth, fullscreen, fullscreen_windowed, resize));
@@ -371,15 +362,6 @@ boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, req_ver.major);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, req_ver.minor);
 #endif
-
-  if(fullscreen && fullscreen_windowed)
-  {
-    if(sdl_get_fullscreen_resolution(&width, &height, true))
-    {
-      graphics->resolution_width = width;
-      graphics->resolution_height = height;
-    }
-  }
 
   render_data->window = SDL_CreateWindow("MegaZeux",
    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,

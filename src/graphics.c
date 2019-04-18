@@ -1628,6 +1628,18 @@ boolean set_video_mode(void)
   boolean resize = graphics.allow_resize;
   boolean ret;
 
+#ifdef CONFIG_SDL
+  if(fullscreen && graphics.fullscreen_windowed)
+  {
+    // TODO maybe be able to communicate with the renderer instead of this hack
+    if(sdl_get_fullscreen_resolution(&target_width, &target_height, true))
+    {
+      graphics.resolution_width = target_width;
+      graphics.resolution_height = target_height;
+    }
+  }
+#endif
+
   if(fullscreen)
   {
     target_width = graphics.resolution_width;
