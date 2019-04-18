@@ -1531,21 +1531,26 @@ boolean init_video(struct config_info *conf, const char *caption)
   if(!set_graphics_output(conf))
     return false;
 
-  // FIXME- We should communicate with the renderer to get the desktop resolution.
   if(conf->resolution_width == -1 && conf->resolution_height == -1)
   {
-    // FIXME hack- default resolution assignment should occur
-    // somewhere else on a per-renderer basis (probably init_video)
-    if(strcmp(conf->video_output, "software"))
-    {
-      // "Safe" resolution for scalable renderers
-      graphics.resolution_width = 1280;
-      graphics.resolution_height = 720;
-    }
+#ifdef CONFIG_SDL
+    // TODO maybe be able to communicate with the renderer instead of this hack
+    boolean is_scaling = true;
+    int width;
+    int height;
 
-    else
+    if(!strcmp(conf->video_output, "software"))
+      is_scaling = false;
+
+    if(sdl_get_fullscreen_resolution(&width, &height, is_scaling))
     {
-      // "Safe" resolution for software renderer
+      graphics.resolution_width = width;
+      graphics.resolution_height = height;
+    }
+    else
+#endif
+    {
+      // "Safe" resolution
       graphics.resolution_width = 640;
       graphics.resolution_height = 480;
     }

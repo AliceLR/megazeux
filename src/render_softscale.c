@@ -320,7 +320,13 @@ static boolean softscale_set_video_mode(struct graphics_data *graphics,
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
 
   if(fullscreen && fullscreen_windowed)
-    sdl_get_native_resolution(&width, &height);
+  {
+    if(sdl_get_fullscreen_resolution(&width, &height, true))
+    {
+      graphics->resolution_width = width;
+      graphics->resolution_height = height;
+    }
+  }
 
   render_data->sdl.window = SDL_CreateWindow("MegaZeux",
    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,

@@ -47,7 +47,7 @@ extern CORE_LIBSPEC Uint32 sdl_window_id;
 
 int sdl_flags(int depth, boolean fullscreen, boolean fullscreen_windowed,
  boolean resize);
-void sdl_get_native_resolution(int *width, int *height);
+boolean sdl_get_fullscreen_resolution(int *width, int *height, boolean scaling);
 void sdl_destruct_window(struct graphics_data *graphics);
 
 boolean sdl_set_video_mode(struct graphics_data *graphics, int width,

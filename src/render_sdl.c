@@ -55,19 +55,63 @@ int sdl_flags(int depth, boolean fullscreen, boolean fullscreen_windowed,
   return flags;
 }
 
-void sdl_get_native_resolution(int *width, int *height)
+boolean sdl_get_fullscreen_resolution(int *width, int *height, boolean scaling)
 {
 #if SDL_VERSION_ATLEAST(2,0,0)
   SDL_DisplayMode display_mode;
+  int ret = -1;
+  int count;
 
-  if(!SDL_GetDesktopDisplayMode(0, &display_mode))
+  if(scaling)
+  {
+    // Use the current desktop resolution.
+    ret = SDL_GetDesktopDisplayMode(0, &display_mode);
+
+    if(ret)
+    {
+      count = SDL_GetNumDisplayModes(0);
+      if(count)
+        ret = SDL_GetDisplayMode(0, 0, &display_mode);
+    }
+  }
+  else
+  {
+    // Get the smallest possible resolution bigger than 640x350.
+    // Smaller means the software renderer will occupy more screen space.
+    SDL_DisplayMode mode;
+    int min_size = INT_MAX;
+    int i;
+
+    count = SDL_GetNumDisplayModes(0);
+
+    debug("Display modes:\n");
+
+    for(i = 0; i < count; i++)
+    {
+      ret = SDL_GetDisplayMode(0, i, &mode);
+      debug("%d: %d x %d, %dHz, %s\n", i, mode.w, mode.h, mode.refresh_rate,
+       SDL_GetPixelFormatName(mode.format));
+
+      if(!ret && (mode.w * mode.h < min_size) &&
+       (mode.w >= SCREEN_PIX_W) && (mode.h >= SCREEN_PIX_H))
+      {
+        min_size = mode.w * mode.h;
+        display_mode = mode;
+      }
+    }
+  }
+
+  if(!ret)
   {
     *width = display_mode.w;
     *height = display_mode.h;
+    return true;
   }
   else
     warn("Failed to get display mode: %s\n", SDL_GetError());
 #endif
+
+  return false;
 }
 
 void sdl_destruct_window(struct graphics_data *graphics)
@@ -153,7 +197,13 @@ boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
   sdl_destruct_window(graphics);
 
   if(fullscreen && fullscreen_windowed)
-    sdl_get_native_resolution(&width, &height);
+  {
+    if(sdl_get_fullscreen_resolution(&width, &height, true))
+    {
+      graphics->resolution_width = width;
+      graphics->resolution_height = height;
+    }
+  }
 
   render_data->window = SDL_CreateWindow("MegaZeux",
    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
@@ -324,11 +374,11 @@ boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
 
   if(fullscreen && fullscreen_windowed)
   {
-    sdl_get_native_resolution(&width, &height);
-
-    // Need to store these because the GL renderers actually need them.
-    graphics->resolution_width = width;
-    graphics->resolution_height = height;
+    if(sdl_get_fullscreen_resolution(&width, &height, true))
+    {
+      graphics->resolution_width = width;
+      graphics->resolution_height = height;
+    }
   }
 
   render_data->window = SDL_CreateWindow("MegaZeux",
