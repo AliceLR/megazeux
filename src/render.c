@@ -730,7 +730,7 @@ void fix_viewport_ratio(int width, int height, int *v_width, int *v_height,
   *v_width = width;
   *v_height = height;
 
-  if((ratio == RATIO_STRETCH))
+  if(ratio == RATIO_STRETCH)
     return;
 
   if(ratio == RATIO_CLASSIC_4_3)

@@ -206,7 +206,7 @@ __libspec int main(int argc, char *argv[])
     split_path_filename(argv[1], conf->startup_path, 256,
      conf->startup_file, 256);
 
-  if(conf->startup_path && strlen(conf->startup_path))
+  if(strlen(conf->startup_path))
   {
     debug("Config: Using startup path '%s'\n", conf->startup_path);
     snprintf(current_dir, MAX_PATH, "%s", conf->startup_path);

@@ -561,7 +561,7 @@ int color_selection(int current, int allow_wild)
           if(current == 0)
             current = -512;
           else
-            current =- current;
+            current = -current;
         }
         return current;
       }
