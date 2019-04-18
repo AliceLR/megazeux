@@ -1511,6 +1511,7 @@ boolean init_video(struct config_info *conf, const char *caption)
 {
   graphics.screen_mode = 0;
   graphics.fullscreen = conf->fullscreen;
+  graphics.fullscreen_windowed = conf->fullscreen_windowed;
   graphics.resolution_width = conf->resolution_width;
   graphics.resolution_height = conf->resolution_height;
   graphics.window_width = conf->window_width;
@@ -1530,21 +1531,26 @@ boolean init_video(struct config_info *conf, const char *caption)
   if(!set_graphics_output(conf))
     return false;
 
-  // FIXME- We should communicate with the renderer to get the desktop resolution.
   if(conf->resolution_width == -1 && conf->resolution_height == -1)
   {
-    // FIXME hack- default resolution assignment should occur
-    // somewhere else on a per-renderer basis (probably init_video)
-    if(strcmp(conf->video_output, "software"))
-    {
-      // "Safe" resolution for scalable renderers
-      graphics.resolution_width = 1280;
-      graphics.resolution_height = 720;
-    }
+#ifdef CONFIG_SDL
+    // TODO maybe be able to communicate with the renderer instead of this hack
+    boolean is_scaling = true;
+    int width;
+    int height;
 
-    else
+    if(!strcmp(conf->video_output, "software"))
+      is_scaling = false;
+
+    if(sdl_get_fullscreen_resolution(&width, &height, is_scaling))
     {
-      // "Safe" resolution for software renderer
+      graphics.resolution_width = width;
+      graphics.resolution_height = height;
+    }
+    else
+#endif
+    {
+      // "Safe" resolution
       graphics.resolution_width = 640;
       graphics.resolution_height = 480;
     }
@@ -1621,6 +1627,18 @@ boolean set_video_mode(void)
   boolean fullscreen = graphics.fullscreen;
   boolean resize = graphics.allow_resize;
   boolean ret;
+
+#ifdef CONFIG_SDL
+  if(fullscreen && graphics.fullscreen_windowed)
+  {
+    // TODO maybe be able to communicate with the renderer instead of this hack
+    if(sdl_get_fullscreen_resolution(&target_width, &target_height, true))
+    {
+      graphics.resolution_width = target_width;
+      graphics.resolution_height = target_height;
+    }
+  }
+#endif
 
   if(fullscreen)
   {

@@ -130,11 +130,16 @@
 #
 # Give in x,y format. Use this if the defaults are giving you problems,
 # especially in the software renderer.
-# The resolution "1280,720" is the default for all scalable renderers;
+# The current desktop resolution is the default for all scalable renderers;
 # "640,480" is the default for the software renderer.
 
-# fullscreen_resolution = 1280,720
 # fullscreen_resolution = 640,480
+
+# If this setting is enabled, instead of regular fullscreen MZX will create
+# a borderless window with the current desktop resolution when fullscreen
+# is enabled. This overrides fullscreen_resolution. Disabled by default.
+
+# fullscreen_windowed = 0
 
 # The resolution MZX uses in a window. If you renderer supports
 # it, MZX will be scaled to fit this specification. Otherwise
