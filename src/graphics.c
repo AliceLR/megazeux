@@ -1801,7 +1801,7 @@ void color_string_ext_special(const char *str, Uint32 x, Uint32 y,
   char next_str[2];
   next_str[1] = 0;
 
-  if(c_offset) dirty_ui();
+  dirty_ui();
   dirty_current();
 
   while(cur_char)
@@ -1933,7 +1933,7 @@ void write_string_ext(const char *str, Uint32 x, Uint32 y,
   Uint8 bg_color = (color >> 4) + c_offset;
   Uint8 fg_color = (color & 0x0F) + c_offset;
 
-  if(c_offset) dirty_ui();
+  dirty_ui();
   dirty_current();
 
   while(cur_char && (cur_char != 0))
@@ -2052,7 +2052,7 @@ void write_line_ext(const char *str, Uint32 x, Uint32 y,
   Uint8 bg_color = (color >> 4) + c_offset;
   Uint8 fg_color = (color & 0x0F) + c_offset;
 
-  if(c_offset) dirty_ui();
+  dirty_ui();
   dirty_current();
 
   while(cur_char && (cur_char != '\n'))
@@ -2171,7 +2171,7 @@ static void color_line_ext(Uint32 length, Uint32 x, Uint32 y,
   Uint8 fg_color = (color & 0x0F) + c_offset;
   Uint32 i;
 
-  if(c_offset) dirty_ui();
+  dirty_ui();
   dirty_current();
 
   for(i = 0; i < length; i++)
@@ -2194,7 +2194,7 @@ void fill_line_ext(Uint32 length, Uint32 x, Uint32 y,
   Uint8 fg_color = (color & 0x0F) + c_offset;
   Uint32 i;
 
-  if(c_offset) dirty_ui();
+  dirty_ui();
   dirty_current();
 
   for(i = 0; i < length; i++)
@@ -2220,7 +2220,7 @@ void draw_char_mixed_pal_ext(Uint8 chr, Uint8 bg_color,
 
   *(dest_copy++) = *dest;
 
-  if((fg_color|bg_color) >= 16) dirty_ui();
+  dirty_ui();
   dirty_current();
 }
 
@@ -2235,7 +2235,7 @@ void draw_char_ext(Uint8 chr, Uint8 color, Uint32 x,
   dest->fg_color = (color & 0x0F) + c_offset;
   *(dest_copy++) = *dest;
 
-  if(c_offset) dirty_ui();
+  dirty_ui();
   dirty_current();
 }
 
@@ -2249,7 +2249,7 @@ void draw_char_linear_ext(Uint8 color, Uint8 chr,
   dest->fg_color = (color & 0x0F) + c_offset;
   *(dest_copy++) = *dest;
 
-  if(c_offset) dirty_ui();
+  dirty_ui();
   dirty_current();
 }
 

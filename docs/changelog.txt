@@ -67,6 +67,8 @@ FIXES
   renderer on some platforms.
 + Fixed a software renderer mouse crash bug caused by moving the
   cursor off the screen with a window bigger than the screen.
++ Fixed a bug where setting SMZX_MESSAGE to 0 wouldn't always
+  draw the message correctly.
 
 DEVELOPERS
 
