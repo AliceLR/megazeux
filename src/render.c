@@ -653,7 +653,7 @@ void set_screen_coords_centered(struct graphics_data *graphics, int x, int y,
 }
 
 #if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM) \
- || defined(CONFIG_RENDER_YUV)
+ || defined(CONFIG_RENDER_SOFTSCALE) || defined(CONFIG_RENDER_YUV)
 
 void get_screen_coords_scaled(struct graphics_data *graphics, int screen_x,
  int screen_y, int *x, int *y, int *min_x, int *min_y, int *max_x, int *max_y)
@@ -720,7 +720,8 @@ void set_screen_coords_scaled(struct graphics_data *graphics, int x, int y,
 // FIXME: Integerize
 
 #if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM) \
- || defined(CONFIG_RENDER_YUV) || defined(CONFIG_RENDER_GX)
+ || defined(CONFIG_RENDER_SOFTSCALE) || defined(CONFIG_RENDER_YUV) \
+ || defined(CONFIG_RENDER_GX)
 
 void fix_viewport_ratio(int width, int height, int *v_width, int *v_height,
  enum ratio_type ratio)

@@ -83,7 +83,13 @@
 #endif
 
 #ifndef VIDEO_OUTPUT_DEFAULT
+#if defined(CONFIG_RENDER_GL_PROGRAM)
 #define VIDEO_OUTPUT_DEFAULT "auto_glsl"
+#elif defined(CONFIG_RENDER_SOFTSCALE)
+#define VIDEO_OUTPUT_DEFAULT "softscale"
+#else
+#define VIDEO_OUTPUT_DEFAULT "software"
+#endif
 #endif
 
 #ifndef AUDIO_BUFFER_SAMPLES

@@ -41,6 +41,7 @@
 #include "render_layer.h"
 #include "render_sdl.h"
 #include "renderers.h"
+#include "util.h"
 #include "yuv.h"
 
 struct softscale_render_data
