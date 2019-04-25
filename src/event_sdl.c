@@ -1106,6 +1106,12 @@ static boolean process_event(SDL_Event *event)
       if(joystick_index < 0)
         break;
 
+#ifdef CONFIG_SWITCH
+      // Ignore fake axis "buttons".
+      if((button >= 16) && (button <= 23))
+        break;
+#endif
+
       joystick_button_press(status, joystick_index, button);
       break;
     }
@@ -1119,6 +1125,12 @@ static boolean process_event(SDL_Event *event)
       int joystick_index = get_joystick_index(which);
       if(joystick_index < 0)
         break;
+
+#ifdef CONFIG_SWITCH
+      // Ignore fake axis "buttons".
+      if((button >= 16) && (button <= 23))
+        break;
+#endif
 
       joystick_button_release(status, joystick_index, button);
       break;

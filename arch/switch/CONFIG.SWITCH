@@ -1,4 +1,8 @@
 #!/bin/bash
 
+# NOTE: GL renderers currently cause system crashes on exit and are disabled
+# by default until this can be fixed.
+
 ./config.sh --platform switch --prefix $DEVKITPRO/devkitA64 --enable-release \
-            --disable-utils --enable-meter --enable-stdio-redirect $@
+            --disable-utils --enable-meter --enable-stdio-redirect \
+            --disable-gl $@

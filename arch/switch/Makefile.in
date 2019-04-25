@@ -39,10 +39,18 @@ else
   NX := nx
 endif
 
-ifeq ($(filter 1,${BUILD_RENDER_GL_FIXED} ${BUILD_RENDER_GL_PROGRAM}),1)
-  MESA_LIBS := -lEGL -lGLESv2 -lGLESv1_CM -lglapi -ldrm_nouveau
-else
-  MESA_LIBS :=
+MESA_LIBS :=
+
+ifneq ($(or ${BUILD_RENDER_SOFTSCALE}, ${BUILD_RENDER_GL_PROGRAM}),)
+MESA_LIBS += -lGLESv2
+endif
+
+ifneq (${BUILD_RENDER_GL_FIXED},)
+MESA_LIBS += -lGLESv1_CM
+endif
+
+ifneq (${MESA_LIBS},)
+MESA_LIBS += -lEGL -lglapi -ldrm_nouveau
 endif
 
 SDL_PREFIX := ${PORTLIBS}
