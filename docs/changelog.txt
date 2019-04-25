@@ -23,6 +23,7 @@ FEATURES
 + Added the config setting "joy_axis_threshold". This setting
   allows the threshold for joystick axis mapped presses to be
   configured.
++ Added Nintendo Switch port. (Lachesis, asie)
 + The NDS directional pad is now mappable as a joystick hat.
 + The 3DS directional pad is now mappable as a joystick hat. The
   circle pad is now mappable as axes 1 and 2.
