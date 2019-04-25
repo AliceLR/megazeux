@@ -143,7 +143,7 @@ struct dso_syms_map
 #define PATH_BUF_LEN MAX_PATH
 
 struct mzx_dir {
-#if defined(CONFIG_PSP) || defined(CONFIG_3DS)
+#if defined(CONFIG_PSP) || defined(CONFIG_3DS) || defined(CONFIG_SWITCH)
   char path[PATH_BUF_LEN];
 #endif
   DIR *d;
@@ -184,7 +184,7 @@ CORE_LIBSPEC char *strsep(char **stringp, const char *delim);
 #ifndef __WIN32__
 #if defined(CONFIG_PSP) || defined(CONFIG_GP2X) \
  || defined(CONFIG_NDS) || defined(CONFIG_WII) \
- || defined(CONFIG_3DS)
+ || defined(CONFIG_3DS) || defined(CONFIG_SWITCH)
 #include <string.h>
 #else
 #include <strings.h>

@@ -340,13 +340,13 @@ boolean redirect_stdio(const char *base_path, boolean require_conf)
     fclose(fp_wr);
     fprintf(stdout, "Redirecting logs to '%s'...\n", dest_path);
     freopen(dest_path, "w", stdout);
-    fprintf(stdout, "MegaZeux: Logging to '%s' (%llu)\n", dest_path, t);
+    fprintf(stdout, "MegaZeux: Logging to '%s' (%" PRIu64 ")\n", dest_path, t);
 
     // Redirect stderr to stderr.txt.
     join_path_names(dest_path, MAX_PATH, clean_path, "stderr.txt");
     fprintf(stderr, "Redirecting logs to '%s'...\n", dest_path);
     freopen(dest_path, "w", stderr);
-    fprintf(stderr, "MegaZeux: Logging to '%s' (%llu)\n", dest_path, t);
+    fprintf(stderr, "MegaZeux: Logging to '%s' (%" PRIu64 ")\n", dest_path, t);
     return true;
   }
   return false;
@@ -977,7 +977,7 @@ boolean dir_open(struct mzx_dir *dir, const char *path)
   while(readdir(dir->d) != NULL)
     dir->entries++;
 
-#if defined(CONFIG_PSP) || defined(CONFIG_3DS)
+#if defined(CONFIG_PSP) || defined(CONFIG_3DS) || defined(CONFIG_SWITCH)
   strncpy(dir->path, path, PATH_BUF_LEN);
   dir->path[PATH_BUF_LEN - 1] = 0;
   closedir(dir->d);
@@ -1010,7 +1010,7 @@ void dir_seek(struct mzx_dir *dir, long offset)
 
   dir->pos = CLAMP(offset, 0L, dir->entries);
 
-#if defined(CONFIG_PSP) || defined(CONFIG_3DS)
+#if defined(CONFIG_PSP) || defined(CONFIG_3DS) || defined(CONFIG_SWITCH)
   closedir(dir->d);
   dir->d = opendir(dir->path);
   if(!dir->d)

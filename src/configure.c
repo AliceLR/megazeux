@@ -67,6 +67,13 @@
 #define FORCE_BPP_DEFAULT 16
 #endif
 
+#ifdef CONFIG_SWITCH
+// Switch SDL needs this resolution or else weird things start happening...
+#define FULLSCREEN_WIDTH_DEFAULT 1920
+#define FULLSCREEN_HEIGHT_DEFAULT 1080
+#define FULLSCREEN_DEFAULT 1
+#endif
+
 #ifdef ANDROID
 #define FORCE_BPP_DEFAULT 16
 #define FULLSCREEN_DEFAULT 1

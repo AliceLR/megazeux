@@ -1106,6 +1106,12 @@ static boolean process_event(SDL_Event *event)
       if(joystick_index < 0)
         break;
 
+#ifdef CONFIG_SWITCH
+      // Ignore fake axis "buttons".
+      if((button >= 16) && (button <= 23))
+        break;
+#endif
+
       joystick_button_press(status, joystick_index, button);
       break;
     }
@@ -1119,6 +1125,12 @@ static boolean process_event(SDL_Event *event)
       int joystick_index = get_joystick_index(which);
       if(joystick_index < 0)
         break;
+
+#ifdef CONFIG_SWITCH
+      // Ignore fake axis "buttons".
+      if((button >= 16) && (button <= 23))
+        break;
+#endif
 
       joystick_button_release(status, joystick_index, button);
       break;
@@ -1261,8 +1273,9 @@ void real_warp_mouse(int x, int y)
 
 void initialize_joysticks(void)
 {
-#if !SDL_VERSION_ATLEAST(2,0,0)
+#if !SDL_VERSION_ATLEAST(2,0,0) || defined(CONFIG_SWITCH)
   // SDL 1.2 doesn't have joystick added/removed events.
+  // Switch SDL doesn't seem to generate these events at all on startup.
   int i, count;
 
   count = SDL_NumJoysticks();
@@ -1272,10 +1285,10 @@ void initialize_joysticks(void)
 
   for(i = 0; i < count; i++)
     init_joystick(i);
-#else
+#endif
 
+#if SDL_VERSION_ATLEAST(2,0,0)
   load_gamecontrollerdb();
-
 #endif
 
 // FIXME:

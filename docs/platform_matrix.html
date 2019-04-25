@@ -53,6 +53,7 @@ var no_updater_unix = subopt("NO", 7);
 var no_sdl_3ds = std("NO", 9);
 var optional_sdl_wii = std("OPTIONAL", 10);
 var yes_but_8bpp = subopt("YES (8bpp)", 11);
+var no_gl_switch = subopt("NO", 12);
 
 var ZIP = _yes("ZIP");
 var DMG = _yes("DMG");
@@ -91,8 +92,8 @@ var fields =
   helpsys:          "HELPSYS",
   audio:            "AUDIO",
   software:         "SOFTWARE",
+  overlay:          "SOFTSCALE",
   gl:               "GL",
-  overlay:          "OVERLAY",
   glsl:             "GLSL",
   updater:          "UPDATER",
   modular:          "MODULAR",
@@ -291,6 +292,33 @@ var archs =
     helpsys:          no_low_memory,
     audio:            yes,
     software:         yes,
+    updater:          no_updater,
+    png:              yes,
+    uthash:           yes,
+    loadsave_meter:   yes,
+  },
+
+  switch:
+  {
+    platform:         "switch",
+    description:      "Nintendo Switch",
+    architecture:     "ARMv8/AArch64 (ELF)",
+    endian:           "Little",
+    toolchain:        "gcc 8.3.0 <br /> binutils 2.32 <br /> (dk r13)",
+    packaged:         ZIP,
+    stack_protector:  _FAULTY(),
+    layer_rendering:  yes,
+    module_engine:    xmp,
+    ogg_vorbis:       libvorbis,
+    optimization:     speed,
+    sdl:              yes,
+    editor:           yes,
+    helpsys:          yes,
+    audio:            yes,
+    software:         yes,
+    overlay:          yes,
+    gl:               no_gl_switch,
+    glsl:             no_gl_switch,
     updater:          no_updater,
     png:              yes,
     uthash:           yes,
@@ -761,6 +789,10 @@ considered unstable.
 <li><a name="note11"/>Layer rendering is supported on this platform by as it
 uses the SDL software renderer, but this port does not currently support a color
 depth greater than 8bpp, so the UI palette will not be protected in SMZX mode.
+</li>
+
+<li><a name="note12"/>The GL renderers work on the Switch but have been
+disabled because they cause system crashes when exiting MegaZeux.
 </li>
 </ol>
 

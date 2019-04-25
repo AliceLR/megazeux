@@ -25,6 +25,7 @@
 #include "render_layer.h"
 #include "render_sdl.h"
 #include "renderers.h"
+#include "util.h"
 #include "yuv.h"
 
 #if SDL_VERSION_ATLEAST(2,0,0)
