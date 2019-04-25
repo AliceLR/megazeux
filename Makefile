@@ -208,6 +208,7 @@ LDFLAGS  += ${ARCH_LDFLAGS}
 # GCC version >= 7.x
 #
 
+GCC_VER := ${shell ${CC} -dumpversion}
 GCC_VER_MAJOR := ${shell ${CC} -dumpversion | cut -d. -f1}
 GCC_VER_MAJOR_GE_7 := ${shell test $(GCC_VER_MAJOR) -ge 7; echo $$?}
 
@@ -227,8 +228,10 @@ GCC_VER_MAJOR_GE_4 := ${shell test $(GCC_VER_MAJOR) -ge 4; echo $$?}
 ifeq ($(GCC_VER_MAJOR_GE_4),0)
 
 ifeq (${DEBUG},1)
+ifneq (${GCC_VER},4.2.1)
 CFLAGS   += -fbounds-check
 CXXFLAGS += -fbounds-check
+endif
 endif
 
 #

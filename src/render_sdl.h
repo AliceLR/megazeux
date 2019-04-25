@@ -45,8 +45,9 @@ struct sdl_render_data
 
 extern CORE_LIBSPEC Uint32 sdl_window_id;
 
-int sdl_flags(int depth, boolean fullscreen, boolean resize);
-
+int sdl_flags(int depth, boolean fullscreen, boolean fullscreen_windowed,
+ boolean resize);
+boolean sdl_get_fullscreen_resolution(int *width, int *height, boolean scaling);
 void sdl_destruct_window(struct graphics_data *graphics);
 
 boolean sdl_set_video_mode(struct graphics_data *graphics, int width,
@@ -59,8 +60,15 @@ boolean sdl_check_video_mode(struct graphics_data *graphics, int width,
 
 #include "render_gl.h"
 
-#define GL_STRIP_FLAGS(A) \
-  ((A & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_RESIZABLE)) | SDL_WINDOW_OPENGL)
+#if SDL_VERSION_ATLEAST(2,0,0)
+#define GL_ALLOW_FLAGS \
+ (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP | \
+  SDL_WINDOW_BORDERLESS | SDL_WINDOW_RESIZABLE)
+#else
+#define GL_ALLOW_FLAGS (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_RESIZABLE)
+#endif
+
+#define GL_STRIP_FLAGS(A) ((A & GL_ALLOW_FLAGS) | SDL_WINDOW_OPENGL)
 
 boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
  int depth, boolean fullscreen, boolean resize, struct gl_version req_ver);

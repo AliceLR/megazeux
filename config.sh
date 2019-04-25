@@ -373,7 +373,7 @@ if [ "$PLATFORM" = "win32"   -o "$PLATFORM" = "win64" \
 	# provided. This helps avoid errors that occur when gcc or libs exist in
 	# /usr, which is used by MSYS2 for the MSYS environment.
 	if [ "$PREFIX_IS_SET" = "false" -a -n "$MSYSTEM" \
-	 -a $(uname -o | grep "Msys") -a $(uname -r | grep "^2\.") ]; then
+	 -a "$(uname -o)" == "Msys" ]; then
 		if [ "$MSYSTEM" = "MINGW32" -o "$MSYSTEM" = "MINGW64" ]; then
 			[ "$PLATFORM" = "win32" ] && PREFIX="/mingw32"
 			[ "$PLATFORM" = "win64" ] && PREFIX="/mingw64"

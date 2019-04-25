@@ -115,6 +115,12 @@ struct blacklist_entry
 
 static struct blacklist_entry auto_glsl_blacklist[] =
 {
+  { "swrast",
+    "  MESA software renderer.\n"
+    "  Blacklisted due to poor performance on some machines.\n" },
+  { "softpipe",
+    "  MESA software renderer.\n"
+    "  Blacklisted due to poor performance on some machines.\n" },
   { "llvmpipe",
     "  MESA software renderer.\n"
     "  Blacklisted due to poor performance on some machines.\n" },

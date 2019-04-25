@@ -33,6 +33,13 @@ FEATURES
   function to produce sharper edges. This shader can scale up to
   any size larger than 640x350 and is comparable to hqscale
   (though it should look and perform a little better).
++ Fullscreen mode will now attempt to match a supported screen
+  resolution if no "fullscreen_resolution" setting is specified.
+  For scaling renderers, this favors the current desktop
+  resolution. For "software", this favors smaller resolutions.
++ Added the config setting "fullscreen_windowed". When set to 1,
+  MZX will create a borderless window with the current desktop
+  resolution instead of regular fullscreen. Disabled by default.
 + The current renderer can now be set from the settings menu.
 + Added the 'softscale' renderer. This renderer is a generalized
   rewrite of the former SDL 2 overlay renderer implementation.
@@ -60,6 +67,8 @@ FIXES
   renderer on some platforms.
 + Fixed a software renderer mouse crash bug caused by moving the
   cursor off the screen with a window bigger than the screen.
++ Fixed a bug where setting SMZX_MESSAGE to 0 wouldn't always
+  draw the message correctly.
 
 DEVELOPERS
 

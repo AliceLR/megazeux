@@ -27,6 +27,10 @@ __M_BEGIN_DECLS
 #include "platform.h"
 #include "keysym.h"
 
+#ifdef CONFIG_SDL
+#include <SDL_version.h>
+#endif
+
 #define UPDATE_DELAY 16
 
 #define KEY_REPEAT_STACK_SIZE 32
@@ -56,8 +60,6 @@ __M_BEGIN_DECLS
 #define MOUSE_BUTTON_X2         9
 
 #elif defined(CONFIG_SDL)
-
-#include <SDL_version.h>
 
 // SDL 2 maps X1 and X2, but has a separate wheel event that we map.
 #if SDL_VERSION_ATLEAST(2,0,0)

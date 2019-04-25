@@ -41,6 +41,7 @@
 #include "render_layer.h"
 #include "render_sdl.h"
 #include "renderers.h"
+#include "util.h"
 #include "yuv.h"
 
 struct softscale_render_data
@@ -309,6 +310,7 @@ static boolean softscale_set_video_mode(struct graphics_data *graphics,
  int width, int height, int depth, boolean fullscreen, boolean resize)
 {
   struct softscale_render_data *render_data = graphics->render_data;
+  boolean fullscreen_windowed = graphics->fullscreen_windowed;
 
   sdl_destruct_window(graphics);
 
@@ -320,7 +322,7 @@ static boolean softscale_set_video_mode(struct graphics_data *graphics,
 
   render_data->sdl.window = SDL_CreateWindow("MegaZeux",
    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
-   sdl_flags(depth, fullscreen, resize));
+   sdl_flags(depth, fullscreen, fullscreen_windowed, resize));
 
   if(!render_data->sdl.window)
   {
