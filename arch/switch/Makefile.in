@@ -72,6 +72,6 @@ build := build/${SUBPLATFORM}/switch/megazeux
 build: package ${build}
 	${CP} arch/switch/pad.config ${build}
 	${CP} megazeux.nro ${build}
-	${RM} ${build}/${mzxrun} ${build}/${mzx}
+	${RM} ${build}/${mzxrun} ${build}/${mzx} ${build}/*.debug
 
 include arch/zip.inc

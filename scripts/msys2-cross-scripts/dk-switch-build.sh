@@ -16,7 +16,7 @@ cd megazeux
 git checkout $1
 
 arch/switch/CONFIG.SWITCH
-make -j8
+make debuglink -j8
 make package
 make archive
 
