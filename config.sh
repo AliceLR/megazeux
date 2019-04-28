@@ -804,12 +804,10 @@ fi
 
 #
 # Force disable networking (unsupported platform or no editor build)
-# Also disable all network applications
 #
 if [ "$EDITOR" = "false" -o "$PLATFORM" = "nds" ]; then
 	echo "Force-disabling networking (unsupported platform or editor disabled)."
 	NETWORK="false"
-	UPDATER="false"
 fi
 
 #
@@ -821,10 +819,18 @@ if [ "$PLATFORM" != "mingw" ]; then
 fi
 
 #
+# Force disable network applications (network disabled)
+#
+if [ "$NETWORK" = "false" ]; then
+	echo "Force-disabling network-dependent features (networking disabled)"
+	UPDATER="false"
+fi
+
+#
 # Force disable networking (no applications enabled)
 #
 if [ "$NETWORK" = "true" -a "$UPDATER" = "false" ]; then
-	echo "Force-disabling networking (no network applications enabled)."
+	echo "Force-disabling networking (no network-dependent features enabled)."
 	NETWORK="false"
 fi
 

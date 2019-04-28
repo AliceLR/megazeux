@@ -411,7 +411,9 @@ ifeq (${BUILD_UTILS},1)
 	${MKDIR} ${build}/utils
 	${CP} ${checkres} ${downver} ${build}/utils
 	${CP} ${hlp2txt} ${txt2hlp} ${build}/utils
+ifeq (${LIBPNG},1)
 	${CP} ${png2smzx} ${build}/utils
+endif
 	${CP} ${ccv} ${build}/utils
 	@if test -f ${checkres}.debug; then \
 		cp ${checkres}.debug ${downver}.debug ${build}/utils; \
