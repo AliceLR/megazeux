@@ -756,7 +756,6 @@ if [ "$PLATFORM" = "emscripten" ]; then
 	echo "Force-enabling OpenGL ES support; force-disabling unsupported GL renderers (Emscripten)."
 	GLES="true"
 	GL_FIXED="false"
-	OVERLAY="false"
 fi
 
 #
