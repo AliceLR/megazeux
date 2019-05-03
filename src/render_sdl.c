@@ -19,6 +19,7 @@
 
 #include "compat_sdl.h"
 #include "render_sdl.h"
+#include "util.h"
 
 #include <limits.h>
 
