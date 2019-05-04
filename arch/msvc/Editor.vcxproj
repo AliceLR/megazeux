@@ -73,25 +73,25 @@
     <IncludePath>$(SolutionDir);$(SolutionDir)\Deps\include;$(SolutionDir)\Deps\include\SDL2;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)\Deps\lib\$(PlatformTarget);$(LibraryPath)</LibraryPath>
     <IntDir>$(SolutionDir)\obj\$(ProjectName)\$(Configuration)\$(PlatformTarget)\</IntDir>
-    <OutDir>$(SolutionDir)\..\..</OutDir>
+    <OutDir>$(SolutionDir)\..\..\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(SolutionDir);$(SolutionDir)\Deps\include;$(SolutionDir)\Deps\include\SDL2;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)\Deps\lib\$(PlatformTarget);$(LibraryPath)</LibraryPath>
     <IntDir>$(SolutionDir)\obj\$(ProjectName)\$(Configuration)\$(PlatformTarget)\</IntDir>
-    <OutDir>$(SolutionDir)\..\..</OutDir>
+    <OutDir>$(SolutionDir)\..\..\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IncludePath>$(SolutionDir);$(SolutionDir)\Deps\include;$(SolutionDir)\Deps\include\SDL2;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)\Deps\lib\$(PlatformTarget);$(LibraryPath)</LibraryPath>
     <IntDir>$(SolutionDir)\obj\$(ProjectName)\$(Configuration)\$(PlatformTarget)\</IntDir>
-    <OutDir>$(SolutionDir)\..\..</OutDir>
+    <OutDir>$(SolutionDir)\..\..\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(SolutionDir);$(SolutionDir)\Deps\include;$(SolutionDir)\Deps\include\SDL2;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)\Deps\lib\$(PlatformTarget);$(LibraryPath)</LibraryPath>
     <IntDir>$(SolutionDir)\obj\$(ProjectName)\$(Configuration)\$(PlatformTarget)\</IntDir>
-    <OutDir>$(SolutionDir)\..\..</OutDir>
+    <OutDir>$(SolutionDir)\..\..\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

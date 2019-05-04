@@ -327,15 +327,6 @@
     <ClCompile Include="..\..\src\render_soft.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\render_yuv.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\render_yuv1.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\render_yuv2.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\helpsys.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -421,6 +412,9 @@
       <Filter>Source Files\network</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\intake_num.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\render_softscale.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -642,9 +636,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\render_gl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\render_yuv.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\helpsys.h">

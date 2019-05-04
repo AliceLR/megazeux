@@ -73,25 +73,25 @@
     <IncludePath>$(SolutionDir);$(SolutionDir)\Deps\include;$(SolutionDir)\Deps\include\SDL2;$(SolutionDir)\..\..\contrib\libxmp\include;$(SolutionDir)\..\..\contrib\libxmp\src;$(SolutionDir)\..\..\contrib\libxmp\src\win32;$(SolutionDir)\..\..\contrib\gdm2s3m\src;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)\Deps\lib\$(PlatformTarget);$(LibraryPath)</LibraryPath>
     <IntDir>$(SolutionDir)\obj\$(ProjectName)\$(Configuration)\$(PlatformTarget)\</IntDir>
-    <OutDir>$(SolutionDir)\..\..</OutDir>
+    <OutDir>$(SolutionDir)\..\..\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(SolutionDir);$(SolutionDir)\Deps\include;$(SolutionDir)\Deps\include\SDL2;$(SolutionDir)\..\..\contrib\libxmp\include;$(SolutionDir)\..\..\contrib\libxmp\src;$(SolutionDir)\..\..\contrib\libxmp\src\win32;$(SolutionDir)\..\..\contrib\gdm2s3m\src;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)\Deps\lib\$(PlatformTarget);$(LibraryPath)</LibraryPath>
     <IntDir>$(SolutionDir)\obj\$(ProjectName)\$(Configuration)\$(PlatformTarget)\</IntDir>
-    <OutDir>$(SolutionDir)\..\..</OutDir>
+    <OutDir>$(SolutionDir)\..\..\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IncludePath>$(SolutionDir);$(SolutionDir)\Deps\include;$(SolutionDir)\Deps\include\SDL2;$(SolutionDir)\..\..\contrib\libxmp\include;$(SolutionDir)\..\..\contrib\libxmp\src;$(SolutionDir)\..\..\contrib\libxmp\src\win32;$(SolutionDir)\..\..\contrib\gdm2s3m\src;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)\Deps\lib\$(PlatformTarget);$(LibraryPath)</LibraryPath>
     <IntDir>$(SolutionDir)\obj\$(ProjectName)\$(Configuration)\$(PlatformTarget)\</IntDir>
-    <OutDir>$(SolutionDir)\..\..</OutDir>
+    <OutDir>$(SolutionDir)\..\..\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(SolutionDir);$(SolutionDir)\Deps\include;$(SolutionDir)\Deps\include\SDL2;$(SolutionDir)\..\..\contrib\libxmp\include;$(SolutionDir)\..\..\contrib\libxmp\src;$(SolutionDir)\..\..\contrib\libxmp\src\win32;$(SolutionDir)\..\..\contrib\gdm2s3m\src;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)\Deps\lib\$(PlatformTarget);$(LibraryPath)</LibraryPath>
     <IntDir>$(SolutionDir)\obj\$(ProjectName)\$(Configuration)\$(PlatformTarget)\</IntDir>
-    <OutDir>$(SolutionDir)\..\..</OutDir>
+    <OutDir>$(SolutionDir)\..\..\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -318,9 +318,7 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClCompile Include="..\..\src\render_layer.c" />
     <ClCompile Include="..\..\src\render_sdl.c" />
     <ClCompile Include="..\..\src\render_soft.c" />
-    <ClCompile Include="..\..\src\render_yuv.c" />
-    <ClCompile Include="..\..\src\render_yuv1.c" />
-    <ClCompile Include="..\..\src\render_yuv2.c" />
+    <ClCompile Include="..\..\src\render_softscale.c" />
     <ClCompile Include="..\..\src\robot.c" />
     <ClCompile Include="..\..\src\run_robot.c" />
     <ClCompile Include="..\..\src\scrdisp.c" />
@@ -423,7 +421,6 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClInclude Include="..\..\src\render_gl.h" />
     <ClInclude Include="..\..\src\render_layer.h" />
     <ClInclude Include="..\..\src\render_sdl.h" />
-    <ClInclude Include="..\..\src\render_yuv.h" />
     <ClInclude Include="..\..\src\robot.h" />
     <ClInclude Include="..\..\src\robot_struct.h" />
     <ClInclude Include="..\..\src\scrdisp.h" />
