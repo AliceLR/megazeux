@@ -75,7 +75,7 @@
 #endif
 
 #ifdef ANDROID
-#define FULLSCREEN_DEFAULT 0
+#define FULLSCREEN_DEFAULT 1
 #endif
 
 // End arch-specific config.

@@ -584,7 +584,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
                                         View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
                                         View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
                                         View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.INVISIBLE;
-                            window.getDecorView().setSystemUiVisibility(flags);        
+                            window.getDecorView().setSystemUiVisibility(flags);
                             window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
                             window.clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
                             SDLActivity.mFullscreenModeActive = true;
@@ -737,6 +737,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
      */
     public static void setWindowStyle(boolean fullscreen) {
         // Called from SDLMain() thread and can't directly affect the view
+//        mSingleton.sendCommand(COMMAND_CHANGE_WINDOW_STYLE, fullscreen ? 1 : 0);
         mSingleton.sendCommand(COMMAND_CHANGE_WINDOW_STYLE, fullscreen ? 1 : 0);
     }
 

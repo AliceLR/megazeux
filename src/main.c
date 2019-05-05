@@ -161,6 +161,12 @@ __libspec int main(int argc, char *argv[])
   }
 #endif // __APPLE__
 
+#ifdef ANDROID
+  // Accept argv[1] passed in from the Java side as the "intended" argv[0].
+  if(argc >= 2)
+    argv[0] = argv[1];
+#endif
+
   // argc may be 0 on e.g. some Wii homebrew loaders.
   if(argc == 0)
   {

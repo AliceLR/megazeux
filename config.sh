@@ -450,8 +450,6 @@ echo "PREFIX:=$PREFIX" >> platform.inc
 
 if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "darwin" ]; then
 	LIBDIR="${LIBDIR}/megazeux"
-elif [ "$PLATFORM" = "android" ]; then
-	LIBDIR="/data/megazeux"
 else
 	LIBDIR="."
 fi
@@ -462,8 +460,6 @@ if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "darwin" ]; then
 	: # Use default or user-defined SYSCONFDIR
 elif [ "$PLATFORM" = "darwin-dist" ]; then
 	SYSCONFDIR="../Resources"
-elif [ "$PLATFORM" = "android" ]; then
-	SYSCONFDIR="/data/megazeux"
 elif [ "$SYSCONFDIR_IS_SET" != "true" ]; then
 	SYSCONFDIR="."
 fi
@@ -533,12 +529,6 @@ elif [ "$PLATFORM" = "darwin-dist" ]; then
 	echo "#define CONFFILE \"config.txt\""           >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""            >> src/config.h
 	echo "#define USERCONFFILE \".megazeux-config\"" >> src/config.h
-elif [ "$PLATFORM" = "android" ]; then
-	SHAREDIR=/data/megazeux
-	GAMESDIR=/data/megazeux
-	BINDIR=/data/megazeux
-	echo "#define CONFFILE \"config.txt\"" >> src/config.h
-	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 else
 	SHAREDIR=.
 	GAMESDIR=.
@@ -610,8 +600,10 @@ fi
 # Use GLES on Android.
 #
 if [ "$PLATFORM" = "android" ]; then
-	echo "Force-enabling OpenGL ES support (Android)."
-	GLES="true"
+	#echo "Force-enabling OpenGL ES support (Android)."
+	#GLES="true"
+	echo "Force-enabling OpenGL ES support (Android; broken, TODO)."
+	GL="false"
 fi
 
 #

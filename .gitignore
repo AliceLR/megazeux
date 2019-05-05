@@ -12,6 +12,7 @@ arch/android/project/app/jni/SDL2
 arch/android/project/app/jni/lib
 arch/android/project/app/jni/libogg
 arch/android/project/app/jni/libvorbis
+arch/android/project/app/src/main/res/raw/assets.zip
 arch/android/project/app/*.iml
 arch/android/project/build
 arch/mingw/pefix.d

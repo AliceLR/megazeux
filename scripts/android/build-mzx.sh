@@ -25,3 +25,12 @@ cp build/android/out/"$1"-arm.so arch/android/project/app/jni/lib/armeabi-v7a/li
 cp build/android/out/"$1"-arm64.so arch/android/project/app/jni/lib/arm64-v8a/libmain.so
 cp build/android/out/"$1"-x86.so arch/android/project/app/jni/lib/x86/libmain.so
 cp build/android/out/"$1"-x86_64.so arch/android/project/app/jni/lib/x86_64/libmain.so
+
+# ensure JNI libs will get refreshed
+rm -r arch/android/project/app/build
+
+ASSETS_ZIP=arch/android/project/app/src/main/res/raw/assets.zip
+if [ -f "$ASSETS_ZIP" ]; then
+	rm "$ASSETS_ZIP"
+fi
+zip -9 -r "$ASSETS_ZIP" assets/ config.txt
