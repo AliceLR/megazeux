@@ -52,10 +52,6 @@ enum
 
 typedef unsigned char boolean;
 
-#if defined(CONFIG_EGL) || defined(ANDROID)
-#define USE_GLES
-#endif
-
 #ifdef CONFIG_3DS
 #include <3ds.h>
 #endif

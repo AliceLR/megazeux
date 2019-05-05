@@ -50,10 +50,10 @@ var no_mingw_stack_protector = subopt("NO", 4);
 var no_low_memory = subopt("NO", 5);
 var no_updater = subopt("NO", 6);
 var no_updater_unix = subopt("NO", 7);
-var no_sdl_3ds = std("NO", 9);
-var optional_sdl_wii = std("OPTIONAL", 10);
-var yes_but_8bpp = subopt("YES (8bpp)", 11);
-var no_gl_switch = subopt("NO", 12);
+var no_sdl_3ds = std("NO", 8);
+var optional_sdl_wii = std("OPTIONAL", 9);
+var yes_but_8bpp = subopt("YES (8bpp)", 10);
+var no_gl_switch = subopt("NO", 11);
 
 var ZIP = _yes("ZIP");
 var DMG = _yes("DMG");
@@ -161,6 +161,34 @@ var archs =
     png:              yes,
     uthash:           yes,
     loadsave_meter:   yes,
+  },
+
+  android:
+  {
+    platform:         defunct("android"),
+    description:      "Android",
+    architecture:     "ARMv7-a (ELF) <br/> AArch64 (ELF) <br /> i686 (ELF) <br /> x86_64 (ELF)",
+    endian:           "Little",
+    toolchain:        "clang 8.0.2 <br /> binutils 2.27.0.20170315 <br /> bionic",
+    packaged:         _FAULTY("TBD"),
+    visibility:       yes,
+    stack_protector:  _FAULTY("NO"),
+    layer_rendering:  _FAULTY("NO"),
+    module_engine:    xmp,
+    ogg_vorbis:       libvorbis,
+    optimization:     speed,
+    sdl:              yes,
+    editor:           yes,
+    helpsys:          yes,
+    audio:            yes,
+    software:         yes,
+    gl:               _FAULTY("NO"),
+    overlay:          yes,
+    glsl:             _FAULTY("NO"),
+    updater:          no_updater,
+    png:              yes,
+    uthash:           yes,
+    loadsave_meter:   no,
   },
 
   darwin:
@@ -431,35 +459,6 @@ var archs =
     software:         yes,
     gl:               yes,
     overlay:          yes,
-    glsl:             yes,
-    updater:          no_updater,
-    modular:          yes,
-    png:              yes,
-    uthash:           yes,
-    loadsave_meter:   no,
-  },
-
-  android:
-  {
-    platform:         defunct("android"),
-    description:      "Android",
-    architecture:     "ARMv7-a (ELF) <br /> i686 (ELF)",
-    endian:           "Little",
-    toolchain:        "gcc 4.2.1 <br /> binutils 2.17 <br /> bionic",
-    packaged:         _FAULTY("TBD", 8),
-    visibility:       yes,
-    stack_protector:  _FAULTY("NO", 8),
-    layer_rendering:  _FAULTY("NO", 8),
-    module_engine:    xmp,
-    ogg_vorbis:       tremor_lowmem,
-    optimization:     size,
-    sdl:              no,
-    editor:           yes,
-    helpsys:          yes,
-    audio:            _FAULTY("TBD", 8),
-    software:         no,
-    gl:               yes,
-    overlay:          _FAULTY("NO", 8),
     glsl:             yes,
     updater:          no_updater,
     modular:          yes,
@@ -770,28 +769,23 @@ guaranteed.<br/>Additionally, it is felt that the advanced package management
 on these platforms supercedes any usefulness of the built-in updater.
 </li>
 
-<li><a name="note8"/>The Android platform, while having been listed in this
-table for a long time, has never really been supported. What little work exists
-is extremely old, and no viable build has ever been created.
-</li>
-
-<li><a name="note9"/>Building MZX with SDL on the 3DS is viable, but the
+<li><a name="note8"/>Building MZX with SDL on the 3DS is viable, but the
 software renderer is far slower, currently offers no additional functionality,
 and doesn't allow for special features such as screen dragging. Furthermore,
 SDL significantly increases the size of the MZX executable.
 </li>
 
-<li><a name="note10"/>Building MZX with SDL Wii is viable, but produces larger
+<li><a name="note9"/>Building MZX with SDL Wii is viable, but produces larger
 binaries than desired, relies on the software renderer, and SDL Wii is
 considered unstable.
 </li>
 
-<li><a name="note11"/>Layer rendering is supported on this platform by as it
+<li><a name="note10"/>Layer rendering is supported on this platform by as it
 uses the SDL software renderer, but this port does not currently support a color
 depth greater than 8bpp, so the UI palette will not be protected in SMZX mode.
 </li>
 
-<li><a name="note12"/>The GL renderers work on the Switch but have been
+<li><a name="note11"/>The GL renderers work on the Switch but have been
 disabled because they cause system crashes when exiting MegaZeux.
 </li>
 </ol>

@@ -607,6 +607,14 @@ if [ "$EGL" = "true" ]; then
 fi
 
 #
+# Use GLES on Android.
+#
+if [ "$PLATFORM" = "android" ]; then
+	echo "Force-enabling OpenGL ES support (Android)."
+	GLES="true"
+fi
+
+#
 # We need either SDL or EGL for OpenGL
 #
 if [ "$SDL" = "false" -a "$EGL" = "false" ]; then

@@ -26,7 +26,7 @@
 #include "util.h"
 
 // Skip unused variants to reduce compile time on these platforms.
-#ifdef CONFIG_WII
+#if defined(CONFIG_WII) || defined(ANDROID)
 #define SKIP_8BPP
 #define SKIP_16BPP
 #endif

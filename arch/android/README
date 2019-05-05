@@ -10,8 +10,9 @@ NOTE: Requires a few gigabytes of hard drive space and some patience.
     * For Android Studio users, this will be /home/.../Android/Sdk/ndk-bundle/
 3. scripts/android/create-toolchains.sh
 4. scripts/android/build-deps.sh
-5. "scripts/android/build-mzx.sh megazeux" (pass mzxrun instead to build with mzxrun)
-6. cd android
-7. ./gradlew build
+5. ./config.sh --platform android [...]
+6. "scripts/android/build-mzx.sh megazeux" (pass mzxrun instead to build with mzxrun)
+7. cd android
+8. ./gradlew build
 
 To change configuration options for the build, make a copy of build-mzx.sh and work from there.

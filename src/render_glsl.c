@@ -24,7 +24,6 @@
 #include <string.h>
 #include <assert.h>
 
-#include "compat.h"
 #include "data.h"
 #include "graphics.h"
 #include "platform.h"
@@ -33,13 +32,11 @@
 #include "renderers.h"
 #include "util.h"
 
-#if defined(CONFIG_SDL)
+#ifdef CONFIG_SDL
 #include "render_sdl.h"
-#elif defined(CONFIG_EGL)
-#include "render_egl.h"
 #endif
 
-#ifdef USE_GLES
+#ifdef CONFIG_EGL
 #include <GLES2/gl2.h>
 #include "render_egl.h"
 #endif
@@ -399,11 +396,7 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
 
   shader = glsl.glCreateShader(type);
 
-<<<<<<< HEAD
 #ifdef CONFIG_GLES
-=======
-#ifdef USE_GLES
->>>>>>> initial Android port
   {
     /**
      * OpenGL ES really doesn't like '#version 110' being specified. This
@@ -589,11 +582,6 @@ static boolean glsl_init_video(struct graphics_data *graphics,
   if(!render_data)
     return false;
 
-#if defined(USE_GLES) && SDL_VERSION_ATLEAST(2,0,0)
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-#endif
-
   if(!GL_LoadLibrary(GL_LIB_PROGRAMMABLE))
     goto err_free;
 
@@ -749,13 +737,8 @@ static boolean glsl_set_video_mode(struct graphics_data *graphics,
 
   // We need a specific version of OpenGL; desktop GL must be 2.0.
   // All OpenGL ES 2.0 implementations are supported, so don't do
-<<<<<<< HEAD
   // the check with these configurations.
 #ifndef CONFIG_GLES
-=======
-  // the check with EGL configurations (EGL implies OpenGL ES).
-#ifndef USE_GLES
->>>>>>> initial Android port
   {
     static boolean initialized = false;
 
