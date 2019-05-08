@@ -96,6 +96,7 @@ DEVELOPERS
   opengl2 and glsl. This provides a tiny performance improvement
   on most cards and a massive performance improvement on some
   other cards. (Lancer-X)
+- Removed uthash as a build option.
 
 
 February 20th, 2019 - MZX 2.91j

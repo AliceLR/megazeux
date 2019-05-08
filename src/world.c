@@ -1497,7 +1497,7 @@ static inline int load_world_counters(struct world *mzx_world,
   if(!num_prev_allocated)
     counter_list->num_counters = i;
 
-#if !defined(CONFIG_KHASH) && !defined(CONFIG_UTHASH)
+#ifndef CONFIG_KHASH
   // Versions without the hash table require this to be sorted at all times
   sort_counter_list(counter_list);
 #endif
@@ -1636,7 +1636,7 @@ static inline int load_world_strings_mem(struct world *mzx_world,
   if(!num_prev_allocated)
     string_list->num_strings = i;
 
-#ifndef CONFIG_UTHASH
+#ifndef CONFIG_KHASH
   // Versions without the hash table require this to be sorted at all times
   sort_string_list(string_list);
 #endif
@@ -1733,7 +1733,7 @@ static inline int load_world_strings(struct world *mzx_world,
   if(!num_prev_allocated)
     string_list->num_strings = i;
 
-#if !defined(CONFIG_KHASH) && !defined(CONFIG_UTHASH)
+#ifndef CONFIG_KHASH
   // Versions without the hash table require this to be sorted at all times
   sort_string_list(string_list);
 #endif

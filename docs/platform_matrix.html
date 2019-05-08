@@ -99,7 +99,7 @@ var fields =
   modular:          "MODULAR",
   png:              "PNG",
   x11:              "X11",
-  uthash:           "UTHASH",
+  hashtables:       "HASH TABLES",
   loadsave_meter:   "LOADSAVE_METER",
 };
 
@@ -134,7 +134,7 @@ var archs =
     modular:          // Does this platform use modular builds?
     png:              // Does this platform build with libpng?
     x11:              // Can this platform link to X11?
-    uthash:           // Does this platform use uthash for counter lookups?
+    hashtables:       // Does this platform use hash tables for counter lookups?
     loadsave_meter:   // Does this platform ship with the loadsave meter enabled?
   },
 */
@@ -159,7 +159,7 @@ var archs =
     software:         render_ctr,
     updater:          no_updater,
     png:              yes,
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   yes,
   },
 
@@ -188,7 +188,7 @@ var archs =
     updater:          no_updater,
     modular:          yes,
     png:              yes,
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   no,
   },
 
@@ -217,7 +217,7 @@ var archs =
     updater:          yes,
     modular:          yes,
     png:              yes,
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   no,
   },
 
@@ -246,7 +246,7 @@ var archs =
     updater:          yes,
     modular:          yes,
     png:              yes,
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   no,
   },
 
@@ -270,7 +270,7 @@ var archs =
     software:         render_nds,
     updater:          no_updater,
     png:              no_low_memory,
-    uthash:           no_low_memory,
+    hashtables:       no_low_memory,
     loadsave_meter:   yes,
   },
 
@@ -294,7 +294,7 @@ var archs =
     software:         yes,
     updater:          no_updater,
     png:              yes,
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   yes,
   },
 
@@ -321,7 +321,7 @@ var archs =
     glsl:             no_gl_switch,
     updater:          no_updater,
     png:              yes,
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   yes,
   },
 
@@ -351,7 +351,7 @@ var archs =
     modular:          yes,
     png:              yes,
     x11:              yes,
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   no,
   },
 
@@ -375,7 +375,7 @@ var archs =
     software:         render_gx,
     updater:          no_updater,
     png:              yes,
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   yes,
   },
 
@@ -404,7 +404,7 @@ var archs =
     updater:          no_updater,
     modular:          yes,
     png:              yes,
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   no,
   },
 
@@ -435,7 +435,7 @@ var archs =
     updater:          no_updater,
     modular:          yes,
     png:              yes,
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   no,
   },
 
@@ -464,7 +464,7 @@ var archs =
     updater:          no_updater,
     modular:          yes,
     png:              yes,
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   no,
   },
 
@@ -488,7 +488,7 @@ var archs =
     software:         render_gp2x,
     updater:          no_updater,
     png:              yes,
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   yes,
   },
 
@@ -517,7 +517,7 @@ var archs =
     updater:          no_updater,
     png:              yes,
     x11:              subopt(),
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   no,
   },
 };
@@ -754,7 +754,7 @@ conjunction with C++ exceptions with some MinGW compilers.
 <li><a name="note5"/>The editor and help system features are disabled
 to conserve cache on embedded platforms. The features build and work
 on these platforms, but they are basically unusable due to the lack of any
-on-screen keyboard. Additionally, uthash has been disabled on the NDS to
+on-screen keyboard. Additionally, hash tables have been disabled on the NDS to
 conserve memory.
 </li>
 

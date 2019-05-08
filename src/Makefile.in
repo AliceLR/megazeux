@@ -289,10 +289,6 @@ ifeq (${BUILD_KHASH},1)
 core_flags += -Icontrib/khash/
 endif
 
-ifeq (${BUILD_UTHASH},1)
-core_flags += -Icontrib/uthash/
-endif
-
 ifeq (${BUILD_AUDIO},1)
 audio_cobjs := \
  ${audio_obj}/audio.o          \

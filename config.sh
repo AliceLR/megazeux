@@ -75,7 +75,6 @@ usage() {
 	echo "  --enable-gles           Enable hacks for OpenGL ES platforms."
 	echo "  --disable-check-alloc   Disables memory allocator error handling."
 	echo "  --disable-khash         Disables using khash for counter/string lookups."
-	echo "  --enable-uthash         Enables using uthash for counter/string lookups."
 	echo "  --enable-debytecode     Enable experimental 'debytecode' transform."
 	echo "  --disable-libsdl2       Disable SDL 2.0 support (falls back on 1.2)."
 	echo "  --enable-stdio-redirect Redirect console output to stdout.txt/stderr.txt."
@@ -144,7 +143,6 @@ EGL="false"
 GLES="false"
 CHECK_ALLOC="true"
 KHASH="true"
-UTHASH="false"
 DEBYTECODE="false"
 LIBSDL2="true"
 STDIO_REDIRECT="false"
@@ -331,9 +329,6 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--enable-khash" ]  && KHASH="true"
 	[ "$1" = "--disable-khash" ] && KHASH="false"
-
-	[ "$1" = "--enable-uthash" ]  && UTHASH="true"
-	[ "$1" = "--disable-uthash" ] && UTHASH="false"
 
 	[ "$1" = "--enable-debytecode" ]  && DEBYTECODE="true"
 	[ "$1" = "--disable-debytecode" ] && DEBYTECODE="false"
@@ -641,7 +636,6 @@ if [ "$PLATFORM" = "nds" ]; then
 
 	echo "Force-disabling hash tables on NDS."
 	KHASH="false"
-	UTHASH="false"
 fi
 
 #
@@ -1237,18 +1231,13 @@ fi
 
 #
 # Allow use of hash table counter/string lookups, if enabled
-# Keep the default at the bottom so it doesn't override other options.
 #
-if [ "$UTHASH" = "true" ]; then
-	echo "uthash counter/string lookup enabled."
-	echo "#define CONFIG_UTHASH" >> src/config.h
-	echo "BUILD_UTHASH=1" >> platform.inc
-elif [ "$KHASH" = "true" ]; then
+if [ "$KHASH" = "true" ]; then
 	echo "khash counter/string lookup enabled."
 	echo "#define CONFIG_KHASH" >> src/config.h
 	echo "BUILD_KHASH=1" >> platform.inc
 else
-	echo "uthash counter/string lookup disabled (using binary search)."
+	echo "khash counter/string lookup disabled (using binary search)."
 fi
 
 #
