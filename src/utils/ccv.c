@@ -33,7 +33,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // This software requires uthash to compile. Download it from
 // http://troydhanson.github.com/uthash/
 
-#include <uthash.h>
+#include "uthash.h"
 
 #define MAX_PATH 65535
 
