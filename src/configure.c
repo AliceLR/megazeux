@@ -508,8 +508,8 @@ static void joy_action_set(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
   unsigned int joy_num;
-  unsigned int key;
   char joy_action[16];
+  char key[16];
   int read = 0;
 
   if(sscanf(name, "joy%u." JOY_ENUM "%n", &joy_num, joy_action, &read) != 2
@@ -517,7 +517,7 @@ static void joy_action_set(struct config_info *conf, char *name,
     return;
 
   read = 0;
-  if(sscanf(value, "%u%n", &key, &read) != 1 || (value[read] != 0))
+  if(sscanf(value, JOY_ENUM "%n", key, &read) != 1 || (value[read] != 0))
     return;
 
   // Right now do a global binding at startup and a game binding otherwise.

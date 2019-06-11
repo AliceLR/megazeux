@@ -1276,9 +1276,9 @@ static enum joystick_action find_joystick_action(const char *name)
 }
 
 /**
- * A joystick can be mapped to either an int from 0 to 32767 (a key binding)
- * or to a joystick enum string (action binding). Read either from an input
- * value string.
+ * A joystick can be mapped to either an int from 0 to 32767 (a key binding),
+ * a key enum string (also a key binding), or to a joystick action enum string
+ * (action binding). Read either from an input value string.
  */
 boolean joystick_parse_map_value(const char *value, Sint16 *binding)
 {
@@ -1426,26 +1426,30 @@ void joystick_map_hat(int joystick, const char *up, const char *down,
 
 /**
  * Map a generic action to a key. The input action should be null-terminated.
+ * Only allow key bindings; if value resolves to an action, it is ignored.
  */
-void joystick_map_action(int joystick, const char *action, int value,
+void joystick_map_action(int joystick, const char *action, const char *value,
  boolean is_global)
 {
-  if((joystick >= 0) && (joystick < MAX_JOYSTICKS) &&
-   (value >= 0) && (value <= SHRT_MAX))
+  if((joystick >= 0) && (joystick < MAX_JOYSTICKS))
   {
-    if(!strncmp(action, "act_", 4))
+    Sint16 binding;
+
+    if(!strncmp(action, "act_", 4) &&
+     joystick_parse_map_value(value, &binding) &&
+     binding > 0)
     {
       enum joystick_action action_value = find_joystick_action(action + 4);
 
       if(action_value)
       {
         /*debug("[JOYSTICK] (%s) %d.%s -> %d\n", is_global ? "G" : "L",
-         joystick, action, value);*/
+         joystick, action, binding);*/
 
         if(is_global)
-          input.joystick_global_map.action[joystick][action_value] = value;
+          input.joystick_global_map.action[joystick][action_value] = binding;
         else
-          input.joystick_game_map.action[joystick][action_value] = value;
+          input.joystick_game_map.action[joystick][action_value] = binding;
       }
     }
   }

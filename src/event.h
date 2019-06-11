@@ -248,7 +248,7 @@ void joystick_map_axis(int joystick, int axis, const char *neg,
  const char *pos, boolean is_global);
 void joystick_map_hat(int joystick, const char *up, const char *down,
  const char *left, const char *right, boolean is_global);
-void joystick_map_action(int joystick, const char *action, int value,
+void joystick_map_action(int joystick, const char *action, const char *value,
  boolean is_global);
 void joystick_reset_game_map(void);
 void joystick_set_game_mode(boolean enable);
