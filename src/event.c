@@ -144,7 +144,7 @@ void init_event(void)
   // Config has already loaded, so there might be user mappings here already.
   for(i = 0; i < MAX_JOYSTICKS; i++)
     for(i2 = 0; i2 < NUM_JOYSTICK_ACTIONS; i2++)
-      if(input.joystick_global_map.action[i][i2] == 0)
+      if(!input.joystick_global_map.action_is_conf[i][i2])
         input.joystick_global_map.action[i][i2] =
          joystick_action_map_default[i2];
 
@@ -1437,7 +1437,7 @@ void joystick_map_action(int joystick, const char *action, const char *value,
 
     if(!strncmp(action, "act_", 4) &&
      joystick_parse_map_value(value, &binding) &&
-     binding > 0)
+     binding >= 0)
     {
       enum joystick_action action_value = find_joystick_action(action + 4);
 
@@ -1447,7 +1447,10 @@ void joystick_map_action(int joystick, const char *action, const char *value,
          joystick, action, binding);*/
 
         if(is_global)
+        {
           input.joystick_global_map.action[joystick][action_value] = binding;
+          input.joystick_global_map.action_is_conf[joystick][action_value] = true;
+        }
         else
           input.joystick_game_map.action[joystick][action_value] = binding;
       }

@@ -145,6 +145,7 @@ struct joystick_map
   boolean button_is_conf[MAX_JOYSTICKS][MAX_JOYSTICK_BUTTONS];
   boolean axis_is_conf[MAX_JOYSTICKS][MAX_JOYSTICK_AXES];
   boolean hat_is_conf[MAX_JOYSTICKS];
+  boolean action_is_conf[MAX_JOYSTICKS][NUM_JOYSTICK_ACTIONS];
 };
 
 struct input_status
