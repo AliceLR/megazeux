@@ -144,7 +144,7 @@ void init_event(void)
   // Config has already loaded, so there might be user mappings here already.
   for(i = 0; i < MAX_JOYSTICKS; i++)
     for(i2 = 0; i2 < NUM_JOYSTICK_ACTIONS; i2++)
-      if(input.joystick_global_map.action[i][i2] == 0)
+      if(!input.joystick_global_map.action_is_conf[i][i2])
         input.joystick_global_map.action[i][i2] =
          joystick_action_map_default[i2];
 
@@ -1073,10 +1073,124 @@ boolean set_exit_status(boolean value)
   return exit_status;
 }
 
+struct keycode_name
+{
+  const char * const name;
+  const enum keycode value;
+};
+
 struct joystick_action_name
 {
   const char * const name;
   const enum joystick_action value;
+};
+
+static const struct keycode_name keycode_names[] =
+{
+  { "0",            IKEY_0 },
+  { "1",            IKEY_1 },
+  { "2",            IKEY_2 },
+  { "3",            IKEY_3 },
+  { "4",            IKEY_4 },
+  { "5",            IKEY_5 },
+  { "6",            IKEY_6 },
+  { "7",            IKEY_7 },
+  { "8",            IKEY_8 },
+  { "9",            IKEY_9 },
+  { "a",            IKEY_a },
+  { "b",            IKEY_b },
+  { "backquote",    IKEY_BACKQUOTE },
+  { "backslash",    IKEY_BACKSLASH },
+  { "backspace",    IKEY_BACKSPACE },
+  { "break",        IKEY_BREAK },
+  { "c",            IKEY_c },
+  { "capslock",     IKEY_CAPSLOCK },
+  { "comma",        IKEY_COMMA },
+  { "d",            IKEY_d },
+  { "delete",       IKEY_DELETE },
+  { "down",         IKEY_DOWN },
+  { "e",            IKEY_e },
+  { "end",          IKEY_END },
+  { "equals",       IKEY_EQUALS },
+  { "escape",       IKEY_ESCAPE },
+  { "f",            IKEY_f },
+  { "f1",           IKEY_F1 },
+  { "f10",          IKEY_F10 },
+  { "f11",          IKEY_F11 },
+  { "f12",          IKEY_F12 },
+  { "f2",           IKEY_F2 },
+  { "f3",           IKEY_F3 },
+  { "f4",           IKEY_F4 },
+  { "f5",           IKEY_F5 },
+  { "f6",           IKEY_F6 },
+  { "f7",           IKEY_F7 },
+  { "f8",           IKEY_F8 },
+  { "f9",           IKEY_F9 },
+  { "g",            IKEY_g },
+  { "h",            IKEY_h },
+  { "home",         IKEY_HOME },
+  { "i",            IKEY_i },
+  { "insert",       IKEY_INSERT },
+  { "j",            IKEY_j },
+  { "k",            IKEY_k },
+  { "kp0",          IKEY_KP0 },
+  { "kp1",          IKEY_KP1 },
+  { "kp2",          IKEY_KP2 },
+  { "kp3",          IKEY_KP3 },
+  { "kp4",          IKEY_KP4 },
+  { "kp5",          IKEY_KP5 },
+  { "kp6",          IKEY_KP6 },
+  { "kp7",          IKEY_KP7 },
+  { "kp8",          IKEY_KP8 },
+  { "kp9",          IKEY_KP9 },
+  { "kp_divide",    IKEY_KP_DIVIDE },
+  { "kp_enter",     IKEY_KP_ENTER },
+  { "kp_minus",     IKEY_KP_MINUS },
+  { "kp_multiply",  IKEY_KP_MULTIPLY },
+  { "kp_period",    IKEY_KP_PERIOD },
+  { "kp_plus",      IKEY_KP_PLUS },
+  { "l",            IKEY_l },
+  { "lalt",         IKEY_LALT },
+  { "lctrl",        IKEY_LCTRL },
+  { "left",         IKEY_LEFT },
+  { "leftbracket",  IKEY_LEFTBRACKET },
+  { "lshift",       IKEY_LSHIFT },
+  { "lsuper",       IKEY_LSUPER },
+  { "m",            IKEY_m },
+  { "menu",         IKEY_MENU },
+  { "minus",        IKEY_MINUS },
+  { "n",            IKEY_n },
+  { "numlock",      IKEY_NUMLOCK },
+  { "o",            IKEY_o },
+  { "p",            IKEY_p },
+  { "pagedown",     IKEY_PAGEDOWN },
+  { "pageup",       IKEY_PAGEUP },
+  { "period",       IKEY_PERIOD },
+  { "q",            IKEY_q },
+  { "quote",        IKEY_QUOTE },
+  { "r",            IKEY_r },
+  { "ralt",         IKEY_RALT },
+  { "rctrl",        IKEY_RCTRL },
+  { "return",       IKEY_RETURN },
+  { "right",        IKEY_RIGHT },
+  { "rightbracket", IKEY_RIGHTBRACKET },
+  { "rshift",       IKEY_RSHIFT },
+  { "rsuper",       IKEY_RSUPER },
+  { "s",            IKEY_s },
+  { "scrolllock",   IKEY_SCROLLOCK },
+  { "semicolon",    IKEY_SEMICOLON },
+  { "slash",        IKEY_SLASH },
+  { "space",        IKEY_SPACE },
+  { "sysreq",       IKEY_SYSREQ },
+  { "t",            IKEY_t },
+  { "tab",          IKEY_TAB },
+  { "u",            IKEY_u },
+  { "up",           IKEY_UP },
+  { "v",            IKEY_v },
+  { "w",            IKEY_w },
+  { "x",            IKEY_x },
+  { "y",            IKEY_y },
+  { "z",            IKEY_z },
 };
 
 static const struct joystick_action_name joystick_action_names[] =
@@ -1111,6 +1225,31 @@ static const struct joystick_action_name joystick_action_names[] =
   { "y",        JOY_Y }
 };
 
+static enum keycode find_keycode(const char *name)
+{
+  int top = ARRAY_SIZE(keycode_names) - 1;
+  int bottom = 0;
+  int middle;
+  int cmpval;
+
+  while(bottom <= top)
+  {
+    middle = (bottom + top) / 2;
+    cmpval = strcasecmp(name, keycode_names[middle].name);
+
+    if(cmpval > 0)
+      bottom = middle + 1;
+    else
+
+    if(cmpval < 0)
+      top = middle - 1;
+
+    else
+      return keycode_names[middle].value;
+  }
+  return IKEY_UNKNOWN;
+}
+
 static enum joystick_action find_joystick_action(const char *name)
 {
   int top = ARRAY_SIZE(joystick_action_names) - 1;
@@ -1137,9 +1276,9 @@ static enum joystick_action find_joystick_action(const char *name)
 }
 
 /**
- * A joystick can be mapped to either an int from 0 to 32767 (a key binding)
- * or to a joystick enum string (action binding). Read either from an input
- * value string.
+ * A joystick can be mapped to either an int from 0 to 32767 (a key binding),
+ * a key enum string (also a key binding), or to a joystick action enum string
+ * (action binding). Read either from an input value string.
  */
 boolean joystick_parse_map_value(const char *value, Sint16 *binding)
 {
@@ -1160,6 +1299,17 @@ boolean joystick_parse_map_value(const char *value, Sint16 *binding)
     if(action_value)
     {
       *binding = -((Sint16)action_value);
+      return true;
+    }
+  }
+  else
+
+  if(!strncmp(value, "key_", 4))
+  {
+    key_value = find_keycode(value + 4);
+    if(key_value)
+    {
+      *binding = key_value;
       return true;
     }
   }
@@ -1276,26 +1426,33 @@ void joystick_map_hat(int joystick, const char *up, const char *down,
 
 /**
  * Map a generic action to a key. The input action should be null-terminated.
+ * Only allow key bindings; if value resolves to an action, it is ignored.
  */
-void joystick_map_action(int joystick, const char *action, int value,
+void joystick_map_action(int joystick, const char *action, const char *value,
  boolean is_global)
 {
-  if((joystick >= 0) && (joystick < MAX_JOYSTICKS) &&
-   (value >= 0) && (value <= SHRT_MAX))
+  if((joystick >= 0) && (joystick < MAX_JOYSTICKS))
   {
-    if(!strncmp(action, "act_", 4))
+    Sint16 binding;
+
+    if(!strncmp(action, "act_", 4) &&
+     joystick_parse_map_value(value, &binding) &&
+     binding >= 0)
     {
       enum joystick_action action_value = find_joystick_action(action + 4);
 
       if(action_value)
       {
         /*debug("[JOYSTICK] (%s) %d.%s -> %d\n", is_global ? "G" : "L",
-         joystick, action, value);*/
+         joystick, action, binding);*/
 
         if(is_global)
-          input.joystick_global_map.action[joystick][action_value] = value;
+        {
+          input.joystick_global_map.action[joystick][action_value] = binding;
+          input.joystick_global_map.action_is_conf[joystick][action_value] = true;
+        }
         else
-          input.joystick_game_map.action[joystick][action_value] = value;
+          input.joystick_game_map.action[joystick][action_value] = binding;
       }
     }
   }

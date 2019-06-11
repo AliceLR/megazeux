@@ -505,6 +505,10 @@
 
 # Joystick options
 
+# NOTE: As of MZX 2.92, it is not recommended to bind joystick controls
+# to keys directly. See the sections about joystick actions and SDL 2.0
+# gamecontroller support below.
+
 # It is possible to emulate key presses using a joystick. This can be
 # achieved with the following config options globally or (for options
 # starting with "joyX" only) on a per-game basis. To configure joysticks
@@ -523,6 +527,8 @@
 # and one POV hat. Axes/buttons/hats are mapped to keys using a number
 # corresponding to the a given key. This number is the same as the
 # KEY_PRESSED value for that key (see keycodes.html or mzx_help.html).
+# For convenience, "key_X" can be provided in place of a key number
+# (without the quotes), where X is the name of the key.
 
 # The option to map a joystick axis is
 
@@ -608,7 +614,7 @@
 # joyX.act_Y = A
 
 # where X is the number of the joystick, Y is the name of the joystick action
-# (e.g. "shoot"), and A is the number of the key to assign to that action.
+# (e.g. "shoot"), and A is the number (or name) of the key to assign.
 
 # For platforms MegaZeux supports via SDL 2, joystick mapping can be automated
 # for the numerous controllers recognized by SDL 2. This means that, if your
