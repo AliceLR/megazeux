@@ -16,6 +16,8 @@ FEATURES
   and the functions they perform can be found in the config
   file. The NDS, 3DS, Wii, PSP, and GP2X pad.config files have
   been updated to use joystick actions.
++ Joystick inputs can also be bound to key names now in the
+  format of "key_X" (without quotes), where X is the key name.
 + Added automatic joystick mapping for Windows/Mac/Linux/etc.
   Joysticks recognized as SDL game controllers are automatically
   assigned joystick actions when detected. This behavior can be

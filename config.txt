@@ -523,6 +523,8 @@
 # and one POV hat. Axes/buttons/hats are mapped to keys using a number
 # corresponding to the a given key. This number is the same as the
 # KEY_PRESSED value for that key (see keycodes.html or mzx_help.html).
+# For convenience, "key_X" can be provided in place of a key number
+# (without the quotes), where X is the name of the key.
 
 # The option to map a joystick axis is
 
