@@ -56,6 +56,10 @@ static const char *RADValidate10(const void *data, const uint8_t *end)
     bool last_line;
     bool last_note;
 
+    // NOTE: an extra byte was allocated and set to null so some extra tracks
+    // would pass this, so bump the end pointer.
+    end++;
+
     // Description
     pos += 17;
     if(*(pos++) & 0x80)

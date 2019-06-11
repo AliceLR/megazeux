@@ -200,8 +200,14 @@ static struct audio_stream *construct_rad_stream(char *filename,
   fp = fopen(filename, "rb");
   if(fp)
   {
+    /**
+     * NOTE: some legacy RAD files in the Reality public archive have a single
+     * byte truncated off of the end for no apparent reason. These files load
+     * and play normally otherwise. Allocate an extra null byte so they load.
+     */
     length = ftell_and_rewind(fp);
-    data = (Uint8 *)cmalloc(length);
+    data = (Uint8 *)cmalloc(length + 1);
+    data[length] = 0;
 
     if(!fread(data, length, 1, fp))
     {
