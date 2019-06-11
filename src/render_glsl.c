@@ -607,23 +607,13 @@ static boolean glsl_init_video(struct graphics_data *graphics,
     goto err_free;
 
   if(!set_video_mode())
-    goto err_free;
+    goto err_free_pixels;
 
   return true;
 
+err_free_pixels:
+  free(render_data->pixels);
 err_free:
-#if SDL_VERSION_ATLEAST(2,0,0)
-  if(render_data->sdl.context)
-  {
-    SDL_GL_DeleteContext(render_data->sdl.context);
-    render_data->sdl.context = NULL;
-  }
-  if(render_data->sdl.window)
-  {
-    SDL_DestroyWindow(render_data->sdl.window);
-    render_data->sdl.window = NULL;
-  }
-#endif // SDL_VERSION_ATLEAST(2,0,0)
   free(render_data);
   graphics->render_data = NULL;
   return false;
@@ -733,7 +723,10 @@ static boolean glsl_set_video_mode(struct graphics_data *graphics,
   gl_set_attributes(graphics);
 
   if(!gl_load_syms(glsl_syms_map))
+  {
+    gl_cleanup(graphics);
     return false;
+  }
 
   // We need a specific version of OpenGL; desktop GL must be 2.0.
   // All OpenGL ES 2.0 implementations are supported, so don't do
@@ -749,12 +742,17 @@ static boolean glsl_set_video_mode(struct graphics_data *graphics,
 
       version = (const char *)glsl.glGetString(GL_VERSION);
       if(!version)
+      {
+        warn("Could not load GL version string.\n");
+        gl_cleanup(graphics);
         return false;
+      }
 
       version_float = atof(version);
       if(version_float < 2.0)
       {
         warn("Need >= OpenGL 2.0, got OpenGL %.1f.\n", version_float);
+        gl_cleanup(graphics);
         return false;
       }
 
@@ -795,6 +793,7 @@ static boolean glsl_auto_set_video_mode(struct graphics_data *graphics,
           auto_glsl_blacklist[i].match_string,
           auto_glsl_blacklist[i].reason
         );
+        gl_cleanup(graphics);
         return false;
       }
     }

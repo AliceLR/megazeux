@@ -1771,7 +1771,11 @@ void toggle_fullscreen(void)
 {
   graphics.fullscreen = !graphics.fullscreen;
   graphics.palette_dirty = true;
-  set_video_mode();
+  if(!set_video_mode())
+  {
+    warn("Failed to set video mode toggling fullscreen. Aborting\n");
+    exit(1);
+  }
   update_screen();
 }
 
@@ -1781,7 +1785,11 @@ void resize_screen(Uint32 w, Uint32 h)
   {
     graphics.window_width = w;
     graphics.window_height = h;
-    set_video_mode();
+    if(!set_video_mode())
+    {
+      warn("Failed to set video mode resizing window. Aborting\n");
+      exit(1);
+    }
     graphics.renderer.resize_screen(&graphics, w, h);
   }
 }
