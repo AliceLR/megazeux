@@ -1537,7 +1537,7 @@ static inline int load_world_counters(struct world *mzx_world,
   if(!num_prev_allocated)
     counter_list->num_counters = i;
 
-#if !defined(CONFIG_KHASH) && !defined(CONFIG_UTHASH)
+#ifndef CONFIG_KHASH
   // Versions without the hash table require this to be sorted at all times
   sort_counter_list(counter_list);
 #endif
@@ -1676,7 +1676,7 @@ static inline int load_world_strings_mem(struct world *mzx_world,
   if(!num_prev_allocated)
     string_list->num_strings = i;
 
-#ifndef CONFIG_UTHASH
+#ifndef CONFIG_KHASH
   // Versions without the hash table require this to be sorted at all times
   sort_string_list(string_list);
 #endif
@@ -1773,7 +1773,7 @@ static inline int load_world_strings(struct world *mzx_world,
   if(!num_prev_allocated)
     string_list->num_strings = i;
 
-#if !defined(CONFIG_KHASH) && !defined(CONFIG_UTHASH)
+#ifndef CONFIG_KHASH
   // Versions without the hash table require this to be sorted at all times
   sort_string_list(string_list);
 #endif
@@ -2596,14 +2596,21 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
       chdir(file_path);
   }
 
+  if(!savegame)
+  {
+    // Reset the joystick mappings to the defaults before loading a game config.
+    // Games with multiple worlds need to have mappings configured for each of
+    // their worlds as a consequence of this. We can't really do this with
+    // savegames as they currently can't load their world config.
+    joystick_reset_game_map();
+  }
+
   // load world config file
   memcpy(config_file_name, file, file_name_len);
   strncpy(config_file_name + file_name_len, ".cnf", 5);
 
   if(stat(config_file_name, &file_info) >= 0)
-  {
     set_config_from_file(config_file_name);
-  }
 
   // Some initial setting(s)
   mzx_world->custom_sfx_on = 0;
@@ -3346,8 +3353,8 @@ void remap_vlayer(struct world *mzx_world,
 
     for(i = 0; i < old_height; i++)
     {
-      memcpy(vlayer_chars + new_pos, vlayer_chars + old_pos, new_width);
-      memcpy(vlayer_colors + new_pos, vlayer_colors + old_pos, new_width);
+      memmove(vlayer_chars + new_pos, vlayer_chars + old_pos, new_width);
+      memmove(vlayer_colors + new_pos, vlayer_colors + old_pos, new_width);
 
       old_pos += old_width;
       new_pos += new_width;
@@ -3370,8 +3377,8 @@ void remap_vlayer(struct world *mzx_world,
 
     for(i = 0; i < new_height; i++)
     {
-      memcpy(vlayer_chars + new_pos, vlayer_chars + old_pos, new_width);
-      memcpy(vlayer_colors + new_pos, vlayer_colors + old_pos, new_width);
+      memmove(vlayer_chars + new_pos, vlayer_chars + old_pos, new_width);
+      memmove(vlayer_colors + new_pos, vlayer_colors + old_pos, new_width);
 
       // Clear blank area
       memset(vlayer_chars + new_pos + old_width, 32, clear_width);

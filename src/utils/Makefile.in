@@ -14,7 +14,7 @@ utils_obj = src/utils/.build
 
 # Some core objects are required for file format purposes.
 # Define UTILS_LIBSPEC so these properly link.
-utils_cflags := ${LIBPNG_CFLAGS} -Icontrib/uthash/ -DUTILS_LIBSPEC=
+utils_cflags := ${LIBPNG_CFLAGS} -DUTILS_LIBSPEC=
 
 checkres := ${utils_src}/checkres${BINEXT}
 checkres_objs := ${utils_obj}/checkres.o ${core_obj}/fsafeopen.o \

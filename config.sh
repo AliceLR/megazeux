@@ -29,6 +29,7 @@ usage() {
 	echo "  gp2x           Experimental GP2X port"
 	echo "  nds            Experimental NDS port"
 	echo "  3ds            Experimental 3DS port"
+	echo "  switch         Experimental Switch port"
 	echo "  wii            Experimental Wii port"
 	echo "  amiga          Experimental AmigaOS 4 port"
 	echo "  android        Experimental Android port"
@@ -47,10 +48,11 @@ usage() {
 	echo "  --disable-utils         Disable compilation of utils."
 	echo "  --disable-x11           Disable X11, removing binary dependency."
 	echo "  --disable-software      Disable software renderer."
+	echo "  --disable-softscale     Disable SDL 2 accelerated software renderer."
 	echo "  --disable-gl            Disable all GL renderers."
 	echo "  --disable-gl-fixed      Disable GL renderers for fixed-function h/w."
 	echo "  --disable-gl-prog       Disable GL renderers for programmable h/w."
-	echo "  --disable-overlay       Disable all overlay renderers."
+	echo "  --disable-overlay       Disable SDL 1.2 overlay renderers."
 	echo "  --enable-gp2x           Enables half-res software renderer."
 	echo "  --disable-screenshots   Disable the screenshot hotkey."
 	echo "  --disable-xmp           Disable XMP music engine."
@@ -71,11 +73,12 @@ usage() {
 	echo "  --enable-meter          Enable load/save meter display."
 	echo "  --disable-sdl           Disables SDL dependencies and features."
 	echo "  --enable-egl            Enables EGL backend (if SDL disabled)."
+	echo "  --enable-gles           Enable hacks for OpenGL ES platforms."
 	echo "  --disable-check-alloc   Disables memory allocator error handling."
 	echo "  --disable-khash         Disables using khash for counter/string lookups."
-	echo "  --enable-uthash         Enables using uthash for counter/string lookups."
 	echo "  --enable-debytecode     Enable experimental 'debytecode' transform."
 	echo "  --disable-libsdl2       Disable SDL 2.0 support (falls back on 1.2)."
+	echo "  --enable-stdio-redirect Redirect console output to stdout.txt/stderr.txt."
 	echo "  --enable-fps            Enable frames-per-second counter."
 	echo
 	echo "e.g.: ./config.sh --platform unix --prefix /usr"
@@ -116,6 +119,7 @@ HELPSYS="true"
 UTILS="true"
 X11="true"
 SOFTWARE="true"
+SOFTSCALE="true"
 GL_FIXED="true"
 GL_PROGRAM="true"
 OVERLAY="true"
@@ -138,11 +142,13 @@ VERBOSE="false"
 METER="false"
 SDL="true"
 EGL="false"
+GLES="false"
 CHECK_ALLOC="true"
 KHASH="true"
-UTHASH="false"
 DEBYTECODE="false"
 LIBSDL2="true"
+STDIO_REDIRECT="false"
+GAMECONTROLLERDB="true"
 FPSCOUNTER="false"
 
 #
@@ -242,6 +248,9 @@ while [ "$1" != "" ]; do
 	[ "$1" = "--disable-software" ] && SOFTWARE="false"
 	[ "$1" = "--enable-software" ]  && SOFTWARE="true"
 
+	[ "$1" = "--disable-softscale" ] && SOFTSCALE="false"
+	[ "$1" = "--enable-softscale" ]  && SOFTSCALE="true"
+
 	[ "$1" = "--disable-gl" ] && GL="false"
 	[ "$1" = "--enable-gl" ]  && GL="true"
 
@@ -317,20 +326,23 @@ while [ "$1" != "" ]; do
 	[ "$1" = "--enable-egl" ]  && EGL="true"
 	[ "$1" = "--disable-egl" ] && EGL="false"
 
+	[ "$1" = "--enable-gles" ]  && GLES="true"
+	[ "$1" = "--disable-gles" ] && GLES="false"
+
 	[ "$1" = "--disable-check-alloc" ] && CHECK_ALLOC="false"
 	[ "$1" = "--enable-check-alloc" ]  && CHECK_ALLOC="true"
 
 	[ "$1" = "--enable-khash" ]  && KHASH="true"
 	[ "$1" = "--disable-khash" ] && KHASH="false"
 
-	[ "$1" = "--enable-uthash" ]  && UTHASH="true"
-	[ "$1" = "--disable-uthash" ] && UTHASH="false"
-
 	[ "$1" = "--enable-debytecode" ]  && DEBYTECODE="true"
 	[ "$1" = "--disable-debytecode" ] && DEBYTECODE="false"
 
 	[ "$1" = "--enable-libsdl2" ]  && LIBSDL2="true"
 	[ "$1" = "--disable-libsdl2" ] && LIBSDL2="false"
+
+	[ "$1" = "--enable-stdio-redirect" ]  && STDIO_REDIRECT="true"
+	[ "$1" = "--disable-stdio-redirect" ] && STDIO_REDIRECT="false"
 
 	[ "$1" = "--enable-fps" ]  && FPSCOUNTER="true"
 	[ "$1" = "--disable-fps" ] && FPSCOUNTER="false"
@@ -361,7 +373,7 @@ if [ "$PLATFORM" = "win32"   -o "$PLATFORM" = "win64" \
 	# provided. This helps avoid errors that occur when gcc or libs exist in
 	# /usr, which is used by MSYS2 for the MSYS environment.
 	if [ "$PREFIX_IS_SET" = "false" -a -n "$MSYSTEM" \
-	 -a $(uname -o | grep "Msys") -a $(uname -r | grep "^2\.") ]; then
+	 -a "$(uname -o)" == "Msys" ]; then
 		if [ "$MSYSTEM" = "MINGW32" -o "$MSYSTEM" = "MINGW64" ]; then
 			[ "$PLATFORM" = "win32" ] && PREFIX="/mingw32"
 			[ "$PLATFORM" = "win64" ] && PREFIX="/mingw64"
@@ -508,6 +520,12 @@ elif [ "$PLATFORM" = "wii" ]; then
 	BINDIR=$SHAREDIR
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
+elif [ "$PLATFORM" = "switch" ]; then
+	SHAREDIR=/switch/megazeux
+	GAMESDIR=$SHAREDIR
+	BINDIR=$SHAREDIR
+	echo "#define CONFFILE \"config.txt\"" >> src/config.h
+	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 elif [ "$PLATFORM" = "darwin-dist" ]; then
 	SHAREDIR=../Resources
 	GAMESDIR=$SHAREDIR
@@ -548,13 +566,8 @@ if [ "$PLATFORM" = "wii" ]; then
 	LIBSDL2="false"
 fi
 
-if [ "$PLATFORM" = "3ds" ]; then
-	echo "Disabling SDL (3DS)."
-	SDL="false"
-fi
-
-if [ "$PLATFORM" = "nds" ]; then
-	echo "Disabling SDL (NDS)."
+if [ "$PLATFORM" = "3ds" -o "$PLATFORM" = "nds" ]; then
+	echo "Disabling SDL ($PLATFORM)."
 	SDL="false"
 fi
 
@@ -574,10 +587,12 @@ fi
 #
 if [ "$SDL" = "false" ]; then
 	echo "Force-disabling SDL dependent components:"
-	echo " -> SOFTWARE, OVERLAY, MIKMOD"
+	echo " -> SOFTWARE, SOFTSCALE, OVERLAY, MIKMOD"
 	SOFTWARE="false"
+	SOFTSCALE="false"
 	OVERLAY="false"
 	MIKMOD="false"
+	LIBSDL2="false"
 else
 	echo "#define CONFIG_SDL" >> src/config.h
 	echo "BUILD_SDL=1" >> platform.inc
@@ -585,18 +600,23 @@ else
 fi
 
 #
-# We have EGL support
+# Use an EGL backend in place of SDL.
+# For now, also force-enable OpenGL ES hacks, since that's most
+# likely what is being used with EGL.
 #
 if [ "$EGL" = "true" ]; then
 	echo "#define CONFIG_EGL" >> src/config.h
 	echo "BUILD_EGL=1" >> platform.inc
+
+	echo "Force-enabling OpenGL ES support (EGL)."
+	GLES="true"
 fi
 
 #
 # We need either SDL or EGL for OpenGL
 #
 if [ "$SDL" = "false" -a "$EGL" = "false" ]; then
-	echo "Force-disabling OpenGL (no SDL or EGL support)."
+	echo "Force-disabling OpenGL (no SDL or EGL backend)."
 	GL="false"
 fi
 
@@ -621,7 +641,6 @@ if [ "$PLATFORM" = "nds" ]; then
 
 	echo "Force-disabling hash tables on NDS."
 	KHASH="false"
-	UTHASH="false"
 fi
 
 #
@@ -639,6 +658,25 @@ if [ "$PLATFORM" = "3ds" ]; then
 
 	echo "Disabling utils on 3DS (silly)."
 	UTILS="false"
+fi
+
+#
+# If the Switch arch is enabled, some code has to be compile time
+# enabled too.
+#
+if [ "$PLATFORM" = "switch" ]; then
+	echo "Enabling Switch-specific hacks."
+	echo "#define CONFIG_SWITCH" >> src/config.h
+	echo "BUILD_SWITCH=1" >> platform.inc
+
+	echo "Disabling utils on Switch (silly)."
+	UTILS="false"
+
+	echo "Force-enabling OpenGL ES support (Switch)."
+	GLES="true"
+
+	# This may or may not be totally useless for the Switch, disable it for now.
+	GAMECONTROLLERDB="false"
 fi
 
 #
@@ -685,6 +723,23 @@ if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" \
 fi
 
 #
+# Force-disable the softscale renderer for SDL 1.2 (requires SDL_Renderer).
+#
+if [ "$SDL" = "true" -a "$LIBSDL2" = "false" -a "$SOFTSCALE" = "true" ]; then
+	echo "Force-disabling softscale renderer (requires SDL 2)."
+	SOFTSCALE="false"
+fi
+
+#
+# Force-disable overlay renderers for SDL 2. The SDL 2 answer to SDL_Overlay
+# involves planar YUV modes which don't mesh well with MZX's internal rendering.
+#
+if [ "$SDL" = "true" -a "$LIBSDL2" = "true" -a "$OVERLAY" = "true" ]; then
+	echo "Force-disabling overlay renderers (requires SDL 1.2)."
+	OVERLAY="false"
+fi
+
+#
 # Must have at least one OpenGL renderer enabled
 #
 [ "$GL_FIXED" = "false" -a "$GL_PROGRAM" = "false" ] && GL="false"
@@ -696,6 +751,7 @@ if [ "$GL" = "false" ]; then
 	echo "Force-disabling OpenGL."
 	GL_FIXED="false"
 	GL_PROGRAM="false"
+	GLES="false"
 fi
 
 #
@@ -740,7 +796,7 @@ fi
 # Force disable modular DSOs.
 #
 if [ "$PLATFORM" = "gp2x" -o "$PLATFORM" = "nds" \
-  -o "$PLATFORM" = "3ds" \
+  -o "$PLATFORM" = "3ds"  -o "$PLATFORM" = "switch" \
   -o "$PLATFORM" = "psp"  -o "$PLATFORM" = "wii" ]; then
 	echo "Force-disabling modular build (nonsensical or unsupported)."
 	MODULAR="false"
@@ -748,12 +804,10 @@ fi
 
 #
 # Force disable networking (unsupported platform or no editor build)
-# Also disable all network applications
 #
 if [ "$EDITOR" = "false" -o "$PLATFORM" = "nds" ]; then
 	echo "Force-disabling networking (unsupported platform or editor disabled)."
 	NETWORK="false"
-	UPDATER="false"
 fi
 
 #
@@ -765,10 +819,18 @@ if [ "$PLATFORM" != "mingw" ]; then
 fi
 
 #
+# Force disable network applications (network disabled)
+#
+if [ "$NETWORK" = "false" ]; then
+	echo "Force-disabling network-dependent features (networking disabled)"
+	UPDATER="false"
+fi
+
+#
 # Force disable networking (no applications enabled)
 #
 if [ "$NETWORK" = "true" -a "$UPDATER" = "false" ]; then
-	echo "Force-disabling networking (no network applications enabled)."
+	echo "Force-disabling networking (no network-dependent features enabled)."
 	NETWORK="false"
 fi
 
@@ -914,6 +976,16 @@ if [ "$ICON" = "true" ]; then
 fi
 
 #
+# Enable OpenGL ES hacks if required.
+#
+if [ "$GLES" = "true" ]; then
+	echo "OpenGL ES support enabled."
+	echo "#define CONFIG_GLES" >> src/config.h
+else
+	echo "OpenGL ES support disabled."
+fi
+
+#
 # Software renderer
 #
 if [ "$SOFTWARE" = "true" ]; then
@@ -922,6 +994,17 @@ if [ "$SOFTWARE" = "true" ]; then
 	echo "BUILD_RENDER_SOFT=1" >> platform.inc
 else
 	echo "Software renderer disabled."
+fi
+
+#
+# Softscale renderer (SDL 2)
+#
+if [ "$SOFTSCALE" = "true" ]; then
+	echo "Softscale renderer enabled."
+	echo "#define CONFIG_RENDER_SOFTSCALE" >> src/config.h
+	echo "BUILD_RENDER_SOFTSCALE=1" >> platform.inc
+else
+	echo "Softscale renderer disabled."
 fi
 
 #
@@ -1166,18 +1249,13 @@ fi
 
 #
 # Allow use of hash table counter/string lookups, if enabled
-# Keep the default at the bottom so it doesn't override other options.
 #
-if [ "$UTHASH" = "true" ]; then
-	echo "uthash counter/string lookup enabled."
-	echo "#define CONFIG_UTHASH" >> src/config.h
-	echo "BUILD_UTHASH=1" >> platform.inc
-elif [ "$KHASH" = "true" ]; then
+if [ "$KHASH" = "true" ]; then
 	echo "khash counter/string lookup enabled."
 	echo "#define CONFIG_KHASH" >> src/config.h
 	echo "BUILD_KHASH=1" >> platform.inc
 else
-	echo "uthash counter/string lookup disabled (using binary search)."
+	echo "khash counter/string lookup disabled (using binary search)."
 fi
 
 #
@@ -1199,6 +1277,29 @@ if [ "$LIBSDL2" = "true" ]; then
 	echo "BUILD_LIBSDL2=1" >> platform.inc
 else
 	echo "SDL 2.0 support disabled."
+fi
+
+#
+# stdio redirect, if enabled
+#
+if [ "$SDL" = "true" -a "$LIBSDL2" = "false" ]; then
+	echo "Using SDL 1.x default stdio redirect behavior."
+elif [ "$STDIO_REDIRECT" = "true" ]; then
+	echo "Redirecting stdio to stdout.txt and stderr.txt."
+	echo "#define CONFIG_STDIO_REDIRECT" >> src/config.h
+else
+	echo "stdio redirect disabled."
+fi
+
+#
+# SDL_GameControllerDB, if enabled. This depends on SDL 2.
+#
+if [ "$LIBSDL2" = "true" -a "$GAMECONTROLLERDB" = "true" ]; then
+	echo "SDL_GameControllerDB enabled."
+	echo "#define CONFIG_GAMECONTROLLERDB" >> src/config.h
+	echo "BUILD_GAMECONTROLLERDB=1" >> platform.inc
+else
+	echo "SDL_GameControllerDB disabled."
 fi
 
 #

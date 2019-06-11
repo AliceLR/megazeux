@@ -81,6 +81,9 @@ static struct mzx_resource mzx_res[] = {
   { GLSL_SHADERS "cursor.vert",         NULL, false },
   { GLSL_SHADERS "cursor.frag",         NULL, false },
 #endif
+#ifdef CONFIG_GAMECONTROLLERDB
+  { ASSETS "gamecontrollerdb.txt",      NULL, true },
+#endif
 };
 
 #ifdef CONFIG_CHECK_ALLOC
@@ -217,6 +220,12 @@ int mzx_res_init(const char *argv0, boolean editor)
     if(!editor && mzx_res[i].optional)
       continue;
 
+#ifdef CONFIG_GAMECONTROLLERDB
+    // FIXME stupid hack because "optional" doesn't really mean optional.
+    if(i == GAMECONTROLLERDB_TXT)
+      continue;
+#endif
+
     if(!mzx_res[i].path)
     {
       warn("Failed to locate critical resource '%s'.\n",
@@ -291,6 +300,56 @@ char *mzx_res_get_by_id(enum resource_id id)
   }
 #endif /* USERCONFFILE */
   return mzx_res[id].path;
+}
+
+/**
+ * Some platforms may not be able to display console output without extra work.
+ * On these platforms redirect STDIO to files so the console output is easier
+ * to read.
+ */
+boolean redirect_stdio(const char *base_path, boolean require_conf)
+{
+  char clean_path[MAX_PATH];
+  char dest_path[MAX_PATH];
+  FILE *fp_wr;
+  uint64_t t;
+
+  if(!base_path)
+    return false;
+
+  clean_path_slashes(base_path, clean_path, MAX_PATH);
+
+  if(require_conf)
+  {
+    // If the config file is required, attempt to stat it.
+    struct stat stat_info;
+
+    join_path_names(dest_path, MAX_PATH, clean_path, "config.txt");
+    if(stat(dest_path, &stat_info))
+      return false;
+  }
+
+  // Test directory for write access.
+  join_path_names(dest_path, MAX_PATH, clean_path, "stdout.txt");
+  fp_wr = fopen_unsafe(dest_path, "w");
+  if(fp_wr)
+  {
+    t = (uint64_t)time(NULL);
+
+    // Redirect stdout to stdout.txt.
+    fclose(fp_wr);
+    fprintf(stdout, "Redirecting logs to '%s'...\n", dest_path);
+    freopen(dest_path, "w", stdout);
+    fprintf(stdout, "MegaZeux: Logging to '%s' (%" PRIu64 ")\n", dest_path, t);
+
+    // Redirect stderr to stderr.txt.
+    join_path_names(dest_path, MAX_PATH, clean_path, "stderr.txt");
+    fprintf(stderr, "Redirecting logs to '%s'...\n", dest_path);
+    freopen(dest_path, "w", stderr);
+    fprintf(stderr, "MegaZeux: Logging to '%s' (%" PRIu64 ")\n", dest_path, t);
+    return true;
+  }
+  return false;
 }
 
 // Get 2 bytes, little endian
@@ -554,15 +613,14 @@ int change_dir_name(char *path_name, const char *dest)
   current = dest;
   end = dest + strlen(dest);
 
-  // Destination starts with a root directory.
-#if defined(__WIN32__) || defined(CONFIG_WII)
-
-  if(dest[0] == DIR_SEPARATOR_CHAR)
-    return -1;
-
   next = strchr(dest, ':');
   if(next)
   {
+    /**
+     * Destination starts with a Windows-style root directory.
+     * Aside from Windows, these are often used by console SDKs (albeit with /
+     * instead of \) to distinguish SD cards and the like.
+     */
     if(next[1] != DIR_SEPARATOR_CHAR && next[1] != 0)
       return -1;
 
@@ -577,31 +635,30 @@ int change_dir_name(char *path_name, const char *dest)
       current++;
   }
   else
-  {
-    if(path_name[strlen(path_name) - 1] != DIR_SEPARATOR_CHAR)
-      snprintf(path, MAX_PATH, "%s" DIR_SEPARATOR, path_name);
-
-    else
-      strcpy(path, path_name);
-  }
-
-#else /* !defined(__WIN32__) && !defined(CONFIG_WII) */
 
   if(dest[0] == DIR_SEPARATOR_CHAR)
   {
+    /**
+     * Destination starts with a Unix-style root directory.
+     * Aside from Unix-likes, these are also supported by console platforms.
+     * Even Windows (back through XP at least) doesn't seem to mind them.
+     */
     strcpy(path, DIR_SEPARATOR);
     current = dest + 1;
   }
+
   else
   {
+    /**
+     * Destination is relative--start from the current path. Make sure there's
+     * a trailing separator.
+     */
     if(path_name[strlen(path_name) - 1] != DIR_SEPARATOR_CHAR)
       snprintf(path, MAX_PATH, "%s" DIR_SEPARATOR, path_name);
 
     else
       strcpy(path, path_name);
   }
-
-#endif /* !defined(__WIN32__) && !defined(CONFIG_WII) */
 
   current_char = current[0];
   len = strlen(path);
@@ -920,7 +977,7 @@ boolean dir_open(struct mzx_dir *dir, const char *path)
   while(readdir(dir->d) != NULL)
     dir->entries++;
 
-#if defined(CONFIG_PSP) || defined(CONFIG_3DS)
+#if defined(CONFIG_PSP) || defined(CONFIG_3DS) || defined(CONFIG_SWITCH)
   strncpy(dir->path, path, PATH_BUF_LEN);
   dir->path[PATH_BUF_LEN - 1] = 0;
   closedir(dir->d);
@@ -953,7 +1010,7 @@ void dir_seek(struct mzx_dir *dir, long offset)
 
   dir->pos = CLAMP(offset, 0L, dir->entries);
 
-#if defined(CONFIG_PSP) || defined(CONFIG_3DS)
+#if defined(CONFIG_PSP) || defined(CONFIG_3DS) || defined(CONFIG_SWITCH)
   closedir(dir->d);
   dir->d = opendir(dir->path);
   if(!dir->d)

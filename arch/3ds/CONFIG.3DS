@@ -2,4 +2,4 @@
 
 ./config.sh --platform 3ds --enable-release --enable-meter \
             --disable-editor --disable-helpsys --disable-utils \
-            --enable-tremor --disable-screenshots
+            --enable-tremor --disable-screenshots --enable-stdio-redirect "$@"

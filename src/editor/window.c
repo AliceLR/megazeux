@@ -71,6 +71,7 @@ int list_menu(const char *const *choices, int choice_size, const char *title,
   int last_keypress_time = 0;
   int ticks;
   int width = choice_size + 6;
+  int joystick_key;
   int key;
   int i;
 
@@ -148,6 +149,10 @@ int list_menu(const char *const *choices, int choice_size, const char *title,
     // Act upon it
     key = get_key(keycode_internal_wrt_numlock);
 
+    joystick_key = get_joystick_ui_key();
+    if(joystick_key)
+      key = joystick_key;
+
     exit = get_exit_status();
 
     mouse_press = get_mouse_press_ext();
@@ -216,8 +221,8 @@ int list_menu(const char *const *choices, int choice_size, const char *title,
     {
       case IKEY_ESCAPE:
       {
-          exit = 1;
-          break;
+        exit = 1;
+        break;
       }
 
       case IKEY_BACKSPACE:
@@ -364,6 +369,7 @@ int color_selection(int current, int allow_wild)
 {
   int x, y;
   int key;
+  int joystick_key;
   int selected;
   int currx, curry;
   int last_keypress_time = 0;
@@ -493,6 +499,10 @@ int color_selection(int current, int allow_wild)
     update_event_status_delay();
     key = get_key(keycode_internal_wrt_numlock);
 
+    joystick_key = get_joystick_ui_key();
+    if(joystick_key)
+      key = joystick_key;
+
     // Exit event -- mimic Escape
     if(get_exit_status())
       key = IKEY_ESCAPE;
@@ -551,7 +561,7 @@ int color_selection(int current, int allow_wild)
           if(current == 0)
             current = -512;
           else
-            current =- current;
+            current = -current;
         }
         return current;
       }

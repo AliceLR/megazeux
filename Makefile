@@ -208,6 +208,7 @@ LDFLAGS  += ${ARCH_LDFLAGS}
 # GCC version >= 7.x
 #
 
+GCC_VER := ${shell ${CC} -dumpversion}
 GCC_VER_MAJOR := ${shell ${CC} -dumpversion | cut -d. -f1}
 GCC_VER_MAJOR_GE_7 := ${shell test $(GCC_VER_MAJOR) -ge 7; echo $$?}
 
@@ -227,8 +228,10 @@ GCC_VER_MAJOR_GE_4 := ${shell test $(GCC_VER_MAJOR) -ge 4; echo $$?}
 ifeq ($(GCC_VER_MAJOR_GE_4),0)
 
 ifeq (${DEBUG},1)
+ifneq (${GCC_VER},4.2.1)
 CFLAGS   += -fbounds-check
 CXXFLAGS += -fbounds-check
+endif
 endif
 
 #
@@ -408,7 +411,9 @@ ifeq (${BUILD_UTILS},1)
 	${MKDIR} ${build}/utils
 	${CP} ${checkres} ${downver} ${build}/utils
 	${CP} ${hlp2txt} ${txt2hlp} ${build}/utils
+ifeq (${LIBPNG},1)
 	${CP} ${png2smzx} ${build}/utils
+endif
 	${CP} ${ccv} ${build}/utils
 	@if test -f ${checkres}.debug; then \
 		cp ${checkres}.debug ${downver}.debug ${build}/utils; \
@@ -423,6 +428,10 @@ ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 	${CP} assets/glsl/README.md ${build}/assets/glsl
 	${CP} assets/glsl/scalers/*.frag assets/glsl/scalers/*.vert \
 		${build}/assets/glsl/scalers
+endif
+ifeq (${BUILD_GAMECONTROLLERDB},1)
+	${CP} assets/gamecontrollerdb.txt assets/gamecontrollerdb.LICENSE \
+	 ${build}/assets
 endif
 
 distclean: clean

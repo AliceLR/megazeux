@@ -149,6 +149,11 @@ core_cobjs += arch/3ds/event.o arch/3ds/audio.o
 core_cobjs += arch/3ds/keyboard.o
 endif
 
+ifeq (${BUILD_SWITCH},1)
+# Switch libraries require C++
+LINK_CC := ${CXX}
+endif
+
 ifeq (${PLATFORM},android)
 core_cxxobjs += arch/android/sfwrapper.o
 LINK_CC := ${CXX}
@@ -187,6 +192,12 @@ core_cobjs += ${core_obj}/render_soft.o
 render_layer_software = 1
 endif
 
+# Accelerated SDL2 software renderer
+ifeq (${BUILD_RENDER_SOFTSCALE},1)
+core_cobjs += ${core_obj}/render_softscale.o
+render_layer_software = 1
+endif
+
 # GL shared
 ifneq ($(or ${BUILD_RENDER_GL_FIXED},${BUILD_RENDER_GL_PROGRAM}),)
 core_cobjs += ${core_obj}/render_gl.o
@@ -219,7 +230,6 @@ endif
 # Overlay renderers
 ifeq (${BUILD_RENDER_YUV},1)
 core_cobjs += ${core_obj}/render_yuv.o
-core_cobjs += ${core_obj}/render_yuv1.o ${core_obj}/render_yuv2.o
 render_layer_software = 1
 endif
 
@@ -282,10 +292,6 @@ endif
 
 ifeq (${BUILD_KHASH},1)
 core_flags += -Icontrib/khash/
-endif
-
-ifeq (${BUILD_UTHASH},1)
-core_flags += -Icontrib/uthash/
 endif
 
 ifeq (${BUILD_AUDIO},1)

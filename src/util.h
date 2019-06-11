@@ -79,6 +79,9 @@ enum resource_id
   GLSL_SHADER_CURSOR_VERT,
   GLSL_SHADER_CURSOR_FRAG,
 #endif
+#ifdef CONFIG_GAMECONTROLLERDB
+  GAMECONTROLLERDB_TXT,
+#endif
   END_RESOURCE_ID_T // must be last
 };
 
@@ -91,6 +94,8 @@ enum resource_id
 CORE_LIBSPEC int mzx_res_init(const char *argv0, boolean editor);
 CORE_LIBSPEC void mzx_res_free(void);
 CORE_LIBSPEC char *mzx_res_get_by_id(enum resource_id id);
+
+CORE_LIBSPEC boolean redirect_stdio(const char *base_path, boolean require_conf);
 
 // Code to load multi-byte ints from little endian file
 int fgetw(FILE *fp);
@@ -138,7 +143,7 @@ struct dso_syms_map
 #define PATH_BUF_LEN MAX_PATH
 
 struct mzx_dir {
-#if defined(CONFIG_PSP) || defined(CONFIG_3DS)
+#if defined(CONFIG_PSP) || defined(CONFIG_3DS) || defined(CONFIG_SWITCH)
   char path[PATH_BUF_LEN];
 #endif
   DIR *d;
@@ -179,7 +184,7 @@ CORE_LIBSPEC char *strsep(char **stringp, const char *delim);
 #ifndef __WIN32__
 #if defined(CONFIG_PSP) || defined(CONFIG_GP2X) \
  || defined(CONFIG_NDS) || defined(CONFIG_WII) \
- || defined(CONFIG_3DS)
+ || defined(CONFIG_3DS) || defined(CONFIG_SWITCH)
 #include <string.h>
 #else
 #include <strings.h>

@@ -47,6 +47,8 @@
 //       OpenGL ES 1.x. The latter API lacks many functions present in
 //       desktop OpenGL. GL ES is typically used on cellphones.
 
+static const struct gl_version gl_required_version = { 1, 1 };
+
 // We need to keep two versions of each char: the regular char, and an
 // inverted version for foreground transparency with layer rendering.
 #define CHAR_2W (CHAR_W * 2)
@@ -205,10 +207,12 @@ static boolean gl2_init_video(struct graphics_data *graphics,
     goto err_free_render_data;
 
   if(!set_video_mode())
-    goto err_free_render_data;
+    goto err_free_pixels;
 
   return true;
 
+err_free_pixels:
+  free(render_data->pixels);
 err_free_render_data:
   free(render_data);
   graphics->render_data = NULL;
@@ -345,18 +349,22 @@ static boolean gl2_set_video_mode(struct graphics_data *graphics,
 {
   gl_set_attributes(graphics);
 
-  if(!gl_set_video_mode(graphics, width, height, depth, fullscreen, resize))
+  if(!gl_set_video_mode(graphics, width, height, depth, fullscreen, resize,
+   gl_required_version))
     return false;
 
   gl_set_attributes(graphics);
 
   if(!gl_load_syms(gl2_syms_map))
+  {
+    gl_cleanup(graphics);
     return false;
+  }
 
   // We need a specific version of OpenGL; desktop GL must be 1.1.
   // All OpenGL ES 1.x implementations are supported, so don't do
-  // the check with EGL configurations (EGL implies OpenGL ES).
-#ifndef CONFIG_EGL
+  // the check with these configurations.
+#ifndef CONFIG_GLES
   {
     static boolean initialized = false;
 
@@ -367,12 +375,17 @@ static boolean gl2_set_video_mode(struct graphics_data *graphics,
 
       version = (const char *)gl2.glGetString(GL_VERSION);
       if(!version)
+      {
+        warn("Could not load GL version string.\n");
+        gl_cleanup(graphics);
         return false;
+      }
 
       version_float = atof(version);
       if(version_float < 1.1)
       {
         warn("Need >= OpenGL 1.1, got OpenGL %.1f.\n", version_float);
+        gl_cleanup(graphics);
         return false;
       }
 

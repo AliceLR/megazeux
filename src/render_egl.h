@@ -28,8 +28,8 @@ __M_BEGIN_DECLS
 
 #include <EGL/egl.h>
 
-boolean gl_set_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, boolean fullscreen, boolean resize);
+boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
+ int depth, boolean fullscreen, boolean resize, struct gl_version req_ver);
 boolean gl_check_video_mode(struct graphics_data *graphics, int width,
  int height, int depth, boolean fullscreen, boolean resize);
 void gl_set_attributes(struct graphics_data *graphics);

@@ -51,6 +51,7 @@ struct config_info
 {
   // Video options
   boolean fullscreen;
+  boolean fullscreen_windowed;
   int resolution_width;
   int resolution_height;
   int window_width;

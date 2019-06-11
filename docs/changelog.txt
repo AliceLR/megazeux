@@ -26,9 +26,53 @@ FEATURES
 + New counters: FREAD_LENGTH and FWRITE_LENGTH. These counters
   return the length of the FREAD file/directory (if open) or the
   current length of the FWRITE file (if open).
++ Joystick settings in game.cnf files are now loaded as game-
+  specific joystick bindings. These bindings will no longer
+  permanently override global/UI bindings defined by the config
+  file or pad.config. The global bindings are restored when any
+  world is loaded (including SWAP WORLD); they are not restored
+  when a save is loaded.
++ Joystick inputs can now be bound to generic actions. These
+  actions are configured to control MegaZeux's various windows
+  in a context-specific manner, and can themselves be bound to
+  keycodes to allow for gameplay controls that are more
+  consistent with the UI controls. A list of joystick actions
+  and the functions they perform can be found in the config
+  file. The NDS, 3DS, Wii, PSP, and GP2X pad.config files have
+  been updated to use joystick actions.
++ Joystick inputs can also be bound to key names now in the
+  format of "key_X" (without quotes), where X is the key name.
++ Added automatic joystick mapping for Windows/Mac/Linux/etc.
+  Joysticks recognized as SDL game controllers are automatically
+  assigned joystick actions when detected. This behavior can be
+  altered or disabled via config options.
++ Added the config setting "joy_axis_threshold". This setting
+  allows the threshold for joystick axis mapped presses to be
+  configured.
++ Added Nintendo Switch port. (Lachesis, asie)
++ The NDS directional pad is now mappable as a joystick hat.
++ The 3DS directional pad is now mappable as a joystick hat. The
+  circle pad is now mappable as axes 1 and 2.
 + The default boot.dol for Wii builds with the editor enabled
   is now MegaZeux instead of MZXRun.
++ New GLSL scaling shader: "sai". This shader implements the
+  "Scale 2xSaI" algorithm by Kreed with a modified interpolation
+  function to produce sharper edges. This shader can scale up to
+  any size larger than 640x350 and is comparable to hqscale
+  (though it should look and perform a little better).
++ Fullscreen mode will now attempt to match a supported screen
+  resolution if no "fullscreen_resolution" setting is specified.
+  For scaling renderers, this favors the current desktop
+  resolution. For "software", this favors smaller resolutions.
++ Added the config setting "fullscreen_windowed". When set to 1,
+  MZX will create a borderless window with the current desktop
+  resolution instead of regular fullscreen. Disabled by default.
 + The current renderer can now be set from the settings menu.
++ Added the 'softscale' renderer. This renderer is a generalized
+  rewrite of the former SDL 2 overlay renderer implementation.
+  It should perform significantly better and be more portable.
+- SDL 2 support for the overlay renderers has been removed. When
+  specified for video_output, softscale will be enabled instead.
 
 FIXES
 
@@ -75,16 +119,19 @@ FIXES
 + The software renderer no longer tries to use an SDL_Renderer
   to draw the surface returned by SDL_GetWindowSurface. This
   fixes a crash when switching to fullscreen with the software
-  renderer on some platforms. A similar hack has been removed
-  from the overlay renderers.
+  renderer on some platforms.
 + Fixed a software renderer mouse crash bug caused by moving the
   cursor off the screen with a window bigger than the screen.
++ Fixed a bug where setting SMZX_MESSAGE to 0 wouldn't always
+  draw the message correctly.
 
 DEVELOPERS
 
 + Fixed -Wunused-result warnings for Linux builds.
 + Added "Intel EMGD" to auto_glsl blacklist (questionable
   OpenGL 2.0 support).
++ Added platform-independent joystick event functions and
+  updated the SDL, NDS, 3DS, and Wii event handlers for them.
 + MinGW builds now use -Wl,-Bstatic and -Wl,-Bdynamic to enforce
   the preferred linking when both static and dynamic builds of
   libraries are present.
@@ -96,6 +143,14 @@ DEVELOPERS
   loaded in SDL 1.2. (Lancer-X)
 + GL renderers free textures and revert to fixed function
   pipeline where appropriate. (Lancer-X)
++ OpenGL ES support can now be enabled for SDL builds with the
+  --enable-gles option. This option is force-enabled for
+  platforms that only support OpenGL ES.
++ opengl1 renderer now always uses power of 2 textures, same as
+  opengl2 and glsl. This provides a tiny performance improvement
+  on most cards and a massive performance improvement on some
+  other cards. (Lancer-X)
+- Removed uthash as a build option.
 
 
 February 20th, 2019 - MZX 2.91j

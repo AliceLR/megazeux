@@ -66,6 +66,11 @@ static const struct renderer_data renderers[] =
 #if defined(CONFIG_RENDER_SOFT)
   { "software", render_soft_register },
 #endif
+#if defined(CONFIG_RENDER_SOFTSCALE)
+  { "softscale", render_softscale_register },
+  { "overlay1", render_softscale_register },
+  { "overlay2", render_softscale_register },
+#endif
 #if defined(CONFIG_RENDER_GL_FIXED)
   { "opengl1", render_gl1_register },
   { "opengl2", render_gl2_register },
@@ -1506,6 +1511,7 @@ boolean init_video(struct config_info *conf, const char *caption)
 {
   graphics.screen_mode = 0;
   graphics.fullscreen = conf->fullscreen;
+  graphics.fullscreen_windowed = conf->fullscreen_windowed;
   graphics.resolution_width = conf->resolution_width;
   graphics.resolution_height = conf->resolution_height;
   graphics.window_width = conf->window_width;
@@ -1525,21 +1531,26 @@ boolean init_video(struct config_info *conf, const char *caption)
   if(!set_graphics_output(conf))
     return false;
 
-  // FIXME- We should communicate with the renderer to get the desktop resolution.
   if(conf->resolution_width == -1 && conf->resolution_height == -1)
   {
-    // FIXME hack- default resolution assignment should occur
-    // somewhere else on a per-renderer basis (probably init_video)
-    if(strcmp(conf->video_output, "software"))
-    {
-      // "Safe" resolution for scalable renderers
-      graphics.resolution_width = 1280;
-      graphics.resolution_height = 720;
-    }
+#ifdef CONFIG_SDL
+    // TODO maybe be able to communicate with the renderer instead of this hack
+    boolean is_scaling = true;
+    int width;
+    int height;
 
-    else
+    if(!strcmp(conf->video_output, "software"))
+      is_scaling = false;
+
+    if(sdl_get_fullscreen_resolution(&width, &height, is_scaling))
     {
-      // "Safe" resolution for software renderer
+      graphics.resolution_width = width;
+      graphics.resolution_height = height;
+    }
+    else
+#endif
+    {
+      // "Safe" resolution
       graphics.resolution_width = 640;
       graphics.resolution_height = 480;
     }
@@ -1616,6 +1627,18 @@ boolean set_video_mode(void)
   boolean fullscreen = graphics.fullscreen;
   boolean resize = graphics.allow_resize;
   boolean ret;
+
+#ifdef CONFIG_SDL
+  if(fullscreen && graphics.fullscreen_windowed)
+  {
+    // TODO maybe be able to communicate with the renderer instead of this hack
+    if(sdl_get_fullscreen_resolution(&target_width, &target_height, true))
+    {
+      graphics.resolution_width = target_width;
+      graphics.resolution_height = target_height;
+    }
+  }
+#endif
 
   if(fullscreen)
   {
@@ -1748,7 +1771,11 @@ void toggle_fullscreen(void)
 {
   graphics.fullscreen = !graphics.fullscreen;
   graphics.palette_dirty = true;
-  set_video_mode();
+  if(!set_video_mode())
+  {
+    warn("Failed to set video mode toggling fullscreen. Aborting\n");
+    exit(1);
+  }
   update_screen();
 }
 
@@ -1758,7 +1785,11 @@ void resize_screen(Uint32 w, Uint32 h)
   {
     graphics.window_width = w;
     graphics.window_height = h;
-    set_video_mode();
+    if(!set_video_mode())
+    {
+      warn("Failed to set video mode resizing window. Aborting\n");
+      exit(1);
+    }
     graphics.renderer.resize_screen(&graphics, w, h);
   }
 }
@@ -1778,7 +1809,7 @@ void color_string_ext_special(const char *str, Uint32 x, Uint32 y,
   char next_str[2];
   next_str[1] = 0;
 
-  if(c_offset) dirty_ui();
+  dirty_ui();
   dirty_current();
 
   while(cur_char)
@@ -1910,7 +1941,7 @@ void write_string_ext(const char *str, Uint32 x, Uint32 y,
   Uint8 bg_color = (color >> 4) + c_offset;
   Uint8 fg_color = (color & 0x0F) + c_offset;
 
-  if(c_offset) dirty_ui();
+  dirty_ui();
   dirty_current();
 
   while(cur_char && (cur_char != 0))
@@ -2029,7 +2060,7 @@ void write_line_ext(const char *str, Uint32 x, Uint32 y,
   Uint8 bg_color = (color >> 4) + c_offset;
   Uint8 fg_color = (color & 0x0F) + c_offset;
 
-  if(c_offset) dirty_ui();
+  dirty_ui();
   dirty_current();
 
   while(cur_char && (cur_char != '\n'))
@@ -2148,7 +2179,7 @@ static void color_line_ext(Uint32 length, Uint32 x, Uint32 y,
   Uint8 fg_color = (color & 0x0F) + c_offset;
   Uint32 i;
 
-  if(c_offset) dirty_ui();
+  dirty_ui();
   dirty_current();
 
   for(i = 0; i < length; i++)
@@ -2171,7 +2202,7 @@ void fill_line_ext(Uint32 length, Uint32 x, Uint32 y,
   Uint8 fg_color = (color & 0x0F) + c_offset;
   Uint32 i;
 
-  if(c_offset) dirty_ui();
+  dirty_ui();
   dirty_current();
 
   for(i = 0; i < length; i++)
@@ -2197,7 +2228,7 @@ void draw_char_mixed_pal_ext(Uint8 chr, Uint8 bg_color,
 
   *(dest_copy++) = *dest;
 
-  if((fg_color|bg_color) >= 16) dirty_ui();
+  dirty_ui();
   dirty_current();
 }
 
@@ -2212,7 +2243,7 @@ void draw_char_ext(Uint8 chr, Uint8 color, Uint32 x,
   dest->fg_color = (color & 0x0F) + c_offset;
   *(dest_copy++) = *dest;
 
-  if(c_offset) dirty_ui();
+  dirty_ui();
   dirty_current();
 }
 
@@ -2226,7 +2257,7 @@ void draw_char_linear_ext(Uint8 color, Uint8 chr,
   dest->fg_color = (color & 0x0F) + c_offset;
   *(dest_copy++) = *dest;
 
-  if(c_offset) dirty_ui();
+  dirty_ui();
   dirty_current();
 }
 

@@ -123,7 +123,7 @@ static const EGLint gles_v2_attribs[] =
 };
 
 boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
- int depth, boolean fullscreen, boolean resize)
+ int depth, boolean fullscreen, boolean resize, struct gl_version req_ver)
 {
   struct egl_render_data *egl_render_data = graphics->render_data;
   const EGLint *attribs = gles_v1_attribs;

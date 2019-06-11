@@ -60,10 +60,6 @@
 KHASH_SET_INIT(COUNTER, struct counter *, name, name_length)
 #endif
 
-#ifdef CONFIG_UTHASH
-#include <utcasehash.h>
-#endif
-
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -3409,12 +3405,6 @@ static struct counter *find_counter(struct counter_list *counter_list,
   *next = counter_list->num_counters;
   return current;
 
-#elif defined(CONFIG_UTHASH)
-  size_t name_length = strlen(name);
-  HASH_FIND(ch, counter_list->head, name, name_length, current);
-  *next = counter_list->num_counters;
-  return current;
-
 #else
   struct counter **base = counter_list->counters;
   int bottom = 0, top = (counter_list->num_counters) - 1, middle = 0;
@@ -3672,10 +3662,6 @@ static void add_counter(struct counter_list *counter_list, const char *name,
 
 #ifdef CONFIG_KHASH
   KHASH_ADD(COUNTER, counter_list->hash_table, dest);
-#endif
-
-#ifdef CONFIG_UTHASH
-  HASH_ADD_KEYPTR(ch, counter_list->head, dest->name, dest->name_length, dest);
 #endif
 }
 
@@ -3976,10 +3962,6 @@ void load_new_counter(struct counter_list *counter_list, int index,
 #ifdef CONFIG_KHASH
   KHASH_ADD(COUNTER, counter_list->hash_table, dest);
 #endif
-
-#ifdef CONFIG_UTHASH
-  HASH_ADD_KEYPTR(ch, counter_list->head, dest->name, dest->name_length, dest);
-#endif
 }
 
 static int counter_sort_fcn(const void *a, const void *b)
@@ -4002,11 +3984,6 @@ void clear_counter_list(struct counter_list *counter_list)
 #ifdef CONFIG_KHASH
   KHASH_CLEAR(COUNTER, counter_list->hash_table);
   counter_list->hash_table = NULL;
-#endif
-
-#ifdef CONFIG_UTHASH
-  HASH_CLEAR(ch, counter_list->head);
-  counter_list->head = NULL;
 #endif
 
   for(i = 0; i < counter_list->num_counters; i++)

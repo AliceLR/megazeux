@@ -46,10 +46,6 @@
 KHASH_SET_INIT(STRING, struct string *, name, name_length)
 #endif
 
-#ifdef CONFIG_UTHASH
-#include <utcasehash.h>
-#endif
-
 // Please only use string literals with this, thanks.
 
 #define special_name(n)                                         \
@@ -88,15 +84,6 @@ static struct string *find_string(struct string_list *string_list,
 #if defined(CONFIG_KHASH)
   size_t name_length = strlen(name);
   KHASH_FIND(STRING, string_list->hash_table, name, name_length, current);
-
-  // When reallocing we need to replace the old pointer at
-  // its original list index.
-  *next = current ? current->list_ind : string_list->num_strings;
-  return current;
-
-#elif defined(CONFIG_UTHASH)
-  size_t name_length = strlen(name);
-  HASH_FIND(sh, string_list->head, name, name_length, current);
 
   // When reallocing we need to replace the old pointer at
   // its original list index.
@@ -202,10 +189,6 @@ static struct string *add_string_preallocate(struct string_list *string_list,
   KHASH_ADD(STRING, string_list->hash_table, dest);
 #endif
 
-#ifdef CONFIG_UTHASH
-  HASH_ADD_KEYPTR(sh, string_list->head, dest->name, dest->name_length, dest);
-#endif
-
   return dest;
 }
 
@@ -218,14 +201,6 @@ static struct string *reallocate_string(struct string_list *string_list,
 #ifdef CONFIG_KHASH
   // Delete the string with the same name as src if it exists in the table.
   KHASH_DELETE(STRING, string_list->hash_table, src);
-#endif
-
-#ifdef CONFIG_UTHASH
-  struct string *result = NULL;
-  HASH_FIND(sh, string_list->head, src->name, (size_t)src->name_length, result);
-
-  if(result)
-    HASH_DELETE(sh, string_list->head, result);
 #endif
 
   src = crealloc(src, base_length + length);
@@ -245,10 +220,6 @@ static struct string *reallocate_string(struct string_list *string_list,
 
 #ifdef CONFIG_KHASH
   KHASH_ADD(STRING, string_list->hash_table, src);
-#endif
-
-#ifdef CONFIG_UTHASH
-  HASH_ADD_KEYPTR(sh, string_list->head, src->name, src->name_length, src);
 #endif
 
   return src;
@@ -1540,10 +1511,6 @@ struct string *load_new_string(struct string_list *string_list, int index,
   KHASH_ADD(STRING, string_list->hash_table, dest);
 #endif
 
-#ifdef CONFIG_UTHASH
-  HASH_ADD_KEYPTR(sh, string_list->head, dest->name, dest->name_length, dest);
-#endif
-
   return dest;
 }
 
@@ -1574,11 +1541,6 @@ void clear_string_list(struct string_list *string_list)
 #ifdef CONFIG_KHASH
   KHASH_CLEAR(STRING, string_list->hash_table);
   string_list->hash_table = NULL;
-#endif
-
-#ifdef CONFIG_UTHASH
-  HASH_CLEAR(sh, string_list->head);
-  string_list->head = NULL;
 #endif
 
   for(i = 0; i < string_list->num_strings; i++)
