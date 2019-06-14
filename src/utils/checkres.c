@@ -28,11 +28,10 @@
  " -h   Display this message and exit.\n"                                   \
  "\nStatus options:\n" \
  " -a   Display all found, created, missing, and unused files.\n"           \
- " -A   Display missing files and files that may be created only.\n"        \
- " -C   Display created files only.\n"                                      \
- " -F   Display found files only.\n"                                        \
- " -M   Display missing files only (default).\n"                            \
- " -U   Display unused files only.\n"                                       \
+ " -C   Only display created files.\n"                                      \
+ " -F   Only display found files.\n"                                        \
+ " -M   Only display missing files (default).\n"                            \
+ " -U   Only display unused files.\n"                                       \
  " -c   Also display created files.\n"                                      \
  " -f   Also display found files.\n"                                        \
  " -m   Also display missing files.\n"                                      \
@@ -935,11 +934,12 @@ static void process_requirements(struct base_path **path_list,
           {
             const char *file_path = bpf_sorted[k]->file_path;
 
-            // Don't print "unused" MZX/MZB files.
+            // Don't print "unused" MZX/MZB files or directories.
             size_t len = strlen(file_path);
             if(len > 4 &&
              (!strcasecmp(file_path + len - 4, ".MZX") ||
-              !strcasecmp(file_path + len - 4, ".MZB")))
+              !strcasecmp(file_path + len - 4, ".MZB") ||
+              file_path[len - 1] == '/'))
               continue;
 
             output("", DONT_PRINT, -1, -1, bpf_sorted[k]->file_path,
@@ -2298,7 +2298,7 @@ int main(int argc, char *argv[])
             fprintf(stderr, USAGE);
             return SUCCESS;
 
-          case 'A':
+          case 'A': // Legacy equivalent of -Mc
             display_not_found = true;
             display_found = false;
             display_created = true;
@@ -2383,7 +2383,7 @@ int main(int argc, char *argv[])
           }
 
           case '1':
-          case 'q':
+          case 'q': // Legacy equivalent of -1
             display_first_only = true;
             display_filename_only = true;
             break;
