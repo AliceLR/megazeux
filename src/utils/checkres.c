@@ -22,12 +22,21 @@
  */
 
 #define USAGE \
- "Usage: checkres [-a -A -h -q] " \
- "mzx/mzb/zip file [-extra path/zip file [-in relative path] ...] ... \n" \
- "  -a  Display all found and missing files.\n"                           \
- "  -A  Display missing files and files that may be created by Robotic.\n"\
- "  -h  Display this message.\n"                                          \
- "  -q  Display only file paths i.e. no extra info.\n"                    \
+ "Usage: checkres [options] " \
+ "mzx/mzb/zip file [-extra path/zip file [-in relative path] ...] ... \n"   \
+ "\nGeneral options:\n" \
+ "  -h  Display this message and exit.\n"                                   \
+ "\nStatus options:\n" \
+ "  -m  Display missing files only (default).\n"                            \
+ "  -A  Display missing files and files that may be created by Robotic.\n"  \
+ "  -a  Display all found and missing files.\n"                             \
+ "\nUnique options:\n" \
+ "  -r  Display all references of expected files (default).\n"              \
+ "  -u  Display expected files the first time they are referenced only.\n"  \
+ "  -1  Display unique expected filenames, one per line, no other info.\n"  \
+ "\nSorting options:\n" \
+ "  -L  Sort by location of reference: world, board#, robot# (default).\n"  \
+ "  -F  Sort by referenced filename, then by location.\n"                   \
  "\n"
 
 #include <stdlib.h>
@@ -76,9 +85,17 @@ static const char *found_append = "FOUND";
 static const char *created_append = "CREATED";
 static const char *not_found_append = "NOT FOUND";
 
-static int quiet_mode = 0;
-static int display_found = 0;
-static int display_created = 0;
+static boolean display_found = false;
+static boolean display_created = false;
+static boolean display_first_only = false;
+static boolean display_filename_only = false;
+
+static enum
+{
+  SORT_BY_LOCATION,
+  SORT_BY_FILENAME,
+}
+sort_by = SORT_BY_LOCATION;
 
 enum status
 {
@@ -222,14 +239,34 @@ static void strcpy_fsafe(char *dest, const char *src)
     dest[0] = 0;
 }
 
-static int started_table = 0;
-static int parent_max_len = 12;
-static int resource_max_len = 16;
+static int16_t robot_xpos[256];
+static int16_t robot_ypos[256];
 
-static void output(const char *required_by, const char *resource_path,
- const char *status, const char *found_in)
+#define PARENT_DEFAULT_LEN 13
+#define RESOURCE_DEFAULT_LEN 14
+#define DETAILS_MAX_LEN 35
+#define DETAILS_SHORT_LEN 12
+#define GLOBAL_ROBOT 0
+#define IS_SFX -1
+#define IS_BOARD_MOD -3
+#define IS_BOARD_CHARSET -2
+#define IS_BOARD_PALETTE -1
+
+static int started_table = 0;
+static int parent_max_len = PARENT_DEFAULT_LEN;
+static int resource_max_len = RESOURCE_DEFAULT_LEN;
+static boolean show_details = true;
+static boolean short_details = false;
+
+static void output(const char *required_by,
+ int board_num, int robot_num, int line_num,
+ const char *resource_path, const char *status, const char *found_in)
 {
-  if(!quiet_mode)
+  char details[DETAILS_MAX_LEN];
+  int details_max_len =
+   show_details ? (short_details ? DETAILS_SHORT_LEN : DETAILS_MAX_LEN) : 0;
+
+  if(!display_filename_only)
   {
     found_in = found_in ? found_in : "";
 
@@ -237,15 +274,17 @@ static void output(const char *required_by, const char *resource_path,
     {
       fprintf(stdout, "\n");
 
-      fprintf(stdout, "%-*.*s  %-*.*s  %-10s %s\n",
+      fprintf(stdout, "%-*.*s  %-*.*s%-*.*s  %-10s %s\n",
        parent_max_len, parent_max_len, "Required by",
-       resource_max_len, resource_max_len, "Resource path",
+       details_max_len, details_max_len, "B#    R#    Line     Position",
+       resource_max_len, resource_max_len, "Expected file",
        "Status",
        "Found in"
       );
 
-      fprintf(stdout, "%-*.*s  %-*.*s  %-10s %s\n",
+      fprintf(stdout, "%-*.*s  %-*.*s%-*.*s  %-10s %s\n",
        parent_max_len, parent_max_len, "-----------",
+       details_max_len, details_max_len, "---   ---   ------   -----------",
        resource_max_len, resource_max_len, "-------------",
        "------",
        "--------"
@@ -254,8 +293,54 @@ static void output(const char *required_by, const char *resource_path,
       started_table = 1;
     }
 
-    fprintf(stdout, "%-*.*s  %-*.*s  %-10s %s\n",
+    if(show_details)
+    {
+      char board[6];
+      char robot[6];
+      char line[8];
+      char xy[14];
+      snprintf(board, 6, "%d", board_num);
+      snprintf(robot, 6, "%d", robot_num);
+      snprintf(line, 8, "%d", line_num);
+
+      if(board_num == IS_SFX)
+        snprintf(details, DETAILS_MAX_LEN, "sfx   %-3.3s", robot);
+      else
+      if(robot_num > 0)
+      {
+        snprintf(xy, 14, "%d, %d",
+          robot_xpos[(unsigned char)robot_num],
+          robot_ypos[(unsigned char)robot_num]
+        );
+        snprintf(details, DETAILS_MAX_LEN,
+          "b%-3.3s  r%-3.3s  %-6.6s   %-11.11s",
+          board, robot, line, xy
+        );
+      }
+      else
+      if(board_num == NO_BOARD && robot_num == GLOBAL_ROBOT)
+      {
+        snprintf(details, DETAILS_MAX_LEN,
+         "      gl    %-6.6s   -1, -1", line);
+      }
+      else
+      if(robot_num == IS_BOARD_MOD)
+        snprintf(details, DETAILS_MAX_LEN, "b%-3.3s  mod  ", board);
+      else
+      if(robot_num == IS_BOARD_CHARSET)
+        snprintf(details, DETAILS_MAX_LEN, "b%-3.3s  chr  ", board);
+      else
+      if(robot_num == IS_BOARD_PALETTE)
+        snprintf(details, DETAILS_MAX_LEN, "b%-3.3s  pal  ", board);
+      else
+        strcpy(details, "(unknown)");
+    }
+    else
+      details[0] = 0;
+
+    fprintf(stdout, "%-*.*s  %-*.*s%-*.*s  %-10s %s\n",
      parent_max_len, parent_max_len, required_by,
+     details_max_len, details_max_len, details,
      resource_max_len, resource_max_len, resource_path,
      status,
      found_in
@@ -298,18 +383,23 @@ struct base_file
 
 struct resource
 {
-  char path[MAX_PATH];
+  char path[MAX_PATH * 2];
   int path_len;
+  int key_len;
+  int board_num;
+  int robot_num;
+  int line_num;
   struct base_file *parent;
 };
 
-KHASH_SET_INIT(RESOURCE, struct resource *, path, path_len)
+KHASH_SET_INIT(RESOURCE, struct resource *, path, key_len)
 
 // NULL is important
 static khash_t(RESOURCE) *requirement_table = NULL;
 static khash_t(RESOURCE) *resource_table = NULL;
 
-static struct resource *add_requirement(char *src, struct base_file *file)
+static struct resource *add_requirement_ext(char *src, struct base_file *file,
+ int board_num, int robot_num, int line_num)
 {
   // A resource file required by a world/board.
 
@@ -327,7 +417,19 @@ static struct resource *add_requirement(char *src, struct base_file *file)
 
     strcpy_fsafe(req->path, file_buffer);
     req->path_len = strlen(req->path);
+    req->key_len = req->path_len;
+    req->board_num = board_num;
+    req->robot_num = robot_num;
+    req->line_num = line_num;
     req->parent = file;
+
+    if(!display_first_only)
+    {
+      // add more info to the key.
+      snprintf(req->path + req->path_len + 1, MAX_PATH - 1, "%04x%04x%08x",
+       (int16_t)board_num, (int16_t)robot_num, line_num);
+      req->key_len += 17;
+    }
 
     // Calculate these values for the output table as we go along
     resource_max_len = MAX(resource_max_len, req->path_len);
@@ -337,6 +439,26 @@ static struct resource *add_requirement(char *src, struct base_file *file)
   }
 
   return req;
+}
+/*
+static struct resource *add_requirement(char *src, struct base_file *file)
+{ return add_requirement_ext(src, file, -1, -1, -1); }
+*/
+static struct resource *add_requirement_board(char *src, struct base_file *file,
+ int board_num, int resource_type)
+{
+  if(board_num < 0 || resource_type >= 0) return NULL;
+  return add_requirement_ext(src, file, board_num, resource_type, -1);
+}
+
+static struct resource *add_requirement_robot(char *src, struct base_file *file,
+ int board_num, int robot_num, int line_num)
+{
+  if(robot_num < 0 || board_num < 0 ||
+   (board_num == NO_BOARD && robot_num != GLOBAL_ROBOT))
+    return NULL;
+
+  return add_requirement_ext(src, file, board_num, robot_num, line_num);
 }
 
 static struct resource *add_resource(char *src, struct base_file *file)
@@ -357,6 +479,11 @@ static struct resource *add_resource(char *src, struct base_file *file)
 
     strcpy_fsafe(res->path, file_buffer);
     res->path_len = strlen(res->path);
+    res->key_len = res->path_len;
+    res->board_num = -1;
+    res->robot_num = -1;
+    res->line_num = -1;
+    res->parent = NULL;
 
     // Calculate these values for the output table as we go along
     resource_max_len = MAX(resource_max_len, res->path_len);
@@ -474,6 +601,33 @@ static struct base_file *add_base_file(const char *path_name,
   return new_file;
 }
 
+static int req_sort_by_location_fn(const void *A, const void *B)
+{
+  const struct resource *a = *(struct resource **)A;
+  const struct resource *b = *(struct resource **)B;
+  int parent_cmp = strcmp(a->parent->file_name, b->parent->file_name);
+  return
+    parent_cmp ? parent_cmp :
+    a->board_num != b->board_num ? a->board_num - b->board_num :
+    a->robot_num != b->robot_num ? a->robot_num - b->robot_num :
+    a->line_num != b->line_num ? a->line_num - b->line_num :
+    strcmp(a->path, b->path);
+}
+
+static int req_sort_by_filename_fn(const void *A, const void *B)
+{
+  const struct resource *a = *(struct resource **)A;
+  const struct resource *b = *(struct resource **)B;
+  int path_cmp = strcmp(a->path, b->path);
+  int parent_cmp = strcmp(a->parent->file_name, b->parent->file_name);
+  return
+    path_cmp ? path_cmp :
+    parent_cmp ? parent_cmp :
+    a->board_num != b->board_num ? a->board_num - b->board_num :
+    a->robot_num != b->robot_num ? a->robot_num - b->robot_num :
+    a->line_num - b->line_num;
+}
+
 static void process_requirements(struct base_path **path_list,
  int path_list_size)
 {
@@ -486,16 +640,43 @@ static void process_requirements(struct base_path **path_list,
   char *translated_path;
   size_t len;
   int found;
-  int i;
+  size_t i;
+  int j;
 
-  // Now actually process the requirements
+  size_t num_reqs = kh_size(requirement_table);
+  struct resource **req_sorted = cmalloc(num_reqs * sizeof(struct resource *));
+
+  int (*sort_fn)(const void *, const void *);
+  switch(sort_by)
+  {
+    default:
+    case SORT_BY_LOCATION:
+      sort_fn = req_sort_by_location_fn;
+      break;
+
+    case SORT_BY_FILENAME:
+      sort_fn = req_sort_by_filename_fn;
+      break;
+  }
+
+  // Build a list of the requirements from the hash table and sort it.
+  // This is entirely for the purpose of having more useful output.
+  i = 0;
   KHASH_ITER(RESOURCE, requirement_table, req,
   {
+    req_sorted[i++] = req;
+  });
+  qsort(req_sorted, num_reqs, sizeof(struct resource *), sort_fn);
+
+  // Now, actually process the requirements.
+  for(i = 0; i < num_reqs; i++)
+  {
+    req = req_sorted[i];
     found = 0;
 
-    for(i = 0; i < path_list_size; i++)
+    for(j = 0; j < path_list_size; j++)
     {
-      current_path = path_list[i];
+      current_path = path_list[j];
       len = strlen(current_path->relative_path);
 
       // The required resource's path must start with the relative path
@@ -533,8 +714,8 @@ static void process_requirements(struct base_path **path_list,
     if(found)
     {
       if(display_found)
-        output(req->parent->file_name, req->path, found_append,
-         current_path->actual_path);
+        output(req->parent->file_name, req->board_num, req->robot_num,
+         req->line_num, req->path, found_append, current_path->actual_path);
     }
     else
     {
@@ -544,19 +725,22 @@ static void process_requirements(struct base_path **path_list,
       if(res)
       {
         if(display_created)
-          output(req->parent->file_name, req->path, created_append, NULL);
+          output(req->parent->file_name, req->board_num, req->robot_num,
+           req->line_num, req->path, created_append, NULL);
       }
       else
       {
-        output(req->parent->file_name, req->path, not_found_append, NULL);
+        output(req->parent->file_name, req->board_num, req->robot_num,
+         req->line_num, req->path, not_found_append, NULL);
       }
     }
-  });
+  }
+  free(req_sorted);
 
   // Reset these for next time
   started_table = 0;
-  parent_max_len = 12;
-  resource_max_len = 16;
+  parent_max_len = PARENT_DEFAULT_LEN;
+  resource_max_len = RESOURCE_DEFAULT_LEN;
 }
 
 static void clear_data(struct base_path **path_list,
@@ -655,7 +839,8 @@ static int board_magic(const unsigned char magic_string[4])
   return 0;
 }
 
-static enum status parse_sfx(char *sfx_buf, struct base_file *file)
+static enum status parse_sfx(char *sfx_buf, struct base_file *file,
+ int board_num, int robot_num, int line_num)
 {
   char *start, *end = sfx_buf - 1, str_buf_len;
   enum status ret = SUCCESS;
@@ -680,7 +865,7 @@ static enum status parse_sfx(char *sfx_buf, struct base_file *file)
 
     debug("SFX (class): %s\n", start + 1);
 
-    add_requirement(start + 1, file);
+    add_requirement_ext(start + 1, file, board_num, robot_num, line_num);
   }
 
   return ret;
@@ -694,12 +879,13 @@ static enum status parse_sfx(char *sfx_buf, struct base_file *file)
 
 
 static enum status parse_legacy_bytecode(struct memfile *mf,
- unsigned int program_size, struct base_file *file)
+ unsigned int program_size, struct base_file *file, int board_num, int robot_num)
 {
   int world_version = file->world_version;
   enum status ret = SUCCESS;
   int command_length;
   int command;
+  int line_num = 0;
 
   char function_counter[256];
   size_t fn_len;
@@ -721,6 +907,7 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
       break;
 
     command = mfgetc(mf);
+    line_num++;
 
     // These constants may eventually change in debytecode versions.
     // Since this is for legacy bytecode, leave the fixed numbers.
@@ -761,7 +948,7 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
          || match_partial("LOAD_ROBOT", V270))
         {
           debug("SET: %s (%s)\n", src, function_counter);
-          add_requirement(src, file);
+          add_requirement_robot(src, file, board_num, robot_num, line_num);
           break;
         }
 
@@ -809,7 +996,7 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
           src[src_len - 1] = 0;
 
         debug("MOD: %s\n", src);
-        add_requirement(src, file);
+        add_requirement_robot(src, file, board_num, robot_num, line_num);
         break;
       }
 
@@ -830,7 +1017,7 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
           return FREAD_FAILED;
 
         debug("SAM: %s\n", src);
-        add_requirement(src, file);
+        add_requirement_robot(src, file, board_num, robot_num, line_num);
         break;
       }
 
@@ -844,7 +1031,7 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
         if(mfread(src, 1, src_len, mf) != src_len)
           return FREAD_FAILED;
 
-        ret = parse_sfx(src, file);
+        ret = parse_sfx(src, file, board_num, robot_num, line_num);
         if(ret != SUCCESS)
           return ret;
         break;
@@ -868,7 +1055,8 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
             if(mfgetw(mf) == IMAGE_FILE && src[0] == '@')
             {
               debug("PUT @file: %s\n", src + 1);
-              add_requirement(src + 1, file);
+              add_requirement_robot(src + 1, file, board_num, robot_num,
+               line_num);
             }
           }
           else
@@ -908,7 +1096,7 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
           return FREAD_FAILED;
 
         debug("MOD FADE IN: %s\n", src);
-        add_requirement(src, file);
+        add_requirement_robot(src, file, board_num, robot_num, line_num);
         break;
       }
 
@@ -990,7 +1178,7 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
         }
 
         debug("LOAD CHAR SET: %s\n", rest);
-        add_requirement(rest, file);
+        add_requirement_robot(rest, file, board_num, robot_num, line_num);
         break;
       }
 
@@ -1003,7 +1191,7 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
           return FREAD_FAILED;
 
         debug("LOAD PALETTE: %s\n", src);
-        add_requirement(src, file);
+        add_requirement_robot(src, file, board_num, robot_num, line_num);
         break;
       }
 
@@ -1016,7 +1204,7 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
           return FREAD_FAILED;
 
         debug("SWAP WORLD: %s\n", src);
-        add_requirement(src, file);
+        add_requirement_robot(src, file, board_num, robot_num, line_num);
         break;
       }
 
@@ -1044,38 +1232,119 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
 /*****************/
 
 static enum status parse_legacy_robot(struct memfile *mf,
- struct base_file *file)
+ struct base_file *file, int board_num, int robot_num)
 {
   unsigned int program_size;
   struct memfile prog;
 
   enum status ret = SUCCESS;
 
-  // robot's size
+  // program_length (2),
   program_size = mfgetw(mf);
 
-  // skip to robot code
-  if(mfseek(mf, 40 - 2 + 1, SEEK_CUR) != 0)
+  // program_location (2), robot_name (15), robot_char (1),
+  // cur_prog_line (2), pos_within_line (1), robot_cycle (1), cycle_count (1),
+  // bullet_type (1), is_locked (1), can_lavawalk (1), walk_dir (1),
+  // last_touch_dir (1), last_shot_dir (1), xpos (2), ypos (2),
+  // status (1), blank (2), used (1), loop_count (2),
+  if(mfseek(mf, 41 - 2, SEEK_CUR) != 0)
     return FSEEK_FAILED;
 
   if(program_size)
   {
     mfopen(mf->current, program_size, &prog);
 
-    ret = parse_legacy_bytecode(&prog, program_size, file);
+    ret = parse_legacy_bytecode(&prog, program_size, file, board_num, robot_num);
   }
 
   mfseek(mf, program_size, SEEK_CUR);
   return ret;
 }
 
-static enum status parse_legacy_board(struct memfile *mf,
- struct base_file *file)
+static boolean skip_rle(struct memfile *mf)
 {
-  int i, num_robots, skip_rle_blocks = 6, skip_bytes;
+  uint16_t w = mfgetw(mf);
+  uint16_t h = mfgetw(mf);
+  int pos = 0;
+
+  /* RLE "decoder"; just to skip stuff */
+  while(pos < w * h && mf->current < mf->end)
+  {
+    unsigned char c = (unsigned char)mfgetc(mf);
+
+    if(!(c & 0x80))
+      pos++;
+    else
+    {
+      c &= ~0x80;
+      pos += c;
+      mfgetc(mf);
+    }
+  }
+  return (mf->current < mf->end);
+}
+
+static boolean load_rle(char **dest, uint16_t *width, uint16_t *height,
+ struct memfile *mf)
+{
+  uint16_t w = mfgetw(mf);
+  uint16_t h = mfgetw(mf);
+  size_t size = w * h;
+  size_t runsize;
+  size_t i;
+  char *plane;
+
+  if(size > MAX_BOARD_SIZE)
+    return false;
+
+  plane = cmalloc(size);
+
+  for(i = 0; i < size && mf->current < mf->end; i++)
+  {
+    unsigned char c = (unsigned char)mfgetc(mf);
+    if(!(c & 0x80))
+    {
+      // Regular character
+      plane[i] = (char)c;
+    }
+    else
+    {
+      // A run
+      runsize = (c & 0x7F);
+      if((i + runsize) > size)
+      {
+        free(plane);
+        return false;
+      }
+
+      memset(plane + i, mfgetc(mf), runsize);
+      i += (runsize - 1);
+    }
+  }
+
+  if(mf->current < mf->end)
+  {
+    *dest = plane;
+    *width = w;
+    *height = h;
+    return true;
+  }
+
+  free(plane);
+  return false;
+}
+
+static enum status parse_legacy_board(struct memfile *mf,
+ struct base_file *file, int board_num)
+{
+  int i, num_robots, skip_bytes;
   unsigned short board_mod_len;
   enum status ret = SUCCESS;
   char board_mod[MAX_PATH];
+  char *level_id = NULL;
+  char *level_param = NULL;
+  uint16_t width;
+  uint16_t height;
 
   // junk the undocumented (and unused) board_mode
   mfgetc(mf);
@@ -1091,32 +1360,44 @@ static enum status parse_legacy_board(struct memfile *mf,
   {
     // junk overlay_mode
     mfgetc(mf);
-    skip_rle_blocks += 2;
+
+    // Skip overlay char and color RLE blocks.
+    if(!skip_rle(mf) || !skip_rle(mf))
+      return FREAD_FAILED;
   }
 
-  // this skips either 6 blocks (with no overlay)
-  // ..or 8 blocks (with overlay enabled on board)
-  for(i = 0; i < skip_rle_blocks; i++)
+  // NOTE: Robot xpos and ypos variables were always set to 0 in DOS-era worlds
+  // and can't be trusted. Instead, the level_id/level_param arrays need to be
+  // unpacked and scanned.
+
+  // level_id, level_color, level_param,
+  // level_under_id, level_under_color, level_under_param
+  if( !load_rle(&level_id, &width, &height, mf)
+   || !skip_rle(mf)
+   || !load_rle(&level_param, &width, &height, mf)
+   || !skip_rle(mf)
+   || !skip_rle(mf)
+   || !skip_rle(mf))
   {
-    unsigned short w = mfgetw(mf);
-    unsigned short h = mfgetw(mf);
-    int pos = 0;
+    free(level_id);
+    free(level_param);
+    return FREAD_FAILED;
+  }
 
-    /* RLE "decoder"; just to skip stuff */
-    while(pos < w * h)
+  if(level_id && level_param)
+  {
+    for(i = 0; i < (int)(width * height); i++)
     {
-      unsigned char c = (unsigned char)mfgetc(mf);
-
-      if(!(c & 0x80))
-        pos++;
-      else
+      if(is_robot((enum thing)level_id[i]))
       {
-        c &= ~0x80;
-        pos += c;
-        mfgetc(mf);
+        unsigned char param = (unsigned char)level_param[i];
+        robot_xpos[param] = (i % width);
+        robot_ypos[param] = (i / width);
       }
     }
   }
+  free(level_id);
+  free(level_param);
 
   // get length of board MOD string
   if(file->world_version < V283)
@@ -1134,7 +1415,7 @@ static enum status parse_legacy_board(struct memfile *mf,
   if(strlen(board_mod) > 0 && strcmp(board_mod, "*"))
   {
     debug("BOARD MOD: %s\n", board_mod);
-    add_requirement(board_mod, file);
+    add_requirement_board(board_mod, file, board_num, IS_BOARD_MOD);
   }
 
   if(file->world_version < V283)
@@ -1150,7 +1431,7 @@ static enum status parse_legacy_board(struct memfile *mf,
   num_robots = mfgetc(mf);
   for(i = 0; i < num_robots; i++)
   {
-    ret = parse_legacy_robot(mf, file);
+    ret = parse_legacy_robot(mf, file, board_num, i + 1);
     if(ret != SUCCESS)
       break;
   }
@@ -1204,7 +1485,7 @@ static enum status parse_legacy_world(struct memfile *mf,
           return FREAD_FAILED;
         sfx_buf[sfx_len] = 0;
 
-        ret = parse_sfx(sfx_buf, file);
+        ret = parse_sfx(sfx_buf, file, IS_SFX, i, -1);
         if(ret != SUCCESS)
           return ret;
       }
@@ -1251,7 +1532,7 @@ static enum status parse_legacy_world(struct memfile *mf,
       return FSEEK_FAILED;
 
     // parse this board atomically
-    ret = parse_legacy_board(mf, file);
+    ret = parse_legacy_board(mf, file, i);
     if(ret != SUCCESS)
       goto err_out;
   }
@@ -1262,7 +1543,7 @@ static enum status parse_legacy_world(struct memfile *mf,
   if(mfseek(mf, global_robot_offset, SEEK_SET) != 0)
     return FSEEK_FAILED;
 
-  ret = parse_legacy_robot(mf, file);
+  ret = parse_legacy_robot(mf, file, -1, 0);
 
 err_out:
   return ret;
@@ -1273,7 +1554,8 @@ err_out:
 /* Modern Worlds */
 /*****************/
 
-static enum status parse_robot_info(struct memfile *mf, struct base_file *file)
+static enum status parse_robot_info(struct memfile *mf, struct base_file *file,
+ int board_num, int robot_num)
 {
   struct memfile prop;
   int ident;
@@ -1281,14 +1563,29 @@ static enum status parse_robot_info(struct memfile *mf, struct base_file *file)
 
   while(next_prop(&prop, &ident, &len, mf))
   {
-    if(ident == RPROP_PROGRAM_BYTECODE)
-      return parse_legacy_bytecode(&prop, (unsigned int)len, file);
+    switch(ident)
+    {
+      // These vars are more reliable in ZIP worlds than they were prior,
+      // and can be trusted instead of scanning the board data.
+      case RPROP_XPOS:
+        robot_xpos[(unsigned char)robot_num] = load_prop_int(len, &prop);
+        break;
+
+      case RPROP_YPOS:
+        robot_ypos[(unsigned char)robot_num] = load_prop_int(len, &prop);
+        break;
+
+      case RPROP_PROGRAM_BYTECODE:
+        return parse_legacy_bytecode(&prop, (unsigned int)len, file,
+         board_num, robot_num);
+    }
   }
 
   return SUCCESS;
 }
 
-static enum status parse_board_info(struct memfile *mf, struct base_file *file)
+static enum status parse_board_info(struct memfile *mf, struct base_file *file,
+ int board_num)
 {
   struct memfile prop;
   int ident;
@@ -1308,7 +1605,7 @@ static enum status parse_board_info(struct memfile *mf, struct base_file *file)
           mfread(buffer, len, 1, &prop);
           buffer[len] = 0;
 
-          add_requirement(buffer, file);
+          add_requirement_board(buffer, file, board_num, IS_BOARD_MOD);
         }
         break;
       }
@@ -1320,7 +1617,8 @@ static enum status parse_board_info(struct memfile *mf, struct base_file *file)
           mfread(buffer, len, 1, &prop);
           buffer[len] = 0;
 
-          add_requirement(buffer, file);
+          add_requirement_board(buffer, file, board_num,
+           (ident == BPROP_CHARSET_PATH) ? IS_BOARD_CHARSET : IS_BOARD_PALETTE);
         }
         break;
       }
@@ -1346,7 +1644,7 @@ static enum status parse_sfx_file(struct memfile *mf, struct base_file *file)
 
     sfx_buf[LEGACY_SFX_SIZE] = 0;
 
-    ret = parse_sfx(sfx_buf, file);
+    ret = parse_sfx(sfx_buf, file, IS_SFX, i, -1);
     if(ret != SUCCESS)
       return ret;
   }
@@ -1364,6 +1662,8 @@ static enum status parse_world(struct memfile *mf, struct base_file *file,
   size_t actual_size;
   struct memfile buf_file;
   unsigned int file_id;
+  unsigned int board_id;
+  unsigned int robot_id;
 
   enum status ret = SUCCESS;
 
@@ -1375,7 +1675,7 @@ static enum status parse_world(struct memfile *mf, struct base_file *file,
 
   assign_fprops(zp, not_a_world);
 
-  while(ZIP_SUCCESS == zip_get_next_prop(zp, &file_id, NULL, NULL))
+  while(ZIP_SUCCESS == zip_get_next_prop(zp, &file_id, &board_id, &robot_id))
   {
     switch(file_id)
     {
@@ -1389,10 +1689,10 @@ static enum status parse_world(struct memfile *mf, struct base_file *file,
         mfopen(buffer, actual_size, &buf_file);
 
         if(file_id == FPROP_BOARD_INFO)
-          ret = parse_board_info(&buf_file, file);
+          ret = parse_board_info(&buf_file, file, (int)board_id);
 
         else if(file_id == FPROP_ROBOT)
-          ret = parse_robot_info(&buf_file, file);
+          ret = parse_robot_info(&buf_file, file, (int)board_id, (int)robot_id);
 
         else if(file_id == FPROP_WORLD_SFX)
           ret = parse_sfx_file(&buf_file, file);
@@ -1439,7 +1739,7 @@ static enum status parse_board_file(struct memfile *mf, struct base_file *file)
   file->world_version = file_version;
 
   if(file_version <= MZX_LEGACY_FORMAT_VERSION)
-    return parse_legacy_board(mf, file);
+    return parse_legacy_board(mf, file, -1);
 
   if(file_version <= MZX_VERSION)
     return parse_world(mf, file, 1);
@@ -1657,7 +1957,7 @@ static enum status parse_file(const char *file_name,
   clear_data(path_list, path_list_size,
    file_list, file_list_size);
 
-  if(!quiet_mode)
+  if(!display_filename_only)
    fprintf(stdout, "\nFinished processing '%s'.\n\n", file_name);
 
   fflush(stdout);
@@ -1735,35 +2035,59 @@ int main(int argc, char *argv[])
         }
       }
       else
-      if(!strcmp(param, "q"))
+
+      while(*param)
       {
-        quiet_mode = 1;
-      }
-      else
-      if(!strcmp(param, "a"))
-      {
-        display_found = 1;
-        display_created = 1;
-      }
-      else
-      if(!strcmp(param, "A"))
-      {
-        display_found = 0;
-        display_created = 1;
-      }
-      else
-      if(!strcmp(param, "h"))
-      {
-        if(i == 1)
+        switch(*param)
         {
-          fprintf(stderr, USAGE);
-          return SUCCESS;
+          case 'h':
+            fprintf(stderr, USAGE);
+            return SUCCESS;
+
+          case 'm':
+            display_found = false;
+            display_created = false;
+            break;
+
+          case 'A':
+            display_found = false;
+            display_created = true;
+            break;
+
+          case 'a':
+            display_found = true;
+            display_created = true;
+            break;
+
+          case 'r':
+            display_first_only = false;
+            display_filename_only = false;
+            break;
+
+          case 'u':
+            display_first_only = true;
+            display_filename_only = false;
+            break;
+
+          case '1':
+          case 'q':
+            display_first_only = true;
+            display_filename_only = true;
+            break;
+
+          case 'L':
+            sort_by = SORT_BY_LOCATION;
+            break;
+
+          case 'F':
+            sort_by = SORT_BY_FILENAME;
+            break;
+
+          default:
+            fprintf(stderr, "Unrecognized argument '%c'\n", *param);
+            return INVALID_ARGUMENTS;
         }
-      }
-      else
-      {
-        fprintf(stderr, "Unrecognized argument: -%s\n", param);
-        return INVALID_ARGUMENTS;
+        param++;
       }
     }
 
@@ -1797,5 +2121,6 @@ int main(int argc, char *argv[])
     fprintf(stderr, "ERROR: %s\n", decode_status(ret));
   }
 
+  fflush(stderr);
   return ret;
 }
