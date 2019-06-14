@@ -49,13 +49,25 @@ FEATURES
   It should perform significantly better and be more portable.
 + checkres now displays the board, sfx, and robot (with line and
   position on the board) each file was referenced in.
++ checkres can now be used with a directory as the base file.
+  Like a ZIP archive, checkres will recursively search the
+  directory for .MZX/.MZB files and display information for all
+  of them.
++ checkres has more display options: only display missing (-M)
+  (default), only display created (-C), only display found (-F),
+  also display missing (-m), also display created (-c), and also
+  display found (-f).
++ checkres can now display unused resources in a path/zip after
+  the other resources are listed (-u), or display only unused
+  resources (-U).
 + checkres can now display every reference to a particular
-  resource in a world instead of just the first (-r) (default).
-  An option has been added to display only the first reference
-  as in older versions (-u).
+  resource in a world instead of just the first with varying
+  levels of information (-vvv (default), -vv, -v). The option
+  -v is equivalent to older versions of checkres. Added -1 as
+  an alternate flag for -q.
 + checkres can now sort its output either by the name of the
-  expected resource file (-F) or by the location in the world
-  the file was referenced (-W) (default).
+  expected resource file (-N) (default) or by the location in
+  the world the file was referenced (-L).
 + checkres option flags can now be combined (e.g. -auL). This
   does not apply to the "-extra" and "-in" flags.
 - SDL 2 support for the overlay renderers has been removed. When
