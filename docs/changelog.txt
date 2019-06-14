@@ -49,6 +49,8 @@ FEATURES
   It should perform significantly better and be more portable.
 - SDL 2 support for the overlay renderers has been removed. When
   specified for video_output, softscale will be enabled instead.
+- Removed WAV from the list of board mod extensions. Attempting
+  to bypass this or using large WAV files now prints a warning.
 
 FIXES
 

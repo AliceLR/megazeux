@@ -36,6 +36,9 @@
 #include "SDL.h"
 #endif
 
+// If the WAV/SAM is larger than this, print a warning to the console.
+#define WARN_FILESIZE (1<<22)
+
 // WAV sample types
 
 #define SAMPLE_U8     0
@@ -372,7 +375,7 @@ static void* get_riff_chunk_by_id(FILE *fp, int filesize,
 static int load_sam_file(const char *file, struct wav_info *spec,
  Uint8 **audio_buf, Uint32 *audio_len)
 {
-  Uint32 source_length;
+  size_t source_length;
   void *buf;
   int ret = 0;
   FILE *fp;
@@ -381,6 +384,11 @@ static int load_sam_file(const char *file, struct wav_info *spec,
   if(!fp)
     goto exit_out;
   source_length = ftell_and_rewind(fp);
+  if(source_length > WARN_FILESIZE)
+  {
+    warn("Size of SAM file '%s' is %zu; OGG should be used instead.\n",
+     file, source_length);
+  }
 
   // Default to no loop
   spec->channels = 1;
@@ -418,6 +426,7 @@ static int load_wav_file(const char *file, struct wav_info *spec,
   Uint32 loop_start, loop_end;
   char *fmt_chunk, *smpl_chunk, tmp_buf[4];
   ssize_t sam_ext_pos = (ssize_t)strlen(file) - 4;
+  size_t file_size;
   int ret = 0;
   FILE *fp;
 #ifdef CONFIG_SDL
@@ -432,6 +441,14 @@ static int load_wav_file(const char *file, struct wav_info *spec,
   fp = fopen_unsafe(file, "rb");
   if(!fp)
     goto exit_out;
+
+  file_size = ftell_and_rewind(fp);
+  if(file_size > WARN_FILESIZE)
+  {
+    debug("This WAV is too big sempai OwO;;;\n");
+    warn("Size of WAV file '%s' is %zu; OGG should be used instead.\n",
+     file, file_size);
+  }
 
   // If it doesn't start with "RIFF", it's not a WAV file.
   if(fread(tmp_buf, 1, 4, fp) < 4)
