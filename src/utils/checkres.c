@@ -1147,7 +1147,7 @@ static void process_requirements(struct base_path **path_list,
           });
 
           // See: note above.
-          if(!display_unused && !display_wildcard)
+          if(found && !display_unused && !display_wildcard)
             break;
 
           continue;
