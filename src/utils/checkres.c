@@ -32,6 +32,8 @@
  "    FOUND:     the file is required and was found;\n"                       \
  "    NOT FOUND: the file is required and was not found;\n"                   \
  "    CREATED:   the file is required and wasn't found, but may be created;\n"\
+ "    CREATED??: as above, except more tenuous as this file may be created\n" \
+ "               only depending on the result of expressions/interpolation;\n"\
  "    WILDCARD:  the file is specified as part of a command that can only\n"  \
  "               be evaluated while MegaZeux is running, but potential\n"     \
  "               matches can be inferred contextually. This includes things\n"\
@@ -117,6 +119,7 @@ static const char *created_append = "CREATED";
 static const char *not_found_append = "NOT FOUND";
 static const char *unused_append = "UNUSED";
 static const char *wildcard_append = "WILDCARD";
+static const char *wildcard_created_append = "CREATED??";
 
 // Status options
 static boolean display_not_found = true;
@@ -390,7 +393,7 @@ static boolean get_wildcard_path(char dest[MAX_PATH], char *src)
     }
 
     else
-      dest[j++] = memtolower(src[i]);
+      dest[j++] = src[i];
   }
   dest[MIN(j, MAX_PATH - 1)] = 0;
   return true;
@@ -488,7 +491,7 @@ static boolean check_wildcard_path(const char *path, const char *wildcard)
 
       default:
       {
-        if(memtolower(path[p]) == next)
+        if(memtolower(path[p]) == memtolower(next))
         {
           state[pos].p++;
           state[pos].w = w;
@@ -918,7 +921,15 @@ static void build_zip_base_path_table(struct base_path *path,
 static void change_base_path_dir(struct base_path *current_path,
  const char *new_relative_path)
 {
+  size_t len;
   fsafetranslate(new_relative_path, current_path->relative_path);
+
+  len = strlen(current_path->relative_path);
+  if(current_path->relative_path[len - 1] != '/' && len < MAX_PATH - 1)
+  {
+    current_path->relative_path[len++] = '/';
+    current_path->relative_path[len] = '\0';
+  }
 }
 
 static struct base_path *add_base_path(const char *path_name,
@@ -1195,14 +1206,27 @@ static void process_requirements(struct base_path **path_list,
     else
     {
       // Try to find in the created resources table
-      // TODO: something for wildcards here...
       KHASH_FIND(RESOURCE, resource_table, req->path, req->path_len, res);
+
+      if(!res && resource_table)
+      {
+        // There might be wildcard created resources...
+        KHASH_ITER(RESOURCE, resource_table, res,
+        {
+          if(check_wildcard_path(req->path, res->path))
+            break;
+          res = NULL;
+        });
+      }
 
       if(res)
       {
+        const char *append =
+         (res->is_wildcard ? wildcard_created_append : created_append);
+
         if(display_created)
           output(req->parent->file_name, req->board_num, req->robot_num,
-           req->line_num, req->path, created_append, NULL);
+           req->line_num, req->path, append, NULL);
       }
       else
       {
@@ -1261,6 +1285,13 @@ static void process_requirements(struct base_path **path_list,
             // No "unused" directories either.
             if(len && file_path[len - 1] == '/')
               continue;
+
+            // Want to display this to the user as being in its relative path
+            if(path_list[j]->relative_path[0])
+            {
+              join_path(path_buffer, path_list[j]->relative_path, file_path);
+              file_path = path_buffer;
+            }
 
             if(display_unused && !bpf->used_wildcard)
             {
@@ -1420,6 +1451,8 @@ static enum status parse_sfx(char *sfx_buf, struct base_file *file,
 #define match_partial(s, reqv) ((world_version >= reqv) && \
  (fn_len >= sizeof(s)-1) && (!strncasecmp(function_counter, s, fn_len)))
 
+#define TERMINATE(s,slen) \
+ do{ if(s[slen - 1] == '\0') slen--; else s[slen]='\0'; }while(0)
 
 static enum status parse_legacy_bytecode(struct memfile *mf,
  unsigned int program_size, struct base_file *file, int board_num, int robot_num)
@@ -1471,6 +1504,8 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
           warnhere("Truncated command\n");
           return CORRUPT_WORLD;
         }
+        // Don't trust null termination from data read in
+        TERMINATE(src, src_len);
 
         fn_len = mfgetc(mf);
 
@@ -1487,9 +1522,8 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
           warnhere("Truncated command\n");
           return CORRUPT_WORLD;
         }
-
-        // Subtract off the null terminator
-        fn_len--;
+        // Don't trust null termination from data read in
+        TERMINATE(function_counter, fn_len);
 
         if(fn_len == 0)
           break;
@@ -1544,6 +1578,8 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
           warnhere("Truncated command\n");
           return CORRUPT_WORLD;
         }
+        // Don't trust null termination from data read in
+        TERMINATE(src, src_len);
 
         // ignore MOD *
         if(!strcmp(src, "*"))
@@ -1576,6 +1612,8 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
           warnhere("Truncated command\n");
           return CORRUPT_WORLD;
         }
+        // Don't trust null termination from data read in
+        TERMINATE(src, src_len);
 
         debug("SAM: %s\n", src);
         add_requirement_robot(src, file, board_num, robot_num, line_num);
@@ -1594,6 +1632,8 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
           warnhere("Truncated command\n");
           return CORRUPT_WORLD;
         }
+        // Don't trust null termination from data read in
+        TERMINATE(src, src_len);
 
         ret = parse_sfx(src, file, board_num, robot_num, line_num);
         if(ret != SUCCESS)
@@ -1613,6 +1653,8 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
             warnhere("Truncated command\n");
             return CORRUPT_WORLD;
           }
+        // Don't trust null termination from data read in
+        TERMINATE(src, src_len);
 
           fn_len = mfgetc(mf);
 
@@ -1664,6 +1706,16 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
           warnhere("Truncated command\n");
           return CORRUPT_WORLD;
         }
+        // Don't trust null termination from data read in
+        TERMINATE(src, src_len);
+
+        // ignore MOD *
+        if(!strcmp(src, "*"))
+          break;
+
+        // Clip filename.mod*
+        if(src[src_len - 1] == '*')
+          src[src_len - 1] = 0;
 
         debug("MOD FADE IN: %s\n", src);
         add_requirement_robot(src, file, board_num, robot_num, line_num);
@@ -1697,6 +1749,8 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
             warnhere("Truncated command\n");
             return CORRUPT_WORLD;
           }
+          // Don't trust null termination from data read in
+          TERMINATE(src, src_len);
 
           if(src[0] == '@')
           {
@@ -1727,6 +1781,8 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
           warnhere("Truncated command\n");
           return CORRUPT_WORLD;
         }
+        // Don't trust null termination from data read in
+        TERMINATE(src, src_len);
 
         if(src[0] == '+')
         {
@@ -1768,6 +1824,8 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
           warnhere("Truncated command\n");
           return CORRUPT_WORLD;
         }
+        // Don't trust null termination from data read in
+        TERMINATE(src, src_len);
 
         debug("LOAD PALETTE: %s\n", src);
         add_requirement_robot(src, file, board_num, robot_num, line_num);
@@ -1784,6 +1842,8 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
           warnhere("Truncated command\n");
           return CORRUPT_WORLD;
         }
+        // Don't trust null termination from data read in
+        TERMINATE(src, src_len);
 
         debug("SWAP WORLD: %s\n", src);
         add_requirement_robot(src, file, board_num, robot_num, line_num);
