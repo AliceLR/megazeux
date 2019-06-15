@@ -23,7 +23,19 @@
 
 #define USAGE \
  "Usage: checkres [options] " \
- "mzx/mzb/zip file [-extra path/zip file [-in relative path] ...] ... \n"   \
+ "mzx/mzb/dir/zip file [-extra path/zip file [-in relative path] ...] ... \n" \
+ "\n" \
+ "  checkres scans a MZX, MZB, or ZIP file (or a directory) for any file\n"   \
+ "  dependencies MegaZeux might encounter. This is useful to check e.g. if\n" \
+ "  all files are present before releasing a game. Each required or present\n"\
+ "  file may have one of the following statuses:\n\n"                         \
+ "    FOUND:     the file is required and was found;\n"                       \
+ "    NOT FOUND: the file is required and was not found;\n"                   \
+ "    CREATED:   the file is required and wasn't found, but may be created;\n"\
+ "    WILDCARD:  the file is specified as part of a command that can only\n"  \
+ "               be evaluated while MegaZeux is running, but potential\n"     \
+ "               matches can be inferred contextually;\n"                     \
+ "    UNUSED:    the file is present but is not used in any MZX/MZB file.\n"  \
  "\nGeneral options:\n" \
  " -h   Display this message and exit.\n"                                   \
  "\nStatus options:\n" \
@@ -32,10 +44,12 @@
  " -F   Only display found files.\n"                                        \
  " -M   Only display missing files (default).\n"                            \
  " -U   Only display unused files.\n"                                       \
+ " -W   Only display wildcard-matched files.\n"                             \
  " -c   Also display created files.\n"                                      \
  " -f   Also display found files.\n"                                        \
  " -m   Also display missing files.\n"                                      \
- " -u   Also display unused files (use after one of the above).\n"          \
+ " -u   Also display unused files.\n"                                       \
+ " -w   Also display wildcard-matched files.\n"                             \
  "\nDetail options:\n" \
  " -vvv Display all references with all information (default).\n"           \
  " -vv  Display all references with board# and robot#.\n"                   \
@@ -46,6 +60,7 @@
  " -L   Sort by location of reference: world, board#, robot#.\n"            \
  "\n"
 
+#include <ctype.h>
 #include <dirent.h>
 #include <stdlib.h>
 #include <string.h>
@@ -95,12 +110,14 @@ static const char *found_append = "FOUND";
 static const char *created_append = "CREATED";
 static const char *not_found_append = "NOT FOUND";
 static const char *unused_append = "UNUSED";
+static const char *wildcard_append = "WILDCARD";
 
 // Status options
 static boolean display_not_found = true;
 static boolean display_found = false;
 static boolean display_created = false;
 static boolean display_unused = false;
+static boolean display_wildcard = false;
 
 // Detail options
 static boolean display_filename_only = false;
@@ -245,6 +262,203 @@ static boolean is_simple_path(char *src)
   }
 
   return true;
+}
+
+static boolean get_wildcard_path(char dest[MAX_PATH], char *src)
+{
+  size_t len = strlen(src);
+  size_t i;
+  size_t j;
+
+  // No empty filename
+  if(len == 0)
+    return false;
+
+  // No strings.
+  if(len >= 1)
+    if(src[0] == '$')
+      return false;
+
+  for(i = 0, j = 0; i < len && j < MAX_PATH; i++)
+  {
+    if(src[i] == '&' && src[i+1] != '&')
+    {
+      char s = src[i + 1];
+      while(i < len)
+      {
+        i++;
+        if(src[i] == '&')
+          break;
+      }
+      // Due to an MZX bug, the end of the string is a valid terminator.
+      if(src[i] != '&' && src[i] != 0)
+        return false;
+
+      // String (assume interpolation for now)
+      if(s == '$')
+        dest[j++] = '*';
+
+      // Counter
+      else
+        dest[j++] = '#';
+    }
+    else
+
+    if(src[i] == '(')
+    {
+      // Expression
+      int level = 1;
+      while(i < len && level > 0)
+      {
+        i++;
+        if(src[i] == '(')
+          level++;
+        if(src[i] == ')')
+          level--;
+      }
+      if(level > 0)
+        return false;
+
+      dest[j++] = '#';
+    }
+    else
+
+    if(src[i] == '*')
+    {
+      // Escape %
+      dest[j++] = '|';
+      dest[j++] = '*';
+    }
+    else
+
+    if(src[i] == '#')
+    {
+      // Escape #
+      dest[j++] = '|';
+      dest[j++] = '#';
+    }
+    else
+
+    if(src[i] == '|')
+    {
+      // Escape | (can't use backslash because it'll be recognized as a
+      // path separator)
+      dest[j++] = '|';
+      dest[j++] = '|';
+    }
+
+    else
+      dest[j++] = memtolower(src[i]);
+  }
+  dest[MIN(j, MAX_PATH - 1)] = 0;
+  return true;
+}
+
+static boolean check_wildcard_path(const char *path, const char *wildcard)
+{
+#define MAX_STATE 1024
+#define MAX_ITER 1024
+  size_t iter = 0;
+  struct _state
+  {
+    uint16_t p;
+    uint16_t w;
+  }
+  state[MAX_STATE] = {0};
+  int pos = 0;
+
+  size_t wildcard_len = strlen(wildcard);
+  size_t path_len = strlen(path);
+  size_t i;
+  size_t p;
+  size_t w;
+  char next;
+
+  if(path_len > MAX_PATH)
+    return false;
+
+  while(pos >= 0)
+  {
+    iter++;
+    if(iter >= MAX_ITER) return -1;
+
+    p = state[pos].p;
+    w = state[pos].w;
+
+    if(p == path_len || w == wildcard_len)
+    {
+      // Skip trailing wildcards if they exist
+      while(wildcard[w] == '*') w++;
+
+      if(p == path_len && w == wildcard_len)
+        return true;
+
+      pos--;
+      continue;
+    }
+
+    next = wildcard[w++];
+
+    switch(next)
+    {
+      case '*':
+      {
+        // Skip duplicate wildcards if they exist, pop current state
+        while(wildcard[w] == '*') w++;
+        pos--;
+
+        for(i = p; i <= path_len; i++)
+        {
+          if(pos == MAX_STATE - 1) break;
+          pos++;
+          state[pos].p = i;
+          state[pos].w = w;
+        }
+        break;
+      }
+
+      case '#':
+      {
+        // Numeric
+        // Consume '-' if it exists, pop current state
+        if(path[p] == '-') p++;
+        pos--;
+
+        // Allow up to 10 digits to be consumed
+        for(i = p; i < MIN(p + 10, path_len); i++)
+        {
+          if(pos == MAX_STATE - 1) break;
+          if(isdigit(path[i]))
+          {
+            pos++;
+            state[pos].p = i + 1;
+            state[pos].w = w;
+          }
+          else
+            break;
+        }
+        break;
+      }
+
+      case '|':
+        next = wildcard[w++];
+        /* fall-through */
+
+      default:
+      {
+        if(memtolower(path[p]) == next)
+        {
+          state[pos].p++;
+          state[pos].w = w;
+        }
+        else
+          pos--;
+
+        break;
+      }
+    }
+  }
+  return false;
 }
 
 static void strcpy_fsafe(char *dest, const char *src)
@@ -449,6 +663,7 @@ struct base_path_file
   char file_path[MAX_PATH];
   int file_path_len;
   boolean used;
+  boolean used_wildcard;
 };
 
 KHASH_SET_INIT(BASE_PATH_FILE, struct base_path_file *, file_path, file_path_len)
@@ -476,6 +691,7 @@ struct resource
   int board_num;
   int robot_num;
   int line_num;
+  boolean is_wildcard;
   struct base_file *parent;
 };
 
@@ -486,19 +702,30 @@ static khash_t(RESOURCE) *requirement_table = NULL;
 static khash_t(RESOURCE) *resource_table = NULL;
 
 static struct resource *add_requirement_ext(char *src, struct base_file *file,
- int board_num, int robot_num, int line_num)
+ int board_num, int robot_num, int line_num, boolean allow_wildcard)
 {
   // A resource file required by a world/board.
-
   struct resource *req = NULL;
   char file_buffer[MAX_PATH];
+  char wildcard_buffer[MAX_PATH];
+  boolean is_wildcard = false;
 
   // Offset the required file's path with the relative path of its parent
-  join_path(file_buffer, file->relative_path, src);
+  // The file might require wildcard conversion first (if allowed)
+  if(!is_simple_path(src))
+  {
+    if(!allow_wildcard || !get_wildcard_path(wildcard_buffer, src))
+      return NULL;
+
+    join_path(file_buffer, file->relative_path, wildcard_buffer);
+    is_wildcard = true;
+  }
+  else
+    join_path(file_buffer, file->relative_path, src);
 
   KHASH_FIND(RESOURCE, requirement_table, file_buffer, strlen(file_buffer), req);
 
-  if(!req && is_simple_path(src))
+  if(!req)
   {
     req = malloc(sizeof(struct resource));
 
@@ -508,6 +735,7 @@ static struct resource *add_requirement_ext(char *src, struct base_file *file,
     req->board_num = board_num;
     req->robot_num = robot_num;
     req->line_num = line_num;
+    req->is_wildcard = is_wildcard;
     req->parent = file;
 
     if(!display_first_only)
@@ -524,18 +752,20 @@ static struct resource *add_requirement_ext(char *src, struct base_file *file,
 
     KHASH_ADD(RESOURCE, requirement_table, req);
   }
-
   return req;
 }
-/*
-static struct resource *add_requirement(char *src, struct base_file *file)
-{ return add_requirement_ext(src, file, -1, -1, -1); }
-*/
+
+static struct resource *add_requirement_sfx(char *src, struct base_file *file,
+ int board_num, int robot_num, int line_num)
+{
+  return add_requirement_ext(src, file, board_num, robot_num, line_num, false);
+}
+
 static struct resource *add_requirement_board(char *src, struct base_file *file,
  int board_num, int resource_type)
 {
   if(board_num < 0 || resource_type >= 0) return NULL;
-  return add_requirement_ext(src, file, board_num, resource_type, -1);
+  return add_requirement_ext(src, file, board_num, resource_type, -1, false);
 }
 
 static struct resource *add_requirement_robot(char *src, struct base_file *file,
@@ -545,22 +775,33 @@ static struct resource *add_requirement_robot(char *src, struct base_file *file,
    (board_num == NO_BOARD && robot_num != GLOBAL_ROBOT))
     return NULL;
 
-  return add_requirement_ext(src, file, board_num, robot_num, line_num);
+  return add_requirement_ext(src, file, board_num, robot_num, line_num, true);
 }
 
 static struct resource *add_resource(char *src, struct base_file *file)
 {
   // A filename found in Robotic code that may fulfill a requirement for a file.
-
   struct resource *res = NULL;
   char file_buffer[MAX_PATH];
+  char wildcard_buffer[MAX_PATH];
+  boolean is_wildcard = false;
 
   // Offset the required file's path with the relative path of its parent
-  join_path(file_buffer, file->relative_path, src);
+  // The file might require wildcard conversion first (if allowed)
+  if(!is_simple_path(src))
+  {
+    if(!get_wildcard_path(wildcard_buffer, src))
+      return NULL;
+
+    join_path(file_buffer, file->relative_path, wildcard_buffer);
+    is_wildcard = true;
+  }
+  else
+    join_path(file_buffer, file->relative_path, src);
 
   KHASH_FIND(RESOURCE, resource_table, file_buffer, strlen(file_buffer), res);
 
-  if(!res && is_simple_path(src))
+  if(!res)
   {
     res = malloc(sizeof(struct resource));
 
@@ -570,6 +811,7 @@ static struct resource *add_resource(char *src, struct base_file *file)
     res->board_num = -1;
     res->robot_num = -1;
     res->line_num = -1;
+    res->is_wildcard = is_wildcard;
     res->parent = NULL;
 
     // Calculate these values for the output table as we go along
@@ -601,6 +843,7 @@ static void add_base_path_file(struct base_path *path,
     entry->file_path[file_name_length] = '\0';
     entry->file_path_len = file_name_length;
     entry->used = false;
+    entry->used_wildcard = false;
 
     KHASH_ADD(BASE_PATH_FILE, path->file_list_table, entry);
 
@@ -657,13 +900,7 @@ static struct base_path *add_base_path(const char *path_name,
     new_path->zp = zp;
   }
   else
-
-  if(display_unused)
   {
-    // Only bother to construct a path tree if the user actually wants to see
-    // unused files. Otherwise, this is a waste of time (just stat the expected
-    // paths).
-
     if(!path_search(path_name, strlen(path_name), MAX_PATH_DEPTH,
      (void *)new_path, add_base_path_file_wr))
     {
@@ -780,12 +1017,15 @@ static int bpf_sort_fn(const void *A, const void *B)
 {
   const struct base_path_file *a = *(struct base_path_file **)A;
   const struct base_path_file *b = *(struct base_path_file **)B;
-  return strcmp(a->file_path, b->file_path);
+  return
+  (a->used_wildcard != b->used_wildcard) ? b->used_wildcard - a->used_wildcard :
+   strcmp(a->file_path, b->file_path);
 }
 
 static void process_requirements(struct base_path **path_list,
  int path_list_size)
 {
+#define FOUND_WILDCARD 2
   struct stat stat_info;
   struct base_path *current_path;
   struct base_path_file *bpf;
@@ -794,7 +1034,7 @@ static void process_requirements(struct base_path **path_list,
   char path_buffer[MAX_PATH];
   char *translated_path;
   size_t len;
-  int found;
+  boolean found;
   size_t i;
   int j;
 
@@ -833,7 +1073,7 @@ static void process_requirements(struct base_path **path_list,
   for(i = 0; i < num_reqs; i++)
   {
     req = req_sorted[i];
-    found = 0;
+    found = false;
 
     for(j = 0; j < path_list_size; j++)
     {
@@ -848,14 +1088,37 @@ static void process_requirements(struct base_path **path_list,
 
       if(current_path->file_list_table)
       {
-        // Try to find the file in the base path's hash table...
+        if(req->is_wildcard)
+        {
+          KHASH_ITER(BASE_PATH_FILE, current_path->file_list_table, bpf,
+          {
+            if(check_wildcard_path(bpf->file_path, translated_path))
+            {
+              bpf->used_wildcard = true;
+              found = FOUND_WILDCARD;
+
+              // If unused/wildcards are being displayed, every single thing
+              // this possibly matches needs to be detected. Otherwise, break
+              if(!display_unused && !display_wildcard)
+                break;
+            }
+          });
+
+          // See: note above.
+          if(!display_unused && !display_wildcard)
+            break;
+
+          continue;
+        }
+
+        // Normal resource: try to find the file in the base path's hash table
         KHASH_FIND(BASE_PATH_FILE, current_path->file_list_table,
          translated_path, strlen(translated_path), bpf);
 
         if(bpf)
         {
           bpf->used = true;
-          found = 1;
+          found = true;
           break;
         }
       }
@@ -867,11 +1130,19 @@ static void process_requirements(struct base_path **path_list,
 
         if(!stat(path_buffer, &stat_info))
         {
-          found = 1;
+          found = true;
           break;
         }
       }
     }
+
+    if(found == FOUND_WILDCARD)
+    {
+      if(display_wildcard)
+        output(req->parent->file_name, req->board_num, req->robot_num,
+         req->line_num, req->path, wildcard_append, current_path->actual_path);
+    }
+    else
 
     if(found)
     {
@@ -882,6 +1153,7 @@ static void process_requirements(struct base_path **path_list,
     else
     {
       // Try to find in the created resources table
+      // TODO: something for wildcards here...
       KHASH_FIND(RESOURCE, resource_table, req->path, req->path_len, res);
 
       if(res)
@@ -900,7 +1172,7 @@ static void process_requirements(struct base_path **path_list,
   }
   free(req_sorted);
 
-  if(display_unused)
+  if(display_unused || display_wildcard)
   {
     // Now go through all of the base paths and print the files that aren't
     // actually used by anything... yikes.
@@ -932,18 +1204,34 @@ static void process_requirements(struct base_path **path_list,
 
           for(k = 0; k < i; k++)
           {
-            const char *file_path = bpf_sorted[k]->file_path;
+            const char *file_path;
+            size_t len;
+            bpf = bpf_sorted[k];
+            file_path = bpf->file_path;
 
-            // Don't print "unused" MZX/MZB files or directories.
-            size_t len = strlen(file_path);
+            // Don't print "unused" MZX/MZB files.
+            len = strlen(file_path);
             if(len > 4 &&
              (!strcasecmp(file_path + len - 4, ".MZX") ||
-              !strcasecmp(file_path + len - 4, ".MZB") ||
-              file_path[len - 1] == '/'))
+              !strcasecmp(file_path + len - 4, ".MZB")))
               continue;
 
-            output("", DONT_PRINT, -1, -1, bpf_sorted[k]->file_path,
-             unused_append, current_path->actual_path);
+            // No "unused" directories either.
+            if(len && file_path[len - 1] == '/')
+              continue;
+
+            if(display_unused && !bpf->used_wildcard)
+            {
+              output("", DONT_PRINT, -1, -1, file_path, unused_append,
+               current_path->actual_path);
+            }
+            else
+
+            if(display_wildcard && bpf->used_wildcard)
+            {
+              output("", DONT_PRINT, -1, -1, file_path, wildcard_append,
+               current_path->actual_path);
+            }
           }
         }
       }
@@ -1078,8 +1366,7 @@ static enum status parse_sfx(char *sfx_buf, struct base_file *file,
     *end = 0;
 
     debug("SFX (class): %s\n", start + 1);
-
-    add_requirement_ext(start + 1, file, board_num, robot_num, line_num);
+    add_requirement_sfx(start + 1, file, board_num, robot_num, line_num);
   }
 
   return ret;
@@ -2303,6 +2590,7 @@ int main(int argc, char *argv[])
             display_found = false;
             display_created = true;
             display_unused = false;
+            display_wildcard = false;
             break;
 
           case 'C':
@@ -2310,6 +2598,7 @@ int main(int argc, char *argv[])
             display_found = false;
             display_created = true;
             display_unused = false;
+            display_wildcard = false;
             break;
 
           case 'F':
@@ -2317,6 +2606,7 @@ int main(int argc, char *argv[])
             display_found = true;
             display_created = false;
             display_unused = false;
+            display_wildcard = false;
             break;
 
           case 'M':
@@ -2324,6 +2614,7 @@ int main(int argc, char *argv[])
             display_found = false;
             display_created = false;
             display_unused = false;
+            display_wildcard = false;
             break;
 
           case 'U':
@@ -2331,6 +2622,15 @@ int main(int argc, char *argv[])
             display_found = false;
             display_created = false;
             display_unused = true;
+            display_wildcard = false;
+            break;
+
+          case 'W':
+            display_not_found = false;
+            display_found = false;
+            display_created = false;
+            display_unused = false;
+            display_wildcard = true;
             break;
 
           case 'a':
@@ -2338,6 +2638,7 @@ int main(int argc, char *argv[])
             display_found = true;
             display_created = true;
             display_unused = true;
+            display_wildcard = true;
             break;
 
           case 'c':
@@ -2354,6 +2655,10 @@ int main(int argc, char *argv[])
 
           case 'u':
             display_unused = true;
+            break;
+
+          case 'w':
+            display_wildcard = true;
             break;
 
           case 'v':
