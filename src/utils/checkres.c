@@ -34,7 +34,8 @@
  "    CREATED:   the file is required and wasn't found, but may be created;\n"\
  "    WILDCARD:  the file is specified as part of a command that can only\n"  \
  "               be evaluated while MegaZeux is running, but potential\n"     \
- "               matches can be inferred contextually;\n"                     \
+ "               matches can be inferred contextually. This includes things\n"\
+ "               like DOS truncated filenames (e.g. FF-DAR~1.MOD).\n"         \
  "    UNUSED:    the file is present but is not used in any MZX/MZB file.\n"  \
  "\nGeneral options:\n" \
  " -h   Display this message and exit.\n"                                   \
@@ -73,6 +74,8 @@
 #endif
 
 // Defines so checkres builds when this is included.
+// This is because khashmzx.h uses the check_alloc functions (CORE_LIBSPEC)
+// and memcasecmp.h (which needs platform_endian.h and thus SDL_endian.h).
 #define SKIP_SDL
 #define CORE_LIBSPEC
 #include "../../contrib/khash/khashmzx.h"
@@ -81,11 +84,14 @@
 
 // Safe- self sufficient or completely macros/static inlines
 #include "../const.h"
+#include "../memcasecmp.h"
 #include "../memfile.h"
 #include "../world_format.h"
 #include "../zip.h"
 
-// Avoid CORE_LIBSPEC functions
+// Contains some CORE_LIBSPEC functions, which should be fine if the object
+// is included in linking due to the CORE_LIBSPEC define above. Right now,
+// checkres needs fsafeopen.o and util.o.
 #include "../fsafeopen.h"
 #include "../util.h"
 #include "../world.h"
@@ -151,6 +157,10 @@ enum status
   MISSING_FILE
 };
 
+#define warnhere(...) \
+ do{ fprintf(stderr, "At " __FILE__ ":%d: ", __LINE__); \
+  fprintf(stderr, "" __VA_ARGS__); fflush(stderr); }while(0)
+
 // MegaZeux's obtuse architecture requires this for the time being.
 // This function is used in out_of_memory_check (util.c), and check alloc
 // is required by zip.c (as it should be). util.c is also required by the
@@ -167,7 +177,7 @@ static const char *decode_status(enum status status)
   switch(status)
   {
     case CORRUPT_WORLD:
-      return "Random world corruption.";
+      return "World corruption or truncation detected.";
     case FOPEN_FAILED:
       return "Could not open file.";
     case GET_PATH_FAILED:
@@ -233,7 +243,7 @@ static void join_path(char *dest, const char *dir, const char *file)
   dest[MAX_PATH - 1] = 0;
 }
 
-static boolean is_simple_path(char *src)
+static boolean is_simple_path(char *src, boolean allow_expressions)
 {
   size_t len = strlen(src);
   unsigned int i;
@@ -252,15 +262,32 @@ static boolean is_simple_path(char *src)
     // No interpolation. A single & at the end of an expression is a
     // valid interpolation due to a longstanding MZX bug.
 
-    if(src[i] == '&')
+    if(allow_expressions && src[i] == '&')
       if(i+1 == len || src[i+1] != '&')
         return false;
 
     // No expressions.
-    if(src[i] == '(')
+    if(allow_expressions && src[i] == '(')
       return false;
   }
 
+  // No truncated DOS filenames (attempt to wildcard these)
+  if(len <= 12)
+  {
+    const char *tpos = strchr(src, '~');
+    if(tpos)
+    {
+      while(*(++tpos))
+      {
+        if(isdigit(*tpos)) continue;
+        if(*tpos == '.' || *tpos == '\0')
+        {
+          info("wildcard me pls: %s\n", src);
+          return false;
+        }
+      }
+    }
+  }
   return true;
 }
 
@@ -320,6 +347,25 @@ static boolean get_wildcard_path(char dest[MAX_PATH], char *src)
         return false;
 
       dest[j++] = '#';
+    }
+    else
+
+    if(src[i] == '~')
+    {
+      // Truncated DOS filename--replace ~### with wildcard
+      size_t backup = i;
+      info("ty\n");
+      if(i + 1 < len && isdigit(src[i + 1]))
+      {
+        while(i + 1 < len && isdigit(src[i + 1])) i++;
+        if(i + 1 >= len || src[i + 1] == '.')
+        {
+          dest[j++] = '*';
+          continue;
+        }
+      }
+      i = backup;
+      dest[j++] = '~';
     }
     else
 
@@ -702,7 +748,7 @@ static khash_t(RESOURCE) *requirement_table = NULL;
 static khash_t(RESOURCE) *resource_table = NULL;
 
 static struct resource *add_requirement_ext(char *src, struct base_file *file,
- int board_num, int robot_num, int line_num, boolean allow_wildcard)
+ int board_num, int robot_num, int line_num, boolean allow_expressions)
 {
   // A resource file required by a world/board.
   struct resource *req = NULL;
@@ -712,9 +758,9 @@ static struct resource *add_requirement_ext(char *src, struct base_file *file,
 
   // Offset the required file's path with the relative path of its parent
   // The file might require wildcard conversion first (if allowed)
-  if(!is_simple_path(src))
+  if(!is_simple_path(src, allow_expressions))
   {
-    if(!allow_wildcard || !get_wildcard_path(wildcard_buffer, src))
+    if(!get_wildcard_path(wildcard_buffer, src))
       return NULL;
 
     join_path(file_buffer, file->relative_path, wildcard_buffer);
@@ -788,7 +834,7 @@ static struct resource *add_resource(char *src, struct base_file *file)
 
   // Offset the required file's path with the relative path of its parent
   // The file might require wildcard conversion first (if allowed)
-  if(!is_simple_path(src))
+  if(!is_simple_path(src, true))
   {
     if(!get_wildcard_path(wildcard_buffer, src))
       return NULL;
@@ -1396,12 +1442,18 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
 
   // skip 0xff marker
   if(mfgetc(mf) != 0xff)
+  {
+    warnhere("Invalid program start byte\n");
     return CORRUPT_WORLD;
+  }
 
   while(1)
   {
     if(mftell(mf) >= (long int)program_size)
+    {
+      warnhere("Program exceeded expected length\n");
       return CORRUPT_WORLD;
+    }
 
     command_length = mfgetc(mf);
     if(command_length == 0)
@@ -1419,7 +1471,10 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
         src_len = mfgetc(mf);
 
         if(mfread(src, 1, src_len, mf) != src_len)
-          return FREAD_FAILED;
+        {
+          warnhere("Truncated command\n");
+          return CORRUPT_WORLD;
+        }
 
         fn_len = mfgetc(mf);
 
@@ -1432,7 +1487,10 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
 
         // String parameter
         if(mfread(function_counter, 1, fn_len, mf) != fn_len)
-          return FREAD_FAILED;
+        {
+          warnhere("Truncated command\n");
+          return CORRUPT_WORLD;
+        }
 
         // Subtract off the null terminator
         fn_len--;
@@ -1486,7 +1544,10 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
         src_len = mfgetc(mf);
 
         if(mfread(src, 1, src_len, mf) != src_len)
-          return FREAD_FAILED;
+        {
+          warnhere("Truncated command\n");
+          return CORRUPT_WORLD;
+        }
 
         // ignore MOD *
         if(!strcmp(src, "*"))
@@ -1515,7 +1576,10 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
         src_len = mfgetc(mf);
 
         if(mfread(src, 1, src_len, mf) != src_len)
-          return FREAD_FAILED;
+        {
+          warnhere("Truncated command\n");
+          return CORRUPT_WORLD;
+        }
 
         debug("SAM: %s\n", src);
         add_requirement_robot(src, file, board_num, robot_num, line_num);
@@ -1530,7 +1594,10 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
         src_len = mfgetc(mf);
 
         if(mfread(src, 1, src_len, mf) != src_len)
-          return FREAD_FAILED;
+        {
+          warnhere("Truncated command\n");
+          return CORRUPT_WORLD;
+        }
 
         ret = parse_sfx(src, file, board_num, robot_num, line_num);
         if(ret != SUCCESS)
@@ -1546,7 +1613,10 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
         if(src_len != 0)
         {
           if(mfread(src, 1, src_len, mf) != src_len)
-            return FREAD_FAILED;
+          {
+            warnhere("Truncated command\n");
+            return CORRUPT_WORLD;
+          }
 
           fn_len = mfgetc(mf);
 
@@ -1594,7 +1664,10 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
         src_len = mfgetc(mf);
 
         if(mfread(src, 1, src_len, mf) != src_len)
-          return FREAD_FAILED;
+        {
+          warnhere("Truncated command\n");
+          return CORRUPT_WORLD;
+        }
 
         debug("MOD FADE IN: %s\n", src);
         add_requirement_robot(src, file, board_num, robot_num, line_num);
@@ -1624,7 +1697,10 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
         if(src_len != 0)
         {
           if(mfread(src, 1, src_len, mf) != src_len)
-            return FREAD_FAILED;
+          {
+            warnhere("Truncated command\n");
+            return CORRUPT_WORLD;
+          }
 
           if(src[0] == '@')
           {
@@ -1651,7 +1727,10 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
         src_len = mfgetc(mf);
 
         if(mfread(src, 1, src_len, mf) != src_len)
-          return FREAD_FAILED;
+        {
+          warnhere("Truncated command\n");
+          return CORRUPT_WORLD;
+        }
 
         if(src[0] == '+')
         {
@@ -1689,7 +1768,10 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
         src_len = mfgetc(mf);
 
         if(mfread(src, 1, src_len, mf) != src_len)
-          return FREAD_FAILED;
+        {
+          warnhere("Truncated command\n");
+          return CORRUPT_WORLD;
+        }
 
         debug("LOAD PALETTE: %s\n", src);
         add_requirement_robot(src, file, board_num, robot_num, line_num);
@@ -1702,7 +1784,10 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
         src_len = mfgetc(mf);
 
         if(mfread(src, 1, src_len, mf) != src_len)
-          return FREAD_FAILED;
+        {
+          warnhere("Truncated command\n");
+          return CORRUPT_WORLD;
+        }
 
         debug("SWAP WORLD: %s\n", src);
         add_requirement_robot(src, file, board_num, robot_num, line_num);
@@ -1712,7 +1797,10 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
       default:
       {
         if(mfseek(mf, command_length - 1, SEEK_CUR) != 0)
-          return FSEEK_FAILED;
+        {
+          warnhere("Truncated command\n");
+          return CORRUPT_WORLD;
+        }
         break;
       }
     }
@@ -1721,7 +1809,10 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
       return ret;
 
     if(mfgetc(mf) != command_length)
+    {
+      warnhere("Command start length != end length\n");
       return CORRUPT_WORLD;
+    }
   }
 
   return ret;
@@ -1841,7 +1932,9 @@ static enum status parse_legacy_board(struct memfile *mf,
   int i, num_robots, skip_bytes;
   unsigned short board_mod_len;
   enum status ret = SUCCESS;
-  char board_mod[MAX_PATH];
+  // NOTE: the higher of the two possible MAX_PATH values that might have been
+  // used to store this.
+  char board_mod[512];
   char *level_id = NULL;
   char *level_param = NULL;
   uint16_t width;
@@ -1864,7 +1957,10 @@ static enum status parse_legacy_board(struct memfile *mf,
 
     // Skip overlay char and color RLE blocks.
     if(!skip_rle(mf) || !skip_rle(mf))
-      return FREAD_FAILED;
+    {
+      warnhere("Failed to unpack overlay RLE\n");
+      return CORRUPT_WORLD;
+    }
   }
 
   // NOTE: Robot xpos and ypos variables were always set to 0 in DOS-era worlds
@@ -1880,9 +1976,10 @@ static enum status parse_legacy_board(struct memfile *mf,
    || !skip_rle(mf)
    || !skip_rle(mf))
   {
+    warnhere("Failed to unpack board RLE\n");
     free(level_id);
     free(level_param);
-    return FREAD_FAILED;
+    return CORRUPT_WORLD;
   }
 
   if(level_id && level_param)
@@ -1906,9 +2003,21 @@ static enum status parse_legacy_board(struct memfile *mf,
   else
     board_mod_len = mfgetw(mf);
 
+  // In practice, the board mod could never be longer than this.
+  // If it is, something's wrong with the world file (e.g. 2.83 beta worlds
+  // have the 2.83 magic but expect a length of 12)
+  if(board_mod_len >= sizeof(board_mod))
+  {
+    warnhere("Board mod length invalid (%d)\n", board_mod_len);
+    return CORRUPT_WORLD;
+  }
+
   // grab board's default MOD
   if(mfread(board_mod, 1, board_mod_len, mf) != board_mod_len)
-    return FREAD_FAILED;
+  {
+    warnhere("Failed to read board mod (truncated)\n");
+    return CORRUPT_WORLD;
+  }
 
   board_mod[board_mod_len] = '\0';
 
@@ -1926,7 +2035,10 @@ static enum status parse_legacy_board(struct memfile *mf,
 
   // skip to the robot count
   if(mfseek(mf, skip_bytes, SEEK_CUR) != 0)
-    return FSEEK_FAILED;
+  {
+    warnhere("Failed to seek to start of robots\n");
+    return CORRUPT_WORLD;
+  }
 
   // walk the robot list, scan the robotic
   num_robots = mfgetc(mf);
@@ -1934,7 +2046,10 @@ static enum status parse_legacy_board(struct memfile *mf,
   {
     ret = parse_legacy_robot(mf, file, board_num, i + 1);
     if(ret != SUCCESS)
+    {
+      warnhere("Failed processing robot %d\n", i + 1);
       break;
+    }
   }
 
   return ret;
@@ -1957,7 +2072,10 @@ static enum status parse_legacy_world(struct memfile *mf,
 
   // Jump to the global robot offset
   if(mfseek(mf, LEGACY_WORLD_GLOBAL_OFFSET_OFFSET, SEEK_SET) != 0)
-    return FSEEK_FAILED;
+  {
+    warnhere("couldn't seek to global robot position (truncated)\n");
+    return CORRUPT_WORLD;
+  }
 
   // Absolute offset (in bytes) of global robot
   global_robot_offset = mfgetd(mf);
@@ -1978,17 +2096,26 @@ static enum status parse_legacy_world(struct memfile *mf,
     {
       sfx_len = mfgetc(mf);
       if(sfx_len > LEGACY_SFX_SIZE)
+      {
+        warnhere("invalid SFX length of %d\n", sfx_len);
         return CORRUPT_WORLD;
+      }
 
       if(sfx_len > 0)
       {
         if(mfread(sfx_buf, 1, sfx_len, mf) != (size_t)sfx_len)
-          return FREAD_FAILED;
+        {
+          warnhere("couldn't read SFX %d (truncated)\n", i);
+          return CORRUPT_WORLD;
+        }
         sfx_buf[sfx_len] = 0;
 
         ret = parse_sfx(sfx_buf, file, IS_SFX, i, -1);
         if(ret != SUCCESS)
+        {
+          warnhere("error parsing SFX %d\n", i);
           return ret;
+        }
       }
 
       // 1 for length byte + sfx string
@@ -1998,7 +2125,7 @@ static enum status parse_legacy_world(struct memfile *mf,
     // better check we moved by whole amount
     if(sfx_len_total != 0)
     {
-      debug("Failed sfx total check: remaining is %d\n", sfx_len_total);
+      warnhere("Failed sfx total check: remaining is %d\n", sfx_len_total);
       return CORRUPT_WORLD;
     }
 
@@ -2008,7 +2135,10 @@ static enum status parse_legacy_world(struct memfile *mf,
 
   // skip board names; we simply don't care
   if(mfseek(mf, num_boards * BOARD_NAME_SIZE, SEEK_CUR) != 0)
-    return FSEEK_FAILED;
+  {
+    warnhere("Failed to skip board names (truncated)\n");
+    return CORRUPT_WORLD;
+  }
 
   // grab the board sizes/offsets
   for(i = 0; i < num_boards; i++)
@@ -2030,21 +2160,32 @@ static enum status parse_legacy_world(struct memfile *mf,
 
     // seek to board offset within world
     if(mfseek(mf, board->offset, SEEK_SET) != 0)
-      return FSEEK_FAILED;
+    {
+      warnhere("Failed to seek to position of board %d\n", i);
+      return CORRUPT_WORLD;
+    }
 
     // parse this board atomically
     ret = parse_legacy_board(mf, file, i);
     if(ret != SUCCESS)
+    {
+      warnhere("Failed processing board %d\n", i);
       goto err_out;
+    }
   }
 
   debug("Global robot\n");
 
   // Do the global robot too..
   if(mfseek(mf, global_robot_offset, SEEK_SET) != 0)
-    return FSEEK_FAILED;
+  {
+    warnhere("Failed to seek to global robot position\n");
+    return CORRUPT_WORLD;
+  }
 
   ret = parse_legacy_robot(mf, file, -1, 0);
+  if(ret != SUCCESS)
+    warnhere("Failed processing global robot\n");
 
 err_out:
   return ret;
@@ -2390,7 +2531,13 @@ static enum status parse_file(const char *file_name,
       if(!strcasecmp(ext, ".MZX"))
       {
         buffer = malloc(actual_size);
-        zip_read_file(zp, buffer, actual_size, &actual_size);
+        if(ZIP_SUCCESS != zip_read_file(zp, buffer, actual_size, &actual_size))
+        {
+          warn("Error processing '%s': %s\n\n", name_buffer,
+           decode_status(ZIP_FAILED));
+          free(buffer);
+          continue;
+        }
 
         current_file = add_base_file(name_buffer,
          &file_list, &file_list_size, &file_list_alloc);
@@ -2400,8 +2547,13 @@ static enum status parse_file(const char *file_name,
 
         mfopen(buffer, actual_size, &mf);
 
-        // FIXME do something with ret
         ret = parse_world_file(&mf, current_file);
+        if(ret != SUCCESS)
+        {
+          // Keep going; other files in the archive may not be corrupt.
+          warn("Error processing '%s': %s\n\n", name_buffer, decode_status(ret));
+          ret = SUCCESS;
+        }
         free(buffer);
       }
       else
@@ -2409,7 +2561,13 @@ static enum status parse_file(const char *file_name,
       if(!strcasecmp(ext, ".MZB"))
       {
         buffer = malloc(actual_size);
-        zip_read_file(zp, buffer, actual_size, &actual_size);
+        if(ZIP_SUCCESS != zip_read_file(zp, buffer, actual_size, &actual_size))
+        {
+          warn("Error processing '%s': %s\n\n", name_buffer,
+           decode_status(ZIP_FAILED));
+          free(buffer);
+          continue;
+        }
 
         current_file = add_base_file(name_buffer,
          &file_list, &file_list_size, &file_list_alloc);
@@ -2419,8 +2577,13 @@ static enum status parse_file(const char *file_name,
 
         mfopen(buffer, actual_size, &mf);
 
-        // FIXME do something with ret
         ret = parse_board_file(&mf, current_file);
+        if(ret != SUCCESS)
+        {
+          // Keep going; other files in the archive may not be corrupt.
+          warn("Error processing '%s': %s\n\n", name_buffer, decode_status(ret));
+          ret = SUCCESS;
+        }
         free(buffer);
       }
 
@@ -2474,8 +2637,12 @@ static enum status parse_file(const char *file_name,
         free(buffer);
 
         if(ret != SUCCESS)
+        {
+          // Keep going; other files in the path may not be corrupt.
           warn("Error processing '%s': %s\n", current_file->file_name,
            decode_status(ret));
+          ret = SUCCESS;
+        }
       }
       else
         warn("Failed to open '%s' for reading\n", current_file->file_name);
