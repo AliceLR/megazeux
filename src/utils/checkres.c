@@ -281,10 +281,7 @@ static boolean is_simple_path(char *src, boolean allow_expressions)
       {
         if(isdigit(*tpos)) continue;
         if(*tpos == '.' || *tpos == '\0')
-        {
-          info("wildcard me pls: %s\n", src);
           return false;
-        }
       }
     }
   }
@@ -354,7 +351,6 @@ static boolean get_wildcard_path(char dest[MAX_PATH], char *src)
     {
       // Truncated DOS filename--replace ~### with wildcard
       size_t backup = i;
-      info("ty\n");
       if(i + 1 < len && isdigit(src[i + 1]))
       {
         while(i + 1 < len && isdigit(src[i + 1])) i++;
