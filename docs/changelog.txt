@@ -57,6 +57,9 @@ FEATURES
   (default), only display created (-C), only display found (-F),
   also display missing (-m), also display created (-c), and also
   display found (-f).
++ checkres can now wildcard match resources from commands that
+  use expressions or interpolation in filenames. This can be
+  enabled with -w or enabled exclusively with -W.
 + checkres can now display unused resources in a path/zip after
   the other resources are listed (-u), or display only unused
   resources (-U).
@@ -68,7 +71,7 @@ FEATURES
 + checkres can now sort its output either by the name of the
   expected resource file (-N) (default) or by the location in
   the world the file was referenced (-L).
-+ checkres option flags can now be combined (e.g. -auL). This
++ checkres option flags can now be combined (e.g. -aL). This
   does not apply to the "-extra" and "-in" flags.
 - SDL 2 support for the overlay renderers has been removed. When
   specified for video_output, softscale will be enabled instead.
