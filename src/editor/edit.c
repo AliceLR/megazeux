@@ -2854,7 +2854,7 @@ static boolean editor_key(context *ctx, int *key)
              "Choose a module file", 2)) // 2:subdirsonly
             {
               const char *ext_pos = new_mod + strlen(new_mod) - 4;
-              if(ext_pos > new_mod && !strcmp(ext_pos, ".wav"))
+              if(ext_pos >= new_mod && !strcasecmp(ext_pos, ".WAV"))
               {
                 error("Using OGG instead of WAV is recommended.",
                  ERROR_T_WARNING, ERROR_OPT_OK, 0xc0c5);
