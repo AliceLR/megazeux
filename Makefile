@@ -169,15 +169,28 @@ PTHREAD_LDFLAGS ?= -lpthread
 #
 # Set up general CFLAGS/LDFLAGS
 #
-
 OPTIMIZE_CFLAGS ?= -O3
 
 ifeq (${DEBUG},1)
 #
-# Disable the optimizer for "true" debug builds
+# Usually, just disable the optimizer for "true" debug builds and
+# define "DEBUG" to enable optional code at compile time.
 #
-CFLAGS   = -O0 -DDEBUG
-CXXFLAGS = -O0 -DDEBUG
+# Sanitizer builds turn on some optimizations for the sake of being usable.
+#
+ifeq (${SANITIZER},address)
+DEBUG_CFLAGS := -fsanitize=address -O1 -fno-omit-frame-pointer
+else ifeq (${SANITIZER},thread)
+DEBUG_CFLAGS := -fsanitize=thread -O2 -fno-omit-frame-pointer -fPIE -pie
+else ifeq (${SANITIZER},memory)
+DEBUG_CFLAGS := -fsanitize=memory -O1 -fno-omit-frame-pointer -fPIE -pie
+else
+DEBUG_CFLAGS ?= -O0
+endif
+
+CFLAGS   = ${DEBUG_CFLAGS} -DDEBUG
+CXXFLAGS = ${DEBUG_CFLAGS} -DDEBUG
+LDFLAGS += ${DEBUG_CFLAGS}
 else
 #
 # Optimized builds have assert() compiled out
