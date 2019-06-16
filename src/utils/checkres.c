@@ -246,7 +246,7 @@ static void join_path(char *dest, const char *dir, const char *file)
   dest[MAX_PATH - 1] = 0;
 }
 
-static boolean is_simple_path(char *src, boolean allow_expressions)
+static boolean is_simple_path(const char *src, boolean allow_expressions)
 {
   size_t len = strlen(src);
   unsigned int i;
@@ -291,6 +291,50 @@ static boolean is_simple_path(char *src, boolean allow_expressions)
   return true;
 }
 
+static const char *skip_expression(const char *src)
+{
+  int level = 0;
+  if(*src != '(')
+    return src;
+
+  do
+  {
+    if(*src == '(')
+      level++;
+    if(*src == ')')
+      level--;
+    src++;
+  }
+  while(*src && level > 0);
+
+  if(level == 0)
+    return src;
+
+  return NULL;
+}
+
+static const char *skip_interpolation(const char *src)
+{
+  if(*src != '&')
+    return src;
+  src++;
+
+  if(*src == '&')
+    return src;
+
+  // Due to an MZX bug, the end of the string is a valid terminator.
+  while(src && *src && *src != '&')
+  {
+    if(*src == '(')
+      src = skip_expression(src);
+    else
+      src++;
+  }
+  if(src && *src == '&')
+    src++;
+  return src;
+}
+
 static boolean get_wildcard_path(char dest[MAX_PATH], const char *src)
 {
   size_t len = strlen(src);
@@ -311,15 +355,11 @@ static boolean get_wildcard_path(char dest[MAX_PATH], const char *src)
     if(src[i] == '&' && src[i+1] != '&')
     {
       size_t start = i + 1;
-      while(i < len)
-      {
-        i++;
-        if(src[i] == '&')
-          break;
-      }
-      // Due to an MZX bug, the end of the string is a valid terminator.
-      if(src[i] != '&' && src[i] != 0)
+      const char *end = skip_interpolation(src + i);
+      if(!end)
         return false;
+
+      i = end - src - 1;
 
       // String (assume interpolation for now)
       if(src[start] == '$')
@@ -339,18 +379,11 @@ static boolean get_wildcard_path(char dest[MAX_PATH], const char *src)
     if(src[i] == '(')
     {
       // Expression
-      int level = 1;
-      while(i < len && level > 0)
-      {
-        i++;
-        if(src[i] == '(')
-          level++;
-        if(src[i] == ')')
-          level--;
-      }
-      if(level > 0)
+      const char *end = skip_expression(src + i);
+      if(!end)
         return false;
 
+      i = end - src - 1;
       dest[j++] = '#';
     }
     else
@@ -751,8 +784,9 @@ KHASH_SET_INIT(RESOURCE, struct resource *, path, key_len)
 static khash_t(RESOURCE) *requirement_table = NULL;
 static khash_t(RESOURCE) *resource_table = NULL;
 
-static struct resource *add_requirement_ext(char *src, struct base_file *file,
- int board_num, int robot_num, int line_num, boolean allow_expressions)
+static struct resource *add_requirement_ext(const char *src,
+ struct base_file *file, int board_num, int robot_num, int line_num,
+ boolean allow_expressions)
 {
   // A resource file required by a world/board.
   struct resource *req = NULL;
@@ -805,21 +839,21 @@ static struct resource *add_requirement_ext(char *src, struct base_file *file,
   return req;
 }
 
-static struct resource *add_requirement_sfx(char *src, struct base_file *file,
- int board_num, int robot_num, int line_num)
+static struct resource *add_requirement_sfx(const char *src,
+ struct base_file *file, int board_num, int robot_num, int line_num)
 {
   return add_requirement_ext(src, file, board_num, robot_num, line_num, false);
 }
 
-static struct resource *add_requirement_board(char *src, struct base_file *file,
- int board_num, int resource_type)
+static struct resource *add_requirement_board(const char *src,
+ struct base_file *file, int board_num, int resource_type)
 {
   if(board_num < 0 || resource_type >= 0) return NULL;
   return add_requirement_ext(src, file, board_num, resource_type, -1, false);
 }
 
-static struct resource *add_requirement_robot(char *src, struct base_file *file,
- int board_num, int robot_num, int line_num)
+static struct resource *add_requirement_robot(const char *src,
+ struct base_file *file, int board_num, int robot_num, int line_num)
 {
   if(robot_num < 0 || board_num < 0 ||
    (board_num == NO_BOARD && robot_num != GLOBAL_ROBOT))
@@ -828,7 +862,7 @@ static struct resource *add_requirement_robot(char *src, struct base_file *file,
   return add_requirement_ext(src, file, board_num, robot_num, line_num, true);
 }
 
-static struct resource *add_resource(char *src, struct base_file *file)
+static struct resource *add_resource(const char *src, struct base_file *file)
 {
   // A filename found in Robotic code that may fulfill a requirement for a file.
   struct resource *res = NULL;
@@ -1776,7 +1810,7 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
 
       case 216: // ROBOTIC_CMD_LOAD_CHAR_SET
       {
-        char *rest = src;
+        const char *rest = src;
 
         // Filename
         src_len = mfgetc(mf);
@@ -1794,7 +1828,7 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
           char tempc = src[3];
 
           src[3] = 0;
-          strtol(src + 1, &rest, 16);
+          strtol(src + 1, (char **)(&rest), 16);
           src[3] = tempc;
         }
 
@@ -1803,15 +1837,31 @@ static enum status parse_legacy_bytecode(struct memfile *mf,
           char tempc;
           int maxlen;
 
-          if(world_version < V290)
-            maxlen = 3;
+          if(src[1] == '&')
+          {
+            rest = skip_interpolation(src + 1);
+          }
           else
-            maxlen = 4;
 
-          tempc = src[maxlen+1];
-          src[maxlen+1] = 0;
-          strtol(src + 1, &rest, 10);
-          src[maxlen+1] = tempc;
+          if(src[1] == '(')
+          {
+            rest = skip_expression(src + 1);
+          }
+
+          else
+          {
+            if(world_version < V290)
+              maxlen = 3;
+            else
+              maxlen = 4;
+
+            tempc = src[maxlen+1];
+            src[maxlen+1] = 0;
+            strtol(src + 1, (char **)(&rest), 10);
+            src[maxlen+1] = tempc;
+          }
+          if(!rest)
+            rest = src;
         }
 
         debug("LOAD CHAR SET: %s\n", rest);
