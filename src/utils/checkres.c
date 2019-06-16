@@ -179,6 +179,8 @@ static const char *decode_status(enum status status)
 {
   switch(status)
   {
+    case INVALID_ARGUMENTS:
+      return "Invalid file or argument provided.";
     case CORRUPT_WORLD:
       return "World corruption or truncation detected.";
     case FOPEN_FAILED:
@@ -1058,7 +1060,7 @@ struct base_file_list_data
 static void base_file_found_fn(void *data, const char *name, size_t name_len)
 {
   struct base_file_list_data *d = (struct base_file_list_data *)data;
-  const char *ext = name_len > 4 ? name + name_len - 4 : NULL;
+  const char *ext = name_len >= 4 ? name + name_len - 4 : NULL;
 
   if(ext && (!strcasecmp(ext, ".MZX") || !strcasecmp(ext, ".MZB")))
   {
@@ -1316,7 +1318,7 @@ static void process_requirements(struct base_path **path_list,
 
             // Don't print "unused" MZX/MZB files.
             len = strlen(file_path);
-            if(len > 4 &&
+            if(len >= 4 &&
              (!strcasecmp(file_path + len - 4, ".MZX") ||
               !strcasecmp(file_path + len - 4, ".MZB")))
               continue;
@@ -2572,7 +2574,7 @@ static enum status parse_file(const char *file_name,
 
   fp = fopen_unsafe(file_name, "rb");
   len = strlen(file_name);
-  ext = len > 4 ? (char *)file_name + len - 4 : NULL;
+  ext = len >= 4 ? (char *)file_name + len - 4 : NULL;
 
   _get_path(file_dir, file_name);
 
@@ -2727,7 +2729,7 @@ static enum status parse_file(const char *file_name,
 
       fp = fopen_unsafe(name_buffer, "rb");
       len = strlen(current_file->file_name);
-      ext = len > 4 ? current_file->file_name + len - 4 : NULL;
+      ext = len >= 4 ? current_file->file_name + len - 4 : NULL;
       if(fp)
       {
         // NOTE: the relative paths of these are automatically added in
