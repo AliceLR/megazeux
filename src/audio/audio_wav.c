@@ -37,6 +37,8 @@
 #endif
 
 // If the WAV/SAM is larger than this, print a warning to the console.
+// (Right now only do this for debug builds because a lot more games than
+// anticipated use big WAVs and it could get annoying for end users.)
 #define WARN_FILESIZE (1<<22)
 
 // WAV sample types
@@ -386,7 +388,7 @@ static int load_sam_file(const char *file, struct wav_info *spec,
   source_length = ftell_and_rewind(fp);
   if(source_length > WARN_FILESIZE)
   {
-    warn("Size of SAM file '%s' is %zu; OGG should be used instead.\n",
+    debug("Size of SAM file '%s' is %zu; OGG should be used instead.\n",
      file, source_length);
   }
 
@@ -446,7 +448,7 @@ static int load_wav_file(const char *file, struct wav_info *spec,
   if(file_size > WARN_FILESIZE)
   {
     debug("This WAV is too big sempai OwO;;;\n");
-    warn("Size of WAV file '%s' is %zu; OGG should be used instead.\n",
+    debug("Size of WAV file '%s' is %zu; OGG should be used instead.\n",
      file, file_size);
   }
 
