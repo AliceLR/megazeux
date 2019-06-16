@@ -181,9 +181,11 @@ ifeq (${DEBUG},1)
 ifeq (${SANITIZER},address)
 DEBUG_CFLAGS := -fsanitize=address -O1 -fno-omit-frame-pointer
 else ifeq (${SANITIZER},thread)
-DEBUG_CFLAGS := -fsanitize=thread -O2 -fno-omit-frame-pointer -fPIE -pie
+DEBUG_CFLAGS := -fsanitize=thread -O2 -fno-omit-frame-pointer -fPIE
+ARCH_EXE_LDFLAGS += -pie
 else ifeq (${SANITIZER},memory)
-DEBUG_CFLAGS := -fsanitize=memory -O1 -fno-omit-frame-pointer -fPIE -pie
+DEBUG_CFLAGS := -fsanitize=memory -O1 -fno-omit-frame-pointer -fPIE
+ARCH_EXE_LDFLAGS += -pie
 else
 DEBUG_CFLAGS ?= -O0
 endif
