@@ -1159,7 +1159,6 @@ void insta_fadeout(void)
   for(i = 0; i < num_colors; i++)
     set_color_intensity(i, 0);
 
-  delay(1);
   graphics.palette_dirty = true;
   update_screen(); // NOTE: this was called conditionally in 2.81e
 
