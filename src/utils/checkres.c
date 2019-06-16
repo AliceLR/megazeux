@@ -291,7 +291,7 @@ static boolean is_simple_path(char *src, boolean allow_expressions)
   return true;
 }
 
-static boolean get_wildcard_path(char dest[MAX_PATH], char *src)
+static boolean get_wildcard_path(char dest[MAX_PATH], const char *src)
 {
   size_t len = strlen(src);
   size_t i;
@@ -310,7 +310,7 @@ static boolean get_wildcard_path(char dest[MAX_PATH], char *src)
   {
     if(src[i] == '&' && src[i+1] != '&')
     {
-      char s = src[i + 1];
+      size_t start = i + 1;
       while(i < len)
       {
         i++;
@@ -322,7 +322,12 @@ static boolean get_wildcard_path(char dest[MAX_PATH], char *src)
         return false;
 
       // String (assume interpolation for now)
-      if(s == '$')
+      if(src[start] == '$')
+        dest[j++] = '*';
+
+      // Special: INPUT is also a string when interpolated.
+      else
+      if(!strncasecmp(src + start, "INPUT", strlen("INPUT")))
         dest[j++] = '*';
 
       // Counter
