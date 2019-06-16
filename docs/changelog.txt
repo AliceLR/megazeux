@@ -101,6 +101,8 @@ DEVELOPERS
 + Added debug build sanitizer options for AddressSanitizer,
   MemorySanitizer, and ThreadSanitizer. MemorySanitizer requires
   clang and all currently require Linux/BSD/Mac OS X/similar.
+  Support for all three is very experimental; they may require
+  disabling options like modular builds or may not work at all.
 - Removed uthash as a build option.
 
 

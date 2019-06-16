@@ -184,7 +184,11 @@ else ifeq (${SANITIZER},thread)
 DEBUG_CFLAGS := -fsanitize=thread -O2 -fno-omit-frame-pointer -fPIE
 ARCH_EXE_LDFLAGS += -pie
 else ifeq (${SANITIZER},memory)
-DEBUG_CFLAGS := -fsanitize=memory -O1 -fno-omit-frame-pointer -fPIE
+# FIXME I don't think there's a way to make this one work properly right now.
+# SDL_Init generates an error immediately and if sanitize-recover is used it
+# seems to get stuck printing endless errors.
+DEBUG_CFLAGS := -fsanitize=memory -O1 -fno-omit-frame-pointer -fPIE \
+ -fsanitize-recover=memory -fsanitize-memory-track-origins
 ARCH_EXE_LDFLAGS += -pie
 else
 DEBUG_CFLAGS ?= -O0
