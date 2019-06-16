@@ -88,9 +88,9 @@ static const char *const chr_ext[] = { ".CHR", NULL };
 static const char *const pal_ext[] = { ".PAL", NULL };
 static const char *const idx_ext[] = { ".PALIDX", NULL };
 static const char *const mod_ext[] =
-{ ".ogg", ".mod", ".s3m", ".xm", ".it", ".gdm",
-  ".669", ".amf", ".dsm", ".far", ".med",
-  ".mtm", ".okt", ".stm", ".ult", ".wav",
+{ ".ogg", ".mod", ".s3m", ".xm", ".it",
+  ".669", ".amf", ".dsm", ".far", ".gdm",
+  ".med", ".mtm", ".okt", ".stm", ".ult",
   NULL
 };
 static const char *const sam_ext[] =
@@ -2853,6 +2853,13 @@ static boolean editor_key(context *ctx, int *key)
             if(!choose_file(mzx_world, mod_ext, new_mod,
              "Choose a module file", 2)) // 2:subdirsonly
             {
+              const char *ext_pos = new_mod + strlen(new_mod) - 4;
+              if(ext_pos >= new_mod && !strcasecmp(ext_pos, ".WAV"))
+              {
+                error("Using OGG instead of WAV is recommended.",
+                 ERROR_T_WARNING, ERROR_OPT_OK, 0xc0c5);
+              }
+
               strcpy(cur_board->mod_playing, new_mod);
               strcpy(mzx_world->real_mod_playing, new_mod);
               fix_mod(editor);
