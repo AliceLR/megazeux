@@ -98,6 +98,11 @@ DEVELOPERS
   opengl2 and glsl. This provides a tiny performance improvement
   on most cards and a massive performance improvement on some
   other cards. (Lancer-X)
++ Added debug build sanitizer options for AddressSanitizer,
+  MemorySanitizer, and ThreadSanitizer. MemorySanitizer requires
+  clang and all currently require Linux/BSD/Mac OS X/similar.
+  Support for all three is very experimental; they may require
+  disabling options like modular builds or may not work at all.
 - Removed uthash as a build option.
 
 
