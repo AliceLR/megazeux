@@ -210,12 +210,9 @@ static int zip_uncompress(char *dest, uint32_t *destLen, const char *src,
   int err;
 
   // Following uncompr.c from zlib pretty closely here...
+  memset(&stream, 0, sizeof(z_stream));
   stream.next_in = (Bytef *) src;
   stream.avail_in = (uInt) *srcLen;
-
-  stream.zalloc = (alloc_func)0;
-  stream.zfree = (free_func)0;
-  stream.opaque = (voidpf)0;
 
   /* The reason we can't just use uncompress() is because there's no way
    * to assign the number of window bits with it, and uncompress() expects
@@ -245,9 +242,7 @@ static int zip_compress(char **dest, uint32_t *destLen, const char *src,
   int _destLen;
   int err;
 
-  stream.zalloc = (alloc_func)0;
-  stream.zfree = (free_func)0;
-  stream.opaque = (voidpf)0;
+  memset(&stream, 0, sizeof(z_stream));
 
   /* The reason we can't just use compress() is because there's no way
    * to assign the number of window bits with it, and compress() expects
@@ -288,12 +283,9 @@ int zip_bound_data_usage(char *src, int srcLen)
   z_stream stream;
   int bound;
 
+  memset(&stream, 0, sizeof(z_stream));
   stream.next_in = (Bytef *) src;
   stream.avail_in = (uInt) srcLen;
-
-  stream.zalloc = (alloc_func)0;
-  stream.zfree = (free_func)0;
-  stream.opaque = (voidpf)0;
 
   // Note: aside from the windowbits, these are all defaults
   deflateInit2(&stream, Z_DEFAULT_COMPRESSION, Z_DEFLATED, -MAX_WBITS,
