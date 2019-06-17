@@ -795,7 +795,7 @@ static struct resource *add_requirement_ext(const char *src,
   char fsafe_buffer[MAX_PATH * 2];
   char temporary_buffer[MAX_PATH];
   boolean is_wildcard = false;
-  size_t fsafe_len;
+  int fsafe_len;
 
   // Offset the required file's path with the relative path of its parent
   // The file might require wildcard conversion first (if allowed)
@@ -818,7 +818,7 @@ static struct resource *add_requirement_ext(const char *src,
     // add more info to the key.
     snprintf(fsafe_buffer + fsafe_len + 1, MAX_PATH, "%04x%04x%08x%s",
      (int16_t)board_num, (int16_t)robot_num, line_num, file->file_name);
-    fsafe_len += strlen(fsafe_buffer + fsafe_len + 1);
+    fsafe_len += 1 + strlen(fsafe_buffer + fsafe_len + 1);
   }
 
   KHASH_FIND(RESOURCE, requirement_table, fsafe_buffer, fsafe_len, req);
@@ -827,6 +827,7 @@ static struct resource *add_requirement_ext(const char *src,
   {
     req = cmalloc(sizeof(struct resource));
 
+    // NOTE: might be copying data past the terminator, see key extension above
     memcpy(req->path, fsafe_buffer, fsafe_len + 1);
     req->path_len = strlen(fsafe_buffer);
     req->key_len = fsafe_len;
@@ -872,32 +873,36 @@ static struct resource *add_resource(const char *src, struct base_file *file)
 {
   // A filename found in Robotic code that may fulfill a requirement for a file.
   struct resource *res = NULL;
-  char file_buffer[MAX_PATH];
-  char wildcard_buffer[MAX_PATH];
+  char fsafe_buffer[MAX_PATH];
+  char temporary_buffer[MAX_PATH];
   boolean is_wildcard = false;
+  int fsafe_len;
 
   // Offset the required file's path with the relative path of its parent
   // The file might require wildcard conversion first (if allowed)
   if(!is_simple_path(src, true))
   {
-    if(!get_wildcard_path(wildcard_buffer, src))
+    if(!get_wildcard_path(fsafe_buffer, src))
       return NULL;
 
-    join_path(file_buffer, file->relative_path, wildcard_buffer);
+    join_path(temporary_buffer, file->relative_path, fsafe_buffer);
     is_wildcard = true;
   }
   else
-    join_path(file_buffer, file->relative_path, src);
+    join_path(temporary_buffer, file->relative_path, src);
 
-  KHASH_FIND(RESOURCE, resource_table, file_buffer, strlen(file_buffer), res);
+  strcpy_fsafe(fsafe_buffer, temporary_buffer);
+  fsafe_len = strlen(fsafe_buffer);
+
+  KHASH_FIND(RESOURCE, resource_table, fsafe_buffer, fsafe_len, res);
 
   if(!res)
   {
     res = cmalloc(sizeof(struct resource));
 
-    strcpy_fsafe(res->path, file_buffer);
-    res->path_len = strlen(res->path);
-    res->key_len = res->path_len;
+    strcpy(res->path, fsafe_buffer);
+    res->path_len = fsafe_len;
+    res->key_len = fsafe_len;
     res->board_num = -1;
     res->robot_num = -1;
     res->line_num = -1;
@@ -905,7 +910,7 @@ static struct resource *add_resource(const char *src, struct base_file *file)
     res->parent = NULL;
 
     // Calculate these values for the output table as we go along
-    resource_max_len = MAX(resource_max_len, res->path_len);
+    resource_max_len = MAX(resource_max_len, fsafe_len);
     parent_max_len = MAX(parent_max_len, (int)strlen(file->file_name));
 
     KHASH_ADD(RESOURCE, resource_table, res);
@@ -937,7 +942,7 @@ static void add_base_path_file(struct base_path *path,
 
     KHASH_ADD(BASE_PATH_FILE, path->file_list_table, entry);
 
-    if(display_unused)
+    if(display_unused || display_wildcard)
       resource_max_len = MAX(resource_max_len, (int)file_name_length);
   }
 }
