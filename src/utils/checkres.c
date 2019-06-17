@@ -24,7 +24,7 @@
 #include "../config.h"
 
 #define USAGE \
- "checkres (MegaZeux " VERSION ")\n" \
+ "checkres :: MegaZeux " VERSION VERSION_DATE "\n" \
  "Usage: checkres [options] " \
  "mzx/mzb/dir/zip file [-extra path/zip file [-in relative path] ...] ... \n" \
  "\n" \
