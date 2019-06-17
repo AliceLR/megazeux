@@ -99,6 +99,11 @@ FIXES
   cursor off the screen with a window bigger than the screen.
 + Fixed a bug where setting SMZX_MESSAGE to 0 wouldn't always
   draw the message correctly.
++ If a referenced SAM or GDM file isn't present, MegaZeux will
+  attempt to load a corresponding WAV or S3M (respectively) with
+  the same filename minus the extension. This should fix some
+  music/sounds in older games that referenced SAM/GDM files but
+  were packed with the post-conversion WAV/S3M files only.
 
 DEVELOPERS
 
