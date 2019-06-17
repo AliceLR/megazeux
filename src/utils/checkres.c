@@ -21,7 +21,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "../config.h"
+
 #define USAGE \
+ "checkres (MegaZeux " VERSION ")\n" \
  "Usage: checkres [options] " \
  "mzx/mzb/dir/zip file [-extra path/zip file [-in relative path] ...] ... \n" \
  "\n" \
@@ -55,10 +58,10 @@
  " -u   Also display unused files.\n"                                       \
  " -w   Also display wildcard-matched files.\n"                             \
  "\nDetail options:\n" \
- " -vvv Display all references with all information (default).\n"           \
- " -vv  Display all references with board# and robot#.\n"                   \
- " -v   Display unique expected filenames, status, source, and world.\n"    \
- " -1   Display unique expected filenames, one per line, no other info.\n"  \
+ " -s   Summary: unique filenames, status, source, world file (default).\n" \
+ " -v   Display all references with sfx#, board#, robot#.\n"                \
+ " -vv  Display all references with sfx#, board#, robot#, line#, coords.\n" \
+ " -1   Display unique filenames, one per line, with no other info.\n"      \
  "\nSorting options:\n" \
  " -N   Sort by referenced filename, then by location (default).\n"         \
  " -L   Sort by location of reference: world, board#, robot#.\n"            \
@@ -132,9 +135,9 @@ static boolean display_wildcard = false;
 
 // Detail options
 static boolean display_filename_only = false;
-static boolean display_first_only = false;
-static boolean display_details = true;
-static boolean display_all_details = true;
+static boolean display_first_only = true;
+static boolean display_details = false;
+static boolean display_all_details = false;
 
 static enum
 {
@@ -2936,29 +2939,26 @@ int main(int argc, char *argv[])
             display_wildcard = true;
             break;
 
+          case 's':
+            display_filename_only = false;
+            display_first_only = true;
+            display_details = false;
+            display_all_details = false;
+            break;
+
           case 'v':
           {
             if(param[1] == 'v')
             {
-              if(param[2] == 'v')
-              {
-                display_all_details = true;
-                param++;
-              }
-              else
-                display_all_details = false;
-
-              display_details = true;
-              display_first_only = false;
+              display_all_details = true;
               param++;
             }
             else
-            {
-              display_details = false;
-              display_first_only = true;
-            }
+              display_all_details = false;
 
             display_filename_only = false;
+            display_first_only = false;
+            display_details = true;
             break;
           }
 
@@ -2966,6 +2966,8 @@ int main(int argc, char *argv[])
           case 'q': // Legacy equivalent of -1
             display_first_only = true;
             display_filename_only = true;
+            display_details = false;
+            display_all_details = false;
             break;
 
           case 'L':

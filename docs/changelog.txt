@@ -65,9 +65,9 @@ FEATURES
   resources (-U).
 + checkres can now display every reference to a particular
   resource in a world instead of just the first with varying
-  levels of information (-vvv (default), -vv, -v). The option
-  -v is equivalent to older versions of checkres. Added -1 as
-  an alternate flag for -q.
+  levels of information (-v, -vv). Added the option -s, which
+  is the default and equivalent to older versions of checkres,
+  and -1 as an alternate flag for -q.
 + checkres can now sort its output either by the name of the
   expected resource file (-N) (default) or by the location in
   the world the file was referenced (-L).
