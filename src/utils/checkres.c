@@ -32,12 +32,13 @@
  "    FOUND:     the file is required and was found;\n"                       \
  "    NOT FOUND: the file is required and was not found;\n"                   \
  "    CREATED:   the file is required and wasn't found, but may be created;\n"\
- "    CREATED??: as above, except more tenuous as this file may be created\n" \
+ "    CREATED*:  as above, except more tenuous as this file may be created\n" \
  "               only depending on the result of expressions/interpolation;\n"\
- "    WILDCARD:  the file is specified as part of a command that can only\n"  \
+ "    PATTERN*:  the file is specified as part of a command that can only\n"  \
  "               be evaluated while MegaZeux is running, but potential\n"     \
- "               matches can be inferred contextually. This includes things\n"\
- "               like DOS truncated filenames (e.g. FF-DAR~1.MOD).\n"         \
+ "               matches can be inferred contextually using wildcards. This\n"\
+ "               includes things like DOS filenames (xxxxxx~1.ext).\n"        \
+ "    MATCH*:    files potentially matched by a wildcard pattern;\n"          \
  "    UNUSED:    the file is present but is not used in any MZX/MZB file.\n"  \
  "\nGeneral options:\n" \
  " -h   Display this message and exit.\n"                                   \
@@ -118,8 +119,9 @@ static const char *found_append = "FOUND";
 static const char *created_append = "CREATED";
 static const char *not_found_append = "NOT FOUND";
 static const char *unused_append = "UNUSED";
-static const char *wildcard_append = "WILDCARD";
-static const char *wildcard_created_append = "CREATED??";
+static const char *pattern_append = "PATTERN*";
+static const char *maybe_used_append = "MATCH*";
+static const char *maybe_created_append = "CREATED*";
 
 // Status options
 static boolean display_not_found = true;
@@ -837,10 +839,14 @@ static struct resource *add_requirement_ext(const char *src,
     req->is_wildcard = is_wildcard;
     req->parent = file;
 
-    // Calculate these values for the output table as we go along
-    resource_max_len = MAX(resource_max_len, req->path_len);
-    parent_max_len = MAX(parent_max_len, (int)strlen(file->file_name));
-
+    // Only need to compute these sizes if there's a situation where a
+    // requirement might be displayed. The only time this isn't the case
+    // currently is when only unused files are being displayed, though.
+    if(display_not_found || display_found || display_created || display_wildcard)
+    {
+      resource_max_len = MAX(resource_max_len, req->path_len);
+      parent_max_len = MAX(parent_max_len, (int)strlen(file->file_name));
+    }
     KHASH_ADD(RESOURCE, requirement_table, req);
   }
   return req;
@@ -909,10 +915,13 @@ static struct resource *add_resource(const char *src, struct base_file *file)
     res->is_wildcard = is_wildcard;
     res->parent = NULL;
 
-    // Calculate these values for the output table as we go along
-    resource_max_len = MAX(resource_max_len, fsafe_len);
-    parent_max_len = MAX(parent_max_len, (int)strlen(file->file_name));
-
+    // Created resources are never displayed directly so this isn't necessary.
+    // However, if this changes, uncomment this.
+    /*if(display_created)
+    {
+      resource_max_len = MAX(resource_max_len, fsafe_len);
+      parent_max_len = MAX(parent_max_len, (int)strlen(file->file_name));
+    }*/
     KHASH_ADD(RESOURCE, resource_table, res);
   }
 
@@ -1246,7 +1255,7 @@ static void process_requirements(struct base_path **path_list,
     {
       if(display_wildcard)
         output(req->parent->file_name, req->board_num, req->robot_num,
-         req->line_num, req->path, wildcard_append, current_path->actual_path);
+         req->line_num, req->path, pattern_append, current_path->actual_path);
     }
     else
 
@@ -1275,7 +1284,7 @@ static void process_requirements(struct base_path **path_list,
       if(res)
       {
         const char *append =
-         (res->is_wildcard ? wildcard_created_append : created_append);
+         (res->is_wildcard ? maybe_created_append : created_append);
 
         if(display_created)
           output(req->parent->file_name, req->board_num, req->robot_num,
@@ -1355,7 +1364,7 @@ static void process_requirements(struct base_path **path_list,
 
             if(display_wildcard && bpf->used_wildcard)
             {
-              output("", DONT_PRINT, -1, -1, file_path, wildcard_append,
+              output("", DONT_PRINT, -1, -1, file_path, maybe_used_append,
                current_path->actual_path);
             }
           }
