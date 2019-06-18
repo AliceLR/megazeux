@@ -73,6 +73,12 @@ FEATURES
   the world the file was referenced (-L).
 + checkres option flags can now be combined (e.g. -aL). This
   does not apply to the "-extra" and "-in" flags.
++ New config options: "test_mode" and "test_mode_start_board".
+  If "test_mode" is set to 1, MegaZeux will start the given file
+  in testing mode, exactly as if the user used Alt+T on the
+  first board from the editor. Setting "test_mode_start_board"
+  to a valid board number in the world will start instead from
+  that board. Exiting testing will exit MegaZeux entirely.
 - SDL 2 support for the overlay renderers has been removed. When
   specified for video_output, softscale will be enabled instead.
 - Removed WAV from the list of board mod extensions.
