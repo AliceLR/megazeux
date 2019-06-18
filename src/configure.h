@@ -90,6 +90,8 @@ struct config_info
   boolean system_mouse;
 
   // Editor options
+  boolean test_mode;
+  unsigned char test_mode_start_board;
   // TODO: two places outside of the editor currently require access to this.
   boolean mask_midchars;
 
