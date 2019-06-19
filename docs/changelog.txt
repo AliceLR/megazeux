@@ -47,6 +47,15 @@ FEATURES
 + Added the 'softscale' renderer. This renderer is a generalized
   rewrite of the former SDL 2 overlay renderer implementation.
   It should perform significantly better and be more portable.
++ Added several palette editor usability improvements:
+  + The current color stored with F2 is now displayed in the
+    bottom-right corner of the palette editor help menu.
+  + In SMZX mode 3 editing, the current subpalette can be stored
+    with F4. The stored subpalette is displayed in the help menu
+    and can be placed over the current subpalette with F5.
+  + The shortcut for hiding the subpalette cursors has been
+    changed to Tab. The subpalette cursors can now be displayed
+    in SMZX mode 3 editing and are enabled by default.
 + checkres now displays the board, sfx, and robot (with line and
   position on the board) each file was referenced in.
 + checkres can now be used with a directory as the base file.

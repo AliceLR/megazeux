@@ -48,23 +48,26 @@
 
 // 16-color help
 
-//----------------------------------------------------------------/
+//------------------------------------------------------------------/
 //
-// %- Select color    Alt+D- Default pal.   PgUp- Prev. mode
-// R- Increase Red    Alt+R- Decrease Red   PgDn- Next mode
-// G- Increase Green  Alt+G- Decrease Green   F2- Store color
-// B- Increase Blue   Alt+B- Decrease Blue    F3- Retrieve color
-// A- Increase All    Alt+A- Decrease All
-// 0- Blacken color   Alt+H- Hide help         Q- Quit editing
-//
-// Left click- edit component/activate   Right click- color (drag)
-//
-//----------------------------------------------------------------/
+//  %- Select color    Alt+D- Default pal.      PgUp- Prev. mode
+//  R- Increase Red    Alt+R- Decrease Red      PgDn- Next mode
+//  G- Increase Green  Alt+G- Decrease Green
+//  B- Increase Blue   Alt+B- Decrease Blue        Q- Quit editing  /
+//  A- Increase All    Alt+A- Decrease All
+//  0- Blacken color   Alt+H- Hide menu        Alt+T- Switch to
+//  F2- Store color    Alt+I- Import                  temp palette  /
+//  F3- Place color    Alt+X- Export                                /
+//                                                   /--------------/
+//  Left click-       edit component/activate        | Buffer ##### /
+//  Right click+Drag- change color                   |        ##### /
+//                                                   |        ##### /
+//---------------------------------------------------+--------------/
 
 // 256-color subpalette
 
 //----------------------------------/
-// Palette  1:123 2:123 3:123 4:123 /
+// Subpal.  1:123 2:123 3:123 4:123 /
 //  # 000   ##### ##### ##### ##### /
 //          ##### ##### ##### ##### /
 // Hex: FF  ##### ##### ##### ##### /
@@ -84,22 +87,27 @@
 // G- Increase Green  Alt+G- Decrease Green /
 // B- Increase Blue   Alt+B- Decrease Blue  /
 // A- Increase All    Alt+A- Decrease All   /
-// 0- Blacken color   Alt+H- Hide help      /
-//
-// PgUp- Prev. mode   PgDn- Next mode       /
-// F2- Store color    F3- Retrieve color    /
-//
-// Space- Subpalette  1-4- Current color to
-// Q- Quit editing         subpalette index
+// 0- Blacken color   Alt+H- Hide menu      /
+// F2- Store color    Alt+I- Import
+// F3- Place color    Alt+X- Export
+// PgUp- Prev. mode
+// PgDn- Next mode
+// Q- Quit editing    Alt+T- Switch to
+// Tab- Cursors (off)        temp. palette
 
-// Space- Toggle subpalette index cursors
-// Q- Quit editing
-
+// Mode 3- this replaces 'Hide menu'/'Import'/'Export'...
 //
-//   Left click- edit component/activate
-//  Right click- change color (drag)
-// Middle/wheel- change subpalette
-//------------------------------------------/
+//Space- Subpalette
+//  F4- Store subpal.
+//  F5- Place subpal.
+// 1-4- Current color
+//      to subpalette
+
+//                           /--------------/
+// Left click- activate      | Buffer ##### /
+// Right click- color (drag) | 1####3 ##### /
+// Middle/wheel- subpalette  | 2####4 ##### /
+//---------------------------+--------------/
 
 // Note: the help menu mouse functionality has been broken since 2.80.
 
@@ -131,9 +139,14 @@ static struct color_status saved_color =
   0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
+static unsigned char saved_indices[4] =
+{
+  0, 1, 2, 3
+};
+
 static boolean startup = false;
 static boolean minimal_help = false;
-static boolean mode2_extra_cursors = true;
+static boolean subpalette_cursors = true;
 
 static unsigned int current_id = 0;
 static unsigned int current_subpalette = 0;
@@ -939,6 +952,48 @@ static subcontext *create_color_editor(struct pal_ed_context *pal_ed)
 
 // -----------------------------------------------------------------------------
 
+/**
+ * Draw the buffer portion of the menu window.
+ */
+static void menu_buffer_draw(int x, int y, boolean show_indices)
+{
+  int mode = get_screen_mode();
+  int i;
+
+  draw_window_box(
+    x, y, x + 15, y + 4,
+    DI_GREY, DI_GREY_DARK, DI_GREY_CORNER, false, false
+  );
+
+  write_string("Buffer", x + 2, y + 1, DI_GREY_TEXT, false);
+
+  set_protected_rgb(2, saved_color.r, saved_color.g, saved_color.b);
+
+  write_string("     \n     \n     ", x + 9, y + 1, 0x22, false);
+
+  if(show_indices && mode >= 2)
+  {
+    char c = (mode == 2) ? CHAR_SMZX_C2 : 0;
+    int x2;
+    int y2;
+
+    write_string("1    3\n2    4", x + 2, y + 2, DI_GREY_CORNER, false);
+    for(i = 0; i < 4; i++)
+    {
+      x2 = x + 3 + (i/2*2);
+      y2 = y + 2 + (i%2);
+
+      select_layer(UI_LAYER);
+      erase_char(x2, y2);
+      erase_char(x2 + 1, y2);
+
+      select_layer(GAME_UI_LAYER);
+      draw_char(c, saved_indices[i], x2, y2);
+      draw_char(c, saved_indices[i], x2 + 1, y2);
+    }
+  }
+  select_layer(UI_LAYER);
+}
 
 /**
  * Draw the 16 color editor menu window.
@@ -964,14 +1019,17 @@ static void menu_16_draw(subcontext *ctx)
 
   // Write menu
   write_string(
-    "\x1d- Select color    Alt+D- Default pal.   PgUp- Prev. mode\n"
-    " - Increase        Alt+ - Decrease       PgDn- Next mode\n"
-    " - Increase        Alt+ - Decrease         F2- Store color\n"
-    " - Increase        Alt+ - Decrease         F3- Retrieve color\n"
+    "\x1d- Select color    Alt+D- Default pal.     PgUp- Prev. mode\n"
+    " - Increase        Alt+ - Decrease         PgDn- Next mode\n"
+    " - Increase        Alt+ - Decrease            \n"
+    " - Increase        Alt+ - Decrease            Q- Quit editing\n"
     "\n"
-    "0- Blacken color   Alt+H- Hide menu         Q- Quit editing\n"
+    "0- Blacken color   Alt+H- Hide menu       Alt+T- Switch to\n"
+    "F2- Store color    Alt+I- Import                 XXXX palettte\n"
+    "F3- Place color    Alt+X- Export\n"
     "\n"
-    "Left click- edit component/activate  Right click- color (drag)\n",
+    "Left click-       edit component/activate\n"
+    "Right click+Drag- change color\n",
     menu->x,
     menu->y,
     DI_GREY_TEXT,
@@ -1008,6 +1066,9 @@ static void menu_16_draw(subcontext *ctx)
      false
     );
   }
+
+  // Buffer
+  menu_buffer_draw(menu->border_x2 - 15, menu->border_y2 - 4, false);
 }
 
 /**
@@ -1023,7 +1084,7 @@ static subcontext *create_menu_16(struct pal_ed_context *pal_ed)
   sub->border_x = 7;
   sub->border_y = 7;
   sub->border_x2 = 73;
-  sub->border_y2 = 18;
+  sub->border_y2 = 21;
 
   sub->x = sub->border_x + 3;
   sub->y = sub->border_y + 2;
@@ -1266,34 +1327,33 @@ static void menu_256_draw(subcontext *ctx)
     " - Increase        Alt+ - Decrease       \n"
     "\n"
     "0- Blacken color\n"
+    "F2- Store color\n"
+    "F3- Place color\n"
+    "Tab- Cursors (off)\n"
+    "PgUp- Prev. mode\n"
+    "PgDn- Next mode    Alt+T- Switch to\n"
+    "Q- Quit editing           XXXX palette\n"
     "\n"
-    "PgUp- Prev. mode   PgDn- Next mode       \n"
-    "F2- Store color    F3- Retrieve color    \n",
+    "Left click- activate\n"
+    "Right click+Drag- color\n",
     menu->x,
     menu->y,
     DI_GREY_TEXT,
     1
   );
 
+  if(subpalette_cursors)
+    write_string("(on) ", menu->x + 13, menu->y + 8, DI_GREY_TEXT, false);
+
   if(smzx_mode == 2)
   {
     // SMZX mode 2 specific help
     write_string(
-      "Alt+H- Hide menu",
+      "Alt+H- Hide menu\n"
+      "Alt+I- Import\n"
+      "Alt+X- Export\n",
       menu->x + 19,
       menu->y + 5,
-      DI_GREY_TEXT,
-      false
-    );
-    write_string(
-      "Space- Toggle subpalette index cursors\n"
-      "Q- Quit editing\n"
-      "\n"
-      "  Left click- edit component/activate\n"
-      " Right click- change color (drag)\n"
-      "Middle/wheel- toggle subpalette cursors\n",
-      menu->x,
-      menu->y + 9,
       DI_GREY_TEXT,
       false
     );
@@ -1302,14 +1362,20 @@ static void menu_256_draw(subcontext *ctx)
   {
     // SMZX mode 3 specific help
     write_string(
-      "Space- Subpalette  1-4- Current color to \n"
-      "Q- Quit editing         subpalette index\n"
-      "\n"
-      "  Left click- edit component/activate\n"
-      " Right click- change color (drag)\n"
-      "Middle/wheel- change subpalette\n",
+      "Space- Subpalette\n"
+      "   F4- Store subpal.\n"
+      "   F5- Place subpal.\n"
+      "  1-4- Current color\n"
+      "       to subpalette\n",
+      menu->x + 19,
+      menu->y + 5,
+      DI_GREY_TEXT,
+      false
+    );
+    write_string(
+      "Middle/wheel- subpalette\n",
       menu->x,
-      menu->y + 9,
+      menu->y + 15,
       DI_GREY_TEXT,
       false
     );
@@ -1345,6 +1411,9 @@ static void menu_256_draw(subcontext *ctx)
       1
     );
   }
+
+  // Buffer
+  menu_buffer_draw(menu->border_x2 - 15, menu->border_y2 - 4, smzx_mode==3);
 }
 
 /**
@@ -1431,6 +1500,7 @@ static void palette_256_draw(subcontext *ctx)
   int col;
   int x;
   int y;
+  int subcursor[4] = { -1, -1, -1, -1 };
 
   int lo = current_id & 0x0F;
   int hi = (current_id & 0xF0) >> 4;
@@ -1449,10 +1519,10 @@ static void palette_256_draw(subcontext *ctx)
   // Destroy the cursors if they already exist.
   destroy_unbound_cursors(pal->pal_ed);
 
+  select_layer(GAME_UI_LAYER);
+
   if(get_screen_mode() == 2)
   {
-    select_layer(GAME_UI_LAYER);
-
     // Draw the palette
     for(y = 0; y < 16; y++)
     {
@@ -1465,29 +1535,14 @@ static void palette_256_draw(subcontext *ctx)
       }
     }
 
-    // Extra mode 2 cursors
-    if(mode2_extra_cursors)
-    {
-      if(blink_cursor)
-      {
-        draw_unbound_cursor(hi * 2 + pal->x, hi + pal->y, 0xC, 0x4, 0);
-        draw_unbound_cursor(hi * 2 + pal->x, lo + pal->y, 0xC, 0x4, 1);
-        draw_unbound_cursor(lo * 2 + pal->x, lo + pal->y, 0xC, 0x4, 2);
-      }
-      else
-      {
-        draw_unbound_cursor(hi * 2 + pal->x, hi + pal->y, 0x4, 0x0, 0);
-        draw_unbound_cursor(hi * 2 + pal->x, lo + pal->y, 0x4, 0x0, 1);
-        draw_unbound_cursor(lo * 2 + pal->x, lo + pal->y, 0x4, 0x0, 2);
-      }
-    }
+    subcursor[0] = (hi << 4) | hi;
+    subcursor[1] = (lo << 4) | hi;
+    subcursor[2] = (lo << 4) | lo;
   }
 
   // Mode 3
   else
   {
-    select_layer(GAME_UI_LAYER);
-
     // Draw the palette
     for(y = 0; y < 16; y++)
     {
@@ -1498,16 +1553,41 @@ static void palette_256_draw(subcontext *ctx)
         draw_char_ext(0, col, (x*2+1 + pal->x), (y + pal->y), PRO_CH, 0);
       }
     }
+
+    subcursor[0] = graphics.editor_backup_indices[current_subpalette * 4 + 0];
+    subcursor[1] = graphics.editor_backup_indices[current_subpalette * 4 + 2];
+    subcursor[2] = graphics.editor_backup_indices[current_subpalette * 4 + 1];
+    subcursor[3] = graphics.editor_backup_indices[current_subpalette * 4 + 3];
+  }
+
+  // Subpalette cursors
+  if(subpalette_cursors)
+  {
+    unsigned char cursor_fg = blink_cursor ? 0xC : 0x4;
+    unsigned char cursor_bg = blink_cursor ? 0x4 : 0x0;
+    int i;
+
+    for(i = 0; i < 4; i++)
+    {
+      if(subcursor[i] >= 0)
+      {
+        draw_unbound_cursor(
+          (subcursor[i] & 15) * 2 + pal->x,
+          (subcursor[i] >> 4) + pal->y,
+          cursor_fg, cursor_bg, 0
+        );
+      }
+    }
   }
 
   // Main cursor
   if(blink_cursor)
   {
-    draw_unbound_cursor(lo * 2 + pal->x, hi + pal->y, 0xF, 0x8, 3);
+    draw_unbound_cursor(lo * 2 + pal->x, hi + pal->y, 0xF, 0x8, 4);
   }
   else
   {
-    draw_unbound_cursor(lo * 2 + pal->x, hi + pal->y, 0x7, 0x0, 3);
+    draw_unbound_cursor(lo * 2 + pal->x, hi + pal->y, 0x7, 0x0, 4);
   }
 
   select_layer(UI_LAYER);
@@ -1519,18 +1599,11 @@ static void palette_256_draw(subcontext *ctx)
 
 static boolean palette_256_key(subcontext *ctx, int *key)
 {
-  int smzx_mode = get_screen_mode();
-
   switch(*key)
   {
-    case IKEY_SPACE:
+    case IKEY_TAB:
     {
-      if(smzx_mode == 2)
-      {
-        // Mode 2- toggle the extra palette cursors
-        mode2_extra_cursors ^= 1;
-        return true;
-      }
+      subpalette_cursors = !subpalette_cursors;
       break;
     }
 
@@ -1665,7 +1738,7 @@ static void subpalette_256_draw(subcontext *ctx)
 
   // Palette View contents
   write_string(
-   "Palette\n #\n\nHex:",
+   "Subpal.\n #\n\nHex:",
    spal->x,
    spal->y,
    DI_GREY_TEXT,
@@ -1846,6 +1919,34 @@ static boolean subpalette_256_key(subcontext *ctx, int *key)
       }
       return true;
     }
+
+    case IKEY_F4:
+    {
+      if(smzx_mode == 3)
+      {
+        // Store subpalette
+        int index = current_subpalette * 4;
+        saved_indices[0] = graphics.editor_backup_indices[index + 0];
+        saved_indices[1] = graphics.editor_backup_indices[index + 2];
+        saved_indices[2] = graphics.editor_backup_indices[index + 1];
+        saved_indices[3] = graphics.editor_backup_indices[index + 3];
+      }
+      break;
+    }
+
+    case IKEY_F5:
+    {
+      if(smzx_mode == 3)
+      {
+        // Place subpalette
+        int index = current_subpalette * 4;
+        graphics.editor_backup_indices[index + 0] = saved_indices[0];
+        graphics.editor_backup_indices[index + 2] = saved_indices[1];
+        graphics.editor_backup_indices[index + 1] = saved_indices[2];
+        graphics.editor_backup_indices[index + 3] = saved_indices[3];
+      }
+      break;
+    }
   }
   return false;
 }
@@ -1876,7 +1977,7 @@ static boolean subpalette_256_click(subcontext *ctx, int *key, int button,
 
   if(button == MOUSE_BUTTON_MIDDLE)
   {
-    // Palette selector/hide cursors
+    // Palette selector
     *key = IKEY_SPACE;
     return true;
   }
@@ -2037,6 +2138,9 @@ static void pal_ed_destroy(context *ctx)
     // Apply the modified SMZX indices.
     load_editor_indices();
   }
+
+  // Fix protected color 2
+  default_protected_palette();
 
   restore_screen();
 }
