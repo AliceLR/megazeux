@@ -85,8 +85,6 @@ static const char *const mzb_ext[] = { ".MZB", NULL };
 static const char *const mzm_ext[] = { ".MZM", NULL };
 static const char *const sfx_ext[] = { ".SFX", NULL };
 static const char *const chr_ext[] = { ".CHR", NULL };
-static const char *const pal_ext[] = { ".PAL", NULL };
-static const char *const idx_ext[] = { ".PALIDX", NULL };
 static const char *const mod_ext[] =
 { ".ogg", ".mod", ".s3m", ".xm", ".it",
   ".669", ".amf", ".dsm", ".far", ".gdm",
@@ -107,8 +105,6 @@ struct editor_context
   char mzb_name_buffer[MAX_PATH];
   char mzm_name_buffer[MAX_PATH];
   char chr_name_buffer[MAX_PATH];
-  char pal_name_buffer[MAX_PATH];
-  char idx_name_buffer[MAX_PATH];
   char current_listening_dir[MAX_PATH];
   char current_listening_mod[MAX_PATH];
 
@@ -2628,27 +2624,8 @@ static boolean editor_key(context *ctx, int *key)
 
             case 3:
             {
-              // Palette
-              strcpy(import_name, editor->pal_name_buffer);
-              if(!choose_file(mzx_world, pal_ext, import_name,
-               "Choose palette to import", 1))
-              {
-                strcpy(editor->pal_name_buffer, import_name);
-                load_palette(import_name);
-                editor->modified = true;
-              }
-
-              // Indices (mode 3 only)
-              strcpy(import_name, editor->idx_name_buffer);
-              if((get_screen_mode() == 3) &&
-               !choose_file(mzx_world, idx_ext, import_name,
-                "Choose indices to import (.PALIDX)", 1))
-              {
-                strcpy(editor->idx_name_buffer, import_name);
-                load_index_file(import_name);
-                editor->modified = true;
-              }
-
+              // Palette (let the palette editor handle this one)
+              import_palette(ctx);
               break;
             }
 
@@ -3252,24 +3229,8 @@ static boolean editor_key(context *ctx, int *key)
 
             case 2:
             {
-              // Palette
-              strcpy(export_name, editor->pal_name_buffer);
-              if(!new_file(mzx_world, pal_ext, ".pal", export_name,
-               "Export palette", 1))
-              {
-                strcpy(editor->pal_name_buffer, export_name);
-                save_palette(export_name);
-              }
-
-              strcpy(export_name, editor->idx_name_buffer);
-              if((get_screen_mode() == 3) &&
-               !new_file(mzx_world, idx_ext, ".palidx", export_name,
-                "Export indices (.PALIDX)", 1))
-              {
-                strcpy(editor->idx_name_buffer, export_name);
-                save_index_file(export_name);
-              }
-
+              // Palette (let the palette editor handle this one)
+              export_palette(ctx);
               break;
             }
 

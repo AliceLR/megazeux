@@ -53,9 +53,15 @@ FEATURES
   + In SMZX mode 3 editing, the current subpalette can be stored
     with F4. The stored subpalette is displayed in the help menu
     and can be placed over the current subpalette with F5.
-  + The shortcut for hiding the subpalette cursors has been
-    changed to Tab. The subpalette cursors can now be displayed
+  + The shortcut for toggling the subpalette cursors has been
+    changed to Insert. The subpalette cursors are now displayed
     in SMZX mode 3 editing and are enabled by default.
+  + Palettes (and/or indices) can be imported into and exported
+    from the palette editor with Alt+I and Alt+X, respectively.
+  + Added a secondary editor-only palette which can be switched
+    to with Tab. This palette is not saved with any world, but
+    can be edited and imported to/exported from and can be used
+    to copy colors/subpalettes between different sources.
 + checkres now displays the board, sfx, and robot (with line and
   position on the board) each file was referenced in.
 + checkres can now be used with a directory as the base file.
