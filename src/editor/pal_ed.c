@@ -2156,7 +2156,7 @@ static void reset_pal_ed_palettes(struct pal_ed_context *pal_ed)
     load_backup_indices(pal_ed->game_indices);
   }
 
-  // Fix protected color 2
+  // Fix protected color 5
   default_protected_palette();
 }
 
