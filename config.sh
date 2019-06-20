@@ -643,11 +643,14 @@ fi
 # Force-disable features unnecessary on Emscripten.
 #
 if [ "$PLATFORM" = "emscripten" ]; then
-	echo "Force-disabling features unnecessary in web context (Emscripten)."
+	echo "Enabling Emscripten-specific hacks."
 	EDITOR="false"
 	SCREENSHOTS="false"
 	UPDATER="false"
 	UTILS="false"
+
+	GLES="true"
+	GL_FIXED="false"
 fi
 
 #
@@ -750,12 +753,6 @@ if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" \
   	echo "Force-disabling OpenGL and overlay renderers."
 	GL="false"
 	OVERLAY="false"
-fi
-
-if [ "$PLATFORM" = "emscripten" ]; then
-	echo "Force-enabling OpenGL ES support; force-disabling unsupported GL renderers (Emscripten)."
-	GLES="true"
-	GL_FIXED="false"
 fi
 
 #
