@@ -1244,7 +1244,7 @@ static void mouse_slide_cursor(int *_key, int mouse_x, int mouse_y)
 {
   int delta_x;
   int delta_y;
-  int key;
+  int key = IKEY_UNKNOWN;
 
   get_mouse_movement(&delta_x, &delta_y);
 
@@ -1265,7 +1265,7 @@ static void mouse_slide_cursor(int *_key, int mouse_x, int mouse_y)
       key = IKEY_UP;
   }
 
-  if(key)
+  if(key != IKEY_UNKNOWN)
   {
     // Only warp the mouse to its old spot if there's movement registered.
     // Otherwise, it will be unresponsive with precise mouse movements.
@@ -1769,10 +1769,10 @@ static void subpalette_256_draw(subcontext *ctx)
   struct pal_ed_context *pal_ed = spal->pal_ed;
   char buffer[5];
   int subpalette_num;
-  int c0;
-  int c1;
-  int c2;
-  int c3;
+  int c0 = 0;
+  int c1 = 0;
+  int c2 = 0;
+  int c3 = 0;
   int x;
   int y;
 
