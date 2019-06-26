@@ -157,7 +157,6 @@ void prefix_mid_xy_var(struct world *mzx_world, int *mx, int *my,
  int robotx, int roboty, int width, int height);
 void prefix_first_xy_var(struct world *mzx_world, int *fx, int *fy,
  int robotx, int roboty, int width, int height);
-int fix_color(int color, int def);
 int restore_label(struct robot *cur_robot, char *label);
 int zap_label(struct robot *cur_robot, char *label);
 int next_param(char *ptr, int pos);

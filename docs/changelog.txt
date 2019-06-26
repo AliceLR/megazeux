@@ -141,6 +141,10 @@ DEVELOPERS
   clang and all currently require Linux/BSD/Mac OS X/similar.
   Support for all three is very experimental; they may require
   disabling options like modular builds or may not work at all.
++ Moved several param functions from robot.c to run_robot.c.
+  Aside from a few exceptions, these functions are largely used
+  in run_robot.c only. This should improve Robotic performance
+  in release builds.
 - Removed uthash as a build option.
 
 

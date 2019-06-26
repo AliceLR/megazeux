@@ -32,6 +32,7 @@
 #include "data.h"
 #include "error.h"
 #include "event.h"
+#include "expr.h"
 #include "extmem.h"
 #include "fsafeopen.h"
 #include "game.h"
@@ -143,6 +144,19 @@ static void calculate_blocked(struct world *mzx_world, int x, int y, int id,
       }
     }
   }
+}
+
+// Turns a color (including those w/??) to a real color (0-255)
+static int fix_color(int color, int def)
+{
+  if(color < 256)
+    return color;
+  if(color < 272)
+    return (color & 0x0F) + (def & 0xF0);
+  if(color < 288)
+    return ((color - 272) << 4) + (def & 0x0F);
+
+  return def;
 }
 
 int place_at_xy(struct world *mzx_world, enum thing id, int color, int param,
@@ -844,6 +858,89 @@ void replace_player(struct world *mzx_world)
   mzx_world->player_x = 0;
   mzx_world->player_y = 0;
   place_at_xy(mzx_world, PLAYER, 0, 0, 0, 0);
+}
+
+// Returns the numeric value pointed to OR the numeric value represented
+// by the counter string pointed to. (the ptr is at the param within the
+// command)
+// Sign extends the result, for now...
+
+int parse_param(struct world *mzx_world, char *program, int id)
+{
+  char ibuff[ROBOT_MAX_TR];
+
+  if(program[0] == 0)
+  {
+    // Numeric
+    return (signed short)((int)program[1] | (int)(program[2] << 8));
+  }
+
+  // Expressions - Exo
+  if((program[1] == '(') && mzx_world->version >= V268)
+  {
+    char *e_ptr = program + 2;
+    int val, error;
+
+    val = parse_expression(mzx_world, &e_ptr, &error, id);
+    if(!error && !(*e_ptr))
+      return val;
+  }
+
+  tr_msg(mzx_world, program + 1, id, ibuff);
+
+  return get_counter(mzx_world, ibuff, id);
+}
+
+// These will always return numeric values
+enum thing parse_param_thing(struct world *mzx_world, char *program)
+{
+  return (enum thing)
+   ((int)program[1] | (int)(program[2] << 8));
+}
+
+enum dir parse_param_dir(struct world *mzx_world, char *program)
+{
+  return (enum dir)
+   ((int)program[1] | (int)(program[2] << 8));
+}
+
+enum equality parse_param_eq(struct world *mzx_world, char *program)
+{
+  return (enum equality)
+   ((int)program[1] | (int)(program[2] << 8));
+}
+
+enum condition parse_param_cond(struct world *mzx_world, char *program,
+ enum dir *direction)
+{
+  *direction = (enum dir)program[2];
+  return (enum condition)program[1];
+}
+
+// Returns location of next parameter (pos is loc of current parameter)
+int next_param(char *ptr, int pos)
+{
+  if(ptr[pos])
+  {
+    return ptr[pos] + 1;
+  }
+  else
+  {
+    return 3;
+  }
+}
+
+char *next_param_pos(char *ptr)
+{
+  int index = *ptr;
+  if(index)
+  {
+    return ptr + index + 1;
+  }
+  else
+  {
+    return ptr + 3;
+  }
 }
 
 static void advance_line(struct robot *cur_robot, char *program)
