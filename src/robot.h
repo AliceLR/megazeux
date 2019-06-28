@@ -167,6 +167,7 @@ enum dir parse_param_dir(struct world *mzx_world, char *program);
 enum equality parse_param_eq(struct world *mzx_world, char *program);
 enum condition parse_param_cond(struct world *mzx_world, char *program,
  enum dir *direction);
+boolean is_robot_box_command(int cmd);
 void robot_box_display(struct world *mzx_world, char *program,
  char *label_storage, int id);
 void push_sensor(struct world *mzx_world, int id);

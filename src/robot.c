@@ -2293,6 +2293,40 @@ int zap_label(struct robot *cur_robot, char *label)
   return 0;
 }
 
+/**
+ * Return true if this command can be displayed/skipped in the robot box.
+ * FIXME this does NOT allow zapped labels; when zapping stops modifying the
+ * bytecode, special handling needs to be added for labels. This means access
+ * to the robot's label cache HERE.
+ */
+boolean is_robot_box_command(int cmd)
+{
+  return
+   (cmd == ROBOTIC_CMD_BLANK_LINE) ||
+   (cmd == ROBOTIC_CMD_MESSAGE_BOX_LINE) ||
+   (cmd == ROBOTIC_CMD_MESSAGE_BOX_OPTION) ||
+   (cmd == ROBOTIC_CMD_MESSAGE_BOX_MAYBE_OPTION) ||
+   (cmd == ROBOTIC_CMD_LABEL) ||
+   (cmd == ROBOTIC_CMD_MESSAGE_BOX_COLOR_LINE) ||
+   (cmd == ROBOTIC_CMD_MESSAGE_BOX_CENTER_LINE) ||
+   // While executing, the robot box temporarily replaces inaccessible options
+   // with this dummy command.
+   (cmd == ROBOTIC_CMD_UNUSED_249);
+}
+
+/**
+ * Return true if this command should be skipped over when scrolling instead
+ * of displaying as a blank line.
+ *
+ * FIXME this does NOT allow zapped labels; when zapping stops modifying the
+ * bytecode, special handling needs to be added for labels. This means access
+ * to the robot's label cache HERE.
+ */
+static boolean is_robot_box_skip_command(int cmd)
+{
+  return (cmd == ROBOTIC_CMD_LABEL) || (cmd == ROBOTIC_CMD_UNUSED_249);
+}
+
 static int robot_box_down(char *program, int pos, int count)
 {
   int i, cur_cmd = -1;
@@ -2314,15 +2348,13 @@ static int robot_box_down(char *program, int pos, int count)
       else
       {
         cur_cmd = program[pos + 1];
-        if(((cur_cmd < 103) && (cur_cmd != 47)) ||
-         ((cur_cmd > 106) && (cur_cmd < 116)) ||
-         ((cur_cmd > 117) && (cur_cmd != 249)))
+        if(!is_robot_box_command(cur_cmd))
         {
           pos = old_pos;
           done = 1;
         }
       }
-    } while(((cur_cmd == 106) || (cur_cmd == 249)) && (!done));
+    } while(is_robot_box_skip_command(cur_cmd) && (!done));
 
     if(i == 100000)
       i = 99999;
@@ -2352,15 +2384,13 @@ static int robot_box_up(char *program, int pos, int count)
       {
         pos -= program[pos - 1] + 2;
         cur_cmd = program[pos + 1];
-        if(((cur_cmd < 103) && (cur_cmd != 47)) ||
-         ((cur_cmd > 106) && (cur_cmd < 116)) ||
-         ((cur_cmd > 117) && (cur_cmd != 249)))
+        if(!is_robot_box_command(cur_cmd))
         {
           pos = old_pos;
           done = 1;
         }
       }
-    } while(((cur_cmd == 106) || (cur_cmd == 249)) && (!done));
+    } while(is_robot_box_skip_command(cur_cmd) && (!done));
 
     if(i == 100000)
       i = 99999;
@@ -2405,7 +2435,7 @@ static void display_robot_line(struct world *mzx_world, char *program,
 
   switch(program[1])
   {
-    case 103: // Normal message
+    case ROBOTIC_CMD_MESSAGE_BOX_LINE: // Normal message
     {
       // On the off-chance something actually relies on this bug...
       boolean allow_tabs =
@@ -2417,7 +2447,7 @@ static void display_robot_line(struct world *mzx_world, char *program,
       break;
     }
 
-    case 104: // Option
+    case ROBOTIC_CMD_MESSAGE_BOX_OPTION: // Option
     {
       // Skip over label...
       // next is pos of string
@@ -2429,7 +2459,7 @@ static void display_robot_line(struct world *mzx_world, char *program,
       break;
     }
 
-    case 105: // Counter-based option
+    case ROBOTIC_CMD_MESSAGE_BOX_MAYBE_OPTION: // Counter-based option
     {
       // Check counter
       int val = parse_param(mzx_world, program + 2, id);
@@ -2447,7 +2477,7 @@ static void display_robot_line(struct world *mzx_world, char *program,
       break;
     }
 
-    case 116: // Colored message
+    case ROBOTIC_CMD_MESSAGE_BOX_COLOR_LINE: // Colored message
     {
       tr_msg(mzx_world, program + 3, id, ibuff);
       ibuff[64 + num_ccode_chars(ibuff)] = 0; // Clip
@@ -2455,7 +2485,7 @@ static void display_robot_line(struct world *mzx_world, char *program,
       break;
     }
 
-    case 117: // Centered message
+    case ROBOTIC_CMD_MESSAGE_BOX_CENTER_LINE: // Centered message
     {
       int length, x_position;
       tr_msg(mzx_world, program + 3, id, ibuff);
@@ -2467,7 +2497,7 @@ static void display_robot_line(struct world *mzx_world, char *program,
     }
   }
 
-  // Others, like 47 and 106, are blank lines
+  // Others, like ROBOTIC_CMD_BLANK_LINE and ROBOTIC_CMD_LABEL, are blank lines
 }
 
 static void robot_frame(struct world *mzx_world, char *program, int id)
@@ -2545,17 +2575,17 @@ void robot_box_display(struct world *mzx_world, char *program,
   select_layer(UI_LAYER);
 
   // Scan section and mark all invalid counter-controlled options as codes
-  // 249.
+  // ROBOTIC_CMD_UNUSED_249.
 
   do
   {
-    if(program[pos + 1] == 249)
-      program[pos + 1] = 105;
+    if(program[pos + 1] == ROBOTIC_CMD_UNUSED_249)
+      program[pos + 1] = ROBOTIC_CMD_MESSAGE_BOX_MAYBE_OPTION;
 
-    if(program[pos + 1] == 105)
+    if(program[pos + 1] == ROBOTIC_CMD_MESSAGE_BOX_MAYBE_OPTION)
     {
       if(!parse_param(mzx_world, program + (pos + 2), id))
-        program[pos + 1] = 249;
+        program[pos + 1] = ROBOTIC_CMD_UNUSED_249;
     }
 
     pos += program[pos] + 2;
@@ -2566,13 +2596,13 @@ void robot_box_display(struct world *mzx_world, char *program,
   // Backwards
   do
   {
-    if(program[pos + 1] == 249)
-      program[pos + 1] = 105;
+    if(program[pos + 1] == ROBOTIC_CMD_UNUSED_249)
+      program[pos + 1] = ROBOTIC_CMD_MESSAGE_BOX_MAYBE_OPTION;
 
-    if(program[pos + 1] == 105)
+    if(program[pos + 1] == ROBOTIC_CMD_MESSAGE_BOX_MAYBE_OPTION)
     {
       if(!parse_param(mzx_world, program + (pos + 2), id))
-        program[pos + 1] = 249;
+        program[pos + 1] = ROBOTIC_CMD_UNUSED_249;
     }
 
     if(program[pos - 1] == 0xFF)
@@ -2584,7 +2614,7 @@ void robot_box_display(struct world *mzx_world, char *program,
   pos = 0;
 
   // If we're starting on an unavailable option, try to seek down
-  if(program[pos + 1] == 249)
+  if(program[pos + 1] == ROBOTIC_CMD_UNUSED_249)
     pos = robot_box_down(program, pos, 1);
 
   // Loop
@@ -2658,10 +2688,11 @@ void robot_box_display(struct world *mzx_world, char *program,
       {
         key = IKEY_ESCAPE;
 
-        if((program[pos + 1] == 104) || (program[pos + 1] == 105))
+        if((program[pos + 1] == ROBOTIC_CMD_MESSAGE_BOX_OPTION) ||
+         (program[pos + 1] == ROBOTIC_CMD_MESSAGE_BOX_MAYBE_OPTION))
         {
           char *next;
-          if(program[pos + 1] == 105)
+          if(program[pos + 1] == ROBOTIC_CMD_MESSAGE_BOX_MAYBE_OPTION)
             next = next_param_pos(program + pos + 2) + 1;
           else
             next = program + pos + 3;
@@ -2696,15 +2727,15 @@ void robot_box_display(struct world *mzx_world, char *program,
   } while(key != IKEY_ESCAPE);
 
   // Scan section and mark all invalid counter-controlled options as codes
-  // 105.
+  // ROBOTIC_CMD_MESSAGE_BOX_MAYBE_OPTION.
 
   pos = 0;
 
   do
   {
-    if(program[pos + 1] == 249)
+    if(program[pos + 1] == ROBOTIC_CMD_UNUSED_249)
     {
-      program[pos + 1] = 105;
+      program[pos + 1] = ROBOTIC_CMD_MESSAGE_BOX_MAYBE_OPTION;
     }
 
     pos += program[pos] + 2;
@@ -2716,9 +2747,9 @@ void robot_box_display(struct world *mzx_world, char *program,
   // Backwards
   do
   {
-    if(program[pos + 1] == 249)
+    if(program[pos + 1] == ROBOTIC_CMD_UNUSED_249)
     {
-      program[pos + 1] = 105;
+      program[pos + 1] = ROBOTIC_CMD_MESSAGE_BOX_MAYBE_OPTION;
     }
     if(program[pos - 1] == 0xFF)
       break;

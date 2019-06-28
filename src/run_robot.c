@@ -1723,7 +1723,7 @@ void run_robot(context *ctx, int id, int x, int y)
               int offset = x + (y * board_width);
               int under = level_under_id[offset];
 
-              if((under > 19) && (under < 25))
+              if(is_water(under))
                 success = 1;
             }
             break;
@@ -3574,8 +3574,7 @@ void run_robot(context *ctx, int id, int x, int y)
           }
 
           next_cmd = program[next_prog_line + 1];
-          if(!((next_cmd == 47) || ((next_cmd >= 103) && (next_cmd <= 106))
-                                || ((next_cmd >= 116) && (next_cmd <= 117))))
+          if(!is_robot_box_command(next_cmd))
             break;
 
           cur_robot->cur_prog_line = next_prog_line;
@@ -4612,7 +4611,7 @@ void run_robot(context *ctx, int id, int x, int y)
         else
         {
           duplicate_color = 7;
-          duplicate_id = 124;
+          duplicate_id = ROBOT;
         }
 
         offset = duplicate_x + (duplicate_y * board_width);
@@ -4661,7 +4660,7 @@ void run_robot(context *ctx, int id, int x, int y)
         else
         {
           duplicate_color = 7;
-          duplicate_id = 124;
+          duplicate_id = ROBOT;
         }
 
         offset = duplicate_x + (duplicate_y * board_width);
@@ -4835,7 +4834,7 @@ void run_robot(context *ctx, int id, int x, int y)
           int d_id = (enum thing)level_id[offset];
           int d_param = level_param[offset];
 
-          if(((d_id != 123) && (d_id != 124)) || (d_param != id))
+          if(!is_robot(d_id) || (d_param != id))
             return;
 
           update_blocked = 1;
@@ -5668,7 +5667,7 @@ void run_robot(context *ctx, int id, int x, int y)
               break;
 
             back_cmd -= program[back_cmd - 1] + 2;
-          } while(program[back_cmd + 1] != 251);
+          } while(program[back_cmd + 1] != ROBOTIC_CMD_LOOP_START);
 
           cur_robot->cur_prog_line = back_cmd;
         }
@@ -5688,7 +5687,7 @@ void run_robot(context *ctx, int id, int x, int y)
             break;
 
           forward_cmd += program[forward_cmd] + 2;
-        } while(program[forward_cmd + 1] != 252);
+        } while(program[forward_cmd + 1] != ROBOTIC_CMD_LOOP_FOR);
 
         if(program[forward_cmd])
           cur_robot->cur_prog_line = forward_cmd;
