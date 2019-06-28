@@ -145,6 +145,7 @@ DEVELOPERS
   Aside from a few exceptions, these functions are largely used
   in run_robot.c only. This should improve Robotic performance
   in release builds.
++ Updated MSVC project for Visual Studio 2019. (elig, Spectere)
 - Removed uthash as a build option.
 
 
