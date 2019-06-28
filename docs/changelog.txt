@@ -110,6 +110,10 @@ FIXES
   the same filename minus the extension. This should fix some
   music/sounds in older games that referenced SAM/GDM files but
   were packed with the post-conversion WAV/S3M files only.
++ The behavior for reseting the player movement repeat timers
+  has been reverted to requiring all four movement keys released
+  (as in 2.80 to 2.91i). The related player locking fix has not
+  been modified.
 
 DEVELOPERS
 
