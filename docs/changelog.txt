@@ -114,6 +114,10 @@ FIXES
   has been reverted to requiring all four movement keys released
   (as in 2.80 to 2.91i). The related player locking fix has not
   been modified.
++ IF "&$string&" and COPY BLOCK # # # # "&$string&" now properly
+  resolve &$string& before checking if the first operand or the
+  copy destination are a string (respectively), bringing their
+  behavior more in line with SET/INC/DEC and other commands.
 
 DEVELOPERS
 
