@@ -157,7 +157,6 @@ void prefix_mid_xy_var(struct world *mzx_world, int *mx, int *my,
  int robotx, int roboty, int width, int height);
 void prefix_first_xy_var(struct world *mzx_world, int *fx, int *fy,
  int robotx, int roboty, int width, int height);
-int fix_color(int color, int def);
 int restore_label(struct robot *cur_robot, char *label);
 int zap_label(struct robot *cur_robot, char *label);
 int next_param(char *ptr, int pos);
@@ -168,6 +167,7 @@ enum dir parse_param_dir(struct world *mzx_world, char *program);
 enum equality parse_param_eq(struct world *mzx_world, char *program);
 enum condition parse_param_cond(struct world *mzx_world, char *program,
  enum dir *direction);
+boolean is_robot_box_command(int cmd);
 void robot_box_display(struct world *mzx_world, char *program,
  char *label_storage, int id);
 void push_sensor(struct world *mzx_world, int id);

@@ -192,6 +192,8 @@ static const struct config_info user_conf_default =
   false,                        // system_mouse
 
   // Editor options
+  false,                        // test_mode
+  NO_BOARD,                     // test_mode_start_board
   true,                         // mask_midchars
 
 #ifdef CONFIG_NETWORK
@@ -757,6 +759,22 @@ static void config_max_simultaneous_samples(struct config_info *conf,
   conf->max_simultaneous_samples = v;
 }
 
+static void config_test_mode(struct config_info *conf,
+ char *name, char *value, char *extended_data)
+{
+  // FIXME sloppy validation
+  unsigned long test_mode = strtoul(value, NULL, 10);
+  conf->test_mode = !!test_mode;
+}
+
+static void config_test_mode_start_board(struct config_info *conf,
+ char *name, char *value, char *extended_data)
+{
+  // FIXME sloppy validation
+  unsigned long start_board = MIN(strtoul(value, NULL, 10), MAX_BOARDS-1);
+  conf->test_mode_start_board = start_board;
+}
+
 /* NOTE: This is searched as a binary tree, the nodes must be
  *       sorted alphabetically, or they risk being ignored.
  */
@@ -816,6 +834,8 @@ static const struct config_entry config_options[] =
   { "startup_file", config_startup_file, false },
   { "startup_path", config_startup_path, false },
   { "system_mouse", config_system_mouse, false },
+  { "test_mode", config_test_mode, false },
+  { "test_mode_start_board", config_test_mode_start_board, false },
 #ifdef CONFIG_UPDATER
   { "update_auto_check", config_update_auto_check, false },
   { "update_branch_pin", config_update_branch_pin, false },

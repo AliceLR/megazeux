@@ -200,9 +200,11 @@ static inline void load_vquick_fadeout(void)
 /**
  * Load a world and prepare it for gameplay.
  * On failure, make sure the title's fade setting is restored (if applicable).
+ * If the provided start board parameter is a valid board in the loaded world,
+ * gameplay will start on the given board.
  */
-
-static boolean load_world_gameplay(struct game_context *game, char *name)
+static boolean load_world_gameplay_ext(struct game_context *game, char *name,
+ int start_board)
 {
   struct world *mzx_world = ((context *)game)->world;
   boolean was_faded = get_fade_status();
@@ -222,10 +224,14 @@ static boolean load_world_gameplay(struct game_context *game, char *name)
 
   if(reload_world(mzx_world, name, &ignore))
   {
-    if(mzx_world->current_board_id != mzx_world->first_board)
+    if((start_board < 0) || (start_board >= mzx_world->num_boards) ||
+     !(mzx_world->board_list[start_board]))
     {
-      change_board(mzx_world, mzx_world->first_board);
+      start_board = mzx_world->first_board;
     }
+
+    if(mzx_world->current_board_id != start_board)
+      change_board(mzx_world, start_board);
 
     cur_board = mzx_world->current_board;
 
@@ -250,6 +256,15 @@ static boolean load_world_gameplay(struct game_context *game, char *name)
     game->fade_in = false;
 
   return false;
+}
+
+/**
+ * Load a world and prepare it for gameplay.
+ * On failure, make sure the title's fade setting is restored (if applicable).
+ */
+static boolean load_world_gameplay(struct game_context *game, char *name)
+{
+  return load_world_gameplay_ext(game, name, -1);
 }
 
 /**
@@ -376,7 +391,7 @@ static boolean load_savegame_selection(struct game_context *game)
  * game update cycle, including player input and updating the board.
  */
 
-static void game_draw(context *ctx)
+static boolean game_draw(context *ctx)
 {
   struct game_context *game = (struct game_context *)ctx;
   struct config_info *conf = get_config();
@@ -400,12 +415,12 @@ static void game_draw(context *ctx)
     if(!conf->standalone_mode)
       draw_intro_mesg(mzx_world);
     m_show();
-    return;
+    return true;
   }
 
   set_context_framerate_mode(ctx, FRAMERATE_MZX_SPEED);
   update_world(ctx, game->is_title);
-  draw_world(ctx, game->is_title);
+  return draw_world(ctx, game->is_title);
 }
 
 // Forward declaration since this is used for both game and title screen.
@@ -1071,19 +1086,29 @@ void title_screen(context *parent)
 {
   struct config_info *conf = get_config();
   struct game_context *title;
+  struct game_context tmp;
   struct context_spec spec;
+
+  tmp.ctx.world = parent->world;
 
   if(edit_world)
   {
     conf->standalone_mode = false;
+
+    if(conf->test_mode)
+    {
+      if(load_world_gameplay_ext(&tmp, curr_file, conf->test_mode_start_board))
+      {
+        parent->world->editing = true;
+        play_game(parent, NULL);
+      }
+      return;
+    }
   }
 
   if(conf->standalone_mode && conf->no_titlescreen)
   {
-    struct game_context dummy;
-    dummy.ctx.world = parent->world;
-
-    if(load_world_gameplay(&dummy, curr_file))
+    if(load_world_gameplay(&tmp, curr_file))
     {
       play_game(parent, NULL);
       return;

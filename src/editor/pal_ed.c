@@ -664,7 +664,7 @@ static void draw_color_components(struct pal_ed_subcontext *current)
  * Draw the color editor.
  */
 
-static void color_editor_draw(subcontext *ctx)
+static boolean color_editor_draw(subcontext *ctx)
 {
   struct pal_ed_subcontext *current = (struct pal_ed_subcontext *)ctx;
   char color;
@@ -703,6 +703,7 @@ static void color_editor_draw(subcontext *ctx)
   }
 
   draw_color_components(current);
+  return true;
 }
 
 static void inc_component(struct color_status *current_color,
@@ -1024,7 +1025,7 @@ static void menu_buffer_draw(int x, int y, boolean show_indices)
  * Draw the 16 color editor menu window.
  */
 
-static void menu_16_draw(subcontext *ctx)
+static boolean menu_16_draw(subcontext *ctx)
 {
   struct pal_ed_subcontext *menu = (struct pal_ed_subcontext *)ctx;
   struct pal_ed_context *pal_ed = menu->pal_ed;
@@ -1035,7 +1036,7 @@ static void menu_16_draw(subcontext *ctx)
   int i;
 
   if(minimal_help)
-    return;
+    return false;
 
   draw_window_box(
     menu->border_x,  menu->border_y,
@@ -1098,6 +1099,7 @@ static void menu_16_draw(subcontext *ctx)
 
   // Buffer
   menu_buffer_draw(menu->border_x2 - 15, menu->border_y2 - 4, false);
+  return true;
 }
 
 /**
@@ -1133,7 +1135,7 @@ static subcontext *create_menu_16(struct pal_ed_context *pal_ed)
  * Draw the palette window for the 16 color editor.
  */
 
-static void palette_16_draw(subcontext *ctx)
+static boolean palette_16_draw(subcontext *ctx)
 {
   struct pal_ed_subcontext *pal = (struct pal_ed_subcontext *)ctx;
   struct pal_ed_context *pal_ed = pal->pal_ed;
@@ -1204,6 +1206,7 @@ static void palette_16_draw(subcontext *ctx)
        x, y + 4, DI_GREY_TEXT, false);
     }
   }
+  return true;
 }
 
 /**
@@ -1336,7 +1339,7 @@ static subcontext *create_palette_16(struct pal_ed_context *pal_ed)
  * Draw the 256 color palette editor menu window.
  */
 
-static void menu_256_draw(subcontext *ctx)
+static boolean menu_256_draw(subcontext *ctx)
 {
   struct pal_ed_subcontext *menu = (struct pal_ed_subcontext *)ctx;
   struct pal_ed_context *pal_ed = menu->pal_ed;
@@ -1349,7 +1352,7 @@ static void menu_256_draw(subcontext *ctx)
 
   // Always enable help during smzx_mode 3; the preview area is useless.
   if(minimal_help && smzx_mode == 2)
-    return;
+    return false;
 
   draw_window_box(
     menu->border_x,  menu->border_y,
@@ -1455,6 +1458,7 @@ static void menu_256_draw(subcontext *ctx)
 
   // Buffer
   menu_buffer_draw(menu->border_x2 - 15, menu->border_y2 - 4, smzx_mode==3);
+  return true;
 }
 
 /**
@@ -1533,7 +1537,7 @@ static void destroy_unbound_cursors(struct pal_ed_context *pal_ed)
  * Draw the 256 color palette window.
  */
 
-static void palette_256_draw(subcontext *ctx)
+static boolean palette_256_draw(subcontext *ctx)
 {
   struct pal_ed_subcontext *pal = (struct pal_ed_subcontext *)ctx;
   struct pal_ed_context *pal_ed = pal->pal_ed;
@@ -1643,6 +1647,7 @@ static void palette_256_draw(subcontext *ctx)
   }
 
   select_layer(UI_LAYER);
+  return true;
 }
 
 /**
@@ -1763,7 +1768,7 @@ static subcontext *create_palette_256(struct pal_ed_context *pal_ed)
  * Draw the 256 color subpalette window.
  */
 
-static void subpalette_256_draw(subcontext *ctx)
+static boolean subpalette_256_draw(subcontext *ctx)
 {
   struct pal_ed_subcontext *spal = (struct pal_ed_subcontext *)ctx;
   struct pal_ed_context *pal_ed = spal->pal_ed;
@@ -1884,6 +1889,7 @@ static void subpalette_256_draw(subcontext *ctx)
   write_string(buffer, spal->x + 23, spal->y, DI_GREY_TEXT, false);
   sprintf(buffer, "%03d", c3);
   write_string(buffer, spal->x + 29, spal->y, DI_GREY_TEXT, false);
+  return true;
 }
 
 /**
