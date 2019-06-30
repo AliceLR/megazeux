@@ -567,7 +567,8 @@ void setup_overlay(struct board *src_board, int mode)
 
 static void copy_block(struct world *mzx_world, int id, int x, int y,
  int src_type, int dest_type, int src_x, int src_y, int width, int height,
- int dest_x, int dest_y, char *dest, int dest_param)
+ int dest_x, int dest_y, char *dest, int dest_param,
+ char dest_name_buffer[ROBOT_MAX_TR])
 {
   struct board *src_board = mzx_world->current_board;
   int src_width = src_board->board_width;
@@ -616,14 +617,12 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
     //string - dest_param is the terminator
     case 3:
     {
-      char str_buffer[ROBOT_MAX_TR];
-      tr_msg(mzx_world, dest + 1, id, str_buffer);
       switch(src_type)
       {
         case 0:
         {
           // Board to string
-          load_string_board(mzx_world, str_buffer,
+          load_string_board(mzx_world, dest_name_buffer,
            src_board->level_param + src_offset, src_width,
            width, height, dest_param);
           break;
@@ -631,7 +630,7 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
         case 1:
         {
           // Overlay to string
-          load_string_board(mzx_world, str_buffer,
+          load_string_board(mzx_world, dest_name_buffer,
            src_board->overlay + src_offset, src_width,
            width, height, dest_param);
           break;
@@ -639,7 +638,7 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
         case 2:
         {
           // Vlayer to string
-          load_string_board(mzx_world, str_buffer,
+          load_string_board(mzx_world, dest_name_buffer,
            mzx_world->vlayer_chars + src_offset, src_width,
            width, height, dest_param);
           break;
@@ -650,26 +649,23 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
     //mzm - if dest_param is !=0, the board is saved like a layer.
     case 4:
     {
-      char name_buffer[ROBOT_MAX_TR];
       char *translated_name = cmalloc(MAX_PATH);
       int err;
-
-      tr_msg(mzx_world, dest + 2, id, name_buffer);
 
       if(dest_param && !src_type)
         src_type = 3;
 
       // Save MZM to string (2.90+)
-      if(mzx_world->version >= V290 && is_string(name_buffer))
+      if(mzx_world->version >= V290 && is_string(dest_name_buffer))
       {
-        save_mzm_string(mzx_world, name_buffer, src_x, src_y,
+        save_mzm_string(mzx_world, dest_name_buffer, src_x, src_y,
          width, height, src_type, 1, id);
       }
 
       // Save MZM to file
       else
       {
-        err = fsafetranslate(name_buffer, translated_name);
+        err = fsafetranslate(dest_name_buffer, translated_name);
         if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
         {
           save_mzm(mzx_world, translated_name, src_x, src_y,
@@ -801,19 +797,23 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
   }
 }
 
-// Gets the type for a single copy block param. Run on all four to get big prize (????)
-static int copy_block_param(struct world *mzx_world, int id, char *param, int *coord) {
+// Gets the type for a single copy block param.
+static int copy_block_param(struct world *mzx_world, int id, char *param,
+ int *coord)
+{
   int type = 0;
   if(*param)
   {
     if(*(param + 1) == '+')
+    {
       type = 1;
-    else if(*(param + 1) == '#')
+    }
+    else
+
+    if(*(param + 1) == '#')
+    {
       type = 2;
-    else if(*(param + 1) == '@')
-      type = 4;
-    else if(is_string(param + 1))
-      type = 3;
+    }
   }
 
   if(type == 0)
@@ -829,6 +829,31 @@ static int copy_block_param(struct world *mzx_world, int id, char *param, int *c
     *coord = strtol(src_char_buffer, NULL, 10);
   }
   return type;
+}
+
+// Gets the type for the X coord of the copy block destination.
+// This argument has two special cases: it can be a $string (after tr_msg) or
+// an MZM (always prefixed with @). These cases need to also return the name
+// of their destination string/MZM.
+static int copy_block_param_special(struct world *mzx_world, int id,
+ char *param, int *coord, char dest_name_buffer[ROBOT_MAX_TR])
+{
+  char first = *(param + 1);
+  if(!(*param) || first == '(' || first == '+' || first == '#')
+    return copy_block_param(mzx_world, id, param, coord);
+
+  if(first == '@')
+  {
+    tr_msg(mzx_world, param + 2, id, dest_name_buffer);
+    return 4;
+  }
+
+  tr_msg(mzx_world, param + 1, id, dest_name_buffer);
+  if(is_string(dest_name_buffer))
+    return 3;
+
+  *coord = get_counter(mzx_world, dest_name_buffer, id);
+  return 0;
 }
 
 void replace_player(struct world *mzx_world)
@@ -889,6 +914,15 @@ int parse_param(struct world *mzx_world, char *program, int id)
   tr_msg(mzx_world, program + 1, id, ibuff);
 
   return get_counter(mzx_world, ibuff, id);
+}
+
+// Check for the cases of parse_param that treat the param as a name.
+// Use this if tr_msg is required to check for a string in a place where an
+// expression is valid (currently only the IF and COPY BLOCK $string commands).
+static boolean is_name_param(struct world *mzx_world, char *program)
+{
+  return (program[0] != 0) &&
+  ((program[1] != '(') || mzx_world->version < V268);
 }
 
 // These will always return numeric values
@@ -1553,22 +1587,31 @@ void run_robot(context *ctx, int id, int x, int y)
       case ROBOTIC_CMD_IF: // if c?n l
       {
         int dest_value = 0, src_value = 0;
-        char *dest_string = cmd_ptr + 2;
+        char *dest_string = cmd_ptr + 1;
         char *p2 = next_param_pos(cmd_ptr + 1);
         char *src_string = p2 + 3;
         enum equality comparison = parse_param_eq(mzx_world, p2);
         char src_buffer[ROBOT_MAX_TR];
         char dest_buffer[ROBOT_MAX_TR];
         int success = 0;
+        boolean has_dest_buffer = false;
 
-        if(is_string(dest_string))
+        // NOTE: versions prior to 2.92 never did this before is_string.
+        if(is_name_param(mzx_world, dest_string))
+        {
+          tr_msg(mzx_world, dest_string + 1, id, dest_buffer);
+          has_dest_buffer = true;
+        }
+
+        if(has_dest_buffer && is_string(dest_buffer))
         {
           struct string dest;
           struct string src;
           int allow_wildcards = 0;
           int exact_case = 0;
 
-          tr_msg(mzx_world, dest_string, id, dest_buffer);
+          // NOTE: versions prior to 2.92 did tr_msg here instead of above.
+
           // Get a pointer to the dest string
           get_string(mzx_world, dest_buffer, &dest, id);
 
@@ -1609,8 +1652,16 @@ void run_robot(context *ctx, int id, int x, int y)
            exact_case, allow_wildcards);
         }
         else
+
+        if(has_dest_buffer)
         {
-          dest_value = parse_param(mzx_world, cmd_ptr + 1, id);
+          dest_value = get_counter(mzx_world, dest_buffer, id);
+          src_value = parse_param(mzx_world, src_string, id);
+        }
+
+        else
+        {
+          dest_value = parse_param(mzx_world, dest_string, id);
           src_value = parse_param(mzx_world, src_string, id);
         }
 
@@ -3900,7 +3951,7 @@ void run_robot(context *ctx, int id, int x, int y)
         else
         {
           copy_block(mzx_world, id, x, y, src_type, dest_type, src_x, src_y, 1, 1,
-           dest_x, dest_y, NULL, 0);
+           dest_x, dest_y, NULL, 0, NULL);
         }
 
         if((dest_x == x) && (dest_y == y) && (dest_type == 0))
@@ -4784,6 +4835,7 @@ void run_robot(context *ctx, int id, int x, int y)
       case ROBOTIC_CMD_COPY_BLOCK: // Copy block sx sy width height dx dy
       case ROBOTIC_CMD_COPY_OVERLAY_BLOCK: // Copy overlay block etc
       {
+        char dest_name_buffer[ROBOT_MAX_TR];
         char *p1 = cmd_ptr + 1;
         char *p2 = next_param_pos(p1);
         char *p3 = next_param_pos(p2);
@@ -4803,7 +4855,8 @@ void run_robot(context *ctx, int id, int x, int y)
         int src_type = -1, dest_type = -1;
         type[0] = copy_block_param(mzx_world, id, p1, &src_x);
         type[1] = copy_block_param(mzx_world, id, p2, &src_y);
-        type[2] = copy_block_param(mzx_world, id, p5, &dest_x);
+        type[2] = copy_block_param_special(mzx_world, id, p5, &dest_x,
+         dest_name_buffer);
         type[3] = copy_block_param(mzx_world, id, p6, &dest_y);
 
         if((type[0] == type[1]) && (type[0] <= 2))
@@ -4825,7 +4878,7 @@ void run_robot(context *ctx, int id, int x, int y)
         }
 
         copy_block(mzx_world, id, x, y, src_type, dest_type, src_x, src_y,
-         width, height, dest_x, dest_y, p5, dest_y);
+         width, height, dest_x, dest_y, p5, dest_y, dest_name_buffer);
 
         // If we got deleted, exit
         if(id)

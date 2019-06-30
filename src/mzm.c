@@ -116,7 +116,10 @@ static void save_mzm_common(struct world *mzx_world, int start_x, int start_y,
   mem_putc(0, &bufferPtr);
 
   mem_putw(MZX_VERSION, &bufferPtr);
-  bufferPtr += 3;
+  // Reserved bytes
+  mem_putc(0, &bufferPtr);
+  mem_putc(0, &bufferPtr);
+  mem_putc(0, &bufferPtr);
 
   switch(mode)
   {
