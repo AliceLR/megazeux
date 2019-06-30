@@ -118,6 +118,9 @@ FIXES
   resolve &$string& before checking if the first operand or the
   copy destination are a string (respectively), bringing their
   behavior more in line with SET/INC/DEC and other commands.
++ Fixed a regression where the COLOR INTENSITY commands would
+  update the screen if used the same cycle as TELEPORT PLAYER.
+  This fixes a graphical issue in Thanatos Insignia.
 
 DEVELOPERS
 

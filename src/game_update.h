@@ -29,7 +29,7 @@ __M_BEGIN_DECLS
 void update_world(context *ctx, boolean is_title);
 void update_board(context *ctx);
 
-void draw_world(context *ctx, boolean is_title);
+boolean draw_world(context *ctx, boolean is_title);
 
 boolean update_resolve_target(struct world *mzx_world,
  boolean *fade_in_next_cycle);

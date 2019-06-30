@@ -824,7 +824,7 @@ static void draw_message(struct world *mzx_world)
  * Draw the active world.
  */
 
-void draw_world(context *ctx, boolean is_title)
+boolean draw_world(context *ctx, boolean is_title)
 {
   struct world *mzx_world = ctx->world;
   struct board *cur_board = mzx_world->current_board;
@@ -842,7 +842,12 @@ void draw_world(context *ctx, boolean is_title)
   // the Bard) and probably in other places so we have to keep it around
   // for compatibility.
   if(mzx_world->target_where == TARGET_TELEPORT)
-    return;
+  {
+    // This is passed to the main loop and will prevent update_screen() from
+    // being executed. Some games, such as Thanatos Insignia, set the color
+    // intensity before a teleport and rely on it not taking immediately.
+    return false;
+  }
 
   blank_layers();
 
@@ -915,6 +920,7 @@ void draw_world(context *ctx, boolean is_title)
     draw_debug_box(mzx_world, 60, 19, mzx_world->player_x,
      mzx_world->player_y, 1);
   }
+  return true;
 }
 
 /**

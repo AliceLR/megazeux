@@ -635,7 +635,7 @@ static boolean intake_place_char(struct intake_subcontext *intk, char chr)
  * Draw the input string and cursor.
  */
 
-static void intake_draw(subcontext *sub)
+static boolean intake_draw(subcontext *sub)
 {
   struct intake_subcontext *intk = (struct intake_subcontext *)sub;
   int use_mask = get_config()->mask_midchars;
@@ -691,6 +691,8 @@ static void intake_draw(subcontext *sub)
 
   if(temp_pos)
     intk->dest[temp_pos] = temp_char;
+
+  return true;
 }
 
 /**

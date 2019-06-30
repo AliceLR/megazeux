@@ -3208,7 +3208,7 @@ static void init_robot_lines(struct robot_editor_context *rstate,
 #endif /* !CONFIG_DEBYTECODE */
 }
 
-static void robot_editor_draw(context *ctx)
+static boolean robot_editor_draw(context *ctx)
 {
   struct robot_editor_context *rstate = (struct robot_editor_context *)ctx;
 
@@ -3395,6 +3395,7 @@ static void robot_editor_draw(context *ctx)
   intake_set_color(rstate->intk, intk_color);
 
   draw_char(bg_char, intk_color, 1, rstate->scr_line_middle);
+  return true;
 }
 
 static boolean robot_editor_idle(context *ctx)

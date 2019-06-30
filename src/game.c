@@ -391,7 +391,7 @@ static boolean load_savegame_selection(struct game_context *game)
  * game update cycle, including player input and updating the board.
  */
 
-static void game_draw(context *ctx)
+static boolean game_draw(context *ctx)
 {
   struct game_context *game = (struct game_context *)ctx;
   struct config_info *conf = get_config();
@@ -415,12 +415,12 @@ static void game_draw(context *ctx)
     if(!conf->standalone_mode)
       draw_intro_mesg(mzx_world);
     m_show();
-    return;
+    return true;
   }
 
   set_context_framerate_mode(ctx, FRAMERATE_MZX_SPEED);
   update_world(ctx, game->is_title);
-  draw_world(ctx, game->is_title);
+  return draw_world(ctx, game->is_title);
 }
 
 // Forward declaration since this is used for both game and title screen.
