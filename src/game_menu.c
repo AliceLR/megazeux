@@ -321,6 +321,11 @@ static void draw_main_menu(struct world *mzx_world)
   y += 1;
 }
 
+static boolean menu_draw(context *ctx)
+{
+  return true;
+}
+
 /**
  * Joystick input for the game menu. Use the default UI joystick mapping except
  * with a couple of exceptions: JOY_SWITCH should open F2 since JOY_SWITCH will
@@ -397,6 +402,7 @@ void game_menu(context *parent)
   m_show();
 
   memset(&spec, 0, sizeof(struct context_spec));
+  spec.draw     = menu_draw;
   spec.key      = menu_key;
   spec.joystick = menu_joystick;
   spec.destroy  = menu_destroy;
@@ -418,6 +424,7 @@ void main_menu(context *parent)
   m_show();
 
   memset(&spec, 0, sizeof(struct context_spec));
+  spec.draw     = menu_draw;
   spec.key      = menu_key;
   spec.joystick = menu_joystick;
   spec.destroy  = menu_destroy;
