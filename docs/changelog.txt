@@ -121,6 +121,7 @@ FIXES
 + Fixed a regression where the COLOR INTENSITY commands would
   update the screen if used the same cycle as TELEPORT PLAYER.
   This fixes a graphical issue in Thanatos Insignia.
++ Improved string wildcard comparison performance.
 
 DEVELOPERS
 
