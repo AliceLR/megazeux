@@ -71,8 +71,41 @@ FEATURES
 + Added the 'softscale' renderer. This renderer is a generalized
   rewrite of the former SDL 2 overlay renderer implementation.
   It should perform significantly better and be more portable.
++ checkres now displays the board, sfx, and robot (with line and
+  position on the board) each file was referenced in.
++ checkres can now be used with a directory as the base file.
+  Like a ZIP archive, checkres will recursively search the
+  directory for .MZX/.MZB files and display information for all
+  of them.
++ checkres has more display options: only display missing (-M)
+  (default), only display created (-C), only display found (-F),
+  also display missing (-m), also display created (-c), and also
+  display found (-f).
++ checkres can now wildcard match resources from commands that
+  use expressions or interpolation in filenames. This can be
+  enabled with -w or enabled exclusively with -W.
++ checkres can now display unused resources in a path/zip after
+  the other resources are listed (-u), or display only unused
+  resources (-U).
++ checkres can now display every reference to a particular
+  resource in a world instead of just the first with varying
+  levels of information (-v, -vv). Added the option -s, which
+  is the default and equivalent to older versions of checkres,
+  and -1 as an alternate flag for -q.
++ checkres can now sort its output either by the name of the
+  expected resource file (-N) (default) or by the location in
+  the world the file was referenced (-L).
++ checkres option flags can now be combined (e.g. -aL). This
+  does not apply to the "-extra" and "-in" flags.
++ New config options: "test_mode" and "test_mode_start_board".
+  If "test_mode" is set to 1, MegaZeux will start the given file
+  in testing mode, exactly as if the user used Alt+T on the
+  first board from the editor. Setting "test_mode_start_board"
+  to a valid board number in the world will start instead from
+  that board. Exiting testing will exit MegaZeux entirely.
 - SDL 2 support for the overlay renderers has been removed. When
   specified for video_output, softscale will be enabled instead.
+- Removed WAV from the list of board mod extensions.
 
 FIXES
 
@@ -124,6 +157,23 @@ FIXES
   cursor off the screen with a window bigger than the screen.
 + Fixed a bug where setting SMZX_MESSAGE to 0 wouldn't always
   draw the message correctly.
++ If a referenced SAM or GDM file isn't present, MegaZeux will
+  attempt to load a corresponding WAV or S3M (respectively) with
+  the same filename minus the extension. This should fix some
+  music/sounds in older games that referenced SAM/GDM files but
+  were packed with the post-conversion WAV/S3M files only.
++ The behavior for reseting the player movement repeat timers
+  has been reverted to requiring all four movement keys released
+  (as in 2.80 to 2.91i). The related player locking fix has not
+  been modified.
++ IF "&$string&" and COPY BLOCK # # # # "&$string&" now properly
+  resolve &$string& before checking if the first operand or the
+  copy destination are a string (respectively), bringing their
+  behavior more in line with SET/INC/DEC and other commands.
++ Fixed a regression where the COLOR INTENSITY commands would
+  update the screen if used the same cycle as TELEPORT PLAYER.
+  This fixes a graphical issue in Thanatos Insignia.
++ Improved string wildcard comparison performance.
 
 DEVELOPERS
 
@@ -150,6 +200,16 @@ DEVELOPERS
   opengl2 and glsl. This provides a tiny performance improvement
   on most cards and a massive performance improvement on some
   other cards. (Lancer-X)
++ Added debug build sanitizer options for AddressSanitizer,
+  MemorySanitizer, and ThreadSanitizer. MemorySanitizer requires
+  clang and all currently require Linux/BSD/Mac OS X/similar.
+  Support for all three is very experimental; they may require
+  disabling options like modular builds or may not work at all.
++ Moved several param functions from robot.c to run_robot.c.
+  Aside from a few exceptions, these functions are largely used
+  in run_robot.c only. This should improve Robotic performance
+  in release builds.
++ Updated MSVC project for Visual Studio 2019. (elig, Spectere)
 - Removed uthash as a build option.
 
 

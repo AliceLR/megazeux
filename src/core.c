@@ -700,18 +700,19 @@ static void core_resume(core_context *root)
  * Draw the current context.
  */
 
-static void core_draw(core_context *root)
+static boolean core_draw(core_context *root)
 {
   context *ctx = root->stack.contents[root->stack.size - 1];
   context_data *ctx_data = ctx->internal_data;
   context_data *sub_data;
   subcontext *sub;
+  boolean ret = false;
 
   if(ctx_data->functions.draw)
-    ctx_data->functions.draw(ctx);
+    ret |= ctx_data->functions.draw(ctx);
 
   if(root->context_changed || root->full_exit)
-    return;
+    return ret;
 
   ctx_data->stack.pos = 0;
 
@@ -723,11 +724,11 @@ static void core_draw(core_context *root)
     if(sub_data->functions.draw)
     {
       select_layer(UI_LAYER);
-      sub_data->functions.draw((context *)sub);
+      ret |= sub_data->functions.draw((context *)sub);
     }
 
     if(root->context_changed || root->full_exit)
-      return;
+      return ret;
 
     ctx_data->stack.pos++;
   }
@@ -741,8 +742,10 @@ static void core_draw(core_context *root)
 
     select_layer(UI_LAYER);
     write_string(fpsbuf, 0, 0, 0x0f, false);
+    return true;
   }
 #endif
+  return ret;
 }
 
 /**
@@ -990,6 +993,7 @@ void core_run(core_context *root)
   int start_ticks = get_ticks();
   int delta_ticks;
   int total_ticks;
+  boolean need_update_screen = true;
 
   // If there aren't any contexts on the stack, there's no reason to be here.
   if(initial_stack_size <= 0)
@@ -1019,13 +1023,14 @@ void core_run(core_context *root)
         return;
     }
 
-    core_draw(root);
+    need_update_screen = core_draw(root);
 
     // Context changed or an exit occurred? Skip the screen update and delay
     if(root->context_changed || root->full_exit)
       continue;
 
-    update_screen();
+    if(need_update_screen)
+      update_screen();
 
     // Delay and then handle events.
     ctx = root->stack.contents[root->stack.size - 1];

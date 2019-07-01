@@ -1707,19 +1707,24 @@ static void init_sprites_node(struct world *mzx_world, struct debug_node *dest)
     if(sprite_list[i]->width != 0 || sprite_list[i]->height != 0)
       num_sprites_active++;
 
-  nodes = ccalloc(num_sprites_active, sizeof(struct debug_node));
   dest->num_nodes = num_sprites_active;
-  dest->nodes = nodes;
-
-  // Populate the sprite nodes.
-  for(spr = 0, i = 0; i < MAX_SPRITES; i++)
+  if(num_sprites_active)
   {
-    if(sprite_list[i]->width == 0 && sprite_list[i]->height == 0)
-      continue;
+    nodes = ccalloc(num_sprites_active, sizeof(struct debug_node));
+    dest->nodes = nodes;
 
-    init_sprite_vars_node(mzx_world, dest, &(nodes[spr]), i);
-    spr++;
+    // Populate the sprite nodes.
+    for(spr = 0, i = 0; i < MAX_SPRITES; i++)
+    {
+      if(sprite_list[i]->width == 0 && sprite_list[i]->height == 0)
+        continue;
+
+      init_sprite_vars_node(mzx_world, dest, &(nodes[spr]), i);
+      spr++;
+    }
   }
+  else
+    dest->nodes = NULL;
 }
 
 static void init_builtin_node(struct world *mzx_world,

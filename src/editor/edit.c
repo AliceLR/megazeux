@@ -88,9 +88,9 @@ static const char *const chr_ext[] = { ".CHR", NULL };
 static const char *const pal_ext[] = { ".PAL", NULL };
 static const char *const idx_ext[] = { ".PALIDX", NULL };
 static const char *const mod_ext[] =
-{ ".ogg", ".mod", ".s3m", ".xm", ".it", ".gdm",
-  ".669", ".amf", ".dsm", ".far", ".med",
-  ".mtm", ".okt", ".stm", ".ult", ".wav",
+{ ".ogg", ".mod", ".s3m", ".xm", ".it",
+  ".669", ".amf", ".dsm", ".far", ".gdm",
+  ".med", ".mtm", ".okt", ".stm", ".ult",
   ".rad",
   NULL
 };
@@ -705,7 +705,7 @@ struct view_board_context
   int max_y;
 };
 
-static void view_board_draw(context *ctx)
+static boolean view_board_draw(context *ctx)
 {
   struct view_board_context *vb = (struct view_board_context *)ctx;
   struct world *mzx_world = ctx->world;
@@ -713,6 +713,7 @@ static void view_board_draw(context *ctx)
   blank_layers();
   draw_viewport(mzx_world->current_board, mzx_world->edge_color);
   draw_game_window(mzx_world->current_board, vb->x, vb->y);
+  return true;
 }
 
 static boolean view_board_key(context *ctx, int *key)
@@ -972,7 +973,7 @@ static void draw_out_of_bounds(int in_x, int in_y, int in_width, int in_height)
  * to happen at draw time.
  */
 
-static void editor_draw(context *ctx)
+static boolean editor_draw(context *ctx)
 {
   struct editor_context *editor = (struct editor_context *)ctx;
   struct buffer_info *buffer = &(editor->buffer);
@@ -1092,6 +1093,8 @@ static void editor_draw(context *ctx)
   update_edit_menu(editor->edit_menu, editor->mode, editor->cursor_mode,
    editor->cursor_x, editor->cursor_y, editor->screen_height,
    &(editor->buffer), editor->use_default_color);
+
+  return true;
 }
 
 /**
@@ -2854,6 +2857,13 @@ static boolean editor_key(context *ctx, int *key)
             if(!choose_file(mzx_world, mod_ext, new_mod,
              "Choose a module file", 2)) // 2:subdirsonly
             {
+              const char *ext_pos = new_mod + strlen(new_mod) - 4;
+              if(ext_pos >= new_mod && !strcasecmp(ext_pos, ".WAV"))
+              {
+                error("Using OGG instead of WAV is recommended.",
+                 ERROR_T_WARNING, ERROR_OPT_OK, 0xc0c5);
+              }
+
               strcpy(cur_board->mod_playing, new_mod);
               strcpy(mzx_world->real_mod_playing, new_mod);
               fix_mod(editor);

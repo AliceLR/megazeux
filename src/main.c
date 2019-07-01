@@ -76,7 +76,8 @@ __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1; // AMD
 
 static char startup_dir[MAX_PATH];
 
-static inline char **rewrite_argv_for_execv(int argc, char **argv)
+#ifdef CONFIG_UPDATER
+static char **rewrite_argv_for_execv(int argc, char **argv)
 {
   char **new_argv = cmalloc((argc+1) * sizeof(char *));
   char *arg;
@@ -118,6 +119,7 @@ static inline char **rewrite_argv_for_execv(int argc, char **argv)
 
   return new_argv;
 }
+#endif
 
 #ifdef __amigaos__
 #define __libspec LIBSPEC

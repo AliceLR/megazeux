@@ -384,7 +384,7 @@ static void draw_menu_minimal(struct edit_menu_subcontext *edit_menu)
   draw_menu_status(edit_menu, EDIT_SCREEN_MINIMAL);
 }
 
-static void edit_menu_draw(subcontext *ctx)
+static boolean edit_menu_draw(subcontext *ctx)
 {
   struct edit_menu_subcontext *edit_menu = (struct edit_menu_subcontext *)ctx;
 
@@ -396,6 +396,7 @@ static void edit_menu_draw(subcontext *ctx)
   {
     draw_menu_minimal(edit_menu);
   }
+  return true;
 }
 
 static boolean edit_menu_idle(subcontext *ctx)

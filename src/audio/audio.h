@@ -140,6 +140,8 @@ void audio_set_music_volume(int volume);
 void audio_set_sound_volume(int volume);
 void audio_set_pcs_volume(int volume);
 
+int audio_legacy_translate(const char *path, char newpath[MAX_PATH]);
+
 // Internal functions
 int audio_get_real_frequency(int period);
 void destruct_audio_stream(struct audio_stream *a_src);
@@ -188,6 +190,9 @@ static inline void audio_set_pcs_on(int val) {}
 static inline void audio_set_music_volume(int volume) {}
 static inline void audio_set_sound_volume(int volume) {}
 static inline void audio_set_pcs_volume(int volume) {}
+
+static inline int audio_legacy_translate(const char *path,
+ char newpath[MAX_PATH]) { return -1; }
 
 #endif // CONFIG_AUDIO
 

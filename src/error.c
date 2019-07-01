@@ -53,8 +53,8 @@ int error(const char *string, enum error_type type, unsigned int options,
   int x;
 
   // Find the name of this error type.
-  if(type >= sizeof(error_type_names) / sizeof(*error_type_names))
-    type = 0;
+  if((unsigned int)type >= ARRAY_SIZE(error_type_names))
+    type = ERROR_T_WARNING;
 
   type_name = error_type_names[type];
 

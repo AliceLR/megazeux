@@ -41,6 +41,9 @@ usage() {
 	echo "  --enable-release        Optimize and remove debugging code."
 	echo "  --enable-verbose        Build system is always verbose (V=1)."
 	echo "  --optimize-size         Perform size optimizations (-Os)."
+	echo "  --enable-asan           Enable AddressSanitizer for debug builds"
+	echo "  --enable-msan           Enable MemorySanitizer for debug builds"
+	echo "  --enable-tsan           Enable ThreadSanitizer for debug builds"
 	echo "  --disable-datestamp     Disable adding date to version."
 	echo "  --disable-editor        Disable the built-in editor."
 	echo "  --disable-mzxrun        Disable generation of separate MZXRun."
@@ -113,6 +116,7 @@ DATE_STAMP="true"
 AS_NEEDED="false"
 RELEASE="false"
 OPT_SIZE="false"
+SANITIZER="false"
 EDITOR="true"
 MZXRUN="true"
 HELPSYS="true"
@@ -226,6 +230,15 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--optimize-size" ]  && OPT_SIZE="true"
 	[ "$1" = "--optimize-speed" ] && OPT_SIZE="false"
+
+	[ "$1" = "--enable-asan" ]  && SANITIZER="address"
+	[ "$1" = "--disable-asan" ] && SANITIZER="false"
+
+	[ "$1" = "--enable-msan" ]  && SANITIZER="memory"
+	[ "$1" = "--disable-msan" ] && SANITIZER="false"
+
+	[ "$1" = "--enable-tsan" ] &&  SANITIZER="thread"
+	[ "$1" = "--disable-tsan" ] && SANITIZER="false"
 
 	[ "$1" = "--disable-datestamp" ] && DATE_STAMP="false"
 	[ "$1" = "--enable-datestamp" ]  && DATE_STAMP="true"
@@ -871,6 +884,11 @@ if [ "$RELEASE" = "true" ]; then
 else
 	echo "Disabling optimization, debug enabled."
 	echo "DEBUG=1" >> platform.inc
+
+	if [ "$SANITIZER" != "false" ]; then
+		echo "Enabling $SANITIZER sanitizer (may enable some optimizations)"
+		echo "SANITIZER=$SANITIZER" >> platform.inc
+	fi
 fi
 
 #

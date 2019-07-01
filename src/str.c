@@ -1337,6 +1337,15 @@ boolean is_string(char *buffer)
   return true;
 }
 
+static boolean wildcard_char_is_escapable(unsigned char c)
+{
+  return (c == '%') || (c == '?') || (c == '\\');
+}
+
+// Slower wildcard compare algorithm that manipulates an array of booleans to
+// determine the match state of the entire source string at once.
+// This approach seems to perform a bit better than a stack.
+//
 // Example pattern:
 //      z a b c d e f g
 //    Y
@@ -1346,11 +1355,10 @@ boolean is_string(char *buffer)
 // c  Y - - N Y N N N N (attempt from left to right)
 // %  Y - - - Y Y Y Y Y (fill left to end with Y)
 // g  Y - - - - N N N Y
-
-static int compare_wildcard(const char *str, size_t str_len,
- const char *pat, size_t pat_len, int exact_case)
+static int compare_wildcard_slow(const char *str, size_t str_len,
+ const char *pat, size_t pat_len, boolean exact_case)
 {
-  char *str_matched = calloc(1, str_len + 1);
+  char *str_matched = ccalloc(1, str_len + 1);
   size_t left = 1;
   size_t right = 1;
   size_t new_left = 1;
@@ -1358,40 +1366,64 @@ static int compare_wildcard(const char *str, size_t str_len,
   size_t i = 0;
   size_t j;
   char next = 0;
-  char prev;
   int res = -1;
+
+  //info("Slow: %.*s ?=%s %.*s\n", str_len, str, exact_case?"=":"", pat_len, pat);
 
   str_matched[0] = 1;
 
   while(i < pat_len && left <= str_len)
   {
-    prev = next;
-    next = exact_case ? pat[i] : toupper((int)pat[i]);
+    next = exact_case ? pat[i] : memtolower(pat[i]);
     i++;
 
     switch(next)
     {
+      case '?':
       case '%':
       {
-        // Can match the entire string or nothing. Ignore duplicate %s
-        if(prev != '%')
+        // ? matches any character.
+        // % can match the entire string or nothing.
+        // Consume all wildcards in a block to reduce the number of calls.
+        boolean match_any = false;
+        new_left = left;
+        new_right = right;
+        while(true)
+        {
+          if(next == '%')
+          {
+            new_right = str_len;
+            match_any = true;
+          }
+          else
+
+          if(next == '?')
+          {
+            new_left++;
+            if(new_right < str_len)
+              new_right++;
+          }
+          else
+          {
+            i--;
+            break;
+          }
+
+          if(i >= pat_len)
+            break;
+
+          next = pat[i++];
+        }
+
+        if(match_any)
         {
           memset(str_matched + left, 1, str_len - left + 1);
-          right = str_len;
         }
-        continue;
-      }
+        else
+          memmove(str_matched + new_left - 1, str_matched + left - 1,
+           new_right - new_left + 1);
 
-      case '?':
-      {
-        // Matches the next character if the previous character was matched
-        memmove(str_matched + left, str_matched + left - 1, right - left + 1);
-
-        left++;
-        if(right < str_len)
-          right++;
-
-        continue;
+        break;
       }
 
       case '\\':
@@ -1399,7 +1431,7 @@ static int compare_wildcard(const char *str, size_t str_len,
         // Might be an escaped character
         if(i < pat_len)
         {
-          if(pat[i] == '%' || pat[i] == '?' || pat[i] == '\\')
+          if(wildcard_char_is_escapable(pat[i]))
           {
             next = pat[i];
             i++;
@@ -1412,7 +1444,8 @@ static int compare_wildcard(const char *str, size_t str_len,
       default:
       {
         // Matches next character if previous character matched and
-        // the current character is the same as the pattern
+        // the current character is the same as the pattern. If no matches are
+        // found, left will be set >str_len and terminate the search.
         new_left = (size_t)-1;
         new_right = 0;
 
@@ -1433,7 +1466,7 @@ static int compare_wildcard(const char *str, size_t str_len,
         {
           for(j = right; j >= left; j--)
           {
-            str_matched[j] = str_matched[j-1] && toupper((int)str[j-1]) == next;
+            str_matched[j] = str_matched[j-1] && memtolower(str[j-1]) == next;
             if(str_matched[j])
             {
               new_left = j+1;
@@ -1459,6 +1492,134 @@ static int compare_wildcard(const char *str, size_t str_len,
 
   free(str_matched);
   return res;
+}
+
+// Basic wildcard match-- supports anything but % followed by literals.
+// This is a lot faster than the older algorithm, but if the aforementioned
+// case is encountered, it has to call the old algorithm instead.
+static int compare_wildcard(const char *str, size_t str_len,
+ const char *pat, size_t pat_len, boolean exact_case)
+{
+  size_t s = 0;
+  size_t w = 0;
+
+  //info("Fast: %.*s ?=%s %.*s\n", str_len, str, exact_case?"=":"", pat_len, pat);
+
+  // Pattern is length 0: match if str is length 0, otherwise not a match.
+  if(pat_len == 0)
+    return (str_len == 0) ? 0 : 1;
+
+  while(s < str_len && w < pat_len)
+  {
+    switch(pat[w])
+    {
+      case '%':
+      {
+        // Consume extra wildcards.
+        size_t oldw = w;
+        size_t olds = s;
+        char lookahead;
+        w++;
+        while(w < pat_len)
+        {
+          if(pat[w] == '%')
+          {
+            w++;
+          }
+          else
+
+          if(pat[w] == '?')
+          {
+            w++;
+            s++;
+          }
+          else
+            break;
+        }
+
+        // Not enough source characters? Not a match.
+        if(s > str_len)
+          return 1;
+
+        // End of the pattern and >=0 characters left? Match.
+        if(w == pat_len)
+          return 0;
+
+        // Lookahead char not present anywhere in the source? Not a match.
+        // This is a good opportunity to reduce the size of the source if it
+        // has to go to the old search algorithm too.
+        lookahead = pat[w];
+        if(lookahead == '\\' && w+1 < pat_len)
+          if(wildcard_char_is_escapable(pat[w+1]))
+            lookahead = pat[w+1];
+
+        while(s < str_len)
+        {
+          if(str[s] == lookahead)
+            break;
+          olds++;
+          s++;
+        }
+        if(s >= str_len)
+          return 1;
+
+        // Bring out the slow search algorithm :(
+        str += olds;
+        str_len -= olds;
+        pat += oldw;
+        pat_len -= oldw;
+        return compare_wildcard_slow(str, str_len, pat, pat_len, exact_case);
+      }
+
+      case '?':
+      {
+        // Consume extra wildcards.
+        w++;
+        s++;
+        while(w < pat_len && pat[w] == '?')
+        {
+          w++;
+          s++;
+        }
+        continue;
+      }
+
+      case '\\':
+      {
+        if(wildcard_char_is_escapable(pat[w+1]))
+          w++;
+        if(w >= pat_len)
+          return 1;
+      }
+
+      /* fall-through */
+
+      default:
+      {
+        if(exact_case)
+        {
+          if(str[s] != pat[w])
+            return 1;
+        }
+        else
+        {
+          if(memtolower(str[s]) != memtolower(pat[w]))
+            return 1;
+        }
+        w++;
+        s++;
+        continue;
+      }
+    }
+  }
+  // Skip trailing wildcards if they exist
+  while(w < pat_len && pat[w] == '%') w++;
+
+  // Both exactly consumed--successful match.
+  if(s == str_len && w == pat_len)
+    return 0;
+
+  return 1;
 }
 
 int compare_strings(struct string *A, struct string *B, boolean exact_case,
