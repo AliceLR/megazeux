@@ -605,15 +605,36 @@ static void init_gamecontroller(int sdl_index, int joystick_index)
 
     if(gamecontroller)
     {
-      char *mapping;
+      char *mapping = NULL;
       gamecontrollers[joystick_index] = gamecontroller;
 
+#if SDL_VERSION_ATLEAST(2,0,9)
       // NOTE: the other functions for this will not return the default mapping
       // string; this is the only one that can return everything. Right now,
       // this only matters for the Emscripten port.
-      // TODO If there's a situation in the future where a gamecontroller can
-      // open with no mapping string, use gamecontroller events as a fallback.
       mapping = (char *)SDL_GameControllerMappingForDeviceIndex(sdl_index);
+#else
+      mapping = (char *)SDL_GameControllerMapping(gamecontroller);
+#endif
+
+#ifdef __EMSCRIPTEN__
+      if(!mapping)
+      {
+        // The only function that can return the default mapping was added
+        // in SDL 2.0.9, but I'm not sure Emscripten actually has SDL 2.0.9.
+        // This string is copied from SDL_gamecontrollerdb.h
+        static const char default_mapping[] =
+         "default,Standard Gamepad,a:b0,b:b1,back:b8,dpdown:b13,dpleft:b14,"
+         "dpright:b15,dpup:b12,guide:b16,leftshoulder:b4,leftstick:b10,"
+         "lefttrigger:b6,leftx:a0,lefty:a1,rightshoulder:b5,rightstick:b11,"
+         "righttrigger:b7,rightx:a2,righty:a3,start:b9,x:b2,y:b3,";
+
+        mapping = SDL_malloc(sizeof(default_mapping));
+        if(mapping)
+          strcpy(mapping, default_mapping);
+      }
+#endif
+
       if(mapping)
       {
         info("[JOYSTICK] %d has an SDL mapping: %s\n", joystick_index, mapping);
