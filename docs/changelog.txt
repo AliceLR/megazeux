@@ -122,6 +122,10 @@ FIXES
   update the screen if used the same cycle as TELEPORT PLAYER.
   This fixes a graphical issue in Thanatos Insignia.
 + Improved string wildcard comparison performance.
++ Changed the debug window to display "2.65/2.68" for worlds
+  from MZX 2.65 and MZX 2.68. Features from 2.68 still check for
+  the intended MZX 2.68 magic; the very few existing 2.68 worlds
+  that use these features need to be resaved in 2.69.
 
 DEVELOPERS
 
