@@ -1012,7 +1012,7 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
     if(cur_robot && dest && dest->length)
     {
       int new_length = 0;
-      char *new_source = legacy_convert_file_mem(dest->value,
+      char *new_source = legacy_convert_program(dest->value,
        dest->length, &new_length, SAVE_ROBOT_DISASM_EXTRAS,
        SAVE_ROBOT_DISASM_BASE);
 
@@ -1095,6 +1095,26 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
       }
     }
   }
+  else
+
+  if(special_name_partial("save_robot") && mzx_world->version >= V292)
+  {
+    // Save robot source to string (2.92+)
+    struct robot *cur_robot;
+    int load_id = id;
+
+    if(src_length > 10)
+      load_id = strtol(src_value + 10, NULL, 10);
+
+    cur_robot = get_robot_by_id(mzx_world, load_id);
+
+    if(cur_robot)
+    {
+      force_string_copy(string_list, name, next, &dest,
+       cur_robot->program_source_length, offset, offset_specified,
+       &size, size_specified, cur_robot->program_source);
+    }
+  }
 
 #else //!CONFIG_DEBYTECODE
   if(special_name_partial("load_robot") && mzx_world->version >= V290)
@@ -1105,7 +1125,7 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
     int new_size;
 
     if(dest && dest->length)
-      new_program = assemble_file_mem(dest->value, dest->length, &new_size);
+      new_program = assemble_program(dest->value, dest->length, &new_size);
 
     if(new_program)
     {
@@ -1149,6 +1169,35 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
       }
 
       free(new_program);
+    }
+  }
+  else
+
+  if(special_name_partial("save_robot") && mzx_world->version >= V292)
+  {
+    // Save robot to string (2.92+)
+    struct robot *cur_robot;
+    char *robot_source = NULL;
+    int robot_source_length;
+    int load_id = id;
+
+    if(src_length > 10)
+      load_id = strtol(src_value + 10, NULL, 10);
+
+    cur_robot = get_robot_by_id(mzx_world, load_id);
+
+    if(cur_robot)
+    {
+      disassemble_program(cur_robot->program_bytecode,
+       cur_robot->program_bytecode_length,
+       &robot_source, &robot_source_length, NULL, NULL);
+
+      if(robot_source)
+      {
+        force_string_copy(string_list, name, next, &dest, robot_source_length,
+         offset, offset_specified, &size, size_specified, robot_source);
+        free(robot_source);
+      }
     }
   }
 #endif

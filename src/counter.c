@@ -3220,14 +3220,23 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       break;
     }
 
-    /* We can't support this. That's because there probably won't be
-     * source code present to save. If any games use it then they just
-     * can't be supported. There just isn't an easy fix for this.
-     */
     case FOPEN_SAVE_ROBOT:
     {
-      error_message(E_DBC_SAVE_ROBOT_UNSUPPORTED, 0, NULL);
-      set_error_suppression(E_DBC_SAVE_ROBOT_UNSUPPORTED, 1);
+      if(value >= 0)
+        cur_robot = get_robot_by_id(mzx_world, value);
+
+      if(cur_robot && cur_robot->program_source)
+      {
+        FILE *fp = fsafeopen(char_value, "wb");
+        size_t len = cur_robot->program_source_length;
+
+        if(fp)
+        {
+          // TODO: this doesn't apply zaps...
+          fwrite(cur_robot->program_source, len, 1, fp);
+          fclose(fp);
+        }
+      }
       break;
     }
 
