@@ -55,7 +55,7 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
  struct robot *cur_robot, const void *buffer, int savegame, int version,
  int robot_location)
 {
-  int program_length, validated_length;
+  int program_length;
   int i;
 
   const unsigned char *bufferPtr = buffer;
@@ -161,21 +161,10 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
     memcpy(program_legacy_bytecode, bufferPtr, program_length);
     bufferPtr += program_length;
 
-    validated_length = validate_legacy_bytecode(program_legacy_bytecode,
-     program_length);
-
-    if(validated_length <= 0)
+    if(!validate_legacy_bytecode(&program_legacy_bytecode, &program_length))
     {
       free(program_legacy_bytecode);
       goto err_invalid;
-    }
-    else
-
-    if(validated_length < program_length)
-    {
-      program_legacy_bytecode = crealloc(program_legacy_bytecode,
-       validated_length);
-      program_length = validated_length;
     }
 
     // FIXME need legacy bytecode map in addition to modern bytecode
@@ -219,18 +208,10 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
     memcpy(cur_robot->program_bytecode, bufferPtr, program_length);
     bufferPtr += program_length;
 
-    validated_length = validate_legacy_bytecode(cur_robot->program_bytecode,
-     program_length);
-
-    if(validated_length <= 0)
+    if(!validate_legacy_bytecode(&cur_robot->program_bytecode, &program_length))
       goto err_invalid;
 
-    else if(validated_length < program_length)
-    {
-      cur_robot->program_bytecode = crealloc(cur_robot->program_bytecode,
-       validated_length);
-      cur_robot->program_bytecode_length = validated_length;
-    }
+    cur_robot->program_bytecode_length = program_length;
 
     // Now create a label cache IF the robot is in use
     if(cur_robot->used)

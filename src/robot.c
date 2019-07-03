@@ -266,13 +266,16 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
         // This field should never be found in files saved in >= VERSION_SOURCE.
         if(file_version < VERSION_SOURCE)
         {
-          char *program_legacy_bytecode = (char *)prop.start;
-          int v_size;
+          char *program_legacy_bytecode = cmalloc(size);
+          int v_size = size;
 
-          v_size = validate_legacy_bytecode(program_legacy_bytecode, size);
+          mfread(program_legacy_bytecode, size, 1, &prop);
 
-          if(v_size < 0)
+          if(!validate_legacy_bytecode(&program_legacy_bytecode, &v_size))
+          {
+            free(program_legacy_bytecode);
             goto err_invalid;
+          }
 
           cur_robot->program_bytecode = NULL;
           cur_robot->program_bytecode_length = 0;
@@ -282,6 +285,8 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
           cur_robot->program_source =
            legacy_disassemble_program(program_legacy_bytecode, v_size,
             &(cur_robot->program_source_length), true, 10);
+
+          free(program_legacy_bytecode);
         }
         break;
       }
@@ -297,19 +302,13 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
 
         if(size > 0)
         {
-          int v_size;
+          int v_size = size;
           cur_robot->program_bytecode = cmalloc(size);
 
           mfread(cur_robot->program_bytecode, size, 1, &prop);
 
-          v_size = validate_legacy_bytecode(cur_robot->program_bytecode, size);
-
-          if(v_size <= 0)
+          if(!validate_legacy_bytecode(&cur_robot->program_bytecode, &v_size))
             goto err_invalid;
-
-          else if(v_size < size)
-            cur_robot->program_bytecode =
-             crealloc(cur_robot->program_bytecode, v_size);
 
           cur_robot->program_bytecode_length = v_size;
 

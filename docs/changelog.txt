@@ -126,6 +126,10 @@ FIXES
   from MZX 2.65 and MZX 2.68. Features from 2.68 still check for
   the intended MZX 2.68 magic; the very few existing 2.68 worlds
   that use these features need to be resaved in 2.69.
++ MegaZeux now attempts to fix Robotic that fails bytecode
+  validation. This resolves error messages and bugs in Eternal
+  Eclipse Taoyarin v1.0, Loco, SaintZZT 7th, Slave Pit, and
+  Ep+Arp World MZX.
 
 DEVELOPERS
 
