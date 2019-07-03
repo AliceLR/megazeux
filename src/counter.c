@@ -3124,7 +3124,8 @@ int set_counter_special(struct world *mzx_world, char *char_value,
           fread(program_legacy_bytecode, program_bytecode_length, 1,
            bc_file);
 
-          if(validate_legacy_bytecode(program_legacy_bytecode, program_bytecode_length) <= 0)
+          if(!validate_legacy_bytecode(&program_legacy_bytecode,
+           &program_bytecode_length))
           {
             error_message(E_LOAD_BC_CORRUPT, 0, char_value);
             free(program_legacy_bytecode);
@@ -3310,17 +3311,17 @@ int set_counter_special(struct world *mzx_world, char *char_value,
             break;
           }
 
-          if(validate_legacy_bytecode(program_bytecode, new_size) <= 0)
+          if(!validate_legacy_bytecode(&program_bytecode, &new_size))
           {
             error_message(E_LOAD_BC_CORRUPT, 0, char_value);
             free(program_bytecode);
             break;
           }
 
-          reallocate_robot(cur_robot, new_size);
           clear_label_cache(cur_robot->label_list, cur_robot->num_labels);
-
-          memcpy(cur_robot->program_bytecode, program_bytecode, new_size);
+          free(cur_robot->program_bytecode);
+          cur_robot->program_bytecode = program_bytecode;
+          cur_robot->program_bytecode_length = new_size;
           cur_robot->cur_prog_line = 1;
           cur_robot->stack_pointer = 0;
           cur_robot->label_list =

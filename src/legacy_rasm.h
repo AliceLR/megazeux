@@ -69,7 +69,8 @@ CORE_LIBSPEC int get_color(char *cmd_line);
 
 extern const char special_first_char[256];
 
-int validate_legacy_bytecode(char *bc, int program_length);
+// This command will reallocate the program as-needed, but it won't free it.
+boolean validate_legacy_bytecode(char **_bc, int *_program_length);
 
 #ifdef CONFIG_DEBYTECODE
 
