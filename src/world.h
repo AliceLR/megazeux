@@ -100,8 +100,8 @@ enum mzx_version
   V261            = 0x0209,
   VERSION_DECRYPT = 0x0211, // Special version used for decrypted worlds only.
   V262            = 0x0232,
-  V265            = 0x0241,
-  V268            = 0x0244,
+  V265            = 0x0241, // NOTE: 2.68 uses 0x241 for worlds and 0x244 for
+  V268            = 0x0244, // saves. Leave any 2.68 version checks at V268.
   V269            = 0x0245,
   V269b           = 0x0246,
   V269c           = 0x0248,
