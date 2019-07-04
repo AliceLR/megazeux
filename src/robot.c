@@ -384,19 +384,12 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
   if(savegame && saved_label_zaps)
   {
     // Apply saved label zap data.
-    struct label *cur;
-
     prepare_robot_bytecode(mzx_world, cur_robot);
 
     if(num_label_zaps == cur_robot->num_labels)
     {
       for(i = 0; i < num_label_zaps; i++)
-      {
-        cur = cur_robot->label_list[i];
-
-        if(saved_label_zaps[i])
-          cur->zapped = !cur->zapped_in_source;
-      }
+        cur_robot->label_list[i]->zapped = saved_label_zaps[i];
     }
   }
 
@@ -677,7 +670,7 @@ static void save_robot_to_memory(struct robot *cur_robot,
     for(i = 0; i < cur_robot->num_labels; i++)
     {
       struct label *cur = cur_robot->label_list[i];
-      prop.start[i] = (cur->zapped != cur->zapped_in_source);
+      prop.start[i] = cur->zapped;
     }
 
 #endif // CONFIG_DEBYTECODE
