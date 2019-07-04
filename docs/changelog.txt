@@ -26,6 +26,9 @@ FEATURES
 + New counters: FREAD_LENGTH and FWRITE_LENGTH. These counters
   return the length of the FREAD file/directory (if open) or the
   current length of the FWRITE file (if open).
++ New counter: SET "$string" "SAVE_ROBOT". This does the same
+  thing as SET "filename" "SAVE_ROBOT", except it saves the
+  robot to the specified string.
 + Joystick settings in game.cnf files are now loaded as game-
   specific joystick bindings. These bindings will no longer
   permanently override global/UI bindings defined by the config
