@@ -24,6 +24,13 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+#include "../config.h"
+
+#ifdef CONFIG_PLEDGE
+#include "pledge.h"
+#define PROMISES "stdio rpath wpath cpath"
+#endif
+
 // Cleaned up/revised txt2hlp.cpp for compiling outside of DOS
 
 static void fputw(int src, FILE *fp)
@@ -117,6 +124,22 @@ int main(int argc, char *argv[])
     printf("Usage: TXT2HLP source.txt output.fil\n");
     return 1;
   }
+
+#ifdef CONFIG_PLEDGE
+#ifdef HAS_UNVEIL
+  if(unveil(argv[1], "r") || unveil(argv[2], "cw") || unveil(NULL, NULL))
+  {
+    fprintf(stderr, "ERROR: Failed unveil!\n");
+    return 1;
+  }
+#endif
+
+  if(pledge(PROMISES, ""))
+  {
+    fprintf(stderr, "ERROR: Failed pledge!\n");
+    return 1;
+  }
+#endif
 
   source = fopen(argv[1], "rb");
   if(source == NULL)

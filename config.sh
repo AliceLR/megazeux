@@ -44,6 +44,7 @@ usage() {
 	echo "  --enable-asan           Enable AddressSanitizer for debug builds"
 	echo "  --enable-msan           Enable MemorySanitizer for debug builds"
 	echo "  --enable-tsan           Enable ThreadSanitizer for debug builds"
+	echo "  --disable-pledge        Disable experimental OpenBSD pledge(2) support"
 	echo "  --disable-datestamp     Disable adding date to version."
 	echo "  --disable-editor        Disable the built-in editor."
 	echo "  --disable-mzxrun        Disable generation of separate MZXRun."
@@ -116,6 +117,7 @@ AS_NEEDED="false"
 RELEASE="false"
 OPT_SIZE="false"
 SANITIZER="false"
+PLEDGE="true"
 EDITOR="true"
 MZXRUN="true"
 HELPSYS="true"
@@ -237,6 +239,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--enable-tsan" ] &&  SANITIZER="thread"
 	[ "$1" = "--disable-tsan" ] && SANITIZER="false"
+
+	[ "$1" = "--disable-pledge" ] && PLEDGE="false"
+	[ "$1" = "--enable-pledge" ] &&  PLEDGE="true"
 
 	[ "$1" = "--disable-datestamp" ] && DATE_STAMP="false"
 	[ "$1" = "--enable-datestamp" ]  && DATE_STAMP="true"
@@ -407,6 +412,9 @@ elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 			;;
 		"FreeBSD")
 			UNIX="freebsd"
+			;;
+		"OpenBSD")
+			UNIX="openbsd"
 			;;
 		*)
 			echo "WARNING: Should define proper UNIX name here!"
@@ -860,6 +868,20 @@ fi
 if [ "$AS_NEEDED" = "true" ]; then
 	echo "Assuming GNU ld and passing --as-needed through."
 	echo "LDFLAGS+=-Wl,--as-needed" >> platform.inc
+fi
+
+#
+# Enable pledge(2) support (OpenBSD only)
+#
+if [ "$UNIX" = "openbsd" ]; then
+	if [ "$PLEDGE" = "true" ]; then
+		echo "Enabling OpenBSD pledge(2) support."
+		echo "#define CONFIG_PLEDGE" >> src/config.h
+	else
+		echo "OpenBSD pledge(2) support disabled."
+	fi
+else
+	PLEDGE="false"
 fi
 
 #

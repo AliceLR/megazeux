@@ -37,10 +37,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdio.h>
 #include <string.h>
 
 #ifdef __WIN32__
 #include <strings.h>
+#endif
+
+#include "../config.h"
+
+#ifdef CONFIG_PLEDGE
+#include "pledge.h"
+#define PROMISES "stdio rpath wpath cpath"
 #endif
 
 #include "../compat.h"
@@ -279,14 +287,16 @@ int main(int argc, char *argv[])
 
   if(!strcasecmp(argv[1] + ext_pos, ".mzb"))
   {
-    strcpy(fname, argv[1]);
-    strcpy(fname + ext_pos, DOWNVER_EXT ".mzb");
+    snprintf(fname, sizeof(fname), "%.*s" DOWNVER_EXT ".mzb",
+     (int)ext_pos, argv[1]);
+    fname[sizeof(fname) - 1] = '\0';
     world = false;
   }
   else if(!strcasecmp(argv[1] + ext_pos, ".mzx"))
   {
-    strcpy(fname, argv[1]);
-    strcpy(fname + ext_pos, DOWNVER_EXT ".mzx");
+    snprintf(fname, sizeof(fname), "%.*s" DOWNVER_EXT ".mzx",
+     (int)ext_pos, argv[1]);
+    fname[sizeof(fname) - 1] = '\0';
     world = true;
   }
   else
@@ -294,6 +304,22 @@ int main(int argc, char *argv[])
     error("Unknown extension '%s'.\n", argv[1] + ext_pos);
     goto exit_out;
   }
+
+#ifdef CONFIG_PLEDGE
+#ifdef HAS_UNVEIL
+  if(unveil(argv[1], "r") || unveil(fname, "cw") || unveil(NULL, NULL))
+  {
+    error("[ERROR] Failed unveil!\n");
+    return 1;
+  }
+#endif
+
+  if(pledge(PROMISES, ""))
+  {
+    error("[ERROR] Failed pledge!\n");
+    return 1;
+  }
+#endif
 
   in = fopen_unsafe(argv[1], "rb");
   if(!in)

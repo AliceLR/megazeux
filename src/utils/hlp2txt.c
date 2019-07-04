@@ -20,6 +20,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "../config.h"
+
+#ifdef CONFIG_PLEDGE
+#include "pledge.h"
+#define PROMISES "stdio rpath wpath cpath"
+#endif
+
 static int fgetw(FILE *fp)
 {
   int r = fgetc(fp);
@@ -60,6 +67,22 @@ int main(int argc, char *argv[])
     error("usage: %s [help.fil] [help.txt]\n", argv[0]);
     goto exit_out;
   }
+
+#ifdef CONFIG_PLEDGE
+#ifdef HAS_UNVEIL
+  if(unveil(argv[1], "r") || unveil(argv[2], "cw") || unveil(NULL, NULL))
+  {
+    fprintf(stderr, "ERROR: Failed unveil!\n");
+    return 1;
+  }
+#endif
+
+  if(pledge(PROMISES, ""))
+  {
+    error("ERROR: Failed pledge!\n");
+    return 1;
+  }
+#endif
 
   in = fopen(argv[1], "rb");
   if(!in)
