@@ -22,19 +22,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../config.h"
-
-#ifdef CONFIG_PLEDGE
-#include "pledge.h"
-#define PROMISES "stdio rpath wpath cpath"
-#endif
-
 // Defines so hlp2html builds when this is included.
 #define SKIP_SDL
 #define CORE_LIBSPEC
 #include "../compat.h"
 #include "../util.h"
 #include "../../contrib/khash/khashmzx.h"
+
+#ifdef CONFIG_PLEDGE
+#include <unistd.h>
+#define PROMISES "stdio rpath wpath cpath"
+#endif
 
 #define EOL "\n"
 #define MZXFONT_OFFSET (0xE000)
@@ -686,7 +684,7 @@ int main(int argc, char *argv[])
   }
 
 #ifdef CONFIG_PLEDGE
-#ifdef HAS_UNVEIL
+#ifdef PLEDGE_HAS_UNVEIL
   if(unveil(argv[1], "r") || unveil(argv[2], "cw") ||
    unveil(RESOURCES, "r") || unveil(NULL, NULL))
   {

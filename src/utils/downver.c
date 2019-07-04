@@ -44,14 +44,13 @@
 #include <strings.h>
 #endif
 
-#include "../config.h"
+#include "../compat.h"
 
 #ifdef CONFIG_PLEDGE
-#include "pledge.h"
+#include <unistd.h>
 #define PROMISES "stdio rpath wpath cpath"
 #endif
 
-#include "../compat.h"
 #include "../const.h"
 #include "../memfile.h"
 #include "../util.h"
@@ -306,7 +305,7 @@ int main(int argc, char *argv[])
   }
 
 #ifdef CONFIG_PLEDGE
-#ifdef HAS_UNVEIL
+#ifdef PLEDGE_HAS_UNVEIL
   if(unveil(argv[1], "r") || unveil(fname, "cw") || unveil(NULL, NULL))
   {
     error("[ERROR] Failed unveil!\n");

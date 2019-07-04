@@ -24,10 +24,10 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#include "../config.h"
+#include "../compat.h"
 
 #ifdef CONFIG_PLEDGE
-#include "pledge.h"
+#include <unistd.h>
 #define PROMISES "stdio rpath wpath cpath"
 #endif
 
@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
   }
 
 #ifdef CONFIG_PLEDGE
-#ifdef HAS_UNVEIL
+#ifdef PLEDGE_HAS_UNVEIL
   if(unveil(argv[1], "r") || unveil(argv[2], "cw") || unveil(NULL, NULL))
   {
     fprintf(stderr, "ERROR: Failed unveil!\n");
@@ -141,14 +141,14 @@ int main(int argc, char *argv[])
   }
 #endif
 
-  source = fopen(argv[1], "rb");
+  source = fopen_unsafe(argv[1], "rb");
   if(source == NULL)
   {
     printf("Error opening %s for input.\n", argv[1]);
     return -1;
   }
 
-  dest = fopen(argv[2],"wb");
+  dest = fopen_unsafe(argv[2],"wb");
   if(dest == NULL)
   {
     fclose(source);

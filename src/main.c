@@ -76,6 +76,29 @@ __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1; // AMD
 
 static char startup_dir[MAX_PATH];
 
+#ifdef CONFIG_PLEDGE
+static void init_pledge(void)
+{
+  // Experimental OpenBSD pledge(2) support.
+  // This has to be done after init_video and possibly after init_audio.
+  //
+  // If this is an OpenBSD version without the "video" promise, MZX will
+  // crash on exit and possibly at other times!
+  // FIXME verify that "video" actually fixes these problems in OpenBSD 6.5.
+
+  static const char * const promises =
+    "stdio rpath wpath cpath audio drm"
+#ifdef PLEDGE_HAS_VIDEO
+    " video"
+#endif
+  ;
+
+  debug("Promises: '%s'\n", promises);
+  if(pledge(promises, ""))
+    perror("Pledge failed");
+}
+#endif
+
 #ifdef CONFIG_UPDATER
 static char **rewrite_argv_for_execv(int argc, char **argv)
 {
@@ -144,7 +167,7 @@ __libspec int main(int argc, char *argv[])
   // We need to store the current working directory so it's
   // always possible to get back to it..
   getcwd(startup_dir, MAX_PATH);
-  strcpy(current_dir, startup_dir);
+  snprintf(current_dir, MAX_PATH, "%s", startup_dir);
 
 #ifdef CONFIG_STDIO_REDIRECT
   // Do this after platform_init() since, even though platform_init() might
@@ -229,6 +252,10 @@ __libspec int main(int argc, char *argv[])
   if(!init_video(conf, CAPTION))
     goto err_free_config;
   init_audio(conf);
+
+#ifdef CONFIG_PLEDGE
+  init_pledge();
+#endif
 
   core_data = core_init(&mzx_world);
 

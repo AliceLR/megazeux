@@ -20,13 +20,13 @@
 #include <string.h>
 #include <errno.h>
 
+#include "../compat.h"
+
 #include "pngops.h"
 #include "smzxconv.h"
 
-#include "../config.h"
-
 #ifdef CONFIG_PLEDGE
-#include "pledge.h"
+#include <unistd.h>
 #define PROMISES "stdio rpath wpath cpath"
 #endif
 
@@ -170,7 +170,7 @@ int main(int argc, char **argv)
   }
 
 #ifdef CONFIG_PLEDGE
-#ifdef HAS_UNVEIL
+#ifdef PLEDGE_HAS_UNVEIL
   if(unveil(input_file_name, "r") || unveil(output_mzm_name, "cw") ||
    unveil(output_chr_name, "cw") || unveil(output_pal_name, "cw") ||
    unveil(NULL, NULL))

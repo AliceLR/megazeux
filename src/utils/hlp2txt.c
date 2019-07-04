@@ -20,10 +20,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "../config.h"
+#include "../compat.h"
 
 #ifdef CONFIG_PLEDGE
-#include "pledge.h"
+#include <unistd.h>
 #define PROMISES "stdio rpath wpath cpath"
 #endif
 
@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
   }
 
 #ifdef CONFIG_PLEDGE
-#ifdef HAS_UNVEIL
+#ifdef PLEDGE_HAS_UNVEIL
   if(unveil(argv[1], "r") || unveil(argv[2], "cw") || unveil(NULL, NULL))
   {
     fprintf(stderr, "ERROR: Failed unveil!\n");
@@ -84,14 +84,14 @@ int main(int argc, char *argv[])
   }
 #endif
 
-  in = fopen(argv[1], "rb");
+  in = fopen_unsafe(argv[1], "rb");
   if(!in)
   {
     error("Failed to open input file '%s' for reading.\n", argv[1]);
     goto exit_close;
   }
 
-  out = fopen(argv[2], "w");
+  out = fopen_unsafe(argv[2], "w");
   if(!out)
   {
     error("Failed to open output file '%s' for writing.\n", argv[2]);

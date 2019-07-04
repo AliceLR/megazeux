@@ -33,7 +33,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "../config.h"
 
 #ifdef CONFIG_PLEDGE
-#include "pledge.h"
+#include <unistd.h>
 #define PROMISES "stdio rpath wpath cpath"
 #endif
 

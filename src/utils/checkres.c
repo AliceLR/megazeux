@@ -79,11 +79,6 @@
 #include <strings.h>
 #endif
 
-#ifdef CONFIG_PLEDGE
-#include "pledge.h"
-#define PROMISES "stdio rpath"
-#endif
-
 // Defines so checkres builds when this is included.
 // This is because khashmzx.h uses the check_alloc functions (CORE_LIBSPEC)
 // and memcasecmp.h (which needs platform_endian.h and thus SDL_endian.h).
@@ -106,6 +101,11 @@
 #include "../fsafeopen.h"
 #include "../util.h"
 #include "../world.h"
+
+#ifdef CONFIG_PLEDGE
+#include <unistd.h>
+#define PROMISES "stdio rpath"
+#endif
 
 // From const.h (copied here for convenience)
 #define BOARD_NAME_SIZE 25
