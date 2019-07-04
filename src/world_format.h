@@ -642,6 +642,7 @@ enum robot_prop {
 //RPROP_PROGRAM_ID                = 0x0005, // 4
 
 #ifdef CONFIG_DEBYTECODE
+  RPROP_PROGRAM_LABEL_ZAPS        = 0x00FD, // variable
   RPROP_PROGRAM_SOURCE            = 0x00FE, // variable
 #endif
   RPROP_PROGRAM_BYTECODE          = 0x00FF, // variable

@@ -125,6 +125,10 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
  struct memfile *mf, int savegame, int file_version)
 {
   char *program_legacy_bytecode = NULL;
+#ifdef CONFIG_DEBYTECODE
+  char *saved_label_zaps = NULL;
+  int num_label_zaps = 0;
+#endif
   struct memfile prop;
   int last_ident = -1;
   int ident;
@@ -235,8 +239,20 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
         cur_robot->can_goopwalk = load_prop_int(size, &prop);
         break;
 
-      // Slated for separation
+      // Source/bytecode are slated for separation from these files.
+      // When that happens, it might also be good to merge all robots into
+      // one file per board.
 #ifdef CONFIG_DEBYTECODE
+
+      case RPROP_PROGRAM_LABEL_ZAPS:
+      {
+        err_if_skipped(RPROP_YPOS);
+
+        // These have to be handled after loading the program.
+        saved_label_zaps = (char *)prop.start;
+        num_label_zaps = size;
+        break;
+      }
 
       case RPROP_PROGRAM_SOURCE:
       {
@@ -363,6 +379,25 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
       cmd_num = cur_robot->cur_prog_line;
 
     cur_robot->cur_prog_line = command_num_to_program_pos(cur_robot, cmd_num);
+  }
+
+  if(savegame && saved_label_zaps)
+  {
+    // Apply saved label zap data.
+    struct label *cur;
+
+    prepare_robot_bytecode(mzx_world, cur_robot);
+
+    if(num_label_zaps == cur_robot->num_labels)
+    {
+      for(i = 0; i < num_label_zaps; i++)
+      {
+        cur = cur_robot->label_list[i];
+
+        if(saved_label_zaps[i])
+          cur->zapped = !cur->zapped_in_source;
+      }
+    }
   }
 
 #else /* !CONFIG_DEBYTECODE */
@@ -577,6 +612,9 @@ size_t save_robot_calculate_size(struct world *mzx_world,
 
   size += cur_robot->program_source_length;
 
+  if(savegame)
+    size += PROP_HEADER_SIZE + cur_robot->num_labels;
+
 #else // !CONFIG_DEBYTECODE
 
   size += cur_robot->program_bytecode_length;
@@ -633,6 +671,14 @@ static void save_robot_to_memory(struct robot *cur_robot,
     // The current bytecode offset isn't very useful when saved with
     // source code. Save the command number within the program instead.
     program_line = get_program_command_num(cur_robot);
+
+    // Label zaps.
+    save_prop_v(RPROP_PROGRAM_LABEL_ZAPS, cur_robot->num_labels, &prop, mf);
+    for(i = 0; i < cur_robot->num_labels; i++)
+    {
+      struct label *cur = cur_robot->label_list[i];
+      prop.start[i] = (cur->zapped != cur->zapped_in_source);
+    }
 
 #endif // CONFIG_DEBYTECODE
 
@@ -826,9 +872,10 @@ struct label **cache_robot_labels(struct robot *robot, int *num_labels)
       }
 
       if(cmd == ROBOTIC_CMD_ZAPPED_LABEL)
-        current_label->zapped = 1;
+        current_label->zapped_in_source = true;
       else
-        current_label->zapped = 0;
+        current_label->zapped_in_source = false;
+      current_label->zapped = current_label->zapped_in_source;
 
       // Do we need more room?
       if(labels_found == labels_allocated)
@@ -2296,7 +2343,7 @@ int restore_label(struct robot *cur_robot, char *label)
   if(dest_label)
   {
     cur_robot->program_bytecode[dest_label->cmd_position] = ROBOTIC_CMD_LABEL;
-    dest_label->zapped = 0;
+    dest_label->zapped = false;
     return 1;
   }
 
@@ -2310,7 +2357,7 @@ int zap_label(struct robot *cur_robot, char *label)
   if(dest_label)
   {
     cur_robot->program_bytecode[dest_label->cmd_position] = ROBOTIC_CMD_ZAPPED_LABEL;
-    dest_label->zapped = 1;
+    dest_label->zapped = true;
     return 1;
   }
 
@@ -3717,6 +3764,8 @@ int get_program_command_num(struct robot *cur_robot)
 
     if(program_pos >= cmd_map[b].bc_pos)
       a = b;
+
+    return a;
   }
   else
 #endif
@@ -3727,10 +3776,11 @@ int get_program_command_num(struct robot *cur_robot)
   // Otherwise, step through the program line by line.
   if(cur_robot->program_bytecode)
   {
-    char *bc = cur_robot->program_bytecode + 1;
+    char *bc = cur_robot->program_bytecode;
     char *end = bc + program_pos;
     a = 1;
 
+    bc++;
     while(*bc)
     {
       if(bc >= end)
