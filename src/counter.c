@@ -1863,20 +1863,6 @@ static int load_bc_read(struct world *mzx_world,
   return -1;
 }
 
-#ifdef CONFIG_DEBYTECODE
-
-static int load_source_file_read(struct world *mzx_world,
- const struct function_counter *counter, const char *name, int id)
-{
-  mzx_world->special_counter_return = FOPEN_LOAD_SOURCE_FILE;
-  if(name[16])
-    return strtol(name + 16, NULL, 10);
-
-  return -1;
-}
-
-#endif // CONFIG_DEBYTECODE
-
 static int save_robot_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
@@ -2558,9 +2544,6 @@ static const struct function_counter builtin_counters[] =
   { "load_counters",    V290,   load_counters_read,   NULL },
   { "load_game",        V268,   load_game_read,       NULL },
   { "load_robot?",      V270,   load_robot_read,      NULL },
-#ifdef CONFIG_DEBYTECODE
-  { "load_source_file?", VERSION_SOURCE, load_source_file_read, NULL },
-#endif
   { "local?",           V251s1, local_read,           local_write },
   { "loopcount",        ALL,    loopcount_read,       loopcount_write },
   { "max!,!",           V284,   maxval_read,          NULL },
@@ -3069,8 +3052,31 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       if(cur_robot)
       {
         int new_length = 0;
-        char *new_source = legacy_convert_file(char_value,
-         &new_length, SAVE_ROBOT_DISASM_EXTRAS, SAVE_ROBOT_DISASM_BASE);
+        char *new_source;
+
+        // Source world? Assume new source. Otherwise, assume old source.
+        // TODO issues caused by this will be resolved when these counters get
+        // translated into actual commands eventually.
+        if(mzx_world->version >= VERSION_SOURCE)
+        {
+          FILE *fp = fsafeopen(char_value, "rb");
+          if(fp)
+          {
+            new_length = ftell_and_rewind(fp);
+            new_source = cmalloc(new_length + 1);
+            new_source[new_length] = 0;
+
+            if(!fread(new_source, new_length, 1, fp))
+            {
+              free(new_source);
+              new_source = NULL;
+            }
+            fclose(fp);
+          }
+        }
+        else
+          new_source = legacy_convert_file(char_value, &new_length,
+           SAVE_ROBOT_DISASM_EXTRAS, SAVE_ROBOT_DISASM_BASE);
 
         if(new_source)
         {
@@ -3085,10 +3091,10 @@ int set_counter_special(struct world *mzx_world, char *char_value,
           {
             free(cur_robot->program_bytecode);
             cur_robot->program_bytecode = NULL;
-            cur_robot->stack_pointer = 0;
-            cur_robot->cur_prog_line = 1;
           }
 
+          cur_robot->stack_pointer = 0;
+          cur_robot->cur_prog_line = 1;
           prepare_robot_bytecode(mzx_world, cur_robot);
 
           // Restart this robot if either it was just a LOAD_ROBOT
@@ -3163,66 +3169,13 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       break;
     }
 
-
-    case FOPEN_LOAD_SOURCE_FILE:
-    {
-      // Load source code.
-
-      FILE *src_file = fsafeopen(char_value, "rt");
-
-      if(src_file)
-      {
-        if(value >= 0)
-          cur_robot = get_robot_by_id(mzx_world, value);
-
-        if(cur_robot)
-        {
-          char *new_source;
-          int new_length;
-
-          new_length = ftell_and_rewind(src_file);
-
-          new_source = cmalloc(new_length+1);
-          if(!fread(new_source, new_length, 1, src_file))
-          {
-            free(new_source);
-            break;
-          }
-          new_source[new_length] = 0;
-
-          if(new_source)
-          {
-            if(cur_robot->program_source)
-              free(cur_robot->program_source);
-
-            cur_robot->program_source = new_source;
-            cur_robot->program_source_length = new_length;
-
-            // TODO: Move this outside of here.
-            if(cur_robot->program_bytecode)
-            {
-              free(cur_robot->program_bytecode);
-              cur_robot->program_bytecode = NULL;
-              cur_robot->stack_pointer = 0;
-              cur_robot->cur_prog_line = 1;
-            }
-
-            prepare_robot_bytecode(mzx_world, cur_robot);
-
-            // Restart this robot if either it was just a LOAD_ROBOT
-            // OR LOAD_ROBOTn was used where n is &robot_id&.
-            if(value == -1 || value == id)
-              return 1;
-          }
-        }
-
-        fclose(src_file);
-      }
-      break;
-    }
-
     case FOPEN_SAVE_ROBOT:
     {
+      // FIXME old worlds will save new source. Fixing this would ideally
+      // involve allowing new source, old source, or old bytecode to all be
+      // considered the current program "source", but doing this in a clean
+      // way probably relies on separating programs from robots internally.
+
       if(value >= 0)
         cur_robot = get_robot_by_id(mzx_world, value);
 

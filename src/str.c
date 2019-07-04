@@ -1012,9 +1012,21 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
     if(cur_robot && dest && dest->length)
     {
       int new_length = 0;
-      char *new_source = legacy_convert_program(dest->value,
-       dest->length, &new_length, SAVE_ROBOT_DISASM_EXTRAS,
-       SAVE_ROBOT_DISASM_BASE);
+      char *new_source;
+
+      // Source world? Assume new source. Otherwise, assume old source.
+      // TODO issues caused by this will be resolved when these counters get
+      // translated into actual commands eventually.
+      if(mzx_world->version >= VERSION_SOURCE)
+      {
+        new_length = dest->length;
+        new_source = cmalloc(new_length + 1);
+        memcpy(new_source, dest->value, dest->length);
+        new_source[new_length] = 0;
+      }
+      else
+        new_source = legacy_convert_program(dest->value, dest->length,
+         &new_length, SAVE_ROBOT_DISASM_EXTRAS, SAVE_ROBOT_DISASM_BASE);
 
       if(new_source)
       {
@@ -1029,63 +1041,9 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
         {
           free(cur_robot->program_bytecode);
           cur_robot->program_bytecode = NULL;
-          cur_robot->stack_pointer = 0;
-          cur_robot->cur_prog_line = 1;
         }
-
-        prepare_robot_bytecode(mzx_world, cur_robot);
-
-        // Restart this robot if either it was just a LOAD_ROBOT
-        // OR LOAD_ROBOTn was used where n is &robot_id&.
-        if(load_id == id)
-          return 1;
-      }
-    }
-  }
-  else
-
-  if(special_name_partial("load_source_file") &&
-   mzx_world->version >= VERSION_SOURCE)
-  {
-    // Source code (DBC+)
-
-    struct robot *cur_robot;
-    int load_id = id;
-
-    // If there's a number at the end, we're loading to another robot.
-    if(src_length > 16)
-      load_id = strtol(src_value + 16, NULL, 10);
-
-    cur_robot = get_robot_by_id(mzx_world, load_id);
-
-    if(cur_robot && dest)
-    {
-      int new_length = dest->length;
-      char *new_source;
-
-      if(new_length)
-      {
-        if(cur_robot->program_source)
-          free(cur_robot->program_source);
-
-        // We have to duplicate the source for prepare_robot_bytecode.
-        // Even if we're just going to throw it away afterward.
-        new_source = cmalloc(new_length + 1);
-        memcpy(new_source, dest->value, new_length);
-        new_source[new_length] = 0;
-
-        cur_robot->program_source = new_source;
-        cur_robot->program_source_length = new_length;
-
-        // TODO: Move this outside of here.
-        if(cur_robot->program_bytecode)
-        {
-          free(cur_robot->program_bytecode);
-          cur_robot->program_bytecode = NULL;
-          cur_robot->stack_pointer = 0;
-          cur_robot->cur_prog_line = 1;
-        }
-
+        cur_robot->stack_pointer = 0;
+        cur_robot->cur_prog_line = 1;
         prepare_robot_bytecode(mzx_world, cur_robot);
 
         // Restart this robot if either it was just a LOAD_ROBOT
@@ -1100,6 +1058,11 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
   if(special_name_partial("save_robot") && mzx_world->version >= V292)
   {
     // Save robot source to string (2.92+)
+    // FIXME old worlds will save new source. Fixing this would ideally
+    // involve allowing new source, old source, or old bytecode to all be
+    // considered the current program "source", but doing this in a clean
+    // way probably relies on separating programs from robots internally.
+
     struct robot *cur_robot;
     int load_id = id;
 
