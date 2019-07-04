@@ -34,8 +34,10 @@ struct label
   int position;
   // Used for zapping.
   int cmd_position;
-  // Set to 1 if zapped
-  int zapped;
+  // Set to true if zapped
+  boolean zapped;
+  // Set to true if originally zapped
+  boolean zapped_in_source;
 };
 
 struct scroll
@@ -115,13 +117,11 @@ struct robot
   // Local counters - store in save file
   int local[32];
 
-#if defined(CONFIG_EDITOR) || defined(CONFIG_DEBYTECODE)
+#ifdef CONFIG_EDITOR
   // A mapping of bytecode lines to source lines.
   struct command_mapping *command_map;
   int command_map_length;
-#endif
 
-#ifdef CONFIG_EDITOR
   // Total commands run; commands run in cycle; commands seen by debugger
   int commands_total;
   int commands_cycle;

@@ -1,7 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
- * Copyright (C) 2012 Alice Lauren Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2012 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -2061,7 +2061,7 @@ exit_out:
   return buffer;
 }
 
-char *assemble_file_mem(char *src, int len, int *size)
+char *assemble_program(char *src, int len, int *size)
 {
   char line_buffer[256];
   char bytecode_buffer[256];
@@ -2600,7 +2600,6 @@ void disassemble_file(char *name, char *program, int program_length,
   fclose(output_file);
 }
 
-#ifdef CONFIG_EDITOR
 static inline int get_program_line_count(char *program, int program_length)
 {
   char *end = program + program_length;
@@ -2618,7 +2617,7 @@ static inline int get_program_line_count(char *program, int program_length)
   return line_num;
 }
 
-void disassemble_and_map_program(char *program, int program_length,
+void disassemble_program(char *program, int program_length,
  char **_source, int *_source_length, struct command_mapping **_command_map,
  int *_command_map_length)
 {
@@ -2633,29 +2632,36 @@ void disassemble_and_map_program(char *program, int program_length,
   char *source = cmalloc(source_length);
   int offset = 0;
 
-  struct command_mapping *cmd_map;
+  struct command_mapping *cmd_map = NULL;
   int cmd_map_length;
-  int i;
+  int i = 1;
 
   char *start = program;
   char *next = program + 1;
 
   int ret;
 
-  cmd_map_length = get_program_line_count(program, program_length);
-  cmd_map = cmalloc(cmd_map_length * sizeof(struct command_mapping));
+  if(_command_map && _command_map_length)
+  {
+    cmd_map_length = get_program_line_count(program, program_length);
+    cmd_map = cmalloc(cmd_map_length * sizeof(struct command_mapping));
 
-  cmd_map[0].real_line = 0;
-  cmd_map[0].bc_pos = 0;
-  cmd_map[0].src_pos = 0;
+    cmd_map[0].real_line = 0;
+    cmd_map[0].bc_pos = 0;
+    cmd_map[0].src_pos = 0;
+  }
 
-  for(i = 1; i < cmd_map_length; i++)
+  while(*next)
   {
     line_size = 0;
 
-    cmd_map[i].real_line = i;
-    cmd_map[i].bc_pos = next - start;
-    cmd_map[i].src_pos = offset;
+    if(cmd_map && i < cmd_map_length)
+    {
+      cmd_map[i].real_line = i;
+      cmd_map[i].bc_pos = next - start;
+      cmd_map[i].src_pos = offset;
+      i++;
+    }
 
     ret = disassemble_line(next, &next,
      line_buffer,
@@ -2693,11 +2699,12 @@ void disassemble_and_map_program(char *program, int program_length,
   *_source = source;
   *_source_length = source_length;
 
-  *_command_map = cmd_map;
-  *_command_map_length = cmd_map_length;
+  if(_command_map && _command_map_length)
+  {
+    *_command_map = cmd_map;
+    *_command_map_length = cmd_map_length;
+  }
 }
-#endif // CONFIG_EDITOR
-
 #endif // !CONFIG_DEBYTECODE
 
 
