@@ -102,6 +102,11 @@
 #include "../util.h"
 #include "../world.h"
 
+#ifdef CONFIG_PLEDGE_UTILS
+#include <unistd.h>
+#define PROMISES "stdio rpath"
+#endif
+
 // From const.h (copied here for convenience)
 #define BOARD_NAME_SIZE 25
 #define MAX_BOARDS 250
@@ -242,12 +247,12 @@ static void join_path(char *dest, const char *dir, const char *file)
     }
 
     else
-      strcpy(dest, dir);
+      snprintf(dest, MAX_PATH, "%s", dir);
   }
 
   else
   {
-    strcpy(dest, file);
+    snprintf(dest, MAX_PATH, "%s", file);
   }
 
   dest[MAX_PATH - 1] = 0;
@@ -723,7 +728,8 @@ static void output(const char *required_by,
       if(robot_num == IS_BOARD_PALETTE)
         snprintf(details, DETAILS_MAX_LEN, "b%-3.3s  pal  ", board);
       else
-        strcpy(details, "(unknown)");
+        snprintf(details, DETAILS_MAX_LEN, "(unknown)");
+      details[DETAILS_MAX_LEN - 1] = '\0';
     }
     else
       details[0] = 0;
@@ -909,7 +915,7 @@ static struct resource *add_resource(const char *src, struct base_file *file)
   {
     res = cmalloc(sizeof(struct resource));
 
-    strcpy(res->path, fsafe_buffer);
+    snprintf(res->path, MAX_PATH, "%s", fsafe_buffer);
     res->path_len = fsafe_len;
     res->key_len = fsafe_len;
     res->board_num = -1;
@@ -1027,7 +1033,7 @@ static struct base_path *add_base_path(const char *path_name,
     }
   }
 
-  strcpy(new_path->actual_path, path_name);
+  snprintf(new_path->actual_path, MAX_PATH, "%s", path_name);
 
   if(size == alloc)
   {
@@ -1054,7 +1060,7 @@ static struct base_file *add_base_file(const char *path_name,
   int alloc = *file_list_alloc;
   int size = *file_list_size;
 
-  strcpy(new_file->file_name, path_name);
+  snprintf(new_file->file_name, MAX_PATH, "%s", path_name);
 
   if(size == alloc)
   {
@@ -2795,6 +2801,15 @@ int main(int argc, char *argv[])
   struct base_path *current_path = NULL;
   char *file_name = NULL;
   char *param;
+
+#ifdef CONFIG_PLEDGE_UTILS
+  // Hard to predict where this will read ahead of time, so no unveil right now.
+  if(pledge(PROMISES, ""))
+  {
+    fprintf(stderr, "ERROR: Failed pledge!\n");
+    return 1;
+  }
+#endif
 
   if(argc < 2)
   {

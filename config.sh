@@ -44,6 +44,7 @@ usage() {
 	echo "  --enable-asan           Enable AddressSanitizer for debug builds"
 	echo "  --enable-msan           Enable MemorySanitizer for debug builds"
 	echo "  --enable-tsan           Enable ThreadSanitizer for debug builds"
+	echo "  --enable-pledge         Enable experimental OpenBSD pledge(2) support"
 	echo "  --disable-datestamp     Disable adding date to version."
 	echo "  --disable-editor        Disable the built-in editor."
 	echo "  --disable-mzxrun        Disable generation of separate MZXRun."
@@ -116,6 +117,8 @@ AS_NEEDED="false"
 RELEASE="false"
 OPT_SIZE="false"
 SANITIZER="false"
+PLEDGE="false"
+PLEDGE_UTILS="true"
 EDITOR="true"
 MZXRUN="true"
 HELPSYS="true"
@@ -237,6 +240,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--enable-tsan" ] &&  SANITIZER="thread"
 	[ "$1" = "--disable-tsan" ] && SANITIZER="false"
+
+	[ "$1" = "--enable-pledge" ] &&  PLEDGE="true"  && PLEDGE_UTILS="true"
+	[ "$1" = "--disable-pledge" ] && PLEDGE="false" && PLEDGE_UTILS="false"
 
 	[ "$1" = "--disable-datestamp" ] && DATE_STAMP="false"
 	[ "$1" = "--enable-datestamp" ]  && DATE_STAMP="true"
@@ -407,6 +413,9 @@ elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 			;;
 		"FreeBSD")
 			UNIX="freebsd"
+			;;
+		"OpenBSD")
+			UNIX="openbsd"
 			;;
 		*)
 			echo "WARNING: Should define proper UNIX name here!"
@@ -863,6 +872,28 @@ if [ "$AS_NEEDED" = "true" ]; then
 fi
 
 #
+# Enable pledge(2) support (OpenBSD only)
+#
+if [ "$UNIX" = "openbsd" ]; then
+	if [ "$PLEDGE" = "true" ]; then
+		echo "Enabling OpenBSD pledge(2) support for main executable(s)."
+		echo "#define CONFIG_PLEDGE" >> src/config.h
+	else
+		echo "OpenBSD pledge(2) support disabled for main executable(s)."
+	fi
+	if [ "$UTILS" = "true" ]; then
+		if [ "$PLEDGE_UTILS" = "true" ]; then
+			echo "Enabling OpenBSD pledge(2) support for utils"
+			echo "#define CONFIG_PLEDGE_UTILS" >> src/config.h
+		else
+			echo "OpenBSD pledge(2) support disabled for utils"
+		fi
+	fi
+else
+	PLEDGE="false"
+fi
+
+#
 # Users may enable release mode
 #
 if [ "$RELEASE" = "true" ]; then
@@ -1310,6 +1341,19 @@ if [ "$FPSCOUNTER" = "true" ]; then
 	echo "#define CONFIG_FPS" >> src/config.h
 else
 	echo "fps counter disabled."
+fi
+
+#
+# Pledge(2) on main executable warning
+#
+if [ "$PLEDGE" = "true" ]; then
+	echo
+	echo "  WARNING: pledge will probably: break renderer switching; crash when"
+	echo "  switching to fullscreen (use fullscreen=1) or exiting when using"
+	echo "  the software renderer; crash when switching to fullscreen with the"
+	echo "  scaling renderers (use fullscreen=1 and/or fullscreen_windowed=1);"
+	echo "  crash when using any scaling renderer with some Mesa versions."
+	echo "  You've been warned!"
 fi
 
 echo

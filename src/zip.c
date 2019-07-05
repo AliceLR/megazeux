@@ -1562,6 +1562,7 @@ enum zip_error zip_write_open_file_stream(struct zip_archive *zp,
 {
   struct zip_file_header *fh;
   char *file_name;
+  uint16_t file_name_len;
 
   void *fp;
 
@@ -1588,7 +1589,8 @@ enum zip_error zip_write_open_file_stream(struct zip_archive *zp,
   }
 
   fh = cmalloc(sizeof(struct zip_file_header));
-  file_name = cmalloc(strlen(name) + 1);
+  file_name_len = strlen(name);
+  file_name = cmalloc(file_name_len + 1);
 
   fp = zp->fp;
 
@@ -1603,9 +1605,9 @@ enum zip_error zip_write_open_file_stream(struct zip_archive *zp,
   fh->compressed_size = 0;
   fh->uncompressed_size = 0;
   fh->offset = zp->vtell(fp);
-  fh->file_name_length = strlen(name);
+  fh->file_name_length = file_name_len;
   fh->file_name = file_name;
-  strcpy(file_name, name);
+  memcpy(file_name, name, file_name_len + 1);
 
   // Write the header
   result = zip_write_file_header(zp, fh, 0);
@@ -1690,6 +1692,7 @@ enum zip_error zip_write_open_mem_stream(struct zip_archive *zp,
 {
   struct zip_file_header *fh;
   char *file_name;
+  uint16_t file_name_len;
 
   void *fp;
 
@@ -1715,7 +1718,8 @@ enum zip_error zip_write_open_mem_stream(struct zip_archive *zp,
   }
 
   fh = cmalloc(sizeof(struct zip_file_header));
-  file_name = cmalloc(strlen(name) + 1);
+  file_name_len = strlen(name);
+  file_name = cmalloc(file_name_len + 1);
 
   fp = zp->fp;
 
@@ -1730,9 +1734,9 @@ enum zip_error zip_write_open_mem_stream(struct zip_archive *zp,
   fh->compressed_size = 0;
   fh->uncompressed_size = 0;
   fh->offset = zp->vtell(fp);
-  fh->file_name_length = strlen(name);
+  fh->file_name_length = file_name_len;
   fh->file_name = file_name;
-  strcpy(file_name, name);
+  memcpy(file_name, name, file_name_len + 1);
 
   // Write the header
   result = zip_write_file_header(zp, fh, 0);

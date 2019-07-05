@@ -473,7 +473,7 @@ help_check: ${hlp2txt} assets/help.fil
 	@rm -f help.txt
 
 test:
-	@testworlds/run.sh @{PLATFORM} @{LIBDIR}
+	@bash testworlds/run.sh @{PLATFORM} @{LIBDIR}
 
 test_clean:
 	@rm -rf testworlds/log

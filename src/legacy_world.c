@@ -192,8 +192,8 @@ static void decrypt(const char *file_name)
 
   src_ptr += 25;
 
-  strncpy(backup_name, file_name, MAX_PATH - 8);
-  strcat(backup_name, ".locked");
+  snprintf(backup_name, MAX_PATH, "%.*s.locked", MAX_PATH - 8, file_name);
+
   backup = fopen_unsafe(backup_name, "wb");
   count = fwrite(file_buffer, file_length, 1, backup);
   fclose(backup);
