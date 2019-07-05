@@ -182,6 +182,7 @@ struct graphics_data
   Uint32 mouse_height_mul;
   boolean mouse_status;
   boolean system_mouse;
+  boolean grab_mouse;
   boolean fullscreen;
   boolean fullscreen_windowed;
   Uint32 resolution_width;

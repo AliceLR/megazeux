@@ -43,6 +43,9 @@ FEATURES
 + Added the config setting "fullscreen_windowed". When set to 1,
   MZX will create a borderless window with the current desktop
   resolution instead of regular fullscreen. Disabled by default.
++ Added the config setting "grab_mouse". When set to 1, MZX will
+  trap the mouse cursor within the window while the window is
+  active. Disabled by default.
 + The current renderer can now be set from the settings menu.
 + Added the 'softscale' renderer. This renderer is a generalized
   rewrite of the former SDL 2 overlay renderer implementation.

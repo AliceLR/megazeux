@@ -190,6 +190,7 @@ static const struct config_info user_conf_default =
   false,                        // standalone_mode
   false,                        // no_titlescreen
   false,                        // system_mouse
+  false,                        // grab_mouse
 
   // Editor options
   false,                        // test_mode
@@ -389,6 +390,13 @@ static void config_system_mouse(struct config_info *conf, char *name,
 {
   // FIXME sloppy validation
   conf->system_mouse = strtol(value, NULL, 10);
+}
+
+static void config_grab_mouse(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  // FIXME sloppy validation
+  conf->grab_mouse = strtol(value, NULL, 10);
 }
 
 static void config_enable_oversampling(struct config_info *conf, char *name,
@@ -801,6 +809,7 @@ static const struct config_entry config_options[] =
   { "gl_filter_method", config_set_gl_filter_method, false },
   { "gl_scaling_shader", config_set_gl_scaling_shader, true },
   { "gl_vsync", config_gl_vsync, false },
+  { "grab_mouse", config_grab_mouse, false },
   { "include", include2_config, true },
   { "include*", include_config, true },
   { "joy!.*", joy_action_set, true },
