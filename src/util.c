@@ -263,7 +263,7 @@ char *mzx_res_get_by_id(enum resource_id id)
 
     // Special handling for CONFIG_TXT to allow for user
     // configuration files
-    sprintf(userconfpath, "%s/%s", getenv("HOME"), USERCONFFILE);
+    snprintf(userconfpath, MAX_PATH, "%s/%s", getenv("HOME"), USERCONFFILE);
 
     // Check if the file can be opened for reading
     fp = fopen_unsafe(userconfpath, "rb");
