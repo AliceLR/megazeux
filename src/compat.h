@@ -116,7 +116,7 @@ typedef unsigned char boolean;
 #undef CONDITION
 #endif
 
-#if defined(__OpenBSD__) && defined(CONFIG_PLEDGE)
+#ifdef __OpenBSD__
 #include <sys/param.h>
 // These macros conflict with internally-defined MZX macros
 #undef MIN
@@ -128,12 +128,8 @@ typedef unsigned char boolean;
 #define PLEDGE_HAS_UNVEIL
 #endif
 
-// video added in OpenBSD 6.5
-#if OpenBSD >= 201905
-#define PLEDGE_HAS_VIDEO
-#endif
 #endif /* OpenBSD */
-#endif /* defined(__OpenBSD__) && defined(CONFIG_PLEDGE) */
+#endif /* __OpenBSD__ */
 
 #ifndef MAX_PATH
 #define MAX_PATH 512

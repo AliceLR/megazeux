@@ -102,7 +102,7 @@
 #include "../util.h"
 #include "../world.h"
 
-#ifdef CONFIG_PLEDGE
+#ifdef CONFIG_PLEDGE_UTILS
 #include <unistd.h>
 #define PROMISES "stdio rpath"
 #endif
@@ -2802,7 +2802,7 @@ int main(int argc, char *argv[])
   char *file_name = NULL;
   char *param;
 
-#ifdef CONFIG_PLEDGE
+#ifdef CONFIG_PLEDGE_UTILS
   // Hard to predict where this will read ahead of time, so no unveil right now.
   if(pledge(PROMISES, ""))
   {

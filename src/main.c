@@ -77,21 +77,20 @@ __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1; // AMD
 static char startup_dir[MAX_PATH];
 
 #ifdef CONFIG_PLEDGE
+/**
+ * Experimental OpenBSD pledge(2) support.
+ * This has to be done after init_video and possibly after init_audio.
+ *
+ * FIXME MZX will abort if pretty much anything happens that requires
+ * destroying or creating a window (fullscreen, renderer switching, exiting).
+ * Additionally, in OpenBSD 6.5, Mesa seems to use something that aborts
+ * when drawing the current frame, so the GL renderers only work in 6.4 or
+ * earlier. I don't think there's anything that can be done about this in
+ * the near future.
+ */
 static void init_pledge(void)
 {
-  // Experimental OpenBSD pledge(2) support.
-  // This has to be done after init_video and possibly after init_audio.
-  //
-  // If this is an OpenBSD version without the "video" promise, MZX will
-  // crash on exit and possibly at other times!
-  // FIXME verify that "video" actually fixes these problems in OpenBSD 6.5.
-
-  static const char * const promises =
-    "stdio rpath wpath cpath audio drm"
-#ifdef PLEDGE_HAS_VIDEO
-    " video"
-#endif
-  ;
+  static const char * const promises = "stdio rpath wpath cpath audio drm";
 
   debug("Promises: '%s'\n", promises);
   if(pledge(promises, ""))

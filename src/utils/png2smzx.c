@@ -25,7 +25,7 @@
 #include "pngops.h"
 #include "smzxconv.h"
 
-#ifdef CONFIG_PLEDGE
+#ifdef CONFIG_PLEDGE_UTILS
 #include <unistd.h>
 #define PROMISES "stdio rpath wpath cpath"
 #endif
@@ -169,7 +169,7 @@ int main(int argc, char **argv)
     snprintf(output_pal_name, MAX_PATH, "%s.pal", output_base_name);
   }
 
-#ifdef CONFIG_PLEDGE
+#ifdef CONFIG_PLEDGE_UTILS
 #ifdef PLEDGE_HAS_UNVEIL
   if(unveil(input_file_name, "r") || unveil(output_mzm_name, "cw") ||
    unveil(output_chr_name, "cw") || unveil(output_pal_name, "cw") ||

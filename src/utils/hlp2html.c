@@ -29,7 +29,7 @@
 #include "../util.h"
 #include "../../contrib/khash/khashmzx.h"
 
-#ifdef CONFIG_PLEDGE
+#ifdef CONFIG_PLEDGE_UTILS
 #include <unistd.h>
 #define PROMISES "stdio rpath wpath cpath"
 #endif
@@ -683,7 +683,7 @@ int main(int argc, char *argv[])
     exit(0);
   }
 
-#ifdef CONFIG_PLEDGE
+#ifdef CONFIG_PLEDGE_UTILS
 #ifdef PLEDGE_HAS_UNVEIL
   if(unveil(argv[1], "r") || unveil(argv[2], "cw") ||
    unveil(RESOURCES, "r") || unveil(NULL, NULL))

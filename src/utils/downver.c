@@ -46,7 +46,7 @@
 
 #include "../compat.h"
 
-#ifdef CONFIG_PLEDGE
+#ifdef CONFIG_PLEDGE_UTILS
 #include <unistd.h>
 #define PROMISES "stdio rpath wpath cpath"
 #endif
@@ -304,7 +304,7 @@ int main(int argc, char *argv[])
     goto exit_out;
   }
 
-#ifdef CONFIG_PLEDGE
+#ifdef CONFIG_PLEDGE_UTILS
 #ifdef PLEDGE_HAS_UNVEIL
   if(unveil(argv[1], "r") || unveil(fname, "cw") || unveil(NULL, NULL))
   {

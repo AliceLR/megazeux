@@ -32,7 +32,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "../config.h"
 
-#ifdef CONFIG_PLEDGE
+#ifdef CONFIG_PLEDGE_UTILS
 #include <unistd.h>
 #define PROMISES "stdio rpath wpath cpath"
 #endif
@@ -1008,7 +1008,7 @@ int main(int argc, char **argv)
   Charset *cset;
   Mzm *mzm;
 
-#ifdef CONFIG_PLEDGE
+#ifdef CONFIG_PLEDGE_UTILS
   // TODO unveil
   if(pledge(PROMISES, ""))
   {
