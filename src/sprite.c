@@ -499,7 +499,7 @@ static int sprite_colliding_xy_old(struct world *mzx_world,
   if((ref_x + col_width) >= bwidth)
     col_width = bwidth - ref_x;
 
-  if((ref_y + col_width) >= bheight)
+  if((ref_y + col_height) >= bheight)
     col_height = bheight - ref_y;
 
   if((check_x + col_width) >= board_width)

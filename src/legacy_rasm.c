@@ -2748,6 +2748,14 @@ static const struct program_patch program_patches[] =
     true,
     false
   },
+  // Manuel the Manx, board 6, 3 25
+  // There's no recoverable data here, but this board is inaccessible anyway.
+  {
+    "\x0F\x6E\x00\x04\x00\x00Aloopcoun\x84\x84\x84", 17,
+    "\x00", 1,
+    true,
+    true
+  },
   // Slave Pit global robot (no recoverable data)
   {
     "\xFF\xFF\xFF\x00\x00\x00\xFF\xFF\xFF\x88\x01\x00", 12,
