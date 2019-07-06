@@ -534,8 +534,8 @@ void move_board_block(struct world *mzx_world,
   int dest_offset = dest_x + (dest_y * dest_board->board_width);
 
   boolean replace_player = false;
-  int player_x;
-  int player_y;
+  int player_x = 0;
+  int player_y = 0;
 
   // Work around to move the player
   if((mzx_world->player_x >= src_x) &&

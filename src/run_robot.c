@@ -4557,7 +4557,17 @@ void run_robot(context *ctx, int id, int x, int y)
 
       case ROBOTIC_CMD_MOD_SAM: // modsam freq num
       {
-        // Removed.
+        // Lock this to DOS worlds because it only ever had a use in DOS vers.
+        // Also, no port worlds ever used it because it never worked.
+
+        if((mzx_world->version < VERSION_PORT) && audio_get_music_on())
+        {
+          int frequency = parse_param(mzx_world, cmd_ptr + 1, id);
+          char *p2 = next_param_pos(cmd_ptr + 1);
+          int sam_num = parse_param(mzx_world, p2, id);
+
+          audio_spot_sample(frequency, sam_num);
+        }
         break;
       }
 

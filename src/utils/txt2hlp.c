@@ -24,6 +24,13 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+#include "../compat.h"
+
+#ifdef CONFIG_PLEDGE_UTILS
+#include <unistd.h>
+#define PROMISES "stdio rpath wpath cpath"
+#endif
+
 // Cleaned up/revised txt2hlp.cpp for compiling outside of DOS
 
 static void fputw(int src, FILE *fp)
@@ -118,14 +125,30 @@ int main(int argc, char *argv[])
     return 1;
   }
 
-  source = fopen(argv[1], "rb");
+#ifdef CONFIG_PLEDGE_UTILS
+#ifdef PLEDGE_HAS_UNVEIL
+  if(unveil(argv[1], "r") || unveil(argv[2], "cw") || unveil(NULL, NULL))
+  {
+    fprintf(stderr, "ERROR: Failed unveil!\n");
+    return 1;
+  }
+#endif
+
+  if(pledge(PROMISES, ""))
+  {
+    fprintf(stderr, "ERROR: Failed pledge!\n");
+    return 1;
+  }
+#endif
+
+  source = fopen_unsafe(argv[1], "rb");
   if(source == NULL)
   {
     printf("Error opening %s for input.\n", argv[1]);
     return -1;
   }
 
-  dest = fopen(argv[2],"wb");
+  dest = fopen_unsafe(argv[2],"wb");
   if(dest == NULL)
   {
     fclose(source);

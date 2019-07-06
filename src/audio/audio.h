@@ -36,10 +36,30 @@ __M_BEGIN_DECLS
 #include "modplug.h"
 #endif
 
+// WAV sample types
+#define SAMPLE_U8     0
+#define SAMPLE_S8     1
+#define SAMPLE_S16LSB 2
+
+// Default period for .SAM files.
+#define SAM_DEFAULT_PERIOD 428
+
+struct wav_info
+{
+  Uint8 *wav_data;
+  Uint32 data_length;
+  Uint32 channels;
+  Uint32 freq;
+  Uint16 format;
+  Uint32 loop_start;
+  Uint32 loop_end;
+};
+
 struct audio_stream
 {
   struct audio_stream *next;
   struct audio_stream *previous;
+  boolean is_spot_sample;
   Uint32 volume;
   Uint32 repeat;
   Uint32 (* mix_data)(struct audio_stream *a_src, Sint32 *buffer, Uint32 len);
@@ -54,6 +74,8 @@ struct audio_stream
   Uint32 (* get_length)(struct audio_stream *a_src);
   Uint32 (* get_loop_start)(struct audio_stream *a_src);
   Uint32 (* get_loop_end)(struct audio_stream *a_src);
+  boolean (* get_sample)(struct audio_stream *a_src, Uint32 which,
+   struct wav_info *dest);
   void (* destruct)(struct audio_stream *a_src);
 };
 
@@ -71,6 +93,8 @@ struct audio_stream_spec
   Uint32 (* get_length)(struct audio_stream *a_src);
   Uint32 (* get_loop_start)(struct audio_stream *a_src);
   Uint32 (* get_loop_end)(struct audio_stream *a_src);
+  boolean (* get_sample)(struct audio_stream *a_src, Uint32 which,
+   struct wav_info *dest);
   void (* destruct)(struct audio_stream *a_src);
 };
 
@@ -111,6 +135,7 @@ CORE_LIBSPEC void quit_audio(void);
 CORE_LIBSPEC int audio_play_module(char *filename, boolean safely, int volume);
 CORE_LIBSPEC void audio_end_module(void);
 CORE_LIBSPEC void audio_play_sample(char *filename, boolean safely, int period);
+CORE_LIBSPEC void audio_spot_sample(int period, int which);
 
 CORE_LIBSPEC void audio_set_module_volume(int volume);
 void audio_set_module_order(int order);
@@ -162,6 +187,7 @@ static inline int audio_play_module(char *filename, boolean safely, int volume)
 static inline void audio_end_module(void) {}
 static inline void audio_play_sample(char *filename, boolean safely, int period)
  {}
+static inline void audio_spot_sample(int period, int which) {}
 
 static inline void audio_set_module_volume(int vol) {}
 static inline void audio_set_module_order(int order) {}

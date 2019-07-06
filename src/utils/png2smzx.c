@@ -20,8 +20,15 @@
 #include <string.h>
 #include <errno.h>
 
+#include "../compat.h"
+
 #include "pngops.h"
 #include "smzxconv.h"
+
+#ifdef CONFIG_PLEDGE_UTILS
+#include <unistd.h>
+#define PROMISES "stdio rpath wpath cpath"
+#endif
 
 #ifndef MAX_PATH
 #define MAX_PATH 512
@@ -70,7 +77,7 @@ int main(int argc, char **argv)
   char output_chr_name[MAX_PATH] = { '\0' };
   char output_pal_name[MAX_PATH] = { '\0' };
   char output_base_name[MAX_PATH] = { '\0' };
-  char ext[5] = { '\0' };
+  const char *ext;
 
         int skip_char = -1;
 
@@ -106,14 +113,17 @@ int main(int argc, char **argv)
   // Read the input files
   for(i = 2; i < (unsigned int) argc; i++)
   {
-    strcpy(ext, (argv[i] + strlen(argv[i]) - 4));
+    if(strlen(argv[i]) >= 4)
+    {
+      ext = argv[i] + strlen(argv[i]) - 4;
 
-    if(!strcasecmp(ext, ".mzm"))
-      snprintf(output_mzm_name, MAX_PATH, "%s", argv[i]);
-    if(!strcasecmp(ext, ".chr"))
-      snprintf(output_chr_name, MAX_PATH, "%s", argv[i]);
-    if(!strcasecmp(ext, ".pal"))
-      snprintf(output_pal_name, MAX_PATH, "%s", argv[i]);
+      if(!strcasecmp(ext, ".mzm"))
+        snprintf(output_mzm_name, MAX_PATH, "%s", argv[i]);
+      if(!strcasecmp(ext, ".chr"))
+        snprintf(output_chr_name, MAX_PATH, "%s", argv[i]);
+      if(!strcasecmp(ext, ".pal"))
+        snprintf(output_pal_name, MAX_PATH, "%s", argv[i]);
+    }
 
     if(!strncasecmp(argv[i], "--skip-char", 11) &&
      (argv[i][11] == '=') && argv[i][12])
@@ -144,24 +154,38 @@ int main(int argc, char **argv)
 
     output_base_name[MAX_PATH - 6] = '\0';
 
-    strcpy(output_mzm_name, output_base_name);
-    strcpy(output_mzm_name + strlen(output_mzm_name), ".mzm");
-
+    snprintf(output_mzm_name, MAX_PATH, "%s.mzm", output_base_name);
     output_pal_name[0] = '\0';
     output_chr_name[0] = '\0';
   }
 
   if(!output_chr_name[0])
   {
-    strcpy(output_chr_name, output_base_name);
-    strcpy(output_chr_name + strlen(output_chr_name), ".chr");
+    snprintf(output_chr_name, MAX_PATH, "%s.chr", output_base_name);
   }
 
   if(!output_pal_name[0])
   {
-    strcpy(output_pal_name, output_base_name);
-    strcpy(output_pal_name + strlen(output_pal_name), ".pal");
+    snprintf(output_pal_name, MAX_PATH, "%s.pal", output_base_name);
   }
+
+#ifdef CONFIG_PLEDGE_UTILS
+#ifdef PLEDGE_HAS_UNVEIL
+  if(unveil(input_file_name, "r") || unveil(output_mzm_name, "cw") ||
+   unveil(output_chr_name, "cw") || unveil(output_pal_name, "cw") ||
+   unveil(NULL, NULL))
+  {
+    fprintf(stderr, "ERROR: Failed unveil!\n");
+    return 1;
+  }
+#endif
+
+  if(pledge(PROMISES, ""))
+  {
+    fprintf(stderr, "ERROR: Failed pledge!\n");
+    return 1;
+  }
+#endif
 
   // Do stuff
   img = (rgba_color *)read_png(input_file_name, &w, &h);

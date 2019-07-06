@@ -3078,8 +3078,10 @@ skip_dir:
       case 1:
       case 4:
       {
-        if(ret[0] && (ret[strlen(ret) - 1] == ':'))
-          strcat(ret, DIR_SEPARATOR);
+        size_t ret_len = strlen(ret);
+
+        if(ret[0] && (ret[ret_len - 1] == ':') && (ret_len + 1) < MAX_PATH)
+          strcpy(ret + ret_len, DIR_SEPARATOR);
 
         split_path_filename(ret, ret_path, MAX_PATH, ret_file, MAX_PATH);
         if(ret_path[0])

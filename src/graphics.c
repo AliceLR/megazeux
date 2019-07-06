@@ -1282,6 +1282,14 @@ static SDL_Surface *png_read_icon(const char *name)
 
 #endif // CONFIG_PNG && CONFIG_SDL && CONFIG_ICON && !__WIN32__
 
+static void set_window_grab(boolean grabbed)
+{
+#ifdef CONFIG_SDL
+  SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
+  SDL_SetWindowGrab(window, grabbed ? SDL_TRUE : SDL_FALSE);
+#endif
+}
+
 void set_window_caption(const char *caption)
 {
 #ifdef CONFIG_SDL
@@ -1519,6 +1527,7 @@ boolean init_video(struct config_info *conf, const char *caption)
   graphics.cursor_timestamp = get_ticks();
   graphics.cursor_flipflop = 1;
   graphics.system_mouse = conf->system_mouse;
+  graphics.grab_mouse = conf->grab_mouse;
 
   memset(&(graphics.text_video_layer), 0, sizeof(struct video_layer));
   graphics.text_video_layer.w = SCREEN_W;
@@ -1672,6 +1681,7 @@ boolean set_video_mode(void)
   if(ret)
   {
     set_window_caption(graphics.default_caption);
+    set_window_grab(graphics.grab_mouse);
     set_window_icon();
   }
 
