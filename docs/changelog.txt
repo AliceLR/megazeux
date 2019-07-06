@@ -123,6 +123,11 @@ FIXES
   in an infinite loop instead of executing the next command.
 + SPR_YORDER and the sprite collision list are properly saved
   and loaded from saves again.
++ The SPR_NUM counter now has the full range of a regular
+  counter and is saved. Out-of-range values are ignored for the
+  purposes of its legacy IF and PUT uses. This only affects
+  2.92+ worlds. Additionally, 2.65 through 2.69c worlds treat
+  its range as -128 through 127, fixing a bug in Sprite Catcher.
 + The active sprites count is properly updated when SPR#_OFF is
   set and is properly loaded from saves again. This value can be
   viewed from the variable debug screen now, though it may be

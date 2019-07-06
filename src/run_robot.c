@@ -2175,9 +2175,9 @@ void run_robot(context *ctx, int id, int x, int y)
 
           // Versions up to 2.82b would use sprite_num instead of the
           // param if the provided color was c??. This was unintuitive and
-          // redundant with the SPR_NUM counter, so it was removed.
+          // redundant with newer language extensions, so it was removed.
           if(mzx_world->version <= V282 && check_color == 288)
-            check_param = mzx_world->sprite_num;
+            check_param = (unsigned int)mzx_world->sprite_num;
 
           /* 256 == p?? */
           if(check_param == 256)
@@ -2232,7 +2232,12 @@ void run_robot(context *ctx, int id, int x, int y)
 
           int ret;
           if(check_param >= 256)
-            check_param = mzx_world->sprite_num;
+          {
+            check_param = (unsigned int)mzx_world->sprite_num;
+
+            if(check_param >= 256)
+              break;
+          }
 
           check_sprite = mzx_world->sprite_list[check_param];
 
@@ -2241,7 +2246,7 @@ void run_robot(context *ctx, int id, int x, int y)
             check_x += check_sprite->x;
             check_y += check_sprite->y;
           }
-          if (check_sprite->flags & SPRITE_UNBOUND)
+          if(check_sprite->flags & SPRITE_UNBOUND)
             prefix_mid_xy_unbound(mzx_world, &check_x, &check_y, x, y);
           else
             prefix_mid_xy(mzx_world, &check_x, &check_y, x, y);
@@ -3129,7 +3134,7 @@ void run_robot(context *ctx, int id, int x, int y)
 
           if((unsigned int)put_param < 256)
           {
-            if (mzx_world->sprite_list[put_param]->flags & SPRITE_UNBOUND)
+            if(mzx_world->sprite_list[put_param]->flags & SPRITE_UNBOUND)
               prefix_mid_xy_unbound(mzx_world, &put_x, &put_y, x, y);
             else
               prefix_mid_xy(mzx_world, &put_x, &put_y, x, y);

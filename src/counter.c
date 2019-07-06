@@ -698,6 +698,12 @@ static int spr_collisions_read(struct world *mzx_world,
 static int spr_num_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
+  // This was a signed char in versions prior to 2.70.
+  // Note the 2.69c source code claims it's an unsigned char too, but it can
+  // be verified that the build everyone relied on still treats it as signed.
+  if(mzx_world->version < V270)
+    return (signed char)mzx_world->sprite_num;
+
   return mzx_world->sprite_num;
 }
 
@@ -816,9 +822,11 @@ static int spr_cheight_read(struct world *mzx_world,
 static void spr_num_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
-  value &= 0xFF;
+  // This only used the lowest byte prior to 2.92.
+  if(mzx_world->version < V292)
+    value &= 0xFF;
 
-  mzx_world->sprite_num = (unsigned int)value;
+  mzx_world->sprite_num = value;
 }
 
 static void spr_yorder_write(struct world *mzx_world,

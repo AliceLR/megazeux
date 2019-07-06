@@ -1264,6 +1264,7 @@ static inline int save_world_sprites(struct world *mzx_world,
   save_prop_d(SPROP_ACTIVE_SPRITES,       mzx_world->active_sprites, &mf);
   save_prop_d(SPROP_SPRITE_Y_ORDER,       mzx_world->sprite_y_order, &mf);
   save_prop_d(SPROP_COLLISION_COUNT,      mzx_world->collision_count, &mf);
+  save_prop_d(SPROP_SPRITE_NUM,           mzx_world->sprite_num, &mf);
 
   // Collision list
   save_prop_v(SPROP_COLLISION_LIST, collision_size, &prop, &mf);
@@ -1408,6 +1409,10 @@ static inline int load_world_sprites(struct world *mzx_world,
 
         break;
       }
+
+      case SPROP_SPRITE_NUM:
+        mzx_world->sprite_num = value;
+        break;
 
       default:
         break;

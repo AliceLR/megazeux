@@ -479,8 +479,8 @@ enum world_prop
 
 #define COUNT_SPRITE_PROPS        16
 #define BOUND_SPRITE_PROPS        61
-#define COUNT_SPRITE_ONCE_PROPS   4
-#define BOUND_SPRITE_ONCE_PROPS   12 // + (collision_count * 4)
+#define COUNT_SPRITE_ONCE_PROPS   5
+#define BOUND_SPRITE_ONCE_PROPS   16 // + (collision_count * 4)
 
 #define SPRITE_PROPS_SIZE                       \
 (                                               \
@@ -522,6 +522,7 @@ enum sprite_prop
   SPROP_SPRITE_Y_ORDER            = 0x8001, // 1
   SPROP_COLLISION_COUNT           = 0x8002, // 2
   SPROP_COLLISION_LIST            = 0x8003, // collision count * 4
+  SPROP_SPRITE_NUM                = 0x8004, // 4
 };
 
 
