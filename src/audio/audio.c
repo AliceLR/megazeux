@@ -163,7 +163,9 @@ void initialize_audio_stream(struct audio_stream *a_src,
   a_src->get_order = a_spec->get_order;
   a_src->get_position = a_spec->get_position;
   a_src->get_length = a_spec->get_length;
+  a_src->get_sample = a_spec->get_sample;
   a_src->destruct = a_spec->destruct;
+  a_src->is_spot_sample = false;
 
   if(a_src->set_volume)
     a_src->set_volume(a_src, volume);
@@ -342,8 +344,21 @@ void audio_end_module(void)
 {
   if(audio.primary_stream)
   {
+    struct audio_stream *current_astream = audio.stream_list_base;
+
     LOCK();
     audio.primary_stream->destruct(audio.primary_stream);
+
+    // Also end any sound effects attached to the mod.
+    while(current_astream)
+    {
+      struct audio_stream *next_astream = current_astream->next;
+
+      if(current_astream->is_spot_sample)
+        current_astream->destruct(current_astream);
+
+      current_astream = next_astream;
+    }
     UNLOCK();
   }
 
@@ -446,6 +461,34 @@ void audio_play_sample(char *filename, boolean safely, int period)
   }
 
   limit_samples(audio.max_simultaneous_samples);
+}
+
+void audio_spot_sample(int period, int which)
+{
+  // Play a sample from the current playing mod.
+  // Currently only works with libxmp (and maybe only ever will).
+
+  Uint32 vol = volume_function(255, audio.sound_volume);
+  struct wav_info wav;
+  boolean ret;
+
+  memset(&wav, 0, sizeof(struct wav_info));
+
+  if(audio.primary_stream && audio.primary_stream->get_sample)
+  {
+    LOCK();
+    ret = audio.primary_stream->get_sample(audio.primary_stream, which, &wav);
+    UNLOCK();
+
+    if(ret)
+    {
+      struct audio_stream *a_src = construct_wav_stream_direct(&wav,
+       audio_get_real_frequency(period * 2), vol, !!(wav.loop_end));
+      a_src->is_spot_sample = true;
+
+      limit_samples(audio.max_simultaneous_samples);
+    }
+  }
 }
 
 void audio_end_sample(void)

@@ -133,6 +133,10 @@ FIXES
   validation. This resolves error messages and bugs in Eternal
   Eclipse Taoyarin v1.0, Loco, SaintZZT 7th, Slave Pit, and
   Ep+Arp World MZX.
++ The MOD SAM command has been restored for compatibility and
+  is version locked to <2.80 worlds. This fixes missing sound
+  effects in Crisis in Stuffyou City (original), Sprite Catcher,
+  and Talon's Tale. This only works for libxmp builds.
 
 DEVELOPERS
 

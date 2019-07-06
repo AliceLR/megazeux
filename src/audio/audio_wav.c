@@ -41,24 +41,6 @@
 // anticipated use big WAVs and it could get annoying for end users.)
 #define WARN_FILESIZE (1<<22)
 
-// WAV sample types
-
-#define SAMPLE_U8     0
-#define SAMPLE_S8     1
-#define SAMPLE_S16LSB 2
-
-// Default period for .SAM files.
-static const int default_period = 428;
-
-struct wav_info
-{
-  Uint32 channels;
-  Uint32 freq;
-  Uint16 format;
-  Uint32 loop_start;
-  Uint32 loop_end;
-};
-
 struct wav_stream
 {
   struct sampled_stream s;
@@ -306,7 +288,7 @@ static void *get_riff_chunk(FILE *fp, int filesize, char *id, int *size)
   if(*size & 1)
   {
     c = fgetc(fp);
-    if ((c != 0) && (c != EOF))
+    if((c != 0) && (c != EOF))
       fseek(fp, -1, SEEK_CUR);
   }
 
@@ -374,8 +356,7 @@ static void* get_riff_chunk_by_id(FILE *fp, int filesize,
 
 // Simple SAM loader.
 
-static int load_sam_file(const char *file, struct wav_info *spec,
- Uint8 **audio_buf, Uint32 *audio_len)
+static int load_sam_file(const char *file, struct wav_info *spec)
 {
   size_t source_length;
   void *buf;
@@ -394,7 +375,7 @@ static int load_sam_file(const char *file, struct wav_info *spec,
 
   // Default to no loop
   spec->channels = 1;
-  spec->freq = audio_get_real_frequency(default_period);
+  spec->freq = audio_get_real_frequency(SAM_DEFAULT_PERIOD);
   spec->format = SAMPLE_S8;
   spec->loop_start = 0;
   spec->loop_end = 0;
@@ -405,8 +386,8 @@ static int load_sam_file(const char *file, struct wav_info *spec,
     free(buf);
     goto exit_close;
   }
-  *audio_len = source_length;
-  *audio_buf = buf;
+  spec->data_length = source_length;
+  spec->wav_data = buf;
   goto exit_close_success;
 
 exit_close_success:
@@ -420,8 +401,7 @@ exit_out:
 // More lenient than SDL's WAV loader, but only supports
 // uncompressed PCM files (for now.)
 
-static int load_wav_file(const char *file, struct wav_info *spec,
- Uint8 **audio_buf, Uint32 *audio_len)
+static int load_wav_file(const char *file, struct wav_info *spec)
 {
   int data_size, filesize, riffsize, channels, srate, sbytes, fmt_size;
   int smpl_size, numloops;
@@ -438,7 +418,7 @@ static int load_wav_file(const char *file, struct wav_info *spec,
   // First, check if this isn't actually a SAM file. If so,
   // route to load_sam_file instead.
   if((sam_ext_pos > 0) && !strcasecmp(file + sam_ext_pos, ".sam"))
-    return load_sam_file(file, spec, audio_buf, audio_len);
+    return load_sam_file(file, spec);
 
   fp = fopen_unsafe(file, "rb");
   if(!fp)
@@ -494,12 +474,12 @@ static int load_wav_file(const char *file, struct wav_info *spec,
   {
     free(fmt_chunk);
 #ifdef CONFIG_SDL
-    if(SDL_LoadWAV(file, &sdlspec, audio_buf, audio_len))
+    if(SDL_LoadWAV(file, &sdlspec, &(spec->wav_data), &(spec->data_length)))
     {
-      void *copy_buf = cmalloc(*audio_len);
-      memcpy(copy_buf, *audio_buf, *audio_len);
-      SDL_FreeWAV(*audio_buf);
-      *audio_buf = copy_buf;
+      void *copy_buf = cmalloc(spec->data_length);
+      memcpy(copy_buf, spec->wav_data, spec->data_length);
+      SDL_FreeWAV(spec->wav_data);
+      spec->wav_data = copy_buf;
       spec->channels = sdlspec.channels;
       spec->freq = sdlspec.freq;
       switch(sdlspec.format)
@@ -541,17 +521,17 @@ static int load_wav_file(const char *file, struct wav_info *spec,
     goto exit_close;
 
   // Everything seems to check out, so let's load the "data" chunk.
-  *audio_buf = get_riff_chunk_by_id(fp, filesize, "data", &data_size);
-  *audio_len = data_size;
+  spec->wav_data = get_riff_chunk_by_id(fp, filesize, "data", &data_size);
+  spec->data_length = data_size;
 
   // No "data" chunk?! FAIL!
-  if(!*audio_buf)
+  if(!spec->wav_data)
     goto exit_close;
 
   // Empty "data" chunk?! ALSO FAIL!
   if(!data_size)
   {
-    free(*audio_buf);
+    free(spec->wav_data);
     goto exit_close;
   }
 
@@ -578,11 +558,11 @@ static int load_wav_file(const char *file, struct wav_info *spec,
   free(smpl_chunk);
 
   // If the number of loops is less than 1, the loop data's invalid
-  if (numloops < 1)
+  if(numloops < 1)
     goto exit_close_success;
 
   // Boundary check loop points
-  if ((loop_start >= *audio_len) || (loop_end > *audio_len)
+  if((loop_start >= spec->data_length) || (loop_end > spec->data_length)
    || (loop_start >= loop_end))
     goto exit_close_success;
 
@@ -597,60 +577,63 @@ exit_out:
   return ret;
 }
 
+struct audio_stream *construct_wav_stream_direct(struct wav_info *w_info,
+ Uint32 frequency, Uint32 volume, Uint32 repeat)
+{
+  struct wav_stream *w_stream = cmalloc(sizeof(struct wav_stream));
+  struct sampled_stream_spec s_spec;
+  struct audio_stream_spec a_spec;
+
+  w_stream->wav_data = w_info->wav_data;
+  w_stream->data_length = w_info->data_length;
+  w_stream->channels = w_info->channels;
+  w_stream->data_offset = 0;
+  w_stream->format = w_info->format;
+  w_stream->natural_frequency = w_info->freq;
+  w_stream->bytes_per_sample = w_info->channels;
+  w_stream->loop_start = w_info->loop_start;
+  w_stream->loop_end = w_info->loop_end;
+
+  if((w_info->format != SAMPLE_U8) && (w_info->format != SAMPLE_S8))
+    w_stream->bytes_per_sample *= 2;
+
+  memset(&a_spec, 0, sizeof(struct audio_stream_spec));
+  a_spec.mix_data     = wav_mix_data;
+  a_spec.set_volume   = wav_set_volume;
+  a_spec.set_repeat   = wav_set_repeat;
+  a_spec.set_position = wav_set_position;
+  a_spec.get_position = wav_get_position;
+  a_spec.get_length   = wav_get_length;
+  a_spec.destruct     = wav_destruct;
+
+  memset(&s_spec, 0, sizeof(struct sampled_stream_spec));
+  s_spec.set_frequency = wav_set_frequency;
+  s_spec.get_frequency = wav_get_frequency;
+
+  initialize_sampled_stream((struct sampled_stream *)w_stream, &s_spec,
+    frequency, w_info->channels, 1);
+
+  initialize_audio_stream((struct audio_stream *)w_stream, &a_spec,
+    volume, repeat);
+
+  return (struct audio_stream *)w_stream;
+}
+
 static struct audio_stream *construct_wav_stream(char *filename,
  Uint32 frequency, Uint32 volume, Uint32 repeat)
 {
-  struct wav_info w_info = {0,0,0,0,0};
-  struct audio_stream *ret_val = NULL;
-  Uint32 data_length = 0;
-  Uint8 *wav_data = NULL;
+  struct wav_info w_info;
+  memset(&w_info, 0, sizeof(struct wav_info));
 
-  if(load_wav_file(filename, &w_info, &wav_data, &data_length))
+  if(load_wav_file(filename, &w_info))
   {
     // Surround WAVs not supported yet..
     if(w_info.channels <= 2)
-    {
-      struct wav_stream *w_stream = cmalloc(sizeof(struct wav_stream));
-      struct sampled_stream_spec s_spec;
-      struct audio_stream_spec a_spec;
+      return construct_wav_stream_direct(&w_info, frequency, volume, repeat);
 
-      w_stream->wav_data = wav_data;
-      w_stream->data_length = data_length;
-      w_stream->channels = w_info.channels;
-      w_stream->data_offset = 0;
-      w_stream->format = w_info.format;
-      w_stream->natural_frequency = w_info.freq;
-      w_stream->bytes_per_sample = w_info.channels;
-      w_stream->loop_start = w_info.loop_start;
-      w_stream->loop_end = w_info.loop_end;
-
-      if((w_info.format != SAMPLE_U8) && (w_info.format != SAMPLE_S8))
-        w_stream->bytes_per_sample *= 2;
-
-      memset(&a_spec, 0, sizeof(struct audio_stream_spec));
-      a_spec.mix_data     = wav_mix_data;
-      a_spec.set_volume   = wav_set_volume;
-      a_spec.set_repeat   = wav_set_repeat;
-      a_spec.set_position = wav_set_position;
-      a_spec.get_position = wav_get_position;
-      a_spec.get_length   = wav_get_length;
-      a_spec.destruct     = wav_destruct;
-
-      memset(&s_spec, 0, sizeof(struct sampled_stream_spec));
-      s_spec.set_frequency = wav_set_frequency;
-      s_spec.get_frequency = wav_get_frequency;
-
-      initialize_sampled_stream((struct sampled_stream *)w_stream, &s_spec,
-       frequency, w_info.channels, 1);
-
-      initialize_audio_stream((struct audio_stream *)w_stream, &a_spec,
-       volume, repeat);
-
-      ret_val = (struct audio_stream *)w_stream;
-    }
+    free(w_info.wav_data);
   }
-
-  return ret_val;
+  return NULL;
 }
 
 void init_wav(struct config_info *conf)
