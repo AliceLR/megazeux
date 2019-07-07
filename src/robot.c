@@ -865,10 +865,9 @@ struct label **cache_robot_labels(struct robot *robot, int *num_labels)
       }
 
       if(cmd == ROBOTIC_CMD_ZAPPED_LABEL)
-        current_label->zapped_in_source = true;
+        current_label->zapped = true;
       else
-        current_label->zapped_in_source = false;
-      current_label->zapped = current_label->zapped_in_source;
+        current_label->zapped = false;
 
       // Do we need more room?
       if(labels_found == labels_allocated)

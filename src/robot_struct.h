@@ -36,8 +36,6 @@ struct label
   int cmd_position;
   // Set to true if zapped
   boolean zapped;
-  // Set to true if originally zapped
-  boolean zapped_in_source;
 };
 
 struct scroll
