@@ -3060,7 +3060,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       if(cur_robot)
       {
         int new_length = 0;
-        char *new_source;
+        char *new_source = NULL;
 
         // Source world? Assume new source. Otherwise, assume old source.
         // TODO issues caused by this will be resolved when these counters get
