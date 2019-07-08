@@ -213,8 +213,8 @@ static Sint16 sdl_axis_action_map[SDL_CONTROLLER_AXIS_MAX][2] =
   [SDL_CONTROLLER_AXIS_LEFTY]         = { -JOY_L_UP,    -JOY_L_DOWN },
   [SDL_CONTROLLER_AXIS_RIGHTX]        = { -JOY_R_LEFT,  -JOY_R_RIGHT },
   [SDL_CONTROLLER_AXIS_RIGHTY]        = { -JOY_R_UP,    -JOY_R_DOWN },
-  [SDL_CONTROLLER_AXIS_TRIGGERLEFT]   = { 0,            -JOY_SAVE },
-  [SDL_CONTROLLER_AXIS_TRIGGERRIGHT]  = { 0,            -JOY_LOAD },
+  [SDL_CONTROLLER_AXIS_TRIGGERLEFT]   = { 0,            -JOY_LTRIGGER },
+  [SDL_CONTROLLER_AXIS_TRIGGERRIGHT]  = { 0,            -JOY_RTRIGGER },
 };
 
 static Sint16 sdl_action_map[SDL_CONTROLLER_BUTTON_MAX] =
@@ -223,13 +223,13 @@ static Sint16 sdl_action_map[SDL_CONTROLLER_BUTTON_MAX] =
   [SDL_CONTROLLER_BUTTON_B]             = -JOY_B,
   [SDL_CONTROLLER_BUTTON_X]             = -JOY_X,
   [SDL_CONTROLLER_BUTTON_Y]             = -JOY_Y,
-  [SDL_CONTROLLER_BUTTON_BACK]          = -JOY_ESCAPE,
-//[SDL_CONTROLLER_BUTTON_GUIDE]         = -JOY_ESCAPE,
-  [SDL_CONTROLLER_BUTTON_START]         = -JOY_MENU,
+  [SDL_CONTROLLER_BUTTON_BACK]          = -JOY_SELECT,
+//[SDL_CONTROLLER_BUTTON_GUIDE]         = -JOY_GUIDE,
+  [SDL_CONTROLLER_BUTTON_START]         = -JOY_START,
   [SDL_CONTROLLER_BUTTON_LEFTSTICK]     = -JOY_LSTICK,
   [SDL_CONTROLLER_BUTTON_RIGHTSTICK]    = -JOY_RSTICK,
-  [SDL_CONTROLLER_BUTTON_LEFTSHOULDER]  = -JOY_SWITCH,
-  [SDL_CONTROLLER_BUTTON_RIGHTSHOULDER] = -JOY_SETTINGS,
+  [SDL_CONTROLLER_BUTTON_LEFTSHOULDER]  = -JOY_LSHOULDER,
+  [SDL_CONTROLLER_BUTTON_RIGHTSHOULDER] = -JOY_RSHOULDER,
   [SDL_CONTROLLER_BUTTON_DPAD_UP]       = -JOY_UP,
   [SDL_CONTROLLER_BUTTON_DPAD_DOWN]     = -JOY_DOWN,
   [SDL_CONTROLLER_BUTTON_DPAD_LEFT]     = -JOY_LEFT,
@@ -498,13 +498,13 @@ static void parse_gamecontroller_read_string(char *map,
 }
 
 static void parse_gamecontroller_apply(int joy, Sint16 mapping,
- struct gc_map *target, boolean *escape_mapped, boolean *escape_used)
+ struct gc_map *target, boolean *select_mapped, boolean *select_used)
 {
   Uint8 which = target->which;
   Uint8 pos = target->pos;
 
-  if(mapping == -JOY_ESCAPE)
-    *escape_mapped = true;
+  if(mapping == -JOY_SELECT)
+    *select_mapped = true;
 
   switch(target->feature)
   {
@@ -546,8 +546,8 @@ static void parse_gamecontroller_apply(int joy, Sint16 mapping,
       break;
     }
   }
-  if(mapping == -JOY_ESCAPE)
-    *escape_used = true;
+  if(mapping == -JOY_SELECT)
+    *select_used = true;
   return;
 }
 
@@ -555,8 +555,8 @@ static void parse_gamecontroller_map(int joystick_index, char *map)
 {
   struct gc_axis_map axes[SDL_CONTROLLER_AXIS_MAX];
   struct gc_map buttons[SDL_CONTROLLER_BUTTON_MAX];
-  boolean escape_mapped = false;
-  boolean escape_used = false;
+  boolean select_mapped = false;
+  boolean select_used = false;
   size_t i;
 
   memset(axes, 0, sizeof(axes));
@@ -568,26 +568,27 @@ static void parse_gamecontroller_map(int joystick_index, char *map)
   for(i = 0; i < SDL_CONTROLLER_AXIS_MAX; i++)
   {
     parse_gamecontroller_apply(joystick_index,
-     sdl_axis_action_map[i][0], &(axes[i].neg), &escape_mapped, &escape_used);
+     sdl_axis_action_map[i][0], &(axes[i].neg), &select_mapped, &select_used);
 
     parse_gamecontroller_apply(joystick_index,
-     sdl_axis_action_map[i][1], &(axes[i].pos), &escape_mapped, &escape_used);
+     sdl_axis_action_map[i][1], &(axes[i].pos), &select_mapped, &select_used);
   }
 
   // Apply buttons.
   for(i = 0; i < SDL_CONTROLLER_BUTTON_MAX; i++)
   {
     parse_gamecontroller_apply(joystick_index,
-     sdl_action_map[i], &(buttons[i]), &escape_mapped, &escape_used);
+     sdl_action_map[i], &(buttons[i]), &select_mapped, &select_used);
   }
 
-  if(escape_mapped && !escape_used)
+  if(select_mapped && !select_used)
   {
-    // TODO originally this was going to try to place JOY_ESCAPE on another
+    // TODO originally this was going to try to place JOY_SELECT on another
     // button. That was kind of a bad idea, so just print a warning for now.
     warn("[JOYSTICK] %d doesn't have any gamecontroller button that binds "
-     "act_escape (by default, this would be 'back'). You may want to override "
-     "this controller mapping to include it.\n", joystick_index);
+     "'select' (by default, this is the SDL gamecontoller button 'back'). "
+     "Since this button is used to open the joystick menu, you may want to "
+     "override this controller mapping to include it.\n", joystick_index);
   }
 }
 

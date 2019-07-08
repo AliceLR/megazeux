@@ -783,9 +783,9 @@ static boolean process_event(union event *ev)
       {
         if(button == HOME_BUTTON)
         {
-          // HACK: force the home button mapping to always be escape.
+          // HACK: force the home button mapping to always be select.
           int joystick = ev->button.pad;
-          input.joystick_global_map.button[joystick][button] = -JOY_ESCAPE;
+          input.joystick_global_map.button[joystick][button] = -JOY_SELECT;
           input.joystick_game_map.button[joystick][button] = 0;
         }
         joystick_button_press(status, ev->button.pad, button);

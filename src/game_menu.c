@@ -328,9 +328,8 @@ static boolean menu_draw(context *ctx)
 
 /**
  * Joystick input for the game menu. Use the default UI joystick mapping except
- * with a couple of exceptions: JOY_SWITCH should open F2 since JOY_SWITCH will
- * be available more often than JOY_SETTINGS on consoles; JOY_X should open
- * help like the title screen.
+ * with an exception: JOY_LSHOULDER should open F2 since it will be available
+ * more often than JOY_RSHOULDER on consoles.
  */
 
 static boolean menu_joystick(context *ctx, int *key, int action)
@@ -339,13 +338,7 @@ static boolean menu_joystick(context *ctx, int *key, int action)
 
   switch(action)
   {
-    case JOY_X:
-    {
-      *key = IKEY_F1;
-      return true;
-    }
-
-    case JOY_SWITCH:
+    case JOY_LSHOULDER:
     {
       *key = IKEY_F2;
       return true;

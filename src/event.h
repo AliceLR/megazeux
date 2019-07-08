@@ -243,14 +243,14 @@ void set_unfocus_pause(boolean value);
 void set_num_buffered_events(Uint8 value);
 
 boolean joystick_parse_map_value(const char *value, Sint16 *binding);
-void joystick_map_button(int joystick, int button, const char *value,
+void joystick_map_button(int first, int last, int button, const char *value,
  boolean is_global);
-void joystick_map_axis(int joystick, int axis, const char *neg,
+void joystick_map_axis(int first, int last, int axis, const char *neg,
  const char *pos, boolean is_global);
-void joystick_map_hat(int joystick, const char *up, const char *down,
+void joystick_map_hat(int first, int last, const char *up, const char *down,
  const char *left, const char *right, boolean is_global);
-void joystick_map_action(int joystick, const char *action, const char *value,
- boolean is_global);
+void joystick_map_action(int first, int last, const char *action,
+ const char *value, boolean is_global);
 void joystick_reset_game_map(void);
 void joystick_set_game_mode(boolean enable);
 void joystick_set_game_bindings(boolean enable);

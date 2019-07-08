@@ -544,7 +544,7 @@ static boolean game_joystick(context *ctx, int *key, int action)
 {
   switch(action)
   {
-    case JOY_ESCAPE:
+    case JOY_SELECT:
     {
       // Force an escape press.
       *key = IKEY_ESCAPE;
@@ -860,14 +860,14 @@ static boolean title_joystick(context *ctx, int *key, int action)
   {
     case JOY_A:         *key = IKEY_F5; return true;
     case JOY_B:         *key = IKEY_RETURN; return true;
-    case JOY_X:         *key = IKEY_F1; return true;
-    case JOY_Y:         *key = IKEY_F7; return true;
-    case JOY_MENU:      *key = IKEY_F5; return true;
-    case JOY_ESCAPE:    *key = IKEY_ESCAPE; return true;
-    case JOY_SETTINGS:  *key = IKEY_F2; return true;
-    case JOY_SWITCH:    *key = IKEY_F2; return true;
-    case JOY_SAVE:      *key = IKEY_F3; return true;
-    case JOY_LOAD:      *key = IKEY_F4; return true;
+    case JOY_X:         *key = IKEY_F3; return true;
+    case JOY_Y:         *key = IKEY_F4; return true;
+    case JOY_START:     *key = IKEY_F5; return true;
+    case JOY_SELECT:    *key = IKEY_ESCAPE; return true;
+    case JOY_LSHOULDER: *key = IKEY_F2; return true;
+    case JOY_RSHOULDER: *key = IKEY_F2; return true;
+    case JOY_LTRIGGER:  *key = IKEY_F3; return true;
+    case JOY_RTRIGGER:  *key = IKEY_F4; return true;
   }
   return false;
 }
