@@ -199,7 +199,7 @@ FIXES
   and Talon's Tale. This only works for libxmp builds.
 + Fixed a sprite collision bounding bug where the collision
   height bounding for the reference checked using the collision
-  width instead. This fixes Manuel the Minx.
+  width instead. This fixes Manuel the Manx.
 
 DEVELOPERS
 
