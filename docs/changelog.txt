@@ -236,11 +236,10 @@ DEVELOPERS
   in run_robot.c only. This should improve Robotic performance
   in release builds.
 + Updated MSVC project for Visual Studio 2019. (elig, Spectere)
-+ Added experimental pledge(2) and unveil(2) support. This is
-  enabled by default on OpenBSD, but can be disabled with the
-  config.sh flag --disable-pledge. The utils should work fine,
-  but MZX itself might have issues. Additionally, config.sh now
-  detects OpenBSD properly and several warnings have been fixed.
++ Added experimental pledge(2) and unveil(2) support for OpenBSD
+  builds. By default, this is enabled for the utils but not for
+  MZX. Additionally, config.sh now detects OpenBSD properly and
+  several warnings have been fixed.
 - Removed uthash as a build option.
 
 
