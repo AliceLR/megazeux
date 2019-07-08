@@ -1,0 +1,3 @@
+Title: SPR_NUM range test
+Author: Alice Rowan
+Desc: Test the range of SPR_NUM prior to 2.70, when it was stored as a signed char.

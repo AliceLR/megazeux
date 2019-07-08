@@ -64,6 +64,9 @@ CORE_LIBSPEC int find_free_robot(struct board *src_board);
 
 void prepare_robot_bytecode(struct world *mzx_world, struct robot *cur_robot);
 
+int get_legacy_bytecode_command_num(char *legacy_bc, int pos_in_bc);
+int command_num_to_program_pos(struct robot *cur_robot, int command_num);
+
 #else /* !CONFIG_DEBYTECODE */
 
 CORE_LIBSPEC void reallocate_robot(struct robot *robot, int size);
@@ -174,6 +177,9 @@ void push_sensor(struct world *mzx_world, int id);
 void step_sensor(struct world *mzx_world, int id);
 int get_robot_id(struct board *src_board, const char *name);
 
+CORE_LIBSPEC void get_robot_position(struct robot *cur_robot, int *xpos,
+ int *ypos);
+
 static inline char *tr_msg(struct world *mzx_world, char *mesg, int id,
  char *buffer)
 {
@@ -190,7 +196,7 @@ CORE_LIBSPEC void duplicate_scroll_direct(struct scroll *cur_scroll,
 CORE_LIBSPEC void duplicate_sensor_direct(struct sensor *cur_sensor,
  struct sensor *copy_sensor);
 
-CORE_LIBSPEC int get_current_command_map_index(struct robot *cur_robot);
+CORE_LIBSPEC int get_program_command_num(struct robot *cur_robot);
 
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC extern const int def_params[128];

@@ -274,7 +274,7 @@ char *legacy_disassemble_program(char *program_bytecode, int bytecode_length,
  int *_disasm_length, boolean print_ignores, int base);
 char *legacy_convert_file(char *file_name, int *_disasm_length,
  boolean print_ignores, int base);
-char *legacy_convert_file_mem(char *src, int len, int *_disasm_length,
+char *legacy_convert_program(char *src, int len, int *_disasm_length,
  boolean print_ignores, int base);
 
 char *find_non_identifier_char(char *str);

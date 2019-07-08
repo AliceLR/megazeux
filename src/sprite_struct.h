@@ -43,6 +43,7 @@ struct sprite
   int transparent_color;
   int offset;
   int qsort_order;
+  int z;
 };
 
 struct collision_list
