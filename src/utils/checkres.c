@@ -1452,7 +1452,7 @@ static int _world_magic(const unsigned char magic_string[3])
         case 'X':
           return V100;
         case '2':
-          return V251;
+          return V200;
         case 'A':
           return V251s1;
       }

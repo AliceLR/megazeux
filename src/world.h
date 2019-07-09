@@ -90,9 +90,9 @@ __M_BEGIN_DECLS
 
 enum mzx_version
 {
-  VERSION_ALL     = 0,      // Used in versioned lists
   V100            = 0x0100, // Magic: MZX
-  V251            = 0x0205, // Magic: MZ2
+  V200            = 0x0205, // Magic: MZ2
+  V251            = 0x0205,
   V251s1          = 0x0208, // Magic: MZA
   V251s2          = 0x0209,
   V251s3          = 0x0209,
