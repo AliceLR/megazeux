@@ -253,7 +253,7 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
    (viewport_y < 0) || (viewport_y > 24) ||
    (viewport_width < 1) || (viewport_width > 80) ||
    (viewport_height < 1) || (viewport_height > 25))
-    goto err_invalid;
+    goto err_freeboard;
 
   cur_board->viewport_x = viewport_x;
   cur_board->viewport_y = viewport_y;
@@ -523,6 +523,13 @@ board_scan:
           if(!found_robots[pr] && pr <= num_robots && robot_list[pr])
           {
             found_robots[pr] = 1;
+            // Also fix the xpos/ypos values, which may have been saved
+            // incorrectly in ver1to2 worlds (see: Caverns of Zeux).
+            cur_robot = robot_list[pr];
+            cur_robot->xpos = i % board_width;
+            cur_robot->ypos = i / board_width;
+            cur_robot->compat_xpos = cur_robot->xpos;
+            cur_robot->compat_ypos = cur_robot->ypos;
           }
 
           else

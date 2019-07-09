@@ -480,8 +480,7 @@ static int check_dir_xy(struct world *mzx_world, enum thing id, int color,
 
     if((direction & 0x1F) == SEEK)
     {
-      x = cur_robot->xpos;
-      y = cur_robot->ypos;
+      get_robot_position(cur_robot, &x, &y);
     }
 
     direction = parsedir(direction, x, y, cur_robot->walk_dir);
@@ -991,9 +990,11 @@ static void end_cycle(struct robot *cur_robot, int lines_run, int x, int y)
 #endif
 
   cur_robot->cycle_count = 0; // In case a label changed it
-  // Reset x/y (from movements)
-  cur_robot->xpos = x;
-  cur_robot->ypos = y;
+
+  // Older versions have a really sloppy method of updating the robot pos
+  // that causes a lot of bugs, and sadly this needs to be emulated.
+  cur_robot->compat_xpos = x;
+  cur_robot->compat_ypos = y;
 }
 
 static void end_program(struct robot *cur_robot)
@@ -1049,6 +1050,8 @@ void run_robot(context *ctx, int id, int x, int y)
     cur_robot = src_board->robot_list[id];
     cur_robot->xpos = x;
     cur_robot->ypos = y;
+    cur_robot->compat_xpos = x;
+    cur_robot->compat_ypos = y;
     cur_robot->cycle_count = 0;
 
     src_board->robot_list[id]->status = 0;
@@ -1063,6 +1066,8 @@ void run_robot(context *ctx, int id, int x, int y)
     // Reset x/y
     cur_robot->xpos = x;
     cur_robot->ypos = y;
+    cur_robot->compat_xpos = x;
+    cur_robot->compat_ypos = y;
 
 #ifdef CONFIG_EDITOR
     cur_robot->commands_cycle = 0;
@@ -1107,7 +1112,17 @@ void run_robot(context *ctx, int id, int x, int y)
       {
         enum thing l_id;
 
-        move_dir(src_board, &x, &y, walk_dir);
+        if(mzx_world->version >= V292)
+        {
+          // Source the current position off of the robot's new real position.
+          x = cur_robot->xpos;
+          y = cur_robot->ypos;
+        }
+        else
+        {
+          // Source the current position off of a hack that doesn't really work.
+          move_dir(src_board, &x, &y, walk_dir);
+        }
 
         /* Normally, WALK doesn't end the cycle. But due to long-standing
          * bugs in the transport() and push() functions, the board is actually
@@ -1412,6 +1427,8 @@ void run_robot(context *ctx, int id, int x, int y)
             if(place_at_xy(mzx_world, new_id, color, id, new_x, new_y))
             {
               id_remove_top(mzx_world, x, y);
+              cur_robot->xpos = new_x;
+              cur_robot->ypos = new_y;
               x = new_x;
               y = new_y;
             }
@@ -2158,9 +2175,9 @@ void run_robot(context *ctx, int id, int x, int y)
 
           // Versions up to 2.82b would use sprite_num instead of the
           // param if the provided color was c??. This was unintuitive and
-          // redundant with the SPR_NUM counter, so it was removed.
+          // redundant with newer language extensions, so it was removed.
           if(mzx_world->version <= V282 && check_color == 288)
-            check_param = mzx_world->sprite_num;
+            check_param = (unsigned int)mzx_world->sprite_num;
 
           /* 256 == p?? */
           if(check_param == 256)
@@ -2215,7 +2232,12 @@ void run_robot(context *ctx, int id, int x, int y)
 
           int ret;
           if(check_param >= 256)
-            check_param = mzx_world->sprite_num;
+          {
+            check_param = (unsigned int)mzx_world->sprite_num;
+
+            if(check_param >= 256)
+              break;
+          }
 
           check_sprite = mzx_world->sprite_list[check_param];
 
@@ -2224,7 +2246,7 @@ void run_robot(context *ctx, int id, int x, int y)
             check_x += check_sprite->x;
             check_y += check_sprite->y;
           }
-          if (check_sprite->flags & SPRITE_UNBOUND)
+          if(check_sprite->flags & SPRITE_UNBOUND)
             prefix_mid_xy_unbound(mzx_world, &check_x, &check_y, x, y);
           else
             prefix_mid_xy(mzx_world, &check_x, &check_y, x, y);
@@ -2565,29 +2587,17 @@ void run_robot(context *ctx, int id, int x, int y)
                 enum thing old_id = (enum thing)level_id[offset];
                 level_id[offset] = (char)ROBOT_PUSHABLE;
                 grab_item(mzx_world, new_x, new_y, 0);
-                // Find the robot
+
+                // If a door opened in the direction of the robot, the robot
+                // was pushed and its position needs to be updated. This might
+                // have been through a transport so just use xpos/ypos.
                 if(level_id[offset] != ROBOT_PUSHABLE)
                 {
-                  int i;
-                  for(i = 0; i < 4; i++)
-                  {
-                    new_x = x;
-                    new_y = y;
-                    if(!move_dir(src_board, &new_x, &new_y, int_to_dir(i)))
-                    {
-                      // Not edge... robot?
-                      new_offset = new_x + (new_y * board_width);
-                      if((level_id[new_offset] == ROBOT_PUSHABLE) &&
-                       (level_param[new_offset] == id))
-                      {
-                        offset = new_offset;
-                        x = new_x;
-                        y = new_y;
-                        break;
-                      }
-                    }
-                  }
+                  x = cur_robot->xpos;
+                  y = cur_robot->ypos;
+                  offset = x + (y * board_width);
                 }
+
                 level_id[offset] = old_id;
                 update_blocked = 1;
               }
@@ -2855,6 +2865,7 @@ void run_robot(context *ctx, int id, int x, int y)
               // nothing gets copied.
               if((src_x != dest_x) || (src_y != dest_y))
               {
+                struct robot *src_robot;
                 int src_offset = src_x + (src_y * board_width);
                 int dest_offset = dest_x + (dest_y * board_width);
                 enum thing cp_id = (enum thing)level_id[src_offset];
@@ -2868,6 +2879,22 @@ void run_robot(context *ctx, int id, int x, int y)
                 level_color[dest_offset] = cp_color;
                 // Figure blocked vars
                 update_blocked = 1;
+
+                // This might have moved robots. Fix their xpos/ypos values.
+                // Old versions didn't fix these, so don't touch the compat pos.
+                if(is_robot(cp_id))
+                {
+                  src_robot = src_board->robot_list[cp_param];
+                  src_robot->xpos = dest_x;
+                  src_robot->ypos = dest_y;
+                }
+                if(is_robot(level_id[src_offset]))
+                {
+                  cp_param = level_param[src_offset];
+                  src_robot = src_board->robot_list[cp_param];
+                  src_robot->xpos = src_x;
+                  src_robot->ypos = src_y;
+                }
               }
             }
           }
@@ -3107,7 +3134,7 @@ void run_robot(context *ctx, int id, int x, int y)
 
           if((unsigned int)put_param < 256)
           {
-            if (mzx_world->sprite_list[put_param]->flags & SPRITE_UNBOUND)
+            if(mzx_world->sprite_list[put_param]->flags & SPRITE_UNBOUND)
               prefix_mid_xy_unbound(mzx_world, &put_x, &put_y, x, y);
             else
               prefix_mid_xy(mzx_world, &put_x, &put_y, x, y);
@@ -3954,13 +3981,22 @@ void run_robot(context *ctx, int id, int x, int y)
            dest_x, dest_y, NULL, 0, NULL);
         }
 
-        if((dest_x == x) && (dest_y == y) && (dest_type == 0))
+        // If this robot was deleted, exit. NOTE: all port versions prior
+        // to 2.92 had a faulty check here that would only check dest_x
+        // and dest_y and not whether or not the robot was actually
+        // overwritten. If something actually relied on this, add a
+        // version check.
+        if(id)
         {
-          // Robot no longer exists; exit
-          return;
-        }
+          int offset = x + (y * board_width);
+          int d_id = (enum thing)level_id[offset];
+          int d_param = level_param[offset];
 
-        update_blocked = 1;
+          if((d_id != ROBOT && d_id != ROBOT_PUSHABLE) || (d_param != id))
+            return;
+
+          update_blocked = 1;
+        }
         break;
       }
 
@@ -4117,15 +4153,24 @@ void run_robot(context *ctx, int id, int x, int y)
             {
               copy_xy_to_xy(mzx_world, src_x, src_y, dest_x, dest_y);
 
-              if((dest_x == x) && (dest_y == y))
+              // If this robot was deleted, exit. NOTE: all port versions prior
+              // to 2.92 had a faulty check here that would only check dest_x
+              // and dest_y and not whether or not the robot was actually
+              // overwritten. If something actually relied on this, add a
+              // version check. That said, this command overwriting the current
+              // robot does not seem to be possible anyway.
               {
-                // Robot no longer exists; exit
-                return;
+                int offset = x + (y * board_width);
+                int d_id = (enum thing)level_id[offset];
+                int d_param = level_param[offset];
+
+                if((d_id != ROBOT && d_id != ROBOT_PUSHABLE) || (d_param != id))
+                  return;
               }
+              update_blocked = 1;
             }
           }
         }
-        update_blocked = 1;
         break;
       }
 
@@ -4686,6 +4731,8 @@ void run_robot(context *ctx, int id, int x, int y)
           level_color[offset] = duplicate_color;
           level_param[offset] = dest_id;
 
+          // This robot doesn't actually move. Who knows why this is here, but
+          // removing it might be a compatibility problem with xpos/ypos...
           x = duplicate_x;
           y = duplicate_y;
 
@@ -4735,6 +4782,8 @@ void run_robot(context *ctx, int id, int x, int y)
           level_color[offset] = duplicate_color;
           level_param[offset] = dest_id;
 
+          // This robot doesn't actually move. Who knows why this is here, but
+          // removing it might be a compatibility problem with xpos/ypos...
           x = duplicate_x;
           y = duplicate_y;
 
@@ -5433,6 +5482,7 @@ void run_robot(context *ctx, int id, int x, int y)
         if(id)
         {
           struct robot *dest_robot;
+          int dest_x, dest_y;
           int first, last;
           char robot_name_buffer[ROBOT_MAX_TR];
           tr_msg(mzx_world, cmd_ptr + 2, id, robot_name_buffer);
@@ -5441,8 +5491,9 @@ void run_robot(context *ctx, int id, int x, int y)
           while(first <= last)
           {
             dest_robot = src_board->robot_list_name_sorted[first];
-            if(dest_robot &&
-             ((dest_robot->xpos == x) || (dest_robot->ypos == y)))
+            get_robot_position(dest_robot, &dest_x, &dest_y);
+
+            if(dest_robot && ((dest_x == x) || (dest_y == y)))
             {
               char *p2 = next_param_pos(cmd_ptr + 1);
               gotoed = send_self_label_tr(mzx_world, p2 + 1, id);

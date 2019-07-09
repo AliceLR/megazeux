@@ -58,8 +58,8 @@
 #include "../world_format.h"
 #include "../zip.h"
 
-#define DOWNVER_VERSION "2.91"
-#define DOWNVER_EXT ".290"
+#define DOWNVER_VERSION "2.92"
+#define DOWNVER_EXT ".291"
 
 #define MZX_VERSION_HI ((MZX_VERSION >> 8) & 0xff)
 #define MZX_VERSION_LO (MZX_VERSION & 0xff)
@@ -147,7 +147,7 @@ err_free:
   return result;
 }
 
-static void convert_291_to_290_world_info(struct memfile *dest,
+static void convert_292_to_291_world_info(struct memfile *dest,
  struct memfile *src)
 {
   struct memfile prop;
@@ -158,13 +158,6 @@ static void convert_291_to_290_world_info(struct memfile *dest,
   {
     switch(ident)
     {
-      case WPROP_SMZX_MODE:
-      case WPROP_VLAYER_WIDTH:
-      case WPROP_VLAYER_HEIGHT:
-      case WPROP_VLAYER_SIZE:
-        // 2.90 doesn't use these.
-        break;
-
       case WPROP_WORLD_VERSION:
       case WPROP_FILE_VERSION:
         // Replace the version number
@@ -181,7 +174,7 @@ static void convert_291_to_290_world_info(struct memfile *dest,
   mfresize(mftell(dest), dest);
 }
 
-static void convert_291_to_290_board_info(struct memfile *dest,
+static void convert_292_to_291_board_info(struct memfile *dest,
  struct memfile *src)
 {
   struct memfile prop;
@@ -207,7 +200,7 @@ static void convert_291_to_290_board_info(struct memfile *dest,
   mfresize(mftell(dest), dest);
 }
 
-static enum status convert_291_to_290(FILE *out, FILE *in)
+static enum status convert_292_to_291(FILE *out, FILE *in)
 {
   struct zip_archive *inZ = zip_open_fp_read(in);
   struct zip_archive *outZ = zip_open_fp_write(out);
@@ -222,19 +215,12 @@ static enum status convert_291_to_290(FILE *out, FILE *in)
   {
     switch(file_id)
     {
-      case FPROP_WORLD_PAL_INDEX:
-      case FPROP_WORLD_VCO:
-      case FPROP_WORLD_VCH:
-        // 2.90 doesn't use these files.
-        zip_skip_file(inZ);
-        break;
-
       case FPROP_WORLD_INFO:
-        err = zip_duplicate_file(outZ, inZ, convert_291_to_290_world_info);
+        err = zip_duplicate_file(outZ, inZ, convert_292_to_291_world_info);
         break;
 
       case FPROP_BOARD_INFO:
-        err = zip_duplicate_file(outZ, inZ, convert_291_to_290_board_info);
+        err = zip_duplicate_file(outZ, inZ, convert_292_to_291_board_info);
         break;
 
       default:
@@ -440,7 +426,7 @@ int main(int argc, char *argv[])
   // Worlds and boards are the same from here out.
   // Conversion closes the file pointers, so NULL them.
 
-  ret = convert_291_to_290(out, in);
+  ret = convert_292_to_291(out, in);
   out = NULL;
   in = NULL;
 

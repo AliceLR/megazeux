@@ -89,6 +89,7 @@ echo ""
 rm -f next
 rm -f "test"
 rm -f saved.sav
+rm -f saved2.sav
 rm -f LOCKED.MZX
 rm -f LOCKED.MZX.locked
 rm -f ../megazeux-config

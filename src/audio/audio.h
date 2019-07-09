@@ -67,9 +67,13 @@ struct audio_stream
   void (* set_repeat)(struct audio_stream *a_src, Uint32 repeat);
   void (* set_order)(struct audio_stream *a_src, Uint32 order);
   void (* set_position)(struct audio_stream *a_src, Uint32 pos);
+  void (* set_loop_start)(struct audio_stream *a_src, Uint32 pos);
+  void (* set_loop_end)(struct audio_stream *a_src, Uint32 pos);
   Uint32 (* get_order)(struct audio_stream *a_src);
   Uint32 (* get_position)(struct audio_stream *a_src);
   Uint32 (* get_length)(struct audio_stream *a_src);
+  Uint32 (* get_loop_start)(struct audio_stream *a_src);
+  Uint32 (* get_loop_end)(struct audio_stream *a_src);
   boolean (* get_sample)(struct audio_stream *a_src, Uint32 which,
    struct wav_info *dest);
   void (* destruct)(struct audio_stream *a_src);
@@ -82,9 +86,13 @@ struct audio_stream_spec
   void (* set_repeat)(struct audio_stream *a_src, Uint32 repeat);
   void (* set_order)(struct audio_stream *a_src, Uint32 order);
   void (* set_position)(struct audio_stream *a_src, Uint32 pos);
+  void (* set_loop_start)(struct audio_stream *a_src, Uint32 pos);
+  void (* set_loop_end)(struct audio_stream *a_src, Uint32 pos);
   Uint32 (* get_order)(struct audio_stream *a_src);
   Uint32 (* get_position)(struct audio_stream *a_src);
   Uint32 (* get_length)(struct audio_stream *a_src);
+  Uint32 (* get_loop_start)(struct audio_stream *a_src);
+  Uint32 (* get_loop_end)(struct audio_stream *a_src);
   boolean (* get_sample)(struct audio_stream *a_src, Uint32 which,
    struct wav_info *dest);
   void (* destruct)(struct audio_stream *a_src);
@@ -137,6 +145,10 @@ int audio_get_module_position(void);
 void audio_set_module_frequency(int freq);
 int audio_get_module_frequency(void);
 int audio_get_module_length(void);
+void audio_set_module_loop_start(int pos);
+int audio_get_module_loop_start(void);
+void audio_set_module_loop_end(int pos);
+int audio_get_module_loop_end(void);
 
 void audio_end_sample(void);
 int audio_get_max_samples(void);
@@ -185,6 +197,10 @@ static inline int audio_get_module_position(void) { return 0; }
 static inline void audio_set_module_frequency(int freq) {}
 static inline int audio_get_module_frequency(void) { return 0; }
 static inline int audio_get_module_length(void) { return 0; }
+static inline void audio_set_module_loop_start(int pos) {}
+static inline int audio_get_module_loop_start(void) { return 0; }
+static inline void audio_set_module_loop_end(int pos) {}
+static inline int audio_get_module_loop_end(void) { return 0; }
 
 static inline void audio_end_sample(void) {}
 static inline void audio_set_max_samples(int max_samples) {}

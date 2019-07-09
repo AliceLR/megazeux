@@ -790,6 +790,8 @@ void grab_item(struct world *mzx_world, int item_x, int item_y, int src_dir)
       else
       {
         play_sfx(mzx_world, SFX_OPEN_DOOR);
+        // The player might have been pushed by the door.
+        find_player(mzx_world);
       }
       break;
     }

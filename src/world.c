@@ -1227,12 +1227,15 @@ static inline int save_world_sprites(struct world *mzx_world,
  struct zip_archive *zp, const char *name)
 {
   char *buffer;
+  size_t collision_size = mzx_world->collision_count * 4;
+  size_t buf_size = SPRITE_PROPS_SIZE + collision_size;
   struct sprite *spr;
   struct memfile mf;
+  struct memfile prop;
   int i;
 
-  buffer = cmalloc(SPRITE_PROPS_SIZE);
-  mfopen(buffer, SPRITE_PROPS_SIZE, &mf);
+  buffer = cmalloc(buf_size);
+  mfopen(buffer, buf_size, &mf);
 
   // For each
   for(i = 0; i < MAX_SPRITES; i++)
@@ -1254,16 +1257,24 @@ static inline int save_world_sprites(struct world *mzx_world,
     save_prop_d(SPROP_COL_HEIGHT,         spr->col_height, &mf);
     save_prop_d(SPROP_TRANSPARENT_COLOR,  spr->transparent_color, &mf);
     save_prop_d(SPROP_CHARSET_OFFSET,     spr->offset, &mf);
+    save_prop_d(SPROP_Z,                  spr->z, &mf);
   }
 
   // Only once
   save_prop_d(SPROP_ACTIVE_SPRITES,       mzx_world->active_sprites, &mf);
   save_prop_d(SPROP_SPRITE_Y_ORDER,       mzx_world->sprite_y_order, &mf);
   save_prop_d(SPROP_COLLISION_COUNT,      mzx_world->collision_count, &mf);
+  save_prop_d(SPROP_SPRITE_NUM,           mzx_world->sprite_num, &mf);
+
+  // Collision list
+  save_prop_v(SPROP_COLLISION_LIST, collision_size, &prop, &mf);
+
+  for(i = 0; i < mzx_world->collision_count; i++)
+    mfputd(mzx_world->collision_list[i], &prop);
 
   save_prop_eof(&mf);
 
-  zip_write_file(zp, name, buffer, SPRITE_PROPS_SIZE, ZIP_M_DEFLATE);
+  zip_write_file(zp, name, buffer, buf_size, ZIP_M_DEFLATE);
 
   free(buffer);
   return 0;
@@ -1281,6 +1292,7 @@ static inline int load_world_sprites(struct world *mzx_world,
   int ident;
   int length;
   int value;
+  int num_collisions = 0;
 
   int result;
 
@@ -1298,7 +1310,7 @@ static inline int load_world_sprites(struct world *mzx_world,
 
   while(next_prop(&prop, &ident, &length, &mf))
   {
-    // Only numeric values here.
+    // Mostly numeric values here, and anything that isn't can seek back.
     value = load_prop_int(length, &prop);
 
     switch(ident)
@@ -1367,6 +1379,39 @@ static inline int load_world_sprites(struct world *mzx_world,
 
       case SPROP_CHARSET_OFFSET:
         if(spr) spr->offset = value;
+        break;
+
+      case SPROP_Z:
+        if(mzx_world->version >= V292 && spr) spr->z = value;
+        break;
+
+      case SPROP_ACTIVE_SPRITES:
+        mzx_world->active_sprites = value;
+        break;
+
+      case SPROP_SPRITE_Y_ORDER:
+        mzx_world->sprite_y_order = value;
+        break;
+
+      case SPROP_COLLISION_COUNT:
+        num_collisions = CLAMP(value, 0, MAX_SPRITES);
+        mzx_world->collision_count = num_collisions;
+        break;
+
+      case SPROP_COLLISION_LIST:
+      {
+        int collision;
+
+        mfseek(&prop, 0, SEEK_SET);
+        if(num_collisions * 4 <= length)
+          for(collision = 0; collision < num_collisions; collision++)
+            mzx_world->collision_list[collision] = mfgetd(&prop);
+
+        break;
+      }
+
+      case SPROP_SPRITE_NUM:
+        mzx_world->sprite_num = value;
         break;
 
       default:

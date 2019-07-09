@@ -56,6 +56,7 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
  int robot_location)
 {
   int program_length;
+  int xpos, ypos;
   int i;
 
   const unsigned char *bufferPtr = buffer;
@@ -96,8 +97,8 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
   cur_robot->walk_dir = (enum dir)mem_getc(&bufferPtr);
   cur_robot->last_touch_dir = (enum dir)mem_getc(&bufferPtr);
   cur_robot->last_shot_dir = (enum dir)mem_getc(&bufferPtr);
-  cur_robot->xpos = mem_getw(&bufferPtr);
-  cur_robot->ypos = mem_getw(&bufferPtr);
+  xpos = mem_getw(&bufferPtr);
+  ypos = mem_getw(&bufferPtr);
   cur_robot->status = mem_getc(&bufferPtr);
   // Skip local - these are in the save files now
   bufferPtr += 2;
@@ -108,8 +109,12 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
     bufferPtr += 2;
 
   // Fix xpos and ypos for global robot
-  cur_robot->xpos = -(cur_robot->xpos >= 32768) | cur_robot->xpos;
-  cur_robot->ypos = -(cur_robot->ypos >= 32768) | cur_robot->ypos;
+  xpos = (xpos >= 32768) ? -1 : xpos;
+  ypos = (ypos >= 32768) ? -1 : ypos;
+  cur_robot->xpos = xpos;
+  cur_robot->ypos = ypos;
+  cur_robot->compat_xpos = xpos;
+  cur_robot->compat_ypos = ypos;
 
   // If savegame, there's some additional information to get
   if(savegame)
@@ -167,27 +172,35 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
       goto err_invalid;
     }
 
-    // FIXME need legacy bytecode map in addition to modern bytecode
-    // map. How awful!
     cur_robot->program_source =
      legacy_disassemble_program(program_legacy_bytecode, program_length,
      &(cur_robot->program_source_length), true, 10);
-    free(program_legacy_bytecode);
 
-    if(savegame)
+    if(savegame && cur_robot->cur_prog_line > 1)
     {
-      // Compile immediately if this is a save. The command mapping is
-      // required to translate saved line numbers into a program offset.
+      // Compile immediately if this is a save. The old bytecode and the new
+      // bytecode are both required to convert the old program position into
+      // the new program position.
+      //
+      // Note this doesn't need to be done if cur_prog_line is 0 (robot ended)
+      // or 1 (this is always the first command).
+
+      // FIXME the following relies upon the new bytecode having the same number
+      // of commands as the old bytecode, which SHOULD be true, but it is not.
+      // Uncomment this when rasm gets the ability to compile comments and
+      // blank lines into NOPs.
+      cur_robot->cur_prog_line = 1;
+      cur_robot->pos_within_line = 0;
+      /*
+      int cmd_num = get_legacy_bytecode_command_num(program_legacy_bytecode,
+       cur_robot->cur_prog_line);
+
       prepare_robot_bytecode(mzx_world, cur_robot);
 
-      // FIXME there's actually a way to do this that would involve generating
-      // a temporary legacy-to-source map in addition to the source-to-bytecode
-      // map. That can wait until programs are split out from this mess.
-      if(cur_robot->cur_prog_line)
-        cur_robot->cur_prog_line = 1;
-
-      cur_robot->pos_within_line = 0;
+      cur_robot->cur_prog_line = command_num_to_program_pos(cur_robot, cmd_num);
+      */
     }
+    free(program_legacy_bytecode);
   }
   else
   {

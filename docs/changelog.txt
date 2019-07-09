@@ -2,6 +2,33 @@ GIT
 
 FEATURES
 
++ MegaZeux now supports Reality Adlib Tracker (RAD) music files.
+  Both 1.x and 2.x variants are fully supported.
++ New counter: TIME_MILLIS. Returns the milliseconds of the
+  current system time.
++ New counters: MOD_LOOPSTART and MOD_LOOPEND. These counters
+  return the start and end of the loop for the current playing
+  music and can be set to change the loop while the music is
+  playing. Setting MOD_LOOPEND to 0 disables the loop. These
+  counters only work for Ogg Vorbis and WAV audio (not modules).
++ Added support for the LOOPEND tag for Ogg Vorbis files. This
+  tag can be used to define the end of the loop directly, which
+  may be more convenient for some users. This tag takes lower
+  precedence than LOOPLENGTH if both are present, and will be
+  ignored if its value is less than LOOPSTART.
++ The SPR#_OFF counter is now readable through Robotic.
++ New sprite counter: SPR#_Z. Sprites are displayed in order
+  of their z value. Sprites with a higher z value will appear in
+  front of sprites with a lower z value. This ordering takes
+  precedence over both Y ordering (if SPR_YORDER is enabled) and
+  sprite number. Removes the need to use SPR#_SWAP for managing
+  sprite draw order. (Lancer-X)
++ New counters: FREAD_LENGTH and FWRITE_LENGTH. These counters
+  return the length of the FREAD file/directory (if open) or the
+  current length of the FWRITE file (if open).
++ New counter: SET "$string" "SAVE_ROBOT". This does the same
+  thing as SET "filename" "SAVE_ROBOT", except it saves the
+  robot to the specified string.
 + Joystick settings in game.cnf files are now loaded as game-
   specific joystick bindings. These bindings will no longer
   permanently override global/UI bindings defined by the config
@@ -88,6 +115,39 @@ FEATURES
 
 FIXES
 
++ SET "$string" TO "fwrite" will now always write the delimiter
+  regardless of the length of $string. Previously, this command
+  would only write a delimiter if $string was a length greater
+  than zero, requiring extra checks by the user to account for
+  this special case. Compatibility checks have been added for
+  for worlds made in older versions.
++ Fixed bug where robots attempting to copy the player over
+  themselves with COPY x y x y or COPY dir dir would get stuck
+  in an infinite loop instead of executing the next command.
++ SPR_YORDER and the sprite collision list are properly saved
+  and loaded from saves again.
++ The SPR_NUM counter now has the full range of a regular
+  counter and is saved. Out-of-range values are ignored for the
+  purposes of its legacy IF and PUT uses. This only affects
+  2.92+ worlds. Additionally, 2.65 through 2.69c worlds treat
+  its range as -128 through 127, fixing a bug in Sprite Catcher.
++ The active sprites count is properly updated when SPR#_OFF is
+  set and is properly loaded from saves again. This value can be
+  viewed from the variable debug screen now, though it may be
+  inaccurate for older saves.
++ Fixed various bugs related to the robot position not being
+  internally tracked correctly. This could be caused by WALK,
+  SWITCH dir dir, OPEN, MOVE ALL, moving through a transport,
+  pushing, and rotation. This fixes issues with IF ALIGNEDROBOT,
+  THISX, THISY, THIS_COLOR, PLAYERDIST, HORIZPLD, VERTPLD, RID#,
+  ROBOT_ID_#, the robot's coordinates displayed in the counter
+  and robot debuggers, and MZM saving. Due to the number of
+  features affected by these bugs, the fix only affects worlds
+  saved in 2.92 or later.
++ Fixed a regression where rotating could sometimes fail to
+  rotate the player, sensors, pushable robots, or transports.
++ When a robot uses the OPEN command and is pushed through a
+  transport, MZX no longer crashes or creates invalid robots.
 + Fixed crash that could sometimes occur when pressing Alt+Up
   while drawing near the top of a board in the editor.
 + Fixed bug where canceling 'Alt+C' char selection in the
@@ -139,7 +199,7 @@ FIXES
   and Talon's Tale. This only works for libxmp builds.
 + Fixed a sprite collision bounding bug where the collision
   height bounding for the reference checked using the collision
-  width instead. This fixes Manuel the Minx.
+  width instead. This fixes Manuel the Manx.
 
 DEVELOPERS
 
@@ -176,11 +236,10 @@ DEVELOPERS
   in run_robot.c only. This should improve Robotic performance
   in release builds.
 + Updated MSVC project for Visual Studio 2019. (elig, Spectere)
-+ Added experimental pledge(2) and unveil(2) support. This is
-  enabled by default on OpenBSD, but can be disabled with the
-  config.sh flag --disable-pledge. The utils should work fine,
-  but MZX itself might have issues. Additionally, config.sh now
-  detects OpenBSD properly and several warnings have been fixed.
++ Added experimental pledge(2) and unveil(2) support for OpenBSD
+  builds. By default, this is enabled for the utils but not for
+  MZX. Additionally, config.sh now detects OpenBSD properly and
+  several warnings have been fixed.
 - Removed uthash as a build option.
 
 

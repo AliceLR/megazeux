@@ -279,6 +279,11 @@ core_ldflags := ${OPENMPT_LDFLAGS} ${core_ldflags}
 core_cobjs += ${audio_obj}/audio_openmpt.o
 endif
 
+ifeq (${BUILD_REALITY},1)
+core_cxxobjs += ${audio_obj}/audio_reality.o
+LINK_CC := ${CXX}
+endif
+
 ifeq (${LIBPNG},1)
 core_flags += $(LIBPNG_CFLAGS) -DNEED_PNG_WRITE_SCREEN
 core_ldflags := $(LIBPNG_LDFLAGS) ${core_ldflags}
