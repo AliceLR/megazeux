@@ -25,9 +25,13 @@
 __M_BEGIN_DECLS
 
 #include "../platform.h"
+#include "../graphics.h"
 
-void save_editor_indices(void);
-void load_editor_indices(void);
+void store_backup_palette(char dest[SMZX_PAL_SIZE * 3]);
+void load_backup_palette(char src[SMZX_PAL_SIZE * 3]);
+void store_backup_indices(char dest[SMZX_PAL_SIZE * 4]);
+void load_backup_indices(char src[SMZX_PAL_SIZE * 4]);
+
 void save_palette(char *fname);
 void save_index_file(char *fname);
 void draw_char_mixed_pal(Uint8 chr, Uint8 bg_color, Uint8 fg_color,

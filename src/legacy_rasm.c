@@ -2633,7 +2633,7 @@ void disassemble_program(char *program, int program_length,
   int offset = 0;
 
   struct command_mapping *cmd_map = NULL;
-  int cmd_map_length;
+  int cmd_map_length = 0;
   int i = 1;
 
   char *start = program;

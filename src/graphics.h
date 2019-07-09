@@ -206,10 +206,6 @@ struct graphics_data
   struct renderer renderer;
   void *render_data;
   Uint32 renderer_num;
-
-#ifdef CONFIG_EDITOR
-  char editor_backup_indices[SMZX_PAL_SIZE * 4];
-#endif
 };
 
 CORE_LIBSPEC void color_string(const char *string, Uint32 x, Uint32 y,
