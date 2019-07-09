@@ -88,21 +88,23 @@
 // B- Increase Blue   Alt+B- Decrease Blue  /
 // A- Increase All    Alt+A- Decrease All   /
 // 0- Blacken color   Alt+H- Hide menu      /
-// F2- Store color    Alt+I- Import
-// F3- Place color    Alt+X- Export
-// Ins- Cursors (off)
-// PgUp- Prev. mode
-// PgDn- Next mode
-// Q- Quit editing    Alt+T- Switch to
-// Tab- Cursors (off)        temp. palette
+// F2- Store color       F5- Store colors
+// F3- Place color       F6- Load colors
+// Ins- Cursors (off)  PgUp- Prev. mode
+// Tab- Switch to      PgDn- Next mode
+//      temp. palette Alt+I- Import
+// Q- Quit editing    Alt+X- Export
+//
 
 // Mode 3- this replaces 'Hide menu'/'Import'/'Export'...
 //
 //Space- Subpalette
-//  F4- Store subpal.
-//  F5- Place subpal.
-// 1-4- Current color
-//      to subpalette
+//   F5- Store colors
+//   F6- Place colors
+//   F7- Store indices
+//   F8- Place indices
+//  1-4- Current index
+//       to subpalette
 
 //                           /--------------/
 // Left click- activate      | Buffer ##### /
@@ -134,13 +136,13 @@ struct color_status
 };
 
 static boolean saved_color_active = false;
+static boolean saved_subpalette_active = false;
+static boolean saved_subpalette_display = false;
 
-static struct color_status saved_color =
-{
-  0, 0, 0, 0, 0, 0, 0, 0, 0
-};
+static struct color_status saved_color;
+static struct color_status saved_subpal[4];
 
-static unsigned char saved_indices[4] =
+static int saved_indices[4] =
 {
   0, 1, 2, 3
 };
@@ -349,6 +351,11 @@ static void load_color(struct color_status *current, int id)
   rgb_to_lab(current);
 }
 
+static void store_color_pos(struct color_status *current, int id)
+{
+  set_rgb(id, current->r, current->g, current->b);
+}
+
 static void store_color_rgb(struct color_status *current)
 {
   rgb_to_hsl(current);
@@ -538,6 +545,35 @@ static struct color_status *get_current_color(struct pal_ed_context *pal_ed)
 static struct color_mode *get_current_mode(struct pal_ed_context *pal_ed)
 {
   return (struct color_mode *)&(mode_list[current_mode_id]);
+}
+
+static boolean get_current_indices(struct pal_ed_context *pal_ed,
+ int *a, int *b, int *c, int *d)
+{
+  int screen_mode = get_screen_mode();
+  if(screen_mode < 2)
+    return false;
+
+  if(screen_mode == 2)
+  {
+    int lo = current_id & (0x0F);
+    int hi = (current_id & (0xF0)) >> 4;
+    *a = (hi << 4) | hi;
+    *b = (lo << 4) | hi;
+    *c = (hi << 4) | lo;
+    *d = (lo << 4) | lo;
+  }
+  else
+  {
+    if(!pal_ed->current_indices)
+      return false;
+
+    *a = pal_ed->current_indices[current_subpalette * 4 + 0];
+    *b = pal_ed->current_indices[current_subpalette * 4 + 2];
+    *c = pal_ed->current_indices[current_subpalette * 4 + 1];
+    *d = pal_ed->current_indices[current_subpalette * 4 + 3];
+  }
+  return true;
 }
 
 #define MOUSE_IN(b_x, b_y, b_w, b_h) \
@@ -788,6 +824,7 @@ static boolean color_editor_key(subcontext *ctx, int *key)
         break;
 
       memcpy(&saved_color, current_color, sizeof(struct color_status));
+      saved_subpalette_display = false;
       saved_color_active = true;
       return true;
     }
@@ -798,6 +835,7 @@ static boolean color_editor_key(subcontext *ctx, int *key)
       {
         memcpy(current_color, &saved_color, sizeof(struct color_status));
         store_color_rgb(current_color);
+        saved_subpalette_display = false;
       }
       return true;
     }
@@ -983,6 +1021,7 @@ static subcontext *create_color_editor(struct pal_ed_context *pal_ed)
  */
 static void menu_buffer_draw(int x, int y, boolean show_indices)
 {
+  static unsigned int timer = 0;
   int mode = get_screen_mode();
   int i;
 
@@ -992,10 +1031,25 @@ static void menu_buffer_draw(int x, int y, boolean show_indices)
   );
 
   write_string("Buffer", x + 2, y + 1, DI_GREY_TEXT, false);
-
-  set_protected_rgb(5, saved_color.r, saved_color.g, saved_color.b);
-
   write_string("     \n     \n     ", x + 9, y + 1, 0x55, false);
+
+  if(mode >= 2 && saved_subpalette_display)
+  {
+    Uint8 which = ((timer++) / 60) % 4;
+    Uint8 fg_color;
+    struct color_status *col = &saved_subpal[which];
+
+    set_protected_rgb(5, col->r, col->g, col->b);
+
+    fg_color =
+     (get_color_luma(graphics.protected_pal_position + 5) < 128) ? 31 : 16;
+    draw_char(which + 49, (0x50) | fg_color, x + 11, y + 1);
+  }
+  else
+  {
+    set_protected_rgb(5, saved_color.r, saved_color.g, saved_color.b);
+    timer = 0;
+  }
 
   if(show_indices && mode >= 2)
   {
@@ -1371,9 +1425,9 @@ static boolean menu_256_draw(subcontext *ctx)
     "F2- Store color\n"
     "F3- Place color\n"
     "Ins- Cursors (off)\n"
-    "PgUp- Prev. mode\n"
-    "PgDn- Next mode      Tab- Switch to\n"
-    "Q- Quit editing           XXXX palette\n"
+    "Tab- Switch to\n"
+    "     XXXX palette\n"
+    "Q- Quit editing\n"
     "\n"
     "Left click- activate\n"
     "Right click+Drag- color\n",
@@ -1383,7 +1437,7 @@ static boolean menu_256_draw(subcontext *ctx)
     1
   );
 
-  write_string(palette_labels[!pal_ed->current], menu->x + 26, menu->y + 11,
+  write_string(palette_labels[!pal_ed->current], menu->x + 5, menu->y + 10,
    DI_GREY_TEXT, false);
 
   if(subpalette_cursors)
@@ -1394,6 +1448,10 @@ static boolean menu_256_draw(subcontext *ctx)
     // SMZX mode 2 specific help
     write_string(
       "Alt+H- Hide menu\n"
+      "   F5- Store colors\n"
+      "   F6- Place colors\n"
+      " PgUp- Prev. mode\n"
+      " PgDn- Next mode\n"
       "Alt+I- Import\n"
       "Alt+X- Export\n",
       menu->x + 19,
@@ -1407,9 +1465,11 @@ static boolean menu_256_draw(subcontext *ctx)
     // SMZX mode 3 specific help
     write_string(
       "Space- Subpalette\n"
-      "   F4- Store subpal.\n"
-      "   F5- Place subpal.\n"
-      "  1-4- Current color\n"
+      "   F5- Store colors\n"
+      "   F6- Place colors\n"
+      "   F7- Store indices\n"
+      "   F8- Place indices\n"
+      "  1-4- Current index\n"
       "       to subpalette\n",
       menu->x + 19,
       menu->y + 5,
@@ -1547,6 +1607,7 @@ static boolean palette_256_draw(subcontext *ctx)
   int x;
   int y;
   int subcursor[4] = { -1, -1, -1, -1 };
+  int ignore;
 
   int lo = current_id & 0x0F;
   int hi = (current_id & 0xF0) >> 4;
@@ -1588,9 +1649,8 @@ static boolean palette_256_draw(subcontext *ctx)
       }
     }
 
-    subcursor[0] = (hi << 4) | hi;
-    subcursor[1] = (lo << 4) | hi;
-    subcursor[2] = (lo << 4) | lo;
+    get_current_indices(pal_ed,
+     &subcursor[0], &subcursor[1], &ignore, &subcursor[2]);
   }
 
   // Mode 3
@@ -1609,10 +1669,8 @@ static boolean palette_256_draw(subcontext *ctx)
 
     if(pal_ed->current_indices)
     {
-      subcursor[0] = pal_ed->current_indices[current_subpalette * 4 + 0];
-      subcursor[1] = pal_ed->current_indices[current_subpalette * 4 + 2];
-      subcursor[2] = pal_ed->current_indices[current_subpalette * 4 + 1];
-      subcursor[3] = pal_ed->current_indices[current_subpalette * 4 + 3];
+      get_current_indices(pal_ed,
+       &subcursor[0], &subcursor[1], &subcursor[2], &subcursor[3]);
     }
   }
 
@@ -1781,9 +1839,6 @@ static boolean subpalette_256_draw(subcontext *ctx)
   int x;
   int y;
 
-  int lo = current_id & 0x0F;
-  int hi = (current_id & 0xF0) >> 4;
-
   draw_window_box(
     spal->border_x,  spal->border_y,
     spal->border_x2, spal->border_y2,
@@ -1828,10 +1883,7 @@ static boolean subpalette_256_draw(subcontext *ctx)
   if(get_screen_mode() == 2)
   {
     subpalette_num = current_id;
-    c0 = hi << 4 | hi;
-    c1 = lo << 4 | hi;
-    c2 = hi << 4 | lo;
-    c3 = lo << 4 | lo;
+    get_current_indices(pal_ed, &c0, &c1, &c2, &c3);
 
     // Draw the current subpalette
     for(y = 0; y < 3; y++)
@@ -1852,12 +1904,7 @@ static boolean subpalette_256_draw(subcontext *ctx)
     // Note indices 1 and 2 are swapped to make sense.
     subpalette_num = current_subpalette;
     if(pal_ed->current_indices)
-    {
-      c0 = pal_ed->current_indices[current_subpalette * 4 + 0];
-      c1 = pal_ed->current_indices[current_subpalette * 4 + 2];
-      c2 = pal_ed->current_indices[current_subpalette * 4 + 1];
-      c3 = pal_ed->current_indices[current_subpalette * 4 + 3];
-    }
+      get_current_indices(pal_ed, &c0, &c1, &c2, &c3);
 
     // Draw the current subpalette
     for(y = 0; y < 3; y++)
@@ -1900,6 +1947,7 @@ static boolean subpalette_256_key(subcontext *ctx, int *key)
 {
   struct pal_ed_subcontext *spal = (struct pal_ed_subcontext *)ctx;
   struct pal_ed_context *pal_ed = spal->pal_ed;
+  struct color_status *palette = pal_ed->internal_palette;
   int smzx_mode = get_screen_mode();
 
   switch(*key)
@@ -1983,25 +2031,63 @@ static boolean subpalette_256_key(subcontext *ctx, int *key)
       return true;
     }
 
-    case IKEY_F4:
+    case IKEY_F5:
     {
-      if(smzx_mode == 3 && pal_ed->current_indices)
+      // Store subpalette colors
+      int c0, c1, c2, c3;
+      if(get_current_indices(pal_ed, &c0, &c1, &c2, &c3))
       {
-        // Store subpalette
-        int index = current_subpalette * 4;
-        saved_indices[0] = pal_ed->current_indices[index + 0];
-        saved_indices[1] = pal_ed->current_indices[index + 2];
-        saved_indices[2] = pal_ed->current_indices[index + 1];
-        saved_indices[3] = pal_ed->current_indices[index + 3];
+        memcpy(&saved_subpal[0], &palette[c0], sizeof(struct color_status));
+        memcpy(&saved_subpal[1], &palette[c1], sizeof(struct color_status));
+        memcpy(&saved_subpal[2], &palette[c2], sizeof(struct color_status));
+        memcpy(&saved_subpal[3], &palette[c3], sizeof(struct color_status));
+        saved_subpalette_active = true;
+        saved_subpalette_display = true;
+        return true;
       }
       break;
     }
 
-    case IKEY_F5:
+    case IKEY_F6:
+    {
+      // Place subpalette colors
+      int c0, c1, c2, c3;
+      if(saved_subpalette_active &&
+       get_current_indices(pal_ed, &c0, &c1, &c2, &c3))
+      {
+        memcpy(&palette[c0], &saved_subpal[0], sizeof(struct color_status));
+        memcpy(&palette[c1], &saved_subpal[1], sizeof(struct color_status));
+        memcpy(&palette[c2], &saved_subpal[2], sizeof(struct color_status));
+        memcpy(&palette[c3], &saved_subpal[3], sizeof(struct color_status));
+        store_color_pos(&palette[c0], c0);
+        store_color_pos(&palette[c1], c1);
+        store_color_pos(&palette[c2], c2);
+        store_color_pos(&palette[c3], c3);
+        saved_subpalette_display = true;
+        return true;
+      }
+      break;
+    }
+
+    case IKEY_F7:
     {
       if(smzx_mode == 3 && pal_ed->current_indices)
       {
-        // Place subpalette
+        // Store subpalette indices
+        get_current_indices(pal_ed,
+         &saved_indices[0], &saved_indices[1],
+         &saved_indices[2], &saved_indices[3]);
+      }
+      break;
+    }
+
+    case IKEY_F8:
+    {
+      if(smzx_mode == 3 && pal_ed->current_indices)
+      {
+        // Place subpalette indices
+        // NOTE: "get_current_indices" swaps 1 and 2 to make more sense to the
+        // user, so swap them here too.
         int index = current_subpalette * 4;
         pal_ed->current_indices[index + 0] = saved_indices[0];
         pal_ed->current_indices[index + 2] = saved_indices[1];

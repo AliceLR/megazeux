@@ -50,9 +50,15 @@ FEATURES
 + Added several palette editor usability improvements:
   + The current color stored with F2 is now displayed in the
     bottom-right corner of the palette editor help menu.
-  + In SMZX mode 3 editing, the current subpalette can be stored
-    with F4. The stored subpalette is displayed in the help menu
-    and can be placed over the current subpalette with F5.
+  + In SMZX mode 2 or 3 editing, the four colors of the current
+    subpalette can be stored with F5. Stored subpalette colors
+    can be placed at the current subpalette with F6. These are
+    stored independently of the stored current color. The help
+    menu color display will cycle through the stored colors.
+  + In SMZX mode 3 editing, the current subpalette's indices can
+    be stored with F7 and placed at the current subpalette with
+    F8. The stored indices are displayed in the help menu next
+    to the stored color display.
   + The shortcut for toggling the subpalette cursors has been
     changed to Insert. The subpalette cursors are now displayed
     in SMZX mode 3 editing and are enabled by default.
