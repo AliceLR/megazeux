@@ -253,7 +253,7 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
    (viewport_y < 0) || (viewport_y > 24) ||
    (viewport_width < 1) || (viewport_width > 80) ||
    (viewport_height < 1) || (viewport_height > 25))
-    goto err_invalid;
+    goto err_freeboard;
 
   cur_board->viewport_x = viewport_x;
   cur_board->viewport_y = viewport_y;
