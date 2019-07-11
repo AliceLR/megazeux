@@ -3227,13 +3227,12 @@ int set_counter_special(struct world *mzx_world, char *char_value,
         if(cur_robot)
         {
           reallocate_robot(cur_robot, new_size);
-          clear_label_cache(cur_robot->label_list, cur_robot->num_labels);
+          clear_label_cache(cur_robot);
 
           memcpy(cur_robot->program_bytecode, new_program, new_size);
           cur_robot->stack_pointer = 0;
           cur_robot->cur_prog_line = 1;
-          cur_robot->label_list =
-           cache_robot_labels(cur_robot, &cur_robot->num_labels);
+          cache_robot_labels(cur_robot);
 
           // Free the robot's source and command map
           free(cur_robot->program_source);
@@ -3286,14 +3285,13 @@ int set_counter_special(struct world *mzx_world, char *char_value,
             break;
           }
 
-          clear_label_cache(cur_robot->label_list, cur_robot->num_labels);
+          clear_label_cache(cur_robot);
           free(cur_robot->program_bytecode);
           cur_robot->program_bytecode = program_bytecode;
           cur_robot->program_bytecode_length = new_size;
           cur_robot->cur_prog_line = 1;
           cur_robot->stack_pointer = 0;
-          cur_robot->label_list =
-           cache_robot_labels(cur_robot, &cur_robot->num_labels);
+          cache_robot_labels(cur_robot);
 
           // Free the robot's source and command map
           free(cur_robot->program_source);

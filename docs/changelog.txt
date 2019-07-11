@@ -221,6 +221,8 @@ FIXES
 + Fixed a sprite collision bounding bug where the collision
   height bounding for the reference checked using the collision
   width instead. This fixes Manuel the Manx.
++ Fixed several memory leaks in the editor related to editing,
+  placing, grab, and undo/redo operations on them.
 
 DEVELOPERS
 

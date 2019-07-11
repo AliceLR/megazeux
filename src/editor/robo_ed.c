@@ -334,8 +334,8 @@ static void delete_robot_lines(struct robot *cur_robot,
   {
     cur_robot->used = 1;
     cur_robot->cur_prog_line = 1;
-    cur_robot->label_list = cache_robot_labels(cur_robot,
-     &(cur_robot->num_labels));
+    clear_label_cache(cur_robot);
+    cache_robot_labels(cur_robot);
   }
 #endif
 }

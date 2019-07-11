@@ -1429,9 +1429,9 @@ static void modify_thing_callback(context *ctx, context_callback_param *p)
     replace_current_at_xy(ctx->world, temp_buffer, editor->cursor_x,
      editor->cursor_y, editor->mode, editor->cur_history);
 
-    free_edit_buffer(temp_buffer);
     editor->modified = true;
   }
+  free_edit_buffer(temp_buffer);
 }
 
 static void modify_thing_at_cursor(struct editor_context *editor)

@@ -324,8 +324,7 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
           cur_robot->program_bytecode_length = v_size;
 
           // Create the label cache for this robot
-          cur_robot->label_list =
-           cache_robot_labels(cur_robot, &cur_robot->num_labels);
+          cache_robot_labels(cur_robot);
         }
         break;
       }
@@ -828,7 +827,7 @@ static int cmp_labels(const void *dest, const void *src)
 // really be done when robots are assembled, rather than when they're loaded.
 // So it's bundled with the function for that.
 
-struct label **cache_robot_labels(struct robot *robot, int *num_labels)
+void cache_robot_labels(struct robot *cur_robot)
 {
   int labels_allocated = 16;
   int labels_found = 0;
@@ -836,11 +835,11 @@ struct label **cache_robot_labels(struct robot *robot, int *num_labels)
   int next;
   int i;
 
-  char *robot_program = robot->program_bytecode;
+  char *robot_program = cur_robot->program_bytecode;
   struct label **label_list = ccalloc(16, sizeof(struct label *));
   struct label *current_label;
 
-  for(i = 1; i < (robot->program_bytecode_length - 1); i++)
+  for(i = 1; i < (cur_robot->program_bytecode_length - 1); i++)
   {
     // Is it a label?
     cmd = robot_program[i + 1];
@@ -853,12 +852,12 @@ struct label **cache_robot_labels(struct robot *robot, int *num_labels)
 
       current_label->cmd_position = i + 1;
 
-      if(next >= (robot->program_bytecode_length - 2))
+      if(next >= (cur_robot->program_bytecode_length - 2))
         current_label->position = 0;
       else
       {
         //compatibility fix for 2.80 to 2.83
-        if(robot->world_version >= V280 && robot->world_version <= V283)
+        if(cur_robot->world_version >= V280 && cur_robot->world_version <= V283)
           current_label->position = next + 1;
         else
           current_label->position = i;
@@ -886,9 +885,10 @@ struct label **cache_robot_labels(struct robot *robot, int *num_labels)
 
   if(!labels_found)
   {
-    *num_labels = 0;
+    cur_robot->label_list = NULL;
+    cur_robot->num_labels = 0;
     free(label_list);
-    return NULL;
+    return;
   }
 
   if(labels_found != labels_allocated)
@@ -900,27 +900,30 @@ struct label **cache_robot_labels(struct robot *robot, int *num_labels)
   // Now sort the list
   qsort(label_list, labels_found, sizeof(struct label *), cmp_labels);
 
-  *num_labels = labels_found;
-  return label_list;
+  cur_robot->label_list = label_list;
+  cur_robot->num_labels = labels_found;
+  return;
 }
 
 #ifdef CONFIG_DEBYTECODE
 static
 #endif
-void clear_label_cache(struct label **label_list, int num_labels)
+void clear_label_cache(struct robot *cur_robot)
 {
   int i;
 
-  if(label_list)
+  if(cur_robot->label_list)
   {
-    for(i = 0; i < num_labels; i++)
+    for(i = 0; i < cur_robot->num_labels; i++)
     {
-      free(label_list[i]);
+      free(cur_robot->label_list[i]);
     }
 
-    free(label_list);
-    label_list = NULL;
+    free(cur_robot->label_list);
   }
+
+  cur_robot->label_list = NULL;
+  cur_robot->num_labels = 0;
 }
 
 void clear_robot_contents(struct robot *cur_robot)
@@ -929,11 +932,9 @@ void clear_robot_contents(struct robot *cur_robot)
   cur_robot->stack = NULL;
 
 #ifdef CONFIG_EDITOR
-
   free(cur_robot->command_map);
   cur_robot->command_map = NULL;
   cur_robot->command_map_length = 0;
-
 #endif
 
   // If it was created by the game or loaded via a save file
@@ -945,8 +946,7 @@ void clear_robot_contents(struct robot *cur_robot)
   // It could be in the editor, or possibly it was never executed.
   if(cur_robot->program_bytecode)
   {
-    if(cur_robot->used)
-      clear_label_cache(cur_robot->label_list, cur_robot->num_labels);
+    clear_label_cache(cur_robot);
     free(cur_robot->program_bytecode);
     cur_robot->program_bytecode = NULL;
     cur_robot->program_bytecode_length = 0;
@@ -3672,8 +3672,7 @@ void prepare_robot_bytecode(struct world *mzx_world, struct robot *cur_robot)
     // This was moved here from load robot - only build up the labels once the
     // robot's actually used. But eventually this should be combined with
     // assemble_program.
-    cur_robot->label_list =
-     cache_robot_labels(cur_robot, &cur_robot->num_labels);
+    cache_robot_labels(cur_robot);
   }
 }
 

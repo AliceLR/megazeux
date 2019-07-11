@@ -228,10 +228,7 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
 
     // Now create a label cache IF the robot is in use
     if(cur_robot->used)
-    {
-      cur_robot->label_list =
-       cache_robot_labels(cur_robot, &cur_robot->num_labels);
-    }
+      cache_robot_labels(cur_robot);
   }
 #endif /* !CONFIG_DEBYTECODE */
 

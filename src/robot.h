@@ -70,8 +70,8 @@ int command_num_to_program_pos(struct robot *cur_robot, int command_num);
 #else /* !CONFIG_DEBYTECODE */
 
 CORE_LIBSPEC void reallocate_robot(struct robot *robot, int size);
+CORE_LIBSPEC void clear_label_cache(struct robot *cur_robot);
 
-void clear_label_cache(struct label **label_list, int num_labels);
 void change_robot_name(struct board *src_board, struct robot *cur_robot,
  char *new_name);
 void add_robot_name_entry(struct board *src_board, struct robot *cur_robot,
@@ -80,8 +80,7 @@ int find_free_robot(struct board *src_board);
 
 #endif /* !CONFIG_DEBYTECODE */
 
-CORE_LIBSPEC struct label **cache_robot_labels(struct robot *robot,
- int *num_labels);
+CORE_LIBSPEC void cache_robot_labels(struct robot *robot);
 
 CORE_LIBSPEC void clear_robot_contents(struct robot *cur_robot);
 CORE_LIBSPEC void clear_robot_id(struct board *src_board, int id);
