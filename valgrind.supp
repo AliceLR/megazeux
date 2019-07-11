@@ -94,3 +94,164 @@
    fun:platform_init
    fun:main
 }
+
+{
+   X11_InitKeyboard via SDL_VideoInit
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:SDL_DBus_Init
+   fun:SDL_DBus_GetContext
+   fun:SDL_IBus_Init
+   fun:SDL_IME_Init
+}
+
+{
+   X11_InitKeyboard via SDL_VideoInit
+   Memcheck:Leak
+   fun:calloc
+   ...
+   fun:SDL_DBus_Init
+   fun:SDL_DBus_GetContext
+   fun:SDL_IBus_Init
+   fun:SDL_IME_Init
+}
+
+{
+   X11_InitKeyboard via SDL_VideoInit
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:X11_InitKeyboard
+   fun:X11_VideoInit
+   fun:SDL_VideoInit_REAL
+}
+
+{
+   X11_InitKeyboard via SDL_VideoInit
+   Memcheck:Leak
+   fun:calloc
+   ...
+   fun:X11_InitKeyboard
+   fun:X11_VideoInit
+   fun:SDL_VideoInit_REAL
+}
+
+{
+   X11_InitKeyboard via SDL_VideoInit
+   Memcheck:Leak
+   fun:realloc
+   ...
+   fun:X11_InitKeyboard
+   fun:X11_VideoInit
+   fun:SDL_VideoInit_REAL
+}
+
+{
+   Alsa
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:snd_config_hook_load
+}
+{
+   Alsa
+   Memcheck:Leak
+   fun:calloc
+   ...
+   fun:snd_config_hook_load
+}
+{
+   Alsa
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:snd_config_update_r
+}
+{
+   Alsa
+   Memcheck:Leak
+   fun:calloc
+   ...
+   fun:snd_config_update_r
+}
+{
+   Alsa
+   Memcheck:Leak
+   fun:malloc
+   obj:*/libasound.so.2.0.0
+   obj:*/libasound.so.2.0.0
+   obj:*/libasound.so.2.0.0
+   obj:*/libasound.so.2.0.0
+   obj:*/libasound.so.2.0.0
+   obj:*/libasound.so.2.0.0
+   obj:*/libasound.so.2.0.0
+   obj:*/libasound.so.2.0.0
+   obj:*/libasound.so.2.0.0
+   obj:*/libasound.so.2.0.0
+   obj:*/libasound.so.2.0.0
+}
+{
+   Alsa
+   Memcheck:Leak
+   fun:calloc
+   obj:*/libasound.so.2.0.0
+   obj:*/libasound.so.2.0.0
+   obj:*/libasound.so.2.0.0
+   obj:*/libasound.so.2.0.0
+   obj:*/libasound.so.2.0.0
+   obj:*/libasound.so.2.0.0
+   obj:*/libasound.so.2.0.0
+   obj:*/libasound.so.2.0.0
+   obj:*/libasound.so.2.0.0
+   obj:*/libasound.so.2.0.0
+   obj:*/libasound.so.2.0.0
+}
+{
+   Alsa
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:snd_config_load
+}
+{
+   Alsa
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:parse_array_defs
+}
+{
+   Alsa
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:snd1_dlobj_cache_get
+}
+{
+   Alsa
+   Memcheck:Leak
+   fun:malloc
+   fun:snd_pcm_hw_get_chmap
+   fun:snd_pcm_get_chmap
+   fun:snd1_pcm_direct_get_chmap
+   fun:snd_pcm_get_chmap
+   fun:snd1_pcm_generic_get_chmap
+   fun:snd_pcm_get_chmap
+   fun:snd1_pcm_generic_get_chmap
+   fun:snd_pcm_get_chmap
+   fun:snd1_pcm_generic_get_chmap
+   fun:snd_pcm_get_chmap
+   fun:snd_pcm_set_chmap
+}
+{
+   Alsa
+   Memcheck:Cond
+   fun:snd_interval_floor
+   fun:snd_pcm_plug_hw_refine_cchange
+   fun:snd1_pcm_hw_refine_slave
+   fun:snd_pcm_plug_hw_refine
+   fun:snd_pcm_hw_refine
+   fun:snd1_pcm_hw_param_set_last
+   ...
+}

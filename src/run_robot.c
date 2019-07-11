@@ -5467,13 +5467,13 @@ void run_robot(context *ctx, int id, int x, int y)
              ERROR_T_ERROR, ERROR_OPT_FAIL|ERROR_OPT_RETRY, 0x2C01);
           }
         } while(redo_load == ERROR_OPT_RETRY);
+        free(translated_name);
 
         // User asked to "Fail" on error message above
         if(redo_load == ERROR_OPT_FAIL)
           break;
 
         mzx_world->change_game_state = CHANGE_STATE_SWAP_WORLD;
-        free(translated_name);
         return;
       }
 
