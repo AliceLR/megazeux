@@ -29,21 +29,27 @@ FEATURES
 + New counter: SET "$string" "SAVE_ROBOT". This does the same
   thing as SET "filename" "SAVE_ROBOT", except it saves the
   robot to the specified string.
++ Joystick inputs can now be bound to generic actions. These
+  actions correspond mostly to XInput buttons and are configured
+  to control MegaZeux's various windows in a context-specific
+  manner. They can be used directly in Robotic with the new
+  counter "joy!.[action]" or can be bound to keycodes in the
+  config file to allow them to be used with older games.
+  The NDS, 3DS, Wii, PSP, and GP2X pad.config files have been
+  updated to use actions. See the help file or config file for
+  more info on the config options and available actions.
++ New counter: "joy_simulate_keys". When set to 1 (default),
+  joysticks can produce simulated key presses, as in older MZX
+  versions. When set to 0, this behavior is disabled.
++ New counter: "joy!active" will return 1 if a given joystick is
+  availabled, 0 if it is not, and -1 if the index is invalid.
 + Joystick settings in game.cnf files are now loaded as game-
   specific joystick bindings. These bindings will no longer
   permanently override global/UI bindings defined by the config
   file or pad.config. The global bindings are restored when any
   world is loaded (including SWAP WORLD); they are not restored
   when a save is loaded.
-+ Joystick inputs can now be bound to generic actions. These
-  actions are configured to control MegaZeux's various windows
-  in a context-specific manner, and can themselves be bound to
-  keycodes to allow for gameplay controls that are more
-  consistent with the UI controls. A list of joystick actions
-  and the functions they perform can be found in the config
-  file. The NDS, 3DS, Wii, PSP, and GP2X pad.config files have
-  been updated to use joystick actions.
-+ Joystick inputs can also be bound to key names now in the
++ Joystick config options can be assigned to key names in the
   format of "key_X" (without quotes), where X is the key name.
 + Added automatic joystick mapping for Windows/Mac/Linux/etc.
   Joysticks recognized as SDL game controllers are automatically

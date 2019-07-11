@@ -69,7 +69,8 @@ void real_warp_mouse(int x, int y)
 
 void initialize_joysticks(void)
 {
-  // stub (we have a hardcoded 0-axis, 8-button joystick)
+  struct buffered_status *status = store_status();
+  joystick_set_active(status, 0, true);
 }
 
 static int nds_map_joystick(int nds_button, boolean *is_hat)

@@ -170,6 +170,7 @@ enum joystick_action
 
 enum joystick_special_axis
 {
+  JOY_NO_AXIS,
   JOY_AXIS_LEFT_X,
   JOY_AXIS_LEFT_Y,
   JOY_AXIS_RIGHT_X,

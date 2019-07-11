@@ -153,6 +153,9 @@ void init_event(void)
 
   // Write the new global bindings over the game bindings.
   joystick_reset_game_map();
+
+  // Now, initialize the joysticks (platform-dependent function).
+  initialize_joysticks();
 }
 
 static Uint32 convert_internal_xt(enum keycode key)
@@ -1221,6 +1224,16 @@ static const struct joystick_action_name joystick_action_names[] =
   { "y",        JOY_Y }
 };
 
+static const struct joystick_action_name joystick_axis_names[] =
+{
+  { "ltrigger", JOY_AXIS_LEFT_TRIGGER },
+  { "lx",       JOY_AXIS_LEFT_X },
+  { "ly",       JOY_AXIS_LEFT_Y },
+  { "rtrigger", JOY_AXIS_RIGHT_TRIGGER },
+  { "rx",       JOY_AXIS_RIGHT_X },
+  { "ry",       JOY_AXIS_RIGHT_Y },
+};
+
 static enum keycode find_keycode(const char *name)
 {
   int top = ARRAY_SIZE(keycode_names) - 1;
@@ -1269,6 +1282,16 @@ static enum joystick_action find_joystick_action(const char *name)
       return joystick_action_names[middle].value;
   }
   return JOY_NO_ACTION;
+}
+
+static enum joystick_special_axis find_joystick_axis(const char *name)
+{
+  size_t i;
+  for(i = 0; i < ARRAY_SIZE(joystick_axis_names); i++)
+    if(!strcasecmp(name, joystick_axis_names[i].name))
+      return (enum joystick_special_axis)joystick_axis_names[i].value;
+
+  return JOY_NO_AXIS;
 }
 
 /**
@@ -1435,6 +1458,9 @@ void joystick_map_hat(int first, int last, const char *up, const char *down,
 /**
  * Map a generic action to a key. The input action should be null-terminated.
  * Only allow key bindings; if value resolves to an action, it is ignored.
+ *
+ * Alternatively, the action provided may be an axis, in which case the named
+ * axis is being assigned to a real axis number.
  */
 void joystick_map_action(int first, int last, const char *action,
  const char *value, boolean is_global)
@@ -1445,8 +1471,10 @@ void joystick_map_action(int first, int last, const char *action,
     Sint16 binding;
     int i;
 
-    if(action_value != JOY_NO_ACTION &&
-     joystick_parse_map_value(value, &binding) && (binding >= 0))
+    if(!joystick_parse_map_value(value, &binding) || (binding < 0))
+      return;
+
+    if(action_value != JOY_NO_ACTION)
     {
       /*debug("[JOYSTICK] (%s) %d.%s -> %d\n", is_global ? "G" : "L",
        joystick, action, binding);*/
@@ -1462,6 +1490,21 @@ void joystick_map_action(int first, int last, const char *action,
           input.joystick_game_map.action[i][action_value] = binding;
       }
     }
+    else
+
+    if(!strncasecmp(action, "axis_", 5) && (binding < MAX_JOYSTICK_AXES))
+    {
+      enum joystick_special_axis axis_value = find_joystick_axis(action + 5);
+
+      if(axis_value == JOY_NO_AXIS)
+        return;
+
+      for(i = first; i <= last; i++)
+      {
+        if(is_global)
+          input.joystick_global_map.special_axis[i][binding] = axis_value;
+      }
+    }
   }
 }
 
@@ -1471,6 +1514,7 @@ void joystick_map_action(int first, int last, const char *action,
  */
 void joystick_reset_game_map(void)
 {
+  joystick_game_bindings = true;
   memcpy(&(input.joystick_game_map), &(input.joystick_global_map),
    sizeof(struct joystick_map));
 }
@@ -1515,8 +1559,8 @@ void joystick_set_axis_threshold(Uint16 threshold)
  * Determine which key (if any) a joystick press should bind to
  * within the current context.
  */
-static enum keycode joystick_resolve_bindings(struct buffered_status *status,
- int joystick, Sint16 global_binding, Sint16 game_binding)
+static void joystick_resolve_bindings(int joystick, Sint16 global_binding,
+ Sint16 game_binding, enum keycode *key, enum joystick_action *action)
 {
   // Global key bindings
   // HACK: places where the no context hacks are enabled are never gameplay,
@@ -1525,23 +1569,25 @@ static enum keycode joystick_resolve_bindings(struct buffered_status *status,
   if(!joystick_game_mode || joystick_legacy_loop_hacks)
   {
     if(global_binding > 0)
-      return global_binding;
+      *key = (enum keycode)global_binding;
   }
 
   // Gameplay bindings
   else
   {
-    if(game_binding < 0 && (-game_binding < NUM_JOYSTICK_ACTIONS) &&
-     input.joystick_game_map.action[joystick][-game_binding] > 0)
+    if(game_binding < 0 && (-game_binding < NUM_JOYSTICK_ACTIONS))
     {
-      return input.joystick_game_map.action[joystick][-game_binding];
+      *action = (enum joystick_action)(-game_binding);
+
+      if(joystick_game_bindings &&
+       input.joystick_game_map.action[joystick][-game_binding] > 0)
+        *key = (enum keycode)input.joystick_game_map.action[joystick][*action];
     }
     else
 
-    if(game_binding > 0)
-      return game_binding;
+    if(game_binding > 0 && joystick_game_bindings)
+      *key = (enum keycode)game_binding;
   }
-  return IKEY_UNKNOWN;
 }
 
 enum joy_press_type
@@ -1561,16 +1607,24 @@ static void joystick_press(struct buffered_status *status, int joystick,
   int pos = status->joystick_press_count[joystick];
   if(pos < MAX_JOYSTICK_PRESS)
   {
-    int press_key =
-     joystick_resolve_bindings(status, joystick, global_binding, game_binding);
+    enum joystick_action press_action = JOY_NO_ACTION;
+    enum keycode press_key = IKEY_UNKNOWN;
 
-    if(press_key)
+    joystick_resolve_bindings(joystick, global_binding, game_binding,
+     &press_key, &press_action);
+
+    if(press_key || press_action)
     {
       status->joystick_press[joystick][pos].type = type;
       status->joystick_press[joystick][pos].num = num;
       status->joystick_press[joystick][pos].key = press_key;
+      status->joystick_press[joystick][pos].action = press_action;
       status->joystick_press_count[joystick]++;
-      key_press(status, press_key, press_key);
+
+      if(press_action)
+        status->joystick_action_status[joystick][press_action] = true;
+      if(press_key)
+        key_press(status, press_key, press_key);
 
       //debug("[JOYSTICK] (P) %d (%d %d) -> { %d, %d, %d } @ %d\n",
       // joystick, global_binding, game_binding, type, num, press_key, pos);
@@ -1607,7 +1661,10 @@ static void joystick_release(struct buffered_status *status, int joystick,
 
       if(p->type == type && p->num == num)
       {
-        key_release(status, p->key);
+        if(p->action)
+          status->joystick_action_status[joystick][p->action] = false;
+        if(p->key)
+          key_release(status, p->key);
         //debug("[JOYSTICK] (R) %d (%d %d) -> { %d, %d, %d } @ %d\n", joystick,
         // global_binding, game_binding, type, num, p->key, i);
 
@@ -1750,6 +1807,11 @@ void joystick_axis_update(struct buffered_status *status,
 
     status->joystick_axis[joystick][axis] = value;
 
+    // Might be a special axis.
+    if(input.joystick_global_map.special_axis[joystick][axis])
+      joystick_special_axis_update(status, joystick,
+       input.joystick_global_map.special_axis[joystick][axis], value);
+
     //if(digital_value != last_digital_value)
     //  debug("[JOYSTICK] (A) %d.a%d -> %d\n", joystick, axis, value);
 
@@ -1771,10 +1833,33 @@ void joystick_axis_update(struct buffered_status *status,
 }
 
 /**
- * Release any active inputs for a given joystick. Use this function if a
- * joystick is removed.
+ * Update the value of a named axis. This usually corresponds to a regular axis.
  */
-void joystick_release_all(struct buffered_status *status, int joystick)
+void joystick_special_axis_update(struct buffered_status *status,
+ int joystick, enum joystick_special_axis axis, Sint16 value)
+{
+  if((joystick >= 0) && (joystick < MAX_JOYSTICKS) &&
+   (axis > JOY_NO_AXIS) && (axis < NUM_JOYSTICK_SPECIAL_AXES))
+  {
+    status->joystick_special_axis_status[joystick][axis] = value;
+  }
+}
+
+/**
+ * Set the current active status for a joystick.
+ */
+void joystick_set_active(struct buffered_status *status, int joystick,
+ boolean active)
+{
+  if(joystick >= 0 && joystick < MAX_JOYSTICKS)
+    status->joystick_active[joystick] = active;
+}
+
+/**
+ * Release any active inputs for a given joystick and clear other info.
+ * Use this function if a joystick is removed.
+ */
+void joystick_clear(struct buffered_status *status, int joystick)
 {
   int count = status->joystick_press_count[joystick];
   int i;
@@ -1782,6 +1867,7 @@ void joystick_release_all(struct buffered_status *status, int joystick)
   for(i = 0; i < count; i++)
     key_release(status, status->joystick_press[joystick][i].key);
 
+  status->joystick_active[joystick] = false;
   status->joystick_press_count[joystick] = 0;
 
   memset(status->joystick_button[joystick], 0,
@@ -1792,6 +1878,12 @@ void joystick_release_all(struct buffered_status *status, int joystick)
 
   memset(status->joystick_hat[joystick], 0,
    sizeof(status->joystick_hat[joystick]));
+
+  memset(status->joystick_action_status[joystick], 0,
+   sizeof(status->joystick_action_status[joystick]));
+
+  memset(status->joystick_special_axis_status[joystick], 0,
+   sizeof(status->joystick_special_axis_status));
 
   if((int)status->joystick_repeat_id == joystick)
   {
@@ -1819,4 +1911,56 @@ Uint32 get_joystick_ui_key(void)
 {
   const struct buffered_status *status = load_status();
   return joystick_action_map_ui[status->joystick_action];
+}
+
+/**
+ * Get the active status of a joystick. Returns false if the joystick number
+ * is invalid. If the joystick is valid, is_active will be set to the active
+ * status and the function will return true.
+ */
+boolean joystick_is_active(int joystick, boolean *is_active)
+{
+  const struct buffered_status *status = load_status();
+  if((joystick >= 0) && (joystick < MAX_JOYSTICKS))
+  {
+    *is_active = status->joystick_active[joystick];
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Get the status of a joystick control by name. Returns false if the joystick
+ * number is invalid or if the control is invalid. If the joystick and control
+ * are both valid, value will be set to the status value of the control and the
+ * function will return true.
+ */
+boolean joystick_get_status(int joystick, char *name, Sint16 *value)
+{
+  const struct buffered_status *status = load_status();
+
+  if((joystick >= 0) && (joystick < MAX_JOYSTICKS))
+  {
+    if(!strncasecmp(name, "axis_", 5))
+    {
+      enum joystick_special_axis axis = find_joystick_axis(name + 5);
+
+      if(axis != JOY_NO_AXIS)
+      {
+        *value = status->joystick_special_axis_status[joystick][axis];
+        return true;
+      }
+    }
+    else
+    {
+      enum joystick_action action = find_joystick_action(name);
+
+      if(action != JOY_NO_ACTION)
+      {
+        *value = status->joystick_action_status[joystick][action];
+        return true;
+      }
+    }
+  }
+  return false;
 }

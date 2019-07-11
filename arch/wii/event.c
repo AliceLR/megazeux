@@ -1070,8 +1070,15 @@ void real_warp_mouse(int x, int y)
 
 void initialize_joysticks(void)
 {
+  struct buffered_status *status = store_status();
+  int i;
+
   MQ_Init(&eq, EVENT_QUEUE_SIZE);
   eq_inited = 1;
   LWP_CreateThread(&poll_thread, wii_poll_thread, NULL, poll_stack, STACKSIZE,
    40);
+
+  // TODO: should be able to actually detect pad plugging/removal?
+  for(i = 0; i < 8; i++)
+    joystick_set_active(status, i, true);
 }

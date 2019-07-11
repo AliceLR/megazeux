@@ -52,6 +52,10 @@ boolean platform_init(void)
 {
   Uint32 flags = SDL_INIT_VIDEO | SDL_INIT_JOYSTICK;
 
+#if SDL_VERSION_ATLEAST(2,0,0)
+  flags |= SDL_INIT_GAMECONTROLLER;
+#endif
+
 #ifdef CONFIG_PSP
   scePowerSetClockFrequency(333, 333, 166);
 #endif
@@ -75,6 +79,9 @@ boolean platform_init(void)
 
     // try again without joystick support
     flags &= ~SDL_INIT_JOYSTICK;
+#if SDL_VERSION_ATLEAST(2,0,0)
+    flags &= ~SDL_INIT_GAMECONTROLLER;
+#endif
 
     if(SDL_Init(flags) < 0)
     {

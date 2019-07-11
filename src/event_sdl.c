@@ -195,7 +195,6 @@ static int get_pandora_joystick_button(SDL_Keycode key)
 static SDL_GameController *gamecontrollers[MAX_JOYSTICKS];
 boolean allow_gamecontroller_mapping = true;
 
-/*
 static enum joystick_special_axis sdl_axis_map[SDL_CONTROLLER_AXIS_MAX] =
 {
   [SDL_CONTROLLER_AXIS_LEFTX]         = JOY_AXIS_LEFT_X,
@@ -205,7 +204,6 @@ static enum joystick_special_axis sdl_axis_map[SDL_CONTROLLER_AXIS_MAX] =
   [SDL_CONTROLLER_AXIS_TRIGGERLEFT]   = JOY_AXIS_LEFT_TRIGGER,
   [SDL_CONTROLLER_AXIS_TRIGGERRIGHT]  = JOY_AXIS_RIGHT_TRIGGER
 };
-*/
 
 static Sint16 sdl_axis_action_map[SDL_CONTROLLER_AXIS_MAX][2] =
 {
@@ -808,6 +806,7 @@ static int get_next_unused_joystick_index(void)
 
 static void init_joystick(int sdl_index)
 {
+  struct buffered_status *status = store_status();
   int joystick_index = get_next_unused_joystick_index();
 
   if(joystick_index >= 0)
@@ -818,6 +817,7 @@ static void init_joystick(int sdl_index)
     {
       joystick_instance_ids[joystick_index] = SDL_JoystickInstanceID(joystick);
       joysticks[joystick_index] = joystick;
+      joystick_set_active(status, joystick_index, true);
 
       debug("[JOYSTICK] Opened %d (SDL instance ID: %d)\n",
        joystick_index, joystick_instance_ids[joystick_index]);
@@ -1217,7 +1217,24 @@ static boolean process_event(SDL_Event *event)
       // Joysticks can be trivially disconnected while holding a button and
       // the corresponding release event will never be sent for it. Release
       // all of this joystick's inputs.
-      joystick_release_all(status, joystick_index);
+      joystick_clear(status, joystick_index);
+      break;
+    }
+
+    case SDL_CONTROLLERAXISMOTION:
+    {
+      // Since gamecontroller axis mappings can be complicated, use
+      // the gamecontroller events to update the named axis values.
+      int value = event->caxis.value;
+      int which = event->caxis.which;
+      int axis = event->caxis.axis;
+      enum joystick_special_axis special_axis = sdl_axis_map[axis];
+
+      int joystick_index = get_joystick_index(which);
+      if(joystick_index < 0 || !special_axis || !allow_gamecontroller_mapping)
+        break;
+
+      joystick_special_axis_update(status, joystick_index, special_axis, value);
       break;
     }
 #endif
@@ -1429,11 +1446,9 @@ void initialize_joysticks(void)
 #endif
 
 #if SDL_VERSION_ATLEAST(2,0,0)
+  SDL_GameControllerEventState(SDL_ENABLE);
   load_gamecontrollerdb();
 #endif
-
-// FIXME:
-// SDL_GameControllerEventState (for getting analog axis values eventually)
 
   SDL_JoystickEventState(SDL_ENABLE);
 }

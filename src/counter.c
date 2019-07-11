@@ -1192,6 +1192,48 @@ static int key_release_read(struct world *mzx_world,
   return get_last_key_released(keycode_pc_xt);
 }
 
+static int joyn_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  char *dot_ptr;
+  int joystick = strtol(name + 3, &dot_ptr, 10) - 1;
+  boolean is_active;
+  Sint16 value;
+
+  if(*dot_ptr == '.')
+  {
+    if(joystick_is_active(joystick, &is_active) && is_active &&
+     joystick_get_status(joystick, dot_ptr + 1, &value))
+    {
+      // -1 should always mean the status is invalid or unavailable,
+      // so remap a legitimate value of -1 to -2. This only affects axes,
+      // which should rarely return this exact value anyway.
+      if(value == -1)
+        value--;
+
+      return value;
+    }
+  }
+  return -1;
+}
+
+static int joyn_active_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  int joystick = strtol(name + 3, NULL, 10) - 1;
+  boolean is_active;
+
+  if(joystick_is_active(joystick, &is_active))
+    return is_active;
+  return -1;
+}
+
+static void joy_simulate_keys_write(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int value, int id)
+{
+  joystick_set_game_bindings(!!value);
+}
+
 static int scrolledx_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
@@ -2540,6 +2582,9 @@ static const struct function_counter builtin_counters[] =
   { "input",            V100,   input_read,           input_write },
   { "inputsize",        V100,   inputsize_read,       inputsize_write },
   { "int2bin",          V260,   int2bin_read,         int2bin_write },
+  { "joy!.*",           V292,   joyn_read,            NULL },
+  { "joy!active",       V292,   joyn_active_read,     NULL },
+  { "joy_simulate_keys",V292,   NULL,                 joy_simulate_keys_write },
   { "key",              V100,   key_read,             key_write },
   { "key?",             V269,   keyn_read,            NULL },
   { "key_code",         V269,   key_code_read,        NULL },

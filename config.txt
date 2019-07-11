@@ -620,6 +620,10 @@
 
 # where X is the number of the joystick, Y is the name of the joystick action
 # (e.g. "lshoulder"), and A is the number (or name) of the key to assign.
+#
+# Analog actions "axis_lx", "axis_ly", "axis_rx", "axis_ry", "axis_ltrigger",
+# and "axis_rtrigger" are also available as actions in Robotic. These can be
+# assigned to real axes via this setting as well if A is an axis number.
 
 # For platforms MegaZeux supports via SDL 2, joystick mapping can be automated
 # for the numerous controllers recognized by SDL 2. This means that, if your

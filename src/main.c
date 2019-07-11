@@ -242,8 +242,6 @@ __libspec int main(int argc, char *argv[])
 
   rng_seed_init();
 
-  initialize_joysticks();
-
   set_mouse_mul(8, 14);
 
   init_event();
