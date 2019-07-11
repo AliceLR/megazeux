@@ -222,7 +222,7 @@ FIXES
   height bounding for the reference checked using the collision
   width instead. This fixes Manuel the Manx.
 + Fixed several memory leaks in the editor related to editing,
-  placing, grab, and undo/redo operations on them.
+  placing, grab, and undo/redo operations on robots and scrolls.
 
 DEVELOPERS
 
