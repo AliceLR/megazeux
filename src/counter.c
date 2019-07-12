@@ -1231,6 +1231,7 @@ static int joyn_active_read(struct world *mzx_world,
 static void joy_simulate_keys_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
+  mzx_world->joystick_simulate_keys = !!value;
   joystick_set_game_bindings(!!value);
 }
 

@@ -472,6 +472,7 @@ enum world_prop
   WPROP_C_DIVISIONS               = 0x8082, //   4
   WPROP_MAX_SAMPLES               = 0x8090, //   4
   WPROP_SMZX_MESSAGE              = 0x8091, //   1
+  WPROP_JOY_SIMULATE_KEYS         = 0x8092, //   1
 };
 
 
