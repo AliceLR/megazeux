@@ -38,6 +38,13 @@ FEATURES
   + The 3DS directional pad is now considered a joystick hat.
     The circle pad is now mappable as axes 1 and 2.
 + Added Nintendo Switch port. (Lachesis, asie)
++ The main menu and game menu are now usable with keyboard,
+  mouse, or joystick. Pressing a navigation key/joystick button
+  or clicking an option in these menus will enable a cursor to
+  select one of the options. Most listed options are selectable
+  unless disabled by the current game, in which case they will
+  be hidden from the menu entirely. If ESCAPE_MENU is disabled,
+  the exit option triggers an exit event instead.
 + MegaZeux now supports Reality Adlib Tracker (RAD) music files.
   Both 1.x and 2.x variants are fully supported.
 + New counter: TIME_MILLIS. Returns the milliseconds of the

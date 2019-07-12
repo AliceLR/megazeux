@@ -25,9 +25,21 @@
 __M_BEGIN_DECLS
 
 #include "core.h"
+#include "keysym.h"
 
-void game_menu(context *parent);
-void main_menu(context *parent);
+boolean allow_exit_menu(struct world *mzx_world, boolean is_titlescreen);
+boolean allow_enter_menu(struct world *mzx_world, boolean is_titlescreen);
+boolean allow_help_system(struct world *mzx_world, boolean is_titlescreen);
+boolean allow_settings_menu(struct world *mzx_world, boolean is_titlescreen,
+ boolean is_override);
+boolean allow_load_world_menu(struct world *mzx_world);
+boolean allow_save_menu(struct world *mzx_world);
+boolean allow_load_menu(struct world *mzx_world, boolean is_titlescreen);
+boolean allow_debug_menu(struct world *mzx_world);
+
+void game_menu(context *parent, boolean start_selected, enum keycode *retval,
+ boolean *retval_alt);
+void main_menu(context *parent, boolean start_selected, enum keycode *retval);
 
 __M_END_DECLS
 

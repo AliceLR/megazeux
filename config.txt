@@ -588,12 +588,12 @@
 #  right                          Cursor right    Right (move)
 #  a              Play game       Select          Space (shoot)
 #  b              Main menu       Cancel          Delete (lay bomb)
-#  x              Load world      Select char     S (Caverns: spells)
-#  y              Reload save     Backspace       P (Caverns: altar)
-#  select         Exit            Cancel          Escape (exit[1])
-#  start          Play game       Select          Enter (game menu)
+#  x              Load world      Select char     Enter (game menu)
+#  y              Reload save     Backspace       S (Caverns: spells)
+#  select         Exit            Cancel          Escape[1]
+#  start          Play game       Select          Enter[1]
 #  lshoulder      Settings        Next element    Insert (switch bombs)
-#  rshoulder[2]   Settings        Settings[3]     F2 (settings)
+#  rshoulder[2]   Settings        Settings[3]     P (Caverns: altar)
 #  ltrigger[2]    Load world      Page up         F3 (save game)
 #  rtrigger[2]    Reload save     Page down       F4 (load save)
 #  lstick[2]                      Home
@@ -604,8 +604,13 @@
 # also exist, which are similar and intended for analog stick mapping on
 # controllers that possess both a digital pad and analog sticks.
 
-# [1] This behavior will always override other bindings unless the
-# exit dialog has been disabled.
+# [1] These buttons will always open the game menu directly unless both the
+# enter menu and the escape menu have been disabled through Robotic (in which
+# case the listed keys will be used). If the enter menu is disabled but not
+# the escape menu, the status half of the menu will be hidden.
+#
+# Since many games disable the enter menu but not the escape menu, the default
+# configuration has a duplicate enter mapping on the X button.
 
 # [2] The rshoulder action is highly likely to be unmapped on console ports
 # that use an onscreen keyboard by default. Availability of several other

@@ -63,6 +63,10 @@ struct game_context
   boolean load_dialog_on_failed_load;
   boolean is_title;
   boolean allow_cheats;
+
+  // Menu return values.
+  enum keycode menu_key;
+  boolean menu_alt;
 };
 
 // As nice as this would be to put in the title context, it's annoying
@@ -535,19 +539,43 @@ static boolean game_idle(context *ctx)
   return false;
 }
 
+static boolean game_key(context *ctx, int *key); // Forward declaration.
+
+/**
+ * Callback for handling the game menu key.
+ */
+static void game_menu_callback(context *ctx, context_callback_param *ignore)
+{
+  struct game_context *game = (struct game_context *)ctx;
+  int key = game->menu_key;
+
+  if(game->menu_key)
+    game_key(ctx, &(key));
+
+  game->menu_key = 0;
+  game->menu_alt = false;
+}
+
 /**
  * Joystick function for the gameplay context. Gameplay only detects UI
  * escape presses and ignores everything else.
  */
-
 static boolean game_joystick(context *ctx, int *key, int action)
 {
+  struct game_context *game = (struct game_context *)ctx;
+
   switch(action)
   {
+    case JOY_START:
     case JOY_SELECT:
     {
-      // Force an escape press.
-      *key = IKEY_ESCAPE;
+      // Special: open the game menu if the enter or escape menu is allowed.
+      if(allow_enter_menu(ctx->world, false) ||
+       allow_exit_menu(ctx->world, false))
+      {
+        game_menu(ctx, true, &(game->menu_key), &(game->menu_alt));
+        context_callback(ctx, NULL, game_menu_callback);
+      }
       return true;
     }
   }
@@ -558,7 +586,6 @@ static boolean game_joystick(context *ctx, int *key, int action)
  * Key function for the gameplay context. This handles interface keys and some
  * key labels; some other keys are handled in the update function.
  */
-
 static boolean game_key(context *ctx, int *key)
 {
   struct game_context *game = (struct game_context *)ctx;
@@ -611,7 +638,7 @@ static boolean game_key(context *ctx, int *key)
       case IKEY_F3:
       {
         // Save game
-        if(!mzx_world->dead && player_can_save(mzx_world))
+        if(allow_save_menu(mzx_world))
         {
           char save_game[MAX_PATH];
           strcpy(save_game, curr_sav);
@@ -632,10 +659,9 @@ static boolean game_key(context *ctx, int *key)
           break;
 
         // Restore saved game
-        if(mzx_world->version < V282 || get_counter(mzx_world, "LOAD_MENU", 0))
-        {
+        if(allow_load_menu(mzx_world, false))
           load_savegame_selection(game);
-        }
+
         return true;
       }
 
@@ -652,8 +678,9 @@ static boolean game_key(context *ctx, int *key)
       // Toggle debug mode
       case IKEY_F6:
       {
-        if(edit_world && mzx_world->editing)
+        if(edit_world && allow_debug_menu(mzx_world))
           mzx_world->debug_mode = !(mzx_world->debug_mode);
+
         return true;
       }
 
@@ -678,18 +705,16 @@ static boolean game_key(context *ctx, int *key)
       // Quick save
       case IKEY_F9:
       {
-        if(!mzx_world->dead)
-        {
-          if(player_can_save(mzx_world))
-            save_world(mzx_world, curr_sav, true, MZX_VERSION);
-        }
+        if(allow_save_menu(mzx_world))
+          save_world(mzx_world, curr_sav, true, MZX_VERSION);
+
         return true;
       }
 
       // Quick load saved game
       case IKEY_F10:
       {
-        if(mzx_world->version < V282 || get_counter(mzx_world, "LOAD_MENU", 0))
+        if(allow_load_menu(mzx_world, false))
         {
           struct stat file_info;
 
@@ -701,10 +726,10 @@ static boolean game_key(context *ctx, int *key)
 
       case IKEY_F11:
       {
-        if(mzx_world->editing)
+        if(allow_debug_menu(mzx_world))
         {
           // Breakpoint editor
-          if(get_alt_status(keycode_internal))
+          if(get_alt_status(keycode_internal) || game->menu_alt)
           {
             if(debug_robot_config)
               debug_robot_config(mzx_world);
@@ -727,9 +752,11 @@ static boolean game_key(context *ctx, int *key)
         if(key_status != 1)
           return true;
 
-        if(mzx_world->version < V260 || get_counter(mzx_world, "ENTER_MENU", 0))
-          game_menu(ctx);
-
+        if(allow_enter_menu(mzx_world, false))
+        {
+          game_menu(ctx, false, &(game->menu_key), &(game->menu_alt));
+          context_callback(ctx, NULL, game_menu_callback);
+        }
         return true;
       }
 
@@ -741,7 +768,7 @@ static boolean game_key(context *ctx, int *key)
           //return true;
 
         // ESCAPE_MENU (2.90+)
-        if(mzx_world->version < V290 || get_counter(mzx_world, "ESCAPE_MENU", 0))
+        if(allow_exit_menu(mzx_world, false))
           confirm_exit = true;
 
         break;
@@ -850,20 +877,46 @@ static void title_resume(context *ctx)
   title->need_reload = false;
 }
 
+static boolean title_key(context *ctx, int *key); // Forward declaration.
+
+/**
+ * Callback for handling the main menu key.
+ */
+static void main_menu_callback(context *ctx, context_callback_param *ignore)
+{
+  struct game_context *title = (struct game_context *)ctx;
+  int key = title->menu_key;
+
+  if(title->menu_key)
+    title_key(ctx, &(key));
+}
+
 /**
  * Joystick handler for the title screen.
  */
-
 static boolean title_joystick(context *ctx, int *key, int action)
 {
+  struct game_context *title = (struct game_context *)ctx;
+  struct world *mzx_world = ctx->world;
+
   switch(action)
   {
+    case JOY_START:
+    case JOY_SELECT:
+    {
+      // Special: open the main menu if the enter or escape menu is allowed.
+      if(allow_enter_menu(mzx_world, true) || allow_exit_menu(mzx_world, true))
+      {
+        main_menu(ctx, true, &(title->menu_key));
+        context_callback(ctx, NULL, main_menu_callback);
+      }
+      return true;
+    }
+
     case JOY_A:         *key = IKEY_F5; return true;
-    case JOY_B:         *key = IKEY_RETURN; return true;
+    case JOY_B:         *key = IKEY_F5; return true;
     case JOY_X:         *key = IKEY_F3; return true;
     case JOY_Y:         *key = IKEY_F4; return true;
-    case JOY_START:     *key = IKEY_F5; return true;
-    case JOY_SELECT:    *key = IKEY_ESCAPE; return true;
     case JOY_LSHOULDER: *key = IKEY_F2; return true;
     case JOY_RSHOULDER: *key = IKEY_F2; return true;
     case JOY_LTRIGGER:  *key = IKEY_F3; return true;
@@ -875,7 +928,6 @@ static boolean title_joystick(context *ctx, int *key, int action)
 /**
  * Key handler for the title screen.
  */
-
 static boolean title_key(context *ctx, int *key)
 {
   const struct config_info *conf = get_config();
@@ -910,10 +962,9 @@ static boolean title_key(context *ctx, int *key)
     case IKEY_F3:
     case IKEY_l:
     {
-      if(conf->standalone_mode)
-        return true;
+      if(allow_load_world_menu(mzx_world))
+        load_world_title_selection(title);
 
-      load_world_title_selection(title);
       return true;
     }
 
@@ -929,13 +980,13 @@ static boolean title_key(context *ctx, int *key)
     case IKEY_r:
     {
       // Restore saved game
-      if(conf->standalone_mode && !get_counter(mzx_world, "LOAD_MENU", 0))
-        return true;
-
-      if(load_savegame_selection(title))
+      if(allow_load_menu(mzx_world, true))
       {
-        play_game(ctx, &(title->fade_in));
-        title->need_reload = true;
+        if(load_savegame_selection(title))
+        {
+          play_game(ctx, &(title->fade_in));
+          title->need_reload = true;
+        }
       }
       return true;
     }
@@ -1012,15 +1063,15 @@ static boolean title_key(context *ctx, int *key)
     // Quickload saved game
     case IKEY_F10:
     {
-      struct stat file_info;
-
-      if(conf->standalone_mode && !get_counter(mzx_world, "LOAD_MENU", 0))
-        return true;
-
-      if(!stat(curr_sav, &file_info) && load_savegame(title, curr_sav))
+      if(allow_load_menu(mzx_world, true))
       {
-        play_game(ctx, &(title->fade_in));
-        title->need_reload = true;
+        struct stat file_info;
+
+        if(!stat(curr_sav, &file_info) && load_savegame(title, curr_sav))
+        {
+          play_game(ctx, &(title->fade_in));
+          title->need_reload = true;
+        }
       }
       return true;
     }
@@ -1032,9 +1083,11 @@ static boolean title_key(context *ctx, int *key)
       //if(key_status != 1)
         //return true;
 
-      if(!conf->standalone_mode || get_counter(mzx_world, "ENTER_MENU", 0))
-        main_menu(ctx);
-
+      if(allow_enter_menu(mzx_world, true))
+      {
+        main_menu(ctx, false, &(title->menu_key));
+        context_callback(ctx, NULL, main_menu_callback);
+      }
       return true;
     }
 
@@ -1045,10 +1098,7 @@ static boolean title_key(context *ctx, int *key)
       //if(key_status != 1)
         //return true;
 
-      // ESCAPE_MENU (2.90+) only works on the title screen if the
-      // standalone_mode config option is set
-      if(mzx_world->version < V290 || !conf->standalone_mode ||
-       get_counter(mzx_world, "ESCAPE_MENU", 0))
+      if(allow_exit_menu(mzx_world, true))
         confirm_exit = true;
 
       break;
