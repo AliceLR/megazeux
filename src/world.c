@@ -382,6 +382,7 @@ static inline int save_world_info(struct world *mzx_world,
     save_prop_d(WPROP_C_DIVISIONS,      mzx_world->c_divisions, mf);
     save_prop_d(WPROP_MAX_SAMPLES,      mzx_world->max_samples, mf);
     save_prop_c(WPROP_SMZX_MESSAGE,     mzx_world->smzx_message, mf);
+    save_prop_c(WPROP_JOY_SIMULATE_KEYS,mzx_world->joystick_simulate_keys, mf);
   }
 
   save_prop_eof(mf);
@@ -440,6 +441,7 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
   check(WPROP_WORLD_VERSION);
   world_version = load_prop_int(size, &prop);
 
+  // World data.
   check(WPROP_NUM_BOARDS);
   check(WPROP_ID_CHARS);
   check(WPROP_ID_MISSILE_COLOR);
@@ -468,6 +470,7 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
     return VAL_SUCCESS;
   }
 
+  // World data (2.91+), save-only prior.
   check(WPROP_SMZX_MODE);
   check(WPROP_VLAYER_WIDTH);
   check(WPROP_VLAYER_HEIGHT);
@@ -478,6 +481,7 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
     return VAL_SUCCESS;
   }
 
+  // Save-only data.
   check(WPROP_REAL_MOD_PLAYING);
   check(WPROP_MZX_SPEED);
   check(WPROP_LOCK_SPEED);
@@ -518,6 +522,12 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
     // Added in 2.91
     check(WPROP_MAX_SAMPLES);
     check(WPROP_SMZX_MESSAGE);
+  }
+
+  if(world_version >= V292)
+  {
+    // Added in 2.92
+    check(WPROP_JOY_SIMULATE_KEYS);
   }
 
   return VAL_SUCCESS;
@@ -961,6 +971,16 @@ static inline void load_world_info(struct world *mzx_world,
         if_savegame
         if(mzx_world->version >= V291)
         mzx_world->smzx_message = load_prop_int(size, prop);
+        break;
+
+      // Added in 2.92
+      case WPROP_JOY_SIMULATE_KEYS:
+        if_savegame
+        if(mzx_world->version >= V292)
+        {
+          mzx_world->joystick_simulate_keys = !!load_prop_int(size, prop);
+          joystick_set_game_bindings(mzx_world->joystick_simulate_keys);
+        }
         break;
 
       default:
@@ -2601,15 +2621,6 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
       chdir(file_path);
   }
 
-  if(!savegame)
-  {
-    // Reset the joystick mappings to the defaults before loading a game config.
-    // Games with multiple worlds need to have mappings configured for each of
-    // their worlds as a consequence of this. We can't really do this with
-    // savegames as they currently can't load their world config.
-    joystick_reset_game_map();
-  }
-
   // load world config file
   memcpy(config_file_name, file, file_name_len);
   strncpy(config_file_name + file_name_len, ".cnf", 5);
@@ -3070,6 +3081,7 @@ __editor_maybe_static void default_global_data(struct world *mzx_world)
   // In 2.90X, due to a bug the message could only display in mode 0.
   if(mzx_world->version == V290)
     mzx_world->smzx_message = 0;
+  mzx_world->joystick_simulate_keys = true;
 
   mzx_world->blind_dur = 0;
   mzx_world->firewalker_dur = 0;

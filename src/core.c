@@ -28,6 +28,7 @@
 #include "core.h"
 #include "error.h"
 #include "event.h"
+#include "game_menu.h"
 #include "graphics.h"
 #include "helpsys.h"
 #include "settings.h"
@@ -768,37 +769,34 @@ static boolean is_on_stack(core_context *root, enum context_type type)
 
 #ifdef CONFIG_HELPSYS
 /**
- * Determine if the help system is currently allowed.
+ * Determine if the help system is currently allowed. In addition to the
+ * regular checks, this should not be allowed to open if it's already open!
  */
-static boolean allow_help_system(core_context *root)
+static boolean core_allow_help_system(core_context *root)
 {
   struct world *mzx_world = ((context *)root)->world;
-  struct config_info *conf = get_config();
+  boolean is_titlescreen = !is_on_stack(root, CTX_PLAY_GAME);
 
   if(is_on_stack(root, CTX_HELP_SYSTEM))
     return false;
 
-  if(mzx_world->active && mzx_world->version >= V260)
-  {
-    if(is_on_stack(root, CTX_PLAY_GAME) ||
-     (is_on_stack(root, CTX_TITLE_SCREEN) && conf->standalone_mode))
-    {
-      if(!get_counter(mzx_world, "HELP_MENU", 0))
-        return false;
-    }
-  }
+  if(mzx_world->active && !allow_help_system(mzx_world, is_titlescreen))
+    return false;
 
   return true;
 }
 #endif
 
 /**
- * Determine if the configure menu is currently allowed.
+ * Determine if the settings menu is currently allowed. In addition to the
+ * regular checks, this should not be allowed to open if it's already open!
  */
-static boolean allow_configure(core_context *root)
+static boolean core_allow_settings_menu(core_context *root)
 {
   struct world *mzx_world = ((context *)root)->world;
-  struct config_info *conf = get_config();
+  boolean is_titlescreen = !is_on_stack(root, CTX_PLAY_GAME);
+  boolean is_override =
+   get_alt_status(keycode_internal) || get_ctrl_status(keycode_internal);
 
   if(is_on_stack(root, CTX_CONFIGURE))
     return false;
@@ -806,20 +804,9 @@ static boolean allow_configure(core_context *root)
   if(is_on_stack(root, CTX_HELP_SYSTEM))
     return false;
 
-  // Bypass F2_MENU counter.
-  if((get_alt_status(keycode_internal) || get_ctrl_status(keycode_internal)) &&
-   !conf->standalone_mode)
-    return true;
-
-  if(mzx_world->active && mzx_world->version >= V260)
-  {
-    if(is_on_stack(root, CTX_PLAY_GAME) ||
-     (is_on_stack(root, CTX_TITLE_SCREEN) && conf->standalone_mode))
-    {
-      if(!get_counter(mzx_world, "F2_MENU", 0))
-        return false;
-    }
-  }
+  if(mzx_world->active &&
+   !allow_settings_menu(mzx_world, is_titlescreen, is_override))
+    return false;
 
   return true;
 }
@@ -940,7 +927,7 @@ static void core_update(core_context *root)
       case IKEY_F1:
       {
         // Display help.
-        if(allow_help_system(root))
+        if(core_allow_help_system(root))
           help_system(ctx, ctx->world);
 
         break;
@@ -950,7 +937,7 @@ static void core_update(core_context *root)
       case IKEY_F2:
       {
         // Display settings menu.
-        if(allow_configure(root))
+        if(core_allow_settings_menu(root))
           game_settings(ctx->world);
 
         break;
@@ -1011,16 +998,14 @@ void core_run(core_context *root)
 
   do
   {
-    // Resume might trigger additional context changes.
-    while(root->context_changed)
+    // Resume might trigger additional context changes, exit, or empty the
+    // context stack, so continue the main loop after handling the resume.
+    if(root->context_changed)
     {
       root->context_changed = false;
       force_release_all_keys();
       core_resume(root);
-
-      // Resume might also trigger an exit.
-      if(root->full_exit)
-        return;
+      continue;
     }
 
     need_update_screen = core_draw(root);

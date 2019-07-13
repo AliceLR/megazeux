@@ -47,6 +47,7 @@
 #include "data.h"
 #include "error.h"
 #include "event.h"
+#include "game_menu.h"
 #include "graphics.h"
 #include "helpsys.h"
 #include "intake.h"
@@ -1180,8 +1181,7 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
 #ifdef CONFIG_HELPSYS
       case IKEY_F1: // F1
       {
-        if(!get_config()->standalone_mode ||
-         get_counter(mzx_world, "HELP_MENU", 0))
+        if(allow_help_system(mzx_world, true))
         {
           // FIXME context
           help_system(NULL, mzx_world);
