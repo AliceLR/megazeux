@@ -555,11 +555,10 @@ static void game_menu_callback(context *ctx, context_callback_param *ignore)
   struct game_context *game = (struct game_context *)ctx;
   int key = game->menu_key;
 
-  if(game->menu_key)
-    game_key(ctx, &(key));
-
   game->menu_key = 0;
-  game->menu_alt = false;
+
+  if(key)
+    game_key(ctx, &(key));
 }
 
 /**
@@ -747,6 +746,7 @@ static boolean game_key(context *ctx, int *key)
               debug_counters(ctx);
           }
         }
+        game->menu_alt = false;
         return true;
       }
 
@@ -893,7 +893,10 @@ static void main_menu_callback(context *ctx, context_callback_param *ignore)
   struct game_context *title = (struct game_context *)ctx;
   int key = title->menu_key;
 
-  if(title->menu_key)
+  title->menu_key = 0;
+  title->menu_alt = false;
+
+  if(key)
     title_key(ctx, &(key));
 }
 
