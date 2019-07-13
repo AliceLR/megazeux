@@ -2621,15 +2621,6 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
       chdir(file_path);
   }
 
-  if(!savegame)
-  {
-    // Reset the joystick mappings to the defaults before loading a game config.
-    // Games with multiple worlds need to have mappings configured for each of
-    // their worlds as a consequence of this. We can't really do this with
-    // savegames as they currently can't load their world config.
-    joystick_reset_game_map();
-  }
-
   // load world config file
   memcpy(config_file_name, file, file_name_len);
   strncpy(config_file_name + file_name_len, ".cnf", 5);

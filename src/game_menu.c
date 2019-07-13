@@ -62,6 +62,7 @@ static const char main_menu_title[] = "MegaZeux " VERSION;
 
 enum main_menu_opts
 {
+  M_NONE,
   M_RETURN,
   M_EXIT,
   M_HELP,
@@ -111,6 +112,7 @@ static const char game_menu_title[] = "Game Menu";
 
 enum game_menu_opts
 {
+  G_NONE,
   G_RETURN,
   G_EXIT,
   G_HELP,
@@ -171,6 +173,9 @@ const enum keycode game_menu_keys[] =
   [G_DEBUG_ROBOTS]    = IKEY_F11,
 };
 
+static enum main_menu_opts main_menu_last_selected = M_NONE;
+static enum game_menu_opts game_menu_last_selected = G_NONE;
+
 struct menu_opt
 {
   const char *label;
@@ -192,6 +197,7 @@ struct game_menu_context
   int width;
   int height;
   int current_option;
+  int last_opened_opt_type;
   boolean is_game_menu;
   boolean show_status;
 };
@@ -703,6 +709,25 @@ static void focus_menu(struct game_menu_context *game_menu)
 }
 
 /**
+ * Find the last selected option in the menu, if it exists. Otherwise, this
+ * selects the first option.
+ */
+static int find_last_option(struct game_menu_context *game_menu, int which)
+{
+  struct menu_opt *current;
+  int i;
+
+  for(i = 0; i < game_menu->num_options; i++)
+  {
+    current = &(game_menu->options[i]);
+
+    if(current->is_selectable && current->which == which)
+      return i;
+  }
+  return 0;
+}
+
+/**
  * Select the previous menu option.
  */
 static void menu_select_prev(struct game_menu_context *game_menu)
@@ -724,9 +749,13 @@ static void menu_select_prev(struct game_menu_context *game_menu)
         break;
     }
     while(i != current);
-  }
 
-  game_menu->current_option = i;
+    game_menu->current_option = i;
+  }
+  else
+    game_menu->current_option =
+     find_last_option(game_menu, game_menu->last_opened_opt_type);
+
   focus_menu(game_menu);
 }
 
@@ -752,9 +781,13 @@ static void menu_select_next(struct game_menu_context *game_menu)
         break;
     }
     while(i != current);
-  }
 
-  game_menu->current_option = i;
+    game_menu->current_option = i;
+  }
+  else
+    game_menu->current_option =
+     find_last_option(game_menu, game_menu->last_opened_opt_type);
+
   focus_menu(game_menu);
 }
 
@@ -902,6 +935,16 @@ static boolean menu_joystick(context *ctx, int *key, int action)
 
   switch(action)
   {
+    case JOY_START:
+    case JOY_X:
+    case JOY_Y:
+    {
+      // Since start opens the menu, it should also close it instead of
+      // selecting things. Also let X and Y close the menu, just because.
+      *key = IKEY_ESCAPE;
+      return true;
+    }
+
     case JOY_LSHOULDER:
     {
       *key = IKEY_F2;
@@ -1089,10 +1132,23 @@ static boolean menu_drag(context *ctx, int *key, int button, int x, int y)
 }
 
 /**
- * Restore the screen when a menu is closed.
+ * Restore the screen when the menu is closed and save the last option.
  */
 static void menu_destroy(context *ctx)
 {
+  struct game_menu_context *game_menu = (struct game_menu_context *)ctx;
+  int current = game_menu->current_option;
+  int which;
+
+  if(current >= 0)
+  {
+    which = game_menu->options[current].which;
+
+    if(game_menu->is_game_menu)
+      game_menu_last_selected = (enum game_menu_opts)which;
+    else
+      main_menu_last_selected = (enum main_menu_opts)which;
+  }
   restore_screen();
 }
 
@@ -1118,11 +1174,18 @@ void game_menu(context *parent, boolean start_selected, enum keycode *retval,
   game_menu->y = GAME_MENU_Y;
   game_menu->width = GAME_MENU_WIDTH;
   game_menu->height = game_menu->num_options + 2;
-  game_menu->current_option = start_selected ? 0 : -1;
+  game_menu->current_option = -1;
+  game_menu->last_opened_opt_type = game_menu_last_selected;
   game_menu->is_game_menu = true;
   game_menu->show_status = allow_enter_menu(parent->world, false);
   game_menu->return_key = retval;
   game_menu->return_alt = retval_alt;
+
+  if(start_selected)
+  {
+    game_menu->current_option =
+     find_last_option(game_menu, game_menu_last_selected);
+  }
 
   if(!game_menu->show_status)
   {
@@ -1167,11 +1230,18 @@ void main_menu(context *parent, boolean start_selected, enum keycode *retval)
   game_menu->y = MAIN_MENU_Y;
   game_menu->width = MAIN_MENU_WIDTH;
   game_menu->height = game_menu->num_options + 2;
-  game_menu->current_option = start_selected ? 0 : -1;
+  game_menu->current_option = -1;
+  game_menu->last_opened_opt_type = main_menu_last_selected;
   game_menu->is_game_menu = false;
   game_menu->show_status = false;
   game_menu->return_key = retval;
   game_menu->return_alt = NULL;
+
+  if(start_selected)
+  {
+    game_menu->current_option =
+     find_last_option(game_menu, main_menu_last_selected);
+  }
 
   focus_menu(game_menu);
   if(retval)

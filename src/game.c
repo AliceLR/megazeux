@@ -226,6 +226,9 @@ static boolean load_world_gameplay_ext(struct game_context *game, char *name,
 
   game->fade_in = true;
 
+  // Reset the joystick mappings to the defaults before loading a game config.
+  joystick_reset_game_map();
+
   if(reload_world(mzx_world, name, &ignore))
   {
     if((start_board < 0) || (start_board >= mzx_world->num_boards) ||
@@ -285,6 +288,9 @@ static boolean load_world_title(struct game_context *game, char *name)
   clear_screen();
   enable_intro_mesg();
   game->fade_in = true;
+
+  // Reset the joystick mappings to the defaults before loading a game config.
+  joystick_reset_game_map();
 
   if(reload_world(mzx_world, name, &ignore))
   {
