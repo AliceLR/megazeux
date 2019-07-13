@@ -1492,7 +1492,8 @@ void joystick_map_action(int first, int last, const char *action,
     }
     else
 
-    if(!strncasecmp(action, "axis_", 5) && (binding < MAX_JOYSTICK_AXES))
+    if(!strncasecmp(action, "axis_", 5) && (binding > 0) &&
+     (binding <= MAX_JOYSTICK_AXES))
     {
       enum joystick_special_axis axis_value = find_joystick_axis(action + 5);
 
@@ -1502,7 +1503,7 @@ void joystick_map_action(int first, int last, const char *action,
       for(i = first; i <= last; i++)
       {
         if(is_global)
-          input.joystick_global_map.special_axis[i][binding] = axis_value;
+          input.joystick_global_map.special_axis[i][binding - 1] = axis_value;
       }
     }
   }
