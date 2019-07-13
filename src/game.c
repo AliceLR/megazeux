@@ -907,10 +907,12 @@ static boolean title_joystick(context *ctx, int *key, int action)
 
   switch(action)
   {
-    case JOY_START:
+    case JOY_B:
     case JOY_SELECT:
     {
       // Special: open the main menu if the enter or escape menu is allowed.
+      // The B button is the alternate for select instead of start because the
+      // start button makes much more sense playing the game on the title.
       if(allow_enter_menu(mzx_world, true) || allow_exit_menu(mzx_world, true))
       {
         main_menu(ctx, true, &(title->menu_key));
@@ -920,9 +922,9 @@ static boolean title_joystick(context *ctx, int *key, int action)
     }
 
     case JOY_A:         *key = IKEY_F5; return true;
-    case JOY_B:         *key = IKEY_F5; return true;
     case JOY_X:         *key = IKEY_F3; return true;
     case JOY_Y:         *key = IKEY_F4; return true;
+    case JOY_START:     *key = IKEY_F5; return true;
     case JOY_LSHOULDER: *key = IKEY_F2; return true;
     case JOY_RSHOULDER: *key = IKEY_F2; return true;
     case JOY_LTRIGGER:  *key = IKEY_F3; return true;
