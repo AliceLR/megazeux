@@ -35,6 +35,12 @@
 #include <wiiuse/wpad.h>
 #undef BOOL
 
+// Shut an annoying warning up
+#if WPAD_CLASSIC_BUTTON_RIGHT == (0x8000 << 16)
+#undef WPAD_CLASSIC_BUTTON_RIGHT
+#define WPAD_CLASSIC_BUTTON_RIGHT (((Uint32)0x8000) << 16)
+#endif
+
 #define PTR_BORDER_W 128
 #define PTR_BORDER_H 70
 
@@ -200,6 +206,9 @@ static Sint16 adjust_axis(Uint8 pos, Uint8 min, Uint8 cen, Uint8 max)
 {
   Sint32 temp;
   temp = (pos - cen) * 32767 / ((cen - min) + (max - cen) / 2);
+  // FIXME hack because Wii stick axis ranges seem to cap out near +-22000
+  // universally, but +-32767 is desired.
+  temp += temp >> 1;
   if(temp < -32767) temp = -32767;
   if(temp > 32767) temp = 32767;
   return temp;
@@ -230,12 +239,39 @@ static void scan_joystick(Uint32 pad, Uint32 xaxis, joystick_t js, Sint16 axes[]
   }
 }
 
+static Sint16 adjust_axis_single(float mag, Sint16 minval, Sint16 maxval)
+{
+  Sint32 temp = (Sint32)(mag * 32767.0);
+  temp = (temp - minval) * 32767 / (maxval - minval);
+  if(temp < 0) temp = 0;
+  if(temp > 32767) temp = 32767;
+  return temp;
+}
+
+static void scan_axis_single(Uint32 pad, Uint32 axis, float mag, Sint16 *prev)
+{
+  // NOTE adjusting the range to ignore <3200 because the minimum values
+  // received from the triggers seem generally questionable.
+  Sint16 temp = adjust_axis_single(mag, 3200, 32767);
+  union event ev;
+
+  if(temp != *prev)
+  {
+    ev.type = EVENT_AXIS_MOVE;
+    ev.axis.pad = pad;
+    ev.axis.axis = axis;
+    ev.axis.pos = temp;
+    write_eq(&ev);
+    *prev = temp;
+  }
+}
+
 static void poll_input(void)
 {
   static Sint32 old_x = 1000, old_y = 1000;
   static Uint32 old_point = 0;
   static Uint32 old_btns[4] = {0};
-  static Sint16 old_axes[4][4] = {{0}};
+  static Sint16 old_axes[4][6] = {{0}};
   static int old_type[4] =
   {
     WPAD_EXP_NONE, WPAD_EXP_NONE,
@@ -243,6 +279,7 @@ static void poll_input(void)
   };
   static Uint32 old_gcbtns[4] = {0};
   static Sint8 old_gcaxes[4][4] = {{0}};
+  static Uint8 old_gctriggers[4][2] = {{0}};
   static Uint16 old_modifiers = 0;
   static Uint8 old_mousebtns = 0;
 
@@ -287,15 +324,15 @@ static void poll_input(void)
         {
           ev.pointer.x = wd->ir.x - PTR_BORDER_W;
           ev.pointer.y = wd->ir.y - PTR_BORDER_H;
-          if (ev.pointer.x < 0)
+          if(ev.pointer.x < 0)
             ev.pointer.x = 0;
-          if (ev.pointer.y < 0)
+          if(ev.pointer.y < 0)
             ev.pointer.y = 0;
-          if (ev.pointer.x >= 640)
+          if(ev.pointer.x >= 640)
             ev.pointer.x = 639;
-          if (ev.pointer.y >= 350)
+          if(ev.pointer.y >= 350)
             ev.pointer.y = 349;
-          if ((ev.pointer.x != old_x) || (ev.pointer.y != old_y))
+          if((ev.pointer.x != old_x) || (ev.pointer.y != old_y))
           {
             ev.type = EVENT_POINTER_MOVE;
             write_eq(&ev);
@@ -328,19 +365,14 @@ static void poll_input(void)
         {
           scan_joystick(i, 0, wd->exp.classic.ljs, old_axes[i]);
           scan_joystick(i, 2, wd->exp.classic.rjs, old_axes[i] + 2);
+          scan_axis_single(i, 4, wd->exp.classic.l_shoulder, old_axes[i] + 4);
+          scan_axis_single(i, 5, wd->exp.classic.r_shoulder, old_axes[i] + 5);
           break;
         }
         case WPAD_EXP_GUITARHERO3:
         {
           scan_joystick(i, 0, wd->exp.gh3.js, old_axes[i]);
-          j = (int)(wd->exp.gh3.whammy_bar * 32767.0);
-          if((int)j != old_axes[i][2])
-          {
-            ev.type = EVENT_AXIS_MOVE;
-            ev.axis.pad = i;
-            ev.axis.pos = j;
-            write_eq(&ev);
-          }
+          scan_axis_single(i, 2, wd->exp.gh3.whammy_bar, old_axes[i] + 2);
           break;
         }
         default: break;
@@ -374,6 +406,8 @@ static void poll_input(void)
       old_gcbtns[i] = pad[i].button;
       ev.type = EVENT_AXIS_MOVE;
       ev.axis.pad = i + 4;
+      // TODO all 6 of these have low min/max magnitudes but not as bad as the
+      // nunchuck and classic controller, maybe address this eventually.
       if(pad[i].stickX != old_gcaxes[i][0])
       {
         ev.axis.axis = 0;
@@ -401,6 +435,20 @@ static void poll_input(void)
         ev.axis.pos = -(pad[i].substickY << 8);
         write_eq(&ev);
         old_gcaxes[i][1] = pad[i].substickY;
+      }
+      if(pad[i].triggerL != old_gctriggers[i][0])
+      {
+        ev.axis.axis = 4;
+        ev.axis.pos = pad[i].triggerL << 7;
+        write_eq(&ev);
+        old_gctriggers[i][0] = pad[i].triggerL;
+      }
+      if(pad[i].triggerR != old_gctriggers[i][1])
+      {
+        ev.axis.axis = 5;
+        ev.axis.pos = pad[i].triggerR << 7;
+        write_eq(&ev);
+        old_gctriggers[i][1] = pad[i].triggerR;
       }
     }
     else
@@ -627,7 +675,7 @@ static int wii_map_axis(Uint32 pad, Uint32 axis)
     {
       case WPAD_EXP_NUNCHUK:      return axis;
       case WPAD_EXP_CLASSIC:      return axis + 2;
-      case WPAD_EXP_GUITARHERO3:  return axis + 6;
+      case WPAD_EXP_GUITARHERO3:  return axis + 8;
       default:                    return -1; // Not supposed to happen
     }
   }

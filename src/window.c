@@ -47,6 +47,7 @@
 #include "data.h"
 #include "error.h"
 #include "event.h"
+#include "game_menu.h"
 #include "graphics.h"
 #include "helpsys.h"
 #include "intake.h"
