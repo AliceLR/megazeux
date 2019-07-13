@@ -24,13 +24,13 @@ FEATURES
   + Joystick settings in game.cnf files are now loaded as game-
     specific joystick bindings. These bindings will no longer
     override global/UI bindings defined by the config file or
-    pad.config. The global bindings are restored when any world
-    is loaded (including SWAP WORLD); they are not restored when
-    a save is loaded.
+    pad.config. The default bindings are restored when any world
+    is loaded from the title screen; they are not restored when
+    a save is loaded, between world swaps, or in the editor.
   + Joystick config options can be assigned to key names in the
     format of "key_X" (without quotes), where X is the key name.
   + Joystick config options for a particular controller now work
-    with ranges of controllers e.g. "joy[1,16].start = 13".
+    with ranges of controllers e.g. "joy[1,16].lshoulder = 13".
   + Added the config setting "joy_axis_threshold". This setting
     allows the threshold for joystick axis mapped presses to be
     configured.
