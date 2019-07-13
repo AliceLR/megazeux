@@ -587,11 +587,11 @@
 #  left                           Cursor left     Left (move)
 #  right                          Cursor right    Right (move)
 #  a              Play game       Select          Space (shoot)
-#  b              Main menu       Cancel          Delete (lay bomb)
+#  b              Play game       Cancel          Delete (lay bomb)
 #  x              Load world      Select char     Enter (game menu)
 #  y              Reload save     Backspace       S (Caverns: spells)
-#  select         Exit            Cancel          Escape[1]
-#  start          Play game       Select          Enter[1]
+#  select         Main menu       Cancel          Escape[1]
+#  start          Main menu       Select          Enter[1]
 #  lshoulder      Settings        Next element    Insert (switch bombs)
 #  rshoulder[2]   Settings        Settings[3]     P (Caverns: altar)
 #  ltrigger[2]    Load world      Page up         F3 (save game)
