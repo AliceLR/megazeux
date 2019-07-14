@@ -825,7 +825,7 @@ void play_game(context *parent, boolean *_fade_in)
   struct game_context *game;
   struct context_spec spec;
 
-  game = cmalloc(sizeof(struct game_context));
+  game = ccalloc(1, sizeof(struct game_context));
   game->fade_in = _fade_in ? * _fade_in : true;
   game->is_title = false;
   game->allow_cheats = false;
@@ -1178,7 +1178,7 @@ void title_screen(context *parent)
     conf->standalone_mode = false;
   }
 
-  title = cmalloc(sizeof(struct game_context));
+  title = ccalloc(1, sizeof(struct game_context));
   title->fade_in = true;
   title->need_reload = true;
   title->load_dialog_on_failed_load = true;
