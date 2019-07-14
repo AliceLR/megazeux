@@ -501,7 +501,7 @@ static void parse_gamecontroller_apply(int joy, Sint16 mapping,
   Uint8 which = target->which;
   Uint8 pos = target->pos;
 
-  if(mapping == -JOY_SELECT)
+  if(mapping == -JOY_SELECT || mapping == -JOY_START)
     *select_mapped = true;
 
   switch(target->feature)
@@ -544,7 +544,7 @@ static void parse_gamecontroller_apply(int joy, Sint16 mapping,
       break;
     }
   }
-  if(mapping == -JOY_SELECT)
+  if(mapping == -JOY_SELECT || mapping == -JOY_START)
     *select_used = true;
   return;
 }
@@ -583,10 +583,11 @@ static void parse_gamecontroller_map(int joystick_index, char *map)
   {
     // TODO originally this was going to try to place JOY_SELECT on another
     // button. That was kind of a bad idea, so just print a warning for now.
-    warn("[JOYSTICK] %d doesn't have any gamecontroller button that binds "
-     "'select' (by default, this is the SDL gamecontoller button 'back'). "
-     "Since this button is used to open the joystick menu, you may want to "
-     "override this controller mapping to include it.\n", joystick_index);
+    info("[JOYSTICK] %d doesn't have any gamecontroller button that binds "
+     "'select' or 'start' (by default, these are the SDL gamecontoller buttons "
+     "'back' and 'start', respectively). Since these buttons are used to open "
+     "the joystick menu, you may want to override this controller mapping.\n",
+      joystick_index + 1);
   }
 }
 
@@ -636,7 +637,8 @@ static void init_gamecontroller(int sdl_index, int joystick_index)
 
       if(mapping)
       {
-        info("[JOYSTICK] %d has an SDL mapping: %s\n", joystick_index, mapping);
+        info("[JOYSTICK] joystick %d has an SDL mapping: %s\n",
+         joystick_index + 1, mapping);
 
         if(strncmp(mapping, guid_string, strlen(guid_string)))
           info("[JOYSTICK] GUID: %s\n", guid_string);
@@ -649,8 +651,8 @@ static void init_gamecontroller(int sdl_index, int joystick_index)
       }
     }
   }
-  info("[JOYSTICK] %d does not have an SDL mapping or could not be opened "
-   "as a gamecontroller (GUID: %s).\n", joystick_index, guid_string);
+  info("[JOYSTICK] joystick %d does not have an SDL mapping or could not be "
+   "opened as a gamecontroller (GUID: %s).\n", joystick_index + 1, guid_string);
 }
 
 // Clean up auto-generated bindings so they don't cause problems for other
@@ -820,7 +822,7 @@ static void init_joystick(int sdl_index)
       joystick_set_active(status, joystick_index, true);
 
       debug("[JOYSTICK] Opened %d (SDL instance ID: %d)\n",
-       joystick_index, joystick_instance_ids[joystick_index]);
+       joystick_index + 1, joystick_instance_ids[joystick_index]);
 
 #if SDL_VERSION_ATLEAST(2,0,0)
       init_gamecontroller(sdl_index, joystick_index);
@@ -836,7 +838,7 @@ static void close_joystick(int joystick_index)
   if(joystick_index >= 0)
   {
     debug("[JOYSTICK] Closing %d (SDL instance ID: %d)\n",
-     joystick_index, joystick_instance_ids[joystick_index]);
+     joystick_index + 1, joystick_instance_ids[joystick_index]);
 
     // SDL_GameControllerClose also closes the joystick.
     if(gamecontrollers[joystick_index])

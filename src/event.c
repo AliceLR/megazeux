@@ -1350,10 +1350,6 @@ void joystick_map_button(int first, int last, int button, const char *value,
 
     if(joystick_parse_map_value(value, &binding))
     {
-      /*debug("[JOYSTICK] (%s) %d.b%d -> %s (%d)\n",
-       is_global ? "G" : "L", joystick, button,
-       value, binding);*/
-
       for(i = first; i <= last; i++)
       {
         if(is_global)
@@ -1387,10 +1383,6 @@ void joystick_map_axis(int first, int last, int axis, const char *neg,
     if(joystick_parse_map_value(neg, &binding_neg) &&
      joystick_parse_map_value(pos, &binding_pos))
     {
-      /*debug("[JOYSTICK] (%s) %d.a%d -> %s (%d), %s (%d)\n",
-       is_global ? "G" : "L", joystick, axis,
-       neg, binding_neg, pos, binding_pos);*/
-
       for(i = first; i <= last; i++)
       {
         if(is_global)
@@ -1427,11 +1419,6 @@ void joystick_map_hat(int first, int last, const char *up, const char *down,
      joystick_parse_map_value(left, &binding_left) &&
      joystick_parse_map_value(right, &binding_right))
     {
-      /*debug("[JOYSTICK] (%s) %d.h -> %s (%d), %s (%d), %s (%d), %s (%d)\n",
-       is_global ? "G" : "L", joystick,
-       up, binding_up, down, binding_down,
-       left, binding_left, right, binding_right);*/
-
       for(i = first; i <= last; i++)
       {
         if(is_global)
@@ -1476,9 +1463,6 @@ void joystick_map_action(int first, int last, const char *action,
 
     if(action_value != JOY_NO_ACTION)
     {
-      /*debug("[JOYSTICK] (%s) %d.%s -> %d\n", is_global ? "G" : "L",
-       joystick, action, binding);*/
-
       for(i = first; i <= last; i++)
       {
         if(is_global)
@@ -1626,9 +1610,6 @@ static void joystick_press(struct buffered_status *status, int joystick,
         status->joystick_action_status[joystick][press_action] = true;
       if(press_key)
         key_press(status, press_key, press_key);
-
-      //debug("[JOYSTICK] (P) %d (%d %d) -> { %d, %d, %d } @ %d\n",
-      // joystick, global_binding, game_binding, type, num, press_key, pos);
     }
   }
 
@@ -1666,8 +1647,6 @@ static void joystick_release(struct buffered_status *status, int joystick,
           status->joystick_action_status[joystick][p->action] = false;
         if(p->key)
           key_release(status, p->key);
-        //debug("[JOYSTICK] (R) %d (%d %d) -> { %d, %d, %d } @ %d\n", joystick,
-        // global_binding, game_binding, type, num, p->key, i);
 
         count--;
         status->joystick_press_count[joystick] = count;
@@ -1812,9 +1791,6 @@ void joystick_axis_update(struct buffered_status *status,
     if(input.joystick_global_map.special_axis[joystick][axis])
       joystick_special_axis_update(status, joystick,
        input.joystick_global_map.special_axis[joystick][axis], value);
-
-    //if(digital_value != last_digital_value)
-    //  debug("[JOYSTICK] (A) %d.a%d -> %d\n", joystick, axis, value);
 
     if(digital_value != -1)
     {
