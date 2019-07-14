@@ -977,10 +977,7 @@ static inline void load_world_info(struct world *mzx_world,
       case WPROP_JOY_SIMULATE_KEYS:
         if_savegame
         if(mzx_world->version >= V292)
-        {
           mzx_world->joystick_simulate_keys = !!load_prop_int(size, prop);
-          joystick_set_game_bindings(mzx_world->joystick_simulate_keys);
-        }
         break;
 
       default:
@@ -2631,6 +2628,7 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
   // Some initial setting(s)
   mzx_world->custom_sfx_on = 0;
   mzx_world->max_samples = -1;
+  mzx_world->joystick_simulate_keys = true;
 
   // If we're here, there's either a zip (regular) or a file (legacy).
   if(zp)
@@ -2711,6 +2709,9 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
 
   // This will be -1 (no limit) or whatever was loaded from a save
   audio_set_max_samples(mzx_world->max_samples);
+
+  // This will generally be 'true' unless it was different in the save.
+  joystick_set_game_bindings(mzx_world->joystick_simulate_keys);
 
   mzx_world->active = 1;
 
@@ -3081,7 +3082,6 @@ __editor_maybe_static void default_global_data(struct world *mzx_world)
   // In 2.90X, due to a bug the message could only display in mode 0.
   if(mzx_world->version == V290)
     mzx_world->smzx_message = 0;
-  mzx_world->joystick_simulate_keys = true;
 
   mzx_world->blind_dur = 0;
   mzx_world->firewalker_dur = 0;

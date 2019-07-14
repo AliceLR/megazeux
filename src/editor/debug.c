@@ -247,6 +247,7 @@ static const char *world_var_list[] =
   "divider",
   "fread_delimiter", //no read
   "fwrite_delimiter", //no read
+  "joy_simulate_keys", //no read
   "max_samples",
   "mod_frequency",
   "mod_length*",
@@ -592,6 +593,12 @@ static void get_var_value(struct world *mzx_world, struct debug_var *v,
       {
         *char_value = cur_board->sensor_list[index]->robot_to_mesg;
         *int_value = strlen(*char_value);
+      }
+      else
+
+      if(match_var("joy_simulate_keys"))
+      {
+        *int_value = mzx_world->joystick_simulate_keys;
       }
 
       else
