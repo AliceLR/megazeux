@@ -245,6 +245,7 @@ FIXES
   width instead. This fixes Manuel the Manx.
 + Fixed several memory leaks in the editor related to editing,
   placing, grab, and undo/redo operations on robots and scrolls.
++ Fixed vlayer memory leak when loading 2.84 saves.
 
 DEVELOPERS
 
