@@ -1091,7 +1091,7 @@ static inline void get_src_line(struct robot *cur_robot, char **_src_ptr,
  int *_src_length, int *_real_line_num)
 {
   struct command_mapping *cmd_map = cur_robot->command_map;
-  int line_num = get_current_command_map_index(cur_robot);
+  int line_num = get_program_command_num(cur_robot);
 
   char *src_ptr;
   int src_length;

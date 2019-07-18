@@ -34,6 +34,7 @@ usage() {
 	echo "  amiga          Experimental AmigaOS 4 port"
 	echo "  android        Experimental Android port"
 	echo "  pandora        Experimental Pandora port"
+	echo "  emscripten     Experimental HTML5 (Emscripten) port"
 	echo
 	echo "Supported <option> values (negatives can be used):"
 	echo
@@ -41,6 +42,10 @@ usage() {
 	echo "  --enable-release        Optimize and remove debugging code."
 	echo "  --enable-verbose        Build system is always verbose (V=1)."
 	echo "  --optimize-size         Perform size optimizations (-Os)."
+	echo "  --enable-asan           Enable AddressSanitizer for debug builds"
+	echo "  --enable-msan           Enable MemorySanitizer for debug builds"
+	echo "  --enable-tsan           Enable ThreadSanitizer for debug builds"
+	echo "  --enable-pledge         Enable experimental OpenBSD pledge(2) support"
 	echo "  --disable-datestamp     Disable adding date to version."
 	echo "  --disable-editor        Disable the built-in editor."
 	echo "  --disable-mzxrun        Disable generation of separate MZXRun."
@@ -59,6 +64,7 @@ usage() {
 	echo "  --enable-modplug        Enables ModPlug music engine."
 	echo "  --enable-mikmod         Enables MikMod music engine."
 	echo "  --enable-openmpt        Enables OpenMPT music engine."
+	echo "  --disable-rad           Disables Reality Adlib Tracker (RAD) support."
 	echo "  --disable-libpng        Disable PNG screendump support."
 	echo "  --disable-audio         Disable all audio (sound + music)."
 	echo "  --disable-vorbis        Disable ogg/vorbis support."
@@ -75,7 +81,6 @@ usage() {
 	echo "  --enable-gles           Enable hacks for OpenGL ES platforms."
 	echo "  --disable-check-alloc   Disables memory allocator error handling."
 	echo "  --disable-khash         Disables using khash for counter/string lookups."
-	echo "  --enable-uthash         Enables using uthash for counter/string lookups."
 	echo "  --enable-debytecode     Enable experimental 'debytecode' transform."
 	echo "  --disable-libsdl2       Disable SDL 2.0 support (falls back on 1.2)."
 	echo "  --enable-stdio-redirect Redirect console output to stdout.txt/stderr.txt."
@@ -113,6 +118,9 @@ DATE_STAMP="true"
 AS_NEEDED="false"
 RELEASE="false"
 OPT_SIZE="false"
+SANITIZER="false"
+PLEDGE="false"
+PLEDGE_UTILS="true"
 EDITOR="true"
 MZXRUN="true"
 HELPSYS="true"
@@ -129,6 +137,7 @@ XMP="true"
 MODPLUG="false"
 MIKMOD="false"
 OPENMPT="false"
+REALITY="true"
 LIBPNG="true"
 AUDIO="true"
 VORBIS="true"
@@ -144,7 +153,6 @@ EGL="false"
 GLES="false"
 CHECK_ALLOC="true"
 KHASH="true"
-UTHASH="false"
 DEBYTECODE="false"
 LIBSDL2="true"
 STDIO_REDIRECT="false"
@@ -227,6 +235,18 @@ while [ "$1" != "" ]; do
 	[ "$1" = "--optimize-size" ]  && OPT_SIZE="true"
 	[ "$1" = "--optimize-speed" ] && OPT_SIZE="false"
 
+	[ "$1" = "--enable-asan" ]  && SANITIZER="address"
+	[ "$1" = "--disable-asan" ] && SANITIZER="false"
+
+	[ "$1" = "--enable-msan" ]  && SANITIZER="memory"
+	[ "$1" = "--disable-msan" ] && SANITIZER="false"
+
+	[ "$1" = "--enable-tsan" ] &&  SANITIZER="thread"
+	[ "$1" = "--disable-tsan" ] && SANITIZER="false"
+
+	[ "$1" = "--enable-pledge" ] &&  PLEDGE="true"  && PLEDGE_UTILS="true"
+	[ "$1" = "--disable-pledge" ] && PLEDGE="false" && PLEDGE_UTILS="false"
+
 	[ "$1" = "--disable-datestamp" ] && DATE_STAMP="false"
 	[ "$1" = "--enable-datestamp" ]  && DATE_STAMP="true"
 
@@ -281,6 +301,9 @@ while [ "$1" != "" ]; do
 	[ "$1" = "--disable-openmpt" ] && OPENMPT="false"
 	[ "$1" = "--enable-openmpt" ]  && OPENMPT="true"
 
+	[ "$1" = "--disable-rad" ] && REALITY="false"
+	[ "$1" = "--enable-rad" ]  && REALITY="true"
+
 	[ "$1" = "--disable-libpng" ] && LIBPNG="false"
 	[ "$1" = "--enable-libpng" ]  && LIBPNG="true"
 
@@ -331,9 +354,6 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--enable-khash" ]  && KHASH="true"
 	[ "$1" = "--disable-khash" ] && KHASH="false"
-
-	[ "$1" = "--enable-uthash" ]  && UTHASH="true"
-	[ "$1" = "--disable-uthash" ] && UTHASH="false"
 
 	[ "$1" = "--enable-debytecode" ]  && DEBYTECODE="true"
 	[ "$1" = "--disable-debytecode" ] && DEBYTECODE="false"
@@ -400,6 +420,9 @@ elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 		"FreeBSD")
 			UNIX="freebsd"
 			;;
+		"OpenBSD")
+			UNIX="openbsd"
+			;;
 		*)
 			echo "WARNING: Should define proper UNIX name here!"
 			UNIX="unix"
@@ -450,6 +473,8 @@ echo "PREFIX:=$PREFIX" >> platform.inc
 
 if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "darwin" ]; then
 	LIBDIR="${LIBDIR}/megazeux"
+elif [ "$PLATFORM" = "emscripten" ]; then
+	LIBDIR="/data"
 else
 	LIBDIR="."
 fi
@@ -460,6 +485,8 @@ if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "darwin" ]; then
 	: # Use default or user-defined SYSCONFDIR
 elif [ "$PLATFORM" = "darwin-dist" ]; then
 	SYSCONFDIR="../Resources"
+elif [ "$PLATFORM" = "emscripten" ]; then
+	SYSCONFDIR="/data/etc"
 elif [ "$SYSCONFDIR_IS_SET" != "true" ]; then
 	SYSCONFDIR="."
 fi
@@ -529,6 +556,12 @@ elif [ "$PLATFORM" = "darwin-dist" ]; then
 	echo "#define CONFFILE \"config.txt\""           >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""            >> src/config.h
 	echo "#define USERCONFFILE \".megazeux-config\"" >> src/config.h
+elif [ "$PLATFORM" = "emscripten" ]; then
+	SHAREDIR=/data
+	GAMESDIR=/data/game
+	BINDIR=/data
+	echo "#define CONFFILE \"config.txt\"" >> src/config.h
+	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 else
 	SHAREDIR=.
 	GAMESDIR=.
@@ -615,6 +648,20 @@ if [ "$SDL" = "false" -a "$EGL" = "false" ]; then
 fi
 
 #
+# Force-disable features unnecessary on Emscripten.
+#
+if [ "$PLATFORM" = "emscripten" ]; then
+	echo "Enabling Emscripten-specific hacks."
+	EDITOR="false"
+	SCREENSHOTS="false"
+	UPDATER="false"
+	UTILS="false"
+
+	GLES="true"
+	GL_FIXED="false"
+fi
+
+#
 # If the NDS arch is enabled, some code has to be compile time
 # enabled too.
 #
@@ -635,7 +682,6 @@ if [ "$PLATFORM" = "nds" ]; then
 
 	echo "Force-disabling hash tables on NDS."
 	KHASH="false"
-	UTHASH="false"
 fi
 
 #
@@ -775,6 +821,7 @@ if [ "$AUDIO" = "false" ]; then
 	MIKMOD="false"
 	XMP="false"
 	OPENMPT="false"
+	REALITY="false"
 fi
 
 #
@@ -791,7 +838,7 @@ fi
 #
 if [ "$PLATFORM" = "gp2x" -o "$PLATFORM" = "nds" \
   -o "$PLATFORM" = "3ds"  -o "$PLATFORM" = "switch" \
-  -o "$PLATFORM" = "android" \
+  -o "$PLATFORM" = "android" -o "$PLATFORM" = "emscripten" \
   -o "$PLATFORM" = "psp"  -o "$PLATFORM" = "wii" ]; then
 	echo "Force-disabling modular build (nonsensical or unsupported)."
 	MODULAR="false"
@@ -851,6 +898,28 @@ if [ "$AS_NEEDED" = "true" ]; then
 fi
 
 #
+# Enable pledge(2) support (OpenBSD only)
+#
+if [ "$UNIX" = "openbsd" ]; then
+	if [ "$PLEDGE" = "true" ]; then
+		echo "Enabling OpenBSD pledge(2) support for main executable(s)."
+		echo "#define CONFIG_PLEDGE" >> src/config.h
+	else
+		echo "OpenBSD pledge(2) support disabled for main executable(s)."
+	fi
+	if [ "$UTILS" = "true" ]; then
+		if [ "$PLEDGE_UTILS" = "true" ]; then
+			echo "Enabling OpenBSD pledge(2) support for utils"
+			echo "#define CONFIG_PLEDGE_UTILS" >> src/config.h
+		else
+			echo "OpenBSD pledge(2) support disabled for utils"
+		fi
+	fi
+else
+	PLEDGE="false"
+fi
+
+#
 # Users may enable release mode
 #
 if [ "$RELEASE" = "true" ]; then
@@ -866,6 +935,11 @@ if [ "$RELEASE" = "true" ]; then
 else
 	echo "Disabling optimization, debug enabled."
 	echo "DEBUG=1" >> platform.inc
+
+	if [ "$SANITIZER" != "false" ]; then
+		echo "Enabling $SANITIZER sanitizer (may enable some optimizations)"
+		echo "SANITIZER=$SANITIZER" >> platform.inc
+	fi
 fi
 
 #
@@ -1096,6 +1170,18 @@ else
 fi
 
 #
+# Handle RAD support, if enabled
+#
+
+if [ "$REALITY" = "true" ]; then
+	echo "Reality Adlib Tracker (RAD) support enabled."
+	echo "#define CONFIG_REALITY" >> src/config.h
+	echo "BUILD_REALITY=1" >> platform.inc
+else
+	echo "Reality Adlib Tracker (RAD) support disabled."
+fi
+
+#
 # Handle audio subsystem, if enabled
 #
 if [ "$AUDIO" = "true" ]; then
@@ -1232,18 +1318,13 @@ fi
 
 #
 # Allow use of hash table counter/string lookups, if enabled
-# Keep the default at the bottom so it doesn't override other options.
 #
-if [ "$UTHASH" = "true" ]; then
-	echo "uthash counter/string lookup enabled."
-	echo "#define CONFIG_UTHASH" >> src/config.h
-	echo "BUILD_UTHASH=1" >> platform.inc
-elif [ "$KHASH" = "true" ]; then
+if [ "$KHASH" = "true" ]; then
 	echo "khash counter/string lookup enabled."
 	echo "#define CONFIG_KHASH" >> src/config.h
 	echo "BUILD_KHASH=1" >> platform.inc
 else
-	echo "uthash counter/string lookup disabled (using binary search)."
+	echo "khash counter/string lookup disabled (using binary search)."
 fi
 
 #
@@ -1298,6 +1379,19 @@ if [ "$FPSCOUNTER" = "true" ]; then
 	echo "#define CONFIG_FPS" >> src/config.h
 else
 	echo "fps counter disabled."
+fi
+
+#
+# Pledge(2) on main executable warning
+#
+if [ "$PLEDGE" = "true" ]; then
+	echo
+	echo "  WARNING: pledge will probably: break renderer switching; crash when"
+	echo "  switching to fullscreen (use fullscreen=1) or exiting when using"
+	echo "  the software renderer; crash when switching to fullscreen with the"
+	echo "  scaling renderers (use fullscreen=1 and/or fullscreen_windowed=1);"
+	echo "  crash when using any scaling renderer with some Mesa versions."
+	echo "  You've been warned!"
 fi
 
 echo

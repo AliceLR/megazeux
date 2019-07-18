@@ -53,13 +53,15 @@ int error(const char *string, enum error_type type, unsigned int options,
   int x;
 
   // Find the name of this error type.
-  if(type >= sizeof(error_type_names) / sizeof(*error_type_names))
-    type = 0;
+  if((unsigned int)type >= ARRAY_SIZE(error_type_names))
+    type = ERROR_T_WARNING;
 
   type_name = error_type_names[type];
 
   // If graphics couldn't initialize, print the error to stderr and abort.
+#ifndef __EMSCRIPTEN__ // We cannot possibly Emterpret every path leading here
   if(!has_video_initialized())
+#endif
   {
     int scode = code ? (int)code : -1;
 
@@ -71,6 +73,7 @@ int error(const char *string, enum error_type type, unsigned int options,
     if(options & ERROR_OPT_OK) return ERROR_OPT_OK;
     if(options & ERROR_OPT_FAIL) return ERROR_OPT_FAIL;
     exit(scode);
+    return ERROR_OPT_FAIL; // __EMSCRIPTEN__
   }
 
   // Use the high byte of the error code to link to a context in the help file.
@@ -487,7 +490,7 @@ int error_message(enum error_code id, int parameter, const char *string)
 
     case E_DBC_SAVE_ROBOT_UNSUPPORTED:
       sprintf(error_mesg,
-       "SAVE_ROBOT and SAVE_BC are no longer supported");
+       "SAVE_BC is no longer supported");
       code = 0x0fac;
       break;
 #endif

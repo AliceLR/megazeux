@@ -48,23 +48,26 @@
 
 // 16-color help
 
-//----------------------------------------------------------------/
+//------------------------------------------------------------------/
 //
-// %- Select color    Alt+D- Default pal.   PgUp- Prev. mode
-// R- Increase Red    Alt+R- Decrease Red   PgDn- Next mode
-// G- Increase Green  Alt+G- Decrease Green   F2- Store color
-// B- Increase Blue   Alt+B- Decrease Blue    F3- Retrieve color
-// A- Increase All    Alt+A- Decrease All
-// 0- Blacken color   Alt+H- Hide help         Q- Quit editing
-//
-// Left click- edit component/activate   Right click- color (drag)
-//
-//----------------------------------------------------------------/
+//  %- Select color    Alt+D- Default pal.      PgUp- Prev. mode
+//  R- Increase Red    Alt+R- Decrease Red      PgDn- Next mode
+//  G- Increase Green  Alt+G- Decrease Green
+//  B- Increase Blue   Alt+B- Decrease Blue        Q- Quit editing  /
+//  A- Increase All    Alt+A- Decrease All
+//  0- Blacken color   Alt+H- Hide menu          Tab- Switch to
+//  F2- Store color    Alt+I- Import                  temp palette  /
+//  F3- Place color    Alt+X- Export                                /
+//                                                   /--------------/
+//  Left click-       edit component/activate        | Buffer ##### /
+//  Right click+Drag- change color                   |        ##### /
+//                                                   |        ##### /
+//---------------------------------------------------+--------------/
 
 // 256-color subpalette
 
 //----------------------------------/
-// Palette  1:123 2:123 3:123 4:123 /
+// Subpal.  1:123 2:123 3:123 4:123 /
 //  # 000   ##### ##### ##### ##### /
 //          ##### ##### ##### ##### /
 // Hex: FF  ##### ##### ##### ##### /
@@ -84,22 +87,30 @@
 // G- Increase Green  Alt+G- Decrease Green /
 // B- Increase Blue   Alt+B- Decrease Blue  /
 // A- Increase All    Alt+A- Decrease All   /
-// 0- Blacken color   Alt+H- Hide help      /
+// 0- Blacken color   Alt+H- Hide menu      /
+// F2- Store color       F5- Store colors
+// F3- Place color       F6- Load colors
+// Ins- Cursors (off)  PgUp- Prev. mode
+// Tab- Switch to      PgDn- Next mode
+//      temp. palette Alt+I- Import
+// Q- Quit editing    Alt+X- Export
 //
-// PgUp- Prev. mode   PgDn- Next mode       /
-// F2- Store color    F3- Retrieve color    /
-//
-// Space- Subpalette  1-4- Current color to
-// Q- Quit editing         subpalette index
 
-// Space- Toggle subpalette index cursors
-// Q- Quit editing
-
+// Mode 3- this replaces 'Hide menu'/'Import'/'Export'...
 //
-//   Left click- edit component/activate
-//  Right click- change color (drag)
-// Middle/wheel- change subpalette
-//------------------------------------------/
+//Space- Subpalette
+//   F5- Store colors
+//   F6- Place colors
+//   F7- Store indices
+//   F8- Place indices
+//  1-4- Current index
+//       to subpalette
+
+//                           /--------------/
+// Left click- activate      | Buffer ##### /
+// Right click- color (drag) | 1####3 ##### /
+// Middle/wheel- subpalette  | 2####4 ##### /
+//---------------------------+--------------/
 
 // Note: the help menu mouse functionality has been broken since 2.80.
 
@@ -125,26 +136,46 @@ struct color_status
 };
 
 static boolean saved_color_active = false;
+static boolean saved_subpalette_active = false;
+static boolean saved_subpalette_display = false;
 
-static struct color_status saved_color =
+static struct color_status saved_color;
+static struct color_status saved_subpal[4];
+
+static int saved_indices[4] =
 {
-  0, 0, 0, 0, 0, 0, 0, 0, 0
+  0, 1, 2, 3
 };
 
 static boolean startup = false;
 static boolean minimal_help = false;
-static boolean mode2_extra_cursors = true;
+static boolean subpalette_cursors = true;
 
 static unsigned int current_id = 0;
 static unsigned int current_subpalette = 0;
 static int current_mode_id = 0;
 
+static int temp_palette_mode = -1;
+static char temp_palette[SMZX_PAL_SIZE * 3];
+static char temp_indices[SMZX_PAL_SIZE * 4];
+
+static char pal_filename[MAX_PATH];
+static char palidx_filename[MAX_PATH];
+
 struct pal_ed_context
 {
   context ctx;
-  struct color_status palette[SMZX_PAL_SIZE];
-  //Uint32 cursor_fg_layer[4];
-  //Uint32 cursor_bg_layer[4];
+  struct color_status internal_palette[SMZX_PAL_SIZE];
+  char game_palette_backup[SMZX_PAL_SIZE * 3];
+  char game_indices[SMZX_PAL_SIZE * 4];
+  char *current_indices;
+  enum
+  {
+    GAME_PALETTE,
+    TEMP_PALETTE,
+  } current;
+  //Uint32 cursor_fg_layer[5];
+  //Uint32 cursor_bg_layer[5];
   int editing_component;
 };
 
@@ -161,6 +192,15 @@ struct pal_ed_subcontext
   int x;
   int y;
 };
+
+static const char *palette_labels[] =
+{
+  "game palette",
+  "temp palette"
+};
+
+static const char *const pal_ext[] = { ".PAL", NULL };
+static const char *const idx_ext[] = { ".PALIDX", NULL };
 
 
 // -----------------------------------------------------------------------------
@@ -309,6 +349,11 @@ static void load_color(struct color_status *current, int id)
   get_rgb(id, &(current->r), &(current->g), &(current->b));
   rgb_to_hsl(current);
   rgb_to_lab(current);
+}
+
+static void store_color_pos(struct color_status *current, int id)
+{
+  set_rgb(id, current->r, current->g, current->b);
 }
 
 static void store_color_rgb(struct color_status *current)
@@ -494,12 +539,41 @@ static const struct color_mode mode_list[] =
 
 static struct color_status *get_current_color(struct pal_ed_context *pal_ed)
 {
-  return &(pal_ed->palette[current_id]);
+  return &(pal_ed->internal_palette[current_id]);
 }
 
 static struct color_mode *get_current_mode(struct pal_ed_context *pal_ed)
 {
   return (struct color_mode *)&(mode_list[current_mode_id]);
+}
+
+static boolean get_current_indices(struct pal_ed_context *pal_ed,
+ int *a, int *b, int *c, int *d)
+{
+  int screen_mode = get_screen_mode();
+  if(screen_mode < 2)
+    return false;
+
+  if(screen_mode == 2)
+  {
+    int lo = current_id & (0x0F);
+    int hi = (current_id & (0xF0)) >> 4;
+    *a = (hi << 4) | hi;
+    *b = (lo << 4) | hi;
+    *c = (hi << 4) | lo;
+    *d = (lo << 4) | lo;
+  }
+  else
+  {
+    if(!pal_ed->current_indices)
+      return false;
+
+    *a = pal_ed->current_indices[current_subpalette * 4 + 0];
+    *b = pal_ed->current_indices[current_subpalette * 4 + 2];
+    *c = pal_ed->current_indices[current_subpalette * 4 + 1];
+    *d = pal_ed->current_indices[current_subpalette * 4 + 3];
+  }
+  return true;
 }
 
 #define MOUSE_IN(b_x, b_y, b_w, b_h) \
@@ -626,7 +700,7 @@ static void draw_color_components(struct pal_ed_subcontext *current)
  * Draw the color editor.
  */
 
-static void color_editor_draw(subcontext *ctx)
+static boolean color_editor_draw(subcontext *ctx)
 {
   struct pal_ed_subcontext *current = (struct pal_ed_subcontext *)ctx;
   char color;
@@ -665,6 +739,7 @@ static void color_editor_draw(subcontext *ctx)
   }
 
   draw_color_components(current);
+  return true;
 }
 
 static void inc_component(struct color_status *current_color,
@@ -749,6 +824,7 @@ static boolean color_editor_key(subcontext *ctx, int *key)
         break;
 
       memcpy(&saved_color, current_color, sizeof(struct color_status));
+      saved_subpalette_display = false;
       saved_color_active = true;
       return true;
     }
@@ -759,6 +835,7 @@ static boolean color_editor_key(subcontext *ctx, int *key)
       {
         memcpy(current_color, &saved_color, sizeof(struct color_status));
         store_color_rgb(current_color);
+        saved_subpalette_display = false;
       }
       return true;
     }
@@ -939,14 +1016,73 @@ static subcontext *create_color_editor(struct pal_ed_context *pal_ed)
 
 // -----------------------------------------------------------------------------
 
+/**
+ * Draw the buffer portion of the menu window.
+ */
+static void menu_buffer_draw(int x, int y, boolean show_indices)
+{
+  static unsigned int timer = 0;
+  int mode = get_screen_mode();
+  int i;
+
+  draw_window_box(
+    x, y, x + 15, y + 4,
+    DI_GREY, DI_GREY_DARK, DI_GREY_CORNER, false, false
+  );
+
+  write_string("Buffer", x + 2, y + 1, DI_GREY_TEXT, false);
+  write_string("     \n     \n     ", x + 9, y + 1, 0x55, false);
+
+  if(mode >= 2 && saved_subpalette_display)
+  {
+    Uint8 which = ((timer++) / 60) % 4;
+    Uint8 fg_color;
+    struct color_status *col = &saved_subpal[which];
+
+    set_protected_rgb(5, col->r, col->g, col->b);
+
+    fg_color =
+     (get_color_luma(graphics.protected_pal_position + 5) < 128) ? 31 : 16;
+    draw_char(which + 49, (0x50) | fg_color, x + 11, y + 1);
+  }
+  else
+  {
+    set_protected_rgb(5, saved_color.r, saved_color.g, saved_color.b);
+    timer = 0;
+  }
+
+  if(show_indices && mode >= 2)
+  {
+    char c = (mode == 2) ? CHAR_SMZX_C2 : 0;
+    int x2;
+    int y2;
+
+    write_string("1    3\n2    4", x + 2, y + 2, DI_GREY_CORNER, false);
+    for(i = 0; i < 4; i++)
+    {
+      x2 = x + 3 + (i/2*2);
+      y2 = y + 2 + (i%2);
+
+      select_layer(UI_LAYER);
+      erase_char(x2, y2);
+      erase_char(x2 + 1, y2);
+
+      select_layer(GAME_UI_LAYER);
+      draw_char(c, saved_indices[i], x2, y2);
+      draw_char(c, saved_indices[i], x2 + 1, y2);
+    }
+  }
+  select_layer(UI_LAYER);
+}
 
 /**
  * Draw the 16 color editor menu window.
  */
 
-static void menu_16_draw(subcontext *ctx)
+static boolean menu_16_draw(subcontext *ctx)
 {
   struct pal_ed_subcontext *menu = (struct pal_ed_subcontext *)ctx;
+  struct pal_ed_context *pal_ed = menu->pal_ed;
   struct color_mode *current_mode = get_current_mode(menu->pal_ed);
   struct color_mode_component *c;
   int x;
@@ -954,7 +1090,7 @@ static void menu_16_draw(subcontext *ctx)
   int i;
 
   if(minimal_help)
-    return;
+    return false;
 
   draw_window_box(
     menu->border_x,  menu->border_y,
@@ -964,19 +1100,25 @@ static void menu_16_draw(subcontext *ctx)
 
   // Write menu
   write_string(
-    "\x1d- Select color    Alt+D- Default pal.   PgUp- Prev. mode\n"
-    " - Increase        Alt+ - Decrease       PgDn- Next mode\n"
-    " - Increase        Alt+ - Decrease         F2- Store color\n"
-    " - Increase        Alt+ - Decrease         F3- Retrieve color\n"
+    "\x1d- Select color    Alt+D- Default pal.     PgUp- Prev. mode\n"
+    " - Increase        Alt+ - Decrease         PgDn- Next mode\n"
+    " - Increase        Alt+ - Decrease            \n"
+    " - Increase        Alt+ - Decrease            Q- Quit editing\n"
     "\n"
-    "0- Blacken color   Alt+H- Hide menu         Q- Quit editing\n"
+    "0- Blacken color   Alt+H- Hide menu         Tab- Switch to\n"
+    "F2- Store color    Alt+I- Import                 XXXX palette\n"
+    "F3- Place color    Alt+X- Export\n"
     "\n"
-    "Left click- edit component/activate  Right click- color (drag)\n",
+    "Left click-       edit component/activate\n"
+    "Right click+Drag- change color\n",
     menu->x,
     menu->y,
     DI_GREY_TEXT,
     false
   );
+
+  write_string(palette_labels[!pal_ed->current], menu->x + 49, menu->y + 6,
+   DI_GREY_TEXT, false);
 
   // Component instructions
   y = menu->y + 1;
@@ -1008,6 +1150,10 @@ static void menu_16_draw(subcontext *ctx)
      false
     );
   }
+
+  // Buffer
+  menu_buffer_draw(menu->border_x2 - 15, menu->border_y2 - 4, false);
+  return true;
 }
 
 /**
@@ -1023,7 +1169,7 @@ static subcontext *create_menu_16(struct pal_ed_context *pal_ed)
   sub->border_x = 7;
   sub->border_y = 7;
   sub->border_x2 = 73;
-  sub->border_y2 = 18;
+  sub->border_y2 = 21;
 
   sub->x = sub->border_x + 3;
   sub->y = sub->border_y + 2;
@@ -1043,9 +1189,10 @@ static subcontext *create_menu_16(struct pal_ed_context *pal_ed)
  * Draw the palette window for the 16 color editor.
  */
 
-static void palette_16_draw(subcontext *ctx)
+static boolean palette_16_draw(subcontext *ctx)
 {
   struct pal_ed_subcontext *pal = (struct pal_ed_subcontext *)ctx;
+  struct pal_ed_context *pal_ed = pal->pal_ed;
   int screen_mode = get_screen_mode();
   unsigned int bg_color;
   unsigned int fg_color;
@@ -1059,6 +1206,13 @@ static void palette_16_draw(subcontext *ctx)
     pal->border_x2, pal->border_y2,
     DI_GREY_DARK, DI_GREY, DI_GREY_CORNER, true, true
   );
+
+  // Temporary palette warning
+  if(pal_ed->current != GAME_PALETTE)
+  {
+    write_string("TEMPORARY -- WILL NOT BE SAVED", pal->border_x + 3,
+     pal->border_y, 0x8E, false);
+  }
 
   // Draw palette bars
   for(bg_color = 0; bg_color < 16; bg_color++)
@@ -1106,6 +1260,7 @@ static void palette_16_draw(subcontext *ctx)
        x, y + 4, DI_GREY_TEXT, false);
     }
   }
+  return true;
 }
 
 /**
@@ -1146,7 +1301,7 @@ static void mouse_slide_cursor(int *_key, int mouse_x, int mouse_y)
 {
   int delta_x;
   int delta_y;
-  int key;
+  int key = IKEY_UNKNOWN;
 
   get_mouse_movement(&delta_x, &delta_y);
 
@@ -1167,7 +1322,7 @@ static void mouse_slide_cursor(int *_key, int mouse_x, int mouse_y)
       key = IKEY_UP;
   }
 
-  if(key)
+  if(key != IKEY_UNKNOWN)
   {
     // Only warp the mouse to its old spot if there's movement registered.
     // Otherwise, it will be unresponsive with precise mouse movements.
@@ -1238,9 +1393,10 @@ static subcontext *create_palette_16(struct pal_ed_context *pal_ed)
  * Draw the 256 color palette editor menu window.
  */
 
-static void menu_256_draw(subcontext *ctx)
+static boolean menu_256_draw(subcontext *ctx)
 {
   struct pal_ed_subcontext *menu = (struct pal_ed_subcontext *)ctx;
+  struct pal_ed_context *pal_ed = menu->pal_ed;
   struct color_mode *current_mode = get_current_mode(menu->pal_ed);
   struct color_mode_component *c;
   int smzx_mode = get_screen_mode();
@@ -1250,7 +1406,7 @@ static void menu_256_draw(subcontext *ctx)
 
   // Always enable help during smzx_mode 3; the preview area is useless.
   if(minimal_help && smzx_mode == 2)
-    return;
+    return false;
 
   draw_window_box(
     menu->border_x,  menu->border_y,
@@ -1266,34 +1422,40 @@ static void menu_256_draw(subcontext *ctx)
     " - Increase        Alt+ - Decrease       \n"
     "\n"
     "0- Blacken color\n"
+    "F2- Store color\n"
+    "F3- Place color\n"
+    "Ins- Cursors (off)\n"
+    "Tab- Switch to\n"
+    "     XXXX palette\n"
+    "Q- Quit editing\n"
     "\n"
-    "PgUp- Prev. mode   PgDn- Next mode       \n"
-    "F2- Store color    F3- Retrieve color    \n",
+    "Left click- activate\n"
+    "Right click+Drag- color\n",
     menu->x,
     menu->y,
     DI_GREY_TEXT,
     1
   );
 
+  write_string(palette_labels[!pal_ed->current], menu->x + 5, menu->y + 10,
+   DI_GREY_TEXT, false);
+
+  if(subpalette_cursors)
+    write_string("(on) ", menu->x + 13, menu->y + 8, DI_GREY_TEXT, false);
+
   if(smzx_mode == 2)
   {
     // SMZX mode 2 specific help
     write_string(
-      "Alt+H- Hide menu",
+      "Alt+H- Hide menu\n"
+      "   F5- Store colors\n"
+      "   F6- Place colors\n"
+      " PgUp- Prev. mode\n"
+      " PgDn- Next mode\n"
+      "Alt+I- Import\n"
+      "Alt+X- Export\n",
       menu->x + 19,
       menu->y + 5,
-      DI_GREY_TEXT,
-      false
-    );
-    write_string(
-      "Space- Toggle subpalette index cursors\n"
-      "Q- Quit editing\n"
-      "\n"
-      "  Left click- edit component/activate\n"
-      " Right click- change color (drag)\n"
-      "Middle/wheel- toggle subpalette cursors\n",
-      menu->x,
-      menu->y + 9,
       DI_GREY_TEXT,
       false
     );
@@ -1302,14 +1464,22 @@ static void menu_256_draw(subcontext *ctx)
   {
     // SMZX mode 3 specific help
     write_string(
-      "Space- Subpalette  1-4- Current color to \n"
-      "Q- Quit editing         subpalette index\n"
-      "\n"
-      "  Left click- edit component/activate\n"
-      " Right click- change color (drag)\n"
-      "Middle/wheel- change subpalette\n",
+      "Space- Subpalette\n"
+      "   F5- Store colors\n"
+      "   F6- Place colors\n"
+      "   F7- Store indices\n"
+      "   F8- Place indices\n"
+      "  1-4- Current index\n"
+      "       to subpalette\n",
+      menu->x + 19,
+      menu->y + 5,
+      DI_GREY_TEXT,
+      false
+    );
+    write_string(
+      "Middle/wheel- subpalette\n",
       menu->x,
-      menu->y + 9,
+      menu->y + 15,
       DI_GREY_TEXT,
       false
     );
@@ -1345,6 +1515,10 @@ static void menu_256_draw(subcontext *ctx)
       1
     );
   }
+
+  // Buffer
+  menu_buffer_draw(menu->border_x2 - 15, menu->border_y2 - 4, smzx_mode==3);
+  return true;
 }
 
 /**
@@ -1423,14 +1597,17 @@ static void destroy_unbound_cursors(struct pal_ed_context *pal_ed)
  * Draw the 256 color palette window.
  */
 
-static void palette_256_draw(subcontext *ctx)
+static boolean palette_256_draw(subcontext *ctx)
 {
   struct pal_ed_subcontext *pal = (struct pal_ed_subcontext *)ctx;
+  struct pal_ed_context *pal_ed = pal->pal_ed;
   int blink_cursor = graphics.cursor_flipflop;
   char chr;
   int col;
   int x;
   int y;
+  int subcursor[4] = { -1, -1, -1, -1 };
+  int ignore;
 
   int lo = current_id & 0x0F;
   int hi = (current_id & 0xF0) >> 4;
@@ -1441,6 +1618,13 @@ static void palette_256_draw(subcontext *ctx)
     DI_GREY, DI_GREY_DARK, DI_GREY_CORNER, true, true
   );
 
+  // Temporary palette warning
+  if(pal_ed->current != GAME_PALETTE)
+  {
+    write_string("TEMPORARY -- WILL NOT BE SAVED", pal->border_x + 3,
+     pal->border_y, 0x8E, false);
+  }
+
   // Erase the spot where the palette will go.
   for(y = 0; y < 16; y++)
     for(x = 0; x < 32; x++)
@@ -1449,10 +1633,10 @@ static void palette_256_draw(subcontext *ctx)
   // Destroy the cursors if they already exist.
   destroy_unbound_cursors(pal->pal_ed);
 
+  select_layer(GAME_UI_LAYER);
+
   if(get_screen_mode() == 2)
   {
-    select_layer(GAME_UI_LAYER);
-
     // Draw the palette
     for(y = 0; y < 16; y++)
     {
@@ -1465,29 +1649,13 @@ static void palette_256_draw(subcontext *ctx)
       }
     }
 
-    // Extra mode 2 cursors
-    if(mode2_extra_cursors)
-    {
-      if(blink_cursor)
-      {
-        draw_unbound_cursor(hi * 2 + pal->x, hi + pal->y, 0xC, 0x4, 0);
-        draw_unbound_cursor(hi * 2 + pal->x, lo + pal->y, 0xC, 0x4, 1);
-        draw_unbound_cursor(lo * 2 + pal->x, lo + pal->y, 0xC, 0x4, 2);
-      }
-      else
-      {
-        draw_unbound_cursor(hi * 2 + pal->x, hi + pal->y, 0x4, 0x0, 0);
-        draw_unbound_cursor(hi * 2 + pal->x, lo + pal->y, 0x4, 0x0, 1);
-        draw_unbound_cursor(lo * 2 + pal->x, lo + pal->y, 0x4, 0x0, 2);
-      }
-    }
+    get_current_indices(pal_ed,
+     &subcursor[0], &subcursor[1], &ignore, &subcursor[2]);
   }
 
   // Mode 3
   else
   {
-    select_layer(GAME_UI_LAYER);
-
     // Draw the palette
     for(y = 0; y < 16; y++)
     {
@@ -1498,19 +1666,46 @@ static void palette_256_draw(subcontext *ctx)
         draw_char_ext(0, col, (x*2+1 + pal->x), (y + pal->y), PRO_CH, 0);
       }
     }
+
+    if(pal_ed->current_indices)
+    {
+      get_current_indices(pal_ed,
+       &subcursor[0], &subcursor[1], &subcursor[2], &subcursor[3]);
+    }
+  }
+
+  // Subpalette cursors
+  if(subpalette_cursors)
+  {
+    unsigned char cursor_fg = blink_cursor ? 0xC : 0x4;
+    unsigned char cursor_bg = blink_cursor ? 0x4 : 0x0;
+    int i;
+
+    for(i = 0; i < 4; i++)
+    {
+      if(subcursor[i] >= 0)
+      {
+        draw_unbound_cursor(
+          (subcursor[i] & 15) * 2 + pal->x,
+          (subcursor[i] >> 4) + pal->y,
+          cursor_fg, cursor_bg, 0
+        );
+      }
+    }
   }
 
   // Main cursor
   if(blink_cursor)
   {
-    draw_unbound_cursor(lo * 2 + pal->x, hi + pal->y, 0xF, 0x8, 3);
+    draw_unbound_cursor(lo * 2 + pal->x, hi + pal->y, 0xF, 0x8, 4);
   }
   else
   {
-    draw_unbound_cursor(lo * 2 + pal->x, hi + pal->y, 0x7, 0x0, 3);
+    draw_unbound_cursor(lo * 2 + pal->x, hi + pal->y, 0x7, 0x0, 4);
   }
 
   select_layer(UI_LAYER);
+  return true;
 }
 
 /**
@@ -1519,18 +1714,11 @@ static void palette_256_draw(subcontext *ctx)
 
 static boolean palette_256_key(subcontext *ctx, int *key)
 {
-  int smzx_mode = get_screen_mode();
-
   switch(*key)
   {
-    case IKEY_SPACE:
+    case IKEY_INSERT:
     {
-      if(smzx_mode == 2)
-      {
-        // Mode 2- toggle the extra palette cursors
-        mode2_extra_cursors ^= 1;
-        return true;
-      }
+      subpalette_cursors = !subpalette_cursors;
       break;
     }
 
@@ -1638,20 +1826,18 @@ static subcontext *create_palette_256(struct pal_ed_context *pal_ed)
  * Draw the 256 color subpalette window.
  */
 
-static void subpalette_256_draw(subcontext *ctx)
+static boolean subpalette_256_draw(subcontext *ctx)
 {
   struct pal_ed_subcontext *spal = (struct pal_ed_subcontext *)ctx;
+  struct pal_ed_context *pal_ed = spal->pal_ed;
   char buffer[5];
   int subpalette_num;
-  int c0;
-  int c1;
-  int c2;
-  int c3;
+  int c0 = 0;
+  int c1 = 0;
+  int c2 = 0;
+  int c3 = 0;
   int x;
   int y;
-
-  int lo = current_id & 0x0F;
-  int hi = (current_id & 0xF0) >> 4;
 
   draw_window_box(
     spal->border_x,  spal->border_y,
@@ -1665,7 +1851,7 @@ static void subpalette_256_draw(subcontext *ctx)
 
   // Palette View contents
   write_string(
-   "Palette\n #\n\nHex:",
+   "Subpal.\n #\n\nHex:",
    spal->x,
    spal->y,
    DI_GREY_TEXT,
@@ -1697,10 +1883,7 @@ static void subpalette_256_draw(subcontext *ctx)
   if(get_screen_mode() == 2)
   {
     subpalette_num = current_id;
-    c0 = hi << 4 | hi;
-    c1 = lo << 4 | hi;
-    c2 = hi << 4 | lo;
-    c3 = lo << 4 | lo;
+    get_current_indices(pal_ed, &c0, &c1, &c2, &c3);
 
     // Draw the current subpalette
     for(y = 0; y < 3; y++)
@@ -1720,10 +1903,8 @@ static void subpalette_256_draw(subcontext *ctx)
   {
     // Note indices 1 and 2 are swapped to make sense.
     subpalette_num = current_subpalette;
-    c0 = graphics.editor_backup_indices[current_subpalette * 4 + 0];
-    c1 = graphics.editor_backup_indices[current_subpalette * 4 + 2];
-    c2 = graphics.editor_backup_indices[current_subpalette * 4 + 1];
-    c3 = graphics.editor_backup_indices[current_subpalette * 4 + 3];
+    if(pal_ed->current_indices)
+      get_current_indices(pal_ed, &c0, &c1, &c2, &c3);
 
     // Draw the current subpalette
     for(y = 0; y < 3; y++)
@@ -1755,6 +1936,7 @@ static void subpalette_256_draw(subcontext *ctx)
   write_string(buffer, spal->x + 23, spal->y, DI_GREY_TEXT, false);
   sprintf(buffer, "%03d", c3);
   write_string(buffer, spal->x + 29, spal->y, DI_GREY_TEXT, false);
+  return true;
 }
 
 /**
@@ -1764,6 +1946,8 @@ static void subpalette_256_draw(subcontext *ctx)
 static boolean subpalette_256_key(subcontext *ctx, int *key)
 {
   struct pal_ed_subcontext *spal = (struct pal_ed_subcontext *)ctx;
+  struct pal_ed_context *pal_ed = spal->pal_ed;
+  struct color_status *palette = pal_ed->internal_palette;
   int smzx_mode = get_screen_mode();
 
   switch(*key)
@@ -1778,8 +1962,8 @@ static boolean subpalette_256_key(subcontext *ctx, int *key)
         // Make sure there aren't layers displaying over the UI.
         destroy_unbound_cursors(spal->pal_ed);
 
-        // Load the actual indices
-        load_editor_indices();
+        // Load the current active indices
+        load_backup_indices(pal_ed->current_indices);
 
         new_subpal = color_selection(current_subpalette, false);
 
@@ -1831,7 +2015,7 @@ static boolean subpalette_256_key(subcontext *ctx, int *key)
     case IKEY_3:
     case IKEY_4:
     {
-      if(smzx_mode == 3)
+      if(smzx_mode == 3 && pal_ed->current_indices)
       {
         // Assign current color to subpalette index
         int index = (*key - IKEY_1);
@@ -1842,9 +2026,75 @@ static boolean subpalette_256_key(subcontext *ctx, int *key)
 
         index += current_subpalette * 4;
 
-        graphics.editor_backup_indices[index] = current_id;
+        pal_ed->current_indices[index] = current_id;
       }
       return true;
+    }
+
+    case IKEY_F5:
+    {
+      // Store subpalette colors
+      int c0, c1, c2, c3;
+      if(get_current_indices(pal_ed, &c0, &c1, &c2, &c3))
+      {
+        memcpy(&saved_subpal[0], &palette[c0], sizeof(struct color_status));
+        memcpy(&saved_subpal[1], &palette[c1], sizeof(struct color_status));
+        memcpy(&saved_subpal[2], &palette[c2], sizeof(struct color_status));
+        memcpy(&saved_subpal[3], &palette[c3], sizeof(struct color_status));
+        saved_subpalette_active = true;
+        saved_subpalette_display = true;
+        return true;
+      }
+      break;
+    }
+
+    case IKEY_F6:
+    {
+      // Place subpalette colors
+      int c0, c1, c2, c3;
+      if(saved_subpalette_active &&
+       get_current_indices(pal_ed, &c0, &c1, &c2, &c3))
+      {
+        memcpy(&palette[c0], &saved_subpal[0], sizeof(struct color_status));
+        memcpy(&palette[c1], &saved_subpal[1], sizeof(struct color_status));
+        memcpy(&palette[c2], &saved_subpal[2], sizeof(struct color_status));
+        memcpy(&palette[c3], &saved_subpal[3], sizeof(struct color_status));
+        store_color_pos(&palette[c0], c0);
+        store_color_pos(&palette[c1], c1);
+        store_color_pos(&palette[c2], c2);
+        store_color_pos(&palette[c3], c3);
+        saved_subpalette_display = true;
+        return true;
+      }
+      break;
+    }
+
+    case IKEY_F7:
+    {
+      if(smzx_mode == 3 && pal_ed->current_indices)
+      {
+        // Store subpalette indices
+        get_current_indices(pal_ed,
+         &saved_indices[0], &saved_indices[1],
+         &saved_indices[2], &saved_indices[3]);
+      }
+      break;
+    }
+
+    case IKEY_F8:
+    {
+      if(smzx_mode == 3 && pal_ed->current_indices)
+      {
+        // Place subpalette indices
+        // NOTE: "get_current_indices" swaps 1 and 2 to make more sense to the
+        // user, so swap them here too.
+        int index = current_subpalette * 4;
+        pal_ed->current_indices[index + 0] = saved_indices[0];
+        pal_ed->current_indices[index + 2] = saved_indices[1];
+        pal_ed->current_indices[index + 1] = saved_indices[2];
+        pal_ed->current_indices[index + 3] = saved_indices[3];
+      }
+      break;
     }
   }
   return false;
@@ -1876,7 +2126,7 @@ static boolean subpalette_256_click(subcontext *ctx, int *key, int button,
 
   if(button == MOUSE_BUTTON_MIDDLE)
   {
-    // Palette selector/hide cursors
+    // Palette selector
     *key = IKEY_SPACE;
     return true;
   }
@@ -1939,7 +2189,6 @@ static subcontext *create_subpalette_256(struct pal_ed_context *pal_ed)
 /**
  * Calculate color mode information for every color in the current palette.
  */
-
 static struct color_status *rebuild_palette(struct color_status *palette)
 {
   int palette_size = (get_screen_mode() >= 2) ? 256 : 16;
@@ -1956,12 +2205,123 @@ static struct color_status *rebuild_palette(struct color_status *palette)
 }
 
 /**
+ * Swap the current active palette.
+ */
+static void swap_palettes(struct pal_ed_context *pal_ed)
+{
+  if(pal_ed->current == GAME_PALETTE)
+  {
+    // Save the game palette, load the temp palette.
+    store_backup_palette(pal_ed->game_palette_backup);
+    load_backup_palette(temp_palette);
+
+    pal_ed->current_indices = temp_indices;
+    pal_ed->current = TEMP_PALETTE;
+  }
+  else
+  {
+    // Save the temp palette, load the game palette.
+    store_backup_palette(temp_palette);
+    load_backup_palette(pal_ed->game_palette_backup);
+
+    pal_ed->current_indices = pal_ed->game_indices;
+    pal_ed->current = GAME_PALETTE;
+  }
+
+  rebuild_palette(pal_ed->internal_palette);
+}
+
+/**
+ * Reset the palettes to their state before the palette editor started.
+ */
+static void reset_pal_ed_palettes(struct pal_ed_context *pal_ed)
+{
+  if(pal_ed->current != GAME_PALETTE)
+  {
+    // Reload the game palette.
+    swap_palettes(pal_ed);
+  }
+
+  if(get_screen_mode() == 3)
+  {
+    // Make the game indices active.
+    load_backup_indices(pal_ed->game_indices);
+  }
+
+  // Fix protected color 5
+  default_protected_palette();
+}
+
+/**
+ * Initialize the palette editor's backup palettes (and indices).
+ */
+static void init_pal_ed_palettes(struct pal_ed_context *pal_ed)
+{
+  int screen_mode = get_screen_mode();
+  int i;
+  int j;
+
+  pal_ed->current = GAME_PALETTE;
+  pal_ed->current_indices = pal_ed->game_indices;
+
+  // Rebuild the internal palette off the currently loaded (game) palette.
+  rebuild_palette(pal_ed->internal_palette);
+
+  if(screen_mode == 3)
+  {
+    // Special: mode 3 editing doesn't work while the game indices are actually
+    // loaded, so they need to be backed up and edited from the backup.
+    store_backup_indices(pal_ed->game_indices);
+
+    // Reset the indices to default for display purposes.
+    set_screen_mode(3);
+  }
+
+  if(screen_mode != temp_palette_mode)
+  {
+    // Initialize the temp palette.
+    temp_palette_mode = screen_mode;
+    memset(temp_palette, 0, sizeof(temp_palette));
+
+    if(screen_mode < 2)
+    {
+      // Copy in the protected palette...
+      for(i = 0, j = 0; i < PAL_SIZE; i++)
+      {
+        temp_palette[j++] = graphics.protected_palette[i].r * 63 / 255;
+        temp_palette[j++] = graphics.protected_palette[i].g * 63 / 255;
+        temp_palette[j++] = graphics.protected_palette[i].b * 63 / 255;
+      }
+    }
+    else
+    {
+      // Load the external SMZX palette.
+      FILE *fp = fopen_unsafe(mzx_res_get_by_id(SMZX_PAL), "rb");
+      if(fp)
+      {
+        if(!fread(temp_palette, sizeof(temp_palette), 1, fp))
+          memset(temp_palette, 0, sizeof(temp_palette));
+
+        fclose(fp);
+      }
+    }
+
+    if(screen_mode == 3)
+    {
+      // The active indices will be the default mode 3 indices since the
+      // mode changed above.
+      store_backup_indices(temp_indices);
+    }
+  }
+}
+
+/**
  * Basic key handler for the palette editor.
  */
-
 static boolean pal_ed_key(context *ctx, int *key)
 {
   struct pal_ed_context *pal_ed = (struct pal_ed_context *)ctx;
+  int screen_mode = get_screen_mode();
 
   // Exit event -- mimic Escape
   if(get_exit_status())
@@ -2007,7 +2367,7 @@ static boolean pal_ed_key(context *ctx, int *key)
       if(get_alt_status(keycode_internal))
       {
         // SMZX modes 0 and 1 use the default palette
-        if(get_screen_mode() <= 1)
+        if(screen_mode <= 1)
         {
           default_palette();
         }
@@ -2017,9 +2377,69 @@ static boolean pal_ed_key(context *ctx, int *key)
           load_palette(mzx_res_get_by_id(SMZX_PAL));
         }
 
-        rebuild_palette(pal_ed->palette);
+        rebuild_palette(pal_ed->internal_palette);
         return true;
       }
+      break;
+    }
+
+    case IKEY_TAB:
+    {
+      swap_palettes(pal_ed);
+      return true;
+    }
+
+    case IKEY_i:
+    {
+      if(get_alt_status(keycode_internal))
+      {
+        // Make sure there aren't layers displaying over the UI.
+        destroy_unbound_cursors(pal_ed);
+
+        if(screen_mode == 3)
+        {
+          // Set these to active in case the user doesn't load them.
+          // Then, they'll just copy over themselves when stored again.
+          load_backup_indices(pal_ed->current_indices);
+
+          import_palette(ctx);
+
+          // Save the indices and reset them for display.
+          store_backup_indices(pal_ed->current_indices);
+          set_screen_mode(3);
+        }
+        else
+          import_palette(ctx);
+
+        rebuild_palette(pal_ed->internal_palette);
+        return true;
+      }
+      break;
+    }
+
+    case IKEY_x:
+    {
+      if(get_alt_status(keycode_internal))
+      {
+        // Make sure there aren't layers displaying over the UI.
+        destroy_unbound_cursors(pal_ed);
+
+        if(screen_mode == 3)
+        {
+          // Temporarily make these the active indices while exporting...
+          load_backup_indices(pal_ed->current_indices);
+
+          export_palette(ctx);
+
+          // Reset the indices for display.
+          set_screen_mode(3);
+        }
+        else
+          export_palette(ctx);
+
+        return true;
+      }
+      break;
     }
   }
 
@@ -2029,22 +2449,15 @@ static boolean pal_ed_key(context *ctx, int *key)
 /**
  * Clean up palette editor info and restore the screen on exit.
  */
-
 static void pal_ed_destroy(context *ctx)
 {
-  if(get_screen_mode() == 3)
-  {
-    // Apply the modified SMZX indices.
-    load_editor_indices();
-  }
-
+  reset_pal_ed_palettes((struct pal_ed_context *)ctx);
   restore_screen();
 }
 
 /**
  * Create and run the palette editor.
  */
-
 void palette_editor(context *parent)
 {
   struct pal_ed_context *pal_ed = ccalloc(1, sizeof(struct pal_ed_context));
@@ -2052,7 +2465,7 @@ void palette_editor(context *parent)
   int smzx_mode = get_screen_mode();
   struct context_spec spec;
 
-  rebuild_palette(pal_ed->palette);
+  init_pal_ed_palettes(pal_ed);
 
   memset(&spec, 0, sizeof(struct context_spec));
   spec.key      = pal_ed_key;
@@ -2074,14 +2487,6 @@ void palette_editor(context *parent)
     create_menu_16(pal_ed);
   }
 
-  if(smzx_mode == 3)
-  {
-    save_editor_indices();
-
-    // Reset the indices to default for display purposes.
-    set_screen_mode(3);
-  }
-
   if(startup == false)
   {
     minimal_help = editor_conf->palette_editor_hide_help;
@@ -2091,4 +2496,60 @@ void palette_editor(context *parent)
   m_show();
   cursor_off();
   save_screen();
+}
+
+/**
+ * Prompt the user to import a .PAL (and/or .PALIDX) file.
+ * NOTE: This is used by both the main editor and the palette editor.
+ */
+void import_palette(context *ctx)
+{
+  char filename_buffer[MAX_PATH];
+
+  // Palette
+  strcpy(filename_buffer, pal_filename);
+  if(!choose_file(ctx->world, pal_ext, filename_buffer,
+   "Choose palette to import", true))
+  {
+    strcpy(pal_filename, filename_buffer);
+    load_palette(filename_buffer);
+  }
+
+  // Indices (mode 3 only)
+  strcpy(filename_buffer, palidx_filename);
+  if((get_screen_mode() == 3) &&
+   !choose_file(ctx->world, idx_ext, filename_buffer,
+    "Choose indices to import (.PALIDX)", true))
+  {
+    strcpy(palidx_filename, filename_buffer);
+    load_index_file(filename_buffer);
+  }
+}
+
+/**
+ * Prompt the user to export a .PAL (and/or .PALIDX) file.
+ * NOTE: This is used by both the main editor and the palette editor.
+ */
+void export_palette(context *ctx)
+{
+  char filename_buffer[MAX_PATH];
+
+  // Palette
+  strcpy(filename_buffer, pal_filename);
+  if(!new_file(ctx->world, pal_ext, ".pal", filename_buffer,
+   "Export palette", true))
+  {
+    strcpy(pal_filename, filename_buffer);
+    save_palette(filename_buffer);
+  }
+
+  // Indices (mode 3 only)
+  strcpy(filename_buffer, palidx_filename);
+  if((get_screen_mode() == 3) &&
+   !new_file(ctx->world, idx_ext, ".palidx", filename_buffer,
+    "Export indices (.PALIDX)", true))
+  {
+    strcpy(palidx_filename, filename_buffer);
+    save_index_file(filename_buffer);
+  }
 }

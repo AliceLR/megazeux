@@ -58,8 +58,10 @@ var no_gl_switch = subopt("NO", 11);
 var ZIP = _yes("ZIP");
 var DMG = _yes("DMG");
 var LHA = _yes("LHA");
+var APK = _yes("APK");
 
 var xmp = std("xmp");
+var rad = std("RAD");
 var libvorbis = std("libvorbis");
 var tremor = std("tremor");
 var tremor_lowmem = std("tremor (lowmem)");
@@ -85,6 +87,7 @@ var fields =
   stack_protector:  "Stack Protector",
   layer_rendering:  "Layer Rendering",
   module_engine:    "Module Engine",
+  adlib_engine:     "Adlib Engine",
   ogg_vorbis:       "Ogg Vorbis",
   optimization:     "Optimization",
   sdl:              "SDL",
@@ -99,7 +102,7 @@ var fields =
   modular:          "MODULAR",
   png:              "PNG",
   x11:              "X11",
-  uthash:           "UTHASH",
+  hashtables:       "HASH TABLES",
   loadsave_meter:   "LOADSAVE_METER",
 };
 
@@ -120,6 +123,7 @@ var archs =
     visibility:       // Optimized visibility (See note 3)
     stack_protector:  // Is the stack protector enabled? (usually _FAULTY())
     module_engine:    // xmp or other
+    adlib_engine:     // rad
     ogg_vorbis:       // vorbis, tremor, tremor_lowmem or _FAULTY()
     optimization:     // speed or size
     sdl:              // Does this platform rely on SDL?
@@ -134,7 +138,7 @@ var archs =
     modular:          // Does this platform use modular builds?
     png:              // Does this platform build with libpng?
     x11:              // Can this platform link to X11?
-    uthash:           // Does this platform use uthash for counter lookups?
+    hashtables:       // Does this platform use hash tables for counter lookups?
     loadsave_meter:   // Does this platform ship with the loadsave meter enabled?
   },
 */
@@ -150,6 +154,7 @@ var archs =
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       tremor,
     optimization:     speed,
     sdl:              no_sdl_3ds,
@@ -159,22 +164,23 @@ var archs =
     software:         render_ctr,
     updater:          no_updater,
     png:              yes,
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   yes,
   },
 
   android:
   {
-    platform:         defunct("android"),
+    platform:         "android",
     description:      "Android",
     architecture:     "ARMv7-a (ELF) <br/> AArch64 (ELF) <br /> i686 (ELF) <br /> x86_64 (ELF)",
     endian:           "Little",
     toolchain:        "clang 8.0.2 <br /> binutils 2.27.0.20170315 <br /> bionic",
-    packaged:         _FAULTY("TBD"),
+    packaged:         APK,
     visibility:       yes,
     stack_protector:  _FAULTY("NO"),
     layer_rendering:  _FAULTY("NO"),
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
     sdl:              yes,
@@ -203,6 +209,7 @@ var archs =
     stack_protector:  yes,
     layer_rendering:  yes,
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
     sdl:              yes,
@@ -216,6 +223,34 @@ var archs =
     updater:          no_updater,
     modular:          yes,
     png:              yes,
+    hashtables:       yes,
+    loadsave_meter:   no,
+  },
+
+  emscripten:
+  {
+    platform:         "emscripten",
+    description:      "HTML5 (Emscripten)",
+    architecture:     "JavaScript <br /> WebAssembly",
+    endian:           "Little",
+    toolchain:        "clang 6.0.1 <br /> emsdk 1.38.36",
+    packaged:         subopt("NO"),
+    stack_protector:  _FAULTY(),
+    layer_rendering:  yes,
+    module_engine:    xmp,
+    ogg_vorbis:       libvorbis,
+    optimization:     speed,
+    sdl:              yes,
+    editor:           _FAULTY(),
+    helpsys:          yes,
+    audio:            yes,
+    software:         yes,
+    gl:               no,
+    overlay:          yes,
+    glsl:             yes,
+    updater:          no,
+    modular:          no,
+    png:              no,
     uthash:           yes,
     loadsave_meter:   no,
   },
@@ -232,6 +267,7 @@ var archs =
     stack_protector:  no_mingw_stack_protector,
     layer_rendering:  yes,
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
     sdl:              yes,
@@ -245,7 +281,7 @@ var archs =
     updater:          yes,
     modular:          yes,
     png:              yes,
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   no,
   },
 
@@ -261,6 +297,7 @@ var archs =
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
     sdl:              yes,
@@ -274,7 +311,7 @@ var archs =
     updater:          yes,
     modular:          yes,
     png:              yes,
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   no,
   },
 
@@ -289,6 +326,7 @@ var archs =
     stack_protector:  _FAULTY(),
     layer_rendering:  _FAULTY(),
     module_engine:    _FAULTY(),
+    adlib_engine:     _FAULTY(),
     ogg_vorbis:       _FAULTY(),
     optimization:     size,
     sdl:              no,
@@ -298,7 +336,7 @@ var archs =
     software:         render_nds,
     updater:          no_updater,
     png:              no_low_memory,
-    uthash:           no_low_memory,
+    hashtables:       no_low_memory,
     loadsave_meter:   yes,
   },
 
@@ -313,6 +351,7 @@ var archs =
     stack_protector:  _FAULTY(),
     layer_rendering:  yes_but_8bpp,
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       tremor_lowmem,
     optimization:     size,
     sdl:              yes,
@@ -322,7 +361,7 @@ var archs =
     software:         yes,
     updater:          no_updater,
     png:              yes,
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   yes,
   },
 
@@ -349,7 +388,7 @@ var archs =
     glsl:             no_gl_switch,
     updater:          no_updater,
     png:              yes,
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   yes,
   },
 
@@ -365,6 +404,7 @@ var archs =
     stack_protector:  yes,
     layer_rendering:  yes,
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
     sdl:              yes,
@@ -379,7 +419,7 @@ var archs =
     modular:          yes,
     png:              yes,
     x11:              yes,
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   no,
   },
 
@@ -394,6 +434,7 @@ var archs =
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       tremor,
     optimization:     speed,
     sdl:              optional_sdl_wii,
@@ -403,7 +444,7 @@ var archs =
     software:         render_gx,
     updater:          no_updater,
     png:              yes,
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   yes,
   },
 
@@ -419,6 +460,7 @@ var archs =
     stack_protector:  yes,
     layer_rendering:  yes,
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
     sdl:              yes,
@@ -432,7 +474,7 @@ var archs =
     updater:          no_updater,
     modular:          yes,
     png:              yes,
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   no,
   },
 
@@ -450,6 +492,7 @@ var archs =
     stack_protector:  yes,
     layer_rendering:  yes,
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
     sdl:              yes,
@@ -463,10 +506,10 @@ var archs =
     updater:          no_updater,
     modular:          yes,
     png:              yes,
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   no,
   },
-
+  
   gp2x:
   {
     platform:         defunct("gp2x"),
@@ -478,6 +521,7 @@ var archs =
     stack_protector:  _FAULTY(),
     layer_rendering:  _FAULTY(),
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       tremor_lowmem,
     optimization:     size,
     sdl:              yes,
@@ -487,7 +531,7 @@ var archs =
     software:         render_gp2x,
     updater:          no_updater,
     png:              yes,
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   yes,
   },
 
@@ -503,6 +547,7 @@ var archs =
     stack_protector:  yes,
     layer_rendering:  yes,
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       tremor_lowmem,
     optimization:     speed,
     sdl:              yes,
@@ -516,7 +561,7 @@ var archs =
     updater:          no_updater,
     png:              yes,
     x11:              subopt(),
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   no,
   },
 };
@@ -753,7 +798,7 @@ conjunction with C++ exceptions with some MinGW compilers.
 <li><a name="note5"/>The editor and help system features are disabled
 to conserve cache on embedded platforms. The features build and work
 on these platforms, but they are basically unusable due to the lack of any
-on-screen keyboard. Additionally, uthash has been disabled on the NDS to
+on-screen keyboard. Additionally, hash tables have been disabled on the NDS to
 conserve memory.
 </li>
 
@@ -785,8 +830,9 @@ uses the SDL software renderer, but this port does not currently support a color
 depth greater than 8bpp, so the UI palette will not be protected in SMZX mode.
 </li>
 
-<li><a name="note11"/>The GL renderers work on the Switch but have been
-disabled because they cause system crashes when exiting MegaZeux.
+<li><a name="note12"/>The GL renderers work on the Switch but have been
+disabled because they cause system crashes when exiting MegaZeux. They generally
+seem to perform worse than softscale, so there isn't much reason to fix this.
 </li>
 </ol>
 

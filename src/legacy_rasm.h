@@ -69,7 +69,8 @@ CORE_LIBSPEC int get_color(char *cmd_line);
 
 extern const char special_first_char[256];
 
-int validate_legacy_bytecode(char *bc, int program_length);
+// This command will reallocate the program as-needed, but it won't free it.
+boolean validate_legacy_bytecode(char **_bc, int *_program_length);
 
 #ifdef CONFIG_DEBYTECODE
 
@@ -79,10 +80,13 @@ CORE_LIBSPEC int legacy_assemble_line(char *cpos, char *output_buffer, char *err
 #else // !CONFIG_DEBYTECODE
 
 char *assemble_file(char *name, int *size);
-char *assemble_file_mem(char *src, int len, int *size);
+char *assemble_program(char *src, int len, int *size);
 
 void disassemble_file(char *name, char *program, int program_length,
  int allow_ignores, int base);
+CORE_LIBSPEC void disassemble_program(char *program, int program_length,
+ char **_source, int *_source_length, struct command_mapping **_command_map,
+ int *_command_map_length);
 
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC int legacy_assemble_line(char *cpos, char *output_buffer,
@@ -90,9 +94,6 @@ CORE_LIBSPEC int legacy_assemble_line(char *cpos, char *output_buffer,
 CORE_LIBSPEC int disassemble_line(char *cpos, char **next, char *output_buffer,
  char *error_buffer, int *total_bytes, int print_ignores, char *arg_types,
  int *arg_count, int base);
-CORE_LIBSPEC void disassemble_and_map_program(char *program, int program_length,
- char **_source, int *_source_length, struct command_mapping **_command_map,
- int *_command_map_length);
 CORE_LIBSPEC const struct search_entry_short *find_argument(char *name);
 CORE_LIBSPEC void print_color(int color, char *color_buffer);
 CORE_LIBSPEC int unescape_char(char *dest, char c);

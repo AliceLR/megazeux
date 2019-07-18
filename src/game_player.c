@@ -87,6 +87,9 @@ void player_switch_bomb_type(struct world *mzx_world)
 {
   struct board *cur_board = mzx_world->current_board;
 
+  if(!mzx_world->active || !cur_board)
+    return;
+
   mzx_world->bomb_type ^= 1;
   if(!cur_board->player_attack_locked && cur_board->can_bomb)
   {
@@ -790,6 +793,8 @@ void grab_item(struct world *mzx_world, int item_x, int item_y, int src_dir)
       else
       {
         play_sfx(mzx_world, SFX_OPEN_DOOR);
+        // The player might have been pushed by the door.
+        find_player(mzx_world);
       }
       break;
     }

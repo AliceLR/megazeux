@@ -472,15 +472,16 @@ enum world_prop
   WPROP_C_DIVISIONS               = 0x8082, //   4
   WPROP_MAX_SAMPLES               = 0x8090, //   4
   WPROP_SMZX_MESSAGE              = 0x8091, //   1
+  WPROP_JOY_SIMULATE_KEYS         = 0x8092, //   1
 };
 
 
-// All sprite fields are saved as dwords, so bound them as such
+// All sprite fields are saved as dwords (except SET_ID), so bound them as such
 
-#define COUNT_SPRITE_PROPS        15
-#define BOUND_SPRITE_PROPS        60
-#define COUNT_SPRITE_ONCE_PROPS   3
-#define BOUND_SPRITE_ONCE_PROPS   12
+#define COUNT_SPRITE_PROPS        16
+#define BOUND_SPRITE_PROPS        61
+#define COUNT_SPRITE_ONCE_PROPS   5
+#define BOUND_SPRITE_ONCE_PROPS   16 // + (collision_count * 4)
 
 #define SPRITE_PROPS_SIZE                       \
 (                                               \
@@ -500,7 +501,7 @@ enum sprite_prop
   SPROP_EOF                       = 0x00,
 
   // For each sprite
-  SPROP_SET_ID                    = 0x01, // 4, used to select a sprite #
+  SPROP_SET_ID                    = 0x01, // 1, used to select a sprite #
   SPROP_X                         = 0x02, // 2 (ignore size; we save as dwords)
   SPROP_Y                         = 0x03, // 2
   SPROP_REF_X                     = 0x04, // 2
@@ -515,11 +516,14 @@ enum sprite_prop
   SPROP_COL_HEIGHT                = 0x0D, // 1
   SPROP_TRANSPARENT_COLOR         = 0x0E, // 4
   SPROP_CHARSET_OFFSET            = 0x0F, // 4
+  SPROP_Z                         = 0x10, // 4
 
   // Only once
   SPROP_ACTIVE_SPRITES            = 0x8000, // 1
   SPROP_SPRITE_Y_ORDER            = 0x8001, // 1
   SPROP_COLLISION_COUNT           = 0x8002, // 2
+  SPROP_COLLISION_LIST            = 0x8003, // collision count * 4
+  SPROP_SPRITE_NUM                = 0x8004, // 4
 };
 
 
@@ -640,6 +644,7 @@ enum robot_prop {
 //RPROP_PROGRAM_ID                = 0x0005, // 4
 
 #ifdef CONFIG_DEBYTECODE
+  RPROP_PROGRAM_LABEL_ZAPS        = 0x00FD, // variable
   RPROP_PROGRAM_SOURCE            = 0x00FE, // variable
 #endif
   RPROP_PROGRAM_BYTECODE          = 0x00FF, // variable

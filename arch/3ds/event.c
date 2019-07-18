@@ -307,3 +307,9 @@ boolean update_hid(void)
 
   return retval;
 }
+
+void initialize_joysticks(void)
+{
+  struct buffered_status *status = store_status();
+  joystick_set_active(status, 0, true);
+}

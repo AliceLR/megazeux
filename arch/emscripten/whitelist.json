@@ -1,0 +1,108 @@
+[
+	"_main",
+		"_core_run",
+			"_core_resume",
+			"_core_update",
+				"_help_system",
+			"_core_draw",
+				"_game_draw",
+
+	"_title_key",
+		"_load_savegame_selection",
+
+	"_game_key",
+		"_new_file",
+			"_file_manager",
+		"_confirm",
+
+	"_confirm",
+		"_run_dialog",
+
+	"_game_settings",
+		"_run_dialog",
+
+	"_core_resume",
+		"_title_resume",
+			"_load_world_title_selection",
+
+	"_load_world_title_selection",
+		"_load_world_title",
+			"_reload_world",
+				"_try_load_world",
+					"_try_load_legacy_world",
+						"_validate_legacy_world_file",
+							"_confirm",
+		"_choose_file_ch",
+	"_load_savegame_selection",
+		"_choose_file_ch",
+
+	"_choose_file_ch",
+		"_file_manager",
+			"_confirm_input",
+			"_idle_input_box",
+			"_run_dialog",
+
+	"_run_dialog",
+		"_help_system",
+		"_key_file_selector",
+			"_run_dialog",
+
+	"_core_update",
+		"_game_idle",
+
+	"_update_event_status",
+	"_update_event_status_delay",
+		"_delay",
+	"_update_event_status_intake",
+		"_wait_event",
+
+	"_game_draw",
+		"_update_world",
+			"_update_player_input",
+			"_update_player_wind",
+			"_update_player_under",
+			"_update_board",
+				"_run_robot",
+
+	"_update_player_input",
+		"_move_player",
+	"_update_player_wind",
+		"_move_player",
+	"_update_player_under",
+		"_move_player",
+
+	"_move_player",
+		"_grab_item",
+	"_grab_item",
+		"_scroll_edit",
+
+	"_run_robot",
+		"_ask_yes_no",
+			"_run_dialog",
+		"_input_window",
+		"_move_player",
+		"_grab_item",
+		"_robot_box_display",
+
+	"_confirm_input",
+		"_idle_input_box",
+
+	"_input_window",
+		"_intake",
+	"_click_input_box",
+		"_intake",
+	"_idle_input_box",
+		"_intake",
+
+	"_char_selection",
+		"_char_selection_ext",
+
+	"_intake",
+		"_char_selection",
+		"_intake_key",
+			"_char_selection",
+	"_scroll_edit",
+		"_intake",
+	"_help_system",
+		"_help_display"
+]

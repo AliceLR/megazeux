@@ -83,6 +83,8 @@ void create_blank_robot(struct robot *cur_robot)
   cur_robot->last_shot_dir = 0;
   cur_robot->xpos = -1;
   cur_robot->ypos = -1;
+  cur_robot->compat_xpos = -1;
+  cur_robot->compat_ypos = -1;
   cur_robot->status = 0;
   cur_robot->used = 1;
 
@@ -117,17 +119,16 @@ void create_blank_robot_program(struct robot *cur_robot)
 #endif
 }
 
-#ifdef CONFIG_DEBYTECODE
-// Forward declaration
-static int get_source_command_map_index(struct robot *cur_robot,
- int source_pos);
-#endif
-
 #define err_if_skipped(idn) if(last_ident < idn) { goto err_invalid; }
 
 static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_robot,
  struct memfile *mf, int savegame, int file_version)
 {
+  char *program_legacy_bytecode = NULL;
+#ifdef CONFIG_DEBYTECODE
+  char *saved_label_zaps = NULL;
+  int num_label_zaps = 0;
+#endif
   struct memfile prop;
   int last_ident = -1;
   int ident;
@@ -155,12 +156,14 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
 
       case RPROP_XPOS:
         err_if_skipped(RPROP_ROBOT_CHAR);
-        cur_robot->xpos = (signed short) load_prop_int(size, &prop);
+        cur_robot->xpos = (signed short)load_prop_int(size, &prop);
+        cur_robot->compat_xpos = cur_robot->xpos;
         break;
 
       case RPROP_YPOS:
         err_if_skipped(RPROP_XPOS);
         cur_robot->ypos = (signed short) load_prop_int(size, &prop);
+        cur_robot->compat_ypos = cur_robot->ypos;
         break;
 
       // Legacy world, now save
@@ -236,8 +239,20 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
         cur_robot->can_goopwalk = load_prop_int(size, &prop);
         break;
 
-      // Slated for separation
+      // Source/bytecode are slated for separation from these files.
+      // When that happens, it might also be good to merge all robots into
+      // one file per board.
 #ifdef CONFIG_DEBYTECODE
+
+      case RPROP_PROGRAM_LABEL_ZAPS:
+      {
+        err_if_skipped(RPROP_YPOS);
+
+        // These have to be handled after loading the program.
+        saved_label_zaps = (char *)prop.start;
+        num_label_zaps = size;
+        break;
+      }
 
       case RPROP_PROGRAM_SOURCE:
       {
@@ -266,19 +281,20 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
         // This field should never be found in files saved in >= VERSION_SOURCE.
         if(file_version < VERSION_SOURCE)
         {
-          char *program_legacy_bytecode = (char *)prop.start;
-          int v_size;
+          int v_size = size;
+          program_legacy_bytecode = cmalloc(size);
 
-          v_size = validate_legacy_bytecode(program_legacy_bytecode, size);
+          mfread(program_legacy_bytecode, size, 1, &prop);
 
-          if(v_size < 0)
+          if(!validate_legacy_bytecode(&program_legacy_bytecode, &v_size))
+          {
+            free(program_legacy_bytecode);
             goto err_invalid;
+          }
 
           cur_robot->program_bytecode = NULL;
           cur_robot->program_bytecode_length = 0;
 
-          // FIXME need legacy bytecode map in addition to modern bytecode
-          // map. How awful!
           cur_robot->program_source =
            legacy_disassemble_program(program_legacy_bytecode, v_size,
             &(cur_robot->program_source_length), true, 10);
@@ -297,25 +313,18 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
 
         if(size > 0)
         {
-          int v_size;
+          int v_size = size;
           cur_robot->program_bytecode = cmalloc(size);
 
           mfread(cur_robot->program_bytecode, size, 1, &prop);
 
-          v_size = validate_legacy_bytecode(cur_robot->program_bytecode, size);
-
-          if(v_size <= 0)
+          if(!validate_legacy_bytecode(&cur_robot->program_bytecode, &v_size))
             goto err_invalid;
-
-          else if(v_size < size)
-            cur_robot->program_bytecode =
-             crealloc(cur_robot->program_bytecode, v_size);
 
           cur_robot->program_bytecode_length = v_size;
 
           // Create the label cache for this robot
-          cur_robot->label_list =
-           cache_robot_labels(cur_robot, &cur_robot->num_labels);
+          cache_robot_labels(cur_robot);
         }
         break;
       }
@@ -338,30 +347,48 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
   }
   else
 
-  if(savegame)
+  if(savegame && cur_robot->cur_prog_line > 1)
   {
     // The cur_prog_line value loaded above was actually a source code position
     // (or worse, a legacy bytecode position). Compile the source now and then
     // determine the program offset using the generated command map.
+    //
+    // Note this doesn't need to be done if cur_prog_line is 0 (robot ended) or
+    // 1 (this is always the first command).
+
+    int cmd_num = 0;
+
     prepare_robot_bytecode(mzx_world, cur_robot);
 
-    if(file_version >= VERSION_SOURCE)
+    if(file_version < VERSION_SOURCE)
     {
-      int source_pos = cur_robot->cur_prog_line;
-      int map_pos = get_source_command_map_index(cur_robot, source_pos);
-
-      cur_robot->cur_prog_line = cur_robot->command_map[map_pos].bc_pos;
+      // FIXME the following relies upon the new bytecode having the same number
+      // of commands as the old bytecode, which SHOULD be true, but it is not.
+      // Uncomment this when rasm gets the ability to compile comments and
+      // blank lines into NOPs.
+      cmd_num = 1;
+      cur_robot->pos_within_line = 0;
+      /*
+      if(program_legacy_bytecode)
+        cmd_num = get_legacy_bytecode_command_num(program_legacy_bytecode,
+         cur_robot->cur_prog_line);
+      */
     }
     else
-    {
-      // FIXME there's actually a way to do this that would involve generating
-      // a temporary legacy-to-source map in addition to the source-to-bytecode
-      // map. That ought to be created during legacy disassembly and can wait
-      // until programs are split out from this mess.
-      if(cur_robot->cur_prog_line)
-        cur_robot->cur_prog_line = 1;
+      cmd_num = cur_robot->cur_prog_line;
 
-      cur_robot->pos_within_line = 0;
+    cur_robot->cur_prog_line = command_num_to_program_pos(cur_robot, cmd_num);
+  }
+
+  if(savegame && saved_label_zaps)
+  {
+    // Apply saved label zap data.
+    prepare_robot_bytecode(mzx_world, cur_robot);
+
+    if(num_label_zaps == cur_robot->num_labels)
+    {
+      for(i = 0; i < num_label_zaps; i++)
+        cur_robot->label_list[i]->zapped = saved_label_zaps[i];
     }
   }
 
@@ -372,6 +399,7 @@ static int load_robot_from_memory(struct world *mzx_world, struct robot *cur_rob
 
 #endif
 
+  free(program_legacy_bytecode);
   return 0;
 
 err_invalid:
@@ -385,6 +413,7 @@ err_invalid:
   cur_robot->cur_prog_line = 0;
 
   // Trigger error message
+  free(program_legacy_bytecode);
   return -1;
 }
 
@@ -575,6 +604,9 @@ size_t save_robot_calculate_size(struct world *mzx_world,
 
   size += cur_robot->program_source_length;
 
+  if(savegame)
+    size += PROP_HEADER_SIZE + cur_robot->num_labels;
+
 #else // !CONFIG_DEBYTECODE
 
   size += cur_robot->program_bytecode_length;
@@ -629,14 +661,16 @@ static void save_robot_to_memory(struct robot *cur_robot,
 #ifdef CONFIG_DEBYTECODE
 
     // The current bytecode offset isn't very useful when saved with
-    // source code. Save the current source offset instead.
-    if(cur_robot->command_map)
+    // source code. Save the command number within the program instead.
+    program_line = get_program_command_num(cur_robot);
+
+    // Label zaps.
+    save_prop_v(RPROP_PROGRAM_LABEL_ZAPS, cur_robot->num_labels, &prop, mf);
+    for(i = 0; i < cur_robot->num_labels; i++)
     {
-      int map_pos = get_current_command_map_index(cur_robot);
-      program_line = cur_robot->command_map[map_pos].src_pos;
+      struct label *cur = cur_robot->label_list[i];
+      prop.start[i] = cur->zapped;
     }
-    else
-      program_line = -1;
 
 #endif // CONFIG_DEBYTECODE
 
@@ -793,7 +827,7 @@ static int cmp_labels(const void *dest, const void *src)
 // really be done when robots are assembled, rather than when they're loaded.
 // So it's bundled with the function for that.
 
-struct label **cache_robot_labels(struct robot *robot, int *num_labels)
+void cache_robot_labels(struct robot *cur_robot)
 {
   int labels_allocated = 16;
   int labels_found = 0;
@@ -801,11 +835,11 @@ struct label **cache_robot_labels(struct robot *robot, int *num_labels)
   int next;
   int i;
 
-  char *robot_program = robot->program_bytecode;
+  char *robot_program = cur_robot->program_bytecode;
   struct label **label_list = ccalloc(16, sizeof(struct label *));
   struct label *current_label;
 
-  for(i = 1; i < (robot->program_bytecode_length - 1); i++)
+  for(i = 1; i < (cur_robot->program_bytecode_length - 1); i++)
   {
     // Is it a label?
     cmd = robot_program[i + 1];
@@ -818,21 +852,21 @@ struct label **cache_robot_labels(struct robot *robot, int *num_labels)
 
       current_label->cmd_position = i + 1;
 
-      if(next >= (robot->program_bytecode_length - 2))
+      if(next >= (cur_robot->program_bytecode_length - 2))
         current_label->position = 0;
       else
       {
         //compatibility fix for 2.80 to 2.83
-        if(robot->world_version >= V280 && robot->world_version <= V283)
+        if(cur_robot->world_version >= V280 && cur_robot->world_version <= V283)
           current_label->position = next + 1;
         else
           current_label->position = i;
       }
 
       if(cmd == ROBOTIC_CMD_ZAPPED_LABEL)
-        current_label->zapped = 1;
+        current_label->zapped = true;
       else
-        current_label->zapped = 0;
+        current_label->zapped = false;
 
       // Do we need more room?
       if(labels_found == labels_allocated)
@@ -851,9 +885,10 @@ struct label **cache_robot_labels(struct robot *robot, int *num_labels)
 
   if(!labels_found)
   {
-    *num_labels = 0;
+    cur_robot->label_list = NULL;
+    cur_robot->num_labels = 0;
     free(label_list);
-    return NULL;
+    return;
   }
 
   if(labels_found != labels_allocated)
@@ -865,27 +900,30 @@ struct label **cache_robot_labels(struct robot *robot, int *num_labels)
   // Now sort the list
   qsort(label_list, labels_found, sizeof(struct label *), cmp_labels);
 
-  *num_labels = labels_found;
-  return label_list;
+  cur_robot->label_list = label_list;
+  cur_robot->num_labels = labels_found;
+  return;
 }
 
 #ifdef CONFIG_DEBYTECODE
 static
 #endif
-void clear_label_cache(struct label **label_list, int num_labels)
+void clear_label_cache(struct robot *cur_robot)
 {
   int i;
 
-  if(label_list)
+  if(cur_robot->label_list)
   {
-    for(i = 0; i < num_labels; i++)
+    for(i = 0; i < cur_robot->num_labels; i++)
     {
-      free(label_list[i]);
+      free(cur_robot->label_list[i]);
     }
 
-    free(label_list);
-    label_list = NULL;
+    free(cur_robot->label_list);
   }
+
+  cur_robot->label_list = NULL;
+  cur_robot->num_labels = 0;
 }
 
 void clear_robot_contents(struct robot *cur_robot)
@@ -894,11 +932,9 @@ void clear_robot_contents(struct robot *cur_robot)
   cur_robot->stack = NULL;
 
 #ifdef CONFIG_EDITOR
-
   free(cur_robot->command_map);
   cur_robot->command_map = NULL;
   cur_robot->command_map_length = 0;
-
 #endif
 
   // If it was created by the game or loaded via a save file
@@ -910,8 +946,7 @@ void clear_robot_contents(struct robot *cur_robot)
   // It could be in the editor, or possibly it was never executed.
   if(cur_robot->program_bytecode)
   {
-    if(cur_robot->used)
-      clear_label_cache(cur_robot->label_list, cur_robot->num_labels);
+    clear_label_cache(cur_robot);
     free(cur_robot->program_bytecode);
     cur_robot->program_bytecode = NULL;
     cur_robot->program_bytecode_length = 0;
@@ -1006,6 +1041,29 @@ void reallocate_scroll(struct scroll *scroll, size_t size)
   scroll->mesg_size = size;
 }
 
+/**
+ * Due to MZX bugs in older versions the xpos/ypos for in-game features
+ * may not be the robot's actual position on the board. This function
+ * will return compatibility positions for the affected versions or
+ * the robot's real board position otherwise.
+ */
+void get_robot_position(struct robot *cur_robot, int *xpos, int *ypos)
+{
+  if(cur_robot)
+  {
+    if(cur_robot->world_version >= V292)
+    {
+      *xpos = cur_robot->xpos;
+      *ypos = cur_robot->ypos;
+    }
+    else
+    {
+      *xpos = cur_robot->compat_xpos;
+      *ypos = cur_robot->compat_ypos;
+    }
+  }
+}
+
 int get_robot_id(struct board *src_board, const char *name)
 {
   int first, last;
@@ -1014,10 +1072,15 @@ int get_robot_id(struct board *src_board, const char *name)
   {
     struct robot *cur_robot = src_board->robot_list_name_sorted[first];
     // This is a cheap trick for now since robots don't have
-    // a back-reference for ID's
-    int offset = cur_robot->xpos +
-     (cur_robot->ypos * src_board->board_width);
-    enum thing d_id = (enum thing)src_board->level_id[offset];
+    // a back-reference for IDs
+    enum thing d_id;
+    int offset;
+    int thisx = 0;
+    int thisy = 0;
+    get_robot_position(cur_robot, &thisx, &thisy);
+
+    offset = thisx + (thisy * src_board->board_width);
+    d_id = (enum thing)src_board->level_id[offset];
 
     if(is_robot(d_id))
     {
@@ -2256,89 +2319,6 @@ int move_dir(struct board *src_board, int *x, int *y, enum dir dir)
   return 0;
 }
 
-// Returns the numeric value pointed to OR the numeric value represented
-// by the counter string pointed to. (the ptr is at the param within the
-// command)
-// Sign extends the result, for now...
-
-int parse_param(struct world *mzx_world, char *program, int id)
-{
-  char ibuff[ROBOT_MAX_TR];
-
-  if(program[0] == 0)
-  {
-    // Numeric
-    return (signed short)((int)program[1] | (int)(program[2] << 8));
-  }
-
-  // Expressions - Exo
-  if((program[1] == '(') && mzx_world->version >= V268)
-  {
-    char *e_ptr = program + 2;
-    int val, error;
-
-    val = parse_expression(mzx_world, &e_ptr, &error, id);
-    if(!error && !(*e_ptr))
-      return val;
-  }
-
-  tr_msg(mzx_world, program + 1, id, ibuff);
-
-  return get_counter(mzx_world, ibuff, id);
-}
-
-// These will always return numeric values
-enum thing parse_param_thing(struct world *mzx_world, char *program)
-{
-  return (enum thing)
-   ((int)program[1] | (int)(program[2] << 8));
-}
-
-enum dir parse_param_dir(struct world *mzx_world, char *program)
-{
-  return (enum dir)
-   ((int)program[1] | (int)(program[2] << 8));
-}
-
-enum equality parse_param_eq(struct world *mzx_world, char *program)
-{
-  return (enum equality)
-   ((int)program[1] | (int)(program[2] << 8));
-}
-
-enum condition parse_param_cond(struct world *mzx_world, char *program,
- enum dir *direction)
-{
-  *direction = (enum dir)program[2];
-  return (enum condition)program[1];
-}
-
-// Returns location of next parameter (pos is loc of current parameter)
-int next_param(char *ptr, int pos)
-{
-  if(ptr[pos])
-  {
-    return ptr[pos] + 1;
-  }
-  else
-  {
-    return 3;
-  }
-}
-
-char *next_param_pos(char *ptr)
-{
-  int index = *ptr;
-  if(index)
-  {
-    return ptr + index + 1;
-  }
-  else
-  {
-    return ptr + 3;
-  }
-}
-
 // Internal only. NOTE- IF WE EVER ALLOW ZAPPING OF LABELS NOT IN CURRENT
 // ROBOT, USE A COPY OF THE *LABEL BEFORE THE PREPARE_ROBOT_MEM!
 
@@ -2355,7 +2335,7 @@ int restore_label(struct robot *cur_robot, char *label)
   if(dest_label)
   {
     cur_robot->program_bytecode[dest_label->cmd_position] = ROBOTIC_CMD_LABEL;
-    dest_label->zapped = 0;
+    dest_label->zapped = false;
     return 1;
   }
 
@@ -2369,24 +2349,45 @@ int zap_label(struct robot *cur_robot, char *label)
   if(dest_label)
   {
     cur_robot->program_bytecode[dest_label->cmd_position] = ROBOTIC_CMD_ZAPPED_LABEL;
-    dest_label->zapped = 1;
+    dest_label->zapped = true;
     return 1;
   }
 
   return 0;
 }
 
-// Turns a color (including those w/??) to a real color (0-255)
-int fix_color(int color, int def)
+/**
+ * Return true if this command can be displayed/skipped in the robot box.
+ * FIXME this does NOT allow zapped labels; when zapping stops modifying the
+ * bytecode, special handling needs to be added for labels. This means access
+ * to the robot's label cache HERE.
+ */
+boolean is_robot_box_command(int cmd)
 {
-  if(color < 256)
-    return color;
-  if(color < 272)
-    return (color & 0x0F) + (def & 0xF0);
-  if(color < 288)
-    return ((color - 272) << 4) + (def & 0x0F);
+  return
+   (cmd == ROBOTIC_CMD_BLANK_LINE) ||
+   (cmd == ROBOTIC_CMD_MESSAGE_BOX_LINE) ||
+   (cmd == ROBOTIC_CMD_MESSAGE_BOX_OPTION) ||
+   (cmd == ROBOTIC_CMD_MESSAGE_BOX_MAYBE_OPTION) ||
+   (cmd == ROBOTIC_CMD_LABEL) ||
+   (cmd == ROBOTIC_CMD_MESSAGE_BOX_COLOR_LINE) ||
+   (cmd == ROBOTIC_CMD_MESSAGE_BOX_CENTER_LINE) ||
+   // While executing, the robot box temporarily replaces inaccessible options
+   // with this dummy command.
+   (cmd == ROBOTIC_CMD_UNUSED_249);
+}
 
-  return def;
+/**
+ * Return true if this command should be skipped over when scrolling instead
+ * of displaying as a blank line.
+ *
+ * FIXME this does NOT allow zapped labels; when zapping stops modifying the
+ * bytecode, special handling needs to be added for labels. This means access
+ * to the robot's label cache HERE.
+ */
+static boolean is_robot_box_skip_command(int cmd)
+{
+  return (cmd == ROBOTIC_CMD_LABEL) || (cmd == ROBOTIC_CMD_UNUSED_249);
 }
 
 static int robot_box_down(char *program, int pos, int count)
@@ -2410,15 +2411,13 @@ static int robot_box_down(char *program, int pos, int count)
       else
       {
         cur_cmd = program[pos + 1];
-        if(((cur_cmd < 103) && (cur_cmd != 47)) ||
-         ((cur_cmd > 106) && (cur_cmd < 116)) ||
-         ((cur_cmd > 117) && (cur_cmd != 249)))
+        if(!is_robot_box_command(cur_cmd))
         {
           pos = old_pos;
           done = 1;
         }
       }
-    } while(((cur_cmd == 106) || (cur_cmd == 249)) && (!done));
+    } while(is_robot_box_skip_command(cur_cmd) && (!done));
 
     if(i == 100000)
       i = 99999;
@@ -2448,15 +2447,13 @@ static int robot_box_up(char *program, int pos, int count)
       {
         pos -= program[pos - 1] + 2;
         cur_cmd = program[pos + 1];
-        if(((cur_cmd < 103) && (cur_cmd != 47)) ||
-         ((cur_cmd > 106) && (cur_cmd < 116)) ||
-         ((cur_cmd > 117) && (cur_cmd != 249)))
+        if(!is_robot_box_command(cur_cmd))
         {
           pos = old_pos;
           done = 1;
         }
       }
-    } while(((cur_cmd == 106) || (cur_cmd == 249)) && (!done));
+    } while(is_robot_box_skip_command(cur_cmd) && (!done));
 
     if(i == 100000)
       i = 99999;
@@ -2501,7 +2498,7 @@ static void display_robot_line(struct world *mzx_world, char *program,
 
   switch(program[1])
   {
-    case 103: // Normal message
+    case ROBOTIC_CMD_MESSAGE_BOX_LINE: // Normal message
     {
       // On the off-chance something actually relies on this bug...
       boolean allow_tabs =
@@ -2513,7 +2510,7 @@ static void display_robot_line(struct world *mzx_world, char *program,
       break;
     }
 
-    case 104: // Option
+    case ROBOTIC_CMD_MESSAGE_BOX_OPTION: // Option
     {
       // Skip over label...
       // next is pos of string
@@ -2525,7 +2522,7 @@ static void display_robot_line(struct world *mzx_world, char *program,
       break;
     }
 
-    case 105: // Counter-based option
+    case ROBOTIC_CMD_MESSAGE_BOX_MAYBE_OPTION: // Counter-based option
     {
       // Check counter
       int val = parse_param(mzx_world, program + 2, id);
@@ -2543,7 +2540,7 @@ static void display_robot_line(struct world *mzx_world, char *program,
       break;
     }
 
-    case 116: // Colored message
+    case ROBOTIC_CMD_MESSAGE_BOX_COLOR_LINE: // Colored message
     {
       tr_msg(mzx_world, program + 3, id, ibuff);
       ibuff[64 + num_ccode_chars(ibuff)] = 0; // Clip
@@ -2551,7 +2548,7 @@ static void display_robot_line(struct world *mzx_world, char *program,
       break;
     }
 
-    case 117: // Centered message
+    case ROBOTIC_CMD_MESSAGE_BOX_CENTER_LINE: // Centered message
     {
       int length, x_position;
       tr_msg(mzx_world, program + 3, id, ibuff);
@@ -2563,7 +2560,7 @@ static void display_robot_line(struct world *mzx_world, char *program,
     }
   }
 
-  // Others, like 47 and 106, are blank lines
+  // Others, like ROBOTIC_CMD_BLANK_LINE and ROBOTIC_CMD_LABEL, are blank lines
 }
 
 static void robot_frame(struct world *mzx_world, char *program, int id)
@@ -2641,17 +2638,17 @@ void robot_box_display(struct world *mzx_world, char *program,
   select_layer(UI_LAYER);
 
   // Scan section and mark all invalid counter-controlled options as codes
-  // 249.
+  // ROBOTIC_CMD_UNUSED_249.
 
   do
   {
-    if(program[pos + 1] == 249)
-      program[pos + 1] = 105;
+    if(program[pos + 1] == ROBOTIC_CMD_UNUSED_249)
+      program[pos + 1] = ROBOTIC_CMD_MESSAGE_BOX_MAYBE_OPTION;
 
-    if(program[pos + 1] == 105)
+    if(program[pos + 1] == ROBOTIC_CMD_MESSAGE_BOX_MAYBE_OPTION)
     {
       if(!parse_param(mzx_world, program + (pos + 2), id))
-        program[pos + 1] = 249;
+        program[pos + 1] = ROBOTIC_CMD_UNUSED_249;
     }
 
     pos += program[pos] + 2;
@@ -2662,13 +2659,13 @@ void robot_box_display(struct world *mzx_world, char *program,
   // Backwards
   do
   {
-    if(program[pos + 1] == 249)
-      program[pos + 1] = 105;
+    if(program[pos + 1] == ROBOTIC_CMD_UNUSED_249)
+      program[pos + 1] = ROBOTIC_CMD_MESSAGE_BOX_MAYBE_OPTION;
 
-    if(program[pos + 1] == 105)
+    if(program[pos + 1] == ROBOTIC_CMD_MESSAGE_BOX_MAYBE_OPTION)
     {
       if(!parse_param(mzx_world, program + (pos + 2), id))
-        program[pos + 1] = 249;
+        program[pos + 1] = ROBOTIC_CMD_UNUSED_249;
     }
 
     if(program[pos - 1] == 0xFF)
@@ -2680,7 +2677,7 @@ void robot_box_display(struct world *mzx_world, char *program,
   pos = 0;
 
   // If we're starting on an unavailable option, try to seek down
-  if(program[pos + 1] == 249)
+  if(program[pos + 1] == ROBOTIC_CMD_UNUSED_249)
     pos = robot_box_down(program, pos, 1);
 
   // Loop
@@ -2754,10 +2751,11 @@ void robot_box_display(struct world *mzx_world, char *program,
       {
         key = IKEY_ESCAPE;
 
-        if((program[pos + 1] == 104) || (program[pos + 1] == 105))
+        if((program[pos + 1] == ROBOTIC_CMD_MESSAGE_BOX_OPTION) ||
+         (program[pos + 1] == ROBOTIC_CMD_MESSAGE_BOX_MAYBE_OPTION))
         {
           char *next;
-          if(program[pos + 1] == 105)
+          if(program[pos + 1] == ROBOTIC_CMD_MESSAGE_BOX_MAYBE_OPTION)
             next = next_param_pos(program + pos + 2) + 1;
           else
             next = program + pos + 3;
@@ -2792,15 +2790,15 @@ void robot_box_display(struct world *mzx_world, char *program,
   } while(key != IKEY_ESCAPE);
 
   // Scan section and mark all invalid counter-controlled options as codes
-  // 105.
+  // ROBOTIC_CMD_MESSAGE_BOX_MAYBE_OPTION.
 
   pos = 0;
 
   do
   {
-    if(program[pos + 1] == 249)
+    if(program[pos + 1] == ROBOTIC_CMD_UNUSED_249)
     {
-      program[pos + 1] = 105;
+      program[pos + 1] = ROBOTIC_CMD_MESSAGE_BOX_MAYBE_OPTION;
     }
 
     pos += program[pos] + 2;
@@ -2812,9 +2810,9 @@ void robot_box_display(struct world *mzx_world, char *program,
   // Backwards
   do
   {
-    if(program[pos + 1] == 249)
+    if(program[pos + 1] == ROBOTIC_CMD_UNUSED_249)
     {
-      program[pos + 1] = 105;
+      program[pos + 1] = ROBOTIC_CMD_MESSAGE_BOX_MAYBE_OPTION;
     }
     if(program[pos - 1] == 0xFF)
       break;
@@ -3320,40 +3318,38 @@ void duplicate_robot_direct(struct world *mzx_world, struct robot *cur_robot,
     dest_label->name += program_offset;
   }
 
-#ifdef CONFIG_DEBYTECODE
-#ifdef CONFIG_EDITOR
-  // If we're in the editor, we want to give the new robot a brand new duplicate
-  // of our source code.
-  if(mzx_world->editing)
-  {
-    int cmd_map_size =
-     cur_robot->command_map_length * sizeof(struct command_mapping);
+  copy_robot->program_source = NULL;
+  copy_robot->program_source_length = 0;
 
+#ifdef CONFIG_DEBYTECODE
+  if(cur_robot->program_source)
+  {
+    // Copy the source too.
     copy_robot->program_source = cmalloc(cur_robot->program_source_length);
     memcpy(copy_robot->program_source, cur_robot->program_source,
      cur_robot->program_source_length);
     copy_robot->program_source_length = cur_robot->program_source_length;
+  }
+#endif
+
+#ifdef CONFIG_EDITOR
+  copy_robot->command_map = NULL;
+  copy_robot->command_map_length = 0;
+
+#ifdef CONFIG_DEBYTECODE
+  if(mzx_world->editing && cur_robot->command_map)
+  {
+    // Duplicate the command map too if this is testing.
+    int cmd_map_size =
+     cur_robot->command_map_length * sizeof(struct command_mapping);
 
     // And the command map
     copy_robot->command_map = cmalloc(cmd_map_size);
     memcpy(copy_robot->command_map, cur_robot->command_map, cmd_map_size);
     copy_robot->command_map_length = cur_robot->command_map_length;
   }
-  // Otherwise we want to at least know it doesn't exist
-  else
-#endif /* CONFIG_EDITOR */
-#endif /* CONFIG_DEBYTECODE */
-  {
-    // Don't give this robot source; if we're debugging, it will get regenerated
-    copy_robot->program_source = NULL;
-    copy_robot->program_source_length = 0;
-
-#ifdef CONFIG_EDITOR
-    // Don't give this robot a command map; if we're debugging, it will get regenerated
-    copy_robot->command_map = NULL;
-    copy_robot->command_map_length = 0;
 #endif
-  }
+#endif
 
   if(preserve_state && mzx_world->version < VERSION_PORT)
   {
@@ -3378,6 +3374,8 @@ void duplicate_robot_direct(struct world *mzx_world, struct robot *cur_robot,
   }
   copy_robot->xpos = x;
   copy_robot->ypos = y;
+  copy_robot->compat_xpos = x;
+  copy_robot->compat_ypos = y;
 }
 
 // Finds a robot ID then duplicates a robot there. Must not be called
@@ -3610,6 +3608,8 @@ void optimize_null_objects(struct board *src_board)
           cur_robot = robot_list[d_new_param];
           cur_robot->xpos = x;
           cur_robot->ypos = y;
+          cur_robot->compat_xpos = x;
+          cur_robot->compat_ypos = y;
         }
         else
 
@@ -3645,66 +3645,103 @@ void prepare_robot_bytecode(struct world *mzx_world, struct robot *cur_robot)
 {
   if(cur_robot->program_bytecode == NULL)
   {
-    // Assemble and map the program. Don't free the source; we need it to save.
-    assemble_program(cur_robot->program_source,
-     &cur_robot->program_bytecode, &cur_robot->program_bytecode_length,
-     &cur_robot->command_map, &cur_robot->command_map_length);
+#ifdef CONFIG_EDITOR
+    if(cur_robot->command_map)
+    {
+      free(cur_robot->command_map);
+      cur_robot->command_map = NULL;
+      cur_robot->command_map_length = 0;
+    }
+
+    if(mzx_world->editing)
+    {
+      // Assemble and map the program.
+      assemble_program(cur_robot->program_source,
+       &cur_robot->program_bytecode, &cur_robot->program_bytecode_length,
+       &cur_robot->command_map, &cur_robot->command_map_length);
+    }
+    else
+#endif
+    {
+      // Assemble the program.
+      assemble_program(cur_robot->program_source,
+       &cur_robot->program_bytecode, &cur_robot->program_bytecode_length,
+       NULL, NULL);
+    }
 
     // This was moved here from load robot - only build up the labels once the
     // robot's actually used. But eventually this should be combined with
     // assemble_program.
-    cur_robot->label_list =
-     cache_robot_labels(cur_robot, &cur_robot->num_labels);
+    cache_robot_labels(cur_robot);
   }
 }
 
-static int get_source_command_map_index(struct robot *cur_robot,
- int source_pos)
+int command_num_to_program_pos(struct robot *cur_robot, int command_num)
 {
+  char *bc = cur_robot->program_bytecode;
+  int program_length = cur_robot->program_bytecode_length;
+  int i = 1;
+
+#ifdef CONFIG_EDITOR
   struct command_mapping *cmd_map = cur_robot->command_map;
 
-  int b = cur_robot->command_map_length - 1;
-  int a = 0;
-  int i;
+  if(cmd_map && command_num < cur_robot->command_map_length)
+    return cmd_map[command_num].bc_pos;
+#endif
 
-  int d;
+  if(!bc || program_length == 0)
+    return 0;
 
-  if(cmd_map)
+  bc++;
+  while(*bc)
   {
-    while(b-a > 1)
-    {
-      i = (b - a)/2 + a;
+    if(i == command_num)
+      return (int)(bc - cur_robot->program_bytecode);
 
-      d = cmd_map[i].src_pos - source_pos;
-
-      if(d >= 0) b = i;
-      if(d <= 0) a = i;
-    }
-
-    if(source_pos >= cmd_map[b].src_pos)
-      a = b;
+    bc += *bc + 2;
+    i++;
   }
-  return a;
+  return 0;
+}
+
+int get_legacy_bytecode_command_num(char *legacy_bc, int pos_in_bc)
+{
+  char *end = legacy_bc + pos_in_bc;
+  int i = 1;
+
+  if(!legacy_bc || pos_in_bc == 0)
+    return 0;
+
+  legacy_bc++;
+  while(*legacy_bc)
+  {
+    if(legacy_bc >= end)
+      return i;
+
+    legacy_bc += *legacy_bc + 2;
+    i++;
+  }
+  return 0;
 }
 
 #endif /* CONFIG_DEBYTECODE */
 
 #if defined(CONFIG_EDITOR) || defined(CONFIG_DEBYTECODE)
 
-int get_current_command_map_index(struct robot *cur_robot)
+int get_program_command_num(struct robot *cur_robot)
 {
-  struct command_mapping *cmd_map = cur_robot->command_map;
-
   int program_pos = cur_robot->cur_prog_line;
 
+#ifdef CONFIG_EDITOR
+  struct command_mapping *cmd_map = cur_robot->command_map;
   int b = cur_robot->command_map_length - 1;
   int a = 0;
   int i;
 
   int d;
 
-  // If mapping information is available, we can binary search.
-  if(cmd_map)
+  // If mapping information is available, do a binary search.
+  if(cmd_map && program_pos > 0)
   {
     while(b-a > 1)
     {
@@ -3718,23 +3755,33 @@ int get_current_command_map_index(struct robot *cur_robot)
 
     if(program_pos >= cmd_map[b].bc_pos)
       a = b;
+
+    return a;
   }
+  else
+#endif
+
+  if(program_pos == 0)
+    return 0;
 
   // Otherwise, step through the program line by line.
-  else
+  if(cur_robot->program_bytecode)
   {
     char *bc = cur_robot->program_bytecode;
     char *end = bc + program_pos;
     a = 1;
 
-    while(bc < end)
+    bc++;
+    while(*bc)
     {
+      if(bc >= end)
+        return a;
+
       bc += *bc + 2;
       a++;
     }
   }
-
-  return a;
+  return 0;
 }
 
 #endif /* defined(CONFIG_EDITOR) || defined(CONFIG_DEBYTECODE) */

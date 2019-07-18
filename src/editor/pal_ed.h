@@ -29,6 +29,8 @@ __M_BEGIN_DECLS
 #include "../core.h"
 
 void palette_editor(context *parent);
+void import_palette(context *ctx);
+void export_palette(context *ctx);
 
 __M_END_DECLS
 

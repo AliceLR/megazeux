@@ -28,6 +28,7 @@
 #include "core.h"
 #include "error.h"
 #include "event.h"
+#include "game_menu.h"
 #include "graphics.h"
 #include "helpsys.h"
 #include "settings.h"
@@ -700,18 +701,19 @@ static void core_resume(core_context *root)
  * Draw the current context.
  */
 
-static void core_draw(core_context *root)
+static boolean core_draw(core_context *root)
 {
   context *ctx = root->stack.contents[root->stack.size - 1];
   context_data *ctx_data = ctx->internal_data;
   context_data *sub_data;
   subcontext *sub;
+  boolean ret = false;
 
   if(ctx_data->functions.draw)
-    ctx_data->functions.draw(ctx);
+    ret |= ctx_data->functions.draw(ctx);
 
   if(root->context_changed || root->full_exit)
-    return;
+    return ret;
 
   ctx_data->stack.pos = 0;
 
@@ -723,11 +725,11 @@ static void core_draw(core_context *root)
     if(sub_data->functions.draw)
     {
       select_layer(UI_LAYER);
-      sub_data->functions.draw((context *)sub);
+      ret |= sub_data->functions.draw((context *)sub);
     }
 
     if(root->context_changed || root->full_exit)
-      return;
+      return ret;
 
     ctx_data->stack.pos++;
   }
@@ -741,8 +743,10 @@ static void core_draw(core_context *root)
 
     select_layer(UI_LAYER);
     write_string(fpsbuf, 0, 0, 0x0f, false);
+    return true;
   }
 #endif
+  return ret;
 }
 
 /**
@@ -765,37 +769,34 @@ static boolean is_on_stack(core_context *root, enum context_type type)
 
 #ifdef CONFIG_HELPSYS
 /**
- * Determine if the help system is currently allowed.
+ * Determine if the help system is currently allowed. In addition to the
+ * regular checks, this should not be allowed to open if it's already open!
  */
-static boolean allow_help_system(core_context *root)
+static boolean core_allow_help_system(core_context *root)
 {
   struct world *mzx_world = ((context *)root)->world;
-  struct config_info *conf = get_config();
+  boolean is_titlescreen = !is_on_stack(root, CTX_PLAY_GAME);
 
   if(is_on_stack(root, CTX_HELP_SYSTEM))
     return false;
 
-  if(mzx_world->active && mzx_world->version >= V260)
-  {
-    if(is_on_stack(root, CTX_PLAY_GAME) ||
-     (is_on_stack(root, CTX_TITLE_SCREEN) && conf->standalone_mode))
-    {
-      if(!get_counter(mzx_world, "HELP_MENU", 0))
-        return false;
-    }
-  }
+  if(mzx_world->active && !allow_help_system(mzx_world, is_titlescreen))
+    return false;
 
   return true;
 }
 #endif
 
 /**
- * Determine if the configure menu is currently allowed.
+ * Determine if the settings menu is currently allowed. In addition to the
+ * regular checks, this should not be allowed to open if it's already open!
  */
-static boolean allow_configure(core_context *root)
+static boolean core_allow_settings_menu(core_context *root)
 {
   struct world *mzx_world = ((context *)root)->world;
-  struct config_info *conf = get_config();
+  boolean is_titlescreen = !is_on_stack(root, CTX_PLAY_GAME);
+  boolean is_override =
+   get_alt_status(keycode_internal) || get_ctrl_status(keycode_internal);
 
   if(is_on_stack(root, CTX_CONFIGURE))
     return false;
@@ -803,20 +804,9 @@ static boolean allow_configure(core_context *root)
   if(is_on_stack(root, CTX_HELP_SYSTEM))
     return false;
 
-  // Bypass F2_MENU counter.
-  if((get_alt_status(keycode_internal) || get_ctrl_status(keycode_internal)) &&
-   !conf->standalone_mode)
-    return true;
-
-  if(mzx_world->active && mzx_world->version >= V260)
-  {
-    if(is_on_stack(root, CTX_PLAY_GAME) ||
-     (is_on_stack(root, CTX_TITLE_SCREEN) && conf->standalone_mode))
-    {
-      if(!get_counter(mzx_world, "F2_MENU", 0))
-        return false;
-    }
-  }
+  if(mzx_world->active &&
+   !allow_settings_menu(mzx_world, is_titlescreen, is_override))
+    return false;
 
   return true;
 }
@@ -937,7 +927,7 @@ static void core_update(core_context *root)
       case IKEY_F1:
       {
         // Display help.
-        if(allow_help_system(root))
+        if(core_allow_help_system(root))
           help_system(ctx, ctx->world);
 
         break;
@@ -947,7 +937,7 @@ static void core_update(core_context *root)
       case IKEY_F2:
       {
         // Display settings menu.
-        if(allow_configure(root))
+        if(core_allow_settings_menu(root))
           game_settings(ctx->world);
 
         break;
@@ -990,6 +980,10 @@ void core_run(core_context *root)
   int start_ticks = get_ticks();
   int delta_ticks;
   int total_ticks;
+  boolean need_update_screen = true;
+#ifdef __EMSCRIPTEN__
+  int emscripten_prev_ticks = get_ticks();
+#endif
 
   // If there aren't any contexts on the stack, there's no reason to be here.
   if(initial_stack_size <= 0)
@@ -1007,25 +1001,24 @@ void core_run(core_context *root)
 
   do
   {
-    // Resume might trigger additional context changes.
-    while(root->context_changed)
+    // Resume might trigger additional context changes, exit, or empty the
+    // context stack, so continue the main loop after handling the resume.
+    if(root->context_changed)
     {
       root->context_changed = false;
       force_release_all_keys();
       core_resume(root);
-
-      // Resume might also trigger an exit.
-      if(root->full_exit)
-        return;
+      continue;
     }
 
-    core_draw(root);
+    need_update_screen = core_draw(root);
 
     // Context changed or an exit occurred? Skip the screen update and delay
     if(root->context_changed || root->full_exit)
       continue;
 
-    update_screen();
+    if(need_update_screen)
+      update_screen();
 
     // Delay and then handle events.
     ctx = root->stack.contents[root->stack.size - 1];
@@ -1069,6 +1062,19 @@ void core_run(core_context *root)
           // Delay for 16 * (speed - 1) since the beginning of the update
           delay(total_ticks);
         }
+#ifdef __EMSCRIPTEN__
+        else
+        {
+          // Emscripten must yield occasionally, or else the asynchronous queue
+          // will never get processed, causing a freeze.
+          delta_ticks = get_ticks() - emscripten_prev_ticks;
+          if(delta_ticks >= 8) // 16 - 8 = 8
+          {
+            delay(8);
+            emscripten_prev_ticks = get_ticks();
+          }
+        }
+#endif
 
         update_event_status();
         break;

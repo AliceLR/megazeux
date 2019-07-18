@@ -1,0 +1,4 @@
+Title: COPY player over current robot test
+Author: Alice Rowan
+Desc: When a robot copies the player over itself, or attempts to copy a storage object over itself when there are no remaining IDs, this operation should fail and the robot should continue to the next command.
+

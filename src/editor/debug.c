@@ -229,6 +229,13 @@ static const char *universal_var_list[] =
 {
   "random_seed0",
   "random_seed1",
+  "date_year*",
+  "date_month*",
+  "date_day*",
+  "time_hours*",
+  "time_minutes*",
+  "time_seconds*",
+  "time_millis*",
 };
 
 static const char *world_var_list[] =
@@ -240,9 +247,12 @@ static const char *world_var_list[] =
   "divider",
   "fread_delimiter", //no read
   "fwrite_delimiter", //no read
+  "joy_simulate_keys", //no read
   "max_samples",
   "mod_frequency",
   "mod_length*",
+  "mod_loopend",
+  "mod_loopstart",
   "mod_name*",
   "mod_order",
   "mod_position",
@@ -300,6 +310,7 @@ static const char *robot_var_list[] =
 // Sprite parent list (note: clist# added to end)
 static const char *sprite_parent_var_list[] =
 {
+  "Active sprites*", // no read/write
   "spr_num",
   "spr_yorder",
   "spr_collisions*",
@@ -310,6 +321,7 @@ static const char *sprite_var_list[] =
 {
   "x",
   "y",
+  "z",
   "refx",
   "refy",
   "width",
@@ -319,7 +331,7 @@ static const char *sprite_var_list[] =
   "cwidth",
   "cheight",
   "ccheck", // no read
-  "off", // no read
+  "off",
   "offset",
   "overlay", // no read
   "static", // no read
@@ -498,6 +510,12 @@ static void get_var_value(struct world *mzx_world, struct debug_var *v,
       }
       else
 
+      if(match_var("Active sprites*"))
+      {
+        *int_value = mzx_world->active_sprites;
+      }
+      else
+
       if(match_var("spr_yorder"))
       {
         *int_value = mzx_world->sprite_y_order;
@@ -576,6 +594,12 @@ static void get_var_value(struct world *mzx_world, struct debug_var *v,
         *char_value = cur_board->sensor_list[index]->robot_to_mesg;
         *int_value = strlen(*char_value);
       }
+      else
+
+      if(match_var("joy_simulate_keys"))
+      {
+        *int_value = mzx_world->joystick_simulate_keys;
+      }
 
       else
       {
@@ -595,13 +619,6 @@ static void get_var_value(struct world *mzx_world, struct debug_var *v,
       const char *var = v->data.var_name;
       size_t len = strlen(var);
       int sprite_num = v->id;
-
-      if(match_var("off"))
-      {
-        if(!(mzx_world->sprite_list[sprite_num]->flags & SPRITE_INITIALIZED))
-          *int_value = 1;
-      }
-      else
 
       if(match_var("overlay"))
       {
@@ -1697,19 +1714,24 @@ static void init_sprites_node(struct world *mzx_world, struct debug_node *dest)
     if(sprite_list[i]->width != 0 || sprite_list[i]->height != 0)
       num_sprites_active++;
 
-  nodes = ccalloc(num_sprites_active, sizeof(struct debug_node));
   dest->num_nodes = num_sprites_active;
-  dest->nodes = nodes;
-
-  // Populate the sprite nodes.
-  for(spr = 0, i = 0; i < MAX_SPRITES; i++)
+  if(num_sprites_active)
   {
-    if(sprite_list[i]->width == 0 && sprite_list[i]->height == 0)
-      continue;
+    nodes = ccalloc(num_sprites_active, sizeof(struct debug_node));
+    dest->nodes = nodes;
 
-    init_sprite_vars_node(mzx_world, dest, &(nodes[spr]), i);
-    spr++;
+    // Populate the sprite nodes.
+    for(spr = 0, i = 0; i < MAX_SPRITES; i++)
+    {
+      if(sprite_list[i]->width == 0 && sprite_list[i]->height == 0)
+        continue;
+
+      init_sprite_vars_node(mzx_world, dest, &(nodes[spr]), i);
+      spr++;
+    }
   }
+  else
+    dest->nodes = NULL;
 }
 
 static void init_builtin_node(struct world *mzx_world,
@@ -1982,7 +2004,7 @@ static void build_debug_tree(struct world *mzx_world, struct debug_node *root)
   {
     "Sprites",
     false,
-    false,
+    true,
     false,
     true,
     0,

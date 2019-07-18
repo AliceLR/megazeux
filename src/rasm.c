@@ -5919,7 +5919,7 @@ char *legacy_convert_file(char *file_name, int *_disasm_length,
   return NULL;
 }
 
-char *legacy_convert_file_mem(char *src, int len, int *_disasm_length,
+char *legacy_convert_program(char *src, int len, int *_disasm_length,
  boolean print_ignores, int base)
 {
   if(len)

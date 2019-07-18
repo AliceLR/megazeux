@@ -116,7 +116,10 @@ static void save_mzm_common(struct world *mzx_world, int start_x, int start_y,
   mem_putc(0, &bufferPtr);
 
   mem_putw(MZX_VERSION, &bufferPtr);
-  bufferPtr += 3;
+  // Reserved bytes
+  mem_putc(0, &bufferPtr);
+  mem_putc(0, &bufferPtr);
+  mem_putc(0, &bufferPtr);
 
   switch(mode)
   {
@@ -757,8 +760,6 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer,
               else
               {
                 cur_robot->world_version = mzx_world->version;
-                cur_robot->xpos = current_x;
-                cur_robot->ypos = current_y;
 
 #ifdef CONFIG_DEBYTECODE
                 // If we're loading source code at runtime, we need to compile it
@@ -780,6 +781,8 @@ static int load_mzm_common(struct world *mzx_world, const void *buffer,
                       src_board->robot_list[new_param] = cur_robot;
                       cur_robot->xpos = current_x;
                       cur_robot->ypos = current_y;
+                      cur_robot->compat_xpos = current_x;
+                      cur_robot->compat_ypos = current_y;
                       level_param[offset] = new_param;
                     }
                     else

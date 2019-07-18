@@ -156,7 +156,8 @@ void game_settings(struct world *mzx_world)
       num_elements++;
     }
 
-#if !defined(CONFIG_WII) && !defined(CONFIG_SWITCH)
+#if !defined(CONFIG_WII) && !defined(CONFIG_SWITCH) && !defined(__EMSCRIPTEN__)
+    // Emscripten's SDL port crashes on re-entry attempts.
     // Wii has multiple renderers but shouldn't display this option.
     // FIXME this is a hack. Fix the Wii renderers so they're switchable.
     // FIXME: Switch has undiagnosed crash bugs related to renderer switching.
@@ -243,7 +244,6 @@ void game_settings(struct world *mzx_world)
 
     dialog_result = run_dialog(mzx_world, &di);
     start_option = di.current_element;
-    destruct_dialog(&di);
 
     // Prevent UI keys from carrying through.
     force_release_all_keys();
@@ -298,6 +298,10 @@ void game_settings(struct world *mzx_world)
           error("Failed to set renderer.", ERROR_T_ERROR, ERROR_OPT_OK, 0x6000);
 
         cur_video_output = get_current_video_output();
+
+        // HACK: after creating a new X11 window SDL seems to like to send the
+        // previous frame's events again sometimes, so just flush the events
+        update_event_status();
       }
     }
 
@@ -328,6 +332,7 @@ void game_settings(struct world *mzx_world)
       }
     }
 #endif
+    destruct_dialog(&di);
   }
   while(dialog_result >= RESULT_KEEP_OPEN);
 

@@ -263,7 +263,7 @@ char *mzx_res_get_by_id(enum resource_id id)
 
     // Special handling for CONFIG_TXT to allow for user
     // configuration files
-    sprintf(userconfpath, "%s/%s", getenv("HOME"), USERCONFFILE);
+    snprintf(userconfpath, MAX_PATH, "%s/%s", getenv("HOME"), USERCONFFILE);
 
     // Check if the file can be opened for reading
     fp = fopen_unsafe(userconfpath, "rb");
@@ -339,14 +339,19 @@ boolean redirect_stdio(const char *base_path, boolean require_conf)
     // Redirect stdout to stdout.txt.
     fclose(fp_wr);
     fprintf(stdout, "Redirecting logs to '%s'...\n", dest_path);
-    freopen(dest_path, "w", stdout);
-    fprintf(stdout, "MegaZeux: Logging to '%s' (%" PRIu64 ")\n", dest_path, t);
+    if(freopen(dest_path, "w", stdout))
+      fprintf(stdout, "MegaZeux: Logging to '%s' (%" PRIu64 ")\n", dest_path, t);
+    else
+      fprintf(stdout, "Failed to redirect stdout\n");
 
     // Redirect stderr to stderr.txt.
     join_path_names(dest_path, MAX_PATH, clean_path, "stderr.txt");
     fprintf(stderr, "Redirecting logs to '%s'...\n", dest_path);
-    freopen(dest_path, "w", stderr);
-    fprintf(stderr, "MegaZeux: Logging to '%s' (%" PRIu64 ")\n", dest_path, t);
+    if(freopen(dest_path, "w", stderr))
+      fprintf(stderr, "MegaZeux: Logging to '%s' (%" PRIu64 ")\n", dest_path, t);
+    else
+      fprintf(stderr, "Failed to redirect stderr\n");
+
     return true;
   }
   return false;
@@ -448,7 +453,11 @@ void add_ext(char *src, const char *ext)
   if((src_len < ext_len) || (src[src_len - ext_len] != '.') ||
    strcasecmp(src + src_len - ext_len, ext))
   {
-    strcat(src, ext);
+    if(src_len + ext_len >= MAX_PATH)
+      src_len = MAX_PATH - ext_len - 1;
+
+    snprintf(src + src_len, MAX_PATH - src_len, "%s", ext);
+    src[MAX_PATH - 1] = '\0';
   }
 }
 
@@ -541,7 +550,7 @@ void split_path_filename(const char *source,
       clean_path_slashes(source, destpath, dest_buffer_len);
 
     if(file_buffer_len)
-      strcpy(destfile, "");
+      destfile[0] = '\0';
   }
   else
   // If source has a directory and a file
@@ -558,7 +567,7 @@ void split_path_filename(const char *source,
   else
   {
     if(dest_buffer_len)
-      strcpy(destpath, "");
+      destpath[0] = '\0';
 
     if(file_buffer_len)
       strncpy(destfile, source, file_buffer_len);
@@ -626,6 +635,7 @@ int change_dir_name(char *path_name, const char *dest)
 
     snprintf(path, MAX_PATH, "%.*s" DIR_SEPARATOR, (int)(next - dest + 1),
      dest);
+    path[MAX_PATH - 1] = '\0';
 
     if(stat(path, &stat_info) < 0)
       return -1;
@@ -643,7 +653,7 @@ int change_dir_name(char *path_name, const char *dest)
      * Aside from Unix-likes, these are also supported by console platforms.
      * Even Windows (back through XP at least) doesn't seem to mind them.
      */
-    strcpy(path, DIR_SEPARATOR);
+    snprintf(path, MAX_PATH, DIR_SEPARATOR);
     current = dest + 1;
   }
 
@@ -657,9 +667,10 @@ int change_dir_name(char *path_name, const char *dest)
       snprintf(path, MAX_PATH, "%s" DIR_SEPARATOR, path_name);
 
     else
-      strcpy(path, path_name);
+      snprintf(path, MAX_PATH, "%s", path_name);
   }
 
+  path[MAX_PATH - 1] = '\0';
   current_char = current[0];
   len = strlen(path);
 
@@ -696,6 +707,7 @@ int change_dir_name(char *path_name, const char *dest)
     {
       snprintf(path + len, MAX_PATH - len, "%.*s", (int)(next - current),
        current);
+      path[MAX_PATH - 1] = '\0';
       len = strlen(path);
     }
 
@@ -707,7 +719,7 @@ int change_dir_name(char *path_name, const char *dest)
   clean_path_slashes(path, path_temp, MAX_PATH);
   if(stat(path_temp, &stat_info) >= 0)
   {
-    strcpy(path_name, path_temp);
+    snprintf(path_name, MAX_PATH, "%s", path_temp);
     return 0;
   }
 

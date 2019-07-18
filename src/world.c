@@ -110,7 +110,7 @@ int world_magic(const char magic_string[3])
         case 'X':
           return V100;
         case '2':
-          return V251;
+          return V200;
         case 'A':
           return V251s1;
       }
@@ -192,8 +192,8 @@ int get_version_string(char buffer[16], enum mzx_version version)
       sprintf(buffer, "2.62/2.62b");
       break;
 
-    case V265:
-      sprintf(buffer, "2.65");
+    case V265: // Also 2.68 because the magic wasn't actually incremented.
+      sprintf(buffer, "2.65/2.68");
       break;
 
     case V268:
@@ -382,6 +382,7 @@ static inline int save_world_info(struct world *mzx_world,
     save_prop_d(WPROP_C_DIVISIONS,      mzx_world->c_divisions, mf);
     save_prop_d(WPROP_MAX_SAMPLES,      mzx_world->max_samples, mf);
     save_prop_c(WPROP_SMZX_MESSAGE,     mzx_world->smzx_message, mf);
+    save_prop_c(WPROP_JOY_SIMULATE_KEYS,mzx_world->joystick_simulate_keys, mf);
   }
 
   save_prop_eof(mf);
@@ -440,6 +441,7 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
   check(WPROP_WORLD_VERSION);
   world_version = load_prop_int(size, &prop);
 
+  // World data.
   check(WPROP_NUM_BOARDS);
   check(WPROP_ID_CHARS);
   check(WPROP_ID_MISSILE_COLOR);
@@ -468,6 +470,7 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
     return VAL_SUCCESS;
   }
 
+  // World data (2.91+), save-only prior.
   check(WPROP_SMZX_MODE);
   check(WPROP_VLAYER_WIDTH);
   check(WPROP_VLAYER_HEIGHT);
@@ -478,6 +481,7 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
     return VAL_SUCCESS;
   }
 
+  // Save-only data.
   check(WPROP_REAL_MOD_PLAYING);
   check(WPROP_MZX_SPEED);
   check(WPROP_LOCK_SPEED);
@@ -518,6 +522,12 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
     // Added in 2.91
     check(WPROP_MAX_SAMPLES);
     check(WPROP_SMZX_MESSAGE);
+  }
+
+  if(world_version >= V292)
+  {
+    // Added in 2.92
+    check(WPROP_JOY_SIMULATE_KEYS);
   }
 
   return VAL_SUCCESS;
@@ -963,6 +973,13 @@ static inline void load_world_info(struct world *mzx_world,
         mzx_world->smzx_message = load_prop_int(size, prop);
         break;
 
+      // Added in 2.92
+      case WPROP_JOY_SIMULATE_KEYS:
+        if_savegame
+        if(mzx_world->version >= V292)
+          mzx_world->joystick_simulate_keys = !!load_prop_int(size, prop);
+        break;
+
       default:
         break;
     }
@@ -1227,12 +1244,15 @@ static inline int save_world_sprites(struct world *mzx_world,
  struct zip_archive *zp, const char *name)
 {
   char *buffer;
+  size_t collision_size = mzx_world->collision_count * 4;
+  size_t buf_size = SPRITE_PROPS_SIZE + collision_size;
   struct sprite *spr;
   struct memfile mf;
+  struct memfile prop;
   int i;
 
-  buffer = cmalloc(SPRITE_PROPS_SIZE);
-  mfopen(buffer, SPRITE_PROPS_SIZE, &mf);
+  buffer = cmalloc(buf_size);
+  mfopen(buffer, buf_size, &mf);
 
   // For each
   for(i = 0; i < MAX_SPRITES; i++)
@@ -1254,16 +1274,24 @@ static inline int save_world_sprites(struct world *mzx_world,
     save_prop_d(SPROP_COL_HEIGHT,         spr->col_height, &mf);
     save_prop_d(SPROP_TRANSPARENT_COLOR,  spr->transparent_color, &mf);
     save_prop_d(SPROP_CHARSET_OFFSET,     spr->offset, &mf);
+    save_prop_d(SPROP_Z,                  spr->z, &mf);
   }
 
   // Only once
   save_prop_d(SPROP_ACTIVE_SPRITES,       mzx_world->active_sprites, &mf);
   save_prop_d(SPROP_SPRITE_Y_ORDER,       mzx_world->sprite_y_order, &mf);
   save_prop_d(SPROP_COLLISION_COUNT,      mzx_world->collision_count, &mf);
+  save_prop_d(SPROP_SPRITE_NUM,           mzx_world->sprite_num, &mf);
+
+  // Collision list
+  save_prop_v(SPROP_COLLISION_LIST, collision_size, &prop, &mf);
+
+  for(i = 0; i < mzx_world->collision_count; i++)
+    mfputd(mzx_world->collision_list[i], &prop);
 
   save_prop_eof(&mf);
 
-  zip_write_file(zp, name, buffer, SPRITE_PROPS_SIZE, ZIP_M_DEFLATE);
+  zip_write_file(zp, name, buffer, buf_size, ZIP_M_DEFLATE);
 
   free(buffer);
   return 0;
@@ -1281,6 +1309,7 @@ static inline int load_world_sprites(struct world *mzx_world,
   int ident;
   int length;
   int value;
+  int num_collisions = 0;
 
   int result;
 
@@ -1298,7 +1327,7 @@ static inline int load_world_sprites(struct world *mzx_world,
 
   while(next_prop(&prop, &ident, &length, &mf))
   {
-    // Only numeric values here.
+    // Mostly numeric values here, and anything that isn't can seek back.
     value = load_prop_int(length, &prop);
 
     switch(ident)
@@ -1367,6 +1396,39 @@ static inline int load_world_sprites(struct world *mzx_world,
 
       case SPROP_CHARSET_OFFSET:
         if(spr) spr->offset = value;
+        break;
+
+      case SPROP_Z:
+        if(mzx_world->version >= V292 && spr) spr->z = value;
+        break;
+
+      case SPROP_ACTIVE_SPRITES:
+        mzx_world->active_sprites = value;
+        break;
+
+      case SPROP_SPRITE_Y_ORDER:
+        mzx_world->sprite_y_order = value;
+        break;
+
+      case SPROP_COLLISION_COUNT:
+        num_collisions = CLAMP(value, 0, MAX_SPRITES);
+        mzx_world->collision_count = num_collisions;
+        break;
+
+      case SPROP_COLLISION_LIST:
+      {
+        int collision;
+
+        mfseek(&prop, 0, SEEK_SET);
+        if(num_collisions * 4 <= length)
+          for(collision = 0; collision < num_collisions; collision++)
+            mzx_world->collision_list[collision] = mfgetd(&prop);
+
+        break;
+      }
+
+      case SPROP_SPRITE_NUM:
+        mzx_world->sprite_num = value;
         break;
 
       default:
@@ -1497,7 +1559,7 @@ static inline int load_world_counters(struct world *mzx_world,
   if(!num_prev_allocated)
     counter_list->num_counters = i;
 
-#if !defined(CONFIG_KHASH) && !defined(CONFIG_UTHASH)
+#ifndef CONFIG_KHASH
   // Versions without the hash table require this to be sorted at all times
   sort_counter_list(counter_list);
 #endif
@@ -1636,7 +1698,7 @@ static inline int load_world_strings_mem(struct world *mzx_world,
   if(!num_prev_allocated)
     string_list->num_strings = i;
 
-#ifndef CONFIG_UTHASH
+#ifndef CONFIG_KHASH
   // Versions without the hash table require this to be sorted at all times
   sort_string_list(string_list);
 #endif
@@ -1733,7 +1795,7 @@ static inline int load_world_strings(struct world *mzx_world,
   if(!num_prev_allocated)
     string_list->num_strings = i;
 
-#if !defined(CONFIG_KHASH) && !defined(CONFIG_UTHASH)
+#ifndef CONFIG_KHASH
   // Versions without the hash table require this to be sorted at all times
   sort_string_list(string_list);
 #endif
@@ -2556,15 +2618,6 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
       chdir(file_path);
   }
 
-  if(!savegame)
-  {
-    // Reset the joystick mappings to the defaults before loading a game config.
-    // Games with multiple worlds need to have mappings configured for each of
-    // their worlds as a consequence of this. We can't really do this with
-    // savegames as they currently can't load their world config.
-    joystick_reset_game_map();
-  }
-
   // load world config file
   memcpy(config_file_name, file, file_name_len);
   strncpy(config_file_name + file_name_len, ".cnf", 5);
@@ -2575,6 +2628,7 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
   // Some initial setting(s)
   mzx_world->custom_sfx_on = 0;
   mzx_world->max_samples = -1;
+  mzx_world->joystick_simulate_keys = true;
 
   // If we're here, there's either a zip (regular) or a file (legacy).
   if(zp)
@@ -2655,6 +2709,9 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
 
   // This will be -1 (no limit) or whatever was loaded from a save
   audio_set_max_samples(mzx_world->max_samples);
+
+  // This will generally be 'true' unless it was different in the save.
+  joystick_set_game_bindings(mzx_world->joystick_simulate_keys);
 
   mzx_world->active = 1;
 

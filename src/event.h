@@ -93,6 +93,7 @@ struct joystick_press
   Uint8 type;
   Uint8 num;
   Sint16 key;
+  Uint8 action;
 };
 
 struct buffered_status
@@ -127,11 +128,22 @@ struct buffered_status
   Uint32 joystick_repeat_state;
   Uint32 joystick_repeat_id;
   Uint32 joystick_time;
+
+  // NOTE: These arrays track raw joystick state but this is only used to
+  // determine if an action status or a simulated press should be altered.
+  // So, these arrays probably don't need to be processed in a network context.
   boolean joystick_hat[MAX_JOYSTICKS][4];
   boolean joystick_button[MAX_JOYSTICKS][MAX_JOYSTICK_BUTTONS];
   Sint16 joystick_axis[MAX_JOYSTICKS][MAX_JOYSTICK_AXES];
+
+  // NOTE: These arrays track abstracted joystick state and are the ones that
+  // simulated keypresses, games, and event buffering need to care about.
+  boolean joystick_active[MAX_JOYSTICKS];
+  boolean joystick_action_status[MAX_JOYSTICKS][NUM_JOYSTICK_ACTIONS];
+  Sint16 joystick_special_axis_status[MAX_JOYSTICKS][NUM_JOYSTICK_SPECIAL_AXES];
   struct joystick_press joystick_press[MAX_JOYSTICKS][MAX_JOYSTICK_PRESS];
   Uint8 joystick_press_count[MAX_JOYSTICKS];
+
   Uint8 keymap[512];
 };
 
@@ -141,10 +153,12 @@ struct joystick_map
   Sint16 axis[MAX_JOYSTICKS][MAX_JOYSTICK_AXES][2];
   Sint16 hat[MAX_JOYSTICKS][4];
   Sint16 action[MAX_JOYSTICKS][NUM_JOYSTICK_ACTIONS];
+  Uint8 special_axis[MAX_JOYSTICKS][MAX_JOYSTICK_AXES];
 
   boolean button_is_conf[MAX_JOYSTICKS][MAX_JOYSTICK_BUTTONS];
   boolean axis_is_conf[MAX_JOYSTICKS][MAX_JOYSTICK_AXES];
   boolean hat_is_conf[MAX_JOYSTICKS];
+  boolean action_is_conf[MAX_JOYSTICKS][NUM_JOYSTICK_ACTIONS];
 };
 
 struct input_status
@@ -200,7 +214,6 @@ CORE_LIBSPEC Uint32 get_mouse_drag(void);
 CORE_LIBSPEC boolean get_alt_status(enum keycode_type type);
 CORE_LIBSPEC boolean get_shift_status(enum keycode_type type);
 CORE_LIBSPEC boolean get_ctrl_status(enum keycode_type type);
-CORE_LIBSPEC void initialize_joysticks(void);
 CORE_LIBSPEC void key_press(struct buffered_status *status, enum keycode key,
  Uint16 unicode_key);
 CORE_LIBSPEC void key_release(struct buffered_status *status, enum keycode key);
@@ -211,6 +224,7 @@ CORE_LIBSPEC Uint32 get_joystick_ui_action(void);
 CORE_LIBSPEC Uint32 get_joystick_ui_key(void);
 
 // Implemented by "drivers" (SDL, Wii, NDS, 3DS, etc.)
+void initialize_joysticks(void);
 void __wait_event(void);
 boolean __update_event_status(void);
 
@@ -242,14 +256,14 @@ void set_unfocus_pause(boolean value);
 void set_num_buffered_events(Uint8 value);
 
 boolean joystick_parse_map_value(const char *value, Sint16 *binding);
-void joystick_map_button(int joystick, int button, const char *value,
+void joystick_map_button(int first, int last, int button, const char *value,
  boolean is_global);
-void joystick_map_axis(int joystick, int axis, const char *neg,
+void joystick_map_axis(int first, int last, int axis, const char *neg,
  const char *pos, boolean is_global);
-void joystick_map_hat(int joystick, const char *up, const char *down,
+void joystick_map_hat(int first, int last, const char *up, const char *down,
  const char *left, const char *right, boolean is_global);
-void joystick_map_action(int joystick, const char *action, int value,
- boolean is_global);
+void joystick_map_action(int first, int last, const char *action,
+ const char *value, boolean is_global);
 void joystick_reset_game_map(void);
 void joystick_set_game_mode(boolean enable);
 void joystick_set_game_bindings(boolean enable);
@@ -263,7 +277,13 @@ void joystick_hat_update(struct buffered_status *status,
  int joystick, enum joystick_hat dir, boolean dir_active);
 void joystick_axis_update(struct buffered_status *status,
  int joystick, int axis, Sint16 value);
-void joystick_release_all(struct buffered_status *status, int joystick);
+void joystick_special_axis_update(struct buffered_status *status,
+ int joystick, enum joystick_special_axis axis, Sint16 value);
+void joystick_set_active(struct buffered_status *status, int joystick,
+ boolean active);
+void joystick_clear(struct buffered_status *status, int joystick);
+boolean joystick_is_active(int joystick, boolean *is_active);
+boolean joystick_get_status(int joystick, char *name, Sint16 *value);
 
 void real_warp_mouse(int x, int y);
 

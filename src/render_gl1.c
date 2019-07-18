@@ -199,7 +199,10 @@ static boolean gl1_set_video_mode(struct graphics_data *graphics,
   gl_set_attributes(graphics);
 
   if(!gl_load_syms(gl1_syms_map))
+  {
+    gl_cleanup(graphics);
     return false;
+  }
 
   // We need a specific version of OpenGL; desktop GL must be 1.1.
   // All OpenGL ES 1.x implementations are supported, so don't do
@@ -210,21 +213,22 @@ static boolean gl1_set_video_mode(struct graphics_data *graphics,
 
     if(!initialized)
     {
-      const char *version, *extensions;
+      const char *version;
       double version_float;
 
       version = (const char *)gl1.glGetString(GL_VERSION);
       if(!version)
+      {
+        warn("Could not load GL version string.\n");
+        gl_cleanup(graphics);
         return false;
-
-      extensions = (const char *)gl1.glGetString(GL_EXTENSIONS);
-      if(!extensions)
-        return false;
+      }
 
       version_float = atof(version);
       if(version_float < 1.1)
       {
         warn("Need >= OpenGL 1.1, got OpenGL %.1f.\n", version_float);
+        gl_cleanup(graphics);
         return false;
       }
 
@@ -235,7 +239,10 @@ static boolean gl1_set_video_mode(struct graphics_data *graphics,
 
   render_data->pixels = cmalloc(sizeof(Uint32) * SCREEN_PIX_W * SCREEN_PIX_H);
   if(!render_data->pixels)
+  {
+    gl_cleanup(graphics);
     return false;
+  }
 
   render_data->w = SCREEN_PIX_W;
   render_data->h = SCREEN_PIX_H;

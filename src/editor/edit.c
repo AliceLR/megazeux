@@ -85,12 +85,11 @@ static const char *const mzb_ext[] = { ".MZB", NULL };
 static const char *const mzm_ext[] = { ".MZM", NULL };
 static const char *const sfx_ext[] = { ".SFX", NULL };
 static const char *const chr_ext[] = { ".CHR", NULL };
-static const char *const pal_ext[] = { ".PAL", NULL };
-static const char *const idx_ext[] = { ".PALIDX", NULL };
 static const char *const mod_ext[] =
-{ ".ogg", ".mod", ".s3m", ".xm", ".it", ".gdm",
-  ".669", ".amf", ".dsm", ".far", ".med",
-  ".mtm", ".okt", ".stm", ".ult", ".wav",
+{ ".ogg", ".mod", ".s3m", ".xm", ".it",
+  ".669", ".amf", ".dsm", ".far", ".gdm",
+  ".med", ".mtm", ".okt", ".stm", ".ult",
+  ".rad",
   NULL
 };
 static const char *const sam_ext[] =
@@ -107,8 +106,6 @@ struct editor_context
   char mzb_name_buffer[MAX_PATH];
   char mzm_name_buffer[MAX_PATH];
   char chr_name_buffer[MAX_PATH];
-  char pal_name_buffer[MAX_PATH];
-  char idx_name_buffer[MAX_PATH];
   char current_listening_dir[MAX_PATH];
   char current_listening_mod[MAX_PATH];
 
@@ -704,7 +701,7 @@ struct view_board_context
   int max_y;
 };
 
-static void view_board_draw(context *ctx)
+static boolean view_board_draw(context *ctx)
 {
   struct view_board_context *vb = (struct view_board_context *)ctx;
   struct world *mzx_world = ctx->world;
@@ -712,6 +709,7 @@ static void view_board_draw(context *ctx)
   blank_layers();
   draw_viewport(mzx_world->current_board, mzx_world->edge_color);
   draw_game_window(mzx_world->current_board, vb->x, vb->y);
+  return true;
 }
 
 static boolean view_board_key(context *ctx, int *key)
@@ -971,7 +969,7 @@ static void draw_out_of_bounds(int in_x, int in_y, int in_width, int in_height)
  * to happen at draw time.
  */
 
-static void editor_draw(context *ctx)
+static boolean editor_draw(context *ctx)
 {
   struct editor_context *editor = (struct editor_context *)ctx;
   struct buffer_info *buffer = &(editor->buffer);
@@ -1091,6 +1089,8 @@ static void editor_draw(context *ctx)
   update_edit_menu(editor->edit_menu, editor->mode, editor->cursor_mode,
    editor->cursor_x, editor->cursor_y, editor->screen_height,
    &(editor->buffer), editor->use_default_color);
+
+  return true;
 }
 
 /**
@@ -1429,9 +1429,9 @@ static void modify_thing_callback(context *ctx, context_callback_param *p)
     replace_current_at_xy(ctx->world, temp_buffer, editor->cursor_x,
      editor->cursor_y, editor->mode, editor->cur_history);
 
-    free_edit_buffer(temp_buffer);
     editor->modified = true;
   }
+  free_edit_buffer(temp_buffer);
 }
 
 static void modify_thing_at_cursor(struct editor_context *editor)
@@ -2628,27 +2628,8 @@ static boolean editor_key(context *ctx, int *key)
 
             case 3:
             {
-              // Palette
-              strcpy(import_name, editor->pal_name_buffer);
-              if(!choose_file(mzx_world, pal_ext, import_name,
-               "Choose palette to import", 1))
-              {
-                strcpy(editor->pal_name_buffer, import_name);
-                load_palette(import_name);
-                editor->modified = true;
-              }
-
-              // Indices (mode 3 only)
-              strcpy(import_name, editor->idx_name_buffer);
-              if((get_screen_mode() == 3) &&
-               !choose_file(mzx_world, idx_ext, import_name,
-                "Choose indices to import (.PALIDX)", 1))
-              {
-                strcpy(editor->idx_name_buffer, import_name);
-                load_index_file(import_name);
-                editor->modified = true;
-              }
-
+              // Palette (let the palette editor handle this one)
+              import_palette(ctx);
               break;
             }
 
@@ -2853,6 +2834,13 @@ static boolean editor_key(context *ctx, int *key)
             if(!choose_file(mzx_world, mod_ext, new_mod,
              "Choose a module file", 2)) // 2:subdirsonly
             {
+              const char *ext_pos = new_mod + strlen(new_mod) - 4;
+              if(ext_pos >= new_mod && !strcasecmp(ext_pos, ".WAV"))
+              {
+                error("Using OGG instead of WAV is recommended.",
+                 ERROR_T_WARNING, ERROR_OPT_OK, 0xc0c5);
+              }
+
               strcpy(cur_board->mod_playing, new_mod);
               strcpy(mzx_world->real_mod_playing, new_mod);
               fix_mod(editor);
@@ -3245,24 +3233,8 @@ static boolean editor_key(context *ctx, int *key)
 
             case 2:
             {
-              // Palette
-              strcpy(export_name, editor->pal_name_buffer);
-              if(!new_file(mzx_world, pal_ext, ".pal", export_name,
-               "Export palette", 1))
-              {
-                strcpy(editor->pal_name_buffer, export_name);
-                save_palette(export_name);
-              }
-
-              strcpy(export_name, editor->idx_name_buffer);
-              if((get_screen_mode() == 3) &&
-               !new_file(mzx_world, idx_ext, ".palidx", export_name,
-                "Export indices (.PALIDX)", 1))
-              {
-                strcpy(editor->idx_name_buffer, export_name);
-                save_index_file(export_name);
-              }
-
+              // Palette (let the palette editor handle this one)
+              export_palette(ctx);
               break;
             }
 

@@ -36,6 +36,28 @@
  * Utility functions for gameplay.
  */
 
+/**
+ * Update a robot's position after moving it. This was never done by older
+ * versions, so don't update the robot's compatibility position values.
+ */
+static void fix_robot_pos(struct board *cur_board, int id, int x, int y)
+{
+  struct robot *cur_robot = cur_board->robot_list[id];
+  cur_robot->xpos = x;
+  cur_robot->ypos = y;
+}
+
+/**
+ * Update a robot's position after moving it. This was never done by older
+ * versions, so don't update the robot's compatibility position values.
+ */
+static void fix_robot_pos_offs(struct board *cur_board, int id, int offset)
+{
+  struct robot *cur_robot = cur_board->robot_list[id];
+  cur_robot->xpos = offset % cur_board->board_width;
+  cur_robot->ypos = offset / cur_board->board_width;
+}
+
 //Bit 1- +1
 //Bit 2- -1
 //Bit 4- +width
@@ -59,6 +81,7 @@ void rotate(struct world *mzx_world, int x, int y, int dir)
   enum thing id;
   char param, color;
   enum thing cur_id;
+  char cur_param, cur_color;
   int d_flag;
   int cur_offset, next_offset;
 
@@ -97,20 +120,34 @@ void rotate(struct world *mzx_world, int x, int y, int dir)
 
   if(i == 8)
   {
+    // No surrounding floors were found, so swap temporarily off of the board.
+    // For some reason this case doesn't track rotation state with update_done.
     for(i = 0; i < 8; i++)
     {
       cur_id = (enum thing)level_id[offset + offs[i]];
       d_flag = flags[(int)cur_id];
 
-      if((!(d_flag & A_PUSHABLE) || (d_flag & A_SPEC_PUSH)) &&
-       (cur_id != GATE))
+      if(!((d_flag & A_PUSHABLE) || (d_flag & A_SPEC_PUSH)))
       {
-        break; // Transport NOT pushable
+        /**
+         * From 2.80X through 2.91X, this would also exit for anything with
+         * A_SPEC_PUSH. This regression was most likely introduced because
+         * of a comment about transports not being pushable. If something
+         * seriously relies on A_SPEC_PUSH objects not rotating in this edge
+         * case, add a compatibility check.
+         *
+         * This also originally checked for the GATE thing, but GATE never had
+         * either pushable flag set. MZX 1.xx appears to have blacklisted
+         * A_SPEC_PUSH and this may have been a (broken) attempt to prevent
+         * transports from rotating after that bug was fixed in 2.00.
+         */
+        break;
       }
     }
 
     if(i == 8)
     {
+      // All surrounding objects are pushable and can be rotated.
       cur_offset = offset + offs[0];
       id = (enum thing)level_id[cur_offset];
       color = level_color[cur_offset];
@@ -123,16 +160,23 @@ void rotate(struct world *mzx_world, int x, int y, int dir)
         level_id[cur_offset] = level_id[next_offset];
         level_color[cur_offset] = level_color[next_offset];
         level_param[cur_offset] = level_param[next_offset];
+
+        if(level_id[cur_offset] == ROBOT_PUSHABLE)
+          fix_robot_pos_offs(src_board, level_param[cur_offset], cur_offset);
       }
 
       cur_offset = offset + offs[7];
       level_id[cur_offset] = (char)id;
       level_color[cur_offset] = color;
       level_param[cur_offset] = param;
+
+      if(id == ROBOT_PUSHABLE)
+        fix_robot_pos_offs(src_board, param, cur_offset);
     }
   }
   else
   {
+    // A floor was found, so start the rotation from the floor.
     cw = i - 1;
 
     if(cw == -1)
@@ -149,14 +193,24 @@ void rotate(struct world *mzx_world, int x, int y, int dir)
       cur_id = (enum thing)level_id[cur_offset];
       d_flag = flags[(int)cur_id];
 
+      /**
+       * This originally checked for the GATE thing, but GATE never had
+       * either pushable flag set. MZX 1.xx appears to have blacklisted
+       * A_SPEC_PUSH and this may have been a (broken) attempt to prevent
+       * transports from rotating after that bug was fixed in 2.00.
+       */
       if(((d_flag & A_PUSHABLE) || (d_flag & A_SPEC_PUSH)) &&
-       (cur_id != GATE) && (!(mzx_world->update_done[cur_offset] & 2)))
+       (!(mzx_world->update_done[cur_offset] & 2)))
       {
-        offs_place_id(mzx_world, next_offset, cur_id,
-         level_color[cur_offset], level_param[cur_offset]);
+        cur_param = level_param[cur_offset];
+        cur_color = level_color[cur_offset];
+        offs_place_id(mzx_world, next_offset, cur_id, cur_color, cur_param);
         offs_remove_id(mzx_world, cur_offset);
-        mzx_world->update_done[offset + offs[i]] |= 2;
+        mzx_world->update_done[next_offset] |= 2;
         i = ccw;
+
+        if(cur_id == ROBOT_PUSHABLE)
+          fix_robot_pos_offs(src_board, cur_param, next_offset);
       }
       else
       {
@@ -400,6 +454,9 @@ int transport(struct world *mzx_world, int x, int y, int dir, enum thing id,
     // Place it
     play_sfx(mzx_world, SFX_TRANSPORT);
     id_place(mzx_world, dx, dy, id, color, param);
+
+    if(is_robot(id))
+      fix_robot_pos(src_board, param, dx, dy);
   }
 
   // Successful return..
@@ -564,11 +621,17 @@ int push(struct world *mzx_world, int x, int y, int dir, int checking)
       {
         // Place the previous thing here
         id_place(mzx_world, dx, dy, p_id, p_color, p_param);
+
         if((p_id == PLAYER) && (p_under_id == SENSOR))
         {
           push_player_sensor(mzx_world, p_offset, d_offset, sensor_param,
            sensor_color);
         }
+        else
+
+        if(p_id == ROBOT_PUSHABLE)
+          fix_robot_pos(src_board, p_param, dx, dy);
+
         // If this is a sensor, the player was pushed onto it
         if(d_id == SENSOR)
         {
@@ -610,6 +673,9 @@ int push(struct world *mzx_world, int x, int y, int dir, int checking)
             push_player_sensor(mzx_world, p_offset, d_offset,
              sensor_param, sensor_color);
           }
+
+          if(p_id == ROBOT_PUSHABLE)
+            fix_robot_pos(src_board, p_param, dx, dy);
         }
 
         // How about a pushable robot?
@@ -625,7 +691,6 @@ int push(struct world *mzx_world, int x, int y, int dir, int checking)
         p_param = d_param;
         p_color = d_color;
         p_offset = d_offset;
-
 
         // Is it a sensor that was pushed? Flag it.
         if(d_id == SENSOR)
@@ -1174,6 +1239,9 @@ enum move_status move(struct world *mzx_world, int x, int y, int dir,
   id_remove_top(mzx_world, x, y);
   // Place a new one at the destination
   id_place(mzx_world, dx, dy, p_id, p_color, p_param);
+
+  if(is_robot(p_id))
+    fix_robot_pos(src_board, p_param, dx, dy);
 
   // Successfully return
   return NO_HIT;

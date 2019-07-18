@@ -210,12 +210,9 @@ static int zip_uncompress(char *dest, uint32_t *destLen, const char *src,
   int err;
 
   // Following uncompr.c from zlib pretty closely here...
+  memset(&stream, 0, sizeof(z_stream));
   stream.next_in = (Bytef *) src;
   stream.avail_in = (uInt) *srcLen;
-
-  stream.zalloc = (alloc_func)0;
-  stream.zfree = (free_func)0;
-  stream.opaque = (voidpf)0;
 
   /* The reason we can't just use uncompress() is because there's no way
    * to assign the number of window bits with it, and uncompress() expects
@@ -245,9 +242,7 @@ static int zip_compress(char **dest, uint32_t *destLen, const char *src,
   int _destLen;
   int err;
 
-  stream.zalloc = (alloc_func)0;
-  stream.zfree = (free_func)0;
-  stream.opaque = (voidpf)0;
+  memset(&stream, 0, sizeof(z_stream));
 
   /* The reason we can't just use compress() is because there's no way
    * to assign the number of window bits with it, and compress() expects
@@ -288,12 +283,9 @@ int zip_bound_data_usage(char *src, int srcLen)
   z_stream stream;
   int bound;
 
+  memset(&stream, 0, sizeof(z_stream));
   stream.next_in = (Bytef *) src;
   stream.avail_in = (uInt) srcLen;
-
-  stream.zalloc = (alloc_func)0;
-  stream.zfree = (free_func)0;
-  stream.opaque = (voidpf)0;
 
   // Note: aside from the windowbits, these are all defaults
   deflateInit2(&stream, Z_DEFAULT_COMPRESSION, Z_DEFLATED, -MAX_WBITS,
@@ -1570,6 +1562,7 @@ enum zip_error zip_write_open_file_stream(struct zip_archive *zp,
 {
   struct zip_file_header *fh;
   char *file_name;
+  uint16_t file_name_len;
 
   void *fp;
 
@@ -1596,7 +1589,8 @@ enum zip_error zip_write_open_file_stream(struct zip_archive *zp,
   }
 
   fh = cmalloc(sizeof(struct zip_file_header));
-  file_name = cmalloc(strlen(name) + 1);
+  file_name_len = strlen(name);
+  file_name = cmalloc(file_name_len + 1);
 
   fp = zp->fp;
 
@@ -1611,9 +1605,9 @@ enum zip_error zip_write_open_file_stream(struct zip_archive *zp,
   fh->compressed_size = 0;
   fh->uncompressed_size = 0;
   fh->offset = zp->vtell(fp);
-  fh->file_name_length = strlen(name);
+  fh->file_name_length = file_name_len;
   fh->file_name = file_name;
-  strcpy(file_name, name);
+  memcpy(file_name, name, file_name_len + 1);
 
   // Write the header
   result = zip_write_file_header(zp, fh, 0);
@@ -1698,6 +1692,7 @@ enum zip_error zip_write_open_mem_stream(struct zip_archive *zp,
 {
   struct zip_file_header *fh;
   char *file_name;
+  uint16_t file_name_len;
 
   void *fp;
 
@@ -1723,7 +1718,8 @@ enum zip_error zip_write_open_mem_stream(struct zip_archive *zp,
   }
 
   fh = cmalloc(sizeof(struct zip_file_header));
-  file_name = cmalloc(strlen(name) + 1);
+  file_name_len = strlen(name);
+  file_name = cmalloc(file_name_len + 1);
 
   fp = zp->fp;
 
@@ -1738,9 +1734,9 @@ enum zip_error zip_write_open_mem_stream(struct zip_archive *zp,
   fh->compressed_size = 0;
   fh->uncompressed_size = 0;
   fh->offset = zp->vtell(fp);
-  fh->file_name_length = strlen(name);
+  fh->file_name_length = file_name_len;
   fh->file_name = file_name;
-  strcpy(file_name, name);
+  memcpy(file_name, name, file_name_len + 1);
 
   // Write the header
   result = zip_write_file_header(zp, fh, 0);

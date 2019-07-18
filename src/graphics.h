@@ -182,6 +182,7 @@ struct graphics_data
   Uint32 mouse_height_mul;
   boolean mouse_status;
   boolean system_mouse;
+  boolean grab_mouse;
   boolean fullscreen;
   boolean fullscreen_windowed;
   Uint32 resolution_width;
@@ -205,10 +206,6 @@ struct graphics_data
   struct renderer renderer;
   void *render_data;
   Uint32 renderer_num;
-
-#ifdef CONFIG_EDITOR
-  char editor_backup_indices[SMZX_PAL_SIZE * 4];
-#endif
 };
 
 CORE_LIBSPEC void color_string(const char *string, Uint32 x, Uint32 y,

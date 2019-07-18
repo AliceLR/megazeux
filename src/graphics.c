@@ -1065,7 +1065,9 @@ void update_screen(void)
 // to use in conjuction with the next function.
 void vquick_fadeout(void)
 {
+#ifndef __EMSCRIPTEN__
   if(!has_video_initialized())
+#endif
   {
     // If we're running without video there's no point waiting 11 frames.
     insta_fadeout();
@@ -1107,7 +1109,9 @@ void vquick_fadeout(void)
 // use in conjuction with the previous function.
 void vquick_fadein(void)
 {
+#ifndef __EMSCRIPTEN__
   if(!has_video_initialized())
+#endif
   {
     // If we're running without video there's no point waiting 11 frames.
     insta_fadein();
@@ -1156,10 +1160,12 @@ void insta_fadeout(void)
   else
     num_colors = PAL_SIZE;
 
+  memcpy(graphics.saved_intensity, graphics.current_intensity,
+   sizeof(Uint32) * num_colors);
+
   for(i = 0; i < num_colors; i++)
     set_color_intensity(i, 0);
 
-  delay(1);
   graphics.palette_dirty = true;
   update_screen(); // NOTE: this was called conditionally in 2.81e
 
@@ -1282,6 +1288,14 @@ static SDL_Surface *png_read_icon(const char *name)
 }
 
 #endif // CONFIG_PNG && CONFIG_SDL && CONFIG_ICON && !__WIN32__
+
+static void set_window_grab(boolean grabbed)
+{
+#ifdef CONFIG_SDL
+  SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
+  SDL_SetWindowGrab(window, grabbed ? SDL_TRUE : SDL_FALSE);
+#endif
+}
 
 void set_window_caption(const char *caption)
 {
@@ -1520,6 +1534,7 @@ boolean init_video(struct config_info *conf, const char *caption)
   graphics.cursor_timestamp = get_ticks();
   graphics.cursor_flipflop = 1;
   graphics.system_mouse = conf->system_mouse;
+  graphics.grab_mouse = conf->grab_mouse;
 
   memset(&(graphics.text_video_layer), 0, sizeof(struct video_layer));
   graphics.text_video_layer.w = SCREEN_W;
@@ -1673,6 +1688,7 @@ boolean set_video_mode(void)
   if(ret)
   {
     set_window_caption(graphics.default_caption);
+    set_window_grab(graphics.grab_mouse);
     set_window_icon();
   }
 
@@ -1771,7 +1787,11 @@ void toggle_fullscreen(void)
 {
   graphics.fullscreen = !graphics.fullscreen;
   graphics.palette_dirty = true;
-  set_video_mode();
+  if(!set_video_mode())
+  {
+    warn("Failed to set video mode toggling fullscreen. Aborting\n");
+    exit(1);
+  }
   update_screen();
 }
 
@@ -1781,7 +1801,11 @@ void resize_screen(Uint32 w, Uint32 h)
   {
     graphics.window_width = w;
     graphics.window_height = h;
-    set_video_mode();
+    if(!set_video_mode())
+    {
+      warn("Failed to set video mode resizing window. Aborting\n");
+      exit(1);
+    }
     graphics.renderer.resize_screen(&graphics, w, h);
   }
 }

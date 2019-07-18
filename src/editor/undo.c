@@ -102,39 +102,43 @@ static struct undo_history *construct_undo_history(int max_size)
 static void add_undo_frame(struct undo_history *h, void *f)
 {
   struct undo_frame *temp;
-  int i;
+  int i, j;
 
   h->current_frame = f;
 
   if(h->current != h->last)
   {
     // Clear everything after the current frame
+    // Stop at the position after the last frame.
+    j = h->last + 1;
+    if(j >= h->size)
+      j = 0;
+
     // Might be -1 (e.g. every frame has been undone)
     if(h->current > -1)
     {
-      i = h->current;
+      i = h->current + 1;
+      if(i >= h->size)
+        i = 0;
+
       h->last = h->current;
     }
     else
     {
-      // Clear the first frame too (the loop won't)
       i = h->first;
-      temp = h->frames[i];
-      h->frames[i] = NULL;
-      h->clear_function(temp);
       h->first = -1;
     }
 
     // Clear everything after the current frame
-    while(i != h->last)
+    while(i != j)
     {
-      i++;
-      if(i == h->size)
-        i = 0;
-
       temp = h->frames[i];
       h->frames[i] = NULL;
       h->clear_function(temp);
+
+      i++;
+      if(i == h->size)
+        i = 0;
     }
   }
 
@@ -417,7 +421,7 @@ static void alloc_board_undo_pos(struct board_undo_pos *pos)
   {
     pos->param = -1;
     pos->storage_obj = cmalloc(sizeof(struct robot));
-    create_blank_robot_direct(pos->storage_obj, 0, 0);
+    memset(pos->storage_obj, 0, sizeof(struct robot));
   }
   else
 
@@ -425,7 +429,7 @@ static void alloc_board_undo_pos(struct board_undo_pos *pos)
   {
     pos->param = -1;
     pos->storage_obj = cmalloc(sizeof(struct scroll));
-    create_blank_scroll_direct(pos->storage_obj);
+    memset(pos->storage_obj, 0, sizeof(struct scroll));
   }
   else
 
@@ -433,7 +437,7 @@ static void alloc_board_undo_pos(struct board_undo_pos *pos)
   {
     pos->param = -1;
     pos->storage_obj = cmalloc(sizeof(struct sensor));
-    create_blank_sensor_direct(pos->storage_obj);
+    memset(pos->storage_obj, 0, sizeof(struct sensor));
   }
 }
 
