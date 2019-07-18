@@ -89,12 +89,16 @@ mzxrun.ilk
 mzxrun.iobj
 mzxrun.ipdb
 mzxrun.lib
+mzxrun.js
+mzxrun.js.orig.js
+mzxrun.js.mem
 mzxrun.nacp
 mzxrun.nds
 mzxrun.nro
 mzxrun.nso
 mzxrun.pdb
 mzxrun.smdh
+mzxrun.wasm
 /mzxrun
 PARAM.SFO
 platform.inc

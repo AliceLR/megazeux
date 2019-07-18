@@ -808,10 +808,10 @@ fi
 #
 # Force-enable tremor-lowmem on GP2X
 #
-#if [ "$PLATFORM" = "gp2x" -o "$PLATFORM" = "android" ]; then
-#	echo "Force-switching ogg/vorbis to tremor-lowmem."
-#	VORBIS="tremor-lowmem"
-#fi
+if [ "$PLATFORM" = "gp2x" ]; then
+	echo "Force-switching ogg/vorbis to tremor-lowmem."
+	VORBIS="tremor-lowmem"
+fi
 
 #
 # Force-disable modplug/mikmod/openmpt if audio is disabled

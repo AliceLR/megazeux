@@ -40,3 +40,15 @@ ifeq (${DEBUG},1)
 else
 	OPTIMIZE_CFLAGS = -O3
 endif
+
+clean:
+	$(if ${V},,@echo "  RM       mzxrun.js.orig.js")
+	$(if ${V},,@echo "  RM       mzxrun.js.mem")
+	$(if ${V},,@echo "  RM       mzxrun.wasm")
+	@rm -rf mzxrun.js.mem mzxrun.js.orig.js mzxrun.wasm
+
+# TODO: archive assets, copy frontend.
+build: all mzxrun.wasm
+	@cp mzxrun.wasm ${build}
+
+include arch/zip.inc

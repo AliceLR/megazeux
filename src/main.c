@@ -188,7 +188,7 @@ __libspec int main(int argc, char *argv[])
 #ifdef ANDROID
   // Accept argv[1] passed in from the Java side as the "intended" argv[0].
   if(argc >= 2)
-    argv[0] = argv[1];
+    argv++;
 #endif
 
   // argc may be 0 on e.g. some Wii homebrew loaders.

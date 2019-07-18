@@ -43,6 +43,8 @@ FEATURES
     been fixed. The Gamecube controller triggers are recognized
     as axes 5 and 6, and all 8 controllers now have default
     bindings in pad.config.
++ Added/updated Android port. (asie)
++ Added Emscripten port. (asie)
 + Added Nintendo Switch port. (Lachesis, asie)
 + The main menu and game menu are now usable with keyboard,
   mouse, or joystick. Pressing a navigation key/joystick button
