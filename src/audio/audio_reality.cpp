@@ -197,7 +197,7 @@ static struct audio_stream *construct_rad_stream(char *filename,
   Uint32 rate;
   FILE *fp;
 
-  fp = fopen(filename, "rb");
+  fp = fopen_unsafe(filename, "rb");
   if(fp)
   {
     /**

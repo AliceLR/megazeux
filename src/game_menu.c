@@ -425,7 +425,7 @@ static void construct_main_menu(struct world *mzx_world, struct menu_opt *menu,
   *_menu_length = menu_length;
 }
 
-static void set_game_menu_opt(struct menu_opt *opt, enum main_menu_opts which,
+static void set_game_menu_opt(struct menu_opt *opt, enum game_menu_opts which,
  boolean is_selectable)
 {
   opt->label = game_menu_labels[which];

@@ -1085,7 +1085,7 @@ struct keycode_name
 struct joystick_action_name
 {
   const char * const name;
-  const enum joystick_action value;
+  const int value;
 };
 
 static const struct keycode_name keycode_names[] =

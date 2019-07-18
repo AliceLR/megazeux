@@ -211,7 +211,8 @@ class RADPlayer {
         uint8_t             InstNum;
         uint8_t             EffectNum;
         uint8_t             Param;
-        bool                LastNote;
+        // Unused field, commented out to suppress warnings.
+        //bool                LastNote;
 
         static const int8_t NoteSize[];
         static const uint16_t ChanOffsets3[9], Chn2Offsets3[9];
