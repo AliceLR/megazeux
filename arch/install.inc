@@ -75,6 +75,7 @@ install: install-check install-arch
 		docs/mzxhelp.html.gz \
 		docs/macro.txt \
 		docs/keycodes.html \
+		docs/joystick.html \
 		${DESTDIR}${SHAREDIR}/doc/megazeux/
 	@${RM} -f docs/changelog.txt.gz
 	@${RM} -f docs/mzxhelp.html.gz

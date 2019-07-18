@@ -505,10 +505,6 @@
 
 # Joystick options
 
-# NOTE: As of MZX 2.92, it is not recommended to bind joystick controls
-# to keys directly. See the sections about joystick actions and SDL 2.0
-# gamecontroller support below.
-
 # It is possible to emulate key presses using a joystick. This can be
 # achieved with the following config options globally or (for options
 # starting with "joyX" only) on a per-game basis. To configure joysticks
@@ -523,23 +519,23 @@
 # joysticks are plugged in, you may have to experiment to determine which
 # joystick is which.
 
-# You can currently map three joystick input methods: axes, buttons,
-# and one POV hat. Axes/buttons/hats are mapped to keys using a number
-# corresponding to the a given key. This number is the same as the
-# KEY_PRESSED value for that key (see keycodes.html or mzx_help.html).
-# For convenience, "key_X" can be provided in place of a key number
-# (without the quotes), where X is the name of the key.
+# The old method for mapping joystick controls is to manually assign axes,
+# buttons, and/or a POV hat to keys to simulate keypresses. While this is no
+# longer recommended, the settings for this are
 
-# The option to map a joystick axis is
-
+# joyXbuttonY = A
 # joyXaxisY = A, B
+# joyXhat = A, B, C, D
 
-# where X is the number of the joystick, Y is the number of the axis
-# (1 is typically left/right, 2 is typically up/down), A is the key
-# for one extreme (such as left) and B is the key for the other
-# (such as right). An example of an axis is an analog stick or a
-# pressure-sensitive trigger button. The threshold to trigger a
-# joystick axis press can be globally defined with the setting
+# where X is the number of the joystick, Y is the number of the button or axis,
+# and A, B, C, and D are any of the following:
+#
+# 1) a number representing an internal MZX keycode (see keycodes.html);
+# 2) 'key_NAME' (without quotes), representing the key NAME (see keycodes.html);
+# 3) or 'act_NAME' (without quotes), representing the action NAME (see below).
+
+# The threshold to trigger a joystick axis press can be globally defined with
+# the setting
 
 # joy_axis_threshold = 10000
 
@@ -547,103 +543,68 @@
 # movement and higher values (32767 maximum) will press the mapped key
 # with more movement.
 
-# The option to map a joystick button is
-
-# joyXbuttonY = A
-
-# where X is the number of the joystick, Y is the number of the button,
-# and A is the key whose press is emulated when this button is pressed.
-# You may have to experiment to find the number of a given button.
-
-# The option to map a joystick hat is
-
-# joyXhat = U, D, L, R
-
-# where X is the number of the joystick, U is the key for the up direction,
-# D is the key for the down direction, L is the key for the left direction,
-# and R is the key for the right direction. Currently, only one POV hat per
-# joystick is supported. An example of a POV hat is the directional pad on
-# some controllers.
-
 # As of MegaZeux 2.92, it is also possible to bind joystick controls to
-# named "joystick actions". These actions correspond directly to positional
+# named joystick "actions". These actions correspond directly to positional
 # button names common on popular game controllers, are more UI-friendly than
 # using keys directly, they have default gameplay keys pre-assigned, and these
 # gameplay keys can be changed to different values without altering UI behavior.
-
-# To use a joystick action, replace the key in one of the settings above with
-# "act_A", where A is an action name from the table below. Examples:
-
-# joyXhat = act_up, act_down, act_left, act_right
-# joyXaxisY = act_l_left, act_l_right
-# joyXbuttonY = act_a
+# Actions can also be detected directly through Robotic. Finally, for most
+# platforms, these actions can be assigned automatically for many controllers
+# rather than by config options.
 
 # The available joystick actions and their typical behaviors are:
-
+#
 #  Action         Title screen    Window          Game key (default)
 # -------------  --------------  --------------  ----------------------
-#  up                             Cursor up       Up (move)
-#  down                           Cursor down     Down (move)
-#  left                           Cursor left     Left (move)
-#  right                          Cursor right    Right (move)
+#  up (1)                         Cursor up       Up (move)
+#  down (1)                       Cursor down     Down (move)
+#  left (1)                       Cursor left     Left (move)
+#  right (1)                      Cursor right    Right (move)
 #  a              Play game       Select          Space (shoot)
-#  b              Play game       Cancel          Delete (lay bomb)
+#  b              Main menu       Cancel          Delete (lay bomb)
 #  x              Load world      Select char     Enter (game menu)
 #  y              Reload save     Backspace       S (Caverns: spells)
-#  select         Main menu       Cancel          Escape[1]
-#  start          Main menu       Select          Enter[1]
+#  select         Main menu       Cancel          Game menu (2)
+#  start          Play game       Select          Game menu (2)
 #  lshoulder      Settings        Next element    Insert (switch bombs)
-#  rshoulder[2]   Settings        Settings[3]     P (Caverns: altar)
-#  ltrigger[2]    Load world      Page up         F3 (save game)
-#  rtrigger[2]    Reload save     Page down       F4 (load save)
-#  lstick[2]                      Home
-#  rstick[2]                      End
-
-# Actions "up"/"down"/"left"/"right" are intended for a digital pad. Actions
-# "l_up"/"l_down"/"l_left"/"l_right" and "r_up"/"r_down"/"r_left"/"r_right"
-# also exist, which are similar and intended for analog stick mapping on
-# controllers that possess both a digital pad and analog sticks.
-
-# [1] These buttons will always open the game menu directly unless both the
-# enter menu and the escape menu have been disabled through Robotic (in which
-# case the listed keys will be used). If the enter menu is disabled but not
-# the escape menu, the status half of the menu will be hidden.
+#  rshoulder      Settings        Settings        P (Caverns: altar)
+#  ltrigger       Load world      Page up         F3 (save game)
+#  rtrigger       Reload save     Page down       F4 (load save)
+#  lstick                         Home
+#  rstick                         End
 #
-# Since many games disable the enter menu but not the escape menu, the default
-# configuration has a duplicate enter mapping on the X button.
-
-# [2] The rshoulder action is highly likely to be unmapped on console ports
-# that use an onscreen keyboard by default. Availability of several other
-# actions also varies.
-
-# [3] Works on the main menu and game menu. May not work on other windows
-# currently.
+# (1) Actions "up"/"down"/"left"/"right" are intended for a dpad. Actions
+# "l_up"/"l_down"/"l_left"/"l_right" and "r_up"/"r_down"/"r_left"/"r_right"
+# also exist for analog sticks, and have the same default mappings.
+#
+# (2) These buttons will always open the game menu directly unless both the
+# enter menu and the escape menu have been disabled through Robotic.
 
 # To map a joystick action to a different key for gameplay, use the setting
 
-# joyX.Y = A
+# joyX.NAME = A
 
-# where X is the number of the joystick, Y is the name of the joystick action
-# (e.g. "lshoulder"), and A is the number (or name) of the key to assign.
-#
-# Analog actions "axis_lx", "axis_ly", "axis_rx", "axis_ry", "axis_ltrigger",
-# and "axis_rtrigger" are also available as actions in Robotic. These can be
-# assigned to real axes via this setting as well if A is an axis number.
+# where X is the number of the joystick, NAME is the name of the action
+# (e.g. "lshoulder"), and A is the number (or name) of the key to assign. The
+# joystick number 'X' can be substituted with a range '[Z,W]', which will
+# assign the control for all joysticks numbered Z through W (inclusive).
 
-# For platforms MegaZeux supports via SDL 2, joystick mapping can be automated
-# for the numerous controllers recognized by SDL 2. This means that, if your
-# device is supported, you can plug in your joystick/gamepad/etc. and it will
-# just work. This automatic mapping will not overwrite mapping values specified
-# in config by the above settings.
-
+# Automatic mapping for actions is handled using SDL 2's game controller API.
+# Supported controllers should generally "just work" when they're plugged in.
 # This setting can be used to globally disable the automatic mapping feature
 # entirely. If 1, it will be enabled (default). If 0, it will be disabled.
 
 # gamecontroller_enable = 1
 
-# This feature uses SDL 2 gamecontroller mappings to assign the above joystick
-# actions to axes/buttons/hats. The following settings can be used to customize
-# the default mapping from SDL to MZX actions/keys globally:
+# Controllers that aren't supported can be fixed by adding SDL mapping strings.
+# This config option adds a new mapping string and can be used multiple times;
+# each line adds a new mapping. See docs/joystick.html for more information.
+
+# gamecontroller_add =
+
+# The following settings can be used to globally customize the automated
+# joystick mappings generated from SDL mapping strings.
+# See docs/joystick.html for more information.
 
 # gamecontroller.a = act_a
 # gamecontroller.b = act_b
@@ -669,25 +630,6 @@
 # gamecontroller.+righty = act_r_down
 # gamecontroller.lefttrigger = act_ltrigger
 # gamecontroller.righttrigger = act_rtrigger
-
-# If your controller isn't currently supported by SDL or gamecontrollerdb.txt,
-# it is possible to add or override an SDL mapping string directly. Use one of
-# the tools on the following website to generate a mapping string for your
-# controller.
-#
-# https://github.com/gabomdq/SDL_GameControllerDB
-#
-# You can use the following setting to add your mapping to MegaZeux. Copy the
-# string generated by the mapping tool and paste it on the right side of the
-# equals sign:
-
-# gamecontroller_add =
-
-# You should test your new mapping to make sure every button/axis works
-# correctly and then report it to a MegaZeux developer or SDL_GameControllerDB
-# so it can be added to the database. This option may be specified multiple
-# times; each time, it will add or replace a different mapping. Each instance
-# should be on a single line.
 
 
 # Misc Options
