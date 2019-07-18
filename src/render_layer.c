@@ -25,8 +25,8 @@
 #include "render_layer.h"
 #include "util.h"
 
-// Skip unused variants to reduce compile time on these platforms.
-#ifdef CONFIG_WII
+// Skip unused variants to reduce compile time (Wii) or output size (Emscripten).
+#if defined(CONFIG_WII) || defined(__EMSCRIPTEN__)
 #define SKIP_8BPP
 #define SKIP_16BPP
 #endif

@@ -38,10 +38,18 @@
 #include <fat.h>
 #endif
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+void delay(Uint32 ms)
+{
+  emscripten_sleep_with_yield(ms);
+}
+#else
 void delay(Uint32 ms)
 {
   SDL_Delay(ms);
 }
+#endif
 
 Uint32 get_ticks(void)
 {

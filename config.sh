@@ -34,6 +34,7 @@ usage() {
 	echo "  amiga          Experimental AmigaOS 4 port"
 	echo "  android        Experimental Android port"
 	echo "  pandora        Experimental Pandora port"
+	echo "  emscripten     Experimental HTML5 (Emscripten) port"
 	echo
 	echo "Supported <option> values (negatives can be used):"
 	echo
@@ -474,6 +475,8 @@ if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "darwin" ]; then
 	LIBDIR="${LIBDIR}/megazeux"
 elif [ "$PLATFORM" = "android" ]; then
 	LIBDIR="/data/megazeux"
+elif [ "$PLATFORM" = "emscripten" ]; then
+	LIBDIR="/data"
 else
 	LIBDIR="."
 fi
@@ -486,6 +489,8 @@ elif [ "$PLATFORM" = "darwin-dist" ]; then
 	SYSCONFDIR="../Resources"
 elif [ "$PLATFORM" = "android" ]; then
 	SYSCONFDIR="/data/megazeux"
+elif [ "$PLATFORM" = "emscripten" ]; then
+	SYSCONFDIR="/data/etc"
 elif [ "$SYSCONFDIR_IS_SET" != "true" ]; then
 	SYSCONFDIR="."
 fi
@@ -559,6 +564,12 @@ elif [ "$PLATFORM" = "android" ]; then
 	SHAREDIR=/data/megazeux
 	GAMESDIR=/data/megazeux
 	BINDIR=/data/megazeux
+	echo "#define CONFFILE \"config.txt\"" >> src/config.h
+	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
+elif [ "$PLATFORM" = "emscripten" ]; then
+	SHAREDIR=/data
+	GAMESDIR=/data/game
+	BINDIR=/data
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 else
@@ -640,6 +651,20 @@ fi
 if [ "$SDL" = "false" -a "$EGL" = "false" ]; then
 	echo "Force-disabling OpenGL (no SDL or EGL backend)."
 	GL="false"
+fi
+
+#
+# Force-disable features unnecessary on Emscripten.
+#
+if [ "$PLATFORM" = "emscripten" ]; then
+	echo "Enabling Emscripten-specific hacks."
+	EDITOR="false"
+	SCREENSHOTS="false"
+	UPDATER="false"
+	UTILS="false"
+
+	GLES="true"
+	GL_FIXED="false"
 fi
 
 #
@@ -819,6 +844,7 @@ fi
 #
 if [ "$PLATFORM" = "gp2x" -o "$PLATFORM" = "nds" \
   -o "$PLATFORM" = "3ds"  -o "$PLATFORM" = "switch" \
+  -o "$PLATFORM" = "emscripten" \
   -o "$PLATFORM" = "psp"  -o "$PLATFORM" = "wii" ]; then
 	echo "Force-disabling modular build (nonsensical or unsupported)."
 	MODULAR="false"

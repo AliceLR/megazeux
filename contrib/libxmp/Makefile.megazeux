@@ -17,6 +17,9 @@ libxmp_cflags = \
  ${libxmp_include} -w -O3 \
  -include src/platform_endian.h
 
+ifeq (${PLATFORM},emscripten)
+libxmp_cflags += -DHAVE_FNMATCH -DHAVE_MKSTEMP
+endif
 
 SRC_OBJS	= virtual.o format.o period.o player.o read_event.o dataio.o \
 		  fnmatch.o md5.o lfo.o scan.o control.o \

@@ -1,0 +1,42 @@
+CC      = emcc
+CXX     = em++
+AR      = emar
+OBJCOPY = /bin/true
+STRIP   = /bin/true
+
+SDL_CFLAGS = -s USE_SDL=2
+SDL_LDFLAGS = -s USE_SDL=2
+
+VORBIS_CFLAGS = -s USE_OGG=1 -s USE_VORBIS=1
+VORBIS_LDFLAGS = -s USE_OGG=1 -s USE_VORBIS=1
+
+ZLIB_CFLAGS = -s USE_ZLIB=1
+ZLIB_LDFLAGS = -s USE_ZLIB=1
+
+LIBPNG_CFLAGS = -s USE_LIBPNG=1
+LIBPNG_LDFLAGS = -s USE_LIBPNG=1
+
+BINEXT = .js
+
+ARCH_LDFLAGS += -s ALLOW_MEMORY_GROWTH=1
+#ARCH_LDFLAGS += -s TOTAL_MEMORY=134217728 -s ALLOW_MEMORY_GROWTH=0
+
+ifeq (${BUILD_RENDER_GL_PROGRAM},1)
+	ARCH_CFLAGS += -s FULL_ES2=1
+	ARCH_LDFLAGS += -s FULL_ES2=1
+endif
+
+ARCH_LDFLAGS += -s EMTERPRETIFY=1 -s EMTERPRETIFY_ASYNC=1
+ARCH_LDFLAGS += -s EMTERPRETIFY_WHITELIST=@arch/emscripten/whitelist.json
+
+ARCH_CFLAGS += -s ENVIRONMENT=web
+ARCH_LDFLAGS += -s ENVIRONMENT=web
+
+#ARCH_LDFLAGS += --no-heap-copy --preload-file assets --preload-file config.txt
+
+ifeq (${DEBUG},1)
+	ARCH_CFLAGS += -s ASSERTIONS=1 --profiling-funcs
+	ARCH_LDFLAGS += -s ASSERTIONS=1 --profiling-funcs
+else
+	OPTIMIZE_CFLAGS = -O3
+endif

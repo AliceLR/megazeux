@@ -156,7 +156,8 @@ void game_settings(struct world *mzx_world)
       num_elements++;
     }
 
-#if !defined(CONFIG_WII) && !defined(CONFIG_SWITCH)
+#if !defined(CONFIG_WII) && !defined(CONFIG_SWITCH) && !defined(__EMSCRIPTEN__)
+    // Emscripten's SDL port crashes on re-entry attempts.
     // Wii has multiple renderers but shouldn't display this option.
     // FIXME this is a hack. Fix the Wii renderers so they're switchable.
     // FIXME: Switch has undiagnosed crash bugs related to renderer switching.

@@ -197,6 +197,34 @@ var archs =
     loadsave_meter:   no,
   },
 
+  emscripten:
+  {
+    platform:         "emscripten",
+    description:      "HTML5 (Emscripten)",
+    architecture:     "JavaScript <br /> WebAssembly",
+    endian:           "Little",
+    toolchain:        "clang 6.0.1 <br /> emsdk 1.38.36",
+    packaged:         subopt("NO"),
+    stack_protector:  _FAULTY(),
+    layer_rendering:  yes,
+    module_engine:    xmp,
+    ogg_vorbis:       libvorbis,
+    optimization:     speed,
+    sdl:              yes,
+    editor:           _FAULTY(),
+    helpsys:          yes,
+    audio:            yes,
+    software:         yes,
+    gl:               no,
+    overlay:          yes,
+    glsl:             yes,
+    updater:          no,
+    modular:          no,
+    png:              no,
+    uthash:           yes,
+    loadsave_meter:   no,
+  },
+
   mingw:
   {
     platform:         "mingw",
