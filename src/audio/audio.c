@@ -68,6 +68,10 @@
 #include "audio_openmpt.h"
 #endif
 
+#ifdef CONFIG_REALITY
+#include "audio_reality.h"
+#endif
+
 // May be used by audio plugins
 struct audio audio;
 
@@ -82,19 +86,38 @@ struct audio audio;
 static volatile int locked = 0;
 static volatile char last_lock[32];
 
+#ifdef CONFIG_SDL
+#include <SDL_thread.h>
+static volatile SDL_threadID last_thread = 0;
+#endif
+
 static void lock(const char *file, int line)
 {
-  // lock should _not_ be held here
-  if(locked)
-    debug("%s:%d: locked at %s already!\n", file, line, last_lock);
+#ifdef CONFIG_SDL
+  // lock may be held here, but it shouldn't be held by the current thread.
+  // If this is SDL, we can determine if the current thread is holding it.
+  // Otherwise, print nothing because this debug message is annoying and is
+  // almost always spurious.
+  SDL_threadID cur_thread = SDL_ThreadID();
+
+  if(locked && (last_thread == cur_thread))
+  {
+    debug("%s:%d (thread %ld): locked at %s (thread %ld) already!\n",
+     file, line, cur_thread, last_lock, last_thread);
+  }
+#endif
 
   // acquire the mutex
   __lock();
-  locked = 1;
 
   // store information on this lock
   snprintf((char *)last_lock, 32, "%s:%d", file, line);
   last_lock[31] = '\0';
+#ifdef CONFIG_SDL
+  last_thread = SDL_ThreadID();
+#endif
+
+  locked = 1;
 }
 
 static void unlock(const char *file, int line)
@@ -155,15 +178,22 @@ void destruct_audio_stream(struct audio_stream *a_src)
 void initialize_audio_stream(struct audio_stream *a_src,
  struct audio_stream_spec *a_spec, Uint32 volume, Uint32 repeat)
 {
+  // TODO should probably just memcpy into a spec in the audio_stream instead.
   a_src->mix_data = a_spec->mix_data;
   a_src->set_volume = a_spec->set_volume;
   a_src->set_repeat = a_spec->set_repeat;
   a_src->set_order = a_spec->set_order;
   a_src->set_position = a_spec->set_position;
+  a_src->set_loop_start = a_spec->set_loop_start;
+  a_src->set_loop_end = a_spec->set_loop_end;
   a_src->get_order = a_spec->get_order;
   a_src->get_position = a_spec->get_position;
   a_src->get_length = a_spec->get_length;
+  a_src->get_loop_start = a_spec->get_loop_start;
+  a_src->get_loop_end = a_spec->get_loop_end;
+  a_src->get_sample = a_spec->get_sample;
   a_src->destruct = a_spec->destruct;
+  a_src->is_spot_sample = false;
 
   if(a_src->set_volume)
     a_src->set_volume(a_src, volume);
@@ -279,6 +309,10 @@ void init_audio(struct config_info *conf)
   init_openmpt(conf);
 #endif
 
+#ifdef CONFIG_REALITY
+  init_reality(conf);
+#endif
+
   audio_set_music_volume(conf->music_volume);
   audio_set_sound_volume(conf->sam_volume);
   audio_set_music_on(conf->music_on);
@@ -342,8 +376,21 @@ void audio_end_module(void)
 {
   if(audio.primary_stream)
   {
+    struct audio_stream *current_astream = audio.stream_list_base;
+
     LOCK();
     audio.primary_stream->destruct(audio.primary_stream);
+
+    // Also end any sound effects attached to the mod.
+    while(current_astream)
+    {
+      struct audio_stream *next_astream = current_astream->next;
+
+      if(current_astream->is_spot_sample)
+        current_astream->destruct(current_astream);
+
+      current_astream = next_astream;
+    }
     UNLOCK();
   }
 
@@ -446,6 +493,34 @@ void audio_play_sample(char *filename, boolean safely, int period)
   }
 
   limit_samples(audio.max_simultaneous_samples);
+}
+
+void audio_spot_sample(int period, int which)
+{
+  // Play a sample from the current playing mod.
+  // Currently only works with libxmp (and maybe only ever will).
+
+  Uint32 vol = volume_function(255, audio.sound_volume);
+  struct wav_info wav;
+  boolean ret;
+
+  memset(&wav, 0, sizeof(struct wav_info));
+
+  if(audio.primary_stream && audio.primary_stream->get_sample)
+  {
+    LOCK();
+    ret = audio.primary_stream->get_sample(audio.primary_stream, which, &wav);
+    UNLOCK();
+
+    if(ret)
+    {
+      struct audio_stream *a_src = construct_wav_stream_direct(&wav,
+       audio_get_real_frequency(period * 2), vol, !!(wav.loop_end));
+      a_src->is_spot_sample = true;
+
+      limit_samples(audio.max_simultaneous_samples);
+    }
+  }
 }
 
 void audio_end_sample(void)
@@ -600,6 +675,56 @@ int audio_get_module_length(void)
     return length;
   }
 
+  return 0;
+}
+
+void audio_set_module_loop_start(int pos)
+{
+  if(audio.primary_stream && audio.primary_stream->set_loop_start)
+  {
+    LOCK();
+    audio.primary_stream->set_loop_start(audio.primary_stream, pos);
+    UNLOCK();
+  }
+}
+
+int audio_get_module_loop_start(void)
+{
+  if(audio.primary_stream && audio.primary_stream->get_loop_start)
+  {
+    int loop_start;
+
+    LOCK();
+    loop_start = audio.primary_stream->get_loop_start(audio.primary_stream);
+    UNLOCK();
+
+    return loop_start;
+  }
+  return 0;
+}
+
+void audio_set_module_loop_end(int pos)
+{
+  if(audio.primary_stream && audio.primary_stream->set_loop_end)
+  {
+    LOCK();
+    audio.primary_stream->set_loop_end(audio.primary_stream, pos);
+    UNLOCK();
+  }
+}
+
+int audio_get_module_loop_end(void)
+{
+  if(audio.primary_stream && audio.primary_stream->get_loop_end)
+  {
+    int loop_end;
+
+    LOCK();
+    loop_end = audio.primary_stream->get_loop_end(audio.primary_stream);
+    UNLOCK();
+
+    return loop_end;
+  }
   return 0;
 }
 

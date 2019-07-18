@@ -88,8 +88,11 @@ struct config_info
   boolean standalone_mode;
   boolean no_titlescreen;
   boolean system_mouse;
+  boolean grab_mouse;
 
   // Editor options
+  boolean test_mode;
+  unsigned char test_mode_start_board;
   // TODO: two places outside of the editor currently require access to this.
   boolean mask_midchars;
 

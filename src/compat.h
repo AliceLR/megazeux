@@ -116,6 +116,21 @@ typedef unsigned char boolean;
 #undef CONDITION
 #endif
 
+#ifdef __OpenBSD__
+#include <sys/param.h>
+// These macros conflict with internally-defined MZX macros
+#undef MIN
+#undef MAX
+
+// unveil added in OpenBSD 6.3
+#ifdef OpenBSD
+#if OpenBSD >= 201805
+#define PLEDGE_HAS_UNVEIL
+#endif
+
+#endif /* OpenBSD */
+#endif /* __OpenBSD__ */
+
 #ifndef MAX_PATH
 #define MAX_PATH 512
 #endif

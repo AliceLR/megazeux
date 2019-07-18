@@ -177,7 +177,7 @@ void prepare_robot_source(struct robot *cur_robot)
   // Disassemble the robot to source. Used by the robot debugger.
   if(!cur_robot->program_source)
   {
-    disassemble_and_map_program(
+    disassemble_program(
      cur_robot->program_bytecode, cur_robot->program_bytecode_length,
      &cur_robot->program_source, &cur_robot->program_source_length,
      &cur_robot->command_map, &cur_robot->command_map_length

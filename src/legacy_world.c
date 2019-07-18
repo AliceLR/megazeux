@@ -192,8 +192,8 @@ static void decrypt(const char *file_name)
 
   src_ptr += 25;
 
-  strncpy(backup_name, file_name, MAX_PATH - 8);
-  strcat(backup_name, ".locked");
+  snprintf(backup_name, MAX_PATH, "%.*s.locked", MAX_PATH - 8, file_name);
+
   backup = fopen_unsafe(backup_name, "wb");
   count = fwrite(file_buffer, file_length, 1, backup);
   fclose(backup);
@@ -906,8 +906,9 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
     mzx_world->vlayer_height = fgetw(fp);
     mzx_world->vlayer_size = vlayer_size;
 
-    mzx_world->vlayer_chars = cmalloc(vlayer_size);
-    mzx_world->vlayer_colors = cmalloc(vlayer_size);
+    // This might have been allocated already...
+    mzx_world->vlayer_chars = crealloc(mzx_world->vlayer_chars, vlayer_size);
+    mzx_world->vlayer_colors = crealloc(mzx_world->vlayer_colors, vlayer_size);
 
     if(vlayer_size &&
      (!fread(mzx_world->vlayer_chars, vlayer_size, 1, fp) ||

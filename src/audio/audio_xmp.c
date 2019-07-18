@@ -22,6 +22,7 @@
 
 #include "audio.h"
 #include "audio_xmp.h"
+#include "audio_wav.h"
 #include "ext.h"
 #include "sampled_stream.h"
 
@@ -162,6 +163,53 @@ static Uint32 audio_xmp_get_frequency(struct sampled_stream *s_src)
   return ((struct xmp_stream *)s_src)->effective_frequency;
 }
 
+// Return a duplicate of a sample from the current playing mod.
+static boolean audio_xmp_get_sample(struct audio_stream *a_src, Uint32 which,
+ struct wav_info *dest)
+{
+  struct xmp_stream *stream = (struct xmp_stream *)a_src;
+
+  struct xmp_module_info info;
+  xmp_get_module_info(stream->ctx, &info);
+
+  if(info.mod && info.mod->xxs && (info.mod->smp > (int)which))
+  {
+    struct xmp_sample *sam = &(info.mod->xxs[which]);
+
+    // I don't know if it's even possible for synth samples to get this far,
+    // but check for them so they can be ignored anyway.
+    if(sam->len && !(sam->flg & XMP_SAMPLE_SYNTH))
+    {
+      dest->channels = 1;
+      dest->freq = audio_get_real_frequency(SAM_DEFAULT_PERIOD);
+      dest->data_length = sam->len;
+
+      // If the sample loops, the sample this returns needs to loop too.
+      if(sam->flg & XMP_SAMPLE_LOOP)
+      {
+        dest->loop_start = sam->lps;
+        dest->loop_end = sam->lpe;
+      }
+      else
+        dest->loop_start = dest->loop_end = 0;
+
+      // XMP samples are signed, and if 16bit, LSB, so just copy it directly.
+      if(sam->flg & XMP_SAMPLE_16BIT)
+      {
+        dest->format = SAMPLE_S16LSB;
+        dest->data_length *= 2;
+      }
+      else
+        dest->format = SAMPLE_S8;
+
+      dest->wav_data = cmalloc(dest->data_length);
+      memcpy(dest->wav_data, sam->data, dest->data_length);
+      return true;
+    }
+  }
+  return false;
+}
+
 static void audio_xmp_destruct(struct audio_stream *a_src)
 {
   xmp_end_player(((struct xmp_stream *)a_src)->ctx);
@@ -246,6 +294,7 @@ static struct audio_stream *construct_xmp_stream(char *filename,
       a_spec.get_order    = audio_xmp_get_order;
       a_spec.get_position = audio_xmp_get_position;
       a_spec.get_length   = audio_xmp_get_length;
+      a_spec.get_sample   = audio_xmp_get_sample;
       a_spec.destruct     = audio_xmp_destruct;
 
       memset(&s_spec, 0, sizeof(struct sampled_stream_spec));

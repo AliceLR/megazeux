@@ -36,16 +36,35 @@ static Uint8 ascii_charset[CHAR_SIZE * CHARSET_SIZE];
 static Uint8 blank_charset[CHAR_SIZE * CHARSET_SIZE];
 static Uint8 smzx_charset[CHAR_SIZE * CHARSET_SIZE];
 
-void save_editor_indices(void)
+void store_backup_palette(char dest[SMZX_PAL_SIZE])
 {
-  memcpy(graphics.editor_backup_indices, graphics.smzx_indices,
-   SMZX_PAL_SIZE * 4);
+  Uint32 i;
+  Uint8 *r;
+  Uint8 *g;
+  Uint8 *b;
+
+  for(i = 0; i < graphics.protected_pal_position; i++)
+  {
+    r = (Uint8 *)(dest++);
+    g = (Uint8 *)(dest++);
+    b = (Uint8 *)(dest++);
+    get_rgb(i, r, g, b);
+  }
 }
 
-void load_editor_indices(void)
+void load_backup_palette(char src[SMZX_PAL_SIZE * 3])
 {
-  memcpy(graphics.smzx_indices, graphics.editor_backup_indices,
-   SMZX_PAL_SIZE * 4);
+  load_palette_mem(src, SMZX_PAL_SIZE * 3);
+}
+
+void store_backup_indices(char dest[SMZX_PAL_SIZE * 4])
+{
+  memcpy(dest, graphics.smzx_indices, SMZX_PAL_SIZE * 4);
+}
+
+void load_backup_indices(char src[SMZX_PAL_SIZE * 4])
+{
+  memcpy(graphics.smzx_indices, src, SMZX_PAL_SIZE * 4);
 }
 
 void save_palette(char *fname)

@@ -401,6 +401,7 @@ ${build}:
 	${CP} assets/default.chr assets/edit.chr ${build}/assets
 	${CP} assets/smzx.pal ${build}/assets
 	${CP} docs/macro.txt docs/keycodes.html docs/mzxhelp.html ${build}/docs
+	${CP} docs/joystick.html ${build}/docs
 	${CP} docs/changelog.txt docs/platform_matrix.html ${build}/docs
 	${CP} ${mzxrun} ${build}
 	@if test -f ${mzxrun}.debug; then \
@@ -473,7 +474,7 @@ help_check: ${hlp2txt} assets/help.fil
 	@rm -f help.txt
 
 test:
-	@testworlds/run.sh @{PLATFORM} @{LIBDIR}
+	@bash testworlds/run.sh @{PLATFORM} @{LIBDIR}
 
 test_clean:
 	@rm -rf testworlds/log

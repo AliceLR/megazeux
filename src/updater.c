@@ -163,7 +163,7 @@ static int ui_confirm_changes(context *ctx, struct manifest_entry *removed,
   int list_entry_width = 0;
   int entries = 0;
   int result;
-  int i;
+  int i = 0;
 
   for(e = removed; e; e = e->next, entries++)
     list_entry_width = MAX(list_entry_width, 2 + (int)strlen(e->name)+1+1);

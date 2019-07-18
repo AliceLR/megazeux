@@ -20,6 +20,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "../compat.h"
+
+#ifdef CONFIG_PLEDGE_UTILS
+#include <unistd.h>
+#define PROMISES "stdio rpath wpath cpath"
+#endif
+
 static int fgetw(FILE *fp)
 {
   int r = fgetc(fp);
@@ -61,14 +68,30 @@ int main(int argc, char *argv[])
     goto exit_out;
   }
 
-  in = fopen(argv[1], "rb");
+#ifdef CONFIG_PLEDGE_UTILS
+#ifdef PLEDGE_HAS_UNVEIL
+  if(unveil(argv[1], "r") || unveil(argv[2], "cw") || unveil(NULL, NULL))
+  {
+    fprintf(stderr, "ERROR: Failed unveil!\n");
+    return 1;
+  }
+#endif
+
+  if(pledge(PROMISES, ""))
+  {
+    error("ERROR: Failed pledge!\n");
+    return 1;
+  }
+#endif
+
+  in = fopen_unsafe(argv[1], "rb");
   if(!in)
   {
     error("Failed to open input file '%s' for reading.\n", argv[1]);
     goto exit_close;
   }
 
-  out = fopen(argv[2], "w");
+  out = fopen_unsafe(argv[2], "w");
   if(!out)
   {
     error("Failed to open output file '%s' for writing.\n", argv[2]);

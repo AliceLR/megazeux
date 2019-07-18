@@ -121,9 +121,11 @@ xcuserdata/
 
 # This MUST go after the *.mzx rule.
 !testworlds/*/*.mzx
+testworlds/*/backup*
 testworlds/backup*
 testworlds/log
 testworlds/next
+testworlds/test
 testworlds/temp/*
 !testworlds/temp/README.md
 !testworlds/data/*

@@ -76,6 +76,28 @@ __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1; // AMD
 
 static char startup_dir[MAX_PATH];
 
+#ifdef CONFIG_PLEDGE
+/**
+ * Experimental OpenBSD pledge(2) support.
+ * This has to be done after init_video and possibly after init_audio.
+ *
+ * FIXME MZX will abort if pretty much anything happens that requires
+ * destroying or creating a window (fullscreen, renderer switching, exiting).
+ * Additionally, in OpenBSD 6.5, Mesa seems to use something that aborts
+ * when drawing the current frame, so the GL renderers only work in 6.4 or
+ * earlier. I don't think there's anything that can be done about this in
+ * the near future.
+ */
+static void init_pledge(void)
+{
+  static const char * const promises = "stdio rpath wpath cpath audio drm";
+
+  debug("Promises: '%s'\n", promises);
+  if(pledge(promises, ""))
+    perror("Pledge failed");
+}
+#endif
+
 #ifdef CONFIG_UPDATER
 static char **rewrite_argv_for_execv(int argc, char **argv)
 {
@@ -144,7 +166,7 @@ __libspec int main(int argc, char *argv[])
   // We need to store the current working directory so it's
   // always possible to get back to it..
   getcwd(startup_dir, MAX_PATH);
-  strcpy(current_dir, startup_dir);
+  snprintf(current_dir, MAX_PATH, "%s", startup_dir);
 
 #ifdef CONFIG_STDIO_REDIRECT
   // Do this after platform_init() since, even though platform_init() might
@@ -220,8 +242,6 @@ __libspec int main(int argc, char *argv[])
 
   rng_seed_init();
 
-  initialize_joysticks();
-
   set_mouse_mul(8, 14);
 
   init_event();
@@ -229,6 +249,10 @@ __libspec int main(int argc, char *argv[])
   if(!init_video(conf, CAPTION))
     goto err_free_config;
   init_audio(conf);
+
+#ifdef CONFIG_PLEDGE
+  init_pledge();
+#endif
 
   core_data = core_init(&mzx_world);
 

@@ -113,6 +113,8 @@ struct context
 /**
  * Contains extra function/variable information for a new context or subcontext.
  * All variables should be set to NULL or zero unless explicitly provided.
+ * A return value of true from the draw function will update the screen (this
+ * is almost always what you want to return, for an exception see draw_world).
  * A return value of true to an update function will treat the indicated input
  * type(s) as having been fully handled. If no functions aside from destroy are
  * provided, an error will display.
@@ -130,7 +132,7 @@ struct context
 struct context_spec
 {
   void (*resume)(context *);
-  void (*draw)(context *);
+  boolean (*draw)(context *);
   boolean (*idle)(context *);
   boolean (*key)(context *, int *key);
   boolean (*joystick)(context *, int *key, int action);

@@ -92,11 +92,6 @@ void platform_quit(void)
   cfguExit();
 }
 
-void initialize_joysticks(void)
-{
-  // stub - hardcoded
-}
-
 void real_warp_mouse(int x, int y)
 {
   // Since we can't warp a touchscreen stylus, focus there instead.
