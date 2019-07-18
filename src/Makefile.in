@@ -156,11 +156,6 @@ ifeq (${BUILD_SWITCH},1)
 LINK_CC := ${CXX}
 endif
 
-ifeq (${PLATFORM},android)
-core_cxxobjs += arch/android/sfwrapper.o
-LINK_CC := ${CXX}
-endif
-
 ifeq (${BUILD_WII},1)
 # SDL and platform_sdl.c takes care of all of this when enabled.
 ifeq (${BUILD_SDL},)

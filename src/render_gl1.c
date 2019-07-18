@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "compat.h"
 #include "platform.h"
 #include "render.h"
 #include "render_layer.h"

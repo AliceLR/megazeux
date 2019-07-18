@@ -109,13 +109,6 @@ typedef unsigned char boolean;
 #define MAX_PATH 260
 #endif
 
-#ifdef ANDROID
-#define HAVE_SYS_UIO_H
-#define LOG_TAG "MegaZeux"
-#include <cutils/log.h>
-#undef CONDITION
-#endif
-
 #ifdef __OpenBSD__
 #include <sys/param.h>
 // These macros conflict with internally-defined MZX macros

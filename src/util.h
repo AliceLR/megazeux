@@ -207,11 +207,13 @@ CORE_LIBSPEC void __stack_chk_fail(void);
 
 #if defined(ANDROID)
 
-#define info(...)  LOGI(__VA_ARGS__)
-#define warn(...)  LOGW(__VA_ARGS__)
+#include <android/log.h>
+
+#define info(...)  __android_log_print(ANDROID_LOG_INFO, "MegaZeux", __VA_ARGS__)
+#define warn(...)  __android_log_print(ANDROID_LOG_WARN, "MegaZeux", __VA_ARGS__)
 
 #ifdef DEBUG
-#define debug(...) LOGD(__VA_ARGS__)
+#define debug(...)  __android_log_print(ANDROID_LOG_DEBUG, "MegaZeux", __VA_ARGS__)
 #else
 #define debug(...) do { } while(0)
 #endif

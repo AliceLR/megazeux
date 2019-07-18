@@ -75,7 +75,6 @@
 #endif
 
 #ifdef ANDROID
-#define FORCE_BPP_DEFAULT 16
 #define FULLSCREEN_DEFAULT 1
 #endif
 

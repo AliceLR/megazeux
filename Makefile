@@ -281,10 +281,8 @@ CXXFLAGS += -fvisibility=hidden
 # function. Skip android, too.
 #
 ifeq ($(or ${BUILD_GP2X},${BUILD_NDS},${BUILD_3DS},${BUILD_PSP},${BUILD_WII}),)
-ifneq (${PLATFORM},android)
 CFLAGS   += -fstack-protector-all
 CXXFLAGS += -fstack-protector-all
-endif
 endif
 
 endif

@@ -473,8 +473,6 @@ echo "PREFIX:=$PREFIX" >> platform.inc
 
 if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "darwin" ]; then
 	LIBDIR="${LIBDIR}/megazeux"
-elif [ "$PLATFORM" = "android" ]; then
-	LIBDIR="/data/megazeux"
 elif [ "$PLATFORM" = "emscripten" ]; then
 	LIBDIR="/data"
 else
@@ -487,8 +485,6 @@ if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "darwin" ]; then
 	: # Use default or user-defined SYSCONFDIR
 elif [ "$PLATFORM" = "darwin-dist" ]; then
 	SYSCONFDIR="../Resources"
-elif [ "$PLATFORM" = "android" ]; then
-	SYSCONFDIR="/data/megazeux"
 elif [ "$PLATFORM" = "emscripten" ]; then
 	SYSCONFDIR="/data/etc"
 elif [ "$SYSCONFDIR_IS_SET" != "true" ]; then
@@ -560,12 +556,6 @@ elif [ "$PLATFORM" = "darwin-dist" ]; then
 	echo "#define CONFFILE \"config.txt\""           >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""            >> src/config.h
 	echo "#define USERCONFFILE \".megazeux-config\"" >> src/config.h
-elif [ "$PLATFORM" = "android" ]; then
-	SHAREDIR=/data/megazeux
-	GAMESDIR=/data/megazeux
-	BINDIR=/data/megazeux
-	echo "#define CONFFILE \"config.txt\"" >> src/config.h
-	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 elif [ "$PLATFORM" = "emscripten" ]; then
 	SHAREDIR=/data
 	GAMESDIR=/data/game
@@ -604,12 +594,6 @@ if [ "$PLATFORM" = "3ds" -o "$PLATFORM" = "nds" ]; then
 	SDL="false"
 fi
 
-if [ "$PLATFORM" = "android" ]; then
-	echo "Disabling SDL (Android), force-enabling EGL."
-	SDL="false"
-	EGL="true"
-fi
-
 if [ "$PLATFORM" = "pandora" ]; then
 	echo "#define CONFIG_PANDORA" >> src/config.h
 	echo "BUILD_PANDORA=1" >> platform.inc
@@ -643,6 +627,16 @@ if [ "$EGL" = "true" ]; then
 
 	echo "Force-enabling OpenGL ES support (EGL)."
 	GLES="true"
+fi
+
+#
+# Use GLES on Android.
+#
+if [ "$PLATFORM" = "android" ]; then
+	#echo "Force-enabling OpenGL ES support (Android)."
+	#GLES="true"
+	echo "Force-enabling OpenGL ES support (Android; broken, TODO)."
+	GL="false"
 fi
 
 #
@@ -814,10 +808,10 @@ fi
 #
 # Force-enable tremor-lowmem on GP2X
 #
-if [ "$PLATFORM" = "gp2x" -o "$PLATFORM" = "android" ]; then
-	echo "Force-switching ogg/vorbis to tremor-lowmem."
-	VORBIS="tremor-lowmem"
-fi
+#if [ "$PLATFORM" = "gp2x" -o "$PLATFORM" = "android" ]; then
+#	echo "Force-switching ogg/vorbis to tremor-lowmem."
+#	VORBIS="tremor-lowmem"
+#fi
 
 #
 # Force-disable modplug/mikmod/openmpt if audio is disabled
@@ -844,7 +838,7 @@ fi
 #
 if [ "$PLATFORM" = "gp2x" -o "$PLATFORM" = "nds" \
   -o "$PLATFORM" = "3ds"  -o "$PLATFORM" = "switch" \
-  -o "$PLATFORM" = "emscripten" \
+  -o "$PLATFORM" = "android" -o "$PLATFORM" = "emscripten" \
   -o "$PLATFORM" = "psp"  -o "$PLATFORM" = "wii" ]; then
 	echo "Force-disabling modular build (nonsensical or unsupported)."
 	MODULAR="false"
