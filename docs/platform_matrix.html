@@ -64,7 +64,7 @@ var xmp = std("xmp");
 var rad = std("RAD");
 var libvorbis = std("libvorbis");
 var tremor = std("tremor");
-var tremor_lowmem = std("tremor (lowmem)");
+var tremor_lowmem = std("tremor<br />(lowmem)");
 
 var render_ctr = std("render_ctr");
 var render_nds = std("render_nds");
@@ -149,7 +149,7 @@ var archs =
     description:      "Nintendo 3DS",
     architecture:     "ARM11 (ELF)",
     endian:           "Little",
-    toolchain:        "gcc 8.3.0 <br /> binutils 2.32 <br /> (dk r52)",
+    toolchain:        "gcc 9.1.0 <br /> binutils 2.32 <br /> (dk r53)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
@@ -178,7 +178,7 @@ var archs =
     packaged:         APK,
     visibility:       yes,
     stack_protector:  _FAULTY("NO"),
-    layer_rendering:  _FAULTY("NO"),
+    layer_rendering:  yes,
     module_engine:    xmp,
     adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
@@ -238,6 +238,7 @@ var archs =
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
     sdl:              yes,
@@ -261,7 +262,7 @@ var archs =
     description:      "Windows <br /> (GNU toolchain)",
     architecture:     "x64 (PE+ COFF) <br /> x86 (PE COFF)",
     endian:           "Little",
-    toolchain:        "gcc 8.3.0 (x64) <br /> gcc 7.4.0 (x86) <br /> binutils 2.30",
+    toolchain:        "gcc 9.1.0 (x64) <br /> gcc 9.1.0 (x86) <br /> binutils 2.30",
     packaged:         ZIP,
     visibility:       yes,
     stack_protector:  no_mingw_stack_protector,
@@ -321,7 +322,7 @@ var archs =
     description:      "Nintendo DS",
     architecture:     "ARM9 (ELF)",
     endian:           "Little",
-    toolchain:        "gcc 8.3.0 <br /> binutils 2.32 <br /> (dk r52)",
+    toolchain:        "gcc 9.1.0 <br /> binutils 2.32 <br /> (dk r53)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  _FAULTY(),
@@ -376,6 +377,7 @@ var archs =
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
     sdl:              yes,
@@ -679,7 +681,8 @@ table {
 	border-collapse : collapse;
 	border : 2px solid black;
 	border-spacing : 0;
-	width : 150em;
+	min-width : 1880px;
+	width : 98%;
 }
 
 td, th {
@@ -689,7 +692,7 @@ td, th {
 	border-color : gray;
 	padding : 5px;
 	color : black;
-	width : 8.3%;
+  max-width : 100px;
 }
 
 td {
@@ -698,6 +701,7 @@ td {
 
 th {
 	background-color : rgb(200,200,200);
+  max-width: 120px;
 }
 
 td.yes, td.no, td.no2, td.na, td.std {
