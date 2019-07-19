@@ -1,4 +1,24 @@
-GIT
+July 21st, 2019 - MZX 2.92
+
+Here's another inexcusably big minor version release. First off,
+there are two new ports (Switch and Emscripten) and the Android
+port has been updated to be actually usable. Second, joystick
+support has been significantly overhauled (and depending on the
+controller/joystick you plug in, it may work with no config
+settings required!). Game joystick settings should no longer
+override the new UI joystick behavior. Also, controllers can now
+be used directly via Robotic. Read docs/joystick.html for more
+information on the new features.
+
+Other changes of note include RAD music support (v1 and v2),
+palette editor improvements, and some new counters. There's a
+new SDL 2 exclusive renderer to replace overlay1/overlay2 called
+"softscale" that performs much better than either did and with
+fewer crashes. Also of note are the massive number of fixed bugs
+and compatibility improvements, fixing regressions and error
+messages that affected around 20 different games (or more). A
+major bug was fixed that caused the updater to not initialize
+in Windows has been fixed too, so basically, update already.
 
 FEATURES
 
