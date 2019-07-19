@@ -2915,7 +2915,10 @@ void run_robot(context *ctx, int id, int x, int y)
             shoot(mzx_world, x, y, dir_to_int(direction),
              MIN(cur_robot->bullet_type, 2));
 
-            if(_bl[dir_to_int(direction)])
+            // Versions 2.80 through 2.91X had the logic inverted here, meaning
+            // the blocked array would never get updated when shooting. If this
+            // fix breaks something, exclude those versions from setting this.
+            if(!_bl[dir_to_int(direction)])
               _bl[dir_to_int(direction)] = 3;
           }
         }

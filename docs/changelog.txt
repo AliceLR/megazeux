@@ -257,6 +257,8 @@ FIXES
   Serum (2003 DoZ #404), Trashman Dan (Summer 2004 DoZ #18349).
 + The LOCAL and LOCAL# counters are now versioned separately,
   fixing bugs in Freedom Bound (Summer 2000 DoZ #4096).
++ SHOOT now properly updates the blocked array. This fixes a bug
+  in Captain Proton and the Reality Rippers (1999 WEoZ #173).
 
 DEVELOPERS
 
