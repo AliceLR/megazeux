@@ -136,6 +136,18 @@ static void string_counter_write(struct world *mzx_world,
 static int local_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
+  return (mzx_world->current_board->robot_list[id])->local[0];
+}
+
+static void local_write(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int value, int id)
+{
+  (mzx_world->current_board->robot_list[id])->local[0] = value;
+}
+
+static int localn_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
   int local_num = 0;
 
   if(name[5])
@@ -144,7 +156,7 @@ static int local_read(struct world *mzx_world,
   return (mzx_world->current_board->robot_list[id])->local[local_num];
 }
 
-static void local_write(struct world *mzx_world,
+static void localn_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   int local_num = 0;
@@ -2587,7 +2599,7 @@ static const struct function_counter builtin_counters[] =
   { "joy!active",       V292,   joyn_active_read,     NULL },
   { "joy_simulate_keys",V292,   NULL,                 joy_simulate_keys_write },
   { "key",              V100,   key_read,             key_write },
-  { "key?",             V269,   keyn_read,            NULL },
+  { "key!",             V269,   keyn_read,            NULL },
   { "key_code",         V269,   key_code_read,        NULL },
   { "key_pressed",      V260,   key_pressed_read,     NULL },
   { "key_release",      V269,   key_release_read,     NULL },
@@ -2596,7 +2608,8 @@ static const struct function_counter builtin_counters[] =
   { "load_counters",    V290,   load_counters_read,   NULL },
   { "load_game",        V268,   load_game_read,       NULL },
   { "load_robot?",      V270,   load_robot_read,      NULL },
-  { "local?",           V251s1, local_read,           local_write },
+  { "local",            V251s1, local_read,           local_write },
+  { "local!",           V269b,  localn_read,          localn_write },
   { "loopcount",        V200,   loopcount_read,       loopcount_write },
   { "max!,!",           V284,   maxval_read,          NULL },
   { "max_samples",      V291,   max_samples_read,     max_samples_write },
@@ -2751,9 +2764,7 @@ int match_function_counter(const char *dest, const char *src)
       {
         if(((cur_dest < '0') || (cur_dest > '9')) &&
          (cur_dest != '-'))
-        {
-          return 1;
-        }
+          break;
 
         dest++;
         cur_dest = *dest;
