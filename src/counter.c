@@ -2764,7 +2764,13 @@ int match_function_counter(const char *dest, const char *src)
       {
         if(((cur_dest < '0') || (cur_dest > '9')) &&
          (cur_dest != '-'))
+        {
+          // Don't want to accidentally match this char...
+          if(cur_dest == '!')
+            return 1;
+
           break;
+        }
 
         dest++;
         cur_dest = *dest;
