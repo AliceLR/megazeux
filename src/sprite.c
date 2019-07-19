@@ -48,7 +48,14 @@ static inline int is_blank(Uint16 c)
 void plot_sprite(struct world *mzx_world, struct sprite *cur_sprite, int color,
  int x, int y)
 {
-  if(((cur_sprite->width) && (cur_sprite->height)))
+  /**
+   * Prior to 2.80, only one of these had to be set, and it was extremely
+   * likely at least one WOULD be set because DOS versions would not clear
+   * anything but the flags between game loads. Instead of emulating the
+   * quirks of pre-port MZX for this, just unconditionally allow placement.
+   */
+  if((cur_sprite->width && cur_sprite->height) ||
+   (mzx_world->version < VERSION_PORT))
   {
     cur_sprite->x = x;
     cur_sprite->y = y;

@@ -2173,10 +2173,11 @@ void run_robot(context *ctx, int id, int x, int y)
           else
             prefix_mid_xy(mzx_world, &check_x, &check_y, x, y);
 
-          // Versions up to 2.82b would use sprite_num instead of the
+          // Versions from 2.69c to 2.82b would use sprite_num instead of the
           // param if the provided color was c??. This was unintuitive and
           // redundant with newer language extensions, so it was removed.
-          if(mzx_world->version <= V282 && check_color == 288)
+          if((check_color == 288) &&
+           (mzx_world->version >= V269c) && (mzx_world->version <= V282))
             check_param = (unsigned int)mzx_world->sprite_num;
 
           /* 256 == p?? */

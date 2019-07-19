@@ -248,6 +248,13 @@ FIXES
 + Fixed several memory leaks in the editor related to editing,
   placing, grab, and undo/redo operations on robots and scrolls.
 + Fixed vlayer memory leak when loading 2.84 saves.
++ Fixed a regression where the 'if c?? Sprite' legacy fix wasn't
+  locked to 2.69c and up. This fixes Depravity (2003 DoZ #666).
++ PUT Sprite now works unconditionally for <2.80 games, fixing
+  bugs where games relied on placing 0-height sprites or placing
+  sprites before initializing their dimensions: Hackers Can Turn
+  Your Computer Into a Bomb!, Lethal Recurse (2003 DoZ #215),
+  Serum (2003 DoZ #404), Trashman Dan (Summer 2004 DoZ #18349).
 
 DEVELOPERS
 
