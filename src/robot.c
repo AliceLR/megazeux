@@ -93,12 +93,10 @@ void create_blank_robot(struct robot *cur_robot)
   for(i = 0; i<32; i++)
     cur_robot->local[i] = 0;
 
-#if defined(CONFIG_EDITOR) || defined(CONFIG_DEBYTECODE)
+#ifdef CONFIG_EDITOR
   cur_robot->command_map = NULL;
   cur_robot->command_map_length = 0;
-#endif
 
-#ifdef CONFIG_EDITOR
   cur_robot->commands_total = 0;
   cur_robot->commands_cycle = 0;
 #endif
@@ -3731,11 +3729,11 @@ int get_legacy_bytecode_command_num(char *legacy_bc, int pos_in_bc)
 int get_program_command_num(struct robot *cur_robot)
 {
   int program_pos = cur_robot->cur_prog_line;
+  int a = 0;
 
 #ifdef CONFIG_EDITOR
   struct command_mapping *cmd_map = cur_robot->command_map;
   int b = cur_robot->command_map_length - 1;
-  int a = 0;
   int i;
 
   int d;

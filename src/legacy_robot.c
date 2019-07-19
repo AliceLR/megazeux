@@ -72,12 +72,10 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
   program_length = mem_getw(&bufferPtr);
   bufferPtr += 2;
 
-#if defined(CONFIG_EDITOR) || defined(CONFIG_DEBYTECODE)
+#ifdef CONFIG_EDITOR
   cur_robot->command_map = NULL;
   cur_robot->command_map_length = 0;
-#endif
 
-#ifdef CONFIG_EDITOR
   cur_robot->commands_total = 0;
   cur_robot->commands_cycle = 0;
   cur_robot->commands_caught = 0;
