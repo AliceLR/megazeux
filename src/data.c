@@ -140,8 +140,8 @@ const unsigned int flags[] =
   0,                                                          // 0x62 98
   0,                                                          // 0x63 99
   0,                                                          // 0x64 100
-  0,                                                          // 0x65 101
-  0,                                                          // 0x66 102
+  A_PUSHNS,                                                   // 0x65 101 CustomNS
+  A_PUSHEW,                                                   // 0x66 102 CustomEW
   0,                                                          // 0x67 103
   0,                                                          // 0x68 104
   0,                                                          // 0x69 105
@@ -273,8 +273,8 @@ const char *const thing_names[128] =
   "Sprite",
   "Sprite_colliding",
   "Image_file",
-  "__unused",
-  "__unused",
+  "CustomNS",
+  "CustomEW",
   "__unused",
   "__unused",
   "__unused",

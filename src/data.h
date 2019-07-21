@@ -138,6 +138,8 @@ enum thing
   SPRITE          = 98,
   SPR_COLLISION   = 99,
   IMAGE_FILE      = 100,
+  CUSTOM_NS       = 101,
+  CUSTOM_EW       = 102,
   SENSOR          = 122,
   ROBOT_PUSHABLE  = 123,
   ROBOT           = 124,

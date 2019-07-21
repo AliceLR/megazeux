@@ -144,6 +144,8 @@ static struct thing_menu_item thing_menus[NUM_THING_MENUS][MAX_CHOICES] =
     { "Pusher          ~D\x1F",   PUSHER          },
     { "Slider NS       ~D\x12",   SLIDER_NS       },
     { "Slider EW       ~D\x1D",   SLIDER_EW       },
+	{ "Custom NS       ~F?",      CUSTOM_NS       },
+	{ "Custom EW       ~F?",      CUSTOM_EW       },
     { NULL, 0 }
   },
 
