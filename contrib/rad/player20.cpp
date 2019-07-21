@@ -344,7 +344,9 @@ void RADPlayer::Init(const void *tune, void (*opl3)(void *, uint16_t, uint8_t), 
         } else {
 
             // Ignore MIDI instrument data
-            s += 6;
+            // NOTE: this incorrectly skipped 6 bytes in the vanilla player,
+            // even though the algorithm byte has already been skipped above.
+            s += 5;
         }
 
         // Instrument riff?
@@ -708,10 +710,15 @@ void RADPlayer::PlayNote(int channum, int8_t notenum, int8_t octave, uint16_t in
         chan.Instrument = inst;
 
         // Ignore MIDI instruments
+        // NOTE: the vanilla player does this, meaning no effects or new riffs
+        // will trigger on this line.
+        /*
         if (inst->Algorithm == 7) {
             Entrances--;
             return;
         }
+        */
+        if (inst->Algorithm < 7) {
 
         LoadInstrumentOPL3(channum);
 
@@ -746,6 +753,7 @@ void RADPlayer::PlayNote(int channum, int8_t notenum, int8_t octave, uint16_t in
 
             } else
                 chan.IRiff.SpeedCnt = 0;
+        }
         }
     }
 

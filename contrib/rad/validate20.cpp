@@ -304,7 +304,8 @@ const char *RADValidate(const void *data, size_t data_size) {
     if (flags & 0x80)
         return g_RADBadFlags; // Bit 7 is unused
 
-    if (flags & 0x40) {
+    // NOTE: the vanilla validater incorrectly checks 0x40 here.
+    if (flags & 0x20) {
         if (s + 2 > e)
             return g_RADTruncated;
         uint16_t bpm = s[0] | (uint16_t(s[1]) << 8);
