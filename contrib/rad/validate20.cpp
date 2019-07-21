@@ -304,7 +304,8 @@ const char *RADValidate(const void *data, size_t data_size) {
     if (flags & 0x80)
         return g_RADBadFlags; // Bit 7 is unused
 
-    if (flags & 0x40) {
+    // NOTE: the vanilla validator incorrectly checks 0x40 here.
+    if (flags & 0x20) {
         if (s + 2 > e)
             return g_RADTruncated;
         uint16_t bpm = s[0] | (uint16_t(s[1]) << 8);
@@ -357,7 +358,9 @@ const char *RADValidate(const void *data, size_t data_size) {
                 return g_RADTruncated;
             if (s[2] >> 4)
                 return g_RADUnknownMIDIVersion;
-            s += 6;
+            // NOTE the vanilla validator skips 6 bytes here as if the algorithm
+            // byte was already skipped. It wasn't, so skip 7 instead.
+            s += 7;
 
         } else {
 
