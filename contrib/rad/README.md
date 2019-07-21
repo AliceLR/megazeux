@@ -25,6 +25,7 @@ Please visit the Reality website for the latest version of the RAD tracker, the
 original version of this playback code, and .RAD music releases by Reality:
 <https://www.3eality.com/productions/reality-adlib-tracker>.
 
-Special thanks to zzo38 for finding and reporting several of these bugs.
+Thanks to Reality for the original software and to zzo38 for finding and
+reporting several of these bugs.
 
 -Lachesis
