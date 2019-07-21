@@ -344,9 +344,7 @@ void RADPlayer::Init(const void *tune, void (*opl3)(void *, uint16_t, uint8_t), 
         } else {
 
             // Ignore MIDI instrument data
-            // NOTE: this incorrectly skipped 6 bytes in the vanilla player,
-            // even though the algorithm byte has already been skipped above.
-            s += 5;
+            s += 6;
         }
 
         // Instrument riff?

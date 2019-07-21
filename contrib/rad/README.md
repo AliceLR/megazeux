@@ -9,9 +9,10 @@ This is a modified version of the RAD 2.x player for MegaZeux. Included:
   row is reached.
 * A bugfix for BPM validation. The vanilla validater incorrectly checks bit 6
   when the BPM-present flag is bit 5 in both the player and the documentation.
-* A bugfix for MIDI instrument loading in the player. A MIDI instrument is 6
-  bytes long including the first algorithm byte, but the vanilla player
-  erroneously skips this byte twice when loading a track.
+* A bugfix for MIDI instrument validation in the player. A MIDI instrument is 7
+  bytes long including the first algorithm byte; the final byte is a "volume"
+  byte that appears in the tracker but is not present in the documentation.
+  The validator only skips 6 bytes.
 * A bugfix for MIDI instrument processing in the player. The vanilla player
   will ignore processing an entire row when it encounters a line that would
   play a MIDI instrument, causing it to ignore effects and riffs.
