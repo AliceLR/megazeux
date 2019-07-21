@@ -14,7 +14,7 @@ This is a modified version of the RAD 2.x player for MegaZeux. Included:
   byte that appears in the tracker but is not present in the documentation.
   The vanilla validator only skips 6 bytes.
 * A bugfix for MIDI instrument processing in the player. The vanilla player
-  will ignore processing an entire row when it encounters a line that would
+  will ignore processing an entire note when it encounters a line that would
   play a MIDI instrument, causing it to ignore effects and riffs.
 * Some -pedantic warning fixes.
 
