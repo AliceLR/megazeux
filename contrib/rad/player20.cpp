@@ -753,6 +753,8 @@ void RADPlayer::PlayNote(int channum, int8_t notenum, int8_t octave, uint16_t in
                 chan.IRiff.SpeedCnt = 0;
         }
         }
+        else
+            chan.Instrument = 0;
     }
 
     // Starting a channel riff?
