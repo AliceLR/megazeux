@@ -3328,6 +3328,13 @@ void clear_global_data(struct world *mzx_world)
   mzx_world->robotic_save_type = SAVE_NONE;
 
   memset(mzx_world->custom_sfx, 0, NUM_SFX * SFX_SIZE);
+  mzx_world->custom_sfx_on = 0;
+
+  mzx_world->max_samples = -1;
+  audio_set_max_samples(mzx_world->max_samples);
+
+  mzx_world->joystick_simulate_keys = true;
+  joystick_set_game_bindings(mzx_world->joystick_simulate_keys);
 
   mzx_world->bomb_type = 1;
   mzx_world->dead = false;

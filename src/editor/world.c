@@ -433,6 +433,11 @@ void create_blank_world(struct world *mzx_world)
 
   mzx_world->name[0] = 0;
 
+  // Defaults for things set by load_world
+  mzx_world->custom_sfx_on = 0;
+  mzx_world->max_samples = -1;
+  mzx_world->joystick_simulate_keys = true;
+
   set_update_done(mzx_world);
 
   set_screen_mode(0);

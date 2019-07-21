@@ -280,6 +280,8 @@ FIXES
   Impact (2001 DoZ #027).
 + SHOOT now properly updates the blocked array. This fixes a bug
   in Captain Proton and the Reality Rippers (1999 WEoZ #173).
++ Fixed a bug where the custom SFX flag and max samples wouldn't
+  be reset when creating a new world in the editor.
 
 DEVELOPERS
 
