@@ -89,8 +89,8 @@ function check_file
 		echo "Found mzxrun.nds in $1; adding caverns to NDS at $NDS_DIR"
 		add_caverns $1 $NDS_PATH
 
-	elif $(locate_mzx $1 "megazeux.dol"); then
-		echo "Found megazeux.dol in $1; adding caverns to Wii at $WII_DIR"
+	elif $(locate_mzx $1 "boot.dol"); then
+		echo "Found boot.dol in $1; adding caverns to Wii at $WII_DIR"
 		add_caverns $1 $WII_PATH
 
 	elif $(locate_mzx $1 "megazeux.nro"); then
