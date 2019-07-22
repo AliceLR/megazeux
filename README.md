@@ -3,7 +3,7 @@
 
 MegaZeux is a game creation system (GCS) created by game developer Alexis Janson in 1994.
 Originally a DOS program, in 2005 a multi-platform port was released by Exophase. The most
-recent version of MegaZeux is 2.91j, which was released on February 20th, 2019.
+recent version of MegaZeux is 2.92, which was released on July 22nd, 2019.
 
 MegaZeux is officially supported on Windows, Linux/BSD, MacOS, as well as the NDS, 3DS, Wii,
 and PSP consoles. Historical support has also existed for GP2X, Pandora, and AmigaOS 4.
@@ -27,6 +27,7 @@ Older versions are available at [DigitalMZX](https://vault.digitalmzx.net/).
 [megazeux-nds]: https://vault.digitalmzx.net/download.php?latest=nds
 [megazeux-3ds]: https://vault.digitalmzx.net/download.php?latest=3ds
 [megazeux-wii]: https://vault.digitalmzx.net/download.php?latest=wii
+[megazeux-swi]: https://vault.digitalmzx.net/download.php?latest=switch
 [megazeux-psp]: https://vault.digitalmzx.net/download.php?latest=psp
 [megazeux-src]: https://vault.digitalmzx.net/download.php?latest=src
 
@@ -47,6 +48,7 @@ Older versions are available at [DigitalMZX](https://vault.digitalmzx.net/).
 [arch-nds]: contrib/archicons/nds.png       "Nintendo DS"
 [arch-3ds]: contrib/archicons/3ds.png       "Nintendo 3DS"
 [arch-wii]: contrib/archicons/wii.png       "Nintendo Wii"
+[arch-swi]: contrib/archicons/switch.png    "Nintendo Switch"
 [arch-psp]: contrib/archicons/psp.png       "PlayStation Portable"
 [arch-ami]: contrib/archicons/amiga.png     "Amiga OS 4"
 [arch-gp2x]:contrib/archicons/gp2x.png      "GP2X"
@@ -64,6 +66,7 @@ Older versions are available at [DigitalMZX](https://vault.digitalmzx.net/).
 &nbsp; [![Nintendo DS         ][arch-nds]][megazeux-nds]
 &nbsp; [![Nintendo 3DS        ][arch-3ds]][megazeux-3ds]
 &nbsp; [![Nintendo Wii        ][arch-wii]][megazeux-wii]
+&nbsp; [![Nintendo Switch     ][arch-swi]][megazeux-swi]
 &nbsp; [![PlayStation Portable][arch-psp]][megazeux-psp]
 &nbsp; [![Source code         ][arch-src]][megazeux-src]
 
@@ -88,8 +91,8 @@ Downloads are also available for the following platforms, but are not regularly 
 | ----------------- | -------------------------------- |
 | Alice Rowan       | Developer/current maintainer     |
 | Dr. Lancer X      | Developer (layer rendering)      |
-| Adrian Siekierka  | Developer (3DS port)             |
-| Alistair Strachan | Developer (SDL 2 support)        |
+| Adrian Siekierka  | Developer (various ports)        |
+| Alistair Strachan | Developer (initial SDL 2 support)|
 | Terryn            | Help file                        |
 | Spectere          | Mac OS X builds                  |
 | Insidious         | Ubuntu/Debian builds             |
