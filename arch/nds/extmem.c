@@ -41,11 +41,8 @@ static void store_robot_to_extram(struct robot *robot)
   if(!nds_ext_in(&robot->program_bytecode, robot->program_bytecode_length)) {}
     // TODO: handle out-of-memory
 
-  if(robot->used)
-  {
-    clear_label_cache(robot->label_list, robot->num_labels);
-    robot->label_list = cache_robot_labels(robot, &robot->num_labels);
-  }
+  clear_label_cache(robot);
+  cache_robot_labels(robot);
 }
 
 // Move the robot's memory from extra RAM to normal RAM.
@@ -60,11 +57,8 @@ static void retrieve_robot_from_extram(struct robot *robot)
   if(!nds_ext_out(&robot->program_bytecode, robot->program_bytecode_length)) {}
     // TODO: handle out-of-memory
 
-  if(robot->used)
-  {
-    clear_label_cache(robot->label_list, robot->num_labels);
-    robot->label_list = cache_robot_labels(robot, &robot->num_labels);
-  }
+  clear_label_cache(robot);
+  cache_robot_labels(robot);
 }
 
 // Move the board's memory from normal RAM to extra RAM.

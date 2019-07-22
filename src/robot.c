@@ -834,8 +834,16 @@ void cache_robot_labels(struct robot *cur_robot)
   int i;
 
   char *robot_program = cur_robot->program_bytecode;
-  struct label **label_list = ccalloc(16, sizeof(struct label *));
+  struct label **label_list;
   struct label *current_label;
+
+  cur_robot->label_list = NULL;
+  cur_robot->num_labels = 0;
+
+  if(!robot_program)
+    return;
+
+  label_list = ccalloc(16, sizeof(struct label *));
 
   for(i = 1; i < (cur_robot->program_bytecode_length - 1); i++)
   {
@@ -883,8 +891,6 @@ void cache_robot_labels(struct robot *cur_robot)
 
   if(!labels_found)
   {
-    cur_robot->label_list = NULL;
-    cur_robot->num_labels = 0;
     free(label_list);
     return;
   }
