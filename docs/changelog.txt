@@ -1,4 +1,4 @@
-July 21st, 2019 - MZX 2.92
+July 22nd, 2019 - MZX 2.92
 
 Here's another inexcusably big minor version release. First off,
 there are two new ports (Switch and Emscripten) and the Android
