@@ -93,10 +93,9 @@ function check_file
 		echo "Found megazeux.dol in $1; adding caverns to Wii at $WII_DIR"
 		add_caverns $1 $WII_PATH
 
-	# FIXME: Switch not yet merged.
-	#elif $(locate_mzx $1 "megazeux.nro"); then
-		#echo "Found megazeux.nro in $1; adding caverns to Switch at $SWITCH_DIR"
-		#add_caverns $1 $SWITCH_PATH
+	elif $(locate_mzx $1 "megazeux.nro"); then
+		echo "Found megazeux.nro in $1; adding caverns to Switch at $SWITCH_DIR"
+		add_caverns $1 $SWITCH_PATH
 
 	elif $(locate_mzx $1 "EBOOT.PBP"); then
 		echo "Found EBOOT.PBP in $1; adding caverns to PSP at /"
