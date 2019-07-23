@@ -18,6 +18,7 @@
 		BF1012C21FCCABF0008EEDB6 /* SDL2.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C01FCCABF0008EEDB6 /* SDL2.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		BF1012C41FCCB02F008EEDB6 /* libpng.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C31FCCB02F008EEDB6 /* libpng.framework */; };
 		BF1012C51FCCB02F008EEDB6 /* libpng.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C31FCCB02F008EEDB6 /* libpng.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		BF3C7A7C22E689020024C630 /* render_softscale.c in Sources */ = {isa = PBXBuildFile; fileRef = BF3C7A7A22E688000024C630 /* render_softscale.c */; };
 		BF6058B2216B3683001B738C /* edit_menu.c in Sources */ = {isa = PBXBuildFile; fileRef = BF6058AC216B3682001B738C /* edit_menu.c */; };
 		BF6058B3216B3683001B738C /* buffer.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058AD216B3682001B738C /* buffer.h */; };
 		BF6058B4216B3683001B738C /* edit_menu.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058AE216B3682001B738C /* edit_menu.h */; };
@@ -136,10 +137,6 @@
 		BFFF16F01FCDC76900BDEC58 /* render_sdl.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF16A71FCDC6D300BDEC58 /* render_sdl.c */; };
 		BFFF16F11FCDC76900BDEC58 /* render_sdl.h in Headers */ = {isa = PBXBuildFile; fileRef = BFFF16971FCDC6D000BDEC58 /* render_sdl.h */; };
 		BFFF16F21FCDC76900BDEC58 /* render_soft.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF16A41FCDC6D300BDEC58 /* render_soft.c */; };
-		BFFF16F31FCDC76900BDEC58 /* render_yuv.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF169B1FCDC6D100BDEC58 /* render_yuv.c */; };
-		BFFF16F41FCDC76900BDEC58 /* render_yuv.h in Headers */ = {isa = PBXBuildFile; fileRef = BFFF16A51FCDC6D300BDEC58 /* render_yuv.h */; };
-		BFFF16F51FCDC76900BDEC58 /* render_yuv1.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF16981FCDC6D100BDEC58 /* render_yuv1.c */; };
-		BFFF16F61FCDC76900BDEC58 /* render_yuv2.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF169A1FCDC6D100BDEC58 /* render_yuv2.c */; };
 		BFFF16F71FCDC76900BDEC58 /* render.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF166D1FCDC64D00BDEC58 /* render.c */; };
 		BFFF16F81FCDC76900BDEC58 /* render.h in Headers */ = {isa = PBXBuildFile; fileRef = BFFF16691FCDC64C00BDEC58 /* render.h */; };
 		BFFF16F91FCDC76900BDEC58 /* robot.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF16451FCDC64700BDEC58 /* robot.c */; };
@@ -384,6 +381,9 @@
 		BF1012C01FCCABF0008EEDB6 /* SDL2.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = SDL2.framework; sourceTree = "<group>"; };
 		BF1012C31FCCB02F008EEDB6 /* libpng.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = libpng.framework; sourceTree = "<group>"; };
 		BF1012C61FCCB0F9008EEDB6 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
+		BF3C7A7A22E688000024C630 /* render_softscale.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = render_softscale.c; path = ../../src/render_softscale.c; sourceTree = "<group>"; };
+		BF3C7A7D22E6B6A20024C630 /* yuv.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = yuv.h; path = ../../src/yuv.h; sourceTree = "<group>"; };
+		BF3C7A7E22E6B7A20024C630 /* gamecontrollerdb.txt */ = {isa = PBXFileReference; lastKnownFileType = text; name = gamecontrollerdb.txt; path = ../../assets/gamecontrollerdb.txt; sourceTree = "<group>"; };
 		BF6058AC216B3682001B738C /* edit_menu.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = edit_menu.c; path = ../../src/editor/edit_menu.c; sourceTree = "<group>"; };
 		BF6058AD216B3682001B738C /* buffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = buffer.h; path = ../../src/editor/buffer.h; sourceTree = "<group>"; };
 		BF6058AE216B3682001B738C /* edit_menu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = edit_menu.h; path = ../../src/editor/edit_menu.h; sourceTree = "<group>"; };
@@ -512,15 +512,11 @@
 		BFFF16951FCDC6D000BDEC58 /* render_gl2.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = render_gl2.c; path = ../../src/render_gl2.c; sourceTree = "<group>"; };
 		BFFF16961FCDC6D000BDEC58 /* event_sdl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = event_sdl.c; path = ../../src/event_sdl.c; sourceTree = "<group>"; };
 		BFFF16971FCDC6D000BDEC58 /* render_sdl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = render_sdl.h; path = ../../src/render_sdl.h; sourceTree = "<group>"; };
-		BFFF16981FCDC6D100BDEC58 /* render_yuv1.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = render_yuv1.c; path = ../../src/render_yuv1.c; sourceTree = "<group>"; };
 		BFFF16991FCDC6D100BDEC58 /* render_gl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = render_gl.c; path = ../../src/render_gl.c; sourceTree = "<group>"; };
-		BFFF169A1FCDC6D100BDEC58 /* render_yuv2.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = render_yuv2.c; path = ../../src/render_yuv2.c; sourceTree = "<group>"; };
-		BFFF169B1FCDC6D100BDEC58 /* render_yuv.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = render_yuv.c; path = ../../src/render_yuv.c; sourceTree = "<group>"; };
 		BFFF169D1FCDC6D200BDEC58 /* render_gl1.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = render_gl1.c; path = ../../src/render_gl1.c; sourceTree = "<group>"; };
 		BFFF169E1FCDC6D200BDEC58 /* render_glsl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = render_glsl.c; path = ../../src/render_glsl.c; sourceTree = "<group>"; };
 		BFFF16A31FCDC6D200BDEC58 /* platform_sdl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = platform_sdl.c; path = ../../src/platform_sdl.c; sourceTree = "<group>"; };
 		BFFF16A41FCDC6D300BDEC58 /* render_soft.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = render_soft.c; path = ../../src/render_soft.c; sourceTree = "<group>"; };
-		BFFF16A51FCDC6D300BDEC58 /* render_yuv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = render_yuv.h; path = ../../src/render_yuv.h; sourceTree = "<group>"; };
 		BFFF16A61FCDC6D300BDEC58 /* render_gl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = render_gl.h; path = ../../src/render_gl.h; sourceTree = "<group>"; };
 		BFFF16A71FCDC6D300BDEC58 /* render_sdl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = render_sdl.c; path = ../../src/render_sdl.c; sourceTree = "<group>"; };
 		BFFF16A81FCDC6D300BDEC58 /* platform_endian.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = platform_endian.h; path = ../../src/platform_endian.h; sourceTree = "<group>"; };
@@ -717,8 +713,9 @@
 			isa = PBXGroup;
 			children = (
 				BFFF17101FCDC81000BDEC58 /* config.h */,
-				BFE5EB622006DB4300E15CC0 /* version.h */,
 				BFFF18981FCDE8FD00BDEC58 /* config.txt */,
+				BF3C7A7E22E6B7A20024C630 /* gamecontrollerdb.txt */,
+				BFE5EB622006DB4300E15CC0 /* version.h */,
 				BFFF18951FCDE8B300BDEC58 /* assets */,
 				BFFF16351FCDC5AE00BDEC58 /* Core */,
 				BFFF181C1FCDCEE800BDEC58 /* Editor */,
@@ -889,10 +886,7 @@
 				BFFF16A71FCDC6D300BDEC58 /* render_sdl.c */,
 				BFFF16971FCDC6D000BDEC58 /* render_sdl.h */,
 				BFFF16A41FCDC6D300BDEC58 /* render_soft.c */,
-				BFFF169B1FCDC6D100BDEC58 /* render_yuv.c */,
-				BFFF16A51FCDC6D300BDEC58 /* render_yuv.h */,
-				BFFF16981FCDC6D100BDEC58 /* render_yuv1.c */,
-				BFFF169A1FCDC6D100BDEC58 /* render_yuv2.c */,
+				BF3C7A7A22E688000024C630 /* render_softscale.c */,
 				BFFF166D1FCDC64D00BDEC58 /* render.c */,
 				BFFF16691FCDC64C00BDEC58 /* render.h */,
 				BFFF16451FCDC64700BDEC58 /* robot.c */,
@@ -917,6 +911,7 @@
 				BFFF165F1FCDC64B00BDEC58 /* world.h */,
 				BF6058C5216B3721001B738C /* world_format.h */,
 				BF6058CB216B3722001B738C /* world_struct.h */,
+				BF3C7A7D22E6B6A20024C630 /* yuv.h */,
 				BFFF16631FCDC64B00BDEC58 /* zip.c */,
 				BFFF16371FCDC64600BDEC58 /* zip.h */,
 			);
@@ -1118,7 +1113,6 @@
 				BFFF16E11FCDC76900BDEC58 /* legacy_robot.h in Headers */,
 				BFFF17051FCDC76900BDEC58 /* util.h in Headers */,
 				BFFF16DF1FCDC76900BDEC58 /* legacy_rasm.h in Headers */,
-				BFFF16F41FCDC76900BDEC58 /* render_yuv.h in Headers */,
 				BF6058E2216B3725001B738C /* counter_struct.h in Headers */,
 				BFFF17C71FCDCCF300BDEC58 /* fnmatch.h in Headers */,
 				BFFF17A41FCDCCE200BDEC58 /* host.h in Headers */,
@@ -1418,6 +1412,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BF3C7A7C22E689020024C630 /* render_softscale.c in Sources */,
 				BF6058E9216B3725001B738C /* rasm.c in Sources */,
 				BF6058E5216B3725001B738C /* intake_num.c in Sources */,
 				BFC1C05B214258CE00378A4C /* audio.c in Sources */,
@@ -1487,7 +1482,6 @@
 				BFFF16EC1FCDC76900BDEC58 /* render_gl2.c in Sources */,
 				BFFF18081FCDCD1200BDEC58 /* voltable.c in Sources */,
 				BFFF16D01FCDC76900BDEC58 /* game.c in Sources */,
-				BFFF16F51FCDC76900BDEC58 /* render_yuv1.c in Sources */,
 				BFFF16CE1FCDC76900BDEC58 /* fsafeopen.c in Sources */,
 				BFFF17F41FCDCD1200BDEC58 /* asylum_load.c in Sources */,
 				BF6058F1216B3725001B738C /* caption.c in Sources */,
@@ -1514,7 +1508,6 @@
 				BFFF16E71FCDC76900BDEC58 /* platform_sdl.c in Sources */,
 				BFFF181A1FCDCD8500BDEC58 /* pngops.c in Sources */,
 				BFFF16CA1FCDC76900BDEC58 /* event.c in Sources */,
-				BFFF16F61FCDC76900BDEC58 /* render_yuv2.c in Sources */,
 				BFFF17B01FCDCCF300BDEC58 /* fnmatch.c in Sources */,
 				BFFF17C31FCDCCF300BDEC58 /* virtual.c in Sources */,
 				BF6058E4216B3725001B738C /* game_player.c in Sources */,
@@ -1531,7 +1524,6 @@
 				BFFF18041FCDCD1200BDEC58 /* s3m_load.c in Sources */,
 				BFFF17A71FCDCCE200BDEC58 /* network.c in Sources */,
 				BFFF17AE1FCDCCF300BDEC58 /* extras.c in Sources */,
-				BFFF16F31FCDC76900BDEC58 /* render_yuv.c in Sources */,
 				BFFF16D61FCDC76900BDEC58 /* idarray.c in Sources */,
 				BFFF16F01FCDC76900BDEC58 /* render_sdl.c in Sources */,
 				BFFF17FA1FCDCD1200BDEC58 /* itsex.c in Sources */,
