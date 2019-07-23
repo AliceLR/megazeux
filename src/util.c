@@ -44,6 +44,9 @@ struct mzx_resource
   char *path;
 
   /* So mzxrun requires fewer files even in CONFIG_EDITOR=1 build */
+  boolean editor_only;
+
+  /* Optional resource--do not abort if not found, but print a warning. */
   boolean optional;
 };
 
@@ -53,36 +56,37 @@ struct mzx_resource
  * As a result, these must be in exactly the same order as the
  * enum resource_id enumeration defines them.
  */
-static struct mzx_resource mzx_res[] = {
+static struct mzx_resource mzx_res[] =
+{
 #define ASSETS "assets/"
-  { CONFFILE,                           NULL, false },
-  { ASSETS "default.chr",               NULL, false },
-  { ASSETS "edit.chr",                  NULL, false },
-  { ASSETS "smzx.pal",                  NULL, false },
+  { CONFFILE,                           NULL, false, false },
+  { ASSETS "default.chr",               NULL, false, false },
+  { ASSETS "edit.chr",                  NULL, false, false },
+  { ASSETS "smzx.pal",                  NULL, false, false },
 #ifdef CONFIG_EDITOR
-  { ASSETS "ascii.chr",                 NULL, true },
-  { ASSETS "blank.chr",                 NULL, true },
-  { ASSETS "smzx.chr",                  NULL, true },
+  { ASSETS "ascii.chr",                 NULL, true,  false },
+  { ASSETS "blank.chr",                 NULL, true,  false },
+  { ASSETS "smzx.chr",                  NULL, true,  false },
 #endif
 #ifdef CONFIG_HELPSYS
-  { ASSETS "help.fil",                  NULL, true },
+  { ASSETS "help.fil",                  NULL, false, true },
 #endif
 #ifdef CONFIG_RENDER_GL_PROGRAM
 #define GLSL_SHADERS ASSETS "glsl/"
 #define GLSL_SCALERS GLSL_SHADERS "scalers/"
-  { GLSL_SCALERS,                       NULL, false },
-  { GLSL_SHADERS "scaler.vert",         NULL, false },
-  { GLSL_SCALERS "semisoft.frag",       NULL, false },
-  { GLSL_SHADERS "tilemap.vert",        NULL, false },
-  { GLSL_SHADERS "tilemap.frag",        NULL, false },
-  { GLSL_SHADERS "tilemap.smzx.frag",   NULL, false },
-  { GLSL_SHADERS "mouse.vert",          NULL, false },
-  { GLSL_SHADERS "mouse.frag",          NULL, false },
-  { GLSL_SHADERS "cursor.vert",         NULL, false },
-  { GLSL_SHADERS "cursor.frag",         NULL, false },
+  { GLSL_SCALERS,                       NULL, false, false },
+  { GLSL_SHADERS "scaler.vert",         NULL, false, false },
+  { GLSL_SCALERS "semisoft.frag",       NULL, false, false },
+  { GLSL_SHADERS "tilemap.vert",        NULL, false, false },
+  { GLSL_SHADERS "tilemap.frag",        NULL, false, false },
+  { GLSL_SHADERS "tilemap.smzx.frag",   NULL, false, false },
+  { GLSL_SHADERS "mouse.vert",          NULL, false, false },
+  { GLSL_SHADERS "mouse.frag",          NULL, false, false },
+  { GLSL_SHADERS "cursor.vert",         NULL, false, false },
+  { GLSL_SHADERS "cursor.frag",         NULL, false, false },
 #endif
 #ifdef CONFIG_GAMECONTROLLERDB
-  { ASSETS "gamecontrollerdb.txt",      NULL, true },
+  { ASSETS "gamecontrollerdb.txt",      NULL, false, true },
 #endif
 };
 
@@ -216,18 +220,19 @@ int mzx_res_init(const char *argv0, boolean editor)
 
   for(i = 0; i < END_RESOURCE_ID_T; i++)
   {
-    /* Skip non-essential resources */
-    if(!editor && mzx_res[i].optional)
+    /* Skip editor resources if this isn't the editor. */
+    if(!editor && mzx_res[i].editor_only)
       continue;
-
-#ifdef CONFIG_GAMECONTROLLERDB
-    // FIXME stupid hack because "optional" doesn't really mean optional.
-    if(i == GAMECONTROLLERDB_TXT)
-      continue;
-#endif
 
     if(!mzx_res[i].path)
     {
+      if(mzx_res[i].optional)
+      {
+        warn("Failed to locate non-critical resource '%s'\n",
+         mzx_res[i].base_name);
+        continue;
+      }
+
       warn("Failed to locate critical resource '%s'.\n",
        mzx_res[i].base_name);
       ret = 1;
