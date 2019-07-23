@@ -131,8 +131,8 @@ var archs =
     helpsys:          // Does this platform ship with the help file enabled?
     audio:            // Does this platform ship with audio enabled?
     software:         // Does this platform have a software/proprietary renderer?
+    overlay:          // Does this platform use the softscale (SDL 2) or overlay (SDL 1.2) renderer(s)?
     gl:               // Does this platform use the OpenGL fixed function renderers?
-    overlay:          // Does this platform use the overlay renderers?
     glsl:             // Does this platform use the GLSL renderer?
     updater:          // Is this platform compatible with the updater?
     modular:          // Does this platform use modular builds?
@@ -431,7 +431,7 @@ var archs =
     description:      "Nintendo Wii",
     architecture:     "PPC (ELF)",
     endian:           "Big",
-    toolchain:        "gcc 8.2.0 <br /> binutils 2.32 <br /> (dk r34)",
+    toolchain:        "gcc 8.3.0 <br /> binutils 2.32 <br /> (dk r35)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
