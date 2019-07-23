@@ -382,6 +382,8 @@
 		BF1012C31FCCB02F008EEDB6 /* libpng.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = libpng.framework; sourceTree = "<group>"; };
 		BF1012C61FCCB0F9008EEDB6 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
 		BF3C7A7A22E688000024C630 /* render_softscale.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = render_softscale.c; path = ../../src/render_softscale.c; sourceTree = "<group>"; };
+		BF3C7A7D22E6B6A20024C630 /* yuv.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = yuv.h; path = ../../src/yuv.h; sourceTree = "<group>"; };
+		BF3C7A7E22E6B7A20024C630 /* gamecontrollerdb.txt */ = {isa = PBXFileReference; lastKnownFileType = text; name = gamecontrollerdb.txt; path = ../../assets/gamecontrollerdb.txt; sourceTree = "<group>"; };
 		BF6058AC216B3682001B738C /* edit_menu.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = edit_menu.c; path = ../../src/editor/edit_menu.c; sourceTree = "<group>"; };
 		BF6058AD216B3682001B738C /* buffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = buffer.h; path = ../../src/editor/buffer.h; sourceTree = "<group>"; };
 		BF6058AE216B3682001B738C /* edit_menu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = edit_menu.h; path = ../../src/editor/edit_menu.h; sourceTree = "<group>"; };
@@ -711,8 +713,9 @@
 			isa = PBXGroup;
 			children = (
 				BFFF17101FCDC81000BDEC58 /* config.h */,
-				BFE5EB622006DB4300E15CC0 /* version.h */,
 				BFFF18981FCDE8FD00BDEC58 /* config.txt */,
+				BF3C7A7E22E6B7A20024C630 /* gamecontrollerdb.txt */,
+				BFE5EB622006DB4300E15CC0 /* version.h */,
 				BFFF18951FCDE8B300BDEC58 /* assets */,
 				BFFF16351FCDC5AE00BDEC58 /* Core */,
 				BFFF181C1FCDCEE800BDEC58 /* Editor */,
@@ -908,6 +911,7 @@
 				BFFF165F1FCDC64B00BDEC58 /* world.h */,
 				BF6058C5216B3721001B738C /* world_format.h */,
 				BF6058CB216B3722001B738C /* world_struct.h */,
+				BF3C7A7D22E6B6A20024C630 /* yuv.h */,
 				BFFF16631FCDC64B00BDEC58 /* zip.c */,
 				BFFF16371FCDC64600BDEC58 /* zip.h */,
 			);
