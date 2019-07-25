@@ -29,7 +29,10 @@ cp build/android/out/"$1"-x86_64.so arch/android/project/app/jni/lib/x86_64/libm
 # ensure JNI libs will get refreshed
 rm -r arch/android/project/app/build
 
-ASSETS_ZIP=arch/android/project/app/src/main/res/raw/assets.zip
+ASSETS_DIR=arch/android/project/app/src/main/res/raw
+mkdir -p "$ASSETS_DIR"
+
+ASSETS_ZIP="$ASSETS_DIR/assets.zip"
 if [ -f "$ASSETS_ZIP" ]; then
 	rm "$ASSETS_ZIP"
 fi
