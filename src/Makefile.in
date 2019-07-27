@@ -278,7 +278,7 @@ endif
 
 ifeq (${BUILD_REALITY},1)
 core_cxxobjs += ${audio_obj}/audio_reality.o
-LINK_CC := ${CXX}
+#LINK_CC := ${CXX}
 endif
 
 ifeq (${LIBPNG},1)
