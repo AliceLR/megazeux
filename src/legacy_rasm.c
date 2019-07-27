@@ -2707,6 +2707,11 @@ void disassemble_program(char *program, int program_length,
 }
 #endif // !CONFIG_DEBYTECODE
 
+#ifdef _MSC_VER
+// Prevents a conflict with the fix_status enum if MZX is built against the MZX
+// SDK.
+#undef NO_ERROR
+#endif
 
 enum fix_status
 {
