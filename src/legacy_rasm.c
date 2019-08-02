@@ -2708,14 +2708,14 @@ void disassemble_program(char *program, int program_length,
 #endif // !CONFIG_DEBYTECODE
 
 
-enum fix_status
+enum bytecode_fix_status
 {
-  NO_ERROR,
-  COULDNT_FIX,
-  MISSING_TERMINATOR,
-  WRONG_TERMINATOR,
-  APPLIED_PATCH,
-  REPLACED_WITH_NOP
+  BC_NO_ERROR,
+  BC_COULDNT_FIX,
+  BC_MISSING_TERMINATOR,
+  BC_WRONG_TERMINATOR,
+  BC_APPLIED_PATCH,
+  BC_REPLACED_WITH_NOP
 };
 
 struct program_patch
@@ -2816,7 +2816,7 @@ static void validate_legacy_bytecode_print(char *bc, int program_length,
 #endif
 }
 
-static enum fix_status validate_legacy_bytecode_attempt_fix(char **_bc,
+static enum bytecode_fix_status validate_legacy_bytecode_attempt_fix(char **_bc,
  int *_len, int offset)
 {
   const struct program_patch *p;
@@ -2828,7 +2828,7 @@ static enum fix_status validate_legacy_bytecode_attempt_fix(char **_bc,
 
   // Can't do anything in this case.
   if(offset > program_length)
-    return COULDNT_FIX;
+    return BC_COULDNT_FIX;
 
   if(left == 0)
   {
@@ -2838,7 +2838,7 @@ static enum fix_status validate_legacy_bytecode_attempt_fix(char **_bc,
     *_len = program_length + 1;
     *_bc = bc;
     debug("Added missing terminator to truncated program\n\n");
-    return MISSING_TERMINATOR;
+    return BC_MISSING_TERMINATOR;
   }
   else
 
@@ -2847,7 +2847,7 @@ static enum fix_status validate_legacy_bytecode_attempt_fix(char **_bc,
     // Could also be a wrong last byte (Sidewinder's Engines).
     debug("Corrected program terminator %X\n", bc[offset]);
     bc[offset] = '\x00';
-    return WRONG_TERMINATOR;
+    return BC_WRONG_TERMINATOR;
   }
   else
 
@@ -2859,7 +2859,7 @@ static enum fix_status validate_legacy_bytecode_attempt_fix(char **_bc,
     debug("Corrected program terminator %X %X\n", bc[offset], bc[offset+1]);
     bc[offset] = '\x00';
     *_len = program_length - 1;
-    return WRONG_TERMINATOR;
+    return BC_WRONG_TERMINATOR;
   }
 
   // The rest of the fixes are more technical, so print detailed debug output.
@@ -2904,7 +2904,7 @@ static enum fix_status validate_legacy_bytecode_attempt_fix(char **_bc,
       *_len = new_length;
       *_bc = bc;
       debug("Applied command patch %zu\n\n", i);
-      return APPLIED_PATCH;
+      return BC_APPLIED_PATCH;
     }
   }
 
@@ -2918,7 +2918,7 @@ static enum fix_status validate_legacy_bytecode_attempt_fix(char **_bc,
     {
       bc[offset + 1] = ROBOTIC_CMD_BLANK_LINE;
       debug("Replaced invalid command with NOP\n\n");
-      return REPLACED_WITH_NOP;
+      return BC_REPLACED_WITH_NOP;
     }
   }
 
@@ -2930,7 +2930,7 @@ static enum fix_status validate_legacy_bytecode_attempt_fix(char **_bc,
   //*_bc = bc;
   //*_len = offset + 1;
   debug("Truncated program at invalid command\n\n");
-  return COULDNT_FIX;
+  return BC_COULDNT_FIX;
 }
 
 boolean validate_legacy_bytecode(char **_bc, int *_program_length)
@@ -2940,7 +2940,7 @@ boolean validate_legacy_bytecode(char **_bc, int *_program_length)
   int cur_command_start = 0, cur_command_length = 0, cur_param_length = 0;
   int cur_command, p;
   int i = 1;
-  enum fix_status status = NO_ERROR;
+  enum bytecode_fix_status status = BC_NO_ERROR;
 
   if(!bc)
     return false;
@@ -2960,12 +2960,12 @@ boolean validate_legacy_bytecode(char **_bc, int *_program_length)
 
   // Error out if the start of the program is invalid.
   if(bc[0] != 0xFF)
-    status = COULDNT_FIX;
+    status = BC_COULDNT_FIX;
 
   // One iteration should be a single command.
   while(1)
   {
-    if(status == COULDNT_FIX)
+    if(status == BC_COULDNT_FIX)
       break;
 
     cur_command_length = bc[i];
@@ -3027,7 +3027,7 @@ boolean validate_legacy_bytecode(char **_bc, int *_program_length)
     i = cur_command_start + cur_command_length + 1;
   }
 
-  if((status != COULDNT_FIX) && (i < program_length))
+  if((status != BC_COULDNT_FIX) && (i < program_length))
   {
     debug("Robot checked for %i but program length is %i; extra removed\n",
      program_length, i);
@@ -3039,7 +3039,7 @@ boolean validate_legacy_bytecode(char **_bc, int *_program_length)
   *_bc = bc;
   *_program_length = program_length;
 
-  if((status == COULDNT_FIX) || (i > program_length))
+  if((status == BC_COULDNT_FIX) || (i > program_length))
     return false;
 
   return true;
