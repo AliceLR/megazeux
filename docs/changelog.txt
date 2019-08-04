@@ -8,6 +8,9 @@ USERS
   the wrong color intensities while COLOR FADE OUT was active
   (or during the first cycle of a board for <2.90 worlds). This
   fixes fading bugs in Ruin Diver 3.
++ Added compatibility for a bug where the robot message box
+  would disable COLOR FADE OUT in versions 2.83 through 2.90X.
+  This fixes several BKZX games.
 
 DEVELOPERS
 

@@ -3784,6 +3784,9 @@ void run_robot(context *ctx, int id, int x, int y)
 
         dialog_fadein();
         input_window(mzx_world, input_buffer, src_board->input_string, 70);
+
+        // Due to a faulty check, 2.83 through 2.91f always stay faded in here.
+        // If something is found that relies on that, make this conditional.
         dialog_fadeout();
 
         src_board->input_size = strlen(src_board->input_string);
@@ -4460,6 +4463,8 @@ void run_robot(context *ctx, int id, int x, int y)
         if(!send_status)
           gotoed = 1;
 
+        // Due to a faulty check, 2.83 through 2.91f always stay faded in here.
+        // If something is found that relies on that, make this conditional.
         dialog_fadeout();
         break;
       }

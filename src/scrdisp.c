@@ -404,6 +404,8 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
   } while(key != IKEY_ESCAPE);
   // Restore screen and exit
   restore_screen();
+  // Due to a faulty check, 2.83 through 2.91f always stay faded in here.
+  // If something is found that relies on that, make this conditional.
   dialog_fadeout();
 }
 
