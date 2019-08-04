@@ -152,7 +152,12 @@ static enum keycode convert_SDL_internal(SDL_Keycode key)
     case SDLK_SYSREQ: return IKEY_SYSREQ;
     case SDLK_PAUSE: return IKEY_BREAK;
     case SDLK_MENU: return IKEY_MENU;
-    case SDLK_CLEAR: return IKEY_KP5; // FIXME remove (see tracker issue 744)
+#ifdef __WIN32__
+#if SDL_VERSION_ATLEAST(2,0,6) && !SDL_VERSION_ATLEAST(2,0,10)
+    // Dumb hack for a Windows virtual keycode bug. TODO remove.
+    case SDLK_CLEAR: return IKEY_KP5;
+#endif
+#endif
     default: return IKEY_UNKNOWN;
   }
 }
