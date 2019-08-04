@@ -1,3 +1,13 @@
+GIT
+
+USERS
+
++ Fixed a bug where mouse warping both mouse coordinates would
+  not actually warp both coordinates.
+
+DEVELOPERS
+
+
 July 22nd, 2019 - MZX 2.92
 
 Here's another inexcusably big minor version release. First off,
