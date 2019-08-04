@@ -4,6 +4,10 @@ USERS
 
 + Fixed a bug where mouse warping both mouse coordinates would
   not actually warp both coordinates.
++ Fixed a port regression where save files would be saved with
+  the wrong color intensities while COLOR FADE OUT was active
+  (or during the first cycle of a board for <2.90 worlds). This
+  fixes fading bugs in Ruin Diver 3.
 
 DEVELOPERS
 
