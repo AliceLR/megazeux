@@ -4,6 +4,14 @@ SDL_VERSION=2.0.9
 LIBOGG_VERSION=1.3.3
 LIBVORBIS_VERSION=1.3.6
 
+[ -z "$NDK_PATH" ] && { echo "NDK_PATH must be set! Aborting."; exit 1; }
+
+if [ -z "$MSYSTEM" ]; then
+        NDK_BUILD=ndk-build
+else
+        NDK_BUILD="$NDK_PATH/ndk-build.cmd"
+fi
+
 cd build/android
 if [ ! -f SDL2-"$SDL_VERSION".tar.gz ]; then
 	wget https://www.libsdl.org/release/SDL2-"$SDL_VERSION".tar.gz
@@ -31,7 +39,7 @@ cp ../../../scripts/android/config_types.h libogg/include/ogg/config_types.h
 cp ../../../scripts/android/libvorbis-Android.mk libvorbis/Android.mk
 mkdir out
 
-ndk-build \
+$NDK_BUILD \
   NDK_PROJECT_PATH=. NDK_OUT=out NDK_LIBS_OUT=out \
   APP_BUILD_SCRIPT=Android.mk APP_ABI="armeabi-v7a arm64-v8a x86 x86_64" \
   APP_PLATFORM=android-16

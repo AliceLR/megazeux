@@ -152,7 +152,12 @@ static enum keycode convert_SDL_internal(SDL_Keycode key)
     case SDLK_SYSREQ: return IKEY_SYSREQ;
     case SDLK_PAUSE: return IKEY_BREAK;
     case SDLK_MENU: return IKEY_MENU;
-    case SDLK_CLEAR: return IKEY_KP5; // FIXME remove (see tracker issue 744)
+#ifdef __WIN32__
+#if SDL_VERSION_ATLEAST(2,0,6) && !SDL_VERSION_ATLEAST(2,0,10)
+    // Dumb hack for a Windows virtual keycode bug. TODO remove.
+    case SDLK_CLEAR: return IKEY_KP5;
+#endif
+#endif
     default: return IKEY_UNKNOWN;
   }
 }
@@ -1417,16 +1422,19 @@ void __wait_event(void)
 
 void real_warp_mouse(int x, int y)
 {
-  int current_x, current_y;
   SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
 
-  SDL_GetMouseState(&current_x, &current_y);
+  if((x < 0) || (y < 0))
+  {
+    int current_x, current_y;
+    SDL_GetMouseState(&current_x, &current_y);
 
-  if(x < 0)
-    x = current_x;
+    if(x < 0)
+      x = current_x;
 
-  if(y < 0)
-    y = current_y;
+    if(y < 0)
+      y = current_y;
+  }
 
   SDL_WarpMouseInWindow(window, x, y);
 }

@@ -633,10 +633,8 @@ fi
 # Use GLES on Android.
 #
 if [ "$PLATFORM" = "android" ]; then
-	#echo "Force-enabling OpenGL ES support (Android)."
-	#GLES="true"
-	echo "Force-enabling OpenGL ES support (Android; broken, TODO)."
-	GL="false"
+	echo "Force-enabling OpenGL ES support (Android)."
+	GLES="true"
 fi
 
 #

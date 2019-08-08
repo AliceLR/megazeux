@@ -113,6 +113,8 @@ struct buffered_status
   Uint32 real_mouse_y;
   Uint32 real_mouse_last_x;
   Uint32 real_mouse_last_y;
+  Sint32 warped_mouse_x;
+  Sint32 warped_mouse_y;
   Uint32 mouse_button;
   Uint32 mouse_repeat;
   Uint32 mouse_repeat_state;

@@ -2824,7 +2824,9 @@ void robot_box_display(struct world *mzx_world, char *program,
 
   } while(1);
 
-  dialog_fadeout();
+  // Due to a faulty check, 2.83 through 2.91f always stay faded in here.
+  if((mzx_world->version < V283) || (mzx_world->version >= V291))
+    dialog_fadeout();
 
   // Restore screen and exit
   m_hide();

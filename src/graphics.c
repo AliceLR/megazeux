@@ -544,6 +544,8 @@ void set_smzx_index(Uint32 col, Uint32 offset, Uint32 value)
 
 Uint32 get_color_intensity(Uint32 color)
 {
+  if(graphics.fade_status)
+    return graphics.saved_intensity[color];
   return graphics.current_intensity[color];
 }
 

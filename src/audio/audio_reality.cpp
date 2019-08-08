@@ -47,7 +47,7 @@
 template<typename T>//typename ...Args>
 T *nothrow_new(int i)//(Args... args)
 {
-  T *t = new(cmalloc(sizeof(T))) T(i); //T(args...);
+  T *t = new(ccalloc(1,sizeof(T))) T(i); //T(args...);
   return t;
 }
 

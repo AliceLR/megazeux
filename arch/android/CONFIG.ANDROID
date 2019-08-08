@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# TODO: GL doesn't work.
+
+./config.sh --platform android --enable-release --disable-utils \
+  --disable-libpng --disable-gl "$@"

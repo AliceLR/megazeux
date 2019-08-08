@@ -1,6 +1,8 @@
 #!/bin/bash
 PATH=$NDK_PATH:$PATH
 
+[ -z "$NDK_PATH" ] && { echo "NDK_PATH must be set! Aborting."; exit 1; }
+
 mkdir -p build/android
 if [ -d build/android/out ]; then
 	rm -r build/android/out
@@ -8,10 +10,9 @@ fi
 mkdir -p build/android/out
 
 for i in arm arm64 x86 x86_64; do
-	./config.sh --platform android --enable-release --disable-utils --disable-libpng \
-	  --prefix "$(realpath ./build/android/toolchain-$i/sysroot/usr)"
+	arch/android/CONFIG.ANDROID --prefix "$(realpath ./build/android/toolchain-$i/sysroot/usr)"
 	make -j1 clean
-	ARCH="$i" make
+	ARCH="$i" make -j8
 	cp "$1" build/android/out/"$1"-"$i".so
 done
 
