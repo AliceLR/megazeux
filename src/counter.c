@@ -27,7 +27,12 @@
 #include <ctype.h>
 #include <time.h>
 #include <sys/stat.h>
+
+#ifdef _MSC_VER
+#include "win32time.h"
+#else
 #include <sys/time.h>
+#endif /* _MSC_VER */
 
 #include "configure.h"
 #include "counter.h"

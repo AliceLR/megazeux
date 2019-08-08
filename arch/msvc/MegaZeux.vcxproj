@@ -167,10 +167,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\main.c" />
-    <ClCompile Include="..\..\src\updater.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\updater.h" />
     <ClInclude Include="config.h" />
   </ItemGroup>
   <ItemGroup>

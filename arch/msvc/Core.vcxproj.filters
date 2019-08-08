@@ -16,12 +16,6 @@
     <Filter Include="Header Files\MSVC">
       <UniqueIdentifier>{d14bf040-4f3e-4535-80a4-5fb0ccf167c5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\network">
-      <UniqueIdentifier>{7da1fec0-bfed-4357-bce7-d9fb9e745a6f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\network">
-      <UniqueIdentifier>{34b97daa-d17e-476b-906c-0b729806d748}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\contrib">
       <UniqueIdentifier>{8a9e0782-2347-4780-bc6c-0c3235801faa}</UniqueIdentifier>
     </Filter>
@@ -48,6 +42,9 @@
     </Filter>
     <Filter Include="Header Files\contrib\libxmp\win32">
       <UniqueIdentifier>{526cc8dd-11ed-4a21-8442-97a5e0f30d3a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\MSVC">
+      <UniqueIdentifier>{36c07643-1016-4818-9590-bdcb3f5f7813}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -333,18 +330,6 @@
     <ClCompile Include="..\..\src\pngops.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\network\host.c">
-      <Filter>Source Files\network</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\network\manifest.c">
-      <Filter>Source Files\network</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\network\network.c">
-      <Filter>Source Files\network</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\network\sha256.c">
-      <Filter>Source Files\network</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\flt_load.c">
       <Filter>Source Files\contrib\libxmp\loaders</Filter>
     </ClCompile>
@@ -405,16 +390,16 @@
     <ClCompile Include="..\..\src\core.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\network\dns.c">
-      <Filter>Source Files\network</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\network\socksyms.c">
-      <Filter>Source Files\network</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\intake_num.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\render_softscale.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="win32time.c">
+      <Filter>Source Files\MSVC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\audio\audio_reality.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -629,9 +614,6 @@
     <ClInclude Include="..\..\src\render_sdl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\mutex_sdl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\compat.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -643,18 +625,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\pngops.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\network\host.h">
-      <Filter>Header Files\network</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\network\manifest.h">
-      <Filter>Header Files\network</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\network\network.h">
-      <Filter>Header Files\network</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\network\sha256.h">
-      <Filter>Header Files\network</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\const.h">
       <Filter>Header Files</Filter>
@@ -704,12 +674,6 @@
     <ClInclude Include="..\..\src\audio\sfx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\network\dns.h">
-      <Filter>Header Files\network</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\network\socksyms.h">
-      <Filter>Header Files\network</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\caption.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -732,6 +696,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\settings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="win32time.h">
+      <Filter>Header Files\MSVC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\audio\audio_reality.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

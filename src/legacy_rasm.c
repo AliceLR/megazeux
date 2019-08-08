@@ -2707,7 +2707,6 @@ void disassemble_program(char *program, int program_length,
 }
 #endif // !CONFIG_DEBYTECODE
 
-
 enum bytecode_fix_status
 {
   BC_NO_ERROR,
