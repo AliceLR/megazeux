@@ -399,6 +399,9 @@
     <ClCompile Include="win32time.c">
       <Filter>Source Files\MSVC</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\audio\audio_reality.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\block.h">
@@ -697,6 +700,9 @@
     </ClInclude>
     <ClInclude Include="win32time.h">
       <Filter>Header Files\MSVC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\audio\audio_reality.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
