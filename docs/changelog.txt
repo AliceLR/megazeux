@@ -11,6 +11,8 @@ USERS
 + Added compatibility for a bug where the robot message box
   would disable COLOR FADE OUT in versions 2.83 through 2.90X.
   This fixes several BKZX games.
++ Fixed checkres bugs separately preventing detection of global
+  robots in both world formats.
 
 DEVELOPERS
 

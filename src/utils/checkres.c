@@ -2326,7 +2326,7 @@ static enum status parse_legacy_world(struct memfile *mf,
     return CORRUPT_WORLD;
   }
 
-  ret = parse_legacy_robot(mf, file, -1, 0);
+  ret = parse_legacy_robot(mf, file, NO_BOARD, GLOBAL_ROBOT);
   if(ret != SUCCESS)
     warnhere("Failed processing global robot\n");
 
@@ -2390,6 +2390,7 @@ static enum status parse_board_info(struct memfile *mf, struct base_file *file,
           mfread(buffer, len, 1, &prop);
           buffer[len] = 0;
 
+          debug("BOARD MOD: %s\n", buffer);
           add_requirement_board(buffer, file, board_num, IS_BOARD_MOD);
         }
         break;
@@ -2402,6 +2403,7 @@ static enum status parse_board_info(struct memfile *mf, struct base_file *file,
           mfread(buffer, len, 1, &prop);
           buffer[len] = 0;
 
+          debug("BOARD CHR/PAL: %s\n", buffer);
           add_requirement_board(buffer, file, board_num,
            (ident == BPROP_CHARSET_PATH) ? IS_BOARD_CHARSET : IS_BOARD_PALETTE);
         }
@@ -2443,8 +2445,9 @@ static enum status parse_world(struct memfile *mf, struct base_file *file,
   struct zip_archive *zp = zip_open_mem_read(mf->start,
    mf->end - mf->start);
 
-  char *buffer;
+  char *buffer = NULL;
   size_t actual_size;
+  size_t allocated_size = 0;
   struct memfile buf_file;
   unsigned int file_id;
   unsigned int board_id;
@@ -2464,25 +2467,47 @@ static enum status parse_world(struct memfile *mf, struct base_file *file,
   {
     switch(file_id)
     {
+      case FPROP_WORLD_GLOBAL_ROBOT:
       case FPROP_BOARD_INFO:
       case FPROP_ROBOT:
       case FPROP_WORLD_SFX:
       {
         zip_get_next_uncompressed_size(zp, &actual_size);
-        buffer = ccalloc(1, actual_size);
+        if(allocated_size < actual_size)
+        {
+          allocated_size = actual_size;
+          buffer = crealloc(buffer, allocated_size);
+        }
+
         zip_read_file(zp, buffer, actual_size, &actual_size);
         mfopen(buffer, actual_size, &buf_file);
 
         if(file_id == FPROP_BOARD_INFO)
+        {
+          debug("Board %u\n", board_id);
           ret = parse_board_info(&buf_file, file, (int)board_id);
+        }
+        else
 
-        else if(file_id == FPROP_ROBOT)
+        if(file_id == FPROP_ROBOT)
+        {
           ret = parse_robot_info(&buf_file, file, (int)board_id, (int)robot_id);
+        }
+        else
 
-        else if(file_id == FPROP_WORLD_SFX)
+        if(file_id == FPROP_WORLD_GLOBAL_ROBOT)
+        {
+          debug("Global robot\n");
+          ret = parse_robot_info(&buf_file, file, NO_BOARD, GLOBAL_ROBOT);
+        }
+        else
+
+        if(file_id == FPROP_WORLD_SFX)
+        {
+          debug("SFX table\n");
           ret = parse_sfx_file(&buf_file, file);
+        }
 
-        free(buffer);
         break;
       }
 
@@ -2499,6 +2524,7 @@ static enum status parse_world(struct memfile *mf, struct base_file *file,
 
 err_close:
   zip_close(zp, NULL);
+  free(buffer);
   return ret;
 }
 
