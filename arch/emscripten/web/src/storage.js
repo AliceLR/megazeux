@@ -294,15 +294,8 @@ export function createZipStorage(url, options, progressCallback) {
 				if (options && options.filenameMap) {
 					if (typeof(options.filenameMap) === "object") {
 						key = options.filenameMap[key] || undefined;
-					} else if (typeof(options.filenameMap) === "string" && options.filenameMap.length > 0) {
-						let cmpStr = options.filenameMap.toLowerCase();
-						if (!cmpStr.endsWith("/")) cmpStr += "/";
-
-						if (key.toLowerCase().startsWith(cmpStr)) {
-							key = key.substring(cmpStr.length);
-						} else {
-							key = undefined;
-						}
+					} else if (typeof(options.filenameMap) === "string") {
+						key = options.filenameMap + key;
 					} else if (typeof(options.filenameMap) === "function") {
 						key = options.filenameMap(key);
 					}

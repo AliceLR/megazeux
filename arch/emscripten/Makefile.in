@@ -35,8 +35,6 @@ ARCH_LDFLAGS += -s 'ASYNCIFY_IMPORTS=["emscripten_sleep"]'
 ARCH_CFLAGS += -s ENVIRONMENT=web
 ARCH_LDFLAGS += -s ENVIRONMENT=web
 
-#ARCH_LDFLAGS += --no-heap-copy --preload-file assets --preload-file config.txt
-
 ifeq (${DEBUG},1)
 	ARCH_CFLAGS += -s ASSERTIONS=1 --profiling-funcs
 	ARCH_LDFLAGS += -s ASSERTIONS=1 --profiling-funcs
@@ -50,8 +48,22 @@ clean:
 	$(if ${V},,@echo "  RM       mzxrun.wasm")
 	@rm -rf mzxrun.js.mem mzxrun.js.orig.js mzxrun.wasm
 
-# TODO: archive assets, copy frontend.
-build: all mzxrun.wasm
-	@cp mzxrun.wasm ${build}
+ifeq (${DEBUG},1)
+${build}/mzxrun.js: all ${build} mzxrun.js
+	@mkdir -p ${build}/
+	@cp mzxrun.js ${build}/
+else
+${build}/mzxrun.js: all ${build} mzxrun.js
+	@mkdir -p ${build}/
+	@(cd arch/emscripten/web && $(shell (cd arch/emscripten/web && npm bin))/terser ../../../mzxrun.js -c -m > ../../../${build}/mzxrun.js)
+endif
+
+build: all ${build} ${build}/mzxrun.js
+	@cp mzxrun.wasm ${build}/
+	@(if [ -f ${build}/config.txt ]; then rm ${build}/config.txt; fi)
+	@(if [ -d ${build}/assets ]; then cd ${build} && zip -9 -r assets.zip assets/ && rm -r assets/; fi)
+	@(cd arch/emscripten/web && npm run build)
+	@cp -r arch/emscripten/web/res/* ${build}/
+	@cp arch/emscripten/web/mzxrun_web.js ${build}/
 
 include arch/zip.inc

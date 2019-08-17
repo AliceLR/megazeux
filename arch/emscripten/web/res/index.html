@@ -29,8 +29,8 @@
 			},
 			path: "./",
 			files: [
-				["assets.zip", {filenameMap: function(path) { return "assets/" + path; }}],
-				["my_game.zip", {filenameMap: function(path) { return "game/" + path; }}],
+				["assets.zip", ""], // used by MegaZeux - do not touch!
+				["my_game.zip", "game/"] // edit this one - should contain your game
 			]
 		});
 	}

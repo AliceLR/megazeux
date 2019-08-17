@@ -105,7 +105,10 @@ window.MzxrunInitialize = function(options) {
 
 		if (Array.isArray(file)) {
             var opts = file[1];
-            if (!opts.hasOwnProperty("readonly")) {
+            if (typeof(opts) == "string") {
+                opts = {filenameMap: opts};
+            }
+            if (opts && !opts.hasOwnProperty("readonly")) {
                 opts.readonly = true;
             }
             vfsPromises.push(

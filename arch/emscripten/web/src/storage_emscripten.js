@@ -195,8 +195,12 @@ export function wrapStorageForEmscripten(vfs) {
                 node.stream_ops.read = (stream, buffer, bufOffset, dataLength, dataOffset) => {
                     // console.log("FS read " + node.vfs_path + " " + dataOffset + " " + dataLength);
                     const size = Math.min(dataLength, stream.vfs_data.length - dataOffset);
-                    for (var i = 0; i < size; i++) {
-                        buffer[bufOffset + i] = stream.vfs_data[dataOffset + i];
+                    if (size > 8 && buffer.set && stream.vfs_data.subarray) {
+                        buffer.set(stream.vfs_data.subarray(dataOffset, dataOffset + size), bufOffset);
+                    } else {
+                        for (var i = 0; i < size; i++) {
+                            buffer[bufOffset + i] = stream.vfs_data[dataOffset + i];
+                        }
                     }
                     return size;
                 }
@@ -205,8 +209,13 @@ export function wrapStorageForEmscripten(vfs) {
                     // console.log("FS write " + node.vfs_path + " " + dataOffset + " " + dataLength);
                     if (dataLength <= 0) return 0;
                     stream.vfs_data = vfs_expand_array(stream.vfs_data, Math.max(stream.vfs_data.length, dataOffset + dataLength))
-                    for (var i = 0; i < dataLength; i++) {
-                        stream.vfs_data[dataOffset + i] = buffer[bufOffset + i];
+                    const size = dataLength;
+                    if (size > 8 && stream.vfs_data.set && buffer.subarray) {
+                        stream.vfs_data.set(buffer.subarray(bufOffset, bufOffset + size), dataOffset);
+                    } else {
+                        for (var i = 0; i < size; i++) {
+                            stream.vfs_data[dataOffset + i] = buffer[bufOffset + i];
+                        }
                     }
                     stream.vfs_modified = true;
                     return dataLength;
