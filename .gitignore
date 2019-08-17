@@ -45,6 +45,9 @@ contrib/libxmp/src/.build/
 contrib/libxmp/src/win32/.build/
 contrib/libxmp/src/loaders/.build/
 contrib/unzip/src/.build/
+contrib/web/node_modules
+contrib/web/package-lock.json
+contrib/web/mzxrun_web.js
 boot.dol
 Core.exp
 Core.ilk
