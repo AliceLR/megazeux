@@ -146,12 +146,22 @@ export function wrapStorageForEmscripten(vfs) {
                 node.node_ops.readdir = (node) => {
                     const path = node.vfs_path;
                     const list = vfs.list(a => a.startsWith(path));
+                    let directories = {};
                     let dirents = [".", ".."];
                     for (var i = 0; i < list.length; i++) {
                         var entry = list[i].substring(path.length);
                         if (entry.length == 0) continue; // is empty
-                        if (entry.indexOf('/') >= 0) continue; // is sub-directory
-                        dirents.push(entry);
+                        if (entry.indexOf('/') >= 0) {
+                            // is directory
+                            const entryDirName = entry.split('/')[0];
+                            if (!directories.hasOwnProperty(entryDirName)) {
+                                directories[entryDirName] = true;
+                                dirents.push(entryDirName);
+                            }
+                        } else {
+                            // is file
+                            dirents.push(entry);
+                        }
                     }
                     // console.log("FS readdir " + path + " => " + dirents.length + " dirents");
                     // console.log(dirents);
