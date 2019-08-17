@@ -41,6 +41,7 @@ ifeq (${DEBUG},1)
 	ARCH_LDFLAGS += -s ASSERTIONS=1 --profiling-funcs
 	EMSCRIPTEN_FRONTEND_BUILD_PROFILE = build
 else
+	ARCH_LDFLAGS += -O3
 	OPTIMIZE_CFLAGS = -O3
 	EMSCRIPTEN_FRONTEND_BUILD_PROFILE = build-release
 endif
@@ -51,15 +52,9 @@ clean:
 	$(if ${V},,@echo "  RM       mzxrun.wasm")
 	@rm -rf mzxrun.js.mem mzxrun.js.orig.js mzxrun.wasm
 
-ifeq (${DEBUG},1)
 ${build}/mzxrun.js: all ${build} mzxrun.js
 	@mkdir -p ${build}/
 	@cp mzxrun.js ${build}/
-else
-${build}/mzxrun.js: all ${build} mzxrun.js
-	@mkdir -p ${build}/
-	@(cd arch/emscripten/web && $(shell (cd arch/emscripten/web && npm bin))/terser ../../../mzxrun.js -c -m > ../../../${build}/mzxrun.js)
-endif
 
 build: all ${build} ${build}/mzxrun.js
 	@cp mzxrun.wasm ${build}/
