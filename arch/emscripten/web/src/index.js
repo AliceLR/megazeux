@@ -22,10 +22,8 @@ import { getIndexedDB, getLocalStorage, drawErrorMessage } from "./util.js";
 import { createInMemoryStorage, createBrowserBackedStorage, wrapAsyncStorage, createIndexedDbBackedAsyncStorage, createCompositeStorage, createZipStorage } from "./storage.js";
 import { wrapStorageForEmscripten } from "./storage_emscripten.js";
 
-const VERSION = "@VERSION@";
-
 class LoadingScreen {
-    constructor(canvas, ctx, version, options) {
+    constructor(canvas, ctx, options) {
         this.canvas = canvas;
         this.ctx = ctx;
         this.loaded = false;
@@ -39,15 +37,9 @@ class LoadingScreen {
         return new Promise((resolve, reject) => {
             const loadingImage = new Image();
             loadingImage.onload = function() {
-                const versionStr = VERSION;
                 const w = loadingImage.width;
                 const h = loadingImage.height;
                 self.ctx.drawImage(loadingImage,0,0,w,h,(self.canvas.width - w)/2,(self.canvas.height - h)/2,w,h);
-
-                self.ctx.font = "16px sans-serif";
-                self.ctx.fillStyle = "#aaaaaa";
-                self.ctx.textBaseline = "bottom";
-                self.ctx.fillText(versionStr, (self.canvas.width + w) / 2 - 6 - self.ctx.measureText(versionStr).width, (self.canvas.height + h) / 2 - 6);
 
                 self.loaded = true;
                 resolve(true);
@@ -70,7 +62,7 @@ class LoadingScreen {
 }
 
 window.MzxrunInitialize = function(options) {
-    console.log("Initializing MegaZeux web frontend " + VERSION);
+    console.log("Initializing MegaZeux web frontend");
 
     if (!options.render) throw "Missing option: render!";
     if (!options.render.canvas) throw "Missing option: render.canvas!";
@@ -93,7 +85,7 @@ window.MzxrunInitialize = function(options) {
         return Promise.reject(e);
     }
 
-    const loadingScreen = new LoadingScreen(canvas, ctx, VERSION, options);
+    const loadingScreen = new LoadingScreen(canvas, ctx, options);
 
     var vfsPromises = [];
     var vfsProgresses = [];
