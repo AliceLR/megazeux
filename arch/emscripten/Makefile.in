@@ -52,11 +52,11 @@ clean:
 	$(if ${V},,@echo "  RM       mzxrun.wasm")
 	@rm -rf mzxrun.js.mem mzxrun.js.orig.js mzxrun.wasm
 
-${build}/mzxrun.js: all ${build} mzxrun.js
+${build}/mzxrun.js: ${build} mzxrun.js
 	@mkdir -p ${build}/
 	@cp mzxrun.js ${build}/
 
-build: all ${build} ${build}/mzxrun.js
+build: ${build} ${build}/mzxrun.js
 	@cp mzxrun.wasm ${build}/
 	@(if [ -f ${build}/config.txt ]; then rm ${build}/config.txt; fi)
 	@(if [ -d ${build}/assets ]; then cd ${build} && zip -9 -r assets.zip assets/ && rm -r assets/; fi)
