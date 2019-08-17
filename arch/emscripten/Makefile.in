@@ -29,6 +29,7 @@ ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 endif
 
 ARCH_LDFLAGS += -s ASYNCIFY=1 -s ASYNCIFY_STACK_SIZE=32768
+# TODO: Removing the whitelist should allow the editor to work.
 ARCH_LDFLAGS += -s ASYNCIFY_WHITELIST=@arch/emscripten/whitelist.json
 ARCH_LDFLAGS += -s 'ASYNCIFY_IMPORTS=["emscripten_sleep"]'
 
