@@ -93,6 +93,7 @@ struct ctr_render_data
   u32 last_focus_x, last_focus_y;
   u32 focus_x, focus_y;
   u32 layer_num;
+  int lower_video_ratio;
 };
 
 static u8 morton_lut[64] =
@@ -363,6 +364,8 @@ static boolean ctr_init_video(struct graphics_data *graphics,
 
   render_data.rendering_frame = false;
   render_data.checked_frame = false;
+
+  render_data.lower_video_ratio = conf->video_ratio;
 
   // 1024x512 is the smallest power of two texture which can fit a 640x350 playfield
   if (conf->force_bpp == 32)
@@ -1013,11 +1016,25 @@ static inline void ctr_draw_playfield(struct ctr_render_data *render_data,
   else
   {
     if(get_bottom_screen_mode() == BOTTOM_SCREEN_MODE_KEYBOARD)
+    {
       ctr_draw_2d_texture(render_data, &render_data->playfield_tex,
        0, 512 - 350, 640, 350, 80, 12.75, 160, 87.5, 2.0f, 0xffffffff, true);
-    else
+    } else
+    {
+      int width = 320, height = 175;
+      switch (render_data->lower_video_ratio)
+      {
+        case RATIO_CLASSIC_4_3:
+        case RATIO_STRETCH:
+          height = 240;
+          break;
+      }
       ctr_draw_2d_texture(render_data, &render_data->playfield_tex,
-       0, 512 - 350, 640, 350, 0, 32, 320, 175, 2.0f, 0xffffffff, true);
+        0, 512 - 350, 640, 350,
+        (int) ((320 - width) / 2), (int) ((240 - height) / 2),
+        width, height, 2.0f, 0xffffffff, true
+      );
+    }
   }
 }
 
