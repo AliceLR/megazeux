@@ -38,8 +38,10 @@ ARCH_LDFLAGS += -s ENVIRONMENT=web
 ifeq (${DEBUG},1)
 	ARCH_CFLAGS += -s ASSERTIONS=1 --profiling-funcs
 	ARCH_LDFLAGS += -s ASSERTIONS=1 --profiling-funcs
+	EMSCRIPTEN_FRONTEND_BUILD_PROFILE = build
 else
 	OPTIMIZE_CFLAGS = -O3
+	EMSCRIPTEN_FRONTEND_BUILD_PROFILE = build-release
 endif
 
 clean:
@@ -62,7 +64,7 @@ build: all ${build} ${build}/mzxrun.js
 	@cp mzxrun.wasm ${build}/
 	@(if [ -f ${build}/config.txt ]; then rm ${build}/config.txt; fi)
 	@(if [ -d ${build}/assets ]; then cd ${build} && zip -9 -r assets.zip assets/ && rm -r assets/; fi)
-	@(cd arch/emscripten/web && npm run build)
+	@(cd arch/emscripten/web && npm run $(EMSCRIPTEN_FRONTEND_BUILD_PROFILE))
 	@cp -r arch/emscripten/web/res/* ${build}/
 	@cp arch/emscripten/web/mzxrun_web.js ${build}/
 
