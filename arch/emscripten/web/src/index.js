@@ -58,12 +58,12 @@ class LoadingScreen {
 
     progress(p) {
         if (!this.loaded) return;
-        
+
         const canvas = this.canvas;
         const ctx = this.ctx;
         const cx = (canvas.width - 640) / 2;
         const cy = (canvas.height - 350) / 2;
-    
+
         ctx.fillStyle = "#ff0000";
         ctx.fillRect(cx + 14*2, cy + 112*2, p * 292*2, 20);
     }
@@ -75,11 +75,16 @@ window.MzxrunInitialize = function(options) {
     if (!options.render) throw "Missing option: render!";
     if (!options.render.canvas) throw "Missing option: render.canvas!";
 
-    const canvas = options.render.canvas;
+    let canvas = options.render.canvas;
     canvas.contentEditable = true;
-    const ctx = canvas.getContext('2d', {alpha: false});
+    let ctx = canvas.getContext('2d', {alpha: false});
     ctx.imageSmoothingEnabled = false;
-    
+
+    canvas.addEventListener("webglcontextlost", e => {
+        drawErrorMessage(canvas, ctx, 'Error: WebGL context lost!');
+        e.preventDefault();
+    }, false);
+
     try {
         if (!options.path) throw "Missing option: path!";
         if (!options.files) throw "Missing option: files!";
@@ -100,10 +105,10 @@ window.MzxrunInitialize = function(options) {
         const i = vfsProgresses.length - 1;
         const progressUpdater = function(p) {
             vfsProgresses[i] = Math.min(p, 1);
-            loadingScreen.progress(vfsProgresses.reduce((p, c) => p + c) / options.files.length);            
+            loadingScreen.progress(vfsProgresses.reduce((p, c) => p + c) / options.files.length);
         }
 
-		if (Array.isArray(file)) {
+        if (Array.isArray(file)) {
             var opts = file[1];
             if (typeof(opts) == "string") {
                 opts = {filenameMap: opts};
@@ -121,7 +126,7 @@ window.MzxrunInitialize = function(options) {
                     .then(o => vfsObjects.push(o))
             );
         }
-	}
+    }
 
     return loadingScreen._drawBackground().then(_ => Promise.all(vfsPromises)).then(_ => {
         // add MegaZeux config.txt vfs
@@ -149,7 +154,7 @@ window.MzxrunInitialize = function(options) {
                 options.storage = undefined;
             }
         }
-        
+
         if (options.storage && options.storage.type) {
             if (options.storage.type == "indexeddb") {
                 if (!options.storage.database) throw "Missing option: storage.database!";
@@ -173,6 +178,17 @@ window.MzxrunInitialize = function(options) {
     }).then(_ => new Promise((resolve, reject) => {
         const vfs = createCompositeStorage(vfsObjects);
         console.log(vfs);
+
+        const oldCanvas = canvas;
+
+        // after using the canvas in 2D mode, it cannot be used in WebGL mode
+        // as such, create a new canvas
+        canvas = oldCanvas.cloneNode(true);
+        canvas.oncontextmenu = () => { event.preventDefault(); };
+        ctx = null;
+
+        oldCanvas.parentNode.replaceChild(canvas, oldCanvas);
+        options.render.canvas = canvas;
 
         Module({
             canvas: options.render.canvas
