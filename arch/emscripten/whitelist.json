@@ -104,5 +104,25 @@
 	"scroll_edit",
 		"intake",
 	"help_system",
-		"help_display"
+		"help_display",
+
+	"vquick_fadeout",
+	"vquick_fadein",
+
+	"game_destroy",
+		"vquick_fadeout",
+
+	"game_idle",
+		"update_resolve_target",
+			"vquick_fadeout",
+
+	"core_free",
+		"destroy_context",
+			"game_destroy",
+	"game_idle",
+		"destroy_context",
+			"game_destroy",
+	"game_key",
+		"destroy_context",
+			"game_destroy"
 ]
