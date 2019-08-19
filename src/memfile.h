@@ -121,7 +121,8 @@ static inline void mfmove(void *new_buf, size_t new_len, struct memfile *mf)
 static inline void mfresize(size_t new_len, struct memfile *mf)
 {
   void *new_buf = realloc(mf->start, new_len);
-  mfmove(new_buf, new_len, mf);
+  if(new_buf)
+    mfmove(new_buf, new_len, mf);
 }
 
 static inline int mfgetc(struct memfile *mf)
