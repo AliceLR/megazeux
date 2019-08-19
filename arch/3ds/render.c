@@ -77,6 +77,9 @@ struct linear_ptr_list_entry
 #define CTR_TEXTURE_WIDTH 1024
 #define CTR_TEXTURE_CHARS_ROW (CTR_TEXTURE_WIDTH / CHAR_W)
 #define CTR_TEXTURE_HEIGHT ((FULL_CHARSET_SIZE / CTR_TEXTURE_CHARS_ROW) * CTR_CHAR_H)
+#define CTR_LAYER_MAX (LAYER_DRAWORDER_MAX + 101)
+#define CTR_LAYER_CURSOR (LAYER_DRAWORDER_MAX + 50)
+#define CTR_LAYER_MOUSE (LAYER_DRAWORDER_MAX + 75)
 
 struct ctr_render_data
 {
@@ -170,11 +173,11 @@ static inline void ctr_set_2d_projection(struct ctr_render_data *render_data,
  int width, int height, boolean tilt)
 {
   if(tilt)
-    Mtx_OrthoTilt(&render_data->projection, 0, width, height, 0, -1.0, 12100.0,
+    Mtx_OrthoTilt(&render_data->projection, 0, width, height, 0, -1.0, CTR_LAYER_MAX,
      true);
 
   else
-    Mtx_Ortho(&render_data->projection, 0, width, 0, height, -1.0, 12100.0,
+    Mtx_Ortho(&render_data->projection, 0, width, 0, height, -1.0, CTR_LAYER_MAX,
      true);
 }
 
@@ -734,7 +737,7 @@ static void ctr_render_layer(struct graphics_data *graphics,
   if(layer != NULL && (layer->draw_order != vlayer->draw_order))
   {
     layer->draw_order = vlayer->draw_order;
-    layer->z = (LAYER_DRAWORDER_MAX - layer->draw_order) * 3 + 1;
+    layer->z = (LAYER_DRAWORDER_MAX - layer->draw_order) + 0.33f;
   }
 
   if(layer != NULL && (layer->w != vlayer->w || layer->h != vlayer->h))
@@ -750,7 +753,7 @@ static void ctr_render_layer(struct graphics_data *graphics,
     layer = cmalloc(sizeof(struct ctr_layer));
     layer->w = vlayer->w; layer->h = vlayer->h;
     layer->draw_order = vlayer->draw_order;
-    layer->z = (LAYER_DRAWORDER_MAX - layer->draw_order) * 3 + 1;
+    layer->z = (LAYER_DRAWORDER_MAX - layer->draw_order) + 0.33f;
     layer->foreground = clinearAlloc(sizeof(struct v_char) * max_bufsize, 0x80);
     layer->background.data = NULL;
     C3D_TexInit(&(layer->background), to_texture_size(layer->w),
@@ -893,7 +896,7 @@ static void ctr_render_layer(struct graphics_data *graphics,
     ctr_draw_2d_texture(render_data, &layer->background, 0,
      layer->background.height - layer->h, layer->w, layer->h,
      vlayer->x, vlayer->y, layer->w * 8, layer->h * 14,
-     (LAYER_DRAWORDER_MAX - layer->draw_order + 1) * 3.0f + 2, 0xffffffff, false);
+     (LAYER_DRAWORDER_MAX - layer->draw_order) + 0.66f, 0xffffffff, false);
   }
 
   ctr_prepare_playfield(render_data, layer->foreground, vlayer->x, vlayer->y,
@@ -939,7 +942,7 @@ static void ctr_render_cursor(struct graphics_data *graphics,
   if(ctr_should_render(render_data))
   {
     ctr_draw_2d_texture(render_data, NULL, 0, 0, 0, 0,
-     x * 8, y * 14 + offset, 8, lines, 12050, flatcolor, false);
+     x * 8, y * 14 + offset, 8, lines, CTR_LAYER_CURSOR, flatcolor, false);
   }
 }
 
@@ -953,7 +956,7 @@ static void ctr_render_mouse(struct graphics_data *graphics,
   {
     C3D_AlphaBlend(GPU_BLEND_SUBTRACT, GPU_BLEND_ADD,
      GPU_SRC_COLOR, GPU_DST_COLOR, GPU_SRC_ALPHA, GPU_DST_ALPHA);
-    ctr_draw_2d_texture(render_data, NULL, 0, 0, 1, 1, x, y, w, h, 1, col,
+    ctr_draw_2d_texture(render_data, NULL, 0, 0, 0, 0, x, y, w, h, CTR_LAYER_MOUSE, col,
      false);
     C3D_AlphaBlend(GPU_BLEND_ADD, GPU_BLEND_ADD, GPU_SRC_ALPHA,
      GPU_ONE_MINUS_SRC_ALPHA, GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA);
