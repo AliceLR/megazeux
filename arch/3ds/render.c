@@ -73,9 +73,10 @@ struct linear_ptr_list_entry
   struct linear_ptr_list_entry *next;
 };
 
+#define CTR_CHAR_H 16
 #define CTR_TEXTURE_WIDTH 1024
-#define CTR_TEXTURE_CHARS_ROW (CTR_TEXTURE_WIDTH / 8)
-#define CTR_TEXTURE_HEIGHT ((NUM_CHARSETS * 256 / CTR_TEXTURE_CHARS_ROW) * 16)
+#define CTR_TEXTURE_CHARS_ROW (CTR_TEXTURE_WIDTH / CHAR_W)
+#define CTR_TEXTURE_HEIGHT ((FULL_CHARSET_SIZE / CTR_TEXTURE_CHARS_ROW) * CTR_CHAR_H)
 
 struct ctr_render_data
 {
@@ -439,17 +440,17 @@ static boolean ctr_init_video(struct graphics_data *graphics,
   C3D_TexEnvFunc(&(render_data.env_no_texture), C3D_Both, GPU_REPLACE);
 
   C3D_TexEnvInit(&(render_data.env_playfield));
-  C3D_TexEnvSrc(&(render_data.env_playfield), C3D_RGB, 0, 0, 0);
+  C3D_TexEnvSrc(&(render_data.env_playfield), C3D_RGB, 0, GPU_PRIMARY_COLOR, 0);
   C3D_TexEnvSrc(&(render_data.env_playfield), C3D_Alpha, 0, GPU_TEXTURE0, 0);
-  C3D_TexEnvOpRgb(&(render_data.env_playfield), 0, 2, 0);
-  C3D_TexEnvOpAlpha(&(render_data.env_playfield), 0, 0, 0);
+  C3D_TexEnvOpRgb(&(render_data.env_playfield), 0, GPU_TEVOP_RGB_SRC_ALPHA, 0);
+  C3D_TexEnvOpAlpha(&(render_data.env_playfield), 0, GPU_TEVOP_A_SRC_ALPHA, 0);
   C3D_TexEnvFunc(&(render_data.env_playfield), C3D_Both, GPU_MODULATE);
 
   C3D_TexEnvInit(&(render_data.env_playfield_inv));
-  C3D_TexEnvSrc(&(render_data.env_playfield_inv), C3D_RGB, 0, 0, 0);
+  C3D_TexEnvSrc(&(render_data.env_playfield_inv), C3D_RGB, 0, GPU_PRIMARY_COLOR, 0);
   C3D_TexEnvSrc(&(render_data.env_playfield_inv), C3D_Alpha, 0, GPU_TEXTURE0, 0);
-  C3D_TexEnvOpRgb(&(render_data.env_playfield_inv), 0, 2, 0);
-  C3D_TexEnvOpAlpha(&(render_data.env_playfield_inv), 1, 0, 0);
+  C3D_TexEnvOpRgb(&(render_data.env_playfield_inv), 0, GPU_TEVOP_RGB_SRC_ALPHA, 0);
+  C3D_TexEnvOpAlpha(&(render_data.env_playfield_inv), 0, GPU_TEVOP_A_ONE_MINUS_SRC_ALPHA, 0);
   C3D_TexEnvFunc(&(render_data.env_playfield_inv), C3D_Both, GPU_MODULATE);
 
   C3D_AlphaTest(false, GPU_GREATER, 0x80);
@@ -527,8 +528,8 @@ static inline void ctr_char_line_to_texture(
   u32 offset = ((chr%CTR_TEXTURE_CHARS_ROW) * (8 * 8 / 2));
   u32 offset_smzx = (((chr & (~1)) % CTR_TEXTURE_CHARS_ROW) * (4 * 8 / 2));
 
-  offset += (chr/CTR_TEXTURE_CHARS_ROW) * (CTR_TEXTURE_WIDTH * 16 / 2);
-  offset_smzx += (chr/CTR_TEXTURE_CHARS_ROW) * (CTR_TEXTURE_WIDTH/2 * 16 / 2);
+  offset += (chr/CTR_TEXTURE_CHARS_ROW) * (CTR_TEXTURE_WIDTH * CTR_CHAR_H / 2);
+  offset_smzx += (chr/CTR_TEXTURE_CHARS_ROW) * (CTR_TEXTURE_WIDTH/2 * CTR_CHAR_H / 2);
 
   // add the Y position to the offsets, taking into account the 8x8 tex. tiles
   offset += ((y / 8) * (CTR_TEXTURE_WIDTH * 8 / 2));
@@ -630,7 +631,7 @@ static inline void ctr_refresh_charsets(struct ctr_render_data *render_data,
   u8 *charset_dirty;
   int coffs = 0;
   int csize = 0;
-  int cincr = (CTR_TEXTURE_WIDTH * 16) / 2;
+  int cincr = (CTR_TEXTURE_WIDTH * CTR_CHAR_H) / 2;
   int last_dirty = 0;
   int i;
 
@@ -699,6 +700,14 @@ static boolean ctr_should_render(struct ctr_render_data *render_data)
   return true;
 }
 
+static inline u32 ctr_char_texture_uv(u32 ch)
+{
+  u16 u = (ch % CTR_TEXTURE_CHARS_ROW) * CHAR_W;
+  u16 v = CTR_TEXTURE_HEIGHT - ((ch / CTR_TEXTURE_CHARS_ROW) * CTR_CHAR_H);
+
+  return (v << 16) | u;
+}
+
 static void ctr_render_layer(struct graphics_data *graphics,
  struct video_layer *vlayer)
 {
@@ -722,7 +731,7 @@ static void ctr_render_layer(struct graphics_data *graphics,
   if(layer != NULL && (layer->draw_order != vlayer->draw_order))
   {
     layer->draw_order = vlayer->draw_order;
-    layer->z = (2000 - layer->draw_order) * 3 + 1;
+    layer->z = (LAYER_DRAWORDER_MAX - layer->draw_order) * 3 + 1;
   }
 
   if(layer != NULL && (layer->w != vlayer->w || layer->h != vlayer->h))
@@ -738,7 +747,7 @@ static void ctr_render_layer(struct graphics_data *graphics,
     layer = cmalloc(sizeof(struct ctr_layer));
     layer->w = vlayer->w; layer->h = vlayer->h;
     layer->draw_order = vlayer->draw_order;
-    layer->z = (2000 - layer->draw_order) * 3 + 1;
+    layer->z = (LAYER_DRAWORDER_MAX - layer->draw_order) * 3 + 1;
     layer->foreground = clinearAlloc(sizeof(struct v_char) * max_bufsize, 0x80);
     layer->background.data = NULL;
     C3D_TexInit(&(layer->background), to_texture_size(layer->w),
@@ -778,8 +787,8 @@ static void ctr_render_layer(struct graphics_data *graphics,
           ch = (ch & 0xFF) + PROTECTED_CHARSET_POSITION;
         else
           ch = (ch + offset) % PROTECTED_CHARSET_POSITION;
-        uv = ((ch & 127) << 3);
-        uv |= (((NUM_CHARSETS * 32)-((ch >> 7) << 4)) << 16);
+        uv = ctr_char_texture_uv(ch);
+
         col = src->bg_color;
         if(col == tcol)
         {
@@ -843,8 +852,7 @@ static void ctr_render_layer(struct graphics_data *graphics,
           ch = (ch & 0xFF) + PROTECTED_CHARSET_POSITION;
         else
           ch = (ch + offset) % PROTECTED_CHARSET_POSITION;
-        uv = ((ch & 127) << 3);
-        uv |= (((NUM_CHARSETS * 32)-((ch >> 7) << 4)) << 16);
+        uv = ctr_char_texture_uv(ch);
 
         idx1 = graphics->smzx_indices[idx + 0];
         idx2 = graphics->smzx_indices[idx + 1];
@@ -882,7 +890,7 @@ static void ctr_render_layer(struct graphics_data *graphics,
     ctr_draw_2d_texture(render_data, &layer->background, 0,
      layer->background.height - layer->h, layer->w, layer->h,
      vlayer->x, vlayer->y, layer->w * 8, layer->h * 14,
-     (2000 - layer->draw_order + 1) * 3.0f + 2, 0xffffffff, false);
+     (LAYER_DRAWORDER_MAX - layer->draw_order + 1) * 3.0f + 2, 0xffffffff, false);
   }
 
   ctr_prepare_playfield(render_data, layer->foreground, vlayer->x, vlayer->y,

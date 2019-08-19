@@ -13,6 +13,10 @@ USERS
   This fixes several BKZX games.
 + Fixed checkres bugs separately preventing detection of global
   robots in both world formats.
++ Fixed 3DS renderer bug where the UI wouldn't properly display
+  char foregrounds with extended graphics enabled.
++ Fixed 3DS renderer bug where sprites containing chars with
+  transparent foregrounds wouldn't draw any char backgrounds.
 
 DEVELOPERS
 
