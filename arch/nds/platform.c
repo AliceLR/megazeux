@@ -141,7 +141,9 @@ boolean platform_init(void)
     return false;
   }
 
+#if !defined(CONFIG_DEBYTECODE)
   nds_ram_init(DETECT_RAM);
+#endif
   timer_init();
 
   // Enable vblank interrupts, but don't install the handler until the
