@@ -42,33 +42,6 @@ struct pc_speaker_stream
   Uint32 last_increment_buffer;
 };
 
-// This function is only used in sfx_next_note() under lock.
-void sound(int frequency, int duration)
-{
-  struct pc_speaker_stream *pcs_stream =
-   (struct pc_speaker_stream *)audio.pcs_stream;
-
-  if(pcs_stream)
-  {
-    pcs_stream->playing = 1;
-    pcs_stream->frequency = frequency;
-    pcs_stream->note_duration = duration;
-  }
-}
-
-// This function is only used in sfx_next_note() under lock.
-void nosound(int duration)
-{
-  struct pc_speaker_stream *pcs_stream =
-   (struct pc_speaker_stream *)audio.pcs_stream;
-
-  if(pcs_stream)
-  {
-    pcs_stream->playing = 0;
-    pcs_stream->note_duration = duration;
-  }
-}
-
 static Uint32 pcs_mix_data(struct audio_stream *a_src, Sint32 *buffer,
  Uint32 len)
 {
@@ -120,7 +93,8 @@ static Uint32 pcs_mix_data(struct audio_stream *a_src, Sint32 *buffer,
 
   while(offset < len / 4)
   {
-    sfx_next_note();
+    sfx_next_note((int *)&(pcs_stream->playing),
+     (int *)&(pcs_stream->frequency), (int *)&(pcs_stream->note_duration));
 
     // Minimum note duration is 1 to prevent locking up the audio thread.
     if(pcs_stream->note_duration < 1)

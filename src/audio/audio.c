@@ -327,9 +327,15 @@ void init_audio(struct config_info *conf)
 
 void quit_audio(void)
 {
+  // Signal the audio thread to stop and wait for it to release the lock.
   quit_audio_platform();
+
+  LOCK();
+
   audio_ext_free_registry();
   free(audio.pcs_stream);
+
+  UNLOCK();
 }
 
 /* If the mod was successfully changed, return 1.  This value is used
@@ -376,12 +382,19 @@ void audio_end_module(void)
 {
   if(audio.primary_stream)
   {
-    struct audio_stream *current_astream = audio.stream_list_base;
+    struct audio_stream *current_astream;
 
     LOCK();
-    audio.primary_stream->destruct(audio.primary_stream);
+
+    // Ensure that this didn't change while waiting for the lock.
+    if(audio.primary_stream)
+    {
+      audio.primary_stream->destruct(audio.primary_stream);
+      audio.primary_stream = NULL;
+    }
 
     // Also end any sound effects attached to the mod.
+    current_astream = audio.stream_list_base;
     while(current_astream)
     {
       struct audio_stream *next_astream = current_astream->next;
@@ -391,10 +404,9 @@ void audio_end_module(void)
 
       current_astream = next_astream;
     }
+
     UNLOCK();
   }
-
-  audio.primary_stream = NULL;
 }
 
 void audio_set_max_samples(int max_samples)
@@ -420,15 +432,16 @@ static void limit_samples(int max)
 {
   int samples_playing = 0;
   int cancel_num = 0;
-  struct audio_stream *current_astream = audio.stream_list_base;
+  struct audio_stream *current_astream;
   struct audio_stream *next_astream;
 
-  if (max == -1) return; // No limit
-
-  // We want to limit the # of samples playing.
+  // Don't limit samples if the max samples setting is -1.
+  if(max == -1)
+    return;
 
   LOCK();
 
+  current_astream = audio.stream_list_base;
   while(current_astream)
   {
     next_astream = current_astream->next;
@@ -443,18 +456,18 @@ static void limit_samples(int max)
   }
 
   cancel_num = samples_playing - max;
-  if (cancel_num > 0) {
+  if(cancel_num > 0)
+  {
     current_astream = audio.stream_list_base;
-    while(current_astream)
+    while(current_astream && cancel_num > 0)
     {
       next_astream = current_astream->next;
 
       if((current_astream != audio.primary_stream) &&
-      (current_astream != (struct audio_stream *)(audio.pcs_stream)))
+       (current_astream != (struct audio_stream *)(audio.pcs_stream)))
       {
         current_astream->destruct(current_astream);
         cancel_num--;
-        if (cancel_num <= 0) break;
       }
 
       current_astream = next_astream;
@@ -502,24 +515,24 @@ void audio_spot_sample(int period, int which)
 
   Uint32 vol = volume_function(255, audio.sound_volume);
   struct wav_info wav;
-  boolean ret;
+  boolean ret = false;
 
   memset(&wav, 0, sizeof(struct wav_info));
 
+  LOCK();
+
   if(audio.primary_stream && audio.primary_stream->get_sample)
-  {
-    LOCK();
     ret = audio.primary_stream->get_sample(audio.primary_stream, which, &wav);
-    UNLOCK();
 
-    if(ret)
-    {
-      struct audio_stream *a_src = construct_wav_stream_direct(&wav,
-       audio_get_real_frequency(period * 2), vol, !!(wav.loop_end));
-      a_src->is_spot_sample = true;
+  UNLOCK();
 
-      limit_samples(audio.max_simultaneous_samples);
-    }
+  if(ret)
+  {
+    struct audio_stream *a_src = construct_wav_stream_direct(&wav,
+     audio_get_real_frequency(period * 2), vol, !!(wav.loop_end));
+    a_src->is_spot_sample = true;
+
+    limit_samples(audio.max_simultaneous_samples);
   }
 }
 
@@ -529,11 +542,12 @@ void audio_end_sample(void)
   // primary or PC speaker stream. This is a bit of a dirty way
   // to do it though (might want to keep multiple lists instead)
 
-  struct audio_stream *current_astream = audio.stream_list_base;
+  struct audio_stream *current_astream;
   struct audio_stream *next_astream;
 
   LOCK();
 
+  current_astream = audio.stream_list_base;
   while(current_astream)
   {
     next_astream = current_astream->next;
@@ -555,42 +569,38 @@ void audio_set_module_order(int order)
   // This is intended for modules only, and should not be supported for any
   // other formats.
 
+  LOCK();
+
   if(audio.primary_stream && audio.primary_stream->set_order)
-  {
-    LOCK();
     audio.primary_stream->set_order(audio.primary_stream, order);
-    UNLOCK();
-  }
+
+  UNLOCK();
 }
 
 int audio_get_module_order(void)
 {
+  int order = 0;
+
+  LOCK();
+
   if(audio.primary_stream && audio.primary_stream->get_order)
-  {
-    int order;
-
-    LOCK();
     order = audio.primary_stream->get_order(audio.primary_stream);
-    UNLOCK();
 
-    return order;
-  }
-  else
-  {
-    return 0;
-  }
+  UNLOCK();
+
+  return order;
 }
 
 void audio_set_module_volume(int volume)
 {
-  if(audio.primary_stream)
-  {
-    int real_volume = volume_function(volume, audio.music_volume);
+  int real_volume = volume_function(volume, audio.music_volume);
 
-    LOCK();
+  LOCK();
+
+  if(audio.primary_stream)
     audio.primary_stream->set_volume(audio.primary_stream, real_volume);
-    UNLOCK();
-  }
+
+  UNLOCK();
 }
 
 void audio_set_module_frequency(int freq)
@@ -604,33 +614,35 @@ void audio_set_module_frequency(int freq)
   // this without too much success... This might be less noticeable
   // when interpolation isn't used (but the tradeoff is hardly worth it)
 
-  if(audio.primary_stream && freq >= 16)
+  if(freq >= 16)
   {
     LOCK();
-    ((struct sampled_stream *)audio.primary_stream)->
-     set_frequency((struct sampled_stream *)audio.primary_stream,
-     freq);
+
+    if(audio.primary_stream)
+    {
+      struct sampled_stream *s = (struct sampled_stream *)audio.primary_stream;
+      s->set_frequency(s, freq);
+    }
+
     UNLOCK();
   }
 }
 
 int audio_get_module_frequency(void)
 {
+  int freq = 0;
+
+  LOCK();
+
   if(audio.primary_stream)
   {
-    int freq;
-
-    LOCK();
-    freq = ((struct sampled_stream *)audio.primary_stream)->
-     get_frequency((struct sampled_stream *)audio.primary_stream);
-    UNLOCK();
-
-    return freq;
+    struct sampled_stream *s = (struct sampled_stream *)audio.primary_stream;
+    freq = s->get_frequency(s);
   }
-  else
-  {
-    return 0;
-  }
+
+  UNLOCK();
+
+  return freq;
 }
 
 void audio_set_module_position(int pos)
@@ -638,94 +650,88 @@ void audio_set_module_position(int pos)
   // Position isn't a universal thing and instead depends on the
   // medium and what it supports.
 
+  LOCK();
+
   if(audio.primary_stream && audio.primary_stream->set_position)
-  {
-    LOCK();
     audio.primary_stream->set_position(audio.primary_stream, pos);
-    UNLOCK();
-  }
+
+  UNLOCK();
 }
 
 int audio_get_module_position(void)
 {
+  int pos = 0;
+
+  LOCK();
+
   if(audio.primary_stream && audio.primary_stream->get_position)
-  {
-    int pos;
-
-    LOCK();
     pos = audio.primary_stream->get_position(audio.primary_stream);
-    UNLOCK();
 
-    return pos;
-  }
+  UNLOCK();
 
-  return 0;
+  return pos;
 }
 
 int audio_get_module_length(void)
 {
+  int length = 0;
+
+  LOCK();
+
   if(audio.primary_stream && audio.primary_stream->get_length)
-  {
-    int length;
-
-    LOCK();
     length = audio.primary_stream->get_length(audio.primary_stream);
-    UNLOCK();
 
-    return length;
-  }
+  UNLOCK();
 
-  return 0;
+  return length;
 }
 
 void audio_set_module_loop_start(int pos)
 {
+  LOCK();
+
   if(audio.primary_stream && audio.primary_stream->set_loop_start)
-  {
-    LOCK();
     audio.primary_stream->set_loop_start(audio.primary_stream, pos);
-    UNLOCK();
-  }
+
+  UNLOCK();
 }
 
 int audio_get_module_loop_start(void)
 {
+  int loop_start = 0;
+
+  LOCK();
+
   if(audio.primary_stream && audio.primary_stream->get_loop_start)
-  {
-    int loop_start;
-
-    LOCK();
     loop_start = audio.primary_stream->get_loop_start(audio.primary_stream);
-    UNLOCK();
 
-    return loop_start;
-  }
-  return 0;
+  UNLOCK();
+
+  return loop_start;
 }
 
 void audio_set_module_loop_end(int pos)
 {
+  LOCK();
+
   if(audio.primary_stream && audio.primary_stream->set_loop_end)
-  {
-    LOCK();
     audio.primary_stream->set_loop_end(audio.primary_stream, pos);
-    UNLOCK();
-  }
+
+  UNLOCK();
 }
 
 int audio_get_module_loop_end(void)
 {
+  int loop_end = 0;
+
+  LOCK();
+
   if(audio.primary_stream && audio.primary_stream->get_loop_end)
-  {
-    int loop_end;
-
-    LOCK();
     loop_end = audio.primary_stream->get_loop_end(audio.primary_stream);
-    UNLOCK();
 
-    return loop_end;
-  }
-  return 0;
+  UNLOCK();
+
+  return loop_end;
 }
 
 void audio_set_music_on(int val)
@@ -779,7 +785,7 @@ void audio_set_music_volume(int volume)
 
 void audio_set_sound_volume(int volume)
 {
-  struct audio_stream *current_astream = audio.stream_list_base;
+  struct audio_stream *current_astream;
   int real_volume;
 
   LOCK();
@@ -787,6 +793,7 @@ void audio_set_sound_volume(int volume)
   audio.sound_volume = volume;
   real_volume = volume_function(255, audio.sound_volume);
 
+  current_astream = audio.stream_list_base;
   while(current_astream)
   {
     if((current_astream != audio.primary_stream) &&

@@ -368,10 +368,10 @@ void play_string(char *str, int sfx_play)
 void sfx_clear_queue(void)
 {
   backindex = topindex = sound_in_queue = 0; // queue pointers
-  nosound(1);
 }
 
-void sfx_next_note(void)
+// Called by audio_pcs.c under lock.
+void sfx_next_note(int *is_playing, int *freq, int *duration)
 {
   int sfx_on = audio_get_pcs_on();
 
@@ -381,14 +381,19 @@ void sfx_next_note(void)
     if(background[backindex].freq == F_REST)
     {
       if(sfx_on)
-        nosound(background[backindex].duration + 1); // freq == 1 for rest
+      {
+        *is_playing = false;
+        *duration = background[backindex].duration + 1; // freq == 1 for rest
+      }
     }
     else
 
     if(sfx_on)
     {
       // Start sound
-      sound(background[backindex].freq, background[backindex].duration + 1);
+      *is_playing = true;
+      *freq = background[backindex].freq;
+      *duration = background[backindex].duration + 1;
     }
 
     backindex++;
@@ -400,7 +405,18 @@ void sfx_next_note(void)
   else
   {
     if(sfx_on)
-      nosound(1);
+    {
+      *is_playing = false;
+      *duration = 1;
+    }
+  }
+
+  // Silence the emulated PC speaker when sounds are disabled.
+  // NOTE: there was not a corresponding nosound() call here in DOS versions.
+  if(!sfx_on)
+  {
+    *is_playing = false;
+    *duration = 1;
   }
 }
 
