@@ -163,8 +163,9 @@ static inline boolean ctr_update_touch(struct buffered_status *status,
   }
   else
   {
+    int s_height = ctr_get_subscreen_height();
     mx = touch->px * 2;
-    my = touch->py * 2 - 64;
+    my = ((int)(touch->py - ((240 - s_height) / 2)) * 350 / s_height);
     if(mx < 0) mx = 0;
     if(mx >= 640) mx = 639;
     if(my < 0) my = 0;
@@ -306,6 +307,18 @@ boolean update_hid(void)
 //  retval |= ctr_update_cstick(status);
 
   return retval;
+}
+
+int ctr_get_subscreen_height(void)
+{
+  switch (get_config()->video_ratio)
+  {
+    case RATIO_CLASSIC_4_3:
+    case RATIO_STRETCH:
+      return 240;
+    default:
+      return 175;
+  }
 }
 
 void initialize_joysticks(void)

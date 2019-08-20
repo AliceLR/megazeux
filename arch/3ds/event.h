@@ -40,5 +40,6 @@ enum focus_mode
 
 enum bottom_screen_mode get_bottom_screen_mode(void);
 enum focus_mode get_allow_focus_changes(void);
+int ctr_get_subscreen_height(void);
 
 #endif /* __3DS_EVENT_H__ */

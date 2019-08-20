@@ -30,6 +30,7 @@ void nds_update_input(void);
 static boolean process_event(NDSEvent *event);
 
 extern struct input_status input;
+extern u16 subscreen_height;
 
 static boolean keyboard_allow_release = true;
 
@@ -240,7 +241,9 @@ static boolean process_event(NDSEvent *event)
     case NDS_EVENT_TOUCH_MOVE:
     {
       int mx = event->x * 640 / 256;
-      int my = event->y * 350 / 192;
+      int my = (event->y - ((192 - subscreen_height)/2)) * 350 / subscreen_height;
+      if (my < 0 || my >= 350)
+        break;
 
       // Update the MZX mouse state.
       status->real_mouse_x = mx;
