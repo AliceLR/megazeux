@@ -17,6 +17,8 @@ USERS
   char foregrounds with extended graphics enabled.
 + Fixed 3DS renderer bug where sprites containing chars with
   transparent foregrounds wouldn't draw any char backgrounds.
++ Fixed 3DS renderer crashes that would occur when large numbers
+  of sprites were active.
 
 DEVELOPERS
 

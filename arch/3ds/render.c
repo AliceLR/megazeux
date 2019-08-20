@@ -48,6 +48,7 @@ struct ctr_layer
   Uint32 w, h, mode;
   float z;
   int draw_order;
+  boolean has_background_texture;
   struct v_char *foreground;
   C3D_Tex background;
 };
@@ -723,7 +724,7 @@ static void ctr_render_layer(struct graphics_data *graphics,
   u32 uv;
   u32 i, j, ch;
   u32 protected_pal_position = graphics->protected_pal_position;
-  boolean has_content = false, has_inversions = false;
+  boolean has_content = false, draw_background_texture;
 
   if(!ctr_should_render(render_data))
     return;
@@ -737,7 +738,8 @@ static void ctr_render_layer(struct graphics_data *graphics,
   if(layer != NULL && (layer->w != vlayer->w || layer->h != vlayer->h))
   {
     linearFree(layer->foreground);
-    C3D_TexDelete(&(layer->background));
+    if(layer->has_background_texture)
+      C3D_TexDelete(&(layer->background));
     free(layer);
     layer = NULL;
   }
@@ -749,10 +751,31 @@ static void ctr_render_layer(struct graphics_data *graphics,
     layer->draw_order = vlayer->draw_order;
     layer->z = (LAYER_DRAWORDER_MAX - layer->draw_order) * 3 + 1;
     layer->foreground = clinearAlloc(sizeof(struct v_char) * max_bufsize, 0x80);
-    layer->background.data = NULL;
-    C3D_TexInit(&(layer->background), to_texture_size(layer->w),
-     to_texture_size(layer->h), GPU_RGBA8);
-    C3D_TexSetFilter(&(layer->background), GPU_NEAREST, GPU_NEAREST);
+
+    /**
+     * This renderer has two methods to draw char backgrounds. The quicker
+     * method is to draw them as single pixels on a texture stretched to the
+     * size of the layer. The slower method is to draw the layer an extra time
+     * for the background colors.
+     *
+     * The former method seems to consume a vast amount of buffer space to the
+     * point it causes crashes when too many sprites are active. Only use it for
+     * the default layers (these are the layers most likely to benefit anyway).
+     */
+    if((vlayer->draw_order == LAYER_DRAWORDER_BOARD) ||
+     (vlayer->draw_order == LAYER_DRAWORDER_OVERLAY) ||
+     (vlayer->draw_order == LAYER_DRAWORDER_GAME_UI) ||
+     (vlayer->draw_order == LAYER_DRAWORDER_UI))
+    {
+      layer->has_background_texture = true;
+      layer->background.data = NULL;
+      C3D_TexInit(&(layer->background), to_texture_size(layer->w),
+       to_texture_size(layer->h), GPU_RGBA8);
+      C3D_TexSetFilter(&(layer->background), GPU_NEAREST, GPU_NEAREST);
+    }
+    else
+      layer->has_background_texture = false;
+
     vlayer->platform_layer_data = layer;
     for(i = 0; i < max_bufsize; i++)
     {
@@ -763,6 +786,7 @@ static void ctr_render_layer(struct graphics_data *graphics,
   }
 
   layer->mode = vlayer->mode;
+  draw_background_texture = layer->has_background_texture;
 
   if(layer->mode == 0)
   {
@@ -777,7 +801,8 @@ static void ctr_render_layer(struct graphics_data *graphics,
         ch = src->char_value;
         if(ch == INVISIBLE_CHAR)
         {
-          ((u32*) layer->background.data)[k] = 0;
+          if(draw_background_texture)
+            ((u32*) layer->background.data)[k] = 0;
           layer->foreground[l++].col = 0;
           layer->foreground[m++].col = 0;
           continue;
@@ -805,7 +830,7 @@ static void ctr_render_layer(struct graphics_data *graphics,
         if(col2 == tcol)
         {
           col2 = 0;
-          has_inversions = true;
+          draw_background_texture = false;
         }
         else
         {
@@ -814,7 +839,8 @@ static void ctr_render_layer(struct graphics_data *graphics,
 
           col2 = graphics->flat_intensity_palette[col2];
         }
-        ((u32*) layer->background.data)[k] = col;
+        if(draw_background_texture)
+          ((u32*) layer->background.data)[k] = col;
         layer->foreground[l].uv = uv;
         layer->foreground[l++].col = col;
 
@@ -839,7 +865,8 @@ static void ctr_render_layer(struct graphics_data *graphics,
         ch = src->char_value;
         if(ch == INVISIBLE_CHAR)
         {
-          ((u32*) layer->background.data)[k] = 0;
+          if(draw_background_texture)
+            ((u32*) layer->background.data)[k] = 0;
           layer->foreground[l++].col = 0;
           layer->foreground[m++].col = 0;
           layer->foreground[n++].col = 0;
@@ -865,9 +892,10 @@ static void ctr_render_layer(struct graphics_data *graphics,
         col4 = idx4 == tcol ? 0 : graphics->flat_intensity_palette[(u8) idx4];
 
         if((col2 & col3 & col4) == 0)
-          has_inversions = true;
+          draw_background_texture = false;
 
-        ((u32*) layer->background.data)[k] = col;
+        if(draw_background_texture)
+          ((u32*) layer->background.data)[k] = col;
         layer->foreground[l].uv = uv;
         layer->foreground[l++].col = col;
         layer->foreground[m].uv = uv;
@@ -883,7 +911,7 @@ static void ctr_render_layer(struct graphics_data *graphics,
   if(!has_content)
     return;
 
-  if(!has_inversions)
+  if(draw_background_texture)
   {
     C3D_TexFlush(&layer->background);
 
@@ -900,7 +928,7 @@ static void ctr_render_layer(struct graphics_data *graphics,
   if(layer->mode == 0)
   {
     C3D_TexBind(0, &render_data->charset_vram[0]);
-    if(has_inversions)
+    if(!draw_background_texture)
     {
       C3D_SetTexEnv(0, &(render_data->env_playfield_inv));
       C3D_DrawArrays(GPU_GEOMETRY_PRIM, 0, layer->w * layer->h);
@@ -911,7 +939,7 @@ static void ctr_render_layer(struct graphics_data *graphics,
   else
   {
     C3D_SetTexEnv(0, &(render_data->env_playfield));
-    if(has_inversions)
+    if(!draw_background_texture)
     {
       C3D_TexBind(0, &render_data->charset_vram[1]);
       C3D_DrawArrays(GPU_GEOMETRY_PRIM, 0, layer->w * layer->h);
