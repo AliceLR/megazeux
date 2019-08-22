@@ -1991,6 +1991,9 @@ static int save_world_zip(struct world *mzx_world, const char *file,
   if(!fp)
     goto err;
 
+  // TODO temporary fix to improve save times on the embedded platforms.
+  setvbuf(fp, NULL, _IOFBF, 16384);
+
   // Header
   if(!savegame)
   {
@@ -2733,6 +2736,9 @@ static FILE *try_open_world(const char *file, boolean savegame,
   FILE *fp = fopen_unsafe(file, "rb");
   if(!fp)
     return NULL;
+
+  // TODO temporary fix to improve load times on the embedded platforms.
+  setvbuf(fp, NULL, _IOFBF, 16384);
 
   if(savegame)
   {

@@ -19,6 +19,9 @@ USERS
   transparent foregrounds wouldn't draw any char backgrounds.
 + Fixed 3DS renderer crashes that would occur when large numbers
   of sprites were active.
++ File IO for world saving/loading is now buffered, which should
+  improve save/load times on the 3DS and Switch.
++ Enabled writing zip data descriptors for the Switch.
 
 DEVELOPERS
 
