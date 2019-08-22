@@ -194,8 +194,6 @@ UTILS_LIBSPEC enum zip_error zip_read_close_stream(struct zip_archive *zp);
 UTILS_LIBSPEC enum zip_error zip_read_open_mem_stream(struct zip_archive *zp,
  struct memfile *mf);
 
-UTILS_LIBSPEC enum zip_error zip_read_close_mem_stream(struct zip_archive *zp);
-
 UTILS_LIBSPEC enum zip_error zip_rewind(struct zip_archive *zp);
 
 UTILS_LIBSPEC enum zip_error zip_skip_file(struct zip_archive *zp);

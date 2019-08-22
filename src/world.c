@@ -1494,6 +1494,7 @@ static inline int load_world_counters(struct world *mzx_world,
 
   enum zip_error result;
   unsigned int method;
+  boolean is_stream = false;
 
   result = zip_get_next_method(zp, &method);
   if(result != ZIP_SUCCESS)
@@ -1503,6 +1504,7 @@ static inline int load_world_counters(struct world *mzx_world,
   if(zp->is_memory && method == ZIP_M_NONE)
   {
     zip_read_open_mem_stream(zp, &mf);
+    is_stream = true;
   }
 
   else
@@ -1564,16 +1566,10 @@ static inline int load_world_counters(struct world *mzx_world,
   sort_counter_list(counter_list);
 #endif
 
-  if(zp->is_memory && method == ZIP_M_NONE)
-  {
-    zip_read_close_mem_stream(zp);
-  }
+  if(is_stream)
+    zip_read_close_stream(zp);
 
-  else
-  {
-    free(buffer);
-  }
-
+  free(buffer);
   return ZIP_SUCCESS;
 }
 
@@ -1623,6 +1619,7 @@ static inline int load_world_strings_mem(struct world *mzx_world,
   // implementation.
   struct memfile mf;
   char *buffer = NULL;
+  boolean is_stream = false;
 
   struct string_list *string_list = &(mzx_world->string_list);
   struct string *src_string;
@@ -1638,6 +1635,7 @@ static inline int load_world_strings_mem(struct world *mzx_world,
   if(zp->is_memory && method == ZIP_M_NONE)
   {
     zip_read_open_mem_stream(zp, &mf);
+    is_stream = true;
   }
 
   else
@@ -1703,16 +1701,10 @@ static inline int load_world_strings_mem(struct world *mzx_world,
   sort_string_list(string_list);
 #endif
 
-  if(zp->is_memory && method == ZIP_M_NONE)
-  {
-    zip_read_close_mem_stream(zp);
-  }
+  if(is_stream)
+    zip_read_close_stream(zp);
 
-  else
-  {
-    free(buffer);
-  }
-
+  free(buffer);
   return ZIP_SUCCESS;
 }
 

@@ -425,6 +425,7 @@ void load_robot(struct world *mzx_world, struct robot *cur_robot,
   unsigned int method;
   unsigned int board_id;
   unsigned int id;
+  boolean is_stream = false;
 
   zip_get_next_prop(zp, NULL, &board_id, &id);
   zip_get_next_method(zp, &method);
@@ -437,6 +438,7 @@ void load_robot(struct world *mzx_world, struct robot *cur_robot,
   if(zp->is_memory && method == ZIP_M_NONE)
   {
     zip_read_open_mem_stream(zp, &mf);
+    is_stream = true;
   }
 
   else
@@ -453,15 +455,10 @@ void load_robot(struct world *mzx_world, struct robot *cur_robot,
     error_message(E_BOARD_ROBOT_CORRUPT, (board_id << 8)|id, NULL);
   }
 
-  if(zp->is_memory && method == ZIP_M_NONE)
-  {
-    zip_read_close_mem_stream(zp);
-  }
+  if(is_stream)
+    zip_read_close_stream(zp);
 
-  else
-  {
-    free(buffer);
-  }
+  free(buffer);
 }
 
 struct robot *load_robot_allocate(struct world *mzx_world,
