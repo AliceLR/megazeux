@@ -241,6 +241,9 @@ void store_board_to_extram(struct board *board)
     &board->level_under_color, &board->overlay, &board->overlay_color
   };
 
+  if (!has_extmem)
+    return;
+
   // Skip the last 2 pointers if overlays are disabled.
   num_fields = sizeof(ptr_list)/sizeof(*ptr_list);
   if(!board->overlay_mode)
@@ -269,6 +272,9 @@ void retrieve_board_from_extram(struct board *board)
     &board->level_under_id, &board->level_under_param,
     &board->level_under_color, &board->overlay, &board->overlay_color
   };
+
+  if (!has_extmem)
+    return;
 
   // Skip the last 2 pointers if overlays are disabled.
   num_fields = sizeof(ptr_list)/sizeof(*ptr_list);
