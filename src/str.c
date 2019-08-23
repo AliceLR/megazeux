@@ -858,7 +858,7 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
     while(1)
     {
       // Read entries until there are none left
-      if(!dir_get_next_entry(&mzx_world->input_directory, entry))
+      if(!dir_get_next_entry(&mzx_world->input_directory, entry, NULL))
         break;
 
       // Ignore . and ..

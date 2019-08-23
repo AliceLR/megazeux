@@ -121,7 +121,7 @@ static int case5(char *path, char *string)
     while(ret != FSAFE_SUCCESS)
     {
       // somebody bad happened, or there's no new entry
-      if(!dir_get_next_entry(&wd, newpath))
+      if(!dir_get_next_entry(&wd, newpath, NULL))
         break;
 
       // okay, we got something, but does it match?

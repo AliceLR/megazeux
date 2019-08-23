@@ -142,6 +142,13 @@ struct dso_syms_map
 
 #define PATH_BUF_LEN MAX_PATH
 
+enum mzx_dir_type
+{
+  DIR_TYPE_UNKNOWN,
+  DIR_TYPE_FILE,
+  DIR_TYPE_DIR
+};
+
 struct mzx_dir {
 #if defined(CONFIG_PSP) || defined(CONFIG_3DS) || defined(CONFIG_SWITCH)
   char path[PATH_BUF_LEN];
@@ -155,7 +162,7 @@ boolean dir_open(struct mzx_dir *dir, const char *path);
 void dir_close(struct mzx_dir *dir);
 void dir_seek(struct mzx_dir *dir, long offset);
 long dir_tell(struct mzx_dir *dir);
-boolean dir_get_next_entry(struct mzx_dir *dir, char *entry);
+boolean dir_get_next_entry(struct mzx_dir *dir, char *entry, int *type);
 
 CORE_LIBSPEC void boyer_moore_index(const void *B, const size_t b_len,
  int index[256], boolean ignore_case);

@@ -2580,6 +2580,84 @@ static int sort_function(const void *dest_str_ptr, const void *src_str_ptr)
 #define FILESEL_FILES_LABEL   5
 #define FILESEL_DIRS_LABEL    6
 
+#define MAX_FILE_LIST_DISPLAY 56
+#define MAX_FILE_LIST_DISPLAY_MZX 30
+
+struct file_list_entry
+{
+  // This is the string displayed by the file list interface. It must be the
+  // first thing in this struct.
+  char display[MAX_FILE_LIST_DISPLAY];
+
+  boolean is_mzx_file;
+  boolean loaded_world_name;
+  char filename[1];
+};
+
+/**
+ * Read the name of a world file from the file.
+ * Conveniently, this is typically just the first 25 bytes of the world.
+ */
+static void file_list_get_mzx_world_name(struct file_list_entry *entry)
+{
+  FILE *mzx_file = fopen_unsafe(entry->filename, "rb");
+  char *world_name = entry->display + MAX_FILE_LIST_DISPLAY_MZX;
+
+  if(!fread(world_name, 24, 1, mzx_file))
+    strcpy(world_name, "@0~c\x10 name read failed \x11");
+  else
+  if(!memcmp(world_name, "PK\x03\x04", 4))
+    strcpy(world_name, "@0~c\x10 rearchived world \x11");
+
+  fclose(mzx_file);
+
+  entry->display[MAX_FILE_LIST_DISPLAY - 1] = '\0';
+  entry->loaded_world_name = true;
+}
+
+/**
+ * Create an entry in the file list.
+ */
+static struct file_list_entry *construct_file_list_entry(const char *file_name)
+{
+  size_t file_name_length = strlen(file_name);
+  struct file_list_entry *entry =
+   cmalloc(sizeof(struct file_list_entry) + file_name_length);
+
+  memcpy(entry->filename, file_name, file_name_length + 1);
+
+  if(file_name_length >= 4 &&
+   !strcasecmp(file_name + file_name_length - 4, ".mzx"))
+  {
+    // Special handling for MZX worlds- display their world names.
+    entry->is_mzx_file = true;
+    entry->loaded_world_name = false;
+
+    memset(entry->display, ' ', MAX_FILE_LIST_DISPLAY - 1);
+    entry->display[MAX_FILE_LIST_DISPLAY - 1] = '\0';
+
+    memcpy(entry->display, file_name, file_name_length);
+
+    // Display names that are too long with ...
+    if(file_name_length > (MAX_FILE_LIST_DISPLAY_MZX - 1))
+      memcpy(entry->display + MAX_FILE_LIST_DISPLAY_MZX - 4, "... ", 4);
+
+    // TODO it would be nice to be able to delay this on the 3DS but it's
+    // annoying to implement right now.
+    file_list_get_mzx_world_name(entry);
+  }
+  else
+  {
+    entry->is_mzx_file = false;
+    snprintf(entry->display, MAX_FILE_LIST_DISPLAY, "%s", file_name);
+
+    // Display names that are too long with ...
+    if(file_name_length > (MAX_FILE_LIST_DISPLAY - 1))
+      snprintf(entry->display + MAX_FILE_LIST_DISPLAY - 4, 4, "...");
+  }
+  return entry;
+}
+
 static int file_dialog_function(struct world *mzx_world, struct dialog *di,
  int key)
 {
@@ -2637,7 +2715,8 @@ static int file_dialog_function(struct world *mzx_world, struct dialog *di,
 
         if(current_element_num == FILESEL_FILE_LIST)
         {
-          strncpy(dest->result, file_name + 56, dest->max_length - 1);
+          struct file_list_entry *entry = (struct file_list_entry *)file_name;
+          strncpy(dest->result, entry->filename, dest->max_length - 1);
           dest->result[dest->max_length - 1] = '\0';
           e->draw_function(mzx_world, di, e, DI_NONACTIVE, 0);
         }
@@ -2736,7 +2815,7 @@ static void remove_files(char *directory_name, int remove_recursively)
 
   while(1)
   {
-    if(!dir_get_next_entry(&current_dir, file_name))
+    if(!dir_get_next_entry(&current_dir, file_name, NULL))
       break;
 
     if(stat(file_name, &file_info) < 0)
@@ -2865,77 +2944,59 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
 
     while(1)
     {
-      if(!dir_get_next_entry(&current_dir, file_name))
+      int dir_type;
+      if(!dir_get_next_entry(&current_dir, file_name, &dir_type))
         break;
 
       file_name_length = strlen(file_name);
 
       // Exclude . and hidden files
-      if((stat(file_name, &file_info) >= 0) &&
-       ((file_name[0] != '.') || (file_name[1] == '.')))
+      if(file_name[0] == '.' && file_name[1] != '.')
+        continue;
+
+      // The file type value from dirent isn't particularly reliable; might
+      // need to use stat instead.
+      if(dir_type == DIR_TYPE_UNKNOWN)
       {
+        if(stat(file_name, &file_info) < 0)
+          continue;
+
         if(S_ISDIR(file_info.st_mode))
+          dir_type = DIR_TYPE_DIR;
+
+        else
+        if(S_ISREG(file_info.st_mode))
+          dir_type = DIR_TYPE_FILE;
+      }
+
+      if(dir_type == DIR_TYPE_DIR)
+      {
+        // Exclude .. from base dir in subdirsonly mode
+        if(dirs_okay &&
+         !(dirs_okay == 2 && !strcmp(file_name, "..") &&
+          !strcmp(current_dir_name, base_dir_name) ))
         {
-          // Exclude .. from base dir in subdirsonly mode
-          if(dirs_okay &&
-           !(dirs_okay == 2 && !strcmp(file_name, "..") &&
-             !strcmp(current_dir_name, base_dir_name) ))
-          {
-            dir_list[num_dirs] = cmalloc(file_name_length + 1);
-            memcpy(dir_list[num_dirs], file_name, file_name_length + 1);
-            dir_list[num_dirs][file_name_length] = '\0';
-            num_dirs++;
-          }
+          dir_list[num_dirs] = cmalloc(file_name_length + 1);
+          memcpy(dir_list[num_dirs], file_name, file_name_length + 1);
+          dir_list[num_dirs][file_name_length] = '\0';
+          num_dirs++;
         }
-        else if(S_ISREG(file_info.st_mode))
+      }
+      else
+
+      if(dir_type == DIR_TYPE_FILE)
+      {
+        // Find the extension.
+        ext_pos = get_ext_pos(file_name);
+
+        for(i = 0; wildcards[i] != NULL; i++)
         {
-          // Must match one of the wildcards, also ignore the .
-          if(file_name_length >= 4)
+          if(ext_pos >= 0 && !strcasecmp(file_name + ext_pos, wildcards[i]))
           {
-            // Find the extension.
-            ext_pos = get_ext_pos(file_name);
-
-            for(i = 0; wildcards[i] != NULL; i++)
-            {
-              if(ext_pos >= 0 && !strcasecmp(file_name + ext_pos, wildcards[i]))
-              {
-                file_list[num_files] = cmalloc(56 + file_name_length + 1);
-
-                if(!strcasecmp(file_name + file_name_length - 4, ".mzx"))
-                {
-                  FILE *mzx_file = fopen_unsafe(file_name, "rb");
-                  char *world_name = file_list[num_files] + 30;
-
-                  memset(file_list[num_files], ' ', 55);
-                  memcpy(file_list[num_files], file_name, file_name_length);
-
-                  // Display names that are too long with ...
-                  if(file_name_length > 29)
-                    strcpy(file_list[num_files] + 26, "... ");
-
-                  if(!fread(world_name, 24, 1, mzx_file))
-                    strcpy(world_name, "@0~c\x10 name read failed \x11");
-                  else
-                  if(!memcmp(world_name, "PK\x03\x04", 4))
-                    strcpy(world_name, "@0~c\x10 rearchived world \x11");
-
-                  fclose(mzx_file);
-                }
-                else
-                {
-                  memcpy(file_list[num_files], file_name, file_name_length + 1);
-                  // Display names that are too long with ...
-                  if(file_name_length > 55)
-                    strcpy(file_list[num_files] + 52, "...");
-                }
-                file_list[num_files][55] = 0;
-                memcpy(file_list[num_files] + 56, file_name,
-                 file_name_length + 1);
-
-                num_files++;
-                break;
-              }
-            }
+            struct file_list_entry *e = construct_file_list_entry(file_name);
+            file_list[num_files] = (char *)e;
+            num_files++;
+            break;
           }
         }
       }
@@ -3041,7 +3102,7 @@ skip_dir:
 
     elements[FILESEL_FILE_LIST] =
      construct_list_box(2, 2, (const char **)file_list, num_files,
-     list_length, 55, 1, &chosen_file, NULL, true);
+     list_length, (MAX_FILE_LIST_DISPLAY - 1), 1, &chosen_file, NULL, true);
     elements[FILESEL_DIR_LIST] =
      construct_list_box(59, 2, (const char **)dir_list, num_dirs,
      list_length, 15, 2, &chosen_dir, NULL, true);
@@ -3122,10 +3183,14 @@ skip_dir:
         // Unfortunately, ret isn't reliable when the file name is 55+ chars,
         // so if the focus is directly on the list and they don't match, use
         // the complete name
-        if(di.current_element == FILESEL_FILE_LIST &&
-         strcmp(ret_file, file_list[chosen_file] + 56))
-          join_path_names(ret, MAX_PATH, current_dir_name,
-           file_list[chosen_file] + 56);
+        if(di.current_element == FILESEL_FILE_LIST)
+        {
+          struct file_list_entry *e =
+           (struct file_list_entry *)file_list[chosen_file];
+
+          if(strcmp(ret_file, e->filename))
+            join_path_names(ret, MAX_PATH, current_dir_name, e->filename);
+        }
 
         if(default_ext)
           add_ext(ret, default_ext);
@@ -3235,12 +3300,14 @@ skip_dir:
         char *new_path = cmalloc(MAX_PATH);
         char *new_name = cmalloc(MAX_PATH);
 
-        strncpy(new_name, file_list[chosen_file] + 56, MAX_PATH);
+        struct file_list_entry *e =
+         (struct file_list_entry *)file_list[chosen_file];
+
+        snprintf(new_name, MAX_PATH, "%s", e->filename);
 
         if(!confirm_input(mzx_world, "Rename File", "New file name:", new_name))
         {
-          join_path_names(old_path, MAX_PATH, current_dir_name,
-           file_list[chosen_file] + 56);
+          join_path_names(old_path, MAX_PATH, current_dir_name, e->filename);
           join_path_names(new_path, MAX_PATH, current_dir_name, new_name);
 
           if(strcmp(old_path, new_path))
