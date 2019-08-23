@@ -1804,6 +1804,9 @@ void save_counters_file(struct world *mzx_world, const char *file)
   if(!fp)
     return;
 
+  // TODO temporary fix to improve save times on the embedded platforms.
+  setvbuf(fp, NULL, _IOFBF, 16384);
+
   if(!fwrite("COUNTERS", 8, 1, fp))
     goto err;
 
@@ -1836,6 +1839,9 @@ int load_counters_file(struct world *mzx_world, const char *file)
     error_message(E_FILE_DOES_NOT_EXIST, 0, NULL);
     return -1;
   }
+
+  // TODO temporary fix to improve load times on the embedded platforms.
+  setvbuf(fp, NULL, _IOFBF, 16384);
 
   if(!fread(magic, 8, 1, fp))
     goto err_close_file;
