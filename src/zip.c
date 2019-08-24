@@ -550,7 +550,7 @@ static enum zip_error zip_read_central_file_header(struct zip_archive *zp,
   central_fh->file_name[n] = 0;
 
   // Done. Skip to the position where the next header should be.
-  if(zp->vseek(fp, skip_length, SEEK_CUR))
+  if(skip_length && zp->vseek(fp, skip_length, SEEK_CUR))
     return ZIP_SEEK_ERROR;
 
   return ZIP_SUCCESS;
