@@ -1060,7 +1060,7 @@ boolean dir_get_next_entry(struct mzx_dir *dir, char *entry, int *type)
     return false;
   }
 
-#ifdef CONFIG_3DS
+#if defined(CONFIG_3DS) || defined(CONFIG_WII)
   // While presumably other platforms support this field the only one it's
   // really critical for right now is the 3DS (where stat usage in the file
   // manager can cause a directory with a moderate number of files to take
