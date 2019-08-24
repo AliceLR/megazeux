@@ -23,6 +23,9 @@ USERS
 + File IO for world saving/loading is now buffered, which should
   improve save/load times on the 3DS and Switch.
 + Enabled writing zip data descriptors for the Switch.
++ Added classic/stretch video ratio support for the 3DS and NDS
+  lower screens. (asie)
++ "classic" is now the default ratio for the 3DS, NDS, and Wii.
 
 DEVELOPERS
 

@@ -89,7 +89,8 @@
 # The scaling renderers can be configured to preserve aspect ratio where
 # possible in window and fullscreen modes. The supported ratios are
 # "classic" (4:3) and "modern" (64:35). The ratio type "stretch" disables
-# any aspect ratio preservation. The default is "modern".
+# any aspect ratio preservation. The default is "modern" (except for consoles
+# where "classic" makes more sense, including the 3DS, NDS, and Wii).
 
 # video_ratio = modern
 

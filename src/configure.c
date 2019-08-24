@@ -37,6 +37,7 @@
 // Arch-specific config.
 #ifdef CONFIG_NDS
 #define VIDEO_OUTPUT_DEFAULT "nds"
+#define VIDEO_RATIO_DEFAULT RATIO_CLASSIC_4_3
 #endif
 
 #ifdef CONFIG_GP2X
@@ -55,6 +56,7 @@
 #define AUDIO_SAMPLE_RATE 48000
 #define FULLSCREEN_DEFAULT 1
 #define GL_VSYNC_DEFAULT 1
+#define VIDEO_RATIO_DEFAULT RATIO_CLASSIC_4_3
 #ifdef CONFIG_SDL
 #define VIDEO_OUTPUT_DEFAULT "software"
 #define FULLSCREEN_WIDTH_DEFAULT 640
@@ -65,6 +67,7 @@
 
 #ifdef CONFIG_3DS
 #define FORCE_BPP_DEFAULT 16
+#define VIDEO_RATIO_DEFAULT RATIO_CLASSIC_4_3
 #endif
 
 #ifdef CONFIG_SWITCH
@@ -122,6 +125,10 @@
 #define FULLSCREEN_DEFAULT 0
 #endif
 
+#ifndef VIDEO_RATIO_DEFAULT
+#define VIDEO_RATIO_DEFAULT RATIO_MODERN_64_35
+#endif
+
 #ifdef CONFIG_UPDATER
 #ifndef MAX_UPDATE_HOSTS
 #define MAX_UPDATE_HOSTS 16
@@ -164,7 +171,7 @@ static const struct config_info user_conf_default =
   1,                            // allow_resize
   VIDEO_OUTPUT_DEFAULT,         // video_output
   FORCE_BPP_DEFAULT,            // force_bpp
-  RATIO_MODERN_64_35,           // video_ratio
+  VIDEO_RATIO_DEFAULT,          // video_ratio
   "linear",                     // opengl filter method
   "",                           // opengl default scaling shader
   GL_VSYNC_DEFAULT,             // opengl vsync mode
