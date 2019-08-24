@@ -35,7 +35,7 @@
 
 
 struct robot *legacy_load_robot_allocate(struct world *mzx_world, FILE *fp,
- int savegame, int file_version)
+ int savegame, int file_version, boolean *truncated)
 {
   struct robot *cur_robot = cmalloc(sizeof(struct robot));
 
@@ -45,7 +45,9 @@ struct robot *legacy_load_robot_allocate(struct world *mzx_world, FILE *fp,
   cur_robot->program_source = NULL;
   cur_robot->num_labels = 0;
 
-  legacy_load_robot(mzx_world, cur_robot, fp, savegame, file_version);
+  if(!legacy_load_robot(mzx_world, cur_robot, fp, savegame, file_version))
+    *truncated = true;
+
   return cur_robot;
 }
 
@@ -271,7 +273,9 @@ size_t legacy_load_robot_calculate_size(const void *buffer, int savegame,
   const unsigned char *bufferPtr;
   int program_length;
   int stack_size;
-  size_t robot_size;
+
+  // Base robot size
+  size_t robot_size = legacy_calculate_partial_robot_size(savegame, version);
 
   // First, read the program length (0 bytes in)
   bufferPtr = (unsigned char *)buffer + 0;
@@ -286,42 +290,38 @@ size_t legacy_load_robot_calculate_size(const void *buffer, int savegame,
   // Next, if this is a savegame robot, read the stack size
   if(savegame)
   {
-    bufferPtr = (unsigned char *)buffer + 41;
-    if(version >= V284) bufferPtr += 4; // Skip over loopcount
-    bufferPtr += 32 * 4; // Skip over 32 local counters
+    bufferPtr = (unsigned char *)buffer + robot_size - 8;
     stack_size = mem_getd(&bufferPtr);
+
+    robot_size += stack_size * 4;
   }
 
-  // Now calculate the robot size
-  robot_size = 41;
-  if(savegame)
-  {
-    if(version >= V284) robot_size += 4;
-    robot_size += 32 * 4 + 2 * 4 + stack_size * 4;
-  }
   robot_size += program_length;
   return robot_size;
 }
 
-void legacy_load_robot(struct world *mzx_world, struct robot *cur_robot,
+boolean legacy_load_robot(struct world *mzx_world, struct robot *cur_robot,
  FILE *fp, int savegame, int version)
 {
   int robot_location = ftell(fp);
   size_t partial_size = legacy_calculate_partial_robot_size(savegame, version);
-  void *buffer = cmalloc(partial_size);
-  size_t total_read = 0;
+  char *buffer = cmalloc(partial_size);
+  boolean truncated = true;
   size_t full_size;
 
-  total_read += fread(buffer, partial_size, 1, fp) * partial_size;
-  full_size = legacy_load_robot_calculate_size(buffer, savegame, version);
+  if(fread(buffer, partial_size, 1, fp))
+  {
+    full_size = legacy_load_robot_calculate_size(buffer, savegame, version);
+    buffer = crealloc(buffer, full_size);
 
-  buffer = crealloc(buffer, full_size);
-  total_read += fread((unsigned char *)buffer + partial_size,
-   full_size - partial_size, 1, fp) * (full_size - partial_size);
+    if((partial_size == full_size) ||
+     fread(buffer + partial_size, full_size - partial_size, 1, fp))
+      truncated = false;
+  }
 
   create_blank_robot(cur_robot);
 
-  if(total_read != full_size)
+  if(truncated)
   {
     error_message(E_BOARD_ROBOT_CORRUPT, robot_location, NULL);
     create_blank_robot_program(cur_robot);
@@ -334,6 +334,7 @@ void legacy_load_robot(struct world *mzx_world, struct robot *cur_robot,
      version, robot_location);
   }
   free(buffer);
+  return !truncated;
 }
 
 static void legacy_load_scroll(struct scroll *cur_scroll, FILE *fp)
@@ -342,7 +343,7 @@ static void legacy_load_scroll(struct scroll *cur_scroll, FILE *fp)
 
   cur_scroll->mesg = NULL;
   cur_scroll->num_lines = fgetw(fp);
-  fseek(fp, 2, SEEK_CUR); // Skip junk
+  fgetw(fp); // Skip junk
   scroll_size = fgetw(fp);
   cur_scroll->mesg_size = scroll_size;
   cur_scroll->used = fgetc(fp);

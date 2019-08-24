@@ -99,7 +99,7 @@ CORE_LIBSPEC boolean redirect_stdio(const char *base_path, boolean require_conf)
 
 // Code to load multi-byte ints from little endian file
 int fgetw(FILE *fp);
-int fgetd(FILE *fp);
+CORE_LIBSPEC int fgetd(FILE *fp);
 void fputw(int src, FILE *fp);
 void fputd(int src, FILE *fp);
 

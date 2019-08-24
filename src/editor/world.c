@@ -195,10 +195,12 @@ static void append_world_refactor_board(struct board *cur_board,
 static boolean append_world_legacy(struct world *mzx_world, FILE *fp,
  int file_version)
 {
-  int i;
+  int i, j;
   int num_boards, old_num_boards = mzx_world->num_boards;
-  int last_pos;
+  int board_names_pos;
   struct board *cur_board;
+  unsigned int *board_offsets;
+  unsigned int *board_sizes;
 
   fseek(fp, 4234, SEEK_SET);
 
@@ -220,8 +222,7 @@ static boolean append_world_legacy(struct world *mzx_world, FILE *fp,
   }
 
   // Skip the names for now
-  // Gonna wanna come back to here
-  last_pos = ftell(fp);
+  board_names_pos = ftell(fp);
   fseek(fp, num_boards * BOARD_NAME_SIZE, SEEK_CUR);
 
   if(num_boards + old_num_boards >= MAX_BOARDS)
@@ -233,15 +234,28 @@ static boolean append_world_legacy(struct world *mzx_world, FILE *fp,
    crealloc(mzx_world->board_list,
    sizeof(struct board *) * (old_num_boards + num_boards));
 
-  // Append boards
-  for(i = old_num_boards; i < old_num_boards + num_boards; i++)
+  // Read the board offsets/sizes preemptively to reduce the amount of seeking.
+  board_offsets = cmalloc(sizeof(int) * num_boards);
+  board_sizes = cmalloc(sizeof(int) * num_boards);
+  for(i = 0; i < num_boards; i++)
   {
-    mzx_world->board_list[i] =
-     legacy_load_board_allocate(mzx_world, fp, 0, file_version);
+    board_sizes[i] = fgetd(fp);
+    board_offsets[i] = fgetd(fp);
   }
 
+  // Append boards
+  for(i = 0, j = old_num_boards; j < old_num_boards + num_boards; i++, j++)
+  {
+    mzx_world->board_list[j] =
+     legacy_load_board_allocate(mzx_world, fp, board_offsets[i], board_sizes[i],
+      false, file_version);
+  }
+
+  free(board_offsets);
+  free(board_sizes);
+
   // Go back to where the names are
-  fseek(fp, last_pos, SEEK_SET);
+  fseek(fp, board_names_pos, SEEK_SET);
   for(i = old_num_boards; i < old_num_boards + num_boards; i++)
   {
     cur_board = mzx_world->board_list[i];
