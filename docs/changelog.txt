@@ -26,6 +26,8 @@ USERS
 + Added classic/stretch video ratio support for the 3DS and NDS
   lower screens. (asie)
 + "classic" is now the default ratio for the 3DS, NDS, and Wii.
++ Fixed GX renderer bug where chars with both colors transparent
+  could cause various graphical bugs in normal MZX mode.
 
 DEVELOPERS
 
