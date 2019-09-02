@@ -2468,7 +2468,7 @@ void refactor_board_list(struct world *mzx_world,
     {
       d_param = cur_board->board_dir[i2];
 
-      if(d_param < new_list_size)
+      if(d_param < num_boards)
         cur_board->board_dir[i2] = board_id_translation_list[d_param];
       else
         cur_board->board_dir[i2] = NO_BOARD;

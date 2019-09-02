@@ -28,6 +28,8 @@ USERS
 + "classic" is now the default ratio for the 3DS, NDS, and Wii.
 + Fixed GX renderer bug where chars with both colors transparent
   could cause various graphical bugs in normal MZX mode.
++ Fixed bug where board exits could be cleared when deleting a
+  board or after loading a world containing null boards.
 
 DEVELOPERS
 
@@ -35,6 +37,7 @@ DEVELOPERS
   some stat calls (currently only used by the 3DS and Wii ports
   for the file manager).
 + Replaced most fseek calls in the legacy world loader.
++ Refactored move_current_board to be more readable.
 
 
 July 22nd, 2019 - MZX 2.92
