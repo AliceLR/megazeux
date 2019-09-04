@@ -30,6 +30,7 @@ USERS
   could cause various graphical bugs in normal MZX mode.
 + Fixed bug where board exits could be cleared when deleting a
   board or after loading a world containing null boards.
++ Fixed bugs when playing STARDSTM.GDM with the libxmp engine.
 
 DEVELOPERS
 
