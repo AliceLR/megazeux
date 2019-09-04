@@ -303,6 +303,7 @@ int xmp_load_module(xmp_context opaque, char *path)
 	}
 
 	m->filename = path;	/* For ALM, SSMT, etc */
+	m->size = hio_size(h);
 #endif
 
 	ret = load_module(opaque, h);

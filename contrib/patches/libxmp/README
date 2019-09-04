@@ -70,7 +70,11 @@ Patch summary
 03: Removes less common formats that weren't supported by libmodplug.
 04: (by NoSuck) adds https://github.com/cmatsuoka/libxmp/pull/105 (xmp_set_row),
     putting libxmp's support for setting MOD_POSITION in line with libmodplug.
+    This has been merged upstream.
 05: Removes a leftover depacker function that depended on the win32 folder.
+    This should eventually be merged into patch 02.
+06: Fixes bugs in the MOD loader caused by the depacker removal patch.
+    This should eventually be merged into patch 02.
 
 10: Fixes https://github.com/cmatsuoka/libxmp/issues/97. This has been merged
     upstream in PR https://github.com/cmatsuoka/libxmp/pull/98.
@@ -78,18 +82,24 @@ Patch summary
     upstream in PR https://github.com/cmatsuoka/libxmp/pull/99.
 12: Fixes https://github.com/cmatsuoka/libxmp/issues/102 (global sample volume)
     and https://github.com/cmatsuoka/libxmp/issues/103 (sample vibrato).
-13: (by NoSuck) fixes IT T00. https://github.com/cmatsuoka/libxmp/pull/129
+13: (by NoSuck) fixes IT T00. https://github.com/cmatsuoka/libxmp/pull/129.
+    This has been merged upstream.
+14: Fixes https://github.com/cmatsuoka/libxmp/issues/147. This has been merged
+    upstream in PR https://github.com/cmatsuoka/libxmp/pull/148.
 
 20: Disables USE_VERSIONED_SYMBOLS. Required to get our hacked libxmp to link
-    on unix platforms. Ideally these platforms will eventually dynamically link.
+    on unix platforms. This should probably be merged into patch 01.
 30: (by Spectere) Compatibility patch for newever versions of MSVC, which
-    have snprintf and vnprintf.
+    have snprintf and vnprintf. This is obsoleted upstream by
+    https://github.com/cmatsuoka/libxmp/pull/83.
 
 Unix note
 ---------
 The only things preventing unix builds from just dynamically linking libxmp are
 A) the .it format patches and B) xmp_set_row. Presumably, the latter will exist
 in later releases of libxmp, and .it handling might be replaced with libit216
-eventually.
+eventually. However, dynamically linking with a standard libxmp would enable
+non-portable formats and the depackers, so this might never be a standard build
+option.
 
 --Lachesis
