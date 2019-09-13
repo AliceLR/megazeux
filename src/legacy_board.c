@@ -139,6 +139,10 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   cur_board->charset_path[0] = 0;
   cur_board->palette_path[0] = 0;
 
+#ifdef DEBUG
+  cur_board->is_extram = false;
+#endif
+
   // board_mode, unused
   if(fgetc(fp) == EOF)
   {

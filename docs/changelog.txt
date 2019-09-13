@@ -31,6 +31,11 @@ USERS
 + Fixed bug where board exits could be cleared when deleting a
   board or after loading a world containing null boards.
 + Fixed bugs when playing STARDSTM.GDM with the libxmp engine.
++ Fixed a crash that could occur when importing a world in the
+  editor containing a null board.
++ Fixed a bug where null boards wouldn't be properly refactored
+  on the NDS while using a memory cart, causing entrances to
+  point to the wrong boards and possibly other problems.
 
 DEVELOPERS
 
@@ -38,6 +43,9 @@ DEVELOPERS
   avoid stat calls when reading directories.
 + Replaced most fseek calls in the legacy world loader.
 + Refactored move_current_board to be more readable.
++ Corrected some of the editor's bad extram handling and added
+  warnings to debug builds to help debug it (no platforms at the
+  present support both the editor and extram).
 
 
 July 22nd, 2019 - MZX 2.92

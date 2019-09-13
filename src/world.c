@@ -2423,14 +2423,14 @@ void refactor_board_list(struct world *mzx_world,
   int d_param, d_flag;
   int board_width;
   int board_height;
-  int relocate_current = 1;
+  int new_current_id = NO_BOARD;
 
   int num_boards = mzx_world->num_boards;
   struct board **board_list = mzx_world->board_list;
   struct board *cur_board;
 
-  if(board_list[mzx_world->current_board_id] == NULL)
-    relocate_current = 0;
+  if(board_list[mzx_world->current_board_id])
+    new_current_id = board_id_translation_list[mzx_world->current_board_id];
 
   free(board_list);
   board_list =
@@ -2445,6 +2445,10 @@ void refactor_board_list(struct world *mzx_world,
     cur_board = board_list[i];
     board_width = cur_board->board_width;
     board_height = cur_board->board_height;
+
+    if(i != new_current_id)
+      retrieve_board_from_extram(cur_board);
+
     level_id = cur_board->level_id;
     level_param = cur_board->level_param;
 
@@ -2473,10 +2477,13 @@ void refactor_board_list(struct world *mzx_world,
       else
         cur_board->board_dir[i2] = NO_BOARD;
     }
+
+    if(i != new_current_id)
+      store_board_to_extram(cur_board);
   }
 
   // Fix current board
-  if(relocate_current)
+  if(new_current_id != NO_BOARD)
   {
     d_param = mzx_world->current_board_id;
     d_param = board_id_translation_list[d_param];

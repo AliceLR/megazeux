@@ -294,6 +294,10 @@ static void default_board(struct board *cur_board)
   cur_board->b_mesg_timer = 0;
   cur_board->b_mesg_row = 24;
   cur_board->b_mesg_col = -1;
+
+#ifdef DEBUG
+  cur_board->is_extram = false;
+#endif
 }
 
 void dummy_board(struct board *cur_board)

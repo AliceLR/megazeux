@@ -25,6 +25,7 @@
 #include "../board.h"
 #include "../const.h"
 #include "../error.h"
+#include "../extmem.h"
 #include "../graphics.h"
 #include "../robot.h"
 #include "../window.h"
@@ -246,22 +247,11 @@ static boolean append_world_legacy(struct world *mzx_world, FILE *fp,
   // Append boards
   for(i = 0, j = old_num_boards; j < old_num_boards + num_boards; i++, j++)
   {
-    mzx_world->board_list[j] =
+    cur_board =
      legacy_load_board_allocate(mzx_world, fp, board_offsets[i], board_sizes[i],
       false, file_version);
-  }
 
-  free(board_offsets);
-  free(board_sizes);
-
-  // Go back to where the names are
-  fseek(fp, board_names_pos, SEEK_SET);
-  for(i = old_num_boards; i < old_num_boards + num_boards; i++)
-  {
-    cur_board = mzx_world->board_list[i];
-    if(!fread(cur_board->board_name, BOARD_NAME_SIZE, 1, fp))
-      cur_board->board_name[0] = 0;
-
+    mzx_world->board_list[j] = cur_board;
     if(cur_board)
     {
       // Also patch a pointer to the global robot
@@ -274,7 +264,27 @@ static boolean append_world_legacy(struct world *mzx_world, FILE *fp,
 
       // Fix exits
       append_world_refactor_board(cur_board, old_num_boards);
+
+      store_board_to_extram(cur_board);
     }
+  }
+
+  free(board_offsets);
+  free(board_sizes);
+
+  // Go back to where the names are
+  fseek(fp, board_names_pos, SEEK_SET);
+  for(i = old_num_boards; i < old_num_boards + num_boards; i++)
+  {
+    char ignore[BOARD_NAME_SIZE];
+    char *dest = ignore;
+
+    cur_board = mzx_world->board_list[i];
+    if(cur_board)
+      dest = cur_board->board_name;
+
+    if(!fread(dest, BOARD_NAME_SIZE, 1, fp))
+      dest[0] = 0;
   }
 
   fclose(fp);
@@ -357,8 +367,12 @@ static boolean append_world_zip(struct world *mzx_world, struct zip_archive *zp,
         mzx_world->board_list[i] = cur_board;
 
         if(cur_board)
+        {
+          // Fix exits.
           append_world_refactor_board(cur_board, old_num_boards);
 
+          store_board_to_extram(cur_board);
+        }
         break;
       }
     }
@@ -392,11 +406,11 @@ boolean append_world(struct world *mzx_world, const char *file)
     ret = append_world_legacy(mzx_world, fp, file_version);
   }
 
-  // Make sure update_done is adequately sized
-  set_update_done(mzx_world);
-
   // Remove any null boards
   optimize_null_boards(mzx_world);
+
+  // Make sure update_done is adequately sized
+  set_update_done(mzx_world);
 
   return ret;
 }

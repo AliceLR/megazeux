@@ -27,6 +27,7 @@
 #include "../data.h"
 #include "../error.h"
 #include "../event.h"
+#include "../extmem.h"
 #include "../game.h"
 #include "../game_player.h"
 #include "../graphics.h"
@@ -524,7 +525,8 @@ static void fix_mod(struct editor_context *editor)
  * Set the active world's current board.
  */
 
-static void set_current_board(struct editor_context *editor, int new_board)
+static void editor_set_current_board(struct editor_context *editor,
+ int new_board, boolean is_extram)
 {
   struct editor_config_info *editor_conf = get_editor_config();
   struct world *mzx_world = ((context *)editor)->world;
@@ -537,8 +539,12 @@ static void set_current_board(struct editor_context *editor, int new_board)
       new_board = mzx_world->num_boards - 1;
 
     mzx_world->current_board_id = new_board;
-    mzx_world->current_board = mzx_world->board_list[new_board];
-    cur_board = mzx_world->current_board;
+    cur_board = mzx_world->board_list[new_board];
+
+    if(is_extram)
+      set_current_board_ext(mzx_world, cur_board);
+    else
+      set_current_board(mzx_world, cur_board);
 
     if(!cur_board->overlay_mode || editor->mode == EDIT_VLAYER)
       set_editor_mode(editor, EDIT_BOARD);
@@ -1207,7 +1213,7 @@ static boolean editor_idle(context *ctx)
       strcpy(mzx_world->name, NEW_WORLD_TITLE);
       strcpy(mzx_world->board_list[0]->board_name, NEW_WORLD_TITLE);
       mzx_world->first_board = 1;
-      set_current_board(editor, 1);
+      editor_set_current_board(editor, 1, false);
     }
 
     editor->first_board_prompt = false;
@@ -1545,7 +1551,7 @@ static boolean editor_key(context *ctx, int *key)
 
           if(mzx_world->current_board_id != s_board)
           {
-            set_current_board(editor, s_board);
+            editor_set_current_board(editor, s_board, true);
           }
 
           else
@@ -1570,7 +1576,7 @@ static boolean editor_key(context *ctx, int *key)
       {
         // Move to adjacent board
         if(cur_board->board_dir[0] != NO_BOARD && editor->mode != EDIT_VLAYER)
-          set_current_board(editor, cur_board->board_dir[0]);
+          editor_set_current_board(editor, cur_board->board_dir[0], true);
         return true;
       }
       else
@@ -1593,7 +1599,7 @@ static boolean editor_key(context *ctx, int *key)
       {
         // Move to adjacent board
         if(cur_board->board_dir[1] != NO_BOARD && editor->mode != EDIT_VLAYER)
-          set_current_board(editor, cur_board->board_dir[1]);
+          editor_set_current_board(editor, cur_board->board_dir[1], true);
         return true;
       }
 
@@ -1615,7 +1621,7 @@ static boolean editor_key(context *ctx, int *key)
       {
         // Move to adjacent board
         if(cur_board->board_dir[3] != NO_BOARD && editor->mode != EDIT_VLAYER)
-          set_current_board(editor, cur_board->board_dir[3]);
+          editor_set_current_board(editor, cur_board->board_dir[3], true);
         return true;
       }
 
@@ -1637,7 +1643,7 @@ static boolean editor_key(context *ctx, int *key)
       {
         // Move to adjacent board
         if(cur_board->board_dir[2] != NO_BOARD && editor->mode != EDIT_VLAYER)
-          set_current_board(editor, cur_board->board_dir[2]);
+          editor_set_current_board(editor, cur_board->board_dir[2], true);
         return true;
       }
 
@@ -2095,7 +2101,7 @@ static boolean editor_key(context *ctx, int *key)
         // Previous board
         // Doesn't make sense on the vlayer.
         if(mzx_world->current_board_id > 0 && editor->mode != EDIT_VLAYER)
-          set_current_board(editor, mzx_world->current_board_id - 1);
+          editor_set_current_board(editor, mzx_world->current_board_id - 1, true);
       }
       else
         place_text(editor);
@@ -2112,7 +2118,7 @@ static boolean editor_key(context *ctx, int *key)
         // Doesn't make sense on the vlayer.
         if(mzx_world->current_board_id < mzx_world->num_boards - 1
          && editor->mode != EDIT_VLAYER)
-          set_current_board(editor, mzx_world->current_board_id + 1);
+          editor_set_current_board(editor, mzx_world->current_board_id + 1, true);
       }
       else
         place_text(editor);
@@ -2325,7 +2331,7 @@ static boolean editor_key(context *ctx, int *key)
         if(i < MAX_BOARDS)
         {
           if(add_board(mzx_world, i) >= 0)
-            set_current_board(editor, i);
+            editor_set_current_board(editor, i, false);
         }
       }
       else
@@ -2351,7 +2357,7 @@ static boolean editor_key(context *ctx, int *key)
            choose_board(mzx_world, mzx_world->current_board_id,
            "Select current board:", 0);
 
-          set_current_board(editor, change_to_board);
+          editor_set_current_board(editor, change_to_board, true);
         }
       }
       else
@@ -2412,7 +2418,7 @@ static boolean editor_key(context *ctx, int *key)
 
             if(del_board == current_board_id)
             {
-              set_current_board(editor, 0);
+              editor_set_current_board(editor, 0, true);
             }
             else
             {
@@ -2744,8 +2750,8 @@ static boolean editor_key(context *ctx, int *key)
             strcpy(curr_file, load_world);
 
             mzx_world->current_board_id = mzx_world->first_board;
-            mzx_world->current_board =
-             mzx_world->board_list[mzx_world->current_board_id];
+            set_current_board_ext(mzx_world,
+             mzx_world->board_list[mzx_world->current_board_id]);
             cur_board = mzx_world->current_board;
 
             insta_fadein();
@@ -2808,7 +2814,7 @@ static boolean editor_key(context *ctx, int *key)
            (new_position != mzx_world->current_board_id))
           {
             move_current_board(mzx_world, new_position);
-            set_current_board(editor, new_position);
+            editor_set_current_board(editor, new_position, true);
             editor->modified = true;
           }
         }
@@ -3452,7 +3458,8 @@ static void editor_resume(context *ctx)
 
     scroll_color = 15;
     mzx_world->current_board_id = editor->test_reload_board;
-    mzx_world->current_board = mzx_world->board_list[editor->test_reload_board];
+    set_current_board_ext(mzx_world,
+     mzx_world->board_list[editor->test_reload_board]);
 
     synchronize_board_values(editor);
     fix_scroll(editor);
@@ -3578,8 +3585,8 @@ static void __edit_world(context *parent, boolean reload_curr_file)
     strncpy(editor->current_world, curr_file, MAX_PATH);
 
     mzx_world->current_board_id = mzx_world->first_board;
-    mzx_world->current_board =
-      mzx_world->board_list[mzx_world->current_board_id];
+    set_current_board_ext(mzx_world,
+     mzx_world->board_list[mzx_world->current_board_id]);
 
     fix_mod(editor);
   }

@@ -48,12 +48,42 @@ void set_current_board_ext(struct world *mzx_world, struct board *cur_board);
  * away. The implementations are obvious enough.
  */
 
-static inline void store_board_to_extram(struct board *board) {}
-static inline void retrieve_board_from_extram(struct board *board) {}
+#ifdef DEBUG
+#include "util.h"
+#endif
+
+#define store_board_to_extram(b) \
+ real_store_board_to_extram(b, __FILE__, __LINE__)
+#define retrieve_board_from_extram(b) \
+ real_retrieve_board_from_extram(b, __FILE__, __LINE__)
+
+static inline void real_store_board_to_extram(struct board *board,
+ const char *file, int line)
+{
+#ifdef DEBUG
+  if(!board->is_extram)
+    board->is_extram = true;
+  else
+    warn("board %p is already in extram! (%s:%d)\n", (void *)board, file, line);
+#endif
+}
+
+static inline void real_retrieve_board_from_extram(struct board *board,
+ const char *file, int line)
+{
+#ifdef DEBUG
+  if(board->is_extram)
+    board->is_extram = false;
+  else
+    warn("board %p isn't in extram! (%s:%d)\n", (void *)board, file, line);
+#endif
+}
 
 static inline void set_current_board(struct world *mzx_world,
  struct board *cur_board)
 {
+  if(mzx_world->current_board)
+    store_board_to_extram(mzx_world->current_board);
   mzx_world->current_board = cur_board;
 }
 
@@ -61,6 +91,7 @@ static inline void set_current_board_ext(struct world *mzx_world,
  struct board *cur_board)
 {
   set_current_board(mzx_world, cur_board);
+  retrieve_board_from_extram(cur_board);
 }
 
 #endif // CONFIG_NDS && !CONFIG_DEBYTECODE
