@@ -1060,14 +1060,12 @@ boolean dir_get_next_entry(struct mzx_dir *dir, char *entry, int *type)
     return false;
   }
 
-#if defined(CONFIG_3DS) || defined(CONFIG_WII)
-  // While presumably other platforms support this field the only one it's
-  // really critical for right now is the 3DS (where stat usage in the file
-  // manager can cause a directory with a moderate number of files to take
-  // a long time to open). If there's a decent way of telling which platforms
-  // have this field, generalize this ifdef.
   if(type)
   {
+#ifdef DT_UNKNOWN
+    /* On platforms that support it, the d_type field can be used to avoid
+     * stat calls. This is critical for the file manager on embedded platforms.
+     */
     if(inode->d_type == DT_REG)
       *type = DIR_TYPE_FILE;
     else
@@ -1075,11 +1073,10 @@ boolean dir_get_next_entry(struct mzx_dir *dir, char *entry, int *type)
       *type = DIR_TYPE_DIR;
     else
       *type = DIR_TYPE_UNKNOWN;
-  }
 #else
-  if(type)
     *type = DIR_TYPE_UNKNOWN;
 #endif
+  }
 
   snprintf(entry, PATH_BUF_LEN, "%s", inode->d_name);
   return true;

@@ -19,7 +19,7 @@ USERS
   transparent foregrounds wouldn't draw any char backgrounds.
 + Fixed 3DS renderer crashes that would occur when large numbers
   of sprites were active.
-+ Improved file manager directory read times for the 3DS, Wii.
++ Improved file manager directory read times for 3DS/NDS/Wii.
 + File IO for world saving/loading is now buffered, which should
   improve save/load times on the 3DS and Switch.
 + Enabled writing zip data descriptors for the Switch.
@@ -34,9 +34,8 @@ USERS
 
 DEVELOPERS
 
-+ Added initial support for the dirent d_type field to avoid
-  some stat calls (currently only used by the 3DS and Wii ports
-  for the file manager).
++ Added initial support for the dirent d_type field to help
+  avoid stat calls when reading directories.
 + Replaced most fseek calls in the legacy world loader.
 + Refactored move_current_board to be more readable.
 
