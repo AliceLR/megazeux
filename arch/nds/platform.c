@@ -32,8 +32,6 @@
 #include "dlmalloc.h"
 #include "exception.h"
 
-static unsigned int y = 0;
-
 // from arch/nds/event.c
 extern void nds_update_input(void);
 
@@ -72,13 +70,15 @@ static void timer_init(void)
   irqEnable(IRQ_TIMER2);
 }
 
+#ifndef CONFIG_STDIO_REDIRECT
 /*
  * Special handling for debug output
  */
-
 static __attribute__((format(printf, 2, 0)))
 void handle_debug_info(const char *type, const char *format, va_list args)
 {
+  static unsigned int y = 0;
+
   if(!has_video_initialized())
   {
     iprintf("%s: ", type);
@@ -128,6 +128,7 @@ void debug(const char *format, ...)
   va_end(args);
 }
 #endif // DEBUG
+#endif /* !CONFIG_STDIO_REDIRECT */
 
 boolean platform_init(void)
 {

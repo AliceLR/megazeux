@@ -225,7 +225,7 @@ CORE_LIBSPEC void __stack_chk_fail(void);
 #define debug(...) do { } while(0)
 #endif
 
-#elif defined(CONFIG_NDS) /* ANDROID */
+#elif defined(CONFIG_NDS) && !defined(CONFIG_STDIO_REDIRECT) /* ANDROID */
 
 // When the graphics have initialized, print to a debug buffer rather than the screen.
 void info(const char *format, ...)  __attribute__((format(printf, 1, 2)));

@@ -37,6 +37,8 @@ USERS
   on the NDS while using a memory cart, causing entrances to
   point to the wrong boards and possibly other problems.
 + Improved world loading times when using an NDS memory cart.
++ Improved NDS memory cart transfer speed. (asie)
++ Disabled NDS logging hacks when stdio redirect is enabled.
 
 DEVELOPERS
 
