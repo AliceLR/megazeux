@@ -349,7 +349,8 @@ static boolean nds_init_video(struct graphics_data *graphics,
   palette_idx_table_init();
 
   // Start with scaled mode.
-  switch (config->video_ratio) {
+  switch(config->video_ratio)
+  {
     case RATIO_CLASSIC_4_3:
     case RATIO_STRETCH:
       subscreen_height = 192;

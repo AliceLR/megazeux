@@ -242,7 +242,7 @@ static boolean process_event(NDSEvent *event)
     {
       int mx = event->x * 640 / 256;
       int my = (event->y - ((192 - subscreen_height)/2)) * 350 / subscreen_height;
-      if (my < 0 || my >= 350)
+      if(my < 0 || my >= 350)
         break;
 
       // Update the MZX mouse state.

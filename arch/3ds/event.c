@@ -311,7 +311,7 @@ boolean update_hid(void)
 
 int ctr_get_subscreen_height(void)
 {
-  switch (get_config()->video_ratio)
+  switch(get_config()->video_ratio)
   {
     case RATIO_CLASSIC_4_3:
     case RATIO_STRETCH:

@@ -1047,7 +1047,8 @@ static inline void ctr_draw_playfield(struct ctr_render_data *render_data,
     {
       ctr_draw_2d_texture(render_data, &render_data->playfield_tex,
        0, 512 - 350, 640, 350, 80, 12.75, 160, 87.5, 2.0f, 0xffffffff, true);
-    } else
+    }
+    else
     {
       int width = 320, height = ctr_get_subscreen_height();
       ctr_draw_2d_texture(render_data, &render_data->playfield_tex,
