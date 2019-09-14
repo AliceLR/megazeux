@@ -36,6 +36,7 @@ USERS
 + Fixed a bug where null boards wouldn't be properly refactored
   on the NDS while using a memory cart, causing entrances to
   point to the wrong boards and possibly other problems.
++ Improved world loading times when using an NDS memory cart.
 
 DEVELOPERS
 

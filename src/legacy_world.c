@@ -972,7 +972,16 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
       savegame, file_version);
 
     if(mzx_world->board_list[i])
+    {
+      // Also patch a pointer to the global robot
+      if(mzx_world->board_list[i]->robot_list)
+        (mzx_world->board_list[i])->robot_list[0] = &mzx_world->global_robot;
+
+      // Also optimize out null objects
+      optimize_null_objects(mzx_world->board_list[i]);
+
       store_board_to_extram(mzx_world->board_list[i]);
+    }
 
     meter_update_screen(&meter_curr, meter_target);
   }
@@ -998,15 +1007,6 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
     {
       if(!fread(cur_board->board_name, BOARD_NAME_SIZE, 1, fp))
         cur_board->board_name[0] = 0;
-
-      // Also patch a pointer to the global robot
-      if(cur_board->robot_list)
-        (mzx_world->board_list[i])->robot_list[0] = &mzx_world->global_robot;
-
-      // Also optimize out null objects
-      retrieve_board_from_extram(mzx_world->board_list[i]);
-      optimize_null_objects(mzx_world->board_list[i]);
-      store_board_to_extram(mzx_world->board_list[i]);
     }
     else
     {
