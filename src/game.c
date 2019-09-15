@@ -198,7 +198,12 @@ static inline void load_vquick_fadeout(void)
   return;
 #endif
 
+#ifdef __EMSCRIPTEN__
+  // HACK: avoid putting load_world_*/load_savegame on the asyncify whitelist
+  insta_fadeout();
+#else
   vquick_fadeout();
+#endif
 }
 
 /**

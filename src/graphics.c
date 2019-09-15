@@ -1067,9 +1067,7 @@ void update_screen(void)
 // to use in conjuction with the next function.
 void vquick_fadeout(void)
 {
-#ifndef __EMSCRIPTEN__
   if(!has_video_initialized())
-#endif
   {
     // If we're running without video there's no point waiting 11 frames.
     insta_fadeout();
@@ -1111,9 +1109,7 @@ void vquick_fadeout(void)
 // use in conjuction with the previous function.
 void vquick_fadein(void)
 {
-#ifndef __EMSCRIPTEN__
   if(!has_video_initialized())
-#endif
   {
     // If we're running without video there's no point waiting 11 frames.
     insta_fadein();

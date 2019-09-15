@@ -42,7 +42,7 @@
 #include <emscripten.h>
 void delay(Uint32 ms)
 {
-  emscripten_sleep_with_yield(ms);
+  emscripten_sleep(ms);
 }
 #else
 void delay(Uint32 ms)

@@ -19,26 +19,31 @@ LIBPNG_LDFLAGS = -s USE_LIBPNG=1
 BINEXT = .js
 
 ARCH_LDFLAGS += -s ALLOW_MEMORY_GROWTH=1
-#ARCH_LDFLAGS += -s TOTAL_MEMORY=134217728 -s ALLOW_MEMORY_GROWTH=0
+# ARCH_LDFLAGS += -s TOTAL_MEMORY=134217728 -s ALLOW_MEMORY_GROWTH=0
+
+ARCH_LDFLAGS += -s MODULARIZE=1 -s 'EXTRA_EXPORTED_RUNTIME_METHODS=["FS"]'
 
 ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 	ARCH_CFLAGS += -s FULL_ES2=1
 	ARCH_LDFLAGS += -s FULL_ES2=1
 endif
 
-ARCH_LDFLAGS += -s EMTERPRETIFY=1 -s EMTERPRETIFY_ASYNC=1
-ARCH_LDFLAGS += -s EMTERPRETIFY_WHITELIST=@arch/emscripten/whitelist.json
+ARCH_LDFLAGS += -s ASYNCIFY=1 -s ASYNCIFY_STACK_SIZE=32768
+# TODO: Removing the whitelist should allow the editor to work.
+ARCH_LDFLAGS += -s ASYNCIFY_WHITELIST=@arch/emscripten/whitelist.json
+ARCH_LDFLAGS += -s 'ASYNCIFY_IMPORTS=["emscripten_sleep"]'
 
 ARCH_CFLAGS += -s ENVIRONMENT=web
 ARCH_LDFLAGS += -s ENVIRONMENT=web
 
-#ARCH_LDFLAGS += --no-heap-copy --preload-file assets --preload-file config.txt
-
 ifeq (${DEBUG},1)
 	ARCH_CFLAGS += -s ASSERTIONS=1 --profiling-funcs
 	ARCH_LDFLAGS += -s ASSERTIONS=1 --profiling-funcs
+	EMSCRIPTEN_FRONTEND_BUILD_PROFILE = build
 else
+	ARCH_LDFLAGS += -O3
 	OPTIMIZE_CFLAGS = -O3
+	EMSCRIPTEN_FRONTEND_BUILD_PROFILE = build-release
 endif
 
 clean:
@@ -47,8 +52,16 @@ clean:
 	$(if ${V},,@echo "  RM       mzxrun.wasm")
 	@rm -rf mzxrun.js.mem mzxrun.js.orig.js mzxrun.wasm
 
-# TODO: archive assets, copy frontend.
-build: all mzxrun.wasm
-	@cp mzxrun.wasm ${build}
+${build}/mzxrun.js: ${build} mzxrun.js
+	@mkdir -p ${build}/
+	@cp mzxrun.js ${build}/
+
+build: ${build} ${build}/mzxrun.js
+	@cp mzxrun.wasm ${build}/
+	@(if [ -f ${build}/config.txt ]; then rm ${build}/config.txt; fi)
+	@(if [ -d ${build}/assets ]; then cd ${build} && zip -9 -r assets.zip assets/ && rm -r assets/; fi)
+	@(cd arch/emscripten/web && npm run $(EMSCRIPTEN_FRONTEND_BUILD_PROFILE))
+	@cp -r arch/emscripten/web/res/* ${build}/
+	@cp arch/emscripten/web/mzxrun_web.js ${build}/
 
 include arch/zip.inc

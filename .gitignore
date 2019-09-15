@@ -17,6 +17,9 @@ arch/android/project/app/src/main/res/raw/assets.zip
 arch/android/project/app/*.iml
 arch/android/project/build
 arch/android/project/local.properties
+arch/emscripten/web/mzxrun_web.js
+arch/emscripten/web/node_modules
+arch/emscripten/web/package-lock.json
 arch/mingw/pefix.d
 arch/mingw/pefix.exe
 arch/mingw/pefix.o
