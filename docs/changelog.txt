@@ -36,6 +36,8 @@ USERS
 + Fixed a bug where null boards wouldn't be properly refactored
   on the NDS while using a memory cart, causing entrances to
   point to the wrong boards and possibly other problems.
++ Fixed a bug that could corrupt the ends of robot programs when
+  using an NDS memory cart.
 + Improved world loading times when using an NDS memory cart.
 + Improved NDS memory cart transfer speed. (asie)
 + Disabled NDS logging hacks when stdio redirect is enabled.

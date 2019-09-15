@@ -17,24 +17,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "ram.h"
+#include "../../src/compat.h"
 
 #ifndef NDS_EXTMEM_H
 #define NDS_EXTMEM_H
 
-// NDS-specific interface
-// Kevin Vance
-bool nds_ram_init(RAM_TYPE type);
-void *nds_ext_malloc(size_t bytes);
-void *nds_ext_realloc(void *mem, size_t bytes);
-void nds_ext_free(void *mem);
-void nds_ext_unlock(void);
-void nds_ext_lock(void);
-void nds_ext_copy(void *dest, void *src, size_t size);
+__M_BEGIN_DECLS
 
-// These functions take a pointer to a pointer to the memory region to swap,
-// e.g. (&foo) for (char *foo).
-bool nds_ext_in(void *normal_buffer, size_t size);
-bool nds_ext_out(void *extra_buffer, size_t size);
+#include "ram.h"
+
+boolean nds_ram_init(RAM_TYPE type);
+
+__M_END_DECLS
 
 #endif /* NDS_EXTMEM_H */
