@@ -42,6 +42,7 @@ USERS
 + Improved NDS memory cart transfer speed. (asie)
 + Disabled NDS logging hacks when stdio redirect is enabled.
 + Exiting MZX on the NDS should now power off the NDS.
++ Added Emscripten frontend. (asie)
 
 DEVELOPERS
 

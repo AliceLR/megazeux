@@ -390,31 +390,20 @@ ifeq (${build},)
 build := build/${SUBPLATFORM}
 endif
 
-build: ${build}
+build: ${build} ${build}/assets ${build}/docs
 
 ${build}:
-	${MKDIR} -p ${build}/docs
-	${MKDIR} -p ${build}/assets
+	${MKDIR} -p ${build}
 	${CP} config.txt LICENSE ${build}
-	${CP} assets/default.chr assets/edit.chr ${build}/assets
-	${CP} assets/smzx.pal ${build}/assets
-	${CP} docs/macro.txt docs/keycodes.html docs/mzxhelp.html ${build}/docs
-	${CP} docs/joystick.html ${build}/docs
-	${CP} docs/changelog.txt docs/platform_matrix.html ${build}/docs
 	${CP} ${mzxrun} ${build}
 	@if test -f ${mzxrun}.debug; then \
 		cp ${mzxrun}.debug ${build}; \
 	fi
 ifeq (${BUILD_EDITOR},1)
-	${CP} assets/ascii.chr assets/blank.chr ${build}/assets
-	${CP} assets/smzx.chr ${build}/assets
 	${CP} ${mzx} ${build}
 	@if test -f ${mzx}.debug; then \
 		cp ${mzx}.debug ${build}; \
 	fi
-endif
-ifeq (${BUILD_HELPSYS},1)
-	${CP} assets/help.fil ${build}/assets
 endif
 ifeq (${BUILD_MODULAR},1)
 	${CP} ${core_target} ${editor_target} ${build}
@@ -438,6 +427,24 @@ endif
 		cp ${hlp2txt}.debug  ${txt2hlp}.debug ${build}/utils; \
 		cp ${png2smzx}.debug ${build}/utils; \
 	fi
+endif
+
+${build}/docs: ${build}
+	${MKDIR} -p ${build}/docs
+	${CP} docs/macro.txt docs/keycodes.html docs/mzxhelp.html ${build}/docs
+	${CP} docs/joystick.html ${build}/docs
+	${CP} docs/changelog.txt docs/platform_matrix.html ${build}/docs
+
+${build}/assets: ${build}
+	${MKDIR} -p ${build}/assets
+	${CP} assets/default.chr assets/edit.chr ${build}/assets
+	${CP} assets/smzx.pal ${build}/assets
+ifeq (${BUILD_EDITOR},1)
+	${CP} assets/ascii.chr assets/blank.chr ${build}/assets
+	${CP} assets/smzx.chr ${build}/assets
+endif
+ifeq (${BUILD_HELPSYS},1)
+	${CP} assets/help.fil ${build}/assets
 endif
 ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 	${MKDIR} -p ${build}/assets/glsl/scalers

@@ -14,6 +14,7 @@ BUILDING
 
 For the moment, you need to build with:
 
+make
 make build
 
 This will emit the necesary suite in build/emscripten/.
@@ -21,12 +22,13 @@ This will emit the necesary suite in build/emscripten/.
 PACKAGING THE BUILD
 
 You can then use the usual "make archive" to build a
-build/dist/3ds/mzxgit-3ds.zip file for distribution.
+build/dist/emscripten/mzxgit-emscripten.zip file for distribution.
+Note: you can omit the "make build" step if using "make archive".
 
 TROUBLESHOOTING
 
 If "assets.zip" is missing from build/emscripten, that is because the current Makefile is a bit wonky.
-Please re-build with "make -B build".
+Please re-build with "make -B build" or "make -B archive".
 
 If "unreachable" errors start appearing at random moments in the web browser's console, please try disabling the
 "ASYNCIFY_WHITELIST" argument. That may fix it, in which case the whitelist must be updated.
