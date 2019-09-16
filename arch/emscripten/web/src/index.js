@@ -122,7 +122,10 @@ window.MzxrunInitialize = function(options) {
 
     return loadingScreen._drawBackground().then(_ => Promise.all(vfsPromises)).then(_ => {
         // add MegaZeux config.txt vfs
-        var configString = options.config;
+        // Set startup_path first so user config will override it...
+        var configString = "startup_path = /data/game\n";
+
+        configString += options.config + "\n";
 
         configString += "audio_sample_rate = 48000\n";
         if (navigator.userAgent.toLowerCase().indexOf('firefox') >= 0) {
