@@ -24,6 +24,11 @@
 	"core_resume",
 		"title_resume",
 			"load_world_title_selection",
+		"execute_next_context_callback",
+			"game_menu_callback",
+				"game_key",
+			"main_menu_callback",
+				"title_key",
 
 	"load_world_title_selection",
 		"load_world_title",

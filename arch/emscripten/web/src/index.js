@@ -122,7 +122,7 @@ window.MzxrunInitialize = function(options) {
 
     return loadingScreen._drawBackground().then(_ => Promise.all(vfsPromises)).then(_ => {
         // add MegaZeux config.txt vfs
-        var configString = "";
+        var configString = options.config;
 
         configString += "audio_sample_rate = 48000\n";
         if (navigator.userAgent.toLowerCase().indexOf('firefox') >= 0) {
@@ -131,7 +131,6 @@ window.MzxrunInitialize = function(options) {
         } else {
                 configString += "audio_buffer_samples = 4096\n";
         }
-        configString += "startup_path = /data/game\n";
 
         vfsObjects.push(createInMemoryStorage({"etc/config.txt": new TextEncoder().encode(configString)}));
 

@@ -31,7 +31,11 @@
 			files: [
 				["assets.zip", ""], // used by MegaZeux - do not touch!
 				["my_game.zip", "game/"] // edit this one - should contain your game
-			]
+			],
+			config: // edit this string to set config.txt options for your game.
+				"# Set the startup path and world.\n"+
+				"startup_path = /data/game\n"+
+				"startup_file = caverns.mzx\n"
 		});
 	}
 })();
