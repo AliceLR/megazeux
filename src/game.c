@@ -877,6 +877,9 @@ static void title_resume(context *ctx)
     {
       conf->standalone_mode = false;
 
+      // Do this to avoid some UI fade bugs...
+      insta_fadein();
+
       if(title->load_dialog_on_failed_load)
       {
         load_world_title_selection(title);

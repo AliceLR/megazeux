@@ -43,6 +43,8 @@ USERS
 + Disabled NDS logging hacks when stdio redirect is enabled.
 + Exiting MZX on the NDS should now power off the NDS.
 + Added Emscripten frontend. (asie)
++ Fixed bug where errors in the title screen Load World window
+  could clear the rest of the screen.
 
 DEVELOPERS
 
@@ -53,6 +55,7 @@ DEVELOPERS
 + Corrected some of the editor's bad extram handling and added
   warnings to debug builds to help debug it (no platforms at the
   present support both the editor and extram).
++ Replaced error wait_event() with update_event_status_delay().
 
 
 July 22nd, 2019 - MZX 2.92

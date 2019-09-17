@@ -143,7 +143,7 @@ int error(const char *string, enum error_type type, unsigned int options,
   // Get key
   do
   {
-    wait_event(0);
+    update_event_status_delay();
     t1 = get_key(keycode_internal_wrt_numlock);
 
     joystick_key = get_joystick_ui_key();
