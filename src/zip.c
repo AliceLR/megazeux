@@ -187,6 +187,7 @@ static const char *zip_error_string(enum zip_error code)
     case ZIP_DEFLATE_FAILED:
       return "compression failed";
   }
+  warn("zip_error_string: received unknown error code %d!\n", code);
   return "UNKNOWN ERROR";
 }
 
@@ -759,7 +760,7 @@ static enum zip_error zip_write_file_header(struct zip_archive *zp,
 
   // File comment (zero bytes)
 
-  if(!zp->vwrite(buffer, 1, header_size, fp))
+  if(!zp->vwrite(buffer, header_size, 1, fp))
     result = ZIP_WRITE_ERROR;
 
   // Memfile zips - we know there's enough space, because it was already
@@ -1883,6 +1884,7 @@ static enum zip_error zip_read_directory(struct zip_archive *zp)
         free(f[i]);
         f[i] = NULL;
         zp->files_alloc--;
+        zip_error("error reading central directory record", result);
         break;
       }
     }
@@ -1895,6 +1897,8 @@ static enum zip_error zip_read_directory(struct zip_archive *zp)
 
     if(zp->files_alloc < n)
     {
+      warn("expected %d central directory records but only found %d\n",
+       n, zp->files_alloc);
       result = ZIP_INCOMPLETE_CENTRAL_DIRECTORY;
       goto err_realloc;
     }
