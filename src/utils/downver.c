@@ -70,6 +70,7 @@
 enum status
 {
   SUCCESS = 0,
+  ARCHIVE_ERROR,
   READ_ERROR,
   WRITE_ERROR,
   SEEK_ERROR,
@@ -208,6 +209,13 @@ static enum status convert_292_to_291(FILE *out, FILE *in)
   unsigned int file_id;
   unsigned int board_id;
   unsigned int robot_id;
+
+  if(!inZ || !outZ)
+  {
+    zip_close(inZ, NULL);
+    zip_close(outZ, NULL);
+    return ARCHIVE_ERROR;
+  }
 
   assign_fprops(inZ, 0);
 
@@ -432,10 +440,11 @@ int main(int argc, char *argv[])
 
   switch(ret)
   {
-    case SEEK_ERROR:  goto err_seek;
-    case READ_ERROR:  goto err_read;
-    case WRITE_ERROR: goto err_write;
-    case SUCCESS:     break;
+    case ARCHIVE_ERROR: goto err_zip;
+    case SEEK_ERROR:    goto err_seek;
+    case READ_ERROR:    goto err_read;
+    case WRITE_ERROR:   goto err_write;
+    case SUCCESS:       break;
   }
 
   fprintf(stdout,
@@ -452,6 +461,10 @@ exit_close:
 
 exit_out:
   return 0;
+
+err_zip:
+  error("Error opening world archive, aborting.\n")
+  goto exit_close;
 
 err_seek:
   error("Seek error, aborting.\n");

@@ -2075,7 +2075,7 @@ static struct zip_archive *zip_new_archive(void)
 /**
  * Open a zip archive located in a file for reading. Returns a zip_archive
  * pointer if this archive is ready for file reading; otherwise, returns
- * NULL.
+ * NULL. On failure, this will also close the file pointer.
  */
 struct zip_archive *zip_open_fp_read(FILE *fp)
 {

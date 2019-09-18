@@ -2824,7 +2824,10 @@ static struct zip_archive *try_load_zip_world(struct world *mzx_world,
   zp = zip_open_fp_read(fp);
 
   if(!zp)
+  {
+    fp = NULL;
     goto err_close;
+  }
 
   result = validate_world_zip(mzx_world, zp, savegame, file_version);
 
@@ -2870,7 +2873,7 @@ err_close:
 
   else
   {
-    if (v > MZX_VERSION)
+    if(v > MZX_VERSION)
     {
       error_message(E_WORLD_FILE_VERSION_TOO_RECENT, v, NULL);
     }
@@ -2891,9 +2894,14 @@ err_close:
 err_protected:
   *protected = pr;
   if(zp)
+  {
     zip_close(zp, NULL);
+  }
   else
+
+  if(fp)
     fclose(fp);
+
   return NULL;
 }
 

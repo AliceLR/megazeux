@@ -45,6 +45,8 @@ USERS
 + Added Emscripten frontend. (asie)
 + Fixed bug where errors in the title screen Load World window
   could clear the rest of the screen.
++ Fixed crash that could occur when attempting to load an
+  invalid zip world.
 
 DEVELOPERS
 
