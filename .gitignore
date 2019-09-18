@@ -104,6 +104,7 @@ mzxrun.nso
 mzxrun.pdb
 mzxrun.smdh
 mzxrun.wasm
+mzxrun.wasm.map
 /mzxrun
 PARAM.SFO
 platform.inc
