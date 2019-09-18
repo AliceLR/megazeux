@@ -18,11 +18,12 @@ utils_cflags := ${LIBPNG_CFLAGS} -DUTILS_LIBSPEC=
 
 checkres := ${utils_src}/checkres${BINEXT}
 checkres_objs := ${utils_obj}/checkres.o ${core_obj}/fsafeopen.o \
-                 ${core_obj}/util.o ${core_obj}/zip.o
+                 ${core_obj}/util.o ${core_obj}/vfs.o ${core_obj}/zip.o
 checkres_ldflags := ${ZLIB_LDFLAGS}
 
 downver := ${utils_src}/downver${BINEXT}
-downver_objs := ${utils_obj}/downver.o ${core_obj}/util.o ${core_obj}/zip.o
+downver_objs := ${utils_obj}/downver.o \
+                ${core_obj}/util.o ${core_obj}/vfs.o ${core_obj}/zip.o
 downver_ldflags := ${ZLIB_LDFLAGS}
 
 hlp2html := ${utils_src}/hlp2html${BINEXT}

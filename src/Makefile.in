@@ -107,6 +107,7 @@ core_cobjs := \
   ${core_obj}/sprite.o            \
   ${core_obj}/str.o               \
   ${core_obj}/util.o              \
+  ${core_obj}/vfs.o               \
   ${core_obj}/window.o            \
   ${core_obj}/world.o             \
   ${core_obj}/zip.o

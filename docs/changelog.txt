@@ -56,6 +56,8 @@ DEVELOPERS
   warnings to debug builds to help debug it (no platforms at the
   present support both the editor and extram).
 + Replaced error wait_event() with update_event_status_delay().
++ Added preliminary VFS code to replace function pointer casting
+  in zip.c.
 
 
 July 22nd, 2019 - MZX 2.92
