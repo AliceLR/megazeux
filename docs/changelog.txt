@@ -47,6 +47,9 @@ USERS
   could clear the rest of the screen.
 + Fixed crash that could occur when attempting to load an
   invalid zip world.
++ Non-recursive directory deletion in the file manager now tries
+  to delete the directory itself instead of its contents. Added
+  error messages for failed file and directory deletes.
 
 DEVELOPERS
 

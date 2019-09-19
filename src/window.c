@@ -2797,15 +2797,16 @@ static int file_dialog_function(struct world *mzx_world, struct dialog *di,
   return key;
 }
 
-static void remove_files(char *directory_name, int remove_recursively)
+static boolean remove_files(char *directory_name, boolean remove_recursively)
 {
   struct mzx_dir current_dir;
   char *current_dir_name;
   struct stat file_info;
   char *file_name;
+  boolean success = true;
 
   if(!dir_open(&current_dir, directory_name))
-    return;
+    return false;
 
   current_dir_name = cmalloc(MAX_PATH);
   file_name = cmalloc(PATH_BUF_LEN);
@@ -2823,15 +2824,17 @@ static void remove_files(char *directory_name, int remove_recursively)
 
     if(!S_ISDIR(file_info.st_mode))
     {
-      unlink(file_name);
-      continue;
+      // Only attempt to remove contents if remove_recursively is set...
+      if(!remove_recursively || unlink(file_name))
+        success = false;
     }
+    else
 
-    if(remove_recursively && strcmp(file_name, ".") &&
-     strcmp(file_name, ".."))
+    if(strcmp(file_name, ".") && strcmp(file_name, ".."))
     {
-      remove_files(file_name, 1);
-      rmdir(file_name);
+      if(!remove_recursively ||
+       !remove_files(file_name, true) || rmdir(file_name))
+        success = false;
     }
   }
 
@@ -2841,6 +2844,7 @@ static void remove_files(char *directory_name, int remove_recursively)
   free(current_dir_name);
 
   dir_close(&current_dir);
+  return success;
 }
 
 __editor_maybe_static int file_manager(struct world *mzx_world,
@@ -3286,7 +3290,9 @@ skip_dir:
            "Delete %s - are you sure?", ret_file);
 
           if(!confirm(mzx_world, confirm_string))
-            unlink(ret);
+            if(unlink(ret))
+              error("File could not be deleted.",
+               ERROR_T_WARNING, ERROR_OPT_OK, 0x0000);
 
           free(confirm_string);
         }
@@ -3343,12 +3349,15 @@ skip_dir:
             if(!ask_yes_no(mzx_world,
              (char *)"Delete subdirectories recursively?"))
             {
-              remove_files(file_name_ch, 1);
-              rmdir(file_name_ch);
+              if(!remove_files(file_name_ch, true) || rmdir(file_name_ch))
+                error("Directory could not be deleted.",
+                 ERROR_T_WARNING, ERROR_OPT_OK, 0x0000);
             }
             else
             {
-              remove_files(file_name_ch, 0);
+              if(!remove_files(file_name_ch, false) || rmdir(file_name_ch))
+                error("Directory contains files or could not be deleted.",
+                 ERROR_T_WARNING, ERROR_OPT_OK, 0x0000);
             }
           }
         }
