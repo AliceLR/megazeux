@@ -46,6 +46,7 @@ static const char *const error_type_names[] =
 int error(const char *string, enum error_type type, unsigned int options,
  unsigned int code)
 {
+  boolean skip_error_ui = false;
   const char *type_name;
   int t1 = 9, ret = 0;
   int joystick_key;
@@ -59,9 +60,23 @@ int error(const char *string, enum error_type type, unsigned int options,
   type_name = error_type_names[type];
 
   // If graphics couldn't initialize, print the error to stderr and abort.
-#ifndef __EMSCRIPTEN__ // We cannot possibly Emterpret every path leading here
   if(!has_video_initialized())
+    skip_error_ui = true;
+
+#ifdef __EMSCRIPTEN__
+  // TODO: For Emscripten, some paths here are safe and others will crash.
+  // These can be detected through their error codes for now.
+  {
+    static const enum error_type safe_codes[] = { 0x3101, 0x2C01, 0x0000 };
+    skip_error_ui = true;
+
+    for(x = 0; x < (int)ARRAY_SIZE(safe_codes); x++)
+      if(code == safe_codes[x])
+        skip_error_ui = false;
+  }
 #endif
+
+  if(skip_error_ui)
   {
     int scode = code ? (int)code : -1;
 

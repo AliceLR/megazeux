@@ -9,6 +9,7 @@
 
 	"title_key",
 		"load_savegame_selection",
+		"error",
 
 	"game_key",
 		"new_file",
@@ -46,6 +47,9 @@
 			"confirm_input",
 			"idle_input_box",
 			"run_dialog",
+			"confirm",
+			"ask_yes_no",
+			"error",
 
 	"run_dialog",
 		"help_system",
@@ -88,6 +92,7 @@
 		"move_player",
 		"grab_item",
 		"robot_box_display",
+		"error",
 
 	"confirm_input",
 		"idle_input_box",
