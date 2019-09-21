@@ -8,7 +8,10 @@
  * https://www.digitalmzx.net/forums/index.php?app=tracker&showissue=788
  */
 * { border: 0; margin: 0; padding: 0; }
-#mzx_canvas { width: 100%; height: 100%; display: block; position: absolute; top: 0; left: 0; overflow: hidden; background-color: #000; }
+#mzx_canvas {
+	width: 100%; height: 100%; display: block; position: absolute; top: 0; left: 0; overflow: hidden;
+	background: url('play.png') center center / contain no-repeat #000;
+}
 </style>
 </head>
 <body>
@@ -23,6 +26,7 @@
 	mzxCanvas.onclick = function() {
 		if (mzxLoadAttempted) return;
 		mzxLoadAttempted = true;
+		mzxCanvas.style.backgroundImage = "none";
 		MzxrunLoad({
 			render: {
 				canvas: mzxCanvas
