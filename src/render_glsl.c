@@ -1122,7 +1122,7 @@ static void glsl_render_mouse(struct graphics_data *graphics,
   int y2 = y + h;
 
   const float vertex_array[2 * 4] =
-   {
+  {
     x  * 2.0f / SCREEN_PIX_W - 1.0f, (y  * 2.0f / SCREEN_PIX_H - 1.0f) * -1.0f,
     x  * 2.0f / SCREEN_PIX_W - 1.0f, (y2 * 2.0f / SCREEN_PIX_H - 1.0f) * -1.0f,
     x2 * 2.0f / SCREEN_PIX_W - 1.0f, (y  * 2.0f / SCREEN_PIX_H - 1.0f) * -1.0f,
@@ -1197,19 +1197,19 @@ static void glsl_sync_screen(struct graphics_data *graphics)
   {
     const float tex_coord_array_single[2 * 4] =
     {
-       0.0f,                              height / (1.0f * GL_POWER_2_HEIGHT),
-       0.0f,                              0.0f,
-       width / (1.0f * GL_POWER_2_WIDTH), height / (1.0f * GL_POWER_2_HEIGHT),
-       width / (1.0f * GL_POWER_2_WIDTH), 0.0f,
+      0.0f,                              height / (1.0f * GL_POWER_2_HEIGHT),
+      0.0f,                              0.0f,
+      width / (1.0f * GL_POWER_2_WIDTH), height / (1.0f * GL_POWER_2_HEIGHT),
+      width / (1.0f * GL_POWER_2_WIDTH), 0.0f,
     };
 
     glsl.glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 0,
      tex_coord_array_single);
     gl_check_error();
-  }
 
-  glsl.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-  gl_check_error();
+    glsl.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    gl_check_error();
+  }
 
   glsl.glDisableVertexAttribArray(ATTRIB_POSITION);
   glsl.glDisableVertexAttribArray(ATTRIB_TEXCOORD);
