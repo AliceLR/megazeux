@@ -63,6 +63,11 @@ DEVELOPERS
 + Replaced error wait_event() with update_event_status_delay().
 + Added preliminary VFS code to replace function pointer casting
   in zip.c.
++ Fixed Wayland/X11 detection for setups that don't allow X or
+  Xorg to be run normally.
++ Unix builds should now attempt to load the icon from the
+  installed path instead of from a hardcoded path. Builds with
+  no sharedir set will use "contrib/icons/quantump.png" instead.
 
 
 July 22nd, 2019 - MZX 2.92
