@@ -1338,7 +1338,7 @@ void RADPlayer::Init10(const void *tune)
 
     // Skip any description (only present if flag is set)
     if(flags & 0x80)
-        while(*(pos++));
+        while(*(pos++)) {}
 
     // Unpack the instruments
     while(true)

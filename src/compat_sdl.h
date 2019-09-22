@@ -41,6 +41,7 @@ __M_BEGIN_DECLS
 
 typedef SDLKey SDL_Keycode;
 typedef void   SDL_Window;
+typedef unsigned long SDL_threadID;
 
 // Macros / enumerants
 

@@ -87,6 +87,7 @@ static volatile int locked = 0;
 static volatile char last_lock[32];
 
 #ifdef CONFIG_SDL
+#include "../compat_sdl.h"
 #include <SDL_thread.h>
 static volatile SDL_threadID last_thread = 0;
 #endif
