@@ -993,8 +993,8 @@ if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" \
 	#
 	if [ "$X11" = "true" ]; then
 		for XBIN in X Xorg; do
-			# try to run X
-			$XBIN -version >/dev/null 2>&1
+			# check if X exists
+			command -v $XBIN >/dev/null 2>&1
 
 			# X/Xorg queried successfully
 			[ "$?" = "0" ] && break
@@ -1247,6 +1247,16 @@ if [ "$ICON" = "true" ]; then
 	#
 	if [ "$PLATFORM" = "mingw" ]; then
 		echo "EMBED_ICONS=1" >> platform.inc
+	else
+		#
+		# Also get the (probable) icon path...
+		#
+		if [ "$SHAREDIR" = "." ]; then
+			ICONFILE="contrib/icons/quantump.png"
+		else
+			ICONFILE="$SHAREDIR/icons/megazeux.png"
+		fi
+		echo "#define ICONFILE \"$ICONFILE\"" >> src/config.h
 	fi
 else
 	echo "Icon branding disabled."

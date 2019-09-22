@@ -1333,9 +1333,9 @@ static void set_window_icon(void)
     }
   }
 #else // !__WIN32__
-#if defined(CONFIG_PNG)
+#if defined(CONFIG_PNG) && defined(ICONFILE)
   {
-    SDL_Surface *icon = png_read_icon("/usr/share/icons/megazeux.png");
+    SDL_Surface *icon = png_read_icon(ICONFILE);
     if(icon)
     {
       SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
