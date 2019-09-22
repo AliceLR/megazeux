@@ -198,11 +198,6 @@ CORE_LIBSPEC char *strsep(char **stringp, const char *delim);
 #endif
 #endif // !__WIN32__
 
-#if defined(CONFIG_NDS) || defined(CONFIG_WII)
-// FIXME: rmdir() needs implementing on NDS/Wii
-#define rmdir(x)
-#endif
-
 #if defined(__WIN32__) && !defined(_MSC_VER)
 #define mkdir(file,mode) mkdir(file)
 #endif
