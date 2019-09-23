@@ -125,7 +125,10 @@ or difficult, as long or short as you please. We aren't just
 talking about worlds made up of petty, pre-programmed enemies
 and objects; MegaZeux has its own, easy-to-use PROGRAMMING
 LANGUAGE called Robotic that allows you to create objects,
-engines and worlds that do almost anything you desire.
+engines and worlds that do almost anything you desire. Not only
+can you make your own game with the editor, but every world
+MegaZeux can play can be opened in the editor. Take a look at
+how other games tick!
 
 For the newest user, it's recommended that you play Caverns,
 the first ever MegaZeux game, to get the feel of simple yet
@@ -180,7 +183,7 @@ object where the player would end up, but MZX simply overwrites
 the object on the other board with the player.
 -Bomb explosions are not instantaneous but instead radiate out
 from the center. They are also diamond-shaped as opposed to
-a flattened oval shape.
+a flattened oval shape and do not ignore walls.
 -MegaZeux uses cycle 1 as default (as opposed to ZZT's cycle
 3).
 -No equivalent of duplicators exists.
@@ -711,12 +714,12 @@ $~9Nondescript Play Tips
 First, let me warn you that many worlds you get from archives
 or (especially) from personal webpages may not be of acceptable
 quality. They may be unfair, boring, have numerous bugs, and/or
-not give proper instructions. On a related note, there is no
-problem in MAKING poor games, but PLEASE think before uploading
-them without attempting fixes or improvements, even in these
-days where games are fewer and farther between. Really old games
-of bad quality, on the other hand, are tolerated somewhat
-better. Don't let a few dull games ruin the fun.
+not give proper instructions. On a related note, PLEASE try to
+get feedback and try acting on it before uploading your game,
+even in these days where games are fewer and farther between.
+Really old games of bad quality, on the other hand, are
+tolerated somewhat better. Don't let a few dull games ruin the
+fun.
 
 With that out of the way, some basic play tips:
 
@@ -795,7 +798,7 @@ $~9The Mirth of Built-ins
 
 The following help section contains a list of the different
 objects, enemies, items, and terrains you will find within
-the different MegaZeux worlds. 
+the different MegaZeux worlds.
 Want to make a (very) quick and (very) dirty game? Built-ins are
 the way to do it! However, outside of a select few built-ins
 (such as certain terrains, Robots and items) heavy usage of
@@ -891,6 +894,9 @@ different piles.
 Each bomb you grab adds another to your supply. The sound made
 when you grab the bomb will be high-pitched for a high strength
 bomb and low-pitched for the rare low strength bomb.
+
+Some boards may not allow the player to collect bombs, and
+instead will have bombs ignite on touch.
 
 ~BKey            ~A
 
@@ -1313,7 +1319,7 @@ character, but exactly one player object is always present.
 ~BSign           ~6â
 
 Touch this to display a given message. The message will be in a
-message box. A Scroll will disappear after you finish reading
+message box. A scroll will disappear after you finish reading
 it; signs will not.
 
 Unlike in ZZT, scrolls and signs are text-only: they cannot
@@ -1425,7 +1431,7 @@ To make things sane for all parties, do this before submitting:
   3) Try to write down what specifically happens.
   4) List what platform(s) you know show this problem.
   5) Try to pinpoint the problem to a specific Robotic line or
-     MZX function; at the very least, try to narrow it down. 
+     MZX function; at the very least, try to narrow it down.
      Pinpointing which version introduced the bug is very
      helpful, if possible.
   6) If it is a crash, try to run a debug build through GDB and
@@ -1680,6 +1686,11 @@ A: It's a matter of personal preference. Many people prefer
   If you don't mind pumping up your game's filesize, you could
   use any typical composition software (like FL Studio) and
   convert your wave to ogg format.
+  
+  A third alternative would be Reality Tracker. This tracker
+  creates music based on the once-common OPL3 chip found in
+  typical shareware-era DOS sound cards. MegaZeux now supports
+  files made in this tracker.
 
 Q: How do I make WAV files?
 
@@ -1725,6 +1736,29 @@ A: Nope. MegaZeux used to be able to protect worlds from being
   fully look through a standalone game, people who have no
   knowledge of MegaZeux beforehand will lack the immediate means
   to heavily manipulate or look through your game.
+  
+Q: The help file mentions "certain renderers" being unable to
+  display unbound sprites. What are renderers, what does this
+  mean, and what should I be worried about?
+  
+A: MegaZeux has several different video settings to accommodate
+  a wide range of hardware. The engines used to provide video
+  are called renderers, and can be set in the config file or
+  changed on the fly in the F2 settings menu. Renderers range
+  from basic support (software, does not utilize video hardware
+  functions) to features-oriented (glsl, featuring customizable
+  filters).
+  
+  Certain platforms and renderers cannot show extended graphics
+  (in other words, unbound sprites and SMZX mode 3 custom
+  indices). Right now, this is only a concern for very weak
+  platforms that cannot handle much to begin with, such as the
+  DS. Pretty much anyone running MegaZeux on an even remotely
+  modern computer should be able to view extended graphics.
+  
+  (Besides the Nintendo DS, the other platforms and renderers
+  currently unable are the GP2X and any use of the weak and
+  obseleted "overlay2" renderer.)
   
 Q: I heard only certain graphics cards can properly show Super
   MZX mode games. Is this true?
@@ -2767,7 +2801,7 @@ currently stored in the buffer is shown in the bottom-right
 corner.
 
 Some color theory is in order. Computer monitors display colors
-by projecting various amounts of Red, Green, and Blue light. 
+by projecting various amounts of Red, Green, and Blue light.
 Combined, these three colors can produce almost any shade and
 hue of color. This is one way colors are represented in MegaZeux
 as well. In the RGB color model (the default), each color has a
@@ -5019,7 +5053,7 @@ $Robotic Usage of Strings
 In Robotic, strings can be incredibly powerful. They can act
 like counters, but hold text information as well as numbers
 (however, counters are by far better-suited for number use).
-A Robotic string is any counter prefixed by a $ sign (e.g. 
+A Robotic string is any counter prefixed by a $ sign (e.g.
 "$string").
 
 Certain characters must be inputted in specific ways to avoid
@@ -5749,7 +5783,7 @@ given label.
 :_b1:~ABECOME [color] [thing] [param]
 
 The Robot will end its program permanently, and instead become
-a specified object with a given color and parameter. 
+a specified object with a given color and parameter.
 NOTE: Becoming another Robot type will not destroy the program,
 but there are far better commands for doing this: ~ABECOME~F
 ~APUSHABLE~F and ~ABECOME NONPUSHABLE~F.
@@ -5845,7 +5879,7 @@ counter, respectively.
 
 Multiplies, divides, or performs a modulo on the value of the
 given counter by the given number (rounding down), and then sets
-the counter to the result. 
+the counter to the result.
 To modulo is to set to the remainder when dividing. Example: 7
 modulo 3 is equal to 1, since 7 divided by 3 gives a remainder
 of 1.
@@ -6185,6 +6219,10 @@ all locks on the player, allowing free movement and attacking.
 These have no relation to the Board Info options "Can Bomb" and
 "Can Shoot". Player locking is local, only affecting the
 current board.
+
+Locking the player will also prevent messages related to locked
+actions from showing (such as bomb switch messages or a "Can't
+{shoot/bomb} here!" message when the player is attack locked).
 
 Also, locking the player will not cause the relevant input to
 be ignored completely. MegaZeux will still detect that you are
@@ -7982,26 +8020,27 @@ checked by sprite number in ascending order.
 
 ~BSPR_YORDER (write-only)
 
-If set to 1, the sprites are drawn in order of lowest SPRn_CY
-value to highest instead of in order of their sprite numbers.
-Any incidence of matching SPRn_CY numbers will have draw order
-determined by sprite number. If any SPRn_Z values are set, those
-take precedence.
+If set to 1, the sprites are drawn in order of lowest sum of
+SPRn_Y and SPRn_CY values to highest instead of in order of
+their sprite numbers. Any incidence of matching sums will have
+draw order determined by sprite number. If any SPRn_Z values are
+set, those take precedence.
 
 ~BSPRn_CCHECK (write-only)
 
-If set to 1, overlapping char 32s will not cause a collision
-between sprites or the foreground. If set to 2, char 32s and
-blank chars will also not collide, and blank characters will
-not be drawn. If set to 3, the given unbound sprite will undergo
-pixel-precise collision checks, and transparent colors will not
-cause a collision. Setting to 0 will cancel any previously set
-ccheck modes for that given sprite.
+If set to 1 for sprite n, overlapping char 32s will not cause a
+collision between that sprite and other sprites or the
+foreground. If set to 2, char 32s and blank chars will also not
+collide, and blank characters will not be drawn. If set to 3,
+the given unbound sprite will undergo pixel-precise collision
+checks, and transparent colors will not cause a collision.
+Setting to 0 will cancel any previously set ccheck modes for
+that given sprite.
 
 ~BSPRn_CWIDTH
 ~BSPRn_CHEIGHT
 
-The dimensions of the collision box around a sprite. (X and Y
+The dimensions of the collision box around sprite n. (X and Y
 dimensions, respectively)
 
 ~BSPRn_CLIST (write-only)
@@ -8012,33 +8051,34 @@ on sprite n against its current location.
 ~BSPRn_CX
 ~BSPRn_CY
 
-The location, relative to the sprite's upper left corner, of
-the sprite's collision box (X and Y coordinates, respectively).
+The location, relative to sprite n's upper left corner, of the
+sprite's collision box (X and Y coordinates, respectively).
 These have default values of 0.
 
 ~BSPRn_OFF
 
-If set to any value, turns the given sprite off if it is on.
+If set to any value, turns sprite n off if it is on.
 
 ~BSPRn_OVERLAID (write-only)
 ~BSPRn_OVERLAY (write-only)
 
-If either is set to 1, these draw the given sprite n over the
-overlay as opposed to underneath. Note that this has different
-behavior depending on whether unbound sprites are present. If
-there are any unbound sprites active, all overlaid sprites will
-be drawn above all non-overlaid sprites (as well as over the
-overlay). If unbound sprites are not in use, overlaid sprites
-will be drawn above the overlay, but will otherwise respect the
-standard sprite draw order.
+If either is set to 1, these draw sprite n over the overlay as
+opposed to underneath. Note that this has different behavior
+depending on whether unbound sprites are present. If there are
+any unbound sprites active, all overlaid sprites will be drawn
+above all non-overlaid sprites (as well as over the overlay).
+If unbound sprites are not in use, overlaid sprites will be
+drawn above the overlay, but will otherwise respect the standard
+sprite draw order.
 
 ~BSPRn_REFX
 ~BSPRn_REFY
 
-Where the sprite's appearance is stored - either on the board
-or the vlayer (see SPRn_VLAYER). Whatever this looks like at
-this position is what the sprite will look like when drawn,
-including the colors if c?? is used when placing the sprite.
+Where sprite n's appearance is stored - either on the board or
+the vlayer (see SPRn_VLAYER). REFX is the x-coordinate, REFY is
+the y-coordinate. Whatever this looks like at this position is
+what the sprite will look like when drawn, including the colors
+if c?? is used when placing the sprite.
 
 ~BSPRn_SETVIEW (write-only)
 
@@ -8049,30 +8089,29 @@ screen for (e.g.) a sprite-based player object.
 
 ~BSPRn_STATIC (write-only)
 
-If set to 1, makes given sprite n act static (like a static
-overlay, a static sprite always stays in a given position on
-the screen); if this is 0, the sprite scrolls with the board.
+If set to 1, makes sprite n act static (like a static overlay, a
+static sprite always stays in a given position on the screen);
+if this is 0, the sprite scrolls with the board.
 
 ~BSPRn_SWAP (write-only)
 
-Swaps the given sprite n with the sprite number to which this
-function is set.
+Swaps sprite n with the sprite number to which this function is
+set.
 
 ~BSPRn_VLAYER (write-only)
 
-If set to 1, the sprite is referenced from the vlayer instead
-of the board.
+If set to 1, sprite n is referenced from the vlayer instead of
+the board.
 
 ~BSPRn_WIDTH
 ~BSPRn_HEIGHT
 
-The dimensions of the sprite. (x and y dimensions,
-respectively.)
+The dimensions of sprite n. (x and y dimensions, respectively.)
 
 ~BSPRn_X
 ~BSPRn_Y
 
-The current position of the sprite. This can be used to set the
+The current position of sprite n. These can be used to set the
 sprite outside the edges of the board, whereas PUT c?? Sprite
 p?? X Y disallows this.
 
@@ -8087,27 +8126,27 @@ precedence if active, and sprite number precedence otherwise.
 
 ~BSPRn_UNBOUND
 
-If set to 1, unbinds the given sprite n from the grid, making
-its coordinates refer to pixel positions instead of tile
-positions. Its dimensions (SPRn_HEIGHT, SPRn_WIDTH) and
-reference coordinates (SPRn_REFX, SPRn_REFY) will still be
-relative to tiles, but its current position (SPRn_X, SPRn_Y)
-and collision box counters (SPRn_CX, SPRn_CY, SPRn_CWIDTH,
-SPRn_CHEIGHT) will adhere to this change. See the Unbound
-Sprites section in the Sprites help for more information.
+If set to 1, unbinds sprite n from the grid, making its
+coordinates refer to pixel positions instead of tile positions.
+Its dimensions (SPRn_HEIGHT, SPRn_WIDTH) and reference
+coordinates (SPRn_REFX, SPRn_REFY) will still be relative to
+tiles, but its current position (SPRn_X, SPRn_Y) and collision
+box counters (SPRn_CX, SPRn_CY, SPRn_CWIDTH, SPRn_CHEIGHT) will
+adhere to this change. See the Unbound Sprites section in the
+Sprites help for more information.
 
 ~BSPRn_TCOL
 
-Sets which color provides transparency for a given unbound
-sprite n. Setting to -1 disables transparency for that sprite.
-Defaults to 0.
+Sets which color provides transparency for unbound sprite n.
+Setting to -1 disables transparency for that sprite. Defaults to
+0.
 
 ~BSPRn_OFFSET
 
-Internally alters any number that refers to a character for a
-given sprite n. In the case of unbound sprites, this number will
-often be a multiple of 256 in order to access an extra charset,
-but offset values within char sets may also be used.
+Internally alters any number that refers to a character for
+sprite n. In the case of unbound sprites, this number will often
+be a multiple of 256 in order to access an extra charset, but
+offset values within char sets may also be used.
 
 >#SPRITES.HLP:spr:Sprites
 
@@ -8176,8 +8215,10 @@ SMZX_MODE to -1 would set it to 3).
 ~BSMZX_Gn
 
 Changes or reads the value of color n's red/blue/green value,
-respectively. These counters also work outside of SMZX modes;
-in normal mode, numbers 0-15 alter the current palette.
+respectively. These counters range from 0-63; numbers outside
+these bounds wrap around. These counters also work outside of
+SMZX modes; in normal mode, using numbers 0-15 for n alters the
+current palette.
 
 ~BSMZX_IDXx,y
 
@@ -8230,7 +8271,7 @@ consists of fourteen rows of eight pixels, which gives us 256
 pixels across by 112 pixels down. Since we start counting at 0,
 the top-left pixel of the top-left character (char 0) would be
 0,0. The bottom-right pixel of the bottom-right character
-(char 255) would be 255,111. 
+(char 255) would be 255,111.
 
 These counters become useless in SMZX modes.
 
@@ -8895,7 +8936,7 @@ somewhat moderate to completely master. It is somewhere along
 the lines of BASIC, although more complex. If you've ever used
 Epic Megagame's ZZT, Robotic is vastly more complex than
 ZZT-OOP, although there are vague similiarities. There's a
-kludge or two dozen to get really powerful things working, but
+kludge or dozen to get really powerful things working, but
 you'll get used to them.
 
 To place a Robot in the editor, press F10 and select Robot. (You
@@ -9333,7 +9374,8 @@ Certain commands (as hinted above) are worthless in the global.
 Obvious commands such as BECOME, EXPLODE, COLOR/CHAR and all
 command forms that take a relative direction (like LAYBOMB and
 DUPLICATE SELF [dir]) will be ignored. DIE, DIE ITEM and GOTOXY
-.# # are completely ignored as well.
+.# # are completely ignored as well. Any checks at (-1,-1) will
+fail to detect the global.
 
 Finally, the global is the only Robot that ignores FREEZETIME
 and SLOWTIME states. This is extremely handy in creating the
@@ -9521,7 +9563,7 @@ Therefore, using expressions for nesting is another benefit.
 
 Example: We set "r" to 1, "in" to 8 and "out18" to 11. We want
 to output the value of "out18".
-"(&out&&r&in&&)" would output (0r&in&).
+"(&out&r&&in&&)" would output (0r&in&).
 "('out'r''in'')" would output ('out'r''in'')
 "('out('r')('in')')" would output the desired result - 11.
 
@@ -9769,7 +9811,7 @@ Here are the file writing commands at your disposal.
 
 ~ASET "file.xxx" to "FREAD_OPEN"
 
-This command loads a file for reading. 
+This command loads a file for reading.
 
 ~ASET "file.xxx" to "FWRITE_OPEN"
 
@@ -9932,7 +9974,8 @@ be displayed over lower-numbered ones whenever they overlap.
 There are up to 256 available sprites (globally, not per board),
 and sprites are controlled in the following ways:
 
--Through sprite specific counters named SPRn_value
+-Through sprite-specific counters named SPRn_value ("n" being
+ the sprite number, e.g. SPR10_value modifies sprite number 10)
 -Through control counters for all of the sprites
 -Through commands for placing sprites and testing for collision
 
@@ -10022,7 +10065,7 @@ force a label jump on collision.
 Sprites can be set to ignore certain types of blocks in
 collision checks by setting the sprN_ccheck value of a given
 sprite N. In addition, setting a sprite's ccheck value to 2 will
-cause blank characters in a sprite from being shown, much like
+prevent blank characters in a sprite from being shown, much like
 char 32.
 
 Since sprites are global, they will persist upon changing
@@ -10120,20 +10163,21 @@ of sprites not noted here.
 $~9Super MegaZeux Modes
 
 Super MZX modes (a.k.a. SMZX) allow richer color options at the
-expense of halved horizontal resolution. The number of colors
-per character doubles to four, while the number of total max
-colors on-screen at one time squares to 256. However, each mode
-works differently and has different limitations and uses.
+expense of halved horizontal resolution per character. The
+number of colors per character doubles to four, while the number
+of total max colors on-screen at one time squares to 256.
+However, each mode works differently and has different
+limitations and uses.
 
-In the editor, F11 switches between display modes. To set Super
-MZX modes in a game, use the ~Aset "smzx_mode" # ~FRobotic
-command, where # is the SMZX mode (0 to revert to normal mode).
+In the editor, F11 switches display modes. To set Super MZX
+modes in a game, use the ~Aset "smzx_mode" # ~FRobotic command,
+where # is the SMZX mode (0 to revert to normal mode).
 
 Super MZX mode 1 is the simplest mode and the easiest mode to
 use. SMZX mode 1 simply blends the foreground and background
 colors to get the third and fourth character colors. It is
-obviously limited (this mode only allows editing of the 16
-base colors) but is useful for anti-aliasing and shading
+obviously limited, as this mode only allows editing of the 16
+base colors, but is useful for anti-aliasing and shading
 effects.
 
 Super MZX mode 2 is the most difficult mode to use, although it
@@ -10172,7 +10216,7 @@ these rules. This essentially allows 256 user-defined
 subpalettes of four colors each. These overrides, called SMZX
 indices, are loaded and saved out separately from the normal
 palette. These changes can only apply for renderers that can
-show unbound sprites.
+show unbound sprites (which is the vast majority of renderers).
 
 Character editing in Super MZX modes is noticeably different.
 While the character set can be edited in MegaZeux's internal
@@ -10195,7 +10239,7 @@ palettes are:
 
 Manipulation of these counters can change or read the value of
 color n's red/blue/green value, respectively. n ranges from 0
-to 255.
+to 255, and counter values range from 0 to 63.
 
 The SMZX indices can also be directly read or changed with the
 ~BSMZX_IDXx,y~F counter. x is the palette color ranging from 0
@@ -10205,10 +10249,10 @@ to 255; y is one of the given color's indices ranging from 0 to
 Lastly, SMZX palettes and character sets can be loaded and
 saved like any other palette or character set. SMZX indices must
 be loaded in a special manner in Robotic:
-~ESET "filename" "SMZX_INDICES"~F. 
+~ESET "filename" "SMZX_INDICES"~F.
 There is a deprecated way to load an SMZX palette in Robotic
 (SET "filename" "smzx_palette") due to constraints DOS imposed,
-but it is no longer necessary. 
+but it is no longer necessary.
 
 >#COUNTERS.HLP:szc:Super MZX Counters
 >#PALEEDIT.HLP:093:The Palette Editor
@@ -10426,6 +10470,8 @@ Vlayer to string:
 Vlayer to itself:
 ~ACOPY (OVERLAY) BLOCK "#x1" "#y1" w h "#x2" "#y2"
 
+"m" and "c" can be any value but must exist.
+
 There are several ways to give the vlayer working coordinates:
 
 Pure numbers - ~E"#xxx"~F
@@ -10463,7 +10509,7 @@ given, the other becomes as large as possible to fill the given
 vlayer. For example, if one has a vlayer 50000 characters large
 and sets vlayer_height to 499, the vlayer's width will become
 100 characters wide (for a total vlayer size of 49900
-characters). 
+characters).
 
 All bad values of vlayer_size, vlayer_height and vlayer_width
 (0 and below) will be changed to 1.
@@ -10521,8 +10567,9 @@ copying non-graphical data (especially Robots); 1 is proper for
 copying graphical data, as the block's appearance will stay as
 exactly as it was when saved. The last case is for saving from
 the vlayer to MZM. The x,y coordinates MUST be in "#x" "#y"
-format, and the m MUST exist. Any valid MZX string can take the
-place of a filename, but the @@ prefix is still required.
+format, and the m can be any value but MUST exist. Any valid MZX
+string can take the place of a filename, but the @@ prefix is
+still required.
 
 Unlike with board MZMs containing Robots saved in the editor,
 loading board MZMs containing runtime Robots in the editor is
@@ -10764,6 +10811,85 @@ updated.
 #NEWINVER.HLP
 :1st: 
 $~9NEW in MegaZeux!
+
+September 23rd, 2019 - MZX 2.92b
+
+This release fixes several bugs, notably 3DS and Wii rendering
+issues and a bug where the wrong palette would be saved while
+COLOR FADE OUT was active. Also in this release are performance
+and usability improvements for the NDS and 3DS ports and a new
+frontend for HTML5/Emscripten builds (special thanks to asie).
+
+USERS
+
++ Fixed a bug where mouse warping both mouse coordinates would
+  not actually warp both coordinates.
++ Fixed a port regression where save files would be saved with
+  the wrong color intensities while COLOR FADE OUT was active
+  (or during the first cycle of a board for <2.90 worlds). This
+  fixes fading bugs in Ruin Diver 3.
++ Added compatibility for a bug where the robot message box
+  would disable COLOR FADE OUT in versions 2.83 through 2.90X.
+  This fixes several BKZX games.
++ Fixed checkres bugs separately preventing detection of global
+  robots in both world formats.
++ Fixed 3DS renderer bug where the UI wouldn't properly display
+  char foregrounds with extended graphics enabled.
++ Fixed 3DS renderer bug where sprites containing chars with
+  transparent foregrounds wouldn't draw any char backgrounds.
++ Fixed 3DS renderer crashes that would occur when large numbers
+  of sprites were active.
++ Improved file manager directory read times for 3DS/NDS/Wii.
++ File IO for world saving/loading is now buffered, which should
+  improve save/load times on the 3DS and Switch.
++ Enabled writing zip data descriptors for the Switch.
++ Added classic/stretch video ratio support for the 3DS and NDS
+  lower screens. (asie)
++ "classic" is now the default ratio for the 3DS, NDS, and Wii.
++ Fixed GX renderer bug where chars with both colors transparent
+  could cause various graphical bugs in normal MZX mode.
++ Fixed bug where board exits could be cleared when deleting a
+  board or after loading a world containing null boards.
++ Fixed bugs when playing STARDSTM.GDM with the libxmp engine.
++ Fixed a crash that could occur when importing a world in the
+  editor containing a null board.
++ Fixed a bug where null boards wouldn't be properly refactored
+  on the NDS while using a memory cart, causing entrances to
+  point to the wrong boards and possibly other problems.
++ Fixed a bug that could corrupt the ends of robot programs when
+  using an NDS memory cart.
++ Improved world loading times when using an NDS memory cart.
++ Improved NDS memory cart transfer speed. (asie)
++ Disabled NDS logging hacks when stdio redirect is enabled.
++ Exiting MZX on the NDS should now power off the NDS.
++ Added Emscripten frontend. (asie)
++ Fixed bug where errors in the title screen Load World window
+  could clear the rest of the screen.
++ Fixed crash that could occur when attempting to load an
+  invalid zip world.
++ Non-recursive directory deletion in the file manager now tries
+  to delete the directory itself instead of its contents. Added
+  error messages for failed file and directory deletes.
+
+DEVELOPERS
+
++ Added initial support for the dirent d_type field to help
+  avoid stat calls when reading directories.
++ Replaced most fseek calls in the legacy world loader.
++ Refactored move_current_board to be more readable.
++ Corrected some of the editor's bad extram handling and added
+  warnings to debug builds to help debug it (no platforms at the
+  present support both the editor and extram).
++ Replaced error wait_event() with update_event_status_delay().
++ Added preliminary VFS code to replace function pointer casting
+  in zip.c.
++ Fixed Wayland/X11 detection for setups that don't allow X or
+  Xorg to be run normally.
++ Unix builds should now attempt to load the icon from the
+  installed path instead of from a hardcoded path. Builds with
+  no sharedir set will use "contrib/icons/quantump.png" instead.
+
+>#MAIN.HLP:072:Table of Contents
 
 July 22nd, 2019 - MZX 2.92
 
