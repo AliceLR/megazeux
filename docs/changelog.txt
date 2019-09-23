@@ -1,4 +1,10 @@
-GIT
+September 23rd, 2019 - MZX 2.92b
+
+This release fixes several bugs, notably 3DS and Wii rendering
+issues and a bug where the wrong palette would be saved while
+COLOR FADE OUT was active. Also in this release are performance
+and usability improvements for the NDS and 3DS ports and a new
+frontend for HTML5/Emscripten builds (special thanks to asie).
 
 USERS
 
