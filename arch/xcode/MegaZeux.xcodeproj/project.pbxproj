@@ -60,6 +60,10 @@
 		BF6058FB216B3725001B738C /* keysym.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058D8216B3724001B738C /* keysym.h */; };
 		BF6058FC216B3725001B738C /* settings.c in Sources */ = {isa = PBXBuildFile; fileRef = BF6058D9216B3725001B738C /* settings.c */; };
 		BF6058FD216B3725001B738C /* memfile.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058DA216B3725001B738C /* memfile.h */; };
+		BFA52FCE233AC29900A90CB4 /* vfs.c in Sources */ = {isa = PBXBuildFile; fileRef = BFA52FCC233AC29800A90CB4 /* vfs.c */; };
+		BFA52FCF233AC29900A90CB4 /* vfs.h in Headers */ = {isa = PBXBuildFile; fileRef = BFA52FCD233AC29900A90CB4 /* vfs.h */; };
+		BFA52FD2233AC48100A90CB4 /* audio_reality.h in Headers */ = {isa = PBXBuildFile; fileRef = BFA52FD0233AC48100A90CB4 /* audio_reality.h */; };
+		BFA52FD3233AC48100A90CB4 /* audio_reality.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BFA52FD1233AC48100A90CB4 /* audio_reality.cpp */; };
 		BFC0B26B20681ACC00D28296 /* flt_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BFC0B26620681A9000D28296 /* flt_load.c */; };
 		BFC0B26C20681ACC00D28296 /* hmn_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BFC0B26520681A9000D28296 /* hmn_load.c */; };
 		BFC0B26D20681ACC00D28296 /* st_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BFC0B26720681A9000D28296 /* st_load.c */; };
@@ -425,6 +429,10 @@
 		BF6058D8216B3724001B738C /* keysym.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = keysym.h; path = ../../src/keysym.h; sourceTree = "<group>"; };
 		BF6058D9216B3725001B738C /* settings.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = settings.c; path = ../../src/settings.c; sourceTree = "<group>"; };
 		BF6058DA216B3725001B738C /* memfile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = memfile.h; path = ../../src/memfile.h; sourceTree = "<group>"; };
+		BFA52FCC233AC29800A90CB4 /* vfs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = vfs.c; path = ../../src/vfs.c; sourceTree = "<group>"; };
+		BFA52FCD233AC29900A90CB4 /* vfs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = vfs.h; path = ../../src/vfs.h; sourceTree = "<group>"; };
+		BFA52FD0233AC48100A90CB4 /* audio_reality.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = audio_reality.h; path = ../../src/audio/audio_reality.h; sourceTree = "<group>"; };
+		BFA52FD1233AC48100A90CB4 /* audio_reality.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = audio_reality.cpp; path = ../../src/audio/audio_reality.cpp; sourceTree = "<group>"; };
 		BFC0B26520681A9000D28296 /* hmn_load.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = hmn_load.c; path = ../../contrib/libxmp/src/loaders/hmn_load.c; sourceTree = "<group>"; };
 		BFC0B26620681A9000D28296 /* flt_load.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = flt_load.c; path = ../../contrib/libxmp/src/loaders/flt_load.c; sourceTree = "<group>"; };
 		BFC0B26720681A9000D28296 /* st_load.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = st_load.c; path = ../../contrib/libxmp/src/loaders/st_load.c; sourceTree = "<group>"; };
@@ -779,6 +787,8 @@
 				BFC1C0422142551800378A4C /* audio.h */,
 				BFC1C0582142585300378A4C /* audio_pcs.c */,
 				BFC1C0592142585300378A4C /* audio_pcs.h */,
+				BFA52FD1233AC48100A90CB4 /* audio_reality.cpp */,
+				BFA52FD0233AC48100A90CB4 /* audio_reality.h */,
 				BFC1C0482142551800378A4C /* audio_sdl.c */,
 				BFC1C04A2142551900378A4C /* audio_vorbis.c */,
 				BFC1C0492142551800378A4C /* audio_vorbis.h */,
@@ -905,6 +915,8 @@
 				BF6058D6216B3724001B738C /* thread_sdl.h */,
 				BFFF16651FCDC64C00BDEC58 /* util.c */,
 				BFFF16361FCDC64600BDEC58 /* util.h */,
+				BFA52FCC233AC29800A90CB4 /* vfs.c */,
+				BFA52FCD233AC29900A90CB4 /* vfs.h */,
 				BFFF16531FCDC64900BDEC58 /* window.c */,
 				BFFF164F1FCDC64800BDEC58 /* window.h */,
 				BFFF16591FCDC64A00BDEC58 /* world.c */,
@@ -1136,6 +1148,7 @@
 				BFFF16C41FCDC76900BDEC58 /* counter.h in Headers */,
 				BFFF17D41FCDCCF300BDEC58 /* player.h in Headers */,
 				BF6058DE216B3725001B738C /* board_struct.h in Headers */,
+				BFA52FCF233AC29900A90CB4 /* vfs.h in Headers */,
 				BFFF17091FCDC76900BDEC58 /* world.h in Headers */,
 				BF6058F6216B3725001B738C /* game_update.h in Headers */,
 				BFFF16DD1FCDC76900BDEC58 /* legacy_board.h in Headers */,
@@ -1161,6 +1174,7 @@
 				BFFF16FA1FCDC76900BDEC58 /* robot.h in Headers */,
 				BF6058E8216B3725001B738C /* world_format.h in Headers */,
 				BFFF18101FCDCD1200BDEC58 /* s3m.h in Headers */,
+				BFA52FD2233AC48100A90CB4 /* audio_reality.h in Headers */,
 				BFFF16FD1FCDC76900BDEC58 /* scrdisp.h in Headers */,
 				BFC1C06C2142591600378A4C /* dns.h in Headers */,
 				BF6058F0216B3725001B738C /* renderers.h in Headers */,
@@ -1489,6 +1503,7 @@
 				BFFF17BC1FCDCCF300BDEC58 /* mixer.c in Sources */,
 				BFFF16D81FCDC76900BDEC58 /* idput.c in Sources */,
 				BFFF17C21FCDCCF300BDEC58 /* smix.c in Sources */,
+				BFA52FD3233AC48100A90CB4 /* audio_reality.cpp in Sources */,
 				BFFF18031FCDCD1200BDEC58 /* okt_load.c in Sources */,
 				BFFF16ED1FCDC76900BDEC58 /* render_glsl.c in Sources */,
 				BFFF17BF1FCDCCF300BDEC58 /* player.c in Sources */,
@@ -1528,6 +1543,7 @@
 				BFFF16F01FCDC76900BDEC58 /* render_sdl.c in Sources */,
 				BFFF17FA1FCDCD1200BDEC58 /* itsex.c in Sources */,
 				BFC0B26B20681ACC00D28296 /* flt_load.c in Sources */,
+				BFA52FCE233AC29900A90CB4 /* vfs.c in Sources */,
 				BFC0B26C20681ACC00D28296 /* hmn_load.c in Sources */,
 				BFC0B26D20681ACC00D28296 /* st_load.c in Sources */,
 			);
@@ -1701,6 +1717,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_CXX_LIBRARY = "libstdc++";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = "";
@@ -1727,6 +1744,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_CXX_LIBRARY = "libstdc++";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = "";
@@ -1752,6 +1770,7 @@
 		BF1012921FCCA957008EEDB6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_CXX_LIBRARY = "libstdc++";
 				CLANG_ENABLE_MODULES = NO;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "";
@@ -1786,6 +1805,7 @@
 		BF1012931FCCA957008EEDB6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_CXX_LIBRARY = "libstdc++";
 				CLANG_ENABLE_MODULES = NO;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "";
@@ -1817,6 +1837,7 @@
 		BF10129A1FCCA97D008EEDB6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_CXX_LIBRARY = "libstdc++";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "";
 				DYLIB_COMPATIBILITY_VERSION = 1;
@@ -1840,6 +1861,7 @@
 		BF10129B1FCCA97D008EEDB6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_CXX_LIBRARY = "libstdc++";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "";
 				DYLIB_COMPATIBILITY_VERSION = 1;
@@ -1864,6 +1886,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_CXX_LIBRARY = "libstdc++";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = "";
@@ -1886,6 +1909,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_CXX_LIBRARY = "libstdc++";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = "";
