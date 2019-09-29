@@ -61,6 +61,25 @@ class LoadingScreen {
     }
 }
 
+window.MzxrunInitShortcuts = function() {
+    /* Disable the default functions for several common MegaZeux shortcuts.
+     * FIXME: Opera defaults for left alt and F3 can't be disabled this way (as of 63).
+     */
+    document.body.addEventListener('keydown', event => {
+        let key = event.key.toUpperCase();
+        if ((event.altKey && (
+                   key == 'C' // Select char
+                || key == 'D' // Delete file/directory
+                || key == 'N' // New directory
+                || key == 'R' // Rename file/directory
+            ))
+            || key == 'F1'  // Help
+            || key == 'F3'  // Save/Load World
+
+        ) event.preventDefault()
+    })
+}
+
 window.MzxrunInitialize = function(options) {
     console.log("Initializing MegaZeux web frontend");
 
@@ -76,6 +95,8 @@ window.MzxrunInitialize = function(options) {
         drawErrorMessage(canvas, ctx, 'Error: WebGL context lost!');
         e.preventDefault();
     }, false);
+
+    MzxrunInitShortcuts();
 
     try {
         if (!options.path) throw "Missing option: path!";
