@@ -61,7 +61,22 @@ class LoadingScreen {
     }
 }
 
-window.MzxrunInitShortcuts = function() {
+window.MzxrunInitialize = function(options) {
+    console.log("Initializing MegaZeux web frontend");
+
+    if (!options.render) throw "Missing option: render!";
+    if (!options.render.canvas) throw "Missing option: render.canvas!";
+
+    let canvas = options.render.canvas;
+    canvas.contentEditable = true;
+    let ctx = canvas.getContext('2d', {alpha: false});
+    ctx.imageSmoothingEnabled = false;
+
+    canvas.addEventListener("webglcontextlost", e => {
+        drawErrorMessage(canvas, ctx, 'Error: WebGL context lost!');
+        e.preventDefault();
+    }, false);
+
     /* Disable the default functions for several common MegaZeux shortcuts.
      * FIXME: Opera defaults for left alt and F3 can't be disabled this way (as of 63).
      */
@@ -82,25 +97,6 @@ window.MzxrunInitShortcuts = function() {
 
         ) event.preventDefault()
     })
-}
-
-window.MzxrunInitialize = function(options) {
-    console.log("Initializing MegaZeux web frontend");
-
-    if (!options.render) throw "Missing option: render!";
-    if (!options.render.canvas) throw "Missing option: render.canvas!";
-
-    let canvas = options.render.canvas;
-    canvas.contentEditable = true;
-    let ctx = canvas.getContext('2d', {alpha: false});
-    ctx.imageSmoothingEnabled = false;
-
-    canvas.addEventListener("webglcontextlost", e => {
-        drawErrorMessage(canvas, ctx, 'Error: WebGL context lost!');
-        e.preventDefault();
-    }, false);
-
-    MzxrunInitShortcuts();
 
     try {
         if (!options.path) throw "Missing option: path!";
