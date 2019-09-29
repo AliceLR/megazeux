@@ -104,7 +104,6 @@ class CompositeStorage {
 	}
 
 	set(key, value) {
-		let promise = Promise.resolve(false);
 		for (var p = this.providers.length - 1; p >= 0; p--) {
 			let provider = this.providers[p];
 			if (provider.set(key, value)) return true;
@@ -113,7 +112,6 @@ class CompositeStorage {
 	}
 
 	remove(key) {
-		let promise = Promise.resolve(false); // FIXME not sure this is even necessary.
 		for (var p = this.providers.length - 1; p >= 0; p--) {
 			let provider = this.providers[p];
 			if (provider.remove(key)) return true;
