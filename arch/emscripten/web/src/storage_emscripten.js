@@ -21,6 +21,7 @@
 const EPERM = 1;
 const ENOENT = 2;
 const EINVAL = 22;
+const ENOTEMPTY = 39;
 const O_CREAT = 0x40;
 const O_TRUNC = 0x200;
 const S_IFDIR = 0x4000;
@@ -30,7 +31,7 @@ const S_IFMT = 0xF000;
 function vfs_get_type(vfs, path) {
     if (path.length == 0) return "dir";
     let contents = vfs.get(path);
-    if (contents) {
+    if (contents !== null) {
         return "file";
     } else {
         const list = vfs.list(a => a.startsWith(path));
@@ -109,6 +110,24 @@ export function wrapStorageForEmscripten(vfs) {
 
             node.node_ops.setattr = (n, attr) => {
                 if (attr.mode !== undefined) n.mode = attr.mode;
+                if (attr.size !== undefined) {
+                    // Used to implement O_TRUNC by the Emscripten FS API.
+                    // console.log("FS setattr size " + n.vfs_path + " " + attr.size);
+
+                    if (attr.size) {
+                        // Note: not sure this can ever be reached from the FS API...
+                        let old_data = vfs.get(n.vfs_path);
+                        if (!old_data)
+                            throw new FS.ErrnoError(ENOENT);
+
+                        let new_data = new Uint8Array(attr.size).set(old_data);
+                        if (!vfs.set(n.vfs_path, new_data))
+                            throw new FS.ErrnoError(EPERM);
+                    } else {
+                        if (!vfs.set(n.vfs_path, new Uint8Array(0)))
+                            throw new FS.ErrnoError(EPERM);
+                    }
+                }
             }
 
             node.stream_ops.llseek = (stream, offset, whence) => {
@@ -141,7 +160,26 @@ export function wrapStorageForEmscripten(vfs) {
                     return wrap.createNode(parent, '/' + node.vfs_path + name, mode, dev);
                 };
                 node.node_ops.rename = (oldNode, newDir, newName) => {
-                    throw "FS TODO rename " + newName;
+                    console.log("FS FIXME rename " + newName);
+                    throw new FS.ErrnoError(EPERM);
+                };
+                node.node_ops.unlink = (parent, name) => {
+                    // console.log("FS unlink " + name);
+                    let file = vfs.get(node.vfs_path + name);
+                    if (!file)
+                        throw new FS.ErrnoError(ENOENT);
+                    if (!vfs.remove(node.vfs_path + name))
+                        throw new FS.ErrnoError(EPERM);
+                };
+                node.node_ops.rmdir = (parent, name) => {
+                    // console.log("FS rmdir " + name);
+                    const path = node.vfs_path + name;
+                    const list = vfs.list(a => a.startsWith(path));
+                    for (var i = 0; i < list.length; i++) {
+                        var entry = list[i].substring(path.length);
+                        if (entry.length != 0)
+                            throw new FS.ErrnoError(ENOTEMPTY);
+                    }
                 };
                 node.node_ops.readdir = (node) => {
                     const path = node.vfs_path;
