@@ -166,9 +166,6 @@ export function wrapStorageForEmscripten(vfs) {
                 };
                 node.node_ops.unlink = (parent, name) => {
                     // console.log("FS unlink " + name);
-                    let file = vfs.get(node.vfs_path + name);
-                    if (!file)
-                        throw new FS.ErrnoError(ENOENT);
                     if (!vfs.remove(node.vfs_path + name))
                         throw new FS.ErrnoError(EPERM);
                 };
