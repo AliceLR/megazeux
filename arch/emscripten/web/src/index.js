@@ -74,7 +74,11 @@ window.MzxrunInitShortcuts = function() {
                 || key == 'R' // Rename file/directory
             ))
             || key == 'F1'  // Help
-            || key == 'F3'  // Save/Load World
+            || key == 'F2'  // Settings
+            || key == 'F3'  // Save, Load World
+            || key == 'F4'  // Load save
+            || key == 'F9'  // Quicksave
+            || key == 'F10' // Quickload Save
 
         ) event.preventDefault()
     })
