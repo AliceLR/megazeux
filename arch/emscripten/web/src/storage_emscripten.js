@@ -40,15 +40,15 @@ function vfs_get_type(vfs, path) {
     return "empty";
 }
 
-function next_power_of_two(n) {
-    var i = 1;
+function vfs_next_power_of_two(n) {
+    var i = 4096;
     while (i < n) i *= 2;
     return i;
 }
 
 function vfs_expand_array(array, newLength) {
     if (newLength <= array.length) return array;
-    newLength = next_power_of_two(newLength);
+    newLength = vfs_next_power_of_two(newLength);
 
     var newArrayBuffer = new ArrayBuffer(newLength);
     var newArray = new Uint8Array(newArrayBuffer);
