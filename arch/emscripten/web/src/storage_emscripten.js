@@ -113,20 +113,14 @@ export function wrapStorageForEmscripten(vfs) {
                 if (attr.size !== undefined) {
                     // Used to implement O_TRUNC by the Emscripten FS API.
                     // console.log("FS setattr size " + n.vfs_path + " " + attr.size);
-
-                    if (attr.size) {
-                        // Note: not sure this can ever be reached from the FS API...
-                        let old_data = vfs.get(n.vfs_path);
-                        if (!old_data)
-                            throw new FS.ErrnoError(ENOENT);
-
-                        let new_data = new Uint8Array(attr.size).set(old_data);
-                        if (!vfs.set(n.vfs_path, new_data))
-                            throw new FS.ErrnoError(EPERM);
-                    } else {
-                        if (!vfs.set(n.vfs_path, new Uint8Array(0)))
-                            throw new FS.ErrnoError(EPERM);
+                    let old_data = vfs.get(n.vfs_path);
+                    let new_data = new Uint8Array(attr.size);
+                    if (attr.size > 0 && old_data) {
+                        // Note: not sure sizes > 0 will reach here from the FS API...
+                        new_data.set(old_data.slice(0, attr.size));
                     }
+                    if (!vfs.set(n.vfs_path, new_data))
+                        throw new FS.ErrnoError(EPERM);
                 }
             }
 
