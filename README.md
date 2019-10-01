@@ -24,6 +24,7 @@ Older versions are available at [DigitalMZX](https://vault.digitalmzx.net/).
 [megazeux-d64]: https://vault.digitalmzx.net/download.php?latest=debian64
 [megazeux-d32]: https://vault.digitalmzx.net/download.php?latest=debian32
 [megazeux-rpi]: https://vault.digitalmzx.net/download.php?latest=raspbian
+[megazeux-html]: https://vault.digitalmzx.net/download.php?latest=emscripten
 [megazeux-nds]: https://vault.digitalmzx.net/download.php?latest=nds
 [megazeux-3ds]: https://vault.digitalmzx.net/download.php?latest=3ds
 [megazeux-wii]: https://vault.digitalmzx.net/download.php?latest=wii
@@ -42,6 +43,7 @@ Older versions are available at [DigitalMZX](https://vault.digitalmzx.net/).
 [arch-d64]: contrib/archicons/debian64.png  "Debian AMD64"
 [arch-d32]: contrib/archicons/debian32.png  "Debian i386"
 [arch-rpi]: contrib/archicons/raspbian.png  "Raspbian"
+[arch-html]:contrib/archicons/html5.png     "HTML5 (Emscripten)"
 [arch-aur]: contrib/archicons/archlinux.png "Arch Linux (via AUR)"
 [arch-void]:contrib/archicons/voidlinux.png "Void Linux"
 [arch-gen]: contrib/archicons/gentoo.png    "Gentoo"
@@ -63,6 +65,7 @@ Older versions are available at [DigitalMZX](https://vault.digitalmzx.net/).
 &nbsp; [![Ubuntu i386         ][arch-u32]][megazeux-u32]
 &nbsp; [![Debian AMD64        ][arch-d64]][megazeux-d64]
 &nbsp; [![Debian i386         ][arch-d32]][megazeux-d32]
+&nbsp; [![HTML5 (Emscripten)  ][arch-html]][megazeux-html]
 &nbsp; [![Nintendo DS         ][arch-nds]][megazeux-nds]
 &nbsp; [![Nintendo 3DS        ][arch-3ds]][megazeux-3ds]
 &nbsp; [![Nintendo Wii        ][arch-wii]][megazeux-wii]
