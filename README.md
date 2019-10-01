@@ -24,7 +24,7 @@ Older versions are available at [DigitalMZX](https://vault.digitalmzx.net/).
 [megazeux-d64]: https://vault.digitalmzx.net/download.php?latest=debian64
 [megazeux-d32]: https://vault.digitalmzx.net/download.php?latest=debian32
 [megazeux-rpi]: https://vault.digitalmzx.net/download.php?latest=raspbian
-[megazeux-html]: https://vault.digitalmzx.net/download.php?latest=emscripten
+[megazeux-html]: https://vault.digitalmzx.net/download.php?latest=html5
 [megazeux-nds]: https://vault.digitalmzx.net/download.php?latest=nds
 [megazeux-3ds]: https://vault.digitalmzx.net/download.php?latest=3ds
 [megazeux-wii]: https://vault.digitalmzx.net/download.php?latest=wii
