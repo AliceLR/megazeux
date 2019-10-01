@@ -60,6 +60,12 @@ class InMemoryStorage {
 		this.map[key] = value;
 		return true;
 	}
+
+	remove(key) {
+		if (this.readonly) return false;
+		delete this.map[key];
+		return true;
+	}
 }
 
 class CompositeStorage {
@@ -98,10 +104,17 @@ class CompositeStorage {
 	}
 
 	set(key, value) {
-		let promise = Promise.resolve(false);
 		for (var p = this.providers.length - 1; p >= 0; p--) {
 			let provider = this.providers[p];
 			if (provider.set(key, value)) return true;
+		}
+		return false;
+	}
+
+	remove(key) {
+		for (var p = this.providers.length - 1; p >= 0; p--) {
+			let provider = this.providers[p];
+			if (provider.remove(key)) return true;
 		}
 		return false;
 	}
@@ -139,6 +152,15 @@ class AsyncStorageWrapper extends InMemoryStorage {
 			return false;
 		}
 	}
+
+	remove(key) {
+		if (super.remove(key)) {
+			this.parent.remove(key);
+			return true;
+		} else {
+			return false;
+		}
+	}
 }
 
 class BrowserBackedStorage {
@@ -153,7 +175,7 @@ class BrowserBackedStorage {
 
 	get(key) {
 		const result = this.storage.getItem(this.prefix + key);
-		if (result) {
+		if (result !== null) {
 			return result.split(",").map(s => parseInt(s));
 		} else {
 			return null;
@@ -173,6 +195,11 @@ class BrowserBackedStorage {
 
 	set(key, value) {
 		this.storage.setItem(this.prefix + key, value.join(","));
+		return true;
+	}
+
+	remove(key) {
+		this.storage.removeItem(this.prefix + key);
 		return true;
 	}
 }
@@ -239,6 +266,19 @@ class IndexedDbBackedAsyncStorage {
 				"filename": key,
 				"value": value
 			});
+			request.onsuccess = event => {
+				resolve(true);
+			}
+			request.onerror = event => {
+				resolve(false);
+			}
+		});
+	}
+
+	remove(key) {
+		const transaction = this.database.transaction(["files"], "readwrite");
+		return new Promise((resolve, reject) => {
+			const request = transaction.objectStore("files").delete(key);
 			request.onsuccess = event => {
 				resolve(true);
 			}

@@ -77,6 +77,27 @@ window.MzxrunInitialize = function(options) {
         e.preventDefault();
     }, false);
 
+    /* Disable the default functions for several common MegaZeux shortcuts.
+     * FIXME: Opera defaults for left alt and F3 can't be disabled this way (as of 63).
+     */
+    document.body.addEventListener('keydown', event => {
+        let key = event.key.toUpperCase();
+        if ((event.altKey && (
+                   key == 'C' // Select char
+                || key == 'D' // Delete file/directory
+                || key == 'N' // New directory
+                || key == 'R' // Rename file/directory
+            ))
+            || key == 'F1'  // Help
+            || key == 'F2'  // Settings
+            || key == 'F3'  // Save, Load World
+            || key == 'F4'  // Load save
+            || key == 'F9'  // Quicksave
+            || key == 'F10' // Quickload Save
+
+        ) event.preventDefault()
+    })
+
     try {
         if (!options.path) throw "Missing option: path!";
         if (!options.files) throw "Missing option: files!";
