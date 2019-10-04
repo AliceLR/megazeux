@@ -178,12 +178,6 @@ struct world
   // Was the player damaged while 'restart if hurt' is active?
   boolean was_zapped;
 
-  // For use in repeat delays for player movement
-  int key_up_delay;
-  int key_down_delay;
-  int key_right_delay;
-  int key_left_delay;
-
   // 1-3 normal 5-7 is 1-3 but from a REL FIRST cmd
   int first_prefix;
   // Just 1-3

@@ -35,6 +35,12 @@ struct player
 
   // Did the player just move?
   boolean moved;
+
+  // For use in repeat delays for player movement
+  int key_up_delay;
+  int key_down_delay;
+  int key_right_delay;
+  int key_left_delay;
 };
 
 __M_END_DECLS

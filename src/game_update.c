@@ -379,20 +379,20 @@ static void update_player_input(struct world *mzx_world)
   // Player movement
   if(up_pressed && !cur_board->player_ns_locked)
   {
-    int key_up_delay = mzx_world->key_up_delay;
+    int key_up_delay = mzx_world->players[0].key_up_delay;
     if((key_up_delay == 0) || (key_up_delay > REPEAT_WAIT))
     {
       move_player(mzx_world, 0);
       cur_board->player_last_dir = (cur_board->player_last_dir & 0x0F);
     }
     if(key_up_delay <= REPEAT_WAIT)
-      mzx_world->key_up_delay = key_up_delay + 1;
+      mzx_world->players[0].key_up_delay = key_up_delay + 1;
   }
   else
 
   if(down_pressed && !cur_board->player_ns_locked)
   {
-    int key_down_delay = mzx_world->key_down_delay;
+    int key_down_delay = mzx_world->players[0].key_down_delay;
     if((key_down_delay == 0) || (key_down_delay > REPEAT_WAIT))
     {
       move_player(mzx_world, 1);
@@ -400,13 +400,13 @@ static void update_player_input(struct world *mzx_world)
        (cur_board->player_last_dir & 0x0F) + 0x10;
     }
     if(key_down_delay <= REPEAT_WAIT)
-      mzx_world->key_down_delay = key_down_delay + 1;
+      mzx_world->players[0].key_down_delay = key_down_delay + 1;
   }
   else
 
   if(right_pressed && !cur_board->player_ew_locked)
   {
-    int key_right_delay = mzx_world->key_right_delay;
+    int key_right_delay = mzx_world->players[0].key_right_delay;
     if((key_right_delay == 0) || (key_right_delay > REPEAT_WAIT))
     {
       move_player(mzx_world, 2);
@@ -414,13 +414,13 @@ static void update_player_input(struct world *mzx_world)
        (cur_board->player_last_dir & 0x0F) + 0x20;
     }
     if(key_right_delay <= REPEAT_WAIT)
-      mzx_world->key_right_delay = key_right_delay + 1;
+      mzx_world->players[0].key_right_delay = key_right_delay + 1;
   }
   else
 
   if(left_pressed && !cur_board->player_ew_locked)
   {
-    int key_left_delay = mzx_world->key_left_delay;
+    int key_left_delay = mzx_world->players[0].key_left_delay;
     if((key_left_delay == 0) || (key_left_delay > REPEAT_WAIT))
     {
       move_player(mzx_world, 3);
@@ -428,7 +428,7 @@ static void update_player_input(struct world *mzx_world)
        (cur_board->player_last_dir & 0x0F) + 0x30;
     }
     if(key_left_delay <= REPEAT_WAIT)
-      mzx_world->key_left_delay = key_left_delay + 1;
+      mzx_world->players[0].key_left_delay = key_left_delay + 1;
   }
 
   // Reset timers when all of the movement keys are released. Some games rely
@@ -438,10 +438,10 @@ static void update_player_input(struct world *mzx_world)
   // From user feedback, this behavior generally seems preferred.
   if(!up_pressed && !down_pressed && !right_pressed && !left_pressed)
   {
-    mzx_world->key_up_delay = 0;
-    mzx_world->key_down_delay = 0;
-    mzx_world->key_right_delay = 0;
-    mzx_world->key_left_delay = 0;
+    mzx_world->players[0].key_up_delay = 0;
+    mzx_world->players[0].key_down_delay = 0;
+    mzx_world->players[0].key_right_delay = 0;
+    mzx_world->players[0].key_left_delay = 0;
   }
 
   // Bomb
