@@ -592,25 +592,30 @@ static void open_chest(struct world *mzx_world, int chest_x, int chest_y)
   cur_board->level_param[offset] = CHEST_EMPTY;
 }
 
-static void place_player(struct world *mzx_world, int x, int y, int dir)
+static void place_one_player(struct world *mzx_world, int player_id, int x, int y, int dir)
 {
   struct board *src_board = mzx_world->current_board;
-  if((mzx_world->players[0].x != x) || (mzx_world->players[0].y != y))
+  if((mzx_world->players[player_id].x != x) || (mzx_world->players[player_id].y != y))
   {
-    id_remove_top(mzx_world, mzx_world->players[0].x, mzx_world->players[0].y);
+    id_remove_top(mzx_world, mzx_world->players[player_id].x, mzx_world->players[player_id].y);
   }
-  id_place(mzx_world, x, y, PLAYER, 0, 0);
-  mzx_world->players[0].x = x;
-  mzx_world->players[0].y = y;
+  id_place(mzx_world, x, y, PLAYER, 0, player_id);
+  mzx_world->players[player_id].x = x;
+  mzx_world->players[player_id].y = y;
   src_board->player_last_dir =
    (src_board->player_last_dir & 240) | (dir + 1);
-  mzx_world->players[0].moved = true;
+  mzx_world->players[player_id].moved = true;
+}
+
+static void place_player(struct world *mzx_world, int x, int y, int dir)
+{
+  abort(); // TODO: unify players!
 }
 
 // mzx_world->players[0].moved will be true if the player moved, otherwise false.
 // This function is guaranteed to keep the player position correctly updated;
 // using find_player after using this function is not necessary.
-void grab_item(struct world *mzx_world, int item_x, int item_y, int src_dir)
+void grab_item_for_player(struct world *mzx_world, int player_id, int item_x, int item_y, int src_dir)
 {
   // "src_dir" is the direction from the player to this object.
   struct board *cur_board = mzx_world->current_board;
@@ -622,7 +627,7 @@ void grab_item(struct world *mzx_world, int item_x, int item_y, int src_dir)
 
   char tmp[81];
 
-  mzx_world->players[0].moved = false;
+  mzx_world->players[player_id].moved = false;
 
   switch(id)
   {
@@ -827,7 +832,7 @@ void grab_item(struct world *mzx_world, int item_x, int item_y, int src_dir)
 
     case TRANSPORT:
     {
-      if(!transport(mzx_world, item_x, item_y, src_dir, PLAYER, 0, 0, 1))
+      if(!transport(mzx_world, item_x, item_y, src_dir, PLAYER, player_id, 0, 1))
       {
         // The player moved, so we need to erase the old player and find the new
         // one. The under player vars were updated as part of the transport, so
@@ -837,15 +842,15 @@ void grab_item(struct world *mzx_world, int item_x, int item_y, int src_dir)
         int under_player_param = mzx_world->under_player_param;
         int player_last_dir = cur_board->player_last_dir;
 
-        id_remove_top(mzx_world, mzx_world->players[0].x, mzx_world->players[0].y);
+        id_remove_top(mzx_world, mzx_world->players[player_id].x, mzx_world->players[player_id].y);
         mzx_world->under_player_id = under_player_id;
         mzx_world->under_player_color = under_player_color;
         mzx_world->under_player_param = under_player_param;
         cur_board->player_last_dir = (player_last_dir & 240) + src_dir + 1;
-        mzx_world->players[0].moved = true;
+        mzx_world->players[player_id].moved = true;
 
         // Figure out the player's new position so we don't get player clones.
-        find_player(mzx_world);
+        find_one_player(mzx_world, player_id);
       }
       break;
     }
@@ -1000,26 +1005,31 @@ void grab_item(struct world *mzx_world, int item_x, int item_y, int src_dir)
     // If this is a consumable item, remove it and put the player where it was.
     // FIXME has_context_changed
     offs_remove_id(mzx_world, offset);
-    place_player(mzx_world, item_x, item_y, src_dir);
+    place_one_player(mzx_world, player_id, item_x, item_y, src_dir);
   }
 
   return;
 }
 
+void grab_item(struct world *mzx_world, int item_x, int item_y, int src_dir)
+{
+  abort(); // TODO: unify players!
+}
+
 // mzx_world->players[0].moved will be true if the player moved, otherwise false.
 // This function is guaranteed to keep the player position correctly updated;
 // using find_player after using this function is not necessary.
-void move_player(struct world *mzx_world, int dir)
+void move_one_player(struct world *mzx_world, int player_id, int dir)
 {
   struct board *src_board = mzx_world->current_board;
   // Dir is from 0 to 3
-  int player_x = mzx_world->players[0].x;
-  int player_y = mzx_world->players[0].y;
+  int player_x = mzx_world->players[player_id].x;
+  int player_y = mzx_world->players[player_id].y;
   int new_x = player_x;
   int new_y = player_y;
   int edge = 0;
 
-  mzx_world->players[0].moved = false;
+  mzx_world->players[player_id].moved = false;
 
   switch(dir)
   {
@@ -1089,7 +1099,7 @@ void move_player(struct world *mzx_world, int dir)
     src_board->player_last_dir =
      (src_board->player_last_dir & 240) + dir + 1;
 
-    mzx_world->players[0].moved = true;
+    mzx_world->players[player_id].moved = true;
     return;
   }
   else
@@ -1109,7 +1119,7 @@ void move_player(struct world *mzx_world, int dir)
        (src_board->sensor_list[d_param])->robot_to_mesg,
        "SENSORON", 0);
 
-      place_player(mzx_world, new_x, new_y, dir);
+      place_one_player(mzx_world, player_id, new_x, new_y, dir);
       return;
     }
     else
@@ -1118,7 +1128,7 @@ void move_player(struct world *mzx_world, int dir)
     {
       // Entrance
       entrance(mzx_world, new_x, new_y);
-      place_player(mzx_world, new_x, new_y, dir);
+      place_one_player(mzx_world, player_id, new_x, new_y, dir);
       return;
     }
     else
@@ -1126,7 +1136,7 @@ void move_player(struct world *mzx_world, int dir)
     if((d_flag & A_ITEM) && (d_id != ROBOT_PUSHABLE))
     {
       // Item (handles player movement separately)
-      grab_item(mzx_world, new_x, new_y, dir);
+      grab_item_for_player(mzx_world, player_id, new_x, new_y, dir);
       return;
     }
     else
@@ -1134,7 +1144,7 @@ void move_player(struct world *mzx_world, int dir)
     if(d_flag & A_UNDER)
     {
       // Under
-      place_player(mzx_world, new_x, new_y, dir);
+      place_one_player(mzx_world, player_id, new_x, new_y, dir);
       return;
     }
     else
@@ -1148,7 +1158,7 @@ void move_player(struct world *mzx_world, int dir)
         {
           // Player bullet no hurty
           id_remove_top(mzx_world, new_x, new_y);
-          place_player(mzx_world, new_x, new_y, dir);
+          place_one_player(mzx_world, player_id, new_x, new_y, dir);
           return;
         }
         else
@@ -1173,7 +1183,7 @@ void move_player(struct world *mzx_world, int dir)
           // Not onto goop.. (under is now top)
           if(u_id != GOOP && !src_board->restart_if_zapped)
           {
-            place_player(mzx_world, new_x, new_y, dir);
+            place_one_player(mzx_world, player_id, new_x, new_y, dir);
             return;
           }
         }
@@ -1198,11 +1208,21 @@ void move_player(struct world *mzx_world, int dir)
 
         if(!push(mzx_world, player_x, player_y, dir, 0))
         {
-          place_player(mzx_world, new_x, new_y, dir);
+          place_one_player(mzx_world, player_id, new_x, new_y, dir);
           return;
         }
       }
     }
+  }
+}
+
+void move_player(struct world *mzx_world, int dir)
+{
+  int player_id;
+
+  for(player_id = 0; player_id < NUM_PLAYERS; player_id++)
+  {
+    move_one_player(mzx_world, player_id, dir);
   }
 }
 
