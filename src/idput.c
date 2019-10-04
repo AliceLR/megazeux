@@ -374,7 +374,17 @@ static unsigned char get_special_id_color(struct board *src_board,
       break;
 
     case PLAYER: /* player */
-      return id_chars[player_color];
+      if(param == 0)
+      {
+        // This is the primary player.
+        return id_chars[player_color];
+      }
+      else
+      {
+        // This is not the primary player.
+        // Swap the foreground and background colours.
+        return (id_chars[player_color]>>4)|((id_chars[player_color]&0xF)<<4);
+      }
 
     default:
       return color;
