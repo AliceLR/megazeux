@@ -855,7 +855,7 @@ static int copy_block_param_special(struct world *mzx_world, int id,
   return 0;
 }
 
-void replace_player(struct world *mzx_world)
+void replace_one_player(struct world *mzx_world, int player_id)
 {
   struct board *src_board = mzx_world->current_board;
   char *level_id = src_board->level_id;
@@ -870,18 +870,28 @@ void replace_player(struct world *mzx_world)
       if(A_UNDER & flags[(int)level_id[offset]])
       {
         // Place the player here
-        mzx_world->players[0].x = dx;
-        mzx_world->players[0].y = dy;
-        id_place(mzx_world, dx, dy, PLAYER, 0, 0);
+        mzx_world->players[player_id].x = dx;
+        mzx_world->players[player_id].y = dy;
+        id_place(mzx_world, dx, dy, PLAYER, 0, player_id);
         return;
       }
     }
   }
 
   // Place the player here
-  mzx_world->players[0].x = 0;
-  mzx_world->players[0].y = 0;
-  place_at_xy(mzx_world, PLAYER, 0, 0, 0, 0);
+  mzx_world->players[player_id].x = 0;
+  mzx_world->players[player_id].y = 0;
+  place_at_xy(mzx_world, PLAYER, 0, 0, 0, player_id);
+}
+
+void replace_player(struct world *mzx_world)
+{
+  int player_id;
+
+  for(player_id = 0; player_id < NUM_PLAYERS; player_id++)
+  {
+    replace_one_player(mzx_world, player_id);
+  }
 }
 
 // Returns the numeric value pointed to OR the numeric value represented
