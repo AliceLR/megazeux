@@ -1384,8 +1384,8 @@ void update_board(context *ctx)
           {
             int sensitivity = ((current_param & 0x07) + 1) << 1;
             int player_distance;
-            int player_dist_x = mzx_world->player_x - x;
-            int player_dist_y = mzx_world->player_y - y;
+            int player_dist_x = mzx_world->players[0].x - x;
+            int player_dist_y = mzx_world->players[0].y - y;
 
             // Zero out move cycle
             level_param[level_offset] &= 0x9F;

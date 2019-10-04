@@ -2976,8 +2976,8 @@ static boolean editor_key(context *ctx, int *key)
           }
 
           // Uh oh, we might need a new player
-          if((mzx_world->player_x >= cur_board->board_width) ||
-           (mzx_world->player_y >= cur_board->board_height))
+          if((mzx_world->players[0].x >= cur_board->board_width) ||
+           (mzx_world->players[0].y >= cur_board->board_height))
             replace_player(mzx_world);
 
           editor->modified = true;

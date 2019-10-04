@@ -491,8 +491,8 @@ void copy_replace_player(struct world *mzx_world, int x, int y)
     clear_storage_object(cur_board, src_id, cur_board->level_param[offset]);
 
   id_place(mzx_world, x, y, PLAYER, 0, 0);
-  mzx_world->player_x = x;
-  mzx_world->player_y = y;
+  mzx_world->players[0].x = x;
+  mzx_world->players[0].y = y;
 }
 
 // This goes here so the block buffer monstrosity can be inlined.
@@ -538,17 +538,17 @@ void move_board_block(struct world *mzx_world,
   int player_y = 0;
 
   // Work around to move the player
-  if((mzx_world->player_x >= src_x) &&
-   (mzx_world->player_y >= src_y) &&
-   (mzx_world->player_x < (src_x + clear_width)) &&
-   (mzx_world->player_y < (src_y + clear_height)) &&
+  if((mzx_world->players[0].x >= src_x) &&
+   (mzx_world->players[0].y >= src_y) &&
+   (mzx_world->players[0].x < (src_x + clear_width)) &&
+   (mzx_world->players[0].y < (src_y + clear_height)) &&
    (src_board == dest_board))
   {
-    player_x = mzx_world->player_x - src_x + dest_x;
-    player_y = mzx_world->player_y - src_y + dest_y;
+    player_x = mzx_world->players[0].x - src_x + dest_x;
+    player_y = mzx_world->players[0].y - src_y + dest_y;
     replace_player = true;
 
-    id_remove_top(mzx_world, mzx_world->player_x, mzx_world->player_y);
+    id_remove_top(mzx_world, mzx_world->players[0].x, mzx_world->players[0].y);
   }
 
   copy_board_to_board_buffer(mzx_world,

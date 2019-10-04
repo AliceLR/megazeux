@@ -26,6 +26,7 @@ __M_BEGIN_DECLS
 
 #include "board_struct.h"
 #include "robot_struct.h"
+#include "player_struct.h"
 #include "counter_struct.h"
 #include "sprite_struct.h"
 
@@ -146,9 +147,7 @@ struct world
   char custom_sfx[NUM_SFX * SFX_SIZE];
 
   // Not part of world/save files, but runtime globals
-  int player_x;
-  int player_y;
-  int player_shoot_cooldown;
+  struct player players[NUM_PLAYERS];
 
   // For moving the player between boards
   enum board_target target_where;

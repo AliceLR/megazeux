@@ -1448,8 +1448,8 @@ static void send_sensor_command(struct world *mzx_world, int id, int command)
   char *level_color = src_board->level_color;
   int board_width = src_board->board_width;
   int board_height = src_board->board_height;
-  int player_x = mzx_world->player_x;
-  int player_y = mzx_world->player_y;
+  int player_x = mzx_world->players[0].x;
+  int player_y = mzx_world->players[0].y;
   int player_offset = player_x + (player_y * board_width);
   int offset;
   int move_status;
@@ -1514,8 +1514,8 @@ static void send_sensor_command(struct world *mzx_world, int id, int command)
         {
           // Find player...
           find_player(mzx_world);
-          player_x = mzx_world->player_x;
-          player_y = mzx_world->player_y;
+          player_x = mzx_world->players[0].x;
+          player_y = mzx_world->players[0].y;
           player_offset = player_x + (player_y * board_width);
 
           move_status = HIT_PLAYER;
@@ -1958,8 +1958,8 @@ void prefix_first_last_xy(struct world *mzx_world, int *fx, int *fy,
     case 6:
     {
       find_player(mzx_world);
-      tfx += mzx_world->player_x;
-      tfy += mzx_world->player_y;
+      tfx += mzx_world->players[0].x;
+      tfy += mzx_world->players[0].y;
       break;
     }
 
@@ -1992,8 +1992,8 @@ void prefix_first_last_xy(struct world *mzx_world, int *fx, int *fy,
     case 6:
     {
       find_player(mzx_world);
-      tlx += mzx_world->player_x;
-      tly += mzx_world->player_y;
+      tlx += mzx_world->players[0].x;
+      tly += mzx_world->players[0].y;
       break;
     }
 
@@ -2067,8 +2067,8 @@ void prefix_first_xy_var(struct world *mzx_world, int *fx, int *fy,
     case 6:
     {
       find_player(mzx_world);
-      tfx += mzx_world->player_x;
-      tfy += mzx_world->player_y;
+      tfx += mzx_world->players[0].x;
+      tfy += mzx_world->players[0].y;
       break;
     }
 
@@ -2123,8 +2123,8 @@ void prefix_last_xy_var(struct world *mzx_world, int *lx, int *ly,
     case 6:
     {
       find_player(mzx_world);
-      tlx += mzx_world->player_x;
-      tly += mzx_world->player_y;
+      tlx += mzx_world->players[0].x;
+      tly += mzx_world->players[0].y;
       break;
     }
 
@@ -2177,8 +2177,8 @@ void prefix_mid_xy_var(struct world *mzx_world, int *mx, int *my,
     case 2:
     {
       find_player(mzx_world);
-      tmx += mzx_world->player_x;
-      tmy += mzx_world->player_y;
+      tmx += mzx_world->players[0].x;
+      tmy += mzx_world->players[0].y;
       break;
     }
 
@@ -2224,8 +2224,8 @@ void prefix_mid_xy_unbound(struct world *mzx_world, int *mx, int *my, int x, int
     case 2:
     {
       find_player(mzx_world);
-      tmx += mzx_world->player_x;
-      tmy += mzx_world->player_y;
+      tmx += mzx_world->players[0].x;
+      tmy += mzx_world->players[0].y;
       break;
     }
 

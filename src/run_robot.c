@@ -101,8 +101,8 @@ static void magic_load_mod(struct world *mzx_world, char *filename)
 
 static void save_player_position(struct world *mzx_world, int pos)
 {
-  mzx_world->pl_saved_x[pos] = mzx_world->player_x;
-  mzx_world->pl_saved_y[pos] = mzx_world->player_y;
+  mzx_world->pl_saved_x[pos] = mzx_world->players[0].x;
+  mzx_world->pl_saved_y[pos] = mzx_world->players[0].y;
   mzx_world->pl_saved_board[pos] = mzx_world->current_board_id;
 }
 
@@ -282,7 +282,7 @@ static int place_dir_xy(struct world *mzx_world, enum thing id, int color,
 
 int place_player_xy(struct world *mzx_world, int x, int y)
 {
-  if((mzx_world->player_x != x) || (mzx_world->player_y != y))
+  if((mzx_world->players[0].x != x) || (mzx_world->players[0].y != y))
   {
     struct board *src_board = mzx_world->current_board;
     int offset = x + (y * src_board->board_width);
@@ -306,10 +306,10 @@ int place_player_xy(struct world *mzx_world, int x, int y)
       step_sensor(mzx_world, dparam);
     }
 
-    id_remove_top(mzx_world, mzx_world->player_x, mzx_world->player_y);
+    id_remove_top(mzx_world, mzx_world->players[0].x, mzx_world->players[0].y);
     id_place(mzx_world, x, y, PLAYER, 0, 0);
-    mzx_world->player_x = x;
-    mzx_world->player_y = y;
+    mzx_world->players[0].x = x;
+    mzx_world->players[0].y = y;
 
     return 1;
   }
@@ -870,8 +870,8 @@ void replace_player(struct world *mzx_world)
       if(A_UNDER & flags[(int)level_id[offset]])
       {
         // Place the player here
-        mzx_world->player_x = dx;
-        mzx_world->player_y = dy;
+        mzx_world->players[0].x = dx;
+        mzx_world->players[0].y = dy;
         id_place(mzx_world, dx, dy, PLAYER, 0, 0);
         return;
       }
@@ -879,8 +879,8 @@ void replace_player(struct world *mzx_world)
   }
 
   // Place the player here
-  mzx_world->player_x = 0;
-  mzx_world->player_y = 0;
+  mzx_world->players[0].x = 0;
+  mzx_world->players[0].y = 0;
   place_at_xy(mzx_world, PLAYER, 0, 0, 0, 0);
 }
 
@@ -1823,8 +1823,8 @@ void run_robot(context *ctx, int id, int x, int y)
                 new_y = y;
                 if(!move_dir(src_board, &new_x, &new_y, direction))
                 {
-                  if((mzx_world->player_x == new_x) &&
-                   (mzx_world->player_y == new_y))
+                  if((mzx_world->players[0].x == new_x) &&
+                   (mzx_world->players[0].y == new_y))
                   {
                     success = 1;
                   }
@@ -1845,8 +1845,8 @@ void run_robot(context *ctx, int id, int x, int y)
                     new_y = y;
                     if(!move_dir(src_board, &new_x, &new_y, int_to_dir(i)))
                     {
-                      if((mzx_world->player_x == new_x) &&
-                       (mzx_world->player_y == new_y))
+                      if((mzx_world->players[0].x == new_x) &&
+                       (mzx_world->players[0].y == new_y))
                       {
                         success = 1;
                       }
@@ -1878,8 +1878,8 @@ void run_robot(context *ctx, int id, int x, int y)
               {
                 // Give an ID of -1 to throw it off from not
                 // allowing global robot.
-                calculate_blocked(mzx_world, mzx_world->player_x,
-                 mzx_world->player_y, -1, new_bl);
+                calculate_blocked(mzx_world, mzx_world->players[0].x,
+                 mzx_world->players[0].y, -1, new_bl);
                 update_blocked = 1;
                 break;
               }
@@ -1925,7 +1925,7 @@ void run_robot(context *ctx, int id, int x, int y)
           {
             if(id)
             {
-              if((mzx_world->player_x == x) || (mzx_world->player_y == y))
+              if((mzx_world->players[0].x == x) || (mzx_world->players[0].y == y))
                 success = 1;
             }
             break;
@@ -1935,7 +1935,7 @@ void run_robot(context *ctx, int id, int x, int y)
           {
             if(id)
             {
-              if(mzx_world->player_x == x)
+              if(mzx_world->players[0].x == x)
                 success = 1;
             }
             break;
@@ -1945,7 +1945,7 @@ void run_robot(context *ctx, int id, int x, int y)
           {
             if(id)
             {
-              if(mzx_world->player_y == y)
+              if(mzx_world->players[0].y == y)
                 success = 1;
             }
             break;
@@ -2307,7 +2307,7 @@ void run_robot(context *ctx, int id, int x, int y)
         int check_param = parse_param(mzx_world, p4, id);
 
         if(check_dir_xy(mzx_world, check_id, check_color,
-         check_param, mzx_world->player_x, mzx_world->player_y,
+         check_param, mzx_world->players[0].x, mzx_world->players[0].y,
          direction, cur_robot, _bl))
         {
           char *p5 = next_param_pos(p4);
@@ -2717,8 +2717,8 @@ void run_robot(context *ctx, int id, int x, int y)
         direction = parsedir(direction, x, y, cur_robot->walk_dir);
         if(is_cardinal_dir(direction))
         {
-          int old_x = mzx_world->player_x;
-          int old_y = mzx_world->player_y;
+          int old_x = mzx_world->players[0].x;
+          int old_y = mzx_world->players[0].y;
           int old_board = mzx_world->current_board_id;
           enum board_target old_target = mzx_world->target_where;
 
@@ -2738,8 +2738,8 @@ void run_robot(context *ctx, int id, int x, int y)
           move_player(mzx_world, dir_to_int(direction));
 
           if((cmd == ROBOTIC_CMD_MOVE_PLAYER_DIR_OR) &&
-           (mzx_world->player_x == old_x) &&
-           (mzx_world->player_y == old_y) &&
+           (mzx_world->players[0].x == old_x) &&
+           (mzx_world->players[0].y == old_y) &&
            (mzx_world->current_board_id == old_board) &&
            (mzx_world->target_where == old_target))
           {
@@ -2764,7 +2764,7 @@ void run_robot(context *ctx, int id, int x, int y)
         if(place_player_xy(mzx_world, put_x, put_y))
         {
           done = 1;
-          if((mzx_world->player_x == x) && (mzx_world->player_y == y))
+          if((mzx_world->players[0].x == x) && (mzx_world->players[0].y == y))
           {
             // Robot no longer exists; exit
             return;
@@ -2780,8 +2780,8 @@ void run_robot(context *ctx, int id, int x, int y)
         int check_y = parse_param(mzx_world, p2, id);
         prefix_mid_xy(mzx_world, &check_x, &check_y, x, y);
 
-        if((check_x == mzx_world->player_x) &&
-         (check_y == mzx_world->player_y))
+        if((check_x == mzx_world->players[0].x) &&
+         (check_y == mzx_world->players[0].y))
         {
           char *p3 = next_param_pos(p2);
           gotoed = send_self_label_tr(mzx_world, p3 + 1, id);
@@ -2802,7 +2802,7 @@ void run_robot(context *ctx, int id, int x, int y)
           {
             if(place_player_xy(mzx_world, put_x, put_y))
             {
-              if((mzx_world->player_x == x) && (mzx_world->player_y == y))
+              if((mzx_world->players[0].x == x) && (mzx_world->players[0].y == y))
               {
                 // Robot no longer exists; exit
                 return;
@@ -3502,8 +3502,8 @@ void run_robot(context *ctx, int id, int x, int y)
 
       case ROBOTIC_CMD_SEND_DIR_PLAYER: // Send DIR of player "label"
       {
-        int send_x = mzx_world->player_x;
-        int send_y = mzx_world->player_y;
+        int send_x = mzx_world->players[0].x;
+        int send_y = mzx_world->players[0].y;
         enum dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
         direction = parsedir(direction, send_x, send_y,
          cur_robot->walk_dir);
@@ -3533,11 +3533,11 @@ void run_robot(context *ctx, int id, int x, int y)
         {
           int player_bl[4];
 
-          calculate_blocked(mzx_world, mzx_world->player_x,
-           mzx_world->player_y, 1, player_bl);
+          calculate_blocked(mzx_world, mzx_world->players[0].x,
+           mzx_world->players[0].y, 1, player_bl);
 
           place_dir_xy(mzx_world, put_id, put_color, put_param,
-           mzx_world->player_x, mzx_world->player_y, direction,
+           mzx_world->players[0].x, mzx_world->players[0].y, direction,
            cur_robot, player_bl);
 
           /* Ensure that if the put involves overwriting this robot,
@@ -4706,8 +4706,8 @@ void run_robot(context *ctx, int id, int x, int y)
       case ROBOTIC_CMD_RESTORE_PLAYER_POSITION_N_DUPLICATE_SELF:
       {
         int pos = parse_param(mzx_world, cmd_ptr + 1, id) - 1;
-        int duplicate_x = mzx_world->player_x;
-        int duplicate_y = mzx_world->player_y;
+        int duplicate_x = mzx_world->players[0].x;
+        int duplicate_y = mzx_world->players[0].y;
         int duplicate_color, duplicate_id, dest_id;
         int offset;
 
@@ -4756,8 +4756,8 @@ void run_robot(context *ctx, int id, int x, int y)
       case ROBOTIC_CMD_EXCHANGE_PLAYER_POSITION_N_DUPLICATE_SELF:
       {
         int pos = parse_param(mzx_world, cmd_ptr + 1, id) - 1;
-        int duplicate_x = mzx_world->player_x;
-        int duplicate_y = mzx_world->player_y;
+        int duplicate_x = mzx_world->players[0].x;
+        int duplicate_y = mzx_world->players[0].y;
         int duplicate_color, duplicate_id, dest_id;
         int offset;
 

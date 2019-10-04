@@ -190,8 +190,8 @@ static int playerdist_read(struct world *mzx_world,
   struct board *src_board = mzx_world->current_board;
   struct robot *cur_robot = src_board->robot_list[id];
 
-  int player_x = mzx_world->player_x;
-  int player_y = mzx_world->player_y;
+  int player_x = mzx_world->players[0].x;
+  int player_y = mzx_world->players[0].y;
   int thisx, thisy;
   get_robot_position(cur_robot, &thisx, &thisy);
 
@@ -299,7 +299,7 @@ static int thisx_read(struct world *mzx_world,
   get_robot_position(cur_robot, &thisx, &thisy);
 
   if(mzx_world->mid_prefix == 2)
-    return thisx - mzx_world->player_x;
+    return thisx - mzx_world->players[0].x;
 
   return thisx;
 }
@@ -312,7 +312,7 @@ static int thisy_read(struct world *mzx_world,
   get_robot_position(cur_robot, &thisx, &thisy);
 
   if(mzx_world->mid_prefix == 2)
-    return thisy - mzx_world->player_y;
+    return thisy - mzx_world->players[0].y;
 
   return thisy;
 }
@@ -320,13 +320,13 @@ static int thisy_read(struct world *mzx_world,
 static int playerx_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  return mzx_world->player_x;
+  return mzx_world->players[0].x;
 }
 
 static int playery_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  return mzx_world->player_y;
+  return mzx_world->players[0].y;
 }
 
 static int this_char_read(struct world *mzx_world,
@@ -439,7 +439,7 @@ static int horizpld_read(struct world *mzx_world,
   int thisx, thisy;
   get_robot_position(cur_robot, &thisx, &thisy);
 
-  return abs(mzx_world->player_x - thisx);
+  return abs(mzx_world->players[0].x - thisx);
 }
 
 static int vertpld_read(struct world *mzx_world,
@@ -449,7 +449,7 @@ static int vertpld_read(struct world *mzx_world,
   int thisx, thisy;
   get_robot_position(cur_robot, &thisx, &thisy);
 
-  return abs(mzx_world->player_y - thisy);
+  return abs(mzx_world->players[0].y - thisy);
 }
 
 static int board_char_read(struct world *mzx_world,
@@ -3481,8 +3481,8 @@ static int hurt_player(struct world *mzx_world, int value)
     {
       int player_restart_x = mzx_world->player_restart_x;
       int player_restart_y = mzx_world->player_restart_y;
-      int player_x = mzx_world->player_x;
-      int player_y = mzx_world->player_y;
+      int player_x = mzx_world->players[0].x;
+      int player_y = mzx_world->players[0].y;
       //Restart since we were hurt
       if((player_restart_x != player_x) || (player_restart_y != player_y))
       {
@@ -3491,8 +3491,8 @@ static int hurt_player(struct world *mzx_world, int value)
         player_y = player_restart_y;
         id_place(mzx_world, player_x, player_y, PLAYER, 0, 0);
         mzx_world->was_zapped = true;
-        mzx_world->player_x = player_x;
-        mzx_world->player_y = player_y;
+        mzx_world->players[0].x = player_x;
+        mzx_world->players[0].y = player_y;
       }
     }
   }

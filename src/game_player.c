@@ -74,7 +74,7 @@ boolean player_can_save(struct world *mzx_world)
 
   if(cur_board->save_mode == CAN_SAVE_ON_SENSOR)
   {
-    offset = xy_to_offset(cur_board, mzx_world->player_x, mzx_world->player_y);
+    offset = xy_to_offset(cur_board, mzx_world->players[0].x, mzx_world->players[0].y);
 
     if(cur_board->level_under_id[offset] != SENSOR)
       return false;
@@ -134,8 +134,8 @@ void player_cheat_give_all(struct world *mzx_world)
 
 void player_cheat_zap(struct world *mzx_world)
 {
-  int player_x = mzx_world->player_x;
-  int player_y = mzx_world->player_y;
+  int player_x = mzx_world->players[0].x;
+  int player_y = mzx_world->players[0].y;
   int board_width = mzx_world->current_board->board_width;
   int board_height = mzx_world->current_board->board_height;
 
@@ -595,13 +595,13 @@ static void open_chest(struct world *mzx_world, int chest_x, int chest_y)
 static void place_player(struct world *mzx_world, int x, int y, int dir)
 {
   struct board *src_board = mzx_world->current_board;
-  if((mzx_world->player_x != x) || (mzx_world->player_y != y))
+  if((mzx_world->players[0].x != x) || (mzx_world->players[0].y != y))
   {
-    id_remove_top(mzx_world, mzx_world->player_x, mzx_world->player_y);
+    id_remove_top(mzx_world, mzx_world->players[0].x, mzx_world->players[0].y);
   }
   id_place(mzx_world, x, y, PLAYER, 0, 0);
-  mzx_world->player_x = x;
-  mzx_world->player_y = y;
+  mzx_world->players[0].x = x;
+  mzx_world->players[0].y = y;
   src_board->player_last_dir =
    (src_board->player_last_dir & 240) | (dir + 1);
   mzx_world->player_moved = true;
@@ -837,7 +837,7 @@ void grab_item(struct world *mzx_world, int item_x, int item_y, int src_dir)
         int under_player_param = mzx_world->under_player_param;
         int player_last_dir = cur_board->player_last_dir;
 
-        id_remove_top(mzx_world, mzx_world->player_x, mzx_world->player_y);
+        id_remove_top(mzx_world, mzx_world->players[0].x, mzx_world->players[0].y);
         mzx_world->under_player_id = under_player_id;
         mzx_world->under_player_color = under_player_color;
         mzx_world->under_player_param = under_player_param;
@@ -1013,8 +1013,8 @@ void move_player(struct world *mzx_world, int dir)
 {
   struct board *src_board = mzx_world->current_board;
   // Dir is from 0 to 3
-  int player_x = mzx_world->player_x;
-  int player_y = mzx_world->player_y;
+  int player_x = mzx_world->players[0].x;
+  int player_y = mzx_world->players[0].y;
   int new_x = player_x;
   int new_y = player_y;
   int edge = 0;
@@ -1251,14 +1251,14 @@ void find_player(struct world *mzx_world)
   char *level_id = src_board->level_id;
   int dx, dy, offset;
 
-  if(mzx_world->player_x >= board_width)
-    mzx_world->player_x = 0;
+  if(mzx_world->players[0].x >= board_width)
+    mzx_world->players[0].x = 0;
 
-  if(mzx_world->player_y >= board_height)
-    mzx_world->player_y = 0;
+  if(mzx_world->players[0].y >= board_height)
+    mzx_world->players[0].y = 0;
 
-  if((enum thing)level_id[mzx_world->player_x +
-   (mzx_world->player_y * board_width)] != PLAYER)
+  if((enum thing)level_id[mzx_world->players[0].x +
+   (mzx_world->players[0].y * board_width)] != PLAYER)
   {
     for(dy = 0, offset = 0; dy < board_height; dy++)
     {
@@ -1266,8 +1266,8 @@ void find_player(struct world *mzx_world)
       {
         if((enum thing)level_id[offset] == PLAYER)
         {
-          mzx_world->player_x = dx;
-          mzx_world->player_y = dy;
+          mzx_world->players[0].x = dx;
+          mzx_world->players[0].y = dy;
           return;
         }
       }

@@ -251,8 +251,8 @@ void calculate_xytop(struct world *mzx_world, int *x, int *y)
   {
     // Calculate from player position
     // Center screen around player, add scroll factor
-    nx = mzx_world->player_x - (viewport_width / 2);
-    ny = mzx_world->player_y - (viewport_height / 2);
+    nx = mzx_world->players[0].x - (viewport_width / 2);
+    ny = mzx_world->players[0].y - (viewport_height / 2);
 
     if(nx < 0)
       nx = 0;
@@ -291,8 +291,8 @@ void calculate_xytop(struct world *mzx_world, int *x, int *y)
 int find_seek(struct world *mzx_world, int x, int y)
 {
   int dir;
-  int player_x = mzx_world->player_x;
-  int player_y = mzx_world->player_y;
+  int player_x = mzx_world->players[0].x;
+  int player_y = mzx_world->players[0].y;
 
   if(y == player_y)
   {

@@ -2989,8 +2989,8 @@ void change_board_set_values(struct world *mzx_world)
 
   // Set the player restart position.
   find_player(mzx_world);
-  mzx_world->player_restart_x = mzx_world->player_x;
-  mzx_world->player_restart_y = mzx_world->player_y;
+  mzx_world->player_restart_x = mzx_world->players[0].x;
+  mzx_world->player_restart_y = mzx_world->players[0].y;
 }
 
 void change_board_load_assets(struct world *mzx_world)
@@ -3297,7 +3297,7 @@ void clear_world(struct world *mzx_world)
 
   mzx_world->current_cycle_odd = false;
   mzx_world->current_cycle_frozen = false;
-  mzx_world->player_shoot_cooldown = 0;
+  mzx_world->players[0].shoot_cooldown = 0;
   mzx_world->active = 0;
 
   audio_end_sample();
