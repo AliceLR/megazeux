@@ -172,9 +172,6 @@ struct world
   // Toggle used by certain built-in mechanics that update every other cycle.
   boolean current_cycle_odd;
 
-  // Did the player just move?
-  boolean player_moved;
-
   // Was the player on an entrance before the board scan?
   boolean player_was_on_entrance;
 

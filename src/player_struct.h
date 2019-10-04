@@ -32,6 +32,9 @@ struct player
   int x;
   int y;
   int shoot_cooldown;
+
+  // Did the player just move?
+  boolean moved;
 };
 
 __M_END_DECLS

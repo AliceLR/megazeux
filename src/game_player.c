@@ -604,10 +604,10 @@ static void place_player(struct world *mzx_world, int x, int y, int dir)
   mzx_world->players[0].y = y;
   src_board->player_last_dir =
    (src_board->player_last_dir & 240) | (dir + 1);
-  mzx_world->player_moved = true;
+  mzx_world->players[0].moved = true;
 }
 
-// mzx_world->player_moved will be true if the player moved, otherwise false.
+// mzx_world->players[0].moved will be true if the player moved, otherwise false.
 // This function is guaranteed to keep the player position correctly updated;
 // using find_player after using this function is not necessary.
 void grab_item(struct world *mzx_world, int item_x, int item_y, int src_dir)
@@ -622,7 +622,7 @@ void grab_item(struct world *mzx_world, int item_x, int item_y, int src_dir)
 
   char tmp[81];
 
-  mzx_world->player_moved = false;
+  mzx_world->players[0].moved = false;
 
   switch(id)
   {
@@ -842,7 +842,7 @@ void grab_item(struct world *mzx_world, int item_x, int item_y, int src_dir)
         mzx_world->under_player_color = under_player_color;
         mzx_world->under_player_param = under_player_param;
         cur_board->player_last_dir = (player_last_dir & 240) + src_dir + 1;
-        mzx_world->player_moved = true;
+        mzx_world->players[0].moved = true;
 
         // Figure out the player's new position so we don't get player clones.
         find_player(mzx_world);
@@ -1006,7 +1006,7 @@ void grab_item(struct world *mzx_world, int item_x, int item_y, int src_dir)
   return;
 }
 
-// mzx_world->player_moved will be true if the player moved, otherwise false.
+// mzx_world->players[0].moved will be true if the player moved, otherwise false.
 // This function is guaranteed to keep the player position correctly updated;
 // using find_player after using this function is not necessary.
 void move_player(struct world *mzx_world, int dir)
@@ -1019,7 +1019,7 @@ void move_player(struct world *mzx_world, int dir)
   int new_y = player_y;
   int edge = 0;
 
-  mzx_world->player_moved = false;
+  mzx_world->players[0].moved = false;
 
   switch(dir)
   {
@@ -1089,7 +1089,7 @@ void move_player(struct world *mzx_world, int dir)
     src_board->player_last_dir =
      (src_board->player_last_dir & 240) + dir + 1;
 
-    mzx_world->player_moved = true;
+    mzx_world->players[0].moved = true;
     return;
   }
   else

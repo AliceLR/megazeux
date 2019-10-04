@@ -253,7 +253,7 @@ static void update_player_under(struct world *mzx_world)
         move_player(mzx_world, (player_last_dir & 0x0F) - 1);
 
         // FIXME has_context_changed
-        if(!mzx_world->player_moved)
+        if(!mzx_world->players[0].moved)
           cur_board->player_last_dir = player_last_dir & 0xF0;
       }
       return;
