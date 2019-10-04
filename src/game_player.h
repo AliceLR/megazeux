@@ -29,6 +29,7 @@ __M_BEGIN_DECLS
 
 #include "world_struct.h"
 
+CORE_LIBSPEC void find_one_player(struct world *mzx_world, int player_id);
 CORE_LIBSPEC void find_player(struct world *mzx_world);
 
 void set_mesg(struct world *mzx_world, const char *str);

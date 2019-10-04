@@ -1243,22 +1243,23 @@ void entrance(struct world *mzx_world, int x, int y)
   }
 }
 
-void find_player(struct world *mzx_world)
+void find_one_player(struct world *mzx_world, int player_id)
 {
   struct board *src_board = mzx_world->current_board;
   int board_width = src_board->board_width;
   int board_height = src_board->board_height;
   char *level_id = src_board->level_id;
+  char *level_param = src_board->level_param;
   int dx, dy, offset;
 
-  if(mzx_world->players[0].x >= board_width)
-    mzx_world->players[0].x = 0;
+  if(mzx_world->players[player_id].x >= board_width)
+    mzx_world->players[player_id].x = 0;
 
-  if(mzx_world->players[0].y >= board_height)
-    mzx_world->players[0].y = 0;
+  if(mzx_world->players[player_id].y >= board_height)
+    mzx_world->players[player_id].y = 0;
 
-  if((enum thing)level_id[mzx_world->players[0].x +
-   (mzx_world->players[0].y * board_width)] != PLAYER)
+  if((enum thing)level_id[mzx_world->players[player_id].x +
+   (mzx_world->players[player_id].y * board_width)] != PLAYER)
   {
     for(dy = 0, offset = 0; dy < board_height; dy++)
     {
@@ -1266,13 +1267,26 @@ void find_player(struct world *mzx_world)
       {
         if((enum thing)level_id[offset] == PLAYER)
         {
-          mzx_world->players[0].x = dx;
-          mzx_world->players[0].y = dy;
-          return;
+          if(level_param[offset] == player_id)
+          {
+            mzx_world->players[player_id].x = dx;
+            mzx_world->players[player_id].y = dy;
+            return;
+          }
         }
       }
     }
 
-    replace_player(mzx_world);
+    replace_one_player(mzx_world, player_id);
+  }
+}
+
+void find_player(struct world *mzx_world)
+{
+  int player_id;
+
+  for(player_id = 0; player_id < NUM_PLAYERS; player_id++)
+  {
+    find_one_player(mzx_world, player_id);
   }
 }
