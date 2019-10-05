@@ -1271,8 +1271,6 @@ void find_one_player(struct world *mzx_world, int player_id)
 
   // Don't attempt to find this player if it
   // hasn't separated from the primary player
-  //
-  // The primary
   if(player_id != 0 && !player->separated)
   {
     struct player *parent = &mzx_world->players[0];
