@@ -206,11 +206,12 @@ static void update_mod_volume(struct world *mzx_world)
  * May result in a context change.
  */
 
-static void update_player_under(struct world *mzx_world)
+static void update_one_player_under(struct world *mzx_world, int player_id)
 {
   struct board *cur_board = mzx_world->current_board;
-  int player_x = mzx_world->players[0].x;
-  int player_y = mzx_world->players[0].y;
+  struct player *player = &mzx_world->players[player_id];
+  int player_x = player->x;
+  int player_y = player->y;
   int offset = xy_to_offset(cur_board, player_x, player_y);
   enum thing under_id = (enum thing)cur_board->level_under_id[offset];
 
@@ -223,25 +224,25 @@ static void update_player_under(struct world *mzx_world)
   {
     case N_WATER:
     {
-      move_player(mzx_world, 0);
+      move_one_player(mzx_world, player_id, 0);
       return;
     }
 
     case S_WATER:
     {
-      move_player(mzx_world, 1);
+      move_one_player(mzx_world, player_id, 1);
       return;
     }
 
     case E_WATER:
     {
-      move_player(mzx_world, 2);
+      move_one_player(mzx_world, player_id, 2);
       return;
     }
 
     case W_WATER:
     {
-      move_player(mzx_world, 3);
+      move_one_player(mzx_world, player_id, 3);
       return;
     }
 
@@ -250,10 +251,10 @@ static void update_player_under(struct world *mzx_world)
       int player_last_dir = cur_board->player_last_dir;
       if(player_last_dir & 0x0F)
       {
-        move_player(mzx_world, (player_last_dir & 0x0F) - 1);
+        move_one_player(mzx_world, player_id, (player_last_dir & 0x0F) - 1);
 
         // FIXME has_context_changed
-        if(!mzx_world->players[0].moved)
+        if(!player->moved)
           cur_board->player_last_dir = player_last_dir & 0xF0;
       }
       return;
@@ -288,12 +289,22 @@ static void update_player_under(struct world *mzx_world)
   }
 }
 
+static void update_player_under(struct world *mzx_world)
+{
+  int player_id;
+
+  for(player_id = 0; player_id < NUM_PLAYERS; player_id++)
+  {
+    update_one_player_under(mzx_world, player_id);
+  }
+}
+
 /**
  * Apply wind to the player if wind is currently active.
  * May result in a context change.
  */
 
-static void update_player_wind(struct world *mzx_world)
+static void update_one_player_wind(struct world *mzx_world, int player_id)
 {
   struct board *cur_board = mzx_world->current_board;
 
@@ -305,8 +316,18 @@ static void update_player_wind(struct world *mzx_world)
       // No wind this turn if above 3
       cur_board->player_last_dir =
        (cur_board->player_last_dir & 0xF0) + wind_dir;
-      move_player(mzx_world, wind_dir);
+      move_one_player(mzx_world, player_id, wind_dir);
     }
+  }
+}
+
+static void update_player_wind(struct world *mzx_world)
+{
+  int player_id;
+
+  for(player_id = 0; player_id < NUM_PLAYERS; player_id++)
+  {
+    update_one_player_wind(mzx_world, player_id);
   }
 }
 
@@ -315,9 +336,10 @@ static void update_player_wind(struct world *mzx_world)
  * May result in a context change.
  */
 
-static void update_player_input(struct world *mzx_world)
+static void update_one_player_input(struct world *mzx_world, int player_id)
 {
   struct board *cur_board = mzx_world->current_board;
+  struct player *player = &mzx_world->players[player_id];
   int space_pressed = get_key_status(keycode_internal_wrt_numlock, IKEY_SPACE);
   int up_pressed = get_key_status(keycode_internal_wrt_numlock, IKEY_UP);
   int down_pressed = get_key_status(keycode_internal_wrt_numlock, IKEY_DOWN);
@@ -328,7 +350,7 @@ static void update_player_input(struct world *mzx_world)
   // Shoot
   if(space_pressed && mzx_world->bi_shoot_status)
   {
-    if(!mzx_world->players[0].shoot_cooldown && !cur_board->player_attack_locked)
+    if(!player->shoot_cooldown && !cur_board->player_attack_locked)
     {
       int move_dir = -1;
 
@@ -365,9 +387,9 @@ static void update_player_input(struct world *mzx_world)
         {
           dec_counter(mzx_world, "AMMO", 1, 0);
           play_sfx(mzx_world, SFX_SHOOT);
-          shoot(mzx_world, mzx_world->players[0].x, mzx_world->players[0].y,
+          shoot(mzx_world, player->x, player->y,
            move_dir, PLAYER_BULLET);
-          mzx_world->players[0].shoot_cooldown = MAX_PLAYER_SHOT_COOLDOWN;
+          player->shoot_cooldown = MAX_PLAYER_SHOT_COOLDOWN;
           cur_board->player_last_dir =
            (cur_board->player_last_dir & 0x0F) | (move_dir << 4);
         }
@@ -379,56 +401,56 @@ static void update_player_input(struct world *mzx_world)
   // Player movement
   if(up_pressed && !cur_board->player_ns_locked)
   {
-    int key_up_delay = mzx_world->players[0].key_up_delay;
+    int key_up_delay = player->key_up_delay;
     if((key_up_delay == 0) || (key_up_delay > REPEAT_WAIT))
     {
-      move_player(mzx_world, 0);
+      move_one_player(mzx_world, player_id, 0);
       cur_board->player_last_dir = (cur_board->player_last_dir & 0x0F);
     }
     if(key_up_delay <= REPEAT_WAIT)
-      mzx_world->players[0].key_up_delay = key_up_delay + 1;
+      player->key_up_delay = key_up_delay + 1;
   }
   else
 
   if(down_pressed && !cur_board->player_ns_locked)
   {
-    int key_down_delay = mzx_world->players[0].key_down_delay;
+    int key_down_delay = player->key_down_delay;
     if((key_down_delay == 0) || (key_down_delay > REPEAT_WAIT))
     {
-      move_player(mzx_world, 1);
+      move_one_player(mzx_world, player_id, 1);
       cur_board->player_last_dir =
        (cur_board->player_last_dir & 0x0F) + 0x10;
     }
     if(key_down_delay <= REPEAT_WAIT)
-      mzx_world->players[0].key_down_delay = key_down_delay + 1;
+      player->key_down_delay = key_down_delay + 1;
   }
   else
 
   if(right_pressed && !cur_board->player_ew_locked)
   {
-    int key_right_delay = mzx_world->players[0].key_right_delay;
+    int key_right_delay = player->key_right_delay;
     if((key_right_delay == 0) || (key_right_delay > REPEAT_WAIT))
     {
-      move_player(mzx_world, 2);
+      move_one_player(mzx_world, player_id, 2);
       cur_board->player_last_dir =
        (cur_board->player_last_dir & 0x0F) + 0x20;
     }
     if(key_right_delay <= REPEAT_WAIT)
-      mzx_world->players[0].key_right_delay = key_right_delay + 1;
+      player->key_right_delay = key_right_delay + 1;
   }
   else
 
   if(left_pressed && !cur_board->player_ew_locked)
   {
-    int key_left_delay = mzx_world->players[0].key_left_delay;
+    int key_left_delay = player->key_left_delay;
     if((key_left_delay == 0) || (key_left_delay > REPEAT_WAIT))
     {
-      move_player(mzx_world, 3);
+      move_one_player(mzx_world, player_id, 3);
       cur_board->player_last_dir =
        (cur_board->player_last_dir & 0x0F) + 0x30;
     }
     if(key_left_delay <= REPEAT_WAIT)
-      mzx_world->players[0].key_left_delay = key_left_delay + 1;
+      player->key_left_delay = key_left_delay + 1;
   }
 
   // Reset timers when all of the movement keys are released. Some games rely
@@ -438,17 +460,17 @@ static void update_player_input(struct world *mzx_world)
   // From user feedback, this behavior generally seems preferred.
   if(!up_pressed && !down_pressed && !right_pressed && !left_pressed)
   {
-    mzx_world->players[0].key_up_delay = 0;
-    mzx_world->players[0].key_down_delay = 0;
-    mzx_world->players[0].key_right_delay = 0;
-    mzx_world->players[0].key_left_delay = 0;
+    player->key_up_delay = 0;
+    player->key_down_delay = 0;
+    player->key_right_delay = 0;
+    player->key_left_delay = 0;
   }
 
   // Bomb
   if(del_pressed && !cur_board->player_attack_locked)
   {
     int offset =
-     xy_to_offset(cur_board, mzx_world->players[0].x, mzx_world->players[0].y);
+     xy_to_offset(cur_board, player->x, player->y);
     enum thing under_id = (enum thing)cur_board->level_under_id[offset];
     char under_param = cur_board->level_under_param[offset];
     char under_color = cur_board->level_under_color[offset];
@@ -499,8 +521,18 @@ static void update_player_input(struct world *mzx_world)
     }
   }
 
-  if(mzx_world->players[0].shoot_cooldown)
-    mzx_world->players[0].shoot_cooldown--;
+  if(player->shoot_cooldown)
+    player->shoot_cooldown--;
+}
+
+static void update_player_input(struct world *mzx_world)
+{
+  int player_id;
+
+  for(player_id = 0; player_id < NUM_PLAYERS; player_id++)
+  {
+    update_one_player_input(mzx_world, player_id);
+  }
 }
 
 /**

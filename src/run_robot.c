@@ -874,6 +874,13 @@ void replace_one_player(struct world *mzx_world, int player_id)
   struct player *player = &mzx_world->players[player_id];
   int dx, dy, offset;
 
+  if(player_id != 0)
+  {
+    // Merge this player with the primary player.
+    merge_one_player(mzx_world, player_id);
+    return;
+  }
+
   for(dy = 0, offset = 0; dy < board_height; dy++)
   {
     for(dx = 0; dx < board_width; dx++, offset++)
@@ -901,16 +908,7 @@ void replace_player(struct world *mzx_world)
 
   for(player_id = 0; player_id < NUM_PLAYERS; player_id++)
   {
-    if(player_id == 0)
-    {
-      // Replace this player.
-      replace_one_player(mzx_world, player_id);
-    }
-    else
-    {
-      // Merge this player with the primary player.
-      merge_one_player(mzx_world, player_id);
-    }
+    replace_one_player(mzx_world, player_id);
   }
 }
 
