@@ -33,6 +33,9 @@ struct player
   int y;
   int shoot_cooldown;
 
+  // Has this player separated from the primary player?
+  boolean separated;
+
   // Did the player just move?
   boolean moved;
 

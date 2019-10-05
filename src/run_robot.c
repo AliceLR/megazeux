@@ -855,12 +855,23 @@ static int copy_block_param_special(struct world *mzx_world, int id,
   return 0;
 }
 
+void merge_one_player(struct world *mzx_world, int player_id)
+{
+  struct player *player = &mzx_world->players[player_id];
+  struct player *primary_player = &mzx_world->players[0];
+
+  player->x = primary_player->x;
+  player->y = primary_player->y;
+  player->separated = false;
+}
+
 void replace_one_player(struct world *mzx_world, int player_id)
 {
   struct board *src_board = mzx_world->current_board;
   char *level_id = src_board->level_id;
   int board_width = src_board->board_width;
   int board_height = src_board->board_height;
+  struct player *player = &mzx_world->players[player_id];
   int dx, dy, offset;
 
   for(dy = 0, offset = 0; dy < board_height; dy++)
@@ -870,8 +881,8 @@ void replace_one_player(struct world *mzx_world, int player_id)
       if(A_UNDER & flags[(int)level_id[offset]])
       {
         // Place the player here
-        mzx_world->players[player_id].x = dx;
-        mzx_world->players[player_id].y = dy;
+        player->x = dx;
+        player->y = dy;
         id_place(mzx_world, dx, dy, PLAYER, 0, player_id);
         return;
       }
@@ -879,8 +890,8 @@ void replace_one_player(struct world *mzx_world, int player_id)
   }
 
   // Place the player here
-  mzx_world->players[player_id].x = 0;
-  mzx_world->players[player_id].y = 0;
+  player->x = 0;
+  player->y = 0;
   place_at_xy(mzx_world, PLAYER, 0, 0, 0, player_id);
 }
 
@@ -890,7 +901,16 @@ void replace_player(struct world *mzx_world)
 
   for(player_id = 0; player_id < NUM_PLAYERS; player_id++)
   {
-    replace_one_player(mzx_world, player_id);
+    if(player_id == 0)
+    {
+      // Replace this player.
+      replace_one_player(mzx_world, player_id);
+    }
+    else
+    {
+      // Merge this player with the primary player.
+      merge_one_player(mzx_world, player_id);
+    }
   }
 }
 

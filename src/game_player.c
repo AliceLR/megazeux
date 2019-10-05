@@ -595,16 +595,19 @@ static void open_chest(struct world *mzx_world, int chest_x, int chest_y)
 static void place_one_player(struct world *mzx_world, int player_id, int x, int y, int dir)
 {
   struct board *src_board = mzx_world->current_board;
-  if((mzx_world->players[player_id].x != x) || (mzx_world->players[player_id].y != y))
+  struct player *player = &mzx_world->players[player_id];
+
+  if((player->x != x) || (player->y != y))
   {
-    id_remove_top(mzx_world, mzx_world->players[player_id].x, mzx_world->players[player_id].y);
+    id_remove_top(mzx_world, player->x, player->y);
   }
   id_place(mzx_world, x, y, PLAYER, 0, player_id);
-  mzx_world->players[player_id].x = x;
-  mzx_world->players[player_id].y = y;
+  player->x = x;
+  player->y = y;
   src_board->player_last_dir =
    (src_board->player_last_dir & 240) | (dir + 1);
-  mzx_world->players[player_id].moved = true;
+  player->moved = true;
+  player->separated = true;
 }
 
 // mzx_world->players[0].moved will be true if the player moved, otherwise false.
@@ -1264,15 +1267,27 @@ void find_one_player(struct world *mzx_world, int player_id)
   char *level_id = src_board->level_id;
   char *level_param = src_board->level_param;
   int dx, dy, offset;
+  struct player *player = &mzx_world->players[player_id];
 
-  if(mzx_world->players[player_id].x >= board_width)
-    mzx_world->players[player_id].x = 0;
+  // Don't attempt to find this player if it
+  // hasn't separated from the primary player
+  //
+  // The primary
+  if(player_id != 0 && !player->separated)
+  {
+    struct player *parent = &mzx_world->players[0];
+    player->x = parent->x;
+    player->y = parent->y;
+    return;
+  }
 
-  if(mzx_world->players[player_id].y >= board_height)
-    mzx_world->players[player_id].y = 0;
+  if(player->x >= board_width)
+    player->x = 0;
 
-  offset = (mzx_world->players[player_id].x +
-    (mzx_world->players[player_id].y * board_width));
+  if(player->y >= board_height)
+    player->y = 0;
+
+  offset = (player->x + (player->y * board_width));
 
   if((enum thing)level_id[offset] != PLAYER
    || level_param[offset] != player_id)
@@ -1284,14 +1299,21 @@ void find_one_player(struct world *mzx_world, int player_id)
         if((enum thing)level_id[offset] == PLAYER
          && level_param[offset] == player_id)
         {
-          mzx_world->players[player_id].x = dx;
-          mzx_world->players[player_id].y = dy;
+          player->x = dx;
+          player->y = dy;
           return;
         }
       }
     }
 
-    replace_one_player(mzx_world, player_id);
+    if(player_id == 0)
+    {
+      replace_one_player(mzx_world, player_id);
+    }
+    else
+    {
+      merge_one_player(mzx_world, player_id);
+    }
   }
 }
 
