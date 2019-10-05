@@ -607,11 +607,6 @@ static void place_one_player(struct world *mzx_world, int player_id, int x, int 
   mzx_world->players[player_id].moved = true;
 }
 
-static void place_player(struct world *mzx_world, int x, int y, int dir)
-{
-  abort(); // TODO: unify players!
-}
-
 // mzx_world->players[0].moved will be true if the player moved, otherwise false.
 // This function is guaranteed to keep the player position correctly updated;
 // using find_player after using this function is not necessary.
@@ -887,7 +882,7 @@ void grab_item_for_player(struct world *mzx_world, int player_id, int item_x, in
       else
       {
         cur_board->level_id[offset] = (char)FLOOR;
-        place_player(mzx_world, item_x, item_y, src_dir);
+        place_one_player(mzx_world, player_id, item_x, item_y, src_dir);
       }
       break;
     }
