@@ -288,6 +288,7 @@ int place_player_xy(struct world *mzx_world, int x, int y)
     int offset = x + (y * src_board->board_width);
     int did = src_board->level_id[offset];
     int dparam = src_board->level_param[offset];
+    merge_all_players(mzx_world);
 
     if(is_robot(did))
     {
