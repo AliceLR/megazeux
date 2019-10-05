@@ -599,7 +599,10 @@ static void place_one_player(struct world *mzx_world, int player_id, int x, int 
 
   if((player->x != x) || (player->y != y))
   {
-    id_remove_top(mzx_world, player->x, player->y);
+    if(player_id == 0 || player->separated)
+    {
+      id_remove_top(mzx_world, player->x, player->y);
+    }
   }
   id_place(mzx_world, x, y, PLAYER, 0, player_id);
   player->x = x;
@@ -1014,15 +1017,17 @@ void grab_item_for_player(struct world *mzx_world, int player_id, int item_x, in
 // using find_player after using this function is not necessary.
 void move_one_player(struct world *mzx_world, int player_id, int dir)
 {
+  struct player *player = &mzx_world->players[player_id];
+  struct player *src_player = (player->separated ? player : &mzx_world->players[0]);
   struct board *src_board = mzx_world->current_board;
   // Dir is from 0 to 3
-  int player_x = mzx_world->players[player_id].x;
-  int player_y = mzx_world->players[player_id].y;
+  int player_x = src_player->x;
+  int player_y = src_player->y;
   int new_x = player_x;
   int new_y = player_y;
   int edge = 0;
 
-  mzx_world->players[player_id].moved = false;
+  player->moved = false;
 
   switch(dir)
   {
@@ -1092,7 +1097,7 @@ void move_one_player(struct world *mzx_world, int player_id, int dir)
     src_board->player_last_dir =
      (src_board->player_last_dir & 240) + dir + 1;
 
-    mzx_world->players[player_id].moved = true;
+    player->moved = true;
     return;
   }
   else
