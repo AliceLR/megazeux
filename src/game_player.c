@@ -1029,6 +1029,12 @@ void move_one_player(struct world *mzx_world, int player_id, int dir)
 
   player->moved = false;
 
+  // Don't move a non-primary player if we're teleporting.
+  if(player_id != 0 && mzx_world->target_where != TARGET_NONE)
+  {
+    return;
+  }
+
   switch(dir)
   {
     case 0:
