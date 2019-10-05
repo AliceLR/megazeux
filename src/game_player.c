@@ -1126,7 +1126,8 @@ void move_one_player(struct world *mzx_world, int player_id, int dir)
     {
       // Entrance
       entrance(mzx_world, new_x, new_y);
-      place_one_player(mzx_world, player_id, new_x, new_y, dir);
+      merge_all_players(mzx_world);
+      place_one_player(mzx_world, 0, new_x, new_y, dir);
       return;
     }
     else

@@ -699,6 +699,9 @@ int push(struct world *mzx_world, int x, int y, int dir, int checking)
         }
       }
     }
+
+    // Update player positions just in case any players moved.
+    find_player(mzx_world);
   }
 
   play_sfx(mzx_world, SFX_PUSH);
