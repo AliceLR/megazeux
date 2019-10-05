@@ -2597,7 +2597,10 @@ void run_robot(context *ctx, int id, int x, int y)
                 int offset = x + (y * board_width);
                 enum thing old_id = (enum thing)level_id[offset];
                 level_id[offset] = (char)ROBOT_PUSHABLE;
-                grab_item(mzx_world, new_x, new_y, 0);
+
+                // Do this as the primary player.
+                // TODO: Investigate what this is actually doing.
+                grab_item_for_player(mzx_world, 0, new_x, new_y, 0);
 
                 // If a door opened in the direction of the robot, the robot
                 // was pushed and its position needs to be updated. This might

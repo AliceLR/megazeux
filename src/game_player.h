@@ -44,7 +44,6 @@ void hurt_player(struct world *mzx_world, enum thing damage_src);
 int take_key(struct world *mzx_world, int color);
 int give_key(struct world *mzx_world, int color);
 void grab_item_for_player(struct world *mzx_world, int player_id, int item_x, int item_y, int src_dir);
-void grab_item(struct world *mzx_world, int item_x, int item_y, int src_dir);
 void move_one_player(struct world *mzx_world, int player_id, int dir);
 void move_player(struct world *mzx_world, int dir);
 void entrance(struct world *mzx_world, int x, int y);

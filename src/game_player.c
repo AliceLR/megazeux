@@ -1006,11 +1006,6 @@ void grab_item_for_player(struct world *mzx_world, int player_id, int item_x, in
   return;
 }
 
-void grab_item(struct world *mzx_world, int item_x, int item_y, int src_dir)
-{
-  abort(); // TODO: unify players!
-}
-
 // mzx_world->players[0].moved will be true if the player moved, otherwise false.
 // This function is guaranteed to keep the player position correctly updated;
 // using find_player after using this function is not necessary.
