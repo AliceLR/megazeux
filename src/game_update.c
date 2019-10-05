@@ -977,6 +977,9 @@ boolean update_resolve_target(struct world *mzx_world,
     int target_board = mzx_world->target_board;
     boolean load_assets = false;
 
+    // Merge players before proceeding
+    merge_all_players(mzx_world);
+
     // TELEPORT or ENTRANCE.
     // Destroy message, bullets, spitfire?
 
