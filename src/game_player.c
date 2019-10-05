@@ -1208,9 +1208,6 @@ void move_one_player(struct world *mzx_world, int player_id, int dir)
         if(!push(mzx_world, player_x, player_y, dir, 0))
         {
           place_one_player(mzx_world, player_id, new_x, new_y, dir);
-          // Update the player list just in case we pushed a player
-          // (otherwise we get yet another player clone)
-          find_player(mzx_world);
           return;
         }
       }

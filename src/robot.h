@@ -107,6 +107,7 @@ CORE_LIBSPEC int place_at_xy(struct world *mzx_world, enum thing id,
 CORE_LIBSPEC int place_player_xy(struct world *mzx_world, int x, int y);
 CORE_LIBSPEC void setup_overlay(struct board *src_board, int mode);
 CORE_LIBSPEC void merge_one_player(struct world *mzx_world, int player_id);
+CORE_LIBSPEC void merge_all_players(struct world *mzx_world);
 CORE_LIBSPEC void replace_one_player(struct world *mzx_world, int player_id);
 CORE_LIBSPEC void replace_player(struct world *mzx_world);
 

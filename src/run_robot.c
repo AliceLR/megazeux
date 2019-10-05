@@ -857,12 +857,54 @@ static int copy_block_param_special(struct world *mzx_world, int id,
 
 void merge_one_player(struct world *mzx_world, int player_id)
 {
+  struct board *src_board = mzx_world->current_board;
+  int board_width = src_board->board_width;
+  int board_height = src_board->board_height;
+  char *level_id = src_board->level_id;
+  char *level_param = src_board->level_param;
   struct player *player = &mzx_world->players[player_id];
   struct player *primary_player = &mzx_world->players[0];
+
+  // If we are the primary player, do nothing.
+  if(player_id == 0)
+  {
+    return;
+  }
+
+  // Are we separated?
+  if(player->separated)
+  {
+    // Do we have a position that's within the board bounds?
+    int dx = player->x;
+    int dy = player->y;
+    if(dx >= 0 && dx < board_width && dy >= 0 && dy < board_height)
+    {
+      // Are we actually on the board?
+      int offset = dx + (dy*board_width);
+      enum thing d_id = (enum thing)level_id[offset];
+      int d_param = level_param[offset];
+
+      if(d_id == PLAYER && d_param == player_id)
+      {
+        // Remove the old player
+        id_remove_top(mzx_world, player->x, player->y);
+      }
+    }
+  }
 
   player->x = primary_player->x;
   player->y = primary_player->y;
   player->separated = false;
+}
+
+void merge_all_players(struct world *mzx_world)
+{
+  int player_id;
+
+  for(player_id = 1; player_id < NUM_PLAYERS; player_id++)
+  {
+    merge_one_player(mzx_world, player_id);
+  }
 }
 
 void replace_one_player(struct world *mzx_world, int player_id)
