@@ -679,6 +679,7 @@ static void end_life(struct world *mzx_world)
 
       // Return to entry x/y
       id_remove_top(mzx_world, mzx_world->players[0].x, mzx_world->players[0].y);
+      merge_all_players(mzx_world);
       id_place(mzx_world, player_restart_x, player_restart_y, PLAYER, 0, 0);
       mzx_world->players[0].x = player_restart_x;
       mzx_world->players[0].y = player_restart_y;
@@ -692,6 +693,7 @@ static void end_life(struct world *mzx_world)
         int death_y = mzx_world->death_y;
 
         id_remove_top(mzx_world, mzx_world->players[0].x, mzx_world->players[0].y);
+        merge_all_players(mzx_world);
         id_place(mzx_world, death_x, death_y, PLAYER, 0, 0);
         mzx_world->players[0].x = death_x;
         mzx_world->players[0].y = death_y;
