@@ -1199,6 +1199,9 @@ void move_one_player(struct world *mzx_world, int player_id, int dir)
         if(!push(mzx_world, player_x, player_y, dir, 0))
         {
           place_one_player(mzx_world, player_id, new_x, new_y, dir);
+          // Update the player list just in case we pushed a player
+          // (otherwise we get yet another player clone)
+          find_player(mzx_world);
           return;
         }
       }
@@ -1268,21 +1271,22 @@ void find_one_player(struct world *mzx_world, int player_id)
   if(mzx_world->players[player_id].y >= board_height)
     mzx_world->players[player_id].y = 0;
 
-  if((enum thing)level_id[mzx_world->players[player_id].x +
-   (mzx_world->players[player_id].y * board_width)] != PLAYER)
+  offset = (mzx_world->players[player_id].x +
+    (mzx_world->players[player_id].y * board_width));
+
+  if((enum thing)level_id[offset] != PLAYER
+   || level_param[offset] != player_id)
   {
     for(dy = 0, offset = 0; dy < board_height; dy++)
     {
       for(dx = 0; dx < board_width; dx++, offset++)
       {
-        if((enum thing)level_id[offset] == PLAYER)
+        if((enum thing)level_id[offset] == PLAYER
+         && level_param[offset] == player_id)
         {
-          if(level_param[offset] == player_id)
-          {
-            mzx_world->players[player_id].x = dx;
-            mzx_world->players[player_id].y = dy;
-            return;
-          }
+          mzx_world->players[player_id].x = dx;
+          mzx_world->players[player_id].y = dy;
+          return;
         }
       }
     }
