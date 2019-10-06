@@ -874,7 +874,7 @@ fi
 #
 # Force disable networking (no applications enabled)
 #
-if [ "$NETWORK" = "true" -a "$UPDATER" = "false" -a "$MULTIPLAYER" = "false" ]; then
+if [ "$NETWORK" = "true" -a "$UPDATER" = "false" ]; then
 	echo "Force-disabling networking (no network-dependent features enabled)."
 	NETWORK="false"
 fi
