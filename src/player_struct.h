@@ -25,7 +25,12 @@
 
 __M_BEGIN_DECLS
 
+#ifdef CONFIG_MULTIPLAYER
+// TODO: A lot of things, check doc/multiplayer_support.txt
+#define NUM_PLAYERS 16
+#else
 #define NUM_PLAYERS 1
+#endif
 
 struct player
 {
