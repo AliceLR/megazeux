@@ -21,6 +21,7 @@
  */
 
 #include "counter.h"
+#include "distance.h"
 #include "game.h"
 #include "game_ops.h"
 #include "game_player.h"
@@ -36,6 +37,31 @@
 /**
  * Player functions for gameplay.
  */
+
+// Find nearest player using a distance function.
+int get_player_id_near_position(struct world *mzx_world, int x, int y, distance_fn_t distance_fn)
+{
+  int best_player_id = 0;
+  int best_dist = distance_fn(x, y,
+   mzx_world->players[best_player_id].x,
+   mzx_world->players[best_player_id].y);
+  int player_id;
+
+  for(player_id = 1; player_id < NUM_PLAYERS; player_id++)
+  {
+    int dist = distance_fn(x, y,
+     mzx_world->players[player_id].x,
+     mzx_world->players[player_id].y);
+
+    if(dist < best_dist)
+    {
+      best_dist = dist;
+      best_player_id = player_id;
+    }
+  }
+
+  return best_player_id;
+}
 
 void set_mesg(struct world *mzx_world, const char *str)
 {
