@@ -35,12 +35,17 @@ Goals
 The initial goal is to be able to play the original MegaZeux quartet mostly coherently:
 
 - If a player clone forms under ANY circumstances, this is a bug that MUST get squished.
+  - Even if the game has no chance of working unmodified, e.g. most sidescrollers.
 - If you can cause sequence breaks and/or softlocks by being several players, this is completely fine. These games do have softlocks in them anyway, and they're less of a softlock and more of a soft-game-over.
 - The side-scrolling sections in Catacombs are probably best left to the primary player to play them.
 
 The next goal is to allow game creators to make multiplayer-aware games that can be non-coop games.
 
-TODO: put some notes here.
+- Some status things should be able to be set as either shared among all players or per-player.
+  - That is, the ammo/lobombs/hibombs/health/lives/coins/gems/score and also the keys.
+  - This may also include stuff like spell effects.
+  - Being able to select these individually will be easier to deal with than trying to work out a suitable subset, although what would be easier would be to embrace an "all or nothing" approach for this.
+  - This whole feature is probably not going to be in the first release of multiplayer, as nice as it would be to have.
 
 Everything after that is more like a stretch goal. This includes:
 
@@ -64,11 +69,183 @@ This one's going to be hard to get right.
 
 ----------------------------------------------------------------------------
 
-[UNIMPLEMENTED] Counters
+[UNIMPLEMENTED] Robotic changes
 
-Some ideas:
+NOTE: Not all of this will be implemented in the first release of multiplayer.
+Also a lot of this is a draft that will most likely be awful in places if it were to be implemented, especially when it comes to PLAYEREVENTINDEX.
 
-TODO. There's definitely ideas to go into here, but this text file has a lot of others I need to get off my chest. --GM
+There needs to be a way to handle specific players from the Robotic side.
+
+- There will be a couple of counters per robot allowing one to target a specific player.
+  - PLAYERINDEX: Defaults to -1. Set this to a non-negative integer to target a specific player.
+  - PLAYEREVENTINDEX: Defaults to -1. Automatically gets set to a given player based on certain actions and events.
+    - When PLAYERINDEX is -1, it falls back on this under all circumstances.
+    - However, when PLAYERINDEX is not -1, it overrides PLAYEREVENTINDEX.
+  - The above names are tentative, especially the PLAYEREVENTINDEX one, and honestly all the new counter names here will be tentative.
+
+- The following special counters will also be provided:
+  - PLAYERNEARESTINDEX (read-only): Indicates the index of the player nearest to this robot.
+
+- The following global counters will also be provided:
+  - PLAYERCOUNT (read-only?): Indicates the number of players in this game.
+
+The rationale for using index counters rather than direct access is because it's quite likely that one would use a loop:
+
+    . "You could also do 'loop start/loop #' if you prefer"
+    set "playerindex" to "loopcount"
+    : "lp_draw_crosshairs"
+    set "local1" to "('playerindex'+32)"
+    set "spr('local1')_refxto " 0
+    set "spr('local1')_refy" to 27
+    set "spr('local1')_width" to 7
+    set "spr('local1')_height" to 5
+    put c?? Sprite "spr('local1')" at "('playerx'-3)" "('playery'-2)"
+    inc "playerindex" by 1
+    if "playerindex" < "playercount" then "lp_draw_crosshairs"
+    loop for "('playercount'-1)"
+    set "playerindex" to -1
+
+or handle an event:
+
+    : "playershot"
+    inc "pscore('playereventindex')" by 10
+    . "here, local2 is health"
+    dec "local2" by 1
+    if "local2" <= 0 then "die"
+    set "playereventindex" to -1
+    end
+    : "die"
+    if "playereventindex" < 0 then "die_noscore"
+    inc "pscore('playereventindex')" by 50
+    : "die_noscore"
+    explode 3
+
+or take matters into your own hands:
+
+    : "#chase_player"
+    if "playerdist" > 5 then "#return"
+    set "playerindex" "playernearestindex"
+    go SEEK for 1
+    set "playereventindex" to -1
+    goto "#return"
+
+Moving on...
+
+These counters are per-player, and should default to the nearest player (TODO: go with this? or use player 0? the former is more intuitive and harder to cheese, but the latter is probably going to be less wonky):
+
+- PLAYERFACEDIR
+- PLAYERLASTDIR
+- PLAYERX
+- PLAYERY
+- HORIZPLD
+- PLAYERDIST
+- VERTPLD
+
+(TODO: Should the distance counters set PLAYEREVENTINDEX when read, or is that a little bit too unexpected? Either way, the default is probably going to be the nearest player as that's what makes the most sense --GM)
+
+These directions need some way of distinguishing between players:
+
+- SEEK
+
+These conditions will need to set PLAYEREVENTINDEX (TODO: This is probably not going to be nice, perhaps this could be detected more intuitively --GM):
+
+- ALIGNED
+- ALIGNEDEW
+- ALIGNEDNS
+- TOUCHING [dir]
+
+These conditions will probably default to player 0:
+
+- DELPRESSSED
+- DOWNPRESSED
+- LEFTPRESSSED
+- RIGHTPRESSSED
+- SPACEPRESSSED
+- UPPRESSSED
+
+These labels will need to set PLAYEREVENTINDEX to either the player that caused them, or -1 if no player caused them:
+
+- BOMBED [#]
+- GOOPTOUCHED [#]
+- INVINCO [#]
+- PLAYERHIT [#]
+- PLAYERHURT [#]
+- PLAYERSHOT [#]
+- SENSORON
+- SHOT [#]
+- TOUCH [#]
+
+Ideally, returning from the subroutine versions of these should reset PLAYEREVENTINDEX to what it was before.
+
+These commands need some way of distinguishing between players:
+
+- EXCHANGE PLAYER POSITION
+- EXCHANGE PLAYER POSITION #
+- EXCHANGE PLAYER POSITION # DUPLICATE SELF
+- IF [dir] PLAYER [color] [thing] [param] "label"
+- PUT [color] [thing] [param] [dir] PLAYER
+- REL PLAYER
+- REL PLAYER FIRST
+- REL PLAYER LAST
+- RESTORE PLAYER POSITION
+- RESTORE PLAYER POSITION #
+- RESTORE PLAYER POSITION # DUPLICATE SELF
+- SAVE PLAYER POSITION
+- SAVE PLAYER POSITION #
+- SEND [dir] PLAYER "label"
+
+These commands merge all players regardless:
+
+- TELEPORT PLAYER "string" # #
+
+These commands default to merging all players:
+
+These commands default to merging all players UNLESS someone caused a touch or *shot action:
+
+- DIE ITEM
+- PUT PLAYER # #
+- PUT PLAYER [dir]
+
+These commands default to affecting all players, but may be performed on a player-by-player basis:
+
+- LOCKPLAYER
+- LOCKPLAYER ATTACK
+- LOCKPLAYER EW
+- LOCKPLAYER NS
+- UNLOCKPLAYER
+- PLAYER BULLETCOLOR [color]
+- PLAYER BULLETE [char]
+- PLAYER BULLETN [char]
+- PLAYER BULLETS [char]
+- PLAYER BULLETW [char]
+- PLAYER CHAR [dir] [char]
+- PLAYER CHAR [char]
+- PLAYERCOLOR [color]
+
+These counters default to shared, but may be made per-player in a multiplayer-aware game:
+
+- AMMO
+- COINS
+- GEMS
+- HEALTH
+- HIBOMBS
+- INVINCO
+- LOBOMBS
+- LIVES
+- SCORE
+- SPACELOCK
+
+Status counters (as set by STATUS COUNTER # "counter") are probably not going to have a per-player version - this would require overhauling how the ENTER menu works and in all seriousness you should actually be using a HUD considering they're not terribad to implement.
+
+These commands default to being shared, but may be made per-player in a multiplayer-aware game:
+
+- BLIND #
+- ENDLIFE
+- FIREWALKER #
+- WIND #
+
+The AVALANCHE command is a board-wide effect. It makes no sense to make this per-player.
+The FREEZETIME and SLOWTIME commands are likely to be too much of a pain to do on a per-player basis.
 
 ----------------------------------------------------------------------------
 
