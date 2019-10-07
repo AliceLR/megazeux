@@ -39,7 +39,8 @@
  */
 
 // Find nearest player using a distance function.
-int get_player_id_near_position(struct world *mzx_world, int x, int y, enum distance_type dtype)
+int get_player_id_near_position(struct world *mzx_world, int x, int y,
+ enum distance_type dtype)
 {
   int best_player_id = 0;
   distance_fn_t distance_fn = get_distance_type_function(dtype);
@@ -101,7 +102,8 @@ boolean player_can_save(struct world *mzx_world)
 
   if(cur_board->save_mode == CAN_SAVE_ON_SENSOR)
   {
-    offset = xy_to_offset(cur_board, mzx_world->players[0].x, mzx_world->players[0].y);
+    offset = xy_to_offset(cur_board,
+     mzx_world->players[0].x, mzx_world->players[0].y);
 
     if(cur_board->level_under_id[offset] != SENSOR)
       return false;
@@ -619,7 +621,8 @@ static void open_chest(struct world *mzx_world, int chest_x, int chest_y)
   cur_board->level_param[offset] = CHEST_EMPTY;
 }
 
-static void place_one_player(struct world *mzx_world, int player_id, int x, int y, int dir)
+static void place_one_player(struct world *mzx_world, int player_id,
+ int x, int y, int dir)
 {
   struct board *src_board = mzx_world->current_board;
   struct player *player = &mzx_world->players[player_id];
@@ -640,10 +643,11 @@ static void place_one_player(struct world *mzx_world, int player_id, int x, int 
   player->separated = true;
 }
 
-// mzx_world->players[0].moved will be true if the player moved, otherwise false.
+// player->moved will be true if the player moved, otherwise false.
 // This function is guaranteed to keep the player position correctly updated;
 // using find_player after using this function is not necessary.
-void grab_item_for_player(struct world *mzx_world, int player_id, int item_x, int item_y, int src_dir)
+void grab_item_for_player(struct world *mzx_world, int player_id,
+ int item_x, int item_y, int src_dir)
 {
   // "src_dir" is the direction from the player to this object.
   struct board *cur_board = mzx_world->current_board;
@@ -860,7 +864,8 @@ void grab_item_for_player(struct world *mzx_world, int player_id, int item_x, in
 
     case TRANSPORT:
     {
-      if(!transport(mzx_world, item_x, item_y, src_dir, PLAYER, player_id, 0, 1))
+      if(!transport(mzx_world, item_x, item_y, src_dir,
+       PLAYER, player_id, 0, 1))
       {
         // The player moved, so we need to erase the old player and find the new
         // one. The under player vars were updated as part of the transport, so
@@ -870,7 +875,9 @@ void grab_item_for_player(struct world *mzx_world, int player_id, int item_x, in
         int under_player_param = mzx_world->under_player_param;
         int player_last_dir = cur_board->player_last_dir;
 
-        id_remove_top(mzx_world, mzx_world->players[player_id].x, mzx_world->players[player_id].y);
+        id_remove_top(mzx_world,
+         mzx_world->players[player_id].x,
+         mzx_world->players[player_id].y);
         mzx_world->under_player_id = under_player_id;
         mzx_world->under_player_color = under_player_color;
         mzx_world->under_player_param = under_player_param;
@@ -1039,13 +1046,15 @@ void grab_item_for_player(struct world *mzx_world, int player_id, int item_x, in
   return;
 }
 
-// mzx_world->players[0].moved will be true if the player moved, otherwise false.
+// player->moved will be true if the player moved, otherwise false.
 // This function is guaranteed to keep the player position correctly updated;
 // using find_player after using this function is not necessary.
 void move_one_player(struct world *mzx_world, int player_id, int dir)
 {
   struct player *player = &mzx_world->players[player_id];
-  struct player *src_player = (player->separated ? player : &mzx_world->players[0]);
+  struct player *src_player = (player->separated
+   ? player
+   : &mzx_world->players[0]);
   struct board *src_board = mzx_world->current_board;
   // Dir is from 0 to 3
   int player_x = src_player->x;
