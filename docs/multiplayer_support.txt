@@ -56,10 +56,11 @@ This one's going to be hard to get right.
 ? Should each player be presented as a virtual joystick?
   - The joystick code could do with less pain, not more.
 ? Should each player be presented as its own keyboard? mouse? both?
-? Do we separate (up|down|left|right|space|del)pressed from their respective keys and then have some way to map these to the respective players?
+? Do we separate (up|down|left|right|space|del|ins)pressed from their respective keys and then have some way to map these to the respective players?
   + This is probably going to have to happen regardless.
-? Do we have extra virtual keys for (up|down|left|right|space|del)?
+? Do we have extra virtual keys for (up|down|left|right|space|del|ins)?
   ? Do we also have an extra one for insert, or do we all share that button, or do we leave that to player 0?
+    + Some games distinguish between lobombs and hibombs, so there's value in having this selectable per-player
 
 ----------------------------------------------------------------------------
 
