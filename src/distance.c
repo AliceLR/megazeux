@@ -38,3 +38,33 @@ int distance_min_axis(int x0, int y0, int x1, int y1)
   int ady = abs(y0 - y1);
   return (adx < ady ? adx : ady);
 }
+
+// x-only distance (adx)
+int distance_x_only(int x0, int y0, int x1, int y1)
+{
+  int adx = abs(x0 - x1);
+  return adx;
+}
+
+// y-only distance (ady)
+int distance_y_only(int x0, int y0, int x1, int y1)
+{
+  int ady = abs(y0 - y1);
+  return ady;
+}
+
+distance_fn_t get_distance_type_function(enum distance_type dtype)
+{
+  switch(dtype)
+  {
+    default:
+    case DISTANCE_MANHATTAN:
+      return distance_manhattan;
+    case DISTANCE_MIN_AXIS:
+      return distance_min_axis;
+    case DISTANCE_X_ONLY:
+      return distance_x_only;
+    case DISTANCE_Y_ONLY:
+      return distance_y_only;
+  }
+}

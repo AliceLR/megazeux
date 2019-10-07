@@ -39,9 +39,10 @@
  */
 
 // Find nearest player using a distance function.
-int get_player_id_near_position(struct world *mzx_world, int x, int y, distance_fn_t distance_fn)
+int get_player_id_near_position(struct world *mzx_world, int x, int y, enum distance_type dtype)
 {
   int best_player_id = 0;
+  distance_fn_t distance_fn = get_distance_type_function(dtype);
   int best_dist = distance_fn(x, y,
    mzx_world->players[best_player_id].x,
    mzx_world->players[best_player_id].y);

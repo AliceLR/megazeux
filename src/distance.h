@@ -22,9 +22,20 @@
 #ifndef __DISTANCE_H
 #define __DISTANCE_H
 
+enum distance_type
+{
+  DISTANCE_MANHATTAN = 0,
+  DISTANCE_MIN_AXIS,
+  DISTANCE_X_ONLY,
+  DISTANCE_Y_ONLY,
+};
+
 typedef int (*distance_fn_t)(int x0, int y0, int x1, int y1);
 
 int distance_manhattan(int x0, int y0, int x1, int y1);
 int distance_min_axis(int x0, int y0, int x1, int y1);
+int distance_x_only(int x0, int y0, int x1, int y1);
+int distance_y_only(int x0, int y0, int x1, int y1);
+distance_fn_t get_distance_type_function(enum distance_type dtype);
 
 #endif // __DISTANCE_H

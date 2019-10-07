@@ -33,7 +33,7 @@ __M_BEGIN_DECLS
 CORE_LIBSPEC void find_one_player(struct world *mzx_world, int player_id);
 CORE_LIBSPEC void find_player(struct world *mzx_world);
 
-int get_player_id_near_position(struct world *mzx_world, int x, int y, distance_fn_t distance_fn);
+int get_player_id_near_position(struct world *mzx_world, int x, int y, enum distance_type dtype);
 
 void set_mesg(struct world *mzx_world, const char *str);
 void set_mesg_direct(struct board *src_board, const char *str);
