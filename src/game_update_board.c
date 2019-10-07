@@ -798,6 +798,10 @@ void update_board(context *ctx)
               int new_x, new_y;
               current_color = level_color[level_offset];
               // Clear cycle
+              // BUG: This leaves the lowest cycle count bit set, which can't
+              // be fixed right now (compatibility). Seems like Alexis planned
+              // to extend the speed range in 2.00 but didn't fully implement
+              // it; the param dialog previously had the wrong bound too...
               current_param &= 0xC7;
 
               // Put slimes all around
