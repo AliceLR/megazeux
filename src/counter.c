@@ -37,10 +37,12 @@
 #include "configure.h"
 #include "counter.h"
 #include "data.h"
+#include "distance.h"
 #include "error.h"
 #include "event.h"
 #include "fsafeopen.h"
 #include "game_ops.h"
+#include "game_player.h"
 #include "graphics.h"
 #include "idarray.h"
 #include "idput.h"
@@ -3470,7 +3472,7 @@ static struct counter *find_counter(struct counter_list *counter_list,
 #endif
 }
 
-static int hurt_player(struct world *mzx_world, int value)
+static int health_hurt_player(struct world *mzx_world, int value)
 {
   // Must not be invincible
   if(get_counter(mzx_world, "INVINCO", 0) <= 0)
@@ -3514,7 +3516,7 @@ static int health_gateway(struct world *mzx_world, struct counter *counter,
   // Additionally, any decrement of >0 triggers this, so do it before the clamp.
   if((value < counter->value) && (mzx_world->version < VERSION_PORT) && is_dec)
   {
-    value = counter->value - hurt_player(mzx_world, counter->value - value);
+    value = counter->value - health_hurt_player(mzx_world, counter->value - value);
   }
 
   // Make sure health is within 0 and max health
@@ -3532,7 +3534,7 @@ static int health_gateway(struct world *mzx_world, struct counter *counter,
   // This only happens if the clamped value is less than the old value.
   if((value < counter->value) && (mzx_world->version >= VERSION_PORT))
   {
-    value = counter->value - hurt_player(mzx_world, counter->value - value);
+    value = counter->value - health_hurt_player(mzx_world, counter->value - value);
   }
 
   return value;
