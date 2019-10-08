@@ -1937,6 +1937,8 @@ void prefix_first_last_xy(struct world *mzx_world, int *fx, int *fy,
  int *lx, int *ly, int robotx, int roboty)
 {
   struct board *src_board = mzx_world->current_board;
+  const int player_id = 0; // TODO: Consider other players for MP-aware stuff
+  struct player *player = &mzx_world->players[player_id];
   int board_width = src_board->board_width;
   int board_height = src_board->board_height;
   int tfx = *fx;
@@ -1958,8 +1960,8 @@ void prefix_first_last_xy(struct world *mzx_world, int *fx, int *fy,
     case 6:
     {
       find_player(mzx_world);
-      tfx += mzx_world->players[0].x;
-      tfy += mzx_world->players[0].y;
+      tfx += player->x;
+      tfy += player->y;
       break;
     }
 
@@ -1992,8 +1994,8 @@ void prefix_first_last_xy(struct world *mzx_world, int *fx, int *fy,
     case 6:
     {
       find_player(mzx_world);
-      tlx += mzx_world->players[0].x;
-      tly += mzx_world->players[0].y;
+      tlx += player->x;
+      tly += player->y;
       break;
     }
 
@@ -2050,6 +2052,8 @@ void prefix_first_last_xy(struct world *mzx_world, int *fx, int *fy,
 void prefix_first_xy_var(struct world *mzx_world, int *fx, int *fy,
  int robotx, int roboty, int width, int height)
 {
+  const int player_id = 0; // TODO: Consider other players for MP-aware stuff
+  struct player *player = &mzx_world->players[player_id];
   int tfx = *fx;
   int tfy = *fy;
 
@@ -2067,8 +2071,8 @@ void prefix_first_xy_var(struct world *mzx_world, int *fx, int *fy,
     case 6:
     {
       find_player(mzx_world);
-      tfx += mzx_world->players[0].x;
-      tfy += mzx_world->players[0].y;
+      tfx += player->x;
+      tfy += player->y;
       break;
     }
 
@@ -2106,6 +2110,8 @@ void prefix_first_xy_var(struct world *mzx_world, int *fx, int *fy,
 void prefix_last_xy_var(struct world *mzx_world, int *lx, int *ly,
  int robotx, int roboty, int width, int height)
 {
+  const int player_id = 0; // TODO: Consider other players for MP-aware stuff
+  struct player *player = &mzx_world->players[player_id];
   int tlx = *lx;
   int tly = *ly;
 
@@ -2123,8 +2129,8 @@ void prefix_last_xy_var(struct world *mzx_world, int *lx, int *ly,
     case 6:
     {
       find_player(mzx_world);
-      tlx += mzx_world->players[0].x;
-      tly += mzx_world->players[0].y;
+      tlx += player->x;
+      tly += player->y;
       break;
     }
 
@@ -2162,6 +2168,8 @@ void prefix_last_xy_var(struct world *mzx_world, int *lx, int *ly,
 void prefix_mid_xy_var(struct world *mzx_world, int *mx, int *my,
  int robotx, int roboty, int width, int height)
 {
+  const int player_id = 0; // TODO: Consider other players for MP-aware stuff
+  struct player *player = &mzx_world->players[player_id];
   int tmx = *mx;
   int tmy = *my;
 
@@ -2177,8 +2185,8 @@ void prefix_mid_xy_var(struct world *mzx_world, int *mx, int *my,
     case 2:
     {
       find_player(mzx_world);
-      tmx += mzx_world->players[0].x;
-      tmy += mzx_world->players[0].y;
+      tmx += player->x;
+      tmy += player->y;
       break;
     }
 
@@ -2209,6 +2217,8 @@ void prefix_mid_xy_var(struct world *mzx_world, int *mx, int *my,
 // Unbounded version.
 void prefix_mid_xy_unbound(struct world *mzx_world, int *mx, int *my, int x, int y)
 {
+  const int player_id = 0; // TODO: Consider other players for MP-aware stuff
+  struct player *player = &mzx_world->players[player_id];
   int tmx = *mx;
   int tmy = *my;
 
@@ -2224,8 +2234,8 @@ void prefix_mid_xy_unbound(struct world *mzx_world, int *mx, int *my, int x, int
     case 2:
     {
       find_player(mzx_world);
-      tmx += mzx_world->players[0].x;
-      tmy += mzx_world->players[0].y;
+      tmx += player->x;
+      tmy += player->y;
       break;
     }
 
