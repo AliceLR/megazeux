@@ -191,13 +191,14 @@ static int playerdist_read(struct world *mzx_world,
 {
   struct board *src_board = mzx_world->current_board;
   struct robot *cur_robot = src_board->robot_list[id];
+  struct player *player;
   int thisx, thisy;
   int player_id;
 
   get_robot_position(cur_robot, &thisx, &thisy);
   player_id = get_player_id_near_position(
    mzx_world, thisx, thisy, DISTANCE_MANHATTAN);
-  struct player *player = &mzx_world->players[player_id];
+  player = &mzx_world->players[player_id];
 
   return abs(player->x - thisx) + abs(player->y - thisy);
 }
