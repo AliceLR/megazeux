@@ -573,8 +573,9 @@ static void hide_player(struct world *mzx_world)
 
 static void focus_on_player(struct world *mzx_world)
 {
-  int player_x   = mzx_world->players[0].x;
-  int player_y   = mzx_world->players[0].y;
+  struct player *player = &mzx_world->players[0];
+  int player_x   = player->x;
+  int player_y   = player->y;
   int viewport_x = mzx_world->current_board->viewport_x;
   int viewport_y = mzx_world->current_board->viewport_y;
   int top_x, top_y;
@@ -602,11 +603,12 @@ static void end_game(struct world *mzx_world)
     // Jump to given board
     if(mzx_world->current_board_id == endgame_board)
     {
-      id_remove_top(mzx_world, mzx_world->players[0].x,
-        mzx_world->players[0].y);
+      struct player *player = &mzx_world->players[0];
+      merge_all_players(mzx_world);
+      id_remove_top(mzx_world, player->x, player->y);
       id_place(mzx_world, endgame_x, endgame_y, PLAYER, 0, 0);
-      mzx_world->players[0].x = endgame_x;
-      mzx_world->players[0].y = endgame_y;
+      player->x = endgame_x;
+      player->y = endgame_y;
     }
     else
     {
@@ -653,6 +655,7 @@ static void end_game(struct world *mzx_world)
 static void end_life(struct world *mzx_world)
 {
   struct board *cur_board = mzx_world->current_board;
+  struct player *player = &mzx_world->players[0];
   int death_board = mzx_world->death_board;
 
   // Death
@@ -665,6 +668,8 @@ static void end_life(struct world *mzx_world)
   // Go somewhere else?
   if(death_board != DEATH_SAME_POS)
   {
+    merge_all_players(mzx_world);
+
     if(death_board == NO_DEATH_BOARD)
     {
       int player_restart_x = mzx_world->player_restart_x;
@@ -677,11 +682,10 @@ static void end_life(struct world *mzx_world)
         player_restart_y = cur_board->board_height - 1;
 
       // Return to entry x/y
-      id_remove_top(mzx_world, mzx_world->players[0].x, mzx_world->players[0].y);
-      merge_all_players(mzx_world);
+      id_remove_top(mzx_world, player->x, player->y);
       id_place(mzx_world, player_restart_x, player_restart_y, PLAYER, 0, 0);
-      mzx_world->players[0].x = player_restart_x;
-      mzx_world->players[0].y = player_restart_y;
+      player->x = player_restart_x;
+      player->y = player_restart_y;
     }
     else
     {
@@ -691,11 +695,10 @@ static void end_life(struct world *mzx_world)
         int death_x = mzx_world->death_x;
         int death_y = mzx_world->death_y;
 
-        id_remove_top(mzx_world, mzx_world->players[0].x, mzx_world->players[0].y);
-        merge_all_players(mzx_world);
+        id_remove_top(mzx_world, player->x, player->y);
         id_place(mzx_world, death_x, death_y, PLAYER, 0, 0);
-        mzx_world->players[0].x = death_x;
-        mzx_world->players[0].y = death_y;
+        player->x = death_x;
+        player->y = death_y;
       }
       else
       {
@@ -882,6 +885,7 @@ boolean draw_world(context *ctx, boolean is_title)
 {
   struct world *mzx_world = ctx->world;
   struct board *cur_board = mzx_world->current_board;
+  struct player *player = &mzx_world->players[0];
   struct config_info *conf = get_config();
   int time_remaining;
   int top_x;
@@ -915,8 +919,8 @@ boolean draw_world(context *ctx, boolean is_title)
   // Draw screen
   if(mzx_world->blind_dur > 0)
   {
-    int player_x = mzx_world->players[0].x;
-    int player_y = mzx_world->players[0].y;
+    int player_x = player->x;
+    int player_y = player->y;
 
     // Only draw the player during gameplay
     if(is_title)
@@ -971,8 +975,7 @@ boolean draw_world(context *ctx, boolean is_title)
   // Add debug box
   if(draw_debug_box && mzx_world->debug_mode)
   {
-    draw_debug_box(mzx_world, 60, 19, mzx_world->players[0].x,
-     mzx_world->players[0].y, 1);
+    draw_debug_box(mzx_world, 60, 19, player->x, player->y, 1);
   }
   return true;
 }
@@ -987,6 +990,7 @@ boolean update_resolve_target(struct world *mzx_world,
  boolean *fade_in_next_cycle)
 {
   struct board *src_board = mzx_world->current_board;
+  struct player *player = &mzx_world->players[0];
   int board_width = src_board->board_width;
   int board_height = src_board->board_height;
   char *level_id = src_board->level_id;
@@ -1080,8 +1084,8 @@ boolean update_resolve_target(struct world *mzx_world,
           if(d_id == PLAYER)
           {
             // Remove the player, maybe readd
-            mzx_world->players[0].x = x;
-            mzx_world->players[0].y = y;
+            player->x = x;
+            player->y = y;
             id_remove_top(mzx_world, x, y);
             // Grab again - might have revealed an entrance
             d_id = (enum thing)level_id[offset];
@@ -1152,12 +1156,11 @@ boolean update_resolve_target(struct world *mzx_world,
 
       if(i < 5)
       {
-        mzx_world->players[0].x = tmp_x[i];
-        mzx_world->players[0].y = tmp_y[i];
+        player->x = tmp_x[i];
+        player->y = tmp_y[i];
       }
 
-      id_place(mzx_world, mzx_world->players[0].x,
-       mzx_world->players[0].y, PLAYER, 0, 0);
+      id_place(mzx_world, player->x, player->y, PLAYER, 0, 0);
     }
     else
     {
@@ -1191,8 +1194,8 @@ boolean update_resolve_target(struct world *mzx_world,
      (saved_player_last_dir & 0xF0);
 
     // ...and if player ended up on ICE, set last dir pressed as well
-    if((enum thing)level_under_id[mzx_world->players[0].x +
-     (mzx_world->players[0].y * board_width)] == ICE)
+    if((enum thing)level_under_id[player->x +
+     (player->y * board_width)] == ICE)
     {
       src_board->player_last_dir = saved_player_last_dir;
     }
