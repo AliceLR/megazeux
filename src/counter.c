@@ -347,7 +347,7 @@ static int playery_read(struct world *mzx_world,
   player_id = get_player_id_near_position(
    mzx_world, thisx, thisy, DISTANCE_MANHATTAN);
 
-  return mzx_world->players[player_id].x;
+  return mzx_world->players[player_id].y;
 }
 
 static int this_char_read(struct world *mzx_world,
