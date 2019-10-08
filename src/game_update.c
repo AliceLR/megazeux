@@ -542,9 +542,8 @@ static void update_player_input(struct world *mzx_world)
 static boolean one_player_on_entrance(struct world *mzx_world, int player_id)
 {
   struct board *cur_board = mzx_world->current_board;
-  int player_x = mzx_world->players[0].x;
-  int player_y = mzx_world->players[0].y;
-  int offset = xy_to_offset(cur_board, player_x, player_y);
+  struct player *player = &mzx_world->players[player_id];
+  int offset = xy_to_offset(cur_board, player->x, player->y);
 
   int under_id = cur_board->level_under_id[offset];
 
