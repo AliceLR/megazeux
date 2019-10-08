@@ -475,6 +475,7 @@ void copy_layer_to_board(
 void copy_replace_one_player(struct world *mzx_world, int player_id, int x, int y)
 {
   struct board *cur_board = mzx_world->current_board;
+  struct player *player = &mzx_world->players[player_id];
   enum thing src_id;
   int offset;
 
@@ -490,9 +491,9 @@ void copy_replace_one_player(struct world *mzx_world, int player_id, int x, int 
   if(is_robot(src_id) || is_signscroll(src_id))
     clear_storage_object(cur_board, src_id, cur_board->level_param[offset]);
 
-  id_place(mzx_world, x, y, PLAYER, 0, 0);
-  mzx_world->players[0].x = x;
-  mzx_world->players[0].y = y;
+  id_place(mzx_world, x, y, PLAYER, 0, player_id);
+  player->x = x;
+  player->y = y;
 }
 
 // This goes here so the block buffer monstrosity can be inlined.
