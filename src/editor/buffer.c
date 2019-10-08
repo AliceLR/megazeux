@@ -287,9 +287,11 @@ int place_current_at_xy(struct world *mzx_world, struct buffer_info *buffer,
 
       if(buffer->id == PLAYER)
       {
-        id_remove_top(mzx_world, mzx_world->players[0].x, mzx_world->players[0].y);
-        mzx_world->players[0].x = x;
-        mzx_world->players[0].y = y;
+        int player_id = buffer->param;
+        struct player *player = &mzx_world->players[player_id];
+        id_remove_top(mzx_world, player->x, player->y);
+        player->x = x;
+        player->y = y;
       }
       else
 
