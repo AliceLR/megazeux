@@ -1448,9 +1448,11 @@ static void send_sensor_command(struct world *mzx_world, int id, int command)
   char *level_color = src_board->level_color;
   int board_width = src_board->board_width;
   int board_height = src_board->board_height;
-  int player_x = mzx_world->players[0].x;
-  int player_y = mzx_world->players[0].y;
-  int player_offset = player_x + (player_y * board_width);
+  // TODO: Get some testworlds for multiplayer sensor tests,
+  // then get all that jazz working.
+  // For singleplayer this should still work fine, touch wood.
+  struct player *player = &mzx_world->players[0];
+  int player_offset = player->x + (player->y * board_width);
   int offset;
   int move_status;
 
@@ -1459,12 +1461,12 @@ static void send_sensor_command(struct world *mzx_world, int id, int command)
   {
     // Don't bother for a char cmd
     under = 0;
-    if((level_under_id[player_offset] == 122) &&
+    if((level_under_id[player_offset] == SENSOR) &&
      (level_under_param[player_offset] == id))
     {
       under = 1;
-      x = player_x;
-      y = player_y;
+      x = player->x;
+      y = player->y;
     }
     else
     {
@@ -1473,7 +1475,7 @@ static void send_sensor_command(struct world *mzx_world, int id, int command)
       {
         for(x = 0; x < board_width; x++, offset++)
         {
-          if((level_id[offset] == 122) &&
+          if((level_id[offset] == SENSOR) &&
            (level_param[offset] == id))
           {
             found = 1;
@@ -1514,9 +1516,7 @@ static void send_sensor_command(struct world *mzx_world, int id, int command)
         {
           // Find player...
           find_player(mzx_world);
-          player_x = mzx_world->players[0].x;
-          player_y = mzx_world->players[0].y;
-          player_offset = player_x + (player_y * board_width);
+          player_offset = player->x + (player->y * board_width);
 
           move_status = HIT_PLAYER;
         }
@@ -1544,7 +1544,7 @@ static void send_sensor_command(struct world *mzx_world, int id, int command)
         mzx_world->under_player_id = level_under_id[player_offset];
         mzx_world->under_player_param = level_under_param[player_offset];
         mzx_world->under_player_color = level_under_color[player_offset];
-        level_under_id[player_offset] = 122;
+        level_under_id[player_offset] = SENSOR;
         level_under_param[player_offset] = id;
         level_under_color[player_offset] = level_color[x + (y * board_width)];
         id_remove_top(mzx_world, x, y);
