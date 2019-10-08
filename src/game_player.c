@@ -51,9 +51,8 @@ int get_player_id_near_position(struct world *mzx_world, int x, int y,
 
   for(player_id = 1; player_id < NUM_PLAYERS; player_id++)
   {
-    int dist = distance_fn(x, y,
-     mzx_world->players[player_id].x,
-     mzx_world->players[player_id].y);
+    struct player *player = &mzx_world->players[player_id];
+    int dist = distance_fn(x, y, player->x, player->y);
 
     if(dist < best_dist)
     {
@@ -102,8 +101,8 @@ boolean player_can_save(struct world *mzx_world)
 
   if(cur_board->save_mode == CAN_SAVE_ON_SENSOR)
   {
-    offset = xy_to_offset(cur_board,
-     mzx_world->players[0].x, mzx_world->players[0].y);
+    struct player *player = &mzx_world->players[0];
+    offset = xy_to_offset(cur_board, player->x, player->y);
 
     if(cur_board->level_under_id[offset] != SENSOR)
       return false;
@@ -163,8 +162,9 @@ void player_cheat_give_all(struct world *mzx_world)
 
 void player_cheat_zap(struct world *mzx_world)
 {
-  int player_x = mzx_world->players[0].x;
-  int player_y = mzx_world->players[0].y;
+  struct player *player = &mzx_world->players[0];
+  int player_x = player->x;
+  int player_y = player->y;
   int board_width = mzx_world->current_board->board_width;
   int board_height = mzx_world->current_board->board_height;
 
@@ -651,6 +651,7 @@ void grab_item_for_player(struct world *mzx_world, int player_id,
 {
   // "src_dir" is the direction from the player to this object.
   struct board *cur_board = mzx_world->current_board;
+  struct player *player = &mzx_world->players[player_id];
   int offset = xy_to_offset(cur_board, item_x, item_y);
   enum thing id = (enum thing)cur_board->level_id[offset];
   char param = cur_board->level_param[offset];
@@ -659,7 +660,7 @@ void grab_item_for_player(struct world *mzx_world, int player_id,
 
   char tmp[81];
 
-  mzx_world->players[player_id].moved = false;
+  player->moved = false;
 
   switch(id)
   {
@@ -876,13 +877,13 @@ void grab_item_for_player(struct world *mzx_world, int player_id,
         int player_last_dir = cur_board->player_last_dir;
 
         id_remove_top(mzx_world,
-         mzx_world->players[player_id].x,
-         mzx_world->players[player_id].y);
+         player->x,
+         player->y);
         mzx_world->under_player_id = under_player_id;
         mzx_world->under_player_color = under_player_color;
         mzx_world->under_player_param = under_player_param;
         cur_board->player_last_dir = (player_last_dir & 240) + src_dir + 1;
-        mzx_world->players[player_id].moved = true;
+        player->moved = true;
 
         // Figure out the player's new position so we don't get player clones.
         find_one_player(mzx_world, player_id);
