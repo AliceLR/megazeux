@@ -44,6 +44,9 @@ struct player
   // Did the player just move?
   boolean moved;
 
+  // Was the player on an entrance before the board scan?
+  boolean was_on_entrance;
+
   // For use in repeat delays for player movement
   int key_up_delay;
   int key_down_delay;

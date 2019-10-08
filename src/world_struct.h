@@ -172,9 +172,6 @@ struct world
   // Toggle used by certain built-in mechanics that update every other cycle.
   boolean current_cycle_odd;
 
-  // Was the player on an entrance before the board scan?
-  boolean player_was_on_entrance;
-
   // Was the player damaged while 'restart if hurt' is active?
   boolean was_zapped;
 

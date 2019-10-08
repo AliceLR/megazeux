@@ -536,10 +536,10 @@ static void update_player_input(struct world *mzx_world)
 }
 
 /**
- * Is the player on an entrance?
+ * Is a player on an entrance?
  */
 
-static boolean player_on_entrance(struct world *mzx_world)
+static boolean one_player_on_entrance(struct world *mzx_world, int player_id)
 {
   struct board *cur_board = mzx_world->current_board;
   int player_x = mzx_world->players[0].x;
@@ -745,18 +745,39 @@ void update_world(context *ctx, boolean is_title)
 
   if(!mzx_world->current_cycle_frozen)
   {
-    mzx_world->player_was_on_entrance = player_on_entrance(mzx_world);
+    int player_id;
+
+    for(player_id = 0; player_id < NUM_PLAYERS; player_id++)
+    {
+      // TODO: Handle a player pushing a later player onto an entrance
+      // Such a thing would have to be checked before updating player input
+      struct player *player = &mzx_world->players[player_id];
+      player->was_on_entrance = one_player_on_entrance(mzx_world, player_id);
+    }
+
     mzx_world->was_zapped = false;
 
     update_board(ctx);
 
-    if(player_on_entrance(mzx_world) && !mzx_world->player_was_on_entrance &&
-     !mzx_world->was_zapped)
+    for(player_id = 0; player_id < NUM_PLAYERS; player_id++)
     {
-      // Pushed onto an entrance
-      // There's often a pushed sound in this case, so clear the current SFX
-      sfx_clear_queue();
-      entrance(mzx_world, mzx_world->players[0].x, mzx_world->players[0].y);
+      struct player *player = &mzx_world->players[player_id];
+
+      if(one_player_on_entrance(mzx_world, player_id) &&
+       !player->was_on_entrance &&
+       !mzx_world->was_zapped)
+      {
+        struct player *primary_player = &mzx_world->players[0];
+
+        // Pushed onto an entrance
+        // There's often a pushed sound in this case, so clear the current SFX
+        sfx_clear_queue();
+        place_player_xy(mzx_world, player->x, player->y);
+        entrance(mzx_world, primary_player->x, primary_player->y);
+
+        // We took an entrance here, so bail
+        break;
+      }
     }
   }
   else
