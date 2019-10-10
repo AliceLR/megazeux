@@ -636,7 +636,7 @@ static int pe_slime_blob(struct world *mzx_world, int param)
 
   set_confirm_buttons(elements);
   elements[2] = construct_number_box(15, 6, "Spread speed: ",
-   1, 8, NUMBER_LINE, &speed);
+   1, 4, NUMBER_LINE, &speed);
   elements[3] = construct_check_box(15, 8, check_strings,
    2, 12, check_results);
 

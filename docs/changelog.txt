@@ -1,3 +1,16 @@
+GIT
+
+USERS
+
++ Fixed the upper bound of the slime blob's spread speed setting
+  when editing a slime blob. The valid range for this has only
+  ever been 1-4; selecting higher values would change the slime
+  blob's cycle counter and could corrupt its other settings.
++ Board list typing now allows non-alphanumeric keys like spaces
+  and periods. Typing a space first will match zero or more
+  prefixed spaces while seeking.
+
+
 September 23rd, 2019 - MZX 2.92b
 
 This release fixes several bugs, notably 3DS and Wii rendering
