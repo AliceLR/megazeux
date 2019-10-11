@@ -30,6 +30,11 @@
 #define SKIP_16BPP
 #endif
 
+#if defined(CONFIG_DJGPP)
+#define SKIP_16BPP
+#define SKIP_32BPP
+#endif
+
 // Not exactly clear how much Emscripten benefits from these and they're
 // doubling the number of renderers.
 #if defined(__EMSCRIPTEN__)

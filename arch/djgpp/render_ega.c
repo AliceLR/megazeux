@@ -358,7 +358,7 @@ static void ega_render_graph(struct graphics_data *graphics)
 }
 
 static void ega_render_cursor(struct graphics_data *graphics,
- Uint32 x, Uint32 y, Uint8 color, Uint8 lines, Uint8 offset)
+ Uint32 x, Uint32 y, Uint16 color, Uint8 lines, Uint8 offset)
 {
   struct ega_render_data *render_data = graphics->render_data;
   unsigned long dest = ega_vb_page[render_data->page];

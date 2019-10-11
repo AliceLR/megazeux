@@ -16,12 +16,13 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
 // This isn't really a mutex. Audio is handled via interrupt.
 
 #ifndef __MUTEX_DJGPP_H
 #define __MUTEX_DJGPP_H
 
-#include "compat.h"
+#include "../../src/compat.h"
 
 __M_BEGIN_DECLS
 
@@ -29,7 +30,7 @@ typedef struct
 {
   void (*cbfunc)(void *);
   void *cbdata;
-  bool flag;
+  boolean flag;
 } platform_mutex;
 
 static inline void platform_mutex_init(platform_mutex *mutex)
@@ -39,7 +40,7 @@ static inline void platform_mutex_init(platform_mutex *mutex)
   mutex->flag = false;
 }
 
-static inline bool platform_mutex_lock(platform_mutex *mutex)
+static inline boolean platform_mutex_lock(platform_mutex *mutex)
 {
   if (!mutex->flag)
   {
@@ -50,7 +51,7 @@ static inline bool platform_mutex_lock(platform_mutex *mutex)
     return false;
 }
 
-static inline bool platform_mutex_unlock(platform_mutex *mutex)
+static inline boolean platform_mutex_unlock(platform_mutex *mutex)
 {
   if(mutex->flag)
   {
