@@ -83,6 +83,7 @@
 
 #ifdef __EMSCRIPTEN__
 #define AUDIO_SAMPLE_RATE 48000
+#define AUTO_DECRYPT_WORLDS true
 #endif
 
 // End arch-specific config.
@@ -127,6 +128,10 @@
 
 #ifndef VIDEO_RATIO_DEFAULT
 #define VIDEO_RATIO_DEFAULT RATIO_MODERN_64_35
+#endif
+
+#ifndef AUTO_DECRYPT_WORLDS
+#define AUTO_DECRYPT_WORLDS false
 #endif
 
 #ifdef CONFIG_UPDATER
@@ -196,6 +201,7 @@ static const struct config_info user_conf_default =
   "saved.sav",                  // default_save_name
   4,                            // mzx_speed
   ALLOW_CHEATS_NEVER,           // allow_cheats
+  AUTO_DECRYPT_WORLDS,          // auto_decrypt_worlds
   false,                        // startup_editor
   false,                        // standalone_mode
   false,                        // no_titlescreen
@@ -774,6 +780,13 @@ static void config_set_allow_cheats(struct config_info *conf, char *name,
   }
 }
 
+static void config_set_auto_decrypt_worlds(struct config_info *conf,
+ char *name, char *value, char *extended_data)
+{
+  // FIXME sloppy validation
+  conf->auto_decrypt_worlds = !!strtoul(value, NULL, 10);
+}
+
 static void config_set_video_ratio(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
@@ -836,6 +849,7 @@ static const struct config_entry config_options[] =
   { "audio_buffer", config_set_audio_buffer, false },
   { "audio_buffer_samples", config_set_audio_buffer, false },
   { "audio_sample_rate", config_set_audio_freq, false },
+  { "auto_decrypt_worlds", config_set_auto_decrypt_worlds, false },
   { "enable_oversampling", config_enable_oversampling, false },
   { "enable_resizing", config_enable_resizing, false },
   { "force_bpp", config_force_bpp, false },

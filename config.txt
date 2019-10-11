@@ -271,6 +271,12 @@
 
 # allow_cheats = 0
 
+# Allow MegaZeux to automatically decrypt worlds without confirmation.
+# Set to 1 to enable this. This feature is disabled by default outside
+# of the HTML5 port.
+
+# auto_decrypt_worlds = 0
+
 # Enable standalone mode. This is a game mode meant to be used
 # for packaged standalone MegaZeux games. In standalone mode:
 # - ENTER_MENU, ESCAPE_MENU, HELP_MENU, F2_MENU and LOAD_MENU

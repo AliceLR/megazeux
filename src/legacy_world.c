@@ -29,6 +29,7 @@
 #include "legacy_board.h"
 #include "legacy_robot.h"
 
+#include "configure.h"
 #include "const.h"
 #include "counter.h"
 #include "error.h"
@@ -601,10 +602,11 @@ enum val_result validate_legacy_world_file(struct world *mzx_world,
  const char *file, boolean savegame)
 {
   enum val_result res = __validate_legacy_world_file(file, savegame);
+  struct config_info *conf = get_config();
 
   if(res == VAL_PROTECTED)
   {
-    if(!has_video_initialized() ||
+    if(conf->auto_decrypt_worlds || !has_video_initialized() ||
      !confirm(mzx_world, "This world may be password protected. Decrypt it?"))
     {
       // Decrypt and try again

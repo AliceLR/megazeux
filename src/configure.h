@@ -84,6 +84,7 @@ struct config_info
   char default_save_name[256];
   int mzx_speed;
   enum allow_cheats_type allow_cheats;
+  boolean auto_decrypt_worlds;
   boolean startup_editor;
   boolean standalone_mode;
   boolean no_titlescreen;
