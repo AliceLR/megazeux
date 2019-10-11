@@ -312,7 +312,6 @@ endif
 # function.
 #
 ifeq (${HAS_F_STACK_PROTECTOR},1)
-ifeq ($(or ${BUILD_GP2X},${BUILD_NDS},${BUILD_3DS},${BUILD_PSP},${BUILD_WII},${BUILD_EMSCRIPTEN}),)
 CFLAGS   += -fstack-protector-all
 CXXFLAGS += -fstack-protector-all
 endif

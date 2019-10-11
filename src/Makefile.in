@@ -172,6 +172,12 @@ core_cobjs += arch/3ds/event.o arch/3ds/audio.o
 core_cobjs += arch/3ds/keyboard.o
 endif
 
+ifeq (${BUILD_DJGPP},1)
+core_cobjs += arch/djgpp/event.o arch/djgpp/interrupt.o arch/djgpp/platform.o
+core_cobjs += arch/djgpp/audio.o
+core_cobjs += arch/djgpp/render_ega.o
+endif
+
 ifeq (${BUILD_SWITCH},1)
 # Switch libraries require C++
 LINK_CC := ${CXX}
@@ -361,7 +367,7 @@ endif
 
 else
 
-ifeq ($(or ${BUILD_WII},${BUILD_NDS},${BUILD_3DS}),)
+ifeq ($(or ${BUILD_WII},${BUILD_NDS},${BUILD_3DS},${BUILD_DJGPP}),)
 
 core_cobjs += ${core_obj}/platform_dummy.o
 

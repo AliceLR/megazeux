@@ -35,6 +35,7 @@ usage() {
 	echo "  android        Experimental Android port"
 	echo "  pandora        Experimental Pandora port"
 	echo "  emscripten     Experimental HTML5 (Emscripten) port"
+	echo "  djgpp          Experimental DOS port"
 	echo
 	echo "Supported <option> values (negatives can be used):"
 	echo
@@ -655,6 +656,13 @@ if [ "$PLATFORM" = "pandora" ]; then
 	echo "BUILD_PANDORA=1" >> platform.inc
 fi
 
+if [ "$PLATFORM" = "djgpp" ]; then
+	echo "#define CONFIG_DJGPP" >> src/config.h
+	echo "BUILD_DJGPP=1" >> platform.inc
+	echo "Disabling SDL ($PLATFORM)."
+	SDL="false"
+fi
+
 #
 # SDL was disabled above; must also disable SDL-dependent modules
 #
@@ -825,7 +833,7 @@ fi
 # Force-disable OpenGL and overlay renderers on PSP, GP2X, 3DS, NDS and Wii
 #
 if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" \
-  -o "$PLATFORM" = "3ds" \
+  -o "$PLATFORM" = "3ds" -o "$PLATFORM" = "djgpp" \
   -o "$PLATFORM" = "nds" -o "$PLATFORM" = "wii" ]; then
   	echo "Force-disabling OpenGL and overlay renderers."
 	GL="false"
@@ -908,6 +916,7 @@ fi
 if [ "$PLATFORM" = "gp2x" -o "$PLATFORM" = "nds" \
   -o "$PLATFORM" = "3ds"  -o "$PLATFORM" = "switch" \
   -o "$PLATFORM" = "android" -o "$PLATFORM" = "emscripten" \
+  -o "$PLATFORM" = "djgpp" \
   -o "$PLATFORM" = "psp"  -o "$PLATFORM" = "wii" ]; then
 	echo "Force-disabling modular build (nonsensical or unsupported)."
 	MODULAR="false"
@@ -916,7 +925,7 @@ fi
 #
 # Force disable networking (unsupported platform or no editor build)
 #
-if [ "$EDITOR" = "false" -o "$PLATFORM" = "nds" ]; then
+if [ "$EDITOR" = "false" -o "$PLATFORM" = "nds" -o "$PLATFORM" = "djgpp" ]; then
 	echo "Force-disabling networking (unsupported platform or editor disabled)."
 	NETWORK="false"
 fi
@@ -1151,7 +1160,7 @@ if [ "$ICON" = "true" ]; then
 	if [ "$PLATFORM" = "darwin" -o "$PLATFORM" = "darwin-devel" \
 	  -o "$PLATFORM" = "darwin-dist" -o "$PLATFORM" = "gp2x" \
 	  -o "$PLATFORM" = "psp" -o "$PLATFORM" = "nds" \
-	  -o "$PLATFORM" = "wii" ]; then
+	  -o "$PLATFORM" = "wii" -o "$PLATFORM" = "djgpp" ]; then
 		echo "Force-disabling icon branding (redundant)."
 		ICON="false"
 	fi
