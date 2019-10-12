@@ -40,7 +40,7 @@ int djgpp_display_adapter_detect(void)
   reg.x.ax = 0x4F00;
   __dpmi_int(0x10, &reg);
 
-  if (reg.x.ax == 0x004F)
+  if(reg.x.ax == 0x004F)
     return DISPLAY_ADAPTER_SVGA;
 
   // VIDEO - GET DISPLAY COMBINATION CODE (PS,VGA/MCGA)
@@ -48,12 +48,14 @@ int djgpp_display_adapter_detect(void)
   reg.x.ax = 0x1A00;
   __dpmi_int(0x10, &reg);
 
-  if (reg.h.al == 0x1A)
+  if(reg.h.al == 0x1A)
   {
-    switch (reg.h.bl) {
-      case 0x04: case 0x05:
+    switch(reg.h.bl) {
+      case 0x04:
+      case 0x05:
         return DISPLAY_ADAPTER_EGA;
-      case 0x07: case 0x08:
+      case 0x07:
+      case 0x08:
         return DISPLAY_ADAPTER_VGA;
       default:
         return DISPLAY_ADAPTER_UNSUPPORTED;
@@ -66,7 +68,7 @@ int djgpp_display_adapter_detect(void)
   reg.x.bx = 0xFF10;
   __dpmi_int(0x10, &reg);
 
-  if (reg.h.bh != 0xFF)
+  if(reg.h.bh != 0xFF)
     return DISPLAY_ADAPTER_EGA;
 
   return DISPLAY_ADAPTER_UNSUPPORTED;
@@ -90,7 +92,7 @@ int djgpp_malloc_boundary(int len_bytes, int boundary_bytes, int *selector)
   int len_segment = (len_bytes + 15) >> 4;
   int boundary_mask = ~((boundary_bytes - 1) >> 4);
   int segment = __dpmi_allocate_dos_memory((len_bytes + 7) >> 3, selector);
-  if (((segment + len_segment - 1) & boundary_mask) != (segment & boundary_mask))
+  if(((segment + len_segment - 1) & boundary_mask) != (segment & boundary_mask))
     segment += len_segment;
   return segment;
 }

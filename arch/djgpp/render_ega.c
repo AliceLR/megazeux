@@ -17,13 +17,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#define delay delay_dos
 #include <stdlib.h>
 #include <string.h>
 #include <pc.h>
+#include <dos.h>
 #include <dpmi.h>
 #include <sys/farptr.h>
 #include <sys/segments.h>
 #include <sys/movedata.h>
+#undef delay
 #include "../../src/graphics.h"
 #include "../../src/render.h"
 #include "../../src/renderers.h"
@@ -65,6 +68,7 @@ struct ega_render_data
 {
   unsigned char page;
   unsigned char smzx;
+  unsigned char smzx_swap_nibbles;
   unsigned char flags;
   unsigned char oldmode;
   unsigned short vbsel;
@@ -81,6 +85,21 @@ static void ega_set_14p(void)
   reg.x.ax = 0x1201;
   reg.h.bl = 0x30;
   __dpmi_int(0x10, &reg);
+}
+
+static void ega_set_smzx(void)
+{
+  // Super MegaZeux mode:
+  // In a nutshell, this sets bit 6 of the VGA Mode Control Register.
+  // Bit 6 controls the pixel width - if 1, the pixel width is doubled,
+  // creating one 8-bit pixel instead of two 4-bit pixels. HOWEVER,
+  // normally, this is only done in Mode 13h.
+  //
+  // nVidia and some Cirrus Logic cards support this; ATI cards
+  // also "support" it, but swap the order of joining the pixels
+  // and require a weird horizontal pixel shift value - see below.
+  outportb(0x3C0, 0x10);
+  outportb(0x3C0, 0x4C);
 }
 
 static void ega_set_16p(void)
@@ -186,8 +205,10 @@ static void ega_bank_text(void)
 
 static void ega_vsync(void)
 {
-  while (inportb(0x03DA) & 0x08);
-  while (!(inportb(0x03DA) & 0x08));
+  while(inportb(0x03DA) & 0x08)
+    ;
+  while(!(inportb(0x03DA) & 0x08))
+    ;
 }
 
 static boolean ega_init_video(struct graphics_data *graphics,
@@ -248,14 +269,24 @@ static boolean ega_check_video_mode(struct graphics_data *graphics,
   return true;
 }
 
+static boolean ega_is_ati_card(void)
+{
+  // TODO: I don't know if this actually works!
+  char ati_magic[9];
+  dosmemget(0xC0031, 9, ati_magic);
+  return memcmp("761295520", ati_magic, 9) == 0;
+}
+
 static boolean ega_set_video_mode(struct graphics_data *graphics,
  int width, int height, int depth, boolean fullscreen, boolean resize)
 {
   struct ega_render_data *render_data = graphics->render_data;
   int i;
+  boolean ati_card = ega_is_ati_card();
 
   render_data->page = 0;
-  render_data->smzx = 0;
+  render_data->smzx = graphics->screen_mode;
+  render_data->smzx_swap_nibbles = ati_card;
   render_data->lines = 255;
   render_data->offset = 255;
   render_data->x = 65535;
@@ -263,8 +294,17 @@ static boolean ega_set_video_mode(struct graphics_data *graphics,
 
   if(render_data->flags & TEXT_FLAGS_VGA)
     ega_set_14p();
-  // 80x25 color text mode
   ega_set_mode(0x03);
+  if(render_data->smzx)
+  {
+    ega_set_smzx();
+    if(ati_card)
+    {
+      // set horizontal pixel shift to Undefined (0.5 pixels, in theory)
+      outportb(0x3C0, 0x13);
+      outportb(0x3C0, 0x01);
+    }
+  }
   ega_blink_off();
   ega_cursor_off();
 
@@ -313,17 +353,26 @@ static void ega_update_colors(struct graphics_data *graphics,
 
   if(render_data->flags & TEXT_FLAGS_VGA)
   {
-    for(i = 0; i < count; i++)
-    {
-      outportb(0x03C8, i);
-      outportb(0x03C9, palette[i].r >> 2);
-      outportb(0x03C9, palette[i].g >> 2);
-      outportb(0x03C9, palette[i].b >> 2);
-    }
+    if(render_data->smzx && render_data->smzx_swap_nibbles)
+      for(i = 0; i < count; i++)
+      {
+        outportb(0x03C8, (i >> 4) | ((i & 0x0F) << 4));
+        outportb(0x03C9, palette[i].r >> 2);
+        outportb(0x03C9, palette[i].g >> 2);
+        outportb(0x03C9, palette[i].b >> 2);
+      }
+    else
+      for(i = 0; i < count; i++)
+      {
+        outportb(0x03C8, i);
+        outportb(0x03C9, palette[i].r >> 2);
+        outportb(0x03C9, palette[i].g >> 2);
+        outportb(0x03C9, palette[i].b >> 2);
+      }
   }
   else
   {
-    if(count > 64)
+    if(render_data->smzx)
       step = 17;
     else
       step = 1;

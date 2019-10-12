@@ -44,54 +44,13 @@ static inline boolean platform_mutex_lock(platform_mutex *mutex)
 
 static inline boolean platform_mutex_unlock(platform_mutex *mutex)
 {
-  if (*mutex)
+  if(*mutex)
   {
     enable();
     *mutex = 0;
   }
   return true;
 }
-
-/* typedef struct
-{
-  void (*cbfunc)(void *);
-  void *cbdata;
-  boolean flag;
-} platform_mutex;
-
-static inline void platform_mutex_init(platform_mutex *mutex)
-{
-  mutex->cbfunc = NULL;
-  mutex->cbdata = NULL;
-  mutex->flag = false;
-}
-
-static inline boolean platform_mutex_lock(platform_mutex *mutex)
-{
-  if (!mutex->flag)
-  {
-    mutex->flag = true;
-    return true;
-  }
-  else
-    return false;
-}
-
-static inline boolean platform_mutex_unlock(platform_mutex *mutex)
-{
-  if(mutex->flag)
-  {
-    mutex->flag = false;
-    if(mutex->cbfunc)
-    {
-      mutex->cbfunc(mutex->cbdata);
-      mutex->cbfunc = NULL;
-    }
-    return true;
-  }
-  else
-    return false;
-} */
 
 __M_END_DECLS
 

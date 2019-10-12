@@ -30,51 +30,54 @@
 
 #ifdef CONFIG_AUDIO
 
-struct sb_config {
-	// from environment variable, config, ...
-	Uint16 port;
-	Uint8 irq, dma8, dma16, type;
-	// from DSP
-	Uint8 version_major, version_minor;
-	// from allocation
-	int buffer_selector, buffer_segment;
-	Uint8 *buffer;
-	Uint8 buffer_block;
-	Uint8 old_21h;
-	_go32_dpmi_seginfo old_irq_handler;
+struct sb_config
+{
+  // from environment variable, config, ...
+  Uint16 port;
+  Uint8 irq, dma8, dma16, type;
+  // from DSP
+  Uint8 version_major, version_minor;
+  // from allocation
+  int buffer_selector, buffer_segment;
+  Uint8 *buffer;
+  Uint8 buffer_block;
+  // to restore on deinit
+  Uint8 old_21h;
+  _go32_dpmi_seginfo old_irq_handler;
 };
 
 static struct sb_config sb_cfg;
 
 static void audio_sb_fill_block(void)
 {
-    int block_size_bytes = audio.buffer_samples << 2;
-    int offset = (sb_cfg.buffer_block != 0) ? block_size_bytes : 0;
+  int block_size_bytes = audio.buffer_samples << 2;
+  int offset = (sb_cfg.buffer_block != 0) ? block_size_bytes : 0;
 
-    audio_callback((Sint16*) (sb_cfg.buffer + offset), block_size_bytes);
-    dosmemput(sb_cfg.buffer + offset, block_size_bytes, (sb_cfg.buffer_segment << 4) + offset);
+//  audio_callback((Sint16*) (sb_cfg.buffer + offset), block_size_bytes);
+  dosmemput(sb_cfg.buffer + offset, block_size_bytes, (sb_cfg.buffer_segment << 4) + offset);
 }
 
 static void audio_sb_next_block(void)
 {
-    audio_sb_fill_block();
-    sb_cfg.buffer_block ^= 1;
+  audio_sb_fill_block();
+  sb_cfg.buffer_block ^= 1;
 }
 
 static void audio_sb_interrupt(void)
 {
-    audio_sb_next_block();
-    inportb(sb_cfg.port + 0xF); // ack (sb)
-    outportb(0x20, 0x20); // ack (pic)
+  audio_sb_next_block();
+  inportb(sb_cfg.port + 0xF); // ack (sb)
+  outportb(0x20, 0x20); // ack (pic)
 }
 
 static void audio_sb_parse_env(struct sb_config *conf, char *env)
 {
   char *token;
   token = strtok(env, " ");
-  while (token != NULL)
+  while(token != NULL)
   {
-    switch (token[0]) {
+    switch(token[0])
+    {
       case 'A':
         conf->port = strtol(token + 1, NULL, 16);
         break;
@@ -97,13 +100,15 @@ static void audio_sb_parse_env(struct sb_config *conf, char *env)
 
 static Uint8 audio_sb_dsp_read(void)
 {
-  while (!(inportb(sb_cfg.port + 0xE) & 0x80));
+  while(!(inportb(sb_cfg.port + 0xE) & 0x80))
+    ;
   return inportb(sb_cfg.port + 0xA);
 }
 
 static void audio_sb_dsp_write(Uint8 val)
 {
-  while (inportb(sb_cfg.port + 0xC) & 0x80);
+  while(inportb(sb_cfg.port + 0xC) & 0x80)
+    ;
   outportb(sb_cfg.port + 0xC, val);
 }
 
@@ -113,11 +118,14 @@ static boolean audio_sb_dsp_detect(void)
   outportb(sb_cfg.port + 0x6, 1);
   usleep(3);
   outportb(sb_cfg.port + 0x6, 0);
-  for (i = 65535; i > 0; i--)
-    if (inportb(sb_cfg.port + 0xE) & 0x80) break;
-  if (i == 0) return false;
-  for (i = 65535; i > 0; i--)
-    if (inportb(sb_cfg.port + 0xA) == 0xAA) break;
+  for(i = 65535; i > 0; i--)
+    if(inportb(sb_cfg.port + 0xE) & 0x80)
+      break;
+  if(i == 0)
+    return false;
+  for(i = 65535; i > 0; i--)
+    if(inportb(sb_cfg.port + 0xA) == 0xAA)
+      break;
   return i > 0;
 }
 
@@ -126,33 +134,35 @@ void init_audio_platform(struct config_info *conf)
   _go32_dpmi_seginfo new_irq_handler;
   // Try to find a Sound Blaster
   char *sb_env = getenv("BLASTER");
-  if (sb_env != NULL)
+  if(sb_env != NULL)
     audio_sb_parse_env(&sb_cfg, sb_env);
-  if (sb_cfg.port != 0)
-    if (!audio_sb_dsp_detect())
+  if(sb_cfg.port != 0)
+    if(!audio_sb_dsp_detect())
       sb_cfg.port = 0;
-  if (sb_cfg.port != 0)
+  if(sb_cfg.port != 0)
   {
     audio_sb_dsp_write(0xE1); // version
     sb_cfg.version_major = audio_sb_dsp_read();
     sb_cfg.version_minor = audio_sb_dsp_read();
 
     // currently, we only support the SB16+
-    if (sb_cfg.version_major < 4)
+    if(sb_cfg.version_major < 4)
       sb_cfg.port = 0;
-    else if (sb_cfg.irq >= 8) // TODO: support IRQ8-15?
+    else if(sb_cfg.irq >= 8) // TODO: support IRQ8-15?
       sb_cfg.port = 0;
-    else if (sb_cfg.dma16 < 5 || sb_cfg.dma16 >= 8)
+    else if(sb_cfg.dma16 < 5 || sb_cfg.dma16 >= 8)
       sb_cfg.port = 0;
   }
 
-  if (sb_cfg.port != 0)
+  if(sb_cfg.port != 0)
   {
     // configure sample rate
-    if (audio.output_frequency < 5000) audio.output_frequency = 5000;
-    if (audio.output_frequency > 44100) audio.output_frequency = 44100;
+    if(audio.output_frequency < 5000)
+      audio.output_frequency = 5000;
+    else if(audio.output_frequency > 44100)
+      audio.output_frequency = 44100;
 
-    if (sb_cfg.version_major >= 4) // SB16
+    if(sb_cfg.version_major >= 4) // SB16
     {
       audio_sb_dsp_write(0x41); // set sampling rate
       audio_sb_dsp_write(audio.output_frequency >> 8);
@@ -160,7 +170,7 @@ void init_audio_platform(struct config_info *conf)
     }
 /*  else // pre-SB16
     {
-      if (audio.output_frequency > 22050) audio.output_frequency = 22050;
+      if(audio.output_frequency > 22050) audio.output_frequency = 22050;
       Uint8 time_constant = 256 - (500000 / audio.output_frequency);
       audio.output_frequency = 500000 / (256 - time_constant);
       audio_sb_dsp_write(0x40); // set time constant
@@ -169,8 +179,10 @@ void init_audio_platform(struct config_info *conf)
 
     // buffer_samples * 2 (stereo) * 2 (16-bit) * 2 (doubled)
     // each sample is 4 bytes
-    if (audio.buffer_samples > 4096) audio.buffer_samples = 4096;
-    else if (audio.buffer_samples <= 0) audio.buffer_samples = 2048;
+    if(audio.buffer_samples > 4096)
+      audio.buffer_samples = 4096;
+    else if(audio.buffer_samples <= 0)
+      audio.buffer_samples = 2048;
     audio.mix_buffer = malloc(audio.buffer_samples << 3);
 
     // allocate memory, without crossing 64K boundary
@@ -202,15 +214,22 @@ void init_audio_platform(struct config_info *conf)
     outportb(0xC0 + ((sb_cfg.dma16 & 3) << 2), (sb_cfg.buffer_segment >> 5) & 0xFF);
     outportb(0xC2 + ((sb_cfg.dma16 & 3) << 2), ((audio.buffer_samples << 2) - 1) & 0xFF);
     outportb(0xC2 + ((sb_cfg.dma16 & 3) << 2), ((audio.buffer_samples << 2) - 1) >> 8);
-    switch (sb_cfg.dma16 & 3) {
-	case 1: outportb(0x8B, (sb_cfg.buffer_segment >> 13)); break;
-	case 2: outportb(0x89, (sb_cfg.buffer_segment >> 13)); break;
-	case 3: outportb(0x8A, (sb_cfg.buffer_segment >> 13)); break;
+    switch(sb_cfg.dma16 & 3)
+    {
+      case 1:
+        outportb(0x8B, (sb_cfg.buffer_segment >> 13));
+        break;
+      case 2:
+        outportb(0x89, (sb_cfg.buffer_segment >> 13));
+        break;
+      case 3:
+        outportb(0x8A, (sb_cfg.buffer_segment >> 13));
+        break;
     }
     outportb(0xD4, (sb_cfg.dma16 & 3));
 
     // configure dsp
-    if (sb_cfg.version_major >= 4) // SB16
+    if(sb_cfg.version_major >= 4) // SB16
     {
       audio_sb_dsp_write(0xD1); // turn on speaker
 
@@ -225,7 +244,7 @@ void init_audio_platform(struct config_info *conf)
 void quit_audio_platform(void)
 {
   // Deinitialize audio
-  if (sb_cfg.port != 0)
+  if(sb_cfg.port != 0)
   {
     audio_sb_dsp_write(0xD3); // turn off speaker
 

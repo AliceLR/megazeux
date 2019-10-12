@@ -339,11 +339,13 @@ static boolean process_keypress(int key)
     return true;
   }
 
+#ifdef CONFIG_ENABLE_SCREENSHOTS
   if(ikey == IKEY_F12)
   {
     dump_screen();
     return true;
   }
+#endif
 
   if(status->key_repeat &&
    (status->key_repeat != IKEY_LSHIFT) &&
