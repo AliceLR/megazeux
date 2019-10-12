@@ -661,6 +661,8 @@ if [ "$PLATFORM" = "djgpp" ]; then
 	echo "BUILD_DJGPP=1" >> platform.inc
 	echo "Disabling SDL ($PLATFORM)."
 	SDL="false"
+	echo "Enabling stdio redirect ($PLATFORM)."
+	STDIO_REDIRECT="true"
 fi
 
 #

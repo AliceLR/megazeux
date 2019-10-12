@@ -22,11 +22,37 @@
 #ifndef __MUTEX_DJGPP_H
 #define __MUTEX_DJGPP_H
 
+#define delay delay_dos
+#include <dos.h>
+#undef delay
 #include "../../src/compat.h"
 
 __M_BEGIN_DECLS
 
-typedef struct
+typedef int platform_mutex;
+
+static inline void platform_mutex_init(platform_mutex *mutex)
+{
+  *mutex = 0;
+}
+
+static inline boolean platform_mutex_lock(platform_mutex *mutex)
+{
+  *mutex = disable();
+  return true;
+}
+
+static inline boolean platform_mutex_unlock(platform_mutex *mutex)
+{
+  if (*mutex)
+  {
+    enable();
+    *mutex = 0;
+  }
+  return true;
+}
+
+/* typedef struct
 {
   void (*cbfunc)(void *);
   void *cbdata;
@@ -65,7 +91,7 @@ static inline boolean platform_mutex_unlock(platform_mutex *mutex)
   }
   else
     return false;
-}
+} */
 
 __M_END_DECLS
 

@@ -199,10 +199,10 @@ static boolean ega_init_video(struct graphics_data *graphics,
   if(!render_data)
     return false;
 
-  display = detect_graphics();
-  if(display < DISPLAY_ADAPTER_EGA_MONO)
+  display = djgpp_display_adapter_detect();
+  if(display == DISPLAY_ADAPTER_UNSUPPORTED)
   {
-    warn("Insufficient display adapter detected: %s\n", disp_names[display]);
+    warn("Could not find EGA-compatible graphics card!");
     free(render_data);
     return false;
   }
@@ -221,7 +221,7 @@ static boolean ega_init_video(struct graphics_data *graphics,
   graphics->window_width = 640;
   graphics->window_height = 350;
 
-  if(display >= DISPLAY_ADAPTER_VGA_MONO)
+  if(display >= DISPLAY_ADAPTER_VGA)
     render_data->flags = TEXT_FLAGS_VGA;
   else
     render_data->flags = 0;

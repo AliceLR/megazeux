@@ -11,6 +11,7 @@ OBJCOPY = ${DJGPPBASE}-objcopy
 STRIP = ${DJGPPBASE}-strip
 
 BINEXT = .exe
+OPTIMIZE_CFLAGS = -Os
 
 # 387 emulation for FPU not have
 EXTRA_LIBS = -lemu

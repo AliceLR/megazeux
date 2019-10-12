@@ -23,6 +23,7 @@
 #include <pc.h>
 #include <dos.h>
 #include <dpmi.h>
+#include <crt0.h>
 #include <sys/segments.h>
 #include <sys/exceptn.h>
 #undef delay
@@ -30,85 +31,68 @@
 #include "../../src/platform.h"
 #include "platform_djgpp.h"
 
-static const int ps2_cards[] =
-{
-  DISPLAY_ADAPTER_NONE,
-  DISPLAY_ADAPTER_MDA,
-  DISPLAY_ADAPTER_CGA,
-  DISPLAY_ADAPTER_CGA,
-  DISPLAY_ADAPTER_EGA_COLOR,
-  DISPLAY_ADAPTER_EGA_MONO,
-  DISPLAY_ADAPTER_CGA,
-  DISPLAY_ADAPTER_VGA_MONO,
-  DISPLAY_ADAPTER_VGA_COLOR,
-  DISPLAY_ADAPTER_CGA,
-  DISPLAY_ADAPTER_MCGA_COLOR,
-  DISPLAY_ADAPTER_MCGA_MONO,
-  DISPLAY_ADAPTER_MCGA_COLOR
-};
-
-const char *disp_names[] =
-{
-  "None",
-  "MDA",
-  "CGA",
-  "EGA mono",
-  "EGA",
-  "VGA mono",
-  "VGA+",
-  "MCGA mono",
-  "MCGA"
-};
-
-int detect_graphics(void)
+int djgpp_display_adapter_detect(void)
 {
   __dpmi_regs reg;
 
-  // Try calling VGA Identity Adapter function
+  // VESA SuperVGA BIOS (VBE) - GET SuperVGA INFORMATION
+  // Generally supported by SVGA cards
+  reg.x.ax = 0x4F00;
+  __dpmi_int(0x10, &reg);
+
+  if (reg.x.ax == 0x004F)
+    return DISPLAY_ADAPTER_SVGA;
+
+  // VIDEO - GET DISPLAY COMBINATION CODE (PS,VGA/MCGA)
+  // Generally supported by VGA cards
   reg.x.ax = 0x1A00;
   __dpmi_int(0x10, &reg);
 
-  // Do we have PS/2 video BIOS?
-  if(reg.h.al == 0x1A)
+  if (reg.h.al == 0x1A)
   {
-    // BL > 0x0C => CGA hardware
-    if(reg.h.bl > 0x0C)
-      return DISPLAY_ADAPTER_CGA;
-    return ps2_cards[reg.h.bl];
-  }
-  else
-  {
-    // Set alternate function service
-    reg.h.ah = 0x12;
-    // Set to return EGA information
-    reg.x.bx = 0x0010;
-    __dpmi_int(0x10, &reg);
-    // Is EGA there?
-    if(reg.x.bx != 0x0010)
-    {
-      // Since we have EGA BIOS, get details
-      reg.h.ah = 0x12;
-      reg.h.bl = 0x10;
-      __dpmi_int(0x10, &reg);
-      // Do we have color EGA?
-      if(!reg.h.bh)
-        return DISPLAY_ADAPTER_EGA_COLOR;
-      else
-        return DISPLAY_ADAPTER_EGA_MONO;
-    }
-    else
-    {
-      // Let's try equipment determination service
-      __dpmi_int(0x11, &reg);
-      switch(reg.h.al & 0x30)
-      {
-        // No graphics card at all? This is a stupid machine!
-        case 0x00: return DISPLAY_ADAPTER_NONE;
-        case 0x30: return DISPLAY_ADAPTER_MDA;
-        default: return DISPLAY_ADAPTER_CGA;
-      }
+    switch (reg.h.bl) {
+      case 0x04: case 0x05:
+        return DISPLAY_ADAPTER_EGA;
+      case 0x07: case 0x08:
+        return DISPLAY_ADAPTER_VGA;
+      default:
+        return DISPLAY_ADAPTER_UNSUPPORTED;
     }
   }
+
+  // VIDEO - ALTERNATE FUNCTION SELECT (PS, EGA, VGA, MCGA) - GET EGA INFO
+  // Generally supported by EGA cards
+  reg.h.ah = 0x12;
+  reg.x.bx = 0xFF10;
+  __dpmi_int(0x10, &reg);
+
+  if (reg.h.bh != 0xFF)
+    return DISPLAY_ADAPTER_EGA;
+
+  return DISPLAY_ADAPTER_UNSUPPORTED;
+}
+
+const char *disp_adapter_names[] =
+{
+  "Unsupported",
+  "EGA",
+  "VGA",
+  "SVGA"
+};
+
+const char *djgpp_display_adapter_name(int adapter)
+{
+  return disp_adapter_names[adapter];
+}
+
+int djgpp_malloc_boundary(int len_bytes, int boundary_bytes, int *selector)
+{
+  int len_segment = (len_bytes + 15) >> 4;
+  int boundary_mask = ~((boundary_bytes - 1) >> 4);
+  int segment = __dpmi_allocate_dos_memory((len_bytes + 7) >> 3, selector);
+  if (((segment + len_segment - 1) & boundary_mask) != (segment & boundary_mask))
+    segment += len_segment;
+  return segment;
 }
 
 #define TIMER_CLOCK  3579545
@@ -136,8 +120,10 @@ void delay(Uint32 ms)
 {
   ms += timer_ticks;
   while(timer_ticks < ms)
+  {
     if(yieldable)
       __dpmi_yield();
+  }
 }
 
 Uint32 get_ticks(void)

@@ -22,18 +22,14 @@
 
 enum
 {
-  DISPLAY_ADAPTER_NONE,
-  DISPLAY_ADAPTER_MDA,
-  DISPLAY_ADAPTER_CGA,
-  DISPLAY_ADAPTER_EGA_MONO,
-  DISPLAY_ADAPTER_EGA_COLOR,
-  DISPLAY_ADAPTER_VGA_MONO,
-  DISPLAY_ADAPTER_VGA_COLOR,
-  DISPLAY_ADAPTER_MCGA_MONO,
-  DISPLAY_ADAPTER_MCGA_COLOR
+  DISPLAY_ADAPTER_UNSUPPORTED,
+  DISPLAY_ADAPTER_EGA,
+  DISPLAY_ADAPTER_VGA,
+  DISPLAY_ADAPTER_SVGA
 };
 
-extern const char *disp_names[];
-int detect_graphics(void);
+int djgpp_display_adapter_detect(void);
+const char *djgpp_display_adapter_name(int adapter);
+int djgpp_malloc_boundary(int len_bytes, int boundary_bytes, int *selector);
 
 #endif // __PLATFORM_DJGPP_H
