@@ -88,6 +88,13 @@ static void ega_set_14p(void)
   __dpmi_int(0x10, &reg);
 }
 
+static void ega_set_page(int page)
+{
+  __dpmi_regs reg;
+  reg.x.ax = 0x0500 | page;
+  __dpmi_int(0x10, &reg);
+}
+
 static void ega_set_smzx(void)
 {
   // Super MegaZeux mode:
@@ -131,7 +138,7 @@ static void ega_cursor_off(void)
 {
   __dpmi_regs reg;
   reg.x.ax = 0x0103;
-  reg.x.cx = 0x1F00;
+  reg.x.cx = 0x3F00;
   __dpmi_int(0x10, &reg);
 }
 
@@ -464,7 +471,9 @@ static void ega_sync_screen(struct graphics_data *graphics)
     ega_bank_text();
     render_data->flags &= ~TEXT_FLAGS_CHR;
   }
-  // TODO: Page flip! Both text pages and character sets!
+  // TODO: Character set page flips.
+  ega_set_page(render_data->page);
+  render_data->page = (render_data->page + 1) & 3;
 }
 
 void render_ega_register(struct renderer *renderer)
