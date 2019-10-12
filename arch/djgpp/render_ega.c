@@ -68,7 +68,6 @@ static const unsigned long ega_vb_page[4] =
 struct ega_render_data
 {
   unsigned char page;
-  unsigned char smzx;
   unsigned char smzx_swap_nibbles;
   unsigned char flags;
   unsigned char oldmode;
@@ -293,7 +292,6 @@ static boolean ega_set_video_mode(struct graphics_data *graphics,
   boolean ati_card = ega_is_ati_card();
 
   render_data->page = 0;
-  render_data->smzx = graphics->screen_mode;
   render_data->smzx_swap_nibbles = ati_card;
   render_data->lines = 255;
   render_data->offset = 255;
@@ -303,7 +301,7 @@ static boolean ega_set_video_mode(struct graphics_data *graphics,
   if(render_data->flags & TEXT_FLAGS_VGA)
     ega_set_14p();
   ega_set_mode(0x03);
-  if(render_data->smzx)
+  if(graphics->screen_mode)
   {
     ega_set_smzx();
     if(ati_card)
@@ -361,7 +359,7 @@ static void ega_update_colors(struct graphics_data *graphics,
 
   if(render_data->flags & TEXT_FLAGS_VGA)
   {
-    if(render_data->smzx && render_data->smzx_swap_nibbles)
+    if(graphics->screen_mode && render_data->smzx_swap_nibbles)
       for(i = 0; i < count; i++)
       {
         outportb(0x03C8, (i >> 4) | ((i & 0x0F) << 4));
@@ -380,7 +378,7 @@ static void ega_update_colors(struct graphics_data *graphics,
   }
   else
   {
-    if(render_data->smzx)
+    if(graphics->screen_mode)
       step = 17;
     else
       step = 1;
