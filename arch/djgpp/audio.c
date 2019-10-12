@@ -1,6 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2010 Alan Williams <mralert@gmail.com>
+ * Copyright (C) 2019 Adrian Siekierka <kontakt@asie.pl>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -53,7 +54,7 @@ static void audio_sb_fill_block(void)
   int block_size_bytes = audio.buffer_samples << 2;
   int offset = (sb_cfg.buffer_block != 0) ? block_size_bytes : 0;
 
-//  audio_callback((Sint16*) (sb_cfg.buffer + offset), block_size_bytes);
+  audio_callback((Sint16*) (sb_cfg.buffer + offset), block_size_bytes);
   dosmemput(sb_cfg.buffer + offset, block_size_bytes, (sb_cfg.buffer_segment << 4) + offset);
 }
 

@@ -67,6 +67,7 @@ void render_xfb_register(struct renderer *renderer);
 #endif
 #if defined(CONFIG_DJGPP)
 void render_ega_register(struct renderer *renderer);
+void render_svga_register(struct renderer *renderer);
 #endif
 
 __M_END_DECLS

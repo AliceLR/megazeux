@@ -2,6 +2,7 @@
  *
  * Copyright (C) 1996 Greg Janson
  * Copyright (C) 2010 Alan Williams <mralert@gmail.com>
+ * Copyright (C) 2019 Adrian Siekierka <kontakt@asie.pl>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -23,6 +24,7 @@
 #include <pc.h>
 #include <dos.h>
 #include <dpmi.h>
+#include <go32.h>
 #include <crt0.h>
 #include <sys/segments.h>
 #include <sys/exceptn.h>
@@ -38,10 +40,17 @@ int djgpp_display_adapter_detect(void)
   // VESA SuperVGA BIOS (VBE) - GET SuperVGA INFORMATION
   // Generally supported by SVGA cards
   reg.x.ax = 0x4F00;
+  reg.x.di = __tb & 0xF;
+  reg.x.es = (__tb >> 4);
   __dpmi_int(0x10, &reg);
 
   if(reg.x.ax == 0x004F)
-    return DISPLAY_ADAPTER_SVGA;
+  {
+    struct vbe_info vbe;
+    dosmemget(__tb, sizeof(struct vbe_info), &vbe);
+    if (memcmp(vbe.signature, "VESA", 4) == 0)
+      return vbe.version >= 0x200 ? DISPLAY_ADAPTER_VBE20 : DISPLAY_ADAPTER_SVGA;
+  }
 
   // VIDEO - GET DISPLAY COMBINATION CODE (PS,VGA/MCGA)
   // Generally supported by VGA cards
@@ -79,7 +88,8 @@ const char *disp_adapter_names[] =
   "Unsupported",
   "EGA",
   "VGA",
-  "SVGA"
+  "SVGA",
+  "SVGA (VBE 2.0+)"
 };
 
 const char *djgpp_display_adapter_name(int adapter)

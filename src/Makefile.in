@@ -176,6 +176,7 @@ ifeq (${BUILD_DJGPP},1)
 core_cobjs += arch/djgpp/event.o arch/djgpp/interrupt.o arch/djgpp/platform.o
 core_cobjs += arch/djgpp/audio.o
 core_cobjs += arch/djgpp/render_ega.o
+core_cobjs += arch/djgpp/render_svga.o
 endif
 
 ifeq (${BUILD_SWITCH},1)

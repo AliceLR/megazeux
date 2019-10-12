@@ -31,7 +31,6 @@
 #endif
 
 #if defined(CONFIG_DJGPP)
-#define SKIP_16BPP
 #define SKIP_32BPP
 #endif
 
