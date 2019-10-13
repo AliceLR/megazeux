@@ -30,8 +30,9 @@
 #define SKIP_16BPP
 #endif
 
-#if defined(CONFIG_DJGPP)
-#define SKIP_32BPP
+#if defined(CONFIG_DJGPP) && !defined(CONFIG_DOS_SVGA)
+#define SKIP_8BPP
+#define SKIP_16BPP
 #endif
 
 // Not exactly clear how much Emscripten benefits from these and they're

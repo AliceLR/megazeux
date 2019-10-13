@@ -97,7 +97,9 @@ static const struct renderer_data renderers[] =
   { "xfb", render_xfb_register },
 #endif
 #if defined(CONFIG_DJGPP)
+#if defined(CONFIG_DOS_SVGA)
   { "svga", render_svga_register },
+#endif
   { "ega", render_ega_register },
 #endif
   { NULL, NULL }

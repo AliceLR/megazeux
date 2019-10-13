@@ -59,6 +59,7 @@ usage() {
 	echo "  --disable-modular       Disable dynamically shared objects."
 	echo "  --disable-libsdl2       Disable SDL 2.0 support (falls back on 1.2)."
 	echo "  --disable-sdl           Disables SDL dependencies and features."
+	echo "  --disable-dos-svga      On the DOS platform, disable SVGA software renderer."
 	echo "  --enable-egl            Enables EGL backend (if SDL disabled)."
 	echo "  --enable-pledge         Enable experimental OpenBSD pledge(2) support"
 	echo
@@ -182,6 +183,7 @@ STDIO_REDIRECT="false"
 GAMECONTROLLERDB="true"
 FPSCOUNTER="false"
 LAYER_RENDERING="true"
+DOS_SVGA="true"
 
 #
 # User may override above settings
@@ -408,6 +410,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--enable-fps" ]  && FPSCOUNTER="true"
 	[ "$1" = "--disable-fps" ] && FPSCOUNTER="false"
+
+	[ "$1" = "--enable-dos-svga" ]  && DOS_SVGA="true"
+	[ "$1" = "--disable-dos-svga" ] && DOS_SVGA="false"
 
 	if [ "$1" = "--help" ]; then
 		usage
@@ -663,6 +668,13 @@ if [ "$PLATFORM" = "djgpp" ]; then
 	SDL="false"
 	echo "Enabling stdio redirect ($PLATFORM)."
 	STDIO_REDIRECT="true"
+	if [ "$DOS_SVGA" = "true" ]; then
+		echo "#define CONFIG_DOS_SVGA" >> src/config.h
+		echo "BUILD_DOS_SVGA=1" >> platform.inc
+		echo "SVGA software renderer enabled."
+	else
+		echo "SVGA software renderer disabled."
+	fi
 fi
 
 #

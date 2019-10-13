@@ -176,7 +176,9 @@ ifeq (${BUILD_DJGPP},1)
 core_cobjs += arch/djgpp/event.o arch/djgpp/interrupt.o arch/djgpp/platform.o
 core_cobjs += arch/djgpp/audio.o
 core_cobjs += arch/djgpp/render_ega.o
+ifeq (${BUILD_DOS_SVGA},1)
 core_cobjs += arch/djgpp/render_svga.o
+endif
 endif
 
 ifeq (${BUILD_SWITCH},1)
@@ -218,6 +220,10 @@ render_layer_software = 0
 
 ifeq (${BUILD_RENDER_SOFT},1)
 core_cobjs += ${core_obj}/render_soft.o
+render_layer_software = 1
+endif
+
+ifeq (${BUILD_DOS_SVGA},1)
 render_layer_software = 1
 endif
 
