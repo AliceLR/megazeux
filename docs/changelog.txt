@@ -9,6 +9,10 @@ USERS
 + Board list typing now allows non-alphanumeric keys like spaces
   and periods. Typing a space first will match zero or more
   prefixed spaces while seeking.
++ Added the config setting "auto_decrypt_worlds". When set to 1,
+  this allows MegaZeux to automatically attempt to decrypt
+  protected worlds. For most platforms this option is disabled
+  by default.
 
 
 September 23rd, 2019 - MZX 2.92b
