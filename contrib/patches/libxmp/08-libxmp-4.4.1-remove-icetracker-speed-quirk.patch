@@ -1,0 +1,191 @@
+diff -Nrup libxmp-4.4.1-07/src/common.h libxmp-4.4.1/src/common.h
+--- libxmp-4.4.1-07/src/common.h	2019-10-17 08:40:52.034009792 +0200
++++ libxmp-4.4.1/src/common.h	2019-10-17 08:43:41.567011797 +0200
+@@ -206,9 +206,6 @@ struct ord_data {
+ 	int gvl;
+ 	int time;
+ 	int start_row;
+-#ifndef LIBXMP_CORE_PLAYER
+-	int st26_speed;
+-#endif
+ };
+ 
+ 
+@@ -345,9 +342,6 @@ struct player_data {
+ 		char *in_buffer;
+ 	} buffer_data;
+ 
+-#ifndef LIBXMP_CORE_PLAYER
+-	int st26_speed;			/* For IceTracker speed effect */
+-#endif
+ 	int filter;			/* Amiga led filter */
+ };
+ 
+diff -Nrup libxmp-4.4.1-07/src/effects.c libxmp-4.4.1/src/effects.c
+--- libxmp-4.4.1-07/src/effects.c	2019-10-17 08:40:52.034009792 +0200
++++ libxmp-4.4.1/src/effects.c	2019-10-17 08:42:59.083011294 +0200
+@@ -522,9 +522,6 @@ void libxmp_process_fx(struct context_da
+ 	    fx_s3m_speed:
+ 		if (fxp) {
+ 			p->speed = fxp;
+-#ifndef LIBXMP_CORE_PLAYER
+-			p->st26_speed = 0;
+-#endif
+ 		}
+ 		break;
+ 	case FX_S3M_BPM:	/* Set S3M BPM */
+@@ -873,24 +870,6 @@ void libxmp_process_fx(struct context_da
+ 		xc->porta.dir = -1;
+ 		break;
+ 
+-	/* Saga Musix says:
+-	 *
+-	 * "When both nibbles of an Fxx command are set, SoundTracker 2.6
+-	 * applies the both values alternatingly, first the high nibble,
+-	 * then the low nibble on the next row, then the high nibble again...
+-	 * If only the high nibble is set, it should act like if only the low
+-	 * nibble is set (i.e. F30 is the same as F03).
+-	 */
+-	case FX_ICE_SPEED:
+-		if (fxp) {
+-			if (LSN(fxp)) {
+-				p->st26_speed = (MSN(fxp) << 8) | LSN(fxp);
+-			} else {
+-				p->st26_speed = MSN(fxp);
+-			}
+-		}
+-		break;
+-
+ 	case FX_VOLSLIDE_UP:	/* Vol slide with uint8 arg */
+ 		if (HAS_QUIRK(QUIRK_FINEFX)) {
+ 			h = MSN(fxp);
+@@ -1016,7 +995,6 @@ void libxmp_process_fx(struct context_da
+ 	case FX_SPEED_CP:	/* Set speed and ... */
+ 		if (fxp) {
+ 			p->speed = fxp;
+-			p->st26_speed = 0;
+ 		}
+ 		/* fall through */
+ 	case FX_PER_CANCEL:	/* Cancel persistent effects */
+diff -Nrup libxmp-4.4.1-07/src/player.c libxmp-4.4.1/src/player.c
+--- libxmp-4.4.1-07/src/player.c	2019-10-17 08:40:52.034009792 +0200
++++ libxmp-4.4.1/src/player.c	2019-10-17 08:43:22.520011571 +0200
+@@ -1463,10 +1463,6 @@ static void update_from_ord_info(struct
+ 	p->gvol = oinfo->gvl;
+ 	p->current_time = oinfo->time;
+ 	p->frame_time = m->time_factor * m->rrate / p->bpm;
+-
+-#ifndef LIBXMP_CORE_PLAYER
+-	p->st26_speed = oinfo->st26_speed;
+-#endif
+ }
+ 
+ int xmp_start_player(xmp_context opaque, int rate, int format)
+@@ -1678,17 +1674,6 @@ int xmp_play_frame(xmp_context opaque)
+ 	if (p->frame == 0) {			/* first frame in row */
+ 		check_end_of_module(ctx);
+ 		read_row(ctx, mod->xxo[p->ord], p->row);
+-
+-#ifndef LIBXMP_CORE_PLAYER
+-		if (p->st26_speed) {
+-			if  (p->st26_speed & 0x10000) {
+-				p->speed = (p->st26_speed & 0xff00) >> 8;
+-			} else {
+-				p->speed = p->st26_speed & 0xff;
+-			}
+-			p->st26_speed ^= 0x10000;
+-		}
+-#endif
+ 	}
+ 
+ 	inject_event(ctx);
+diff -Nrup libxmp-4.4.1-07/src/scan.c libxmp-4.4.1/src/scan.c
+--- libxmp-4.4.1-07/src/scan.c	2019-10-17 08:40:52.034009792 +0200
++++ libxmp-4.4.1/src/scan.c	2019-10-17 08:43:15.917011493 +0200
+@@ -66,9 +66,6 @@ static int scan_module(struct context_da
+     int i, pat;
+     int has_marker;
+     struct ord_data *info;
+-#ifndef LIBXMP_CORE_PLAYER
+-    int st26_speed;
+-#endif
+ 
+     if (mod->len == 0)
+ 	return 0;
+@@ -91,9 +88,6 @@ static int scan_module(struct context_da
+ 
+     speed = mod->spd;
+     base_time = m->rrate;
+-#ifndef LIBXMP_CORE_PLAYER
+-    st26_speed = 0;
+-#endif
+ 
+     has_marker = HAS_QUIRK(QUIRK_MARKER);
+ 
+@@ -174,9 +168,6 @@ static int scan_module(struct context_da
+             info->bpm = bpm;
+             info->speed = speed;
+             info->time = time + m->time_factor * frame_count * base_time / bpm;
+-#ifndef LIBXMP_CORE_PLAYER
+-            info->st26_speed = st26_speed;
+-#endif
+         }
+ 
+ 	if (info->start_row == 0 && ord != 0) {
+@@ -278,9 +269,6 @@ static int scan_module(struct context_da
+ 			if (HAS_QUIRK(QUIRK_NOBPM) || p->flags & XMP_FLAGS_VBLANK || parm < 0x20) {
+ 			    if (parm > 0) {
+ 			        speed = parm;
+-#ifndef LIBXMP_CORE_PLAYER
+-			        st26_speed = 0;
+-#endif
+                             }
+ 			} else {
+ 			    time += m->time_factor * frame_count * base_time / bpm;
+@@ -297,16 +285,6 @@ static int scan_module(struct context_da
+ 		if (f2 == FX_SPEED_CP) {
+ 		    f2 = FX_S3M_SPEED;
+ 		}
+-
+-		/* ST2.6 speed processing */
+-
+-		if (f1 == FX_ICE_SPEED && p1) {
+-		    if (LSN(p1)) {
+-		        st26_speed = (MSN(p1) << 8) | LSN(p1);
+-		    } else {
+-			st26_speed = MSN(p1);
+-		    }
+-		}
+ #endif
+ 
+ 		if ((f1 == FX_S3M_SPEED && p1) || (f2 == FX_S3M_SPEED && p2)) {
+@@ -315,9 +293,6 @@ static int scan_module(struct context_da
+ 		        frame_count += row_count * speed;
+ 		        row_count  = 0;
+ 		        speed = parm;
+-#ifndef LIBXMP_CORE_PLAYER
+-		        st26_speed = 0;
+-#endif
+ 		    }
+ 		}
+ 
+@@ -439,19 +414,6 @@ static int scan_module(struct context_da
+ 		row = loop_row[loop_chn];
+ 		loop_chn = -1;
+ 	    }
+-
+-#ifndef LIBXMP_CORE_PLAYER
+-	    if (st26_speed) {
+-	        frame_count += row_count * speed;
+-	        row_count  = 0;
+-		if (st26_speed & 0x10000) {
+-			speed = (st26_speed & 0xff00) >> 8;
+-		} else {
+-			speed = st26_speed & 0xff;
+-		}
+-		st26_speed ^= 0x10000;
+-	    }
+-#endif
+ 	}
+ 
+ 	if (break_row && pdelay) {

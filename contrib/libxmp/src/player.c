@@ -1463,10 +1463,6 @@ static void update_from_ord_info(struct context_data *ctx)
 	p->gvol = oinfo->gvl;
 	p->current_time = oinfo->time;
 	p->frame_time = m->time_factor * m->rrate / p->bpm;
-
-#ifndef LIBXMP_CORE_PLAYER
-	p->st26_speed = oinfo->st26_speed;
-#endif
 }
 
 int xmp_start_player(xmp_context opaque, int rate, int format)
@@ -1678,17 +1674,6 @@ int xmp_play_frame(xmp_context opaque)
 	if (p->frame == 0) {			/* first frame in row */
 		check_end_of_module(ctx);
 		read_row(ctx, mod->xxo[p->ord], p->row);
-
-#ifndef LIBXMP_CORE_PLAYER
-		if (p->st26_speed) {
-			if  (p->st26_speed & 0x10000) {
-				p->speed = (p->st26_speed & 0xff00) >> 8;
-			} else {
-				p->speed = p->st26_speed & 0xff;
-			}
-			p->st26_speed ^= 0x10000;
-		}
-#endif
 	}
 
 	inject_event(ctx);

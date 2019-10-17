@@ -383,54 +383,16 @@ static int s3m_load(struct module_data *m, HIO_HANDLE * f, const int start)
 		m->quirk |= QUIRK_VSALL;
 	}
 
-#ifndef LIBXMP_CORE_PLAYER
 	switch (sfh.version >> 12) {
 	case 1:
-		snprintf(tracker_name, 40, "Scream Tracker %d.%02x",
-			 (sfh.version & 0x0f00) >> 8, sfh.version & 0xff);
 		m->quirk |= QUIRK_ST3BUGS;
-		break;
-	case 2:
-		snprintf(tracker_name, 40, "Imago Orpheus %d.%02x",
-			 (sfh.version & 0x0f00) >> 8, sfh.version & 0xff);
-		break;
-	case 3:
-		if (sfh.version == 0x3216) {
-			strcpy(tracker_name, "Impulse Tracker 2.14v3");
-		} else if (sfh.version == 0x3217) {
-			strcpy(tracker_name, "Impulse Tracker 2.14v5");
-		} else {
-			snprintf(tracker_name, 40, "Impulse Tracker %d.%02x",
-				 (sfh.version & 0x0f00) >> 8,
-				 sfh.version & 0xff);
-		}
 		break;
 	case 5:
-		snprintf(tracker_name, 40, "OpenMPT %d.%02x",
-			 (sfh.version & 0x0f00) >> 8, sfh.version & 0xff);
 		m->quirk |= QUIRK_ST3BUGS;
 		break;
-	case 4:
-		if (sfh.version != 0x4100) {
-			snprintf(tracker_name, 40, "Schism Tracker %d.%02x",
-				 (sfh.version & 0x0f00) >> 8,
-				 sfh.version & 0xff);
-			break;
-		}
-		/* fall through */
-	case 6:
-		snprintf(tracker_name, 40, "BeRoTracker %d.%02x",
-			 (sfh.version & 0x0f00) >> 8, sfh.version & 0xff);
-		break;
-	default:
-		snprintf(tracker_name, 40, "unknown (%04x)", sfh.version);
 	}
 
-	libxmp_set_type(m, "%s S3M", tracker_name);
-#else
 	libxmp_set_type(m, "Scream Tracker 3");
-	m->quirk |= QUIRK_ST3BUGS;
-#endif
 
 	MODULE_INFO();
 

@@ -66,9 +66,6 @@ static int scan_module(struct context_data *ctx, int ep, int chain)
     int i, pat;
     int has_marker;
     struct ord_data *info;
-#ifndef LIBXMP_CORE_PLAYER
-    int st26_speed;
-#endif
 
     if (mod->len == 0)
 	return 0;
@@ -91,9 +88,6 @@ static int scan_module(struct context_data *ctx, int ep, int chain)
 
     speed = mod->spd;
     base_time = m->rrate;
-#ifndef LIBXMP_CORE_PLAYER
-    st26_speed = 0;
-#endif
 
     has_marker = HAS_QUIRK(QUIRK_MARKER);
 
@@ -174,9 +168,6 @@ static int scan_module(struct context_data *ctx, int ep, int chain)
             info->bpm = bpm;
             info->speed = speed;
             info->time = time + m->time_factor * frame_count * base_time / bpm;
-#ifndef LIBXMP_CORE_PLAYER
-            info->st26_speed = st26_speed;
-#endif
         }
 
 	if (info->start_row == 0 && ord != 0) {
@@ -278,9 +269,6 @@ static int scan_module(struct context_data *ctx, int ep, int chain)
 			if (HAS_QUIRK(QUIRK_NOBPM) || p->flags & XMP_FLAGS_VBLANK || parm < 0x20) {
 			    if (parm > 0) {
 			        speed = parm;
-#ifndef LIBXMP_CORE_PLAYER
-			        st26_speed = 0;
-#endif
                             }
 			} else {
 			    time += m->time_factor * frame_count * base_time / bpm;
@@ -297,16 +285,6 @@ static int scan_module(struct context_data *ctx, int ep, int chain)
 		if (f2 == FX_SPEED_CP) {
 		    f2 = FX_S3M_SPEED;
 		}
-
-		/* ST2.6 speed processing */
-
-		if (f1 == FX_ICE_SPEED && p1) {
-		    if (LSN(p1)) {
-		        st26_speed = (MSN(p1) << 8) | LSN(p1);
-		    } else {
-			st26_speed = MSN(p1);
-		    }
-		}
 #endif
 
 		if ((f1 == FX_S3M_SPEED && p1) || (f2 == FX_S3M_SPEED && p2)) {
@@ -315,9 +293,6 @@ static int scan_module(struct context_data *ctx, int ep, int chain)
 		        frame_count += row_count * speed;
 		        row_count  = 0;
 		        speed = parm;
-#ifndef LIBXMP_CORE_PLAYER
-		        st26_speed = 0;
-#endif
 		    }
 		}
 
@@ -439,19 +414,6 @@ static int scan_module(struct context_data *ctx, int ep, int chain)
 		row = loop_row[loop_chn];
 		loop_chn = -1;
 	    }
-
-#ifndef LIBXMP_CORE_PLAYER
-	    if (st26_speed) {
-	        frame_count += row_count * speed;
-	        row_count  = 0;
-		if (st26_speed & 0x10000) {
-			speed = (st26_speed & 0xff00) >> 8;
-		} else {
-			speed = st26_speed & 0xff;
-		}
-		st26_speed ^= 0x10000;
-	    }
-#endif
 	}
 
 	if (break_row && pdelay) {

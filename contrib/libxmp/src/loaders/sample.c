@@ -25,56 +25,11 @@
 
 #ifndef LIBXMP_CORE_PLAYER
 
-/*
- * From the Audio File Formats (version 2.5)
- * Submitted-by: Guido van Rossum <guido@cwi.nl>
- * Last-modified: 27-Aug-1992
- *
- * The Acorn Archimedes uses a variation on U-LAW with the bit order
- * reversed and the sign bit in bit 0.  Being a 'minority' architecture,
- * Arc owners are quite adept at converting sound/image formats from
- * other machines, and it is unlikely that you'll ever encounter sound in
- * one of the Arc's own formats (there are several).
- */
-static const int8 vdic_table[128] = {
-	/*   0 */	  0,   0,   0,   0,   0,   0,   0,   0,
-	/*   8 */	  0,   0,   0,   0,   0,   0,   0,   0,
-	/*  16 */	  0,   0,   0,   0,   0,   0,   0,   0,
-	/*  24 */	  1,   1,   1,   1,   1,   1,   1,   1,
-	/*  32 */	  1,   1,   1,   1,   2,   2,   2,   2,
-	/*  40 */	  2,   2,   2,   2,   3,   3,   3,   3,
-	/*  48 */	  3,   3,   4,   4,   4,   4,   5,   5,
-	/*  56 */	  5,   5,   6,   6,   6,   6,   7,   7,
-	/*  64 */	  7,   8,   8,   9,   9,  10,  10,  11,
-	/*  72 */	 11,  12,  12,  13,  13,  14,  14,  15,
-	/*  80 */	 15,  16,  17,  18,  19,  20,  21,  22,
-	/*  88 */	 23,  24,  25,  26,  27,  28,  29,  30,
-	/*  96 */	 31,  33,  34,  36,  38,  40,  42,  44,
-	/* 104 */	 46,  48,  50,  52,  54,  56,  58,  60,
-	/* 112 */	 62,  65,  68,  72,  77,  80,  84,  91,
-	/* 120 */	 95,  98, 103, 109, 114, 120, 126, 127
-};
-
-
 /* Convert 7 bit samples to 8 bit */
 static void convert_7bit_to_8bit(uint8 *p, int l)
 {
 	for (; l--; p++) {
 		*p <<= 1;
-	}
-}
-
-/* Convert Archimedes VIDC samples to linear */
-static void convert_vidc_to_linear(uint8 *p, int l)
-{
-	int i;
-	uint8 x;
-
-	for (i = 0; i < l; i++) {
-		x = p[i];
-		p[i] = vdic_table[x >> 1];
-		if (x & 0x01)
-			p[i] *= -1;
 	}
 }
 
@@ -343,12 +298,6 @@ int libxmp_load_sample(struct module_data *m, HIO_HANDLE *f, int flags, struct x
 		convert_stereo_to_mono(xxs->data, xxs->len,
 					xxs->flg & XMP_SAMPLE_16BIT);
 		xxs->len /= 2;
-	}
-#endif
-
-#ifndef LIBXMP_CORE_PLAYER
-	if (flags & SAMPLE_FLAG_VIDC) {
-		convert_vidc_to_linear(xxs->data, xxs->len);
 	}
 #endif
 

@@ -522,9 +522,6 @@ void libxmp_process_fx(struct context_data *ctx, struct channel_data *xc, int ch
 	    fx_s3m_speed:
 		if (fxp) {
 			p->speed = fxp;
-#ifndef LIBXMP_CORE_PLAYER
-			p->st26_speed = 0;
-#endif
 		}
 		break;
 	case FX_S3M_BPM:	/* Set S3M BPM */
@@ -878,24 +875,6 @@ void libxmp_process_fx(struct context_data *ctx, struct channel_data *xc, int ch
 		xc->porta.dir = -1;
 		break;
 
-	/* Saga Musix says:
-	 *
-	 * "When both nibbles of an Fxx command are set, SoundTracker 2.6
-	 * applies the both values alternatingly, first the high nibble,
-	 * then the low nibble on the next row, then the high nibble again...
-	 * If only the high nibble is set, it should act like if only the low
-	 * nibble is set (i.e. F30 is the same as F03).
-	 */
-	case FX_ICE_SPEED:
-		if (fxp) {
-			if (LSN(fxp)) {
-				p->st26_speed = (MSN(fxp) << 8) | LSN(fxp);
-			} else {
-				p->st26_speed = MSN(fxp);
-			}
-		}
-		break;
-
 	case FX_VOLSLIDE_UP:	/* Vol slide with uint8 arg */
 		if (HAS_QUIRK(QUIRK_FINEFX)) {
 			h = MSN(fxp);
@@ -1021,7 +1000,6 @@ void libxmp_process_fx(struct context_data *ctx, struct channel_data *xc, int ch
 	case FX_SPEED_CP:	/* Set speed and ... */
 		if (fxp) {
 			p->speed = fxp;
-			p->st26_speed = 0;
 		}
 		/* fall through */
 	case FX_PER_CANCEL:	/* Cancel persistent effects */

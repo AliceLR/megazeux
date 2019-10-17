@@ -1,0 +1,14 @@
+diff -Nrup libxmp-4.4.1-orig/src/common.h libxmp-4.4.1/src/common.h
+--- libxmp-4.4.1-orig/src/common.h	2019-10-17 08:40:06.636009255 +0200
++++ libxmp-4.4.1/src/common.h	2019-10-17 08:40:17.285009381 +0200
+@@ -38,10 +38,6 @@ typedef unsigned long long uint64;
+ typedef signed long long int64;
+ #endif
+ 
+-#ifndef LIBXMP_CORE_PLAYER
+-#define LIBXMP_PAULA_SIMULATOR
+-#endif
+-
+ /* Constants */
+ #define PAL_RATE	250.0		/* 1 / (50Hz * 80us)		  */
+ #define NTSC_RATE	208.0		/* 1 / (60Hz * 80us)		  */
