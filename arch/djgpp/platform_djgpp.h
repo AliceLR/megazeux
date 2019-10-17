@@ -82,5 +82,9 @@ struct vbe_mode_info
 int djgpp_display_adapter_detect(void);
 const char *djgpp_display_adapter_name(int adapter);
 int djgpp_malloc_boundary(int len_bytes, int boundary_bytes, int *selector);
+boolean djgpp_push_enable_nearptr(void);
+boolean djgpp_pop_enable_nearptr(void);
+void djgpp_enable_dma(Uint8 port, Uint8 mode, int offset, int bytes);
+void djgpp_disable_dma(Uint8 port);
 
 #endif // __PLATFORM_DJGPP_H

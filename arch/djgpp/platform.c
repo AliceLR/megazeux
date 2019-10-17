@@ -26,12 +26,35 @@
 #include <dpmi.h>
 #include <go32.h>
 #include <crt0.h>
-#include <sys/segments.h>
 #include <sys/exceptn.h>
+#include <sys/nearptr.h>
+#include <sys/segments.h>
 #undef delay
 #include "../../src/util.h"
 #include "../../src/platform.h"
 #include "platform_djgpp.h"
+
+static int djgpp_nearptr_cnt = 0;
+
+boolean djgpp_push_enable_nearptr(void)
+{
+  if(djgpp_nearptr_cnt > 0)
+    return true;
+  if(!__djgpp_nearptr_enable())
+    return false;
+  djgpp_nearptr_cnt++;
+  return true;
+}
+
+boolean djgpp_pop_enable_nearptr(void)
+{
+  if(djgpp_nearptr_cnt <= 0)
+    return false;
+  if(djgpp_nearptr_cnt == 1)
+    __djgpp_nearptr_disable();
+  djgpp_nearptr_cnt--;
+  return true;
+}
 
 int djgpp_display_adapter_detect(void)
 {
@@ -105,6 +128,74 @@ int djgpp_malloc_boundary(int len_bytes, int boundary_bytes, int *selector)
   if(((segment + len_segment - 1) & boundary_mask) != (segment & boundary_mask))
     segment += len_segment;
   return segment;
+}
+
+static void djgpp_enable_dma16(Uint8 port, Uint8 mode, int offset, int bytes)
+{
+  int words = (bytes + 1) >> 1;
+  outportb(0xD4, 0x04 | (port & 3));
+  outportb(0xD8, 0x00);
+  outportb(0xD6, (mode & (~3)) | (port & 3));
+  outportb(0xC0 + ((port & 3) << 2), (offset >> 1) & 0xFF);
+  outportb(0xC0 + ((port & 3) << 2), (offset >> 9) & 0xFF);
+  outportb(0xC2 + ((port & 3) << 2), (words - 1) & 0xFF);
+  outportb(0xC2 + ((port & 3) << 2), (words - 1) >> 8);
+  switch(port & 3)
+  {
+    case 1:
+      outportb(0x8B, (offset >> 17));
+      break;
+    case 2:
+      outportb(0x89, (offset >> 17));
+      break;
+    case 3:
+      outportb(0x8A, (offset >> 17));
+      break;
+  }
+  outportb(0xD4, (port & 3));
+}
+
+static void djgpp_enable_dma8(Uint8 port, Uint8 mode, int offset, int bytes)
+{
+  outportb(0x0A, 0x04 | (port & 3));
+  outportb(0x0C, 0x00);
+  outportb(0x0B, (mode & (~3)) | (port & 3));
+  outportb(0x00 + ((port & 3) << 1), (offset) & 0xFF);
+  outportb(0x00 + ((port & 3) << 1), (offset >> 8) & 0xFF);
+  outportb(0x01 + ((port & 3) << 1), (bytes - 1) & 0xFF);
+  outportb(0x01 + ((port & 3) << 1), (bytes - 1) >> 8);
+  switch(port & 3)
+  {
+    case 0:
+      outportb(0x87, (offset >> 16));
+      break;
+    case 1:
+      outportb(0x83, (offset >> 16));
+      break;
+    case 2:
+      outportb(0x81, (offset >> 16));
+      break;
+    case 3:
+      outportb(0x82, (offset >> 16));
+      break;
+  }
+  outportb(0x0A, (port & 3));
+}
+
+void djgpp_enable_dma(Uint8 port, Uint8 mode, int offset, int bytes)
+{
+  if (port >= 4)
+    djgpp_enable_dma16(port, mode, offset, bytes);
+  else
+    djgpp_enable_dma8(port, mode, offset, bytes);
+}
+
+void djgpp_disable_dma(Uint8 port)
+{
+  if (port >= 4)
+    outportb(0xD4, 0x04 | (port & 3));
+  else
+    outportb(0x0A, 0x04 | (port & 3));
 }
 
 #define TIMER_CLOCK  3579545
@@ -219,4 +310,7 @@ void platform_quit(void)
     warn("Failed to unhook timer interrupt.");
   set_timer(timer_normal);
   enable();
+
+  while(djgpp_pop_enable_nearptr())
+    ;
 }

@@ -97,7 +97,7 @@ static boolean svga_init_video(struct graphics_data *graphics,
   if (graphics->bits_per_pixel != 8 && graphics->bits_per_pixel != 16)
     graphics->bits_per_pixel = 16;
 
-  if(!__djgpp_nearptr_enable())
+  if(!djgpp_push_enable_nearptr())
     return false;
 
   display = djgpp_display_adapter_detect();
@@ -152,7 +152,7 @@ static void svga_free_video(struct graphics_data *graphics)
 {
   struct svga_render_data *render_data = graphics->render_data;
   __dpmi_free_physical_address_mapping(&(render_data->mapping));
-  __djgpp_nearptr_disable();
+  djgpp_pop_enable_nearptr();
 }
 
 static boolean svga_check_video_mode(struct graphics_data *graphics, int width,

@@ -25,6 +25,7 @@
 #include <bios.h>
 #include <dpmi.h>
 #include <go32.h>
+#include <sys/nearptr.h>
 #undef delay
 #include "../../src/audio/audio.h"
 #include "platform_djgpp.h"
@@ -42,9 +43,13 @@ struct sb_config
   int buffer_selector, buffer_segment;
   Uint8 *buffer;
   Uint8 buffer_block;
-  // to restore on deinit
+  // driver-specific:
+  // - to restore on deinit
   Uint8 old_21h;
   _go32_dpmi_seginfo old_irq_handler;
+  // - if nearptr enabled
+  boolean nearptr_buffer_enabled;
+  __dpmi_meminfo nearptr_buffer_mapping;
 };
 
 static struct sb_config sb_cfg;
@@ -55,7 +60,8 @@ static void audio_sb_fill_block(void)
   int offset = (sb_cfg.buffer_block != 0) ? block_size_bytes : 0;
 
   audio_callback((Sint16*) (sb_cfg.buffer + offset), block_size_bytes);
-  dosmemput(sb_cfg.buffer + offset, block_size_bytes, (sb_cfg.buffer_segment << 4) + offset);
+  if(!sb_cfg.nearptr_buffer_enabled)
+    dosmemput(sb_cfg.buffer + offset, block_size_bytes, (sb_cfg.buffer_segment << 4) + offset);
 }
 
 static void audio_sb_next_block(void)
@@ -133,6 +139,7 @@ static boolean audio_sb_dsp_detect(void)
 void init_audio_platform(struct config_info *conf)
 {
   _go32_dpmi_seginfo new_irq_handler;
+  int buffer_size_bytes;
   // Try to find a Sound Blaster
   char *sb_env = getenv("BLASTER");
   if(sb_env != NULL)
@@ -146,7 +153,6 @@ void init_audio_platform(struct config_info *conf)
     sb_cfg.version_major = audio_sb_dsp_read();
     sb_cfg.version_minor = audio_sb_dsp_read();
 
-    // currently, we only support the SB16+
     if(sb_cfg.version_major < 4)
       sb_cfg.port = 0;
     else if(sb_cfg.irq >= 8) // TODO: support IRQ8-15?
@@ -169,9 +175,8 @@ void init_audio_platform(struct config_info *conf)
       audio_sb_dsp_write(audio.output_frequency >> 8);
       audio_sb_dsp_write(audio.output_frequency & 0xFF);
     }
-/*  else // pre-SB16
+    /* else // pre-SB16
     {
-      if(audio.output_frequency > 22050) audio.output_frequency = 22050;
       Uint8 time_constant = 256 - (500000 / audio.output_frequency);
       audio.output_frequency = 500000 / (256 - time_constant);
       audio_sb_dsp_write(0x40); // set time constant
@@ -184,13 +189,36 @@ void init_audio_platform(struct config_info *conf)
       audio.buffer_samples = 4096;
     else if(audio.buffer_samples <= 0)
       audio.buffer_samples = 2048;
+
+    buffer_size_bytes = audio.buffer_samples << 3;
+    sb_cfg.nearptr_buffer_enabled = djgpp_push_enable_nearptr();
+
     audio.mix_buffer = malloc(audio.buffer_samples << 3);
 
-    // allocate memory, without crossing 64K boundary
-    sb_cfg.buffer_segment = djgpp_malloc_boundary(audio.buffer_samples << 3, 65536, &sb_cfg.buffer_selector);
-    sb_cfg.buffer = malloc(audio.buffer_samples << 3);
-    memset(sb_cfg.buffer, 0, audio.buffer_samples << 3);
-    dosmemput(sb_cfg.buffer, audio.buffer_samples << 3, sb_cfg.buffer_segment << 4);
+    // allocate memory, without crossing 64K boundary, and clean it
+    sb_cfg.buffer_segment = djgpp_malloc_boundary(buffer_size_bytes, 65536, &sb_cfg.buffer_selector);
+    if(sb_cfg.nearptr_buffer_enabled)
+    {
+      sb_cfg.nearptr_buffer_mapping.address = sb_cfg.buffer_segment << 4;
+      sb_cfg.nearptr_buffer_mapping.size = buffer_size_bytes;
+      if(__dpmi_physical_address_mapping(&sb_cfg.nearptr_buffer_mapping) != 0)
+      {
+        sb_cfg.nearptr_buffer_enabled = false;
+        djgpp_pop_enable_nearptr();
+      }
+      else
+      {
+        sb_cfg.buffer = (Uint8*)(sb_cfg.nearptr_buffer_mapping.address + __djgpp_conventional_base);
+        memset(sb_cfg.buffer, 0, buffer_size_bytes);
+      }
+    }
+
+    if(!sb_cfg.nearptr_buffer_enabled)
+    {
+      sb_cfg.buffer = malloc(buffer_size_bytes);
+      memset(sb_cfg.buffer, 0, buffer_size_bytes);
+      dosmemput(sb_cfg.buffer, buffer_size_bytes, sb_cfg.buffer_segment << 4);
+    }
 
     // lock C irq handler
     // (TODO: rewrite handler in ASM?)
@@ -207,30 +235,10 @@ void init_audio_platform(struct config_info *conf)
     sb_cfg.old_21h = inportb(0x21);
     outportb(0x21, sb_cfg.old_21h & (~(1 << sb_cfg.irq)));
 
-    // configure dma
-    outportb(0xD4, 0x04 | (sb_cfg.dma16 & 3));
-    outportb(0xD8, 0x00);
-    outportb(0xD6, 0x58 | (sb_cfg.dma16 & 3));
-    outportb(0xC0 + ((sb_cfg.dma16 & 3) << 2), (sb_cfg.buffer_segment << 3) & 0xFF);
-    outportb(0xC0 + ((sb_cfg.dma16 & 3) << 2), (sb_cfg.buffer_segment >> 5) & 0xFF);
-    outportb(0xC2 + ((sb_cfg.dma16 & 3) << 2), ((audio.buffer_samples << 2) - 1) & 0xFF);
-    outportb(0xC2 + ((sb_cfg.dma16 & 3) << 2), ((audio.buffer_samples << 2) - 1) >> 8);
-    switch(sb_cfg.dma16 & 3)
-    {
-      case 1:
-        outportb(0x8B, (sb_cfg.buffer_segment >> 13));
-        break;
-      case 2:
-        outportb(0x89, (sb_cfg.buffer_segment >> 13));
-        break;
-      case 3:
-        outportb(0x8A, (sb_cfg.buffer_segment >> 13));
-        break;
-    }
-    outportb(0xD4, (sb_cfg.dma16 & 3));
+    djgpp_enable_dma(sb_cfg.dma16, 0x58, sb_cfg.buffer_segment << 4, buffer_size_bytes);
 
     // configure dsp
-    if(sb_cfg.version_major >= 4) // SB16
+    if(sb_cfg.version_major >= 4)
     {
       audio_sb_dsp_write(0xD1); // turn on speaker
 
@@ -255,10 +263,17 @@ void quit_audio_platform(void)
     // undo vector change
     _go32_dpmi_set_protected_mode_interrupt_vector(8 + sb_cfg.irq, &sb_cfg.old_irq_handler);
 
-    // disable dma
-    outportb(0xD4, 0x04 | (sb_cfg.dma16 & 3));
+    djgpp_disable_dma(sb_cfg.dma16);
 
-    free(sb_cfg.buffer);
+    if(sb_cfg.nearptr_buffer_enabled)
+    {
+      __dpmi_free_physical_address_mapping(&(sb_cfg.nearptr_buffer_mapping));
+      djgpp_pop_enable_nearptr();
+    }
+    else
+    {
+      free(sb_cfg.buffer);
+    }
     __dpmi_free_dos_memory(sb_cfg.buffer_selector);
   }
 }
