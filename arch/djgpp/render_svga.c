@@ -39,9 +39,19 @@
 struct svga_render_data
 {
   __dpmi_meminfo mapping;
-  Uint8 *ptr;
+  Uint8 *ptr, *ptr2;
+  Uint16 line, line2;
   Uint16 mode, pitch;
+  Uint8 display;
+  boolean page_flip_ok;
+  int update_colors;
 };
+
+static void ega_vsync(void)
+{
+  while(!(inportb(0x03DA) & 0x08))
+    ;
+}
 
 static boolean svga_try_mode(struct graphics_data *graphics, Uint16 mode, Uint16 width, Uint16 height, Uint16 bpp)
 {
@@ -85,7 +95,6 @@ static boolean svga_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
   static struct svga_render_data render_data;
-  int display;
   struct vbe_mode_info vbe;
   int x_offset, y_offset;
   __dpmi_regs reg;
@@ -94,14 +103,15 @@ static boolean svga_init_video(struct graphics_data *graphics,
   graphics->render_data = &render_data;
 
   graphics->allow_resize = 0;
+  graphics->bits_per_pixel = conf->force_bpp;
   if (graphics->bits_per_pixel != 8 && graphics->bits_per_pixel != 16)
     graphics->bits_per_pixel = 16;
 
   if(!djgpp_push_enable_nearptr())
     return false;
 
-  display = djgpp_display_adapter_detect();
-  if(display < DISPLAY_ADAPTER_VBE20)
+  render_data.display = djgpp_display_adapter_detect();
+  if(render_data.display < DISPLAY_ADAPTER_VBE20)
   {
     warn("Could not find VBE 2.0+-compatible graphics card!\n");
     return false;
@@ -127,7 +137,12 @@ static boolean svga_init_video(struct graphics_data *graphics,
 
   dosmemget(__tb, sizeof(struct vbe_mode_info), &vbe);
   render_data.mapping.address = vbe.linear_ptr;
-  render_data.mapping.size = ((graphics->resolution_width * graphics->resolution_height * (graphics->bits_per_pixel >> 3)) + 4095) & (~4095);
+  render_data.mapping.size = (graphics->resolution_height * vbe.pitch) + (graphics->resolution_width * (graphics->bits_per_pixel >> 3));
+  /* * 2 / 1024 = / 512 = >> 9 */
+  render_data.page_flip_ok = true; //>= (render_data.mapping.size >> 9);
+  if(render_data.page_flip_ok)
+    render_data.mapping.size <<= 1;
+  render_data.mapping.size = (render_data.mapping.size + 4095) & (~4095);
   if(__dpmi_physical_address_mapping(&render_data.mapping) != 0)
   {
     // set text video mode, leave
@@ -142,6 +157,12 @@ static boolean svga_init_video(struct graphics_data *graphics,
 
   render_data.ptr = (Uint8*)(render_data.mapping.address + __djgpp_conventional_base) + (vbe.pitch * y_offset) + ((vbe.bpp >> 3) * x_offset);
   render_data.pitch = vbe.pitch;
+  if(render_data.page_flip_ok)
+  {
+    render_data.ptr2 = render_data.ptr + (graphics->resolution_height * vbe.pitch);
+    render_data.line = 0;
+    render_data.line2 = graphics->resolution_height;
+  }
 
   memset((Uint8*)(render_data.mapping.address + __djgpp_conventional_base), 0, vbe.pitch * vbe.height);
 
@@ -197,6 +218,7 @@ static void svga_update_colors(struct graphics_data *graphics,
  struct rgb_color *palette, Uint32 count)
 {
   Uint32 i;
+  struct svga_render_data *render_data = graphics->render_data;
 
   if(graphics->bits_per_pixel == 16)
     for(i = 0; i < count; i++)
@@ -215,7 +237,7 @@ static void svga_update_colors(struct graphics_data *graphics,
         | ((palette[i].g & 0xFC) << 6)
         | ((palette[i].b & 0xFC) >> 2);
     }
-    svga_upload_colors(graphics->flat_intensity_palette, count);
+    render_data->update_colors = count;
   }
 }
 
@@ -253,13 +275,55 @@ static void svga_render_mouse(struct graphics_data *graphics,
  Uint32 x, Uint32 y, Uint8 w, Uint8 h)
 {
   struct svga_render_data *render_data = graphics->render_data;
-  render_mouse((Uint32*)render_data->ptr, render_data->pitch, graphics->bits_per_pixel, x, y, 0xFFFFFFFF, 0, w, h);
+  Uint32 mask;
+  if((graphics->bits_per_pixel == 8) && !graphics->screen_mode)
+    mask = 0x0F0F0F0F;
+  else
+    mask = 0xFFFFFFFF;
+
+  render_mouse((Uint32*)render_data->ptr, render_data->pitch, graphics->bits_per_pixel, x, y, mask, 0, w, h);
 }
 
 static void svga_sync_screen(struct graphics_data *graphics)
 {
-//  struct svga_render_data *render_data = graphics->render_data;
-//  vid_flip(-1);
+  struct svga_render_data *render_data = graphics->render_data;
+  __dpmi_regs reg;
+  Uint8 *ptr;
+  Uint16 line;
+
+  if(render_data->update_colors > 0 || render_data->page_flip_ok)
+    ega_vsync();
+
+  if(render_data->update_colors > 0)
+  {
+    svga_upload_colors(graphics->flat_intensity_palette, render_data->update_colors);
+    render_data->update_colors = 0;
+  }
+
+  if(render_data->page_flip_ok)
+  {
+    // VBE 2.0 method of flipping
+    reg.x.ax = 0x4F07;
+    reg.x.bx = 0x0000;
+    reg.x.cx = 0;
+    reg.x.dx = render_data->line;
+
+    __dpmi_int(0x10, &reg);
+    if(reg.h.al != 0x4F)
+    {
+      // we were wrong
+      render_data->page_flip_ok = false;
+      return;
+    }
+
+    ptr = render_data->ptr;
+    render_data->ptr = render_data->ptr2;
+    render_data->ptr2 = ptr;
+
+    line = render_data->line;
+    render_data->line = render_data->line2;
+    render_data->line2 = line;
+  }
 }
 
 void render_svga_register(struct renderer *renderer)

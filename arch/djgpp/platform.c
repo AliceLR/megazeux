@@ -71,8 +71,14 @@ int djgpp_display_adapter_detect(void)
   {
     struct vbe_info vbe;
     dosmemget(__tb, sizeof(struct vbe_info), &vbe);
-    if (memcmp(vbe.signature, "VESA", 4) == 0)
-      return vbe.version >= 0x200 ? DISPLAY_ADAPTER_VBE20 : DISPLAY_ADAPTER_SVGA;
+    if(memcmp(vbe.signature, "VESA", 4) == 0)
+    {
+      if(vbe.version >= 0x300)
+        return DISPLAY_ADAPTER_VBE30;
+      else if(vbe.version >= 0x200)
+        return DISPLAY_ADAPTER_VBE20;
+      return DISPLAY_ADAPTER_SVGA;
+    }
   }
 
   // VIDEO - GET DISPLAY COMBINATION CODE (PS,VGA/MCGA)
