@@ -27,6 +27,7 @@
 struct dc_render_data
 {
   pvr_ptr_t texture;
+  pvr_poly_hdr_t header;
 };
 
 #endif /* __DREAMCAST_RENDER_H__ */

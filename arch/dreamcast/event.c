@@ -45,72 +45,29 @@ boolean __update_event_status(void)
   return retval;
 }
 
-void __wait_event(int timeout)
+void __wait_event(void)
 {
-  if(timeout)
-    delay(timeout);
-
   while(!__update_event_status())
     vid_waitvbl();
 }
 
-// Taken from arch/nds/event.c
-// Send a key up/down event to MZX.
-void do_unicode_key_event(struct buffered_status *status, boolean down,
- enum keycode code, int unicode)
-{
-  if(down)
-  {
-    key_press(status, code, unicode);
-  }
-  else
-  {
-    status->keymap[code] = 0;
-    if(status->key_repeat == code)
-    {
-      status->key_repeat = IKEY_UNKNOWN;
-      status->unicode_repeat = 0;
-    }
-    status->key_release = code;
-  }
-}
-
-void do_key_event(struct buffered_status *status, boolean down,
- enum keycode code)
-{
-  do_unicode_key_event(status, down, code,
-   (code >= 32 && code <= 126) ? code : 0);
-}
-
-// Send a joystick button up/down event to MZX.
-void do_joybutton_event(struct buffered_status *status, boolean down,
- int button)
-{
-  // Look up the keycode for this joystick button.
-  enum keycode stuffed_key = input.joystick_button_map[0][button];
-  do_key_event(status, down, stuffed_key);
-}
-
-static inline boolean check_key(struct buffered_status *status,
- Uint32 down, Uint32 up, Uint32 key, enum keycode code)
+static inline boolean check_hat(struct buffered_status *status,
+ Uint32 down, Uint32 up, Uint32 key, enum joystick_hat dir)
 {
   if(down & key)
   {
-    do_key_event(status, true, code);
+    joystick_hat_update(status, 0, dir, true);
     return true;
   }
   else
 
   if(up & key)
   {
-    do_key_event(status, false, code);
+    joystick_hat_update(status, 0, dir, false);
     return true;
   }
 
-  else
-  {
-    return false;
-  }
+  return false;
 }
 
 static inline boolean check_joy(struct buffered_status *status,
@@ -118,14 +75,14 @@ static inline boolean check_joy(struct buffered_status *status,
 {
   if(down & key)
   {
-    do_joybutton_event(status, true, code);
+    joystick_button_press(status, 0, code);
     return true;
   }
   else
 
   if(up & key)
   {
-    do_joybutton_event(status, false, code);
+    joystick_button_release(status, 0, code);
     return true;
   }
 
@@ -152,10 +109,10 @@ boolean dc_update_input(void)
     held = (pad->buttons & last_buttons);
     up = (pad->buttons ^ last_buttons) & last_buttons;
 
-    retval |= check_key(status, down, up, CONT_DPAD_UP, IKEY_UP);
-    retval |= check_key(status, down, up, CONT_DPAD_DOWN, IKEY_DOWN);
-    retval |= check_key(status, down, up, CONT_DPAD_LEFT, IKEY_LEFT);
-    retval |= check_key(status, down, up, CONT_DPAD_RIGHT, IKEY_RIGHT);
+    retval |= check_hat(status, down, up, CONT_DPAD_UP, JOYHAT_UP);
+    retval |= check_hat(status, down, up, CONT_DPAD_DOWN, JOYHAT_DOWN);
+    retval |= check_hat(status, down, up, CONT_DPAD_LEFT, JOYHAT_LEFT);
+    retval |= check_hat(status, down, up, CONT_DPAD_RIGHT, JOYHAT_RIGHT);
     retval |= check_joy(status, down, up, CONT_A, 0);
     retval |= check_joy(status, down, up, CONT_B, 1);
     retval |= check_joy(status, down, up, CONT_X, 2);
@@ -164,13 +121,13 @@ boolean dc_update_input(void)
     retval |= ((last_ltrig ^ pad->ltrig) >= 0x80) || ((last_rtrig ^ pad->rtrig) >= 0x80);
 
     if (last_ltrig >= 0x80 && pad->ltrig < 0x80)
-        do_joybutton_event(status, false, 4);
+        joystick_button_release(status, 0, 4);
     if (last_ltrig < 0x80 && pad->ltrig >= 0x80)
-        do_joybutton_event(status, true, 4);
+        joystick_button_press(status, 0, 4);
     if (last_rtrig >= 0x80 && pad->rtrig < 0x80)
-        do_joybutton_event(status, false, 5);
+        joystick_button_release(status, 0, 5);
     if (last_rtrig < 0x80 && pad->rtrig >= 0x80)
-        do_joybutton_event(status, true, 5);
+        joystick_button_press(status, 0, 5);
 
     last_buttons = pad->buttons;
     last_ltrig = pad->ltrig;

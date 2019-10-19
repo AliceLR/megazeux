@@ -37,13 +37,15 @@
 
 static pvr_init_params_t pvr_params = {
   { PVR_BINSIZE_8, PVR_BINSIZE_0, PVR_BINSIZE_8, PVR_BINSIZE_0, PVR_BINSIZE_0 },
-  32 * 32768
+  32 * 32768,
+  0, 0, 1
 };
 
-static bool dc_init_video(struct graphics_data *graphics,
+static boolean dc_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
   static struct dc_render_data render_data;
+  pvr_poly_cxt_t cxt;
 
   pvr_init(&pvr_params);
   pvr_set_bg_color(0.0f, 0.0f, 0.0f);
@@ -51,10 +53,14 @@ static bool dc_init_video(struct graphics_data *graphics,
   memset(&render_data, 0, sizeof(struct dc_render_data));
   graphics->render_data = &render_data;
 
-  render_data.texture = pvr_mem
+  render_data.texture = pvr_mem_malloc(1024 * 512 * 2);
+
+  // generate polygon header
+  pvr_poly_cxt_txr(&cxt, PVR_LIST_OP_POLY, PVR_TXRFMT_NONTWIDDLED | PVR_TXRFMT_RGB565, 1024, 512, render_data.texture, PVR_FILTER_NEAREST);
+  pvr_poly_compile(&(render_data.header), &cxt);
 
   graphics->allow_resize = 0;
-  graphics->bits_per_pixel = 32;
+  graphics->bits_per_pixel = 16;
 
   graphics->resolution_width = 640;
   graphics->resolution_height = 350;
@@ -64,24 +70,20 @@ static bool dc_init_video(struct graphics_data *graphics,
   return set_video_mode();
 }
 
-static inline Uint16 *dc_vram_ptr()
-{
-  return vram_s + (640*65); // 0,65 - 639,415
-}
-
 static void dc_free_video(struct graphics_data *graphics)
 {
-//  struct dc_render_data *render_data = graphics->render_data;
+  struct dc_render_data *render_data = graphics->render_data;
+  pvr_mem_free(render_data->texture);
 }
 
-static bool dc_check_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, bool fullscreen, bool resize)
+static boolean dc_check_video_mode(struct graphics_data *graphics, int width,
+ int height, int depth, boolean fullscreen, boolean resize)
 {
   return true;
 }
 
-static bool dc_set_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, bool fullscreen, bool resize)
+static boolean dc_set_video_mode(struct graphics_data *graphics, int width,
+ int height, int depth, boolean fullscreen, boolean resize)
 {
   return true;
 }
@@ -102,37 +104,76 @@ static void dc_update_colors(struct graphics_data *graphics,
 
 static void dc_render_graph(struct graphics_data *graphics)
 {
-//  struct dc_render_data *render_data = graphics->render_data;
-  render_graph16(dc_vram_ptr(), 640*2, graphics, set_colors16[graphics->screen_mode]);
+  struct dc_render_data *render_data = graphics->render_data;
+  render_graph16(render_data->texture, 1024*2, graphics, set_colors16[graphics->screen_mode]);
 }
 
 static void dc_render_layer(struct graphics_data *graphics,
  struct video_layer *vlayer)
 {
-//  struct dc_render_data *render_data = graphics->render_data;
-  render_layer(dc_vram_ptr(), 16, 640*2, graphics, vlayer);
+  struct dc_render_data *render_data = graphics->render_data;
+  render_layer(render_data->texture, 16, 1024*2, graphics, vlayer);
 }
 
 static void dc_render_cursor(struct graphics_data *graphics,
  Uint32 x, Uint32 y, Uint16 color, Uint8 lines, Uint8 offset)
 {
-//  struct dc_render_data *render_data = graphics->render_data;
+  struct dc_render_data *render_data = graphics->render_data;
   Uint32 flatcolor = graphics->flat_intensity_palette[color] * 0x10001;
 
-  render_cursor((Uint32*)dc_vram_ptr(), 640*2, 16, x, y, flatcolor, lines, offset);
+  render_cursor((Uint32*)render_data->texture, 1024*2, 16, x, y, flatcolor, lines, offset);
 }
 
 static void dc_render_mouse(struct graphics_data *graphics,
  Uint32 x, Uint32 y, Uint8 w, Uint8 h)
 {
-//  struct dc_render_data *render_data = graphics->render_data;
-  render_mouse((Uint32*)dc_vram_ptr(), 640*2, 16, x, y, 0xFFFFFFFF, 0, w, h);
+  struct dc_render_data *render_data = graphics->render_data;
+  render_mouse((Uint32*)render_data->texture, 1024*2, 16, x, y, 0xFFFFFFFF, 0, w, h);
 }
 
 static void dc_sync_screen(struct graphics_data *graphics)
 {
-//  struct dc_render_data *render_data = graphics->render_data;
-  vid_flip(-1);
+  struct dc_render_data *render_data = graphics->render_data;
+  pvr_vertex_t vtx;
+
+  pvr_wait_ready();
+  pvr_scene_begin();
+  pvr_list_begin(PVR_LIST_OP_POLY);
+
+  pvr_prim(&(render_data->header), sizeof(pvr_poly_hdr_t));
+
+  vtx.argb = PVR_PACK_COLOR(1.0f, 1.0f, 1.0f, 1.0f);
+  vtx.oargb = 0;
+  vtx.flags = PVR_CMD_VERTEX;
+  vtx.z = 1;
+
+  vtx.x = 1;
+  vtx.y = 1;
+  vtx.u = 0;
+  vtx.v = 0;
+  pvr_prim(&vtx, sizeof(vtx));
+
+  vtx.x = 640;
+  vtx.y = 1;
+  vtx.u = 640.0/1024.0;
+  vtx.v = 0;
+  pvr_prim(&vtx, sizeof(vtx));
+
+  vtx.x = 1;
+  vtx.y = 480;
+  vtx.u = 0;
+  vtx.v = 350.0/512.0;
+  pvr_prim(&vtx, sizeof(vtx));
+
+  vtx.x = 640;
+  vtx.y = 480;
+  vtx.u = 640.0/1024.0;
+  vtx.v = 350.0/512.0;
+  vtx.flags = PVR_CMD_VERTEX_EOL;
+  pvr_prim(&vtx, sizeof(vtx));
+
+  pvr_list_finish();
+  pvr_scene_finish();
 }
 
 void render_dc_register(struct renderer *renderer)

@@ -31,6 +31,10 @@
 #define SKIP_16BPP
 #endif
 
+#if defined(CONFIG_DREAMCAST)
+#define SKIP_8BPP
+#endif
+
 #include "render_layer_code.h"
 
 #if 0

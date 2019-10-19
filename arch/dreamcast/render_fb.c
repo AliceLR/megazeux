@@ -29,7 +29,7 @@
 #include <kos.h>
 #include "render_fb.h"
 
-static bool dc_fb_init_video(struct graphics_data *graphics,
+static boolean dc_fb_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
   static struct dc_fb_render_data render_data;
@@ -60,14 +60,14 @@ static void dc_fb_free_video(struct graphics_data *graphics)
 //  struct dc_fb_render_data *render_data = graphics->render_data;
 }
 
-static bool dc_fb_check_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, bool fullscreen, bool resize)
+static boolean dc_fb_check_video_mode(struct graphics_data *graphics, int width,
+ int height, int depth, boolean fullscreen, boolean resize)
 {
   return true;
 }
 
-static bool dc_fb_set_video_mode(struct graphics_data *graphics, int width,
- int height, int depth, bool fullscreen, bool resize)
+static boolean dc_fb_set_video_mode(struct graphics_data *graphics, int width,
+ int height, int depth, boolean fullscreen, boolean resize)
 {
   return true;
 }

@@ -66,7 +66,7 @@ void render_gx_register(struct renderer *renderer);
 void render_xfb_register(struct renderer *renderer);
 #endif
 #if defined(CONFIG_DREAMCAST)
-//void render_dc_register(struct renderer *renderer);
+void render_dc_register(struct renderer *renderer);
 void render_dc_fb_register(struct renderer *renderer);
 #endif
 
