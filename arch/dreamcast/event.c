@@ -48,7 +48,7 @@ boolean __update_event_status(void)
 void __wait_event(void)
 {
   while(!__update_event_status())
-    vid_waitvbl();
+    thd_pass();
 }
 
 static inline boolean check_hat(struct buffered_status *status,
@@ -104,7 +104,8 @@ boolean dc_update_input(void)
   boolean retval = false;
 
   maple_pad = maple_enum_type(0, MAPLE_FUNC_CONTROLLER);
-  if (maple_pad && (pad = (cont_state_t*) maple_dev_status(maple_pad))) {
+  if(maple_pad && (pad = (cont_state_t*) maple_dev_status(maple_pad)))
+  {
     down = (pad->buttons ^ last_buttons) & pad->buttons;
     held = (pad->buttons & last_buttons);
     up = (pad->buttons ^ last_buttons) & last_buttons;
@@ -120,13 +121,13 @@ boolean dc_update_input(void)
     retval |= check_joy(status, down, up, CONT_START, 7);
     retval |= ((last_ltrig ^ pad->ltrig) >= 0x80) || ((last_rtrig ^ pad->rtrig) >= 0x80);
 
-    if (last_ltrig >= 0x80 && pad->ltrig < 0x80)
+    if(last_ltrig >= 0x80 && pad->ltrig < 0x80)
         joystick_button_release(status, 0, 4);
-    if (last_ltrig < 0x80 && pad->ltrig >= 0x80)
+    if(last_ltrig < 0x80 && pad->ltrig >= 0x80)
         joystick_button_press(status, 0, 4);
-    if (last_rtrig >= 0x80 && pad->rtrig < 0x80)
+    if(last_rtrig >= 0x80 && pad->rtrig < 0x80)
         joystick_button_release(status, 0, 5);
-    if (last_rtrig < 0x80 && pad->rtrig >= 0x80)
+    if(last_rtrig < 0x80 && pad->rtrig >= 0x80)
         joystick_button_press(status, 0, 5);
 
     last_buttons = pad->buttons;

@@ -31,45 +31,59 @@
 static Sint16* sound_buffer;
 static snd_stream_hnd_t stream;
 static int buffer_size;
+static boolean running;
+static kthread_t *sound_thread;
 
 static void* dc_audio_callback(snd_stream_hnd_t hnd, int smp_req, int *smp_recv)
 {
-  audio_callback(sound_buffer, smp_req);
-  *smp_recv = smp_req;
+  int actual = smp_req;
+  if(actual > buffer_size)
+    actual = buffer_size;
+  audio_callback(sound_buffer, actual);
+  *smp_recv = actual;
   return sound_buffer;
 }
 
 static void *dc_audio_thread(void *dud)
 {
   snd_stream_init();
+
+  audio.mix_buffer = cmalloc(buffer_size * 2);
+  sound_buffer = cmalloc(buffer_size);
+
   stream = snd_stream_alloc(dc_audio_callback, buffer_size);
 
   snd_stream_start(stream, audio.output_frequency, 1);
 
-  while (1)
+  while(running)
   {
     snd_stream_poll(stream);
     thd_sleep(10);
   }
+
+  snd_stream_destroy(stream);
+  snd_stream_shutdown();
+
+  free(sound_buffer);
+  free(audio.mix_buffer);
+
   return NULL;
 }
 
 void init_audio_platform(struct config_info *conf)
 {
-  audio.buffer_samples = conf->audio_buffer_samples / 2;
+  audio.buffer_samples = 2048; // the value KOS seems to like best
+  audio.output_frequency = 44100;
   buffer_size = 4 * audio.buffer_samples;
-  audio.mix_buffer = cmalloc(buffer_size * 2);
-  sound_buffer = cmalloc(buffer_size);
 
-  thd_create(0, dc_audio_thread, NULL);
+  running = true;
+  sound_thread = thd_create(0, dc_audio_thread, NULL);
 }
 
 void quit_audio_platform(void)
 {
-  snd_stream_destroy(stream);
-  snd_stream_shutdown();
-  free(sound_buffer);
-  free(audio.mix_buffer);
+  running = false;
+  thd_join(sound_thread, NULL);
 }
 
 #endif // CONFIG_AUDIO
