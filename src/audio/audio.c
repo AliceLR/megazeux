@@ -51,6 +51,10 @@
 #include "audio_vorbis.h"
 #endif
 
+#if defined(CONFIG_STB_VORBIS)
+#include "audio_vorbis_stb.h"
+#endif
+
 #ifdef CONFIG_MODPLUG
 #include "audio_modplug.h"
 #include "gdm2s3m.h"
@@ -292,6 +296,10 @@ void init_audio(struct config_info *conf)
 
 #ifdef CONFIG_VORBIS
   init_vorbis(conf);
+#endif
+
+#ifdef CONFIG_STB_VORBIS
+  init_vorbis_stb(conf);
 #endif
 
 #ifdef CONFIG_MODPLUG

@@ -70,6 +70,7 @@ usage() {
 	echo "  --disable-vorbis        Disable ogg/vorbis support."
 	echo "  --enable-tremor         Switches out libvorbis for libvorbisidec."
 	echo "  --enable-tremor-lowmem  Switches out libvorbis for libvorbisidec (lowmem branch)."
+	echo "  --enable-stb-vorbis     Switches out libvorbis for stb_vorbis."
 	echo "  --disable-pthread       Use SDL's threads/locking instead of pthread."
 	echo "  --disable-icon          Do not try to brand executable."
 	echo "  --disable-modular       Disable dynamically shared objects."
@@ -318,6 +319,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--disable-tremor-lowmem" ] && VORBIS="true"
 	[ "$1" = "--enable-tremor-lowmem" ]  && VORBIS="tremor-lowmem"
+
+	[ "$1" = "--disable-stb-vorbis" ] && VORBIS="true"
+	[ "$1" = "--enable-stb-vorbis" ]  && VORBIS="stb-vorbis"
 
 	[ "$1" = "--disable-pthread" ] && PTHREAD="false"
 	[ "$1" = "--enable-pthread" ]  && PTHREAD="true"
@@ -1220,6 +1224,12 @@ elif [ "$VORBIS" = "tremor-lowmem" ]; then
 	echo "#define CONFIG_VORBIS" >> src/config.h
 	echo "#define CONFIG_TREMOR" >> src/config.h
 	echo "VORBIS=tremor-lowmem" >> platform.inc
+
+elif [ "$VORBIS" = "stb-vorbis" ]; then
+	echo "Using stb_vorbis in place of ogg/vorbis."
+	echo "#define CONFIG_STB_VORBIS" >> src/config.h
+	echo "VORBIS=stb-vorbis" >> platform.inc
+
 else
 	echo "Ogg/vorbis disabled."
 fi

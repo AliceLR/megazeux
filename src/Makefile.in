@@ -302,13 +302,18 @@ audio_cobjs := \
  ${audio_obj}/sfx.o
 
 ifneq (${VORBIS},)
+ifeq (${VORBIS},stb-vorbis)
+audio_cobjs += \
+ ${audio_obj}/audio_vorbis_stb.o
+else
 audio_cobjs += \
  ${audio_obj}/audio_vorbis.o
+core_flags += ${VORBIS_CFLAGS}
+core_ldflags := ${VORBIS_LDFLAGS} ${core_ldflags}
+endif
 endif
 
 core_cobjs += ${audio_cobjs}
-core_flags += ${VORBIS_CFLAGS}
-core_ldflags := ${VORBIS_LDFLAGS} ${core_ldflags}
 else
 # The editor needs this for sfx_strs...
 ifeq (${BUILD_EDITOR},1)
