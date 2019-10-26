@@ -801,7 +801,7 @@ void update_board(context *ctx)
               // BUG: This leaves the lowest cycle count bit set, which can't
               // be fixed right now (compatibility). Seems like Alexis planned
               // to extend the speed range in 2.00 but didn't fully implement
-              // it; the param dialog previously had the wrong bound too...
+              // it; the param dialog has the "wrong" bound too...
               current_param &= 0xC7;
 
               // Put slimes all around
