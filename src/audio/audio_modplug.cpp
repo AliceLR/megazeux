@@ -295,27 +295,27 @@ void init_modplug(struct config_info *conf)
   audio.mod_settings.mChannels = 2;
   audio.mod_settings.mBits = 16;
 
-  switch(conf->modplug_resample_mode)
+  switch(conf->module_resample_mode)
   {
-    case 0:
+    case RESAMPLE_MODE_NONE:
     {
       audio.mod_settings.mResamplingMode = MODPLUG_RESAMPLE_NEAREST;
       break;
     }
 
-    case 1:
+    case RESAMPLE_MODE_LINEAR:
     {
       audio.mod_settings.mResamplingMode = MODPLUG_RESAMPLE_LINEAR;
       break;
     }
 
-    case 2:
+    case RESAMPLE_MODE_CUBIC:
     {
       audio.mod_settings.mResamplingMode = MODPLUG_RESAMPLE_SPLINE;
       break;
     }
 
-    case 3:
+    case RESAMPLE_MODE_FIR:
     {
       audio.mod_settings.mResamplingMode = MODPLUG_RESAMPLE_FIR;
       break;

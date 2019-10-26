@@ -45,7 +45,24 @@ struct xmp_stream
   Uint32 repeat;
 };
 
-static int xmp_resample_mode;
+static int get_xmp_resample_mode(void)
+{
+  struct config_info *conf = get_config();
+
+  switch(conf->module_resample_mode)
+  {
+    case RESAMPLE_MODE_NONE:
+      return XMP_INTERP_NEAREST;
+
+    case RESAMPLE_MODE_LINEAR:
+    default:
+      return XMP_INTERP_LINEAR;
+
+    case RESAMPLE_MODE_CUBIC:
+    case RESAMPLE_MODE_FIR:
+      return XMP_INTERP_SPLINE;
+  }
+}
 
 static Uint32 audio_xmp_mix_data(struct audio_stream *a_src, Sint32 *buffer,
  Uint32 len)
@@ -233,28 +250,6 @@ static struct audio_stream *construct_xmp_stream(char *filename,
   {
     xmp_set_player(ctx, XMP_PLAYER_DEFPAN, 50);
 
-    switch(xmp_resample_mode)
-    {
-      case 0:
-      {
-        xmp_set_player(ctx, XMP_PLAYER_INTERP, XMP_INTERP_NEAREST);
-        break;
-      }
-
-      case 1:
-      {
-        xmp_set_player(ctx, XMP_PLAYER_INTERP, XMP_INTERP_LINEAR);
-        break;
-      }
-
-      case 2:
-      case 3:
-      {
-        xmp_set_player(ctx, XMP_PLAYER_INTERP, XMP_INTERP_SPLINE);
-        break;
-      }
-    }
-
     if(xmp_load_module(ctx, filename) == 0)
     {
       struct xmp_stream *xmp_stream = ccalloc(1, sizeof(struct xmp_stream));
@@ -264,6 +259,7 @@ static struct audio_stream *construct_xmp_stream(char *filename,
 
       xmp_stream->ctx = ctx;
       xmp_start_player(ctx, audio.output_frequency, 0);
+      xmp_set_player(ctx, XMP_PLAYER_INTERP, get_xmp_resample_mode());
 
       xmp_get_module_info(ctx, &info);
       num_orders = info.mod->len;
@@ -316,8 +312,6 @@ static struct audio_stream *construct_xmp_stream(char *filename,
 
 void init_xmp(struct config_info *conf)
 {
-  xmp_resample_mode = conf->modplug_resample_mode;
-
   audio_ext_register("669", construct_xmp_stream);
   audio_ext_register("amf", construct_xmp_stream);
   //audio_ext_register("dsm", construct_xmp_stream);

@@ -260,7 +260,7 @@ void init_openmpt(struct config_info *conf)
   // As OpenMPT is configured on a per-module basis, the only thing
   // this "init" function does is store a global variable for usage
   // in module initialization.
-  openmpt_resample_mode = 1 << conf->modplug_resample_mode;
+  openmpt_resample_mode = 1 << conf->module_resample_mode;
 
   audio_ext_register("669", construct_openmpt_stream);
   audio_ext_register("amf", construct_openmpt_stream);

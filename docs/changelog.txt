@@ -13,6 +13,11 @@ USERS
   this allows MegaZeux to automatically attempt to decrypt
   protected worlds. For most platforms this option is disabled
   by default.
++ Renamed "modplug_resample_mode" to "module_resample_mode".
+  Fixed a bug where the xmp interpolation mode wouldn't be set
+  correctly from this setting and instead would always reset to
+  "linear". The default for this setting in config.txt has been
+  corrected (the default has been "cubic" since 2.82b).
 
 
 September 23rd, 2019 - MZX 2.92b
