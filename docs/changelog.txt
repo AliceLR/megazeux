@@ -14,6 +14,10 @@ USERS
   correctly from this setting and instead would always reset to
   "linear". The default for this setting in config.txt has been
   corrected (the default has been "cubic" since 2.82b).
++ Added a comment to the Emscripten frontend for how to disable
+  the "Click to Play" splash.
++ Fixed Emscripten frontend issues when MegaZeux is embedded in
+  an iframe making it difficult to regain focus after losing it.
 
 
 September 23rd, 2019 - MZX 2.92b

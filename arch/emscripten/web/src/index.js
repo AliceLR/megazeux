@@ -212,6 +212,14 @@ window.MzxrunInitialize = function(options) {
             FS.createFolder(FS.root, "data", true, true);
             FS.mount(wrapStorageForEmscripten(vfs), null, "/data");
             console.log("Filesystem initialization complete!");
+
+            // This event handler refocuses MZX when clicked if it's inside of
+            // an iframe (e.g. embedded on itch.io). This is necessary to regain
+            // keyboard control after focus is lost (though tab can be used too).
+            // This needs to be done HERE since Emscripten clobbers all event
+            // handlers added to the canvas.
+            canvas.addEventHandler("mousedown", function(){ canvas.focus(); });
+
             resolve();
         });
     })).then(_ => true).catch(reason => {
