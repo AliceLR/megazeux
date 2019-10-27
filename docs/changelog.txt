@@ -18,6 +18,9 @@ USERS
   the "Click to Play" splash.
 + Fixed Emscripten frontend issues when MegaZeux is embedded in
   an iframe making it difficult to regain focus after losing it.
++ Fixed an Emscripten frontend bug where certain filenames could
+  cause false positives when checking for a directory name. This
+  would prevent fsafetranslate from detecting the correct path.
 
 
 September 23rd, 2019 - MZX 2.92b
