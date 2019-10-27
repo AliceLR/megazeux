@@ -34,6 +34,8 @@ function vfs_get_type(vfs, path) {
     if (contents !== null) {
         return "file";
     } else {
+        if (!path.endsWith("/"))
+            path += "/";
         const list = vfs.list(a => a.startsWith(path));
         if (list.length >= 1) return "dir";
     }

@@ -223,7 +223,7 @@ class IndexedDbBackedAsyncStorage {
 				resolve();
 			}
 			dbRequest.onerror = event => {
-				reject();
+				reject("Failed to open IndexedDB database (is this a private window?)");
 			}
 		});
 	}
