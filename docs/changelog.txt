@@ -19,8 +19,8 @@ USERS
 + Fixed Emscripten frontend issues when MegaZeux is embedded in
   an iframe making it difficult to regain focus after losing it.
 + Fixed an Emscripten frontend bug where certain filenames could
-  cause false positives when checking for a directory name. This
-  would prevent fsafetranslate from detecting the correct path.
+  cause false positives when checking for a directory name,
+  preventing fsafetranslate from detecting the correct path.
   This fixes various things in Eternal Eclipse Taoyarin.
 + The Emscripten frontend should now fall back to memory storage
   if IndexedDB or local storage fails to initialize. This fixes
