@@ -170,26 +170,48 @@ window.MzxrunInitialize = function(options) {
             }
         }
 
-        if (options.storage && options.storage.type) {
-            if (options.storage.type == "indexeddb") {
-                if (!options.storage.database) throw "Missing option: storage.database!";
-                return createIndexedDbBackedAsyncStorage("mzx_" + options.storage.database)
-                    .then(result => wrapAsyncStorage(result))
-                    .then(result => vfsObjects.push(result));
-            } else if (options.storage.type == "localstorage") {
-                if (!options.storage.database) throw "Missing option: storage.database!";
-                let storageObj = window.localStorage;
-                if (options.storage.storage) storageObj = options.storage.storage;
-                if (storageObj == undefined) throw "Could not find storage object!";
-                vfsObjects.push(createBrowserBackedStorage(storageObj, "mzx_" + options.storage.database));
-                return true;
-            } else {
-                throw "Unknown storage type: " + options.storage.type;
-            }
-        } else {
+        function initMemoryStorage() {
+            console.log("Using memory storage. FILES WILL NOT PERSIST BETWEEN SESSIONS!");
             vfsObjects.push(createInMemoryStorage({}, {"readonly": false}));
             return true;
         }
+
+        function initIndexedDBStorage() {
+            if (!options.storage.database) throw "Missing option: storage.database!";
+            return createIndexedDbBackedAsyncStorage("mzx_" + options.storage.database)
+                .then(result => wrapAsyncStorage(result))
+                .then(result => vfsObjects.push(result))
+                .catch(reason => {
+                    console.log("Failed to initialize IndexedDB storage: " + reason);
+                    initMemoryStorage();
+            });
+        }
+
+        function initLocalStorage() {
+            if (!options.storage.database) throw "Missing option: storage.database!";
+            let storageObj = window.localStorage;
+            if (options.storage.storage) storageObj = options.storage.storage;
+            if (storageObj == undefined) throw "Could not find storage object!";
+            vfsObjects.push(createBrowserBackedStorage(storageObj, "mzx_" + options.storage.database));
+            return true;
+        }
+
+        try {
+            if (options.storage && options.storage.type) {
+                if (options.storage.type == "indexeddb") {
+                    return initIndexedDBStorage();
+                } else if (options.storage.type == "localstorage") {
+                    return initLocalStorage();
+                } else {
+                    throw "Unknown storage type: " + options.storage.type;
+                }
+           }
+        } catch(str) {
+            console.log(str);
+        }
+
+        return initMemoryStorage();
+
     }).then(_ => new Promise((resolve, reject) => {
         const vfs = createCompositeStorage(vfsObjects);
         console.log(vfs);
