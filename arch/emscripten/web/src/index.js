@@ -218,7 +218,7 @@ window.MzxrunInitialize = function(options) {
             // keyboard control after focus is lost (though tab can be used too).
             // This needs to be done HERE since Emscripten clobbers all event
             // handlers added to the canvas.
-            canvas.addEventHandler("mousedown", function(){ canvas.focus(); });
+            canvas.addEventListener("mousedown", function(){ canvas.focus(); });
 
             resolve();
         });
