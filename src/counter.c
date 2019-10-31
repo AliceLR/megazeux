@@ -1686,10 +1686,17 @@ static int char_byte_read(struct world *mzx_world,
   // Normalize byte values (see: Day of Zeux Invitation)
   if(byte_num >= 14)
   {
-    char_num += byte_num / 14;
-    byte_num %= 14;
-    if(mzx_world->version < V290 && char_num > 0xFF)
-      return 0;
+    if(mzx_world->version >= V280)
+    {
+      char_num += byte_num / 14;
+      byte_num %= 14;
+      if(mzx_world->version < V290 && char_num > 0xFF)
+        return 0;
+    }
+    else
+    {
+      byte_num %= 14;
+    }
   }
 
   return ec_read_byte(char_num, byte_num);
@@ -1707,10 +1714,17 @@ static void char_byte_write(struct world *mzx_world,
   // Normalize byte values (see: Day of Zeux Invitation)
   if(byte_num >= 14)
   {
-    char_num += byte_num / 14;
-    byte_num %= 14;
-    if(mzx_world->version < V290 && char_num > 0xFF)
-      return;
+    if(mzx_world->version >= V280)
+    {
+      char_num += byte_num / 14;
+      byte_num %= 14;
+      if(mzx_world->version < V290 && char_num > 0xFF)
+        return;
+    }
+    else
+    {
+      byte_num %= 14;
+    }
   }
 
   if(char_num > 0xFF && !layer_renderer_check(true)) return;
