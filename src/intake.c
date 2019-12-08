@@ -945,7 +945,7 @@ static boolean intake_key(subcontext *sub, int *key)
 
     default:
     {
-      if(!alt_status && !ctrl_status && (*key >= 32) && (*key < 256))
+      if(!alt_status && !ctrl_status && (*key >= 32) && (cur_char > 0))
         place = true;
 
       break;

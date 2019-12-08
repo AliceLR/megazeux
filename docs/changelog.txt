@@ -25,6 +25,8 @@ USERS
 + The Emscripten frontend should now fall back to memory storage
   if IndexedDB or local storage fails to initialize. This fixes
   an error when using MZX in a private browser window.
++ Fixed a robot editor regression where certain numpad symbols
+  could not be typed.
 
 
 September 23rd, 2019 - MZX 2.92b
