@@ -77,6 +77,27 @@ window.MzxrunInitialize = function(options) {
         e.preventDefault();
     }, false);
 
+    /* Disable the default functions for several common MegaZeux shortcuts.
+     * FIXME: Opera defaults for left alt and F3 can't be disabled this way (as of 63).
+     */
+    document.body.addEventListener('keydown', event => {
+        let key = event.key.toUpperCase();
+        if ((event.altKey && (
+                   key == 'C' // Select char
+                || key == 'D' // Delete file/directory
+                || key == 'N' // New directory
+                || key == 'R' // Rename file/directory
+            ))
+            || key == 'F1'  // Help
+            || key == 'F2'  // Settings
+            || key == 'F3'  // Save, Load World
+            || key == 'F4'  // Load save
+            || key == 'F9'  // Quicksave
+            || key == 'F10' // Quickload Save
+
+        ) event.preventDefault()
+    })
+
     try {
         if (!options.path) throw "Missing option: path!";
         if (!options.files) throw "Missing option: files!";
@@ -149,26 +170,48 @@ window.MzxrunInitialize = function(options) {
             }
         }
 
-        if (options.storage && options.storage.type) {
-            if (options.storage.type == "indexeddb") {
-                if (!options.storage.database) throw "Missing option: storage.database!";
-                return createIndexedDbBackedAsyncStorage("mzx_" + options.storage.database)
-                    .then(result => wrapAsyncStorage(result))
-                    .then(result => vfsObjects.push(result));
-            } else if (options.storage.type == "localstorage") {
-                if (!options.storage.database) throw "Missing option: storage.database!";
-                let storageObj = window.localStorage;
-                if (options.storage.storage) storageObj = options.storage.storage;
-                if (storageObj == undefined) throw "Could not find storage object!";
-                vfsObjects.push(createBrowserBackedStorage(storageObj, "mzx_" + options.storage.database));
-                return true;
-            } else {
-                throw "Unknown storage type: " + options.storage.type;
-            }
-        } else {
+        function initMemoryStorage() {
+            console.log("Using memory storage. FILES WILL NOT PERSIST BETWEEN SESSIONS!");
             vfsObjects.push(createInMemoryStorage({}, {"readonly": false}));
             return true;
         }
+
+        function initIndexedDBStorage() {
+            if (!options.storage.database) throw "Missing option: storage.database!";
+            return createIndexedDbBackedAsyncStorage("mzx_" + options.storage.database)
+                .then(result => wrapAsyncStorage(result))
+                .then(result => vfsObjects.push(result))
+                .catch(reason => {
+                    console.log("Failed to initialize IndexedDB storage: " + reason);
+                    initMemoryStorage();
+            });
+        }
+
+        function initLocalStorage() {
+            if (!options.storage.database) throw "Missing option: storage.database!";
+            let storageObj = window.localStorage;
+            if (options.storage.storage) storageObj = options.storage.storage;
+            if (storageObj == undefined) throw "Could not find storage object!";
+            vfsObjects.push(createBrowserBackedStorage(storageObj, "mzx_" + options.storage.database));
+            return true;
+        }
+
+        try {
+            if (options.storage && options.storage.type) {
+                if (options.storage.type == "indexeddb") {
+                    return initIndexedDBStorage();
+                } else if (options.storage.type == "localstorage") {
+                    return initLocalStorage();
+                } else {
+                    throw "Unknown storage type: " + options.storage.type;
+                }
+            }
+        } catch(reason) {
+            console.log(reason);
+        }
+
+        return initMemoryStorage();
+
     }).then(_ => new Promise((resolve, reject) => {
         const vfs = createCompositeStorage(vfsObjects);
         console.log(vfs);
@@ -191,6 +234,14 @@ window.MzxrunInitialize = function(options) {
             FS.createFolder(FS.root, "data", true, true);
             FS.mount(wrapStorageForEmscripten(vfs), null, "/data");
             console.log("Filesystem initialization complete!");
+
+            // This event listener refocuses MZX when clicked if it's inside of
+            // an iframe (e.g. embedded on itch.io). This is necessary to regain
+            // keyboard control after focus is lost (though tab can be used too).
+            // This needs to be done HERE since something clobbers all event
+            // listeners added to the canvas.
+            canvas.addEventListener("mousedown", function(){ canvas.focus(); });
+
             resolve();
         });
     })).then(_ => true).catch(reason => {

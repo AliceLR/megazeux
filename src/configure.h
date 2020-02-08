@@ -33,6 +33,14 @@ enum ratio_type
   RATIO_STRETCH
 };
 
+enum resample_modes
+{
+  RESAMPLE_MODE_NONE,
+  RESAMPLE_MODE_LINEAR,
+  RESAMPLE_MODE_CUBIC,
+  RESAMPLE_MODE_FIR
+};
+
 enum allow_cheats_type
 {
   ALLOW_CHEATS_NEVER,
@@ -70,7 +78,7 @@ struct config_info
   int audio_buffer_samples;
   int oversampling_on;
   int resample_mode;
-  int modplug_resample_mode;
+  int module_resample_mode;
   int max_simultaneous_samples;
   int music_volume;
   int sam_volume;
@@ -84,6 +92,7 @@ struct config_info
   char default_save_name[256];
   int mzx_speed;
   enum allow_cheats_type allow_cheats;
+  boolean auto_decrypt_worlds;
   boolean startup_editor;
   boolean standalone_mode;
   boolean no_titlescreen;

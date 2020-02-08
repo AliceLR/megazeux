@@ -74,6 +74,7 @@ int list_menu(const char *const *choices, int choice_size, const char *title,
   int joystick_key;
   int key;
   int i;
+  int j;
 
   cursor_off();
 
@@ -293,11 +294,10 @@ int list_menu(const char *const *choices, int choice_size, const char *title,
 
       default:
       {
-        // Not necessarily invalid. Might be an alphanumeric; seek the
-        // sucker.
+        int key_char = get_key(keycode_unicode);
 
-        if(((key >= IKEY_a) && (key <= IKEY_z)) ||
-         ((key >= IKEY_0) && (key <= IKEY_9)))
+        if(!get_alt_status(keycode_internal) &&
+         !get_ctrl_status(keycode_internal) && (key_char >= 32))
         {
           ticks = get_ticks();
           if(((ticks - last_keypress_time) >= TIME_SUSPEND) ||
@@ -308,18 +308,31 @@ int list_menu(const char *const *choices, int choice_size, const char *title,
           }
           last_keypress_time = ticks;
 
-          key_buffer[key_position] = key;
+          key_buffer[key_position] = key_char;
           key_position++;
           key_buffer[key_position] = 0;
 
-          if(get_shift_status(keycode_internal))
+          if(key_buffer[0] == ' ')
           {
+            const char *key_buffer_nospace = key_buffer;
+
+            // Skip prefixed spaces for the buffer...
+            while(*key_buffer_nospace == ' ')
+              key_buffer_nospace++;
+
+            if(!key_buffer_nospace[0])
+              break;
+
             for(i = 0; i < num_choices; i++)
             {
-              if((choices[i][0] == ' ') &&
-               !strncasecmp(choices[i] + 1, key_buffer, key_position))
+              // Skip prefixed spaces for the choices...
+              j = 0;
+              while(choices[i][j] == ' ')
+                j++;
+
+              if(!strncasecmp(choices[i] + j, key_buffer_nospace,
+               strlen(key_buffer_nospace)))
               {
-                // It's good!
                 current = i;
                 break;
               }
@@ -331,7 +344,6 @@ int list_menu(const char *const *choices, int choice_size, const char *title,
             {
               if(!strncasecmp(choices[i], key_buffer, key_position))
               {
-                // It's good!
                 current = i;
                 break;
               }

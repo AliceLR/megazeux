@@ -329,6 +329,7 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClCompile Include="..\..\src\sprite.c" />
     <ClCompile Include="..\..\src\str.c" />
     <ClCompile Include="..\..\src\util.c" />
+    <ClCompile Include="..\..\src\vfs.c" />
     <ClCompile Include="..\..\src\window.c" />
     <ClCompile Include="..\..\src\world.c" />
     <ClCompile Include="..\..\src\zip.c" />
@@ -427,6 +428,7 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClInclude Include="..\..\src\sprite_struct.h" />
     <ClInclude Include="..\..\src\str.h" />
     <ClInclude Include="..\..\src\util.h" />
+    <ClInclude Include="..\..\src\vfs.h" />
     <ClInclude Include="..\..\src\window.h" />
     <ClInclude Include="..\..\src\world.h" />
     <ClInclude Include="..\..\src\world_struct.h" />

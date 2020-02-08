@@ -83,6 +83,7 @@
 
 #ifdef __EMSCRIPTEN__
 #define AUDIO_SAMPLE_RATE 48000
+#define AUTO_DECRYPT_WORLDS true
 #endif
 
 // End arch-specific config.
@@ -127,6 +128,10 @@
 
 #ifndef VIDEO_RATIO_DEFAULT
 #define VIDEO_RATIO_DEFAULT RATIO_MODERN_64_35
+#endif
+
+#ifndef AUTO_DECRYPT_WORLDS
+#define AUTO_DECRYPT_WORLDS false
 #endif
 
 #ifdef CONFIG_UPDATER
@@ -181,8 +186,8 @@ static const struct config_info user_conf_default =
   AUDIO_SAMPLE_RATE,            // output_frequency
   AUDIO_BUFFER_SAMPLES,         // audio_buffer_samples
   0,                            // oversampling_on
-  1,                            // resample_mode
-  2,                            // modplug_resample_mode
+  RESAMPLE_MODE_LINEAR,         // resample_mode
+  RESAMPLE_MODE_CUBIC,          // module_resample_mode
   -1,                           // max_simultaneous_samples
   8,                            // music_volume
   8,                            // sam_volume
@@ -196,6 +201,7 @@ static const struct config_info user_conf_default =
   "saved.sav",                  // default_save_name
   4,                            // mzx_speed
   ALLOW_CHEATS_NEVER,           // allow_cheats
+  AUTO_DECRYPT_WORLDS,          // auto_decrypt_worlds
   false,                        // startup_editor
   false,                        // standalone_mode
   false,                        // no_titlescreen
@@ -421,46 +427,46 @@ static void config_resample_mode(struct config_info *conf, char *name,
 {
   if(!strcasecmp(value, "none"))
   {
-    conf->resample_mode = 0;
+    conf->resample_mode = RESAMPLE_MODE_NONE;
   }
   else
 
   if(!strcasecmp(value, "linear"))
   {
-    conf->resample_mode = 1;
+    conf->resample_mode = RESAMPLE_MODE_LINEAR;
   }
   else
 
   if(!strcasecmp(value, "cubic"))
   {
-    conf->resample_mode = 2;
+    conf->resample_mode = RESAMPLE_MODE_CUBIC;
   }
 }
 
-static void config_mp_resample_mode(struct config_info *conf, char *name,
+static void config_mod_resample_mode(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
   if(!strcasecmp(value, "none"))
   {
-    conf->modplug_resample_mode = 0;
+    conf->module_resample_mode = RESAMPLE_MODE_NONE;
   }
   else
 
   if(!strcasecmp(value, "linear"))
   {
-    conf->modplug_resample_mode = 1;
+    conf->module_resample_mode = RESAMPLE_MODE_LINEAR;
   }
   else
 
   if(!strcasecmp(value, "cubic"))
   {
-    conf->modplug_resample_mode = 2;
+    conf->module_resample_mode = RESAMPLE_MODE_CUBIC;
   }
   else
 
   if(!strcasecmp(value, "fir"))
   {
-    conf->modplug_resample_mode = 3;
+    conf->module_resample_mode = RESAMPLE_MODE_FIR;
   }
 }
 
@@ -774,6 +780,13 @@ static void config_set_allow_cheats(struct config_info *conf, char *name,
   }
 }
 
+static void config_set_auto_decrypt_worlds(struct config_info *conf,
+ char *name, char *value, char *extended_data)
+{
+  // FIXME sloppy validation
+  conf->auto_decrypt_worlds = !!strtoul(value, NULL, 10);
+}
+
 static void config_set_video_ratio(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
@@ -836,6 +849,7 @@ static const struct config_entry config_options[] =
   { "audio_buffer", config_set_audio_buffer, false },
   { "audio_buffer_samples", config_set_audio_buffer, false },
   { "audio_sample_rate", config_set_audio_freq, false },
+  { "auto_decrypt_worlds", config_set_auto_decrypt_worlds, false },
   { "enable_oversampling", config_enable_oversampling, false },
   { "enable_resizing", config_enable_resizing, false },
   { "force_bpp", config_force_bpp, false },
@@ -866,7 +880,8 @@ static const struct config_entry config_options[] =
   { "joy_axis_threshold", config_set_joy_axis_threshold, false },
   { "mask_midchars", config_mask_midchars, false },
   { "max_simultaneous_samples", config_max_simultaneous_samples, false },
-  { "modplug_resample_mode", config_mp_resample_mode, false },
+  { "modplug_resample_mode", config_mod_resample_mode, false },
+  { "module_resample_mode", config_mod_resample_mode, false },
   { "music_on", config_set_music, false },
   { "music_volume", config_set_mod_volume, false },
   { "mzx_speed", config_set_mzx_speed, true },

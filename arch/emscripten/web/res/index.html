@@ -15,15 +15,18 @@
 </style>
 </head>
 <body>
-<canvas id="mzx_canvas" width="640" height="350" oncontextmenu="event.preventDefault()"></canvas>
+<canvas id="mzx_canvas" width="640" height="350" oncontextmenu="event.preventDefault()" tabindex="0"></canvas>
 <script type="text/javascript" src="./mzxrun_loader.js"></script>
 <script type="text/javascript">
 (function() {
 	var mzxCanvas = document.getElementById("mzx_canvas");
 	var mzxLoadAttempted = false;
 
-	// the initialization process should be triggered by a click - audio enabling!
-	mzxCanvas.onclick = function() {
+	// The initialization process should be triggered by a click - audio enabling!
+	// If you're embedding this on itch.io, you can safely comment this line out;
+	// the click itch.io uses to initialize the game iframe is sufficient.
+	mzxCanvas.onclick = function()
+	{
 		if (mzxLoadAttempted) return;
 		mzxLoadAttempted = true;
 		mzxCanvas.style.backgroundImage = "none";

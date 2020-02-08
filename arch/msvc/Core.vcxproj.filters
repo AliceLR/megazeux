@@ -402,6 +402,9 @@
     <ClCompile Include="..\..\src\audio\audio_reality.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\vfs.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\block.h">
@@ -702,6 +705,9 @@
       <Filter>Header Files\MSVC</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\audio\audio_reality.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\vfs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

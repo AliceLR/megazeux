@@ -21,6 +21,7 @@
 const EPERM = 1;
 const ENOENT = 2;
 const EINVAL = 22;
+const ENOTEMPTY = 39;
 const O_CREAT = 0x40;
 const O_TRUNC = 0x200;
 const S_IFDIR = 0x4000;
@@ -30,17 +31,26 @@ const S_IFMT = 0xF000;
 function vfs_get_type(vfs, path) {
     if (path.length == 0) return "dir";
     let contents = vfs.get(path);
-    if (contents) {
+    if (contents !== null) {
         return "file";
     } else {
+        if (!path.endsWith("/"))
+            path += "/";
         const list = vfs.list(a => a.startsWith(path));
         if (list.length >= 1) return "dir";
     }
     return "empty";
 }
 
+function vfs_next_power_of_two(n) {
+    var i = 4096;
+    while (i < n) i *= 2;
+    return i;
+}
+
 function vfs_expand_array(array, newLength) {
     if (newLength <= array.length) return array;
+    newLength = vfs_next_power_of_two(newLength);
 
     var newArrayBuffer = new ArrayBuffer(newLength);
     var newArray = new Uint8Array(newArrayBuffer);
@@ -109,6 +119,18 @@ export function wrapStorageForEmscripten(vfs) {
 
             node.node_ops.setattr = (n, attr) => {
                 if (attr.mode !== undefined) n.mode = attr.mode;
+                if (attr.size !== undefined) {
+                    // Used to implement O_TRUNC by the Emscripten FS API.
+                    // console.log("FS setattr size " + n.vfs_path + " " + attr.size);
+                    let old_data = vfs.get(n.vfs_path);
+                    let new_data = new Uint8Array(attr.size);
+                    if (attr.size > 0 && old_data) {
+                        // Note: not sure sizes > 0 will reach here from the FS API...
+                        new_data.set(old_data.slice(0, attr.size));
+                    }
+                    if (!vfs.set(n.vfs_path, new_data))
+                        throw new FS.ErrnoError(EPERM);
+                }
             }
 
             node.stream_ops.llseek = (stream, offset, whence) => {
@@ -119,7 +141,7 @@ export function wrapStorageForEmscripten(vfs) {
                         return offset + stream.position;
                     case 2:
                         if (stream.vfs_data)
-                            return offset + stream.vfs_data.length;
+                            return offset + stream.vfs_data_length;
                         else
                             return offset;
                     default:
@@ -141,7 +163,23 @@ export function wrapStorageForEmscripten(vfs) {
                     return wrap.createNode(parent, '/' + node.vfs_path + name, mode, dev);
                 };
                 node.node_ops.rename = (oldNode, newDir, newName) => {
-                    throw "FS TODO rename " + newName;
+                    console.log("FS FIXME rename " + newName);
+                    throw new FS.ErrnoError(EPERM);
+                };
+                node.node_ops.unlink = (parent, name) => {
+                    // console.log("FS unlink " + name);
+                    if (!vfs.remove(node.vfs_path + name))
+                        throw new FS.ErrnoError(EPERM);
+                };
+                node.node_ops.rmdir = (parent, name) => {
+                    // console.log("FS rmdir " + name);
+                    const path = node.vfs_path + name;
+                    const list = vfs.list(a => a.startsWith(path));
+                    for (var i = 0; i < list.length; i++) {
+                        var entry = list[i].substring(path.length);
+                        if (entry.length != 0)
+                            throw new FS.ErrnoError(ENOTEMPTY);
+                    }
                 };
                 node.node_ops.readdir = (node) => {
                     const path = node.vfs_path;
@@ -183,18 +221,20 @@ export function wrapStorageForEmscripten(vfs) {
                             }
                         }
                     }
+                    stream.vfs_data_length = stream.vfs_data.length;
                 }
 
                 node.stream_ops.close = (stream) => {
                     // console.log("FS close " + node.vfs_path);
                     if (stream.vfs_data && stream.vfs_modified) {
-                        vfs.set(node.vfs_path, stream.vfs_data);
+                        let length = Math.min(stream.vfs_data.length, stream.vfs_data_length);
+                        vfs.set(node.vfs_path, stream.vfs_data.subarray(0, length));
                     }
                 }
 
                 node.stream_ops.read = (stream, buffer, bufOffset, dataLength, dataOffset) => {
                     // console.log("FS read " + node.vfs_path + " " + dataOffset + " " + dataLength);
-                    const size = Math.min(dataLength, stream.vfs_data.length - dataOffset);
+                    const size = Math.min(dataLength, stream.vfs_data_length - dataOffset);
                     if (size > 8 && buffer.set && stream.vfs_data.subarray) {
                         buffer.set(stream.vfs_data.subarray(dataOffset, dataOffset + size), bufOffset);
                     } else {
@@ -208,7 +248,7 @@ export function wrapStorageForEmscripten(vfs) {
                 node.stream_ops.write = (stream, buffer, bufOffset, dataLength, dataOffset) => {
                     // console.log("FS write " + node.vfs_path + " " + dataOffset + " " + dataLength);
                     if (dataLength <= 0) return 0;
-                    stream.vfs_data = vfs_expand_array(stream.vfs_data, Math.max(stream.vfs_data.length, dataOffset + dataLength))
+                    stream.vfs_data = vfs_expand_array(stream.vfs_data, dataOffset + dataLength);
                     const size = dataLength;
                     if (size > 8 && stream.vfs_data.set && buffer.subarray) {
                         stream.vfs_data.set(buffer.subarray(bufOffset, bufOffset + size), dataOffset);
@@ -217,14 +257,17 @@ export function wrapStorageForEmscripten(vfs) {
                             stream.vfs_data[dataOffset + i] = buffer[bufOffset + i];
                         }
                     }
+                    stream.vfs_data_length = Math.max(dataOffset + dataLength, stream.vfs_data_length);
                     stream.vfs_modified = true;
                     return dataLength;
                 }
 
                 node.stream_ops.allocate = (stream, offset, length) => {
-                    const oldLength = stream.vfs_data.length;
                     stream.vfs_data = vfs_expand_array(stream.vfs_data, offset + length);
-                    if (oldLength != stream.vfs_data.length) stream.vfs_modified = true;
+                    if (offset + length > stream.vfs_data_length) {
+                        stream.vfs_data_length = offset + length;
+                        stream.vfs_modified = true;
+                    }
                 }
             }
             return node;

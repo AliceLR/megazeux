@@ -1,3 +1,34 @@
+GIT
+
+USERS
+
++ Board list typing now allows non-alphanumeric keys like spaces
+  and periods. Typing a space first will match zero or more
+  prefixed spaces while seeking.
++ Added the config setting "auto_decrypt_worlds". When set to 1,
+  this allows MegaZeux to automatically attempt to decrypt
+  protected worlds. For most platforms this option is disabled
+  by default.
++ Renamed "modplug_resample_mode" to "module_resample_mode".
+  Fixed a bug where the xmp interpolation mode wouldn't be set
+  correctly from this setting and instead would always reset to
+  "linear". The default for this setting in config.txt has been
+  corrected (the default has been "cubic" since 2.82b).
++ Added a comment to the Emscripten frontend for how to disable
+  the "Click to Play" splash.
++ Fixed Emscripten frontend issues when MegaZeux is embedded in
+  an iframe making it difficult to regain focus after losing it.
++ Fixed an Emscripten frontend bug where certain filenames could
+  cause false positives when checking for a directory name,
+  preventing fsafetranslate from detecting the correct path.
+  This fixes various things in Eternal Eclipse Taoyarin.
++ The Emscripten frontend should now fall back to memory storage
+  if IndexedDB or local storage fails to initialize. This fixes
+  an error when using MZX in a private browser window.
++ Fixed a robot editor regression where certain numpad symbols
+  could not be typed.
+
+
 September 23rd, 2019 - MZX 2.92b
 
 This release fixes several bugs, notably 3DS and Wii rendering
