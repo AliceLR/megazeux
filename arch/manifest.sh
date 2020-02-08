@@ -23,6 +23,7 @@ rm -f manifest.txt
 
 find -mindepth 1 -type f				\
 	-not -name config.txt				\
+	-not -name manifest.txt				\
 	-not -name pad.config				\
 	-not -name '*.debug' 				\
 	-print0						\

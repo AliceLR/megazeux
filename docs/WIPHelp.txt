@@ -125,7 +125,10 @@ or difficult, as long or short as you please. We aren't just
 talking about worlds made up of petty, pre-programmed enemies
 and objects; MegaZeux has its own, easy-to-use PROGRAMMING
 LANGUAGE called Robotic that allows you to create objects,
-engines and worlds that do almost anything you desire.
+engines and worlds that do almost anything you desire. Not only
+can you make your own game with the editor, but every world
+MegaZeux can play can be opened in the editor. Take a look at
+how other games tick!
 
 For the newest user, it's recommended that you play Caverns,
 the first ever MegaZeux game, to get the feel of simple yet
@@ -169,7 +172,8 @@ can easily be used as flags if set only to 1 and 0.
 -Multiple MegaZeux keys of the same color can be picked up at
  once.
 -There is no board setting controlling the amount of player
-shots that can be on a given board.
+shots that can be on a given board, outside of preventing the
+player from shooting altogether.
 -Cloning the player has no use in MZX; uses of player clones
 need simulated in Robotic.
 -The Shift-? hotkey (often used for inventory engines) does not
@@ -179,7 +183,7 @@ object where the player would end up, but MZX simply overwrites
 the object on the other board with the player.
 -Bomb explosions are not instantaneous but instead radiate out
 from the center. They are also diamond-shaped as opposed to
-a flattened oval shape.
+a flattened oval shape and do not ignore walls.
 -MegaZeux uses cycle 1 as default (as opposed to ZZT's cycle
 3).
 -No equivalent of duplicators exists.
@@ -188,7 +192,7 @@ territories in MegaZeux.
 -MegaZeux water is not equivalent to ZZT water, as it can be
 traversed. ZZT water is most similar to MZX's "goop".
 -MZX Sharks can be shot. They do not swim in water, but can in
- lava or goop. They can also shoot any type of projectile.
+lava or goop. They can also shoot any type of projectile.
 -MZX Scrolls cannot execute code. Use a Robot ending with the
 "die" command to emulate ZZT scrolls with code instead.
 -Terrains that give out a distinctive message on first touch
@@ -198,7 +202,7 @@ gems is the Magic Gem.
 -Lasers will not push the player into other objects. This makes
 some ZZT laser configurations a lot less deadly.
 -Scrolls with only one line launch a message box (instead of
-using the message row for the line).
+using the message line for the line).
 -ZZT has one less bullet type than MZX; shift MZX types one
 tier of "friendliness" for each typical shooter to get
 ZZT-equivalent bullets.
@@ -223,7 +227,10 @@ have to do.
 
 [+] = There is no good analogue for this command, due to
 bound objects sharing zap/restore settings in ZZT. Without
-these concerns, COPYROBOT is the closest match.
+these concerns, COPYROBOT is the closest match. Also, ZZT
+objects using BIND use only as much memory as the object had
+before in ZZT, while Robots using COPYROBOT will use as much
+memory as the target Robot once copied.
 
 [#] = You need to manually add a label at the top of the Robot
 for this in MZX.
@@ -474,35 +481,51 @@ Enter - Menu/Status
 Use this to bring up a menu of options and a list of your
 current stats, such as Score, Gems, any custom-defined status
 counters, etc. Some games may have this key do nothing, or even
-something different entirely.
+something different entirely. Clicking on the key shortcuts
+(everything but move/shoot/bomb) will perform the given action.
+
+Certain key shortcuts will not be listed if the current MZX
+world prevents their default actions from happening. "Help",
+"Save game", "Restore game", "Quicksave" and "Quickload" can be
+filtered out this way, while "Exit to title" and "Settings" are
+always available and still work when clicked even if otherwise
+locked out.
 
 ESC - Exit to Title
 This will load a prompt to quit the current game and return to
 its title screen. In yes/no dialog boxes, this selects the "no"
 option. Some games may disable using ESC to trigger the exit
-prompt, but other methods (such as Alt+F4) will always work.
+prompt, but other methods (such as Alt+F4 or clicking on the
+"ESC - Exit to Title" text in the Enter menu) will always work.
 
 F2 or Ctrl+F2 or Alt+F2 - Settings
 :092:This will bring up a dialog box where you can change the
-current game settings: Game Speed (if allowed), Music toggle,
-Sound toggle, and Audio Volumes (Overall Volume, SoundFX
-volume, and PC Speaker SFX). Speed 1 is the fastest; speed 16
-is the slowest. A speed of 1 will run MZX as fast as possible
-and as such acts differently between computers; it will also
-cause flicker in fullscreen mode, so it is not recommended
-unless it is your only option. (Please note that some games
-may have the speed change by itself; the next load will change
-to the default speed unless otherwise prompted.) 
+current game settings: Game Speed (if allowed), Music/sample SFX
+toggle, PC speaker SFX toggle, and Audio Volumes (Music,
+Samples, and PC Speaker).
+
+Speed 1 is the fastest; speed 16 is the slowest. A speed of 1
+will run MZX as fast as possible and as such acts differently
+between computers; it will also cause flicker in fullscreen
+mode, so it is not recommended unless it is your only option.
+(Please note that some games may have the speed change by
+itself and/or enforce a set speed.)
+
+No changes to sound options will go into effect until the
+Settings menu is left.
 
 In addition to these settings, one can change the current
-scaling shader if running MegaZeux with the GLSL renderer.
+renderer with the "Select renderer..." button, and can change
+the scaling shader if running MegaZeux with the GLSL or
+auto_GLSL renderers.
 
 Settings for game speed will only apply for the current world;
 all other settings are global.
 
 Note that some games may block access to the F2 menu entirely.
 Ctrl+F2 or Alt+F2 will ignore this setting and allow access to
-the menu even if it is prohibited otherwise.
+the menu even if it is prohibited otherwise, as will clicking
+on the "F2 - Settings" text in the Enter menu.
 
 F3 - Save Game
 This will prompt you for a filename, allowing the saving of the
@@ -542,7 +565,8 @@ below lists the currently playing music, with "(no module)" for
 none and "*" for the module wildcard; finally, the bottom right
 numbers list the key_code (green) and key_pressed (magenta)
 values of the last pressed key. Press F6 again to turn the box
-off. This will only work during playtesting in the editor.
+off. This shortcut will only work during playtesting in the
+editor.
 
 F7 - Items Cheat
 
@@ -565,19 +589,18 @@ editor, or limited to MZXRun builds, depending on config.txt
 settings.
 
 F9 - Quicksave
-This will save the game, like F3, but to the last filename you
-used without prompting you for a filename. The old file will
-be overwritten. If no game has been saved since MegaZeux was
-started, the save will have the default filename listed in the
-config.txt file. If saving is blocked, quicksaving will be
-blocked as well.
+This will save the game, like F3, but will automatically save to
+the last filename you used. The old file will be overwritten. If
+no game has been saved since MegaZeux was started, the save will
+have the default filename listed in the config.txt file. If
+saving is blocked, quicksaving will be blocked as well.
 
 >#CONFGINI.HLP:1st:The Config File
 
 F10 - Quickload
-This will reload the last game saved using F3 or F9. If no
-game has been saved since MegaZeux was started, the default
-save filename will be used. The same caveats about save versions
+This will load the last save that was saved with F3 or F9. If no
+game has been saved since MegaZeux was started, the default save
+filename will be used. The same caveats about save versions
 still apply here. If loading is blocked, quickloading will be
 blocked as well.
 
@@ -604,7 +627,8 @@ section.
 F12 - Take Screenshot
 Pressing F12 will make a 640x350 screenshot (in PNG format by
 default) in the working directory, using the software renderer.
-The file naming starts from "screen0".
+The file naming starts from "screen0". The config file may
+disallow taking screenshots, depending on setting.
 
 Arrows - Move
 The arrow keys will move the player and allow it to interact
@@ -690,12 +714,12 @@ $~9Nondescript Play Tips
 First, let me warn you that many worlds you get from archives
 or (especially) from personal webpages may not be of acceptable
 quality. They may be unfair, boring, have numerous bugs, and/or
-not give proper instructions. On a related note, there is no
-problem in MAKING poor games, but PLEASE think before uploading
-them without attempting fixes or improvements, even in these
-days where games are fewer and farther between. Really old games
-of bad quality, on the other hand, are tolerated somewhat
-better. Don't let a few dull games ruin the fun.
+not give proper instructions. On a related note, PLEASE try to
+get feedback and try acting on it before uploading your game,
+even in these days where games are fewer and farther between.
+Really old games of bad quality, on the other hand, are
+tolerated somewhat better. Don't let a few dull games ruin the
+fun.
 
 With that out of the way, some basic play tips:
 
@@ -774,7 +798,7 @@ $~9The Mirth of Built-ins
 
 The following help section contains a list of the different
 objects, enemies, items, and terrains you will find within
-the different MegaZeux worlds. 
+the different MegaZeux worlds.
 Want to make a (very) quick and (very) dirty game? Built-ins are
 the way to do it! However, outside of a select few built-ins
 (such as certain terrains, Robots and items) heavy usage of
@@ -851,10 +875,13 @@ your maximum health, running into a heart will still collect it.
 ~BEnergizer      ~1›
 
 After grabbing an energizer, the player will flash colors for a
-limited time. During this period, you are invincible against
-enemies, bullets, fire, lava, poison damage, and most other
-forms of pain. Be careful not to get into a dangerous situation
-as its energy runs out!
+limited time (specifically, for 113 cycles). During this period,
+you are invincible against enemies, bullets, fire, lava, poison
+damage, and most other forms of pain. Be careful not to get into
+a dangerous situation as its energy runs out!
+
+Any energizer grabbed while already energized resets the timeout
+period to 113 cycles.
 
 ~BAmmo           ~3£ ¤
 
@@ -867,6 +894,9 @@ different piles.
 Each bomb you grab adds another to your supply. The sound made
 when you grab the bomb will be high-pitched for a high strength
 bomb and low-pitched for the rare low strength bomb.
+
+Some boards may not allow the player to collect bombs, and
+instead will have bombs ignite on touch.
 
 ~BKey            ~A
 
@@ -948,7 +978,7 @@ Reduces the player's health by 10.
 
 Temporarily blinds the player. The viewport will appear in
 dark gray. You can still move and interact, but you won't be
-able to see anything but yourself.
+able to see anything but the player.
 
 ~BKill Enemies
 
@@ -964,11 +994,16 @@ Explodes all bombs and lit bombs in the room.
 
 ~BBanish (Dragons)
 
-Turns all dragons into ghosts.
+Turns all dragons on the board into ghosts. Each ghost made this
+way will have intelligence set to 4, movement speed set to 4,
+and the "Invincible" flag set to off.
 
 ~BSummon (Dragons)
 
-Turns all enemies into dragons.
+Turns all creatures on the board - excepting guns - into
+dragons. (This includes other dragons.) Each dragon made this
+way will have a firing rate of 3, 4 hit points, and the "Moves"
+flag set to on.
 
 ~BAvalanche
 
@@ -981,9 +1016,9 @@ except the Global) for a short time.
 
 ~BWind
 
-The player retains normal control but will also move around
-a bit randomly for a while; the wind will blow the player in
-all directions.
+The player retains control but will also move additional random
+steps for a limited time. The wind will blow the player in all
+directions.
 
 ~BSlow Time
 
@@ -1000,15 +1035,16 @@ $@0~8± ~FCreatures~8 ±@8
 A snake moves in a straight line until it hits an obstruction,
 then aims itself in another direction and continues. Hitting a
 snake (like all enemies hereafter unless noted) will cause you
-to lose 10 health, then kill the snake. Runners act like snakes
-and will take up to four hits, but will only go the opposite
+to lose health, then kill the snake. Runners act like snakes and
+will take up to four hits, but will only go the opposite
 direction when obstructed.
 
 ~BEye            ~Fì
 
 An eye chases you down like any ordinary enemy, but when it
 catches you or dies, it explodes! The size of the explosion
-can vary with each eye.
+can vary with each eye. As eyes float, they can traverse both
+goop and lava.
 
 ~BGhost          ~7ê
 ~BThief          ~C
@@ -1016,7 +1052,8 @@ can vary with each eye.
 A ghost is the simplest enemy, simply chasing you. While some
 of them are invincible, most can be killed. Thieves chase but
 don't do damage. They steal your gems on touch instead, and can
-do so multiple times until killed.
+do so multiple times until killed. Ghosts can traverse lava and
+goop; thieves cannot.
 
                 ~A*
 ~BSlime Blob     ~A*±*
@@ -1027,15 +1064,15 @@ become incredibly annoying because of its habit of dividing
 into more slime blobs, then hardening into "solid slime"
 (i.e. breakables), quickly filling rooms.... You can often
 kill slime by touching or shooting it, but some slimes can be
-invincible.
+invincible, and others can be harmful to touch.
 
 ~BDragon         ~4 ~C ~E*~C
 
 Some dragons move around slowly, but their main advantage is
 their offense - they can shoot barrages of scorching flame.
 Dragons also have a strong defense, taking up to eight hits to
-kill. Touching them will take 10 health, but will NOT hurt the
-dragon.
+kill. Touching them will take away health, but will NOT hurt the
+dragon. Dragons can traverse lava but not goop.
 
 ~BFish           ~Eà
 ~BShark          ~7
@@ -1187,9 +1224,9 @@ slide in that direction instead.
 ~BLava           @4~C±²°±²
 
 Lava is another floor. However, it is (almost always) very
-deadly. Only a few things can traverse it, and any player
-unfortunate enough to walk on it will typically suffer rapid and
-massive amounts of damage.
+deadly. Only a few things can traverse it, puzzle pieces cannot
+be pushed onto it, and any player unfortunate enough to walk on
+it will typically suffer rapid and massive amounts of damage.
 
 ~BFire           @0~C±°~E²±~C²
 
@@ -1221,8 +1258,8 @@ reactions.
 
 ~BGoop           ~8@1°°°
 
-Goop is pretty much non-traversable terrain to anything,
-although sharks may occasionally inhabit it and select Robots
+Goop is pretty much non-traversable terrain to anything
+landborne. Sharks may occasionally inhabit it, and select Robots
 may be able to walk in it. Bullets, lazers, and other
 projectiles will traverse it freely. Goop may also be treated
 as water or other terrains in certain worlds.
@@ -1282,7 +1319,7 @@ character, but exactly one player object is always present.
 ~BSign           ~6â
 
 Touch this to display a given message. The message will be in a
-message box. A Scroll will disappear after you finish reading
+message box. A scroll will disappear after you finish reading
 it; signs will not.
 
 Unlike in ZZT, scrolls and signs are text-only: they cannot
@@ -1394,7 +1431,7 @@ To make things sane for all parties, do this before submitting:
   3) Try to write down what specifically happens.
   4) List what platform(s) you know show this problem.
   5) Try to pinpoint the problem to a specific Robotic line or
-     MZX function; at the very least, try to narrow it down. 
+     MZX function; at the very least, try to narrow it down.
      Pinpointing which version introduced the bug is very
      helpful, if possible.
   6) If it is a crash, try to run a debug build through GDB and
@@ -1438,9 +1475,8 @@ A: Yes, plenty! MegaZeux comes with two helpful tools:
   "Checkres" will detect what files are referenced by an MZX
   world and which are present, and "ccv" can take an image file
   and output a conversion of it in .chr/.mzm form for MZX use.
-  There are several graphical conversion programs such as
-  CharCon, and MZX worlds that create control mappings such as
-  Joymap. MZX has natural time-savers, of course. Automated
+  There are also several graphical conversion programs such as
+  CharCon. MZX has natural time-savers, of course. Automated
   backups, macros, Robotic code import/export, expressions,
   repeated block copying and other features can help speed up
   development time.
@@ -1549,6 +1585,10 @@ A: In a sense, they can be now. It was a long-held consensus
   blocking the default escape menu) have also facilitated
   standalone releases. Read the comments for standalone_mode in
   config.txt for more information, if interested.
+  
+  MegaZeux has also been ported to Emscripten, which means that
+  MZX games can now be embedded into web pages, allowing play
+  without any extra program download or web plugin necessary.
 
 Q: I need more than 256 characters! Could you help with this?
 
@@ -1568,6 +1608,14 @@ A: Then you'll need to carefully utilize the Robot command
   of their other benefits.
   
 >#PARTIAL.HLP:par:Partial Character Sets
+>#SPRITES.HLP:ubs:Unbound Sprites
+
+Q: How can I load sounds at different volumes in my game?
+
+A: Unfortunately, MegaZeux currently has no way of doing this
+  via Robotic. The best you can do for now is load versions of
+  your sound that are louder/quieter. Volume settings for music,
+  on the other hand, can be manipulated freely.
   
 Q: Why is my MegaZeux world starting on the title screen?
 
@@ -1638,6 +1686,11 @@ A: It's a matter of personal preference. Many people prefer
   If you don't mind pumping up your game's filesize, you could
   use any typical composition software (like FL Studio) and
   convert your wave to ogg format.
+  
+  A third alternative would be Reality Tracker. This tracker
+  creates music based on the once-common OPL3 chip found in
+  typical shareware-era DOS sound cards. MegaZeux now supports
+  files made in this tracker.
 
 Q: How do I make WAV files?
 
@@ -1683,6 +1736,29 @@ A: Nope. MegaZeux used to be able to protect worlds from being
   fully look through a standalone game, people who have no
   knowledge of MegaZeux beforehand will lack the immediate means
   to heavily manipulate or look through your game.
+  
+Q: The help file mentions "certain renderers" being unable to
+  display unbound sprites. What are renderers, what does this
+  mean, and what should I be worried about?
+  
+A: MegaZeux has several different video settings to accommodate
+  a wide range of hardware. The engines used to provide video
+  are called renderers, and can be set in the config file or
+  changed on the fly in the F2 settings menu. Renderers range
+  from basic support (software, does not utilize video hardware
+  functions) to features-oriented (glsl, featuring customizable
+  filters).
+  
+  Certain platforms and renderers cannot show extended graphics
+  (in other words, unbound sprites and SMZX mode 3 custom
+  indices). Right now, this is only a concern for very weak
+  platforms that cannot handle much to begin with, such as the
+  DS. Pretty much anyone running MegaZeux on an even remotely
+  modern computer should be able to view extended graphics.
+  
+  (Besides the Nintendo DS, the other platforms and renderers
+  currently unable are the GP2X and any use of the weak and
+  obseleted "overlay2" renderer.)
   
 Q: I heard only certain graphics cards can properly show Super
   MZX mode games. Is this true?
@@ -2005,7 +2081,7 @@ On Mac platforms, any command that uses the Alt key can take ½¾
 >CtrZ:Ctrl+Z               - Undo
 >CtrNu:Ctrl+Number          - Save Editor Position
 >Sft8:Shift+8 OR Numpad *  - Mod Wildcard
->SftAr:Shift+Arrow         - Goto Linked Board
+>SftAr:Shift+Arrow          - Goto Linked Board
 
 >F1:F1  - Help
 >F2:F2  - Text
@@ -2720,10 +2796,12 @@ editor. The palette editing screen will appear. The current
 palette will be shown to the left, with the current color
 marked. By default, the RGB values of the current color and the
 current color creation mode are shown to the right of the
-visible palette, and the menu is shown below.
+visible palette, and the menu is shown below. The color
+currently stored in the buffer is shown in the bottom-right
+corner.
 
 Some color theory is in order. Computer monitors display colors
-by projecting various amounts of Red, Green, and Blue light. 
+by projecting various amounts of Red, Green, and Blue light.
 Combined, these three colors can produce almost any shade and
 hue of color. This is one way colors are represented in MegaZeux
 as well. In the RGB color model (the default), each color has a
@@ -2748,9 +2826,11 @@ Several functions are consistent across all color models. Alt+D
 will reset the palette to its default colors (you will NOT be
 asked for confirmation). 0 will blacken the current color. Alt+H
 will toggle the shortcut display. The PgUp and PgDn keys select
-the current color model. Finally, F2 will store the current
-color to an internal buffer, while F3 will paste the buffered
-color to the current color.
+the current color model. Alt+I will import a palette; Alt+X will
+export the current palette. Tab will switch to and from a
+scratchpad palette that will only exist for the editor session.
+Finally, F2 will store the current color to an internal buffer,
+while F3 will paste the buffered color to the current color.
 
 In addition to the keyboard shortcuts listed in the below menu,
 users can click colors in the palette to select them. Users can
@@ -2801,25 +2881,37 @@ The palette number, as well as its hex number and the four
 colors that comprise it, are shown in the upper-left corner. By
 default, the color selector shows the current color/palette
 highlighted by a white box, with red boxes showing the other
-colors of the palette.
+colors of the palette. The buffer stores only subpalettes in
+this mode, cycling through each color of the subpalette.
 
 The base values of the current color and the current color
 creation mode are shown in the upper-right, and the help menu
 is shown below.
 
 On top of the functions allowed in the normal palette editor,
-SMZX Mode 2 adds this hotkey:
+SMZX Mode 2 adds these hotkeys:
 
-~ESpacebar / Middle Click~F: Toggle Subpalette Index Cursors.
-Turns the display of the red boxes highlighting the other
-component colors of the given palette on or off.
+~EF5~F: Store Colors.
+
+Stores the currently-highlighted subpalette into the buffer.
+
+~EF6~F: Place Colors.
+
+Replaces the highlighted subpalette with the subpalette colors
+currently in the buffer.
+
+~EInsert~F: Cursors.
+Turns the display of the red boxes highlighting the component
+colors of the given subpalette on or off. Defaults to (on).
 
 $Super MZX Mode 3 Palette Editor
 
 Super MZX Mode 3's color selection is shown as a 16x16 set of
 colors. The palette number, as well as its hex number and the
 four colors that comprise it, are shown in the upper-left
-corner.
+corner. Since Mode 3 allows user-defined indices, the buffer
+display now also includes the currently-stored indices just to
+the left of the stored subpalette.
 
 The base values of the current color and the current color
 creation mode are shown in the upper-right, and the help menu
@@ -2831,12 +2923,27 @@ color and subpalette at the same time, and changing highlighted
 color will NOT change the current subpalette.
 
 To change the current subpalette, press Space or click the
-middle mouse button, and then choose the subpallete to edit.
+middle mouse button, and then choose the subpalette to edit.
 Each color can be assigned to a color slot in the current
 subpalette; to place a color in a subpalette slot, press 1-4 to
 put the current color in the corresponding slot (for example,
 pressing 2 while on color #120 would make the second color of
 the current subpalette color #120).
+
+The Import and Export commands can also handle indices files in
+this mode.
+
+On top of the functions allowed in the SMZX Mode 2 palette
+editor, SMZX Mode 3 adds these hotkeys:
+
+~EF7~F: Store Indices.
+
+Puts the current indices into the buffer.
+
+~EF8~F: Place Indices.
+
+Assigns the current subpalette the indices currently in the
+buffer.
 
 With the exception of hiding the help, all functions available
 to the palette editor in normal MZX mode are available in the
@@ -2958,6 +3065,21 @@ Previous to move between the screens, and Done when you are
 finished. Lit Bomb Anim 1 is special; setting it will set the
 other 6 frames of Lit Bomb Animation to the succeeding
 characters.
+
+Setting the char of any thing to 255 (always represented by a
+magenta question mark in the char select) will allow that object
+type to act like a Custom object. This means that the character
+it displays will correspond to the object's parameter (so, for
+instance, an object with this set and with a parameter of p0a
+will display character 10). This is best-suited for things that
+do not otherwise use the parameter field, but will work with
+objects that have meaningful parameters as well.
+
+Any object type with its char set to 255 that did not previously
+use the parameter field (such as Trees) will also prompt a
+character selection screen when initially placed in the editor,
+much like what happens when selecting a Custom object. Other
+objects are placed normally.
 
 The damage editing dialog allows you to change the amount of
 damage dealt by various things within the game. Select one and
@@ -3120,6 +3242,9 @@ MegaZeux has two types of sound: Digitized sound, played
 through a sound card, and sound effects, which are emulated PC
 Speaker effects.
 
+MegaZeux allows OGG, WAV, SAM (a legacy sound format), and
+module files (that is, music files) for digitized sound.
+
 MegaZeux's many sound options can be accessed through the
 config.txt file. Please see this section for details.
 
@@ -3136,32 +3261,32 @@ following formats:
 * XM
 * IT
 * GDM
-* WAV
-* Other formats {STM, MTM, 669, ULT, FAR, MED, DSM, OKT, AMF}
+* RAD
+* Other formats {STM, MTM, 669, ULT, FAR, MED, OKT, AMF}
 * Several other formats are in ModPlug or XMP, but are not
   supported in MZX.
 
 The default module engine is XMP. It is still possible to build
 using ModPlug, and possible to build using MikMod to support
-platforms that cannot handle anything else. OGGs and WAVs are
-handled outside of the module engines, while GDMs load natively
-in XMP/MikMod, but not in ModPlug. When a GDM is loaded with
-ModPlug as the music engine, it is converted to an S3M file. The
-S3M file is then loaded in all future incidences.
+platforms that cannot handle anything else. OGGs, WAVs and RADs
+are handled outside of the module engines, while GDMs load
+natively in XMP/MikMod, but not in ModPlug. When a GDM is loaded
+with ModPlug as the music engine, it is converted to an S3M
+file. The S3M file is then loaded in all future incidences.
 
 Formats common to all engines are MOD, S3M, XM, IT, STM, MTM,
-669, ULT, FAR, MED, DSM, OKT and AMF. All other formats 
-(excluding WAV/OGG/SAM/GDM) are locked out of MZX by default.
+669, ULT, FAR, MED, OKT and AMF. All other formats (excluding
+WAV/OGG/SAM/GDM/RAD) are locked out of MZX by default.
 
 MED support is the most inconsistent between module engines,
 due to its multiple subversions and the engines' varying
 accuracy on dealing with them, so use of this format is not
 generally advised.
 
-MZX supports loop markers for WAVE and OGG files. WAVE formats
-with the "smpl" marker will be recognized, and forward loop
-only; OGG loops are supported with the LOOPSTART and LOOPLENGTH
-tags.
+MZX supports loop markers for OGG files. OGG loops are supported
+with the LOOPSTART, LOOPLENGTH and LOOPEND metadata tags. MZX
+can also control OGG looping dynamically with the MOD_LOOPSTART
+and MOD_LOOPEND counters.
 
 $Using Sound and Music in Your Own Games
 
@@ -3253,8 +3378,9 @@ format effectively. The commands are:
   affect any note other than the note directly before the sharp
   or flat. Constructs such as B# are allowed.
 ~A 0 1 2 3 4 5 6
-  Sets the current octave. Octave 4 starts at middle C. The
-  lower the number, the lower the notes.
+  Sets the current octave. MZX octaves are shifted a number back
+  resulting in octave 3 starting at middle C (aka c'). The lower
+  the number, the lower the notes.
 ~A + -
   Raises or lowers the current octave by 1, but only if
   possible. You cannot go below octave 0 or above octave 6.
@@ -3295,11 +3421,12 @@ format effectively. The commands are:
 
 $"&FILENAME.WAV&4C"
 
-  This will play middle C using FILENAME.WAV. Duration is
-  irrelevant. If nothing follows the last &, the effect will
-  play at natural frequency. Multiple filenames can be used in
-  the same PLAY command, but only the last one can have nothing
-  following its last &.
+  This will play FILENAME.WAV at a pitch of 4c, which
+  corresponds to a sample rate of 8363Hz. Any given durations
+  are irrelevant. If nothing follows the last &, the effect will
+  play at the file's natural frequency. Multiple filenames can
+  be used in the same PLAY command, but only the last one can
+  have nothing following its last &.
 ~A _
   An underscore is usually used in conjunction with &. It
   turns off digitized sounds for the rest of the string, and
@@ -3308,9 +3435,9 @@ $"&FILENAME.WAV&4C"
 
 $"&SHOT.WAV&6F#_+C-C"
 
-  The above will play SHOT.WAV at 4.8KHz (F-sharp, 6th octave)
-  if digitized sound is on, OTHERWISE it will play the normal
-  shooting sound of "+C-C".
+  The above will play SHOT.WAV at a sample rate of roughly 48KHz
+  (F-sharp, 6th octave) if digitized sound is on, OTHERWISE it
+  will play the normal shooting sound of "+C-C".
 
 $Sound Effect Numbers
 
@@ -3397,7 +3524,7 @@ statement notes:
  Ú-Â----Â----Â----Â----Â----Â----Â----Â----Å----Â----Â----Â----¿
  |O|C   |C#  |D   |D#  |E   |F   |F#  |G   |G#  |A   |A#  |B   |
  Ã-Å----Å----Å----Å----Å----Å----Å----Å----Å----Å----Å----Å----´
- |0|3424|3232|3948|2880|2712|2560|2416|2280|2152|2032|1920|1812|
+ |0|3424|3232|3048|2880|2712|2560|2416|2280|2152|2032|1920|1812|
  Ã-Å----Å----Å----Å----Å----Å----Å----Å----Å----Å----Å----Å----´
  |1|1712|1616|1524|1440|1356|1280|1208|1140|1076|1016| 960| 906|
  Ã-Å----Å----Å----Å----Å----Å----Å----Å----Å----Å----Å----Å----´
@@ -3434,13 +3561,13 @@ SAMs and WAVs converted from SAMs by older versions of MZX play
 at a natural frequency of 8363Hz.
 
 Finally, tracked modules have a normal frequency of 44100 Hz;
-other types such as OGG and WAV have normal frequencies at
-their recording rate (for example, a WAV encoded at 22050 Hz
-will play normally at the 22050 Hz setting). The frequency of a
-module can be controlled with the "mod_frequency" counter;
-changing the frequency mid-song can create a popping sound,
-especially while lowering frequency. The lowest allowed setting
-of mod_frequency is 16 Hz.
+OGGs, on the other hand, have normal frequencies at their
+recording rate (for example, a OGG encoded at 22050 Hz will play
+normally at the 22050 Hz setting). The frequency of a module can
+be controlled with the "mod_frequency" counter. Changing the
+frequency mid-song can create a popping sound, especially while
+lowering frequency. The lowest allowed setting of mod_frequency
+is 16 Hz.
 
 $Where to Get Module and Sound Files
 
@@ -3752,16 +3879,26 @@ first 40 characters of a string value will be shown.
 ~ASprites~F: Lists the global sprite counters and their values.
 Expanding this list will allow selection of lists sorted by
 relevant sprite - "spr1","spr2", and so on. Each spr# list
-shows all of each sprite's relevant counters.
+shows all of each sprite's relevant counters. The number of
+currently-active sprites is given under the "Active sprites"
+entry.
 
 ~AUniversal~F: Lists counters which persist throughout an entire
 session of MegaZeux, as well as their values.
 
 ~AWorld~F: Lists built-in world counters/strings and their values.
 
-~ABoard~F: Lists built-in board counters/strings and their values.
+~ABoard~F: Lists the current board's built-in board counters/strings
+and their values. Also can expand to show lists of scrolls/signs
+(both under "Scrolls") and sensors, if any of these items exist
+on that board. For scrolls/signs, each list shows a "Scroll
+text" entry; if clicked or Enter is pressed while highlighted,
+it views that scroll's/sign's text as it would be if encountered
+in-game (i.e. in the currently-loaded charset, not the protected
+charset). For sensors, each list shows the sensor name and the
+Robot it messages.
 
-~ARobots~F: Directly highlighted, this option lists nothing.
+~ARobots~F: If directly highlighted, this option lists nothing.
 However, expanding this tree will allow selection of lists
 sorted by the robot_id of the current board's Robots - starting
 with "0: <name>" for the Global, and continuing on for each
@@ -4553,9 +4690,7 @@ following colors, by default:
 ? Any color/No change in color
 
 The UI uses its own set of protected colors, to prevent general
-color edits from harming usability. However, one can still
-temporarily edit the UI colors through Robotic by editing
-colors 16-31.
+color edits from harming usability.
 
 The use of ? is not always a logical option for some commands.
 When used, it signifies to replace it with the current color or
@@ -4918,7 +5053,7 @@ $Robotic Usage of Strings
 In Robotic, strings can be incredibly powerful. They can act
 like counters, but hold text information as well as numbers
 (however, counters are by far better-suited for number use).
-A Robotic string is any counter prefixed by a $ sign (e.g. 
+A Robotic string is any counter prefixed by a $ sign (e.g.
 "$string").
 
 Certain characters must be inputted in specific ways to avoid
@@ -4955,7 +5090,7 @@ Simply encase the string name in ampersands. E.G.:
 ~ESET "$woohoo" to "My favorite song!"
 ~E* "&$woohoo&"
 
-Would output "My favorite song!" in the message row.
+Would output "My favorite song!" in the message line.
 
 There are several special things you can set strings to for
 certain functions. These are listed in the Counters section.
@@ -5003,7 +5138,8 @@ Firstly, strings can be offset and limited ("spliced").
 ~B$strname+X~F will offset the start of the string by X
 characters. Using a negative number will offset the start of
 the string backwards from the end of the string by X characters,
-with -1 as the end character.
+with -1 as the end character. (e.g. "$str+-2" would offset the
+string "str" at two characters from its end.)
 
 ~B$strname+X#Y~F will offset the string by X characters and limit
 the string to Y characters in length.
@@ -5080,6 +5216,27 @@ given block is reached. If x and y begin with a pound sign (#),
 the string will instead be read from the vlayer.
 Please use this method of scanning strings instead of
 BOARD_SCAN.
+
+$Robotic Usage - File Access
+
+Finally, strings can be used for loading and saving several MZX
+file formats. The following formats can be loaded from a string:
+
+-Palettes with ~BLOAD PALETTE "$string"
+-Charsets with ~BLOAD CHAR SET "$string"
+-Robots with ~BSET "$string" "LOAD_ROBOT"
+-MZMs with ~BPUT "@@$string" image_file pNN x y
+
+Robots can be saved into a string with this command:
+~BSET "$string" "SAVE_ROBOT"~F
+
+MZMs can be saved into a string via these methods:
+
+~BCOPY BLOCK x y w h "@@$string" p
+~BCOPY OVERLAY BLOCK x y w h "@@$string" p
+~BCOPY (OVERLAY) BLOCK "#x" "#y" w h "@@$string" m
+
+String splicing is valid for string file operations.
 
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
@@ -5357,9 +5514,10 @@ $Command Descriptions
 :__3:~A* "string"
 
 This command displays the given string as a message on the
-message line, at the bottom of the screen by default. Using the
-newline char (\n) in this string will cause the message line to
-span another line underneath, allowing multi-line messages.
+message line, which by default is at the bottom of the screen
+and centered. Using the newline char (\n) in this string will
+cause the message line to span another line underneath, allowing
+multi-line messages.
 
 >#STRINGS.HLP:1st:Strings, Special Formatting, and Their Place in Robotic
 
@@ -5510,13 +5668,15 @@ any further commands until an external event affects it.
 
 These commands destroy the Robot forever. DIE ITEM will also
 put the player at the location the Robot previously occupied,
-which is useful for creating Robots that simulate items.
+which is useful for creating Robots that simulate collectible
+items.
 
 :_w1:~AWAIT #
 
 This command will cause the Robot to do absolutely nothing for
 a given number of cycles (limited to 255; values over this will
-wrap around).
+wrap around). Robots will still respond to label sends when
+waiting, provided that the Robot is not locked.
 
 :_c9:~ACHAR [char]
 
@@ -5537,7 +5697,8 @@ internal variables that can be changed through Robots. They are
 usually used for custom purposes, although there are many
 counters with pre-defined uses as well, such as "Gems". The
 RANDOM version will set the counter to a random number within
-the given range, inclusive.
+the given range, inclusive (first number minimum, second
+maximum).
 
 :_sH:~ASET "$string" "text"
 :_sI:~ASET "$string" "$string2"
@@ -5555,7 +5716,8 @@ another string or a number, respectively.
 
 These commands will increase or decrease a given counter or
 string by a given amount. The RANDOM versions will increase or
-decrease by a random number within the given range, inclusive.
+decrease by a random number within the given range, inclusive
+(first number minimum, second maximum).
 
 >#COUNTERS.HLP:1st:Counters, Built-in Counters and Local Counters
 
@@ -5621,7 +5783,7 @@ given label.
 :_b1:~ABECOME [color] [thing] [param]
 
 The Robot will end its program permanently, and instead become
-a specified object with a given color and parameter. 
+a specified object with a given color and parameter.
 NOTE: Becoming another Robot type will not destroy the program,
 but there are far better commands for doing this: ~ABECOME~F
 ~APUSHABLE~F and ~ABECOME NONPUSHABLE~F.
@@ -5660,13 +5822,12 @@ use ~ADUPLICATE SELF # #~F or ~ADUPLICATE SELF [dir]~F.
 
 :_m3:~AMOD "file"
 
-This command loads the given module/OGG/WAV/SAM file as
-background music. These files also can be loaded from a
-subdirectory with the syntax of ""dir"\"file"" or 
-""dir"/"file"" (without the inner quotes). The biggest
-difference between MOD and SAM commands is that for a file
-loaded with MOD one can use related commands like VOLUME and
-MOD ORDER; the music loops as well.
+This command loads the given module/OGG/SAM file as background
+music. These files also can be loaded from a subdirectory with
+the syntax of ""dir"\"file"" or ""dir"/"file"" (without the
+inner quotes). The biggest difference between MOD and SAM
+commands is that for a file loaded with MOD one can use related
+commands like VOLUME and MOD ORDER; the music loops as well.
 NOTE: placing * at the end of the filename will set the current
 mod to the given filename, but institute MOD "*" (see below) for
 subsequent board visits.
@@ -5718,7 +5879,7 @@ counter, respectively.
 
 Multiplies, divides, or performs a modulo on the value of the
 given counter by the given number (rounding down), and then sets
-the counter to the result. 
+the counter to the result.
 To modulo is to set to the remainder when dividing. Example: 7
 modulo 3 is equal to 1, since 7 divided by 3 gives a remainder
 of 1.
@@ -5753,8 +5914,8 @@ Plays the given built-in sound effect.
 :_eH:~AEXPLODE #
 
 The Robot will explode, destroying it and its program forever.
-The radius of the explosion is stated in the command, with a
-maximum of 16.
+The radius of the explosion in characters is stated in the
+command, with a maximum of 16 characters.
 
 :_cD:~ACOLOR FADE OUT
 :_cE:~ACOLOR FADE IN
@@ -5879,8 +6040,8 @@ be stated in one of three ways:
 NOTE: Exact means just that, EXACT, down to the values of
 local counters. The only thing that will differ will be the
 robot_id. If one requires an group of objects differing only in
-name, COPYROBOT is unsuitable for this purpose because even the
-Robot name is copied.
+name, COPYROBOT is generally unsuitable for this purpose because
+even the Robot name is copied.
 
 >#COMMANDS.HLP:dir:Directions
 
@@ -5991,7 +6152,7 @@ immediate given direction.
 
 :_i7:~AIF ALIGNEDROBOT "Robot" "label"
 
-Jump to the given label if the current Robot is aligned either
+Jumps to the given label if the current Robot is aligned either
 vertically or horizontally with the named Robot.
 
 :_i8:~AIF ANY [color] [thing] [param] "label"
@@ -6058,6 +6219,10 @@ all locks on the player, allowing free movement and attacking.
 These have no relation to the Board Info options "Can Bomb" and
 "Can Shoot". Player locking is local, only affecting the
 current board.
+
+Locking the player will also prevent messages related to locked
+actions from showing (such as bomb switch messages or a "Can't
+{shoot/bomb} here!" message when the player is attack locked).
 
 Also, locking the player will not cause the relevant input to
 be ignored completely. MegaZeux will still detect that you are
@@ -6186,8 +6351,7 @@ applicable. For example, JUMP MOD ORDER 3 will begin playing
 the third order in the module, which is the fourth section of
 the module. Sometimes your music editor will refer to this as
 the 'Pattern' or 'Track'.
-With OGG music and/or WAVs, this command makes a jump to the
-stated frame.
+With OGG music, this command makes a jump to the stated frame.
 
 >#SOUNDEFX.HLP:1st:Sound and Music
 
@@ -6361,22 +6525,24 @@ The player's health is filled to its maximum.
 
 :_cA:~ACLEAR MESG
 
-The message row, if currently displayed, disappears.
+The message line, if currently displayed, stops displaying its
+current message.
 
 :_m1:~AMESSAGE ROW #
 
-The message row is moved to the stated row, from 0 to 24.
+The top row of the message line is moved to the stated row. The
+range is 0 to 24.
 
 :_sN:~ASET MESG COLUMN #
 
-The message is displayed starting from the given column, from 0
-to 79. (The actual message will start at this location, not the
-message edge.)
+Changes the message line to display its messages starting from
+the given column. The range is 0 to 79 and the changes affect
+each row. (The actual message will start at this location, not
+the message edge.)
 
 :_c1:~ACENTER MESG
 
-The message is centered on its row instead of being shown at a
-constant column. (see above)
+Changes the message line to center its messages on its rows.
 
 :_l4:~ALOAD CHAR SET "file"
 :_l5:~ALOAD PALETTE "file"
@@ -6450,6 +6616,10 @@ Plays a sample (instrument) from the current module file. The
 first number states the frequency at which to play it; the
 second is the number of the sample, from 1 on.
 
+This command will not work in current versions. Support for
+older worlds using this command is implemented only for the XMP
+module engine (the engine used for most release builds).
+
 >#SOUNDEFX.HLP:1st:Sound and Music
 
 :_l0:~ALOCKSCROLL
@@ -6468,28 +6638,28 @@ Robot editor, select the desired character, and press ESC.
 
 :_m5:~AMOD FADE IN "file"
 
-Fades in the stated module/OGG/WAV music file, from 0 volume to
-255 volume. These files also can be loaded from a subdirectory
-with the syntax of ""dir"\"file"" or ""dir"/"file"" (without
-the inner quotes).
+Fades in the stated module/OGG music file, from 0 volume to 255
+volume. These files also can be loaded from a subdirectory with
+the syntax of ""dir"\"file"" or ""dir"/"file"" (without the
+inner quotes).
 
 >#SOUNDEFX.HLP:1st:Sound and Music
 >#STRINGS.HLP:1st:Strings, Special Formatting, and Their Place in Robotic
 
 :_m6:~AMOD FADE OUT
 
-Fades out the current module/OGG/WAV music file, from the
-current volume to 0 volume. Although the mod will be inaudible,
-it will still be the current music file after the fade out.
+Fades out the current module/OGG music file, from the current
+volume to 0 volume. Although the mod will be inaudible, it will
+still be the current music file after the fade out.
 
 >#SOUNDEFX.HLP:1st:Sound and Music
 
 :_m4:~AMOD FADE # #
 
-Fades the current module/OGG/WAV music file to a given volume
-at the given rate. The first number is the target volume, the
-second number is the speed at which to fade. All negative
-numbers and numbers over 255 will wrap around.
+Fades the current module/OGG music file to a given volume at the
+given rate. The first number is the target volume, the second
+number is the speed at which to fade. All negative numbers and
+numbers over 255 will wrap around.
 
 >#SOUNDEFX.HLP:1st:Sound and Music
 
@@ -6519,8 +6689,8 @@ Changes the player's health limit, or maximum health rating.
 
 :_w2:~AWAIT MOD FADE
 
-Waits for the module/OGG/WAV music to finish its fading. (see
-MOD FADE IN, MOD FADE OUT, and MOD FADE)
+Waits for the module/OGG music to finish its fading. (see MOD
+FADE IN, MOD FADE OUT, and MOD FADE)
 
 >#SOUNDEFX.HLP:1st:Sound and Music
 >#COMMAND2.HLP:_m5:~AMOD FADE IN "file"
@@ -6686,7 +6856,7 @@ second character.
 :_d5:~ADISABLE MESG EDGE
 :_e7:~AENABLE MESG EDGE
 
-Disables or enables the edging on the message row. When
+Disables or enables the edging on the message line. When
 enabled, all messages have a space (char 32) tacked onto each
 end for display clarity. This is enabled by default.
 
@@ -6753,10 +6923,11 @@ TITLE   = The color of the scroll/box title
 :_sA:~ASCROLLVIEW POSITION # #
 :_r0:~ARESETVIEW
 
-The first two commands scroll the current view a number of
-spaces in one direction or until the given coordinates are in
-the upper-left corner. RESETVIEW resets the view to normal,
-showing the player in the center of the screen when possible.
+The first two commands jump the current view a number of spaces
+in one direction or until the given coordinates are in the
+upper-left corner. RESETVIEW resets the view to normal, showing
+the player in the center of the screen when possible. All of
+these change to the target view instantaneously.
 
 >#COMMANDS.HLP:dir:Directions
 
@@ -7183,7 +7354,7 @@ Special-case characters that can work with KEY? are character 8
 127 (Delete) and character 13 (Enter, though there's a better
 label just for this mentioned in the very next entry).
 
-There is another way to scan for key presses - using counters.
+There is another way to scan for key presses: using counters.
 They are called KEY_PRESSED, KEY, and KEY_CODE, and are detailed
 in the Miscellaneous Counters section of the help file.
 
@@ -7341,7 +7512,7 @@ divided into distinct sections.
 >#COUNTERS.HLP:stc:String Counters
 >#COUNTERS.HLP:szc:Super MZX Counters
 >#COUNTERS.HLP:cha:Character Edit Counters
->#COUNTERS.HLP:chu:Mouse Counters
+>#COUNTERS.HLP:nkp:Mouse/Joystick Counters
 >#COUNTERS.HLP:def:Defaults Counters
 >#COUNTERS.HLP:vlc:Vlayer Counters
 >#COUNTERS.HLP:msc:Miscellaneous Counters
@@ -7419,9 +7590,9 @@ Enemy bullets, if actually used to affect shot bullets.
 
 ~BCOMMANDS
 
-The number of commands executed per cycle (40 is default). This
-number is global. It can severely slow MegaZeux if set too high
-and coupled with poor coding (especially busy loops lacking
+The number of commands executed per Robot cycle (40 is default).
+This number is global. It can severely slow MegaZeux if set too
+high and coupled with poor coding (especially busy loops lacking
 cycle-ending commands).
 
 ~BLOOPCOUNT (local)
@@ -7527,8 +7698,8 @@ NOTE: This timer was erroneously called "TIMERSET" in some
 versions. MZX will NOT use TIMERSET as a synonym for this
 counter in current versions.
 
-~BSCROLLEDX (board, read-only)
-~BSCROLLEDY (board, read-only)
+~BSCROLLEDX (read-only, board)
+~BSCROLLEDY (read-only, board)
 
 The top-left corner of the screen's x or y coordinates,
 respectively.
@@ -7632,13 +7803,26 @@ Controls the current mod order of the currently playing mod.
 ~BMOD_POSITION (board)
 
 Controls the current row in tracked modules, or the current PCM
-sample in other types of audio files.
+sample in OGGs.
 
 ~BMOD_LENGTH (read-only, board)
 
 Displays the length of the currently playing mod. This counter's
 value shows number of rows for module files and number of
-samples for WAV/OGG files.
+samples for OGG files.
+
+NOTE: This counter will not work if MegaZeux was built with the
+Mikmod engine. This is a minor concern due to Mikmod never being
+the default module engine for MegaZeux.
+
+~BMOD_LOOPSTART
+~BMOD_LOOPEND
+
+These counters control looping in the currently-playing music.
+MOD_LOOPSTART marks the beginning position of a loop;
+MOD_LOOPEND marks the end. If MOD_LOOPEND is 0, no looping will
+occur. Despite the counter names, they do not work on tracked 
+modules, only OGG files.
 
 $Mathematical Counters
 :mth:
@@ -7665,17 +7849,17 @@ comma is required.
 ~BMULTIPLIER
 
 Multiplies values output by the normal trigonometric functions
-(sin, cos, tan) by the given number.
+(sin, cos, tan) by the given number. Defaults to 10000.
 
 ~BDIVIDER
 
 Divides the number given to the inverse trigonometric functions
-(asin, acos, atan) by the given number.
+(asin, acos, atan) by the given number. Defaults to 10000.
 
 ~BC_DIVISIONS
 
-Determines how many divisions the base circle in MegaZeux's
-trigonometric functions is divided.
+Determines the number of divisions of the base circle in
+MegaZeux's trigonometric functions. Defaults to 360.
 
 ~BSINn
 ~BCOSn
@@ -7746,8 +7930,30 @@ operations, respectively.
 ~BFWRITE (function)
 ~BFREAD (function)
 
-Writes strings to and read strings from, respectively, the open
-file.
+Respectively writes to and reads from the open file. With
+counters, these counters only write/read a single byte at a
+time; with strings, FWRITE will write a full string and tack the
+terminator character to the end, and FREAD will read a full
+string up to the terminator.
+
+~BFWRITEn (function)
+~BFREADn (function)
+
+Respectively writes to and reads from the open file, but will
+limit action to n number of characters. These counters only work
+with strings, not with counters, and will neither place nor
+respect terminator characters.
+
+~BFREAD_LENGTH
+
+Returns the length in characters of the open file in read mode.
+If this file does not exist, returns -1. If a directory is open,
+returns the number of items (files and subdirectories) in that
+directory.
+
+~BFWRITE_LENGTH
+
+Returns the length in characters of the open file in write mode.
 
 ~BSAVE_ROBOT (function)
 ~BLOAD_ROBOT (function)
@@ -7758,6 +7964,9 @@ Saves or loads Robotic code to or from plaintext files,
 respectively. The first forms save/load the current Robot,
 while the second forms save/load the Robot with the Robot ID of
 the number n.
+
+One can also load a string as a Robot instead of a text file, or
+save a Robot into a given string.
 
 ~BSAVE_BC (function)
 ~BLOAD_BC (function)
@@ -7798,37 +8007,40 @@ valid. If the foreground collided, SPR_CLIST0 is always set to
 
 ~BSPR_COLLISIONS (read-only)
 
-The number of sprites/foreground collisions listed in
+The number of sprite/foreground collisions listed in
 SPR_CLISTn.
 
 ~BSPR_NUM
 
-When using p?? for a sprite this value is referenced. When
-IF c?? Sprite p?? X Y is used, SPR_NUM is used to match the
-highest sprite that's checked; i.e. it will check for all
-sprite parameters from p00 to SPR_NUM, and will return true on
-the first match.
+When using p?? for placing a sprite, this counter's value
+becomes the sprite's parameter. When IF c?? Sprite p?? X Y is
+used, SPR_NUM will be set to the number of the first sprite that
+makes the IF statement true (if there are any). The sprites are
+checked by sprite number in ascending order.
 
 ~BSPR_YORDER (write-only)
 
-If set to 1, the sprites are drawn in order of lowest SPRn_CY
-value to highest. Otherwise, the sprites are drawn in order of
-their numbers.
+If set to 1, the sprites are drawn in order of lowest sum of
+SPRn_Y and SPRn_CY values to highest instead of in order of
+their sprite numbers. Any incidence of matching sums will have
+draw order determined by sprite number. If any SPRn_Z values are
+set, those take precedence.
 
 ~BSPRn_CCHECK (write-only)
 
-If set to 1, overlapping char 32s will not cause a collision
-between sprites or the foreground. If set to 2, char 32s and
-blank chars will also not collide, and blank characters will
-not be drawn. If set to 3, the given unbound sprite will undergo
-pixel-precise collision checks, and transparent colors will not
-cause a collision. Setting to 0 will cancel any previously set
-ccheck modes for that given sprite.
+If set to 1 for sprite n, overlapping char 32s will not cause a
+collision between that sprite and other sprites or the
+foreground. If set to 2, char 32s and blank chars will also not
+collide, and blank characters will not be drawn. If set to 3,
+the given unbound sprite will undergo pixel-precise collision
+checks, and transparent colors will not cause a collision.
+Setting to 0 will cancel any previously set ccheck modes for
+that given sprite.
 
 ~BSPRn_CWIDTH
 ~BSPRn_CHEIGHT
 
-The dimensions of the collision box around a sprite. (X and Y
+The dimensions of the collision box around sprite n. (X and Y
 dimensions, respectively)
 
 ~BSPRn_CLIST (write-only)
@@ -7839,92 +8051,102 @@ on sprite n against its current location.
 ~BSPRn_CX
 ~BSPRn_CY
 
-The location, relative to the sprite's upper left corner, of
-the sprite's collision box (X and Y coordinates, respectively).
+The location, relative to sprite n's upper left corner, of the
+sprite's collision box (X and Y coordinates, respectively).
+These have default values of 0.
 
-~BSPRn_OFF (write-only)
+~BSPRn_OFF
 
-Turns the given sprite off if it is on.
+If set to any value, turns sprite n off if it is on.
 
 ~BSPRn_OVERLAID (write-only)
 ~BSPRn_OVERLAY (write-only)
 
-If either is set to 1, these draw the given sprite n over the
-overlay as opposed to underneath. Note that this has different
-behavior depending on whether unbound sprites are present. If
-there are any unbound sprites active, all overlaid sprites will
-be drawn above all non-overlaid sprites (as well as over the
-overlay). If unbound sprites are not in use, overlaid sprites
-will be drawn above the overlay, but will otherwise respect the
-standard sprite draw order.
+If either is set to 1, these draw sprite n over the overlay as
+opposed to underneath. Note that this has different behavior
+depending on whether unbound sprites are present. If there are
+any unbound sprites active, all overlaid sprites will be drawn
+above all non-overlaid sprites (as well as over the overlay).
+If unbound sprites are not in use, overlaid sprites will be
+drawn above the overlay, but will otherwise respect the standard
+sprite draw order.
 
 ~BSPRn_REFX
 ~BSPRn_REFY
 
-Where the sprite's appearance is stored - either on the board
-or the vlayer (see SPRn_VLAYER). Whatever this looks like at
-this position is what the sprite will look like when drawn,
-including the colors if c?? is used when placing the sprite.
+Where sprite n's appearance is stored - either on the board or
+the vlayer (see SPRn_VLAYER). REFX is the x-coordinate, REFY is
+the y-coordinate. Whatever this looks like at this position is
+what the sprite will look like when drawn, including the colors
+if c?? is used when placing the sprite.
 
 ~BSPRn_SETVIEW (write-only)
 
 Setting this to 1 will cause the viewport to be centered around
-sprite n. This is useful for scrolling the screen, along with
-sprite based players.
+sprite n. This is not a permanent effect, but a one-time jump
+akin to the RESETVIEW command. This is useful for scrolling the
+screen for (e.g.) a sprite-based player object.
 
 ~BSPRn_STATIC (write-only)
 
-If set to 1, makes given sprite n act static (like a static
-overlay, a static sprite always stays in a given position on
-the screen); if this is 0, the sprite scrolls with the board.
-SPRn_STATIC takes in SCROLLEDX and SCROLLEDY as collision
-reference points, as opposed to the normal x,y coordinates.
+If set to 1, makes sprite n act static (like a static overlay, a
+static sprite always stays in a given position on the screen);
+if this is 0, the sprite scrolls with the board.
 
 ~BSPRn_SWAP (write-only)
 
-Swaps the given sprite n with the sprite number to which this
-function is set.
+Swaps sprite n with the sprite number to which this function is
+set.
 
 ~BSPRn_VLAYER (write-only)
 
-If set to 1, the sprite is referenced from the vlayer instead
-of the board.
+If set to 1, sprite n is referenced from the vlayer instead of
+the board.
 
 ~BSPRn_WIDTH
 ~BSPRn_HEIGHT
 
-The dimensions of the sprite. (x and y dimensions,
-respectively.)
+The dimensions of sprite n. (x and y dimensions, respectively.)
 
 ~BSPRn_X
 ~BSPRn_Y
 
-The current position of the sprite. This can be used to set the
+The current position of sprite n. These can be used to set the
 sprite outside the edges of the board, whereas PUT c?? Sprite
 p?? X Y disallows this.
 
+~BSPRn_Z
+
+These counters allow a user-defined sprite draw order. This
+method of determining draw order takes precedence over
+SPR_YORDER and sprite number. Higher SPRn_Z values are higher
+priority and will be drawn over sprites with lower SPRn_Z
+numbers. Matching SPRn_Z values will fall back to SPR_YORDER
+precedence if active, and sprite number precedence otherwise.
+
 ~BSPRn_UNBOUND
 
-If set to 1, unbinds the given sprite n from the grid, making
-its coordinates refer to pixel positions instead of tile
-positions. Its dimensions (SPRn_HEIGHT, SPRn_WIDTH) and
-reference coordinates (SPRn_REFX, SPRn_REFY) will still be
-relative to tiles, but its current position (SPRn_X, SPRn_Y)
-and collision box counters (SPRn_CX, SPRn_CY, SPRn_CWIDTH,
-SPRn_CHEIGHT) will adhere to this change. See the Unbound
-Sprites section in the Sprites help for more information.
+If set to 1, unbinds sprite n from the grid, making its
+coordinates refer to pixel positions instead of tile positions.
+Its dimensions (SPRn_HEIGHT, SPRn_WIDTH) and reference
+coordinates (SPRn_REFX, SPRn_REFY) will still be relative to
+tiles, but its current position (SPRn_X, SPRn_Y) and collision
+box counters (SPRn_CX, SPRn_CY, SPRn_CWIDTH, SPRn_CHEIGHT) will
+adhere to this change. See the Unbound Sprites section in the
+Sprites help for more information.
 
 ~BSPRn_TCOL
 
-Sets which color provides transparency for a given unbound
-sprite n. Setting to -1 disables transparency for that sprite.
+Sets which color provides transparency for unbound sprite n.
+Setting to -1 disables transparency for that sprite. Defaults to
+0.
 
 ~BSPRn_OFFSET
 
-Internally alters any number that refers to a character for a
-given sprite n. In the case of unbound sprites, this number will
-often be a multiple of 256 in order to access an extra charset,
-but offset values within char sets may also be used.
+Internally alters any number that refers to a character for
+sprite n. In the case of unbound sprites, this number will often
+be a multiple of 256 in order to access an extra charset, but
+offset values within char sets may also be used.
 
 >#SPRITES.HLP:spr:Sprites
 
@@ -7983,16 +8205,20 @@ $Super MZX Counters
 
 ~BSMZX_MODE
 
-Determines whether Super MZX mode is off (0), 1, 2, or 3.
+Determines whether Super MZX mode is off (0), 1, 2, or 3. All
+other values wrap around these four (so, for instance, trying to
+set SMZX_MODE to 4 would set it to 0, and trying to set
+SMZX_MODE to -1 would set it to 3).
 
 ~BSMZX_Rn
 ~BSMZX_Bn
 ~BSMZX_Gn
 
 Changes or reads the value of color n's red/blue/green value,
-respectively. These counters also work outside of SMZX modes;
-in normal mode, numbers 0-15 alter the normal palette while
-16-31 alter the protected palette.
+respectively. These counters range from 0-63; numbers outside
+these bounds wrap around. These counters also work outside of
+SMZX modes; in normal mode, using numbers 0-15 for n alters the
+current palette.
 
 ~BSMZX_IDXx,y
 
@@ -8011,7 +8237,7 @@ Loads SMZX indices files. This only applies for SMZX Mode 3.
 
 ~BSMZX_MESSAGE
 
-Controls whether messages in the message row are displayed with
+Controls whether messages in the message line are displayed with
 SMZX characters and colors in SMZX modes. 1 is yes, 0 is no
 (displays in normal mode); the default value is 1.
 
@@ -8045,8 +8271,9 @@ consists of fourteen rows of eight pixels, which gives us 256
 pixels across by 112 pixels down. Since we start counting at 0,
 the top-left pixel of the top-left character (char 0) would be
 0,0. The bottom-right pixel of the bottom-right character
-(char 255) would be 255,111. However, these counters become
-worthless in SMZX modes.
+(char 255) would be 255,111.
+
+These counters become useless in SMZX modes.
 
 >#CHAREDIT.HLP:079:The Character Editor
 
@@ -8060,6 +8287,10 @@ byte using the CHAR_BYTE counter. Char_byte values range from
 0-255, and the meaning of each char_byte setting changes between
 normal mode and SMZX modes. Normal MZX graphics mode sets bytes
 in binary (base 2); SMZX modes use quaternary (base 4).
+
+These counters can also edit the extra character sets unbound
+sprites use by setting CHAR to the character numbers of the
+extra sets (e.g. 256 for the first char of the first extra set).
 
 It helps to write the number in binary/quaternary first, then
 convert to decimal. Writing the numbers this way helps
@@ -8103,8 +8334,8 @@ Here, color values range from 0 to 3.
 
 >#CHAREDIT.HLP:079:The Character Editor
 
-$Mouse Counters
-:chu:
+$Mouse/Joystick Counters
+:nkp:
 
 ~BMOUSEX
 ~BMOUSEY
@@ -8116,8 +8347,9 @@ relative to the screen in characters.
 ~BMOUSEPY
 
 Reads/sets the mouse cursor's x or y-coordinates (respectively)
-in pixels. Always scales to terms of 640x350, regardless of the
-actual resolution or current SMZX mode.
+relative to the screen in pixels. Always scales to terms of
+640x350, regardless of the actual resolution or current SMZX
+mode.
 
 ~BMBOARDX (read-only, board)
 ~BMBOARDY (read-only, board)
@@ -8146,6 +8378,27 @@ output 5 (1 + 4).
 
 Determines whether the default mouse cursor is on or off (0 is
 off, 1 (or any non-zero value) is on - defaults to off).
+
+~BJOY#ACTIVE (read-only)
+
+Determines the status of the given joystick numbered #. Returns
+1 for active, 0 for inactive, and -1 for an invalid index.
+
+~BJOY#.[ACTION] (read-only)
+
+Determines the status of the given joystick action for the given
+joystick numbered #. The square brackets are not included.
+Digital actions return 1 for pressed/held and 0 for
+unpressed/unheld. Analog actions will return their current
+value. Invalid actions will return -1.
+
+Please read joystick.html for a full list of actions.
+
+~BJOY_SIMULATE_KEYS
+
+Allows MegaZeux to simulate key presses with joystick actions
+when enabled. 0 is off, 1 (or any non-zero value) is on.
+Defaults to on.
 
 $Defaults Counters
 :def:
@@ -8251,11 +8504,11 @@ configuration file upon loading a different game.
 ~BCOMMANDS_STOP
 
 A special counter active only while playtesting in the editor.
-COMMAND_STOP will activate stepping in the Robotic debugger,
+COMMANDS_STOP will activate stepping in the Robotic debugger,
 even if the debugger was currently disabled, once the number of
 commands any specific Robot executes in a single cycle exceeds
-COMMAND_STOP's value. By default, COMMAND_STOP holds a value of
-2000000.
+COMMANDS_STOP's value. By default, COMMANDS_STOP holds a value
+of 2000000.
 
 ~BEXIT_GAME
 
@@ -8277,7 +8530,7 @@ MZXRun will be ignored.
 ~BGREEN_VALUE
 ~BBLUE_VALUE
 
-When CURRENT_COLOR is set between 0 and 31 (between 0 and 255
+When CURRENT_COLOR is set between 0 and 15 (between 0 and 255
 in Super MZX modes), the other three counters contain the red,
 green and blue values of that color.
 
@@ -8286,29 +8539,32 @@ green and blue values of that color.
 
 ~BINPUT (board)
 
-The numerical value of the last string inputted.
+The numerical value of the last string inputted in an INPUT
+STRING box.
 
 >#COMMAND2.HLP:_iP:INPUT STRING "string"
 
 ~BINPUTSIZE (board)
 
-The size, in characters, of the last string inputted.
+The size, in characters, of the last string inputted in an INPUT
+STRING box.
 
 >#COMMAND2.HLP:_iP:INPUT STRING "string"
 
-~BDATE_DAY (read-only)
-~BDATE_MONTH (read-only)
-~BDATE_YEAR (read-only)
+~BDATE_DAY (read-only, universal)
+~BDATE_MONTH (read-only, universal)
+~BDATE_YEAR (read-only, universal)
 
 Contain the current day, month and year respectively, based on
 the system clock.
 
-~BTIME_HOURS (read-only)
-~BTIME_MINUTES (read-only)
-~BTIME_SECONDS (read-only)
+~BTIME_HOURS (read-only, universal)
+~BTIME_MINUTES (read-only, universal)
+~BTIME_SECONDS (read-only, universal)
+~BTIME_MILLIS (read-only, universal)
 
-Contain the current hour, minute and second respectively, based
-on the system clock, in 24-hour format.
+Contain the current hour, minute, second and millisecond
+respectively, based on the system clock, in 24-hour format.
 
 ~BINT
 ~BBIT_PLACE
@@ -8680,7 +8936,7 @@ somewhat moderate to completely master. It is somewhere along
 the lines of BASIC, although more complex. If you've ever used
 Epic Megagame's ZZT, Robotic is vastly more complex than
 ZZT-OOP, although there are vague similiarities. There's a
-kludge or two dozen to get really powerful things working, but
+kludge or dozen to get really powerful things working, but
 you'll get used to them.
 
 To place a Robot in the editor, press F10 and select Robot. (You
@@ -8815,10 +9071,10 @@ Here's what each line does.
 ~E* "HELLO WORLD!"
 
 The * command puts whatever text is in the parentheses on the
-bottom of the screen. (Actually, it's the given message row
-line, which is the bottom by default.) All Robotic code starts
-immediately, so this particular statement happens right as the
-board with this Robot is loaded.
+bottom of the screen. (Actually, it's placed on the given
+message line row, which is the bottom by default.) All Robotic
+code starts immediately, so this particular statement happens
+right as the board with this Robot is loaded.
 
 ~Eend
 
@@ -9118,7 +9374,8 @@ Certain commands (as hinted above) are worthless in the global.
 Obvious commands such as BECOME, EXPLODE, COLOR/CHAR and all
 command forms that take a relative direction (like LAYBOMB and
 DUPLICATE SELF [dir]) will be ignored. DIE, DIE ITEM and GOTOXY
-.# # are completely ignored as well.
+.# # are completely ignored as well. Any checks at (-1,-1) will
+fail to detect the global.
 
 Finally, the global is the only Robot that ignores FREEZETIME
 and SLOWTIME states. This is extremely handy in creating the
@@ -9143,12 +9400,13 @@ are several practices to avoid, as well as proper replacements.
   Anything that has an undefined value will use a default
   that may be undesirable. The correct action would therefore
   be to define the object's color and parameter values. c?? and
-  p?? exist for the sake of Robotic comparisons and conditional
-  branching, not for being applied to actual objects.
+  p?? generally exist for the sake of Robotic comparisons and
+  conditional branching, not for being applied to actual
+  objects.
   Sprites are an exception regarding color, since they refer to
   a set of placed characters with their own colors.
 ~9GOOD: Putting in set values for colors and parameters when
-  placing objects.
+  ~9placing objects.
 
 ~cBAD: Using global counters for temporary or localized work.
   There are several counters that are Robot-specific and don't
@@ -9164,9 +9422,9 @@ are several practices to avoid, as well as proper replacements.
 
 ~CBAD: Breaking a subroutine without returning or entering the
   ~Cmiddle of a subroutine.
-~9GOOD: Fully finishing and starting subroutines. This is
-  especially important for built-in labels which can trigger
-  very rapidly, such as #keyN.
+~9GOOD: Fully finishing and starting subroutines.
+  This is especially important for built-in labels which can
+  trigger very rapidly, such as #keyN.
 
 ~cBAD: Using a high amount of if statements regarding one
   ~Cvariable.
@@ -9305,7 +9563,7 @@ Therefore, using expressions for nesting is another benefit.
 
 Example: We set "r" to 1, "in" to 8 and "out18" to 11. We want
 to output the value of "out18".
-"(&out&&r&in&&)" would output (0r&in&).
+"(&out&r&&in&&)" would output (0r&in&).
 "('out'r''in'')" would output ('out'r''in'')
 "('out('r')('in')')" would output the desired result - 11.
 
@@ -9460,10 +9718,13 @@ abilities. File access can do things that no other tools of
 MegaZeux can do, such as create high score tables or preserve
 and unlock game options without needing a save. An MZX world
 can access any file in its own directory or deeper, including
-for charset, palette, sound and MZM loading commands; access of
-folders outside of this range is forbidden.
+for charset, palette, sound and MZM loading commands. To do
+this, give MZX the subdirectory name as well as the file name.
+Both slashes and backslashes are accepted, regardless of OS.
+Examples: "subdir/subsubdir/file.txt", "subdir\\file.txt".
+Access of folders outside of this range is forbidden.
 
-MegaZeux has some ways of saving standard formats in-game:
+MegaZeux has some ways of accessing standard formats in-game:
 
 ~ASET "file.txt" to "SAVE_ROBOT"
 ~ASET "file.txt" to "LOAD_ROBOT"
@@ -9500,11 +9761,12 @@ These commands save or load MZX savegames, respectively.
 ~ASET "file.sav" to "LOAD_COUNTERS"
 
 These commands respectively save or load a counters file.
-Counter files only contain counter and string data and do not
-require version checks. Saving will dump the current contents
-of the current world's counters and strings; loading will set
-the current world's counter and string values to the values
-given in the file.
+Counter files only contain counter and string data (to be
+specific, only global and current board counters/strings).
+Unlike save files, they do not require version checks. Saving
+will dump the current contents of the current world's counters
+and strings; loading will set the current world's counter and
+string values to the values given in the file.
 
 ~ASET "file.palidx" to "SMZX_INDICES"
 
@@ -9513,8 +9775,8 @@ essentially miniature palettes and will only load in SMZX Mode
 3.
 
 MegaZeux can manipulate any type of file with certain Robotic
-commands. There are some basic things to remember when using
-file access.
+commands. Here are some basic things to remember when using file
+access.
 
 -A file can only be read or written to at one time, never both.
 This means you can't select the same file to be the current
@@ -9533,6 +9795,12 @@ a string when encountered (the terminator character itself will
 not be in the string output). However, using FWRITEn will not
 place a terminator, and FREADn will ignore any terminator
 characters encountered.
+-To find the length of a file, use the FREAD_LENGTH and
+FWRITE_LENGTH counters. They will report the length of the file
+currently open in the respective mode in characters. If a
+directory is open for reading, the counter will be the number of
+files and subdirectories in that directory. If there is no file
+or directory open, these counters will return -1.
 -Lastly, files need to be closed when the current task is
 finished. Otherwise, the file remains open and causes problems.
 To close a file, use SET "" to "FREAD_OPEN" to close a file for
@@ -9543,7 +9811,7 @@ Here are the file writing commands at your disposal.
 
 ~ASET "file.xxx" to "FREAD_OPEN"
 
-This command loads a file for reading. 
+This command loads a file for reading.
 
 ~ASET "file.xxx" to "FWRITE_OPEN"
 
@@ -9567,14 +9835,18 @@ mode.
 These commands change the current reading or writing position
 of the accessed files. The position is in DECIMAL, not
 hexadecimal, and the first position is 0; when no file is
-loaded, the relevant counter is -1. To seek the end of a file,
-set to -1.
+loaded, the relevant counter is -1.
+
+Setting "FREAD_POS" or "FWRITE_POS" to -1 is called "file
+end seeking" and will set the relevant counter to the final
+position in the file (or -1 if the file does not exist). This is
+very helpful for placing stuff at the end of a file.
 
 ~ASET "dir" to "FREAD_OPEN"
 
 This command opens subdirectories for reading (by using the name
 of the subdirectory by itself, e.g. ~ASET "directory" to
-"FREAD_OPEN"~F); FREAD will then list the names of files in the
+"FREAD_OPEN"~F). FREAD will then list the names of files in the
 directory, with each read position being a different filename.
 Note that the files are not guaranteed to be read in any
 specific order.
@@ -9582,8 +9854,8 @@ specific order.
 ~ASET "FREAD_DELIMITER" to #
 ~ASET "FWRITE_DELIMITER" to #
 
-These commands change the character considered the terminator;
-the FREAD command changes which character is detected as the
+These commands change the character considered the terminator.
+The FREAD command changes which character is detected as the
 terminator, and the FWRITE command changes which character is
 written as the terminator.
 
@@ -9607,8 +9879,8 @@ signed; the resulting range is from -2147483648 to 2147483647).
 ~ASET "$string" to "FREADn"
 
 These commands write values to and read values from,
-respectively, the open file relative to the FREAD_POS or
-FWRITE_POS counters. FWRITE and FREAD, when used with counters,
+respectively, the open file relative to the FWRITE_POS or
+FREAD_POS counters. FWRITE and FREAD, when used with counters,
 only write one byte at a time (from 0-255).
 The SET "$string" to "FWRITEn" and "FREADn" commands will write
 the first n characters (relative to FREAD_POS or FWRITE_POS)
@@ -9619,21 +9891,6 @@ string will be at least N characters long when written.
 FWRITE and FREAD, when used with counters, can be substituted
 by FWRITE_COUNTER and FREAD_COUNTER to read in longer values
 at a time (four bytes as opposed to one).
-
-Another use of file commands (which takes more work, but not
-much) is verifying whether a file exists. To do this, a 
-programmer would type:
-
-~ESET "file.xxx" to "FREAD_OPEN"
-~ESET "FREAD_POS" to -1
-~EIF "FREAD_POS" >= 0 "existslabel"
-
-If the file does not exist, "FREAD_POS" will read -1; if it
-does exist, "FREAD_POS" will be the number of characters in the
-file (0 or higher). Setting "FREAD_POS" or "FWRITE_POS" to -1
-is called "file end seeking" and is also very helpful for
-finding the length of the file, as well as for placing stuff at
-the end of a file.
 
 Here's a quick example of file access.
 
@@ -9703,22 +9960,31 @@ Sprites allow the designer to have interactive entities on the
 board composed of several characters. A sprite is a block of
 characters drawn on the board or the vlayer that is then
 displayed on the board, either beneath or above the overlay.
-The biggest benefit of sprites is that they are cohesive;
+The biggest benefit of sprites is that they are cohesive:
 unlike use of several Robots, there is absolutely no chance of
 the sprite falling apart.
 
-There are up to 256 available sprites (in total, not per board),
+Sprites also have the benefit of a well-defined draw order. This
+means that if sprites overlap, it is easy to determine which
+sprite gets shown in the overlap. By default, sprites determine
+this by sprite number. The sprites are drawn in order of sprite
+number, which means that parts of higher-numbered sprites will
+be displayed over lower-numbered ones whenever they overlap.
+
+There are up to 256 available sprites (globally, not per board),
 and sprites are controlled in the following ways:
 
--Through sprite specific counters named SPRn_value
+-Through sprite-specific counters named SPRn_value ("n" being
+ the sprite number, e.g. SPR10_value modifies sprite number 10)
 -Through control counters for all of the sprites
 -Through commands for placing sprites and testing for collision
 
-To setup a sprite you must set the SPRn_REFX / REFY / WIDTH /
+To set up a sprite you must set the SPRn_REFX / REFY / WIDTH /
 HEIGHT counters to define where the sprite's characters are and
-what its size is. (SPRn_REFX and SPRn_REFY are the coordinates
-for the upper-left corner of the reference characters, which are
-the characters a sprite uses for its appearance.) Then you use:
+the sprite's size. (SPRn_REFX and SPRn_REFY are the x,y
+coordinates for the upper-left corner of the reference
+characters, which are the characters a sprite uses for its
+appearance.) Then you use:
 
 ~APUT cXX sprite pNN x y
 
@@ -9752,46 +10018,55 @@ not be shown, instead displaying the next underlying layer.
 Also, if the reference characters change, the sprite's
 characters will change to match, as will colors of a c?? sprite.
 
-Now that you have sprites set up and displayed, you can do
+Outside of simple sprite motion such as this, you can do
 collision tests. These check if moving sprites will cause
 collision (i.e. overlapping) with either the foreground (i.e.
-customblocks) or with other sprites. This way, you can prevent
-sprites from moving on top of walls or on top of other
-characters, or allow a sprite to damage another one when
+customblocks) or with other sprites. This way, you can do things
+such as prevent sprites from moving on top of walls or on top of
+other characters, or allow a sprite to damage another one when
 striking.
 
-This is done by using the following command:
+For these, sprite collision boxes must be set, as sprites will
+not have one set by default. Use the SPRn_CX and SPRn_CY
+counters to set the respective x,y coordinates of the upper-left
+corner of the collision box, and use SPRn_CWIDTH and
+SPRn_CHEIGHT to set its respective width and height (in tiles).
+
+Once collision boxes are established, collision tests have to
+be triggered. This is done by using the following command:
 
 ~AIF c?? sprite_colliding pNN x y "collision"
 
-This will go to the label "collision" if moving the sprite x by
-y from its current position will cause it to collide with
+This will go to the label "collision" if moving sprite NN x by
+y from its current position would cause it to collide with
 something. If anything besides c?? is used then (x, y) are
 absolute board coordinates instead.
 
-If collision is gone to, then the spr_clistN counters will be
-set to what it collided with and spr_collisions will be set to
-the number of things that the sprite collided with. If the
-sprite will have collided with the foreground, spr_clist0 will
-be set to -1. If for instance, the sprite also collided with
-sprites 2 and 3 spr_collisions will be set to 3 and spr_clist1
-will be 2, spr_clist2 will be 3. The values of spr_clistN with
-values of n greater than spr_collisions - 1 are undefined.
+If colliding happens, then the spr_clistN counters will be
+set to what sprite numbers it collided with - one counter set
+for each other sprite in the collision, starting with spr_clist0
+- and spr_collisions will be set to the number of things that
+the sprite collided with. If the sprite collided with the
+foreground, spr_clist0 will be set to -1.
+
+So for instance, if the sprite collided with the foreground and
+sprites 2 and 3, spr_collisions will be set to 3, spr_clist0
+will be -1, spr_clist1 will be 2, and spr_clist2 will be 3. If
+the sprite collided only with sprites 2 and 3, spr_collisions
+will be set to 2, spr_clist0 will be 2, and spr_clist1 will be
+3. The values of spr_clistN with values of N greater than
+(spr_collisions - 1) are undefined.
+
+Alternatively, a collision check for a sprite can be done by
+setting that sprite n's "SPRn_CLIST" counter to anything. This
+checks that sprite against its current location and does not
+force a label jump on collision.
 
 Sprites can be set to ignore certain types of blocks in
 collision checks by setting the sprN_ccheck value of a given
 sprite N. In addition, setting a sprite's ccheck value to 2 will
-cause blank characters in a sprite from being shown, much like
+prevent blank characters in a sprite from being shown, much like
 char 32.
-
-sprN_static uses the SCROLLEDX and SCROLLEDY counters instead
-of absolute board coordinates for determining collisions.
-
-Sprites can also have modified collision boxes, instead of them
-being limited to covering the sprite. Use the SPRn_CX/SPRn_CY
-counters to set the respective x,y coordinates of the upper-left
-corner of the collision box, and use SPRn_CWIDTH/SPRn_CHEIGHT to
-set its respective width and height (in tiles).
 
 Since sprites are global, they will persist upon changing
 boards. Since the vlayer is global as well, using the vlayer to
@@ -9799,7 +10074,7 @@ reference characters (by setting the SPRn_VLAYER counter to 1)
 will keep sprite characters consistent between boards.
 
 $~9Unbound Sprites
-
+:ubs:
 Unbound sprites are sprites with special implementations,
 allowing significantly greater precision and access to extra
 character sets. They have their own setup, their own quirks, and
@@ -9872,8 +10147,10 @@ and potentially raise detail to normal MZX mode levels while
 retaining much of SMZX's palette benefits.
 
 Unfortunately, unbound sprites cannot be used with all MZX
-renderers. At present, the overlay2 renderer is incompatible
-with unbound sprites.
+renderers. At present, the overlay2 renderer (which is a 
+low-overhead renderer intended for platforms with weak video
+hardware that cannot support SDL2) is incompatible with
+unbound sprites.
 
 See the Sprite Counters and Robotic sections for other features
 of sprites not noted here.
@@ -9886,20 +10163,21 @@ of sprites not noted here.
 $~9Super MegaZeux Modes
 
 Super MZX modes (a.k.a. SMZX) allow richer color options at the
-expense of halved horizontal resolution. The number of colors
-per character doubles to four, while the number of total max
-colors on-screen at one time squares to 256. However, each mode
-works differently and has different limitations and uses.
+expense of halved horizontal resolution per character. The
+number of colors per character doubles to four, while the number
+of total max colors on-screen at one time squares to 256.
+However, each mode works differently and has different
+limitations and uses.
 
-In the editor, F11 switches between display modes. To set Super
-MZX modes in a game, use the ~Aset "smzx_mode" # ~FRobotic
-command, where # is the SMZX mode (0 to revert to normal mode).
+In the editor, F11 switches display modes. To set Super MZX
+modes in a game, use the ~Aset "smzx_mode" # ~FRobotic command,
+where # is the SMZX mode (0 to revert to normal mode).
 
 Super MZX mode 1 is the simplest mode and the easiest mode to
 use. SMZX mode 1 simply blends the foreground and background
 colors to get the third and fourth character colors. It is
-obviously limited (this mode only allows editing of the 16
-base colors) but is useful for anti-aliasing and shading
+obviously limited, as this mode only allows editing of the 16
+base colors, but is useful for anti-aliasing and shading
 effects.
 
 Super MZX mode 2 is the most difficult mode to use, although it
@@ -9938,7 +10216,7 @@ these rules. This essentially allows 256 user-defined
 subpalettes of four colors each. These overrides, called SMZX
 indices, are loaded and saved out separately from the normal
 palette. These changes can only apply for renderers that can
-show unbound sprites.
+show unbound sprites (which is the vast majority of renderers).
 
 Character editing in Super MZX modes is noticeably different.
 While the character set can be edited in MegaZeux's internal
@@ -9961,7 +10239,7 @@ palettes are:
 
 Manipulation of these counters can change or read the value of
 color n's red/blue/green value, respectively. n ranges from 0
-to 255.
+to 255, and counter values range from 0 to 63.
 
 The SMZX indices can also be directly read or changed with the
 ~BSMZX_IDXx,y~F counter. x is the palette color ranging from 0
@@ -9971,10 +10249,10 @@ to 255; y is one of the given color's indices ranging from 0 to
 Lastly, SMZX palettes and character sets can be loaded and
 saved like any other palette or character set. SMZX indices must
 be loaded in a special manner in Robotic:
-~ESET "filename" "SMZX_INDICES"~F. 
+~ESET "filename" "SMZX_INDICES"~F.
 There is a deprecated way to load an SMZX palette in Robotic
 (SET "filename" "smzx_palette") due to constraints DOS imposed,
-but it is no longer necessary. 
+but it is no longer necessary.
 
 >#COUNTERS.HLP:szc:Super MZX Counters
 >#PALEEDIT.HLP:093:The Palette Editor
@@ -10192,6 +10470,8 @@ Vlayer to string:
 Vlayer to itself:
 ~ACOPY (OVERLAY) BLOCK "#x1" "#y1" w h "#x2" "#y2"
 
+"m" and "c" can be any value but must exist.
+
 There are several ways to give the vlayer working coordinates:
 
 Pure numbers - ~E"#xxx"~F
@@ -10229,7 +10509,7 @@ given, the other becomes as large as possible to fill the given
 vlayer. For example, if one has a vlayer 50000 characters large
 and sets vlayer_height to 499, the vlayer's width will become
 100 characters wide (for a total vlayer size of 49900
-characters). 
+characters).
 
 All bad values of vlayer_size, vlayer_height and vlayer_width
 (0 and below) will be changed to 1.
@@ -10287,8 +10567,9 @@ copying non-graphical data (especially Robots); 1 is proper for
 copying graphical data, as the block's appearance will stay as
 exactly as it was when saved. The last case is for saving from
 the vlayer to MZM. The x,y coordinates MUST be in "#x" "#y"
-format, and the m MUST exist. Any valid MZX string can take the
-place of a filename, but the @@ prefix is still required.
+format, and the m can be any value but MUST exist. Any valid MZX
+string can take the place of a filename, but the @@ prefix is
+still required.
 
 Unlike with board MZMs containing Robots saved in the editor,
 loading board MZMs containing runtime Robots in the editor is
@@ -10406,10 +10687,11 @@ cause MegaZeux to trigger safeguards that prevent it from
 freezing.
 
 The two commands that are best suited for ending the cycle are
-WAIT 1 and CYCLE 1, due to their very low amounts of side
-effects. While WAIT 1 is preferred in most cases, there is a
-subtle difference between processing the two due to a quirk with
-reverse scan detailed later in this section.
+WAIT 1 and CYCLE 1, because of their very low amounts of side
+effects. While WAIT 1 is preferred in most cases, mostly due to
+being far more intuitive, there is a subtle difference between
+processing the two due to its quirk with reverse scan detailed
+later in this section.
 
 As a simple rule of thumb, commands that move anything on the
 board generally end a cycle, especially moving the player,
@@ -10529,6 +10811,557 @@ updated.
 #NEWINVER.HLP
 :1st: 
 $~9NEW in MegaZeux!
+
+September 23rd, 2019 - MZX 2.92b
+
+This release fixes several bugs, notably 3DS and Wii rendering
+issues and a bug where the wrong palette would be saved while
+COLOR FADE OUT was active. Also in this release are performance
+and usability improvements for the NDS and 3DS ports and a new
+frontend for HTML5/Emscripten builds (special thanks to asie).
+
+USERS
+
++ Fixed a bug where mouse warping both mouse coordinates would
+  not actually warp both coordinates.
++ Fixed a port regression where save files would be saved with
+  the wrong color intensities while COLOR FADE OUT was active
+  (or during the first cycle of a board for <2.90 worlds). This
+  fixes fading bugs in Ruin Diver 3.
++ Added compatibility for a bug where the robot message box
+  would disable COLOR FADE OUT in versions 2.83 through 2.90X.
+  This fixes several BKZX games.
++ Fixed checkres bugs separately preventing detection of global
+  robots in both world formats.
++ Fixed 3DS renderer bug where the UI wouldn't properly display
+  char foregrounds with extended graphics enabled.
++ Fixed 3DS renderer bug where sprites containing chars with
+  transparent foregrounds wouldn't draw any char backgrounds.
++ Fixed 3DS renderer crashes that would occur when large numbers
+  of sprites were active.
++ Improved file manager directory read times for 3DS/NDS/Wii.
++ File IO for world saving/loading is now buffered, which should
+  improve save/load times on the 3DS and Switch.
++ Enabled writing zip data descriptors for the Switch.
++ Added classic/stretch video ratio support for the 3DS and NDS
+  lower screens. (asie)
++ "classic" is now the default ratio for the 3DS, NDS, and Wii.
++ Fixed GX renderer bug where chars with both colors transparent
+  could cause various graphical bugs in normal MZX mode.
++ Fixed bug where board exits could be cleared when deleting a
+  board or after loading a world containing null boards.
++ Fixed bugs when playing STARDSTM.GDM with the libxmp engine.
++ Fixed a crash that could occur when importing a world in the
+  editor containing a null board.
++ Fixed a bug where null boards wouldn't be properly refactored
+  on the NDS while using a memory cart, causing entrances to
+  point to the wrong boards and possibly other problems.
++ Fixed a bug that could corrupt the ends of robot programs when
+  using an NDS memory cart.
++ Improved world loading times when using an NDS memory cart.
++ Improved NDS memory cart transfer speed. (asie)
++ Disabled NDS logging hacks when stdio redirect is enabled.
++ Exiting MZX on the NDS should now power off the NDS.
++ Added Emscripten frontend. (asie)
++ Fixed bug where errors in the title screen Load World window
+  could clear the rest of the screen.
++ Fixed crash that could occur when attempting to load an
+  invalid zip world.
++ Non-recursive directory deletion in the file manager now tries
+  to delete the directory itself instead of its contents. Added
+  error messages for failed file and directory deletes.
+
+DEVELOPERS
+
++ Added initial support for the dirent d_type field to help
+  avoid stat calls when reading directories.
++ Replaced most fseek calls in the legacy world loader.
++ Refactored move_current_board to be more readable.
++ Corrected some of the editor's bad extram handling and added
+  warnings to debug builds to help debug it (no platforms at the
+  present support both the editor and extram).
++ Replaced error wait_event() with update_event_status_delay().
++ Added preliminary VFS code to replace function pointer casting
+  in zip.c.
++ Fixed Wayland/X11 detection for setups that don't allow X or
+  Xorg to be run normally.
++ Unix builds should now attempt to load the icon from the
+  installed path instead of from a hardcoded path. Builds with
+  no sharedir set will use "contrib/icons/quantump.png" instead.
+
+>#MAIN.HLP:072:Table of Contents
+
+July 22nd, 2019 - MZX 2.92
+
+Here's another inexcusably big minor version release. First off,
+there are two new ports (Switch and Emscripten) and the Android
+port has been updated to be actually usable. Second, joystick
+support has been significantly overhauled (and depending on the
+controller/joystick you plug in, it may work with no config
+settings required!). Game joystick settings should no longer
+override the new UI joystick behavior. Also, controllers can now
+be used directly via Robotic. Read docs/joystick.html for more
+information on the new features.
+
+Other changes of note include RAD music support (v1 and v2),
+palette editor improvements, and some new counters. There's a
+new SDL 2 exclusive renderer to replace overlay1/overlay2 called
+"softscale" that performs much better than either did and with
+fewer crashes. Also of note are the massive number of fixed bugs
+and compatibility improvements, fixing regressions and error
+messages that affected around 20 different games (or more). A
+major bug was fixed that caused the updater to not initialize
+in Windows has been fixed too, so basically, update already.
+
+FEATURES
+
++ Added numerous improvements to MZX's joystick handling:
+  + Joystick inputs can now be bound to generic actions. These
+    actions correspond to XInput buttons and can interact with
+    MegaZeux's various windows in a context-specific manner.
+    They can be used directly in Robotic with the new counter
+    "joy#.[action]" or can be bound to keycodes in the config
+    file to allow them to be used with older games. The NDS,
+    3DS, Wii, PSP, and GP2X pad.config files have been updated
+    to use actions. See the help file or config file for more
+    info on the config options and available actions.
+  + Added automatic joystick mapping for Windows/Mac/Linux/etc.
+    Joysticks recognized as SDL game controllers are assigned
+    joystick actions when detected. This behavior can be altered
+    or disabled via config options.
+  + New counter: "joy#active" will return 1 if a given joystick
+    is availabled, 0 if not, and -1 if the index is invalid.
+  + New counter: "joy_simulate_keys". When set to 1 (default),
+    joysticks can produce simulated key presses, as in older MZX
+    versions. When set to 0, this behavior is disabled.
+  + Joystick settings in game.cnf files are now loaded as game-
+    specific joystick bindings. These bindings will no longer
+    override global/UI bindings defined by the config file or
+    pad.config. The default bindings are restored when any world
+    is loaded from the title screen; they are not restored when
+    a save is loaded, between world swaps, or in the editor.
+  + Joystick config options can be assigned to key names in the
+    format of "key_X" (without quotes), where X is the key name.
+  + Joystick config options for a particular controller now work
+    with ranges of controllers e.g. "joy[1,16].lshoulder = 13".
+  + Added the config setting "joy_axis_threshold". This setting
+    allows the threshold for joystick axis mapped presses to be
+    configured.
+  + The NDS directional pad is now considered a joystick hat.
+  + The 3DS directional pad is now considered a joystick hat.
+    The circle pad is now mappable as axes 1 and 2.
+  + The Wii Classic Controller triggers are now recognized as
+    axes 7 and 8. The Guitar Hero axes have been shifted to 9,
+    10, and 11, and a likely bug with the whammy bar axis has
+    been fixed. The Gamecube controller triggers are recognized
+    as axes 5 and 6, and all 8 controllers now have default
+    bindings in pad.config.
++ Added/updated Android port. (asie)
++ Added Emscripten port. (asie)
++ Added Nintendo Switch port. (Lachesis, asie)
++ The main menu and game menu are now usable with keyboard,
+  mouse, or joystick. Pressing a navigation key/joystick button
+  or clicking an option in these menus will enable a cursor to
+  select one of the options. Most listed options are selectable
+  unless disabled by the current game, in which case they will
+  be hidden from the menu entirely. However, the settings and
+  exit options appear regardless of their respective counters.
++ MegaZeux now supports Reality Adlib Tracker (RAD) music files.
+  Both 1.x and 2.x variants are fully supported.
++ New counter: TIME_MILLIS. Returns the milliseconds of the
+  current system time.
++ New counters: MOD_LOOPSTART and MOD_LOOPEND. These counters
+  return the start and end of the loop for the current playing
+  music and can be set to change the loop while the music is
+  playing. Setting MOD_LOOPEND to 0 disables the loop. These
+  counters only work for Ogg Vorbis and WAV audio (not modules).
++ Added support for the LOOPEND tag for Ogg Vorbis files. This
+  tag can be used to define the end of the loop directly, which
+  may be more convenient for some users. This tag takes lower
+  precedence than LOOPLENGTH if both are present, and will be
+  ignored if its value is less than LOOPSTART.
++ The SPR#_OFF counter is now readable through Robotic.
++ New sprite counter: SPR#_Z. Sprites are displayed in order
+  of their z value. Sprites with a higher z value will appear in
+  front of sprites with a lower z value. This ordering takes
+  precedence over both Y ordering (if SPR_YORDER is enabled) and
+  sprite number. Removes the need to use SPR#_SWAP for managing
+  sprite draw order. (Lancer-X)
++ New counters: FREAD_LENGTH and FWRITE_LENGTH. These counters
+  return the length of the FREAD file/directory (if open) or the
+  current length of the FWRITE file (if open).
++ New counter: SET "$string" "SAVE_ROBOT". This does the same
+  thing as SET "filename" "SAVE_ROBOT", except it saves the
+  robot to the specified string.
++ The default boot.dol for Wii builds with the editor enabled
+  is now MegaZeux instead of MZXRun.
++ New GLSL scaling shader: "sai". This shader implements the
+  "Scale 2xSaI" algorithm by Kreed with a modified interpolation
+  function to produce sharper edges. This shader can scale up to
+  any size larger than 640x350 and is comparable to hqscale
+  (though it should look and perform a little better).
++ Fullscreen mode will now attempt to match a supported screen
+  resolution if no "fullscreen_resolution" setting is specified.
+  For scaling renderers, this favors the current desktop
+  resolution. For "software", this favors smaller resolutions.
++ Added the config setting "fullscreen_windowed". When set to 1,
+  MZX will create a borderless window with the current desktop
+  resolution instead of regular fullscreen. Disabled by default.
++ Added the config setting "grab_mouse". When set to 1, MZX will
+  trap the mouse cursor within the window while the window is
+  active. Disabled by default.
++ The current renderer can now be set from the settings menu.
++ Added the 'softscale' renderer. This renderer is a generalized
+  rewrite of the former SDL 2 overlay renderer implementation.
+  It should perform significantly better and be more portable.
++ Added several palette editor usability improvements:
+  + The current color stored with F2 is now displayed in the
+    bottom-right corner of the palette editor help menu.
+  + In SMZX mode 2 or 3 editing, the four colors of the current
+    subpalette can be stored with F5. Stored subpalette colors
+    can be placed at the current subpalette with F6. These are
+    stored independently of the stored current color. The help
+    menu color display will cycle through the stored colors.
+  + In SMZX mode 3 editing, the current subpalette's indices can
+    be stored with F7 and placed at the current subpalette with
+    F8. The stored indices are displayed in the help menu next
+    to the stored color display.
+  + The shortcut for toggling the subpalette cursors has been
+    changed to Insert. The subpalette cursors are now displayed
+    in SMZX mode 3 editing and are enabled by default.
+  + Palettes (and/or indices) can be imported into and exported
+    from the palette editor with Alt+I and Alt+X, respectively.
+  + Added a secondary editor-only palette which can be switched
+    to with Tab. This palette is not saved with any world, but
+    can be edited and imported to/exported from and can be used
+    to copy colors/subpalettes between different sources.
++ checkres now displays the board, sfx, and robot (with line and
+  position on the board) each file was referenced in.
++ checkres can now be used with a directory as the base file.
+  Like a ZIP archive, checkres will recursively search the
+  directory for .MZX/.MZB files and display information for all
+  of them.
++ checkres has more display options: only display missing (-M)
+  (default), only display created (-C), only display found (-F),
+  also display missing (-m), also display created (-c), and also
+  display found (-f).
++ checkres can now wildcard match resources from commands that
+  use expressions or interpolation in filenames. This can be
+  enabled with -w or enabled exclusively with -W.
++ checkres can now display unused resources in a path/zip after
+  the other resources are listed (-u), or display only unused
+  resources (-U).
++ checkres can now display every reference to a particular
+  resource in a world instead of just the first with varying
+  levels of information (-v, -vv). Added the option -s, which
+  is the default and equivalent to older versions of checkres,
+  and -1 as an alternate flag for -q.
++ checkres can now sort its output either by the name of the
+  expected resource file (-N) (default) or by the location in
+  the world the file was referenced (-L).
++ checkres option flags can now be combined (e.g. -aL). This
+  does not apply to the "-extra" and "-in" flags.
++ New config options: "test_mode" and "test_mode_start_board".
+  If "test_mode" is set to 1, MegaZeux will start the given file
+  in testing mode, exactly as if the user used Alt+T on the
+  first board from the editor. Setting "test_mode_start_board"
+  to a valid board number in the world will start instead from
+  that board. Exiting testing will exit MegaZeux entirely.
+- SDL 2 support for the overlay renderers has been removed. When
+  specified for video_output, softscale will be enabled instead.
+- Removed WAV from the list of board mod extensions.
+
+FIXES
+
++ SET "$string" TO "fwrite" will now always write the delimiter
+  regardless of the length of $string. Previously, this command
+  would only write a delimiter if $string was a length greater
+  than zero, requiring extra checks by the user to account for
+  this special case. Compatibility checks have been added for
+  for worlds made in older versions.
++ Fixed bug where robots attempting to copy the player over
+  themselves with COPY x y x y or COPY dir dir would get stuck
+  in an infinite loop instead of executing the next command.
++ SPR_YORDER and the sprite collision list are properly saved
+  and loaded from saves again.
++ The SPR_NUM counter now has the full range of a regular
+  counter and is saved. Out-of-range values are ignored for the
+  purposes of its legacy IF and PUT uses. This only affects
+  2.92+ worlds. Additionally, 2.65 through 2.69c worlds treat
+  its range as -128 through 127, fixing a bug in Sprite Catcher.
++ The active sprites count is properly updated when SPR#_OFF is
+  set and is properly loaded from saves again. This value can be
+  viewed from the variable debug screen now, though it may be
+  inaccurate for older saves.
++ Fixed various bugs related to the robot position not being
+  internally tracked correctly. This could be caused by WALK,
+  SWITCH dir dir, OPEN, MOVE ALL, moving through a transport,
+  pushing, and rotation. This fixes issues with IF ALIGNEDROBOT,
+  THISX, THISY, THIS_COLOR, PLAYERDIST, HORIZPLD, VERTPLD, RID#,
+  ROBOT_ID_#, the robot's coordinates displayed in the counter
+  and robot debuggers, and MZM saving. Due to the number of
+  features affected by these bugs, the fix only affects worlds
+  saved in 2.92 or later.
++ Fixed a regression where rotating could sometimes fail to
+  rotate the player, sensors, pushable robots, or transports.
++ When a robot uses the OPEN command and is pushed through a
+  transport, MZX no longer crashes or creates invalid robots.
++ Fixed crash that could sometimes occur when pressing Alt+Up
+  while drawing near the top of a board in the editor.
++ Fixed bug where canceling 'Alt+C' char selection in the
+  robot editor would comment the current line.
++ Fixed a bug where F5 in the robot editor would not print data
+  for extended chars.
++ Clicking through board name windows and other interfaces with
+  the mouse should no longer place the current buffer.
++ Fixed a bug where the updater could fail to initialize due to
+  a relative argv[0] in Windows. MegaZeux attempts to get the
+  executable path from Win32 first now.
++ Improved warning message when no HTTP response is received.
++ The software renderer no longer tries to use an SDL_Renderer
+  to draw the surface returned by SDL_GetWindowSurface. This
+  fixes a crash when switching to fullscreen with the software
+  renderer on some platforms.
++ Fixed a software renderer mouse crash bug caused by moving the
+  cursor off the screen with a window bigger than the screen.
++ Fixed a bug where setting SMZX_MESSAGE to 0 wouldn't always
+  draw the message correctly.
++ If a referenced SAM or GDM file isn't present, MegaZeux will
+  attempt to load a corresponding WAV or S3M (respectively) with
+  the same filename minus the extension. This should fix some
+  music/sounds in older games that referenced SAM/GDM files but
+  were packed with the post-conversion WAV/S3M files only.
++ The behavior for reseting the player movement repeat timers
+  has been reverted to requiring all four movement keys released
+  (as in 2.80 to 2.91i). The related player locking fix has not
+  been modified.
++ IF "&$string&" and COPY BLOCK # # # # "&$string&" now properly
+  resolve &$string& before checking if the first operand or the
+  copy destination are a string (respectively), bringing their
+  behavior more in line with SET/INC/DEC and other commands.
++ Fixed a regression where the COLOR INTENSITY commands would
+  update the screen if used the same cycle as TELEPORT PLAYER.
+  This fixes a graphical issue in Thanatos Insignia.
++ Improved string wildcard comparison performance.
++ Changed the debug window to display "2.65/2.68" for worlds
+  from MZX 2.65 and MZX 2.68. Features from 2.68 still check for
+  the intended MZX 2.68 magic; the very few existing 2.68 worlds
+  that use these features need to be resaved in 2.69.
++ MegaZeux now attempts to fix Robotic that fails bytecode
+  validation. This resolves error messages and bugs in Eternal
+  Eclipse Taoyarin v1.0, Loco, Manuel the Manx, SaintZZT 7th,
+  Slave Pit, and Ep+Arp World MZX.
++ The MOD SAM command has been restored for compatibility and
+  is version locked to <2.80 worlds. This fixes missing sound
+  effects in Crisis in Stuffyou City (original), Sprite Catcher,
+  and Talon's Tale. This only works for libxmp builds.
++ Fixed a sprite collision bounding bug where the collision
+  height bounding for the reference checked using the collision
+  width instead. This fixes Manuel the Manx.
++ Fixed several memory leaks in the editor related to editing,
+  placing, grab, and undo/redo operations on robots and scrolls.
++ Fixed vlayer memory leak when loading 2.84 saves.
++ Fixed a regression where the 'if c?? Sprite' legacy fix wasn't
+  locked to 2.69c and up. This fixes Depravity (2003 DoZ #666).
++ PUT Sprite now works unconditionally for <2.80 games, fixing
+  bugs where games relied on placing 0-height sprites or placing
+  sprites before initializing their dimensions: Hackers Can Turn
+  Your Computer Into a Bomb!, Lethal Recurse (2003 DoZ #215),
+  Serum (2003 DoZ #404), Trashman Dan (Summer 2004 DoZ #18349).
++ The LOCAL and LOCAL# counters are now versioned separately,
+  fixing bugs in Freedom Bound (Summer 2000 DoZ #4096) and
+  Impact (2001 DoZ #027).
++ SHOOT now properly updates the blocked array. This fixes a bug
+  in Captain Proton and the Reality Rippers (1999 WEoZ #173).
++ Fixed a bug where the custom SFX flag and max samples wouldn't
+  be reset when creating a new world in the editor.
+
+DEVELOPERS
+
++ Fixed -Wunused-result warnings for Linux builds.
++ Added "Intel EMGD" to auto_glsl blacklist (questionable
+  OpenGL 2.0 support).
++ Added platform-independent joystick event functions and
+  updated the SDL, NDS, 3DS, and Wii event handlers for them.
++ MinGW builds now use -Wl,-Bstatic and -Wl,-Bdynamic to enforce
+  the preferred linking when both static and dynamic builds of
+  libraries are present.
++ For MSYS2 shells, config.sh now chooses the prefix /mingw32
+  or /mingw64 by default if $MSYSTEM is "MINGW32" or "MINGW64"
+  and either the "win32" or "win64" arch is selected.
++ MegaZeux now uses the renderer free_video function on exit.
++ GL_LoadLibrary no longer fails if the library is already
+  loaded in SDL 1.2. (Lancer-X)
++ GL renderers free textures and revert to fixed function
+  pipeline where appropriate. (Lancer-X)
++ OpenGL ES support can now be enabled for SDL builds with the
+  --enable-gles option. This option is force-enabled for
+  platforms that only support OpenGL ES.
++ opengl1 renderer now always uses power of 2 textures, same as
+  opengl2 and glsl. This provides a tiny performance improvement
+  on most cards and a massive performance improvement on some
+  other cards. (Lancer-X)
++ Added debug build sanitizer options for AddressSanitizer,
+  MemorySanitizer, and ThreadSanitizer. MemorySanitizer requires
+  clang and all currently require Linux/BSD/Mac OS X/similar.
+  Support for all three is very experimental; they may require
+  disabling options like modular builds or may not work at all.
++ Moved several param functions from robot.c to run_robot.c.
+  Aside from a few exceptions, these functions are largely used
+  in run_robot.c only. This should improve Robotic performance
+  in release builds.
++ Updated MSVC project for Visual Studio 2019. (elig, Spectere)
++ Added experimental pledge(2) and unveil(2) support for OpenBSD
+  builds. By default, this is enabled for the utils but not for
+  MZX. Additionally, config.sh now detects OpenBSD properly and
+  several warnings have been fixed.
++ Fixed faulty '!' rule logic in match_function_counter and
+  changed 'key?' to 'key!' to prevent potential false matches.
+- Removed uthash as a build option.
+
+>#2901CLOG.HLP:291:New in Versions 2.90 to 2.91j
+>#284CLOG.HLP:284:New in Versions 2.84 to 2.84c
+>#2823CLOG.HLP:283:New in Versions 2.82 to 2.83
+>#281CLOG.HLP:281:New in Versions 2.81 to 2.81h
+>#280CLOG.HLP:280:New in Versions 2.80 to 2.80h
+>#OLDERVER.HLP:260:New in Versions 2.60 to 2.70
+>#OLDESVER.HLP:201:New in Versions 2.01 to 2.60
+>#NEWIN200.HLP:1st:New in Version 2.00
+>#ANCENVER.HLP:1xx:New in Versions Through 1.03
+>#MAIN.HLP:072:Table of Contents
+
+#2901CLOG.HLP
+:291:
+$~9New in Versions 2.90 to 2.91j
+
+February 20th, 2019 - MZX 2.91j
+
+Here's a huge collection of bugfixes and a couple of features
+that needed to be split off from 2.92.
+
+Features: every release has an HTML copy of the help file now,
+the editor keeps separate board/overlay/vlayer buffers now, and
+anyone who still uses scrolls/sensors can view their info in the
+counter debugger. The global volume settings use an exponential
+curve now, range from 0 to 10, and have updated UI elements.
+
+Fixes in this release include: the updater won't complain about
+mzx_help.fil anymore, the NDS and 3DS ports have keyboards that
+work again, several bugs that would lead to worlds/saves with
+"Robot # does not exist on board #" errors have been fixed, and
+several crashes have been fixed.
+
+USERS
+
++ A complete HTML copy of the MegaZeux help file is now packaged
+  with releases for all platforms. It can be found in the docs/
+  folder.
++ Nvidia and AMD switchable graphics drivers should now detect
+  MegaZeux and MZXRun properly on Windows.
++ The editor now remembers the contents of the buffer when
+  switching between board, overlay, and vlayer editing. For
+  example, if a robot is selected on the board before switching
+  to overlay mode, the robot will still be in the buffer when
+  the user switches back to board mode.
++ The editor now remembers the last filename for importing and
+  exporting MZM, MZB, CHR, PAL, and PALIDX files.
++ Scrolls and sensors can now be viewed in the counter debugger.
+  They can be found by expanding the Board list (when present).
++ Readded "#version 110" directives to all GLSL shaders, fixing
+  warnings on some Intel HD drivers. OpenGL ES builds should now
+  comment out these directives.
++ Fixed bug where using Modify+Grab on built-ins could clear the
+  floor under the built-in.
++ Fixed bug where key repeat wouldn't work for any text field in
+  the NDS/3DS/Wii ports. This also affected the robot editor in
+  Wii builds.
++ Fixed NDS touch screen support. Touching the screen no longer
+  acts like escape and the keyboard properly works again.
++ Fixed a bug where the NDS keyboard would drop keypresses on
+  games not running at speed 2.
++ The counter debugger now correctly displays the value of
+  local0.
++ Fixed a bug where the counter debugger would not reopen to
+  the correct robot local# value.
++ MZX now attempts to retry removal of an old file when updating
+  if deletion fails initially. Error messages related to the
+  failed deletion of "mzx_help.fil" or "assets/help.fil" are now
+  suppressed as they are caused by a bug in older MZX versions.
++ The help file is now closed before the updater restarts MZX.
++ Fixed crash bug that could occur when removing old files after
+  an update.
++ Improved manifest validity checks.
++ Fixed board editor crash caused by invalid thing IDs.
++ Player movement key repeat no longer resets when the player is
+  locked. It will reset for a direction only when the arrow key
+  corresponding to that direction is released. This fixes a bug
+  in Brotherhood where the player would move at a fraction of
+  the speed they were supposed to while swimming.
++ Added version checking for legacy IF c?? Sprite behavior. In
+  versions 2.82b and prior, c?? would make this command ignore
+  the provided param and use SPR_NUM instead. This fixes Project
+  MoveZig.
++ Fixed spelling error in missile param dialog.
++ Switching boards in the editor now properly translates the new
+  board's mod name, fixing cases where board mods would restart
+  sometimes.
++ Fixed a bug where the current board mod wouldn't play after
+  starting a listening mod, testing, returning to the editor,
+  and then disabling the listening mod.
++ Replaced the linear volume setting curve with an exponential
+  curve to make lower volumes less loud. The volume settings can
+  now be set from 0 to 10 instead of from 1 to 8.
++ The config file setting pc_speaker_on=0 no longer prevents
+  turning on PC speaker SFX at runtime.
++ Added temporary workaround for numpad 5 key detection when
+  numlock is disabled.
++ "Forest to floor" and "Collect bombs" are properly enabled
+  again for new boards by default. This fix doesn't alter config
+  settings or saved .editor.cnf defaults.
++ The "Downver. world (MZX)" option in the "Export as" dialog
+  is now completely highlighted when selected. (Lancer-X)
++ Starting MegaZeux with "startup_editor=1" no longer loads the
+  default palette over the startup world's palette.
++ The move block action and undo/redo operations should now
+  preserve the element beneath the player.
++ Fixed crashes caused by using block actions or COPY BLOCK on
+  the player while the player is standing on a sensor.
++ Fixed several bugs where editor block actions and the commands
+  COPY/COPY BLOCK would not check for the player or clean up
+  robots/scrolls/sensors. Worlds/saves saved after these bugs
+  occured could display "Robot # does not exist on board"
+  errors when loaded.
++ The DUPLICATE SELF x y and DUPLICATE SELF dir commands now
+  properly check for the player before attempting to duplicate
+  a robot. This fixes a bug where MZX could create saves with
+  "Robot # does not exist on board" errors.
++ Fixed a crash that could occur when importing a new board.
++ Fixed a bug where the 3DS onscreen keyboard would send key
+  releases instead of key presses.
++ The 3DS onscreen keyboard now returns shifted chars when shift
+  is active.
++ Fixed a bug where the libxmp implementation of MOD_ORDER and
+  JUMP MOD ORDER could not restart the current order.
++ Fixed a crash with the libxmp implementation of MOD_POSITION
+  when providing an out-of-bounds value.
++ Fixed a bug where Ctrl+[key] shortcuts would not work while a
+  dialog list element was active on the Wii.
++ Fixed a bug where setting the board mod/charset/palette could
+  truncate the first letter of the path on the Wii.
++ "mask_midchars" no longer masks the non-text char 127.
++ The message box title and the command [ now properly display
+  the graphic for char 9 instead of a tab.
++ Added newline escaping to robot, counter, and string names in
+  the counter debugger to work around formatting bugs.
+
+DEVELOPERS
+
++ Added the hlp2html utility, which can be used to convert
+  WIPHelp.txt into web and printable HTML files.
++ Updated to latest NDS ARM7 template.
++ Updated SDL2 for Windows release builds to SDL 2.0.9.
+
+>#MAIN.HLP:072:Table of Contents
 
 December 9th, 2018 - MZX 2.91i
 
@@ -11750,6 +12583,7 @@ DEVELOPERS
 + LibSDL2 support is now the default. It can still be disabled
   by passing --disable-libsdl2 to config.sh. (Lancer-X)
 
+>#NEWINVER.HLP:1st:NEW in MegaZeux!
 >#284CLOG.HLP:284:New in Versions 2.84 to 2.84c
 >#2823CLOG.HLP:283:New in Versions 2.82 to 2.83
 >#281CLOG.HLP:281:New in Versions 2.81 to 2.81h
@@ -12265,6 +13099,7 @@ DEVELOPERS
   layer. (MZXGiant)
 
 >#NEWINVER.HLP:1st:NEW in MegaZeux!
+>#2901CLOG.HLP:291:New in Versions 2.90 to 2.91j
 >#2823CLOG.HLP:283:New in Versions 2.82 to 2.83
 >#281CLOG.HLP:281:New in Versions 2.81 to 2.81h
 >#280CLOG.HLP:280:New in Versions 2.80 to 2.80h
@@ -12902,6 +13737,7 @@ DEVELOPERS
   feature right away (see config.sh). (Mr_Alert)
 
 >#NEWINVER.HLP:1st:NEW in MegaZeux!
+>#2901CLOG.HLP:291:New in Versions 2.90 to 2.91j
 >#284CLOG.HLP:284:New in Versions 2.84 to 2.84c
 >#281CLOG.HLP:281:New in Versions 2.81 to 2.81h
 >#280CLOG.HLP:280:New in Versions 2.80 to 2.80h
@@ -13663,6 +14499,7 @@ November 20, 2005 - MZX 2.81
   changes in the save format.
 
 >#NEWINVER.HLP:1st:NEW in MegaZeux!
+>#2901CLOG.HLP:291:New in Versions 2.90 to 2.91j
 >#284CLOG.HLP:284:New in Versions 2.84 to 2.84c
 >#2823CLOG.HLP:283:New in Versions 2.82 to 2.83
 >#280CLOG.HLP:280:New in Versions 2.80 to 2.80h
@@ -14363,6 +15200,7 @@ August 9, 2004 - First release, MZX 2.80 BETA
   before new values were set. They will not work here.
 
 >#NEWINVER.HLP:1st:NEW in MegaZeux!
+>#2901CLOG.HLP:291:New in Versions 2.90 to 2.91j
 >#284CLOG.HLP:284:New in Versions 2.84 to 2.84c
 >#2823CLOG.HLP:283:New in Versions 2.82 to 2.83
 >#281CLOG.HLP:281:New in Versions 2.81 to 2.81h
@@ -14518,6 +15356,7 @@ $~9New in Versions 2.60 to 2.70
 $***
 
 >#NEWINVER.HLP:1st:NEW in MegaZeux!
+>#2901CLOG.HLP:291:New in Versions 2.90 to 2.91j
 >#284CLOG.HLP:284:New in Versions 2.84 to 2.84c
 >#2823CLOG.HLP:283:New in Versions 2.82 to 2.83
 >#281CLOG.HLP:281:New in Versions 2.81 to 2.81h
@@ -14980,6 +15819,7 @@ before, you probably won't understand much of this list.
  * Fill in editor now works with board sizes over 127x127
 
 >#NEWINVER.HLP:1st:NEW in MegaZeux!
+>#2901CLOG.HLP:291:New in Versions 2.90 to 2.91j
 >#284CLOG.HLP:284:New in Versions 2.84 to 2.84c
 >#2823CLOG.HLP:283:New in Versions 2.82 to 2.83
 >#281CLOG.HLP:281:New in Versions 2.81 to 2.81h
@@ -15219,6 +16059,7 @@ $~9New in Version 2.00:
  * Different player pics per direction.
 
 >#NEWINVER.HLP:1st:NEW in MegaZeux!
+>#2901CLOG.HLP:291:New in Versions 2.90 to 2.91j
 >#284CLOG.HLP:284:New in Versions 2.84 to 2.84c
 >#2823CLOG.HLP:283:New in Versions 2.82 to 2.83
 >#281CLOG.HLP:281:New in Versions 2.81 to 2.81h
@@ -15522,6 +16363,7 @@ $~9New in Versions Through 1.03
  * Optimized code
 
 >#NEWINVER.HLP:1st:NEW in MegaZeux!
+>#2901CLOG.HLP:291:New in Versions 2.90 to 2.91j
 >#284CLOG.HLP:284:New in Versions 2.84 to 2.84c
 >#2823CLOG.HLP:283:New in Versions 2.82 to 2.83
 >#281CLOG.HLP:281:New in Versions 2.81 to 2.81h

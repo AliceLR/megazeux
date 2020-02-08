@@ -30,6 +30,7 @@ __M_BEGIN_DECLS
 // Don't use core features, don't extern anything.
 
 #include "memfile.h"
+#include "vfs.h"
 
 // Currently supported methods are 0 (Store) and 8 (DEFLATE)
 enum zip_compression_method
@@ -152,20 +153,11 @@ struct zip_archive
   enum zip_error write_file_error;
   enum zip_error write_stream_error;
 
-  void *fp;
+  vfile *vf;
 
   boolean is_memory;
   void **external_buffer;
   size_t *external_buffer_size;
-
-  int (*vgetc)(void *);
-  size_t (*vread)(void *, size_t, size_t, void *);
-  size_t (*vwrite)(const void *, size_t, size_t, void *);
-
-  int (*vseek)(void *, long int, int);
-  long int (*vtell)(void *);
-
-  int (*vclose)(void *);
 };
 
 UTILS_LIBSPEC int zip_bound_data_usage(char *src, int srcLen);
@@ -193,8 +185,6 @@ UTILS_LIBSPEC enum zip_error zip_read_close_stream(struct zip_archive *zp);
 
 UTILS_LIBSPEC enum zip_error zip_read_open_mem_stream(struct zip_archive *zp,
  struct memfile *mf);
-
-UTILS_LIBSPEC enum zip_error zip_read_close_mem_stream(struct zip_archive *zp);
 
 UTILS_LIBSPEC enum zip_error zip_rewind(struct zip_archive *zp);
 

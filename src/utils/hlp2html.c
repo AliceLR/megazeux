@@ -29,6 +29,11 @@
 #include "../util.h"
 #include "../../contrib/khash/khashmzx.h"
 
+#ifdef CONFIG_PLEDGE_UTILS
+#include <unistd.h>
+#define PROMISES "stdio rpath wpath cpath"
+#endif
+
 #define EOL "\n"
 #define MZXFONT_OFFSET (0xE000)
 
@@ -122,6 +127,8 @@ static void load_file(char **_output, size_t *_output_len, const char *filename)
     output[output_len] = 0;
     fclose(fp);
   }
+  else
+    fprintf(stderr, "ERROR: failed to read input file '%s'\n", filename);
 
   *_output = output;
   *_output_len = output_len;
@@ -675,6 +682,23 @@ int main(int argc, char *argv[])
     fprintf(stdout, usage);
     exit(0);
   }
+
+#ifdef CONFIG_PLEDGE_UTILS
+#ifdef PLEDGE_HAS_UNVEIL
+  if(unveil(argv[1], "r") || unveil(argv[2], "cw") ||
+   unveil(RESOURCES, "r") || unveil(NULL, NULL))
+  {
+    fprintf(stderr, "ERROR: Failed unveil!\n");
+    return 1;
+  }
+#endif
+
+  if(pledge(PROMISES, ""))
+  {
+    fprintf(stderr, "ERROR: Failed pledge!\n");
+    return 1;
+  }
+#endif
 
   for(i = 3; i < argc; i++)
   {

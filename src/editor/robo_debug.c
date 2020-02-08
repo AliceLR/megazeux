@@ -168,7 +168,7 @@ static int edit_breakpoint_dialog(struct world *mzx_world,
    "Match robot name:", ROBOT_NAME_SIZE - 1, match_name);
 
   elements[2] = construct_number_box(38, 3,
-   "Match line number:", 0, 99999, 0, &line_number);
+   "Match line number:", 0, 99999, NUMBER_BOX, &line_number);
 
   elements[3] = construct_button(22, 5, "Confirm", 0);
   elements[4] = construct_button(45, 5, "Cancel", -1);
@@ -1091,7 +1091,7 @@ static inline void get_src_line(struct robot *cur_robot, char **_src_ptr,
  int *_src_length, int *_real_line_num)
 {
   struct command_mapping *cmd_map = cur_robot->command_map;
-  int line_num = get_current_program_line(cur_robot);
+  int line_num = get_program_command_num(cur_robot);
 
   char *src_ptr;
   int src_length;

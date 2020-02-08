@@ -29,10 +29,12 @@ usage() {
 	echo "  gp2x           Experimental GP2X port"
 	echo "  nds            Experimental NDS port"
 	echo "  3ds            Experimental 3DS port"
+	echo "  switch         Experimental Switch port"
 	echo "  wii            Experimental Wii port"
 	echo "  amiga          Experimental AmigaOS 4 port"
 	echo "  android        Experimental Android port"
 	echo "  pandora        Experimental Pandora port"
+	echo "  emscripten     Experimental HTML5 (Emscripten) port"
 	echo
 	echo "Supported <option> values (negatives can be used):"
 	echo
@@ -40,6 +42,10 @@ usage() {
 	echo "  --enable-release        Optimize and remove debugging code."
 	echo "  --enable-verbose        Build system is always verbose (V=1)."
 	echo "  --optimize-size         Perform size optimizations (-Os)."
+	echo "  --enable-asan           Enable AddressSanitizer for debug builds"
+	echo "  --enable-msan           Enable MemorySanitizer for debug builds"
+	echo "  --enable-tsan           Enable ThreadSanitizer for debug builds"
+	echo "  --enable-pledge         Enable experimental OpenBSD pledge(2) support"
 	echo "  --disable-datestamp     Disable adding date to version."
 	echo "  --disable-editor        Disable the built-in editor."
 	echo "  --disable-mzxrun        Disable generation of separate MZXRun."
@@ -47,16 +53,18 @@ usage() {
 	echo "  --disable-utils         Disable compilation of utils."
 	echo "  --disable-x11           Disable X11, removing binary dependency."
 	echo "  --disable-software      Disable software renderer."
+	echo "  --disable-softscale     Disable SDL 2 accelerated software renderer."
 	echo "  --disable-gl            Disable all GL renderers."
 	echo "  --disable-gl-fixed      Disable GL renderers for fixed-function h/w."
 	echo "  --disable-gl-prog       Disable GL renderers for programmable h/w."
-	echo "  --disable-overlay       Disable all overlay renderers."
+	echo "  --disable-overlay       Disable SDL 1.2 overlay renderers."
 	echo "  --enable-gp2x           Enables half-res software renderer."
 	echo "  --disable-screenshots   Disable the screenshot hotkey."
 	echo "  --disable-xmp           Disable XMP music engine."
 	echo "  --enable-modplug        Enables ModPlug music engine."
 	echo "  --enable-mikmod         Enables MikMod music engine."
 	echo "  --enable-openmpt        Enables OpenMPT music engine."
+	echo "  --disable-rad           Disables Reality Adlib Tracker (RAD) support."
 	echo "  --disable-libpng        Disable PNG screendump support."
 	echo "  --disable-audio         Disable all audio (sound + music)."
 	echo "  --disable-vorbis        Disable ogg/vorbis support."
@@ -70,11 +78,12 @@ usage() {
 	echo "  --enable-meter          Enable load/save meter display."
 	echo "  --disable-sdl           Disables SDL dependencies and features."
 	echo "  --enable-egl            Enables EGL backend (if SDL disabled)."
+	echo "  --enable-gles           Enable hacks for OpenGL ES platforms."
 	echo "  --disable-check-alloc   Disables memory allocator error handling."
 	echo "  --disable-khash         Disables using khash for counter/string lookups."
-	echo "  --enable-uthash         Enables using uthash for counter/string lookups."
 	echo "  --enable-debytecode     Enable experimental 'debytecode' transform."
 	echo "  --disable-libsdl2       Disable SDL 2.0 support (falls back on 1.2)."
+	echo "  --enable-stdio-redirect Redirect console output to stdout.txt/stderr.txt."
 	echo "  --enable-fps            Enable frames-per-second counter."
 	echo
 	echo "e.g.: ./config.sh --platform unix --prefix /usr"
@@ -90,6 +99,7 @@ usage() {
 #
 PLATFORM=""
 PREFIX="/usr"
+PREFIX_IS_SET="false"
 SYSCONFDIR="/etc"
 SYSCONFDIR_IS_SET="false"
 GAMESDIR_IS_SET="false"
@@ -108,12 +118,16 @@ DATE_STAMP="true"
 AS_NEEDED="false"
 RELEASE="false"
 OPT_SIZE="false"
+SANITIZER="false"
+PLEDGE="false"
+PLEDGE_UTILS="true"
 EDITOR="true"
 MZXRUN="true"
 HELPSYS="true"
 UTILS="true"
 X11="true"
 SOFTWARE="true"
+SOFTSCALE="true"
 GL_FIXED="true"
 GL_PROGRAM="true"
 OVERLAY="true"
@@ -123,6 +137,7 @@ XMP="true"
 MODPLUG="false"
 MIKMOD="false"
 OPENMPT="false"
+REALITY="true"
 LIBPNG="true"
 AUDIO="true"
 VORBIS="true"
@@ -135,11 +150,13 @@ VERBOSE="false"
 METER="false"
 SDL="true"
 EGL="false"
+GLES="false"
 CHECK_ALLOC="true"
 KHASH="true"
-UTHASH="false"
 DEBYTECODE="false"
 LIBSDL2="true"
+STDIO_REDIRECT="false"
+GAMECONTROLLERDB="true"
 FPSCOUNTER="false"
 
 #
@@ -156,6 +173,7 @@ while [ "$1" != "" ]; do
 	if [ "$1" = "--prefix" ]; then
 		shift
 		PREFIX="$1"
+		PREFIX_IS_SET="true"
 		# Update other install folders to match
 		if [ "$GAMESDIR_IS_SET" = "false" ]; then
 			GAMESDIR="${PREFIX}${GAMESDIR_IN_PREFIX}"
@@ -217,6 +235,18 @@ while [ "$1" != "" ]; do
 	[ "$1" = "--optimize-size" ]  && OPT_SIZE="true"
 	[ "$1" = "--optimize-speed" ] && OPT_SIZE="false"
 
+	[ "$1" = "--enable-asan" ]  && SANITIZER="address"
+	[ "$1" = "--disable-asan" ] && SANITIZER="false"
+
+	[ "$1" = "--enable-msan" ]  && SANITIZER="memory"
+	[ "$1" = "--disable-msan" ] && SANITIZER="false"
+
+	[ "$1" = "--enable-tsan" ] &&  SANITIZER="thread"
+	[ "$1" = "--disable-tsan" ] && SANITIZER="false"
+
+	[ "$1" = "--enable-pledge" ] &&  PLEDGE="true"  && PLEDGE_UTILS="true"
+	[ "$1" = "--disable-pledge" ] && PLEDGE="false" && PLEDGE_UTILS="false"
+
 	[ "$1" = "--disable-datestamp" ] && DATE_STAMP="false"
 	[ "$1" = "--enable-datestamp" ]  && DATE_STAMP="true"
 
@@ -237,6 +267,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--disable-software" ] && SOFTWARE="false"
 	[ "$1" = "--enable-software" ]  && SOFTWARE="true"
+
+	[ "$1" = "--disable-softscale" ] && SOFTSCALE="false"
+	[ "$1" = "--enable-softscale" ]  && SOFTSCALE="true"
 
 	[ "$1" = "--disable-gl" ] && GL="false"
 	[ "$1" = "--enable-gl" ]  && GL="true"
@@ -267,6 +300,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--disable-openmpt" ] && OPENMPT="false"
 	[ "$1" = "--enable-openmpt" ]  && OPENMPT="true"
+
+	[ "$1" = "--disable-rad" ] && REALITY="false"
+	[ "$1" = "--enable-rad" ]  && REALITY="true"
 
 	[ "$1" = "--disable-libpng" ] && LIBPNG="false"
 	[ "$1" = "--enable-libpng" ]  && LIBPNG="true"
@@ -310,20 +346,23 @@ while [ "$1" != "" ]; do
 	[ "$1" = "--enable-egl" ]  && EGL="true"
 	[ "$1" = "--disable-egl" ] && EGL="false"
 
+	[ "$1" = "--enable-gles" ]  && GLES="true"
+	[ "$1" = "--disable-gles" ] && GLES="false"
+
 	[ "$1" = "--disable-check-alloc" ] && CHECK_ALLOC="false"
 	[ "$1" = "--enable-check-alloc" ]  && CHECK_ALLOC="true"
 
 	[ "$1" = "--enable-khash" ]  && KHASH="true"
 	[ "$1" = "--disable-khash" ] && KHASH="false"
 
-	[ "$1" = "--enable-uthash" ]  && UTHASH="true"
-	[ "$1" = "--disable-uthash" ] && UTHASH="false"
-
 	[ "$1" = "--enable-debytecode" ]  && DEBYTECODE="true"
 	[ "$1" = "--disable-debytecode" ] && DEBYTECODE="false"
 
 	[ "$1" = "--enable-libsdl2" ]  && LIBSDL2="true"
 	[ "$1" = "--disable-libsdl2" ] && LIBSDL2="false"
+
+	[ "$1" = "--enable-stdio-redirect" ]  && STDIO_REDIRECT="true"
+	[ "$1" = "--disable-stdio-redirect" ] && STDIO_REDIRECT="false"
 
 	[ "$1" = "--enable-fps" ]  && FPSCOUNTER="true"
 	[ "$1" = "--disable-fps" ] && FPSCOUNTER="false"
@@ -346,10 +385,21 @@ fi
 
 ### PLATFORM DEFINITION #######################################################
 
-echo "PREFIX:=$PREFIX" > platform.inc
+rm -f platform.inc
 
 if [ "$PLATFORM" = "win32"   -o "$PLATFORM" = "win64" \
   -o "$PLATFORM" = "mingw32" -o "$PLATFORM" = "mingw64" ]; then
+	# Auto-prefix for the MSYS2 MINGW32/MINGW64 environments if a prefix wasn't
+	# provided. This helps avoid errors that occur when gcc or libs exist in
+	# /usr, which is used by MSYS2 for the MSYS environment.
+	if [ "$PREFIX_IS_SET" = "false" -a -n "$MSYSTEM" \
+	 -a "$(uname -o)" == "Msys" ]; then
+		if [ "$MSYSTEM" = "MINGW32" -o "$MSYSTEM" = "MINGW64" ]; then
+			[ "$PLATFORM" = "win32" ] && PREFIX="/mingw32"
+			[ "$PLATFORM" = "win64" ] && PREFIX="/mingw64"
+		fi
+	fi
+
 	[ "$PLATFORM" = "win32" -o "$PLATFORM" = "mingw32" ] && ARCHNAME=x86
 	[ "$PLATFORM" = "win64" -o "$PLATFORM" = "mingw64" ] && ARCHNAME=x64
 	[ "$PLATFORM" = "mingw32" ] && MINGWBASE=i686-w64-mingw32-
@@ -369,6 +419,9 @@ elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 			;;
 		"FreeBSD")
 			UNIX="freebsd"
+			;;
+		"OpenBSD")
+			UNIX="openbsd"
 			;;
 		*)
 			echo "WARNING: Should define proper UNIX name here!"
@@ -416,10 +469,12 @@ else
 	echo "PLATFORM=$PLATFORM"            >> platform.inc
 fi
 
+echo "PREFIX:=$PREFIX" >> platform.inc
+
 if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "darwin" ]; then
 	LIBDIR="${LIBDIR}/megazeux"
-elif [ "$PLATFORM" = "android" ]; then
-	LIBDIR="/data/megazeux"
+elif [ "$PLATFORM" = "emscripten" ]; then
+	LIBDIR="/data"
 else
 	LIBDIR="."
 fi
@@ -430,8 +485,8 @@ if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "darwin" ]; then
 	: # Use default or user-defined SYSCONFDIR
 elif [ "$PLATFORM" = "darwin-dist" ]; then
 	SYSCONFDIR="../Resources"
-elif [ "$PLATFORM" = "android" ]; then
-	SYSCONFDIR="/data/megazeux"
+elif [ "$PLATFORM" = "emscripten" ]; then
+	SYSCONFDIR="/data/etc"
 elif [ "$SYSCONFDIR_IS_SET" != "true" ]; then
 	SYSCONFDIR="."
 fi
@@ -488,6 +543,12 @@ elif [ "$PLATFORM" = "wii" ]; then
 	BINDIR=$SHAREDIR
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
+elif [ "$PLATFORM" = "switch" ]; then
+	SHAREDIR=/switch/megazeux
+	GAMESDIR=$SHAREDIR
+	BINDIR=$SHAREDIR
+	echo "#define CONFFILE \"config.txt\"" >> src/config.h
+	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 elif [ "$PLATFORM" = "darwin-dist" ]; then
 	SHAREDIR=../Resources
 	GAMESDIR=$SHAREDIR
@@ -495,10 +556,10 @@ elif [ "$PLATFORM" = "darwin-dist" ]; then
 	echo "#define CONFFILE \"config.txt\""           >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""            >> src/config.h
 	echo "#define USERCONFFILE \".megazeux-config\"" >> src/config.h
-elif [ "$PLATFORM" = "android" ]; then
-	SHAREDIR=/data/megazeux
-	GAMESDIR=/data/megazeux
-	BINDIR=/data/megazeux
+elif [ "$PLATFORM" = "emscripten" ]; then
+	SHAREDIR=/data
+	GAMESDIR=/data/game
+	BINDIR=/data
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 else
@@ -528,20 +589,9 @@ if [ "$PLATFORM" = "wii" ]; then
 	LIBSDL2="false"
 fi
 
-if [ "$PLATFORM" = "3ds" ]; then
-	echo "Disabling SDL (3DS)."
+if [ "$PLATFORM" = "3ds" -o "$PLATFORM" = "nds" ]; then
+	echo "Disabling SDL ($PLATFORM)."
 	SDL="false"
-fi
-
-if [ "$PLATFORM" = "nds" ]; then
-	echo "Disabling SDL (NDS)."
-	SDL="false"
-fi
-
-if [ "$PLATFORM" = "android" ]; then
-	echo "Disabling SDL (Android), force-enabling EGL."
-	SDL="false"
-	EGL="true"
 fi
 
 if [ "$PLATFORM" = "pandora" ]; then
@@ -554,10 +604,12 @@ fi
 #
 if [ "$SDL" = "false" ]; then
 	echo "Force-disabling SDL dependent components:"
-	echo " -> SOFTWARE, OVERLAY, MIKMOD"
+	echo " -> SOFTWARE, SOFTSCALE, OVERLAY, MIKMOD"
 	SOFTWARE="false"
+	SOFTSCALE="false"
 	OVERLAY="false"
 	MIKMOD="false"
+	LIBSDL2="false"
 else
 	echo "#define CONFIG_SDL" >> src/config.h
 	echo "BUILD_SDL=1" >> platform.inc
@@ -565,19 +617,46 @@ else
 fi
 
 #
-# We have EGL support
+# Use an EGL backend in place of SDL.
+# For now, also force-enable OpenGL ES hacks, since that's most
+# likely what is being used with EGL.
 #
 if [ "$EGL" = "true" ]; then
 	echo "#define CONFIG_EGL" >> src/config.h
 	echo "BUILD_EGL=1" >> platform.inc
+
+	echo "Force-enabling OpenGL ES support (EGL)."
+	GLES="true"
+fi
+
+#
+# Use GLES on Android.
+#
+if [ "$PLATFORM" = "android" ]; then
+	echo "Force-enabling OpenGL ES support (Android)."
+	GLES="true"
 fi
 
 #
 # We need either SDL or EGL for OpenGL
 #
 if [ "$SDL" = "false" -a "$EGL" = "false" ]; then
-	echo "Force-disabling OpenGL (no SDL or EGL support)."
+	echo "Force-disabling OpenGL (no SDL or EGL backend)."
 	GL="false"
+fi
+
+#
+# Force-disable features unnecessary on Emscripten.
+#
+if [ "$PLATFORM" = "emscripten" ]; then
+	echo "Enabling Emscripten-specific hacks."
+	EDITOR="false"
+	SCREENSHOTS="false"
+	UPDATER="false"
+	UTILS="false"
+
+	GLES="true"
+	GL_FIXED="false"
 fi
 
 #
@@ -601,7 +680,6 @@ if [ "$PLATFORM" = "nds" ]; then
 
 	echo "Force-disabling hash tables on NDS."
 	KHASH="false"
-	UTHASH="false"
 fi
 
 #
@@ -619,6 +697,25 @@ if [ "$PLATFORM" = "3ds" ]; then
 
 	echo "Disabling utils on 3DS (silly)."
 	UTILS="false"
+fi
+
+#
+# If the Switch arch is enabled, some code has to be compile time
+# enabled too.
+#
+if [ "$PLATFORM" = "switch" ]; then
+	echo "Enabling Switch-specific hacks."
+	echo "#define CONFIG_SWITCH" >> src/config.h
+	echo "BUILD_SWITCH=1" >> platform.inc
+
+	echo "Disabling utils on Switch (silly)."
+	UTILS="false"
+
+	echo "Force-enabling OpenGL ES support (Switch)."
+	GLES="true"
+
+	# This may or may not be totally useless for the Switch, disable it for now.
+	GAMECONTROLLERDB="false"
 fi
 
 #
@@ -665,6 +762,23 @@ if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" \
 fi
 
 #
+# Force-disable the softscale renderer for SDL 1.2 (requires SDL_Renderer).
+#
+if [ "$SDL" = "true" -a "$LIBSDL2" = "false" -a "$SOFTSCALE" = "true" ]; then
+	echo "Force-disabling softscale renderer (requires SDL 2)."
+	SOFTSCALE="false"
+fi
+
+#
+# Force-disable overlay renderers for SDL 2. The SDL 2 answer to SDL_Overlay
+# involves planar YUV modes which don't mesh well with MZX's internal rendering.
+#
+if [ "$SDL" = "true" -a "$LIBSDL2" = "true" -a "$OVERLAY" = "true" ]; then
+	echo "Force-disabling overlay renderers (requires SDL 1.2)."
+	OVERLAY="false"
+fi
+
+#
 # Must have at least one OpenGL renderer enabled
 #
 [ "$GL_FIXED" = "false" -a "$GL_PROGRAM" = "false" ] && GL="false"
@@ -676,6 +790,7 @@ if [ "$GL" = "false" ]; then
 	echo "Force-disabling OpenGL."
 	GL_FIXED="false"
 	GL_PROGRAM="false"
+	GLES="false"
 fi
 
 #
@@ -691,7 +806,7 @@ fi
 #
 # Force-enable tremor-lowmem on GP2X
 #
-if [ "$PLATFORM" = "gp2x" -o "$PLATFORM" = "android" ]; then
+if [ "$PLATFORM" = "gp2x" ]; then
 	echo "Force-switching ogg/vorbis to tremor-lowmem."
 	VORBIS="tremor-lowmem"
 fi
@@ -704,6 +819,7 @@ if [ "$AUDIO" = "false" ]; then
 	MIKMOD="false"
 	XMP="false"
 	OPENMPT="false"
+	REALITY="false"
 fi
 
 #
@@ -719,7 +835,8 @@ fi
 # Force disable modular DSOs.
 #
 if [ "$PLATFORM" = "gp2x" -o "$PLATFORM" = "nds" \
-  -o "$PLATFORM" = "3ds" \
+  -o "$PLATFORM" = "3ds"  -o "$PLATFORM" = "switch" \
+  -o "$PLATFORM" = "android" -o "$PLATFORM" = "emscripten" \
   -o "$PLATFORM" = "psp"  -o "$PLATFORM" = "wii" ]; then
 	echo "Force-disabling modular build (nonsensical or unsupported)."
 	MODULAR="false"
@@ -727,12 +844,10 @@ fi
 
 #
 # Force disable networking (unsupported platform or no editor build)
-# Also disable all network applications
 #
 if [ "$EDITOR" = "false" -o "$PLATFORM" = "nds" ]; then
 	echo "Force-disabling networking (unsupported platform or editor disabled)."
 	NETWORK="false"
-	UPDATER="false"
 fi
 
 #
@@ -744,10 +859,18 @@ if [ "$PLATFORM" != "mingw" ]; then
 fi
 
 #
+# Force disable network applications (network disabled)
+#
+if [ "$NETWORK" = "false" ]; then
+	echo "Force-disabling network-dependent features (networking disabled)"
+	UPDATER="false"
+fi
+
+#
 # Force disable networking (no applications enabled)
 #
 if [ "$NETWORK" = "true" -a "$UPDATER" = "false" ]; then
-	echo "Force-disabling networking (no network applications enabled)."
+	echo "Force-disabling networking (no network-dependent features enabled)."
 	NETWORK="false"
 fi
 
@@ -773,6 +896,28 @@ if [ "$AS_NEEDED" = "true" ]; then
 fi
 
 #
+# Enable pledge(2) support (OpenBSD only)
+#
+if [ "$UNIX" = "openbsd" ]; then
+	if [ "$PLEDGE" = "true" ]; then
+		echo "Enabling OpenBSD pledge(2) support for main executable(s)."
+		echo "#define CONFIG_PLEDGE" >> src/config.h
+	else
+		echo "OpenBSD pledge(2) support disabled for main executable(s)."
+	fi
+	if [ "$UTILS" = "true" ]; then
+		if [ "$PLEDGE_UTILS" = "true" ]; then
+			echo "Enabling OpenBSD pledge(2) support for utils"
+			echo "#define CONFIG_PLEDGE_UTILS" >> src/config.h
+		else
+			echo "OpenBSD pledge(2) support disabled for utils"
+		fi
+	fi
+else
+	PLEDGE="false"
+fi
+
+#
 # Users may enable release mode
 #
 if [ "$RELEASE" = "true" ]; then
@@ -788,6 +933,11 @@ if [ "$RELEASE" = "true" ]; then
 else
 	echo "Disabling optimization, debug enabled."
 	echo "DEBUG=1" >> platform.inc
+
+	if [ "$SANITIZER" != "false" ]; then
+		echo "Enabling $SANITIZER sanitizer (may enable some optimizations)"
+		echo "SANITIZER=$SANITIZER" >> platform.inc
+	fi
 fi
 
 #
@@ -843,8 +993,8 @@ if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" \
 	#
 	if [ "$X11" = "true" ]; then
 		for XBIN in X Xorg; do
-			# try to run X
-			$XBIN -version >/dev/null 2>&1
+			# check if X exists
+			command -v $XBIN >/dev/null 2>&1
 
 			# X/Xorg queried successfully
 			[ "$?" = "0" ] && break
@@ -893,6 +1043,16 @@ if [ "$ICON" = "true" ]; then
 fi
 
 #
+# Enable OpenGL ES hacks if required.
+#
+if [ "$GLES" = "true" ]; then
+	echo "OpenGL ES support enabled."
+	echo "#define CONFIG_GLES" >> src/config.h
+else
+	echo "OpenGL ES support disabled."
+fi
+
+#
 # Software renderer
 #
 if [ "$SOFTWARE" = "true" ]; then
@@ -901,6 +1061,17 @@ if [ "$SOFTWARE" = "true" ]; then
 	echo "BUILD_RENDER_SOFT=1" >> platform.inc
 else
 	echo "Software renderer disabled."
+fi
+
+#
+# Softscale renderer (SDL 2)
+#
+if [ "$SOFTSCALE" = "true" ]; then
+	echo "Softscale renderer enabled."
+	echo "#define CONFIG_RENDER_SOFTSCALE" >> src/config.h
+	echo "BUILD_RENDER_SOFTSCALE=1" >> platform.inc
+else
+	echo "Softscale renderer disabled."
 fi
 
 #
@@ -997,6 +1168,18 @@ else
 fi
 
 #
+# Handle RAD support, if enabled
+#
+
+if [ "$REALITY" = "true" ]; then
+	echo "Reality Adlib Tracker (RAD) support enabled."
+	echo "#define CONFIG_REALITY" >> src/config.h
+	echo "BUILD_REALITY=1" >> platform.inc
+else
+	echo "Reality Adlib Tracker (RAD) support disabled."
+fi
+
+#
 # Handle audio subsystem, if enabled
 #
 if [ "$AUDIO" = "true" ]; then
@@ -1064,6 +1247,16 @@ if [ "$ICON" = "true" ]; then
 	#
 	if [ "$PLATFORM" = "mingw" ]; then
 		echo "EMBED_ICONS=1" >> platform.inc
+	else
+		#
+		# Also get the (probable) icon path...
+		#
+		if [ "$SHAREDIR" = "." ]; then
+			ICONFILE="contrib/icons/quantump.png"
+		else
+			ICONFILE="$SHAREDIR/icons/megazeux.png"
+		fi
+		echo "#define ICONFILE \"$ICONFILE\"" >> src/config.h
 	fi
 else
 	echo "Icon branding disabled."
@@ -1133,18 +1326,13 @@ fi
 
 #
 # Allow use of hash table counter/string lookups, if enabled
-# Keep the default at the bottom so it doesn't override other options.
 #
-if [ "$UTHASH" = "true" ]; then
-	echo "uthash counter/string lookup enabled."
-	echo "#define CONFIG_UTHASH" >> src/config.h
-	echo "BUILD_UTHASH=1" >> platform.inc
-elif [ "$KHASH" = "true" ]; then
+if [ "$KHASH" = "true" ]; then
 	echo "khash counter/string lookup enabled."
 	echo "#define CONFIG_KHASH" >> src/config.h
 	echo "BUILD_KHASH=1" >> platform.inc
 else
-	echo "uthash counter/string lookup disabled (using binary search)."
+	echo "khash counter/string lookup disabled (using binary search)."
 fi
 
 #
@@ -1169,6 +1357,29 @@ else
 fi
 
 #
+# stdio redirect, if enabled
+#
+if [ "$SDL" = "true" -a "$LIBSDL2" = "false" ]; then
+	echo "Using SDL 1.x default stdio redirect behavior."
+elif [ "$STDIO_REDIRECT" = "true" ]; then
+	echo "Redirecting stdio to stdout.txt and stderr.txt."
+	echo "#define CONFIG_STDIO_REDIRECT" >> src/config.h
+else
+	echo "stdio redirect disabled."
+fi
+
+#
+# SDL_GameControllerDB, if enabled. This depends on SDL 2.
+#
+if [ "$LIBSDL2" = "true" -a "$GAMECONTROLLERDB" = "true" ]; then
+	echo "SDL_GameControllerDB enabled."
+	echo "#define CONFIG_GAMECONTROLLERDB" >> src/config.h
+	echo "BUILD_GAMECONTROLLERDB=1" >> platform.inc
+else
+	echo "SDL_GameControllerDB disabled."
+fi
+
+#
 # Frames-per-second counter
 #
 if [ "$FPSCOUNTER" = "true" ]; then
@@ -1176,6 +1387,19 @@ if [ "$FPSCOUNTER" = "true" ]; then
 	echo "#define CONFIG_FPS" >> src/config.h
 else
 	echo "fps counter disabled."
+fi
+
+#
+# Pledge(2) on main executable warning
+#
+if [ "$PLEDGE" = "true" ]; then
+	echo
+	echo "  WARNING: pledge will probably: break renderer switching; crash when"
+	echo "  switching to fullscreen (use fullscreen=1) or exiting when using"
+	echo "  the software renderer; crash when switching to fullscreen with the"
+	echo "  scaling renderers (use fullscreen=1 and/or fullscreen_windowed=1);"
+	echo "  crash when using any scaling renderer with some Mesa versions."
+	echo "  You've been warned!"
 fi
 
 echo

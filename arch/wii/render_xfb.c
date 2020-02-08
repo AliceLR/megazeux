@@ -23,6 +23,7 @@
 #include "../../src/render.h"
 #include "../../src/render_layer.h"
 #include "../../src/renderers.h"
+#include "../../src/yuv.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -62,21 +63,6 @@ struct xfb_render_data
   u8 intermediate_bpp;
   u8 require_240p_mode;
 };
-
-static inline void rgb_to_yuv(Uint8 r, Uint8 g, Uint8 b,
-                              Uint8 *y, Uint8 *u, Uint8 *v)
-{
-  *y = (9797 * r + 19237 * g + 3734 * b) >> 15;
-  *u = ((18492 * (b - *y)) >> 15) + 128;
-  *v = ((23372 * (r - *y)) >> 15) + 128;
-}
-
-static inline Uint32 rgb_to_yuy2(Uint8 r, Uint8 g, Uint8 b)
-{
-  Uint8 y, u, v;
-  rgb_to_yuv(r, g, b, &y, &u, &v);
-  return (y << 24) | (u << 16) | (y << 8) | v;
-}
 
 static boolean xfb_init_video(struct graphics_data *graphics,
  struct config_info *conf)
@@ -156,32 +142,13 @@ static boolean xfb_set_video_mode(struct graphics_data *graphics,
 static void xfb_update_colors(struct graphics_data *graphics,
  struct rgb_color *palette, Uint32 count)
 {
-  Uint8 y, u, v;
   Uint32 i;
 
   for(i = 0; i < count; i++)
   {
-    rgb_to_yuv(palette[i].r, palette[i].g, palette[i].b, &y, &u, &v);
-    graphics->flat_intensity_palette[i] = (y << 24) | (u << 16) | (y << 8) | v;
+    graphics->flat_intensity_palette[i] =
+     rgb_to_yuy2(palette[i].r, palette[i].g, palette[i].b);
   }
-}
-
-#define Y1_MASK 0xFF000000
-#define Y2_MASK 0x0000FF00
-#define UV_MASK 0x00FF00FF
-
-static void xfb_set_colors_mzx(struct graphics_data *graphics,
- Uint32 *char_colors, Uint8 bg, Uint8 fg)
-{
-  Uint32 yuv_bg = graphics->flat_intensity_palette[bg];
-  Uint32 yuv_fg = graphics->flat_intensity_palette[fg];
-  Uint32 yuv_mix =
-   (((yuv_bg & UV_MASK) / 2) + ((yuv_fg & UV_MASK) / 2)) & UV_MASK;
-
-  char_colors[0] = yuv_bg;
-  char_colors[1] = yuv_mix | (yuv_bg & Y1_MASK) | (yuv_fg & Y2_MASK);
-  char_colors[2] = yuv_mix | (yuv_fg & Y1_MASK) | (yuv_bg & Y2_MASK);
-  char_colors[3] = yuv_fg;
 }
 
 static void xfb_render_graph(struct graphics_data *graphics)
@@ -206,7 +173,8 @@ static void xfb_render_graph(struct graphics_data *graphics)
   }
 
   if(!mode)
-    render_graph16((Uint16 *)pixels, pitch, graphics, xfb_set_colors_mzx);
+    render_graph16((Uint16 *)pixels, pitch, graphics,
+     yuy2_subsample_set_colors_mzx);
   else
     render_graph16((Uint16 *)pixels, pitch, graphics, set_colors32[mode]);
 }
@@ -285,6 +253,10 @@ static void xfb_render_mouse(struct graphics_data *graphics,
 
   render_mouse(pixels, pitch, bpp, x, y, mask, alpha_mask, w, h);
 }
+
+#define Y1_MASK YUY2_Y1_MASK
+#define Y2_MASK YUY2_Y2_MASK
+#define UV_MASK YUY2_UV_MASK
 
 static inline Uint32 yuy_mix_x(Uint32 a, Uint32 b)
 {

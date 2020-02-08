@@ -48,7 +48,14 @@ static inline int is_blank(Uint16 c)
 void plot_sprite(struct world *mzx_world, struct sprite *cur_sprite, int color,
  int x, int y)
 {
-  if(((cur_sprite->width) && (cur_sprite->height)))
+  /**
+   * Prior to 2.80, only one of these had to be set, and it was extremely
+   * likely at least one WOULD be set because DOS versions would not clear
+   * anything but the flags between game loads. Instead of emulating the
+   * quirks of pre-port MZX for this, just unconditionally allow placement.
+   */
+  if((cur_sprite->width && cur_sprite->height) ||
+   (mzx_world->version < VERSION_PORT))
   {
     cur_sprite->x = x;
     cur_sprite->y = y;
@@ -71,21 +78,38 @@ void plot_sprite(struct world *mzx_world, struct sprite *cur_sprite, int color,
   }
 }
 
-// Sort by yorder (or by sprite number if the yorder is the same)
-static int compare_spr(const void *dest, const void *src)
+// Sort by zorder, then by sprite number
+static int compare_spr_normal(const void *dest, const void *src)
 {
   struct sprite *spr_dest = *((struct sprite **)dest);
   struct sprite *spr_src = *((struct sprite **)src);
-  int dest_y = spr_dest->y * (spr_dest->flags & SPRITE_UNBOUND ? 1 : CHAR_H);
-  int src_y = spr_src->y * (spr_src->flags & SPRITE_UNBOUND ? 1 : CHAR_H);
 
-  int diff = ((dest_y + spr_dest->col_y) - (src_y + spr_src->col_y));
+  int diff = spr_dest->z - spr_src->z;
+
+  return diff ? diff : (spr_dest->qsort_order - spr_src->qsort_order);
+}
+
+// Sort by zorder, then by yorder, then by sprite number
+static int compare_spr_yorder(const void *dest, const void *src)
+{
+  struct sprite *spr_dest = *((struct sprite **)dest);
+  struct sprite *spr_src = *((struct sprite **)src);
+
+  int diff = spr_dest->z - spr_src->z;
+  int dest_y, src_y;
+
+  if (diff != 0) return diff;
+
+  dest_y = spr_dest->y * (spr_dest->flags & SPRITE_UNBOUND ? 1 : CHAR_H);
+  src_y = spr_src->y * (spr_src->flags & SPRITE_UNBOUND ? 1 : CHAR_H);
+
+  diff = ((dest_y + spr_dest->col_y) - (src_y + spr_src->col_y));
 
   return diff ? diff : (spr_dest->qsort_order - spr_src->qsort_order);
 }
 
 static inline void sort_sprites(struct sprite **sorted_list,
- struct sprite **sprite_list)
+ struct sprite **sprite_list, int spr_yorder)
 {
   // Fill the sorted list with the active sprites in the beginning
   // and the inactive sprites in the end.
@@ -93,6 +117,7 @@ static inline void sort_sprites(struct sprite **sorted_list,
   int i;
   int i_active;
   int i_inactive;
+  int (*spr_compare)(const void *, const void *);
 
   for(i = 0, i_active = 0, i_inactive = MAX_SPRITES - 1; i < MAX_SPRITES; i++)
   {
@@ -113,7 +138,13 @@ static inline void sort_sprites(struct sprite **sorted_list,
     }
   }
 
-  qsort(sorted_list, i_active, sizeof(struct sprite *), compare_spr);
+  if(spr_yorder)
+    spr_compare = compare_spr_yorder;
+
+  else
+    spr_compare = compare_spr_normal;
+
+  qsort(sorted_list, i_active, sizeof(struct sprite *), spr_compare);
 }
 
 void draw_sprites(struct world *mzx_world)
@@ -133,7 +164,6 @@ void draw_sprites(struct world *mzx_world)
   boolean use_vlayer;
   struct sprite **sprite_list = mzx_world->sprite_list;
   struct sprite *sorted_list[MAX_SPRITES];
-  struct sprite **draw_order = sprite_list;
   struct sprite *cur_sprite;
   Uint16 ch;
   char color;
@@ -153,16 +183,12 @@ void draw_sprites(struct world *mzx_world)
 
   calculate_xytop(mzx_world, &screen_x, &screen_y);
 
-  if(mzx_world->sprite_y_order)
-  {
-    sort_sprites(sorted_list, sprite_list);
-    draw_order = sorted_list;
-  }
+  sort_sprites(sorted_list, sprite_list, mzx_world->sprite_y_order);
 
   // draw this on top of the SCREEN window.
   for(i = 0; i < MAX_SPRITES; i++)
   {
-    cur_sprite = draw_order[i];
+    cur_sprite = sorted_list[i];
 
     if(!(cur_sprite->flags & SPRITE_INITIALIZED))
       continue;
@@ -499,7 +525,7 @@ static int sprite_colliding_xy_old(struct world *mzx_world,
   if((ref_x + col_width) >= bwidth)
     col_width = bwidth - ref_x;
 
-  if((ref_y + col_width) >= bheight)
+  if((ref_y + col_height) >= bheight)
     col_height = bheight - ref_y;
 
   if((check_x + col_width) >= board_width)

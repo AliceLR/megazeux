@@ -35,7 +35,7 @@
 
 
 struct robot *legacy_load_robot_allocate(struct world *mzx_world, FILE *fp,
- int savegame, int file_version)
+ int savegame, int file_version, boolean *truncated)
 {
   struct robot *cur_robot = cmalloc(sizeof(struct robot));
 
@@ -45,7 +45,9 @@ struct robot *legacy_load_robot_allocate(struct world *mzx_world, FILE *fp,
   cur_robot->program_source = NULL;
   cur_robot->num_labels = 0;
 
-  legacy_load_robot(mzx_world, cur_robot, fp, savegame, file_version);
+  if(!legacy_load_robot(mzx_world, cur_robot, fp, savegame, file_version))
+    *truncated = true;
+
   return cur_robot;
 }
 
@@ -55,7 +57,8 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
  struct robot *cur_robot, const void *buffer, int savegame, int version,
  int robot_location)
 {
-  int program_length, validated_length;
+  int program_length;
+  int xpos, ypos;
   int i;
 
   const unsigned char *bufferPtr = buffer;
@@ -68,21 +71,13 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
   cur_robot->program_source = NULL;
   cur_robot->num_labels = 0;
 
-#ifdef CONFIG_DEBYTECODE
-  if(version >= VERSION_SOURCE)
-  {
-    program_length = mem_getd(&bufferPtr);
-  }
-  else
-#endif
-  {
-    program_length = mem_getw(&bufferPtr);
-    bufferPtr += 2;
-  }
+  program_length = mem_getw(&bufferPtr);
+  bufferPtr += 2;
 
 #ifdef CONFIG_EDITOR
   cur_robot->command_map = NULL;
   cur_robot->command_map_length = 0;
+
   cur_robot->commands_total = 0;
   cur_robot->commands_cycle = 0;
   cur_robot->commands_caught = 0;
@@ -102,8 +97,8 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
   cur_robot->walk_dir = (enum dir)mem_getc(&bufferPtr);
   cur_robot->last_touch_dir = (enum dir)mem_getc(&bufferPtr);
   cur_robot->last_shot_dir = (enum dir)mem_getc(&bufferPtr);
-  cur_robot->xpos = mem_getw(&bufferPtr);
-  cur_robot->ypos = mem_getw(&bufferPtr);
+  xpos = mem_getw(&bufferPtr);
+  ypos = mem_getw(&bufferPtr);
   cur_robot->status = mem_getc(&bufferPtr);
   // Skip local - these are in the save files now
   bufferPtr += 2;
@@ -114,8 +109,12 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
     bufferPtr += 2;
 
   // Fix xpos and ypos for global robot
-  cur_robot->xpos = -(cur_robot->xpos >= 32768) | cur_robot->xpos;
-  cur_robot->ypos = -(cur_robot->ypos >= 32768) | cur_robot->ypos;
+  xpos = (xpos >= 32768) ? -1 : xpos;
+  ypos = (ypos >= 32768) ? -1 : ypos;
+  cur_robot->xpos = xpos;
+  cur_robot->ypos = ypos;
+  cur_robot->compat_xpos = xpos;
+  cur_robot->compat_ypos = ypos;
 
   // If savegame, there's some additional information to get
   if(savegame)
@@ -140,73 +139,6 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
     }
 
     cur_robot->stack_size = stack_size;
-
-#ifdef CONFIG_DEBYTECODE
-    // We're allowing legacy save robots to be loaded because lancer-x is
-    // a bad person and relies on savegame type MZMs (even though he claims
-    // to have made them in the editor)
-
-    if(version < VERSION_SOURCE)
-    {
-      // The program is bytecode and we have to convert it to sourcecode.
-      char *program_legacy_bytecode = cmalloc(program_length);
-      memcpy(program_legacy_bytecode, bufferPtr, program_length);
-      bufferPtr += program_length;
-
-      validated_length = validate_legacy_bytecode(program_legacy_bytecode,
-       program_length);
-
-      if(validated_length <= 0)
-      {
-        free(program_legacy_bytecode);
-        goto err_invalid;
-      }
-
-      else if(validated_length < program_length)
-      {
-        program_legacy_bytecode = crealloc(program_legacy_bytecode,
-         validated_length);
-        program_length = validated_length;
-      }
-
-      cur_robot->program_bytecode = NULL;
-      cur_robot->program_source =
-       legacy_disassemble_program(program_legacy_bytecode, program_length,
-       &(cur_robot->program_source_length), true, 10);
-
-      free(program_legacy_bytecode);
-      prepare_robot_bytecode(mzx_world, cur_robot);
-
-      // And if you thought that lancer-x was a bad person for relying
-      // on in-game saved MZMs then you should also know that these
-      // these had robots that MZMs weren't at start position. Fortunately,
-      // they were working more in spite of it than because of it, so
-      // they're safe to nudge back.
-
-      if(cur_robot->cur_prog_line)
-        cur_robot->cur_prog_line = 1;
-    }
-    else
-    {
-      // Save file loads bytecode. This also means that we can't ever
-      // ever edit save files, so make them null. In practice this
-      // shouldn't be possible though.
-
-      // TODO: We need to validate new bytecode too
-      cur_robot->program_bytecode = cmalloc(program_length);
-      cur_robot->program_bytecode_length = program_length;
-      memcpy(cur_robot->program_bytecode, bufferPtr, program_length);
-      bufferPtr += program_length;
-    }
-
-    cur_robot->program_source = NULL;
-    cur_robot->program_source_length = 0;
-
-    // TODO: This has to be made part of what's saved one day.
-    cur_robot->label_list =
-     cache_robot_labels(cur_robot, &cur_robot->num_labels);
-
-#endif /* CONFIG_DEBYTECODE */
   }
   else
   {
@@ -220,66 +152,67 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
 
     // Initialize the stack pointer to the bottom
     cur_robot->stack_pointer = 0;
-
-#ifdef CONFIG_DEBYTECODE
-    // World file loads source code.
-    if(version < VERSION_SOURCE)
-    {
-      if((cur_robot->used) || (program_length >= 2))
-      {
-        // The program is bytecode and we have to convert it to sourcecode.
-        char *program_legacy_bytecode = cmalloc(program_length);
-        memcpy(program_legacy_bytecode, bufferPtr, program_length);
-        bufferPtr += program_length;
-
-        validated_length = validate_legacy_bytecode(program_legacy_bytecode,
-         program_length);
-
-        if(validated_length <= 0)
-        {
-          free(program_legacy_bytecode);
-          goto err_invalid;
-        }
-
-        else if(validated_length < program_length)
-        {
-          program_legacy_bytecode = crealloc(program_legacy_bytecode,
-           validated_length);
-          program_length = validated_length;
-        }
-
-        cur_robot->program_source =
-         legacy_disassemble_program(program_legacy_bytecode, program_length,
-         &(cur_robot->program_source_length), true, 10);
-        free(program_legacy_bytecode);
-      }
-      else
-      {
-        // Skip over program, we're not going to use it.
-        bufferPtr += program_length;
-        cur_robot->program_source = NULL;
-        cur_robot->program_source_length = 0;
-      }
-    }
-    else
-    {
-      // This program is source, just load it straight
-      cur_robot->program_source = cmalloc(program_length + 1);
-      cur_robot->program_source_length = program_length;
-
-      memcpy(cur_robot->program_source, bufferPtr, program_length);
-      bufferPtr += program_length;
-
-      cur_robot->program_source[program_length] = 0;
-    }
-
-    // This will become non-null when the robot's executed.
-    cur_robot->program_bytecode = NULL;
-    cur_robot->program_bytecode_length = 0;
-#endif /* CONFIG_DEBYTECODE */
   }
 
-#ifndef CONFIG_DEBYTECODE
+#ifdef CONFIG_DEBYTECODE
+
+  // The program is legacy bytecode and we have to convert it to source.
+  cur_robot->program_bytecode = NULL;
+  cur_robot->program_bytecode_length = 0;
+
+  if((cur_robot->used) || (program_length >= 2))
+  {
+    char *program_legacy_bytecode = cmalloc(program_length);
+    memcpy(program_legacy_bytecode, bufferPtr, program_length);
+    bufferPtr += program_length;
+
+    if(!validate_legacy_bytecode(&program_legacy_bytecode, &program_length))
+    {
+      free(program_legacy_bytecode);
+      goto err_invalid;
+    }
+
+    cur_robot->program_source =
+     legacy_disassemble_program(program_legacy_bytecode, program_length,
+     &(cur_robot->program_source_length), true, 10);
+
+    if(savegame && cur_robot->cur_prog_line > 1)
+    {
+      // Compile immediately if this is a save. The old bytecode and the new
+      // bytecode are both required to convert the old program position into
+      // the new program position.
+      //
+      // Note this doesn't need to be done if cur_prog_line is 0 (robot ended)
+      // or 1 (this is always the first command).
+
+      // FIXME the following relies upon the new bytecode having the same number
+      // of commands as the old bytecode, which SHOULD be true, but it is not.
+      // Uncomment this when rasm gets the ability to compile comments and
+      // blank lines into NOPs.
+      cur_robot->cur_prog_line = 1;
+      cur_robot->pos_within_line = 0;
+      /*
+      int cmd_num = get_legacy_bytecode_command_num(program_legacy_bytecode,
+       cur_robot->cur_prog_line);
+
+      prepare_robot_bytecode(mzx_world, cur_robot);
+
+      cur_robot->cur_prog_line = command_num_to_program_pos(cur_robot, cmd_num);
+      */
+    }
+    free(program_legacy_bytecode);
+  }
+  else
+  {
+    // Skip over program, we're not going to use it.
+    bufferPtr += program_length;
+
+    create_blank_robot_program(cur_robot);
+    cur_robot->cur_prog_line = 0;
+  }
+
+#else /* !CONFIG_DEBYTECODE */
+
   cur_robot->program_bytecode_length = program_length;
   if(program_length > 0)
   {
@@ -288,25 +221,14 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
     memcpy(cur_robot->program_bytecode, bufferPtr, program_length);
     bufferPtr += program_length;
 
-    validated_length = validate_legacy_bytecode(cur_robot->program_bytecode,
-     program_length);
-
-    if(validated_length <= 0)
+    if(!validate_legacy_bytecode(&cur_robot->program_bytecode, &program_length))
       goto err_invalid;
 
-    else if(validated_length < program_length)
-    {
-      cur_robot->program_bytecode = crealloc(cur_robot->program_bytecode,
-       validated_length);
-      cur_robot->program_bytecode_length = validated_length;
-    }
+    cur_robot->program_bytecode_length = program_length;
 
     // Now create a label cache IF the robot is in use
     if(cur_robot->used)
-    {
-      cur_robot->label_list =
-       cache_robot_labels(cur_robot, &cur_robot->num_labels);
-    }
+      cache_robot_labels(cur_robot);
   }
 #endif /* !CONFIG_DEBYTECODE */
 
@@ -351,7 +273,9 @@ size_t legacy_load_robot_calculate_size(const void *buffer, int savegame,
   const unsigned char *bufferPtr;
   int program_length;
   int stack_size;
-  size_t robot_size;
+
+  // Base robot size
+  size_t robot_size = legacy_calculate_partial_robot_size(savegame, version);
 
   // First, read the program length (0 bytes in)
   bufferPtr = (unsigned char *)buffer + 0;
@@ -362,46 +286,42 @@ size_t legacy_load_robot_calculate_size(const void *buffer, int savegame,
   if(version < VERSION_SOURCE)
   #endif
     program_length &= 0xFFFF;
-  
+
   // Next, if this is a savegame robot, read the stack size
   if(savegame)
   {
-    bufferPtr = (unsigned char *)buffer + 41;
-    if(version >= V284) bufferPtr += 4; // Skip over loopcount
-    bufferPtr += 32 * 4; // Skip over 32 local counters
+    bufferPtr = (unsigned char *)buffer + robot_size - 8;
     stack_size = mem_getd(&bufferPtr);
+
+    robot_size += stack_size * 4;
   }
 
-  // Now calculate the robot size
-  robot_size = 41;
-  if(savegame)
-  {
-    if(version >= V284) robot_size += 4;
-    robot_size += 32 * 4 + 2 * 4 + stack_size * 4;
-  }
   robot_size += program_length;
   return robot_size;
 }
 
-void legacy_load_robot(struct world *mzx_world, struct robot *cur_robot,
+boolean legacy_load_robot(struct world *mzx_world, struct robot *cur_robot,
  FILE *fp, int savegame, int version)
 {
   int robot_location = ftell(fp);
   size_t partial_size = legacy_calculate_partial_robot_size(savegame, version);
-  void *buffer = cmalloc(partial_size);
-  size_t total_read = 0;
+  char *buffer = cmalloc(partial_size);
+  boolean truncated = true;
   size_t full_size;
 
-  total_read += fread(buffer, partial_size, 1, fp) * partial_size;
-  full_size = legacy_load_robot_calculate_size(buffer, savegame, version);
+  if(fread(buffer, partial_size, 1, fp))
+  {
+    full_size = legacy_load_robot_calculate_size(buffer, savegame, version);
+    buffer = crealloc(buffer, full_size);
 
-  buffer = crealloc(buffer, full_size);
-  total_read += fread((unsigned char *)buffer + partial_size,
-   full_size - partial_size, 1, fp) * (full_size - partial_size);
+    if((partial_size == full_size) ||
+     fread(buffer + partial_size, full_size - partial_size, 1, fp))
+      truncated = false;
+  }
 
   create_blank_robot(cur_robot);
 
-  if(total_read != full_size)
+  if(truncated)
   {
     error_message(E_BOARD_ROBOT_CORRUPT, robot_location, NULL);
     create_blank_robot_program(cur_robot);
@@ -414,6 +334,7 @@ void legacy_load_robot(struct world *mzx_world, struct robot *cur_robot,
      version, robot_location);
   }
   free(buffer);
+  return !truncated;
 }
 
 static void legacy_load_scroll(struct scroll *cur_scroll, FILE *fp)
@@ -422,7 +343,7 @@ static void legacy_load_scroll(struct scroll *cur_scroll, FILE *fp)
 
   cur_scroll->mesg = NULL;
   cur_scroll->num_lines = fgetw(fp);
-  fseek(fp, 2, SEEK_CUR); // Skip junk
+  fgetw(fp); // Skip junk
   scroll_size = fgetw(fp);
   cur_scroll->mesg_size = scroll_size;
   cur_scroll->used = fgetc(fp);

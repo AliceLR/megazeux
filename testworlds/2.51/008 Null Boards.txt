@@ -1,0 +1,3 @@
+Title: Null Boards Test
+Author: Alice Rowan
+Desc: Make sure entrances work after null board removal. Also make sure null board removal doesn't print warnings.

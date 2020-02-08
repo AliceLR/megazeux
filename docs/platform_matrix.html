@@ -50,18 +50,21 @@ var no_mingw_stack_protector = subopt("NO", 4);
 var no_low_memory = subopt("NO", 5);
 var no_updater = subopt("NO", 6);
 var no_updater_unix = subopt("NO", 7);
-var no_sdl_3ds = std("NO", 9);
-var optional_sdl_wii = std("OPTIONAL", 10);
-var yes_but_8bpp = subopt("YES (8bpp)", 11);
+var no_sdl_3ds = std("NO", 8);
+var optional_sdl_wii = std("OPTIONAL", 9);
+var yes_but_8bpp = subopt("YES (8bpp)", 10);
+var no_gl_switch = subopt("NO", 11);
 
 var ZIP = _yes("ZIP");
 var DMG = _yes("DMG");
 var LHA = _yes("LHA");
+var APK = _yes("APK");
 
 var xmp = std("xmp");
+var rad = std("RAD");
 var libvorbis = std("libvorbis");
 var tremor = std("tremor");
-var tremor_lowmem = std("tremor (lowmem)");
+var tremor_lowmem = std("tremor<br />(lowmem)");
 
 var render_ctr = std("render_ctr");
 var render_nds = std("render_nds");
@@ -84,6 +87,7 @@ var fields =
   stack_protector:  "Stack Protector",
   layer_rendering:  "Layer Rendering",
   module_engine:    "Module Engine",
+  adlib_engine:     "Adlib Engine",
   ogg_vorbis:       "Ogg Vorbis",
   optimization:     "Optimization",
   sdl:              "SDL",
@@ -91,14 +95,14 @@ var fields =
   helpsys:          "HELPSYS",
   audio:            "AUDIO",
   software:         "SOFTWARE",
+  overlay:          "SOFTSCALE",
   gl:               "GL",
-  overlay:          "OVERLAY",
   glsl:             "GLSL",
   updater:          "UPDATER",
   modular:          "MODULAR",
   png:              "PNG",
   x11:              "X11",
-  uthash:           "UTHASH",
+  hashtables:       "HASH TABLES",
   loadsave_meter:   "LOADSAVE_METER",
 };
 
@@ -119,6 +123,7 @@ var archs =
     visibility:       // Optimized visibility (See note 3)
     stack_protector:  // Is the stack protector enabled? (usually _FAULTY())
     module_engine:    // xmp or other
+    adlib_engine:     // rad
     ogg_vorbis:       // vorbis, tremor, tremor_lowmem or _FAULTY()
     optimization:     // speed or size
     sdl:              // Does this platform rely on SDL?
@@ -126,14 +131,14 @@ var archs =
     helpsys:          // Does this platform ship with the help file enabled?
     audio:            // Does this platform ship with audio enabled?
     software:         // Does this platform have a software/proprietary renderer?
+    overlay:          // Does this platform use the softscale (SDL 2) or overlay (SDL 1.2) renderer(s)?
     gl:               // Does this platform use the OpenGL fixed function renderers?
-    overlay:          // Does this platform use the overlay renderers?
     glsl:             // Does this platform use the GLSL renderer?
     updater:          // Is this platform compatible with the updater?
     modular:          // Does this platform use modular builds?
     png:              // Does this platform build with libpng?
     x11:              // Can this platform link to X11?
-    uthash:           // Does this platform use uthash for counter lookups?
+    hashtables:       // Does this platform use hash tables for counter lookups?
     loadsave_meter:   // Does this platform ship with the loadsave meter enabled?
   },
 */
@@ -144,11 +149,12 @@ var archs =
     description:      "Nintendo 3DS",
     architecture:     "ARM11 (ELF)",
     endian:           "Little",
-    toolchain:        "gcc 8.1.0 <br /> binutils 2.30 <br /> (dk r49)",
+    toolchain:        "gcc 9.1.0 <br /> binutils 2.32 <br /> (dk r53)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       tremor,
     optimization:     speed,
     sdl:              no_sdl_3ds,
@@ -158,8 +164,37 @@ var archs =
     software:         render_ctr,
     updater:          no_updater,
     png:              yes,
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   yes,
+  },
+
+  android:
+  {
+    platform:         "android",
+    description:      "Android",
+    architecture:     "ARMv7-a (ELF) <br/> AArch64 (ELF) <br /> i686 (ELF) <br /> x86_64 (ELF)",
+    endian:           "Little",
+    toolchain:        "clang 8.0.2 <br /> binutils 2.27.0.20170315 <br /> bionic",
+    packaged:         APK,
+    visibility:       yes,
+    stack_protector:  _FAULTY("NO"),
+    layer_rendering:  yes,
+    module_engine:    xmp,
+    adlib_engine:     rad,
+    ogg_vorbis:       libvorbis,
+    optimization:     speed,
+    sdl:              yes,
+    editor:           yes,
+    helpsys:          yes,
+    audio:            yes,
+    software:         yes,
+    gl:               _FAULTY("NO"),
+    overlay:          yes,
+    glsl:             _FAULTY("NO"),
+    updater:          no_updater,
+    png:              yes,
+    hashtables:       yes,
+    loadsave_meter:   no,
   },
 
   darwin:
@@ -174,6 +209,7 @@ var archs =
     stack_protector:  yes,
     layer_rendering:  yes,
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
     sdl:              yes,
@@ -187,7 +223,36 @@ var archs =
     updater:          no_updater,
     modular:          yes,
     png:              yes,
-    uthash:           yes,
+    hashtables:       yes,
+    loadsave_meter:   no,
+  },
+
+  emscripten:
+  {
+    platform:         "emscripten",
+    description:      "HTML5 (Emscripten)",
+    architecture:     "JavaScript <br /> WebAssembly",
+    endian:           "Little",
+    toolchain:        "clang 10.0.0 <br /> emsdk 1.38.41",
+    packaged:         ZIP,
+    stack_protector:  _FAULTY(),
+    layer_rendering:  yes,
+    module_engine:    xmp,
+    adlib_engine:     rad,
+    ogg_vorbis:       libvorbis,
+    optimization:     speed,
+    sdl:              yes,
+    editor:           _FAULTY(),
+    helpsys:          yes,
+    audio:            yes,
+    software:         yes,
+    gl:               no,
+    overlay:          yes,
+    glsl:             yes,
+    updater:          no,
+    modular:          no,
+    png:              no,
+    hashtables:       yes,
     loadsave_meter:   no,
   },
 
@@ -197,12 +262,13 @@ var archs =
     description:      "Windows <br /> (GNU toolchain)",
     architecture:     "x64 (PE+ COFF) <br /> x86 (PE COFF)",
     endian:           "Little",
-    toolchain:        "gcc 8.2.0 (x64) <br /> gcc 7.3.0 (x86) <br /> binutils 2.30",
+    toolchain:        "gcc 9.2.0 (x64) <br /> gcc 9.2.0 (x86) <br /> binutils 2.32",
     packaged:         ZIP,
     visibility:       yes,
     stack_protector:  no_mingw_stack_protector,
     layer_rendering:  yes,
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
     sdl:              yes,
@@ -216,7 +282,7 @@ var archs =
     updater:          yes,
     modular:          yes,
     png:              yes,
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   no,
   },
 
@@ -232,6 +298,7 @@ var archs =
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
     sdl:              yes,
@@ -245,7 +312,7 @@ var archs =
     updater:          yes,
     modular:          yes,
     png:              yes,
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   no,
   },
 
@@ -255,11 +322,12 @@ var archs =
     description:      "Nintendo DS",
     architecture:     "ARM9 (ELF)",
     endian:           "Little",
-    toolchain:        "gcc 8.1.0 <br /> binutils 2.30 <br /> (dk r49)",
+    toolchain:        "gcc 9.1.0 <br /> binutils 2.32 <br /> (dk r53)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  _FAULTY(),
     module_engine:    _FAULTY(),
+    adlib_engine:     _FAULTY(),
     ogg_vorbis:       _FAULTY(),
     optimization:     size,
     sdl:              no,
@@ -269,7 +337,7 @@ var archs =
     software:         render_nds,
     updater:          no_updater,
     png:              no_low_memory,
-    uthash:           no_low_memory,
+    hashtables:       no_low_memory,
     loadsave_meter:   yes,
   },
 
@@ -284,6 +352,7 @@ var archs =
     stack_protector:  _FAULTY(),
     layer_rendering:  yes_but_8bpp,
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       tremor_lowmem,
     optimization:     size,
     sdl:              yes,
@@ -293,7 +362,35 @@ var archs =
     software:         yes,
     updater:          no_updater,
     png:              yes,
-    uthash:           yes,
+    hashtables:       yes,
+    loadsave_meter:   yes,
+  },
+
+  switch:
+  {
+    platform:         "switch",
+    description:      "Nintendo Switch",
+    architecture:     "ARMv8/AArch64 (ELF)",
+    endian:           "Little",
+    toolchain:        "gcc 8.3.0 <br /> binutils 2.32 <br /> (dk r13)",
+    packaged:         ZIP,
+    stack_protector:  _FAULTY(),
+    layer_rendering:  yes,
+    module_engine:    xmp,
+    adlib_engine:     rad,
+    ogg_vorbis:       libvorbis,
+    optimization:     speed,
+    sdl:              yes,
+    editor:           yes,
+    helpsys:          yes,
+    audio:            yes,
+    software:         yes,
+    overlay:          yes,
+    gl:               no_gl_switch,
+    glsl:             no_gl_switch,
+    updater:          no_updater,
+    png:              yes,
+    hashtables:       yes,
     loadsave_meter:   yes,
   },
 
@@ -309,6 +406,7 @@ var archs =
     stack_protector:  yes,
     layer_rendering:  yes,
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
     sdl:              yes,
@@ -323,7 +421,7 @@ var archs =
     modular:          yes,
     png:              yes,
     x11:              yes,
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   no,
   },
 
@@ -333,11 +431,12 @@ var archs =
     description:      "Nintendo Wii",
     architecture:     "PPC (ELF)",
     endian:           "Big",
-    toolchain:        "gcc 8.2.0 <br /> binutils 2.31.1 <br /> (dk r33)",
+    toolchain:        "gcc 8.3.0 <br /> binutils 2.32 <br /> (dk r35)",
     packaged:         ZIP,
     stack_protector:  _FAULTY(),
     layer_rendering:  yes,
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       tremor,
     optimization:     speed,
     sdl:              optional_sdl_wii,
@@ -347,7 +446,7 @@ var archs =
     software:         render_gx,
     updater:          no_updater,
     png:              yes,
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   yes,
   },
 
@@ -363,6 +462,7 @@ var archs =
     stack_protector:  yes,
     layer_rendering:  yes,
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
     sdl:              yes,
@@ -376,7 +476,7 @@ var archs =
     updater:          no_updater,
     modular:          yes,
     png:              yes,
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   no,
   },
 
@@ -394,6 +494,7 @@ var archs =
     stack_protector:  yes,
     layer_rendering:  yes,
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       libvorbis,
     optimization:     speed,
     sdl:              yes,
@@ -407,36 +508,7 @@ var archs =
     updater:          no_updater,
     modular:          yes,
     png:              yes,
-    uthash:           yes,
-    loadsave_meter:   no,
-  },
-
-  android:
-  {
-    platform:         defunct("android"),
-    description:      "Android",
-    architecture:     "ARMv7-a (ELF) <br /> i686 (ELF)",
-    endian:           "Little",
-    toolchain:        "gcc 4.2.1 <br /> binutils 2.17 <br /> bionic",
-    packaged:         _FAULTY("TBD", 8),
-    visibility:       yes,
-    stack_protector:  _FAULTY("NO", 8),
-    layer_rendering:  _FAULTY("NO", 8),
-    module_engine:    xmp,
-    ogg_vorbis:       tremor_lowmem,
-    optimization:     size,
-    sdl:              no,
-    editor:           yes,
-    helpsys:          yes,
-    audio:            _FAULTY("TBD", 8),
-    software:         no,
-    gl:               yes,
-    overlay:          _FAULTY("NO", 8),
-    glsl:             yes,
-    updater:          no_updater,
-    modular:          yes,
-    png:              yes,
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   no,
   },
 
@@ -451,6 +523,7 @@ var archs =
     stack_protector:  _FAULTY(),
     layer_rendering:  _FAULTY(),
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       tremor_lowmem,
     optimization:     size,
     sdl:              yes,
@@ -460,7 +533,7 @@ var archs =
     software:         render_gp2x,
     updater:          no_updater,
     png:              yes,
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   yes,
   },
 
@@ -476,6 +549,7 @@ var archs =
     stack_protector:  yes,
     layer_rendering:  yes,
     module_engine:    xmp,
+    adlib_engine:     rad,
     ogg_vorbis:       tremor_lowmem,
     optimization:     speed,
     sdl:              yes,
@@ -489,7 +563,7 @@ var archs =
     updater:          no_updater,
     png:              yes,
     x11:              subopt(),
-    uthash:           yes,
+    hashtables:       yes,
     loadsave_meter:   no,
   },
 };
@@ -607,7 +681,8 @@ table {
 	border-collapse : collapse;
 	border : 2px solid black;
 	border-spacing : 0;
-	width : 150em;
+	min-width : 1880px;
+	width : 98%;
 }
 
 td, th {
@@ -617,7 +692,7 @@ td, th {
 	border-color : gray;
 	padding : 5px;
 	color : black;
-	width : 8.3%;
+  max-width : 100px;
 }
 
 td {
@@ -626,6 +701,7 @@ td {
 
 th {
 	background-color : rgb(200,200,200);
+  max-width: 120px;
 }
 
 td.yes, td.no, td.no2, td.na, td.std {
@@ -726,7 +802,7 @@ conjunction with C++ exceptions with some MinGW compilers.
 <li><a name="note5"/>The editor and help system features are disabled
 to conserve cache on embedded platforms. The features build and work
 on these platforms, but they are basically unusable due to the lack of any
-on-screen keyboard. Additionally, uthash has been disabled on the NDS to
+on-screen keyboard. Additionally, hash tables have been disabled on the NDS to
 conserve memory.
 </li>
 
@@ -742,25 +818,25 @@ guaranteed.<br/>Additionally, it is felt that the advanced package management
 on these platforms supercedes any usefulness of the built-in updater.
 </li>
 
-<li><a name="note8"/>The Android platform, while having been listed in this
-table for a long time, has never really been supported. What little work exists
-is extremely old, and no viable build has ever been created.
-</li>
-
-<li><a name="note9"/>Building MZX with SDL on the 3DS is viable, but the
+<li><a name="note8"/>Building MZX with SDL on the 3DS is viable, but the
 software renderer is far slower, currently offers no additional functionality,
 and doesn't allow for special features such as screen dragging. Furthermore,
 SDL significantly increases the size of the MZX executable.
 </li>
 
-<li><a name="note10"/>Building MZX with SDL Wii is viable, but produces larger
+<li><a name="note9"/>Building MZX with SDL Wii is viable, but produces larger
 binaries than desired, relies on the software renderer, and SDL Wii is
 considered unstable.
 </li>
 
-<li><a name="note11"/>Layer rendering is supported on this platform by as it
+<li><a name="note10"/>Layer rendering is supported on this platform by as it
 uses the SDL software renderer, but this port does not currently support a color
 depth greater than 8bpp, so the UI palette will not be protected in SMZX mode.
+</li>
+
+<li><a name="note11"/>The GL renderers work on the Switch but have been
+disabled because they cause system crashes when exiting MegaZeux. They generally
+seem to perform worse than softscale, so there isn't much reason to fix this.
 </li>
 </ol>
 

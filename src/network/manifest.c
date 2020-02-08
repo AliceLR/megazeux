@@ -305,6 +305,12 @@ boolean manifest_entry_check_validity(struct manifest_entry *e, FILE *f)
   unsigned long len = e->size;
   struct SHA256_ctx ctx;
 
+  // Nope
+  if(e->name[0] == '/' || e->name[0] == '\\' ||
+   strstr(e->name, ":/") || strstr(e->name, ":\\") ||
+   strstr(e->name, "../") || strstr(e->name, "..\\"))
+    return false;
+
   // It must be the same length
   if((unsigned long)ftell_and_rewind(f) != len)
     return false;
@@ -442,6 +448,7 @@ boolean manifest_entry_download_replace(struct host *h, const char *basedir,
     }
   }
 
+  memset(&req, 0, sizeof(struct http_info));
   strcpy(req.expected_type, "application/octet-stream");
   snprintf(req.url, LINE_BUF_LEN, "%s/%08x%08x%08x%08x%08x%08x%08x%08x", basedir,
     e->sha256[0], e->sha256[1], e->sha256[2], e->sha256[3],

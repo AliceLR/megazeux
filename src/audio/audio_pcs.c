@@ -42,33 +42,6 @@ struct pc_speaker_stream
   Uint32 last_increment_buffer;
 };
 
-// This function is only used in sfx_next_note() under lock.
-void sound(int frequency, int duration)
-{
-  struct pc_speaker_stream *pcs_stream =
-   (struct pc_speaker_stream *)audio.pcs_stream;
-
-  if(pcs_stream)
-  {
-    pcs_stream->playing = 1;
-    pcs_stream->frequency = frequency;
-    pcs_stream->note_duration = duration;
-  }
-}
-
-// This function is only used in sfx_next_note() under lock.
-void nosound(int duration)
-{
-  struct pc_speaker_stream *pcs_stream =
-   (struct pc_speaker_stream *)audio.pcs_stream;
-
-  if(pcs_stream)
-  {
-    pcs_stream->playing = 0;
-    pcs_stream->note_duration = duration;
-  }
-}
-
 static Uint32 pcs_mix_data(struct audio_stream *a_src, Sint32 *buffer,
  Uint32 len)
 {
@@ -77,7 +50,7 @@ static Uint32 pcs_mix_data(struct audio_stream *a_src, Sint32 *buffer,
   Uint32 sample_duration = pcs_stream->last_duration;
   Uint32 end_duration;
   Uint32 increment_value, increment_buffer;
-  Uint32 sfx_scale = (pcs_stream->volume + 1) * 32;
+  Uint32 sfx_scale = (pcs_stream->volume ? pcs_stream->volume + 1 : 0) * 32;
   Uint32 sfx_scale_half = sfx_scale / 2;
   Sint32 *mix_dest_ptr = buffer;
   Sint16 cur_sample;
@@ -120,7 +93,12 @@ static Uint32 pcs_mix_data(struct audio_stream *a_src, Sint32 *buffer,
 
   while(offset < len / 4)
   {
-    sfx_next_note();
+    sfx_next_note((int *)&(pcs_stream->playing),
+     (int *)&(pcs_stream->frequency), (int *)&(pcs_stream->note_duration));
+
+    // Minimum note duration is 1 to prevent locking up the audio thread.
+    if(pcs_stream->note_duration < 1)
+      pcs_stream->note_duration = 1;
 
     sample_duration = (Uint32)((float)audio.output_frequency / 500 *
      pcs_stream->note_duration);
@@ -179,9 +157,6 @@ static struct audio_stream *construct_pc_speaker_stream(void)
   struct pc_speaker_stream *pcs_stream;
   struct audio_stream_spec a_spec;
 
-  if(!audio.pcs_on)
-    return NULL;
-
   pcs_stream = ccalloc(1, sizeof(struct pc_speaker_stream));
 
   memset(&a_spec, 0, sizeof(struct audio_stream_spec));
@@ -189,8 +164,8 @@ static struct audio_stream *construct_pc_speaker_stream(void)
   a_spec.set_volume = pcs_set_volume;
   a_spec.destruct   = pcs_destruct;
 
-  initialize_audio_stream((struct audio_stream *)pcs_stream, &a_spec,
-   audio.pcs_volume * 255 / 8, 0);
+  // The volume here will be corrected after initialization...
+  initialize_audio_stream((struct audio_stream *)pcs_stream, &a_spec, 255, 0);
 
   return (struct audio_stream *)pcs_stream;
 }

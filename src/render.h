@@ -34,10 +34,13 @@ extern void (*const set_colors32[4])(struct graphics_data *graphics,
  Uint32 *char_colors, Uint8 bg, Uint8 fg);
 extern void (*const set_indices[4])(struct graphics_data *graphics,
  int *indices, Uint8 bg, Uint8 fg);
-#ifdef CONFIG_RENDER_YUV
-extern void (*const yuv2_set_colors[4])(struct graphics_data *graphics,
- Uint32 *char_colors, Uint8 bg, Uint8 fg);
-#endif
+
+void yuy2_subsample_set_colors_mzx(struct graphics_data *graphics,
+ Uint32 *indices, Uint8 bg, Uint8 fg);
+void uyvy_subsample_set_colors_mzx(struct graphics_data *graphics,
+ Uint32 *indices, Uint8 bg, Uint8 fg);
+void yvyu_subsample_set_colors_mzx(struct graphics_data *graphics,
+ Uint32 *indices, Uint8 bg, Uint8 fg);
 
 void render_graph8(Uint8 *pixels, Uint32 pitch,
  struct graphics_data *graphics,
@@ -63,7 +66,7 @@ void set_screen_coords_centered(struct graphics_data *graphics, int x, int y,
  int *screen_x, int *screen_y);
 
 #if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM) \
- || defined(CONFIG_RENDER_YUV)
+ || defined(CONFIG_RENDER_SOFTSCALE) || defined(CONFIG_RENDER_YUV)
 
 void get_screen_coords_scaled(struct graphics_data *graphics, int screen_x,
  int screen_y, int *x, int *y, int *min_x, int *min_y, int *max_x, int *max_y);
@@ -74,7 +77,8 @@ void set_screen_coords_scaled(struct graphics_data *graphics, int x, int y,
  CONFIG_RENDER_YUV */
 
 #if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM) \
- || defined(CONFIG_RENDER_YUV) || defined(CONFIG_RENDER_GX)
+ || defined(CONFIG_RENDER_SOFTSCALE) || defined(CONFIG_RENDER_YUV) \
+ || defined(CONFIG_RENDER_GX)
 
 void fix_viewport_ratio(int width, int height, int *v_width, int *v_height,
  enum ratio_type ratio);

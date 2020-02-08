@@ -34,6 +34,7 @@
 
 #include "configure.h"
 #include "core.h"
+#include "error.h"
 #include "event.h"
 #include "helpsys.h"
 #include "graphics.h"
@@ -73,6 +74,75 @@ __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001; // Nvidia
 __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1; // AMD
 #endif
 
+static char startup_dir[MAX_PATH];
+
+#ifdef CONFIG_PLEDGE
+/**
+ * Experimental OpenBSD pledge(2) support.
+ * This has to be done after init_video and possibly after init_audio.
+ *
+ * FIXME MZX will abort if pretty much anything happens that requires
+ * destroying or creating a window (fullscreen, renderer switching, exiting).
+ * Additionally, in OpenBSD 6.5, Mesa seems to use something that aborts
+ * when drawing the current frame, so the GL renderers only work in 6.4 or
+ * earlier. I don't think there's anything that can be done about this in
+ * the near future.
+ */
+static void init_pledge(void)
+{
+  static const char * const promises = "stdio rpath wpath cpath audio drm";
+
+  debug("Promises: '%s'\n", promises);
+  if(pledge(promises, ""))
+    perror("Pledge failed");
+}
+#endif
+
+#ifdef CONFIG_UPDATER
+static char **rewrite_argv_for_execv(int argc, char **argv)
+{
+  char **new_argv = cmalloc((argc+1) * sizeof(char *));
+  char *arg;
+  int length;
+  int pos;
+  int i;
+  int i2;
+
+  // Due to a bug in execv, args with spaces present are treated as multiple
+  // args in the new process. Each arg in argv must be wrapped in double quotes
+  // to work properly. Because of this, " and \ must also be escaped.
+
+  for(i = 0; i < argc; i++)
+  {
+    length = strlen(argv[i]);
+    arg = cmalloc(length * 2 + 2);
+    arg[0] = '"';
+
+    for(i2 = 0, pos = 1; i2 < length; i2++, pos++)
+    {
+      switch(argv[i][i2])
+      {
+        case '"':
+        case '\\':
+          arg[pos] = '\\';
+          pos++;
+          break;
+      }
+      arg[pos] = argv[i][i2];
+    }
+
+    arg[pos] = '"';
+    arg[pos + 1] = '\0';
+
+    new_argv[i] = arg;
+  }
+
+  new_argv[argc] = NULL;
+
+  return new_argv;
+}
+#endif
+
 #ifdef __amigaos__
 #define __libspec LIBSPEC
 #else
@@ -95,7 +165,16 @@ __libspec int main(int argc, char *argv[])
 
   // We need to store the current working directory so it's
   // always possible to get back to it..
-  getcwd(current_dir, MAX_PATH);
+  getcwd(startup_dir, MAX_PATH);
+  snprintf(current_dir, MAX_PATH, "%s", startup_dir);
+
+#ifdef CONFIG_STDIO_REDIRECT
+  // Do this after platform_init() since, even though platform_init() might
+  // log stuff, it actually initializes the filesystem on some platforms.
+  if(!redirect_stdio(startup_dir, true))
+    if(!redirect_stdio(SHAREDIR, false))
+      redirect_stdio(getenv("HOME"), false);
+#endif
 
 #ifdef __APPLE__
   if(!strcmp(current_dir, "/") || !strncmp(current_dir, "/App", 4))
@@ -105,6 +184,12 @@ __libspec int main(int argc, char *argv[])
     snprintf(current_dir, MAX_PATH, "/Users/%s", user);
   }
 #endif // __APPLE__
+
+#ifdef ANDROID
+  // Accept argv[1] passed in from the Java side as the "intended" argv[0].
+  if(argc >= 2)
+    argv++;
+#endif
 
   // argc may be 0 on e.g. some Wii homebrew loaders.
   if(argc == 0)
@@ -151,7 +236,7 @@ __libspec int main(int argc, char *argv[])
     split_path_filename(argv[1], conf->startup_path, 256,
      conf->startup_file, 256);
 
-  if(conf->startup_path && strlen(conf->startup_path))
+  if(strlen(conf->startup_path))
   {
     debug("Config: Using startup path '%s'\n", conf->startup_path);
     snprintf(current_dir, MAX_PATH, "%s", conf->startup_path);
@@ -163,8 +248,6 @@ __libspec int main(int argc, char *argv[])
 
   rng_seed_init();
 
-  initialize_joysticks();
-
   set_mouse_mul(8, 14);
 
   init_event();
@@ -172,6 +255,12 @@ __libspec int main(int argc, char *argv[])
   if(!init_video(conf, CAPTION))
     goto err_free_config;
   init_audio(conf);
+
+#ifdef CONFIG_PLEDGE
+  init_pledge();
+#endif
+
+  core_data = core_init(&mzx_world);
 
   if(network_layer_init(conf))
   {
@@ -186,7 +275,8 @@ __libspec int main(int argc, char *argv[])
           conf->update_auto_check = UPDATE_AUTO_CHECK_OFF;
 
         if(conf->update_auto_check)
-          check_for_updates(&mzx_world, true);
+          if(check_for_updates((context *)core_data, true))
+            goto update_restart_mzx;
       }
       else
         info("Updater disabled.\n");
@@ -209,14 +299,10 @@ __libspec int main(int argc, char *argv[])
   mzx_world.mzx_speed = conf->mzx_speed;
 
   // Run main game (mouse is hidden and palette is faded)
-  core_data = core_init(&mzx_world);
   title_screen((context *)core_data);
   core_run(core_data);
-  core_free(core_data);
 
   vquick_fadeout();
-
-  destruct_layers();
 
   if(mzx_world.active)
   {
@@ -228,8 +314,33 @@ __libspec int main(int argc, char *argv[])
   help_close(&mzx_world);
 #endif
 
+#ifdef CONFIG_UPDATER
+update_restart_mzx:
+#endif
   network_layer_exit(conf);
   quit_audio();
+
+#ifdef CONFIG_UPDATER
+  // TODO: eventually any platform with execv will need to be able to allow
+  // this for config/standalone-invoked restarts. Locking it to the updater
+  // for now because that's the only thing that currently uses it.
+  if(core_restart_requested(core_data))
+  {
+    char **new_argv = rewrite_argv_for_execv(argc, argv);
+
+    info("Attempting to restart MegaZeux...\n");
+    if(!chdir(startup_dir))
+    {
+      execv(argv[0], (const void *)new_argv);
+      perror("execv");
+    }
+
+    error_message(E_INVOKE_SELF_FAILED, 0, NULL);
+  }
+#endif
+  core_free(core_data);
+
+  quit_video();
 
   err = 0;
 err_free_config:

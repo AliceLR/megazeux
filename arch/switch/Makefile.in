@@ -1,0 +1,77 @@
+#
+# Nintendo Switch Makefile
+#
+
+.PHONY: package clean
+
+ifeq ($(strip $(DEVKITPRO)),)
+$(error "DEVKITPRO must be set in your environment.")
+endif
+
+# NOTE: there is no $DEVKITA64. Don't use it.
+
+#
+# Switch target rules
+#
+
+include $(DEVKITPRO)/libnx/switch_rules
+
+BINEXT     := .elf
+
+APP_TITLE  := MegaZeux
+APP_AUTHOR := \"MegaZeux Developers\"
+APP_ICON   := arch/switch/icon.jpg
+
+STRIP      := /bin/true
+
+#
+# Override library paths.
+#
+
+MACHDEP    := -D__SWITCH__ -march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE
+
+ifeq (${DEBUG},1)
+  #DRM_NOUVEAU := drm_nouveaud
+  NX := nxd
+else
+  OPTIMIZE_CFLAGS := -O3 -ffunction-sections
+  #DRM_NOUVEAU := drm_nouveau
+  NX := nx
+endif
+
+MESA_LIBS :=
+
+ifneq ($(or ${BUILD_RENDER_SOFTSCALE}, ${BUILD_RENDER_GL_PROGRAM}),)
+MESA_LIBS += -lGLESv2
+endif
+
+ifneq (${BUILD_RENDER_GL_FIXED},)
+MESA_LIBS += -lGLESv1_CM
+endif
+
+ifneq (${MESA_LIBS},)
+MESA_LIBS += -lEGL -lglapi -ldrm_nouveau
+endif
+
+SDL_PREFIX := ${PORTLIBS}
+
+EXTRA_INCLUDES := -isystem ${LIBNX}/include -isystem ${PORTLIBS}/include
+EXTRA_LIBS := -L${LIBNX}/lib -L${PORTLIBS}/lib -L$(DEVKITPRO)/devkitA64/aarch64-none-elf/lib/pic \
+              -lSDL2 ${MESA_LIBS} -l${NX} -lpng16 -lz
+
+ARCH_CFLAGS   += ${EXTRA_INCLUDES} ${MACHDEP}
+ARCH_CXXFLAGS += ${ARCH_CFLAGS} -fno-rtti -fno-exceptions
+ARCH_LDFLAGS  += ${EXTRA_LIBS} ${MACHDEP} -specs=$(DEVKITPRO)/libnx/switch.specs
+
+package: mzx mzxrun.nro megazeux.nro mzxrun.nso megazeux.nso mzxrun.nacp megazeux.nacp
+
+clean:
+	@rm -f mzxrun.{nacp,nro,nso,pfs0,elf} megazeux.{nacp,nro,nso,pfs0,elf}
+
+build := build/${SUBPLATFORM}/switch/megazeux
+build: package ${build}
+	${CP} arch/switch/pad.config ${build}
+	${CP} megazeux.nro ${build}
+	${RM} ${build}/${mzxrun} ${build}/${mzx} ${build}/*.debug
+
+include arch/zip.inc

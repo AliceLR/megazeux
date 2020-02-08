@@ -29,7 +29,7 @@ __M_BEGIN_DECLS
 #include "world_struct.h"
 
 struct robot *legacy_load_robot_allocate(struct world *mzx_world, FILE *fp,
- int savegame, int file_version);
+ int savegame, int file_version, boolean *truncated);
 
 void legacy_load_robot_from_memory(struct world *mzx_world,
  struct robot *cur_robot, const void *buffer, int savegame, int version,
@@ -40,7 +40,7 @@ size_t legacy_calculate_partial_robot_size(int savegame, int version);
 size_t legacy_load_robot_calculate_size(const void *buffer, int savegame,
  int version);
 
-void legacy_load_robot(struct world *mzx_world, struct robot *cur_robot,
+boolean legacy_load_robot(struct world *mzx_world, struct robot *cur_robot,
  FILE *fp, int savegame, int version);
 
 struct scroll *legacy_load_scroll_allocate(FILE *fp);

@@ -1,5 +1,5 @@
-# Configuration file for MegaZeux 2.91i
-# December 9th, 2018
+# Configuration file for MegaZeux 2.92b
+# September 23rd, 2019
 
 # Comments begin with #. Whitespace is ignored. Empty lines are
 # ignored as well.
@@ -22,63 +22,63 @@
 
 ### Video options ###
 
-# Rendering engine to use to display MegaZeux. The fastest renderer
-# is "software", due to the way MegaZeux is drawn internally. However,
-# due to MegaZeux's strange default resolution (640x350), many video
-# cards have difficulty with supporting it correctly in fullscreen mode.
+# Rendering engine to use to display MegaZeux. The simplest (but not
+# necessarily fastest) renderer is "software". Due to MegaZeux's strange
+# default resolution (640x350), many video cards have difficulty
+# supporting it correctly in fullscreen mode.
 #
-# Using another renderer that supports scaling will be slower, but not
-# necessarily by much, depending on your video hardware and CPU. Very
-# often, MZX uses so little CPU during software rendering that scaling
-# is an inexpensive feature.
-#
-# The software renderer is the default renderer and has very good
-# windowed and non-windowed performance. In addition, this renderer
-# correctly supports 8 bit colour modes, should you be using antiquated
-# hardware. It also requires no overlay or 3D hardware support. If you're
-# on a slow computer or a handheld portable, you definitely want to use
-# this. To use it, either do nothing, or uncomment the line below.
+# The software renderer is the fallback renderer if another renderer fails
+# to initialize, and has generally adequate performance. Additionally, it
+# supports 8 bit indexed color and requires no overlay or 3D hardware support.
+# If you're on a slow computer or a handheld portable, definitely use this.
+# To use it, uncomment the line below.
 
 # video_output = software
 
-# The YUV overlay renderer is a good substitute if you want scaling
-# at low cost. The quality of the scaling is poor, and can sometimes be
-# very poor depending on your video hardware. On video hardware that
-# interpolates or filters the YUV overlay, such as NVIDIA or ATI hardware,
-# this method can be fairly high quality (comparable to GL with linear
-# filtering), and yields good performance, with low OS driver requirements.
-# On Intel Integrated video, and other similar solutions, the YUV overlay
-# will use nearest neighbour and the quality will be atrocious.
+# A much faster option for almost anything with a graphics card is the
+# "softscale" renderer. This renderer uses SDL2's built-in rendering API
+# to stream the output of the software renderer to a hardware-accelerated
+# texture (if available) for extremely fast scaling and display.
+#
+# Either 32 bit or 16 bit rendering can be enabled (see force_bpp), but
+# 32 bit is recommended. Nearest neighbor or linear scaling will be chosen
+# automatically based on the scaling ratio and size of the window. This
+# renderer is a replacement for the YUV overlay renderer.
+
+# video_output = softscale
+
+# If you built MegaZeux yourself with SDL 1.2 support enabled, the YUV overlay
+# renderer is available instead of softscale. This renderer is good if you
+# want scaling and can't use OpenGL. The quality of scaling is hardware
+# dependent and often looks bad at non-integer scaling.
 #
 # Uncomment either of the lines below (but not both) if you want to try it.
 # The "overlay2" mode is cheaper, but will be less accurate due to the use
-# of chroma subsampling instead of a full YUV encode. Furthermore, the
-# "overlay2" mode does not support newer graphical features such as unbound
-# sprites. The use of it is not recommended.
+# of chroma subsampling instead of a full YUV encode. The "overlay2" mode
+# also does not support newer graphical features such as unbound sprites.
+# If uncommented for SDL2 builds, these lines will enable softscale instead.
 
 # video_output = overlay1
 # video_output = overlay2
 
-# An OpenGL renderer is a good choice if you want a highly configurable,
-# cheap (in terms of CPU cycles) renderer and have a fairly good video
-# card. This method provides the highest quality scaler and should work
-# on all platforms with OpenGL or OpenGL ES support.
+# An OpenGL renderer is a good choice if you want a configurable, cheap
+# renderer and have a video card. This method provides the highest quality
+# scaler and should work on all platforms with OpenGL or OpenGL ES support.
 #
-# MegaZeux provides two fixed-function scalers. The first, by Exophase,
-# renders the whole game to a texture and uses OpenGL to stretch it.
-# This renderer is called "opengl1" and is high quality but quite slow.
+# MegaZeux provides two fixed-function scalers. The first renders the whole
+# screen to a texture and uses OpenGL to stretch it. This method is generally
+# fast but may be slow on very old PCs. This renderer is called "opengl1".
 #
-# The second fixed-function scaler was written by Logicow, and it uses the
-# features of GL more extensively, remapping the character sets to a texture,
-# tiling entirely in OpenGL. This yields a performance increase, at the cost
-# of some compatibility. This renderer is called "opengl2".
+# The second fixed-function scaler draws entirely in OpenGL by remapping the
+# character sets to a texture. This yields a performance increase for some
+# games, but at the cost of compatibility. This renderer is called "opengl2".
 #
 # MegaZeux also provides a scaler for programmable hardware. If you have
 # OpenGL 2.0 or OpenGL ES 2.0 capable hardware, you should use this renderer.
-# Written by Logicow, it uses shaders to do the tiling and scaling. There
-# are several shader programs that can be selected at runtime using the F2
-# menu. This renderer is called "glsl". It is the highest quality and best
-# performing renderer for most PCs.
+# This renderer uses GLSL shaders to render and scale the screen, and several
+# different scaling shaders can be selected at runtime using the settings menu.
+# This renderer is called "glsl". It is the highest quality and best performing
+# renderer for most PCs and games, and is enabled by default.
 #
 # Uncomment ONE of the lines below:
 
@@ -86,10 +86,11 @@
 # video_output = opengl2
 # video_output = glsl
 
-# The OpenGL and YUV overlay renderers can be configured to preserve aspect
-# ratio where possible, in window and fullscreen modes. The supported
-# ratios are "classic" (4:3) and "modern" (64:35). The ratio type "stretch"
-# disables any aspect ratio preservation. "Modern" is the default.
+# The scaling renderers can be configured to preserve aspect ratio where
+# possible in window and fullscreen modes. The supported ratios are
+# "classic" (4:3) and "modern" (64:35). The ratio type "stretch" disables
+# any aspect ratio preservation. The default is "modern" (except for consoles
+# where "classic" makes more sense, including the 3DS, NDS, and Wii).
 
 # video_ratio = modern
 
@@ -112,29 +113,34 @@
 # gl_scaling_shader = semisoft
 
 # Some OpenGL driver settings may default vertical sync on, which looks
-# visually better (especially on CRTs) but can cause "speed 1" to run
-# noticably slower than with other renderers. For consistency with other
-# renderers, and for correctness, MegaZeux will attempt to disable vsync
-# when gl_vsync is the default value of 0. Conversely, a value >= 1 forces
-# MegaZeux to override the driver settings and enable vsync, which
-# decreases tearing. A value < 0 can be used to tell MegaZeux to obey the
-# driver default, which is unlikely to be useful.
+# visually better on CRTs but can cause "speed 1" to run noticably slower.
+# For consistency with other renderers, and for correctness, MegaZeux will
+# attempt to disable vsync when gl_vsync is the default value of 0.
+# Conversely, a value of 1 forces MegaZeux to override the driver settings
+# and enable vsync, which decreases tearing. A value of -1 can be used to
+# tell MegaZeux to obey the driver default, which is unlikely to be useful.
 
 # gl_vsync = 1
 
 # Resolution MZX uses for fullscreen. With the software renderer, this
-# will center MZX on the screen, and will not scale it.
-# However, with the hardware renderers above, MZX will attempt to scale
-# itself to match this resolution. Best results are obtained by using
-# a well-supported resolution like 1280,720 in conjunction with the
-# modern aspect ratio.
+# will center MZX on the screen, and will not scale it. All other renderers
+# listed above will attempt to scale the screen to match this resolution.
+# Best results are obtained by using your current desktop resolution or a
+# well-supported resolution (like 1280,720) in conjunction with the modern
+# aspect ratio.
+#
 # Give in x,y format. Use this if the defaults are giving you problems,
 # especially in the software renderer.
-# The resolution "1280,720" is the default for all scalable renderers;
+# The current desktop resolution is the default for all scalable renderers;
 # "640,480" is the default for the software renderer.
 
-# fullscreen_resolution = 1280,720
 # fullscreen_resolution = 640,480
+
+# If this setting is enabled, instead of regular fullscreen MZX will create
+# a borderless window with the current desktop resolution when fullscreen
+# is enabled. This overrides fullscreen_resolution. Disabled by default.
+
+# fullscreen_windowed = 0
 
 # The resolution MZX uses in a window. If you renderer supports
 # it, MZX will be scaled to fit this specification. Otherwise
@@ -154,7 +160,7 @@
 # resolutions. Using 32bit colour is slower, but not by much.
 # NOTE: This option may be ignored by one or more of the above
 # renderers, but it is guaranteed to apply to "software". Valid
-# settings are usually '8' or '32'.
+# settings are usually '8', '16', or '32'. Default is '32'.
 
 # force_bpp = 32
 
@@ -218,15 +224,15 @@
 
 # pc_speaker_on = 1
 
-# Volume music plays at
+# Volume music plays at (0 through 10)
 
 # music_volume = 8
 
-# Volume samples play at
+# Volume samples play at (0 through 10)
 
 # sample_volume = 8
 
-# Volume PC speaker SFX play at
+# Volume PC speaker SFX play at (0 through 10)
 
 # pc_speaker_volume = 8
 
@@ -250,7 +256,7 @@
 
 # save_file = saved.sav
 
-# Speed MZX should start at (1 through 9)
+# Speed MZX should start at (1 through 16)
 
 # mzx_speed = 4
 
@@ -500,42 +506,131 @@
 
 # Joystick options
 
-# It is possible to emulate key presses using a joystick. If this file
-# is config.txt these options will apply as a default to all games -
-# you can put them in game.cnf to apply specifically to game.mzx.
+# It is possible to emulate key presses using a joystick. This can be
+# achieved with the following config options globally or (for options
+# starting with "joyX" only) on a per-game basis. To configure joysticks
+# for a particular game, place the applicable settings in a file called
+# [game].cnf (e.g. "caverns.cnf" is the settings file for "caverns.mzx").
+# This will configure joysticks for that world and all saves loaded from
+# that world only. Games utilizing swaps may require multiple .cnf files.
 
-# A joystick is first specified as joyN where N is the number from
-# 1 onwards identifying the joystick in your system. You may have
-# to experiment to find which joystick is which number, if you have
-# multiple ones, otherwise just use 1. Up to 16 joysticks are
-# recognized.
-# You can currently map three things, axes, buttons, and POV hats.
-# Axes/buttons/hats are mapped to keys given by number. You can find out
-# a key's number by printing key_pressed in a loop (NOT key_code).
-# Axis mapping looks as follows:
+# Each joystick in MegaZeux is assigned a number between 1 and 16. When
+# a joystick is detected, it is given the lowest available number, so
+# typically the joystick you are using is joystick 1. When multiple
+# joysticks are plugged in, you may have to experiment to determine which
+# joystick is which.
 
-# joyXaxisY = A, B
-
-# Where X is the number of the joystick, Y is the number of the axis
-# (1 is typically left/right, 2 is typically up/down), A is the key
-# for one extreme (such as left) and B is the key for the other
-# (such as right).
-
-# Button mapping looks as follows:
+# The old method for mapping joystick controls is to manually assign axes,
+# buttons, and/or a POV hat to keys to simulate keypresses. While this is no
+# longer recommended, the settings for this are
 
 # joyXbuttonY = A
+# joyXaxisY = A, B
+# joyXhat = A, B, C, D
 
-# Where X is the number of the joystick, Y is the number of the button
-# (you may have to experiment to find out which button is which number),
-# and A is the key whose press is emulated when this button is pressed.
+# where X is the number of the joystick, Y is the number of the button or axis,
+# and A, B, C, and D are any of the following:
+#
+# 1) a number representing an internal MZX keycode (see keycodes.html);
+# 2) 'key_NAME' (without quotes), representing the key NAME (see keycodes.html);
+# 3) or 'act_NAME' (without quotes), representing the action NAME (see below).
 
-# Hat mapping looks as follows:
+# The threshold to trigger a joystick axis press can be globally defined with
+# the setting
 
-# joyXhat = U, D, L, R
+# joy_axis_threshold = 10000
 
-# Where X is the number of the joystick, U is the key for the up direction,
-# D is the key for the down direction, L is the key for the left direction,
-# and R is the key for the right direction.
+# where lower values (0 minimum) will press the mapped key with less
+# movement and higher values (32767 maximum) will press the mapped key
+# with more movement.
+
+# As of MegaZeux 2.92, it is also possible to bind joystick controls to
+# named joystick "actions". These actions correspond directly to positional
+# button names common on popular game controllers, are more UI-friendly than
+# using keys directly, they have default gameplay keys pre-assigned, and these
+# gameplay keys can be changed to different values without altering UI behavior.
+# Actions can also be detected directly through Robotic. Finally, for most
+# platforms, these actions can be assigned automatically for many controllers
+# rather than by config options.
+
+# The available joystick actions and their typical behaviors are:
+#
+#  Action         Title screen    Window          Game key (default)
+# -------------  --------------  --------------  ----------------------
+#  up (1)                         Cursor up       Up (move)
+#  down (1)                       Cursor down     Down (move)
+#  left (1)                       Cursor left     Left (move)
+#  right (1)                      Cursor right    Right (move)
+#  a              Play game       Select          Space (shoot)
+#  b              Main menu       Cancel          Delete (lay bomb)
+#  x              Load world      Select char     Enter (game menu)
+#  y              Reload save     Backspace       S (Caverns: spells)
+#  select         Main menu       Cancel          Game menu (2)
+#  start          Play game       Select          Game menu (2)
+#  lshoulder      Settings        Next element    Insert (switch bombs)
+#  rshoulder      Settings        Settings        P (Caverns: altar)
+#  ltrigger       Load world      Page up         F3 (save game)
+#  rtrigger       Reload save     Page down       F4 (load save)
+#  lstick                         Home
+#  rstick                         End
+#
+# (1) Actions "up"/"down"/"left"/"right" are intended for a dpad. Actions
+# "l_up"/"l_down"/"l_left"/"l_right" and "r_up"/"r_down"/"r_left"/"r_right"
+# also exist for analog sticks, and have the same default mappings.
+#
+# (2) These buttons will always open the game menu directly unless both the
+# enter menu and the escape menu have been disabled through Robotic.
+
+# To map a joystick action to a different key for gameplay, use the setting
+
+# joyX.NAME = A
+
+# where X is the number of the joystick, NAME is the name of the action
+# (e.g. "lshoulder"), and A is the number (or name) of the key to assign. The
+# joystick number 'X' can be substituted with a range '[Z,W]', which will
+# assign the control for all joysticks numbered Z through W (inclusive).
+
+# Automatic mapping for actions is handled using SDL 2's game controller API.
+# Supported controllers should generally "just work" when they're plugged in.
+# This setting can be used to globally disable the automatic mapping feature
+# entirely. If 1, it will be enabled (default). If 0, it will be disabled.
+
+# gamecontroller_enable = 1
+
+# Controllers that aren't supported can be fixed by adding SDL mapping strings.
+# This config option adds a new mapping string and can be used multiple times;
+# each line adds a new mapping. See docs/joystick.html for more information.
+
+# gamecontroller_add =
+
+# The following settings can be used to globally customize the automated
+# joystick mappings generated from SDL mapping strings.
+# See docs/joystick.html for more information.
+
+# gamecontroller.a = act_a
+# gamecontroller.b = act_b
+# gamecontroller.x = act_x
+# gamecontroller.y = act_y
+# gamecontroller.back = act_select
+# gamecontroller.start = act_start
+# gamecontroller.leftstick = act_lstick
+# gamecontroller.rightstick = act_rstick
+# gamecontroller.leftshoulder = act_lshoulder
+# gamecontroller.rightshoulder = act_rshoulder
+# gamecontroller.dpup = act_up
+# gamecontroller.dpdown = act_down
+# gamecontroller.dpleft = act_left
+# gamecontroller.dpright = act_right
+# gamecontroller.-leftx = act_l_left
+# gamecontroller.+leftx = act_l_right
+# gamecontroller.-lefty = act_l_up
+# gamecontroller.+lefty = act_l_down
+# gamecontroller.-rightx = act_r_left
+# gamecontroller.+rightx = act_r_right
+# gamecontroller.-righty = act_r_up
+# gamecontroller.+righty = act_r_down
+# gamecontroller.lefttrigger = act_ltrigger
+# gamecontroller.righttrigger = act_rtrigger
 
 
 # Misc Options
@@ -548,7 +643,7 @@
 # pause_on_unfocus = 0
 
 # Set to 0 if you want input boxes and strings in the robot editor
-# to use the game set for characters 32-127, as opposed to the protected
+# to use the game set for characters 32-126, as opposed to the protected
 # GUI set.
 
 # mask_midchars = 1
@@ -557,6 +652,20 @@
 # system mouse cursor.
 
 # system_mouse = 0
+
+# Set to 1 to let MZX grab the mouse pointer while active.
+
+# grab_mouse = 0
+
+# Set to 1 to start MZX in testing mode, exactly as if Alt+T was pressed in
+# the editor. MegaZeux will exit after gameplay ends. This is intended to be
+# used with the command line or exec(), and only works with the "megazeux"
+# executable. Testing will start in the world's first board; a different
+# board can be chosen by setting the second option to a valid board number.
+
+# test_mode = 0
+# test_mode_start_board = 0
+
 
 ###################
 # NETWORK OPTIONS #

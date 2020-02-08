@@ -334,8 +334,8 @@ static void delete_robot_lines(struct robot *cur_robot,
   {
     cur_robot->used = 1;
     cur_robot->cur_prog_line = 1;
-    cur_robot->label_list = cache_robot_labels(cur_robot,
-     &(cur_robot->num_labels));
+    clear_label_cache(cur_robot);
+    cache_robot_labels(cur_robot);
   }
 #endif
 }
@@ -1835,9 +1835,9 @@ static void goto_position(struct robot_editor_context *rstate)
 
   struct element *elements[4] =
   {
-    construct_number_box(2, 2, "Line:   ", 0, rstate->total_lines, false,
+    construct_number_box(2, 2, "Line:   ", 1, rstate->total_lines, NUMBER_BOX,
      &line_number),
-    construct_number_box(2, 3, "Column: ", 1, MAX_COMMAND_LEN + 1, false,
+    construct_number_box(2, 3, "Column: ", 1, MAX_COMMAND_LEN + 1, NUMBER_BOX,
      &column_number),
     construct_button(3, 5, "OK", 0),
     construct_button(14, 5, "Cancel", -1)
@@ -2379,7 +2379,7 @@ static void execute_macro(struct robot_editor_context *rstate,
             elements[dialog_index] =
              construct_number_box(x, y, current_variable->name,
              current_type->type_attributes[0],
-             current_type->type_attributes[1], 0,
+             current_type->type_attributes[1], NUMBER_BOX,
              &(current_variable->storage.int_storage));
             break;
           }
@@ -3208,7 +3208,7 @@ static void init_robot_lines(struct robot_editor_context *rstate,
 #endif /* !CONFIG_DEBYTECODE */
 }
 
-static void robot_editor_draw(context *ctx)
+static boolean robot_editor_draw(context *ctx)
 {
   struct robot_editor_context *rstate = (struct robot_editor_context *)ctx;
 
@@ -3395,6 +3395,7 @@ static void robot_editor_draw(context *ctx)
   intake_set_color(rstate->intk, intk_color);
 
   draw_char(bg_char, intk_color, 1, rstate->scr_line_middle);
+  return true;
 }
 
 static boolean robot_editor_idle(context *ctx)

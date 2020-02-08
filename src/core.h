@@ -113,14 +113,17 @@ struct context
 /**
  * Contains extra function/variable information for a new context or subcontext.
  * All variables should be set to NULL or zero unless explicitly provided.
+ * A return value of true from the draw function will update the screen (this
+ * is almost always what you want to return, for an exception see draw_world).
  * A return value of true to an update function will treat the indicated input
  * type(s) as having been fully handled. If no functions aside from destroy are
  * provided, an error will display.
  *
  * resume           Optional function called when this context enters focus.
  * draw             Optional function to draw this context every frame.
- * idle             Update function called every frame (key and mouse).
+ * idle             Update function called every frame (all).
  * key              Update function called to handle a keypress (key).
+ * joystick         Update function called to handle a joystick (joystick).
  * click            Update function called to handle a mouse click (mouse).
  * drag             Update function called to handle a mouse drag (mouse).
  * destroy          Optional function to be called on destruction.
@@ -129,9 +132,10 @@ struct context
 struct context_spec
 {
   void (*resume)(context *);
-  void (*draw)(context *);
+  boolean (*draw)(context *);
   boolean (*idle)(context *);
   boolean (*key)(context *, int *key);
+  boolean (*joystick)(context *, int *key, int action);
   boolean (*click)(context *, int *key, int button, int x, int y);
   boolean (*drag)(context *, int *key, int button, int x, int y);
   void (*destroy)(context *);
@@ -258,7 +262,24 @@ CORE_LIBSPEC void core_run(core_context *root);
  * @param ctx           The current context.
  */
 
-CORE_LIBSPEC void core_exit(context *ctx);
+CORE_LIBSPEC void core_full_exit(context *ctx);
+
+/**
+ * Signal the core to abort all contexts, exit the loop, and restart MegaZeux.
+ *
+ * @param ctx           The current context.
+ */
+
+CORE_LIBSPEC void core_full_restart(context *ctx);
+
+/**
+ * Determine if the a restart was requested.
+ *
+ * @param root          The core context.
+ * @return              True if a restart was requested.
+ */
+
+CORE_LIBSPEC boolean core_restart_requested(core_context *root);
 
 /**
  * Clean up MegaZeux all context data for a given core context.
@@ -289,7 +310,7 @@ CORE_LIBSPEC extern void (*debug_robot_config)(struct world *mzx_world);
 
 // Network external function pointers.
 
-CORE_LIBSPEC extern void (*check_for_updates)(struct world *mzx_world,
+CORE_LIBSPEC extern boolean (*check_for_updates)(context *ctx,
  boolean is_automatic);
 
 __M_END_DECLS

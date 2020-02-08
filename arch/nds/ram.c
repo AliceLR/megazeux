@@ -11,6 +11,9 @@ and GPLv2 (http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt) licenses.
 
 #include "../../src/compat.h"
 
+// Disable annoying GCC warnings.
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+
 
 //===================================//
 //                                   //
@@ -224,7 +227,7 @@ static bool  _ram_test (void)
 {
     vu16 *ram = _unlock();
 
-    ram[0] = 0x1234;        
+    ram[0] = 0x1234;
     if(ram[0] == 0x1234)        // test writability
     {
         _lock();
@@ -235,7 +238,7 @@ static bool  _ram_test (void)
             return true;
         }
     }
-    
+
     return false;
 }
 
@@ -269,7 +272,7 @@ static void  _ram_precalc_size (void)
 bool  ram_init (RAM_TYPE type)
 //==========================================================
 {
-    sysSetBusOwners(BUS_OWNER_ARM9, BUS_OWNER_ARM9);
+    sysSetCartOwner(BUS_OWNER_ARM9);
 
     switch(type)
     {
@@ -410,7 +413,7 @@ u32   ram_size (void)
 vu16* ram_unlock (void)
 //==========================================================
 {
-    sysSetBusOwners(BUS_OWNER_ARM9, BUS_OWNER_ARM9);
+    sysSetCartOwner(BUS_OWNER_ARM9);
 
     if(_unlock)
         return _unlock();
@@ -422,7 +425,7 @@ vu16* ram_unlock (void)
 void  ram_lock (void)
 //==========================================================
 {
-    sysSetBusOwners(BUS_OWNER_ARM9, BUS_OWNER_ARM9);
+    sysSetCartOwner(BUS_OWNER_ARM9);
 
     if(_lock)
         _lock();

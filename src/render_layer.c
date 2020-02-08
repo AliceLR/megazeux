@@ -25,9 +25,17 @@
 #include "render_layer.h"
 #include "util.h"
 
+// Skip unused variants to reduce compile time on these platforms.
+#if defined(CONFIG_WII) || defined(ANDROID) || defined(__EMSCRIPTEN__)
+#define SKIP_8BPP
+#define SKIP_16BPP
+#endif
+
 #include "render_layer_code.h"
 
-// VERY BAD RENDERER. REPLACE THIS ASAP.
+#if 0
+// This layer renderer is very slow, but it should work properly.
+// The renderers in render_layer_code.h should generally be used instead.
 
 static inline void reference_renderer(Uint32 *pixels, Uint32 pitch,
  struct graphics_data *graphics, struct video_layer *layer)
@@ -152,6 +160,7 @@ static inline void reference_renderer(Uint32 *pixels, Uint32 pitch,
     }
   }
 }
+#endif
 
 void render_layer_32bpp(void *pixels, Uint32 pitch,
  struct graphics_data *graphics, struct video_layer *layer)

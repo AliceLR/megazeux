@@ -25,6 +25,7 @@
 #include "../board.h"
 #include "../const.h"
 #include "../error.h"
+#include "../extmem.h"
 #include "../graphics.h"
 #include "../robot.h"
 #include "../window.h"
@@ -195,10 +196,12 @@ static void append_world_refactor_board(struct board *cur_board,
 static boolean append_world_legacy(struct world *mzx_world, FILE *fp,
  int file_version)
 {
-  int i;
+  int i, j;
   int num_boards, old_num_boards = mzx_world->num_boards;
-  int last_pos;
+  int board_names_pos;
   struct board *cur_board;
+  unsigned int *board_offsets;
+  unsigned int *board_sizes;
 
   fseek(fp, 4234, SEEK_SET);
 
@@ -220,8 +223,7 @@ static boolean append_world_legacy(struct world *mzx_world, FILE *fp,
   }
 
   // Skip the names for now
-  // Gonna wanna come back to here
-  last_pos = ftell(fp);
+  board_names_pos = ftell(fp);
   fseek(fp, num_boards * BOARD_NAME_SIZE, SEEK_CUR);
 
   if(num_boards + old_num_boards >= MAX_BOARDS)
@@ -233,21 +235,23 @@ static boolean append_world_legacy(struct world *mzx_world, FILE *fp,
    crealloc(mzx_world->board_list,
    sizeof(struct board *) * (old_num_boards + num_boards));
 
-  // Append boards
-  for(i = old_num_boards; i < old_num_boards + num_boards; i++)
+  // Read the board offsets/sizes preemptively to reduce the amount of seeking.
+  board_offsets = cmalloc(sizeof(int) * num_boards);
+  board_sizes = cmalloc(sizeof(int) * num_boards);
+  for(i = 0; i < num_boards; i++)
   {
-    mzx_world->board_list[i] =
-     legacy_load_board_allocate(mzx_world, fp, 0, file_version);
+    board_sizes[i] = fgetd(fp);
+    board_offsets[i] = fgetd(fp);
   }
 
-  // Go back to where the names are
-  fseek(fp, last_pos, SEEK_SET);
-  for(i = old_num_boards; i < old_num_boards + num_boards; i++)
+  // Append boards
+  for(i = 0, j = old_num_boards; j < old_num_boards + num_boards; i++, j++)
   {
-    cur_board = mzx_world->board_list[i];
-    if(!fread(cur_board->board_name, BOARD_NAME_SIZE, 1, fp))
-      cur_board->board_name[0] = 0;
+    cur_board =
+     legacy_load_board_allocate(mzx_world, fp, board_offsets[i], board_sizes[i],
+      false, file_version);
 
+    mzx_world->board_list[j] = cur_board;
     if(cur_board)
     {
       // Also patch a pointer to the global robot
@@ -260,7 +264,27 @@ static boolean append_world_legacy(struct world *mzx_world, FILE *fp,
 
       // Fix exits
       append_world_refactor_board(cur_board, old_num_boards);
+
+      store_board_to_extram(cur_board);
     }
+  }
+
+  free(board_offsets);
+  free(board_sizes);
+
+  // Go back to where the names are
+  fseek(fp, board_names_pos, SEEK_SET);
+  for(i = old_num_boards; i < old_num_boards + num_boards; i++)
+  {
+    char ignore[BOARD_NAME_SIZE];
+    char *dest = ignore;
+
+    cur_board = mzx_world->board_list[i];
+    if(cur_board)
+      dest = cur_board->board_name;
+
+    if(!fread(dest, BOARD_NAME_SIZE, 1, fp))
+      dest[0] = 0;
   }
 
   fclose(fp);
@@ -343,8 +367,12 @@ static boolean append_world_zip(struct world *mzx_world, struct zip_archive *zp,
         mzx_world->board_list[i] = cur_board;
 
         if(cur_board)
+        {
+          // Fix exits.
           append_world_refactor_board(cur_board, old_num_boards);
 
+          store_board_to_extram(cur_board);
+        }
         break;
       }
     }
@@ -378,11 +406,11 @@ boolean append_world(struct world *mzx_world, const char *file)
     ret = append_world_legacy(mzx_world, fp, file_version);
   }
 
-  // Make sure update_done is adequately sized
-  set_update_done(mzx_world);
-
   // Remove any null boards
   optimize_null_boards(mzx_world);
+
+  // Make sure update_done is adequately sized
+  set_update_done(mzx_world);
 
   return ret;
 }
@@ -433,6 +461,11 @@ void create_blank_world(struct world *mzx_world)
 
   mzx_world->name[0] = 0;
 
+  // Defaults for things set by load_world
+  mzx_world->custom_sfx_on = 0;
+  mzx_world->max_samples = -1;
+  mzx_world->joystick_simulate_keys = true;
+
   set_update_done(mzx_world);
 
   set_screen_mode(0);
@@ -466,41 +499,60 @@ void set_update_done_current(struct world *mzx_world)
   }
 }
 
+/**
+ * Move the current board to a new position in the board list.
+ * The current board is updated afterward if necessary.
+ */
 void move_current_board(struct world *mzx_world, int new_position)
 {
-  int i, i2;
-  int num_boards = mzx_world->num_boards;
   int old_position = mzx_world->current_board_id;
-  struct board **board_list = mzx_world->board_list;
-  struct board **new_board_list = ccalloc(num_boards, sizeof(struct board *));
-  int *board_id_translation_list = ccalloc(num_boards, sizeof(int));
 
-  // Copy the list and shift all boards necessary
-  for(i = 0; i < num_boards; i++)
+  if(new_position != old_position)
   {
-    // This works easier if we start with the new table and
-    // figure out where to copy from the old table.
-    i2 = i - (i >= new_position) +
-     (i >= (old_position + (old_position > new_position)));
+    int num_boards = mzx_world->num_boards;
+    struct board **board_list = mzx_world->board_list;
+    struct board **new_board_list = ccalloc(num_boards, sizeof(struct board *));
+    int *board_id_translation_list = ccalloc(num_boards, sizeof(int));
+    int i;
+    int j;
 
-    // As it turns out, we'll always have a duplicate of something
-    // else where the new position is this way, ignore it so we
-    // don't mess up the translation table.
-    if(i != new_position)
+    // Copy the list and shift all boards necessary.
+    for(i = 0; i < num_boards; i++)
     {
-      board_id_translation_list[i2] = i;
-      new_board_list[i] = board_list[i2];
+      j = i;
+
+      if(new_position > old_position)
+      {
+        // Move the board back.
+        if(i > old_position && i <= new_position)
+          j = i - 1;
+      }
+      else
+
+      if(new_position < old_position)
+      {
+        // Move the board forward.
+        if(i >= new_position && i < old_position)
+          j = i + 1;
+      }
+
+      // Ignore the current board for now...
+      if(i != old_position)
+      {
+        board_id_translation_list[i] = j;
+        new_board_list[j] = board_list[i];
+      }
     }
+
+    // Insert the current board at its new position.
+    board_id_translation_list[old_position] = new_position;
+    new_board_list[new_position] = board_list[old_position];
+
+    refactor_board_list(mzx_world, new_board_list, num_boards,
+     board_id_translation_list);
+
+    free(board_id_translation_list);
   }
-
-  // Insert the old board
-  board_id_translation_list[old_position] = new_position;
-  new_board_list[new_position] = board_list[old_position];
-
-  refactor_board_list(mzx_world, new_board_list, num_boards,
-   board_id_translation_list);
-
-  free(board_id_translation_list);
 }
 
 char get_default_id_char(int id)

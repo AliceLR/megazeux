@@ -1,0 +1,80 @@
+CC      = emcc
+CXX     = em++
+AR      = emar
+OBJCOPY = /bin/true
+STRIP   = /bin/true
+
+SDL_CFLAGS = -s USE_SDL=2
+SDL_LDFLAGS = -s USE_SDL=2
+
+VORBIS_CFLAGS = -s USE_OGG=1 -s USE_VORBIS=1
+VORBIS_LDFLAGS = -s USE_OGG=1 -s USE_VORBIS=1
+
+ZLIB_CFLAGS = -s USE_ZLIB=1
+ZLIB_LDFLAGS = -s USE_ZLIB=1
+
+LIBPNG_CFLAGS = -s USE_LIBPNG=1
+LIBPNG_LDFLAGS = -s USE_LIBPNG=1
+
+BINEXT = .js
+
+ARCH_LDFLAGS += -s ALLOW_MEMORY_GROWTH=1
+# ARCH_LDFLAGS += -s TOTAL_MEMORY=134217728 -s ALLOW_MEMORY_GROWTH=0
+
+ARCH_LDFLAGS += -s MODULARIZE=1 -s 'EXTRA_EXPORTED_RUNTIME_METHODS=["FS"]'
+
+ifeq (${BUILD_RENDER_GL_PROGRAM},1)
+	ARCH_CFLAGS += -s FULL_ES2=1
+	ARCH_LDFLAGS += -s FULL_ES2=1
+endif
+
+ARCH_LDFLAGS += -s ASYNCIFY=1 -s ASYNCIFY_STACK_SIZE=32768
+# TODO: Removing the whitelist should allow the editor to work.
+ARCH_LDFLAGS += -s ASYNCIFY_WHITELIST=@arch/emscripten/whitelist.json
+ARCH_LDFLAGS += -s 'ASYNCIFY_IMPORTS=["emscripten_sleep"]'
+
+ARCH_CFLAGS += -s ENVIRONMENT=web
+ARCH_LDFLAGS += -s ENVIRONMENT=web
+
+# Enable source map for debugging if this is supplied by the user.
+ifneq (${SOURCE_MAP_BASE},)
+ARCH_CFLAGS += -g4 --source-map-base ${SOURCE_MAP_BASE}
+ARCH_LDFLAGS += -g4 --source-map-base ${SOURCE_MAP_BASE}
+endif
+
+ifeq (${DEBUG},1)
+	ARCH_CFLAGS += -s ASSERTIONS=1 --profiling-funcs
+	ARCH_LDFLAGS += -s ASSERTIONS=1 --profiling-funcs
+	EMSCRIPTEN_FRONTEND_BUILD_PROFILE = build
+else
+	ARCH_LDFLAGS += -O3
+	OPTIMIZE_CFLAGS = -O3
+	EMSCRIPTEN_FRONTEND_BUILD_PROFILE = build-release
+endif
+
+clean:
+	$(if ${V},,@echo "  RM       mzxrun.js.orig.js")
+	$(if ${V},,@echo "  RM       mzxrun.js.mem")
+	$(if ${V},,@echo "  RM       mzxrun.wasm")
+	$(if ${V},,@echo "  RM       mzxrun.wasm.map")
+	@rm -rf mzxrun.js.mem mzxrun.js.orig.js mzxrun.wasm mzxrun.wasm.map
+
+# Normally not defined yet...
+build := build/${SUBPLATFORM}
+
+${build}/mzxrun.js: ${build}
+	@cp mzxrun.js ${build}/
+
+${build}/mzxrun.wasm: ${build}
+	@cp mzxrun.wasm ${build}/
+	@(if [ -f mzxrun.wasm.map ]; then cp mzxrun.wasm.map ${build}/ && rm -rf ${build}/src && cp -r src/ ${build}/; fi)
+
+build: ${build} ${build}/mzxrun.js ${build}/mzxrun.wasm ${build}/assets
+	@rm -rf ${build}/config.txt
+	@(if [ -d ${build}/assets ]; then cd ${build} && rm -rf assets.zip && zip -9 -r assets.zip assets/ && rm -r assets/; fi)
+	@(if [ ! -d "arch/emscripten/web/node_modules" ]; then cd arch/emscripten/web && npm install; fi)
+	@(cd arch/emscripten/web && npm run $(EMSCRIPTEN_FRONTEND_BUILD_PROFILE))
+	@cp -r arch/emscripten/web/res/* ${build}/
+	@cp arch/emscripten/web/mzxrun_web.js ${build}/
+
+include arch/zip.inc

@@ -22,9 +22,36 @@
 #include "block.h"
 
 #include "data.h"
+#include "idarray.h"
 #include "idput.h"
 #include "robot.h"
 #include "world_struct.h"
+
+static inline int duplicate_storage_object(struct world *mzx_world,
+ struct board *dest_board, struct board *src_board, int src_id, int src_param)
+{
+  if(is_robot(src_id))
+  {
+    struct robot *src_robot = src_board->robot_list[src_param];
+    return duplicate_robot(mzx_world, dest_board, src_robot, 0, 0, true);
+  }
+  else
+
+  if(is_signscroll(src_id))
+  {
+    struct scroll *src_scroll = src_board->scroll_list[src_param];
+    return duplicate_scroll(dest_board, src_scroll);
+  }
+  else
+
+  if(src_id == SENSOR)
+  {
+    struct sensor *src_sensor = src_board->sensor_list[src_param];
+    return duplicate_sensor(dest_board, src_sensor);
+  }
+
+  return src_param;
+}
 
 static inline void copy_board_to_board_buffer(struct world *mzx_world,
  struct board *src_board, int src_offset, struct board *dest_board,
@@ -45,7 +72,9 @@ static inline void copy_board_to_board_buffer(struct world *mzx_world,
   int buffer_offset = 0;
 
   enum thing src_id;
+  enum thing src_under_id;
   int src_param;
+  int src_under_param;
   int i, i2;
 
   for(i = 0; i < block_height; i++)
@@ -54,28 +83,18 @@ static inline void copy_board_to_board_buffer(struct world *mzx_world,
     {
       src_id = (enum thing)level_id[src_offset];
       src_param = level_param[src_offset];
+      src_under_id = (enum thing)level_under_id[src_offset];
+      src_under_param = level_under_param[src_offset];
 
       // Storage objects need to be copied to the destination board
-      if(is_robot(src_id))
-      {
-        struct robot *src_robot = src_board->robot_list[src_param];
-        src_param = duplicate_robot(mzx_world, dest_board, src_robot,
-         0, 0, 1);
-      }
-      else
+      if(!is_storageless(src_id))
+        src_param = duplicate_storage_object(mzx_world, dest_board,
+         src_board, src_id, src_param);
 
-      if(is_signscroll(src_id))
-      {
-        struct scroll *src_scroll = src_board->scroll_list[src_param];
-        src_param = duplicate_scroll(dest_board, src_scroll);
-      }
-      else
-
-      if(src_id == SENSOR)
-      {
-        struct sensor *src_sensor = src_board->sensor_list[src_param];
-        src_param = duplicate_sensor(dest_board, src_sensor);
-      }
+      // Storage objects can also exist under, unfortunately.
+      if(!is_storageless(src_under_id))
+        src_under_param = duplicate_storage_object(mzx_world, dest_board,
+         src_board, src_under_id, src_under_param);
 
       // Copy to the buffer
       if(src_param != -1)
@@ -83,20 +102,32 @@ static inline void copy_board_to_board_buffer(struct world *mzx_world,
         buffer_id[buffer_offset] = src_id;
         buffer_param[buffer_offset] = src_param;
         buffer_color[buffer_offset] = level_color[src_offset];
-        buffer_under_id[buffer_offset] = level_under_id[src_offset];
-        buffer_under_param[buffer_offset] = level_under_param[src_offset];
+        buffer_under_id[buffer_offset] = src_under_id;
+        buffer_under_param[buffer_offset] = src_under_param;
         buffer_under_color[buffer_offset] = level_under_color[src_offset];
       }
+      else
 
       // If the storage object failed to allocate, copy under data instead
+      if(src_under_param != -1)
+      {
+        buffer_id[buffer_offset] = src_under_id;
+        buffer_param[buffer_offset] = src_under_param;
+        buffer_color[buffer_offset] = level_under_color[src_offset];
+        buffer_under_id[buffer_offset] = SPACE;
+        buffer_under_param[buffer_offset] = 0;
+        buffer_under_color[buffer_offset] = 7;
+      }
+
+      // No under either? Just put a space...
       else
       {
-        buffer_id[buffer_offset] = level_under_id[src_offset];
-        buffer_param[buffer_offset] = level_under_param[src_offset];
-        buffer_color[buffer_offset] = level_under_color[src_offset];
-        buffer_under_id[buffer_offset] = level_under_id[src_offset];
-        buffer_under_param[buffer_offset] = level_under_param[src_offset];
-        buffer_under_color[buffer_offset] = level_under_color[src_offset];
+        buffer_id[buffer_offset] = SPACE;
+        buffer_param[buffer_offset] = 0;
+        buffer_color[buffer_offset] = 7;
+        buffer_under_id[buffer_offset] = SPACE;
+        buffer_under_param[buffer_offset] = 0;
+        buffer_under_color[buffer_offset] = 7;
       }
 
       src_offset++;
@@ -104,6 +135,26 @@ static inline void copy_board_to_board_buffer(struct world *mzx_world,
     }
 
     src_offset += src_skip;
+  }
+}
+
+static void clear_storage_object(struct board *dest_board, int id, int param)
+{
+  if(id == SENSOR)
+  {
+    clear_sensor_id(dest_board, param);
+  }
+  else
+
+  if(is_signscroll(id))
+  {
+    clear_scroll_id(dest_board, param);
+  }
+  else
+
+  if(is_robot(id))
+  {
+    clear_robot_id(dest_board, param);
   }
 }
 
@@ -141,30 +192,20 @@ static inline void copy_board_buffer_to_board(
         dest_param = level_param[dest_offset];
 
         // Storage objects need to be deleted from the destination board
-        if(dest_id == SENSOR)
-        {
-          clear_sensor_id(dest_board, dest_param);
-        }
-        else
-
-        if(is_signscroll(dest_id))
-        {
-          clear_scroll_id(dest_board, dest_param);
-        }
-        else
-
-        if(is_robot(dest_id))
-        {
-          clear_robot_id(dest_board, dest_param);
-        }
+        if(!is_storageless(dest_id))
+          clear_storage_object(dest_board, dest_id, dest_param);
 
         if(is_robot(buffer_id_cur))
         {
           struct robot *cur_robot =
            dest_board->robot_list[(int)buffer_param[buffer_offset]];
 
-          cur_robot->xpos = dest_offset % dest_width;
-          cur_robot->ypos = dest_offset / dest_width;
+          int thisx = dest_offset % dest_width;
+          int thisy = dest_offset / dest_width;
+          cur_robot->xpos = thisx;
+          cur_robot->ypos = thisy;
+          cur_robot->compat_xpos = thisx;
+          cur_robot->compat_ypos = thisy;
         }
 
         // Copy off of the buffer onto the board
@@ -184,6 +225,25 @@ static inline void copy_board_buffer_to_board(
           level_id[dest_offset] = buffer_under_id[buffer_offset];
           level_param[dest_offset] = buffer_under_param[buffer_offset];
           level_color[dest_offset] = buffer_under_color[buffer_offset];
+        }
+      }
+
+      else
+      {
+        // This can't be placed on top of the player. Free any storage
+        // objects so this isn't leaking storage object IDs.
+        if(!is_storageless(buffer_id_cur))
+        {
+          clear_storage_object(dest_board, buffer_id_cur,
+           buffer_param[buffer_offset]);
+        }
+
+        // Also make sure there isn't a storage object under in the extremely
+        // unlikely event one got there.
+        if(!is_storageless(buffer_under_id[buffer_offset]))
+        {
+          clear_storage_object(dest_board, buffer_under_id[buffer_offset],
+           buffer_under_param[buffer_offset]);
         }
       }
 
@@ -378,6 +438,7 @@ void copy_layer_to_board(
   int src_skip = src_width - block_width;
   int dest_skip = dest_width - block_width;
 
+  enum thing dest_id;
   char src_char_cur;
   int i, i2;
 
@@ -386,8 +447,14 @@ void copy_layer_to_board(
     for(i2 = 0; i2 < block_width; i2++)
     {
       src_char_cur = src_char[src_offset];
-      if(src_char_cur != 32 && level_id[dest_offset] != PLAYER)
+      dest_id = level_id[dest_offset];
+
+      if(src_char_cur != 32 && dest_id != PLAYER)
       {
+        // Storage objects need to be deleted from the destination board
+        if(!is_storageless(dest_id))
+          clear_storage_object(dest_board, dest_id, level_param[dest_offset]);
+
         level_id[dest_offset] = (char)convert_id;
         level_param[dest_offset] = src_char_cur;
         level_color[dest_offset] = src_color[src_offset];
@@ -402,8 +469,33 @@ void copy_layer_to_board(
 
 #ifdef CONFIG_EDITOR
 
-// This goes here so the block buffer monstrosity can be inlined.
+// Place the player on the board. Intended for editor operations that move the
+// player but need to preserve the thing under the player. Only use after the
+// old player has been removed; THIS FUNCTION WILL NOT REMOVE IT.
+void copy_replace_player(struct world *mzx_world, int x, int y)
+{
+  struct board *cur_board = mzx_world->current_board;
+  enum thing src_id;
+  int offset;
 
+  if(x >= cur_board->board_width)
+    x = cur_board->board_width - 1;
+
+  if(y >= cur_board->board_height)
+    y = cur_board->board_height - 1;
+
+  offset = x + (y * cur_board->board_width);
+
+  src_id = (enum thing)cur_board->level_id[offset];
+  if(is_robot(src_id) || is_signscroll(src_id))
+    clear_storage_object(cur_board, src_id, cur_board->level_param[offset]);
+
+  id_place(mzx_world, x, y, PLAYER, 0, 0);
+  mzx_world->player_x = x;
+  mzx_world->player_y = y;
+}
+
+// This goes here so the block buffer monstrosity can be inlined.
 void move_board_block(struct world *mzx_world,
  struct board *src_board, int src_x, int src_y,
  struct board *dest_board, int dest_x, int dest_y,
@@ -441,10 +533,9 @@ void move_board_block(struct world *mzx_world,
   int src_offset = src_x + (src_y * src_width);
   int dest_offset = dest_x + (dest_y * dest_board->board_width);
 
-  copy_board_to_board_buffer(mzx_world,
-   src_board, src_offset, dest_board, block_width, block_height,
-   buffer_id, buffer_color, buffer_param, buffer_under_id,
-   buffer_under_color, buffer_under_param);
+  boolean replace_player = false;
+  int player_x = 0;
+  int player_y = 0;
 
   // Work around to move the player
   if((mzx_world->player_x >= src_x) &&
@@ -453,10 +544,17 @@ void move_board_block(struct world *mzx_world,
    (mzx_world->player_y < (src_y + clear_height)) &&
    (src_board == dest_board))
   {
-    place_player_xy(mzx_world,
-     mzx_world->player_x - src_x + dest_x,
-     mzx_world->player_y - src_y + dest_y);
+    player_x = mzx_world->player_x - src_x + dest_x;
+    player_y = mzx_world->player_y - src_y + dest_y;
+    replace_player = true;
+
+    id_remove_top(mzx_world, mzx_world->player_x, mzx_world->player_y);
   }
+
+  copy_board_to_board_buffer(mzx_world,
+   src_board, src_offset, dest_board, block_width, block_height,
+   buffer_id, buffer_color, buffer_param, buffer_under_id,
+   buffer_under_color, buffer_under_param);
 
   for(i = 0; i < clear_height; i++)
   {
@@ -467,27 +565,18 @@ void move_board_block(struct world *mzx_world,
       {
         src_param = level_param[src_offset];
 
-        if(src_id == SENSOR)
-        {
-          clear_sensor_id(src_board, src_param);
-        }
-        else
-
-        if(is_signscroll(src_id))
-        {
-          clear_scroll_id(src_board, src_param);
-        }
-        else
-
-        if(is_robot(src_id))
-        {
-          clear_robot_id(src_board, src_param);
-        }
+        if(!is_storageless(src_id))
+          clear_storage_object(src_board, src_id, src_param);
 
         level_id[src_offset] = (char)SPACE;
         level_param[src_offset] = 0;
         level_color[src_offset] = 7;
       }
+      else
+
+      if(!is_storageless(level_under_id[src_offset]))
+        clear_storage_object(src_board, level_under_id[src_offset],
+         level_under_param[src_offset]);
 
       level_under_id[src_offset] = (char)SPACE;
       level_under_param[src_offset] = 0;
@@ -503,6 +592,9 @@ void move_board_block(struct world *mzx_world,
    dest_board, dest_offset, block_width, block_height,
    buffer_id, buffer_color, buffer_param, buffer_under_id,
    buffer_under_color, buffer_under_param);
+
+  if(replace_player)
+    copy_replace_player(mzx_world, player_x, player_y);
 
   free(buffer_id);
   free(buffer_color);

@@ -192,8 +192,8 @@ static void decrypt(const char *file_name)
 
   src_ptr += 25;
 
-  strncpy(backup_name, file_name, MAX_PATH - 8);
-  strcat(backup_name, ".locked");
+  snprintf(backup_name, MAX_PATH, "%.*s.locked", MAX_PATH - 8, file_name);
+
   backup = fopen_unsafe(backup_name, "wb");
   count = fwrite(file_buffer, file_length, 1, backup);
   fclose(backup);
@@ -628,12 +628,14 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
 {
   int i;
   int num_boards;
-  int gl_rob, last_pos;
+  int global_robot_pos, board_names_pos;
   unsigned char *charset_mem;
   unsigned char r, g, b;
   struct counter_list *counter_list;
   struct string_list *string_list;
   struct board *cur_board;
+  unsigned int *board_offsets;
+  unsigned int *board_sizes;
 
   int meter_target = 2, meter_curr = 0;
 
@@ -804,7 +806,7 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
       legacy_load_string(fp, string_list, i);
     }
 
-#if !defined(CONFIG_KHASH) && !defined(CONFIG_UTHASH)
+#ifndef CONFIG_KHASH
     // Versions without the hash table require these to be sorted at all times
     sort_counter_list(counter_list);
     sort_string_list(string_list);
@@ -906,8 +908,9 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
     mzx_world->vlayer_height = fgetw(fp);
     mzx_world->vlayer_size = vlayer_size;
 
-    mzx_world->vlayer_chars = cmalloc(vlayer_size);
-    mzx_world->vlayer_colors = cmalloc(vlayer_size);
+    // This might have been allocated already...
+    mzx_world->vlayer_chars = crealloc(mzx_world->vlayer_chars, vlayer_size);
+    mzx_world->vlayer_colors = crealloc(mzx_world->vlayer_colors, vlayer_size);
 
     if(vlayer_size &&
      (!fread(mzx_world->vlayer_chars, vlayer_size, 1, fp) ||
@@ -916,7 +919,7 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
   }
 
   // Get position of global robot...
-  gl_rob = fgetd(fp);
+  global_robot_pos = fgetd(fp);
   // Get number of boards
   num_boards = fgetc(fp);
 
@@ -926,7 +929,7 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
     char *sfx_offset = mzx_world->custom_sfx;
     // Sfx
     mzx_world->custom_sfx_on = 1;
-    fseek(fp, 2, SEEK_CUR);     // Skip word size
+    fgetw(fp); // Skip word size
 
     //Read sfx
     for(i = 0; i < NUM_SFX; i++, sfx_offset += LEGACY_SFX_SIZE)
@@ -950,20 +953,44 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
   mzx_world->board_list = cmalloc(sizeof(struct board *) * num_boards);
 
   // Skip the names for now
-  // Gonna wanna come back to here
-  last_pos = ftell(fp);
+  board_names_pos = ftell(fp);
   fseek(fp, num_boards * BOARD_NAME_SIZE, SEEK_CUR);
+
+  // Read the board offsets/sizes preemptively to reduce the amount of seeking.
+  board_offsets = cmalloc(sizeof(int) * num_boards);
+  board_sizes = cmalloc(sizeof(int) * num_boards);
+  for(i = 0; i < num_boards; i++)
+  {
+    board_sizes[i] = fgetd(fp);
+    board_offsets[i] = fgetd(fp);
+  }
 
   for(i = 0; i < num_boards; i++)
   {
     mzx_world->board_list[i] =
-     legacy_load_board_allocate(mzx_world, fp, savegame, file_version);
-    store_board_to_extram(mzx_world->board_list[i]);
+     legacy_load_board_allocate(mzx_world, fp, board_offsets[i], board_sizes[i],
+      savegame, file_version);
+
+    if(mzx_world->board_list[i])
+    {
+      // Also patch a pointer to the global robot
+      if(mzx_world->board_list[i]->robot_list)
+        (mzx_world->board_list[i])->robot_list[0] = &mzx_world->global_robot;
+
+      // Also optimize out null objects
+      optimize_null_objects(mzx_world->board_list[i]);
+
+      store_board_to_extram(mzx_world->board_list[i]);
+    }
+
     meter_update_screen(&meter_curr, meter_target);
   }
 
+  free(board_offsets);
+  free(board_sizes);
+
   // Read global robot
-  fseek(fp, gl_rob, SEEK_SET); //don't worry if this fails
+  fseek(fp, global_robot_pos, SEEK_SET); //don't worry if this fails
   legacy_load_robot(mzx_world, &mzx_world->global_robot, fp, savegame,
    file_version);
 
@@ -971,7 +998,7 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
   mzx_world->global_robot.used = 1;
 
   // Go back to where the names are
-  fseek(fp, last_pos, SEEK_SET);
+  fseek(fp, board_names_pos, SEEK_SET);
   for(i = 0; i < num_boards; i++)
   {
     cur_board = mzx_world->board_list[i];
@@ -980,19 +1007,11 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
     {
       if(!fread(cur_board->board_name, BOARD_NAME_SIZE, 1, fp))
         cur_board->board_name[0] = 0;
-
-      // Also patch a pointer to the global robot
-      if(cur_board->robot_list)
-        (mzx_world->board_list[i])->robot_list[0] = &mzx_world->global_robot;
-
-      // Also optimize out null objects
-      retrieve_board_from_extram(mzx_world->board_list[i]);
-      optimize_null_objects(mzx_world->board_list[i]);
-      store_board_to_extram(mzx_world->board_list[i]);
     }
     else
     {
-      fseek(fp, BOARD_NAME_SIZE, SEEK_CUR);
+      char ignore[BOARD_NAME_SIZE];
+      fread(ignore, BOARD_NAME_SIZE, 1, fp);
     }
   }
 

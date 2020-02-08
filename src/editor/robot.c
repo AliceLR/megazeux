@@ -177,7 +177,7 @@ void prepare_robot_source(struct robot *cur_robot)
   // Disassemble the robot to source. Used by the robot debugger.
   if(!cur_robot->program_source)
   {
-    disassemble_and_map_program(
+    disassemble_program(
      cur_robot->program_bytecode, cur_robot->program_bytecode_length,
      &cur_robot->program_source, &cur_robot->program_source_length,
      &cur_robot->command_map, &cur_robot->command_map_length
@@ -186,50 +186,3 @@ void prepare_robot_source(struct robot *cur_robot)
 }
 
 #endif // !CONFIG_DEBYTECODE
-
-
-int get_current_program_line(struct robot *cur_robot)
-{
-  struct command_mapping *cmd_map = cur_robot->command_map;
-
-  int program_pos = cur_robot->cur_prog_line;
-
-  int b = cur_robot->command_map_length - 1;
-  int a = 0;
-  int i;
-
-  int d;
-
-  // If mapping information is available, we can binary search.
-  if(cmd_map)
-  {
-    while(b-a > 1)
-    {
-      i = (b - a)/2 + a;
-
-      d = cmd_map[i].bc_pos - program_pos;
-
-      if(d >= 0) b = i;
-      if(d <= 0) a = i;
-    }
-
-    if(program_pos >= cmd_map[b].bc_pos)
-      a = b;
-  }
-
-  // Otherwise, step through the program line by line.
-  else
-  {
-    char *bc = cur_robot->program_bytecode;
-    char *end = bc + program_pos;
-    a = 1;
-
-    while(bc < end)
-    {
-      bc += *bc + 2;
-      a++;
-    }
-  }
-
-  return a;
-}

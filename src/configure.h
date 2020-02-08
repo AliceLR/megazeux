@@ -44,13 +44,14 @@ enum update_auto_check_mode
 {
   UPDATE_AUTO_CHECK_OFF = 0,
   UPDATE_AUTO_CHECK_ON,
-  UPDATE_AUTO_CHECK_SILENT,
+  UPDATE_AUTO_CHECK_SILENT
 };
 
 struct config_info
 {
   // Video options
   boolean fullscreen;
+  boolean fullscreen_windowed;
   int resolution_width;
   int resolution_height;
   int window_width;
@@ -87,8 +88,11 @@ struct config_info
   boolean standalone_mode;
   boolean no_titlescreen;
   boolean system_mouse;
+  boolean grab_mouse;
 
   // Editor options
+  boolean test_mode;
+  unsigned char test_mode_start_board;
   // TODO: two places outside of the editor currently require access to this.
   boolean mask_midchars;
 

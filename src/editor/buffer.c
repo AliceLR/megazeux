@@ -255,10 +255,8 @@ void change_param(context *ctx, struct buffer_info *buffer, int *new_param)
 
 void free_edit_buffer(struct buffer_info *buffer)
 {
-  if(buffer->robot->used)
-    clear_robot_contents(buffer->robot);
-  if(buffer->scroll->used)
-    clear_scroll_contents(buffer->scroll);
+  clear_robot_contents(buffer->robot);
+  clear_scroll_contents(buffer->scroll);
 
   memset(buffer->robot, 0, sizeof(struct robot));
   memset(buffer->scroll, 0, sizeof(struct scroll));
@@ -410,7 +408,7 @@ int place_current_at_xy(struct world *mzx_world, struct buffer_info *buffer,
  * the board.
  */
 
-void replace_current_at_xy(struct world *mzx_world, struct buffer_info *buffer,
+int replace_current_at_xy(struct world *mzx_world, struct buffer_info *buffer,
  int x, int y, enum editor_mode mode, struct undo_history *history)
 {
   struct board *cur_board = mzx_world->current_board;
@@ -437,13 +435,14 @@ void replace_current_at_xy(struct world *mzx_world, struct buffer_info *buffer,
 
       if(history)
         update_undo_frame(history);
-      return;
+
+      return buffer->param;
     }
   }
 
   // Our requirements here are actually equivalent to the behavior of
   // place_current_xy in most cases, so use it directly.
-  place_current_at_xy(mzx_world, buffer, x, y, mode, history);
+  return place_current_at_xy(mzx_world, buffer, x, y, mode, history);
 }
 
 /**
@@ -457,7 +456,6 @@ void grab_at_xy(struct world *mzx_world, struct buffer_info *buffer,
   int board_width = src_board->board_width;
   int offset = x + (y * board_width);
   enum thing old_id = buffer->id;
-  int old_param = buffer->param;
 
   if(mode == EDIT_BOARD)
   {
@@ -470,17 +468,17 @@ void grab_at_xy(struct world *mzx_world, struct buffer_info *buffer,
     else
       buffer->color = get_id_color(src_board, offset);
 
-    // First, clear the existing copies, unless the new id AND param
-    // matches, because in that case it's the same thing
+    // First, clear the existing copies. Previously, this would conditionally
+    // be ignored if the buffer thing and param were the same, but since it's
+    // always being duplicated over the buffer now, always clear it.
 
-    if(is_robot(old_id) &&
-     ((old_id != grab_id) || (old_param != grab_param)))
+    if(is_robot(old_id))
     {
       clear_robot_contents(buffer->robot);
     }
+    else
 
-    if(is_signscroll(old_id) &&
-     ((old_id != grab_id) || (old_param != grab_param)))
+    if(is_signscroll(old_id))
     {
       clear_scroll_contents(buffer->scroll);
     }

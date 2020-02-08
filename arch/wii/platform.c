@@ -68,10 +68,7 @@ static u64 timebase_offset;
 
 void delay(Uint32 ms)
 {
-  // FIXME use nanosleep instead?
-  // This requires r31/libogc 1.8.20, which means juggling dependencies between
-  // this version of the Wii port and the SDL Wii version
-
+  // TODO use nanosleep instead?
   usleep(ms * 1000);
 }
 

@@ -214,6 +214,9 @@ struct world
   // If we can change the speed from the F2 menu.
   int lock_speed;
 
+  // Joystick state data.
+  boolean joystick_simulate_keys;
+
   // Editor specific state flags.
   boolean editing;
   boolean debug_mode;

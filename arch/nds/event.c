@@ -30,6 +30,9 @@ void nds_update_input(void);
 static boolean process_event(NDSEvent *event);
 
 extern struct input_status input;
+extern u16 subscreen_height;
+
+static boolean keyboard_allow_release = true;
 
 boolean __update_event_status(void)
 {
@@ -42,11 +45,9 @@ boolean __update_event_status(void)
   return retval;
 }
 
-void __wait_event(int timeout)
+void __wait_event(void)
 {
   NDSEvent event;
-
-  if (timeout) delay(timeout);
 
   while(!nds_event_poll(&event))
     swiWaitForVBlank();
@@ -69,7 +70,32 @@ void real_warp_mouse(int x, int y)
 
 void initialize_joysticks(void)
 {
-  // stub (we have a hardcoded 0-axis, 8-button joystick)
+  struct buffered_status *status = store_status();
+  joystick_set_active(status, 0, true);
+}
+
+static int nds_map_joystick(int nds_button, boolean *is_hat)
+{
+  // Determine how to handle this particular joystick input.
+  // Map the directional pad to the hat and everything else to buttons.
+  *is_hat = false;
+
+  switch(nds_button)
+  {
+    case KEY_UP:      *is_hat = true; return JOYHAT_UP;
+    case KEY_DOWN:    *is_hat = true; return JOYHAT_DOWN;
+    case KEY_LEFT:    *is_hat = true; return JOYHAT_LEFT;
+    case KEY_RIGHT:   *is_hat = true; return JOYHAT_RIGHT;
+    case KEY_A:       return 0;
+    case KEY_B:       return 1;
+    case KEY_X:       return 2;
+    case KEY_Y:       return 3;
+    case KEY_L:       return 4;
+    case KEY_R:       return 5;
+    case KEY_SELECT:  return 6;
+    case KEY_START:   return 7;
+  }
+  return -1;
 }
 
 static void convert_nds_internal(int key, int *internal_code, int *unicode)
@@ -119,47 +145,9 @@ static void convert_nds_internal(int key, int *internal_code, int *unicode)
     *internal_code = IKEY_UNKNOWN;
 }
 
-
-// Send a key up/down event to MZX.
-static void do_unicode_key_event(struct buffered_status *status, boolean down,
- enum keycode code, int unicode)
-{
-  if(down)
-  {
-    key_press(status, code, unicode);
-  }
-  else
-  {
-    status->keymap[code] = 0;
-    if(status->key_repeat == code)
-    {
-      status->key_repeat = IKEY_UNKNOWN;
-      status->unicode_repeat = 0;
-    }
-    status->key_release = code;
-  }
-}
-
-static void do_key_event(struct buffered_status *status, boolean down,
- enum keycode code)
-{
-  do_unicode_key_event(status, down, code, code >= 32 && code <= 126 ? code : 0);
-}
-
-// Send a joystick button up/down event to MZX.
-static void do_joybutton_event(struct buffered_status *status, boolean down,
- int button)
-{
-  // Look up the keycode for this joystick button.
-  enum keycode stuffed_key = input.joystick_button_map[0][button];
-  do_key_event(status, down, stuffed_key);
-}
-
-
 static boolean process_event(NDSEvent *event)
 {
   struct buffered_status *status = store_status();
-  boolean key_down = false;
   boolean retval = true;
 
   switch(event->type)
@@ -167,81 +155,60 @@ static boolean process_event(NDSEvent *event)
     // Hardware key pressed
     case NDS_EVENT_KEY_DOWN:
     {
+      boolean is_hat;
+      int button;
+
+      // Special case- R is currently hardcoded to the keyboard.
       if(event->key == KEY_R)
       {
-          nds_subscreen_switch();
-          retval = false;
-          break;
+        nds_subscreen_switch();
+        retval = false;
+        break;
       }
-      key_down = true;
+
+      button = nds_map_joystick(event->key, &is_hat);
+      if(button >= 0)
+      {
+        if(is_hat)
+          joystick_hat_update(status, 0, button, true);
+        else
+          joystick_button_press(status, 0, button);
+      }
+      break;
     }
 
-    /* fallthrough */
-
-    // Continuing from NDS_EVENT_KEY_DOWN...
     case NDS_EVENT_KEY_UP:
     {
-      switch(event->key)
+      boolean is_hat;
+      int button;
+
+      button = nds_map_joystick(event->key, &is_hat);
+      if(button >= 0)
       {
-        case KEY_UP:
-          do_key_event(status, key_down, IKEY_UP);
-          break;
-        case KEY_DOWN:
-          do_key_event(status, key_down, IKEY_DOWN);
-          break;
-         case KEY_LEFT:
-          do_key_event(status, key_down, IKEY_LEFT);
-          break;
-        case KEY_RIGHT:
-          do_key_event(status, key_down, IKEY_RIGHT);
-          break;
-
-        case KEY_A:
-          do_joybutton_event(status, key_down, 0);
-          break;
-        case KEY_B:
-          do_joybutton_event(status, key_down, 1);
-          break;
-        case KEY_X:
-          do_joybutton_event(status, key_down, 2);
-          break;
-        case KEY_Y:
-          do_joybutton_event(status, key_down, 3);
-          break;
-
-        case KEY_L:
-          do_joybutton_event(status, key_down, 4);
-          break;
-
-        case KEY_SELECT:
-          do_joybutton_event(status, key_down, 6);
-          break;
-        case KEY_START:
-          do_joybutton_event(status, key_down, 7);
-          break;
-
-        default:
-          retval = false;
-          break;
+        if(is_hat)
+          joystick_hat_update(status, 0, button, false);
+        else
+          joystick_button_release(status, 0, button);
       }
-
       break;
     }
 
     // Software key down
     case NDS_EVENT_KEYBOARD_DOWN:
     {
-      key_down = true;
+      int internal_code, unicode;
+      convert_nds_internal(event->key, &internal_code, &unicode);
+      key_press(status, internal_code, unicode);
+
+      keyboard_allow_release = true;
+      break;
     }
 
-    /* fallthrough */
-
-    // Continuing from NDS_EVENT_KEYBOARD_UP...
     case NDS_EVENT_KEYBOARD_UP:
     {
       int internal_code, unicode;
       convert_nds_internal(event->key, &internal_code, &unicode);
-      do_unicode_key_event(status, key_down, internal_code, unicode);
+      key_release(status, internal_code);
       break;
     }
 
@@ -274,7 +241,9 @@ static boolean process_event(NDSEvent *event)
     case NDS_EVENT_TOUCH_MOVE:
     {
       int mx = event->x * 640 / 256;
-      int my = event->y * 350 / 192;
+      int my = (event->y - ((192 - subscreen_height)/2)) * 350 / subscreen_height;
+      if(my < 0 || my >= 350)
+        break;
 
       // Update the MZX mouse state.
       status->real_mouse_x = mx;
@@ -335,23 +304,28 @@ static void nds_update_hw_keys(void)
 static void nds_update_sw_keyboard(void)
 {
   static int last_key = -1;
-  int c = keyboardUpdate();
   NDSEvent event;
 
   // Release last key
-  if(last_key != -1)
+  if(keyboard_allow_release && last_key != -1)
   {
     nds_event_fill_keyboard_up(&event, last_key);
     nds_event_push(&event);
     last_key = -1;
   }
 
-  // Press new key
-  if(c != -1)
+  // Press new key (only allow if the keyboard is active)
+  if(subscreen_mode == SUBSCREEN_KEYBOARD && last_key == -1)
   {
-    nds_event_fill_keyboard_down(&event, c);
-    nds_event_push(&event);
-    last_key = c;
+    int c = keyboardUpdate();
+
+    if(c != -1)
+    {
+      nds_event_fill_keyboard_down(&event, c);
+      nds_event_push(&event);
+      keyboard_allow_release = false;
+      last_key = c;
+    }
   }
 }
 

@@ -73,36 +73,39 @@
     <IncludePath>$(SolutionDir);$(SolutionDir)\Deps\include;$(SolutionDir)\Deps\include\SDL2;$(SolutionDir)\..\..\contrib\libxmp\include;$(SolutionDir)\..\..\contrib\libxmp\src;$(SolutionDir)\..\..\contrib\libxmp\src\win32;$(SolutionDir)\..\..\contrib\gdm2s3m\src;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)\Deps\lib\$(PlatformTarget);$(LibraryPath)</LibraryPath>
     <IntDir>$(SolutionDir)\obj\$(ProjectName)\$(Configuration)\$(PlatformTarget)\</IntDir>
-    <OutDir>$(SolutionDir)\..\..</OutDir>
+    <OutDir>$(SolutionDir)\..\..\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(SolutionDir);$(SolutionDir)\Deps\include;$(SolutionDir)\Deps\include\SDL2;$(SolutionDir)\..\..\contrib\libxmp\include;$(SolutionDir)\..\..\contrib\libxmp\src;$(SolutionDir)\..\..\contrib\libxmp\src\win32;$(SolutionDir)\..\..\contrib\gdm2s3m\src;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)\Deps\lib\$(PlatformTarget);$(LibraryPath)</LibraryPath>
     <IntDir>$(SolutionDir)\obj\$(ProjectName)\$(Configuration)\$(PlatformTarget)\</IntDir>
-    <OutDir>$(SolutionDir)\..\..</OutDir>
+    <OutDir>$(SolutionDir)\..\..\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IncludePath>$(SolutionDir);$(SolutionDir)\Deps\include;$(SolutionDir)\Deps\include\SDL2;$(SolutionDir)\..\..\contrib\libxmp\include;$(SolutionDir)\..\..\contrib\libxmp\src;$(SolutionDir)\..\..\contrib\libxmp\src\win32;$(SolutionDir)\..\..\contrib\gdm2s3m\src;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)\Deps\lib\$(PlatformTarget);$(LibraryPath)</LibraryPath>
     <IntDir>$(SolutionDir)\obj\$(ProjectName)\$(Configuration)\$(PlatformTarget)\</IntDir>
-    <OutDir>$(SolutionDir)\..\..</OutDir>
+    <OutDir>$(SolutionDir)\..\..\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(SolutionDir);$(SolutionDir)\Deps\include;$(SolutionDir)\Deps\include\SDL2;$(SolutionDir)\..\..\contrib\libxmp\include;$(SolutionDir)\..\..\contrib\libxmp\src;$(SolutionDir)\..\..\contrib\libxmp\src\win32;$(SolutionDir)\..\..\contrib\gdm2s3m\src;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)\Deps\lib\$(PlatformTarget);$(LibraryPath)</LibraryPath>
     <IntDir>$(SolutionDir)\obj\$(ProjectName)\$(Configuration)\$(PlatformTarget)\</IntDir>
-    <OutDir>$(SolutionDir)\..\..</OutDir>
+    <OutDir>$(SolutionDir)\..\..\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>CORE_LIBSPEC=__declspec(dllexport);PATH_MAX=1024;_USE_MATH_DEFINES;NEED_PNG_WRITE_SCREEN;_CRT_SECURE_NO_WARNINGS;__WIN32__;WIN32;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_ALLOW_KEYWORD_MACROS;CORE_LIBSPEC=__declspec(dllexport);PATH_MAX=1024;_USE_MATH_DEFINES;NEED_PNG_WRITE_SCREEN;_CRT_SECURE_NO_WARNINGS;__WIN32__;WIN32;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>/J %(AdditionalOptions)</AdditionalOptions>
+      <SDLCheck>false</SDLCheck>
+      <DisableSpecificWarnings>
+      </DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>libogg_static.lib;libpng16.lib;libvorbis_static.lib;libvorbisfile_static.lib;SDL2.lib;SDL2main.lib;zlibstat.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libogg.lib;libpng.lib;libvorbis.lib;libvorbisfile.lib;SDL2.lib;SDL2main.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <PreBuildEvent>
@@ -118,11 +121,14 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>CORE_LIBSPEC=__declspec(dllexport);PATH_MAX=1024;_USE_MATH_DEFINES;NEED_PNG_WRITE_SCREEN;_CRT_SECURE_NO_WARNINGS;__WIN32__;WIN32;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_ALLOW_KEYWORD_MACROS;CORE_LIBSPEC=__declspec(dllexport);PATH_MAX=1024;_USE_MATH_DEFINES;NEED_PNG_WRITE_SCREEN;_CRT_SECURE_NO_WARNINGS;__WIN32__;WIN32;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>/J %(AdditionalOptions)</AdditionalOptions>
+      <SDLCheck>false</SDLCheck>
+      <DisableSpecificWarnings>
+      </DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>libogg_static.lib;libpng16.lib;libvorbis_static.lib;libvorbisfile_static.lib;SDL2.lib;SDL2main.lib;zlibstat.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libogg.lib;libpng.lib;libvorbis.lib;libvorbisfile.lib;SDL2.lib;SDL2main.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <PreBuildEvent>
@@ -140,13 +146,14 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>CORE_LIBSPEC=__declspec(dllexport);PATH_MAX=1024;_USE_MATH_DEFINES;NEED_PNG_WRITE_SCREEN;_CRT_SECURE_NO_WARNINGS;__WIN32__;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_ALLOW_KEYWORD_MACROS;CORE_LIBSPEC=__declspec(dllexport);PATH_MAX=1024;_USE_MATH_DEFINES;NEED_PNG_WRITE_SCREEN;_CRT_SECURE_NO_WARNINGS;__WIN32__;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>/J %(AdditionalOptions)</AdditionalOptions>
+      <SDLCheck>false</SDLCheck>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>libogg_static.lib;libpng16.lib;libvorbis_static.lib;libvorbisfile_static.lib;SDL2.lib;SDL2main.lib;zlibstat.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libogg.lib;libpng.lib;libvorbis.lib;libvorbisfile.lib;SDL2.lib;SDL2main.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <PreBuildEvent>
@@ -164,13 +171,14 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>CORE_LIBSPEC=__declspec(dllexport);PATH_MAX=1024;_USE_MATH_DEFINES;NEED_PNG_WRITE_SCREEN;_CRT_SECURE_NO_WARNINGS;__WIN32__;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_ALLOW_KEYWORD_MACROS;CORE_LIBSPEC=__declspec(dllexport);PATH_MAX=1024;_USE_MATH_DEFINES;NEED_PNG_WRITE_SCREEN;_CRT_SECURE_NO_WARNINGS;__WIN32__;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>/J %(AdditionalOptions)</AdditionalOptions>
+      <SDLCheck>false</SDLCheck>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>libogg_static.lib;libpng16.lib;libvorbis_static.lib;libvorbisfile_static.lib;SDL2.lib;SDL2main.lib;zlibstat.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libogg.lib;libpng.lib;libvorbis.lib;libvorbisfile.lib;SDL2.lib;SDL2main.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <PreBuildEvent>
@@ -264,12 +272,21 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClCompile Include="..\..\contrib\libxmp\src\scan.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\smix.c" />
     <ClCompile Include="..\..\contrib\libxmp\src\virtual.c" />
-    <ClCompile Include="..\..\src\audio.c" />
-    <ClCompile Include="..\..\src\audio_sdl.c" />
-    <ClCompile Include="..\..\src\audio_xmp.c" />
+    <ClCompile Include="..\..\src\audio\audio.c" />
+    <ClCompile Include="..\..\src\audio\audio_pcs.c" />
+    <ClCompile Include="..\..\src\audio\audio_reality.cpp" />
+    <ClCompile Include="..\..\src\audio\audio_sdl.c" />
+    <ClCompile Include="..\..\src\audio\audio_vorbis.c" />
+    <ClCompile Include="..\..\src\audio\audio_wav.c" />
+    <ClCompile Include="..\..\src\audio\audio_xmp.c" />
+    <ClCompile Include="..\..\src\audio\ext.c" />
+    <ClCompile Include="..\..\src\audio\sampled_stream.c" />
+    <ClCompile Include="..\..\src\audio\sfx.c" />
     <ClCompile Include="..\..\src\block.c" />
     <ClCompile Include="..\..\src\board.c" />
+    <ClCompile Include="..\..\src\caption.c" />
     <ClCompile Include="..\..\src\configure.c" />
+    <ClCompile Include="..\..\src\core.c" />
     <ClCompile Include="..\..\src\counter.c" />
     <ClCompile Include="..\..\src\data.c" />
     <ClCompile Include="..\..\src\error.c" />
@@ -278,21 +295,22 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClCompile Include="..\..\src\expr.c" />
     <ClCompile Include="..\..\src\fsafeopen.c" />
     <ClCompile Include="..\..\src\game.c" />
-    <ClCompile Include="..\..\src\game2.c" />
+    <ClCompile Include="..\..\src\game_menu.c" />
+    <ClCompile Include="..\..\src\game_ops.c" />
+    <ClCompile Include="..\..\src\game_player.c" />
+    <ClCompile Include="..\..\src\game_update.c" />
+    <ClCompile Include="..\..\src\game_update_board.c" />
     <ClCompile Include="..\..\src\graphics.c" />
     <ClCompile Include="..\..\src\helpsys.c" />
     <ClCompile Include="..\..\src\idarray.c" />
     <ClCompile Include="..\..\src\idput.c" />
     <ClCompile Include="..\..\src\intake.c" />
+    <ClCompile Include="..\..\src\intake_num.c" />
     <ClCompile Include="..\..\src\legacy_board.c" />
     <ClCompile Include="..\..\src\legacy_rasm.c" />
     <ClCompile Include="..\..\src\legacy_robot.c" />
     <ClCompile Include="..\..\src\legacy_world.c" />
     <ClCompile Include="..\..\src\mzm.c" />
-    <ClCompile Include="..\..\src\network\host.c" />
-    <ClCompile Include="..\..\src\network\manifest.c" />
-    <ClCompile Include="..\..\src\network\network.c" />
-    <ClCompile Include="..\..\src\network\sha256.c" />
     <ClCompile Include="..\..\src\platform_sdl.c" />
     <ClCompile Include="..\..\src\pngops.c" />
     <ClCompile Include="..\..\src\render.c" />
@@ -303,19 +321,18 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClCompile Include="..\..\src\render_layer.c" />
     <ClCompile Include="..\..\src\render_sdl.c" />
     <ClCompile Include="..\..\src\render_soft.c" />
-    <ClCompile Include="..\..\src\render_yuv.c" />
-    <ClCompile Include="..\..\src\render_yuv1.c" />
-    <ClCompile Include="..\..\src\render_yuv2.c" />
+    <ClCompile Include="..\..\src\render_softscale.c" />
     <ClCompile Include="..\..\src\robot.c" />
     <ClCompile Include="..\..\src\run_robot.c" />
     <ClCompile Include="..\..\src\scrdisp.c" />
-    <ClCompile Include="..\..\src\sfx.c" />
+    <ClCompile Include="..\..\src\settings.c" />
     <ClCompile Include="..\..\src\sprite.c" />
     <ClCompile Include="..\..\src\str.c" />
     <ClCompile Include="..\..\src\util.c" />
     <ClCompile Include="..\..\src\window.c" />
     <ClCompile Include="..\..\src\world.c" />
     <ClCompile Include="..\..\src\zip.c" />
+    <ClCompile Include="win32time.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\contrib\gdm2s3m\src\error.h" />
@@ -355,13 +372,22 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClInclude Include="..\..\contrib\libxmp\src\win32\osdcomm.h" />
     <ClInclude Include="..\..\contrib\libxmp\src\win32\ptpopen.h" />
     <ClInclude Include="..\..\contrib\libxmp\src\win32\unistd.h" />
-    <ClInclude Include="..\..\src\audio.h" />
-    <ClInclude Include="..\..\src\audio_xmp.h" />
+    <ClInclude Include="..\..\src\audio\audio.h" />
+    <ClInclude Include="..\..\src\audio\audio_pcs.h" />
+    <ClInclude Include="..\..\src\audio\audio_reality.h" />
+    <ClInclude Include="..\..\src\audio\audio_vorbis.h" />
+    <ClInclude Include="..\..\src\audio\audio_wav.h" />
+    <ClInclude Include="..\..\src\audio\audio_xmp.h" />
+    <ClInclude Include="..\..\src\audio\ext.h" />
+    <ClInclude Include="..\..\src\audio\sampled_stream.h" />
+    <ClInclude Include="..\..\src\audio\sfx.h" />
     <ClInclude Include="..\..\src\block.h" />
     <ClInclude Include="..\..\src\board.h" />
+    <ClInclude Include="..\..\src\caption.h" />
     <ClInclude Include="..\..\src\compat.h" />
     <ClInclude Include="..\..\src\configure.h" />
     <ClInclude Include="..\..\src\const.h" />
+    <ClInclude Include="..\..\src\core.h" />
     <ClInclude Include="..\..\src\counter.h" />
     <ClInclude Include="..\..\src\data.h" />
     <ClInclude Include="..\..\src\error.h" />
@@ -369,23 +395,22 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClInclude Include="..\..\src\expr.h" />
     <ClInclude Include="..\..\src\fsafeopen.h" />
     <ClInclude Include="..\..\src\game.h" />
-    <ClInclude Include="..\..\src\game2.h" />
+    <ClInclude Include="..\..\src\game_menu.h" />
+    <ClInclude Include="..\..\src\game_ops.h" />
+    <ClInclude Include="..\..\src\game_player.h" />
+    <ClInclude Include="..\..\src\game_update.h" />
     <ClInclude Include="..\..\src\graphics.h" />
     <ClInclude Include="..\..\src\helpsys.h" />
     <ClInclude Include="..\..\src\idarray.h" />
     <ClInclude Include="..\..\src\idput.h" />
     <ClInclude Include="..\..\src\intake.h" />
+    <ClInclude Include="..\..\src\intake_num.h" />
     <ClInclude Include="..\..\src\keysym.h" />
     <ClInclude Include="..\..\src\legacy_board.h" />
     <ClInclude Include="..\..\src\legacy_rasm.h" />
     <ClInclude Include="..\..\src\legacy_robot.h" />
     <ClInclude Include="..\..\src\legacy_world.h" />
-    <ClInclude Include="..\..\src\mutex_sdl.h" />
     <ClInclude Include="..\..\src\mzm.h" />
-    <ClInclude Include="..\..\src\network\host.h" />
-    <ClInclude Include="..\..\src\network\manifest.h" />
-    <ClInclude Include="..\..\src\network\network.h" />
-    <ClInclude Include="..\..\src\network\sha256.h" />
     <ClInclude Include="..\..\src\platform.h" />
     <ClInclude Include="..\..\src\platform_endian.h" />
     <ClInclude Include="..\..\src\pngops.h" />
@@ -394,11 +419,10 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClInclude Include="..\..\src\render_gl.h" />
     <ClInclude Include="..\..\src\render_layer.h" />
     <ClInclude Include="..\..\src\render_sdl.h" />
-    <ClInclude Include="..\..\src\render_yuv.h" />
     <ClInclude Include="..\..\src\robot.h" />
     <ClInclude Include="..\..\src\robot_struct.h" />
     <ClInclude Include="..\..\src\scrdisp.h" />
-    <ClInclude Include="..\..\src\sfx.h" />
+    <ClInclude Include="..\..\src\settings.h" />
     <ClInclude Include="..\..\src\sprite.h" />
     <ClInclude Include="..\..\src\sprite_struct.h" />
     <ClInclude Include="..\..\src\str.h" />
@@ -410,6 +434,7 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClInclude Include="config.h" />
     <ClInclude Include="dirent.h" />
     <ClInclude Include="msvc.h" />
+    <ClInclude Include="win32time.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

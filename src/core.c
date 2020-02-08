@@ -28,6 +28,7 @@
 #include "core.h"
 #include "error.h"
 #include "event.h"
+#include "game_menu.h"
 #include "graphics.h"
 #include "helpsys.h"
 #include "settings.h"
@@ -54,6 +55,7 @@ struct core_context
   context ctx;
   boolean first_run;
   boolean full_exit;
+  boolean restart_on_exit;
   boolean context_changed;
   struct context_stack stack;
 };
@@ -251,15 +253,16 @@ static void print_ctx_line(context_data *ctx_data)
   if(ctx_data->functions.click == ctx_data->functions.drag)
     click_drag_same = true;
 
-  fprintf(stderr, "%-*.*s | %3s %3s %3s %3s %3s %3s %3s | %-3s %3s\n",
+  fprintf(stderr, "%-*.*s | %3s %3s %3s %3s %3s %3s %3s %3s | %-3s %3s\n",
     16, 16, name,
-    ctx_data->functions.resume  ? "Yes" : "",
-    ctx_data->functions.draw    ? "Yes" : "",
-    ctx_data->functions.idle    ? "Yes" : "",
-    ctx_data->functions.key     ? "Yes" : "",
-    ctx_data->functions.click   ? "Yes" : "",
-    ctx_data->functions.drag    ? click_drag_same ? "<- " : "Yes" : "",
-    ctx_data->functions.destroy ? "Yes" : "",
+    ctx_data->functions.resume    ? "Yes" : "",
+    ctx_data->functions.draw      ? "Yes" : "",
+    ctx_data->functions.idle      ? "Yes" : "",
+    ctx_data->functions.key       ? "Yes" : "",
+    ctx_data->functions.joystick  ? "Yes" : "",
+    ctx_data->functions.click     ? "Yes" : "",
+    ctx_data->functions.drag      ? click_drag_same ? "<- " : "Yes" : "",
+    ctx_data->functions.destroy   ? "Yes" : "",
     framerate_str,
     cbs_str
   );
@@ -299,8 +302,9 @@ static void __print_core_stack(context *_ctx, const char *file, int line)
 
   root = _ctx->root;
 
-  fprintf(stderr, "CONTEXT STACK    | Res Drw Idl Key Clk Drg Dst | Fr. CbQ \n");
-  fprintf(stderr, "-----------------|-----------------------------|---------\n");
+  fprintf(stderr,
+   "CONTEXT STACK    | Res Drw Idl Key Joy Clk Drg Dst | Fr. CbQ \n"
+   "-----------------|---------------------------------|---------\n");
 
   for(i = root->stack.size - 1; i >= 0; i--)
   {
@@ -379,8 +383,9 @@ void create_context(context *ctx, context *parent,
 
   if(parent == NULL || !ctx_spec ||
    (ctx_spec->resume == NULL && ctx_spec->draw == NULL &&
-    ctx_spec->key == NULL && ctx_spec->click == NULL &&
-    ctx_spec->drag == NULL && ctx_spec->idle == NULL))
+    ctx_spec->key == NULL && ctx_spec->joystick == NULL &&
+    ctx_spec->click == NULL && ctx_spec->drag == NULL &&
+    ctx_spec->idle == NULL))
   {
     print_core_stack(parent);
     error_message(E_CORE_FATAL_BUG, 1, NULL);
@@ -627,6 +632,7 @@ core_context *core_init(struct world *mzx_world)
   memset(&(root->stack), 0, sizeof(struct context_stack));
   root->first_run = true;
   root->full_exit = false;
+  root->restart_on_exit = false;
   root->context_changed = false;
 
   return root;
@@ -695,18 +701,19 @@ static void core_resume(core_context *root)
  * Draw the current context.
  */
 
-static void core_draw(core_context *root)
+static boolean core_draw(core_context *root)
 {
   context *ctx = root->stack.contents[root->stack.size - 1];
   context_data *ctx_data = ctx->internal_data;
   context_data *sub_data;
   subcontext *sub;
+  boolean ret = false;
 
   if(ctx_data->functions.draw)
-    ctx_data->functions.draw(ctx);
+    ret |= ctx_data->functions.draw(ctx);
 
   if(root->context_changed || root->full_exit)
-    return;
+    return ret;
 
   ctx_data->stack.pos = 0;
 
@@ -718,11 +725,11 @@ static void core_draw(core_context *root)
     if(sub_data->functions.draw)
     {
       select_layer(UI_LAYER);
-      sub_data->functions.draw((context *)sub);
+      ret |= sub_data->functions.draw((context *)sub);
     }
 
     if(root->context_changed || root->full_exit)
-      return;
+      return ret;
 
     ctx_data->stack.pos++;
   }
@@ -736,8 +743,10 @@ static void core_draw(core_context *root)
 
     select_layer(UI_LAYER);
     write_string(fpsbuf, 0, 0, 0x0f, false);
+    return true;
   }
 #endif
+  return ret;
 }
 
 /**
@@ -760,37 +769,34 @@ static boolean is_on_stack(core_context *root, enum context_type type)
 
 #ifdef CONFIG_HELPSYS
 /**
- * Determine if the help system is currently allowed.
+ * Determine if the help system is currently allowed. In addition to the
+ * regular checks, this should not be allowed to open if it's already open!
  */
-static boolean allow_help_system(core_context *root)
+static boolean core_allow_help_system(core_context *root)
 {
   struct world *mzx_world = ((context *)root)->world;
-  struct config_info *conf = get_config();
+  boolean is_titlescreen = !is_on_stack(root, CTX_PLAY_GAME);
 
   if(is_on_stack(root, CTX_HELP_SYSTEM))
     return false;
 
-  if(mzx_world->active && mzx_world->version >= V260)
-  {
-    if(is_on_stack(root, CTX_PLAY_GAME) ||
-     (is_on_stack(root, CTX_TITLE_SCREEN) && conf->standalone_mode))
-    {
-      if(!get_counter(mzx_world, "HELP_MENU", 0))
-        return false;
-    }
-  }
+  if(mzx_world->active && !allow_help_system(mzx_world, is_titlescreen))
+    return false;
 
   return true;
 }
 #endif
 
 /**
- * Determine if the configure menu is currently allowed.
+ * Determine if the settings menu is currently allowed. In addition to the
+ * regular checks, this should not be allowed to open if it's already open!
  */
-static boolean allow_configure(core_context *root)
+static boolean core_allow_settings_menu(core_context *root)
 {
   struct world *mzx_world = ((context *)root)->world;
-  struct config_info *conf = get_config();
+  boolean is_titlescreen = !is_on_stack(root, CTX_PLAY_GAME);
+  boolean is_override =
+   get_alt_status(keycode_internal) || get_ctrl_status(keycode_internal);
 
   if(is_on_stack(root, CTX_CONFIGURE))
     return false;
@@ -798,20 +804,9 @@ static boolean allow_configure(core_context *root)
   if(is_on_stack(root, CTX_HELP_SYSTEM))
     return false;
 
-  // Bypass F2_MENU counter.
-  if((get_alt_status(keycode_internal) || get_ctrl_status(keycode_internal)) &&
-   !conf->standalone_mode)
-    return true;
-
-  if(mzx_world->active && mzx_world->version >= V260)
-  {
-    if(is_on_stack(root, CTX_PLAY_GAME) ||
-     (is_on_stack(root, CTX_TITLE_SCREEN) && conf->standalone_mode))
-    {
-      if(!get_counter(mzx_world, "F2_MENU", 0))
-        return false;
-    }
-  }
+  if(mzx_world->active &&
+   !allow_settings_menu(mzx_world, is_titlescreen, is_override))
+    return false;
 
   return true;
 }
@@ -821,10 +816,11 @@ static boolean allow_configure(core_context *root)
  * If any subcontexts are attached to the context, they will be handled from
  * most recent to oldest, and the context will be handled last. Notes:
  *
- * 1) Execution order: Idle -> Click OR Drag -> Key
- * 2) A true return value of idle cancels both key and mouse handling.
+ * 1) Execution order: Idle -> Click OR Drag -> Joystick -> Key
+ * 2) A true return value of idle cancels key, mouse, and joystick handling.
  * 3) A true return value of key cancels key handling.
  * 4) A true return value of click or drag cancels mouse handling.
+ * 5) A true return value of joystick handling cancels joystick handling.
  */
 
 static void core_update(core_context *root)
@@ -834,11 +830,13 @@ static void core_update(core_context *root)
   context_data *cur_data;
   context *cur;
 
+  boolean joystick_handled = false;
   boolean mouse_handled = false;
   boolean key_handled = false;
 
   boolean exit_status = get_exit_status();
   int key = get_key(keycode_internal_wrt_numlock);
+  int joystick = get_joystick_ui_action();
   int mouse_press = get_mouse_press_ext();
   int mouse_drag_state = get_mouse_drag();
   int mouse_x;
@@ -867,6 +865,7 @@ static void core_update(core_context *root)
     {
       if(cur_data->functions.idle(cur))
       {
+        joystick_handled = true;
         mouse_handled = true;
         key_handled = true;
       }
@@ -889,6 +888,15 @@ static void core_update(core_context *root)
         mouse_handled |=
          cur_data->functions.click(cur, &key, mouse_press, mouse_x, mouse_y);
       }
+
+      if(root->context_changed || root->full_exit)
+        return;
+    }
+
+    if(!joystick_handled)
+    {
+      if(joystick && cur_data->functions.joystick)
+        joystick_handled |= cur_data->functions.joystick(cur, &key, joystick);
 
       if(root->context_changed || root->full_exit)
         return;
@@ -919,7 +927,7 @@ static void core_update(core_context *root)
       case IKEY_F1:
       {
         // Display help.
-        if(allow_help_system(root))
+        if(core_allow_help_system(root))
           help_system(ctx, ctx->world);
 
         break;
@@ -929,7 +937,7 @@ static void core_update(core_context *root)
       case IKEY_F2:
       {
         // Display settings menu.
-        if(allow_configure(root))
+        if(core_allow_settings_menu(root))
           game_settings(ctx->world);
 
         break;
@@ -972,6 +980,10 @@ void core_run(core_context *root)
   int start_ticks = get_ticks();
   int delta_ticks;
   int total_ticks;
+  boolean need_update_screen = true;
+#ifdef __EMSCRIPTEN__
+  int emscripten_prev_ticks = get_ticks();
+#endif
 
   // If there aren't any contexts on the stack, there's no reason to be here.
   if(initial_stack_size <= 0)
@@ -989,31 +1001,35 @@ void core_run(core_context *root)
 
   do
   {
-    // Resume might trigger additional context changes.
-    while(root->context_changed)
+    // Resume might trigger additional context changes, exit, or empty the
+    // context stack, so continue the main loop after handling the resume.
+    if(root->context_changed)
     {
       root->context_changed = false;
       force_release_all_keys();
       core_resume(root);
-
-      // Resume might also trigger an exit.
-      if(root->full_exit)
-        return;
+      continue;
     }
 
-    core_draw(root);
+    need_update_screen = core_draw(root);
 
     // Context changed or an exit occurred? Skip the screen update and delay
     if(root->context_changed || root->full_exit)
       continue;
 
-    update_screen();
+    if(need_update_screen)
+      update_screen();
 
     // Delay and then handle events.
     ctx = root->stack.contents[root->stack.size - 1];
 
-    // FIXME hack
+    // Special- enable joystick gameplay bindings if this is the gameplay ctx.
+    joystick_set_game_mode(ctx->internal_data->context_type == CTX_PLAY_GAME);
+
+    // FIXME legacy loop hacks; remove when legacy loops are gone
+    joystick_set_legacy_loop_hacks(false);
     enable_f12_hack = false;
+    // FIXME end legacy loop hacks
 
     switch(ctx->internal_data->framerate)
     {
@@ -1046,6 +1062,19 @@ void core_run(core_context *root)
           // Delay for 16 * (speed - 1) since the beginning of the update
           delay(total_ticks);
         }
+#ifdef __EMSCRIPTEN__
+        else
+        {
+          // Emscripten must yield occasionally, or else the asynchronous queue
+          // will never get processed, causing a freeze.
+          delta_ticks = get_ticks() - emscripten_prev_ticks;
+          if(delta_ticks >= 8) // 16 - 8 = 8
+          {
+            delay(8);
+            emscripten_prev_ticks = get_ticks();
+          }
+        }
+#endif
 
         update_event_status();
         break;
@@ -1059,8 +1088,11 @@ void core_run(core_context *root)
       }
     }
 
-    // FIXME hack
+    // FIXME legacy loop hacks; remove when legacy loops are gone
+    joystick_set_game_mode(false);
+    joystick_set_legacy_loop_hacks(true);
     enable_f12_hack = conf->allow_screenshots;
+    // FIXME end legacy loop hacks
 
     start_ticks = get_ticks();
 
@@ -1081,7 +1113,7 @@ void core_run(core_context *root)
  * Indicate that the core loop should exit.
  */
 
-void core_exit(context *ctx)
+void core_full_exit(context *ctx)
 {
   if(!ctx || !ctx->root)
   {
@@ -1091,6 +1123,38 @@ void core_exit(context *ctx)
   }
 
   ctx->root->full_exit = true;
+}
+
+/**
+ * Exit the core loop and restart MegaZeux.
+ */
+
+void core_full_restart(context *ctx)
+{
+  if(!ctx || !ctx->root)
+  {
+    print_core_stack(ctx);
+    error_message(E_CORE_FATAL_BUG, 11, NULL);
+    return;
+  }
+
+  ctx->root->full_exit = true;
+  ctx->root->restart_on_exit = true;
+}
+
+/**
+ * Find out if an exit has been requested.
+ */
+
+boolean core_restart_requested(core_context *root)
+{
+  if(!root)
+  {
+    error_message(E_CORE_FATAL_BUG, 12, NULL);
+    return false;
+  }
+
+  return root->restart_on_exit;
 }
 
 /**
@@ -1169,4 +1233,4 @@ void (*debug_robot_config)(struct world *mzx_world);
 
 // Network external function pointers (NULL by default).
 
-void (*check_for_updates)(struct world *mzx_world, boolean is_automatic);
+boolean (*check_for_updates)(context *ctx, boolean is_automatic);

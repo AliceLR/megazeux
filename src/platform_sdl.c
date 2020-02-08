@@ -38,10 +38,18 @@
 #include <fat.h>
 #endif
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+void delay(Uint32 ms)
+{
+  emscripten_sleep(ms);
+}
+#else
 void delay(Uint32 ms)
 {
   SDL_Delay(ms);
 }
+#endif
 
 Uint32 get_ticks(void)
 {
@@ -51,6 +59,10 @@ Uint32 get_ticks(void)
 boolean platform_init(void)
 {
   Uint32 flags = SDL_INIT_VIDEO | SDL_INIT_JOYSTICK;
+
+#if SDL_VERSION_ATLEAST(2,0,0)
+  flags |= SDL_INIT_GAMECONTROLLER;
+#endif
 
 #ifdef CONFIG_PSP
   scePowerSetClockFrequency(333, 333, 166);
@@ -75,6 +87,9 @@ boolean platform_init(void)
 
     // try again without joystick support
     flags &= ~SDL_INIT_JOYSTICK;
+#if SDL_VERSION_ATLEAST(2,0,0)
+    flags &= ~SDL_INIT_GAMECONTROLLER;
+#endif
 
     if(SDL_Init(flags) < 0)
     {

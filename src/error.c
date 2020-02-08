@@ -46,19 +46,37 @@ static const char *const error_type_names[] =
 int error(const char *string, enum error_type type, unsigned int options,
  unsigned int code)
 {
+  boolean skip_error_ui = false;
   const char *type_name;
   int t1 = 9, ret = 0;
+  int joystick_key;
   char temp[5];
   int x;
 
   // Find the name of this error type.
-  if(type >= sizeof(error_type_names) / sizeof(*error_type_names))
-    type = 0;
+  if((unsigned int)type >= ARRAY_SIZE(error_type_names))
+    type = ERROR_T_WARNING;
 
   type_name = error_type_names[type];
 
   // If graphics couldn't initialize, print the error to stderr and abort.
   if(!has_video_initialized())
+    skip_error_ui = true;
+
+#ifdef __EMSCRIPTEN__
+  // TODO: For Emscripten, some paths here are safe and others will crash.
+  // These can be detected through their error codes for now.
+  {
+    static const enum error_type safe_codes[] = { 0x3101, 0x2C01, 0x0000 };
+    skip_error_ui = true;
+
+    for(x = 0; x < (int)ARRAY_SIZE(safe_codes); x++)
+      if(code == safe_codes[x])
+        skip_error_ui = false;
+  }
+#endif
+
+  if(skip_error_ui)
   {
     int scode = code ? (int)code : -1;
 
@@ -70,6 +88,7 @@ int error(const char *string, enum error_type type, unsigned int options,
     if(options & ERROR_OPT_OK) return ERROR_OPT_OK;
     if(options & ERROR_OPT_FAIL) return ERROR_OPT_FAIL;
     exit(scode);
+    return ERROR_OPT_FAIL; // __EMSCRIPTEN__
   }
 
   // Use the high byte of the error code to link to a context in the help file.
@@ -139,8 +158,12 @@ int error(const char *string, enum error_type type, unsigned int options,
   // Get key
   do
   {
-    wait_event(0);
+    update_event_status_delay();
     t1 = get_key(keycode_internal_wrt_numlock);
+
+    joystick_key = get_joystick_ui_key();
+    if(joystick_key)
+      t1 = joystick_key;
 
     //Exit event--mimic Escape
     if(get_exit_status())
@@ -233,6 +256,11 @@ int error_message(enum error_code id, int parameter, const char *string)
 
   switch (id)
   {
+    case E_INVOKE_SELF_FAILED:
+      sprintf(error_mesg, "Attempt to invoke self failed!");
+      code = 0xADA1;
+      break;
+
     case E_CORE_FATAL_BUG:
       sprintf(error_mesg, "Context code bug");
       severity = ERROR_T_FATAL;
@@ -455,6 +483,11 @@ int error_message(enum error_code id, int parameter, const char *string)
 #endif
 
 #ifdef CONFIG_UPDATER
+    case E_UPDATE_RETRY:
+      opts = ERROR_OPT_RETRY | ERROR_OPT_FAIL;
+
+      /* fallthrough */
+
     case E_UPDATE:
       snprintf(error_mesg, 79, "%s", string);
       code = 0xA200 | (parameter & 0xFF);
@@ -472,7 +505,7 @@ int error_message(enum error_code id, int parameter, const char *string)
 
     case E_DBC_SAVE_ROBOT_UNSUPPORTED:
       sprintf(error_mesg,
-       "SAVE_ROBOT and SAVE_BC are no longer supported");
+       "SAVE_BC is no longer supported");
       code = 0x0fac;
       break;
 #endif

@@ -239,7 +239,17 @@ static void draw_menu_status(struct edit_menu_subcontext *edit_menu, int line)
       }
       else
       {
-        str = thing_names[buffer->id];
+        char unknown[20];
+
+        if(buffer->id < ARRAY_SIZE(thing_names))
+        {
+          str = thing_names[buffer->id];
+        }
+        else
+        {
+          sprintf(unknown, "unknown_%02x", buffer->id);
+          str = unknown;
+        }
 
         write_string(str, display_next_pos, line, EC_CURR_THING, false);
         display_next_pos += strlen(str) + 1;
@@ -374,7 +384,7 @@ static void draw_menu_minimal(struct edit_menu_subcontext *edit_menu)
   draw_menu_status(edit_menu, EDIT_SCREEN_MINIMAL);
 }
 
-static void edit_menu_draw(subcontext *ctx)
+static boolean edit_menu_draw(subcontext *ctx)
 {
   struct edit_menu_subcontext *edit_menu = (struct edit_menu_subcontext *)ctx;
 
@@ -386,6 +396,7 @@ static void edit_menu_draw(subcontext *ctx)
   {
     draw_menu_minimal(edit_menu);
   }
+  return true;
 }
 
 static boolean edit_menu_idle(subcontext *ctx)

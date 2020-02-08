@@ -294,6 +294,10 @@ static void default_board(struct board *cur_board)
   cur_board->b_mesg_timer = 0;
   cur_board->b_mesg_row = 24;
   cur_board->b_mesg_col = -1;
+
+#ifdef DEBUG
+  cur_board->is_extram = false;
+#endif
 }
 
 void dummy_board(struct board *cur_board)
@@ -1093,6 +1097,15 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
     }
   }
 
+  // Correct scroll/sensor counts.
+  while(num_scrolls && !scroll_list[num_scrolls])
+    num_scrolls--;
+
+  while(num_sensors && !sensor_list[num_sensors])
+    num_sensors--;
+
+  cur_board->num_scrolls = num_scrolls;
+  cur_board->num_sensors = num_sensors;
   return VAL_SUCCESS;
 
 err_invalid:

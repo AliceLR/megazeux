@@ -32,6 +32,7 @@
 #include "../graphics.h"
 #include "../intake.h"
 #include "../memcasecmp.h"
+#include "../scrdisp.h"
 #include "../sprite.h"
 #include "../str.h"
 #include "../util.h"
@@ -77,70 +78,104 @@
 #define VAR_ADD_DIALOG_H 6
 #define VAR_ADD_MAX 30
 
-char asc[17] = "0123456789ABCDEF";
+static char asc[17] = "0123456789ABCDEF";
 
-static void copy_substring_escaped(struct string *str, char *buf,
- unsigned int size)
+// Escape \n. Use for most debug var name/text fields. This is intended for
+// display only and doesn't escape \. For anything that needs to be edited
+// or unescaped, use copy_substring_escaped instead. FIXME it'd be nice if
+// list box elements could print these chars instead of making this necessary.
+static void copy_name_escaped(char *dest, size_t dest_len, const char *src,
+ size_t src_len)
 {
   unsigned int i, j, left;
 
-  for(i = 0, j = 0; j < str->length; i++, j++)
+  for(i = 0, j = 0; j < src_len; i++, j++)
   {
-    left = size - i;
-    if(str->value[j] == '\\')
+    left = dest_len - i;
+    if(src[j] == '\n')
     {
       if(left < 3)
         break;
 
-      buf[i++] = '\\';
-      buf[i] = '\\';
-    }
-    else if(str->value[j] == '\n')
-    {
-      if(left < 3)
-        break;
-
-      buf[i++] = '\\';
-      buf[i] = 'n';
-    }
-    else if(str->value[j] == '\r')
-    {
-      if(left < 3)
-        break;
-
-      buf[i++] = '\\';
-      buf[i] = 'r';
-    }
-    else if(str->value[j] == '\t')
-    {
-      if(left < 3)
-        break;
-
-      buf[i++] = '\\';
-      buf[i] = 't';
-    }
-    else if(str->value[j] < 32 || str->value[j] > 126)
-    {
-      if(left < 5)
-        break;
-
-      buf[i++] = '\\';
-      buf[i++] = 'x';
-      buf[i++] = asc[str->value[j] >> 4];
-      buf[i] = asc[str->value[j] & 15];
+      dest[i++] = '\\';
+      dest[i] = 'n';
     }
     else
     {
       if(left < 2)
         break;
 
-      buf[i] = str->value[j];
+      dest[i] = src[j];
     }
   }
 
-  buf[i] = 0;
+  dest[i] = 0;
 }
 
+// Escape all non-ASCII chars. Use for string values.
+static void copy_substring_escaped(char *dest, size_t dest_len, const char *src,
+ size_t src_len)
+{
+  unsigned int i, j, left;
+
+  for(i = 0, j = 0; j < src_len; i++, j++)
+  {
+    left = dest_len - i;
+    if(src[j] == '\\')
+    {
+      if(left < 3)
+        break;
+
+      dest[i++] = '\\';
+      dest[i] = '\\';
+    }
+    else if(src[j] == '\n')
+    {
+      if(left < 3)
+        break;
+
+      dest[i++] = '\\';
+      dest[i] = 'n';
+    }
+    else if(src[j] == '\r')
+    {
+      if(left < 3)
+        break;
+
+      dest[i++] = '\\';
+      dest[i] = 'r';
+    }
+    else if(src[j] == '\t')
+    {
+      if(left < 3)
+        break;
+
+      dest[i++] = '\\';
+      dest[i] = 't';
+    }
+    else if(src[j] < 32 || src[j] > 126)
+    {
+      if(left < 5)
+        break;
+
+      dest[i++] = '\\';
+      dest[i++] = 'x';
+      dest[i++] = asc[src[j] >> 4];
+      dest[i] = asc[src[j] & 15];
+    }
+    else
+    {
+      if(left < 2)
+        break;
+
+      dest[i] = src[j];
+    }
+  }
+
+  dest[i] = 0;
+}
+
+// Unescape a string escaped by copy_substring_escaped.
 static void unescape_string(char *buf, int *len)
 {
   size_t i = 0, j, old_len = strlen(buf);
@@ -194,6 +229,13 @@ static const char *universal_var_list[] =
 {
   "random_seed0",
   "random_seed1",
+  "date_year*",
+  "date_month*",
+  "date_day*",
+  "time_hours*",
+  "time_minutes*",
+  "time_seconds*",
+  "time_millis*",
 };
 
 static const char *world_var_list[] =
@@ -205,9 +247,12 @@ static const char *world_var_list[] =
   "divider",
   "fread_delimiter", //no read
   "fwrite_delimiter", //no read
+  "joy_simulate_keys", //no read
   "max_samples",
   "mod_frequency",
   "mod_length*",
+  "mod_loopend",
+  "mod_loopstart",
   "mod_name*",
   "mod_order",
   "mod_position",
@@ -265,6 +310,7 @@ static const char *robot_var_list[] =
 // Sprite parent list (note: clist# added to end)
 static const char *sprite_parent_var_list[] =
 {
+  "Active sprites*", // no read/write
   "spr_num",
   "spr_yorder",
   "spr_collisions*",
@@ -275,6 +321,7 @@ static const char *sprite_var_list[] =
 {
   "x",
   "y",
+  "z",
   "refx",
   "refy",
   "width",
@@ -284,7 +331,7 @@ static const char *sprite_var_list[] =
   "cwidth",
   "cheight",
   "ccheck", // no read
-  "off", // no read
+  "off",
   "offset",
   "overlay", // no read
   "static", // no read
@@ -293,12 +340,21 @@ static const char *sprite_var_list[] =
   "vlayer", // no read
 };
 
+static const char *sensor_var_list[] =
+{
+  "Sensor name*", // no read/write
+  "Robot to mesg*", // no read/write
+};
+
+static const char *scroll_text_var = "Scroll text*";
+
 static int num_universal_vars = ARRAY_SIZE(universal_var_list);
 static int num_world_vars = ARRAY_SIZE(world_var_list);
 static int num_board_vars = ARRAY_SIZE(board_var_list);
 static int num_robot_vars = ARRAY_SIZE(robot_var_list);
 static int num_sprite_parent_vars = ARRAY_SIZE(sprite_parent_var_list);
 static int num_sprite_vars = ARRAY_SIZE(sprite_var_list);
+static int num_sensor_vars = ARRAY_SIZE(sensor_var_list);
 
 enum debug_var_type
 {
@@ -308,6 +364,7 @@ enum debug_var_type
   V_SPRITE_VAR,
   V_SPRITE_CLIST,
   V_LOCAL_VAR,
+  V_SCROLL_TEXT,
 };
 
 struct debug_var
@@ -362,6 +419,7 @@ static void get_var_name(struct debug_var *v, char **name, int *len,
       return;
 
     case V_VAR:
+    case V_SCROLL_TEXT:
       if(name) *name = (char *)v->data.var_name;
       if(len)  *len = strlen(*name);
       return;
@@ -379,7 +437,7 @@ static void get_var_name(struct debug_var *v, char **name, int *len,
       return;
 
     case V_LOCAL_VAR:
-      snprintf(buffer, 32, "local%d", v->id);
+      snprintf(buffer, 32, "local%d", v->data.local_num);
       if(name) *name = buffer;
       if(len)  *len = strlen(buffer);
       return;
@@ -388,6 +446,7 @@ static void get_var_name(struct debug_var *v, char **name, int *len,
 
 #define match_var(_name) (strlen(_name) == len && !memcmp(var, _name, len))
 
+// The buffer param is used for any vars that need to generate char values.
 static void get_var_value(struct world *mzx_world, struct debug_var *v,
  char **char_value, int *int_value, char buffer[VAR_LIST_WIDTH + 1])
 {
@@ -451,6 +510,12 @@ static void get_var_value(struct world *mzx_world, struct debug_var *v,
       }
       else
 
+      if(match_var("Active sprites*"))
+      {
+        *int_value = mzx_world->active_sprites;
+      }
+      else
+
       if(match_var("spr_yorder"))
       {
         *int_value = mzx_world->sprite_y_order;
@@ -494,26 +559,7 @@ static void get_var_value(struct world *mzx_world, struct debug_var *v,
 
       if(match_var("robot_name*"))
       {
-#ifdef CONFIG_DEBYTECODE
-        // FIXME belongs in read_var, not here
-        // In debytecode, it is possible to encounter situations where
-        // debug information is missing, so add a display for it.
-
-        struct robot *cur_robot = cur_board->robot_list[index];
-        size_t len = strlen(cur_robot->robot_name);
-        const char *yn[] = { "N", "Y" };
-
-        memset(buffer, ' ', SVALUE_SIZE);
-        memcpy(buffer, cur_robot->robot_name, len);
-        sprintf(buffer + SVALUE_SIZE - CVALUE_SIZE, "(debug: %s)",
-         yn[cur_robot->command_map != NULL]);
-
-        buffer[SVALUE_SIZE] = 0;
-        *char_value = buffer;
-#else
         *char_value = cur_board->robot_list[index]->robot_name;
-#endif
-
         *int_value = strlen(*char_value);
       }
       else
@@ -534,6 +580,26 @@ static void get_var_value(struct world *mzx_world, struct debug_var *v,
       {
         *int_value = cur_board->robot_list[index]->is_locked;
       }
+      else
+
+      if(match_var("Sensor name*"))
+      {
+        *char_value = cur_board->sensor_list[index]->sensor_name;
+        *int_value = strlen(*char_value);
+      }
+      else
+
+      if(match_var("Robot to mesg*"))
+      {
+        *char_value = cur_board->sensor_list[index]->robot_to_mesg;
+        *int_value = strlen(*char_value);
+      }
+      else
+
+      if(match_var("joy_simulate_keys"))
+      {
+        *int_value = mzx_world->joystick_simulate_keys;
+      }
 
       else
       {
@@ -553,13 +619,6 @@ static void get_var_value(struct world *mzx_world, struct debug_var *v,
       const char *var = v->data.var_name;
       size_t len = strlen(var);
       int sprite_num = v->id;
-
-      if(match_var("off"))
-      {
-        if(!(mzx_world->sprite_list[sprite_num]->flags & SPRITE_INITIALIZED))
-          *int_value = 1;
-      }
-      else
 
       if(match_var("overlay"))
       {
@@ -619,10 +678,19 @@ static void get_var_value(struct world *mzx_world, struct debug_var *v,
     {
       // These are a special case mostly because their names are generated.
       // NOTE: Annoyingly, local1 is at index 0, local2 is at index 1, etc...
-      int local_num = (v->data.local_num - 1) % 32;
+      // NOTE: Awful C modulo-- add 31 instead of subtracting 1...
+      int local_num = (v->data.local_num + 31) % 32;
       int index = v->id;
 
       *int_value = cur_board->robot_list[index]->local[local_num];
+      break;
+    }
+
+    case V_SCROLL_TEXT:
+    {
+      struct scroll *src_scroll = cur_board->scroll_list[v->id];
+      *char_value = src_scroll->mesg + 1;
+      *int_value = src_scroll->mesg_size;
       break;
     }
   }
@@ -631,6 +699,7 @@ static void get_var_value(struct world *mzx_world, struct debug_var *v,
 static void read_var(struct world *mzx_world, struct debug_var *v)
 {
   char buffer[VAR_LIST_WIDTH + 1];
+  char *char_dest = v->text + SVALUE_COL_OFFSET;
   char *char_value = NULL;
   int int_value = 0;
 
@@ -638,19 +707,17 @@ static void read_var(struct world *mzx_world, struct debug_var *v)
 
   if(v->type == V_STRING)
   {
-    // get_var_value does not escape this, but we want it escaped for display.
-    copy_substring_escaped(v->data.string, buffer, SVALUE_SIZE + 1);
-    int_value = SVALUE_SIZE;
-    char_value = buffer;
+    // Add special escaping to string values to match how they're edited.
+    const char *src = v->data.string->value;
+    size_t src_len = v->data.string->length;
+    copy_substring_escaped(char_dest, SVALUE_SIZE + 1, src, src_len);
   }
+  else
 
   if(char_value)
   {
-    if(int_value > SVALUE_SIZE)
-      int_value = SVALUE_SIZE;
-
-    memcpy(v->text + SVALUE_COL_OFFSET, char_value, int_value);
-    v->text[SVALUE_COL_OFFSET + int_value] = '\0';
+    // Use minimal escaping to avoid display bugs.
+    copy_name_escaped(char_dest, SVALUE_SIZE + 1, char_value, int_value);
   }
 
   else
@@ -762,6 +829,12 @@ static void write_var(struct world *mzx_world, struct debug_var *v, int int_val,
       set_counter(mzx_world, real_var, int_val, v->id);
       break;
     }
+
+    case V_SCROLL_TEXT:
+    {
+      // Scroll text (read-only)
+      return;
+    }
   }
 
   // Now update debug_var to reflect the new value.
@@ -770,12 +843,14 @@ static void write_var(struct world *mzx_world, struct debug_var *v, int int_val,
 
 static void init_counter_var(struct debug_var *v, struct counter *src)
 {
+  char buf[CVALUE_COL_OFFSET];
   v->type = V_COUNTER;
   v->is_empty = (src->value ? false : true);
   v->data.counter = src;
 
+  copy_name_escaped(buf, CVALUE_COL_OFFSET, src->name, src->name_length);
   snprintf(v->text, VAR_LIST_WIDTH, "%-*.*s %i",
-   CVALUE_COL_OFFSET - 1, CVALUE_COL_OFFSET - 1, src->name, src->value);
+   CVALUE_COL_OFFSET - 1, CVALUE_COL_OFFSET - 1, buf, src->value);
 }
 
 static void init_string_var(struct debug_var *v, struct string *src)
@@ -785,10 +860,11 @@ static void init_string_var(struct debug_var *v, struct string *src)
   v->is_empty = (src->length ? false : true);
   v->data.string = src;
 
-  snprintf(buf, SVALUE_COL_OFFSET, "%s", src->name);
+  copy_name_escaped(buf, SVALUE_COL_OFFSET, src->name, src->name_length);
   memset(v->text, 32, VAR_LIST_WIDTH);
   memcpy(v->text, buf, strlen(buf));
-  copy_substring_escaped(src, v->text + SVALUE_COL_OFFSET, SVALUE_SIZE + 1);
+  copy_substring_escaped(v->text + SVALUE_COL_OFFSET, SVALUE_SIZE + 1,
+   src->value, src->length);
   v->text[VAR_LIST_WIDTH] = 0;
 }
 
@@ -841,6 +917,17 @@ static void init_local_var(struct debug_var *v, int robot, int num)
   v->text[VAR_LIST_WIDTH] = 0;
 }
 
+static void init_scroll_text(struct debug_var *v, int scroll)
+{
+  v->type = V_SCROLL_TEXT;
+  v->is_empty = false;
+  v->id = (char)scroll;
+  v->data.var_name = scroll_text_var;
+  memset(v->text, 32, VAR_LIST_WIDTH);
+  memcpy(v->text, scroll_text_var, strlen(scroll_text_var));
+  v->text[VAR_LIST_WIDTH] = 0;
+}
+
 /************************
  * Debug tree functions *
  ************************/
@@ -869,6 +956,7 @@ struct debug_node
    boolean opened;
    boolean refresh_on_focus;
    boolean show_child_contents;
+   boolean delete_child_nodes;
    int num_nodes;
    int num_vars;
    struct debug_node *parent;
@@ -1019,7 +1107,10 @@ static void rebuild_var_list(struct debug_node *node,
   init_var_list(node, *var_list, *num_vars, &index, hide_empty);
 }
 
-// If we're not deleting the entire tree we only wipe the counter lists
+/**
+ * Delete all vars in the tree. If delete_all is true, all child nodes will
+ * also be deleted; otherwise, only delete children of nodes explicitly marked.
+ */
 static void clear_debug_tree(struct debug_node *node, boolean delete_all)
 {
   int i;
@@ -1032,6 +1123,10 @@ static void clear_debug_tree(struct debug_node *node, boolean delete_all)
 
   if(node->num_nodes)
   {
+    // If this node deletes its children, its children also need to delete
+    // their children recursively.
+    delete_all |= node->delete_child_nodes;
+
     for(i = 0; i < node->num_nodes; i++)
       clear_debug_tree(&(node->nodes[i]), delete_all);
 
@@ -1619,19 +1714,24 @@ static void init_sprites_node(struct world *mzx_world, struct debug_node *dest)
     if(sprite_list[i]->width != 0 || sprite_list[i]->height != 0)
       num_sprites_active++;
 
-  nodes = ccalloc(num_sprites_active, sizeof(struct debug_node));
   dest->num_nodes = num_sprites_active;
-  dest->nodes = nodes;
-
-  // Populate the sprite nodes.
-  for(spr = 0, i = 0; i < MAX_SPRITES; i++)
+  if(num_sprites_active)
   {
-    if(sprite_list[i]->width == 0 && sprite_list[i]->height == 0)
-      continue;
+    nodes = ccalloc(num_sprites_active, sizeof(struct debug_node));
+    dest->nodes = nodes;
 
-    init_sprite_vars_node(mzx_world, dest, &(nodes[spr]), i);
-    spr++;
+    // Populate the sprite nodes.
+    for(spr = 0, i = 0; i < MAX_SPRITES; i++)
+    {
+      if(sprite_list[i]->width == 0 && sprite_list[i]->height == 0)
+        continue;
+
+      init_sprite_vars_node(mzx_world, dest, &(nodes[spr]), i);
+      spr++;
+    }
   }
+  else
+    dest->nodes = NULL;
 }
 
 static void init_builtin_node(struct world *mzx_world,
@@ -1675,6 +1775,7 @@ static void init_robot_vars_node(struct world *mzx_world,
   int num_vars = num_robot_vars + 32;
   struct debug_var *vars = cmalloc(num_vars * sizeof(struct debug_var));
   struct debug_var *current_var;
+  char temp[15];
   int i;
 
   // Init the default vars first
@@ -1693,7 +1794,8 @@ static void init_robot_vars_node(struct world *mzx_world,
     read_var(mzx_world, current_var);
   }
 
-  snprintf(dest->name, 14, "%d:%s", robot_id, src_robot->robot_name);
+  snprintf(temp, 14, "%d:%s", robot_id, src_robot->robot_name);
+  copy_name_escaped(dest->name, 15, temp, strlen(temp));
   dest->parent = parent;
   dest->num_nodes = 0;
   dest->nodes = NULL;
@@ -1725,6 +1827,88 @@ static void init_robot_node(struct world *mzx_world, struct debug_node *dest)
       init_robot_vars_node(mzx_world, dest, &(nodes[cur++]), robot_list[i], i);
 }
 
+static void init_scroll_var_node(struct world *mzx_world,
+ struct debug_node *parent, struct debug_node *dest, int scroll_id)
+{
+  struct debug_var *var_list = ccalloc(1, sizeof(struct debug_var));
+
+  init_scroll_text(&(var_list[0]), scroll_id);
+  read_var(mzx_world, &(var_list[0]));
+
+  snprintf(dest->name, 14, "Scroll %d", scroll_id);
+  dest->parent = parent;
+  dest->num_nodes = 0;
+  dest->nodes = NULL;
+  dest->num_vars = 1;
+  dest->vars = var_list;
+}
+
+static void init_scroll_node(struct world *mzx_world, struct debug_node *dest)
+{
+  struct debug_node *nodes;
+  struct scroll **scroll_list = mzx_world->current_board->scroll_list;
+  int max_scrolls = mzx_world->current_board->num_scrolls;
+  int num_scrolls = 0;
+  int cur;
+  int i;
+
+  for(i = 1; i <= max_scrolls; i++)
+    if(scroll_list[i] && scroll_list[i]->used)
+      num_scrolls++;
+
+  // Don't create any child nodes if there are no scrolls...
+  if(!num_scrolls)
+    return;
+
+  nodes = ccalloc(num_scrolls, sizeof(struct debug_node));
+  dest->num_nodes = num_scrolls;
+  dest->nodes = nodes;
+
+  // Populate scroll nodes.
+  for(cur = 0, i = 1; i <= max_scrolls; i++)
+    if(scroll_list[i] && scroll_list[i]->used)
+      init_scroll_var_node(mzx_world, dest, &(nodes[cur++]), i);
+}
+
+static void init_sensor_var_node(struct world *mzx_world,
+ struct debug_node *parent, struct debug_node *dest, int sensor_id)
+{
+  init_builtin_node(mzx_world, dest, sensor_var_list, num_sensor_vars,
+   sensor_id);
+
+  snprintf(dest->name, 14, "Sensor %d", sensor_id);
+  dest->parent = parent;
+  dest->num_nodes = 0;
+  dest->nodes = NULL;
+}
+
+static void init_sensor_node(struct world *mzx_world, struct debug_node *dest)
+{
+  struct debug_node *nodes;
+  struct sensor **sensor_list = mzx_world->current_board->sensor_list;
+  int max_sensors = mzx_world->current_board->num_sensors;
+  int num_sensors = 0;
+  int cur;
+  int i;
+
+  for(i = 1; i <= max_sensors; i++)
+    if(sensor_list[i] && sensor_list[i]->used)
+      num_sensors++;
+
+  // Don't create any child nodes if there are no sensors...
+  if(!num_sensors)
+    return;
+
+  nodes = ccalloc(num_sensors, sizeof(struct debug_node));
+  dest->num_nodes = num_sensors;
+  dest->nodes = nodes;
+
+  // Populate the sensor nodes.
+  for(cur = 0, i = 1; i <= max_sensors; i++)
+    if(sensor_list[i] && sensor_list[i]->used)
+      init_sensor_var_node(mzx_world, dest, &(nodes[cur++]), i);
+}
+
 enum root_node_ids
 {
   NODE_COUNTERS,
@@ -1737,15 +1921,21 @@ enum root_node_ids
   NUM_ROOT_NODES
 };
 
+enum board_node_ids
+{
+  NODE_SCROLLS,
+  NODE_SENSORS,
+  NUM_BOARD_NODES
+};
+
 // Create new counter lists.
 // (Re)make the child nodes
 static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
 {
-  int i;
+  struct debug_node *board = &(root->nodes[NODE_BOARD]);
 
-  // Clear all of the root-level lists recursively.
-  for(i = 0; i < NUM_ROOT_NODES; i++)
-    clear_debug_tree(root->nodes + i, true);
+  // Clear the debug tree recursively (but preserve the base structure).
+  clear_debug_tree(root, false);
 
   // Initialize the tree.
   init_counters_node(mzx_world,   &(root->nodes[NODE_COUNTERS]));
@@ -1755,6 +1945,12 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
   init_world_node(mzx_world,      &(root->nodes[NODE_WORLD]));
   init_board_node(mzx_world,      &(root->nodes[NODE_BOARD]));
   init_robot_node(mzx_world,      &(root->nodes[NODE_ROBOTS]));
+
+  if(board->nodes)
+  {
+    init_scroll_node(mzx_world,   &(board->nodes[NODE_SCROLLS]));
+    init_sensor_node(mzx_world,   &(board->nodes[NODE_SENSORS]));
+  }
 }
 
 // Create the base tree structure, except for sprites and robots
@@ -1768,6 +1964,7 @@ static void build_debug_tree(struct world *mzx_world, struct debug_node *root)
     true,  //opened
     false, //refresh_on_focus
     false, //show_child_contents
+    false, //delete_child_nodes
     NUM_ROOT_NODES,
     0,
     NULL,  //parent
@@ -1780,6 +1977,7 @@ static void build_debug_tree(struct world *mzx_world, struct debug_node *root)
     "Counters",
     false,
     false,
+    true,
     true,
     0,
     0,
@@ -1794,6 +1992,7 @@ static void build_debug_tree(struct world *mzx_world, struct debug_node *root)
     false,
     false,
     true,
+    true,
     0,
     0,
     root,
@@ -1805,8 +2004,9 @@ static void build_debug_tree(struct world *mzx_world, struct debug_node *root)
   {
     "Sprites",
     false,
+    true,
     false,
-    false,
+    true,
     0,
     0,
     root,
@@ -1819,6 +2019,7 @@ static void build_debug_tree(struct world *mzx_world, struct debug_node *root)
     "Universal",
     false,
     true,
+    false,
     false,
     0,
     0,
@@ -1833,6 +2034,7 @@ static void build_debug_tree(struct world *mzx_world, struct debug_node *root)
     false,
     true,
     false,
+    false,
     0,
     0,
     root,
@@ -1845,6 +2047,7 @@ static void build_debug_tree(struct world *mzx_world, struct debug_node *root)
     "Board",
     false,
     true,
+    false,
     false,
     0,
     0,
@@ -1859,12 +2062,53 @@ static void build_debug_tree(struct world *mzx_world, struct debug_node *root)
     false,
     false,
     false,
+    true,
     0,
     0,
     root,
     NULL,
     NULL
   };
+
+  struct debug_node scrolls =
+  {
+    "Scrolls/Signs",
+    false,
+    false,
+    false,
+    true,
+    0,
+    0,
+    &(nodes[NODE_BOARD]),
+    NULL,
+    NULL
+  };
+
+  struct debug_node sensors =
+  {
+    "Sensors",
+    false,
+    false,
+    false,
+    true,
+    0,
+    0,
+    &(nodes[NODE_BOARD]),
+    NULL,
+    NULL
+  };
+
+  if(mzx_world->current_board->num_scrolls ||
+   mzx_world->current_board->num_sensors)
+  {
+    // Only create these if there are actually scrolls/sensors on the board.
+    struct debug_node *n = ccalloc(NUM_BOARD_NODES, sizeof(struct debug_node));
+    board.num_nodes = NUM_BOARD_NODES;
+    board.nodes = n;
+
+    n[NODE_SCROLLS] = scrolls;
+    n[NODE_SENSORS] = sensors;
+  }
 
   *root = root_node;
   nodes[NODE_COUNTERS] = counters;
@@ -1894,15 +2138,27 @@ static void input_counter_value(struct world *mzx_world, struct debug_var *v)
   {
     case V_COUNTER:
     {
-      snprintf(dialog_name, 70, "Edit: counter %s", v->data.counter->name);
-      sprintf(new_value, "%d", v->data.counter->value);
+      const struct counter *src = v->data.counter;
+      const char *mesg = "Edit: counter ";
+      char *dest = dialog_name + strlen(mesg);
+      size_t dest_len = sizeof(dialog_name) - strlen(mesg);
+
+      strcpy(dialog_name, mesg);
+      copy_name_escaped(dest, dest_len, src->name, src->name_length);
+      sprintf(new_value, "%d", src->value);
       break;
     }
 
     case V_STRING:
     {
-      snprintf(dialog_name, 70, "Edit: string %s", v->data.string->name);
-      copy_substring_escaped(v->data.string, new_value, 71);
+      const struct string *src = v->data.string;
+      const char *mesg = "Edit: string ";
+      char *dest = dialog_name + strlen(mesg);
+      size_t dest_len = sizeof(dialog_name) - strlen(mesg);
+
+      strcpy(dialog_name, mesg);
+      copy_name_escaped(dest, dest_len, src->name, src->name_length);
+      copy_substring_escaped(new_value, 71, src->value, src->length);
       break;
     }
 
@@ -1945,6 +2201,13 @@ static void input_counter_value(struct world *mzx_world, struct debug_var *v)
       // Just strcpy it off of the debug_var for simplicity
       strcpy(new_value, v->text + CVALUE_COL_OFFSET);
       break;
+    }
+
+    case V_SCROLL_TEXT:
+    {
+      // Too much of a pain to figure out if it's a sign or scroll so
+      scroll_edit(mzx_world, mzx_world->current_board->scroll_list[v->id], 0);
+      return;
     }
   }
 

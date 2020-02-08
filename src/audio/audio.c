@@ -68,6 +68,10 @@
 #include "audio_openmpt.h"
 #endif
 
+#ifdef CONFIG_REALITY
+#include "audio_reality.h"
+#endif
+
 // May be used by audio plugins
 struct audio audio;
 
@@ -82,19 +86,39 @@ struct audio audio;
 static volatile int locked = 0;
 static volatile char last_lock[32];
 
+#ifdef CONFIG_SDL
+#include "../compat_sdl.h"
+#include <SDL_thread.h>
+static volatile SDL_threadID last_thread = 0;
+#endif
+
 static void lock(const char *file, int line)
 {
-  // lock should _not_ be held here
-  if(locked)
-    debug("%s:%d: locked at %s already!\n", file, line, last_lock);
+#ifdef CONFIG_SDL
+  // lock may be held here, but it shouldn't be held by the current thread.
+  // If this is SDL, we can determine if the current thread is holding it.
+  // Otherwise, print nothing because this debug message is annoying and is
+  // almost always spurious.
+  SDL_threadID cur_thread = SDL_ThreadID();
+
+  if(locked && (last_thread == cur_thread))
+  {
+    debug("%s:%d (thread %ld): locked at %s (thread %ld) already!\n",
+     file, line, cur_thread, last_lock, last_thread);
+  }
+#endif
 
   // acquire the mutex
   __lock();
-  locked = 1;
 
   // store information on this lock
   snprintf((char *)last_lock, 32, "%s:%d", file, line);
   last_lock[31] = '\0';
+#ifdef CONFIG_SDL
+  last_thread = SDL_ThreadID();
+#endif
+
+  locked = 1;
 }
 
 static void unlock(const char *file, int line)
@@ -123,6 +147,18 @@ int audio_get_real_frequency(int period)
   return freq_conversion / period;
 }
 
+static int volume_function(int input, int volume_setting)
+{
+  /* Adjust volume (0-255) exponentially according to a given setting (0-10).
+   * 0 is no volume whatsoever and 10 is maximum volume. */
+
+  float setting_f = volume_setting / 10.0f;
+  float setting_exp = (expf(setting_f) - 1) / (M_E - 1);
+  int output = (int)((float)input * setting_exp + 0.5f);
+
+  return CLAMP(output, 0, 255);
+}
+
 void destruct_audio_stream(struct audio_stream *a_src)
 {
   if(a_src == audio.stream_list_base)
@@ -143,15 +179,22 @@ void destruct_audio_stream(struct audio_stream *a_src)
 void initialize_audio_stream(struct audio_stream *a_src,
  struct audio_stream_spec *a_spec, Uint32 volume, Uint32 repeat)
 {
+  // TODO should probably just memcpy into a spec in the audio_stream instead.
   a_src->mix_data = a_spec->mix_data;
   a_src->set_volume = a_spec->set_volume;
   a_src->set_repeat = a_spec->set_repeat;
   a_src->set_order = a_spec->set_order;
   a_src->set_position = a_spec->set_position;
+  a_src->set_loop_start = a_spec->set_loop_start;
+  a_src->set_loop_end = a_spec->set_loop_end;
   a_src->get_order = a_spec->get_order;
   a_src->get_position = a_spec->get_position;
   a_src->get_length = a_spec->get_length;
+  a_src->get_loop_start = a_spec->get_loop_start;
+  a_src->get_loop_end = a_spec->get_loop_end;
+  a_src->get_sample = a_spec->get_sample;
   a_src->destruct = a_spec->destruct;
+  a_src->is_spot_sample = false;
 
   if(a_src->set_volume)
     a_src->set_volume(a_src, volume);
@@ -267,6 +310,10 @@ void init_audio(struct config_info *conf)
   init_openmpt(conf);
 #endif
 
+#ifdef CONFIG_REALITY
+  init_reality(conf);
+#endif
+
   audio_set_music_volume(conf->music_volume);
   audio_set_sound_volume(conf->sam_volume);
   audio_set_music_on(conf->music_on);
@@ -281,9 +328,15 @@ void init_audio(struct config_info *conf)
 
 void quit_audio(void)
 {
+  // Signal the audio thread to stop and wait for it to release the lock.
   quit_audio_platform();
+
+  LOCK();
+
   audio_ext_free_registry();
   free(audio.pcs_stream);
+
+  UNLOCK();
 }
 
 /* If the mod was successfully changed, return 1.  This value is used
@@ -293,17 +346,18 @@ int audio_play_module(char *filename, boolean safely, int volume)
 {
   char translated_filename[MAX_PATH];
   struct audio_stream *a_src;
+  int real_volume;
 
-  // FIXME: Weird hack, why not use audio_end_module() directly?
   if(!filename || !filename[0])
   {
-    audio_end_module();
-    return 1;
+    debug("audio_play_module received empty filename!\n");
+    return 0;
   }
 
   if(safely)
   {
-    if(fsafetranslate(filename, translated_filename) != FSAFE_SUCCESS)
+    if(fsafetranslate(filename, translated_filename) != FSAFE_SUCCESS &&
+     audio_legacy_translate(filename, translated_filename) != FSAFE_SUCCESS)
     {
       debug("Module filename '%s' failed safety checks\n", filename);
       return 0;
@@ -314,8 +368,8 @@ int audio_play_module(char *filename, boolean safely, int volume)
 
   audio_end_module();
 
-  a_src = audio_ext_construct_stream(filename, 0,
-   volume * audio.music_volume / 8, 1);
+  real_volume = volume_function(volume, audio.music_volume);
+  a_src = audio_ext_construct_stream(filename, 0, real_volume, 1);
 
   LOCK();
 
@@ -329,12 +383,31 @@ void audio_end_module(void)
 {
   if(audio.primary_stream)
   {
+    struct audio_stream *current_astream;
+
     LOCK();
-    audio.primary_stream->destruct(audio.primary_stream);
+
+    // Ensure that this didn't change while waiting for the lock.
+    if(audio.primary_stream)
+    {
+      audio.primary_stream->destruct(audio.primary_stream);
+      audio.primary_stream = NULL;
+    }
+
+    // Also end any sound effects attached to the mod.
+    current_astream = audio.stream_list_base;
+    while(current_astream)
+    {
+      struct audio_stream *next_astream = current_astream->next;
+
+      if(current_astream->is_spot_sample)
+        current_astream->destruct(current_astream);
+
+      current_astream = next_astream;
+    }
+
     UNLOCK();
   }
-
-  audio.primary_stream = NULL;
 }
 
 void audio_set_max_samples(int max_samples)
@@ -360,15 +433,16 @@ static void limit_samples(int max)
 {
   int samples_playing = 0;
   int cancel_num = 0;
-  struct audio_stream *current_astream = audio.stream_list_base;
+  struct audio_stream *current_astream;
   struct audio_stream *next_astream;
 
-  if (max == -1) return; // No limit
-
-  // We want to limit the # of samples playing.
+  // Don't limit samples if the max samples setting is -1.
+  if(max == -1)
+    return;
 
   LOCK();
 
+  current_astream = audio.stream_list_base;
   while(current_astream)
   {
     next_astream = current_astream->next;
@@ -383,18 +457,18 @@ static void limit_samples(int max)
   }
 
   cancel_num = samples_playing - max;
-  if (cancel_num > 0) {
+  if(cancel_num > 0)
+  {
     current_astream = audio.stream_list_base;
-    while(current_astream)
+    while(current_astream && cancel_num > 0)
     {
       next_astream = current_astream->next;
 
       if((current_astream != audio.primary_stream) &&
-      (current_astream != (struct audio_stream *)(audio.pcs_stream)))
+       (current_astream != (struct audio_stream *)(audio.pcs_stream)))
       {
         current_astream->destruct(current_astream);
         cancel_num--;
-        if (cancel_num <= 0) break;
       }
 
       current_astream = next_astream;
@@ -406,12 +480,13 @@ static void limit_samples(int max)
 
 void audio_play_sample(char *filename, boolean safely, int period)
 {
-  Uint32 vol = 255 * audio.sound_volume / 8;
+  Uint32 vol = volume_function(255, audio.sound_volume);
   char translated_filename[MAX_PATH];
 
   if(safely)
   {
-    if(fsafetranslate(filename, translated_filename) != FSAFE_SUCCESS)
+    if(fsafetranslate(filename, translated_filename) != FSAFE_SUCCESS &&
+     audio_legacy_translate(filename, translated_filename) != FSAFE_SUCCESS)
     {
       debug("Sample filename '%s' failed safety checks\n", filename);
       return;
@@ -434,17 +509,46 @@ void audio_play_sample(char *filename, boolean safely, int period)
   limit_samples(audio.max_simultaneous_samples);
 }
 
+void audio_spot_sample(int period, int which)
+{
+  // Play a sample from the current playing mod.
+  // Currently only works with libxmp (and maybe only ever will).
+
+  Uint32 vol = volume_function(255, audio.sound_volume);
+  struct wav_info wav;
+  boolean ret = false;
+
+  memset(&wav, 0, sizeof(struct wav_info));
+
+  LOCK();
+
+  if(audio.primary_stream && audio.primary_stream->get_sample)
+    ret = audio.primary_stream->get_sample(audio.primary_stream, which, &wav);
+
+  UNLOCK();
+
+  if(ret)
+  {
+    struct audio_stream *a_src = construct_wav_stream_direct(&wav,
+     audio_get_real_frequency(period * 2), vol, !!(wav.loop_end));
+    a_src->is_spot_sample = true;
+
+    limit_samples(audio.max_simultaneous_samples);
+  }
+}
+
 void audio_end_sample(void)
 {
   // Destroy all samples - something is a sample if it's not a
   // primary or PC speaker stream. This is a bit of a dirty way
   // to do it though (might want to keep multiple lists instead)
 
-  struct audio_stream *current_astream = audio.stream_list_base;
+  struct audio_stream *current_astream;
   struct audio_stream *next_astream;
 
   LOCK();
 
+  current_astream = audio.stream_list_base;
   while(current_astream)
   {
     next_astream = current_astream->next;
@@ -466,41 +570,38 @@ void audio_set_module_order(int order)
   // This is intended for modules only, and should not be supported for any
   // other formats.
 
+  LOCK();
+
   if(audio.primary_stream && audio.primary_stream->set_order)
-  {
-    LOCK();
     audio.primary_stream->set_order(audio.primary_stream, order);
-    UNLOCK();
-  }
+
+  UNLOCK();
 }
 
 int audio_get_module_order(void)
 {
+  int order = 0;
+
+  LOCK();
+
   if(audio.primary_stream && audio.primary_stream->get_order)
-  {
-    int order;
-
-    LOCK();
     order = audio.primary_stream->get_order(audio.primary_stream);
-    UNLOCK();
 
-    return order;
-  }
-  else
-  {
-    return 0;
-  }
+  UNLOCK();
+
+  return order;
 }
 
 void audio_set_module_volume(int volume)
 {
+  int real_volume = volume_function(volume, audio.music_volume);
+
+  LOCK();
+
   if(audio.primary_stream)
-  {
-    LOCK();
-    audio.primary_stream->set_volume(audio.primary_stream,
-     volume * audio.music_volume / 8);
-    UNLOCK();
-  }
+    audio.primary_stream->set_volume(audio.primary_stream, real_volume);
+
+  UNLOCK();
 }
 
 void audio_set_module_frequency(int freq)
@@ -514,33 +615,35 @@ void audio_set_module_frequency(int freq)
   // this without too much success... This might be less noticeable
   // when interpolation isn't used (but the tradeoff is hardly worth it)
 
-  if(audio.primary_stream && freq >= 16)
+  if(freq >= 16)
   {
     LOCK();
-    ((struct sampled_stream *)audio.primary_stream)->
-     set_frequency((struct sampled_stream *)audio.primary_stream,
-     freq);
+
+    if(audio.primary_stream)
+    {
+      struct sampled_stream *s = (struct sampled_stream *)audio.primary_stream;
+      s->set_frequency(s, freq);
+    }
+
     UNLOCK();
   }
 }
 
 int audio_get_module_frequency(void)
 {
+  int freq = 0;
+
+  LOCK();
+
   if(audio.primary_stream)
   {
-    int freq;
-
-    LOCK();
-    freq = ((struct sampled_stream *)audio.primary_stream)->
-     get_frequency((struct sampled_stream *)audio.primary_stream);
-    UNLOCK();
-
-    return freq;
+    struct sampled_stream *s = (struct sampled_stream *)audio.primary_stream;
+    freq = s->get_frequency(s);
   }
-  else
-  {
-    return 0;
-  }
+
+  UNLOCK();
+
+  return freq;
 }
 
 void audio_set_module_position(int pos)
@@ -548,44 +651,88 @@ void audio_set_module_position(int pos)
   // Position isn't a universal thing and instead depends on the
   // medium and what it supports.
 
+  LOCK();
+
   if(audio.primary_stream && audio.primary_stream->set_position)
-  {
-    LOCK();
     audio.primary_stream->set_position(audio.primary_stream, pos);
-    UNLOCK();
-  }
+
+  UNLOCK();
 }
 
 int audio_get_module_position(void)
 {
+  int pos = 0;
+
+  LOCK();
+
   if(audio.primary_stream && audio.primary_stream->get_position)
-  {
-    int pos;
-
-    LOCK();
     pos = audio.primary_stream->get_position(audio.primary_stream);
-    UNLOCK();
 
-    return pos;
-  }
+  UNLOCK();
 
-  return 0;
+  return pos;
 }
 
 int audio_get_module_length(void)
 {
+  int length = 0;
+
+  LOCK();
+
   if(audio.primary_stream && audio.primary_stream->get_length)
-  {
-    int length;
-
-    LOCK();
     length = audio.primary_stream->get_length(audio.primary_stream);
-    UNLOCK();
 
-    return length;
-  }
+  UNLOCK();
 
-  return 0;
+  return length;
+}
+
+void audio_set_module_loop_start(int pos)
+{
+  LOCK();
+
+  if(audio.primary_stream && audio.primary_stream->set_loop_start)
+    audio.primary_stream->set_loop_start(audio.primary_stream, pos);
+
+  UNLOCK();
+}
+
+int audio_get_module_loop_start(void)
+{
+  int loop_start = 0;
+
+  LOCK();
+
+  if(audio.primary_stream && audio.primary_stream->get_loop_start)
+    loop_start = audio.primary_stream->get_loop_start(audio.primary_stream);
+
+  UNLOCK();
+
+  return loop_start;
+}
+
+void audio_set_module_loop_end(int pos)
+{
+  LOCK();
+
+  if(audio.primary_stream && audio.primary_stream->set_loop_end)
+    audio.primary_stream->set_loop_end(audio.primary_stream, pos);
+
+  UNLOCK();
+}
+
+int audio_get_module_loop_end(void)
+{
+  int loop_end = 0;
+
+  LOCK();
+
+  if(audio.primary_stream && audio.primary_stream->get_loop_end)
+    loop_end = audio.primary_stream->get_loop_end(audio.primary_stream);
+
+  UNLOCK();
+
+  return loop_end;
 }
 
 void audio_set_music_on(int val)
@@ -639,19 +786,21 @@ void audio_set_music_volume(int volume)
 
 void audio_set_sound_volume(int volume)
 {
-  struct audio_stream *current_astream = audio.stream_list_base;
+  struct audio_stream *current_astream;
+  int real_volume;
 
   LOCK();
 
   audio.sound_volume = volume;
+  real_volume = volume_function(255, audio.sound_volume);
 
+  current_astream = audio.stream_list_base;
   while(current_astream)
   {
     if((current_astream != audio.primary_stream) &&
      (current_astream != audio.pcs_stream))
     {
-      current_astream->set_volume(current_astream,
-       audio.sound_volume * 255 / 8);
+      current_astream->set_volume(current_astream, real_volume);
     }
 
     current_astream = current_astream->next;
@@ -662,13 +811,55 @@ void audio_set_sound_volume(int volume)
 
 void audio_set_pcs_volume(int volume)
 {
+  int real_volume;
   if(!audio.pcs_stream)
     return;
 
   LOCK();
 
   audio.pcs_volume = volume;
-  audio.pcs_stream->set_volume(audio.pcs_stream, volume * 255 / 8);
+  real_volume = volume_function(255, audio.pcs_volume);
+
+  audio.pcs_stream->set_volume(audio.pcs_stream, real_volume);
 
   UNLOCK();
+}
+
+/**
+ * Wrapper for fsafetranslate. Prior to 2.83, the audio code would apply
+ * special translations to certain filenames BEFORE the fsafetranslate step
+ * that is now in audio_play_module and audio_play_sample; due to this change,
+ * certain quirks of the old engine relied on by some games stopped working:
+ *
+ * + Requests to play files with the .SAM extension would first try to play a
+ *   .WAV with the same name even if the .SAM didn't exist at all.
+ * + Requests to play files with the .GDM extension would first try to play an
+ *   .S3M with the same name even if the .GDM didn't exist at all.
+ *
+ * This function provides a compatibility layer for this old behavior; use
+ * after the initial fsafetranslate fails.
+ */
+int audio_legacy_translate(const char *path, char newpath[MAX_PATH])
+{
+  char temp[MAX_PATH];
+  ssize_t ext_pos = strlen(path) - 4;
+
+  if(ext_pos >= 0)
+  {
+    if(!strcasecmp(path + ext_pos, ".SAM"))
+    {
+      strcpy(temp, path);
+      strcpy(temp + ext_pos, ".WAV");
+      return fsafetranslate(temp, newpath);
+    }
+    else
+
+    if(!strcasecmp(path + ext_pos, ".GDM"))
+    {
+      strcpy(temp, path);
+      strcpy(temp + ext_pos, ".S3M");
+      return fsafetranslate(temp, newpath);
+    }
+  }
+  return -FSAFE_MATCH_FAILED;
 }

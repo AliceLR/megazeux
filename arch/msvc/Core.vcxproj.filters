@@ -16,12 +16,6 @@
     <Filter Include="Header Files\MSVC">
       <UniqueIdentifier>{d14bf040-4f3e-4535-80a4-5fb0ccf167c5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\network">
-      <UniqueIdentifier>{7da1fec0-bfed-4357-bce7-d9fb9e745a6f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\network">
-      <UniqueIdentifier>{34b97daa-d17e-476b-906c-0b729806d748}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\contrib">
       <UniqueIdentifier>{8a9e0782-2347-4780-bc6c-0c3235801faa}</UniqueIdentifier>
     </Filter>
@@ -48,6 +42,9 @@
     </Filter>
     <Filter Include="Header Files\contrib\libxmp\win32">
       <UniqueIdentifier>{526cc8dd-11ed-4a21-8442-97a5e0f30d3a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\MSVC">
+      <UniqueIdentifier>{36c07643-1016-4818-9590-bdcb3f5f7813}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -79,9 +76,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\game.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\game2.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\graphics.c">
@@ -124,9 +118,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\scrdisp.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\sfx.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\sprite.c">
@@ -315,16 +306,7 @@
     <ClCompile Include="..\..\src\event_sdl.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\audio_sdl.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\render_sdl.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\audio.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\audio_xmp.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\render_gl.c">
@@ -342,32 +324,11 @@
     <ClCompile Include="..\..\src\render_soft.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\render_yuv.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\render_yuv1.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\render_yuv2.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\helpsys.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\pngops.c">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\network\host.c">
-      <Filter>Source Files\network</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\network\manifest.c">
-      <Filter>Source Files\network</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\network\network.c">
-      <Filter>Source Files\network</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\network\sha256.c">
-      <Filter>Source Files\network</Filter>
     </ClCompile>
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\flt_load.c">
       <Filter>Source Files\contrib\libxmp\loaders</Filter>
@@ -377,6 +338,69 @@
     </ClCompile>
     <ClCompile Include="..\..\contrib\libxmp\src\loaders\st_load.c">
       <Filter>Source Files\contrib\libxmp\loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\audio\audio.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\audio\audio_pcs.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\audio\audio_sdl.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\audio\audio_vorbis.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\audio\audio_wav.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\audio\audio_xmp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\audio\ext.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\audio\sampled_stream.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\audio\sfx.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\game_menu.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\game_ops.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\game_player.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\game_update.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\game_update_board.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\caption.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\settings.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\core.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\intake_num.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\render_softscale.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="win32time.c">
+      <Filter>Source Files\MSVC</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\audio\audio_reality.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -408,9 +432,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\game.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\game2.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\graphics.h">
@@ -450,9 +471,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\scrdisp.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\sfx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\sprite.h">
@@ -596,22 +614,10 @@
     <ClInclude Include="..\..\src\render_sdl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\mutex_sdl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\compat.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\audio.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\audio_xmp.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\render_gl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\render_yuv.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\helpsys.h">
@@ -619,18 +625,6 @@
     </ClInclude>
     <ClInclude Include="..\..\src\pngops.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\network\host.h">
-      <Filter>Header Files\network</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\network\manifest.h">
-      <Filter>Header Files\network</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\network\network.h">
-      <Filter>Header Files\network</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\network\sha256.h">
-      <Filter>Header Files\network</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\const.h">
       <Filter>Header Files</Filter>
@@ -654,6 +648,60 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\world_struct.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\audio\audio.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\audio\audio_pcs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\audio\audio_vorbis.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\audio\audio_wav.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\audio\audio_xmp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\audio\ext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\audio\sampled_stream.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\audio\sfx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\caption.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\core.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game_menu.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game_ops.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game_player.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game_update.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\intake_num.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\settings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="win32time.h">
+      <Filter>Header Files\MSVC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\audio\audio_reality.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

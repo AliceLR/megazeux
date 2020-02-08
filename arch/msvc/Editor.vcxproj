@@ -73,25 +73,25 @@
     <IncludePath>$(SolutionDir);$(SolutionDir)\Deps\include;$(SolutionDir)\Deps\include\SDL2;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)\Deps\lib\$(PlatformTarget);$(LibraryPath)</LibraryPath>
     <IntDir>$(SolutionDir)\obj\$(ProjectName)\$(Configuration)\$(PlatformTarget)\</IntDir>
-    <OutDir>$(SolutionDir)\..\..</OutDir>
+    <OutDir>$(SolutionDir)\..\..\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(SolutionDir);$(SolutionDir)\Deps\include;$(SolutionDir)\Deps\include\SDL2;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)\Deps\lib\$(PlatformTarget);$(LibraryPath)</LibraryPath>
     <IntDir>$(SolutionDir)\obj\$(ProjectName)\$(Configuration)\$(PlatformTarget)\</IntDir>
-    <OutDir>$(SolutionDir)\..\..</OutDir>
+    <OutDir>$(SolutionDir)\..\..\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IncludePath>$(SolutionDir);$(SolutionDir)\Deps\include;$(SolutionDir)\Deps\include\SDL2;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)\Deps\lib\$(PlatformTarget);$(LibraryPath)</LibraryPath>
     <IntDir>$(SolutionDir)\obj\$(ProjectName)\$(Configuration)\$(PlatformTarget)\</IntDir>
-    <OutDir>$(SolutionDir)\..\..</OutDir>
+    <OutDir>$(SolutionDir)\..\..\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(SolutionDir);$(SolutionDir)\Deps\include;$(SolutionDir)\Deps\include\SDL2;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)\Deps\lib\$(PlatformTarget);$(LibraryPath)</LibraryPath>
     <IntDir>$(SolutionDir)\obj\$(ProjectName)\$(Configuration)\$(PlatformTarget)\</IntDir>
-    <OutDir>$(SolutionDir)\..\..</OutDir>
+    <OutDir>$(SolutionDir)\..\..\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -100,9 +100,10 @@
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>EDITOR_LIBSPEC=__declspec(dllexport);_CRT_SECURE_NO_WARNINGS;__WIN32__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>/J %(AdditionalOptions)</AdditionalOptions>
+      <SDLCheck>false</SDLCheck>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>zlibstat.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
   </ItemDefinitionGroup>
@@ -113,9 +114,10 @@
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>EDITOR_LIBSPEC=__declspec(dllexport);_CRT_SECURE_NO_WARNINGS;__WIN32__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>/J %(AdditionalOptions)</AdditionalOptions>
+      <SDLCheck>false</SDLCheck>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>zlibstat.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
   </ItemDefinitionGroup>
@@ -128,11 +130,12 @@
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>EDITOR_LIBSPEC=__declspec(dllexport);_CRT_SECURE_NO_WARNINGS;__WIN32__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>/J %(AdditionalOptions)</AdditionalOptions>
+      <SDLCheck>false</SDLCheck>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>zlibstat.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
   </ItemDefinitionGroup>
@@ -145,23 +148,26 @@
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>EDITOR_LIBSPEC=__declspec(dllexport);_CRT_SECURE_NO_WARNINGS;__WIN32__;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>/J %(AdditionalOptions)</AdditionalOptions>
+      <SDLCheck>false</SDLCheck>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>zlibstat.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\editor\block.c" />
     <ClCompile Include="..\..\src\editor\board.c" />
+    <ClCompile Include="..\..\src\editor\buffer.c" />
     <ClCompile Include="..\..\src\editor\char_ed.c" />
     <ClCompile Include="..\..\src\editor\clipboard_win32.c" />
     <ClCompile Include="..\..\src\editor\configure.c" />
     <ClCompile Include="..\..\src\editor\debug.c" />
     <ClCompile Include="..\..\src\editor\edit.c" />
     <ClCompile Include="..\..\src\editor\edit_di.c" />
+    <ClCompile Include="..\..\src\editor\edit_menu.c" />
     <ClCompile Include="..\..\src\editor\fill.c" />
     <ClCompile Include="..\..\src\editor\graphics.c" />
     <ClCompile Include="..\..\src\editor\macro.c" />
@@ -175,7 +181,6 @@
     <ClCompile Include="..\..\src\editor\undo.c" />
     <ClCompile Include="..\..\src\editor\window.c" />
     <ClCompile Include="..\..\src\editor\world.c" />
-    <ClCompile Include="..\..\src\zip.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\audio.h" />
@@ -185,12 +190,14 @@
     <ClInclude Include="..\..\src\data.h" />
     <ClInclude Include="..\..\src\editor\block.h" />
     <ClInclude Include="..\..\src\editor\board.h" />
+    <ClInclude Include="..\..\src\editor\buffer.h" />
     <ClInclude Include="..\..\src\editor\char_ed.h" />
     <ClInclude Include="..\..\src\editor\clipboard.h" />
     <ClInclude Include="..\..\src\editor\configure.h" />
     <ClInclude Include="..\..\src\editor\debug.h" />
     <ClInclude Include="..\..\src\editor\edit.h" />
     <ClInclude Include="..\..\src\editor\edit_di.h" />
+    <ClInclude Include="..\..\src\editor\edit_menu.h" />
     <ClInclude Include="..\..\src\editor\fill.h" />
     <ClInclude Include="..\..\src\editor\graphics.h" />
     <ClInclude Include="..\..\src\editor\macro.h" />

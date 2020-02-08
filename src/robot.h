@@ -64,11 +64,14 @@ CORE_LIBSPEC int find_free_robot(struct board *src_board);
 
 void prepare_robot_bytecode(struct world *mzx_world, struct robot *cur_robot);
 
+int get_legacy_bytecode_command_num(char *legacy_bc, int pos_in_bc);
+int command_num_to_program_pos(struct robot *cur_robot, int command_num);
+
 #else /* !CONFIG_DEBYTECODE */
 
 CORE_LIBSPEC void reallocate_robot(struct robot *robot, int size);
+CORE_LIBSPEC void clear_label_cache(struct robot *cur_robot);
 
-void clear_label_cache(struct label **label_list, int num_labels);
 void change_robot_name(struct board *src_board, struct robot *cur_robot,
  char *new_name);
 void add_robot_name_entry(struct board *src_board, struct robot *cur_robot,
@@ -77,8 +80,7 @@ int find_free_robot(struct board *src_board);
 
 #endif /* !CONFIG_DEBYTECODE */
 
-CORE_LIBSPEC struct label **cache_robot_labels(struct robot *robot,
- int *num_labels);
+CORE_LIBSPEC void cache_robot_labels(struct robot *robot);
 
 CORE_LIBSPEC void clear_robot_contents(struct robot *cur_robot);
 CORE_LIBSPEC void clear_robot_id(struct board *src_board, int id);
@@ -157,7 +159,6 @@ void prefix_mid_xy_var(struct world *mzx_world, int *mx, int *my,
  int robotx, int roboty, int width, int height);
 void prefix_first_xy_var(struct world *mzx_world, int *fx, int *fy,
  int robotx, int roboty, int width, int height);
-int fix_color(int color, int def);
 int restore_label(struct robot *cur_robot, char *label);
 int zap_label(struct robot *cur_robot, char *label);
 int next_param(char *ptr, int pos);
@@ -168,11 +169,15 @@ enum dir parse_param_dir(struct world *mzx_world, char *program);
 enum equality parse_param_eq(struct world *mzx_world, char *program);
 enum condition parse_param_cond(struct world *mzx_world, char *program,
  enum dir *direction);
+boolean is_robot_box_command(int cmd);
 void robot_box_display(struct world *mzx_world, char *program,
  char *label_storage, int id);
 void push_sensor(struct world *mzx_world, int id);
 void step_sensor(struct world *mzx_world, int id);
 int get_robot_id(struct board *src_board, const char *name);
+
+CORE_LIBSPEC void get_robot_position(struct robot *cur_robot, int *xpos,
+ int *ypos);
 
 static inline char *tr_msg(struct world *mzx_world, char *mesg, int id,
  char *buffer)
@@ -189,6 +194,8 @@ CORE_LIBSPEC void duplicate_scroll_direct(struct scroll *cur_scroll,
  struct scroll *copy_scroll);
 CORE_LIBSPEC void duplicate_sensor_direct(struct sensor *cur_sensor,
  struct sensor *copy_sensor);
+
+CORE_LIBSPEC int get_program_command_num(struct robot *cur_robot);
 
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC extern const int def_params[128];

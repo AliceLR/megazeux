@@ -4505,7 +4505,7 @@ void assemble_program(char *program_source, char **_bytecode,
     cmd_map = malloc(cmd_map_allocated * sizeof(struct command_mapping));
     cmd_map[0].real_line = 0;
     cmd_map[0].bc_pos = 0;
-    cmd_map[0].src_pos = 0;
+    cmd_map[0].src_pos = -1;
   }
 
   program_bytecode[0] = 0xFF;
@@ -5919,7 +5919,7 @@ char *legacy_convert_file(char *file_name, int *_disasm_length,
   return NULL;
 }
 
-char *legacy_convert_file_mem(char *src, int len, int *_disasm_length,
+char *legacy_convert_program(char *src, int len, int *_disasm_length,
  boolean print_ignores, int base)
 {
   if(len)

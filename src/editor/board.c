@@ -315,6 +315,10 @@ struct board *create_blank_board(struct editor_config_info *conf)
 
   cur_board->level_id[0] = 127;
 
+#ifdef DEBUG
+  cur_board->is_extram = false;
+#endif
+
   return cur_board;
 }
 

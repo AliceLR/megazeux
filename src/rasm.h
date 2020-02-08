@@ -27,6 +27,8 @@
 
 #include "data.h"
 
+#include <limits.h>
+
 // I really didn't want to have all this stuff in the header file, but exposing
 // tokens to the outside world dragged it all in.
 
@@ -72,7 +74,16 @@ enum arg_type
   ARG_TYPE_UNKNOWN            = (1 << 16),
 
   ARG_TYPE_IGNORE             = (1 << 30),
-  ARG_TYPE_FRAGMENT           = (1 << 31),
+
+  /**
+   * Hi, I'm GCC. Having (1 << 31) would be too easy, so I'll complain about
+   * that not being a constant integer expression. Lower the shift values so
+   * there aren't negative numbers? Guess what, now it's an unsigned enum!
+   * Think you can still get an unsigned enum with (1u << 31)? Nope, enum is
+   * restricted to the range of int and I'm going to complain about that too.
+   * This is what you have to do to get this value to work:
+   */
+  ARG_TYPE_FRAGMENT           = (int)(1u << 31)
 };
 
 enum arg_type_indexed
@@ -263,7 +274,7 @@ char *legacy_disassemble_program(char *program_bytecode, int bytecode_length,
  int *_disasm_length, boolean print_ignores, int base);
 char *legacy_convert_file(char *file_name, int *_disasm_length,
  boolean print_ignores, int base);
-char *legacy_convert_file_mem(char *src, int len, int *_disasm_length,
+char *legacy_convert_program(char *src, int len, int *_disasm_length,
  boolean print_ignores, int base);
 
 char *find_non_identifier_char(char *str);

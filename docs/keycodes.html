@@ -6,47 +6,73 @@
   <style>
    body
    {
-    /*width: 1260px;*/
+    /* The keyboard starts to visually break apart around ~824px. */
+    min-width: 832px;
     max-width: 1260px;
    }
+
+   /* Browsers that don't support flexboxes should ignore these settings and
+    * and use the floating divs. */
+   #keyboardcontainer
+   {
+    display: flex;
+    flex-flow: row-reverse;
+   }
+
+   #keyboardmaincontainer
+   {
+    /* Shrink within parent ^ */
+    flex-shrink: 3;
+    /* This div is also a separate flexbox */
+    display: flex;
+    flex-flow: column;
+   }
+
+   table, tbody, tr, td, div, p, b
+   {
+    /* Need this for the flex shrinking to work properly. */
+    min-width: 0px;
+    /* Need this for annotation superscript positioning to work properly. */
+    position: relative;
+   }
+
+   .navigation, .numpad, .capslock, .modifier, .enter, .backspace
+   {
+    /* Keys with lengthy text get smaller text. */
+    font-size: 95%;
+   }
+
+   span#capslocktext:before { content: "Caps\00a0Lock"; }
 
    table.keyboard
    {
     margin: 0px;
     border: 0px solid black;
+    border-spacing: 0px 0px;
     padding: 0px;
    }
-
    table.keyboard.navigation
    {
+    flex-shrink: 1;
     float: right;
-    border-spacing: 3px;
    }
    table.keyboard.numpad
    {
+    flex-shrink: 1;
     float: right;
-    border-spacing: 3px;
    }
-   /*
-   table.keyboard.main {
+   table.keyboard.key
+   {
+    margin-left: 8px;
    }
-   table.keyboard.key {
-   }
-   */
 
    table.keyboard td
    {
     width: 48px;
     height: 64px;
-    border-width: 1px 3px 6px 1px;
+    border-width: 0px 7px 1px 0px;
     border-style: solid;
-    border-color: black;
-    margin: 1px;
-    padding-top: 0px;
-    padding-bottom: 0px;
-
-    background-color: #EEF;
-    color: #007;
+    border-color: white;
    }
    table.keyboard .wide
    {
@@ -62,7 +88,33 @@
    }
    table.keyboard .spacebar
    {
-    width: 240px;
+    width: 244px;
+   }
+   table.keyboard .space
+   {
+    display: block;
+    width: 20px;
+    height: 16px;
+    margin: 0px;
+    border: 0px solid white;
+   }
+
+   table.keyboard div
+   {
+    display: block;
+    width: 100%;
+    height: 100%;
+    margin-right: -4px;
+    margin-left: -1px;
+    border-width: 1px 3px 6px 1px;
+    border-style: solid;
+    border-color: black;
+    padding: 1px;
+    padding-top: 0px;
+    padding-bottom: 0px;
+
+    background-color: #EEF;
+    color: #007;
    }
    table.keyboard .game
    {
@@ -91,16 +143,7 @@
     border-color: #EEE;
    }
 
-   table.keyboard .space
-   {
-    width: 23px;
-    height: 16px;
-    border: 0px solid white;
-    margin: 0px;
-    background-color: #FFF;
-   }
-
-   /* KEY_CODE */
+   /* PC XT (KEY_CODE) */
    table.keyboard td b
    {
     display: block;
@@ -108,7 +151,7 @@
     color: #585;
    }
 
-   /* KEY_PRESSED */
+   /* Internal (KEY_PRESSED) */
    table.keyboard td p
    {
     margin: 0px;
@@ -117,12 +160,37 @@
     color: #A5A;
    }
 
-   :before
+   /* Config file key name */
+   table.keyboard td span.keyname
    {
-    font-size: 70%;
-    margin-right: 4px;
-    vertical-align: super;
-    float: right;
+    display: none;
+    position: absolute;
+    left: -4px;
+    bottom: -20px;
+    background-color: #444;
+    color: white;
+    font-family: monospace;
+    text-align: center;
+    padding: 3px 5px;
+    border-radius: 5px;
+   }
+   table.keyboard td span.keyname.rhs
+   {
+    left: auto;
+    right: -6px;
+   }
+   table.keyboard td:hover span.keyname
+   {
+    display: inline-block;
+    z-index: 1;
+   }
+
+   div:before, b:before, p:before
+   {
+    font-size: 60%;
+    position: absolute;
+    right: 1px;
+    top: -1px;
    }
    .f12:before {
     content: "A";
@@ -168,24 +236,66 @@
     font-weight: bold;
     font-size: 85%;
    }
+
+   /* Scaling styles. */
+   @media (max-width: 1024px)
+   {
+    /* Need the normal width for the Fn row to line up usually,
+     * but for smaller screens these are just wasting space... */
+    table.keyboard .space { width: 4px; }
+
+    /* Also make the Caps Lock label waste less space. */
+    span#capslocktext:before { content: "CapsL."; }
+   }
+
+   /* IE10+ hacks. */
+   @media all and (-ms-high-contrast: none), (-ms-high-contrast: active)
+   {
+    /* Scaling is so broken it's easier to just force full width. */
+    body { width: 1280px; }
+   }
+
+   /* Edge 12+ hacks. */
+   @supports (-ms-ime-align:auto)
+   {
+    /* Edge won't scale the navigation/numpad tables properly, breaking
+     * scaling earlier than usual. */
+    body { min-width: 864px; }
+
+    /* It also displays the unicode chars as emoji for no reason. */
+    table.keyboard div { font-family: "Segoe UI Symbol"; font-size: 90%; }
+   }
+
+   /* Firefox hacks. */
+   @-moz-document url-prefix()
+   {
+    table.keyboard.key td
+    {
+     /* Firefox won't properly expand tds vertically to fit their contents. */
+     height: 72px;
+    }
+
+    table.keyboard .rowspan2hack
+    {
+     /* Firefox won't properly expand height:100% divs to fit rowspan=2. */
+     height: 138px;
+    }
+   }
   </style>
  </head>
  <body>
   <div>
    <h1>MegaZeux US Key-Mapping Guide</h1>
-   <h3>MegaZeux 2.91i &mdash; Lachesis 2010-2018</h2>
+   <h3>MegaZeux 2.92b &mdash; by Lachesis, 2010-2019</h2>
    <p>
-    This guide is current as of December 9th, 2018, and contains
-    updated warnings, annotations, and information for SDL 2.0.
-   </p>
-   <p>
-    On small displays the numpad will appear above the rest
-    of the keyboard. For a static full-size display, edit this
-    HTML file and remove /* and */ from the eighth line.
+    This guide is current as of September 23rd, 2019, and contains
+    updated warnings, annotations, and information.
    </p>
 
    <hr/>
   </div>
+
+  <div id="keyboardcontainer">
 
 
 <!-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++ -->
@@ -193,111 +303,184 @@
 
   <table class="keyboard numpad">
    <tr>
-    <td class="none">&nbsp;
-    </td>
-    <td class="none">&nbsp;
-    </td>
-    <td class="none">&nbsp;
-    </td>
-    <td class="none">&nbsp;
-    </td>
+    <td><div class="none">&nbsp;
+    </div></td>
+    <td><div class="none">&nbsp;
+    </div></td>
+    <td><div class="none">&nbsp;
+    </div></td>
+    <td><div class="none">&nbsp;
+    </div></td>
    </tr>
    <tr class="space">
    </tr>
    <tr>
-    <td class="bad">
-      NLock
+
+    <td>
+     <div class="bad numlock">
+      NumL.
       <b class="badkey">n/a</b>
       <p class="badkey">n/a</p>
+      <span class="keyname">key_numlock</span>
+     </div>
     </td>
-    <td class="warn">
+
+    <td>
+     <div class="warn">
       /
-      <b>53</p>
+      <b>53</b>
       <p>267</p>
+      <span class="keyname">key_kp_divide</span>
+     </div>
     </td>
-    <td class="warn">
+
+    <td>
+     <div class="warn">
       *
-      <b>55</p>
+      <b>55</b>
       <p>268</p>
+      <span class="keyname rhs">key_kp_multiply</span>
+     </div>
     </td>
-    <td class="warn">
+
+    <td>
+     <div class="warn">
       -
-      <b>74</p>
+      <b>74</b>
       <p>269</p>
+      <span class="keyname rhs">key_kp_minus</span>
+     </div>
     </td>
+
    </tr>
    <tr>
-    <td class="warn">
-      Home7
+
+    <td>
+     <div class="warn">
+      7<sup> Home</sup>
       <b>71</b>
       <p>263</p>
+      <span class="keyname">key_kp7</span>
+     </div>
     </td>
-    <td class="warn">
-      Up8
+
+    <td>
+     <div class="warn">
+       8<sup> &#x25b2;</sup>
       <b>72</b>
       <p>264</p>
+      <span class="keyname">key_kp8</span>
+     </div>
     </td>
-    <td class="warn">
-      PgUp7
+
+    <td>
+     <div class="warn">
+      9<sup> PgUp</sup>
       <b>73</b>
       <p>265</p>
+      <span class="keyname">key_kp9</span>
+     </div>
     </td>
-    <td rowspan="2" class="warn">
+
+    <td rowspan="2" class="rowspan2hack">
+     <div class="warn">
       +
       <b>78</b>
       <p>270</p>
+      <span class="keyname rhs">key_kp_plus</span>
+     </div>
     </td>
+
    </tr>
    <tr>
-    <td class="warn">
-      Left4
+
+    <td>
+     <div class="warn">
+       4<sup> &#x25c0;</sup>
       <b>75</b>
       <p>260</p>
+      <span class="keyname">key_kp4</span>
+     </div>
     </td>
-    <td class="warn">
-      Num5
+
+    <td>
+     <div class="warn">
+      5
       <b>76</b>
       <p>261</p>
+      <span class="keyname">key_kp5</span>
+     </div>
     </td>
-    <td class="warn">
-      Right6
+
+    <td>
+     <div class="warn">
+       6<sup> &#x25b6;</sup>
       <b>77</b>
       <p>262</p>
+      <span class="keyname">key_kp6</span>
+     </div>
     </td>
+
    </tr>
    <tr>
-    <td class="warn">
-      End1
+
+    <td>
+     <div class="warn">
+      1<sup> End</sup>
       <b>79</b>
       <p>257</p>
+      <span class="keyname">key_kp1</span>
+     </div>
     </td>
-    <td class="warn">
-      Down2
+
+    <td>
+     <div class="warn">
+       2<sup> &#x25bc;</sup>
       <b>80</b>
       <p>258</p>
+      <span class="keyname">key_kp2</span>
+     </div>
     </td>
-    <td class="warn">
-      PgDn3
+
+    <td>
+     <div class="warn">
+      3<sup> PgDn</sup>
       <b>81</b>
       <p>259</p>
+      <span class="keyname">key_kp3</span>
+     </div>
     </td>
-    <td rowspan="2" class="warn">
+
+    <td rowspan="2" class="rowspan2hack">
+     <div class="warn">
       Enter
       <b>28</b>
       <p>271</p>
+      <span class="keyname rhs">key_kp_enter</span>
+     </div>
     </td>
+
    </tr>
    <tr>
-    <td colspan="2" class="warn">
-      Insert 0
+
+    <td colspan="2">
+     <div class="warn">
+      0<sup> Insert</sup>
       <b>82</b>
       <p>256</p>
+      <span class="keyname">key_kp0</span>
+     </div>
     </td>
-    <td class="warn">
-      Del .
+
+    <td>
+     <div class="warn">
+      .<sup>Delete</sup>
       <b>83</b>
       <p>266</p>
+      <span class="keyname">key_kp_period</span>
+     </div>
     </td>
+
    </tr>
    <tr class="space">
    </tr>
@@ -309,103 +492,168 @@
 
   <table class="keyboard navigation">
    <tr>
-    <td class="bad">
+
+    <td>
+     <div class="bad">
       SysRq
       <b class="badkey">n/a</b>
       <p class="badkey">1</p>
+      <span class="keyname">key_sysreq</span>
+     </div>
     </td>
-    <td class="warn">
-      ScLock
+
+    <td>
+     <div class="warn">
+      Scr.L.
       <b>70</b>
       <p>302</p>
+      <span class="keyname">key_scrolllock</span>
+     </div>
     </td>
-    <td class="warn">
+
+    <td>
+     <div class="warn">
       Break
       <b>197</b>
       <p>318</p>
+      <span class="keyname">key_break</span>
+     </div>
     </td>
+
     <td class="space">
     </td>
    </tr>
    <tr class="space">
    </tr>
    <tr>
-    <td class="game">
+
+    <td>
+     <div class="game">
       Insert
       <b>82</b>
       <p>277</p>
+      <span class="keyname">key_insert</span>
+     </div>
     </td>
-    <td class="warn">
+
+    <td>
+     <div class="warn">
       Home
       <b>71</b>
       <p>278</p>
+      <span class="keyname">key_home</span>
+     </div>
     </td>
-    <td class="warn">
-      PageUp
+
+    <td>
+     <div class="warn">
+      PgUp
       <b>73</b>
       <p>280</p>
+      <span class="keyname">key_pageup</span>
+     </div>
     </td>
+
     <td class="space">
     </td>
    </tr>
    <tr>
-    <td class="game">
+
+    <td>
+     <div class="game">
       Delete
       <b>83</b>
       <p>127</p>
+      <span class="keyname">key_delete</span>
+     </div>
     </td>
-    <td class="warn">
+
+    <td>
+     <div class="warn">
       End
       <b>79</b>
       <p>279</p>
+      <span class="keyname">key_end</span>
+     </div>
     </td>
-    <td class="warn">
-      PageDn
+
+    <td>
+     <div class="warn">
+      PgDn
       <b>81</b>
       <p>281</p>
+      <span class="keyname">key_pagedown</span>
+     </div>
     </td>
+
     <td class="space">
     </td>
    </tr>
    <tr>
-    <td class="none">&nbsp;
-    </td>
-    <td class="none">&nbsp;
-    </td>
-    <td class="none">&nbsp;
-    </td>
+
+    <td><div class="none">&nbsp;
+    </div></td>
+    <td><div class="none">&nbsp;
+    </div></td>
+    <td><div class="none">&nbsp;
+    </div></td>
+
     <td class="space">
     </td>
    </tr>
    <tr>
-    <td class="none">&nbsp;
-    </td>
-    <td class="game">
-      &#x2191;
+
+    <td><div class="none">&nbsp;
+    </div></td>
+
+    <td>
+     <div class="game">
+      <!-- &#x2191; -->
+      &#x25b2;
       <b>72</b>
       <p>273</p>
+      <span class="keyname">key_up</span>
+     </div>
     </td>
-    <td class="none">&nbsp;
-    </td>
+
+    <td><div class="none">&nbsp;
+    </div></td>
+
     <td class="space">
     </td>
    </tr>
    <tr>
-    <td class="game">
-      &#x2190;
+
+    <td>
+     <div class="game">
+      <!-- &#x2190; -->
+      &#x25c0;
       <b>75</b>
       <p>276</p>
+      <span class="keyname">key_left</span>
+     </div>
     </td>
-    <td class="game">
-      &#x2193;
+
+    <td>
+     <div class="game">
+      <!-- &#x2193; -->
+      &#x25bc;
       <b>80</b>
       <p>274</p>
+      <span class="keyname">key_down</span>
+     </div>
     </td>
-    <td class="game">
-      &#x2192;
+
+    <td>
+     <div class="game">
+      <!-- &#x2192; -->
+      &#x25b6;
       <b>77</b>
       <p>275</p>
+      <span class="keyname">key_right</span>
+     </div>
     </td>
+
     <td class="space">
     </td>
    </tr>
@@ -417,464 +665,785 @@
 <!-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++ -->
 
 
+  <div id="keyboardmaincontainer">
+
   <table class="keyboard main">
    <tr>
-    <td class="game">
+
+    <td>
+     <div class="game">
       Esc
       <b>1</b>
       <p>27</p>
+      <span class="keyname">key_escape</span>
+     </div>
     </td>
+
     <td class="space">
     </td>
-    <td class="game">
+
+    <td>
+     <div class="game">
       F1
       <b>59</b>
       <p>282</p>
+      <span class="keyname">key_f1</span>
+     </div>
     </td>
-    <td class="game">
+
+    <td>
+     <div class="game">
       F2
       <b>60</b>
       <p>283</p>
+      <span class="keyname">key_f2</span>
+     </div>
     </td>
-    <td class="game">
+
+    <td>
+     <div class="game">
       F3
       <b>61</b>
       <p>284</p>
+      <span class="keyname">key_f3</span>
+     </div>
     </td>
-    <td class="game">
+
+    <td>
+     <div class="game">
       F4
       <b>62</b>
       <p>285</p>
+      <span class="keyname">key_f4</span>
+     </div>
     </td>
+
     <td class="space">
     </td>
-    <td class="game">
+
+    <td>
+     <div class="game">
       F5
       <b>63</b>
       <p>286</p>
+      <span class="keyname">key_f5</span>
+     </div>
     </td>
-    <td class="test">
+
+    <td>
+     <div class="test">
       F6
       <b>64</b>
       <p>287</p>
+      <span class="keyname">key_f6</span>
+     </div>
     </td>
-    <td class="test">
+
+    <td>
+     <div class="test">
       F7
       <b>65</b>
       <p>288</p>
+      <span class="keyname">key_f7</span>
+     </div>
     </td>
-    <td class="test">
+
+    <td>
+     <div class="test">
       F8
       <b>66</b>
       <p>289</p>
+      <span class="keyname">key_f8</span>
+     </div>
     </td>
+
     <td class="space">
     </td>
-    <td class="game">
+
+    <td>
+     <div class="game">
       F9
       <b>67</b>
       <p>290</p>
+      <span class="keyname">key_f9</span>
+     </div>
     </td>
-    <td class="game">
+
+    <td>
+     <div class="game">
       F10
       <b>68</b>
       <p>291</p>
+      <span class="keyname">key_f10</span>
+     </div>
     </td>
-    <td class="test">
+
+    <td>
+     <div class="test">
       F11
       <b>87</b>
       <p>292</p>
+      <span class="keyname">key_f11</span>
+     </div>
     </td>
-    <td class="game f12">
-      F12<!-- <sup class="f12">&nbsp;</sup> -->
+
+    <td>
+     <div class="game f12">
+      F12
       <b>88</b>
       <p>293</p>
+      <span class="keyname">key_f12</span>
+     </div>
     </td>
+
     <td class="space">
     </td>
    </tr>
-
    <tr class="space">
    </tr>
   </table>
-
   <table class="keyboard main">
    <tr>
-    <td class="warn">
+
+    <td>
+     <div class="warn">
       `
       <b>41</b>
       <p>96</p>
+      <span class="keyname">key_backquote</span>
+     </div>
     </td>
+
     <td>
+     <div>
       1
       <b>2</b>
       <p>49</p>
+      <span class="keyname">key_1</span>
+     </div>
     </td>
+
     <td>
+     <div>
       2
       <b>3</b>
       <p>50</p>
+      <span class="keyname">key_2</span>
+     </div>
     </td>
+
     <td>
+     <div>
       3
       <b>4</b>
       <p>51</p>
+      <span class="keyname">key_3</span>
+     </div>
     </td>
+
     <td>
+     <div>
       4
       <b>5</b>
       <p>52</p>
+      <span class="keyname">key_4</span>
+     </div>
     </td>
+
     <td>
+     <div>
       5
       <b>6</b>
       <p>53</p>
+      <span class="keyname">key_5</span>
+     </div>
     </td>
+
     <td>
+     <div>
       6
       <b>7</b>
       <p>54</p>
+      <span class="keyname">key_6</span>
+     </div>
     </td>
+
     <td>
+     <div>
       7
       <b>8</b>
       <p>55</p>
+      <span class="keyname">key_7</span>
+     </div>
     </td>
+
     <td>
+     <div>
       8
       <b>9</b>
       <p>56</p>
+      <span class="keyname">key_8</span>
+     </div>
     </td>
+
     <td>
+     <div>
       9
       <b>10</b>
       <p>57</p>
+      <span class="keyname">key_9</span>
+     </div>
     </td>
+
     <td>
+     <div>
       0
       <b>11</b>
       <p>48</p>
+      <span class="keyname">key_0</span>
+     </div>
     </td>
+
     <td>
+     <div>
       -
       <b>12</b>
       <p>45</p>
+      <span class="keyname">key_minus</span>
+     </div>
     </td>
+
     <td>
+     <div>
       =
       <b>13</b>
       <p>61</p>
+      <span class="keyname">key_equals</span>
+     </div>
     </td>
+
     <td class="wide">
-      BackSp
+     <div class="backspace">
+      BackSp.
       <b>14</b>
       <p>8</p>
+      <span class="keyname">key_backspace</span>
+     </div>
     </td>
+
     <td class="space">
     </td>
    </tr>
   </table>
-
   <table class="keyboard main">
    <tr>
+
     <td class="wide">
+     <div>
       Tab
       <b>15</b>
       <p>9</p>
+      <span class="keyname">key_tab</span>
+     </div>
     </td>
+
     <td>
+     <div>
       Q
       <b>16</b>
       <p>113</p>
+      <span class="keyname">key_q</span>
+     </div>
     </td>
+
     <td>
+     <div>
       W
       <b>17</b>
       <p>119</p>
+      <span class="keyname">key_w</span>
+     </div>
     </td>
+
     <td>
+     <div>
       E
       <b>18</b>
       <p>101</p>
+      <span class="keyname">key_e</span>
+     </div>
     </td>
+
     <td>
+     <div>
       R
       <b>19</b>
       <p>114</p>
+      <span class="keyname">key_r</span>
+     </div>
     </td>
+
     <td>
+     <div>
       T
       <b>20</b>
       <p>116</p>
+      <span class="keyname">key_t</span>
+     </div>
     </td>
+
     <td>
+     <div>
       Y
       <b>21</b>
       <p>121</p>
+      <span class="keyname">key_y</span>
+     </div>
     </td>
+
     <td>
+     <div>
       U
       <b>22</b>
       <p>117</p>
+      <span class="keyname">key_u</span>
+     </div>
     </td>
+
     <td>
+     <div>
       I
       <b>23</b>
       <p>105</p>
+      <span class="keyname">key_i</span>
+     </div>
     </td>
+
     <td>
+     <div>
       O
       <b>24</b>
       <p>111</p>
+      <span class="keyname">key_o</span>
+     </div>
     </td>
+
     <td>
+     <div>
       P
       <b>25</b>
       <p>112</p>
+      <span class="keyname">key_p</span>
+     </div>
     </td>
+
     <td>
+     <div>
       [
       <b>26</b>
       <p>91</p>
+      <span class="keyname">key_leftbracket</span>
+     </div>
     </td>
+
     <td>
+     <div>
       ]
       <b>27</b>
       <p>93</p>
+      <span class="keyname">key_rightbracket</span>
+     </div>
     </td>
-    <td class="warn">
+
+    <td>
+     <div class="warn">
       \
       <b>43</b>
       <p>92</p>
+      <span class="keyname">key_backslash</span>
+     </div>
     </td>
+
     <td class="space">
     </td>
    </tr>
   </table>
-
   <table class="keyboard main">
    <tr>
-    <td class="extrawide capslock">
-      Caps Lock
+
+    <td class="extrawide">
+     <div class="capslock">
+      <span id="capslocktext"></span>
       <b>58</b>
       <p>301</p>
+      <span class="keyname">key_capslock</span>
+     </div>
     </td>
+
     <td>
+     <div>
       A
       <b>30</b>
       <p>97</p>
+      <span class="keyname">key_a</span>
+     </div>
     </td>
+
     <td>
+     <div>
       S
       <b>31</b>
       <p>115</p>
+      <span class="keyname">key_s</span>
+     </div>
     </td>
+
     <td>
+     <div>
       D
       <b>32</b>
       <p>100</p>
+      <span class="keyname">key_d</span>
+     </div>
     </td>
+
     <td>
+     <div>
       F
       <b>33</b>
       <p>102</p>
+      <span class="keyname">key_f</span>
+     </div>
     </td>
+
     <td>
+     <div>
       G
       <b>34</b>
       <p>103</p>
+      <span class="keyname">key_g</span>
+     </div>
     </td>
+
     <td>
+     <div>
       H
       <b>35</b>
       <p>104</p>
+      <span class="keyname">key_h</span>
+     </div>
     </td>
+
     <td>
+     <div>
       J
       <b>36</b>
       <p>106</p>
+      <span class="keyname">key_j</span>
+     </div>
     </td>
+
     <td>
+     <div>
       K
       <b>37</b>
       <p>107</p>
+      <span class="keyname">key_k</span>
+     </div>
     </td>
+
     <td>
+     <div>
       L
       <b>38</b>
       <p>108</p>
+      <span class="keyname">key_l</span>
+     </div>
     </td>
+
     <td>
+     <div>
       ;
       <b>39</b>
       <p>59</p>
+      <span class="keyname">key_semicolon</span>
+     </div>
     </td>
+
     <td>
+     <div>
       '
       <b>40</b>
       <p>39</p>
+      <span class="keyname">key_quote</span>
+     </div>
     </td>
-    <td class="extrawide game">
+
+    <td class="extrawide">
+     <div class="game enter">
       Enter
       <b>28</b>
       <p>13</p>
+      <span class="keyname">key_return</span>
+     </div>
     </td>
+
     <td class="space">
     </td>
    </tr>
   </table>
-
   <table class="keyboard main">
    <tr>
-    <td class="double modifier">
-      L. Shift
+
+    <td class="double">
+     <div class="modifier">
+      L.&nbsp;Shift
       <b>42</b>
       <p>304</p>
+      <span class="keyname">key_lshift</span>
+     </div>
     </td>
+
     <td>
+     <div>
       Z
       <b>44</b>
       <p>122</p>
+      <span class="keyname">key_z</span>
+     </div>
     </td>
+
     <td>
+     <div>
       X
       <b>45</b>
       <p>120</p>
+      <span class="keyname">key_x</span>
+     </div>
     </td>
+
     <td>
+     <div>
       C
       <b>46</b>
       <p>99</p>
+      <span class="keyname">key_c</span>
+     </div>
     </td>
+
     <td>
+     <div>
       V
       <b>47</b>
       <p>118</p>
+      <span class="keyname">key_v</span>
+     </div>
     </td>
+
     <td>
+     <div>
       B
       <b>48</b>
       <p>98</p>
+      <span class="keyname">key_b</span>
+     </div>
     </td>
+
     <td>
+     <div>
       N
       <b>49</b>
       <p>110</p>
+      <span class="keyname">key_n</span>
+     </div>
     </td>
+
     <td>
+     <div>
       M
       <b>50</b>
       <p>109</p>
+      <span class="keyname">key_m</span>
+     </div>
     </td>
+
     <td>
+     <div>
       ,
       <b>51</b>
       <p>44</p>
+      <span class="keyname">key_comma</span>
+     </div>
     </td>
+
     <td>
+     <div>
       .
       <b>52</b>
       <p>46</p>
+      <span class="keyname">key_period</span>
+     </div>
     </td>
+
     <td>
+     <div>
       /
       <b>53</b>
       <p>47</p>
+      <span class="keyname">key_slash</span>
+     </div>
     </td>
-    <td class="double modifier">
-      R. Shift
+
+    <td class="double">
+     <div class="modifier">
+      R.&nbsp;Shift
       <b>54</b>
       <p>303</p>
+      <span class="keyname">key_rshift</span>
+     </div>
     </td>
+
     <td class="space">&nbsp;
     </td>
    </tr>
   </table>
-
   <table class="keyboard main">
    <tr>
-    <td class="wide modifier">
-      L. Ctrl
+
+    <td class="wide">
+     <div class="modifier">
+      L.&nbsp;Ctrl
       <b>29</b>
       <p>306</p>
+      <span class="keyname">key_lctrl</span>
+     </div>
     </td>
-    <td class="wide warn modifier">
-      L. Win
+
+    <td class="wide">
+     <div class="warn modifier">
+      L.&nbsp;Win
       <b>91</b>
       <p>311</p>
+      <span class="keyname">key_lsuper</span>
+     </div>
     </td>
-    <td class="wide modifier">
-      L. Alt
+
+    <td class="wide">
+     <div class="modifier">
+      L.&nbsp;Alt
       <b>56</b>
       <p>308</p>
+      <span class="keyname">key_lalt</span>
+     </div>
     </td>
-    <td class="spacebar">
+
+    <td class="spacebar"><div>
       Space
       <b>57</b>
       <p>32</p>
+      <span class="keyname">key_space</span>
+     </div>
     </td>
-    <td class="wide modifier">
-      R. Alt
+
+    <td class="wide">
+     <div class="modifier">
+      R.&nbsp;Alt
       <b>56</b>
       <p>307</p>
+      <span class="keyname">key_ralt</span>
+     </div>
     </td>
-    <td class="wide warn modifier">
-      R. Win
+
+    <td class="wide">
+     <div class="warn modifier">
+      R.&nbsp;Win
       <b>92</b>
       <p>312</p>
+      <span class="keyname">key_rsuper</span>
+     </div>
     </td>
-    <td class="wide bad">
-      R. Click
+
+    <td class="wide">
+     <div class="bad">
+      R.&nbsp;Click
       <b class="badkey">n/a</b>
       <p class="badkey">1</p>
+      <span class="keyname">key_menu</span>
+     </div>
     </td>
-    <td class="wide modifier">
-      R. Ctrl
+
+    <td class="wide">
+     <div class="modifier">
+      R.&nbsp;Ctrl
       <b>29</b>
       <p>305</p>
+      <span class="keyname">key_rctrl</span>
+     </div>
     </td>
+
     <td class="space">&nbsp;
     </td>
    </tr>
    <tr class="space">
    </tr>
   </table>
+
+  </div> <!-- #keyboardmaincontainer -->
 
 
 <!-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++ -->
 
 
+  </div> <!-- #keyboardcontainer -->
+
   <table class="keyboard key">
    <tr>
-    <td class="spacebar none">
-     Key:
-     <b>key_code / key(n)</b>
-     <p>key_pressed</p>
+    <td class="spacebar">
+     <div class="none">
+      Key:
+      <b>key_code / key(n) <span style="font-size: 75%">[PC XT]</span></b>
+      <p>key_pressed <span style="font-size: 75%">[internal]</span></p>
+      <i style="display: block; text-align: center">(hover: config file key name)</i>
+      <span class="keyname">
+       Key names can be used instead of key_pressed numbers in the config file.
+       To get the config file name for a key, hover over it.
+      </span>
+     </div>
     </td>
     <td class="space">
     </td>
     <td class="double">
+     <div>
       Normal key&mdash;always available for use.
+     </div>
     </td>
     <td class="space">
     </td>
-    <td class="double game">
+    <td class="double">
+     <div class="game">
       Game key&mdash;can be disabled via Robotic or other means.
+     </div>
     </td>
     <td class="space">
     </td>
-    <td class="double test">
+    <td class="double">
+     <div class="test">
       Debug key&mdash;has a unique function only while testing.
+     </div>
     </td>
     <td class="space">
     </td>
-    <td class="double warn">
-     This key may be missing between keyboards.
+    <td class="double">
+     <div class="warn">
+      This key may be missing between keyboards.
+     </div>
     </td>
     <td class="space">
     </td>
-    <td class="double bad">
-     Unusable key&mdash;can not or should not be used ever.
+    <td class="double">
+     <div class="bad">
+      Unusable key&mdash;can not or should not be used ever.
+     </div>
     </td>
    </tr>
   </table>

@@ -431,7 +431,12 @@ static void update_player_input(struct world *mzx_world)
       mzx_world->key_left_delay = key_left_delay + 1;
   }
 
-  else
+  // Reset timers when all of the movement keys are released. Some games rely
+  // on this persisting when locking the player, e.g. Brotherhood periodically
+  // locks the player when moving in water.
+  // NOTE: the pre-port behavior was to reset these on individual key releases.
+  // From user feedback, this behavior generally seems preferred.
+  if(!up_pressed && !down_pressed && !right_pressed && !left_pressed)
   {
     mzx_world->key_up_delay = 0;
     mzx_world->key_down_delay = 0;
@@ -819,7 +824,7 @@ static void draw_message(struct world *mzx_world)
  * Draw the active world.
  */
 
-void draw_world(context *ctx, boolean is_title)
+boolean draw_world(context *ctx, boolean is_title)
 {
   struct world *mzx_world = ctx->world;
   struct board *cur_board = mzx_world->current_board;
@@ -837,7 +842,12 @@ void draw_world(context *ctx, boolean is_title)
   // the Bard) and probably in other places so we have to keep it around
   // for compatibility.
   if(mzx_world->target_where == TARGET_TELEPORT)
-    return;
+  {
+    // This is passed to the main loop and will prevent update_screen() from
+    // being executed. Some games, such as Thanatos Insignia, set the color
+    // intensity before a teleport and rely on it not taking immediately.
+    return false;
+  }
 
   blank_layers();
 
@@ -910,6 +920,7 @@ void draw_world(context *ctx, boolean is_title)
     draw_debug_box(mzx_world, 60, 19, mzx_world->player_x,
      mzx_world->player_y, 1);
   }
+  return true;
 }
 
 /**

@@ -26,6 +26,7 @@
 #include "audio.h"
 #include "audio_modplug.h"
 #include "ext.h"
+#include "gdm2s3m.h"
 #include "sampled_stream.h"
 
 #include "../const.h"

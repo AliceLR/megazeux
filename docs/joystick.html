@@ -1,0 +1,1686 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>MegaZeux Joystick Support</title>
+
+  <style>
+    #container
+    {
+      width: 800px;
+      margin: auto;
+      padding: 0px 24px;
+    }
+
+    header, section
+    {
+      margin: 8px;
+      margin-bottom: 16px;
+    }
+
+    header, section.contents
+    {
+      padding: 16px;
+    }
+
+    section.main
+    {
+      padding: 16px;
+      padding-bottom: 96px;
+    }
+
+    section.inner
+    {
+      background-color: #F4F4F4;
+      border-radius: 5px;
+      padding: 4px 24px 16px;
+    }
+
+    code
+    {
+      background-color: #CCC;
+      border-radius: 3px;
+      padding: 1px 4px;
+      font-weight: bold;
+    }
+
+    code.example
+    {
+      display: block;
+      background-color: #555;
+      font-size: .95em;
+      color: #fff;
+      margin: 24px;
+      padding: 0px 32px 16px;
+      white-space: pre-line;
+    }
+
+    div.image-wrapper
+    {
+      margin: 16px;
+    }
+
+    table
+    {
+      width: 100%;
+      margin: 24px 2px 40px;
+      border: 1px solid #aaa;
+    }
+
+    td
+    {
+      padding: 1px 10px;
+      border: 4px solid transparent;
+    }
+
+    thead td
+    {
+      border-bottom: 2px solid #aaa;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+<div id="container">
+  <header>
+    <h1>MegaZeux Joystick Support Guide</h1>
+    <h3>MegaZeux 2.92b &mdash; September 23rd, 2019</h3>
+    <p>
+      This guide contains all current information for joystick mapping and
+      Robotic support for using joysticks.
+    </p>
+  </header>
+
+  <hr>
+
+  <section class="contents">
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#info">General Info</a></li>
+      <ol type="i">
+        <li><a href="#info-layout">A typical controller layout</a></li>
+        <li><a href="#info-actions">List of available actions</a></li>
+      </ol>
+      <li><a href="#config">Config Usage and Examples</a></li>
+      <ol type="i">
+        <li><a href="#config-examples">Examples for specific games</a></li>
+        <li><a href="#config-sdl">Adding/modifying controller support</a></li>
+        <li><a href="#config-legacy">Config options in versions prior to 2.92</a></li>
+      </ol>
+      <li><a href="#robotic">Robotic Usage and Examples</a></li>
+      <li><a href="#layouts">Controller Layouts for Console Ports</a></li>
+      <ol type="i">
+        <li><a href="#layout-nds">NDS and 3DS</a></li>
+        <li><a href="#layout-psp">PSP</a></li>
+        <li><a href="#layout-switch">Switch</a></li>
+        <li><a href="#layout-wii">Wii</a></li>
+        <li><a href="#layout-gp2x">GP2X</a></li>
+      </ol>
+      <li><a href="#license">License</a></li>
+    </ol>
+  </section>
+
+  <hr>
+
+  <section id="info" class="main">
+    <h2>General Info</h2>
+    <p>
+      Joystick support in MegaZeux is primarily handled through abstracted
+      buttons and axes called <i>actions</i>. These actions correspond primarily
+      to XInput controls in both name and general physical location on a
+      controller. Actions can interact directly with the UI elements of MegaZeux
+      and may be used by MegaZeux games.
+    </p>
+
+    <p>
+      Actions can be used by games in two ways.
+
+      The simplest method is to bind a key to a given action via a game config
+      file (see <a href="#examples-config">Config Usage and Examples</a>).
+      When the joystick action is pressed/released in game, MegaZeux will
+      simulate the press/release of the bound key. Each action has a default
+      game key bound to it initially (see <a href="#info-actions">the list of
+      available actions</a> below).
+
+      Alternatively, the simulated key behavior can be disabled through Robotic
+      and the pressed/released status of an action may be read directly with
+      a counter (see <a href="#examples-robotic">Robotic Usage and Examples</a>).
+    </p>
+
+    <section id="info-layout" class="inner">
+      <h3>A Typical Controller Layout</h3>
+      <p id="info-layout">
+        This figure shows most available actions and a typical placement of them
+        on controllers for most platforms:
+      </p>
+
+      <div class="image-wrapper">
+      <svg width="640" height="400">
+        <style>
+          .label { font: bold 16px monospace; }
+        </style>
+        <svg x="1%" y="5%" width="98%" height="95%" viewbox="0 0 200 125">
+          <path fill="none" stroke="darkgrey" stroke-width="1.5"
+            d="M 25 13  H50  Q 50 15 54 15  H146   Q 150 15 150 13  H175
+               C 235 125 175 160 150 80
+               C 142  89 128  89 120 80
+               H80
+               C 72  89  58  89 50 80
+               C 25 160 -35 125 25 13 Z"/>
+
+          <svg x="6%" y="22%" width="24%" height="24%" viewbox="0 0 100 100">
+            <path fill="lightgrey" stroke="#222" stroke-width="4"
+              d="M37  5 H63 V28 L50 42 L37 28 Z
+                  M 5 37 V63 H28 L42 50 L28 37 Z
+                  M37 95 H63 V72 L50 58 L37 72 Z
+                  M95 37 V63 H72 L58 50 L72 37 Z" />
+          </svg>
+
+          <circle cx="100" cy="67.5" r="5"
+            fill="none" stroke="darkgrey" stroke-width="1"/>
+
+          <circle cx="65" cy="68" r="8%"
+            fill="none" stroke="darkgrey" stroke-width="1"/>
+          <circle cx="135" cy="68" r="8%"
+            fill="none" stroke="darkgrey" stroke-width="1"/>
+          <circle cx="65" cy="68" r="6.5%"
+            fill="lightgrey" stroke="#222" stroke-width="1.25"/>
+          <circle cx="135" cy="68" r="6.5%"
+            fill="lightgrey" stroke="#222" stroke-width="1.25"/>
+
+          <circle cx="163" cy="30" r="5"
+            fill="#ced" stroke="#222" stroke-width="1"/>
+          <circle cx="150" cy="43" r="5"
+            fill="#ece" stroke="#222" stroke-width="1"/>
+          <circle cx="176" cy="43" r="5"
+            fill="#ecc" stroke="#222" stroke-width="1"/>
+          <circle cx="163" cy="56" r="5"
+            fill="#cce" stroke="#222" stroke-width="1"/>
+
+          <rect x="75" y="35" width="8" height="5" rx="1"
+            fill="lightgrey" stroke="#222" stroke-width="1"/>
+          <rect x="117" y="35" width="8" height="5" rx="1"
+            fill="lightgrey" stroke="#222" stroke-width="1"/>
+
+          <path fill="lightgrey" stroke="#222" stroke-width="1"
+            d="M 26 12  H48  V10  Q 37 8 26 10  Z"/>
+          <path fill="lightgrey" stroke="#222" stroke-width="1"
+            d="M 152 12  H173  V10  Q 163 8 152 10  Z"/>
+        </svg>
+
+        <text x="14%" y="8%" class="label">lshoulder</text>
+        <text x="74%" y="8%" class="label">rshoulder</text>
+        <text x="30.5%" y="5%" class="label">ltrigger</text>
+        <text x="59.5%" y="5%" class="label">rtrigger</text>
+        <text x="30.5%" y="10%" class="label">axis_ltrigger</text>
+        <text x="52.5%" y="10%" class="label">axis_rtrigger</text>
+        <line x1="29.5%" x2="28.5%" y1="11.5%" y2="14%"
+          stroke="black" stroke-width="2.5"/>
+        <line x1="70.5%" x2="71.5%" y1="11.5%" y2="14%"
+          stroke="black" stroke-width="2.5"/>
+
+        <text x="18.25%" y="24%" class="label">up</text>
+        <text x="5.75%" y="38.5%" class="label">left</text>
+        <text x="27.5%" y="38.5%" class="label">right</text>
+        <text x="16.75%" y="53%" class="label">down</text>
+
+        <text x="36%" y="29%" class="label">select</text>
+        <text x="56.5%" y="29%" class="label">start</text>
+
+        <text x="79%" y="22%" class="label">y</text>
+        <text x="73%" y="32%" class="label">x</text>
+        <text x="85.5%" y="32%" class="label">b</text>
+        <text x="79%" y="42%" class="label">a</text>
+
+        <text x="34.5%" y="80%" class="label">axis_lx</text>
+        <text x="34.5%" y="85%" class="label">axis_ly</text>
+        <text x="35%" y="90%" class="label">lstick</text>
+
+        <text x="55.5%" y="80%" class="label">axis_rx</text>
+        <text x="55.5%" y="85%" class="label">axis_ry</text>
+        <text x="56%" y="90%" class="label">rstick</text>
+
+        <line x1="37%" x2="35%" y1="76%" y2="68%"
+          stroke="black" stroke-width="2.5"/>
+        <line x1="62%" x2="64%" y1="76%" y2="68%"
+          stroke="black" stroke-width="2.5"/>
+      </svg>
+      </div>
+
+      <p>
+        NOTE: Not all controllers have the same layout or support all of the
+        same controls; the default layout for a given controller depends on the
+        mapping provided by SDL or gamecontrollerdb.txt, if any. See
+        <a href="#config-sdl">Adding/modifying controller support</a> for more
+        info on getting new controllers to work in SDL and tweaking existing
+        controllers.
+      </p>
+    </section>
+
+    <section id="info-actions" class="inner">
+      <h3>List of Available Actions</h3>
+      <p>
+        The available joystick actions, their UI behavior, and their default
+        gameplay keybindings are:
+      </p>
+      <table>
+        <thead>
+          <td>Name</td>
+          <td>Title behavior</td>
+          <td>Window behavior</td>
+          <td>Default gameplay key</td>
+        </thead>
+
+        <tr>
+          <td><code>up</code></td>
+          <td></td>
+          <td>Element/cursor up</td>
+          <td><code>key_up</code> (movement)</td>
+        </tr>
+
+        <tr>
+          <td><code>down</code></td>
+          <td></td>
+          <td>Element/cursor down</td>
+          <td><code>key_down</code> (movement)</td>
+        </tr>
+
+        <tr>
+          <td><code>left</code></td>
+          <td></td>
+          <td>Element/cursor left</td>
+          <td><code>key_left</code> (movement)</td>
+        </tr>
+
+        <tr>
+          <td><code>right</code></td>
+          <td></td>
+          <td>Element/cursor right</td>
+          <td><code>key_right</code> (movement)</td>
+        </tr>
+
+        <tr>
+          <td><code>a</code></td>
+          <td>Play game</td>
+          <td>Select</td>
+          <td><code>key_space</code> (shoot)</td>
+        </tr>
+
+        <tr>
+          <td><code>b</code></td>
+          <td>Main menu</td>
+          <td>Cancel</td>
+          <td><code>key_delete</code> (bomb)</td>
+        </tr>
+
+        <tr>
+          <td><code>x</code></td>
+          <td>Load world</td>
+          <td>Select char (text)</td>
+          <td><code>key_return</code> (game menu)</td>
+        </tr>
+
+        <tr>
+          <td><code>y</code></td>
+          <td>Reload save</td>
+          <td>Backspace (text)</td>
+          <td><code>key_s</code> (Caverns: spells)</td>
+        </tr>
+
+        <tr>
+          <td><code>start</code></td>
+          <td>Play game</td>
+          <td>Select</td>
+          <td>Game menu<sup>1</sup></td>
+        </tr>
+
+        <tr>
+          <td><code>select</code></td>
+          <td>Main menu</td>
+          <td>Cancel</td>
+          <td>Game menu<sup>1</sup></td>
+        </tr>
+
+        <tr>
+          <td><code>lshoulder</code></td>
+          <td>Settings</td>
+          <td>Next element</td>
+          <td><code>key_insert</code> (bomb type)</td>
+        </tr>
+
+        <tr>
+          <td><code>rshoulder</code><sup>2</sup></td>
+          <td>Settings</td>
+          <td>Settings<sup>3</sup></td>
+          <td><code>key_p</code> (Caverns: altar)</td>
+        </tr>
+
+        <tr>
+          <td><code>ltrigger</code><sup>2</sup></td>
+          <td>Load world</td>
+          <td>Page up</td>
+          <td><code>key_f3</code> (save game)</td>
+        </tr>
+
+        <tr>
+          <td><code>rtrigger</code><sup>2</sup></td>
+          <td>Reload save</td>
+          <td>Page down</td>
+          <td><code>key_f4</code> (load save)</td>
+        </tr>
+
+        <tr>
+          <td><code>lstick</code><sup>2</sup></td>
+          <td></td>
+          <td>Home</td>
+          <td></td>
+        </tr>
+
+        <tr>
+          <td><code>rstick</code><sup>2</sup></td>
+          <td></td>
+          <td>End</td>
+          <td></td>
+        </tr>
+      </table>
+
+      <p>
+        The following actions are available only through Robotic or are mostly
+        similar to other actions listed above:
+      </p>
+
+      <table>
+        <thead>
+          <td style="min-width:256px">Name</td>
+          <td>Description</td>
+        </thead>
+
+        <tr>
+          <td>
+            <code>l_up</code>, <code>l_down</code>, <code>l_left</code>, and
+            <code>l_right</code><sup>2</sup>
+          </td>
+          <td>
+            Directional actions for the left analog stick. Same behavior as
+            the dpad actions by default.
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <code>r_up</code>, <code>r_down</code>, <code>r_left</code>, and
+            <code>r_right</code><sup>2</sup>
+          </td>
+          <td>
+            Directional actions for the right analog stick. Same behavior as
+            the dpad actions by default.
+          </td>
+        </tr>
+        <tr>
+          <td><code>axis_lx</code> and <code>axis_ly</code><sup>2</sup></td>
+          <td>X and Y axes of the left stick (counter only).</td>
+        </tr>
+        <tr>
+          <td><code>axis_rx</code> and <code>axis_ry</code><sup>2</sup></td>
+          <td>X and Y axes of the right stick (counter only).</td>
+        </tr>
+        <tr>
+          <td><code>axis_ltrigger</code> and <code>axis_rtrigger</code><sup>2</sup></td>
+          <td>Axes for the left and right triggers (counter only).</td>
+        </tr>
+      </table>
+
+      <p>
+        <sup>1</sup>Gives access to most UI menus such as saving, loading,
+        exiting the game, and settings. This behavior overrides any keys
+        assigned to this action unless both <code>ENTER_MENU</code> and
+        <code>ESCAPE_MENU</code> are disabled. This occupies both
+        <code>start</code> and <code>select</code> right now because some
+        controllers may lack one of these buttons.
+      </p>
+
+      <p>
+        <sup>2</sup>The <code>rshoulder</code> action is replaced by some
+        consoles with a hardcoded button to open an onscreen keyboard. The
+        availability of some other actions may vary between consoles and
+        controllers (for example, some controllers may have a left analog
+        stick but no dpad, and many controllers lack the stick press
+        <code>lstick</code> and <code>rstick</code> actions).
+      </p>
+
+      <p>
+        <sup>3</sup>This behavior currently only works on some windows, such
+        as the main menu and game menu.
+      </p>
+    </section>
+  </section>
+
+  <hr>
+
+  <section id="config" class="main">
+    <h2>Config Usage and Examples</h2>
+    <p>
+      Creating a game config file to give a game compatibility with joystick
+      actions is very easy and, best of all, requires no modification to older
+      games. A game config file is a text file that shares the same filename as
+      a world but with the ".cnf" extension instead of ".mzx" (for example, the
+      the config file for <code>CAVERNS.MZX</code> would be
+      <code>CAVERNS.CNF</code>). Joystick config file options can be used in
+      this file just as they would be in the regular config file, but they'll
+      only affect their given world.
+    </p>
+
+    <p>
+      The main config option worth noting for the purpose of configuring a
+      game.cnf file is
+    </p>
+
+    <code class="example">
+      joy#.ACTION = KEY
+    </code>
+
+    <p>
+      where # is the joystick number (1-16), <code>ACTION</code> is the name
+      of a joystick action, and <code>KEY</code> is either a key number or a
+      string in the format of <code>key_NAME</code>
+      (see <a href="keycodes.html">keycodes.html</a> for <i>key_pressed</i>
+      numbers and/or key names to use here). For example:
+    </p>
+
+    <code class="example">
+      joy1.lshoulder = key_space
+    </code>
+
+    <p>
+      would assign the space key to the <code>lshoulder</code> action of
+      joystick 1. Since up to 16 joysticks can be used with MegaZeux, it may be
+      useful to assign the same action keybinding to multiple joysticks. This
+      can be done by substituting the joystick number with a range. For example:
+    </p>
+
+    <code class="example">
+      joy[1,16].lshoulder = key_space
+    </code>
+
+    <p>
+      will assign the <code>lshoulder</code> action on every controller to
+      the space key.
+    </p>
+
+    <section id="config-examples" class="inner">
+      <h3>Examples for Specific Games</h3>
+
+      <section>
+        <h4>Forest of Ruin</h4>
+        <p>
+          The default config mostly works for this game, but it would be
+          nice to be able to switch weapons (and <code>start</code> is good
+          enough for the menu in this game, which frees up <code>x</code>):
+        </p>
+        <code class="example">
+          joy[1,16].x = key_w
+        </code>
+      </section>
+
+      <section>
+        <h4>red</h4>
+        <p>
+          red also mostly works with the default config thanks to <code>x</code>
+          being bound to <code>key_return</code>. For convenience, we'll go
+          ahead and bind <code>y</code> to <code>key_return</code> too:
+        </p>
+        <code class="example">
+          joy[1,16].y = key_return
+        </code>
+      </section>
+
+      <section>
+        <h4>Demon Earth</h4>
+        <p>
+          Demon Earth uses different keys for attacking and uses space to hold
+          the player's current facing direction. Because of this, it's useful
+          to put the attack keys on the face buttons and space on the shoulders.
+
+          Note: because Demon Earth uses swap worlds, you may need to create
+          a game.cnf file for each world.
+        </p>
+        <code class="example">
+          joy[1,16].a = key_a
+          joy[1,16].b = key_s
+          joy[1,16].x = key_return
+          joy[1,16].y = key_return
+          joy[1,16].lshoulder = key_space
+          joy[1,16].rshoulder = key_space
+        </code>
+      </section>
+
+      <section>
+        <h4>Achtung!!</h4>
+        <p>
+          Comments can be added to explain the in-game function of each key:
+        </p>
+        <code class="example">
+          # Shoot down; change to B for some consoles
+          # Shoot right; change to A for some consoles
+          # Shoot left; change to Y for some consoles
+          # Shoot up; change to X for some consoles
+          joy[1,16].a = key_s
+          joy[1,16].b = key_d
+          joy[1,16].x = key_a
+          joy[1,16].y = key_w
+
+          # Shoot up
+          # Shoot down
+          # Shoot left
+          # Shoot right
+          joy[1,16].r_up = key_w
+          joy[1,16].r_down = key_s
+          joy[1,16].r_left = key_a
+          joy[1,16].r_right = key_d
+
+          # Select menu, bomb
+          joy[1,16].lshoulder = key_space
+          joy[1,16].rshoulder = key_space
+          joy[1,16].ltrigger = key_space
+          joy[1,16].rtrigger = key_space
+        </code>
+      </section>
+    </section>
+
+    <section id="config-sdl" class="inner">
+      <h3>Adding/Modifying Controller Support</h3>
+      <p>
+        Most platforms supported by MegaZeux (excluding consoles) rely on SDL 2.
+        Controller support in MegaZeux for these platforms is based on SDL's
+        game controller API, and any controller supported by the game controller
+        API is automatically detected by MegaZeux. However, many controllers are
+        still missing from SDL and/or gamecontrollerdb.txt.
+      </p>
+
+      <p>
+        It should be possible to map most missing USB or Bluetooth controllers,
+        and several utilities for this purpose are available at the
+        <a href="https://github.com/gabomdq/SDL_GameControllerDB">SDL_GameControllerDB
+        GitHub repository</a>. When used, these utilities will produce a mapping
+        string that can be added to MZX using the following config setting:
+      </p>
+
+      <code class="example" style="word-wrap: break-word">
+        gamecontroller_add = 030000005e0400008e02000000007801,XInput Controller,a:b0,b:b1,back:b6,dpdown:h0.4,dpleft:h0.8,dpright:h0.2,dpup:h0.1,guide:b10,leftshoulder:b4,leftstick:b8,lefttrigger:a2,leftx:a0,lefty:a1,rightshoulder:b5,rightstick:b9,righttrigger:a5,rightx:a3,righty:a4,start:b7,x:b2,y:b3,platform:Windows,
+      </code>
+
+      <p>
+        (note: it must be a single line).
+        This will override any existing config for your controller (in either
+        SDL or gamecontrollerdb.txt) with your new mapping. It might also be a
+        good idea to thoroughly test your new mapping and send it to an MZX
+        developer or submit it to SDL or SDL_GameControllerDB yourself if it's
+        a controller that is missing or if the mapping in the database is
+        unusable/broken.
+      </p>
+
+      <p>
+        The way MZX uses the SDL game controller API to generate controller
+        mappings can be further configured globally with the following settings:
+      </p>
+
+      <code class="example">
+        gamecontroller.SDLBUTTON = act_NAME
+        gamecontroller.+SDLAXIS = act_NAME
+        gamecontroller.-SDLAXIS = act_NAME
+      </code>
+
+      <p>
+        The first will assign an SDL game controller button to the MZX action
+        <code>NAME</code>. The second will assign the positive direction of an
+        SDL axis to <code>NAME</code>; the third does the same, for the negative
+        direction. A complete list of SDL buttons that can be customized is in
+        the config file.
+      </p>
+
+      <p>
+        Finally, if you'd like to go back to the old and bad joystick support
+        for some reason, you can turn off automatic mappings altogether via the
+        config file:
+      </p>
+
+      <code class="example">
+        gamecontroller_enable = 0
+      </code>
+    </section>
+
+    <section id="config-legacy" class="inner">
+      <h3>Config Options in Versions Prior to 2.92</h3>
+      <p>
+        MZX versions prior to 2.92 do not have access to any joystick counters,
+        nor to actions in general. Only the following config options are
+        available. The use of these options in versions 2.92 and up is not
+        recommended.
+      </p>
+      <p>
+        Versions prior to 2.92 are also not capable of using joystick index
+        ranges or binding key names and must use key_pressed values directly.
+        They also do not distinguish global config from game config, meaning
+        a game.cnf file that uses these settings will affect all UIs in MZX
+        permanently until another game.cnf file is loaded.
+      </p>
+      <p>
+        Most port pad.config files still use these config settings as
+        the physical location of each button/axis/hat is already known and will
+        not change.
+      </p>
+
+      <code class="example">
+        joyXbuttonY = A
+      </code>
+      <p>
+        This will assign button Y (1-256) on joystick X (1-16) to key A.
+      </p>
+      <p>
+        In versions 2.92 and up, A can also be a key name in the format of
+        <code>key_NAME</code> or an action name in the format of
+        <code>act_NAME</code>. Additionally, X can be a range, e.g.
+        <code>joy[Z,W]buttonY</code>.
+      </p>
+
+      <code class="example">
+        joyXaxisY = A, B
+      </code>
+      <p>
+        This will assign axis Y (1-16) on joystick X (1-16) to keys A and B.
+        The negative direction of the axis will be assigned to A and the
+        positive direction will be assigned to B.
+      </p>
+      <p>
+        In versions 2.92 and up, A and B can also be key names in the format of
+        <code>key_NAME</code> or action names in the format of
+        <code>act_NAME</code>. Additionally, X can be a range, e.g.
+        <code>joy[Z,W]axisY</code>.
+      </p>
+
+      <code class="example">
+        joyXhat = A, B, C, D
+      </code>
+      <p>
+        This will assign the hat of joystick X (1-16) to keys A, B, C, and D.
+        Up will be assigned to A, down will be assigned to B, left will be
+        assigned to C, and right will be assigned to D.
+      </p>
+      <p>
+        In versions 2.92 and up, A/B/C/D can also be key names in the format of
+        <code>key_NAME</code> or action names in the format of
+        <code>act_NAME</code>. Additionally, X can be a range, e.g.
+        <code>joy[Z,W]hat</code>.
+      </p>
+    </section>
+  </section>
+
+  <hr>
+
+  <section id="robotic" class="main">
+    <h2>Robotic Usage and Examples</h2>
+    <p>
+      Joystick presses can be read directly from Robotic via counters. First,
+      however, it might be useful to turn off the simulated key press behavior
+      for joysticks that is enabled by default:
+    </p>
+
+    <code class="example">
+      set "joy_simulate_keys" to 0
+    </code>
+
+    <p>
+      The <code>joy#active</code> counter returns <b>1</b> if a joystick is
+      active, <b>0</b> if it is not active, and <b>-1</b> if the provided
+      joystick index is invalid. You can use it if you need to check to see how
+      many joysticks are active or if any are active:
+    </p>
+
+    <code class="example">
+      set "num_active" 0
+      loop start
+      if "joy&loopcount&active" = 1 then "#is_active"
+      loop for 15
+      * "&num_active& controllers are active."
+      end
+
+      : "#is_active"
+      inc "num_active" by 1
+      goto "#return"
+    </code>
+
+    <p>
+      The <code>joy#.NAME</code> counter is probably more useful, however.
+      For action <code>NAME</code>, this counter will return the value of that
+      action for a given joystick number, or <b>-1</b> if either the joystick
+      number or action name are invalid. For button actions, the value is
+      <b>1</b> if pressed and <b>0</b> if not pressed. For axis actions, the
+      value can be anywhere between <b>-32768</b> and <b>32767</b>, though
+      trigger axes are more likely to be between <b>0</b> and <b>32767</b>.
+    </p>
+
+    <p>
+      The following example moves a player sprite around with an analog stick:
+    </p>
+    <code class="example">
+      lockplayer
+      set "spr0_refx" to "playerx"
+      set "spr0_refy" to "playery"
+      set "spr0_width" to 1
+      set "spr0_height" to 1
+      set "spr0_unbound" to 1
+      put c?? Sprite p00 at 316 168
+
+      : "l"
+      inc "spr0_x" by "('joy1.axis_lx'/2500)"
+      inc "spr0_y" by "('joy1.axis_ly'/2500)"
+      wait for 1
+      goto "l"
+    </code>
+
+    <p>
+      This longer example implements a simple player robot that can move around
+      or shoot by holding the <code>a</code> button and pressing a direction:
+    </p>
+
+    <code class="example">
+      lockplayer
+      : "l"
+      if "joy1.a" = 1 then "shoot"
+      if "joy1.up" = 1 then "go_up"
+      if "joy1.down" = 1 then "go_down"
+      if "joy1.right" = 1 then "go_right"
+      if "joy1.left" = 1 then "go_left"
+      wait for 1
+      goto "l"
+
+      : "go_up"
+      go NORTH for 1
+      goto "l"
+      : "go_down"
+      go SOUTH for 1
+      goto "l"
+      : "go_right"
+      go EAST for 1
+      goto "l"
+      : "go_left"
+      go WEST for 1
+      goto "l"
+
+      : "shoot"
+      if "joy1.up" = 1 "shoot_up"
+      if "joy1.down" = 1 "shoot_down"
+      if "joy1.right" = 1 "shoot_right"
+      if "joy1.left" = 1 "shoot_left"
+      wait for 1
+      goto "l"
+      : "shoot_up"
+      sfx 28
+      shoot NORTH
+      wait for 2
+      goto "l"
+      : "shoot_down"
+      sfx 28
+      shoot SOUTH
+      wait for 2
+      goto "l"
+      : "shoot_right"
+      sfx 28
+      shoot EAST
+      wait for 2
+      goto "l"
+      : "shoot_left"
+      sfx 28
+      shoot WEST
+      wait for 2
+      goto "l"
+    </code>
+
+    <p>
+      The above example can be modified to check the axes, too:
+    </p>
+
+    <code class="example">
+      ...
+
+      if "joy1.up" = 1 then "go_up"
+      if "joy1.l_up" = 1 then "go_up"
+      if "joy1.r_up" = 1 then "go_up"
+
+      if "joy1.down" = 1 then "go_down"
+      if "joy1.l_down" = 1 then "go_down"
+      if "joy1.r_down" = 1 then "go_down"
+
+      if "joy1.right" = 1 then "go_right"
+      if "joy1.l_right" = 1 then "go_right"
+      if "joy1.r_right" = 1 then "go_right"
+
+      if "joy1.left" = 1 then "go_left"
+      if "joy1.l_left" = 1 then "go_left"
+      if "joy1.r_left" = 1 then "go_left"
+
+      ...
+    </code>
+
+    <p>
+      Ideally, a game should work with both keyboard and rather than joystick
+      inputs alone. However, if you do make a game that is playable only with a
+      joystick, it should probably indicate clearly that a joystick is required.
+    </p>
+  </section>
+
+  <hr>
+
+  <section id="layouts" class="main">
+    <h2>Controller Layouts for Console Ports</h2>
+    <p>
+      Diagrams of the default layouts for the console platforms supported by
+      MegaZeux are provided here. These layouts can be further configured for
+      each platform by modifying the "pad.config" file that comes with them.
+    </p>
+
+    <section id="layout-nds" class="inner">
+      <h3>NDS and 3DS</h3>
+      <p>
+        The NDS and 3DS ports share the same layout; the only difference is that
+        the 3DS port has extra controls, particularly the New 3DS (note the
+        New 3DS circle stick is reserved for future use and can't be mapped).
+      </p>
+      <p>
+        Neither console maps <code>axis_rx</code>, <code>axis_ry</code>,
+        <code>axis_ltrigger</code>, <code>axis_rtrigger</code>,
+        <code>lstick</code>, or <code>rstick</code>. The right shoulder button
+        is hardcoded to open the onscreen keyboard, so <code>rshoulder</code>
+        is unmapped as well.
+      </p>
+      <p>
+        Furthermore, the NDS doesn't have the circle pad (<code>axis_lx</code>,
+        <code>axis_ly</code>) and both the NDS and original 3DS are missing
+        ZL (<code>ltrigger</code>) and ZR (<code>rtrigger</code>).
+      </p>
+
+      <div class="image-wrapper">
+      <svg width="640" height="560">
+        <svg x="5%" y="1%" width="90%" height="98%">
+          <style>
+            .label { font: bold 16px monospace; }
+          </style>
+
+          <!-- Outline -->
+          <rect x="1%" y="1%" width="98%" height="98%" rx="5%"
+            fill="none" stroke="darkgrey" stroke-width="5" />
+          <line x1="1%" y1="50%" x2="99%" y2="50%"
+            stroke="darkgrey" stroke-width="3" />
+          <rect x="25%" y="5%" width="50%" height="40%"
+            fill="none" stroke="darkgrey" stroke-width="3" />
+          <rect x="25%" y="55%" width="50%" height="40%"
+            fill="none" stroke="darkgrey" stroke-width="3" />
+          <circle cx="80%" cy="58.5%" r="2%"
+            fill="none" stroke="darkgrey" stroke-width="2.5" />
+
+          <!-- circle pad -->
+          <svg x="5%" y="58%" width="15%" height="14%" viewbox="0 0 100 100">
+            <circle cx="50" cy="50" r="44"
+              fill="none" stroke="darkgrey" stroke-width="5" />
+            <circle cx="50" cy="50" r="30"
+              fill="lightgrey" stroke="#222" stroke-width="5" />
+          </svg>
+
+          <line x1="20%" y1="65%" x2="30%" y2="65%"
+            stroke="black" stroke-width="2" />
+          <text x="32%" y="64%" class="label">axis_lx</text>
+          <text x="32%" y="68%" class="label">axis_ly</text>
+
+          <!-- dpad -->
+          <svg x="5%" y="75%" width="15%" height="13%" viewbox="0 0 100 100">
+            <path fill="lightgrey" stroke="#222" stroke-width="5"
+              d="M33 5 H66 V33 H95 V66 H66 V95 H33 V66 H5 V33 H33 Z" />
+          </svg>
+
+          <line x1="20%" y1="81%" x2="28%" y2="81%"
+            stroke="black" stroke-width="2" />
+          <text x="30%" y="80%" class="label">up, down,</text>
+          <text x="30%" y="84%" class="label">left, right</text>
+
+          <!-- abxy -->
+          <svg x="77%" y="60%" width="20%" height="20%" viewbox="0 0 100 100">
+            <circle cx="50%" cy="25%" r="12%"
+             fill="blue" fill-opacity=".4" stroke="#222" stroke-width="3" />
+            <circle cx="50%" cy="75%" r="12%"
+             fill="yellow" fill-opacity=".4" stroke="#222" stroke-width="3" />
+            <circle cx="25%" cy="50%" r="12%"
+             fill="green" fill-opacity=".4" stroke="#222" stroke-width="3" />
+            <circle cx="75%" cy="50%" r="12%"
+             fill="red" fill-opacity=".4" stroke="#222" stroke-width="3" />
+          </svg>
+
+          <text x="95%" y="72%" class="label">a</text>
+          <text x="90%" y="78%" class="label">b</text>
+          <text x="82%" y="63%" class="label">x</text>
+          <text x="77%" y="69%" class="label">y</text>
+
+          <!-- start select -->
+          <circle cx="82%" cy="85%" r="1.60%"
+            fill="lightgrey" stroke="#222" stroke-width="2" />
+          <circle cx="82%" cy="90%" r="1.60%"
+            fill="lightgrey" stroke="#222" stroke-width="2" />
+
+          <text x="85%" y="85%" class="label">start</text>
+          <text x="85%" y="90%" class="label">select</text>
+
+          <!-- shoulders -->
+          <rect x="1%" y="49%" width="11%" height="5.5%" rx=".75%"
+            fill="lightgrey" stroke="#222" stroke-width="3" />
+          <rect x="88%" y="49%" width="11%" height="5.5%" rx=".75%"
+            fill="lightgrey" stroke="#222" stroke-width="3" />
+          <rect x="14%" y="49.25%" width="7%" height="4.5%" rx=".75%"
+            fill="lightgrey" stroke="#222" stroke-width="3" />
+          <rect x="79%" y="49.25%" width="7%" height="4.5%" rx=".75%"
+            fill="lightgrey" stroke="#222" stroke-width="3" />
+
+          <line x1="5%" y1="40%" x2="5%" y2="47%"
+            stroke="black" stroke-width="2" />
+          <line x1="95%" y1="40%" x2="95%" y2="47%"
+            stroke="black" stroke-width="2" />
+          <text x="3%" y="38%" class="label">lshoulder</text>
+          <text x="81%" y="34%" class="label">rshoulder</text>
+          <text x="80%" y="38%" class="label">(keyboard)</text>
+          <text x="8.5%" y="46%" class="label">ltrigger</text>
+          <text x="75.5%" y="46%" class="label">rtrigger</text>
+        </svg>
+      </svg>
+      </dev>
+      <!-- -->
+    </section>
+
+
+    <section id="layout-psp" class="inner">
+      <h3>PSP</h3>
+      <p>The PSP port does not map
+        <code>axis_rx</code>, <code>axis_ry</code>,
+        <code>axis_ltrigger</code>, <code>axis_rtrigger</code>,
+        <code>ltrigger</code>, <code>rtrigger</code>,
+        <code>lstick</code>, or <code>rstick</code>. No button is reserved for
+        a keyboard as the PSP port supports an infrared keyboard.
+      </p>
+
+      <div class="image-wrapper">
+      <svg width="640" height="280">
+        <style>
+          .label { font: bold 16px monospace; }
+        </style>
+
+        <!-- Outline -->
+        <svg x="2%" y="10%" width="95%" height="90%" viewbox="0 0 1000 400">
+          <path fill="none" stroke="darkgrey" stroke-width="8"
+            d="
+            M 200 10
+            H 800    Q 820  50 850  50
+            H 900    Q 975 200 900 350
+            H 850    Q 820 350 800 390
+            H 200    Q 180 350 150 350
+            H 100    Q  25 200 100  50
+            H 150    Q 180  50 200  10
+            Z" />
+          <rect x="26%" y="12%" width="48%" height="76%"
+            fill="none" stroke="darkgrey" stroke-width="5" />
+
+          <!-- Shoulder paths here because they follow the outline. -->
+          <path fill="lightgrey" stroke="#222" stroke-width="6"
+            d="M110 45   H 145   Q 170 45 190 15   H140  Q120 15 110 45 Z" />
+          <path fill="lightgrey" stroke="#222" stroke-width="6"
+            d="M890 45   H 855   Q 830 45 810 15   H860  Q880 15 890 45 Z" />
+        </svg>
+
+        <!-- shoulders -->
+        <text x="10%" y="10%" class="label">lshoulder</text>
+        <text x="76%" y="10%" class="label">rshoulder</text>
+
+        <!-- analog stick -->
+        <svg x="6%" y="65%" width="22%" height="22%" viewbox="0 0 100 100">
+          <circle cx="50" cy="50" r="30"
+          fill="lightgrey" stroke="#222" stroke-width="6" />
+        </svg>
+
+        <line x1="22%" y1="75%" x2="28%" y2="75%"
+          stroke="black" stroke-width="2" />
+        <text x="30%" y="73%" class="label">axis_lx</text>
+        <text x="30%" y="80%" class="label">axis_ly</text>
+
+        <!-- dpad -->
+        <svg x="4.5%" y="35%" width="25%" height="25%" viewbox="0 0 100 100">
+          <path fill="lightgrey" stroke="#222" stroke-width="5"
+            d="M33  5 H66 V25 L50 42 L33 25 Z
+                M 5 33 V66 H25 L42 50 L25 33 Z
+                M33 95 H66 V75 L50 58 L33 75 Z
+                M95 33 V66 H75 L58 50 L75 33 Z" />
+        </svg>
+
+        <line x1="23%" y1="47%" x2="30%" y2="47%"
+          stroke="black" stroke-width="2" />
+        <text x="32%" y="45%" class="label">up, down,</text>
+        <text x="32%" y="52%" class="label">left, right</text>
+
+        <!-- abxy -->
+        <svg x="67%" y="31%" width="30%" height="36%" viewbox="0 0 100 100">
+          <circle cx="50%" cy="50%" r="25%"
+            fill="none" stroke="darkgrey" stroke-width="2" />
+          <circle cx="50%" cy="25%" r="12%"
+            fill="#ced" stroke="#222" stroke-width="3" />
+          <circle cx="50%" cy="75%" r="12%"
+            fill="#cce" stroke="#222" stroke-width="3" />
+          <circle cx="25%" cy="50%" r="12%"
+            fill="#ece" stroke="#222" stroke-width="3" />
+          <circle cx="75%" cy="50%" r="12%"
+            fill="#ecc" stroke="#222" stroke-width="3" />
+        </svg>
+
+        <text x="88.5%" y="53%" class="label">a</text>
+        <text x="84.5%" y="62%" class="label">b</text>
+        <text x="78%" y="37%" class="label">x</text>
+        <text x="74%" y="46%" class="label">y</text>
+
+        <!-- start select -->
+        <svg x="61.5%" y="88.5%" width="15%" height="7%" viewbox="0 0 100 25">
+          <path fill="lightgrey" stroke="#222" stroke-width="3"
+            d="M 5 5   H 45   V 10   Q 25 30  5 10   Z" />
+          <path fill="lightgrey" stroke="#222" stroke-width="3"
+            d="M 55 5  H 95   V 10   Q 75 30 55 10   Z" />
+        </svg>
+
+        <text x="60%" y="86%" class="label">select</text>
+        <text x="70%" y="86%" class="label">start</text>
+      </svg>
+    </section>
+
+
+    <section id="layout-switch" class="inner">
+      <h3>Switch</h3>
+      <p>
+        The Nintendo Switch port uses SDL 2 and thus has mappings built into
+        SDL. However, SDL default mappings for <code>a</code>, <code>b</code>,
+        <code>x</code>, and <code>y</code> correspond to the XInput positions
+        for these buttons, which Nintendo console users generally don't want.
+        Because of this, the Switch port also ships with a default pad.config
+        that reconfigures the mapping of <code>a</code>, <code>b</code>,
+        <code>x</code>, and <code>y</code> globally for all SDL controllers:
+      </p>
+
+      <code class="example">
+        gamecontroller.a = act_b
+        gamecontroller.b = act_a
+        gamecontroller.x = act_y
+        gamecontroller.y = act_x
+      </code>
+
+      <p>
+        Furthermore, the Switch port may not map <code>axis_ltrigger</code>
+        or <code>axis_rtrigger</code>, and if it does, they probably only
+        return a value of either 0 or 32767 (this needs to be verified).
+      </p>
+
+      <div class="image-wrapper">
+      <svg width="640" height="320">
+        <style>
+          .label { font: bold 16px monospace; }
+        </style>
+
+        <!-- shoulders -->
+        <line x1="5%" y1="22%" x2="5%" y2="4%"
+          stroke="black" stroke-width="2"/>
+        <line x1="8%" y1="18%" x2="8%" y2="12%"
+          stroke="black" stroke-width="2"/>
+        <line x1="5%" y1="4%" x2="16%" y2="4%"
+          stroke="black" stroke-width="2"/>
+        <line x1="8%" y1="12%" x2="12%" y2="12%"
+          stroke="black" stroke-width="2"/>
+        <text x="17%" y="5%" class="label">ltrigger</text>
+        <text x="13%" y="13%" class="label">lshoulder</text>
+
+        <line x1="95%" y1="22%" x2="95%" y2="4%"
+          stroke="black" stroke-width="2"/>
+        <line x1="92%" y1="18%" x2="92%" y2="12%"
+          stroke="black" stroke-width="2"/>
+        <line x1="95%" y1="4%" x2="84%" y2="4%"
+          stroke="black" stroke-width="2"/>
+        <line x1="92%" y1="12%" x2="88%" y2="12%"
+          stroke="black" stroke-width="2"/>
+        <text x="71%" y="5%" class="label">rtrigger</text>
+        <text x="74%" y="13%" class="label">rshoulder</text>
+
+        <svg x="2%" y="20%" width="96%" height="80%">
+
+          <!-- Outline -->
+          <rect x="1%" y="1%" width="98%" height="98%" rx="10%"
+            fill="none" stroke="darkgrey" stroke-width="5" />
+          <rect x="15%" y="1%" width="70%" height="98%"
+            fill="none" stroke="darkgrey" stroke-width="3" />
+          <rect x="17%" y="4%" width="66%" height="92%" rx="2%"
+            fill="none" stroke="darkgrey" stroke-width="3" />
+          <rect x="22%" y="10%" width="56%" height="80%"
+            fill="none" stroke="darkgrey" stroke-width="3" />
+          <rect x="10%" y="75%" width="2%" height="5%"
+            fill="none" stroke="darkgrey" stroke-width="3" />
+          <circle cx="88.5%" cy="77.5%" r="1.5%"
+            fill="none" stroke="darkgrey" stroke-width="3" />
+
+          <!-- minus, plus -->
+          <rect x="11%" y="8%" width="2.5%" height="2.5%"
+            fill="lightgrey" stroke="#222" stroke-width="3" />
+          <svg x="86%" y="5.5%" width="3%" height="7%" viewbox="0 0 100 100">
+            <path fill="lightgrey" stroke="#222" stroke-width="15"
+              d="M 33 10  H67 V33 H90 V67 H67 V90 H33 V67 H5 V33 H33 Z" />
+          </svg>
+
+          <text x="77%" y="9%" class="label">start</text>
+          <text x="16%" y="9%" class="label">select</text>
+
+          <!-- Sticks -->
+          <svg x="4%" y="8%" width="8%" height="40%" viewbox="0 0 100 100">
+            <circle cx="50%" cy="50%" r="48%"
+              fill="none" stroke="darkgrey" stroke-width="4" />
+            <circle cx="50%" cy="50%" r="40%"
+              fill="lightgrey" stroke="#222" stroke-width="6" />
+          </svg>
+          <svg x="88%" y="38%" width="8%" height="40%" viewbox="0 0 100 100">
+            <circle cx="50%" cy="50%" r="48%"
+              fill="none" stroke="darkgrey" stroke-width="4" />
+            <circle cx="50%" cy="50%" r="40%"
+              fill="lightgrey" stroke="#222" stroke-width="6" />
+          </svg>
+
+          <line x1="13%" y1="27%" x2="27%" y2="27%"
+            stroke="black" stroke-width="2" />
+          <line x1="73%" y1="58%" x2="87%" y2="58%"
+            stroke="black" stroke-width="2" />
+          <text x="29%" y="21%" class="label">axis_lx</text>
+          <text x="29%" y="28%" class="label">axis_ly</text>
+          <text x="29%" y="35%" class="label">lstick</text>
+          <text x="61%" y="52%" class="label">axis_rx</text>
+          <text x="61%" y="59%" class="label">axis_ry</text>
+          <text x="61%" y="66%" class="label">rstick</text>
+
+          <!-- dpad -->
+          <svg x="2%" y="38%" width="12%" height="40%" viewbox="0 0 100 100">
+            <circle cx="25%" cy="50%" r="12%"
+              fill="lightgrey" stroke="#222" stroke-width="4"/>
+            <circle cx="75%" cy="50%" r="12%"
+              fill="lightgrey" stroke="#222" stroke-width="4"/>
+            <circle cx="50%" cy="25%" r="12%"
+              fill="lightgrey" stroke="#222" stroke-width="4"/>
+            <circle cx="50%" cy="75%" r="12%"
+              fill="lightgrey" stroke="#222" stroke-width="4"/>
+          </svg>
+
+          <text x="6%" y="45%" class="label">up</text>
+          <text x="6%" y="74%" class="label">down</text>
+          <text x="-0.25%" y="53%" class="label">left</text>
+          <text x="11%" y="66%" class="label">right</text>
+
+          <!-- ABXY -->
+          <svg x="86%" y="8%" width="12%" height="40%" viewbox="0 0 100 100">
+            <circle cx="25%" cy="50%" r="12%"
+              fill="#aea" stroke="#222" stroke-width="4"/>
+            <circle cx="75%" cy="50%" r="12%"
+              fill="#eaa" stroke="#222" stroke-width="4"/>
+            <circle cx="50%" cy="25%" r="12%"
+              fill="#aae" stroke="#222" stroke-width="4"/>
+            <circle cx="50%" cy="75%" r="12%"
+              fill="#eea" stroke="#222" stroke-width="4"/>
+          </svg>
+
+          <text x="97%" y="28%" class="label">a</text>
+          <text x="90%" y="44%" class="label">b</text>
+          <text x="94%" y="19%" class="label">x</text>
+          <text x="86%" y="35%" class="label">y</text>
+
+        </svg>
+      </svg>
+      </div>
+    </section>
+
+
+    <section id="layout-wii" class="inner">
+      <h3>Wii</h3>
+      <p>
+        Button availability for the Wii port varies given which controller
+        or extension controller is being used. Regardless of the available
+        controllers, however, no Wii layout maps <code>lstick</code> or
+        <code>rstick</code>. No buttons are reserved for a keyboard in any
+        layout as the Wii has multiple built-in USB ports. The home button is
+        hardcoded to <code>select</code> when present.
+      </p>
+      <p>
+        Extensions not otherwise listed below are the
+        Guitar Hero 3 extension controller (supported by MegaZeux) and the
+        Wii Balance Board and Wii Motion Plus (not supported by MegaZeux).
+      </p>
+
+      <section>
+        <h4>Wii Remote (no extension)</h4>
+        <p>
+          The mapping for this layout is fairly arbitrary and may change in
+          future versions (particularly if <code>start</code>/<code>select</code>
+          become more usable by games). This layout has no axes or mappings for
+          <code>ltrigger</code>, <code>rtrigger</code>, or <code>start</code>.
+          This layout assumes the Wii Remote is held horizontally like an NES
+          controller.
+        </p>
+
+        <div class="image-wrapper">
+        <svg width="640" height="200">
+          <style>
+            .label { font: bold 16px monospace; }
+          </style>
+          <!-- Graphic is nested so it can be transformed below -->
+          <g>
+          <svg x="40" y="50" width="560" height="140">
+            <rect x="1%" y="2%" width="98%" height="96%" rx="5%"
+              fill="none" stroke="darkgrey" stroke-width="5"/>
+            <rect x="90%" y="17.5%" width="1.25%" height="5%"
+              fill="none" stroke="darkgrey" stroke-width="3"/>
+            <rect x="90%" y="37.5%" width="1.25%" height="5%"
+              fill="none" stroke="darkgrey" stroke-width="3"/>
+            <rect x="90%" y="57.5%" width="1.25%" height="5%"
+              fill="none" stroke="darkgrey" stroke-width="3"/>
+            <rect x="90%" y="77.5%" width="1.25%" height="5%"
+              fill="none" stroke="darkgrey" stroke-width="3"/>
+            <circle cx="5%" cy="82.5%" r="2%"
+              fill="none" stroke="darkgrey" stroke-width="3"/>
+
+            <circle cx="47.5%" cy="25%" r="2.25%"
+              fill="lightgrey" stroke="#222" stroke-width="3"/>
+            <circle cx="47.5%" cy="50%" r="2%"
+              fill="#ace" stroke="#222" stroke-width="3"/>
+            <circle cx="47.5%" cy="75%" r="2.25%"
+              fill="lightgrey" stroke="#222" stroke-width="3"/>
+            <circle cx="30%" cy="50%" r="5%"
+              fill="#aac" stroke="#222" stroke-width="3"/>
+            <circle cx="72.5%" cy="50%" r="3%"
+              fill="lightgrey" stroke="#222" stroke-width="3"/>
+            <circle cx="82.5%" cy="50%" r="3%"
+              fill="lightgrey" stroke="#222" stroke-width="3"/>
+
+            <svg x="4%" y="25%" width="25%" height="50%" viewbox="0 0 100 100">
+              <path fill="lightgrey" stroke="#222" stroke-width="4"
+                d="M 37 5 H63 V37 H95 V63 H63 V95 H37 V63 H5 V37 H37 Z"/>
+            </svg>
+          </svg>
+          </g>
+
+          <!-- AB labels -->
+          <line x1="28%" x2="28%" y1="10%" y2="20%"
+            stroke="black" stroke-width="3"/>
+          <text x="22%" y="6%" class="label">lshoulder</text>
+          <text x="28%" y="45%" class="label">rshoulder</text>
+
+          <!-- dpad labels -->
+          <text x="19.5%" y="38%" class="label">up</text>
+          <text x="17.75%" y="86%" class="label">down</text>
+          <text x="9%" y="62%" class="label">left</text>
+          <text x="23%" y="74%" class="label">right</text>
+
+          <!-- plus/minus labels -->
+          <text x="50.5%" y="44%" class="label">x</text>
+          <text x="50%" y="62%" class="label">select</text>
+          <text x="50.5%" y="80%" class="label">y</text>
+
+          <!-- 12 labels -->
+          <text x="69%" y="50%" class="label">b</text>
+          <text x="77.75%" y="50%" class="label">a</text>
+        </svg>
+        </div>
+      </section>
+
+      <section>
+        <h4>Wii Remote (with nunchuck)</h4>
+        <p>
+          The mapping for this layout is fairly arbitrary and may change in
+          future versions (particularly if <code>start</code>/<code>select</code>
+          become more usable by games). This layout has no mappings for
+          <code>start</code>, <code>axis_rx</code>, <code>axis_ry</code>,
+          <code>axis_ltrigger</code>, or <code>axis_rtrigger</code>. This layout
+          assumes the Wii Remote is held like a remote in one hand and the
+          nunchuck is held by the other hand.
+        </p>
+
+        <div class="image-wrapper">
+        <svg width="640" height="500">
+          <style>
+            .label { font: bold 16px monospace; }
+          </style>
+          <!-- Same as above but rotated. -->
+          <g transform="rotate(70,320,240)">
+          <svg x="120" y="80" width="500" height="120">
+            <rect x="1%" y="2%" width="98%" height="96%" rx="5%"
+              fill="none" stroke="darkgrey" stroke-width="5"/>
+            <rect x="90%" y="17.5%" width="1.25%" height="5%"
+              fill="none" stroke="darkgrey" stroke-width="3"/>
+            <rect x="90%" y="37.5%" width="1.25%" height="5%"
+              fill="none" stroke="darkgrey" stroke-width="3"/>
+            <rect x="90%" y="57.5%" width="1.25%" height="5%"
+              fill="none" stroke="darkgrey" stroke-width="3"/>
+            <rect x="90%" y="77.5%" width="1.25%" height="5%"
+              fill="none" stroke="darkgrey" stroke-width="3"/>
+            <circle cx="5%" cy="82.5%" r="2%"
+              fill="none" stroke="darkgrey" stroke-width="3"/>
+
+            <circle cx="47.5%" cy="25%" r="2.25%"
+              fill="lightgrey" stroke="#222" stroke-width="3"/>
+            <circle cx="47.5%" cy="50%" r="2%"
+              fill="#ace" stroke="#222" stroke-width="3"/>
+            <circle cx="47.5%" cy="75%" r="2.25%"
+              fill="lightgrey" stroke="#222" stroke-width="3"/>
+            <circle cx="30%" cy="50%" r="5%"
+              fill="#aac" stroke="#222" stroke-width="3"/>
+            <circle cx="72.5%" cy="50%" r="3%"
+              fill="lightgrey" stroke="#222" stroke-width="3"/>
+            <circle cx="82.5%" cy="50%" r="3%"
+              fill="lightgrey" stroke="#222" stroke-width="3"/>
+
+            <svg x="4%" y="25%" width="25%" height="50%" viewbox="0 0 100 100">
+              <path fill="lightgrey" stroke="#222" stroke-width="4"
+                d="M 37 5 H63 V37 H95 V63 H63 V95 H37 V63 H5 V37 H37 Z"/>
+            </svg>
+          </svg>
+          </g>
+
+          <svg x="5%" y="17.5%" width="30%" height="65%" viewbox="0 0 100 200">
+            <path fill="none" stroke="darkgrey" stroke-width="3"
+              d="M 12 65   C 10 -15 90 -15 88 65   C 75 240 25 240 12 65    Z"/>
+            <svg x="25" y="35" width="50" height="50" viewbox="0 0 100 100">
+              <path fill="none" stroke="darkgrey" stroke-width="4"
+                d="M 50  5  L 82 18  L 95 50  L 82 82
+                   L 50 95  L 18 82  L  5 50  L 18 18  Z"/>
+              <circle cx="50" cy="50" r="30"
+                fill="lightgrey" stroke="#222" stroke-width="4"/>
+            </svg>
+          </svg>
+
+          <!-- nunchuck labels -->
+          <line x1="24%" x2="28%" y1="19%" y2="13%"
+            stroke="black" stroke-width="3"/>
+          <line x1="28%" x2="32%" y1="24%" y2="18%"
+            stroke="black" stroke-width="3"/>
+          <line x1="27%" x2="32%" y1="36.5%" y2="36.5%"
+            stroke="black" stroke-width="3"/>
+          <text x="28%" y="12%" class="label">lshoulder</text>
+          <text x="32%" y="17%" class="label">ltrigger</text>
+          <text x="34%" y="35%" class="label">axis_lx</text>
+          <text x="34%" y="40%" class="label">axis_ly</text>
+
+          <!-- dpad labels -->
+          <text x="55%" y="12%" class="label">up</text>
+          <text x="60%" y="26.5%" class="label">down</text>
+          <text x="48%" y="23%" class="label">left</text>
+          <text x="63.5%" y="17%" class="label">right</text>
+
+          <!-- AB labels -->
+          <line x1="74%" x2="70%" y1="20%" y2="22%"
+            stroke="black" stroke-width="3"/>
+          <text x="75%" y="20%" class="label">rtrigger</text>
+          <text x="66%" y="32%" class="label">rshoulder</text>
+
+          <!-- plus/minus labels -->
+          <text x="61%" y="55%" class="label">y</text>
+          <text x="67%" y="53%" class="label">select</text>
+          <text x="71%" y="43%" class="label">x</text>
+
+          <!-- 12 labels -->
+          <text x="76%" y="70%" class="label">b</text>
+          <text x="79%" y="80%" class="label">a</text>
+        </svg>
+        </div>
+      </section>
+
+      <section>
+        <h4>Wii Classic Controller</h4>
+        <p>
+          This layout maps all buttons and axes aside from the aforementioned
+          <code>lstick</code> and <code>rstick</code>. Input from the Wii Remote
+          is ignored in this configuration (aside from pointing/clicking).
+          Note that L/R are the triggers as they are analog and ZL/ZR are the
+          shoulders (opposite from the New 3DS layout).
+
+          This is the recommended controller for use with the Wii port.
+        </p>
+        <p>
+          The NES and SNES classic controllers currently select this layout as
+          well, but (obviously) several buttons will be missing. It is unknown
+          currently whether libogc can/will distinguish between these.
+        </p>
+
+        <div class="image-wrapper">
+        <svg width="640" height="320">
+          <style>
+            .label { font: bold 16px monospace; }
+          </style>
+          <svg x="2%" y="15%" width="96%" height="85%" viewbox="0 0 200 100">
+            <!-- Outline -->
+            <path fill="none" stroke="darkgrey" stroke-width="2"
+              d="M 60 5  Q 100 10 140  5  C 210   0 210 100 140 95
+                         Q 100 90  60 95  C -10 100 -10   0  60  5  Z" />
+
+            <!-- Shoulder buttons -->
+            <path fill="lightgrey" stroke="#222" stroke-width="1"
+              d="M  73 5  Q  78 2  83 5  V 6.75  L  73 6  Z"/>
+            <path fill="lightgrey" stroke="#222" stroke-width="1"
+              d="M 127 5  Q 122 2 117 5  V 6.75  L 127 6  Z"/>
+
+            <path fill="lightgrey" stroke="#222" stroke-width="1"
+              d="M  29 11  C  40 5  50 4  59 4.5  V 1  C  50 1  40 1  29 8  Z"/>
+            <path fill="lightgrey" stroke="#222" stroke-width="1"
+              d="M 171 11  C 160 5 150 4 141 4.5  V 1  C 150 1 160 1 171 8  Z"/>
+
+            <!-- Left stick -->
+            <svg x="61" y="55" width="30" height="30" viewbox="0 0 100 100">
+              <path fill="none" stroke="darkgrey" stroke-width="4"
+                d="M 50  5  L 82 18  L 95 50  L 82 82
+                   L 50 95  L 18 82  L  5 50  L 18 18  Z"/>
+              <circle cx="50" cy="50" r="30"
+                fill="lightgrey" stroke="#222" stroke-width="4"/>
+            </svg>
+
+            <!-- Right stick -->
+            <svg x="109" y="55" width="30" height="30" viewbox="0 0 100 100">
+              <path fill="none" stroke="darkgrey" stroke-width="4"
+                d="M 50  5  L 82 18  L 95 50  L 82 82
+                   L 50 95  L 18 82  L  5 50  L 18 18  Z"/>
+              <circle cx="50" cy="50" r="30"
+                fill="lightgrey" stroke="#222" stroke-width="4"/>
+            </svg>
+
+            <!-- dpad -->
+            <svg x="28" y="23" width="32" height="32" viewbox="0 0 100 100">
+              <path fill="lightgrey" stroke="#222" stroke-width="4"
+                d="M 37 5 H63 V37 H95 V63 H63 V95 H37 V63 H5 V37 H37 Z"/>
+            </svg>
+
+            <!-- center buttons -->
+            <circle cx="86" cy="40" r="3.25"
+              fill="lightgrey" stroke="#222" stroke-width="1"/>
+            <circle cx="100" cy="40" r="3"
+              fill="#ace" stroke="#222" stroke-width="1"/>
+            <circle cx="114" cy="40" r="3.25"
+              fill="lightgrey" stroke="#222" stroke-width="1"/>
+
+            <!-- abxy -->
+            <circle cx="138" cy="40" r="6"
+              fill="lightgrey" stroke="#222" stroke-width="1"/>
+            <circle cx="156" cy="26.5" r="6"
+              fill="lightgrey" stroke="#222" stroke-width="1"/>
+            <circle cx="174" cy="40" r="6"
+              fill="#aac" stroke="#222" stroke-width="1"/>
+            <circle cx="156" cy="53.5" r="6"
+              fill="#aac" stroke="#222" stroke-width="1"/>
+          </svg>
+
+          <!-- Labels -->
+          <text x="12%" y="7%" class="label">ltrigger</text>
+          <text x="12%" y="13%" class="label">axis_ltrigger</text>
+          <text x="70%" y="7%" class="label">rtrigger</text>
+          <text x="70%" y="13%" class="label">axis_rtrigger</text>
+          <text x="36%" y="15%" class="label">lshoulder</text>
+          <text x="52%" y="15%" class="label">rshoulder</text>
+
+          <text x="8%" y="35%" class="label">up, down,</text>
+          <text x="8%" y="42%" class="label">left, right</text>
+
+          <text x="38%" y="44%" class="label">select</text>
+          <text x="46%" y="57%" class="label">select</text>
+          <text x="54%" y="44%" class="label">start</text>
+
+          <text x="73%" y="30%" class="label">x</text>
+          <text x="65.5%" y="42%" class="label">y</text>
+          <text x="80.5%" y="42%" class="label">a</text>
+          <text x="73%" y="53%" class="label">b</text>
+
+          <text x="24%" y="82%" class="label">axis_lx</text>
+          <text x="24%" y="87%" class="label">axis_ly</text>
+          <text x="66%" y="82%" class="label">axis_rx</text>
+          <text x="66%" y="87%" class="label">axis_ry</text>
+        </svg>
+        </div>
+      </section>
+
+      <section>
+        <h4>Gamecube Controller</h4>
+        <p>
+          This layout maps most buttons but is notably lacking a button for
+          <code>select</code> and one shoulder button. Currently
+          <code>lshoulder</code> is mapped to Z and <code>rshoulder</code> is
+          left unmapped, as <code>lshoulder</code> is arguably more useful by
+          default.
+        </p>
+      </section>
+    </section>
+
+
+    <section id="layout-gp2x" class="inner">
+      <h3>GP2X</h3>
+      <p>
+        Some buttons are unusually mapped on the GP2X due to its non-standard
+        layout. The <code>a</code>, <code>b</code>, <code>x</code>, and
+        <code>y</code> actions are assigned using their Nintendo positions
+        rather than the GP2X button names. While the GP2X appears to have an
+        analog stick, it is actually only 8-directional. However, some models
+        have a stick press button, which is mapped to <code>lstick</code>. The
+        volume buttons are also mappable and assigned to <code>ltrigger</code>
+        and <code>rtrigger</code> (for lack of anything better to put there).
+      </p>
+      <p>
+        The GP2X does not map <code>axis_lx</code>, <code>axis_ly</code>,
+        <code>axis_rx</code>, <code>axis_ry</code>, <code>axis_ltrigger</code>,
+        <code>axis_rtrigger</code>, or <code>rstick</code>. No button is
+        reserved for a keyboard as the GP2X has a built-in USB port.
+      </p>
+
+      <div class="image-wrapper">
+      <svg width="640" height="360">
+        <style>
+          .label { font: bold 16px monospace; }
+        </style>
+
+        <!-- Shoulder text needs to be outside of outline... -->
+        <text x="7.5%" y="7.5%" class="label">lshoulder</text>
+        <text x="80%" y="7.5%" class="label">rshoulder</text>
+
+        <svg x="5%" y="10%" width="90%" height="90%">
+          <!-- Outline -->
+          <rect x="1%" y="1%" width="98%" height="98%" rx="10%"
+            fill="none" stroke="darkgrey" stroke-width="5" />
+          <rect x="3%" y="4%" width="94%" height="85%" rx="7.5%"
+            fill="none" stroke="darkgrey" stroke-width="3" />
+          <rect x="22%" y="6%" width="56%" height="78%" rx="1%"
+            fill="none" stroke="darkgrey" stroke-width="3" />
+          <rect x="26%" y="10%" width="48%" height="70%"
+            fill="none" stroke="darkgrey" stroke-width="3" />
+
+          <!-- Shoulders -->
+          <svg width="100%" height="20%" viewbox="0 0 100 10">
+            <path fill="lightgrey" stroke="#222" stroke-width=".75"
+              d="M 1 10   Q  1.5 0.5 10 0  H18 V1.5 H12   Q  3 1.75  3 10 Z"/>
+            <path fill="lightgrey" stroke="#222" stroke-width=".75"
+              d="M99 10   Q 98.5 0.5 90 0  H82 V1.5 H88   Q 97 1.75 97 10 Z"/>
+          </svg>
+
+          <!-- Directional stick -->
+          <svg x="5%" y="22.5%" width="15%" height="25%" viewbox="0 0 100 100">
+            <circle cx="50" cy="50" r="44"
+              fill="none" stroke="darkgrey" stroke-width="5" />
+            <circle cx="50" cy="50" r="30"
+              fill="lightgrey" stroke="#222" stroke-width="5" />
+          </svg>
+
+          <line x1="20%" y1="35%" x2="30%" y2="35%"
+            stroke="black" stroke-width="2" />
+          <text x="32%" y="30%" class="label">up, down,</text>
+          <text x="32%" y="36%" class="label">left, right,</text>
+          <text x="32%" y="42%" class="label">lstick</text>
+
+          <!-- Volume buttons -->
+          <rect x="6%" y="65%" width="13%" height="5%" rx="1.5%"
+            fill="lightgrey" stroke="#222" stroke-width="3" />
+          <line x1="12.5%" y1="66%" x2="12.5%" y2="69%"
+            stroke="#222" stroke-width="3" />
+
+          <line x1="8%" y1="59%" x2="8%" y2="63%"
+            stroke="black" stroke-width="2" />
+          <line x1="17%" y1="72%" x2="17%" y2="76%"
+            stroke="black" stroke-width="2" />
+          <text x="5%" y="57%" class="label">ltrigger</text>
+          <text x="8%" y="80%" class="label">rtrigger</text>
+
+          <!-- ABXY -->
+          <svg x="72.5%" y="19%" width="30%" height="35%" viewbox="0 0 100 100">
+            <circle cx="50%" cy="50%" r="25%"
+              fill="none" stroke="darkgrey" stroke-width="2" />
+            <circle cx="50%" cy="25%" r="12%"
+              fill="lightgrey" stroke="#222" stroke-width="3" />
+            <circle cx="50%" cy="75%" r="12%"
+              fill="lightgrey" stroke="#222" stroke-width="3" />
+            <circle cx="25%" cy="50%" r="12%"
+              fill="lightgrey" stroke="#222" stroke-width="3" />
+            <circle cx="75%" cy="50%" r="12%"
+              fill="lightgrey" stroke="#222" stroke-width="3" />
+          </svg>
+
+          <text x="95%" y="40%" class="label">a</text>
+          <text x="90.5%" y="50%" class="label">b</text>
+          <text x="83%" y="26%" class="label">x</text>
+          <text x="78.5%" y="35%" class="label">y</text>
+
+          <!-- Start/Select -->
+          <svg x="77%" y="55%" width="20%" height="20%" viewbox="0 0 100 100">
+            <rect x="0%" y="50%" width="50%" height="20%" rx="10%"
+              fill="lightgrey" stroke="#222" stroke-width="5"
+              transform="rotate(-45 25 50)" />
+            <rect x="50%" y="50%" width="50%" height="20%" rx="10%"
+              fill="lightgrey" stroke="#222" stroke-width="5"
+              transform="rotate(-45 75 50)" />
+          </svg>
+
+          <text x="79%" y="60%" class="label">select</text>
+          <text x="88%" y="76%" class="label">start</text>
+        </svg>
+      </svg>
+      </div>
+    </section>
+  </section>
+
+  <hr>
+
+  <section id="license" class="main">
+    <h2>License</h2>
+    <p>
+      This document or sections of it may be copied and redistributed as long
+      as a credit and the following link are provided where used:
+
+      <a href="https://github.com/AliceLR/megazeux/">
+        https://github.com/AliceLR/megazeux/
+      </a>
+    </p>
+  </section>
+</div>
+</body>
+</html>

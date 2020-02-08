@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style type="text/css">
+/* Note: the background color of the canvas needs to be black or WebGL blending won't work properly.
+ * https://stackoverflow.com/questions/6160004/how-does-blending-work-with-glsl-es-fragment-shaders-in-webgl
+ * https://www.digitalmzx.net/forums/index.php?app=tracker&showissue=788
+ */
+* { border: 0; margin: 0; padding: 0; }
+#mzx_canvas {
+	width: 100%; height: 100%; display: block; position: absolute; top: 0; left: 0; overflow: hidden;
+	background: url('play.png') center center / contain no-repeat #000;
+}
+</style>
+</head>
+<body>
+<canvas id="mzx_canvas" width="640" height="350" oncontextmenu="event.preventDefault()"></canvas>
+<script type="text/javascript" src="./mzxrun_loader.js"></script>
+<script type="text/javascript">
+(function() {
+	var mzxCanvas = document.getElementById("mzx_canvas");
+	var mzxLoadAttempted = false;
+
+	// the initialization process should be triggered by a click - audio enabling!
+	mzxCanvas.onclick = function() {
+		if (mzxLoadAttempted) return;
+		mzxLoadAttempted = true;
+		mzxCanvas.style.backgroundImage = "none";
+		MzxrunLoad({
+			render: {
+				canvas: mzxCanvas
+			},
+			storage: { // optional - if not present, saves to RAM (lost on page refresh)
+				type: "auto", // can also be "localstorage" or "indexeddb"; "auto" is recommended
+				database: "test_database"
+			},
+			path: "./",
+			files: [
+				["assets.zip", ""], // used by MegaZeux - do not touch!
+				["my_game.zip", "game/"] // edit this one - should contain your game
+			],
+			config: // edit this string to set config.txt options for your game.
+				"# Set the startup path and world.\n"+
+				"startup_path = /data/game\n"+
+				"startup_file = caverns.mzx\n"
+		});
+	}
+})();
+</script>
+</body>
+</html>

@@ -35,6 +35,12 @@
 #include <wiiuse/wpad.h>
 #undef BOOL
 
+// Shut an annoying warning up
+#if WPAD_CLASSIC_BUTTON_RIGHT == (0x8000 << 16)
+#undef WPAD_CLASSIC_BUTTON_RIGHT
+#define WPAD_CLASSIC_BUTTON_RIGHT (((Uint32)0x8000) << 16)
+#endif
+
 #define PTR_BORDER_W 128
 #define PTR_BORDER_H 70
 
@@ -44,6 +50,8 @@
 
 #define USB_MOUSE_BTN_MASK (USB_MOUSE_BTN_LEFT | USB_MOUSE_BTN_RIGHT | \
  USB_MOUSE_BTN_MIDDLE)
+
+#define HOME_BUTTON (MAX_JOYSTICK_BUTTONS - 1)
 
 extern struct input_status input;
 
@@ -198,6 +206,9 @@ static Sint16 adjust_axis(Uint8 pos, Uint8 min, Uint8 cen, Uint8 max)
 {
   Sint32 temp;
   temp = (pos - cen) * 32767 / ((cen - min) + (max - cen) / 2);
+  // FIXME hack because Wii stick axis ranges seem to cap out near +-22000
+  // universally, but +-32767 is desired.
+  temp += temp >> 1;
   if(temp < -32767) temp = -32767;
   if(temp > 32767) temp = 32767;
   return temp;
@@ -228,12 +239,39 @@ static void scan_joystick(Uint32 pad, Uint32 xaxis, joystick_t js, Sint16 axes[]
   }
 }
 
+static Sint16 adjust_axis_single(float mag, Sint16 minval, Sint16 maxval)
+{
+  Sint32 temp = (Sint32)(mag * 32767.0);
+  temp = (temp - minval) * 32767 / (maxval - minval);
+  if(temp < 0) temp = 0;
+  if(temp > 32767) temp = 32767;
+  return temp;
+}
+
+static void scan_axis_single(Uint32 pad, Uint32 axis, float mag, Sint16 *prev)
+{
+  // NOTE adjusting the range to ignore <3200 because the minimum values
+  // received from the triggers seem generally questionable.
+  Sint16 temp = adjust_axis_single(mag, 3200, 32767);
+  union event ev;
+
+  if(temp != *prev)
+  {
+    ev.type = EVENT_AXIS_MOVE;
+    ev.axis.pad = pad;
+    ev.axis.axis = axis;
+    ev.axis.pos = temp;
+    write_eq(&ev);
+    *prev = temp;
+  }
+}
+
 static void poll_input(void)
 {
   static Sint32 old_x = 1000, old_y = 1000;
   static Uint32 old_point = 0;
   static Uint32 old_btns[4] = {0};
-  static Sint16 old_axes[4][4] = {{0}};
+  static Sint16 old_axes[4][6] = {{0}};
   static int old_type[4] =
   {
     WPAD_EXP_NONE, WPAD_EXP_NONE,
@@ -241,6 +279,7 @@ static void poll_input(void)
   };
   static Uint32 old_gcbtns[4] = {0};
   static Sint8 old_gcaxes[4][4] = {{0}};
+  static Uint8 old_gctriggers[4][2] = {{0}};
   static Uint16 old_modifiers = 0;
   static Uint8 old_mousebtns = 0;
 
@@ -285,15 +324,15 @@ static void poll_input(void)
         {
           ev.pointer.x = wd->ir.x - PTR_BORDER_W;
           ev.pointer.y = wd->ir.y - PTR_BORDER_H;
-          if (ev.pointer.x < 0)
+          if(ev.pointer.x < 0)
             ev.pointer.x = 0;
-          if (ev.pointer.y < 0)
+          if(ev.pointer.y < 0)
             ev.pointer.y = 0;
-          if (ev.pointer.x >= 640)
+          if(ev.pointer.x >= 640)
             ev.pointer.x = 639;
-          if (ev.pointer.y >= 350)
+          if(ev.pointer.y >= 350)
             ev.pointer.y = 349;
-          if ((ev.pointer.x != old_x) || (ev.pointer.y != old_y))
+          if((ev.pointer.x != old_x) || (ev.pointer.y != old_y))
           {
             ev.type = EVENT_POINTER_MOVE;
             write_eq(&ev);
@@ -326,19 +365,14 @@ static void poll_input(void)
         {
           scan_joystick(i, 0, wd->exp.classic.ljs, old_axes[i]);
           scan_joystick(i, 2, wd->exp.classic.rjs, old_axes[i] + 2);
+          scan_axis_single(i, 4, wd->exp.classic.l_shoulder, old_axes[i] + 4);
+          scan_axis_single(i, 5, wd->exp.classic.r_shoulder, old_axes[i] + 5);
           break;
         }
         case WPAD_EXP_GUITARHERO3:
         {
           scan_joystick(i, 0, wd->exp.gh3.js, old_axes[i]);
-          j = (int)(wd->exp.gh3.whammy_bar * 32767.0);
-          if((int)j != old_axes[i][2])
-          {
-            ev.type = EVENT_AXIS_MOVE;
-            ev.axis.pad = i;
-            ev.axis.pos = j;
-            write_eq(&ev);
-          }
+          scan_axis_single(i, 2, wd->exp.gh3.whammy_bar, old_axes[i] + 2);
           break;
         }
         default: break;
@@ -372,6 +406,8 @@ static void poll_input(void)
       old_gcbtns[i] = pad[i].button;
       ev.type = EVENT_AXIS_MOVE;
       ev.axis.pad = i + 4;
+      // TODO all 6 of these have low min/max magnitudes but not as bad as the
+      // nunchuck and classic controller, maybe address this eventually.
       if(pad[i].stickX != old_gcaxes[i][0])
       {
         ev.axis.axis = 0;
@@ -399,6 +435,20 @@ static void poll_input(void)
         ev.axis.pos = -(pad[i].substickY << 8);
         write_eq(&ev);
         old_gcaxes[i][1] = pad[i].substickY;
+      }
+      if(pad[i].triggerL != old_gctriggers[i][0])
+      {
+        ev.axis.axis = 4;
+        ev.axis.pos = pad[i].triggerL << 7;
+        write_eq(&ev);
+        old_gctriggers[i][0] = pad[i].triggerL;
+      }
+      if(pad[i].triggerR != old_gctriggers[i][1])
+      {
+        ev.axis.axis = 5;
+        ev.axis.pos = pad[i].triggerR << 7;
+        write_eq(&ev);
+        old_gctriggers[i][1] = pad[i].triggerR;
       }
     }
     else
@@ -506,29 +556,32 @@ static void *wii_poll_thread(void *dud)
   return 0;
 }
 
-static Uint32 map_button(Uint32 pad, Uint32 button)
+static int wii_map_button(Uint32 pad, Uint32 button)
 {
-  Uint32 rval = 256;
+  Uint32 rval = MAX_JOYSTICK_BUTTONS;
+
   if(pad < 4)
   {
     switch(button)
     {
-      case WPAD_BUTTON_A: rval = 0; break;
-      case WPAD_BUTTON_B: rval = 1; break;
-      case WPAD_BUTTON_1: rval = 2; break;
-      case WPAD_BUTTON_2: rval = 3; break;
-      case WPAD_BUTTON_LEFT: rval = 4; break;
+      case WPAD_BUTTON_A:     rval = 0; break;
+      case WPAD_BUTTON_B:     rval = 1; break;
+      case WPAD_BUTTON_1:     rval = 2; break;
+      case WPAD_BUTTON_2:     rval = 3; break;
+      case WPAD_BUTTON_LEFT:  rval = 4; break;
       case WPAD_BUTTON_RIGHT: rval = 5; break;
-      case WPAD_BUTTON_UP: rval = 6; break;
-      case WPAD_BUTTON_DOWN: rval = 7; break;
+      case WPAD_BUTTON_UP:    rval = 6; break;
+      case WPAD_BUTTON_DOWN:  rval = 7; break;
       case WPAD_BUTTON_MINUS: rval = 8; break;
-      case WPAD_BUTTON_PLUS: rval = 9; break;
-      default: break;
+      case WPAD_BUTTON_PLUS:  rval = 9; break;
+      case WPAD_BUTTON_HOME:  return HOME_BUTTON;
     }
 
     switch(ext_type[pad])
     {
-      case WPAD_EXP_NONE: break;
+      case WPAD_EXP_NONE:
+        break;
+
       case WPAD_EXP_NUNCHUK:
       {
         switch(button)
@@ -540,49 +593,52 @@ static Uint32 map_button(Uint32 pad, Uint32 button)
         rval += 10;
         break;
       }
+
       case WPAD_EXP_CLASSIC:
       {
         switch(button)
         {
-          case WPAD_CLASSIC_BUTTON_A: rval = 10; break;
-          case WPAD_CLASSIC_BUTTON_B: rval = 11; break;
-          case WPAD_CLASSIC_BUTTON_X: rval = 12; break;
-          case WPAD_CLASSIC_BUTTON_Y: rval = 13; break;
-          case WPAD_CLASSIC_BUTTON_FULL_L: rval = 14; break;
-          case WPAD_CLASSIC_BUTTON_FULL_R: rval = 15; break;
-          case WPAD_CLASSIC_BUTTON_ZL: rval = 16; break;
-          case WPAD_CLASSIC_BUTTON_ZR: rval = 17; break;
-          case WPAD_CLASSIC_BUTTON_LEFT: rval = 18; break;
-          case WPAD_CLASSIC_BUTTON_RIGHT: rval = 19; break;
-          case WPAD_CLASSIC_BUTTON_UP: rval = 20; break;
-          case WPAD_CLASSIC_BUTTON_DOWN: rval = 21; break;
-          case WPAD_CLASSIC_BUTTON_MINUS: rval = 22; break;
-          case WPAD_CLASSIC_BUTTON_PLUS: rval = 23; break;
-          default: break;
+          case WPAD_CLASSIC_BUTTON_A:       rval = 10; break;
+          case WPAD_CLASSIC_BUTTON_B:       rval = 11; break;
+          case WPAD_CLASSIC_BUTTON_X:       rval = 12; break;
+          case WPAD_CLASSIC_BUTTON_Y:       rval = 13; break;
+          case WPAD_CLASSIC_BUTTON_FULL_L:  rval = 14; break;
+          case WPAD_CLASSIC_BUTTON_FULL_R:  rval = 15; break;
+          case WPAD_CLASSIC_BUTTON_ZL:      rval = 16; break;
+          case WPAD_CLASSIC_BUTTON_ZR:      rval = 17; break;
+          case WPAD_CLASSIC_BUTTON_LEFT:    rval = 18; break;
+          case WPAD_CLASSIC_BUTTON_RIGHT:   rval = 19; break;
+          case WPAD_CLASSIC_BUTTON_UP:      rval = 20; break;
+          case WPAD_CLASSIC_BUTTON_DOWN:    rval = 21; break;
+          case WPAD_CLASSIC_BUTTON_MINUS:   rval = 22; break;
+          case WPAD_CLASSIC_BUTTON_PLUS:    rval = 23; break;
+          case WPAD_CLASSIC_BUTTON_HOME:    return HOME_BUTTON;
         }
         rval += 22;
         break;
       }
+
       case WPAD_EXP_GUITARHERO3:
       {
         switch(button)
         {
-          case WPAD_GUITAR_HERO_3_BUTTON_GREEN: rval = 10; break;
-          case WPAD_GUITAR_HERO_3_BUTTON_RED: rval = 11; break;
-          case WPAD_GUITAR_HERO_3_BUTTON_YELLOW: rval = 12; break;
-          case WPAD_GUITAR_HERO_3_BUTTON_BLUE: rval = 13; break;
-          case WPAD_GUITAR_HERO_3_BUTTON_ORANGE: rval = 14; break;
-          case WPAD_GUITAR_HERO_3_BUTTON_STRUM_UP: rval = 15; break;
-          case WPAD_GUITAR_HERO_3_BUTTON_STRUM_DOWN: rval = 16; break;
-          case WPAD_GUITAR_HERO_3_BUTTON_MINUS: rval = 17; break;
-          case WPAD_GUITAR_HERO_3_BUTTON_PLUS: rval = 18; break;
-          default: break;
+          case WPAD_GUITAR_HERO_3_BUTTON_GREEN:       rval = 10; break;
+          case WPAD_GUITAR_HERO_3_BUTTON_RED:         rval = 11; break;
+          case WPAD_GUITAR_HERO_3_BUTTON_YELLOW:      rval = 12; break;
+          case WPAD_GUITAR_HERO_3_BUTTON_BLUE:        rval = 13; break;
+          case WPAD_GUITAR_HERO_3_BUTTON_ORANGE:      rval = 14; break;
+          case WPAD_GUITAR_HERO_3_BUTTON_STRUM_UP:    rval = 15; break;
+          case WPAD_GUITAR_HERO_3_BUTTON_STRUM_DOWN:  rval = 16; break;
+          case WPAD_GUITAR_HERO_3_BUTTON_MINUS:       rval = 17; break;
+          case WPAD_GUITAR_HERO_3_BUTTON_PLUS:        rval = 18; break;
         }
         rval += 46;
         break;
       }
+
       default:
-        rval = 256; // Unsupported extension controller
+        // Unsupported extension controller.
+        rval = MAX_JOYSTICK_BUTTONS;
         break;
     }
   }
@@ -590,26 +646,40 @@ static Uint32 map_button(Uint32 pad, Uint32 button)
   {
     switch(button)
     {
-      case PAD_BUTTON_A: rval = 0; break;
-      case PAD_BUTTON_B: rval = 1; break;
-      case PAD_BUTTON_X: rval = 2; break;
-      case PAD_BUTTON_Y: rval = 3; break;
-      case PAD_TRIGGER_L: rval = 4; break;
-      case PAD_TRIGGER_R: rval = 5; break;
-      case PAD_TRIGGER_Z: rval = 6; break;
-      case PAD_BUTTON_LEFT: rval = 7; break;
-      case PAD_BUTTON_RIGHT: rval = 8; break;
-      case PAD_BUTTON_UP: rval = 9; break;
-      case PAD_BUTTON_DOWN: rval = 10; break;
-      case PAD_BUTTON_START: rval = 11; break;
-      default: break;
+      case PAD_BUTTON_A:      rval = 0; break;
+      case PAD_BUTTON_B:      rval = 1; break;
+      case PAD_BUTTON_X:      rval = 2; break;
+      case PAD_BUTTON_Y:      rval = 3; break;
+      case PAD_TRIGGER_L:     rval = 4; break;
+      case PAD_TRIGGER_R:     rval = 5; break;
+      case PAD_TRIGGER_Z:     rval = 6; break;
+      case PAD_BUTTON_LEFT:   rval = 7; break;
+      case PAD_BUTTON_RIGHT:  rval = 8; break;
+      case PAD_BUTTON_UP:     rval = 9; break;
+      case PAD_BUTTON_DOWN:   rval = 10; break;
+      case PAD_BUTTON_START:  rval = 11; break;
     }
   }
 
-  if (rval < 256)
+  if(rval < MAX_JOYSTICK_BUTTONS)
     return rval;
-  else
-    return 256;
+
+  return -1;
+}
+
+static int wii_map_axis(Uint32 pad, Uint32 axis)
+{
+  if(pad < 4)
+  {
+    switch(ext_type[pad])
+    {
+      case WPAD_EXP_NUNCHUK:      return axis;
+      case WPAD_EXP_CLASSIC:      return axis + 2;
+      case WPAD_EXP_GUITARHERO3:  return axis + 8;
+      default:                    return -1; // Not supposed to happen
+    }
+  }
+  return axis;
 }
 
 static enum keycode convert_USB_internal(Uint32 key)
@@ -733,7 +803,7 @@ static boolean process_event(union event *ev)
   {
     case EVENT_BUTTON_DOWN:
     {
-      Uint32 button = map_button(ev->button.pad, ev->button.button);
+      int button = wii_map_button(ev->button.pad, ev->button.button);
       rval = false;
       if((ev->button.pad == 0) && pointing)
       {
@@ -756,33 +826,25 @@ static boolean process_event(union event *ev)
           rval = true;
         }
       }
-      if((button < 256))
+
+      if(button >= 0)
       {
-        enum keycode skey = input.joystick_button_map[ev->button.pad][button];
-        if(skey && (status->keymap[skey] == 0))
+        if(button == HOME_BUTTON)
         {
-          key_press(status, skey, skey);
-          rval = true;
+          // HACK: force the home button mapping to always be select.
+          int joystick = ev->button.pad;
+          input.joystick_global_map.button[joystick][button] = -JOY_SELECT;
+          input.joystick_game_map.button[joystick][button] = 0;
         }
-      }
-      else
-      {
-        if((ev->button.pad < 4) && ((ev->button.button == WPAD_BUTTON_HOME) ||
-         ((ext_type[ev->button.pad] == WPAD_EXP_CLASSIC) &&
-         (ev->button.button == WPAD_CLASSIC_BUTTON_HOME))))
-        {
-          status->keymap[IKEY_ESCAPE] = 1;
-          status->key = IKEY_ESCAPE;
-          status->keypress_time = get_ticks();
-          rval = true;
-          break;
-        }
+        joystick_button_press(status, ev->button.pad, button);
+        rval = true;
       }
       break;
     }
+
     case EVENT_BUTTON_UP:
     {
-      Uint32 button = map_button(ev->button.pad, ev->button.button);
+      int button = wii_map_button(ev->button.pad, ev->button.button);
       rval = false;
       if((ev->button.pad == 0) && status->mouse_button_state)
       {
@@ -804,73 +866,32 @@ static boolean process_event(union event *ev)
           rval = true;
         }
       }
-      if((button < 256))
+
+      if(button >= 0)
       {
-        enum keycode skey = input.joystick_button_map[ev->button.pad][button];
-        if(skey)
-        {
-          key_release(status, skey);
-          rval = true;
-        }
+        joystick_button_release(status, ev->button.pad, button);
+        rval = true;
       }
       break;
     }
+
     case EVENT_AXIS_MOVE:
     {
-      int digital_value = -1;
-      int axis = ev->axis.axis;
-      int last_axis;
-      enum keycode skey;
-      if(ev->axis.pad < 4)
-      {
-        switch(ext_type[ev->axis.pad])
-        {
-          case WPAD_EXP_NUNCHUK: break;
-          case WPAD_EXP_CLASSIC: axis += 2; break;
-          case WPAD_EXP_GUITARHERO3: axis += 6; break;
-          default: axis = 256; break; // Not supposed to happen
-        }
-      }
-      if(axis == 256) break;
-      last_axis = status->axis[ev->axis.pad][axis];
+      int axis = wii_map_axis(ev->axis.pad, ev->axis.axis);
 
-      if(ev->axis.pos > 10000)
-        digital_value = 1;
-      else if(ev->axis.pos < -10000)
-        digital_value = 0;
+      if(axis < 0)
+        break;
 
-      if(digital_value != -1)
-      {
-        skey = input.joystick_axis_map[ev->axis.pad][axis][digital_value];
-        if(skey)
-        {
-          if(status->keymap[skey] == 0)
-            key_press(status, skey, skey);
-
-          if(last_axis == (digital_value ^ 1))
-          {
-            skey = input.joystick_axis_map[ev->axis.pad][axis][last_axis];
-            key_release(status, skey);
-          }
-        }
-      }
-      else
-      {
-        if(last_axis != -1)
-        {
-          skey = input.joystick_axis_map[ev->axis.pad][axis][last_axis];
-          if(skey)
-            key_release(status, skey);
-        }
-      }
-      status->axis[ev->axis.pad][axis] = digital_value;
+      joystick_axis_update(status, ev->axis.pad, axis, ev->axis.pos);
       break;
     }
+
     case EVENT_CHANGE_EXT:
     {
       ext_type[ev->ext.pad] = ev->ext.ext;
       break;
     }
+
     case EVENT_POINTER_MOVE:
     {
       pointing = 1;
@@ -881,11 +902,13 @@ static boolean process_event(union event *ev)
       status->mouse_y = ev->pointer.y / 14;
       break;
     }
+
     case EVENT_POINTER_OUT:
     {
       pointing = 0;
       break;
     }
+
     case EVENT_KEY_DOWN:
     {
       enum keycode ckey = convert_USB_internal(ev->key.key);
@@ -938,6 +961,7 @@ static boolean process_event(union event *ev)
       key_press(status, ckey, ev->key.unicode);
       break;
     }
+
     case EVENT_KEY_UP:
     {
       enum keycode ckey = convert_USB_internal(ev->key.key);
@@ -961,12 +985,14 @@ static boolean process_event(union event *ev)
       status->key_release = ckey;
       break;
     }
+
     case EVENT_KEY_LOCKS:
     {
       status->numlock_status = !!(ev->locks.locks & MOD_NUMLOCK);
       status->caps_status = !!(ev->locks.locks & MOD_CAPSLOCK);
       break;
     }
+
     case EVENT_MOUSE_MOVE:
     {
       int mx = status->real_mouse_x + ev->mmove.dx;
@@ -988,6 +1014,7 @@ static boolean process_event(union event *ev)
       status->mouse_moved = true;
       break;
     }
+
     case EVENT_MOUSE_BUTTON_DOWN:
     {
       Uint32 button = 0;
@@ -1017,6 +1044,7 @@ static boolean process_event(union event *ev)
       status->mouse_time = get_ticks();
       break;
     }
+
     case EVENT_MOUSE_BUTTON_UP:
     {
       Uint32 button = 0;
@@ -1044,6 +1072,7 @@ static boolean process_event(union event *ev)
       status->mouse_repeat_state = 0;
       break;
     }
+
     default:
     {
       rval = false;
@@ -1068,15 +1097,12 @@ boolean __update_event_status(void)
   return rval;
 }
 
-void __wait_event(int timeout)
+void __wait_event(void)
 {
   mqmsg_t ev;
 
   if(!eq_inited)
     return;
-
-  if(timeout)
-    delay(timeout);
 
   if(MQ_Receive(eq, &ev, MQ_MSG_BLOCK))
   {
@@ -1092,8 +1118,15 @@ void real_warp_mouse(int x, int y)
 
 void initialize_joysticks(void)
 {
+  struct buffered_status *status = store_status();
+  int i;
+
   MQ_Init(&eq, EVENT_QUEUE_SIZE);
   eq_inited = 1;
   LWP_CreateThread(&poll_thread, wii_poll_thread, NULL, poll_stack, STACKSIZE,
    40);
+
+  // TODO: should be able to actually detect pad plugging/removal?
+  for(i = 0; i < 8; i++)
+    joystick_set_active(status, i, true);
 }

@@ -46,10 +46,6 @@
 KHASH_SET_INIT(STRING, struct string *, name, name_length)
 #endif
 
-#ifdef CONFIG_UTHASH
-#include <utcasehash.h>
-#endif
-
 // Please only use string literals with this, thanks.
 
 #define special_name(n)                                         \
@@ -88,15 +84,6 @@ static struct string *find_string(struct string_list *string_list,
 #if defined(CONFIG_KHASH)
   size_t name_length = strlen(name);
   KHASH_FIND(STRING, string_list->hash_table, name, name_length, current);
-
-  // When reallocing we need to replace the old pointer at
-  // its original list index.
-  *next = current ? current->list_ind : string_list->num_strings;
-  return current;
-
-#elif defined(CONFIG_UTHASH)
-  size_t name_length = strlen(name);
-  HASH_FIND(sh, string_list->head, name, name_length, current);
 
   // When reallocing we need to replace the old pointer at
   // its original list index.
@@ -202,10 +189,6 @@ static struct string *add_string_preallocate(struct string_list *string_list,
   KHASH_ADD(STRING, string_list->hash_table, dest);
 #endif
 
-#ifdef CONFIG_UTHASH
-  HASH_ADD_KEYPTR(sh, string_list->head, dest->name, dest->name_length, dest);
-#endif
-
   return dest;
 }
 
@@ -218,14 +201,6 @@ static struct string *reallocate_string(struct string_list *string_list,
 #ifdef CONFIG_KHASH
   // Delete the string with the same name as src if it exists in the table.
   KHASH_DELETE(STRING, string_list->hash_table, src);
-#endif
-
-#ifdef CONFIG_UTHASH
-  struct string *result = NULL;
-  HASH_FIND(sh, string_list->head, src->name, (size_t)src->name_length, result);
-
-  if(result)
-    HASH_DELETE(sh, string_list->head, result);
 #endif
 
   src = crealloc(src, base_length + length);
@@ -245,10 +220,6 @@ static struct string *reallocate_string(struct string_list *string_list,
 
 #ifdef CONFIG_KHASH
   KHASH_ADD(STRING, string_list->hash_table, src);
-#endif
-
-#ifdef CONFIG_UTHASH
-  HASH_ADD_KEYPTR(sh, string_list->head, src->name, src->name_length, src);
 #endif
 
   return src;
@@ -887,7 +858,7 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
     while(1)
     {
       // Read entries until there are none left
-      if(!dir_get_next_entry(&mzx_world->input_directory, entry))
+      if(!dir_get_next_entry(&mzx_world->input_directory, entry, NULL))
         break;
 
       // Ignore . and ..
@@ -971,6 +942,9 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
 
   if(special_name_partial("fwrite") && mzx_world->output_file)
   {
+    // When no length argument is specified, always write a delimiter.
+    boolean write_delimiter = (src_length == 6);
+
     /* You can't write a string that doesn't exist, or a string
      * of zero length (the file will still be created, of course).
      */
@@ -993,10 +967,20 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
         size = dest_length - offset;
 
       fwrite(dest_value + offset, size, 1, output_file);
-
-      if(src_length == 6)
-        fputc(mzx_world->fwrite_delimiter, output_file);
     }
+    else
+    {
+      // 2.80X through 2.91X wouldn't write delimiters for unset strings.
+      if((mzx_world->version >= V280) && (mzx_world->version <= V291) && !dest)
+        write_delimiter = false;
+
+      // 2.82b through 2.91X wouldn't write them for 0-length strings either.
+      if((mzx_world->version >= V282) && (mzx_world->version <= V291))
+        write_delimiter = false;
+    }
+
+    if(write_delimiter)
+      fputc(mzx_world->fwrite_delimiter, mzx_world->output_file);
   }
   else
 
@@ -1028,9 +1012,21 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
     if(cur_robot && dest && dest->length)
     {
       int new_length = 0;
-      char *new_source = legacy_convert_file_mem(dest->value,
-       dest->length, &new_length, SAVE_ROBOT_DISASM_EXTRAS,
-       SAVE_ROBOT_DISASM_BASE);
+      char *new_source;
+
+      // Source world? Assume new source. Otherwise, assume old source.
+      // TODO issues caused by this will be resolved when these counters get
+      // translated into actual commands eventually.
+      if(mzx_world->version >= VERSION_SOURCE)
+      {
+        new_length = dest->length;
+        new_source = cmalloc(new_length + 1);
+        memcpy(new_source, dest->value, dest->length);
+        new_source[new_length] = 0;
+      }
+      else
+        new_source = legacy_convert_program(dest->value, dest->length,
+         &new_length, SAVE_ROBOT_DISASM_EXTRAS, SAVE_ROBOT_DISASM_BASE);
 
       if(new_source)
       {
@@ -1045,10 +1041,9 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
         {
           free(cur_robot->program_bytecode);
           cur_robot->program_bytecode = NULL;
-          cur_robot->stack_pointer = 0;
-          cur_robot->cur_prog_line = 1;
         }
-
+        cur_robot->stack_pointer = 0;
+        cur_robot->cur_prog_line = 1;
         prepare_robot_bytecode(mzx_world, cur_robot);
 
         // Restart this robot if either it was just a LOAD_ROBOT
@@ -1060,55 +1055,27 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
   }
   else
 
-  if(special_name_partial("load_source_file") &&
-   mzx_world->version >= VERSION_SOURCE)
+  if(special_name_partial("save_robot") && mzx_world->version >= V292)
   {
-    // Source code (DBC+)
+    // Save robot source to string (2.92+)
+    // FIXME old worlds will save new source. Fixing this would ideally
+    // involve allowing new source, old source, or old bytecode to all be
+    // considered the current program "source", but doing this in a clean
+    // way probably relies on separating programs from robots internally.
 
     struct robot *cur_robot;
     int load_id = id;
 
-    // If there's a number at the end, we're loading to another robot.
-    if(src_length > 16)
-      load_id = strtol(src_value + 16, NULL, 10);
+    if(src_length > 10)
+      load_id = strtol(src_value + 10, NULL, 10);
 
     cur_robot = get_robot_by_id(mzx_world, load_id);
 
-    if(cur_robot && dest)
+    if(cur_robot)
     {
-      int new_length = dest->length;
-      char *new_source;
-
-      if(new_length)
-      {
-        if(cur_robot->program_source)
-          free(cur_robot->program_source);
-
-        // We have to duplicate the source for prepare_robot_bytecode.
-        // Even if we're just going to throw it away afterward.
-        new_source = cmalloc(new_length + 1);
-        memcpy(new_source, dest->value, new_length);
-        new_source[new_length] = 0;
-
-        cur_robot->program_source = new_source;
-        cur_robot->program_source_length = new_length;
-
-        // TODO: Move this outside of here.
-        if(cur_robot->program_bytecode)
-        {
-          free(cur_robot->program_bytecode);
-          cur_robot->program_bytecode = NULL;
-          cur_robot->stack_pointer = 0;
-          cur_robot->cur_prog_line = 1;
-        }
-
-        prepare_robot_bytecode(mzx_world, cur_robot);
-
-        // Restart this robot if either it was just a LOAD_ROBOT
-        // OR LOAD_ROBOTn was used where n is &robot_id&.
-        if(load_id == id)
-          return 1;
-      }
+      force_string_copy(string_list, name, next, &dest,
+       cur_robot->program_source_length, offset, offset_specified,
+       &size, size_specified, cur_robot->program_source);
     }
   }
 
@@ -1121,7 +1088,7 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
     int new_size;
 
     if(dest && dest->length)
-      new_program = assemble_file_mem(dest->value, dest->length, &new_size);
+      new_program = assemble_program(dest->value, dest->length, &new_size);
 
     if(new_program)
     {
@@ -1137,13 +1104,12 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
       if(cur_robot)
       {
         reallocate_robot(cur_robot, new_size);
-        clear_label_cache(cur_robot->label_list, cur_robot->num_labels);
+        clear_label_cache(cur_robot);
 
         memcpy(cur_robot->program_bytecode, new_program, new_size);
         cur_robot->stack_pointer = 0;
         cur_robot->cur_prog_line = 1;
-        cur_robot->label_list =
-         cache_robot_labels(cur_robot, &cur_robot->num_labels);
+        cache_robot_labels(cur_robot);
 
         // Free the robot's source and command map
         free(cur_robot->program_source);
@@ -1165,6 +1131,35 @@ int set_string(struct world *mzx_world, const char *name, struct string *src,
       }
 
       free(new_program);
+    }
+  }
+  else
+
+  if(special_name_partial("save_robot") && mzx_world->version >= V292)
+  {
+    // Save robot to string (2.92+)
+    struct robot *cur_robot;
+    char *robot_source = NULL;
+    int robot_source_length;
+    int load_id = id;
+
+    if(src_length > 10)
+      load_id = strtol(src_value + 10, NULL, 10);
+
+    cur_robot = get_robot_by_id(mzx_world, load_id);
+
+    if(cur_robot)
+    {
+      disassemble_program(cur_robot->program_bytecode,
+       cur_robot->program_bytecode_length,
+       &robot_source, &robot_source_length, NULL, NULL);
+
+      if(robot_source)
+      {
+        force_string_copy(string_list, name, next, &dest, robot_source_length,
+         offset, offset_specified, &size, size_specified, robot_source);
+        free(robot_source);
+      }
     }
   }
 #endif
@@ -1353,6 +1348,15 @@ boolean is_string(char *buffer)
   return true;
 }
 
+static boolean wildcard_char_is_escapable(unsigned char c)
+{
+  return (c == '%') || (c == '?') || (c == '\\');
+}
+
+// Slower wildcard compare algorithm that manipulates an array of booleans to
+// determine the match state of the entire source string at once.
+// This approach seems to perform a bit better than a stack.
+//
 // Example pattern:
 //      z a b c d e f g
 //    Y
@@ -1362,11 +1366,10 @@ boolean is_string(char *buffer)
 // c  Y - - N Y N N N N (attempt from left to right)
 // %  Y - - - Y Y Y Y Y (fill left to end with Y)
 // g  Y - - - - N N N Y
-
-static int compare_wildcard(const char *str, size_t str_len,
- const char *pat, size_t pat_len, int exact_case)
+static int compare_wildcard_slow(const char *str, size_t str_len,
+ const char *pat, size_t pat_len, boolean exact_case)
 {
-  char *str_matched = calloc(1, str_len + 1);
+  char *str_matched = ccalloc(1, str_len + 1);
   size_t left = 1;
   size_t right = 1;
   size_t new_left = 1;
@@ -1374,40 +1377,64 @@ static int compare_wildcard(const char *str, size_t str_len,
   size_t i = 0;
   size_t j;
   char next = 0;
-  char prev;
   int res = -1;
+
+  //info("Slow: %.*s ?=%s %.*s\n", str_len, str, exact_case?"=":"", pat_len, pat);
 
   str_matched[0] = 1;
 
   while(i < pat_len && left <= str_len)
   {
-    prev = next;
-    next = exact_case ? pat[i] : toupper((int)pat[i]);
+    next = exact_case ? pat[i] : memtolower(pat[i]);
     i++;
 
     switch(next)
     {
+      case '?':
       case '%':
       {
-        // Can match the entire string or nothing. Ignore duplicate %s
-        if(prev != '%')
+        // ? matches any character.
+        // % can match the entire string or nothing.
+        // Consume all wildcards in a block to reduce the number of calls.
+        boolean match_any = false;
+        new_left = left;
+        new_right = right;
+        while(true)
+        {
+          if(next == '%')
+          {
+            new_right = str_len;
+            match_any = true;
+          }
+          else
+
+          if(next == '?')
+          {
+            new_left++;
+            if(new_right < str_len)
+              new_right++;
+          }
+          else
+          {
+            i--;
+            break;
+          }
+
+          if(i >= pat_len)
+            break;
+
+          next = pat[i++];
+        }
+
+        if(match_any)
         {
           memset(str_matched + left, 1, str_len - left + 1);
-          right = str_len;
         }
-        continue;
-      }
+        else
+          memmove(str_matched + new_left - 1, str_matched + left - 1,
+           new_right - new_left + 1);
 
-      case '?':
-      {
-        // Matches the next character if the previous character was matched
-        memmove(str_matched + left, str_matched + left - 1, right - left + 1);
-
-        left++;
-        if(right < str_len)
-          right++;
-
-        continue;
+        break;
       }
 
       case '\\':
@@ -1415,7 +1442,7 @@ static int compare_wildcard(const char *str, size_t str_len,
         // Might be an escaped character
         if(i < pat_len)
         {
-          if(pat[i] == '%' || pat[i] == '?' || pat[i] == '\\')
+          if(wildcard_char_is_escapable(pat[i]))
           {
             next = pat[i];
             i++;
@@ -1428,7 +1455,8 @@ static int compare_wildcard(const char *str, size_t str_len,
       default:
       {
         // Matches next character if previous character matched and
-        // the current character is the same as the pattern
+        // the current character is the same as the pattern. If no matches are
+        // found, left will be set >str_len and terminate the search.
         new_left = (size_t)-1;
         new_right = 0;
 
@@ -1449,7 +1477,7 @@ static int compare_wildcard(const char *str, size_t str_len,
         {
           for(j = right; j >= left; j--)
           {
-            str_matched[j] = str_matched[j-1] && toupper((int)str[j-1]) == next;
+            str_matched[j] = str_matched[j-1] && memtolower(str[j-1]) == next;
             if(str_matched[j])
             {
               new_left = j+1;
@@ -1475,6 +1503,134 @@ static int compare_wildcard(const char *str, size_t str_len,
 
   free(str_matched);
   return res;
+}
+
+// Basic wildcard match-- supports anything but % followed by literals.
+// This is a lot faster than the older algorithm, but if the aforementioned
+// case is encountered, it has to call the old algorithm instead.
+static int compare_wildcard(const char *str, size_t str_len,
+ const char *pat, size_t pat_len, boolean exact_case)
+{
+  size_t s = 0;
+  size_t w = 0;
+
+  //info("Fast: %.*s ?=%s %.*s\n", str_len, str, exact_case?"=":"", pat_len, pat);
+
+  // Pattern is length 0: match if str is length 0, otherwise not a match.
+  if(pat_len == 0)
+    return (str_len == 0) ? 0 : 1;
+
+  while(s < str_len && w < pat_len)
+  {
+    switch(pat[w])
+    {
+      case '%':
+      {
+        // Consume extra wildcards.
+        size_t oldw = w;
+        size_t olds = s;
+        char lookahead;
+        w++;
+        while(w < pat_len)
+        {
+          if(pat[w] == '%')
+          {
+            w++;
+          }
+          else
+
+          if(pat[w] == '?')
+          {
+            w++;
+            s++;
+          }
+          else
+            break;
+        }
+
+        // Not enough source characters? Not a match.
+        if(s > str_len)
+          return 1;
+
+        // End of the pattern and >=0 characters left? Match.
+        if(w == pat_len)
+          return 0;
+
+        // Lookahead char not present anywhere in the source? Not a match.
+        // This is a good opportunity to reduce the size of the source if it
+        // has to go to the old search algorithm too.
+        lookahead = pat[w];
+        if(lookahead == '\\' && w+1 < pat_len)
+          if(wildcard_char_is_escapable(pat[w+1]))
+            lookahead = pat[w+1];
+
+        while(s < str_len)
+        {
+          if(str[s] == lookahead)
+            break;
+          olds++;
+          s++;
+        }
+        if(s >= str_len)
+          return 1;
+
+        // Bring out the slow search algorithm :(
+        str += olds;
+        str_len -= olds;
+        pat += oldw;
+        pat_len -= oldw;
+        return compare_wildcard_slow(str, str_len, pat, pat_len, exact_case);
+      }
+
+      case '?':
+      {
+        // Consume extra wildcards.
+        w++;
+        s++;
+        while(w < pat_len && pat[w] == '?')
+        {
+          w++;
+          s++;
+        }
+        continue;
+      }
+
+      case '\\':
+      {
+        if(wildcard_char_is_escapable(pat[w+1]))
+          w++;
+        if(w >= pat_len)
+          return 1;
+      }
+
+      /* fall-through */
+
+      default:
+      {
+        if(exact_case)
+        {
+          if(str[s] != pat[w])
+            return 1;
+        }
+        else
+        {
+          if(memtolower(str[s]) != memtolower(pat[w]))
+            return 1;
+        }
+        w++;
+        s++;
+        continue;
+      }
+    }
+  }
+  // Skip trailing wildcards if they exist
+  while(w < pat_len && pat[w] == '%') w++;
+
+  // Both exactly consumed--successful match.
+  if(s == str_len && w == pat_len)
+    return 0;
+
+  return 1;
 }
 
 int compare_strings(struct string *A, struct string *B, boolean exact_case,
@@ -1527,10 +1683,6 @@ struct string *load_new_string(struct string_list *string_list, int index,
   KHASH_ADD(STRING, string_list->hash_table, dest);
 #endif
 
-#ifdef CONFIG_UTHASH
-  HASH_ADD_KEYPTR(sh, string_list->head, dest->name, dest->name_length, dest);
-#endif
-
   return dest;
 }
 
@@ -1561,11 +1713,6 @@ void clear_string_list(struct string_list *string_list)
 #ifdef CONFIG_KHASH
   KHASH_CLEAR(STRING, string_list->hash_table);
   string_list->hash_table = NULL;
-#endif
-
-#ifdef CONFIG_UTHASH
-  HASH_CLEAR(sh, string_list->head);
-  string_list->head = NULL;
 #endif
 
   for(i = 0; i < string_list->num_strings; i++)

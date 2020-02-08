@@ -47,6 +47,7 @@
 #include "data.h"
 #include "error.h"
 #include "event.h"
+#include "game_menu.h"
 #include "graphics.h"
 #include "helpsys.h"
 #include "intake.h"
@@ -332,6 +333,7 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
   int bottom = 16;
   int x, y;
   int i, i2;
+  int joystick_key;
   int key;
 
   if(width_ptr && height_ptr)
@@ -543,6 +545,10 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
     update_screen();
     update_event_status_delay();
     key = get_key(keycode_internal_wrt_numlock);
+
+    joystick_key = get_joystick_ui_key();
+    if(joystick_key)
+      key = joystick_key;
 
     if(get_exit_status())
       key = IKEY_ESCAPE;
@@ -990,6 +996,10 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
     update_event_status_delay();
     current_key = get_key(keycode_internal_wrt_numlock);
 
+    new_key = get_joystick_ui_key();
+    if(new_key)
+      current_key = new_key;
+
     new_key = 0;
 
     if(current_element->idle_function)
@@ -1162,7 +1172,7 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
       case IKEY_ESCAPE: // ESC
       {
         // Only work on press.  Ignore autorepeat.
-        if(get_key_status(keycode_internal, IKEY_ESCAPE) == 1)
+        //if(get_key_status(keycode_internal, IKEY_ESCAPE) == 1)
           exit = 1;
 
         break;
@@ -1171,8 +1181,7 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
 #ifdef CONFIG_HELPSYS
       case IKEY_F1: // F1
       {
-        if(!get_config()->standalone_mode ||
-         get_counter(mzx_world, "HELP_MENU", 0))
+        if(allow_help_system(mzx_world, true))
         {
           // FIXME context
           help_system(NULL, mzx_world);
@@ -1331,15 +1340,14 @@ static void draw_number_box(struct world *mzx_world, struct dialog *di,
   int increment = 1;
   int i;
 
-  if(src->mult_five)
+  if(src->type == NUMBER_BOX_MULT_FIVE)
     increment = 5;
 
   write_string(src->question, x, y, color, 0);
 
   x += (int)strlen(src->question) + di->pad_space;
 
-  if((src->lower_limit == 1) && (src->upper_limit < 10) &&
-   (increment == 1))
+  if(src->type == NUMBER_LINE)
   {
     // Draw a number line
     for(i = 1; i <= src->upper_limit; i++)
@@ -1350,6 +1358,25 @@ static void draw_number_box(struct world *mzx_world, struct dialog *di,
         draw_char('0' + i, DI_NONACTIVE, x + i - 1, y);
     }
   }
+  else
+
+  if(src->type == NUMBER_SLIDER)
+  {
+    int upper_x = x + (src->upper_limit - src->lower_limit) + 2;
+    int slider_x = x + (*(src->result) - src->lower_limit);
+    int slider_col = active ? DI_ARROWBUTTON : DI_NUMERIC;
+
+    for(i = x + 1; i < upper_x; i++)
+      draw_char('\xC4', DI_DARK, i, y);
+
+    write_number(src->lower_limit, DI_NONACTIVE, x, y, 0, false, 10);
+    write_number(src->upper_limit, DI_NONACTIVE, upper_x, y, 0, false, 10);
+
+    draw_char(' ', slider_col, slider_x, y);
+    draw_char(' ', slider_col, slider_x + 2 + (*(src->result) >= 10), y);
+    write_number(*(src->result), slider_col, slider_x + 1, y, 0, false, 10);
+  }
+
   else
   {
     // Draw a number
@@ -1657,7 +1684,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
       {
         result = src->lower_limit;
         if(src->upper_limit > 9)
-          src->is_null = 1;
+          src->is_null = true;
       }
 
       *(src->result) = result;
@@ -1683,7 +1710,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
            (key_char - '0');
         }
 
-        if(src->mult_five)
+        if(src->type == NUMBER_BOX_MULT_FIVE)
           current_value -= current_value % 5;
 
         if(current_value < src->lower_limit)
@@ -1700,7 +1727,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
        !get_shift_status(keycode_internal) &&
        !get_ctrl_status(keycode_internal) &&
        !get_alt_status(keycode_internal))
-        src->is_null = 0;
+        src->is_null = false;
 
       return key;
     }
@@ -1708,7 +1735,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
 
   if(increment_value > 0 && src->is_null)
     increment_value -= src->lower_limit;
-  src->is_null = 0;
+  src->is_null = false;
 
   if(increment_value)
   {
@@ -1878,7 +1905,8 @@ static int key_list_box(struct world *mzx_world, struct dialog *di,
     default:
     {
       int key_char = get_key(keycode_unicode);
-      if(!get_alt_status(keycode_internal) && (key_char >= 32))
+      if(!get_alt_status(keycode_internal) &&
+       !get_ctrl_status(keycode_internal) && (key_char >= 32))
       {
         char *key_buffer = src->key_buffer;
         int key_position = src->key_position;
@@ -1992,13 +2020,21 @@ static int click_number_box(struct world *mzx_world, struct dialog *di,
   struct number_box *src = (struct number_box *)e;
   mouse_x -= (int)strlen(src->question) + 7;
 
-  if((src->lower_limit == 1) &&
-    (src->upper_limit < 10) && (!src->mult_five))
+  if(src->type == NUMBER_LINE)
   {
     // Select number IF on the number line itself
     mouse_x += 7;
     if((mouse_x < src->upper_limit) && (mouse_x >= 0))
       *(src->result) = mouse_x + 1;
+  }
+  else
+
+  if(src->type == NUMBER_SLIDER)
+  {
+    mouse_x += 7;
+    if(mouse_x >= 0)
+      *(src->result) = CLAMP(mouse_x - 1 + src->lower_limit,
+       src->lower_limit, src->upper_limit);
   }
   else
 
@@ -2008,7 +2044,7 @@ static int click_number_box(struct world *mzx_world, struct dialog *di,
   }
   else
 
-  if((mouse_x >= 3) && (mouse_y <= 5))
+  if((mouse_x >= 3) && (mouse_x <= 5))
   {
     return IKEY_DOWN;
   }
@@ -2024,13 +2060,21 @@ static int drag_number_box(struct world *mzx_world, struct dialog *di,
 
   mouse_x -= (int)strlen(src->question) + 7;
 
-  if((src->lower_limit == 1) &&
-    (src->upper_limit < 10) && (!src->mult_five))
+  if(src->type == NUMBER_LINE)
   {
     // Select number IF on the number line itself
     mouse_x += 7;
     if((mouse_x < src->upper_limit) && (mouse_x >= 0))
       *(src->result) = mouse_x + 1;
+  }
+  else
+
+  if(src->type == NUMBER_SLIDER)
+  {
+    mouse_x += 7;
+    if(mouse_x >= 0)
+      *(src->result) = CLAMP(mouse_x - 1 + src->lower_limit,
+       src->lower_limit, src->upper_limit);
   }
   else
 
@@ -2041,7 +2085,7 @@ static int drag_number_box(struct world *mzx_world, struct dialog *di,
   }
   else
 
-  if((mouse_x >= 3) && (mouse_y <= 5) && mouse_press)
+  if((mouse_x >= 3) && (mouse_x <= 5) && mouse_press)
   {
     return IKEY_DOWN;
   }
@@ -2279,7 +2323,7 @@ struct element *construct_button(int x, int y, const char *label,
 
 struct element *construct_number_box(int x, int y,
  const char *question, int lower_limit, int upper_limit,
- int mult_five, int *result)
+ enum number_box_type type, int *result)
 {
   struct number_box *src = cmalloc(sizeof(struct number_box));
   int width;
@@ -2287,15 +2331,35 @@ struct element *construct_number_box(int x, int y,
   src->question = question;
   src->lower_limit = lower_limit;
   src->upper_limit = upper_limit;
-  src->mult_five = mult_five;
+  src->type = type;
   src->result = result;
-  src->is_null = 0;
+  src->is_null = false;
   width = (int)strlen(question) + 1;
 
-  if((lower_limit == 1) && (upper_limit < 10))
-    width += upper_limit - 1;
+  if(src->type == NUMBER_LINE)
+  {
+    if(lower_limit != 1 || upper_limit >= 10)
+      src->type = NUMBER_BOX;
+
+    else
+      width += upper_limit - 1;
+  }
   else
+
+  if(src->type == NUMBER_SLIDER)
+  {
+    // Currently only allow lower limits from 0 to 9.
+    if(lower_limit < 0 || lower_limit >= 10)
+      src->type = NUMBER_BOX;
+
+    else
+      width += (upper_limit - lower_limit) + (upper_limit >= 10) + 2;
+  }
+
+  if(src->type == NUMBER_BOX || src->type == NUMBER_BOX_MULT_FIVE)
+  {
     width += 13;
+  }
 
   construct_element(&(src->e), x, y, width, 1,
    draw_number_box, key_number_box, click_number_box, drag_number_box, NULL);
@@ -2327,7 +2391,7 @@ struct element *construct_file_selector(int x, int y,
   return (struct element *)src;
 }
 
-__editor_maybe_static struct element *construct_list_box(int x, int y,
+struct element *construct_list_box(int x, int y,
  const char **choices, int num_choices, int num_choices_visible,
  int choice_length, int return_value, int *result, int *result_offset,
  boolean respect_color_codes)
@@ -2516,6 +2580,84 @@ static int sort_function(const void *dest_str_ptr, const void *src_str_ptr)
 #define FILESEL_FILES_LABEL   5
 #define FILESEL_DIRS_LABEL    6
 
+#define MAX_FILE_LIST_DISPLAY 56
+#define MAX_FILE_LIST_DISPLAY_MZX 30
+
+struct file_list_entry
+{
+  // This is the string displayed by the file list interface. It must be the
+  // first thing in this struct.
+  char display[MAX_FILE_LIST_DISPLAY];
+
+  boolean is_mzx_file;
+  boolean loaded_world_name;
+  char filename[1];
+};
+
+/**
+ * Read the name of a world file from the file.
+ * Conveniently, this is typically just the first 25 bytes of the world.
+ */
+static void file_list_get_mzx_world_name(struct file_list_entry *entry)
+{
+  FILE *mzx_file = fopen_unsafe(entry->filename, "rb");
+  char *world_name = entry->display + MAX_FILE_LIST_DISPLAY_MZX;
+
+  if(!fread(world_name, 24, 1, mzx_file))
+    strcpy(world_name, "@0~c\x10 name read failed \x11");
+  else
+  if(!memcmp(world_name, "PK\x03\x04", 4))
+    strcpy(world_name, "@0~c\x10 rearchived world \x11");
+
+  fclose(mzx_file);
+
+  entry->display[MAX_FILE_LIST_DISPLAY - 1] = '\0';
+  entry->loaded_world_name = true;
+}
+
+/**
+ * Create an entry in the file list.
+ */
+static struct file_list_entry *construct_file_list_entry(const char *file_name)
+{
+  size_t file_name_length = strlen(file_name);
+  struct file_list_entry *entry =
+   cmalloc(sizeof(struct file_list_entry) + file_name_length);
+
+  memcpy(entry->filename, file_name, file_name_length + 1);
+
+  if(file_name_length >= 4 &&
+   !strcasecmp(file_name + file_name_length - 4, ".mzx"))
+  {
+    // Special handling for MZX worlds- display their world names.
+    entry->is_mzx_file = true;
+    entry->loaded_world_name = false;
+
+    memset(entry->display, ' ', MAX_FILE_LIST_DISPLAY - 1);
+    entry->display[MAX_FILE_LIST_DISPLAY - 1] = '\0';
+
+    memcpy(entry->display, file_name, file_name_length);
+
+    // Display names that are too long with ...
+    if(file_name_length > (MAX_FILE_LIST_DISPLAY_MZX - 1))
+      memcpy(entry->display + MAX_FILE_LIST_DISPLAY_MZX - 4, "... ", 4);
+
+    // TODO it would be nice to be able to delay this on the 3DS but it's
+    // annoying to implement right now.
+    file_list_get_mzx_world_name(entry);
+  }
+  else
+  {
+    entry->is_mzx_file = false;
+    snprintf(entry->display, MAX_FILE_LIST_DISPLAY, "%s", file_name);
+
+    // Display names that are too long with ...
+    if(file_name_length > (MAX_FILE_LIST_DISPLAY - 1))
+      snprintf(entry->display + MAX_FILE_LIST_DISPLAY - 4, 4, "...");
+  }
+  return entry;
+}
+
 static int file_dialog_function(struct world *mzx_world, struct dialog *di,
  int key)
 {
@@ -2573,7 +2715,8 @@ static int file_dialog_function(struct world *mzx_world, struct dialog *di,
 
         if(current_element_num == FILESEL_FILE_LIST)
         {
-          strncpy(dest->result, file_name + 56, dest->max_length - 1);
+          struct file_list_entry *entry = (struct file_list_entry *)file_name;
+          strncpy(dest->result, entry->filename, dest->max_length - 1);
           dest->result[dest->max_length - 1] = '\0';
           e->draw_function(mzx_world, di, e, DI_NONACTIVE, 0);
         }
@@ -2654,15 +2797,16 @@ static int file_dialog_function(struct world *mzx_world, struct dialog *di,
   return key;
 }
 
-static void remove_files(char *directory_name, int remove_recursively)
+static boolean remove_files(char *directory_name, boolean remove_recursively)
 {
   struct mzx_dir current_dir;
   char *current_dir_name;
   struct stat file_info;
   char *file_name;
+  boolean success = true;
 
   if(!dir_open(&current_dir, directory_name))
-    return;
+    return false;
 
   current_dir_name = cmalloc(MAX_PATH);
   file_name = cmalloc(PATH_BUF_LEN);
@@ -2672,7 +2816,7 @@ static void remove_files(char *directory_name, int remove_recursively)
 
   while(1)
   {
-    if(!dir_get_next_entry(&current_dir, file_name))
+    if(!dir_get_next_entry(&current_dir, file_name, NULL))
       break;
 
     if(stat(file_name, &file_info) < 0)
@@ -2680,15 +2824,17 @@ static void remove_files(char *directory_name, int remove_recursively)
 
     if(!S_ISDIR(file_info.st_mode))
     {
-      unlink(file_name);
-      continue;
+      // Only attempt to remove contents if remove_recursively is set...
+      if(!remove_recursively || unlink(file_name))
+        success = false;
     }
+    else
 
-    if(remove_recursively && strcmp(file_name, ".") &&
-     strcmp(file_name, ".."))
+    if(strcmp(file_name, ".") && strcmp(file_name, ".."))
     {
-      remove_files(file_name, 1);
-      rmdir(file_name);
+      if(!remove_recursively ||
+       !remove_files(file_name, true) || rmdir(file_name))
+        success = false;
     }
   }
 
@@ -2698,6 +2844,7 @@ static void remove_files(char *directory_name, int remove_recursively)
   free(current_dir_name);
 
   dir_close(&current_dir);
+  return success;
 }
 
 __editor_maybe_static int file_manager(struct world *mzx_world,
@@ -2801,71 +2948,59 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
 
     while(1)
     {
-      if(!dir_get_next_entry(&current_dir, file_name))
+      int dir_type;
+      if(!dir_get_next_entry(&current_dir, file_name, &dir_type))
         break;
 
       file_name_length = strlen(file_name);
 
       // Exclude . and hidden files
-      if((stat(file_name, &file_info) >= 0) &&
-       ((file_name[0] != '.') || (file_name[1] == '.')))
+      if(file_name[0] == '.' && file_name[1] != '.')
+        continue;
+
+      // The file type value from dirent isn't particularly reliable; might
+      // need to use stat instead.
+      if(dir_type == DIR_TYPE_UNKNOWN)
       {
+        if(stat(file_name, &file_info) < 0)
+          continue;
+
         if(S_ISDIR(file_info.st_mode))
+          dir_type = DIR_TYPE_DIR;
+
+        else
+        if(S_ISREG(file_info.st_mode))
+          dir_type = DIR_TYPE_FILE;
+      }
+
+      if(dir_type == DIR_TYPE_DIR)
+      {
+        // Exclude .. from base dir in subdirsonly mode
+        if(dirs_okay &&
+         !(dirs_okay == 2 && !strcmp(file_name, "..") &&
+          !strcmp(current_dir_name, base_dir_name) ))
         {
-          // Exclude .. from base dir in subdirsonly mode
-          if(dirs_okay &&
-           !(dirs_okay == 2 && !strcmp(file_name, "..") &&
-             !strcmp(current_dir_name, base_dir_name) ))
-          {
-            dir_list[num_dirs] = cmalloc(file_name_length + 1);
-            memcpy(dir_list[num_dirs], file_name, file_name_length + 1);
-            dir_list[num_dirs][file_name_length] = '\0';
-            num_dirs++;
-          }
+          dir_list[num_dirs] = cmalloc(file_name_length + 1);
+          memcpy(dir_list[num_dirs], file_name, file_name_length + 1);
+          dir_list[num_dirs][file_name_length] = '\0';
+          num_dirs++;
         }
-        else if(S_ISREG(file_info.st_mode))
+      }
+      else
+
+      if(dir_type == DIR_TYPE_FILE)
+      {
+        // Find the extension.
+        ext_pos = get_ext_pos(file_name);
+
+        for(i = 0; wildcards[i] != NULL; i++)
         {
-          // Must match one of the wildcards, also ignore the .
-          if(file_name_length >= 4)
+          if(ext_pos >= 0 && !strcasecmp(file_name + ext_pos, wildcards[i]))
           {
-            // Find the extension.
-            ext_pos = get_ext_pos(file_name);
-
-            for(i = 0; wildcards[i] != NULL; i++)
-            {
-              if(ext_pos >= 0 && !strcasecmp(file_name + ext_pos, wildcards[i]))
-              {
-                file_list[num_files] = cmalloc(56 + file_name_length + 1);
-
-                if(!strcasecmp(file_name + file_name_length - 4, ".mzx"))
-                {
-                  FILE *mzx_file = fopen_unsafe(file_name, "rb");
-
-                  memset(file_list[num_files], ' ', 55);
-                  memcpy(file_list[num_files], file_name, file_name_length);
-
-                  // Display names that are too long with ...
-                  if(file_name_length > 29)
-                    strcpy(file_list[num_files] + 26, "... ");
-
-                  fread(file_list[num_files] + 30, 1, 24, mzx_file);
-                  fclose(mzx_file);
-                }
-                else
-                {
-                  memcpy(file_list[num_files], file_name, file_name_length + 1);
-                  // Display names that are too long with ...
-                  if(file_name_length > 55)
-                    strcpy(file_list[num_files] + 52, "...");
-                }
-                file_list[num_files][55] = 0;
-                memcpy(file_list[num_files] + 56, file_name,
-                 file_name_length + 1);
-
-                num_files++;
-                break;
-              }
-            }
+            struct file_list_entry *e = construct_file_list_entry(file_name);
+            file_list[num_files] = (char *)e;
+            num_files++;
+            break;
           }
         }
       }
@@ -2971,7 +3106,7 @@ skip_dir:
 
     elements[FILESEL_FILE_LIST] =
      construct_list_box(2, 2, (const char **)file_list, num_files,
-     list_length, 55, 1, &chosen_file, NULL, true);
+     list_length, (MAX_FILE_LIST_DISPLAY - 1), 1, &chosen_file, NULL, true);
     elements[FILESEL_DIR_LIST] =
      construct_list_box(59, 2, (const char **)dir_list, num_dirs,
      list_length, 15, 2, &chosen_dir, NULL, true);
@@ -3008,8 +3143,10 @@ skip_dir:
       case 1:
       case 4:
       {
-        if(ret[0] && (ret[strlen(ret) - 1] == ':'))
-          strcat(ret, DIR_SEPARATOR);
+        size_t ret_len = strlen(ret);
+
+        if(ret[0] && (ret[ret_len - 1] == ':') && (ret_len + 1) < MAX_PATH)
+          strcpy(ret + ret_len, DIR_SEPARATOR);
 
         split_path_filename(ret, ret_path, MAX_PATH, ret_file, MAX_PATH);
         if(ret_path[0])
@@ -3050,10 +3187,14 @@ skip_dir:
         // Unfortunately, ret isn't reliable when the file name is 55+ chars,
         // so if the focus is directly on the list and they don't match, use
         // the complete name
-        if(di.current_element == FILESEL_FILE_LIST &&
-         strcmp(ret_file, file_list[chosen_file] + 56))
-          join_path_names(ret, MAX_PATH, current_dir_name,
-           file_list[chosen_file] + 56);
+        if(di.current_element == FILESEL_FILE_LIST)
+        {
+          struct file_list_entry *e =
+           (struct file_list_entry *)file_list[chosen_file];
+
+          if(strcmp(ret_file, e->filename))
+            join_path_names(ret, MAX_PATH, current_dir_name, e->filename);
+        }
 
         if(default_ext)
           add_ext(ret, default_ext);
@@ -3149,7 +3290,9 @@ skip_dir:
            "Delete %s - are you sure?", ret_file);
 
           if(!confirm(mzx_world, confirm_string))
-            unlink(ret);
+            if(unlink(ret))
+              error("File could not be deleted.",
+               ERROR_T_WARNING, ERROR_OPT_OK, 0x0000);
 
           free(confirm_string);
         }
@@ -3163,12 +3306,14 @@ skip_dir:
         char *new_path = cmalloc(MAX_PATH);
         char *new_name = cmalloc(MAX_PATH);
 
-        strncpy(new_name, file_list[chosen_file] + 56, MAX_PATH);
+        struct file_list_entry *e =
+         (struct file_list_entry *)file_list[chosen_file];
+
+        snprintf(new_name, MAX_PATH, "%s", e->filename);
 
         if(!confirm_input(mzx_world, "Rename File", "New file name:", new_name))
         {
-          join_path_names(old_path, MAX_PATH, current_dir_name,
-           file_list[chosen_file] + 56);
+          join_path_names(old_path, MAX_PATH, current_dir_name, e->filename);
           join_path_names(new_path, MAX_PATH, current_dir_name, new_name);
 
           if(strcmp(old_path, new_path))
@@ -3204,12 +3349,15 @@ skip_dir:
             if(!ask_yes_no(mzx_world,
              (char *)"Delete subdirectories recursively?"))
             {
-              remove_files(file_name_ch, 1);
-              rmdir(file_name_ch);
+              if(!remove_files(file_name_ch, true) || rmdir(file_name_ch))
+                error("Directory could not be deleted.",
+                 ERROR_T_WARNING, ERROR_OPT_OK, 0x0000);
             }
             else
             {
-              remove_files(file_name_ch, 0);
+              if(!remove_files(file_name_ch, false) || rmdir(file_name_ch))
+                error("Directory contains files or could not be deleted.",
+                 ERROR_T_WARNING, ERROR_OPT_OK, 0x0000);
             }
           }
         }
@@ -3253,13 +3401,14 @@ skip_dir:
     // No unallowed paths kthx
     if(dirs_okay != 1)
     {
+      size_t base_dir_len = strlen(base_dir_name);
+
       // If the base path isn't part of the return path
-      if(strncmp(base_dir_name, current_dir_name, strlen(base_dir_name)) ||
+      if(strncmp(base_dir_name, current_dir_name,  base_dir_len) ||
        strstr(current_dir_name, "..") ||
 
       // or if there's an unallowed subdirectory
-       (!dirs_okay &&
-        strstr(current_dir_name + strlen(base_dir_name), DIR_SEPARATOR)))
+       (!dirs_okay && strstr(current_dir_name + base_dir_len, DIR_SEPARATOR)))
       {
         debug("some1 dropped da ball!!!!!!11\n");
         strcpy(current_dir_name, base_dir_name);
@@ -3270,7 +3419,12 @@ skip_dir:
 
       if(!strcmp(base_dir_name, return_dir_name))
       {
-        strcpy(ret_file, ret + strlen(base_dir_name) + 1);
+        // The base dir might not have a trailing slash, so skip any of those
+        // found in the selected file before copying the result.
+        while(ret[base_dir_len] == DIR_SEPARATOR_CHAR)
+          base_dir_len++;
+
+        strcpy(ret_file, ret + base_dir_len);
         strcpy(ret, ret_file);
       }
     }

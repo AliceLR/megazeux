@@ -103,12 +103,26 @@ typedef unsigned char boolean;
 #endif
 #endif
 
-#ifdef ANDROID
-#define HAVE_SYS_UIO_H
-#define LOG_TAG "MegaZeux"
-#include <cutils/log.h>
-#undef CONDITION
+#ifdef __WIN32__
+// Usually defined in Windows headers but somehow those always seem to add 30%
+// or more build time and we don't include them globally for any other purpose.
+#define MAX_PATH 260
 #endif
+
+#ifdef __OpenBSD__
+#include <sys/param.h>
+// These macros conflict with internally-defined MZX macros
+#undef MIN
+#undef MAX
+
+// unveil added in OpenBSD 6.3
+#ifdef OpenBSD
+#if OpenBSD >= 201805
+#define PLEDGE_HAS_UNVEIL
+#endif
+
+#endif /* OpenBSD */
+#endif /* __OpenBSD__ */
 
 #ifndef MAX_PATH
 #define MAX_PATH 512
@@ -170,6 +184,36 @@ static inline FILE *check_fopen(const char *path, const char *mode)
  { return fopen_unsafe(path, mode); }
 
 #define fopen(path, mode) check_fopen(path, mode)
+
+// These functions have the warn_unused_result attribute but in most cases
+// right now we'd just print a warning. So, wrap them and print a warning.
+
+#include <unistd.h>
+
+static inline char *check_getcwd(char *buf, size_t size)
+{
+  char *ret = getcwd(buf, size);
+  if(!ret)
+  {
+    fprintf(stderr, "WARNING: Failed getcwd from %s\n", buf);
+    fflush(stderr);
+  }
+  return ret;
+}
+
+static inline int check_chdir(const char *path)
+{
+  int ret = chdir(path);
+  if(ret)
+  {
+    fprintf(stderr, "WARNING: failed chdir to %s\n", path);
+    fflush(stderr);
+  }
+  return ret;
+}
+
+#define getcwd(buf, size) check_getcwd(buf, size)
+#define chdir(path) check_chdir(path)
 
 #else // !__GNUC__
 

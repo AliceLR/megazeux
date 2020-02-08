@@ -30,8 +30,6 @@ static enum gl_lib_type gl_type;
 
 #ifdef ANDROID
 
-#include "sfwrapper.h"
-
 fn_ptr GL_GetProcAddress(const char *proc)
 {
   return (fn_ptr)dlsym(glso, proc);
@@ -123,7 +121,7 @@ static const EGLint gles_v2_attribs[] =
 };
 
 boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
- int depth, boolean fullscreen, boolean resize)
+ int depth, boolean fullscreen, boolean resize, struct gl_version req_ver)
 {
   struct egl_render_data *egl_render_data = graphics->render_data;
   const EGLint *attribs = gles_v1_attribs;
@@ -131,10 +129,6 @@ boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
   EGLint w, h;
 
   assert(egl_render_data != NULL);
-
-#ifdef ANDROID
-  window = SurfaceFlingerGetNativeWindow();
-#endif
 
 #ifdef CONFIG_X11
   window = XCreateSimpleWindow(egl_render_data->native_display,
@@ -198,10 +192,6 @@ boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
     graphics->window_height = h;
   }
 
-#ifdef ANDROID
-  SurfaceFlingerSetSwapRectangle(0, 0, w, h);
-#endif
-
   if(!eglMakeCurrent(egl_render_data->display, egl_render_data->surface,
                      egl_render_data->surface, egl_render_data->context))
   {
@@ -224,14 +214,6 @@ boolean gl_check_video_mode(struct graphics_data *graphics, int width,
   EGLint num_configs;
 
   assert(egl_render_data != NULL);
-
-#ifdef ANDROID
-  if(!SurfaceFlingerInitialize(width, height, depth, fullscreen))
-  {
-    warn("SurfaceFlingerInitialize failed\n");
-    return false;
-  }
-#endif
 
 #ifdef CONFIG_X11
   egl_render_data->native_display = XOpenDisplay(NULL);
@@ -313,10 +295,6 @@ void gl_cleanup(struct graphics_data *graphics)
     eglTerminate(egl_render_data->display);
     egl_render_data->display = EGL_NO_DISPLAY;
   }
-
-#ifdef ANDROID
-  SurfaceFlingerDeinitialize();
-#endif
 
 #ifdef CONFIG_X11
   XCloseDisplay(egl_render_data->native_display);

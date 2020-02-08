@@ -28,11 +28,9 @@
 
 #include <fat.h>
 #include "render.h"
-#include "ram.h"
+#include "extmem.h"
 #include "dlmalloc.h"
 #include "exception.h"
-
-static unsigned int y = 0;
 
 // from arch/nds/event.c
 extern void nds_update_input(void);
@@ -72,13 +70,15 @@ static void timer_init(void)
   irqEnable(IRQ_TIMER2);
 }
 
+#ifndef CONFIG_STDIO_REDIRECT
 /*
  * Special handling for debug output
  */
-
 static __attribute__((format(printf, 2, 0)))
 void handle_debug_info(const char *type, const char *format, va_list args)
 {
+  static unsigned int y = 0;
+
   if(!has_video_initialized())
   {
     iprintf("%s: ", type);
@@ -128,10 +128,11 @@ void debug(const char *format, ...)
   va_end(args);
 }
 #endif // DEBUG
+#endif /* !CONFIG_STDIO_REDIRECT */
 
 boolean platform_init(void)
 {
-  powerOn(POWER_ALL);
+  powerOn(POWER_ALL_2D);
   setMzxExceptionHandler();
 
   if(!fatInitDefault())
@@ -141,11 +142,9 @@ boolean platform_init(void)
     return false;
   }
 
-  // If the "extra RAM" is missing, warn the user
-  if(!isDSiMode())
-    if(nds_ram_init(DETECT_RAM))
-      nds_ext_lock();
-
+#if !defined(CONFIG_DEBYTECODE)
+  nds_ram_init(DETECT_RAM);
+#endif
   timer_init();
 
   // Enable vblank interrupts, but don't install the handler until the
@@ -157,7 +156,6 @@ boolean platform_init(void)
 
 void platform_quit(void)
 {
-  nds_ext_unlock();
 }
 
 // argc/argv is unreliable on NDS and varies between cards/launchers.
@@ -183,5 +181,6 @@ int main(int argc, char *argv[])
     real_main(argc, argv);
   }
 
+  systemShutDown();
   while(true);
 }

@@ -1,18 +1,536 @@
-GIT
+September 23rd, 2019 - MZX 2.92b
+
+This release fixes several bugs, notably 3DS and Wii rendering
+issues and a bug where the wrong palette would be saved while
+COLOR FADE OUT was active. Also in this release are performance
+and usability improvements for the NDS and 3DS ports and a new
+frontend for HTML5/Emscripten builds (special thanks to asie).
 
 USERS
 
++ Fixed a bug where mouse warping both mouse coordinates would
+  not actually warp both coordinates.
++ Fixed a port regression where save files would be saved with
+  the wrong color intensities while COLOR FADE OUT was active
+  (or during the first cycle of a board for <2.90 worlds). This
+  fixes fading bugs in Ruin Diver 3.
++ Added compatibility for a bug where the robot message box
+  would disable COLOR FADE OUT in versions 2.83 through 2.90X.
+  This fixes several BKZX games.
++ Fixed checkres bugs separately preventing detection of global
+  robots in both world formats.
++ Fixed 3DS renderer bug where the UI wouldn't properly display
+  char foregrounds with extended graphics enabled.
++ Fixed 3DS renderer bug where sprites containing chars with
+  transparent foregrounds wouldn't draw any char backgrounds.
++ Fixed 3DS renderer crashes that would occur when large numbers
+  of sprites were active.
++ Improved file manager directory read times for 3DS/NDS/Wii.
++ File IO for world saving/loading is now buffered, which should
+  improve save/load times on the 3DS and Switch.
++ Enabled writing zip data descriptors for the Switch.
++ Added classic/stretch video ratio support for the 3DS and NDS
+  lower screens. (asie)
++ "classic" is now the default ratio for the 3DS, NDS, and Wii.
++ Fixed GX renderer bug where chars with both colors transparent
+  could cause various graphical bugs in normal MZX mode.
++ Fixed bug where board exits could be cleared when deleting a
+  board or after loading a world containing null boards.
++ Fixed bugs when playing STARDSTM.GDM with the libxmp engine.
++ Fixed a crash that could occur when importing a world in the
+  editor containing a null board.
++ Fixed a bug where null boards wouldn't be properly refactored
+  on the NDS while using a memory cart, causing entrances to
+  point to the wrong boards and possibly other problems.
++ Fixed a bug that could corrupt the ends of robot programs when
+  using an NDS memory cart.
++ Improved world loading times when using an NDS memory cart.
++ Improved NDS memory cart transfer speed. (asie)
++ Disabled NDS logging hacks when stdio redirect is enabled.
++ Exiting MZX on the NDS should now power off the NDS.
++ Added Emscripten frontend. (asie)
++ Fixed bug where errors in the title screen Load World window
+  could clear the rest of the screen.
++ Fixed crash that could occur when attempting to load an
+  invalid zip world.
++ Non-recursive directory deletion in the file manager now tries
+  to delete the directory itself instead of its contents. Added
+  error messages for failed file and directory deletes.
+
+DEVELOPERS
+
++ Added initial support for the dirent d_type field to help
+  avoid stat calls when reading directories.
++ Replaced most fseek calls in the legacy world loader.
++ Refactored move_current_board to be more readable.
++ Corrected some of the editor's bad extram handling and added
+  warnings to debug builds to help debug it (no platforms at the
+  present support both the editor and extram).
++ Replaced error wait_event() with update_event_status_delay().
++ Added preliminary VFS code to replace function pointer casting
+  in zip.c.
++ Fixed Wayland/X11 detection for setups that don't allow X or
+  Xorg to be run normally.
++ Unix builds should now attempt to load the icon from the
+  installed path instead of from a hardcoded path. Builds with
+  no sharedir set will use "contrib/icons/quantump.png" instead.
+
+
+July 22nd, 2019 - MZX 2.92
+
+Here's another inexcusably big minor version release. First off,
+there are two new ports (Switch and Emscripten) and the Android
+port has been updated to be actually usable. Second, joystick
+support has been significantly overhauled (and depending on the
+controller/joystick you plug in, it may work with no config
+settings required!). Game joystick settings should no longer
+override the new UI joystick behavior. Also, controllers can now
+be used directly via Robotic. Read docs/joystick.html for more
+information on the new features.
+
+Other changes of note include RAD music support (v1 and v2),
+palette editor improvements, and some new counters. There's a
+new SDL 2 exclusive renderer to replace overlay1/overlay2 called
+"softscale" that performs much better than either did and with
+fewer crashes. Also of note are the massive number of fixed bugs
+and compatibility improvements, fixing regressions and error
+messages that affected around 20 different games (or more). A
+major bug was fixed that caused the updater to not initialize
+in Windows has been fixed too, so basically, update already.
+
+FEATURES
+
++ Added numerous improvements to MZX's joystick handling:
+  + Joystick inputs can now be bound to generic actions. These
+    actions correspond to XInput buttons and can interact with
+    MegaZeux's various windows in a context-specific manner.
+    They can be used directly in Robotic with the new counter
+    "joy#.[action]" or can be bound to keycodes in the config
+    file to allow them to be used with older games. The NDS,
+    3DS, Wii, PSP, and GP2X pad.config files have been updated
+    to use actions. See the help file or config file for more
+    info on the config options and available actions.
+  + Added automatic joystick mapping for Windows/Mac/Linux/etc.
+    Joysticks recognized as SDL game controllers are assigned
+    joystick actions when detected. This behavior can be altered
+    or disabled via config options.
+  + New counter: "joy#active" will return 1 if a given joystick
+    is availabled, 0 if not, and -1 if the index is invalid.
+  + New counter: "joy_simulate_keys". When set to 1 (default),
+    joysticks can produce simulated key presses, as in older MZX
+    versions. When set to 0, this behavior is disabled.
+  + Joystick settings in game.cnf files are now loaded as game-
+    specific joystick bindings. These bindings will no longer
+    override global/UI bindings defined by the config file or
+    pad.config. The default bindings are restored when any world
+    is loaded from the title screen; they are not restored when
+    a save is loaded, between world swaps, or in the editor.
+  + Joystick config options can be assigned to key names in the
+    format of "key_X" (without quotes), where X is the key name.
+  + Joystick config options for a particular controller now work
+    with ranges of controllers e.g. "joy[1,16].lshoulder = 13".
+  + Added the config setting "joy_axis_threshold". This setting
+    allows the threshold for joystick axis mapped presses to be
+    configured.
+  + The NDS directional pad is now considered a joystick hat.
+  + The 3DS directional pad is now considered a joystick hat.
+    The circle pad is now mappable as axes 1 and 2.
+  + The Wii Classic Controller triggers are now recognized as
+    axes 7 and 8. The Guitar Hero axes have been shifted to 9,
+    10, and 11, and a likely bug with the whammy bar axis has
+    been fixed. The Gamecube controller triggers are recognized
+    as axes 5 and 6, and all 8 controllers now have default
+    bindings in pad.config.
++ Added/updated Android port. (asie)
++ Added Emscripten port. (asie)
++ Added Nintendo Switch port. (Lachesis, asie)
++ The main menu and game menu are now usable with keyboard,
+  mouse, or joystick. Pressing a navigation key/joystick button
+  or clicking an option in these menus will enable a cursor to
+  select one of the options. Most listed options are selectable
+  unless disabled by the current game, in which case they will
+  be hidden from the menu entirely. However, the settings and
+  exit options appear regardless of their respective counters.
++ MegaZeux now supports Reality Adlib Tracker (RAD) music files.
+  Both 1.x and 2.x variants are fully supported.
++ New counter: TIME_MILLIS. Returns the milliseconds of the
+  current system time.
++ New counters: MOD_LOOPSTART and MOD_LOOPEND. These counters
+  return the start and end of the loop for the current playing
+  music and can be set to change the loop while the music is
+  playing. Setting MOD_LOOPEND to 0 disables the loop. These
+  counters only work for Ogg Vorbis and WAV audio (not modules).
++ Added support for the LOOPEND tag for Ogg Vorbis files. This
+  tag can be used to define the end of the loop directly, which
+  may be more convenient for some users. This tag takes lower
+  precedence than LOOPLENGTH if both are present, and will be
+  ignored if its value is less than LOOPSTART.
++ The SPR#_OFF counter is now readable through Robotic.
++ New sprite counter: SPR#_Z. Sprites are displayed in order
+  of their z value. Sprites with a higher z value will appear in
+  front of sprites with a lower z value. This ordering takes
+  precedence over both Y ordering (if SPR_YORDER is enabled) and
+  sprite number. Removes the need to use SPR#_SWAP for managing
+  sprite draw order. (Lancer-X)
++ New counters: FREAD_LENGTH and FWRITE_LENGTH. These counters
+  return the length of the FREAD file/directory (if open) or the
+  current length of the FWRITE file (if open).
++ New counter: SET "$string" "SAVE_ROBOT". This does the same
+  thing as SET "filename" "SAVE_ROBOT", except it saves the
+  robot to the specified string.
++ The default boot.dol for Wii builds with the editor enabled
+  is now MegaZeux instead of MZXRun.
++ New GLSL scaling shader: "sai". This shader implements the
+  "Scale 2xSaI" algorithm by Kreed with a modified interpolation
+  function to produce sharper edges. This shader can scale up to
+  any size larger than 640x350 and is comparable to hqscale
+  (though it should look and perform a little better).
++ Fullscreen mode will now attempt to match a supported screen
+  resolution if no "fullscreen_resolution" setting is specified.
+  For scaling renderers, this favors the current desktop
+  resolution. For "software", this favors smaller resolutions.
++ Added the config setting "fullscreen_windowed". When set to 1,
+  MZX will create a borderless window with the current desktop
+  resolution instead of regular fullscreen. Disabled by default.
++ Added the config setting "grab_mouse". When set to 1, MZX will
+  trap the mouse cursor within the window while the window is
+  active. Disabled by default.
++ The current renderer can now be set from the settings menu.
++ Added the 'softscale' renderer. This renderer is a generalized
+  rewrite of the former SDL 2 overlay renderer implementation.
+  It should perform significantly better and be more portable.
++ Added several palette editor usability improvements:
+  + The current color stored with F2 is now displayed in the
+    bottom-right corner of the palette editor help menu.
+  + In SMZX mode 2 or 3 editing, the four colors of the current
+    subpalette can be stored with F5. Stored subpalette colors
+    can be placed at the current subpalette with F6. These are
+    stored independently of the stored current color. The help
+    menu color display will cycle through the stored colors.
+  + In SMZX mode 3 editing, the current subpalette's indices can
+    be stored with F7 and placed at the current subpalette with
+    F8. The stored indices are displayed in the help menu next
+    to the stored color display.
+  + The shortcut for toggling the subpalette cursors has been
+    changed to Insert. The subpalette cursors are now displayed
+    in SMZX mode 3 editing and are enabled by default.
+  + Palettes (and/or indices) can be imported into and exported
+    from the palette editor with Alt+I and Alt+X, respectively.
+  + Added a secondary editor-only palette which can be switched
+    to with Tab. This palette is not saved with any world, but
+    can be edited and imported to/exported from and can be used
+    to copy colors/subpalettes between different sources.
++ checkres now displays the board, sfx, and robot (with line and
+  position on the board) each file was referenced in.
++ checkres can now be used with a directory as the base file.
+  Like a ZIP archive, checkres will recursively search the
+  directory for .MZX/.MZB files and display information for all
+  of them.
++ checkres has more display options: only display missing (-M)
+  (default), only display created (-C), only display found (-F),
+  also display missing (-m), also display created (-c), and also
+  display found (-f).
++ checkres can now wildcard match resources from commands that
+  use expressions or interpolation in filenames. This can be
+  enabled with -w or enabled exclusively with -W.
++ checkres can now display unused resources in a path/zip after
+  the other resources are listed (-u), or display only unused
+  resources (-U).
++ checkres can now display every reference to a particular
+  resource in a world instead of just the first with varying
+  levels of information (-v, -vv). Added the option -s, which
+  is the default and equivalent to older versions of checkres,
+  and -1 as an alternate flag for -q.
++ checkres can now sort its output either by the name of the
+  expected resource file (-N) (default) or by the location in
+  the world the file was referenced (-L).
++ checkres option flags can now be combined (e.g. -aL). This
+  does not apply to the "-extra" and "-in" flags.
++ New config options: "test_mode" and "test_mode_start_board".
+  If "test_mode" is set to 1, MegaZeux will start the given file
+  in testing mode, exactly as if the user used Alt+T on the
+  first board from the editor. Setting "test_mode_start_board"
+  to a valid board number in the world will start instead from
+  that board. Exiting testing will exit MegaZeux entirely.
+- SDL 2 support for the overlay renderers has been removed. When
+  specified for video_output, softscale will be enabled instead.
+- Removed WAV from the list of board mod extensions.
+
+FIXES
+
++ SET "$string" TO "fwrite" will now always write the delimiter
+  regardless of the length of $string. Previously, this command
+  would only write a delimiter if $string was a length greater
+  than zero, requiring extra checks by the user to account for
+  this special case. Compatibility checks have been added for
+  for worlds made in older versions.
++ Fixed bug where robots attempting to copy the player over
+  themselves with COPY x y x y or COPY dir dir would get stuck
+  in an infinite loop instead of executing the next command.
++ SPR_YORDER and the sprite collision list are properly saved
+  and loaded from saves again.
++ The SPR_NUM counter now has the full range of a regular
+  counter and is saved. Out-of-range values are ignored for the
+  purposes of its legacy IF and PUT uses. This only affects
+  2.92+ worlds. Additionally, 2.65 through 2.69c worlds treat
+  its range as -128 through 127, fixing a bug in Sprite Catcher.
++ The active sprites count is properly updated when SPR#_OFF is
+  set and is properly loaded from saves again. This value can be
+  viewed from the variable debug screen now, though it may be
+  inaccurate for older saves.
++ Fixed various bugs related to the robot position not being
+  internally tracked correctly. This could be caused by WALK,
+  SWITCH dir dir, OPEN, MOVE ALL, moving through a transport,
+  pushing, and rotation. This fixes issues with IF ALIGNEDROBOT,
+  THISX, THISY, THIS_COLOR, PLAYERDIST, HORIZPLD, VERTPLD, RID#,
+  ROBOT_ID_#, the robot's coordinates displayed in the counter
+  and robot debuggers, and MZM saving. Due to the number of
+  features affected by these bugs, the fix only affects worlds
+  saved in 2.92 or later.
++ Fixed a regression where rotating could sometimes fail to
+  rotate the player, sensors, pushable robots, or transports.
++ When a robot uses the OPEN command and is pushed through a
+  transport, MZX no longer crashes or creates invalid robots.
++ Fixed crash that could sometimes occur when pressing Alt+Up
+  while drawing near the top of a board in the editor.
++ Fixed bug where canceling 'Alt+C' char selection in the
+  robot editor would comment the current line.
++ Fixed a bug where F5 in the robot editor would not print data
+  for extended chars.
++ Clicking through board name windows and other interfaces with
+  the mouse should no longer place the current buffer.
++ Fixed a bug where the updater could fail to initialize due to
+  a relative argv[0] in Windows. MegaZeux attempts to get the
+  executable path from Win32 first now.
++ Improved warning message when no HTTP response is received.
++ The software renderer no longer tries to use an SDL_Renderer
+  to draw the surface returned by SDL_GetWindowSurface. This
+  fixes a crash when switching to fullscreen with the software
+  renderer on some platforms.
++ Fixed a software renderer mouse crash bug caused by moving the
+  cursor off the screen with a window bigger than the screen.
++ Fixed a bug where setting SMZX_MESSAGE to 0 wouldn't always
+  draw the message correctly.
++ If a referenced SAM or GDM file isn't present, MegaZeux will
+  attempt to load a corresponding WAV or S3M (respectively) with
+  the same filename minus the extension. This should fix some
+  music/sounds in older games that referenced SAM/GDM files but
+  were packed with the post-conversion WAV/S3M files only.
++ The behavior for reseting the player movement repeat timers
+  has been reverted to requiring all four movement keys released
+  (as in 2.80 to 2.91i). The related player locking fix has not
+  been modified.
++ IF "&$string&" and COPY BLOCK # # # # "&$string&" now properly
+  resolve &$string& before checking if the first operand or the
+  copy destination are a string (respectively), bringing their
+  behavior more in line with SET/INC/DEC and other commands.
++ Fixed a regression where the COLOR INTENSITY commands would
+  update the screen if used the same cycle as TELEPORT PLAYER.
+  This fixes a graphical issue in Thanatos Insignia.
++ Improved string wildcard comparison performance.
++ Changed the debug window to display "2.65/2.68" for worlds
+  from MZX 2.65 and MZX 2.68. Features from 2.68 still check for
+  the intended MZX 2.68 magic; the very few existing 2.68 worlds
+  that use these features need to be resaved in 2.69.
++ MegaZeux now attempts to fix Robotic that fails bytecode
+  validation. This resolves error messages and bugs in Eternal
+  Eclipse Taoyarin v1.0, Loco, Manuel the Manx, SaintZZT 7th,
+  Slave Pit, and Ep+Arp World MZX.
++ The MOD SAM command has been restored for compatibility and
+  is version locked to <2.80 worlds. This fixes missing sound
+  effects in Crisis in Stuffyou City (original), Sprite Catcher,
+  and Talon's Tale. This only works for libxmp builds.
++ Fixed a sprite collision bounding bug where the collision
+  height bounding for the reference checked using the collision
+  width instead. This fixes Manuel the Manx.
++ Fixed several memory leaks in the editor related to editing,
+  placing, grab, and undo/redo operations on robots and scrolls.
++ Fixed vlayer memory leak when loading 2.84 saves.
++ Fixed a regression where the 'if c?? Sprite' legacy fix wasn't
+  locked to 2.69c and up. This fixes Depravity (2003 DoZ #666).
++ PUT Sprite now works unconditionally for <2.80 games, fixing
+  bugs where games relied on placing 0-height sprites or placing
+  sprites before initializing their dimensions: Hackers Can Turn
+  Your Computer Into a Bomb!, Lethal Recurse (2003 DoZ #215),
+  Serum (2003 DoZ #404), Trashman Dan (Summer 2004 DoZ #18349).
++ The LOCAL and LOCAL# counters are now versioned separately,
+  fixing bugs in Freedom Bound (Summer 2000 DoZ #4096) and
+  Impact (2001 DoZ #027).
++ SHOOT now properly updates the blocked array. This fixes a bug
+  in Captain Proton and the Reality Rippers (1999 WEoZ #173).
++ Fixed a bug where the custom SFX flag and max samples wouldn't
+  be reset when creating a new world in the editor.
+
+DEVELOPERS
+
++ Fixed -Wunused-result warnings for Linux builds.
++ Added "Intel EMGD" to auto_glsl blacklist (questionable
+  OpenGL 2.0 support).
++ Added platform-independent joystick event functions and
+  updated the SDL, NDS, 3DS, and Wii event handlers for them.
++ MinGW builds now use -Wl,-Bstatic and -Wl,-Bdynamic to enforce
+  the preferred linking when both static and dynamic builds of
+  libraries are present.
++ For MSYS2 shells, config.sh now chooses the prefix /mingw32
+  or /mingw64 by default if $MSYSTEM is "MINGW32" or "MINGW64"
+  and either the "win32" or "win64" arch is selected.
++ MegaZeux now uses the renderer free_video function on exit.
++ GL_LoadLibrary no longer fails if the library is already
+  loaded in SDL 1.2. (Lancer-X)
++ GL renderers free textures and revert to fixed function
+  pipeline where appropriate. (Lancer-X)
++ OpenGL ES support can now be enabled for SDL builds with the
+  --enable-gles option. This option is force-enabled for
+  platforms that only support OpenGL ES.
++ opengl1 renderer now always uses power of 2 textures, same as
+  opengl2 and glsl. This provides a tiny performance improvement
+  on most cards and a massive performance improvement on some
+  other cards. (Lancer-X)
++ Added debug build sanitizer options for AddressSanitizer,
+  MemorySanitizer, and ThreadSanitizer. MemorySanitizer requires
+  clang and all currently require Linux/BSD/Mac OS X/similar.
+  Support for all three is very experimental; they may require
+  disabling options like modular builds or may not work at all.
++ Moved several param functions from robot.c to run_robot.c.
+  Aside from a few exceptions, these functions are largely used
+  in run_robot.c only. This should improve Robotic performance
+  in release builds.
++ Updated MSVC project for Visual Studio 2019. (elig, Spectere)
++ Added experimental pledge(2) and unveil(2) support for OpenBSD
+  builds. By default, this is enabled for the utils but not for
+  MZX. Additionally, config.sh now detects OpenBSD properly and
+  several warnings have been fixed.
++ Fixed faulty '!' rule logic in match_function_counter and
+  changed 'key?' to 'key!' to prevent potential false matches.
+- Removed uthash as a build option.
+
+
+February 20th, 2019 - MZX 2.91j
+
+Here's a huge collection of bugfixes and a couple of features
+that needed to be split off from 2.92.
+
+Features: every release has an HTML copy of the help file now,
+the editor keeps separate board/overlay/vlayer buffers now, and
+anyone who still uses scrolls/sensors can view their info in the
+counter debugger. The global volume settings use an exponential
+curve now, range from 0 to 10, and have updated UI elements.
+
+Fixes in this release include: the updater won't complain about
+mzx_help.fil anymore, the NDS and 3DS ports have keyboards that
+work again, several bugs that would lead to worlds/saves with
+"Robot # does not exist on board #" errors have been fixed, and
+several crashes have been fixed.
+
+USERS
+
++ A complete HTML copy of the MegaZeux help file is now packaged
+  with releases for all platforms. It can be found in the docs/
+  folder.
 + Nvidia and AMD switchable graphics drivers should now detect
-  MegaZeux and MZXRun properly.
-+ Updated SDL2 for Windows release builds to SDL 2.0.9.
+  MegaZeux and MZXRun properly on Windows.
++ The editor now remembers the contents of the buffer when
+  switching between board, overlay, and vlayer editing. For
+  example, if a robot is selected on the board before switching
+  to overlay mode, the robot will still be in the buffer when
+  the user switches back to board mode.
++ The editor now remembers the last filename for importing and
+  exporting MZM, MZB, CHR, PAL, and PALIDX files.
++ Scrolls and sensors can now be viewed in the counter debugger.
+  They can be found by expanding the Board list (when present).
 + Readded "#version 110" directives to all GLSL shaders, fixing
   warnings on some Intel HD drivers. OpenGL ES builds should now
   comment out these directives.
++ Fixed bug where using Modify+Grab on built-ins could clear the
+  floor under the built-in.
++ Fixed bug where key repeat wouldn't work for any text field in
+  the NDS/3DS/Wii ports. This also affected the robot editor in
+  Wii builds.
++ Fixed NDS touch screen support. Touching the screen no longer
+  acts like escape and the keyboard properly works again.
++ Fixed a bug where the NDS keyboard would drop keypresses on
+  games not running at speed 2.
++ The counter debugger now correctly displays the value of
+  local0.
++ Fixed a bug where the counter debugger would not reopen to
+  the correct robot local# value.
++ MZX now attempts to retry removal of an old file when updating
+  if deletion fails initially. Error messages related to the
+  failed deletion of "mzx_help.fil" or "assets/help.fil" are now
+  suppressed as they are caused by a bug in older MZX versions.
++ The help file is now closed before the updater restarts MZX.
++ Fixed crash bug that could occur when removing old files after
+  an update.
++ Improved manifest validity checks.
++ Fixed board editor crash caused by invalid thing IDs.
++ Player movement key repeat no longer resets when the player is
+  locked. It will reset for a direction only when the arrow key
+  corresponding to that direction is released. This fixes a bug
+  in Brotherhood where the player would move at a fraction of
+  the speed they were supposed to while swimming.
++ Added version checking for legacy IF c?? Sprite behavior. In
+  versions 2.82b and prior, c?? would make this command ignore
+  the provided param and use SPR_NUM instead. This fixes Project
+  MoveZig.
++ Fixed spelling error in missile param dialog.
++ Switching boards in the editor now properly translates the new
+  board's mod name, fixing cases where board mods would restart
+  sometimes.
++ Fixed a bug where the current board mod wouldn't play after
+  starting a listening mod, testing, returning to the editor,
+  and then disabling the listening mod.
++ Replaced the linear volume setting curve with an exponential
+  curve to make lower volumes less loud. The volume settings can
+  now be set from 0 to 10 instead of from 1 to 8.
++ The config file setting pc_speaker_on=0 no longer prevents
+  turning on PC speaker SFX at runtime.
++ Added temporary workaround for numpad 5 key detection when
+  numlock is disabled.
++ "Forest to floor" and "Collect bombs" are properly enabled
+  again for new boards by default. This fix doesn't alter config
+  settings or saved .editor.cnf defaults.
++ The "Downver. world (MZX)" option in the "Export as" dialog
+  is now completely highlighted when selected. (Lancer-X)
++ Starting MegaZeux with "startup_editor=1" no longer loads the
+  default palette over the startup world's palette.
++ The move block action and undo/redo operations should now
+  preserve the element beneath the player.
++ Fixed crashes caused by using block actions or COPY BLOCK on
+  the player while the player is standing on a sensor.
++ Fixed several bugs where editor block actions and the commands
+  COPY/COPY BLOCK would not check for the player or clean up
+  robots/scrolls/sensors. Worlds/saves saved after these bugs
+  occured could display "Robot # does not exist on board"
+  errors when loaded.
++ The DUPLICATE SELF x y and DUPLICATE SELF dir commands now
+  properly check for the player before attempting to duplicate
+  a robot. This fixes a bug where MZX could create saves with
+  "Robot # does not exist on board" errors.
++ Fixed a crash that could occur when importing a new board.
++ Fixed a bug where the 3DS onscreen keyboard would send key
+  releases instead of key presses.
++ The 3DS onscreen keyboard now returns shifted chars when shift
+  is active.
++ Fixed a bug where the libxmp implementation of MOD_ORDER and
+  JUMP MOD ORDER could not restart the current order.
++ Fixed a crash with the libxmp implementation of MOD_POSITION
+  when providing an out-of-bounds value.
++ Fixed a bug where Ctrl+[key] shortcuts would not work while a
+  dialog list element was active on the Wii.
++ Fixed a bug where setting the board mod/charset/palette could
+  truncate the first letter of the path on the Wii.
++ "mask_midchars" no longer masks the non-text char 127.
++ The message box title and the command [ now properly display
+  the graphic for char 9 instead of a tab.
++ Added newline escaping to robot, counter, and string names in
+  the counter debugger to work around formatting bugs.
 
 DEVELOPERS
 
 + Added the hlp2html utility, which can be used to convert
   WIPHelp.txt into web and printable HTML files.
++ Updated to latest NDS ARM7 template.
++ Updated SDL2 for Windows release builds to SDL 2.0.9.
 
 
 December 9th, 2018 - MZX 2.91i

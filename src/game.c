@@ -63,6 +63,10 @@ struct game_context
   boolean load_dialog_on_failed_load;
   boolean is_title;
   boolean allow_cheats;
+
+  // Menu return values.
+  enum keycode menu_key;
+  boolean menu_alt;
 };
 
 // As nice as this would be to put in the title context, it's annoying
@@ -146,6 +150,8 @@ boolean load_game_module(struct world *mzx_world, char *filename,
 
   // Get the translated name (the one we want to compare against later)
   n_result = fsafetranslate(filename, translated_name);
+  if(n_result != FSAFE_SUCCESS)
+    n_result = audio_legacy_translate(filename, translated_name);
 
   // Add * back
   if(mod_star)
@@ -192,15 +198,22 @@ static inline void load_vquick_fadeout(void)
   return;
 #endif
 
+#ifdef __EMSCRIPTEN__
+  // HACK: avoid putting load_world_*/load_savegame on the asyncify whitelist
+  insta_fadeout();
+#else
   vquick_fadeout();
+#endif
 }
 
 /**
  * Load a world and prepare it for gameplay.
  * On failure, make sure the title's fade setting is restored (if applicable).
+ * If the provided start board parameter is a valid board in the loaded world,
+ * gameplay will start on the given board.
  */
-
-static boolean load_world_gameplay(struct game_context *game, char *name)
+static boolean load_world_gameplay_ext(struct game_context *game, char *name,
+ int start_board)
 {
   struct world *mzx_world = ((context *)game)->world;
   boolean was_faded = get_fade_status();
@@ -218,12 +231,19 @@ static boolean load_world_gameplay(struct game_context *game, char *name)
 
   game->fade_in = true;
 
+  // Reset the joystick mappings to the defaults before loading a game config.
+  joystick_reset_game_map();
+
   if(reload_world(mzx_world, name, &ignore))
   {
-    if(mzx_world->current_board_id != mzx_world->first_board)
+    if((start_board < 0) || (start_board >= mzx_world->num_boards) ||
+     !(mzx_world->board_list[start_board]))
     {
-      change_board(mzx_world, mzx_world->first_board);
+      start_board = mzx_world->first_board;
     }
+
+    if(mzx_world->current_board_id != start_board)
+      change_board(mzx_world, start_board);
 
     cur_board = mzx_world->current_board;
 
@@ -251,6 +271,15 @@ static boolean load_world_gameplay(struct game_context *game, char *name)
 }
 
 /**
+ * Load a world and prepare it for gameplay.
+ * On failure, make sure the title's fade setting is restored (if applicable).
+ */
+static boolean load_world_gameplay(struct game_context *game, char *name)
+{
+  return load_world_gameplay_ext(game, name, -1);
+}
+
+/**
  * Load a world and prepare it for the title screen.
  * On failure, display a blank screen.
  */
@@ -264,6 +293,9 @@ static boolean load_world_title(struct game_context *game, char *name)
   clear_screen();
   enable_intro_mesg();
   game->fade_in = true;
+
+  // Reset the joystick mappings to the defaults before loading a game config.
+  joystick_reset_game_map();
 
   if(reload_world(mzx_world, name, &ignore))
   {
@@ -374,7 +406,7 @@ static boolean load_savegame_selection(struct game_context *game)
  * game update cycle, including player input and updating the board.
  */
 
-static void game_draw(context *ctx)
+static boolean game_draw(context *ctx)
 {
   struct game_context *game = (struct game_context *)ctx;
   struct config_info *conf = get_config();
@@ -398,12 +430,12 @@ static void game_draw(context *ctx)
     if(!conf->standalone_mode)
       draw_intro_mesg(mzx_world);
     m_show();
-    return;
+    return true;
   }
 
   set_context_framerate_mode(ctx, FRAMERATE_MZX_SPEED);
   update_world(ctx, game->is_title);
-  draw_world(ctx, game->is_title);
+  return draw_world(ctx, game->is_title);
 }
 
 // Forward declaration since this is used for both game and title screen.
@@ -518,11 +550,52 @@ static boolean game_idle(context *ctx)
   return false;
 }
 
+static boolean game_key(context *ctx, int *key); // Forward declaration.
+
+/**
+ * Callback for handling the game menu key.
+ */
+static void game_menu_callback(context *ctx, context_callback_param *ignore)
+{
+  struct game_context *game = (struct game_context *)ctx;
+  int key = game->menu_key;
+
+  game->menu_key = 0;
+
+  if(key)
+    game_key(ctx, &(key));
+}
+
+/**
+ * Joystick function for the gameplay context. Gameplay only detects UI
+ * escape presses and ignores everything else.
+ */
+static boolean game_joystick(context *ctx, int *key, int action)
+{
+  struct game_context *game = (struct game_context *)ctx;
+
+  switch(action)
+  {
+    case JOY_START:
+    case JOY_SELECT:
+    {
+      // Special: open the game menu if the enter or escape menu is allowed.
+      if(allow_enter_menu(ctx->world, false) ||
+       allow_exit_menu(ctx->world, false))
+      {
+        game_menu(ctx, true, &(game->menu_key), &(game->menu_alt));
+        context_callback(ctx, NULL, game_menu_callback);
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
 /**
  * Key function for the gameplay context. This handles interface keys and some
  * key labels; some other keys are handled in the update function.
  */
-
 static boolean game_key(context *ctx, int *key)
 {
   struct game_context *game = (struct game_context *)ctx;
@@ -575,7 +648,7 @@ static boolean game_key(context *ctx, int *key)
       case IKEY_F3:
       {
         // Save game
-        if(!mzx_world->dead && player_can_save(mzx_world))
+        if(allow_save_menu(mzx_world))
         {
           char save_game[MAX_PATH];
           strcpy(save_game, curr_sav);
@@ -596,10 +669,9 @@ static boolean game_key(context *ctx, int *key)
           break;
 
         // Restore saved game
-        if(mzx_world->version < V282 || get_counter(mzx_world, "LOAD_MENU", 0))
-        {
+        if(allow_load_menu(mzx_world, false))
           load_savegame_selection(game);
-        }
+
         return true;
       }
 
@@ -616,8 +688,9 @@ static boolean game_key(context *ctx, int *key)
       // Toggle debug mode
       case IKEY_F6:
       {
-        if(edit_world && mzx_world->editing)
+        if(edit_world && allow_debug_menu(mzx_world))
           mzx_world->debug_mode = !(mzx_world->debug_mode);
+
         return true;
       }
 
@@ -642,18 +715,16 @@ static boolean game_key(context *ctx, int *key)
       // Quick save
       case IKEY_F9:
       {
-        if(!mzx_world->dead)
-        {
-          if(player_can_save(mzx_world))
-            save_world(mzx_world, curr_sav, true, MZX_VERSION);
-        }
+        if(allow_save_menu(mzx_world))
+          save_world(mzx_world, curr_sav, true, MZX_VERSION);
+
         return true;
       }
 
       // Quick load saved game
       case IKEY_F10:
       {
-        if(mzx_world->version < V282 || get_counter(mzx_world, "LOAD_MENU", 0))
+        if(allow_load_menu(mzx_world, false))
         {
           struct stat file_info;
 
@@ -665,10 +736,10 @@ static boolean game_key(context *ctx, int *key)
 
       case IKEY_F11:
       {
-        if(mzx_world->editing)
+        if(allow_debug_menu(mzx_world))
         {
           // Breakpoint editor
-          if(get_alt_status(keycode_internal))
+          if(get_alt_status(keycode_internal) || game->menu_alt)
           {
             if(debug_robot_config)
               debug_robot_config(mzx_world);
@@ -680,6 +751,7 @@ static boolean game_key(context *ctx, int *key)
               debug_counters(ctx);
           }
         }
+        game->menu_alt = false;
         return true;
       }
 
@@ -691,20 +763,23 @@ static boolean game_key(context *ctx, int *key)
         if(key_status != 1)
           return true;
 
-        if(mzx_world->version < V260 || get_counter(mzx_world, "ENTER_MENU", 0))
-          game_menu(ctx);
-
+        if(allow_enter_menu(mzx_world, false))
+        {
+          game_menu(ctx, false, &(game->menu_key), &(game->menu_alt));
+          context_callback(ctx, NULL, game_menu_callback);
+        }
         return true;
       }
 
       case IKEY_ESCAPE:
       {
         // Ignore if this isn't a fresh press
-        if(key_status != 1)
-          return true;
+        // NOTE: disabled because it breaks the joystick action.
+        //if(key_status != 1)
+          //return true;
 
         // ESCAPE_MENU (2.90+)
-        if(mzx_world->version < V290 || get_counter(mzx_world, "ESCAPE_MENU", 0))
+        if(allow_exit_menu(mzx_world, false))
           confirm_exit = true;
 
         break;
@@ -719,7 +794,7 @@ static boolean game_key(context *ctx, int *key)
     // ask for confirmation. Exit events instead terminate MegaZeux.
     if(conf->standalone_mode && !confirm_exit)
     {
-      core_exit(ctx);
+      core_full_exit(ctx);
     }
     else
     {
@@ -755,7 +830,7 @@ void play_game(context *parent, boolean *_fade_in)
   struct game_context *game;
   struct context_spec spec;
 
-  game = cmalloc(sizeof(struct game_context));
+  game = ccalloc(1, sizeof(struct game_context));
   game->fade_in = _fade_in ? * _fade_in : true;
   game->is_title = false;
   game->allow_cheats = false;
@@ -768,6 +843,7 @@ void play_game(context *parent, boolean *_fade_in)
   spec.draw     = game_draw;
   spec.idle     = game_idle;
   spec.key      = game_key;
+  spec.joystick = game_joystick;
   spec.destroy  = game_destroy;
 
   spec.framerate_mode = FRAMERATE_MZX_SPEED;
@@ -801,6 +877,9 @@ static void title_resume(context *ctx)
     {
       conf->standalone_mode = false;
 
+      // Do this to avoid some UI fade bugs...
+      insta_fadein();
+
       if(title->load_dialog_on_failed_load)
       {
         load_world_title_selection(title);
@@ -812,17 +891,70 @@ static void title_resume(context *ctx)
   title->need_reload = false;
 }
 
+static boolean title_key(context *ctx, int *key); // Forward declaration.
+
+/**
+ * Callback for handling the main menu key.
+ */
+static void main_menu_callback(context *ctx, context_callback_param *ignore)
+{
+  struct game_context *title = (struct game_context *)ctx;
+  int key = title->menu_key;
+
+  title->menu_key = 0;
+  title->menu_alt = false;
+
+  if(key)
+    title_key(ctx, &(key));
+}
+
+/**
+ * Joystick handler for the title screen.
+ */
+static boolean title_joystick(context *ctx, int *key, int action)
+{
+  struct game_context *title = (struct game_context *)ctx;
+  struct world *mzx_world = ctx->world;
+
+  switch(action)
+  {
+    case JOY_B:
+    case JOY_SELECT:
+    {
+      // Special: open the main menu if the enter or escape menu is allowed.
+      // The B button is the alternate for select instead of start because the
+      // start button makes much more sense playing the game on the title.
+      if(allow_enter_menu(mzx_world, true) || allow_exit_menu(mzx_world, true))
+      {
+        main_menu(ctx, true, &(title->menu_key));
+        context_callback(ctx, NULL, main_menu_callback);
+      }
+      return true;
+    }
+
+    case JOY_A:         *key = IKEY_F5; return true;
+    case JOY_X:         *key = IKEY_F3; return true;
+    case JOY_Y:         *key = IKEY_F4; return true;
+    case JOY_START:     *key = IKEY_F5; return true;
+    case JOY_LSHOULDER: *key = IKEY_F2; return true;
+    case JOY_RSHOULDER: *key = IKEY_F2; return true;
+    case JOY_LTRIGGER:  *key = IKEY_F3; return true;
+    case JOY_RTRIGGER:  *key = IKEY_F4; return true;
+  }
+  return false;
+}
+
 /**
  * Key handler for the title screen.
  */
-
 static boolean title_key(context *ctx, int *key)
 {
   const struct config_info *conf = get_config();
   struct game_context *title = (struct game_context *)ctx;
   struct world *mzx_world = ctx->world;
 
-  int key_status = get_key_status(keycode_internal_wrt_numlock, *key);
+  // NOTE: disabled due to joystick support. See IKEY_RETURN and IKEY_ESCAPE.
+  //int key_status = get_key_status(keycode_internal_wrt_numlock, *key);
   boolean exit_status = get_exit_status();
 
   boolean reload_curr_file_in_editor = true;
@@ -849,10 +981,9 @@ static boolean title_key(context *ctx, int *key)
     case IKEY_F3:
     case IKEY_l:
     {
-      if(conf->standalone_mode)
-        return true;
+      if(allow_load_world_menu(mzx_world))
+        load_world_title_selection(title);
 
-      load_world_title_selection(title);
       return true;
     }
 
@@ -868,13 +999,13 @@ static boolean title_key(context *ctx, int *key)
     case IKEY_r:
     {
       // Restore saved game
-      if(conf->standalone_mode && !get_counter(mzx_world, "LOAD_MENU", 0))
-        return true;
-
-      if(load_savegame_selection(title))
+      if(allow_load_menu(mzx_world, true))
       {
-        play_game(ctx, &(title->fade_in));
-        title->need_reload = true;
+        if(load_savegame_selection(title))
+        {
+          play_game(ctx, &(title->fade_in));
+          title->need_reload = true;
+        }
       }
       return true;
     }
@@ -914,7 +1045,7 @@ static boolean title_key(context *ctx, int *key)
         if(mzx_world->active)
           audio_set_module_volume(0);
 
-        check_for_updates(mzx_world, false);
+        check_for_updates(ctx, false);
 
         audio_set_pcs_volume(current_pcs_vol);
         audio_set_music_volume(current_music_vol);
@@ -951,15 +1082,15 @@ static boolean title_key(context *ctx, int *key)
     // Quickload saved game
     case IKEY_F10:
     {
-      struct stat file_info;
-
-      if(conf->standalone_mode && !get_counter(mzx_world, "LOAD_MENU", 0))
-        return true;
-
-      if(!stat(curr_sav, &file_info) && load_savegame(title, curr_sav))
+      if(allow_load_menu(mzx_world, true))
       {
-        play_game(ctx, &(title->fade_in));
-        title->need_reload = true;
+        struct stat file_info;
+
+        if(!stat(curr_sav, &file_info) && load_savegame(title, curr_sav))
+        {
+          play_game(ctx, &(title->fade_in));
+          title->need_reload = true;
+        }
       }
       return true;
     }
@@ -967,25 +1098,26 @@ static boolean title_key(context *ctx, int *key)
     case IKEY_RETURN: // Enter
     {
       // Ignore if this isn't a fresh press
-      if(key_status != 1)
-        return true;
+      // NOTE: disabled because it breaks the joystick actions.
+      //if(key_status != 1)
+        //return true;
 
-      if(!conf->standalone_mode || get_counter(mzx_world, "ENTER_MENU", 0))
-        main_menu(ctx);
-
+      if(allow_enter_menu(mzx_world, true))
+      {
+        main_menu(ctx, false, &(title->menu_key));
+        context_callback(ctx, NULL, main_menu_callback);
+      }
       return true;
     }
 
     case IKEY_ESCAPE:
     {
       // Ignore if this isn't a fresh press
-      if(key_status != 1)
-        return true;
+      // NOTE: disabled because it breaks the joystick actions.
+      //if(key_status != 1)
+        //return true;
 
-      // ESCAPE_MENU (2.90+) only works on the title screen if the
-      // standalone_mode config option is set
-      if(mzx_world->version < V290 || !conf->standalone_mode ||
-       get_counter(mzx_world, "ESCAPE_MENU", 0))
+      if(allow_exit_menu(mzx_world, true))
         confirm_exit = true;
 
       break;
@@ -999,7 +1131,7 @@ static boolean title_key(context *ctx, int *key)
     // ask for confirmation. Exit events instead terminate MegaZeux.
     if(conf->standalone_mode && !confirm_exit)
     {
-      core_exit(ctx);
+      core_full_exit(ctx);
     }
     else
     {
@@ -1023,19 +1155,29 @@ void title_screen(context *parent)
 {
   struct config_info *conf = get_config();
   struct game_context *title;
+  struct game_context tmp;
   struct context_spec spec;
+
+  tmp.ctx.world = parent->world;
 
   if(edit_world)
   {
     conf->standalone_mode = false;
+
+    if(conf->test_mode)
+    {
+      if(load_world_gameplay_ext(&tmp, curr_file, conf->test_mode_start_board))
+      {
+        parent->world->editing = true;
+        play_game(parent, NULL);
+      }
+      return;
+    }
   }
 
   if(conf->standalone_mode && conf->no_titlescreen)
   {
-    struct game_context dummy;
-    dummy.ctx.world = parent->world;
-
-    if(load_world_gameplay(&dummy, curr_file))
+    if(load_world_gameplay(&tmp, curr_file))
     {
       play_game(parent, NULL);
       return;
@@ -1044,7 +1186,7 @@ void title_screen(context *parent)
     conf->standalone_mode = false;
   }
 
-  title = cmalloc(sizeof(struct game_context));
+  title = ccalloc(1, sizeof(struct game_context));
   title->fade_in = true;
   title->need_reload = true;
   title->load_dialog_on_failed_load = true;
@@ -1055,9 +1197,11 @@ void title_screen(context *parent)
   spec.draw     = game_draw;
   spec.idle     = game_idle;
   spec.key      = title_key;
+  spec.joystick = title_joystick;
   spec.destroy  = game_destroy;
 
   create_context((context *)title, parent, &spec, CTX_TITLE_SCREEN);
+  default_palette();
 
   if(edit_world && conf->startup_editor)
   {
@@ -1065,6 +1209,5 @@ void title_screen(context *parent)
     edit_world((context *)title, true);
   }
 
-  default_palette();
   clear_screen();
 }

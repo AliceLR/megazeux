@@ -33,10 +33,14 @@ STRIP   := /bin/true
 SDL_CFLAGS     = -isystem $(DEVKITPRO)/libogc/include/SDL
 SDL_LDFLAGS    = $(SDL_CFLAGS)
 
-EXTRA_INCLUDES = -isystem $(LIBOGC_INC) \
-                 -isystem $(PORTLIBS)/include
-EXTRA_LIBS     = -L$(LIBOGC_LIB) \
-                 -L$(PORTLIBS)/lib \
+#
+# As of devkitPPC r34 $(PORTLIBS) has multiple paths for some reason...
+#
+PORTLIBS_INCLUDES := $(foreach dir, $(PORTLIBS), -isystem $(dir)/include)
+PORTLIBS_LIBS     := $(foreach dir, $(PORTLIBS), -L$(dir)/lib)
+
+EXTRA_INCLUDES := -isystem $(LIBOGC_INC) ${PORTLIBS_INCLUDES}
+EXTRA_LIBS     := -L$(LIBOGC_LIB) ${PORTLIBS_LIBS} \
                  $(if $(BUILD_SDL), -lSDL,) \
                  -lfat -lasnd -lwiikeyboard -lwiiuse -lbte -logc -lstdc++ -lm
 
@@ -44,14 +48,17 @@ ARCH_CFLAGS   += ${EXTRA_INCLUDES} $(MACHDEP)
 ARCH_CXXFLAGS += ${ARCH_CFLAGS}
 ARCH_LDFLAGS  += ${EXTRA_LIBS} $(MACHDEP)
 
+# Boot MegaZeux by default if the editor is enabled; otherwise, boot MZXRun.
 package: mzx
-	${ELF2DOL} ${mzxrun} boot.dol
 ifneq ($(BUILD_EDITOR),)
-	${ELF2DOL} ${mzx} megazeux.dol
+	${ELF2DOL} ${mzx} boot.dol
+	${ELF2DOL} ${mzxrun} mzxrun.dol
+else
+	${ELF2DOL} ${mzxrun} boot.dol
 endif
 
 clean:
-	@rm -f boot.dol megazeux.dol arch/wii/*.d arch/wii/*.o
+	@rm -f boot.dol mzxrun.dol arch/wii/*.d arch/wii/*.o
 
 #
 # Vile hack, remove me ASAP
@@ -71,7 +78,10 @@ else
 	${CP} arch/wii/pad.config.sdl ${build}/pad.config
 endif
 	${CP} arch/wii/icon.png ${build}
-	${CP} boot.dol megazeux.dol ${build}
+	${CP} boot.dol ${build}
+ifneq ($(BUILD_EDITOR),)
+	${CP} mzxrun.dol ${build}
+endif
 	@sed "s/%VERSION%/${VERSION}/g;s/%DATE%/`date -u +%Y%m%d%H%M`/g" \
 	    arch/wii/meta.xml > ${build}/meta.xml
 	${RM} ${build}/${mzxrun} ${build}/${mzxrun}.debug

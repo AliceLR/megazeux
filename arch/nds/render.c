@@ -50,6 +50,10 @@ static int palette_idx_table[16][16];
 // If we're looking around with the mouse, ignore the next call to focus.
 static boolean mouselook;
 
+// Y offset information for subscreen
+static s16 subscreen_offset_y = 0;
+u16 subscreen_height;
+
 // The current transition state.
 static struct {
   enum { TRANSITION_NONE = 0, TRANSITION_IN, TRANSITION_OUT } state;
@@ -107,7 +111,7 @@ static void palette_idx_table_init(void)
 static void nds_subscreen_scaled_init(void)
 {
   int xscale = (int)(320.0/256.0 * 256.0);
-  int yscale = (int)(350.0/192.0 * 256.0);
+  int yscale = (int)(350.0/subscreen_height * 256.0);
 
   /* Use banks A and B for the ZZT screen. */
   videoSetMode(MODE_5_2D | DISPLAY_BG2_ACTIVE | DISPLAY_BG3_ACTIVE);
@@ -122,7 +126,7 @@ static void nds_subscreen_scaled_init(void)
   REG_BG2PC  = 0;
   REG_BG2PD  = yscale;
   REG_BG2X   = 0;
-  REG_BG2Y   = 0;
+  REG_BG2Y   = subscreen_offset_y;
 
   REG_BG3CNT = BG_BMP8_512x512 | BG_BMP_BASE(3) | BG_PRIORITY(0);
   REG_BG3PA  = xscale;
@@ -130,7 +134,7 @@ static void nds_subscreen_scaled_init(void)
   REG_BG3PC  = 0;
   REG_BG3PD  = yscale;
   REG_BG3X   = 0;
-  REG_BG3Y   = 0;
+  REG_BG3Y   = subscreen_offset_y;
 
   /* Enable BG2/BG3 blending. */
   REG_BLDCNT   = BLEND_ALPHA | BLEND_SRC_BG2 | BLEND_DST_BG3;
@@ -210,9 +214,9 @@ void nds_video_jitter(void)
     jidx = 0;
 
   REG_BG2X = jitterF4[jidx];
-  REG_BG2Y = jitterF4[jidx+1];
+  REG_BG2Y = jitterF4[jidx+1] + subscreen_offset_y;
   REG_BG3X = jitterF4[jidx+2];
-  REG_BG3Y = jitterF4[jidx+3];
+  REG_BG3Y = jitterF4[jidx+3] + subscreen_offset_y;
   jidx += 4;
 }
 
@@ -345,6 +349,18 @@ static boolean nds_init_video(struct graphics_data *graphics,
   palette_idx_table_init();
 
   // Start with scaled mode.
+  switch(config->video_ratio)
+  {
+    case RATIO_CLASSIC_4_3:
+    case RATIO_STRETCH:
+      subscreen_height = 192;
+      break;
+    default:
+      subscreen_height = 140;
+      break;
+  }
+  subscreen_offset_y = -((192 - subscreen_height) * 320 /* 1/2 * 256 * (1/0.4) */);
+
   subscreen_mode = SUBSCREEN_SCALED;
   last_subscreen_mode = SUBSCREEN_MODE_INVALID;
   nds_subscreen_scaled_init();

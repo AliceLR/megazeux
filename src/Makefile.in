@@ -26,7 +26,9 @@ core_flags   += -Wwrite-strings
 core_cflags  += ${CFLAGS} -Wmissing-prototypes
 core_cxxflags = ${CXXFLAGS} -DHAVE_INTTYPES_H
 
+ifneq (${PLATFORM},emscripten)
 core_flags   += -I${PREFIX}/include
+endif
 core_ldflags := -lm ${core_ldflags}
 
 ifeq (${PLATFORM},mingw)
@@ -105,6 +107,7 @@ core_cobjs := \
   ${core_obj}/sprite.o            \
   ${core_obj}/str.o               \
   ${core_obj}/util.o              \
+  ${core_obj}/vfs.o               \
   ${core_obj}/window.o            \
   ${core_obj}/world.o             \
   ${core_obj}/zip.o
@@ -133,12 +136,12 @@ endif
 # These are really just hacks and should be moved elsewhere
 #
 ifeq (${BUILD_NDS},1)
-core_cobjs += arch/nds/ram.o arch/nds/exception.o
-core_cobjs += arch/nds/dlmalloc.o
+core_cobjs += arch/nds/exception.o
 core_cobjs += arch/nds/platform.o arch/nds/event.o
 core_cobjs += arch/nds/render.o arch/nds/evq.o
 ifneq (${BUILD_DEBYTECODE},1)
-core_cobjs += arch/nds/extmem.o
+core_cobjs += arch/nds/dlmalloc.o
+core_cobjs += arch/nds/ram.o arch/nds/extmem.o
 endif
 endif
 
@@ -149,8 +152,8 @@ core_cobjs += arch/3ds/event.o arch/3ds/audio.o
 core_cobjs += arch/3ds/keyboard.o
 endif
 
-ifeq (${PLATFORM},android)
-core_cxxobjs += arch/android/sfwrapper.o
+ifeq (${BUILD_SWITCH},1)
+# Switch libraries require C++
 LINK_CC := ${CXX}
 endif
 
@@ -187,6 +190,12 @@ core_cobjs += ${core_obj}/render_soft.o
 render_layer_software = 1
 endif
 
+# Accelerated SDL2 software renderer
+ifeq (${BUILD_RENDER_SOFTSCALE},1)
+core_cobjs += ${core_obj}/render_softscale.o
+render_layer_software = 1
+endif
+
 # GL shared
 ifneq ($(or ${BUILD_RENDER_GL_FIXED},${BUILD_RENDER_GL_PROGRAM}),)
 core_cobjs += ${core_obj}/render_gl.o
@@ -219,7 +228,6 @@ endif
 # Overlay renderers
 ifeq (${BUILD_RENDER_YUV},1)
 core_cobjs += ${core_obj}/render_yuv.o
-core_cobjs += ${core_obj}/render_yuv1.o ${core_obj}/render_yuv2.o
 render_layer_software = 1
 endif
 
@@ -234,12 +242,15 @@ render_layer_software = 1
 endif
 
 # Software layer renderer
+# This one tends to take forever for many builds. Prefix it to
+# the list so hopefully it starts sooner during parallel builds.
 ifeq (${render_layer_software},1)
-core_cobjs += ${core_obj}/render_layer.o
+core_cobjs := ${core_obj}/render_layer.o ${core_cobjs}
 endif
 
 ifeq (${BUILD_MODPLUG},1)
 core_cflags += -I${gdm2s3m_src}
+core_cxxflags += -I${gdm2s3m_src}
 core_cobjs += ${gdm2s3m_objs}
 core_flags += -I${libmodplug_src} -I${libmodplug_src}/libmodplug
 core_cxxobjs += ${audio_obj}/audio_modplug.o ${libmodplug_objs}
@@ -266,6 +277,11 @@ core_ldflags := ${OPENMPT_LDFLAGS} ${core_ldflags}
 core_cobjs += ${audio_obj}/audio_openmpt.o
 endif
 
+ifeq (${BUILD_REALITY},1)
+core_cxxobjs += ${audio_obj}/audio_reality.o
+#LINK_CC := ${CXX}
+endif
+
 ifeq (${LIBPNG},1)
 core_flags += $(LIBPNG_CFLAGS) -DNEED_PNG_WRITE_SCREEN
 core_ldflags := $(LIBPNG_LDFLAGS) ${core_ldflags}
@@ -274,10 +290,6 @@ endif
 
 ifeq (${BUILD_KHASH},1)
 core_flags += -Icontrib/khash/
-endif
-
-ifeq (${BUILD_UTHASH},1)
-core_flags += -Icontrib/uthash/
 endif
 
 ifeq (${BUILD_AUDIO},1)

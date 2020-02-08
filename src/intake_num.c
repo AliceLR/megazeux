@@ -83,7 +83,7 @@ static void fix_draw_area(struct intake_num_context *intk)
  * Draw the number input to the screen.
  */
 
-static void intake_num_draw(context *ctx)
+static boolean intake_num_draw(context *ctx)
 {
   struct intake_num_context *intk = (struct intake_num_context *)ctx;
   int write_pos = intk->x + intk->w + 1;
@@ -101,6 +101,8 @@ static void intake_num_draw(context *ctx)
 
   if(!intk->empty)
     write_string(buffer, write_pos, intk->y, intk->color, false);
+
+  return true;
 }
 
 /**

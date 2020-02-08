@@ -18,9 +18,13 @@ ARCH_CFLAGS   += -G0 -isystem ${PREFIX}/sdk/include -DPATH_MAX=4096
 ARCH_CXXFLAGS += ${ARCH_CFLAGS}
 ARCH_LDFLAGS  += -L${PREFIX}/sdk/lib
 
+# psp-g++ seems to either remove the first -lc it finds or repositions it to
+# after the rest of the includes. Specify it twice so psp-g++ really knows it
+# needs to go there. Otherwise, linking fails. This issue was encountered with
+# the devkitPSP r16 build of PSPDEV.
 SDL_CFLAGS = -I${PREFIX}/include/SDL
-SDL_LDFLAGS = -lSDL -lGL -lpspirkeyb -lc -lpspvfpu -lpsprtc -lpsppower -lpspaudio -lpspgu -lpspge -lpspdisplay -lpsphprm -lpspctrl -lpspnet_inet -lpspuser
-LIBPNG_CFLAGS = 
+SDL_LDFLAGS = -lSDL -lGL -lpspirkeyb -lc -lc -lpspvfpu -lpsprtc -lpsppower -lpspaudio -lpspgu -lpspge -lpspdisplay -lpsphprm -lpspctrl -lpspnet_inet -lpspuser
+LIBPNG_CFLAGS =
 LIBPNG_LDFLAGS = -lpng
 
 package: mzx
@@ -34,7 +38,7 @@ package: mzx
 	rm -f ${mzxrun}.strip
 
 clean:
-	@rm -f EBOOT.PBP PARAM.SFO ICON0.PNG
+	@rm -f EBOOT.PBP PARAM.SFO ICON0.PNG arch/psp/*.{o,d}
 
 build: package ${build}
 	${CP} arch/psp/pad.config ${build}

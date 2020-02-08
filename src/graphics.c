@@ -66,6 +66,11 @@ static const struct renderer_data renderers[] =
 #if defined(CONFIG_RENDER_SOFT)
   { "software", render_soft_register },
 #endif
+#if defined(CONFIG_RENDER_SOFTSCALE)
+  { "softscale", render_softscale_register },
+  { "overlay1", render_softscale_register },
+  { "overlay2", render_softscale_register },
+#endif
 #if defined(CONFIG_RENDER_GL_FIXED)
   { "opengl1", render_gl1_register },
   { "opengl2", render_gl2_register },
@@ -539,6 +544,8 @@ void set_smzx_index(Uint32 col, Uint32 offset, Uint32 value)
 
 Uint32 get_color_intensity(Uint32 color)
 {
+  if(graphics.fade_status)
+    return graphics.saved_intensity[color];
   return graphics.current_intensity[color];
 }
 
@@ -1151,10 +1158,12 @@ void insta_fadeout(void)
   else
     num_colors = PAL_SIZE;
 
+  memcpy(graphics.saved_intensity, graphics.current_intensity,
+   sizeof(Uint32) * num_colors);
+
   for(i = 0; i < num_colors; i++)
     set_color_intensity(i, 0);
 
-  delay(1);
   graphics.palette_dirty = true;
   update_screen(); // NOTE: this was called conditionally in 2.81e
 
@@ -1203,6 +1212,7 @@ static boolean set_graphics_output(struct config_info *conf)
 {
   const char *video_output = conf->video_output;
   const struct renderer_data *renderer = renderers;
+  int i = 0;
 
   // The first renderer was NULL, this shouldn't happen
   if(!renderer->name)
@@ -1216,13 +1226,18 @@ static boolean set_graphics_output(struct config_info *conf)
     if(!strcasecmp(video_output, renderer->name))
       break;
     renderer++;
+    i++;
   }
 
   // If no match found, use first renderer in the renderer list
   if(!renderer->name)
+  {
     renderer = renderers;
+    i = 0;
+  }
 
   renderer->reg(&graphics.renderer);
+  graphics.renderer_num = i;
 
   debug("Video: using '%s' renderer.\n", renderer->name);
   return true;
@@ -1272,6 +1287,14 @@ static SDL_Surface *png_read_icon(const char *name)
 
 #endif // CONFIG_PNG && CONFIG_SDL && CONFIG_ICON && !__WIN32__
 
+static void set_window_grab(boolean grabbed)
+{
+#ifdef CONFIG_SDL
+  SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
+  SDL_SetWindowGrab(window, grabbed ? SDL_TRUE : SDL_FALSE);
+#endif
+}
+
 void set_window_caption(const char *caption)
 {
 #ifdef CONFIG_SDL
@@ -1310,9 +1333,9 @@ static void set_window_icon(void)
     }
   }
 #else // !__WIN32__
-#if defined(CONFIG_PNG)
+#if defined(CONFIG_PNG) && defined(ICONFILE)
   {
-    SDL_Surface *icon = png_read_icon("/usr/share/icons/megazeux.png");
+    SDL_Surface *icon = png_read_icon(ICONFILE);
     if(icon)
     {
       SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
@@ -1500,6 +1523,7 @@ boolean init_video(struct config_info *conf, const char *caption)
 {
   graphics.screen_mode = 0;
   graphics.fullscreen = conf->fullscreen;
+  graphics.fullscreen_windowed = conf->fullscreen_windowed;
   graphics.resolution_width = conf->resolution_width;
   graphics.resolution_height = conf->resolution_height;
   graphics.window_width = conf->window_width;
@@ -1508,6 +1532,7 @@ boolean init_video(struct config_info *conf, const char *caption)
   graphics.cursor_timestamp = get_ticks();
   graphics.cursor_flipflop = 1;
   graphics.system_mouse = conf->system_mouse;
+  graphics.grab_mouse = conf->grab_mouse;
 
   memset(&(graphics.text_video_layer), 0, sizeof(struct video_layer));
   graphics.text_video_layer.w = SCREEN_W;
@@ -1519,21 +1544,26 @@ boolean init_video(struct config_info *conf, const char *caption)
   if(!set_graphics_output(conf))
     return false;
 
-  // FIXME- We should communicate with the renderer to get the desktop resolution.
   if(conf->resolution_width == -1 && conf->resolution_height == -1)
   {
-    // FIXME hack- default resolution assignment should occur
-    // somewhere else on a per-renderer basis (probably init_video)
-    if(strcmp(conf->video_output, "software"))
-    {
-      // "Safe" resolution for scalable renderers
-      graphics.resolution_width = 1280;
-      graphics.resolution_height = 720;
-    }
+#ifdef CONFIG_SDL
+    // TODO maybe be able to communicate with the renderer instead of this hack
+    boolean is_scaling = true;
+    int width;
+    int height;
 
-    else
+    if(!strcmp(conf->video_output, "software"))
+      is_scaling = false;
+
+    if(sdl_get_fullscreen_resolution(&width, &height, is_scaling))
     {
-      // "Safe" resolution for software renderer
+      graphics.resolution_width = width;
+      graphics.resolution_height = height;
+    }
+    else
+#endif
+    {
+      // "Safe" resolution
       graphics.resolution_width = 640;
       graphics.resolution_height = 480;
     }
@@ -1584,6 +1614,14 @@ boolean init_video(struct config_info *conf, const char *caption)
   return true;
 }
 
+void quit_video(void)
+{
+  if(graphics.renderer.free_video)
+    graphics.renderer.free_video(&graphics);
+
+  destruct_layers();
+}
+
 boolean has_video_initialized(void)
 {
 #ifdef CONFIG_SDL
@@ -1602,6 +1640,18 @@ boolean set_video_mode(void)
   boolean fullscreen = graphics.fullscreen;
   boolean resize = graphics.allow_resize;
   boolean ret;
+
+#ifdef CONFIG_SDL
+  if(fullscreen && graphics.fullscreen_windowed)
+  {
+    // TODO maybe be able to communicate with the renderer instead of this hack
+    if(sdl_get_fullscreen_resolution(&target_width, &target_height, true))
+    {
+      graphics.resolution_width = target_width;
+      graphics.resolution_height = target_height;
+    }
+  }
+#endif
 
   if(fullscreen)
   {
@@ -1636,17 +1686,18 @@ boolean set_video_mode(void)
   if(ret)
   {
     set_window_caption(graphics.default_caption);
+    set_window_grab(graphics.grab_mouse);
     set_window_icon();
   }
 
   return ret;
 }
 
-#if 0
-
-static boolean change_video_output(struct config_info *conf, const char *output)
+boolean change_video_output(struct config_info *conf, const char *output)
 {
   char old_video_output[16];
+  boolean fallback = false;
+  boolean retval = true;
 
   strncpy(old_video_output, conf->video_output, 16);
   old_video_output[15] = 0;
@@ -1661,24 +1712,69 @@ static boolean change_video_output(struct config_info *conf, const char *output)
 
   if(!graphics.renderer.init_video(&graphics, conf))
   {
+    retval = false;
+
     strcpy(conf->video_output, old_video_output);
     if(!set_graphics_output(conf))
     {
-      warn("Failed to roll back renderer, aborting!\n");
-      exit(0);
+      warn("Failed to roll back renderer!\n");
+      fallback = true;
+    }
+    else
+
+    if(!graphics.renderer.init_video(&graphics, conf))
+    {
+      warn("Failed to roll back video mode!\n");
+      fallback = true;
+    }
+  }
+
+  if(fallback)
+  {
+    // Attempt the first renderer in the list (unless that just failed).
+    if(!strcmp(conf->video_output, renderers->name))
+    {
+      warn("Aborting!\n");
+      exit(1);
+    }
+
+    strcpy(conf->video_output, renderers->name);
+    if(!set_graphics_output(conf))
+    {
+      warn("Failed to load fallback renderer, aborting!\n");
+      exit(1);
     }
 
     if(!graphics.renderer.init_video(&graphics, conf))
     {
-      warn("Failed to roll back video mode, aborting!\n");
-      exit(0);
+      warn("Failed to set fallback video mode, aborting!\n");
+      exit(1);
     }
   }
 
-  return true;
+  update_palette();
+  return retval;
 }
 
-#endif
+int get_available_video_output_list(const char **buffer, int buffer_len)
+{
+  const struct renderer_data *renderer = renderers;
+  int i;
+
+  for(i = 0; i < buffer_len; i++, renderer++)
+  {
+    if(!renderer->name)
+      break;
+
+    buffer[i] = renderer->name;
+  }
+  return i;
+}
+
+int get_current_video_output(void)
+{
+  return (int)(graphics.renderer_num);
+}
 
 boolean is_fullscreen(void)
 {
@@ -1689,7 +1785,11 @@ void toggle_fullscreen(void)
 {
   graphics.fullscreen = !graphics.fullscreen;
   graphics.palette_dirty = true;
-  set_video_mode();
+  if(!set_video_mode())
+  {
+    warn("Failed to set video mode toggling fullscreen. Aborting\n");
+    exit(1);
+  }
   update_screen();
 }
 
@@ -1699,7 +1799,11 @@ void resize_screen(Uint32 w, Uint32 h)
   {
     graphics.window_width = w;
     graphics.window_height = h;
-    set_video_mode();
+    if(!set_video_mode())
+    {
+      warn("Failed to set video mode resizing window. Aborting\n");
+      exit(1);
+    }
     graphics.renderer.resize_screen(&graphics, w, h);
   }
 }
@@ -1719,7 +1823,7 @@ void color_string_ext_special(const char *str, Uint32 x, Uint32 y,
   char next_str[2];
   next_str[1] = 0;
 
-  if(c_offset) dirty_ui();
+  dirty_ui();
   dirty_current();
 
   while(cur_char)
@@ -1851,7 +1955,7 @@ void write_string_ext(const char *str, Uint32 x, Uint32 y,
   Uint8 bg_color = (color >> 4) + c_offset;
   Uint8 fg_color = (color & 0x0F) + c_offset;
 
-  if(c_offset) dirty_ui();
+  dirty_ui();
   dirty_current();
 
   while(cur_char && (cur_char != 0))
@@ -1937,7 +2041,7 @@ void write_string_mask(const char *str, Uint32 x, Uint32 y,
 
       default:
       {
-        if((cur_char >= 32) && (cur_char <= 127))
+        if((cur_char >= 32) && (cur_char <= 126))
           dest->char_value = cur_char + PRO_CH;
         else
           dest->char_value = cur_char;
@@ -1970,7 +2074,7 @@ void write_line_ext(const char *str, Uint32 x, Uint32 y,
   Uint8 bg_color = (color >> 4) + c_offset;
   Uint8 fg_color = (color & 0x0F) + c_offset;
 
-  if(c_offset) dirty_ui();
+  dirty_ui();
   dirty_current();
 
   while(cur_char && (cur_char != '\n'))
@@ -2089,7 +2193,7 @@ static void color_line_ext(Uint32 length, Uint32 x, Uint32 y,
   Uint8 fg_color = (color & 0x0F) + c_offset;
   Uint32 i;
 
-  if(c_offset) dirty_ui();
+  dirty_ui();
   dirty_current();
 
   for(i = 0; i < length; i++)
@@ -2112,7 +2216,7 @@ void fill_line_ext(Uint32 length, Uint32 x, Uint32 y,
   Uint8 fg_color = (color & 0x0F) + c_offset;
   Uint32 i;
 
-  if(c_offset) dirty_ui();
+  dirty_ui();
   dirty_current();
 
   for(i = 0; i < length; i++)
@@ -2138,7 +2242,7 @@ void draw_char_mixed_pal_ext(Uint8 chr, Uint8 bg_color,
 
   *(dest_copy++) = *dest;
 
-  if((fg_color|bg_color) >= 16) dirty_ui();
+  dirty_ui();
   dirty_current();
 }
 
@@ -2153,7 +2257,7 @@ void draw_char_ext(Uint8 chr, Uint8 color, Uint32 x,
   dest->fg_color = (color & 0x0F) + c_offset;
   *(dest_copy++) = *dest;
 
-  if(c_offset) dirty_ui();
+  dirty_ui();
   dirty_current();
 }
 
@@ -2167,7 +2271,7 @@ void draw_char_linear_ext(Uint8 color, Uint8 chr,
   dest->fg_color = (color & 0x0F) + c_offset;
   *(dest_copy++) = *dest;
 
-  if(c_offset) dirty_ui();
+  dirty_ui();
   dirty_current();
 }
 

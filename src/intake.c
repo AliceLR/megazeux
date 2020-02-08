@@ -60,7 +60,9 @@ int intake(struct world *mzx_world, char *string, int max_len,
   int currx, curr_len;
   int done = 0, place = 0;
   char cur_char = 0;
+  boolean select_char = false;
   int mouse_press;
+  int action;
   int key;
 
   // Activate cursor
@@ -97,6 +99,27 @@ int intake(struct world *mzx_world, char *string, int max_len,
     place = 0;
 
     cur_char = get_key(keycode_unicode);
+
+    action = get_joystick_ui_action();
+    if(action)
+    {
+      switch(action)
+      {
+        case JOY_X:
+          // Select character
+          select_char = true;
+          key = IKEY_c;
+          break;
+
+        case JOY_Y:
+          key = IKEY_BACKSPACE;
+          break;
+
+        default:
+          key = get_joystick_ui_key();;
+          break;
+      }
+    }
 
     // Exit event mimics escape
     if(get_exit_status() && exit_type != INTK_EXIT_ENTER)
@@ -351,10 +374,12 @@ int intake(struct world *mzx_world, char *string, int max_len,
 
       case IKEY_c:
       {
-        if(get_alt_status(keycode_internal))
+        if(get_alt_status(keycode_internal) || select_char)
         {
           // If alt - C is pressed, choose character
           int new_char = char_selection(last_char);
+          select_char = false;
+
           if(new_char >= 32)
           {
             cur_char = new_char;
@@ -458,6 +483,7 @@ struct intake_subcontext
   int pos;
   int *pos_external;
   int *length_external;
+  boolean select_char;
 
   // Display info.
   int x;
@@ -609,7 +635,7 @@ static boolean intake_place_char(struct intake_subcontext *intk, char chr)
  * Draw the input string and cursor.
  */
 
-static void intake_draw(subcontext *sub)
+static boolean intake_draw(subcontext *sub)
 {
   struct intake_subcontext *intk = (struct intake_subcontext *)sub;
   int use_mask = get_config()->mask_midchars;
@@ -665,6 +691,8 @@ static void intake_draw(subcontext *sub)
 
   if(temp_pos)
     intk->dest[temp_pos] = temp_char;
+
+  return true;
 }
 
 /**
@@ -696,6 +724,35 @@ static boolean intake_click(subcontext *sub, int *key, int button, int x, int y)
       intake_set_pos(intk, x - intk->x);
       return true;
     }
+  }
+  return false;
+}
+
+/**
+ * Joystick input. Can't do much here; pass most input through to the parent.
+ */
+
+static boolean intake_joystick(subcontext *sub, int *key, int action)
+{
+  switch(action)
+  {
+    case JOY_LEFT:
+      *key = IKEY_LEFT;
+      return true;
+
+    case JOY_RIGHT:
+      *key = IKEY_RIGHT;
+      return true;
+
+    case JOY_X:
+      // Select character
+      ((struct intake_subcontext *)sub)->select_char = true;
+      *key = IKEY_c;
+      return true;
+
+    case JOY_Y:
+      *key = IKEY_BACKSPACE;
+      return true;
   }
   return false;
 }
@@ -866,16 +923,18 @@ static boolean intake_key(subcontext *sub, int *key)
       }
       else
 
-      if(get_alt_status(keycode_internal))
+      if(get_alt_status(keycode_internal) || intk->select_char)
       {
         // If alt - C is pressed, choose character
         int new_char = char_selection(last_char);
+        intk->select_char = false;
+
         if(new_char >= 32)
         {
-          cur_char = new_char;
           last_char = new_char;
-          place = true;
+          intake_place_char(intk, new_char);
         }
+        return true;
       }
       else
       {
@@ -922,7 +981,7 @@ static void intake_destroy(subcontext *sub)
 subcontext *intake2(context *parent, char *dest, int max_length,
  int x, int y, int width, int color, int *pos_external, int *length_external)
 {
-  struct intake_subcontext *intk = cmalloc(sizeof(struct intake_subcontext));
+  struct intake_subcontext *intk = ccalloc(1, sizeof(struct intake_subcontext));
   struct context_spec spec;
 
   intk->dest = dest;
@@ -939,6 +998,7 @@ subcontext *intake2(context *parent, char *dest, int max_length,
   spec.idle     = intake_idle;
   spec.click    = intake_click;
   spec.key      = intake_key;
+  spec.joystick = intake_joystick;
   spec.destroy  = intake_destroy;
 
   intake_set_length(intk, strlen(dest));

@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# NOTE: GL renderers currently cause system crashes on exit and are disabled
+# by default. They don't perform as well as the softscale renderer on the
+# Switch anyway.
+
+./config.sh --platform switch --prefix $DEVKITPRO/devkitA64 --enable-release \
+            --disable-utils --enable-meter --enable-stdio-redirect \
+            --disable-gl $@

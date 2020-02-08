@@ -27,6 +27,7 @@
 #include "../data.h"
 #include "../error.h"
 #include "../event.h"
+#include "../extmem.h"
 #include "../game.h"
 #include "../game_player.h"
 #include "../graphics.h"
@@ -85,12 +86,11 @@ static const char *const mzb_ext[] = { ".MZB", NULL };
 static const char *const mzm_ext[] = { ".MZM", NULL };
 static const char *const sfx_ext[] = { ".SFX", NULL };
 static const char *const chr_ext[] = { ".CHR", NULL };
-static const char *const pal_ext[] = { ".PAL", NULL };
-static const char *const idx_ext[] = { ".PALIDX", NULL };
 static const char *const mod_ext[] =
-{ ".ogg", ".mod", ".s3m", ".xm", ".it", ".gdm",
-  ".669", ".amf", ".dsm", ".far", ".med",
-  ".mtm", ".okt", ".stm", ".ult", ".wav",
+{ ".ogg", ".mod", ".s3m", ".xm", ".it",
+  ".669", ".amf", ".dsm", ".far", ".gdm",
+  ".med", ".mtm", ".okt", ".stm", ".ult",
+  ".rad",
   NULL
 };
 static const char *const sam_ext[] =
@@ -104,7 +104,9 @@ struct editor_context
   subcontext *edit_menu;
 
   char current_world[MAX_PATH];
+  char mzb_name_buffer[MAX_PATH];
   char mzm_name_buffer[MAX_PATH];
+  char chr_name_buffer[MAX_PATH];
   char current_listening_dir[MAX_PATH];
   char current_listening_mod[MAX_PATH];
 
@@ -125,6 +127,13 @@ struct editor_context
   struct scroll buffer_scroll;
   struct sensor buffer_sensor;
   boolean use_default_color;        // = 1
+  enum thing stored_board_id;
+  char stored_board_color;
+  char stored_board_param;
+  char stored_overlay_char;
+  char stored_overlay_color;
+  char stored_vlayer_char;
+  char stored_vlayer_color;
 
   // Modify in-place buffer
   struct buffer_info temp_buffer;
@@ -294,6 +303,28 @@ static void clear_vlayer_history(struct editor_context *editor)
 }
 
 /**
+ * Set the buffer to the default id/color/param for the current mode.
+ */
+
+static void default_buffer(struct editor_context *editor)
+{
+  struct buffer_info *buffer = &(editor->buffer);
+
+  if(editor->mode == EDIT_BOARD)
+  {
+    buffer->id = SPACE;
+    buffer->color = 7;
+    buffer->param = 0;
+  }
+  else
+  {
+    buffer->id = SPACE;
+    buffer->color = 7;
+    buffer->param = 32;
+  }
+}
+
+/**
  * Switch the current editing mode. If switching to or from the vlayer,
  * the current cursor and scroll position needs to be stored.
  */
@@ -326,6 +357,54 @@ static void set_editor_mode(struct editor_context *editor,
     editor->cursor_y = editor->stored_board_y;
     editor->scroll_x = editor->stored_scroll_x;
     editor->scroll_y = editor->stored_scroll_y;
+  }
+
+  // When switching modes, store the buffer for the old mode and load
+  // the buffer for the new mode. Previously, switching modes would
+  // (inconsistently) set the default buffer instead.
+  if(editor->mode != new_mode)
+  {
+    struct buffer_info *buffer = &(editor->buffer);
+
+    switch(editor->mode)
+    {
+      case EDIT_BOARD:
+        editor->stored_board_id = buffer->id;
+        editor->stored_board_color = buffer->color;
+        editor->stored_board_param = buffer->param;
+        break;
+
+      case EDIT_OVERLAY:
+        editor->stored_overlay_char = buffer->param;
+        editor->stored_overlay_color = buffer->color;
+        break;
+
+      case EDIT_VLAYER:
+        editor->stored_vlayer_char = buffer->param;
+        editor->stored_vlayer_color = buffer->color;
+        break;
+    }
+
+    switch(new_mode)
+    {
+      case EDIT_BOARD:
+        buffer->id = editor->stored_board_id;
+        buffer->color = editor->stored_board_color;
+        buffer->param = editor->stored_board_param;
+        break;
+
+      case EDIT_OVERLAY:
+        buffer->id = SPACE;
+        buffer->param = editor->stored_overlay_char;
+        buffer->color = editor->stored_overlay_color;
+        break;
+
+      case EDIT_VLAYER:
+        buffer->id = SPACE;
+        buffer->param = editor->stored_vlayer_char;
+        buffer->color = editor->stored_vlayer_color;
+        break;
+    }
   }
 
   editor->mode = new_mode;
@@ -421,6 +500,7 @@ static void fix_scroll(struct editor_context *editor)
 
 /**
  * Play the current board's mod if the listening mod isn't playing.
+ * This will restart the board mod even if it's already playing.
  */
 
 static void fix_mod(struct editor_context *editor)
@@ -445,7 +525,8 @@ static void fix_mod(struct editor_context *editor)
  * Set the active world's current board.
  */
 
-static void set_current_board(struct editor_context *editor, int new_board)
+static void editor_set_current_board(struct editor_context *editor,
+ int new_board, boolean is_extram)
 {
   struct editor_config_info *editor_conf = get_editor_config();
   struct world *mzx_world = ((context *)editor)->world;
@@ -458,8 +539,12 @@ static void set_current_board(struct editor_context *editor, int new_board)
       new_board = mzx_world->num_boards - 1;
 
     mzx_world->current_board_id = new_board;
-    mzx_world->current_board = mzx_world->board_list[new_board];
-    cur_board = mzx_world->current_board;
+    cur_board = mzx_world->board_list[new_board];
+
+    if(is_extram)
+      set_current_board_ext(mzx_world, cur_board);
+    else
+      set_current_board(mzx_world, cur_board);
 
     if(!cur_board->overlay_mode || editor->mode == EDIT_VLAYER)
       set_editor_mode(editor, EDIT_BOARD);
@@ -468,9 +553,9 @@ static void set_current_board(struct editor_context *editor, int new_board)
     fix_scroll(editor);
     fix_caption(editor);
 
-    if(strcmp(cur_board->mod_playing, "*") &&
-     strcasecmp(cur_board->mod_playing, mzx_world->real_mod_playing))
-      fix_mod(editor);
+    // We want mod switching from changing boards to act the same as gameplay.
+    if(!editor->listening_mod_active)
+      load_game_module(mzx_world, cur_board->mod_playing, true);
 
     // Load the board charset and palette
     if(editor_conf->editor_load_board_assets)
@@ -522,10 +607,10 @@ static void move_edit_cursor(struct editor_context *editor,
     int height = abs(move_y) + 1;
 
     if(step_x < 0)
-      offset -= width;
+      offset -= (width - 1);
 
     if(step_y < 0)
-      offset -= editor->board_width * height;
+      offset -= editor->board_width * (height - 1);
 
     if(editor->cursor_mode == CURSOR_DRAW)
     {
@@ -622,7 +707,7 @@ struct view_board_context
   int max_y;
 };
 
-static void view_board_draw(context *ctx)
+static boolean view_board_draw(context *ctx)
 {
   struct view_board_context *vb = (struct view_board_context *)ctx;
   struct world *mzx_world = ctx->world;
@@ -630,6 +715,7 @@ static void view_board_draw(context *ctx)
   blank_layers();
   draw_viewport(mzx_world->current_board, mzx_world->edge_color);
   draw_game_window(mzx_world->current_board, vb->x, vb->y);
+  return true;
 }
 
 static boolean view_board_key(context *ctx, int *key)
@@ -889,7 +975,7 @@ static void draw_out_of_bounds(int in_x, int in_y, int in_width, int in_height)
  * to happen at draw time.
  */
 
-static void editor_draw(context *ctx)
+static boolean editor_draw(context *ctx)
 {
   struct editor_context *editor = (struct editor_context *)ctx;
   struct buffer_info *buffer = &(editor->buffer);
@@ -1003,16 +1089,14 @@ static void editor_draw(context *ctx)
 
   // Fix invalid buffer params before they get drawn.
   if(buffer->param == -1)
-  {
-    buffer->id = SPACE;
-    buffer->param = 0;
-    buffer->color = 7;
-  }
+    default_buffer(editor);
 
   // Give the edit menu up-to-date information before it is drawn.
   update_edit_menu(editor->edit_menu, editor->mode, editor->cursor_mode,
    editor->cursor_x, editor->cursor_y, editor->screen_height,
    &(editor->buffer), editor->use_default_color);
+
+  return true;
 }
 
 /**
@@ -1129,7 +1213,7 @@ static boolean editor_idle(context *ctx)
       strcpy(mzx_world->name, NEW_WORLD_TITLE);
       strcpy(mzx_world->board_list[0]->board_name, NEW_WORLD_TITLE);
       mzx_world->first_board = 1;
-      set_current_board(editor, 1);
+      editor_set_current_board(editor, 1, false);
     }
 
     editor->first_board_prompt = false;
@@ -1233,7 +1317,10 @@ static boolean editor_mouse(context *ctx, int *key, int button, int x, int y)
 
       if(get_mouse_held(MOUSE_BUTTON_LEFT))
       {
-        mouse_draw(editor, x, y);
+        // Mouse draw. Only start if this is an initial click to prevent it
+        // from carrying through other interfaces.
+        if(editor->continue_mouse_history || !get_mouse_drag())
+          mouse_draw(editor, x, y);
         return true;
       }
     }
@@ -1288,7 +1375,8 @@ static void get_modify_place_callback(context *ctx, context_callback_param *p)
     buffer->param = new_param;
 
     // Place the buffer back on the board/layer.
-    new_param = place_current_at_xy(ctx->world, buffer, editor->cursor_x,
+    // Use place_current_at_xy wrapper that ensures the under is untouched.
+    new_param = replace_current_at_xy(ctx->world, buffer, editor->cursor_x,
      editor->cursor_y, editor->mode, editor->cur_history);
 
     // Placement might have required that we change the buffer param again.
@@ -1347,9 +1435,9 @@ static void modify_thing_callback(context *ctx, context_callback_param *p)
     replace_current_at_xy(ctx->world, temp_buffer, editor->cursor_x,
      editor->cursor_y, editor->mode, editor->cur_history);
 
-    free_edit_buffer(temp_buffer);
     editor->modified = true;
   }
+  free_edit_buffer(temp_buffer);
 }
 
 static void modify_thing_at_cursor(struct editor_context *editor)
@@ -1463,7 +1551,7 @@ static boolean editor_key(context *ctx, int *key)
 
           if(mzx_world->current_board_id != s_board)
           {
-            set_current_board(editor, s_board);
+            editor_set_current_board(editor, s_board, true);
           }
 
           else
@@ -1488,7 +1576,7 @@ static boolean editor_key(context *ctx, int *key)
       {
         // Move to adjacent board
         if(cur_board->board_dir[0] != NO_BOARD && editor->mode != EDIT_VLAYER)
-          set_current_board(editor, cur_board->board_dir[0]);
+          editor_set_current_board(editor, cur_board->board_dir[0], true);
         return true;
       }
       else
@@ -1511,7 +1599,7 @@ static boolean editor_key(context *ctx, int *key)
       {
         // Move to adjacent board
         if(cur_board->board_dir[1] != NO_BOARD && editor->mode != EDIT_VLAYER)
-          set_current_board(editor, cur_board->board_dir[1]);
+          editor_set_current_board(editor, cur_board->board_dir[1], true);
         return true;
       }
 
@@ -1533,7 +1621,7 @@ static boolean editor_key(context *ctx, int *key)
       {
         // Move to adjacent board
         if(cur_board->board_dir[3] != NO_BOARD && editor->mode != EDIT_VLAYER)
-          set_current_board(editor, cur_board->board_dir[3]);
+          editor_set_current_board(editor, cur_board->board_dir[3], true);
         return true;
       }
 
@@ -1555,7 +1643,7 @@ static boolean editor_key(context *ctx, int *key)
       {
         // Move to adjacent board
         if(cur_board->board_dir[2] != NO_BOARD && editor->mode != EDIT_VLAYER)
-          set_current_board(editor, cur_board->board_dir[2]);
+          editor_set_current_board(editor, cur_board->board_dir[2], true);
         return true;
       }
 
@@ -1782,10 +1870,6 @@ static boolean editor_key(context *ctx, int *key)
         set_editor_mode(editor, EDIT_BOARD);
         synchronize_board_values(editor);
         fix_scroll(editor);
-
-        buffer->id = SPACE;
-        buffer->param = 0;
-        buffer->color = 7;
         key = 0;
         return true;
       }
@@ -2017,7 +2101,7 @@ static boolean editor_key(context *ctx, int *key)
         // Previous board
         // Doesn't make sense on the vlayer.
         if(mzx_world->current_board_id > 0 && editor->mode != EDIT_VLAYER)
-          set_current_board(editor, mzx_world->current_board_id - 1);
+          editor_set_current_board(editor, mzx_world->current_board_id - 1, true);
       }
       else
         place_text(editor);
@@ -2034,7 +2118,7 @@ static boolean editor_key(context *ctx, int *key)
         // Doesn't make sense on the vlayer.
         if(mzx_world->current_board_id < mzx_world->num_boards - 1
          && editor->mode != EDIT_VLAYER)
-          set_current_board(editor, mzx_world->current_board_id + 1);
+          editor_set_current_board(editor, mzx_world->current_board_id + 1, true);
       }
       else
         place_text(editor);
@@ -2132,11 +2216,13 @@ static boolean editor_key(context *ctx, int *key)
           case BLOCK_CMD_SAVE_MZM:
           {
             // Save as MZM
-            editor->mzm_name_buffer[0] = 0;
+            char export_name[MAX_PATH];
+            strcpy(export_name, editor->mzm_name_buffer);
 
-            if(!new_file(mzx_world, mzm_ext, ".mzm", editor->mzm_name_buffer,
+            if(!new_file(mzx_world, mzm_ext, ".mzm", export_name,
              "Export MZM", 1))
             {
+              strcpy(editor->mzm_name_buffer, export_name);
               save_mzm(mzx_world, editor->mzm_name_buffer, block->src_x,
                block->src_y, block->width, block->height, editor->mode,
                false);
@@ -2245,7 +2331,7 @@ static boolean editor_key(context *ctx, int *key)
         if(i < MAX_BOARDS)
         {
           if(add_board(mzx_world, i) >= 0)
-            set_current_board(editor, i);
+            editor_set_current_board(editor, i, false);
         }
       }
       else
@@ -2271,7 +2357,7 @@ static boolean editor_key(context *ctx, int *key)
            choose_board(mzx_world, mzx_world->current_board_id,
            "Select current board:", 0);
 
-          set_current_board(editor, change_to_board);
+          editor_set_current_board(editor, change_to_board, true);
         }
       }
       else
@@ -2332,7 +2418,7 @@ static boolean editor_key(context *ctx, int *key)
 
             if(del_board == current_board_id)
             {
-              set_current_board(editor, 0);
+              editor_set_current_board(editor, 0, true);
             }
             else
             {
@@ -2469,9 +2555,11 @@ static boolean editor_key(context *ctx, int *key)
           {
             case 0:
             {
+              strcpy(import_name, editor->mzb_name_buffer);
               if(!choose_file(mzx_world, mzb_ext, import_name,
                "Choose board to import", 1))
               {
+                strcpy(editor->mzb_name_buffer, import_name);
                 replace_current_board(mzx_world, import_name);
 
                 // Exit vlayer mode if necessary.
@@ -2480,18 +2568,19 @@ static boolean editor_key(context *ctx, int *key)
                 fix_scroll(editor);
                 fix_caption(editor);
 
-                // fixme load_mod_check
-                if(strcmp(cur_board->mod_playing, "*") &&
-                 strcasecmp(cur_board->mod_playing,
-                 mzx_world->real_mod_playing))
-                  fix_mod(editor);
-
-                if(block->selected &&
-                 (block->src_board == (mzx_world->current_board)))
+                // This check works because cur_board is still the old pointer.
+                if(block->selected && (block->src_board == cur_board))
                 {
                   block->selected = false;
                   editor->cursor_mode = CURSOR_PLACE;
                 }
+
+                // Need the new pointer here, though.
+                cur_board = mzx_world->current_board;
+                if(strcmp(cur_board->mod_playing, "*") &&
+                 strcasecmp(cur_board->mod_playing,
+                 mzx_world->real_mod_playing))
+                  fix_mod(editor);
 
                 clear_board_history(editor);
                 clear_overlay_history(editor);
@@ -2508,13 +2597,15 @@ static boolean editor_key(context *ctx, int *key)
               struct element *elements[] =
               {
                 construct_number_box(21, 20, "Offset:  ",
-                 0, (PRO_CH - 1), 0, &char_offset),
+                 0, (PRO_CH - 1), NUMBER_BOX, &char_offset),
               };
 
+              strcpy(import_name, editor->chr_name_buffer);
               if(!file_manager(mzx_world, chr_ext, NULL, import_name,
                "Choose character set to import", 1, 0,
                elements, ARRAY_SIZE(elements), 2))
               {
+                strcpy(editor->chr_name_buffer, import_name);
                 ec_load_set_var(import_name, char_offset, MZX_VERSION);
               }
               editor->modified = true;
@@ -2543,24 +2634,8 @@ static boolean editor_key(context *ctx, int *key)
 
             case 3:
             {
-              // Palette
-              // Character set
-              if(!choose_file(mzx_world, pal_ext, import_name,
-               "Choose palette to import", 1))
-              {
-                load_palette(import_name);
-                editor->modified = true;
-              }
-
-              import_name[0] = 0;
-              if((get_screen_mode() == 3) &&
-               !choose_file(mzx_world, idx_ext, import_name,
-                "Choose indices to import (.PALIDX)", 1))
-              {
-                load_index_file(import_name);
-                editor->modified = true;
-              }
-
+              // Palette (let the palette editor handle this one)
+              import_palette(ctx);
               break;
             }
 
@@ -2587,17 +2662,18 @@ static boolean editor_key(context *ctx, int *key)
             case 5:
             {
               // MZM file
-              if(!choose_file(mzx_world, mzm_ext,
-               editor->mzm_name_buffer, "Choose image file to import", 1))
+              strcpy(import_name, editor->mzm_name_buffer);
+              if(!choose_file(mzx_world, mzm_ext, import_name,
+               "Choose image file to import", 1))
               {
+                strcpy(editor->mzm_name_buffer, import_name);
                 editor->cursor_mode = CURSOR_MZM_PLACE;
                 block->command = BLOCK_CMD_LOAD_MZM;
                 block->selected = true;
                 block->src_board = NULL;
                 block->src_mode = editor->mode;
                 block->dest_mode = editor->mode;
-                load_mzm_size(editor->mzm_name_buffer,
-                 &block->width, &block->height);
+                load_mzm_size(import_name, &block->width, &block->height);
               }
 
               break;
@@ -2674,8 +2750,8 @@ static boolean editor_key(context *ctx, int *key)
             strcpy(curr_file, load_world);
 
             mzx_world->current_board_id = mzx_world->first_board;
-            mzx_world->current_board =
-             mzx_world->board_list[mzx_world->current_board_id];
+            set_current_board_ext(mzx_world,
+             mzx_world->board_list[mzx_world->current_board_id]);
             cur_board = mzx_world->current_board;
 
             insta_fadein();
@@ -2738,7 +2814,7 @@ static boolean editor_key(context *ctx, int *key)
            (new_position != mzx_world->current_board_id))
           {
             move_current_board(mzx_world, new_position);
-            set_current_board(editor, new_position);
+            editor_set_current_board(editor, new_position, true);
             editor->modified = true;
           }
         }
@@ -2764,6 +2840,13 @@ static boolean editor_key(context *ctx, int *key)
             if(!choose_file(mzx_world, mod_ext, new_mod,
              "Choose a module file", 2)) // 2:subdirsonly
             {
+              const char *ext_pos = new_mod + strlen(new_mod) - 4;
+              if(ext_pos >= new_mod && !strcasecmp(ext_pos, ".WAV"))
+              {
+                error("Using OGG instead of WAV is recommended.",
+                 ERROR_T_WARNING, ERROR_OPT_OK, 0xc0c5);
+              }
+
               strcpy(cur_board->mod_playing, new_mod);
               strcpy(mzx_world->real_mod_playing, new_mod);
               fix_mod(editor);
@@ -2806,8 +2889,13 @@ static boolean editor_key(context *ctx, int *key)
           {
             audio_end_module();
             editor->listening_mod_active = false;
+
+            // If there's a mod currently "playing", restart it. Otherwise,
+            // just start the current board's mod.
             if(mzx_world->real_mod_playing[0])
               audio_play_module(mzx_world->real_mod_playing, true, 255);
+            else
+              fix_mod(editor);
           }
         }
       }
@@ -2839,8 +2927,6 @@ static boolean editor_key(context *ctx, int *key)
 
               editor->cursor_mode = CURSOR_PLACE;
               block->selected = false;
-              buffer->param = 32;
-              buffer->color = 7;
             }
           }
           else
@@ -2848,9 +2934,6 @@ static boolean editor_key(context *ctx, int *key)
             set_editor_mode(editor, EDIT_BOARD);
             editor->cursor_mode = CURSOR_PLACE;
             block->selected = false;
-            buffer->id = SPACE;
-            buffer->param = 0;
-            buffer->color = 7;
           }
         }
       }
@@ -3089,9 +3172,6 @@ static boolean editor_key(context *ctx, int *key)
 
           editor->cursor_mode = CURSOR_PLACE;
           block->selected = false;
-          buffer->id = SPACE;
-          buffer->param = 32;
-          buffer->color = 7;
         }
         else
 
@@ -3122,9 +3202,11 @@ static boolean editor_key(context *ctx, int *key)
             case 0:
             {
               // Board file
+              strcpy(export_name, editor->mzb_name_buffer);
               if(!new_file(mzx_world, mzb_ext, ".mzb", export_name,
                "Export board file", 1))
               {
+                strcpy(editor->mzb_name_buffer, export_name);
                 save_board_file(mzx_world, cur_board, export_name);
               }
               break;
@@ -3138,17 +3220,18 @@ static boolean editor_key(context *ctx, int *key)
               struct element *elements[] =
               {
                 construct_number_box(9, 20, "Offset:  ",
-                 0, (PRO_CH - 1), 0, &char_offset),
+                 0, (PRO_CH - 1), NUMBER_BOX, &char_offset),
                 construct_number_box(35, 20, "Size: ",
-                 1, (PRO_CH), 0, &char_size)
+                 1, (PRO_CH), NUMBER_BOX, &char_size)
               };
 
+              strcpy(export_name, editor->chr_name_buffer);
               if(!file_manager(mzx_world, chr_ext, NULL, export_name,
                "Export character set", 1, 1, elements, ARRAY_SIZE(elements), 2))
               {
                 add_ext(export_name, ".chr");
-                ec_save_set_var(export_name, char_offset,
-                 char_size);
+                ec_save_set_var(export_name, char_offset, char_size);
+                strcpy(editor->chr_name_buffer, export_name);
               }
 
               break;
@@ -3156,21 +3239,8 @@ static boolean editor_key(context *ctx, int *key)
 
             case 2:
             {
-              // Palette
-              if(!new_file(mzx_world, pal_ext, ".pal", export_name,
-               "Export palette", 1))
-              {
-                save_palette(export_name);
-              }
-
-              export_name[0] = 0;
-              if((get_screen_mode() == 3) &&
-               !new_file(mzx_world, idx_ext, ".palidx", export_name,
-                "Export indices (.PALIDX)", 1))
-              {
-                save_index_file(export_name);
-              }
-
+              // Palette (let the palette editor handle this one)
+              export_palette(ctx);
               break;
             }
 
@@ -3388,7 +3458,8 @@ static void editor_resume(context *ctx)
 
     scroll_color = 15;
     mzx_world->current_board_id = editor->test_reload_board;
-    mzx_world->current_board = mzx_world->board_list[editor->test_reload_board];
+    set_current_board_ext(mzx_world,
+     mzx_world->board_list[editor->test_reload_board]);
 
     synchronize_board_values(editor);
     fix_scroll(editor);
@@ -3482,9 +3553,11 @@ static void __edit_world(context *parent, boolean reload_curr_file)
   buffer->robot = &(editor->buffer_robot);
   buffer->scroll = &(editor->buffer_scroll);
   buffer->sensor = &(editor->buffer_sensor);
-  buffer->id = SPACE;
-  buffer->param = 0;
-  buffer->color = 7;
+  editor->stored_overlay_char = 32;
+  editor->stored_overlay_color = 7;
+  editor->stored_vlayer_char = 32;
+  editor->stored_vlayer_color = 7;
+  default_buffer(editor);
 
   block->command = BLOCK_CMD_NONE;
   block->selected = false;
@@ -3507,13 +3580,13 @@ static void __edit_world(context *parent, boolean reload_curr_file)
     curr_file[0] = '\0';
 
   if(reload_curr_file && curr_file[0] &&
-    editor_reload_world(editor, curr_file))
+   editor_reload_world(editor, curr_file))
   {
     strncpy(editor->current_world, curr_file, MAX_PATH);
 
     mzx_world->current_board_id = mzx_world->first_board;
-    mzx_world->current_board =
-      mzx_world->board_list[mzx_world->current_board_id];
+    set_current_board_ext(mzx_world,
+     mzx_world->board_list[mzx_world->current_board_id]);
 
     fix_mod(editor);
   }

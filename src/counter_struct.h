@@ -25,16 +25,8 @@
 
 __M_BEGIN_DECLS
 
-#ifdef CONFIG_UTHASH
-#include <utcasehash.h>
-#endif
-
 struct counter
 {
-#ifdef CONFIG_UTHASH
-  UT_hash_handle ch;
-#endif
-
   unsigned char gateway_write;
   int value;
   int name_length;
@@ -46,9 +38,6 @@ struct counter_list
   int num_counters;
   int num_counters_allocated;
   struct counter **counters;
-#ifdef CONFIG_UTHASH
-  struct counter *head;
-#endif
 #ifdef CONFIG_KHASH
   void *hash_table;
 #endif
@@ -88,17 +77,13 @@ struct counter_list
 
 struct string
 {
-#ifdef CONFIG_UTHASH
-  UT_hash_handle sh;
-#endif
-
   // Back reference to the string's position in the list, mandatory
-  // because we're not using a search to find it with uthash. We'll
-  // add it for both though so there doesn't have to be a UTHASH ifdef
+  // because we're not using a search to find it with the hash table. We'll
+  // add it for both though so there doesn't have to be a hash table ifdef
   // in world.c
   int list_ind;
-  int name_length;
 
+  int name_length;
   size_t length;
   size_t allocated_length;
   char *value;
@@ -111,9 +96,6 @@ struct string_list
   int num_strings;
   int num_strings_allocated;
   struct string **strings;
-#ifdef CONFIG_UTHASH
-  struct string *head;
-#endif
 #ifdef CONFIG_KHASH
   void *hash_table;
 #endif
@@ -136,9 +118,6 @@ enum special_counter_return
   FOPEN_SAVE_COUNTERS,
   FOPEN_LOAD_ROBOT,
   FOPEN_LOAD_BC,
-#ifdef CONFIG_DEBYTECODE
-  FOPEN_LOAD_SOURCE_FILE,
-#endif
   FOPEN_SAVE_ROBOT,
   FOPEN_SAVE_BC
 };

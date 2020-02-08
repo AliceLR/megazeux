@@ -97,8 +97,8 @@ CORE_LIBSPEC extern char sfx_strs[NUM_SFX][SFX_SIZE];
 
 #ifdef CONFIG_AUDIO
 
-// Used by audio_pcs.c
-void sfx_next_note(void);
+// Called by audio_pcs.c under lock.
+void sfx_next_note(int *is_playing, int *freq, int *duration);
 
 void play_sfx(struct world *mzx_world, enum sfx_id sfx);
 void play_string(char *str, int sfx_play);

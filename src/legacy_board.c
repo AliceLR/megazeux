@@ -95,7 +95,7 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   int num_robots, num_scrolls, num_sensors, num_robots_active;
   int overlay_mode, size, board_width, board_height, i;
   int viewport_x, viewport_y, viewport_width, viewport_height;
-  int truncated = 0;
+  boolean truncated = false;
 
   struct robot *cur_robot;
   struct scroll *cur_scroll;
@@ -139,6 +139,10 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   cur_board->charset_path[0] = 0;
   cur_board->palette_path[0] = 0;
 
+#ifdef DEBUG
+  cur_board->is_extram = false;
+#endif
+
   // board_mode, unused
   if(fgetc(fp) == EOF)
   {
@@ -169,7 +173,7 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
       goto err_freeoverlay;
 
     // Skip sizes
-    if(fseek(fp, 4, SEEK_CUR) ||
+    if(fgetd(fp) == EOF ||
      load_RLE2_plane(cur_board->overlay_color, fp, size))
       goto err_freeoverlay;
   }
@@ -202,23 +206,23 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   if(load_RLE2_plane(cur_board->level_id, fp, size))
     goto err_freeboard;
 
-  if(fseek(fp, 4, SEEK_CUR) ||
+  if(fgetd(fp) == EOF ||
    load_RLE2_plane(cur_board->level_color, fp, size))
     goto err_freeboard;
 
-  if(fseek(fp, 4, SEEK_CUR) ||
+  if(fgetd(fp) == EOF ||
    load_RLE2_plane(cur_board->level_param, fp, size))
     goto err_freeboard;
 
-  if(fseek(fp, 4, SEEK_CUR) ||
+  if(fgetd(fp) == EOF ||
    load_RLE2_plane(cur_board->level_under_id, fp, size))
     goto err_freeboard;
 
-  if(fseek(fp, 4, SEEK_CUR) ||
+  if(fgetd(fp) == EOF ||
    load_RLE2_plane(cur_board->level_under_color, fp, size))
     goto err_freeboard;
 
-  if(fseek(fp, 4, SEEK_CUR) ||
+  if(fgetd(fp) == EOF ||
    load_RLE2_plane(cur_board->level_under_param, fp, size))
     goto err_freeboard;
 
@@ -253,7 +257,7 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
    (viewport_y < 0) || (viewport_y > 24) ||
    (viewport_width < 1) || (viewport_width > 80) ||
    (viewport_height < 1) || (viewport_height > 25))
-    goto err_invalid;
+    goto err_freeboard;
 
   cur_board->viewport_x = viewport_x;
   cur_board->viewport_y = viewport_y;
@@ -359,7 +363,7 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
   num_robots_active = 0;
 
   if(num_robots == EOF)
-    truncated = 1;
+    truncated = true;
 
   // EOF/crazy value check
   if((num_robots < 0) || (num_robots > 255) || (num_robots > size))
@@ -378,19 +382,11 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
     for(i = 1; i <= num_robots; i++)
     {
       // Make sure there's robots to load here
-      int length_check = fgetw(fp);
-      fseek(fp, -2, SEEK_CUR);
-      if(length_check < 0)
-      {
-        // Send off the error and then tell validation to shut up for now
-        error_message(E_WORLD_ROBOT_MISSING, ftell(fp), NULL);
-        set_error_suppression(E_WORLD_ROBOT_MISSING, 1);
-        set_error_suppression(E_BOARD_ROBOT_CORRUPT, 1);
-        truncated = 1;
-      }
+      if(truncated)
+        break;
 
       cur_robot = legacy_load_robot_allocate(mzx_world, fp, savegame,
-       file_version);
+       file_version, &truncated);
 
       if(cur_robot->used)
       {
@@ -406,9 +402,6 @@ int legacy_load_board_direct(struct world *mzx_world, struct board *cur_board,
       }
     }
   }
-
-  set_error_suppression(E_WORLD_ROBOT_MISSING, 0);
-  set_error_suppression(E_BOARD_ROBOT_CORRUPT, 0);
 
   if(num_robots_active > 0)
   {
@@ -523,6 +516,13 @@ board_scan:
           if(!found_robots[pr] && pr <= num_robots && robot_list[pr])
           {
             found_robots[pr] = 1;
+            // Also fix the xpos/ypos values, which may have been saved
+            // incorrectly in ver1to2 worlds (see: Caverns of Zeux).
+            cur_robot = robot_list[pr];
+            cur_robot->xpos = i % board_width;
+            cur_robot->ypos = i / board_width;
+            cur_robot->compat_xpos = cur_robot->xpos;
+            cur_robot->compat_ypos = cur_robot->ypos;
           }
 
           else
@@ -642,41 +642,33 @@ err_invalid:
 
 
 struct board *legacy_load_board_allocate(struct world *mzx_world, FILE *fp,
- int savegame, int file_version)
+ int data_offset, int data_size, int savegame, int file_version)
 {
-  struct board *cur_board = cmalloc(sizeof(struct board));
-  int board_size, board_location, last_location;
+  struct board *cur_board;
   enum val_result result;
 
-  board_size = fgetd(fp);
-
   // Skip deleted boards
-  if(!board_size)
+  if(!data_size)
+    return NULL;
+
+  // Should generally be at this position after reading the previous
+  // board, but don't count on that being true...
+  if(ftell(fp) != data_offset)
   {
-    fseek(fp, 4, SEEK_CUR);
-    goto err_out;
+    if(fseek(fp, data_offset, SEEK_SET))
+    {
+      error_message(E_WORLD_BOARD_MISSING, data_offset, NULL);
+      return NULL;
+    }
   }
 
-  board_location = fgetd(fp);
-  last_location = ftell(fp);
-
-  if(fseek(fp, board_location, SEEK_SET))
-  {
-    error_message(E_WORLD_BOARD_MISSING, board_location, NULL);
-    goto err_out;
-  }
-
+  cur_board = cmalloc(sizeof(struct board));
   cur_board->world_version = mzx_world->version;
-  result = legacy_load_board_direct(mzx_world, cur_board, fp, board_size,
+  result = legacy_load_board_direct(mzx_world, cur_board, fp, data_size,
    savegame, file_version);
 
   if(result != VAL_SUCCESS)
     dummy_board(cur_board);
 
-  fseek(fp, last_location, SEEK_SET);
   return cur_board;
-
-err_out:
-  free(cur_board);
-  return NULL;
 }

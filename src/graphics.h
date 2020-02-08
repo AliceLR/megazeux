@@ -91,6 +91,7 @@ struct char_element
 #define LAYER_DRAWORDER_OVERLAY 1000
 #define LAYER_DRAWORDER_GAME_UI 2000
 #define LAYER_DRAWORDER_UI 3000
+#define LAYER_DRAWORDER_MAX (LAYER_DRAWORDER_UI + 1000)
 
 enum default_video_layers
 {
@@ -182,7 +183,9 @@ struct graphics_data
   Uint32 mouse_height_mul;
   boolean mouse_status;
   boolean system_mouse;
+  boolean grab_mouse;
   boolean fullscreen;
+  boolean fullscreen_windowed;
   Uint32 resolution_width;
   Uint32 resolution_height;
   Uint32 window_width;
@@ -203,10 +206,7 @@ struct graphics_data
   Uint32 protected_pal_position;
   struct renderer renderer;
   void *render_data;
-
-#ifdef CONFIG_EDITOR
-  char editor_backup_indices[SMZX_PAL_SIZE * 4];
-#endif
+  Uint32 renderer_num;
 };
 
 CORE_LIBSPEC void color_string(const char *string, Uint32 x, Uint32 y,
@@ -242,6 +242,7 @@ CORE_LIBSPEC void cursor_off(void);
 CORE_LIBSPEC void move_cursor(Uint32 x, Uint32 y);
 
 CORE_LIBSPEC boolean init_video(struct config_info *conf, const char *caption);
+CORE_LIBSPEC void quit_video(void);
 CORE_LIBSPEC void destruct_layers(void);
 CORE_LIBSPEC void destruct_extra_layers(Uint32 first);
 CORE_LIBSPEC Uint32 create_layer(int x, int y, Uint32 w, Uint32 h,
@@ -314,6 +315,10 @@ void write_line_mask(const char *str, Uint32 x, Uint32 y,
 Uint8 get_color_linear(Uint32 offset);
 
 void cursor_underline(void);
+
+boolean change_video_output(struct config_info *conf, const char *output);
+int get_available_video_output_list(const char **buffer, int buffer_len);
+int get_current_video_output(void);
 
 boolean set_video_mode(void);
 boolean is_fullscreen(void);

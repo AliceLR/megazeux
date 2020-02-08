@@ -18,8 +18,9 @@
  */
 
 #include "../../src/event.h"
-#include "../../src/platform.h"
 #include "../../src/graphics.h"
+#include "../../src/platform.h"
+#include "../../src/util.h"
 
 #include <3ds.h>
 
@@ -51,94 +52,79 @@ boolean __update_event_status(void)
   return retval;
 }
 
-void __wait_event(int timeout)
+void __wait_event(void)
 {
-  if(timeout)
-    delay(timeout);
-
   while(!__update_event_status())
     gspWaitForVBlank();
 }
 
-// Taken from arch/nds/event.c
-// Send a key up/down event to MZX.
-void do_unicode_key_event(struct buffered_status *status, boolean down,
- enum keycode code, int unicode)
+// Convert the 3DS axis ranges to the MZX axis ranges. The 3DS uses values in
+// (roughly) the -150 to 150 range, but MZX uses the full range of a Sint16.
+// The 3DS Y axis is also inverted from the typical axis direction, but that
+// is fixed in check_circle below.
+static inline Sint16 axis_convert(s16 value)
 {
-  if(down)
+  int new_value = ((int)value) * 32768 / 150;
+  return (Sint16)CLAMP(new_value, -32768, 32767);
+}
+
+static inline boolean check_circle(struct buffered_status *status,
+ circlePosition *current, circlePosition *prev, Uint32 axis_x, Uint32 axis_y)
+{
+  boolean rval = false;
+
+  if(current->dx != prev->dx)
   {
-    key_press(status, code, unicode);
+    joystick_axis_update(status, 0, axis_x, axis_convert(current->dx));
+    rval = true;
   }
-  else
+
+  if(current->dy != prev->dy)
   {
-    status->keymap[code] = 0;
-    if(status->key_repeat == code)
-    {
-      status->key_repeat = IKEY_UNKNOWN;
-      status->unicode_repeat = 0;
-    }
-    status->key_release = code;
+    // 3DS has an inverted Y axis on the circle pad vs. most controllers.
+    joystick_axis_update(status, 0, axis_y, axis_convert(-current->dy));
+    rval = true;
   }
+
+  return rval;
 }
 
-void do_key_event(struct buffered_status *status, boolean down,
- enum keycode code)
-{
-  do_unicode_key_event(status, down, code,
-   (code >= 32 && code <= 126) ? code : 0);
-}
-
-// Send a joystick button up/down event to MZX.
-void do_joybutton_event(struct buffered_status *status, boolean down,
- int button)
-{
-  // Look up the keycode for this joystick button.
-  enum keycode stuffed_key = input.joystick_button_map[0][button];
-  do_key_event(status, down, stuffed_key);
-}
-
-static inline boolean check_key(struct buffered_status *status,
- Uint32 down, Uint32 up, Uint32 key, enum keycode code)
+static inline boolean check_hat(struct buffered_status *status,
+ Uint32 down, Uint32 up, Uint32 key, enum joystick_hat dir)
 {
   if(down & key)
   {
-    do_key_event(status, true, code);
+    joystick_hat_update(status, 0, dir, true);
     return true;
   }
   else
 
   if(up & key)
   {
-    do_key_event(status, false, code);
+    joystick_hat_update(status, 0, dir, false);
     return true;
   }
 
-  else
-  {
-    return false;
-  }
+  return false;
 }
 
 static inline boolean check_joy(struct buffered_status *status,
-  Uint32 down, Uint32 up, Uint32 key, Uint32 code)
+  Uint32 down, Uint32 up, Uint32 key, Uint32 button)
 {
   if(down & key)
   {
-    do_joybutton_event(status, true, code);
+    joystick_button_press(status, 0, button);
     return true;
   }
   else
 
   if(up & key)
   {
-    do_joybutton_event(status, false, code);
+    joystick_button_release(status, 0, button);
     return true;
   }
 
-  else
-  {
-    return false;
-  }
+  return false;
 }
 
 static inline boolean ctr_is_mouse_area(touchPosition *touch)
@@ -177,8 +163,9 @@ static inline boolean ctr_update_touch(struct buffered_status *status,
   }
   else
   {
+    int s_height = ctr_get_subscreen_height();
     mx = touch->px * 2;
-    my = touch->py * 2 - 64;
+    my = ((int)(touch->py - ((240 - s_height) / 2)) * 350 / s_height);
     if(mx < 0) mx = 0;
     if(mx >= 640) mx = 639;
     if(my < 0) my = 0;
@@ -247,16 +234,20 @@ boolean update_hid(void)
   Uint32 down, held, up;
   boolean retval = false;
   touchPosition touch;
+  circlePosition cpad;
+  static circlePosition last_cpad;
 
   hidScanInput();
+  hidCircleRead(&cpad);
   down = hidKeysDown();
   held = hidKeysHeld();
   up = hidKeysUp();
 
-  retval |= check_key(status, down, up, KEY_UP, IKEY_UP);
-  retval |= check_key(status, down, up, KEY_DOWN, IKEY_DOWN);
-  retval |= check_key(status, down, up, KEY_LEFT, IKEY_LEFT);
-  retval |= check_key(status, down, up, KEY_RIGHT, IKEY_RIGHT);
+  retval |= check_circle(status, &cpad, &last_cpad, 0, 1);
+  retval |= check_hat(status, down, up, KEY_DUP, JOYHAT_UP);
+  retval |= check_hat(status, down, up, KEY_DDOWN, JOYHAT_DOWN);
+  retval |= check_hat(status, down, up, KEY_DLEFT, JOYHAT_LEFT);
+  retval |= check_hat(status, down, up, KEY_DRIGHT, JOYHAT_RIGHT);
   retval |= check_joy(status, down, up, KEY_A, 0);
   retval |= check_joy(status, down, up, KEY_B, 1);
   retval |= check_joy(status, down, up, KEY_X, 2);
@@ -266,6 +257,8 @@ boolean update_hid(void)
   retval |= check_joy(status, down, up, KEY_START, 7);
   retval |= check_joy(status, down, up, KEY_ZL, 8);
   retval |= check_joy(status, down, up, KEY_ZR, 9);
+
+  last_cpad = cpad;
 
   if(down & KEY_R)
   {
@@ -314,4 +307,22 @@ boolean update_hid(void)
 //  retval |= ctr_update_cstick(status);
 
   return retval;
+}
+
+int ctr_get_subscreen_height(void)
+{
+  switch(get_config()->video_ratio)
+  {
+    case RATIO_CLASSIC_4_3:
+    case RATIO_STRETCH:
+      return 240;
+    default:
+      return 175;
+  }
+}
+
+void initialize_joysticks(void)
+{
+  struct buffered_status *status = store_status();
+  joystick_set_active(status, 0, true);
 }

@@ -52,10 +52,10 @@ ifeq (${BUILD_SDL},1)
 ifneq (${BUILD_LIBSDL2},)
 
 # Check PREFIX for sdl2-config.
-ifneq ($(wildcard ${PREFIX}/bin/sdl2-config),)
-SDL_CONFIG  := ${PREFIX}/bin/sdl2-config
-else ifneq ($(wildcard ${SDL_PREFIX}/bin/sdl2-config),)
+ifneq ($(wildcard ${SDL_PREFIX}/bin/sdl2-config),)
 SDL_CONFIG  := ${SDL_PREFIX}/bin/sdl2-config
+else ifneq ($(wildcard ${PREFIX}/bin/sdl2-config),)
+SDL_CONFIG  := ${PREFIX}/bin/sdl2-config
 else
 SDL_CONFIG  := sdl2-config
 endif
@@ -72,10 +72,10 @@ endif
 ifeq (${BUILD_LIBSDL2},)
 
 # Check PREFIX for sdl-config.
-ifneq ($(wildcard ${PREFIX}/bin/sdl-config),)
-SDL_CONFIG  := ${PREFIX}/bin/sdl-config
-else ifneq ($(wildcard ${SDL_PREFIX}/bin/sdl-config),)
+ifneq ($(wildcard ${SDL_PREFIX}/bin/sdl-config),)
 SDL_CONFIG  := ${SDL_PREFIX}/bin/sdl-config
+else ifneq ($(wildcard ${PREFIX}/bin/sdl-config),)
+SDL_CONFIG  := ${PREFIX}/bin/sdl-config
 else
 SDL_CONFIG  := sdl-config
 endif
@@ -88,7 +88,7 @@ endif
 # Make these immediate so the scripts run only once.
 SDL_PREFIX  := $(SDL_PREFIX)
 SDL_CFLAGS  := $(SDL_CFLAGS)
-SDL_LDFLAGS := $(SDL_LDFLAGS)
+SDL_LDFLAGS := $(LINK_DYNAMIC_IF_MIXED) $(SDL_LDFLAGS)
 
 endif
 
@@ -98,11 +98,11 @@ endif
 
 VORBIS_CFLAGS  ?= -I${PREFIX}/include -DOV_EXCLUDE_STATIC_CALLBACKS
 ifeq (${VORBIS},vorbis)
-VORBIS_LDFLAGS ?= -L${PREFIX}/lib -lvorbisfile -lvorbis -logg
+VORBIS_LDFLAGS ?= $(LINK_STATIC_IF_MIXED) -L${PREFIX}/lib -lvorbisfile -lvorbis -logg
 else ifeq (${VORBIS},tremor)
-VORBIS_LDFLAGS ?= -L${PREFIX}/lib -lvorbisidec -logg
+VORBIS_LDFLAGS ?= $(LINK_STATIC_IF_MIXED) -L${PREFIX}/lib -lvorbisidec -logg
 else ifeq (${VORBIS},tremor-lowmem)
-VORBIS_LDFLAGS ?= -L${PREFIX}/lib -lvorbisidec
+VORBIS_LDFLAGS ?= $(LINK_STATIC_IF_MIXED) -L${PREFIX}/lib -lvorbisidec
 endif
 
 #
@@ -110,14 +110,14 @@ endif
 #
 
 MIKMOD_CFLAGS  ?= -I${PREFIX}/include
-MIKMOD_LDFLAGS ?= -L${PREFIX}/lib -lmikmod
+MIKMOD_LDFLAGS ?= $(LINK_STATIC_IF_MIXED) -L${PREFIX}/lib -lmikmod
 
 #
 # libopenmpt (optional mod engine)
 #
 
 OPENMPT_CFLAGS  ?= -I${PREFIX}/include
-OPENMPT_LDFLAGS ?= -L${PREFIX}/lib -lopenmpt
+OPENMPT_LDFLAGS ?= $(LINK_STATIC_IF_MIXED) -L${PREFIX}/lib -lopenmpt
 
 #
 # zlib
@@ -125,7 +125,7 @@ OPENMPT_LDFLAGS ?= -L${PREFIX}/lib -lopenmpt
 
 ZLIB_CFLAGS  ?= -I${PREFIX}/include \
                 -D_FILE_OFFSET_BITS=32 -U_LARGEFILE64_SOURCE
-ZLIB_LDFLAGS ?= -L${PREFIX}/lib -lz
+ZLIB_LDFLAGS ?= $(LINK_STATIC_IF_MIXED) -L${PREFIX}/lib -lz
 
 #
 # libpng
@@ -145,7 +145,7 @@ LIBPNG_LDFLAGS ?= $(shell ${LIBPNG_CONFIG} --ldflags)
 
 # Make these immediate so the scripts run only once.
 LIBPNG_CFLAGS  := $(LIBPNG_CFLAGS)
-LIBPNG_LDFLAGS := $(LIBPNG_LDFLAGS)
+LIBPNG_LDFLAGS := $(LINK_STATIC_IF_MIXED) $(LIBPNG_LDFLAGS)
 endif
 
 #
@@ -169,15 +169,34 @@ PTHREAD_LDFLAGS ?= -lpthread
 #
 # Set up general CFLAGS/LDFLAGS
 #
-
 OPTIMIZE_CFLAGS ?= -O3
 
 ifeq (${DEBUG},1)
 #
-# Disable the optimizer for "true" debug builds
+# Usually, just disable the optimizer for "true" debug builds and
+# define "DEBUG" to enable optional code at compile time.
 #
-CFLAGS   = -O0 -DDEBUG
-CXXFLAGS = -O0 -DDEBUG
+# Sanitizer builds turn on some optimizations for the sake of being usable.
+#
+ifeq (${SANITIZER},address)
+DEBUG_CFLAGS := -fsanitize=address -O1 -fno-omit-frame-pointer
+else ifeq (${SANITIZER},thread)
+DEBUG_CFLAGS := -fsanitize=thread -O2 -fno-omit-frame-pointer -fPIE
+ARCH_EXE_LDFLAGS += -pie
+else ifeq (${SANITIZER},memory)
+# FIXME I don't think there's a way to make this one work properly right now.
+# SDL_Init generates an error immediately and if sanitize-recover is used it
+# seems to get stuck printing endless errors.
+DEBUG_CFLAGS := -fsanitize=memory -O1 -fno-omit-frame-pointer -fPIE \
+ -fsanitize-recover=memory -fsanitize-memory-track-origins
+ARCH_EXE_LDFLAGS += -pie
+else
+DEBUG_CFLAGS ?= -O0
+endif
+
+CFLAGS   = ${DEBUG_CFLAGS} -DDEBUG
+CXXFLAGS = ${DEBUG_CFLAGS} -DDEBUG
+LDFLAGS += ${DEBUG_CFLAGS}
 else
 #
 # Optimized builds have assert() compiled out
@@ -208,6 +227,7 @@ LDFLAGS  += ${ARCH_LDFLAGS}
 # GCC version >= 7.x
 #
 
+GCC_VER := ${shell ${CC} -dumpversion}
 GCC_VER_MAJOR := ${shell ${CC} -dumpversion | cut -d. -f1}
 GCC_VER_MAJOR_GE_7 := ${shell test $(GCC_VER_MAJOR) -ge 7; echo $$?}
 
@@ -227,8 +247,10 @@ GCC_VER_MAJOR_GE_4 := ${shell test $(GCC_VER_MAJOR) -ge 4; echo $$?}
 ifeq ($(GCC_VER_MAJOR_GE_4),0)
 
 ifeq (${DEBUG},1)
+ifneq (${GCC_VER},4.2.1)
 CFLAGS   += -fbounds-check
 CXXFLAGS += -fbounds-check
+endif
 endif
 
 #
@@ -259,10 +281,8 @@ CXXFLAGS += -fvisibility=hidden
 # function. Skip android, too.
 #
 ifeq ($(or ${BUILD_GP2X},${BUILD_NDS},${BUILD_3DS},${BUILD_PSP},${BUILD_WII}),)
-ifneq (${PLATFORM},android)
 CFLAGS   += -fstack-protector-all
 CXXFLAGS += -fstack-protector-all
-endif
 endif
 
 endif
@@ -370,30 +390,20 @@ ifeq (${build},)
 build := build/${SUBPLATFORM}
 endif
 
-build: ${build}
+build: ${build} ${build}/assets ${build}/docs
 
 ${build}:
-	${MKDIR} -p ${build}/docs
-	${MKDIR} -p ${build}/assets
+	${MKDIR} -p ${build}
 	${CP} config.txt LICENSE ${build}
-	${CP} assets/default.chr assets/edit.chr ${build}/assets
-	${CP} assets/smzx.pal ${build}/assets
-	${CP} docs/macro.txt docs/keycodes.html ${build}/docs
-	${CP} docs/changelog.txt docs/platform_matrix.html ${build}/docs
 	${CP} ${mzxrun} ${build}
 	@if test -f ${mzxrun}.debug; then \
 		cp ${mzxrun}.debug ${build}; \
 	fi
 ifeq (${BUILD_EDITOR},1)
-	${CP} assets/ascii.chr assets/blank.chr ${build}/assets
-	${CP} assets/smzx.chr ${build}/assets
 	${CP} ${mzx} ${build}
 	@if test -f ${mzx}.debug; then \
 		cp ${mzx}.debug ${build}; \
 	fi
-endif
-ifeq (${BUILD_HELPSYS},1)
-	${CP} assets/help.fil ${build}/assets
 endif
 ifeq (${BUILD_MODULAR},1)
 	${CP} ${core_target} ${editor_target} ${build}
@@ -408,13 +418,33 @@ ifeq (${BUILD_UTILS},1)
 	${MKDIR} ${build}/utils
 	${CP} ${checkres} ${downver} ${build}/utils
 	${CP} ${hlp2txt} ${txt2hlp} ${build}/utils
+ifeq (${LIBPNG},1)
 	${CP} ${png2smzx} ${build}/utils
+endif
 	${CP} ${ccv} ${build}/utils
 	@if test -f ${checkres}.debug; then \
 		cp ${checkres}.debug ${downver}.debug ${build}/utils; \
 		cp ${hlp2txt}.debug  ${txt2hlp}.debug ${build}/utils; \
 		cp ${png2smzx}.debug ${build}/utils; \
 	fi
+endif
+
+${build}/docs: ${build}
+	${MKDIR} -p ${build}/docs
+	${CP} docs/macro.txt docs/keycodes.html docs/mzxhelp.html ${build}/docs
+	${CP} docs/joystick.html ${build}/docs
+	${CP} docs/changelog.txt docs/platform_matrix.html ${build}/docs
+
+${build}/assets: ${build}
+	${MKDIR} -p ${build}/assets
+	${CP} assets/default.chr assets/edit.chr ${build}/assets
+	${CP} assets/smzx.pal ${build}/assets
+ifeq (${BUILD_EDITOR},1)
+	${CP} assets/ascii.chr assets/blank.chr ${build}/assets
+	${CP} assets/smzx.chr ${build}/assets
+endif
+ifeq (${BUILD_HELPSYS},1)
+	${CP} assets/help.fil ${build}/assets
 endif
 ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 	${MKDIR} -p ${build}/assets/glsl/scalers
@@ -424,6 +454,10 @@ ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 	${CP} assets/glsl/scalers/*.frag assets/glsl/scalers/*.vert \
 		${build}/assets/glsl/scalers
 endif
+ifeq (${BUILD_GAMECONTROLLERDB},1)
+	${CP} assets/gamecontrollerdb.txt assets/gamecontrollerdb.LICENSE \
+	 ${build}/assets
+endif
 
 distclean: clean
 	@echo "  DISTCLEAN"
@@ -431,7 +465,12 @@ distclean: clean
 	@echo "PLATFORM=none" > platform.inc
 
 assets/help.fil: ${txt2hlp} docs/WIPHelp.txt
+	$(if ${V},,@echo "  txt2hlp " $@)
 	@src/utils/txt2hlp docs/WIPHelp.txt $@
+
+docs/mzxhelp.html: ${hlp2html} docs/WIPHelp.txt
+	$(if ${V},,@echo "  hlp2html" $@)
+	@src/utils/hlp2html docs/WIPHelp.txt docs/mzxhelp.html
 
 help_check: ${hlp2txt} assets/help.fil
 	@src/utils/hlp2txt assets/help.fil help.txt
@@ -440,7 +479,7 @@ help_check: ${hlp2txt} assets/help.fil
 	@rm -f help.txt
 
 test:
-	@testworlds/run.sh @{PLATFORM} @{LIBDIR}
+	@bash testworlds/run.sh @{PLATFORM} @{LIBDIR}
 
 test_clean:
 	@rm -rf testworlds/log

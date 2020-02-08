@@ -7,11 +7,14 @@ directory:
   - libogg (audio only)
   - libvorbis (audio only)
 
-Make sure DEVKITPRO and DEVKITPPC are both defined and valid, and use a
-config.sh configure line such as:
+Make sure DEVKITPRO and DEVKITPPC are both defined and valid, and use
+config.sh to configure. You can get the default configuration by running:
 
-./config.sh --platform wii --prefix $DEVKITPPC --disable-libpng \
-            --disable-utils --enable-release --enable-meter
+arch/wii/CONFIG.WII
+
+SDLWii builds can be enabled by providing the following flag to this script:
+
+  --enable-sdl
 
 Then build with the command:
 

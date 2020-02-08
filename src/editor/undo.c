@@ -29,6 +29,7 @@
 #include "../block.h"
 #include "../board.h"
 #include "../graphics.h"
+#include "../idarray.h"
 #include "../platform.h"
 #include "../robot.h"
 #include "../world.h"
@@ -101,39 +102,43 @@ static struct undo_history *construct_undo_history(int max_size)
 static void add_undo_frame(struct undo_history *h, void *f)
 {
   struct undo_frame *temp;
-  int i;
+  int i, j;
 
   h->current_frame = f;
 
   if(h->current != h->last)
   {
     // Clear everything after the current frame
+    // Stop at the position after the last frame.
+    j = h->last + 1;
+    if(j >= h->size)
+      j = 0;
+
     // Might be -1 (e.g. every frame has been undone)
     if(h->current > -1)
     {
-      i = h->current;
+      i = h->current + 1;
+      if(i >= h->size)
+        i = 0;
+
       h->last = h->current;
     }
     else
     {
-      // Clear the first frame too (the loop won't)
       i = h->first;
-      temp = h->frames[i];
-      h->frames[i] = NULL;
-      h->clear_function(temp);
       h->first = -1;
     }
 
     // Clear everything after the current frame
-    while(i != h->last)
+    while(i != j)
     {
-      i++;
-      if(i == h->size)
-        i = 0;
-
       temp = h->frames[i];
       h->frames[i] = NULL;
       h->clear_function(temp);
+
+      i++;
+      if(i == h->size)
+        i = 0;
     }
   }
 
@@ -416,7 +421,7 @@ static void alloc_board_undo_pos(struct board_undo_pos *pos)
   {
     pos->param = -1;
     pos->storage_obj = cmalloc(sizeof(struct robot));
-    create_blank_robot_direct(pos->storage_obj, 0, 0);
+    memset(pos->storage_obj, 0, sizeof(struct robot));
   }
   else
 
@@ -424,7 +429,7 @@ static void alloc_board_undo_pos(struct board_undo_pos *pos)
   {
     pos->param = -1;
     pos->storage_obj = cmalloc(sizeof(struct scroll));
-    create_blank_scroll_direct(pos->storage_obj);
+    memset(pos->storage_obj, 0, sizeof(struct scroll));
   }
   else
 
@@ -432,7 +437,7 @@ static void alloc_board_undo_pos(struct board_undo_pos *pos)
   {
     pos->param = -1;
     pos->storage_obj = cmalloc(sizeof(struct sensor));
-    create_blank_sensor_direct(pos->storage_obj);
+    memset(pos->storage_obj, 0, sizeof(struct sensor));
   }
 }
 
@@ -486,10 +491,11 @@ static void apply_board_undo(struct undo_frame *f)
   struct board_undo_frame *current = (struct board_undo_frame *)f;
   struct world *mzx_world = current->mzx_world;
 
-  // Can't overwrite the player, so move the player first
+  // Can't overwrite the player, so move the player first. This needs to be
+  // done for both types of operations, as either may require relocating the
+  // player to the player's previous position.
   if(current->move_player)
-    place_player_xy(mzx_world,
-     current->prev_player_x, current->prev_player_y);
+    id_remove_top(mzx_world, mzx_world->player_x, mzx_world->player_y);
 
   switch(f->type)
   {
@@ -535,6 +541,10 @@ static void apply_board_undo(struct undo_frame *f)
       break;
     }
   }
+
+  if(current->move_player)
+    copy_replace_player(mzx_world, current->prev_player_x,
+     current->prev_player_y);
 }
 
 static void apply_board_redo(struct undo_frame *f)
@@ -542,15 +552,13 @@ static void apply_board_redo(struct undo_frame *f)
   struct board_undo_frame *current = (struct board_undo_frame *)f;
   struct world *mzx_world = current->mzx_world;
 
-  // Copy won't overwrite the player, so move the player first
-  if(current->move_player)
-    place_player_xy(current->mzx_world,
-     current->current_player_x, current->current_player_y);
-
   switch(f->type)
   {
     case POS_FRAME:
     {
+      // Don't need any special handling for the player here. The only thing
+      // that can move the player during this redo operation is if the player
+      // is the thing being placed; place_current_at_xy can handle that.
       struct board_undo_pos *next = &(current->replace);
       struct board_undo_pos *prev;
       struct buffer_info temp_buffer;
@@ -574,10 +582,18 @@ static void apply_board_redo(struct undo_frame *f)
     {
       struct block_undo_frame *current = (struct block_undo_frame *)f;
 
+      // Copy won't overwrite the player, so remove the player first.
+      if(current->move_player)
+        id_remove_top(mzx_world, mzx_world->player_x, mzx_world->player_y);
+
       copy_board_to_board(current->mzx_world,
        current->current_board, 0, current->src_board, current->src_offset,
        current->width, current->height
       );
+
+      if(current->move_player)
+        copy_replace_player(mzx_world, current->current_player_x,
+         current->current_player_y);
       break;
     }
   }

@@ -30,6 +30,7 @@
 #include <unistd.h>
 #endif
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -43,6 +44,9 @@ struct mzx_resource
   char *path;
 
   /* So mzxrun requires fewer files even in CONFIG_EDITOR=1 build */
+  boolean editor_only;
+
+  /* Optional resource--do not abort if not found, but print a warning. */
   boolean optional;
 };
 
@@ -52,33 +56,37 @@ struct mzx_resource
  * As a result, these must be in exactly the same order as the
  * enum resource_id enumeration defines them.
  */
-static struct mzx_resource mzx_res[] = {
+static struct mzx_resource mzx_res[] =
+{
 #define ASSETS "assets/"
-  { CONFFILE,                           NULL, false },
-  { ASSETS "default.chr",               NULL, false },
-  { ASSETS "edit.chr",                  NULL, false },
-  { ASSETS "smzx.pal",                  NULL, false },
+  { CONFFILE,                           NULL, false, false },
+  { ASSETS "default.chr",               NULL, false, false },
+  { ASSETS "edit.chr",                  NULL, false, false },
+  { ASSETS "smzx.pal",                  NULL, false, false },
 #ifdef CONFIG_EDITOR
-  { ASSETS "ascii.chr",                 NULL, true },
-  { ASSETS "blank.chr",                 NULL, true },
-  { ASSETS "smzx.chr",                  NULL, true },
+  { ASSETS "ascii.chr",                 NULL, true,  false },
+  { ASSETS "blank.chr",                 NULL, true,  false },
+  { ASSETS "smzx.chr",                  NULL, true,  false },
 #endif
 #ifdef CONFIG_HELPSYS
-  { ASSETS "help.fil",                  NULL, true },
+  { ASSETS "help.fil",                  NULL, false, true },
 #endif
 #ifdef CONFIG_RENDER_GL_PROGRAM
 #define GLSL_SHADERS ASSETS "glsl/"
 #define GLSL_SCALERS GLSL_SHADERS "scalers/"
-  { GLSL_SCALERS,                       NULL, false },
-  { GLSL_SHADERS "scaler.vert",         NULL, false },
-  { GLSL_SCALERS "semisoft.frag",       NULL, false },
-  { GLSL_SHADERS "tilemap.vert",        NULL, false },
-  { GLSL_SHADERS "tilemap.frag",        NULL, false },
-  { GLSL_SHADERS "tilemap.smzx.frag",   NULL, false },
-  { GLSL_SHADERS "mouse.vert",          NULL, false },
-  { GLSL_SHADERS "mouse.frag",          NULL, false },
-  { GLSL_SHADERS "cursor.vert",         NULL, false },
-  { GLSL_SHADERS "cursor.frag",         NULL, false },
+  { GLSL_SCALERS,                       NULL, false, false },
+  { GLSL_SHADERS "scaler.vert",         NULL, false, false },
+  { GLSL_SCALERS "semisoft.frag",       NULL, false, false },
+  { GLSL_SHADERS "tilemap.vert",        NULL, false, false },
+  { GLSL_SHADERS "tilemap.frag",        NULL, false, false },
+  { GLSL_SHADERS "tilemap.smzx.frag",   NULL, false, false },
+  { GLSL_SHADERS "mouse.vert",          NULL, false, false },
+  { GLSL_SHADERS "mouse.frag",          NULL, false, false },
+  { GLSL_SHADERS "cursor.vert",         NULL, false, false },
+  { GLSL_SHADERS "cursor.frag",         NULL, false, false },
+#endif
+#ifdef CONFIG_GAMECONTROLLERDB
+  { ASSETS "gamecontrollerdb.txt",      NULL, false, true },
 #endif
 };
 
@@ -212,12 +220,19 @@ int mzx_res_init(const char *argv0, boolean editor)
 
   for(i = 0; i < END_RESOURCE_ID_T; i++)
   {
-    /* Skip non-essential resources */
-    if(!editor && mzx_res[i].optional)
+    /* Skip editor resources if this isn't the editor. */
+    if(!editor && mzx_res[i].editor_only)
       continue;
 
     if(!mzx_res[i].path)
     {
+      if(mzx_res[i].optional)
+      {
+        warn("Failed to locate non-critical resource '%s'\n",
+         mzx_res[i].base_name);
+        continue;
+      }
+
       warn("Failed to locate critical resource '%s'.\n",
        mzx_res[i].base_name);
       ret = 1;
@@ -253,7 +268,7 @@ char *mzx_res_get_by_id(enum resource_id id)
 
     // Special handling for CONFIG_TXT to allow for user
     // configuration files
-    sprintf(userconfpath, "%s/%s", getenv("HOME"), USERCONFFILE);
+    snprintf(userconfpath, MAX_PATH, "%s/%s", getenv("HOME"), USERCONFFILE);
 
     // Check if the file can be opened for reading
     fp = fopen_unsafe(userconfpath, "rb");
@@ -290,6 +305,61 @@ char *mzx_res_get_by_id(enum resource_id id)
   }
 #endif /* USERCONFFILE */
   return mzx_res[id].path;
+}
+
+/**
+ * Some platforms may not be able to display console output without extra work.
+ * On these platforms redirect STDIO to files so the console output is easier
+ * to read.
+ */
+boolean redirect_stdio(const char *base_path, boolean require_conf)
+{
+  char clean_path[MAX_PATH];
+  char dest_path[MAX_PATH];
+  FILE *fp_wr;
+  uint64_t t;
+
+  if(!base_path)
+    return false;
+
+  clean_path_slashes(base_path, clean_path, MAX_PATH);
+
+  if(require_conf)
+  {
+    // If the config file is required, attempt to stat it.
+    struct stat stat_info;
+
+    join_path_names(dest_path, MAX_PATH, clean_path, "config.txt");
+    if(stat(dest_path, &stat_info))
+      return false;
+  }
+
+  // Test directory for write access.
+  join_path_names(dest_path, MAX_PATH, clean_path, "stdout.txt");
+  fp_wr = fopen_unsafe(dest_path, "w");
+  if(fp_wr)
+  {
+    t = (uint64_t)time(NULL);
+
+    // Redirect stdout to stdout.txt.
+    fclose(fp_wr);
+    fprintf(stdout, "Redirecting logs to '%s'...\n", dest_path);
+    if(freopen(dest_path, "w", stdout))
+      fprintf(stdout, "MegaZeux: Logging to '%s' (%" PRIu64 ")\n", dest_path, t);
+    else
+      fprintf(stdout, "Failed to redirect stdout\n");
+
+    // Redirect stderr to stderr.txt.
+    join_path_names(dest_path, MAX_PATH, clean_path, "stderr.txt");
+    fprintf(stderr, "Redirecting logs to '%s'...\n", dest_path);
+    if(freopen(dest_path, "w", stderr))
+      fprintf(stderr, "MegaZeux: Logging to '%s' (%" PRIu64 ")\n", dest_path, t);
+    else
+      fprintf(stderr, "Failed to redirect stderr\n");
+
+    return true;
+  }
+  return false;
 }
 
 // Get 2 bytes, little endian
@@ -347,30 +417,30 @@ long ftell_and_rewind(FILE *f)
 
 // Random function, returns an integer [0-range)
 
-static unsigned long long rng_state;
+static uint64_t rng_state;
 
 // Seed the RNG from system time on startup
 void rng_seed_init(void)
 {
-  unsigned long long seed = (((unsigned long long)time(NULL)) << 32) | clock();
+  uint64_t seed = (((uint64_t)time(NULL)) << 32) | clock();
   rng_set_seed(seed);
 }
 
-unsigned long long rng_get_seed(void)
+uint64_t rng_get_seed(void)
 {
   return rng_state;
 }
 
-void rng_set_seed(unsigned long long seed)
+void rng_set_seed(uint64_t seed)
 {
   rng_state = seed;
 }
 
 // xorshift*
 // Implementation from https://en.wikipedia.org/wiki/Xorshift
-unsigned int Random(unsigned long long range)
+unsigned int Random(uint64_t range)
 {
-  unsigned long long x = rng_state;
+  uint64_t x = rng_state;
   if(x == 0) x = 1;
   x ^= x >> 12; // a
   x ^= x << 25; // b
@@ -388,7 +458,11 @@ void add_ext(char *src, const char *ext)
   if((src_len < ext_len) || (src[src_len - ext_len] != '.') ||
    strcasecmp(src + src_len - ext_len, ext))
   {
-    strcat(src, ext);
+    if(src_len + ext_len >= MAX_PATH)
+      src_len = MAX_PATH - ext_len - 1;
+
+    snprintf(src + src_len, MAX_PATH - src_len, "%s", ext);
+    src[MAX_PATH - 1] = '\0';
   }
 }
 
@@ -481,7 +555,7 @@ void split_path_filename(const char *source,
       clean_path_slashes(source, destpath, dest_buffer_len);
 
     if(file_buffer_len)
-      strcpy(destfile, "");
+      destfile[0] = '\0';
   }
   else
   // If source has a directory and a file
@@ -498,7 +572,7 @@ void split_path_filename(const char *source,
   else
   {
     if(dest_buffer_len)
-      strcpy(destpath, "");
+      destpath[0] = '\0';
 
     if(file_buffer_len)
       strncpy(destfile, source, file_buffer_len);
@@ -553,20 +627,20 @@ int change_dir_name(char *path_name, const char *dest)
   current = dest;
   end = dest + strlen(dest);
 
-  // Destination starts with a root directory.
-#if defined(__WIN32__) || defined(CONFIG_WII)
-
-  if(dest[0] == DIR_SEPARATOR_CHAR)
-    return -1;
-
   next = strchr(dest, ':');
   if(next)
   {
+    /**
+     * Destination starts with a Windows-style root directory.
+     * Aside from Windows, these are often used by console SDKs (albeit with /
+     * instead of \) to distinguish SD cards and the like.
+     */
     if(next[1] != DIR_SEPARATOR_CHAR && next[1] != 0)
       return -1;
 
     snprintf(path, MAX_PATH, "%.*s" DIR_SEPARATOR, (int)(next - dest + 1),
      dest);
+    path[MAX_PATH - 1] = '\0';
 
     if(stat(path, &stat_info) < 0)
       return -1;
@@ -576,32 +650,32 @@ int change_dir_name(char *path_name, const char *dest)
       current++;
   }
   else
-  {
-    if(path_name[strlen(path_name) - 1] != DIR_SEPARATOR_CHAR)
-      snprintf(path, MAX_PATH, "%s" DIR_SEPARATOR, path_name);
-
-    else
-      strcpy(path, path_name);
-  }
-
-#else /* !defined(__WIN32__) && !defined(CONFIG_WII) */
 
   if(dest[0] == DIR_SEPARATOR_CHAR)
   {
-    strcpy(path, DIR_SEPARATOR);
+    /**
+     * Destination starts with a Unix-style root directory.
+     * Aside from Unix-likes, these are also supported by console platforms.
+     * Even Windows (back through XP at least) doesn't seem to mind them.
+     */
+    snprintf(path, MAX_PATH, DIR_SEPARATOR);
     current = dest + 1;
   }
+
   else
   {
+    /**
+     * Destination is relative--start from the current path. Make sure there's
+     * a trailing separator.
+     */
     if(path_name[strlen(path_name) - 1] != DIR_SEPARATOR_CHAR)
       snprintf(path, MAX_PATH, "%s" DIR_SEPARATOR, path_name);
 
     else
-      strcpy(path, path_name);
+      snprintf(path, MAX_PATH, "%s", path_name);
   }
 
-#endif /* !defined(__WIN32__) && !defined(CONFIG_WII) */
-
+  path[MAX_PATH - 1] = '\0';
   current_char = current[0];
   len = strlen(path);
 
@@ -638,6 +712,7 @@ int change_dir_name(char *path_name, const char *dest)
     {
       snprintf(path + len, MAX_PATH - len, "%.*s", (int)(next - current),
        current);
+      path[MAX_PATH - 1] = '\0';
       len = strlen(path);
     }
 
@@ -649,7 +724,7 @@ int change_dir_name(char *path_name, const char *dest)
   clean_path_slashes(path, path_temp, MAX_PATH);
   if(stat(path_temp, &stat_info) >= 0)
   {
-    strcpy(path_name, path_temp);
+    snprintf(path_name, MAX_PATH, "%s", path_temp);
     return 0;
   }
 
@@ -919,7 +994,9 @@ boolean dir_open(struct mzx_dir *dir, const char *path)
   while(readdir(dir->d) != NULL)
     dir->entries++;
 
-#if defined(CONFIG_PSP) || defined(CONFIG_3DS)
+// pspdev/devkitPSP historically does not have a rewinddir implementation.
+// libctru (3DS) has rewinddir but it doesn't work. FIXME reason for the Switch?
+#if defined(CONFIG_PSP) || defined(CONFIG_3DS) || defined(CONFIG_SWITCH)
   strncpy(dir->path, path, PATH_BUF_LEN);
   dir->path[PATH_BUF_LEN - 1] = 0;
   closedir(dir->d);
@@ -952,7 +1029,9 @@ void dir_seek(struct mzx_dir *dir, long offset)
 
   dir->pos = CLAMP(offset, 0L, dir->entries);
 
-#if defined(CONFIG_PSP) || defined(CONFIG_3DS)
+// pspdev/devkitPSP historically does not have a rewinddir implementation.
+// libctru (3DS) has rewinddir but it doesn't work. FIXME reason for the Switch?
+#if defined(CONFIG_PSP) || defined(CONFIG_3DS) || defined(CONFIG_SWITCH)
   closedir(dir->d);
   dir->d = opendir(dir->path);
   if(!dir->d)
@@ -965,7 +1044,7 @@ void dir_seek(struct mzx_dir *dir, long offset)
     readdir(dir->d);
 }
 
-boolean dir_get_next_entry(struct mzx_dir *dir, char *entry)
+boolean dir_get_next_entry(struct mzx_dir *dir, char *entry, int *type)
 {
   struct dirent *inode;
 
@@ -979,6 +1058,24 @@ boolean dir_get_next_entry(struct mzx_dir *dir, char *entry)
   {
     entry[0] = 0;
     return false;
+  }
+
+  if(type)
+  {
+#ifdef DT_UNKNOWN
+    /* On platforms that support it, the d_type field can be used to avoid
+     * stat calls. This is critical for the file manager on embedded platforms.
+     */
+    if(inode->d_type == DT_REG)
+      *type = DIR_TYPE_FILE;
+    else
+    if(inode->d_type == DT_DIR)
+      *type = DIR_TYPE_DIR;
+    else
+      *type = DIR_TYPE_UNKNOWN;
+#else
+    *type = DIR_TYPE_UNKNOWN;
+#endif
   }
 
   snprintf(entry, PATH_BUF_LEN, "%s", inode->d_name);

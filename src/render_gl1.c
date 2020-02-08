@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "compat.h"
 #include "platform.h"
 #include "render.h"
 #include "render_layer.h"
@@ -45,10 +46,13 @@
 //       OpenGL ES 1.x. The latter API lacks many functions present in
 //       desktop OpenGL. GL ES is typically used on cellphones.
 
+static const struct gl_version gl_required_version = { 1, 1 };
+
 static struct
 {
   void (GL_APIENTRY *glBindTexture)(GLenum target, GLuint texture);
   void (GL_APIENTRY *glClear)(GLbitfield mask);
+  void (GL_APIENTRY *glDeleteTextures)(GLsizei n, GLuint *textures);
   void (GL_APIENTRY *glDisableClientState)(GLenum cap);
   void (GL_APIENTRY *glDrawArrays)(GLenum mode, GLint first, GLsizei count);
   void (GL_APIENTRY *glEnable)(GLenum cap);
@@ -63,6 +67,9 @@ static struct
    GLenum format, GLenum type, const GLvoid *pixels);
   void (GL_APIENTRY *glTexParameterf)(GLenum target, GLenum pname,
    GLfloat param);
+  void (GL_APIENTRY *glTexSubImage2D)(GLenum target, GLint level,
+   GLint xoffset, GLint yoffset, GLsizei width, GLsizei height,
+   GLenum format, GLenum type, const GLvoid *pixels);
   void (GL_APIENTRY *glVertexPointer)(GLint size, GLenum type,
    GLsizei stride, const GLvoid *ptr);
   void (GL_APIENTRY *glViewport)(GLint x, GLint y, GLsizei width,
@@ -74,6 +81,7 @@ static const struct dso_syms_map gl1_syms_map[] =
 {
   { "glBindTexture",        (fn_ptr *)&gl1.glBindTexture },
   { "glClear",              (fn_ptr *)&gl1.glClear },
+  { "glDeleteTextures",     (fn_ptr *)&gl1.glDeleteTextures },
   { "glDisableClientState", (fn_ptr *)&gl1.glDisableClientState },
   { "glDrawArrays",         (fn_ptr *)&gl1.glDrawArrays },
   { "glEnable",             (fn_ptr *)&gl1.glEnable },
@@ -84,6 +92,7 @@ static const struct dso_syms_map gl1_syms_map[] =
   { "glTexCoordPointer",    (fn_ptr *)&gl1.glTexCoordPointer },
   { "glTexImage2D",         (fn_ptr *)&gl1.glTexImage2D },
   { "glTexParameterf",      (fn_ptr *)&gl1.glTexParameterf },
+  { "glTexSubImage2D",      (fn_ptr *)&gl1.glTexSubImage2D },
   { "glVertexPointer",      (fn_ptr *)&gl1.glVertexPointer },
   { "glViewport",           (fn_ptr *)&gl1.glViewport },
   { NULL, NULL }
@@ -102,6 +111,7 @@ struct gl1_render_data
   Uint32 *pixels;
   Uint32 w;
   Uint32 h;
+  GLuint texture_number;
 };
 
 static boolean gl1_init_video(struct graphics_data *graphics,
@@ -136,6 +146,7 @@ static boolean gl1_init_video(struct graphics_data *graphics,
 
 err_free_render_data:
   free(render_data);
+  graphics->render_data = NULL;
 err_out:
   return false;
 }
@@ -143,8 +154,7 @@ err_out:
 static void gl1_resize_screen(struct graphics_data *graphics,
  int width, int height)
 {
-  //struct gl1_render_data *render_data = graphics->render_data;
-  GLuint texture_number;
+  struct gl1_render_data *render_data = graphics->render_data;
   int v_width, v_height;
 
   get_context_width_height(graphics, &width, &height);
@@ -159,11 +169,18 @@ static void gl1_resize_screen(struct graphics_data *graphics,
 
   gl1.glEnable(GL_TEXTURE_2D);
 
-  gl1.glGenTextures(1, &texture_number);
+  // Free any preexisting textures if they exist
+  gl1.glDeleteTextures(1, &render_data->texture_number);
   gl_check_error();
 
-  gl1.glBindTexture(GL_TEXTURE_2D, texture_number);
+  gl1.glGenTextures(1, &render_data->texture_number);
   gl_check_error();
+
+  gl1.glBindTexture(GL_TEXTURE_2D, render_data->texture_number);
+  gl_check_error();
+
+  gl1.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, GL_POWER_2_WIDTH,
+   GL_POWER_2_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
   gl_set_filter_method(graphics->gl_filter_method, gl1.glTexParameterf);
 }
@@ -171,52 +188,48 @@ static void gl1_resize_screen(struct graphics_data *graphics,
 static boolean gl1_set_video_mode(struct graphics_data *graphics,
  int width, int height, int depth, boolean fullscreen, boolean resize)
 {
-  int internal_width = GL_POWER_2_WIDTH, internal_height = GL_POWER_2_HEIGHT;
   struct gl1_render_data *render_data = graphics->render_data;
 
   gl_set_attributes(graphics);
 
-  if(!gl_set_video_mode(graphics, width, height, depth, fullscreen, resize))
+  if(!gl_set_video_mode(graphics, width, height, depth, fullscreen, resize,
+   gl_required_version))
     return false;
 
   gl_set_attributes(graphics);
 
   if(!gl_load_syms(gl1_syms_map))
+  {
+    gl_cleanup(graphics);
     return false;
+  }
 
   // We need a specific version of OpenGL; desktop GL must be 1.1.
   // All OpenGL ES 1.x implementations are supported, so don't do
-  // the check with EGL configurations (EGL implies OpenGL ES).
-  // No OpenGL ES 1.x supports NPOT textures, so we can also skip
-  // the extension check.
-#ifndef CONFIG_EGL
+  // the check with these configurations.
+#ifndef CONFIG_GLES
   {
     static boolean initialized = false;
 
     if(!initialized)
     {
-      const char *version, *extensions;
+      const char *version;
       double version_float;
 
       version = (const char *)gl1.glGetString(GL_VERSION);
       if(!version)
+      {
+        warn("Could not load GL version string.\n");
+        gl_cleanup(graphics);
         return false;
-
-      extensions = (const char *)gl1.glGetString(GL_EXTENSIONS);
-      if(!extensions)
-        return false;
+      }
 
       version_float = atof(version);
       if(version_float < 1.1)
       {
         warn("Need >= OpenGL 1.1, got OpenGL %.1f.\n", version_float);
+        gl_cleanup(graphics);
         return false;
-      }
-
-      if(strstr(extensions, "GL_ARB_texture_non_power_of_two"))
-      {
-        internal_width = SCREEN_PIX_W;
-        internal_height = SCREEN_PIX_H;
       }
 
       initialized = true;
@@ -224,13 +237,15 @@ static boolean gl1_set_video_mode(struct graphics_data *graphics,
   }
 #endif
 
-  render_data->pixels =
-   cmalloc(sizeof(Uint32) * internal_width * internal_height);
+  render_data->pixels = cmalloc(sizeof(Uint32) * SCREEN_PIX_W * SCREEN_PIX_H);
   if(!render_data->pixels)
+  {
+    gl_cleanup(graphics);
     return false;
+  }
 
-  render_data->w = internal_width;
-  render_data->h = internal_height;
+  render_data->w = SCREEN_PIX_W;
+  render_data->h = SCREEN_PIX_H;
 
   gl1_resize_screen(graphics, width, height);
   return true;
@@ -238,9 +253,17 @@ static boolean gl1_set_video_mode(struct graphics_data *graphics,
 
 static void gl1_free_video(struct graphics_data *graphics)
 {
-  gl_cleanup(graphics);
-  free(graphics->render_data);
-  graphics->render_data = NULL;
+  struct gl1_render_data *render_data = graphics->render_data;
+
+  if(render_data)
+  {
+    gl1.glDeleteTextures(1, &render_data->texture_number);
+    gl_check_error();
+
+    gl_cleanup(graphics);
+    free(render_data);
+    graphics->render_data = NULL;
+  }
 }
 
 static void gl1_update_colors(struct graphics_data *graphics,
@@ -306,8 +329,8 @@ static void gl1_sync_screen(struct graphics_data *graphics)
 {
   struct gl1_render_data *render_data = graphics->render_data;
 
-  const float texture_width = 640.0f / render_data->w;
-  const float texture_height = 350.0f / render_data->h;
+  const float texture_width = 1.0f * SCREEN_PIX_W / GL_POWER_2_WIDTH;
+  const float texture_height = 1.0f * SCREEN_PIX_H / GL_POWER_2_HEIGHT;
 
   const float tex_coord_array[2 * 4] = {
     0.0f,          0.0f,
@@ -316,8 +339,8 @@ static void gl1_sync_screen(struct graphics_data *graphics)
     texture_width, texture_height
   };
 
-  gl1.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, render_data->w, render_data->h,
-   0, GL_RGBA, GL_UNSIGNED_BYTE, render_data->pixels);
+  gl1.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, render_data->w, render_data->h,
+   GL_RGBA, GL_UNSIGNED_BYTE, render_data->pixels);
   gl_check_error();
 
   gl1.glClear(GL_COLOR_BUFFER_BIT);

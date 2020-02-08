@@ -82,6 +82,8 @@
 #define TLUT_UI_OFFSET    (256 * 6) // UI
 #define NUM_TLUT          (256 * 7)
 
+#define TLUT_MZX_BOTH_TRANSPARENT (-1)
+
 // RGB5A3 transparent color for layer rendering.
 #define NO_COLOR 0x0000
 
@@ -624,6 +626,9 @@ static int gx_get_tlut_id_mzx(struct graphics_data *graphics,
   int tcol = layer->transparent_col;
   int tlut_id;
 
+  if((tcol == (int)bg_color) && (tcol == (int)fg_color))
+    return TLUT_MZX_BOTH_TRANSPARENT;
+
   if(tcol == (int)bg_color)
     return fg_color + TLUT_T0_OFFSET;
 
@@ -776,6 +781,9 @@ static void gx_render_layer(struct graphics_data *graphics,
         bg_color = src->bg_color;
         fg_color = src->fg_color;
         cur_tlut_id = gx_get_tlut_id_mzx(graphics, layer, bg_color, fg_color);
+
+        if(cur_tlut_id == TLUT_MZX_BOTH_TRANSPARENT)
+          continue;
 
         if(cur_tlut_id != last_tlut_id)
         {
