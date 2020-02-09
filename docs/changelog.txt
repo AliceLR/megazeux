@@ -27,6 +27,8 @@ USERS
   an error when using MZX in a private browser window.
 + Fixed a robot editor regression where certain numpad symbols
   could not be typed.
+- Removed the options "overlay1" and "overlay2" from the list of
+  selectable renderer options except when SDL 1.2 is enabled.
 
 
 September 23rd, 2019 - MZX 2.92b
