@@ -68,8 +68,6 @@ static const struct renderer_data renderers[] =
 #endif
 #if defined(CONFIG_RENDER_SOFTSCALE)
   { "softscale", render_softscale_register },
-  { "overlay1", render_softscale_register },
-  { "overlay2", render_softscale_register },
 #endif
 #if defined(CONFIG_RENDER_GL_FIXED)
   { "opengl1", render_gl1_register },
@@ -99,6 +97,21 @@ static const struct renderer_data renderers[] =
   { "xfb", render_xfb_register },
 #endif
   { NULL, NULL }
+};
+
+struct renderer_alias
+{
+  const char *alias;
+  const char *name;
+};
+
+static const struct renderer_alias renderer_aliases[] =
+{
+#if defined(CONFIG_RENDER_SOFTSCALE)
+  { "overlay1", "softscale" },
+  { "overlay2", "softscale" },
+#endif
+  { NULL, NULL },
 };
 
 static const struct rgb_color default_pal[16] =
@@ -1210,8 +1223,9 @@ void default_protected_palette(void)
 
 static boolean set_graphics_output(struct config_info *conf)
 {
-  const char *video_output = conf->video_output;
+  char video_output[sizeof(conf->video_output)];
   const struct renderer_data *renderer = renderers;
+  const struct renderer_alias *alias = renderer_aliases;
   int i = 0;
 
   // The first renderer was NULL, this shouldn't happen
@@ -1219,6 +1233,19 @@ static boolean set_graphics_output(struct config_info *conf)
   {
     warn("No renderers built, please provide a valid config.h!\n");
     return false;
+  }
+
+  // Some "renderers" are aliases for other renderers that are kept around for
+  // compatibility reasons only. These are kept separate from the main list.
+  strcpy(video_output, conf->video_output);
+  while(alias->alias)
+  {
+    if(!strcasecmp(video_output, alias->alias))
+    {
+      strcpy(video_output, alias->name);
+      break;
+    }
+    alias++;
   }
 
   while(renderer->name)
