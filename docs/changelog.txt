@@ -27,6 +27,7 @@ USERS
   an error when using MZX in a private browser window.
 + Fixed a robot editor regression where certain numpad symbols
   could not be typed.
++ Switched from xmp_load_module to xmp_load_module_from_memory.
 - Removed the options "overlay1" and "overlay2" from the list of
   selectable renderer options except when SDL 1.2 is enabled.
 

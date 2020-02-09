@@ -39,6 +39,8 @@ struct xmp_stream
 {
   struct sampled_stream s;
   xmp_context ctx;
+  char *buffer;
+  size_t buffer_len;
   Uint32 row_tbl[XMP_MAX_MOD_LENGTH];
   Uint32 effective_frequency;
   Uint32 total_rows;
@@ -232,25 +234,43 @@ static void audio_xmp_destruct(struct audio_stream *a_src)
   xmp_end_player(((struct xmp_stream *)a_src)->ctx);
   xmp_release_module(((struct xmp_stream *)a_src)->ctx);
   xmp_free_context(((struct xmp_stream *)a_src)->ctx);
+  free(((struct xmp_stream *)a_src)->buffer);
   sampled_destruct(a_src);
 }
 
 static struct audio_stream *construct_xmp_stream(char *filename,
  Uint32 frequency, Uint32 volume, Uint32 repeat)
 {
-  struct audio_stream *ret_val = NULL;
   struct xmp_module_info info;
   xmp_context ctx;
   unsigned char ord;
   Uint32 row_pos;
   int i;
+  char *buffer;
+  size_t buffer_len;
+  int retval;
+
+  FILE *fp = fopen_unsafe(filename, "rb");
+  if(!fp)
+    return NULL;
+
+  buffer_len = ftell_and_rewind(fp);
+  buffer = cmalloc(buffer_len);
+  retval = fread(buffer, buffer_len, 1, fp);
+  fclose(fp);
+
+  if(!retval)
+  {
+    free(buffer);
+    return NULL;
+  }
 
   ctx = xmp_create_context();
   if(ctx)
   {
     xmp_set_player(ctx, XMP_PLAYER_DEFPAN, 50);
 
-    if(xmp_load_module(ctx, filename) == 0)
+    if(!xmp_load_module_from_memory(ctx, buffer, buffer_len))
     {
       struct xmp_stream *xmp_stream = ccalloc(1, sizeof(struct xmp_stream));
       struct sampled_stream_spec s_spec;
@@ -258,6 +278,8 @@ static struct audio_stream *construct_xmp_stream(char *filename,
       int num_orders;
 
       xmp_stream->ctx = ctx;
+      xmp_stream->buffer = buffer;
+      xmp_stream->buffer_len = buffer_len;
       xmp_start_player(ctx, audio.output_frequency, 0);
       xmp_set_player(ctx, XMP_PLAYER_INTERP, get_xmp_resample_mode());
 
@@ -303,11 +325,11 @@ static struct audio_stream *construct_xmp_stream(char *filename,
       initialize_audio_stream((struct audio_stream *)xmp_stream, &a_spec,
        volume, repeat);
 
-      ret_val = (struct audio_stream *)xmp_stream;
+      return (struct audio_stream *)xmp_stream;
     }
   }
-
-  return ret_val;
+  free(buffer);
+  return NULL;
 }
 
 void init_xmp(struct config_info *conf)
