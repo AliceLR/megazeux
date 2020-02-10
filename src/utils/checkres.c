@@ -1003,15 +1003,21 @@ static void change_base_path_dir(struct base_path *current_path,
 static struct base_path *add_base_path(const char *path_name,
  struct base_path ***path_list, int *path_list_size, int *path_list_alloc)
 {
-  struct base_path *new_path = ccalloc(1, sizeof(struct base_path));
+  struct stat st;
+  struct base_path *new_path;
   int alloc = *path_list_alloc;
   int size = *path_list_size;
 
   size_t path_name_len = strlen(path_name);
-  const char *ext = path_name_len >= 4 ? path_name + path_name_len - 4 : NULL;
 
-  if(ext && !strcasecmp(ext, ".ZIP"))
+  if(stat(path_name, &st))
+    return NULL;
+
+  new_path = ccalloc(1, sizeof(struct base_path));
+
+  if(S_ISREG(st.st_mode))
   {
+    // Attempt to open the path as a zip archive.
     struct zip_archive *zp = zip_open_file_read(path_name);
 
     if(!zp)
@@ -1024,13 +1030,21 @@ static struct base_path *add_base_path(const char *path_name,
     new_path->zp = zp;
   }
   else
+
+  if(S_ISDIR(st.st_mode))
   {
+    // Attempt to recursively build a file list of this directory's contents.
     if(!path_search(path_name, path_name_len, MAX_PATH_DEPTH,
      (void *)new_path, add_base_path_file_wr))
     {
       free(new_path);
       return NULL;
     }
+  }
+  else
+  {
+    free(new_path);
+    return NULL;
   }
 
   snprintf(new_path->actual_path, MAX_PATH, "%s", path_name);
@@ -2668,8 +2682,9 @@ static enum status parse_file(const char *file_name,
   }
   else
 
-  if(fp && ext && !strcasecmp(ext, ".ZIP"))
+  if(fp)
   {
+    // Is a file but isn't an .mzx or an .mzb? Try to read it as a zip...
     struct base_path *zip_base;
     struct zip_archive *zp;
 
@@ -2685,7 +2700,7 @@ static enum status parse_file(const char *file_name,
      &path_list_size, &path_list_alloc);
 
     if(!zip_base)
-      return ZIP_FAILED;
+      goto error;
 
     zp = zip_base->zp;
 
@@ -2794,10 +2809,10 @@ static enum status parse_file(const char *file_name,
 
   else
   {
-    if(fp) fclose(fp);
+error:
     fprintf(stderr,
-      "'%s' is not a .MZX (world), .MZB (board),"
-      "directory containing .MZX/.MZB files, or .ZIP (archive) file.\n",
+      "'%s' is not a .MZX (world), a .MZB (board), "
+      "a directory containing .MZX/.MZB files, or a ZIP archive.\n",
       file_name
     );
     return INVALID_ARGUMENTS;

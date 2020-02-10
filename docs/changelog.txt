@@ -29,6 +29,8 @@ USERS
   could not be typed.
 + Switched from xmp_load_module to xmp_load_module_from_file.
 + Added "GL4ES wrapper" to the auto_glsl blacklist.
++ checkres no longer requires zip archive filenames to end with
+  the .ZIP extension.
 - Removed the options "overlay1" and "overlay2" from the list of
   selectable renderer options except when SDL 1.2 is enabled.
 
