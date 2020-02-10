@@ -31,6 +31,7 @@ USERS
 + Added "GL4ES wrapper" to the auto_glsl blacklist.
 + checkres no longer requires zip archive filenames to end with
   the .ZIP extension.
++ Added optional CSV output to checkres.
 - Removed the options "overlay1" and "overlay2" from the list of
   selectable renderer options except when SDL 1.2 is enabled.
 

@@ -62,6 +62,8 @@
  " -v   Display all references with sfx#, board#, robot#.\n"                \
  " -vv  Display all references with sfx#, board#, robot#, line#, coords.\n" \
  " -1   Display unique filenames, one per line, with no other info.\n"      \
+ "\nOutput options:\n" \
+ " -V   Output CSV instead of preformatted text.\n"                         \
  "\nSorting options:\n" \
  " -N   Sort by referenced filename, then by location (default).\n"         \
  " -L   Sort by location of reference: world, board#, robot#.\n"            \
@@ -143,6 +145,9 @@ static boolean display_filename_only = false;
 static boolean display_first_only = true;
 static boolean display_details = false;
 static boolean display_all_details = false;
+
+// Output format options
+static boolean output_format_csv = false;
 
 static enum
 {
@@ -653,7 +658,7 @@ static int started_table = 0;
 static int parent_max_len = PARENT_DEFAULT_LEN;
 static int resource_max_len = RESOURCE_DEFAULT_LEN;
 
-static void output(const char *required_by,
+static void output_preformatted(const char *required_by,
  int board_num, int robot_num, int line_num,
  const char *resource_path, const char *status, const char *found_in)
 {
@@ -742,13 +747,119 @@ static void output(const char *required_by,
      found_in
     );
   }
-  else
+}
+
+static void output_csv(const char *required_by,
+ int board_num, int robot_num, int line_num,
+ const char *resource_path, const char *status, const char *found_in)
+{
+  // TODO add proper escaping for the filenames.
+  found_in = found_in ? found_in : "";
+
+  if(!started_table)
+  {
+    fprintf(stdout, "Required by,");
+    if(display_details)
+    {
+      fprintf(stdout, "Board #,Robot #,");
+      if(display_all_details)
+        fprintf(stdout, "Line,Position,");
+    }
+    fprintf(stdout, "Expected file,Status,Found in\n");
+
+    started_table = 1;
+  }
+
+  fprintf(stdout, "%s,", required_by);
+
+  if(display_details)
+  {
+    const char *filler = display_all_details ? ",," : "";
+
+    if(board_num == DONT_PRINT)
+    {
+      fprintf(stdout, ",,%s", filler);
+    }
+    else
+
+    if(board_num == IS_SFX)
+    {
+      fprintf(stdout, "sfx,%d,%s", robot_num, filler);
+    }
+    else
+
+    if(robot_num > 0)
+    {
+      if(display_all_details)
+      {
+        fprintf(stdout, "b%d,r%d,%d,\"(%d,%d)\",",
+          board_num, robot_num, line_num,
+          robot_xpos[(unsigned char)robot_num],
+          robot_ypos[(unsigned char)robot_num]
+        );
+      }
+      else
+        fprintf(stdout, "b%d,r%d,", board_num, robot_num);
+    }
+    else
+
+    if(board_num == NO_BOARD && robot_num == GLOBAL_ROBOT)
+    {
+      if(display_all_details)
+      {
+        fprintf(stdout, ",gl,%d,\"(-1,-1)\",", line_num);
+      }
+      else
+        fprintf(stdout, ",gl,");
+    }
+    else
+
+    if(robot_num == IS_BOARD_MOD)
+    {
+      fprintf(stdout, "b%d,mod,%s", board_num, filler);
+    }
+    else
+
+    if(robot_num == IS_BOARD_CHARSET)
+    {
+      fprintf(stdout, "b%d,chr,%s", board_num, filler);
+    }
+    else
+
+    if(robot_num == IS_BOARD_PALETTE)
+    {
+      fprintf(stdout, "b%d,pal,%s", board_num, filler);
+    }
+    else
+      fprintf(stdout, "(unknown),,%s", filler);
+  }
+
+  fprintf(stdout, "%s,%s,%s\n", resource_path, status, found_in);
+}
+
+static void output(const char *required_by,
+ int board_num, int robot_num, int line_num,
+ const char *resource_path, const char *status, const char *found_in)
+{
+  if(display_filename_only)
   {
     // Quiet mode- just print the resource paths
     fprintf(stdout, "%s\n", resource_path);
   }
-}
+  else
 
+  if(output_format_csv)
+  {
+    output_csv(required_by, board_num, robot_num, line_num, resource_path,
+     status, found_in);
+  }
+
+  else
+  {
+    output_preformatted(required_by, board_num, robot_num, line_num,
+     resource_path, status, found_in);
+  }
+}
 
 /*******************/
 /* Data processing */
@@ -2823,7 +2934,7 @@ error:
   clear_data(path_list, path_list_size,
    file_list, file_list_size);
 
-  if(!display_filename_only)
+  if(!display_filename_only && !output_format_csv)
    fprintf(stdout, "\nFinished processing '%s'.\n\n", file_name);
 
   fflush(stdout);
@@ -3024,6 +3135,10 @@ int main(int argc, char *argv[])
             display_filename_only = true;
             display_details = false;
             display_all_details = false;
+            break;
+
+          case 'V':
+            output_format_csv = true;
             break;
 
           case 'L':
