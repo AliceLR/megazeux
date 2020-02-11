@@ -82,6 +82,7 @@ enum zip_general_purpose_flag
 enum zip_error
 {
   ZIP_SUCCESS = 0,
+  ZIP_IGNORE_FILE,
   ZIP_EOF,
   ZIP_NULL,
   ZIP_NULL_BUF,

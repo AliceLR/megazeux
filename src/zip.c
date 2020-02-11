@@ -122,6 +122,8 @@ static const char *zip_error_string(enum zip_error code)
   {
     case ZIP_SUCCESS:
       return "no error";
+    case ZIP_IGNORE_FILE:
+      return "no error; file in archive was ignored";
     case ZIP_EOF:
       return "reached end of file";
     case ZIP_NULL:
@@ -186,6 +188,31 @@ static const char *zip_error_string(enum zip_error code)
 static void zip_error(const char *func, enum zip_error code)
 {
   warn("%s: %s\n", func, zip_error_string(code));
+}
+
+/**
+ * Mac OS X likes to pollute ZIPs with metadata files. Try to detect these...
+ * Also check for Thumbs.db because Windows :(
+ *
+ * If these are ever needed for some reason, it should be trivial to add an
+ * option to disable this.
+ */
+static inline boolean zip_is_ignore_file(const char *filename, size_t len)
+{
+  if(len >= 9)
+  {
+    if(!strncasecmp(filename, "__MACOSX/", 9))
+      return true;
+
+    if(!strcasecmp(filename + len - 9, ".DS_Store") &&
+     (len == 9 || filename[len - 10] == '/'))
+      return true;
+
+    if(!strcasecmp(filename + len - 9, "Thumbs.db") &&
+     (len == 9 || filename[len - 10] == '/'))
+      return true;
+  }
+  return false;
 }
 
 /**
@@ -528,6 +555,9 @@ static enum zip_error zip_read_central_file_header(struct zip_archive *zp,
   // Done. Skip to the position where the next header should be.
   if(skip_length && vfseek(zp->vf, skip_length, SEEK_CUR))
     return ZIP_SEEK_ERROR;
+
+  if(zip_is_ignore_file(central_fh->file_name, n))
+    return ZIP_IGNORE_FILE;
 
   return ZIP_SUCCESS;
 }
@@ -1755,7 +1785,7 @@ static enum zip_error zip_read_directory(struct zip_archive *zp)
 {
   char buffer[EOCD_RECORD_LEN];
   struct memfile mf;
-  int i;
+  int i, j;
   int n;
   int result;
 
@@ -1809,20 +1839,28 @@ static enum zip_error zip_read_directory(struct zip_archive *zp)
       goto err_realloc;
     }
 
-    for(i = 0; i < n; i++)
+    for(i = 0, j = 0; i < n; i++)
     {
-      f[i] = cmalloc(sizeof(struct zip_file_header));
-      zp->files_alloc++;
+      f[j] = cmalloc(sizeof(struct zip_file_header));
+      f[j]->file_name = NULL;
 
-      result = zip_read_central_file_header(zp, f[i]);
+      result = zip_read_central_file_header(zp, f[j]);
       if(result)
       {
-        free(f[i]);
-        f[i] = NULL;
-        zp->files_alloc--;
+        free(f[j]->file_name);
+        free(f[j]);
+        f[j] = NULL;
+        if(result == ZIP_IGNORE_FILE)
+        {
+          zp->num_files--;
+          continue;
+        }
+
         zip_error("error reading central directory record", result);
         break;
       }
+      zp->files_alloc++;
+      j++;
     }
 
     if(zp->files_alloc == 0)
@@ -1831,12 +1869,18 @@ static enum zip_error zip_read_directory(struct zip_archive *zp)
       goto err_realloc;
     }
 
-    if(zp->files_alloc < n)
+    if(zp->files_alloc < zp->num_files)
     {
       warn("expected %d central directory records but only found %d\n",
        n, zp->files_alloc);
       result = ZIP_INCOMPLETE_CENTRAL_DIRECTORY;
       goto err_realloc;
+    }
+
+    if(zp->files_alloc < n)
+    {
+      zp->files =
+       crealloc(zp->files, zp->files_alloc * sizeof(struct zip_file_header *));
     }
   }
 

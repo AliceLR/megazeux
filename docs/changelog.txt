@@ -32,6 +32,7 @@ USERS
 + checkres no longer requires zip archive filenames to end with
   the .ZIP extension.
 + Added optional CSV output to checkres.
++ ZIP support now ignores __MACOSX/, .DS_Store, and Thumbs.db.
 - Removed the options "overlay1" and "overlay2" from the list of
   selectable renderer options except when SDL 1.2 is enabled.
 
