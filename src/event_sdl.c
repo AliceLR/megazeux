@@ -1441,9 +1441,10 @@ void real_warp_mouse(int x, int y)
 
 void initialize_joysticks(void)
 {
-#if !SDL_VERSION_ATLEAST(2,0,0) || defined(CONFIG_SWITCH)
+#if !SDL_VERSION_ATLEAST(2,0,0) || defined(CONFIG_SWITCH) || defined(CONFIG_PSVITA)
   // SDL 1.2 doesn't have joystick added/removed events.
-  // Switch SDL doesn't seem to generate these events at all on startup.
+  // Switch SDL doesn't seem to generate these events at all on startup. The Vita
+  // appears to have the same issue.
   int i, count;
 
   count = SDL_NumJoysticks();

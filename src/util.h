@@ -232,6 +232,10 @@ void debug(const char *format, ...) __attribute__((format(printf, 1, 2)));
 #define debug(...) do { } while(0)
 #endif
 
+#elif defined(CONFIG_PSVITA)
+
+#include "vita_debug.h"
+
 #else /* ANDROID, CONFIG_NDS */
 
 #define info(...) \

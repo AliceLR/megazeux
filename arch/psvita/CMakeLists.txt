@@ -25,10 +25,13 @@ set(VITA_APP_NAME ${DIST_NAME})
 set(VITA_TITLEID "DMZX00001")
 set(VITA_VERSION "02.91")
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -DDEBUG -W -Wall -Wno-unused-parameter -Wno-format-truncation")
+#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -DDEBUG -W -Wall -Wno-unused-parameter -Wno-format-truncation")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -W -Wall -Wno-unused-parameter -Wno-format-truncation")
 set(VITA_MKSFOEX_FLAGS "${VITA_MKSFOEX_FLAGS} -d PARENTAL_LEVEL=1")
 
+set(GDM2S3M_SRC ../../contrib/gdm2s3m/src)
 set(MZX_SRC ../../src)
+set(MODPLUG_SRC ../../contrib/libmodplug/src)
 set(XMP_SRC ../../contrib/libxmp/src)
 
 include_directories(
@@ -39,6 +42,9 @@ include_directories(
 	# Libraries
 	${XMP_SRC}/../include
 	${XMP_SRC}
+	${GDM2S3M_SRC}
+	#${MODPLUG_SRC}
+	#${MODPLUG_SRC}/libmodplug
 
 	# We're not using sdl-config to smooth things over for us so we need to
 	# point directly to the SDL include directory. This should work as long
@@ -83,6 +89,7 @@ add_executable(${BIN_NAME}
 	${MZX_SRC}/sprite.c
 	${MZX_SRC}/str.c
 	${MZX_SRC}/util.c
+	${MZX_SRC}/vfs.c
 	${MZX_SRC}/window.c
 	${MZX_SRC}/world.c
 	${MZX_SRC}/zip.c
@@ -90,6 +97,7 @@ add_executable(${BIN_NAME}
 	# Renderer
 	${MZX_SRC}/render_layer.c
 	${MZX_SRC}/render_soft.c
+	${MZX_SRC}/render_softscale.c
 
 	# SDL2
 	${MZX_SRC}/audio/audio_sdl.c
@@ -105,8 +113,43 @@ add_executable(${BIN_NAME}
 	${MZX_SRC}/audio/sampled_stream.c
 	${MZX_SRC}/audio/sfx.c
 
+	# Reality
+	${MZX_SRC}/audio/audio_reality.cpp
+
 	# Vorbis
 	${MZX_SRC}/audio/audio_vorbis.c
+
+	# ModPlug
+	#${MZX_SRC}/audio/audio_modplug.cpp
+	#${MODPLUG_SRC}/fastmix.cpp
+	#${MODPLUG_SRC}/load_669.cpp
+	#${MODPLUG_SRC}/load_amf.cpp
+	#${MODPLUG_SRC}/load_dsm.cpp
+	#${MODPLUG_SRC}/load_far.cpp
+	#${MODPLUG_SRC}/load_it.cpp
+	#${MODPLUG_SRC}/load_med.cpp
+	#${MODPLUG_SRC}/load_mod.cpp
+	#${MODPLUG_SRC}/load_mtm.cpp
+	#${MODPLUG_SRC}/load_okt.cpp
+	#${MODPLUG_SRC}/load_s3m.cpp
+	#${MODPLUG_SRC}/load_stm.cpp
+	#${MODPLUG_SRC}/load_ult.cpp
+	#${MODPLUG_SRC}/load_wav.cpp
+	#${MODPLUG_SRC}/load_xm.cpp
+	#${MODPLUG_SRC}/mmcmp.cpp
+	#${MODPLUG_SRC}/modplug.cpp
+	#${MODPLUG_SRC}/snd_dsp.cpp
+	#${MODPLUG_SRC}/snd_flt.cpp
+	#${MODPLUG_SRC}/snd_fx.cpp
+	#${MODPLUG_SRC}/sndfile.cpp
+	#${MODPLUG_SRC}/sndmix.cpp
+
+	# GDM2S3M
+	#${GDM2S3M_SRC}/error.c
+	#${GDM2S3M_SRC}/gdm2s3m.c
+	#${GDM2S3M_SRC}/gdm.c
+	#${GDM2S3M_SRC}/s3m.c
+	#${GDM2S3M_SRC}/utility.c
 
 	# XMP
 	${MZX_SRC}/audio/audio_xmp.c
@@ -169,6 +212,7 @@ add_executable(${BIN_NAME}
 	# Platform-specific
 	linked_list.c
 	vitaio.c
+	vita_debug.c
 )
 
 target_link_libraries(${BIN_NAME}

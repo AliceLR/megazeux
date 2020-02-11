@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2018 Ian Burgmyer <spectere@gmail.com>
+ * Copyright (C) 2018-2020 Ian Burgmyer <spectere@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -28,6 +28,10 @@
 
 #define ROOT_PATH "ux0:/data/MegaZeux"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int vitaio_chdir(const char *path);
 FILE* vitaio_fopen(const char *pathname, const char *mode);
 char* vitaio_getcwd(char *buf, size_t size);
@@ -35,6 +39,10 @@ int vitaio_mkdir(const char *path, mode_t mode);
 DIR* vitaio_opendir(const char *name);
 int vitaio_rmdir(const char *path);
 int vitaio_stat(const char *path, struct stat *buf);
+
+#ifdef __cplusplus
+}
+#endif
 
 #ifndef __VITAIO_C
 /* These functions cannot be defined if we're hitting this include file from

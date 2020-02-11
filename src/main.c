@@ -56,6 +56,10 @@
 #include <SDL.h>
 #endif
 
+#ifdef CONFIG_PSVITA
+#include "vita_debug.h"
+#endif // CONFIG_PSVITA
+
 #ifndef VERSION
 #error Must define VERSION for MegaZeux version string
 #endif
@@ -175,6 +179,10 @@ __libspec int main(int argc, char *argv[])
     if(!redirect_stdio(SHAREDIR, false))
       redirect_stdio(getenv("HOME"), false);
 #endif
+
+#if defined(CONFIG_PSVITA) && defined(DEBUG)
+  vitadebug_init();
+#endif // CONFIG_PSVITA && DEBUG
 
 #ifdef __APPLE__
   if(!strcmp(current_dir, "/") || !strncmp(current_dir, "/App", 4))
@@ -341,6 +349,10 @@ update_restart_mzx:
   core_free(core_data);
 
   quit_video();
+
+#if defined(CONFIG_PSVITA) && defined(DEBUG)
+  vitadebug_close();
+#endif // CONFIG_PSVITA && DEBUG
 
   err = 0;
 err_free_config:

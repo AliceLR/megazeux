@@ -37,6 +37,7 @@ arch/nds/*.d
 arch/nds/*.o
 arch/psp/*.d
 arch/psp/*.o
+arch/psvita/build*
 arch/wii/*.d
 arch/wii/*.o
 arch/xcode/version.h
