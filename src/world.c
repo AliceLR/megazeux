@@ -1988,6 +1988,11 @@ static int save_world_zip(struct world *mzx_world, const char *file,
   struct board *cur_board;
   int i;
 
+#ifdef CONFIG_PSVITA
+  size_t zip_buffer_size = 2 * 1024 * 1024;  // 2MB
+  void *zip_buffer = NULL;
+#endif // CONFIG_PSVITA
+
   int meter_curr = 0;
   int meter_target = 2 + mzx_world->num_boards + mzx_world->temporary_board;
 
@@ -2031,7 +2036,12 @@ static int save_world_zip(struct world *mzx_world, const char *file,
     fputc(mzx_world->current_board_id, fp);
   }
 
+#ifdef CONFIG_PSVITA
+  zip_buffer = malloc(zip_buffer_size);
+  zp = zip_open_mem_write_ext(&zip_buffer, &zip_buffer_size, 0);
+#else // !CONFIG_PSVITA
   zp = zip_open_fp_write(fp);
+#endif // CONFIG_PSVITA
   if(!zp)
     goto err_close;
 
@@ -2082,7 +2092,15 @@ static int save_world_zip(struct world *mzx_world, const char *file,
 
   meter_restore_screen();
 
+#ifdef CONFIG_PSVITA
+  zip_close(zp, &zip_buffer_size);
+  fwrite(zip_buffer, zip_buffer_size, 1, fp);
+  fclose(fp);
+  free(zip_buffer);
+#else // !CONFIG_PSVITA
   zip_close(zp, NULL);
+#endif // CONFIG_PSVITA
+
   return 0;
 
 err_close:
@@ -2090,6 +2108,11 @@ err_close:
     zip_close(zp, NULL);
   else
     fclose(fp);
+
+#ifdef CONFIG_PSVITA
+  if(zip_buffer)
+    free(zip_buffer);
+#endif // CONFIG_PSVITA
 
 err:
   error_message(E_WORLD_IO_SAVING, 0, NULL);
