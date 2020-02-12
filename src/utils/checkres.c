@@ -2110,7 +2110,9 @@ static enum status parse_legacy_robot(struct memfile *mf,
   if(mfseek(mf, 41 - 2, SEEK_CUR) != 0)
     return FSEEK_FAILED;
 
-  if(program_size)
+  // VER1TO2 worlds (e.g. Forest, Catacombs) sometimes have invalid programs
+  // of size 2. It's safe to just ignore anything of size 2 or less.
+  if(program_size > 2)
   {
     mfopen(mf->current, program_size, &prog);
 
