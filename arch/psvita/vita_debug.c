@@ -36,8 +36,6 @@ void vitadebug_close(void)
 void vitadebug_init(void)
 {
   char clean_path[MAX_PATH];
-  char dest_path[MAX_PATH];
-
   clean_path_slashes(CONFDIR, clean_path, MAX_PATH);
 
   // This will drop the files into the MZX root path (ux0:data/MegaZeux/)
