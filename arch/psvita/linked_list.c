@@ -21,9 +21,11 @@
 
 #include "linked_list.h"
 
-void init_list(list *list)
+static void init_list(list *list)
 {
-  list_node *new_node = malloc(sizeof(list_node));
+  list_node *new_node;
+
+  new_node = malloc(sizeof(list_node));
   new_node->data = NULL;
   new_node->next = new_node->prev = NULL;
   list->head = list->tail = list->current = new_node;
@@ -132,6 +134,8 @@ void *list_get_prev(list *list)
 
 void *list_insert_after_current(list *list)
 {
+  list_node *new_node;
+
   list->count++;
   if(list_is_empty(list))
   {
@@ -139,7 +143,7 @@ void *list_insert_after_current(list *list)
     return list->current->data;
   }
 
-  list_node *new_node = malloc(sizeof(list_node));
+  new_node = malloc(sizeof(list_node));
   new_node->data = NULL;
 
   new_node->prev = list->current;
@@ -162,6 +166,8 @@ void *list_insert_after_current(list *list)
 
 void *list_insert_before_current(list *list)
 {
+  list_node *new_node;
+
   list->count++;
   if(list_is_empty(list))
   {
@@ -169,7 +175,7 @@ void *list_insert_before_current(list *list)
     return list->current->data;
   }
 
-  list_node *new_node = malloc(sizeof(list_node));
+  new_node = malloc(sizeof(list_node));
   new_node->data = NULL;
 
   new_node->next = list->current;
@@ -191,6 +197,8 @@ void *list_insert_before_current(list *list)
 
 void *list_insert_first(list *list)
 {
+  list_node *new_node;
+
   list->count++;
   if(list_is_empty(list))
   {
@@ -198,7 +206,7 @@ void *list_insert_first(list *list)
     return list->current->data;
   }
 
-  list_node *new_node = malloc(sizeof(list_node));
+  new_node = malloc(sizeof(list_node));
   new_node->data = NULL;
 
   new_node->next = list->head;
@@ -211,6 +219,8 @@ void *list_insert_first(list *list)
 
 void *list_insert_last(list *list)
 {
+  list_node *new_node;
+
   list->count++;
   if(list_is_empty(list))
   {
@@ -218,7 +228,7 @@ void *list_insert_last(list *list)
     return list->current->data;
   }
 
-  list_node *new_node = malloc(sizeof(list_node));
+  new_node = malloc(sizeof(list_node));
   new_node->data = NULL;
 
   new_node->prev = list->tail;

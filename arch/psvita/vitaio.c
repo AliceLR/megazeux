@@ -36,14 +36,14 @@ static char* get_absolute_path(const char* path)
   static char full_path[FULL_MAX_PATH] = "";
 
   full_path[0] = '\0';
-  strncpy(full_path, root, FULL_MAX_PATH);
-  strncat(full_path, path, FULL_MAX_PATH);
+  strncpy(full_path, root, MAX_PATH);
+  strncat(full_path, path, MAX_PATH);
   return full_path;
 }
 
 static char* resolve_virtual_path(const char* path)
 {
-  static char result[MAX_PATH];
+  static char result[FULL_MAX_PATH];
   char *component, *data;
   size_t len;
 

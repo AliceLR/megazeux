@@ -25,7 +25,6 @@
 
 #include <SDL.h>
 
-
 CORE_LIBSPEC Uint32 sdl_window_id;
 
 int sdl_flags(int depth, boolean fullscreen, boolean fullscreen_windowed,
