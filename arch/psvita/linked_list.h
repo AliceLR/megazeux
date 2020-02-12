@@ -51,15 +51,15 @@ typedef struct list
 
 boolean list_delete_current(list *list);
 void list_clear(list *list);
-void* list_get_first(list *list);
-void* list_get_last(list *list);
-list_node* list_get_last_node(list *list);
-void* list_get_next(list *list);
-void* list_get_prev(list *list);
-void* list_insert_after_current(list *list);
-void* list_insert_before_current(list *list);
-void* list_insert_first(list *list);
-void* list_insert_last(list *list);
+void *list_get_first(list *list);
+void *list_get_last(list *list);
+list_node *list_get_last_node(list *list);
+void *list_get_next(list *list);
+void *list_get_prev(list *list);
+void *list_insert_after_current(list *list);
+void *list_insert_before_current(list *list);
+void *list_insert_first(list *list);
+void *list_insert_last(list *list);
 boolean list_is_at_end(list *list);
 boolean list_is_at_start(list *list);
 boolean list_is_empty(list *list);
