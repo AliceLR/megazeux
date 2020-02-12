@@ -27,13 +27,13 @@
 FILE *vitaout = NULL;
 FILE *vitaerr = NULL;
 
-void vitadebug_close()
+void vitadebug_close(void)
 {
   if(vitaout != NULL) fclose(vitaout);
   if(vitaerr != NULL) fclose(vitaerr);
 }
 
-void vitadebug_init()
+void vitadebug_init(void)
 {
   char clean_path[MAX_PATH];
   char dest_path[MAX_PATH];

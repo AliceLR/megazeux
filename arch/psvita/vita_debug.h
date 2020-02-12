@@ -22,8 +22,8 @@
 
 #include <stdio.h>
 
-void vitadebug_close();
-void vitadebug_init();
+void vitadebug_close(void);
+void vitadebug_init(void);
 
 #ifdef DEBUG
 void info(const char *format, ...);

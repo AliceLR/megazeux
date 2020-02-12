@@ -21,7 +21,7 @@
 
 #include "linked_list.h"
 
-void init_list(list* list)
+void init_list(list *list)
 {
   list_node *new_node = malloc(sizeof(list_node));
   new_node->data = NULL;
@@ -82,7 +82,7 @@ boolean list_delete_current(list *list)
   return true;
 }
 
-void* list_get_first(list *list)
+void *list_get_first(list *list)
 {
   if(list->head == NULL)
     return NULL;
@@ -91,7 +91,7 @@ void* list_get_first(list *list)
   return list->current->data;
 }
 
-void* list_get_last(list *list)
+void *list_get_last(list *list)
 {
   if(list->tail == NULL)
     return NULL;
@@ -100,7 +100,7 @@ void* list_get_last(list *list)
   return list->current->data;
 }
 
-list_node* list_get_last_node(list *list)
+list_node *list_get_last_node(list *list)
 {
   if(list->tail == NULL)
     return NULL;
@@ -108,7 +108,7 @@ list_node* list_get_last_node(list *list)
   return list->tail;
 }
 
-void* list_get_next(list *list)
+void *list_get_next(list *list)
 {
   /* If the current entry is NULL, set this to a valid value. */
   if(list->current == NULL)
@@ -121,7 +121,7 @@ void* list_get_next(list *list)
   return list->current->data;
 }
 
-void* list_get_prev(list *list)
+void *list_get_prev(list *list)
 {
   if(list->current->prev == NULL)
     return NULL;
@@ -130,7 +130,7 @@ void* list_get_prev(list *list)
   return list->current->data;
 }
 
-void* list_insert_after_current(list *list)
+void *list_insert_after_current(list *list)
 {
   list->count++;
   if(list_is_empty(list))
@@ -160,7 +160,7 @@ void* list_insert_after_current(list *list)
   return new_node->data;
 }
 
-void* list_insert_before_current(list *list)
+void *list_insert_before_current(list *list)
 {
   list->count++;
   if(list_is_empty(list))
@@ -189,7 +189,7 @@ void* list_insert_before_current(list *list)
   return new_node->data;
 }
 
-void* list_insert_first(list *list)
+void *list_insert_first(list *list)
 {
   list->count++;
   if(list_is_empty(list))
@@ -209,7 +209,7 @@ void* list_insert_first(list *list)
   return new_node->data;
 }
 
-void* list_insert_last(list *list)
+void *list_insert_last(list *list)
 {
   list->count++;
   if(list_is_empty(list))
