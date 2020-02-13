@@ -175,6 +175,11 @@ ifeq (${BUILD_PSP},1)
 core_cobjs += arch/psp/platform.o
 endif
 
+ifeq (${BUILD_PSVITA},1)
+core_cobjs += arch/psvita/linked_list.o arch/psvita/vita_debug.o
+core_cobjs += arch/psvita/vitaio.o
+endif
+
 #
 # Other modular stuff
 #

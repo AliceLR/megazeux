@@ -20,9 +20,9 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#include "compat.h"
-#include "config.h"
-#include "util.h"
+#include "../../src/compat.h"
+#include "../../src/config.h"
+#include "../../src/util.h"
 
 FILE *vitaout = NULL;
 FILE *vitaerr = NULL;

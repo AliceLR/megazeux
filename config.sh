@@ -35,6 +35,7 @@ usage() {
 	echo "  android        Experimental Android port"
 	echo "  pandora        Experimental Pandora port"
 	echo "  emscripten     Experimental HTML5 (Emscripten) port"
+	echo "  psvita         Experimental PS Vita port"
 	echo
 	echo "Supported <option> values (negatives can be used):"
 	echo
@@ -562,6 +563,12 @@ elif [ "$PLATFORM" = "emscripten" ]; then
 	BINDIR=/data
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h
 	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
+elif [ "$PLATFORM" = "psvita" ]; then
+	SHAREDIR="ux0:/data/MegaZeux"
+	GAMESDIR=$SHAREDIR
+	echo "#define CONFFILE \"config.txt\""      >> src/config.h
+	echo "#define SHAREDIR \"$SHAREDIR\""       >> src/config.h
+	echo "#include \"../arch/psvita/vitaio.h\"" >> src/config.h
 else
 	SHAREDIR=.
 	GAMESDIR=.
@@ -751,6 +758,19 @@ if [ "$PLATFORM" = "gp2x" ]; then
 fi
 
 #
+# If the PS Vita arch is enabled, some code has to be compile time
+# enabled too.
+#
+if [ "$PLATFORM" = "psvita" ]; then
+	echo "Enabling PS Vita-specific hacks."
+	echo "#define CONFIG_PSVITA" >> src/config.h
+	echo "BUILD_PSVITA=1" >> platform.inc
+
+	echo "Disabling utils on PS Vita (silly)."
+	UTILS="false"
+fi
+
+#
 # Force-disable OpenGL and overlay renderers on PSP, GP2X, 3DS, NDS and Wii
 #
 if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" \
@@ -837,7 +857,8 @@ fi
 if [ "$PLATFORM" = "gp2x" -o "$PLATFORM" = "nds" \
   -o "$PLATFORM" = "3ds"  -o "$PLATFORM" = "switch" \
   -o "$PLATFORM" = "android" -o "$PLATFORM" = "emscripten" \
-  -o "$PLATFORM" = "psp"  -o "$PLATFORM" = "wii" ]; then
+  -o "$PLATFORM" = "psp"  -o "$PLATFORM" = "wii" \
+  -o "$PLATFORM" = "psvita" ]; then
 	echo "Force-disabling modular build (nonsensical or unsupported)."
 	MODULAR="false"
 fi

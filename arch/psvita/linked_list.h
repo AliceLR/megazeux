@@ -22,7 +22,7 @@
 
 #include <inttypes.h>
 
-#include "compat.h"
+#include "../../src/compat.h"
 
 #define LIST_ITERATE(v, l) for(v = list_get_first(l); \
                                v != NULL; \
