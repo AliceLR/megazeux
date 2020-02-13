@@ -169,6 +169,7 @@ enum status
   MALLOC_FAILED,
   PROTECTED_WORLD,
   MAGIC_CHECK_FAILED,
+  MZX_100_NOT_SUPPORTED,
   DIRENT_FAILED,
   ZIP_FAILED,
   NO_WORLD,
@@ -214,6 +215,8 @@ static const char *decode_status(enum status status)
       return "Protected worlds currently unsupported.";
     case MAGIC_CHECK_FAILED:
       return "File magic not consistent with 2.00 world or board.";
+    case MZX_100_NOT_SUPPORTED:
+      return "Worlds from MegaZeux 1.xx are not supported by this utility.";
     case DIRENT_FAILED:
       return "Failed to read a required directory.";
     case ZIP_FAILED:
@@ -2706,6 +2709,9 @@ static enum status parse_world_file(struct memfile *mf, struct base_file *file)
   file_version = _world_magic(magic);
   if(file_version <= 0)
     return MAGIC_CHECK_FAILED;
+
+  if(file_version < V200)
+    return MZX_100_NOT_SUPPORTED;
 
   file->world_version = file_version;
 
