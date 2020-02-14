@@ -3,6 +3,5 @@
 [[ -z $VITASDK ]] && { echo "\$VITASDK is unset. Aborting"; exit 1; }
 
 ./config.sh --platform psvita --prefix $VITASDK --optimize-size \
-            --disable-editor --disable-helpsys --disable-utils \
-            --enable-release --enable-meter --disable-gl \
-            --disable-libpng -- "$@"
+            --disable-helpsys --disable-utils --enable-release \
+            --enable-meter --disable-gl --disable-libpng -- "$@"
