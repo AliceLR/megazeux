@@ -1098,6 +1098,9 @@ static boolean process_event(SDL_Event *event)
       if(SDL_PeepEvents(event, 1, SDL_GETEVENT, SDL_TEXTINPUT, SDL_TEXTINPUT))
         unicode = event->text.text[0] | event->text.text[1] << 8;
 #elif defined(CONFIG_PSVITA)
+      // The Vita's SDL port doesn't seem to support Unicode keyboard events.
+      // Use the keysym/Unicode code (originally in the 3DS port) to convert
+      // the keysym to a Unicode character so we can use it.
       unicode = convert_internal_unicode(event->key.keysym.sym);
 #else
       unicode = event->key.keysym.unicode;
