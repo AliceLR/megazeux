@@ -177,51 +177,6 @@ void ctr_keyboard_draw(struct ctr_render_data *render_data)
   }
 }
 
-static enum keycode convert_internal_unicode(enum keycode key)
-{
-  if(key >= 32 && key <= 126)
-  {
-    if(get_shift_status(keycode_internal))
-    {
-      if((key >= IKEY_a) && (key <= IKEY_z))
-        return (key - 32);
-
-      // TODO based on a US keyboard right now since that's as good as any
-      // default and possibly what most users are going to expect. It would
-      // be nice to have more locales at some point if someone requests them.
-      switch(key)
-      {
-        case IKEY_BACKQUOTE:    return '~';
-        case IKEY_1:            return '!';
-        case IKEY_2:            return '@';
-        case IKEY_3:            return '#';
-        case IKEY_4:            return '$';
-        case IKEY_5:            return '%';
-        case IKEY_6:            return '^';
-        case IKEY_7:            return '&';
-        case IKEY_8:            return '*';
-        case IKEY_9:            return '(';
-        case IKEY_0:            return ')';
-        case IKEY_MINUS:        return '_';
-        case IKEY_EQUALS:       return '+';
-        case IKEY_LEFTBRACKET:  return '{';
-        case IKEY_RIGHTBRACKET: return '}';
-        case IKEY_BACKSLASH:    return '|';
-        case IKEY_SEMICOLON:    return ':';
-        case IKEY_QUOTE:        return '"';
-        case IKEY_COMMA:        return '<';
-        case IKEY_PERIOD:       return '>';
-        case IKEY_SLASH:        return '?';
-        default:                return IKEY_UNKNOWN;
-      }
-    }
-
-    return key;
-  }
-
-  return IKEY_UNKNOWN;
-}
-
 boolean ctr_keyboard_update(struct buffered_status *status)
 {
   touchPosition pos;

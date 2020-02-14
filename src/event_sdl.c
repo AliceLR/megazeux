@@ -1087,7 +1087,7 @@ static boolean process_event(SDL_Event *event)
         ckey = IKEY_UNICODE;
       }
 
-#if SDL_VERSION_ATLEAST(2,0,0)
+#if SDL_VERSION_ATLEAST(2,0,0) && !defined(CONFIG_PSVITA)
       // SDL 2.0 sends the raw key and translated 'text' as separate events.
       // There is no longer a UNICODE mode that sends both at once.
       // Because of the way the SDL 1.2 assumption is embedded deeply in
@@ -1097,6 +1097,8 @@ static boolean process_event(SDL_Event *event)
 
       if(SDL_PeepEvents(event, 1, SDL_GETEVENT, SDL_TEXTINPUT, SDL_TEXTINPUT))
         unicode = event->text.text[0] | event->text.text[1] << 8;
+#elif defined(CONFIG_PSVITA)
+      unicode = convert_internal_unicode(event->key.keysym.sym);
 #else
       unicode = event->key.keysym.unicode;
 #endif
