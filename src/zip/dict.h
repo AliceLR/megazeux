@@ -42,7 +42,7 @@ static inline void sliding_dictionary_copy(uint8_t *start, uint8_t **_pos,
   if(copy_offset < 0)
   {
     // Treat bytes at negative offsets as having value 0...
-    uint32_t fill_amount = MIN(-copy_offset, length);
+    uint32_t fill_amount = MIN((uint32_t)(-copy_offset), length);
 
     for(i = 0; i < fill_amount; i++)
       pos[i] = 0;

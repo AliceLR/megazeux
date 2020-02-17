@@ -90,7 +90,7 @@ struct zip_stream_spec
 };
 
 #define MAX_SUPPORTED_METHOD ZIP_M_DEFLATE64
-struct zip_stream_spec *zip_stream_specs[MAX_SUPPORTED_METHOD + 1];
+extern struct zip_stream_spec *zip_stream_specs[MAX_SUPPORTED_METHOD + 1];
 
 __M_END_DECLS
 

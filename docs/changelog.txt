@@ -35,6 +35,8 @@ USERS
 + Added error to checkres for 1.xx worlds.
 + Fix checkres errors when encountering VER1TO2 empty robots.
 + ZIP support now ignores __MACOSX/, .DS_Store, and Thumbs.db.
++ Added decompression support for various legacy ZIP compression
+  methods.
 - Removed the options "overlay1" and "overlay2" from the list of
   selectable renderer options except when SDL 1.2 is enabled.
 
