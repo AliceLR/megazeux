@@ -49,21 +49,11 @@ struct bitstream
   size_t input_left;
 };
 
-/*
-static inline void bs_print(struct bitstream *b)
-{
-  fprintf(stdout, "Buffer: %16.16" PRIx64 " (%u bits) \n", b->buf, b->buf_left);
-  fflush(stdout);
-}
-*/
-
 static inline boolean bs_fill(struct bitstream *b)
 {
   if(b->input_left)
   {
-    // FIXME do more testing to see if these hacks are worth it
-#if 0 //PLATFORM_BYTE_ORDER == PLATFORM_LIL_ENDIAN
-    // yolo
+#if PLATFORM_BYTE_ORDER == PLATFORM_LIL_ENDIAN
     size_t align = (size_t)b->input & 7;
 
 #if ARCHITECTURE_BITS >= 64
@@ -105,7 +95,6 @@ static inline boolean bs_fill(struct bitstream *b)
     if(!b->input_left)
       b->input = NULL;
 
-    //bs_print(b);
     return true;
   }
   return false;
