@@ -34,6 +34,9 @@
 #include "util.h"
 #include "zip.h"
 
+// TODO maybe just the header instead :(
+#include "zip/zip_stream.c"
+
 #define ZIP_VERSION 20
 #define ZIP_VERSION_MINIMUM 20
 
@@ -53,16 +56,6 @@
 #endif
 
 #define ZIP_DEFAULT_NUM_FILES 4
-
-#define ZIP_S_READ_UNINITIALIZED 0
-#define ZIP_S_READ_FILES 1
-#define ZIP_S_READ_STREAM 2
-#define ZIP_S_READ_MEMSTREAM 3
-#define ZIP_S_WRITE_UNINITIALIZED 8
-#define ZIP_S_WRITE_FILES 9
-#define ZIP_S_WRITE_STREAM 10
-#define ZIP_S_WRITE_MEMSTREAM 11
-#define ZIP_S_ERROR 99
 
 #define LOCAL_FILE_HEADER_LEN 30
 #define CENTRAL_FILE_HEADER_LEN 46
@@ -155,7 +148,7 @@ static const char *zip_error_string(enum zip_error code)
     case ZIP_NOT_MEMORY_ARCHIVE:
       return "archive isn't a memory archive";
     case ZIP_NO_EOCD:
-      return "could not find EOCD record";
+      return "file is not a zip archive";
     case ZIP_NO_CENTRAL_DIRECTORY:
       return "could not find or read central directory";
     case ZIP_INCOMPLETE_CENTRAL_DIRECTORY:
@@ -164,22 +157,32 @@ static const char *zip_error_string(enum zip_error code)
       return "unsupported multiple volume archive";
     case ZIP_UNSUPPORTED_FLAGS:
       return "unsupported flags";
+    case ZIP_UNSUPPORTED_DECOMPRESSION:
+      return "unsupported method for decompression";
     case ZIP_UNSUPPORTED_COMPRESSION:
       return "unsupported method; use DEFLATE or none";
     case ZIP_UNSUPPORTED_ZIP64:
       return "unsupported ZIP64 data";
-    case ZIP_UNSUPPORTED_DEFLATE_STREAM:
-      return "DEFLATE: can only stream whole file";
+    case ZIP_UNSUPPORTED_DECOMPRESSION_STREAM:
+      return "method does not support partial decompression";
+    case ZIP_UNSUPPORTED_COMPRESSION_STREAM:
+      return "method does not support partial compression";
+    case ZIP_UNSUPPORTED_METHOD_MEMORY_STREAM:
+      return "can not open compressed files for direct memory read/write";
     case ZIP_MISSING_LOCAL_HEADER:
       return "could not find file header";
     case ZIP_HEADER_MISMATCH:
       return "local header mismatch";
     case ZIP_CRC32_MISMATCH:
       return "CRC-32 mismatch; validation failed";
-    case ZIP_INFLATE_FAILED:
+    case ZIP_DECOMPRESS_FAILED:
       return "decompression failed";
-    case ZIP_DEFLATE_FAILED:
+    case ZIP_COMPRESS_FAILED:
       return "compression failed";
+    case ZIP_INPUT_EMPTY:
+      return "stream input buffer exhausted";
+    case ZIP_OUTPUT_FULL:
+      return "stream output buffer full";
   }
   warn("zip_error_string: received unknown error code %d!\n", code);
   return "UNKNOWN ERROR";
@@ -216,102 +219,87 @@ static inline boolean zip_is_ignore_file(const char *filename, size_t len)
 }
 
 /**
- * Wrappers for zlib functions.
+ * Return true if a method is supported for decompression.
  */
-
-static inline uint32_t zip_crc32(uint32_t crc, const void *src, uint32_t srcLen)
+static boolean zip_method_is_supported(uint8_t method)
 {
-  return crc32(crc, (Bytef *) src, (uLong) srcLen);
-}
+  if(method > ZIP_M_NONE && method <= MAX_SUPPORTED_METHOD)
+    return !!zip_stream_specs[method];
 
-static int zip_uncompress(char *dest, uint32_t *destLen, const char *src,
- uint32_t *srcLen)
-{
-  z_stream stream;
-  int err;
-
-  // Following uncompr.c from zlib pretty closely here...
-  memset(&stream, 0, sizeof(z_stream));
-  stream.next_in = (Bytef *) src;
-  stream.avail_in = (uInt) *srcLen;
-
-  /* The reason we can't just use uncompress() is because there's no way
-   * to assign the number of window bits with it, and uncompress() expects
-   * them to exist. We're just inflating raw DEFLATE data, so we set them
-   * to -MAX_WBITS.
-   */
-
-  inflateInit2(&stream, -MAX_WBITS);
-
-  stream.next_out = (Bytef *) dest;
-  stream.avail_out = (uInt) *destLen;
-
-  err = inflate(&stream, Z_FINISH);
-
-  *srcLen = (int) stream.total_in;
-  *destLen = (int) stream.total_out;
-
-  inflateEnd(&stream);
-
-  return err;
-}
-
-static int zip_compress(char **dest, uint32_t *destLen, const char *src,
- uint32_t *srcLen)
-{
-  z_stream stream;
-  int _destLen;
-  int err;
-
-  memset(&stream, 0, sizeof(z_stream));
-
-  /* The reason we can't just use compress() is because there's no way
-   * to assign the number of window bits with it, and compress() expects
-   * them to exist. We're just deflating to raw DEFLATE data, so we set
-   * them to -MAX_WBITS.
-   */
-
-  // Note: aside from the windowbits, these are all defaults
-  deflateInit2(&stream, Z_DEFAULT_COMPRESSION, Z_DEFLATED, -MAX_WBITS,
-   8, Z_DEFAULT_STRATEGY);
-
-  stream.next_in = (Bytef *) src;
-  stream.avail_in = (uInt) *srcLen;
-
-  _destLen = deflateBound(&stream, (uLong) *srcLen);
-
-  *dest = cmalloc(_destLen);
-
-  stream.next_out = (Bytef *) *dest;
-  stream.avail_out = (uInt) _destLen;
-
-  err = deflate(&stream, Z_FINISH);
-
-  *srcLen = (int) stream.total_in;
-  *destLen = (int) stream.total_out;
-
-  deflateEnd(&stream);
-
-  return err;
+  return (method == ZIP_M_NONE);
 }
 
 /**
- * Calculate an upper bound for the total compressed size of a memory block.
+ * Set a zip archive's zip stream functions for a given method, or to NULL
+ * if the specified method isn't supported.
  */
-int zip_bound_data_usage(char *src, int srcLen)
+static enum zip_error zip_get_stream(struct zip_archive *zp, uint8_t method,
+ enum zip_internal_state new_mode)
+{
+  zp->stream = NULL;
+
+  if(method == ZIP_M_NONE)
+  {
+    // Special handling for store.
+    return ZIP_SUCCESS;
+  }
+
+  if(method <= MAX_SUPPORTED_METHOD)
+  {
+    struct zip_stream_spec *result = zip_stream_specs[method];
+
+    switch(new_mode)
+    {
+      // These should never reach here!
+      case ZIP_S_READ_UNINITIALIZED:
+      case ZIP_S_READ_FILES:
+      case ZIP_S_READ_MEMSTREAM:
+      case ZIP_S_WRITE_UNINITIALIZED:
+      case ZIP_S_WRITE_FILES:
+      case ZIP_S_WRITE_MEMSTREAM:
+      case ZIP_S_ERROR:
+        return -1;
+
+      case ZIP_S_READ_STREAM:
+      {
+        if(result && result->decompress_open)
+        {
+          zp->stream = result;
+          return ZIP_SUCCESS;
+        }
+        return ZIP_UNSUPPORTED_DECOMPRESSION;
+      }
+
+      case ZIP_S_WRITE_STREAM:
+      {
+        if(result && result->compress_open)
+        {
+          zp->stream = result;
+          return ZIP_SUCCESS;
+        }
+        return ZIP_UNSUPPORTED_COMPRESSION;
+      }
+    }
+  }
+  return -1;
+}
+
+/**
+ * Calculate an upper bound for the total compressed size of a memory block
+ * of a given length with deflate.
+ */
+int zip_bound_deflate_usage(size_t length)
 {
   z_stream stream;
   int bound;
 
   memset(&stream, 0, sizeof(z_stream));
-  stream.next_in = (Bytef *) src;
-  stream.avail_in = (uInt) srcLen;
 
   // Note: aside from the windowbits, these are all defaults
   deflateInit2(&stream, Z_DEFAULT_COMPRESSION, Z_DEFLATED, -MAX_WBITS,
    8, Z_DEFAULT_STRATEGY);
 
-  bound = deflateBound(&stream, (uLong) srcLen);
+  bound = deflateBound(&stream, length);
 
   deflateEnd(&stream);
 
@@ -490,7 +478,7 @@ static enum zip_error zip_read_central_file_header(struct zip_archive *zp,
 
   flags = mfgetw(&mf);
 
-  if((flags & ~ZIP_F_ALLOWED) != 0)
+  if((flags & ~(ZIP_F_ALLOWED | ZIP_F_UNUSED)) != 0)
   {
     warn(
       "Zip using unsupported options "
@@ -510,8 +498,8 @@ static enum zip_error zip_read_central_file_header(struct zip_archive *zp,
   if(method < 0)
     return ZIP_READ_ERROR;
 
-  if(method != ZIP_M_NONE && method != ZIP_M_DEFLATE)
-    return ZIP_UNSUPPORTED_COMPRESSION;
+  if(!zip_method_is_supported(method))
+    return ZIP_UNSUPPORTED_DECOMPRESSION;
 
   central_fh->method = method;
 
@@ -656,7 +644,8 @@ static enum zip_error zip_verify_local_file_header(struct zip_archive *zp,
   }
 
   // Verify values are correct.
-  if(crc32 != central_fh->crc32 ||
+  if((flags & ~ZIP_F_UNUSED) != (central_fh->flags & ~ZIP_F_UNUSED) ||
+   crc32 != central_fh->crc32 ||
    compressed_size != central_fh->compressed_size ||
    uncompressed_size != central_fh->uncompressed_size)
     return ZIP_HEADER_MISMATCH;
@@ -783,7 +772,7 @@ enum zip_error zread(void *destBuf, size_t readLen, struct zip_archive *zp)
   struct zip_file_header *fh;
   char *src;
 
-  uint32_t consumed;
+  size_t consumed = 0;
 
   enum zip_error result;
 
@@ -791,22 +780,16 @@ enum zip_error zread(void *destBuf, size_t readLen, struct zip_archive *zp)
   if(result)
     goto err_out;
 
-  if(!readLen) return ZIP_SUCCESS;
+  if(!readLen)
+    return ZIP_SUCCESS;
 
   fh = zp->streaming_file;
 
   // No compression
-  if(!fh || fh->method == ZIP_M_NONE)
+  if(fh->method == ZIP_M_NONE)
   {
-    if(fh)
-    {
-      // Can't read past the length of the file
-      consumed = MIN(readLen, zp->stream_left);
-    }
-    else
-    {
-      consumed = readLen;
-    }
+    // Can't read past the length of the file
+    consumed = MIN(readLen, zp->stream_left);
 
     if(!vfread(destBuf, consumed, 1, zp->vf))
     {
@@ -816,15 +799,16 @@ enum zip_error zread(void *destBuf, size_t readLen, struct zip_archive *zp)
   }
   else
 
-  // DEFLATE compression
-  if(fh->method == ZIP_M_DEFLATE)
+  // Decompression via stream
+  if(zp->stream)
   {
-    uint32_t u_size = fh ? fh->uncompressed_size : 0;
-    uint32_t c_size = fh ? fh->compressed_size : 0;
+    struct zip_stream *stream_data = &(zp->stream_data);
+    uint32_t u_size = fh->uncompressed_size;
+    uint32_t c_size = fh->compressed_size;
 
-    if(!fh || readLen != u_size)
+    if(readLen != u_size)
     {
-      result = ZIP_UNSUPPORTED_DEFLATE_STREAM;
+      result = ZIP_UNSUPPORTED_DECOMPRESSION_STREAM;
       goto err_out;
     }
 
@@ -836,12 +820,17 @@ enum zip_error zread(void *destBuf, size_t readLen, struct zip_archive *zp)
       goto err_free_src;
     }
 
-    consumed = c_size;
-    result = zip_uncompress(destBuf, &u_size, src, &consumed);
+    zp->stream->input(stream_data, src, c_size);
+    zp->stream->output(stream_data, destBuf, u_size);
 
-    if(result != Z_STREAM_END || readLen != u_size || consumed != c_size)
+    result = zp->stream->decompress_file(stream_data);
+
+    zp->stream->close(stream_data, &consumed, &readLen);
+    zp->stream = NULL;
+
+    if(result != ZIP_SUCCESS || readLen != u_size || consumed != c_size)
     {
-      result = ZIP_INFLATE_FAILED;
+      result = ZIP_DECOMPRESS_FAILED;
       goto err_free_src;
     }
     free(src);
@@ -850,14 +839,14 @@ enum zip_error zread(void *destBuf, size_t readLen, struct zip_archive *zp)
   // This shouldn't have made it this far...
   else
   {
-    result = ZIP_UNSUPPORTED_COMPRESSION;
+    result = ZIP_UNSUPPORTED_DECOMPRESSION;
     goto err_out;
   }
 
   // Update the crc32 and streamed amount
   if(fh)
   {
-    zp->stream_crc32 = zip_crc32(zp->stream_crc32, destBuf, readLen);
+    zp->stream_crc32 = crc32(zp->stream_crc32, destBuf, readLen);
     zp->stream_left -= consumed;
   }
 
@@ -1033,13 +1022,15 @@ static enum zip_error zip_read_stream_open(struct zip_archive *zp, uint8_t mode)
     if(!zp->is_memory)
       return ZIP_NOT_MEMORY_ARCHIVE;
 
-    if(method == ZIP_M_DEFLATE)
-      return ZIP_UNSUPPORTED_DEFLATE_STREAM;
+    if(method != ZIP_M_NONE)
+      return ZIP_UNSUPPORTED_METHOD_MEMORY_STREAM;
   }
 
-  // Check for unsupported methods
-  if(method != ZIP_M_NONE && method != ZIP_M_DEFLATE)
-    return ZIP_UNSUPPORTED_COMPRESSION;
+  // Attempt to get stream functions for this compression method. This will
+  // return an error if the method is not supported for decompression.
+  result = zip_get_stream(zp, method, mode);
+  if(result)
+    return result;
 
   // Seek to the start of the record
   read_pos = vftell(zp->vf);
@@ -1059,6 +1050,9 @@ static enum zip_error zip_read_stream_open(struct zip_archive *zp, uint8_t mode)
   zp->streaming_file = central_fh;
   zp->stream_left = c_size;
   zp->stream_crc32 = 0;
+
+  if(zp->stream)
+    zp->stream->decompress_open(&(zp->stream_data), method, central_fh->flags);
 
   precalculate_read_errors(zp);
   return ZIP_SUCCESS;
@@ -1092,9 +1086,9 @@ err_out:
  * Like zip_read_open_file_stream, but allows the direct reading of
  * uncompressed files. This is abusable, but quicker than the alternatives.
  *
- * ZIP_NOT_MEMORY_ARCHIVE or ZIP_UNSUPPORTED_DEFLATE_STREAM will be silently
- * returned if the current archive or file doesn't support this; use regular
- * functions instead in this case.
+ * ZIP_NOT_MEMORY_ARCHIVE or ZIP_UNSUPPORTED_METHOD_MEMORY_STREAM will be
+ * silently returned if the current archive or file doesn't support this; use
+ * regular functions instead in this case.
  */
 enum zip_error zip_read_open_mem_stream(struct zip_archive *zp,
  struct memfile *mf)
@@ -1110,7 +1104,7 @@ enum zip_error zip_read_open_mem_stream(struct zip_archive *zp,
 err_out:
   if(result != ZIP_EOF &&
    result != ZIP_NOT_MEMORY_ARCHIVE &&
-   result != ZIP_UNSUPPORTED_DEFLATE_STREAM)
+   result != ZIP_UNSUPPORTED_METHOD_MEMORY_STREAM)
     zip_error("zip_read_open_mem_stream", result);
   mfopen(NULL, 0, mf);
   return result;
@@ -1124,7 +1118,7 @@ enum zip_error zip_read_close_stream(struct zip_archive *zp)
   uint32_t expected_crc32;
   uint32_t stream_crc32;
   uint32_t stream_left;
-  char buffer[128];
+  uint8_t buffer[128];
   int size;
 
   enum zip_error result;
@@ -1137,7 +1131,7 @@ enum zip_error zip_read_close_stream(struct zip_archive *zp)
 
     zp->read_stream_error = ZIP_SUCCESS;
     zp->stream_left = 0;
-    zp->stream_crc32 = zip_crc32(0, mf->current, c_size);
+    zp->stream_crc32 = crc32(0, mf->current, c_size);
   }
 
   result = (zp ? zp->read_stream_error : ZIP_NULL);
@@ -1153,7 +1147,7 @@ enum zip_error zip_read_close_stream(struct zip_archive *zp)
   {
     size = MIN(128, stream_left);
     vfread(buffer, size, 1, zp->vf);
-    stream_crc32 = zip_crc32(stream_crc32, buffer, size);
+    stream_crc32 = crc32(stream_crc32, buffer, size);
     stream_left -= size;
   }
 
@@ -1327,8 +1321,8 @@ enum zip_error zwrite(const void *src, size_t srcLen, struct zip_archive *zp)
 {
   struct zip_file_header *fh;
   char *buffer = NULL;
-  uint32_t writeLen;
   uint16_t method = ZIP_M_NONE;
+  size_t writeLen;
 
   enum zip_error result;
 
@@ -1364,16 +1358,34 @@ enum zip_error zwrite(const void *src, size_t srcLen, struct zip_archive *zp)
   }
   else
 
-  // DEFLATE
-  // This might cause issues if the entire file isn't written in one go. Not sure.
-  if(method == ZIP_M_DEFLATE)
+  // Compression via stream (DEFLATE only)
+  if(method == ZIP_M_DEFLATE && zp->stream)
   {
-    uint32_t consumed = srcLen;
+    struct zip_stream *stream_data = &(zp->stream_data);
+    size_t estimated_size;
+    size_t consumed = 0;
 
-    result = zip_compress(&buffer, &writeLen, src, &consumed);
-    if(result != Z_STREAM_END)
+    // Currently must write the entire file in one go...
+    if(zp->stream_left > 0)
     {
-      result = ZIP_DEFLATE_FAILED;
+      result = ZIP_UNSUPPORTED_COMPRESSION_STREAM;
+      goto err_free;
+    }
+
+    estimated_size = zip_bound_deflate_usage(srcLen);
+    buffer = cmalloc(estimated_size);
+
+    zp->stream->input(stream_data, src, srcLen);
+    zp->stream->output(stream_data, buffer, estimated_size);
+
+    result = zp->stream->compress_file(stream_data);
+
+    zp->stream->close(stream_data, &consumed, &writeLen);
+    zp->stream = NULL;
+
+    if(result != ZIP_SUCCESS)
+    {
+      result = ZIP_COMPRESS_FAILED;
       goto err_free;
     }
 
@@ -1404,7 +1416,7 @@ enum zip_error zwrite(const void *src, size_t srcLen, struct zip_archive *zp)
   {
     // Update the stream
     fh->uncompressed_size += srcLen;
-    zp->stream_crc32 = zip_crc32(zp->stream_crc32, src, srcLen);
+    zp->stream_crc32 = crc32(zp->stream_crc32, src, srcLen);
     zp->stream_left += writeLen;
   }
 
@@ -1485,16 +1497,18 @@ static enum zip_error zip_write_open_stream(struct zip_archive *zp,
 
     // Sanity check (this shouldn't actually happen ever).
     if(method == ZIP_M_DEFLATE)
-      return ZIP_UNSUPPORTED_DEFLATE_STREAM;
+      return ZIP_UNSUPPORTED_METHOD_MEMORY_STREAM;
   }
 
   // memfiles: make sure there's enough space for the header
   if(zp->is_memory && zip_ensure_capacity(strlen(name) + 30, zp))
     return ZIP_EOF;
 
-  // Check to make sure this is a valid method.
-  if(method != ZIP_M_NONE && method != ZIP_M_DEFLATE)
-    return ZIP_UNSUPPORTED_COMPRESSION;
+  // Attempt to get stream functions for this compression method. This will
+  // return an error if the method is not supported for compression.
+  result = zip_get_stream(zp, method, mode);
+  if(result)
+    return result;
 
   fh = cmalloc(sizeof(struct zip_file_header));
   file_name_len = strlen(name);
@@ -1530,6 +1544,9 @@ static enum zip_error zip_write_open_stream(struct zip_archive *zp,
   zp->streaming_file = fh;
   zp->stream_left = 0;
   zp->stream_crc32 = 0;
+
+  if(zp->stream)
+    zp->stream->compress_open(&(zp->stream_data), method, 0);
 
   precalculate_write_errors(zp);
   return ZIP_SUCCESS;
@@ -1579,7 +1596,7 @@ enum zip_error zip_write_open_mem_stream(struct zip_archive *zp,
 
 err_out:
   if(result != ZIP_NOT_MEMORY_ARCHIVE &&
-   result != ZIP_UNSUPPORTED_DEFLATE_STREAM)
+   result != ZIP_UNSUPPORTED_METHOD_MEMORY_STREAM)
     zip_error("zip_write_open_file_stream", result);
   mfopen(NULL, 0, mf);
   return result;
@@ -1654,7 +1671,7 @@ enum zip_error zip_write_close_mem_stream(struct zip_archive *zp,
 
   // Compute some things that a regular stream would have here but are missing
   // from mem streams.
-  zp->stream_crc32 = zip_crc32(0, start, length);
+  zp->stream_crc32 = crc32(0, start, length);
   zp->stream_left = length;
   zp->streaming_file->uncompressed_size = length;
 

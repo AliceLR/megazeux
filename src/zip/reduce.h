@@ -1,0 +1,272 @@
+/* MegaZeux
+ *
+ * Copyright (C) 2020 Alice Rowan <petrifiedrowan@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+/**
+ * Reduce (zip compression methods 2-5) decompressor.
+ */
+
+#ifndef __ZIP_REDUCE_H
+#define __ZIP_REDUCE_H
+
+#include "../compat.h"
+
+__M_BEGIN_DECLS
+
+#include <assert.h>
+#include <inttypes.h>
+
+#include "bitstream.h"
+#include "dict.h"
+#include "zip_stream.h"
+
+#include "../util.h"
+
+struct reduce_stream
+{
+  struct zip_stream zs;
+  struct bitstream b;
+  uint8_t factor;
+};
+
+/**
+ * Open an expanding stream.
+ */
+static inline void reduce_ex_open(struct zip_stream *zs, uint16_t method,
+ uint16_t flags)
+{
+  struct reduce_stream *rs = ((struct reduce_stream *)zs);
+
+  assert(ZIP_STREAM_ALLOC_SIZE >= sizeof(struct reduce_stream));
+  memset(zs, 0, sizeof(struct reduce_stream));
+  rs->factor = CLAMP((method - 2), 0, 3);
+}
+
+/**
+ * Free an expanding stream. Currently, just do nothing...
+ */
+static inline void reduce_ex_close(struct zip_stream *zs,
+ size_t *final_input_length, size_t *final_output_length)
+{
+  if(final_input_length)
+    *final_input_length = zs->final_input_length;
+
+  if(final_output_length)
+    *final_output_length = zs->final_output_length;
+}
+
+/**
+ * Return the number of bits required to store an index for a follower set of
+ * a given length, or 0 if the follower set is of length 0.
+ */
+static inline uint8_t follower_set_bits_required(int length)
+{
+  int i;
+  if(length < 1)
+    return 0;
+
+  length--;
+  for(i = 1; i < 8; i++)
+    if(length < (1 << i))
+      return i;
+  return i;
+}
+
+#define REDUCE_DLE (144)
+#define REDUCE_BUFFER_SIZE (8192)
+#define SET(ch) (sets + (ch * 32))
+
+struct reduce_factor_masks
+{
+  uint8_t lower;
+  uint8_t upper;
+};
+
+static struct reduce_factor_masks reduce_masks[] =
+{
+  { 0x7F, 0x80 },
+  { 0x3F, 0xC0 },
+  { 0x1F, 0xE0 },
+  { 0x0F, 0xF0 }
+};
+
+/**
+ * Expand the entire input buffer into the output buffer as a complete file.
+ */
+static inline enum zip_error reduce_ex_file(struct zip_stream *zs)
+{
+  struct reduce_stream *rs = ((struct reduce_stream *)zs);
+  struct bitstream *b = &(rs->b);
+  uint8_t factor = rs->factor;
+  uint8_t n[256];
+  uint8_t *buffer = cmalloc((REDUCE_BUFFER_SIZE + 32 * 256) * sizeof(uint8_t));
+  uint8_t *sets = buffer + REDUCE_BUFFER_SIZE;
+  uint8_t *set;
+
+  uint8_t *start = zs->output_start;
+  uint8_t *pos = zs->output_pos;
+  uint8_t *end = zs->output_end;
+
+  uint32_t buffer_pos;
+  uint32_t buffer_stop;
+  uint32_t length = 0;
+  uint32_t distance = 0;
+  uint8_t last_character;
+  uint8_t state;
+  int value;
+  int i;
+  int j;
+
+  if(!zs->next_input || !zs->output_start || zs->finished)
+    return ZIP_EOF;
+
+  b->input = zs->next_input;
+  b->input_left = zs->next_input_length;
+  zs->final_input_length = zs->next_input_length;
+  zs->next_input = zs->output_start = zs->output_pos = zs->output_end = NULL;
+
+  // Read the follower sets from the input buffer.
+  for(i = 255; i >= 0; i--)
+  {
+    value = BS_READ(b, 6);
+    if(value < 0)
+      goto err_free;
+
+    n[i] = follower_set_bits_required(value);
+    set = SET(i);
+    for(j = 0; j < value; j++)
+      set[j] = BS_READ(b, 8);
+    for(j = value; j < 32; j++)
+      set[j] = 0;
+  }
+
+  last_character = 0;
+  state = 0;
+  while(pos < end)
+  {
+    // Stage 1: probabilistic decompression using follower sets.
+    buffer_pos = 0;
+    while(buffer_pos < REDUCE_BUFFER_SIZE)
+    {
+      if(!n[last_character])
+      {
+        value = BS_READ(b, 8);
+        if(value < 0)
+          break;
+
+        last_character = value;
+      }
+      else
+      {
+        value = BS_READ(b, 1);
+        if(value < 0)
+          break;
+
+        if(value)
+        {
+          value = BS_READ(b, 8);
+          if(value < 0)
+            goto err_free;
+
+          last_character = value;
+        }
+        else
+        {
+          value = BS_READ(b, n[last_character]);
+          if(value < 0 && value >= 32)
+            goto err_free;
+
+          last_character = SET(last_character)[value];
+        }
+      }
+      buffer[buffer_pos++] = last_character;
+    }
+
+    // Stage 2: expand intermediate buffer.
+    buffer_stop = buffer_pos;
+    buffer_pos = 0;
+    while(pos < end && buffer_pos < buffer_stop)
+    {
+      uint8_t ch = buffer[buffer_pos++];
+      switch(state)
+      {
+        case 0:
+        {
+          if(ch != REDUCE_DLE)
+          {
+            *(pos++) = ch;
+          }
+          else
+            state = 1;
+          break;
+        }
+
+        case 1:
+        {
+          if(ch)
+          {
+            struct reduce_factor_masks *mask = &(reduce_masks[factor]);
+
+            distance = (uint32_t)(ch & mask->upper) << (factor + 1);
+            length = (ch & mask->lower);
+            state = length == mask->lower ? 2 : 3;
+          }
+          else
+          {
+            *(pos++) = REDUCE_DLE;
+            state = 0;
+          }
+          break;
+        }
+
+        case 2:
+        {
+          length += ch;
+          state = 3;
+          break;
+        }
+
+        case 3:
+        {
+          distance += ch + 1;
+          length += 3;
+
+          if(pos + length > end)
+            goto err_free;
+
+          sliding_dictionary_copy(start, &pos, distance, length);
+          state = 0;
+          break;
+        }
+      }
+    }
+  }
+  free(buffer);
+
+  zs->final_output_length = pos - start;
+  zs->finished = true;
+  return ZIP_SUCCESS;
+
+err_free:
+  free(buffer);
+  return ZIP_DECOMPRESS_FAILED;
+}
+
+__M_END_DECLS
+
+#endif /* __ZIP_REDUCE_H */
