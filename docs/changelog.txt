@@ -9,6 +9,9 @@ USERS
   this allows MegaZeux to automatically attempt to decrypt
   protected worlds. For most platforms this option is disabled
   by default.
++ MegaZeux now silently ignores robots in older worlds with
+  corrupt programs that are marked unused. This fixes an error
+  message that would display when loading Wes.
 + Renamed "modplug_resample_mode" to "module_resample_mode".
   Fixed a bug where the xmp interpolation mode wouldn't be set
   correctly from this setting and instead would always reset to
