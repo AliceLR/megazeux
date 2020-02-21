@@ -58,19 +58,6 @@ static inline void reduce_ex_open(struct zip_stream *zs, uint16_t method,
 }
 
 /**
- * Free an expanding stream. Currently, just do nothing...
- */
-static inline void reduce_ex_close(struct zip_stream *zs,
- size_t *final_input_length, size_t *final_output_length)
-{
-  if(final_input_length)
-    *final_input_length = zs->final_input_length;
-
-  if(final_output_length)
-    *final_output_length = zs->final_output_length;
-}
-
-/**
  * Return the number of bits required to store an index for a follower set of
  * a given length, or 0 if the follower set is of length 0.
  */

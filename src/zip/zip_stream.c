@@ -28,10 +28,21 @@
  */
 #if defined(CONFIG_UTILS) || defined(__EMSCRIPTEN__)
 #define ZIP_EXTRA_DECOMPRESSORS
+#include "deflate64.h"
 #include "implode.h"
 #include "reduce.h"
 #include "shrink.h"
 #endif
+
+static void zip_stream_close(struct zip_stream *zs, size_t *final_input_length,
+ size_t *final_output_length)
+{
+  if(final_input_length)
+    *final_input_length = zs->final_input_length;
+
+  if(final_output_length)
+    *final_output_length = zs->final_output_length;
+}
 
 static boolean zip_stream_input(struct zip_stream *zs, const void *src,
  size_t src_len)
@@ -75,7 +86,7 @@ static struct zip_stream_spec reduce_spec =
 {
   reduce_ex_open,
   NULL,
-  reduce_ex_close,
+  zip_stream_close,
   zip_stream_input,
   zip_stream_output,
   reduce_ex_file,
@@ -96,13 +107,26 @@ static struct zip_stream_spec implode_spec =
   NULL,
   NULL
 };
+
+static struct zip_stream_spec deflate64_spec =
+{
+  inflate64_open,
+  NULL,
+  inflate64_close,
+  zip_stream_input,
+  zip_stream_output,
+  inflate64_file,
+  NULL,
+  NULL,
+  NULL
+};
 #endif
 
 static struct zip_stream_spec deflate_spec =
 {
   inflate_open,
   deflate_open,
-  deflate_close,
+  zip_stream_close,
   deflate_input,
   deflate_output,
   inflate_file,
@@ -120,7 +144,7 @@ struct zip_stream_spec *zip_stream_specs[] =
   [ZIP_M_REDUCED_3] = &reduce_spec,
   [ZIP_M_REDUCED_4] = &reduce_spec,
   [ZIP_M_IMPLODED]  = &implode_spec,
-  //[ZIP_M_DEFLATE64] = &deflate64_spec,
+  [ZIP_M_DEFLATE64] = &deflate64_spec,
 #endif
   [ZIP_M_DEFLATE]   = &deflate_spec,
 };

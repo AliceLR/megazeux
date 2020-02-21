@@ -52,16 +52,6 @@ static inline void deflate_open(struct zip_stream *zs, uint16_t m, uint16_t f)
   zs->is_compression_stream = true;
 }
 
-static inline void deflate_close(struct zip_stream *zs,
- size_t *final_input_length, size_t *final_output_length)
-{
-  if(final_input_length)
-    *final_input_length = zs->final_input_length;
-
-  if(final_output_length)
-    *final_output_length = zs->final_output_length;
-}
-
 static inline boolean deflate_input(struct zip_stream *zs, const void *src,
  size_t src_len)
 {
@@ -114,6 +104,7 @@ static inline enum zip_error inflate_file(struct zip_stream *zs)
 
   zs->final_input_length = ds->z.total_in;
   zs->final_output_length = ds->z.total_out;
+  zs->finished = true;
 
   inflateEnd(&(ds->z));
 
@@ -158,14 +149,14 @@ static inline enum zip_error deflate_file(struct zip_stream *zs)
 
   zs->final_input_length = ds->z.total_in;
   zs->final_output_length = ds->z.total_out;
+  zs->finished = true;
 
   deflateEnd(&(ds->z));
-  inflateEnd(&(ds->z));
 
   if(err == Z_STREAM_END)
     return ZIP_SUCCESS;
 
-  return ZIP_DECOMPRESS_FAILED;
+  return ZIP_COMPRESS_FAILED;
 }
 
 __M_END_DECLS
