@@ -10,6 +10,12 @@
 
 #define WSIZE 65536UL
 
+// Older versions of zlib may not expose zcalloc and zcfree, causing linking
+// to fail. Replace them with wrappers for MZX check_calloc and stdlib free...
+static inline voidpf _zcalloc(voidpf opaque, unsigned nmemb, unsigned size)
+{ return ccalloc(nmemb, size); }
+static inline void _zcfree(voidpf opaque, voidpf ptr) { free(ptr); }
+
 /*
    strm provides memory allocation functions in zalloc and zfree, or
    Z_NULL to use the library memory allocation functions.
@@ -31,10 +37,10 @@ int stream_size;
         return Z_STREAM_ERROR;
     strm->msg = Z_NULL;                 /* in case we return an error */
     if (strm->zalloc == (alloc_func)0) {
-        strm->zalloc = zcalloc;
+        strm->zalloc = _zcalloc;
         strm->opaque = (voidpf)0;
     }
-    if (strm->zfree == (free_func)0) strm->zfree = zcfree;
+    if (strm->zfree == (free_func)0) strm->zfree = _zcfree;
     state = (struct inflate_state FAR *)ZALLOC(strm, 1,
                                                sizeof(struct inflate_state));
     if (state == Z_NULL) return Z_MEM_ERROR;
