@@ -345,25 +345,14 @@ export function createZipStorage(url, options, progressCallback) {
 			let files;
 			let fileMap = {};
 
-			// Attempt UZIP first since it's lighter on memory usage. If that fails,
-			// fall back to emzip (a wrapper for MZX's internal zip handler).
 			try
 			{
-				files = UZIP.parse(xhr.response);
+				files = zip.extract(xhr.response);
 			}
 			catch(e)
 			{
-				console.error('UZIP: ' + e);
-				try
-				{
-					files = zip.extract(xhr.response);
-				}
-				catch(e)
-				{
-					console.error('emzip: ' + e);
-					reject(e);
-					return;
-				}
+				reject(e);
+				return;
 			}
 
 			for (var key in files) {

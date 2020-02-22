@@ -27,12 +27,6 @@
 #include <stdlib.h>
 #include <emscripten.h>
 
-struct zip_archive *emzip_open(const void *src, size_t src_len);
-size_t emzip_length(struct zip_archive *zp);
-const char *emzip_filename(struct zip_archive *zp);
-const char *emzip_extract(struct zip_archive *zp);
-void emzip_close(struct zip_archive *zp);
-
 int error(const char *message, unsigned int a, unsigned int b, unsigned int c)
 {
   fprintf(stderr, "%s\n", message);

@@ -21,7 +21,7 @@
 export var zip =
 {
   emzip: undefined,
-  required_functions:
+  emzip_functions:
   [
     "_emzip_open",
     "_emzip_length",
@@ -43,7 +43,7 @@ export var zip =
 
       zip.emzip = emzip();
 
-      zip.required_functions.forEach(function(fn)
+      zip.emzip_functions.forEach(function(fn)
       {
         if(typeof(zip.emzip[fn])!=='function')
           throw "zip.initialize: function emzip." + fn + " not found!";
@@ -56,8 +56,30 @@ export var zip =
   },
   extract: function(bytes)
   {
+    // Attempt UZIP first since it's lighter on memory usage. If that fails,
+    // fall back to emzip (a wrapper for MZX's internal zip handler).
+    try
+    {
+      return UZIP.parse(bytes);
+    }
+    catch(e)
+    {
+      console.error('UZIP: ' + e);
+      try
+      {
+        return zip.extract_emzip(bytes);
+      }
+      catch(e)
+      {
+        console.error('emzip: ' + e);
+      }
+    }
+    throw "Failed to extract archive.";
+  },
+  extract_emzip: function(bytes)
+  {
     if(zip.emzip === undefined)
-      throw "zip.extract: not initialized!";
+      throw "Not initialized!";
 
     var emzip = zip.emzip;
     var bytes_array = new Uint8Array(bytes);
