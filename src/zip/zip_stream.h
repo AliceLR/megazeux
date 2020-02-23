@@ -26,7 +26,7 @@ __M_BEGIN_DECLS
 
 #include "../zip.h"
 
-struct zip_stream
+struct zip_stream_data
 {
   // Location and size of the next input buffer.
   const void *next_input;
@@ -52,45 +52,48 @@ struct zip_stream
 
 // tfw want to allocate this as part of struct zip_archive but also want
 // to extend it without using a union
-#define ZIP_STREAM_PADDING 128
-#define ZIP_STREAM_ALLOC_SIZE (sizeof(struct zip_stream) + ZIP_STREAM_PADDING)
+#define ZIP_STREAM_DATA_PADDING 128
+#define ZIP_STREAM_DATA_ALLOC_SIZE \
+ (sizeof(struct zip_stream_data) + ZIP_STREAM_DATA_PADDING)
 
 // tfw not C++
-struct zip_stream_spec
+struct zip_stream
 {
   // Open a decompression stream.
-  void (*decompress_open)(struct zip_stream *, uint16_t method, uint16_t flags);
+  void (*decompress_open)(struct zip_stream_data *, uint16_t method,
+   uint16_t flags);
 
   // Open a compression stream.
-  void (*compress_open)(struct zip_stream *, uint16_t method, uint16_t flags);
+  void (*compress_open)(struct zip_stream_data *, uint16_t method,
+   uint16_t flags);
 
   // Frees any memory allocated by the stream. Does not free the zip_stream.
-  void (*close)(struct zip_stream *, size_t *final_input_length,
+  void (*close)(struct zip_stream_data *, size_t *final_input_length,
    size_t *final_output_length);
 
   // Provide the next input buffer for a stream.
-  boolean (*input)(struct zip_stream *, const void *src, size_t src_len);
+  boolean (*input)(struct zip_stream_data *, const void *src, size_t src_len);
 
   // Provide the next output buffer for a stream.
-  boolean (*output)(struct zip_stream *, void *dest, size_t dest_len);
+  boolean (*output)(struct zip_stream_data *, void *dest, size_t dest_len);
 
   // Decompress, treating the input and output as an entire file.
-  enum zip_error (*decompress_file)(struct zip_stream *);
+  enum zip_error (*decompress_file)(struct zip_stream_data *);
 
   // Decompress until the input is exhausted or the output is full.
   // Can be called multiple times.
-  enum zip_error (*decompress_block)(struct zip_stream *);
+  enum zip_error (*decompress_block)(struct zip_stream_data *);
 
   // Compress, treating the input and output as an entire file.
-  enum zip_error (*compress_file)(struct zip_stream *);
+  enum zip_error (*compress_file)(struct zip_stream_data *);
 
   // Compress until the input is exhausted or the output is full.
   // Can be called multiple times.
-  enum zip_error (*compress_block)(struct zip_stream *);
+  enum zip_error (*compress_block)(struct zip_stream_data *);
 };
 
 #define MAX_SUPPORTED_METHOD ZIP_M_DEFLATE64
-extern struct zip_stream_spec *zip_stream_specs[MAX_SUPPORTED_METHOD + 1];
+extern struct zip_stream *zip_streams[MAX_SUPPORTED_METHOD + 1];
 
 __M_END_DECLS
 

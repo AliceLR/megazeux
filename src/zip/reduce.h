@@ -37,9 +37,9 @@ __M_BEGIN_DECLS
 
 #include "../util.h"
 
-struct reduce_stream
+struct reduce_stream_data
 {
-  struct zip_stream zs;
+  struct zip_stream_data zs;
   struct bitstream b;
   uint8_t factor;
 };
@@ -47,13 +47,13 @@ struct reduce_stream
 /**
  * Open an expanding stream.
  */
-static inline void reduce_ex_open(struct zip_stream *zs, uint16_t method,
+static inline void reduce_ex_open(struct zip_stream_data *zs, uint16_t method,
  uint16_t flags)
 {
-  struct reduce_stream *rs = ((struct reduce_stream *)zs);
+  struct reduce_stream_data *rs = ((struct reduce_stream_data *)zs);
 
-  assert(ZIP_STREAM_ALLOC_SIZE >= sizeof(struct reduce_stream));
-  memset(zs, 0, sizeof(struct reduce_stream));
+  assert(ZIP_STREAM_DATA_ALLOC_SIZE >= sizeof(struct reduce_stream_data));
+  memset(zs, 0, sizeof(struct reduce_stream_data));
   rs->factor = CLAMP((method - 2), 0, 3);
 }
 
@@ -95,9 +95,9 @@ static struct reduce_factor_masks reduce_masks[] =
 /**
  * Expand the entire input buffer into the output buffer as a complete file.
  */
-static inline enum zip_error reduce_ex_file(struct zip_stream *zs)
+static inline enum zip_error reduce_ex_file(struct zip_stream_data *zs)
 {
-  struct reduce_stream *rs = ((struct reduce_stream *)zs);
+  struct reduce_stream_data *rs = ((struct reduce_stream_data *)zs);
   struct bitstream *b = &(rs->b);
   uint8_t factor = rs->factor;
   uint8_t n[256];

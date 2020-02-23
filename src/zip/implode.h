@@ -35,9 +35,9 @@ __M_BEGIN_DECLS
 #include "dict.h"
 #include "zip_stream.h"
 
-struct explode_stream
+struct explode_stream_data
 {
-  struct zip_stream zs;
+  struct zip_stream_data zs;
   struct bitstream b;
   struct SF_tree *literal_tree;
   struct SF_tree *length_tree;
@@ -279,13 +279,13 @@ static inline void expl_SF_free(struct SF_tree *tree)
 /**
  * Open an explode stream.
  */
-static inline void expl_open(struct zip_stream *zs, uint16_t method,
+static inline void expl_open(struct zip_stream_data *zs, uint16_t method,
  uint16_t flags)
 {
-  struct explode_stream *xs = ((struct explode_stream *)zs);
+  struct explode_stream_data *xs = ((struct explode_stream_data *)zs);
 
-  assert(ZIP_STREAM_ALLOC_SIZE >= sizeof(struct explode_stream));
-  memset(zs, 0, sizeof(struct explode_stream));
+  assert(ZIP_STREAM_DATA_ALLOC_SIZE >= sizeof(struct explode_stream_data));
+  memset(zs, 0, sizeof(struct explode_stream_data));
   xs->has_8k_dictionary = !!(flags & ZIP_F_COMPRESSION_1);
   xs->has_literal_tree = !!(flags & ZIP_F_COMPRESSION_2);
   xs->minimum_match_length = xs->has_literal_tree ? 3 : 2;
@@ -294,10 +294,10 @@ static inline void expl_open(struct zip_stream *zs, uint16_t method,
 /**
  * Close an explode stream.
  */
-static inline void expl_close(struct zip_stream *zs,
+static inline void expl_close(struct zip_stream_data *zs,
  size_t *final_input_length, size_t *final_output_length)
 {
-  struct explode_stream *xs = ((struct explode_stream *)zs);
+  struct explode_stream_data *xs = ((struct explode_stream_data *)zs);
   expl_SF_free(xs->literal_tree);
   expl_SF_free(xs->length_tree);
   expl_SF_free(xs->distance_tree);
@@ -312,9 +312,9 @@ static inline void expl_close(struct zip_stream *zs,
 /**
  * Explode the input stream into the output buffer as a single file.
  */
-static inline enum zip_error expl_file(struct zip_stream *zs)
+static inline enum zip_error expl_file(struct zip_stream_data *zs)
 {
-  struct explode_stream *xs = ((struct explode_stream *)zs);
+  struct explode_stream_data *xs = ((struct explode_stream_data *)zs);
   struct bitstream *b = &(xs->b);
 
   uint8_t *start = zs->output_start;

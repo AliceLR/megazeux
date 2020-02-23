@@ -52,9 +52,9 @@ struct LZW_tree
   uint8_t previous_first_char;
 };
 
-struct shrink_stream
+struct shrink_stream_data
 {
-  struct zip_stream zs;
+  struct zip_stream_data zs;
   struct bitstream b;
   struct LZW_tree tree;
   uint8_t bit_width;
@@ -291,15 +291,15 @@ static inline enum zip_error LZW_decode(struct LZW_tree *tree, uint16_t code,
 /**
  * Open a unshrink stream.
  */
-static inline void unshrink_open(struct zip_stream *zs, uint16_t method,
+static inline void unshrink_open(struct zip_stream_data *zs, uint16_t method,
  uint16_t flags)
 {
-  struct shrink_stream *ss = ((struct shrink_stream *)zs);
+  struct shrink_stream_data *ss = ((struct shrink_stream_data *)zs);
   struct LZW_tree *tree = &(ss->tree);
   int i;
 
-  assert(ZIP_STREAM_ALLOC_SIZE >= sizeof(struct shrink_stream));
-  memset(zs, 0, sizeof(struct shrink_stream));
+  assert(ZIP_STREAM_DATA_ALLOC_SIZE >= sizeof(struct shrink_stream_data));
+  memset(zs, 0, sizeof(struct shrink_stream_data));
 
   tree->nodes = cmalloc(LZW_TREE_ALLOC_DEFAULT * sizeof(struct LZW_node));
   tree->alloc = LZW_TREE_ALLOC_DEFAULT;
@@ -320,10 +320,10 @@ static inline void unshrink_open(struct zip_stream *zs, uint16_t method,
 /**
  * Free extra allocated data for a (un)shrink stream.
  */
-static inline void unshrink_close(struct zip_stream *zs,
+static inline void unshrink_close(struct zip_stream_data *zs,
  size_t *final_input_length, size_t *final_output_length)
 {
-  struct shrink_stream *ss = ((struct shrink_stream *)zs);
+  struct shrink_stream_data *ss = ((struct shrink_stream_data *)zs);
   free(ss->tree.nodes);
 
   if(final_input_length)
@@ -336,9 +336,9 @@ static inline void unshrink_close(struct zip_stream *zs,
 /**
  * Unshrink the input buffer into the output buffer, treating it as a file.
  */
-static inline enum zip_error unshrink_file(struct zip_stream *zs)
+static inline enum zip_error unshrink_file(struct zip_stream_data *zs)
 {
-  struct shrink_stream *ss = ((struct shrink_stream *)zs);
+  struct shrink_stream_data *ss = ((struct shrink_stream_data *)zs);
   struct LZW_tree *tree = &(ss->tree);
   struct bitstream *b = &(ss->b);
   enum zip_error result;

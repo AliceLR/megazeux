@@ -185,9 +185,9 @@ struct zip_archive
   void **external_buffer;
   size_t *external_buffer_size;
 
-  struct zip_stream_spec *stream;
-  struct zip_stream stream_data;
-  uint8_t padding[ZIP_STREAM_PADDING];
+  struct zip_stream *stream;
+  struct zip_stream_data stream_data;
+  uint8_t padding[ZIP_STREAM_DATA_PADDING];
 };
 
 UTILS_LIBSPEC int zip_bound_deflate_usage(size_t length);

@@ -37,27 +37,27 @@ __M_BEGIN_DECLS
 
 #include "zip_stream.h"
 
-struct deflate64_stream
+struct deflate64_stream_data
 {
-  struct zip_stream zs;
+  struct zip_stream_data zs;
   z_stream z;
   void *window;
 };
 
-static inline void inflate64_open(struct zip_stream *zs, uint16_t method,
+static inline void inflate64_open(struct zip_stream_data *zs, uint16_t method,
  uint16_t flags)
 {
-  struct deflate64_stream *d64s = ((struct deflate64_stream *)zs);
-  assert(ZIP_STREAM_ALLOC_SIZE >= sizeof(struct deflate64_stream));
-  memset(zs, 0, sizeof(struct deflate64_stream));
+  struct deflate64_stream_data *d64s = ((struct deflate64_stream_data *)zs);
+  assert(ZIP_STREAM_DATA_ALLOC_SIZE >= sizeof(struct deflate64_stream_data));
+  memset(zs, 0, sizeof(struct deflate64_stream_data));
 
   d64s->window = cmalloc(1<<16);
 }
 
-static inline void inflate64_close(struct zip_stream *zs,
+static inline void inflate64_close(struct zip_stream_data *zs,
  size_t *final_input_length, size_t *final_output_length)
 {
-  struct deflate64_stream *d64s = ((struct deflate64_stream *)zs);
+  struct deflate64_stream_data *d64s = ((struct deflate64_stream_data *)zs);
   free(d64s->window);
   d64s->window = NULL;
 
@@ -71,7 +71,7 @@ static inline void inflate64_close(struct zip_stream *zs,
 static inline unsigned inflate64_in_callback(void *data,
  z_const unsigned char **in)
 {
-  struct zip_stream *zs = (struct zip_stream *)data;
+  struct zip_stream_data *zs = (struct zip_stream_data *)data;
   size_t length = zs->next_input_length;
   *in = (void *)zs->next_input;
   zs->next_input = NULL;
@@ -83,7 +83,7 @@ static inline unsigned inflate64_in_callback(void *data,
 static inline int inflate64_out_callback(void *data, unsigned char *buffer,
  unsigned buffer_len)
 {
-  struct zip_stream *zs = (struct zip_stream *)data;
+  struct zip_stream_data *zs = (struct zip_stream_data *)data;
   size_t output_left = zs->output_end - zs->output_pos;
   int err = 0;
 
@@ -102,9 +102,9 @@ static inline int inflate64_out_callback(void *data, unsigned char *buffer,
   return err;
 }
 
-static inline enum zip_error inflate64_file(struct zip_stream *zs)
+static inline enum zip_error inflate64_file(struct zip_stream_data *zs)
 {
-  struct deflate64_stream *d64s = ((struct deflate64_stream *)zs);
+  struct deflate64_stream_data *d64s = ((struct deflate64_stream_data *)zs);
   int err;
 
   if(zs->finished)

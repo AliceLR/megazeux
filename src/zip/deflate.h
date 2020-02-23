@@ -33,46 +33,48 @@ __M_BEGIN_DECLS
 
 #include "zip_stream.h"
 
-struct deflate_stream
+struct deflate_stream_data
 {
-  struct zip_stream zs;
+  struct zip_stream_data zs;
   z_stream z;
 };
 
-static inline void inflate_open(struct zip_stream *zs, uint16_t m, uint16_t f)
+static inline void inflate_open(struct zip_stream_data *zs, uint16_t method,
+ uint16_t flags)
 {
-  assert(ZIP_STREAM_ALLOC_SIZE >= sizeof(struct deflate_stream));
-  memset(zs, 0, sizeof(struct deflate_stream));
+  assert(ZIP_STREAM_DATA_ALLOC_SIZE >= sizeof(struct deflate_stream_data));
+  memset(zs, 0, sizeof(struct deflate_stream_data));
 }
 
-static inline void deflate_open(struct zip_stream *zs, uint16_t m, uint16_t f)
+static inline void deflate_open(struct zip_stream_data *zs, uint16_t method,
+ uint16_t flags)
 {
-  assert(ZIP_STREAM_ALLOC_SIZE >= sizeof(struct deflate_stream));
-  memset(zs, 0, sizeof(struct deflate_stream));
+  assert(ZIP_STREAM_DATA_ALLOC_SIZE >= sizeof(struct deflate_stream_data));
+  memset(zs, 0, sizeof(struct deflate_stream_data));
   zs->is_compression_stream = true;
 }
 
-static inline boolean deflate_input(struct zip_stream *zs, const void *src,
- size_t src_len)
+static inline boolean deflate_input(struct zip_stream_data *zs,
+ const void *src, size_t src_len)
 {
-  struct deflate_stream *ds = ((struct deflate_stream *)zs);
+  struct deflate_stream_data *ds = ((struct deflate_stream_data *)zs);
   ds->z.next_in = (Bytef *)src;
   ds->z.avail_in = (uInt)src_len;
   return true;
 }
 
-static inline boolean deflate_output(struct zip_stream *zs, void *dest,
+static inline boolean deflate_output(struct zip_stream_data *zs, void *dest,
  size_t dest_len)
 {
-  struct deflate_stream *ds = ((struct deflate_stream *)zs);
+  struct deflate_stream_data *ds = ((struct deflate_stream_data *)zs);
   ds->z.next_out = (Bytef *)dest;
   ds->z.avail_out = (uInt)dest_len;
   return true;
 }
 
-static inline enum zip_error inflate_init(struct zip_stream *zs)
+static inline enum zip_error inflate_init(struct zip_stream_data *zs)
 {
-  struct deflate_stream *ds = ((struct deflate_stream *)zs);
+  struct deflate_stream_data *ds = ((struct deflate_stream_data *)zs);
 
   if(zs->is_initialized)
     return ZIP_SUCCESS;
@@ -87,9 +89,9 @@ static inline enum zip_error inflate_init(struct zip_stream *zs)
   return ZIP_INPUT_EMPTY;
 }
 
-static inline enum zip_error inflate_file(struct zip_stream *zs)
+static inline enum zip_error inflate_file(struct zip_stream_data *zs)
 {
-  struct deflate_stream *ds = ((struct deflate_stream *)zs);
+  struct deflate_stream_data *ds = ((struct deflate_stream_data *)zs);
 
   enum zip_error result = inflate_init(zs);
   int err;
@@ -114,9 +116,9 @@ static inline enum zip_error inflate_file(struct zip_stream *zs)
   return ZIP_DECOMPRESS_FAILED;
 }
 
-static inline enum zip_error deflate_init(struct zip_stream *zs)
+static inline enum zip_error deflate_init(struct zip_stream_data *zs)
 {
-  struct deflate_stream *ds = ((struct deflate_stream *)zs);
+  struct deflate_stream_data *ds = ((struct deflate_stream_data *)zs);
 
   if(!zs->is_initialized)
   {
@@ -129,9 +131,9 @@ static inline enum zip_error deflate_init(struct zip_stream *zs)
   return ZIP_SUCCESS;
 }
 
-static inline enum zip_error deflate_file(struct zip_stream *zs)
+static inline enum zip_error deflate_file(struct zip_stream_data *zs)
 {
-  struct deflate_stream *ds = ((struct deflate_stream *)zs);
+  struct deflate_stream_data *ds = ((struct deflate_stream_data *)zs);
 
   enum zip_error result = deflate_init(zs);
   int err;

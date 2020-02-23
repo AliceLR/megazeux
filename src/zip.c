@@ -224,7 +224,7 @@ static inline boolean zip_is_ignore_file(const char *filename, size_t len)
 static boolean zip_method_is_supported(uint8_t method)
 {
   if(method > ZIP_M_NONE && method <= MAX_SUPPORTED_METHOD)
-    return !!zip_stream_specs[method];
+    return !!zip_streams[method];
 
   return (method == ZIP_M_NONE);
 }
@@ -246,7 +246,7 @@ static enum zip_error zip_get_stream(struct zip_archive *zp, uint8_t method,
 
   if(method <= MAX_SUPPORTED_METHOD)
   {
-    struct zip_stream_spec *result = zip_stream_specs[method];
+    struct zip_stream *result = zip_streams[method];
 
     switch(new_mode)
     {
@@ -802,7 +802,7 @@ enum zip_error zread(void *destBuf, size_t readLen, struct zip_archive *zp)
   // Decompression via stream
   if(zp->stream)
   {
-    struct zip_stream *stream_data = &(zp->stream_data);
+    struct zip_stream_data *stream_data = &(zp->stream_data);
     uint32_t u_size = fh->uncompressed_size;
     uint32_t c_size = fh->compressed_size;
 
@@ -1361,7 +1361,7 @@ enum zip_error zwrite(const void *src, size_t srcLen, struct zip_archive *zp)
   // Compression via stream (DEFLATE only)
   if(method == ZIP_M_DEFLATE && zp->stream)
   {
-    struct zip_stream *stream_data = &(zp->stream_data);
+    struct zip_stream_data *stream_data = &(zp->stream_data);
     size_t estimated_size;
     size_t consumed = 0;
 
@@ -2093,7 +2093,7 @@ static void zip_init_for_write(struct zip_archive *zp, int num_files)
 {
   struct zip_file_header **f;
 
-  f = cmalloc(sizeof(struct zip_file_header) * num_files);
+  f = cmalloc(num_files * sizeof(struct zip_file_header *));
 
   zp->files_alloc = num_files;
   zp->files = f;

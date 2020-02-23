@@ -34,8 +34,8 @@
 #include "shrink.h"
 #endif
 
-static void zip_stream_close(struct zip_stream *zs, size_t *final_input_length,
- size_t *final_output_length)
+static void zip_stream_close(struct zip_stream_data *zs,
+ size_t *final_input_length, size_t *final_output_length)
 {
   if(final_input_length)
     *final_input_length = zs->final_input_length;
@@ -44,7 +44,7 @@ static void zip_stream_close(struct zip_stream *zs, size_t *final_input_length,
     *final_output_length = zs->final_output_length;
 }
 
-static boolean zip_stream_input(struct zip_stream *zs, const void *src,
+static boolean zip_stream_input(struct zip_stream_data *zs, const void *src,
  size_t src_len)
 {
   if(!zs->next_input)
@@ -56,7 +56,8 @@ static boolean zip_stream_input(struct zip_stream *zs, const void *src,
   return false;
 }
 
-static boolean zip_stream_output(struct zip_stream *zs, void *dest, size_t len)
+static boolean zip_stream_output(struct zip_stream_data *zs, void *dest,
+ size_t len)
 {
   if(!zs->output_start)
   {
@@ -69,7 +70,7 @@ static boolean zip_stream_output(struct zip_stream *zs, void *dest, size_t len)
 }
 
 #ifdef ZIP_EXTRA_DECOMPRESSORS
-static struct zip_stream_spec shrink_spec =
+static struct zip_stream shrink_spec =
 {
   unshrink_open,
   NULL,
@@ -82,7 +83,7 @@ static struct zip_stream_spec shrink_spec =
   NULL
 };
 
-static struct zip_stream_spec reduce_spec =
+static struct zip_stream reduce_spec =
 {
   reduce_ex_open,
   NULL,
@@ -95,7 +96,7 @@ static struct zip_stream_spec reduce_spec =
   NULL
 };
 
-static struct zip_stream_spec implode_spec =
+static struct zip_stream implode_spec =
 {
   expl_open,
   NULL,
@@ -108,7 +109,7 @@ static struct zip_stream_spec implode_spec =
   NULL
 };
 
-static struct zip_stream_spec deflate64_spec =
+static struct zip_stream deflate64_spec =
 {
   inflate64_open,
   NULL,
@@ -122,7 +123,7 @@ static struct zip_stream_spec deflate64_spec =
 };
 #endif
 
-static struct zip_stream_spec deflate_spec =
+static struct zip_stream deflate_spec =
 {
   inflate_open,
   deflate_open,
@@ -135,7 +136,7 @@ static struct zip_stream_spec deflate_spec =
   NULL // TODO
 };
 
-struct zip_stream_spec *zip_stream_specs[] =
+struct zip_stream *zip_streams[] =
 {
 #ifdef ZIP_EXTRA_DECOMPRESSORS
   [ZIP_M_SHRUNK]    = &shrink_spec,
