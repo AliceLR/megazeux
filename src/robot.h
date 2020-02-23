@@ -26,7 +26,8 @@ __M_BEGIN_DECLS
 
 #include "core.h"
 #include "data.h"
-#include "zip.h"
+
+struct zip_archive;
 
 // Let's not let a robot's stack get larger than 64k right now.
 // The value is a bit arbitrary, but it's mainly there to prevent MZX from
