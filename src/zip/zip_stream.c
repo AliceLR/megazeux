@@ -44,6 +44,7 @@ static void zip_stream_close(struct zip_stream_data *zs,
     *final_output_length = zs->final_output_length;
 }
 
+#ifdef ZIP_EXTRA_DECOMPRESSORS
 static boolean zip_stream_input(struct zip_stream_data *zs, const void *src,
  size_t src_len)
 {
@@ -69,7 +70,6 @@ static boolean zip_stream_output(struct zip_stream_data *zs, void *dest,
   return false;
 }
 
-#ifdef ZIP_EXTRA_DECOMPRESSORS
 static struct zip_stream shrink_spec =
 {
   unshrink_open,
