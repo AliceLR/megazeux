@@ -32,7 +32,11 @@ __M_BEGIN_DECLS
 #include "memfile.h"
 #include "vfs.h"
 
-// Currently supported methods are 0 (Store) and 8 (DEFLATE)
+/**
+ * Methods universally supported by MZX are 0 (store) and 8 (Deflate).
+ * Emscripten and utils builds also enable decompressors for 1 (Shrink),
+ * 2-5 (Reduce), 6 (Implode), and 9 (Deflate64).
+ */
 enum zip_compression_method
 {
   ZIP_M_NONE                    = 0, // Store
