@@ -230,12 +230,16 @@ LDFLAGS  += ${ARCH_LDFLAGS}
 GCC_VER := ${shell ${CC} -dumpversion}
 GCC_VER_MAJOR := ${shell ${CC} -dumpversion | cut -d. -f1}
 GCC_VER_MAJOR_GE_7 := ${shell test $(GCC_VER_MAJOR) -ge 7; echo $$?}
+IS_CLANG := ${shell ${CC} --version | grep -qi "clang version"; echo $$?}
 
 ifeq ($(GCC_VER_MAJOR_GE_7),0)
 # This gives spurious warnings on Linux. The snprintf implementation on Linux
 # will terminate even in the case of truncation, making this largely useless.
 # It does not trigger using mingw, where it would actually matter.
+# Clang (as of 9.0) does not support this flag.
+ifneq (${IS_CLANG},0)
 CFLAGS   += -Wno-format-truncation
+endif
 endif
 
 #
@@ -248,8 +252,10 @@ ifeq ($(GCC_VER_MAJOR_GE_4),0)
 
 ifeq (${DEBUG},1)
 ifneq (${GCC_VER},4.2.1)
+ifneq (${IS_CLANG},0)
 CFLAGS   += -fbounds-check
 CXXFLAGS += -fbounds-check
+endif
 endif
 endif
 

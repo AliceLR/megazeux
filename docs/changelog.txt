@@ -30,7 +30,6 @@ USERS
   an error when using MZX in a private browser window.
 + Fixed a robot editor regression where certain numpad symbols
   could not be typed.
-+ Switched from xmp_load_module to xmp_load_module_from_file.
 + Added "GL4ES wrapper" to the auto_glsl blacklist.
 + checkres no longer requires zip archive filenames to end with
   the .ZIP extension.
@@ -45,6 +44,11 @@ USERS
 + Fixed IndexedDB support for legacy Edge versions. (asie)
 - Removed the options "overlay1" and "overlay2" from the list of
   selectable renderer options except when SDL 1.2 is enabled.
+
+DEVELOPERS
+
++ Switched from xmp_load_module to xmp_load_module_from_file.
++ Fixed various clang unused argument compiler warnings.
 
 
 September 23rd, 2019 - MZX 2.92b
