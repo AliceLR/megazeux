@@ -44,7 +44,7 @@ typedef uint32_t BS_BUFTYPE;
 struct bitstream
 {
   BS_BUFTYPE buf;
-  uint8_t buf_left;
+  BS_BUFTYPE buf_left;
   const uint8_t *input;
   size_t input_left;
 };
@@ -100,9 +100,9 @@ static inline boolean bs_fill(struct bitstream *b)
   return false;
 }
 
-static inline int bs_read(struct bitstream *b, uint16_t mask, uint8_t bits)
+static inline int bs_read(struct bitstream *b, BS_BUFTYPE mask, BS_BUFTYPE bits)
 {
-  uint16_t tmp;
+  BS_BUFTYPE tmp;
   if(b->buf_left < bits)
     if(!bs_fill(b) || b->buf_left < bits)
       return EOF;
