@@ -42,6 +42,7 @@ USERS
   methods and deflate64.
 + The Emscripten frontend now falls back to a wrapper for MZX's
   internal ZIP support when UZIP fails to extract an archive.
++ Fixed IndexedDB support for legacy Edge versions. (asie)
 - Removed the options "overlay1" and "overlay2" from the list of
   selectable renderer options except when SDL 1.2 is enabled.
 
