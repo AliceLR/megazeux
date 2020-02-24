@@ -18,6 +18,7 @@
 		BF1012C21FCCABF0008EEDB6 /* SDL2.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C01FCCABF0008EEDB6 /* SDL2.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		BF1012C41FCCB02F008EEDB6 /* libpng.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C31FCCB02F008EEDB6 /* libpng.framework */; };
 		BF1012C51FCCB02F008EEDB6 /* libpng.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C31FCCB02F008EEDB6 /* libpng.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		BF389F47240476B200021622 /* vfs.c in Sources */ = {isa = PBXBuildFile; fileRef = BF389F442404767100021622 /* vfs.c */; };
 		BF3C7A7C22E689020024C630 /* render_softscale.c in Sources */ = {isa = PBXBuildFile; fileRef = BF3C7A7A22E688000024C630 /* render_softscale.c */; };
 		BF6058B2216B3683001B738C /* edit_menu.c in Sources */ = {isa = PBXBuildFile; fileRef = BF6058AC216B3682001B738C /* edit_menu.c */; };
 		BF6058B3216B3683001B738C /* buffer.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058AD216B3682001B738C /* buffer.h */; };
@@ -381,6 +382,8 @@
 		BF1012C01FCCABF0008EEDB6 /* SDL2.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = SDL2.framework; sourceTree = "<group>"; };
 		BF1012C31FCCB02F008EEDB6 /* libpng.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = libpng.framework; sourceTree = "<group>"; };
 		BF1012C61FCCB0F9008EEDB6 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
+		BF389F442404767100021622 /* vfs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = vfs.c; path = ../../src/vfs.c; sourceTree = "<group>"; };
+		BF389F452404767100021622 /* vfs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = vfs.h; path = ../../src/vfs.h; sourceTree = "<group>"; };
 		BF3C7A7A22E688000024C630 /* render_softscale.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = render_softscale.c; path = ../../src/render_softscale.c; sourceTree = "<group>"; };
 		BF3C7A7D22E6B6A20024C630 /* yuv.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = yuv.h; path = ../../src/yuv.h; sourceTree = "<group>"; };
 		BF3C7A7E22E6B7A20024C630 /* gamecontrollerdb.txt */ = {isa = PBXFileReference; lastKnownFileType = text; name = gamecontrollerdb.txt; path = ../../assets/gamecontrollerdb.txt; sourceTree = "<group>"; };
@@ -905,6 +908,8 @@
 				BF6058D6216B3724001B738C /* thread_sdl.h */,
 				BFFF16651FCDC64C00BDEC58 /* util.c */,
 				BFFF16361FCDC64600BDEC58 /* util.h */,
+				BF389F442404767100021622 /* vfs.c */,
+				BF389F452404767100021622 /* vfs.h */,
 				BFFF16531FCDC64900BDEC58 /* window.c */,
 				BFFF164F1FCDC64800BDEC58 /* window.h */,
 				BFFF16591FCDC64A00BDEC58 /* world.c */,
@@ -1412,6 +1417,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BF389F47240476B200021622 /* vfs.c in Sources */,
 				BF3C7A7C22E689020024C630 /* render_softscale.c in Sources */,
 				BF6058E9216B3725001B738C /* rasm.c in Sources */,
 				BF6058E5216B3725001B738C /* intake_num.c in Sources */,
