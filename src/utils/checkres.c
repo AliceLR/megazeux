@@ -2101,6 +2101,7 @@ static enum status parse_legacy_robot(struct memfile *mf,
   struct memfile prog;
 
   enum status ret = SUCCESS;
+  boolean used = false;
 
   // program_length (2),
   program_size = mfgetw(mf);
@@ -2109,8 +2110,15 @@ static enum status parse_legacy_robot(struct memfile *mf,
   // cur_prog_line (2), pos_within_line (1), robot_cycle (1), cycle_count (1),
   // bullet_type (1), is_locked (1), can_lavawalk (1), walk_dir (1),
   // last_touch_dir (1), last_shot_dir (1), xpos (2), ypos (2),
-  // status (1), blank (2), used (1), loop_count (2),
-  if(mfseek(mf, 41 - 2, SEEK_CUR) != 0)
+  // status (1), legacy local1 (2),
+  if(mfseek(mf, 41 - 5, SEEK_CUR) != 0)
+    return FSEEK_FAILED;
+
+  // used (1),
+  used = !!mfgetc(mf);
+
+  // legacy loop_count (2),
+  if(mfseek(mf, 2, SEEK_CUR) != 0)
     return FSEEK_FAILED;
 
   // VER1TO2 worlds (e.g. Forest, Catacombs) sometimes have invalid programs
@@ -2120,6 +2128,14 @@ static enum status parse_legacy_robot(struct memfile *mf,
     mfopen(mf->current, program_size, &prog);
 
     ret = parse_legacy_bytecode(&prog, program_size, file, board_num, robot_num);
+
+    // Ignore errors on unused robots since these don't really matter.
+    // This includes the global robots in Slave Pit and Wes.
+    if(ret && !used)
+    {
+      warn("Unused robot with corruption detected (this is safe to ignore).\n");
+      ret = SUCCESS;
+    }
   }
 
   mfseek(mf, program_size, SEEK_CUR);
