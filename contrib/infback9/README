@@ -11,3 +11,5 @@ This copy of zlib 1.2.11's unsupported infback9 code has been modified as follow
 * Fixed a fall-through warning.
 * Replaced references to zcalloc and zcfree with inline implementations. This
   is due to older versions of zlib seemingly not exposing these.
+* Removed usage of z_const in infback9.c to allow this code to build against
+  zlib 1.2.3 (OpenBSD 6.5).
