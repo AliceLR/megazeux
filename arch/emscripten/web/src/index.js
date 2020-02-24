@@ -21,6 +21,7 @@
 import { getIndexedDB, getLocalStorage, drawErrorMessage } from "./util.js";
 import { createInMemoryStorage, createBrowserBackedStorage, wrapAsyncStorage, createIndexedDbBackedAsyncStorage, createCompositeStorage, createZipStorage } from "./storage.js";
 import { wrapStorageForEmscripten } from "./storage_emscripten.js";
+import { zip } from "./zip.js";
 
 class LoadingScreen {
     constructor(canvas, ctx, options) {
@@ -106,6 +107,10 @@ window.MzxrunInitialize = function(options) {
         return Promise.reject(e);
     }
 
+    // FIXME this breaks the return value of this function.
+    // Fix this when Emscripten bothers to make their Modules actual promises.
+    zip.initialize().then(_ =>
+    {
     const loadingScreen = new LoadingScreen(canvas, ctx, options);
 
     var vfsPromises = [];
@@ -246,5 +251,6 @@ window.MzxrunInitialize = function(options) {
         });
     })).then(_ => true).catch(reason => {
         drawErrorMessage(canvas, ctx, reason);
+    });
     });
 }

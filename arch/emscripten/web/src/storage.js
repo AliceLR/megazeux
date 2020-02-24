@@ -19,6 +19,7 @@
  */
 
 import { getIndexedDB, getLocalStorage, drawErrorMessage, xhrFetchAsArrayBuffer } from "./util";
+import { zip } from "./zip.js";
 
 function filterKeys(list, filter) {
 	if (filter == null) return list;
@@ -344,9 +345,12 @@ export function createZipStorage(url, options, progressCallback) {
 			let files;
 			let fileMap = {};
 
-			try {
-				files = UZIP.parse(xhr.response);
-			} catch (e) {
+			try
+			{
+				files = zip.extract(xhr.response);
+			}
+			catch(e)
+			{
 				reject(e);
 				return;
 			}

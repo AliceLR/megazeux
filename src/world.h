@@ -27,7 +27,6 @@ __M_BEGIN_DECLS
 #include <stdio.h>
 
 #include "world_struct.h"
-#include "zip.h"
 
 /* When making new versions, change the number below, and
  * change the number in the version strings to follow. From now on,
@@ -191,6 +190,8 @@ void meter_initial_draw(int curr, int target, const char *title);
 #endif
 
 #ifdef CONFIG_EDITOR
+struct zip_archive;
+
 CORE_LIBSPEC void try_load_world(struct world *mzx_world,
  struct zip_archive **zp, FILE **fp, const char *file, boolean savegame,
  int *file_version, char *name);
