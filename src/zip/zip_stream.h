@@ -24,6 +24,7 @@
 
 __M_BEGIN_DECLS
 
+#include <inttypes.h>
 #include "../zip.h"
 
 /**

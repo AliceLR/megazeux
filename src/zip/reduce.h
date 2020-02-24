@@ -78,20 +78,6 @@ static inline uint8_t follower_set_bits_required(int length)
 #define REDUCE_BUFFER_SIZE (8192)
 #define SET(ch) (sets + (ch * 32))
 
-struct reduce_factor_masks
-{
-  uint8_t lower;
-  uint8_t upper;
-};
-
-static struct reduce_factor_masks reduce_masks[] =
-{
-  { 0x7F, 0x80 },
-  { 0x3F, 0xC0 },
-  { 0x1F, 0xE0 },
-  { 0x0F, 0xF0 }
-};
-
 /**
  * Expand the entire input buffer into the output buffer as a complete file.
  */
@@ -115,6 +101,7 @@ static inline enum zip_error reduce_ex_file(struct zip_stream_data *zs)
   uint32_t distance = 0;
   uint8_t last_character;
   uint8_t state;
+  boolean eof = false;
   int value;
   int i;
   int j;
@@ -147,6 +134,11 @@ static inline enum zip_error reduce_ex_file(struct zip_stream_data *zs)
   state = 0;
   while(pos < end)
   {
+    // If the end of the bitstream has been encountered, the loop only
+    // reaches this spot if the input stream is truncated. Abort.
+    if(eof)
+      goto err_free;
+
     // Stage 1: probabilistic decompression using follower sets.
     buffer_pos = 0;
     while(buffer_pos < REDUCE_BUFFER_SIZE)
@@ -155,7 +147,10 @@ static inline enum zip_error reduce_ex_file(struct zip_stream_data *zs)
       {
         value = BS_READ(b, 8);
         if(value < 0)
+        {
+          eof = true;
           break;
+        }
 
         last_character = value;
       }
@@ -163,7 +158,10 @@ static inline enum zip_error reduce_ex_file(struct zip_stream_data *zs)
       {
         value = BS_READ(b, 1);
         if(value < 0)
+        {
+          eof = true;
           break;
+        }
 
         if(value)
         {
@@ -208,11 +206,12 @@ static inline enum zip_error reduce_ex_file(struct zip_stream_data *zs)
         {
           if(ch)
           {
-            struct reduce_factor_masks *mask = &(reduce_masks[factor]);
+            uint8_t lower_mask = 0x7F >> factor;
+            uint8_t upper_mask = 0xFF ^ lower_mask;
 
-            distance = (uint32_t)(ch & mask->upper) << (factor + 1);
-            length = (ch & mask->lower);
-            state = length == mask->lower ? 2 : 3;
+            distance = (uint32_t)(ch & upper_mask) << (factor + 1);
+            length = (ch & lower_mask);
+            state = (length == lower_mask) ? 2 : 3;
           }
           else
           {
