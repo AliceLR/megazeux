@@ -26,16 +26,18 @@ __M_BEGIN_DECLS
 
 #include "../zip.h"
 
+/**
+ * Data for an active ZIP (de)compression stream.
+ */
 struct zip_stream_data
 {
-  // Location and size of the next input buffer.
-  const void *next_input;
-  size_t next_input_length;
+  // Current position and remaining size of the input buffer.
+  const uint8_t *input_buffer;
+  size_t input_length;
 
-  // Location, position, and end of the output buffer.
-  uint8_t *output_start;
-  uint8_t *output_pos;
-  uint8_t *output_end;
+  // Current position and remaining size of the output buffer.
+  uint8_t *output_buffer;
+  size_t output_length;
 
   size_t final_input_length;
   size_t final_output_length;
@@ -50,14 +52,16 @@ struct zip_stream_data
   boolean is_compression_stream;
 };
 
-// tfw want to allocate this as part of struct zip_archive but also want
-// to extend it without using a union
+// zip_stream_data structs should be allocated with at least this much extra
+// space for specific compression method data.
 #define ZIP_STREAM_DATA_PADDING 128
 #define ZIP_STREAM_DATA_ALLOC_SIZE \
  (sizeof(struct zip_stream_data) + ZIP_STREAM_DATA_PADDING)
 
-// tfw not C++
-struct zip_stream
+/**
+ * Describes ZIP stream functions for a particular (de)compresson method.
+ */
+struct zip_method_handler
 {
   // Open a decompression stream.
   void (*decompress_open)(struct zip_stream_data *, uint16_t method,
@@ -93,7 +97,11 @@ struct zip_stream
 };
 
 #define MAX_SUPPORTED_METHOD ZIP_M_DEFLATE64
-extern struct zip_stream *zip_streams[MAX_SUPPORTED_METHOD + 1];
+
+/**
+ * ZIP stream function registry for supported (de)compression methods.
+ */
+extern struct zip_method_handler *zip_method_handlers[MAX_SUPPORTED_METHOD + 1];
 
 __M_END_DECLS
 

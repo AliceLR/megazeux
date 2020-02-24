@@ -224,7 +224,7 @@ static inline boolean zip_is_ignore_file(const char *filename, size_t len)
 static boolean zip_method_is_supported(uint8_t method)
 {
   if(method > ZIP_M_NONE && method <= MAX_SUPPORTED_METHOD)
-    return !!zip_streams[method];
+    return !!zip_method_handlers[method];
 
   return (method == ZIP_M_NONE);
 }
@@ -246,7 +246,7 @@ static enum zip_error zip_get_stream(struct zip_archive *zp, uint8_t method,
 
   if(method <= MAX_SUPPORTED_METHOD)
   {
-    struct zip_stream *result = zip_streams[method];
+    struct zip_method_handler *result = zip_method_handlers[method];
 
     switch(new_mode)
     {

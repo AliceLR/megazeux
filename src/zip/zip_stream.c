@@ -48,29 +48,28 @@ static void zip_stream_close(struct zip_stream_data *zs,
 static boolean zip_stream_input(struct zip_stream_data *zs, const void *src,
  size_t src_len)
 {
-  if(!zs->next_input)
+  if(!zs->input_buffer)
   {
-    zs->next_input = src;
-    zs->next_input_length = src_len;
+    zs->input_buffer = (uint8_t *)src;
+    zs->input_length = src_len;
     return true;
   }
   return false;
 }
 
 static boolean zip_stream_output(struct zip_stream_data *zs, void *dest,
- size_t len)
+ size_t dest_len)
 {
-  if(!zs->output_start)
+  if(!zs->output_buffer)
   {
-    zs->output_start = (uint8_t *)dest;
-    zs->output_pos = zs->output_start;
-    zs->output_end = zs->output_start + len;
+    zs->output_buffer = (uint8_t *)dest;
+    zs->output_length = dest_len;
     return true;
   }
   return false;
 }
 
-static struct zip_stream shrink_spec =
+static struct zip_method_handler shrink_spec =
 {
   unshrink_open,
   NULL,
@@ -83,7 +82,7 @@ static struct zip_stream shrink_spec =
   NULL
 };
 
-static struct zip_stream reduce_spec =
+static struct zip_method_handler reduce_spec =
 {
   reduce_ex_open,
   NULL,
@@ -96,7 +95,7 @@ static struct zip_stream reduce_spec =
   NULL
 };
 
-static struct zip_stream implode_spec =
+static struct zip_method_handler implode_spec =
 {
   expl_open,
   NULL,
@@ -109,7 +108,7 @@ static struct zip_stream implode_spec =
   NULL
 };
 
-static struct zip_stream deflate64_spec =
+static struct zip_method_handler deflate64_spec =
 {
   inflate64_open,
   NULL,
@@ -123,7 +122,7 @@ static struct zip_stream deflate64_spec =
 };
 #endif
 
-static struct zip_stream deflate_spec =
+static struct zip_method_handler deflate_spec =
 {
   inflate_open,
   deflate_open,
@@ -136,7 +135,7 @@ static struct zip_stream deflate_spec =
   NULL // TODO
 };
 
-struct zip_stream *zip_streams[] =
+struct zip_method_handler *zip_method_handlers[] =
 {
 #ifdef ZIP_EXTRA_DECOMPRESSORS
   [ZIP_M_SHRUNK]    = &shrink_spec,

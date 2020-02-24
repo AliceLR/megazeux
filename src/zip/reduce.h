@@ -105,9 +105,9 @@ static inline enum zip_error reduce_ex_file(struct zip_stream_data *zs)
   uint8_t *sets = buffer + REDUCE_BUFFER_SIZE;
   uint8_t *set;
 
-  uint8_t *start = zs->output_start;
-  uint8_t *pos = zs->output_pos;
-  uint8_t *end = zs->output_end;
+  uint8_t *start = zs->output_buffer;
+  uint8_t *pos = zs->output_buffer;
+  uint8_t *end = zs->output_buffer + zs->output_length;
 
   uint32_t buffer_pos;
   uint32_t buffer_stop;
@@ -119,13 +119,14 @@ static inline enum zip_error reduce_ex_file(struct zip_stream_data *zs)
   int i;
   int j;
 
-  if(!zs->next_input || !zs->output_start || zs->finished)
+  if(!zs->input_buffer || !zs->output_buffer || zs->finished)
     return ZIP_EOF;
 
-  b->input = zs->next_input;
-  b->input_left = zs->next_input_length;
-  zs->final_input_length = zs->next_input_length;
-  zs->next_input = zs->output_start = zs->output_pos = zs->output_end = NULL;
+  b->input = zs->input_buffer;
+  b->input_left = zs->input_length;
+  zs->final_input_length = zs->input_length;
+  zs->input_buffer = zs->output_buffer = NULL;
+  zs->input_length = zs->output_length = 0;
 
   // Read the follower sets from the input buffer.
   for(i = 255; i >= 0; i--)

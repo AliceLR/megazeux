@@ -343,19 +343,20 @@ static inline enum zip_error unshrink_file(struct zip_stream_data *zs)
   struct bitstream *b = &(ss->b);
   enum zip_error result;
 
-  uint8_t *start = zs->output_start;
-  uint8_t *pos = zs->output_pos;
-  uint8_t *end = zs->output_end;
+  uint8_t *start = zs->output_buffer;
+  uint8_t *pos = zs->output_buffer;
+  uint8_t *end = zs->output_buffer + zs->output_length;
 
   uint8_t bit_width = ss->bit_width;
 
-  if(!zs->next_input || !zs->output_start || zs->finished)
+  if(!zs->input_buffer || !zs->output_buffer || zs->finished)
     return ZIP_EOF;
 
-  b->input = zs->next_input;
-  b->input_left = zs->next_input_length;
-  zs->final_input_length = zs->next_input_length;
-  zs->next_input = zs->output_start = zs->output_pos = zs->output_end = NULL;
+  b->input = zs->input_buffer;
+  b->input_left = zs->input_length;
+  zs->final_input_length = zs->input_length;
+  zs->input_buffer = zs->output_buffer = NULL;
+  zs->input_length = zs->output_length = 0;
 
   while(pos < end)
   {

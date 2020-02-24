@@ -189,7 +189,7 @@ struct zip_archive
   void **external_buffer;
   size_t *external_buffer_size;
 
-  struct zip_stream *stream;
+  struct zip_method_handler *stream;
   struct zip_stream_data stream_data;
   uint8_t padding[ZIP_STREAM_DATA_PADDING];
 };

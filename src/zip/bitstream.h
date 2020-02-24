@@ -104,7 +104,7 @@ static inline int bs_read(struct bitstream *b, uint16_t mask, uint8_t bits)
 {
   uint16_t tmp;
   if(b->buf_left < bits)
-    if(!bs_fill(b))
+    if(!bs_fill(b) || b->buf_left < bits)
       return EOF;
 
   tmp = (b->buf & mask);

@@ -317,9 +317,9 @@ static inline enum zip_error expl_file(struct zip_stream_data *zs)
   struct explode_stream_data *xs = ((struct explode_stream_data *)zs);
   struct bitstream *b = &(xs->b);
 
-  uint8_t *start = zs->output_start;
-  uint8_t *pos = zs->output_pos;
-  uint8_t *end = zs->output_end;
+  uint8_t *start = zs->output_buffer;
+  uint8_t *pos = zs->output_buffer;
+  uint8_t *end = zs->output_buffer + zs->output_length;
 
   enum zip_error result;
 
@@ -328,17 +328,18 @@ static inline enum zip_error expl_file(struct zip_stream_data *zs)
 
   if(!b->input)
   {
-    if(!zs->next_input)
+    if(!zs->input_buffer)
       return ZIP_EOF;
 
-    b->input = zs->next_input;
-    b->input_left = zs->next_input_length;
-    zs->final_input_length = zs->next_input_length;
-    zs->next_input = NULL;
-    zs->next_input_length = 0;
+    b->input = zs->input_buffer;
+    b->input_left = zs->input_length;
+    zs->final_input_length = zs->input_length;
+    zs->input_buffer = NULL;
+    zs->input_length = 0;
   }
 
-  zs->output_start = zs->output_pos = zs->output_end = NULL;
+  zs->output_buffer = NULL;
+  zs->output_length = 0;
 
   if(!xs->length_tree)
   {

@@ -72,10 +72,10 @@ static inline unsigned inflate64_in_callback(void *data,
  z_const unsigned char **in)
 {
   struct zip_stream_data *zs = (struct zip_stream_data *)data;
-  size_t length = zs->next_input_length;
-  *in = (void *)zs->next_input;
-  zs->next_input = NULL;
-  zs->next_input_length = 0;
+  size_t length = zs->input_length;
+  *in = (void *)zs->input_buffer;
+  zs->input_buffer = NULL;
+  zs->input_length = 0;
   zs->final_input_length += length;
   return length;
 }
@@ -84,19 +84,19 @@ static inline int inflate64_out_callback(void *data, unsigned char *buffer,
  unsigned buffer_len)
 {
   struct zip_stream_data *zs = (struct zip_stream_data *)data;
-  size_t output_left = zs->output_end - zs->output_pos;
   int err = 0;
 
-  if(buffer_len > output_left)
+  if(buffer_len > zs->output_length)
   {
-    buffer_len = output_left;
+    buffer_len = zs->output_length;
     err = -1;
   }
 
   if(buffer_len)
   {
-    memcpy(zs->output_pos, buffer, buffer_len);
-    zs->output_pos += buffer_len;
+    memcpy(zs->output_buffer, buffer, buffer_len);
+    zs->output_buffer += buffer_len;
+    zs->output_length -= buffer_len;
     zs->final_output_length += buffer_len;
   }
   return err;
