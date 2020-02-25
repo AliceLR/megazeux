@@ -23,11 +23,12 @@
 #ifndef __UTIL_H
 #define __UTIL_H
 
-#include <stdio.h>
 #include "compat.h"
 
 __M_BEGIN_DECLS
 
+#include <stdint.h>
+#include <stdio.h>
 #if !defined(_MSC_VER) && !defined(__amigaos__)
 #include <unistd.h>
 #endif
@@ -78,6 +79,9 @@ enum resource_id
   GLSL_SHADER_CURSOR_VERT,
   GLSL_SHADER_CURSOR_FRAG,
 #endif
+#ifdef CONFIG_GAMECONTROLLERDB
+  GAMECONTROLLERDB_TXT,
+#endif
   END_RESOURCE_ID_T // must be last
 };
 
@@ -87,22 +91,24 @@ enum resource_id
 #define GLSL_SHADER_RES_COUNT (GLSL_SHADER_RES_LAST - GLSL_SHADER_RES_FIRST + 1)
 #endif
 
-CORE_LIBSPEC int mzx_res_init(const char *argv0, bool editor);
+CORE_LIBSPEC int mzx_res_init(const char *argv0, boolean editor);
 CORE_LIBSPEC void mzx_res_free(void);
 CORE_LIBSPEC char *mzx_res_get_by_id(enum resource_id id);
 
+CORE_LIBSPEC boolean redirect_stdio(const char *base_path, boolean require_conf);
+
 // Code to load multi-byte ints from little endian file
 int fgetw(FILE *fp);
-int fgetd(FILE *fp);
+CORE_LIBSPEC int fgetd(FILE *fp);
 void fputw(int src, FILE *fp);
 void fputd(int src, FILE *fp);
 
 CORE_LIBSPEC long ftell_and_rewind(FILE *f);
 
 CORE_LIBSPEC void rng_seed_init(void);
-unsigned long long rng_get_seed(void);
-void rng_set_seed(unsigned long long seed);
-unsigned int Random(unsigned long long range);
+uint64_t rng_get_seed(void);
+void rng_set_seed(uint64_t seed);
+unsigned int Random(uint64_t range);
 
 CORE_LIBSPEC void add_ext(char *src, const char *ext);
 CORE_LIBSPEC int get_ext_pos(const char *filename);
@@ -136,8 +142,15 @@ struct dso_syms_map
 
 #define PATH_BUF_LEN MAX_PATH
 
+enum mzx_dir_type
+{
+  DIR_TYPE_UNKNOWN,
+  DIR_TYPE_FILE,
+  DIR_TYPE_DIR
+};
+
 struct mzx_dir {
-#if defined(CONFIG_PSP) || defined(CONFIG_3DS)
+#if defined(CONFIG_PSP) || defined(CONFIG_3DS) || defined(CONFIG_SWITCH)
   char path[PATH_BUF_LEN];
 #endif
   DIR *d;
@@ -145,16 +158,16 @@ struct mzx_dir {
   long pos;
 };
 
-bool dir_open(struct mzx_dir *dir, const char *path);
+boolean dir_open(struct mzx_dir *dir, const char *path);
 void dir_close(struct mzx_dir *dir);
 void dir_seek(struct mzx_dir *dir, long offset);
 long dir_tell(struct mzx_dir *dir);
-bool dir_get_next_entry(struct mzx_dir *dir, char *entry);
+boolean dir_get_next_entry(struct mzx_dir *dir, char *entry, int *type);
 
-CORE_LIBSPEC void boyer_moore_index(void *B, size_t b_len,
- int *index, bool ignore_case);
-CORE_LIBSPEC void *boyer_moore_search(void *A, size_t a_len, void *B, size_t b_len,
- int *index, bool ignore_case);
+CORE_LIBSPEC void boyer_moore_index(const void *B, const size_t b_len,
+ int index[256], boolean ignore_case);
+CORE_LIBSPEC void *boyer_moore_search(const void *A, const size_t a_len,
+ const void *B, const size_t b_len, const int index[256], boolean ignore_case);
 
 // Code to load/save multi-byte ints to/from little endian memory
 int mem_getc(const unsigned char **ptr);
@@ -178,17 +191,12 @@ CORE_LIBSPEC char *strsep(char **stringp, const char *delim);
 #ifndef __WIN32__
 #if defined(CONFIG_PSP) || defined(CONFIG_GP2X) \
  || defined(CONFIG_NDS) || defined(CONFIG_WII) \
- || defined(CONFIG_3DS)
+ || defined(CONFIG_3DS) || defined(CONFIG_SWITCH)
 #include <string.h>
 #else
 #include <strings.h>
 #endif
 #endif // !__WIN32__
-
-#if defined(CONFIG_NDS) || defined(CONFIG_WII)
-// FIXME: rmdir() needs implementing on NDS/Wii
-#define rmdir(x)
-#endif
 
 #if defined(__WIN32__) && !defined(_MSC_VER)
 #define mkdir(file,mode) mkdir(file)
@@ -201,16 +209,18 @@ CORE_LIBSPEC void __stack_chk_fail(void);
 
 #if defined(ANDROID)
 
-#define info(...)  LOGI(__VA_ARGS__)
-#define warn(...)  LOGW(__VA_ARGS__)
+#include <android/log.h>
+
+#define info(...)  __android_log_print(ANDROID_LOG_INFO, "MegaZeux", __VA_ARGS__)
+#define warn(...)  __android_log_print(ANDROID_LOG_WARN, "MegaZeux", __VA_ARGS__)
 
 #ifdef DEBUG
-#define debug(...) LOGD(__VA_ARGS__)
+#define debug(...)  __android_log_print(ANDROID_LOG_DEBUG, "MegaZeux", __VA_ARGS__)
 #else
 #define debug(...) do { } while(0)
 #endif
 
-#elif defined(CONFIG_NDS) /* ANDROID */
+#elif defined(CONFIG_NDS) && !defined(CONFIG_STDIO_REDIRECT) /* ANDROID */
 
 // When the graphics have initialized, print to a debug buffer rather than the screen.
 void info(const char *format, ...)  __attribute__((format(printf, 1, 2)));

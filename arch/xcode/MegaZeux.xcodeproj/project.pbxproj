@@ -18,6 +18,52 @@
 		BF1012C21FCCABF0008EEDB6 /* SDL2.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C01FCCABF0008EEDB6 /* SDL2.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		BF1012C41FCCB02F008EEDB6 /* libpng.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C31FCCB02F008EEDB6 /* libpng.framework */; };
 		BF1012C51FCCB02F008EEDB6 /* libpng.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C31FCCB02F008EEDB6 /* libpng.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		BF3C7A7C22E689020024C630 /* render_softscale.c in Sources */ = {isa = PBXBuildFile; fileRef = BF3C7A7A22E688000024C630 /* render_softscale.c */; };
+		BF6058B2216B3683001B738C /* edit_menu.c in Sources */ = {isa = PBXBuildFile; fileRef = BF6058AC216B3682001B738C /* edit_menu.c */; };
+		BF6058B3216B3683001B738C /* buffer.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058AD216B3682001B738C /* buffer.h */; };
+		BF6058B4216B3683001B738C /* edit_menu.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058AE216B3682001B738C /* edit_menu.h */; };
+		BF6058B5216B3683001B738C /* buffer.c in Sources */ = {isa = PBXBuildFile; fileRef = BF6058AF216B3682001B738C /* buffer.c */; };
+		BF6058B6216B3683001B738C /* buffer_struct.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058B0216B3682001B738C /* buffer_struct.h */; };
+		BF6058B7216B3683001B738C /* macro_struct.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058B1216B3683001B738C /* macro_struct.h */; };
+		BF6058DB216B3725001B738C /* extmem.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058B8216B371F001B738C /* extmem.h */; };
+		BF6058DC216B3725001B738C /* core.c in Sources */ = {isa = PBXBuildFile; fileRef = BF6058B9216B371F001B738C /* core.c */; };
+		BF6058DD216B3725001B738C /* game_menu.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058BA216B371F001B738C /* game_menu.h */; };
+		BF6058DE216B3725001B738C /* board_struct.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058BB216B371F001B738C /* board_struct.h */; };
+		BF6058DF216B3725001B738C /* game_update.c in Sources */ = {isa = PBXBuildFile; fileRef = BF6058BC216B371F001B738C /* game_update.c */; };
+		BF6058E0216B3725001B738C /* compat.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058BD216B3720001B738C /* compat.h */; };
+		BF6058E1216B3725001B738C /* game_menu.c in Sources */ = {isa = PBXBuildFile; fileRef = BF6058BE216B3720001B738C /* game_menu.c */; };
+		BF6058E2216B3725001B738C /* counter_struct.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058BF216B3720001B738C /* counter_struct.h */; };
+		BF6058E3216B3725001B738C /* memcasecmp.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058C0216B3720001B738C /* memcasecmp.h */; };
+		BF6058E4216B3725001B738C /* game_player.c in Sources */ = {isa = PBXBuildFile; fileRef = BF6058C1216B3720001B738C /* game_player.c */; };
+		BF6058E5216B3725001B738C /* intake_num.c in Sources */ = {isa = PBXBuildFile; fileRef = BF6058C2216B3720001B738C /* intake_num.c */; };
+		BF6058E6216B3725001B738C /* rasm.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058C3216B3720001B738C /* rasm.h */; };
+		BF6058E7216B3725001B738C /* game_ops.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058C4216B3720001B738C /* game_ops.h */; };
+		BF6058E8216B3725001B738C /* world_format.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058C5216B3721001B738C /* world_format.h */; };
+		BF6058E9216B3725001B738C /* rasm.c in Sources */ = {isa = PBXBuildFile; fileRef = BF6058C6216B3721001B738C /* rasm.c */; };
+		BF6058EA216B3725001B738C /* settings.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058C7216B3721001B738C /* settings.h */; };
+		BF6058EB216B3725001B738C /* caption.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058C8216B3721001B738C /* caption.h */; };
+		BF6058EC216B3725001B738C /* core.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058C9216B3722001B738C /* core.h */; };
+		BF6058ED216B3725001B738C /* game_update_board.c in Sources */ = {isa = PBXBuildFile; fileRef = BF6058CA216B3722001B738C /* game_update_board.c */; };
+		BF6058EE216B3725001B738C /* world_struct.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058CB216B3722001B738C /* world_struct.h */; };
+		BF6058EF216B3725001B738C /* compat_sdl.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058CC216B3722001B738C /* compat_sdl.h */; };
+		BF6058F0216B3725001B738C /* renderers.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058CD216B3723001B738C /* renderers.h */; };
+		BF6058F1216B3725001B738C /* caption.c in Sources */ = {isa = PBXBuildFile; fileRef = BF6058CE216B3723001B738C /* caption.c */; };
+		BF6058F2216B3725001B738C /* game_ops.c in Sources */ = {isa = PBXBuildFile; fileRef = BF6058CF216B3723001B738C /* game_ops.c */; };
+		BF6058F3216B3725001B738C /* intake_num.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058D0216B3723001B738C /* intake_num.h */; };
+		BF6058F4216B3725001B738C /* render_layer_code.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058D1216B3723001B738C /* render_layer_code.h */; };
+		BF6058F5216B3725001B738C /* sprite_struct.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058D2216B3724001B738C /* sprite_struct.h */; };
+		BF6058F6216B3725001B738C /* game_update.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058D3216B3724001B738C /* game_update.h */; };
+		BF6058F7216B3725001B738C /* game_player.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058D4216B3724001B738C /* game_player.h */; };
+		BF6058F8216B3725001B738C /* robot_struct.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058D5216B3724001B738C /* robot_struct.h */; };
+		BF6058F9216B3725001B738C /* thread_sdl.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058D6216B3724001B738C /* thread_sdl.h */; };
+		BF6058FA216B3725001B738C /* const.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058D7216B3724001B738C /* const.h */; };
+		BF6058FB216B3725001B738C /* keysym.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058D8216B3724001B738C /* keysym.h */; };
+		BF6058FC216B3725001B738C /* settings.c in Sources */ = {isa = PBXBuildFile; fileRef = BF6058D9216B3725001B738C /* settings.c */; };
+		BF6058FD216B3725001B738C /* memfile.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058DA216B3725001B738C /* memfile.h */; };
+		BFA52FCE233AC29900A90CB4 /* vfs.c in Sources */ = {isa = PBXBuildFile; fileRef = BFA52FCC233AC29800A90CB4 /* vfs.c */; };
+		BFA52FCF233AC29900A90CB4 /* vfs.h in Headers */ = {isa = PBXBuildFile; fileRef = BFA52FCD233AC29900A90CB4 /* vfs.h */; };
+		BFA52FD2233AC48100A90CB4 /* audio_reality.h in Headers */ = {isa = PBXBuildFile; fileRef = BFA52FD0233AC48100A90CB4 /* audio_reality.h */; };
+		BFA52FD3233AC48100A90CB4 /* audio_reality.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BFA52FD1233AC48100A90CB4 /* audio_reality.cpp */; };
 		BFC0B26B20681ACC00D28296 /* flt_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BFC0B26620681A9000D28296 /* flt_load.c */; };
 		BFC0B26C20681ACC00D28296 /* hmn_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BFC0B26520681A9000D28296 /* hmn_load.c */; };
 		BFC0B26D20681ACC00D28296 /* st_load.c in Sources */ = {isa = PBXBuildFile; fileRef = BFC0B26720681A9000D28296 /* st_load.c */; };
@@ -64,8 +110,6 @@
 		BFFF16CF1FCDC76900BDEC58 /* fsafeopen.h in Headers */ = {isa = PBXBuildFile; fileRef = BFFF16701FCDC64D00BDEC58 /* fsafeopen.h */; };
 		BFFF16D01FCDC76900BDEC58 /* game.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF16681FCDC64C00BDEC58 /* game.c */; };
 		BFFF16D11FCDC76900BDEC58 /* game.h in Headers */ = {isa = PBXBuildFile; fileRef = BFFF164D1FCDC64800BDEC58 /* game.h */; };
-		BFFF16D21FCDC76900BDEC58 /* game2.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF166B1FCDC64C00BDEC58 /* game2.c */; };
-		BFFF16D31FCDC76900BDEC58 /* game2.h in Headers */ = {isa = PBXBuildFile; fileRef = BFFF16491FCDC64800BDEC58 /* game2.h */; };
 		BFFF16D41FCDC76900BDEC58 /* graphics.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF16561FCDC64900BDEC58 /* graphics.c */; };
 		BFFF16D51FCDC76900BDEC58 /* graphics.h in Headers */ = {isa = PBXBuildFile; fileRef = BFFF16711FCDC64D00BDEC58 /* graphics.h */; };
 		BFFF16D61FCDC76900BDEC58 /* idarray.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF16721FCDC64D00BDEC58 /* idarray.c */; };
@@ -97,10 +141,6 @@
 		BFFF16F01FCDC76900BDEC58 /* render_sdl.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF16A71FCDC6D300BDEC58 /* render_sdl.c */; };
 		BFFF16F11FCDC76900BDEC58 /* render_sdl.h in Headers */ = {isa = PBXBuildFile; fileRef = BFFF16971FCDC6D000BDEC58 /* render_sdl.h */; };
 		BFFF16F21FCDC76900BDEC58 /* render_soft.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF16A41FCDC6D300BDEC58 /* render_soft.c */; };
-		BFFF16F31FCDC76900BDEC58 /* render_yuv.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF169B1FCDC6D100BDEC58 /* render_yuv.c */; };
-		BFFF16F41FCDC76900BDEC58 /* render_yuv.h in Headers */ = {isa = PBXBuildFile; fileRef = BFFF16A51FCDC6D300BDEC58 /* render_yuv.h */; };
-		BFFF16F51FCDC76900BDEC58 /* render_yuv1.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF16981FCDC6D100BDEC58 /* render_yuv1.c */; };
-		BFFF16F61FCDC76900BDEC58 /* render_yuv2.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF169A1FCDC6D100BDEC58 /* render_yuv2.c */; };
 		BFFF16F71FCDC76900BDEC58 /* render.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF166D1FCDC64D00BDEC58 /* render.c */; };
 		BFFF16F81FCDC76900BDEC58 /* render.h in Headers */ = {isa = PBXBuildFile; fileRef = BFFF16691FCDC64C00BDEC58 /* render.h */; };
 		BFFF16F91FCDC76900BDEC58 /* robot.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF16451FCDC64700BDEC58 /* robot.c */; };
@@ -345,6 +385,54 @@
 		BF1012C01FCCABF0008EEDB6 /* SDL2.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = SDL2.framework; sourceTree = "<group>"; };
 		BF1012C31FCCB02F008EEDB6 /* libpng.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = libpng.framework; sourceTree = "<group>"; };
 		BF1012C61FCCB0F9008EEDB6 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
+		BF3C7A7A22E688000024C630 /* render_softscale.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = render_softscale.c; path = ../../src/render_softscale.c; sourceTree = "<group>"; };
+		BF3C7A7D22E6B6A20024C630 /* yuv.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = yuv.h; path = ../../src/yuv.h; sourceTree = "<group>"; };
+		BF3C7A7E22E6B7A20024C630 /* gamecontrollerdb.txt */ = {isa = PBXFileReference; lastKnownFileType = text; name = gamecontrollerdb.txt; path = ../../assets/gamecontrollerdb.txt; sourceTree = "<group>"; };
+		BF6058AC216B3682001B738C /* edit_menu.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = edit_menu.c; path = ../../src/editor/edit_menu.c; sourceTree = "<group>"; };
+		BF6058AD216B3682001B738C /* buffer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = buffer.h; path = ../../src/editor/buffer.h; sourceTree = "<group>"; };
+		BF6058AE216B3682001B738C /* edit_menu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = edit_menu.h; path = ../../src/editor/edit_menu.h; sourceTree = "<group>"; };
+		BF6058AF216B3682001B738C /* buffer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = buffer.c; path = ../../src/editor/buffer.c; sourceTree = "<group>"; };
+		BF6058B0216B3682001B738C /* buffer_struct.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = buffer_struct.h; path = ../../src/editor/buffer_struct.h; sourceTree = "<group>"; };
+		BF6058B1216B3683001B738C /* macro_struct.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = macro_struct.h; path = ../../src/editor/macro_struct.h; sourceTree = "<group>"; };
+		BF6058B8216B371F001B738C /* extmem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = extmem.h; path = ../../src/extmem.h; sourceTree = "<group>"; };
+		BF6058B9216B371F001B738C /* core.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = core.c; path = ../../src/core.c; sourceTree = "<group>"; };
+		BF6058BA216B371F001B738C /* game_menu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = game_menu.h; path = ../../src/game_menu.h; sourceTree = "<group>"; };
+		BF6058BB216B371F001B738C /* board_struct.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = board_struct.h; path = ../../src/board_struct.h; sourceTree = "<group>"; };
+		BF6058BC216B371F001B738C /* game_update.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = game_update.c; path = ../../src/game_update.c; sourceTree = "<group>"; };
+		BF6058BD216B3720001B738C /* compat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = compat.h; path = ../../src/compat.h; sourceTree = "<group>"; };
+		BF6058BE216B3720001B738C /* game_menu.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = game_menu.c; path = ../../src/game_menu.c; sourceTree = "<group>"; };
+		BF6058BF216B3720001B738C /* counter_struct.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = counter_struct.h; path = ../../src/counter_struct.h; sourceTree = "<group>"; };
+		BF6058C0216B3720001B738C /* memcasecmp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = memcasecmp.h; path = ../../src/memcasecmp.h; sourceTree = "<group>"; };
+		BF6058C1216B3720001B738C /* game_player.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = game_player.c; path = ../../src/game_player.c; sourceTree = "<group>"; };
+		BF6058C2216B3720001B738C /* intake_num.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = intake_num.c; path = ../../src/intake_num.c; sourceTree = "<group>"; };
+		BF6058C3216B3720001B738C /* rasm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = rasm.h; path = ../../src/rasm.h; sourceTree = "<group>"; };
+		BF6058C4216B3720001B738C /* game_ops.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = game_ops.h; path = ../../src/game_ops.h; sourceTree = "<group>"; };
+		BF6058C5216B3721001B738C /* world_format.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = world_format.h; path = ../../src/world_format.h; sourceTree = "<group>"; };
+		BF6058C6216B3721001B738C /* rasm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = rasm.c; path = ../../src/rasm.c; sourceTree = "<group>"; };
+		BF6058C7216B3721001B738C /* settings.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = settings.h; path = ../../src/settings.h; sourceTree = "<group>"; };
+		BF6058C8216B3721001B738C /* caption.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = caption.h; path = ../../src/caption.h; sourceTree = "<group>"; };
+		BF6058C9216B3722001B738C /* core.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = core.h; path = ../../src/core.h; sourceTree = "<group>"; };
+		BF6058CA216B3722001B738C /* game_update_board.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = game_update_board.c; path = ../../src/game_update_board.c; sourceTree = "<group>"; };
+		BF6058CB216B3722001B738C /* world_struct.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = world_struct.h; path = ../../src/world_struct.h; sourceTree = "<group>"; };
+		BF6058CC216B3722001B738C /* compat_sdl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = compat_sdl.h; path = ../../src/compat_sdl.h; sourceTree = "<group>"; };
+		BF6058CD216B3723001B738C /* renderers.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = renderers.h; path = ../../src/renderers.h; sourceTree = "<group>"; };
+		BF6058CE216B3723001B738C /* caption.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = caption.c; path = ../../src/caption.c; sourceTree = "<group>"; };
+		BF6058CF216B3723001B738C /* game_ops.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = game_ops.c; path = ../../src/game_ops.c; sourceTree = "<group>"; };
+		BF6058D0216B3723001B738C /* intake_num.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = intake_num.h; path = ../../src/intake_num.h; sourceTree = "<group>"; };
+		BF6058D1216B3723001B738C /* render_layer_code.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = render_layer_code.h; path = ../../src/render_layer_code.h; sourceTree = "<group>"; };
+		BF6058D2216B3724001B738C /* sprite_struct.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sprite_struct.h; path = ../../src/sprite_struct.h; sourceTree = "<group>"; };
+		BF6058D3216B3724001B738C /* game_update.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = game_update.h; path = ../../src/game_update.h; sourceTree = "<group>"; };
+		BF6058D4216B3724001B738C /* game_player.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = game_player.h; path = ../../src/game_player.h; sourceTree = "<group>"; };
+		BF6058D5216B3724001B738C /* robot_struct.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = robot_struct.h; path = ../../src/robot_struct.h; sourceTree = "<group>"; };
+		BF6058D6216B3724001B738C /* thread_sdl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = thread_sdl.h; path = ../../src/thread_sdl.h; sourceTree = "<group>"; };
+		BF6058D7216B3724001B738C /* const.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = const.h; path = ../../src/const.h; sourceTree = "<group>"; };
+		BF6058D8216B3724001B738C /* keysym.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = keysym.h; path = ../../src/keysym.h; sourceTree = "<group>"; };
+		BF6058D9216B3725001B738C /* settings.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = settings.c; path = ../../src/settings.c; sourceTree = "<group>"; };
+		BF6058DA216B3725001B738C /* memfile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = memfile.h; path = ../../src/memfile.h; sourceTree = "<group>"; };
+		BFA52FCC233AC29800A90CB4 /* vfs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = vfs.c; path = ../../src/vfs.c; sourceTree = "<group>"; };
+		BFA52FCD233AC29900A90CB4 /* vfs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = vfs.h; path = ../../src/vfs.h; sourceTree = "<group>"; };
+		BFA52FD0233AC48100A90CB4 /* audio_reality.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = audio_reality.h; path = ../../src/audio/audio_reality.h; sourceTree = "<group>"; };
+		BFA52FD1233AC48100A90CB4 /* audio_reality.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = audio_reality.cpp; path = ../../src/audio/audio_reality.cpp; sourceTree = "<group>"; };
 		BFC0B26520681A9000D28296 /* hmn_load.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = hmn_load.c; path = ../../contrib/libxmp/src/loaders/hmn_load.c; sourceTree = "<group>"; };
 		BFC0B26620681A9000D28296 /* flt_load.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = flt_load.c; path = ../../contrib/libxmp/src/loaders/flt_load.c; sourceTree = "<group>"; };
 		BFC0B26720681A9000D28296 /* st_load.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = st_load.c; path = ../../contrib/libxmp/src/loaders/st_load.c; sourceTree = "<group>"; };
@@ -387,7 +475,6 @@
 		BFFF16451FCDC64700BDEC58 /* robot.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = robot.c; path = ../../src/robot.c; sourceTree = "<group>"; };
 		BFFF16461FCDC64700BDEC58 /* expr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = expr.h; path = ../../src/expr.h; sourceTree = "<group>"; };
 		BFFF16471FCDC64700BDEC58 /* legacy_world.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = legacy_world.c; path = ../../src/legacy_world.c; sourceTree = "<group>"; };
-		BFFF16491FCDC64800BDEC58 /* game2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = game2.h; path = ../../src/game2.h; sourceTree = "<group>"; };
 		BFFF164A1FCDC64800BDEC58 /* fsafeopen.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = fsafeopen.c; path = ../../src/fsafeopen.c; sourceTree = "<group>"; };
 		BFFF164B1FCDC64800BDEC58 /* error.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = error.c; path = ../../src/error.c; sourceTree = "<group>"; };
 		BFFF164C1FCDC64800BDEC58 /* legacy_robot.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = legacy_robot.h; path = ../../src/legacy_robot.h; sourceTree = "<group>"; };
@@ -421,7 +508,6 @@
 		BFFF16681FCDC64C00BDEC58 /* game.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = game.c; path = ../../src/game.c; sourceTree = "<group>"; };
 		BFFF16691FCDC64C00BDEC58 /* render.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = render.h; path = ../../src/render.h; sourceTree = "<group>"; };
 		BFFF166A1FCDC64C00BDEC58 /* legacy_rasm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = legacy_rasm.c; path = ../../src/legacy_rasm.c; sourceTree = "<group>"; };
-		BFFF166B1FCDC64C00BDEC58 /* game2.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = game2.c; path = ../../src/game2.c; sourceTree = "<group>"; };
 		BFFF166C1FCDC64D00BDEC58 /* counter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = counter.h; path = ../../src/counter.h; sourceTree = "<group>"; };
 		BFFF166D1FCDC64D00BDEC58 /* render.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = render.c; path = ../../src/render.c; sourceTree = "<group>"; };
 		BFFF166E1FCDC64D00BDEC58 /* intake.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = intake.h; path = ../../src/intake.h; sourceTree = "<group>"; };
@@ -434,15 +520,11 @@
 		BFFF16951FCDC6D000BDEC58 /* render_gl2.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = render_gl2.c; path = ../../src/render_gl2.c; sourceTree = "<group>"; };
 		BFFF16961FCDC6D000BDEC58 /* event_sdl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = event_sdl.c; path = ../../src/event_sdl.c; sourceTree = "<group>"; };
 		BFFF16971FCDC6D000BDEC58 /* render_sdl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = render_sdl.h; path = ../../src/render_sdl.h; sourceTree = "<group>"; };
-		BFFF16981FCDC6D100BDEC58 /* render_yuv1.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = render_yuv1.c; path = ../../src/render_yuv1.c; sourceTree = "<group>"; };
 		BFFF16991FCDC6D100BDEC58 /* render_gl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = render_gl.c; path = ../../src/render_gl.c; sourceTree = "<group>"; };
-		BFFF169A1FCDC6D100BDEC58 /* render_yuv2.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = render_yuv2.c; path = ../../src/render_yuv2.c; sourceTree = "<group>"; };
-		BFFF169B1FCDC6D100BDEC58 /* render_yuv.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = render_yuv.c; path = ../../src/render_yuv.c; sourceTree = "<group>"; };
 		BFFF169D1FCDC6D200BDEC58 /* render_gl1.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = render_gl1.c; path = ../../src/render_gl1.c; sourceTree = "<group>"; };
 		BFFF169E1FCDC6D200BDEC58 /* render_glsl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = render_glsl.c; path = ../../src/render_glsl.c; sourceTree = "<group>"; };
 		BFFF16A31FCDC6D200BDEC58 /* platform_sdl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = platform_sdl.c; path = ../../src/platform_sdl.c; sourceTree = "<group>"; };
 		BFFF16A41FCDC6D300BDEC58 /* render_soft.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = render_soft.c; path = ../../src/render_soft.c; sourceTree = "<group>"; };
-		BFFF16A51FCDC6D300BDEC58 /* render_yuv.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = render_yuv.h; path = ../../src/render_yuv.h; sourceTree = "<group>"; };
 		BFFF16A61FCDC6D300BDEC58 /* render_gl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = render_gl.h; path = ../../src/render_gl.h; sourceTree = "<group>"; };
 		BFFF16A71FCDC6D300BDEC58 /* render_sdl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = render_sdl.c; path = ../../src/render_sdl.c; sourceTree = "<group>"; };
 		BFFF16A81FCDC6D300BDEC58 /* platform_endian.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = platform_endian.h; path = ../../src/platform_endian.h; sourceTree = "<group>"; };
@@ -639,8 +721,9 @@
 			isa = PBXGroup;
 			children = (
 				BFFF17101FCDC81000BDEC58 /* config.h */,
-				BFE5EB622006DB4300E15CC0 /* version.h */,
 				BFFF18981FCDE8FD00BDEC58 /* config.txt */,
+				BF3C7A7E22E6B7A20024C630 /* gamecontrollerdb.txt */,
+				BFE5EB622006DB4300E15CC0 /* version.h */,
 				BFFF18951FCDE8B300BDEC58 /* assets */,
 				BFFF16351FCDC5AE00BDEC58 /* Core */,
 				BFFF181C1FCDCEE800BDEC58 /* Editor */,
@@ -704,6 +787,8 @@
 				BFC1C0422142551800378A4C /* audio.h */,
 				BFC1C0582142585300378A4C /* audio_pcs.c */,
 				BFC1C0592142585300378A4C /* audio_pcs.h */,
+				BFA52FD1233AC48100A90CB4 /* audio_reality.cpp */,
+				BFA52FD0233AC48100A90CB4 /* audio_reality.h */,
 				BFC1C0482142551800378A4C /* audio_sdl.c */,
 				BFC1C04A2142551900378A4C /* audio_vorbis.c */,
 				BFC1C0492142551800378A4C /* audio_vorbis.h */,
@@ -731,10 +816,19 @@
 				BFFF16741FCDC64E00BDEC58 /* block.h */,
 				BFFF163A1FCDC64600BDEC58 /* board.c */,
 				BFFF16381FCDC64600BDEC58 /* board.h */,
+				BF6058BB216B371F001B738C /* board_struct.h */,
+				BF6058CE216B3723001B738C /* caption.c */,
+				BF6058C8216B3721001B738C /* caption.h */,
+				BF6058BD216B3720001B738C /* compat.h */,
+				BF6058CC216B3722001B738C /* compat_sdl.h */,
 				BFFF164E1FCDC64800BDEC58 /* configure.c */,
 				BFFF165A1FCDC64A00BDEC58 /* configure.h */,
+				BF6058D7216B3724001B738C /* const.h */,
+				BF6058B9216B371F001B738C /* core.c */,
+				BF6058C9216B3722001B738C /* core.h */,
 				BFFF16731FCDC64D00BDEC58 /* counter.c */,
 				BFFF166C1FCDC64D00BDEC58 /* counter.h */,
+				BF6058BF216B3720001B738C /* counter_struct.h */,
 				BFFF163D1FCDC64700BDEC58 /* data.c */,
 				BFFF16441FCDC64700BDEC58 /* data.h */,
 				BFFF164B1FCDC64800BDEC58 /* error.c */,
@@ -744,12 +838,20 @@
 				BFFF166F1FCDC64D00BDEC58 /* event.h */,
 				BFFF165B1FCDC64A00BDEC58 /* expr.c */,
 				BFFF16461FCDC64700BDEC58 /* expr.h */,
+				BF6058B8216B371F001B738C /* extmem.h */,
 				BFFF164A1FCDC64800BDEC58 /* fsafeopen.c */,
 				BFFF16701FCDC64D00BDEC58 /* fsafeopen.h */,
 				BFFF16681FCDC64C00BDEC58 /* game.c */,
 				BFFF164D1FCDC64800BDEC58 /* game.h */,
-				BFFF166B1FCDC64C00BDEC58 /* game2.c */,
-				BFFF16491FCDC64800BDEC58 /* game2.h */,
+				BF6058BE216B3720001B738C /* game_menu.c */,
+				BF6058BA216B371F001B738C /* game_menu.h */,
+				BF6058CF216B3723001B738C /* game_ops.c */,
+				BF6058C4216B3720001B738C /* game_ops.h */,
+				BF6058C1216B3720001B738C /* game_player.c */,
+				BF6058D4216B3724001B738C /* game_player.h */,
+				BF6058CA216B3722001B738C /* game_update_board.c */,
+				BF6058BC216B371F001B738C /* game_update.c */,
+				BF6058D3216B3724001B738C /* game_update.h */,
 				BFFF16561FCDC64900BDEC58 /* graphics.c */,
 				BFFF16711FCDC64D00BDEC58 /* graphics.h */,
 				BFFF18141FCDCD7B00BDEC58 /* helpsys.c */,
@@ -760,6 +862,9 @@
 				BFFF165C1FCDC64A00BDEC58 /* idput.h */,
 				BFFF16661FCDC64C00BDEC58 /* intake.c */,
 				BFFF166E1FCDC64D00BDEC58 /* intake.h */,
+				BF6058C2216B3720001B738C /* intake_num.c */,
+				BF6058D0216B3723001B738C /* intake_num.h */,
+				BF6058D8216B3724001B738C /* keysym.h */,
 				BFFF16501FCDC64900BDEC58 /* legacy_board.c */,
 				BFFF16431FCDC64700BDEC58 /* legacy_board.h */,
 				BFFF166A1FCDC64C00BDEC58 /* legacy_rasm.c */,
@@ -768,6 +873,8 @@
 				BFFF164C1FCDC64800BDEC58 /* legacy_robot.h */,
 				BFFF16471FCDC64700BDEC58 /* legacy_world.c */,
 				BFFF16521FCDC64900BDEC58 /* legacy_world.h */,
+				BF6058C0216B3720001B738C /* memcasecmp.h */,
+				BF6058DA216B3725001B738C /* memfile.h */,
 				BFFF16421FCDC64700BDEC58 /* mzm.c */,
 				BFFF16641FCDC64B00BDEC58 /* mzm.h */,
 				BFFF16A81FCDC6D300BDEC58 /* platform_endian.h */,
@@ -775,6 +882,10 @@
 				BFFF16A91FCDC6D300BDEC58 /* platform.h */,
 				BFFF18121FCDCD7A00BDEC58 /* pngops.c */,
 				BFFF18131FCDCD7B00BDEC58 /* pngops.h */,
+				BF6058C6216B3721001B738C /* rasm.c */,
+				BF6058C3216B3720001B738C /* rasm.h */,
+				BF6058D1216B3723001B738C /* render_layer_code.h */,
+				BF6058CD216B3723001B738C /* renderers.h */,
 				BFFF16991FCDC6D100BDEC58 /* render_gl.c */,
 				BFFF16A61FCDC6D300BDEC58 /* render_gl.h */,
 				BFFF169D1FCDC6D200BDEC58 /* render_gl1.c */,
@@ -785,27 +896,34 @@
 				BFFF16A71FCDC6D300BDEC58 /* render_sdl.c */,
 				BFFF16971FCDC6D000BDEC58 /* render_sdl.h */,
 				BFFF16A41FCDC6D300BDEC58 /* render_soft.c */,
-				BFFF169B1FCDC6D100BDEC58 /* render_yuv.c */,
-				BFFF16A51FCDC6D300BDEC58 /* render_yuv.h */,
-				BFFF16981FCDC6D100BDEC58 /* render_yuv1.c */,
-				BFFF169A1FCDC6D100BDEC58 /* render_yuv2.c */,
+				BF3C7A7A22E688000024C630 /* render_softscale.c */,
 				BFFF166D1FCDC64D00BDEC58 /* render.c */,
 				BFFF16691FCDC64C00BDEC58 /* render.h */,
 				BFFF16451FCDC64700BDEC58 /* robot.c */,
 				BFFF16391FCDC64600BDEC58 /* robot.h */,
+				BF6058D5216B3724001B738C /* robot_struct.h */,
 				BFFF16671FCDC64C00BDEC58 /* run_robot.c */,
 				BFFF16511FCDC64900BDEC58 /* scrdisp.c */,
 				BFFF16581FCDC64A00BDEC58 /* scrdisp.h */,
+				BF6058D9216B3725001B738C /* settings.c */,
+				BF6058C7216B3721001B738C /* settings.h */,
 				BFFF16601FCDC64B00BDEC58 /* sprite.c */,
 				BFFF165E1FCDC64B00BDEC58 /* sprite.h */,
+				BF6058D2216B3724001B738C /* sprite_struct.h */,
 				BFFF16411FCDC64700BDEC58 /* str.c */,
 				BFFF16621FCDC64B00BDEC58 /* str.h */,
+				BF6058D6216B3724001B738C /* thread_sdl.h */,
 				BFFF16651FCDC64C00BDEC58 /* util.c */,
 				BFFF16361FCDC64600BDEC58 /* util.h */,
+				BFA52FCC233AC29800A90CB4 /* vfs.c */,
+				BFA52FCD233AC29900A90CB4 /* vfs.h */,
 				BFFF16531FCDC64900BDEC58 /* window.c */,
 				BFFF164F1FCDC64800BDEC58 /* window.h */,
 				BFFF16591FCDC64A00BDEC58 /* world.c */,
 				BFFF165F1FCDC64B00BDEC58 /* world.h */,
+				BF6058C5216B3721001B738C /* world_format.h */,
+				BF6058CB216B3722001B738C /* world_struct.h */,
+				BF3C7A7D22E6B6A20024C630 /* yuv.h */,
 				BFFF16631FCDC64B00BDEC58 /* zip.c */,
 				BFFF16371FCDC64600BDEC58 /* zip.h */,
 			);
@@ -933,6 +1051,9 @@
 				BFFF18461FCDCF6800BDEC58 /* block.h */,
 				BFFF183F1FCDCF6600BDEC58 /* board.c */,
 				BFFF18311FCDCF6400BDEC58 /* board.h */,
+				BF6058AF216B3682001B738C /* buffer.c */,
+				BF6058AD216B3682001B738C /* buffer.h */,
+				BF6058B0216B3682001B738C /* buffer_struct.h */,
 				BFFF18401FCDCF6600BDEC58 /* char_ed.c */,
 				BFFF18271FCDCF6300BDEC58 /* char_ed.h */,
 				BFFF18211FCDCF6200BDEC58 /* clipboard.h */,
@@ -945,12 +1066,15 @@
 				BFFF18331FCDCF6500BDEC58 /* edit_di.h */,
 				BFFF18301FCDCF6400BDEC58 /* edit.c */,
 				BFFF182F1FCDCF6400BDEC58 /* edit.h */,
+				BF6058AC216B3682001B738C /* edit_menu.c */,
+				BF6058AE216B3682001B738C /* edit_menu.h */,
 				BFFF18251FCDCF6300BDEC58 /* fill.c */,
 				BFFF18361FCDCF6500BDEC58 /* fill.h */,
 				BFFF183D1FCDCF6600BDEC58 /* graphics.c */,
 				BFFF18451FCDCF6700BDEC58 /* graphics.h */,
 				BFFF18371FCDCF6500BDEC58 /* macro.c */,
 				BFFF181F1FCDCF6200BDEC58 /* macro.h */,
+				BF6058B1216B3683001B738C /* macro_struct.h */,
 				BFFF18261FCDCF6300BDEC58 /* pal_ed.c */,
 				BFFF181D1FCDCF6200BDEC58 /* pal_ed.h */,
 				BFFF18411FCDCF6700BDEC58 /* param.c */,
@@ -982,35 +1106,53 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BF6058FB216B3725001B738C /* keysym.h in Headers */,
+				BF6058EF216B3725001B738C /* compat_sdl.h in Headers */,
 				BFFF17CE1FCDCCF300BDEC58 /* mdataio.h in Headers */,
+				BF6058EA216B3725001B738C /* settings.h in Headers */,
 				BFFF17CC1FCDCCF300BDEC58 /* list.h in Headers */,
 				BFFF170B1FCDC76900BDEC58 /* zip.h in Headers */,
+				BF6058F7216B3725001B738C /* game_player.h in Headers */,
 				BFFF17CA1FCDCCF300BDEC58 /* hmn_extras.h in Headers */,
 				BFFF17031FCDC76900BDEC58 /* str.h in Headers */,
 				BFFF17011FCDC76900BDEC58 /* sprite.h in Headers */,
 				BFFF16BE1FCDC76900BDEC58 /* block.h in Headers */,
+				BF6058E3216B3725001B738C /* memcasecmp.h in Headers */,
 				BFFF16C01FCDC76900BDEC58 /* board.h in Headers */,
+				BF6058EB216B3725001B738C /* caption.h in Headers */,
+				BF6058F4216B3725001B738C /* render_layer_code.h in Headers */,
 				BFFF181B1FCDCD8500BDEC58 /* pngops.h in Headers */,
 				BFFF16E11FCDC76900BDEC58 /* legacy_robot.h in Headers */,
 				BFFF17051FCDC76900BDEC58 /* util.h in Headers */,
 				BFFF16DF1FCDC76900BDEC58 /* legacy_rasm.h in Headers */,
-				BFFF16F41FCDC76900BDEC58 /* render_yuv.h in Headers */,
+				BF6058E2216B3725001B738C /* counter_struct.h in Headers */,
 				BFFF17C71FCDCCF300BDEC58 /* fnmatch.h in Headers */,
 				BFFF17A41FCDCCE200BDEC58 /* host.h in Headers */,
+				BF6058DD216B3725001B738C /* game_menu.h in Headers */,
 				BFFF180B1FCDCD1200BDEC58 /* iff.h in Headers */,
 				BFFF17D11FCDCCF300BDEC58 /* mixer.h in Headers */,
+				BF6058E0216B3725001B738C /* compat.h in Headers */,
 				BFFF180E1FCDCD1200BDEC58 /* med.h in Headers */,
 				BFFF17C41FCDCCF300BDEC58 /* common.h in Headers */,
 				BFFF16D91FCDC76900BDEC58 /* idput.h in Headers */,
 				BFFF17D21FCDCCF300BDEC58 /* paula.h in Headers */,
 				BFFF17CB1FCDCCF300BDEC58 /* lfo.h in Headers */,
+				BF6058F3216B3725001B738C /* intake_num.h in Headers */,
 				BFFF17071FCDC76900BDEC58 /* window.h in Headers */,
+				BF6058FD216B3725001B738C /* memfile.h in Headers */,
+				BF6058F5216B3725001B738C /* sprite_struct.h in Headers */,
+				BF6058F9216B3725001B738C /* thread_sdl.h in Headers */,
+				BF6058E7216B3725001B738C /* game_ops.h in Headers */,
 				BFFF17D61FCDCCF300BDEC58 /* precomp_lut.h in Headers */,
 				BFFF16CB1FCDC76900BDEC58 /* event.h in Headers */,
 				BFFF16C41FCDC76900BDEC58 /* counter.h in Headers */,
 				BFFF17D41FCDCCF300BDEC58 /* player.h in Headers */,
+				BF6058DE216B3725001B738C /* board_struct.h in Headers */,
+				BFA52FCF233AC29900A90CB4 /* vfs.h in Headers */,
 				BFFF17091FCDC76900BDEC58 /* world.h in Headers */,
+				BF6058F6216B3725001B738C /* game_update.h in Headers */,
 				BFFF16DD1FCDC76900BDEC58 /* legacy_board.h in Headers */,
+				BF6058F8216B3725001B738C /* robot_struct.h in Headers */,
 				BFFF17A61FCDCCE200BDEC58 /* manifest.h in Headers */,
 				BFFF16DB1FCDC76900BDEC58 /* intake.h in Headers */,
 				BFFF16CD1FCDC76900BDEC58 /* expr.h in Headers */,
@@ -1030,21 +1172,28 @@
 				BFFF17CF1FCDCCF300BDEC58 /* med_extras.h in Headers */,
 				BFFF17C61FCDCCF300BDEC58 /* extras.h in Headers */,
 				BFFF16FA1FCDC76900BDEC58 /* robot.h in Headers */,
+				BF6058E8216B3725001B738C /* world_format.h in Headers */,
 				BFFF18101FCDCD1200BDEC58 /* s3m.h in Headers */,
+				BFA52FD2233AC48100A90CB4 /* audio_reality.h in Headers */,
 				BFFF16FD1FCDC76900BDEC58 /* scrdisp.h in Headers */,
-				BFFF16D31FCDC76900BDEC58 /* game2.h in Headers */,
 				BFC1C06C2142591600378A4C /* dns.h in Headers */,
+				BF6058F0216B3725001B738C /* renderers.h in Headers */,
 				BFFF17D71FCDCCF300BDEC58 /* virtual.h in Headers */,
 				BFFF16C21FCDC76900BDEC58 /* configure.h in Headers */,
+				BF6058DB216B3725001B738C /* extmem.h in Headers */,
 				BFFF18191FCDCD8500BDEC58 /* helpsys.h in Headers */,
+				BF6058EE216B3725001B738C /* world_struct.h in Headers */,
 				BFFF16C81FCDC76900BDEC58 /* error.h in Headers */,
 				BFFF16D11FCDC76900BDEC58 /* game.h in Headers */,
 				BFFF18111FCDCD1200BDEC58 /* xm.h in Headers */,
 				BFFF17CD1FCDCCF300BDEC58 /* md5.h in Headers */,
+				BF6058EC216B3725001B738C /* core.h in Headers */,
 				BFFF180F1FCDCD1200BDEC58 /* mod.h in Headers */,
 				BFFF16E31FCDC76900BDEC58 /* legacy_world.h in Headers */,
+				BF6058FA216B3725001B738C /* const.h in Headers */,
 				BFFF17111FCDC81000BDEC58 /* config.h in Headers */,
 				BFFF17C51FCDCCF300BDEC58 /* effects.h in Headers */,
+				BF6058E6216B3725001B738C /* rasm.h in Headers */,
 				BFFF16E81FCDC76900BDEC58 /* platform.h in Headers */,
 				BFFF17D01FCDCCF300BDEC58 /* memio.h in Headers */,
 				BFFF17C91FCDCCF300BDEC58 /* hio.h in Headers */,
@@ -1064,6 +1213,7 @@
 				BFFF18771FCDCF7C00BDEC58 /* robo_debug.h in Headers */,
 				BFFF18691FCDCF7C00BDEC58 /* edit_di.h in Headers */,
 				BFFF18811FCDCF7C00BDEC58 /* undo.h in Headers */,
+				BF6058B6216B3683001B738C /* buffer_struct.h in Headers */,
 				BFFF18711FCDCF7C00BDEC58 /* macro.h in Headers */,
 				BFFF187B1FCDCF7C00BDEC58 /* robot.h in Headers */,
 				BFFF18671FCDCF7C00BDEC58 /* debug.h in Headers */,
@@ -1078,9 +1228,12 @@
 				BFFF187F1FCDCF7C00BDEC58 /* sfx_edit.h in Headers */,
 				BFFF185D1FCDCF7C00BDEC58 /* block.h in Headers */,
 				BFFF185F1FCDCF7C00BDEC58 /* board.h in Headers */,
+				BF6058B4216B3683001B738C /* edit_menu.h in Headers */,
 				BFFF18791FCDCF7C00BDEC58 /* robo_ed.h in Headers */,
+				BF6058B3216B3683001B738C /* buffer.h in Headers */,
 				BFFF18651FCDCF7C00BDEC58 /* configure.h in Headers */,
 				BFFF18831FCDCF7C00BDEC58 /* window.h in Headers */,
+				BF6058B7216B3683001B738C /* macro_struct.h in Headers */,
 				BFFF186D1FCDCF7C00BDEC58 /* fill.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1273,6 +1426,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BF3C7A7C22E689020024C630 /* render_softscale.c in Sources */,
+				BF6058E9216B3725001B738C /* rasm.c in Sources */,
+				BF6058E5216B3725001B738C /* intake_num.c in Sources */,
 				BFC1C05B214258CE00378A4C /* audio.c in Sources */,
 				BFC1C05C214258CE00378A4C /* audio_pcs.c in Sources */,
 				BFC1C05D214258CE00378A4C /* audio_sdl.c in Sources */,
@@ -1308,19 +1464,22 @@
 				BFFF16C71FCDC76900BDEC58 /* error.c in Sources */,
 				BFC1C0692142591600378A4C /* dns.c in Sources */,
 				BFFF17FB1FCDCD1200BDEC58 /* med2_load.c in Sources */,
+				BF6058DF216B3725001B738C /* game_update.c in Sources */,
 				BFFF17B91FCDCCF300BDEC58 /* memio.c in Sources */,
 				BFFF17F61FCDCD1200BDEC58 /* far_load.c in Sources */,
 				BFFF17F71FCDCD1200BDEC58 /* gdm_load.c in Sources */,
 				BFC1C06B2142591600378A4C /* socksyms.c in Sources */,
 				BFFF18051FCDCD1200BDEC58 /* sample.c in Sources */,
+				BF6058FC216B3725001B738C /* settings.c in Sources */,
+				BF6058ED216B3725001B738C /* game_update_board.c in Sources */,
 				BFFF17B21FCDCCF300BDEC58 /* hio.c in Sources */,
 				BFFF17BA1FCDCCF300BDEC58 /* mix_all.c in Sources */,
 				BFFF17F91FCDCD1200BDEC58 /* it_load.c in Sources */,
 				BFFF17F11FCDCD1200BDEC58 /* 669_load.c in Sources */,
 				BFFF17C11FCDCCF300BDEC58 /* scan.c in Sources */,
+				BF6058E1216B3725001B738C /* game_menu.c in Sources */,
 				BFFF16C11FCDC76900BDEC58 /* configure.c in Sources */,
 				BFFF16EE1FCDC76900BDEC58 /* render_layer.c in Sources */,
-				BFFF16D21FCDC76900BDEC58 /* game2.c in Sources */,
 				BFFF16C31FCDC76900BDEC58 /* counter.c in Sources */,
 				BFFF17A51FCDCCE200BDEC58 /* manifest.c in Sources */,
 				BFFF16DE1FCDC76900BDEC58 /* legacy_rasm.c in Sources */,
@@ -1337,13 +1496,14 @@
 				BFFF16EC1FCDC76900BDEC58 /* render_gl2.c in Sources */,
 				BFFF18081FCDCD1200BDEC58 /* voltable.c in Sources */,
 				BFFF16D01FCDC76900BDEC58 /* game.c in Sources */,
-				BFFF16F51FCDC76900BDEC58 /* render_yuv1.c in Sources */,
 				BFFF16CE1FCDC76900BDEC58 /* fsafeopen.c in Sources */,
 				BFFF17F41FCDCD1200BDEC58 /* asylum_load.c in Sources */,
+				BF6058F1216B3725001B738C /* caption.c in Sources */,
 				BFFF17C01FCDCCF300BDEC58 /* read_event.c in Sources */,
 				BFFF17BC1FCDCCF300BDEC58 /* mixer.c in Sources */,
 				BFFF16D81FCDC76900BDEC58 /* idput.c in Sources */,
 				BFFF17C21FCDCCF300BDEC58 /* smix.c in Sources */,
+				BFA52FD3233AC48100A90CB4 /* audio_reality.cpp in Sources */,
 				BFFF18031FCDCD1200BDEC58 /* okt_load.c in Sources */,
 				BFFF16ED1FCDC76900BDEC58 /* render_glsl.c in Sources */,
 				BFFF17BF1FCDCCF300BDEC58 /* player.c in Sources */,
@@ -1353,6 +1513,7 @@
 				BFFF17081FCDC76900BDEC58 /* world.c in Sources */,
 				BFFF17B71FCDCCF300BDEC58 /* md5.c in Sources */,
 				BFFF18091FCDCD1200BDEC58 /* xm_load.c in Sources */,
+				BF6058DC216B3725001B738C /* core.c in Sources */,
 				BFFF17FE1FCDCD1200BDEC58 /* mmd_common.c in Sources */,
 				BFFF17B31FCDCCF300BDEC58 /* hmn_extras.c in Sources */,
 				BFFF18011FCDCD1200BDEC58 /* mod_load.c in Sources */,
@@ -1362,11 +1523,12 @@
 				BFFF16E71FCDC76900BDEC58 /* platform_sdl.c in Sources */,
 				BFFF181A1FCDCD8500BDEC58 /* pngops.c in Sources */,
 				BFFF16CA1FCDC76900BDEC58 /* event.c in Sources */,
-				BFFF16F61FCDC76900BDEC58 /* render_yuv2.c in Sources */,
 				BFFF17B01FCDCCF300BDEC58 /* fnmatch.c in Sources */,
 				BFFF17C31FCDCCF300BDEC58 /* virtual.c in Sources */,
+				BF6058E4216B3725001B738C /* game_player.c in Sources */,
 				BFFF17F51FCDCD1200BDEC58 /* common.c in Sources */,
 				BFFF17A91FCDCCE200BDEC58 /* sha256.c in Sources */,
+				BF6058F2216B3725001B738C /* game_ops.c in Sources */,
 				BFFF16CC1FCDC76900BDEC58 /* expr.c in Sources */,
 				BFFF17AB1FCDCCF300BDEC58 /* control.c in Sources */,
 				BFFF17FC1FCDCD1200BDEC58 /* med3_load.c in Sources */,
@@ -1377,11 +1539,11 @@
 				BFFF18041FCDCD1200BDEC58 /* s3m_load.c in Sources */,
 				BFFF17A71FCDCCE200BDEC58 /* network.c in Sources */,
 				BFFF17AE1FCDCCF300BDEC58 /* extras.c in Sources */,
-				BFFF16F31FCDC76900BDEC58 /* render_yuv.c in Sources */,
 				BFFF16D61FCDC76900BDEC58 /* idarray.c in Sources */,
 				BFFF16F01FCDC76900BDEC58 /* render_sdl.c in Sources */,
 				BFFF17FA1FCDCD1200BDEC58 /* itsex.c in Sources */,
 				BFC0B26B20681ACC00D28296 /* flt_load.c in Sources */,
+				BFA52FCE233AC29900A90CB4 /* vfs.c in Sources */,
 				BFC0B26C20681ACC00D28296 /* hmn_load.c in Sources */,
 				BFC0B26D20681ACC00D28296 /* st_load.c in Sources */,
 			);
@@ -1400,11 +1562,13 @@
 				BFFF18701FCDCF7C00BDEC58 /* macro.c in Sources */,
 				BFFF18721FCDCF7C00BDEC58 /* pal_ed.c in Sources */,
 				BFFF18681FCDCF7C00BDEC58 /* edit_di.c in Sources */,
+				BF6058B5216B3683001B738C /* buffer.c in Sources */,
 				BFFF186A1FCDCF7C00BDEC58 /* edit.c in Sources */,
 				BFFF185C1FCDCF7C00BDEC58 /* block.c in Sources */,
 				BFFF18761FCDCF7C00BDEC58 /* robo_debug.c in Sources */,
 				BFFF18821FCDCF7C00BDEC58 /* window.c in Sources */,
 				BFFF18781FCDCF7C00BDEC58 /* robo_ed.c in Sources */,
+				BF6058B2216B3683001B738C /* edit_menu.c in Sources */,
 				BFFF187C1FCDCF7C00BDEC58 /* select.c in Sources */,
 				BF00DC0C2085644A00CD2DD2 /* clipboard_sdl2.c in Sources */,
 				BFFF186C1FCDCF7C00BDEC58 /* fill.c in Sources */,
@@ -1452,15 +1616,14 @@
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
-				CLANG_CXX_LIBRARY = "libc++";
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_CXX_LIBRARY = "libstdc++";
+				CLANG_ENABLE_MODULES = NO;
 				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_COMMA = NO;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INFINITE_RECURSION = YES;
@@ -1472,14 +1635,15 @@
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
-				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = NO;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_IDENTITY = "-";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_CHAR_IS_UNSIGNED_CHAR = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu89;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
@@ -1487,11 +1651,11 @@
 					"DEBUG=1",
 					"$(inherited)",
 				);
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = NO;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				MTL_ENABLE_DEBUG_INFO = YES;
@@ -1508,15 +1672,14 @@
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
-				CLANG_CXX_LIBRARY = "libc++";
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_CXX_LIBRARY = "libstdc++";
+				CLANG_ENABLE_MODULES = NO;
 				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_COMMA = NO;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INFINITE_RECURSION = YES;
@@ -1528,20 +1691,21 @@
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
-				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = NO;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_IDENTITY = "-";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_CHAR_IS_UNSIGNED_CHAR = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu89;
 				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = NO;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
-				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = NO;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				MTL_ENABLE_DEBUG_INFO = NO;
@@ -1561,8 +1725,6 @@
 					"$(LOCAL_LIBRARY_DIR)/Frameworks",
 					"$(PROJECT_DIR)",
 				);
-				GCC_CHAR_IS_UNSIGNED_CHAR = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu89;
 				HEADER_SEARCH_PATHS = (
 					SDL2.framework/Headers,
 					../../contrib/libxmp/include,
@@ -1587,8 +1749,6 @@
 					"$(LOCAL_LIBRARY_DIR)/Frameworks",
 					"$(PROJECT_DIR)",
 				);
-				GCC_CHAR_IS_UNSIGNED_CHAR = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu89;
 				HEADER_SEARCH_PATHS = (
 					SDL2.framework/Headers,
 					../../contrib/libxmp/include,
@@ -1604,7 +1764,6 @@
 		BF1012921FCCA957008EEDB6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CLANG_ENABLE_MODULES = NO;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "";
 				DYLIB_COMPATIBILITY_VERSION = 1;
@@ -1615,8 +1774,6 @@
 					"$(LOCAL_LIBRARY_DIR)/Frameworks",
 					"$(PROJECT_DIR)",
 				);
-				GCC_CHAR_IS_UNSIGNED_CHAR = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu89;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					NEED_PNG_WRITE_SCREEN,
 					"DEBUG=1",
@@ -1638,7 +1795,6 @@
 		BF1012931FCCA957008EEDB6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CLANG_ENABLE_MODULES = NO;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "";
 				DYLIB_COMPATIBILITY_VERSION = 1;
@@ -1649,8 +1805,6 @@
 					"$(LOCAL_LIBRARY_DIR)/Frameworks",
 					"$(PROJECT_DIR)",
 				);
-				GCC_CHAR_IS_UNSIGNED_CHAR = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu89;
 				GCC_PREPROCESSOR_DEFINITIONS = NEED_PNG_WRITE_SCREEN;
 				HEADER_SEARCH_PATHS = (
 					SDL2.framework/Headers,
@@ -1678,8 +1832,6 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
-				GCC_CHAR_IS_UNSIGNED_CHAR = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu89;
 				GCC_PREPROCESSOR_DEFINITIONS = "DEBUG=1";
 				HEADER_SEARCH_PATHS = SDL2.framework/Headers;
 				INFOPLIST_FILE = "$(SRCROOT)/MegaZeux/Info.plist";
@@ -1701,8 +1853,6 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
-				GCC_CHAR_IS_UNSIGNED_CHAR = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu89;
 				GCC_PREPROCESSOR_DEFINITIONS = "";
 				HEADER_SEARCH_PATHS = SDL2.framework/Headers;
 				INFOPLIST_FILE = "$(SRCROOT)/MegaZeux/Info.plist";
@@ -1723,8 +1873,6 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
-				GCC_CHAR_IS_UNSIGNED_CHAR = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu89;
 				HEADER_SEARCH_PATHS = SDL2.framework/Headers;
 				INFOPLIST_FILE = MZXRun/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
@@ -1745,8 +1893,6 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)",
 				);
-				GCC_CHAR_IS_UNSIGNED_CHAR = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu89;
 				HEADER_SEARCH_PATHS = SDL2.framework/Headers;
 				INFOPLIST_FILE = MZXRun/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";

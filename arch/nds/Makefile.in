@@ -12,14 +12,7 @@ ifeq ($(strip $(DEVKITARM)),)
 $(error "DEVKITARM must be set in your environment.")
 endif
 
-#
-# Stolen from ds_rules
-#
-CC      := arm-none-eabi-gcc
-CXX     := arm-none-eabi-g++
-AR      := arm-none-eabi-ar
-OBJCOPY := arm-none-eabi-objcopy
-LIBNDS  := $(DEVKITPRO)/libnds
+include ${DEVKITARM}/ds_rules
 
 #
 # NDS target rules
@@ -30,14 +23,20 @@ STRIP  = /bin/true
 # Override library paths.
 #
 
-EXTRA_INCLUDES = -isystem arch/nds/ndsScreens/build \
+#
+# As of devkitARM r51 $(PORTLIBS) has multiple paths...
+#
+PORTLIBS_INCLUDES := $(foreach dir, $(PORTLIBS), -isystem $(dir)/include)
+PORTLIBS_LIBS     := $(foreach dir, $(PORTLIBS), -L$(dir)/lib)
+
+EXTRA_INCLUDES := ${PORTLIBS_INCLUDES} \
+                 -isystem arch/nds/ndsScreens/build \
                  -isystem $(DEVKITPRO)/libfat-nds/include \
-                 -isystem $(DEVKITPRO)/portlibs/armv5te/include \
                  -isystem $(LIBNDS)/include
 
-EXTRA_LIBS = -Larch/nds/ndsScreens/lib \
+EXTRA_LIBS := ${PORTLIBS_LIBS} \
+             -Larch/nds/ndsScreens/lib \
              -L$(DEVKITPRO)/libfat-nds/lib \
-             -L$(DEVKITPRO)/portlibs/armv5te/lib \
              -L$(LIBNDS)/lib -lfat -lm -lnds9
 
 ARCH_CFLAGS   += ${EXTRA_INCLUDES} -DARM9 -D__NDS__ -Iarch/nds

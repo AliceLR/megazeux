@@ -1,0 +1,3 @@
+Title: LOCAL test
+Author: Alice Rowan
+Desc: The LOCAL counter was added in 2.51s1. Make sure it works properly and that LOCAL# creates globals instead.

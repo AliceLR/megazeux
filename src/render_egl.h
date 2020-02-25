@@ -28,15 +28,15 @@ __M_BEGIN_DECLS
 
 #include <EGL/egl.h>
 
-bool gl_set_video_mode(struct graphics_data *graphics, int width, int height,
- int depth, bool fullscreen, bool resize);
-bool gl_check_video_mode(struct graphics_data *graphics, int width, int height,
- int depth, bool fullscreen, bool resize);
+boolean gl_set_video_mode(struct graphics_data *graphics, int width, int height,
+ int depth, boolean fullscreen, boolean resize, struct gl_version req_ver);
+boolean gl_check_video_mode(struct graphics_data *graphics, int width,
+ int height, int depth, boolean fullscreen, boolean resize);
 void gl_set_attributes(struct graphics_data *graphics);
-bool gl_swap_buffers(struct graphics_data *graphics);
+boolean gl_swap_buffers(struct graphics_data *graphics);
 void gl_cleanup(struct graphics_data *graphics);
 
-bool GL_LoadLibrary(enum gl_lib_type type);
+boolean GL_LoadLibrary(enum gl_lib_type type);
 
 #ifndef ANDROID
 

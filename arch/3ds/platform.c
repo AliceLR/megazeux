@@ -58,7 +58,7 @@ void delay(Uint32 ms)
   }
 }
 
-bool ctr_is_2d(void)
+boolean ctr_is_2d(void)
 {
   return isNot2DS == 0;
 }
@@ -68,7 +68,7 @@ Uint32 get_ticks(void)
   return (Uint32)osGetTime();
 }
 
-bool platform_init(void)
+boolean platform_init(void)
 {
   cfguInit();
   romfsInit();
@@ -90,11 +90,6 @@ void platform_quit(void)
 
   romfsExit();
   cfguExit();
-}
-
-void initialize_joysticks(void)
-{
-  // stub - hardcoded
 }
 
 void real_warp_mouse(int x, int y)

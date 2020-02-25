@@ -60,12 +60,15 @@ void gl_error(const char *file, int line,
     case GL_INVALID_OPERATION:
       error = "Invalid operation";
       break;
+#if !defined(CONFIG_GLES) || defined(CONFIG_RENDER_GL_FIXED)
+    // These aren't defined by OpenGL ES 2.
     case GL_STACK_OVERFLOW:
       error = "Stack overflow";
       break;
     case GL_STACK_UNDERFLOW:
       error = "Stack underflow";
       break;
+#endif
     case GL_OUT_OF_MEMORY:
       error = "Out of memory";
       break;
@@ -79,7 +82,7 @@ void gl_error(const char *file, int line,
 
 #endif // DEBUG
 
-bool gl_load_syms(const struct dso_syms_map *map)
+boolean gl_load_syms(const struct dso_syms_map *map)
 {
   int i = 0;
 

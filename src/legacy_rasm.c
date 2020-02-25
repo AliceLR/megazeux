@@ -1,7 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
- * Copyright (C) 2012 Alice Lauren Rowan <petrifiedrowan@gmail.com>
+ * Copyright (C) 2012 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -206,7 +206,7 @@ static const int cm46[]  = { CMD_PLAY };
 static const int cm48[]  = { IMM_U16 | STRING };
 static const int cm49[]  = { CMD_SFX, STRING };
 static const int cm50[]  = { IGNORE_TYPE_AT, DIRECTION };
-static const int cm53[]  = { IGNORE_TYPE_AT, DIRECTION, IGNORE_TYPE_TO, 
+static const int cm53[]  = { IGNORE_TYPE_AT, DIRECTION, IGNORE_TYPE_TO,
  STRING };
 static const int cm54[]  = { STRING, IMM_U16 | STRING };
 static const int cm55[]  = { STRING, IMM_U16 | STRING };
@@ -389,7 +389,7 @@ static const int cm185[] = { CMD_BULLETCOLOR, IGNORE_TYPE_IS,
  COLOR | STRING };
 static const int cm186[] = { CMD_BULLETCOLOR, IGNORE_TYPE_IS,
  COLOR | STRING };
-static const int cm187[] = { CMD_BULLETCOLOR, IGNORE_TYPE_IS, 
+static const int cm187[] = { CMD_BULLETCOLOR, IGNORE_TYPE_IS,
  COLOR | STRING };
 static const int cm193[] = { CMD_SELF, CMD_FIRST };
 static const int cm194[] = { CMD_SELF, CMD_LAST };
@@ -2061,7 +2061,7 @@ exit_out:
   return buffer;
 }
 
-char *assemble_file_mem(char *src, int len, int *size)
+char *assemble_program(char *src, int len, int *size)
 {
   char line_buffer[256];
   char bytecode_buffer[256];
@@ -2600,7 +2600,6 @@ void disassemble_file(char *name, char *program, int program_length,
   fclose(output_file);
 }
 
-#ifdef CONFIG_EDITOR
 static inline int get_program_line_count(char *program, int program_length)
 {
   char *end = program + program_length;
@@ -2618,7 +2617,7 @@ static inline int get_program_line_count(char *program, int program_length)
   return line_num;
 }
 
-void disassemble_and_map_program(char *program, int program_length,
+void disassemble_program(char *program, int program_length,
  char **_source, int *_source_length, struct command_mapping **_command_map,
  int *_command_map_length)
 {
@@ -2633,29 +2632,36 @@ void disassemble_and_map_program(char *program, int program_length,
   char *source = cmalloc(source_length);
   int offset = 0;
 
-  struct command_mapping *cmd_map;
-  int cmd_map_length;
-  int i;
+  struct command_mapping *cmd_map = NULL;
+  int cmd_map_length = 0;
+  int i = 1;
 
   char *start = program;
   char *next = program + 1;
 
   int ret;
 
-  cmd_map_length = get_program_line_count(program, program_length);
-  cmd_map = cmalloc(cmd_map_length * sizeof(struct command_mapping));
+  if(_command_map && _command_map_length)
+  {
+    cmd_map_length = get_program_line_count(program, program_length);
+    cmd_map = cmalloc(cmd_map_length * sizeof(struct command_mapping));
 
-  cmd_map[0].real_line = 0;
-  cmd_map[0].bc_pos = 0;
-  cmd_map[0].src_pos = 0;
+    cmd_map[0].real_line = 0;
+    cmd_map[0].bc_pos = 0;
+    cmd_map[0].src_pos = 0;
+  }
 
-  for(i = 1; i < cmd_map_length; i++)
+  while(*next)
   {
     line_size = 0;
 
-    cmd_map[i].real_line = i;
-    cmd_map[i].bc_pos = next - start;
-    cmd_map[i].src_pos = offset;
+    if(cmd_map && i < cmd_map_length)
+    {
+      cmd_map[i].real_line = i;
+      cmd_map[i].bc_pos = next - start;
+      cmd_map[i].src_pos = offset;
+      i++;
+    }
 
     ret = disassemble_line(next, &next,
      line_buffer,
@@ -2693,38 +2699,274 @@ void disassemble_and_map_program(char *program, int program_length,
   *_source = source;
   *_source_length = source_length;
 
-  *_command_map = cmd_map;
-  *_command_map_length = cmd_map_length;
+  if(_command_map && _command_map_length)
+  {
+    *_command_map = cmd_map;
+    *_command_map_length = cmd_map_length;
+  }
 }
-#endif // CONFIG_EDITOR
-
 #endif // !CONFIG_DEBYTECODE
 
-
-int validate_legacy_bytecode(char *bc, int program_length)
+enum bytecode_fix_status
 {
-  int i = 1;
-  int new_length = program_length;
+  BC_NO_ERROR,
+  BC_COULDNT_FIX,
+  BC_MISSING_TERMINATOR,
+  BC_WRONG_TERMINATOR,
+  BC_APPLIED_PATCH,
+  BC_REPLACED_WITH_NOP
+};
+
+struct program_patch
+{
+  const char *bad_command;
+  const int bad_command_length;
+  const char *patch;
+  const int patch_length;
+  const boolean require_exact_command; // if false, the match can be a prefix.
+  const boolean is_end_of_program;
+};
+
+static const struct program_patch program_patches[] =
+{
+  // Fix the global robot from worlds produced by Mikawo's zzt2mzx generator.
+  // The correct end of the robot exists in the template board supplied with
+  // the converter, so it's known exactly what should be there.
+  {
+    "\x04\x30\x03\x00\x01\x6E", 6,
+    "\x04\x30\x00\x26\x00\x04"
+    "\x04\x5B\x00\x0E\x00\x04"
+    "\x01\x00\x01"
+    "\x07\x6A\x05!^wk\x00\x07"
+    "\x01\x2C\x01"
+    "\x04\x30\x00\x26\x00\x04"
+    "\x04\x5B\x00\x0F\x00\x04"
+    "\x01\x00\x01\x00", 43,
+    true,
+    true
+  },
+  // Loco, board 2, 45 19
+  {
+    "\x04\x1D\x02\x61\x00\x7E", 6,
+    "\x04\x1D\x02\x61\x00\x04"
+    "\x04\x6A\x02\x62\x00\x04"
+    "\x19\x4F\x00\x20\x01\x00\x05\x00", 20,
+    true,
+    false
+  },
+  // Manuel the Manx, board 6, 3 25
+  // There's no recoverable data here, but this board is inaccessible anyway.
+  {
+    "\x0F\x6E\x00\x04\x00\x00Aloopcoun\x84\x84\x84", 17,
+    "\x00", 1,
+    true,
+    true
+  },
+  // Slave Pit global robot (no recoverable data)
+  {
+    "\xFF\xFF\xFF\x00\x00\x00\xFF\xFF\xFF\x88\x01\x00", 12,
+    "\x00", 1,
+    false,
+    true
+  },
+};
+
+static void validate_legacy_bytecode_print(char *bc, int program_length,
+ int offset)
+{
+#ifdef DEBUG
+  char *err_mesg;
+  char *pos;
+  int command_length;
+  int print_length;
+  int i;
+
+  if(offset > program_length)
+  {
+    fprintf(stderr, "\n");
+    debug("Offset exceeded program length\n");
+    debug("Prog len: %d    Offset: %d\n", program_length, offset);
+    return;
+  }
+  else
+
+  if(offset == program_length)
+  {
+    debug("Offset reached end of program (length %d)\n", program_length);
+    return;
+  }
+
+  command_length = bc[offset];
+  print_length = MIN(command_length + 2, program_length - offset);
+
+  err_mesg = cmalloc(sizeof(char) * (print_length * 3 + 2));
+  err_mesg[0] = 0;
+  pos = err_mesg;
+
+  for(i = 0; i < print_length; i++)
+  {
+    snprintf(pos, 4, "%X ", bc[offset + i]);
+    pos += strlen(pos);
+  }
+
+  debug("Prog len: %i    Offset: %i\n", program_length, offset);
+  debug("Bytecode: %s\n", err_mesg);
+  free(err_mesg);
+#endif
+}
+
+static enum bytecode_fix_status validate_legacy_bytecode_attempt_fix(char **_bc,
+ int *_len, int offset)
+{
+  const struct program_patch *p;
+  char *bc = *_bc;
+  int program_length = *_len;
+  int command_length;
+  int left = program_length - offset;
+  size_t i;
+
+  // Can't do anything in this case.
+  if(offset > program_length)
+    return BC_COULDNT_FIX;
+
+  if(left == 0)
+  {
+    // Might just be a truncated last byte, which is an easy fix.
+    bc = crealloc(bc, program_length + 1);
+    bc[program_length] = '\x00';
+    *_len = program_length + 1;
+    *_bc = bc;
+    debug("Added missing terminator to truncated program\n\n");
+    return BC_MISSING_TERMINATOR;
+  }
+  else
+
+  if(left == 1)
+  {
+    // Could also be a wrong last byte (Sidewinder's Engines).
+    debug("Corrected program terminator %X\n", bc[offset]);
+    bc[offset] = '\x00';
+    return BC_WRONG_TERMINATOR;
+  }
+  else
+
+  if(left == 2 && bc[offset + 1] == '\x00')
+  {
+    // Due to Eternal Eclipse Taoyarin 1.0 consistently having these malformed
+    // bytecode endings, this seems to have been a general MZX bug. Just zero
+    // out the first byte and decrease the length by one.
+    debug("Corrected program terminator %X %X\n", bc[offset], bc[offset+1]);
+    bc[offset] = '\x00';
+    *_len = program_length - 1;
+    return BC_WRONG_TERMINATOR;
+  }
+
+  // The rest of the fixes are more technical, so print detailed debug output.
+  validate_legacy_bytecode_print(bc, program_length, offset);
+
+  command_length = MIN(bc[offset] + 2, left);
+
+  // Check for specific patches. The bad command has to exactly match what's
+  // in the list for a patch to be applied.
+  for(i = 0; i < ARRAY_SIZE(program_patches); i++)
+  {
+    p = &program_patches[i];
+    if(left < p->bad_command_length || command_length < p->bad_command_length)
+      continue;
+
+    // If this is set, the match string can't be a prefix of the command.
+    if(p->require_exact_command && command_length > p->bad_command_length)
+      continue;
+
+    if(!memcmp(bc + offset, p->bad_command, p->bad_command_length))
+    {
+      int new_length = program_length;
+      boolean add_terminator = false;
+
+      if(p->is_end_of_program)
+        new_length += p->patch_length - left;
+
+      if(left <= p->patch_length && !p->is_end_of_program)
+      {
+        new_length++;
+        add_terminator = true;
+      }
+
+      if(new_length != program_length)
+        bc = crealloc(bc, new_length);
+
+      memcpy(bc + offset, p->patch, p->patch_length);
+
+      if(add_terminator)
+        bc[offset + p->patch_length] = '\x00';
+
+      *_len = new_length;
+      *_bc = bc;
+      debug("Applied command patch %zu\n\n", i);
+      return BC_APPLIED_PATCH;
+    }
+  }
+
+  // If the bad command is consistent with itself, NOP it.
+  if(bc[offset] + offset + 2 <= program_length)
+  {
+    int cmd_len = bc[offset];
+    int end_len = bc[cmd_len + offset + 1];
+
+    if(cmd_len > 0 && cmd_len == end_len)
+    {
+      bc[offset + 1] = ROBOTIC_CMD_BLANK_LINE;
+      debug("Replaced invalid command with NOP\n\n");
+      return BC_REPLACED_WITH_NOP;
+    }
+  }
+
+  // Truncate the program and display an error.
+  // NOTE: returning this probably means this will get dummied out right now,
+  // so don't bother with reallocation.
+  //bc = crealloc(bc, offset + 1);
+  bc[offset] = '\x00';
+  //*_bc = bc;
+  //*_len = offset + 1;
+  debug("Truncated program at invalid command\n\n");
+  return BC_COULDNT_FIX;
+}
+
+boolean validate_legacy_bytecode(char **_bc, int *_program_length)
+{
+  char *bc = *_bc;
+  int program_length = *_program_length;
   int cur_command_start = 0, cur_command_length = 0, cur_param_length = 0;
   int cur_command, p;
+  int i = 1;
+  enum bytecode_fix_status status = BC_NO_ERROR;
 
   if(!bc)
-    return 0;
+    return false;
 
   // First -- fix the odd robots that appear in old MZX games,
-  // such as Catacombs of Zeux.
-  if((program_length == 2) || (bc[0] != 0xFF))
+  // such as Forest of Ruin and Catacombs of Zeux.
+  if(program_length <= 2)
   {
+    if(program_length < 2)
+    {
+      bc = crealloc(bc, 2);
+      program_length = 2;
+    }
     bc[0] = 0xFF;
     bc[1] = 0x0;
   }
 
+  // Error out if the start of the program is invalid.
   if(bc[0] != 0xFF)
-    goto err_invalid;
+    status = BC_COULDNT_FIX;
 
   // One iteration should be a single command.
   while(1)
   {
+    if(status == BC_COULDNT_FIX)
+      break;
+
     cur_command_length = bc[i];
     i++;
     if(cur_command_length == 0)
@@ -2733,10 +2975,18 @@ int validate_legacy_bytecode(char *bc, int program_length)
     cur_command_start = i;
 
     if((i + cur_command_length) > program_length)
-      goto err_invalid;
+    {
+      i--;
+      status = validate_legacy_bytecode_attempt_fix(&bc, &program_length, i);
+      continue;
+    }
 
     if(bc[i + cur_command_length] != cur_command_length)
-      goto err_invalid;
+    {
+      i--;
+      status = validate_legacy_bytecode_attempt_fix(&bc, &program_length, i);
+      continue;
+    }
 
     cur_command = bc[i];
     i++;
@@ -2757,56 +3007,39 @@ int validate_legacy_bytecode(char *bc, int program_length)
        (param_type & THING) &&
        ((bc[i] != 0) ||
        ((bc[i+1] | (bc[i+2] << 8)) > 127)))
-        goto err_invalid;
+      {
+        i = cur_command_start - 1;
+        status = validate_legacy_bytecode_attempt_fix(&bc, &program_length, i);
+        continue;
+      }
 
       i += cur_param_length + 1;
-
     }
 
-    if(i > cur_command_start + cur_command_length + 1)
-      goto err_invalid;
-
-    if(i > program_length)
-      goto err_invalid;
+    if((i > cur_command_start + cur_command_length + 1) || (i > program_length))
+    {
+      i = cur_command_start - 1;
+      status = validate_legacy_bytecode_attempt_fix(&bc, &program_length, i);
+      continue;
+    }
 
     i = cur_command_start + cur_command_length + 1;
   }
 
-  if(i < program_length)
+  if((status != BC_COULDNT_FIX) && (i < program_length))
   {
     debug("Robot checked for %i but program length is %i; extra removed\n",
      program_length, i);
-    new_length = i;
+
+    bc = crealloc(bc, i);
+    program_length = i;
   }
 
-  if(i > program_length)
-    goto err_invalid;
+  *_bc = bc;
+  *_program_length = program_length;
 
-  return new_length;
+  if((status == BC_COULDNT_FIX) || (i > program_length))
+    return false;
 
-err_invalid:
-  {
-    int n;
-    char hex_seg[4];
-    char *err_mesg = cmalloc(sizeof(char) * ((cur_command_length + 2) * 3 + 2));
-    err_mesg[0] = 0;
-
-    for(n = cur_command_start - 1;
-     n < (cur_command_start + cur_command_length + 1) &&
-     n < program_length;
-     n++)
-    {
-      snprintf(hex_seg, 4, "%X ", bc[n]);
-      strcat(err_mesg, hex_seg);
-    }
-
-    debug("Prog len: %i    i: %i   bc[0]: %i   bc[1]: %i\n",
-     program_length, i, bc[0], bc[1]);
-
-    debug("Bytecode: %s\n\n", err_mesg);
-
-    free(err_mesg);
-  }
-
-  return 0;
+  return true;
 }

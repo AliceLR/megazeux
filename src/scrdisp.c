@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <ctype.h>
 
+#include "configure.h"
 #include "event.h"
 #include "data.h"
 #include "scrdisp.h"
@@ -31,13 +32,14 @@
 #include "error.h"
 #include "intake.h"
 #include "world.h"
+#include "world_struct.h"
 #include "robot.h"
 
 static const char scr_nm_strs[5][12] =
  { "  Scroll   ", "   Sign    ", "Edit Scroll", "   Help    ", "" };
 
 static void scroll_frame(struct world *mzx_world, struct scroll *scroll,
- int pos, bool mask)
+ int pos, boolean mask_chars, boolean mask_colors)
 {
   // Displays one frame of a scroll. The scroll edging, arrows, and title
   // must already be shown. Simply prints each line. POS is the position
@@ -46,20 +48,33 @@ static void scroll_frame(struct world *mzx_world, struct scroll *scroll,
   unsigned int old_pos = pos;
   char *where;
   int scroll_base_color = mzx_world->scroll_base_color;
+  int c_offset = 16;
 
   where = scroll->mesg;
 
+  select_layer(UI_LAYER);
+
+  if(!mask_colors)
+  {
+    // Clear the UI over the frame area in case the frame is masked (editor)
+    // but the contents aren't.
+    erase_area(8, 6, 71, 18);
+    select_layer(GAME_UI_LAYER);
+    c_offset = 0;
+  }
+
   // Display center line
-  fill_line(64, 8, 12, 32, scroll_base_color);
-  if(mask)
+  fill_line_ext(64, 8, 12, 32, scroll_base_color, 0, c_offset);
+
+  if(mask_chars)
     write_line_mask(where + pos, 8, 12, scroll_base_color, 1);
   else
-    write_line_ext(where + pos, 8, 12, scroll_base_color, 1, 0, 16);
+    write_line_ext(where + pos, 8, 12, scroll_base_color, 1, 0, c_offset);
 
   // Display lines above center line
   for(t1 = 11; t1 >= 6; t1--)
   {
-    fill_line(64, 8, t1, 32, scroll_base_color);
+    fill_line_ext(64, 8, t1, 32, scroll_base_color, 0, c_offset);
     // Go backward to previous line
     if(where[pos] != 1)
     {
@@ -72,10 +87,10 @@ static void scroll_frame(struct world *mzx_world, struct scroll *scroll,
         } while((where[pos] != '\n') && (where[pos] != 1));
         // At start of prev. line -1. Display.
         pos++;
-        if(mask)
+        if(mask_chars)
           write_line_mask(where + pos, 8, t1, scroll_base_color, 1);
         else
-          write_line_ext(where + pos, 8, t1, scroll_base_color, 1, 0, 16);
+          write_line_ext(where + pos, 8, t1, scroll_base_color, 1, 0, c_offset);
       }
     }
     // Next line...
@@ -84,7 +99,7 @@ static void scroll_frame(struct world *mzx_world, struct scroll *scroll,
   pos = old_pos;
   for(t1 = 13; t1 <= 18; t1++)
   {
-    fill_line(64, 8, t1, 32, scroll_base_color);
+    fill_line_ext(64, 8, t1, 32, scroll_base_color, 0, c_offset);
     if(where[pos] == 0) continue;
     // Go forward to next line
     while(where[pos] != '\n') pos++;
@@ -92,13 +107,15 @@ static void scroll_frame(struct world *mzx_world, struct scroll *scroll,
     pos++;
     if(where[pos])
     {
-      if(mask)
+      if(mask_chars)
         write_line_mask(where + pos, 8, t1, scroll_base_color, 1);
       else
-        write_line_ext(where + pos, 8, t1, scroll_base_color, 1, 0, 16);
+        write_line_ext(where + pos, 8, t1, scroll_base_color, 1, 0, c_offset);
     }
     // Next line...
   }
+
+  select_layer(UI_LAYER);
 }
 
 // Also used to display scrolls. Use a type of 0 for Show Scroll, 1 for Show
@@ -114,28 +131,26 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
   char *where; // Where scroll is
   char line[80]; // For editing
   int scroll_base_color = mzx_world->scroll_base_color;
-  bool editing = (type == 2);
+  boolean editing = (type == 2);
+  // If the user wants to mask chars and we're in the editor..
+  boolean mask_chars = get_config()->mask_midchars && editing;
 
-  // Draw screen
+  m_show();
   save_screen();
-  disable_gui_mode0();
   dialog_fadein();
 
-  if(editing)
-    scroll_edging_ext(mzx_world, type, PRO_CH, 16);
-  else
-    scroll_edging_ext(mzx_world, type, 0, 0);
+  // Mask edging chars/colors in the scroll editor, but display natural
+  // chars/colors during gameplay.
+  scroll_edging_ext(mzx_world, type, editing);
 
   // Loop
   where = scroll->mesg;
 
   do
   {
-    // If the user wants to mask, and we're in the editor..
-    bool mask = mzx_world->conf.mask_midchars && editing;
-
-    // Display scroll
-    scroll_frame(mzx_world, scroll, pos, mask);
+    // Display scroll. If editing, the colors of the frame need to be masked.
+    // Otherwise, they should display using game colors.
+    scroll_frame(mzx_world, scroll, pos, mask_chars, editing);
     update_screen();
 
     if(editing)
@@ -152,7 +167,7 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
       strcpy(line, where + pos);
       where[pos + t1] = '\n';
       key = intake(mzx_world, line, 64, 8, 12, scroll_base_color,
-       2, 0, &currx, 0, NULL);
+       INTK_EXIT_ANY, &currx);
       // Modify scroll to hold new line (give errors here)
       t2 = (int)strlen(line); // Get length of NEW line
       // Resize and move
@@ -179,8 +194,14 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
     }
     else
     {
+      int joystick_key;
+
       update_event_status_delay();
       key = get_key(keycode_internal_wrt_numlock);
+
+      joystick_key = get_joystick_ui_key();
+      if(joystick_key)
+        key = joystick_key;
     }
 
     // Exit event -- mimic Escape
@@ -383,17 +404,42 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
   } while(key != IKEY_ESCAPE);
   // Restore screen and exit
   restore_screen();
-  enable_gui_mode0();
+  // Due to a faulty check, 2.83 through 2.91f always stay faded in here.
+  // If something is found that relies on that, make this conditional.
   dialog_fadeout();
 }
 
-void scroll_edging_ext(struct world *mzx_world, int type, int offset,
- int c_offset)
+void scroll_edging_ext(struct world *mzx_world, int type, boolean mask)
 {
   int scroll_base_color = mzx_world->scroll_base_color;
   int scroll_corner_color = mzx_world->scroll_corner_color;
   int scroll_pointer_color = mzx_world->scroll_pointer_color;
   int scroll_title_color = mzx_world->scroll_title_color;
+  int bottom_y = (type == 3) ? 22 : 21;
+  int offset = PROTECTED_CHARSET_POSITION;
+  int c_offset = 16;
+  int i;
+
+  select_layer(UI_LAYER);
+
+  if(!mask)
+  {
+    // Clear the place on the UI layer where this will display. This is
+    // necessary because the UI may have been filled to simulate the faded
+    // out state. Then, draw the shadow on the UI layer.
+    erase_area(5, 3, 74, bottom_y);
+
+    // Right shadow
+    for(i = 4; i < bottom_y; i++)
+      draw_char(32, 0, 75, i);
+
+    // Bottom shadow
+    color_line(70, 6, bottom_y + 1, 0);
+
+    select_layer(GAME_UI_LAYER);
+    offset = 0;
+    c_offset = 0;
+  }
 
   // Displays the edging box of scrolls. Type=0 for Scroll, 1 for Sign, 2
   // for Edit Scroll, 3 for Help, 4 for Robot (w/o title)
@@ -455,6 +501,7 @@ void scroll_edging_ext(struct world *mzx_world, int type, int offset,
     write_string_ext("\x12:Scroll text  Esc:Exit "
      "  Enter:Select", 21, 20, scroll_corner_color, 0, offset, c_offset);
   }
+  select_layer(UI_LAYER);
   update_screen();
 }
 
@@ -553,16 +600,17 @@ void help_display(struct world *mzx_world, char *help, int offs, char *file,
 {
   // Display a help file
   int pos = offs, old_pos; // Where
+  int joystick_key;
   int key = 0;
   int t1;
   char mclick;
   // allow_help = 0;
-  // Draw screen
-  save_screen();
 
+  m_show();
+  save_screen();
   dialog_fadein();
 
-  scroll_edging_ext(mzx_world, 3, PRO_CH, 16);
+  scroll_edging_ext(mzx_world, 3, true);
 
   // Loop
   file[0] = label[0] = 0;
@@ -601,6 +649,10 @@ void help_display(struct world *mzx_world, char *help, int offs, char *file,
     }
 
     key = get_key(keycode_internal_wrt_numlock);
+
+    joystick_key = get_joystick_ui_key();
+    if(joystick_key)
+      key = joystick_key;
 
     // Exit event -- mimic Escape
     if(get_exit_status())

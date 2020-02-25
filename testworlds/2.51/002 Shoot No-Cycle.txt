@@ -1,0 +1,3 @@
+Title: Non-cycle ending shoot test
+Author: Alice Rowan
+Desc: In 2.83, shoot ended the cycle. This happens in no other versions before or since.

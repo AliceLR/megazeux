@@ -41,6 +41,7 @@ __M_BEGIN_DECLS
 
 typedef SDLKey SDL_Keycode;
 typedef void   SDL_Window;
+typedef unsigned long SDL_threadID;
 
 // Macros / enumerants
 
@@ -56,8 +57,6 @@ typedef void   SDL_Window;
 #define SDLK_KP_9         SDLK_KP9
 #define SDLK_NUMLOCKCLEAR SDLK_NUMLOCK
 #define SDLK_SCROLLLOCK   SDLK_SCROLLOCK
-#define SDLK_LGUI         SDLK_LSUPER
-#define SDLK_RGUI         SDLK_RSUPER
 #define SDLK_PAUSE        SDLK_BREAK
 
 #define SDL_WINDOW_FULLSCREEN  SDL_FULLSCREEN
@@ -92,6 +91,24 @@ static inline void SDL_SetWindowTitle(SDL_Window *window, const char *title)
 static inline void SDL_SetWindowIcon(SDL_Window *window, SDL_Surface *icon)
 {
    SDL_WM_SetIcon(icon, NULL);
+}
+
+static inline void SDL_SetWindowGrab(SDL_Window *window, SDL_bool grabbed)
+{
+  // Not a perfect equivalent; the SDL 1.2 version will grab even if unfocused
+  SDL_GrabMode mode = (grabbed == SDL_TRUE) ? SDL_GRAB_ON : SDL_GRAB_OFF;
+  SDL_WM_GrabInput(mode);
+}
+
+static inline char *SDL_GetCurrentVideoDriver(void)
+{
+  static char namebuf[16];
+  return SDL_VideoDriverName(namebuf, 16);
+}
+
+static inline int SDL_JoystickInstanceID(SDL_Joystick *joystick)
+{
+  return SDL_JoystickIndex(joystick);
 }
 
 #if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM)

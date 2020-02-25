@@ -31,7 +31,7 @@
 #endif
 
 #include "world.h"
-#include "world_prop.h"
+#include "world_format.h"
 #include "legacy_world.h"
 
 #include "board.h"
@@ -43,7 +43,7 @@
 #include "event.h"
 #include "extmem.h"
 #include "fsafeopen.h"
-#include "game.h"
+#include "game_player.h"
 #include "graphics.h"
 #include "idput.h"
 #include "memfile.h"
@@ -110,7 +110,7 @@ int world_magic(const char magic_string[3])
         case 'X':
           return V100;
         case '2':
-          return V251;
+          return V200;
         case 'A':
           return V251s1;
       }
@@ -189,15 +189,11 @@ int get_version_string(char buffer[16], enum mzx_version version)
       break;
 
     case V262:
-      sprintf(buffer, "2.62");
+      sprintf(buffer, "2.62/2.62b");
       break;
 
-    case V262b:
-      sprintf(buffer, "2.62b");
-      break;
-
-    case V265:
-      sprintf(buffer, "2.65");
+    case V265: // Also 2.68 because the magic wasn't actually incremented.
+      sprintf(buffer, "2.65/2.68");
       break;
 
     case V268:
@@ -244,7 +240,7 @@ int get_version_string(char buffer[16], enum mzx_version version)
 
 // World info
 static inline int save_world_info(struct world *mzx_world,
- struct zip_archive *zp, int savegame, int file_version,
+ struct zip_archive *zp, boolean savegame, int file_version,
  const char *name)
 {
   enum mzx_version world_version = mzx_world->version;
@@ -265,7 +261,7 @@ static inline int save_world_info(struct world *mzx_world,
 
   buffer = cmalloc(buf_size);
 
-  mfopen_static(buffer, buf_size, mf);
+  mfopen(buffer, buf_size, mf);
 
   // Save everything sorted.
 
@@ -287,10 +283,10 @@ static inline int save_world_info(struct world *mzx_world,
   save_prop_c(WPROP_NUM_BOARDS,         mzx_world->num_boards, mf);
 
   // ID Chars
-  save_prop_s(WPROP_ID_CHARS,           id_chars, 323, 1, mf);
+  save_prop_s(WPROP_ID_CHARS,           id_chars, ID_CHARS_SIZE, 1, mf);
   save_prop_c(WPROP_ID_MISSILE_COLOR,   missile_color, mf);
-  save_prop_s(WPROP_ID_BULLET_COLOR,    bullet_color, 3, 1, mf);
-  save_prop_s(WPROP_ID_DMG,             id_dmg, 128, 1, mf);
+  save_prop_s(WPROP_ID_BULLET_COLOR,    bullet_color, ID_BULLET_COLOR_SIZE, 1, mf);
+  save_prop_s(WPROP_ID_DMG,             id_dmg, ID_DMG_SIZE, 1, mf);
 
   // Status counters
   save_prop_v(WPROP_STATUS_COUNTERS, COUNTER_NAME_SIZE * NUM_STATUS_COUNTERS,
@@ -386,6 +382,7 @@ static inline int save_world_info(struct world *mzx_world,
     save_prop_d(WPROP_C_DIVISIONS,      mzx_world->c_divisions, mf);
     save_prop_d(WPROP_MAX_SAMPLES,      mzx_world->max_samples, mf);
     save_prop_c(WPROP_SMZX_MESSAGE,     mzx_world->smzx_message, mf);
+    save_prop_c(WPROP_JOY_SIMULATE_KEYS,mzx_world->joystick_simulate_keys, mf);
   }
 
   save_prop_eof(mf);
@@ -411,7 +408,7 @@ static inline int save_world_info(struct world *mzx_world,
 }
 
 static inline enum val_result validate_world_info(struct world *mzx_world,
- struct zip_archive *zp, int savegame, int *file_version)
+ struct zip_archive *zp, boolean savegame, int *file_version)
 {
   int world_version;
 
@@ -422,8 +419,8 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
 
   int missing_ident;
   int last_ident = -1;
-  int ident;
-  int size;
+  int ident = 0;
+  int size = 0;
 
   zip_get_next_uncompressed_size(zp, &actual_size);
 
@@ -431,7 +428,7 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
 
   zip_read_file(zp, buffer, actual_size, NULL);
 
-  mfopen_static(buffer, actual_size, &mf);
+  mfopen(buffer, actual_size, &mf);
 
   mzx_world->raw_world_info = buffer;
   mzx_world->raw_world_info_size = actual_size;
@@ -444,6 +441,7 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
   check(WPROP_WORLD_VERSION);
   world_version = load_prop_int(size, &prop);
 
+  // World data.
   check(WPROP_NUM_BOARDS);
   check(WPROP_ID_CHARS);
   check(WPROP_ID_MISSILE_COLOR);
@@ -472,6 +470,7 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
     return VAL_SUCCESS;
   }
 
+  // World data (2.91+), save-only prior.
   check(WPROP_SMZX_MODE);
   check(WPROP_VLAYER_WIDTH);
   check(WPROP_VLAYER_HEIGHT);
@@ -482,6 +481,7 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
     return VAL_SUCCESS;
   }
 
+  // Save-only data.
   check(WPROP_REAL_MOD_PLAYING);
   check(WPROP_MZX_SPEED);
   check(WPROP_LOCK_SPEED);
@@ -524,6 +524,12 @@ static inline enum val_result validate_world_info(struct world *mzx_world,
     check(WPROP_SMZX_MESSAGE);
   }
 
+  if(world_version >= V292)
+  {
+    // Added in 2.92
+    check(WPROP_JOY_SIMULATE_KEYS);
+  }
+
   return VAL_SUCCESS;
 
 err_free:
@@ -542,7 +548,7 @@ err_free:
 #define if_savegame_or_291  if(!savegame && *file_version < V291) { break; }
 
 static inline void load_world_info(struct world *mzx_world,
- struct zip_archive *zp, int savegame, int *file_version, int *faded)
+ struct zip_archive *zp, boolean savegame, int *file_version, boolean *faded)
 {
   char *buffer;
   struct memfile _mf;
@@ -574,7 +580,7 @@ static inline void load_world_info(struct world *mzx_world,
     mzx_world->raw_world_info_size = 0;
   }
 
-  mfopen_static(buffer, actual_size, mf);
+  mfopen(buffer, actual_size, mf);
 
   while(next_prop(prop, &ident, &size, mf))
   {
@@ -616,20 +622,40 @@ static inline void load_world_info(struct world *mzx_world,
 
       // ID Chars
       case WPROP_ID_CHARS:
-        mfread(id_chars, 323, 1, prop);
+      {
+        if(size > ID_CHARS_SIZE)
+          size = ID_CHARS_SIZE;
+
+        mfread(id_chars, size, 1, prop);
+        memset(id_chars + size, 0, ID_CHARS_SIZE - size);
         break;
+      }
 
       case WPROP_ID_MISSILE_COLOR:
+      {
         missile_color = load_prop_int(size, prop);
         break;
+      }
 
       case WPROP_ID_BULLET_COLOR:
-        mfread(bullet_color, 3, 1, prop);
+      {
+        if(size > ID_BULLET_COLOR_SIZE)
+          size = ID_BULLET_COLOR_SIZE;
+
+        mfread(bullet_color, size, 1, prop);
+        memset(bullet_color + size, 0, ID_BULLET_COLOR_SIZE - size);
         break;
+      }
 
       case WPROP_ID_DMG:
-        mfread(id_dmg, 128, 1, prop);
+      {
+        if(size > ID_DMG_SIZE)
+          size = ID_DMG_SIZE;
+
+        mfread(id_dmg, size, 1, prop);
+        memset(id_dmg + size, 0, ID_DMG_SIZE - size);
         break;
+      }
 
       // Status counters
       case WPROP_STATUS_COUNTERS:
@@ -947,6 +973,13 @@ static inline void load_world_info(struct world *mzx_world,
         mzx_world->smzx_message = load_prop_int(size, prop);
         break;
 
+      // Added in 2.92
+      case WPROP_JOY_SIMULATE_KEYS:
+        if_savegame
+        if(mzx_world->version >= V292)
+          mzx_world->joystick_simulate_keys = !!load_prop_int(size, prop);
+        break;
+
       default:
         break;
     }
@@ -958,7 +991,7 @@ static inline void load_world_info(struct world *mzx_world,
 
 // Global robot
 static inline int save_world_global_robot(struct world *mzx_world,
- struct zip_archive *zp, int savegame, int file_version, const char *name)
+ struct zip_archive *zp, boolean savegame, int file_version, const char *name)
 {
   save_robot(mzx_world, &mzx_world->global_robot, zp, savegame,
    file_version, name);
@@ -967,7 +1000,7 @@ static inline int save_world_global_robot(struct world *mzx_world,
 }
 
 static inline int load_world_global_robot(struct world *mzx_world,
- struct zip_archive *zp, int savegame, int file_version)
+ struct zip_archive *zp, boolean savegame, int file_version)
 {
   load_robot(mzx_world, &mzx_world->global_robot, zp, savegame, file_version);
   return 0;
@@ -1008,7 +1041,7 @@ static inline int load_world_sfx(struct world *mzx_world,
 
 // Charset
 static inline int save_world_chars(struct world *mzx_world,
- struct zip_archive *zp, int savegame, const char *name)
+ struct zip_archive *zp, boolean savegame, const char *name)
 {
   // Save every charset
   unsigned char *buffer;
@@ -1025,7 +1058,7 @@ static inline int save_world_chars(struct world *mzx_world,
 }
 
 static inline int load_world_chars(struct world *mzx_world,
- struct zip_archive *zp, int savegame)
+ struct zip_archive *zp, boolean savegame)
 {
   unsigned char *buffer;
   size_t actual_size;
@@ -1211,12 +1244,15 @@ static inline int save_world_sprites(struct world *mzx_world,
  struct zip_archive *zp, const char *name)
 {
   char *buffer;
+  size_t collision_size = mzx_world->collision_count * 4;
+  size_t buf_size = SPRITE_PROPS_SIZE + collision_size;
   struct sprite *spr;
   struct memfile mf;
+  struct memfile prop;
   int i;
 
-  buffer = cmalloc(SPRITE_PROPS_SIZE);
-  mfopen_static(buffer, SPRITE_PROPS_SIZE, &mf);
+  buffer = cmalloc(buf_size);
+  mfopen(buffer, buf_size, &mf);
 
   // For each
   for(i = 0; i < MAX_SPRITES; i++)
@@ -1238,16 +1274,24 @@ static inline int save_world_sprites(struct world *mzx_world,
     save_prop_d(SPROP_COL_HEIGHT,         spr->col_height, &mf);
     save_prop_d(SPROP_TRANSPARENT_COLOR,  spr->transparent_color, &mf);
     save_prop_d(SPROP_CHARSET_OFFSET,     spr->offset, &mf);
+    save_prop_d(SPROP_Z,                  spr->z, &mf);
   }
 
   // Only once
   save_prop_d(SPROP_ACTIVE_SPRITES,       mzx_world->active_sprites, &mf);
   save_prop_d(SPROP_SPRITE_Y_ORDER,       mzx_world->sprite_y_order, &mf);
   save_prop_d(SPROP_COLLISION_COUNT,      mzx_world->collision_count, &mf);
+  save_prop_d(SPROP_SPRITE_NUM,           mzx_world->sprite_num, &mf);
+
+  // Collision list
+  save_prop_v(SPROP_COLLISION_LIST, collision_size, &prop, &mf);
+
+  for(i = 0; i < mzx_world->collision_count; i++)
+    mfputd(mzx_world->collision_list[i], &prop);
 
   save_prop_eof(&mf);
 
-  zip_write_file(zp, name, buffer, SPRITE_PROPS_SIZE, ZIP_M_DEFLATE);
+  zip_write_file(zp, name, buffer, buf_size, ZIP_M_DEFLATE);
 
   free(buffer);
   return 0;
@@ -1265,6 +1309,7 @@ static inline int load_world_sprites(struct world *mzx_world,
   int ident;
   int length;
   int value;
+  int num_collisions = 0;
 
   int result;
 
@@ -1278,11 +1323,11 @@ static inline int load_world_sprites(struct world *mzx_world,
   if(result != ZIP_SUCCESS)
     goto err_free;
 
-  mfopen_static(buffer, actual_size, &mf);
+  mfopen(buffer, actual_size, &mf);
 
   while(next_prop(&prop, &ident, &length, &mf))
   {
-    // Only numeric values here.
+    // Mostly numeric values here, and anything that isn't can seek back.
     value = load_prop_int(length, &prop);
 
     switch(ident)
@@ -1353,6 +1398,39 @@ static inline int load_world_sprites(struct world *mzx_world,
         if(spr) spr->offset = value;
         break;
 
+      case SPROP_Z:
+        if(mzx_world->version >= V292 && spr) spr->z = value;
+        break;
+
+      case SPROP_ACTIVE_SPRITES:
+        mzx_world->active_sprites = value;
+        break;
+
+      case SPROP_SPRITE_Y_ORDER:
+        mzx_world->sprite_y_order = value;
+        break;
+
+      case SPROP_COLLISION_COUNT:
+        num_collisions = CLAMP(value, 0, MAX_SPRITES);
+        mzx_world->collision_count = num_collisions;
+        break;
+
+      case SPROP_COLLISION_LIST:
+      {
+        int collision;
+
+        mfseek(&prop, 0, SEEK_SET);
+        if(num_collisions * 4 <= length)
+          for(collision = 0; collision < num_collisions; collision++)
+            mzx_world->collision_list[collision] = mfgetd(&prop);
+
+        break;
+      }
+
+      case SPROP_SPRITE_NUM:
+        mzx_world->sprite_num = value;
+        break;
+
       default:
         break;
     }
@@ -1368,6 +1446,9 @@ err_free:
 static inline int save_world_counters(struct world *mzx_world,
  struct zip_archive *zp, const char *name)
 {
+  Uint8 buffer[8];
+  struct memfile mf;
+  struct counter_list *counter_list = &(mzx_world->counter_list);
   struct counter *src_counter;
   size_t name_length;
   int result;
@@ -1377,15 +1458,19 @@ static inline int save_world_counters(struct world *mzx_world,
   if(result != ZIP_SUCCESS)
     return result;
 
-  zputd(mzx_world->num_counters, zp);
+  mfopen(buffer, 8, &mf);
+  mfputd(counter_list->num_counters, &mf);
+  zwrite(buffer, 4, zp);
 
-  for(i = 0; i < mzx_world->num_counters; i++)
+  for(i = 0; i < counter_list->num_counters; i++)
   {
-    src_counter = mzx_world->counter_list[i];
-    name_length = strlen(src_counter->name);
+    src_counter = counter_list->counters[i];
+    name_length = src_counter->name_length;
 
-    zputd(src_counter->value, zp);
-    zputd(name_length, zp);
+    mf.current = buffer;
+    mfputd(src_counter->value, &mf);
+    mfputd(name_length, &mf);
+    zwrite(buffer, 8, zp);
     zwrite(src_counter->name, name_length, zp);
   }
 
@@ -1402,12 +1487,14 @@ static inline int load_world_counters(struct world *mzx_world,
   size_t name_length;
   int value;
 
+  struct counter_list *counter_list = &(mzx_world->counter_list);
   int num_prev_allocated;
   int num_counters;
   int i;
 
   enum zip_error result;
   unsigned int method;
+  boolean is_stream = false;
 
   result = zip_get_next_method(zp, &method);
   if(result != ZIP_SUCCESS)
@@ -1417,6 +1504,7 @@ static inline int load_world_counters(struct world *mzx_world,
   if(zp->is_memory && method == ZIP_M_NONE)
   {
     zip_read_open_mem_stream(zp, &mf);
+    is_stream = true;
   }
 
   else
@@ -1427,19 +1515,19 @@ static inline int load_world_counters(struct world *mzx_world,
     buffer = cmalloc(actual_size);
     zip_read_file(zp, buffer, actual_size, &actual_size);
 
-    mfopen_static(buffer, actual_size, &mf);
+    mfopen(buffer, actual_size, &mf);
   }
 
   num_counters = mfgetd(&mf);
 
-  num_prev_allocated = mzx_world->num_counters_allocated;
+  num_prev_allocated = counter_list->num_counters_allocated;
 
   // If there aren't already any counters, allocate manually.
   if(!num_prev_allocated)
   {
-    mzx_world->num_counters = num_counters;
-    mzx_world->num_counters_allocated = num_counters;
-    mzx_world->counter_list = ccalloc(num_counters, sizeof(struct counter *));
+    counter_list->num_counters = num_counters;
+    counter_list->num_counters_allocated = num_counters;
+    counter_list->counters = ccalloc(num_counters, sizeof(struct counter *));
   }
 
   for(i = 0; i < num_counters; i++)
@@ -1464,31 +1552,24 @@ static inline int load_world_counters(struct world *mzx_world,
     // Otherwise, put them in the list manually.
     else
     {
-      load_new_counter(mzx_world->counter_list, i,
-       name_buffer, name_length, value);
+      load_new_counter(counter_list, i, name_buffer, name_length, value);
     }
   }
 
   // If there weren't any previously allocated, the number successfully read is
   // the new number of counters.
   if(!num_prev_allocated)
-    mzx_world->num_counters = i;
+    counter_list->num_counters = i;
 
-#ifndef CONFIG_UTHASH
+#ifndef CONFIG_KHASH
   // Versions without the hash table require this to be sorted at all times
-  sort_counter_list(mzx_world->counter_list, mzx_world->num_counters);
+  sort_counter_list(counter_list);
 #endif
 
-  if(zp->is_memory && method == ZIP_M_NONE)
-  {
-    zip_read_close_mem_stream(zp);
-  }
+  if(is_stream)
+    zip_read_close_stream(zp);
 
-  else
-  {
-    free(buffer);
-  }
-
+  free(buffer);
   return ZIP_SUCCESS;
 }
 
@@ -1497,6 +1578,9 @@ static inline int load_world_counters(struct world *mzx_world,
 static inline int save_world_strings(struct world *mzx_world,
  struct zip_archive *zp, const char *name)
 {
+  Uint8 buffer[8];
+  struct memfile mf;
+  struct string_list *string_list = &(mzx_world->string_list);
   struct string *src_string;
   size_t name_length;
   size_t str_length;
@@ -1507,16 +1591,20 @@ static inline int save_world_strings(struct world *mzx_world,
   if(result != ZIP_SUCCESS)
     return result;
 
-  zputd(mzx_world->num_strings, zp);
+  mfopen(buffer, 8, &mf);
+  mfputd(string_list->num_strings, &mf);
+  zwrite(buffer, 4, zp);
 
-  for(i = 0; i < mzx_world->num_strings; i++)
+  for(i = 0; i < string_list->num_strings; i++)
   {
-    src_string = mzx_world->string_list[i];
-    name_length = strlen(src_string->name);
+    src_string = string_list->strings[i];
+    name_length = src_string->name_length;
     str_length = src_string->length;
 
-    zputd(name_length, zp);
-    zputd(str_length, zp);
+    mf.current = buffer;
+    mfputd(name_length, &mf);
+    mfputd(str_length, &mf);
+    zwrite(buffer, 8, zp);
     zwrite(src_string->name, name_length, zp);
     zwrite(src_string->value, str_length, zp);
   }
@@ -1531,7 +1619,9 @@ static inline int load_world_strings_mem(struct world *mzx_world,
   // implementation.
   struct memfile mf;
   char *buffer = NULL;
+  boolean is_stream = false;
 
+  struct string_list *string_list = &(mzx_world->string_list);
   struct string *src_string;
   char name_buffer[ROBOT_MAX_TR];
   size_t name_length;
@@ -1545,6 +1635,7 @@ static inline int load_world_strings_mem(struct world *mzx_world,
   if(zp->is_memory && method == ZIP_M_NONE)
   {
     zip_read_open_mem_stream(zp, &mf);
+    is_stream = true;
   }
 
   else
@@ -1555,19 +1646,19 @@ static inline int load_world_strings_mem(struct world *mzx_world,
     buffer = cmalloc(actual_size);
     zip_read_file(zp, buffer, actual_size, &actual_size);
 
-    mfopen_static(buffer, actual_size, &mf);
+    mfopen(buffer, actual_size, &mf);
   }
 
   num_strings = mfgetd(&mf);
 
-  num_prev_allocated = mzx_world->num_strings_allocated;
+  num_prev_allocated = string_list->num_strings_allocated;
 
   // If there aren't already any strings, allocate manually.
   if(!num_prev_allocated)
   {
-    mzx_world->num_strings = num_strings;
-    mzx_world->num_strings_allocated = num_strings;
-    mzx_world->string_list = ccalloc(num_strings, sizeof(struct string *));
+    string_list->num_strings = num_strings;
+    string_list->num_strings_allocated = num_strings;
+    string_list->strings = ccalloc(num_strings, sizeof(struct string *));
   }
 
   for(i = 0; i < num_strings; i++)
@@ -1592,7 +1683,7 @@ static inline int load_world_strings_mem(struct world *mzx_world,
     // Otherwise, put them in the list manually.
     else
     {
-      src_string = load_new_string(mzx_world->string_list, i,
+      src_string = load_new_string(string_list, i,
        name_buffer, name_length, str_length);
     }
 
@@ -1603,29 +1694,26 @@ static inline int load_world_strings_mem(struct world *mzx_world,
   // If there weren't any previously allocated, the number successfully read is
   // the new number of strings.
   if(!num_prev_allocated)
-    mzx_world->num_strings = i;
+    string_list->num_strings = i;
 
-#ifndef CONFIG_UTHASH
+#ifndef CONFIG_KHASH
   // Versions without the hash table require this to be sorted at all times
-  sort_string_list(mzx_world->string_list, mzx_world->num_strings);
+  sort_string_list(string_list);
 #endif
 
-  if(zp->is_memory && method == ZIP_M_NONE)
-  {
-    zip_read_close_mem_stream(zp);
-  }
+  if(is_stream)
+    zip_read_close_stream(zp);
 
-  else
-  {
-    free(buffer);
-  }
-
+  free(buffer);
   return ZIP_SUCCESS;
 }
 
 static inline int load_world_strings(struct world *mzx_world,
  struct zip_archive *zp)
 {
+  Uint8 buffer[8];
+  struct memfile mf;
+  struct string_list *string_list = &(mzx_world->string_list);
   struct string *src_string;
   char name_buffer[ROBOT_MAX_TR];
   size_t name_length;
@@ -1648,21 +1736,26 @@ static inline int load_world_strings(struct world *mzx_world,
   // Stream the strings out of the file.
   zip_read_open_file_stream(zp, NULL);
 
-  num_strings = zgetd(zp, &result);
-  num_prev_allocated = mzx_world->num_strings_allocated;
+  mfopen(buffer, 8, &mf);
+  zread(buffer, 4, zp);
+
+  num_strings = mfgetd(&mf);
+  num_prev_allocated = string_list->num_strings_allocated;
 
   // If there aren't already any strings, allocate manually.
   if(!num_prev_allocated)
   {
-    mzx_world->num_strings = num_strings;
-    mzx_world->num_strings_allocated = num_strings;
-    mzx_world->string_list = ccalloc(num_strings, sizeof(struct string *));
+    string_list->num_strings = num_strings;
+    string_list->num_strings_allocated = num_strings;
+    string_list->strings = ccalloc(num_strings, sizeof(struct string *));
   }
 
   for(i = 0; i < num_strings; i++)
   {
-    name_length = zgetd(zp, &result);
-    str_length = zgetd(zp, &result);
+    zread(buffer, 8, zp);
+    mf.current = buffer;
+    name_length = mfgetd(&mf);
+    str_length = mfgetd(&mf);
 
     if(name_length >= ROBOT_MAX_TR || str_length > MAX_STRING_LEN)
       break;
@@ -1681,7 +1774,7 @@ static inline int load_world_strings(struct world *mzx_world,
     // Otherwise, put them in the list manually.
     else
     {
-      src_string = load_new_string(mzx_world->string_list, i,
+      src_string = load_new_string(string_list, i,
        name_buffer, name_length, str_length);
     }
 
@@ -1692,11 +1785,11 @@ static inline int load_world_strings(struct world *mzx_world,
   // If there weren't any previously allocated, the number successfully read is
   // the new number of strings.
   if(!num_prev_allocated)
-    mzx_world->num_strings = i;
+    string_list->num_strings = i;
 
-#ifndef CONFIG_UTHASH
+#ifndef CONFIG_KHASH
   // Versions without the hash table require this to be sorted at all times
-  sort_string_list(mzx_world->string_list, mzx_world->num_strings);
+  sort_string_list(string_list);
 #endif
 
   return zip_read_close_stream(zp);
@@ -1705,42 +1798,61 @@ static inline int load_world_strings(struct world *mzx_world,
 
 void save_counters_file(struct world *mzx_world, const char *file)
 {
-  struct zip_archive *zp = zip_open_file_write(file);
+  FILE *fp = fopen_unsafe(file, "wb");
+  struct zip_archive *zp;
 
-  if(!zp)
+  if(!fp)
     return;
 
-  zwrite("COUNTERS", 8, zp);
+  // TODO temporary fix to improve save times on the embedded platforms.
+  setvbuf(fp, NULL, _IOFBF, 16384);
+
+  if(!fwrite("COUNTERS", 8, 1, fp))
+    goto err;
+
+  zp = zip_open_fp_write(fp);
+  if(!zp)
+    goto err;
 
   save_world_counters(mzx_world, zp,      "counter");
   save_world_strings(mzx_world, zp,       "string");
 
   zip_close(zp, NULL);
+  return;
+
+err:
+  fclose(fp);
+  return;
 }
 
 
 int load_counters_file(struct world *mzx_world, const char *file)
 {
-  struct zip_archive *zp = zip_open_file_read(file);
-  char magic[9];
+  FILE *fp = fopen_unsafe(file, "rb");
+  struct zip_archive *zp;
+  char magic[8];
 
   unsigned int prop_id;
 
-  if(!zp)
+  if(!fp)
   {
     error_message(E_FILE_DOES_NOT_EXIST, 0, NULL);
-    return 0;
+    return -1;
   }
 
-  magic[8] = 0;
-  if(ZIP_SUCCESS != zread(magic, 8, zp))
-    goto err;
+  // TODO temporary fix to improve load times on the embedded platforms.
+  setvbuf(fp, NULL, _IOFBF, 16384);
 
-  if(strcmp(magic, "COUNTERS"))
-    goto err;
+  if(!fread(magic, 8, 1, fp))
+    goto err_close_file;
 
-  if(ZIP_SUCCESS != zip_read_directory(zp))
-    goto err;
+  if(memcmp(magic, "COUNTERS", 8))
+    goto err_close_file;
+
+  zp = zip_open_fp_read(fp);
+
+  if(!zp)
+    goto err_close_zip;
 
   assign_fprops(zp, 0);
 
@@ -1765,15 +1877,20 @@ int load_counters_file(struct world *mzx_world, const char *file)
   zip_close(zp, NULL);
   return 0;
 
-err:
-  error_message(E_SAVE_FILE_INVALID, 0, NULL);
+err_close_zip:
   zip_close(zp, NULL);
+  fp = NULL;
+
+err_close_file:
+  if(fp)
+    fclose(fp);
+  error_message(E_SAVE_FILE_INVALID, 0, NULL);
   return -1;
 }
 
 
 static enum val_result validate_world_zip(struct world *mzx_world,
- struct zip_archive *zp, int savegame, int *file_version)
+ struct zip_archive *zp, boolean savegame, int *file_version)
 {
   unsigned int file_id;
   int result;
@@ -1864,9 +1981,10 @@ err_out:
 
 
 static int save_world_zip(struct world *mzx_world, const char *file,
- int savegame, int file_version)
+ boolean savegame, int file_version)
 {
-  struct zip_archive *zp = zip_open_file_write(file);
+  FILE *fp;
+  struct zip_archive *zp = NULL;
   struct board *cur_board;
   int i;
 
@@ -1875,36 +1993,47 @@ static int save_world_zip(struct world *mzx_world, const char *file,
 
   meter_initial_draw(meter_curr, meter_target, "Saving...");
 
-  if(!zp)
+  fp = fopen_unsafe(file, "wb");
+  if(!fp)
     goto err;
+
+  // TODO temporary fix to improve save times on the embedded platforms.
+  setvbuf(fp, NULL, _IOFBF, 16384);
 
   // Header
   if(!savegame)
   {
     // World name
-    zwrite(mzx_world->name, BOARD_NAME_SIZE, zp);
+    if(!fwrite(mzx_world->name, BOARD_NAME_SIZE, 1, fp))
+      goto err_close;
 
     // Protection method -- always zero
-    zputc(0, zp);
+    fputc(0, fp);
 
     // Version string
-    zputc('M', zp);
-    zputc((file_version >> 8) & 0xFF, zp);
-    zputc(file_version & 0xFF, zp);
+    fputc('M', fp);
+    fputc((file_version >> 8) & 0xFF, fp);
+    fputc(file_version & 0xFF, fp);
   }
   else
   {
     // Version string
-    zwrite("MZS", 3, zp);
-    zputc((file_version >> 8) & 0xFF, zp);
-    zputc(file_version & 0xFF, zp);
+    if(!fwrite("MZS", 3, 1, fp))
+      goto err_close;
+
+    fputc((file_version >> 8) & 0xFF, fp);
+    fputc(file_version & 0xFF, fp);
 
     // MZX world version
-    zputw(mzx_world->version, zp);
+    fputw(mzx_world->version, fp);
 
     // Current board ID
-    zputc(mzx_world->current_board_id, zp);
+    fputc(mzx_world->current_board_id, fp);
   }
+
+  zp = zip_open_fp_write(fp);
+  if(!zp)
+    goto err_close;
 
   if(save_world_info(mzx_world, zp, savegame, file_version, "world"))
     goto err_close;
@@ -1957,7 +2086,10 @@ static int save_world_zip(struct world *mzx_world, const char *file,
   return 0;
 
 err_close:
-  zip_close(zp, NULL);
+  if(zp)
+    zip_close(zp, NULL);
+  else
+    fclose(fp);
 
 err:
   error_message(E_WORLD_IO_SAVING, 0, NULL);
@@ -1973,7 +2105,7 @@ err:
                              { zip_skip_file(zp); break; }
 
 static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
- int savegame, int file_version, int *faded)
+ boolean savegame, int file_version, boolean *faded)
 {
   unsigned int file_id;
   unsigned int board_id;
@@ -2146,7 +2278,7 @@ static int load_world_zip(struct world *mzx_world, struct zip_archive *zp,
 }
 
 
-int save_world(struct world *mzx_world, const char *file, int savegame,
+int save_world(struct world *mzx_world, const char *file, boolean savegame,
  int world_version)
 {
 #ifdef CONFIG_DEBYTECODE
@@ -2157,7 +2289,8 @@ int save_world(struct world *mzx_world, const char *file, int savegame,
 
   if(world_version == MZX_VERSION_PREV)
   {
-    error("Downver. not currently supported by debytecode.", 1, 8, 0);
+    error("Downver. not currently supported by debytecode.",
+     ERROR_T_ERROR, ERROR_OPT_OK, 0x0000);
     return -1;
   }
 
@@ -2290,14 +2423,14 @@ void refactor_board_list(struct world *mzx_world,
   int d_param, d_flag;
   int board_width;
   int board_height;
-  int relocate_current = 1;
+  int new_current_id = NO_BOARD;
 
   int num_boards = mzx_world->num_boards;
   struct board **board_list = mzx_world->board_list;
   struct board *cur_board;
 
-  if(board_list[mzx_world->current_board_id] == NULL)
-    relocate_current = 0;
+  if(board_list[mzx_world->current_board_id])
+    new_current_id = board_id_translation_list[mzx_world->current_board_id];
 
   free(board_list);
   board_list =
@@ -2312,6 +2445,10 @@ void refactor_board_list(struct world *mzx_world,
     cur_board = board_list[i];
     board_width = cur_board->board_width;
     board_height = cur_board->board_height;
+
+    if(i != new_current_id)
+      retrieve_board_from_extram(cur_board);
+
     level_id = cur_board->level_id;
     level_param = cur_board->level_param;
 
@@ -2335,15 +2472,18 @@ void refactor_board_list(struct world *mzx_world,
     {
       d_param = cur_board->board_dir[i2];
 
-      if(d_param < new_list_size)
+      if(d_param < num_boards)
         cur_board->board_dir[i2] = board_id_translation_list[d_param];
       else
         cur_board->board_dir[i2] = NO_BOARD;
     }
+
+    if(i != new_current_id)
+      store_board_to_extram(cur_board);
   }
 
   // Fix current board
-  if(relocate_current)
+  if(new_current_id != NO_BOARD)
   {
     d_param = mzx_world->current_board_id;
     d_param = board_id_translation_list[d_param];
@@ -2466,8 +2606,8 @@ static void convert_sfx_strs(char *sfx_buf)
 
 
 static void load_world(struct world *mzx_world, struct zip_archive *zp,
- FILE *fp, const char *file, bool savegame, int file_version, char *name,
- int *faded)
+ FILE *fp, const char *file, boolean savegame, int file_version, char *name,
+ boolean *faded)
 {
   size_t file_name_len = strlen(file) - 4;
   char config_file_name[MAX_PATH];
@@ -2491,13 +2631,12 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
   strncpy(config_file_name + file_name_len, ".cnf", 5);
 
   if(stat(config_file_name, &file_info) >= 0)
-  {
-    set_config_from_file(&(mzx_world->conf), config_file_name);
-  }
+    set_config_from_file(config_file_name);
 
   // Some initial setting(s)
   mzx_world->custom_sfx_on = 0;
   mzx_world->max_samples = -1;
+  mzx_world->joystick_simulate_keys = true;
 
   // If we're here, there's either a zip (regular) or a file (legacy).
   if(zp)
@@ -2579,6 +2718,9 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
   // This will be -1 (no limit) or whatever was loaded from a save
   audio_set_max_samples(mzx_world->max_samples);
 
+  // This will generally be 'true' unless it was different in the save.
+  joystick_set_game_bindings(mzx_world->joystick_simulate_keys);
+
   mzx_world->active = 1;
 
   // Remove any null boards
@@ -2586,42 +2728,78 @@ static void load_world(struct world *mzx_world, struct zip_archive *zp,
 
   // Resize this array if necessary
   set_update_done(mzx_world);
-  mzx_world->slow_down = 0;
 
   // Find the player
   find_player(mzx_world);
 }
 
 
-static struct zip_archive *try_load_zip_world(struct world *mzx_world,
- const char *file, bool savegame, int *file_version, int *protected, char *name)
+/**
+ * Open the world file and attempt to read the world header.
+ * Doesn't validate any read info; only return NULL if there was an IO error.
+ */
+
+static FILE *try_open_world(const char *file, boolean savegame,
+ int *file_version, int *protected, char *name)
 {
-  struct zip_archive *zp = zip_open_file_read(file);
   char magic[5];
+  int pr = 0;
+  int v;
+
+  FILE *fp = fopen_unsafe(file, "rb");
+  if(!fp)
+    return NULL;
+
+  // TODO temporary fix to improve load times on the embedded platforms.
+  setvbuf(fp, NULL, _IOFBF, 16384);
+
+  if(savegame)
+  {
+    if(!fread(magic, 5, 1, fp))
+      goto err_close;
+
+    v = save_magic(magic);
+  }
+
+  else
+  {
+    if(!fread(name, BOARD_NAME_SIZE, 1, fp))
+      goto err_close;
+
+    // Protection byte
+    pr = fgetc(fp);
+    if(protected)
+      *protected = pr;
+
+    if(!fread(magic, 3, 1, fp))
+      goto err_close;
+
+    v = world_magic(magic);
+  }
+
+  if(protected) *protected = pr;
+  if(file_version) *file_version = v;
+  return fp;
+
+err_close:
+  fclose(fp);
+  return NULL;
+}
+
+static struct zip_archive *try_load_zip_world(struct world *mzx_world,
+ const char *file, boolean savegame, int *file_version, int *protected,
+ char *name)
+{
+  struct zip_archive *zp = NULL;
+  FILE *fp;
   int pr = 0;
   int v;
 
   int result;
 
-  if(!zp)
+  fp = try_open_world(file, savegame, &v, &pr, name);
+  if(!fp)
     return NULL;
-
-  if(savegame)
-  {
-    zread(magic, 5, zp);
-
-    v = save_magic(magic);
-  }
-  else
-  {
-    enum zip_error ignore;
-
-    zread(name, BOARD_NAME_SIZE, zp);
-    pr = zgetc(zp, &ignore);
-    zread(magic, 3, zp);
-
-    v = world_magic(magic);
-  }
 
   *file_version = v;
 
@@ -2643,10 +2821,13 @@ static struct zip_archive *try_load_zip_world(struct world *mzx_world,
   *file_version = 0;
   v = 0;
 
-  result = zip_read_directory(zp);
+  zp = zip_open_fp_read(fp);
 
-  if(result != ZIP_SUCCESS)
+  if(!zp)
+  {
+    fp = NULL;
     goto err_close;
+  }
 
   result = validate_world_zip(mzx_world, zp, savegame, file_version);
 
@@ -2692,7 +2873,7 @@ err_close:
 
   else
   {
-    if (v > MZX_VERSION)
+    if(v > MZX_VERSION)
     {
       error_message(E_WORLD_FILE_VERSION_TOO_RECENT, v, NULL);
     }
@@ -2712,51 +2893,41 @@ err_close:
 
 err_protected:
   *protected = pr;
-  zip_close(zp, NULL);
+  if(zp)
+  {
+    zip_close(zp, NULL);
+  }
+  else
+
+  if(fp)
+    fclose(fp);
+
   return NULL;
 }
 
-
-static FILE *try_load_legacy_world(const char *file,
- bool savegame, int *file_version, char *name)
+static FILE *try_load_legacy_world(struct world *mzx_world, const char *file,
+ boolean savegame, int *file_version, char *name)
 {
-  char magic[5];
   FILE *fp;
-
   enum val_result result;
 
   // Validate the legacy world file and attempt decryption as needed.
-  result = validate_legacy_world_file(file, savegame, 0);
+  result = validate_legacy_world_file(mzx_world, file, savegame);
 
   if(result != VAL_SUCCESS)
     return NULL;
 
-  // Open the file
-  fp = fopen_unsafe(file, "rb");
-
-  if(savegame)
-  {
-    fread(magic, 5, 1, fp);
-    *file_version = save_magic(magic);
-  }
-
-  else
-  {
-    fread(name, BOARD_NAME_SIZE, 1, fp);
-    // Skip the protection byte
-    fseek(fp, 1, SEEK_CUR);
-    fread(magic, 3, 1, fp);
-    *file_version = world_magic(magic);
-  }
+  // We don't care about the value of the protected byte since the world
+  // should be decrypted if we've made it this far.
+  fp = try_open_world(file, savegame, file_version, NULL, name);
 
   reset_error_suppression();
   return fp;
 }
 
-
 __editor_maybe_static
 void try_load_world(struct world *mzx_world, struct zip_archive **zp,
- FILE **fp, const char *file, bool savegame, int *file_version, char *name)
+ FILE **fp, const char *file, boolean savegame, int *file_version, char *name)
 {
   // Regular worlds use a zip_archive. Legacy worlds use a FILE.
   struct zip_archive *_zp = NULL;
@@ -2768,7 +2939,7 @@ void try_load_world(struct world *mzx_world, struct zip_archive **zp,
 
   if(!_zp)
     if(protected || (v >= V251 && v <= MZX_LEGACY_FORMAT_VERSION))
-      _fp = try_load_legacy_world(file, savegame, &v, name);
+      _fp = try_load_legacy_world(mzx_world, file, savegame, &v, name);
 
   *zp = _zp;
   *fp = _fp;
@@ -2808,9 +2979,23 @@ void change_board(struct world *mzx_world, int board_id)
   }
 }
 
+void change_board_set_values(struct world *mzx_world)
+{
+  // The sequel to change_board; set special values on board (re)entry.
+  struct board *cur_board = mzx_world->current_board;
+
+  // Set the timer.
+  set_counter(mzx_world, "TIME", cur_board->time_limit, 0);
+
+  // Set the player restart position.
+  find_player(mzx_world);
+  mzx_world->player_restart_x = mzx_world->player_x;
+  mzx_world->player_restart_y = mzx_world->player_y;
+}
+
 void change_board_load_assets(struct world *mzx_world)
 {
-  // The sequel to change_board; use after the vquick_fadeout.
+  // The sequel to change_board; if there's a fadeout, use this after.
   struct board *cur_board = mzx_world->current_board;
   char translated_name[MAX_PATH];
 
@@ -2831,10 +3016,7 @@ void change_board_load_assets(struct world *mzx_world)
   if(mzx_world->version >= V290 && cur_board->palette_path[0])
   {
     if(fsafetranslate(cur_board->palette_path, translated_name) == FSAFE_SUCCESS)
-    {
       load_palette(translated_name);
-      update_palette();
-    }
   }
 }
 
@@ -2916,6 +3098,9 @@ __editor_maybe_static void default_global_data(struct world *mzx_world)
   mzx_world->mesg_edges = 1;
   mzx_world->real_mod_playing[0] = 0;
   mzx_world->smzx_message = 1;
+  // In 2.90X, due to a bug the message could only display in mode 0.
+  if(mzx_world->version == V290)
+    mzx_world->smzx_message = 0;
 
   mzx_world->blind_dur = 0;
   mzx_world->firewalker_dur = 0;
@@ -2945,7 +3130,7 @@ __editor_maybe_static void default_global_data(struct world *mzx_world)
   scroll_color = 15;
 
   mzx_world->lock_speed = 0;
-  mzx_world->mzx_speed = mzx_world->conf.mzx_speed;
+  mzx_world->mzx_speed = get_config()->mzx_speed;
 
   assert(mzx_world->input_file == NULL);
   assert(mzx_world->output_file == NULL);
@@ -2954,7 +3139,7 @@ __editor_maybe_static void default_global_data(struct world *mzx_world)
   mzx_world->target_where = TARGET_NONE;
 }
 
-bool reload_world(struct world *mzx_world, const char *file, int *faded)
+boolean reload_world(struct world *mzx_world, const char *file, boolean *faded)
 {
   char name[BOARD_NAME_SIZE];
   int version;
@@ -2984,7 +3169,7 @@ bool reload_world(struct world *mzx_world, const char *file, int *faded)
 
   load_world(mzx_world, zp, fp, file, false, version, name, faded);
   default_global_data(mzx_world);
-  *faded = 0;
+  *faded = false;
 
   // Now that the world's loaded, fix the save path.
   {
@@ -2999,7 +3184,8 @@ bool reload_world(struct world *mzx_world, const char *file, int *faded)
   return true;
 }
 
-bool reload_savegame(struct world *mzx_world, const char *file, int *faded)
+boolean reload_savegame(struct world *mzx_world, const char *file,
+ boolean *faded)
 {
   char ignore[BOARD_NAME_SIZE];
   int version;
@@ -3027,7 +3213,7 @@ bool reload_savegame(struct world *mzx_world, const char *file, int *faded)
   return true;
 }
 
-bool reload_swap(struct world *mzx_world, const char *file, int *faded)
+boolean reload_swap(struct world *mzx_world, const char *file, boolean *faded)
 {
   char name[BOARD_NAME_SIZE];
   char full_path[MAX_PATH];
@@ -3049,6 +3235,7 @@ bool reload_swap(struct world *mzx_world, const char *file, int *faded)
 
   // Change to the first board of the new world.
   change_board(mzx_world, mzx_world->first_board);
+  change_board_set_values(mzx_world);
   change_board_load_assets(mzx_world);
 
   // Give curr_file a full path
@@ -3108,6 +3295,9 @@ void clear_world(struct world *mzx_world)
     mzx_world->output_file = NULL;
   }
 
+  mzx_world->current_cycle_odd = false;
+  mzx_world->current_cycle_frozen = false;
+  mzx_world->player_shoot_cooldown = 0;
   mzx_world->active = 0;
 
   audio_end_sample();
@@ -3118,10 +3308,6 @@ void clear_world(struct world *mzx_world)
 void clear_global_data(struct world *mzx_world)
 {
   int i;
-  int num_counters = mzx_world->num_counters;
-  int num_strings = mzx_world->num_strings;
-  struct counter **counter_list = mzx_world->counter_list;
-  struct string **string_list = mzx_world->string_list;
   struct sprite **sprite_list = mzx_world->sprite_list;
 
   free(mzx_world->vlayer_chars);
@@ -3129,18 +3315,11 @@ void clear_global_data(struct world *mzx_world)
   mzx_world->vlayer_chars = NULL;
   mzx_world->vlayer_colors = NULL;
 
-  // Let counter.c handle this
-  free_counter_list(counter_list, num_counters);
-  mzx_world->counter_list = NULL;
+  // Clear all counters out of the counter list
+  clear_counter_list(&(mzx_world->counter_list));
 
-  // Let str.c handle this
-  free_string_list(string_list, num_strings);
-  mzx_world->string_list = NULL;
-
-  mzx_world->num_counters = 0;
-  mzx_world->num_counters_allocated = 0;
-  mzx_world->num_strings = 0;
-  mzx_world->num_strings_allocated = 0;
+  // Clear all strings out of the string list
+  clear_string_list(&(mzx_world->string_list));
 
   for(i = 0; i < MAX_SPRITES; i++)
   {
@@ -3168,9 +3347,16 @@ void clear_global_data(struct world *mzx_world)
   mzx_world->robotic_save_type = SAVE_NONE;
 
   memset(mzx_world->custom_sfx, 0, NUM_SFX * SFX_SIZE);
+  mzx_world->custom_sfx_on = 0;
+
+  mzx_world->max_samples = -1;
+  audio_set_max_samples(mzx_world->max_samples);
+
+  mzx_world->joystick_simulate_keys = true;
+  joystick_set_game_bindings(mzx_world->joystick_simulate_keys);
 
   mzx_world->bomb_type = 1;
-  mzx_world->dead = 0;
+  mzx_world->dead = false;
 }
 
 void default_scroll_values(struct world *mzx_world)
@@ -3210,8 +3396,8 @@ void remap_vlayer(struct world *mzx_world,
 
     for(i = 0; i < old_height; i++)
     {
-      memcpy(vlayer_chars + new_pos, vlayer_chars + old_pos, new_width);
-      memcpy(vlayer_colors + new_pos, vlayer_colors + old_pos, new_width);
+      memmove(vlayer_chars + new_pos, vlayer_chars + old_pos, new_width);
+      memmove(vlayer_colors + new_pos, vlayer_colors + old_pos, new_width);
 
       old_pos += old_width;
       new_pos += new_width;
@@ -3234,8 +3420,8 @@ void remap_vlayer(struct world *mzx_world,
 
     for(i = 0; i < new_height; i++)
     {
-      memcpy(vlayer_chars + new_pos, vlayer_chars + old_pos, new_width);
-      memcpy(vlayer_colors + new_pos, vlayer_colors + old_pos, new_width);
+      memmove(vlayer_chars + new_pos, vlayer_chars + old_pos, new_width);
+      memmove(vlayer_colors + new_pos, vlayer_colors + old_pos, new_width);
 
       // Clear blank area
       memset(vlayer_chars + new_pos + old_width, 32, clear_width);

@@ -68,13 +68,17 @@ install: install-check install-arch
 		assets/smzx.pal ${DESTDIR}${SHAREDIR}/megazeux/assets && \
 	 ${install} -m 0644 config.txt ${DESTDIR}${SYSCONFDIR}/megazeux-config
 	@gzip -c docs/changelog.txt > docs/changelog.txt.gz
+	@gzip -c9 docs/mzxhelp.html > docs/mzxhelp.html.gz
 	@${install} -m 0644 \
 		README.md \
 		docs/changelog.txt.gz \
+		docs/mzxhelp.html.gz \
 		docs/macro.txt \
 		docs/keycodes.html \
+		docs/joystick.html \
 		${DESTDIR}${SHAREDIR}/doc/megazeux/
 	@${RM} -f docs/changelog.txt.gz
+	@${RM} -f docs/mzxhelp.html.gz
 ifeq (${BUILD_HELPSYS},1)
 	@${install} -m 0644 assets/help.fil \
 		${DESTDIR}${SHAREDIR}/megazeux/assets
@@ -133,6 +137,12 @@ ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 		assets/glsl/scalers/sepia.frag \
 		assets/glsl/scalers/simple.frag \
 		${DESTDIR}${SHAREDIR}/megazeux/assets/glsl/scalers/
+endif
+ifeq (${BUILD_GAMECONTROLLERDB},1)
+	@${install} -m 0644 \
+		assets/gamecontrollerdb.txt \
+		assets/gamecontrollerdb.LICENSE \
+		${DESTDIR}${SHAREDIR}/megazeux/assets/
 endif
 	@echo Done.
 

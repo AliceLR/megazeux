@@ -39,12 +39,17 @@
 #ifdef CONFIG_EGL
 #include <GLES2/gl2.h>
 #include "render_egl.h"
+#endif
+
+#ifdef CONFIG_GLES
 typedef GLenum GLiftype;
 #else
 typedef GLint GLiftype;
 #endif
 
 #include "render_gl.h"
+
+static const struct gl_version gl_required_version = { 2, 0 };
 
 #define CHARSET_COLS 64
 #define CHARSET_ROWS (FULL_CHARSET_SIZE / CHARSET_COLS)
@@ -90,23 +95,50 @@ enum
   NUM_TEXTURES
 };
 
-static inline int next_power_of_two(int v)
-{
-  int i;
-  for(i = 1; i <= 65536; i *= 2)
-    if(i >= v)
-      return i;
-
-  debug("Couldn't find power of two for %d\n", v);
-  return v;
-}
-
 enum
 {
   ATTRIB_POSITION,
   ATTRIB_TEXCOORD,
   ATTRIB_COLOR,
 };
+
+/**
+ * Some GL drivers attempt to run GLSL in software, resulting in extremely poor
+ * performance for MegaZeux. When one of the drivers in this blacklist is
+ * detected, video output will fall back to a different renderer instead.
+ */
+struct blacklist_entry
+{
+  const char *match_string; // Compare with GL_RENDERER output to detect driver.
+  const char *reason;       // Reason for blacklisting. Displays to the user.
+};
+
+static struct blacklist_entry auto_glsl_blacklist[] =
+{
+  { "swrast",
+    "  MESA software renderer.\n"
+    "  Blacklisted due to poor performance on some machines.\n" },
+  { "softpipe",
+    "  MESA software renderer.\n"
+    "  Blacklisted due to poor performance on some machines.\n" },
+  { "llvmpipe",
+    "  MESA software renderer.\n"
+    "  Blacklisted due to poor performance on some machines.\n" },
+  { "Chromium",
+    "  Chromium redirects GL commands to other GL drivers. The destination\n"
+    "  often seems to be a software renderer, causing poor performance on\n"
+    "  some machines.\n" },
+  { "Intel EMGD",
+    "  This driver may have extremely questionable \"OpenGL 2.0\" support.\n"
+    "  It may output a wall of spurious/nonsensical warnings when compiling\n"
+    "  the shaders, and it may claim that these shaders compiled\n"
+    "  successfully in cases where they actually did not.\n" },
+  { "GL4ES wrapper",
+    "  GL4ES is an OpenGL to GLES translation library that may or may not\n"
+    "  have problems with this renderer.\n" },
+};
+
+static int auto_glsl_blacklist_len = ARRAY_SIZE(auto_glsl_blacklist);
 
 static struct
 {
@@ -295,7 +327,7 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
   struct glsl_render_data *render_data = graphics->render_data;
   int index = res - GLSL_SHADER_RES_FIRST;
   int loaded_config = 0;
-  bool is_user_scaler = false;
+  boolean is_user_scaler = false;
   GLint compile_status;
   GLenum shader;
 
@@ -367,7 +399,28 @@ static GLuint glsl_load_shader(struct graphics_data *graphics,
 
   shader = glsl.glCreateShader(type);
 
-#ifdef CONFIG_EGL
+#ifdef CONFIG_GLES
+  {
+    /**
+     * OpenGL ES really doesn't like '#version 110' being specified. This
+     * is unfortunate, because some drivers (e.g. Intel HD) will emit warnings
+     * if it isn't explicit. Comment these directives out if found.
+     */
+
+    char *pos = source_cache[index];
+
+    while((pos = strstr(pos, "#version 110")))
+    {
+      debug("Found '#version 110' at %d in %s; commenting out\n",
+       (int)(pos - source_cache[index]),
+       mzx_res_get_by_id(res));
+      pos[0] = '/';
+      pos[1] = '/';
+    }
+  }
+#endif // CONFIG_GLES
+
+#ifdef CONFIG_GLES
   {
     const GLchar *sources[2];
     GLint lengths[2];
@@ -523,7 +576,7 @@ static void glsl_load_shaders(struct graphics_data *graphics)
   }
 }
 
-static bool glsl_init_video(struct graphics_data *graphics,
+static boolean glsl_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
   struct glsl_render_data *render_data;
@@ -557,24 +610,15 @@ static bool glsl_init_video(struct graphics_data *graphics,
     goto err_free;
 
   if(!set_video_mode())
-    goto err_free;
+    goto err_free_pixels;
 
   return true;
 
+err_free_pixels:
+  free(render_data->pixels);
 err_free:
-#if SDL_VERSION_ATLEAST(2,0,0)
-  if(render_data->sdl.context)
-  {
-    SDL_GL_DeleteContext(render_data->sdl.context);
-    render_data->sdl.context = NULL;
-  }
-  if(render_data->sdl.window)
-  {
-    SDL_DestroyWindow(render_data->sdl.window);
-    render_data->sdl.window = NULL;
-  }
-#endif // SDL_VERSION_ATLEAST(2,0,0)
   free(render_data);
+  graphics->render_data = NULL;
   return false;
 }
 
@@ -585,14 +629,23 @@ static void glsl_free_video(struct graphics_data *graphics)
   int i;
 
   for(i = 0; i < GLSL_SHADER_RES_COUNT; i++)
+  {
     if(source_cache[i])
+    {
       free((void *)source_cache[i]);
+      source_cache[i] = NULL;
+    }
+  }
 
   if(render_data)
   {
     glsl.glDeleteTextures(NUM_TEXTURES, render_data->textures);
     gl_check_error();
 
+    glsl.glUseProgram(0);
+    gl_check_error();
+
+    gl_cleanup(graphics);
     free(render_data->pixels);
     free(render_data);
     graphics->render_data = NULL;
@@ -661,25 +714,29 @@ static void glsl_resize_screen(struct graphics_data *graphics,
   glsl_load_shaders(graphics);
 }
 
-static bool glsl_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, bool fullscreen, bool resize)
+static boolean glsl_set_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, boolean fullscreen, boolean resize)
 {
   gl_set_attributes(graphics);
 
-  if(!gl_set_video_mode(graphics, width, height, depth, fullscreen, resize))
+  if(!gl_set_video_mode(graphics, width, height, depth, fullscreen, resize,
+   gl_required_version))
     return false;
 
   gl_set_attributes(graphics);
 
   if(!gl_load_syms(glsl_syms_map))
+  {
+    gl_cleanup(graphics);
     return false;
+  }
 
   // We need a specific version of OpenGL; desktop GL must be 2.0.
   // All OpenGL ES 2.0 implementations are supported, so don't do
-  // the check with EGL configurations (EGL implies OpenGL ES).
-#ifndef CONFIG_EGL
+  // the check with these configurations.
+#ifndef CONFIG_GLES
   {
-    static bool initialized = false;
+    static boolean initialized = false;
 
     if(!initialized)
     {
@@ -688,12 +745,17 @@ static bool glsl_set_video_mode(struct graphics_data *graphics,
 
       version = (const char *)glsl.glGetString(GL_VERSION);
       if(!version)
+      {
+        warn("Could not load GL version string.\n");
+        gl_cleanup(graphics);
         return false;
+      }
 
       version_float = atof(version);
       if(version_float < 2.0)
       {
         warn("Need >= OpenGL 2.0, got OpenGL %.1f.\n", version_float);
+        gl_cleanup(graphics);
         return false;
       }
 
@@ -706,26 +768,41 @@ static bool glsl_set_video_mode(struct graphics_data *graphics,
   return true;
 }
 
-static bool glsl_auto_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, bool fullscreen, bool resize)
+static boolean glsl_auto_set_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, boolean fullscreen, boolean resize)
 {
-  const char *renderer;
   struct glsl_render_data *render_data = graphics->render_data;
+  const char *renderer;
+  int i;
 
   if(glsl_set_video_mode(graphics, width, height, depth, fullscreen, resize))
   {
-
     // Driver blacklist. If the renderer is on the blacklist we want to fall
     // back on software as these renderers have disastrous GLSL performance.
 
     renderer = (const char *)glsl.glGetString(GL_RENDERER);
-    if(strstr(renderer, "llvmpipe"))
+
+    // Print the full renderer string for reference.
+    info("GL driver: %s\n\n", renderer);
+
+    for(i = 0; i < auto_glsl_blacklist_len; i++)
     {
-      warn("Detected MESA software renderer. Disabling glsl.\n");
-      return false;
+      if(strstr(renderer, auto_glsl_blacklist[i].match_string))
+      {
+        warn(
+          "Detected blacklisted driver: \"%s\". Disabling glsl. Reason:\n\n"
+          "%s\n\n"
+          "Run again with \"video_output=glsl\" to force-enable glsl.\n\n",
+          auto_glsl_blacklist[i].match_string,
+          auto_glsl_blacklist[i].reason
+        );
+        gl_cleanup(graphics);
+        return false;
+      }
     }
 
-    // Overwrite the original video_output now that we know glsl works
+    // Switch from auto_glsl to glsl now that we know it works.
+    graphics->renderer.set_video_mode = glsl_set_video_mode;
     strcpy(render_data->conf->video_output, "glsl");
 
     return true;
@@ -1048,7 +1125,7 @@ static void glsl_render_mouse(struct graphics_data *graphics,
   int y2 = y + h;
 
   const float vertex_array[2 * 4] =
-   {
+  {
     x  * 2.0f / SCREEN_PIX_W - 1.0f, (y  * 2.0f / SCREEN_PIX_H - 1.0f) * -1.0f,
     x  * 2.0f / SCREEN_PIX_W - 1.0f, (y2 * 2.0f / SCREEN_PIX_H - 1.0f) * -1.0f,
     x2 * 2.0f / SCREEN_PIX_W - 1.0f, (y  * 2.0f / SCREEN_PIX_H - 1.0f) * -1.0f,
@@ -1123,19 +1200,19 @@ static void glsl_sync_screen(struct graphics_data *graphics)
   {
     const float tex_coord_array_single[2 * 4] =
     {
-       0.0f,                              height / (1.0f * GL_POWER_2_HEIGHT),
-       0.0f,                              0.0f,
-       width / (1.0f * GL_POWER_2_WIDTH), height / (1.0f * GL_POWER_2_HEIGHT),
-       width / (1.0f * GL_POWER_2_WIDTH), 0.0f,
+      0.0f,                              height / (1.0f * GL_POWER_2_HEIGHT),
+      0.0f,                              0.0f,
+      width / (1.0f * GL_POWER_2_WIDTH), height / (1.0f * GL_POWER_2_HEIGHT),
+      width / (1.0f * GL_POWER_2_WIDTH), 0.0f,
     };
 
     glsl.glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 0,
      tex_coord_array_single);
     gl_check_error();
-  }
 
-  glsl.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-  gl_check_error();
+    glsl.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    gl_check_error();
+  }
 
   glsl.glDisableVertexAttribArray(ATTRIB_POSITION);
   glsl.glDisableVertexAttribArray(ATTRIB_TEXCOORD);
@@ -1145,8 +1222,10 @@ static void glsl_sync_screen(struct graphics_data *graphics)
 
   gl_swap_buffers(graphics);
 
+#ifndef __EMSCRIPTEN__
   glsl.glClear(GL_COLOR_BUFFER_BIT);
   gl_check_error();
+#endif
 }
 
 static void glsl_switch_shader(struct graphics_data *graphics,

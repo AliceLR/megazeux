@@ -24,31 +24,36 @@
 
 __M_BEGIN_DECLS
 
-#include "world_struct.h"
-
 #ifdef CONFIG_EDITOR
-bool is_editor(void);
+boolean is_editor(void);
 void editor_init(void);
-void init_macros(struct world *mzx_world);
-void free_editor_config(struct world *mzx_world);
-void load_editor_config(struct world *mzx_world, int *argc, char *argv[]);
+void init_macros(void);
+
+void default_editor_config(void);
+void set_editor_config_from_file(const char *conf_file_name);
+void set_editor_config_from_command_line(int *argc, char *argv[]);
+void store_editor_config_backup(void);
+void free_editor_config(void);
 #else
-static inline bool is_editor(void) { return false; }
+static inline boolean is_editor(void) { return false; }
 static inline void editor_init(void) {}
-static inline void init_macros(struct world *mzx_world) {}
-static inline void free_editor_config(struct world *mzx_world) {}
-static inline void load_editor_config(struct world *mzx_world,
- int *argc, char *argv[]) {}
+static inline void init_macros(void) {}
+
+static inline void default_editor_config(void) {}
+static inline void set_editor_config_from_file(const char *conf_file_name) {}
+static inline void set_editor_config_from_command_line(int *argc, char *argv[]){}
+static inline void store_editor_config_backup(void) {}
+static inline void free_editor_config(void) {}
 #endif
 
 
 #ifdef CONFIG_UPDATER
-bool updater_init(int argc, char *argv[]);
-bool is_updater(void);
+boolean updater_init(int argc, char *argv[]);
+boolean is_updater(void);
 #else
-static inline bool updater_init(int argc, char *argv[])
+static inline boolean updater_init(int argc, char *argv[])
 { return true; }
-static inline bool is_updater(void)
+static inline boolean is_updater(void)
 { return false; }
 #endif
 

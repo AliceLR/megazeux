@@ -20,6 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#version 110
+
 // Keep these the same as in render_glsl.c
 #define CHARSET_COLS      64.0
 #define TEX_DATA_WIDTH    512.0

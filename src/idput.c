@@ -19,12 +19,13 @@
 
 #include <stdlib.h>
 
+#include "board.h"
 #include "const.h"
-#include "graphics.h"
 #include "data.h"
+#include "graphics.h"
 #include "idput.h"
 #include "world.h"
-#include "board.h"
+#include "world_struct.h"
 
 #define thin_line            128
 #define thick_line           144
@@ -61,11 +62,10 @@
 #define seeker_colors        298
 #define whirlpool_glow       302
 
-unsigned char id_chars[455];
-
-unsigned char bullet_color[3] = { 15, 15, 15 };
+unsigned char id_chars[ID_CHARS_SIZE];
+unsigned char id_dmg[ID_DMG_SIZE];
+unsigned char bullet_color[ID_BULLET_COLOR_SIZE] = { 15, 15, 15 };
 unsigned char missile_color = 8;
-unsigned char id_dmg[128];
 
 static unsigned char get_special_id_char(struct board *src_board,
  enum thing cell_id, char param, int offset)
@@ -548,6 +548,134 @@ void draw_game_window(struct board *src_board, int array_x, int array_y)
      o_x < x_limit; x++, a_x++, o_x++)
     {
       id_put(src_board, x, y, a_x, a_y, o_x, o_y);
+    }
+  }
+}
+
+void draw_game_window_blind(struct board *src_board, int array_x, int array_y,
+ int player_x, int player_y)
+{
+  int viewport_x = src_board->viewport_x;
+  int viewport_y = src_board->viewport_y;
+  int viewport_width = src_board->viewport_width;
+  int viewport_height = src_board->viewport_height;
+  int i;
+
+  select_layer(BOARD_LAYER);
+
+  for(i = viewport_y; i < viewport_y + viewport_height; i++)
+    fill_line(viewport_width, viewport_x, i, 176, 8);
+
+  // Find where player would be and draw.
+  if(player_x >= 0 && player_y >= 0)
+  {
+    id_put(src_board, player_x - array_x + viewport_x,
+     player_y - array_y + viewport_y, player_x,
+     player_y, player_x, player_y);
+  }
+}
+
+void draw_viewport(struct board *src_board, int edge_color)
+{
+  int i, i2;
+  int viewport_x = src_board->viewport_x;
+  int viewport_y = src_board->viewport_y;
+  int viewport_width = src_board->viewport_width;
+  int viewport_height = src_board->viewport_height;
+
+  // Draw the current viewport
+  if(viewport_y > 1)
+  {
+    // Top
+    for(i = 0; i < viewport_y; i++)
+      fill_line_ext(80, 0, i, 177, edge_color, 0, 0);
+  }
+
+  if((viewport_y + viewport_height) < 24)
+  {
+    // Bottom
+    for(i = viewport_y + viewport_height + 1; i < 25; i++)
+      fill_line_ext(80, 0, i, 177, edge_color, 0, 0);
+  }
+
+  if(viewport_x > 1)
+  {
+    // Left
+    for(i = 0; i < 25; i++)
+      fill_line_ext(viewport_x, 0, i, 177, edge_color, 0, 0);
+  }
+
+  if((viewport_x + viewport_width) < 79)
+  {
+    // Right
+    i2 = viewport_x + viewport_width + 1;
+    for(i = 0; i < 25; i++)
+    {
+      fill_line_ext(80 - i2, i2, i, 177, edge_color, 0, 0);
+    }
+  }
+
+  // Draw the box
+  if(viewport_x > 0)
+  {
+    // left
+    for(i = 0; i < viewport_height; i++)
+    {
+      draw_char_ext('\xba', edge_color, viewport_x - 1,
+       i + viewport_y, 0, 0);
+    }
+
+    if(viewport_y > 0)
+    {
+      draw_char_ext('\xc9', edge_color, viewport_x - 1,
+       viewport_y - 1, 0, 0);
+    }
+  }
+  if((viewport_x + viewport_width) < 80)
+  {
+    // right
+    for(i = 0; i < viewport_height; i++)
+    {
+      draw_char_ext('\xba', edge_color,
+       viewport_x + viewport_width, i + viewport_y, 0, 0);
+    }
+
+    if(viewport_y > 0)
+    {
+      draw_char_ext('\xbb', edge_color,
+       viewport_x + viewport_width, viewport_y - 1, 0, 0);
+    }
+  }
+
+  if(viewport_y > 0)
+  {
+    // top
+    for(i = 0; i < viewport_width; i++)
+    {
+      draw_char_ext('\xcd', edge_color, viewport_x + i,
+       viewport_y - 1, 0, 0);
+    }
+  }
+
+  if((viewport_y + viewport_height) < 25)
+  {
+    // bottom
+    for(i = 0; i < viewport_width; i++)
+    {
+      draw_char_ext('\xcd', edge_color, viewport_x + i,
+       viewport_y + viewport_height, 0, 0);
+    }
+
+    if(viewport_x > 0)
+    {
+      draw_char_ext('\xc8', edge_color, viewport_x - 1,
+       viewport_y + viewport_height, 0, 0);
+    }
+
+    if((viewport_x + viewport_width) < 80)
+    {
+      draw_char_ext('\xbc', edge_color, viewport_x + viewport_width,
+       viewport_y + viewport_height, 0, 0);
     }
   }
 }

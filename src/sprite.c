@@ -21,11 +21,12 @@
 
 #include "data.h"
 #include "error.h"
-#include "game.h"
+#include "game_ops.h"
 #include "graphics.h"
 #include "idput.h"
 #include "sprite.h"
 #include "world.h"
+#include "world_struct.h"
 
 static inline int is_blank(Uint16 c)
 {
@@ -47,7 +48,14 @@ static inline int is_blank(Uint16 c)
 void plot_sprite(struct world *mzx_world, struct sprite *cur_sprite, int color,
  int x, int y)
 {
-  if(((cur_sprite->width) && (cur_sprite->height)))
+  /**
+   * Prior to 2.80, only one of these had to be set, and it was extremely
+   * likely at least one WOULD be set because DOS versions would not clear
+   * anything but the flags between game loads. Instead of emulating the
+   * quirks of pre-port MZX for this, just unconditionally allow placement.
+   */
+  if((cur_sprite->width && cur_sprite->height) ||
+   (mzx_world->version < VERSION_PORT))
   {
     cur_sprite->x = x;
     cur_sprite->y = y;
@@ -70,21 +78,38 @@ void plot_sprite(struct world *mzx_world, struct sprite *cur_sprite, int color,
   }
 }
 
-// Sort by yorder (or by sprite number if the yorder is the same)
-static int compare_spr(const void *dest, const void *src)
+// Sort by zorder, then by sprite number
+static int compare_spr_normal(const void *dest, const void *src)
 {
   struct sprite *spr_dest = *((struct sprite **)dest);
   struct sprite *spr_src = *((struct sprite **)src);
-  int dest_y = spr_dest->y * (spr_dest->flags & SPRITE_UNBOUND ? 1 : CHAR_H);
-  int src_y = spr_src->y * (spr_src->flags & SPRITE_UNBOUND ? 1 : CHAR_H);
 
-  int diff = ((dest_y + spr_dest->col_y) - (src_y + spr_src->col_y));
+  int diff = spr_dest->z - spr_src->z;
+
+  return diff ? diff : (spr_dest->qsort_order - spr_src->qsort_order);
+}
+
+// Sort by zorder, then by yorder, then by sprite number
+static int compare_spr_yorder(const void *dest, const void *src)
+{
+  struct sprite *spr_dest = *((struct sprite **)dest);
+  struct sprite *spr_src = *((struct sprite **)src);
+
+  int diff = spr_dest->z - spr_src->z;
+  int dest_y, src_y;
+
+  if (diff != 0) return diff;
+
+  dest_y = spr_dest->y * (spr_dest->flags & SPRITE_UNBOUND ? 1 : CHAR_H);
+  src_y = spr_src->y * (spr_src->flags & SPRITE_UNBOUND ? 1 : CHAR_H);
+
+  diff = ((dest_y + spr_dest->col_y) - (src_y + spr_src->col_y));
 
   return diff ? diff : (spr_dest->qsort_order - spr_src->qsort_order);
 }
 
 static inline void sort_sprites(struct sprite **sorted_list,
- struct sprite **sprite_list)
+ struct sprite **sprite_list, int spr_yorder)
 {
   // Fill the sorted list with the active sprites in the beginning
   // and the inactive sprites in the end.
@@ -92,6 +117,7 @@ static inline void sort_sprites(struct sprite **sorted_list,
   int i;
   int i_active;
   int i_inactive;
+  int (*spr_compare)(const void *, const void *);
 
   for(i = 0, i_active = 0, i_inactive = MAX_SPRITES - 1; i < MAX_SPRITES; i++)
   {
@@ -112,7 +138,13 @@ static inline void sort_sprites(struct sprite **sorted_list,
     }
   }
 
-  qsort(sorted_list, i_active, sizeof(struct sprite *), compare_spr);
+  if(spr_yorder)
+    spr_compare = compare_spr_yorder;
+
+  else
+    spr_compare = compare_spr_normal;
+
+  qsort(sorted_list, i_active, sizeof(struct sprite *), spr_compare);
 }
 
 void draw_sprites(struct world *mzx_world)
@@ -129,10 +161,9 @@ void draw_sprites(struct world *mzx_world)
   int draw_width, draw_height, ref_x, ref_y, screen_x, screen_y;
   int src_width;
   int src_height;
-  bool use_vlayer;
+  boolean use_vlayer;
   struct sprite **sprite_list = mzx_world->sprite_list;
   struct sprite *sorted_list[MAX_SPRITES];
-  struct sprite **draw_order = sprite_list;
   struct sprite *cur_sprite;
   Uint16 ch;
   char color;
@@ -147,21 +178,17 @@ void draw_sprites(struct world *mzx_world)
   char *src_colors;
   Uint32 layer;
   int draw_layer_order;
-  bool unbound;
+  boolean unbound;
   int transparent_color;
 
   calculate_xytop(mzx_world, &screen_x, &screen_y);
 
-  if(mzx_world->sprite_y_order)
-  {
-    sort_sprites(sorted_list, sprite_list);
-    draw_order = sorted_list;
-  }
+  sort_sprites(sorted_list, sprite_list, mzx_world->sprite_y_order);
 
   // draw this on top of the SCREEN window.
   for(i = 0; i < MAX_SPRITES; i++)
   {
-    cur_sprite = draw_order[i];
+    cur_sprite = sorted_list[i];
 
     if(!(cur_sprite->flags & SPRITE_INITIALIZED))
       continue;
@@ -443,7 +470,7 @@ static int sprite_colliding_xy_old(struct world *mzx_world,
   int bwidth, bheight;
   int x1, x2, y1, y2;
   int mw, mh;
-  bool use_vlayer, use_vlayer2;
+  boolean use_vlayer, use_vlayer2;
   unsigned int x_lmask, x_gmask, y_lmask, y_gmask;
   unsigned int xl, xg, yl, yg, wl, hl, wg, hg;
   char *vlayer_chars = mzx_world->vlayer_chars;
@@ -498,7 +525,7 @@ static int sprite_colliding_xy_old(struct world *mzx_world,
   if((ref_x + col_width) >= bwidth)
     col_width = bwidth - ref_x;
 
-  if((ref_y + col_width) >= bheight)
+  if((ref_y + col_height) >= bheight)
     col_height = bheight - ref_y;
 
   if((check_x + col_width) >= board_width)
@@ -747,7 +774,7 @@ static inline struct rect rectangle(int x, int y, int w, int h)
   return r;
 }
 
-static inline bool rectangle_overlap(struct rect a,
+static inline boolean rectangle_overlap(struct rect a,
  struct rect b)
 {
   //debug("rectangle_overlap(%d, %d, %d, %d, %d, %d, %d, %d)\n",
@@ -760,7 +787,7 @@ static inline bool rectangle_overlap(struct rect a,
   return false;
 }
 
-static inline bool constrain_rectangle(struct rect a,
+static inline boolean constrain_rectangle(struct rect a,
  struct rect *b)
 {
   // Constrain rectangle b to only cover the portion that exists within
@@ -894,7 +921,7 @@ static inline void get_sprite_tile(struct world *mzx_world,
     *col = spr->color;
 }
 
-static inline bool collision_char(struct world *mzx_world,
+static inline boolean collision_char(struct world *mzx_world,
  const struct sprite *spr, char flags, int x, int y)
 {
   int ch;
@@ -909,7 +936,7 @@ static inline bool collision_char(struct world *mzx_world,
   return false;
 }
 
-static inline bool collision_in(struct world *mzx_world,
+static inline boolean collision_in(struct world *mzx_world,
  const struct sprite *spr, char flags, struct rect c)
 {
   char pixcheck = SPRITE_UNBOUND | SPRITE_CHAR_CHECK | SPRITE_CHAR_CHECK2;
@@ -962,7 +989,7 @@ static inline void destroy_mask(struct mask m)
   free(m.data);
 }
 
-bool sprite_at_xy(struct sprite *spr, int x, int y)
+boolean sprite_at_xy(struct sprite *spr, int x, int y)
 {
   struct rect sprite_rect;
   struct rect pos_rect;
@@ -1013,7 +1040,7 @@ static inline void mask_alloc_chr(struct world *mzx_world,
   }
 }
 
-static inline bool mask_get_pixel(struct mask m, int ch, int px, int py)
+static inline boolean mask_get_pixel(struct mask m, int ch, int px, int py)
 {
   int data = m.data[ch * CHAR_SIZE + (py % CHAR_H)];
 
@@ -1023,7 +1050,7 @@ static inline bool mask_get_pixel(struct mask m, int ch, int px, int py)
   return false;
 }
 
-static inline bool collision_pix_in(struct world *mzx_world,
+static inline boolean collision_pix_in(struct world *mzx_world,
  const struct sprite *spr, struct mask m, struct rect c)
 {
   char pixcheck = SPRITE_UNBOUND | SPRITE_CHAR_CHECK | SPRITE_CHAR_CHECK2;
@@ -1049,7 +1076,7 @@ static inline bool collision_pix_in(struct world *mzx_world,
   return false;
 }
 
-static inline bool collision_pix_between(struct world *mzx_world,
+static inline boolean collision_pix_between(struct world *mzx_world,
  const struct sprite *spr, struct mask spr_m,
  const struct sprite *targ, struct mask targ_m, struct rect c)
 {
@@ -1126,12 +1153,12 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *spr,
   int bx, by;
   int sprite_idx;
   int cx, cy;
-  bool sprite_collided;
+  boolean sprite_collided;
   char target_flags;
   struct mask spr_mask = null_mask();
   struct mask target_mask = null_mask();
-  bool spr_mask_allocated = false;
-  bool target_mask_allocated;
+  boolean spr_mask_allocated = false;
+  boolean target_mask_allocated;
 
   if(mzx_world->version < V290)
     return sprite_colliding_xy_old(mzx_world, spr, x, y);

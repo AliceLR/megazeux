@@ -202,7 +202,7 @@ static void (*gp2x_set_colors[4])
   gp2x_set_colors_smzx3
 };
 
-static bool gp2x_init_video(struct graphics_data *graphics,
+static boolean gp2x_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
   struct gp2x_render_data *render_data =
@@ -228,12 +228,14 @@ static bool gp2x_init_video(struct graphics_data *graphics,
 
 static void gp2x_free_video(struct graphics_data *graphics)
 {
+  sdl_destruct_window(graphics);
+
   free(graphics->render_data);
   graphics->render_data = NULL;
 }
 
-static bool gp2x_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, bool fullscreen, bool resize)
+static boolean gp2x_set_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, boolean fullscreen, boolean resize)
 {
   struct gp2x_render_data *render_data = graphics->render_data;
   SDL_PixelFormat *format;
@@ -353,7 +355,7 @@ static void gp2x_sync_screen(struct graphics_data *graphics)
   }
 
 #if SDL_VERSION_ATLEAST(2,0,0)
-  SDL_RenderPresent(render_data->sdl.renderer);
+  SDL_UpdateWindowSurface(render_data->sdl.window);
 #else
   SDL_Flip(render_data->sdl.screen);
 #endif

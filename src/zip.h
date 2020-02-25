@@ -30,8 +30,13 @@ __M_BEGIN_DECLS
 // Don't use core features, don't extern anything.
 
 #include "memfile.h"
+#include "vfs.h"
 
-// Currently supported methods are 0 (Store) and 8 (DEFLATE)
+/**
+ * Methods universally supported by MZX are 0 (store) and 8 (Deflate).
+ * Emscripten and utils builds also enable decompressors for 1 (Shrink),
+ * 2-5 (Reduce), 6 (Implode), and 9 (Deflate64).
+ */
 enum zip_compression_method
 {
   ZIP_M_NONE                    = 0, // Store
@@ -61,15 +66,15 @@ enum zip_general_purpose_flag
   ZIP_F_ENHANCED_DEFLATE    = (1<<4), // Reserved for Deflate64.
   ZIP_F_COMPRESSED_PATCHED  = (1<<5), // ?????
   ZIP_F_STRONG_ENCRYPTION   = (1<<6), // Indicates strong encryption is used.
-  // bit 07 unused
-  // bit 08 unused
-  // bit 09 unused
-  // bit 10 unused
+  ZIP_F_UNUSED_7            = (1<<7),
+  ZIP_F_UNUSED_8            = (1<<8),
+  ZIP_F_UNUSED_9            = (1<<9),
+  ZIP_F_UNUSED_10           = (1<<10),
   ZIP_F_LANGUAGE_ENCODING   = (1<<11), // Indicates UTF-8 filename/comments.
-  // bit 12 reserved
+  ZIP_F_UNUSED_12           = (1<<12),
   ZIP_F_MASKED_HEADER_DATA  = (1<<13), // See: strong encryption.
-  // bit 14 reserved
-  // bit 15 reserved
+  ZIP_F_UNUSED_14           = (1<<14),
+  ZIP_F_UNUSED_15           = (1<<15)
 };
 
 // These flags are allowed for all DEFLATE and stored files we care about.
@@ -78,9 +83,28 @@ enum zip_general_purpose_flag
   ZIP_F_COMPRESSION_1   |\
   ZIP_F_COMPRESSION_2   )
 
+// Some ancient archives from unknown sources seem to have set the unused
+// flags in places. These should be safe to ignore.
+#define ZIP_F_UNUSED (ZIP_F_UNUSED_7 | ZIP_F_UNUSED_8 | ZIP_F_UNUSED_9 |\
+ ZIP_F_UNUSED_10 | ZIP_F_UNUSED_12 | ZIP_F_UNUSED_14 | ZIP_F_UNUSED_15)
+
+enum zip_internal_state
+{
+  ZIP_S_READ_UNINITIALIZED,
+  ZIP_S_READ_FILES,
+  ZIP_S_READ_STREAM,
+  ZIP_S_READ_MEMSTREAM,
+  ZIP_S_WRITE_UNINITIALIZED,
+  ZIP_S_WRITE_FILES,
+  ZIP_S_WRITE_STREAM,
+  ZIP_S_WRITE_MEMSTREAM,
+  ZIP_S_ERROR,
+};
+
 enum zip_error
 {
   ZIP_SUCCESS = 0,
+  ZIP_IGNORE_FILE,
   ZIP_EOF,
   ZIP_NULL,
   ZIP_NULL_BUF,
@@ -88,15 +112,9 @@ enum zip_error
   ZIP_SEEK_ERROR,
   ZIP_READ_ERROR,
   ZIP_WRITE_ERROR,
-  ZIP_OPEN_ERROR,
-  ZIP_ALLOC_MORE_SPACE,
-  ZIP_INVALID_WHILE_CLOSING,
   ZIP_INVALID_READ_IN_WRITE_MODE,
   ZIP_INVALID_WRITE_IN_READ_MODE,
-  ZIP_INVALID_RAW_READ_IN_FILE_MODE,
-  ZIP_INVALID_RAW_WRITE_IN_FILE_MODE,
-  ZIP_INVALID_DIRECTORY_READ_IN_FILE_MODE,
-  ZIP_INVALID_FILE_READ_IN_RAW_MODE,
+  ZIP_INVALID_FILE_READ_UNINITIALIZED,
   ZIP_INVALID_FILE_READ_IN_STREAM_MODE,
   ZIP_INVALID_FILE_WRITE_IN_STREAM_MODE,
   ZIP_INVALID_STREAM_READ,
@@ -107,16 +125,22 @@ enum zip_error
   ZIP_INCOMPLETE_CENTRAL_DIRECTORY,
   ZIP_UNSUPPORTED_MULTIPLE_DISKS,
   ZIP_UNSUPPORTED_FLAGS,
+  ZIP_UNSUPPORTED_DECOMPRESSION,
   ZIP_UNSUPPORTED_COMPRESSION,
+  ZIP_UNSUPPORTED_DECOMPRESSION_STREAM,
+  ZIP_UNSUPPORTED_COMPRESSION_STREAM,
+  ZIP_UNSUPPORTED_METHOD_MEMORY_STREAM,
   ZIP_UNSUPPORTED_ZIP64,
-  ZIP_UNSUPPORTED_DEFLATE_STREAM,
   ZIP_MISSING_LOCAL_HEADER,
-  ZIP_MISSING_DATA_DESCRIPTOR,
   ZIP_HEADER_MISMATCH,
   ZIP_CRC32_MISMATCH,
-  ZIP_INFLATE_FAILED,
-  ZIP_DEFLATE_FAILED,
+  ZIP_DECOMPRESS_FAILED,
+  ZIP_COMPRESS_FAILED,
+  ZIP_INPUT_EMPTY,
+  ZIP_OUTPUT_FULL,
 };
+
+#include "zip/zip_stream.h"
 
 struct zip_file_header
 {
@@ -136,7 +160,6 @@ struct zip_file_header
 struct zip_archive
 {
   uint8_t mode;
-  uint8_t closing;
 
   uint16_t pos;
   uint16_t num_files;
@@ -155,107 +178,84 @@ struct zip_archive
   uint32_t start_in_file;
   uint32_t end_in_file;
 
-  enum zip_error read_raw_error;
   enum zip_error read_file_error;
   enum zip_error read_stream_error;
-  enum zip_error write_raw_error;
   enum zip_error write_file_error;
   enum zip_error write_stream_error;
 
-  void *fp;
+  vfile *vf;
 
-  int is_memory;
+  boolean is_memory;
+  void **external_buffer;
+  size_t *external_buffer_size;
 
-  int (*hasspace)(size_t, void *);
-
-  int (*vgetc)(void *);
-  int (*vgetw)(void *);
-  int (*vgetd)(void *);
-  int (*vputc)(int, void *);
-  void (*vputw)(int, void *);
-  void (*vputd)(int, void *);
-
-  size_t (*vread)(void *, size_t, size_t, void *);
-  size_t (*vwrite)(const void *, size_t, size_t, void *);
-
-  int (*vseek)(void *, long int, int);
-  long int (*vtell)(void *);
-  int (*verror)(void *);
-
-  int (*vclose)(void *);
+  struct zip_method_handler *stream;
+  struct zip_stream_data stream_data;
+  uint8_t padding[ZIP_STREAM_DATA_PADDING];
 };
 
+UTILS_LIBSPEC int zip_bound_deflate_usage(size_t length);
+UTILS_LIBSPEC int zip_bound_total_header_usage(int num_files, int max_name_size);
 
-int zip_bound_data_usage(char *src, int srcLen);
-int zip_bound_total_header_usage(int num_files, int max_name_size);
+UTILS_LIBSPEC enum zip_error zread(void *destBuf, size_t readLen,
+ struct zip_archive *zp);
 
-enum zip_error zseek(struct zip_archive *zp, int value, int code);
-
-int zgetc(struct zip_archive *zp, enum zip_error *err);
-int zgetw(struct zip_archive *zp, enum zip_error *err);
-int zgetd(struct zip_archive *zp, enum zip_error *err);
-enum zip_error zread(void *destBuf, size_t readLen, struct zip_archive *zp);
-
-enum zip_error zip_get_next_name(struct zip_archive *zp,
+UTILS_LIBSPEC enum zip_error zip_get_next_name(struct zip_archive *zp,
  char *name, int name_buffer_size);
 
-enum zip_error zip_get_next_prop(struct zip_archive *zp,
+UTILS_LIBSPEC enum zip_error zip_get_next_prop(struct zip_archive *zp,
  unsigned int *prop_id, unsigned int *board_id, unsigned int *robot_id);
 
-enum zip_error zip_get_next_method(struct zip_archive *zp,
+UTILS_LIBSPEC enum zip_error zip_get_next_method(struct zip_archive *zp,
  unsigned int *method);
 
-enum zip_error zip_get_next_uncompressed_size(struct zip_archive *zp,
- size_t *u_size);
+UTILS_LIBSPEC enum zip_error zip_get_next_uncompressed_size(
+ struct zip_archive *zp, size_t *u_size);
 
-enum zip_error zip_read_open_file_stream(struct zip_archive *zp,
+UTILS_LIBSPEC enum zip_error zip_read_open_file_stream(struct zip_archive *zp,
  size_t *destLen);
 
-enum zip_error zip_read_close_stream(struct zip_archive *zp);
+UTILS_LIBSPEC enum zip_error zip_read_close_stream(struct zip_archive *zp);
 
-enum zip_error zip_read_open_mem_stream(struct zip_archive *zp,
+UTILS_LIBSPEC enum zip_error zip_read_open_mem_stream(struct zip_archive *zp,
  struct memfile *mf);
 
-enum zip_error zip_read_close_mem_stream(struct zip_archive *zp);
+UTILS_LIBSPEC enum zip_error zip_rewind(struct zip_archive *zp);
 
-enum zip_error zip_rewind(struct zip_archive *zp);
+UTILS_LIBSPEC enum zip_error zip_skip_file(struct zip_archive *zp);
 
-enum zip_error zip_skip_file(struct zip_archive *zp);
-
-enum zip_error zip_read_file(struct zip_archive *zp,
+UTILS_LIBSPEC enum zip_error zip_read_file(struct zip_archive *zp,
  void *destBuf, size_t destLen, size_t *readLen);
 
-enum zip_error zputc(int value, struct zip_archive *zp);
-enum zip_error zputw(int value, struct zip_archive *zp);
-enum zip_error zputd(int value, struct zip_archive *zp);
-enum zip_error zwrite(const void *src, size_t srcLen, struct zip_archive *zp);
+UTILS_LIBSPEC enum zip_error zwrite(const void *src, size_t srcLen,
+ struct zip_archive *zp);
 
-enum zip_error zip_write_open_file_stream(struct zip_archive *zp,
+UTILS_LIBSPEC enum zip_error zip_write_open_file_stream(struct zip_archive *zp,
  const char *name, int method);
 
-enum zip_error zip_write_close_stream(struct zip_archive *zp);
+UTILS_LIBSPEC enum zip_error zip_write_close_stream(struct zip_archive *zp);
 
-enum zip_error zip_write_open_mem_stream(struct zip_archive *zp,
+UTILS_LIBSPEC enum zip_error zip_write_open_mem_stream(struct zip_archive *zp,
  struct memfile *mf, const char *name);
 
-enum zip_error zip_write_close_mem_stream(struct zip_archive *zp,
+UTILS_LIBSPEC enum zip_error zip_write_close_mem_stream(struct zip_archive *zp,
  struct memfile *mf);
 
-enum zip_error zip_write_file(struct zip_archive *zp, const char *name,
- const void *src, size_t srcLen, int method);
+UTILS_LIBSPEC enum zip_error zip_write_file(struct zip_archive *zp,
+ const char *name, const void *src, size_t srcLen, int method);
 
-enum zip_error zip_read_directory(struct zip_archive *zp);
-enum zip_error zip_close(struct zip_archive *zp,
+UTILS_LIBSPEC enum zip_error zip_close(struct zip_archive *zp,
  size_t *final_length);
 
-struct zip_archive *zip_open_fp_read(FILE *fp);
-struct zip_archive *zip_open_fp_write(FILE *fp);
-struct zip_archive *zip_open_file_read(const char *file_name);
-struct zip_archive *zip_open_file_write(const char *file_name);
-struct zip_archive *zip_open_mem_read(const void *src, size_t len);
-struct zip_archive *zip_open_mem_write(void *src, size_t len);
-
-enum zip_error zip_expand(struct zip_archive *zp, void **src, size_t new_size);
+UTILS_LIBSPEC struct zip_archive *zip_open_fp_read(FILE *fp);
+UTILS_LIBSPEC struct zip_archive *zip_open_fp_write(FILE *fp);
+UTILS_LIBSPEC struct zip_archive *zip_open_file_read(const char *file_name);
+UTILS_LIBSPEC struct zip_archive *zip_open_file_write(const char *file_name);
+UTILS_LIBSPEC struct zip_archive *zip_open_mem_read(const void *src, size_t len);
+UTILS_LIBSPEC struct zip_archive *zip_open_mem_write(void *src, size_t len,
+ size_t start_pos);
+UTILS_LIBSPEC struct zip_archive *zip_open_mem_write_ext(void **external_buffer,
+ size_t *external_buffer_size, size_t start_pos);
 
 __M_END_DECLS
 

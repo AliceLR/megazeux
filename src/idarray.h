@@ -26,6 +26,7 @@
 
 __M_BEGIN_DECLS
 
+#include "data.h"
 #include "world_struct.h"
 
 CORE_LIBSPEC void id_remove_top(struct world *mzx_world,

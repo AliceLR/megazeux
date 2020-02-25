@@ -32,6 +32,8 @@ C3D_Tex *ctr_load_png(const char *name);
 
 void ctr_draw_2d_texture(struct ctr_render_data *render_data, C3D_Tex *texture,
  int tx, int ty, int tw, int th,
- float x, float y, float w, float h, float z, u32 color, bool flipy);
+ float x, float y, float w, float h, float z, u32 color, boolean flipy);
+
+int ctr_get_subscreen_height(void);
 
 #endif /* __3DS_RENDER_H__ */

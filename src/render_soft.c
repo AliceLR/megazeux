@@ -35,7 +35,7 @@ static SDL_Surface *soft_get_screen_surface(struct sdl_render_data *render_data)
   return render_data->shadow ? render_data->shadow : render_data->screen;
 }
 
-static bool soft_init_video(struct graphics_data *graphics,
+static boolean soft_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
   static struct sdl_render_data render_data;
@@ -61,6 +61,14 @@ static bool soft_init_video(struct graphics_data *graphics,
     graphics->bits_per_pixel = conf->force_bpp;
 
   return set_video_mode();
+}
+
+static void soft_free_video(struct graphics_data *graphics)
+{
+  sdl_destruct_window(graphics);
+
+  // Don't free render_data, it's static!
+  graphics->render_data = NULL;
 }
 
 static void soft_update_colors(struct graphics_data *graphics,
@@ -211,7 +219,7 @@ static void soft_sync_screen(struct graphics_data *graphics)
   }
 
 #if SDL_VERSION_ATLEAST(2,0,0)
-  SDL_RenderPresent(render_data->renderer);
+  SDL_UpdateWindowSurface(render_data->window);
 #else
   SDL_Flip(render_data->screen);
 #endif
@@ -240,6 +248,7 @@ void render_soft_register(struct renderer *renderer)
 {
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = soft_init_video;
+  renderer->free_video = soft_free_video;
   renderer->check_video_mode = sdl_check_video_mode;
   renderer->set_video_mode = sdl_set_video_mode;
   renderer->update_colors = soft_update_colors;

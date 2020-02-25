@@ -21,6 +21,7 @@
 
 #include "char_ed.h"
 
+#include "../core.h"
 #include "../data.h"
 #include "../event.h"
 #include "../graphics.h"
@@ -28,6 +29,7 @@
 #include "../window.h"
 #include "../world.h"
 
+#include "configure.h"
 #include "graphics.h"
 #include "undo.h"
 #include "window.h"
@@ -146,7 +148,6 @@ static void char_editor_default_colors(void)
   // Selection
   set_protected_rgb(6, 14, 42, 56);
   set_protected_rgb(13, 7, 21, 49);
-  update_palette();
 }
 
 static void copy_color_to_protected(int from, int to)
@@ -196,7 +197,6 @@ static void char_editor_update_colors(void)
   // Selection
   set_protected_rgb(6, 14, 42, 56);
   set_protected_rgb(13, 7, 21, 49);
-  update_palette();
 }
 
 static void fill_region(char *buffer, int x, int y,
@@ -870,7 +870,7 @@ static int char_import_tile(const char *name, int char_offset, int charset,
     if(data_size > buffer_size)
       data_size = buffer_size;
 
-    fread(buffer, 1, data_size, fp);
+    data_size = fread(buffer, 1, data_size, fp);
     fclose(fp);
 
     ec_change_block((Uint8)char_offset, (Uint8)charset,
@@ -904,6 +904,7 @@ static void char_export_tile(const char *name, int char_offset, int charset,
 static void char_import(struct world *mzx_world, int char_offset, int charset,
  int highlight_width, int highlight_height, struct undo_history *h)
 {
+  static char saved_import_string[MAX_PATH];
   char import_string[256] = { 0, };
   char import_name[256];
   int current_file = 0;
@@ -917,7 +918,7 @@ static void char_import(struct world *mzx_world, int char_offset, int charset,
 
   // Default to linear for 1x1 selections, otherwise prompt.
   if(highlight_width * highlight_height != 1)
-    select_export_mode(mzx_world, "Import mode");
+    import_mode = select_export_mode(mzx_world, "Import mode");
 
   switch(import_mode)
   {
@@ -934,25 +935,26 @@ static void char_import(struct world *mzx_world, int char_offset, int charset,
       break;
 
     case 1:
-      elements[0] =
-       construct_number_box(3, 20, "Offset:  ", 0, 255, 0, &char_offset);
-      elements[1] =
-       construct_label(3, 21, "~9Size:    auto");
+      elements[0] = construct_number_box(3, 20, "Offset:  ", 0, 255, NUMBER_BOX,
+       &char_offset);
+      elements[1] = construct_label(3, 21, "~9Size:    auto");
       break;
   }
 
   elements[2] =
-   construct_number_box(28, 20, "First: ", 0, 255, 0, &current_file);
+   construct_number_box(28, 20, "First: ", 0, 255, NUMBER_BOX, &current_file);
   elements[3] =
-   construct_number_box(52, 20, "Count: ", 1, 256, 0, &num_files);
+   construct_number_box(52, 20, "Count: ", 1, 256, NUMBER_BOX, &num_files);
   elements[4] =
    construct_label(28, 21, "~9Use \"file#.chr\" to import multiple charsets.");
 
+  strcpy(import_string, saved_import_string);
   if(!file_manager(mzx_world, chr_ext, NULL, import_string,
    "Import character set(s)", 1, 2, elements, ARRAY_SIZE(elements), 2))
   {
     int num_files_present = num_files;
 
+    strcpy(saved_import_string, import_string);
     if(strchr(import_string, '#') == NULL)
       num_files_present = 1;
 
@@ -998,6 +1000,7 @@ static void char_import(struct world *mzx_world, int char_offset, int charset,
 static void char_export(struct world *mzx_world, int char_offset, int charset,
  int highlight_width, int highlight_height)
 {
+  static char saved_export_string[MAX_PATH];
   char export_string[256] = { 0, };
   char export_name[256];
   int current_file = 0;
@@ -1027,25 +1030,27 @@ static void char_export(struct world *mzx_world, int char_offset, int charset,
       break;
 
     case 1:
-      elements[0] =
-       construct_number_box(3, 20, "Offset:  ", 0, 255, 0, &char_offset);
-      elements[1] =
-       construct_number_box(3, 21, "Size:    ", 1, 256, 0, &char_size);
+      elements[0] = construct_number_box(3, 20, "Offset:  ", 0, 255, NUMBER_BOX,
+       &char_offset);
+      elements[1] = construct_number_box(3, 21, "Size:    ", 1, 256, NUMBER_BOX,
+       &char_size);
       break;
   }
 
   elements[2] =
-   construct_number_box(28, 20, "First: ", 0, 255, 0, &current_file);
+   construct_number_box(28, 20, "First: ", 0, 255, NUMBER_BOX, &current_file);
   elements[3] =
-   construct_number_box(52, 20, "Count: ", 1, 256, 0, &num_files);
+   construct_number_box(52, 20, "Count: ", 1, 256, NUMBER_BOX, &num_files);
   elements[4] =
    construct_label(28, 21, "~9Use \"file#.chr\" to export multiple charsets.");
 
+  strcpy(export_string, saved_export_string);
   if(!file_manager(mzx_world, chr_ext, ".chr", export_string,
    "Export character set(s)", 1, 1, elements, ARRAY_SIZE(elements), 2))
   {
     int num_files_present = num_files;
 
+    strcpy(saved_export_string, export_string);
     if(strchr(export_string, '#') == NULL)
       num_files_present = 1;
 
@@ -1113,7 +1118,7 @@ int char_editor(struct world *mzx_world)
   force_release_all_keys();
 
   // Prepare the history
-  h = construct_charset_undo_history(mzx_world->editor_conf.undo_history_size);
+  h = construct_charset_undo_history(get_editor_config()->undo_history_size);
 
   // Make sure the copy buffer is in a usable format
   change_copy_buffer_mode(screen_mode);
@@ -1827,8 +1832,8 @@ int char_editor(struct world *mzx_world)
 #ifdef CONFIG_HELPSYS
       case IKEY_F1:
       {
-        m_show();
-        help_system(mzx_world);
+        // FIXME context
+        help_system(NULL, mzx_world);
         break;
       }
 #endif
@@ -2334,5 +2339,5 @@ int char_editor(struct world *mzx_world)
 
   free(buffer);
 
-  return current_char;
+  return current_char + (current_charset * CHARSET_SIZE);
 }

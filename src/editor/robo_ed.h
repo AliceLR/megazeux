@@ -24,18 +24,10 @@
 
 __M_BEGIN_DECLS
 
+#include "../core.h"
 #include "../rasm.h"
-#include "../world_struct.h"
 
 #define COMMAND_BUFFER_LEN 512
-
-enum find_option
-{
-  FIND_OPTION_NONE,
-  FIND_OPTION_FIND = 0,
-  FIND_OPTION_REPLACE = 1,
-  FIND_OPTION_REPLACE_ALL = 2
-};
 
 #ifdef CONFIG_DEBYTECODE
 
@@ -88,49 +80,45 @@ struct robot_line
   struct robot_line *previous;
 };
 
-struct robot_state
+struct robot_editor_context
 {
+  context ctx;
+  subcontext *intk;
+  struct robot *cur_robot;
+
   int current_line;
   struct robot_line *current_rline;
   int total_lines;
   int size;
   int max_size;
-  int include_ignores;
-  int disassemble_base;
   int current_x;
-  int color_code;
+  int current_line_len;
   int mark_mode;
   int mark_start;
   int mark_end;
-  int show_line_numbers;
+  boolean scr_hide_mode;
   int scr_line_start;
   int scr_line_middle;
   int scr_line_end;
-  int scr_hide_mode;
-  struct robot_line *base;
+  struct robot_line base;
   struct robot_line *mark_start_rline;
   struct robot_line *mark_end_rline;
-  char *ccodes;
-  char *active_macro;
   char *command_buffer;
   char command_buffer_space[COMMAND_BUFFER_LEN];
   int macro_recurse_level;
   int macro_repeat_level;
 
 #ifdef CONFIG_DEBYTECODE
-  bool program_modified;
-  bool confirm_changes;
-  struct robot *cur_robot;
+  boolean program_modified;
+  boolean confirm_changes;
 #else
   enum validity_types default_invalid;
 #endif
-
-  struct world *mzx_world;
 };
 
-void robot_editor(struct world *mzx_world, struct robot *cur_robot);
+void robot_editor(context *parent, struct robot *cur_robot);
 
-EDITOR_LIBSPEC void init_macros(struct world *mzx_world);
+EDITOR_LIBSPEC void init_macros(void);
 
 __M_END_DECLS
 

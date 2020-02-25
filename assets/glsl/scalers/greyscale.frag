@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#version 110
+
 /* Greyscale scaling shader based on nearest.frag */
 
 uniform sampler2D baseMap;

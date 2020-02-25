@@ -34,8 +34,8 @@ struct label
   int position;
   // Used for zapping.
   int cmd_position;
-  // Set to 1 if zapped
-  int zapped;
+  // Set to true if zapped
+  boolean zapped;
 };
 
 struct scroll
@@ -51,9 +51,9 @@ struct scroll
 
 struct sensor
 {
-  char sensor_name[15];
+  char sensor_name[ROBOT_NAME_SIZE];
   char sensor_char;
-  char robot_to_mesg[15];
+  char robot_to_mesg[ROBOT_NAME_SIZE];
 
   char used;
 };
@@ -65,7 +65,7 @@ struct robot
   char *program_source;
   int program_bytecode_length;
   char *program_bytecode;         // Pointer to robot's program
-  char robot_name[15];
+  char robot_name[ROBOT_NAME_SIZE];
   unsigned char robot_char;
   // Location of start of line (pt to FF for none)
   int cur_prog_line;
@@ -81,9 +81,16 @@ struct robot
   enum dir last_shot_dir;
 
   // Used for IF ALIGNED "robot", THISX/THISY, PLAYERDIST,
-  // HORIZPLD, VERTPLD, and others. Keep udpated at all
+  // HORIZPLD, VERTPLD, and others. Keep updated at all
   // times. Set to -1/-1 for global robot.
   int xpos, ypos;
+
+  // Yeah, that note about keeping xpos/ypos "udpated" at all times?
+  // Versions prior to 2.92 didn't take that seriously, causing
+  // all of the features using those values to break in several cases.
+  // The easiest way to deal with this is to have compatibility
+  // position values for features that rely on xpos/ypos.
+  int compat_xpos, compat_ypos;
 
   // 0 = Un-run yet, 1=Was run but only END'd, WAIT'd, or was
   // inactive, 2=To be re-run on a second robot-run due to a

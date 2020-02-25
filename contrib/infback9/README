@@ -1,0 +1,15 @@
+See infback9.h for what this is and how to use it.
+
+Original code available here (zlib 1.2.11):
+https://github.com/madler/zlib/tree/cacf7f1/contrib/infback9
+
+This copy of zlib 1.2.11's unsupported infback9 code has been modified as follows:
+* Added this notice to README.
+* Added "LICENSE" (the license section of zlib.h) from the main zlib code.
+* Added zutil.h from the main zlib code.
+* Added include guards to headers.
+* Fixed a fall-through warning.
+* Replaced references to zcalloc and zcfree with inline implementations. This
+  is due to older versions of zlib seemingly not exposing these.
+* Added conditional definition of z_const in zutil.h to allow this code to
+  build against zlib 1.2.3 (OpenBSD 6.5).

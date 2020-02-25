@@ -32,7 +32,7 @@ CORE_LIBSPEC int legacy_load_board_direct(struct world *mzx_world,
  struct board *cur_board, FILE *fp, int data_size, int savegame, int version);
 
 CORE_LIBSPEC struct board *legacy_load_board_allocate(struct world *mzx_world,
- FILE *fp, int savegame, int file_version);
+ FILE *fp, int data_offset, int data_size, int savegame, int file_version);
 
 __M_END_DECLS
 

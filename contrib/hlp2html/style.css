@@ -1,0 +1,231 @@
+/* MegaZeux
+ *
+ * Copyright (C) 2018 Alice Rowan <petrifiedrowan@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+/**
+ * style.css: Embeddable formatting CSS for HTML help file generation.
+ */
+
+body
+{
+  margin: 0px;
+}
+
+#helpnav
+{
+  font-family: Arial, Helvetica, sans-serif;
+  width: 100%;
+  height: 5em;
+  padding: .5em;
+  padding-left: 0px;
+  padding-right: 0px;
+  border-bottom: 5px solid;
+  text-align: center;
+
+  /* Floating navigation bar. */
+  position: fixed;
+  top: 0;
+}
+
+#helpnav h1
+{
+  display: block;
+  margin: .5em;
+  padding: 0px;
+  font-size: 1.5em;
+}
+
+.helpnavcentered
+{
+  display: inline;
+  text-align: center;
+}
+
+.helpnavcentered ul
+{
+  padding: 0px;
+  margin: .25em;
+}
+
+.helpnavcentered li
+{
+  display: inline-block;
+  margin: 1px;
+  list-style-type: none;
+  text-align: center;
+  font-size: .95em;
+}
+
+.helpnavcentered li a
+{
+  background-color: #222;
+  border-color: #222;
+  border-radius: 4px 4px;
+  -moz-border-radius: 4px 4px;
+  padding: 3px 5px;
+  color: #FFF;
+  text-decoration: none;
+}
+
+.helpnavcentered li a:hover
+{
+  background-color: #666;
+  border-color: #666;
+}
+
+#helpcontainer
+{
+  font-family: 'mzxfont';
+  width: 512px;
+  height: auto;
+  padding: 3px 76px;
+  margin: auto;
+  overflow: auto;
+  white-space: pre;
+  line-height: 14px;
+  font-size: 14px;
+
+  /* Extra top padding to help fix anchors. */
+  padding-top: 6em;
+}
+
+.helpfile
+{
+  page-break-after: always;
+}
+
+.helpfile hr
+{
+  background-color: #000;
+  height: 2px;
+  margin: 14px 8px;
+  border: none;
+}
+
+.helpcentered
+{
+  display: block;
+  text-align: center;
+  margin: 0px;
+}
+
+.helpanchor
+{
+  /* This forces the page to jump above the anchor so it doesn't display
+   * under the navigation bar. */
+  padding-top: 8em;
+  margin-top: -8em;
+
+  /* This is a fix for the fix above so the now gigantic anchor doesn't
+   * cover links up. */
+  pointer-events: none;
+}
+
+.helplink
+{
+  text-decoration: none;
+}
+
+.helplink:before
+{
+  padding-right: 8px;
+  font-family: 'mzxfont';
+  content: "\E010";
+}
+
+@media print
+{
+  #helpnav
+  {
+    /* Disable the floating navigation bar in print mode. */
+    position: absolute;
+    border-bottom: 3px solid;
+  }
+
+  .helpnavcentered
+  {
+    /* Hide navigation buttons when in print mode. */
+    display: none;
+  }
+}
+
+@media only screen and (max-width: 680px),
+       only screen and (max-device-width: 1080px)
+{
+  /* Disable big margins on small windows, small displays, or phones. */
+
+  #helpcontainer
+  {
+    padding: 3px 8px;
+    padding-top: 6em;
+  }
+}
+
+@media only screen and (max-device-width: 800px)
+{
+  /* Probably a phone. Scale up navigation and text. */
+
+  #helpnav
+  {
+    height: 7em;
+  }
+
+  #helpnav h1
+  {
+    font-size: 2em;
+  }
+
+  .helpnavcentered li
+  {
+    font-size: 1.5em;
+  }
+
+  #helpcontainer
+  {
+    width: 768px;
+    line-height: 21px;
+    font-size: 21px;
+  }
+}
+
+@media only screen and (max-device-width: 1080px)
+{
+  /* Probably a phone. Scale up navigation and text. */
+
+  #helpnav
+  {
+    height: 8em;
+  }
+
+  #helpnav h1
+  {
+    font-size: 2.5em;
+  }
+
+  .helpnavcentered li
+  {
+    font-size: 1.75em;
+  }
+
+  #helpcontainer
+  {
+    width: 960px;
+    line-height: 26px;
+    font-size: 26px;
+  }
+}

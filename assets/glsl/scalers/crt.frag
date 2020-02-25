@@ -22,6 +22,8 @@
  *            libretro and semisoft.frag
  */
 
+#version 110
+
 uniform sampler2D baseMap;
 
 varying vec2 vTexcoord;

@@ -76,14 +76,15 @@ enum
 
 #define NO_KEY                127
 
-// "BOARD_NAME_SIZE" includes terminating \0
-// This is legacy, for world format only
-#define MAX_BOARDS            250
-#define BOARD_NAME_SIZE       25
-#define MAX_BOARD_SIZE        16 * 1024 * 1024
+// Length of time to display the message and the intro message.
+#define MESG_TIMEOUT          160
 
-// This is legacy, for status counters only
-#define COUNTER_NAME_SIZE     15
+// "BOARD_NAME_SIZE"/"ROBOT_NAME_SIZE"/"COUNTER_NAME_SIZE" include terminator
+#define MAX_BOARDS            250
+#define MAX_BOARD_SIZE        16 * 1024 * 1024
+#define BOARD_NAME_SIZE       25
+#define ROBOT_NAME_SIZE       15
+#define COUNTER_NAME_SIZE     15 // This is legacy, for status counters only
 #define NUM_KEYS              16
 
 // Attribute flags

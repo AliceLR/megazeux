@@ -14,10 +14,10 @@ and may not work correctly for all platforms.
 
 Test worlds are named in the format
 
-```VVV #XXXXX [short description].mzx```
+```VVV/XXX [short description].mzx```
 
 where `VVV` is the MegaZeux version associated with the world (e.g. `2.51`)
-and #XXXXX is the test number (e.g. `#12345`).
+and XXX is the test number (e.g. `123`).
 
 Example version strings:
 * `2.02` for 2.02
@@ -33,6 +33,19 @@ Example version strings:
 * `2.62` for 2.62
 * `2.62b` for 2.62b
 * etc...
+
+Letter versions starting from 2.80 onward belong in the folder of their
+non-lettered counterpart. Change the first digit of the test number to the
+version letter to signify it is a test for a change in that particular
+lettered version. Example: a 2.80d test called "Big Test" could be located
+at the path `2.80/d01 Big Test.mzx`).
+
+### Dependencies
+
+External files used as dependencies by a test world should be located in the
+folder `data`. Test worlds are copied to the testworlds base folder before they
+are executed, so they should have access to this folder when running as part
+of a test.
 
 ### Robotic
 
@@ -87,14 +100,14 @@ The following counters have special meaning:
 * `SKIP`: Set `result` to this to indicate that the test was skipped.
 * `result`: indicates the result of the test. Defaults to `BADF`.
 * `$result`: indicates more details about the result of a test.
-* `$world`: the filename of the current world.
+* `$world`: the filename of the current world. NOTE: This is not necessarily the original filename of the world.
 * `$title`: the title of the test.
 * `$author`: the author of the test.
 * `$desc`: a description of the test.
 
 Worlds from MZX versions 2.62 to 2.70 should use the following compatible strings:
 
-* `$string0`: the filename of the current world.
+* `$string0`: the filename of the current world. NOTE: This is not necessarily the original filename of the world.
 * `$string1`: the title of the test.
 * `$string2`: the author of the test.
 * `$string3`: a description of the test.
@@ -118,5 +131,27 @@ were introduced in MegaZeux 2.62 in a very limited form. In versions 2.62, 2.62b
 and 2.65, strings can be _ONLY **15** CHARACTERS LONG_. In versions 2.68 through
 2.70, strings can be up to **63** characters long. While it may be possible to
 set longer strings in old worlds using newer versions, it's recommended to stay
-within the original bounds and use the compatibility strings listed above. In
-worlds from before 2.62, title and author information should go in comments instead.
+within the original bounds and use the compatibility strings listed above.
+
+Worlds from MZX versions before 2.62 don't have access to any strings and need to
+provide title, author, and description info in *both* comment form in the main
+robot (for reference) and in a separate text file (to be added to the test output).
+The text file must have the **exact same file name** as the test world but a .txt
+extension instead of a .mzx extension (ex: "mytest.mzx" → "mytest.txt").
+
+Comment form:
+```
+. "Title: A text"
+. "Author: You"
+. "Desc: This is a long description of the test."
+```
+
+Text file format (the space after "Title:", etc. is required):
+```
+Title: A test
+Author: You
+Desc: This is a long description of the test.
+```
+
+It is not possible to provide a `$result` equivalent for these worlds currently,
+but this functionality may be added in the future.

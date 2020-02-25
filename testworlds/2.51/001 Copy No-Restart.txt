@@ -1,0 +1,3 @@
+Title: Robot Copy No-Restart Tester
+Author: Alice Rowan
+Desc: Prior to 2.80X, robots duplicated with the COPY or COPY BLOCK commands would continue their programs from the same position as their source.

@@ -25,20 +25,21 @@
 
 __M_BEGIN_DECLS
 
-#include <stdio.h>
-
-#include "world_struct.h"
 #include "counter_struct.h"
+#include "world_struct.h"
 
+// Settings SAVE_ROBOT should use for disassembling Robotic.
+#define SAVE_ROBOT_DISASM_EXTRAS  true
+#define SAVE_ROBOT_DISASM_BASE    10
+
+CORE_LIBSPEC void counter_fsg(void);
 CORE_LIBSPEC int match_function_counter(const char *dest, const char *src);
 CORE_LIBSPEC int get_counter(struct world *mzx_world, const char *name, int id);
 CORE_LIBSPEC void set_counter(struct world *mzx_world, const char *name,
  int value, int id);
-CORE_LIBSPEC void counter_fsg(void);
 CORE_LIBSPEC void new_counter(struct world *mzx_world, const char *name,
  int value, int id);
-CORE_LIBSPEC void sort_counter_list(struct counter **counter_list,
- int num_counters);
+CORE_LIBSPEC void sort_counter_list(struct counter_list *counter_list);
 
 void initialize_gateway_functions(struct world *mzx_world);
 void inc_counter(struct world *mzx_world, const char *name, int value, int id);
@@ -50,10 +51,10 @@ void mod_counter(struct world *mzx_world, const char *name, int value, int id);
 int set_counter_special(struct world *mzx_world, char *char_value,
  int value, int id);
 
-void load_new_counter(struct counter **counter_list, int index,
+void load_new_counter(struct counter_list *counter_list, int index,
  const char *name, int name_length, int value);
 
-void free_counter_list(struct counter **counter_list, int num_counters);
+void clear_counter_list(struct counter_list *counter_list);
 
 // Even old games tended to use at least this many.
 #define MIN_COUNTER_ALLOCATE 32

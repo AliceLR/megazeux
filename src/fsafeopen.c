@@ -105,7 +105,7 @@ static int case5(char *path, char *string)
   newpath = cmalloc(PATH_BUF_LEN);
 
   // prepend the working directory
-  strcpy(newpath, "./");
+  snprintf(newpath, PATH_BUF_LEN, "./");
 
   // copy everything sans last token
   if(dirlen > 0)
@@ -121,13 +121,13 @@ static int case5(char *path, char *string)
     while(ret != FSAFE_SUCCESS)
     {
       // somebody bad happened, or there's no new entry
-      if(!dir_get_next_entry(&wd, newpath))
+      if(!dir_get_next_entry(&wd, newpath, NULL))
         break;
 
       // okay, we got something, but does it match?
       if(strcasecmp(string, newpath) == 0)
       {
-        strcpy(string, newpath);
+        memcpy(string, newpath, strlen(newpath));
         ret = FSAFE_SUCCESS;
       }
     }
@@ -411,7 +411,7 @@ FILE *fsafeopen(const char *path, const char *mode)
  * fgets may return a string that still contains "EOL" characters considered
  * by another platform. For example, if a file is written out by Windows,
  * and a Linux user reads it, the buffers will not remove the \r character.
- * 
+ *
  * This function provides a "safe" wrapper that removes all kinds of line
  * endings from the buffer, and should work at least until somebody invents
  * a new three byte string terminator ;-(

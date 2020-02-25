@@ -28,12 +28,12 @@ __M_BEGIN_DECLS
 
 #ifdef CONFIG_NETWORK
 
-CORE_LIBSPEC bool network_layer_init(struct config_info *conf);
+CORE_LIBSPEC boolean network_layer_init(struct config_info *conf);
 CORE_LIBSPEC void network_layer_exit(struct config_info *conf);
 
 #else /* !CONFIG_NETWORK */
 
-static inline bool network_layer_init(struct config_info *conf)
+static inline boolean network_layer_init(struct config_info *conf)
 {
   return true;
 }

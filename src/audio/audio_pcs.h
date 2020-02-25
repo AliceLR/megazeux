@@ -26,9 +26,6 @@
 
 __M_BEGIN_DECLS
 
-void sound(int frequency, int duration);
-void nosound(int duration);
-
 void init_pc_speaker(struct config_info *conf);
 
 __M_END_DECLS

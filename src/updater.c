@@ -16,14 +16,17 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#include "updater.h"
+
+#include "caption.h"
 #include "const.h"
-#include "event.h"
-#include "util.h"
-#include "game.h"
-#include "graphics.h"
-#include "window.h"
+#include "core.h"
 #include "error.h"
+#include "event.h"
+#include "graphics.h"
+#include "helpsys.h"
+#include "updater.h"
+#include "util.h"
+#include "window.h"
 
 #include "editor/window.h"
 
@@ -38,6 +41,11 @@
 
 #ifndef _MSC_VER
 #include <unistd.h>
+#endif
+
+#ifdef __WIN32__
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 #endif
 
 #ifndef PLATFORM
@@ -59,59 +67,242 @@ static struct manifest_entry *delete_list, *delete_p;
 
 static char widget_buf[WIDGET_BUF_LEN];
 
+static char executable_dir[MAX_PATH];
 static char previous_dir[MAX_PATH];
 
 static long final_size = -1;
-static bool cancel_update;
+static boolean cancel_update;
 
-static char **process_argv;
-static int process_argc;
-static bool updater_was_initialized;
+static boolean updater_was_initialized;
 
-static char **rewrite_argv_for_execv(int argc, char **argv)
+/**
+ * A new version has been released and there are updates available on the
+ * current host for this platform. Prompt the user to either update to the
+ * new version or attempt to update the current version. Returns the version
+ * selected by the user, or NULL if canceled by the user.
+ */
+static const char *ui_new_version_available(context *ctx,
+ const char *current_ver, const char *new_ver)
 {
-  char **new_argv = cmalloc((argc+1) * sizeof(char *));
-  char *arg;
-  int length;
-  int pos;
-  int i;
-  int i2;
+  struct world *mzx_world = ctx->world;
+  struct element *elements[6];
+  struct dialog di;
+  size_t buf_len;
+  int result;
 
-  // Due to a bug in execv, args with spaces present are treated as multiple
-  // args in the new process. Each arg in argv must be wrapped in double quotes
-  // to work properly. Because of this, " and \ must also be escaped.
+  buf_len = snprintf(widget_buf, WIDGET_BUF_LEN,
+   "A new version is available (%s)", new_ver);
+  widget_buf[WIDGET_BUF_LEN - 1] = 0;
 
-  for(i = 0; i < argc; i++)
-  {
-    length = strlen(argv[i]);
-    arg = cmalloc(length * 2 + 2);
-    arg[0] = '"';
+  elements[0] = construct_label((55 - buf_len) >> 1, 2, widget_buf);
 
-    for(i2 = 0, pos = 1; i2 < length; i2++, pos++)
-    {
-      switch(argv[i][i2])
-      {
-        case '"':
-        case '\\':
-          arg[pos] = '\\';
-          pos++;
-          break;
-      }
-      arg[pos] = argv[i][i2];
-    }
+  elements[1] = construct_label(2, 4,
+   "You can continue to receive updates for the version\n"
+   "installed (if available), or you can upgrade to the\n"
+   "newest version (recommended).");
 
-    arg[pos] = '"';
-    arg[pos + 1] = '\0';
+  elements[2] = construct_label(2, 8,
+   "If you do not upgrade, this question will be asked\n"
+   "again the next time you run the updater.\n");
 
-    new_argv[i] = arg;
-  }
+  elements[3] = construct_button(9, 11, "Upgrade", 0);
+  elements[4] = construct_button(21, 11, "Update Old", 1);
+  elements[5] = construct_button(36, 11, "Cancel", 2);
 
-  new_argv[argc] = NULL;
+  construct_dialog(&di, "New Version", 11, 6, 55, 14, elements, 6, 3);
+  result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
 
-  return new_argv;
+  // User pressed Escape, abort all updates
+  if(result < 0 || result == 2)
+    return NULL;
+
+  // User pressed Upgrade, use new version.
+  if(result == 0)
+    return new_ver;
+
+  // Check for updates on the current version.
+  return current_ver;
 }
 
-static bool check_prune_basedir(const char *file)
+/**
+ * No changes have been detected between the local manifest and the remote
+ * manifest. Prompt the user to either try the next host or to abort. Return
+ * true if the user selected to try the next host, otherwise false.
+ */
+static boolean ui_version_is_current(context *ctx, boolean has_next_host)
+{
+  struct world *mzx_world = ctx->world;
+  struct element *elements[3];
+  struct dialog di;
+  int result;
+
+  elements[0] = construct_label(2, 2, "This client is already current.");
+  elements[1] = construct_button(7, 4, "OK", 0);
+  elements[2] = construct_button(13, 4, "Try next host", 1);
+
+  construct_dialog(&di, "No Updates", 22, 9, 35, 6, elements, 3, 1);
+  result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if((result == 1) && has_next_host)
+    return true;
+
+  return false;
+}
+
+/**
+ * Show the user the list of changes to be applied. Return the number of
+ * changes to be applied (or 0 if canceled).
+ */
+static int ui_confirm_changes(context *ctx, struct manifest_entry *removed,
+ struct manifest_entry *replaced, struct manifest_entry *added)
+{
+  struct manifest_entry *e;
+  char **list_entries;
+  int list_entry_width = 0;
+  int entries = 0;
+  int result;
+  int i = 0;
+
+  for(e = removed; e; e = e->next, entries++)
+    list_entry_width = MAX(list_entry_width, 2 + (int)strlen(e->name)+1+1);
+  for(e = replaced; e; e = e->next, entries++)
+    list_entry_width = MAX(list_entry_width, 2 + (int)strlen(e->name)+1+1);
+  for(e = added; e; e = e->next, entries++)
+    list_entry_width = MAX(list_entry_width, 2 + (int)strlen(e->name)+1+1);
+
+  // We don't want the listbox to be too wide
+  list_entry_width = MIN(list_entry_width, 60);
+
+  list_entries = cmalloc(entries * sizeof(char *));
+
+  for(e = removed; e; e = e->next, i++)
+  {
+    list_entries[i] = cmalloc(list_entry_width);
+    snprintf(list_entries[i], list_entry_width, "- %s", e->name);
+    list_entries[i][list_entry_width - 1] = 0;
+  }
+
+  for(e = replaced; e; e = e->next, i++)
+  {
+    list_entries[i] = cmalloc(list_entry_width);
+    snprintf(list_entries[i], list_entry_width, "* %s", e->name);
+    list_entries[i][list_entry_width - 1] = 0;
+  }
+
+  for(e = added; e; e = e->next, i++)
+  {
+    list_entries[i] = cmalloc(list_entry_width);
+    snprintf(list_entries[i], list_entry_width, "+ %s", e->name);
+    list_entries[i][list_entry_width - 1] = 0;
+  }
+
+  draw_window_box(19, 1, 59, 4, DI_MAIN, DI_DARK, DI_CORNER, 1, 1);
+  write_string(" Task Summary ", 33, 1, DI_TITLE, 0);
+  write_string("ESC   - Cancel   [+] Add   [-] Delete", 21, 2, DI_TEXT, 0);
+  write_string("ENTER - Proceed  [*] Replace  ", 21, 3, DI_TEXT, 0);
+
+  result = list_menu((const char **)list_entries, list_entry_width,
+   NULL, 0, entries, ((80 - (list_entry_width + 9)) >> 1) + 1, 4);
+
+  for(i = 0; i < entries; i++)
+    free(list_entries[i]);
+  free(list_entries);
+
+  clear_screen();
+  update_screen();
+
+  if(result >= 0)
+    return entries;
+
+  return 0;
+}
+
+/**
+ * Inform the user that the update process is complete.
+ */
+static void ui_update_finished(context *ctx)
+{
+  struct world *mzx_world = ctx->world;
+  struct element *elements[2];
+  struct dialog di;
+
+  elements[0] = construct_label(2, 2,
+   "This client will now attempt to restart itself.");
+  elements[1] = construct_button(23, 4, "OK", 0);
+
+  construct_dialog(&di, "Update Successful", 14, 9, 51, 6, elements, 2, 1);
+  run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+}
+
+/**
+ * Clear the screen.
+ */
+static void display_clear(void)
+{
+  clear_screen();
+  update_screen();
+}
+
+/**
+ * Indicate that the client is currently connecting to a remote host.
+ */
+static void display_connecting(const char *host_name)
+{
+  size_t buf_len;
+
+  buf_len = snprintf(widget_buf, WIDGET_BUF_LEN,
+   "Connecting to \"%s\". Please wait..", host_name);
+  widget_buf[WIDGET_BUF_LEN - 1] = 0;
+
+  m_hide();
+  draw_window_box(3, 11, 76, 13, DI_MAIN, DI_DARK, DI_CORNER, 1, 1);
+  write_string(widget_buf, (WIDGET_BUF_LEN - buf_len) >> 1, 12, DI_TEXT, 0);
+  update_screen();
+  m_show();
+}
+
+/**
+ * Indicate that the manifest is currently being processed.
+ */
+static void display_computing_manifest(void)
+{
+  m_hide();
+  draw_window_box(3, 11, 76, 13, DI_MAIN, DI_DARK, DI_CORNER, 1, 1);
+  write_string("Computing manifest deltas (added, replaced, deleted)..",
+   13, 12, DI_TEXT, 0);
+  update_screen();
+  m_show();
+}
+
+/**
+ * Indicate the current download.
+ */
+static void display_download_init(const char *filename, int cur, int total)
+{
+  char name[72];
+
+  m_hide();
+  snprintf(name, 72, "%s (%ldb) [%u/%u]", filename, final_size, cur, total);
+  meter(name, 0, final_size);
+  update_screen();
+  m_show();
+}
+
+/**
+ * Update the download progress bar.
+ */
+static void display_download_update(long progress)
+{
+  m_hide();
+  meter_interior(progress, final_size);
+  update_screen();
+  m_show();
+}
+
+static boolean check_prune_basedir(const char *file)
 {
   static char path[MAX_PATH];
   ssize_t ret;
@@ -119,7 +310,7 @@ static bool check_prune_basedir(const char *file)
   ret = get_path(file, path, MAX_PATH);
   if(ret < 0)
   {
-    error("Failed to prune directories (path too long)", 1, 8, 0);
+    error_message(E_UPDATE, 0, "Failed to prune directories (path too long)");
     return false;
   }
 
@@ -137,7 +328,7 @@ static bool check_prune_basedir(const char *file)
 /* FIXME: The allocation of MAX_PATH on the stack in a recursive
  *        function WILL cause problems, eventually!
  */
-static bool check_create_basedir(const char *file)
+static boolean check_create_basedir(const char *file)
 {
   static struct stat s;
   char path[MAX_PATH];
@@ -146,7 +337,7 @@ static bool check_create_basedir(const char *file)
   ret = get_path(file, path, MAX_PATH);
   if(ret < 0)
   {
-    error("Failed to create directories (path too long)", 1, 8, 0);
+    error_message(E_UPDATE, 1, "Failed to create directories (path too long)");
     return false;
   }
 
@@ -159,7 +350,7 @@ static bool check_create_basedir(const char *file)
     // Every other kind of error is fatal
     if(errno != ENOENT)
     {
-      error("Unknown stat() error occurred", 1, 8, 0);
+      error_message(E_UPDATE, 2, "Unknown stat() error occurred");
       return false;
     }
 
@@ -177,7 +368,7 @@ static bool check_create_basedir(const char *file)
     snprintf(widget_buf, WIDGET_BUF_LEN,
      "File \"%s\" prevents creation of directory by same name", path);
     widget_buf[WIDGET_BUF_LEN - 1] = 0;
-    error(widget_buf, 1, 8, 0);
+    error_message(E_UPDATE, 3, widget_buf);
     return false;
   }
 
@@ -198,16 +389,16 @@ static void recv_cb(long offset)
 
   if(final_size > 0 && offset > final_size)
   {
-    error("Transferred more than expected uncompressed size.", 1, 8, 0);
+    error_message(E_UPDATE, 4,
+     "Transferred more than expected uncompressed size.");
     cancel_update = true;
     return;
   }
 
-  meter_interior(offset, final_size);
-  update_screen();
+  display_download_update(offset);
 }
 
-static bool cancel_cb(void)
+static boolean cancel_cb(void)
 {
   return cancel_update;
 }
@@ -216,7 +407,7 @@ static void delete_hook(const char *file)
 {
   struct manifest_entry *new_entry;
   struct SHA256_ctx ctx;
-  bool ret;
+  boolean ret;
   FILE *f;
 
   new_entry = ccalloc(1, sizeof(struct manifest_entry));
@@ -258,57 +449,84 @@ err_out:
   return;
 }
 
-static bool swivel_current_dir(bool have_video)
+// Determine the executable dir. This is required for the updater.
+static boolean find_executable_dir(int argc, char **argv)
 {
-  bool ret = false;
-  char *base_path;
-  int g_ret;
-
-  if(process_argc < 1)
+#ifdef __WIN32__
   {
-    warn("--UPDATER-- Aborting: argc < 1\n");
-    return ret;
+    // Windows may not reliably give a full path in argv[0]. Fortunately,
+    // there's a Windows solution for this. TODO make UTF-friendly
+    char filename[MAX_PATH];
+    HMODULE module = GetModuleHandle(NULL);
+    DWORD ret = GetModuleFileNameA(module, filename, MAX_PATH);
+
+    if(ret > 0 && ret < MAX_PATH)
+      if(get_path(filename, executable_dir, MAX_PATH) > 0)
+        return true;
+
+    warn("--MAIN-- Failed to get executable from Win32: %s\n", filename);
+  }
+#endif
+
+  if(argc >= 1 && argv)
+  {
+    if(get_path(argv[0], executable_dir, MAX_PATH) > 0)
+      return true;
+
+    else
+    {
+      if(argv[0] && argv[0][0])
+        warn("--MAIN-- Failed to get executable from argv[0]: %s\n", argv[0]);
+      else
+        warn("--MAIN-- Failed to get executable from argv[0]: (null)\n");
+    }
+  }
+  else
+    warn("--MAIN-- Failed to get executable from argv: argc < 1\n");
+
+  // Nope. Oh well.
+  executable_dir[0] = 0;
+  return false;
+}
+
+static boolean swivel_current_dir(boolean have_video)
+{
+  char base_path[MAX_PATH];
+
+  if(!executable_dir[0])
+  {
+    if(have_video)
+      error_message(E_UPDATE, 25,
+       "Updater: couldn't determine install directory.");
+    else
+      warn("--UPDATER-- Couldn't determine install directory.\n");
+    return false;
   }
 
   // Store the user's current directory, so we can get back to it
   getcwd(previous_dir, MAX_PATH);
 
-  base_path = cmalloc(MAX_PATH);
-
-  // Find and change into the base path for this MZX binary
-  g_ret = get_path(process_argv[0], base_path, MAX_PATH);
-  if(g_ret <= 0)
-  {
-    if(process_argv[0] && process_argv[0][0])
-      warn("--UPDATER-- Failed to get path from argv[0]: %s\n", process_argv[0]);
-    else
-      warn("--UPDATER-- No argv[0]!\n");
-    goto err_free_base_path;
-  }
-
-  if(chdir(base_path))
+  if(chdir(executable_dir))
   {
     info("--UPDATER-- getcwd(): %s\n", previous_dir);
     info("--UPDATER-- attempted chdir() to: %s\n", base_path);
     if(have_video)
-      error("Updater: failed to change into install directory.", 1, 8, 0);
+      error_message(E_UPDATE, 5,
+       "Updater: failed to change into install directory.");
     else
       warn("--UPDATER-- Failed to change into install directory.\n");
-    goto err_free_base_path;
+    return false;
   }
-
-  ret = true;
-err_free_base_path:
-  free(base_path);
-  return ret;
+  return true;
 }
 
-static bool swivel_current_dir_back(bool have_video)
+static boolean swivel_current_dir_back(boolean have_video)
 {
   if(chdir(previous_dir))
   {
     if(have_video)
-      error("Updater: failed to change back to user directory.", 1, 8, 0);
+      error_message(E_UPDATE, 6,
+       "Updater: failed to change back to user directory.");
     else
       warn("--UPDATER-- Failed to change back to user directory.\n");
     return false;
@@ -317,12 +535,12 @@ static bool swivel_current_dir_back(bool have_video)
   return true;
 }
 
-static bool backup_original_manifest(void)
+static boolean backup_original_manifest(void)
 {
   unsigned int len, pos = 0;
   char block[BLOCK_SIZE];
   FILE *input, *output;
-  bool ret = false;
+  boolean ret = false;
   struct stat s;
 
   // No existing manifest; this is non-fatal
@@ -363,7 +581,7 @@ err_out:
   return ret;
 }
 
-static bool restore_original_manifest(bool ret)
+static boolean restore_original_manifest(boolean ret)
 {
   struct stat s;
 
@@ -380,7 +598,8 @@ static bool restore_original_manifest(bool ret)
   // Try to remove original manifest before restoration
   if(unlink(MANIFEST_TXT))
   {
-    error("Failed to remove " MANIFEST_TXT ". Check permissions.", 1, 8, 0);
+    error_message(E_UPDATE, 7,
+     "Failed to remove " MANIFEST_TXT ". Check permissions.");
     return false;
   }
 
@@ -391,14 +610,15 @@ static bool restore_original_manifest(bool ret)
   // Try to restore backup manifest
   if(rename(MANIFEST_TXT "~", MANIFEST_TXT))
   {
-    error("Failed to roll back manifest. Check permissions.", 1, 8, 0);
+    error_message(E_UPDATE, 8,
+     "Failed to roll back manifest. Check permissions.");
     return false;
   }
 
   return true;
 }
 
-static bool write_delete_list(void)
+static boolean write_delete_list(void)
 {
   struct manifest_entry *e;
   FILE *f;
@@ -408,7 +628,8 @@ static bool write_delete_list(void)
     f = fopen_unsafe(DELETE_TXT, "ab");
     if(!f)
     {
-      error("Failed to create \"" DELETE_TXT "\". Check permissions.", 1, 8, 0);
+      error_message(E_UPDATE, 9,
+       "Failed to create \"" DELETE_TXT "\". Check permissions.");
       return false;
     }
 
@@ -428,9 +649,12 @@ static bool write_delete_list(void)
 static void apply_delete_list(void)
 {
   struct manifest_entry *e_next = delete_list;
+  struct manifest_entry *e_prev = NULL;
   struct manifest_entry *e;
+  int retry_times = 0;
   struct stat s;
-  bool ret;
+  boolean files_failed = false;
+  boolean is_valid;
   FILE *f;
 
   while(e_next)
@@ -444,10 +668,10 @@ static void apply_delete_list(void)
       if(!f)
         goto err_delete_failed;
 
-      ret = manifest_entry_check_validity(e, f);
+      is_valid = manifest_entry_check_validity(e, f);
       fclose(f);
 
-      if(ret)
+      if(is_valid)
       {
         if(unlink(e->name))
           goto err_delete_failed;
@@ -457,38 +681,99 @@ static void apply_delete_list(void)
          * the directory will be pruned.
          */
         check_prune_basedir(e->name);
+        info("--UPDATER-- Deleted '%s'\n", e->name);
       }
+      else
+        info("--UPDATER-- Skipping invalid entry '%s'\n", e->name);
     }
 
     // File was removed, doesn't exist, or is non-applicable; remove from list
     if(delete_list == e)
       delete_list = e_next;
 
+    // Keep the link on the last failed file up-to-date.
+    if(e_prev)
+      e_prev->next = e_next;
+
     manifest_entry_free(e);
     continue;
 
 err_delete_failed:
     {
-      char buf[72];
-      snprintf(buf, 72, "Failed to delete \"%.30s\". Check permissions.",
-       e->name);
-      buf[71] = 0;
+      int errval;
 
-      error(buf, 1, 8, 0);
+      warn("--UPDATER-- Failed to delete '%s'\n", e->name);
 
-      if(e_next)
-        e->next = e_next->next;
+      switch(retry_times)
+      {
+        case 0:
+        {
+          if(!strcmp(e->name, "mzx_help.fil") ||
+           !strcmp(e->name, "assets/help.fil"))
+          {
+            // HACK: Older MZX versions do not properly close these files
+            // because that would have been too easy. Silently skip them for
+            // now; they'll be deleted the next time MZX is started.
+            errval = ERROR_OPT_FAIL;
+            break;
+          }
 
+          // 1st failure: delay a little bit and then retry automatically.
+          delay(200);
+          errval = ERROR_OPT_RETRY;
+          break;
+        }
+
+        case 1:
+        {
+          // 2nd failure: give user the option to either retry or fail.
+          char buf[72];
+          snprintf(buf, 72, "Failed to delete \"%.30s\". Retry?", e->name);
+          buf[71] = 0;
+
+          errval = error_message(E_UPDATE_RETRY, 10, buf);
+          break;
+        }
+
+        default:
+        {
+          // 3rd failure: auto fail so we're not here all day. Also, display
+          // an error message when this loop is finished.
+          errval = ERROR_OPT_FAIL;
+          files_failed = true;
+          break;
+        }
+      }
+
+      if(errval == ERROR_OPT_RETRY)
+      {
+        info("--UPDATER-- Retrying '%s'...\n", e->name);
+        retry_times++;
+
+        // Set the next file to this file to try again...
+        e_next = e;
+      }
+      else
+      {
+        info("--UPDATER-- Skipping '%s'...\n", e->name);
+        retry_times = 0;
+
+        // Track this file so its link can be updated.
+        e_prev = e;
+      }
       continue;
     }
   }
+
+  if(files_failed)
+    error_message(E_UPDATE, 24,
+     "Failed to delete files; check permissions and restart MegaZeux");
 }
 
-static bool reissue_connection(struct config_info *conf, struct host **h,
+static boolean reissue_connection(struct config_info *conf, struct host **h,
  char *host_name, int is_automatic)
 {
-  bool ret = false;
-  int buf_len;
+  boolean ret = false;
 
   assert(h != NULL);
 
@@ -502,63 +787,62 @@ static bool reissue_connection(struct config_info *conf, struct host **h,
   if(!*h)
   {
     if(!is_automatic)
-      error("Failed to create TCP client socket.", 1, 8, 0);
+      error_message(E_UPDATE, 11, "Failed to create TCP client socket.");
     goto err_out;
   }
 
   if(is_automatic)
     host_set_timeout_ms(*h, 1000);
 
-  m_hide();
-
-  buf_len = snprintf(widget_buf, WIDGET_BUF_LEN,
-   "Connecting to \"%s\". Please wait..", host_name);
-  widget_buf[WIDGET_BUF_LEN - 1] = 0;
-
-  draw_window_box(3, 11, 76, 13, DI_MAIN, DI_DARK, DI_CORNER, 1, 1);
-  write_string(widget_buf, (WIDGET_BUF_LEN - buf_len) >> 1, 12, DI_TEXT, 0);
-  update_screen();
+  display_connecting(host_name);
 
   if(!host_connect(*h, host_name, OUTBOUND_PORT))
   {
     if(!is_automatic)
     {
-      buf_len = snprintf(widget_buf, WIDGET_BUF_LEN,
+      snprintf(widget_buf, WIDGET_BUF_LEN,
        "Connection to \"%s\" failed.", host_name);
       widget_buf[WIDGET_BUF_LEN - 1] = 0;
-      error(widget_buf, 1, 8, 0);
+      error_message(E_UPDATE, 12, widget_buf);
     }
   }
   else
     ret = true;
 
-  clear_screen(32, 7);
-  m_show();
-  update_screen();
+  display_clear();
 
 err_out:
   return ret;
 }
 
-static void __check_for_updates(struct world *mzx_world, struct config_info *conf,
- int is_automatic)
+/**
+ * Run a synchronous update check.
+ * @param ctx           Current context
+ * @param is_automatic  Disable more annoying UI displays for automated checks.
+ * @return              true if the update completed, otherwise false.
+ */
+static boolean __check_for_updates(context *ctx, boolean is_automatic)
 {
+  struct config_info *conf = get_config();
   int cur_host;
   char *update_host;
-  bool try_next_host = true;
-  bool ret = false;
+  boolean try_next_host = true;
+  boolean ret = false;
 
   set_context(CTX_UPDATER);
+  set_error_suppression(E_UPDATE, false);
 
   if(!updater_was_initialized)
   {
-    error("Updater couldn't be initialized; check folder permissions", 1, 8, 0);
+    error_message(E_UPDATE, 13,
+     "Updater couldn't be initialized; check folder permissions");
     goto err_out;
   }
 
   if(conf->update_host_count < 1)
   {
-    error("No updater hosts defined! Aborting.", 1, 8, 0);
+    error_message(E_UPDATE, 14,
+     "No updater hosts defined! Aborting.");
     goto err_out;
   }
 
@@ -567,12 +851,11 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
 
   for(cur_host = 0; (cur_host < conf->update_host_count) && try_next_host; cur_host++)
   {
-    char **list_entries, buffer[LINE_BUF_LEN], *url_base, *value;
+    char buffer[LINE_BUF_LEN], *url_base, *value;
     struct manifest_entry *removed, *replaced, *added, *e;
-    int i = 0, entries = 0, buf_len, result;
+    int i = 0, entries = 0;
     char update_branch[LINE_BUF_LEN];
     const char *version = VERSION;
-    int list_entry_width = 0;
     enum host_status status;
     struct host *h = NULL;
     struct http_info req;
@@ -583,7 +866,8 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
     f = fopen_unsafe(UPDATES_TXT, "w+b");
     if(!f)
     {
-      error("Failed to create \"" UPDATES_TXT "\". Check permissions.", 1, 8, 0);
+      error_message(E_UPDATE, 15,
+       "Failed to create \"" UPDATES_TXT "\". Check permissions.");
       goto err_chdir;
     }
 
@@ -622,7 +906,7 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
         snprintf(widget_buf, WIDGET_BUF_LEN, "Failed to download \""
          UPDATES_TXT "\" (%d/%d).\n", req.status_code, status);
         widget_buf[WIDGET_BUF_LEN - 1] = 0;
-        error(widget_buf, 1, 8, 0);
+        error_message(E_UPDATE, 16, widget_buf);
       }
       goto err_host_destroy;
     }
@@ -661,7 +945,8 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
     if(!value)
     {
       if(!is_automatic)
-        error("Failed to identify applicable update version.", 1, 8, 0);
+        error_message(E_UPDATE, 17,
+         "Failed to identify applicable update version.");
       goto err_host_destroy;
     }
 
@@ -678,10 +963,8 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
      */
     if(strcmp(value, version) != 0)
     {
-      struct element *elements[6];
-      struct dialog di;
-
-      conf->update_available = 1;
+      // Notify the user that updates are available.
+      caption_set_updates_available(true);
 
       // If this is an auto check and silent mode is enabled, we can stop here.
       if(is_automatic && conf->update_auto_check == UPDATE_AUTO_CHECK_SILENT)
@@ -690,39 +973,14 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
         goto err_host_destroy;
       }
 
-      buf_len = snprintf(widget_buf, WIDGET_BUF_LEN,
-       "A new major version is available (%s)", value);
-      widget_buf[WIDGET_BUF_LEN - 1] = 0;
+      version = ui_new_version_available(ctx, version, value);
 
-      elements[0] = construct_label((55 - buf_len) >> 1, 2, widget_buf);
-
-      elements[1] = construct_label(2, 4,
-       "You can continue to receive updates for the version\n"
-       "installed (if available), or you can upgrade to the\n"
-       "newest major version (recommended).");
-
-      elements[2] = construct_label(2, 8,
-       "If you do not upgrade, this question will be asked\n"
-       "again the next time you run the updater.\n");
-
-      elements[3] = construct_button(9, 11, "Upgrade", 0);
-      elements[4] = construct_button(21, 11, "Update Old", 1);
-      elements[5] = construct_button(36, 11, "Cancel", 2);
-
-      construct_dialog(&di, "New Major Version", 11, 6, 55, 14, elements, 6, 3);
-      result = run_dialog(mzx_world, &di);
-      destruct_dialog(&di);
-
-      // User pressed Escape, abort all updates
-      if(result < 0 || result == 2)
+      // Abort if no version was selected.
+      if(version == NULL)
       {
         try_next_host = false;
         goto err_host_destroy;
       }
-
-      // User pressed Upgrade, use new major
-      if(result == 0)
-        version = value;
     }
 
     /* We can now compute a unique URL base for the updater. This will
@@ -740,25 +998,19 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
      */
     if(!backup_original_manifest())
     {
-      error("Failed to back up manifest. Check permissions.", 1, 8, 0);
+      error_message(E_UPDATE, 18,
+       "Failed to back up manifest. Check permissions.");
       try_next_host = false;
       goto err_free_url_base;
     }
 
     for(retries = 0; retries < MAX_RETRIES; retries++)
     {
-      m_hide();
-
-      draw_window_box(3, 11, 76, 13, DI_MAIN, DI_DARK, DI_CORNER, 1, 1);
-      write_string("Computing manifest deltas (added, replaced, deleted)..",
-       13, 12, DI_TEXT, 0);
-      update_screen();
+      display_computing_manifest();
 
       status = manifest_get_updates(h, url_base, &removed, &replaced, &added);
 
-      clear_screen(32, 7);
-      m_show();
-      update_screen();
+      display_clear();
 
       if(status == HOST_SUCCESS)
         break;
@@ -766,7 +1018,7 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
       // Unsupported platform.
       if(-status == HOST_HTTP_REDIRECT || -status == HOST_HTTP_CLIENT_ERROR)
       {
-        error("No updates available for this platform.", 1, 8, 0);
+        error_message(E_UPDATE, 19, "No updates available for this platform.");
         goto err_roll_back_manifest;
       }
 
@@ -776,7 +1028,7 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
 
     if(retries == MAX_RETRIES)
     {
-      error("Failed to compute update manifests", 1, 8, 0);
+      error_message(E_UPDATE, 20, "Failed to compute update manifests");
       goto err_roll_back_manifest;
     }
 
@@ -785,25 +1037,18 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
 
     if(!removed && !replaced && !added)
     {
-      struct element *elements[3];
-      struct dialog di;
+      boolean has_next_host = (cur_host < conf->update_host_count);
 
       if(is_automatic)
         goto err_free_update_manifests;
 
-      elements[0] = construct_label(2, 2, "This client is already current.");
-      elements[1] = construct_button(7, 4, "OK", 0);
-      elements[2] = construct_button(13, 4, "Try next host", 1);
-
-      construct_dialog(&di, "No Updates", 22, 9, 35, 6, elements, 3, 1);
-      result = run_dialog(mzx_world, &di);
-      destruct_dialog(&di);
-
-      if((result == 1) && (cur_host < conf->update_host_count))
-        try_next_host = true;
-
+      // The user may want to attempt an update from the next host.
+      try_next_host = ui_version_is_current(ctx, has_next_host);
       goto err_free_update_manifests;
     }
+
+    // Set the updates available notification if it hasn't been set already.
+    caption_set_updates_available(true);
 
     // Switch back to the normal checking timeout for the rest of the process.
     if(is_automatic)
@@ -815,55 +1060,12 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
       is_automatic = 0;
     }
 
-    for(e = removed; e; e = e->next, entries++)
-      list_entry_width = MAX(list_entry_width, 2 + (int)strlen(e->name)+1+1);
-    for(e = replaced; e; e = e->next, entries++)
-      list_entry_width = MAX(list_entry_width, 2 + (int)strlen(e->name)+1+1);
-    for(e = added; e; e = e->next, entries++)
-      list_entry_width = MAX(list_entry_width, 2 + (int)strlen(e->name)+1+1);
+    /* Show the user the list of changes to perform and prompt the user to
+     * confirm or cancel.
+     */
+    entries = ui_confirm_changes(ctx, removed, replaced, added);
 
-    // We don't want the listbox to be too wide
-    list_entry_width = MIN(list_entry_width, 60);
-
-    list_entries = cmalloc(entries * sizeof(char *));
-
-    for(e = removed; e; e = e->next, i++)
-    {
-      list_entries[i] = cmalloc(list_entry_width);
-      snprintf(list_entries[i], list_entry_width, "- %s", e->name);
-      list_entries[i][list_entry_width - 1] = 0;
-    }
-
-    for(e = replaced; e; e = e->next, i++)
-    {
-      list_entries[i] = cmalloc(list_entry_width);
-      snprintf(list_entries[i], list_entry_width, "* %s", e->name);
-      list_entries[i][list_entry_width - 1] = 0;
-    }
-
-    for(e = added; e; e = e->next, i++)
-    {
-      list_entries[i] = cmalloc(list_entry_width);
-      snprintf(list_entries[i], list_entry_width, "+ %s", e->name);
-      list_entries[i][list_entry_width - 1] = 0;
-    }
-
-    draw_window_box(19, 1, 59, 4, DI_MAIN, DI_DARK, DI_CORNER, 1, 1);
-    write_string(" Task Summary ", 33, 1, DI_TITLE, 0);
-    write_string("ESC   - Cancel   [+] Add   [-] Delete", 21, 2, DI_TEXT, 0);
-    write_string("ENTER - Proceed  [*] Replace  ", 21, 3, DI_TEXT, 0);
-
-    result = list_menu((const char **)list_entries, list_entry_width,
-     NULL, 0, entries, ((80 - (list_entry_width + 9)) >> 1) + 1, 4);
-
-    for(i = 0; i < entries; i++)
-      free(list_entries[i]);
-    free(list_entries);
-
-    clear_screen(32, 7);
-    update_screen();
-
-    if(result < 0)
+    if(entries <= 0)
       goto err_free_update_manifests;
 
     /* Defer deletions until we restart; any of these files may still be
@@ -898,31 +1100,24 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
     {
       for(retries = 0; retries < MAX_RETRIES; retries++)
       {
-        char name[72];
-        bool m_ret;
+        boolean m_ret;
 
         if(!check_create_basedir(e->name))
           goto err_free_delete_list;
 
         final_size = (long)e->size;
-
-        m_hide();
-        snprintf(name, 72, "%s (%ldb) [%u/%u]", e->name, final_size, i, entries);
-        meter(name, 0, final_size);
-        update_screen();
+        display_download_init(e->name, i, entries);
 
         m_ret = manifest_entry_download_replace(h, url_base, e, delete_hook);
 
-        clear_screen(32, 7);
-        m_show();
-        update_screen();
+        display_clear();
 
         if(m_ret)
           break;
 
         if(cancel_update)
         {
-          error("Download was cancelled; update aborted.", 1, 8, 0);
+          error_message(E_UPDATE, 21, "Download was cancelled; update aborted.");
           goto err_free_delete_list;
         }
 
@@ -936,7 +1131,7 @@ static void __check_for_updates(struct world *mzx_world, struct config_info *con
         snprintf(widget_buf, WIDGET_BUF_LEN,
          "Failed to download \"%s\" (after %d attempts).", e->name, retries);
         widget_buf[WIDGET_BUF_LEN - 1] = 0;
-        error(widget_buf, 1, 8, 0);
+        error_message(E_UPDATE, 22, widget_buf);
         goto err_free_delete_list;
       }
     }
@@ -966,41 +1161,27 @@ err_chdir:
   swivel_current_dir_back(true);
 err_out:
 
-  /* At this point we found updates and we successfully updated
-   * to them. Reload the program with the original argv.
-   */
   if(ret)
   {
-    char **new_argv;
-    struct element *elements[2];
-    struct dialog di;
+    // Inform the user the update was successful.
+    ui_update_finished(ctx);
 
-    elements[0] = construct_label(2, 2,
-     "This client will now attempt to restart itself.");
-    elements[1] = construct_button(23, 4, "OK", 0);
-
-    construct_dialog(&di, "Update Successful", 14, 9, 51, 6, elements, 2, 1);
-    run_dialog(mzx_world, &di);
-    destruct_dialog(&di);
-
-    new_argv = rewrite_argv_for_execv(process_argc, process_argv);
-    execv(process_argv[0], (const void *)new_argv);
-    perror("execv");
-
-    error("Attempt to invoke self failed!", 1, 8, 0);
-    return;
+    // Signal core to exit and restart MZX.
+    core_full_restart(ctx);
+    return true;
   }
+  return false;
 }
 
-bool updater_init(int argc, char *argv[])
+boolean updater_init(int argc, char *argv[])
 {
   FILE *f;
 
-  process_argc = argc;
-  process_argv = argv;
-
   check_for_updates = __check_for_updates;
   updater_was_initialized = false;
+
+  if(!find_executable_dir(argc, argv))
+    return false;
 
   if(!swivel_current_dir(false))
     return false;
@@ -1019,8 +1200,6 @@ bool updater_init(int argc, char *argv[])
   {
     write_delete_list();
     manifest_list_free(&delete_list);
-    error("Failed to delete files; check permissions and restart MegaZeux",
-     1, 8, 0);
   }
 
 err_swivel_back:
@@ -1029,7 +1208,7 @@ err_swivel_back:
   return true;
 }
 
-bool is_updater(void)
+boolean is_updater(void)
 {
   return true;
 }

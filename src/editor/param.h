@@ -26,12 +26,13 @@
 
 __M_BEGIN_DECLS
 
-#include "../world_struct.h"
+#include "../core.h"
 
 int edit_param(struct world *mzx_world, int id, int param);
-int edit_robot(struct world *mzx_world, struct robot *cur_robot);
 int edit_scroll(struct world *mzx_world, struct scroll *cur_scroll);
 int edit_sensor(struct world *mzx_world, struct sensor *cur_sensor);
+void edit_robot(context *ctx, struct robot *cur_robot, int *ret_value);
+void edit_global_robot(context *ctx);
 
 __M_END_DECLS
 

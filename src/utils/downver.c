@@ -37,21 +37,29 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdio.h>
 #include <string.h>
 
 #ifdef __WIN32__
 #include <strings.h>
 #endif
 
-#define SKIP_SDL
+#include "../compat.h"
+
+#ifdef CONFIG_PLEDGE_UTILS
+#include <unistd.h>
+#define PROMISES "stdio rpath wpath cpath"
+#endif
+
+#include "../const.h"
 #include "../memfile.h"
 #include "../util.h"
 #include "../world.h"
-#include "../world_prop.h"
+#include "../world_format.h"
 #include "../zip.h"
 
-#define DOWNVER_VERSION "2.91"
-#define DOWNVER_EXT ".290"
+#define DOWNVER_VERSION "2.92"
+#define DOWNVER_EXT ".291"
 
 #define MZX_VERSION_HI ((MZX_VERSION >> 8) & 0xff)
 #define MZX_VERSION_LO (MZX_VERSION & 0xff)
@@ -62,6 +70,7 @@
 enum status
 {
   SUCCESS = 0,
+  ARCHIVE_ERROR,
   READ_ERROR,
   WRITE_ERROR,
   SEEK_ERROR,
@@ -122,12 +131,12 @@ static enum zip_error zip_duplicate_file(struct zip_archive *dest,
     struct memfile mf_out;
     void *buffer2 = malloc(actual_size);
 
-    mfopen_static(buffer, actual_size, &mf_in);
-    mfopen_static(buffer2, actual_size, &mf_out);
+    mfopen(buffer, actual_size, &mf_in);
+    mfopen(buffer2, actual_size, &mf_out);
 
     handler(&mf_out, &mf_in);
 
-    // Free the old buffer, then refresh with the new buffer
+    // Free the old buffer, then replace it with the new buffer.
     free(buffer);
     mfsync(&buffer, &actual_size, &mf_out);
   }
@@ -139,7 +148,7 @@ err_free:
   return result;
 }
 
-static void convert_291_to_290_world_info(struct memfile *dest,
+static void convert_292_to_291_world_info(struct memfile *dest,
  struct memfile *src)
 {
   struct memfile prop;
@@ -150,13 +159,6 @@ static void convert_291_to_290_world_info(struct memfile *dest,
   {
     switch(ident)
     {
-      case WPROP_SMZX_MODE:
-      case WPROP_VLAYER_WIDTH:
-      case WPROP_VLAYER_HEIGHT:
-      case WPROP_VLAYER_SIZE:
-        // 2.90 doesn't use these.
-        break;
-
       case WPROP_WORLD_VERSION:
       case WPROP_FILE_VERSION:
         // Replace the version number
@@ -173,7 +175,7 @@ static void convert_291_to_290_world_info(struct memfile *dest,
   mfresize(mftell(dest), dest);
 }
 
-static void convert_291_to_290_board_info(struct memfile *dest,
+static void convert_292_to_291_board_info(struct memfile *dest,
  struct memfile *src)
 {
   struct memfile prop;
@@ -199,7 +201,7 @@ static void convert_291_to_290_board_info(struct memfile *dest,
   mfresize(mftell(dest), dest);
 }
 
-static enum status convert_291_to_290(FILE *out, FILE *in)
+static enum status convert_292_to_291(FILE *out, FILE *in)
 {
   struct zip_archive *inZ = zip_open_fp_read(in);
   struct zip_archive *outZ = zip_open_fp_write(out);
@@ -208,26 +210,25 @@ static enum status convert_291_to_290(FILE *out, FILE *in)
   unsigned int board_id;
   unsigned int robot_id;
 
-  zip_read_directory(inZ);
+  if(!inZ || !outZ)
+  {
+    zip_close(inZ, NULL);
+    zip_close(outZ, NULL);
+    return ARCHIVE_ERROR;
+  }
+
   assign_fprops(inZ, 0);
 
   while(ZIP_SUCCESS == zip_get_next_prop(inZ, &file_id, &board_id, &robot_id))
   {
     switch(file_id)
     {
-      case FPROP_WORLD_PAL_INDEX:
-      case FPROP_WORLD_VCO:
-      case FPROP_WORLD_VCH:
-        // 2.90 doesn't use these files.
-        zip_skip_file(inZ);
-        break;
-
       case FPROP_WORLD_INFO:
-        err = zip_duplicate_file(outZ, inZ, convert_291_to_290_world_info);
+        err = zip_duplicate_file(outZ, inZ, convert_292_to_291_world_info);
         break;
 
       case FPROP_BOARD_INFO:
-        err = zip_duplicate_file(outZ, inZ, convert_291_to_290_board_info);
+        err = zip_duplicate_file(outZ, inZ, convert_292_to_291_board_info);
         break;
 
       default:
@@ -279,14 +280,16 @@ int main(int argc, char *argv[])
 
   if(!strcasecmp(argv[1] + ext_pos, ".mzb"))
   {
-    strcpy(fname, argv[1]);
-    strcpy(fname + ext_pos, DOWNVER_EXT ".mzb");
+    snprintf(fname, sizeof(fname), "%.*s" DOWNVER_EXT ".mzb",
+     (int)ext_pos, argv[1]);
+    fname[sizeof(fname) - 1] = '\0';
     world = false;
   }
   else if(!strcasecmp(argv[1] + ext_pos, ".mzx"))
   {
-    strcpy(fname, argv[1]);
-    strcpy(fname + ext_pos, DOWNVER_EXT ".mzx");
+    snprintf(fname, sizeof(fname), "%.*s" DOWNVER_EXT ".mzx",
+     (int)ext_pos, argv[1]);
+    fname[sizeof(fname) - 1] = '\0';
     world = true;
   }
   else
@@ -294,6 +297,22 @@ int main(int argc, char *argv[])
     error("Unknown extension '%s'.\n", argv[1] + ext_pos);
     goto exit_out;
   }
+
+#ifdef CONFIG_PLEDGE_UTILS
+#ifdef PLEDGE_HAS_UNVEIL
+  if(unveil(argv[1], "r") || unveil(fname, "cw") || unveil(NULL, NULL))
+  {
+    error("[ERROR] Failed unveil!\n");
+    return 1;
+  }
+#endif
+
+  if(pledge(PROMISES, ""))
+  {
+    error("[ERROR] Failed pledge!\n");
+    return 1;
+  }
+#endif
 
   in = fopen_unsafe(argv[1], "rb");
   if(!in)
@@ -415,16 +434,17 @@ int main(int argc, char *argv[])
   // Worlds and boards are the same from here out.
   // Conversion closes the file pointers, so NULL them.
 
-  ret = convert_291_to_290(out, in);
+  ret = convert_292_to_291(out, in);
   out = NULL;
   in = NULL;
 
   switch(ret)
   {
-    case SEEK_ERROR:  goto err_seek;
-    case READ_ERROR:  goto err_read;
-    case WRITE_ERROR: goto err_write;
-    case SUCCESS:     break;
+    case ARCHIVE_ERROR: goto err_zip;
+    case SEEK_ERROR:    goto err_seek;
+    case READ_ERROR:    goto err_read;
+    case WRITE_ERROR:   goto err_write;
+    case SUCCESS:       break;
   }
 
   fprintf(stdout,
@@ -441,6 +461,10 @@ exit_close:
 
 exit_out:
   return 0;
+
+err_zip:
+  error("Error opening world archive, aborting.\n")
+  goto exit_close;
 
 err_seek:
   error("Seek error, aborting.\n");

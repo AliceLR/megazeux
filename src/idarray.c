@@ -22,6 +22,7 @@
 #include "data.h"
 #include "const.h"
 #include "util.h"
+#include "world_struct.h"
 
 // Place an id/color/param combo in an array position, moving current to
 // "under" status if possible, and clearing original "under". If placing an
@@ -33,7 +34,7 @@ void id_place(struct world *mzx_world, int array_x, int array_y,
 {
   struct board *src_board = mzx_world->current_board;
   int offset;
-  
+
   array_x = CLAMP(array_x, 0, src_board->board_width - 1);
   array_y = CLAMP(array_y, 0, src_board->board_height - 1);
 

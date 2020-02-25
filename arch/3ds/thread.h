@@ -40,20 +40,20 @@ static inline void platform_mutex_init(platform_mutex *mutex)
   LightLock_Init(mutex);
 }
 
-static inline bool platform_mutex_lock(platform_mutex *mutex)
+static inline boolean platform_mutex_lock(platform_mutex *mutex)
 {
   if(LightLock_TryLock(mutex))
     return false;
   return true;
 }
 
-static inline bool platform_mutex_unlock(platform_mutex *mutex)
+static inline boolean platform_mutex_unlock(platform_mutex *mutex)
 {
   LightLock_Unlock(mutex);
   return true;
 }
 
-static inline bool platform_mutex_destroy(platform_mutex *mutex)
+static inline boolean platform_mutex_destroy(platform_mutex *mutex)
 {
   return true;
 }

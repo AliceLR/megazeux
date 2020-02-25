@@ -28,20 +28,19 @@ __M_BEGIN_DECLS
 #include "robot_struct.h"
 #include "counter_struct.h"
 #include "sprite_struct.h"
-#include "configure.h"
-
-#ifdef CONFIG_EDITOR
-#include "editor/configure.h"
-#endif
 
 #include "util.h"
 #include "audio/sfx.h"
 
-#define CHANGE_STATE_SWAP_WORLD 1
-#define CHANGE_STATE_LOAD_GAME_ROBOTIC 2
-#define CHANGE_STATE_EXIT_GAME_ROBOTIC 3
-#define CHANGE_STATE_PLAY_GAME_ROBOTIC 4
-#define CHANGE_STATE_REQUEST_EXIT 5
+enum change_game_state_value
+{
+  CHANGE_STATE_NONE,
+  CHANGE_STATE_SWAP_WORLD,
+  CHANGE_STATE_LOAD_GAME_ROBOTIC,
+  CHANGE_STATE_EXIT_GAME_ROBOTIC,
+  CHANGE_STATE_PLAY_GAME_ROBOTIC,
+  CHANGE_STATE_REQUEST_EXIT
+};
 
 struct world
 {
@@ -51,7 +50,10 @@ struct world
 
   int version;
   // Move here eventually
-  //char id_chars[455];
+  //char id_chars[ID_CHARS_SIZE];
+  //char id_dmg[ID_DMG_SIZE];
+  //char bullet_color[ID_BULLET_COLOR_SIZE];
+  //char missile_color;
   char status_counters_shown[NUM_STATUS_COUNTERS][COUNTER_NAME_SIZE];
 
   // Save game material, part 1
@@ -65,7 +67,6 @@ struct world
   int pl_saved_y[8];
   int pl_saved_board[8];
   int saved_pl_color;
-  int was_zapped;
   int under_player_id;
   int under_player_color;
   int under_player_param;
@@ -97,14 +98,10 @@ struct world
   int only_from_swap;
 
   // Save game material, part 2
+  struct counter_list counter_list;
+  struct string_list string_list;
   int player_restart_x;
   int player_restart_y;
-  int num_counters;
-  int num_counters_allocated;
-  struct counter **counter_list;
-  int num_strings;
-  int num_strings_allocated;
-  struct string **string_list;
   int num_sprites;
   int num_sprites_allocated;
   int sprite_num;
@@ -124,7 +121,7 @@ struct world
   FILE *output_file;
   char input_file_name[MAX_PATH];
   FILE *input_file;
-  bool input_is_dir;
+  boolean input_is_dir;
   struct mzx_dir input_directory;
   int temp_input_pos;
   int temp_output_pos;
@@ -151,6 +148,7 @@ struct world
   // Not part of world/save files, but runtime globals
   int player_x;
   int player_y;
+  int player_shoot_cooldown;
 
   // For moving the player between boards
   enum board_target target_where;
@@ -162,14 +160,27 @@ struct world
   enum thing target_d_id;
   int target_d_color;
 
-  // Indiciates if the player is dead
-  int dead;
-
   // Current bomb type
   int bomb_type;
 
-  // Toggle for if the screen is in slow motion
-  int slow_down;
+  // Indiciates if the player is dead
+  boolean dead;
+
+  // Toggle used to skip the board update when slow time or
+  // freeze time are active.
+  boolean current_cycle_frozen;
+
+  // Toggle used by certain built-in mechanics that update every other cycle.
+  boolean current_cycle_odd;
+
+  // Did the player just move?
+  boolean player_moved;
+
+  // Was the player on an entrance before the board scan?
+  boolean player_was_on_entrance;
+
+  // Was the player damaged while 'restart if hurt' is active?
+  boolean was_zapped;
 
   // For use in repeat delays for player movement
   int key_up_delay;
@@ -195,20 +206,20 @@ struct world
   char robotic_save_path[MAX_PATH];
 
   // Indicates a robotic world swap, savegame load, or game exit
-  int change_game_state;
+  // FIXME this might be better suited to the game context.
+  enum change_game_state_value change_game_state;
 
   // Current speed of MZX world
   int mzx_speed;
   // If we can change the speed from the F2 menu.
   int lock_speed;
 
-  struct config_info conf;
+  // Joystick state data.
+  boolean joystick_simulate_keys;
 
-#ifdef CONFIG_EDITOR
-  struct editor_config_info editor_conf;
-  struct editor_config_info editor_conf_backup;
-  bool editing;
-#endif
+  // Editor specific state flags.
+  boolean editing;
+  boolean debug_mode;
 
   // World validation: we don't want to alloc this file twice.
   char *raw_world_info;
@@ -220,8 +231,6 @@ struct world
   // An array for game2.cpp
   char *update_done;
   int update_done_size;
-  // Are we exiting all the way out of MZX?
-  bool full_exit;
 };
 
 __M_END_DECLS

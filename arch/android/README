@@ -1,47 +1,18 @@
-MEGAZEUX ON ANDROID
+BUILDING MEGAZEUX ON ANDROID
 
-Android uses the Linux kernel and the build is similar to the UNIX one.
+NOTE: Only tested on Linux.
+NOTE: Requires a few gigabytes of hard drive space and some patience.
 
-MegaZeux requires a new arch/ as the Android cross-compiler is weird and
-uses hand-rolled linker flags to generate programs. This may go away over
-time.
+1. Install the latest version of both the Android SDK and NDK.
+2. export NDK_PATH=[the NDK path]. As a hint, the directory should contain "ndk-build", among others.
+    * For Android Studio users, this will be /home/.../Android/Sdk/ndk-bundle/
+   Create the file arch/android/project/local.properties with the following lines:
+      ndk.dir=[NDK path here]
+      sdk.dir=[SDK path here]
+3. scripts/android/create-toolchains.sh
+4. scripts/android/build-deps.sh
+5. "scripts/android/build-mzx.sh megazeux" (pass mzxrun instead to build with mzxrun)
+6. cd android
+7. ./gradlew build
 
-At the moment this Android port does nothing. It needs the following work:
-
-  - Possibly fix up software renderer to use Skia (needed for old phones)
-  - Implement audio support (audioflinger)
-
-Most of the config.sh options work as-is, see docs/platform-matrix.html for
-detailed information.
-
-CHANGES TO ANDROID SOURCE TREE
-
-At the moment the only change required to the source tree is to add a symlink
-to work around a case issue when building on Linux:
-
-cd $ANDROID_ROOT/external/tremor
-ln -s Tremor tremor
-
-You don't have to do this if you disable audio support (which makes a lot of
-sense right now, actually).
-
-BUILD DEPENDENCIES
-
-Android makes this easy, because they bootstrap everything themselves. They
-even provide the cross compiler. All you need to do is specify your android
-build tree with "--prefix" and the build system does the rest.
-
-CONFIGURATION
-
-The config.sh line I've been using is:
-
-./config.sh --platform android --prefix $HOME/android --disable-editor \
-            --disable-modular --disable-utils --disable-audio
-
-However, I've made sure the utils build too, so the --disable-utils is
-optional.
-
-INSTALLATION
-
-The "make build" and "make archive" targets work for Android, but they
-generate ZIP files rather than .apk's, so you can only run MZX from SD.
+To change configuration options for the build, make a copy of build-mzx.sh and work from there.

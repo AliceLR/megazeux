@@ -18,27 +18,28 @@
  */
 
 #include <assert.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "robo_debug.h"
-
 #include "debug.h"
 #include "robot.h"
+#include "robo_debug.h"
 #include "window.h"
 
+#include "../core.h"
 #include "../counter.h"
 #include "../event.h"
 #include "../graphics.h"
 #include "../robot.h"
 #include "../str.h"
+#include "../util.h"
 #include "../window.h"
 #include "../world_struct.h"
-#include "../util.h"
 
 struct breakpoint
 {
-  char match_name[15];
+  char match_name[ROBOT_NAME_SIZE];
   char match_string[61];
   int index[256];
   int line_number;
@@ -67,7 +68,7 @@ static int robo_debugger_enabled = 0;
 static int robo_debugger_override = 0;
 
 // Whether or not the debugger is stepping through code
-static bool step = false;
+static boolean step = false;
 
 // Last positions selected
 static int br_selected = 0;
@@ -146,7 +147,7 @@ static int edit_breakpoint_dialog(struct world *mzx_world,
  struct breakpoint *br, const char *title)
 {
   char match_string[61];
-  char match_name[15];
+  char match_name[ROBOT_NAME_SIZE];
   int line_number;
 
   struct element *elements[5];
@@ -157,17 +158,17 @@ static int edit_breakpoint_dialog(struct world *mzx_world,
   force_release_all_keys();
 
   memcpy(match_string, br->match_string, 61);
-  memcpy(match_name, br->match_name, 15);
+  memcpy(match_name, br->match_name, ROBOT_NAME_SIZE);
   line_number = br->line_number;
 
   elements[0] = construct_input_box(2, 1,
-   "Match text:", 60, 0, match_string);
+   "Match text:", 60, match_string);
 
   elements[1] = construct_input_box(2, 3,
-   "Match robot name:", 14, 0, match_name);
+   "Match robot name:", ROBOT_NAME_SIZE - 1, match_name);
 
   elements[2] = construct_number_box(38, 3,
-   "Match line number:", 0, 99999, 0, &line_number);
+   "Match line number:", 0, 99999, NUMBER_BOX, &line_number);
 
   elements[3] = construct_button(22, 5, "Confirm", 0);
   elements[4] = construct_button(45, 5, "Cancel", -1);
@@ -180,7 +181,7 @@ static int edit_breakpoint_dialog(struct world *mzx_world,
   if(!result)
   {
     memcpy(br->match_string, match_string, 61);
-    memcpy(br->match_name, match_name, 15);
+    memcpy(br->match_name, match_name, ROBOT_NAME_SIZE);
     br->line_number = line_number;
     br->match_string_len = strlen(match_string);
     br->match_name_len = strlen(match_name);
@@ -207,7 +208,7 @@ static int edit_watchpoint_dialog(struct world *mzx_world,
   memcpy(match_name, wt->match_name, 61);
 
   elements[0] = construct_input_box(3, 1,
-   "Variable:", 60, 0, match_name);
+   "Variable:", 60, match_name);
 
   elements[1] = construct_button(22, 3, "Confirm", 0);
   elements[2] = construct_button(45, 3, "Cancel", -1);
@@ -362,8 +363,6 @@ void __debug_robot_config(struct world *mzx_world)
   force_release_all_keys();
 
   set_context(CTX_BREAKPOINT_EDITOR);
-
-  m_show();
 
   do
   {
@@ -649,10 +648,10 @@ static int goto_send_dialog(struct world *mzx_world, int robot_id)
    target_strs, ARRAY_SIZE(target_strs), 8, &target);
 
   elements[1] = construct_input_box(17, 1,
-   "Name:", 51, 0, name_in);
+   "Name:", 51, name_in);
 
   elements[2] = construct_input_box(16, 2,
-   "Label:", 51, 0, label_in);
+   "Label:", 51, label_in);
 
   elements[3] = construct_check_box(21, 3,
    ignore_strs, ARRAY_SIZE(ignore_strs), 50, ignore);
@@ -836,9 +835,11 @@ static void debug_robot_title(char buffer[77], struct robot *cur_robot, int id,
 }
 
 // If the return value != 0, the robot ignores the current command and ends
-static int debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
+static int debug_robot(context *ctx, struct robot *cur_robot, int id,
  char title[77], char info[77], char *src_ptr, int src_length, int lines_run)
 {
+  struct world *mzx_world = ctx->world;
+
   // TODO: when limitations on command length are lifted,
   // this needs to be extended.
   char buffer[ROBOT_MAX_TR] = { 0 };
@@ -971,6 +972,8 @@ static int debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
   {
     if(position)
       dialog_y = 25 - height;
+    else
+      dialog_y = 0;
 
     elements[0]  = construct_button( 3, ypos, "Continue", OP_CONTINUE);
     elements[1]  = construct_button(15, ypos, "Step", OP_STEP);
@@ -984,7 +987,6 @@ static int debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
     construct_dialog_ext(&di, title, 0, dialog_y, 80, height,
      elements, num_elements, 0, 0, selected, debug_robot_idle_function);
 
-    m_show();
     dialog_result = run_dialog(mzx_world, &di);
 
     if(dialog_result > OP_DO_NOTHING)
@@ -1056,7 +1058,7 @@ static int debug_robot(struct world *mzx_world, struct robot *cur_robot, int id,
 
       case OP_COUNTERS:
       {
-        __debug_counters(mzx_world);
+        __debug_counters(ctx);
         break;
       }
 
@@ -1089,7 +1091,7 @@ static inline void get_src_line(struct robot *cur_robot, char **_src_ptr,
  int *_src_length, int *_real_line_num)
 {
   struct command_mapping *cmd_map = cur_robot->command_map;
-  int line_num = get_current_program_line(cur_robot);
+  int line_num = get_program_command_num(cur_robot);
 
   char *src_ptr;
   int src_length;
@@ -1126,9 +1128,10 @@ static inline void get_src_line(struct robot *cur_robot, char **_src_ptr,
   }
 }
 
-int __debug_robot_break(struct world *mzx_world, struct robot *cur_robot,
+int __debug_robot_break(context *ctx, struct robot *cur_robot,
  int id, int lines_run)
 {
+  struct world *mzx_world = ctx->world;
   char title[77];
   char info[77];
 
@@ -1180,7 +1183,7 @@ int __debug_robot_break(struct world *mzx_world, struct robot *cur_robot,
       struct breakpoint *b;
       int match_line;
 
-      bool match = false;
+      boolean match = false;
 
       for(i = 0; i < num_breakpoints; i++)
       {
@@ -1225,13 +1228,14 @@ int __debug_robot_break(struct world *mzx_world, struct robot *cur_robot,
 
   // Run the robot debugger
   debug_robot_title(title, cur_robot, id, action, line_number);
-  return debug_robot(mzx_world, cur_robot, id, title, info, src_ptr, src_length,
+  return debug_robot(ctx, cur_robot, id, title, info, src_ptr, src_length,
    lines_run);
 }
 
-int __debug_robot_watch(struct world *mzx_world, struct robot *cur_robot,
+int __debug_robot_watch(context *ctx, struct robot *cur_robot,
  int id, int lines_run)
 {
+  struct world *mzx_world = ctx->world;
   char title[77];
   char info[77];
 
@@ -1240,7 +1244,7 @@ int __debug_robot_watch(struct world *mzx_world, struct robot *cur_robot,
   char *src_ptr = NULL;
 
   struct watchpoint *wt;
-  bool match = false;
+  boolean match = false;
   int value = 0;
   int i;
 
@@ -1287,6 +1291,6 @@ int __debug_robot_watch(struct world *mzx_world, struct robot *cur_robot,
 
   // Run the robot debugger
   debug_robot_title(title, cur_robot, id, ACTION_WATCH, line_number);
-  return debug_robot(mzx_world, cur_robot, id, title, info, src_ptr, src_length,
+  return debug_robot(ctx, cur_robot, id, title, info, src_ptr, src_length,
    lines_run);
 }

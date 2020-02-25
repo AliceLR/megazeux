@@ -28,22 +28,32 @@
 #define ERROR_OPT_RETRY     2
 #define ERROR_OPT_EXIT      4
 #define ERROR_OPT_OK        8
-#define ERROR_OPT_HELP     16
+#define ERROR_OPT_NO_HELP  16
 #define ERROR_OPT_SUPPRESS 32
 
 __M_BEGIN_DECLS
 
+enum error_type
+{
+  ERROR_T_WARNING   = 0,
+  ERROR_T_ERROR     = 1,
+  ERROR_T_FATAL     = 2,
+};
+
 enum error_code
 {
   E_DEFAULT,
+  E_INVOKE_SELF_FAILED,
+  E_CORE_FATAL_BUG,
   E_FILE_DOES_NOT_EXIST,
+  E_IO_READ,
+  E_IO_WRITE,
   E_SAVE_FILE_INVALID,
   E_SAVE_VERSION_OLD,
   E_SAVE_VERSION_TOO_RECENT,
   E_WORLD_FILE_INVALID,
   E_WORLD_FILE_VERSION_OLD,
   E_WORLD_FILE_VERSION_TOO_RECENT,
-  E_WORLD_PASSWORD_PROTECTED,
   E_WORLD_DECRYPT_WRITE_PROTECTED,
   E_WORLD_LOCKED,
   E_WORLD_IO_POST_VALIDATION,
@@ -74,6 +84,13 @@ enum error_code
   E_ZIP_ROBOT_MISSING_FROM_BOARD,
   E_ZIP_ROBOT_MISSING_FROM_DATA,
   E_ZIP_ROBOT_DUPLICATED,
+#ifdef CONFIG_EDITOR
+  E_CANT_OVERWRITE_PLAYER,
+#endif
+#ifdef CONFIG_UPDATER
+  E_UPDATE,
+  E_UPDATE_RETRY,
+#endif
 #ifdef CONFIG_DEBYTECODE
   E_DBC_WORLD_OVERWRITE_OLD,
   E_DBC_SAVE_ROBOT_UNSUPPORTED,
@@ -81,14 +98,15 @@ enum error_code
   NUM_ERROR_CODES
 };
 
-CORE_LIBSPEC int error(const char *string, unsigned int type,
+CORE_LIBSPEC int error(const char *string, enum error_type type,
  unsigned int options, unsigned int code);
 
 CORE_LIBSPEC int error_message(enum error_code id, int parameter,
  const char *string);
 
+CORE_LIBSPEC void set_error_suppression(enum error_code id, boolean enable);
+
 int get_and_reset_error_count(void);
-void set_error_suppression(enum error_code id, int value);
 void reset_error_suppression(void);
 
 __M_END_DECLS

@@ -1,0 +1,84 @@
+/* MegaZeux
+ *
+ * Copyright (C) 2018 Alice Rowan <petrifiedrowan@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+/**
+ * style_color.css: Embeddable color CSS for HTML help files.
+ * Should only style outside of printing mode.
+ *
+ * TODO: possibly invert the query here.
+ */
+
+@media not print
+{
+  body
+  {
+    background-color: #333;
+  }
+
+  #helpnav
+  {
+    background-color: #444;
+    color: #FFF;
+    border-bottom-color: #333;
+  }
+
+  #helpcontainer
+  {
+    background-color: #555;
+    color: #FFF;
+  }
+
+  .helplink { color: #FFFFFF; }
+  .helplink:before { color: #FFFF55; }
+  .helplink:hover { color: #FF55FF; }
+
+  .f0 { color: #000000; }
+  .f1 { color: #0000AA; }
+  .f2 { color: #00AA00; }
+  .f3 { color: #00AAAA; }
+  .f4 { color: #AA0000; }
+  .f5 { color: #AA00AA; }
+  .f6 { color: #AA5500; }
+  .f7 { color: #AAAAAA; }
+  .f8 { color: #555555; }
+  .f9 { color: #7777FF; } /* Should be #5555FF, but that's ugly on dk grey. */
+  .fa, .fA { color: #55FF55; }
+  .fb, .fB { color: #55FFFF; }
+  .fc, .fC { color: #FF5555; }
+  .fd, .fD { color: #FF55FF; }
+  .fe, .fE { color: #FFFF55; }
+  .ff, .fF { color: #FFFFFF; }
+
+  .b0 { background-color: #000000; }
+  .b1 { background-color: #0000AA; }
+  .b2 { background-color: #00AA00; }
+  .b3 { background-color: #00AAAA; }
+  .b4 { background-color: #AA0000; }
+  .b5 { background-color: #AA00AA; }
+  .b6 { background-color: #AA5500; }
+  .b7 { background-color: #AAAAAA; }
+  .b8 { background-color: #555555; }
+  .b9 { background-color: #5555FF; }
+  .ba, .bA { background-color: #55FF55; }
+  .bb, .bB { background-color: #55FFFF; }
+  .bc, .bC { background-color: #FF5555; }
+  .bd, .bD { background-color: #FF55FF; }
+  .be, .bE { background-color: #FFFF55; }
+  .bf, .bF { background-color: #FFFFFF; }
+}

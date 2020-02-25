@@ -23,12 +23,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "scrdisp.h"
-#include "helpsys.h"
+#include "core.h"
 #include "data.h"
 #include "graphics.h"
-#include "world.h"
+#include "helpsys.h"
+#include "scrdisp.h"
 #include "window.h"
+#include "world.h"
 
 static char *help;
 
@@ -50,7 +51,15 @@ void help_close(struct world *mzx_world)
   free(help);
 }
 
-void help_system(struct world *mzx_world)
+/**
+ * This really ought to only take the context, but this function is still used
+ * outside of core.c in the following places:
+ *
+ * src/editor/char_ed.c
+ * src/editor/robo_ed.c
+ * src/window.c (dialogs)
+ */
+void help_system(context *ctx, struct world *mzx_world)
 {
   char file[13], file2[13], label[13];
   int where, offs, size, t1, t2;
@@ -65,7 +74,7 @@ void help_system(struct world *mzx_world)
 
   rewind(fp);
   t1 = fgetw(fp);
-  fseek(fp, t1 * 21 + 4 + get_context() * 12, SEEK_SET);
+  fseek(fp, t1 * 21 + 4 + get_context(ctx) * 12, SEEK_SET);
 
   // At proper context info
   where = fgetd(fp);    // Where file to load is
@@ -75,7 +84,7 @@ void help_system(struct world *mzx_world)
   // Jump to file
   fseek(fp, where, SEEK_SET);
   // Read it in
-  fread(help, 1, size, fp);
+  size = fread(help, 1, size, fp);
   // Display it
   cursor_off();
 
@@ -89,7 +98,8 @@ labelled:
     fseek(fp, 2, SEEK_SET);
     for(t2 = 0; t2 < t1; t2++)
     {
-      fread(file2, 1, 13, fp);
+      if(!fread(file2, 13, 1, fp))
+        return;
       if(!strcmp(file, file2))
         break;
       fseek(fp, 8, SEEK_CUR);
@@ -101,7 +111,7 @@ labelled:
       where = fgetd(fp);
       size = fgetd(fp);
       fseek(fp, where, SEEK_SET);
-      fread(help, 1, size, fp);
+      size = fread(help, 1, size, fp);
 
       // Search for label
       for(t2 = 0; t2 < size; t2++)

@@ -17,7 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
-#define VERSION "v0.074"
+#define CCV_VERSION "v0.074"
 
 // With fix contributed by Lachesis
 
@@ -30,10 +30,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <ctype.h>
 #include <limits.h>
 
+#include "../config.h"
+
+#ifdef CONFIG_PLEDGE_UTILS
+#include <unistd.h>
+#define PROMISES "stdio rpath wpath cpath"
+#endif
+
 // This software requires uthash to compile. Download it from
 // http://troydhanson.github.com/uthash/
 
-#include <uthash.h>
+#include "uthash.h"
 
 #define MAX_PATH 65535
 
@@ -80,7 +87,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 void Usage()
 {
-  fprintf(stderr, "ccv " VERSION " - char conversion tool for megazeux\n");
+  fprintf(stderr, "ccv " CCV_VERSION " - char conversion tool for megazeux\n");
   fprintf(stderr, "by Dr Lancer-X <drlancer@megazeux.org>\n");
   fprintf(stderr, "Usage: ccv [options] input_file [...]\n");
   fprintf(stderr, "Type \"ccv -help\" for extended options information\n");
@@ -732,18 +739,22 @@ char *OutputPath(const char *input, Config *cfg, const char *ext)
   char *output_path = NULL;
   char buf[MAX_PATH+1];
   char *buf_e;
+  size_t output_len;
   if (cfg->output[0] == '\0') {
-    strcpy(buf, input);
+    snprintf(buf, MAX_PATH, "%s", input);
+    buf[MAX_PATH] = '\0';
     buf_e = strrchr(buf, '.');
     if (buf_e) *buf_e = '\0';
 
-    output_path = malloc(strlen(buf) + strlen(ext) + 1);
-    strcpy(output_path, buf);
-    strcat(output_path, ext);
+    output_len = strlen(buf) + strlen(ext) + 1;
+    output_path = malloc(output_len);
+    snprintf(output_path, output_len, "%s%s", buf, ext);
+    output_path[output_len - 1] = '\0';
   } else {
-    output_path = malloc(strlen(cfg->output) + strlen(ext) + 1);
-    strcpy(output_path, cfg->output);
-    strcat(output_path, ext);
+    output_len = strlen(cfg->output) + strlen(ext) + 1;
+    output_path = malloc(output_len);
+    snprintf(output_path, output_len, "%s%s", cfg->output, ext);
+    output_path[output_len - 1] = '\0';
   }
   return output_path;
 }
@@ -996,6 +1007,15 @@ int main(int argc, char **argv)
   Image *image, *qimage;
   Charset *cset;
   Mzm *mzm;
+
+#ifdef CONFIG_PLEDGE_UTILS
+  // TODO unveil
+  if(pledge(PROMISES, ""))
+  {
+    Error("Failed pledge!");
+    return 1;
+  }
+#endif
 
   for(file = cfg->files; file != NULL; file = file->hh.next) {
     image = LoadImage(cfg, file->path);

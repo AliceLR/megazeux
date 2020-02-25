@@ -56,6 +56,7 @@ void init_audio_platform(struct config_info *conf)
 #else
   SDL_OpenAudio(&desired_spec, &audio_settings);
 #endif
+
   audio.mix_buffer = cmalloc(audio_settings.size * 2);
   audio.buffer_samples = audio_settings.samples;
 

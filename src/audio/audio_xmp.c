@@ -22,6 +22,7 @@
 
 #include "audio.h"
 #include "audio_xmp.h"
+#include "audio_wav.h"
 #include "ext.h"
 #include "sampled_stream.h"
 
@@ -44,7 +45,24 @@ struct xmp_stream
   Uint32 repeat;
 };
 
-static int xmp_resample_mode;
+static int get_xmp_resample_mode(void)
+{
+  struct config_info *conf = get_config();
+
+  switch(conf->module_resample_mode)
+  {
+    case RESAMPLE_MODE_NONE:
+      return XMP_INTERP_NEAREST;
+
+    case RESAMPLE_MODE_LINEAR:
+    default:
+      return XMP_INTERP_LINEAR;
+
+    case RESAMPLE_MODE_CUBIC:
+    case RESAMPLE_MODE_FIR:
+      return XMP_INTERP_SPLINE;
+  }
+}
 
 static Uint32 audio_xmp_mix_data(struct audio_stream *a_src, Sint32 *buffer,
  Uint32 len)
@@ -110,7 +128,10 @@ static void audio_xmp_set_position(struct audio_stream *a_src, Uint32 position)
 static void audio_xmp_set_order(struct audio_stream *a_src, Uint32 order)
 {
   struct xmp_stream *stream = (struct xmp_stream *)a_src;
+  // XMP won't jump to the start of the specified order it's already playing
+  // most of the time, so set the row too.
   xmp_set_position(stream->ctx, order);
+  xmp_set_row(stream->ctx, 0);
 }
 
 static void audio_xmp_set_frequency(struct sampled_stream *s_src,
@@ -159,6 +180,53 @@ static Uint32 audio_xmp_get_frequency(struct sampled_stream *s_src)
   return ((struct xmp_stream *)s_src)->effective_frequency;
 }
 
+// Return a duplicate of a sample from the current playing mod.
+static boolean audio_xmp_get_sample(struct audio_stream *a_src, Uint32 which,
+ struct wav_info *dest)
+{
+  struct xmp_stream *stream = (struct xmp_stream *)a_src;
+
+  struct xmp_module_info info;
+  xmp_get_module_info(stream->ctx, &info);
+
+  if(info.mod && info.mod->xxs && (info.mod->smp > (int)which))
+  {
+    struct xmp_sample *sam = &(info.mod->xxs[which]);
+
+    // I don't know if it's even possible for synth samples to get this far,
+    // but check for them so they can be ignored anyway.
+    if(sam->len && !(sam->flg & XMP_SAMPLE_SYNTH))
+    {
+      dest->channels = 1;
+      dest->freq = audio_get_real_frequency(SAM_DEFAULT_PERIOD);
+      dest->data_length = sam->len;
+
+      // If the sample loops, the sample this returns needs to loop too.
+      if(sam->flg & XMP_SAMPLE_LOOP)
+      {
+        dest->loop_start = sam->lps;
+        dest->loop_end = sam->lpe;
+      }
+      else
+        dest->loop_start = dest->loop_end = 0;
+
+      // XMP samples are signed, and if 16bit, LSB, so just copy it directly.
+      if(sam->flg & XMP_SAMPLE_16BIT)
+      {
+        dest->format = SAMPLE_S16LSB;
+        dest->data_length *= 2;
+      }
+      else
+        dest->format = SAMPLE_S8;
+
+      dest->wav_data = cmalloc(dest->data_length);
+      memcpy(dest->wav_data, sam->data, dest->data_length);
+      return true;
+    }
+  }
+  return false;
+}
+
 static void audio_xmp_destruct(struct audio_stream *a_src)
 {
   xmp_end_player(((struct xmp_stream *)a_src)->ctx);
@@ -170,47 +238,39 @@ static void audio_xmp_destruct(struct audio_stream *a_src)
 static struct audio_stream *construct_xmp_stream(char *filename,
  Uint32 frequency, Uint32 volume, Uint32 repeat)
 {
-  struct audio_stream *ret_val = NULL;
   struct xmp_module_info info;
   xmp_context ctx;
   unsigned char ord;
   Uint32 row_pos;
   int i;
 
+  // Open a file handle here and pass xmp the handle. This is a workaround so
+  // platform-specific MZX path hacks will work without modifying libxmp.
+  FILE *fp = fopen_unsafe(filename, "rb");
+  size_t file_len;
+  if(!fp)
+    return NULL;
+
+  file_len = ftell_and_rewind(fp);
+
   ctx = xmp_create_context();
   if(ctx)
   {
     xmp_set_player(ctx, XMP_PLAYER_DEFPAN, 50);
 
-    switch(xmp_resample_mode)
+    if(!xmp_load_module_from_file(ctx, fp, file_len))
     {
-      case 0:
-      {
-        xmp_set_player(ctx, XMP_PLAYER_INTERP, XMP_INTERP_NEAREST);
-        break;
-      }
-
-      case 1:
-      {
-        xmp_set_player(ctx, XMP_PLAYER_INTERP, XMP_INTERP_LINEAR);
-        break;
-      }
-
-      case 2:
-      case 3:
-      {
-        xmp_set_player(ctx, XMP_PLAYER_INTERP, XMP_INTERP_SPLINE);
-        break;
-      }
-    }
-
-    if(xmp_load_module(ctx, filename) == 0)
-    {
-      struct xmp_stream *xmp_stream = cmalloc(sizeof(struct xmp_stream));
+      struct xmp_stream *xmp_stream = ccalloc(1, sizeof(struct xmp_stream));
+      struct sampled_stream_spec s_spec;
+      struct audio_stream_spec a_spec;
       int num_orders;
+
+      // xmp doesn't need this to persist after load...
+      fclose(fp);
 
       xmp_stream->ctx = ctx;
       xmp_start_player(ctx, audio.output_frequency, 0);
+      xmp_set_player(ctx, XMP_PLAYER_INTERP, get_xmp_resample_mode());
 
       xmp_get_module_info(ctx, &info);
       num_orders = info.mod->len;
@@ -232,26 +292,38 @@ static struct audio_stream *construct_xmp_stream(char *filename,
         info.seq_data[i].entry_point = 0;
       }
 
-      initialize_sampled_stream((struct sampled_stream *)xmp_stream,
-       audio_xmp_set_frequency, audio_xmp_get_frequency, frequency, 2, 0);
+      memset(&a_spec, 0, sizeof(struct audio_stream_spec));
+      a_spec.mix_data     = audio_xmp_mix_data;
+      a_spec.set_volume   = audio_xmp_set_volume;
+      a_spec.set_repeat   = audio_xmp_set_repeat;
+      a_spec.set_order    = audio_xmp_set_order;
+      a_spec.set_position = audio_xmp_set_position;
+      a_spec.get_order    = audio_xmp_get_order;
+      a_spec.get_position = audio_xmp_get_position;
+      a_spec.get_length   = audio_xmp_get_length;
+      a_spec.get_sample   = audio_xmp_get_sample;
+      a_spec.destruct     = audio_xmp_destruct;
 
-      ret_val = (struct audio_stream *)xmp_stream;
+      memset(&s_spec, 0, sizeof(struct sampled_stream_spec));
+      s_spec.set_frequency = audio_xmp_set_frequency;
+      s_spec.get_frequency = audio_xmp_get_frequency;
 
-      construct_audio_stream((struct audio_stream *)xmp_stream,
-       audio_xmp_mix_data, audio_xmp_set_volume, audio_xmp_set_repeat,
-       audio_xmp_set_order, audio_xmp_set_position, audio_xmp_get_order,
-       audio_xmp_get_position, audio_xmp_get_length, audio_xmp_destruct,
+      initialize_sampled_stream((struct sampled_stream *)xmp_stream, &s_spec,
+       frequency, 2, 0);
+
+      initialize_audio_stream((struct audio_stream *)xmp_stream, &a_spec,
        volume, repeat);
-    }
-  }
 
-  return ret_val;
+      return (struct audio_stream *)xmp_stream;
+    }
+    xmp_free_context(ctx);
+  }
+  fclose(fp);
+  return NULL;
 }
 
 void init_xmp(struct config_info *conf)
 {
-  xmp_resample_mode = conf->modplug_resample_mode;
-
   audio_ext_register("669", construct_xmp_stream);
   audio_ext_register("amf", construct_xmp_stream);
   //audio_ext_register("dsm", construct_xmp_stream);

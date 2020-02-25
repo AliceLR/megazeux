@@ -27,6 +27,8 @@
 
 #include "data.h"
 
+#include <limits.h>
+
 // I really didn't want to have all this stuff in the header file, but exposing
 // tokens to the outside world dragged it all in.
 
@@ -72,7 +74,16 @@ enum arg_type
   ARG_TYPE_UNKNOWN            = (1 << 16),
 
   ARG_TYPE_IGNORE             = (1 << 30),
-  ARG_TYPE_FRAGMENT           = (1 << 31),
+
+  /**
+   * Hi, I'm GCC. Having (1 << 31) would be too easy, so I'll complain about
+   * that not being a constant integer expression. Lower the shift values so
+   * there aren't negative numbers? Guess what, now it's an unsigned enum!
+   * Think you can still get an unsigned enum with (1u << 31)? Nope, enum is
+   * restricted to the range of int and I'm going to complain about that too.
+   * This is what you have to do to get this value to work:
+   */
+  ARG_TYPE_FRAGMENT           = (int)(1u << 31)
 };
 
 enum arg_type_indexed
@@ -251,7 +262,7 @@ struct token
   enum token_type type;
   union token_value arg_value;
   enum arg_type_indexed arg_type_indexed;
-  bool value_is_cached;
+  boolean value_is_cached;
   char *value;
   int length;
 };
@@ -260,11 +271,11 @@ struct token
 __M_BEGIN_DECLS
 
 char *legacy_disassemble_program(char *program_bytecode, int bytecode_length,
- int *_disasm_length, bool print_ignores, int base);
+ int *_disasm_length, boolean print_ignores, int base);
 char *legacy_convert_file(char *file_name, int *_disasm_length,
- bool print_ignores, int base);
-char *legacy_convert_file_mem(char *src, int len, int *_disasm_length,
- bool print_ignores, int base);
+ boolean print_ignores, int base);
+char *legacy_convert_program(char *src, int len, int *_disasm_length,
+ boolean print_ignores, int base);
 
 char *find_non_identifier_char(char *str);
 
@@ -275,7 +286,7 @@ CORE_LIBSPEC void assemble_program(char *program_source, char **_bytecode,
 #ifdef CONFIG_EDITOR
 
 CORE_LIBSPEC int legacy_disassemble_command(char *command_base, char *output_base,
- int *line_length, int bytecode_length, bool print_ignores, int base);
+ int *line_length, int bytecode_length, boolean print_ignores, int base);
 
 CORE_LIBSPEC struct token *parse_command(char *src, char **_next,
  int *num_parse_tokens);

@@ -22,7 +22,7 @@
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{0280F856-7B8D-4574-B842-3F4B9D6A541D}</ProjectGuid>
     <RootNamespace>MegaZeux</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>7.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -71,23 +71,27 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IntDir>$(SolutionDir)\obj\$(ProjectName)\$(Configuration)\$(PlatformTarget)\</IntDir>
-    <OutDir>$(SolutionDir)\..\..</OutDir>
-    <IncludePath>$(SolutionDir);$(IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)\..\..\</OutDir>
+    <IncludePath>$(SolutionDir)Deps\include\SDL2;$(SolutionDir);$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)Deps\lib\$(PlatformTarget);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IntDir>$(SolutionDir)\obj\$(ProjectName)\$(Configuration)\$(PlatformTarget)\</IntDir>
-    <OutDir>$(SolutionDir)\..\..</OutDir>
-    <IncludePath>$(SolutionDir);$(IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)\..\..\</OutDir>
+    <IncludePath>$(SolutionDir)Deps\include\SDL2;$(SolutionDir);$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)Deps\lib\$(PlatformTarget);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IntDir>$(SolutionDir)\obj\$(ProjectName)\$(Configuration)\$(PlatformTarget)\</IntDir>
-    <OutDir>$(SolutionDir)\..\..</OutDir>
-    <IncludePath>$(SolutionDir);$(IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)\..\..\</OutDir>
+    <IncludePath>$(SolutionDir)Deps\include\SDL2;$(SolutionDir);$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)Deps\lib\$(PlatformTarget);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IntDir>$(SolutionDir)\obj\$(ProjectName)\$(Configuration)\$(PlatformTarget)\</IntDir>
-    <OutDir>$(SolutionDir)\..\..</OutDir>
-    <IncludePath>$(SolutionDir);$(IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)\..\..\</OutDir>
+    <IncludePath>$(SolutionDir)Deps\include\SDL2;$(SolutionDir);$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)Deps\lib\$(PlatformTarget);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -135,26 +139,8 @@
       <AdditionalDependencies>SDL2main.lib;SDL2.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>cd /d $(SolutionDir)..\..
-rd /s /q build\dist\$(PlatformTarget)
-mkdir build\dist\$(PlatformTarget)
-
-copy MegaZeux.exe build\dist\$(PlatformTarget)
-copy MZXRun.exe build\dist\$(PlatformTarget)
-copy Core.dll build\dist\$(PlatformTarget)
-copy Editor.dll build\dist\$(PlatformTarget)
-copy config.txt build\dist\$(PlatformTarget)
-copy contrib\precompiled-sdl\$(PlatformTarget)\SDL2.dll build\dist\$(PlatformTarget) 
-
-mkdir build\dist\$(PlatformTarget)\assets
-xcopy /e assets build\dist\$(PlatformTarget)\assets
-
-mkdir build\dist\$(PlatformTarget)\docs
-copy docs\changelog.txt build\dist\$(PlatformTarget)\docs
-copy LICENSE build\dist\$(PlatformTarget)\docs\COPYING.DOC
-copy docs\keycodes.html build\dist\$(PlatformTarget)\docs
-copy docs\macro.txt build\dist\$(PlatformTarget)\docs
-copy docs\platform_matrix.html build\dist\$(PlatformTarget)\docs</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -175,34 +161,14 @@ copy docs\platform_matrix.html build\dist\$(PlatformTarget)\docs</Command>
       <AdditionalDependencies>SDL2main.lib;SDL2.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>cd /d $(SolutionDir)..\..
-rd /s /q build\dist\$(PlatformTarget)
-mkdir build\dist\$(PlatformTarget)
-
-copy MegaZeux.exe build\dist\$(PlatformTarget)
-copy MZXRun.exe build\dist\$(PlatformTarget)
-copy Core.dll build\dist\$(PlatformTarget)
-copy Editor.dll build\dist\$(PlatformTarget)
-copy config.txt build\dist\$(PlatformTarget)
-copy contrib\precompiled-sdl\$(PlatformTarget)\SDL2.dll build\dist\$(PlatformTarget) 
-
-mkdir build\dist\$(PlatformTarget)\assets
-xcopy /e assets build\dist\$(PlatformTarget)\assets
-
-mkdir build\dist\$(PlatformTarget)\docs
-copy docs\changelog.txt build\dist\$(PlatformTarget)\docs
-copy LICENSE build\dist\$(PlatformTarget)\docs\COPYING.DOC
-copy docs\keycodes.html build\dist\$(PlatformTarget)\docs
-copy docs\macro.txt build\dist\$(PlatformTarget)\docs
-copy docs\platform_matrix.html build\dist\$(PlatformTarget)\docs</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\main.c" />
-    <ClCompile Include="..\..\src\updater.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\updater.h" />
     <ClInclude Include="config.h" />
   </ItemGroup>
   <ItemGroup>

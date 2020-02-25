@@ -43,7 +43,7 @@ int png_write_screen_32bpp(Uint32 *pixels, const char *name);
 
 #ifdef NEED_PNG_READ_FILE
 
-typedef bool (*check_w_h_constraint_t)(png_uint_32 w, png_uint_32 h);
+typedef boolean (*check_w_h_constraint_t)(png_uint_32 w, png_uint_32 h);
 typedef void *(*rgba_surface_allocator_t)(png_uint_32 w, png_uint_32 h,
                                           png_uint_32 *stride, void **pixels);
 

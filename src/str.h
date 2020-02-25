@@ -43,9 +43,8 @@ CORE_LIBSPEC int set_string(struct world *mzx_world, const char *name,
  struct string *src, int id);
 CORE_LIBSPEC struct string *new_string(struct world *mzx_world,
  const char *name, size_t length, int id);
-CORE_LIBSPEC bool is_string(char *buffer);
-CORE_LIBSPEC void sort_string_list(struct string **string_list,
- int num_strings);
+CORE_LIBSPEC boolean is_string(char *buffer);
+CORE_LIBSPEC void sort_string_list(struct string_list *string_list);
 
 int string_read_as_counter(struct world *mzx_world,
  const char *name, int id);
@@ -60,13 +59,13 @@ void inc_string(struct world *mzx_world, const char *name, struct string *src,
  int id);
 void dec_string_int(struct world *mzx_world, const char *name, int value,
  int id);
-int compare_strings(struct string *dest, struct string *src,
- int exact_case, int allow_wildcards);
+int compare_strings(struct string *A, struct string *B, boolean exact_case,
+ boolean allow_wildcards);
 
-struct string *load_new_string(struct string **string_list, int index,
+struct string *load_new_string(struct string_list *string_list, int index,
  const char *name, int name_length, int str_length);
 
-void free_string_list(struct string **string_list, int num_strings);
+void clear_string_list(struct string_list *string_list);
 
 __M_END_DECLS
 

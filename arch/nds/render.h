@@ -37,7 +37,7 @@ enum Subscreen_Mode
 
 extern enum Subscreen_Mode subscreen_mode;
 
-bool is_scaled_mode(enum Subscreen_Mode mode);
+boolean is_scaled_mode(enum Subscreen_Mode mode);
 
 // Call these 4 functions every vblank.
 void nds_sleep_check(void);
@@ -49,7 +49,7 @@ void nds_video_do_transition(void);
 void nds_subscreen_switch(void);
 
 // Turn on or off mouselook (the next focus call will be ignored).
-void nds_mouselook(bool enable);
+void nds_mouselook(boolean enable);
 
 // Display a warning screen (PCX format).
 void warning_screen(u8 *pcx_data);

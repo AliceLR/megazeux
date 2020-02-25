@@ -29,11 +29,6 @@ __M_BEGIN_DECLS
 
 #include "world_struct.h"
 
-#include "context_enum.h"
-
-CORE_LIBSPEC void set_context(int c);
-CORE_LIBSPEC void pop_context(void);
-
 // For name seeking in list_menu
 #define TIME_SUSPEND 500
 
@@ -41,7 +36,7 @@ CORE_LIBSPEC void pop_context(void);
 CORE_LIBSPEC int save_screen(void);
 CORE_LIBSPEC int restore_screen(void);
 CORE_LIBSPEC int draw_window_box(int x1, int y1, int x2, int y2, int color,
- int dark_color, int corner_color, int shadow, int fill_center);
+ int dark_color, int corner_color, boolean shadow, boolean fill_center);
 CORE_LIBSPEC int char_selection(int current);
 
 // Shell for run_dialog() (returns 0 for ok, 1 for cancel, -1 for ESC)
@@ -52,7 +47,7 @@ CORE_LIBSPEC int confirm_input(struct world *mzx_world, const char *title,
 CORE_LIBSPEC int ask_yes_no(struct world *mzx_world, char *str);
 
 int draw_window_box_ext(int x1, int y1, int x2, int y2, int color,
- int dark_color, int corner_color, int shadow, int fill_center,
+ int dark_color, int corner_color, boolean shadow, boolean fill_center,
  int offset, int c_offset);
 
 // Dialog box structure definition
@@ -93,7 +88,7 @@ struct label_element
 {
   struct element e;
   const char *text;
-  bool respect_colors;
+  boolean respect_colors;
 };
 
 struct box
@@ -117,7 +112,6 @@ struct input_box
 {
   struct element e;
   const char *question;
-  int input_flags;
   int max_length;
   char *result;
 };
@@ -164,14 +158,22 @@ struct button
   int return_value;
 };
 
+enum number_box_type
+{
+  NUMBER_BOX,
+  NUMBER_BOX_MULT_FIVE,
+  NUMBER_LINE,
+  NUMBER_SLIDER
+};
+
 struct number_box
 {
   struct element e;
   const char *question;
   int lower_limit;
   int upper_limit;
-  int mult_five;
-  int is_null;
+  enum number_box_type type;
+  boolean is_null;
   int *result;
 };
 
@@ -190,7 +192,7 @@ struct list_box
   int key_position;
   int last_keypress_time;
   int clicked_scrollbar;
-  bool respect_color_codes;
+  boolean respect_color_codes;
 };
 
 struct board_list
@@ -214,6 +216,9 @@ struct file_selector
   char *result;
 };
 
+CORE_LIBSPEC int input_window(struct world *mzx_world, const char *title,
+ char *buffer, int max_len);
+
 CORE_LIBSPEC void construct_dialog(struct dialog *src, const char *title,
  int x, int y, int width, int height, struct element **elements,
  int num_elements, int start_element);
@@ -226,12 +231,16 @@ CORE_LIBSPEC struct element *construct_button(int x, int y, const char *label,
  int return_value);
 CORE_LIBSPEC struct element *construct_number_box(int x, int y,
  const char *question, int lower_limit, int upper_limit,
- int mult_five, int *result);
+ enum number_box_type type, int *result);
 CORE_LIBSPEC struct element *construct_file_selector(int x, int y,
  const char *title, const char *file_manager_title,
  const char *const *file_manager_exts, const char *none_mesg,
  int show_width, int allow_unset, const char *base_path, char *result,
  int return_value);
+CORE_LIBSPEC struct element *construct_list_box(int x, int y,
+ const char **choices, int num_choices, int num_choices_visible,
+ int choice_length, int return_value, int *result, int *result_offset,
+ boolean respect_color_codes);
 
 CORE_LIBSPEC int choose_file_ch(struct world *mzx_world,
  const char *const *wildcards, char *ret, const char *title, int dirs_okay);
@@ -297,8 +306,6 @@ CORE_LIBSPEC void meter_interior(unsigned int progress, unsigned int out_of);
 CORE_LIBSPEC int run_dialog(struct world *mzx_world, struct dialog *di);
 
 #ifdef CONFIG_EDITOR
-CORE_LIBSPEC extern int context;
-
 CORE_LIBSPEC void construct_element(struct element *e, int x, int y,
  int width, int height,
  void (* draw_function)(struct world *mzx_world, struct dialog *di,
@@ -313,11 +320,7 @@ CORE_LIBSPEC void construct_element(struct element *e, int x, int y,
  int (* idle_function)(struct world *mzx_world, struct dialog *di,
   struct element *e));
 CORE_LIBSPEC struct element *construct_input_box(int x, int y,
- const char *question, int max_length, int input_flags, char *result);
-CORE_LIBSPEC struct element *construct_list_box(int x, int y,
- const char **choices, int num_choices, int num_choices_visible,
- int choice_length, int return_value, int *result, int *result_offset,
- bool respect_color_codes);
+ const char *question, int max_length, char *result);
 CORE_LIBSPEC void construct_dialog_ext(struct dialog *src, const char *title,
  int x, int y, int width, int height, struct element **elements,
  int num_elements, int sfx_test_for_input, int pad_space, int start_element,
@@ -333,10 +336,6 @@ CORE_LIBSPEC int file_manager(struct world *mzx_world,
  const char *title, int dirs_okay, int allow_new,
  struct element **dialog_ext, int num_ext, int ext_height);
 #endif // CONFIG_EDITOR
-
-#ifdef CONFIG_HELPSYS
-int get_context(void);
-#endif
 
 __M_END_DECLS
 

@@ -49,14 +49,14 @@ static inline void platform_mutex_destroy(platform_mutex *mutex)
   SDL_DestroyMutex(*mutex);
 }
 
-static inline bool platform_mutex_lock(platform_mutex *mutex)
+static inline boolean platform_mutex_lock(platform_mutex *mutex)
 {
   if(SDL_LockMutex(*mutex))
     return false;
   return true;
 }
 
-static inline bool platform_mutex_unlock(platform_mutex *mutex)
+static inline boolean platform_mutex_unlock(platform_mutex *mutex)
 {
   if(SDL_UnlockMutex(*mutex))
     return false;
@@ -73,7 +73,7 @@ static inline void platform_cond_destroy(platform_cond *cond)
   SDL_DestroyCond(*cond);
 }
 
-static inline bool platform_cond_wait(platform_cond *cond,
+static inline boolean platform_cond_wait(platform_cond *cond,
  platform_mutex *mutex)
 {
   if(SDL_CondWait(*cond, *mutex))
@@ -81,7 +81,7 @@ static inline bool platform_cond_wait(platform_cond *cond,
   return true;
 }
 
-static inline bool platform_cond_timedwait(platform_cond *cond,
+static inline boolean platform_cond_timedwait(platform_cond *cond,
  platform_mutex *mutex, unsigned int timeout_ms)
 {
   if(SDL_CondWaitTimeout(*cond, *mutex, (Uint32)timeout_ms))
@@ -89,14 +89,14 @@ static inline bool platform_cond_timedwait(platform_cond *cond,
   return true;
 }
 
-static inline bool platform_cond_signal(platform_cond *cond)
+static inline boolean platform_cond_signal(platform_cond *cond)
 {
   if(SDL_CondSignal(*cond))
     return false;
   return true;
 }
 
-static inline bool platform_cond_broadcast(platform_cond *cond)
+static inline boolean platform_cond_broadcast(platform_cond *cond)
 {
   if(SDL_CondBroadcast(*cond))
     return false;

@@ -2,44 +2,37 @@
 # android makefile generics
 #
 
-ANDROID_LIBPATH ?= ${PREFIX}/out/debug/target/product/${ANDROID_PRODUCT}/obj/lib
-ANDROID_PRODUCT ?= generic
-
-CC      = ${CROSS_COMPILE}gcc
-CXX     = ${CROSS_COMPILE}g++
+CC      = ${CROSS_COMPILE}clang
+CXX     = ${CROSS_COMPILE}clang++
 AR      = ${CROSS_COMPILE}ar
 OBJCOPY = ${CROSS_COMPILE}objcopy
 STRIP   = ${CROSS_COMPILE}strip --strip-unneeded
-
-LIBGCC_A := $(shell $(CC) -print-libgcc-file-name)
 
 ifeq (${ARCH},)
 ARCH=arm
 endif
 
+ifeq (${TOOLCHAIN},)
+TOOLCHAIN=build/android/toolchain-${ARCH}
+endif
+
 ifeq (${ARCH},arm)
 
-TOOLCHAIN       ?= ${PREFIX}/prebuilt/linux-x86/toolchain/arm-eabi-4.2.1
-CROSS_COMPILE   ?= ${TOOLCHAIN}/bin/arm-eabi-
+CROSS_COMPILE ?= ${TOOLCHAIN}/bin/arm-linux-androideabi-
+ARCH_CFLAGS = -march=armv7-a -mthumb
+ARCH_LDFLAGS = -march=armv7-a -Wl,--fix-cortex-a8
 
-ARCH_CFLAGS = -march=armv5te \
-  -I${PREFIX}/bionic/libc/arch-arm/include \
-  -I${PREFIX}/bionic/libc/kernel/arch-arm
+else ifeq (${ARCH},arm64)
 
-ARCH_EXE_LDFLAGS = -Bdynamic -Wl,-T,${PREFIX}/build/core/armelf.x
-
-DSOLDFLAGS = -shared -Wl,-T,${PREFIX}/build/core/armelf.xsc
+CROSS_COMPILE ?= ${TOOLCHAIN}/bin/aarch64-linux-android-
 
 else ifeq (${ARCH},x86)
 
-TOOLCHAIN	?= ${PREFIX}/prebuilt/linux-x86/toolchain/i686-unknown-linux-gnu-4.2.1
-CROSS_COMPILE	?= ${TOOLCHAIN}/bin/i686-unknown-linux-gnu-
+CROSS_COMPILE ?= ${TOOLCHAIN}/bin/i686-linux-android-
 
-ARCH_CFLAGS = -march=i686 -fPIC \
-  -I${PREFIX}/bionic/libc/arch-x86/include \
-  -I${PREFIX}/bionic/libc/kernel/arch-x86
+else ifeq (${ARCH},x86_64)
 
-DSOLDFLAGS = -shared
+CROSS_COMPILE ?= ${TOOLCHAIN}/bin/x86_64-linux-android-
 
 else
 
@@ -47,71 +40,13 @@ $(error Specify a valid supported architecture)
 
 endif
 
-ARCH_CFLAGS += \
-  -DANDROID -fno-short-enums \
-  -I${PREFIX}/bionic/libc/include \
-  -I${PREFIX}/bionic/libc/kernel/common \
-  -I${PREFIX}/bionic/libm/include \
-  -I${PREFIX}/frameworks/base/include \
-  -I${PREFIX}/frameworks/base/opengl/include \
-  -I${PREFIX}/system/core/include \
-  -I${PREFIX}/hardware/libhardware/include \
-  -I${PREFIX}/external/skia/include \
-  -Iarch/android
+ARCH_CFLAGS += -DANDROID -fPIE -fPIC
+ARCH_LDFLAGS += -shared
 
-ARCH_CXXFLAGS = \
-  ${ARCH_CFLAGS} -I${PREFIX}/bionic/libstdc++/include
+SDL_CFLAGS = -I${PREFIX}/include/SDL2
+SDL_LDFLAGS = -lSDL2
 
-ARCH_LDFLAGS = \
-  -Bdynamic -nostdlib \
-  -Wl,-dynamic-linker,/system/bin/linker \
-  -Wl,-rpath-link=${ANDROID_LIBPATH} \
-  -L${ANDROID_LIBPATH} -lc -lcutils -lsurfaceflinger $(LIBGCC_A)
+LIBPNG_CFLAGS =
+LIBPNG_LDFLAGS = -lpng16
 
-ARCH_EXE_LDFLAGS += \
-  ${ANDROID_LIBPATH}/crtbegin_dynamic.o \
-  ${ANDROID_LIBPATH}/crtend_android.o
-
-DSOPRE     = lib
-DSOPOST    = .so
-DSORPATH   = -Wl,-rpath,${LIBDIR}
-DSOSONAME  = -Wl,-soname,
-
-#
-# Bionic implements pthread, no separate library
-#
-PTHREAD_LDFLAGS =
-
-#
-# Headers are in a strange place
-#
-VORBIS_CFLAGS = -I${PREFIX}/external/tremor
-ZLIB_CFLAGS   = -I${PREFIX}/external/zlib
-LIBPNG_CFLAGS = -I${PREFIX}/external/libpng ${ZLIB_CFLAGS}
-
-#
-# Skia provides libpng symbols on Android
-#
-LIBPNG_LDFLAGS = -lskiagl
-
-#
-# Some of SurfaceFlinger is only available to C++; this wraps
-# those bits and makes them available to render_egl (C).
-#
-arch/android/sfwrapper.o: arch/android/sfwrapper.cpp
-	$(if ${V},,@echo "  CXX     " $<)
-	${CXX} -MD ${core_cxxflags} -Isrc -c $< -o $@
-
-.PHONY: clean
-clean:
-	$(if ${V},,@echo "  RM      " arch/android/sfwrapper.{o,d})
-	${RM} arch/android/sfwrapper.o arch/android/sfwrapper.d
-
-#
-# Need to nest Android binaries in a subdir
-# FIXME: Convert this to .apk and wrap it with a Java class
-#
-build := build/${SUBPLATFORM}/data/megazeux
-build: ${build}
-
-include arch/zip.inc
+ARCH_CXXFLAGS = ${ARCH_CFLAGS}

@@ -40,15 +40,17 @@
 #undef true
 #undef bool
 
-typedef enum
+enum
 {
   false = 0,
   true  = 1,
-} bool;
+};
 
 #endif // !CONFIG_WII && !CONFIG_NDS
 
 #endif /* __cplusplus */
+
+typedef unsigned char boolean;
 
 #ifdef CONFIG_3DS
 #include <3ds.h>
@@ -101,12 +103,26 @@ typedef enum
 #endif
 #endif
 
-#ifdef ANDROID
-#define HAVE_SYS_UIO_H
-#define LOG_TAG "MegaZeux"
-#include <cutils/log.h>
-#undef CONDITION
+#ifdef __WIN32__
+// Usually defined in Windows headers but somehow those always seem to add 30%
+// or more build time and we don't include them globally for any other purpose.
+#define MAX_PATH 260
 #endif
+
+#ifdef __OpenBSD__
+#include <sys/param.h>
+// These macros conflict with internally-defined MZX macros
+#undef MIN
+#undef MAX
+
+// unveil added in OpenBSD 6.3
+#ifdef OpenBSD
+#if OpenBSD >= 201805
+#define PLEDGE_HAS_UNVEIL
+#endif
+
+#endif /* OpenBSD */
+#endif /* __OpenBSD__ */
 
 #ifndef MAX_PATH
 #define MAX_PATH 512
@@ -130,6 +146,10 @@ typedef enum
 
 #ifndef AUDIO_LIBSPEC
 #define AUDIO_LIBSPEC LIBSPEC
+#endif
+
+#ifndef UTILS_LIBSPEC
+#define UTILS_LIBSPEC CORE_LIBSPEC
 #endif
 
 #ifdef CONFIG_UPDATER

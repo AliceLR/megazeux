@@ -1,7 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
- * Copyright (C) 2017 Alice Rowan (petrifiedrowan@gmail.com)
+ * Copyright (C) 2017 Alice Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -23,48 +23,60 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "platform.h"
-#include "helpsys.h"
+#include "core.h"
 #include "error.h"
-#include "window.h"
-#include "graphics.h"
 #include "event.h"
+#include "graphics.h"
+#include "helpsys.h"
+#include "platform.h"
+#include "window.h"
 #include "world.h"
 
 // Error type names by type code:
 static const char *const error_type_names[] =
 {
-  " WARNING: ",		// 0
-  " ERROR: ",		// 1
-  " FATAL ERROR: ",	// 2
-  " CRITICAL ERROR: ",	// 3
+  " WARNING: ",         // 0
+  " ERROR: ",           // 1
+  " FATAL ERROR: ",     // 2
+  " CRITICAL ERROR: ",  // 3, unused
 };
 
+// Note: ERROR_OPT_SUPPRESS should only be used by error_message().
 
-//Call for an error OR a warning. Type=0 for a warning, 1 for a recoverable
-//error, 2 for a fatal error. Options are (bits set in options and returned
-//as action) FAIL=1, RETRY=2, EXIT TO DOS=4, OK=8, HELP=16 (OK is for usually
-//only for warnings) Code is a specialized error code for debugging purposes.
-//Type of 3 for a critical error.
-
-// SUPPRESS=32 should only be used in conjunction with error_message().
-
-int error(const char *string, unsigned int type, unsigned int options,
+int error(const char *string, enum error_type type, unsigned int options,
  unsigned int code)
 {
+  boolean skip_error_ui = false;
   const char *type_name;
   int t1 = 9, ret = 0;
+  int joystick_key;
   char temp[5];
   int x;
 
   // Find the name of this error type.
-  if(type >= sizeof(error_type_names) / sizeof(*error_type_names))
-    type = 0;
+  if((unsigned int)type >= ARRAY_SIZE(error_type_names))
+    type = ERROR_T_WARNING;
 
   type_name = error_type_names[type];
 
   // If graphics couldn't initialize, print the error to stderr and abort.
   if(!has_video_initialized())
+    skip_error_ui = true;
+
+#ifdef __EMSCRIPTEN__
+  // TODO: For Emscripten, some paths here are safe and others will crash.
+  // These can be detected through their error codes for now.
+  {
+    static const enum error_type safe_codes[] = { 0x3101, 0x2C01, 0x0000 };
+    skip_error_ui = true;
+
+    for(x = 0; x < (int)ARRAY_SIZE(safe_codes); x++)
+      if(code == safe_codes[x])
+        skip_error_ui = false;
+  }
+#endif
+
+  if(skip_error_ui)
   {
     int scode = code ? (int)code : -1;
 
@@ -76,10 +88,12 @@ int error(const char *string, unsigned int type, unsigned int options,
     if(options & ERROR_OPT_OK) return ERROR_OPT_OK;
     if(options & ERROR_OPT_FAIL) return ERROR_OPT_FAIL;
     exit(scode);
+    return ERROR_OPT_FAIL; // __EMSCRIPTEN__
   }
 
-  // Window
-  set_context(code >> 8);
+  // Use the high byte of the error code to link to a context in the help file.
+  set_context(((code >> 8) & 0xFF) + 700);
+
   m_hide();
   save_screen();
 
@@ -120,6 +134,12 @@ int error(const char *string, unsigned int type, unsigned int options,
     write_string(", S for Suppress", t1, 13, 78, 0);
     t1 += 16;
   }
+  // FIXME no context or mzx_world here
+  if(!(options & ERROR_OPT_NO_HELP) && false)
+  {
+    write_string(", F1 for Help", t1, 13, 78, 0);
+    t1 += 13;
+  }
 
   draw_char('.', 78, t1, 13);
   draw_char(':', 78, 9, 13);
@@ -138,8 +158,12 @@ int error(const char *string, unsigned int type, unsigned int options,
   // Get key
   do
   {
-    wait_event(0);
+    update_event_status_delay();
     t1 = get_key(keycode_internal_wrt_numlock);
+
+    joystick_key = get_joystick_ui_key();
+    if(joystick_key)
+      t1 = joystick_key;
 
     //Exit event--mimic Escape
     if(get_exit_status())
@@ -172,9 +196,11 @@ int error(const char *string, unsigned int type, unsigned int options,
         if(!(options & ERROR_OPT_SUPPRESS)) break;
         ret = ERROR_OPT_SUPPRESS;
         break;
-      case IKEY_h:
-        if(!(options & ERROR_OPT_HELP)) break;
+      case IKEY_F1:
+        if(options & ERROR_OPT_NO_HELP) break;
         // Call help
+        // FIXME context, no mzx_world here
+        //help_system(NULL, mzx_world);
         break;
       case IKEY_ESCAPE:
         // Escape. Order of options this applies to-
@@ -210,7 +236,7 @@ int error(const char *string, unsigned int type, unsigned int options,
 }
 
 
-static char suppress_errors[NUM_ERROR_CODES];
+static boolean suppress_errors[NUM_ERROR_CODES];
 static int error_count = 0;
 
 // Wrapper for error().
@@ -221,7 +247,7 @@ int error_message(enum error_code id, int parameter, const char *string)
   int hi = (parameter & 0xFF00) >> 8;
   int lo = (parameter & 0xFF);
   int opts = ERROR_OPT_OK | ERROR_OPT_SUPPRESS;
-  int severity = 1; // ERROR
+  int severity = ERROR_T_ERROR;
   int code = id;
   int result;
 
@@ -230,8 +256,28 @@ int error_message(enum error_code id, int parameter, const char *string)
 
   switch (id)
   {
+    case E_INVOKE_SELF_FAILED:
+      sprintf(error_mesg, "Attempt to invoke self failed!");
+      code = 0xADA1;
+      break;
+
+    case E_CORE_FATAL_BUG:
+      sprintf(error_mesg, "Context code bug");
+      severity = ERROR_T_FATAL;
+      opts = ERROR_OPT_EXIT;
+      code = 0x2B00 | (parameter & 0xFF);
+      break;
+
     case E_FILE_DOES_NOT_EXIST:
       sprintf(error_mesg, "File doesn't exist");
+      break;
+
+    case E_IO_READ:
+      sprintf(error_mesg, "Unknown error reading from file");
+      break;
+
+    case E_IO_WRITE:
+      sprintf(error_mesg, "Unknown error writing to file");
       break;
 
     case E_SAVE_FILE_INVALID:
@@ -272,13 +318,9 @@ int error_message(enum error_code id, int parameter, const char *string)
       code = 0x0D02;
       break;
 
-    case E_WORLD_PASSWORD_PROTECTED:
-      sprintf(error_mesg, "This world may be password protected");
-      code = 0x0D02;
-      break;
-
     case E_WORLD_DECRYPT_WRITE_PROTECTED:
-      sprintf(error_mesg, "Cannot decrypt write-protected world; check permissions");
+      sprintf(error_mesg, "Cannot decrypt write-protected world; "
+       "check permissions");
       code = 0x0DD5;
       break;
 
@@ -293,7 +335,8 @@ int error_message(enum error_code id, int parameter, const char *string)
       break;
 
     case E_WORLD_IO_SAVING:
-      sprintf(error_mesg, "Error saving; file/directory may be write protected");
+      sprintf(error_mesg,
+       "Error saving; file/directory may be write protected");
       code = 0x0D01;
       break;
 
@@ -382,9 +425,10 @@ int error_message(enum error_code id, int parameter, const char *string)
       sprintf(error_mesg, "Bytecode file failed validation check");
       code = 0xD0D0;
       break;
-    
+
     case E_NO_LAYER_RENDERER:
-      sprintf(error_mesg, "Current renderer lacks advanced graphical features; features disabled");
+      sprintf(error_mesg, "Current renderer lacks advanced graphical features; "
+       "features disabled");
       code = 0x2563;
       break;
 
@@ -430,6 +474,27 @@ int error_message(enum error_code id, int parameter, const char *string)
       code = 0x9007;
       break;
 
+#ifdef CONFIG_EDITOR
+    case E_CANT_OVERWRITE_PLAYER:
+      sprintf(error_mesg, "Cannot overwrite the player- move it first");
+      severity = ERROR_T_WARNING;
+      code = 0x0000;
+      break;
+#endif
+
+#ifdef CONFIG_UPDATER
+    case E_UPDATE_RETRY:
+      opts = ERROR_OPT_RETRY | ERROR_OPT_FAIL;
+
+      /* fallthrough */
+
+    case E_UPDATE:
+      snprintf(error_mesg, 79, "%s", string);
+      code = 0xA200 | (parameter & 0xFF);
+      string = NULL;
+      break;
+#endif
+
 #ifdef CONFIG_DEBYTECODE
     case E_DBC_WORLD_OVERWRITE_OLD:
       sprintf(error_mesg,
@@ -440,7 +505,7 @@ int error_message(enum error_code id, int parameter, const char *string)
 
     case E_DBC_SAVE_ROBOT_UNSUPPORTED:
       sprintf(error_mesg,
-       "SAVE_ROBOT and SAVE_BC are no longer supported");
+       "SAVE_BC is no longer supported");
       code = 0x0fac;
       break;
 #endif
@@ -475,14 +540,12 @@ int error_message(enum error_code id, int parameter, const char *string)
 
   if(result == ERROR_OPT_SUPPRESS)
   {
-    suppress_errors[id] = 1;
+    suppress_errors[id] = true;
     return ERROR_OPT_OK;
   }
 
   return result;
 }
-
-
 
 int get_and_reset_error_count(void)
 {
@@ -491,14 +554,14 @@ int get_and_reset_error_count(void)
   return count;
 }
 
-void set_error_suppression(enum error_code id, int value)
+void set_error_suppression(enum error_code id, boolean enable)
 {
-  suppress_errors[id] = (char)value;
+  suppress_errors[id] = enable;
 }
 
 void reset_error_suppression(void)
 {
   int i;
-  for (i = 0; i < NUM_ERROR_CODES; i++)
-    suppress_errors[i] = 0;
+  for(i = 0; i < NUM_ERROR_CODES; i++)
+    suppress_errors[i] = false;
 }

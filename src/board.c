@@ -23,15 +23,15 @@
 #include <string.h>
 
 #include "board.h"
-
 #include "const.h"
 #include "error.h"
 #include "memfile.h"
 #include "legacy_board.h"
 #include "robot.h"
 #include "world.h"
-#include "world_prop.h"
+#include "world_format.h"
 #include "util.h"
+#include "world_struct.h"
 #include "zip.h"
 
 
@@ -50,7 +50,7 @@ static int save_board_info(struct board *cur_board, struct zip_archive *zp,
 
   buffer = cmalloc(size);
 
-  mfopen_static(buffer, size, &mf);
+  mfopen(buffer, size, &mf);
 
   save_prop_s(BPROP_BOARD_NAME, cur_board->board_name, BOARD_NAME_SIZE, 1, &mf);
   save_prop_w(BPROP_BOARD_WIDTH, cur_board->board_width, &mf);
@@ -294,6 +294,10 @@ static void default_board(struct board *cur_board)
   cur_board->b_mesg_timer = 0;
   cur_board->b_mesg_row = 24;
   cur_board->b_mesg_col = -1;
+
+#ifdef DEBUG
+  cur_board->is_extram = false;
+#endif
 }
 
 void dummy_board(struct board *cur_board)
@@ -348,7 +352,7 @@ static int load_board_info(struct board *cur_board, struct zip_archive *zp,
 
   zip_read_file(zp, buffer, actual_size, &actual_size);
 
-  mfopen_static(buffer, actual_size, &mf);
+  mfopen(buffer, actual_size, &mf);
 
   while(next_prop(&prop, &ident, &size, &mf))
   {
@@ -1093,6 +1097,15 @@ int load_board_direct(struct world *mzx_world, struct board *cur_board,
     }
   }
 
+  // Correct scroll/sensor counts.
+  while(num_scrolls && !scroll_list[num_scrolls])
+    num_scrolls--;
+
+  while(num_sensors && !sensor_list[num_sensors])
+    num_sensors--;
+
+  cur_board->num_scrolls = num_scrolls;
+  cur_board->num_sensors = num_sensors;
   return VAL_SUCCESS;
 
 err_invalid:

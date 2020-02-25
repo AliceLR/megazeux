@@ -82,6 +82,8 @@
 #define TLUT_UI_OFFSET    (256 * 6) // UI
 #define NUM_TLUT          (256 * 7)
 
+#define TLUT_MZX_BOTH_TRANSPARENT (-1)
+
 // RGB5A3 transparent color for layer rendering.
 #define NO_COLOR 0x0000
 
@@ -108,7 +110,7 @@ struct gx_render_data
   int chrdirty_all;
   int chrdirty_set;
   int paldirty;
-  bool invalidate;
+  boolean invalidate;
   int current_xfb;
   s16 sx0, sy0, sx1, sy1;
 };
@@ -251,7 +253,7 @@ static u32 smzxtexline[256] =
   0xFFFFFF00, 0xFFFFFF55, 0xFFFFFFAA, 0xFFFFFFFF
 };
 
-static bool gx_init_video(struct graphics_data *graphics,
+static boolean gx_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
   const GXColor black = {0, 0, 0, 255};
@@ -376,14 +378,14 @@ static void gx_free_video(struct graphics_data *graphics)
   graphics->render_data = NULL;
 }
 
-static bool gx_check_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, bool fullscreen, bool resize)
+static boolean gx_check_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, boolean fullscreen, boolean resize)
 {
   return true;
 }
 
-static bool gx_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, bool fullscreen, bool resize)
+static boolean gx_set_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, boolean fullscreen, boolean resize)
 {
   struct gx_render_data *render_data = graphics->render_data;
   float x, y, w, h, scale, xscale, yscale;
@@ -624,6 +626,9 @@ static int gx_get_tlut_id_mzx(struct graphics_data *graphics,
   int tcol = layer->transparent_col;
   int tlut_id;
 
+  if((tcol == (int)bg_color) && (tcol == (int)fg_color))
+    return TLUT_MZX_BOTH_TRANSPARENT;
+
   if(tcol == (int)bg_color)
     return fg_color + TLUT_T0_OFFSET;
 
@@ -776,6 +781,9 @@ static void gx_render_layer(struct graphics_data *graphics,
         bg_color = src->bg_color;
         fg_color = src->fg_color;
         cur_tlut_id = gx_get_tlut_id_mzx(graphics, layer, bg_color, fg_color);
+
+        if(cur_tlut_id == TLUT_MZX_BOTH_TRANSPARENT)
+          continue;
 
         if(cur_tlut_id != last_tlut_id)
         {

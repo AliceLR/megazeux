@@ -1,0 +1,24 @@
+{
+  "name": "megazeux-web",
+  "version": "0.1.0",
+  "description": "MegaZeux web frontend",
+  "main": "src/index.js",
+  "scripts": {
+    "build": "node_modules/.bin/rollup -c",
+    "build-release": "node_modules/.bin/rollup -c --environment MINIFY"
+  },
+  "browserslist": "firefox >= 55, and_ff >= 55, chrome >= 60, and_chr >= 60, ios >= 12, safari >= 12, samsung >= 5, and_uc >= 11.8, opera >= 47, op_mob >= 47, baidu >= 7",
+  "author": "asie",
+  "license": "GPL-2.0-or-later",
+  "devDependencies": {
+    "@babel/core": "^7.5.5",
+    "@babel/preset-env": "^7.5.5",
+    "rollup": "^1.19.4",
+    "rollup-plugin-babel": "^4.3.3",
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "rollup-plugin-terser": "^5.1.1"
+  },
+  "dependencies": {
+    "core-js": "^3.2.1"
+  }
+}

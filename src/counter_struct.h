@@ -25,29 +25,22 @@
 
 __M_BEGIN_DECLS
 
-#ifdef CONFIG_UTHASH
-#include <utcasehash.h>
-#endif
-
-struct world;
-struct counter;
-
-typedef int (*gateway_write_function)(struct world *mzx_world,
- struct counter *counter, const char *name, int value, int id);
-
-typedef int (*gateway_dec_function)(struct world *mzx_world,
- struct counter *counter, const char *name, int value, int id);
-
 struct counter
 {
-#ifdef CONFIG_UTHASH
-  UT_hash_handle ch;
-#endif
-
+  unsigned char gateway_write;
   int value;
-  gateway_write_function gateway_write;
-  gateway_dec_function gateway_dec;
+  int name_length;
   char name[1];
+};
+
+struct counter_list
+{
+  int num_counters;
+  int num_counters_allocated;
+  struct counter **counters;
+#ifdef CONFIG_KHASH
+  void *hash_table;
+#endif
 };
 
 // TODO - Give strings a dynamic length. It would expand
@@ -84,21 +77,28 @@ struct counter
 
 struct string
 {
-#ifdef CONFIG_UTHASH
-  UT_hash_handle sh;
-#endif
-
   // Back reference to the string's position in the list, mandatory
-  // because we're not using a search to find it with uthash. We'll
-  // add it for both though so there doesn't have to be a UTHASH ifdef
+  // because we're not using a search to find it with the hash table. We'll
+  // add it for both though so there doesn't have to be a hash table ifdef
   // in world.c
   int list_ind;
 
+  int name_length;
   size_t length;
   size_t allocated_length;
   char *value;
 
   char name[1];
+};
+
+struct string_list
+{
+  int num_strings;
+  int num_strings_allocated;
+  struct string **strings;
+#ifdef CONFIG_KHASH
+  void *hash_table;
+#endif
 };
 
 // Special counter returns for opening files
@@ -118,9 +118,6 @@ enum special_counter_return
   FOPEN_SAVE_COUNTERS,
   FOPEN_LOAD_ROBOT,
   FOPEN_LOAD_BC,
-#ifdef CONFIG_DEBYTECODE
-  FOPEN_LOAD_SOURCE_FILE,
-#endif
   FOPEN_SAVE_ROBOT,
   FOPEN_SAVE_BC
 };

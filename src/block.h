@@ -51,9 +51,11 @@ CORE_LIBSPEC void copy_layer_to_board(
 
 #ifdef CONFIG_EDITOR
 
+CORE_LIBSPEC void copy_replace_player(struct world *mzx_world, int x, int y);
+
 CORE_LIBSPEC void move_board_block(struct world *mzx_world,
- struct board *src_board, int src_offset,
- struct board *dest_board, int dest_offset,
+ struct board *src_board, int src_x, int src_y,
+ struct board *dest_board, int dest_x, int dest_y,
  int block_width, int block_height,
  int clear_width, int clear_height);
 
