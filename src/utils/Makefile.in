@@ -26,13 +26,13 @@ downver_objs := ${utils_obj}/downver.o ${core_obj}/path.o \
 downver_ldflags := ${ZLIB_LDFLAGS}
 
 hlp2html := ${utils_src}/hlp2html${BINEXT}
-hlp2html_objs := ${utils_obj}/hlp2html.o ${core_obj}/util.o
+hlp2html_objs := ${utils_obj}/hlp2html.o ${core_obj}/util.o ${core_obj}/path.o
 
 hlp2txt := ${utils_src}/hlp2txt${BINEXT}
-hlp2txt_objs := ${utils_obj}/hlp2txt.o
+hlp2txt_objs := ${utils_obj}/hlp2txt.o ${core_obj}/path.o
 
 txt2hlp := ${utils_src}/txt2hlp${BINEXT}
-txt2hlp_objs := ${utils_obj}/txt2hlp.o
+txt2hlp_objs := ${utils_obj}/txt2hlp.o ${core_obj}/path.o
 
 png2smzx := ${utils_src}/png2smzx${BINEXT}
 png2smzx_objs := ${utils_obj}/png2smzx.o ${utils_obj}/smzxconv.o

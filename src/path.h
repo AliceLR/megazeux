@@ -28,11 +28,11 @@ __M_BEGIN_DECLS
 #include <stdio.h>
 #include <sys/stat.h>
 
-FILE *fopen_unsafe(const char *path, const char *mode);
-char *mzx_getcwd(char *buf, size_t size);
-int mzx_chdir(const char *path);
-int mzx_unlink(const char *path);
-int mzx_stat(const char *path, struct stat *buf);
+UTILS_LIBSPEC FILE *fopen_unsafe(const char *path, const char *mode);
+UTILS_LIBSPEC char *mzx_getcwd(char *buf, size_t size);
+UTILS_LIBSPEC int mzx_chdir(const char *path);
+UTILS_LIBSPEC int mzx_unlink(const char *path);
+UTILS_LIBSPEC int mzx_stat(const char *path, struct stat *buf);
 
 // Replace standard versions of above functions with our wrappers.
 #define getcwd(buf, size) mzx_getcwd(buf, size)
