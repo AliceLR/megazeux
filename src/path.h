@@ -32,12 +32,14 @@ UTILS_LIBSPEC FILE *fopen_unsafe(const char *path, const char *mode);
 UTILS_LIBSPEC char *mzx_getcwd(char *buf, size_t size);
 UTILS_LIBSPEC int mzx_chdir(const char *path);
 UTILS_LIBSPEC int mzx_unlink(const char *path);
+UTILS_LIBSPEC int mzx_rmdir(const char *path);
 UTILS_LIBSPEC int mzx_stat(const char *path, struct stat *buf);
 
 // Replace standard versions of above functions with our wrappers.
 #define getcwd(buf, size) mzx_getcwd(buf, size)
 #define chdir(path) mzx_chdir(path)
 #define unlink(path) mzx_unlink(path)
+#define rmdir(path) mzx_rmdir(path)
 #define stat(path, buf) mzx_stat(path, buf)
 
 // fopen() gets special treatment since we distinguish "safe" and
@@ -69,6 +71,34 @@ static inline FILE *check_fopen(const char *path, const char *mode)
 #define fopen(path, mode) fopen_unsafe(path, mode)
 
 #endif // __GNUC__
+
+#define PATH_BUF_LEN MAX_PATH
+
+enum mzx_dir_type
+{
+  DIR_TYPE_UNKNOWN,
+  DIR_TYPE_FILE,
+  DIR_TYPE_DIR
+};
+
+struct mzx_dir
+{
+#if defined(CONFIG_PSP) || defined(CONFIG_3DS)
+  char path[PATH_BUF_LEN];
+#endif
+  void *opaque;
+  long entries;
+  long pos;
+#ifdef __WIN32__
+  boolean is_wdirent;
+#endif
+};
+
+boolean dir_open(struct mzx_dir *dir, const char *path);
+void dir_close(struct mzx_dir *dir);
+void dir_seek(struct mzx_dir *dir, long offset);
+long dir_tell(struct mzx_dir *dir);
+boolean dir_get_next_entry(struct mzx_dir *dir, char *entry, int *type);
 
 __M_END_DECLS
 

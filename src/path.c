@@ -19,6 +19,7 @@
 
 #include <stdio.h>
 #include <sys/stat.h>
+#include <dirent.h>
 
 static inline FILE *_real_fopen(const char *path, const char *mode)
  { return fopen(path, mode); }
@@ -31,6 +32,9 @@ static inline int _real_chdir(const char *path)
 
 static inline int _real_unlink(const char *path)
  { return unlink(path); }
+
+static inline int _real_rmdir(const char *path)
+ { return rmdir(path); }
 
 static inline int _real_stat(const char *path, struct stat *buf)
  { return stat(path, buf); }
@@ -135,6 +139,18 @@ int mzx_unlink(const char *path)
   return _real_unlink(path);
 }
 
+int mzx_rmdir(const char *path)
+{
+#ifdef __WIN32__
+  wchar_t wpath[MAX_PATH];
+
+  if(utf8_to_utf16(path, wpath, MAX_PATH))
+    return _wrmdir(wpath);
+#endif
+
+  return _real_rmdir(path);
+}
+
 int mzx_stat(const char *path, struct stat *buf)
 {
 #ifdef __WIN32__
@@ -162,4 +178,185 @@ int mzx_stat(const char *path, struct stat *buf)
 #endif
 
   return _real_stat(path, buf);
+}
+
+static inline boolean platform_opendir(struct mzx_dir *dir, const char *path)
+{
+#ifdef __WIN32__
+  wchar_t wpath[MAX_PATH];
+  dir->is_wdirent = false;
+
+  if(utf8_to_utf16(path, wpath, MAX_PATH))
+  {
+    dir->opaque = _wopendir(wpath);
+    if(dir->opaque)
+    {
+      dir->is_wdirent = true;
+      return true;
+    }
+  }
+#endif
+
+#if defined(CONFIG_PSP) || defined(CONFIG_3DS)
+  if(dir->path != path)
+  {
+    snprintf(dir->path, PATH_BUF_LEN, "%s%c*", path,
+      path[strlen(path) - 1] != DIR_SEPARATOR_CHAR ? DIR_SEPARATOR_CHAR : 0
+    );
+  }
+#endif
+
+  dir->opaque = opendir(path);
+  return !!dir->opaque;
+}
+
+static inline void platform_closedir(struct mzx_dir *dir)
+{
+#ifdef __WIN32__
+  if(dir->is_wdirent)
+  {
+    _wclosedir(dir->opaque);
+    return;
+  }
+#endif
+
+  closedir(dir->opaque);
+}
+
+static inline boolean platform_readdir(struct mzx_dir *dir,
+ char *dest, size_t dest_len, int *type)
+{
+  struct dirent *inode;
+
+#ifdef __WIN32__
+  if(dir->is_wdirent)
+  {
+    struct _wdirent *w_inode = _wreaddir(dir->opaque);
+    if(!w_inode)
+    {
+      if(dest)
+        dest[0] = 0;
+      return false;
+    }
+
+    // Not supported by MSVC/MinGW dirent...
+    if(type)
+      *type = DIR_TYPE_UNKNOWN;
+
+    if(dest)
+      return !!utf16_to_utf8(w_inode->d_name, dest, dest_len);
+
+    return true;
+  }
+#endif
+
+  inode = readdir(dir->opaque);
+  if(!inode)
+  {
+    if(dest)
+      dest[0] = 0;
+    return false;
+  }
+
+  if(type)
+  {
+#ifdef DT_UNKNOWN
+    /* On platforms that support it, the d_type field can be used to avoid
+     * stat calls. This is critical for the file manager on embedded platforms.
+     */
+    if(inode->d_type == DT_REG)
+      *type = DIR_TYPE_FILE;
+    else
+    if(inode->d_type == DT_DIR)
+      *type = DIR_TYPE_DIR;
+    else
+      *type = DIR_TYPE_UNKNOWN;
+#else
+    *type = DIR_TYPE_UNKNOWN;
+#endif
+  }
+
+  if(dest)
+    snprintf(dest, dest_len, "%s", inode->d_name);
+
+  return true;
+}
+
+static inline boolean platform_rewinddir(struct mzx_dir *dir)
+{
+  // The Win32 functions used for UTF8 support do not support rewinding.
+  // pspdev/devkitPSP historically does not have a rewinddir implementation.
+  // libctru (3DS) has rewinddir but it doesn't work.
+#if defined(CONFIG_PSP) || defined(CONFIG_3DS)
+  dir->path[PATH_BUF_LEN - 1] = 0;
+  platform_closedir(dir);
+  if(!platform_opendir(dir, dir->path))
+    return false;
+#elif defined(__WIN32__)
+  if(dir->is_wdirent)
+    _wrewinddir(dir->opaque);
+  else
+    rewinddir(dir->opaque);
+#else
+  rewinddir(dir->opaque);
+#endif
+  return true;
+}
+
+long dir_tell(struct mzx_dir *dir)
+{
+  return dir->pos;
+}
+
+boolean dir_open(struct mzx_dir *dir, const char *path)
+{
+  if(!platform_opendir(dir, path))
+    return false;
+
+  dir->entries = 0;
+  while(platform_readdir(dir, NULL, 0, NULL))
+    dir->entries++;
+
+  if(!platform_rewinddir(dir))
+    return false;
+
+  dir->pos = 0;
+  return true;
+}
+
+void dir_close(struct mzx_dir *dir)
+{
+  if(dir->opaque)
+  {
+    platform_closedir(dir);
+    dir->opaque = NULL;
+    dir->entries = 0;
+    dir->pos = 0;
+  }
+}
+
+void dir_seek(struct mzx_dir *dir, long offset)
+{
+  long i;
+
+  if(!dir->opaque)
+    return;
+
+  dir->pos = CLAMP(offset, 0L, dir->entries);
+
+  if(!platform_rewinddir(dir))
+    return;
+
+  for(i = 0; i < dir->pos; i++)
+    platform_readdir(dir, NULL, 0, NULL);
+}
+
+boolean dir_get_next_entry(struct mzx_dir *dir, char *entry, int *type)
+{
+  if(!dir->opaque)
+    return false;
+
+  dir->pos = MIN(dir->pos + 1, dir->entries);
+
+  return platform_readdir(dir, entry, PATH_BUF_LEN, type);
 }
