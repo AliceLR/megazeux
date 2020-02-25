@@ -27,6 +27,7 @@
 #include "idarray.h"
 #include "idput.h"
 #include "robot.h"
+#include "util.h"
 #include "window.h"
 #include "world_struct.h"
 

@@ -34,6 +34,7 @@
 #include "../rasm.h"
 #include "../robot.h"
 #include "../scrdisp.h"
+#include "../util.h"
 #include "../window.h"
 
 #include "edit.h"
