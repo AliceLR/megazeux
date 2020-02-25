@@ -17,6 +17,8 @@ USERS
   correctly from this setting and instead would always reset to
   "linear". The default for this setting in config.txt has been
   corrected (the default has been "cubic" since 2.82b).
++ Fixed a ternary operator bug where the expression could break
+  with certain counter names in the middle term.
 + Added a comment to the Emscripten frontend for how to disable
   the "Click to Play" splash.
 + Fixed Emscripten frontend issues when MegaZeux is embedded in
