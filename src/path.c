@@ -223,6 +223,27 @@ static inline void platform_closedir(struct mzx_dir *dir)
   closedir(dir->opaque);
 }
 
+#ifdef DT_UNKNOWN
+/**
+ * On platforms that support it, the d_type field can be used to avoid
+ * stat calls. This is critical for the file manager on embedded platforms.
+ */
+static inline int resolve_dirent_d_type(int d_type)
+{
+  switch(d_type)
+  {
+    case DT_REG:
+      return DIR_TYPE_FILE;
+
+    case DT_DIR:
+      return DIR_TYPE_DIR;
+
+    default:
+      return DIR_TYPE_UNKNOWN;
+  }
+}
+#endif
+
 static inline boolean platform_readdir(struct mzx_dir *dir,
  char *dest, size_t dest_len, int *type)
 {
@@ -239,9 +260,14 @@ static inline boolean platform_readdir(struct mzx_dir *dir,
       return false;
     }
 
-    // Not supported by MSVC/MinGW dirent...
     if(type)
+    {
+#ifdef DT_UNKNOWN
+      *type = resolve_dirent_d_type(w_inode->d_type);
+#else
       *type = DIR_TYPE_UNKNOWN;
+#endif
+    }
 
     if(dest)
       return !!utf16_to_utf8(w_inode->d_name, dest, dest_len);
@@ -261,16 +287,7 @@ static inline boolean platform_readdir(struct mzx_dir *dir,
   if(type)
   {
 #ifdef DT_UNKNOWN
-    /* On platforms that support it, the d_type field can be used to avoid
-     * stat calls. This is critical for the file manager on embedded platforms.
-     */
-    if(inode->d_type == DT_REG)
-      *type = DIR_TYPE_FILE;
-    else
-    if(inode->d_type == DT_DIR)
-      *type = DIR_TYPE_DIR;
-    else
-      *type = DIR_TYPE_UNKNOWN;
+    *type = resolve_dirent_d_type(inode->d_type);
 #else
     *type = DIR_TYPE_UNKNOWN;
 #endif
@@ -284,7 +301,6 @@ static inline boolean platform_readdir(struct mzx_dir *dir,
 
 static inline boolean platform_rewinddir(struct mzx_dir *dir)
 {
-  // The Win32 functions used for UTF8 support do not support rewinding.
   // pspdev/devkitPSP historically does not have a rewinddir implementation.
   // libctru (3DS) has rewinddir but it doesn't work.
 #if defined(CONFIG_PSP) || defined(CONFIG_3DS)
