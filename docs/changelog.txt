@@ -51,10 +51,10 @@ DEVELOPERS
 
 + Switched from xmp_load_module to xmp_load_module_from_file.
 + Fixed various clang unused argument compiler warnings.
++ Updated MSVC dirent.h implementation to latest version.
 + Moved dir_* functions from util.c to dir.c.
 + Added Windows UTF-8 compatibility layer to vfs.c and dir.c.
-  UTF-8 support for Windows is still limited until MZX switches
-  to the vfs.c functions.
+  UTF-8 support for Windows is still limited.
 
 
 September 23rd, 2019 - MZX 2.92b
