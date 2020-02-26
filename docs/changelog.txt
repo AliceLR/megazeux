@@ -49,6 +49,8 @@ USERS
 
 DEVELOPERS
 
++ render_layer.c now disables the (unused) 64-aligned renderers
+  for 32-bit platforms and Emscripten builds.
 + Switched from xmp_load_module to xmp_load_module_from_file.
 + Fixed various clang unused argument compiler warnings.
 
