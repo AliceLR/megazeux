@@ -17,7 +17,8 @@ utils_obj = src/utils/.build
 utils_cflags := ${LIBPNG_CFLAGS} -DUTILS_LIBSPEC=
 
 checkres := ${utils_src}/checkres${BINEXT}
-checkres_objs := ${utils_obj}/checkres.o ${core_obj}/fsafeopen.o \
+checkres_objs := ${utils_obj}/checkres.o \
+                 ${core_obj}/dir.o ${core_obj}/fsafeopen.o \
                  ${core_obj}/util.o ${core_obj}/vfs.o ${core_obj}/zip.o
 checkres_ldflags := ${ZLIB_LDFLAGS}
 

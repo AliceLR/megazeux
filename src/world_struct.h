@@ -29,7 +29,7 @@ __M_BEGIN_DECLS
 #include "counter_struct.h"
 #include "sprite_struct.h"
 
-#include "util.h"
+#include "dir.h"
 #include "audio/sfx.h"
 
 enum change_game_state_value

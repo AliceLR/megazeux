@@ -25,6 +25,12 @@
 #include "vfs.h"
 //#include "zip.h"
 
+#ifdef __WIN32__
+#include "vfs_win32.h"
+#else
+#include "vfs_posix.h"
+#endif
+
 enum vfileflags
 {
   VF_FILE               = (1<<0),
@@ -110,9 +116,7 @@ vfile *vfopen_unsafe(const char *filename, const char *mode)
   // Open the vfile as a normal file.
   if(!vf)
   {
-    // TODO this is where Win32 UTF-8 support goes:
-    // TODO fp = platform_fopen(filename, mode);
-    FILE *fp = fopen_unsafe(filename, mode);
+    FILE *fp = platform_fopen_unsafe(filename, mode);
 
     if(fp)
     {
@@ -213,9 +217,8 @@ struct memfile *vfile_get_memfile(vfile *vf)
  */
 int vchdir(const char *path)
 {
-  // TODO archive detection, platform overrides, etc
-  // TODO don't use real chdir
-  return chdir(path);
+  // TODO archive detection, etc
+  return platform_chdir(path);
 }
 
 /**
@@ -224,9 +227,8 @@ int vchdir(const char *path)
  */
 char *vgetcwd(char *buf, size_t size)
 {
-  // TODO archive detection, platform overrides, etc
-  // TODO don't use real getcwd
-  return getcwd(buf, size);
+  // TODO archive detection, etc
+  return platform_getcwd(buf, size);
 }
 
 /**
@@ -235,8 +237,17 @@ char *vgetcwd(char *buf, size_t size)
  */
 int vunlink(const char *path)
 {
-  // TODO archive detection, platform overrides, etc
-  return unlink(path);
+  // TODO archive detection, cache, etc
+  return platform_unlink(path);
+}
+
+/**
+ * Remove an empty directory at a given path.
+ */
+int vrmdir(const char *path)
+{
+  // TODO archive detection, etc
+  return platform_rmdir(path);
 }
 
 /**
@@ -244,8 +255,8 @@ int vunlink(const char *path)
  */
 int vstat(const char *path, struct stat *buf)
 {
-  // TODO archive detection, platform overrides, etc
-  return stat(path, buf);
+  // TODO archive detection, cache, etc
+  return platform_stat(path, buf);
 }
 
 /**
