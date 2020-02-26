@@ -23,7 +23,6 @@
 #include "platform.h"
 #include "graphics.h"
 #include "render_layer.h"
-#include "util.h"
 
 // Skip unused variants to reduce compile time on these platforms.
 #if defined(CONFIG_WII) || defined(ANDROID) || defined(__EMSCRIPTEN__)
