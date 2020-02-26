@@ -9,11 +9,16 @@ USERS
   this allows MegaZeux to automatically attempt to decrypt
   protected worlds. For most platforms this option is disabled
   by default.
++ MegaZeux now silently ignores robots in older worlds with
+  corrupt programs that are marked unused. This fixes an error
+  message that would display when loading Wes.
 + Renamed "modplug_resample_mode" to "module_resample_mode".
   Fixed a bug where the xmp interpolation mode wouldn't be set
   correctly from this setting and instead would always reset to
   "linear". The default for this setting in config.txt has been
   corrected (the default has been "cubic" since 2.82b).
++ Fixed a ternary operator bug where the expression could break
+  with certain counter names in the middle term.
 + Added a comment to the Emscripten frontend for how to disable
   the "Click to Play" splash.
 + Fixed Emscripten frontend issues when MegaZeux is embedded in
@@ -27,9 +32,27 @@ USERS
   an error when using MZX in a private browser window.
 + Fixed a robot editor regression where certain numpad symbols
   could not be typed.
-+ Switched from xmp_load_module to xmp_load_module_from_file.
++ Added "GL4ES wrapper" to the auto_glsl blacklist.
++ checkres no longer requires zip archive filenames to end with
+  the .ZIP extension.
++ Added optional CSV output to checkres.
++ Added error to checkres for 1.xx worlds.
++ Fix checkres errors when encountering VER1TO2 empty robots.
++ ZIP support now ignores __MACOSX/, .DS_Store, and Thumbs.db.
++ Added decompression support for various legacy ZIP compression
+  methods and deflate64.
++ The Emscripten frontend now falls back to a wrapper for MZX's
+  internal ZIP support when UZIP fails to extract an archive.
++ Fixed IndexedDB support for legacy Edge versions. (asie)
 - Removed the options "overlay1" and "overlay2" from the list of
   selectable renderer options except when SDL 1.2 is enabled.
+
+DEVELOPERS
+
++ render_layer.c now disables the (unused) 64-aligned renderers
+  for 32-bit platforms and Emscripten builds.
++ Switched from xmp_load_module to xmp_load_module_from_file.
++ Fixed various clang unused argument compiler warnings.
 
 
 September 23rd, 2019 - MZX 2.92b

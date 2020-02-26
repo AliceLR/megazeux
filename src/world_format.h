@@ -81,6 +81,14 @@ static inline int __fprop_cmp(const void *a, const void *b)
           (ap!=bp) ? (ap-bp) : (int)A->mzx_robot_id - (int)B->mzx_robot_id;
 }
 
+static inline boolean compression_method_allowed(uint16_t method)
+{
+  // Only store and deflate are supported universally in all MZX builds;
+  // any other decompressors may be disabled for platforms that don't use them.
+  // Thus, any file in an MZX/etc that doesn't use store or deflate is invalid.
+  return (method == ZIP_M_NONE) || (method == ZIP_M_DEFLATE);
+}
+
 static inline void assign_fprops_parse_board(char *next, unsigned int *_file_id,
  unsigned int *_board_id, unsigned int *_robot_id)
 {
@@ -222,6 +230,13 @@ static inline void assign_fprops(struct zip_archive *zp, int not_a_world)
       file_id = 0;
       robot_id = 0;
 
+      if(!compression_method_allowed(fh->method))
+      {
+        fh->mzx_prop_id = FPROP_NONE;
+        continue;
+      }
+      else
+
       if(next[0] == 'r')
       {
         // Shorthand for robot on board 0
@@ -263,6 +278,13 @@ static inline void assign_fprops(struct zip_archive *zp, int not_a_world)
       file_id = 0;
       board_id = 0;
       robot_id = 0;
+
+      if(!compression_method_allowed(fh->method))
+      {
+        fh->mzx_prop_id = FPROP_NONE;
+        continue;
+      }
+      else
 
       if(next[0] == 'b')
       {

@@ -62,6 +62,8 @@
  " -v   Display all references with sfx#, board#, robot#.\n"                \
  " -vv  Display all references with sfx#, board#, robot#, line#, coords.\n" \
  " -1   Display unique filenames, one per line, with no other info.\n"      \
+ "\nOutput options:\n" \
+ " -V   Output CSV instead of preformatted text.\n"                         \
  "\nSorting options:\n" \
  " -N   Sort by referenced filename, then by location (default).\n"         \
  " -L   Sort by location of reference: world, board#, robot#.\n"            \
@@ -144,6 +146,9 @@ static boolean display_first_only = true;
 static boolean display_details = false;
 static boolean display_all_details = false;
 
+// Output format options
+static boolean output_format_csv = false;
+
 static enum
 {
   SORT_BY_LOCATION,
@@ -164,6 +169,7 @@ enum status
   MALLOC_FAILED,
   PROTECTED_WORLD,
   MAGIC_CHECK_FAILED,
+  MZX_100_NOT_SUPPORTED,
   DIRENT_FAILED,
   ZIP_FAILED,
   NO_WORLD,
@@ -209,6 +215,8 @@ static const char *decode_status(enum status status)
       return "Protected worlds currently unsupported.";
     case MAGIC_CHECK_FAILED:
       return "File magic not consistent with 2.00 world or board.";
+    case MZX_100_NOT_SUPPORTED:
+      return "Worlds from MegaZeux 1.xx are not supported by this utility.";
     case DIRENT_FAILED:
       return "Failed to read a required directory.";
     case ZIP_FAILED:
@@ -653,7 +661,7 @@ static int started_table = 0;
 static int parent_max_len = PARENT_DEFAULT_LEN;
 static int resource_max_len = RESOURCE_DEFAULT_LEN;
 
-static void output(const char *required_by,
+static void output_preformatted(const char *required_by,
  int board_num, int robot_num, int line_num,
  const char *resource_path, const char *status, const char *found_in)
 {
@@ -742,13 +750,119 @@ static void output(const char *required_by,
      found_in
     );
   }
-  else
+}
+
+static void output_csv(const char *required_by,
+ int board_num, int robot_num, int line_num,
+ const char *resource_path, const char *status, const char *found_in)
+{
+  // TODO add proper escaping for the filenames.
+  found_in = found_in ? found_in : "";
+
+  if(!started_table)
+  {
+    fprintf(stdout, "Required by,");
+    if(display_details)
+    {
+      fprintf(stdout, "Board #,Robot #,");
+      if(display_all_details)
+        fprintf(stdout, "Line,Position,");
+    }
+    fprintf(stdout, "Expected file,Status,Found in\n");
+
+    started_table = 1;
+  }
+
+  fprintf(stdout, "%s,", required_by);
+
+  if(display_details)
+  {
+    const char *filler = display_all_details ? ",," : "";
+
+    if(board_num == DONT_PRINT)
+    {
+      fprintf(stdout, ",,%s", filler);
+    }
+    else
+
+    if(board_num == IS_SFX)
+    {
+      fprintf(stdout, "sfx,%d,%s", robot_num, filler);
+    }
+    else
+
+    if(robot_num > 0)
+    {
+      if(display_all_details)
+      {
+        fprintf(stdout, "b%d,r%d,%d,\"(%d,%d)\",",
+          board_num, robot_num, line_num,
+          robot_xpos[(unsigned char)robot_num],
+          robot_ypos[(unsigned char)robot_num]
+        );
+      }
+      else
+        fprintf(stdout, "b%d,r%d,", board_num, robot_num);
+    }
+    else
+
+    if(board_num == NO_BOARD && robot_num == GLOBAL_ROBOT)
+    {
+      if(display_all_details)
+      {
+        fprintf(stdout, ",gl,%d,\"(-1,-1)\",", line_num);
+      }
+      else
+        fprintf(stdout, ",gl,");
+    }
+    else
+
+    if(robot_num == IS_BOARD_MOD)
+    {
+      fprintf(stdout, "b%d,mod,%s", board_num, filler);
+    }
+    else
+
+    if(robot_num == IS_BOARD_CHARSET)
+    {
+      fprintf(stdout, "b%d,chr,%s", board_num, filler);
+    }
+    else
+
+    if(robot_num == IS_BOARD_PALETTE)
+    {
+      fprintf(stdout, "b%d,pal,%s", board_num, filler);
+    }
+    else
+      fprintf(stdout, "(unknown),,%s", filler);
+  }
+
+  fprintf(stdout, "%s,%s,%s\n", resource_path, status, found_in);
+}
+
+static void output(const char *required_by,
+ int board_num, int robot_num, int line_num,
+ const char *resource_path, const char *status, const char *found_in)
+{
+  if(display_filename_only)
   {
     // Quiet mode- just print the resource paths
     fprintf(stdout, "%s\n", resource_path);
   }
-}
+  else
 
+  if(output_format_csv)
+  {
+    output_csv(required_by, board_num, robot_num, line_num, resource_path,
+     status, found_in);
+  }
+
+  else
+  {
+    output_preformatted(required_by, board_num, robot_num, line_num,
+     resource_path, status, found_in);
+  }
+}
 
 /*******************/
 /* Data processing */
@@ -1003,15 +1117,21 @@ static void change_base_path_dir(struct base_path *current_path,
 static struct base_path *add_base_path(const char *path_name,
  struct base_path ***path_list, int *path_list_size, int *path_list_alloc)
 {
-  struct base_path *new_path = ccalloc(1, sizeof(struct base_path));
+  struct stat st;
+  struct base_path *new_path;
   int alloc = *path_list_alloc;
   int size = *path_list_size;
 
   size_t path_name_len = strlen(path_name);
-  const char *ext = path_name_len >= 4 ? path_name + path_name_len - 4 : NULL;
 
-  if(ext && !strcasecmp(ext, ".ZIP"))
+  if(stat(path_name, &st))
+    return NULL;
+
+  new_path = ccalloc(1, sizeof(struct base_path));
+
+  if(S_ISREG(st.st_mode))
   {
+    // Attempt to open the path as a zip archive.
     struct zip_archive *zp = zip_open_file_read(path_name);
 
     if(!zp)
@@ -1024,13 +1144,21 @@ static struct base_path *add_base_path(const char *path_name,
     new_path->zp = zp;
   }
   else
+
+  if(S_ISDIR(st.st_mode))
   {
+    // Attempt to recursively build a file list of this directory's contents.
     if(!path_search(path_name, path_name_len, MAX_PATH_DEPTH,
      (void *)new_path, add_base_path_file_wr))
     {
       free(new_path);
       return NULL;
     }
+  }
+  else
+  {
+    free(new_path);
+    return NULL;
   }
 
   snprintf(new_path->actual_path, MAX_PATH, "%s", path_name);
@@ -1973,6 +2101,7 @@ static enum status parse_legacy_robot(struct memfile *mf,
   struct memfile prog;
 
   enum status ret = SUCCESS;
+  boolean used = false;
 
   // program_length (2),
   program_size = mfgetw(mf);
@@ -1981,15 +2110,32 @@ static enum status parse_legacy_robot(struct memfile *mf,
   // cur_prog_line (2), pos_within_line (1), robot_cycle (1), cycle_count (1),
   // bullet_type (1), is_locked (1), can_lavawalk (1), walk_dir (1),
   // last_touch_dir (1), last_shot_dir (1), xpos (2), ypos (2),
-  // status (1), blank (2), used (1), loop_count (2),
-  if(mfseek(mf, 41 - 2, SEEK_CUR) != 0)
+  // status (1), legacy local1 (2),
+  if(mfseek(mf, 41 - 5, SEEK_CUR) != 0)
     return FSEEK_FAILED;
 
-  if(program_size)
+  // used (1),
+  used = !!mfgetc(mf);
+
+  // legacy loop_count (2),
+  if(mfseek(mf, 2, SEEK_CUR) != 0)
+    return FSEEK_FAILED;
+
+  // VER1TO2 worlds (e.g. Forest, Catacombs) sometimes have invalid programs
+  // of size 2. It's safe to just ignore anything of size 2 or less.
+  if(program_size > 2)
   {
     mfopen(mf->current, program_size, &prog);
 
     ret = parse_legacy_bytecode(&prog, program_size, file, board_num, robot_num);
+
+    // Ignore errors on unused robots since these don't really matter.
+    // This includes the global robots in Slave Pit and Wes.
+    if(ret && !used)
+    {
+      warn("Unused robot with corruption detected (this is safe to ignore).\n");
+      ret = SUCCESS;
+    }
   }
 
   mfseek(mf, program_size, SEEK_CUR);
@@ -2580,6 +2726,9 @@ static enum status parse_world_file(struct memfile *mf, struct base_file *file)
   if(file_version <= 0)
     return MAGIC_CHECK_FAILED;
 
+  if(file_version < V200)
+    return MZX_100_NOT_SUPPORTED;
+
   file->world_version = file_version;
 
   if(file_version <= MZX_LEGACY_FORMAT_VERSION)
@@ -2668,8 +2817,9 @@ static enum status parse_file(const char *file_name,
   }
   else
 
-  if(fp && ext && !strcasecmp(ext, ".ZIP"))
+  if(fp)
   {
+    // Is a file but isn't an .mzx or an .mzb? Try to read it as a zip...
     struct base_path *zip_base;
     struct zip_archive *zp;
 
@@ -2685,7 +2835,7 @@ static enum status parse_file(const char *file_name,
      &path_list_size, &path_list_alloc);
 
     if(!zip_base)
-      return ZIP_FAILED;
+      goto error;
 
     zp = zip_base->zp;
 
@@ -2794,10 +2944,10 @@ static enum status parse_file(const char *file_name,
 
   else
   {
-    if(fp) fclose(fp);
+error:
     fprintf(stderr,
-      "'%s' is not a .MZX (world), .MZB (board),"
-      "directory containing .MZX/.MZB files, or .ZIP (archive) file.\n",
+      "'%s' is not a .MZX (world), a .MZB (board), "
+      "a directory containing .MZX/.MZB files, or a ZIP archive.\n",
       file_name
     );
     return INVALID_ARGUMENTS;
@@ -2808,7 +2958,7 @@ static enum status parse_file(const char *file_name,
   clear_data(path_list, path_list_size,
    file_list, file_list_size);
 
-  if(!display_filename_only)
+  if(!display_filename_only && !output_format_csv)
    fprintf(stdout, "\nFinished processing '%s'.\n\n", file_name);
 
   fflush(stdout);
@@ -3009,6 +3159,10 @@ int main(int argc, char *argv[])
             display_filename_only = true;
             display_details = false;
             display_all_details = false;
+            break;
+
+          case 'V':
+            output_format_csv = true;
             break;
 
           case 'L':

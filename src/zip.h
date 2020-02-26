@@ -32,7 +32,11 @@ __M_BEGIN_DECLS
 #include "memfile.h"
 #include "vfs.h"
 
-// Currently supported methods are 0 (Store) and 8 (DEFLATE)
+/**
+ * Methods universally supported by MZX are 0 (store) and 8 (Deflate).
+ * Emscripten and utils builds also enable decompressors for 1 (Shrink),
+ * 2-5 (Reduce), 6 (Implode), and 9 (Deflate64).
+ */
 enum zip_compression_method
 {
   ZIP_M_NONE                    = 0, // Store
@@ -62,15 +66,15 @@ enum zip_general_purpose_flag
   ZIP_F_ENHANCED_DEFLATE    = (1<<4), // Reserved for Deflate64.
   ZIP_F_COMPRESSED_PATCHED  = (1<<5), // ?????
   ZIP_F_STRONG_ENCRYPTION   = (1<<6), // Indicates strong encryption is used.
-  // bit 07 unused
-  // bit 08 unused
-  // bit 09 unused
-  // bit 10 unused
+  ZIP_F_UNUSED_7            = (1<<7),
+  ZIP_F_UNUSED_8            = (1<<8),
+  ZIP_F_UNUSED_9            = (1<<9),
+  ZIP_F_UNUSED_10           = (1<<10),
   ZIP_F_LANGUAGE_ENCODING   = (1<<11), // Indicates UTF-8 filename/comments.
-  // bit 12 reserved
+  ZIP_F_UNUSED_12           = (1<<12),
   ZIP_F_MASKED_HEADER_DATA  = (1<<13), // See: strong encryption.
-  // bit 14 reserved
-  // bit 15 reserved
+  ZIP_F_UNUSED_14           = (1<<14),
+  ZIP_F_UNUSED_15           = (1<<15)
 };
 
 // These flags are allowed for all DEFLATE and stored files we care about.
@@ -79,9 +83,28 @@ enum zip_general_purpose_flag
   ZIP_F_COMPRESSION_1   |\
   ZIP_F_COMPRESSION_2   )
 
+// Some ancient archives from unknown sources seem to have set the unused
+// flags in places. These should be safe to ignore.
+#define ZIP_F_UNUSED (ZIP_F_UNUSED_7 | ZIP_F_UNUSED_8 | ZIP_F_UNUSED_9 |\
+ ZIP_F_UNUSED_10 | ZIP_F_UNUSED_12 | ZIP_F_UNUSED_14 | ZIP_F_UNUSED_15)
+
+enum zip_internal_state
+{
+  ZIP_S_READ_UNINITIALIZED,
+  ZIP_S_READ_FILES,
+  ZIP_S_READ_STREAM,
+  ZIP_S_READ_MEMSTREAM,
+  ZIP_S_WRITE_UNINITIALIZED,
+  ZIP_S_WRITE_FILES,
+  ZIP_S_WRITE_STREAM,
+  ZIP_S_WRITE_MEMSTREAM,
+  ZIP_S_ERROR,
+};
+
 enum zip_error
 {
   ZIP_SUCCESS = 0,
+  ZIP_IGNORE_FILE,
   ZIP_EOF,
   ZIP_NULL,
   ZIP_NULL_BUF,
@@ -102,15 +125,22 @@ enum zip_error
   ZIP_INCOMPLETE_CENTRAL_DIRECTORY,
   ZIP_UNSUPPORTED_MULTIPLE_DISKS,
   ZIP_UNSUPPORTED_FLAGS,
+  ZIP_UNSUPPORTED_DECOMPRESSION,
   ZIP_UNSUPPORTED_COMPRESSION,
+  ZIP_UNSUPPORTED_DECOMPRESSION_STREAM,
+  ZIP_UNSUPPORTED_COMPRESSION_STREAM,
+  ZIP_UNSUPPORTED_METHOD_MEMORY_STREAM,
   ZIP_UNSUPPORTED_ZIP64,
-  ZIP_UNSUPPORTED_DEFLATE_STREAM,
   ZIP_MISSING_LOCAL_HEADER,
   ZIP_HEADER_MISMATCH,
   ZIP_CRC32_MISMATCH,
-  ZIP_INFLATE_FAILED,
-  ZIP_DEFLATE_FAILED,
+  ZIP_DECOMPRESS_FAILED,
+  ZIP_COMPRESS_FAILED,
+  ZIP_INPUT_EMPTY,
+  ZIP_OUTPUT_FULL,
 };
+
+#include "zip/zip_stream.h"
 
 struct zip_file_header
 {
@@ -158,9 +188,13 @@ struct zip_archive
   boolean is_memory;
   void **external_buffer;
   size_t *external_buffer_size;
+
+  struct zip_method_handler *stream;
+  struct zip_stream_data stream_data;
+  uint8_t padding[ZIP_STREAM_DATA_PADDING];
 };
 
-UTILS_LIBSPEC int zip_bound_data_usage(char *src, int srcLen);
+UTILS_LIBSPEC int zip_bound_deflate_usage(size_t length);
 UTILS_LIBSPEC int zip_bound_total_header_usage(int num_files, int max_name_size);
 
 UTILS_LIBSPEC enum zip_error zread(void *destBuf, size_t readLen,

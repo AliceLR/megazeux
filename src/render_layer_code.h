@@ -28,10 +28,21 @@
 
 #ifndef RENDERER_BPP
 
-#define CONCAT(a,b,c,d,e,f,g,h,i,j,k,l,m) a ## b ## c ## d ## e ## f ## g ## h ## i ## j ## k ## l ## m
-#define RENDER_FUNCTION_NAME(b, t, a, s, c, p) CONCAT(render_func_, b, bpp_, t, trans_, a, align_, s, smzx_, c, clip_, p, ppal)
+#include "platform_endian.h"
+
+#define CONCAT(a,b,c,d,e,f,g,h,i,j,k,l,m) \
+ a ## b ## c ## d ## e ## f ## g ## h ## i ## j ## k ## l ## m
+#define RENDER_FUNCTION_NAME(b, t, a, s, c, p) \
+ CONCAT(render_func_, b, bpp_, t, trans_, a, align_, s, smzx_, c, clip_, p, ppal)
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
+
+/**
+ * Renderer bits-per-pixel (8, 16, or 32).
+ * Sets of renderers for lower bpps are larger since they try to support more
+ * alignment options, so several platforms disable them altogether to reduce
+ * executable size and/or compilation time.
+ */
 
 #ifndef SKIP_8BPP
 #define RENDERER_BPP  8
@@ -85,6 +96,9 @@ static inline void RENDER_FUNCTION_NAME(X, X, X, X, X, X) (void *pixels,
 
 #else /* RENDERER_BPP */
 
+/**
+ * Layer transparency enabled (1) or disabled (0).
+ */
 
 #ifndef RENDERER_TR
 
@@ -97,31 +111,43 @@ static inline void RENDER_FUNCTION_NAME(X, X, X, X, X, X) (void *pixels,
 #undef RENDERER_TR
 
 static inline void RENDER_FUNCTION_NAME(RENDERER_BPP, X, X, X, X, X)
- (void *pixels, Uint32 pitch, struct graphics_data *graphics, struct video_layer *layer,
- int ppal, int clip, int smzx, int align, int trans)
+ (void *pixels, Uint32 pitch, struct graphics_data *graphics,
+ struct video_layer *layer, int ppal, int clip, int smzx, int align, int trans)
 {
-  switch (trans) {
+  switch(trans)
+  {
     case 0:
       RENDER_FUNCTION_NAME(RENDERER_BPP, 0, X, X, X, X)
        (pixels, pitch, graphics, layer, ppal, clip, smzx, align);
       break;
+
     case 1:
       RENDER_FUNCTION_NAME(RENDERER_BPP, 1, X, X, X, X)
        (pixels, pitch, graphics, layer, ppal, clip, smzx, align);
       break;
+
     default:
-      fprintf(stderr, "INVALID RENDERER ARG trans=%d\n", trans); exit(1);
+      fprintf(stderr, "INVALID RENDERER ARG trans=%d\n", trans);
+      exit(1);
       break;
   }
 }
 
 #else /* RENDERER_TR */
 
+/**
+ * Alignment of pixel buffer.
+ * This always must be >= the current renderer's bits-per-pixel.
+ */
+
 #ifndef RENDERER_ALIGN
 
+#if ARCHITECTURE_BITS >= 64 && !defined(SKIP_64_ALIGN)
 #define RENDERER_ALIGN  64
 #include "render_layer_code.h"
 #undef RENDERER_ALIGN
+#endif /* ARCHITECTURE_BITS >= 64 */
+
 #if RENDERER_BPP <= 32
 #define RENDERER_ALIGN  32
 #include "render_layer_code.h"
@@ -139,41 +165,52 @@ static inline void RENDER_FUNCTION_NAME(RENDERER_BPP, X, X, X, X, X)
 #endif /* RENDERER_BPP <= 32 */
 
 static inline void RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, X, X, X, X)
- (void *pixels, Uint32 pitch, struct graphics_data *graphics, struct video_layer *layer,
- int ppal, int clip, int smzx, int align)
+ (void *pixels, Uint32 pitch, struct graphics_data *graphics,
+ struct video_layer *layer, int ppal, int clip, int smzx, int align)
 {
-  // Align < BPP is not permitted
-  switch (align) {
+  switch(align)
+  {
+#if ARCHITECTURE_BITS >= 64 && !defined(SKIP_64_ALIGN)
     case 64:
       RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, 64, X, X, X)
        (pixels, pitch, graphics, layer, ppal, clip, smzx);
       break;
-    #if RENDERER_BPP <= 32
+#endif /* ARCHITECTURE_BITS >= 64 */
+
+#if RENDERER_BPP <= 32
     case 32:
       RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, 32, X, X, X)
        (pixels, pitch, graphics, layer, ppal, clip, smzx);
       break;
-    #if RENDERER_BPP <= 16
+
+#if RENDERER_BPP <= 16
     case 16:
       RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, 16, X, X, X)
        (pixels, pitch, graphics, layer, ppal, clip, smzx);
       break;
-    #if RENDERER_BPP <= 8
+
+#if RENDERER_BPP <= 8
     case 8:
       RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, 8, X, X, X)
        (pixels, pitch, graphics, layer, ppal, clip, smzx);
       break;
-    #endif /* RENDERER_BPP <= 8 */
-    #endif /* RENDERER_BPP <= 16 */
-    #endif /* RENDERER_BPP <= 32 */
+#endif /* RENDERER_BPP <= 8 */
+#endif /* RENDERER_BPP <= 16 */
+#endif /* RENDERER_BPP <= 32 */
+
     default:
-      fprintf(stderr, "INVALID RENDERER ARG align=%d bpp=%d\n", align, RENDERER_BPP); exit(1);
+      fprintf(stderr, "INVALID RENDERER ARG align=%d bpp=%d\n",
+       align, RENDERER_BPP);
+      exit(1);
       break;
   }
 }
 
 #else /* RENDERER_ALIGN */
 
+/**
+ * Renderer is SMZX (1) or normal MZX (0).
+ */
 
 #ifndef RENDERER_SMZX
 
@@ -186,27 +223,35 @@ static inline void RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, X, X, X, X)
 #undef RENDERER_SMZX
 
 static inline void RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, RENDERER_ALIGN, X, X, X)
- (void *pixels, Uint32 pitch, struct graphics_data *graphics, struct video_layer *layer,
- int ppal, int clip, int smzx)
+ (void *pixels, Uint32 pitch, struct graphics_data *graphics,
+ struct video_layer *layer, int ppal, int clip, int smzx)
 {
-  switch (smzx) {
+  switch(smzx)
+  {
     case 0:
       RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, RENDERER_ALIGN, 0, X, X)
        (pixels, pitch, graphics, layer, ppal, clip);
       break;
+
     case 1:
     case 2:
     case 3:
       RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, RENDERER_ALIGN, 1, X, X)
        (pixels, pitch, graphics, layer, ppal, clip);
       break;
+
     default:
-      fprintf(stderr, "INVALID RENDERER ARG smzx=%d\n", smzx); exit(1);
+      fprintf(stderr, "INVALID RENDERER ARG smzx=%d\n", smzx);
+      exit(1);
       break;
   }
 }
 
 #else /* RENDERER_SMZX */
+
+/**
+ * Renderer should clip the layer at the screen boundaries (1) or not (0).
+ */
 
 #ifndef RENDERER_CLIP
 
@@ -219,25 +264,35 @@ static inline void RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, RENDERER_ALIG
 #undef RENDERER_CLIP
 
 static inline void RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, RENDERER_ALIGN, RENDERER_SMZX, X, X)
- (void *pixels, Uint32 pitch, struct graphics_data *graphics, struct video_layer *layer,
- int ppal, int clip)
+ (void *pixels, Uint32 pitch, struct graphics_data *graphics,
+ struct video_layer *layer, int ppal, int clip)
 {
-  switch (clip) {
+  switch(clip)
+  {
     case 0:
       RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, RENDERER_ALIGN, RENDERER_SMZX, 0, X)
        (pixels, pitch, graphics, layer, ppal);
       break;
+
     case 1:
       RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, RENDERER_ALIGN, RENDERER_SMZX, 1, X)
        (pixels, pitch, graphics, layer, ppal);
       break;
+
     default:
-      fprintf(stderr, "INVALID RENDERER ARG clip=%d\n", clip); exit(1);
+      fprintf(stderr, "INVALID RENDERER ARG clip=%d\n", clip);
+      exit(1);
       break;
   }
 }
 
 #else /* RENDERER_CLIP */
+
+/**
+ * Protected palette offset is 16 or 256.
+ * This doesn't necessarily correspond to the current SMZX mode, since layers
+ * can be drawn in normal mode while SMZX is technically enabled.
+ */
 
 #ifndef RENDERER_PPAL
 
@@ -250,20 +305,24 @@ static inline void RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, RENDERER_ALIG
 #undef RENDERER_PPAL
 
 static inline void RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, RENDERER_ALIGN, RENDERER_SMZX, RENDERER_CLIP, X)
- (void *pixels, Uint32 pitch, struct graphics_data *graphics, struct video_layer *layer,
- int ppal)
+ (void *pixels, Uint32 pitch, struct graphics_data *graphics,
+ struct video_layer *layer, int ppal)
 {
-  switch (ppal) {
+  switch(ppal)
+  {
     case 256:
       RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, RENDERER_ALIGN, RENDERER_SMZX, RENDERER_CLIP, 256)
        (pixels, pitch, graphics, layer);
       break;
+
     case 16:
       RENDER_FUNCTION_NAME(RENDERER_BPP, RENDERER_TR, RENDERER_ALIGN, RENDERER_SMZX, RENDERER_CLIP, 16)
        (pixels, pitch, graphics, layer);
       break;
+
     default:
-      fprintf(stderr, "INVALID RENDERER ARG ppal=%d\n", ppal); exit(1);
+      fprintf(stderr, "INVALID RENDERER ARG ppal=%d\n", ppal);
+      exit(1);
       break;
   }
 }

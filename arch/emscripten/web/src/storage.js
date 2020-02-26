@@ -19,6 +19,7 @@
  */
 
 import { getIndexedDB, getLocalStorage, drawErrorMessage, xhrFetchAsArrayBuffer } from "./util";
+import { zip } from "./zip.js";
 
 function filterKeys(list, filter) {
 	if (filter == null) return list;
@@ -249,12 +250,35 @@ class IndexedDbBackedAsyncStorage {
 	list(filter) {
 		const transaction = this.database.transaction(["files"], "readonly");
 		return new Promise((resolve, reject) => {
-			const request = transaction.objectStore("files").getAllKeys();
-			request.onsuccess = event => {
-				resolve(filterKeys(request.result, filter));
-			}
-			request.onerror = event => {
-				resolve([]);
+			const store = transaction.objectStore("files");
+			if (typeof store.getAllKeys === 'function') {
+				const request = store.getAllKeys();
+				request.onsuccess = event => {
+					resolve(filterKeys(request.result, filter));
+				}
+				request.onerror = event => {
+					resolve([]);
+				}
+			} else {
+				var result = [];
+				var request;
+				if (typeof store.openKeyCursor === 'function') {
+					request = store.openKeyCursor();
+				} else {
+					request = store.openCursor();
+				}
+				request.onsuccess = event => {
+					var cursor = event.target.result;
+					if (cursor) {
+						result.push(cursor.key);
+						cursor.continue();
+					} else {
+						resolve(filterKeys(result, filter));
+					}
+				}
+				request.onerror = event => {
+					resolve(result);
+				}
 			}
 		});
 	}
@@ -321,9 +345,12 @@ export function createZipStorage(url, options, progressCallback) {
 			let files;
 			let fileMap = {};
 
-			try {
-				files = UZIP.parse(xhr.response);
-			} catch (e) {
+			try
+			{
+				files = zip.extract(xhr.response);
+			}
+			catch(e)
+			{
 				reject(e);
 				return;
 			}

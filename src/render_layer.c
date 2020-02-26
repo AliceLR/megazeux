@@ -23,12 +23,17 @@
 #include "platform.h"
 #include "graphics.h"
 #include "render_layer.h"
-#include "util.h"
 
 // Skip unused variants to reduce compile time on these platforms.
 #if defined(CONFIG_WII) || defined(ANDROID) || defined(__EMSCRIPTEN__) || defined(CONFIG_PSVITA)
 #define SKIP_8BPP
 #define SKIP_16BPP
+#endif
+
+// Not exactly clear how much Emscripten benefits from these and they're
+// doubling the number of renderers.
+#if defined(__EMSCRIPTEN__)
+#define SKIP_64_ALIGN
 #endif
 
 #include "render_layer_code.h"
@@ -203,11 +208,13 @@ void render_layer(void *pixels, int force_bpp, Uint32 pitch,
   drawStart =
    (size_t)((char *)pixels + layer->y * pitch + (layer->x * force_bpp / 8));
 
+#ifndef SKIP_64_ALIGN
   if((sizeof(size_t) >= sizeof(Uint64)) && ((drawStart % sizeof(Uint64)) == 0))
   {
     align = 64;
   }
   else
+#endif
 
   if((sizeof(size_t) >= sizeof(Uint32)) && ((drawStart % sizeof(Uint32)) == 0))
   {

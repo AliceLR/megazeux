@@ -635,7 +635,6 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
   unsigned char r, g, b;
   struct counter_list *counter_list;
   struct string_list *string_list;
-  struct board *cur_board;
   unsigned int *board_offsets;
   unsigned int *board_sizes;
 
@@ -1003,18 +1002,14 @@ void legacy_load_world(struct world *mzx_world, FILE *fp, const char *file,
   fseek(fp, board_names_pos, SEEK_SET);
   for(i = 0; i < num_boards; i++)
   {
-    cur_board = mzx_world->board_list[i];
-    // Look at the name, width, and height of the just loaded board
-    if(cur_board)
-    {
-      if(!fread(cur_board->board_name, BOARD_NAME_SIZE, 1, fp))
-        cur_board->board_name[0] = 0;
-    }
-    else
-    {
-      char ignore[BOARD_NAME_SIZE];
-      fread(ignore, BOARD_NAME_SIZE, 1, fp);
-    }
+    char ignore[BOARD_NAME_SIZE];
+    char *board_name = ignore;
+
+    if(mzx_world->board_list[i])
+      board_name = mzx_world->board_list[i]->board_name;
+
+    if(!fread(board_name, BOARD_NAME_SIZE, 1, fp))
+      board_name[0] = 0;
   }
 
   meter_update_screen(&meter_curr, meter_target);

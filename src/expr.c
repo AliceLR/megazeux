@@ -55,6 +55,191 @@ enum op
   OP_TERNARY
 };
 
+#ifdef CONFIG_DEBYTECODE
+// Forward declaration for recursion...
+static inline char *skip_identifier(char *expression, char terminator);
+
+/**
+ * Skip string interpolation brackets.
+ */
+static inline char *skip_string_interpolation(char *expression)
+{
+  char current_char;
+
+  while(1)
+  {
+    current_char = *expression;
+    expression++;
+
+    if(current_char == '\0')
+    {
+      return expression - 1;
+    }
+    else
+
+    if(current_char == '>')
+    {
+      break;
+    }
+    else
+
+    if(current_char == '`')
+    {
+      expression = skip_identifier(expression, current_char);
+    }
+  }
+  return expression;
+}
+#endif
+
+/**
+ * Skip an expression wrapped in parentheses.
+ */
+static inline char *skip_expression(char *expression)
+{
+  char current_char;
+  int level = 0;
+
+  while(1)
+  {
+    current_char = *expression;
+    expression++;
+
+    if(current_char == '\0')
+    {
+      return expression - 1;
+    }
+    else
+
+    if(current_char == '(')
+    {
+      level++;
+    }
+    else
+
+    if(current_char == ')')
+    {
+      if(level <= 0)
+        break;
+
+      level--;
+    }
+  }
+  return expression;
+}
+
+/**
+ * Skip an identifier.
+ */
+static inline char *skip_identifier(char *expression, char terminator)
+{
+  char current_char;
+
+  while(1)
+  {
+    current_char = *expression;
+    expression++;
+
+    if(current_char == '\0')
+    {
+      return expression - 1;
+    }
+    else
+
+    if(current_char == '(')
+    {
+      expression = skip_expression(expression);
+    }
+    else
+
+#ifdef CONFIG_DEBYTECODE
+    if(current_char == '<')
+    {
+      expression = skip_string_interpolation(expression);
+    }
+    else
+#endif
+
+    if(current_char == terminator)
+      break;
+  }
+  return expression;
+}
+
+/**
+ * Parse the current expression level until the terminator is found, skipping
+ * the contents of identifiers and nested expressions. If the terminator char
+ * is not found, returns false. This is pretty dumb, but still faster than
+ * actually running the expression.
+ */
+static inline boolean ternary_short_circuit(char **_expression, char terminator,
+ int *error)
+{
+  char *expression = *_expression;
+  char current_char;
+  int ternary_level = 0;
+
+  while(1)
+  {
+    current_char = *expression;
+    expression++;
+
+    // Only allow termination if a nested ternary expression hasn't started...
+    if(current_char == terminator && !ternary_level)
+    {
+      *_expression = expression;
+      return true;
+    }
+
+    if(current_char == '\0')
+    {
+      break;
+    }
+    else
+
+    if(current_char == '(')
+    {
+      expression = skip_expression(expression);
+    }
+    else
+
+    if(current_char == ')')
+    {
+      break;
+    }
+    else
+
+    if(current_char == '?')
+    {
+      ternary_level++;
+    }
+    else
+
+    if(current_char == ':')
+    {
+      if(ternary_level <= 0)
+        break;
+
+      ternary_level--;
+    }
+    else
+
+    // The main concern here is reserved chars being found in identifiers.
+    // The affected identifiers should always have quotes, though.
+#ifdef CONFIG_DEBYTECODE
+    if(current_char == '`')
+#else
+    if(current_char == '&' || current_char == '\'')
+#endif
+    {
+      expression = skip_identifier(expression, current_char);
+    }
+  }
+  if(error)
+    *error = 2;
+  return false;
+}
+
 #ifndef CONFIG_DEBYTECODE
 
 /* This new expression parser for legacy Robotic is faster than the older
@@ -617,55 +802,9 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
         // False - seek next ':'
         else
         {
-          int paren_level = 0;
-          int ternary_level = 0;
-          while(1)
-          {
-            current_char = *expression;
-            expression++;
+          if(!ternary_short_circuit(&expression, ':', error))
+            goto err_out;
 
-            if(current_char == '\0')
-            {
-              *error = 2;
-              goto err_out;
-            }
-            else
-
-            if(current_char == '(')
-            {
-              paren_level++;
-            }
-            else
-
-            if(current_char == ')')
-            {
-              if(paren_level <= 0)
-              {
-                *error = 2;
-                goto err_out;
-              }
-              paren_level--;
-            }
-            else
-
-            if(current_char == '?')
-            {
-              if(paren_level == 0)
-                ternary_level++;
-            }
-            else
-
-            if(current_char == ':')
-            {
-              if(paren_level == 0)
-              {
-                if(ternary_level <= 0)
-                  break;
-
-                ternary_level--;
-              }
-            }
-          }
           // Preserve ternary middle state in case these are nested
           state = state & EXPR_STATE_TERNARY_MIDDLE;
         }
@@ -679,7 +818,6 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
       {
         int value = operand_a;
         int ternary_level = 0;
-        int paren_level = 0;
 
         if(mzx_world->version < V290)
           goto err_out;
@@ -706,13 +844,13 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
           else
 
           // Validate ternary operators while we're at it (actually necessary)
-          if(current_char == '?' && paren_level == 0)
+          if(current_char == '?')
           {
             ternary_level++;
           }
           else
 
-          if(current_char == ':' && paren_level == 0)
+          if(current_char == ':')
           {
             if(ternary_level == 0)
             {
@@ -736,16 +874,13 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
 
           if(current_char == '(')
           {
-            paren_level++;
+            expression = skip_expression(expression);
           }
           else
 
           if(current_char == ')')
           {
-            if(paren_level <= 0)
-              break;
-
-            paren_level--;
+            break;
           }
         }
 
@@ -1230,68 +1365,19 @@ static int parse_argument(struct world *mzx_world, char **_argument,
 
       // True - nothing to be done here
       // False - seek next ':'
+      argument++;
       if(!operand_a)
       {
-        int paren_level = 0;
-        int ternary_level = 0;
-        while(1)
+        if(!ternary_short_circuit(&argument, ':', NULL))
         {
-          argument++;
-          first_char = *argument;
-
-#ifndef CONFIG_DEBYTECODE
-          // It's hard to ensure these are actually valid for this parser in
-          // regular MZX (and we don't, since regular MZX uses a different
-          // parser now). But debytecode is validated ahead of time!
-          if(first_char == '\0')
-          {
-            *type = -1;
-            *_argument = argument;
-            return -1;
-          }
-          else
-#endif // !CONFIG_DEBYTECODE
-
-          if(first_char == '(')
-          {
-            paren_level++;
-          }
-          else
-
-          if(first_char == ')')
-          {
-            if(paren_level <= 0)
-            {
-              *type = -1;
-              *_argument = argument;
-              return -1;
-            }
-            paren_level--;
-          }
-          else
-
-          if(first_char == '?')
-          {
-            if(paren_level == 0)
-              ternary_level++;
-          }
-          else
-
-          if(first_char == ':')
-          {
-            if(paren_level == 0)
-            {
-              if(ternary_level <= 0)
-                break;
-
-              ternary_level--;
-            }
-          }
+          *type = -1;
+          *_argument = argument;
+          return -1;
         }
       }
 
       *type = 1;
-      *_argument = argument + 1;
+      *_argument = argument;
       return OP_TERNARY;
     }
 
@@ -1299,8 +1385,6 @@ static int parse_argument(struct world *mzx_world, char **_argument,
     case ':':
     {
       // We're only here because we finished execution of the inner argument.
-      int paren_level = 0;
-
       if(mzx_world->version < V290)
       {
         *type = -1;
@@ -1326,16 +1410,13 @@ static int parse_argument(struct world *mzx_world, char **_argument,
 
         if(first_char == '(')
         {
-          paren_level++;
+          argument = skip_expression(argument + 1) - 1;
         }
         else
 
         if(first_char == ')')
         {
-          if(paren_level <= 0)
-            break;
-
-          paren_level--;
+          break;
         }
       }
 

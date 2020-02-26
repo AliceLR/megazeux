@@ -63,4 +63,17 @@
 #define WORDS_BIGENDIAN
 #endif
 
+/**
+ * Also try to get the platform bit width.
+ * Emscripten natively supports 64-bit math when compiling to Wasm.
+ */
+#if defined(_WIN64) || defined(__EMSCRIPTEN__) || \
+  (defined(__GNUC__) && \
+    (defined(__x86_64__) || defined(__powerpc64__) || defined(__PPC64__) || \
+     defined(__aarch64__)))
+#define ARCHITECTURE_BITS 64
+#else
+#define ARCHITECTURE_BITS 32
+#endif
+
 #endif // __ENDIAN_H

@@ -1112,7 +1112,7 @@ static inline void get_src_line(struct robot *cur_robot, char **_src_ptr,
     }
 
     // Remove any trailing newlines that might have made it in
-    while(src_length > 0 && isspace(src_ptr[src_length - 1]))
+    while(src_length > 0 && isspace((unsigned char)src_ptr[src_length - 1]))
       src_length--;
 
     *_src_ptr = src_ptr;

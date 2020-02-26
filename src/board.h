@@ -25,7 +25,8 @@
 __M_BEGIN_DECLS
 
 #include "world_struct.h"
-#include "zip.h"
+
+struct zip_archive;
 
 CORE_LIBSPEC int save_board(struct world *mzx_world, struct board *cur_board,
  struct zip_archive *zp, int savegame, int file_version, int board_id);

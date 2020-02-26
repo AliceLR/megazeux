@@ -142,6 +142,11 @@ src/utils/*.debug
 stdout.txt
 stderr.txt
 Thumbs.db
+/*.js
+/*.js.mem
+/*.js.orig.js
+/*.wasm
+/*.wasm.map
 *.debug
 *.mzx
 *.sav

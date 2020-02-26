@@ -21,6 +21,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "legacy_robot.h"
 
@@ -222,9 +223,19 @@ void legacy_load_robot_from_memory(struct world *mzx_world,
     bufferPtr += program_length;
 
     if(!validate_legacy_bytecode(&cur_robot->program_bytecode, &program_length))
-      goto err_invalid;
+    {
+      // Only error for used robots; unused robots don't really matter and
+      // in some games (Slave Pit, Wes) may have garbage programs.
+      if(cur_robot->used)
+        goto err_invalid;
 
-    cur_robot->program_bytecode_length = program_length;
+      debug("silently ignoring unused corrupt robot @ %4.4X\n", robot_location);
+      clear_robot_contents(cur_robot);
+      create_blank_robot(cur_robot);
+      create_blank_robot_program(cur_robot);
+    }
+    else
+      cur_robot->program_bytecode_length = program_length;
 
     // Now create a label cache IF the robot is in use
     if(cur_robot->used)

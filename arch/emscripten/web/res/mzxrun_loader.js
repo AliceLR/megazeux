@@ -40,6 +40,7 @@ MzxrunLoad = function(options, callback) {
 
 	scripts_array = [
 		options.path+"uzip.min.js",
+		options.path+"emzip.js",
 		options.path+"mzxrun.js",
 		options.path+"mzxrun_web.js"
 	];
