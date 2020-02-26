@@ -48,6 +48,11 @@ static inline int platform_chdir(const char *path)
   return chdir(path);
 }
 
+static inline int platform_mkdir(const char *path, int mode)
+{
+  return mkdir(path, mode);
+}
+
 static inline int platform_unlink(const char *path)
 {
   return unlink(path);

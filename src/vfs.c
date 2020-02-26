@@ -232,6 +232,15 @@ char *vgetcwd(char *buf, size_t size)
 }
 
 /**
+ * Make a directory with a given name.
+ */
+int vmkdir(const char *path, int mode)
+{
+  // TODO archive detection, etc
+  return platform_mkdir(path, mode);
+}
+
+/**
  * Unlink a name (and delete a file if it was the last link to the file) if
  * the file is a real file.
  */

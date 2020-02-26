@@ -108,6 +108,16 @@ static inline int platform_chdir(const char *path)
   return chdir(path);
 }
 
+static inline int platform_mkdir(const char *path, int mode)
+{
+  wchar_t wpath[MAX_PATH];
+
+  if(utf8_to_utf16(path, wpath, MAX_PATH))
+    return _wmkdir(wpath);
+
+  return mkdir(path);
+}
+
 static inline int platform_unlink(const char *path)
 {
   wchar_t wpath[MAX_PATH];
