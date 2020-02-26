@@ -31,6 +31,7 @@ __M_BEGIN_DECLS
 
 #include <stdio.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 static inline FILE *platform_fopen_unsafe(const char *path, const char *mode)
 {
