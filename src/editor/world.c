@@ -33,6 +33,7 @@
 #include "../legacy_board.h"
 #include "../idput.h"
 #include "../memfile.h"
+#include "../util.h"
 #include "../zip.h"
 
 #include "../world_format.h"

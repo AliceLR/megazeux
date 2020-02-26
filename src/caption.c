@@ -18,6 +18,7 @@
  */
 
 #include <stdarg.h>
+#include <string.h>
 
 #include "caption.h"
 #include "graphics.h"
