@@ -490,12 +490,13 @@ static void apply_board_undo(struct undo_frame *f)
 {
   struct board_undo_frame *current = (struct board_undo_frame *)f;
   struct world *mzx_world = current->mzx_world;
+  struct player *player = &mzx_world->players[0];
 
   // Can't overwrite the player, so move the player first. This needs to be
   // done for both types of operations, as either may require relocating the
   // player to the player's previous position.
   if(current->move_player)
-    id_remove_top(mzx_world, mzx_world->player_x, mzx_world->player_y);
+    id_remove_top(mzx_world, player->x, player->y);
 
   switch(f->type)
   {
@@ -543,7 +544,7 @@ static void apply_board_undo(struct undo_frame *f)
   }
 
   if(current->move_player)
-    copy_replace_player(mzx_world, current->prev_player_x,
+    copy_replace_one_player(mzx_world, 0, current->prev_player_x,
      current->prev_player_y);
 }
 
@@ -551,6 +552,7 @@ static void apply_board_redo(struct undo_frame *f)
 {
   struct board_undo_frame *current = (struct board_undo_frame *)f;
   struct world *mzx_world = current->mzx_world;
+  struct player *player = &mzx_world->players[0];
 
   switch(f->type)
   {
@@ -584,7 +586,7 @@ static void apply_board_redo(struct undo_frame *f)
 
       // Copy won't overwrite the player, so remove the player first.
       if(current->move_player)
-        id_remove_top(mzx_world, mzx_world->player_x, mzx_world->player_y);
+        id_remove_top(mzx_world, player->x, player->y);
 
       copy_board_to_board(current->mzx_world,
        current->current_board, 0, current->src_board, current->src_offset,
@@ -592,8 +594,9 @@ static void apply_board_redo(struct undo_frame *f)
       );
 
       if(current->move_player)
-        copy_replace_player(mzx_world, current->current_player_x,
+        copy_replace_one_player(mzx_world, 0, current->current_player_x,
          current->current_player_y);
+
       break;
     }
   }
@@ -602,6 +605,7 @@ static void apply_board_redo(struct undo_frame *f)
 static void apply_board_update(struct undo_frame *f)
 {
   struct board_undo_frame *current = (struct board_undo_frame *)f;
+  struct player *player;
 
   switch(f->type)
   {
@@ -636,8 +640,9 @@ static void apply_board_update(struct undo_frame *f)
   }
 
   // Handle player position changes
-  current->current_player_x = current->mzx_world->player_x;
-  current->current_player_y = current->mzx_world->player_y;
+  player = &current->mzx_world->players[0];
+  current->current_player_x = player->x;
+  current->current_player_y = player->y;
 
   if((current->current_player_x != current->prev_player_x) ||
    (current->current_player_y != current->prev_player_y))
@@ -757,6 +762,8 @@ struct undo_history *construct_board_undo_history(int max_size)
 void add_board_undo_frame(struct world *mzx_world, struct undo_history *h,
  struct buffer_info *buffer, int x, int y)
 {
+  struct player *player = &mzx_world->players[0];
+
   if(h)
   {
     struct board_undo_frame *current =
@@ -769,8 +776,8 @@ void add_board_undo_frame(struct world *mzx_world, struct undo_history *h,
 
     // The player might be moved by the frame, so back up the position
     current->mzx_world = mzx_world;
-    current->prev_player_x = mzx_world->player_x;
-    current->prev_player_y = mzx_world->player_y;
+    current->prev_player_x = player->x;
+    current->prev_player_y = player->y;
     current->move_player = 0;
 
     // We only care about a handful of things here
@@ -804,6 +811,8 @@ void add_board_undo_frame(struct world *mzx_world, struct undo_history *h,
 void add_block_undo_frame(struct world *mzx_world, struct undo_history *h,
  struct board *src_board, int src_offset, int width, int height)
 {
+  struct player *player = &mzx_world->players[0];
+
   if(h)
   {
     struct block_undo_frame *current =
@@ -814,8 +823,8 @@ void add_block_undo_frame(struct world *mzx_world, struct undo_history *h,
 
     // The player might be moved by the frame, so back up the position
     current->mzx_world = mzx_world;
-    current->prev_player_x = mzx_world->player_x;
-    current->prev_player_y = mzx_world->player_y;
+    current->prev_player_x = player->x;
+    current->prev_player_y = player->y;
     current->move_player = 0;
 
     current->width = width;

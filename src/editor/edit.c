@@ -2950,6 +2950,8 @@ static boolean editor_key(context *ctx, int *key)
       {
         if(get_alt_status(keycode_internal))
         {
+          struct player *player = &mzx_world->players[0];
+
           // Size and position
           if(editor->mode == EDIT_VLAYER)
           {
@@ -2976,8 +2978,8 @@ static boolean editor_key(context *ctx, int *key)
           }
 
           // Uh oh, we might need a new player
-          if((mzx_world->player_x >= cur_board->board_width) ||
-           (mzx_world->player_y >= cur_board->board_height))
+          if((player->x >= cur_board->board_width) ||
+           (player->y >= cur_board->board_height))
             replace_player(mzx_world);
 
           editor->modified = true;

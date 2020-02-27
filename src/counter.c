@@ -37,10 +37,12 @@
 #include "configure.h"
 #include "counter.h"
 #include "data.h"
+#include "distance.h"
 #include "error.h"
 #include "event.h"
 #include "fsafeopen.h"
 #include "game_ops.h"
+#include "game_player.h"
 #include "graphics.h"
 #include "idarray.h"
 #include "idput.h"
@@ -189,13 +191,16 @@ static int playerdist_read(struct world *mzx_world,
 {
   struct board *src_board = mzx_world->current_board;
   struct robot *cur_robot = src_board->robot_list[id];
-
-  int player_x = mzx_world->player_x;
-  int player_y = mzx_world->player_y;
+  struct player *player;
   int thisx, thisy;
-  get_robot_position(cur_robot, &thisx, &thisy);
+  int player_id;
 
-  return abs(player_x - thisx) + abs(player_y - thisy);
+  get_robot_position(cur_robot, &thisx, &thisy);
+  player_id = get_player_id_near_position(
+   mzx_world, thisx, thisy, DISTANCE_MANHATTAN);
+  player = &mzx_world->players[player_id];
+
+  return abs(player->x - thisx) + abs(player->y - thisy);
 }
 
 static int sin_read(struct world *mzx_world,
@@ -299,7 +304,7 @@ static int thisx_read(struct world *mzx_world,
   get_robot_position(cur_robot, &thisx, &thisy);
 
   if(mzx_world->mid_prefix == 2)
-    return thisx - mzx_world->player_x;
+    return thisx - mzx_world->players[0].x;
 
   return thisx;
 }
@@ -312,7 +317,7 @@ static int thisy_read(struct world *mzx_world,
   get_robot_position(cur_robot, &thisx, &thisy);
 
   if(mzx_world->mid_prefix == 2)
-    return thisy - mzx_world->player_y;
+    return thisy - mzx_world->players[0].y;
 
   return thisy;
 }
@@ -320,13 +325,29 @@ static int thisy_read(struct world *mzx_world,
 static int playerx_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  return mzx_world->player_x;
+  struct robot *cur_robot = mzx_world->current_board->robot_list[id];
+  int thisx, thisy;
+  int player_id;
+
+  get_robot_position(cur_robot, &thisx, &thisy);
+  player_id = get_player_id_near_position(
+   mzx_world, thisx, thisy, DISTANCE_MANHATTAN);
+
+  return mzx_world->players[player_id].x;
 }
 
 static int playery_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  return mzx_world->player_y;
+  struct robot *cur_robot = mzx_world->current_board->robot_list[id];
+  int thisx, thisy;
+  int player_id;
+
+  get_robot_position(cur_robot, &thisx, &thisy);
+  player_id = get_player_id_near_position(
+   mzx_world, thisx, thisy, DISTANCE_MANHATTAN);
+
+  return mzx_world->players[player_id].y;
 }
 
 static int this_char_read(struct world *mzx_world,
@@ -436,10 +457,14 @@ static int horizpld_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
   struct robot *cur_robot = mzx_world->current_board->robot_list[id];
+  int player_id;
   int thisx, thisy;
-  get_robot_position(cur_robot, &thisx, &thisy);
 
-  return abs(mzx_world->player_x - thisx);
+  get_robot_position(cur_robot, &thisx, &thisy);
+  player_id = get_player_id_near_position(
+   mzx_world, thisx, thisy, DISTANCE_X_ONLY);
+
+  return abs(mzx_world->players[player_id].x - thisx);
 }
 
 static int vertpld_read(struct world *mzx_world,
@@ -447,9 +472,13 @@ static int vertpld_read(struct world *mzx_world,
 {
   struct robot *cur_robot = mzx_world->current_board->robot_list[id];
   int thisx, thisy;
-  get_robot_position(cur_robot, &thisx, &thisy);
+  int player_id;
 
-  return abs(mzx_world->player_y - thisy);
+  get_robot_position(cur_robot, &thisx, &thisy);
+  player_id = get_player_id_near_position(
+   mzx_world, thisx, thisy, DISTANCE_Y_ONLY);
+
+  return abs(mzx_world->players[player_id].y - thisy);
 }
 
 static int board_char_read(struct world *mzx_world,
@@ -3470,7 +3499,7 @@ static struct counter *find_counter(struct counter_list *counter_list,
 #endif
 }
 
-static int hurt_player(struct world *mzx_world, int value)
+static int health_hurt_player(struct world *mzx_world, int value)
 {
   // Must not be invincible
   if(get_counter(mzx_world, "INVINCO", 0) <= 0)
@@ -3481,8 +3510,12 @@ static int hurt_player(struct world *mzx_world, int value)
     {
       int player_restart_x = mzx_world->player_restart_x;
       int player_restart_y = mzx_world->player_restart_y;
-      int player_x = mzx_world->player_x;
-      int player_y = mzx_world->player_y;
+      struct player *player = &mzx_world->players[0];
+      int player_x = player->x;
+      int player_y = player->y;
+
+      merge_all_players(mzx_world);
+
       //Restart since we were hurt
       if((player_restart_x != player_x) || (player_restart_y != player_y))
       {
@@ -3491,8 +3524,8 @@ static int hurt_player(struct world *mzx_world, int value)
         player_y = player_restart_y;
         id_place(mzx_world, player_x, player_y, PLAYER, 0, 0);
         mzx_world->was_zapped = true;
-        mzx_world->player_x = player_x;
-        mzx_world->player_y = player_y;
+        player->x = player_x;
+        player->y = player_y;
       }
     }
   }
@@ -3514,7 +3547,7 @@ static int health_gateway(struct world *mzx_world, struct counter *counter,
   // Additionally, any decrement of >0 triggers this, so do it before the clamp.
   if((value < counter->value) && (mzx_world->version < VERSION_PORT) && is_dec)
   {
-    value = counter->value - hurt_player(mzx_world, counter->value - value);
+    value = counter->value - health_hurt_player(mzx_world, counter->value - value);
   }
 
   // Make sure health is within 0 and max health
@@ -3532,7 +3565,7 @@ static int health_gateway(struct world *mzx_world, struct counter *counter,
   // This only happens if the clamped value is less than the old value.
   if((value < counter->value) && (mzx_world->version >= VERSION_PORT))
   {
-    value = counter->value - hurt_player(mzx_world, counter->value - value);
+    value = counter->value - health_hurt_player(mzx_world, counter->value - value);
   }
 
   return value;

@@ -472,9 +472,10 @@ void copy_layer_to_board(
 // Place the player on the board. Intended for editor operations that move the
 // player but need to preserve the thing under the player. Only use after the
 // old player has been removed; THIS FUNCTION WILL NOT REMOVE IT.
-void copy_replace_player(struct world *mzx_world, int x, int y)
+void copy_replace_one_player(struct world *mzx_world, int player_id, int x, int y)
 {
   struct board *cur_board = mzx_world->current_board;
+  struct player *player = &mzx_world->players[player_id];
   enum thing src_id;
   int offset;
 
@@ -490,9 +491,9 @@ void copy_replace_player(struct world *mzx_world, int x, int y)
   if(is_robot(src_id) || is_signscroll(src_id))
     clear_storage_object(cur_board, src_id, cur_board->level_param[offset]);
 
-  id_place(mzx_world, x, y, PLAYER, 0, 0);
-  mzx_world->player_x = x;
-  mzx_world->player_y = y;
+  id_place(mzx_world, x, y, PLAYER, 0, player_id);
+  player->x = x;
+  player->y = y;
 }
 
 // This goes here so the block buffer monstrosity can be inlined.
@@ -533,22 +534,26 @@ void move_board_block(struct world *mzx_world,
   int src_offset = src_x + (src_y * src_width);
   int dest_offset = dest_x + (dest_y * dest_board->board_width);
 
-  boolean replace_player = false;
-  int player_x = 0;
-  int player_y = 0;
+  boolean replace_player[NUM_PLAYERS];
+  int player_id;
+  int delta_x = dest_x - src_x;
+  int delta_y = dest_y - src_y;
 
-  // Work around to move the player
-  if((mzx_world->player_x >= src_x) &&
-   (mzx_world->player_y >= src_y) &&
-   (mzx_world->player_x < (src_x + clear_width)) &&
-   (mzx_world->player_y < (src_y + clear_height)) &&
-   (src_board == dest_board))
+  // Work around to move the players
+  for(player_id = 0; player_id < NUM_PLAYERS; player_id++)
   {
-    player_x = mzx_world->player_x - src_x + dest_x;
-    player_y = mzx_world->player_y - src_y + dest_y;
-    replace_player = true;
+    struct player *player = &mzx_world->players[player_id];
 
-    id_remove_top(mzx_world, mzx_world->player_x, mzx_world->player_y);
+    replace_player[player_id] = false;
+
+    if((player->x >= src_x) && (player->y >= src_y) &&
+     (player->x < (src_x + clear_width)) &&
+     (player->y < (src_y + clear_height)) &&
+     (src_board == dest_board))
+    {
+      replace_player[player_id] = true;
+      id_remove_top(mzx_world, player->x, player->y);
+    }
   }
 
   copy_board_to_board_buffer(mzx_world,
@@ -593,8 +598,17 @@ void move_board_block(struct world *mzx_world,
    buffer_id, buffer_color, buffer_param, buffer_under_id,
    buffer_under_color, buffer_under_param);
 
-  if(replace_player)
-    copy_replace_player(mzx_world, player_x, player_y);
+  for(player_id = 0; player_id < NUM_PLAYERS; player_id++)
+  {
+    if(replace_player[player_id])
+    {
+      struct player *player = &mzx_world->players[player_id];
+
+      copy_replace_one_player(mzx_world, player_id,
+       player->x + delta_x,
+       player->y + delta_y);
+    }
+  }
 
   free(buffer_id);
   free(buffer_color);

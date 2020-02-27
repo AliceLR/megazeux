@@ -233,6 +233,7 @@ void rotate(struct world *mzx_world, int x, int y, int dir)
 void calculate_xytop(struct world *mzx_world, int *x, int *y)
 {
   struct board *src_board = mzx_world->current_board;
+  struct player *player = &mzx_world->players[0];
   int nx, ny;
   int board_width = src_board->board_width;
   int board_height = src_board->board_height;
@@ -251,8 +252,8 @@ void calculate_xytop(struct world *mzx_world, int *x, int *y)
   {
     // Calculate from player position
     // Center screen around player, add scroll factor
-    nx = mzx_world->player_x - (viewport_width / 2);
-    ny = mzx_world->player_y - (viewport_height / 2);
+    nx = player->x - (viewport_width / 2);
+    ny = player->y - (viewport_height / 2);
 
     if(nx < 0)
       nx = 0;
@@ -291,15 +292,16 @@ void calculate_xytop(struct world *mzx_world, int *x, int *y)
 int find_seek(struct world *mzx_world, int x, int y)
 {
   int dir;
-  int player_x = mzx_world->player_x;
-  int player_y = mzx_world->player_y;
+  int player_id = get_player_id_near_position(
+   mzx_world, x, y, DISTANCE_MANHATTAN);
+  struct player *player = &mzx_world->players[player_id];
 
-  if(y == player_y)
+  if(y == player->y)
   {
     dir = 0;                // Go horizontally
   }
   else
-  if(x == player_x)
+  if(x == player->x)
   {
     dir = 1;                // Go vertically
   }
@@ -311,7 +313,7 @@ int find_seek(struct world *mzx_world, int x, int y)
   if(dir)
   {
     // Horizontal movement
-    if(player_y < y)
+    if(player->y < y)
     {
       return 0;
     }
@@ -323,7 +325,7 @@ int find_seek(struct world *mzx_world, int x, int y)
   else
   {
     // Vertical movement
-    if(player_x < x)
+    if(player->x < x)
     {
       return 3;
     }
@@ -699,6 +701,9 @@ int push(struct world *mzx_world, int x, int y, int dir, int checking)
         }
       }
     }
+
+    // Update player positions just in case any players moved.
+    find_player(mzx_world);
   }
 
   play_sfx(mzx_world, SFX_PUSH);

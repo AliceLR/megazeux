@@ -24,12 +24,17 @@
 #define __GAME_PLAYER_H
 
 #include "compat.h"
+#include "distance.h"
 
 __M_BEGIN_DECLS
 
 #include "world_struct.h"
 
+CORE_LIBSPEC void find_one_player(struct world *mzx_world, int player_id);
 CORE_LIBSPEC void find_player(struct world *mzx_world);
+
+int get_player_id_near_position(struct world *mzx_world, int x, int y,
+ enum distance_type dtype);
 
 void set_mesg(struct world *mzx_world, const char *str);
 void set_mesg_direct(struct board *src_board, const char *str);
@@ -42,7 +47,9 @@ void player_cheat_zap(struct world *mzx_world);
 void hurt_player(struct world *mzx_world, enum thing damage_src);
 int take_key(struct world *mzx_world, int color);
 int give_key(struct world *mzx_world, int color);
-void grab_item(struct world *mzx_world, int item_x, int item_y, int src_dir);
+void grab_item_for_player(struct world *mzx_world, int player_id,
+ int item_x, int item_y, int src_dir);
+void move_one_player(struct world *mzx_world, int player_id, int dir);
 void move_player(struct world *mzx_world, int dir);
 void entrance(struct world *mzx_world, int x, int y);
 

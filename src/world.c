@@ -2983,14 +2983,15 @@ void change_board_set_values(struct world *mzx_world)
 {
   // The sequel to change_board; set special values on board (re)entry.
   struct board *cur_board = mzx_world->current_board;
+  struct player *player = &mzx_world->players[0];
 
   // Set the timer.
   set_counter(mzx_world, "TIME", cur_board->time_limit, 0);
 
   // Set the player restart position.
   find_player(mzx_world);
-  mzx_world->player_restart_x = mzx_world->player_x;
-  mzx_world->player_restart_y = mzx_world->player_y;
+  mzx_world->player_restart_x = player->x;
+  mzx_world->player_restart_y = player->y;
 }
 
 void change_board_load_assets(struct world *mzx_world)
@@ -3254,6 +3255,7 @@ void clear_world(struct world *mzx_world)
   // Do this before loading, when there's a world
 
   int i;
+  int player_id;
   int num_boards = mzx_world->num_boards;
   struct board **board_list = mzx_world->board_list;
 
@@ -3297,7 +3299,11 @@ void clear_world(struct world *mzx_world)
 
   mzx_world->current_cycle_odd = false;
   mzx_world->current_cycle_frozen = false;
-  mzx_world->player_shoot_cooldown = 0;
+  for(player_id = 0; player_id < NUM_PLAYERS; player_id++)
+  {
+    struct player *player = &mzx_world->players[player_id];
+    player->shoot_cooldown = 0;
+  }
   mzx_world->active = 0;
 
   audio_end_sample();

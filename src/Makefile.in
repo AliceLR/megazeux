@@ -79,6 +79,7 @@ core_cobjs := \
   ${core_obj}/core.o              \
   ${core_obj}/counter.o           \
   ${core_obj}/data.o              \
+  ${core_obj}/distance.o          \
   ${core_obj}/error.o             \
   ${core_obj}/event.o             \
   ${core_obj}/expr.o              \

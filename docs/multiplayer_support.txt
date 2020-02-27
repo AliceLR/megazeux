@@ -1,0 +1,300 @@
+Multiplayer support
+
+This version of MegaZeux may have limited support for native multiplayer. If you used default settings to build this then it does not have this support. If you used --enable-multiplayer then it probably has this support.
+
+----------------------------------------------------------------------------
+
+How it works
+
+Here's the basics:
+
+- You have N players, where N is at least 1, although for this to actually be multiplayer, this would have to be at least 2.
+- Players are numbered from 0 onwards because numbering from 0 consistently is going to be less of a pain than numbering from 1 consistently, or doing a mixture of the two.
+- The first player is the primary player, which will always be player 0.
+- The other N-1 players are secondary players.
+- The parameter of a player object indicates which player this is. Player 0 is, of course, p00, which is what hopefully all player objects will have as their parameter.
+
+Now, if player 0 is the only player doing any moving then players 1 through 255 do not appear and this plays exactly like a single-player game, assuming the game is multiplayer-unaware of course.
+
+However, once the other players start to move, we get to cover the concepts of separation and merging:
+
+- A player can be "merged", "separated", xor "player 0".
+- All players start out as "merged" - that is, they share player 0's position and are effectively not there at all. Think of player 0 as a clown car.
+- A merged player, if it successfully can move from player 0's position, creates a new player object on the board with the parameter being equal to that player's player ID, and the player is now "separated".
+- Certain actions will merge all players with player 0, these are:
+  - Moving to a different board
+  - Dying where "restart on board" is set
+  - Teleporting to a specific position (TODO: Ensure that this is the case)
+  - Some actions which are undesireable, but require further code to make these not cause a full merge:
+    - Doing a "die item"
+
+----------------------------------------------------------------------------
+
+Goals
+
+The initial goal is to be able to play the original MegaZeux quartet mostly coherently:
+
+- If a player clone forms under ANY circumstances, this is a bug that MUST get squished.
+  - Even if the game has no chance of working unmodified, e.g. most sidescrollers.
+- If you can cause sequence breaks and/or softlocks by being several players, this is completely fine. These games do have softlocks in them anyway, and they're less of a softlock and more of a soft-game-over.
+- The side-scrolling sections in Catacombs are probably best left to the primary player to play them.
+
+The next goal is to allow game creators to make multiplayer-aware games that can be non-coop games.
+
+- Some status things should be able to be set as either shared among all players or per-player.
+  - That is, the ammo/lobombs/hibombs/health/lives/coins/gems/score and also the keys.
+  - This may also include stuff like spell effects.
+  - Being able to select these individually will be easier to deal with than trying to work out a suitable subset, although what would be easier would be to embrace an "all or nothing" approach for this.
+  - This whole feature is probably not going to be in the first release of multiplayer, as nice as it would be to have.
+
+Everything after that is more like a stretch goal. This includes:
+
+- Split-screen viewport handling
+- Networked multiplayer
+
+----------------------------------------------------------------------------
+
+[UNIMPLEMENTED] Input handling
+
+This one's going to be hard to get right.
+
+? Should each player be presented as a virtual joystick?
+  - The joystick code could do with less pain, not more.
+? Should each player be presented as its own keyboard? mouse? both?
+? Do we separate (up|down|left|right|space|del|ins)pressed from their respective keys and then have some way to map these to the respective players?
+  + This is probably going to have to happen regardless.
+? Do we have extra virtual keys for (up|down|left|right|space|del|ins)?
+  ? Do we also have an extra one for insert, or do we all share that button, or do we leave that to player 0?
+    + Some games distinguish between lobombs and hibombs, so there's value in having this selectable per-player
+
+----------------------------------------------------------------------------
+
+[UNIMPLEMENTED] Robotic changes
+
+NOTE: Not all of this will be implemented in the first release of multiplayer.
+Also a lot of this is a draft that will most likely be awful in places if it were to be implemented, especially when it comes to PLAYEREVENTINDEX.
+
+There needs to be a way to handle specific players from the Robotic side.
+
+- There will be a couple of counters per robot allowing one to target a specific player.
+  - PLAYERINDEX: Defaults to -1. Set this to a non-negative integer to target a specific player.
+  - PLAYEREVENTINDEX: Defaults to -1. Automatically gets set to a given player based on certain actions and events.
+    - When PLAYERINDEX is -1, it falls back on this under all circumstances.
+    - However, when PLAYERINDEX is not -1, it overrides PLAYEREVENTINDEX.
+  - The above names are tentative, especially the PLAYEREVENTINDEX one, and honestly all the new counter names here will be tentative.
+
+- The following special counters will also be provided:
+  - PLAYERNEARESTINDEX (read-only): Indicates the index of the player nearest to this robot.
+
+- The following global counters will also be provided:
+  - PLAYERCOUNT (read-only?): Indicates the number of players in this game.
+
+The rationale for using index counters rather than direct access is because it's quite likely that one would use a loop:
+
+    . "You could also do 'loop start/loop #' if you prefer"
+    set "playerindex" to "loopcount"
+    : "lp_draw_crosshairs"
+    set "local1" to "('playerindex'+32)"
+    set "spr('local1')_refxto " 0
+    set "spr('local1')_refy" to 27
+    set "spr('local1')_width" to 7
+    set "spr('local1')_height" to 5
+    put c?? Sprite "spr('local1')" at "('playerx'-3)" "('playery'-2)"
+    inc "playerindex" by 1
+    if "playerindex" < "playercount" then "lp_draw_crosshairs"
+    loop for "('playercount'-1)"
+    set "playerindex" to -1
+
+or handle an event:
+
+    : "playershot"
+    inc "pscore('playereventindex')" by 10
+    . "here, local2 is health"
+    dec "local2" by 1
+    if "local2" <= 0 then "die"
+    set "playereventindex" to -1
+    end
+    : "die"
+    if "playereventindex" < 0 then "die_noscore"
+    inc "pscore('playereventindex')" by 50
+    : "die_noscore"
+    explode 3
+
+or take matters into your own hands:
+
+    : "#chase_player"
+    if "playerdist" > 5 then "#return"
+    set "playerindex" "playernearestindex"
+    go SEEK for 1
+    set "playereventindex" to -1
+    goto "#return"
+
+Moving on...
+
+These counters are per-player, and should default to the nearest player (TODO: go with this? or use player 0? the former is more intuitive and harder to cheese, but the latter is probably going to be less wonky):
+
+- PLAYERFACEDIR
+- PLAYERLASTDIR
+- PLAYERX
+- PLAYERY
+- HORIZPLD
+- PLAYERDIST
+- VERTPLD
+
+(TODO: Should the distance counters set PLAYEREVENTINDEX when read, or is that a little bit too unexpected? Either way, the default is probably going to be the nearest player as that's what makes the most sense --GM)
+
+These directions need some way of distinguishing between players:
+
+- SEEK
+
+These conditions will need to set PLAYEREVENTINDEX (TODO: This is probably not going to be nice, perhaps this could be detected more intuitively --GM):
+
+- ALIGNED
+- ALIGNEDEW
+- ALIGNEDNS
+- TOUCHING [dir]
+
+These conditions will probably default to player 0:
+
+- DELPRESSSED
+- DOWNPRESSED
+- LEFTPRESSSED
+- RIGHTPRESSSED
+- SPACEPRESSSED
+- UPPRESSSED
+
+These labels will need to set PLAYEREVENTINDEX to either the player that caused them, or -1 if no player caused them:
+
+- BOMBED [#]
+- GOOPTOUCHED [#]
+- INVINCO [#]
+- PLAYERHIT [#]
+- PLAYERHURT [#]
+- PLAYERSHOT [#]
+- SENSORON
+- SHOT [#]
+- TOUCH [#]
+
+Ideally, returning from the subroutine versions of these should reset PLAYEREVENTINDEX to what it was before.
+
+These commands need some way of distinguishing between players:
+
+- EXCHANGE PLAYER POSITION
+- EXCHANGE PLAYER POSITION #
+- EXCHANGE PLAYER POSITION # DUPLICATE SELF
+- IF [dir] PLAYER [color] [thing] [param] "label"
+- PUT [color] [thing] [param] [dir] PLAYER
+- REL PLAYER
+- REL PLAYER FIRST
+- REL PLAYER LAST
+- RESTORE PLAYER POSITION
+- RESTORE PLAYER POSITION #
+- RESTORE PLAYER POSITION # DUPLICATE SELF
+- SAVE PLAYER POSITION
+- SAVE PLAYER POSITION #
+- SEND [dir] PLAYER "label"
+
+These commands merge all players regardless:
+
+- TELEPORT PLAYER "string" # #
+
+These commands default to merging all players:
+
+These commands default to merging all players UNLESS someone caused a touch or *shot action:
+
+- DIE ITEM
+- PUT PLAYER # #
+- PUT PLAYER [dir]
+
+These commands default to affecting all players, but may be performed on a player-by-player basis:
+
+- LOCKPLAYER
+- LOCKPLAYER ATTACK
+- LOCKPLAYER EW
+- LOCKPLAYER NS
+- UNLOCKPLAYER
+- PLAYER BULLETCOLOR [color]
+- PLAYER BULLETE [char]
+- PLAYER BULLETN [char]
+- PLAYER BULLETS [char]
+- PLAYER BULLETW [char]
+- PLAYER CHAR [dir] [char]
+- PLAYER CHAR [char]
+- PLAYERCOLOR [color]
+
+These counters default to shared, but may be made per-player in a multiplayer-aware game:
+
+- AMMO
+- COINS
+- GEMS
+- HEALTH
+- HIBOMBS
+- INVINCO
+- LOBOMBS
+- LIVES
+- SCORE
+- SPACELOCK
+
+Status counters (as set by STATUS COUNTER # "counter") are probably not going to have a per-player version - this would require overhauling how the ENTER menu works and in all seriousness you should actually be using a HUD considering they're not terribad to implement.
+
+These commands default to being shared, but may be made per-player in a multiplayer-aware game:
+
+- BLIND #
+- ENDLIFE
+- FIREWALKER #
+- WIND #
+
+The AVALANCHE command is a board-wide effect. It makes no sense to make this per-player.
+The FREEZETIME and SLOWTIME commands are likely to be too much of a pain to do on a per-player basis.
+
+----------------------------------------------------------------------------
+
+[UNIMPLEMENTED] Viewports and split screen
+
+Some ideas for multiplayer-unaware games:
+
+- If the camera is locked, we use a single viewport and the camera's position.
+- Otherwise, if any players are far enough apart we split the screen as needed.
+- Ideally we'd exercise some intelligence based on where the players are when splitting the viewport.
+- Or alternatively we could keep the viewport split if the board isn't large enough relative to the viewport size to warrant it, or maybe just keep it split regardless of the board size.
+- I have a proof of concept for split screen in my first attempt at multiplayer. Since then there were a lot of overhauls applied to the mainline code and I've basically had to redo this from the ground up. Therefore, this is my second attempt. --GM
+
+Some ideas for multiplayer-aware games:
+
+- It should be possible to limit sprite visibility on a per-player basis.
+  - Alternatively, providing a "per player index x/y offset" would mean that we don't spam the sprite list.
+  - But if we do that, I'd be inclined to cap it to a min/max player range.
+- Per-viewport control as well as size awareness should be a possibility.
+  - For sprites, would it be worth coming up with a way to anchor them based on left/right, top/bottom corners for both the viewport and the sprite itself?
+    - If yes, would it be worth having these separately controllable?
+    - Also, what about allowing centres for both axes, too?
+    - All of this combined would also open the floor to having >80x25 viewports working nicely...
+
+- Due to the added complexity and the amount of thinking ahead required, I'd be tempted to allow a game to enforce a player count limit, possibly even a players-per-client limit.
+
+----------------------------------------------------------------------------
+
+[UNIMPLEMENTED] Networked multiplayer
+
+The main idea for this is as follows:
+
+- For a game, there exists one server and any number of clients.
+  - The server dictates the game frame state.
+  - The server and the clients run all the game logic.
+  - The primary player is the authority as to what gets loaded and what gets inputted and whatnot.
+  - A client or a server can have any number of players.
+- We start with a save file which all clients must load.
+- All clients provide their inputs to the server.
+- The server dictates the inputs for every frame.
+- All nodes operate in lockstep.
+
+If we make it possible to dump the network logs to a file and then play them back, we also get a demo format For Free(tm).
+
+----------------------------------------------------------------------------
+
+TODO:
+
+- Per-player inputs.
+- Expose multiplayer counters.
+- Actual networked multiplayer support. config.sh will leave the networking code intact here if multiplayer is enabled, but it will not be used at this stage.
+

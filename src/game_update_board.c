@@ -1387,9 +1387,12 @@ void update_board(context *ctx)
           if(move_rate == move_cycle)
           {
             int sensitivity = ((current_param & 0x07) + 1) << 1;
+            int player_id = get_player_id_near_position(
+             mzx_world, x, y, DISTANCE_MANHATTAN);
+            struct player *player = &mzx_world->players[player_id];
             int player_distance;
-            int player_dist_x = mzx_world->player_x - x;
-            int player_dist_y = mzx_world->player_y - y;
+            int player_dist_x = player->x - x;
+            int player_dist_y = player->y - y;
 
             // Zero out move cycle
             level_param[level_offset] &= 0x9F;

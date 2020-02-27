@@ -26,6 +26,7 @@ __M_BEGIN_DECLS
 
 #include "board_struct.h"
 #include "robot_struct.h"
+#include "player_struct.h"
 #include "counter_struct.h"
 #include "sprite_struct.h"
 
@@ -146,9 +147,7 @@ struct world
   char custom_sfx[NUM_SFX * SFX_SIZE];
 
   // Not part of world/save files, but runtime globals
-  int player_x;
-  int player_y;
-  int player_shoot_cooldown;
+  struct player players[NUM_PLAYERS];
 
   // For moving the player between boards
   enum board_target target_where;
@@ -173,20 +172,8 @@ struct world
   // Toggle used by certain built-in mechanics that update every other cycle.
   boolean current_cycle_odd;
 
-  // Did the player just move?
-  boolean player_moved;
-
-  // Was the player on an entrance before the board scan?
-  boolean player_was_on_entrance;
-
   // Was the player damaged while 'restart if hurt' is active?
   boolean was_zapped;
-
-  // For use in repeat delays for player movement
-  int key_up_delay;
-  int key_down_delay;
-  int key_right_delay;
-  int key_left_delay;
 
   // 1-3 normal 5-7 is 1-3 but from a REL FIRST cmd
   int first_prefix;
