@@ -98,6 +98,7 @@ struct config_info
   boolean no_titlescreen;
   boolean system_mouse;
   boolean grab_mouse;
+  boolean save_slots;
 
   // Editor options
   boolean test_mode;

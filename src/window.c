@@ -70,6 +70,9 @@ static struct char_element screen_storage[NUM_SAVSCR][SET_SCREEN_SIZE];
 // Current space for save_screen and restore_screen
 static int cur_screen = 0;
 
+// The last-used saved game slot.
+static int cur_slot = 0;
+
 // Free up memory.
 
 // The following functions do NOT check to see if memory is reserved, in
@@ -2847,6 +2850,17 @@ static boolean remove_files(char *directory_name, boolean remove_recursively)
   return success;
 }
 
+static int slot_manager(struct world *mzx_world, char *ret,
+ const char *title) {
+  char ext[8];
+
+  strncpy(ret, curr_file, MAX_PATH);
+  snprintf(ext, 8, ".%i.sav", cur_slot);
+  add_ext(ret, ext);
+  debug("%s: %s\n", title, ret);
+  return 1;
+}
+
 __editor_maybe_static int file_manager(struct world *mzx_world,
  const char *const *wildcards, const char *default_ext, char *ret,
  const char *title, int dirs_okay, int allow_new, struct element **dialog_ext,
@@ -3472,15 +3486,21 @@ skip_dir:
 int choose_file_ch(struct world *mzx_world, const char *const *wildcards,
  char *ret, const char *title, int dirs_okay)
 {
-  return file_manager(mzx_world, wildcards, NULL, ret, title, dirs_okay,
-   0, NULL, 0, 0);
+  if(get_config()->save_slots && strcmp(*wildcards, ".SAV") == 0) // TODO: yuck! changeme
+    return slot_manager(mzx_world, ret, title);
+  else
+    return file_manager(mzx_world, wildcards, NULL, ret, title, dirs_okay,
+     0, NULL, 0, 0);
 }
 
 int new_file(struct world *mzx_world, const char *const *wildcards,
  const char *default_ext, char *ret, const char *title, int dirs_okay)
 {
-  return file_manager(mzx_world, wildcards, default_ext, ret, title, dirs_okay,
-   1, NULL, 0, 0);
+  if(get_config()->save_slots && strcmp(*wildcards, ".SAV") == 0) // TODO: yuck! changeme
+    return slot_manager(mzx_world, ret, title);
+  else
+    return file_manager(mzx_world, wildcards, default_ext, ret, title, dirs_okay,
+     1, NULL, 0, 0);
 }
 
 #if defined(CONFIG_UPDATER) || defined(CONFIG_LOADSAVE_METER)

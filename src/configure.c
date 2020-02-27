@@ -207,6 +207,7 @@ static const struct config_info user_conf_default =
   false,                        // no_titlescreen
   false,                        // system_mouse
   false,                        // grab_mouse
+  false,                        // save_slots
 
   // Editor options
   false,                        // test_mode
@@ -413,6 +414,13 @@ static void config_grab_mouse(struct config_info *conf, char *name,
 {
   // FIXME sloppy validation
   conf->grab_mouse = strtol(value, NULL, 10);
+}
+
+static void config_save_slots(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  // FIXME sloppy validation
+  conf->save_slots = strtol(value, NULL, 10);
 }
 
 static void config_enable_oversampling(struct config_info *conf, char *name,
@@ -896,6 +904,7 @@ static const struct config_entry config_options[] =
   { "resample_mode", config_resample_mode, false },
   { "sample_volume", config_set_sam_volume, false },
   { "save_file", config_save_file, false },
+  { "save_slots", config_save_slots, false },
 #ifdef CONFIG_NETWORK
   { "socks_host", config_set_socks_host, false },
   { "socks_port", config_set_socks_port, false },
