@@ -44,12 +44,15 @@ USERS
 + The Emscripten frontend now falls back to a wrapper for MZX's
   internal ZIP support when UZIP fails to extract an archive.
 + Fixed IndexedDB support for legacy Edge versions. (asie)
++ Fixed an 8bpp software layer renderer bug where transparent UI
+  colors would not be transparent in SMZX mode.
 - Removed the options "overlay1" and "overlay2" from the list of
   selectable renderer options except when SDL 1.2 is enabled.
 
 DEVELOPERS
 
-+ render_layer.c now disables the (unused) 64-aligned renderers
++ Refactored render_layer_code to use C++ templates.
++ render_layer now disables the (unused) 64-aligned renderers
   for 32-bit platforms and Emscripten builds.
 + Switched from xmp_load_module to xmp_load_module_from_file.
 + Fixed various clang unused argument compiler warnings.

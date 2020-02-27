@@ -26,6 +26,13 @@ core_flags   += -Wwrite-strings
 core_cflags  += ${CFLAGS} -Wmissing-prototypes
 core_cxxflags = ${CXXFLAGS} -DHAVE_INTTYPES_H
 
+# render_layer.cpp needs some special flags.
+render_layer_objs =
+render_layer_cxxflags = ${CXXFLAGS} -funroll-loops
+ifeq ($(GCC_VER_GE_4_8),0)
+render_layer_cxxflags += -std=gnu++11
+endif
+
 ifneq (${PLATFORM},emscripten)
 core_flags   += -I${PREFIX}/include
 endif
@@ -66,6 +73,10 @@ ${core_obj}/%.o: ${core_src}/%.c
 ${core_obj}/%.o: ${core_src}/%.cpp
 	$(if ${V},,@echo "  CXX     " $<)
 	${CXX} -MD ${core_cxxflags} ${core_flags} ${core_spec} -c $< -o $@
+
+${core_obj}/render_layer.o: ${core_src}/render_layer.cpp
+	$(if ${V},,@echo "  CXX     " $<)
+	${CXX} -MD ${render_layer_cxxflags} ${core_flags} ${core_spec} -c $< -o $@
 
 #
 # Lists mandatory C language sources (mangled to object names) required
@@ -245,7 +256,8 @@ endif
 # This one tends to take forever for many builds. Prefix it to
 # the list so hopefully it starts sooner during parallel builds.
 ifeq (${render_layer_software},1)
-core_cobjs := ${core_obj}/render_layer.o ${core_cobjs}
+#core_cobjs := ${core_obj}/render_layer.o ${core_cobjs}
+render_layer_objs := ${core_obj}/render_layer.o
 endif
 
 ifeq (${BUILD_MODPLUG},1)
@@ -374,7 +386,7 @@ ifeq (${BUILD_DEBYTECODE},1)
 core_cobjs += ${core_obj}/rasm.o
 endif
 
-core_objs := ${core_cobjs} ${core_cxxobjs}
+core_objs := ${render_layer_objs} ${core_cobjs} ${core_cxxobjs}
 
 -include ${core_objs:.o=.d}
 

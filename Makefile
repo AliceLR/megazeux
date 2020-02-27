@@ -230,6 +230,7 @@ LDFLAGS  += ${ARCH_LDFLAGS}
 GCC_VER := ${shell ${CC} -dumpversion}
 GCC_VER_MAJOR := ${shell ${CC} -dumpversion | cut -d. -f1}
 GCC_VER_MAJOR_GE_7 := ${shell test $(GCC_VER_MAJOR) -ge 7; echo $$?}
+GCC_VER_GE_4_8 := ${shell [[ "$(GCC_VER)" > "4.8.0" ]]; echo $$?}
 IS_CLANG := ${shell ${CC} --version | grep -qi "clang version"; echo $$?}
 
 ifeq ($(GCC_VER_MAJOR_GE_7),0)
