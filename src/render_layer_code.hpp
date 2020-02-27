@@ -42,12 +42,12 @@ template<typename PIXTYPE, typename ALIGNTYPE>
 static void render_layer_func(void *pixels, Uint32 pitch,
  struct graphics_data *graphics, struct video_layer *layer,
  int smzx, int ppal, int trans, int clip);
-/*
+
 template<typename PIXTYPE, typename ALIGNTYPE, int SMZX>
 static void render_layer_func(void *pixels, Uint32 pitch,
  struct graphics_data *graphics, struct video_layer *layer,
  int ppal, int trans, int clip);
-*/
+
 template<typename PIXTYPE, typename ALIGNTYPE, int SMZX, int PPAL>
 static void render_layer_func(void *pixels, Uint32 pitch,
  struct graphics_data *graphics, struct video_layer *layer,
@@ -206,76 +206,6 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
 }
 
 /**
- * Struct for the protected palette size selection step.
- * This is done via a struct to allow partial specialization since getting rid
- * of ppal=16 for SMZX mode gets rid of a lot of pointless renderers.
- */
-template<typename PIXTYPE, typename ALIGNTYPE, int SMZX>
-struct ppal_selector
-{
-  static inline void func(void *pixels, Uint32 pitch,
-   struct graphics_data *graphics, struct vide_layer *layer,
-   int ppal, int tr, int clip);
-};
-
-/**
- * Protected palette offset is 16 or 256 (MZX).
- * 256 is valid for MZX mode, but 16 is invalid for SMZX.
- */
-template<typename PIXTYPE, typename ALIGNTYPE>
-struct ppal_selector<PIXTYPE, ALIGNTYPE, 0>
-{
-  static inline void func(void *pixels, Uint32 pitch,
-   struct graphics_data *graphics, struct video_layer *layer,
-   int ppal, int tr, int clip)
-  {
-    switch(ppal)
-    {
-      case 256:
-        render_layer_func<PIXTYPE, ALIGNTYPE, 0, 256>(pixels, pitch, graphics, layer,
-         tr, clip);
-        break;
-
-      case 16:
-        render_layer_func<PIXTYPE, ALIGNTYPE, 0, 16>(pixels, pitch, graphics, layer,
-         tr, clip);
-        break;
-
-      default:
-        fprintf(stderr, "INVALID RENDERER ARG ppal=%d (mzx)\n", ppal);
-        exit(1);
-        break;
-    }
-  }
-};
-
-/**
- * Protected palette offset is 16 or 256 (SMZX).
- * 256 is valid for MZX mode, but 16 is invalid for SMZX.
- */
-template<typename PIXTYPE, typename ALIGNTYPE>
-struct ppal_selector<PIXTYPE, ALIGNTYPE, 1>
-{
-  static inline void func(void *pixels, Uint32 pitch,
-   struct graphics_data *graphics, struct video_layer *layer,
-   int ppal, int tr, int clip)
-  {
-    switch(ppal)
-    {
-      case 256:
-        render_layer_func<PIXTYPE, ALIGNTYPE, 1, 256>(pixels, pitch, graphics, layer,
-         tr, clip);
-        break;
-
-      default:
-        fprintf(stderr, "INVALID RENDERER ARG ppal=%d (smzx)\n", ppal);
-        exit(1);
-        break;
-    }
-  }
-};
-
-/**
  * Renderer is SMZX (1) or normal MZX (0).
  */
 template<typename PIXTYPE, typename ALIGNTYPE>
@@ -286,19 +216,61 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
   switch(smzx)
   {
     case 0:
-      ppal_selector<PIXTYPE, ALIGNTYPE, 0>::func(pixels, pitch, graphics, layer,
+      render_layer_func<PIXTYPE, ALIGNTYPE, 0>(pixels, pitch, graphics, layer,
        ppal, trans, clip);
       break;
 
     case 1:
     case 2:
     case 3:
-      ppal_selector<PIXTYPE, ALIGNTYPE, 1>::func(pixels, pitch, graphics, layer,
+      render_layer_func<PIXTYPE, ALIGNTYPE, 1>(pixels, pitch, graphics, layer,
        ppal, trans, clip);
       break;
 
     default:
       fprintf(stderr, "INVALID RENDERER ARG smzx=%d\n", smzx);
+      exit(1);
+      break;
+  }
+}
+
+/**
+ * Protected palette offset is 16 or 256 (MZX).
+ * 256 is valid for MZX mode, but 16 is invalid for SMZX.
+ */
+template<typename PIXTYPE, typename ALIGNTYPE, int SMZX>
+static void render_layer_func(void *pixels, Uint32 pitch,
+ struct graphics_data *graphics, struct video_layer *layer,
+ int ppal, int trans, int clip)
+{
+  switch(ppal)
+  {
+
+    case 256:
+    {
+      // This protected palette position is valid for all SMZX modes.
+      render_layer_func<PIXTYPE, ALIGNTYPE, SMZX, 256>(pixels, pitch, graphics, layer,
+       trans, clip);
+      break;
+    }
+
+    case 16:
+    {
+      // NOTE: the protected palette should always be at 256 during SMZX mode,
+      // so reaching this point for an SMZX layer is nonsensical. This check
+      // also lets the compiler optimize these out, reducing binary size.
+      if(!SMZX)
+      {
+        render_layer_func<PIXTYPE, ALIGNTYPE, SMZX, 16>(pixels, pitch, graphics, layer,
+         trans, clip);
+        break;
+      }
+    }
+
+    /* fall-through */
+
+    default:
+      fprintf(stderr, "INVALID RENDERER ARG ppal=%d (smzx=%d)\n", ppal, SMZX);
       exit(1);
       break;
   }
@@ -397,12 +369,20 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
   static_assert((PPW >= 1), "invalid ppw < 1");
   static_assert((PPW <= 8), "invalid ppw > 8");
   static_assert((PPW == 1) || !(PPW & 1), "invalid ppw (must be power of 2)");
-  static_assert((SMZX == 0) || (PPAL >= 256), "invalid ppal for smzx mode");
 #else
 // Use these if for whatever reason C++11 isn't available.
 #define BPP (int)(sizeof(PIXTYPE) * 8)
 #define PPW (int)(sizeof(ALIGNTYPE) / sizeof(PIXTYPE))
 #endif
+
+  // FIXME remove
+  static boolean printed = false;
+  if(!printed)
+  {
+    fprintf(stderr, "%s\n", __PRETTY_FUNCTION__);
+    fflush(stderr);
+    printed = true;
+  }
 
   Uint32 ch_x, ch_y;
   Uint16 c;
