@@ -1824,6 +1824,7 @@ static int key_slot_selector(struct world *mzx_world, struct dialog *di,
 {
   struct slot_selector *src = (struct slot_selector *)e;
   int this_slot = src->selected_slot;
+  int target_slot;
 
   switch(key)
   {
@@ -1852,6 +1853,32 @@ static int key_slot_selector(struct world *mzx_world, struct dialog *di,
          src->disabled_slots) != SLOT_DISABLED)
           break;
       }
+      break;
+    }
+
+    case IKEY_1:
+    case IKEY_2:
+    case IKEY_3:
+    case IKEY_4:
+    case IKEY_5:
+    case IKEY_6:
+    case IKEY_7:
+    case IKEY_8:
+    case IKEY_9:
+    {
+      target_slot = key - IKEY_1;
+      if(src->save || get_slot_state(target_slot, src->highlighted_slots,
+       src->disabled_slots) != SLOT_DISABLED)
+        src->selected_slot = target_slot;
+      break;
+    }
+
+    case IKEY_0:
+    {
+      // Special case for the 10th element.
+      if(src->save || get_slot_state(9, src->highlighted_slots,
+       src->disabled_slots) != SLOT_DISABLED)
+        src->selected_slot = 9;
       break;
     }
 
