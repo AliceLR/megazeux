@@ -1422,7 +1422,6 @@ static void draw_slot_selector(struct world *mzx_world, struct dialog *di,
   int y = di->y + e->y;
   int slot_x;
   int slot_y = y + SLOTSEL_BAR_Y;
-  int width = e->width;
   int i;
   int slot_color;
 
@@ -2785,11 +2784,11 @@ static int slot_manager(struct world *mzx_world, char *ret,
      construct_slot_selector(3, 2, "Choose a slot:", SLOTSEL_NUM_SLOTS,
      highlighted_slots, disabled_slots, selected_slot, save);
     elements[SLOTSEL_OKAY_BUTTON] =
-     construct_button(14, 6, "OK", 0);
+     construct_button(16, 6, "OK", 0);
     elements[SLOTSEL_CANCEL_BUTTON] =
-     construct_button(20, 6, "Cancel", -1);
+     construct_button(23, 6, "Cancel", -1);
 
-    construct_dialog(&di, title, 17, 8, 46, 8, elements,
+    construct_dialog(&di, title, 17, 8, 46, 9, elements,
      SLOTSEL_MAX_ELEMENTS, SLOTSEL_SELECTOR);
     dialog_result = run_dialog(mzx_world, &di);
 

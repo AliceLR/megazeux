@@ -240,6 +240,9 @@ CORE_LIBSPEC struct element *construct_radio_button(int x, int y,
  const char **choices, int num_choices, int max_length, int *result);
 CORE_LIBSPEC struct element *construct_button(int x, int y, const char *label,
  int return_value);
+CORE_LIBSPEC struct element *construct_slot_selector(int x, int y,
+ const char *title, int num_slots, boolean *highlighted_slots,
+ boolean *disabled_slots, int default_slot, int save);
 CORE_LIBSPEC struct element *construct_number_box(int x, int y,
  const char *question, int lower_limit, int upper_limit,
  enum number_box_type type, int *result);
