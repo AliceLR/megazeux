@@ -203,6 +203,17 @@ struct board_list
   int *result;
 };
 
+struct slot_selector
+{
+  struct element e;
+  const char *title;
+  int num_slots;
+  boolean *highlighted_slots;
+  boolean *disabled_slots;
+  int selected_slot;
+  int save;
+};
+
 struct file_selector
 {
   struct element e;
@@ -295,6 +306,10 @@ CORE_LIBSPEC void meter_interior(unsigned int progress, unsigned int out_of);
 #define DI_DEBUG_BOX_CORNER   DI_INPUT_BOX_CORNER
 #define DI_DEBUG_LABEL        DI_INPUT_BOX_LABEL
 #define DI_DEBUG_NUMBER       79
+
+#define DI_SLOTSEL_NORMAL     7
+#define DI_SLOTSEL_HIGHLIGHT  11
+#define DI_SLOTSEL_DISABLE    128
 
 #define arrow_char '\x10'
 #define pc_top_arrow '\x1E'

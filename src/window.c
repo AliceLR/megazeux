@@ -1396,6 +1396,71 @@ static void draw_number_box(struct world *mzx_world, struct dialog *di,
   }
 }
 
+#define SLOT_DISABLED   -1
+#define SLOT_NORMAL     0
+#define SLOT_HIGHLIGHT  1
+
+static int get_slot_state(int slot, boolean *highlighted_slots,
+ boolean *disabled_slots)
+{
+  if(disabled_slots != NULL && disabled_slots[slot])
+    return SLOT_DISABLED;
+
+  if(highlighted_slots != NULL && highlighted_slots[slot])
+    return SLOT_HIGHLIGHT;
+
+  return SLOT_NORMAL;
+}
+
+#define SLOTSEL_BAR_Y  2
+
+static void draw_slot_selector(struct world *mzx_world, struct dialog *di,
+ struct element *e, int color, int active)
+{
+  struct slot_selector *src = (struct slot_selector *)e;
+  int x = di->x + e->x;
+  int y = di->y + e->y;
+  int slot_x;
+  int slot_y = y + SLOTSEL_BAR_Y;
+  int width = e->width;
+  int i;
+  int slot_color;
+
+  write_string(src->title, x, y, color, 0);
+
+  for(i = 0; i < src->num_slots; i++)
+  {
+    slot_x = x + (i * 4);
+    switch(get_slot_state(i, src->highlighted_slots, src->disabled_slots))
+    {
+      case SLOT_DISABLED:
+      {
+        slot_color = DI_SLOTSEL_DISABLE;
+        break;
+      }
+
+      case SLOT_HIGHLIGHT:
+      {
+        slot_color = i == src->selected_slot
+         ? DI_ACTIVEBUTTON
+         : DI_SLOTSEL_HIGHLIGHT;
+        break;
+      }
+
+      case SLOT_NORMAL:
+      {
+        slot_color = i == src->selected_slot
+         ? DI_ARROWBUTTON
+         : DI_SLOTSEL_NORMAL;
+        break;
+      }
+    }
+
+    fill_line(4, slot_x, slot_y, 0, slot_color);
+    write_number(i + 1, slot_color, slot_x + 2, slot_y, 1, true, 10);
+  }
+}
+
 static void draw_file_selector(struct world *mzx_world, struct dialog *di,
  struct element *e, int color, int active)
 {
@@ -1755,6 +1820,51 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
   return 0;
 }
 
+static int key_slot_selector(struct world *mzx_world, struct dialog *di,
+ struct element *e, int key)
+{
+  struct slot_selector *src = (struct slot_selector *)e;
+  int this_slot = src->selected_slot;
+
+  switch(key)
+  {
+    case IKEY_LEFT:
+    {
+      while(--src->selected_slot != this_slot)
+      {
+        if(src->selected_slot < 0)
+          src->selected_slot = src->num_slots - 1;
+
+        if(get_slot_state(src->selected_slot, src->highlighted_slots,
+         src->disabled_slots) != SLOT_DISABLED)
+          break;
+      }
+      break;
+    }
+
+    case IKEY_RIGHT:
+    {
+      while(++src->selected_slot != this_slot)
+      {
+        if(src->selected_slot >= src->num_slots)
+          src->selected_slot = 0;
+
+        if(get_slot_state(src->selected_slot, src->highlighted_slots,
+         src->disabled_slots) != SLOT_DISABLED)
+          break;
+      }
+      break;
+    }
+
+    default:
+    {
+      return key;
+    }
+  }
+
+  return 0;
+}
+
 static int key_file_selector(struct world *mzx_world, struct dialog *di,
  struct element *e, int key)
 {
@@ -2096,6 +2206,37 @@ static int drag_number_box(struct world *mzx_world, struct dialog *di,
   return 0;
 }
 
+static boolean slot_save_exists(const char *file, int slot)
+{
+  struct stat s;
+  char ext[8];
+  char path[MAX_PATH];
+
+  strncpy(path, file, MAX_PATH);
+  snprintf(ext, 8, ".%i.sav", slot);
+  add_ext(path, ext);
+  return !stat(path, &s);
+}
+
+static int click_slot_selector(struct world *mzx_world, struct dialog *di,
+ struct element *e, int mouse_button, int mouse_x, int mouse_y,
+ int new_active)
+{
+  struct slot_selector *src = (struct slot_selector *)e;
+  int target_slot = 0;
+
+  if(mouse_y != SLOTSEL_BAR_Y) return 0;
+
+  target_slot = mouse_x / 4;
+
+  if(src->save || slot_save_exists(curr_file, target_slot))
+  {
+    src->selected_slot = target_slot;
+  }
+
+  return 0;
+}
+
 static int click_file_selector(struct world *mzx_world, struct dialog *di,
  struct element *e, int mouse_button, int mouse_x, int mouse_y,
  int new_active)
@@ -2370,6 +2511,25 @@ struct element *construct_number_box(int x, int y,
   return (struct element *)src;
 }
 
+struct element *construct_slot_selector(int x, int y,
+ const char *title, int num_slots, boolean *highlighted_slots,
+ boolean *disabled_slots, int default_slot, int save)
+{
+  struct slot_selector *src = cmalloc(sizeof(struct slot_selector));
+
+  src->title = title;
+  src->num_slots = num_slots;
+  src->highlighted_slots = highlighted_slots;
+  src->disabled_slots = disabled_slots;
+  src->selected_slot = default_slot;
+  src->save = save;
+
+  construct_element(&(src->e), x, y, num_slots * 4, 3, draw_slot_selector,
+   key_slot_selector, click_slot_selector, NULL, NULL);;
+
+  return (struct element *)src;
+}
+
 struct element *construct_file_selector(int x, int y,
  const char *title, const char *file_manager_title,
  const char *const *file_manager_exts, const char *none_mesg,
@@ -2567,6 +2727,107 @@ static int sort_function(const void *dest_str_ptr, const void *src_str_ptr)
     return -1;
 
   return strcasecmp(dest_str, src_str);
+}
+
+#define SLOTSEL_MAX_ELEMENTS  3
+#define SLOTSEL_OKAY_BUTTON   0
+#define SLOTSEL_CANCEL_BUTTON 1
+#define SLOTSEL_SELECTOR      2
+#define SLOTSEL_NUM_SLOTS     10
+
+static int slot_manager(struct world *mzx_world, char *ret,
+ const char *title, boolean save)
+{
+  char ext[8];
+  int i;
+
+  struct dialog di;
+  struct element *elements[SLOTSEL_MAX_ELEMENTS];
+  int dialog_result = 0;
+  int return_value = 1;
+  int selected_slot = cur_slot;
+  boolean *highlighted_slots = NULL;
+  boolean *disabled_slots = NULL;
+
+  while(return_value > 0)
+  {
+    if(save)
+    {
+      highlighted_slots = malloc(sizeof(boolean) * SLOTSEL_NUM_SLOTS);
+      for(i = 0; i < SLOTSEL_NUM_SLOTS; i++)
+      {
+        highlighted_slots[i] = slot_save_exists(curr_file, i);
+      }
+    }
+    else
+    {
+      disabled_slots = malloc(sizeof(boolean) * SLOTSEL_NUM_SLOTS);
+      for(i = 0; i < SLOTSEL_NUM_SLOTS; i++)
+      {
+        disabled_slots[i] = !slot_save_exists(curr_file, i);
+      }
+
+      // If the current slot is empty, try to set it to one that isn't.
+      if(disabled_slots[selected_slot])
+      {
+        for(i = 0; i < SLOTSEL_NUM_SLOTS; i++)
+        {
+          if(!disabled_slots[i])
+          {
+            selected_slot = i;
+            break;
+          }
+        }
+      }
+    }
+
+    elements[SLOTSEL_SELECTOR] =
+     construct_slot_selector(3, 2, "Choose a slot:", SLOTSEL_NUM_SLOTS,
+     highlighted_slots, disabled_slots, selected_slot, save);
+    elements[SLOTSEL_OKAY_BUTTON] =
+     construct_button(14, 6, "OK", 0);
+    elements[SLOTSEL_CANCEL_BUTTON] =
+     construct_button(20, 6, "Cancel", -1);
+
+    construct_dialog(&di, title, 17, 8, 46, 8, elements,
+     SLOTSEL_MAX_ELEMENTS, SLOTSEL_SELECTOR);
+    dialog_result = run_dialog(mzx_world, &di);
+
+    switch(dialog_result)
+    {
+      case -1:
+      {
+        return_value = -1;
+        break;
+      }
+
+      case 0:
+      {
+        cur_slot =
+         ((struct slot_selector *)elements[SLOTSEL_SELECTOR])->selected_slot;
+        return_value = 0;
+        break;
+      }
+    }
+
+    // Add one more quick check to make sure that we don't try to restore an
+    // empty slot.
+    if(!save && disabled_slots[cur_slot])
+      return_value = -1;
+
+    force_release_all_keys();
+
+    destruct_dialog(&di);
+
+    if(highlighted_slots != NULL) free(highlighted_slots);
+    if(disabled_slots != NULL) free(disabled_slots);
+  }
+
+  strncpy(ret, curr_file, MAX_PATH);
+  snprintf(ext, 8, ".%i.sav", cur_slot);
+  add_ext(ret, ext);
+
+  return return_value;
 }
 
 // Shell for list_menu() (copies file chosen to ret and returns -1 for ESC)
@@ -2848,17 +3109,6 @@ static boolean remove_files(char *directory_name, boolean remove_recursively)
 
   dir_close(&current_dir);
   return success;
-}
-
-static int slot_manager(struct world *mzx_world, char *ret,
- const char *title) {
-  char ext[8];
-
-  strncpy(ret, curr_file, MAX_PATH);
-  snprintf(ext, 8, ".%i.sav", cur_slot);
-  add_ext(ret, ext);
-  debug("%s: %s\n", title, ret);
-  return 1;
 }
 
 __editor_maybe_static int file_manager(struct world *mzx_world,
@@ -3487,7 +3737,7 @@ int choose_file_ch(struct world *mzx_world, const char *const *wildcards,
  char *ret, const char *title, int dirs_okay)
 {
   if(get_config()->save_slots && strcmp(*wildcards, ".SAV") == 0) // TODO: yuck! changeme
-    return slot_manager(mzx_world, ret, title);
+    return slot_manager(mzx_world, ret, title, false);
   else
     return file_manager(mzx_world, wildcards, NULL, ret, title, dirs_okay,
      0, NULL, 0, 0);
@@ -3497,7 +3747,7 @@ int new_file(struct world *mzx_world, const char *const *wildcards,
  const char *default_ext, char *ret, const char *title, int dirs_okay)
 {
   if(get_config()->save_slots && strcmp(*wildcards, ".SAV") == 0) // TODO: yuck! changeme
-    return slot_manager(mzx_world, ret, title);
+    return slot_manager(mzx_world, ret, title, true);
   else
     return file_manager(mzx_world, wildcards, default_ext, ret, title, dirs_okay,
      1, NULL, 0, 0);
