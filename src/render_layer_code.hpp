@@ -353,6 +353,123 @@ static inline int select_color_16(Uint8 color, int tcol)
     return color & 0x0F;
 }
 
+// Macros to perform these shifts while ignoring spurious compiler warnings
+// that can't be turned off for older versions of GCC. Since BPP is constexpr
+// these should all optimize to single shifts.
+#define BPPx1(c) (c << (BPP - 1) << 1)
+#define BPPx2(c) (c << (BPP - 1) << (BPP - 1) << 2)
+#define BPPx3(c) (c << (BPP - 1) << (BPP - 1) << (BPP - 1) << 3)
+
+/**
+ * Precompute an array of color combinations for multipixel write renderers.
+ *
+ * Since this requires 1<<PPW values to be computed, 8 PPW renderers would
+ * need 256 combinations, which would probably hurt performance more than help
+ * it. Instead, 8 PPW just uses a special case of the 4 PPW code (see below).
+ *
+ * Note: an optimization like this would also be possible for the SMZX renderers
+ * but it's probably not worth it (as they performed much better than the
+ * mode 0 renderers before this optimization was added).
+ */
+template<int BPP, int PPW, typename ALIGNTYPE>
+static inline void set_colors_mzx(ALIGNTYPE dest[16], ALIGNTYPE cols[4])
+{
+  ALIGNTYPE bg = cols[0];
+  ALIGNTYPE fg = cols[1];
+
+#if PLATFORM_BYTE_ORDER == PLATFORM_LIL_ENDIAN
+  switch(PPW)
+  {
+    case 2:
+      dest[0] = BPPx1(bg) | bg;
+      dest[1] = BPPx1(fg) | bg;
+      dest[2] = BPPx1(bg) | fg;
+      dest[3] = BPPx1(fg) | fg;
+      break;
+
+    case 4:
+    case 8:
+      dest[0]  = BPPx3(bg) | BPPx2(bg) | BPPx1(bg) | bg;
+      dest[1]  = BPPx3(fg) | BPPx2(bg) | BPPx1(bg) | bg;
+      dest[2]  = BPPx3(bg) | BPPx2(fg) | BPPx1(bg) | bg;
+      dest[3]  = BPPx3(fg) | BPPx2(fg) | BPPx1(bg) | bg;
+      dest[4]  = BPPx3(bg) | BPPx2(bg) | BPPx1(fg) | bg;
+      dest[5]  = BPPx3(fg) | BPPx2(bg) | BPPx1(fg) | bg;
+      dest[6]  = BPPx3(bg) | BPPx2(fg) | BPPx1(fg) | bg;
+      dest[7]  = BPPx3(fg) | BPPx2(fg) | BPPx1(fg) | bg;
+      dest[8]  = BPPx3(bg) | BPPx2(bg) | BPPx1(bg) | fg;
+      dest[9]  = BPPx3(fg) | BPPx2(bg) | BPPx1(bg) | fg;
+      dest[10] = BPPx3(bg) | BPPx2(fg) | BPPx1(bg) | fg;
+      dest[11] = BPPx3(fg) | BPPx2(fg) | BPPx1(bg) | fg;
+      dest[12] = BPPx3(bg) | BPPx2(bg) | BPPx1(fg) | fg;
+      dest[13] = BPPx3(fg) | BPPx2(bg) | BPPx1(fg) | fg;
+      dest[14] = BPPx3(bg) | BPPx2(fg) | BPPx1(fg) | fg;
+      dest[15] = BPPx3(fg) | BPPx2(fg) | BPPx1(fg) | fg;
+      break;
+  }
+#else
+  switch(PPW)
+  {
+    case 2:
+      dest[0] = BPPx1(bg) | bg;
+      dest[1] = BPPx1(bg) | fg;
+      dest[2] = BPPx1(fg) | bg;
+      dest[3] = BPPx1(fg) | fg;
+      break;
+
+    case 4:
+    case 8:
+      dest[0]  = BPPx3(bg) | BPPx2(bg) | BPPx1(bg) | bg;
+      dest[1]  = BPPx3(bg) | BPPx2(bg) | BPPx1(bg) | fg;
+      dest[2]  = BPPx3(bg) | BPPx2(bg) | BPPx1(fg) | bg;
+      dest[3]  = BPPx3(bg) | BPPx2(bg) | BPPx1(fg) | fg;
+      dest[4]  = BPPx3(bg) | BPPx2(fg) | BPPx1(bg) | bg;
+      dest[5]  = BPPx3(bg) | BPPx2(fg) | BPPx1(bg) | fg;
+      dest[6]  = BPPx3(bg) | BPPx2(fg) | BPPx1(fg) | bg;
+      dest[7]  = BPPx3(bg) | BPPx2(fg) | BPPx1(fg) | fg;
+      dest[8]  = BPPx3(fg) | BPPx2(bg) | BPPx1(bg) | bg;
+      dest[9]  = BPPx3(fg) | BPPx2(bg) | BPPx1(bg) | fg;
+      dest[10] = BPPx3(fg) | BPPx2(bg) | BPPx1(fg) | bg;
+      dest[11] = BPPx3(fg) | BPPx2(bg) | BPPx1(fg) | fg;
+      dest[12] = BPPx3(fg) | BPPx2(fg) | BPPx1(bg) | bg;
+      dest[13] = BPPx3(fg) | BPPx2(fg) | BPPx1(bg) | fg;
+      dest[14] = BPPx3(fg) | BPPx2(fg) | BPPx1(fg) | bg;
+      dest[15] = BPPx3(fg) | BPPx2(fg) | BPPx1(fg) | fg;
+      break;
+  }
+#endif
+}
+
+/**
+ * Use the set_colors array to compute multiple pixel values simultaneously.
+ * This optimization is only useful for PPW >= 2 renderers.
+ */
+template<int PPW, typename ALIGNTYPE>
+static inline ALIGNTYPE get_colors_mzx(ALIGNTYPE set_colors[16],
+ Uint8 char_byte, int write_pos)
+{
+  Uint8 mask = ((0xFF) << (8 - PPW)) & 0xFF;
+  Uint8 idx = (char_byte & (mask >> (write_pos * PPW))) << (write_pos * PPW) >> (8 - PPW);
+
+  switch(PPW)
+  {
+    case 2:
+    case 4:
+      return set_colors[idx];
+
+    case 8:
+    {
+      Uint8 left = (idx & 0xF0) >> 4;
+      Uint8 right = (idx & 0x0F);
+#if PLATFORM_BYTE_ORDER == PLATFORM_LIL_ENDIAN
+      return (set_colors[right] << sizeof(ALIGNTYPE) * 4) | set_colors[left];
+#else
+      return (set_colors[left] << sizeof(ALIGNTYPE) * 4) | set_colors[right];
+#endif
+    }
+  }
+}
+
 /**
  * Finally, render the layer.
  * The optimizer will optimize out the unnecessary parts for relevant renderers.
@@ -418,12 +535,19 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
 
   int i;
 
-  PIXTYPE char_colors[4];
+  // This array will actually only store PIXTYPE values, but making it
+  // ALIGNTYPE instead helps avoid some warnings.
+  ALIGNTYPE char_colors[4];
   int char_idx[4];
   int write_pos;
 
   int pixel_x;
   int pixel_y;
+
+  ALIGNTYPE set_colors[16];
+  Uint16 last_fg = 0xFFFF;
+  Uint16 last_bg = 0xFFFF;
+  boolean has_tcol = false;
 
   // Position the output ptr at the location of the first char
   outPtr = (ALIGNTYPE *)pixels;
@@ -459,30 +583,39 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
           c %= PROTECTED_CHARSET_POSITION;
         }
 
-        if(SMZX)
+        if(src->bg_color != last_bg || src->fg_color != last_fg)
         {
-          for(i = 0; i < 4; i++)
+          if(SMZX)
           {
-            Uint16 pal = ((src->bg_color & 0xF) << 4) | (src->fg_color & 0xF);
-            char_idx[i] = graphics->smzx_indices[pal * 4 + i];
+            for(i = 0; i < 4; i++)
+            {
+              Uint16 pal = ((src->bg_color & 0xF) << 4) | (src->fg_color & 0xF);
+              char_idx[i] = graphics->smzx_indices[pal * 4 + i];
 
-            if(BPP > 8)
-              char_colors[i] = graphics->flat_intensity_palette[char_idx[i]];
-            else
-              char_colors[i] = char_idx[i];
+              if(BPP > 8)
+                char_colors[i] = graphics->flat_intensity_palette[char_idx[i]];
+              else
+                char_colors[i] = char_idx[i];
+            }
           }
-        }
-        else
-        {
-          char_idx[0] = select_color_16<BPP, TR, PPAL>(src->bg_color, tcol);
-          char_idx[1] = select_color_16<BPP, TR, PPAL>(src->fg_color, tcol);
-
-          for(i = 0; i < 2; i++)
+          else
           {
-            if(BPP > 8)
-              char_colors[i] = graphics->flat_intensity_palette[char_idx[i]];
-            else
-              char_colors[i] = char_idx[i];
+            char_idx[0] = select_color_16<BPP, TR, PPAL>(src->bg_color, tcol);
+            char_idx[1] = select_color_16<BPP, TR, PPAL>(src->fg_color, tcol);
+
+            for(i = 0; i < 2; i++)
+            {
+              if(BPP > 8)
+                char_colors[i] = graphics->flat_intensity_palette[char_idx[i]];
+              else
+                char_colors[i] = char_idx[i];
+            }
+
+            if(TR)
+              has_tcol = (char_idx[0] == tcol || char_idx[1] == tcol);
+
+            if(PPW > 1 && (!TR || !has_tcol))
+              set_colors_mzx<BPP,PPW>(set_colors, char_colors);
           }
         }
         char_ptr = graphics->charset + (c * CHAR_H);
@@ -502,9 +635,19 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
               {
                 if(!SMZX)
                 {
+                  if(PPW > 1 && (!TR || !has_tcol))
+                  {
+                    drawPtr[write_pos] = get_colors_mzx<PPW>(set_colors,
+                     current_char_byte, write_pos);
+                    continue;
+                  }
+
                   if(TR)
                     bgdata = drawPtr[write_pos];
 
+                  // NOTE: while the set_colors code was written to support
+                  // big endian, this and the SMZX renderers below were not.
+                  // Thus PPW>1 is disabled for big endian builds currently.
                   pix = 0;
                   for(i = 1; i <= PPW; i++)
                   {
@@ -517,7 +660,7 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
                     if(TR && char_idx[pcol] == tcol)
                       pix |= bgdata & (mask << BPP * (PPW - i));
                     else
-                      pix |= (ALIGNTYPE)char_colors[pcol] << BPP * (PPW - i);
+                      pix |= char_colors[pcol] << BPP * (PPW - i);
                   }
 
                   drawPtr[write_pos] = pix;
@@ -531,19 +674,15 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
                     pix = char_colors[pcol];
                     if(!CLIP || (pixel_x + write_pos * PPW >= 0))
                     {
-                      if(TR && tcol == char_idx[pcol])
-                        pix = drawPtr[write_pos];
-
-                      drawPtr[write_pos] = pix;
+                      if(!TR || tcol != char_idx[pcol])
+                        drawPtr[write_pos] = pix;
                     }
                     write_pos++;
 
                     if(!CLIP || (pixel_x + write_pos * PPW < SCREEN_PIX_W))
                     {
-                      if(TR && tcol == char_idx[pcol])
-                        pix = drawPtr[write_pos];
-
-                      drawPtr[write_pos] = pix;
+                      if(!TR || tcol != char_idx[pcol])
+                        drawPtr[write_pos] = pix;
                     }
                   }
                   else
@@ -566,10 +705,10 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
                       }
                       else
                       {
-                        pix |= (ALIGNTYPE)char_colors[pcol] << BPP * (PPW - i);
+                        pix |= char_colors[pcol] << BPP * (PPW - i);
 
                         if(TR)
-                          pix |= (ALIGNTYPE)char_colors[pcol] << BPP * (PPW - i + 1);
+                          pix |= char_colors[pcol] << BPP * (PPW - i + 1);
                       }
                     }
 

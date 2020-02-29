@@ -28,7 +28,7 @@ core_cxxflags = ${CXXFLAGS} -DHAVE_INTTYPES_H
 
 # render_layer.cpp needs some special flags.
 render_layer_objs =
-render_layer_cxxflags = ${CXXFLAGS} -funroll-loops
+render_layer_cxxflags = ${CXXFLAGS}# -funroll-loops
 ifeq ($(GCC_VER_GE_4_8),0)
 render_layer_cxxflags += -std=gnu++11
 endif
