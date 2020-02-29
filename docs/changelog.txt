@@ -54,6 +54,8 @@ DEVELOPERS
 + Refactored render_layer_code to use C++ templates.
 + render_layer now disables the (unused) 64-aligned renderers
   for 32-bit platforms and Emscripten builds.
++ Fixed buggy render_layer clipping that required clipping
+  renderers to unconditionally use a suboptimal alignment.
 + Switched from xmp_load_module to xmp_load_module_from_file.
 + Fixed various clang unused argument compiler warnings.
 

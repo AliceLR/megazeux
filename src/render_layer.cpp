@@ -208,6 +208,12 @@ void render_layer(void *pixels, int force_bpp, Uint32 pitch,
   drawStart =
    (size_t)((char *)pixels + layer->y * pitch + (layer->x * force_bpp / 8));
 
+  /**
+   * Select the highest pixel align the current platform is capable of.
+   * Additionally, to simplify the renderer code, the align must also be
+   * capable of addressing the first pixel of the draw (e.g. a 64-bit platform
+   * will use a 32-bit align if the layer is on an odd horizontal pixel).
+   */
 #ifndef SKIP_64_ALIGN
   if((sizeof(size_t) >= sizeof(Uint64)) && ((drawStart % sizeof(Uint64)) == 0))
   {
@@ -226,9 +232,6 @@ void render_layer(void *pixels, int force_bpp, Uint32 pitch,
   {
     align = 16;
   }
-
-  if(clip)
-    align = force_bpp;
 
 #if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
   // Currently not sure how big endian will work,

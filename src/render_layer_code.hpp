@@ -365,14 +365,23 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
   constexpr int BPP = sizeof(PIXTYPE) * 8;
   constexpr int PPW = sizeof(ALIGNTYPE) / sizeof(PIXTYPE);
 
+  /**
+   * The minimum pixel position allowed to be drawn.
+   * Since the SMZX,PPW=1 renderers have a special behavior that draws two
+   * pixels, it should always use -1 here (as if PPW is 2).
+   */
+  constexpr int PIXEL_X_MINIMUM = (SMZX && PPW == 1) ? -1 : 1 - PPW;
+
   // Make sure some pointless/impossible renderers are never instantiated.
   static_assert((PPW >= 1), "invalid ppw < 1");
   static_assert((PPW <= 8), "invalid ppw > 8");
-  static_assert((PPW == 1) || !(PPW & 1), "invalid ppw (must be power of 2)");
+  static_assert((PPW == 1) || (PPW == 2) || (PPW == 4) || (PPW == 8),
+   "invalid ppw (must be power of 2)");
 #else
 // Use these if for whatever reason C++11 isn't available.
 #define BPP (int)(sizeof(PIXTYPE) * 8)
 #define PPW (int)(sizeof(ALIGNTYPE) / sizeof(PIXTYPE))
+#define PIXEL_X_MINIMUM (int)((SMZX && PPW == 1) ? -1 : 1 - PPW)
 #endif
 
   // FIXME remove
@@ -433,7 +442,7 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
         pixel_y = layer->y + ch_y * CHAR_H;
 
         if(pixel_x <= -CHAR_W || pixel_y <= -CHAR_H ||
-         pixel_x >= CHAR_W * SCREEN_W || pixel_y >= CHAR_H * SCREEN_H)
+         pixel_x >= SCREEN_PIX_W || pixel_y >= SCREEN_PIX_H)
           c = INVISIBLE_CHAR;
       }
 
@@ -483,14 +492,13 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
         {
           current_char_byte = char_ptr[row];
 
-          if(!CLIP || (pixel_y + row >= 0 && pixel_y + row < CHAR_H * SCREEN_H))
+          if(!CLIP || (pixel_y + row >= 0 && pixel_y + row < SCREEN_PIX_H))
           {
             for(write_pos = 0; write_pos < CHAR_W / PPW; write_pos++)
             {
               if(!CLIP ||
-               ((((!SMZX && PPW == 1) && (pixel_x + write_pos >= 0)) ||
-                ((SMZX || PPW != 1) && (pixel_x + write_pos >= -1))) &&
-                 (pixel_x + write_pos < CHAR_W * SCREEN_W)))
+               ((pixel_x + write_pos * PPW >= PIXEL_X_MINIMUM) &&
+                (pixel_x + write_pos * PPW < SCREEN_PIX_W)))
               {
                 if(!SMZX)
                 {
@@ -511,6 +519,8 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
                     else
                       pix |= (ALIGNTYPE)char_colors[pcol] << BPP * (PPW - i);
                   }
+
+                  drawPtr[write_pos] = pix;
                 }
                 else
                 {
@@ -519,7 +529,7 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
                     pcol = (current_char_byte & (0xC0 >> write_pos)) << write_pos >> 6;
 
                     pix = char_colors[pcol];
-                    if(!CLIP || (pixel_x + write_pos >= 0))
+                    if(!CLIP || (pixel_x + write_pos * PPW >= 0))
                     {
                       if(TR && tcol == char_idx[pcol])
                         pix = drawPtr[write_pos];
@@ -528,8 +538,13 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
                     }
                     write_pos++;
 
-                    if(TR && tcol == char_idx[pcol])
-                      pix = drawPtr[write_pos];
+                    if(!CLIP || (pixel_x + write_pos * PPW < SCREEN_PIX_W))
+                    {
+                      if(TR && tcol == char_idx[pcol])
+                        pix = drawPtr[write_pos];
+
+                      drawPtr[write_pos] = pix;
+                    }
                   }
                   else
                   {
@@ -564,11 +579,10 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
                     if(!TR)
                     //pix |= (pix << BPP);
                       pix |= (pix << (BPP - 1)) << 1;
+
+                    drawPtr[write_pos] = pix;
                   }
                 }
-
-                if(!CLIP || (pixel_x + write_pos < CHAR_W * SCREEN_W))
-                  drawPtr[write_pos] = pix;
               }
             }
           }
