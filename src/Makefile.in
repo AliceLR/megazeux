@@ -26,12 +26,6 @@ core_flags   += -Wwrite-strings
 core_cflags  += ${CFLAGS} -Wmissing-prototypes
 core_cxxflags = ${CXXFLAGS} -DHAVE_INTTYPES_H
 
-# render_layer.cpp needs some special flags.
-render_layer_cxxflags = ${CXXFLAGS}# -funroll-loops
-ifeq ($(GCC_VER_GE_4_8),0)
-render_layer_cxxflags += -std=gnu++11
-endif
-
 ifneq (${PLATFORM},emscripten)
 core_flags   += -I${PREFIX}/include
 endif
@@ -72,10 +66,6 @@ ${core_obj}/%.o: ${core_src}/%.c
 ${core_obj}/%.o: ${core_src}/%.cpp
 	$(if ${V},,@echo "  CXX     " $<)
 	${CXX} -MD ${core_cxxflags} ${core_flags} ${core_spec} -c $< -o $@
-
-${core_obj}/render_layer.o: ${core_src}/render_layer.cpp
-	$(if ${V},,@echo "  CXX     " $<)
-	${CXX} -MD ${render_layer_cxxflags} ${core_flags} ${core_spec} -c $< -o $@
 
 #
 # Lists mandatory C language sources (mangled to object names) required

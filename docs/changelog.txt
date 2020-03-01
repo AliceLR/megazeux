@@ -60,6 +60,7 @@ DEVELOPERS
   renderers to unconditionally use a suboptimal alignment.
 + Switched from xmp_load_module to xmp_load_module_from_file.
 + Fixed various clang unused argument compiler warnings.
++ Moved Makefile compiler version checks to arch/compat.inc.
 
 
 September 23rd, 2019 - MZX 2.92b
