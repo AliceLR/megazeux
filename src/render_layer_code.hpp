@@ -379,6 +379,9 @@ static inline void set_colors_mzx(ALIGNTYPE dest[16], ALIGNTYPE cols[4])
 #if PLATFORM_BYTE_ORDER == PLATFORM_LIL_ENDIAN
   switch(PPW)
   {
+    case 1:
+      break;
+
     case 2:
       dest[0] = BPPx1(bg) | bg;
       dest[1] = BPPx1(fg) | bg;
@@ -409,6 +412,9 @@ static inline void set_colors_mzx(ALIGNTYPE dest[16], ALIGNTYPE cols[4])
 #else
   switch(PPW)
   {
+    case 1:
+      break;
+
     case 2:
       dest[0] = BPPx1(bg) | bg;
       dest[1] = BPPx1(bg) | fg;
@@ -452,6 +458,10 @@ static inline ALIGNTYPE get_colors_mzx(ALIGNTYPE set_colors[16],
 
   switch(PPW)
   {
+    // Should be unreachable, but some compilers complain...
+    case 1:
+      return 0;
+
     case 2:
     case 4:
       return set_colors[idx];
