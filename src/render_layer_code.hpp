@@ -367,9 +367,8 @@ static inline int select_color_16(Uint8 color, int tcol)
  * need 256 combinations, which would probably hurt performance more than help
  * it. Instead, 8 PPW just uses a special case of the 4 PPW code (see below).
  *
- * Note: an optimization like this would also be possible for the SMZX renderers
- * but it's probably not worth it (as they performed much better than the
- * mode 0 renderers before this optimization was added).
+ * Note: this optimization is not worth implementing for SMZX as doubling is
+ * much faster to precompute in SMZX mode.
  */
 template<int BPP, int PPW, typename ALIGNTYPE>
 static inline void set_colors_mzx(ALIGNTYPE dest[16], ALIGNTYPE cols[4])
@@ -587,6 +586,7 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
         {
           if(SMZX)
           {
+            has_tcol = false;
             for(i = 0; i < 4; i++)
             {
               Uint16 pal = ((src->bg_color & 0xF) << 4) | (src->fg_color & 0xF);
@@ -596,6 +596,14 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
                 char_colors[i] = graphics->flat_intensity_palette[char_idx[i]];
               else
                 char_colors[i] = char_idx[i];
+
+              if(TR)
+                has_tcol = has_tcol || char_idx[i] == tcol;
+
+              // If writing more than 2 pixels at once, preemptively double
+              // them. This saves having to perform this operation later...
+              if(PPW > 1)
+                char_colors[i] |= BPPx1(char_colors[i]);
             }
           }
           else
@@ -697,7 +705,9 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
 
                       pcol = (current_char_byte & (0xC0 >> shift)) << shift >> 6;
 
-                      if(TR && char_idx[pcol] == tcol)
+                      // NOTE: the optimizer should unswitch this due to the
+                      // has_tcol check.
+                      if(TR && has_tcol && char_idx[pcol] == tcol)
                       {
                         pix |= bgdata &
                          ((mask << BPP * (PPW - i) |
@@ -705,20 +715,11 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
                       }
                       else
                       {
+                        // NOTE: this was already doubled above, so this shift
+                        // needs to be done once only.
                         pix |= char_colors[pcol] << BPP * (PPW - i);
-
-                        if(TR)
-                          pix |= char_colors[pcol] << BPP * (PPW - i + 1);
                       }
                     }
-
-                    // GCC likes to give warnings about the left shift width
-                    // here despite this being unreachable when this would be
-                    // an issue. Trick it into shutting up...
-                    if(!TR)
-                    //pix |= (pix << BPP);
-                      pix |= (pix << (BPP - 1)) << 1;
-
                     drawPtr[write_pos] = pix;
                   }
                 }
