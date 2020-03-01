@@ -27,7 +27,6 @@ core_cflags  += ${CFLAGS} -Wmissing-prototypes
 core_cxxflags = ${CXXFLAGS} -DHAVE_INTTYPES_H
 
 # render_layer.cpp needs some special flags.
-render_layer_objs =
 render_layer_cxxflags = ${CXXFLAGS}# -funroll-loops
 ifeq ($(GCC_VER_GE_4_8),0)
 render_layer_cxxflags += -std=gnu++11
@@ -256,8 +255,7 @@ endif
 # This one tends to take forever for many builds. Prefix it to
 # the list so hopefully it starts sooner during parallel builds.
 ifeq (${render_layer_software},1)
-#core_cobjs := ${core_obj}/render_layer.o ${core_cobjs}
-render_layer_objs := ${core_obj}/render_layer.o
+core_cobjs := ${core_obj}/render_layer.o ${core_cobjs}
 endif
 
 ifeq (${BUILD_MODPLUG},1)
@@ -386,7 +384,7 @@ ifeq (${BUILD_DEBYTECODE},1)
 core_cobjs += ${core_obj}/rasm.o
 endif
 
-core_objs := ${render_layer_objs} ${core_cobjs} ${core_cxxobjs}
+core_objs := ${core_cobjs} ${core_cxxobjs}
 
 -include ${core_objs:.o=.d}
 
