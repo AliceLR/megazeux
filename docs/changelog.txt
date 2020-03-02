@@ -33,6 +33,7 @@ USERS
 + Fixed a robot editor regression where certain numpad symbols
   could not be typed.
 + Added "GL4ES wrapper" to the auto_glsl blacklist.
++ Added "Software Rasterizer" to the auto_glsl blacklist.
 + checkres no longer requires zip archive filenames to end with
   the .ZIP extension.
 + Added optional CSV output to checkres.

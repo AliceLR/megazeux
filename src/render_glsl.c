@@ -124,6 +124,9 @@ static struct blacklist_entry auto_glsl_blacklist[] =
   { "llvmpipe",
     "  MESA software renderer.\n"
     "  Blacklisted due to poor performance on some machines.\n" },
+  { "Software Rasterizer",
+    "  MESA software renderer.\n"
+    "  Blacklisted due to poor performance on some machines.\n" },
   { "Chromium",
     "  Chromium redirects GL commands to other GL drivers. The destination\n"
     "  often seems to be a software renderer, causing poor performance on\n"
