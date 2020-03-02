@@ -664,7 +664,8 @@
 # grab_mouse = 0
 
 # Set to 1 to use a save slot system (similar to emulator save states)
-# instead of allowing for freeform text entry.
+# instead of allowing for freeform text entry. This value can be overridden
+# using a game.cnf file.
 
 # save_slots = 0
 

@@ -73,6 +73,17 @@ static int cur_screen = 0;
 // The last-used saved game slot.
 static int cur_slot = 0;
 
+// Some slot selector definitions.
+#define SLOTSEL_MAX_ELEMENTS        4
+#define SLOTSEL_OKAY_BUTTON         0
+#define SLOTSEL_CANCEL_BUTTON       1
+#define SLOTSEL_FILE_MANAGER_BUTTON 2
+#define SLOTSEL_SELECTOR            3
+#define SLOTSEL_NUM_SLOTS           10
+#define SLOTSEL_OK_RESULT           0
+#define SLOTSEL_CANCEL_RESULT       -1
+#define SLOTSEL_FILE_MANAGER_RESULT -2
+
 // Free up memory.
 
 // The following functions do NOT check to see if memory is reserved, in
@@ -1825,15 +1836,19 @@ static int key_slot_selector(struct world *mzx_world, struct dialog *di,
   struct slot_selector *src = (struct slot_selector *)e;
   int this_slot = src->selected_slot;
   int target_slot;
+  int i;
 
   switch(key)
   {
     case IKEY_LEFT:
     {
-      while(--src->selected_slot != this_slot)
+      for(i = 0; i < SLOTSEL_NUM_SLOTS; i++)
       {
-        if(src->selected_slot < 0)
+        if(--src->selected_slot < 0)
           src->selected_slot = src->num_slots - 1;
+
+        if(src->selected_slot == this_slot)
+          break;
 
         if(get_slot_state(src->selected_slot, src->highlighted_slots,
          src->disabled_slots) != SLOT_DISABLED)
@@ -1844,10 +1859,13 @@ static int key_slot_selector(struct world *mzx_world, struct dialog *di,
 
     case IKEY_RIGHT:
     {
-      while(++src->selected_slot != this_slot)
+      for(i = 0; i < SLOTSEL_NUM_SLOTS; i++)
       {
-        if(src->selected_slot >= src->num_slots)
+        if(++src->selected_slot >= src->num_slots)
           src->selected_slot = 0;
+
+        if(src->selected_slot == this_slot)
+          break;
 
         if(get_slot_state(src->selected_slot, src->highlighted_slots,
          src->disabled_slots) != SLOT_DISABLED)
@@ -2755,12 +2773,6 @@ static int sort_function(const void *dest_str_ptr, const void *src_str_ptr)
   return strcasecmp(dest_str, src_str);
 }
 
-#define SLOTSEL_MAX_ELEMENTS  3
-#define SLOTSEL_OKAY_BUTTON   0
-#define SLOTSEL_CANCEL_BUTTON 1
-#define SLOTSEL_SELECTOR      2
-#define SLOTSEL_NUM_SLOTS     10
-
 static int slot_manager(struct world *mzx_world, char *ret,
  const char *title, boolean save)
 {
@@ -2811,9 +2823,11 @@ static int slot_manager(struct world *mzx_world, char *ret,
      construct_slot_selector(3, 2, "Choose a slot:", SLOTSEL_NUM_SLOTS,
      highlighted_slots, disabled_slots, selected_slot, save);
     elements[SLOTSEL_OKAY_BUTTON] =
-     construct_button(16, 6, "OK", 0);
+     construct_button(7, 6, "OK", SLOTSEL_OK_RESULT);
     elements[SLOTSEL_CANCEL_BUTTON] =
-     construct_button(23, 6, "Cancel", -1);
+     construct_button(14, 6, "Cancel", SLOTSEL_CANCEL_RESULT);
+    elements[SLOTSEL_FILE_MANAGER_BUTTON] =
+     construct_button(25, 6, "File Manager", SLOTSEL_FILE_MANAGER_RESULT);
 
     construct_dialog(&di, title, 17, 8, 46, 9, elements,
      SLOTSEL_MAX_ELEMENTS, SLOTSEL_SELECTOR);
@@ -2821,25 +2835,26 @@ static int slot_manager(struct world *mzx_world, char *ret,
 
     switch(dialog_result)
     {
-      case -1:
-      {
-        return_value = -1;
-        break;
-      }
-
-      case 0:
+      case SLOTSEL_OK_RESULT:
       {
         cur_slot =
          ((struct slot_selector *)elements[SLOTSEL_SELECTOR])->selected_slot;
         return_value = 0;
+
+        // Add one more quick check to make sure that we don't try to restore an
+        // empty slot.
+        if(!save && disabled_slots[cur_slot])
+          return_value = -1;
+
+        break;
+      }
+
+      default:
+      {
+        return_value = dialog_result;
         break;
       }
     }
-
-    // Add one more quick check to make sure that we don't try to restore an
-    // empty slot.
-    if(!save && disabled_slots[cur_slot])
-      return_value = -1;
 
     force_release_all_keys();
 
@@ -2848,6 +2863,9 @@ static int slot_manager(struct world *mzx_world, char *ret,
     if(highlighted_slots != NULL) free(highlighted_slots);
     if(disabled_slots != NULL) free(disabled_slots);
   }
+
+  if(return_value != 0)
+    return return_value;
 
   strncpy(ret, curr_file, MAX_PATH);
   snprintf(ext, 8, ".%i.sav", cur_slot);
@@ -3762,21 +3780,31 @@ skip_dir:
 int choose_file_ch(struct world *mzx_world, const char *const *wildcards,
  char *ret, const char *title, int dirs_okay)
 {
+  int slot_result = SLOTSEL_FILE_MANAGER_RESULT;
+
   if(get_config()->save_slots && strcmp(*wildcards, ".SAV") == 0) // TODO: yuck! changeme
-    return slot_manager(mzx_world, ret, title, false);
-  else
-    return file_manager(mzx_world, wildcards, NULL, ret, title, dirs_okay,
-     0, NULL, 0, 0);
+    slot_result = slot_manager(mzx_world, ret, title, false);
+
+  if(slot_result != SLOTSEL_FILE_MANAGER_RESULT)
+    return slot_result;
+
+  return file_manager(mzx_world, wildcards, NULL, ret, title, dirs_okay,
+   0, NULL, 0, 0);
 }
 
 int new_file(struct world *mzx_world, const char *const *wildcards,
  const char *default_ext, char *ret, const char *title, int dirs_okay)
 {
+  int slot_result = SLOTSEL_FILE_MANAGER_RESULT;
+
   if(get_config()->save_slots && strcmp(*wildcards, ".SAV") == 0) // TODO: yuck! changeme
-    return slot_manager(mzx_world, ret, title, true);
-  else
-    return file_manager(mzx_world, wildcards, default_ext, ret, title, dirs_okay,
-     1, NULL, 0, 0);
+    slot_result = slot_manager(mzx_world, ret, title, true);
+
+  if(slot_result != SLOTSEL_FILE_MANAGER_RESULT)
+    return slot_result;
+
+  return file_manager(mzx_world, wildcards, default_ext, ret, title, dirs_okay,
+   1, NULL, 0, 0);
 }
 
 #if defined(CONFIG_UPDATER) || defined(CONFIG_LOADSAVE_METER)
