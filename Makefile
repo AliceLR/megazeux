@@ -255,8 +255,8 @@ endif
 #
 ifeq (${DEBUG},1)
 ifeq (${HAS_F_CHECK},1)
-CFLAGS   += -fcheck=bounds
-CXXFLAGS += -fcheck=bounds
+CFLAGS   += -fbounds-check
+CXXFLAGS += -fbounds-check
 endif
 endif
 

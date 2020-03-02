@@ -45,7 +45,7 @@ ifneq (${IS_CLANG},0)
 # Not actually sure if this is the correct version; the != 4.2.1 check that
 # existed prior in the Makefile may have been intended to block clang.
 ifeq (${GCC_VER_GT_4_2_1},0)
-HAS_F_CHECK = 1
+HAS_F_BOUNDS_CHECK = 1
 endif
 
 ifeq ($(GCC_VER_GE_7),0)
