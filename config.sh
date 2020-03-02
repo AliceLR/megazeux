@@ -440,7 +440,7 @@ elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 	elif [ "`echo $MACH | sed 's,^arm.*,arm,'`" = "arm" ]; then
 		ARCHNAME=arm
 		#RAWLIBDIR=lib
-	elif [ "$MACH" == "ppc" ]; then
+	elif [ "$MACH" = "ppc" ]; then
 		ARCHNAME=ppc
 		#RAWLIBDIR=lib
 	else
