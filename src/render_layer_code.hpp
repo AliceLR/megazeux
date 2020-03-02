@@ -479,6 +479,14 @@ static inline ALIGNTYPE get_colors_mzx(ALIGNTYPE set_colors[16],
   }
 }
 
+#if PLATFORM_BYTE_ORDER == PLATFORM_LIL_ENDIAN
+#define PIXEL_POS(i)      (BPP * (PPW - 1 - (i)))
+#define PIXEL_POS_PAIR(i) (BPP * (PPW - 2 - (i)))
+#else
+#define PIXEL_POS(i)      (BPP * (i))
+#define PIXEL_POS_PAIR(i) (BPP * (i))
+#endif
+
 /**
  * Finally, render the layer.
  * The optimizer will optimize out the unnecessary parts for relevant renderers.
@@ -663,22 +671,19 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
                   if(TR)
                     bgdata = drawPtr[write_pos];
 
-                  // NOTE: while the set_colors code was written to support
-                  // big endian, this and the SMZX renderers below were not.
-                  // Thus PPW>1 is disabled for big endian builds currently.
                   pix = 0;
-                  for(i = 1; i <= PPW; i++)
+                  for(i = 0; i < PPW; i++)
                   {
-                    //ALIGNTYPE shift = write_pos * PPW + (PPW - i);
+                    //ALIGNTYPE shift = write_pos * PPW + (PPW - 1 - i);
                     //pcol = (current_char_byte & (0x80 >> shift)) >> (7 - shift);
 
                     // This seems to perform a little better than the old method (above).
-                    pcol = !!(current_char_byte & (0x80 >> (write_pos * PPW + (PPW - i))));
+                    pcol = !!(current_char_byte & (0x80 >> (write_pos * PPW + (PPW - 1 - i))));
 
                     if(TR && char_idx[pcol] == tcol)
-                      pix |= bgdata & (mask << BPP * (PPW - i));
+                      pix |= bgdata & (mask << PIXEL_POS(i));
                     else
-                      pix |= char_colors[pcol] << BPP * (PPW - i);
+                      pix |= char_colors[pcol] << PIXEL_POS(i);
                   }
 
                   drawPtr[write_pos] = pix;
@@ -709,9 +714,9 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
                     if(TR)
                       bgdata = drawPtr[write_pos];
 
-                    for(i = 2; i <= PPW; i += 2)
+                    for(i = 0; i < PPW; i += 2)
                     {
-                      ALIGNTYPE shift = write_pos * PPW + (PPW - i);
+                      ALIGNTYPE shift = write_pos * PPW + (PPW - 2 - i);
 
                       pcol = (current_char_byte & (0xC0 >> shift)) << shift >> 6;
 
@@ -720,14 +725,14 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
                       if(TR && has_tcol && char_idx[pcol] == tcol)
                       {
                         pix |= bgdata &
-                         ((mask << BPP * (PPW - i) |
-                          (mask << BPP * (PPW - i + 1))));
+                         ((mask << PIXEL_POS(i)) |
+                          (mask << PIXEL_POS(i + 1)));
                       }
                       else
                       {
                         // NOTE: this was already doubled above, so this shift
                         // needs to be done once only.
-                        pix |= char_colors[pcol] << BPP * (PPW - i);
+                        pix |= char_colors[pcol] << PIXEL_POS_PAIR(i);
                       }
                     }
                     drawPtr[write_pos] = pix;

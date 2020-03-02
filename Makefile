@@ -254,7 +254,7 @@ endif
 # Enable bounds checks for debug builds.
 #
 ifeq (${DEBUG},1)
-ifeq (${HAS_F_CHECK},1)
+ifeq (${HAS_F_BOUNDS_CHECK},1)
 CFLAGS   += -fbounds-check
 CXXFLAGS += -fbounds-check
 endif

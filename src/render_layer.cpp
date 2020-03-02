@@ -233,12 +233,6 @@ void render_layer(void *pixels, int force_bpp, Uint32 pitch,
     align = 16;
   }
 
-#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
-  // Currently not sure how big endian will work,
-  // so for now force alignment to bpp
-  align = force_bpp;
-#endif
-
   render_layer_func(pixels, pitch, graphics, layer,
    force_bpp, align, smzx, ppal, trans, clip);
 }
