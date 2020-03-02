@@ -904,7 +904,7 @@ static const struct config_entry config_options[] =
   { "resample_mode", config_resample_mode, false },
   { "sample_volume", config_set_sam_volume, false },
   { "save_file", config_save_file, false },
-  { "save_slots", config_save_slots, false },
+  { "save_slots", config_save_slots, true },
 #ifdef CONFIG_NETWORK
   { "socks_host", config_set_socks_host, false },
   { "socks_port", config_set_socks_port, false },
