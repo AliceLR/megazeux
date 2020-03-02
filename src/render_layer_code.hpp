@@ -518,7 +518,7 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
 #define PIXEL_X_MINIMUM (int)((SMZX && PPW == 1) ? -1 : 1 - PPW)
 #endif
 
-  // FIXME remove
+#ifdef DEBUG
   static boolean printed = false;
   if(!printed)
   {
@@ -526,6 +526,7 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
     fflush(stderr);
     printed = true;
   }
+#endif
 
   Uint32 ch_x, ch_y;
   Uint16 c;
