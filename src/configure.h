@@ -99,6 +99,8 @@ struct config_info
   boolean system_mouse;
   boolean grab_mouse;
   boolean save_slots;
+  char save_slots_name[256];
+  char save_slots_ext[256];
 
   // Editor options
   boolean test_mode;

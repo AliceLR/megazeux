@@ -70,10 +70,17 @@ static struct char_element screen_storage[NUM_SAVSCR][SET_SCREEN_SIZE];
 // Current space for save_screen and restore_screen
 static int cur_screen = 0;
 
-// The last-used saved game slot.
+// The last-used saved game slot, and the current slot prefix.
 static int cur_slot = 0;
+static char *cur_slot_prefix = NULL;
 
 // Some slot selector definitions.
+#define SLOT_DISABLED   -1
+#define SLOT_NORMAL     0
+#define SLOT_HIGHLIGHT  1
+
+#define SLOTSEL_BAR_Y  2
+
 #define SLOTSEL_MAX_ELEMENTS        4
 #define SLOTSEL_OKAY_BUTTON         0
 #define SLOTSEL_CANCEL_BUTTON       1
@@ -1407,10 +1414,6 @@ static void draw_number_box(struct world *mzx_world, struct dialog *di,
   }
 }
 
-#define SLOT_DISABLED   -1
-#define SLOT_NORMAL     0
-#define SLOT_HIGHLIGHT  1
-
 static int get_slot_state(int slot, boolean *highlighted_slots,
  boolean *disabled_slots)
 {
@@ -1422,8 +1425,6 @@ static int get_slot_state(int slot, boolean *highlighted_slots,
 
   return SLOT_NORMAL;
 }
-
-#define SLOTSEL_BAR_Y  2
 
 static void draw_slot_selector(struct world *mzx_world, struct dialog *di,
  struct element *e, int color, int active)
@@ -2253,12 +2254,10 @@ static int drag_number_box(struct world *mzx_world, struct dialog *di,
 static boolean slot_save_exists(const char *file, int slot)
 {
   struct stat s;
-  char ext[8];
   char path[MAX_PATH];
 
-  strncpy(path, file, MAX_PATH);
-  snprintf(ext, 8, ".%i.sav", slot);
-  add_ext(path, ext);
+  snprintf(path, MAX_PATH, "%s%i%s",
+   cur_slot_prefix, slot, get_config()->save_slots_ext);
   return !stat(path, &s);
 }
 
@@ -2273,7 +2272,7 @@ static int click_slot_selector(struct world *mzx_world, struct dialog *di,
 
   target_slot = mouse_x / 4;
 
-  if(src->save || slot_save_exists(curr_file, target_slot))
+  if(src->save || slot_save_exists(cur_slot_prefix, target_slot))
   {
     src->selected_slot = target_slot;
   }
@@ -2773,12 +2772,104 @@ static int sort_function(const void *dest_str_ptr, const void *src_str_ptr)
   return strcasecmp(dest_str, src_str);
 }
 
+static void update_slot_prefix(void) {
+  char *world_name;
+  size_t i;
+  size_t pos = 0;
+  int token_pos = -1;
+  char *fmt;
+  boolean parse_token = false;
+  size_t fmt_len;
+  size_t world_len;
+
+  if(cur_slot_prefix != NULL)
+    free(cur_slot_prefix);
+
+  cur_slot_prefix = malloc(sizeof(char) * MAX_PATH);
+
+  fmt = get_config()->save_slots_name;
+  fmt_len = strlen(fmt);
+  for(i = 0; i < fmt_len; i++)
+  {
+    if(fmt[i] == '%')
+    {
+      token_pos = i;
+      break;
+    }
+  }
+
+  // If no tokens were found, just copy the string over as-is.
+  if(token_pos < 0)
+  {
+    strncpy(cur_slot_prefix, fmt, MAX_PATH);
+    debug("update_slot_prefix: slot prefix: %s\n", cur_slot_prefix);
+    return;
+  }
+
+  // Fetch the world name, sans extension.
+  world_len = strlen(curr_file) - 4;
+  world_name = malloc(sizeof(char) * world_len);
+  memcpy(world_name, curr_file, world_len);
+
+  // We already know where the first token is. Copy everything before that
+  // if possible.
+  if(token_pos > 0)
+  {
+    memcpy(cur_slot_prefix, fmt, token_pos);
+    pos += token_pos;
+  }
+
+  // Walk through the format string and replace tokens when necessary.
+  for(i = pos; i < fmt_len && pos < MAX_PATH - 1; i++)
+  {
+    if(!parse_token && fmt[i] != '%')
+    {
+      cur_slot_prefix[pos++] = fmt[i];
+      continue;
+    }
+
+    if(parse_token)
+    {
+      switch(fmt[i])
+      {
+        case '%':
+        {
+          cur_slot_prefix[pos++] = '%';
+          break;
+        }
+
+        case 'w':
+        {
+          memcpy(cur_slot_prefix + pos, world_name, world_len);
+          pos += world_len;
+          break;
+        }
+
+        default:
+        {
+          debug("update_slot_prefix: invalid token '%c'\n", fmt[i]);
+          break;
+        }
+      }
+
+      parse_token = false;
+      continue;
+    }
+
+    parse_token = true;
+  }
+
+  cur_slot_prefix[pos] = '\0';
+  debug("update_slot_prefix: slot prefix: %s\n", cur_slot_prefix);
+
+  // Clean up.
+  free(world_name);
+}
+
 static int slot_manager(struct world *mzx_world, char *ret,
  const char *title, boolean save)
 {
-  char ext[8];
   int i;
-
   struct dialog di;
   struct element *elements[SLOTSEL_MAX_ELEMENTS];
   int dialog_result = 0;
@@ -2787,6 +2878,8 @@ static int slot_manager(struct world *mzx_world, char *ret,
   boolean *highlighted_slots = NULL;
   boolean *disabled_slots = NULL;
 
+  update_slot_prefix();
+
   while(return_value > 0)
   {
     if(save)
@@ -2794,7 +2887,7 @@ static int slot_manager(struct world *mzx_world, char *ret,
       highlighted_slots = malloc(sizeof(boolean) * SLOTSEL_NUM_SLOTS);
       for(i = 0; i < SLOTSEL_NUM_SLOTS; i++)
       {
-        highlighted_slots[i] = slot_save_exists(curr_file, i);
+        highlighted_slots[i] = slot_save_exists(cur_slot_prefix, i);
       }
     }
     else
@@ -2802,7 +2895,7 @@ static int slot_manager(struct world *mzx_world, char *ret,
       disabled_slots = malloc(sizeof(boolean) * SLOTSEL_NUM_SLOTS);
       for(i = 0; i < SLOTSEL_NUM_SLOTS; i++)
       {
-        disabled_slots[i] = !slot_save_exists(curr_file, i);
+        disabled_slots[i] = !slot_save_exists(cur_slot_prefix, i);
       }
 
       // If the current slot is empty, try to set it to one that isn't.
@@ -2867,9 +2960,8 @@ static int slot_manager(struct world *mzx_world, char *ret,
   if(return_value != 0)
     return return_value;
 
-  strncpy(ret, curr_file, MAX_PATH);
-  snprintf(ext, 8, ".%i.sav", cur_slot);
-  add_ext(ret, ext);
+  snprintf(ret, MAX_PATH, "%s%i%s",
+   cur_slot_prefix, cur_slot, get_config()->save_slots_ext);
 
   return return_value;
 }
