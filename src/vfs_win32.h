@@ -38,6 +38,16 @@ __M_BEGIN_DECLS
 #include <wchar.h>
 
 /**
+ * The wide char conversion functions were added in Windows 2000 and generally
+ * the wide versions of the stdio functions just don't appear to work in older
+ * OSes (tested Win98 with KernelEx using tdm-gcc 5.1.0).
+ */
+#if WINVER >= 0x500 /* _WIN32_WINNT_WIN2K */
+#define WIDE_PATHS 1
+#endif
+
+#ifdef WIDE_PATHS
+/**
  * Convert a UTF-8 char string into a UTF-16 wide char string for use with
  * Win32 wide char functions. Returns the length of the output (including the
  * null terminator) or 0 on failure.
@@ -72,21 +82,24 @@ static inline int utf16_to_utf8(const wchar_t *src, char *dest, int dest_size)
     NULL
   );
 }
+#endif
 
 static inline FILE *platform_fopen_unsafe(const char *path, const char *mode)
 {
+#ifdef WIDE_PATHS
   wchar_t wpath[MAX_PATH];
   wchar_t wmode[64];
 
   if(utf8_to_utf16(path, wpath, MAX_PATH))
     if(utf8_to_utf16(mode, wmode, 64))
       return _wfopen(wpath, wmode);
-
+#endif
   return fopen_unsafe(path, mode);
 }
 
 static inline char *platform_getcwd(char *buf, size_t size)
 {
+#ifdef WIDE_PATHS
   wchar_t wpath[MAX_PATH];
 
   if(!_wgetcwd(wpath, MAX_PATH))
@@ -94,59 +107,64 @@ static inline char *platform_getcwd(char *buf, size_t size)
 
   if(utf16_to_utf8(wpath, buf, size))
     return buf;
-
+#endif
   return getcwd(buf, size);
 }
 
 static inline int platform_chdir(const char *path)
 {
+#ifdef WIDE_PATHS
   wchar_t wpath[MAX_PATH];
 
   if(utf8_to_utf16(path, wpath, MAX_PATH))
     return _wchdir(wpath);
-
+#endif
   return chdir(path);
 }
 
 static inline int platform_mkdir(const char *path, int mode)
 {
+#ifdef WIDE_PATHS
   wchar_t wpath[MAX_PATH];
 
   if(utf8_to_utf16(path, wpath, MAX_PATH))
     return _wmkdir(wpath);
-
+#endif
   return mkdir(path);
 }
 
 static inline int platform_unlink(const char *path)
 {
+#ifdef WIDE_PATHS
   wchar_t wpath[MAX_PATH];
 
   if(utf8_to_utf16(path, wpath, MAX_PATH))
     return _wunlink(wpath);
-
+#endif
   return unlink(path);
 }
 
 static inline int platform_rmdir(const char *path)
 {
+#ifdef WIDE_PATHS
   wchar_t wpath[MAX_PATH];
 
   if(utf8_to_utf16(path, wpath, MAX_PATH))
     return _wrmdir(wpath);
-
+#endif
   return rmdir(path);
 }
 
 static inline int platform_stat(const char *path, struct stat *buf)
 {
+#ifdef WIDE_PATHS
   wchar_t wpath[MAX_PATH];
   struct _stat stat_info;
   int ret;
 
   if(utf8_to_utf16(path, wpath, MAX_PATH))
   {
-    ret =  _wstat(wpath, &stat_info);
+    ret = _wstat(wpath, &stat_info);
 
     buf->st_gid = stat_info.st_gid;
     buf->st_atime = (time_t)stat_info.st_atime;
@@ -161,6 +179,7 @@ static inline int platform_stat(const char *path, struct stat *buf)
     buf->st_uid = stat_info.st_uid;
     return ret;
   }
+#endif
   return stat(path, buf);
 }
 

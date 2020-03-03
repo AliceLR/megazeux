@@ -41,7 +41,7 @@
 
 static inline boolean platform_opendir(struct mzx_dir *dir, const char *path)
 {
-#ifdef __WIN32__
+#ifdef WIDE_PATHS
   wchar_t wpath[MAX_PATH];
   dir->is_wdirent = false;
 
@@ -67,7 +67,7 @@ static inline boolean platform_opendir(struct mzx_dir *dir, const char *path)
 
 static inline void platform_closedir(struct mzx_dir *dir)
 {
-#ifdef __WIN32__
+#ifdef WIDE_PATHS
   if(dir->is_wdirent)
   {
     _wclosedir(dir->opaque);
@@ -104,7 +104,7 @@ static inline boolean platform_readdir(struct mzx_dir *dir,
 {
   struct dirent *inode;
 
-#ifdef __WIN32__
+#ifdef WIDE_PATHS
   if(dir->is_wdirent)
   {
     struct _wdirent *w_inode = _wreaddir(dir->opaque);
@@ -163,7 +163,7 @@ static inline boolean platform_rewinddir(struct mzx_dir *dir)
   platform_closedir(dir);
   if(!platform_opendir(dir, dir->path))
     return false;
-#elif defined(__WIN32__)
+#elif defined(WIDE_PATHS)
   if(dir->is_wdirent)
     _wrewinddir(dir->opaque);
   else
