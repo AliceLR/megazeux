@@ -1678,25 +1678,47 @@ static int char_byte_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
   Uint16 char_num = get_counter(mzx_world, "CHAR", id);
+  Uint8 byte_num = get_counter(mzx_world, "BYTE", id);
 
-  // Prior to 2.90 char params are clipped
-  if(mzx_world->version < V290) char_num &= 0xFF;
+  // Prior to 2.90 char params are clipped.
+  if(mzx_world->version < V290)
+    char_num &= 0xFF;
 
-  return ec_read_byte(char_num,
-   get_counter(mzx_world, "BYTE", id));
+  if(byte_num >= 14)
+  {
+    // Old port releases are missing a bounds check (see: Day of Zeux Invitation).
+    if(mzx_world->version >= VERSION_PORT && mzx_world->version < V292)
+      char_num += byte_num / 14;
+
+    byte_num %= 14;
+  }
+
+  return ec_read_byte(char_num, byte_num);
 }
 
 static void char_byte_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   Uint16 char_num = get_counter(mzx_world, "CHAR", id);
+  Uint8 byte_num = get_counter(mzx_world, "BYTE", id);
 
-  // Prior to 2.90 char params are clipped
-  if(mzx_world->version < V290) char_num &= 0xFF;
-  if(char_num > 0xFF && !layer_renderer_check(true)) return;
+  // Prior to 2.90 char params are clipped.
+  if(mzx_world->version < V290)
+    char_num &= 0xFF;
 
-  ec_change_byte(char_num,
-   get_counter(mzx_world, "BYTE", id), value);
+  if(byte_num >= 14)
+  {
+    // Old port releases are missing a bounds check (see: Day of Zeux Invitation).
+    // This may write the byte into the extended charsets, which doesn't really
+    // matter for these games (and is better than corrupting the protected set).
+    if(mzx_world->version >= VERSION_PORT && mzx_world->version < V292)
+      char_num += byte_num / 14;
+
+    byte_num %= 14;
+  }
+
+  if(char_num <= 0xFF || layer_renderer_check(true))
+    ec_change_byte(char_num, byte_num, value);
 }
 
 static int pixel_read(struct world *mzx_world,

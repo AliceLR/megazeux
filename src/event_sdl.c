@@ -299,7 +299,7 @@ static void parse_gamecontroller_read_value(char *key, char *value,
       // Axis- a# or a#~
       unsigned int axis;
 
-      if(!isdigit(value[1]))
+      if(!isdigit((Uint8)value[1]))
         break;
 
       axis = strtoul(value + 1, &value, 10);
@@ -355,7 +355,7 @@ static void parse_gamecontroller_read_value(char *key, char *value,
       // Button- b#
       unsigned int button;
 
-      if(!isdigit(value[1]))
+      if(!isdigit((Uint8)value[1]))
         break;
 
       button = strtoul(value + 1, NULL, 10);
@@ -381,11 +381,11 @@ static void parse_gamecontroller_read_value(char *key, char *value,
       unsigned int hat_mask;
       int dir;
 
-      if(!isdigit(value[1]))
+      if(!isdigit((Uint8)value[1]))
         break;
 
       hat = strtoul(value + 1, &value, 10);
-      if(hat != 0 || !value[0] || !isdigit(value[1]))
+      if(hat != 0 || !value[0] || !isdigit((Uint8)value[1]))
         break;
 
       hat_mask = strtoul(value + 1, NULL, 10);

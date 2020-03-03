@@ -33,6 +33,7 @@ USERS
 + Fixed a robot editor regression where certain numpad symbols
   could not be typed.
 + Added "GL4ES wrapper" to the auto_glsl blacklist.
++ Added "Software Rasterizer" to the auto_glsl blacklist.
 + checkres no longer requires zip archive filenames to end with
   the .ZIP extension.
 + Added optional CSV output to checkres.
@@ -44,17 +45,29 @@ USERS
 + The Emscripten frontend now falls back to a wrapper for MZX's
   internal ZIP support when UZIP fails to extract an archive.
 + Fixed IndexedDB support for legacy Edge versions. (asie)
++ Fixed an 8bpp software layer renderer bug where transparent UI
+  colors would not be transparent in SMZX mode.
++ General software layer renderer (software, softscale, opengl1)
+  performance improvements.
++ Fixed out-of-bounds CHAR_BYTE access with BYTE values over 14,
+  added compatibility check for games relying on this. (asie)
 - Removed the options "overlay1" and "overlay2" from the list of
   selectable renderer options except when SDL 1.2 is enabled.
 
 DEVELOPERS
 
++ Refactored render_layer_code to use C++ templates.
++ render_layer now disables the (unused) 64-aligned renderers
+  for 32-bit platforms and Emscripten builds.
++ Fixed buggy render_layer clipping that required clipping
+  renderers to unconditionally use a suboptimal alignment.
 + Switched from xmp_load_module to xmp_load_module_from_file.
 + Fixed various clang unused argument compiler warnings.
 + Updated MSVC dirent.h implementation to latest version.
 + Moved dir_* functions from util.c to dir.c.
 + Added Windows UTF-8 compatibility layer to vfs.c and dir.c.
   UTF-8 support for Windows is still limited.
++ Moved Makefile compiler version checks to arch/compat.inc.
 
 
 September 23rd, 2019 - MZX 2.92b

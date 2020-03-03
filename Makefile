@@ -39,6 +39,8 @@ MKDIR   ?= mkdir
 MV      ?= mv
 RM      ?= rm
 
+include arch/compat.inc
+
 #
 # Set up CFLAGS/LDFLAGS for all MegaZeux external dependencies.
 #
@@ -214,48 +216,47 @@ CXXFLAGS += -Wundef -Wunused-macros
 endif
 
 #
+# Enable C++11 for compilers that support it.
+# Anything actually using C++11 should be optional or platform-specific,
+# as features using C++11 reduce portability.
+#
+ifeq (${HAS_CXX_11},1)
+CXX_STD = -std=gnu++11
+else
+CXX_STD = -std=gnu++98
+endif
+
+#
 # Always generate debug information; this may end up being
 # stripped (on embedded platforms) or objcopy'ed out.
 #
 CFLAGS   += -g -W -Wall -Wno-unused-parameter -std=gnu99
 CFLAGS   += -Wdeclaration-after-statement ${ARCH_CFLAGS}
-CXXFLAGS += -g -W -Wall -Wno-unused-parameter -std=gnu++98
+CXXFLAGS += -g -W -Wall -Wno-unused-parameter ${CXX_STD}
 CXXFLAGS += -fno-exceptions -fno-rtti ${ARCH_CXXFLAGS}
 LDFLAGS  += ${ARCH_LDFLAGS}
 
 #
-# GCC version >= 7.x
+# Optional compile flags.
 #
 
-GCC_VER := ${shell ${CC} -dumpversion}
-GCC_VER_MAJOR := ${shell ${CC} -dumpversion | cut -d. -f1}
-GCC_VER_MAJOR_GE_7 := ${shell test $(GCC_VER_MAJOR) -ge 7; echo $$?}
-IS_CLANG := ${shell ${CC} --version | grep -qi "clang version"; echo $$?}
-
-ifeq ($(GCC_VER_MAJOR_GE_7),0)
-# This gives spurious warnings on Linux. The snprintf implementation on Linux
-# will terminate even in the case of truncation, making this largely useless.
-# It does not trigger using mingw, where it would actually matter.
-# Clang (as of 9.0) does not support this flag.
-ifneq (${IS_CLANG},0)
+#
+# Linux GCC gives spurious format truncation warnings. The snprintf
+# implementation on Linux will terminate even in the case of truncation,
+# making this largely useless. It does not trigger using mingw (where it
+# would actually matter).
+#
+ifeq (${HAS_W_NO_FORMAT_TRUNCATION},1)
 CFLAGS   += -Wno-format-truncation
 endif
-endif
 
 #
-# GCC version >= 4.x
+# Enable bounds checks for debug builds.
 #
-
-GCC_VER_MAJOR_GE_4 := ${shell test $(GCC_VER_MAJOR) -ge 4; echo $$?}
-
-ifeq ($(GCC_VER_MAJOR_GE_4),0)
-
 ifeq (${DEBUG},1)
-ifneq (${GCC_VER},4.2.1)
-ifneq (${IS_CLANG},0)
+ifeq (${HAS_F_BOUNDS_CHECK},1)
 CFLAGS   += -fbounds-check
 CXXFLAGS += -fbounds-check
-endif
 endif
 endif
 
@@ -267,31 +268,48 @@ endif
 # support have them.
 #
 ifneq (${PLATFORM},android)
-CFLAGS   += -pedantic -Wno-variadic-macros
-CXXFLAGS += -pedantic -fpermissive -Wno-variadic-macros
+ifeq (${HAS_PEDANTIC},1)
+CFLAGS   += -pedantic
+CXXFLAGS += -pedantic
+
+ifeq (${HAS_F_PERMISSIVE},1)
+CXXFLAGS += -fpermissive
 endif
 
+ifeq (${HAS_W_NO_VARIADIC_MACROS},1)
+CFLAGS   += -Wno-variadic-macros
+CXXFLAGS += -Wno-variadic-macros
+endif
+endif
+endif
+
+#
+# The following flags are not applicable to mingw builds.
+#
 ifneq (${PLATFORM},mingw)
 
 #
 # Symbols in COFF binaries are implicitly hidden unless exported; this
 # flag just confuses GCC and must be disabled.
 #
+ifeq (${HAS_F_VISIBILITY},1)
 CFLAGS   += -fvisibility=hidden
 CXXFLAGS += -fvisibility=hidden
+endif
 
 #
 # Skip the stack protector on embedded platforms; it just unnecessarily
 # slows things down, and there's no easy way to write a convincing
 # __stack_chk_fail function. MinGW may or may not have a __stack_chk_fail
-# function. Skip android, too.
+# function.
 #
+ifeq (${HAS_F_STACK_PROTECTOR},1)
 ifeq ($(or ${BUILD_GP2X},${BUILD_NDS},${BUILD_3DS},${BUILD_PSP},${BUILD_WII}),)
 CFLAGS   += -fstack-protector-all
 CXXFLAGS += -fstack-protector-all
 endif
-
 endif
+
 endif
 
 #

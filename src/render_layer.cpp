@@ -23,7 +23,6 @@
 #include "platform.h"
 #include "graphics.h"
 #include "render_layer.h"
-#include "util.h"
 
 // Skip unused variants to reduce compile time on these platforms.
 #if defined(CONFIG_WII) || defined(ANDROID) || defined(__EMSCRIPTEN__)
@@ -31,7 +30,13 @@
 #define SKIP_16BPP
 #endif
 
-#include "render_layer_code.h"
+// Not exactly clear how much Emscripten benefits from these and they're
+// doubling the number of renderers.
+#if defined(__EMSCRIPTEN__)
+#define SKIP_64_ALIGN
+#endif
+
+#include "render_layer_code.hpp"
 
 #if 0
 // This layer renderer is very slow, but it should work properly.
@@ -203,11 +208,19 @@ void render_layer(void *pixels, int force_bpp, Uint32 pitch,
   drawStart =
    (size_t)((char *)pixels + layer->y * pitch + (layer->x * force_bpp / 8));
 
+  /**
+   * Select the highest pixel align the current platform is capable of.
+   * Additionally, to simplify the renderer code, the align must also be
+   * capable of addressing the first pixel of the draw (e.g. a 64-bit platform
+   * will use a 32-bit align if the layer is on an odd horizontal pixel).
+   */
+#ifndef SKIP_64_ALIGN
   if((sizeof(size_t) >= sizeof(Uint64)) && ((drawStart % sizeof(Uint64)) == 0))
   {
     align = 64;
   }
   else
+#endif
 
   if((sizeof(size_t) >= sizeof(Uint32)) && ((drawStart % sizeof(Uint32)) == 0))
   {
@@ -220,15 +233,6 @@ void render_layer(void *pixels, int force_bpp, Uint32 pitch,
     align = 16;
   }
 
-  if(clip)
-    align = force_bpp;
-
-#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
-  // Currently not sure how big endian will work,
-  // so for now force alignment to bpp
-  align = force_bpp;
-#endif
-
-  render_func_Xbpp_Xtrans_Xalign_Xsmzx_Xclip_Xppal(pixels, pitch, graphics,
-   layer, ppal, clip, smzx, align, trans, force_bpp);
+  render_layer_func(pixels, pitch, graphics, layer,
+   force_bpp, align, smzx, ppal, trans, clip);
 }
