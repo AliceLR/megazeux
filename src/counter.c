@@ -1680,23 +1680,17 @@ static int char_byte_read(struct world *mzx_world,
   Uint16 char_num = get_counter(mzx_world, "CHAR", id);
   Uint8 byte_num = get_counter(mzx_world, "BYTE", id);
 
-  // Prior to 2.90 char params are clipped
-  if(mzx_world->version < V290) char_num &= 0xFF;
+  // Prior to 2.90 char params are clipped.
+  if(mzx_world->version < V290)
+    char_num &= 0xFF;
 
-  // Normalize byte values (see: Day of Zeux Invitation)
   if(byte_num >= 14)
   {
-    if(mzx_world->version >= V280)
-    {
+    // Old port releases are missing a bounds check (see: Day of Zeux Invitation).
+    if(mzx_world->version >= VERSION_PORT && mzx_world->version < V292)
       char_num += byte_num / 14;
-      byte_num %= 14;
-      if(mzx_world->version < V290 && char_num > 0xFF)
-        return 0;
-    }
-    else
-    {
-      byte_num %= 14;
-    }
+
+    byte_num %= 14;
   }
 
   return ec_read_byte(char_num, byte_num);
@@ -1708,28 +1702,23 @@ static void char_byte_write(struct world *mzx_world,
   Uint16 char_num = get_counter(mzx_world, "CHAR", id);
   Uint8 byte_num = get_counter(mzx_world, "BYTE", id);
 
-  // Prior to 2.90 char params are clipped
-  if(mzx_world->version < V290) char_num &= 0xFF;
+  // Prior to 2.90 char params are clipped.
+  if(mzx_world->version < V290)
+    char_num &= 0xFF;
 
-  // Normalize byte values (see: Day of Zeux Invitation)
   if(byte_num >= 14)
   {
-    if(mzx_world->version >= V280)
-    {
+    // Old port releases are missing a bounds check (see: Day of Zeux Invitation).
+    // This may write the byte into the extended charsets, which doesn't really
+    // matter for these games (and is better than corrupting the protected set).
+    if(mzx_world->version >= VERSION_PORT && mzx_world->version < V292)
       char_num += byte_num / 14;
-      byte_num %= 14;
-      if(mzx_world->version < V290 && char_num > 0xFF)
-        return;
-    }
-    else
-    {
-      byte_num %= 14;
-    }
+
+    byte_num %= 14;
   }
 
-  if(char_num > 0xFF && !layer_renderer_check(true)) return;
-
-  ec_change_byte(char_num, byte_num, value);
+  if(char_num <= 0xFF || layer_renderer_check(true))
+    ec_change_byte(char_num, byte_num, value);
 }
 
 static int pixel_read(struct world *mzx_world,

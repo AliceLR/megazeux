@@ -49,6 +49,8 @@ USERS
   colors would not be transparent in SMZX mode.
 + General software layer renderer (software, softscale, opengl1)
   performance improvements.
++ Fixed out-of-bounds CHAR_BYTE access with BYTE values over 14,
+  added compatibility check for games relying on this. (asie)
 - Removed the options "overlay1" and "overlay2" from the list of
   selectable renderer options except when SDL 1.2 is enabled.
 
