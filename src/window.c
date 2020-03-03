@@ -3874,7 +3874,7 @@ int choose_file_ch(struct world *mzx_world, const char *const *wildcards,
 {
   int slot_result = SLOTSEL_FILE_MANAGER_RESULT;
 
-  if(get_config()->save_slots && strcmp(*wildcards, ".SAV") == 0) // TODO: yuck! changeme
+  if(get_config()->save_slots && strcmp(*wildcards, ".SAV") == 0)
     slot_result = slot_manager(mzx_world, ret, title, false);
 
   if(slot_result != SLOTSEL_FILE_MANAGER_RESULT)
@@ -3889,7 +3889,7 @@ int new_file(struct world *mzx_world, const char *const *wildcards,
 {
   int slot_result = SLOTSEL_FILE_MANAGER_RESULT;
 
-  if(get_config()->save_slots && strcmp(*wildcards, ".SAV") == 0) // TODO: yuck! changeme
+  if(get_config()->save_slots && strcmp(*wildcards, ".SAV") == 0)
     slot_result = slot_manager(mzx_world, ret, title, true);
 
   if(slot_result != SLOTSEL_FILE_MANAGER_RESULT)
