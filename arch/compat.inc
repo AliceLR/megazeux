@@ -11,7 +11,6 @@ GCC_VER := ${shell ${CC} -dumpfullversion -dumpversion |\
  awk -F. '{print $$3+100*($$2+100*$$1)}'}
 
 GCC_VER_GE_4     := ${shell test ${GCC_VER} -ge 40000; echo $$?}
-GCC_VER_GT_4_2_1 := ${shell test ${GCC_VER} -gt 40201; echo $$?}
 GCC_VER_GE_4_8   := ${shell test ${GCC_VER} -ge 40800; echo $$?}
 GCC_VER_GE_7     := ${shell test ${GCC_VER} -ge 70000; echo $$?}
 
@@ -42,11 +41,11 @@ endif
 #
 ifneq (${IS_CLANG},0)
 
-# Not actually sure if this is the correct version; the != 4.2.1 check that
-# existed prior in the Makefile may have been intended to block clang.
-ifeq (${GCC_VER_GT_4_2_1},0)
+#
+# Not supported by clang.
+# May also only be relevant for FORTRAN and Java (not clear).
+#
 HAS_F_BOUNDS_CHECK = 1
-endif
 
 ifeq ($(GCC_VER_GE_7),0)
 HAS_W_NO_FORMAT_TRUNCATION = 1
