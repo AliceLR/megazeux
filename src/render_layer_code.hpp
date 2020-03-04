@@ -571,15 +571,17 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
   Uint16 last_fg = 0xFFFF;
   Uint16 last_bg = 0xFFFF;
   boolean has_tcol = false;
+  boolean all_tcol = true;
+  Uint8 byte_tcol = 0x00;
 
   // Position the output ptr at the location of the first char
   outPtr = (ALIGNTYPE *)pixels;
   outPtr += layer->y * (int)align_pitch;
   outPtr += layer->x * (int)sizeof(PIXTYPE) / (int)sizeof(ALIGNTYPE);
 
-  for(ch_y = 0; ch_y < layer->h; ch_y++)
+  for(ch_y = 0; ch_y < layer->h; ch_y++, outPtr += advance_char_row)
   {
-    for(ch_x = 0; ch_x < layer->w; ch_x++)
+    for(ch_x = 0; ch_x < layer->w; ch_x++, src++, outPtr += advance_char)
     {
       c = src->char_value;
 
@@ -610,6 +612,7 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
         {
           if(SMZX)
           {
+            all_tcol = true;
             has_tcol = false;
             for(i = 0; i < 4; i++)
             {
@@ -622,7 +625,10 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
                 char_colors[i] = char_idx[i];
 
               if(TR)
-                has_tcol = has_tcol || char_idx[i] == tcol;
+              {
+                has_tcol |= char_idx[i] == tcol;
+                all_tcol &= char_idx[i] == tcol;
+              }
 
               // If writing more than 2 pixels at once, preemptively double
               // them. This saves having to perform this operation later...
@@ -644,18 +650,32 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
             }
 
             if(TR)
+            {
               has_tcol = (char_idx[0] == tcol || char_idx[1] == tcol);
+              all_tcol = (char_idx[0] == tcol && char_idx[1] == tcol);
+              byte_tcol = (char_idx[1] == tcol) ? 0xFF : 0x00;
+            }
 
             if(PPW > 1 && (!TR || !has_tcol))
               set_colors_mzx<BPP,PPW>(set_colors, char_colors);
           }
         }
+
+        // Don't bother drawing chars that are completely transparent.
+        if(TR && all_tcol)
+          continue;
+
         char_ptr = graphics->charset + (c * CHAR_H);
         drawPtr = outPtr;
 
-        for(row = 0; row < CHAR_H; row++)
+        for(row = 0; row < CHAR_H; row++, drawPtr += align_pitch)
         {
           current_char_byte = char_ptr[row];
+
+          // In mode 0 it's possible to quickly determine if an entire byte is
+          // transparent. If it is, there's no point in drawing it.
+          if(TR && !SMZX && has_tcol && current_char_byte == byte_tcol)
+            continue;
 
           if(!CLIP || (pixel_y + row >= 0 && pixel_y + row < SCREEN_PIX_H))
           {
@@ -747,13 +767,8 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
               }
             }
           }
-
-          drawPtr += align_pitch;
         }
       }
-      src++;
-      outPtr += advance_char;
     }
-    outPtr += advance_char_row;
   }
 }
