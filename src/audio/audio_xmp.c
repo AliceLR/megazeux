@@ -258,15 +258,14 @@ static struct audio_stream *construct_xmp_stream(char *filename,
   {
     xmp_set_player(ctx, XMP_PLAYER_DEFPAN, 50);
 
+    // NOTE: this function uses fdopen(fileno(fp)); when the FILE * this opens
+    // is closed, it will also close the FILE * here, so don't close it.
     if(!xmp_load_module_from_file(ctx, fp, file_len))
     {
       struct xmp_stream *xmp_stream = ccalloc(1, sizeof(struct xmp_stream));
       struct sampled_stream_spec s_spec;
       struct audio_stream_spec a_spec;
       int num_orders;
-
-      // xmp doesn't need this to persist after load...
-      fclose(fp);
 
       xmp_stream->ctx = ctx;
       xmp_start_player(ctx, audio.output_frequency, 0);
@@ -318,7 +317,9 @@ static struct audio_stream *construct_xmp_stream(char *filename,
     }
     xmp_free_context(ctx);
   }
-  fclose(fp);
+  else
+    fclose(fp);
+
   return NULL;
 }
 
