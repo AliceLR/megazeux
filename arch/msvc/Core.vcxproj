@@ -99,10 +99,11 @@
       <Optimization>Disabled</Optimization>
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>_ALLOW_KEYWORD_MACROS;CORE_LIBSPEC=__declspec(dllexport);PATH_MAX=1024;_USE_MATH_DEFINES;NEED_PNG_WRITE_SCREEN;_CRT_SECURE_NO_WARNINGS;__WIN32__;WIN32;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalOptions>/J %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/J /Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
       <SDLCheck>false</SDLCheck>
       <DisableSpecificWarnings>
       </DisableSpecificWarnings>
+      <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
       <AdditionalDependencies>libogg.lib;libpng.lib;libvorbis.lib;libvorbisfile.lib;SDL2.lib;SDL2main.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -122,10 +123,11 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
       <Optimization>Disabled</Optimization>
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>_ALLOW_KEYWORD_MACROS;CORE_LIBSPEC=__declspec(dllexport);PATH_MAX=1024;_USE_MATH_DEFINES;NEED_PNG_WRITE_SCREEN;_CRT_SECURE_NO_WARNINGS;__WIN32__;WIN32;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalOptions>/J %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/J /Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
       <SDLCheck>false</SDLCheck>
       <DisableSpecificWarnings>
       </DisableSpecificWarnings>
+      <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
       <AdditionalDependencies>libogg.lib;libpng.lib;libvorbis.lib;libvorbisfile.lib;SDL2.lib;SDL2main.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -147,8 +149,9 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>_ALLOW_KEYWORD_MACROS;CORE_LIBSPEC=__declspec(dllexport);PATH_MAX=1024;_USE_MATH_DEFINES;NEED_PNG_WRITE_SCREEN;_CRT_SECURE_NO_WARNINGS;__WIN32__;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalOptions>/J %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/J /Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
       <SDLCheck>false</SDLCheck>
+      <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -172,8 +175,9 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>_ALLOW_KEYWORD_MACROS;CORE_LIBSPEC=__declspec(dllexport);PATH_MAX=1024;_USE_MATH_DEFINES;NEED_PNG_WRITE_SCREEN;_CRT_SECURE_NO_WARNINGS;__WIN32__;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalOptions>/J %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/J /Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
       <SDLCheck>false</SDLCheck>
+      <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>

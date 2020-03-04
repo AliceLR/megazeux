@@ -33,6 +33,11 @@
 #define HAS_CONSTEXPR
 #endif
 
+#ifdef _MSC_VER
+#include <cstdio>
+#define __PRETTY_FUNCTION__ ""
+#endif
+
 template<typename PIXTYPE>
 static void render_layer_func(void *pixels, Uint32 pitch,
  struct graphics_data *graphics, struct video_layer *layer,
