@@ -22,6 +22,8 @@
 /* Block actions */
 /* For the selection dialogs that used to be called "block.c", see select.c */
 
+#include <string.h>
+
 #include "block.h"
 #include "undo.h"
 

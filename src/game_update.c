@@ -34,6 +34,7 @@
 #include "scrdisp.h" // strlencolor
 #include "sprite.h"
 #include "robot.h"
+#include "util.h"
 #include "world.h"
 #include "world_struct.h"
 

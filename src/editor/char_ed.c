@@ -26,6 +26,7 @@
 #include "../event.h"
 #include "../graphics.h"
 #include "../helpsys.h"
+#include "../util.h"
 #include "../window.h"
 #include "../world.h"
 

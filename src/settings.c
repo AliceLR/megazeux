@@ -27,6 +27,7 @@
 #include "game.h"
 #include "graphics.h"
 #include "settings.h"
+#include "util.h"
 #include "window.h"
 #include "world_struct.h"
 
