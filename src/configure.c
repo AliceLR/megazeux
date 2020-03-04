@@ -145,6 +145,7 @@
 
 static char *default_update_hosts[] =
 {
+  (char *)"updates.digitalmzx.com",
   (char *)"updates.digitalmzx.net",
   (char *)"updates.megazeux.org",
   (char *)"updates.megazeux.net",

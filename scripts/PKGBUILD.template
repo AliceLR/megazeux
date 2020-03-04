@@ -6,7 +6,7 @@ pkgver=UNSET
 pkgrel=1
 pkgdesc="Game creation system"
 arch=('i686' 'x86_64')
-url="http://www.digitalmzx.net/"
+url="https://www.digitalmzx.com/"
 license=('gpl')
 groups=('games')
 depends=(libvorbis libpng sdl2)
@@ -16,10 +16,10 @@ _filename=${_base}src.tar.xz
 _sha256sum=UNSET
 
 ##old version
-#source=("${_filename}::http://vault.digitalmzx.net/download.php?rid=2197&f=${_sha256sum}")
+#source=("${_filename}::https://www.digitalmzx.com/download.php?rid=2197&f=${_sha256sum}")
 
 ##new version
-source=("${_filename}::http://vault.digitalmzx.net/download.php?latest=src&ver=${pkgver}")
+source=("${_filename}::https://www.digitalmzx.com/download.php?latest=src&ver=${pkgver}")
 
 sha256sums=("${_sha256sum}")
 DLAGENTS=("http::/usr/bin/curl -A 'Mozilla' -fLC - -o %o %u")

@@ -11,26 +11,26 @@ and PSP consoles. Historical support has also existed for GP2X, Pandora, and Ami
 ## Downloads
 
 Windows releases are packaged with a copy of the game Caverns of Zeux.
-Older versions are available at [DigitalMZX](https://vault.digitalmzx.net/).
+Older versions are available at [DigitalMZX](https://www.digitalmzx.com/).
 
 <!-- Download URLs. -->
-[megazeux-w64]: https://vault.digitalmzx.net/download.php?latest=windows64
-[megazeux-w32]: https://vault.digitalmzx.net/download.php?latest=windows32
-[megazeux-dos]: https://vault.digitalmzx.net/download.php?latest=dos
-[megazeux-osx]: https://vault.digitalmzx.net/download.php?latest=osx
-[megazeux-ppc]: https://vault.digitalmzx.net/download.php?latest=osxppc
-[megazeux-u64]: https://vault.digitalmzx.net/download.php?latest=ubuntu64
-[megazeux-u32]: https://vault.digitalmzx.net/download.php?latest=ubuntu32
-[megazeux-d64]: https://vault.digitalmzx.net/download.php?latest=debian64
-[megazeux-d32]: https://vault.digitalmzx.net/download.php?latest=debian32
-[megazeux-rpi]: https://vault.digitalmzx.net/download.php?latest=raspbian
-[megazeux-html]: https://vault.digitalmzx.net/download.php?latest=html5
-[megazeux-nds]: https://vault.digitalmzx.net/download.php?latest=nds
-[megazeux-3ds]: https://vault.digitalmzx.net/download.php?latest=3ds
-[megazeux-wii]: https://vault.digitalmzx.net/download.php?latest=wii
-[megazeux-swi]: https://vault.digitalmzx.net/download.php?latest=switch
-[megazeux-psp]: https://vault.digitalmzx.net/download.php?latest=psp
-[megazeux-src]: https://vault.digitalmzx.net/download.php?latest=src
+[megazeux-w64]: https://www.digitalmzx.com/download.php?latest=windows64
+[megazeux-w32]: https://www.digitalmzx.com/download.php?latest=windows32
+[megazeux-dos]: https://www.digitalmzx.com/download.php?latest=dos
+[megazeux-osx]: https://www.digitalmzx.com/download.php?latest=osx
+[megazeux-ppc]: https://www.digitalmzx.com/download.php?latest=osxppc
+[megazeux-u64]: https://www.digitalmzx.com/download.php?latest=ubuntu64
+[megazeux-u32]: https://www.digitalmzx.com/download.php?latest=ubuntu32
+[megazeux-d64]: https://www.digitalmzx.com/download.php?latest=debian64
+[megazeux-d32]: https://www.digitalmzx.com/download.php?latest=debian32
+[megazeux-rpi]: https://www.digitalmzx.com/download.php?latest=raspbian
+[megazeux-html]: https://www.digitalmzx.com/download.php?latest=html5
+[megazeux-nds]: https://www.digitalmzx.com/download.php?latest=nds
+[megazeux-3ds]: https://www.digitalmzx.com/download.php?latest=3ds
+[megazeux-wii]: https://www.digitalmzx.com/download.php?latest=wii
+[megazeux-swi]: https://www.digitalmzx.com/download.php?latest=switch
+[megazeux-psp]: https://www.digitalmzx.com/download.php?latest=psp
+[megazeux-src]: https://www.digitalmzx.com/download.php?latest=src
 
 <!-- Images for download links. -->
 [arch-w64]: contrib/archicons/windows64.png "Windows x64"
@@ -159,14 +159,14 @@ The MegaZeux community and development team can be contacted through Discord,
 GitHub, or the DigitalMZX forums.
 
 [MegaZeux Discord](https://discord.gg/XJCvb4P) <br/>
-[DigitalMZX forums](https://digitalmzx.net/forums/) <br/>
-[MegaZeux Bug tracker](https://www.digitalmzx.net/forums/index.php?app=tracker&showproject=4) <br/>
-[MegaZeux Feature requests](https://www.digitalmzx.net/forums/index.php?app=tracker&showproject=9) <br/>
+[DigitalMZX forums](https://www.digitalmzx.com/forums/) <br/>
+[MegaZeux Bug tracker](https://www.digitalmzx.com/forums/index.php?app=tracker&showproject=4) <br/>
+[MegaZeux Feature requests](https://www.digitalmzx.com/forums/index.php?app=tracker&showproject=9) <br/>
 [AliceLR on GitHub](https://github.com/AliceLR) <br/>
 
 ## Resources
 
-[Official MegaZeux game archive](https://vault.digitalmzx.net/) <br/>
-[MegaZeux help file](https://vault.digitalmzx.net/help.php) <br/>
-[Development roadmap](https://www.digitalmzx.net/forums/index.php?showtopic=15226) <br/>
-[Compiling MegaZeux on the official Wiki](https://www.digitalmzx.net/wiki/index.php?title=Compiling)
+[Official MegaZeux game archive](https://www.digitalmzx.com/) <br/>
+[MegaZeux help file](https://www.digitalmzx.com/help.php) <br/>
+[Development roadmap](https://www.digitalmzx.com/forums/index.php?showtopic=15226) <br/>
+[Compiling MegaZeux on the official Wiki](https://www.digitalmzx.com/wiki/index.php?title=Compiling)

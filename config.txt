@@ -696,9 +696,10 @@
 # be attempted in the order they are defined. Please note, this is not a
 # URL and should not contain protocol specifiers such as http://
 
-# By default, MZX will attempt to connect to updates.digitalmzx.net,
+# By default, MZX will attempt to connect to updates.digitalmzx.com,
 # followed by updates.megazeux.org and updates.megazeux.net.
 
+# update_host = updates.digitalmzx.com
 # update_host = updates.digitalmzx.net
 # update_host = updates.megazeux.org
 # update_host = updates.megazeux.net

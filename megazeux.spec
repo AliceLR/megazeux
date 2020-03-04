@@ -6,7 +6,7 @@ Summary:	A simple game creation system (GCS)
 
 Group:		Amusements/Games
 License:	GPLv2+
-URL:		http://digitalmzx.net/
+URL:		https://www.digitalmzx.com/
 Source:		megazeux-2.84c.tar.bz2
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root
 
@@ -27,7 +27,7 @@ help of an intuitive editor and a simple but powerful object-oriented
 programming language, MegaZeux allows you to create your own ANSI-esque games
 regardless of genre. It is actively maintained by a thriving community.
 
-See http://digitalmzx.net/ for more information.
+See https://www.digitalmzx.com/ for more information.
 
 %prep
 %setup -q

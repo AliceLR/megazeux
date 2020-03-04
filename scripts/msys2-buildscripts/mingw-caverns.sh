@@ -1,7 +1,7 @@
 # Script to add caverns to all applicable release zips.
 #!/bin/bash
 
-URL="https://vault.digitalmzx.net/download.php?rid=182&f=26f59999fc55953e81a66cf01d0207fe3b124387a4a4c9288a155f6a44134641"
+URL="https://www.digitalmzx.com/download/182/26f59999fc55953e81a66cf01d0207fe3b124387a4a4c9288a155f6a44134641/"
 PREFIX="/mzx-build-workingdir/caverns"
 
 CAVERNS_PATH="caverns"
