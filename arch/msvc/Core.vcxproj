@@ -318,7 +318,7 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClCompile Include="..\..\src\render_gl1.c" />
     <ClCompile Include="..\..\src\render_gl2.c" />
     <ClCompile Include="..\..\src\render_glsl.c" />
-    <ClCompile Include="..\..\src\render_layer.c" />
+    <ClCompile Include="..\..\src\render_layer.cpp" />
     <ClCompile Include="..\..\src\render_sdl.c" />
     <ClCompile Include="..\..\src\render_soft.c" />
     <ClCompile Include="..\..\src\render_softscale.c" />
@@ -419,6 +419,7 @@ echo #define VERSION_DATE " ($(BuildDate))"&gt;&gt;$(SolutionDir)version.h</Comm
     <ClInclude Include="..\..\src\renderers.h" />
     <ClInclude Include="..\..\src\render_gl.h" />
     <ClInclude Include="..\..\src\render_layer.h" />
+    <ClInclude Include="..\..\src\render_layer_code.hpp" />
     <ClInclude Include="..\..\src\render_sdl.h" />
     <ClInclude Include="..\..\src\robot.h" />
     <ClInclude Include="..\..\src\robot_struct.h" />
