@@ -2772,7 +2772,8 @@ static int sort_function(const void *dest_str_ptr, const void *src_str_ptr)
   return strcasecmp(dest_str, src_str);
 }
 
-static void update_slot_prefix(void) {
+static void update_slot_prefix(void)
+{
   char *world_name;
   size_t i;
   size_t pos = 0;
