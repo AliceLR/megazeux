@@ -664,23 +664,20 @@
 # grab_mouse = 0
 
 # Set to 1 to use a save slot system (similar to emulator save states)
-# instead of allowing for freeform text entry. This value can be overridden
-# using a game.cnf file.
+# instead of allowing for freeform text entry.
 
 # save_slots = 0
 
 # The filename of the saved games used by the save slot system. The world
 # name can be inserted into this name by including "%w" in the value below.
 # To use a "%" symbol as part of the target filename, use "%%". The slot
-# number will immediately follow this value. This value can be overridden
-# using a game.cnf file.
+# number will immediately follow this value.
 
 # save_slot_name = %w.
 
 # The extension of the saved games used by the save slot system. Keep this
 # set to .sav if you wish to be able to easily load slot saves using the
-# traditional load dialog. This value can be overridden using a game.cnf
-# file.
+# traditional load dialog.
 
 # save_slot_ext = .sav
 
