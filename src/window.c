@@ -2568,7 +2568,7 @@ struct element *construct_slot_selector(int x, int y,
   src->save = save;
 
   construct_element(&(src->e), x, y, num_slots * 4, 3, draw_slot_selector,
-   key_slot_selector, click_slot_selector, NULL, NULL);;
+   key_slot_selector, click_slot_selector, NULL, NULL);
 
   return (struct element *)src;
 }
