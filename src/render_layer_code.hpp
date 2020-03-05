@@ -545,8 +545,8 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
   ALIGNTYPE mask = (PIXTYPE)(~0);
 
   Uint8 *char_ptr;
-  Uint8 current_char_byte;
-  PIXTYPE pcol;
+  Uint32 current_char_byte;
+  Uint32 pcol;
 
   ALIGNTYPE *drawPtr;
   ALIGNTYPE pix;
@@ -572,7 +572,7 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
   Uint16 last_bg = 0xFFFF;
   boolean has_tcol = false;
   boolean all_tcol = true;
-  Uint8 byte_tcol = 0x00;
+  Uint32 byte_tcol = 0xFFFF;
 
   // Position the output ptr at the location of the first char
   outPtr = (ALIGNTYPE *)pixels;
@@ -614,6 +614,7 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
           {
             all_tcol = true;
             has_tcol = false;
+            byte_tcol = 0xFFFF;
             for(i = 0; i < 4; i++)
             {
               Uint16 pal = ((src->bg_color & 0xF) << 4) | (src->fg_color & 0xF);
@@ -626,6 +627,11 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
 
               if(TR)
               {
+                if(!has_tcol)
+                {
+                  static const Uint8 tcol_bytes[] = { 0x00, 0x55, 0xAA, 0xFF };
+                  byte_tcol = tcol_bytes[i];
+                }
                 has_tcol |= char_idx[i] == tcol;
                 all_tcol &= char_idx[i] == tcol;
               }
@@ -673,8 +679,10 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
           current_char_byte = char_ptr[row];
 
           // In mode 0 it's possible to quickly determine if an entire byte is
-          // transparent. If it is, there's no point in drawing it.
-          if(TR && !SMZX && has_tcol && current_char_byte == byte_tcol)
+          // transparent. If it is, there's no point in drawing it. SMZX modes
+          // can try to do a similar trick, but it won't work if the char has
+          // multiple indices set to the transparent color.
+          if(TR && has_tcol && current_char_byte == byte_tcol)
             continue;
 
           if(!CLIP || (pixel_y + row >= 0 && pixel_y + row < SCREEN_PIX_H))
@@ -736,28 +744,34 @@ static inline void render_layer_func(void *pixels, Uint32 pitch,
                   }
                   else
                   {
+                    // NOTE: SMZX colors were already doubled above, so they
+                    // need to be shift+ORed once only.
                     pix = 0;
-                    if(TR)
+                    if(TR && has_tcol)
+                    {
                       bgdata = drawPtr[write_pos];
 
-                    for(i = 0; i < PPW; i += 2)
-                    {
-                      ALIGNTYPE shift = write_pos * PPW + (PPW - 2 - i);
-
-                      pcol = (current_char_byte & (0xC0 >> shift)) << shift >> 6;
-
-                      // NOTE: the optimizer should unswitch this due to the
-                      // has_tcol check.
-                      if(TR && has_tcol && char_idx[pcol] == tcol)
+                      for(i = 0; i < PPW; i += 2)
                       {
-                        pix |= bgdata &
-                         ((mask << PIXEL_POS(i)) |
-                          (mask << PIXEL_POS(i + 1)));
+                        ALIGNTYPE shift = write_pos * PPW + (PPW - 2 - i);
+                        pcol = (current_char_byte & (0xC0 >> shift)) << shift >> 6;
+
+                        if(char_idx[pcol] == tcol)
+                        {
+                          pix |= bgdata &
+                           ((mask << PIXEL_POS(i)) |
+                            (mask << PIXEL_POS(i + 1)));
+                        }
+                        else
+                          pix |= char_colors[pcol] << PIXEL_POS_PAIR(i);
                       }
-                      else
+                    }
+                    else
+                    {
+                      for(i = 0; i < PPW; i += 2)
                       {
-                        // NOTE: this was already doubled above, so this shift
-                        // needs to be done once only.
+                        ALIGNTYPE shift = write_pos * PPW + (PPW - 2 - i);
+                        pcol = (current_char_byte & (0xC0 >> shift)) << shift >> 6;
                         pix |= char_colors[pcol] << PIXEL_POS_PAIR(i);
                       }
                     }
