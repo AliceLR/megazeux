@@ -87,9 +87,6 @@ static char *cur_slot_prefix = NULL;
 #define SLOTSEL_FILE_MANAGER_BUTTON 2
 #define SLOTSEL_SELECTOR            3
 #define SLOTSEL_NUM_SLOTS           10
-#define SLOTSEL_OK_RESULT           0
-#define SLOTSEL_CANCEL_RESULT       -1
-#define SLOTSEL_FILE_MANAGER_RESULT -2
 
 // Free up memory.
 
@@ -2867,7 +2864,7 @@ static void update_slot_prefix(void)
   free(world_name);
 }
 
-static int slot_manager(struct world *mzx_world, char *ret,
+int slot_manager(struct world *mzx_world, char *ret,
  const char *title, boolean save)
 {
   int i;
@@ -3873,14 +3870,6 @@ skip_dir:
 int choose_file_ch(struct world *mzx_world, const char *const *wildcards,
  char *ret, const char *title, int dirs_okay)
 {
-  int slot_result = SLOTSEL_FILE_MANAGER_RESULT;
-
-  if(get_config()->save_slots && strcmp(*wildcards, ".SAV") == 0)
-    slot_result = slot_manager(mzx_world, ret, title, false);
-
-  if(slot_result != SLOTSEL_FILE_MANAGER_RESULT)
-    return slot_result;
-
   return file_manager(mzx_world, wildcards, NULL, ret, title, dirs_okay,
    0, NULL, 0, 0);
 }
@@ -3888,14 +3877,6 @@ int choose_file_ch(struct world *mzx_world, const char *const *wildcards,
 int new_file(struct world *mzx_world, const char *const *wildcards,
  const char *default_ext, char *ret, const char *title, int dirs_okay)
 {
-  int slot_result = SLOTSEL_FILE_MANAGER_RESULT;
-
-  if(get_config()->save_slots && strcmp(*wildcards, ".SAV") == 0)
-    slot_result = slot_manager(mzx_world, ret, title, true);
-
-  if(slot_result != SLOTSEL_FILE_MANAGER_RESULT)
-    return slot_result;
-
   return file_manager(mzx_world, wildcards, default_ext, ret, title, dirs_okay,
    1, NULL, 0, 0);
 }

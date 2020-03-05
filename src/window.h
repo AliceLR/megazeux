@@ -314,6 +314,10 @@ CORE_LIBSPEC void meter_interior(unsigned int progress, unsigned int out_of);
 #define DI_SLOTSEL_HIGHLIGHT  11
 #define DI_SLOTSEL_DISABLE    128
 
+#define SLOTSEL_OK_RESULT           0
+#define SLOTSEL_CANCEL_RESULT       -1
+#define SLOTSEL_FILE_MANAGER_RESULT -2
+
 #define arrow_char '\x10'
 #define pc_top_arrow '\x1E'
 #define pc_bottom_arrow '\x1F'
@@ -322,6 +326,8 @@ CORE_LIBSPEC void meter_interior(unsigned int progress, unsigned int out_of);
 #define pc_meter 219
 
 CORE_LIBSPEC int run_dialog(struct world *mzx_world, struct dialog *di);
+CORE_LIBSPEC int slot_manager(struct world *mzx_world, char *ret,
+ const char *title, boolean save);
 
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC void construct_element(struct element *e, int x, int y,
