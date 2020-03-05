@@ -50,7 +50,6 @@
 		BF6058F1216B3725001B738C /* caption.c in Sources */ = {isa = PBXBuildFile; fileRef = BF6058CE216B3723001B738C /* caption.c */; };
 		BF6058F2216B3725001B738C /* game_ops.c in Sources */ = {isa = PBXBuildFile; fileRef = BF6058CF216B3723001B738C /* game_ops.c */; };
 		BF6058F3216B3725001B738C /* intake_num.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058D0216B3723001B738C /* intake_num.h */; };
-		BF6058F4216B3725001B738C /* render_layer_code.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058D1216B3723001B738C /* render_layer_code.h */; };
 		BF6058F5216B3725001B738C /* sprite_struct.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058D2216B3724001B738C /* sprite_struct.h */; };
 		BF6058F6216B3725001B738C /* game_update.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058D3216B3724001B738C /* game_update.h */; };
 		BF6058F7216B3725001B738C /* game_player.h in Headers */ = {isa = PBXBuildFile; fileRef = BF6058D4216B3724001B738C /* game_player.h */; };
@@ -80,6 +79,10 @@
 		BFC1C06B2142591600378A4C /* socksyms.c in Sources */ = {isa = PBXBuildFile; fileRef = BFC1C0662142591500378A4C /* socksyms.c */; };
 		BFC1C06C2142591600378A4C /* dns.h in Headers */ = {isa = PBXBuildFile; fileRef = BFC1C0672142591500378A4C /* dns.h */; };
 		BFC1C06D2142591600378A4C /* socksyms.h in Headers */ = {isa = PBXBuildFile; fileRef = BFC1C0682142591600378A4C /* socksyms.h */; };
+		BFD67B382410ABAD00AF114E /* dir.c in Sources */ = {isa = PBXBuildFile; fileRef = BFD67B372410ABAC00AF114E /* dir.c */; };
+		BFD67B3A2410ABCB00AF114E /* dir.h in Headers */ = {isa = PBXBuildFile; fileRef = BFD67B392410ABCB00AF114E /* dir.h */; };
+		BFD67B3D2410ABE200AF114E /* render_layer_code.hpp in Headers */ = {isa = PBXBuildFile; fileRef = BFD67B3B2410ABE200AF114E /* render_layer_code.hpp */; };
+		BFD67B3E2410ABE200AF114E /* render_layer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BFD67B3C2410ABE200AF114E /* render_layer.cpp */; };
 		BFFF16281FCDC55000BDEC58 /* libpng.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C31FCCB02F008EEDB6 /* libpng.framework */; };
 		BFFF16291FCDC55000BDEC58 /* libpng.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C31FCCB02F008EEDB6 /* libpng.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		BFFF162A1FCDC55000BDEC58 /* SDL2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF1012C01FCCABF0008EEDB6 /* SDL2.framework */; };
@@ -136,7 +139,6 @@
 		BFFF16EB1FCDC76900BDEC58 /* render_gl1.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF169D1FCDC6D200BDEC58 /* render_gl1.c */; };
 		BFFF16EC1FCDC76900BDEC58 /* render_gl2.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF16951FCDC6D000BDEC58 /* render_gl2.c */; };
 		BFFF16ED1FCDC76900BDEC58 /* render_glsl.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF169E1FCDC6D200BDEC58 /* render_glsl.c */; };
-		BFFF16EE1FCDC76900BDEC58 /* render_layer.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF16551FCDC64900BDEC58 /* render_layer.c */; };
 		BFFF16EF1FCDC76900BDEC58 /* render_layer.h in Headers */ = {isa = PBXBuildFile; fileRef = BFFF16571FCDC64A00BDEC58 /* render_layer.h */; };
 		BFFF16F01FCDC76900BDEC58 /* render_sdl.c in Sources */ = {isa = PBXBuildFile; fileRef = BFFF16A71FCDC6D300BDEC58 /* render_sdl.c */; };
 		BFFF16F11FCDC76900BDEC58 /* render_sdl.h in Headers */ = {isa = PBXBuildFile; fileRef = BFFF16971FCDC6D000BDEC58 /* render_sdl.h */; };
@@ -419,7 +421,6 @@
 		BF6058CE216B3723001B738C /* caption.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = caption.c; path = ../../src/caption.c; sourceTree = "<group>"; };
 		BF6058CF216B3723001B738C /* game_ops.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = game_ops.c; path = ../../src/game_ops.c; sourceTree = "<group>"; };
 		BF6058D0216B3723001B738C /* intake_num.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = intake_num.h; path = ../../src/intake_num.h; sourceTree = "<group>"; };
-		BF6058D1216B3723001B738C /* render_layer_code.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = render_layer_code.h; path = ../../src/render_layer_code.h; sourceTree = "<group>"; };
 		BF6058D2216B3724001B738C /* sprite_struct.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sprite_struct.h; path = ../../src/sprite_struct.h; sourceTree = "<group>"; };
 		BF6058D3216B3724001B738C /* game_update.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = game_update.h; path = ../../src/game_update.h; sourceTree = "<group>"; };
 		BF6058D4216B3724001B738C /* game_player.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = game_player.h; path = ../../src/game_player.h; sourceTree = "<group>"; };
@@ -457,6 +458,10 @@
 		BFC1C0662142591500378A4C /* socksyms.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = socksyms.c; path = ../../src/network/socksyms.c; sourceTree = "<group>"; };
 		BFC1C0672142591500378A4C /* dns.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = dns.h; path = ../../src/network/dns.h; sourceTree = "<group>"; };
 		BFC1C0682142591600378A4C /* socksyms.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = socksyms.h; path = ../../src/network/socksyms.h; sourceTree = "<group>"; };
+		BFD67B372410ABAC00AF114E /* dir.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = dir.c; path = ../../src/dir.c; sourceTree = "<group>"; };
+		BFD67B392410ABCB00AF114E /* dir.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = dir.h; path = ../../src/dir.h; sourceTree = "<group>"; };
+		BFD67B3B2410ABE200AF114E /* render_layer_code.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = render_layer_code.hpp; path = ../../src/render_layer_code.hpp; sourceTree = "<group>"; };
+		BFD67B3C2410ABE200AF114E /* render_layer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = render_layer.cpp; path = ../../src/render_layer.cpp; sourceTree = "<group>"; };
 		BFE5EB622006DB4300E15CC0 /* version.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = version.h; sourceTree = "<group>"; };
 		BFFF16361FCDC64600BDEC58 /* util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = util.h; path = ../../src/util.h; sourceTree = "<group>"; };
 		BFFF16371FCDC64600BDEC58 /* zip.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = zip.h; path = ../../src/zip.h; sourceTree = "<group>"; };
@@ -486,7 +491,6 @@
 		BFFF16521FCDC64900BDEC58 /* legacy_world.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = legacy_world.h; path = ../../src/legacy_world.h; sourceTree = "<group>"; };
 		BFFF16531FCDC64900BDEC58 /* window.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = window.c; path = ../../src/window.c; sourceTree = "<group>"; };
 		BFFF16541FCDC64900BDEC58 /* idput.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = idput.c; path = ../../src/idput.c; sourceTree = "<group>"; };
-		BFFF16551FCDC64900BDEC58 /* render_layer.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = render_layer.c; path = ../../src/render_layer.c; sourceTree = "<group>"; };
 		BFFF16561FCDC64900BDEC58 /* graphics.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = graphics.c; path = ../../src/graphics.c; sourceTree = "<group>"; };
 		BFFF16571FCDC64A00BDEC58 /* render_layer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = render_layer.h; path = ../../src/render_layer.h; sourceTree = "<group>"; };
 		BFFF16581FCDC64A00BDEC58 /* scrdisp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = scrdisp.h; path = ../../src/scrdisp.h; sourceTree = "<group>"; };
@@ -831,6 +835,8 @@
 				BF6058BF216B3720001B738C /* counter_struct.h */,
 				BFFF163D1FCDC64700BDEC58 /* data.c */,
 				BFFF16441FCDC64700BDEC58 /* data.h */,
+				BFD67B372410ABAC00AF114E /* dir.c */,
+				BFD67B392410ABCB00AF114E /* dir.h */,
 				BFFF164B1FCDC64800BDEC58 /* error.c */,
 				BFFF163C1FCDC64600BDEC58 /* error.h */,
 				BFFF16961FCDC6D000BDEC58 /* event_sdl.c */,
@@ -884,15 +890,15 @@
 				BFFF18131FCDCD7B00BDEC58 /* pngops.h */,
 				BF6058C6216B3721001B738C /* rasm.c */,
 				BF6058C3216B3720001B738C /* rasm.h */,
-				BF6058D1216B3723001B738C /* render_layer_code.h */,
 				BF6058CD216B3723001B738C /* renderers.h */,
 				BFFF16991FCDC6D100BDEC58 /* render_gl.c */,
 				BFFF16A61FCDC6D300BDEC58 /* render_gl.h */,
 				BFFF169D1FCDC6D200BDEC58 /* render_gl1.c */,
 				BFFF16951FCDC6D000BDEC58 /* render_gl2.c */,
 				BFFF169E1FCDC6D200BDEC58 /* render_glsl.c */,
-				BFFF16551FCDC64900BDEC58 /* render_layer.c */,
+				BFD67B3C2410ABE200AF114E /* render_layer.cpp */,
 				BFFF16571FCDC64A00BDEC58 /* render_layer.h */,
+				BFD67B3B2410ABE200AF114E /* render_layer_code.hpp */,
 				BFFF16A71FCDC6D300BDEC58 /* render_sdl.c */,
 				BFFF16971FCDC6D000BDEC58 /* render_sdl.h */,
 				BFFF16A41FCDC6D300BDEC58 /* render_soft.c */,
@@ -1120,7 +1126,6 @@
 				BF6058E3216B3725001B738C /* memcasecmp.h in Headers */,
 				BFFF16C01FCDC76900BDEC58 /* board.h in Headers */,
 				BF6058EB216B3725001B738C /* caption.h in Headers */,
-				BF6058F4216B3725001B738C /* render_layer_code.h in Headers */,
 				BFFF181B1FCDCD8500BDEC58 /* pngops.h in Headers */,
 				BFFF16E11FCDC76900BDEC58 /* legacy_robot.h in Headers */,
 				BFFF17051FCDC76900BDEC58 /* util.h in Headers */,
@@ -1148,6 +1153,7 @@
 				BFFF16C41FCDC76900BDEC58 /* counter.h in Headers */,
 				BFFF17D41FCDCCF300BDEC58 /* player.h in Headers */,
 				BF6058DE216B3725001B738C /* board_struct.h in Headers */,
+				BFD67B3A2410ABCB00AF114E /* dir.h in Headers */,
 				BFA52FCF233AC29900A90CB4 /* vfs.h in Headers */,
 				BFFF17091FCDC76900BDEC58 /* world.h in Headers */,
 				BF6058F6216B3725001B738C /* game_update.h in Headers */,
@@ -1161,6 +1167,7 @@
 				BFFF17D51FCDCCF300BDEC58 /* precomp_blep.h in Headers */,
 				BFFF16E51FCDC76900BDEC58 /* mzm.h in Headers */,
 				BFFF16F11FCDC76900BDEC58 /* render_sdl.h in Headers */,
+				BFD67B3D2410ABE200AF114E /* render_layer_code.hpp in Headers */,
 				BFFF16EA1FCDC76900BDEC58 /* render_gl.h in Headers */,
 				BFFF16F81FCDC76900BDEC58 /* render.h in Headers */,
 				BFFF16C61FCDC76900BDEC58 /* data.h in Headers */,
@@ -1447,6 +1454,7 @@
 				BFFF18061FCDCD1200BDEC58 /* stm_load.c in Sources */,
 				BFFF17BB1FCDCCF300BDEC58 /* mix_paula.c in Sources */,
 				BFFF16E01FCDC76900BDEC58 /* legacy_robot.c in Sources */,
+				BFD67B382410ABAD00AF114E /* dir.c in Sources */,
 				BFFF17AC1FCDCCF300BDEC58 /* dataio.c in Sources */,
 				BFFF17AF1FCDCCF300BDEC58 /* filter.c in Sources */,
 				BFFF18001FCDCD1200BDEC58 /* mmd3_load.c in Sources */,
@@ -1479,7 +1487,6 @@
 				BFFF17C11FCDCCF300BDEC58 /* scan.c in Sources */,
 				BF6058E1216B3725001B738C /* game_menu.c in Sources */,
 				BFFF16C11FCDC76900BDEC58 /* configure.c in Sources */,
-				BFFF16EE1FCDC76900BDEC58 /* render_layer.c in Sources */,
 				BFFF16C31FCDC76900BDEC58 /* counter.c in Sources */,
 				BFFF17A51FCDCCE200BDEC58 /* manifest.c in Sources */,
 				BFFF16DE1FCDC76900BDEC58 /* legacy_rasm.c in Sources */,
@@ -1542,6 +1549,7 @@
 				BFFF16D61FCDC76900BDEC58 /* idarray.c in Sources */,
 				BFFF16F01FCDC76900BDEC58 /* render_sdl.c in Sources */,
 				BFFF17FA1FCDCD1200BDEC58 /* itsex.c in Sources */,
+				BFD67B3E2410ABE200AF114E /* render_layer.cpp in Sources */,
 				BFC0B26B20681ACC00D28296 /* flt_load.c in Sources */,
 				BFA52FCE233AC29900A90CB4 /* vfs.c in Sources */,
 				BFC0B26C20681ACC00D28296 /* hmn_load.c in Sources */,
@@ -1615,7 +1623,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++98";
 				CLANG_CXX_LIBRARY = "libstdc++";
 				CLANG_ENABLE_MODULES = NO;
 				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
@@ -1671,7 +1679,7 @@
 				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++98";
 				CLANG_CXX_LIBRARY = "libstdc++";
 				CLANG_ENABLE_MODULES = NO;
 				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
@@ -1731,7 +1739,6 @@
 				);
 				INFOPLIST_FILE = MegaZeux/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRODUCT_BUNDLE_IDENTIFIER = net.digitalmzx.MegaZeux;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -1755,7 +1762,6 @@
 				);
 				INFOPLIST_FILE = MegaZeux/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRODUCT_BUNDLE_IDENTIFIER = net.digitalmzx.MegaZeux;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -1787,7 +1793,6 @@
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/MegaZeux/Info.plist";
 				INSTALL_PATH = "@rpath";
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -1815,7 +1820,6 @@
 				);
 				INFOPLIST_FILE = "$(SRCROOT)/MegaZeux/Info.plist";
 				INSTALL_PATH = "@rpath";
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -1836,7 +1840,6 @@
 				HEADER_SEARCH_PATHS = SDL2.framework/Headers;
 				INFOPLIST_FILE = "$(SRCROOT)/MegaZeux/Info.plist";
 				INSTALL_PATH = "@rpath";
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -1857,7 +1860,6 @@
 				HEADER_SEARCH_PATHS = SDL2.framework/Headers;
 				INFOPLIST_FILE = "$(SRCROOT)/MegaZeux/Info.plist";
 				INSTALL_PATH = "@rpath";
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -1876,7 +1878,6 @@
 				HEADER_SEARCH_PATHS = SDL2.framework/Headers;
 				INFOPLIST_FILE = MZXRun/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRODUCT_BUNDLE_IDENTIFIER = net.digitalmzx.MZXRun;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -1896,7 +1897,6 @@
 				HEADER_SEARCH_PATHS = SDL2.framework/Headers;
 				INFOPLIST_FILE = MZXRun/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRODUCT_BUNDLE_IDENTIFIER = net.digitalmzx.MZXRun;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
