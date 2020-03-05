@@ -2786,7 +2786,7 @@ static void update_slot_prefix(void)
   if(cur_slot_prefix != NULL)
     free(cur_slot_prefix);
 
-  cur_slot_prefix = malloc(sizeof(char) * MAX_PATH);
+  cur_slot_prefix = cmalloc(sizeof(char) * MAX_PATH);
 
   fmt = get_config()->save_slots_name;
   fmt_len = strlen(fmt);
@@ -2809,7 +2809,7 @@ static void update_slot_prefix(void)
 
   // Fetch the world name, sans extension.
   world_len = strlen(curr_file) - 4;
-  world_name = malloc(sizeof(char) * world_len);
+  world_name = cmalloc(sizeof(char) * world_len);
   memcpy(world_name, curr_file, world_len);
 
   // We already know where the first token is. Copy everything before that
@@ -2885,7 +2885,7 @@ static int slot_manager(struct world *mzx_world, char *ret,
   {
     if(save)
     {
-      highlighted_slots = malloc(sizeof(boolean) * SLOTSEL_NUM_SLOTS);
+      highlighted_slots = cmalloc(sizeof(boolean) * SLOTSEL_NUM_SLOTS);
       for(i = 0; i < SLOTSEL_NUM_SLOTS; i++)
       {
         highlighted_slots[i] = slot_save_exists(cur_slot_prefix, i);
@@ -2893,7 +2893,7 @@ static int slot_manager(struct world *mzx_world, char *ret,
     }
     else
     {
-      disabled_slots = malloc(sizeof(boolean) * SLOTSEL_NUM_SLOTS);
+      disabled_slots = cmalloc(sizeof(boolean) * SLOTSEL_NUM_SLOTS);
       for(i = 0; i < SLOTSEL_NUM_SLOTS; i++)
       {
         disabled_slots[i] = !slot_save_exists(cur_slot_prefix, i);
