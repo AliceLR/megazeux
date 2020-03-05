@@ -2799,7 +2799,7 @@ static void update_slot_prefix(void)
   // If no tokens were found, just copy the string over as-is.
   if(token_pos < 0)
   {
-    strncpy(cur_slot_prefix, fmt, MAX_PATH);
+    snprintf(cur_slot_prefix, MAX_PATH, "%s", fmt);
     debug("update_slot_prefix: slot prefix: %s\n", cur_slot_prefix);
     return;
   }
