@@ -2800,6 +2800,7 @@ static void update_slot_prefix(void)
   if(token_pos < 0)
   {
     snprintf(cur_slot_prefix, MAX_PATH, "%s", fmt);
+    cur_slot_prefix[fmt_len] = 0;
     debug("update_slot_prefix: slot prefix: %s\n", cur_slot_prefix);
     return;
   }
