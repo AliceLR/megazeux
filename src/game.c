@@ -391,9 +391,21 @@ static boolean load_savegame_selection(struct game_context *game)
 {
   struct world *mzx_world = ((context *)game)->world;
   char save_file_name[MAX_PATH] = { 0 };
+  int slot_result = SLOTSEL_FILE_MANAGER_RESULT;
 
-  if(!choose_file_ch(mzx_world, save_ext, save_file_name,
-    "Choose game to restore", true))
+  if(get_config()->save_slots)
+  {
+    slot_result = slot_manager(mzx_world, save_file_name,
+     "Choose game to restore", false);
+
+    if(slot_result == SLOTSEL_CANCEL_RESULT)
+    {
+      return false;
+    }
+  }
+
+  if(slot_result == SLOTSEL_OK_RESULT || !choose_file_ch(mzx_world, save_ext,
+   save_file_name, "Choose game to restore", true))
   {
     return load_savegame(game, save_file_name);
   }
@@ -651,9 +663,21 @@ static boolean game_key(context *ctx, int *key)
         if(allow_save_menu(mzx_world))
         {
           char save_game[MAX_PATH];
+          int slot_result = SLOTSEL_FILE_MANAGER_RESULT;
           strcpy(save_game, curr_sav);
 
-          if(!new_file(mzx_world, save_ext, ".sav", save_game, "Save game", 1))
+          if(get_config()->save_slots)
+          {
+            slot_result = slot_manager(mzx_world, save_game, "Save game", true);
+
+            if(slot_result == SLOTSEL_CANCEL_RESULT)
+            {
+              return true;
+            }
+          }
+
+          if(slot_result == SLOTSEL_OK_RESULT ||
+           !new_file(mzx_world, save_ext, ".sav", save_game, "Save game", 1))
           {
             strcpy(curr_sav, save_game);
             save_world(mzx_world, curr_sav, true, MZX_VERSION);
