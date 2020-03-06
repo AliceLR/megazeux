@@ -1432,7 +1432,7 @@ static void draw_slot_selector(struct world *mzx_world, struct dialog *di,
   int slot_x;
   int slot_y = y + SLOTSEL_BAR_Y;
   int i;
-  int slot_color;
+  int slot_color = DI_SLOTSEL_NORMAL;
 
   write_string(src->title, x, y, color, 0);
 
@@ -2881,15 +2881,13 @@ int slot_manager(struct world *mzx_world, char *ret,
 
   while(return_value > 0)
   {
-    if(save)
+    highlighted_slots = cmalloc(sizeof(boolean) * SLOTSEL_NUM_SLOTS);
+    for(i = 0; i < SLOTSEL_NUM_SLOTS; i++)
     {
-      highlighted_slots = cmalloc(sizeof(boolean) * SLOTSEL_NUM_SLOTS);
-      for(i = 0; i < SLOTSEL_NUM_SLOTS; i++)
-      {
-        highlighted_slots[i] = slot_save_exists(cur_slot_prefix, i);
-      }
+      highlighted_slots[i] = slot_save_exists(cur_slot_prefix, i);
     }
-    else
+
+    if(!save)
     {
       disabled_slots = cmalloc(sizeof(boolean) * SLOTSEL_NUM_SLOTS);
       for(i = 0; i < SLOTSEL_NUM_SLOTS; i++)

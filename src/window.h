@@ -310,8 +310,8 @@ CORE_LIBSPEC void meter_interior(unsigned int progress, unsigned int out_of);
 #define DI_DEBUG_LABEL        DI_INPUT_BOX_LABEL
 #define DI_DEBUG_NUMBER       79
 
-#define DI_SLOTSEL_NORMAL     7
-#define DI_SLOTSEL_HIGHLIGHT  11
+#define DI_SLOTSEL_NORMAL     8
+#define DI_SLOTSEL_HIGHLIGHT  10
 #define DI_SLOTSEL_DISABLE    128
 
 #define SLOTSEL_OK_RESULT           0
