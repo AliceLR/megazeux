@@ -2,6 +2,9 @@ GIT
 
 USERS
 
++ Added an optional save slots interface to complement the file
+  manager. This can be enabled by setting the "save_slots"
+  config setting to 1, and is disabled by default. (Spectere)
 + Board list typing now allows non-alphanumeric keys like spaces
   and periods. Typing a space first will match zero or more
   prefixed spaces while seeking.
