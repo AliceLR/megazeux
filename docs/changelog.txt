@@ -72,6 +72,7 @@ DEVELOPERS
 + Added Windows UTF-8 compatibility layer to vfs.c and dir.c.
   UTF-8 support for Windows is still limited.
 + Moved Makefile compiler version checks to arch/compat.inc.
++ Added cycles_and_commands.txt to build and install targets.
 
 
 September 23rd, 2019 - MZX 2.92b
