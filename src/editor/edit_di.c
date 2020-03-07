@@ -1497,7 +1497,7 @@ void global_info(context *ctx)
 * |
 * |  X-[00000][-][+]  Y-[00000][-][+]  |
 * |
-* |      [  Ok  ]        [Cancel]      |
+* |      [  OK  ]        [Cancel]      |
 * |
 * +------------------------------------+
 */
@@ -1532,7 +1532,7 @@ int board_goto(struct world *mzx_world, int overlay_edit,
     board_height = mzx_world->vlayer_height;
   }
 
-  elements[0] = construct_button( 7, 4, "  Ok  ", 0);
+  elements[0] = construct_button( 7, 4, "  OK  ", 0);
   elements[1] = construct_button(24, 4, "Cancel", 1);
   elements[2] = construct_number_box( 3, 2, "X-",
    0, board_width - 1, NUMBER_BOX, &goto_x);
