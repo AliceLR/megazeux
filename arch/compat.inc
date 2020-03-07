@@ -5,7 +5,7 @@
 #
 
 IS_GCC   := ${shell ${CC} --version | grep -qi "gcc"; echo $$?}
-IS_CLANG := ${shell ${CC} --version | grep -qi "clang version"; echo $$?}
+IS_CLANG := ${shell ${CC} --version | grep -qi "\(clang version\|emcc\)"; echo $$?}
 
 GCC_VER := ${shell ${CC} -dumpfullversion -dumpversion |\
  awk -F. '{print $$3+100*($$2+100*$$1)}'}
@@ -15,12 +15,24 @@ GCC_VER_GE_4_8   := ${shell test ${GCC_VER} -ge 40800; echo $$?}
 GCC_VER_GE_7     := ${shell test ${GCC_VER} -ge 70000; echo $$?}
 
 ifeq (${IS_CLANG},0)
-CLANG_VER := ${shell ${CC} --version |\
+CLANG_VER_FLAG = "--version"
+
+#
+# Emscripten uses completely different version numbering and the easiest way
+# to get the clang version is to run it with verbose sanity checks instead.
+# Because of this, stderr needs to be redirected to stdout for this command.
+#
+ifeq (${CC},emcc)
+CLANG_VER_FLAG = "-v"
+endif
+
+CLANG_VER := ${shell ${CC} ${CLANG_VER_FLAG} 2>&1 |\
  grep -oi "clang version.* [0-9]\+\.[0-9]\+\.[0-9]\+" |\
  grep -o "[0-9]\+.*" |\
  awk -F. '{print $$3+100*($$2+100*$$1)}'}
 
 CLANG_VER_GE_3_3 := ${shell test "${CLANG_VER}" -ge 30300; echo $$?}
+IS_GCC :=
 endif
 
 #
