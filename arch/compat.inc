@@ -16,7 +16,7 @@ GCC_VER_GE_7     := ${shell test ${GCC_VER} -ge 70000; echo $$?}
 
 ifeq (${IS_CLANG},0)
 CLANG_VER := ${shell ${CC} --version |\
- grep -oi "^clang version.* [0-9]\+\.[0-9]\+\.[0-9]\+" |\
+ grep -oi "clang version.* [0-9]\+\.[0-9]\+\.[0-9]\+" |\
  grep -o "[0-9]\+.*" |\
  awk -F. '{print $$3+100*($$2+100*$$1)}'}
 
