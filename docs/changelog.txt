@@ -1,4 +1,16 @@
-GIT
+March 8th, 2020 - MZX 2.92c
+
+Here's another bugfix release, this time mostly oriented towards
+fixing bugs in the Emscripten/HTML5 port and checkres. Other
+fixes of note are the module_resample_mode (formerly 'modplug')
+config setting has been fixed, numerous optimizations have been
+made to the software layer renderer, and yet another ternary
+operator bug has been fixed.
+
+Finally, Spectere has added an experimental save slots UI that
+can be enabled with the config setting "save_slots". This
+feature is intended primarily for consoles and will likely be
+enabled by default for consoles in the future.
 
 USERS
 
