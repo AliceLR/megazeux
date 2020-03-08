@@ -140,7 +140,7 @@
 #endif
 
 #ifndef UPDATE_HOST_COUNT
-#define UPDATE_HOST_COUNT 3
+#define UPDATE_HOST_COUNT 4
 #endif
 
 static char *default_update_hosts[] =
