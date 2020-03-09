@@ -11,3 +11,4 @@ This copy of zlib 1.2.11's unsupported infback9 code has been modified as follow
 * Fixed a fall-through warning.
 * Replaced references to zcalloc and zcfree with inline implementations. This
   is due to older versions of zlib seemingly not exposing these.
+* Removed OF() wrapper for function declarations (unnecessary).
