@@ -34,6 +34,20 @@ static boolean insert_on = true;
 
 static char last_char = 0;
 
+static inline void intake_old_place_char(char *string, int *currx,
+ int *curr_len, Uint32 chr)
+{
+  // Overwrite or insert?
+  if(insert_on || (*currx == *curr_len))
+  {
+    // Insert- Move all ahead 1, increasing string length
+    (*curr_len)++;
+    memmove(string + *currx + 1, string + *currx, *curr_len - *currx);
+  }
+  // Add character and move forward one
+  string[(*currx)++] = chr;
+}
+
 // (returns the key used to exit) String points to your memory for storing
 // the new string. The current "value" is used- clear the string before
 // calling intake if you need a blank string. Max_len is the maximum length
@@ -94,11 +108,12 @@ int intake(struct world *mzx_world, char *string, int max_len,
     fill_line(max_len + 1 - curr_len, x + curr_len, y, 32, color);
 
     update_screen();
-    update_event_status_intake();
+    update_event_status_delay();
     key = get_key(keycode_internal_wrt_numlock);
     place = 0;
 
-    cur_char = get_key(keycode_unicode);
+    if(!key && has_unicode_input())
+      key = IKEY_UNICODE;
 
     action = get_joystick_ui_action();
     if(action)
@@ -382,13 +397,8 @@ int intake(struct world *mzx_world, char *string, int max_len,
 
           if(new_char >= 32)
           {
-            cur_char = new_char;
+            intake_old_place_char(string, &currx, &curr_len, new_char);
             last_char = new_char;
-            place = 1;
-          }
-          else
-          {
-            place = 0;
           }
         }
         else
@@ -436,6 +446,8 @@ int intake(struct world *mzx_world, char *string, int max_len,
 
     if(place)
     {
+      Uint32 num_placed = 0;
+
       if((cur_char != 0) && (cur_char < 32) && (exit_type == INTK_EXIT_ANY))
       {
         done = 1;
@@ -443,17 +455,16 @@ int intake(struct world *mzx_world, char *string, int max_len,
       }
       else
 
-      if(place && (curr_len != max_len) && (!done) && cur_char)
+      while((curr_len < max_len) && (!done) && num_placed < KEY_UNICODE_MAX)
       {
-        // Overwrite or insert?
-        if((insert_on) || (currx == curr_len))
+        Uint32 cur_char = get_key(keycode_text_ascii);
+        if(cur_char)
         {
-          // Insert- Move all ahead 1, increasing string length
-          curr_len++;
-          memmove(string + currx + 1, string + currx, curr_len - currx);
+          intake_old_place_char(string, &currx, &curr_len, cur_char);
+          num_placed++;
         }
-        // Add character and move forward one
-        string[currx++] = cur_char;
+        else
+          break;
       }
     }
 
@@ -769,8 +780,7 @@ static boolean intake_key(subcontext *sub, int *key)
   boolean shift_status = get_shift_status(keycode_internal);
   boolean any_mod = (alt_status || ctrl_status || shift_status);
   boolean place = false;
-
-  char cur_char = get_key(keycode_unicode);
+  Uint32 num_placed = 0;
 
   // Exit-- let the parent context handle.
   if(get_exit_status())
@@ -945,21 +955,26 @@ static boolean intake_key(subcontext *sub, int *key)
 
     default:
     {
-      if(!alt_status && !ctrl_status && (*key >= 32) && (cur_char > 0))
+      if(!alt_status && !ctrl_status)
         place = true;
 
       break;
     }
   }
 
-  // Attempt to add the char to the string.
-  if(place && cur_char && cur_char >= 32)
+  // Attempt to add char(s) to the string.
+  while(place && num_placed < KEY_UNICODE_MAX)
   {
-    intake_place_char(intk, cur_char);
-    return true;
+    char cur_char = get_key(keycode_text_ascii);
+    if(cur_char)
+    {
+      intake_place_char(intk, cur_char);
+      num_placed++;
+    }
+    else
+      break;
   }
-
-  return false;
+  return !!(num_placed);
 }
 
 /**

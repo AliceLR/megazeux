@@ -675,7 +675,7 @@ static void place_text(struct editor_context *editor)
   struct world *mzx_world = ((context *)editor)->world;
   struct buffer_info temp_buffer;
 
-  int key = get_key(keycode_unicode);
+  int key = get_key(keycode_text_ascii);
 
   if(key != 0)
   {

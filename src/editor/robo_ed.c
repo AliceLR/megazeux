@@ -4121,7 +4121,6 @@ void robot_editor(context *parent, struct robot *cur_robot)
   spec.click          = robot_editor_mouse;
   spec.key            = robot_editor_key;
   spec.destroy        = robot_editor_destroy;
-  spec.framerate_mode = FRAMERATE_UI_INTERRUPT;
   create_context((context *)rstate, parent, &spec, CTX_ROBO_ED);
 
   rstate->intk =

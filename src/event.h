@@ -34,6 +34,7 @@ __M_BEGIN_DECLS
 #define UPDATE_DELAY 16
 
 #define KEY_REPEAT_STACK_SIZE 32
+#define KEY_UNICODE_MAX 16
 
 #define STATUS_NUM_KEYCODES 512
 
@@ -102,8 +103,10 @@ struct buffered_status
   enum keycode key;
   enum keycode key_repeat;
   enum keycode key_release;
-  Uint16 unicode;
-  Uint16 unicode_repeat;
+  Uint32 unicode[KEY_UNICODE_MAX];
+  Uint32 unicode_pos;
+  Uint32 unicode_length;
+  Uint32 unicode_repeat;
   Uint32 keypress_time;
   Uint32 mouse_x;
   Uint32 mouse_y;
@@ -170,7 +173,7 @@ struct input_status
   Uint16 store_offset;
 
   enum keycode key_repeat_stack[KEY_REPEAT_STACK_SIZE];
-  Uint16 unicode_repeat_stack[KEY_REPEAT_STACK_SIZE];
+  Uint32 unicode_repeat_stack[KEY_REPEAT_STACK_SIZE];
   Uint32 repeat_stack_pointer;
 
   struct joystick_map joystick_global_map;
@@ -182,13 +185,18 @@ struct input_status
 
 // regular keycode_internal treats numpad keys as unique keys
 // wrt_numlock translates them to numeric/navigation based on numlock status
+// keycode_text_ascii masks unicode chars from 32 to 126; keycode_text_unicode
+// will return any unicode char encountered >= 32.
 enum keycode_type
 {
   keycode_pc_xt,
   keycode_internal,
   keycode_internal_wrt_numlock,
-  keycode_unicode
+  keycode_text_ascii,
+  keycode_text_unicode
 };
+
+#define KEYCODE_IS_ASCII(key) ((key) >= 32 && (key) < 127)
 
 CORE_LIBSPEC void init_event(void);
 
@@ -216,14 +224,17 @@ CORE_LIBSPEC Uint32 get_mouse_drag(void);
 CORE_LIBSPEC boolean get_alt_status(enum keycode_type type);
 CORE_LIBSPEC boolean get_shift_status(enum keycode_type type);
 CORE_LIBSPEC boolean get_ctrl_status(enum keycode_type type);
-CORE_LIBSPEC void key_press(struct buffered_status *status, enum keycode key,
- Uint16 unicode_key);
+CORE_LIBSPEC void key_press(struct buffered_status *status, enum keycode key);
+CORE_LIBSPEC void key_press_unicode(struct buffered_status *status, Uint32 unicode);
 CORE_LIBSPEC void key_release(struct buffered_status *status, enum keycode key);
 CORE_LIBSPEC boolean get_exit_status(void);
 CORE_LIBSPEC boolean set_exit_status(boolean value);
 CORE_LIBSPEC boolean peek_exit_input(void);
 CORE_LIBSPEC Uint32 get_joystick_ui_action(void);
 CORE_LIBSPEC Uint32 get_joystick_ui_key(void);
+
+boolean has_unicode_input(void);
+Uint32 convert_internal_unicode(enum keycode key);
 
 // Implemented by "drivers" (SDL, Wii, NDS, 3DS, etc.)
 void initialize_joysticks(void);
