@@ -1427,7 +1427,8 @@ boolean __update_event_status(void)
     {
       status->key = IKEY_UNKNOWN;
       status->key_repeat = IKEY_UNKNOWN;
-      status->unicode = 0;
+      status->unicode_repeat = 0;
+      status->unicode_length = 0;
       status->exit_status = true;
       return true;
     }
