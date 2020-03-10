@@ -10,8 +10,8 @@ DEVELOPERS
 + Decoupled SDL 2 text input handling from regular key handling
   and added a text input buffer. Text keys can now be requested
   multiple times and either as ASCII or unicode; the next key in
-  the buffer is returned on subsequent calls. intake can now
-  now accept multiple text chars per frame.
+  the buffer is returned on subsequent calls. intake and editor
+  text entry can now accept multiple text chars per frame.
 
 
 March 8th, 2020 - MZX 2.92c
