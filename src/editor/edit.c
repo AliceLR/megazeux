@@ -690,6 +690,7 @@ static void place_text(struct editor_context *editor)
       if(editor->cursor_x < (editor->board_width - 1))
         editor->cursor_x++;
 
+      num_placed++;
       editor->modified = true;
     }
     else
