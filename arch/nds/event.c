@@ -190,10 +190,10 @@ static boolean process_event(NDSEvent *event)
     // Software key down
     case NDS_EVENT_KEYBOARD_DOWN:
     {
-      enum keycode internal_code;
+      int internal_code;
       Uint32 unicode;
 
-      convert_nds_internal(event->key, &internal_code, &unicode);
+      convert_nds_internal(event->key, &internal_code);
       unicode = convert_internal_unicode(internal_code);
 
       key_press(status, internal_code);
