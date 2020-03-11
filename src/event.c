@@ -1165,7 +1165,7 @@ void key_release(struct buffered_status *status, enum keycode key)
 boolean has_unicode_input(void)
 {
   const struct buffered_status *status = load_status();
-  return !!status->unicode_length;
+  return status->unicode_length > status->unicode_pos;
 }
 
 boolean get_exit_status(void)
