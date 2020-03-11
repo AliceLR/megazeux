@@ -4,6 +4,10 @@ USERS
 
 + Fixed a bug where input text with no corresponding internal
   key would be ignored by the robot editor.
++ Fixed a bug where some AltGr key combinations would not work
+  in the robot editor (note: SDL doesn't distinguish Alt from
+  AltGr, so any Alt key combos with a special meaning in the
+  robot editor will still be intercepted by MZX).
 
 DEVELOPERS
 

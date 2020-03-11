@@ -955,9 +955,7 @@ static boolean intake_key(subcontext *sub, int *key)
 
     default:
     {
-      if(!alt_status && !ctrl_status)
-        place = true;
-
+      place = true;
       break;
     }
   }
