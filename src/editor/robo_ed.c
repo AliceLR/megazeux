@@ -3490,19 +3490,27 @@ static boolean robot_editor_key(context *ctx, int *key)
 
     case IKEY_BACKSPACE:
     {
-      if(rstate->current_x == 0 && rstate->current_line > 1)
-        combine_current_line(rstate, -1);
+      // Let intake handle Alt+Backspace and Ctrl+Backspace.
+      if(get_alt_status(keycode_internal) || get_ctrl_status(keycode_internal))
+        break;
 
-      return true;
+      if(rstate->current_x == 0 && rstate->current_line > 1)
+      {
+        combine_current_line(rstate, -1);
+        return true;
+      }
+      break;
     }
 
     case IKEY_DELETE:
     {
       if(rstate->command_buffer[rstate->current_x] == 0 &&
        rstate->current_rline->next)
+      {
         combine_current_line(rstate, 1);
-
-      return true;
+        return true;
+      }
+      break;
     }
 
     case IKEY_RETURN:
@@ -3707,12 +3715,16 @@ static boolean robot_editor_key(context *ctx, int *key)
           rstate->command_buffer[1] = '/';
         }
         update_current_line(rstate);
+        return true;
       }
-      return true;
+      break;
     }
 #else /* !CONFIG_DEBYTECODE */
     case IKEY_c:
     {
+      if(!get_ctrl_status(keycode_internal))
+        break;
+
       if(rstate->current_rline->validity_status != valid)
       {
         rstate->current_rline->validity_status = invalid_comment;
@@ -3752,8 +3764,7 @@ static boolean robot_editor_key(context *ctx, int *key)
       }
       else
 
-      if(get_ctrl_status(keycode_internal) &&
-       (rstate->command_buffer[0] == '.') &&
+      if((rstate->command_buffer[0] == '.') &&
        (rstate->command_buffer[1] == ' ') &&
        (rstate->command_buffer[2] == '"') &&
        (rstate->command_buffer[strlen(rstate->command_buffer) - 1] == '"'))
@@ -3788,7 +3799,6 @@ static boolean robot_editor_key(context *ctx, int *key)
 
         strcpy(rstate->command_buffer, uncomment_buffer);
       }
-
       return true;
     }
 
@@ -3798,9 +3808,9 @@ static boolean robot_editor_key(context *ctx, int *key)
       {
         rstate->current_rline->validity_status = invalid_discard;
         update_current_line(rstate);
+        return true;
       }
-
-      return true;
+      break;
     }
 #endif /* !CONFIG_DEBYTECODE */
 
@@ -3873,8 +3883,9 @@ static boolean robot_editor_key(context *ctx, int *key)
           rstate->mark_start_rline = rstate->mark_end_rline;
           rstate->mark_end_rline = mark_swap_rline;
         }
+        return true;
       }
-      return true;
+      break;
     }
 
     // Block action menu

@@ -32,10 +32,13 @@
 #include "graphics.h"
 #include "helpsys.h"
 #include "settings.h"
+#include "util.h"
 #include "world.h"
 #include "world_struct.h"
 
 #define MAX_NUM_CALLBACKS 8
+
+static int unique = 0;
 
 struct context_stack
 {
@@ -43,13 +46,13 @@ struct context_stack
   int alloc;
   int size;
   int pos;
+  boolean removed;
 };
 
 /**
  * Used as a context to help create the first actual context.
  * Stores the context stack.
  */
-
 struct core_context
 {
   context ctx;
@@ -63,7 +66,6 @@ struct core_context
 /**
  * Contains data for callbacks added to a context.
  */
-
 struct context_callback_data
 {
   context *ctx_for_callback;
@@ -75,7 +77,6 @@ struct context_callback_data
 /**
  * Contains internal context data used to run contexts.
  */
-
 struct context_data
 {
   context *parent;
@@ -87,6 +88,8 @@ struct context_data
   struct context_callback_data callbacks[MAX_NUM_CALLBACKS];
   int cur_callback;
   int num_callbacks;
+  int unique;
+  int priority;
 };
 
 #ifdef CONFIG_FPS
@@ -96,9 +99,8 @@ struct context_data
 static double average_fps;
 
 /**
- * Track the current speed MegaZeux is running in frames.
+ * Track the current speed MegaZeux is running in cycles.
  */
-
 static void update_fps(int current_ticks)
 {
   static int fps_previous_ticks = -1;
@@ -230,6 +232,7 @@ static void print_ctx_line(context_data *ctx_data)
 {
   char name[CTX_NAME_MAX_SIZE + 1] = "  -> subcontext";
   char cbs_str[12] = "";
+  char pri_str[12] = "";
   const char *framerate_str = "-";
   boolean click_drag_same = false;
 
@@ -250,10 +253,16 @@ static void print_ctx_line(context_data *ctx_data)
     }
   }
 
+  if(ctx_data->priority)
+  {
+    snprintf(pri_str, 12, "%d", ctx_data->priority);
+    pri_str[11] = 0;
+  }
+
   if(ctx_data->functions.click == ctx_data->functions.drag)
     click_drag_same = true;
 
-  fprintf(stderr, "%-*.*s | %3s %3s %3s %3s %3s %3s %3s %3s | %-3s %3s\n",
+  fprintf(stderr, "%-*.*s | %3s %3s %3s %3s %3s %3s %3s %3s | %-3s %3s %s\n",
     16, 16, name,
     ctx_data->functions.resume    ? "Yes" : "",
     ctx_data->functions.draw      ? "Yes" : "",
@@ -264,7 +273,8 @@ static void print_ctx_line(context_data *ctx_data)
     ctx_data->functions.drag      ? click_drag_same ? "<- " : "Yes" : "",
     ctx_data->functions.destroy   ? "Yes" : "",
     framerate_str,
-    cbs_str
+    cbs_str,
+    pri_str
   );
 }
 
@@ -303,8 +313,8 @@ static void __print_core_stack(context *_ctx, const char *file, int line)
   root = _ctx->root;
 
   fprintf(stderr,
-   "CONTEXT STACK    | Res Drw Idl Key Joy Clk Drg Dst | Fr. CbQ \n"
-   "-----------------|---------------------------------|---------\n");
+   "CONTEXT STACK    | Res Drw Idl Key Joy Clk Drg Dst | Fr. CbQ Pri\n"
+   "-----------------|---------------------------------|-------------\n");
 
   for(i = root->stack.size - 1; i >= 0; i--)
   {
@@ -358,6 +368,7 @@ static int remove_stack(struct context_stack *stack, context *del)
          stack->size - i - 1);
 
       stack->size--;
+      stack->removed = true;
       return i;
     }
   }
@@ -374,7 +385,6 @@ static int remove_stack(struct context_stack *stack, context *del)
  * At least one update function needs to be provided capable of destroying the
  * context; otherwise, MegaZeux would hang up trying to execute this context.
  */
-
 void create_context(context *ctx, context *parent,
  struct context_spec *ctx_spec, enum context_type context_type)
 {
@@ -417,6 +427,8 @@ void create_context(context *ctx, context *parent,
   ctx_data->is_subcontext = false;
   ctx_data->cur_callback = 0;
   ctx_data->num_callbacks = 0;
+  ctx_data->unique = unique++;
+  ctx_data->priority = ctx_spec->priority;
   memset(&(ctx_data->stack), 0, sizeof(struct context_stack));
   memcpy(&(ctx_data->functions), ctx_spec, sizeof(struct context_spec));
 
@@ -430,7 +442,6 @@ void create_context(context *ctx, context *parent,
 /**
  * Creates a subcontext and adds it to the parent context.
  */
-
 CORE_LIBSPEC void create_subcontext(subcontext *sub, context *parent,
  struct context_spec *sub_spec)
 {
@@ -463,6 +474,8 @@ CORE_LIBSPEC void create_subcontext(subcontext *sub, context *parent,
   sub->world = parent->world;
   sub_data->parent = parent;
   sub_data->is_subcontext = true;
+  sub_data->unique = unique++;
+  sub_data->priority = sub_spec->priority;
   memcpy(&(sub_data->functions), sub_spec, sizeof(struct context_spec));
 
   // Add the subcontext to the parent's stack.
@@ -474,7 +487,6 @@ CORE_LIBSPEC void create_subcontext(subcontext *sub, context *parent,
  * Flag the core_context to abort further execution of the cycle if the root
  * context stack is changed.
  */
-
 void destroy_context(context *ctx)
 {
   core_context *root = ctx->root;
@@ -525,7 +537,6 @@ void destroy_context(context *ctx)
 /**
  * Find out if a context change has occurred.
  */
-
 boolean has_context_changed(context *ctx)
 {
   if(!ctx || !ctx->root)
@@ -541,7 +552,6 @@ boolean has_context_changed(context *ctx)
 /**
  * Find out if the given context is a particular context.
  */
-
 boolean is_context(context *ctx, enum context_type context_type)
 {
   if(!ctx || !ctx->internal_data)
@@ -561,7 +571,6 @@ boolean is_context(context *ctx, enum context_type context_type)
  * Add a resume callback to the context (or its parent). Alternatively, call
  * it immediately if no context change has occurred.
  */
-
 void context_callback(context *ctx, context_callback_param *param,
  context_callback_function func)
 {
@@ -602,7 +611,6 @@ void context_callback(context *ctx, context_callback_param *param,
 /**
  * Set the framerate mode for the current context.
  */
-
 void set_context_framerate_mode(context *ctx, enum framerate_type framerate)
 {
   if(!ctx || !ctx->internal_data || ctx->internal_data->is_subcontext)
@@ -619,7 +627,6 @@ void set_context_framerate_mode(context *ctx, enum framerate_type framerate)
  * Generate the core_context struct. This struct imitates a regular context so
  * it can be used as a parent, but it should not be started like a context.
  */
-
 core_context *core_init(struct world *mzx_world)
 {
   core_context *root = cmalloc(sizeof(core_context));
@@ -641,7 +648,6 @@ core_context *core_init(struct world *mzx_world)
 /**
  * Execute the next callback for a context and remove it from the list.
  */
-
 static void execute_next_context_callback(context_data *ctx_data)
 {
   struct context_callback_data *cb_data;
@@ -657,7 +663,6 @@ static void execute_next_context_callback(context_data *ctx_data)
 /**
  * Execute the resume function for the current context after a context change.
  */
-
 static void core_resume(core_context *root)
 {
   context *ctx = root->stack.contents[root->stack.size - 1];
@@ -700,7 +705,6 @@ static void core_resume(core_context *root)
 /**
  * Draw the current context.
  */
-
 static boolean core_draw(core_context *root)
 {
   context *ctx = root->stack.contents[root->stack.size - 1];
@@ -812,27 +816,50 @@ static boolean core_allow_settings_menu(core_context *root)
 }
 
 /**
+ * Update sort function.
+ */
+static int core_update_sort_fn(const void *A, const void *B)
+{
+  const context *a = *((const context **)A);
+  const context *b = *((const context **)B);
+  const context_data *a_data = a->internal_data;
+  const context_data *b_data = b->internal_data;
+  int diff = b_data->priority - a_data->priority;
+  return diff ? diff : a_data->unique - b_data->unique;
+}
+
+/**
  * Update the current context, handling input and idle activity.
- * If any subcontexts are attached to the context, they will be handled from
- * most recent to oldest, and the context will be handled last. Notes:
+ * If any subcontexts are attached to the context, they will also be updated.
+ * Notes:
  *
  * 1) Execution order: Idle -> Click OR Drag -> Joystick -> Key
  * 2) A true return value of idle cancels key, mouse, and joystick handling.
  * 3) A true return value of key cancels key handling.
  * 4) A true return value of click or drag cancels mouse handling.
  * 5) A true return value of joystick handling cancels joystick handling.
+ *
+ * If a subcontext is added during the update, it will not be updated.
+ * If a subcontext is removed during the update, the update will terminate.
  */
-
 static void core_update(core_context *root)
 {
+  context *_update_order[8];
+  context **update_order = _update_order;
+
   context *ctx = root->stack.contents[root->stack.size - 1];
   context_data *ctx_data = ctx->internal_data;
   context_data *cur_data;
   context *cur;
 
+  struct context_stack *stack = &(ctx_data->stack);
+
   boolean joystick_handled = false;
   boolean mouse_handled = false;
   boolean key_handled = false;
+  boolean sorted = true;
+  int update_count = stack->size + 1;
+  int last_priority = ctx_data->priority;
 
   boolean exit_status = get_exit_status();
   int key = get_key(keycode_internal_wrt_numlock);
@@ -841,6 +868,7 @@ static void core_update(core_context *root)
   int mouse_drag_state = get_mouse_drag();
   int mouse_x;
   int mouse_y;
+  int i;
 
   get_mouse_position(&mouse_x, &mouse_y);
 
@@ -849,22 +877,31 @@ static void core_update(core_context *root)
   if(!key && has_unicode_input())
     key = IKEY_UNICODE;
 
-  ctx_data->stack.pos = ctx_data->stack.size - 1;
+  if(update_count > (int)ARRAY_SIZE(_update_order))
+    update_order = cmalloc(update_count * sizeof(context *));
 
-  do
+  update_order[0] = ctx;
+  for(i = 0; i < stack->size; i++)
   {
-    // Count down to -1 and break when cur equals ctx.
-    // Slightly convoluted, but better than duplicating this loop's logic.
-    if(ctx_data->stack.pos < 0)
-    {
-      cur = ctx;
-      cur_data = ctx_data;
-    }
-    else
-    {
-      cur = (context *)ctx_data->stack.contents[ctx_data->stack.pos];
-      cur_data = cur->internal_data;
-    }
+    cur = stack->contents[i];
+    update_order[i + 1] = cur;
+
+    if(cur->internal_data->priority > last_priority)
+      sorted = false;
+
+    last_priority = cur->internal_data->priority;
+  }
+
+  if(!sorted)
+    qsort(update_order, update_count, sizeof(context *), core_update_sort_fn);
+
+  stack->removed = false;
+  stack->pos = 0;
+
+  for(i = 0; i < update_count; i++)
+  {
+    cur = update_order[i];
+    cur_data = cur->internal_data;
 
     if(cur_data->functions.idle)
     {
@@ -875,8 +912,8 @@ static void core_update(core_context *root)
         key_handled = true;
       }
 
-      if(root->context_changed || root->full_exit)
-        return;
+      if(stack->removed || root->context_changed || root->full_exit)
+        break;
     }
 
     if(!mouse_handled)
@@ -894,8 +931,8 @@ static void core_update(core_context *root)
          cur_data->functions.click(cur, &key, mouse_press, mouse_x, mouse_y);
       }
 
-      if(root->context_changed || root->full_exit)
-        return;
+      if(stack->removed || root->context_changed || root->full_exit)
+        break;
     }
 
     if(!joystick_handled)
@@ -903,8 +940,8 @@ static void core_update(core_context *root)
       if(joystick && cur_data->functions.joystick)
         joystick_handled |= cur_data->functions.joystick(cur, &key, joystick);
 
-      if(root->context_changed || root->full_exit)
-        return;
+      if(stack->removed || root->context_changed || root->full_exit)
+        break;
     }
 
     if(!key_handled)
@@ -912,19 +949,16 @@ static void core_update(core_context *root)
       if((key || exit_status) && cur_data->functions.key)
         key_handled |= cur_data->functions.key(cur, &key);
 
-      if(root->context_changed || root->full_exit)
-        return;
+      if(stack->removed || root->context_changed || root->full_exit)
+        break;
     }
-
-    // Move to the next subcontext if we haven't already been advanced.
-    if(ctx_data->stack.pos >= 0)
-      if(cur == ctx_data->stack.contents[ctx_data->stack.pos])
-        ctx_data->stack.pos--;
   }
-  while(cur != ctx);
+
+  if(update_order != _update_order)
+    free(update_order);
 
   // Global key handler.
-  if(!key_handled)
+  if(!root->context_changed && !root->full_exit && !key_handled)
   {
     switch(key)
     {
@@ -972,7 +1006,6 @@ static void core_update(core_context *root)
 /**
  * Run the main game loop.
  */
-
 void core_run(core_context *root)
 {
   struct config_info *conf = get_config();
@@ -1117,7 +1150,6 @@ void core_run(core_context *root)
 /**
  * Indicate that the core loop should exit.
  */
-
 void core_full_exit(context *ctx)
 {
   if(!ctx || !ctx->root)
@@ -1133,7 +1165,6 @@ void core_full_exit(context *ctx)
 /**
  * Exit the core loop and restart MegaZeux.
  */
-
 void core_full_restart(context *ctx)
 {
   if(!ctx || !ctx->root)
@@ -1150,7 +1181,6 @@ void core_full_restart(context *ctx)
 /**
  * Find out if an exit has been requested.
  */
-
 boolean core_restart_requested(core_context *root)
 {
   if(!root)
@@ -1165,7 +1195,6 @@ boolean core_restart_requested(core_context *root)
 /**
  * Free all context data that still exists.
  */
-
 void core_free(core_context *root)
 {
   int i;
@@ -1186,7 +1215,6 @@ static int curr_index = 0;
  * Get the most recent context ID associated with the help system.
  * TODO rename after the deprecated features are no longer necessary.
  */
-
 enum context_type get_context(context *ctx)
 {
   if(!curr_index && ctx)
