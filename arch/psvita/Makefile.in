@@ -67,7 +67,8 @@ endif
 		mzxrun.vpk
 
 clean:
-	@rm -f arch/psvita/*.{o,d} mzxrun mzxrun.elf mzxrun.velf mzxrun.vpk eboot.bin param.sfo
+	@rm -f arch/psvita/*.{o,d} mzxrun mzxrun.elf mzxrun.velf mzxrun.vpk \
+		megazeux megazeux.elf megazeux.velf megazeux.vpk eboot.bin param.sfo
 
 build: package ${build}
 	echo TODO
