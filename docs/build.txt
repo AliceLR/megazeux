@@ -1,11 +1,12 @@
 BUILDING MEGAZEUX
 
-MegaZeux can currently be built for Microsoft Windows, Linux, MacOS X,
-OpenBSD, FreeBSD, OpenSolaris, HaikuOS, Android, GP2X, PSP, NDS or Wii.
+MegaZeux can currently be built for Microsoft Windows, Linux, MacOS,
+OpenBSD, FreeBSD, OpenSolaris, HaikuOS, Amiga OS 4, Android, HTML5,
+PSP, NDS, Wii, 3DS, Switch, GP2X, and Pandora.
 
-On MacOS X, universal binaries can be created.
+On MacOS, universal binaries can be created.
 
-GCC and Microsoft compilers are supported.
+GCC, clang, and Microsoft compilers are supported.
 
 On all platforms, the editor, help system, audio, and various renderers
 can be disabled to reduce program size or required dependencies.
@@ -16,25 +17,28 @@ The following instructions are generic for all platforms.
 
 DEPENDENCIES
 
-MegaZeux depends on only three libraries with the most basic configuration.
-These are the SDL, ogg and vorbis libraries. Some of the ports (Wii, NDS,
-Android) do not require SDL. Some of the ports may substitute Ogg/Vorbis
-with Tremor.
+MegaZeux depends on only five libraries with the most basic configuration.
+These are the SDL, zlib, libpng, ogg, and vorbis libraries. Some of the ports
+(Wii, NDS, 3DS) do not require SDL. Some of the ports may substitute Ogg/Vorbis
+with Tremor. Several omit libpng where PNG screenshot support doesn't make sense.
 
-SDL:			http://www.libsdl.org/
-libogg/libvorbis:	http://xiph.org/downloads/
+SDL:			https://www.libsdl.org/
+zlib:			https://www.zlib.net/
+libpng:			http://www.libpng.org/pub/png/libpng.html
+libogg/libvorbis:	https://xiph.org/downloads/
 
 Installation of these libraries is not covered in this document, but on
-many platforms there are pre-built binaries available. Under Linux, these
-libraries will already be installed, but you may want to install the -dev
+many platforms there are pre-built binaries available. Under Linux/BSD, these
+libraries may already be installed, but you may want to install the -dev
 packages:
 
-libogg-dev, libvorbis-dev, libsdl1.2-dev (Debian/Ubuntu)
+zlib-dev libpng-dev libogg-dev libvorbis-dev libsdl2-dev (Debian/Ubuntu)
+zlib-devel libpng-devel libogg-devel libvorbis-devel SDL2-devel (Fedora/CentOS/RHEL)
+lzlib png libogg libvorbis sdl2 (FreeBSD/OpenBSD)
 
 MegaZeux has a slew of additional features that have more dependencies.
 On X11 platforms, the xorg-dev package should be installed to enable
-clipboard support. Additionally libpng can be used on all platforms
-to enable PNG (as opposed to BMP) screenshots.
+clipboard support when building against SDL 1.2 (SDL 2 is recommended).
 
 CONFIGURING MEGAZEUX
 
@@ -48,7 +52,7 @@ A normal compile line for Windows might be:
 
 BUILDING MEGAZEUX
 
-Now, you need GNU GCC and GNU make to actually build. Type make and
+Now, you need GNU GCC/clang and GNU make to actually build. Type make and
 if you wish to install to ${PREFIX}/bin follow it with make install.
 
 The install target is only supported on Linux. The "make build" and
@@ -58,3 +62,4 @@ This method is supported on all supported platforms.
 
 On Debian Linux, DEB files can be generated with a single command.
 See debian/README for more information.
+

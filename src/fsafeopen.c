@@ -25,6 +25,7 @@
 
 #include "fsafeopen.h"
 #include "const.h"
+#include "dir.h"
 #include "util.h"
 
 #ifndef __WIN32__

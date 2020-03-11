@@ -42,7 +42,9 @@ struct memfile *vfile_get_memfile(vfile *vf);
 
 int vchdir(const char *path);
 char *vgetcwd(char *buf, size_t size);
+int vmkdir(const char *path, int mode);
 int vunlink(const char *path);
+int vrmdir(const char *path);
 int vstat(const char *path, struct stat *buf);
 
 int vfgetc(vfile *vf);

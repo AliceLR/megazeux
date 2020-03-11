@@ -6,10 +6,9 @@ https://github.com/madler/zlib/tree/cacf7f1/contrib/infback9
 This copy of zlib 1.2.11's unsupported infback9 code has been modified as follows:
 * Added this notice to README.
 * Added "LICENSE" (the license section of zlib.h) from the main zlib code.
-* Added zutil.h from the main zlib code.
+* Added a stripped-down copy of zutil.h sufficient to build infback9 against.
 * Added include guards to headers.
 * Fixed a fall-through warning.
 * Replaced references to zcalloc and zcfree with inline implementations. This
   is due to older versions of zlib seemingly not exposing these.
-* Added conditional definition of z_const in zutil.h to allow this code to
-  build against zlib 1.2.3 (OpenBSD 6.5).
+* Removed OF() wrapper for function declarations (unnecessary).

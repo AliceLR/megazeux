@@ -30,6 +30,7 @@
 #include "idput.h"
 #include "robot.h"
 #include "scrdisp.h"
+#include "util.h"
 #include "window.h"
 #include "world_struct.h"
 

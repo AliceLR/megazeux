@@ -872,6 +872,12 @@ int parse_expression(struct world *mzx_world, char **_expression, int *error,
           }
           else
 
+          if(current_char == '\'' || current_char == '&')
+          {
+            expression = skip_identifier(expression, current_char);
+          }
+          else
+
           if(current_char == '(')
           {
             expression = skip_expression(expression);
@@ -1407,6 +1413,12 @@ static int parse_argument(struct world *mzx_world, char **_argument,
         }
         else
 #endif // !CONFIG_DEBYTECODE
+
+        if(first_char == '`')
+        {
+          argument = skip_identifier(argument + 1, first_char) - 1;
+        }
+        else
 
         if(first_char == '(')
         {

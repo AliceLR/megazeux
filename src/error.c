@@ -29,6 +29,7 @@
 #include "graphics.h"
 #include "helpsys.h"
 #include "platform.h"
+#include "util.h"
 #include "window.h"
 #include "world.h"
 

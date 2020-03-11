@@ -15,7 +15,7 @@
 !define startmenu "$SMPROGRAMS\${prodname}"
 !define uninstaller "uninstall.exe"
 
-!define website "http://digitalmzx.net/"
+!define website "https://www.digitalmzx.com/"
 
 ;--------------------------------
 

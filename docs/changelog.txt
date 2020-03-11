@@ -1,7 +1,22 @@
-GIT
+March 8th, 2020 - MZX 2.92c
+
+Here's another bugfix release, this time mostly oriented towards
+fixing bugs in the Emscripten/HTML5 port and checkres. Other
+fixes of note are the module_resample_mode (formerly 'modplug')
+config setting has been fixed, numerous optimizations have been
+made to the software layer renderer, and yet another ternary
+operator bug has been fixed.
+
+Finally, Spectere has added an experimental save slots UI that
+can be enabled with the config setting "save_slots". This
+feature is intended primarily for consoles and will likely be
+enabled by default for consoles in the future.
 
 USERS
 
++ Added an optional save slots interface to complement the file
+  manager. This can be enabled by setting the "save_slots"
+  config setting to 1, and is disabled by default. (Spectere)
 + Board list typing now allows non-alphanumeric keys like spaces
   and periods. Typing a space first will match zero or more
   prefixed spaces while seeking.
@@ -18,7 +33,7 @@ USERS
   "linear". The default for this setting in config.txt has been
   corrected (the default has been "cubic" since 2.82b).
 + Fixed a ternary operator bug where the expression could break
-  with certain counter names in the middle term.
+  with certain counter names in the second and third terms.
 + Added a comment to the Emscripten frontend for how to disable
   the "Click to Play" splash.
 + Fixed Emscripten frontend issues when MegaZeux is embedded in
@@ -33,6 +48,7 @@ USERS
 + Fixed a robot editor regression where certain numpad symbols
   could not be typed.
 + Added "GL4ES wrapper" to the auto_glsl blacklist.
++ Added "Software Rasterizer" to the auto_glsl blacklist.
 + checkres no longer requires zip archive filenames to end with
   the .ZIP extension.
 + Added optional CSV output to checkres.
@@ -44,15 +60,31 @@ USERS
 + The Emscripten frontend now falls back to a wrapper for MZX's
   internal ZIP support when UZIP fails to extract an archive.
 + Fixed IndexedDB support for legacy Edge versions. (asie)
++ Fixed an 8bpp software layer renderer bug where transparent UI
+  colors would not be transparent in SMZX mode.
++ General software layer renderer (software, softscale, opengl1)
+  performance improvements.
++ Fixed out-of-bounds CHAR_BYTE access with BYTE values over 14,
+  added compatibility check for games relying on this. (asie)
++ Fixed faulty bounding on CHAR_X/CHAR_Y/PIXEL.
 - Removed the options "overlay1" and "overlay2" from the list of
   selectable renderer options except when SDL 1.2 is enabled.
 
 DEVELOPERS
 
-+ render_layer.c now disables the (unused) 64-aligned renderers
++ Refactored render_layer_code to use C++ templates.
++ render_layer now disables the (unused) 64-aligned renderers
   for 32-bit platforms and Emscripten builds.
++ Fixed buggy render_layer clipping that required clipping
+  renderers to unconditionally use a suboptimal alignment.
 + Switched from xmp_load_module to xmp_load_module_from_file.
 + Fixed various clang unused argument compiler warnings.
++ Updated MSVC dirent.h implementation to latest version.
++ Moved dir_* functions from util.c to dir.c.
++ Added Windows UTF-8 compatibility layer to vfs.c and dir.c.
+  UTF-8 support for Windows is still limited.
++ Moved Makefile compiler version checks to arch/compat.inc.
++ Added cycles_and_commands.txt to build and install targets.
 
 
 September 23rd, 2019 - MZX 2.92b

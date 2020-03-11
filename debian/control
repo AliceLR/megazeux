@@ -19,7 +19,7 @@ Description: A simple game creation system (GCS)
  programming language, MegaZeux allows you to create your own ANSI-esque games
  regardless of genre. It is actively maintained by a thriving community.
  .
- See http://digitalmzx.net/ for more information.
+ See https://www.digitalmzx.com/ for more information.
 
 Package: megazeux-dbg
 Section: debug

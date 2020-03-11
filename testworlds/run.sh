@@ -75,7 +75,7 @@ do
 	sleep 1
 	i=$[$i+1]
 	printf "."
-	if [ $i -ge 10 ];
+	if [ $i -ge 60 ];
 	then
 		kill -9 $mzxrun_pid
 		echo "killing frozen process."

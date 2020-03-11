@@ -28,6 +28,7 @@
 #include "graphics.h"
 #include "helpsys.h"
 #include "scrdisp.h"
+#include "util.h"
 #include "window.h"
 #include "world.h"
 
