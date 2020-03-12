@@ -208,8 +208,7 @@ boolean ctr_keyboard_update(struct buffered_status *status)
         unicode = convert_internal_unicode(area->keycode);
 
         key_press(status, area->keycode);
-        if(unicode)
-          key_press_unicode(status, unicode);
+        key_press_unicode(status, unicode);
 
         keys_down[keys_down_count++] = area->keycode;
         retval = true;

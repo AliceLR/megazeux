@@ -1138,13 +1138,15 @@ void key_press(struct buffered_status *status, enum keycode key)
 
 void key_press_unicode(struct buffered_status *status, Uint32 unicode)
 {
-  if(status->unicode_length < KEY_UNICODE_MAX)
+  if(unicode)
   {
-    status->unicode[status->unicode_length++] = unicode;
+    if(status->unicode_length < KEY_UNICODE_MAX)
+    {
+      status->unicode[status->unicode_length++] = unicode;
+    }
+    else
+      status->unicode[KEY_UNICODE_MAX - 1] = unicode;
   }
-  else
-    status->unicode[KEY_UNICODE_MAX - 1] = unicode;
-
   status->unicode_repeat = unicode;
 }
 

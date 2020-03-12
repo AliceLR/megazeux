@@ -1212,8 +1212,7 @@ static boolean process_event(SDL_Event *event)
       }
 
       key_press(status, ckey);
-      if(unicode)
-        key_press_unicode(status, unicode);
+      key_press_unicode(status, unicode);
       break;
     }
 
