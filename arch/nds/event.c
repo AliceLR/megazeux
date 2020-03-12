@@ -98,8 +98,14 @@ static int nds_map_joystick(int nds_button, boolean *is_hat)
   return -1;
 }
 
-static void convert_nds_internal(int key, int *internal_code)
+static void convert_nds_internal(int key, int *internal_code, int *unicode)
 {
+  // Actually ASCIIish, but close enough.
+  if(key > 0)
+    *unicode = key;
+  else
+    *unicode = 0;
+
   // Uppercase letters
   if(key >= 65 && key <= 90)
     *internal_code = key + 32;
@@ -190,12 +196,8 @@ static boolean process_event(NDSEvent *event)
     // Software key down
     case NDS_EVENT_KEYBOARD_DOWN:
     {
-      int internal_code;
-      Uint32 unicode;
-
-      convert_nds_internal(event->key, &internal_code);
-      unicode = convert_internal_unicode(internal_code);
-
+      int internal_code, unicode;
+      convert_nds_internal(event->key, &internal_code, &unicode);
       key_press(status, internal_code);
       if(unicode)
         key_press_unicode(status, unicode);
@@ -206,8 +208,8 @@ static boolean process_event(NDSEvent *event)
 
     case NDS_EVENT_KEYBOARD_UP:
     {
-      int internal_code;
-      convert_nds_internal(event->key, &internal_code);
+      int internal_code, unicode;
+      convert_nds_internal(event->key, &internal_code, &unicode);
       key_release(status, internal_code);
       break;
     }
