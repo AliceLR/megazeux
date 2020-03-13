@@ -3424,8 +3424,9 @@ static boolean robot_editor_mouse(context *ctx, int *key, int button,
 
   if(button && (button <= MOUSE_BUTTON_RIGHT))
   {
+    // NOTE: let intake handle clicks on scr_line_middle.
     if((y >= rstate->scr_line_start) && (y <= rstate->scr_line_end) &&
-     (x >= 2) && (x <= 78))
+     (y != rstate->scr_line_middle) && (x >= 2) && (x <= 78))
     {
       move_and_update(rstate, y - rstate->scr_line_middle);
       rstate->current_x = x - 2;
