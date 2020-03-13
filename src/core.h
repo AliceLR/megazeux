@@ -29,12 +29,11 @@ __M_BEGIN_DECLS
 
 /**
  * The type of a given context. Used to identify particular contexts and to open
- * help files contextually. Do not sort is enum by value.
+ * help files contextually. Do not sort this enum by value.
  *
  * Numbers >0 correspond directly to a hyperlink in the help system.
  * Numbers <=0 are used by contexts with no unique link in the help system.
  */
-
 enum context_type
 {
   // Core contexts.
