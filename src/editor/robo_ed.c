@@ -3688,8 +3688,9 @@ static boolean robot_editor_key(context *ctx, int *key)
       {
         update_current_line(rstate);
         validate_lines(rstate, 1);
+        return true;
       }
-      return true;
+      break;
     }
 
 #ifdef CONFIG_DEBYTECODE
