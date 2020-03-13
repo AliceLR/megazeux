@@ -3811,8 +3811,8 @@ static boolean robot_editor_key(context *ctx, int *key)
         {
           rstate->current_rline->validity_status = invalid_discard;
           update_current_line(rstate);
-          return true;
         }
+        return true;
       }
       break;
     }
