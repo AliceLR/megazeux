@@ -5,7 +5,7 @@
 
 cd /mzx-build-workingdir
 
-VERSION=2.0.10
+VERSION=2.0.12
 FILENAME=SDL2-devel-$VERSION-mingw.tar.gz
 
 rm -f $FILENAME
