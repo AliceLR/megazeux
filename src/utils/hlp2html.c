@@ -37,12 +37,12 @@
 #define EOL "\n"
 #define MZXFONT_OFFSET (0xE000)
 
-static const char * const usage =
- "hlp2html - Convert help text file to HTML." EOL
- "usage: hlp2html input.txt output.html [options]..." EOL EOL
- "options:" EOL
- "    -c : color+printable version (default)" EOL
- "    -p : printable-only version" EOL;
+#define USAGE \
+ "hlp2html - Convert help text file to HTML." EOL \
+ "usage: hlp2html input.txt output.html [options]..." EOL EOL \
+ "options:" EOL \
+ "    -c : color+printable version (default)" EOL \
+ "    -p : printable-only version" EOL
 
 #define RESOURCES "contrib/hlp2html/"
 static const char * const font_file =         RESOURCES "fonts.css";
@@ -679,7 +679,7 @@ int main(int argc, char *argv[])
 
   if(argc < 3)
   {
-    fprintf(stdout, usage);
+    fprintf(stdout, USAGE);
     exit(0);
   }
 
