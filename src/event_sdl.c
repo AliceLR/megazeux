@@ -1443,13 +1443,18 @@ boolean __update_event_status(void)
 // Proper polling should be performed if the answer is yes.
 boolean __peek_exit_input(void)
 {
-#if SDL_VERSION_ATLEAST(2,0,0)
   SDL_Event events[256];
-  int num_events, i;
+  int num_events;
+  int i;
 
   SDL_PumpEvents();
+
+#if SDL_VERSION_ATLEAST(2,0,0)
   num_events =
    SDL_PeepEvents(events, 256, SDL_PEEKEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT);
+#else /* !SDL_VERSION_ATLEAST(2,0,0) */
+  num_events = SDL_PeepEvents(events, 256, SDL_PEEKEVENT, SDL_ALLEVENTS);
+#endif /* SDL_VERSION_ATLEAST(2,0,0) */
 
   for(i = 0; i < num_events; i++)
   {
@@ -1470,14 +1475,6 @@ boolean __peek_exit_input(void)
         return true;
     }
   }
-
-#else /* !SDL_VERSION_ATLEAST(2,0,0) */
-
-  // FIXME: SDL supports SDL_PeepEvents but the implementation is
-  // different
-
-#endif /* SDL_VERSION_ATLEAST(2,0,0) */
-
   return false;
 }
 
