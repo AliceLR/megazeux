@@ -3831,6 +3831,25 @@ static boolean robot_editor_key(context *ctx, int *key)
     case IKEY_HOME:
     case IKEY_END:
     {
+      if(get_ctrl_status(keycode_internal))
+      {
+        if(*key == IKEY_HOME)
+        {
+          // Jump to the first line of the program.
+          goto_line(rstate, 1);
+          return true;
+        }
+        else
+
+        if(*key == IKEY_END)
+        {
+          // Jump to the last line of the program.
+          goto_line(rstate, rstate->total_lines);
+          return true;
+        }
+      }
+      else
+
       if(get_alt_status(keycode_internal))
       {
         int mark_switch;
