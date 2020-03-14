@@ -23,6 +23,7 @@ Older versions are available at [DigitalMZX](https://www.digitalmzx.com/).
 [megazeux-u32]: https://www.digitalmzx.com/download.php?latest=ubuntu32
 [megazeux-d64]: https://www.digitalmzx.com/download.php?latest=debian64
 [megazeux-d32]: https://www.digitalmzx.com/download.php?latest=debian32
+[megazeux-f64]: https://www.digitalmzx.com/download.php?latest=fedora64
 [megazeux-rpi]: https://www.digitalmzx.com/download.php?latest=raspbian
 [megazeux-html]: https://www.digitalmzx.com/download.php?latest=html5
 [megazeux-nds]: https://www.digitalmzx.com/download.php?latest=nds
@@ -42,6 +43,7 @@ Older versions are available at [DigitalMZX](https://www.digitalmzx.com/).
 [arch-u32]: contrib/archicons/ubuntu32.png  "Ubuntu i386"
 [arch-d64]: contrib/archicons/debian64.png  "Debian AMD64"
 [arch-d32]: contrib/archicons/debian32.png  "Debian i386"
+[arch-f64]: contrib/archicons/fedora64.png  "Fedora x86_64"
 [arch-rpi]: contrib/archicons/raspbian.png  "Raspbian"
 [arch-html]:contrib/archicons/html5.png     "HTML5 (Emscripten)"
 [arch-aur]: contrib/archicons/archlinux.png "Arch Linux (via AUR)"
@@ -65,6 +67,7 @@ Older versions are available at [DigitalMZX](https://www.digitalmzx.com/).
 &nbsp; [![Ubuntu i386         ][arch-u32]][megazeux-u32]
 &nbsp; [![Debian AMD64        ][arch-d64]][megazeux-d64]
 &nbsp; [![Debian i386         ][arch-d32]][megazeux-d32]
+&nbsp; [![Fedora x86_64       ][arch-f64]][megazeux-f64]
 &nbsp; [![HTML5 (Emscripten)  ][arch-html]][megazeux-html]
 &nbsp; [![Nintendo DS         ][arch-nds]][megazeux-nds]
 &nbsp; [![Nintendo 3DS        ][arch-3ds]][megazeux-3ds]
