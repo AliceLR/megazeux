@@ -959,7 +959,7 @@ static boolean process_event(union event *ev)
       }
 
       key_press(status, ckey);
-      key_press_unicode(status, ev->key.unicode);
+      key_press_unicode(status, ev->key.unicode, true);
       break;
     }
 

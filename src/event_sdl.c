@@ -1212,7 +1212,7 @@ static boolean process_event(SDL_Event *event)
       }
 
       key_press(status, ckey);
-      key_press_unicode(status, unicode);
+      key_press_unicode(status, unicode, true);
       break;
     }
 
@@ -1259,11 +1259,13 @@ static boolean process_event(SDL_Event *event)
     }
 
 #if SDL_VERSION_ATLEAST(2,0,0)
+    /**
+     * SDL 2 sends repeat key press events. In the case of SDL_TEXTINPUT, these
+     * can't be distinguished from regular key presses, so key_press_unicode
+     * needs to be called without repeating enabled.
+     */
     case SDL_TEXTINPUT:
     {
-      // TODO: would be nice if they added a way to disable or ignore repeats
-      // here. If this ever happens, text repeat control can be given back
-      // to MZX (see event.c).
       Uint8 *text = (Uint8 *)event->text.text;
 
       if(unicode_fallback)
@@ -1279,7 +1281,7 @@ static boolean process_event(SDL_Event *event)
         Uint32 unicode = utf8_next_char(&text);
 
         if(unicode)
-          key_press_unicode(status, unicode);
+          key_press_unicode(status, unicode, false);
       }
       break;
     }

@@ -225,7 +225,8 @@ CORE_LIBSPEC boolean get_alt_status(enum keycode_type type);
 CORE_LIBSPEC boolean get_shift_status(enum keycode_type type);
 CORE_LIBSPEC boolean get_ctrl_status(enum keycode_type type);
 CORE_LIBSPEC void key_press(struct buffered_status *status, enum keycode key);
-CORE_LIBSPEC void key_press_unicode(struct buffered_status *status, Uint32 unicode);
+CORE_LIBSPEC void key_press_unicode(struct buffered_status *status,
+ Uint32 unicode, boolean repeating);
 CORE_LIBSPEC void key_release(struct buffered_status *status, enum keycode key);
 CORE_LIBSPEC boolean get_exit_status(void);
 CORE_LIBSPEC boolean set_exit_status(boolean value);

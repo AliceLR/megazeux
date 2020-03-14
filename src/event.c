@@ -37,22 +37,6 @@
 #define JOYSTICK_REPEAT_START KEY_REPEAT_START
 #define JOYSTICK_REPEAT_RATE  KEY_REPEAT_RATE
 
-/**
- * SDL 2 sends repeat key press events. In the case of unicode, these can't be
- * distinguished from regular key presses, so MZX's built-in repeat needs to be
- * disabled for unicode. SDL 2 can also be given control of all key repeat by
- * uncommenting the second define and modifying event_sdl.c.
- *
- * Generally speaking, MZX's built-in key repeat is nicer to use than SDL key
- * repeat due to the repeat stack, so by default this only affects text input.
- */
-#ifdef CONFIG_SDL
-#if SDL_VERSION_ATLEAST(2,0,0)
-//#define PLATFORM_HAS_KEY_REPEAT 1
-#define PLATFORM_HAS_UNICODE_REPEAT 1
-#endif
-#endif
-
 static Uint32 last_update_time;
 
 struct input_status input;
@@ -474,10 +458,13 @@ static boolean update_autorepeat(void)
   Uint8 last_mouse_state = status->mouse_repeat_state;
   Uint8 last_joystick_state = status->joystick_repeat_state;
 
-#ifdef PLATFORM_HAS_KEY_REPEAT
-  last_key_state = 0;
-  input.repeat_stack_pointer = 0;
-#endif
+  // If you enable SDL 2.0 key repeat, uncomment these lines:
+//#ifdef CONFIG_SDL
+//#if SDL_VERSION_ATLEAST(2,0,0)
+  //last_key_state = 0;
+  //input.repeat_stack_pointer = 0;
+//#endif
+//#endif
 
   if(last_key_state)
   {
@@ -491,9 +478,7 @@ static boolean update_autorepeat(void)
         status->keypress_time = new_time;
         status->keymap[status_key] = 2;
         status->key = status->key_repeat;
-#ifndef PLATFORM_HAS_UNICODE_REPEAT
-        key_press_unicode(status, status->unicode_repeat);
-#endif
+        key_press_unicode(status, status->unicode_repeat, false);
         rval = true;
       }
     }
@@ -503,9 +488,7 @@ static boolean update_autorepeat(void)
       {
         status->keypress_time = new_time;
         status->key = status->key_repeat;
-#ifndef PLATFORM_HAS_UNICODE_REPEAT
-        key_press_unicode(status, status->unicode_repeat);
-#endif
+        key_press_unicode(status, status->unicode_repeat, false);
         rval = true;
       }
     }
@@ -1136,7 +1119,8 @@ void key_press(struct buffered_status *status, enum keycode key)
   status->key_release = IKEY_UNKNOWN;
 }
 
-void key_press_unicode(struct buffered_status *status, Uint32 unicode)
+void key_press_unicode(struct buffered_status *status, Uint32 unicode,
+ boolean repeating)
 {
   if(unicode)
   {
@@ -1147,7 +1131,8 @@ void key_press_unicode(struct buffered_status *status, Uint32 unicode)
     else
       status->unicode[KEY_UNICODE_MAX - 1] = unicode;
   }
-  status->unicode_repeat = unicode;
+  if(repeating)
+    status->unicode_repeat = unicode;
 }
 
 void key_release(struct buffered_status *status, enum keycode key)
@@ -1718,9 +1703,9 @@ static void joystick_press(struct buffered_status *status, int joystick,
         status->joystick_action_status[joystick][press_action] = true;
       if(press_key)
       {
+        Uint32 unicode = KEYCODE_IS_ASCII(press_key) ? press_key : 0;
         key_press(status, press_key);
-        if(KEYCODE_IS_ASCII(press_key))
-          key_press_unicode(status, press_key);
+        key_press_unicode(status, unicode, true);
       }
     }
   }
