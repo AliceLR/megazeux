@@ -2098,7 +2098,7 @@ static void robo_ed_search_dialog(struct robot_editor_context *rstate)
   // Prevent previous keys from carrying through.
   force_release_all_keys();
 
-  construct_dialog(&di, "Search (repeat: Ctrl+R)", 5, 10, 70, 5,
+  construct_dialog(&di, "Search (repeat: Ctrl+R; replace: Ctrl+H)", 5, 10, 70, 5,
    elements, num_elements, 3);
 
   result = run_dialog(mzx_world, &di);
@@ -2140,7 +2140,7 @@ static void robo_ed_replace_dialog(struct robot_editor_context *rstate)
   // Prevent previous keys from carrying through.
   force_release_all_keys();
 
-  construct_dialog(&di, "Replace (repeat: Ctrl+R)", 2, 9, 76, 6,
+  construct_dialog(&di, "Replace (repeat: Ctrl+R; search: Ctrl+F)", 2, 9, 76, 6,
    elements, num_elements, 3);
 
   result = run_dialog(mzx_world, &di);
