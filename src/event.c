@@ -158,6 +158,49 @@ void init_event(void)
   initialize_joysticks();
 }
 
+Uint32 convert_internal_unicode(enum keycode key)
+{
+  if(KEYCODE_IS_ASCII(key))
+  {
+    if(get_shift_status(keycode_internal))
+    {
+      if((key >= IKEY_a) && (key <= IKEY_z))
+        return (key - 32);
+
+      // TODO based on a US keyboard right now since that's as good as any
+      // default and possibly what most users are going to expect. It would
+      // be nice to have more locales at some point if someone requests them.
+      switch(key)
+      {
+        case IKEY_BACKQUOTE:    return '~';
+        case IKEY_1:            return '!';
+        case IKEY_2:            return '@';
+        case IKEY_3:            return '#';
+        case IKEY_4:            return '$';
+        case IKEY_5:            return '%';
+        case IKEY_6:            return '^';
+        case IKEY_7:            return '&';
+        case IKEY_8:            return '*';
+        case IKEY_9:            return '(';
+        case IKEY_0:            return ')';
+        case IKEY_MINUS:        return '_';
+        case IKEY_EQUALS:       return '+';
+        case IKEY_LEFTBRACKET:  return '{';
+        case IKEY_RIGHTBRACKET: return '}';
+        case IKEY_BACKSLASH:    return '|';
+        case IKEY_SEMICOLON:    return ':';
+        case IKEY_QUOTE:        return '"';
+        case IKEY_COMMA:        return '<';
+        case IKEY_PERIOD:       return '>';
+        case IKEY_SLASH:        return '?';
+        default:                return IKEY_UNKNOWN;
+      }
+    }
+    return key;
+  }
+  return IKEY_UNKNOWN;
+}
+
 static Uint32 convert_internal_xt(enum keycode key)
 {
   switch(key)
@@ -435,7 +478,7 @@ static boolean update_autorepeat(void)
         status->keypress_time = new_time;
         status->keymap[status_key] = 2;
         status->key = status->key_repeat;
-        status->unicode = status->unicode_repeat;
+        key_press_unicode(status, status->unicode_repeat, false);
         rval = true;
       }
     }
@@ -445,7 +488,7 @@ static boolean update_autorepeat(void)
       {
         status->keypress_time = new_time;
         status->key = status->key_repeat;
-        status->unicode = status->unicode_repeat;
+        key_press_unicode(status, status->unicode_repeat, false);
         rval = true;
       }
     }
@@ -530,7 +573,8 @@ static void start_frame_event_status(void)
   struct buffered_status *status = store_status();
 
   status->key = IKEY_UNKNOWN;
-  status->unicode = 0;
+  status->unicode_pos = 0;
+  status->unicode_length = 0;
   status->mouse_moved = 0;
   status->mouse_button = 0;
   status->joystick_action = 0;
@@ -719,7 +763,7 @@ static enum keycode reverse_keysym_numlock(enum keycode key)
 
 Uint32 get_key(enum keycode_type type)
 {
-  const struct buffered_status *status = load_status();
+  struct buffered_status *status = (struct buffered_status *)load_status();
 
   switch(type)
   {
@@ -732,9 +776,26 @@ Uint32 get_key(enum keycode_type type)
     case keycode_internal_wrt_numlock:
       return emit_keysym_wrt_numlock(status->key);
 
-    default:
-      return status->unicode;
+    case keycode_text_ascii:
+    {
+      while(status->unicode_pos < status->unicode_length)
+      {
+        Uint32 unicode = status->unicode[status->unicode_pos++];
+        if(KEYCODE_IS_ASCII(unicode))
+          return unicode;
+      }
+      break;
+    }
+
+    case keycode_text_unicode:
+    {
+      if(status->unicode_pos < status->unicode_length)
+        return status->unicode[status->unicode_pos++];
+
+      break;
+    }
   }
+  return 0;
 }
 
 Uint32 get_key_status(enum keycode_type type, Uint32 index)
@@ -1046,19 +1107,32 @@ void set_num_buffered_events(Uint8 value)
   num_buffered_events = MAX(1, value);
 }
 
-void key_press(struct buffered_status *status, enum keycode key,
- Uint16 unicode_key)
+void key_press(struct buffered_status *status, enum keycode key)
 {
   // Prevent invalid keycodes from writing out-of-bounds.
   enum keycode map_key = MIN((Uint32)key, STATUS_NUM_KEYCODES - 1);
   status->keymap[map_key] = 1;
   status->key_pressed = key;
   status->key = key;
-  status->unicode = unicode_key;
   status->key_repeat = key;
-  status->unicode_repeat = unicode_key;
   status->keypress_time = get_ticks();
   status->key_release = IKEY_UNKNOWN;
+}
+
+void key_press_unicode(struct buffered_status *status, Uint32 unicode,
+ boolean repeating)
+{
+  if(unicode)
+  {
+    if(status->unicode_length < KEY_UNICODE_MAX)
+    {
+      status->unicode[status->unicode_length++] = unicode;
+    }
+    else
+      status->unicode[KEY_UNICODE_MAX - 1] = unicode;
+  }
+  if(repeating)
+    status->unicode_repeat = unicode;
 }
 
 void key_release(struct buffered_status *status, enum keycode key)
@@ -1073,6 +1147,12 @@ void key_release(struct buffered_status *status, enum keycode key)
     status->key_repeat = IKEY_UNKNOWN;
     status->unicode_repeat = 0;
   }
+}
+
+boolean has_unicode_input(void)
+{
+  const struct buffered_status *status = load_status();
+  return status->unicode_length > status->unicode_pos;
 }
 
 boolean get_exit_status(void)
@@ -1622,7 +1702,11 @@ static void joystick_press(struct buffered_status *status, int joystick,
       if(press_action)
         status->joystick_action_status[joystick][press_action] = true;
       if(press_key)
-        key_press(status, press_key, press_key);
+      {
+        Uint32 unicode = KEYCODE_IS_ASCII(press_key) ? press_key : 0;
+        key_press(status, press_key);
+        key_press_unicode(status, unicode, true);
+      }
     }
   }
 

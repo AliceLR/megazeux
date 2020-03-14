@@ -747,7 +747,7 @@ __editor_maybe_static int char_selection_ext(int current, int allow_char_255,
         if(!current_charset)
         {
           // If this is from 32 to 255, jump there.
-          int key_char = get_key(keycode_unicode);
+          int key_char = get_key(keycode_text_ascii);
 
           if(key_char >= 32 && key_char <= 255)
             current = key_char;
@@ -1773,7 +1773,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
 
     default:
     {
-      int key_char = get_key(keycode_unicode);
+      int key_char = get_key(keycode_text_ascii);
 
       if((key >= '0') && (key <= '9'))
       {
@@ -2060,7 +2060,7 @@ static int key_list_box(struct world *mzx_world, struct dialog *di,
 
     default:
     {
-      int key_char = get_key(keycode_unicode);
+      int key_char = get_key(keycode_text_ascii);
       if(!get_alt_status(keycode_internal) &&
        !get_ctrl_status(keycode_internal) && (key_char >= 32))
       {

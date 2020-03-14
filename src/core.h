@@ -29,12 +29,11 @@ __M_BEGIN_DECLS
 
 /**
  * The type of a given context. Used to identify particular contexts and to open
- * help files contextually. Do not sort is enum by value.
+ * help files contextually. Do not sort this enum by value.
  *
  * Numbers >0 correspond directly to a hyperlink in the help system.
  * Numbers <=0 are used by contexts with no unique link in the help system.
  */
-
 enum context_type
 {
   // Core contexts.
@@ -128,6 +127,7 @@ struct context
  * drag             Update function called to handle a mouse drag (mouse).
  * destroy          Optional function to be called on destruction.
  * framerate_mode   Framerate mode this context should use (context only).
+ * priority         Alters the update order. higher => updates earlier.
  */
 struct context_spec
 {
@@ -140,6 +140,7 @@ struct context_spec
   boolean (*drag)(context *, int *key, int button, int x, int y);
   void (*destroy)(context *);
   enum framerate_type framerate_mode;
+  int priority;
 };
 
 /**
@@ -152,7 +153,6 @@ struct context_spec
  * @param ctx_spec          Specification for context functions/variables.
  * @param context_type      Used to identify contexts (also, by the help system)
  */
-
 CORE_LIBSPEC void create_context(context *ctx, context *parent,
  struct context_spec *ctx_spec, enum context_type context_type);
 
@@ -164,7 +164,7 @@ CORE_LIBSPEC void create_context(context *ctx, context *parent,
  *
  * Resume:  parent, oldest subcontext -> newest subcontext
  * Draw:    parent, oldest subcontext -> newest subcontext
- * Update:  newest subcontext -> oldest subcontext, parent
+ * Update:  parent, oldest subcontext -> newest subcontext (see priority above)
  * Destroy: newest subcontext -> oldest subcontext, parent
  *
  * If "parent" is a subcontext, this function will use the parent of that
@@ -174,7 +174,6 @@ CORE_LIBSPEC void create_context(context *ctx, context *parent,
  * @param parent            The context which created this context.
  * @param sub_spec          Specification for subcontext functions/variables.
  */
-
 CORE_LIBSPEC void create_subcontext(subcontext *sub, context *parent,
  struct context_spec *sub_spec);
 
@@ -186,7 +185,6 @@ CORE_LIBSPEC void create_subcontext(subcontext *sub, context *parent,
  *
  * @param ctx           The context or subcontext to destroy.
  */
-
 CORE_LIBSPEC void destroy_context(context *ctx);
 
 /**
@@ -196,7 +194,6 @@ CORE_LIBSPEC void destroy_context(context *ctx);
  * @param ctx           Current context
  * @return              true if a context change has occurred.
  */
-
 CORE_LIBSPEC boolean has_context_changed(context *ctx);
 
 /**
@@ -206,7 +203,6 @@ CORE_LIBSPEC boolean has_context_changed(context *ctx);
  * @param context_type  A context type
  * @return              true if the context has the given context type.
  */
-
 CORE_LIBSPEC boolean is_context(context *ctx, enum context_type context_type);
 
 /**
@@ -224,7 +220,6 @@ CORE_LIBSPEC boolean is_context(context *ctx, enum context_type context_type);
  * @param param         A parameter to be provided to the callback.
  * @param func          The callback to be executed.
  */
-
 CORE_LIBSPEC void context_callback(context *ctx, context_callback_param *param,
  context_callback_function func);
 
@@ -235,7 +230,6 @@ CORE_LIBSPEC void context_callback(context *ctx, context_callback_param *param,
  * @param ctx           The current context.
  * @param framerate     The new framerate mode.
  */
-
 void set_context_framerate_mode(context *ctx, enum framerate_type framerate);
 
 /**
@@ -245,7 +239,6 @@ void set_context_framerate_mode(context *ctx, enum framerate_type framerate);
  * @param data          Global information struct.
  * @return              A core context struct.
  */
-
 CORE_LIBSPEC core_context *core_init(struct world *mzx_world);
 
 /**
@@ -253,7 +246,6 @@ CORE_LIBSPEC core_context *core_init(struct world *mzx_world);
  *
  * @param root          The core context to run.
  */
-
 CORE_LIBSPEC void core_run(core_context *root);
 
 /**
@@ -261,7 +253,6 @@ CORE_LIBSPEC void core_run(core_context *root);
  *
  * @param ctx           The current context.
  */
-
 CORE_LIBSPEC void core_full_exit(context *ctx);
 
 /**
@@ -269,7 +260,6 @@ CORE_LIBSPEC void core_full_exit(context *ctx);
  *
  * @param ctx           The current context.
  */
-
 CORE_LIBSPEC void core_full_restart(context *ctx);
 
 /**
@@ -278,7 +268,6 @@ CORE_LIBSPEC void core_full_restart(context *ctx);
  * @param root          The core context.
  * @return              True if a restart was requested.
  */
-
 CORE_LIBSPEC boolean core_restart_requested(core_context *root);
 
 /**
@@ -286,7 +275,6 @@ CORE_LIBSPEC boolean core_restart_requested(core_context *root);
  *
  * @param root          The core context to free.
  */
-
 CORE_LIBSPEC void core_free(core_context *root);
 
 // Deprecated functions.

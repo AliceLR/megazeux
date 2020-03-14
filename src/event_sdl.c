@@ -861,9 +861,61 @@ static void close_joystick(int joystick_index)
 }
 #endif
 
+static inline Uint32 utf8_next_char(Uint8 **_src)
+{
+  Uint8 *src = *_src;
+  Uint32 unicode;
+
+  if(!*src)
+    return 0;
+
+  unicode = *(src++);
+
+  if(unicode & 0x80)
+  {
+    Uint32 extra = 1;
+    Uint32 next;
+    Uint32 i;
+
+    if(!(unicode & 0x40))
+      goto err_invalid;
+
+    unicode = unicode & ~0xC0;
+    if(unicode & 0x20)
+    {
+      unicode = unicode & ~0x20;
+      extra++;
+      if(unicode & 0x10)
+      {
+        unicode = unicode & ~0x10;
+        extra++;
+      }
+    }
+
+    for(i = 0; i < extra; i++)
+    {
+      if(!*src)
+        goto err_invalid;
+
+      next = *src++;
+      if((next & 0xC0) != 0x80)
+        goto err_invalid;
+
+      unicode = (unicode << 6) | (next & 0x3F);
+    }
+  }
+  *_src = src;
+  return unicode;
+
+err_invalid:
+  *_src = src;
+  return 0;
+}
+
 static boolean process_event(SDL_Event *event)
 {
   struct buffered_status *status = store_status();
+  static boolean unicode_fallback = true;
   enum keycode ckey;
 
   /* SDL's numlock keyboard modifier handling seems to be broken on X11,
@@ -1051,7 +1103,7 @@ static boolean process_event(SDL_Event *event)
 
     case SDL_KEYDOWN:
     {
-      Uint16 unicode = 0;
+      Uint32 unicode = 0;
 
 #if SDL_VERSION_ATLEAST(2,0,0)
       // SDL 2.0 uses proper key repeat, but derives its timing from the OS.
@@ -1087,19 +1139,21 @@ static boolean process_event(SDL_Event *event)
         ckey = IKEY_UNICODE;
       }
 
-#if SDL_VERSION_ATLEAST(2,0,0)
-      // SDL 2.0 sends the raw key and translated 'text' as separate events.
-      // There is no longer a UNICODE mode that sends both at once.
-      // Because of the way the SDL 1.2 assumption is embedded deeply in
-      // the MZX event queue processor, emulate the 1.2 behaviour by waiting
-      // for a TEXTINPUT event after a KEYDOWN.
-      SDL_PumpEvents();
-
-      if(SDL_PeepEvents(event, 1, SDL_GETEVENT, SDL_TEXTINPUT, SDL_TEXTINPUT))
-        unicode = event->text.text[0] | event->text.text[1] << 8;
-#else
+#if !SDL_VERSION_ATLEAST(2,0,0)
       unicode = event->key.keysym.unicode;
+      if(unicode && unicode_fallback)
+      {
+        // Clear any unicode keys on the buffer generated from the fallback...
+        status->unicode_length = 0;
+        unicode_fallback = false;
+      }
 #endif
+
+      // Some platforms don't implement SDL_TEXTINPUT (SDL 2.0) or the unicode
+      // field (SDL 1.2); until usage of those is detected, fake the text key
+      // using the internal keycode.
+      if(unicode_fallback && KEYCODE_IS_ASCII(ckey))
+        unicode = convert_internal_unicode(ckey);
 
       if((ckey == IKEY_RETURN) &&
        get_alt_status(keycode_internal) &&
@@ -1157,7 +1211,8 @@ static boolean process_event(SDL_Event *event)
         }
       }
 
-      key_press(status, ckey, unicode);
+      key_press(status, ckey);
+      key_press_unicode(status, unicode, true);
       break;
     }
 
@@ -1204,6 +1259,33 @@ static boolean process_event(SDL_Event *event)
     }
 
 #if SDL_VERSION_ATLEAST(2,0,0)
+    /**
+     * SDL 2 sends repeat key press events. In the case of SDL_TEXTINPUT, these
+     * can't be distinguished from regular key presses, so key_press_unicode
+     * needs to be called without repeating enabled.
+     */
+    case SDL_TEXTINPUT:
+    {
+      Uint8 *text = (Uint8 *)event->text.text;
+
+      if(unicode_fallback)
+      {
+        // Clear any unicode keys on the buffer generated from the fallback...
+        status->unicode_length = 0;
+        unicode_fallback = false;
+      }
+
+      // Decode the input UTF-8 string into UTF-32 for the event buffer.
+      while(*text)
+      {
+        Uint32 unicode = utf8_next_char(&text);
+
+        if(unicode)
+          key_press_unicode(status, unicode, false);
+      }
+      break;
+    }
+
     case SDL_JOYDEVICEADDED:
     {
       // Add a new joystick.
@@ -1346,7 +1428,8 @@ boolean __update_event_status(void)
     {
       status->key = IKEY_UNKNOWN;
       status->key_repeat = IKEY_UNKNOWN;
-      status->unicode = 0;
+      status->unicode_repeat = 0;
+      status->unicode_length = 0;
       status->exit_status = true;
       return true;
     }

@@ -624,7 +624,7 @@ static boolean game_key(context *ctx, int *key)
   {
     // Get the char for the KEY? labels. If there is no relevant unicode
     // keypress, we want to use the regular code instead.
-    int key_unicode = get_key(keycode_unicode);
+    int key_unicode = get_key(keycode_text_ascii);
     int key_char = *key;
 
     if(key_unicode > 0 && key_unicode < 256)

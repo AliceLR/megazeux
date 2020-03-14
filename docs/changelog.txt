@@ -1,3 +1,25 @@
+GIT
+
+USERS
+
++ Fixed a bug where input text with no corresponding internal
+  key would be ignored by the robot editor.
++ Fixed a bug where some AltGr key combinations would not work
+  in the robot editor (note: SDL doesn't distinguish Alt from
+  AltGr, so any Alt key combos with a special meaning in the
+  robot editor will still be intercepted by MZX).
++ Windows Alt+numpad sequences corresponding to ASCII characters
+  32-126 should now be recognized.
+
+DEVELOPERS
+
++ Decoupled SDL 2 text input handling from regular key handling
+  and added a text input buffer. Text keys can now be requested
+  multiple times and either as ASCII or unicode; the next key in
+  the buffer is returned on subsequent calls. intake and editor
+  text entry can now accept multiple text chars per frame.
+
+
 March 8th, 2020 - MZX 2.92c
 
 Here's another bugfix release, this time mostly oriented towards
