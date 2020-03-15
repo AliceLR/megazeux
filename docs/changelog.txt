@@ -12,6 +12,8 @@ USERS
   robot editor will still be intercepted by MZX).
 + Windows Alt+numpad sequences corresponding to ASCII characters
   32-126 should now be recognized.
++ Fixed an out-of-memory error in the save slot UI and improved
+  its mouse functionality.
 
 DEVELOPERS
 
