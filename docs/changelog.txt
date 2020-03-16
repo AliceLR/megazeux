@@ -14,6 +14,9 @@ USERS
   32-126 should now be recognized.
 + Fixed an out-of-memory error in the save slot UI and improved
   its mouse functionality.
++ Added optional CRC-32 output to checkres. Currently this flag
+  only works for files in ZIP archives and no CRC-32 validation
+  is performed.
 
 DEVELOPERS
 

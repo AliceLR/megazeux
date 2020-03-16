@@ -62,6 +62,7 @@
  " -v   Display all references with sfx#, board#, robot#.\n"                \
  " -vv  Display all references with sfx#, board#, robot#, line#, coords.\n" \
  " -1   Display unique filenames, one per line, with no other info.\n"      \
+ " -z   Also display CRC-32 values from zip central directory (zip only).\n"\
  "\nOutput options:\n" \
  " -V   Output CSV instead of preformatted text.\n"                         \
  "\nSorting options:\n" \
@@ -145,6 +146,7 @@ static boolean display_filename_only = false;
 static boolean display_first_only = true;
 static boolean display_details = false;
 static boolean display_all_details = false;
+static boolean display_crc32 = false;
 
 // Output format options
 static boolean output_format_csv = false;
@@ -660,14 +662,18 @@ static int16_t robot_ypos[256];
 static int started_table = 0;
 static int parent_max_len = PARENT_DEFAULT_LEN;
 static int resource_max_len = RESOURCE_DEFAULT_LEN;
+static boolean table_has_crc32 = false;
 
 static void output_preformatted(const char *required_by,
  int board_num, int robot_num, int line_num,
- const char *resource_path, const char *status, const char *found_in)
+ const char *resource_path, const char *status, const char *found_in,
+ uint32_t crc32, boolean has_crc32)
 {
   char details[DETAILS_MAX_LEN];
+  char crc[9] = "\0";
   int details_max_len = display_details ?
    (display_all_details ? DETAILS_MAX_LEN : DETAILS_SHORT_LEN) : 0;
+  int crc32_len = (display_crc32 && table_has_crc32) ? 11 : 0;
 
   if(!display_filename_only)
   {
@@ -677,19 +683,21 @@ static void output_preformatted(const char *required_by,
     {
       fprintf(stdout, "\n");
 
-      fprintf(stdout, "%-*.*s  %-*.*s%-*.*s  %-10s %s\n",
+      fprintf(stdout, "%-*.*s  %-*.*s%-*.*s  %-10s%-*.*s %s\n",
        parent_max_len, parent_max_len, "Required by",
        details_max_len, details_max_len, "B#    R#    Line     Position",
        resource_max_len, resource_max_len, "Expected file",
        "Status",
+       crc32_len, crc32_len, "CRC-32",
        "Found in"
       );
 
-      fprintf(stdout, "%-*.*s  %-*.*s%-*.*s  %-10s %s\n",
+      fprintf(stdout, "%-*.*s  %-*.*s%-*.*s  %-10s%-*.*s %s\n",
        parent_max_len, parent_max_len, "-----------",
        details_max_len, details_max_len, "---   ---   ------   -----------",
        resource_max_len, resource_max_len, "-------------",
        "------",
+       crc32_len, crc32_len, "------",
        "--------"
       );
 
@@ -742,11 +750,15 @@ static void output_preformatted(const char *required_by,
     else
       details[0] = 0;
 
-    fprintf(stdout, "%-*.*s  %-*.*s%-*.*s  %-10s %s\n",
+    if(crc32_len)
+      snprintf(crc, 9, "%8.8x", crc32);
+
+    fprintf(stdout, "%-*.*s  %-*.*s%-*.*s  %-10s%-*.*s %s\n",
      parent_max_len, parent_max_len, required_by,
      details_max_len, details_max_len, details,
      resource_max_len, resource_max_len, resource_path,
      status,
+     crc32_len, crc32_len, crc,
      found_in
     );
   }
@@ -754,7 +766,8 @@ static void output_preformatted(const char *required_by,
 
 static void output_csv(const char *required_by,
  int board_num, int robot_num, int line_num,
- const char *resource_path, const char *status, const char *found_in)
+ const char *resource_path, const char *status, const char *found_in,
+ uint32_t crc32, boolean has_crc32)
 {
   // TODO add proper escaping for the filenames.
   found_in = found_in ? found_in : "";
@@ -768,7 +781,12 @@ static void output_csv(const char *required_by,
       if(display_all_details)
         fprintf(stdout, "Line,Position,");
     }
-    fprintf(stdout, "Expected file,Status,Found in\n");
+    fprintf(stdout, "Expected file,Status,");
+
+    if(display_crc32)
+      fprintf(stdout, "CRC-32,");
+
+    fprintf(stdout, "Found in\n");
 
     started_table = 1;
   }
@@ -837,12 +855,25 @@ static void output_csv(const char *required_by,
       fprintf(stdout, "(unknown),,%s", filler);
   }
 
-  fprintf(stdout, "%s,%s,%s\n", resource_path, status, found_in);
+  fprintf(stdout, "%s,%s,", resource_path, status);
+
+  if(display_crc32)
+  {
+    if(has_crc32)
+    {
+      fprintf(stdout, "%8.8x,", crc32);
+    }
+    else
+      fprintf(stdout, ",");
+  }
+
+  fprintf(stdout, "%s,\n", found_in);
 }
 
 static void output(const char *required_by,
  int board_num, int robot_num, int line_num,
- const char *resource_path, const char *status, const char *found_in)
+ const char *resource_path, const char *status, const char *found_in,
+ uint32_t crc32, boolean has_crc32)
 {
   if(display_filename_only)
   {
@@ -854,13 +885,13 @@ static void output(const char *required_by,
   if(output_format_csv)
   {
     output_csv(required_by, board_num, robot_num, line_num, resource_path,
-     status, found_in);
+     status, found_in, crc32, has_crc32);
   }
 
   else
   {
     output_preformatted(required_by, board_num, robot_num, line_num,
-     resource_path, status, found_in);
+     resource_path, status, found_in, crc32, has_crc32);
   }
 }
 
@@ -872,6 +903,8 @@ struct base_path_file
 {
   char file_path[MAX_PATH];
   int file_path_len;
+  uint32_t crc32;
+  boolean has_crc32;
   boolean used;
   boolean used_wildcard;
 };
@@ -1052,7 +1085,8 @@ static struct resource *add_resource(const char *src, struct base_file *file)
 }
 
 static void add_base_path_file(struct base_path *path,
- const char *file_name, size_t file_name_length)
+ const char *file_name, size_t file_name_length, uint32_t crc32,
+ boolean has_crc32)
 {
   struct base_path_file *entry;
 
@@ -1069,6 +1103,8 @@ static void add_base_path_file(struct base_path *path,
     memcpy(entry->file_path, file_name, file_name_length);
     entry->file_path[file_name_length] = '\0';
     entry->file_path_len = file_name_length;
+    entry->crc32 = crc32;
+    entry->has_crc32 = has_crc32;
     entry->used = false;
     entry->used_wildcard = false;
 
@@ -1082,7 +1118,8 @@ static void add_base_path_file(struct base_path *path,
 static void add_base_path_file_wr(void *path, const char *file_name,
  size_t file_name_length)
 {
-  add_base_path_file((struct base_path *)path, file_name, file_name_length);
+  add_base_path_file((struct base_path *)path, file_name, file_name_length,
+   0, false);
 }
 
 static void build_zip_base_path_table(struct base_path *path,
@@ -1096,8 +1133,10 @@ static void build_zip_base_path_table(struct base_path *path,
   for(i = 0; i < num_files; i++)
   {
     fh = files[i];
-    add_base_path_file(path, fh->file_name, fh->file_name_length);
+    add_base_path_file(path, fh->file_name, fh->file_name_length,
+     fh->crc32, true);
   }
+  table_has_crc32 = true;
 }
 
 static void change_base_path_dir(struct base_path *current_path,
@@ -1287,6 +1326,8 @@ static void process_requirements(struct base_path **path_list,
   char *translated_path;
   size_t len;
   boolean found;
+  boolean found_has_crc32;
+  uint32_t found_crc32;
   size_t i;
   int j;
 
@@ -1326,6 +1367,8 @@ static void process_requirements(struct base_path **path_list,
   {
     req = req_sorted[i];
     found = false;
+    found_crc32 = 0;
+    found_has_crc32 = false;
 
     for(j = 0; j < path_list_size; j++)
     {
@@ -1371,6 +1414,8 @@ static void process_requirements(struct base_path **path_list,
         {
           bpf->used = true;
           found = true;
+          found_crc32 = bpf->crc32;
+          found_has_crc32 = bpf->has_crc32;
           break;
         }
       }
@@ -1392,7 +1437,8 @@ static void process_requirements(struct base_path **path_list,
     {
       if(display_wildcard)
         output(req->parent->file_name, req->board_num, req->robot_num,
-         req->line_num, req->path, pattern_append, current_path->actual_path);
+         req->line_num, req->path, pattern_append, current_path->actual_path,
+         0, false);
     }
     else
 
@@ -1400,7 +1446,8 @@ static void process_requirements(struct base_path **path_list,
     {
       if(display_found)
         output(req->parent->file_name, req->board_num, req->robot_num,
-         req->line_num, req->path, found_append, current_path->actual_path);
+         req->line_num, req->path, found_append, current_path->actual_path,
+         found_crc32, found_has_crc32);
     }
     else
     {
@@ -1425,13 +1472,13 @@ static void process_requirements(struct base_path **path_list,
 
         if(display_created)
           output(req->parent->file_name, req->board_num, req->robot_num,
-           req->line_num, req->path, append, NULL);
+           req->line_num, req->path, append, NULL, 0, false);
       }
       else
       {
         if(display_not_found)
           output(req->parent->file_name, req->board_num, req->robot_num,
-           req->line_num, req->path, not_found_append, NULL);
+           req->line_num, req->path, not_found_append, NULL, 0, false);
       }
     }
   }
@@ -1495,14 +1542,14 @@ static void process_requirements(struct base_path **path_list,
             if(display_unused && !bpf->used_wildcard)
             {
               output("", DONT_PRINT, -1, -1, file_path, unused_append,
-               current_path->actual_path);
+               current_path->actual_path, bpf->crc32, bpf->has_crc32);
             }
             else
 
             if(display_wildcard && bpf->used_wildcard)
             {
               output("", DONT_PRINT, -1, -1, file_path, maybe_used_append,
-               current_path->actual_path);
+               current_path->actual_path, bpf->crc32, bpf->has_crc32);
             }
           }
         }
@@ -3159,6 +3206,10 @@ int main(int argc, char *argv[])
             display_filename_only = true;
             display_details = false;
             display_all_details = false;
+            break;
+
+          case 'z':
+            display_crc32 = true;
             break;
 
           case 'V':
