@@ -78,18 +78,6 @@
  * implications for downver or accessing files/worlds from inside of a zip.
  */
 
-static long int _fstatlen(FILE *fp)
-{
-  struct stat file_info;
-
-  if(fstat(fileno(fp), &file_info))
-  {
-    return -1;
-  }
-
-  return file_info.st_size;
-}
-
 static int zip_get_dos_date_time(void)
 {
   time_t current_time = time(NULL);
@@ -2143,9 +2131,10 @@ struct zip_archive *zip_open_fp_read(FILE *fp)
   if(fp)
   {
     struct zip_archive *zp = zip_new_archive();
-    long int file_len = _fstatlen(fp);
+    long int file_len;
 
     zp->vf = vfile_init_fp(fp, "rb");
+    file_len = vfilelength(zp->vf, false);
 
     if(file_len < 0)
     {

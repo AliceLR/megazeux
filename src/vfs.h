@@ -58,8 +58,7 @@ int vfwrite(const void *src, size_t size, size_t count, vfile *vf);
 int vfseek(vfile *vf, long int offset, int whence);
 long int vftell(vfile *vf);
 void vrewind(vfile *vf);
-
-long vftell_and_rewind(vfile *vf);
+long vfilelength(vfile *vf, boolean rewind);
 
 // FIXME dirent
 

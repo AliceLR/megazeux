@@ -544,16 +544,55 @@ void vrewind(vfile *vf)
 }
 
 /**
- * Return the length of the file and rewind to the start of it.
- * TODO do something else instead of this.
+ * Return the length of the file and optionally rewind to the start of it.
+ * If rewind is false, this function is guaranteed to either not modify the
+ * current file position or to restore it to its position prior to calling this.
  */
-long vftell_and_rewind(vfile *vf)
+long vfilelength(vfile *vf, boolean rewind)
 {
+  boolean valid = false;
   long size;
 
-  vfseek(vf, 0, SEEK_END);
-  size = vftell(vf);
-  vrewind(vf);
+  assert(vf);
+
+  if(vf->flags & VF_MEMORY)
+  {
+    size = vf->mf.end - vf->mf.start;
+    valid = true;
+  }
+
+  if(vf->flags & VF_FILE)
+  {
+    struct stat st;
+    int fd = fileno(vf->fp);
+
+#ifdef __WIN32__
+    size = _filelength(fd);
+    if(size < 0)
+#endif
+    {
+      if(!fstat(fd, &st))
+      {
+        size = st.st_size;
+      }
+      else
+      {
+        long current_pos = vftell(vf);
+
+        vfseek(vf, 0, SEEK_END);
+        size = vftell(vf);
+
+        if(!rewind)
+          vfseek(vf, current_pos, SEEK_SET);
+      }
+    }
+    valid = true;
+  }
+
+  assert(valid);
+
+  if(rewind)
+    vrewind(vf);
 
   return size;
 }
