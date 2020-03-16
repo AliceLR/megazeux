@@ -750,7 +750,7 @@ static void output_preformatted(const char *required_by,
     else
       details[0] = 0;
 
-    if(crc32_len)
+    if(crc32_len && has_crc32)
       snprintf(crc, 9, "%8.8x", crc32);
 
     fprintf(stdout, "%-*.*s  %-*.*s%-*.*s  %-10s%-*.*s %s\n",
