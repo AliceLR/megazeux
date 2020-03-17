@@ -550,15 +550,13 @@ void vrewind(vfile *vf)
  */
 long vfilelength(vfile *vf, boolean rewind)
 {
-  boolean valid = false;
-  long size;
+  long size = -1;
 
   assert(vf);
 
   if(vf->flags & VF_MEMORY)
   {
     size = vf->mf.end - vf->mf.start;
-    valid = true;
   }
 
   if(vf->flags & VF_FILE)
@@ -586,10 +584,7 @@ long vfilelength(vfile *vf, boolean rewind)
           vfseek(vf, current_pos, SEEK_SET);
       }
     }
-    valid = true;
   }
-
-  assert(valid);
 
   if(rewind)
     vrewind(vf);
